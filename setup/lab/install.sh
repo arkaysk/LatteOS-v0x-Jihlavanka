@@ -38,7 +38,7 @@ sudo -v
 
 step() { echo; echo "== $*"; }
 
-step "1/8 snímka Btrfs pred inštaláciou (návrat: snapper rollback)"
+step "1/8 snímka Btrfs pred inštaláciou (návrat súborov: sudo snapper -c root undochange <č>..0)"
 if [ "$(findmnt -no FSTYPE /)" = btrfs ]; then
     rpm -q snapper >/dev/null || sudo dnf -y -q install snapper
     sudo snapper list-configs 2>/dev/null | grep -q '^root ' || sudo snapper -c root create-config /
@@ -102,6 +102,13 @@ if mountpoint -q /data; then
 else
     echo "   !! /data nie je pripojený (oddiel Dáta z README)"
 fi
+# EDID pripojeného monitora: náhrada dummy zástrčky (drm.edid_firmware) — uložiť, kým je monitor zapojený
+mkdir -p "$HOME/edid"
+for e in /sys/class/drm/card*-*/edid; do
+    [ -s "$e" ] || continue
+    c="$(basename "$(dirname "$e")")"; cp "$e" "$HOME/edid/${c#card*-}.bin"
+    echo "   EDID monitora ${c#card*-} uložený: ~/edid/${c#card*-}.bin"
+done
 { lspci -k | grep -A3 -E 'VGA|Display' | grep -E 'VGA|Display|driver in use' | sed 's/^\s*/   /'; } || true
 { vulkaninfo --summary 2>/dev/null | grep -m2 -E 'deviceName|driverName' | sed 's/^\s*/   /'; } || echo "   !! vulkaninfo zlyhal"
 echo "   latte-boot (na reálnom PC čakáme renderer = hw):"
