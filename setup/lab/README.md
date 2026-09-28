@@ -68,6 +68,25 @@ Switch len rozvádza, adresy prideľuje router (optický modem). Tri možnosti, 
 3. **Pevná adresa mimo rozsahu DHCP:** v routeri pozrieť rozsah (napr. `.100–.199`), zvoliť adresu mimo neho
    (napr. `.50`) a `setup/lab/install.sh --ip 192.168.1.50/24 --gw 192.168.1.1`. Nastaví sa iba vo Fedore.
 
+## 4a. Inštalácia pri stole bez LAN: internet cez hlavné PC
+
+Monitor je pri hlavnom PC, switch inde a Wi-Fi latte-lab nemá. Celá inštalácia sa preto robí **pri stole**
+a latte-lab dostane sieť cez hlavné PC **krátkym káblom** (1–2 m, obyčajný patch kábel, PC vedľa seba):
+
+1. Windows: *Ovládací panel → Sieťové pripojenia → Wi-Fi → Vlastnosti → Zdieľanie →* „Povoliť ostatným
+   používateľom siete pripojiť sa…“, vybrať **Ethernet**. Ethernet hlavného PC dostane `192.168.137.1`.
+2. Kábel: Ethernet hlavného PC ↔ latte-lab. Latte-lab dostane adresu `192.168.137.x` a internet cez Wi-Fi hlavného PC.
+3. Anaconda (inštalácia ide aj bez siete, DVD ISO má všetko), potom kľúč, `install.sh`, test Wake-on-LAN —
+   všetko pri stole, s monitorom, SSH priamo z hlavného PC.
+4. `sudo poweroff`, vypnúť zdieľanie vo Windowse, odniesť PC k switchu, zapojiť sieť a elektrinu.
+   Router pridelí novú adresu; mDNS ju nájde: `ssh arkay@latte-lab.local`.
+
+Ak hlavné PC nemá Ethernet port: USB tethering z telefónu (Fedora ho vidí ako sieťovku bez ovládačov) stačí na
+sťahovanie, ale latte-lab potom nie je v domácej sieti — `install.sh` treba spustiť priamo na latte-lab
+a počítať s ~3–4 GB dát.
+
+Na mieste pri switchi už monitor nebude: záchrana = SSH, alebo odniesť PC späť k stolu.
+
 ## 5. Prvé kroky s monitorom, potom jeden príkaz
 
 Na latte-lab: `ip -4 -br a` (adresa). Z hlavného PC (PowerShell) skopírovať kľúč:
