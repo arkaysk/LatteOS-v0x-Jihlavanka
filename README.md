@@ -12,7 +12,7 @@
 | `resources/` | prebraté projekty z radaru (`fetch.sh`), naše patche, [MANIFEST](resources/MANIFEST.md) |
 | `crates/` | Rust: `latte-hw` (detekcia HW/grafiky), `latte-boot` (výber režimu NORMAL/SAFE, počítadlo pádov) |
 | `session/` | štart a relácie: `latte-session`, `latte-greeter`, `latte-safe`, Hyprland/labwc konfigurácia, systemd, GRUB SAFE, Plymouth |
-| `setup/` | inštalácia a testy na VM: `f0-install.sh`, `f1/install-session.sh`, merania `f1/RESULTS.md` |
+| `setup/` | inštalácia a testy na VM: `f0-install.sh`, `f1/install-session.sh`, merania `f1/RESULTS.md`; reálne PC latte-lab: [`lab/`](setup/lab/README.md) |
 | `old/`   | celý predchádzajúci stav repa, len na čítanie; **už sa doň nezapisuje** |
 
 Plán vývoja je v [ROADMAP.md](ROADMAP.md). Nový kód a dáta vznikajú iba mimo `old/`.
