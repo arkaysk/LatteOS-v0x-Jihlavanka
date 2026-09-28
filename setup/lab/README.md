@@ -116,8 +116,10 @@ setup/lab/install.sh
 
 Grafický štart zapne až `setup/lab/install.sh --enable`, keď kontrola vyjde a SSH aj Cockpit fungujú.
 Potom test bez periférií: `sudo poweroff`, odpojiť monitor a klávesnicu, zobudiť Wake-on-LAN, `ssh latte-lab`.
-Ak má monitor druhý vstup (DP), latte-lab môže ostať zapojený a monitor sa len prepína — kým monitor hlási
-EDID aj na neaktívnom vstupe, funguje ako dummy zástrčka (overiť, niektoré monitory ho v úspornom režime odpoja).
+Monitor Acer Predator Z301C má DP (hlavné PC, G-Sync) a HDMI. RX 550 HDMI nemá → latte-lab trvalo do HDMI
+cez pasívny kábel/redukciu **mini-DP → HDMI**; vstup sa prepína v ponuke monitora (Input). Kým monitor hlási
+EDID aj na neaktívnom vstupe, funguje ako dummy zástrčka. Overiť s monitorom prepnutým na hlavné PC:
+`cat /sys/class/drm/card*-HDMI-A-*/status` → `connected`. Na inštaláciu stačí dočasne prepojiť DP kábel.
 
 ## Neskôr (nie je v skripte)
 
