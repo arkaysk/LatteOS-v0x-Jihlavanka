@@ -3,7 +3,7 @@
 28. 9. 2026 · @Arkay
 
 ASUS Rampage IV Gene (X79) · i7-4820K · 16 GB · AMD RX 550 (Polaris, RADV) · WD 500 GB · len kábel.
-Po inštalácii stojí pri switchi bez monitora a všetko ide z hlavného PC (SSH, VS Code, Cockpit, Moonlight).
+Stojí pod stolom, káblom priamo v hlavnom PC, bez klávesnice; všetko ide z hlavného PC (SSH, VS Code, Cockpit, Moonlight).
 
 Postup: **ručne** BIOS a Anaconda (~20 min, disk sa delí raz a s ohľadom na Bazzite), potom **jeden príkaz**
 cez SSH: `setup/lab/install.sh`.
@@ -58,34 +58,34 @@ potom sa vráti na predvolený. Wake-on-LAN treba zapnúť v každom systéme zv
 English, klávesnica sk + us, Europe/Bratislava, hostname **latte-lab**, sieť automaticky, root uzamknutý,
 používateľ **arkay** (administrátor), softvér predvolený Fedora Server. Po reštarte vytiahnuť USB.
 
-## 4. Sieť: stála adresa
+## 4. Sieť: kábel priamo do hlavného PC
 
-Switch len rozvádza, adresy prideľuje router (optický modem). Tri možnosti, stačí jedna:
-
-1. **Nič nenastavovať:** `install.sh` zapne mDNS, takže z Windowsu funguje `ssh arkay@latte-lab.local`
-   aj `https://latte-lab.local:9090`, nech má PC akúkoľvek adresu. Moonlight hľadá PC tiež cez mDNS.
-2. **DHCP rezervácia v routeri** (najčistejšie): MAC adresa → stála IP. Platí aj pre Bazzite (rovnaká sieťovka).
-3. **Pevná adresa mimo rozsahu DHCP:** v routeri pozrieť rozsah (napr. `.100–.199`), zvoliť adresu mimo neho
-   (napr. `.50`) a `setup/lab/install.sh --ip 192.168.1.50/24 --gw 192.168.1.1`. Nastaví sa iba vo Fedore.
-
-## 4a. Inštalácia pri stole bez LAN: internet cez hlavné PC
-
-Monitor je pri hlavnom PC, switch inde a Wi-Fi latte-lab nemá. Celá inštalácia sa preto robí **pri stole**
-a latte-lab dostane sieť cez hlavné PC **krátkym káblom** (1–2 m, obyčajný patch kábel, PC vedľa seba):
+Latte-lab stojí pod stolom a je **natrvalo** zapojený krátkym káblom do voľného Ethernetu hlavného PC
+(Wi-Fi nemá, switch je inde). Hlavné PC mu zdieľa internet zo svojej Wi-Fi (Windows ICS).
 
 1. Windows: *Ovládací panel → Sieťové pripojenia → Wi-Fi → Vlastnosti → Zdieľanie →* „Povoliť ostatným
-   používateľom siete pripojiť sa…“, vybrať **Ethernet**. Ethernet hlavného PC dostane `192.168.137.1`.
-2. Kábel: Ethernet hlavného PC ↔ latte-lab. Latte-lab dostane adresu `192.168.137.x` a internet cez Wi-Fi hlavného PC.
-3. Anaconda (inštalácia ide aj bez siete, DVD ISO má všetko), potom kľúč, `install.sh`, test Wake-on-LAN —
-   všetko pri stole, s monitorom, SSH priamo z hlavného PC.
-4. `sudo poweroff`, vypnúť zdieľanie vo Windowse, odniesť PC k switchu, zapojiť sieť a elektrinu.
-   Router pridelí novú adresu; mDNS ju nájde: `ssh arkay@latte-lab.local`.
+   používateľom siete pripojiť sa…“, vybrať **Ethernet**. Ethernet hlavného PC dostane `192.168.137.1`,
+   latte-lab cez DHCP `192.168.137.x` (inštalácia z DVD ISO ide aj bez siete).
+2. Zdieľanie po reštarte Windowsu občas samo prestane fungovať. Prevencia (PowerShell ako správca):
+   ```
+   Set-Service SharedAccess -StartupType Automatic
+   New-ItemProperty -Path HKLM:\Software\Microsoft\Windows\CurrentVersion\SharedAccess -Name EnableRebootPersistConnection -Value 1 -PropertyType DWord -Force
+   ```
+3. Adresa: `ssh arkay@latte-lab.local` (mDNS zapne `install.sh`). Ak by Windows `.local` na tomto
+   pripojení nenašiel, pevná adresa: `setup/lab/install.sh --ip 192.168.137.50/24 --gw 192.168.137.1`.
+4. `~/.ssh/config` vo Windowse, potom stačí `ssh latte-lab` aj vo VS Code:
+   ```
+   Host latte-lab
+       HostName latte-lab.local
+       User arkay
+   ```
 
-Ak hlavné PC nemá Ethernet port: USB tethering z telefónu (Fedora ho vidí ako sieťovku bez ovládačov) stačí na
-sťahovanie, ale latte-lab potom nie je v domácej sieti — `install.sh` treba spustiť priamo na latte-lab
-a počítať s ~3–4 GB dát.
+Dôsledky: latte-lab má internet iba keď beží hlavné PC (a tak sa aj tak ovláda z neho); z iných zariadení
+v domácej sieti nie je vidieť; Moonlight ide priamo po gigabitovom kábli (menšie oneskorenie ako cez switch).
+Wake-on-LAN posiela hlavné PC rovno do toho kábla. Monitor je vedľa: záchrana = prepnúť vstup / prepojiť kábel.
 
-Na mieste pri switchi už monitor nebude: záchrana = SSH, alebo odniesť PC späť k stolu.
+Bez hlavného PC (napr. na stiahnutie pred prvým zapojením) by stačil aj USB tethering z telefónu — Fedora ho
+vidí ako sieťovku bez ovládačov (~3–4 GB dát pre `install.sh`).
 
 ## 5. Prvé kroky s monitorom, potom jeden príkaz
 
@@ -115,7 +115,9 @@ setup/lab/install.sh
 8. kontrola: ovládač GPU, Vulkan, `latte-boot status` (čakáme `renderer = hw`), adresa.
 
 Grafický štart zapne až `setup/lab/install.sh --enable`, keď kontrola vyjde a SSH aj Cockpit fungujú.
-Potom test bez periférií: `sudo poweroff`, odpojiť monitor a klávesnicu, zobudiť Wake-on-LAN, `ssh latte-lab.local`.
+Potom test bez periférií: `sudo poweroff`, odpojiť monitor a klávesnicu, zobudiť Wake-on-LAN, `ssh latte-lab`.
+Ak má monitor druhý vstup (DP), latte-lab môže ostať zapojený a monitor sa len prepína — kým monitor hlási
+EDID aj na neaktívnom vstupe, funguje ako dummy zástrčka (overiť, niektoré monitory ho v úspornom režime odpoja).
 
 ## Neskôr (nie je v skripte)
 
