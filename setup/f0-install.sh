@@ -1,15 +1,16 @@
 #!/usr/bin/env bash
-# F0 — základné balíky pre vývojovú VM LatteOS (Fedora 44 Server, VirtualBox).
+# F0 — základné balíky LatteOS (Fedora 44 Server): vývojová VM vo VirtualBoxe aj reálne PC (latte-lab).
 # Idempotentné: opätovné spustenie len doinštaluje chýbajúce. Spúšťať ako root: sudo ./f0-install.sh
-# Nič nepovoľuje do štartu okrem VirtualBox guest služby; greetd/relácie rieši F1.
+# Nič nepovoľuje do štartu okrem VirtualBox guest služby (len vo VM) a seatd; greetd/relácie rieši F1.
 set -euo pipefail
 [ "$(id -u)" -eq 0 ] || { echo "Spusti cez sudo."; exit 1; }
 
 # --- grafika: Mesa (llvmpipe/lavapipe, svga) + diagnostika --------------------
 GRAPHICS=(mesa-dri-drivers mesa-vulkan-drivers mesa-libEGL mesa-libgbm
           egl-utils glx-utils mesa-demos vulkan-tools pciutils)
-# --- VirtualBox hosť ---------------------------------------------------------
-VM=(virtualbox-guest-additions)
+# --- VirtualBox hosť (iba vo VirtualBoxe; na reálnom PC nič) -------------------
+VM=()
+[ "$(systemd-detect-virt 2>/dev/null)" = oracle ] && VM=(virtualbox-guest-additions)
 # --- relácia: SAFE (labwc) + spoločné -----------------------------------------
 SESSION=(greetd greetd-selinux tuigreet labwc foot fuzzel xorg-x11-server-Xwayland
          xdg-desktop-portal xdg-desktop-portal-gtk xdg-user-dirs xdg-utils polkit
@@ -38,7 +39,7 @@ dnf -y copr enable lionheartp/Hyprland
 dnf -y install "${GRAPHICS[@]}" "${VM[@]}" "${SESSION[@]}" "${HYPR[@]}" \
                "${QT[@]}" "${FONTS[@]}" "${DEV[@]}" "${TEST[@]}" "${AI[@]}"
 
-systemctl enable --now vboxservice.service || true
+[ ${#VM[@]} -eq 0 ] || systemctl enable --now vboxservice.service || true
 systemctl enable --now seatd.service || true
 usermod -aG seat "${SUDO_USER:-user}" || true
 
