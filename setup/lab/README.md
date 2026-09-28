@@ -76,7 +76,7 @@ Na latte-lab: `ip -4 -br a` (adresa). Z hlavného PC (PowerShell) skopírovať k
 type $env:USERPROFILE\.ssh\id_ed25519.pub | ssh arkay@<IP> "mkdir -p ~/.ssh && chmod 700 ~/.ssh && cat >> ~/.ssh/authorized_keys && chmod 600 ~/.ssh/authorized_keys"
 ```
 
-Potom už cez SSH:
+Potom už cez SSH, **monitor nechať zapojený** (skript si uloží jeho EDID do `~/edid/` ako náhradu dummy zástrčky):
 
 ```
 sudo dnf -y install git
@@ -101,6 +101,9 @@ Potom test bez periférií: `sudo poweroff`, odpojiť monitor a klávesnicu, zob
 ## Neskôr (nie je v skripte)
 
 - Dummy zástrčka do DP → Sunshine + Moonlight, automatické prihlásenie cez greetd do `latte-session`.
+  Bez nej (skúsiť v tomto poradí): virtuálny výstup Hyprlandu `hyprctl output create headless` (kreslí GPU,
+  Sunshine ho zachytí), alebo uložený EDID ako softvérový monitor: `~/edid/DP-1.bin` → `/usr/lib/firmware/edid/`
+  a parametre jadra `drm.edid_firmware=DP-1:edid/DP-1.bin video=DP-1:e` (na DP pri amdgpu neisté, treba overiť).
 - `latte-shell` (fork Noctalie) sa postaví, iba ak je zdroj v `~/latte-shell`; inak beží Noctalia z COPR.
 - `hyprland-latte` (vmwgfx záplata) na reálnom PC netreba; Hyprland ostáva z COPR `lionheartp/Hyprland`
   a jeho aktualizácie z COPR blokuje `excludepkgs` (pluginy sú postavené proti nainštalovanej verzii).
