@@ -119,7 +119,7 @@ Potom test bez periférií: `sudo poweroff`, odpojiť monitor a klávesnicu, zob
 Monitor Acer Predator Z301C má DP (hlavné PC, G-Sync) a HDMI. RX 550 HDMI nemá → latte-lab trvalo do HDMI
 cez pasívny kábel/redukciu **mini-DP → HDMI**; vstup sa prepína v ponuke monitora (Input). Kým monitor hlási
 EDID aj na neaktívnom vstupe, funguje ako dummy zástrčka. Overiť s monitorom prepnutým na hlavné PC:
-`cat /sys/class/drm/card*-HDMI-A-*/status` → `connected`. Na inštaláciu stačí dočasne prepojiť DP kábel.
+`cat /sys/class/drm/card*-DP-*/status` → `connected` (aj cez redukciu sa výstup volá DP-x). Na inštaláciu stačí dočasne prepojiť DP kábel.
 
 ## Neskôr (nie je v skripte)
 
