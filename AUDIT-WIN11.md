@@ -146,6 +146,39 @@ s pripnutými aplikáciami, akcie lišty pre herný režim a Zobraziť plochu. V
 6. **Snap Layouts pri prejdení nad □** (nielen pravým klikom).
 7. **Pohyb:** krátke pružné animácie 200–300 ms (radar), v hre vypnuté; svetlo podľa kurzora (hyprglass) iba Plný.
 
+## Betatest návrhu: čo používatelia naozaj používajú (29. 9.)
+
+Microsoft telemetriu jednotlivých funkcií (Task View, Snap, Game Bar) verejne nezverejňuje — kde nie sú tvrdé čísla,
+je uvedená sila dôkazu. Zdroje:
+[J] Jeuris a kol., *The Hidden Cost of Window Management* (arXiv 1810.04673; 6 ľudí, Windows 7, laboratórium) ·
+[G] GNOME Shell user research 2020 (Red Hat, 7 rozhovorov) ·
+[W7] Engineering Windows 7 · [S] Show Desktop vo Win11 build 22631.3155 → .3810 ·
+[C] kontextová ponuka Win11 · [L] Apple Liquid Glass (iOS/macOS 26 → 27) · [H] najneobľúbenejšie funkcie Win11 2025–26.
+
+| Prvok návrhu | Čo hovoria dáta | Ako často | Sila | Verdikt |
+|---|---|---|---|---|
+| Panel úloh s bežiacimi oknami | prepínanie cez panel úloh **84–99 %**, Alt+Tab 0–16 % aj u expertov [J] | desiatky krát za hodinu | stredná (malá vzorka, ale jednoznačná) | **ponechať, hlavný ovládač** |
+| **Pripnuté aplikácie** na lište | používatelia Windowsu spúšťajú najčastejšie z panela úloh [J, anekdoticky] | denne, viackrát | stredná | **zmeniť rozhodnutie radaru: pripnuté áno** |
+| Štart / spúšťač | spúšťa sa hlavne **hľadaním**, mriežka aplikácií takmer nepoužívaná [G]; „Odporúčané“ v Štarte patrí medzi najnenávidenejšie [H], Microsoft ho dovolil skryť | niekoľkokrát denne | stredná | **hľadanie + pripnuté + všetky aplikácie; žiadne „odporúčané“** |
+| Task View a virtuálne plochy | **63 % ľudí používa jedinú plochu** (a to GNOME ich tlačí) [G] | menšina, zato intenzívne | stredná | **ponechať, ale nie ako výrazné tlačidlo**; cesta myšou cez prehľad; tlačidlo voliteľné (Win11 ho dovolí skryť) |
+| Pásik Zobraziť plochu | keď ho Microsoft pri Copilote skryl, po sťažnostiach ho **vrátil ako predvolený** [S] | občas, ale ľudia si ho bránia | stredná | **ponechať** |
+| Oblasť oznámení pri hodinách | konvencia; Steam, Discord, VPN žijú tam | denne pri hráčoch | slabá (bez čísel) | **ponechať pri hodinách** |
+| Lišta na stred / vľavo | iba ankety; veľa návodov „ako vrátiť vľavo“ | — | slabá | **voľba pri prvom štarte (Barista)** |
+| Materiál **Mica** (okná) | rozmaže tapetu raz, nie každú snímku → lacný; transparentnosť sa vypína kvôli čitateľnosti a výkonu | stále na očiach | stredná | **ponechať ako predvolený** |
+| **Acrylic / Liquid Glass** | Apple: rok sťažností na čitateľnosť → prepínač Clear/Tinted a v 27 **posuvník**; obe skupiny nespokojné s jedným nastavením [L]; ~30 % relácií Win7 si menilo farbu skla [W7] | stále na očiach | silná | **Acrylic iba ponuky; Liquid Glass iba voliteľne v Plnom; posuvník „sklo ↔ čitateľnosť“ od prvého dňa** |
+| Ponuka Win11 s radom ikon a „Zobraziť viac možností“ | jedna z najkritizovanejších zmien Win11, bežne sa vracia klasická [C] | pri každom pravom kliku | silná | **zmeniť: celá ponuka hneď (klasický zoznam s ikonami), žiadne „Zobraziť viac“** |
+| Snap Layouts pri prejdení nad □ | bez čísel; predvolené vo Win11 | — | slabá | ponechať s oneskorením, dať vypnúť (už je v Nastaveniach) |
+| Herný blok (ako Game Bar) | Microsoft čísla Game Baru nezverejňuje | pri hraní | slabá | ponechať **malý**: jedna dlaždica, nie panel plný funkcií |
+| Widgety, všadeprítomné AI | medzi najnenávidenejšími funkciami Win11; Microsoft ich v 2026 obmedzuje [H] | — | silná | **nerobiť predvolene**; AI iba na požiadanie (ako radar) |
+| Alt+Tab, skratky | 0–16 % prepnutí [J] | — | stredná | potvrdzuje zásadu: **myš hlavná, klávesnica zrýchľuje** |
+
+**Závery betatestu**
+1. Najviac sa používa **panel úloh** — musí byť najlepšia časť LatteOS; pripnuté aplikácie patria doň.
+2. **Hľadanie** je hlavná cesta k aplikáciám; Štart bez reklám a „odporúčaní“.
+3. Virtuálne plochy, herný blok a Snap pri prejdení sú pre menšinu — dostupné myšou, ale nie na očiach.
+4. **Sklo áno, ale s posuvníkom a čitateľným predvoleným nastavením** (Mica), inak zopakujeme chybu Apple.
+5. **Kontextová ponuka Win11 je zlý vzor** — vziať rozloženie Win11, ale ponuku celú, ako Win10.
+
 ## Poradie krokov
 
 1. Rýchle ❌ na lište **konfiguráciou Noctalie** (bez kódu): widget oblasti oznámení, widget snímky, dlaždica nahrávania,
@@ -154,4 +187,4 @@ s pripnutými aplikáciami, akcie lišty pre herný režim a Zobraziť plochu. V
 3. Qt/KDE vzhľad (šablóny Noctalie), „Nájsť v Softvéri“ → App Manager.
 4. Prototyp materiálov (hyprliquid Mica/Acrylic) na latte-lab, meranie na RX 640 (vykon.sh).
 5. Klikateľné makety lišty, Task View a ponúk na odsúhlasenie → implementácia.
-6. Rozhodnúť: pripnuté aplikácie na lište áno/nie.
+6. ~~Rozhodnúť: pripnuté aplikácie na lište áno/nie~~ → betatest: áno (čaká na potvrdenie používateľa).
