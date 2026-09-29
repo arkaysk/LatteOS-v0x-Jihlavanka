@@ -58,6 +58,20 @@ ako samostatná vrstva (layer-shell) nad jej lištou.
 
 ## Plocha LatteOS Kvapky (skúšobná relácia)
 Klasické LatteOS vypnuté (Noctalia, jej lišta a pomocníci: netznak, kapsavyrez, náhľad, plocha, rýchle nastavenia,
+
+**Previazanie s Noctaliou (latteGoo):** Noctalia v ploche Kvapky beží ďalej, ale bez lišty, bez tapety a bez servera
+upozornení (`latte-kvapky` jej pripraví variant konfigurácie v `$XDG_RUNTIME_DIR/latteos/noctalia-kvapky`: odkazy na
+základ + `zz-kvapky.toml`; Noctalia zlúči všetky `*.toml`). Robí to, čo vie: zamknutie (Super+L), Alt+Tab, snímky, OSD
+hlasitosti a jasu, klávesy médií, ovládacie centrum (tlačidlo „Viac“ v dashboarde), Nastavenia. Upozornenia sú
+kvapôčky (pleamar), tapetu kreslí latte-tapety cez mpvpaper. Super otvára dashboard (latte-spustac to v Kvapkách
+presmeruje). Rýchle nastavenia v dashboarde: stav zo služieb pleamaru, prepínanie cez `noctalia msg` (Wi-Fi,
+Bluetooth, stlmenie, ovládacie centrum), hlasitosť ťahaním.
+
+**Prekladová vrstva:** texty scény sú po anglicky + `translations sk`, dáta (názvy aplikácií, upozornení) sa
+neprekladajú, počasie sú znaky. Dlh: prihlasovacia obrazovka (greeter/shell.qml) má popisy relácií natvrdo po
+slovensky — má ich brať z `Comment[jazyk]` súborov relácií; slovenský preklad Noctalie je neúplný (ovládacie
+centrum: „Home“, „Nothing Playing“) — doplniť a poslať upstream.
+
 pohoda, maskot, živá tapeta QML) — ostáva **živá tapeta** (latte-tapety, mpvpaper; statický obrázok tiež cez mpvpaper)
 a **kvapky**. Z klasiky ostáva iba to, bez čoho by sa nedalo nič spustiť ani odhlásiť: Kapsa (história schránky),
 spúšťač App Managera (kvapka **Štart**) a systémové ponuky (kvapka **vypínač**, Ctrl+Alt+Del).

@@ -271,6 +271,14 @@ on("note_open", function(i)
 end)
 on("notes_clear", function() pcall(sys.call, "notifications.clear") end)
 
+-- rýchle nastavenia: prepína Noctalia (ukáže svoje OSD), „Viac“ otvorí jej ovládacie centrum; hlasitosť priamo
+local function noctalia(...) run("noctalia", { "msg", ... }) end
+on("qs_wifi", function() noctalia("wifi-toggle") end)
+on("qs_bt", function() noctalia("bluetooth-toggle") end)
+on("qs_mute", function() noctalia("volume-mute") end)
+on("qs_more", function() fact.dash = false; after(150, function() noctalia("panel-toggle", "control-center") end) end)
+on("qs_vol", function(v) pcall(sys.call, "audio.volume", math.max(0, math.min(1, tonumber(v) or 0))) end)
+
 -- počasie: Open-Meteo (bez kľúča), miesto z Nastavení › Účet › Prihlasovanie (greeter.conf), každých 20 min
 local WX = { [0] = "☀", [1] = "🌤", [2] = "⛅", [3] = "☁", [45] = "🌫", [48] = "🌫", [95] = "⛈", [96] = "⛈", [99] = "⛈" }
 local function wx_glyph(c)

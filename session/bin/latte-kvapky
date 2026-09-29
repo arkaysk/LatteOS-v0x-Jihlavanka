@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
-# latte-kvapky — skúšobná plocha LatteOS Kvapky: bez klasického LatteOS (Noctalia a jej pomocníci vypnutí),
-# iba živá tapeta a tekuté kvapky (session/kvapky, pleamar).
+# latte-kvapky — skúšobná plocha LatteOS Kvapky (latteGoo): bez klasickej lišty a jej pomocníkov, živá tapeta
+# a tekuté kvapky (session/kvapky, pleamar). Noctalia beží ďalej, ale bez lišty (bar-hide) a bez servera upozornení
+# (tie sú kvapôčky na Hodinách): robí to, čo vie — zamknutie, Alt+Tab, snímky, OSD, klávesy médií, ovládacie centrum.
 #   latte-kvapky start    autoštart relácie „LatteOS Kvapky“ (hyprland.lua pri LATTE_VARIANT=kvapky)
 #   latte-kvapky skusit   z bežiacej klasickej plochy do Kvapiek bez odhlásenia (vypne Noctaliu a pomocníkov)
 #   latte-kvapky spat     späť na klasickú plochu (Noctalia a pomocníci ako pri štarte, bežné okraje okien)
 #   latte-kvapky stav     „kvapky“ alebo „klasicke“
 #   latte-kvapky okraj [dole|hore|vlavo|vpravo POLOHA]   okraj lišty-kvapky (presun ťahaním); bez argumentov vypíše
-# Ostáva: Kapsa (história schránky), App Manager (spúšťač, kvapka Štart) a systémové ponuky (Ctrl+Alt+Del,
-# kvapka vypínač) — bez nich by sa z plochy nedalo nič spustiť ani sa odhlásiť.
+# Ostáva aj Kapsa (história schránky), App Manager a systémové ponuky (Ctrl+Alt+Del, kvapka vypínač).
 set -u
 share=/usr/share/latteos
 scene="${LATTE_KVAPKY_SCENE:-$share/kvapky/kvapka.plm}"
@@ -31,6 +31,29 @@ gaps() {   # pás pri okraji lišty pre kvapku (Noctalia si ho inak vyhradí sam
     fi
 }
 
+# Noctalia pre Kvapky: rovnaká konfigurácia ako v klasickej ploche (odkazy), navyše zz-kvapky.toml — Noctalia
+# zlúči všetky *.toml v priečinku v abecednom poradí
+noctalia_up() {
+    pgrep -x noctalia >/dev/null && return
+    local base="${XDG_CONFIG_HOME:-$HOME/.config}/noctalia" dir="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/latteos/noctalia-kvapky"
+    [ -f "$base/config.toml" ] || base="$share/noctalia"
+    rm -rf "$dir"; mkdir -p "$dir/noctalia"
+    for f in "$base"/*; do ln -s "$f" "$dir/noctalia/"; done
+    cat > "$dir/noctalia/zz-kvapky.toml" <<'EOF2'
+# plocha Kvapky: lištu nahrádzajú kvapky, upozornenia prijíma pleamar (kvapôčky na Hodinách),
+# tapetu kreslí latte-tapety cez mpvpaper (živú aj statickú) — Noctalia by ju inak prekryla
+[bar.main]
+enabled = false
+
+[notification]
+enable_daemon = false
+
+[wallpaper]
+enabled = false
+EOF2
+    NOCTALIA_CONFIG_HOME="$dir" setsid -f noctalia >/dev/null 2>&1
+}
+
 scene_up() {
     pgrep -x pleamar >/dev/null && return
     [ -x "$pleamar" ] && [ -f "$scene" ] || { notify-send -a LatteOS "Kvapky" "chýba pleamar alebo scéna ($scene)"; return 1; }
@@ -49,9 +72,10 @@ case "${1:-}" in
         start_app spustac
         start_app ponuka
         scene_up
+        noctalia_up
         ;;
     skusit)
-        pkill -x noctalia
+        pkill -x noctalia; sleep 0.5          # klasická Noctalia (s lištou) → nahradí ju tá pre Kvapky
         for a in $classic; do pkill -f "latteos/apps/$a\.qml"; done
         pkill -x pleamar; sleep 0.3          # kvapka z klasickej plochy (ak beží) sa spustí znova ako samostatná
         exec "$0" start
@@ -59,7 +83,9 @@ case "${1:-}" in
     spat)
         pkill -x pleamar
         gaps off
-        pgrep -x noctalia >/dev/null || setsid -f noctalia >/dev/null 2>&1
+        pkill -x noctalia; sleep 0.5          # Noctalia pre Kvapky → klasická (s lištou a upozorneniami)
+        [ -f "${XDG_CONFIG_HOME:-$HOME/.config}/noctalia/config.toml" ] || export NOCTALIA_CONFIG_HOME="$share"
+        setsid -f noctalia >/dev/null 2>&1
         [ -f "${XDG_CONFIG_HOME:-$HOME/.config}/latteos/live-wallpaper" ] && start_app zivatapeta
         for a in netznak kapsavyrez nahlad plocha rychle pohoda maskot; do start_app "$a"; done
         # statická tapeta z mpvpaperu (bez shellu) ustúpi natívnej tapete Noctalie; živé video ostáva
@@ -72,7 +98,7 @@ case "${1:-}" in
         [ -e "$flag" ] && gaps "$2"
         ;;
     stav)
-        if pgrep -x noctalia >/dev/null; then echo klasicke; else echo kvapky; fi
+        if [ -e "$flag" ]; then echo kvapky; else echo klasicke; fi
         ;;
     *) sed -n '2,8p' "$0"; exit 1 ;;
 esac
