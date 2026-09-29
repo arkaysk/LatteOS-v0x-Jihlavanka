@@ -56,13 +56,13 @@ sudo systemctl enable --now sshd.service cockpit.socket avahi-daemon.service
 for s in ssh cockpit mdns; do sudo firewall-cmd -q --permanent --add-service="$s"; done
 sudo firewall-cmd -q --reload
 # heslo cez SSH vypnúť iba keď je uložený kľúč — inak by sa dalo zamknúť zvonku
-if [ -s "$HOME/.ssh/authorized_keys" ]; then
+if grep -qE "^(ssh-|ecdsa-|sk-)" "$HOME/.ssh/authorized_keys" 2>/dev/null; then
     printf '# LatteOS latte-lab: iba kľúče (setup/lab/install.sh)\nPasswordAuthentication no\nKbdInteractiveAuthentication no\nPermitRootLogin no\n' \
         | sudo tee /etc/ssh/sshd_config.d/40-latteos.conf >/dev/null
     sudo sshd -t && sudo systemctl reload sshd.service
     echo "   SSH: iba kľúč (heslo vypnuté); konzola s heslom funguje ďalej"
 else
-    echo "   !! ~/.ssh/authorized_keys je prázdny — SSH ostáva s heslom (skopíruj kľúč a spusti skript znova)"
+    echo "   !! ~/.ssh/authorized_keys neobsahuje žiadny kľúč — SSH ostáva s heslom (skopíruj kľúč a spusti skript znova)"
 fi
 
 step "4/8 sieť: Wake-on-LAN, prípadne pevná adresa"
