@@ -303,7 +303,8 @@ texty preložiteľné (`translations`). Noctalia beží bez lišty a robí, čo 
       podľa DankMaterialShell); Barista zmigrovaný (anglický zdroj + sk.json)
 - [ ] Zmigrovať ostatné aplikácie LatteOS na `i18n.tr` (Nastavenia, Súbory, Monitor, ponuky, …) a súbory tém
       (`name`/`desc` dnes po slovensky → `name[sk]`)
-- [ ] **Nová prihlasovacia obrazovka** (greeter): všetky funkcie dnešnej (výber účtu a relácie vrátane Kvapiek,
+- [~] **Nová prihlasovacia obrazovka** (greeter) — napísaná 29. 9. v latteGoo vzhľade, v náhľade overená
+      (`LATTE_GREETER_TEST=1`, sk aj en), **čaká na schválenie pred nasadením**: všetky funkcie dnešnej (výber účtu a relácie vrátane Kvapiek,
       NORMAL/SAFE a dôvod, posledný pád, Caps/Num Lock, zobraziť heslo, ľavý panel log/RSS/počasie/text, tapeta
       a farba z Nastavení, bez GPU pod labwc/pixman) s lepším vzhľadom v duchu latteGoo (kvapky, káva, pokojný
       pohyb) a **preložiteľná** (popisy relácií z `Comment[jazyk]`, texty cez preklady — dnes natvrdo po slovensky)

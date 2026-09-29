@@ -104,6 +104,7 @@ sudo install -m644 "$S"/noctalia/palettes/*.json /usr/share/latteos/noctalia/pal
 
 echo "== greeter LatteOS (Quickshell QML pod labwc + pixman)"
 sudo install -Dm644 "$S/greeter/shell.qml" /usr/share/latteos/greeter/shell.qml
+sudo install -Dm644 "$S/greeter/I18n.qml" /usr/share/latteos/greeter/I18n.qml      # odkaz na apps/common/I18n.qml (Quickshell nič mimo priečinka)
 for f in rc.xml environment; do sudo install -Dm644 "$S/greeter/labwc/$f" "/usr/share/latteos/greeter/labwc/$f"; done
 # vzhľad greetera (Nastavenia › Účet › Prihlasovanie) a záznam pádu: skupina latte píše, greeter (xdm_t) číta
 sudo install -d -m2775 -o root -g latte /var/lib/latteos/greeter /var/lib/latteos/greeter/avatars   # avatary pre obrazovku prihlásenia
