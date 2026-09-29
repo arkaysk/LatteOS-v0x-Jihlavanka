@@ -59,6 +59,16 @@ ako samostatná vrstva (layer-shell) nad jej lištou.
 ## Plocha LatteOS Kvapky (skúšobná relácia)
 Klasické LatteOS vypnuté (Noctalia, jej lišta a pomocníci: netznak, kapsavyrez, náhľad, plocha, rýchle nastavenia,
 
+pohoda, maskot, živá tapeta QML) — ostáva **živá tapeta** (latte-tapety, mpvpaper; statický obrázok tiež cez mpvpaper)
+a **kvapky**. Z klasiky ostáva iba to, bez čoho by sa nedalo nič spustiť ani odhlásiť: Kapsa (história schránky),
+spúšťač App Managera (kvapka **Štart**) a systémové ponuky (kvapka **vypínač**, Ctrl+Alt+Del).
+- **ponuka**: na prihlasovacej obrazovke relácia **LatteOS Kvapky** (`latte-session kvapky` → `LATTE_VARIANT=kvapky`
+  → hyprland.lua spustí `latte-kvapky start`; zdravá, keď po 60 s beží pleamar)
+- bez odhlásenia: `latte-kvapky skusit` (z klasickej plochy) a `latte-kvapky spat` (späť), `latte-kvapky stav`
+- okná nechajú pri okraji lišty 64 px pre kvapku (rezerva monitora, Noctalia si pás vyhradí sama); platí aj po
+  reload-e konfigurácie (príznak `$XDG_RUNTIME_DIR/latteos/kvapky` s okrajom)
+- Štart a vypínač sú malé kvapky vľavo od hlavy, vpité do okraja, pri myši sa vysunú; neodtrhávajú sa
+
 **Previazanie s Noctaliou (latteGoo):** Noctalia v ploche Kvapky beží ďalej, ale bez lišty, bez tapety a bez servera
 upozornení (`latte-kvapky` jej pripraví variant konfigurácie v `$XDG_RUNTIME_DIR/latteos/noctalia-kvapky`: odkazy na
 základ + `zz-kvapky.toml`; Noctalia zlúči všetky `*.toml`). Robí to, čo vie: zamknutie (Super+L), Alt+Tab, snímky, OSD
@@ -71,16 +81,6 @@ Bluetooth, stlmenie, ovládacie centrum), hlasitosť ťahaním.
 neprekladajú, počasie sú znaky. Dlh: prihlasovacia obrazovka (greeter/shell.qml) má popisy relácií natvrdo po
 slovensky — má ich brať z `Comment[jazyk]` súborov relácií; slovenský preklad Noctalie je neúplný (ovládacie
 centrum: „Home“, „Nothing Playing“) — doplniť a poslať upstream.
-
-pohoda, maskot, živá tapeta QML) — ostáva **živá tapeta** (latte-tapety, mpvpaper; statický obrázok tiež cez mpvpaper)
-a **kvapky**. Z klasiky ostáva iba to, bez čoho by sa nedalo nič spustiť ani odhlásiť: Kapsa (história schránky),
-spúšťač App Managera (kvapka **Štart**) a systémové ponuky (kvapka **vypínač**, Ctrl+Alt+Del).
-- **ponuka**: na prihlasovacej obrazovke relácia **LatteOS Kvapky** (`latte-session kvapky` → `LATTE_VARIANT=kvapky`
-  → hyprland.lua spustí `latte-kvapky start`; zdravá, keď po 60 s beží pleamar)
-- bez odhlásenia: `latte-kvapky skusit` (z klasickej plochy) a `latte-kvapky spat` (späť), `latte-kvapky stav`
-- okná nechajú pri okraji lišty 64 px pre kvapku (rezerva monitora, Noctalia si pás vyhradí sama); platí aj po
-  reload-e konfigurácie (príznak `$XDG_RUNTIME_DIR/latteos/kvapky` s okrajom)
-- Štart a vypínač sú malé kvapky vľavo od hlavy, vpité do okraja, pri myši sa vysunú; neodtrhávajú sa
 
 **Kvapka a okno (29. 9.):** s kvapkou sa zlieva iba **jedinečné systémové okno**, ktoré z nej vyteká (hľadanie,
 App Manager, Súbory/Hardvér z rohových kvapiek) — ako karta hľadania z kvapky v Marei. Bežné aplikácie (aj Task
