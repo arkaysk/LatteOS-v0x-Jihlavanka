@@ -105,9 +105,9 @@ fi
 # EDID pripojeného monitora: náhrada dummy zástrčky (drm.edid_firmware) — uložiť, kým je monitor zapojený
 mkdir -p "$HOME/edid"
 for e in /sys/class/drm/card*-*/edid; do
-    [ -s "$e" ] || continue
-    c="$(basename "$(dirname "$e")")"; cp "$e" "$HOME/edid/${c#card*-}.bin"
-    echo "   EDID monitora ${c#card*-} uložený: ~/edid/${c#card*-}.bin"
+    c="$(basename "$(dirname "$e")")"; f="$HOME/edid/${c#card*-}.bin"
+    cat "$e" > "$f" 2>/dev/null   # súbory v /sys hlásia veľkosť 0, test -s by ich preskočil
+    if [ -s "$f" ]; then echo "   EDID monitora ${c#card*-} uložený: ~/edid/${c#card*-}.bin"; else rm -f "$f"; fi
 done
 { lspci -k | grep -A3 -E 'VGA|Display' | grep -E 'VGA|Display|driver in use' | sed 's/^\s*/   /'; } || true
 { vulkaninfo --summary 2>/dev/null | grep -m2 -E 'deviceName|driverName' | sed 's/^\s*/   /'; } || echo "   !! vulkaninfo zlyhal"
