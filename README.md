@@ -15,6 +15,10 @@
 | `setup/` | inštalácia a testy na VM: `f0-install.sh`, `f1/install-session.sh`, merania `f1/RESULTS.md`; reálne PC latte-lab: [`lab/`](setup/lab/README.md) |
 | `old/`   | celý predchádzajúci stav repa, len na čítanie; **už sa doň nezapisuje** |
 
+**Toto repo je súkromné** (celá história, `inspo/`, `old/`, ROADMAP). Verejná kópia bez nich je
+[arkaysk/latteos](https://github.com/arkaysk/latteos): zverejňuje sa príkazom `setup/verejne/zverejnit.sh`
+(čo sa vynecháva: `setup/verejne/vynechat.txt`, verejné README: `setup/verejne/README.md`).
+
 Plán vývoja je v [ROADMAP.md](ROADMAP.md). Nový kód a dáta vznikajú iba mimo `old/`.
 
 ## Platforma — fáza 1 (teraz)

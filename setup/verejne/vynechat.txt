@@ -1,0 +1,8 @@
+# Cesty z tohto (súkromného) repa, ktoré sa NEzverejňujú v arkaysk/latteos.
+# Jedna cesta na riadok, relatívne ku koreňu repa; priečinok končí lomkou.
+inspo/
+old/
+ROADMAP.md
+resources/art/maskoti/KATALOG.md
+setup/verejne/
+README.md
