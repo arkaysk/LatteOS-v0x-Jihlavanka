@@ -92,6 +92,16 @@ if lspci -n | grep -q ' 0300: 1002:\| 0380: 1002:'; then
         || echo "   !! mesa-va-drivers-freeworld sa nenainštaloval (verzia Mesa v RPM Fusion ešte nedobehla?) — skús neskôr"
 fi
 
+# herná relácia (ROADMAP H): gamescope-session z Terra ako Bazzite — Terra iba pre tieto balíky; natívny Steam z RPM Fusion
+if [ "$virt" = none ]; then
+    printf '%s\n' '[terra-latteos]' 'name=Terra (Fyra Labs) — iba gamescope-session pre hernú reláciu LatteOS (ako Bazzite)' \
+        'baseurl=https://repos.fyralabs.com/terra$releasever' 'enabled=1' 'gpgcheck=1' \
+        'gpgkey=https://repos.fyralabs.com/terra$releasever/key.asc' 'includepkgs=gamescope-session gamescope-session-steam' \
+        | sudo tee /etc/yum.repos.d/terra-latteos.repo >/dev/null
+    sudo dnf -y install steam gamescope gamescope-session gamescope-session-steam mangohud \
+        || echo "   !! herná relácia sa nenainštalovala (LatteOS Hra nebude dostupná)"
+fi
+
 step "6/8 balíky LatteOS (setup/f0-install.sh)"
 sudo "$repo/setup/f0-install.sh"
 

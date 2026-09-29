@@ -1,10 +1,12 @@
 #!/usr/bin/env bash
-# latte-session [safe] — relácia LatteOS po prihlásení (spúšťa ju greetd cez wayland-sessions/*.desktop).
+# latte-session [safe|hra] — relácia LatteOS po prihlásení (spúšťa ju greetd cez wayland-sessions/*.desktop).
 #
 # Režim berie z /run/latteos/session.env (zapísal latte-boot select pri štarte).
 # NORMAL: Hyprland + Noctalia. Ak Hyprland spadne skôr, než je relácia zdravá (60 s),
 #         relácia sa hneď prepne do SAFE; pád sa zaráta do počítadla (latte-boot session-start).
 # SAFE:   labwc + pixman (bez GL/GPU) + Noctalia, záloha foot; ponuka latte-safe.
+# HRA:    gamescope-session-plus steam (Steam Big Picture); striedanie s plochou v tom istom prihlásení
+#         cez latte-hra ($XDG_RUNTIME_DIR/latteos/relacia), ako SteamOS. Iba s grafickou kartou.
 set -u
 
 share=/usr/share/latteos
@@ -29,6 +31,10 @@ mkdir -p "$HOME/.local/share/flatpak/exports/share/applications" 2>/dev/null
 gsettings set org.gnome.desktop.wm.preferences button-layout "appmenu:minimize,maximize,close" 2>/dev/null || true
 chosen_safe=0
 [ "${1:-}" = safe ] && { LATTE_MODE=safe; chosen_safe=1; }
+next=desktop
+[ "${1:-}" = hra ] && next=hra
+flag="$XDG_RUNTIME_DIR/latteos/relacia"
+mkdir -p "$(dirname "$flag")"; rm -f "$flag"
 export LATTE_MODE LATTE_RENDERER LATTE_TIER
 
 export XDG_SESSION_TYPE=wayland XDG_SESSION_DESKTOP=latteos
@@ -101,8 +107,23 @@ crash_report() {   # $1 rc, $2 trvanie v s, $3 čas štartu (epoch)
     chmod 0664 "$out" 2>/dev/null
 }
 
+# herná relácia (hotový gamescope-session-plus); vráti sa na plochu pri „Prepnúť na desktop“ aj pri páde,
+# riadne vypnutie Steamu (Vypnúť / Odhlásiť v Steame) ukončí prihlásenie
+run_game() {
+    local why rc t0
+    if ! why="$(latte-hra stav)"; then echo "HRA nedostupná: $why → plocha"; return 0; fi
+    echo "HRA: gamescope-session-plus steam"
+    rm -f "$flag"; t0=$(date +%s)
+    ( unset XDG_CURRENT_DESKTOP; exec gamescope-session-plus steam )
+    rc=$?
+    echo "herná relácia skončila: rc=$rc po $(( $(date +%s) - t0 )) s, ďalej: $(cat "$flag" 2>/dev/null || echo koniec)"
+    if [ "$(cat "$flag" 2>/dev/null)" = desktop ] || [ $rc -ne 0 ]; then rm -f "$flag"; return 0; fi
+    exit 0
+}
+
 restarts=()
 while true; do
+    if [ "$next" = hra ]; then run_game; next=desktop; export XDG_CURRENT_DESKTOP=Hyprland; fi
     t0=$(date +%s)
     "${LATTE_HYPRLAND:-Hyprland}" -c "$hconf"
     rc=$?
@@ -112,6 +133,7 @@ while true; do
 
     if [ $rc -eq 0 ]; then
         latte-boot ok >/dev/null     # riadne odhlásenie nie je pád
+        if [ "$(cat "$flag" 2>/dev/null)" = hra ]; then rm -f "$flag"; next=hra; continue; fi   # latte-hra
         exit 0
     fi
     crash_report "$rc" "$dt" "$t0"

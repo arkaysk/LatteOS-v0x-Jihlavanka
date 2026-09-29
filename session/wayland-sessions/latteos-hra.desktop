@@ -1,0 +1,6 @@
+[Desktop Entry]
+Name=LatteOS Hra
+Comment=Steam Big Picture na celú obrazovku (gamescope); Steam › Prepnúť na desktop otvorí plochu LatteOS
+Exec=/usr/bin/latte-session hra
+Type=Application
+DesktopNames=gamescope

@@ -178,6 +178,7 @@ local function common()
     bind("SUPER + mouse_up",   hl.dsp.focus({ workspace = "e-1" }))
     -- LatteOS doplnky (nekolidujú s Windows): Herňa, rozloženia okna, prehľad pásky, plocha, zamknúť, Súbory
     bind("SUPER + G", panel("latteos/games:panel"))
+    bind("SUPER + SHIFT + G", run("latte-hra"))                                  -- herný režim: Steam Big Picture (gamescope)
     bind("SUPER + Z", panel("latteos/snap:panel"))
     bind("SUPER + Tab", panel("latteos/overview:panel"))
     bind("SUPER + L", run("noctalia msg session lock"))
