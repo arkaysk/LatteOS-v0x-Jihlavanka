@@ -88,6 +88,11 @@ scene Kvapka {
     fact pulling = false                     // ťahá sa od okraja (stopka sa naťahuje)
     fact lpress = false                      // základňa stlačená ľavým (klik = režim okien), nie pravým
     fact icon_press = false                  // stlačený hrbolček s oknom (ťahanie z neho kvapku nepresúva)
+    // ťahanie guľôčky okna: ide za myšou na lepkavom vlákne; pustená medzi inými presunie aplikáciu (poradie v lište),
+    // inde sa pružne vráti. Klik bez ťahania = prepnúť okno (vyhodnotí sa až po pustení)
+    fact bdrag = -1
+    fact bmoved = false
+    event bead_drop ->
     fact menu.x = 0                          // kde otvoriť ponuku okna (kurzor pri pravom kliku)
     fact menu.y = 0
     fact free = false                        // odtrhnutá, ide za myšou
@@ -197,6 +202,8 @@ scene Kvapka {
     let near.edge = min(min(cursor.x, W - cursor.x), min(cursor.y, H - cursor.y))
 
     prop wob = 0 ~lively
+    prop bdx = 0 ~lively                     // posun ťahanej guľôčky (v rámci okraja)
+    prop bdy = 0 ~lively
     prop squish = 0 ~quick
     prop squish.s = 0 ~quick
     prop squish.p = 0 ~quick
@@ -292,47 +299,47 @@ scene Kvapka {
             // hlava: najväčšia guľa, trochu vyššie (nesúmernosť), pomaly dýcha
             ellipse { at: hx, mid - 8 - wob * 0.05; radius: (36 + 3 * hh) * (1 + 0.03 * noise(time * 0.4)); blend: 22 }
             // guľôčky okien: každá pláva a dýcha inak (noise podľa k), vlna pri zmene počtu (wob, striedavo)
-            ellipse { at: lx + ux.0 + 2 * noise(0.0, time * 0.35), mid + uy.0 + 2.5 * noise(5.0, time * 0.3); radius: ur.0 * b.0 * (1 + 0.035 * noise(0.0, time * 0.5) + 0.12 * act.0) + wob * 0.04; blend: 13 }
-            ellipse { at: lx + ux.1 + 2 * noise(0.7, time * 0.35), mid + uy.1 + 2.5 * noise(6.3, time * 0.3); radius: ur.1 * b.1 * (1 + 0.035 * noise(2.1, time * 0.5) + 0.12 * act.1) - wob * 0.04; blend: 13 }
-            ellipse { at: lx + ux.2 + 2 * noise(1.4, time * 0.35), mid + uy.2 + 2.5 * noise(7.6, time * 0.3); radius: ur.2 * b.2 * (1 + 0.035 * noise(4.2, time * 0.5) + 0.12 * act.2) + wob * 0.04; blend: 13 }
-            ellipse { at: lx + ux.3 + 2 * noise(2.1, time * 0.35), mid + uy.3 + 2.5 * noise(8.9, time * 0.3); radius: ur.3 * b.3 * (1 + 0.035 * noise(6.3, time * 0.5) + 0.12 * act.3) - wob * 0.04; blend: 13 }
-            ellipse { at: lx + ux.4 + 2 * noise(2.8, time * 0.35), mid + uy.4 + 2.5 * noise(10.2, time * 0.3); radius: ur.4 * b.4 * (1 + 0.035 * noise(8.4, time * 0.5) + 0.12 * act.4) + wob * 0.04; blend: 13 }
-            ellipse { at: lx + ux.5 + 2 * noise(3.5, time * 0.35), mid + uy.5 + 2.5 * noise(11.5, time * 0.3); radius: ur.5 * b.5 * (1 + 0.035 * noise(10.5, time * 0.5) + 0.12 * act.5) - wob * 0.04; blend: 13 }
-            ellipse { at: lx + ux.6 + 2 * noise(4.2, time * 0.35), mid + uy.6 + 2.5 * noise(12.8, time * 0.3); radius: ur.6 * b.6 * (1 + 0.035 * noise(12.6, time * 0.5) + 0.12 * act.6) + wob * 0.04; blend: 13 }
-            ellipse { at: lx + ux.7 + 2 * noise(4.9, time * 0.35), mid + uy.7 + 2.5 * noise(14.1, time * 0.3); radius: ur.7 * b.7 * (1 + 0.035 * noise(14.7, time * 0.5) + 0.12 * act.7) - wob * 0.04; blend: 13 }
-            ellipse { at: lx + ux.8 + 2 * noise(5.6, time * 0.35), mid + uy.8 + 2.5 * noise(15.4, time * 0.3); radius: ur.8 * b.8 * (1 + 0.035 * noise(16.8, time * 0.5) + 0.12 * act.8) + wob * 0.04; blend: 13 }
-            ellipse { at: lx + ux.9 + 2 * noise(6.3, time * 0.35), mid + uy.9 + 2.5 * noise(16.7, time * 0.3); radius: ur.9 * b.9 * (1 + 0.035 * noise(18.9, time * 0.5) + 0.12 * act.9) - wob * 0.04; blend: 13 }
-            ellipse { at: lx + ux.10 + 2 * noise(7.0, time * 0.35), mid + uy.10 + 2.5 * noise(18.0, time * 0.3); radius: ur.10 * b.10 * (1 + 0.035 * noise(21.0, time * 0.5) + 0.12 * act.10) + wob * 0.04; blend: 13 }
-            ellipse { at: lx + ux.11 + 2 * noise(7.7, time * 0.35), mid + uy.11 + 2.5 * noise(19.3, time * 0.3); radius: ur.11 * b.11 * (1 + 0.035 * noise(23.1, time * 0.5) + 0.12 * act.11) - wob * 0.04; blend: 13 }
-            ellipse { at: lx + ux.12 + 2 * noise(8.4, time * 0.35), mid + uy.12 + 2.5 * noise(20.6, time * 0.3); radius: ur.12 * b.12 * (1 + 0.035 * noise(25.2, time * 0.5) + 0.12 * act.12) + wob * 0.04; blend: 13 }
-            ellipse { at: lx + ux.13 + 2 * noise(9.1, time * 0.35), mid + uy.13 + 2.5 * noise(21.9, time * 0.3); radius: ur.13 * b.13 * (1 + 0.035 * noise(27.3, time * 0.5) + 0.12 * act.13) - wob * 0.04; blend: 13 }
-            ellipse { at: lx + ux.14 + 2 * noise(9.8, time * 0.35), mid + uy.14 + 2.5 * noise(23.2, time * 0.3); radius: ur.14 * b.14 * (1 + 0.035 * noise(29.4, time * 0.5) + 0.12 * act.14) + wob * 0.04; blend: 13 }
-            ellipse { at: lx + ux.15 + 2 * noise(10.5, time * 0.35), mid + uy.15 + 2.5 * noise(24.5, time * 0.3); radius: ur.15 * b.15 * (1 + 0.035 * noise(31.5, time * 0.5) + 0.12 * act.15) - wob * 0.04; blend: 13 }
-            ellipse { at: lx + ux.16 + 2 * noise(11.2, time * 0.35), mid + uy.16 + 2.5 * noise(25.8, time * 0.3); radius: ur.16 * b.16 * (1 + 0.035 * noise(33.6, time * 0.5) + 0.12 * act.16) + wob * 0.04; blend: 13 }
-            ellipse { at: lx + ux.17 + 2 * noise(11.9, time * 0.35), mid + uy.17 + 2.5 * noise(27.1, time * 0.3); radius: ur.17 * b.17 * (1 + 0.035 * noise(35.7, time * 0.5) + 0.12 * act.17) - wob * 0.04; blend: 13 }
-            ellipse { at: lx + ux.18 + 2 * noise(12.6, time * 0.35), mid + uy.18 + 2.5 * noise(28.4, time * 0.3); radius: ur.18 * b.18 * (1 + 0.035 * noise(37.8, time * 0.5) + 0.12 * act.18) + wob * 0.04; blend: 13 }
-            ellipse { at: lx + ux.19 + 2 * noise(13.3, time * 0.35), mid + uy.19 + 2.5 * noise(29.7, time * 0.3); radius: ur.19 * b.19 * (1 + 0.035 * noise(39.9, time * 0.5) + 0.12 * act.19) - wob * 0.04; blend: 13 }
+            ellipse { at: lx + ux.0 + 2 * noise(0.0, time * 0.35) + if(bdrag == 0, bdx, 0), mid + uy.0 + 2.5 * noise(5.0, time * 0.3) + if(bdrag == 0, bdy, 0); radius: ur.0 * b.0 * (1 + 0.035 * noise(0.0, time * 0.5) + 0.12 * act.0) + wob * 0.04; blend: 13 }
+            ellipse { at: lx + ux.1 + 2 * noise(0.7, time * 0.35) + if(bdrag == 1, bdx, 0), mid + uy.1 + 2.5 * noise(6.3, time * 0.3) + if(bdrag == 1, bdy, 0); radius: ur.1 * b.1 * (1 + 0.035 * noise(2.1, time * 0.5) + 0.12 * act.1) - wob * 0.04; blend: 13 }
+            ellipse { at: lx + ux.2 + 2 * noise(1.4, time * 0.35) + if(bdrag == 2, bdx, 0), mid + uy.2 + 2.5 * noise(7.6, time * 0.3) + if(bdrag == 2, bdy, 0); radius: ur.2 * b.2 * (1 + 0.035 * noise(4.2, time * 0.5) + 0.12 * act.2) + wob * 0.04; blend: 13 }
+            ellipse { at: lx + ux.3 + 2 * noise(2.1, time * 0.35) + if(bdrag == 3, bdx, 0), mid + uy.3 + 2.5 * noise(8.9, time * 0.3) + if(bdrag == 3, bdy, 0); radius: ur.3 * b.3 * (1 + 0.035 * noise(6.3, time * 0.5) + 0.12 * act.3) - wob * 0.04; blend: 13 }
+            ellipse { at: lx + ux.4 + 2 * noise(2.8, time * 0.35) + if(bdrag == 4, bdx, 0), mid + uy.4 + 2.5 * noise(10.2, time * 0.3) + if(bdrag == 4, bdy, 0); radius: ur.4 * b.4 * (1 + 0.035 * noise(8.4, time * 0.5) + 0.12 * act.4) + wob * 0.04; blend: 13 }
+            ellipse { at: lx + ux.5 + 2 * noise(3.5, time * 0.35) + if(bdrag == 5, bdx, 0), mid + uy.5 + 2.5 * noise(11.5, time * 0.3) + if(bdrag == 5, bdy, 0); radius: ur.5 * b.5 * (1 + 0.035 * noise(10.5, time * 0.5) + 0.12 * act.5) - wob * 0.04; blend: 13 }
+            ellipse { at: lx + ux.6 + 2 * noise(4.2, time * 0.35) + if(bdrag == 6, bdx, 0), mid + uy.6 + 2.5 * noise(12.8, time * 0.3) + if(bdrag == 6, bdy, 0); radius: ur.6 * b.6 * (1 + 0.035 * noise(12.6, time * 0.5) + 0.12 * act.6) + wob * 0.04; blend: 13 }
+            ellipse { at: lx + ux.7 + 2 * noise(4.9, time * 0.35) + if(bdrag == 7, bdx, 0), mid + uy.7 + 2.5 * noise(14.1, time * 0.3) + if(bdrag == 7, bdy, 0); radius: ur.7 * b.7 * (1 + 0.035 * noise(14.7, time * 0.5) + 0.12 * act.7) - wob * 0.04; blend: 13 }
+            ellipse { at: lx + ux.8 + 2 * noise(5.6, time * 0.35) + if(bdrag == 8, bdx, 0), mid + uy.8 + 2.5 * noise(15.4, time * 0.3) + if(bdrag == 8, bdy, 0); radius: ur.8 * b.8 * (1 + 0.035 * noise(16.8, time * 0.5) + 0.12 * act.8) + wob * 0.04; blend: 13 }
+            ellipse { at: lx + ux.9 + 2 * noise(6.3, time * 0.35) + if(bdrag == 9, bdx, 0), mid + uy.9 + 2.5 * noise(16.7, time * 0.3) + if(bdrag == 9, bdy, 0); radius: ur.9 * b.9 * (1 + 0.035 * noise(18.9, time * 0.5) + 0.12 * act.9) - wob * 0.04; blend: 13 }
+            ellipse { at: lx + ux.10 + 2 * noise(7.0, time * 0.35) + if(bdrag == 10, bdx, 0), mid + uy.10 + 2.5 * noise(18.0, time * 0.3) + if(bdrag == 10, bdy, 0); radius: ur.10 * b.10 * (1 + 0.035 * noise(21.0, time * 0.5) + 0.12 * act.10) + wob * 0.04; blend: 13 }
+            ellipse { at: lx + ux.11 + 2 * noise(7.7, time * 0.35) + if(bdrag == 11, bdx, 0), mid + uy.11 + 2.5 * noise(19.3, time * 0.3) + if(bdrag == 11, bdy, 0); radius: ur.11 * b.11 * (1 + 0.035 * noise(23.1, time * 0.5) + 0.12 * act.11) - wob * 0.04; blend: 13 }
+            ellipse { at: lx + ux.12 + 2 * noise(8.4, time * 0.35) + if(bdrag == 12, bdx, 0), mid + uy.12 + 2.5 * noise(20.6, time * 0.3) + if(bdrag == 12, bdy, 0); radius: ur.12 * b.12 * (1 + 0.035 * noise(25.2, time * 0.5) + 0.12 * act.12) + wob * 0.04; blend: 13 }
+            ellipse { at: lx + ux.13 + 2 * noise(9.1, time * 0.35) + if(bdrag == 13, bdx, 0), mid + uy.13 + 2.5 * noise(21.9, time * 0.3) + if(bdrag == 13, bdy, 0); radius: ur.13 * b.13 * (1 + 0.035 * noise(27.3, time * 0.5) + 0.12 * act.13) - wob * 0.04; blend: 13 }
+            ellipse { at: lx + ux.14 + 2 * noise(9.8, time * 0.35) + if(bdrag == 14, bdx, 0), mid + uy.14 + 2.5 * noise(23.2, time * 0.3) + if(bdrag == 14, bdy, 0); radius: ur.14 * b.14 * (1 + 0.035 * noise(29.4, time * 0.5) + 0.12 * act.14) + wob * 0.04; blend: 13 }
+            ellipse { at: lx + ux.15 + 2 * noise(10.5, time * 0.35) + if(bdrag == 15, bdx, 0), mid + uy.15 + 2.5 * noise(24.5, time * 0.3) + if(bdrag == 15, bdy, 0); radius: ur.15 * b.15 * (1 + 0.035 * noise(31.5, time * 0.5) + 0.12 * act.15) - wob * 0.04; blend: 13 }
+            ellipse { at: lx + ux.16 + 2 * noise(11.2, time * 0.35) + if(bdrag == 16, bdx, 0), mid + uy.16 + 2.5 * noise(25.8, time * 0.3) + if(bdrag == 16, bdy, 0); radius: ur.16 * b.16 * (1 + 0.035 * noise(33.6, time * 0.5) + 0.12 * act.16) + wob * 0.04; blend: 13 }
+            ellipse { at: lx + ux.17 + 2 * noise(11.9, time * 0.35) + if(bdrag == 17, bdx, 0), mid + uy.17 + 2.5 * noise(27.1, time * 0.3) + if(bdrag == 17, bdy, 0); radius: ur.17 * b.17 * (1 + 0.035 * noise(35.7, time * 0.5) + 0.12 * act.17) - wob * 0.04; blend: 13 }
+            ellipse { at: lx + ux.18 + 2 * noise(12.6, time * 0.35) + if(bdrag == 18, bdx, 0), mid + uy.18 + 2.5 * noise(28.4, time * 0.3) + if(bdrag == 18, bdy, 0); radius: ur.18 * b.18 * (1 + 0.035 * noise(37.8, time * 0.5) + 0.12 * act.18) + wob * 0.04; blend: 13 }
+            ellipse { at: lx + ux.19 + 2 * noise(13.3, time * 0.35) + if(bdrag == 19, bdx, 0), mid + uy.19 + 2.5 * noise(29.7, time * 0.3) + if(bdrag == 19, bdy, 0); radius: ur.19 * b.19 * (1 + 0.035 * noise(39.9, time * 0.5) + 0.12 * act.19) - wob * 0.04; blend: 13 }
             // lepkavé vlákna: guľôčky sa nikdy neoddelia od okraja (kotva visí na okraji, strapec na kotve)
-            line { from: lx + ux.0 + 2 * noise(0.0, time * 0.35), mid + uy.0 + 2.5 * noise(5.0, time * 0.3); to: lx + kx.0, if(uy.0 > -3, edge + 14, mid + ky.0); width: ur.0 * b.0 * 0.3 * (1 - o.pull) * ap; blend: 9 }
-            line { from: lx + ux.1 + 2 * noise(0.7, time * 0.35), mid + uy.1 + 2.5 * noise(6.3, time * 0.3); to: lx + kx.1, if(uy.1 > -3, edge + 14, mid + ky.1); width: ur.1 * b.1 * 0.3 * (1 - o.pull) * ap; blend: 9 }
-            line { from: lx + ux.2 + 2 * noise(1.4, time * 0.35), mid + uy.2 + 2.5 * noise(7.6, time * 0.3); to: lx + kx.2, if(uy.2 > -3, edge + 14, mid + ky.2); width: ur.2 * b.2 * 0.3 * (1 - o.pull) * ap; blend: 9 }
-            line { from: lx + ux.3 + 2 * noise(2.1, time * 0.35), mid + uy.3 + 2.5 * noise(8.9, time * 0.3); to: lx + kx.3, if(uy.3 > -3, edge + 14, mid + ky.3); width: ur.3 * b.3 * 0.3 * (1 - o.pull) * ap; blend: 9 }
-            line { from: lx + ux.4 + 2 * noise(2.8, time * 0.35), mid + uy.4 + 2.5 * noise(10.2, time * 0.3); to: lx + kx.4, if(uy.4 > -3, edge + 14, mid + ky.4); width: ur.4 * b.4 * 0.3 * (1 - o.pull) * ap; blend: 9 }
-            line { from: lx + ux.5 + 2 * noise(3.5, time * 0.35), mid + uy.5 + 2.5 * noise(11.5, time * 0.3); to: lx + kx.5, if(uy.5 > -3, edge + 14, mid + ky.5); width: ur.5 * b.5 * 0.3 * (1 - o.pull) * ap; blend: 9 }
-            line { from: lx + ux.6 + 2 * noise(4.2, time * 0.35), mid + uy.6 + 2.5 * noise(12.8, time * 0.3); to: lx + kx.6, if(uy.6 > -3, edge + 14, mid + ky.6); width: ur.6 * b.6 * 0.3 * (1 - o.pull) * ap; blend: 9 }
-            line { from: lx + ux.7 + 2 * noise(4.9, time * 0.35), mid + uy.7 + 2.5 * noise(14.1, time * 0.3); to: lx + kx.7, if(uy.7 > -3, edge + 14, mid + ky.7); width: ur.7 * b.7 * 0.3 * (1 - o.pull) * ap; blend: 9 }
-            line { from: lx + ux.8 + 2 * noise(5.6, time * 0.35), mid + uy.8 + 2.5 * noise(15.4, time * 0.3); to: lx + kx.8, if(uy.8 > -3, edge + 14, mid + ky.8); width: ur.8 * b.8 * 0.3 * (1 - o.pull) * ap; blend: 9 }
-            line { from: lx + ux.9 + 2 * noise(6.3, time * 0.35), mid + uy.9 + 2.5 * noise(16.7, time * 0.3); to: lx + kx.9, if(uy.9 > -3, edge + 14, mid + ky.9); width: ur.9 * b.9 * 0.3 * (1 - o.pull) * ap; blend: 9 }
-            line { from: lx + ux.10 + 2 * noise(7.0, time * 0.35), mid + uy.10 + 2.5 * noise(18.0, time * 0.3); to: lx + kx.10, if(uy.10 > -3, edge + 14, mid + ky.10); width: ur.10 * b.10 * 0.3 * (1 - o.pull) * ap; blend: 9 }
-            line { from: lx + ux.11 + 2 * noise(7.7, time * 0.35), mid + uy.11 + 2.5 * noise(19.3, time * 0.3); to: lx + kx.11, if(uy.11 > -3, edge + 14, mid + ky.11); width: ur.11 * b.11 * 0.3 * (1 - o.pull) * ap; blend: 9 }
-            line { from: lx + ux.12 + 2 * noise(8.4, time * 0.35), mid + uy.12 + 2.5 * noise(20.6, time * 0.3); to: lx + kx.12, if(uy.12 > -3, edge + 14, mid + ky.12); width: ur.12 * b.12 * 0.3 * (1 - o.pull) * ap; blend: 9 }
-            line { from: lx + ux.13 + 2 * noise(9.1, time * 0.35), mid + uy.13 + 2.5 * noise(21.9, time * 0.3); to: lx + kx.13, if(uy.13 > -3, edge + 14, mid + ky.13); width: ur.13 * b.13 * 0.3 * (1 - o.pull) * ap; blend: 9 }
-            line { from: lx + ux.14 + 2 * noise(9.8, time * 0.35), mid + uy.14 + 2.5 * noise(23.2, time * 0.3); to: lx + kx.14, if(uy.14 > -3, edge + 14, mid + ky.14); width: ur.14 * b.14 * 0.3 * (1 - o.pull) * ap; blend: 9 }
-            line { from: lx + ux.15 + 2 * noise(10.5, time * 0.35), mid + uy.15 + 2.5 * noise(24.5, time * 0.3); to: lx + kx.15, if(uy.15 > -3, edge + 14, mid + ky.15); width: ur.15 * b.15 * 0.3 * (1 - o.pull) * ap; blend: 9 }
-            line { from: lx + ux.16 + 2 * noise(11.2, time * 0.35), mid + uy.16 + 2.5 * noise(25.8, time * 0.3); to: lx + kx.16, if(uy.16 > -3, edge + 14, mid + ky.16); width: ur.16 * b.16 * 0.3 * (1 - o.pull) * ap; blend: 9 }
-            line { from: lx + ux.17 + 2 * noise(11.9, time * 0.35), mid + uy.17 + 2.5 * noise(27.1, time * 0.3); to: lx + kx.17, if(uy.17 > -3, edge + 14, mid + ky.17); width: ur.17 * b.17 * 0.3 * (1 - o.pull) * ap; blend: 9 }
-            line { from: lx + ux.18 + 2 * noise(12.6, time * 0.35), mid + uy.18 + 2.5 * noise(28.4, time * 0.3); to: lx + kx.18, if(uy.18 > -3, edge + 14, mid + ky.18); width: ur.18 * b.18 * 0.3 * (1 - o.pull) * ap; blend: 9 }
-            line { from: lx + ux.19 + 2 * noise(13.3, time * 0.35), mid + uy.19 + 2.5 * noise(29.7, time * 0.3); to: lx + kx.19, if(uy.19 > -3, edge + 14, mid + ky.19); width: ur.19 * b.19 * 0.3 * (1 - o.pull) * ap; blend: 9 }
+            line { from: lx + ux.0 + 2 * noise(0.0, time * 0.35) + if(bdrag == 0, bdx, 0), mid + uy.0 + 2.5 * noise(5.0, time * 0.3) + if(bdrag == 0, bdy, 0); to: lx + kx.0, if(uy.0 > -3, edge + 14, mid + ky.0); width: ur.0 * b.0 * 0.3 * if(bdrag == 0, clamp(1 - (abs(bdx) + abs(bdy)) / 520, 0.22, 1), 1) * (1 - o.pull) * ap; blend: 9 }
+            line { from: lx + ux.1 + 2 * noise(0.7, time * 0.35) + if(bdrag == 1, bdx, 0), mid + uy.1 + 2.5 * noise(6.3, time * 0.3) + if(bdrag == 1, bdy, 0); to: lx + kx.1, if(uy.1 > -3, edge + 14, mid + ky.1); width: ur.1 * b.1 * 0.3 * if(bdrag == 1, clamp(1 - (abs(bdx) + abs(bdy)) / 520, 0.22, 1), 1) * (1 - o.pull) * ap; blend: 9 }
+            line { from: lx + ux.2 + 2 * noise(1.4, time * 0.35) + if(bdrag == 2, bdx, 0), mid + uy.2 + 2.5 * noise(7.6, time * 0.3) + if(bdrag == 2, bdy, 0); to: lx + kx.2, if(uy.2 > -3, edge + 14, mid + ky.2); width: ur.2 * b.2 * 0.3 * if(bdrag == 2, clamp(1 - (abs(bdx) + abs(bdy)) / 520, 0.22, 1), 1) * (1 - o.pull) * ap; blend: 9 }
+            line { from: lx + ux.3 + 2 * noise(2.1, time * 0.35) + if(bdrag == 3, bdx, 0), mid + uy.3 + 2.5 * noise(8.9, time * 0.3) + if(bdrag == 3, bdy, 0); to: lx + kx.3, if(uy.3 > -3, edge + 14, mid + ky.3); width: ur.3 * b.3 * 0.3 * if(bdrag == 3, clamp(1 - (abs(bdx) + abs(bdy)) / 520, 0.22, 1), 1) * (1 - o.pull) * ap; blend: 9 }
+            line { from: lx + ux.4 + 2 * noise(2.8, time * 0.35) + if(bdrag == 4, bdx, 0), mid + uy.4 + 2.5 * noise(10.2, time * 0.3) + if(bdrag == 4, bdy, 0); to: lx + kx.4, if(uy.4 > -3, edge + 14, mid + ky.4); width: ur.4 * b.4 * 0.3 * if(bdrag == 4, clamp(1 - (abs(bdx) + abs(bdy)) / 520, 0.22, 1), 1) * (1 - o.pull) * ap; blend: 9 }
+            line { from: lx + ux.5 + 2 * noise(3.5, time * 0.35) + if(bdrag == 5, bdx, 0), mid + uy.5 + 2.5 * noise(11.5, time * 0.3) + if(bdrag == 5, bdy, 0); to: lx + kx.5, if(uy.5 > -3, edge + 14, mid + ky.5); width: ur.5 * b.5 * 0.3 * if(bdrag == 5, clamp(1 - (abs(bdx) + abs(bdy)) / 520, 0.22, 1), 1) * (1 - o.pull) * ap; blend: 9 }
+            line { from: lx + ux.6 + 2 * noise(4.2, time * 0.35) + if(bdrag == 6, bdx, 0), mid + uy.6 + 2.5 * noise(12.8, time * 0.3) + if(bdrag == 6, bdy, 0); to: lx + kx.6, if(uy.6 > -3, edge + 14, mid + ky.6); width: ur.6 * b.6 * 0.3 * if(bdrag == 6, clamp(1 - (abs(bdx) + abs(bdy)) / 520, 0.22, 1), 1) * (1 - o.pull) * ap; blend: 9 }
+            line { from: lx + ux.7 + 2 * noise(4.9, time * 0.35) + if(bdrag == 7, bdx, 0), mid + uy.7 + 2.5 * noise(14.1, time * 0.3) + if(bdrag == 7, bdy, 0); to: lx + kx.7, if(uy.7 > -3, edge + 14, mid + ky.7); width: ur.7 * b.7 * 0.3 * if(bdrag == 7, clamp(1 - (abs(bdx) + abs(bdy)) / 520, 0.22, 1), 1) * (1 - o.pull) * ap; blend: 9 }
+            line { from: lx + ux.8 + 2 * noise(5.6, time * 0.35) + if(bdrag == 8, bdx, 0), mid + uy.8 + 2.5 * noise(15.4, time * 0.3) + if(bdrag == 8, bdy, 0); to: lx + kx.8, if(uy.8 > -3, edge + 14, mid + ky.8); width: ur.8 * b.8 * 0.3 * if(bdrag == 8, clamp(1 - (abs(bdx) + abs(bdy)) / 520, 0.22, 1), 1) * (1 - o.pull) * ap; blend: 9 }
+            line { from: lx + ux.9 + 2 * noise(6.3, time * 0.35) + if(bdrag == 9, bdx, 0), mid + uy.9 + 2.5 * noise(16.7, time * 0.3) + if(bdrag == 9, bdy, 0); to: lx + kx.9, if(uy.9 > -3, edge + 14, mid + ky.9); width: ur.9 * b.9 * 0.3 * if(bdrag == 9, clamp(1 - (abs(bdx) + abs(bdy)) / 520, 0.22, 1), 1) * (1 - o.pull) * ap; blend: 9 }
+            line { from: lx + ux.10 + 2 * noise(7.0, time * 0.35) + if(bdrag == 10, bdx, 0), mid + uy.10 + 2.5 * noise(18.0, time * 0.3) + if(bdrag == 10, bdy, 0); to: lx + kx.10, if(uy.10 > -3, edge + 14, mid + ky.10); width: ur.10 * b.10 * 0.3 * if(bdrag == 10, clamp(1 - (abs(bdx) + abs(bdy)) / 520, 0.22, 1), 1) * (1 - o.pull) * ap; blend: 9 }
+            line { from: lx + ux.11 + 2 * noise(7.7, time * 0.35) + if(bdrag == 11, bdx, 0), mid + uy.11 + 2.5 * noise(19.3, time * 0.3) + if(bdrag == 11, bdy, 0); to: lx + kx.11, if(uy.11 > -3, edge + 14, mid + ky.11); width: ur.11 * b.11 * 0.3 * if(bdrag == 11, clamp(1 - (abs(bdx) + abs(bdy)) / 520, 0.22, 1), 1) * (1 - o.pull) * ap; blend: 9 }
+            line { from: lx + ux.12 + 2 * noise(8.4, time * 0.35) + if(bdrag == 12, bdx, 0), mid + uy.12 + 2.5 * noise(20.6, time * 0.3) + if(bdrag == 12, bdy, 0); to: lx + kx.12, if(uy.12 > -3, edge + 14, mid + ky.12); width: ur.12 * b.12 * 0.3 * if(bdrag == 12, clamp(1 - (abs(bdx) + abs(bdy)) / 520, 0.22, 1), 1) * (1 - o.pull) * ap; blend: 9 }
+            line { from: lx + ux.13 + 2 * noise(9.1, time * 0.35) + if(bdrag == 13, bdx, 0), mid + uy.13 + 2.5 * noise(21.9, time * 0.3) + if(bdrag == 13, bdy, 0); to: lx + kx.13, if(uy.13 > -3, edge + 14, mid + ky.13); width: ur.13 * b.13 * 0.3 * if(bdrag == 13, clamp(1 - (abs(bdx) + abs(bdy)) / 520, 0.22, 1), 1) * (1 - o.pull) * ap; blend: 9 }
+            line { from: lx + ux.14 + 2 * noise(9.8, time * 0.35) + if(bdrag == 14, bdx, 0), mid + uy.14 + 2.5 * noise(23.2, time * 0.3) + if(bdrag == 14, bdy, 0); to: lx + kx.14, if(uy.14 > -3, edge + 14, mid + ky.14); width: ur.14 * b.14 * 0.3 * if(bdrag == 14, clamp(1 - (abs(bdx) + abs(bdy)) / 520, 0.22, 1), 1) * (1 - o.pull) * ap; blend: 9 }
+            line { from: lx + ux.15 + 2 * noise(10.5, time * 0.35) + if(bdrag == 15, bdx, 0), mid + uy.15 + 2.5 * noise(24.5, time * 0.3) + if(bdrag == 15, bdy, 0); to: lx + kx.15, if(uy.15 > -3, edge + 14, mid + ky.15); width: ur.15 * b.15 * 0.3 * if(bdrag == 15, clamp(1 - (abs(bdx) + abs(bdy)) / 520, 0.22, 1), 1) * (1 - o.pull) * ap; blend: 9 }
+            line { from: lx + ux.16 + 2 * noise(11.2, time * 0.35) + if(bdrag == 16, bdx, 0), mid + uy.16 + 2.5 * noise(25.8, time * 0.3) + if(bdrag == 16, bdy, 0); to: lx + kx.16, if(uy.16 > -3, edge + 14, mid + ky.16); width: ur.16 * b.16 * 0.3 * if(bdrag == 16, clamp(1 - (abs(bdx) + abs(bdy)) / 520, 0.22, 1), 1) * (1 - o.pull) * ap; blend: 9 }
+            line { from: lx + ux.17 + 2 * noise(11.9, time * 0.35) + if(bdrag == 17, bdx, 0), mid + uy.17 + 2.5 * noise(27.1, time * 0.3) + if(bdrag == 17, bdy, 0); to: lx + kx.17, if(uy.17 > -3, edge + 14, mid + ky.17); width: ur.17 * b.17 * 0.3 * if(bdrag == 17, clamp(1 - (abs(bdx) + abs(bdy)) / 520, 0.22, 1), 1) * (1 - o.pull) * ap; blend: 9 }
+            line { from: lx + ux.18 + 2 * noise(12.6, time * 0.35) + if(bdrag == 18, bdx, 0), mid + uy.18 + 2.5 * noise(28.4, time * 0.3) + if(bdrag == 18, bdy, 0); to: lx + kx.18, if(uy.18 > -3, edge + 14, mid + ky.18); width: ur.18 * b.18 * 0.3 * if(bdrag == 18, clamp(1 - (abs(bdx) + abs(bdy)) / 520, 0.22, 1), 1) * (1 - o.pull) * ap; blend: 9 }
+            line { from: lx + ux.19 + 2 * noise(13.3, time * 0.35) + if(bdrag == 19, bdx, 0), mid + uy.19 + 2.5 * noise(29.7, time * 0.3) + if(bdrag == 19, bdy, 0); to: lx + kx.19, if(uy.19 > -3, edge + 14, mid + ky.19); width: ur.19 * b.19 * 0.3 * if(bdrag == 19, clamp(1 - (abs(bdx) + abs(bdy)) / 520, 0.22, 1), 1) * (1 - o.pull) * ap; blend: 9 }
             // Štart a vypínač: vlastná „voda“ pod okrajom; s hlavou a medzi sebou ich spája most `link`
             box { from: px - 34 - 14 * flow2 * stir, edge; size: (sx - px + 68 + 28 * flow2 * stir) * so, 70 }
             ellipse { at: sx, s.y; radius: (33 + 3 * hs) * so * (1 - smooth(0, 0.12, dsh)); scale: 1 + squish.s * 0.08, 1 - squish.s * 0.12; blend: link * so }
@@ -352,7 +359,7 @@ scene Kvapka {
             opacity: 70% * ap
             ellipse { at: hx - 14, mid - 32; radius: 4; scale: 1.5, 0.8; rotate: -30deg; color: #fff6ea }
             repeat k in 0..20 {
-                ellipse { at: (lx + ux.$k + 2 * noise(k * 0.7, time * 0.35)) - ur.$k * 0.4, (mid + uy.$k + 2.5 * noise(5 + k * 1.3, time * 0.3)) - ur.$k * 0.52; radius: 0.11 * ur.$k * b.$k; scale: 1.5, 0.8; rotate: -30deg; color: #fff6ea }
+                ellipse { at: (lx + ux.$k + 2 * noise(k * 0.7, time * 0.35) + if(bdrag == k, bdx, 0)) - ur.$k * 0.4, (mid + uy.$k + 2.5 * noise(5 + k * 1.3, time * 0.3) + if(bdrag == k, bdy, 0)) - ur.$k * 0.52; radius: 0.11 * ur.$k * b.$k; scale: 1.5, 0.8; rotate: -30deg; color: #fff6ea }
             }
         }
         // farba upozornení podľa naliehavosti (nízka mätová, bežná jantárová, kritická červená)
@@ -367,7 +374,7 @@ scene Kvapka {
         zone ellipse start_hit { at: sx, s.y; radius: 34; cursor: pointer; active: solo }
         zone ellipse power_hit { at: px, p.y; radius: 19; cursor: pointer; active: solo }
         repeat k in 0..20 {
-            zone box icon_hit.$k { at: (lx + ux.$k + 2 * noise(k * 0.7, time * 0.35)), (mid + uy.$k + 2.5 * noise(5 + k * 1.3, time * 0.3)); size: ur.$k * 1.6, ur.$k * 1.6; corner: ur.$k * 0.8; cursor: pointer; active: k < n and not free }
+            zone box icon_hit.$k { at: (lx + ux.$k + 2 * noise(k * 0.7, time * 0.35) + if(bdrag == k, bdx, 0)), (mid + uy.$k + 2.5 * noise(5 + k * 1.3, time * 0.3) + if(bdrag == k, bdy, 0)); size: ur.$k * 1.6, ur.$k * 1.6; corner: ur.$k * 0.8; cursor: pointer; active: k < n and not free }
         }
     }
 
@@ -385,8 +392,8 @@ scene Kvapka {
 
     // ikony stoja rovno: bod rámca (u, v) → obrazovka podľa okraja; veľkosť podľa guľôčky
     repeat k in 0..20 {
-        image icon.$k { at: pick(side, (lx + ux.$k + 2 * noise(k * 0.7, time * 0.35)), W - (lx + ux.$k + 2 * noise(k * 0.7, time * 0.35)), edge - (mid + uy.$k + 2.5 * noise(5 + k * 1.3, time * 0.3)), W - edge + (mid + uy.$k + 2.5 * noise(5 + k * 1.3, time * 0.3))) - ur.$k * 0.52, pick(side, (mid + uy.$k + 2.5 * noise(5 + k * 1.3, time * 0.3)) + H - edge, edge - (mid + uy.$k + 2.5 * noise(5 + k * 1.3, time * 0.3)), (lx + ux.$k + 2 * noise(k * 0.7, time * 0.35)), H - (lx + ux.$k + 2 * noise(k * 0.7, time * 0.35))) - ur.$k * 0.52; size: ur.$k * 1.04, ur.$k * 1.04; opacity: b.$k * ap; show: k < n }
-        box { at: pick(side, (lx + ux.$k + 2 * noise(k * 0.7, time * 0.35)), W - (lx + ux.$k + 2 * noise(k * 0.7, time * 0.35)), edge - (mid + uy.$k + 2.5 * noise(5 + k * 1.3, time * 0.3)) - ur.$k * 0.76, W - edge + (mid + uy.$k + 2.5 * noise(5 + k * 1.3, time * 0.3)) + ur.$k * 0.76), pick(side, (mid + uy.$k + 2.5 * noise(5 + k * 1.3, time * 0.3)) + ur.$k * 0.76 + H - edge, edge - (mid + uy.$k + 2.5 * noise(5 + k * 1.3, time * 0.3)) - ur.$k * 0.76, (lx + ux.$k + 2 * noise(k * 0.7, time * 0.35)), H - (lx + ux.$k + 2 * noise(k * 0.7, time * 0.35))); size: if(side == vlavo or side == vpravo, 3, 12), if(side == vlavo or side == vpravo, 12, 3); corner: 1.5; color: ink; opacity: ap; show: k < n and wins.$k.active }
+        image icon.$k { at: pick(side, (lx + ux.$k + 2 * noise(k * 0.7, time * 0.35) + if(bdrag == k, bdx, 0)), W - (lx + ux.$k + 2 * noise(k * 0.7, time * 0.35) + if(bdrag == k, bdx, 0)), edge - (mid + uy.$k + 2.5 * noise(5 + k * 1.3, time * 0.3) + if(bdrag == k, bdy, 0)), W - edge + (mid + uy.$k + 2.5 * noise(5 + k * 1.3, time * 0.3) + if(bdrag == k, bdy, 0))) - ur.$k * 0.52, pick(side, (mid + uy.$k + 2.5 * noise(5 + k * 1.3, time * 0.3) + if(bdrag == k, bdy, 0)) + H - edge, edge - (mid + uy.$k + 2.5 * noise(5 + k * 1.3, time * 0.3) + if(bdrag == k, bdy, 0)), (lx + ux.$k + 2 * noise(k * 0.7, time * 0.35) + if(bdrag == k, bdx, 0)), H - (lx + ux.$k + 2 * noise(k * 0.7, time * 0.35) + if(bdrag == k, bdx, 0))) - ur.$k * 0.52; size: ur.$k * 1.04, ur.$k * 1.04; opacity: b.$k * ap; show: k < n }
+        box { at: pick(side, (lx + ux.$k + 2 * noise(k * 0.7, time * 0.35) + if(bdrag == k, bdx, 0)), W - (lx + ux.$k + 2 * noise(k * 0.7, time * 0.35) + if(bdrag == k, bdx, 0)), edge - (mid + uy.$k + 2.5 * noise(5 + k * 1.3, time * 0.3) + if(bdrag == k, bdy, 0)) - ur.$k * 0.76, W - edge + (mid + uy.$k + 2.5 * noise(5 + k * 1.3, time * 0.3) + if(bdrag == k, bdy, 0)) + ur.$k * 0.76), pick(side, (mid + uy.$k + 2.5 * noise(5 + k * 1.3, time * 0.3) + if(bdrag == k, bdy, 0)) + ur.$k * 0.76 + H - edge, edge - (mid + uy.$k + 2.5 * noise(5 + k * 1.3, time * 0.3) + if(bdrag == k, bdy, 0)) - ur.$k * 0.76, (lx + ux.$k + 2 * noise(k * 0.7, time * 0.35) + if(bdrag == k, bdx, 0)), H - (lx + ux.$k + 2 * noise(k * 0.7, time * 0.35) + if(bdrag == k, bdx, 0))); size: if(side == vlavo or side == vpravo, 3, 12), if(side == vlavo or side == vpravo, 12, 3); corner: 1.5; color: ink; opacity: ap; show: k < n and wins.$k.active }
     }
 
     image power_icon = icon "system-shutdown-symbolic", 18, 18
@@ -661,11 +668,15 @@ scene Kvapka {
     // hrbolček s oknom: ľavý klik = prepnúť naň (aktívne okno sa minimalizuje, ako vo Windows),
     // pravý klik = ponuka okna
     repeat k in 0..20 {
-        on press icon_hit.$k { icon_press = true; emit pick(k) }
+        on press icon_hit.$k { icon_press = true; bdrag = k; bmoved = false }
+        on drag icon_hit.$k while bdrag == k { bdx: pick(side, drag.dx, 0 - drag.dx, drag.dy, 0 - drag.dy) ~0ms; bdy: pick(side, drag.dy, 0 - drag.dy, 0 - drag.dx, drag.dx) ~0ms }
+        on drag icon_hit.$k while bdrag == k and abs(drag.dx) + abs(drag.dy) > 8 { bmoved = true }
+        on release icon_hit.$k while not bmoved { emit pick(k) }
+        on release icon_hit.$k while bmoved { emit bead_drop(k) }
         on enter icon_hit.$k { emit hover(k) }
         on leave icon_hit.$k { emit unhover(k) }
         on press right icon_hit.$k { icon_press = true; menu.x = cursor.x; menu.y = cursor.y; emit win_menu(k) }
-        on release icon_hit.$k { icon_press = false }
+        on release icon_hit.$k { icon_press = false; bdx: 0; bdy: 0; impulse wob 40 }
     }
 
     translations sk {

@@ -30,6 +30,9 @@ ako samostatná vrstva (layer-shell) nad jej lištou.
 - **pod oknom využije voľné miesto**: logika zmeria miesto po najnižšie okno (`room`), lišta sa vysunie presne po
   jeho spodok a strapce sa v tom páse rozložia nepravidelne (cik-cak) — bez prekrytia okna
 - ponuka okna (pravý klik na guľôčku) pri kurzore: poloha priamo od Hyprlandu (`hyprctl -j cursorpos`)
+- **ťahanie guľôčky okna** (drag & drop): ide za myšou na lepkavom vlákne (ťahaním sa tenčí, nepretrhne sa);
+  pustená medzi inými presunie svoju aplikáciu na to miesto v lište (poradie si logika pamätá), inde sa pružne
+  vráti s vlnou; klik bez ťahania = prepnúť okno (po pustení)
 - **lepkavé vlákna** (30. 9., podľa obrázka medu): guľôčka pri lište visí na okraji tenkým vláknom, ostatné v strapci
   na nej — hrozen sa nikdy neoddelí od okraja; okná sú guľôčky vo všetkých režimoch (v Dlaždiciach predtým zmizli)
 - **ponuka Vypnúť** vyteká z kvapky vypínača (klik): Zamknúť, Odhlásiť sa, Uspať, Reštartovať, Vypnúť — akcie robí

@@ -18,6 +18,7 @@ end
 -- rovnaký zdroj a poradie ako model wins v scéne (hrbolček k = okno k)
 local wins = {}
 local layout   -- nižšie
+local mon = nil  -- monitor (rozmery; plní hyprctl -j monitors nižšie)
 
 -- ── strapce okien (ikry) ──────────────────────────────────────────────────────
 -- Okná tej istej aplikácie sa zlepia do strapca: prvé sedí pri lište, ďalšie sa lepia smerom od nej (ako ikry),
@@ -72,14 +73,21 @@ local function icon_of(w)
     return (a and a.icon and a.icon ~= "") and a.icon or (w.class or "")
 end
 
+-- poradie aplikácií v lište, ktoré si používateľ nastavil ťahaním (kľúče skupín); ostatné podľa prvého okna
+local group_order = {}
+local last_spans = {}                    -- kľúč → stred strapca (x od hlavy), pre pustenie guľôčky
+
 function layout()
-    local groups, order = {}, {}
+    local groups, first = {}, {}
     for i, w in ipairs(wins) do
         if i > 20 then break end
         local k = group_key(w)
-        if not groups[k] then groups[k] = {}; order[#order + 1] = k end
+        if not groups[k] then groups[k] = {}; first[#first + 1] = k end
         table.insert(groups[k], i)
     end
+    local order, used = {}, {}
+    for _, k in ipairs(group_order) do if groups[k] and not used[k] then order[#order + 1] = k; used[k] = true end end
+    for _, k in ipairs(first) do if not used[k] then order[#order + 1] = k; used[k] = true end end
     local tight = fact.tight == true
     local paska = tostring(fact.mode) == "paska"
     local lay, u = {}, 21                  -- u: ľavý okraj ďalšieho strapca (od hlavy; hlava končí na +36)
@@ -123,9 +131,43 @@ function layout()
     end
     model.lay = lay
     fact.chain_w = math.max(50, u - 12)
+    last_spans = {}
+    for _, key in ipairs(order) do
+        local sx, n = 0, 0
+        for _, i in ipairs(groups[key]) do sx = sx + (lay[i] and lay[i].x or 0); n = n + 1 end
+        last_spans[#last_spans + 1] = { key = key, x = n > 0 and sx / n or 0 }
+    end
 end
 
 sys.watch("window", function(v) wins = (v and v.list) or {}; layout() end)
+
+-- guľôčka pustená po ťahaní: kde na lište (x od hlavy) → jej aplikácia sa presunie pred strapec, ktorý je tam
+on("bead_drop", function(k)
+    local w = wins[(k or 0) + 1]
+    if not w or not mon then return end
+    local key = group_key(w)
+    run("hyprctl", { "-j", "cursorpos" }, function(out)
+        local ok, c = pcall(json.decode, out or "")
+        if not ok or not c then return end
+        local side = tostring(fact.side or "dole")
+        local x, y = c.x - mon.x, c.y - mon.y
+        local u = ({ dole = x, hore = mon.width - x, vlavo = y, vpravo = mon.height - y })[side] or x
+        local len = (side == "vlavo" or side == "vpravo") and mon.height or mon.width
+        local rel = u - len * (tonumber(fact.pos) or 0.4)
+        local keys = {}
+        for _, sp in ipairs(last_spans) do if sp.key ~= key then keys[#keys + 1] = sp end end
+        local at = #keys + 1
+        for i, sp in ipairs(keys) do if rel < sp.x then at = i; break end end
+        local new = {}
+        for i, sp in ipairs(keys) do
+            if i == at then new[#new + 1] = key end
+            new[#new + 1] = sp.key
+        end
+        if at > #keys then new[#new + 1] = key end
+        group_order = new
+        layout()
+    end)
+end)
 on("fact:tight", function() layout() end)
 on("fact:mode", function() layout() end)
 on("hover", function(k)
@@ -207,7 +249,6 @@ end)
 
 -- tesne: aktívne okno siaha k okraju lišty (maximalizované, na celú obrazovku, dlaždice/páska) → kvapka ostane
 -- v páse 64 px (+ rezerva), aby neprekryla program. Okraj podľa fact.side, rozmery monitora z hyprctl.
-local mon = nil
 run("hyprctl", { "-j", "monitors" }, function(out)
     local ok, ms = pcall(json.decode, out or "")
     if ok and ms then for _, m in ipairs(ms) do if m.focused then mon = m end end end
