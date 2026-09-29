@@ -41,6 +41,7 @@ function B.setup(theme)
                 local ws = w.workspace
                 if ws and tostring(ws.name or ""):find("^special:minimized") then latte.win.restore(address) end
                 hl.dispatch(hl.dsp.focus({ window = "address:" .. address }))
+                latte.win.hide_special()
                 return
             end
         end
@@ -67,6 +68,33 @@ function B.setup(theme)
         local hidden = w.workspace and tostring(w.workspace.name or ""):find("^special:minimized")
         if a and a.address == w.address and not hidden then latte.win.minimize_addr(w.address)
         else latte.win.activate(w.address) end
+    end
+    -- skrytá plocha minimalizovaných nesmie ostať ukázaná: nové okná by sa otvárali na nej (vyzerali by minimalizované)
+    function latte.win.hide_special()
+        for _, m in ipairs(hl.get_monitors() or {}) do
+            local sp = m.active_special_workspace
+            if sp and tostring(sp.name or ""):find("^special:minimized") then
+                hl.dispatch(hl.dsp.workspace.toggle_special("minimized"))
+                return
+            end
+        end
+    end
+    -- koliesko nad lištou-kvapkou (plávajúce okná): ďalšie / predošlé okno na aktuálnej ploche, bez minimalizovaných
+    -- (prepnutie na minimalizované cez Wayland ukázalo celú skrytú plochu)
+    function latte.win.cycle(dir)
+        local ws = hl.get_active_workspace()
+        local a = hl.get_active_window()
+        local list, cur = {}, 0
+        for _, w in ipairs(hl.get_windows() or {}) do
+            if w.workspace and ws and w.workspace.id == ws.id then
+                list[#list + 1] = w
+                if a and w.address == a.address then cur = #list end
+            end
+        end
+        if #list == 0 then return end
+        local nxt = ((cur - 1 + (dir or 1)) % #list) + 1
+        hl.dispatch(hl.dsp.focus({ window = "address:" .. list[nxt].address }))
+        latte.win.hide_special()
     end
     function latte.win.focus_by(class, title)
         local w = by(class, title)

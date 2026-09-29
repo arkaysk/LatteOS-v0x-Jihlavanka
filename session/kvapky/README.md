@@ -24,6 +24,9 @@ ako samostatná vrstva (layer-shell) nad jej lištou.
   vypínač a ponuka Vypnúť
 - **lišta je uväznená váhou**: guľôčky pri lište sedia na okraji s meniskom (široká „voda“ pod celou šnúrou),
   strapce z nich rastú hore, ale celý hrozen sa od okraja fyzicky neoddelí — iba ťahaním
+- **až 20 okien** v lište (strapce ich zhustia); koliesko nad lištou v plávajúcom režime prepína iba okná na
+  ploche, bez minimalizovaných (cez Wayland sa pri tom ukázala celá skrytá plocha `special:minimized` a nové okná
+  sa otvárali na nej — vyzerali ako nespustené); LatteOS túto plochu pri prepnutí okna vždy zavrie
 - **lepkavé vlákna** (30. 9., podľa obrázka medu): guľôčka pri lište visí na okraji tenkým vláknom, ostatné v strapci
   na nej — hrozen sa nikdy neoddelí od okraja; okná sú guľôčky vo všetkých režimoch (v Dlaždiciach predtým zmizli)
 - **ponuka Vypnúť** vyteká z kvapky vypínača (klik): Zamknúť, Odhlásiť sa, Uspať, Reštartovať, Vypnúť — akcie robí
@@ -40,7 +43,7 @@ ako samostatná vrstva (layer-shell) nad jej lištou.
 - **tvar ako tekutina v nízkej gravitácii (goo)**: šnúra guľôčok namiesto tuhej kapsuly — hlava vľavo je najväčšia
   guľa, každé okno vlastná guľatá kvapka spojená so susedkami krkom a tenkým vláknom; kvapky pomaly dýchajú a plávajú
   (každá inak), aktívne okno je plnšie, každá guľa má vlastný odlesk; nové/zatvorené okno pošle šnúrou vlnu
-- **neprekryje program**: keď aktívne okno siaha k lište (maximalizované, na celú obrazovku, dlaždice/páska), kvapka
+- **neprekryje program**: keď ktorékoľvek viditeľné okno na ploche siaha k lište (maximalizované, na celú obrazovku, dlaždice/páska), kvapka
   ostane v páse 64 px aj pri myši (`fact tight`, logika kontroluje aktívne okno každých 0,7 s); celú obrazovku
   (hry, video) Hyprland aj tak kreslí nad vrstvou kvapky
 - **pás pre kvapku** v ploche Kvapky: rezerva monitora 54 px + medzera 10 px pri okraji lišty
