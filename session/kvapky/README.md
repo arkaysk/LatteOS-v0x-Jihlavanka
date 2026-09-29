@@ -24,6 +24,8 @@ ako samostatná vrstva (layer-shell) nad jej lištou.
   vypínač a ponuka Vypnúť
 - **lišta je uväznená váhou**: guľôčky pri lište sedia na okraji s meniskom (široká „voda“ pod celou šnúrou),
   strapce z nich rastú hore, ale celý hrozen sa od okraja fyzicky neoddelí — iba ťahaním
+- **lepkavé vlákna** (30. 9., podľa obrázka medu): guľôčka pri lište visí na okraji tenkým vláknom, ostatné v strapci
+  na nej — hrozen sa nikdy neoddelí od okraja; okná sú guľôčky vo všetkých režimoch (v Dlaždiciach predtým zmizli)
 - **ponuka Vypnúť** vyteká z kvapky vypínača (klik): Zamknúť, Odhlásiť sa, Uspať, Reštartovať, Vypnúť — akcie robí
   Noctalia (`noctalia msg session …`), rovnako ako ponuka LatteOS; klik mimo zavrie
 - **ovládacie centrum v dashboarde**: tlačidlá Sieť / Bluetooth / Zvuk prepínajú, klik na ich popis („Sieť ›“) otvorí
