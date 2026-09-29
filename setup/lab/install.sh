@@ -79,11 +79,14 @@ nmcli -t -f NAME,TYPE,DEVICE connection show --active | while IFS=: read -r name
     fi
 done
 
-step "5/8 RPM Fusion (kodeky, Steam) a VA-API s H.264/HEVC pre AMD (Sunshine)"
+step "5/8 RPM Fusion: plný ffmpeg, VA-API s H.264/HEVC pre AMD (tapety, Sunshine)"
 fv="$(rpm -E %fedora)"
 rpm -q rpmfusion-free-release rpmfusion-nonfree-release >/dev/null 2>&1 || sudo dnf -y install \
     "https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-$fv.noarch.rpm" \
     "https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$fv.noarch.rpm"
+# plný ffmpeg: ffmpeg-free má H.264 iba cez softvérový libopenh264, ktorý nevie dekódovať grafickou kartou
+# (živá tapeta 1080p: 66 % → 7 % CPU na latte-lab); postup podľa RPM Fusion Howto/Multimedia
+rpm -q ffmpeg >/dev/null || sudo dnf -y swap ffmpeg-free ffmpeg --allowerasing
 if lspci -n | grep -q ' 0300: 1002:\| 0380: 1002:'; then
     rpm -q mesa-va-drivers-freeworld >/dev/null || sudo dnf -y swap mesa-va-drivers mesa-va-drivers-freeworld \
         || echo "   !! mesa-va-drivers-freeworld sa nenainštaloval (verzia Mesa v RPM Fusion ešte nedobehla?) — skús neskôr"
