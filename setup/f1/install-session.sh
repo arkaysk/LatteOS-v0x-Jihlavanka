@@ -131,6 +131,8 @@ echo "== aplikácie LatteOS (Quickshell QML): Súbory, Nastavenia, Monitor, Apli
 sudo install -d /usr/share/latteos/apps/common /usr/share/latteos/apps/data
 sudo install -m644 "$S"/apps/*.qml /usr/share/latteos/apps/
 sudo install -m644 "$S"/apps/common/*.qml /usr/share/latteos/apps/common/
+sudo install -d /usr/share/latteos/i18n               # preklady aplikácií LatteOS (common/I18n.qml): <jazyk>.json
+sudo install -m644 "$S"/i18n/*.json /usr/share/latteos/i18n/
 sudo install -m644 "$S"/apps/data/*.qml /usr/share/latteos/apps/data/
 sudo install -m644 "$S"/apps/*.desktop /usr/share/applications/
 xdg-mime default latteos-subory.desktop inode/directory 2>/dev/null || true
