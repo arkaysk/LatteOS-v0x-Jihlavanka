@@ -53,6 +53,55 @@ pub struct Gpu {
     pub boot_vga: bool,
     /// počet pripojených výstupov (monitorov)
     pub connected: usize,
+    /// VRAM v MB (amdgpu: `mem_info_vram_total`), 0 = nezistené
+    pub vram_mb: u64,
+    /// generácia AMD čipu z KFD topológie jadra (`gfx_target_version`, napr. 80003 = gfx803 Polaris), 0 = nezistené
+    pub gfx: u32,
+    /// integrovaná grafika (AMD APU podľa KFD, Intel i915 bez vlastnej VRAM)
+    pub apu: bool,
+}
+
+/// Uzol KFD (ROCm topológia v jadre) pre AMD kartu s daným PCI ID: (gfx_target_version, je to APU).
+fn kfd_node(pci_device: &str) -> Option<(u32, bool)> {
+    let id = u32::from_str_radix(pci_device.trim_start_matches("0x"), 16).ok()?;
+    for e in fs::read_dir("/sys/class/kfd/kfd/topology/nodes").ok()?.flatten() {
+        let props = fs::read_to_string(e.path().join("properties")).unwrap_or_default();
+        let get = |k: &str| props.lines().find_map(|l| l.strip_prefix(k)?.trim().parse::<u64>().ok()).unwrap_or(0);
+        if get("device_id ") == id as u64 && get("simd_count ") > 0 {
+            return Some((get("gfx_target_version ") as u32, get("cpu_cores_count ") > 0));
+        }
+    }
+    None
+}
+
+/// Stupeň výkonu pre kartu podľa tabuľky „Škálovanie hardvéru“ (technologický radar):
+/// Plný (RX 6700+, 10 GB+), Štandard (RX 5000/6600, RTX 20, GTX 16), Úsporný (RX 400/500, GTX 10xx),
+/// Minimálny (integrovaná grafika). Generáciu AMD berie z jadra (KFD), NVIDIA podľa rozsahu PCI ID.
+pub fn tier_for(g: &Gpu) -> (&'static str, String) {
+    let vram = if g.vram_mb > 0 { format!(", {} GB VRAM", (g.vram_mb + 512) / 1024) } else { String::new() };
+    if g.apu {
+        return ("minimalny", format!("integrovaná grafika ({}){vram}", g.driver));
+    }
+    match g.vendor.as_str() {
+        "0x1002" if g.gfx > 0 => {
+            let (major, minor) = (g.gfx / 10000, g.gfx / 100 % 100);
+            let t = match (major, minor) {
+                (0..=8, _) => "usporny",                            // GCN 1–4: HD 7000 … RX 400/500
+                (9, _) => "standard",                               // Vega
+                _ if g.vram_mb >= 10 * 1024 => "plny",             // RDNA s 10 GB+ (RX 6700 XT a vyššie)
+                _ => "standard",                                    // RDNA 1–4 s menšou VRAM
+            };
+            (t, format!("AMD gfx{major}{minor:x}{:x}{vram}", g.gfx % 100))
+        }
+        "0x10de" => {
+            // bez overenia na HW (latte-lab má AMD): Turing a novšie od PCI ID 0x1e00, staršie sú vetva 580
+            let id = u32::from_str_radix(g.device.trim_start_matches("0x"), 16).unwrap_or(0);
+            if id >= 0x1e00 { ("standard", format!("NVIDIA Turing alebo novšia ({}){vram}", g.device)) }
+            else { ("usporny", format!("NVIDIA Maxwell/Pascal/Volta ({}){vram}", g.device)) }
+        }
+        "0x8086" if g.vram_mb == 0 => ("minimalny", format!("Intel integrovaná ({})", g.driver)),
+        _ => ("standard", format!("{} {}{vram}", g.vendor, g.driver)),
+    }
 }
 
 pub fn gpus() -> Vec<Gpu> {
@@ -78,14 +127,12 @@ pub fn gpus() -> Vec<Gpu> {
                     .count()
             })
             .unwrap_or(0);
-        out.push(Gpu {
-            vendor: read("vendor"),
-            device: read("device"),
-            boot_vga: read("boot_vga") == "1",
-            card,
-            driver,
-            connected,
-        });
+        let vendor = read("vendor");
+        let device = read("device");
+        let vram_mb = read("mem_info_vram_total").parse::<u64>().unwrap_or(0) / 1_048_576;
+        let (gfx, kfd_apu) = if vendor == "0x1002" { kfd_node(&device).unwrap_or((0, false)) } else { (0, false) };
+        let apu = kfd_apu || (vendor == "0x8086" && driver == "i915" && vram_mb == 0);
+        out.push(Gpu { vendor, device, boot_vga: read("boot_vga") == "1", card, driver, connected, vram_mb, gfx, apu });
     }
     out
 }
@@ -258,6 +305,7 @@ impl Probe {
             let _ = writeln!(s, "driver = {}", q(&g.driver));
             let _ = writeln!(s, "boot_vga = {}", g.boot_vga);
             let _ = writeln!(s, "connected = {}", g.connected);
+            let _ = writeln!(s, "vram_mb = {}\ngfx = {}\napu = {}", g.vram_mb, g.gfx, g.apu);
         }
         s
     }

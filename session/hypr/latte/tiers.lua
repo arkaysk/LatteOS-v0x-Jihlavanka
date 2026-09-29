@@ -5,7 +5,8 @@ local T = {}
 -- efekty: blur, tiene, žiara aktívneho okna (Hyprland 0.56), animácie a ich rýchlosť
 T.levels = {
     plny      = { blur = { size = 6, passes = 2 }, shadow = 22, glow = true,  anim = 1.0, orbit = true },
-    standard  = { blur = { size = 4, passes = 1 }, shadow = 14, glow = true,  anim = 1.0, orbit = true },
+    -- obiehajúci lem (borderangle loop) kreslí každú snímku: na RX 640 pri 144 Hz ~20 % jadra → iba Plný
+    standard  = { blur = { size = 4, passes = 1 }, shadow = 14, glow = true,  anim = 1.0, orbit = false },
     usporny   = { blur = nil,                      shadow = nil, glow = false, anim = 1.6 },
     minimalny = { blur = nil,                      shadow = nil, glow = false, anim = nil },
     -- VM bez GPU: každý pohyb stojí CPU (setup/f1/RESULTS.md) → bez efektov a animácií
