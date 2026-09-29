@@ -115,6 +115,10 @@ do
     if h then h:close(); pcall(dofile, f) end
 end
 
+-- kurzor sa sám nehýbe (ako vo Windows): pri prepnutí okna (koliesko nad lištou-kvapkou, klik na okno v lište,
+-- Alt+Tab) ostane, kde je — inak skočil do stredu okna a prerušil rolovanie nad lištou (test 30. 9.)
+hl.config({ cursor = { no_warps = true } })
+
 -- grafika vo VM: bez HW kurzora; pri vm-3d bez commit timingu (setup/f1/RESULTS.md)
 if mode.renderer ~= "hw" then
     hl.config({ cursor = { no_hardware_cursors = true } })
