@@ -1,15 +1,21 @@
 // LatteOS — Kvapka: lišta aplikácií ako tekutá kvapka kávy (prototyp, pleamar 0.1).
-// Dole v strede; s každým oknom sa rozšíri a ukáže jeho ikonu. Klik na telo prepne režim okien
-// (plávajúce → dlaždice → páska), tvar kvapky ho odráža. Koliesko nad očami: páska = posun,
-// plávajúce = prepínanie okien ako Alt+Tab, dlaždice = nič. Koncept: AUDIT-WIN11.md › Kvapky.
+// Zámerne nesúmerná: hlava s očami stojí vždy na ĽAVOM konci, kvapka rastie doprava s každým oknom.
+// V pokoji je vpitá do spodného okraja obrazovky (skoro rovina); keď k nej príde myš, vytiahne sa,
+// spojenie s okrajom sa stenčí na stopku a pretrhne sa — a naopak. Stopka sa nekreslí: je to okraj
+// („voda“ pod obrazovkou) roztavený s kvapkou, ako v Marei (ball-prototype.plm, `neck`).
+// Na povrchu latte art (shader latte.wgsl, obrazce sa striedajú). Klik na telo prepne režim okien
+// (plávajúce → dlaždice → páska), koliesko nad očami: páska = posun, plávajúce = ďalšie okno.
+// Pravý klik na oči: oči „goo“ (World of Goo) ↔ oči robota na obrazovke.
+// Koncept: AUDIT-WIN11.md › Kvapky.
 language 0.1
 
 scene Kvapka {
     surface {
-        size: full, 240
+        size: full, 260
         anchor: bottom
-        margin: 0, 0, 84, 0
+        margin: 0
         level: top
+        reserve: -1     // ignorovať vyhradené pásy (lišta Noctalie): okraj kvapky je skutočný okraj obrazovky
         rate: 60        // pokojný pohyb kvapky nepotrebuje 144 Hz: 12 % → 6 % jadra na RX 640
     }
     permissions { services: "window", "window.*"; run: "hyprctl", "cat", "printenv" }
@@ -18,30 +24,63 @@ scene Kvapka {
     model wins max 10 { id: text; title: text; class: text; active: bool; minimized: bool }
     service window { list: wins }
     fact mode: plavajuce | dlazdice | paska = plavajuce
-    fact hot = -1
+    fact near = false
+    fact robot = false
     event cycle ->
     event pick ->
     event wheel_turn ->
 
+    shader latte = file "latte.wgsl"
+
     let coffee = #1c0f09
     let cream = #f3ebdd
-    let cx = screen.width / 2
+    let edge = 260                           // spodný okraj obrazovky
+    let lx = screen.width * 0.4              // hlava: ľavý koniec, pevne (medzi kapsulami Noctalie)
     let n = wins.count
+    let step = if(mode == paska, 54, 64)
 
     prop w = 150 ~lively
     prop h = 78 ~lively
     prop c = 39 ~lively
-    follow w = 120 + n * if(mode == paska, 54, if(mode == dlazdice, 34, 64))
+    follow w = 150 + n * if(mode == paska, 54, if(mode == dlazdice, 34, 64))
     follow h = if(mode == paska, 60, if(mode == dlazdice, 108, 78))
     follow c = if(mode == paska, 20, if(mode == dlazdice, 30, 39))
-    let by = 240 - 24 - h
-    let mid = by + h / 2
 
+    // von z okraja: 0 = vpitá do okraja, 1 = voľná, 48 px nad ním. Bez odskoku (~1100ms), aby stopka
+    // nepreskočila späť. V pokoji sa telo s okrajom zlieva skoro do roviny (neck); pri odchode ho drží
+    // stopka pod hlavou: stĺpik od okraja k telu, roztavený s oboma koncami (preto je v strede tenší),
+    // ktorý sa zužuje, až zmizne — kvapka sa odtrhne. Tak to robia goo simulácie; Marea s guľou vystačí
+    // so samotným roztavením (ball-prototype.plm, `neck`), rovné dno tela by však dalo široký pás.
+    fact probe = 0                           // na skúšky: `pleamar --say kvapka "fact probe 75"` zastaví kvapku na 0,75
+    prop out = 0 ~1100ms
+    follow out = if(probe > 0, probe / 100, if(near, 1, 0))
+    let sink = h * 0.42
+    let bottom = edge + sink * (1 - out) - 48 * out
+    let by = bottom - h
+    let mid = by + h / 2
+    let bl = lx - 34                         // ľavý okraj tela
+    let neck = 14 * (1 - out) + 16 * 4 * out * (1 - out)
+    let stalk.w = 30 * clamp((0.9 - out) / 0.5, 0, 1)
+    let stalk.x = lx + 6
+    // „voda“ pod okrajom: v pokoji široká (kvapka sa zlieva s okrajom do roviny), vonku úzka pod hlavou
+    let water.w = 40 + (w + 90) * (1 - out) * (1 - out)
+    let water.x = stalk.x + (bl + w / 2 - stalk.x) * (1 - out)
+
+    prop wob = 0 ~lively
+    prop squish = 0 ~quick
+    on change out > 0.93 while out > 0.93 and near { impulse wob 90 }
+    on change out < 0.07 while out < 0.07 and not near { impulse wob -60 }
+
+    // oči
+    pose lid = 1
+    blink lid every 2.4s..6s for 150ms
     prop gaze.x = 0 ~gentle
     prop gaze.y = 0 ~gentle
-    follow gaze.x = max(-3.5, min(3.5, (pointer.x - cx) / 70))
-    follow gaze.y = max(-3, min(3, (pointer.y - (by - 6)) / 70))
-    prop squish = 0 ~quick
+    follow gaze.x = max(-3.5, min(3.5, (pointer.x - lx) / 70))
+    follow gaze.y = max(-3, min(3, (pointer.y - (by - 8)) / 70))
+    prop stir = 0 ~gentle
+    follow stir = if(near, 1, 0)
+
     // hrbolček každého okna: pružina 0 → 1, zatvorené okno sa vtiahne späť do kvapky
     repeat k in 0..10 {
         image icon.$k = from wins.$k.class, 30, 30
@@ -49,49 +88,73 @@ scene Kvapka {
         follow b.$k = if(k < n and mode != dlazdice, 1, 0)
     }
 
-    body {
-        color: coffee
-        light: 10%, by - 36, 22
-        rim: 22%
-        box { at: cx, mid; size: w, h * (1 - squish * 0.08); corner: c }
-        ellipse { at: cx, by - 4; radius: 33; blend: 22 }
-        ellipse { at: cx - w / 2 + 22 + noise(time * 0.35) * 26, mid; radius: 27; blend: 22 }
-        ellipse { at: cx + w / 2 - 22 + noise(time * 0.42 + 7) * 28, mid; radius: 27; blend: 22 }
-        ellipse { at: cx + noise(time * 0.2 + 3) * 30, by + h + 6 + noise(time * 0.6) * 5; radius: 9; blend: 14 }
-        ellipse { at: cx - w / 2 + 62 + 0 * if(mode == paska, 54, 64), mid; radius: 26 * b.0; blend: 16 }
-        ellipse { at: cx - w / 2 + 62 + 1 * if(mode == paska, 54, 64), mid; radius: 26 * b.1; blend: 16 }
-        ellipse { at: cx - w / 2 + 62 + 2 * if(mode == paska, 54, 64), mid; radius: 26 * b.2; blend: 16 }
-        ellipse { at: cx - w / 2 + 62 + 3 * if(mode == paska, 54, 64), mid; radius: 26 * b.3; blend: 16 }
-        ellipse { at: cx - w / 2 + 62 + 4 * if(mode == paska, 54, 64), mid; radius: 26 * b.4; blend: 16 }
-        ellipse { at: cx - w / 2 + 62 + 5 * if(mode == paska, 54, 64), mid; radius: 26 * b.5; blend: 16 }
-        ellipse { at: cx - w / 2 + 62 + 6 * if(mode == paska, 54, 64), mid; radius: 26 * b.6; blend: 16 }
-        ellipse { at: cx - w / 2 + 62 + 7 * if(mode == paska, 54, 64), mid; radius: 26 * b.7; blend: 16 }
-        ellipse { at: cx - w / 2 + 62 + 8 * if(mode == paska, 54, 64), mid; radius: 26 * b.8; blend: 16 }
-        ellipse { at: cx - w / 2 + 62 + 9 * if(mode == paska, 54, 64), mid; radius: 26 * b.9; blend: 16 }
+    group {
+        shader: latte, bl + w / 2 + 10, mid, h, 0.82, pointer.x, pointer.y, stir, -1
+        body {
+            color: coffee
+            light: 10%, by - 36, 22
+            rim: 22%
+            box water { from: water.x - water.w / 2, edge; size: water.w, 70 }
+            box { at: bl + w / 2, mid; size: w + wob * 0.12, h * (1 - squish * 0.08) - wob * 0.1; corner: c; blend: neck }
+            box stalk { from: stalk.x - stalk.w / 2, bottom - 12; size: stalk.w, edge - bottom + 24; corner: stalk.w / 2; blend: 16 * clamp(stalk.w / 10, 0, 1) }
+            ellipse { at: lx, by - 4 - wob * 0.05; radius: 33; blend: 22 }
+            ellipse { at: bl + w - 22 + noise(time * 0.42 + 7) * 28, mid + noise(time * 0.3) * 6; radius: 27; blend: 22 }
+            ellipse { at: bl + 80 + 0 * step, mid; radius: 26 * b.0; blend: 16 }
+            ellipse { at: bl + 80 + 1 * step, mid; radius: 26 * b.1; blend: 16 }
+            ellipse { at: bl + 80 + 2 * step, mid; radius: 26 * b.2; blend: 16 }
+            ellipse { at: bl + 80 + 3 * step, mid; radius: 26 * b.3; blend: 16 }
+            ellipse { at: bl + 80 + 4 * step, mid; radius: 26 * b.4; blend: 16 }
+            ellipse { at: bl + 80 + 5 * step, mid; radius: 26 * b.5; blend: 16 }
+            ellipse { at: bl + 80 + 6 * step, mid; radius: 26 * b.6; blend: 16 }
+            ellipse { at: bl + 80 + 7 * step, mid; radius: 26 * b.7; blend: 16 }
+            ellipse { at: bl + 80 + 8 * step, mid; radius: 26 * b.8; blend: 16 }
+            ellipse { at: bl + 80 + 9 * step, mid; radius: 26 * b.9; blend: 16 }
+        }
     }
 
-    box { at: cx - 12, by - 8; size: 14, 18; corner: 7; color: cream }
-    box { at: cx + 12, by - 8; size: 14, 18; corner: 7; color: cream }
-    box { at: cx - 12 + gaze.x, by - 7 + gaze.y; size: 7, 8; corner: 3.5; color: coffee }
-    box { at: cx + 12 + gaze.x, by - 7 + gaze.y; size: 7, 8; corner: 3.5; color: coffee }
+    // oči „goo“: veľké biele, každé inej veľkosti, malé zreničky sa trasú každá po svojom
+    ellipse { at: lx - 11, by - 12; radius: 12.5; scale: 1, lid; color: cream; show: not robot }
+    ellipse { at: lx + 12, by - 7; radius: 9.5; scale: 1, lid; color: cream; show: not robot }
+    ellipse { at: lx - 11 + gaze.x * 1.6 + noise(time * 2.1) * 1.1, by - 11 + gaze.y * 1.4 + noise(time * 1.7 + 4) * 1.1; radius: 3.6; scale: 1, lid; color: #120806; show: not robot }
+    ellipse { at: lx + 12 + gaze.x * 1.2 + noise(time * 2.6 + 9) * 1.0, by - 6 + gaze.y * 1.1 + noise(time * 1.9 + 2) * 1.0; radius: 3; scale: 1, lid; color: #120806; show: not robot }
+
+    // oči robota: tmavá obrazovka na hlave a dve svietiace oválne oči; blikajú sploštením
+    box { at: lx, by - 10; size: 52, 30; corner: 13; color: #0c0604; show: robot }
+    group {
+        glow: 6, 70%, #ffd9a8
+        show: robot
+        box { at: lx - 10 + gaze.x * 1.4, by - 10 + gaze.y; size: 10, 15 * lid + 1; corner: 5; color: #ffe6c4 }
+        box { at: lx + 10 + gaze.x * 1.4, by - 10 + gaze.y; size: 10, 15 * lid + 1; corner: 5; color: #ffe6c4 }
+    }
 
     repeat k in 0..10 {
-        image icon.$k { at: cx - w / 2 + 47 + k * if(mode == paska, 54, 64), mid - 15; size: 30, 30; opacity: b.$k; show: k < n and mode != dlazdice }
-        box { at: cx - w / 2 + 62 + k * if(mode == paska, 54, 64), mid + 22; size: 14, 3; corner: 1.5; color: cream; show: k < n and wins.$k.active and mode != dlazdice }
+        image icon.$k { at: bl + 65 + k * step, mid - 15; size: 30, 30; opacity: b.$k; show: k < n and mode != dlazdice }
+        box { at: bl + 80 + k * step, mid + 22; size: 14, 3; corner: 1.5; color: cream; show: k < n and wins.$k.active and mode != dlazdice }
     }
 
-    text pick(mode, "Plávajúce okná", "Dlaždice", "Nekonečná páska") { at: cx, by - 58; anchor: center; size: 12; weight: 700; color: cream; opacity: 70% }
+    text pick(mode, "Floating windows", "Tiles", "Endless strip") { at: lx - 30, by - 56; anchor: left center; size: 12; weight: 700; color: cream; opacity: 70% * out }
 
-    zone box body_hit { at: cx, mid; size: w, h; corner: c; cursor: pointer }
-    zone ellipse eyes_hit { at: cx, by - 4; radius: 33; cursor: pointer }
+    // blízko: vyťahuje kvapku z okraja (pokrýva ju až po okraj, aby sa stopka nezrušila pri pohybe myši)
+    zone box near_hit { from: bl - 40, by - 70; size: w + 80, edge - by + 70 }
+    zone box body_hit { at: bl + w / 2, mid; size: w, h; corner: c; cursor: pointer }
+    zone ellipse eyes_hit { at: lx, by - 4; radius: 33; cursor: pointer }
     repeat k in 0..10 {
-        zone box icon_hit.$k { at: cx - w / 2 + 62 + k * if(mode == paska, 54, 64), mid; size: 44, 44; corner: 12; cursor: pointer; active: k < n and mode != dlazdice }
+        zone box icon_hit.$k { at: bl + 80 + k * step, mid; size: 44, 44; corner: 12; cursor: pointer; active: k < n and mode != dlazdice }
     }
 
+    on enter near_hit { near = true }
+    on away near_hit for 450ms { near = false }
     on press body_hit { emit cycle; squish: 1 }
     on release body_hit { squish: 0 }
+    on press right eyes_hit { toggle robot }
     on scroll eyes_hit { emit wheel_turn(wheel) }
     repeat k in 0..10 {
         on press icon_hit.$k { emit pick(k) }
+    }
+
+    translations sk {
+        "Floating windows" = "Plávajúce okná"
+        "Tiles" = "Dlaždice"
+        "Endless strip" = "Nekonečná páska"
     }
 }
