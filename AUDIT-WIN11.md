@@ -192,7 +192,32 @@ Fotka pracovného PC (Windows): panel úloh = **bežiace okná ako samostatné t
 | Schránka | Ctrl+C/Ctrl+V klasicky, aj cez kontextovú ponuku; **navyše „Prilepiť ďalšie…“ ako schránka v Androide (Gboard)** | ponuka úprav: Prilepiť (posledné) + **Prilepiť ďalšie ›** (história z Kapsy); v cudzích aplikáciách: klik na položku Kapsy **vloží** do okna, kde bol kurzor (ako Win+V), dnes ju iba skopíruje |
 | Virtuálne plochy | nikdy nepoužil | tlačidlo Task View **nie**; plochy iba v prehľade a Nastaveniach, nízka priorita |
 
-Otvorené: „skupiny“ na ploche = ručne zoradené zhluky ikon, alebo pomenované rámčeky (ako Stardock Fences)?
+Upresnenie P1: „skupiny“ = neporiadne zhluky (hry vpravo hore, priečinky v strede, programy vľavo) — nie Fences.
+
+### Rozhodnutie 29. 9.: plocha LatteOS nie je plocha Windowsu
+
+**Prečo:** vo Windows vedú k aplikácii 4 cesty (plocha, Štart, rýchle spúšťanie, hľadanie) — priveľa; ikony na ploche
+sa menia na neporiadok; so živou (video) tapetou pôsobia rušivo. macOS dok a jeho varianty tiež nie.
+**Dáta (Windows, nie GNOME):** anketa PC Gamer (máj 2026, hráči): **84 % má plochu prázdnu alebo udržiavanú, 16 % zaplnenú**
+([PC Gamer](https://www.pcgamer.com/software/operating-systems/84-percent-of-you-rightly-practice-good-desktop-icon-hygiene-but-it-turns-out-16-percent-of-pc-gamer-readers-are-just-plain-monsters/));
+telemetria Windows 7: **67 % hľadaní v Štarte slúži na spustenie programu**
+([Building Windows 8](https://www.windowsobserver.com/2011/10/03/building-windows-8-the-start-menu/));
+Microsoft vo Windows 7 zrušil rýchle spúšťanie v prospech pripínania na panel úloh a vo Windows 8 tlačidlo Štart, lebo ho
+používalo málo ľudí ([Taskbar](https://en.wikipedia.org/wiki/Taskbar)) — rozhodnutie sa neskôr vrátilo.
+(Hodnotu „−11,2 % používania Štartu“ sa nepodarilo overiť, necituje sa.)
+
+**Cesty k aplikácii v LatteOS (dve, obe myšou):**
+1. **Štart v rohu** (dlaždica aplikácií → App Manager / spúšťač) — pripnuté, všetky aplikácie, hľadanie písaním.
+2. **Písanie** kedykoľvek (Text Bar) — skratka, nie podmienka.
+Bežiace okná: panel úloh s názvami (nie spúšťač).
+
+**Plocha = tapeta + widgety** (Noctalia desktop widgets, režim úprav ťahaním myšou — hotové):
+- Kto chce ikony na ploche, **pripne si ich cez widget**: widget „Skratky“ (skupina skutočných ikon aplikácií, voliteľný
+  názov, napr. „Hry“) ako plugin Noctalie `[[desktop_widget]]`; **Pripnúť na plochu** pravým klikom v Štarte a App Manageri.
+  (Vstavaný widget `button` vie iba ikonu Tabler + príkaz — na jednotlivé tlačidlá stačí, na skupinu ikon aplikácií nie.)
+- Predvolene prázdna plocha (tapeta + prípadne hodiny); ďalšie widgety z galérie Noctalie (kalendár, počasie, médiá, výkon).
+- `plocha.qml` (ikony súborov z ~/Plocha ako Windows) → nahradiť; **Kôš** ako widget alebo v Súboroch/lište (overiť, čo čakajú
+  používatelia Windowsu).
 
 ## Poradie krokov
 
