@@ -16,6 +16,11 @@ ako samostatná vrstva (layer-shell) nad jej lištou.
 - **dashboard** vyteká z Hodín (klik na Hodiny): veľký čas, dátum, počasie (Open-Meteo, miesto z Nastavení ›
   Prihlasovanie), **hľadanie aplikácií** (úloha Štartu; píše sa hneď, ↑↓ Enter), upozornenia (klik = otvoriť,
   „Vymazať všetko“), pripnuté (`~/.config/latteos/pripnute`, id .desktop po riadkoch). Esc alebo klik mimo zavrie
+- **ponuka Vypnúť** vyteká z kvapky vypínača (klik): Zamknúť, Odhlásiť sa, Uspať, Reštartovať, Vypnúť — akcie robí
+  Noctalia (`noctalia msg session …`), rovnako ako ponuka LatteOS; klik mimo zavrie
+- **ovládacie centrum v dashboarde**: tlačidlá Sieť / Bluetooth / Zvuk prepínajú, klik na ich popis („Sieť ›“) otvorí
+  stránku so zoznamom (siete — známa sa pripojí, nová zabezpečená otvorí Wi-Fi v Noctalii kvôli heslu; zariadenia
+  Bluetooth — pripojiť/odpojiť; výstupy zvuku — predvolený), „‹“ späť; „Nastavenia“ = Nastavenia LatteOS
 - **strapce okien (ikry)**: okná tej istej aplikácie sa zlepia do strapca — prvé pri lište, ďalšie smerom od nej,
   „náhodne“, ale pre každé poradie rovnako; čím viac okien, tým menšie guľôčky (do 72 %). Myš nad strapcom ho
   rozvinie do radu v plnej veľkosti (po odchode sa o 0,5 s zbalí), okno cez celú obrazovku (`tight`) všetko zrovná
