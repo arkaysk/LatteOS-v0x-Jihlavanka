@@ -58,4 +58,9 @@ Dve opravy pre Kvapky, obe vhodné na upstream:
    nenačítali. Záplata: všetky `…/icons` z `XDG_DATA_DIRS`, téma z `PLEAMAR_ICON_THEME`/`QS_ICON_THEME` ako prvá,
    veľkosti oboch zápisov (48x48 aj 48) a kontext `legacy`.
 
+5. **Viac odberateľov služby okien.** `window` (a `workspaces`) cez wlr-foreign-toplevel mala jediné miesto pre
+   odberateľa: `service window` v scéne a `sys.watch("window")` v jej logike sú dvaja, druhý prvého vytlačil a scéna
+   ostala so starým zoznamom — v lište guľôčky okien, ktoré už neexistovali (nedali sa kliknúť ani zavrieť).
+   Záplata: zoznam odberateľov, zmenu dostanú všetci.
+
 Použitie: `git apply` v `resources/upstream/pleamar`, potom `cargo build --release`.

@@ -37,7 +37,7 @@ scene Kvapka {
     // rozloženie guľôčok okien (počíta logika): x, y od hlavy v rámci okraja (y < 0 = preč od okraja), polomer.
     // Okná tej istej aplikácie sa zlepia do strapca ako ikry — čím viac, tým menšie (do 72 %) —, jedno okno je
     // plná guľa; myš nad strapcom ho rozvinie do radu (vejár), okno cez celú obrazovku (tight) všetko zrovná do pásu
-    model lay max 10 { x: number; y: number; r: number; icon: text }
+    model lay max 10 { x: number; y: number; r: number; icon: text; ax: number; ay: number }
     fact chain_w = 50                        // kde šnúra končí (od hlavy)
     // čas (služba bez logiky); dátum sa skladá tu — `clock.date` je iba po anglicky
     service clock as now { time: text = "--:--"; weekday: number; day: number; month: number; year: number }
@@ -135,11 +135,12 @@ scene Kvapka {
     prop w = 72 ~lively
     prop h = 72 ~lively
     prop c = 36 ~lively
-    follow w = if(round, 72, if(mode == dlazdice, 150 + n * 34, chain_w + 36))
-    follow h = if(round, 72, if(mode == dlazdice, 108, 2 * rr + 6))
-    follow c = if(round, 36, if(mode == dlazdice, 30, 12))
+    // (30. 9.) okná sú guľôčky vo všetkých režimoch — v Dlaždiciach predtým zmizli a nedali sa kliknúť
+    follow w = if(round, 72, chain_w + 36)
+    follow h = if(round, 72, 2 * rr + 6)
+    follow c = if(round, 36, 12)
     // vlákno medzi guľôčkami: tenké; pri dlaždiciach a bez okien je celé telo
-    let spine.h = if(round or mode == dlazdice, h, h * 0.34)
+    let spine.h = if(round, h, h * 0.34)
 
     // blízkosť myši kdekoľvek na ploche (cursor.x/y: pleamar sa pýta Hyprlandu, žiadna zóna nekradne kliky).
     // Každá kvapka sa zdvíha podľa vzdialenosti kurzora od NEJ (lišta, Hodiny, vypínač), nie všetky naraz;
@@ -250,7 +251,7 @@ scene Kvapka {
     repeat k in 0..10 {
         image icon.$k = from lay.$k.icon, 30, 30     // ikona zo spúšťača aplikácie (.desktop), inak podľa triedy
         prop b.$k = 0 ~lively
-        follow b.$k = if(k < n and mode != dlazdice, 1, 0)
+        follow b.$k = if(k < n, 1, 0)
         prop act.$k = 0 ~gentle
         follow act.$k = if(k < n and wins.$k.active, 1, 0)
         prop ux.$k = 50 ~gentle
@@ -259,6 +260,11 @@ scene Kvapka {
         follow ux.$k = lay.$k.x
         follow uy.$k = lay.$k.y
         follow ur.$k = if(lay.$k.r > 0, lay.$k.r, rr)
+        // lepkavé vlákno: kotva strapca (guľôčka pri lište) visí na okraji, ostatné na kotve (ako med, obr. 30. 9.)
+        prop kx.$k = 50 ~gentle
+        prop ky.$k = 0 ~gentle
+        follow kx.$k = lay.$k.ax
+        follow ky.$k = lay.$k.ay
     }
     on change n { impulse wob 70 }
 
@@ -278,7 +284,7 @@ scene Kvapka {
             rim: 30%
             shadow: 0, 6, 16, 40% * out
             box water { from: water.x - water.w / 2, edge; size: water.w, 70 }
-            box { at: bl + w / 2, mid; size: w + wob * 0.1, spine.h * (1 - squish * 0.08); corner: if(mode == dlazdice, c, spine.h / 2); blend: neck }
+            box { at: bl + w / 2, mid; size: w + wob * 0.1, spine.h * (1 - squish * 0.08); corner: spine.h / 2; blend: neck }
             box stalk { from: stalk.x - stalk.w / 2, bottom - 12; size: stalk.w, edge - bottom + 24; corner: stalk.w / 2; blend: 16 * clamp(stalk.w / 10, 0, 1) }
             // hlava: najväčšia guľa, trochu vyššie (nesúmernosť), pomaly dýcha
             ellipse { at: hx, mid - 8 - wob * 0.05; radius: (36 + 3 * hh) * (1 + 0.03 * noise(time * 0.4)); blend: 22 }
@@ -293,6 +299,17 @@ scene Kvapka {
             ellipse { at: lx + ux.7 + 2 * noise(4.9, time * 0.35), mid + uy.7 + 2.5 * noise(14.1, time * 0.3); radius: ur.7 * b.7 * (1 + 0.035 * noise(14.7, time * 0.5) + 0.12 * act.7) - wob * 0.04; blend: 13 }
             ellipse { at: lx + ux.8 + 2 * noise(5.6, time * 0.35), mid + uy.8 + 2.5 * noise(15.4, time * 0.3); radius: ur.8 * b.8 * (1 + 0.035 * noise(16.8, time * 0.5) + 0.12 * act.8) + wob * 0.04; blend: 13 }
             ellipse { at: lx + ux.9 + 2 * noise(6.3, time * 0.35), mid + uy.9 + 2.5 * noise(16.7, time * 0.3); radius: ur.9 * b.9 * (1 + 0.035 * noise(18.9, time * 0.5) + 0.12 * act.9) - wob * 0.04; blend: 13 }
+            // lepkavé vlákna: guľôčky sa nikdy neoddelia od okraja (kotva visí na okraji, strapec na kotve)
+            line { from: lx + ux.0 + 2 * noise(0.0, time * 0.35), mid + uy.0 + 2.5 * noise(5.0, time * 0.3); to: lx + kx.0, if(uy.0 > -3, edge + 14, mid + ky.0); width: ur.0 * b.0 * 0.3 * (1 - o.pull) * ap; blend: 9 }
+            line { from: lx + ux.1 + 2 * noise(0.7, time * 0.35), mid + uy.1 + 2.5 * noise(6.3, time * 0.3); to: lx + kx.1, if(uy.1 > -3, edge + 14, mid + ky.1); width: ur.1 * b.1 * 0.3 * (1 - o.pull) * ap; blend: 9 }
+            line { from: lx + ux.2 + 2 * noise(1.4, time * 0.35), mid + uy.2 + 2.5 * noise(7.6, time * 0.3); to: lx + kx.2, if(uy.2 > -3, edge + 14, mid + ky.2); width: ur.2 * b.2 * 0.3 * (1 - o.pull) * ap; blend: 9 }
+            line { from: lx + ux.3 + 2 * noise(2.1, time * 0.35), mid + uy.3 + 2.5 * noise(8.9, time * 0.3); to: lx + kx.3, if(uy.3 > -3, edge + 14, mid + ky.3); width: ur.3 * b.3 * 0.3 * (1 - o.pull) * ap; blend: 9 }
+            line { from: lx + ux.4 + 2 * noise(2.8, time * 0.35), mid + uy.4 + 2.5 * noise(10.2, time * 0.3); to: lx + kx.4, if(uy.4 > -3, edge + 14, mid + ky.4); width: ur.4 * b.4 * 0.3 * (1 - o.pull) * ap; blend: 9 }
+            line { from: lx + ux.5 + 2 * noise(3.5, time * 0.35), mid + uy.5 + 2.5 * noise(11.5, time * 0.3); to: lx + kx.5, if(uy.5 > -3, edge + 14, mid + ky.5); width: ur.5 * b.5 * 0.3 * (1 - o.pull) * ap; blend: 9 }
+            line { from: lx + ux.6 + 2 * noise(4.2, time * 0.35), mid + uy.6 + 2.5 * noise(12.8, time * 0.3); to: lx + kx.6, if(uy.6 > -3, edge + 14, mid + ky.6); width: ur.6 * b.6 * 0.3 * (1 - o.pull) * ap; blend: 9 }
+            line { from: lx + ux.7 + 2 * noise(4.9, time * 0.35), mid + uy.7 + 2.5 * noise(14.1, time * 0.3); to: lx + kx.7, if(uy.7 > -3, edge + 14, mid + ky.7); width: ur.7 * b.7 * 0.3 * (1 - o.pull) * ap; blend: 9 }
+            line { from: lx + ux.8 + 2 * noise(5.6, time * 0.35), mid + uy.8 + 2.5 * noise(15.4, time * 0.3); to: lx + kx.8, if(uy.8 > -3, edge + 14, mid + ky.8); width: ur.8 * b.8 * 0.3 * (1 - o.pull) * ap; blend: 9 }
+            line { from: lx + ux.9 + 2 * noise(6.3, time * 0.35), mid + uy.9 + 2.5 * noise(16.7, time * 0.3); to: lx + kx.9, if(uy.9 > -3, edge + 14, mid + ky.9); width: ur.9 * b.9 * 0.3 * (1 - o.pull) * ap; blend: 9 }
             // Štart a vypínač: vlastná „voda“ pod okrajom; s hlavou a medzi sebou ich spája most `link`
             box { from: px - 34 - 14 * flow2 * stir, edge; size: (sx - px + 68 + 28 * flow2 * stir) * so, 70 }
             ellipse { at: sx, s.y; radius: (33 + 3 * hs) * so * (1 - smooth(0, 0.12, dsh)); scale: 1 + squish.s * 0.08, 1 - squish.s * 0.12; blend: link * so }
@@ -327,7 +344,7 @@ scene Kvapka {
         zone ellipse start_hit { at: sx, s.y; radius: 34; cursor: pointer; active: solo }
         zone ellipse power_hit { at: px, p.y; radius: 19; cursor: pointer; active: solo }
         repeat k in 0..10 {
-            zone box icon_hit.$k { at: (lx + ux.$k + 2 * noise(k * 0.7, time * 0.35)), (mid + uy.$k + 2.5 * noise(5 + k * 1.3, time * 0.3)); size: ur.$k * 1.6, ur.$k * 1.6; corner: ur.$k * 0.8; cursor: pointer; active: k < n and mode != dlazdice and not free }
+            zone box icon_hit.$k { at: (lx + ux.$k + 2 * noise(k * 0.7, time * 0.35)), (mid + uy.$k + 2.5 * noise(5 + k * 1.3, time * 0.3)); size: ur.$k * 1.6, ur.$k * 1.6; corner: ur.$k * 0.8; cursor: pointer; active: k < n and not free }
         }
     }
 
@@ -345,8 +362,8 @@ scene Kvapka {
 
     // ikony stoja rovno: bod rámca (u, v) → obrazovka podľa okraja; veľkosť podľa guľôčky
     repeat k in 0..10 {
-        image icon.$k { at: pick(side, (lx + ux.$k + 2 * noise(k * 0.7, time * 0.35)), W - (lx + ux.$k + 2 * noise(k * 0.7, time * 0.35)), edge - (mid + uy.$k + 2.5 * noise(5 + k * 1.3, time * 0.3)), W - edge + (mid + uy.$k + 2.5 * noise(5 + k * 1.3, time * 0.3))) - ur.$k * 0.52, pick(side, (mid + uy.$k + 2.5 * noise(5 + k * 1.3, time * 0.3)) + H - edge, edge - (mid + uy.$k + 2.5 * noise(5 + k * 1.3, time * 0.3)), (lx + ux.$k + 2 * noise(k * 0.7, time * 0.35)), H - (lx + ux.$k + 2 * noise(k * 0.7, time * 0.35))) - ur.$k * 0.52; size: ur.$k * 1.04, ur.$k * 1.04; opacity: b.$k * ap; show: k < n and mode != dlazdice }
-        box { at: pick(side, (lx + ux.$k + 2 * noise(k * 0.7, time * 0.35)), W - (lx + ux.$k + 2 * noise(k * 0.7, time * 0.35)), edge - (mid + uy.$k + 2.5 * noise(5 + k * 1.3, time * 0.3)) - ur.$k * 0.76, W - edge + (mid + uy.$k + 2.5 * noise(5 + k * 1.3, time * 0.3)) + ur.$k * 0.76), pick(side, (mid + uy.$k + 2.5 * noise(5 + k * 1.3, time * 0.3)) + ur.$k * 0.76 + H - edge, edge - (mid + uy.$k + 2.5 * noise(5 + k * 1.3, time * 0.3)) - ur.$k * 0.76, (lx + ux.$k + 2 * noise(k * 0.7, time * 0.35)), H - (lx + ux.$k + 2 * noise(k * 0.7, time * 0.35))); size: if(side == vlavo or side == vpravo, 3, 12), if(side == vlavo or side == vpravo, 12, 3); corner: 1.5; color: ink; opacity: ap; show: k < n and wins.$k.active and mode != dlazdice }
+        image icon.$k { at: pick(side, (lx + ux.$k + 2 * noise(k * 0.7, time * 0.35)), W - (lx + ux.$k + 2 * noise(k * 0.7, time * 0.35)), edge - (mid + uy.$k + 2.5 * noise(5 + k * 1.3, time * 0.3)), W - edge + (mid + uy.$k + 2.5 * noise(5 + k * 1.3, time * 0.3))) - ur.$k * 0.52, pick(side, (mid + uy.$k + 2.5 * noise(5 + k * 1.3, time * 0.3)) + H - edge, edge - (mid + uy.$k + 2.5 * noise(5 + k * 1.3, time * 0.3)), (lx + ux.$k + 2 * noise(k * 0.7, time * 0.35)), H - (lx + ux.$k + 2 * noise(k * 0.7, time * 0.35))) - ur.$k * 0.52; size: ur.$k * 1.04, ur.$k * 1.04; opacity: b.$k * ap; show: k < n }
+        box { at: pick(side, (lx + ux.$k + 2 * noise(k * 0.7, time * 0.35)), W - (lx + ux.$k + 2 * noise(k * 0.7, time * 0.35)), edge - (mid + uy.$k + 2.5 * noise(5 + k * 1.3, time * 0.3)) - ur.$k * 0.76, W - edge + (mid + uy.$k + 2.5 * noise(5 + k * 1.3, time * 0.3)) + ur.$k * 0.76), pick(side, (mid + uy.$k + 2.5 * noise(5 + k * 1.3, time * 0.3)) + ur.$k * 0.76 + H - edge, edge - (mid + uy.$k + 2.5 * noise(5 + k * 1.3, time * 0.3)) - ur.$k * 0.76, (lx + ux.$k + 2 * noise(k * 0.7, time * 0.35)), H - (lx + ux.$k + 2 * noise(k * 0.7, time * 0.35))); size: if(side == vlavo or side == vpravo, 3, 12), if(side == vlavo or side == vpravo, 12, 3); corner: 1.5; color: ink; opacity: ap; show: k < n and wins.$k.active }
     }
 
     image power_icon = icon "system-shutdown-symbolic", 18, 18

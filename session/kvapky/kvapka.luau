@@ -87,7 +87,10 @@ function layout()
         if tight then r = math.min(r, 23) end
         if row then
             local step = r * 1.86
-            for j, i in ipairs(idx) do lay[i] = { x = u + r + (j - 1) * step, y = 0, r = r, icon = icon_of(wins[i]) } end
+            for j, i in ipairs(idx) do
+                local x = u + r + (j - 1) * step
+                lay[i] = { x = x, y = 0, r = r, icon = icon_of(wins[i]), ax = x, ay = 0 }
+            end
             u = u + 2 * r + (m - 1) * step + 12
         else
             local lo, hi = 0, 0
@@ -98,7 +101,8 @@ function layout()
             local ax = u + r - lo * r
             for j, i in ipairs(idx) do
                 local rr = r * (1 + 0.06 * (((j - 1) * 37) % 5 - 2) / 2)
-                lay[i] = { x = ax + (OFFS[j][1] + JIT[j][1]) * r, y = (OFFS[j][2] + JIT[j][2]) * r, r = rr, icon = icon_of(wins[i]) }
+                local x, y = ax + (OFFS[j][1] + JIT[j][1]) * r, (OFFS[j][2] + JIT[j][2]) * r
+                lay[i] = { x = x, y = y, r = rr, icon = icon_of(wins[i]), ax = ax, ay = 0 }
             end
             u = ax + hi * r + r + 12
         end
