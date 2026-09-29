@@ -46,8 +46,43 @@ local function virtual_screen()
     if phys == 0 and not virt then hl.exec_cmd("hyprctl output create headless LATTE-VIRT")
     elseif phys > 0 and virt then hl.exec_cmd("hyprctl output remove LATTE-VIRT") end
 end
-hl.on("monitor.added", virtual_screen)
-hl.on("monitor.removed", virtual_screen)
+-- okná mimo všetkých obrazoviek (po odpojení monitora ostali na starých súradniciach) → na stred aktívnej
+latte = latte or {}
+function latte.windows_onscreen()
+    local mons = hl.get_monitors() or {}
+    -- nová (virtuálna) obrazovka začne na prázdnej ploche: prepnúť na najnižšiu plochu s oknami
+    local ws = hl.get_active_workspace()
+    local counts, best = {}, nil
+    for _, w in ipairs(hl.get_windows() or {}) do
+        local id = w.workspace and w.workspace.id
+        if id and id > 0 then counts[id] = (counts[id] or 0) + 1; if not best or id < best then best = id end end
+    end
+    if ws and (counts[ws.id] or 0) == 0 and best then hl.dispatch(hl.dsp.focus({ workspace = best })) end
+    for _, w in ipairs(hl.get_windows() or {}) do
+        local ws = w.workspace and tostring(w.workspace.name or "") or ""
+        local x, y = w.at and w.at.x, w.at and w.at.y
+        if x and y and not ws:find("^special") then
+            local seen = false
+            for _, m in ipairs(mons) do
+                if x + 40 > m.x and x < m.x + m.width - 40 and y + 40 > m.y and y < m.y + m.height - 40 then seen = true end
+            end
+            -- väčšie ako obrazovka (napr. 2560 px zo starého monitora na virtuálnej 1920): zmenšiť na 90 %
+            local m = hl.get_active_monitor and hl.get_active_monitor() or mons[1]
+            if m and w.floating and w.size and (w.size.x > m.width or w.size.y > m.height) then
+                hl.dispatch(hl.dsp.window.resize({ x = math.floor(math.min(w.size.x, m.width * 0.9)), y = math.floor(math.min(w.size.y, m.height * 0.85)),
+                                                   window = "address:" .. w.address }))
+                seen = false
+            end
+            if not seen then hl.dispatch(hl.dsp.window.center({ window = "address:" .. w.address })) end
+        end
+    end
+end
+local function monitors_changed()
+    virtual_screen()
+    hl.exec_cmd("sh -c 'sleep 1; hyprctl eval \"latte.windows_onscreen()\"'")
+end
+hl.on("monitor.added", monitors_changed)
+hl.on("monitor.removed", monitors_changed)
 
 -- ── prostredie ────────────────────────────────────────────────────────────────
 hl.env("XDG_CURRENT_DESKTOP", "Hyprland")

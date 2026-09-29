@@ -92,6 +92,7 @@ scene Kvapka {
     fact menu.y = 0
     fact free = false                        // odtrhnutá, ide za myšou
     fact melting = false                     // pustená uprostred: steká
+    fact room = 999                          // voľné miesto od okraja po najnižšie okno (logika), px
     fact tight = false                       // aktívne okno siaha k lište (maximalizované, celá obrazovka, dlaždice):
                                              // kvapka ostane v páse 64 px a cez okno sa nevysunie (logika)
     fact solo = false                        // bez Noctalie: kvapky Štart a vypínač (logika podľa LATTE_VARIANT)
@@ -163,13 +164,15 @@ scene Kvapka {
     fact probe = 0                           // na skúšky: `pleamar --say kvapka "fact probe 75"` zastaví kvapku na 0,75
     prop pull = 0 ~quick                     // ťahanie myšou od okraja: −1 k okraju … 1 preč
     prop out = 0 ~700ms
-    follow out = if(probe > 0, probe / 100, if(pulling and not free, clamp(0.55 + pull * 0.45, 0, 1), if(tight, 0.1, 0.55) * approach))
+    follow out = if(probe > 0, probe / 100, if(pulling and not free, clamp(0.55 + pull * 0.45, 0, 1), if(tight, room.cap, 0.55) * approach))
     // ap: lišta je pri okraji (1) alebo vtiahnutá doň (0) — kým ide za myšou, steká, alebo sa vynára inde
     prop ap = 1 ~600ms
     // Lišta sa od okraja NEODLEPÍ sama: pri myši (out do 0,55) sa iba vynorí a stále sa ho dotýka (dno na okraji);
     // odlepí ju až ťahanie (out nad 0,55 → dno ide od okraja, stopka sa naťahuje a praskne)
     let sink = h * 0.42
     let o.rise = clamp(out / 0.55, 0, 1)
+    // pod oknom sa lišta vysunie presne po jeho spodok (najvyšší bod = hlava, mid − 44), nie vyššie
+    let room.cap = clamp(0.55 * (1 - (h / 2 + 44 - room) / max(sink, 1)), 0.08, 0.55)
     let o.pull = clamp((out - 0.55) / 0.45, 0, 1)
     let bottom = edge + sink * (1 - o.rise) - 48 * o.pull + (h + 44) * (1 - ap)
     let by = bottom - h
