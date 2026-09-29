@@ -67,6 +67,47 @@ index 9e19585..c14ddd4 100644
 +            Ok(v) => !v.split(',').map(str::trim).any(|p| p == "1" || p == what),
 +        }
 +}
+diff --git a/src/platform/wayland.rs b/src/platform/wayland.rs
+index 7bdb639..113b392 100644
+--- a/src/platform/wayland.rs
++++ b/src/platform/wayland.rs
+@@ -1556,12 +1556,31 @@ smithay_client_toolkit::delegate_dispatch2!(State);
+ /// small. Good enough for application icons.
+ pub fn icon(name: &str) -> Option<std::path::PathBuf> {
+     let home = std::env::var("HOME").unwrap_or_default();
+-    let bases = [format!("{home}/.local/share/icons"), format!("{home}/.icons"), "/usr/share/icons".into()];
+-    let themes = ["hicolor", "Papirus", "Papirus-Dark", "Adwaita", "breeze", "breeze-dark"];
+-    let sizes = ["scalable", "512x512", "256x256", "128x128", "96x96", "64x64", "48x48", "32x32", "symbolic"];
+-    let contexts = ["apps", "devices", "places", "status", "actions", "categories", "mimetypes"];
++    // Every icons directory of XDG_DATA_DIRS too: Flatpak apps put theirs under …/flatpak/exports/share/icons.
++    let mut bases = vec![format!("{home}/.local/share/icons"), format!("{home}/.icons")];
++    let data_dirs = std::env::var("XDG_DATA_DIRS").unwrap_or_else(|_| "/usr/local/share:/usr/share".into());
++    for d in data_dirs.split(':').filter(|d| !d.is_empty()) {
++        let b = format!("{}/icons", d.trim_end_matches('/'));
++        if !bases.contains(&b) {
++            bases.push(b);
++        }
++    }
++    if !bases.iter().any(|b| b == "/usr/share/icons") {
++        bases.push("/usr/share/icons".into());
++    }
++    // The theme the user asked for first (PLEAMAR_ICON_THEME, or the one Quickshell apps use), then the usual ones.
++    let wanted = std::env::var("PLEAMAR_ICON_THEME").or_else(|_| std::env::var("QS_ICON_THEME")).unwrap_or_default();
++    let mut themes: Vec<&str> = Vec::new();
++    if !wanted.is_empty() {
++        themes.push(&wanted);
++    }
++    themes.extend(["hicolor", "Papirus", "Papirus-Dark", "Adwaita", "AdwaitaLegacy", "breeze", "breeze-dark"]);
++    // Both spellings of the size: hicolor and Adwaita say 48x48, breeze says 48.
++    let sizes = ["scalable", "512x512", "256x256", "128x128", "96x96", "64x64", "48x48", "32x32", "24x24", "symbolic",
++                 "64", "48", "32", "24", "22"];
++    let contexts = ["apps", "devices", "places", "status", "actions", "categories", "mimetypes", "legacy"];
+     for base in &bases {
+-        for theme in themes {
++        for theme in &themes {
+             for size in sizes {
+                 for context in contexts {
+                     for ext in ["svg", "png"] {
 diff --git a/src/render.rs b/src/render.rs
 index 3a8a490..bd02256 100644
 --- a/src/render.rs

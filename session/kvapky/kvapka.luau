@@ -181,9 +181,124 @@ local function check_tight()
 end
 every(700, check_tight)
 
--- relácia LatteOS Kvapky (bez Noctalie): kvapky Štart a vypínač
+-- ── upozornenia (iba v ploche Kvapky) ───────────────────────────────────────────
+-- pleamar je vtedy server org.freedesktop.Notifications (v klasickej ploche ich má Noctalia — nepreberať).
+-- Centrum si ich drží, kým ich niekto nezavrie (notifications.keep). Nové: kvapka padne do Hodín a bublina ukáže
+-- „aplikácia · nadpis“.
+local seen, first_report = {}, true
+local URG = { low = 0, normal = 1, critical = 2 }
+local function urgency(u)
+    if type(u) == "number" then return math.max(0, math.min(2, u)) end
+    return URG[tostring(u or "normal")] or 1
+end
+local function watch_notes()
+    pcall(sys.call, "notifications.keep", true)
+    sys.watch("notifications", function(list)
+        list = list or {}
+        local out, fresh = {}, nil
+        for _, n in ipairs(list) do
+            out[#out + 1] = { id = n.id, app = n.app or "", title = n.title or "", body = n.body or "", urgency = urgency(n.urgency) }
+            if not seen[n.id] then
+                seen[n.id] = true
+                fresh = fresh or n
+            end
+        end
+        model.notes = out
+        if fresh and not first_report then
+            text.toast = (fresh.app ~= "" and (fresh.app .. " · ") or "") .. (fresh.title or "")
+            emit("new_note")
+        end
+        first_report = false
+    end)
+end
+
+-- ── dashboard (vyteká z Hodín) ─────────────────────────────────────────────────
+-- Hľadanie aplikácií je úloha Štartu: aplikácie zo služby `apps` (súbory .desktop), ako hľadanie v Marei.
+local apps = {}
+local found = {}
+local function search()
+    local q = (text.query or ""):lower()
+    fact.typing = q ~= ""
+    found = {}
+    if q ~= "" then
+        local starts, inside = {}, {}
+        for _, a in ipairs(apps) do
+            local n = (a.name or ""):lower()
+            if n:sub(1, #q) == q then starts[#starts + 1] = a
+            elseif n:find(q, 1, true) then inside[#inside + 1] = a end
+        end
+        for _, a in ipairs(starts) do if #found < 6 then found[#found + 1] = a end end
+        for _, a in ipairs(inside) do if #found < 6 then found[#found + 1] = a end end
+    end
+    local out = {}
+    for _, a in ipairs(found) do out[#out + 1] = { name = a.name, icon = a.icon } end
+    model.results = out
+    fact.sel = 0
+end
+on("text:query", search)
+
+-- pripnuté: ~/.config/latteos/pripnute (id súborov .desktop po riadkoch), inak predvolené
+local PINS = { "latteos-subory", "org.mozilla.firefox", "latteos-nastavenia", "latteos-aplikacie" }
+local pinned = {}
+local pin_ids = PINS
+local function paint_pins()
+    local by_id = {}
+    for _, a in ipairs(apps) do by_id[a.id] = a end
+    pinned = {}
+    local out = {}
+    for _, id in ipairs(pin_ids) do
+        local a = by_id[id]
+        if a and #pinned < 6 then pinned[#pinned + 1] = a; out[#out + 1] = { name = a.name, icon = a.icon } end
+    end
+    model.pins = out
+end
+sys.watch("apps", function(list) apps = list or {}; paint_pins(); search() end)
+
+local function launch(a)
+    if a and a.exec then pcall(sys.call, "apps.launch", a.exec) end
+    fact.dash = false
+end
+on("open_result", function(i) launch(found[(i or 0) + 1]) end)
+on("pin_open", function(i) launch(pinned[(i or 0) + 1]) end)
+on("fact:dash", function(open) if not open then text.query = "" end end)
+
+-- upozornenie v dashboarde: klik = otvoriť (predvolená akcia aplikácie) a zavrieť; „Vymazať všetko“
+on("note_open", function(i)
+    local n = (model.notes or {})[(i or 0) + 1]
+    if not n then return end
+    pcall(sys.call, "notifications.invoke", n.id, "default")
+    pcall(sys.call, "notifications.dismiss", n.id)
+end)
+on("notes_clear", function() pcall(sys.call, "notifications.clear") end)
+
+-- počasie: Open-Meteo (bez kľúča), miesto z Nastavení › Účet › Prihlasovanie (greeter.conf), každých 20 min
+local WX = { [0] = "☀", [1] = "🌤", [2] = "⛅", [3] = "☁", [45] = "🌫", [48] = "🌫", [95] = "⛈", [96] = "⛈", [99] = "⛈" }
+local function wx_glyph(c)
+    if WX[c] then return WX[c] end
+    if (c >= 51 and c <= 67) or (c >= 80 and c <= 82) then return "🌧" end
+    if (c >= 71 and c <= 77) or c == 85 or c == 86 then return "❄" end
+    return "☁"
+end
+local function weather()
+    run("cat", { "/var/lib/latteos/greeter/greeter.conf" }, function(conf)
+        conf = conf or ""
+        local lat = conf:match('lat%s*=%s*"([%d.-]+)"') or "48.74"
+        local lon = conf:match('lon%s*=%s*"([%d.-]+)"') or "19.15"
+        local place = conf:match('place%s*=%s*"([^"]*)"') or ""
+        run("curl", { "-s", "-m", "8", "https://api.open-meteo.com/v1/forecast?latitude=" .. lat .. "&longitude=" .. lon
+                      .. "&current=temperature_2m,weather_code" }, function(out)
+            local ok, d = pcall(json.decode, out or "")
+            if ok and d and d.current then
+                local t = math.floor((d.current.temperature_2m or 0) + 0.5)
+                text.weather = wx_glyph(d.current.weather_code or 3) .. "  " .. t .. " °C" .. (place ~= "" and (" · " .. place) or "")
+            end
+        end)
+    end)
+end
+
+-- relácia LatteOS Kvapky (bez Noctalie): Hodiny, vypínač a upozornenia
 run("printenv", { "LATTE_VARIANT" }, function(out)
-    if (out or ""):match("kvapky") then fact.solo = true end
+    if (out or ""):match("kvapky") then fact.solo = true; watch_notes(); weather(); every(20 * 60 * 1000, weather) end
 end)
 
 -- káva v kvapkách (Barista / Nastavenia: ~/.config/latteos/kava): pomer vody a mlieka
@@ -206,6 +321,14 @@ run("printenv", { "HOME" }, function(out)
     if home then
         state = home .. "/.local/state/latteos/window-mode"; read_mode()
         kava_file = home .. "/.config/latteos/kava"; read_kava()
+        run("cat", { home .. "/.config/latteos/pripnute" }, function(out)
+            local ids = {}
+            for line in (out or ""):gmatch("[^\n]+") do
+                local id = line:match("^%s*([%w%.%-_]+)")
+                if id then ids[#ids + 1] = id end
+            end
+            if #ids > 0 then pin_ids = ids; paint_pins() end
+        end)
     end
 end)
 every(2000, function() read_mode(); read_kava() end)   -- režim sa dá zmeniť aj inde (Super+W, Nastavenia)
