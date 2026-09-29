@@ -6,6 +6,8 @@
 #                         (~36 MB/s, setup/f1/RESULTS.md), nepoužívať
 # Ak grafický greeter do 10 s spadne, nasleduje tuigreet.
 LATTE_MODE=safe LATTE_RENDERER=pixman
+# jazyk obrazovky prihlásenia = jazyk systému (greetd ho greeteru neodovzdá): texty cez i18n (greeter/I18n.qml)
+if [ -z "${LANG:-}" ] && [ -r /etc/locale.conf ]; then set -a; . /etc/locale.conf; set +a; fi
 [ -r /run/latteos/session.env ] && { set -a; . /run/latteos/session.env; set +a; }
 
 session="LatteOS"
