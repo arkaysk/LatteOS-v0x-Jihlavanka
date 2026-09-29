@@ -9,6 +9,9 @@ ako samostatná vrstva (layer-shell) nad jej lištou.
 - v pokoji vpitá do spodného okraja obrazovky (zlieva sa s ním skoro do roviny)
 - **priblíženie**: od štvrtiny výšky obrazovky od nej sa začne vysúvať; kým k nej myš dôjde, je napoly vonku na hrubej
   stopke pod hlavou. Myš sa číta kdekoľvek (`cursor.x/y` z Hyprlandu), žiadna neviditeľná zóna nekradne kliky oknám
+- **tvar ako tekutina v nízkej gravitácii (goo)**: šnúra guľôčok namiesto tuhej kapsuly — hlava vľavo je najväčšia
+  guľa, každé okno vlastná guľatá kvapka spojená so susedkami krkom a tenkým vláknom; kvapky pomaly dýchajú a plávajú
+  (každá inak), aktívne okno je plnšie, každá guľa má vlastný odlesk; nové/zatvorené okno pošle šnúrou vlnu
 - **bez okien guľatá**: kruh vpitý do okraja, zlieva sa s ním plynulo (radiálne); s oknami sa predĺži
 - **vlastné menu nemá — presun ťahaním (drag & drop)**: chytiť a ťahať od okraja → stopka sa natiahne a pri 0,9
   praskne, kvapka (guľa) ide za myšou s oneskorením. Pustená do 170 px od **ľubovoľného okraja** sa k nemu prilepí
@@ -55,6 +58,8 @@ PLEAMAR_GENERIC=window resources/upstream/pleamar/target/release/pleamar --scene
 Potrebuje pleamar so záplatou [pleamar-hyprland-okna-8bit.patch](../../resources/patches/pleamar-hyprland-okna-8bit.patch):
 `PLEAMAR_GENERIC=window` berie zoznam okien z wlr-foreign-toplevel (socket Hyprlandu hlási iba aktívne okno), kurzor
 ostáva z Hyprlandu; a 8-bitová plocha, inak Hyprland všetky tmavé farby zosvetlí.
+Po inštalácii novej scény pleamar reštartovať (`pkill -x pleamar; latte-kvapky start`): pri živom načítaní ostane
+zoznam okien (model `wins`) zo starej scény, kým sa niečo nezmení.
 Kontrola bez spustenia: `pleamar --check session/kvapky/kvapka.plm`. Stopka na skúšku bez myši:
 `pleamar --say kvapka "fact probe 75"` (0 = späť na myš), okraj: `"fact side vlavo"`, stečenie: `"fact melting true"`.
 `reserve: -1`: inak by Hyprland plochu posunul nad vyhradený pás lišty Noctalie a „okraj“ by visel 68 px nad
