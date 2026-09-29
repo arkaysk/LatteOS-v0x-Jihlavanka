@@ -9,6 +9,13 @@ ako samostatná vrstva (layer-shell) nad jej lištou.
 - v pokoji vpitá do spodného okraja obrazovky (zlieva sa s ním skoro do roviny)
 - **priblíženie**: od štvrtiny výšky obrazovky od nej sa začne vysúvať; kým k nej myš dôjde, je napoly vonku na hrubej
   stopke pod hlavou. Myš sa číta kdekoľvek (`cursor.x/y` z Hyprlandu), žiadna neviditeľná zóna nekradne kliky oknám
+- **Hodiny namiesto Štartu** (plocha Kvapky): čas a dátum (deň v týždni cez preklady, `clock.date` je iba po
+  anglicky) sú vidieť stále, aj v úzkom páse. **Upozornenia** sú farebné kvapôčky na Hodinách (nízka mätová, bežná
+  jantárová, kritická červená); nové do nich spadne a vyleje sa pri nich bublina „aplikácia · nadpis“ na 6 s.
+  pleamar je vtedy server upozornení — iba v ploche Kvapky, v klasickej ich má Noctalia
+- **dashboard** vyteká z Hodín (klik na Hodiny): veľký čas, dátum, počasie (Open-Meteo, miesto z Nastavení ›
+  Prihlasovanie), **hľadanie aplikácií** (úloha Štartu; píše sa hneď, ↑↓ Enter), upozornenia (klik = otvoriť,
+  „Vymazať všetko“), pripnuté (`~/.config/latteos/pripnute`, id .desktop po riadkoch). Esc alebo klik mimo zavrie
 - **strapce okien (ikry)**: okná tej istej aplikácie sa zlepia do strapca — prvé pri lište, ďalšie smerom od nej,
   „náhodne“, ale pre každé poradie rovnako; čím viac okien, tým menšie guľôčky (do 72 %). Myš nad strapcom ho
   rozvinie do radu v plnej veľkosti (po odchode sa o 0,5 s zbalí), okno cez celú obrazovku (`tight`) všetko zrovná
@@ -77,7 +84,8 @@ ostáva z Hyprlandu; a 8-bitová plocha, inak Hyprland všetky tmavé farby zosv
 Po inštalácii novej scény pleamar reštartovať (`pkill -x pleamar; latte-kvapky start`): pri živom načítaní ostane
 zoznam okien (model `wins`) zo starej scény, kým sa niečo nezmení.
 Kontrola bez spustenia: `pleamar --check session/kvapky/kvapka.plm`. Stopka na skúšku bez myši:
-`pleamar --say kvapka "fact probe 75"` (0 = späť na myš), okraj: `"fact side vlavo"`, stečenie: `"fact melting true"`.
+`pleamar --say kvapka "fact probe 75"` (0 = späť na myš), okraj: `"fact side vlavo"`, stečenie: `"fact melting true"`,
+dashboard: `"fact dash true"`, hľadanie: `"text query fi"`.
 `reserve: -1`: inak by Hyprland plochu posunul nad vyhradený pás lišty Noctalie a „okraj“ by visel 68 px nad
 skutočným okrajom.
 

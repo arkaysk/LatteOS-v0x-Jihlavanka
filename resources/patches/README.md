@@ -53,4 +53,9 @@ Dve opravy pre Kvapky, obe vhodné na upstream:
    ľavým aj pravým (ako panel úloh). Záplata: pravé tlačidlo nad zónou začne to isté ťahanie a jeho pustenie ho
    ukončí (`on release`); `on press right` ostáva, takže scéna rozlíši ľavý klik od pravého.
 
+4. **Ikony podľa mena.** pleamar hľadal iba v `/usr/share/icons` a v domove, bez `XDG_DATA_DIRS` (ikony Flatpaku),
+   bez rozloženia Breeze (`apps/48/…`) a bez AdwaitaLegacy → `system-file-manager`, `org.mozilla.firefox` sa
+   nenačítali. Záplata: všetky `…/icons` z `XDG_DATA_DIRS`, téma z `PLEAMAR_ICON_THEME`/`QS_ICON_THEME` ako prvá,
+   veľkosti oboch zápisov (48x48 aj 48) a kontext `legacy`.
+
 Použitie: `git apply` v `resources/upstream/pleamar`, potom `cargo build --release`.

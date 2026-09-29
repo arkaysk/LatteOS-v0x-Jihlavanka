@@ -11,7 +11,9 @@
 // Klik na hlavu prepne režim okien (plávajúce → dlaždice → páska), koliesko nad hlavou: páska = posun,
 // plávajúce = ďalšie okno.
 // Samostatne (relácia LatteOS Kvapky, bez Noctalie: LATTE_VARIANT=kvapky) pribudnú vľavo od hlavy dve malé
-// kvapky, tiež vpité do okraja: Štart (spúšťač App Managera) a vypínač (ponuka Vypnúť). Kvapky na seba pôsobia:
+// kvapky, tiež vpité do okraja: Hodiny (na mieste Štartu; po rozbalení dashboard) a vypínač (ponuka Vypnúť).
+// Na Hodinách visia upozornenia ako farebné kvapôčky; nové do nich spadne a vyleje sa pri nich bublina s textom.
+// Kvapky na seba pôsobia:
 // keď sa vysúvajú, spájajú ich goo vlákna (vypínač ↔ Štart ↔ hlava), nakláňajú sa k susedovi pod myšou
 // a stlačenie jednej prebehne vlnou cez susedov.
 // Koncept: AUDIT-WIN11.md › Kvapky.
@@ -25,8 +27,9 @@ scene Kvapka {
         level: top
         reserve: -1     // ignorovať vyhradené pásy (lišta Noctalie): okraj kvapky je skutočný okraj obrazovky
         rate: 60        // pokojný pohyb kvapky nepotrebuje 144 Hz: 12 % → 6 % jadra na RX 640
+        keyboard: on_demand while dash   // hľadanie v dashboarde
     }
-    permissions { services: "window", "window.*"; run: "hyprctl", "cat", "printenv", "latte-spustac", "latte-ponuka", "latte-kvapky" }
+    permissions { services: "window", "window.*", "clock", "notifications", "notifications.*", "apps", "apps.*"; run: "hyprctl", "cat", "printenv", "curl", "latte-spustac", "latte-ponuka", "latte-kvapky" }
 
     // zoznam okien priamo zo služby (wlr-foreign-toplevel), bez logiky; ikona podľa triedy okna
     model wins max 10 { id: text; title: text; class: text; active: bool; minimized: bool }
@@ -36,6 +39,26 @@ scene Kvapka {
     // plná guľa; myš nad strapcom ho rozvinie do radu (vejár), okno cez celú obrazovku (tight) všetko zrovná do pásu
     model lay max 10 { x: number; y: number; r: number }
     fact chain_w = 50                        // kde šnúra končí (od hlavy)
+    // čas (služba bez logiky); dátum sa skladá tu — `clock.date` je iba po anglicky
+    service clock as now { time: text = "--:--"; weekday: number; day: number; month: number; year: number }
+    // upozornenia (plní logika, iba v ploche Kvapky — inak by ich prebrala Noctalii), najnovšie prvé;
+    // urgency 0 nízka, 1 bežná, 2 kritická
+    model notes max 20 { id: number; app: text; title: text; body: text; urgency: number }
+    event new_note
+    text toast = ""
+    // dashboard: vyteká z Hodín (klik na Hodiny). Hľadanie aplikácií (úloha Štartu), upozornenia, pripnuté, počasie.
+    fact dash = false
+    text query = ""
+    text weather = ""
+    model results max 6 { name: text; icon: image 26, 26 }
+    model pins max 6 { name: text; icon: image 36, 36 }
+    fact sel = 0
+    measure wday
+    fact typing = false                      // v hľadaní je niečo napísané (logika; text sa vo výrazoch neporovnáva)
+    event open_result ->
+    event pin_open ->
+    event note_open ->
+    event notes_clear ->
     event hover ->
     event unhover ->
     fact mode: plavajuce | dlazdice | paska = plavajuce
@@ -77,8 +100,8 @@ scene Kvapka {
     let L = if(side == vlavo or side == vpravo, H, W)     // dĺžka okraja
     let lx = L * pos                         // hlava: ľavý koniec (v rámci okraja)
     let bl = lx - 36                         // ľavý okraj tela
-    let sx0 = lx - 86                        // kvapka Štart (pokojová poloha)
-    let px0 = lx - 146                       // kvapka vypínač
+    let sx0 = lx - 92                        // kvapka Hodiny (na mieste Štartu, pokojová poloha)
+    let px0 = lx - 158                       // kvapka vypínač
     let n = wins.count
     // Tvar ako tekutina v nízkej gravitácii (goo): nie tuhá kapsula, ale šnúra guľôčok. Hlava vľavo je najväčšia
     // „materská“ kvapka, každé okno je vlastná guľatá kvapka (povrchové napätie), so susedkami ju spája krk
@@ -140,6 +163,11 @@ scene Kvapka {
     prop squish = 0 ~quick
     prop squish.s = 0 ~quick
     prop squish.p = 0 ~quick
+    prop nfall = 0 ~700ms                    // nové upozornenie padá do Hodín
+    prop toast.p = 0 ~lively                 // bublina s textom nového upozornenia
+    on new_note { nfall: 0 ~0ms; nfall: 1 after 20ms; toast.p: 1 after 500ms; toast.p: 0 after 6500ms }
+    prop dsh = 0 ~420ms                      // dashboard: 0 = zbalený v Hodinách, 1 = rozliaty
+    follow dsh = if(dash, 1, 0)
     on change ap > 0.9 while ap > 0.9 { impulse wob 70 }
 
     // Štart a vypínač: bez odtrhnutia, iba sa vysunú (pri myši napoly von, ako hlavná kvapka)
@@ -163,7 +191,8 @@ scene Kvapka {
     let px = px0 + 12 * lift + 12 * hs + 5 * stir * noise(time * 0.1 + 4) + 3 * lift * noise(time * 0.5 + 2)
     let hx = lx - 7 * hs
     // v pokoji kvapky pomaly vystupujú z okraja a klesajú (každá v inom rytme), preto vidno aj vlákna a mláku
-    let s.y = edge + 4 - 36 * lift - 4 * hs - 14 * flow * (1 - lift) + 60 * (1 - ap)
+    // Hodiny sú vidieť stále (aj v pokoji a v úzkom páse): stred 22 px nad okrajom, pri myši o kúsok vyššie
+    let s.y = edge - 22 - 10 * lift - 3 * hs - 4 * flow * (1 - lift) + 70 * (1 - ap)
     let p.y = edge + 3 - 26 * lift - 4 * hp - 12 * flow2 * (1 - lift) + 60 * (1 - ap)
     let link = 10 + 16 * lift + 10 * flow
     // goo vlákna: vypínač ↔ Štart a Štart ↔ telo lišty. Hrubnú s priblížením myši; keď sa lišta odtrhne
@@ -193,6 +222,9 @@ scene Kvapka {
         follow ur.$k = if(lay.$k.r > 0, lay.$k.r, rr)
     }
     on change n { impulse wob 70 }
+
+    // otvorený dashboard: klik kamkoľvek mimo neho ho zavrie (zóna cez celú obrazovku, pod všetkými ostatnými)
+    zone box dash_away { at: W / 2, H / 2; size: W, H; active: dash }
 
     // objem kvapky: svetlo zhora, lem a tieň z pleamaru, navrch odlesk. Skupina otočí rámec k okraju `side`
     // (otočenie okolo bodu okraja 0, edge a posun; inverzia je cu/cv vyššie).
@@ -224,7 +256,12 @@ scene Kvapka {
             ellipse { at: lx + ux.9 + 2 * noise(6.3, time * 0.35), mid + uy.9 + 2.5 * noise(16.7, time * 0.3); radius: ur.9 * b.9 * (1 + 0.035 * noise(18.9, time * 0.5) + 0.12 * act.9) - wob * 0.04; blend: 13 }
             // Štart a vypínač: vlastná „voda“ pod okrajom; s hlavou a medzi sebou ich spája most `link`
             box { from: px - 34 - 14 * flow2 * stir, edge; size: (sx - px + 68 + 28 * flow2 * stir) * so, 70 }
-            ellipse { at: sx, s.y; radius: (26 + 5 * hs) * so; scale: 1 + squish.s * 0.08, 1 - squish.s * 0.12; blend: link * so }
+            ellipse { at: sx, s.y; radius: (33 + 3 * hs) * so; scale: 1 + squish.s * 0.08, 1 - squish.s * 0.12; blend: link * so }
+            // upozornenia: kvapôčky prilepené hore vľavo na Hodinách (najviac tri) a jedna, ktorá práve padá
+            ellipse { at: sx - 25, s.y - 23; radius: 6.5 * so * if(notes.count > 0, 1, 0); blend: 8 }
+            ellipse { at: sx - 10, s.y - 34; radius: 5.5 * so * if(notes.count > 1, 1, 0); blend: 8 }
+            ellipse { at: sx + 6, s.y - 37; radius: 4.8 * so * if(notes.count > 2, 1, 0); blend: 8 }
+            ellipse { at: sx + 4, s.y - 110 + 72 * nfall; radius: 6 * so * if(nfall > 0.02 and nfall < 0.97, 1, 0); scale: 0.85, 1.25; blend: 10 }
             ellipse { at: px, p.y; radius: (19 + 4 * hp) * so; scale: 1 + squish.p * 0.08, 1 - squish.p * 0.12; blend: link * so }
             line { from: px, p.y - 4; to: sx, s.y - 6; width: thread.ps; blend: 12 * clamp(thread.ps / 3, 0, 1) }
             line { from: sx + 8, s.y - 12; to: bl + 18, bottom - 14; width: thread.sb * ap; blend: 14 * clamp(thread.sb * ap / 3, 0, 1) }
@@ -239,12 +276,16 @@ scene Kvapka {
                 ellipse { at: (lx + ux.$k + 2 * noise(k * 0.7, time * 0.35)) - ur.$k * 0.4, (mid + uy.$k + 2.5 * noise(5 + k * 1.3, time * 0.3)) - ur.$k * 0.52; radius: 0.11 * ur.$k * b.$k; scale: 1.5, 0.8; rotate: -30deg; color: #fff6ea }
             }
         }
+        // farba upozornení podľa naliehavosti (nízka mätová, bežná jantárová, kritická červená)
+        ellipse { at: sx - 25, s.y - 23; radius: 3.8 * so * if(notes.count > 0, 1, 0); color: pick(notes.0.urgency, #9ed6bd, #e4b283, #e07a5f) }
+        ellipse { at: sx - 10, s.y - 34; radius: 3.2 * so * if(notes.count > 1, 1, 0); color: pick(notes.1.urgency, #9ed6bd, #e4b283, #e07a5f) }
+        ellipse { at: sx + 6, s.y - 37; radius: 2.8 * so * if(notes.count > 2, 1, 0); color: pick(notes.2.urgency, #9ed6bd, #e4b283, #e07a5f) }
         // základňa kvapky: telo (0) a hlava (1) — ľavý klik = režim okien, ťahanie ľavým aj pravým = presun,
         // koliesko = okná, pravý klik nič. Hrbolčeky s oknami (icon_hit) majú vlastné kliky a ležia navrchu.
         repeat z in 0..2 {
             zone box base.$z { at: if(z == 0, bl + w / 2, hx), if(z == 0, mid, by - 4); size: if(z == 0, w, 66), if(z == 0, h, 66); corner: if(z == 0, c, 33); cursor: pointer }
         }
-        zone ellipse start_hit { at: sx, s.y; radius: 26; cursor: pointer; active: solo }
+        zone ellipse start_hit { at: sx, s.y; radius: 34; cursor: pointer; active: solo }
         zone ellipse power_hit { at: px, p.y; radius: 19; cursor: pointer; active: solo }
         repeat k in 0..10 {
             zone box icon_hit.$k { at: (lx + ux.$k + 2 * noise(k * 0.7, time * 0.35)), (mid + uy.$k + 2.5 * noise(5 + k * 1.3, time * 0.3)); size: ur.$k * 1.6, ur.$k * 1.6; corner: ur.$k * 0.8; cursor: pointer; active: k < n and mode != dlazdice and not free }
@@ -269,9 +310,90 @@ scene Kvapka {
         box { at: pick(side, (lx + ux.$k + 2 * noise(k * 0.7, time * 0.35)), W - (lx + ux.$k + 2 * noise(k * 0.7, time * 0.35)), edge - (mid + uy.$k + 2.5 * noise(5 + k * 1.3, time * 0.3)) - ur.$k * 0.76, W - edge + (mid + uy.$k + 2.5 * noise(5 + k * 1.3, time * 0.3)) + ur.$k * 0.76), pick(side, (mid + uy.$k + 2.5 * noise(5 + k * 1.3, time * 0.3)) + ur.$k * 0.76 + H - edge, edge - (mid + uy.$k + 2.5 * noise(5 + k * 1.3, time * 0.3)) - ur.$k * 0.76, (lx + ux.$k + 2 * noise(k * 0.7, time * 0.35)), H - (lx + ux.$k + 2 * noise(k * 0.7, time * 0.35))); size: if(side == vlavo or side == vpravo, 3, 12), if(side == vlavo or side == vpravo, 12, 3); corner: 1.5; color: ink; opacity: ap; show: k < n and wins.$k.active and mode != dlazdice }
     }
 
-    image start_icon = icon "view-app-grid-symbolic", 22, 22
     image power_icon = icon "system-shutdown-symbolic", 18, 18
-    image start_icon { at: pick(side, sx, W - sx, edge - s.y, W - edge + s.y) - 11, pick(side, s.y + H - edge, edge - s.y, sx, H - sx) - 11; size: 22, 22; tint: ink; opacity: so * (0.4 + 0.6 * lift) * ap; show: solo }
+    // Hodiny: čas a dátum stoja rovno v kvapke (bod rámca → obrazovka)
+    let cxs = pick(side, sx, W - sx, edge - s.y, W - edge + s.y)
+    let cys = pick(side, s.y + H - edge, edge - s.y, sx, H - sx)
+    // bublina nového upozornenia: vyleje sa z Hodín smerom od okraja (v obrazovke, text rovno), 6 s
+    let vert = if(side == vlavo or side == vpravo, 1, 0)
+    let away.x = pick(side, 0, 0, 1, -1)
+    let away.y = pick(side, -1, 1, 0, 0)
+    let tst.x = cxs + if(vert, away.x * (40 + 170 * toast.p), 170 * toast.p)
+    let tst.y = cys + if(vert, 0, away.y * (58 * toast.p))
+    body {
+        color: coffee
+        rim: 30%
+        shadow: 0, 6, 16, 30% * toast.p
+        opacity: clamp(toast.p * 3, 0, 1) * so
+        ellipse { at: cxs, cys; radius: 33 }
+        box { at: tst.x, tst.y; size: 40 + 300 * toast.p, 30 + 14 * toast.p; corner: 22; blend: 22 }
+    }
+    text now.time { at: cxs, cys - 5; anchor: center; size: 16; weight: 800; color: ink; opacity: so * ap; show: solo }
+    text pick(now.weekday, "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat") { at: cxs - 2, cys + 12; anchor: right center; size: 9.5; weight: 600; color: ink; opacity: 70% * so * ap; show: solo }
+    text "{now.day}. {now.month}." { at: cxs + 1, cys + 12; anchor: left center; size: 9.5; weight: 600; color: ink; opacity: 70% * so * ap; show: solo }
+
+    text toast { at: tst.x - 135, tst.y; anchor: left center; width: 270; lines: 1; size: 12.5; weight: 600; color: ink; opacity: clamp(toast.p * 2 - 1, 0, 1) * so; show: solo }
+
+    // ── dashboard (vyteká z Hodín smerom od okraja; v obrazovke, text rovno) ──
+    let dw = 560
+    let dh = 450
+    let dt.x = if(vert, cxs + away.x * (40 + dw / 2), clamp(cxs + 190, dw / 2 + 12, W - dw / 2 - 12))
+    let dt.y = if(vert, clamp(cys, dh / 2 + 12, H - dh / 2 - 12), cys + away.y * (40 + dh / 2))
+    let dc.x = cxs + (dt.x - cxs) * dsh
+    let dc.y = cys + (dt.y - cys) * dsh
+    let d0.x = dt.x - dw / 2 + 28              // obsah: ľavý horný roh
+    let d0.y = dt.y - dh / 2 + 24
+    let dshow = clamp(dsh * 2 - 1, 0, 1)
+    body {
+        color: coffee
+        light: 10%, dc.y - dh / 2, 60
+        rim: 30%
+        shadow: 0, 10, 30, 40% * dsh
+        opacity: if(dsh > 0.01, 1, 0) * so
+        ellipse { at: cxs, cys; radius: 34 }
+        box { at: dc.x, dc.y; size: 66 + (dw - 66) * dsh, 66 + (dh - 66) * dsh; corner: 33 - 5 * dsh; blend: 30 }
+    }
+    group {
+        opacity: dshow
+        show: dsh > 0.5
+        text now.time { at: d0.x, d0.y + 22; anchor: left center; size: 44; weight: 800; family: "Fraunces"; color: ink }
+        text pick(now.weekday, "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday") { at: d0.x, d0.y + 62; anchor: left center; size: 14; weight: 600; color: ink; opacity: 75%; measure: wday }
+        text "{now.day}. {now.month}. {now.year}" { at: d0.x + wday.width + 10, d0.y + 62; anchor: left center; size: 14; weight: 600; color: ink; opacity: 75% }
+        text weather { at: d0.x + dw - 56, d0.y + 22; anchor: right center; size: 14; weight: 600; color: ink; opacity: 85% }
+        // hľadanie (úloha Štartu): píše sa hneď po otvorení
+        box { at: d0.x + (dw - 56) / 2, d0.y + 106; size: dw - 56, 40; corner: 20; color: #000000; opacity: 30% }
+        input query { at: d0.x + 18, d0.y + 106; width: dw - 92; size: 14; color: ink; placeholder: "Search apps…"; selection: #6b4a33 }
+        // výsledky hľadania
+        repeat k in 0..6 {
+            box { at: d0.x + (dw - 56) / 2, d0.y + 150 + k * 40; size: dw - 56, 36; corner: 12; color: #ffffff; opacity: if(k == sel, 10%, 0); show: typing and k < results.count }
+            image results.$k.icon { at: d0.x + 12, d0.y + 137 + k * 40; size: 26, 26; show: typing and k < results.count }
+            text results.$k.name { at: d0.x + 48, d0.y + 150 + k * 40; anchor: left center; size: 13.5; color: ink; show: typing and k < results.count }
+        }
+        text "Nothing found" { at: d0.x, d0.y + 150; anchor: left center; size: 13; color: ink; opacity: 60%; show: typing and results.count < 1 }
+        // bez hľadania: upozornenia a pripnuté
+        text "NOTIFICATIONS" { at: d0.x, d0.y + 150; anchor: left center; size: 10.5; weight: 800; color: #e4b283; show: not typing }
+        text "Clear all" { at: d0.x + dw - 56, d0.y + 150; anchor: right center; size: 11; weight: 700; color: ink; opacity: 70%; show: not typing and notes.count > 0 }
+        text "No notifications" { at: d0.x, d0.y + 180; anchor: left center; size: 13; color: ink; opacity: 55%; show: not typing and notes.count < 1 }
+        repeat k in 0..4 {
+            ellipse { at: d0.x + 6, d0.y + 180 + k * 30; radius: 4; color: pick(notes.$k.urgency, #9ed6bd, #e4b283, #e07a5f); show: not typing and k < notes.count }
+            text "{notes.$k.app} · {notes.$k.title}" { at: d0.x + 20, d0.y + 180 + k * 30; anchor: left center; width: dw - 90; lines: 1; size: 13; color: ink; show: not typing and k < notes.count }
+        }
+        text "PINNED" { at: d0.x, d0.y + 316; anchor: left center; size: 10.5; weight: 800; color: #e4b283; show: not typing }
+        repeat k in 0..6 {
+            image pins.$k.icon { at: d0.x + k * 84 + 12, d0.y + 334; size: 36, 36; show: not typing and k < pins.count }
+            text pins.$k.name { at: d0.x + k * 84 + 30, d0.y + 386; anchor: center; width: 80; lines: 1; size: 10.5; color: ink; opacity: 80%; show: not typing and k < pins.count }
+        }
+    }
+    // dashboard: klikateľné miesta (navrchu)
+    zone box dash_card { at: dt.x, dt.y; size: dw, dh; active: dash }
+    repeat k in 0..6 {
+        zone box res_hit.$k { at: d0.x + (dw - 56) / 2, d0.y + 150 + k * 40; size: dw - 56, 36; cursor: pointer; active: dash and typing and k < results.count }
+        zone box pin_hit.$k { at: d0.x + k * 84 + 30, d0.y + 360; size: 76, 76; cursor: pointer; active: dash and not typing and k < pins.count }
+    }
+    repeat k in 0..4 {
+        zone box note_hit.$k { at: d0.x + (dw - 56) / 2, d0.y + 180 + k * 30; size: dw - 56, 28; cursor: pointer; active: dash and not typing and k < notes.count }
+    }
+    zone box clear_hit { at: d0.x + dw - 90, d0.y + 150; size: 90, 24; cursor: pointer; active: dash and not typing and notes.count > 0 }
     image power_icon { at: pick(side, px, W - px, edge - p.y, W - edge + p.y) - 8, pick(side, p.y + H - edge, edge - p.y, px, H - px) - 8; size: 16, 16; tint: ink; opacity: so * (0.4 + 0.6 * lift) * ap; show: solo }
 
     text pick(mode, "Floating windows", "Tiles", "Endless strip") { at: pick(side, lx - 30, W - lx - 30, edge - by + 40, W - edge + by - 150), pick(side, by - 56 + H - edge, edge - by + 56, lx - 60, H - lx - 60); anchor: left center; size: 12; weight: 700; color: ink; opacity: 70% * out * ap * if(tight, 0, 1) }
@@ -304,10 +426,25 @@ scene Kvapka {
     // stečenie: po páde sa lišta vynorí na starom mieste
     on change fall > 0.95 while fall > 0.95 and melting { free = false; melting = false; fall: 0 ~0ms; ap: 1 }
     // stlačenie prebehne vlnou cez susedov (vypínač → Štart → hlava a naopak)
-    on press start_hit { emit start_open; squish.s: 1; squish.p: 0.5 after 70ms; squish: 0.4 after 70ms }
+    on press start_hit { toggle dash; squish.s: 1; squish.p: 0.5 after 70ms; squish: 0.4 after 70ms }
     on release start_hit { squish.s: 0; squish.p: 0 after 70ms; squish: 0 after 70ms }
     on press power_hit { emit power_open; squish.p: 1; squish.s: 0.5 after 70ms; squish: 0.3 after 140ms }
     on release power_hit { squish.p: 0; squish.s: 0 after 70ms; squish: 0 after 140ms }
+    // dashboard: otvorenie dá kurzor do hľadania; Esc alebo klik mimo zavrie; ↑↓ a Enter vo výsledkoch
+    on change dash while dash { focus query }
+    on press dash_away { dash = false }
+    on key Escape while dash { dash = false }
+    on key Down while dash { sel = min(sel + 1, max(results.count - 1, 0)) }
+    on key Up while dash { sel = max(sel - 1, 0) }
+    on submit query { emit open_result(sel) }
+    repeat k in 0..6 {
+        on press res_hit.$k { emit open_result(k) }
+        on press pin_hit.$k { emit pin_open(k) }
+    }
+    repeat k in 0..4 {
+        on press note_hit.$k { emit note_open(k) }
+    }
+    on press clear_hit { emit notes_clear }
     on enter start_hit { hs: 1 }
     on leave start_hit { hs: 0 }
     on enter power_hit { hp: 1 }
@@ -325,6 +462,26 @@ scene Kvapka {
     }
 
     translations sk {
+        "Search apps…" = "Hľadať aplikácie…"
+        "Nothing found" = "Nič sa nenašlo"
+        "NOTIFICATIONS" = "UPOZORNENIA"
+        "Clear all" = "Vymazať všetko"
+        "No notifications" = "Žiadne upozornenia"
+        "PINNED" = "PRIPNUTÉ"
+        "Sunday" = "nedeľa"
+        "Monday" = "pondelok"
+        "Tuesday" = "utorok"
+        "Wednesday" = "streda"
+        "Thursday" = "štvrtok"
+        "Friday" = "piatok"
+        "Saturday" = "sobota"
+        "Sun" = "ne"
+        "Mon" = "po"
+        "Tue" = "ut"
+        "Wed" = "st"
+        "Thu" = "št"
+        "Fri" = "pi"
+        "Sat" = "so"
         "Floating windows" = "Plávajúce okná"
         "Tiles" = "Dlaždice"
         "Endless strip" = "Nekonečná páska"
