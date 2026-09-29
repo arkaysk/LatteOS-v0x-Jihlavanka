@@ -12,6 +12,13 @@ ako samostatná vrstva (layer-shell) nad jej lištou.
 - **tvar ako tekutina v nízkej gravitácii (goo)**: šnúra guľôčok namiesto tuhej kapsuly — hlava vľavo je najväčšia
   guľa, každé okno vlastná guľatá kvapka spojená so susedkami krkom a tenkým vláknom; kvapky pomaly dýchajú a plávajú
   (každá inak), aktívne okno je plnšie, každá guľa má vlastný odlesk; nové/zatvorené okno pošle šnúrou vlnu
+- **neprekryje program**: keď aktívne okno siaha k lište (maximalizované, na celú obrazovku, dlaždice/páska), kvapka
+  ostane v páse 64 px aj pri myši (`fact tight`, logika kontroluje aktívne okno každých 0,7 s); celú obrazovku
+  (hry, video) Hyprland aj tak kreslí nad vrstvou kvapky
+- **pás pre kvapku** v ploche Kvapky: rezerva monitora 54 px + medzera 10 px pri okraji lišty
+  (`latte.kvapky_reserve`, hyprland.lua) — rešpektujú ju aj maximalizované okná, ktoré medzery `gaps_out` ignorujú
+- **tekutina žije sama**: okolo vypínača a Štartu kvapky pomaly vystupujú z okraja a klesajú, driftujú, mláka pri
+  okraji sa rozlieva a sťahuje, vlákna sa samy tvoria a trhajú a po nich tečie kvapôčka; myš to zosilní
 - **bez okien guľatá**: kruh vpitý do okraja, zlieva sa s ním plynulo (radiálne); s oknami sa predĺži
 - **vlastné menu nemá — presun ťahaním (drag & drop)**: chytiť a ťahať od okraja → stopka sa natiahne a pri 0,9
   praskne, kvapka (guľa) ide za myšou s oneskorením. Pustená do 170 px od **ľubovoľného okraja** sa k nemu prilepí
@@ -41,8 +48,8 @@ spúšťač App Managera (kvapka **Štart**) a systémové ponuky (kvapka **vyp�
 - **ponuka**: na prihlasovacej obrazovke relácia **LatteOS Kvapky** (`latte-session kvapky` → `LATTE_VARIANT=kvapky`
   → hyprland.lua spustí `latte-kvapky start`; zdravá, keď po 60 s beží pleamar)
 - bez odhlásenia: `latte-kvapky skusit` (z klasickej plochy) a `latte-kvapky spat` (späť), `latte-kvapky stav`
-- okná nechajú dole 64 px pre kvapku (Noctalia si pás vyhradí sama); platí aj po reload-e konfigurácie
-  (príznak `$XDG_RUNTIME_DIR/latteos/kvapky`)
+- okná nechajú pri okraji lišty 64 px pre kvapku (rezerva monitora, Noctalia si pás vyhradí sama); platí aj po
+  reload-e konfigurácie (príznak `$XDG_RUNTIME_DIR/latteos/kvapky` s okrajom)
 - Štart a vypínač sú malé kvapky vľavo od hlavy, vpité do okraja, pri myši sa vysunú; neodtrhávajú sa
 
 **Kvapka a okno (29. 9.):** s kvapkou sa zlieva iba **jedinečné systémové okno**, ktoré z nej vyteká (hľadanie,

@@ -49,23 +49,29 @@ hl.env("HYPRCURSOR_SIZE", cursor_size)
 
 -- ── vzhľad (spoločný pre všetky stupne) ───────────────────────────────────────
 -- plocha LatteOS Kvapky (relácia, alebo `latte-kvapky skusit` → príznak v XDG_RUNTIME_DIR): bez lišty Noctalie,
--- ktorá si dole vyhradí pás, nechajú okná miesto pre kvapku samy
--- (obsah príznaku = okraj, ku ktorému používateľ lištu-kvapku prilepil: dole | hore | vlavo | vpravo)
+-- ktorá si pás pri okraji vyhradí sama, ho vyhradí LatteOS — rezervou monitora, aby ho rešpektovali aj
+-- maximalizované okná (tie medzery gaps_out ignorujú). Obsah príznaku = okraj lišty-kvapky: dole | hore | vlavo | vpravo.
 local kvapky = os.getenv("LATTE_VARIANT") == "kvapky" and "dole" or nil
 do
     local f = io.open((os.getenv("XDG_RUNTIME_DIR") or "/tmp") .. "/latteos/kvapky", "r")
     if f then kvapky = (f:read("*l") or ""):match("%a+") or "dole"; f:close() end
 end
-local gaps_out = 10
-if kvapky then
-    gaps_out = { top = 10, right = 10, bottom = 10, left = 10 }
-    local key = ({ dole = "bottom", hore = "top", vlavo = "left", vpravo = "right" })[kvapky] or "bottom"
-    gaps_out[key] = 64
+latte = latte or {}
+-- pás 54 px + medzera 10 = 64 px pre kvapku; každý monitor s jeho aktuálnym režimom (pravidlo z monitors.lua
+-- / Device Managera by inak prázdne pravidlo prebilo). Bez okraja (nil) pás zruší. Volá aj latte-kvapky.
+function latte.kvapky_reserve(side)
+    local res = { top = 0, right = 0, bottom = 0, left = 0 }
+    local key = ({ dole = "bottom", hore = "top", vlavo = "left", vpravo = "right" })[side or ""]
+    if key then res[key] = 54 end
+    for _, m in ipairs(hl.get_monitors() or {}) do
+        hl.monitor({ output = m.name, mode = string.format("%dx%d@%.3f", m.width, m.height, m.refresh_rate),
+                     position = string.format("%dx%d", m.x, m.y), scale = m.scale, reserved_area = res })
+    end
 end
 hl.config({
     general = {
         gaps_in = 5,
-        gaps_out = gaps_out,
+        gaps_out = 10,
         border_size = 2,
         col = { active_border = colors.active, inactive_border = colors.inactive },
         resize_on_border = true,
@@ -113,6 +119,7 @@ local function apply_tier(t)
 end
 apply_tier(tier)
 windows.setup()
+if kvapky then latte.kvapky_reserve(kvapky) end      -- po reload-e (pri štarte ešte monitory nie sú: latte-kvapky start)
 -- jednotné okenné tlačidlá (hyprbars): minimalizovať, zväčšiť, zavrieť
 local bars = require("latte.bars")
 bars.setup({ bar_bg = theme.bar_bg, bar_fg = theme.bar_fg, border_active = theme.border_active })
