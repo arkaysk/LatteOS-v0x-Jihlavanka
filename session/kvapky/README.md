@@ -14,10 +14,12 @@ ako samostatná vrstva (layer-shell) nad jej lištou.
 - stopka: okraj je „voda“ pod obrazovkou roztavená s telom ako v Marei, pod hlavou stĺpik roztavený s oboma koncami
 - **objem** bez textúry: svetlo zhora, lem, tieň (keď je vonku) z pleamaru + mäkký odlesk pozdĺž hornej hrany a lesklá
   bodka na hlave. (Latte art shader sme skúsili a vyradili – v histórii: 3bddc26.)
-- **oči**: „goo“ (World of Goo: dve veľké biele rôznej veľkosti, zreničky sa trasú, žmurkanie) alebo **robot**
-  (tmavá obrazovka, svietiace oválne oči) — pravý klik na oči; sledujú myš kdekoľvek
+- **bez očí** (29. 9.): žiadna kvapka nemá tvár; hlava ostáva ako hrbolček na ľavom konci (nesúmernosť)
+- **kvapky na seba pôsobia**: pri vysúvaní sa nakláňajú k susedovi a spájajú ich goo vlákna (vypínač ↔ Štart ↔
+  lišta), roztavené s oboma koncami; odtrhnutá lišta vlákno k Štartu natiahne a pretrhne; myš nad kvapkou ju
+  nafúkne a susedov k nej pritiahne; stlačenie prebehne vlnou cez susedov
 - **klik na hlavu**: `latte.windows.cycle()` (plávajúce → dlaždice → páska), tvar podľa režimu
-- koliesko nad očami: páska = posun, plávajúce = ďalšie okno (Alt+Tab), dlaždice = nič
+- koliesko nad hlavou: páska = posun, plávajúce = ďalšie okno (Alt+Tab), dlaždice = nič
 - klik na ikonu: okno dostane fokus
 - texty po anglicky + `translations sk` (jazyk podľa `LANG`, prepína sa za behu)
 
@@ -47,7 +49,7 @@ Potrebuje pleamar so záplatou [pleamar-hyprland-okna-8bit.patch](../../resource
 `PLEAMAR_GENERIC=window` berie zoznam okien z wlr-foreign-toplevel (socket Hyprlandu hlási iba aktívne okno), kurzor
 ostáva z Hyprlandu; a 8-bitová plocha, inak Hyprland všetky tmavé farby zosvetlí.
 Kontrola bez spustenia: `pleamar --check session/kvapky/kvapka.plm`. Stopka na skúšku bez myši:
-`pleamar --say kvapka "fact probe 75"` (0 = späť na myš), odtrhnutie: `"fact detached true"`, oči: `pleamar --say kvapka "fact robot true"`.
+`pleamar --say kvapka "fact probe 75"` (0 = späť na myš), odtrhnutie: `"fact detached true"`.
 `reserve: -1`: inak by Hyprland plochu posunul nad vyhradený pás lišty Noctalie a „okraj“ by visel 68 px nad
 skutočným okrajom.
 
