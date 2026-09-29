@@ -50,6 +50,19 @@ end)
 on("start_open", function() run("latte-spustac", { "prepni" }) end)
 on("power_open", function() run("latte-ponuka", { "vypnut" }) end)
 
+-- okraj lišty: po presune (drag & drop) si ho zapamätá latte-kvapky okraj (a v ploche Kvapky nechá okná
+-- uhnúť na tej strane); pri štarte sa vráti posledný
+on("side_moved", function()
+    run("latte-kvapky", { "okraj", tostring(fact.side), string.format("%.3f", fact.pos or 0.4) })
+end)
+run("latte-kvapky", { "okraj" }, function(out)
+    local side, pos = (out or ""):match("^(%a+)%s+([%d.]+)")
+    if side == "dole" or side == "hore" or side == "vlavo" or side == "vpravo" then
+        fact.side = side
+        fact.pos = tonumber(pos) or 0.4
+    end
+end)
+
 -- relácia LatteOS Kvapky (bez Noctalie): kvapky Štart a vypínač
 run("printenv", { "LATTE_VARIANT" }, function(out)
     if (out or ""):match("kvapky") then fact.solo = true end

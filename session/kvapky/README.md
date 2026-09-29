@@ -9,8 +9,13 @@ ako samostatná vrstva (layer-shell) nad jej lištou.
 - v pokoji vpitá do spodného okraja obrazovky (zlieva sa s ním skoro do roviny)
 - **priblíženie**: od štvrtiny výšky obrazovky od nej sa začne vysúvať; kým k nej myš dôjde, je napoly vonku na hrubej
   stopke pod hlavou. Myš sa číta kdekoľvek (`cursor.x/y` z Hyprlandu), žiadna neviditeľná zóna nekradne kliky oknám
-- **odtrhnutie len klikom alebo ťahaním**: klik na telo ju odtrhne (stopka sa stenčí a pretrhne), ďalší klik vráti;
-  ťahanie nahor ťahá stopku (nad 0,8 sa pretrhne), nadol ju vráti
+- **bez okien guľatá**: kruh vpitý do okraja, zlieva sa s ním plynulo (radiálne); s oknami sa predĺži
+- **vlastné menu nemá — presun ťahaním (drag & drop)**: chytiť a ťahať od okraja → stopka sa natiahne a pri 0,9
+  praskne, kvapka (guľa) ide za myšou s oneskorením. Pustená do 170 px od **ľubovoľného okraja** sa k nemu prilepí
+  (ako presun panela úloh vo Windows; hlava tam, kde bola pustená) a okná uhnú na tej strane. Pustená uprostred
+  **skvapalní, stečie** a lišta sa vynorí tam, kde bola. Pustená skôr, než stopka praskne: vráti sa. Klik nerobí nič
+- okraj si pamätá `latte-kvapky okraj` (`~/.local/state/latteos/kvapka-okraj`); scéna je celá obrazovka (kliky
+  berú iba zóny), kreslí sa v „rámci okraja“ a skupina ho otočí k okraju; ikony a nápis stoja rovno
 - stopka: okraj je „voda“ pod obrazovkou roztavená s telom ako v Marei, pod hlavou stĺpik roztavený s oboma koncami
 - **objem** bez textúry: svetlo zhora, lem, tieň (keď je vonku) z pleamaru + mäkký odlesk pozdĺž hornej hrany a lesklá
   bodka na hlave. (Latte art shader sme skúsili a vyradili – v histórii: 3bddc26.)
@@ -49,7 +54,7 @@ Potrebuje pleamar so záplatou [pleamar-hyprland-okna-8bit.patch](../../resource
 `PLEAMAR_GENERIC=window` berie zoznam okien z wlr-foreign-toplevel (socket Hyprlandu hlási iba aktívne okno), kurzor
 ostáva z Hyprlandu; a 8-bitová plocha, inak Hyprland všetky tmavé farby zosvetlí.
 Kontrola bez spustenia: `pleamar --check session/kvapky/kvapka.plm`. Stopka na skúšku bez myši:
-`pleamar --say kvapka "fact probe 75"` (0 = späť na myš), odtrhnutie: `"fact detached true"`.
+`pleamar --say kvapka "fact probe 75"` (0 = späť na myš), okraj: `"fact side vlavo"`, stečenie: `"fact melting true"`.
 `reserve: -1`: inak by Hyprland plochu posunul nad vyhradený pás lišty Noctalie a „okraj“ by visel 68 px nad
 skutočným okrajom.
 
@@ -61,6 +66,7 @@ skutočným okrajom.
 | kvapka `rate: 60` (predvolené) | 6 % jadra | 38 % | ~41 % | 63 MB |
 | + stopka, nové oči, latte art (vyradený) | 7,6 % jadra | — | — | 80 MB |
 | bez textúry, kurzor z Hyprlandu (30×/s), 8-bit plocha | 8,8 % jadra | — | — | 65 MB |
+| plocha Kvapky, scéna cez celú obrazovku (bez Noctalie) | 8,8 % jadra | 21 % | — | 67 MB |
 Prvá snímka ~90 ms od štartu, priemerná snímka 7,3 ms.
 
 ## Ďalej
