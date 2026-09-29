@@ -7,6 +7,8 @@
 // stĺpik pod hlavou sú roztavené s telom (ako `neck` v Marei, ball-prototype.plm).
 // Klik na hlavu prepne režim okien (plávajúce → dlaždice → páska), koliesko nad očami: páska = posun,
 // plávajúce = ďalšie okno. Pravý klik na oči: oči „goo“ (World of Goo) ↔ oči robota na obrazovke.
+// Samostatne (relácia LatteOS Kvapky, bez Noctalie: LATTE_VARIANT=kvapky) pribudnú vľavo od hlavy dve malé
+// kvapky, tiež vpité do okraja: Štart (spúšťač App Managera) a vypínač (ponuka Vypnúť).
 // Koncept: AUDIT-WIN11.md › Kvapky.
 language 0.1
 
@@ -19,7 +21,7 @@ scene Kvapka {
         reserve: -1     // ignorovať vyhradené pásy (lišta Noctalie): okraj kvapky je skutočný okraj obrazovky
         rate: 60        // pokojný pohyb kvapky nepotrebuje 144 Hz: 12 % → 6 % jadra na RX 640
     }
-    permissions { services: "window", "window.*"; run: "hyprctl", "cat", "printenv" }
+    permissions { services: "window", "window.*"; run: "hyprctl", "cat", "printenv", "latte-spustac", "latte-ponuka" }
 
     // zoznam okien priamo zo služby (wlr-foreign-toplevel), bez logiky; ikona podľa triedy okna
     model wins max 10 { id: text; title: text; class: text; active: bool; minimized: bool }
@@ -28,15 +30,20 @@ scene Kvapka {
     fact detached = false
     fact pulling = false
     fact robot = false
+    fact solo = false                        // bez Noctalie: kvapky Štart a vypínač (logika podľa LATTE_VARIANT)
     event cycle ->
     event pick ->
     event wheel_turn ->
+    event start_open ->
+    event power_open ->
 
     let coffee = #1c0f09
     let cream = #f3ebdd
     let edge = 260                           // spodný okraj obrazovky
     let lx = screen.width * 0.4              // hlava: ľavý koniec, pevne (medzi kapsulami Noctalie)
     let bl = lx - 34                         // ľavý okraj tela
+    let sx = lx - 104                        // kvapka Štart
+    let px = lx - 166                        // kvapka vypínač
     let n = wins.count
     let step = if(mode == paska, 54, 64)
 
@@ -49,7 +56,7 @@ scene Kvapka {
 
     // blízkosť myši kdekoľvek na ploche (cursor.x/y: pleamar sa pýta Hyprlandu, žiadna zóna nekradne kliky):
     // od štvrtiny výšky obrazovky (270 px pri 1080) sa kvapka vysúva, pri nej je vonku na 0,55
-    let dist.x = max(0, max(bl - cursor.x, cursor.x - (bl + w)))
+    let dist.x = max(0, max(if(solo, px - 30, bl) - cursor.x, cursor.x - (bl + w)))
     let dist.y = max(0, edge - h * 0.6 - cursor.y)
     let approach = 1 - smooth(0, 270, length(dist.x, dist.y))
 
@@ -73,7 +80,17 @@ scene Kvapka {
 
     prop wob = 0 ~lively
     prop squish = 0 ~quick
+    prop squish.s = 0 ~quick
+    prop squish.p = 0 ~quick
     on change detached { impulse wob if(detached, 90, -60) }
+
+    // Štart a vypínač: bez odtrhnutia, iba sa vysunú (pri myši napoly von, ako hlavná kvapka)
+    prop so = 0 ~lively
+    follow so = if(solo, 1, 0)
+    prop lift = 0 ~700ms
+    follow lift = approach
+    let s.y = edge + 10 - 36 * lift
+    let p.y = edge + 8 - 26 * lift
 
     // oči: sledujú myš kdekoľvek
     pose lid = 1
@@ -112,6 +129,10 @@ scene Kvapka {
             ellipse { at: bl + 80 + 7 * step, mid; radius: 26 * b.7; blend: 16 }
             ellipse { at: bl + 80 + 8 * step, mid; radius: 26 * b.8; blend: 16 }
             ellipse { at: bl + 80 + 9 * step, mid; radius: 26 * b.9; blend: 16 }
+            // Štart a vypínač: vlastná „voda“ pod okrajom, kvapky sa s ňou zlievajú
+            box { from: px - 34, edge; size: (sx - px + 68) * so, 70 }
+            ellipse { at: sx, s.y; radius: 26 * so; scale: 1, 1 - squish.s * 0.1; blend: 16 }
+            ellipse { at: px, p.y; radius: 19 * so; scale: 1, 1 - squish.p * 0.1; blend: 14 }
         }
     }
 
@@ -147,9 +168,16 @@ scene Kvapka {
         box { at: bl + 80 + k * step, mid + 22; size: 14, 3; corner: 1.5; color: cream; show: k < n and wins.$k.active and mode != dlazdice }
     }
 
+    image start_icon = icon "view-app-grid-symbolic", 22, 22
+    image power_icon = icon "system-shutdown-symbolic", 18, 18
+    image start_icon { at: sx - 11, s.y - 11; size: 22, 22; tint: cream; opacity: so * (0.4 + 0.6 * lift); show: solo }
+    image power_icon { at: px - 8, p.y - 8; size: 16, 16; tint: cream; opacity: so * (0.4 + 0.6 * lift); show: solo }
+
     text pick(mode, "Floating windows", "Tiles", "Endless strip") { at: lx - 30, by - 56; anchor: left center; size: 12; weight: 700; color: cream; opacity: 70% * out }
 
     zone box body_hit { at: bl + w / 2, mid; size: w, h; corner: c; cursor: pointer }
+    zone ellipse start_hit { at: sx, s.y; radius: 26; cursor: pointer; active: solo }
+    zone ellipse power_hit { at: px, p.y; radius: 19; cursor: pointer; active: solo }
     zone ellipse eyes_hit { at: lx, by - 4; radius: 33; cursor: pointer }
     repeat k in 0..10 {
         zone box icon_hit.$k { at: bl + 80 + k * step, mid; size: 44, 44; corner: 12; cursor: pointer; active: k < n and mode != dlazdice }
@@ -164,6 +192,10 @@ scene Kvapka {
     // hlava: režim okien
     on press eyes_hit { emit cycle; squish: 1 }
     on release eyes_hit { squish: 0 }
+    on press start_hit { emit start_open; squish.s: 1 }
+    on release start_hit { squish.s: 0 }
+    on press power_hit { emit power_open; squish.p: 1 }
+    on release power_hit { squish.p: 0 }
     on press right eyes_hit { toggle robot }
     on scroll eyes_hit { emit wheel_turn(wheel) }
     repeat k in 0..10 {
