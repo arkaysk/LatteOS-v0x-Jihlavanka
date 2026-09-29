@@ -38,3 +38,15 @@ aj keď je lišta priehľadná (`background_opacity = 0`) a vidieť iba ostrovy 
 Záplata: pri priehľadnej lište rozmaže iba zaoblené obdĺžniky kapsúl a prepočíta ich po každom rozložení.
 Vhodná na upstream PR. Použitie: `git apply` v zdroji Noctalie (alebo forku latte-shell), potom
 `LATTE_SHELL_SRC=<zdroj> setup/f1/build-latte-shell.sh`.
+
+## pleamar-hyprland-okna-8bit.patch (29. 9. 2026, latte-lab, pleamar 5f9cd54)
+
+Dve opravy pre Kvapky, obe vhodné na upstream:
+1. **Zoznam okien na Hyprlande.** Služba `window` cez socket Hyprlandu hlási iba aktívne okno (bez `list`) a príkazy
+   `window.*` nepozná. `PLEAMAR_GENERIC=1` to obišlo, no vypne aj `cursor.x/y` (myš mimo scény). Záplata:
+   `PLEAMAR_GENERIC=window` (zoznam oddelený čiarkami) pošle cez všeobecné protokoly (wlr-foreign-toplevel) iba to,
+   čo menuje; kurzor ostáva z Hyprlandu. `=1` sa správa ako doteraz.
+2. **Farby o tón svetlejšie.** RADV ponúka ako prvý nesRGB formát `Rgba16Float`; Hyprland ho berie ako lineárne
+   svetlo a zakóduje ešte raz → káva #1c0f09 vyšla ako #5c4333. Záplata uprednostní `Bgra8Unorm`/`Rgba8Unorm`.
+
+Použitie: `git apply` v `resources/upstream/pleamar`, potom `cargo build --release`.

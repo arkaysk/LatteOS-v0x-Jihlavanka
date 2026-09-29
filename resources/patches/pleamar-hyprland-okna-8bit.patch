@@ -1,0 +1,69 @@
+diff --git a/src/gpu.rs b/src/gpu.rs
+index 9ce96bb..1f17718 100644
+--- a/src/gpu.rs
++++ b/src/gpu.rs
+@@ -1647,7 +1647,13 @@ impl Gpu {
+                 let caps = first.get_capabilities(&adapter);
+                 // No sRGB: the compositor blends the bytes as they are, and premultiplied
+                 // alpha only works out if nobody re-encodes them along the way.
+-                let format = caps.formats.iter().copied().find(|f| !f.is_srgb()).unwrap_or(caps.formats[0]);
++                // 8 bits first: a float surface (Rgba16Float, listed first by RADV) is taken by
++                // Hyprland as linear light and encoded once more, which lightens every dark colour.
++                let format = [wgpu::TextureFormat::Bgra8Unorm, wgpu::TextureFormat::Rgba8Unorm]
++                    .into_iter()
++                    .find(|f| caps.formats.contains(f))
++                    .or_else(|| caps.formats.iter().copied().find(|f| !f.is_srgb()))
++                    .unwrap_or(caps.formats[0]);
+                 let alpha = if caps.alpha_modes.contains(&wgpu::CompositeAlphaMode::PreMultiplied) {
+                     wgpu::CompositeAlphaMode::PreMultiplied
+                 } else {
+diff --git a/src/platform/mod.rs b/src/platform/mod.rs
+index 9e19585..c14ddd4 100644
+--- a/src/platform/mod.rs
++++ b/src/platform/mod.rs
+@@ -83,7 +83,7 @@ pub fn service(from: &str, name: &str, notify: Box<dyn Fn(SysValue) + Send>) ->
+     // `PLEAMAR_GENERIC=1` skips the Hyprland path: it's how to test here what
+     // the other compositors will see.
+     #[cfg(target_os = "linux")]
+-    if hyprland::is_present() && std::env::var_os("PLEAMAR_GENERIC").is_none() {
++    if hyprland_path(name) {
+         return hyprland::service(name, notify);
+     }
+     // Any other Wayland: the protocols everyone understands.
+@@ -141,7 +141,7 @@ pub fn command(from: &str, name: &str, args: &[SysValue]) -> Result<(), String>
+         return mpris::command(name, args);
+     }
+     #[cfg(target_os = "linux")]
+-    if hyprland::is_present() && std::env::var_os("PLEAMAR_GENERIC").is_none() {
++    if hyprland_path(name.split('.').next().unwrap_or(name)) {
+         return hyprland::command(name, args);
+     }
+     #[cfg(target_os = "linux")]
+@@ -510,7 +510,7 @@ pub static CURSOR_WANTED: std::sync::atomic::AtomicBool = std::sync::atomic::Ato
+ /// arrives, and `cursor.x` is only known over the scene, like `pointer.x`.
+ pub fn watch_cursor(to_render: std::sync::mpsc::Sender<crate::scene::ToRender>) {
+     #[cfg(target_os = "linux")]
+-    if hyprland::is_present() && std::env::var_os("PLEAMAR_GENERIC").is_none() {
++    if hyprland_path("cursor") {
+         hyprland::watch_cursor(to_render);
+     }
+     #[cfg(not(target_os = "linux"))]
+@@ -629,3 +629,18 @@ pub use wayland::icon;
+ pub fn icon(_: &str) -> Option<std::path::PathBuf> {
+     None
+ }
++
++/// Whether `what` (a service, a command's family, or "cursor") goes through
++/// Hyprland's socket. `PLEAMAR_GENERIC=1` sends everything through the
++/// protocols every compositor understands; `PLEAMAR_GENERIC=window` (a list,
++/// comma separated) only what it names: on Hyprland the `window` service reports
++/// only the active window, while wlr-foreign-toplevel lists them all, and the
++/// cursor can still come from Hyprland.
++#[cfg(target_os = "linux")]
++fn hyprland_path(what: &str) -> bool {
++    hyprland::is_present()
++        && match std::env::var("PLEAMAR_GENERIC") {
++            Err(_) => true,
++            Ok(v) => !v.split(',').map(str::trim).any(|p| p == "1" || p == what),
++        }
++}
