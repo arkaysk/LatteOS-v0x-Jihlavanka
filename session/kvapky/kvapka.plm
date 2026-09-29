@@ -1,90 +1,116 @@
 // LatteOS — Kvapka: lišta aplikácií ako tekutá kvapka kávy (prototyp, pleamar 0.1).
 // Zámerne nesúmerná: hlava (hrbolček bez očí — kvapky nemajú tvár) stojí vždy na ĽAVOM konci, kvapka rastie
-// doprava s každým oknom.
-// V pokoji je vpitá do spodného okraja obrazovky (skoro rovina). Keď sa k nej myš priblíži na štvrtinu
-// výšky obrazovky, začne sa vysúvať a kým k nej myš dôjde, je napoly vonku, na hrubej stopke pod hlavou.
-// Odtrhne sa až klikom alebo potiahnutím nahor (stopka sa stenčí a pretrhne); ďalší klik alebo
-// potiahnutie nadol ju vráti do okraja. Stopka sa nekreslí zvlášť: okraj („voda“ pod obrazovkou) a
-// stĺpik pod hlavou sú roztavené s telom (ako `neck` v Marei, ball-prototype.plm).
+// doprava s každým oknom; bez okien je guľatá, do okraja sa zlieva plynulo, radiálne.
+// V pokoji je vpitá do okraja obrazovky (skoro rovina). Keď sa k nej myš priblíži na štvrtinu výšky obrazovky,
+// začne sa vysúvať a kým k nej myš dôjde, je napoly vonku, na hrubej stopke pod hlavou.
+// Vlastné menu nemá: od okraja sa odtrhne iba chytením a potiahnutím (drag & drop). Stopka sa natiahne a
+// pretrhne, kvapka ide za myšou; pustená pri inom okraji sa k nemu prilepí (ako presun panela úloh k inému
+// okraju), pustená uprostred skvapalní, stečie a znova sa vynorí tam, kde bola.
+// Kreslí sa v „rámci okraja“ (okraj je čiara y = edge, kvapka nad ňou) a skupina ho otočí k zvolenému okraju;
+// ikony a nápis stoja rovno, preto sa ich poloha prepočíta do obrazovky (pick podľa `side`).
 // Klik na hlavu prepne režim okien (plávajúce → dlaždice → páska), koliesko nad hlavou: páska = posun,
 // plávajúce = ďalšie okno.
 // Samostatne (relácia LatteOS Kvapky, bez Noctalie: LATTE_VARIANT=kvapky) pribudnú vľavo od hlavy dve malé
 // kvapky, tiež vpité do okraja: Štart (spúšťač App Managera) a vypínač (ponuka Vypnúť). Kvapky na seba pôsobia:
-// keď sa vysúvajú, spájajú ich mosty (vypínač ↔ Štart ↔ hlava), nakláňajú sa k susedovi pod myšou,
-// stlačenie jednej prebehne vlnou cez susedov a odtrhnutá lišta most k Štartu natiahne, až praskne.
+// keď sa vysúvajú, spájajú ich goo vlákna (vypínač ↔ Štart ↔ hlava), nakláňajú sa k susedovi pod myšou
+// a stlačenie jednej prebehne vlnou cez susedov.
 // Koncept: AUDIT-WIN11.md › Kvapky.
 language 0.1
 
 scene Kvapka {
     surface {
-        size: full, 260
+        size: full, full    // celá obrazovka: kvapka sa dá preniesť k ľubovoľnému okraju; kliky berú iba zóny
         anchor: bottom
         margin: 0
         level: top
         reserve: -1     // ignorovať vyhradené pásy (lišta Noctalie): okraj kvapky je skutočný okraj obrazovky
         rate: 60        // pokojný pohyb kvapky nepotrebuje 144 Hz: 12 % → 6 % jadra na RX 640
     }
-    permissions { services: "window", "window.*"; run: "hyprctl", "cat", "printenv", "latte-spustac", "latte-ponuka" }
+    permissions { services: "window", "window.*"; run: "hyprctl", "cat", "printenv", "latte-spustac", "latte-ponuka", "latte-kvapky" }
 
     // zoznam okien priamo zo služby (wlr-foreign-toplevel), bez logiky; ikona podľa triedy okna
     model wins max 10 { id: text; title: text; class: text; active: bool; minimized: bool }
     service window { list: wins }
     fact mode: plavajuce | dlazdice | paska = plavajuce
-    fact detached = false
-    fact pulling = false
+    fact side: dole | hore | vlavo | vpravo = dole   // okraj, pri ktorom lišta je (logika ho pamätá)
+    fact pos = 0.4                           // kde na okraji stojí hlava (podiel dĺžky okraja)
+    fact pulling = false                     // ťahá sa od okraja (stopka sa naťahuje)
+    fact free = false                        // odtrhnutá, ide za myšou
+    fact melting = false                     // pustená uprostred: steká
     fact solo = false                        // bez Noctalie: kvapky Štart a vypínač (logika podľa LATTE_VARIANT)
     event cycle ->
     event pick ->
     event wheel_turn ->
     event start_open ->
     event power_open ->
+    event side_moved ->
 
     let coffee = #1c0f09
     let cream = #f3ebdd
-    let edge = 260                           // spodný okraj obrazovky
-    let lx = screen.width * 0.4              // hlava: ľavý koniec, pevne (medzi kapsulami Noctalie)
+    let edge = 260                           // okraj v rámci kvapky (čiara y = 260, kvapka nad ňou)
+    let W = screen.width
+    let H = screen.height
+    let L = if(side == vlavo or side == vpravo, H, W)     // dĺžka okraja
+    let lx = L * pos                         // hlava: ľavý koniec (v rámci okraja)
     let bl = lx - 34                         // ľavý okraj tela
     let sx0 = lx - 86                        // kvapka Štart (pokojová poloha)
     let px0 = lx - 146                       // kvapka vypínač
     let n = wins.count
     let step = if(mode == paska, 54, 64)
 
+    // bez okien guľatá (kruh vpitý do okraja), s oknami podlhovastá podľa režimu
+    let round = if(n < 1, 1, 0)
     prop w = 150 ~lively
     prop h = 78 ~lively
     prop c = 39 ~lively
-    follow w = 150 + n * if(mode == paska, 54, if(mode == dlazdice, 34, 64))
-    follow h = if(mode == paska, 60, if(mode == dlazdice, 108, 78))
-    follow c = if(mode == paska, 20, if(mode == dlazdice, 30, 39))
+    follow w = if(round, 90, 150 + n * if(mode == paska, 54, if(mode == dlazdice, 34, 64)))
+    follow h = if(round, 90, if(mode == paska, 60, if(mode == dlazdice, 108, 78)))
+    follow c = if(round, 45, if(mode == paska, 20, if(mode == dlazdice, 30, 39)))
 
     // blízkosť myši kdekoľvek na ploche (cursor.x/y: pleamar sa pýta Hyprlandu, žiadna zóna nekradne kliky):
     // od štvrtiny výšky obrazovky (270 px pri 1080) sa kvapka vysúva, pri nej je vonku na 0,55
-    let dist.x = max(0, max(if(solo, px0 - 30, bl) - cursor.x, cursor.x - (bl + w)))
-    let dist.y = max(0, edge - h * 0.6 - cursor.y)
+    // myš v rámci okraja (inverzia otočenia skupiny nižšie)
+    let cu = pick(side, cursor.x, W - cursor.x, cursor.y, H - cursor.y)
+    let cv = pick(side, cursor.y - (H - edge), edge - cursor.y, edge - cursor.x, cursor.x - W + edge)
+    let dist.x = max(0, max(if(solo, px0 - 30, bl) - cu, cu - (bl + w)))
+    let dist.y = max(0, edge - h * 0.6 - cv)
     let approach = 1 - smooth(0, 270, length(dist.x, dist.y))
 
-    // von z okraja: 0 = vpitá do okraja, 1 = voľná, 48 px nad ním. Bez odskoku, aby stopka nepreskočila
-    // späť. Pri vysúvaní drží telo stopka pod hlavou: stĺpik od okraja k telu, roztavený s oboma koncami
-    // (preto je v strede tenší), ktorý sa od 0,4 zužuje, až pri 0,9 zmizne — kvapka sa odtrhne.
+    // von z okraja: 0 = vpitá do okraja, 0,55 = napoly vonku (myš pri nej), 0,9 = stopka praskne pri ťahaní.
+    // Bez odskoku, aby stopka nepreskočila späť. Pri vysúvaní drží telo stopka pod hlavou: stĺpik od okraja
+    // k telu, roztavený s oboma koncami (preto je v strede tenší), ktorý sa od 0,4 zužuje, až pri 0,9 zmizne.
     fact probe = 0                           // na skúšky: `pleamar --say kvapka "fact probe 75"` zastaví kvapku na 0,75
-    prop pull = 0 ~quick                     // ťahanie myšou: −1 nadol … 1 nahor
+    prop pull = 0 ~quick                     // ťahanie myšou od okraja: −1 k okraju … 1 preč
     prop out = 0 ~700ms
-    follow out = if(probe > 0, probe / 100, if(pulling, clamp(if(detached, 1, 0.55) + pull * 0.45, 0, 1), if(detached, 1, 0.55 * approach)))
+    follow out = if(probe > 0, probe / 100, if(pulling and not free, clamp(0.55 + pull * 0.45, 0, 1), 0.55 * approach))
+    // ap: lišta je pri okraji (1) alebo vtiahnutá doň (0) — kým ide za myšou, steká, alebo sa vynára inde
+    prop ap = 1 ~600ms
     let sink = h * 0.42
-    let bottom = edge + sink * (1 - out) - 48 * out
+    let bottom = edge + sink * (1 - out) - 48 * out + (h + 44) * (1 - ap)
     let by = bottom - h
     let mid = by + h / 2
-    let neck = 14 * (1 - out) + 16 * 4 * out * (1 - out)
+    let neck = if(round, 24, 14) * (1 - out) + 16 * 4 * out * (1 - out)
     let stalk.w = 30 * clamp((0.9 - out) / 0.5, 0, 1)
     let stalk.x = lx + 6
     // „voda“ pod okrajom: v pokoji široká (kvapka sa zlieva s okrajom do roviny), vonku úzka pod hlavou
     let water.w = 40 + (w + 90) * (1 - out) * (1 - out)
     let water.x = stalk.x + (bl + w / 2 - stalk.x) * (1 - out)
 
+    // odtrhnutá kvapka (v súradniciach obrazovky): ide za myšou s oneskorením, zaguľatí sa; pri stekaní padá,
+    // naťahuje sa a mizne
+    prop gx = 0 ~lively
+    prop gy = 0 ~lively
+    prop gw = 90 ~lively
+    prop gh = 90 ~lively
+    prop fall = 0 ~1000ms
+    prop dockt = 0 ~260ms
+    let near.edge = min(min(cursor.x, W - cursor.x), min(cursor.y, H - cursor.y))
+
     prop wob = 0 ~lively
     prop squish = 0 ~quick
     prop squish.s = 0 ~quick
     prop squish.p = 0 ~quick
-    on change detached { impulse wob if(detached, 90, -60) }
+    on change ap > 0.9 while ap > 0.9 { impulse wob 70 }
 
     // Štart a vypínač: bez odtrhnutia, iba sa vysunú (pri myši napoly von, ako hlavná kvapka)
     prop so = 0 ~lively
@@ -101,8 +127,8 @@ scene Kvapka {
     let sx = sx0 + 18 * lift + 10 * hh - 9 * hp
     let px = px0 + 12 * lift + 12 * hs
     let hx = lx - 7 * hs
-    let s.y = edge + 10 - 36 * lift - 4 * hs
-    let p.y = edge + 8 - 26 * lift - 4 * hp
+    let s.y = edge + 10 - 36 * lift - 4 * hs + 60 * (1 - ap)
+    let p.y = edge + 8 - 26 * lift - 4 * hp + 60 * (1 - ap)
     let link = 10 + 16 * lift
     // goo vlákna: vypínač ↔ Štart a Štart ↔ telo lišty. Hrubnú s priblížením myši; keď sa lišta odtrhne
     // (out → 1), vlákno k nej sa stenčí a pretrhne. Roztavené s oboma koncami (blend), preto uprostred tenšie.
@@ -116,8 +142,12 @@ scene Kvapka {
         follow b.$k = if(k < n and mode != dlazdice, 1, 0)
     }
 
-    // objem kvapky: svetlo zhora, lem a tieň z pleamaru, navrch odlesk (nižšie)
+    // objem kvapky: svetlo zhora, lem a tieň z pleamaru, navrch odlesk. Skupina otočí rámec k okraju `side`
+    // (otočenie okolo bodu okraja 0, edge a posun; inverzia je cu/cv vyššie).
     group {
+        pivot: 0, edge
+        rotate: pick(side, 0deg, 180deg, 90deg, -90deg)
+        move: pick(side, 0, W, 0, W), pick(side, H - edge, 0 - edge, 0 - edge, H - edge)
         body {
             color: coffee
             light: 16%, by - 40, 34
@@ -127,7 +157,7 @@ scene Kvapka {
             box { at: bl + w / 2, mid; size: w + wob * 0.12, h * (1 - squish * 0.08) - wob * 0.1; corner: c; blend: neck }
             box stalk { from: stalk.x - stalk.w / 2, bottom - 12; size: stalk.w, edge - bottom + 24; corner: stalk.w / 2; blend: 16 * clamp(stalk.w / 10, 0, 1) }
             ellipse { at: hx, by - 4 - wob * 0.05; radius: 33 + 3 * hh; blend: 22 }
-            ellipse { at: bl + w - 22 + noise(time * 0.42 + 7) * 28, mid + noise(time * 0.3) * 6; radius: 27; blend: 22 }
+            ellipse { at: bl + w - 22 + noise(time * 0.42 + 7) * if(round, 8, 28), mid + noise(time * 0.3) * 6; radius: 27; blend: 22 }
             ellipse { at: bl + 80 + 0 * step, mid; radius: 26 * b.0; blend: 16 }
             ellipse { at: bl + 80 + 1 * step, mid; radius: 26 * b.1; blend: 16 }
             ellipse { at: bl + 80 + 2 * step, mid; radius: 26 * b.2; blend: 16 }
@@ -143,48 +173,73 @@ scene Kvapka {
             ellipse { at: sx, s.y; radius: (26 + 5 * hs) * so; scale: 1 + squish.s * 0.08, 1 - squish.s * 0.12; blend: link * so }
             ellipse { at: px, p.y; radius: (19 + 4 * hp) * so; scale: 1 + squish.p * 0.08, 1 - squish.p * 0.12; blend: link * so }
             line { from: px, p.y - 4; to: sx, s.y - 6; width: thread.ps; blend: 12 * clamp(thread.ps / 3, 0, 1) }
-            line { from: sx + 8, s.y - 12; to: bl + 18, bottom - 14; width: thread.sb; blend: 14 * clamp(thread.sb / 3, 0, 1) }
+            line { from: sx + 8, s.y - 12; to: bl + 18, bottom - 14; width: thread.sb * ap; blend: 14 * clamp(thread.sb * ap / 3, 0, 1) }
+        }
+        // odlesk: dlhý mäkký pás pozdĺž hornej hrany tela a lesklá bodka na hlave (ako na mokrej kvapke)
+        group {
+            blur: 3
+            opacity: 30% * ap
+            ellipse { at: bl + 40 + (w - 40) * 0.5, by + 8; radius: 10; scale: max(0.5, (w - 70) / 20), 0.32; color: #ffffff }
+        }
+        group {
+            blur: 1.5
+            opacity: 75% * ap
+            ellipse { at: hx + 20, by - 27; radius: 3.2; scale: 1.3, 0.8; rotate: 40deg; color: #fff6ea }
+        }
+        zone box body_hit { at: bl + w / 2, mid; size: w, h; corner: c; cursor: grab }
+        zone ellipse start_hit { at: sx, s.y; radius: 26; cursor: pointer; active: solo }
+        zone ellipse power_hit { at: px, p.y; radius: 19; cursor: pointer; active: solo }
+        zone ellipse head_hit { at: hx, by - 4; radius: 33; cursor: pointer; active: not free }
+        repeat k in 0..10 {
+            zone box icon_hit.$k { at: bl + 80 + k * step, mid; size: 44, 44; corner: 12; cursor: pointer; active: k < n and mode != dlazdice and not free }
         }
     }
 
-    // odlesk: dlhý mäkký pás pozdĺž hornej hrany tela a lesklá bodka na hlave (ako na mokrej kvapke)
-    group {
-        blur: 3
-        opacity: 30%
-        ellipse { at: bl + 40 + (w - 40) * 0.5, by + 8; radius: 10; scale: (w - 70) / 20, 0.32; color: #ffffff }
-    }
-    group {
-        blur: 1.5
-        opacity: 75%
-        ellipse { at: hx + 20, by - 27; radius: 3.2; scale: 1.3, 0.8; rotate: 40deg; color: #fff6ea }
+    // odtrhnutá kvapka: za myšou; pri stekaní padá (smerom dole na obrazovke), naťahuje sa, zmenšuje a kvapká
+    body {
+        color: coffee
+        light: 16%, gy - gh / 2 - 10, 30
+        rim: 30%
+        shadow: 0, 8, 18, 40%
+        opacity: if(free, 1, 0)
+        box { at: gx, gy + 150 * fall; size: gw * (1 - 0.7 * fall), gh * (1 + 0.5 * fall) * (1 - 0.8 * fall); corner: min(gw, gh) / 2 * (1 - 0.7 * fall) }
+        ellipse { at: gx - 12, gy + gh * 0.4 + 210 * fall * fall; radius: 9 * fall * (1 - fall) * 4; blend: 10 }
+        ellipse { at: gx + 16, gy + gh * 0.3 + 260 * fall * fall; radius: 6 * fall * (1 - fall) * 4; blend: 8 }
     }
 
+    // ikony stoja rovno: bod rámca (u, v) → obrazovka podľa okraja
     repeat k in 0..10 {
-        image icon.$k { at: bl + 65 + k * step, mid - 15; size: 30, 30; opacity: b.$k; show: k < n and mode != dlazdice }
-        box { at: bl + 80 + k * step, mid + 22; size: 14, 3; corner: 1.5; color: cream; show: k < n and wins.$k.active and mode != dlazdice }
+        image icon.$k { at: pick(side, bl + 80 + k * step, W - (bl + 80 + k * step), edge - mid, W - edge + mid) - 15, pick(side, mid + H - edge, edge - mid, bl + 80 + k * step, H - (bl + 80 + k * step)) - 15; size: 30, 30; opacity: b.$k * ap; show: k < n and mode != dlazdice }
+        box { at: pick(side, bl + 80 + k * step, W - (bl + 80 + k * step), edge - mid - 22, W - edge + mid + 22), pick(side, mid + 22 + H - edge, edge - mid - 22, bl + 80 + k * step, H - (bl + 80 + k * step)); size: if(side == vlavo or side == vpravo, 3, 14), if(side == vlavo or side == vpravo, 14, 3); corner: 1.5; color: cream; opacity: ap; show: k < n and wins.$k.active and mode != dlazdice }
     }
 
     image start_icon = icon "view-app-grid-symbolic", 22, 22
     image power_icon = icon "system-shutdown-symbolic", 18, 18
-    image start_icon { at: sx - 11, s.y - 11; size: 22, 22; tint: cream; opacity: so * (0.4 + 0.6 * lift); show: solo }
-    image power_icon { at: px - 8, p.y - 8; size: 16, 16; tint: cream; opacity: so * (0.4 + 0.6 * lift); show: solo }
+    image start_icon { at: pick(side, sx, W - sx, edge - s.y, W - edge + s.y) - 11, pick(side, s.y + H - edge, edge - s.y, sx, H - sx) - 11; size: 22, 22; tint: cream; opacity: so * (0.4 + 0.6 * lift) * ap; show: solo }
+    image power_icon { at: pick(side, px, W - px, edge - p.y, W - edge + p.y) - 8, pick(side, p.y + H - edge, edge - p.y, px, H - px) - 8; size: 16, 16; tint: cream; opacity: so * (0.4 + 0.6 * lift) * ap; show: solo }
 
-    text pick(mode, "Floating windows", "Tiles", "Endless strip") { at: lx - 30, by - 56; anchor: left center; size: 12; weight: 700; color: cream; opacity: 70% * out }
+    text pick(mode, "Floating windows", "Tiles", "Endless strip") { at: pick(side, lx - 30, W - lx - 30, edge - by + 40, W - edge + by - 150), pick(side, by - 56 + H - edge, edge - by + 56, lx - 60, H - lx - 60); anchor: left center; size: 12; weight: 700; color: cream; opacity: 70% * out * ap }
 
-    zone box body_hit { at: bl + w / 2, mid; size: w, h; corner: c; cursor: pointer }
-    zone ellipse start_hit { at: sx, s.y; radius: 26; cursor: pointer; active: solo }
-    zone ellipse power_hit { at: px, p.y; radius: 19; cursor: pointer; active: solo }
-    zone ellipse head_hit { at: hx, by - 4; radius: 33; cursor: pointer }
-    repeat k in 0..10 {
-        zone box icon_hit.$k { at: bl + 80 + k * step, mid; size: 44, 44; corner: 12; cursor: pointer; active: k < n and mode != dlazdice }
-    }
-
-    // telo: klik odtrhne / vráti; ťahanie nahor ťahá stopku (nad 0,7 sa pretrhne), nadol vracia
+    // telo: vlastné menu nemá. Chytiť a ťahať od okraja: stopka sa naťahuje (pull), pri 0,9 praskne a kvapka
+    // ide za myšou; pustená pri okraji (do 170 px) sa k nemu prilepí, inde steká a vynorí sa, kde bola.
+    // Pustená skôr, než stopka praskne: vráti sa. Samotný klik nerobí nič (iba stlačí kvapku).
     on press body_hit { squish: 1 }
-    on drag body_hit { pull: clamp(-drag.dy / 90, -1, 1) ~0ms }
-    on drag body_hit while abs(drag.dy) > 6 { pulling = true }
-    on release body_hit while pulling { detached = out > 0.8; pulling = false; pull: 0; squish: 0 }
-    on release body_hit while not pulling { toggle detached; pull: 0; squish: 0 }
+    on drag body_hit while not free { pull: clamp(pick(side, 0 - drag.dy, drag.dy, drag.dx, 0 - drag.dx) / 90, -1, 1) ~0ms }
+    on drag body_hit while not free and abs(drag.dx) + abs(drag.dy) > 6 { pulling = true }
+    on drag body_hit while free { gx: pointer.x; gy: pointer.y }
+    on change out > 0.9 while out > 0.9 and pulling and not free { free = true; ap: 0 ~0ms; gx: cursor.x ~0ms; gy: cursor.y ~0ms; gw: w ~0ms; gh: h ~0ms; gw: 90 after 30ms; gh: 90 after 30ms; fall: 0 ~0ms }
+    on release body_hit while not free { pulling = false; pull: 0; squish: 0 }
+    on release body_hit while free and near.edge < 170 and near.edge == H - cursor.y { side = dole; pos = clamp(cursor.x / W, 0.1, 0.6); gx: cursor.x; gy: H; dockt: 1 }
+    on release body_hit while free and near.edge < 170 and near.edge == cursor.y { side = hore; pos = clamp((W - cursor.x) / W, 0.1, 0.6); gx: cursor.x; gy: 0; dockt: 1 }
+    on release body_hit while free and near.edge < 170 and near.edge == cursor.x { side = vlavo; pos = clamp(cursor.y / H, 0.1, 0.6); gx: 0; gy: cursor.y; dockt: 1 }
+    on release body_hit while free and near.edge < 170 and near.edge == W - cursor.x { side = vpravo; pos = clamp((H - cursor.y) / H, 0.1, 0.6); gx: W; gy: cursor.y; dockt: 1 }
+    on release body_hit while free and near.edge >= 170 { melting = true }
+    on change melting while melting { fall: 1 }
+    on release body_hit while free { pulling = false; pull: 0; squish: 0 }
+    // prilepenie: kvapka dobehne k okraju, potom sa lišta vynorí z okraja na novom mieste
+    on change dockt > 0.95 while dockt > 0.95 { free = false; dockt: 0 ~0ms; ap: 1; emit side_moved }
+    // stečenie: po páde sa lišta vynorí na starom mieste
+    on change fall > 0.95 while fall > 0.95 and melting { free = false; melting = false; fall: 0 ~0ms; ap: 1 }
     // hlava: režim okien; koliesko: páska = posun, plávajúce = ďalšie okno
     on press head_hit { emit cycle; squish: 1; squish.s: 0.5 after 70ms; squish.p: 0.35 after 140ms }
     on release head_hit { squish: 0; squish.s: 0 after 70ms; squish.p: 0 after 140ms }

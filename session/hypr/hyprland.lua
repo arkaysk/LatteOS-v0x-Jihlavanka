@@ -50,15 +50,22 @@ hl.env("HYPRCURSOR_SIZE", cursor_size)
 -- ── vzhľad (spoločný pre všetky stupne) ───────────────────────────────────────
 -- plocha LatteOS Kvapky (relácia, alebo `latte-kvapky skusit` → príznak v XDG_RUNTIME_DIR): bez lišty Noctalie,
 -- ktorá si dole vyhradí pás, nechajú okná miesto pre kvapku samy
-local kvapky = os.getenv("LATTE_VARIANT") == "kvapky"
+-- (obsah príznaku = okraj, ku ktorému používateľ lištu-kvapku prilepil: dole | hore | vlavo | vpravo)
+local kvapky = os.getenv("LATTE_VARIANT") == "kvapky" and "dole" or nil
 do
     local f = io.open((os.getenv("XDG_RUNTIME_DIR") or "/tmp") .. "/latteos/kvapky", "r")
-    if f then f:close(); kvapky = true end
+    if f then kvapky = (f:read("*l") or ""):match("%a+") or "dole"; f:close() end
+end
+local gaps_out = 10
+if kvapky then
+    gaps_out = { top = 10, right = 10, bottom = 10, left = 10 }
+    local key = ({ dole = "bottom", hore = "top", vlavo = "left", vpravo = "right" })[kvapky] or "bottom"
+    gaps_out[key] = 64
 end
 hl.config({
     general = {
         gaps_in = 5,
-        gaps_out = kvapky and { top = 10, right = 10, bottom = 64, left = 10 } or 10,
+        gaps_out = gaps_out,
         border_size = 2,
         col = { active_border = colors.active, inactive_border = colors.inactive },
         resize_on_border = true,

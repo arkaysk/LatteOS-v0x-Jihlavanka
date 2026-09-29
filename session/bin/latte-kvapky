@@ -5,6 +5,7 @@
 #   latte-kvapky skusit   z bežiacej klasickej plochy do Kvapiek bez odhlásenia (vypne Noctaliu a pomocníkov)
 #   latte-kvapky spat     späť na klasickú plochu (Noctalia a pomocníci ako pri štarte, bežné okraje okien)
 #   latte-kvapky stav     „kvapky“ alebo „klasicke“
+#   latte-kvapky okraj [dole|hore|vlavo|vpravo POLOHA]   okraj lišty-kvapky (presun ťahaním); bez argumentov vypíše
 # Ostáva: Kapsa (história schránky), App Manager (spúšťač, kvapka Štart) a systémové ponuky (Ctrl+Alt+Del,
 # kvapka vypínač) — bez nich by sa z plochy nedalo nič spustiť ani sa odhlásiť.
 set -u
@@ -17,10 +18,17 @@ classic="netznak kapsavyrez nahlad plocha rychle pohoda maskot zivatapeta"
 qs_app() { pgrep -f "latteos/apps/$1\.qml" >/dev/null; }
 start_app() { qs_app "$1" || setsid -f latte-app "$1" >/dev/null 2>&1; }
 
-flag="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/latteos/kvapky"
-gaps() {   # okná nechajú dole miesto pre kvapku (Noctalia si ho inak vyhradí sama); príznak platí aj po reload-e
-    if [ "$1" -gt 10 ]; then mkdir -p "$(dirname "$flag")"; : > "$flag"; else rm -f "$flag"; fi
-    hyprctl eval "hl.config({ general = { gaps_out = { top = 10, right = 10, bottom = $1, left = 10 } } })" >/dev/null
+flag="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/latteos/kvapky"          # plocha Kvapky beží; obsah = okraj lišty
+okraj="${XDG_STATE_HOME:-$HOME/.local/state}/latteos/kvapka-okraj"    # „dole 0.400“ (pamätá sa)
+side() { s="$(cut -d' ' -f1 "$okraj" 2>/dev/null)"; case "$s" in dole|hore|vlavo|vpravo) echo "$s" ;; *) echo dole ;; esac; }
+gaps() {   # okná nechajú pri okraji lišty miesto pre kvapku (Noctalia si ho inak vyhradí sama); platí aj po reload-e
+    local t=10 r=10 b=10 l=10
+    if [ "$1" = off ]; then rm -f "$flag"
+    else
+        mkdir -p "$(dirname "$flag")"; echo "$1" > "$flag"
+        case "$1" in dole) b=64 ;; hore) t=64 ;; vlavo) l=64 ;; vpravo) r=64 ;; esac
+    fi
+    hyprctl eval "hl.config({ general = { gaps_out = { top = $t, right = $r, bottom = $b, left = $l } } })" >/dev/null
 }
 
 scene_up() {
@@ -34,7 +42,7 @@ scene_up() {
 case "${1:-}" in
     start)
         mkdir -p "${XDG_STATE_HOME:-$HOME/.local/state}/latteos"
-        gaps 64
+        gaps "$(side)"
         latte-tapety obnov --bez-shellu
         pgrep -f "wl-paste --type text --watch latte-kapsa-store" >/dev/null || setsid -f wl-paste --type text --watch latte-kapsa-store
         pgrep -f "wl-paste --type image --watch latte-kapsa-store" >/dev/null || setsid -f wl-paste --type image --watch latte-kapsa-store
@@ -50,12 +58,18 @@ case "${1:-}" in
         ;;
     spat)
         pkill -x pleamar
-        gaps 10
+        gaps off
         pgrep -x noctalia >/dev/null || setsid -f noctalia >/dev/null 2>&1
         [ -f "${XDG_CONFIG_HOME:-$HOME/.config}/latteos/live-wallpaper" ] && start_app zivatapeta
         for a in netznak kapsavyrez nahlad plocha rychle pohoda maskot; do start_app "$a"; done
         # statická tapeta z mpvpaperu (bez shellu) ustúpi natívnej tapete Noctalie; živé video ostáva
         latte-tapety obnov >/dev/null 2>&1
+        ;;
+    okraj)
+        if [ -z "${2:-}" ]; then cat "$okraj" 2>/dev/null || echo "dole 0.400"; exit 0; fi
+        case "$2" in dole|hore|vlavo|vpravo) ;; *) echo "neznámy okraj: $2" >&2; exit 1 ;; esac
+        mkdir -p "$(dirname "$okraj")"; echo "$2 ${3:-0.4}" > "$okraj"
+        [ -e "$flag" ] && gaps "$2"
         ;;
     stav)
         if pgrep -x noctalia >/dev/null; then echo klasicke; else echo kvapky; fi
