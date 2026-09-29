@@ -215,7 +215,7 @@ impl Probe {
         let cmdline = Cmdline::read();
         let gpus = gpus();
         let has_drm = gpus.iter().any(|g| Path::new(&format!("/dev/dri/{}", g.card)).exists());
-        let t = Duration::from_millis(2000);
+        let t = Duration::from_millis(10_000); // studená vyrovnávacia pamäť na pomalom HDD: prvé načítanie Mesa/LLVM presiahlo 2 s (latte-lab, 29. 9. 2026)
         let (egl_default, egl_sw) = if has_drm && !cmdline.nomodeset {
             // oba testy paralelne: štart čaká len na pomalší z nich
             let sw = thread::spawn(move || egl_gbm(&[("MESA_LOADER_DRIVER_OVERRIDE", "kms_swrast")], t));
