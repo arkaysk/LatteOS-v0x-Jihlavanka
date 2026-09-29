@@ -23,7 +23,9 @@ local colors = {
 
 -- ── monitory ──────────────────────────────────────────────────────────────────
 -- mierka 1: „auto“ vo VM zvolil 2 (lišta dvojnásobná). Na HW ju neskôr nastaví Device Manager.
-hl.monitor({ output = "", mode = "preferred", position = "auto", scale = 1 })
+-- s grafickou kartou najvyššia obnovovacia frekvencia (vstavaný režim Hyprlandu „highrr“; monitory
+-- často ako „preferred“ hlásia 60 Hz, napr. Acer Z301C pri 144 Hz); bez GPU stojí každá snímka CPU → „preferred“
+hl.monitor({ output = "", mode = (mode.renderer == "hw") and "highrr" or "preferred", position = "auto", scale = 1 })
 -- obrazovky uložené v Device Manageri (latte-devices display keep) prepíšu predvolené pravidlo
 do
     local f = (os.getenv("XDG_CONFIG_HOME") or ((os.getenv("HOME") or "") .. "/.config")) .. "/latteos/monitors.lua"

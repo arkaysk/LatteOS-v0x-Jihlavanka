@@ -77,7 +77,7 @@ impl Config {
 struct Decision {
     mode: &'static str,     // normal | safe
     renderer: &'static str, // hw | vm-3d | sw-gl | pixman
-    tier: &'static str,     // standard | softver | safe  (plné stupne doplní Device Manager)
+    tier: &'static str,     // plny | standard | usporny | minimalny (latte_hw::tier_for) | softver | safe
     reason: String,
 }
 
@@ -109,12 +109,18 @@ fn decide(p: &Probe, cfg: &Config, crashes: u32, force_safe: bool) -> Decision {
     let d = &p.egl_default;
     let sw = &p.egl_sw;
     let normal = |renderer, tier, reason: String| Decision { mode: "normal", renderer, tier, reason };
+    // stupeň pre grafickú kartu (hlavná karta, inak prvá) — radar: Škálovanie hardvéru
+    let hw = |reason: String| {
+        let (tier, why) = p.gpus.iter().find(|g| g.boot_vga).or(p.gpus.first()).map(latte_hw::tier_for)
+            .unwrap_or(("standard", String::new()));
+        Decision { mode: "normal", renderer: "hw", tier, reason: if why.is_empty() { reason } else { format!("{reason}; stupeň: {why}") } }
+    };
 
     match cm.renderer.as_deref() {
         Some("pixman") => return safe("vynútené latte.renderer=pixman"),
         Some("sw-gl") if sw.gles_at_least(3, 0) => return normal("sw-gl", "softver", "vynútené latte.renderer=sw-gl".into()),
         Some("vm-3d") if d.gles_at_least(3, 0) => return normal("vm-3d", "softver", "vynútené latte.renderer=vm-3d".into()),
-        Some("hw") if d.gles_at_least(3, 0) => return normal("hw", "standard", "vynútené latte.renderer=hw".into()),
+        Some("hw") if d.gles_at_least(3, 0) => return hw("vynútené latte.renderer=hw".into()),
         _ => {}
     }
 
@@ -122,12 +128,12 @@ fn decide(p: &Probe, cfg: &Config, crashes: u32, force_safe: bool) -> Decision {
     // ako wlroots — padne až pri zlyhaní; pád relácie prepne na SAFE cez počítadlo pádov
     if d.timed_out && p.virt.is_none() {
         if let Some(g) = p.gpus.iter().find(|g| g.boot_vga && REAL_KMS.contains(&g.driver.as_str())) {
-            return normal("hw", "standard", format!("test grafiky vypršal ({} ms), používa sa ovládač {}; pád relácie → SAFE", d.millis, g.driver));
+            return hw(format!("test grafiky vypršal ({} ms), používa sa ovládač {}; pád relácie → SAFE", d.millis, g.driver));
         }
     }
     if d.gles_at_least(3, 0) && !d.is_software() {
         if p.virt.is_none() {
-            return normal("hw", "standard", format!("HW akcelerácia: {} (GLES {}.{})", d.renderer, d.gles.0, d.gles.1));
+            return hw(format!("HW akcelerácia: {} (GLES {}.{})", d.renderer, d.gles.0, d.gles.1));
         }
         if cfg.allow_vm3d {
             return normal("vm-3d", "softver", format!("VM 3D povolené v boot.toml: {}", d.renderer));
@@ -381,7 +387,7 @@ mod tests {
         Probe {
             cmdline: Cmdline::parse(cmdline),
             virt: virt.map(String::from),
-            gpus: vec![Gpu { card: "card0".into(), vendor: "0x15ad".into(), device: "0x0405".into(), driver: "vmwgfx".into(), boot_vga: true, connected: 1 }],
+            gpus: vec![Gpu { card: "card0".into(), vendor: "0x15ad".into(), device: "0x0405".into(), driver: "vmwgfx".into(), boot_vga: true, connected: 1, vram_mb: 0, gfx: 0, apu: false }],
             egl_default: d,
             egl_sw: sw,
             millis: 1,
@@ -443,9 +449,28 @@ mod tests {
 
     #[test]
     fn real_hw_uses_gpu() {
-        let p = probe(None, egl("AMD Radeon RX 6700 XT", (3, 2)), egl("llvmpipe", (3, 2)), "");
+        let mut p = probe(None, egl("AMD Radeon RX 6700 XT", (3, 2)), egl("llvmpipe", (3, 2)), "");
+        p.gpus[0] = Gpu { card: "card1".into(), vendor: "0x1002".into(), device: "0x73df".into(), driver: "amdgpu".into(),
+                          boot_vga: true, connected: 1, vram_mb: 12272, gfx: 100301, apu: false };
         let d = decide(&p, &cfg(), 0, false);
-        assert_eq!((d.renderer, d.tier), ("hw", "standard"));
+        assert_eq!((d.renderer, d.tier), ("hw", "plny"));
+    }
+
+    fn amd(gfx: u32, vram_mb: u64, apu: bool) -> Gpu {
+        Gpu { card: "card1".into(), vendor: "0x1002".into(), device: "0x6987".into(), driver: "amdgpu".into(),
+              boot_vga: true, connected: 1, vram_mb, gfx, apu }
+    }
+
+    #[test]
+    fn tiers_follow_radar_table() {
+        assert_eq!(latte_hw::tier_for(&amd(80003, 4096, false)).0, "usporny");   // RX 550/640 (latte-lab)
+        assert_eq!(latte_hw::tier_for(&amd(100302, 8192, false)).0, "standard"); // RX 6600
+        assert_eq!(latte_hw::tier_for(&amd(110000, 24576, false)).0, "plny");    // RX 7900 XTX
+        assert_eq!(latte_hw::tier_for(&amd(90012, 512, true)).0, "minimalny");   // Renoir APU
+        let nv = |d: &str| Gpu { vendor: "0x10de".into(), device: d.into(), driver: "nvidia".into(), ..amd(0, 0, false) };
+        assert_eq!(latte_hw::tier_for(&nv("0x1c03")).0, "usporny");              // GTX 1060
+        assert_eq!(latte_hw::tier_for(&nv("0x2504")).0, "standard");             // RTX 3060
+        assert!(latte_hw::tier_for(&amd(80003, 4096, false)).1.contains("gfx803"));
     }
 
     #[test]
