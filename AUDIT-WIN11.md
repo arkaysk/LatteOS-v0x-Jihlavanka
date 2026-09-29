@@ -129,6 +129,13 @@ s pripnutými aplikáciami, akcie lišty pre herný režim a Zobraziť plochu. V
 | [fasi96/hyprglass](https://github.com/fasi96/hyprglass) | Liquid Glass + svetlo podľa kurzora, náklon, žiara po kliknutí | presne nápady z radaru („svetlo podľa myši“, „náklon ±2°“); BSD-3, aktívny |
 | [TimaDub/hyprglass](https://github.com/TimaDub/hyprglass) | lom, šošovka, difrakcia na priehľadných oknách | BSD-3 |
 
+**Podnety používateľa 29. 9. (Reddit, zo snímok obrazovky)**
+
+| Projekt | Čo ukazuje | Pre LatteOS |
+|---|---|---|
+| „Super Notchy“ motion reel (r/Anthropic, dizajn Claude) | výrez hore v strede so 3 prstencami (7 %, 42 %, 82 %), ktorý sa rozbalí do HUD; sústredné prstence spotreby; karty padajúce v 3D; veľké tesné groteskné písmo | **výrez so stavom** (hra, nahrávanie, sťahovanie, CPU/GPU) a **prstence** pre Zariadenia/herný blok; rohové mono popisky a „01 / HEADLINE“ sú predvolené AI trópy — nepreberať |
+| [pleamar](https://github.com/k4ditano/pleamar) + [Marea](https://github.com/k4ditano/marea-plm) (r/hyprland) | Rust + wgpu + layer-shell, kreslenie cez **SDF**, každá vlastnosť je pružina, animácia beží vo vlastnom vlákne nezávisle od logiky; skripty v **Luau** (ako naše pluginy Noctalie); na Hyprlande beží vedľa iného shellu. Autor meral ten istý bar: pamäť **336 → 81 MB**, prvá snímka **1876 → 175 ms**, animácia **~24 → 60 FPS**, CPU v pokoji **0,3 %** (vs. Quickshell). Marea = čierna **kvapka slizu** hore na obrazovke s očami, pri myši sa vlní ako želatína a **roztečie sa do panelov** (spúšťač, prehľad) | nápad **„Kvapka“**: maskot LatteOS ako kvapka espressa/crema, ktorá je zároveň výrez so stavom a vstup do panelov (tekutá premena namiesto tvaru L). Technológia: BSD-3, ale **10 dní stará**, 1 autor → nie náhrada Noctalie; kandidát na prototyp kvapky a neskôr na náhradu 9 procesov Quickshellu (~318 MB, ROADMAP O) |
+
 ## Návrh rozhrania: „rozloženie Windows 11, materiál LatteOS“
 
 1. **Lišta s oblasťami Windows 11, tvar ostrovov LatteOS** (zľava doprava, voľba „na stred“ ako Win11):
