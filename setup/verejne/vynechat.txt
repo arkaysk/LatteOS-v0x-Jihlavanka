@@ -6,3 +6,4 @@ ROADMAP.md
 resources/art/maskoti/KATALOG.md
 setup/verejne/
 README.md
+AUDIT-WIN11.md
