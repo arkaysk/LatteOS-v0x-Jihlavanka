@@ -29,7 +29,7 @@ scene Kvapka {
         rate: 60        // pokojný pohyb kvapky nepotrebuje 144 Hz: 12 % → 6 % jadra na RX 640
         keyboard: on_demand while dash   // hľadanie v dashboarde
     }
-    permissions { services: "window", "window.*", "clock", "notifications", "notifications.*", "apps", "apps.*"; run: "hyprctl", "cat", "printenv", "curl", "latte-spustac", "latte-ponuka", "latte-kvapky" }
+    permissions { services: "window", "window.*", "clock", "notifications", "notifications.*", "apps", "apps.*", "network", "bluetooth", "audio", "audio.*"; run: "noctalia", "hyprctl", "cat", "printenv", "curl", "latte-spustac", "latte-ponuka", "latte-kvapky" }
 
     // zoznam okien priamo zo služby (wlr-foreign-toplevel), bez logiky; ikona podľa triedy okna
     model wins max 10 { id: text; title: text; class: text; active: bool; minimized: bool }
@@ -59,6 +59,16 @@ scene Kvapka {
     event pin_open ->
     event note_open ->
     event notes_clear ->
+    event dash_toggle                        // Super (latte-spustac) v ploche Kvapky
+    // rýchle nastavenia v dashboarde: stav zo služieb pleamaru, prepínanie cez Noctaliu (jej OSD, jej ovládacie centrum)
+    service network as net { online: bool; wifi: bool; name: text }
+    service bluetooth as bt { present: bool; powered: bool }
+    service audio as snd { volume: number; muted: bool }
+    event qs_wifi ->
+    event qs_bt ->
+    event qs_mute ->
+    event qs_more ->
+    event qs_vol ->
     event hover ->
     event unhover ->
     fact mode: plavajuce | dlazdice | paska = plavajuce
@@ -311,6 +321,10 @@ scene Kvapka {
     }
 
     image power_icon = icon "system-shutdown-symbolic", 18, 18
+    image qs_wifi_i = icon "network-wireless-symbolic", 20, 20
+    image qs_bt_i = icon "bluetooth-active-symbolic", 20, 20
+    image qs_snd_i = icon "audio-volume-high-symbolic", 20, 20
+    image qs_more_i = icon "emblem-system-symbolic", 20, 20
     // Hodiny: čas a dátum stoja rovno v kvapke (bod rámca → obrazovka)
     let cxs = pick(side, sx, W - sx, edge - s.y, W - edge + s.y)
     let cys = pick(side, s.y + H - edge, edge - s.y, sx, H - sx)
@@ -336,7 +350,7 @@ scene Kvapka {
 
     // ── dashboard (vyteká z Hodín smerom od okraja; v obrazovke, text rovno) ──
     let dw = 560
-    let dh = 450
+    let dh = 520
     let dt.x = if(vert, cxs + away.x * (40 + dw / 2), clamp(cxs + 190, dw / 2 + 12, W - dw / 2 - 12))
     let dt.y = if(vert, clamp(cys, dh / 2 + 12, H - dh / 2 - 12), cys + away.y * (40 + dh / 2))
     let dc.x = cxs + (dt.x - cxs) * dsh
@@ -383,6 +397,24 @@ scene Kvapka {
             image pins.$k.icon { at: d0.x + k * 84 + 12, d0.y + 334; size: 36, 36; show: not typing and k < pins.count }
             text pins.$k.name { at: d0.x + k * 84 + 30, d0.y + 386; anchor: center; width: 80; lines: 1; size: 10.5; color: ink; opacity: 80%; show: not typing and k < pins.count }
         }
+        // rýchle nastavenia (previazané s Noctaliou)
+        line { from: d0.x, d0.y + 410; to: d0.x + dw - 56, d0.y + 410; width: 1; color: ink; opacity: 12% }
+        ellipse { at: d0.x + 22, d0.y + 446; radius: 22; color: if(net.wifi, #e4b283, #3a2618) }
+        ellipse { at: d0.x + 86, d0.y + 446; radius: 22; color: if(bt.powered, #e4b283, #3a2618); show: bt.present }
+        ellipse { at: d0.x + 150, d0.y + 446; radius: 22; color: if(snd.muted, #3a2618, #e4b283) }
+        ellipse { at: d0.x + 214, d0.y + 446; radius: 22; color: #3a2618 }
+        image qs_wifi_i { at: d0.x + 12, d0.y + 436; size: 20, 20; tint: if(net.wifi, #2a170c, cream) }
+        image qs_bt_i { at: d0.x + 76, d0.y + 436; size: 20, 20; tint: if(bt.powered, #2a170c, cream); show: bt.present }
+        image qs_snd_i { at: d0.x + 140, d0.y + 436; size: 20, 20; tint: if(snd.muted, cream, #2a170c) }
+        image qs_more_i { at: d0.x + 204, d0.y + 436; size: 20, 20; tint: cream }
+        text "Network" { at: d0.x + 22, d0.y + 482; anchor: center; size: 10; color: ink; opacity: 75% }
+        text "Bluetooth" { at: d0.x + 86, d0.y + 482; anchor: center; size: 10; color: ink; opacity: 75%; show: bt.present }
+        text "Sound" { at: d0.x + 150, d0.y + 482; anchor: center; size: 10; color: ink; opacity: 75% }
+        text "More" { at: d0.x + 214, d0.y + 482; anchor: center; size: 10; color: ink; opacity: 75% }
+        // hlasitosť: ťahanie po lište
+        box { from: d0.x + 262, d0.y + 443; size: dw - 56 - 262, 6; corner: 3; color: ink; opacity: 20% }
+        box { from: d0.x + 262, d0.y + 443; size: (dw - 56 - 262) * clamp(snd.volume, 0, 1), 6; corner: 3; color: #e4b283 }
+        ellipse { at: d0.x + 262 + (dw - 56 - 262) * clamp(snd.volume, 0, 1), d0.y + 446; radius: 9; color: cream }
     }
     // dashboard: klikateľné miesta (navrchu)
     zone box dash_card { at: dt.x, dt.y; size: dw, dh; active: dash }
@@ -393,6 +425,11 @@ scene Kvapka {
     repeat k in 0..4 {
         zone box note_hit.$k { at: d0.x + (dw - 56) / 2, d0.y + 180 + k * 30; size: dw - 56, 28; cursor: pointer; active: dash and not typing and k < notes.count }
     }
+    zone ellipse qs_wifi_hit { at: d0.x + 22, d0.y + 446; radius: 22; cursor: pointer; active: dash }
+    zone ellipse qs_bt_hit { at: d0.x + 86, d0.y + 446; radius: 22; cursor: pointer; active: dash and bt.present }
+    zone ellipse qs_snd_hit { at: d0.x + 150, d0.y + 446; radius: 22; cursor: pointer; active: dash }
+    zone ellipse qs_more_hit { at: d0.x + 214, d0.y + 446; radius: 22; cursor: pointer; active: dash }
+    zone box qs_vol_hit { from: d0.x + 254, d0.y + 430; size: dw - 56 - 246, 32; cursor: pointer; active: dash }
     zone box clear_hit { at: d0.x + dw - 90, d0.y + 150; size: 90, 24; cursor: pointer; active: dash and not typing and notes.count > 0 }
     image power_icon { at: pick(side, px, W - px, edge - p.y, W - edge + p.y) - 8, pick(side, p.y + H - edge, edge - p.y, px, H - px) - 8; size: 16, 16; tint: ink; opacity: so * (0.4 + 0.6 * lift) * ap; show: solo }
 
@@ -445,6 +482,13 @@ scene Kvapka {
         on press note_hit.$k { emit note_open(k) }
     }
     on press clear_hit { emit notes_clear }
+    on dash_toggle { toggle dash }
+    on press qs_wifi_hit { emit qs_wifi }
+    on press qs_bt_hit { emit qs_bt }
+    on press qs_snd_hit { emit qs_mute }
+    on press qs_more_hit { emit qs_more }
+    on press qs_vol_hit { emit qs_vol(clamp((local.x - 8) / (dw - 56 - 262), 0, 1)) }
+    on drag qs_vol_hit { emit qs_vol(clamp((local.x - 8) / (dw - 56 - 262), 0, 1)) }
     on enter start_hit { hs: 1 }
     on leave start_hit { hs: 0 }
     on enter power_hit { hp: 1 }
@@ -468,6 +512,10 @@ scene Kvapka {
         "Clear all" = "Vymazať všetko"
         "No notifications" = "Žiadne upozornenia"
         "PINNED" = "PRIPNUTÉ"
+        "Network" = "Sieť"
+        "Sound" = "Zvuk"
+        "Bluetooth" = "Bluetooth"
+        "More" = "Viac"
         "Sunday" = "nedeľa"
         "Monday" = "pondelok"
         "Tuesday" = "utorok"

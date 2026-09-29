@@ -1,6 +1,7 @@
 [Desktop Entry]
 Name=LatteOS Kvapky
-Comment=Skúšobná plocha: živá tapeta a tekuté kvapky, bez klasickej lišty (Noctalie)
+Comment=Trial desktop: live wallpaper and liquid drops instead of the classic bar
+Comment[sk]=Skúšobná plocha: živá tapeta a tekuté kvapky namiesto klasickej lišty
 Exec=/usr/bin/latte-session kvapky
 Type=Application
 DesktopNames=Hyprland
