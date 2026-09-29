@@ -131,6 +131,8 @@ pub struct Egl {
     pub gles: (u32, u32),
     pub millis: u128,
     pub error: String,
+    /// test nedobehol v limite (pomalý disk pri štarte, zaseknutý ovládač) — nie je to dôkaz, že GL nejde
+    pub timed_out: bool,
 }
 
 impl Egl {
@@ -163,7 +165,7 @@ pub fn egl_gbm(env: &[(&str, &str)], timeout: Duration) -> Egl {
             Ok(None) if start.elapsed() > timeout => {
                 let _ = child.kill();
                 let _ = child.wait();
-                return Egl { error: format!("eglinfo: timeout {} ms", timeout.as_millis()), millis: start.elapsed().as_millis(), ..Default::default() };
+                return Egl { error: format!("eglinfo: timeout {} ms", timeout.as_millis()), millis: start.elapsed().as_millis(), timed_out: true, ..Default::default() };
             }
             Ok(None) => thread::sleep(Duration::from_millis(5)),
             Err(e) => return Egl { error: format!("eglinfo: {e}"), ..Default::default() },
@@ -217,10 +219,13 @@ impl Probe {
         let has_drm = gpus.iter().any(|g| Path::new(&format!("/dev/dri/{}", g.card)).exists());
         let t = Duration::from_millis(10_000); // studená vyrovnávacia pamäť na pomalom HDD: prvé načítanie Mesa/LLVM presiahlo 2 s (latte-lab, 29. 9. 2026)
         let (egl_default, egl_sw) = if has_drm && !cmdline.nomodeset {
-            // oba testy paralelne: štart čaká len na pomalší z nich
-            let sw = thread::spawn(move || egl_gbm(&[("MESA_LOADER_DRIVER_OVERRIDE", "kms_swrast")], t));
+            // po vzore wlroots (gles2 → vulkan → pixman): najprv skúsime hardvér, softvér iba keď treba;
+            // dva testy naraz by na pomalom disku pri štarte len súperili o čítanie Mesa/LLVM
             let d = egl_gbm(&[], t);
-            (d, sw.join().unwrap_or_default())
+            let hw_ok = d.gles_at_least(3, 0) && !d.is_software() && virtualization().is_none();
+            let sw = if hw_ok || d.timed_out { Egl { error: "preskočené".into(), ..Default::default() } }
+                     else { egl_gbm(&[("MESA_LOADER_DRIVER_OVERRIDE", "kms_swrast")], t) };
+            (d, sw)
         } else {
             let e = Egl { error: "bez DRM zariadenia alebo nomodeset".into(), ..Default::default() };
             (e.clone(), e)

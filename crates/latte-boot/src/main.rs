@@ -85,6 +85,9 @@ fn safe(reason: impl Into<String>) -> Decision {
     Decision { mode: "safe", renderer: "pixman", tier: "safe", reason: reason.into() }
 }
 
+/// KMS ovládače skutočných kariet (nie simpledrm ani virtuálne).
+const REAL_KMS: [&str; 6] = ["amdgpu", "radeon", "i915", "xe", "nouveau", "nvidia"];
+
 fn decide(p: &Probe, cfg: &Config, crashes: u32, force_safe: bool) -> Decision {
     let cm = &p.cmdline;
     if cm.mode.as_deref() == Some("safe") {
@@ -115,6 +118,13 @@ fn decide(p: &Probe, cfg: &Config, crashes: u32, force_safe: bool) -> Decision {
         _ => {}
     }
 
+    // test vypršal (pomalý disk pri štarte), no karta má skutočný KMS ovládač: kompozitor to skúsi sám,
+    // ako wlroots — padne až pri zlyhaní; pád relácie prepne na SAFE cez počítadlo pádov
+    if d.timed_out && p.virt.is_none() {
+        if let Some(g) = p.gpus.iter().find(|g| g.boot_vga && REAL_KMS.contains(&g.driver.as_str())) {
+            return normal("hw", "standard", format!("test grafiky vypršal ({} ms), používa sa ovládač {}; pád relácie → SAFE", d.millis, g.driver));
+        }
+    }
     if d.gles_at_least(3, 0) && !d.is_software() {
         if p.virt.is_none() {
             return normal("hw", "standard", format!("HW akcelerácia: {} (GLES {}.{})", d.renderer, d.gles.0, d.gles.1));
@@ -414,6 +424,21 @@ mod tests {
         let mut n = vbox();
         n.cmdline = Cmdline::parse("nomodeset");
         assert_eq!(decide(&n, &cfg(), 0, false).mode, "safe");
+    }
+
+    #[test]
+    fn timeout_on_real_gpu_goes_normal_hw() {
+        let mut p = probe(None, Egl { timed_out: true, error: "eglinfo: timeout 10000 ms".into(), millis: 10000, ..Default::default() }, Egl::default(), "");
+        p.gpus[0].driver = "amdgpu".into();
+        let d = decide(&p, &cfg(), 0, false);
+        assert_eq!((d.mode, d.renderer), ("normal", "hw"));
+        assert_eq!(decide(&p, &cfg(), 2, false).mode, "safe"); // pády stále vyhrajú
+    }
+
+    #[test]
+    fn timeout_without_real_gpu_stays_safe() {
+        let p = probe(None, Egl { timed_out: true, ..Default::default() }, Egl::default(), ""); // vmwgfx
+        assert_eq!(decide(&p, &cfg(), 0, false).mode, "safe");
     }
 
     #[test]
