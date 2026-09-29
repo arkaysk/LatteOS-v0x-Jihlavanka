@@ -179,6 +179,21 @@ je uvedená sila dôkazu. Zdroje:
 4. **Sklo áno, ale s posuvníkom a čitateľným predvoleným nastavením** (Mica), inak zopakujeme chybu Apple.
 5. **Kontextová ponuka Win11 je zlý vzor** — vziať rozloženie Win11, ale ponuku celú, ako Win10.
 
+## Používateľ P1 (Arkay, 29. 9.) — priame údaje, majú prednosť pred odhadmi z internetu
+
+Fotka pracovného PC (Windows): panel úloh = **bežiace okná ako samostatné tlačidlá s ikonou a názvom okna, nezlúčené**
+(SAP Logon, QM zmena štatusu, …), bez rýchleho spúšťania; vpravo ^ oblasť oznámení, zvuk, sieť. Na ploche ikony.
+
+| Téma | P1 hovorí | Rozhodnutie |
+|---|---|---|
+| Spúšťanie aplikácií | „väčšina sú ikony/odkazy na ploche zoradené do skupín + Štart“; hľadanie iba občas, keď začne písať názov | **plocha s ikonami v skupinách + Štart sú hlavná cesta**, hľadanie doplnok (opravuje betatest bod 2) |
+| Panel úloh | zrušil rýchle spúšťanie; panel úloh = zapnuté okná | **bežiace okná s názvom, nezlúčené** (Noctalia `taskbar` + `show_window_title = true` — iba konfigurácia); pripnuté aplikácie **nie predvolene**, iba voľba |
+| Alt+Tab | hlavne v hrách: dostať sa na plochu / k inému oknu **bez vypnutia hry** | Alt+Tab musí spoľahlivo fungovať z hry na celej obrazovke (Hyprland aj herná relácia) — **overiť na latte-lab** |
+| Schránka | Ctrl+C/Ctrl+V klasicky, aj cez kontextovú ponuku; **navyše „Prilepiť ďalšie…“ ako schránka v Androide (Gboard)** | ponuka úprav: Prilepiť (posledné) + **Prilepiť ďalšie ›** (história z Kapsy); v cudzích aplikáciách: klik na položku Kapsy **vloží** do okna, kde bol kurzor (ako Win+V), dnes ju iba skopíruje |
+| Virtuálne plochy | nikdy nepoužil | tlačidlo Task View **nie**; plochy iba v prehľade a Nastaveniach, nízka priorita |
+
+Otvorené: „skupiny“ na ploche = ručne zoradené zhluky ikon, alebo pomenované rámčeky (ako Stardock Fences)?
+
 ## Poradie krokov
 
 1. Rýchle ❌ na lište **konfiguráciou Noctalie** (bez kódu): widget oblasti oznámení, widget snímky, dlaždica nahrávania,
@@ -187,4 +202,4 @@ je uvedená sila dôkazu. Zdroje:
 3. Qt/KDE vzhľad (šablóny Noctalie), „Nájsť v Softvéri“ → App Manager.
 4. Prototyp materiálov (hyprliquid Mica/Acrylic) na latte-lab, meranie na RX 640 (vykon.sh).
 5. Klikateľné makety lišty, Task View a ponúk na odsúhlasenie → implementácia.
-6. ~~Rozhodnúť: pripnuté aplikácie na lište áno/nie~~ → betatest: áno (čaká na potvrdenie používateľa).
+6. ~~Rozhodnúť: pripnuté aplikácie na lište áno/nie~~ → P1: panel úloh = bežiace okná s názvom; pripnuté iba ako voľba.
