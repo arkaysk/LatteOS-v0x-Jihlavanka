@@ -110,8 +110,26 @@ run("printenv", { "LATTE_VARIANT" }, function(out)
     if (out or ""):match("kvapky") then fact.solo = true end
 end)
 
+-- káva v kvapkách (Barista / Nastavenia: ~/.config/latteos/kava): pomer vody a mlieka
+local kavy = {
+    espresso = { 0, 0 }, ristretto = { 0, 0 }, lungo = { 0.35, 0 }, americano = { 0.7, 0 },
+    macchiato = { 0, 0.25 }, cortado = { 0, 0.4 }, flatwhite = { 0.05, 0.5 }, cappuccino = { 0, 0.55 },
+    latte = { 0, 0.85 }, ["cierna-s-mliekom"] = { 0.4, 0.3 },
+}
+local kava_file = nil
+local function read_kava()
+    if not kava_file then return end
+    run("cat", { kava_file }, function(out)
+        local k = kavy[(out or ""):match("[%w-]+") or "espresso"] or kavy.espresso
+        if fact.voda ~= k[1] then fact.voda = k[1] end
+        if fact.mlieko ~= k[2] then fact.mlieko = k[2] end
+    end)
+end
 run("printenv", { "HOME" }, function(out)
     local home = (out or ""):match("[^\n]+")
-    if home then state = home .. "/.local/state/latteos/window-mode"; read_mode() end
+    if home then
+        state = home .. "/.local/state/latteos/window-mode"; read_mode()
+        kava_file = home .. "/.config/latteos/kava"; read_kava()
+    end
 end)
-every(2000, read_mode)   -- režim sa dá zmeniť aj inde (Super+W, Nastavenia)
+every(2000, function() read_mode(); read_kava() end)   -- režim sa dá zmeniť aj inde (Super+W, Nastavenia)
