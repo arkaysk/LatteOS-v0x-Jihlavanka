@@ -27,7 +27,8 @@ FONTS=(rsms-inter-fonts rsms-inter-vf-fonts jetbrains-mono-fonts
        google-noto-sans-fonts google-noto-emoji-fonts adwaita-icon-theme)
 # --- vývoj: C++/Rust/Go, balenie RPM (hyprland-latte), Lua --------------------
 DEV=(git gcc-c++ cmake meson ninja-build rust cargo golang
-     rpm-build rpmdevtools dnf5-plugins lua lua-devel)
+     rpm-build rpmdevtools dnf5-plugins lua lua-devel
+     python3-pillow)   # maskoti na lištu a logo Plymouth (install-session.sh)
 # --- F1 testy: seatd (kompozitor zo SSH), GL klienti, rozlíšenie ------------------
 TEST=(seatd kitty wlr-randr)
 # --- AI (CPU, malý model; služba sa nepovoľuje) --------------------------------
