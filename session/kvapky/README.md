@@ -9,6 +9,11 @@ ako samostatná vrstva (layer-shell) nad jej lištou.
 - v pokoji vpitá do spodného okraja obrazovky (zlieva sa s ním skoro do roviny)
 - **priblíženie**: od štvrtiny výšky obrazovky od nej sa začne vysúvať; kým k nej myš dôjde, je napoly vonku na hrubej
   stopke pod hlavou. Myš sa číta kdekoľvek (`cursor.x/y` z Hyprlandu), žiadna neviditeľná zóna nekradne kliky oknám
+- **strapce okien (ikry)**: okná tej istej aplikácie sa zlepia do strapca — prvé pri lište, ďalšie smerom od nej,
+  „náhodne“, ale pre každé poradie rovnako; čím viac okien, tým menšie guľôčky (do 72 %). Myš nad strapcom ho
+  rozvinie do radu v plnej veľkosti (po odchode sa o 0,5 s zbalí), okno cez celú obrazovku (`tight`) všetko zrovná
+  do jedného radu v páse. Rozloženie počíta logika (`model lay`), scéna guľôčky ťahá pružinami. Skupina = trieda
+  okna; aplikácie LatteOS (zatiaľ všetky `org.quickshell`) sa rozlišujú podľa titulku
 - **tvar ako tekutina v nízkej gravitácii (goo)**: šnúra guľôčok namiesto tuhej kapsuly — hlava vľavo je najväčšia
   guľa, každé okno vlastná guľatá kvapka spojená so susedkami krkom a tenkým vláknom; kvapky pomaly dýchajú a plávajú
   (každá inak), aktívne okno je plnšie, každá guľa má vlastný odlesk; nové/zatvorené okno pošle šnúrou vlnu

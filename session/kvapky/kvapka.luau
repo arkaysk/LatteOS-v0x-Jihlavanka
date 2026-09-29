@@ -17,7 +17,83 @@ end
 
 -- rovnaký zdroj a poradie ako model wins v scéne (hrbolček k = okno k)
 local wins = {}
-sys.watch("window", function(v) wins = (v and v.list) or {} end)
+local layout   -- nižšie
+
+-- ── strapce okien (ikry) ──────────────────────────────────────────────────────
+-- Okná tej istej aplikácie sa zlepia do strapca: prvé sedí pri lište, ďalšie sa lepia smerom od nej (ako ikry),
+-- „náhodne“, ale pre každé poradie rovnako, aby strapec pri prekreslení neskákal. Čím viac okien, tým menšie
+-- guľôčky (do 72 %, aby sa dali trafiť myšou). Myš nad strapcom ho rozvinie do radu v plnej veľkosti; keď
+-- aktívne okno siaha k lište (fact.tight), všetko sa zrovná do jedného radu v páse.
+local R0 = 29
+local OFFS = { { 0, 0 }, { 1.72, -0.42 }, { 0.78, -1.62 }, { -0.98, -1.3 }, { 2.28, -1.86 },
+               { 0.02, -3.0 }, { 1.62, -3.12 }, { -1.25, -2.85 }, { 2.9, -3.0 }, { 0.85, -4.2 } }
+local JIT = { { 0, 0 }, { 0.06, -0.04 }, { -0.05, 0.07 }, { 0.08, 0.03 }, { -0.07, -0.05 },
+              { 0.05, 0.06 }, { -0.04, 0.05 }, { 0.07, -0.06 }, { -0.06, 0.04 }, { 0.04, -0.07 } }
+local hot = nil          -- aplikácia, ktorej strapec je pod myšou (rozvinutý)
+local hot_gen = 0
+
+-- skupina: aplikácia; aplikácie LatteOS sú zatiaľ všetky „org.quickshell“ → rozlíšiť podľa titulku („Súbory — LatteOS“)
+local function group_key(w)
+    local c = w.class or ""
+    if c == "org.quickshell" then return "latte:" .. ((w.title or ""):match("^(.-) — ") or w.title or "") end
+    return c
+end
+
+function layout()
+    local groups, order = {}, {}
+    for i, w in ipairs(wins) do
+        if i > 10 then break end
+        local k = group_key(w)
+        if not groups[k] then groups[k] = {}; order[#order + 1] = k end
+        table.insert(groups[k], i)
+    end
+    local tight = fact.tight == true
+    local paska = tostring(fact.mode) == "paska"
+    local lay, u = {}, 21                  -- u: ľavý okraj ďalšieho strapca (od hlavy; hlava končí na +36)
+    for _, key in ipairs(order) do
+        local idx = groups[key]
+        local m = #idx
+        local r = (paska and 24 or R0) * math.max(0.72, 1 - 0.07 * (m - 1))
+        local row = tight or m == 1 or key == hot
+        if key == hot and not tight then r = paska and 24 or R0 end
+        if tight then r = math.min(r, 23) end
+        if row then
+            local step = r * 1.86
+            for j, i in ipairs(idx) do lay[i] = { x = u + r + (j - 1) * step, y = 0, r = r } end
+            u = u + 2 * r + (m - 1) * step + 12
+        else
+            local lo, hi = 0, 0
+            for j = 1, m do
+                local ox = OFFS[j][1] + JIT[j][1]
+                lo = math.min(lo, ox); hi = math.max(hi, ox)
+            end
+            local ax = u + r - lo * r
+            for j, i in ipairs(idx) do
+                local rr = r * (1 + 0.06 * (((j - 1) * 37) % 5 - 2) / 2)
+                lay[i] = { x = ax + (OFFS[j][1] + JIT[j][1]) * r, y = (OFFS[j][2] + JIT[j][2]) * r, r = rr }
+            end
+            u = ax + hi * r + r + 12
+        end
+    end
+    model.lay = lay
+    fact.chain_w = math.max(50, u - 12)
+end
+
+sys.watch("window", function(v) wins = (v and v.list) or {}; layout() end)
+on("fact:tight", function() layout() end)
+on("fact:mode", function() layout() end)
+on("hover", function(k)
+    local w = wins[(k or 0) + 1]
+    hot_gen = hot_gen + 1
+    local key = w and group_key(w)
+    if key ~= hot then hot = key; layout() end
+end)
+-- myš odišla z guľôčky: strapec sa zbalí až po chvíli (medzi rozvinutými guľôčkami sú medzery)
+on("unhover", function()
+    hot_gen = hot_gen + 1
+    local mine = hot_gen
+    after(500, function() if mine == hot_gen and hot then hot = nil; layout() end end)
+end)
 
 local function windows()
     local out = {}
