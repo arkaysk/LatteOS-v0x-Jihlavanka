@@ -1,0 +1,157 @@
+# LatteOS a Noctalia — audit podľa Windows 11, prieskum a návrh rozhrania
+
+29. 9. 2026 · latte-lab (Fedora 44, Hyprland 0.56 + Noctalia 5.2) · súkromné (neide do arkaysk/latteos)
+
+## Východiská
+
+- **Pre koho:** používatelia Windowsu. Východiskom pre správanie je **Windows 11**.
+- **Myš je hlavný ovládač.** Všetko musí byť spraviteľné myšou; klávesnica iba zrýchľuje (skratky sa ukazujú v ponukách vedľa položiek, ako vo Windows).
+- **Štandardy freedesktop platia** (MIME a „Otvoriť pomocou“, `.desktop`, portály, StatusNotifier/DBusMenu, témy ikon a zvukov, preklady podľa `LANG`).
+- **Cesta 2:** LatteOS je samostatné prostredie (Hyprland + Noctalia + aplikácie LatteOS) nad obrazom ublue `base-main` + `akmods`, všetko pripnuté.
+- **Preberať, nevymýšľať:** najprv hotové (Noctalia, Hyprland pluginy, Qt, freedesktop), vlastné iba spojivo a identita LatteOS.
+
+Metóda: všetkých 70+ klávesových skratiek (`session/hypr/latte/skratky.lua`, profily Windows / GNOME-KDE / macOS)
+porovnané s tým, čo spúšťajú prvky ovládané myšou (lišta, ponuky, plocha, aplikácie); potom prvky Windows 11,
+ktoré v skratkách nie sú (panel úloh, oblasť oznámení, Štart). Stav overený v kóde, nie z pamäti.
+
+Legenda: ✅ ide myšou · ⚠️ ide, ale inak ako Windows 11 / neúplne · ❌ iba klávesnicou alebo vôbec
+
+## A. Vrstva prostredia (robíme my; Noctalia kde má hotové)
+
+| Windows 11 | Myšou vo Win11 | LatteOS dnes | Stav | Riešenie (odkiaľ) |
+|---|---|---|---|---|
+| Ponuka Štart | klik na Štart: pripnuté, odporúčané, všetky, hľadanie, účet, napájanie | dlaždica aplikácií → spúšťač: pripnuté, často používané, hľadanie, oblasť oznámení | ⚠️ | doplniť napájanie a účet do spúšťača |
+| Pravý klik na Štart (Win+X) | ponuka pre pokročilých | pravý klik na dlaždicu aplikácií → ponuka Win+X | ✅ | — |
+| Panel úloh: bežiace aplikácie | klik = prepni, prejdenie = náhľad, pravý klik = ponuka | zobrazovač okien (latte-okna): klik, náhľad, pravý klik, stredné = nové okno | ✅ | — |
+| Panel úloh: **pripnuté aplikácie** | pripnúť cez pravý klik | zámerne nie (radar: „na lište nie sú pripnuté ikony“) | ⚠️ | **rozhodnúť**: pre Windows používateľa je to základ |
+| **Oblasť oznámení** (Steam, Discord…) | šípka ^ pri hodinách, pravý klik na ikonu | ikony sú vnútri spúšťača („odsunuté“) | ⚠️ | ikona ^ pri hodinách; Noctalia má hotový tray a ponuky DBusMenu |
+| Rýchle nastavenia (sieť, zvuk, batéria) | klik na ikony pri hodinách | ostrov Zariadenia → latte-rychle | ✅ | — |
+| Hodiny, kalendár, oznámenia | klik na dátum / zvonček | ostrov Čas: hodiny, zvonček, dátum | ✅ | — |
+| **Zobraziť plochu** | úzky pásik v pravom rohu | iba ponuka Win+X a Win+D | ❌ | pásik na konci lišty (radar ho aj popisuje) |
+| **Task View a virtuálne plochy** | tlačidlo na paneli: plochy, +Nová, pravý klik zavrieť, ťahanie okien | prehľad pásky iba Win+Tab; Nová plocha vo Win+X; prepínanie a zatváranie iba klávesnicou | ❌ | tlačidlo Task View na lište + pás plôch v prehľade |
+| Snap Layouts | prejdenie nad □, ťahanie k okraju | ponuka rozložení nad □, prichytenie ťahaním (latte-okna) | ✅ | Win11 ju ukáže už pri prejdení, overiť |
+| Titulok okna: – □ ✕, dvojklik, pravý klik | áno | hyprbars: – □ ✕, pravý klik = ponuka okna; minimalizácia z CSD aplikácií (Steam) od 29. 9. | ✅ | — |
+| Presun okna na iný monitor | ťahanie | ťahanie (natívne v Hyprlande) + ponuka okna | ✅ | overiť s 2 monitormi |
+| Pravý klik na plochu | Nový, Zobraziť, Zoradiť, Prispôsobiť, Obrazovka | plocha.qml má ponuku | ✅ | porovnať položky s Win11 |
+| Zamknúť, odhlásiť, vypnúť | Štart › napájanie | šálka (systémová ponuka), Win+X | ✅ | — |
+| Správca úloh | pravý klik na panel úloh | Win+X › Správca úloh, šálka › Monitor | ✅ | — |
+| **Snímka obrazovky** | Nástroj na vystrihovanie (aplikácia v Štarte) | iba Print a Win+Shift+S | ❌ | položka v spúšťači a v rýchlych nastaveniach (Noctalia 5.2 má panel snímok) |
+| **Nahrávanie obrazovky** | Nástroj na vystrihovanie › Záznam | iba Win+Alt+R | ❌ | to isté ako snímka |
+| **Herný panel** (Xbox Game Bar) | Win+G, ale aj tlačidlo v Štarte | Herňa iba Super+G, **herný režim iba Super+Shift+G** | ❌ | herný blok v rýchlych nastaveniach (radar ho plánuje) |
+| Emoji | Win+. (aj dotyková klávesnica) | iba Win+. | ⚠️ | položka „Emoji“ v ponuke úprav textu |
+| Lupa | Nastavenia › Prístupnosť, rýchle nastavenia | Nastavenia › Prístupnosť › Lupa | ✅ | — |
+| Premietanie (Win+P) | rýchle nastavenia › Premietanie | ponuka Premietanie (Win+X) | ✅ | pridať aj do rýchlych nastavení |
+| Prepínanie okien (Alt+Tab) | panel úloh | zobrazovač okien, prehľad | ✅ | — |
+
+## B. Štandardy freedesktop (iba zapojiť)
+
+| Čo | Stav | Poznámka |
+|---|---|---|
+| MIME, predvolené aplikácie, „Otvoriť pomocou“ | ✅ | xdg-mime, `.desktop` |
+| „Nájsť v aplikácii Softvér“ (GTK) | ❌ | `bughunt/bug001.png`: volá `gnome-software`, ktorý tu nie je → presmerovať na App Manager |
+| Portály (súbory, snímky, zdieľanie obrazovky) | ✅ | hyprland + gtk |
+| Vzhľad GTK/GNOME aplikácií | ✅ | šablóny Noctalie gtk3/gtk4, adw-gtk3, `color-scheme` |
+| Vzhľad **Qt/KDE** aplikácií | ❌ | zapnúť šablóny Noctalie `qt` + `kde`, qt6ct |
+| Oblasť oznámení (StatusNotifier, DBusMenu) | ✅ | Noctalia |
+| Notifikácie, zvukové témy | ✅ | Noctalia (zvuky od 5.2) |
+| Žiadosť okna o minimalizáciu | ✅ | latte-okna 0.2 (29. 9.) |
+| **Preklady** podľa `LANG` | ❌ | UI má slovenčinu natvrdo; Noctalia: `noctalia.tr` (27 jazykov, **bez sk** → prispieť), QML: I18n z DMS (MIT), skripty: gettext |
+| Automatické spúšťanie (XDG autostart) | overiť | — |
+
+## C. Naše aplikácie (QML)
+
+| Čo | Stav | Poznámka |
+|---|---|---|
+| Ponuka úprav v textových poliach (Vystrihnúť, Kopírovať, Prilepiť) | ❌ | 23 polí; `LTextInput` pripravený (správanie z Qt, vzhľad Latte), čaká na preklady |
+| Skratky zobrazené v ponukách | ✅ | ContextMenu `hint` |
+| Pravý klik v zoznamoch a paneloch | ⚠️ | Súbory, plocha, spúšťač áno; na lište chýba pri šálke a Zariadeniach |
+| Náhrady hotovými aplikáciami | návrh | Súbory → Double Commander, Monitor → Mission Center, obchod → Bazaar + Setup Plan LatteOS |
+
+## D. Noctalia 5.2 (základ, z ktorého vychádzame)
+
+Metóda: všetkých ~120 akcií Noctalie (`noctalia msg …`, dokumentácia `docs/user/ipc`) porovnaných s tým, čo ponúka
+jej vlastné rozhranie na myš: widgety lišty, dlaždice riadiaceho centra, spúšťač, nastavenia (zdroj 9287a78).
+
+**Silné stránky — Noctalia je pre myš postavená dobre:**
+- Takmer každá akcia má **widget na lište** (35 typov: panel úloh, oblasť oznámení, snímka, hlasitosť, jas, sieť, Bluetooth,
+  pracovné plochy, relácia, nastavenia, počasie, médiá…) alebo **dlaždicu v riadiacom centre** (Wi-Fi, Bluetooth, nočné svetlo,
+  Nerušiť, tmavý režim, kofeín, zvuk, mikrofón, profil výkonu, médiá, **nahrávanie obrazovky**, tapeta, relácia, schránka,
+  rozloženie klávesnice). Pravý klik na dlaždicu otvorí príslušnú kartu.
+- **Akcie lišty:** ľubovoľný widget vie na ľavý / pravý / stredný klik, tlačidlá späť a dopredu a koliesko spustiť ľubovoľnú
+  akciu — **iba konfiguráciou, bez kódu**. Každú akciu, ktorá je dnes iba na klávesnici, sa dá dať na myš.
+- Snímka obrazovky: widget, pravý klik = celá obrazovka / oblasť; oblasť sa vyberá ťahaním.
+- Oblasť oznámení: ponuky aplikácií (DBusMenu), **Pripnúť / Odopnúť pravým klikom**.
+- Spúšťač: pravý klik na aplikáciu = ďalšie možnosti, **Pripnúť do doku**, preusporiadanie ťahaním.
+- **Lišta sa upravuje ťahaním** v Nastaveniach (presun, skupiny, pridanie, odobranie); widgety na ploche majú režim úprav ťahaním.
+- Nastavenia majú GUI pre všetko, čo je v TOML.
+
+| Windows 11 | Noctalia | Stav | Poznámka |
+|---|---|---|---|
+| Pravý klik na ikonu v paneli úloh: Pripnúť, nové okno, nedávne súbory, Zavrieť | iba **Zavrieť / Zavrieť všetko** | ⚠️ | chýba Pripnúť/Odopnúť, Nové okno, nedávne súbory (LatteOS latte-okna má nové okno stredným klikom) |
+| Pripnúť na panel úloh | iba v Nastaveniach (`pinned`); do doku zo spúšťača | ⚠️ | Windows: pravý klik v Štarte aj na paneli úloh |
+| Pravý klik na prázdnu lištu → Nastavenia panela úloh | neoverené | ? | overiť; inak cez akcie lišty |
+| Plocha: ikony, pravý klik | nemá (iba widgety) | ❌ | LatteOS `plocha.qml` to pokrýva |
+| Task View, vytvoriť a zavrieť plochu | widget plôch = prepínanie klikom; vytvoriť/zavrieť nie | ⚠️ | Hyprland plochy vznikajú samy; chýba „+“ a zavrieť |
+| Alt+Tab | prepínač okien iba klávesnicou (5.2: karusel náhľadov) | ✅ | myšou cez panel úloh, rovnako ako Windows |
+| Úprava widgetov na ploche | Nastavenia › Plocha › Editor | ⚠️ | Windows: pravý klik na plochu |
+| Jazyk | 27 jazykov, **bez slovenčiny** | ❌ | prispieť `sk.json` |
+
+**Dôsledok pre LatteOS:** časť ❌ z tabuľky A **nie je treba programovať** — Noctalia ich má a LatteOS ich zatiaľ nepoužíva
+alebo ich nahradil vlastnými pluginmi: oblasť oznámení na lište, widget snímky, dlaždica nahrávania, panel úloh
+s pripnutými aplikáciami, akcie lišty pre herný režim a Zobraziť plochu. Vlastné ostáva iba to, čo Noctalii chýba
+(ponuka panela úloh s Pripnúť, Task View s „+“, plocha s ikonami) — ideálne ako príspevok do Noctalie, nie fork.
+
+## Prieskum (od posledného radaru 21. 9.)
+
+**Novinky**
+- **Noctalia 5.2** (10. 9.): prepínač okien s karuselom náhľadov, anotácia snímok, pripomienky z kalendára (CalDAV, Google),
+  zvukové témy freedesktop, spúšťač otvára aj panely (aj riadiace centrum), dialóg nastavenia monitorov, japončina
+  ([linuxiac](https://linuxiac.com/noctalia-5-2-wayland-shell-released-with-new-window-switcher/)).
+- GNOME 51 (16. 9.), KDE Plasma 6.8 v októbri, **Konveyor** (posuvné dlaždice pre KDE), COSMIC 1.9 (klávesnica na obrazovke),
+  **Fedora 45 Beta** (Linux 7.2, GNOME 51), Steam testuje kodek Pyrowave, Valve Lepton
+  ([týždeň 39](https://linuxiac.com/linuxiac-weekly-wrap-up-week-39-2026-september-21-27/)).
+
+**Obľúbené rice** ([porovnanie](https://www.musabase.com/p/best-hyprland-dotfiles-for-linux.html))
+
+| Projekt | Čo si vziať | Čomu sa vyhnúť |
+|---|---|---|
+| **ML4W** | nastavenia GUI, „klikni a otvor“, ľahké, najbližšie Windows používateľom | málo tém |
+| **HyDE** | 70+ tém prepínaných naraz, sklo | na starom HW sa sekajú animácie |
+| **End-4** (★16k) | Quickshell, živé náhľady, AI, „usability-first“ | ťažké, pôsobí ako Android |
+| **Caelestia** (★12k) | panel s výkonom, morfujúce panely | 1,5 GB RAM v pokoji |
+| **Omarchy** | inštalácia za 10 min | **ovládanie klávesnicou** — opak LatteOS |
+
+**Nové moduly na GitHube (sklo)**
+
+| Projekt | Čo robí | Poznámka |
+|---|---|---|
+| [**hyprliquid**](https://github.com/Neuron-Group/hyprliquid) | **Mica, Mica Alt, Acrylic, Acrylic Thin** (materiály Windows 11), Aero, Liquid Glass pre okná aj panely; sleduje farebný režim z portálu | BSD-3, **konfigurácia v Lua** (sedí na naše hyprland.lua); mladý (★1) → prototyp a meranie |
+| [fasi96/hyprglass](https://github.com/fasi96/hyprglass) | Liquid Glass + svetlo podľa kurzora, náklon, žiara po kliknutí | presne nápady z radaru („svetlo podľa myši“, „náklon ±2°“); BSD-3, aktívny |
+| [TimaDub/hyprglass](https://github.com/TimaDub/hyprglass) | lom, šošovka, difrakcia na priehľadných oknách | BSD-3 |
+
+## Návrh rozhrania: „rozloženie Windows 11, materiál LatteOS“
+
+1. **Lišta s oblasťami Windows 11, tvar ostrovov LatteOS** (zľava doprava, voľba „na stred“ ako Win11):
+   Štart (dlaždica aplikácií) · Hľadanie (Text Bar) · **Task View** · pripnuté + bežiace aplikácie ·
+   … · **^ oblasť oznámení** · rýchle nastavenia (sieť, zvuk, batéria) · čas, dátum, zvonček · **pásik Zobraziť plochu**.
+   Šálka, Kapsa a maskot ostávajú ako identita LatteOS.
+2. **Materiály ako Windows 11, ale teplé:** okná **Mica** (tapeta rozmazaná pod titulkom, farba Latte), ponuky a panely
+   **Acrylic**, **Liquid Glass** iba v stupni Plný; Úsporný = Mica bez rozmazania (plná farba z tapety). Zdroj: hyprliquid.
+3. **Task View:** prehľad pásky + pás virtuálnych plôch hore (+ Nová, pravý klik Zavrieť, ťahanie okna na plochu) —
+   zatvorí všetky ❌ pri plochách.
+4. **Herný blok v rýchlych nastaveniach** (ako Xbox Game Bar): Herný režim, Herňa, Snímka, Nahrávanie, FPS (MangoHud),
+   profil výkonu — zatvorí ❌ pri hrách, snímkach a nahrávaní.
+5. **Jednotná kontextová ponuka ako Win11:** hore rad ikon (Vystrihnúť, Kopírovať, Premenovať, Zdieľať, Odstrániť),
+   pod ním položky, dole „Zobraziť viac možností“. Rovnaká v Súboroch, na ploche aj v textových poliach.
+6. **Snap Layouts pri prejdení nad □** (nielen pravým klikom).
+7. **Pohyb:** krátke pružné animácie 200–300 ms (radar), v hre vypnuté; svetlo podľa kurzora (hyprglass) iba Plný.
+
+## Poradie krokov
+
+1. Rýchle ❌ na lište **konfiguráciou Noctalie** (bez kódu): widget oblasti oznámení, widget snímky, dlaždica nahrávania,
+   akcie lišty pre herný režim a Zobraziť plochu; až potom vlastné (Task View s „+“, Pripnúť v ponuke panela úloh — ako PR do Noctalie).
+2. Základ i18n (I18n z DMS, `noctalia.tr`, gettext; sk do Noctalie) → potom `LTextInput` a ponuka úprav všade.
+3. Qt/KDE vzhľad (šablóny Noctalie), „Nájsť v Softvéri“ → App Manager.
+4. Prototyp materiálov (hyprliquid Mica/Acrylic) na latte-lab, meranie na RX 640 (vykon.sh).
+5. Klikateľné makety lišty, Task View a ponúk na odsúhlasenie → implementácia.
+6. Rozhodnúť: pripnuté aplikácie na lište áno/nie.

@@ -152,6 +152,10 @@ flowchart TD
 - **Návrat:** zo SAFE ide jedným klikom „skúsiť NORMAL“ (vynuluje počítadlo). V NORMAL sa dá zapnúť
   „nabudúce SAFE“.
 
+**Audit podľa Windows 11 a prieskum rozhrania (29. 9.):** [AUDIT-WIN11.md](AUDIT-WIN11.md) — myš ako hlavný ovládač,
+stav LatteOS aj Noctalie, novinky, rice, moduly skla, návrh rozhrania a poradie krokov. Rozhodnuté: cesta 2
+(vlastné prostredie Hyprland + Noctalia nad ublue `base-main` + `akmods`, všetko pripnuté).
+
 ## Fázy
 
 ### F0 — Základ VM *(hotové 23. 9. 2026)*
