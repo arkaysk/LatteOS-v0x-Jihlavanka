@@ -41,6 +41,8 @@ scene Kvapka {
     fact menu.y = 0
     fact free = false                        // odtrhnutá, ide za myšou
     fact melting = false                     // pustená uprostred: steká
+    fact tight = false                       // aktívne okno siaha k lište (maximalizované, celá obrazovka, dlaždice):
+                                             // kvapka ostane v páse 64 px a cez okno sa nevysunie (logika)
     fact solo = false                        // bez Noctalie: kvapky Štart a vypínač (logika podľa LATTE_VARIANT)
     event cycle ->
     event pick ->
@@ -93,7 +95,7 @@ scene Kvapka {
     fact probe = 0                           // na skúšky: `pleamar --say kvapka "fact probe 75"` zastaví kvapku na 0,75
     prop pull = 0 ~quick                     // ťahanie myšou od okraja: −1 k okraju … 1 preč
     prop out = 0 ~700ms
-    follow out = if(probe > 0, probe / 100, if(pulling and not free, clamp(0.55 + pull * 0.45, 0, 1), 0.55 * approach))
+    follow out = if(probe > 0, probe / 100, if(pulling and not free, clamp(0.55 + pull * 0.45, 0, 1), if(tight, 0.1, 0.55) * approach))
     // ap: lišta je pri okraji (1) alebo vtiahnutá doň (0) — kým ide za myšou, steká, alebo sa vynára inde
     prop ap = 1 ~600ms
     let sink = h * 0.42
@@ -127,7 +129,12 @@ scene Kvapka {
     prop so = 0 ~lively
     follow so = if(solo, 1, 0)
     prop lift = 0 ~700ms
-    follow lift = approach
+    follow lift = approach * if(tight, 0.35, 1)
+    // tekutina okolo vypínača a Štartu žije aj bez myši: pomalé toky (flow, flow2 0..1, desiatky sekúnd), kvapky
+    // driftujú, mláka pri okraji sa rozlieva a sťahuje, vlákna sa samy tvoria a trhajú; myš (lift) to zosilní
+    let flow = 0.5 + 0.5 * noise(time * 0.13 + 1.7)
+    let flow2 = 0.5 + 0.5 * noise(time * 0.09 + 5.1)
+    let stir = 1 + 1.5 * lift
     // pôsobenie medzi kvapkami: myš nad kvapkou (hs, hp, hh = Štart, vypínač, hlava) ju nafúkne a susedov
     // k nej nakloní; mosty (link) rastú s vysunutím — v pokoji spája kvapky iba okraj
     prop hs = 0 ~lively
@@ -135,16 +142,24 @@ scene Kvapka {
     prop hh = 0 ~lively
     // most sa vytvorí, keď je medzera medzi kvapkami menšia ako asi polovica `link` (smooth min v pleamare):
     // pri vysúvaní sa preto kvapky k sebe nakláňajú — Štart k telu, vypínač k Štartu
-    let sx = sx0 + 18 * lift + 10 * hh - 9 * hp
-    let px = px0 + 12 * lift + 12 * hs
+    let sx = sx0 + 18 * lift + 10 * hh - 9 * hp + 6 * stir * noise(time * 0.11 + 3) + 3 * lift * noise(time * 0.45 + 8)
+    let px = px0 + 12 * lift + 12 * hs + 5 * stir * noise(time * 0.1 + 4) + 3 * lift * noise(time * 0.5 + 2)
     let hx = lx - 7 * hs
-    let s.y = edge + 10 - 36 * lift - 4 * hs + 60 * (1 - ap)
-    let p.y = edge + 8 - 26 * lift - 4 * hp + 60 * (1 - ap)
-    let link = 10 + 16 * lift
+    // v pokoji kvapky pomaly vystupujú z okraja a klesajú (každá v inom rytme), preto vidno aj vlákna a mláku
+    let s.y = edge + 4 - 36 * lift - 4 * hs - 14 * flow * (1 - lift) + 60 * (1 - ap)
+    let p.y = edge + 3 - 26 * lift - 4 * hp - 12 * flow2 * (1 - lift) + 60 * (1 - ap)
+    let link = 10 + 16 * lift + 10 * flow
     // goo vlákna: vypínač ↔ Štart a Štart ↔ telo lišty. Hrubnú s priblížením myši; keď sa lišta odtrhne
     // (out → 1), vlákno k nej sa stenčí a pretrhne. Roztavené s oboma koncami (blend), preto uprostred tenšie.
-    let thread.ps = 9 * so * smooth(0.3, 0.9, lift)
-    let thread.sb = 12 * so * smooth(0.2, 0.8, lift) * clamp((0.97 - out) / 0.3, 0, 1)
+    let thread.ps = 9 * so * max(smooth(0.3, 0.9, lift), 0.8 * smooth(0.55, 0.85, flow))
+    let thread.sb = 12 * so * max(smooth(0.2, 0.8, lift), 0.7 * smooth(0.6, 0.9, flow2)) * clamp((0.97 - out) / 0.3, 0, 1)
+    // kvapôčka, ktorá tečie po vláknach vypínač → Štart → lišta (iba kde vlákno je)
+    let tt = fract(time * 0.07)
+    let seg = if(tt < 0.5, 0, 1)
+    let tf = if(tt < 0.5, tt * 2, tt * 2 - 1)
+    let drip.x = if(seg, sx + 8 + (bl + 18 - sx - 8) * tf, px + (sx - px) * tf)
+    let drip.y = if(seg, s.y - 12 + (bottom - 14 - s.y + 12) * tf, p.y - 4 + (s.y - 6 - p.y + 4) * tf)
+    let drip.r = 4.5 * if(seg, clamp(thread.sb * ap / 4, 0, 1), clamp(thread.ps / 4, 0, 1))
 
     // guľôčka každého okna: pružina 0 → 1, zatvorené okno sa vtiahne späť do šnúry; aktívne je plnšie (act)
     repeat k in 0..10 {
@@ -184,11 +199,12 @@ scene Kvapka {
             ellipse { at: lx + 50 + 8 * step + 2 * noise(5.6, time * 0.35), mid + 2.5 * noise(15.4, time * 0.3); radius: rr * b.8 * (1 + 0.035 * noise(16.8, time * 0.5) + 0.12 * act.8) + wob * 0.04; blend: 15 }
             ellipse { at: lx + 50 + 9 * step + 2 * noise(6.3, time * 0.35), mid + 2.5 * noise(16.7, time * 0.3); radius: rr * b.9 * (1 + 0.035 * noise(18.9, time * 0.5) + 0.12 * act.9) - wob * 0.04; blend: 15 }
             // Štart a vypínač: vlastná „voda“ pod okrajom; s hlavou a medzi sebou ich spája most `link`
-            box { from: px - 34, edge; size: (sx - px + 68) * so, 70 }
+            box { from: px - 34 - 14 * flow2 * stir, edge; size: (sx - px + 68 + 28 * flow2 * stir) * so, 70 }
             ellipse { at: sx, s.y; radius: (26 + 5 * hs) * so; scale: 1 + squish.s * 0.08, 1 - squish.s * 0.12; blend: link * so }
             ellipse { at: px, p.y; radius: (19 + 4 * hp) * so; scale: 1 + squish.p * 0.08, 1 - squish.p * 0.12; blend: link * so }
             line { from: px, p.y - 4; to: sx, s.y - 6; width: thread.ps; blend: 12 * clamp(thread.ps / 3, 0, 1) }
             line { from: sx + 8, s.y - 12; to: bl + 18, bottom - 14; width: thread.sb * ap; blend: 14 * clamp(thread.sb * ap / 3, 0, 1) }
+            ellipse { at: drip.x, drip.y; radius: drip.r * so; blend: 8 }
         }
         // odlesk: každá guľa odráža svetlo sama (bodka hore vľavo), hlava najväčšiu
         group {
@@ -234,7 +250,7 @@ scene Kvapka {
     image start_icon { at: pick(side, sx, W - sx, edge - s.y, W - edge + s.y) - 11, pick(side, s.y + H - edge, edge - s.y, sx, H - sx) - 11; size: 22, 22; tint: cream; opacity: so * (0.4 + 0.6 * lift) * ap; show: solo }
     image power_icon { at: pick(side, px, W - px, edge - p.y, W - edge + p.y) - 8, pick(side, p.y + H - edge, edge - p.y, px, H - px) - 8; size: 16, 16; tint: cream; opacity: so * (0.4 + 0.6 * lift) * ap; show: solo }
 
-    text pick(mode, "Floating windows", "Tiles", "Endless strip") { at: pick(side, lx - 30, W - lx - 30, edge - by + 40, W - edge + by - 150), pick(side, by - 56 + H - edge, edge - by + 56, lx - 60, H - lx - 60); anchor: left center; size: 12; weight: 700; color: cream; opacity: 70% * out * ap }
+    text pick(mode, "Floating windows", "Tiles", "Endless strip") { at: pick(side, lx - 30, W - lx - 30, edge - by + 40, W - edge + by - 150), pick(side, by - 56 + H - edge, edge - by + 56, lx - 60, H - lx - 60); anchor: left center; size: 12; weight: 700; color: cream; opacity: 70% * out * ap * if(tight, 0, 1) }
 
     // základňa: vlastné menu nemá. Ľavý klik (bez ťahania) prepne režim okien. Chytiť ľavým alebo pravým a ťahať
     // od okraja: stopka sa naťahuje (pull), pri 0,9 praskne a kvapka ide za myšou; pustená pri okraji (do 170 px)

@@ -21,14 +21,14 @@ start_app() { qs_app "$1" || setsid -f latte-app "$1" >/dev/null 2>&1; }
 flag="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/latteos/kvapky"          # plocha Kvapky beží; obsah = okraj lišty
 okraj="${XDG_STATE_HOME:-$HOME/.local/state}/latteos/kvapka-okraj"    # „dole 0.400“ (pamätá sa)
 side() { s="$(cut -d' ' -f1 "$okraj" 2>/dev/null)"; case "$s" in dole|hore|vlavo|vpravo) echo "$s" ;; *) echo dole ;; esac; }
-gaps() {   # okná nechajú pri okraji lišty miesto pre kvapku (Noctalia si ho inak vyhradí sama); platí aj po reload-e
-    local t=10 r=10 b=10 l=10
-    if [ "$1" = off ]; then rm -f "$flag"
+gaps() {   # pás pri okraji lišty pre kvapku (Noctalia si ho inak vyhradí sama): rezerva monitora, ktorú rešpektujú
+          # aj maximalizované okná (latte.kvapky_reserve v hyprland.lua); príznak ju obnoví po reload-e
+    if [ "$1" = off ]; then
+        rm -f "$flag"; hyprctl eval 'latte.kvapky_reserve(nil)' >/dev/null
     else
         mkdir -p "$(dirname "$flag")"; echo "$1" > "$flag"
-        case "$1" in dole) b=64 ;; hore) t=64 ;; vlavo) l=64 ;; vpravo) r=64 ;; esac
+        hyprctl eval "latte.kvapky_reserve('$1')" >/dev/null
     fi
-    hyprctl eval "hl.config({ general = { gaps_out = { top = $t, right = $r, bottom = $b, left = $l } } })" >/dev/null
 }
 
 scene_up() {

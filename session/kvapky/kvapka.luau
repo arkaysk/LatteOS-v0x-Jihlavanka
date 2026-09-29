@@ -83,6 +83,28 @@ run("latte-kvapky", { "okraj" }, function(out)
     end
 end)
 
+-- tesne: aktívne okno siaha k okraju lišty (maximalizované, na celú obrazovku, dlaždice/páska) → kvapka ostane
+-- v páse 64 px (+ rezerva), aby neprekryla program. Okraj podľa fact.side, rozmery monitora z hyprctl.
+local mon = nil
+run("hyprctl", { "-j", "monitors" }, function(out)
+    local ok, ms = pcall(json.decode, out or "")
+    if ok and ms then for _, m in ipairs(ms) do if m.focused then mon = m end end end
+end)
+local function check_tight()
+    run("hyprctl", { "-j", "activewindow" }, function(out)
+        local ok, w = pcall(json.decode, out or "")
+        local tight = false
+        if ok and w and w.at and w.size and mon then
+            local x, y = w.at[1] - mon.x, w.at[2] - mon.y
+            local side = tostring(fact.side or "dole")
+            local gap = ({ dole = mon.height - (y + w.size[2]), hore = y, vlavo = x, vpravo = mon.width - (x + w.size[1]) })[side] or 999
+            tight = (w.fullscreen or 0) ~= 0 or gap < 64 + 16
+        end
+        if fact.tight ~= tight then fact.tight = tight end
+    end)
+end
+every(700, check_tight)
+
 -- relácia LatteOS Kvapky (bez Noctalie): kvapky Štart a vypínač
 run("printenv", { "LATTE_VARIANT" }, function(out)
     if (out or ""):match("kvapky") then fact.solo = true end
