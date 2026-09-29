@@ -16,6 +16,9 @@ ako samostatná vrstva (layer-shell) nad jej lištou.
 - **dashboard** vyteká z Hodín (klik na Hodiny): veľký čas, dátum, počasie (Open-Meteo, miesto z Nastavení ›
   Prihlasovanie), **hľadanie aplikácií** (úloha Štartu; píše sa hneď, ↑↓ Enter), upozornenia (klik = otvoriť,
   „Vymazať všetko“), pripnuté (`~/.config/latteos/pripnute`, id .desktop po riadkoch). Esc alebo klik mimo zavrie
+- **každá kvapka sa dvíha sama** (30. 9., po teste myšou): podľa vzdialenosti kurzora od nej — nad vypínačom
+  najvyššie vypínač, sused (Hodiny) trochu, lišta nie; sused sa pridá iba o 30 % (goo ho ťahá)
+- **lišta sa od okraja neodlepí sama**: pri myši sa iba vynorí a dnom sa stále dotýka okraja; odlepí ju iba ťahanie
 - **ponuka Vypnúť** vyteká z kvapky vypínača (klik): Zamknúť, Odhlásiť sa, Uspať, Reštartovať, Vypnúť — akcie robí
   Noctalia (`noctalia msg session …`), rovnako ako ponuka LatteOS; klik mimo zavrie
 - **ovládacie centrum v dashboarde**: tlačidlá Sieť / Bluetooth / Zvuk prepínajú, klik na ich popis („Sieť ›“) otvorí
