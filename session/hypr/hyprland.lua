@@ -61,6 +61,9 @@ hl.config({
         disable_hyprland_logo = true,
         disable_splash_rendering = true,
         force_default_wallpaper = 0,
+        -- strážcom je latte-session (pád → reštart / SAFE, aquamarine #383), nie start-hyprland: ten po páde
+        -- spustí Hyprland bez -c. Varovanie „launched without start-hyprland“ je preto zbytočné.
+        disable_watchdog_warning = true,
     },
     ecosystem = { no_update_news = true, no_donation_nag = true },
     input = {
