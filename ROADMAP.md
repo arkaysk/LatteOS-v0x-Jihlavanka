@@ -369,7 +369,7 @@ flowchart TD
 - [ ] Steam, umu-launcher, Proton 11: inštalácia, spustenie launchera, integrácia do App Managera.
 - [x] **Herňa** (Super+G, `latte-games`): hry zo Steamu (aj Flatpak) a Heroicu (Epic, GOG, Amazon) s obalmi, filter,
   spustenie v hernom režime a jeho vypnutie po hre. Steam/Heroic sa inštalujú v App Manageri.
-- [ ] Prepínač „Desktop ↔ Hra“ s gamescope reláciou (H, reálny HW).
+- [x] Prepínač „Desktop ↔ Hra“ s gamescope reláciou (H, reálny HW) — pozri fázu H (29. 9.).
 
 ### H — Reálny hardvér *(keď bude pripravený PC s AMD aj NVIDIA)*
 - [x] `latte-hw` rozšíriť o stupne Plný / Štandard / Úsporný / Minimálny (29. 9.): `tier_for()` podľa tabuľky radaru,
@@ -381,7 +381,11 @@ flowchart TD
 - [x] Štart na HDD (29. 9.): test EGL pri studenom štarte ~12 s → vypršanie so skutočným KMS ovládačom = NORMAL
   (vzor wlroots: skúsiť, pri páde SAFE cez počítadlo pádov); softvérový test len keď hardvér neprejde.
 - [x] Monitor: s GPU režim `highrr` (Z301C hlásil 60 Hz ako preferred, vie 144 Hz).
-- [ ] gamescope herná relácia, MangoHud, HDR/VRR.
+- [ ] gamescope herná relácia, MangoHud, HDR/VRR. **Hotové, čaká na test na obrazovke (29. 9.):** prevzaté z Bazzite —
+  `gamescope-session-plus` + `gamescope-session-steam` (ChimeraOS, MIT) z Terra (repo iba pre tieto 2 balíky), natívny Steam
+  z RPM Fusion, MangoHud. Vlastné je len spojivo: `latte-hra` (Super+Shift+G), háčik `/usr/libexec/os-session-select`
+  (Steam › Prepnúť na desktop), striedanie v `latte-session` bez nového prihlásenia (ako SteamOS), položka greetera
+  „LatteOS Hra“. Pád hry → späť na plochu. HDR/VRR: Z301C VRR na DP nehlási (aquamarine: crtc incapable of vrr).
 - [ ] Lepton (Android hry), Qwen3-14B-sk.
 - [ ] Android vrstva: **F-Droid 2.0** (24. 9. 2026, nové rozhranie, pripravuje „Nearby“ = zdieľanie aplikácií medzi
   zariadeniami bez servera) ako predvolený obchod s voľnými Android aplikáciami; App Manager by čítal index F-Droidu

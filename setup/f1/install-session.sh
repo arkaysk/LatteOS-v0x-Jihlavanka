@@ -14,7 +14,7 @@ user="$(id -un)"
 sudo() { if [ -n "${SUDO_ASKPASS:-}" ]; then command sudo -A "$@"; else command sudo "$@"; fi; }
 
 # kontrola pred prvým zásahom do systému (DSanalyze.md): chýbajúci súbor = poškodený checkout, nie polovičná inštalácia
-BINS="latte-session latte-safe latte-greeter latte-theme latte-app latte-ai latte-shellset latte-sysmon latte-apps latte-devices latte-backup latte-games latte-net latte-cloud latte-siet latte-otvor latte-kos latte-spustac latte-sandbox latte-kopia latte-tc latte-ostrovy latte-rychle latte-tapety latte-vyber latte-ponuka latte-prichytenie latte-snimka latte-emoji latte-nove-okno latte-nahravanie latte-maskoti latte-sklo latte-inspektor latte-terminal latte-hypr-udalosti latte-sukromie latte-kapsa-store"
+BINS="latte-session latte-safe latte-greeter latte-theme latte-app latte-ai latte-shellset latte-sysmon latte-apps latte-devices latte-backup latte-games latte-net latte-cloud latte-siet latte-otvor latte-kos latte-spustac latte-sandbox latte-kopia latte-tc latte-ostrovy latte-rychle latte-tapety latte-vyber latte-ponuka latte-prichytenie latte-snimka latte-emoji latte-nove-okno latte-nahravanie latte-maskoti latte-sklo latte-inspektor latte-terminal latte-hypr-udalosti latte-sukromie latte-kapsa-store latte-hra"
 missing=""
 for f in $BINS; do [ -f "$S/bin/$f" ] || missing="$missing $f"; done
 [ -z "$missing" ] || { echo "Chýbajú skripty v $S/bin:$missing — inštaláciu nezačínam (git status / git pull)."; exit 1; }
@@ -42,7 +42,7 @@ put "$S/hypr/hyprland.lua" /usr/share/latteos/hypr/hyprland.lua
 for f in rc.xml autostart environment menu.xml; do sudo install -Dm644 "$S/labwc/$f" "/usr/share/latteos/labwc/$f"; done
 # relácie LatteOS: v systémovom zozname (pre iné greetery) aj vo vlastnom, ktorý ponúka latte-greeter
 # (tuigreet by inak ponúkol aj „Hyprland“ z COPR bez Noctalie a bez latte-session)
-for f in latteos.desktop latteos-safe.desktop; do
+for f in latteos.desktop latteos-safe.desktop latteos-hra.desktop; do
     sudo install -Dm644 "$S/wayland-sessions/$f" "/usr/share/wayland-sessions/$f"
     sudo install -Dm644 "$S/wayland-sessions/$f" "/usr/share/latteos/sessions/$f"
 done
@@ -106,7 +106,9 @@ rpm -q bsdtar 7zip >/dev/null || sudo dnf -y -q install bsdtar 7zip
 # Tapety (živé tapety podľa Aury): mpvpaper, mpv, ffmpeg na náhľady — video sa spustí iba s GPU
 # dialóg výberu súboru (Prehľadávať…) a vzhľad GTK aplikácií podľa témy (šablóny gtk3/gtk4 v config.toml Noctalie)
 rpm -q zenity adw-gtk3-theme >/dev/null || sudo dnf -y -q install zenity adw-gtk3-theme
-rpm -q mpvpaper mpv ffmpeg-free ffmpegthumbnailer >/dev/null || sudo dnf -y -q install mpvpaper mpv ffmpeg-free ffmpegthumbnailer   # Súbory: archívy ako priečinky (zip, 7z, rar, tar, iso), balenie 7z
+rpm -q mpvpaper mpv ffmpegthumbnailer >/dev/null || sudo dnf -y -q install mpvpaper mpv ffmpegthumbnailer
+# ffmpeg: plný z RPM Fusion (setup/lab/install.sh, dekódovanie grafickou kartou) alebo ffmpeg-free z Fedory
+rpm -q ffmpeg >/dev/null || rpm -q ffmpeg-free >/dev/null || sudo dnf -y -q install ffmpeg-free
 rpm -q wf-recorder wtype >/dev/null || sudo dnf -y -q install wf-recorder wtype   # nahrávanie obrazovky (Win+Alt+R), vloženie emoji (Win+.)
 rpm -q fuse3 >/dev/null || sudo dnf -y -q install fuse3                             # FTP/SFTP ako priečinky (latte-siet, rclone mount)
 flatpak remote-add --user --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
@@ -128,6 +130,8 @@ done
 echo "== systemd + tmpfiles + /etc/latteos"
 sudo install -Dm644 "$S/systemd/latte-boot.service" /usr/lib/systemd/system/latte-boot.service
 sudo install -Dm755 "$S/bin/latte-netd" /usr/libexec/latteos/latte-netd                     # okamžité tlačidlo NET (root)
+# háčik gamescope-session: Steam › Prepnúť na desktop → latte-hra desktop (Bazzite tu má steamosctl)
+sudo install -Dm755 "$S/libexec/os-session-select" /usr/libexec/os-session-select
 sudo install -Dm644 "$S/systemd/latte-netd.service" /usr/lib/systemd/system/latte-netd.service
 sudo install -Dm644 "$S/systemd/latteos.tmpfiles" /usr/lib/tmpfiles.d/latteos.conf
 sudo install -Dm644 "$S/systemd/latte-session.target" /usr/lib/systemd/user/latte-session.target
