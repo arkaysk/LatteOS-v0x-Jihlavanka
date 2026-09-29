@@ -298,7 +298,11 @@ texty preložiteľné (`translations`). Noctalia beží bez lišty a robí, čo 
       stránky Sieť / Bluetooth / Zvuk; ponuka Vypnúť vyteká z kvapky vypínača
 - [x] Obsah = káva (`~/.config/latteos/kava`): espresso … latte
 - [ ] Ranný test myšou na latte-lab (klik, ťahanie, strapce, dashboard, ponuka Vypnúť)
-- [ ] Barista: „Akú si dáte kávu a do čoho?“ (hrnček = téma okien, káva = kvapky), náhľad hrnčeka s kávou
+- [x] Barista: „Akú si dáte kávu a do čoho?“ (hrnček = téma okien v jej materiáli, káva = kvapky), náhľad hrnčeka
+- [x] Prekladová vrstva aplikácií LatteOS: `common/I18n.qml` (`i18n.tr`, JSON `/usr/share/latteos/i18n/<jazyk>.json`,
+      podľa DankMaterialShell); Barista zmigrovaný (anglický zdroj + sk.json)
+- [ ] Zmigrovať ostatné aplikácie LatteOS na `i18n.tr` (Nastavenia, Súbory, Monitor, ponuky, …) a súbory tém
+      (`name`/`desc` dnes po slovensky → `name[sk]`)
 - [ ] **Nová prihlasovacia obrazovka** (greeter): všetky funkcie dnešnej (výber účtu a relácie vrátane Kvapiek,
       NORMAL/SAFE a dôvod, posledný pád, Caps/Num Lock, zobraziť heslo, ľavý panel log/RSS/počasie/text, tapeta
       a farba z Nastavení, bez GPU pod labwc/pixman) s lepším vzhľadom v duchu latteGoo (kvapky, káva, pokojný
