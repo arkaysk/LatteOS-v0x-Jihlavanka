@@ -34,6 +34,21 @@ do
 end
 
 
+-- virtuálna obrazovka: bez fyzického monitora (napr. latte-lab ovládaný na diaľku cez Sunshine/Moonlight) si
+-- Hyprland vytvorí LATTE-VIRT 1920×1080; po pripojení monitora ju zruší (setup/lab/vzdialene.sh)
+hl.monitor({ output = "LATTE-VIRT", mode = "1920x1080@60", position = "auto", scale = 1 })
+local function virtual_screen()
+    local phys, virt = 0, false
+    for _, m in ipairs(hl.get_monitors() or {}) do
+        if m.name == "LATTE-VIRT" then virt = true
+        elseif m.name ~= "FALLBACK" and not m.name:match("^HEADLESS") then phys = phys + 1 end
+    end
+    if phys == 0 and not virt then hl.exec_cmd("hyprctl output create headless LATTE-VIRT")
+    elseif phys > 0 and virt then hl.exec_cmd("hyprctl output remove LATTE-VIRT") end
+end
+hl.on("monitor.added", virtual_screen)
+hl.on("monitor.removed", virtual_screen)
+
 -- ── prostredie ────────────────────────────────────────────────────────────────
 hl.env("XDG_CURRENT_DESKTOP", "Hyprland")
 hl.env("XDG_SESSION_DESKTOP", "latteos")
@@ -173,6 +188,7 @@ end)
 
 -- ── autoštart ─────────────────────────────────────────────────────────────────
 hl.on("hyprland.start", function()
+    virtual_screen()
     -- prostredie pre systemd/D-Bus, potom graphical-session.target (portály pre Flatpak)
     hl.exec_cmd("sh -c 'dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE "
         .. "HYPRLAND_INSTANCE_SIGNATURE LATTE_MODE LATTE_RENDERER LATTE_TIER LATTE_VARIANT; systemctl --user start latte-session.target'")
