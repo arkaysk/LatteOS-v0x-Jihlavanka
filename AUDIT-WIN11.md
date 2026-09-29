@@ -136,6 +136,21 @@ s pripnutými aplikáciami, akcie lišty pre herný režim a Zobraziť plochu. V
 | „Super Notchy“ motion reel (r/Anthropic, dizajn Claude) | výrez hore v strede so 3 prstencami (7 %, 42 %, 82 %), ktorý sa rozbalí do HUD; sústredné prstence spotreby; karty padajúce v 3D; veľké tesné groteskné písmo | **výrez so stavom** (hra, nahrávanie, sťahovanie, CPU/GPU) a **prstence** pre Zariadenia/herný blok; rohové mono popisky a „01 / HEADLINE“ sú predvolené AI trópy — nepreberať |
 | [pleamar](https://github.com/k4ditano/pleamar) + [Marea](https://github.com/k4ditano/marea-plm) (r/hyprland) | Rust + wgpu + layer-shell, kreslenie cez **SDF**, každá vlastnosť je pružina, animácia beží vo vlastnom vlákne nezávisle od logiky; skripty v **Luau** (ako naše pluginy Noctalie); na Hyprlande beží vedľa iného shellu. Autor meral ten istý bar: pamäť **336 → 81 MB**, prvá snímka **1876 → 175 ms**, animácia **~24 → 60 FPS**, CPU v pokoji **0,3 %** (vs. Quickshell). Marea = čierna **kvapka slizu** hore na obrazovke s očami, pri myši sa vlní ako želatína a **roztečie sa do panelov** (spúšťač, prehľad) | nápad **„Kvapka“**: maskot LatteOS ako kvapka espressa/crema, ktorá je zároveň výrez so stavom a vstup do panelov (tekutá premena namiesto tvaru L). Technológia: BSD-3, ale **10 dní stará**, 1 autor → nie náhrada Noctalie; kandidát na prototyp kvapky a neskôr na náhradu 9 procesov Quickshellu (~318 MB, ROADMAP O) |
 
+## Koncept „Kvapky“ (P1, 29. 9.) — maketa D na plátne dizajnu
+
+Pohyblivé, tekuté rozhranie namiesto statickej lišty (páčila sa pohyblivosť z „Super Notchy“, tekutosť z Marea):
+- **Dole v strede veľká kvapka = lišta aplikácií**: prelieva sa doľava a doprava, pulzuje, zväčšuje sa; otvorené okno
+  = kvapka sa rozšíri a ukáže ikonu, prejdenie myšou = náhľad okna.
+- **Klik na kvapku prepína režim okien** (plávajúce → dlaždice → nekonečná páska), tvar kvapky ho odráža.
+- **Koliesko nad očami kvapky:** páska = posun pásky; plávajúce = prepínanie okien ako Alt+Tab; dlaždice = nič.
+- **Vľavo od stredu kvapka Štart** (App Manager / spúšťač, menu ako Noctalia s kvapkou na povrchu) a **kvapka s vypínačom
+  na čele** — zvažuje sa ich zlúčenie; alternatíva: Štart hore ako Marea.
+- **Vpravo dole sada kvapiek viazaná na roh**: hodiny, rýchle nastavenia, Kapsa; maskoti **Homebrew** (kávová kvapka
+  z hrnčeka — má už snímky kvapka/natiahnutý/rozliaty) a **Kávový drak** plávajú v káve.
+- **Kvapky podľa voľby používateľa** (Súbory, Hardvér, dashboard Noctalie…), panel sa **roztečie z kvapky**.
+- **Farba kvapky nastaviteľná**: od čiernej kávy po latte.
+Technicky: kvapky = SDF/metaballs (pleamar) alebo „goo“ shader; Hyprland/Noctalia to samy nevedia → prototyp.
+
 ## Návrh rozhrania: „rozloženie Windows 11, materiál LatteOS“
 
 1. **Lišta s oblasťami Windows 11, tvar ostrovov LatteOS** (zľava doprava, voľba „na stred“ ako Win11):
