@@ -26,9 +26,13 @@ local layout   -- nižšie
 -- aktívne okno siaha k lište (fact.tight), všetko sa zrovná do jedného radu v páse.
 local R0 = 29
 local OFFS = { { 0, 0 }, { 1.72, -0.42 }, { 0.78, -1.62 }, { -0.98, -1.3 }, { 2.28, -1.86 },
-               { 0.02, -3.0 }, { 1.62, -3.12 }, { -1.25, -2.85 }, { 2.9, -3.0 }, { 0.85, -4.2 } }
+               { 0.02, -3.0 }, { 1.62, -3.12 }, { -1.25, -2.85 }, { 2.9, -3.0 }, { 0.85, -4.2 },
+               { -0.6, -4.3 }, { 2.2, -4.3 }, { 3.4, -1.1 }, { 0.1, -5.4 }, { 1.55, -5.5 },
+               { -1.3, -5.2 }, { 3.1, -4.4 }, { -1.9, -1.9 }, { 0.8, -6.6 }, { 2.4, -6.4 } }
 local JIT = { { 0, 0 }, { 0.06, -0.04 }, { -0.05, 0.07 }, { 0.08, 0.03 }, { -0.07, -0.05 },
-              { 0.05, 0.06 }, { -0.04, 0.05 }, { 0.07, -0.06 }, { -0.06, 0.04 }, { 0.04, -0.07 } }
+              { 0.05, 0.06 }, { -0.04, 0.05 }, { 0.07, -0.06 }, { -0.06, 0.04 }, { 0.04, -0.07 },
+              { 0.03, 0.05 }, { -0.05, -0.03 }, { 0.06, 0.02 }, { -0.03, -0.06 }, { 0.05, 0.04 },
+              { -0.06, 0.03 }, { 0.02, -0.05 }, { 0.04, 0.06 }, { -0.04, -0.04 }, { 0.06, -0.02 } }
 local hot = nil          -- aplikácia, ktorej strapec je pod myšou (rozvinutý)
 local hot_gen = 0
 
@@ -70,7 +74,7 @@ end
 function layout()
     local groups, order = {}, {}
     for i, w in ipairs(wins) do
-        if i > 10 then break end
+        if i > 20 then break end
         local k = group_key(w)
         if not groups[k] then groups[k] = {}; order[#order + 1] = k end
         table.insert(groups[k], i)
@@ -127,14 +131,6 @@ on("unhover", function()
     after(500, function() if mine == hot_gen and hot then hot = nil; layout() end end)
 end)
 
-local function windows()
-    local out = {}
-    for _, w in ipairs(wins) do
-        if not w.minimized then table.insert(out, w) end
-    end
-    return out
-end
-
 on("cycle", function()
     run("hyprctl", { "eval", 'require("latte.windows").cycle()' }, function() after(250, read_mode) end)
 end)
@@ -166,12 +162,9 @@ on("wheel_turn", function(d)
     if mode == "paska" then
         run("hyprctl", { "eval", 'hl.dispatch(hl.dsp.focus({ direction = "' .. (dir > 0 and "r" or "l") .. '" }))' })
     elseif mode == "plavajuce" then
-        local list = windows()
-        if #list == 0 then return end
-        local cur = 1
-        for i, w in ipairs(list) do if w.active then cur = i end end
-        local nxt = ((cur - 1 + dir) % #list) + 1
-        pcall(sys.call, "window.activate", list[nxt].id)
+        -- ďalšie okno na aktuálnej ploche (latte/bars.lua) — nie cez Wayland: prepnutie na minimalizované okno
+        -- ukázalo celú skrytú plochu special:minimized a nové okná sa potom otvárali na nej
+        run("hyprctl", { "eval", "latte.win.cycle(" .. dir .. ")" })
     end
 end)
 
@@ -205,16 +198,25 @@ run("hyprctl", { "-j", "monitors" }, function(out)
     if ok and ms then for _, m in ipairs(ms) do if m.focused then mon = m end end end
 end)
 local function check_tight()
-    run("hyprctl", { "-j", "activewindow" }, function(out)
-        local ok, w = pcall(json.decode, out or "")
-        local tight = false
-        if ok and w and w.at and w.size and mon then
-            local x, y = w.at[1] - mon.x, w.at[2] - mon.y
-            local side = tostring(fact.side or "dole")
-            local gap = ({ dole = mon.height - (y + w.size[2]), hore = y, vlavo = x, vpravo = mon.width - (x + w.size[1]) })[side] or 999
-            tight = (w.fullscreen or 0) ~= 0 or gap < 64 + 16
-        end
-        if fact.tight ~= tight then fact.tight = tight end
+    -- ktorékoľvek viditeľné okno na aktuálnej ploche (nielen aktívne — v Dlaždiciach siahajú k lište všetky)
+    run("hyprctl", { "-j", "activeworkspace" }, function(wout)
+        local okw, ws = pcall(json.decode, wout or "")
+        run("hyprctl", { "-j", "clients" }, function(out)
+            local ok, list = pcall(json.decode, out or "")
+            local tight = false
+            if ok and list and okw and ws and mon then
+                local side = tostring(fact.side or "dole")
+                for _, w in ipairs(list) do
+                    if w.workspace and w.workspace.id == ws.id and w.mapped ~= false and not w.hidden and w.at and w.size then
+                        local x, y = w.at[1] - mon.x, w.at[2] - mon.y
+                        local gap = ({ dole = mon.height - (y + w.size[2]), hore = y, vlavo = x,
+                                       vpravo = mon.width - (x + w.size[1]) })[side] or 999
+                        if (w.fullscreen or 0) ~= 0 or gap < 64 + 16 then tight = true; break end
+                    end
+                end
+            end
+            if fact.tight ~= tight then fact.tight = tight end
+        end)
     end)
 end
 every(700, check_tight)
