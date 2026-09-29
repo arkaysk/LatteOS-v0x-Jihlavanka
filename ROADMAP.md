@@ -372,9 +372,15 @@ flowchart TD
 - [ ] Prepínač „Desktop ↔ Hra“ s gamescope reláciou (H, reálny HW).
 
 ### H — Reálny hardvér *(keď bude pripravený PC s AMD aj NVIDIA)*
-- [ ] `latte-hw` rozšíriť o stupne Plný / Štandard / Úsporný / Minimálny.
+- [x] `latte-hw` rozšíriť o stupne Plný / Štandard / Úsporný / Minimálny (29. 9.): `tier_for()` podľa tabuľky radaru,
+  generácia AMD z KFD jadra (`gfx_target_version`), APU z KFD, VRAM zo sysfs, NVIDIA podľa PCI ID (neoverené, bez HW).
+  latte-lab RX 640 (gfx803, 4 GB) → Úsporný. `~/.config/latteos/tier` má prednosť.
 - [ ] NVIDIA: RPM Fusion `akmod-nvidia` (595+) a `akmod-nvidia-580xx` pre GTX 900/10xx. Nikdy nemeniť vetvu ovládača bez overenia.
-- [ ] AMD: Mesa RADV.
+- [x] AMD: Mesa RADV (29. 9., latte-lab: RADV POLARIS12, radeonsi GLES 3.2). Plný `ffmpeg` z RPM Fusion — `ffmpeg-free`
+  dekóduje H.264 iba softvérovo (libopenh264), s ním VA-API: živá tapeta 66 % → 7 % CPU.
+- [x] Štart na HDD (29. 9.): test EGL pri studenom štarte ~12 s → vypršanie so skutočným KMS ovládačom = NORMAL
+  (vzor wlroots: skúsiť, pri páde SAFE cez počítadlo pádov); softvérový test len keď hardvér neprejde.
+- [x] Monitor: s GPU režim `highrr` (Z301C hlásil 60 Hz ako preferred, vie 144 Hz).
 - [ ] gamescope herná relácia, MangoHud, HDR/VRR.
 - [ ] Lepton (Android hry), Qwen3-14B-sk.
 - [ ] Android vrstva: **F-Droid 2.0** (24. 9. 2026, nové rozhranie, pripravuje „Nearby“ = zdieľanie aplikácií medzi
@@ -402,6 +408,9 @@ Kľúčové zistenie: pri softvérovom kreslení stojí **každá snímka** komp
   (`playerctl --follow`, udalosti, kurzor 10 s), zvonček (Nerušiť 30 s), mikrofón/kamera (`latte-sukromie`: pactl +
   fuser, Python iba keď niečo nájde — predtým ~4 % jadra stále). Za 15 s ~10 krátkych procesov namiesto ~100.
   **Namerané spolu (vykon.sh):** relácia ~217 % → ~69 % CPU (celý systém ~54 %), pamäť bez zmeny ~700 MB.
+- [x] Kompozitor na reálnom HW (29. 9., RX 640, 144 Hz, stupeň Plný): Hyprland v pokoji **6 %** jadra (VM ~45 ms CPU na snímku).
+  Najdrahší bol obiehajúci lem aktívneho okna (`borderangle` loop kreslí každú snímku): 25 % → 6 % bez neho → ostáva iba
+  v stupni Plný. Relácia spolu 54 % s lemom a video tapetou (vykon.sh).
 - [ ] Kompozitor: sledovanie poškodenia pri sw-gl takmer nešetrí (vypnuté 216 %, zapnuté 189 % pri tej istej animácii):
   každá snímka stojí ~45 ms CPU (llvmpipe) bez ohľadu na veľkosť zmeny. Najpravdepodobnejšie chýba „buffer age“
   (EGL_EXT_buffer_age) pri vmwgfx/llvmpipe → Hyprland kreslí celý výstup. Overiť na reálnom HW (s GPU by to malo
@@ -430,7 +439,7 @@ Kľúčové zistenie: pri softvérovom kreslení stojí **každá snímka** komp
 - [x] 8 Heidelberg WYSIWYG, tlač, kontrola textu · [x] 9 greeter · [x] 10 Monitor · [x] 11 Ktulu a útek maskota · [x] 12 živá tapeta
 - [ ] tvar L (panel zrastený s lištou) iba pri viditeľnom páse lišty — ostrovy ostali oddelené podľa želania
 - [x] Heidelberg: otvárať PDF
-- [ ] video tapeta s GPU otestovať na reálnom HW · Electron pruh (NET jazýček je hotový)
+- [x] video tapeta s GPU otestovať na reálnom HW (29. 9.: vaapi, ~7 % CPU, Hyprland +1 %) · [ ] Electron pruh (NET jazýček je hotový)
 - [x] Digitálna pohoda (pohoda.qml, Monitor › Čas v aplikáciách, limity, čas a RAM v App Manageri)
 - [ ] Plynulé animácie všetkých panelov a vyskakovacích okien pri stupni s GPU (vzor: video „Hyprland as fluid as it gets“) — otestovať na reálnom HW
 - [x] Kolekcia maskotov (12 postáv) s režimami OFF / SLOT / WORLD / CHAOS, výbehy po lište a oknách (maskot.qml), potreby ako tamagoči, panel
