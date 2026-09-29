@@ -49,4 +49,8 @@ Dve opravy pre Kvapky, obe vhodné na upstream:
 2. **Farby o tón svetlejšie.** RADV ponúka ako prvý nesRGB formát `Rgba16Float`; Hyprland ho berie ako lineárne
    svetlo a zakóduje ešte raz → káva #1c0f09 vyšla ako #5c4333. Záplata uprednostní `Bgra8Unorm`/`Rgba8Unorm`.
 
+3. **Ťahanie aj pravým tlačidlom.** pleamar začína ťahanie (`on drag`) iba ľavým; lišta-kvapka sa má dať presunúť
+   ľavým aj pravým (ako panel úloh). Záplata: pravé tlačidlo nad zónou začne to isté ťahanie a jeho pustenie ho
+   ukončí (`on release`); `on press right` ostáva, takže scéna rozlíši ľavý klik od pravého.
+
 Použitie: `git apply` v `resources/upstream/pleamar`, potom `cargo build --release`.

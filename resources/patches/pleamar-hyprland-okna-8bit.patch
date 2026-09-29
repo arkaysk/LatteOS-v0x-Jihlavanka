@@ -67,3 +67,42 @@ index 9e19585..c14ddd4 100644
 +            Ok(v) => !v.split(',').map(str::trim).any(|p| p == "1" || p == what),
 +        }
 +}
+diff --git a/src/render.rs b/src/render.rs
+index 3a8a490..bd02256 100644
+--- a/src/render.rs
++++ b/src/render.rs
+@@ -250,6 +250,9 @@ pub fn run(
+     let mut cursor: Option<((f32, f32), Vec<(String, [i32; 4])>)> = None;
+     // What is being dragged: which zone, and where the mouse was when pressed.
+     let mut drag: Option<(usize, (f32, f32), Instant)> = None;
++    // The right button can drag too (a bar moved to another edge with either button): its press
++    // starts the same drag the left one does, and only its own release ends it.
++    let mut right_drag = false;
+     let mut cursor_set = Cursor::Normal;
+ 
+     // The keyboard that has been asked of the compositor, whether it has the focus, and whether it has
+@@ -1207,7 +1210,23 @@ pub fn run(
+                         let _ = to_logic.send(Event::Press(scene.zones[k].id));
+                     }
+                 }
+-                (0, false) => {
++                (0, false) if !right_drag => {
++                    if let Some((k, _, _)) = drag.take() {
++                        released = Some(k);
++                        if let Some(z) = scene.zones.get(k) {
++                            let _ = to_logic.send(Event::Release(z.id));
++                        }
++                    }
++                }
++                (1, true) => {
++                    pressed_with = hovered.map(|k| (k, 1));
++                    if let (Some(k), Some(p), None) = (hovered, pointer, drag) {
++                        drag = Some((k, p, now));
++                        right_drag = true;
++                    }
++                }
++                (1, false) if right_drag => {
++                    right_drag = false;
+                     if let Some((k, _, _)) = drag.take() {
+                         released = Some(k);
+                         if let Some(z) = scene.zones.get(k) {

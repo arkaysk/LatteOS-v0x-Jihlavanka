@@ -23,9 +23,11 @@ ako samostatná vrstva (layer-shell) nad jej lištou.
 - **kvapky na seba pôsobia**: pri vysúvaní sa nakláňajú k susedovi a spájajú ich goo vlákna (vypínač ↔ Štart ↔
   lišta), roztavené s oboma koncami; odtrhnutá lišta vlákno k Štartu natiahne a pretrhne; myš nad kvapkou ju
   nafúkne a susedov k nej pritiahne; stlačenie prebehne vlnou cez susedov
-- **klik na hlavu**: `latte.windows.cycle()` (plávajúce → dlaždice → páska), tvar podľa režimu
-- koliesko nad hlavou: páska = posun, plávajúce = ďalšie okno (Alt+Tab), dlaždice = nič
-- klik na ikonu: okno dostane fokus
+- **základňa kvapky** (telo a hlava): ľavý klik = režim okien (plávajúce → dlaždice → páska), koliesko nad
+  kvapkou = okná (páska = posun, plávajúce = ďalšie okno), ťahanie ľavým aj pravým = presun, pravý klik nič
+- **hrbolčeky s oknami** majú vlastné kliky: ľavý = prepnúť na okno, aktívne sa minimalizuje (ako vo Windows;
+  minimalizuje LatteOS na special:minimized, Hyprland žiadosť z protokolu ignoruje), pravý = ponuka okna pri
+  kurzore; ťahanie z hrbolčeka kvapku nepresúva
 - texty po anglicky + `translations sk` (jazyk podľa `LANG`, prepína sa za behu)
 
 ## Plocha LatteOS Kvapky (skúšobná relácia)
