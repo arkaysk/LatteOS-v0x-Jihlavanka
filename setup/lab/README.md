@@ -99,7 +99,7 @@ Potom už cez SSH, **monitor nechať zapojený** (skript si uloží jeho EDID do
 
 ```
 sudo dnf -y install git
-git clone -b gamerdistro https://github.com/arkaysk/jihlavanka001 && cd jihlavanka001
+git clone https://github.com/arkaysk/latteos && cd latteos
 setup/lab/install.sh
 ```
 
