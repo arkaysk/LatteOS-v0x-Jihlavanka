@@ -57,17 +57,16 @@ ako samostatná vrstva (layer-shell) nad jej lištou.
 - texty po anglicky + `translations sk` (jazyk podľa `LANG`, prepína sa za behu)
 
 ## Plocha LatteOS Kvapky (skúšobná relácia)
-Klasické LatteOS vypnuté (Noctalia, jej lišta a pomocníci: netznak, kapsavyrez, náhľad, plocha, rýchle nastavenia,
-
-pohoda, maskot, živá tapeta QML) — ostáva **živá tapeta** (latte-tapety, mpvpaper; statický obrázok tiež cez mpvpaper)
-a **kvapky**. Z klasiky ostáva iba to, bez čoho by sa nedalo nič spustiť ani odhlásiť: Kapsa (história schránky),
-spúšťač App Managera (kvapka **Štart**) a systémové ponuky (kvapka **vypínač**, Ctrl+Alt+Del).
+Klasická lišta a jej pomocníci vypnutí (lišta Noctalie, netznak, kapsavyrez, náhľad, plocha, rýchle nastavenia,
+pohoda, maskot, živá tapeta QML) — ostáva **živá tapeta** (latte-tapety, mpvpaper; statický obrázok tiež cez mpvpaper),
+**kvapky** (lišta, Hodiny s dashboardom, vypínač), Noctalia bez lišty (nižšie), Kapsa, App Manager a systémové
+ponuky (kvapka **vypínač**, Ctrl+Alt+Del).
 - **ponuka**: na prihlasovacej obrazovke relácia **LatteOS Kvapky** (`latte-session kvapky` → `LATTE_VARIANT=kvapky`
   → hyprland.lua spustí `latte-kvapky start`; zdravá, keď po 60 s beží pleamar)
 - bez odhlásenia: `latte-kvapky skusit` (z klasickej plochy) a `latte-kvapky spat` (späť), `latte-kvapky stav`
 - okná nechajú pri okraji lišty 64 px pre kvapku (rezerva monitora, Noctalia si pás vyhradí sama); platí aj po
   reload-e konfigurácie (príznak `$XDG_RUNTIME_DIR/latteos/kvapky` s okrajom)
-- Štart a vypínač sú malé kvapky vľavo od hlavy, vpité do okraja, pri myši sa vysunú; neodtrhávajú sa
+- Hodiny a vypínač sú kvapky vľavo od hlavy, vpité do okraja, pri myši sa vysunú; neodtrhávajú sa
 
 **Previazanie s Noctaliou (latteGoo):** Noctalia v ploche Kvapky beží ďalej, ale bez lišty, bez tapety a bez servera
 upozornení (`latte-kvapky` jej pripraví variant konfigurácie v `$XDG_RUNTIME_DIR/latteos/noctalia-kvapky`: odkazy na
