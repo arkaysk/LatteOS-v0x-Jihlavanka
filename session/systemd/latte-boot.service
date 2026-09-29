@@ -9,7 +9,7 @@ Before=greetd.service display-manager.service plymouth-quit.service
 Type=oneshot
 RemainAfterExit=yes
 ExecStart=/usr/bin/latte-boot select
-TimeoutStartSec=15
+TimeoutStartSec=45
 
 [Install]
 WantedBy=graphical.target
