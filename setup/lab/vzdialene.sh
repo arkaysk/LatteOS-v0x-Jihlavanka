@@ -34,6 +34,11 @@ sunshine_name = latte-lab
 EOC
     chown "$user:$user" "$conf"
 fi
+# webové rozhranie z pracovného PC: CSRF ochrana Sunshine inak púšťa iba localhost
+if ! grep -q '^csrf_allowed_origins' "$conf"; then
+    ip="$(hostname -I | awk '{print $1}')"; h="$(hostname -s)"
+    printf '# webové rozhranie z pracovného PC (inak ho CSRF ochrana pustí iba z localhost)\ncsrf_allowed_origins = https://%s:47990,https://%s.local:47990,https://%s:47990\n' "$ip" "$h" "$h" >> "$conf"
+fi
 # zapnutie používateľskej služby = odkaz vo wants (to isté, čo robí `systemctl --user enable`, ale bez bežiacej relácie)
 wants="$home/.config/systemd/user/graphical-session.target.wants"
 install -d -o "$user" -g "$user" "$home/.config/systemd" "$home/.config/systemd/user" "$wants"
