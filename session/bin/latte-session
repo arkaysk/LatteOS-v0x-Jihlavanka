@@ -121,14 +121,32 @@ run_game() {
     exit 0
 }
 
+exit_crash() {   # $1 PID: coredump s pádom v upratovaní na konci procesu (systemd-coredump ho zapíše o chvíľu)
+    local i bt
+    for i in 1 2 3 4 5 6; do
+        bt="$(coredumpctl info "$1" --no-pager 2>/dev/null)"
+        if [ -n "$bt" ]; then grep -qE "_dl_fini|__cxa_finalize" <<<"$bt"; return; fi
+        sleep 0.5
+    done
+    return 1
+}
+
 restarts=()
 while true; do
     if [ "$next" = hra ]; then run_game; next=desktop; export XDG_CURRENT_DESKTOP=Hyprland; fi
     t0=$(date +%s)
-    "${LATTE_HYPRLAND:-Hyprland}" -c "$hconf"
+    "${LATTE_HYPRLAND:-Hyprland}" -c "$hconf" &
+    hpid=$!
+    wait $hpid
     rc=$?
     dt=$(( $(date +%s) - t0 ))
     echo "Hyprland skončil: rc=$rc po ${dt}s"
+    # aquamarine 0.15 padá pri UKONČENÍ Hyprlandu (github.com/hyprwm/aquamarine/issues/383, otvorené 29. 9. 2026):
+    # SIGSEGV v deštruktoroch (_dl_fini → CDRMBackend::flushAsyncCommitEvents). Odhlásenie ani prepnutie na hru
+    # preto nie je pád relácie — rozpozná sa podľa backtrace v coredumpe, alebo podľa žiadosti latte-hra.
+    if [ $rc -eq 139 ] && { [ -s "$flag" ] || exit_crash $hpid; }; then
+        echo "pád až pri ukončení (aquamarine #383) → berie sa ako riadne ukončenie"; rc=0
+    fi
     systemctl --user stop latte-session.target 2>/dev/null     # portály a služby relácie končia s Hyprlandom
 
     if [ $rc -eq 0 ]; then
