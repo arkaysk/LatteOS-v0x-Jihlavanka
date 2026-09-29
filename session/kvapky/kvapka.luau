@@ -33,6 +33,7 @@ local JIT = { { 0, 0 }, { 0.06, -0.04 }, { -0.05, 0.07 }, { 0.08, 0.03 }, { -0.0
               { 0.05, 0.06 }, { -0.04, 0.05 }, { 0.07, -0.06 }, { -0.06, 0.04 }, { 0.04, -0.07 },
               { 0.03, 0.05 }, { -0.05, -0.03 }, { 0.06, 0.02 }, { -0.03, -0.06 }, { 0.05, 0.04 },
               { -0.06, 0.03 }, { 0.02, -0.05 }, { 0.04, 0.06 }, { -0.04, -0.04 }, { 0.06, -0.02 } }
+local ZIG = { 0, 0.46, 0.12, 0.52, 0.04, 0.38, 0.18, 0.5 }   -- cik-cak strapca v páse pod oknom (násobky r)
 local hot = nil          -- aplikácia, ktorej strapec je pod myšou (rozvinutý)
 local hot_gen = 0
 
@@ -89,7 +90,16 @@ function layout()
         local row = tight or m == 1 or key == hot
         if key == hot and not tight then r = paska and 24 or R0 end
         if tight then r = math.min(r, 23) end
-        if row then
+        if row and tight and m > 1 then
+            -- pod oknom: strapec využije pás po spodok okna, nepravidelne (cik-cak), bez prekrytia okna
+            local step = r * 1.45
+            local ax = u + r
+            for j, i in ipairs(idx) do
+                local x = u + r + (j - 1) * step
+                lay[i] = { x = x, y = -ZIG[((j - 1) % #ZIG) + 1] * r, r = r * (1 + 0.05 * (((j - 1) * 37) % 5 - 2) / 2), icon = icon_of(wins[i]), ax = ax, ay = 0 }
+            end
+            u = u + 2 * r + (m - 1) * step + 12
+        elseif row then
             local step = r * 1.86
             for j, i in ipairs(idx) do
                 local x = u + r + (j - 1) * step
@@ -151,8 +161,13 @@ on("win_menu", function(k)
     local w = wins[(k or 0) + 1]
     if not w then return end
     win_eval("focus_by", w)
-    local x, y = math.floor(fact["menu.x"] or 0), math.floor(fact["menu.y"] or 0)
-    after(150, function() run("latte-ponuka", { "okno", tostring(x), tostring(y) }) end)
+    -- poloha ponuky = kurzor v čase kliku, priamo od Hyprlandu (JSON); fakty scény sem prišli neskoro (ponuka vľavo hore)
+    run("hyprctl", { "-j", "cursorpos" }, function(out)
+        local ok, c = pcall(json.decode, out or "")
+        local x = (ok and c and c.x) or math.floor(fact["menu.x"] or 0)
+        local y = (ok and c and c.y) or math.floor(fact["menu.y"] or 0)
+        after(120, function() run("latte-ponuka", { "okno", tostring(math.floor(x)), tostring(math.floor(y)) }) end)
+    end)
 end)
 
 -- koliesko nad očami: páska = posun (fokus doľava/doprava posúva scrolling layout Hyprlandu),
@@ -203,7 +218,7 @@ local function check_tight()
         local okw, ws = pcall(json.decode, wout or "")
         run("hyprctl", { "-j", "clients" }, function(out)
             local ok, list = pcall(json.decode, out or "")
-            local tight = false
+            local tight, room = false, 999
             if ok and list and okw and ws and mon then
                 local side = tostring(fact.side or "dole")
                 for _, w in ipairs(list) do
@@ -211,11 +226,15 @@ local function check_tight()
                         local x, y = w.at[1] - mon.x, w.at[2] - mon.y
                         local gap = ({ dole = mon.height - (y + w.size[2]), hore = y, vlavo = x,
                                        vpravo = mon.width - (x + w.size[1]) })[side] or 999
-                        if (w.fullscreen or 0) ~= 0 or gap < 64 + 16 then tight = true; break end
+                        if (w.fullscreen or 0) ~= 0 then gap = 0 end
+                        room = math.min(room, gap)
+                        if gap < 64 + 16 then tight = true end
                     end
                 end
             end
             if fact.tight ~= tight then fact.tight = tight end
+            room = math.floor(math.max(0, room))
+            if fact.room ~= room then fact.room = room end
         end)
     end)
 end

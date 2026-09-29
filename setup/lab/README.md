@@ -145,4 +145,6 @@ klient na pracovnom PC. Rýchlejšie a plynulejšie ako VNC/RDP (stavané na hry
    správcu Sunshine (certifikát je vlastný, prehliadač sa spýta; pokračovať).
 4. V Moonlighte: ⊕ → `192.168.137.231` → ukáže PIN → zadať ho v Sunshine (karta PIN) → Desktop.
 
+Po odpojení monitora (overené 30. 9.): Hyprland prejde na `LATTE-VIRT`, okná mimo obrazovky vráti na stred,
+priveľké zmenší na 90 % a prepne na plochu s oknami (`latte.windows_onscreen`, hyprland.lua).
 Ukončenie streamu: Ctrl+Alt+Shift+Q (Moonlight). Obraz sa prispôsobí rozlíšeniu okna Moonlightu.
