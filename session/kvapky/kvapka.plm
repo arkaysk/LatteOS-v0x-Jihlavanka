@@ -173,12 +173,14 @@ scene Kvapka {
     let bottom = edge + sink * (1 - o.rise) - 48 * o.pull + (h + 44) * (1 - ap)
     let by = bottom - h
     let mid = by + h / 2
-    let neck = if(round, 24, 14) * (1 - out) + 16 * 4 * out * (1 - out)
+    // lišta je „uväznená váhou“: kým ju nikto neťahá, sedí na okraji ako kvapky na stole — široká „voda“ pod celou
+    // šnúrou a menisk (neck) pod každou guľôčkou; strapce z nej rastú hore, ale od okraja sa neoddelia
+    let neck = if(round, 24, 16) * (1 - o.pull) + 16 * 4 * o.pull * (1 - o.pull) + 6 * o.rise * (1 - o.pull)
     let stalk.w = 30 * clamp((0.9 - out) / 0.5, 0, 1)
     let stalk.x = lx + 6
     // „voda“ pod okrajom: v pokoji široká (kvapka sa zlieva s okrajom do roviny), vonku úzka pod hlavou
-    let water.w = 40 + (w + 90) * (1 - out) * (1 - out)
-    let water.x = stalk.x + (bl + w / 2 - stalk.x) * (1 - out)
+    let water.w = 40 + (w + 90) * (1 - o.pull) * (1 - o.pull)
+    let water.x = stalk.x + (bl + w / 2 - stalk.x) * (1 - o.pull)
 
     // odtrhnutá kvapka (v súradniciach obrazovky): ide za myšou s oneskorením, zaguľatí sa; pri stekaní padá,
     // naťahuje sa a mizne
@@ -293,15 +295,15 @@ scene Kvapka {
             ellipse { at: lx + ux.9 + 2 * noise(6.3, time * 0.35), mid + uy.9 + 2.5 * noise(16.7, time * 0.3); radius: ur.9 * b.9 * (1 + 0.035 * noise(18.9, time * 0.5) + 0.12 * act.9) - wob * 0.04; blend: 13 }
             // Štart a vypínač: vlastná „voda“ pod okrajom; s hlavou a medzi sebou ich spája most `link`
             box { from: px - 34 - 14 * flow2 * stir, edge; size: (sx - px + 68 + 28 * flow2 * stir) * so, 70 }
-            ellipse { at: sx, s.y; radius: (33 + 3 * hs) * so; scale: 1 + squish.s * 0.08, 1 - squish.s * 0.12; blend: link * so }
+            ellipse { at: sx, s.y; radius: (33 + 3 * hs) * so * (1 - smooth(0, 0.12, dsh)); scale: 1 + squish.s * 0.08, 1 - squish.s * 0.12; blend: link * so }
             // upozornenia: kvapôčky prilepené hore vľavo na Hodinách (najviac tri) a jedna, ktorá práve padá
-            ellipse { at: sx - 25, s.y - 23; radius: 6.5 * so * if(notes.count > 0, 1, 0); blend: 8 }
-            ellipse { at: sx - 10, s.y - 34; radius: 5.5 * so * if(notes.count > 1, 1, 0); blend: 8 }
-            ellipse { at: sx + 6, s.y - 37; radius: 4.8 * so * if(notes.count > 2, 1, 0); blend: 8 }
+            ellipse { at: sx - 25, s.y - 23; radius: 6.5 * so * (1 - dsh) * if(notes.count > 0, 1, 0); blend: 8 }
+            ellipse { at: sx - 10, s.y - 34; radius: 5.5 * so * (1 - dsh) * if(notes.count > 1, 1, 0); blend: 8 }
+            ellipse { at: sx + 6, s.y - 37; radius: 4.8 * so * (1 - dsh) * if(notes.count > 2, 1, 0); blend: 8 }
             ellipse { at: sx + 4, s.y - 110 + 72 * nfall; radius: 6 * so * if(nfall > 0.02 and nfall < 0.97, 1, 0); scale: 0.85, 1.25; blend: 10 }
-            ellipse { at: px, p.y; radius: (19 + 4 * hp) * so; scale: 1 + squish.p * 0.08, 1 - squish.p * 0.12; blend: link * so }
-            line { from: px, p.y - 4; to: sx, s.y - 6; width: thread.ps; blend: 12 * clamp(thread.ps / 3, 0, 1) }
-            line { from: sx + 8, s.y - 12; to: bl + 18, bottom - 14; width: thread.sb * ap; blend: 14 * clamp(thread.sb * ap / 3, 0, 1) }
+            ellipse { at: px, p.y; radius: (19 + 4 * hp) * so * (1 - smooth(0, 0.12, pm)); scale: 1 + squish.p * 0.08, 1 - squish.p * 0.12; blend: link * so }
+            line { from: px, p.y - 4; to: sx, s.y - 6; width: thread.ps * (1 - max(dsh, pm)); blend: 12 * clamp(thread.ps * (1 - max(dsh, pm)) / 3, 0, 1) }
+            line { from: sx + 8, s.y - 12; to: bl + 18, bottom - 14; width: thread.sb * ap * (1 - dsh); blend: 14 * clamp(thread.sb * ap * (1 - dsh) / 3, 0, 1) }
             ellipse { at: drip.x, drip.y; radius: drip.r * so; blend: 8 }
         }
         // odlesk: každá guľa odráža svetlo sama (bodka hore vľavo), hlava najväčšiu
@@ -314,9 +316,9 @@ scene Kvapka {
             }
         }
         // farba upozornení podľa naliehavosti (nízka mätová, bežná jantárová, kritická červená)
-        ellipse { at: sx - 25, s.y - 23; radius: 3.8 * so * if(notes.count > 0, 1, 0); color: pick(notes.0.urgency, #9ed6bd, #e4b283, #e07a5f) }
-        ellipse { at: sx - 10, s.y - 34; radius: 3.2 * so * if(notes.count > 1, 1, 0); color: pick(notes.1.urgency, #9ed6bd, #e4b283, #e07a5f) }
-        ellipse { at: sx + 6, s.y - 37; radius: 2.8 * so * if(notes.count > 2, 1, 0); color: pick(notes.2.urgency, #9ed6bd, #e4b283, #e07a5f) }
+        ellipse { at: sx - 25, s.y - 23; radius: 3.8 * so * (1 - dsh) * if(notes.count > 0, 1, 0); color: pick(notes.0.urgency, #9ed6bd, #e4b283, #e07a5f) }
+        ellipse { at: sx - 10, s.y - 34; radius: 3.2 * so * (1 - dsh) * if(notes.count > 1, 1, 0); color: pick(notes.1.urgency, #9ed6bd, #e4b283, #e07a5f) }
+        ellipse { at: sx + 6, s.y - 37; radius: 2.8 * so * (1 - dsh) * if(notes.count > 2, 1, 0); color: pick(notes.2.urgency, #9ed6bd, #e4b283, #e07a5f) }
         // základňa kvapky: telo (0) a hlava (1) — ľavý klik = režim okien, ťahanie ľavým aj pravým = presun,
         // koliesko = okná, pravý klik nič. Hrbolčeky s oknami (icon_hit) majú vlastné kliky a ležia navrchu.
         repeat z in 0..2 {
@@ -369,9 +371,9 @@ scene Kvapka {
         ellipse { at: cxs, cys; radius: 33 }
         box { at: tst.x, tst.y; size: 40 + 300 * toast.p, 30 + 14 * toast.p; corner: 22; blend: 22 }
     }
-    text now.time { at: cxs, cys - 5; anchor: center; size: 16; weight: 800; color: ink; opacity: so * ap; show: solo }
-    text pick(now.weekday, "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat") { at: cxs - 2, cys + 12; anchor: right center; size: 9.5; weight: 600; color: ink; opacity: 70% * so * ap; show: solo }
-    text "{now.day}. {now.month}." { at: cxs + 1, cys + 12; anchor: left center; size: 9.5; weight: 600; color: ink; opacity: 70% * so * ap; show: solo }
+    text now.time { at: cxs, cys - 5; anchor: center; size: 16; weight: 800; color: ink; opacity: so * ap * (1 - smooth(0, 0.2, dsh)); show: solo }
+    text pick(now.weekday, "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat") { at: cxs - 2, cys + 12; anchor: right center; size: 9.5; weight: 600; color: ink; opacity: 70% * so * ap * (1 - smooth(0, 0.2, dsh)); show: solo }
+    text "{now.day}. {now.month}." { at: cxs + 1, cys + 12; anchor: left center; size: 9.5; weight: 600; color: ink; opacity: 70% * so * ap * (1 - smooth(0, 0.2, dsh)); show: solo }
 
     text toast { at: tst.x - 135, tst.y; anchor: left center; width: 270; lines: 1; size: 12.5; weight: 600; color: ink; opacity: clamp(toast.p * 2 - 1, 0, 1) * so; show: solo }
 
@@ -380,8 +382,16 @@ scene Kvapka {
     let dh = 520
     let dt.x = if(vert, cxs + away.x * (40 + dw / 2), clamp(cxs + 190, dw / 2 + 12, W - dw / 2 - 12))
     let dt.y = if(vert, clamp(cys, dh / 2 + 12, H - dh / 2 - 12), cys + away.y * (40 + dh / 2))
-    let dc.x = cxs + (dt.x - cxs) * dsh
-    let dc.y = cys + (dt.y - cys) * dsh
+    // kvapka Hodín sa odlepí od lišty, dopláva do rohu dashboardu (bod karty najbližší Hodinám) a karta z nej
+    // vyrastie — ako v Marei, kde sa kvapka stane rohom okna; na lište po nej ostane iba mláka
+    let dk.x = clamp(cxs, dt.x - dw / 2 + 34, dt.x + dw / 2 - 34)
+    let dk.y = clamp(cys, dt.y - dh / 2 + 34, dt.y + dh / 2 - 34)
+    let d.swim = smooth(0, 0.45, dsh)
+    let d.grow = smooth(0.3, 1, dsh)
+    let db.x = cxs + (dk.x - cxs) * d.swim
+    let db.y = cys + (dk.y - cys) * d.swim
+    let dc.x = dk.x + (dt.x - dk.x) * d.grow
+    let dc.y = dk.y + (dt.y - dk.y) * d.grow
     let d0.x = dt.x - dw / 2 + 28              // obsah: ľavý horný roh
     let d0.y = dt.y - dh / 2 + 24
     let dshow = clamp(dsh * 2 - 1, 0, 1)
@@ -391,8 +401,8 @@ scene Kvapka {
         rim: 30%
         shadow: 0, 10, 30, 40% * dsh
         opacity: if(dsh > 0.01, 1, 0) * so
-        ellipse { at: cxs, cys; radius: 34 }
-        box { at: dc.x, dc.y; size: 66 + (dw - 66) * dsh, 66 + (dh - 66) * dsh; corner: 33 - 5 * dsh; blend: 30 }
+        ellipse { at: db.x, db.y; radius: 34 * if(d.grow > 0.02, 0, 1) }
+        box { at: if(d.grow > 0.02, dc.x, db.x), if(d.grow > 0.02, dc.y, db.y); size: 68 + (dw - 68) * d.grow, 68 + (dh - 68) * d.grow; corner: 34 - 6 * d.grow }
     }
     group {
         opacity: dshow
@@ -494,14 +504,22 @@ scene Kvapka {
     let ph = 5 * 42 + 22
     let pt.x = if(vert, pxs + away.x * (30 + pw / 2), clamp(pxs + pw / 2 - 34, pw / 2 + 12, W - pw / 2 - 12))
     let pt.y = if(vert, clamp(pys, ph / 2 + 12, H - ph / 2 - 12), pys + away.y * (30 + ph / 2))
+    let pk.x = clamp(pxs, pt.x - pw / 2 + 20, pt.x + pw / 2 - 20)
+    let pk.y = clamp(pys, pt.y - ph / 2 + 20, pt.y + ph / 2 - 20)
+    let p.swim = smooth(0, 0.45, pm)
+    let p.grow = smooth(0.3, 1, pm)
+    let pb.x = pxs + (pk.x - pxs) * p.swim
+    let pb.y = pys + (pk.y - pys) * p.swim
+    let pc.x = pk.x + (pt.x - pk.x) * p.grow
+    let pc.y = pk.y + (pt.y - pk.y) * p.grow
     let p0.y = pt.y - ph / 2 + 11
     body {
         color: coffee
         rim: 30%
         shadow: 0, 10, 26, 40% * pm
         opacity: if(pm > 0.01, 1, 0) * so
-        ellipse { at: pxs, pys; radius: 20 }
-        box { at: pxs + (pt.x - pxs) * pm, pys + (pt.y - pys) * pm; size: 40 + (pw - 40) * pm, 40 + (ph - 40) * pm; corner: 20 - 4 * pm; blend: 24 }
+        ellipse { at: pb.x, pb.y; radius: 20 * if(p.grow > 0.02, 0, 1) }
+        box { at: if(p.grow > 0.02, pc.x, pb.x), if(p.grow > 0.02, pc.y, pb.y); size: 40 + (pw - 40) * p.grow, 40 + (ph - 40) * p.grow; corner: 20 - 4 * p.grow }
     }
     image pm_i.0 = icon "system-lock-screen-symbolic", 18, 18
     image pm_i.1 = icon "system-log-out-symbolic", 18, 18
@@ -520,7 +538,7 @@ scene Kvapka {
     repeat k in 0..5 {
         zone box pm_hit.$k { at: pt.x, p0.y + 21 + k * 42; size: pw - 16, 38; cursor: pointer; active: pmenu }
     }
-    image power_icon { at: pick(side, px, W - px, edge - p.y, W - edge + p.y) - 8, pick(side, p.y + H - edge, edge - p.y, px, H - px) - 8; size: 16, 16; tint: ink; opacity: so * (0.4 + 0.6 * lift.p) * ap; show: solo }
+    image power_icon { at: pick(side, px, W - px, edge - p.y, W - edge + p.y) - 8, pick(side, p.y + H - edge, edge - p.y, px, H - px) - 8; size: 16, 16; tint: ink; opacity: so * (0.4 + 0.6 * lift.p) * ap * (1 - smooth(0, 0.2, pm)); show: solo }
 
     text pick(mode, "Floating windows", "Tiles", "Endless strip") { at: pick(side, lx - 30, W - lx - 30, edge - by + 40, W - edge + by - 150), pick(side, by - 56 + H - edge, edge - by + 56, lx - 60, H - lx - 60); anchor: left center; size: 12; weight: 700; color: ink; opacity: 70% * out * ap * if(tight or dash or pmenu, 0, 1) }
 
