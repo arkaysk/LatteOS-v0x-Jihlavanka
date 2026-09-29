@@ -1,4 +1,5 @@
--- Logika Kvapky: iba fakty a príkazy. Zoznam okien plní služba `window` priamo v scéne (model wins),
+-- Logika Kvapky: iba fakty a príkazy. Zoznam okien plní služba `window` priamo v scéne (model wins);
+-- logika model scény nevidí (číta iba to, čo sama zapísala), preto si drží vlastnú kópiu cez sys.watch —
 -- režim okien je z latte/windows.lua (~/.local/state/latteos/window-mode) a prepína sa cez hyprctl eval —
 -- to isté, čo robí lišta Noctalie.
 
@@ -14,9 +15,13 @@ local function read_mode()
     end)
 end
 
+-- rovnaký zdroj a poradie ako model wins v scéne (hrbolček k = okno k)
+local wins = {}
+sys.watch("window", function(v) wins = (v and v.list) or {} end)
+
 local function windows()
     local out = {}
-    for _, w in ipairs(model.wins or {}) do
+    for _, w in ipairs(wins) do
         if not w.minimized then table.insert(out, w) end
     end
     return out
@@ -26,9 +31,24 @@ on("cycle", function()
     run("hyprctl", { "eval", 'require("latte.windows").cycle()' }, function() after(250, read_mode) end)
 end)
 
+-- hrbolček s oknom, ľavý klik: ako vo Windows — neaktívne okno sa ukáže, aktívne sa minimalizuje.
+-- Minimalizuje LatteOS (plocha special:minimized, latte/bars.lua), nie protokol: Hyprland žiadosť o minimalizáciu
+-- z wlr-foreign-toplevel ignoruje. Okno sa hľadá podľa triedy a titulku (adresy Hyprlandu zoznam nemá).
+local function win_eval(fn, w)
+    run("hyprctl", { "eval", string.format("latte.win.%s(%q, %q)", fn, w.class or "", w.title or "") })
+end
 on("pick", function(k)
-    local w = (model.wins or {})[(k or 0) + 1]
-    if w then pcall(sys.call, "window.activate", w.id) end
+    local w = wins[(k or 0) + 1]
+    if w then win_eval("toggle_by", w) end
+end)
+
+-- pravý klik: ponuka okna (apps/ponuka.qml) pri kurzore, pre to okno (najprv dostane fokus)
+on("win_menu", function(k)
+    local w = wins[(k or 0) + 1]
+    if not w then return end
+    win_eval("focus_by", w)
+    local x, y = math.floor(fact["menu.x"] or 0), math.floor(fact["menu.y"] or 0)
+    after(150, function() run("latte-ponuka", { "okno", tostring(x), tostring(y) }) end)
 end)
 
 -- koliesko nad očami: páska = posun (fokus doľava/doprava posúva scrolling layout Hyprlandu),

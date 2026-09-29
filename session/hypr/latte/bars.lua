@@ -48,6 +48,30 @@ function B.setup(theme)
     function latte.win.minimize_addr(address)
         hl.dispatch(hl.dsp.window.move({ workspace = "special:minimized", follow = false, window = "address:" .. address }))
     end
+    -- okno podľa triedy a titulku (kvapka pozná okná zo zoznamu wlr-foreign-toplevel, nie adresy Hyprlandu)
+    local function by(class, title)
+        local hit
+        for _, w in ipairs(hl.get_windows() or {}) do
+            if w.class == class then
+                if w.title == title then return w end
+                hit = hit or w
+            end
+        end
+        return hit
+    end
+    -- klik na okno v lište-kvapke, ako vo Windows: neaktívne sa ukáže (aj z minimalizovaných), aktívne sa minimalizuje
+    function latte.win.toggle_by(class, title)
+        local w = by(class, title)
+        if not w then return end
+        local a = hl.get_active_window()
+        local hidden = w.workspace and tostring(w.workspace.name or ""):find("^special:minimized")
+        if a and a.address == w.address and not hidden then latte.win.minimize_addr(w.address)
+        else latte.win.activate(w.address) end
+    end
+    function latte.win.focus_by(class, title)
+        local w = by(class, title)
+        if w then latte.win.activate(w.address) end
+    end
 
     if not file_exists(B.plugin) then return false end
     local ok = pcall(hl.plugin.load, B.plugin)

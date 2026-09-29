@@ -35,6 +35,10 @@ scene Kvapka {
     fact side: dole | hore | vlavo | vpravo = dole   // okraj, pri ktorom lišta je (logika ho pamätá)
     fact pos = 0.4                           // kde na okraji stojí hlava (podiel dĺžky okraja)
     fact pulling = false                     // ťahá sa od okraja (stopka sa naťahuje)
+    fact lpress = false                      // základňa stlačená ľavým (klik = režim okien), nie pravým
+    fact icon_press = false                  // stlačený hrbolček s oknom (ťahanie z neho kvapku nepresúva)
+    fact menu.x = 0                          // kde otvoriť ponuku okna (kurzor pri pravom kliku)
+    fact menu.y = 0
     fact free = false                        // odtrhnutá, ide za myšou
     fact melting = false                     // pustená uprostred: steká
     fact solo = false                        // bez Noctalie: kvapky Štart a vypínač (logika podľa LATTE_VARIANT)
@@ -44,6 +48,7 @@ scene Kvapka {
     event start_open ->
     event power_open ->
     event side_moved ->
+    event win_menu ->
 
     let coffee = #1c0f09
     let cream = #f3ebdd
@@ -186,10 +191,13 @@ scene Kvapka {
             opacity: 75% * ap
             ellipse { at: hx + 20, by - 27; radius: 3.2; scale: 1.3, 0.8; rotate: 40deg; color: #fff6ea }
         }
-        zone box body_hit { at: bl + w / 2, mid; size: w, h; corner: c; cursor: grab }
+        // základňa kvapky: telo (0) a hlava (1) — ľavý klik = režim okien, ťahanie ľavým aj pravým = presun,
+        // koliesko = okná, pravý klik nič. Hrbolčeky s oknami (icon_hit) majú vlastné kliky a ležia navrchu.
+        repeat z in 0..2 {
+            zone box base.$z { at: if(z == 0, bl + w / 2, hx), if(z == 0, mid, by - 4); size: if(z == 0, w, 66), if(z == 0, h, 66); corner: if(z == 0, c, 33); cursor: pointer }
+        }
         zone ellipse start_hit { at: sx, s.y; radius: 26; cursor: pointer; active: solo }
         zone ellipse power_hit { at: px, p.y; radius: 19; cursor: pointer; active: solo }
-        zone ellipse head_hit { at: hx, by - 4; radius: 33; cursor: pointer; active: not free }
         repeat k in 0..10 {
             zone box icon_hit.$k { at: bl + 80 + k * step, mid; size: 44, 44; corner: 12; cursor: pointer; active: k < n and mode != dlazdice and not free }
         }
@@ -220,30 +228,33 @@ scene Kvapka {
 
     text pick(mode, "Floating windows", "Tiles", "Endless strip") { at: pick(side, lx - 30, W - lx - 30, edge - by + 40, W - edge + by - 150), pick(side, by - 56 + H - edge, edge - by + 56, lx - 60, H - lx - 60); anchor: left center; size: 12; weight: 700; color: cream; opacity: 70% * out * ap }
 
-    // telo: vlastné menu nemá. Chytiť a ťahať od okraja: stopka sa naťahuje (pull), pri 0,9 praskne a kvapka
-    // ide za myšou; pustená pri okraji (do 170 px) sa k nemu prilepí, inde steká a vynorí sa, kde bola.
-    // Pustená skôr, než stopka praskne: vráti sa. Samotný klik nerobí nič (iba stlačí kvapku).
-    on press body_hit { squish: 1 }
-    on drag body_hit while not free { pull: clamp(pick(side, 0 - drag.dy, drag.dy, drag.dx, 0 - drag.dx) / 90, -1, 1) ~0ms }
-    on drag body_hit while not free and abs(drag.dx) + abs(drag.dy) > 6 { pulling = true }
-    on drag body_hit while free { gx: pointer.x; gy: pointer.y }
+    // základňa: vlastné menu nemá. Ľavý klik (bez ťahania) prepne režim okien. Chytiť ľavým alebo pravým a ťahať
+    // od okraja: stopka sa naťahuje (pull), pri 0,9 praskne a kvapka ide za myšou; pustená pri okraji (do 170 px)
+    // sa k nemu prilepí, inde steká a vynorí sa, kde bola. Pustená skôr, než stopka praskne: vráti sa.
+    // Ťahanie, ktoré začalo na hrbolčeku s oknom (icon_press), kvapku nepresúva.
+    repeat z in 0..2 {
+        on press base.$z { lpress = true; squish: 1 }
+        on press right base.$z { lpress = false; squish: 1 }
+        on drag base.$z while not free and not icon_press { pull: clamp(pick(side, 0 - drag.dy, drag.dy, drag.dx, 0 - drag.dx) / 90, -1, 1) ~0ms }
+        on drag base.$z while not free and not icon_press and abs(drag.dx) + abs(drag.dy) > 6 { pulling = true }
+        on drag base.$z while free { gx: pointer.x; gy: pointer.y }
+        on release base.$z while not free and not pulling and lpress { emit cycle; squish.s: 0.5 after 70ms; squish.p: 0.35 after 140ms }
+        on release base.$z while not free { pulling = false; pull: 0; squish: 0; squish.s: 0 after 140ms; squish.p: 0 after 210ms }
+        on release base.$z while free and near.edge < 170 and near.edge == H - cursor.y { side = dole; pos = clamp(cursor.x / W, 0.1, 0.6); gx: cursor.x; gy: H; dockt: 1 }
+        on release base.$z while free and near.edge < 170 and near.edge == cursor.y { side = hore; pos = clamp((W - cursor.x) / W, 0.1, 0.6); gx: cursor.x; gy: 0; dockt: 1 }
+        on release base.$z while free and near.edge < 170 and near.edge == cursor.x { side = vlavo; pos = clamp(cursor.y / H, 0.1, 0.6); gx: 0; gy: cursor.y; dockt: 1 }
+        on release base.$z while free and near.edge < 170 and near.edge == W - cursor.x { side = vpravo; pos = clamp((H - cursor.y) / H, 0.1, 0.6); gx: W; gy: cursor.y; dockt: 1 }
+        on release base.$z while free and near.edge >= 170 { melting = true }
+        on release base.$z while free { pulling = false; pull: 0; squish: 0 }
+        // koliesko nad kvapkou (aj nad hrbolčekmi): páska = posun, plávajúce = ďalšie okno
+        on scroll base.$z { emit wheel_turn(wheel) }
+    }
     on change out > 0.9 while out > 0.9 and pulling and not free { free = true; ap: 0 ~0ms; gx: cursor.x ~0ms; gy: cursor.y ~0ms; gw: w ~0ms; gh: h ~0ms; gw: 90 after 30ms; gh: 90 after 30ms; fall: 0 ~0ms }
-    on release body_hit while not free { pulling = false; pull: 0; squish: 0 }
-    on release body_hit while free and near.edge < 170 and near.edge == H - cursor.y { side = dole; pos = clamp(cursor.x / W, 0.1, 0.6); gx: cursor.x; gy: H; dockt: 1 }
-    on release body_hit while free and near.edge < 170 and near.edge == cursor.y { side = hore; pos = clamp((W - cursor.x) / W, 0.1, 0.6); gx: cursor.x; gy: 0; dockt: 1 }
-    on release body_hit while free and near.edge < 170 and near.edge == cursor.x { side = vlavo; pos = clamp(cursor.y / H, 0.1, 0.6); gx: 0; gy: cursor.y; dockt: 1 }
-    on release body_hit while free and near.edge < 170 and near.edge == W - cursor.x { side = vpravo; pos = clamp((H - cursor.y) / H, 0.1, 0.6); gx: W; gy: cursor.y; dockt: 1 }
-    on release body_hit while free and near.edge >= 170 { melting = true }
     on change melting while melting { fall: 1 }
-    on release body_hit while free { pulling = false; pull: 0; squish: 0 }
     // prilepenie: kvapka dobehne k okraju, potom sa lišta vynorí z okraja na novom mieste
     on change dockt > 0.95 while dockt > 0.95 { free = false; dockt: 0 ~0ms; ap: 1; emit side_moved }
     // stečenie: po páde sa lišta vynorí na starom mieste
     on change fall > 0.95 while fall > 0.95 and melting { free = false; melting = false; fall: 0 ~0ms; ap: 1 }
-    // hlava: režim okien; koliesko: páska = posun, plávajúce = ďalšie okno
-    on press head_hit { emit cycle; squish: 1; squish.s: 0.5 after 70ms; squish.p: 0.35 after 140ms }
-    on release head_hit { squish: 0; squish.s: 0 after 70ms; squish.p: 0 after 140ms }
-    on scroll head_hit { emit wheel_turn(wheel) }
     // stlačenie prebehne vlnou cez susedov (vypínač → Štart → hlava a naopak)
     on press start_hit { emit start_open; squish.s: 1; squish.p: 0.5 after 70ms; squish: 0.4 after 70ms }
     on release start_hit { squish.s: 0; squish.p: 0 after 70ms; squish: 0 after 70ms }
@@ -253,10 +264,14 @@ scene Kvapka {
     on leave start_hit { hs: 0 }
     on enter power_hit { hp: 1 }
     on leave power_hit { hp: 0 }
-    on enter head_hit { hh: 1 }
-    on leave head_hit { hh: 0 }
+    on enter base.1 { hh: 1 }
+    on leave base.1 { hh: 0 }
+    // hrbolček s oknom: ľavý klik = prepnúť naň (aktívne okno sa minimalizuje, ako vo Windows),
+    // pravý klik = ponuka okna
     repeat k in 0..10 {
-        on press icon_hit.$k { emit pick(k) }
+        on press icon_hit.$k { icon_press = true; emit pick(k) }
+        on press right icon_hit.$k { icon_press = true; menu.x = cursor.x; menu.y = cursor.y; emit win_menu(k) }
+        on release icon_hit.$k { icon_press = false }
     }
 
     translations sk {
