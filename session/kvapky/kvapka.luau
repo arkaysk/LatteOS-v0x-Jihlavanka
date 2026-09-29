@@ -144,7 +144,13 @@ on("wheel_turn", function(d)
 end)
 
 on("start_open", function() run("latte-spustac", { "prepni" }) end)
-on("power_open", function() run("latte-ponuka", { "vypnut" }) end)
+-- ponuka Vypnúť (vyteká z kvapky vypínača): akcie relácie robí Noctalia, rovnako ako ponuka LatteOS (ponuka.qml)
+local POWER = { "lock", "logout", "suspend", "reboot", "shutdown" }
+on("power_do", function(k)
+    fact.pmenu = false
+    local a = POWER[(k or 0) + 1]
+    if a then after(200, function() run("noctalia", { "msg", "session", a }) end) end
+end)
 
 -- okraj lišty: po presune (drag & drop) si ho zapamätá latte-kvapky okraj (a v ploche Kvapky nechá okná
 -- uhnúť na tej strane); pri štarte sa vráti posledný
@@ -276,7 +282,35 @@ local function noctalia(...) run("noctalia", { "msg", ... }) end
 on("qs_wifi", function() noctalia("wifi-toggle") end)
 on("qs_bt", function() noctalia("bluetooth-toggle") end)
 on("qs_mute", function() noctalia("volume-mute") end)
-on("qs_more", function() fact.dash = false; after(150, function() noctalia("panel-toggle", "control-center") end) end)
+on("qs_more", function() fact.dash = false; run("latte-app", { "nastavenia" }) end)
+
+-- stránky ovládacieho centra v dashboarde: rovnaké zoznamy ako v scéne (služby), klik = akcia
+local nets, bts, outs = {}, {}, {}
+sys.watch("network", function(v) nets = (v and v.networks) or {} end)
+sys.watch("bluetooth", function(v) bts = (v and v.devices) or {} end)
+sys.watch("audio", function(v) outs = (v and v.outputs) or {} end)
+on("pg_pick", function(k)
+    local i = (k or 0) + 1
+    local page = tonumber(fact.page) or 0
+    if page == 1 then
+        local n = nets[i]
+        if not n or n.active then return end
+        if n.known or not n.secure then
+            pcall(sys.call, "network.connect", n.ssid)
+        else
+            -- nová zabezpečená sieť potrebuje heslo: to vie Noctalia (jej stránka Wi-Fi)
+            fact.dash = false
+            after(150, function() noctalia("panel-toggle", "control-center", "wifi") end)
+        end
+    elseif page == 2 then
+        local d = bts[i]
+        if not d then return end
+        pcall(sys.call, d.connected and "bluetooth.disconnect" or "bluetooth.connect", d.address)
+    elseif page == 3 then
+        local o = outs[i]
+        if o and not o.default then pcall(sys.call, "audio.default", o.id) end
+    end
+end)
 on("qs_vol", function(v) pcall(sys.call, "audio.volume", math.max(0, math.min(1, tonumber(v) or 0))) end)
 
 -- počasie: Open-Meteo (bez kľúča), miesto z Nastavení › Účet › Prihlasovanie (greeter.conf), každých 20 min

@@ -286,6 +286,27 @@ stav LatteOS aj Noctalie, novinky, rice, moduly skla, návrh rozhrania a poradie
 - [x] **AI panel** (Super+I, plugin latteos/ai): rozhovor s pamäťou (`latte-ai chat`), odpovede v markdowne, beží cez runStream
   bez 5 s limitu runAsync; overené s LM Studio.
 
+### F3·G — latteGoo: plocha Kvapky *(prototyp od 29. 9. 2026; session/kvapky, pleamar)*
+Tekuté rozhranie namiesto klasickej lišty: kvapky kávy (téma = hrnček, kvapky = káva s vodou/mliekom), všetko dole
+ako vo Windows (návyk používateľov rozhodol — horná kvapka ako v Marei zamietnutá), **myš prvá, klávesy doplnok**,
+texty preložiteľné (`translations`). Noctalia beží bez lišty a robí, čo vie (zamknutie, Alt+Tab, snímky, OSD).
+- [x] Relácia „LatteOS Kvapky“ na prihlasovacej obrazovke + prepínanie bez odhlásenia (`latte-kvapky skusit|spat`)
+- [x] Lišta: šnúra goo guľôčok, hlava vľavo, vpitá do okraja, vysúvanie pri myši, presun k ľubovoľnému okraju ťahaním
+- [x] Strapce okien jednej aplikácie (ikry), rozvinutie myšou, pás pri okne cez celú obrazovku (rezerva monitora)
+- [x] Hodiny na mieste Štartu, upozornenia ako kvapôčky (pleamar = server), bublina nového upozornenia
+- [x] Dashboard vyteká z Hodín: čas, počasie, hľadanie aplikácií, upozornenia, pripnuté, rýchle nastavenia,
+      stránky Sieť / Bluetooth / Zvuk; ponuka Vypnúť vyteká z kvapky vypínača
+- [x] Obsah = káva (`~/.config/latteos/kava`): espresso … latte
+- [ ] Ranný test myšou na latte-lab (klik, ťahanie, strapce, dashboard, ponuka Vypnúť)
+- [ ] Barista: „Akú si dáte kávu a do čoho?“ (hrnček = téma okien, káva = kvapky), náhľad hrnčeka s kávou
+- [ ] **Nová prihlasovacia obrazovka** (greeter): všetky funkcie dnešnej (výber účtu a relácie vrátane Kvapiek,
+      NORMAL/SAFE a dôvod, posledný pád, Caps/Num Lock, zobraziť heslo, ľavý panel log/RSS/počasie/text, tapeta
+      a farba z Nastavení, bez GPU pod labwc/pixman) s lepším vzhľadom v duchu latteGoo (kvapky, káva, pokojný
+      pohyb) a **preložiteľná** (popisy relácií z `Comment[jazyk]`, texty cez preklady — dnes natvrdo po slovensky)
+- [ ] Vlastné `app_id` pre aplikácie LatteOS (strapce ich dnes rozlišujú podľa titulku)
+- [ ] Slovenský preklad Noctalie doplniť (ovládacie centrum čiastočne po anglicky) a poslať upstream
+- [ ] Záplaty pleamaru poslať autorovi (okná na Hyprlande, 8-bit plocha, ťahanie pravým, ikony)
+
 ### F4 — Systémové služby (Rust)
 - [x] **Správca zariadení** (prototyp `latte-app zariadenia` + `latte-devices`): dlaždice po skupinách (obrazovky, grafika, zvuk,
   sieť, disky, vstup, USB, kamery, Bluetooth, napájanie, počítač), obrazovky s potvrdením do 15 s a uložením pre Hyprland.

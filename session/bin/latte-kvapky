@@ -58,8 +58,9 @@ scene_up() {
     pgrep -x pleamar >/dev/null && return
     [ -x "$pleamar" ] && [ -f "$scene" ] || { notify-send -a LatteOS "Kvapky" "chýba pleamar alebo scéna ($scene)"; return 1; }
     # PLEAMAR_GENERIC=window: zoznam okien z wlr-foreign-toplevel, kurzor z Hyprlandu (resources/patches/pleamar-…)
-    LATTE_VARIANT=kvapky PLEAMAR_GENERIC=window setsid -f "$pleamar" --scene "$scene" --no-hud \
-        >>"${XDG_STATE_HOME:-$HOME/.local/state}/latteos/kvapky.log" 2>&1
+    local log="${XDG_STATE_HOME:-$HOME/.local/state}/latteos/kvapky.log"
+    [ -f "$log" ] && mv -f "$log" "$log.1"          # každý štart s čistým logom (predošlý ostáva ako .1)
+    LATTE_VARIANT=kvapky PLEAMAR_GENERIC=window setsid -f "$pleamar" --scene "$scene" --no-hud >"$log" 2>&1
 }
 
 case "${1:-}" in
