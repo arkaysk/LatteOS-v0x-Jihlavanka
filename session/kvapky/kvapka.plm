@@ -1,14 +1,17 @@
 // LatteOS — Kvapka: lišta aplikácií ako tekutá kvapka kávy (prototyp, pleamar 0.1).
-// Zámerne nesúmerná: hlava s očami stojí vždy na ĽAVOM konci, kvapka rastie doprava s každým oknom.
+// Zámerne nesúmerná: hlava (hrbolček bez očí — kvapky nemajú tvár) stojí vždy na ĽAVOM konci, kvapka rastie
+// doprava s každým oknom.
 // V pokoji je vpitá do spodného okraja obrazovky (skoro rovina). Keď sa k nej myš priblíži na štvrtinu
 // výšky obrazovky, začne sa vysúvať a kým k nej myš dôjde, je napoly vonku, na hrubej stopke pod hlavou.
 // Odtrhne sa až klikom alebo potiahnutím nahor (stopka sa stenčí a pretrhne); ďalší klik alebo
 // potiahnutie nadol ju vráti do okraja. Stopka sa nekreslí zvlášť: okraj („voda“ pod obrazovkou) a
 // stĺpik pod hlavou sú roztavené s telom (ako `neck` v Marei, ball-prototype.plm).
-// Klik na hlavu prepne režim okien (plávajúce → dlaždice → páska), koliesko nad očami: páska = posun,
-// plávajúce = ďalšie okno. Pravý klik na oči: oči „goo“ (World of Goo) ↔ oči robota na obrazovke.
+// Klik na hlavu prepne režim okien (plávajúce → dlaždice → páska), koliesko nad hlavou: páska = posun,
+// plávajúce = ďalšie okno.
 // Samostatne (relácia LatteOS Kvapky, bez Noctalie: LATTE_VARIANT=kvapky) pribudnú vľavo od hlavy dve malé
-// kvapky, tiež vpité do okraja: Štart (spúšťač App Managera) a vypínač (ponuka Vypnúť).
+// kvapky, tiež vpité do okraja: Štart (spúšťač App Managera) a vypínač (ponuka Vypnúť). Kvapky na seba pôsobia:
+// keď sa vysúvajú, spájajú ich mosty (vypínač ↔ Štart ↔ hlava), nakláňajú sa k susedovi pod myšou,
+// stlačenie jednej prebehne vlnou cez susedov a odtrhnutá lišta most k Štartu natiahne, až praskne.
 // Koncept: AUDIT-WIN11.md › Kvapky.
 language 0.1
 
@@ -29,7 +32,6 @@ scene Kvapka {
     fact mode: plavajuce | dlazdice | paska = plavajuce
     fact detached = false
     fact pulling = false
-    fact robot = false
     fact solo = false                        // bez Noctalie: kvapky Štart a vypínač (logika podľa LATTE_VARIANT)
     event cycle ->
     event pick ->
@@ -42,8 +44,8 @@ scene Kvapka {
     let edge = 260                           // spodný okraj obrazovky
     let lx = screen.width * 0.4              // hlava: ľavý koniec, pevne (medzi kapsulami Noctalie)
     let bl = lx - 34                         // ľavý okraj tela
-    let sx = lx - 104                        // kvapka Štart
-    let px = lx - 166                        // kvapka vypínač
+    let sx0 = lx - 86                        // kvapka Štart (pokojová poloha)
+    let px0 = lx - 146                       // kvapka vypínač
     let n = wins.count
     let step = if(mode == paska, 54, 64)
 
@@ -56,7 +58,7 @@ scene Kvapka {
 
     // blízkosť myši kdekoľvek na ploche (cursor.x/y: pleamar sa pýta Hyprlandu, žiadna zóna nekradne kliky):
     // od štvrtiny výšky obrazovky (270 px pri 1080) sa kvapka vysúva, pri nej je vonku na 0,55
-    let dist.x = max(0, max(if(solo, px - 30, bl) - cursor.x, cursor.x - (bl + w)))
+    let dist.x = max(0, max(if(solo, px0 - 30, bl) - cursor.x, cursor.x - (bl + w)))
     let dist.y = max(0, edge - h * 0.6 - cursor.y)
     let approach = 1 - smooth(0, 270, length(dist.x, dist.y))
 
@@ -89,16 +91,23 @@ scene Kvapka {
     follow so = if(solo, 1, 0)
     prop lift = 0 ~700ms
     follow lift = approach
-    let s.y = edge + 10 - 36 * lift
-    let p.y = edge + 8 - 26 * lift
-
-    // oči: sledujú myš kdekoľvek
-    pose lid = 1
-    blink lid every 2.4s..6s for 150ms
-    prop gaze.x = 0 ~gentle
-    prop gaze.y = 0 ~gentle
-    follow gaze.x = max(-3.5, min(3.5, (cursor.x - lx) / 70))
-    follow gaze.y = max(-3, min(3, (cursor.y - (by - 8)) / 70))
+    // pôsobenie medzi kvapkami: myš nad kvapkou (hs, hp, hh = Štart, vypínač, hlava) ju nafúkne a susedov
+    // k nej nakloní; mosty (link) rastú s vysunutím — v pokoji spája kvapky iba okraj
+    prop hs = 0 ~lively
+    prop hp = 0 ~lively
+    prop hh = 0 ~lively
+    // most sa vytvorí, keď je medzera medzi kvapkami menšia ako asi polovica `link` (smooth min v pleamare):
+    // pri vysúvaní sa preto kvapky k sebe nakláňajú — Štart k telu, vypínač k Štartu
+    let sx = sx0 + 18 * lift + 10 * hh - 9 * hp
+    let px = px0 + 12 * lift + 12 * hs
+    let hx = lx - 7 * hs
+    let s.y = edge + 10 - 36 * lift - 4 * hs
+    let p.y = edge + 8 - 26 * lift - 4 * hp
+    let link = 10 + 16 * lift
+    // goo vlákna: vypínač ↔ Štart a Štart ↔ telo lišty. Hrubnú s priblížením myši; keď sa lišta odtrhne
+    // (out → 1), vlákno k nej sa stenčí a pretrhne. Roztavené s oboma koncami (blend), preto uprostred tenšie.
+    let thread.ps = 9 * so * smooth(0.3, 0.9, lift)
+    let thread.sb = 12 * so * smooth(0.2, 0.8, lift) * clamp((0.97 - out) / 0.3, 0, 1)
 
     // hrbolček každého okna: pružina 0 → 1, zatvorené okno sa vtiahne späť do kvapky
     repeat k in 0..10 {
@@ -117,7 +126,7 @@ scene Kvapka {
             box water { from: water.x - water.w / 2, edge; size: water.w, 70 }
             box { at: bl + w / 2, mid; size: w + wob * 0.12, h * (1 - squish * 0.08) - wob * 0.1; corner: c; blend: neck }
             box stalk { from: stalk.x - stalk.w / 2, bottom - 12; size: stalk.w, edge - bottom + 24; corner: stalk.w / 2; blend: 16 * clamp(stalk.w / 10, 0, 1) }
-            ellipse { at: lx, by - 4 - wob * 0.05; radius: 33; blend: 22 }
+            ellipse { at: hx, by - 4 - wob * 0.05; radius: 33 + 3 * hh; blend: 22 }
             ellipse { at: bl + w - 22 + noise(time * 0.42 + 7) * 28, mid + noise(time * 0.3) * 6; radius: 27; blend: 22 }
             ellipse { at: bl + 80 + 0 * step, mid; radius: 26 * b.0; blend: 16 }
             ellipse { at: bl + 80 + 1 * step, mid; radius: 26 * b.1; blend: 16 }
@@ -129,10 +138,12 @@ scene Kvapka {
             ellipse { at: bl + 80 + 7 * step, mid; radius: 26 * b.7; blend: 16 }
             ellipse { at: bl + 80 + 8 * step, mid; radius: 26 * b.8; blend: 16 }
             ellipse { at: bl + 80 + 9 * step, mid; radius: 26 * b.9; blend: 16 }
-            // Štart a vypínač: vlastná „voda“ pod okrajom, kvapky sa s ňou zlievajú
+            // Štart a vypínač: vlastná „voda“ pod okrajom; s hlavou a medzi sebou ich spája most `link`
             box { from: px - 34, edge; size: (sx - px + 68) * so, 70 }
-            ellipse { at: sx, s.y; radius: 26 * so; scale: 1, 1 - squish.s * 0.1; blend: 16 }
-            ellipse { at: px, p.y; radius: 19 * so; scale: 1, 1 - squish.p * 0.1; blend: 14 }
+            ellipse { at: sx, s.y; radius: (26 + 5 * hs) * so; scale: 1 + squish.s * 0.08, 1 - squish.s * 0.12; blend: link * so }
+            ellipse { at: px, p.y; radius: (19 + 4 * hp) * so; scale: 1 + squish.p * 0.08, 1 - squish.p * 0.12; blend: link * so }
+            line { from: px, p.y - 4; to: sx, s.y - 6; width: thread.ps; blend: 12 * clamp(thread.ps / 3, 0, 1) }
+            line { from: sx + 8, s.y - 12; to: bl + 18, bottom - 14; width: thread.sb; blend: 14 * clamp(thread.sb / 3, 0, 1) }
         }
     }
 
@@ -145,22 +156,7 @@ scene Kvapka {
     group {
         blur: 1.5
         opacity: 75%
-        ellipse { at: lx + 20, by - 27; radius: 3.2; scale: 1.3, 0.8; rotate: 40deg; color: #fff6ea }
-    }
-
-    // oči „goo“: veľké biele, každé inej veľkosti, malé zreničky sa trasú každá po svojom
-    ellipse { at: lx - 11, by - 12; radius: 12.5; scale: 1, lid; color: cream; show: not robot }
-    ellipse { at: lx + 12, by - 7; radius: 9.5; scale: 1, lid; color: cream; show: not robot }
-    ellipse { at: lx - 11 + gaze.x * 1.6 + noise(time * 2.1) * 1.1, by - 11 + gaze.y * 1.4 + noise(time * 1.7 + 4) * 1.1; radius: 3.6; scale: 1, lid; color: #120806; show: not robot }
-    ellipse { at: lx + 12 + gaze.x * 1.2 + noise(time * 2.6 + 9) * 1.0, by - 6 + gaze.y * 1.1 + noise(time * 1.9 + 2) * 1.0; radius: 3; scale: 1, lid; color: #120806; show: not robot }
-
-    // oči robota: tmavá obrazovka na hlave a dve svietiace oválne oči; blikajú sploštením
-    box { at: lx, by - 10; size: 52, 30; corner: 13; color: #0c0604; show: robot }
-    group {
-        glow: 6, 70%, #ffd9a8
-        show: robot
-        box { at: lx - 10 + gaze.x * 1.4, by - 10 + gaze.y; size: 10, 15 * lid + 1; corner: 5; color: #ffe6c4 }
-        box { at: lx + 10 + gaze.x * 1.4, by - 10 + gaze.y; size: 10, 15 * lid + 1; corner: 5; color: #ffe6c4 }
+        ellipse { at: hx + 20, by - 27; radius: 3.2; scale: 1.3, 0.8; rotate: 40deg; color: #fff6ea }
     }
 
     repeat k in 0..10 {
@@ -178,7 +174,7 @@ scene Kvapka {
     zone box body_hit { at: bl + w / 2, mid; size: w, h; corner: c; cursor: pointer }
     zone ellipse start_hit { at: sx, s.y; radius: 26; cursor: pointer; active: solo }
     zone ellipse power_hit { at: px, p.y; radius: 19; cursor: pointer; active: solo }
-    zone ellipse eyes_hit { at: lx, by - 4; radius: 33; cursor: pointer }
+    zone ellipse head_hit { at: hx, by - 4; radius: 33; cursor: pointer }
     repeat k in 0..10 {
         zone box icon_hit.$k { at: bl + 80 + k * step, mid; size: 44, 44; corner: 12; cursor: pointer; active: k < n and mode != dlazdice }
     }
@@ -189,15 +185,21 @@ scene Kvapka {
     on drag body_hit while abs(drag.dy) > 6 { pulling = true }
     on release body_hit while pulling { detached = out > 0.8; pulling = false; pull: 0; squish: 0 }
     on release body_hit while not pulling { toggle detached; pull: 0; squish: 0 }
-    // hlava: režim okien
-    on press eyes_hit { emit cycle; squish: 1 }
-    on release eyes_hit { squish: 0 }
-    on press start_hit { emit start_open; squish.s: 1 }
-    on release start_hit { squish.s: 0 }
-    on press power_hit { emit power_open; squish.p: 1 }
-    on release power_hit { squish.p: 0 }
-    on press right eyes_hit { toggle robot }
-    on scroll eyes_hit { emit wheel_turn(wheel) }
+    // hlava: režim okien; koliesko: páska = posun, plávajúce = ďalšie okno
+    on press head_hit { emit cycle; squish: 1; squish.s: 0.5 after 70ms; squish.p: 0.35 after 140ms }
+    on release head_hit { squish: 0; squish.s: 0 after 70ms; squish.p: 0 after 140ms }
+    on scroll head_hit { emit wheel_turn(wheel) }
+    // stlačenie prebehne vlnou cez susedov (vypínač → Štart → hlava a naopak)
+    on press start_hit { emit start_open; squish.s: 1; squish.p: 0.5 after 70ms; squish: 0.4 after 70ms }
+    on release start_hit { squish.s: 0; squish.p: 0 after 70ms; squish: 0 after 70ms }
+    on press power_hit { emit power_open; squish.p: 1; squish.s: 0.5 after 70ms; squish: 0.3 after 140ms }
+    on release power_hit { squish.p: 0; squish.s: 0 after 70ms; squish: 0 after 140ms }
+    on enter start_hit { hs: 1 }
+    on leave start_hit { hs: 0 }
+    on enter power_hit { hp: 1 }
+    on leave power_hit { hp: 0 }
+    on enter head_hit { hh: 1 }
+    on leave head_hit { hh: 0 }
     repeat k in 0..10 {
         on press icon_hit.$k { emit pick(k) }
     }
