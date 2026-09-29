@@ -52,8 +52,18 @@ scene Kvapka {
     event side_moved ->
     event win_menu ->
 
-    let coffee = #1c0f09
+    // obsah je vždy káva (téma je hrnček — materiál okien); líši sa pomerom vody a mlieka:
+    // voda ju robí priesvitnou (sklo, ako lungo/americano), mlieko svetlejšou a zakalenou (cappuccino, latte).
+    // Voľbu (~/.config/latteos/kava, napr. „latte“) číta logika; fakty 0..1.
+    fact voda = 0
+    fact mlieko = 0
+    prop v = 0 ~gentle
+    prop m = 0 ~gentle
+    follow v = voda
+    follow m = mlieko
+    let coffee = mix(mix(#1c0f09, #4a2410, v), #c9a47a, pow(m, 2))   // voda: hnedšia; mlieko svetlejšie, najprv pomaly
     let cream = #f3ebdd
+    let ink = mix(#f3ebdd, #2a170c, smooth(0.62, 0.78, m))   // ikony a nápisy na svetlej (mliečnej) káve tmavé
     let edge = 260                           // okraj v rámci kvapky (čiara y = 260, kvapka nad ňou)
     let W = screen.width
     let H = screen.height
@@ -179,6 +189,7 @@ scene Kvapka {
         move: pick(side, 0, W, 0, W), pick(side, H - edge, 0 - edge, 0 - edge, H - edge)
         body {
             color: coffee
+            opacity: 1 - 0.42 * v * (1 - m)     // voda: priesvitná (obyčajná priehľadnosť, sklo by farbu zmylo)
             light: 16%, by - 40, 34
             rim: 30%
             shadow: 0, 6, 16, 40% * out
@@ -233,7 +244,7 @@ scene Kvapka {
         light: 16%, gy - gh / 2 - 10, 30
         rim: 30%
         shadow: 0, 8, 18, 40%
-        opacity: if(free, 1, 0)
+        opacity: if(free, 1, 0) * (1 - 0.42 * v * (1 - m))
         box { at: gx, gy + 150 * fall; size: gw * (1 - 0.7 * fall), gh * (1 + 0.5 * fall) * (1 - 0.8 * fall); corner: min(gw, gh) / 2 * (1 - 0.7 * fall) }
         ellipse { at: gx - 12, gy + gh * 0.4 + 210 * fall * fall; radius: 9 * fall * (1 - fall) * 4; blend: 10 }
         ellipse { at: gx + 16, gy + gh * 0.3 + 260 * fall * fall; radius: 6 * fall * (1 - fall) * 4; blend: 8 }
@@ -247,10 +258,10 @@ scene Kvapka {
 
     image start_icon = icon "view-app-grid-symbolic", 22, 22
     image power_icon = icon "system-shutdown-symbolic", 18, 18
-    image start_icon { at: pick(side, sx, W - sx, edge - s.y, W - edge + s.y) - 11, pick(side, s.y + H - edge, edge - s.y, sx, H - sx) - 11; size: 22, 22; tint: cream; opacity: so * (0.4 + 0.6 * lift) * ap; show: solo }
-    image power_icon { at: pick(side, px, W - px, edge - p.y, W - edge + p.y) - 8, pick(side, p.y + H - edge, edge - p.y, px, H - px) - 8; size: 16, 16; tint: cream; opacity: so * (0.4 + 0.6 * lift) * ap; show: solo }
+    image start_icon { at: pick(side, sx, W - sx, edge - s.y, W - edge + s.y) - 11, pick(side, s.y + H - edge, edge - s.y, sx, H - sx) - 11; size: 22, 22; tint: ink; opacity: so * (0.4 + 0.6 * lift) * ap; show: solo }
+    image power_icon { at: pick(side, px, W - px, edge - p.y, W - edge + p.y) - 8, pick(side, p.y + H - edge, edge - p.y, px, H - px) - 8; size: 16, 16; tint: ink; opacity: so * (0.4 + 0.6 * lift) * ap; show: solo }
 
-    text pick(mode, "Floating windows", "Tiles", "Endless strip") { at: pick(side, lx - 30, W - lx - 30, edge - by + 40, W - edge + by - 150), pick(side, by - 56 + H - edge, edge - by + 56, lx - 60, H - lx - 60); anchor: left center; size: 12; weight: 700; color: cream; opacity: 70% * out * ap * if(tight, 0, 1) }
+    text pick(mode, "Floating windows", "Tiles", "Endless strip") { at: pick(side, lx - 30, W - lx - 30, edge - by + 40, W - edge + by - 150), pick(side, by - 56 + H - edge, edge - by + 56, lx - 60, H - lx - 60); anchor: left center; size: 12; weight: 700; color: ink; opacity: 70% * out * ap * if(tight, 0, 1) }
 
     // základňa: vlastné menu nemá. Ľavý klik (bez ťahania) prepne režim okien. Chytiť ľavým alebo pravým a ťahať
     // od okraja: stopka sa naťahuje (pull), pri 0,9 praskne a kvapka ide za myšou; pustená pri okraji (do 170 px)

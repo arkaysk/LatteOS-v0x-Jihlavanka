@@ -17,6 +17,10 @@ ako samostatná vrstva (layer-shell) nad jej lištou.
   (hry, video) Hyprland aj tak kreslí nad vrstvou kvapky
 - **pás pre kvapku** v ploche Kvapky: rezerva monitora 54 px + medzera 10 px pri okraji lišty
   (`latte.kvapky_reserve`, hyprland.lua) — rešpektujú ju aj maximalizované okná, ktoré medzery `gaps_out` ignorujú
+- **obsah je vždy káva**: téma LatteOS je hrnček (materiál okien — sklo, kov, zlato, krištáľ…), kvapky sú káva
+  v ňom. Líši sa len pomer vody a mlieka (`~/.config/latteos/kava`): espresso, ristretto, lungo, americano
+  (voda = priesvitná), macchiato, cortado, flat white, cappuccino, latte (mlieko = svetlejšia, ikony tmavé),
+  čierna s mliekom. Výber patrí do Baristu: „Akú si dáte kávu a do čoho?“ (hrnček = téma, káva = kvapky)
 - **tekutina žije sama**: okolo vypínača a Štartu kvapky pomaly vystupujú z okraja a klesajú, driftujú, mláka pri
   okraji sa rozlieva a sťahuje, vlákna sa samy tvoria a trhajú a po nich tečie kvapôčka; myš to zosilní
 - **bez okien guľatá**: kruh vpitý do okraja, zlieva sa s ním plynulo (radiálne); s oknami sa predĺži
