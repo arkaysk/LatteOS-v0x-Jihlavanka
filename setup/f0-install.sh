@@ -15,7 +15,8 @@ VM=()
 SESSION=(greetd greetd-selinux tuigreet labwc foot fuzzel xorg-x11-server-Xwayland
          xdg-desktop-portal xdg-desktop-portal-gtk xdg-user-dirs xdg-utils polkit
          pipewire wireplumber pipewire-pulseaudio wl-clipboard grim slurp
-         udisks2 upower accountsservice NetworkManager systemd-oomd-defaults)
+         udisks2 upower accountsservice NetworkManager systemd-oomd-defaults
+         plymouth-plugin-two-step plymouth-theme-spinner)   # téma latteos (Fedora Server ich nemá)
 # --- NORMAL: Hyprland sada z COPR lionheartp/Hyprland -------------------------
 HYPR=(hyprland hyprland-devel hyprlock hypridle xdg-desktop-portal-hyprland
       hyprpolkitagent hyprland-qt-support hyprland-guiutils hyprpicker uwsm cliphist
