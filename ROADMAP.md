@@ -303,7 +303,9 @@ texty preložiteľné (`translations`). Noctalia beží bez lišty a robí, čo 
       NORMAL/SAFE a dôvod, posledný pád, Caps/Num Lock, zobraziť heslo, ľavý panel log/RSS/počasie/text, tapeta
       a farba z Nastavení, bez GPU pod labwc/pixman) s lepším vzhľadom v duchu latteGoo (kvapky, káva, pokojný
       pohyb) a **preložiteľná** (popisy relácií z `Comment[jazyk]`, texty cez preklady — dnes natvrdo po slovensky)
-- [ ] Vlastné `app_id` pre aplikácie LatteOS (strapce ich dnes rozlišujú podľa titulku)
+- [x] Ikona a skupina okna zo spúšťača (.desktop): LatteOS podľa titulku = Name, ostatné podľa StartupWMClass/id
+- [ ] Vlastné `app_id` pre aplikácie LatteOS (dnes podľa titulku) a spúšťače LatteOS preložiteľné (`Name=` anglicky
+      + `Name[sk]=`; dnes natvrdo po slovensky, rovnako titulky okien)
 - [ ] Slovenský preklad Noctalie doplniť (ovládacie centrum čiastočne po anglicky) a poslať upstream
 - [ ] Záplaty pleamaru poslať autorovi (okná na Hyprlande, 8-bit plocha, ťahanie pravým, ikony)
 

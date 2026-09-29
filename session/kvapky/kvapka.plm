@@ -37,7 +37,7 @@ scene Kvapka {
     // rozloženie guľôčok okien (počíta logika): x, y od hlavy v rámci okraja (y < 0 = preč od okraja), polomer.
     // Okná tej istej aplikácie sa zlepia do strapca ako ikry — čím viac, tým menšie (do 72 %) —, jedno okno je
     // plná guľa; myš nad strapcom ho rozvinie do radu (vejár), okno cez celú obrazovku (tight) všetko zrovná do pásu
-    model lay max 10 { x: number; y: number; r: number }
+    model lay max 10 { x: number; y: number; r: number; icon: text }
     fact chain_w = 50                        // kde šnúra končí (od hlavy)
     // čas (služba bez logiky); dátum sa skladá tu — `clock.date` je iba po anglicky
     service clock as now { time: text = "--:--"; weekday: number; day: number; month: number; year: number }
@@ -232,7 +232,7 @@ scene Kvapka {
 
     // guľôčka každého okna: pružina 0 → 1, zatvorené okno sa vtiahne späť do šnúry; aktívne je plnšie (act)
     repeat k in 0..10 {
-        image icon.$k = from wins.$k.class, 30, 30
+        image icon.$k = from lay.$k.icon, 30, 30     // ikona zo spúšťača aplikácie (.desktop), inak podľa triedy
         prop b.$k = 0 ~lively
         follow b.$k = if(k < n and mode != dlazdice, 1, 0)
         prop act.$k = 0 ~gentle

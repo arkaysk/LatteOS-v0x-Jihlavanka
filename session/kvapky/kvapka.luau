@@ -32,11 +32,39 @@ local JIT = { { 0, 0 }, { 0.06, -0.04 }, { -0.05, 0.07 }, { 0.08, 0.03 }, { -0.0
 local hot = nil          -- aplikácia, ktorej strapec je pod myšou (rozvinutý)
 local hot_gen = 0
 
--- skupina: aplikácia; aplikácie LatteOS sú zatiaľ všetky „org.quickshell“ → rozlíšiť podľa titulku („Súbory — LatteOS“)
+-- okno → aplikácia (súbor .desktop zo služby `apps`): skupina strapca a ikona. Aplikácie LatteOS sú zatiaľ všetky
+-- „org.quickshell“ → podľa titulku („Súbory — LatteOS“ = Name spúšťača); ostatné podľa StartupWMClass, id
+-- spúšťača alebo jeho koncovky (Flatpak: trieda „firefox“, id „org.mozilla.firefox“)
+local apps_by = { wm = {}, id = {}, tail = {}, name = {} }
+local function index_apps(list)
+    apps_by = { wm = {}, id = {}, tail = {}, name = {} }
+    for _, a in ipairs(list or {}) do
+        if a.wmclass and a.wmclass ~= "" then apps_by.wm[a.wmclass:lower()] = a end
+        if a.id then
+            apps_by.id[a.id:lower()] = a
+            apps_by.tail[(a.id:match("([^%.]+)$") or a.id):lower()] = apps_by.tail[(a.id:match("([^%.]+)$") or a.id):lower()] or a
+        end
+        if a.name then apps_by.name[a.name:lower()] = apps_by.name[a.name:lower()] or a end
+    end
+end
+local function app_of(w)
+    local c = (w.class or ""):lower()
+    if c == "org.quickshell" then
+        local t = ((w.title or ""):match("^(.-) — ") or w.title or ""):lower()
+        return apps_by.name[t]
+    end
+    return apps_by.wm[c] or apps_by.id[c] or apps_by.tail[c] or apps_by.name[c]
+end
 local function group_key(w)
+    local a = app_of(w)
+    if a then return "app:" .. (a.id or a.name) end
     local c = w.class or ""
     if c == "org.quickshell" then return "latte:" .. ((w.title or ""):match("^(.-) — ") or w.title or "") end
     return c
+end
+local function icon_of(w)
+    local a = app_of(w)
+    return (a and a.icon and a.icon ~= "") and a.icon or (w.class or "")
 end
 
 function layout()
@@ -59,7 +87,7 @@ function layout()
         if tight then r = math.min(r, 23) end
         if row then
             local step = r * 1.86
-            for j, i in ipairs(idx) do lay[i] = { x = u + r + (j - 1) * step, y = 0, r = r } end
+            for j, i in ipairs(idx) do lay[i] = { x = u + r + (j - 1) * step, y = 0, r = r, icon = icon_of(wins[i]) } end
             u = u + 2 * r + (m - 1) * step + 12
         else
             local lo, hi = 0, 0
@@ -70,7 +98,7 @@ function layout()
             local ax = u + r - lo * r
             for j, i in ipairs(idx) do
                 local rr = r * (1 + 0.06 * (((j - 1) * 37) % 5 - 2) / 2)
-                lay[i] = { x = ax + (OFFS[j][1] + JIT[j][1]) * r, y = (OFFS[j][2] + JIT[j][2]) * r, r = rr }
+                lay[i] = { x = ax + (OFFS[j][1] + JIT[j][1]) * r, y = (OFFS[j][2] + JIT[j][2]) * r, r = rr, icon = icon_of(wins[i]) }
             end
             u = ax + hi * r + r + 12
         end
@@ -258,7 +286,7 @@ local function paint_pins()
     end
     model.pins = out
 end
-sys.watch("apps", function(list) apps = list or {}; paint_pins(); search() end)
+sys.watch("apps", function(list) apps = list or {}; index_apps(apps); paint_pins(); search(); layout() end)
 
 local function launch(a)
     if a and a.exec then pcall(sys.call, "apps.launch", a.exec) end
