@@ -7,6 +7,11 @@ Text {
     property real size: 18
     readonly property var map: ({
         "logout": 0xEBA8,
+        "cut": 0xEA86,              // ponuka úprav textu (LTextInput)
+        "arrow-back-up": 0xEB77,
+        "arrow-forward-up": 0xEB78,
+        "backspace": 0xEA2D,
+        "select-all": 0xF9F7,
         "chevron-down": 0xEA5F,
         "variable": 0xEF05,
         "wifi-0": 0xEBA3,
