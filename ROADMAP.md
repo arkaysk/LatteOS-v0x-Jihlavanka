@@ -385,7 +385,10 @@ flowchart TD
   `gamescope-session-plus` + `gamescope-session-steam` (ChimeraOS, MIT) z Terra (repo iba pre tieto 2 balíky), natívny Steam
   z RPM Fusion, MangoHud. Vlastné je len spojivo: `latte-hra` (Super+Shift+G), háčik `/usr/libexec/os-session-select`
   (Steam › Prepnúť na desktop), striedanie v `latte-session` bez nového prihlásenia (ako SteamOS), položka greetera
-  „LatteOS Hra“. Pád hry → späť na plochu. HDR/VRR: Z301C VRR na DP nehlási (aquamarine: crtc incapable of vrr).
+  „LatteOS Hra“. Pád hry → späť na plochu.
+  Prvý test: Hyprland pri ukončení padá (aquamarine 0.15.1, [#383](https://github.com/hyprwm/aquamarine/issues/383), otvorené;
+  PR #413 zamietnutý) → latte-session to rátal ako pád a prešiel do SAFE. Oprava: pád v `_dl_fini` (coredump) alebo
+  žiadosť latte-hra = riadne ukončenie. Sledovať #383, keď vyjde oprava, výnimku odstrániť. HDR/VRR: Z301C VRR na DP nehlási (aquamarine: crtc incapable of vrr).
 - [ ] Lepton (Android hry), Qwen3-14B-sk.
 - [ ] Android vrstva: **F-Droid 2.0** (24. 9. 2026, nové rozhranie, pripravuje „Nearby“ = zdieľanie aplikácií medzi
   zariadeniami bez servera) ako predvolený obchod s voľnými Android aplikáciami; App Manager by čítal index F-Droidu
