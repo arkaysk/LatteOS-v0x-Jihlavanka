@@ -1,11 +1,12 @@
 // LatteOS — Kvapka: lišta aplikácií ako tekutá kvapka kávy (prototyp, pleamar 0.1).
 // Zámerne nesúmerná: hlava s očami stojí vždy na ĽAVOM konci, kvapka rastie doprava s každým oknom.
-// V pokoji je vpitá do spodného okraja obrazovky (skoro rovina); keď k nej príde myš, vytiahne sa,
-// spojenie s okrajom sa stenčí na stopku a pretrhne sa — a naopak. Stopka sa nekreslí: je to okraj
-// („voda“ pod obrazovkou) roztavený s kvapkou, ako v Marei (ball-prototype.plm, `neck`).
-// Na povrchu latte art (shader latte.wgsl, obrazce sa striedajú). Klik na telo prepne režim okien
-// (plávajúce → dlaždice → páska), koliesko nad očami: páska = posun, plávajúce = ďalšie okno.
-// Pravý klik na oči: oči „goo“ (World of Goo) ↔ oči robota na obrazovke.
+// V pokoji je vpitá do spodného okraja obrazovky (skoro rovina). Keď sa k nej myš priblíži na štvrtinu
+// výšky obrazovky, začne sa vysúvať a kým k nej myš dôjde, je napoly vonku, na hrubej stopke pod hlavou.
+// Odtrhne sa až klikom alebo potiahnutím nahor (stopka sa stenčí a pretrhne); ďalší klik alebo
+// potiahnutie nadol ju vráti do okraja. Stopka sa nekreslí zvlášť: okraj („voda“ pod obrazovkou) a
+// stĺpik pod hlavou sú roztavené s telom (ako `neck` v Marei, ball-prototype.plm).
+// Klik na hlavu prepne režim okien (plávajúce → dlaždice → páska), koliesko nad očami: páska = posun,
+// plávajúce = ďalšie okno. Pravý klik na oči: oči „goo“ (World of Goo) ↔ oči robota na obrazovke.
 // Koncept: AUDIT-WIN11.md › Kvapky.
 language 0.1
 
@@ -24,18 +25,18 @@ scene Kvapka {
     model wins max 10 { id: text; title: text; class: text; active: bool; minimized: bool }
     service window { list: wins }
     fact mode: plavajuce | dlazdice | paska = plavajuce
-    fact near = false
+    fact detached = false
+    fact pulling = false
     fact robot = false
     event cycle ->
     event pick ->
     event wheel_turn ->
 
-    shader latte = file "latte.wgsl"
-
     let coffee = #1c0f09
     let cream = #f3ebdd
     let edge = 260                           // spodný okraj obrazovky
     let lx = screen.width * 0.4              // hlava: ľavý koniec, pevne (medzi kapsulami Noctalie)
+    let bl = lx - 34                         // ľavý okraj tela
     let n = wins.count
     let step = if(mode == paska, 54, 64)
 
@@ -46,19 +47,23 @@ scene Kvapka {
     follow h = if(mode == paska, 60, if(mode == dlazdice, 108, 78))
     follow c = if(mode == paska, 20, if(mode == dlazdice, 30, 39))
 
-    // von z okraja: 0 = vpitá do okraja, 1 = voľná, 48 px nad ním. Bez odskoku (~1100ms), aby stopka
-    // nepreskočila späť. V pokoji sa telo s okrajom zlieva skoro do roviny (neck); pri odchode ho drží
-    // stopka pod hlavou: stĺpik od okraja k telu, roztavený s oboma koncami (preto je v strede tenší),
-    // ktorý sa zužuje, až zmizne — kvapka sa odtrhne. Tak to robia goo simulácie; Marea s guľou vystačí
-    // so samotným roztavením (ball-prototype.plm, `neck`), rovné dno tela by však dalo široký pás.
+    // blízkosť myši kdekoľvek na ploche (cursor.x/y: pleamar sa pýta Hyprlandu, žiadna zóna nekradne kliky):
+    // od štvrtiny výšky obrazovky (270 px pri 1080) sa kvapka vysúva, pri nej je vonku na 0,55
+    let dist.x = max(0, max(bl - cursor.x, cursor.x - (bl + w)))
+    let dist.y = max(0, edge - h * 0.6 - cursor.y)
+    let approach = 1 - smooth(0, 270, length(dist.x, dist.y))
+
+    // von z okraja: 0 = vpitá do okraja, 1 = voľná, 48 px nad ním. Bez odskoku, aby stopka nepreskočila
+    // späť. Pri vysúvaní drží telo stopka pod hlavou: stĺpik od okraja k telu, roztavený s oboma koncami
+    // (preto je v strede tenší), ktorý sa od 0,4 zužuje, až pri 0,9 zmizne — kvapka sa odtrhne.
     fact probe = 0                           // na skúšky: `pleamar --say kvapka "fact probe 75"` zastaví kvapku na 0,75
-    prop out = 0 ~1100ms
-    follow out = if(probe > 0, probe / 100, if(near, 1, 0))
+    prop pull = 0 ~quick                     // ťahanie myšou: −1 nadol … 1 nahor
+    prop out = 0 ~700ms
+    follow out = if(probe > 0, probe / 100, if(pulling, clamp(if(detached, 1, 0.55) + pull * 0.45, 0, 1), if(detached, 1, 0.55 * approach)))
     let sink = h * 0.42
     let bottom = edge + sink * (1 - out) - 48 * out
     let by = bottom - h
     let mid = by + h / 2
-    let bl = lx - 34                         // ľavý okraj tela
     let neck = 14 * (1 - out) + 16 * 4 * out * (1 - out)
     let stalk.w = 30 * clamp((0.9 - out) / 0.5, 0, 1)
     let stalk.x = lx + 6
@@ -68,18 +73,15 @@ scene Kvapka {
 
     prop wob = 0 ~lively
     prop squish = 0 ~quick
-    on change out > 0.93 while out > 0.93 and near { impulse wob 90 }
-    on change out < 0.07 while out < 0.07 and not near { impulse wob -60 }
+    on change detached { impulse wob if(detached, 90, -60) }
 
-    // oči
+    // oči: sledujú myš kdekoľvek
     pose lid = 1
     blink lid every 2.4s..6s for 150ms
     prop gaze.x = 0 ~gentle
     prop gaze.y = 0 ~gentle
-    follow gaze.x = max(-3.5, min(3.5, (pointer.x - lx) / 70))
-    follow gaze.y = max(-3, min(3, (pointer.y - (by - 8)) / 70))
-    prop stir = 0 ~gentle
-    follow stir = if(near, 1, 0)
+    follow gaze.x = max(-3.5, min(3.5, (cursor.x - lx) / 70))
+    follow gaze.y = max(-3, min(3, (cursor.y - (by - 8)) / 70))
 
     // hrbolček každého okna: pružina 0 → 1, zatvorené okno sa vtiahne späť do kvapky
     repeat k in 0..10 {
@@ -88,12 +90,13 @@ scene Kvapka {
         follow b.$k = if(k < n and mode != dlazdice, 1, 0)
     }
 
+    // objem kvapky: svetlo zhora, lem a tieň z pleamaru, navrch odlesk (nižšie)
     group {
-        shader: latte, bl + w / 2 + 10, mid, h, 0.82, pointer.x, pointer.y, stir, -1
         body {
             color: coffee
-            light: 10%, by - 36, 22
-            rim: 22%
+            light: 16%, by - 40, 34
+            rim: 30%
+            shadow: 0, 6, 16, 40% * out
             box water { from: water.x - water.w / 2, edge; size: water.w, 70 }
             box { at: bl + w / 2, mid; size: w + wob * 0.12, h * (1 - squish * 0.08) - wob * 0.1; corner: c; blend: neck }
             box stalk { from: stalk.x - stalk.w / 2, bottom - 12; size: stalk.w, edge - bottom + 24; corner: stalk.w / 2; blend: 16 * clamp(stalk.w / 10, 0, 1) }
@@ -110,6 +113,18 @@ scene Kvapka {
             ellipse { at: bl + 80 + 8 * step, mid; radius: 26 * b.8; blend: 16 }
             ellipse { at: bl + 80 + 9 * step, mid; radius: 26 * b.9; blend: 16 }
         }
+    }
+
+    // odlesk: dlhý mäkký pás pozdĺž hornej hrany tela a lesklá bodka na hlave (ako na mokrej kvapke)
+    group {
+        blur: 3
+        opacity: 30%
+        ellipse { at: bl + 40 + (w - 40) * 0.5, by + 8; radius: 10; scale: (w - 70) / 20, 0.32; color: #ffffff }
+    }
+    group {
+        blur: 1.5
+        opacity: 75%
+        ellipse { at: lx + 20, by - 27; radius: 3.2; scale: 1.3, 0.8; rotate: 40deg; color: #fff6ea }
     }
 
     // oči „goo“: veľké biele, každé inej veľkosti, malé zreničky sa trasú každá po svojom
@@ -134,18 +149,21 @@ scene Kvapka {
 
     text pick(mode, "Floating windows", "Tiles", "Endless strip") { at: lx - 30, by - 56; anchor: left center; size: 12; weight: 700; color: cream; opacity: 70% * out }
 
-    // blízko: vyťahuje kvapku z okraja (pokrýva ju až po okraj, aby sa stopka nezrušila pri pohybe myši)
-    zone box near_hit { from: bl - 40, by - 70; size: w + 80, edge - by + 70 }
     zone box body_hit { at: bl + w / 2, mid; size: w, h; corner: c; cursor: pointer }
     zone ellipse eyes_hit { at: lx, by - 4; radius: 33; cursor: pointer }
     repeat k in 0..10 {
         zone box icon_hit.$k { at: bl + 80 + k * step, mid; size: 44, 44; corner: 12; cursor: pointer; active: k < n and mode != dlazdice }
     }
 
-    on enter near_hit { near = true }
-    on away near_hit for 450ms { near = false }
-    on press body_hit { emit cycle; squish: 1 }
-    on release body_hit { squish: 0 }
+    // telo: klik odtrhne / vráti; ťahanie nahor ťahá stopku (nad 0,7 sa pretrhne), nadol vracia
+    on press body_hit { squish: 1 }
+    on drag body_hit { pull: clamp(-drag.dy / 90, -1, 1) ~0ms }
+    on drag body_hit while abs(drag.dy) > 6 { pulling = true }
+    on release body_hit while pulling { detached = out > 0.8; pulling = false; pull: 0; squish: 0 }
+    on release body_hit while not pulling { toggle detached; pull: 0; squish: 0 }
+    // hlava: režim okien
+    on press eyes_hit { emit cycle; squish: 1 }
+    on release eyes_hit { squish: 0 }
     on press right eyes_hit { toggle robot }
     on scroll eyes_hit { emit wheel_turn(wheel) }
     repeat k in 0..10 {
