@@ -41,6 +41,9 @@ impl Cmdline {
     }
 }
 
+/// KMS ovládače skutočných kariet (nie simpledrm ani virtuálne).
+pub const REAL_KMS: [&str; 6] = ["amdgpu", "radeon", "i915", "xe", "nouveau", "nvidia"];
+
 /// Grafická karta z `/sys/class/drm/cardN`.
 #[derive(Debug, Clone)]
 pub struct Gpu {
@@ -264,7 +267,11 @@ impl Probe {
         let cmdline = Cmdline::read();
         let gpus = gpus();
         let has_drm = gpus.iter().any(|g| Path::new(&format!("/dev/dri/{}", g.card)).exists());
-        let t = Duration::from_millis(10_000); // studená vyrovnávacia pamäť na pomalom HDD: prvé načítanie Mesa/LLVM presiahlo 2 s (latte-lab, 29. 9. 2026)
+        // studená vyrovnávacia pamäť na pomalom HDD: prvé načítanie Mesa pri štarte ~12 s (latte-lab, 29. 9. 2026).
+        // So skutočným KMS ovládačom vypršanie aj tak znamená NORMAL (latte-boot), takže dlhé čakanie iba predĺži štart;
+        // VM (vmwgfx, virtio…) potrebuje výsledok testu → dlhší limit
+        let real = gpus.iter().any(|g| g.boot_vga && REAL_KMS.contains(&g.driver.as_str()));
+        let t = Duration::from_millis(if real { 3_000 } else { 10_000 });
         let (egl_default, egl_sw) = if has_drm && !cmdline.nomodeset {
             // po vzore wlroots (gles2 → vulkan → pixman): najprv skúsime hardvér, softvér iba keď treba;
             // dva testy naraz by na pomalom disku pri štarte len súperili o čítanie Mesa/LLVM

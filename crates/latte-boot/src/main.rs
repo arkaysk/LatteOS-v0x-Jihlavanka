@@ -85,9 +85,6 @@ fn safe(reason: impl Into<String>) -> Decision {
     Decision { mode: "safe", renderer: "pixman", tier: "safe", reason: reason.into() }
 }
 
-/// KMS ovládače skutočných kariet (nie simpledrm ani virtuálne).
-const REAL_KMS: [&str; 6] = ["amdgpu", "radeon", "i915", "xe", "nouveau", "nvidia"];
-
 fn decide(p: &Probe, cfg: &Config, crashes: u32, force_safe: bool) -> Decision {
     let cm = &p.cmdline;
     if cm.mode.as_deref() == Some("safe") {
@@ -127,7 +124,7 @@ fn decide(p: &Probe, cfg: &Config, crashes: u32, force_safe: bool) -> Decision {
     // test vypršal (pomalý disk pri štarte), no karta má skutočný KMS ovládač: kompozitor to skúsi sám,
     // ako wlroots — padne až pri zlyhaní; pád relácie prepne na SAFE cez počítadlo pádov
     if d.timed_out && p.virt.is_none() {
-        if let Some(g) = p.gpus.iter().find(|g| g.boot_vga && REAL_KMS.contains(&g.driver.as_str())) {
+        if let Some(g) = p.gpus.iter().find(|g| g.boot_vga && latte_hw::REAL_KMS.contains(&g.driver.as_str())) {
             return hw(format!("test grafiky vypršal ({} ms), používa sa ovládač {}; pád relácie → SAFE", d.millis, g.driver));
         }
     }
