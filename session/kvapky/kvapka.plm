@@ -1,0 +1,97 @@
+// LatteOS — Kvapka: lišta aplikácií ako tekutá kvapka kávy (prototyp, pleamar 0.1).
+// Dole v strede; s každým oknom sa rozšíri a ukáže jeho ikonu. Klik na telo prepne režim okien
+// (plávajúce → dlaždice → páska), tvar kvapky ho odráža. Koliesko nad očami: páska = posun,
+// plávajúce = prepínanie okien ako Alt+Tab, dlaždice = nič. Koncept: AUDIT-WIN11.md › Kvapky.
+language 0.1
+
+scene Kvapka {
+    surface {
+        size: full, 240
+        anchor: bottom
+        margin: 0, 0, 84, 0
+        level: top
+        rate: 60        // pokojný pohyb kvapky nepotrebuje 144 Hz: 12 % → 6 % jadra na RX 640
+    }
+    permissions { services: "window", "window.*"; run: "hyprctl", "cat", "printenv" }
+
+    // zoznam okien priamo zo služby (wlr-foreign-toplevel), bez logiky; ikona podľa triedy okna
+    model wins max 10 { id: text; title: text; class: text; active: bool; minimized: bool }
+    service window { list: wins }
+    fact mode: plavajuce | dlazdice | paska = plavajuce
+    fact hot = -1
+    event cycle ->
+    event pick ->
+    event wheel_turn ->
+
+    let coffee = #1c0f09
+    let cream = #f3ebdd
+    let cx = screen.width / 2
+    let n = wins.count
+
+    prop w = 150 ~lively
+    prop h = 78 ~lively
+    prop c = 39 ~lively
+    follow w = 120 + n * if(mode == paska, 54, if(mode == dlazdice, 34, 64))
+    follow h = if(mode == paska, 60, if(mode == dlazdice, 108, 78))
+    follow c = if(mode == paska, 20, if(mode == dlazdice, 30, 39))
+    let by = 240 - 24 - h
+    let mid = by + h / 2
+
+    prop gaze.x = 0 ~gentle
+    prop gaze.y = 0 ~gentle
+    follow gaze.x = max(-3.5, min(3.5, (pointer.x - cx) / 70))
+    follow gaze.y = max(-3, min(3, (pointer.y - (by - 6)) / 70))
+    prop squish = 0 ~quick
+    // hrbolček každého okna: pružina 0 → 1, zatvorené okno sa vtiahne späť do kvapky
+    repeat k in 0..10 {
+        image icon.$k = from wins.$k.class, 30, 30
+        prop b.$k = 0 ~lively
+        follow b.$k = if(k < n and mode != dlazdice, 1, 0)
+    }
+
+    body {
+        color: coffee
+        light: 10%, by - 36, 22
+        rim: 22%
+        box { at: cx, mid; size: w, h * (1 - squish * 0.08); corner: c }
+        ellipse { at: cx, by - 4; radius: 33; blend: 22 }
+        ellipse { at: cx - w / 2 + 22 + noise(time * 0.35) * 26, mid; radius: 27; blend: 22 }
+        ellipse { at: cx + w / 2 - 22 + noise(time * 0.42 + 7) * 28, mid; radius: 27; blend: 22 }
+        ellipse { at: cx + noise(time * 0.2 + 3) * 30, by + h + 6 + noise(time * 0.6) * 5; radius: 9; blend: 14 }
+        ellipse { at: cx - w / 2 + 62 + 0 * if(mode == paska, 54, 64), mid; radius: 26 * b.0; blend: 16 }
+        ellipse { at: cx - w / 2 + 62 + 1 * if(mode == paska, 54, 64), mid; radius: 26 * b.1; blend: 16 }
+        ellipse { at: cx - w / 2 + 62 + 2 * if(mode == paska, 54, 64), mid; radius: 26 * b.2; blend: 16 }
+        ellipse { at: cx - w / 2 + 62 + 3 * if(mode == paska, 54, 64), mid; radius: 26 * b.3; blend: 16 }
+        ellipse { at: cx - w / 2 + 62 + 4 * if(mode == paska, 54, 64), mid; radius: 26 * b.4; blend: 16 }
+        ellipse { at: cx - w / 2 + 62 + 5 * if(mode == paska, 54, 64), mid; radius: 26 * b.5; blend: 16 }
+        ellipse { at: cx - w / 2 + 62 + 6 * if(mode == paska, 54, 64), mid; radius: 26 * b.6; blend: 16 }
+        ellipse { at: cx - w / 2 + 62 + 7 * if(mode == paska, 54, 64), mid; radius: 26 * b.7; blend: 16 }
+        ellipse { at: cx - w / 2 + 62 + 8 * if(mode == paska, 54, 64), mid; radius: 26 * b.8; blend: 16 }
+        ellipse { at: cx - w / 2 + 62 + 9 * if(mode == paska, 54, 64), mid; radius: 26 * b.9; blend: 16 }
+    }
+
+    box { at: cx - 12, by - 8; size: 14, 18; corner: 7; color: cream }
+    box { at: cx + 12, by - 8; size: 14, 18; corner: 7; color: cream }
+    box { at: cx - 12 + gaze.x, by - 7 + gaze.y; size: 7, 8; corner: 3.5; color: coffee }
+    box { at: cx + 12 + gaze.x, by - 7 + gaze.y; size: 7, 8; corner: 3.5; color: coffee }
+
+    repeat k in 0..10 {
+        image icon.$k { at: cx - w / 2 + 47 + k * if(mode == paska, 54, 64), mid - 15; size: 30, 30; opacity: b.$k; show: k < n and mode != dlazdice }
+        box { at: cx - w / 2 + 62 + k * if(mode == paska, 54, 64), mid + 22; size: 14, 3; corner: 1.5; color: cream; show: k < n and wins.$k.active and mode != dlazdice }
+    }
+
+    text pick(mode, "Plávajúce okná", "Dlaždice", "Nekonečná páska") { at: cx, by - 58; anchor: center; size: 12; weight: 700; color: cream; opacity: 70% }
+
+    zone box body_hit { at: cx, mid; size: w, h; corner: c; cursor: pointer }
+    zone ellipse eyes_hit { at: cx, by - 4; radius: 33; cursor: pointer }
+    repeat k in 0..10 {
+        zone box icon_hit.$k { at: cx - w / 2 + 62 + k * if(mode == paska, 54, 64), mid; size: 44, 44; corner: 12; cursor: pointer; active: k < n and mode != dlazdice }
+    }
+
+    on press body_hit { emit cycle; squish: 1 }
+    on release body_hit { squish: 0 }
+    on scroll eyes_hit { emit wheel_turn(wheel) }
+    repeat k in 0..10 {
+        on press icon_hit.$k { emit pick(k) }
+    }
+}
