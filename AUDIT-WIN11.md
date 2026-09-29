@@ -216,8 +216,19 @@ Bežiace okná: panel úloh s názvami (nie spúšťač).
   názov, napr. „Hry“) ako plugin Noctalie `[[desktop_widget]]`; **Pripnúť na plochu** pravým klikom v Štarte a App Manageri.
   (Vstavaný widget `button` vie iba ikonu Tabler + príkaz — na jednotlivé tlačidlá stačí, na skupinu ikon aplikácií nie.)
 - Predvolene prázdna plocha (tapeta + prípadne hodiny); ďalšie widgety z galérie Noctalie (kalendár, počasie, médiá, výkon).
-- `plocha.qml` (ikony súborov z ~/Plocha ako Windows) → nahradiť; **Kôš** ako widget alebo v Súboroch/lište (overiť, čo čakajú
-  používatelia Windowsu).
+- `plocha.qml` (ikony súborov z ~/Plocha ako Windows) → nahradiť. **Kôš: v Súboroch** (rozhodnuté 29. 9.).
+- **App Manager zatiaľ odložený** (spolu s myšlienkou oprávnení/capabilities na zariadenia) — návrh prostredia bez neho.
+
+### Štart = spúšťač Noctalie (hotový, iba nastaviť)
+Jedno tlačidlo → panel: pole na písanie hore; pred písaním **pripnuté** (`pinned`, poradie ťahaním) a **často používané**
+(`sort_by_usage`, filter „Nedávno použité“); **kategórie** (Internet, Hry, Kancelária, Systém…); mriežka ikon s názvom
+(`app_grid`); počas písania fuzzy hľadanie v názve, kľúčových slovách a kategóriách, častejšie používané vyššie;
+kalkulačka priamo v hľadaní; pravý klik na aplikáciu = ďalšie možnosti (akcie `.desktop`, pripnúť).
+Predpony `/emo`, `/win`, `/pan`, `/session`, `/wall` a vlastné poskytovatelia z pluginov (`[[launcher_provider]]`).
+Po skopírovaní (emoji, výsledok) vie **sám vložiť** (`auto_paste`); história schránky Noctalie po kliknutí **vkladá**
+(`clipboard_auto_paste`) — to je „klik v Kapse vloží“ bez vlastného kódu.
+LatteOS má dnes vlastný spúšťač (`spustac.qml`) a vlastný Text Bar (4 režimy) — z veľkej časti duplikát; režimy Web, AI,
+Linux príkaz a Súbory sa dajú pridať ako poskytovatelia pluginu do spúšťača Noctalie.
 
 ## Poradie krokov
 
