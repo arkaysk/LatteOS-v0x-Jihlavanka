@@ -55,6 +55,8 @@ clone matugen             https://github.com/InioX/matugen.git
 clone noctalia-shell      https://github.com/noctalia-dev/noctalia-shell.git
 clone noctalia-greeter    https://github.com/noctalia-dev/noctalia-greeter.git
 clone noctalia-plugins    https://github.com/noctalia-dev/noctalia-plugins.git
+clone pleamar            https://github.com/k4ditano/pleamar.git        # kvapky: SDF, pružiny, BSD-3 (29. 9.)
+clone marea-plm          https://github.com/k4ditano/marea-plm.git      # tekutý spoločník v pleamar, BSD-3
 clone noctalia-official-plugins https://github.com/noctalia-dev/official-plugins.git
 clone end4-dots-hyprland  https://github.com/end-4/dots-hyprland.git
 clone ml4w-dotfiles       https://github.com/mylinuxforwork/dotfiles.git
