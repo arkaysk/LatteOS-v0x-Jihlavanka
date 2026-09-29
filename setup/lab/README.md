@@ -99,7 +99,7 @@ Potom už cez SSH, **monitor nechať zapojený** (skript si uloží jeho EDID do
 
 ```
 sudo dnf -y install git
-git clone -b gamerdistro https://github.com/arkaysk/jihlavanka001 && cd jihlavanka001
+git clone -b ccr-d72fa806-mh7av3 https://github.com/arkaysk/jihlavanka001 && cd jihlavanka001   # po zlúčení do gamerdistro: -b gamerdistro
 setup/lab/install.sh
 ```
 
