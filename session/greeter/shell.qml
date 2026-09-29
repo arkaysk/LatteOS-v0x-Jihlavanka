@@ -41,7 +41,8 @@ ShellRoot {
     readonly property var sessions: [
         { name: "LatteOS", cmd: ["/usr/bin/latte-session"], hint: "Hyprland + Noctalia" },
         { name: "LatteOS SAFE", cmd: ["/usr/bin/latte-session", "safe"], hint: "labwc, bez GPU" },
-        { name: "LatteOS Hra", cmd: ["/usr/bin/latte-session", "hra"], hint: "Steam na celú obrazovku (gamescope), iba s grafickou kartou" }
+        { name: "LatteOS Hra", cmd: ["/usr/bin/latte-session", "hra"], hint: "Steam na celú obrazovku (gamescope), iba s grafickou kartou" },
+        { name: "LatteOS Kvapky", cmd: ["/usr/bin/latte-session", "kvapky"], hint: "skúšobné: živá tapeta a tekuté kvapky, bez klasickej lišty" }
     ]
     property int sessionIndex: mode === "safe" ? 1 : 0
 

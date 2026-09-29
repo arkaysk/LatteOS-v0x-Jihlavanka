@@ -47,6 +47,14 @@ on("wheel_turn", function(d)
     end
 end)
 
+on("start_open", function() run("latte-spustac", { "prepni" }) end)
+on("power_open", function() run("latte-ponuka", { "vypnut" }) end)
+
+-- relácia LatteOS Kvapky (bez Noctalie): kvapky Štart a vypínač
+run("printenv", { "LATTE_VARIANT" }, function(out)
+    if (out or ""):match("kvapky") then fact.solo = true end
+end)
+
 run("printenv", { "HOME" }, function(out)
     local home = (out or ""):match("[^\n]+")
     if home then state = home .. "/.local/state/latteos/window-mode"; read_mode() end

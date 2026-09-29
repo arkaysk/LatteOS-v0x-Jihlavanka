@@ -21,6 +21,23 @@ ako samostatná vrstva (layer-shell) nad jej lištou.
 - klik na ikonu: okno dostane fokus
 - texty po anglicky + `translations sk` (jazyk podľa `LANG`, prepína sa za behu)
 
+## Plocha LatteOS Kvapky (skúšobná relácia)
+Klasické LatteOS vypnuté (Noctalia, jej lišta a pomocníci: netznak, kapsavyrez, náhľad, plocha, rýchle nastavenia,
+pohoda, maskot, živá tapeta QML) — ostáva **živá tapeta** (latte-tapety, mpvpaper; statický obrázok tiež cez mpvpaper)
+a **kvapky**. Z klasiky ostáva iba to, bez čoho by sa nedalo nič spustiť ani odhlásiť: Kapsa (história schránky),
+spúšťač App Managera (kvapka **Štart**) a systémové ponuky (kvapka **vypínač**, Ctrl+Alt+Del).
+- **ponuka**: na prihlasovacej obrazovke relácia **LatteOS Kvapky** (`latte-session kvapky` → `LATTE_VARIANT=kvapky`
+  → hyprland.lua spustí `latte-kvapky start`; zdravá, keď po 60 s beží pleamar)
+- bez odhlásenia: `latte-kvapky skusit` (z klasickej plochy) a `latte-kvapky spat` (späť), `latte-kvapky stav`
+- okná nechajú dole 64 px pre kvapku (Noctalia si pás vyhradí sama); platí aj po reload-e konfigurácie
+  (príznak `$XDG_RUNTIME_DIR/latteos/kvapky`)
+- Štart a vypínač sú malé kvapky vľavo od hlavy, vpité do okraja, pri myši sa vysunú; neodtrhávajú sa
+
+**Kvapka a okno (29. 9.):** s kvapkou sa zlieva iba **jedinečné systémové okno**, ktoré z nej vyteká (hľadanie,
+App Manager, Súbory/Hardvér z rohových kvapiek) — ako karta hľadania z kvapky v Marei. Bežné aplikácie (aj Task
+Manager) majú klasickú hornú lištu (hyprbars): nepatria systému, kvapka ich neskrýva. Preto žiadna dekorácia
+rámu v kompozitore.
+
 ## Spustenie (latte-lab)
 ```
 resources/fetch.sh pleamar && (cd resources/upstream/pleamar && git apply ../../patches/pleamar-hyprland-okna-8bit.patch && cargo build --release)
@@ -45,6 +62,6 @@ skutočným okrajom.
 Prvá snímka ~90 ms od štartu, priemerná snímka 7,3 ms.
 
 ## Ďalej
-Štart (zrnko) a vypínač vľavo, sada kvapiek v rohu (hodiny, rýchle nastavenia, Kapsa, Súbory, Hardvér) s panelmi,
+spúšťač a ponuka Vypnúť majú vytiecť z kvapky Štart / vypínač (dnes sa otvoria na svojom starom mieste); sada kvapiek v rohu (hodiny, rýchle nastavenia, Kapsa, Súbory, Hardvér) s panelmi,
 ktoré z kvapky vytečú; náhľad okna pri prejdení myšou; farba čierna káva ↔ latte; maskoti Homebrew a drak;
 vlastné `app_id` pre aplikácie LatteOS (dnes všetky `org.quickshell` → rovnaká ikona).

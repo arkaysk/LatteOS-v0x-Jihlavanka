@@ -14,7 +14,7 @@ user="$(id -un)"
 sudo() { if [ -n "${SUDO_ASKPASS:-}" ]; then command sudo -A "$@"; else command sudo "$@"; fi; }
 
 # kontrola pred prvým zásahom do systému (DSanalyze.md): chýbajúci súbor = poškodený checkout, nie polovičná inštalácia
-BINS="latte-session latte-safe latte-greeter latte-theme latte-app latte-ai latte-shellset latte-sysmon latte-apps latte-devices latte-backup latte-games latte-net latte-cloud latte-siet latte-otvor latte-kos latte-spustac latte-sandbox latte-kopia latte-tc latte-ostrovy latte-rychle latte-tapety latte-vyber latte-ponuka latte-prichytenie latte-snimka latte-emoji latte-nove-okno latte-nahravanie latte-maskoti latte-sklo latte-inspektor latte-terminal latte-hypr-udalosti latte-sukromie latte-kapsa-store latte-hra"
+BINS="latte-session latte-safe latte-greeter latte-theme latte-app latte-ai latte-shellset latte-sysmon latte-apps latte-devices latte-backup latte-games latte-net latte-cloud latte-siet latte-otvor latte-kos latte-spustac latte-sandbox latte-kopia latte-tc latte-ostrovy latte-rychle latte-tapety latte-vyber latte-ponuka latte-prichytenie latte-snimka latte-emoji latte-nove-okno latte-nahravanie latte-maskoti latte-sklo latte-inspektor latte-terminal latte-hypr-udalosti latte-sukromie latte-kapsa-store latte-hra latte-kvapky"
 missing=""
 for f in $BINS; do [ -f "$S/bin/$f" ] || missing="$missing $f"; done
 [ -z "$missing" ] || { echo "Chýbajú skripty v $S/bin:$missing — inštaláciu nezačínam (git status / git pull)."; exit 1; }
@@ -42,7 +42,7 @@ put "$S/hypr/hyprland.lua" /usr/share/latteos/hypr/hyprland.lua
 for f in rc.xml autostart environment menu.xml; do sudo install -Dm644 "$S/labwc/$f" "/usr/share/latteos/labwc/$f"; done
 # relácie LatteOS: v systémovom zozname (pre iné greetery) aj vo vlastnom, ktorý ponúka latte-greeter
 # (tuigreet by inak ponúkol aj „Hyprland“ z COPR bez Noctalie a bez latte-session)
-for f in latteos.desktop latteos-safe.desktop latteos-hra.desktop; do
+for f in latteos.desktop latteos-safe.desktop latteos-hra.desktop latteos-kvapky.desktop; do
     sudo install -Dm644 "$S/wayland-sessions/$f" "/usr/share/wayland-sessions/$f"
     sudo install -Dm644 "$S/wayland-sessions/$f" "/usr/share/latteos/sessions/$f"
 done
@@ -60,6 +60,20 @@ if rpm -q hyprland-devel >/dev/null 2>&1 && make -s -C "$S/hypr/plugins/latte-ok
     sudo install -Dm755 "$S/hypr/plugins/latte-okna/latte-okna.so" /usr/lib64/latteos/latte-okna.so
 else
     echo "   latte-okna sa nepostavil — okná sa nebudú prichytávať ťahaním (Win+←→ a Win+Z fungujú)"
+fi
+echo "== Kvapky (skúšobná plocha LatteOS Kvapky): scéna + pleamar so záplatou LatteOS"
+sudo install -d /usr/share/latteos/kvapky
+for f in kvapka.plm kvapka.luau; do put "$S/kvapky/$f" "/usr/share/latteos/kvapky/$f"; done
+pl="$repo/resources/upstream/pleamar"
+if [ ! -x "$pl/target/release/pleamar" ] && command -v cargo >/dev/null; then
+    "$repo/resources/fetch.sh" pleamar >/dev/null && git -C "$pl" apply --check "$repo/resources/patches/pleamar-hyprland-okna-8bit.patch" 2>/dev/null \
+        && git -C "$pl" apply "$repo/resources/patches/pleamar-hyprland-okna-8bit.patch"
+    (cd "$pl" && cargo build --release -q) || true
+fi
+if [ -x "$pl/target/release/pleamar" ]; then
+    sudo install -Dm755 "$pl/target/release/pleamar" /usr/bin/pleamar
+else
+    echo "   pleamar sa nepostavil (chýba cargo?) — relácia LatteOS Kvapky ukáže iba tapetu"
 fi
 
 echo "== vzhľad: Noctalia (téma Latte), písma Manrope/Fraunces (OFL), tapety LatteOS"

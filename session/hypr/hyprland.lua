@@ -48,10 +48,17 @@ hl.env("XCURSOR_SIZE", cursor_size)
 hl.env("HYPRCURSOR_SIZE", cursor_size)
 
 -- ── vzhľad (spoločný pre všetky stupne) ───────────────────────────────────────
+-- plocha LatteOS Kvapky (relácia, alebo `latte-kvapky skusit` → príznak v XDG_RUNTIME_DIR): bez lišty Noctalie,
+-- ktorá si dole vyhradí pás, nechajú okná miesto pre kvapku samy
+local kvapky = os.getenv("LATTE_VARIANT") == "kvapky"
+do
+    local f = io.open((os.getenv("XDG_RUNTIME_DIR") or "/tmp") .. "/latteos/kvapky", "r")
+    if f then f:close(); kvapky = true end
+end
 hl.config({
     general = {
         gaps_in = 5,
-        gaps_out = 10,
+        gaps_out = kvapky and { top = 10, right = 10, bottom = 64, left = 10 } or 10,
         border_size = 2,
         col = { active_border = colors.active, inactive_border = colors.inactive },
         resize_on_border = true,
@@ -154,7 +161,13 @@ end)
 hl.on("hyprland.start", function()
     -- prostredie pre systemd/D-Bus, potom graphical-session.target (portály pre Flatpak)
     hl.exec_cmd("sh -c 'dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE "
-        .. "HYPRLAND_INSTANCE_SIGNATURE LATTE_MODE LATTE_RENDERER LATTE_TIER; systemctl --user start latte-session.target'")
+        .. "HYPRLAND_INSTANCE_SIGNATURE LATTE_MODE LATTE_RENDERER LATTE_TIER LATTE_VARIANT; systemctl --user start latte-session.target'")
+    -- relácia LatteOS Kvapky (skúšobná): bez Noctalie a klasických pomocníkov, iba živá tapeta a kvapky
+    if os.getenv("LATTE_VARIANT") == "kvapky" then
+        hl.exec_cmd("latte-kvapky start")
+        hl.exec_cmd("latte-boot ok --after 60 --require pleamar")
+        return
+    end
     hl.exec_cmd("noctalia")
     -- história schránky pre Kapsu (text aj obrázky)
     hl.exec_cmd("wl-paste --type text --watch latte-kapsa-store")       -- zapnutie a veľkosť histórie: Nastavenia › Schránka

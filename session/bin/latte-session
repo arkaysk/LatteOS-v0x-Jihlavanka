@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# latte-session [safe|hra] — relácia LatteOS po prihlásení (spúšťa ju greetd cez wayland-sessions/*.desktop).
+# latte-session [safe|hra|kvapky] — relácia LatteOS po prihlásení (spúšťa ju greetd cez wayland-sessions/*.desktop).
 #
 # Režim berie z /run/latteos/session.env (zapísal latte-boot select pri štarte).
 # NORMAL: Hyprland + Noctalia. Ak Hyprland spadne skôr, než je relácia zdravá (60 s),
@@ -7,6 +7,8 @@
 # SAFE:   labwc + pixman (bez GL/GPU) + Noctalia, záloha foot; ponuka latte-safe.
 # HRA:    gamescope-session-plus steam (Steam Big Picture); striedanie s plochou v tom istom prihlásení
 #         cez latte-hra ($XDG_RUNTIME_DIR/latteos/relacia), ako SteamOS. Iba s grafickou kartou.
+# KVAPKY: skúšobná plocha — Hyprland bez Noctalie a klasických pomocníkov, iba živá tapeta a tekuté kvapky
+#         (LATTE_VARIANT=kvapky → hyprland.lua spustí latte-kvapky start). Pád → SAFE ako pri NORMAL.
 set -u
 
 share=/usr/share/latteos
@@ -39,6 +41,9 @@ chosen_safe=0
 [ "${1:-}" = safe ] && { LATTE_MODE=safe; chosen_safe=1; }
 next=desktop
 [ "${1:-}" = hra ] && next=hra
+LATTE_VARIANT=klasicke
+[ "${1:-}" = kvapky ] && LATTE_VARIANT=kvapky
+export LATTE_VARIANT
 flag="$XDG_RUNTIME_DIR/latteos/relacia"
 mkdir -p "$(dirname "$flag")"; rm -f "$flag"
 export LATTE_MODE LATTE_RENDERER LATTE_TIER
