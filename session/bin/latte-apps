@@ -666,6 +666,26 @@ FLATHUB = "https://flathub.org/api/v2"
 CACHE = os.path.join(os.environ.get("XDG_CACHE_HOME", HOME + "/.cache"), "latteos", "flathub")
 
 
+def appstream_rpm(q):
+    """Aplikácie z repozitárov Fedory podľa metadát AppStream (appstreamcli, ako GNOME Software a Discover):
+    mená a popisy aplikácií namiesto surových balíkov; rýchlejšie ako dnf repoquery. Záloha: dnf."""
+    if not shutil.which("appstreamcli"):
+        return [x for x in search(q) if x["source"] == "rpm"]
+    rc, text, _ = sh(["env", "LC_ALL=C", "appstreamcli", "search", q], timeout=30)
+    out = []
+    for block in text.split("\n---"):
+        f = {}
+        for line in block.strip().splitlines():
+            k, _, v = line.partition(": ")
+            f.setdefault(k.strip(), v.strip())
+        pkg = f.get("Package")
+        if not pkg or "desktop-application" not in f.get("Identifier", "") and "console-application" not in f.get("Identifier", ""):
+            continue                                   # iba aplikácie z RPM (Flatpak ukazuje Flathub vyššie)
+        out.append({"source": "rpm", "id": pkg, "name": f.get("Name", pkg), "comment": f.get("Summary", ""), "version": "",
+                    "note": "Fedora · systémový balík, inštalácia vyžaduje heslo správcu"})
+    return out
+
+
 def fh(path, ttl=6 * 3600, post=None):
     import hashlib, time, urllib.request
     os.makedirs(CACHE, exist_ok=True)
@@ -723,10 +743,14 @@ def store(a):
         return {"apps": [card(h, inst) for h in d.get("hits", [])], "pages": d.get("totalPages", 1)}
     if a[0] == "search" and len(a) > 1:
         q = " ".join(a[1:])
-        d = fh("/search", ttl=3600, post={"query": q}) or {}
+        # Flathub (HTTP) a aplikácie Fedory (AppStream) naraz — ako GNOME Software / Discover
+        from concurrent.futures import ThreadPoolExecutor
+        with ThreadPoolExecutor(2) as ex:
+            f_hub = ex.submit(fh, "/search", 3600, {"query": q})
+            f_rpm = ex.submit(appstream_rpm, q)
+            d, rpm = f_hub.result() or {}, f_rpm.result()
         apps = [card(h, inst) for h in d.get("hits", [])[:40] if h.get("type", "desktop-application") in ("desktop-application", "console-application")]
-        rpm = [x for x in search(q) if x["source"] == "rpm"][:8] if a[0] == "search" else []
-        return {"apps": apps, "rpm": rpm}
+        return {"query": q, "apps": apps, "rpm": rpm[:8]}
     if a[0] == "app" and len(a) > 1:
         aid = a[1]
         det = fh("/appstream/" + aid, ttl=24 * 3600) or {}

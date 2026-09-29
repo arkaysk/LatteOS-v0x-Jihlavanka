@@ -30,3 +30,11 @@ a klienti kreslia cez llvmpipe a zdieľanú pamäť.
 
 Doplnkové nastavenia pre VM (nie sú súčasťou patchu, pozri ROADMAP F1):
 `cursor { no_hardware_cursors = true }` a pri problémoch `LIBGL_ALWAYS_SOFTWARE=1` pre klientov.
+
+## noctalia-bar-blur-capsules.patch (29. 9. 2026, latte-lab)
+
+Noctalia (5.2, 9287a78) žiada kompozitor (ext-background-effect) o rozmazanie **celého obdĺžnika lišty**,
+aj keď je lišta priehľadná (`background_opacity = 0`) a vidieť iba ostrovy → po celej šírke mliečny pás.
+Záplata: pri priehľadnej lište rozmaže iba zaoblené obdĺžniky kapsúl a prepočíta ich po každom rozložení.
+Vhodná na upstream PR. Použitie: `git apply` v zdroji Noctalie (alebo forku latte-shell), potom
+`LATTE_SHELL_SRC=<zdroj> setup/f1/build-latte-shell.sh`.

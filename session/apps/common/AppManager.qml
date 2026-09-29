@@ -88,7 +88,14 @@ Item {
           onDone: (out) => { try { app.installedApps = JSON.parse(out); } catch (e) {} } }
     Cmd { id: updProc; command: ["latte-apps", "updates"]
           onDone: (out) => { app.updatesLoading = false; try { app.updatesList = JSON.parse(out); } catch (e) {} } }
-    Cmd { id: searchProc; onDone: (out) => { app.searching = false; try { const r = JSON.parse(out); app.results = r.apps || []; app.searchRpm = r.rpm || []; } catch (e) { app.results = []; app.searchRpm = []; } } }
+    // odpoveď na starší dotaz (písanie pokračovalo) sa zahodí; backend vracia dotaz v poli „query“
+    Cmd { id: searchProc; onDone: (out) => {
+              let r = null; try { r = JSON.parse(out); } catch (e) {}
+              if (r && r.query !== undefined && r.query !== app.query.trim()) return;
+              if (!r && app.searchPending) return;              // zrušené kvôli novému dotazu
+              app.searching = false; app.results = r ? (r.apps || []) : []; app.searchRpm = r ? (r.rpm || []) : [];
+              if (app.searchPending) { app.searchPending = false; app.doSearch(); } } }
+    property bool searchPending: false
     Cmd { id: storeProc; command: ["latte-apps", "store", "home"]; onDone: (out) => { try { app.store = JSON.parse(out); } catch (e) { app.store = { error: true }; } } }
     Cmd { id: catProc; onDone: (out) => { try { const r = JSON.parse(out); app.categoryApps = app.categoryPage > 1 ? app.categoryApps.concat(r.apps) : r.apps; } catch (e) {} } }
     Cmd { id: appProc; onDone: (out) => { try { const r = JSON.parse(out); if (r && r.id === app.appPageId) app.appPage = r; } catch (e) {} } }
@@ -138,7 +145,10 @@ Item {
     function doSearch() {
         if (query.trim().length < 2) { results = []; return; }
         appPage = null; category = "";
-        searching = true; searchProc.command = ["latte-apps", "store", "search", query.trim()]; searchProc.running = true;
+        searching = true;
+        // bežiaci proces Quickshell nereštartuje (running = true nič nespraví) → zrušiť a spustiť po jeho skončení
+        if (searchProc.running) { searchPending = true; searchProc.running = false; return; }
+        searchProc.command = ["latte-apps", "store", "search", query.trim()]; searchProc.running = true;
     }
     function install(src, id, name) {
         if (src === "flatpak") openPlan(id, name, true);        // inštalácia až po schválení Setup Planu

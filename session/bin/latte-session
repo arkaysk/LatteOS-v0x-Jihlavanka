@@ -29,6 +29,12 @@ if [ -r "$ucfg/locale" ]; then set -a; . "$ucfg/locale"; set +a; fi
 mkdir -p "$HOME/.local/share/flatpak/exports/share/applications" 2>/dev/null
 # jednotné okenné tlačidlá aj v aplikáciách s vlastnou hlavičkou (GTK, libadwaita, Firefox): – □ ✕ vpravo
 gsettings set org.gnome.desktop.wm.preferences button-layout "appmenu:minimize,maximize,close" 2>/dev/null || true
+# stupeň zvolený používateľom (šálka › Stupeň výkonu → ~/.config/latteos/tier) platí pre celú reláciu:
+# Hyprland ho číta sám (latte/mode.lua), shell a aplikácie LatteOS cez LATTE_TIER
+if [ "$LATTE_MODE" = normal ] && [ -r "$ucfg/tier" ]; then
+    forced="$(tr -dc 'a-z' < "$ucfg/tier")"
+    case "$forced" in plny|standard|usporny|minimalny|softver) LATTE_TIER="$forced" ;; esac
+fi
 chosen_safe=0
 [ "${1:-}" = safe ] && { LATTE_MODE=safe; chosen_safe=1; }
 next=desktop
