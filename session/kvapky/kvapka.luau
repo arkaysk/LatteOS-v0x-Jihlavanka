@@ -35,6 +35,10 @@ local JIT = { { 0, 0 }, { 0.06, -0.04 }, { -0.05, 0.07 }, { 0.08, 0.03 }, { -0.0
               { 0.05, 0.06 }, { -0.04, 0.05 }, { 0.07, -0.06 }, { -0.06, 0.04 }, { 0.04, -0.07 },
               { 0.03, 0.05 }, { -0.05, -0.03 }, { 0.06, 0.02 }, { -0.03, -0.06 }, { 0.05, 0.04 },
               { -0.06, 0.03 }, { 0.02, -0.05 }, { 0.04, 0.06 }, { -0.04, -0.04 }, { 0.06, -0.02 } }
+-- guľôčok v lište je najviac SLOTS (musí sedieť so session/kvapky/sloty.py); pri viac oknách je posledná guľôčka
+-- „ďalšie okná“ a otvorí prehľad všetkých okien (Super+Tab), takže žiadne okno neostane nedostupné
+local SLOTS = 48
+local function overflow() return #wins > SLOTS end
 local ZIG = { 0, 0.46, 0.12, 0.52, 0.04, 0.38, 0.18, 0.5 }   -- cik-cak strapca v páse pod oknom (násobky r)
 local hot = nil          -- aplikácia, ktorej strapec je pod myšou (rozvinutý)
 local hot_gen = 0
@@ -81,8 +85,8 @@ local last_spans = {}                    -- kľúč → stred strapca (x od hlav
 function layout()
     local groups, first = {}, {}
     for i, w in ipairs(wins) do
-        if i > 20 then break end
-        local k = group_key(w)
+        if i > SLOTS then break end
+        local k = (overflow() and i == SLOTS) and "~viac" or group_key(w)
         if not groups[k] then groups[k] = {}; first[#first + 1] = k end
         table.insert(groups[k], i)
     end
@@ -96,7 +100,7 @@ function layout()
         local idx = groups[key]
         local m = #idx
         local r = (paska and 24 or R0) * math.max(0.72, 1 - 0.07 * (m - 1))
-        local row = tight or m == 1 or key == hot
+        local row = tight or m == 1 or key == hot or m > #OFFS    -- nad 20 okien jednej aplikácie rad, nie veža
         if key == hot and not tight then r = paska and 24 or R0 end
         if tight then r = math.min(r, 23) end
         if row and tight and m > 1 then
@@ -129,6 +133,23 @@ function layout()
             end
             u = ax + hi * r + r + 12
         end
+    end
+    -- veľa okien: šnúra sa musí zmestiť po kraj obrazovky (lišta rastie od hlavy doprava) — všetky guľôčky sa
+    -- zmenšia a priblížia rovnakým pomerom (čím viac ikier, tým menšie; goo ich pri tom zlieva)
+    if mon then
+        local side = tostring(fact.side or "dole")
+        local len = (side == "vlavo" or side == "vpravo") and mon.height or mon.width
+        local avail = len * (1 - (tonumber(fact.pos) or 0.4)) - 24
+        if u > avail and u > 0 then
+            local f = math.max(avail / u, 0.25)
+            for _, e in pairs(lay) do e.x = e.x * f; e.ax = e.ax * f; e.y = e.y * math.max(f, 0.5); e.r = e.r * math.max(f, 0.5) end
+            u = u * f
+        end
+    end
+    if overflow() and lay[SLOTS] then          -- „ďalšie okná“ ostane plná guľôčka, aj keď sa ostatné zmenšili
+        lay[SLOTS].icon = "preferences-system-windows"
+        lay[SLOTS].r = math.max(lay[SLOTS].r, R0 * 0.8)
+        lay[SLOTS].y = 0
     end
     for i, e in pairs(lay) do
         e.dim = hidden[i] and 1 or 0
@@ -175,6 +196,8 @@ on("bead_drop", function(k)
 end)
 on("fact:tight", function() layout() end)
 on("fact:mode", function() layout() end)
+on("fact:pos", function() layout() end)     -- šnúra sa zmestí po kraj podľa miesta hlavy
+on("fact:side", function() layout() end)
 on("hover", function(k)
     local w = wins[(k or 0) + 1]
     hot_gen = hot_gen + 1
@@ -210,13 +233,17 @@ local function win_eval(fn, i)
 end
 on("pick", function(k)
     local i = (k or 0) + 1
+    if overflow() and i == SLOTS then
+        run("noctalia", { "msg", "panel-toggle", "latteos/overview:panel" })
+        return
+    end
     if wins[i] then win_eval("toggle_by", i) end
 end)
 
 -- pravý klik: ponuka okna (apps/ponuka.qml) pri kurzore, pre to okno (najprv dostane fokus)
 on("win_menu", function(k)
     local i = (k or 0) + 1
-    if not wins[i] then return end
+    if not wins[i] or (overflow() and i == SLOTS) then return end
     win_eval("focus_by", i)
     -- poloha ponuky = kurzor v čase kliku, priamo od Hyprlandu (JSON); fakty scény sem prišli neskoro (ponuka vľavo hore)
     run("hyprctl", { "-j", "cursorpos" }, function(out)

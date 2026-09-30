@@ -28,7 +28,12 @@ ako samostatná vrstva (layer-shell) nad jej lištou.
   vypínač a ponuka Vypnúť
 - **lišta je uväznená váhou**: guľôčky pri lište sedia na okraji s meniskom (široká „voda“ pod celou šnúrou),
   strapce z nich rastú hore, ale celý hrozen sa od okraja fyzicky neoddelí — iba ťahaním
-- **až 20 okien** v lište (strapce ich zhustia); koliesko nad lištou v plávajúcom režime prepína iba okná na
+- **48 guľôčok okien** (30. 9., predtým 20): nad 48 oknami je posledná guľôčka „ďalšie okná“ a otvorí prehľad
+  všetkých okien (Super+Tab), takže žiadne okno neostane nedostupné. Šnúra sa vždy zmestí po kraj obrazovky: pri
+  veľa oknách sa všetky guľôčky zmenšia a priblížia. Počet mení `python3 session/kvapky/sloty.py N` (guľôčky v goo
+  tele musia byť vypísané — pleamar v `body` nedovolí `repeat` ani `for`) spolu so `SLOTS` v kvapka.luau. Do limitu
+  sa rátajú iba okná — hlava, Hodiny, vypínač ani kvapôčky upozornení nie. Cena prázdneho slotu ~0,15 % jadra
+  (20 → 12,5 %, 48 → 16,7 %, 96 → 19,4 % bez okien). Pôvodne: **až 20 okien** v lište (strapce ich zhustia); koliesko nad lištou v plávajúcom režime prepína iba okná na
   ploche, bez minimalizovaných (cez Wayland sa pri tom ukázala celá skrytá plocha `special:minimized` a nové okná
   sa otvárali na nej — vyzerali ako nespustené); LatteOS túto plochu pri prepnutí okna vždy zavrie
 - **páska ako v niri** (30. 9.): v páske sa nič neminimalizuje — pri prepnutí do pásky sa minimalizované okná vrátia
