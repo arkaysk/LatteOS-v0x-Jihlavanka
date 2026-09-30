@@ -418,9 +418,11 @@ local function watch_notes()
     end)
 end
 
--- ── spúšťač (vyteká z hodiniek: ľavý klik alebo kláves Win) ─────────────────────────────────────────────
--- Hľadanie v aplikáciách (služba apps), súboroch (fd), na webe (predvolený vyhľadávač) a otázka pre AI (webové
--- čety, ktoré vezmú otázku z adresy); záložky s obľúbenými aplikáciami, ktoré si používateľ pomenuje sám.
+-- ── spúšťač (1. 10., náčrt používateľa): vyteká z TimeGoo (ľavý klik alebo kláves Win) ────────────────────────
+-- Pole s ikonou režimu — AI, aplikácie, súbory, web, Linux príkaz; pod ním obsah režimu; riadok režimu (záložky
+-- obľúbených, služba a model AI, vyhľadávač…); úplne dole úzky riadok počasia. Prevzaté z klasického LatteOS: AI cez
+-- `latte-ai` (Nastavenia › Softvér › AI: Ollama, domáci server, cloud s kľúčom, webové čety), kontrola nebezpečných
+-- príkazov z Text Baru (plugin textbar/cmd.luau), terminál `latte-terminal`.
 -- Nastavenia: ~/.config/latteos/spustac.json (logika nevie zapisovať súbory → `latte-kvapky uloz spustac`).
 local ENGINES = {
     { id = "google", name = "Google", url = "https://www.google.com/search?q=%s" },
@@ -430,46 +432,80 @@ local ENGINES = {
     { id = "ecosia", name = "Ecosia", url = "https://www.ecosia.org/search?q=%s" },
     { id = "brave", name = "Brave Search", url = "https://search.brave.com/search?q=%s" },
 }
--- čety, ktoré otázku prevezmú z adresy (?q=); Gemini to nevie, preto tu nie je
-local AIS = {
-    { id = "chatgpt", name = "ChatGPT", url = "https://chatgpt.com/?q=%s" },
-    { id = "claude", name = "Claude", url = "https://claude.ai/new?q=%s" },
-    { id = "perplexity", name = "Perplexity", url = "https://www.perplexity.ai/search?q=%s" },
-    { id = "copilot", name = "Copilot", url = "https://copilot.microsoft.com/?q=%s" },
-    { id = "mistral", name = "Le Chat", url = "https://chat.mistral.ai/chat?q=%s" },
-    { id = "google-ai", name = "Google AI", url = "https://www.google.com/search?udm=50&q=%s" },
+-- režimy v poradí scény (fact smode); ikona AI je v scéne text „Ai“ (náčrt)
+local MODES = {
+    { id = "ai", name = "AI", icon = "starred-symbolic", hint = "Ask AI anything…" },
+    { id = "apps", name = "Applications", icon = "system-search-symbolic", hint = "Search apps…" },
+    { id = "files", name = "Files", icon = "folder-symbolic", hint = "Search files…" },
+    { id = "web", name = "Web", icon = "web-browser-symbolic", hint = "Search the web…" },
+    { id = "cmd", name = "Linux command", icon = "utilities-terminal-symbolic", hint = "Run a command…" },
+}
+-- služby AI na výber (latte-ai set …); web = odpoveď v prehliadači s prihlásením, bez kľúča
+local AI_PRESETS = {
+    { name = "Claude (web)", provider = "web", key = "web", value = "claude" },
+    { name = "ChatGPT (web)", provider = "web", key = "web", value = "chatgpt" },
+    { name = "Perplexity (web)", provider = "web", key = "web", value = "perplexity" },
+    { name = "Copilot (web)", provider = "web", key = "web", value = "copilot" },
+    { name = "Ollama", provider = "lokalne" },
+    { name = "Home server", provider = "domaci" },
+    { name = "Claude (API key)", provider = "cloud", key = "cloud", value = "anthropic" },
+    { name = "ChatGPT (API key)", provider = "cloud", key = "cloud", value = "openai" },
+    { name = "Gemini (API key)", provider = "cloud", key = "cloud", value = "gemini" },
+    { name = "Mistral (API key)", provider = "cloud", key = "cloud", value = "mistral" },
 }
 local HOME = nil                                    -- domovský priečinok (printenv, nižšie)
-local MAX_TABS = 4                                 -- používateľove záložky (+ Hľadať = 5 v scéne)
+local MAX_TABS = 5
 local apps, by_id = {}, {}
-local cfg = { engine = "google", ai = { chatgpt = true, claude = true, perplexity = true }, tabs = {} }
+local cfg = { engine = "google", mode = 1, tabs = {}, cmds = {} }
 local cfg_file = nil
 local pin_ids = { "latteos-subory", "org.mozilla.firefox", "latteos-nastavenia", "latteos-aplikacie" }
-local hits, file_hits, favs = {}, {}, {}
+local hits, file_hits, favs, places = {}, {}, {}, {}
 local renaming_tab = nil
 local ctx_actions = {}
+local chip_do = {}                                  -- čip → { pick = fn, menu = fn }
+local confirm_cmd = nil                             -- nebezpečný príkaz čaká na druhý Enter
+local ai = {}                                       -- latte-ai status (provider, target, model, ok, web, disabled)
+local conv = {}                                     -- rozhovor s AI, najstarší prvý: { role, content }
+local paint_chips                                   -- (nižšie)
 
 local function fill(s, vars) return (s:gsub("{(%w+)}", function(k) return vars[k] or "" end)) end
 local function urlencode(s)
     return (s:gsub("[^%w%-%._~]", function(c) return string.format("%%%02X", string.byte(c)) end))
 end
 local function engine() for _, e in ipairs(ENGINES) do if e.id == cfg.engine then return e end end return ENGINES[1] end
+local function mode_id() return (MODES[(tonumber(fact.smode) or 1) + 1] or MODES[2]).id end
+local function tilde(path) return (path:gsub("^" .. (HOME or "~"):gsub("%p", "%%%0"), "~")) end
 
 local function save_cfg()
     run("latte-kvapky", { "uloz", "spustac", json.encode(cfg) })
 end
 
--- ── záložky a obľúbené ──
-local function paint_tabs()
-    local out = { { name = tr("Search") } }
-    for _, t in ipairs(cfg.tabs) do out[#out + 1] = { name = t.name } end
-    model.tabs = out
-    if (tonumber(fact.tab) or 0) > #cfg.tabs then fact.tab = 0 end
+-- ── kontextové a rozbaľovacie ponuky: položky { label, on, off, run } ──
+local function menu(items)
+    ctx_actions = {}
+    local out = {}
+    for i, it in ipairs(items) do
+        if i > 10 then break end
+        out[#out + 1] = { label = it.label, on = it.on and 1 or 0, off = it.off == true }
+        ctx_actions[#ctx_actions + 1] = it.run or function() end
+    end
+    model.ctx = out
+    fact.ctx_hot = -1
+    fact.ctx_open = #out > 0
 end
+on("ctx_pick", function(k) local f = ctx_actions[(k or 0) + 1]; if f then f() end end)
+local function has(list, id) for i, v in ipairs(list) do if v == id then return i end end return nil end
+local function move(list, i, d)
+    local j = i + d
+    if j < 1 or j > #list then return end
+    list[i], list[j] = list[j], list[i]
+end
+
+-- ── obľúbené v záložke ──
 local function paint_favs()
     favs = {}
     local out = {}
-    local t = cfg.tabs[tonumber(fact.tab) or 0]
+    local t = cfg.tabs[tonumber(fact.tab) or 1]
     if t then
         for _, id in ipairs(t.apps or {}) do
             local a = by_id[id]
@@ -479,12 +515,42 @@ local function paint_favs()
     model.favs = out
 end
 
--- ── hľadanie ──
+-- ── Linux príkaz: nebezpečné príkazy chcú druhý Enter (zoznam z Text Baru klasického LatteOS) ──
+local DANGER_WORDS = {
+    sudo = true, pkexec = true, su = true, doas = true,
+    rm = true, rmdir = true, shred = true, truncate = true, srm = true, unlink = true,
+    dd = true, wipefs = true, fdisk = true, sfdisk = true, parted = true, blkdiscard = true,
+    kill = true, killall = true, pkill = true, poweroff = true, reboot = true, shutdown = true, halt = true,
+}
+local DANGER = {
+    "mkfs", "%-delete", "chmod%s+%-[%a]*R", "chown%s+%-[%a]*R",
+    ">%s*/dev/[sn]", ">%s*/etc/", ">%s*/boot/", ">%s*/usr/",
+    "%f[%w]mv%s.-%s/[%a]*%s*$",
+    "dnf%s+remove", "dnf%s+erase", "dnf%s+autoremove", "rpm%s+%-e", "flatpak%s+uninstall", "flatpak%s+remove",
+    "systemctl%s+stop", "systemctl%s+disable", "systemctl%s+mask", "systemctl%s+poweroff", "systemctl%s+reboot",
+    "git%s+reset%s+%-%-hard", "git%s+clean%s", "git%s+push%s.-%-%-force", "git%s+push%s.-%-f%f[%W]",
+    "|%s*s?h%f[%W]", "|%s*bash", "|%s*zsh", ":%(%)%s*{",
+}
+local function dangerous(cmd)
+    for seg in string.gmatch(cmd .. ";", "(.-)[;&|`(\n]") do
+        local w = string.match(seg, "^[%s$]*([%w%._/%-]+)")
+        if w then
+            w = string.match(w, "([^/]+)$")
+            if DANGER_WORDS[w] or string.find(w, "^mkfs") then return true end
+        end
+    end
+    for _, p in ipairs(DANGER) do if string.find(cmd, p) then return true end end
+    return false
+end
+
+-- ── obsah podľa režimu ──
+local function note(s) text.note = s end
 local function paint_hits()
     local q = text.query or ""
     local ql = q:lower()
+    local m = mode_id()
     hits = {}
-    if ql ~= "" then
+    if m == "apps" and ql ~= "" then
         local starts, inside = {}, {}
         for _, a in ipairs(apps) do
             local n = (a.name or ""):lower()
@@ -493,35 +559,63 @@ local function paint_hits()
         end
         for _, list in ipairs({ starts, inside }) do
             for _, a in ipairs(list) do
-                if #hits < 4 then hits[#hits + 1] = { kind = "app", name = a.name, sub = tr("Application"), icon = a.icon, app = a } end
+                if #hits < 5 then hits[#hits + 1] = { kind = "app", name = a.name, sub = tr("Application"), icon = a.icon, app = a } end
             end
         end
         -- kvapky widgetov: napíš napr. „hlas“ → Hlasitosť; klik ju pridá na okraj (alebo odoberie)
         for _, w in ipairs(widget_rows(ql)) do
-            if #hits < 6 then
+            if #hits < 7 then
                 hits[#hits + 1] = { kind = "wdg", name = w.name, sub = w.on and tr("Drop · shown") or tr("Drop"), icon = w.icon, id = w.id }
             end
         end
-        for _, f in ipairs(file_hits) do
-            if #hits < 7 then
+        -- to isté inde: prepne režim a text ostane
+        hits[#hits + 1] = { kind = "jump", to = 2, name = fill(tr("Search files for “{q}”"), { q = q }), sub = tr("Files"), icon = "folder" }
+        hits[#hits + 1] = { kind = "jump", to = 3, name = fill(tr("Search the web for “{q}”"), { q = q }), sub = engine().name, icon = "internet-web-browser" }
+        if not ai.disabled then
+            hits[#hits + 1] = { kind = "jump", to = 0, name = fill(tr("Ask AI: {q}"), { q = q }), sub = tr("AI"), icon = "dialog-question" }
+        end
+        note(tr("Nothing found"))
+    elseif m == "files" then
+        local list = ql ~= "" and file_hits or places
+        for _, f in ipairs(list) do
+            if #hits < 10 then
                 local name = f.path:match("([^/]+)/?$") or f.path
-                local where = f.path:gsub("^" .. (HOME or "~"):gsub("%p", "%%%0"), "~")
-                hits[#hits + 1] = { kind = "file", name = name .. "   " .. where, sub = f.dir and tr("Folder") or tr("File"),
-                                    icon = f.dir and "folder" or "text-x-generic", path = f.path }
+                local sub = (ql == "" and tilde(f.path)) or tilde(f.path:match("^(.*)/[^/]*$") or f.path)
+                hits[#hits + 1] = { kind = "file", name = f.name or name, sub = sub,
+                                    icon = f.dir and "folder" or "text-x-generic", path = f.path, dir = f.dir }
             end
         end
-        local e = engine()
-        hits[#hits + 1] = { kind = "web", name = fill(tr("Search the web: {q}"), { q = q }), sub = e.name,
-                            icon = "internet-web-browser", url = e.url:format(urlencode(q)) }
-        for _, ai in ipairs(AIS) do
-            if cfg.ai[ai.id] and #hits < 11 then
-                hits[#hits + 1] = { kind = "ai", name = fill(tr("Ask {ai}: {q}"), { ai = ai.name, q = q }), sub = tr("AI"),
-                                    icon = "dialog-question", url = ai.url:format(urlencode(q)) }
+        note(ql ~= "" and tr("Nothing found") or tr("Type a file or folder name. Enter opens it; right click opens the folder it is in."))
+    elseif m == "web" and ql ~= "" then
+        local first = engine()
+        local order = { first }
+        for _, e in ipairs(ENGINES) do if e ~= first then order[#order + 1] = e end end
+        for _, e in ipairs(order) do
+            hits[#hits + 1] = { kind = "web", name = fill(tr("Search “{q}”"), { q = q }), sub = e.name,
+                                icon = "internet-web-browser", url = e.url:format(urlencode(q)) }
+        end
+    elseif m == "web" then
+        note(tr("Type what to look for. Enter searches with your search engine; choose it below."))
+    elseif m == "cmd" then
+        local cmd = q:gsub("^%s+", "")
+        if cmd ~= "" then
+            local bad = dangerous(cmd)
+            hits[#hits + 1] = { kind = "cmd", cmd = cmd, name = cmd, icon = bad and "dialog-warning" or "utilities-terminal",
+                                warn = bad, sub = bad and (confirm_cmd == cmd and tr("Enter again to run") or tr("Careful: changes the system")) or tr("Run in terminal") }
+        end
+        for _, c in ipairs(cfg.cmds) do
+            if #hits < 10 and c ~= cmd and (ql == "" or c:lower():find(ql, 1, true)) then
+                hits[#hits + 1] = { kind = "cmd", cmd = c, name = c, sub = tr("Recent"), icon = "utilities-terminal" }
             end
         end
+        note(tr("Type a Linux command. It runs in the terminal; commands that can delete or change the system need a second Enter."))
+    elseif m == "ai" then
+        if ai.disabled then note(tr("AI is turned off. Settings › Software › AI turns it on."))
+        elseif ai.web then note(fill(tr("Ask anything. {ai} answers in the browser, signed in as you. For answers right here, choose a service below."), { ai = ai.target or "AI" }))
+        else note(tr("Ask anything. The answer appears here; the service and the model are chosen below.")) end
     end
     local out = {}
-    for _, h in ipairs(hits) do out[#out + 1] = { name = h.name, sub = h.sub, icon = h.icon } end
+    for _, h in ipairs(hits) do out[#out + 1] = { name = h.name, sub = h.sub, icon = h.icon, warn = h.warn == true } end
     model.hits = out
     if (tonumber(fact.sel) or 0) >= #hits then fact.sel = 0 end
 end
@@ -530,18 +624,20 @@ local fd_gen = 0
 local function search()
     if fact.renaming then fact.typing = false; return end
     local q = text.query or ""
+    local was = fact.typing
     fact.typing = q ~= ""
-    if q ~= "" and (tonumber(fact.tab) or 0) > 0 then fact.tab = 0 end   -- písanie v záložke = hľadanie
+    if was ~= fact.typing and mode_id() == "apps" and paint_chips then paint_chips() end
     fact.sel = 0
+    if confirm_cmd and confirm_cmd ~= q:gsub("^%s+", "") then confirm_cmd = nil end
     file_hits = {}
     paint_hits()
-    -- súbory: fd po krátkej pauze v písaní (nie po každom písmene), iba ak je čo hľadať
+    -- súbory: fd po krátkej pauze v písaní (nie po každom písmene)
     fd_gen = fd_gen + 1
     local gen = fd_gen
-    if #q >= 2 and HOME then
+    if mode_id() == "files" and #q >= 2 and HOME then
         after(220, function()
             if gen ~= fd_gen then return end
-            run("fd", { "--ignore-case", "--max-results", "3", "--max-depth", "6", "--absolute-path", "--", q, HOME }, function(out)
+            run("fd", { "--ignore-case", "--max-results", "10", "--max-depth", "6", "--absolute-path", "--", q, HOME }, function(out)
                 if gen ~= fd_gen then return end
                 file_hits = {}
                 for line in (out or ""):gmatch("[^\n]+") do
@@ -557,24 +653,253 @@ on("sel_move", function(d)
     if #hits == 0 then return end
     fact.sel = math.max(0, math.min(#hits - 1, (tonumber(fact.sel) or 0) + (tonumber(d) or 0)))
 end)
+-- priečinky domova (pri prázdnom poli v režime súborov)
+local function load_places()
+    if not HOME then return end
+    run("fd", { "--max-depth", "1", "--type", "d", "--absolute-path", ".", HOME }, function(out)
+        places = { { path = HOME, dir = true, name = tr("Home") } }
+        local list = {}
+        for line in (out or ""):gmatch("[^\n]+") do list[#list + 1] = line:gsub("/$", "") end
+        table.sort(list, function(a, b) return a:lower() < b:lower() end)
+        for _, p in ipairs(list) do places[#places + 1] = { path = p, dir = true } end
+        paint_hits()
+    end)
+end
 
+-- ── AI: rozhovor cez latte-ai (bubliny: najnovšia navrchu, text zalomený do ~56 znakov) ──
+local function wrap(s, width)
+    s = s:gsub("\r", ""):gsub("%*%*", ""):gsub("__", ""):gsub("`", "")
+    local out = {}
+    for para in (s .. "\n"):gmatch("(.-)\n") do
+        para = para:gsub("^#+%s*", ""):gsub("^%s*[%*%-]%s+", "• ")
+        local line = ""
+        for word in para:gmatch("%S+") do
+            if line == "" then line = word
+            elseif (utf8.len(line) or #line) + 1 + (utf8.len(word) or #word) <= width then line = line .. " " .. word
+            else out[#out + 1] = line; line = word end
+        end
+        out[#out + 1] = line
+    end
+    while #out > 0 and out[#out] == "" do table.remove(out) end
+    return table.concat(out, "\n")
+end
+local function paint_chat()
+    local out = {}
+    for i = #conv, math.max(1, #conv - 7), -1 do
+        out[#out + 1] = { txt = wrap(conv[i].content, 56), me = conv[i].role == "user" }
+    end
+    model.chat = out
+    fact.chst = 0
+    paint_hits()
+    if paint_chips then paint_chips() end
+end
+local function ai_status(done)
+    run("latte-ai", { "status" }, function(out)
+        local st = {}
+        for k, v in (out or ""):gmatch("(%w+)=([^\n]*)") do st[k] = v end
+        ai = { provider = st.provider, target = st.target, model = st.model, ok = st.ok == "1",
+               web = st.web == "1", disabled = st.disabled == "1" }
+        if ai.web then ai.target = (st.model ~= "" and st.model) or "AI" end
+        if paint_chips then paint_chips() end
+        paint_hits()
+        if done then done() end
+    end)
+end
+local ai_job = nil                                  -- beží otázka (spawn), klik na kvapku „…“ ju zruší
+on("ai_cancel", function()
+    if ai_job then kill(ai_job); ai_job = nil end
+    fact.ai_wait = false
+    conv[#conv + 1] = { role = "assistant", content = tr("Stopped.") }
+    paint_chat()
+end)
+local function ai_send(q)
+    q = q:gsub("^%s+", ""):gsub("%s+$", "")
+    if q == "" or fact.ai_wait then return end
+    text.query = ""
+    conv[#conv + 1] = { role = "user", content = q }
+    if ai.disabled then
+        conv[#conv + 1] = { role = "assistant", content = tr("AI is turned off. Settings › Software › AI turns it on.") }
+        paint_chat(); return
+    end
+    if ai.web then
+        run("latte-ai", { "open", q })
+        conv[#conv + 1] = { role = "assistant", content = fill(tr("I opened {ai} in the browser with your question."), { ai = ai.target or "AI" }) }
+        paint_chat(); return
+    end
+    paint_chat()
+    fact.ai_wait = true
+    local msgs = {}
+    for i = math.max(1, #conv - 19), #conv do msgs[#msgs + 1] = conv[i] end
+    local lines = {}
+    ai_job = spawn("latte-ai", { "chat", json.encode(msgs) }, function(line) lines[#lines + 1] = line end, function(_, code)
+        if not ai_job then return end                   -- zrušené
+        ai_job = nil
+        fact.ai_wait = false
+        local a = table.concat(lines, "\n"):gsub("%s+$", "")
+        if code ~= 0 or a == "" then
+            a = tr("The AI did not answer.") .. (a ~= "" and ("\n" .. a) or "") .. "\n" .. tr("Settings › Software › AI")
+        end
+        conv[#conv + 1] = { role = "assistant", content = a }
+        paint_chat()
+    end)
+end
+on("bubble_menu", function(k)
+    local i = #conv - (tonumber(k) or 0)
+    local m = conv[i]
+    if not m then return end
+    menu({ { label = tr("Copy"), run = function() pcall(sys.call, "clipboard.set", m.content) end } })
+end)
+
+-- ── riadok režimu: čipy ──
+local function set_chips(list)
+    chip_do = {}
+    local out = {}
+    for _, c in ipairs(list) do
+        out[#out + 1] = { label = c.label .. (c.drop and "  ▾" or ""), on = c.on == true, drop = c.drop == true }
+        chip_do[#chip_do + 1] = c
+    end
+    model.chips = out
+end
+local start_rename
+local function tab_menu(i)
+    menu({
+        { label = tr("Rename"), run = function() start_rename(i) end },
+        { label = tr("Move left"), run = function() if i > 1 then move(cfg.tabs, i, -1); fact.tab = i - 1 end; save_cfg(); paint_chips(); paint_favs() end },
+        { label = tr("Move right"), run = function() if i < #cfg.tabs then move(cfg.tabs, i, 1); fact.tab = i + 1 end; save_cfg(); paint_chips(); paint_favs() end },
+        { label = tr("Delete tab"), run = function() table.remove(cfg.tabs, i); fact.tab = 1; save_cfg(); paint_chips(); paint_favs() end },
+    })
+end
+local function ai_set(pairs_)
+    local n = #pairs_
+    local function step(i)
+        if i > n then ai_status(); return end
+        run("latte-ai", { "set", pairs_[i][1], pairs_[i][2] }, function() step(i + 1) end)
+    end
+    step(1)
+end
+function paint_chips()
+    local m = mode_id()
+    local list = {}
+    if m == "apps" then
+        local cur = tonumber(fact.tab) or 1
+        for i, t in ipairs(cfg.tabs) do
+            list[#list + 1] = { label = t.name, on = i == cur and not fact.typing,
+                pick = function() fact.tab = i; text.query = ""; paint_chips(); paint_favs() end,
+                menu = function() fact.tab = i; paint_chips(); paint_favs(); tab_menu(i) end }
+        end
+        if #cfg.tabs < MAX_TABS then
+            list[#list + 1] = { label = "+", pick = function()
+                cfg.tabs[#cfg.tabs + 1] = { name = tr("New tab"), apps = {} }
+                save_cfg(); fact.tab = #cfg.tabs; paint_chips(); paint_favs(); start_rename(#cfg.tabs)
+            end }
+        end
+    elseif m == "ai" then
+        list[#list + 1] = { label = tr("Settings"), pick = function() run("latte-app", { "nastavenia", "ai" }); fact.dash = false end }
+        local cur = ai.web and ai.target or ({ lokalne = "Ollama", domaci = tr("Home server") })[ai.provider or ""] or ai.target or "AI"
+        list[#list + 1] = { label = cur, drop = true, pick = function()
+            local items = {}
+            for _, p in ipairs(AI_PRESETS) do
+                items[#items + 1] = { label = tr(p.name), run = function()
+                    local sets = { { "provider", p.provider } }
+                    if p.key then sets[#sets + 1] = { p.key, p.value } end
+                    ai_set(sets)
+                end }
+            end
+            menu(items)
+        end }
+        if not ai.web and not ai.disabled then
+            list[#list + 1] = { label = (ai.model and ai.model ~= "") and ai.model or tr("Model"), drop = true, pick = function()
+                run("latte-ai", { "models" }, function(out)
+                    local items = {}
+                    for id in (out or ""):gmatch("([^\t\n]+)[^\n]*") do
+                        if #items < 10 then
+                            items[#items + 1] = { label = id, on = id == ai.model, run = function()
+                                ai_set({ { ai.provider == "cloud" and "cloud_model" or "model", id } })
+                            end }
+                        end
+                    end
+                    if #items == 0 then items[1] = { label = tr("No models found"), off = true } end
+                    menu(items)
+                end)
+            end }
+        end
+        if #conv > 0 then
+            list[#list + 1] = { label = tr("New chat"), pick = function() conv = {}; paint_chat(); paint_chips() end }
+        end
+    elseif m == "files" then
+        list[#list + 1] = { label = tr("Open Files"), pick = function() run("latte-app", { "subory" }); fact.dash = false end }
+    elseif m == "web" then
+        list[#list + 1] = { label = engine().name, drop = true, pick = function()
+            local items = {}
+            for _, e in ipairs(ENGINES) do
+                items[#items + 1] = { label = e.name, on = e.id == cfg.engine, run = function()
+                    cfg.engine = e.id; save_cfg(); paint_chips(); paint_hits()
+                end }
+            end
+            menu(items)
+        end }
+    elseif m == "cmd" then
+        list[#list + 1] = { label = tr("Open terminal"), pick = function() run("latte-terminal", {}); fact.dash = false end }
+        if #cfg.cmds > 0 then
+            list[#list + 1] = { label = tr("Clear history"), pick = function() cfg.cmds = {}; save_cfg(); paint_chips(); paint_hits() end }
+        end
+    end
+    set_chips(list)
+end
+on("chip_pick", function(k) local c = chip_do[(k or 0) + 1]; if c and c.pick then c.pick() end end)
+on("chip_menu", function(k) local c = chip_do[(k or 0) + 1]; if c and c.menu then c.menu() end end)
+
+local function paint_modes()
+    local out = {}
+    for _, m in ipairs(MODES) do out[#out + 1] = { name = tr(m.name), icon = m.icon } end
+    model.modes = out
+end
+local function paint_mode()
+    text.hint = tr((MODES[(tonumber(fact.smode) or 1) + 1] or MODES[2]).hint)
+    paint_chips()
+    if mode_id() == "ai" then ai_status() end
+    search()
+end
+on("fact:smode", function(v)
+    cfg.mode = tonumber(v) or 1
+    save_cfg()
+    fact.wx_detail = false
+    paint_mode()
+end)
+
+-- ── otvorenie riadkov ──
 local function launch(a)
     if a and a.exec then pcall(sys.call, "apps.launch", a.exec) end
+    fact.dash = false
+end
+local function run_cmd(cmd)
+    if dangerous(cmd) and confirm_cmd ~= cmd then confirm_cmd = cmd; paint_hits(); return end
+    confirm_cmd = nil
+    local i = has(cfg.cmds, cmd)
+    if i then table.remove(cfg.cmds, i) end
+    table.insert(cfg.cmds, 1, cmd)
+    while #cfg.cmds > 10 do table.remove(cfg.cmds) end
+    save_cfg()
+    -- terminál ostane otvorený, kým ho používateľ nezavrie Enterom (ako Text Bar)
+    run("latte-terminal", { "sh", "-c", cmd .. "; echo; read -r -p '" .. tr("[LatteOS] Enter closes the terminal…"):gsub("'", "") .. " ' _" })
+    text.query = ""
     fact.dash = false
 end
 local function open_hit(i)
     local h = hits[(i or 0) + 1]
     if not h then return end
     if h.kind == "wdg" then widget_toggle(h.id); paint_hits(); return end
+    if h.kind == "jump" then fact.smode = h.to; return end
     if h.kind == "app" then launch(h.app)
+    elseif h.kind == "cmd" then run_cmd(h.cmd)
     elseif h.kind == "file" then run("xdg-open", { h.path }); fact.dash = false
     else run("xdg-open", { h.url }); fact.dash = false end
 end
 on("open_hit", open_hit)
 on("fav_open", function(i) launch(favs[(i or 0) + 1]) end)
 
--- ── premenovanie záložky: pole hľadania slúži ako názov (Enter uloží, Esc zruší) ──
-local function start_rename(t)
+-- ── premenovanie záložky: pole slúži ako názov (Enter uloží, Esc zruší) ──
+function start_rename(t)
     renaming_tab = t
     fact.renaming = true
     fact.typing = false
@@ -591,50 +916,19 @@ on("query_submit", function(v)
         renaming_tab = nil
         fact.renaming = false
         text.query = ""
-        paint_tabs()
+        paint_chips()
         return
     end
+    if mode_id() == "ai" then ai_send(text.query or ""); return end
     open_hit(tonumber(fact.sel) or 0)
-end)
-on("tab_pick", function(k)
-    if fact.renaming then renaming_tab = nil; fact.renaming = false; text.query = "" end
-    paint_favs()
-    if (tonumber(k) or 0) == 0 then focus("query") end
-end)
-on("tab_add", function()
-    if #cfg.tabs >= MAX_TABS then return end
-    cfg.tabs[#cfg.tabs + 1] = { name = tr("New tab"), apps = {} }
-    save_cfg(); paint_tabs()
-    fact.tab = #cfg.tabs
-    paint_favs()
-    start_rename(#cfg.tabs)
 end)
 on("fact:dash", function(open)
     if not open then
-        renaming_tab = nil; fact.renaming = false; text.query = ""; fact.ctx_open = false
+        renaming_tab = nil; fact.renaming = false; text.query = ""; fact.ctx_open = false; confirm_cmd = nil
+    elseif mode_id() == "ai" then ai_status()
     end
 end)
 
--- ── kontextové ponuky (pravý klik): položky { label, on, run } ──
-local function menu(items)
-    ctx_actions = {}
-    local out = {}
-    for i, it in ipairs(items) do
-        if i > 10 then break end
-        out[#out + 1] = { label = it.label, on = it.on and 1 or 0, off = it.off == true }
-        ctx_actions[#ctx_actions + 1] = it.run
-    end
-    model.ctx = out
-    fact.ctx_hot = -1
-    fact.ctx_open = #out > 0
-end
-on("ctx_pick", function(k) local f = ctx_actions[(k or 0) + 1]; if f then f() end end)
-local function has(list, id) for i, v in ipairs(list) do if v == id then return i end end return nil end
-local function move(list, i, d)
-    local j = i + d
-    if j < 1 or j > #list then return end
-    list[i], list[j] = list[j], list[i]
-end
 on("hit_menu", function(k)
     local h = hits[(k or 0) + 1]
     if not h then return end
@@ -652,23 +946,16 @@ on("hit_menu", function(k)
         items[#items + 1] = { label = tr("Open containing folder"), run = function()
             run("xdg-open", { h.path:match("^(.*)/[^/]*$") or h.path }); fact.dash = false
         end }
-    elseif h.kind == "web" then
-        for _, e in ipairs(ENGINES) do
-            items[#items + 1] = { label = fill(tr("Search engine: {name}"), { name = e.name }), on = e.id == cfg.engine, run = function()
-                cfg.engine = e.id; save_cfg(); paint_hits()
-            end }
-        end
-    elseif h.kind == "ai" then
-        for _, ai in ipairs(AIS) do
-            items[#items + 1] = { label = ai.name, on = cfg.ai[ai.id] == true, run = function()
-                cfg.ai[ai.id] = not cfg.ai[ai.id] or nil; save_cfg(); paint_hits()
-            end }
-        end
+    elseif h.kind == "cmd" and h.sub == tr("Recent") then
+        items[#items + 1] = { label = tr("Remove from history"), run = function()
+            local i = has(cfg.cmds, h.cmd)
+            if i then table.remove(cfg.cmds, i); save_cfg(); paint_hits() end
+        end }
     end
     menu(items)
 end)
 on("fav_menu", function(k)
-    local t = cfg.tabs[tonumber(fact.tab) or 0]
+    local t = cfg.tabs[tonumber(fact.tab) or 1]
     local a = favs[(k or 0) + 1]
     if not t or not a then return end
     local i = has(t.apps, a.id)
@@ -676,16 +963,6 @@ on("fav_menu", function(k)
         { label = tr("Remove from this tab"), run = function() if i then table.remove(t.apps, i) end; save_cfg(); paint_favs() end },
         { label = tr("Move left"), run = function() if i then move(t.apps, i, -1) end; save_cfg(); paint_favs() end },
         { label = tr("Move right"), run = function() if i then move(t.apps, i, 1) end; save_cfg(); paint_favs() end },
-    })
-end)
-on("tab_menu", function(k)
-    local i = tonumber(k) or 0
-    if not cfg.tabs[i] then return end
-    menu({
-        { label = tr("Rename"), run = function() start_rename(i) end },
-        { label = tr("Move left"), run = function() if i > 1 then move(cfg.tabs, i, -1); fact.tab = i - 1 end; save_cfg(); paint_tabs(); paint_favs() end },
-        { label = tr("Move right"), run = function() if i < #cfg.tabs then move(cfg.tabs, i, 1); fact.tab = i + 1 end; save_cfg(); paint_tabs(); paint_favs() end },
-        { label = tr("Delete tab"), run = function() table.remove(cfg.tabs, i); fact.tab = 0; save_cfg(); paint_tabs(); paint_favs() end },
     })
 end)
 
@@ -696,7 +973,8 @@ local function load_cfg()
         local ok, c = pcall(json.decode, out or "")
         if ok and type(c) == "table" and type(c.tabs) == "table" then
             cfg.engine = c.engine or cfg.engine
-            if type(c.ai) == "table" then cfg.ai = c.ai end
+            cfg.mode = tonumber(c.mode) or cfg.mode
+            cfg.cmds = type(c.cmds) == "table" and c.cmds or {}
             cfg.tabs = {}
             for _, t in ipairs(c.tabs) do
                 if type(t) == "table" and #cfg.tabs < MAX_TABS then
@@ -707,7 +985,9 @@ local function load_cfg()
             cfg.tabs = { { name = tr("Favorites"), apps = pin_ids }, { name = tr("Games"), apps = {} } }
             save_cfg()
         end
-        paint_tabs(); paint_favs()
+        paint_modes()
+        if (tonumber(fact.smode) or 1) ~= cfg.mode then fact.smode = cfg.mode end
+        paint_mode(); paint_favs(); load_places()
     end)
 end
 
@@ -1055,20 +1335,73 @@ local function wx_glyph(c)
     if (c >= 71 and c <= 77) or c == 85 or c == 86 then return "❄" end
     return "☁"
 end
+-- predpoveď na 7 dní (hodinová aj denná); riadok počasia v spúšťači ukazuje zvolenú variantu, Detaily 8 stĺpcov
+local wxd, wx_place = nil, ""
+local WDAY = { "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" }
+local function weekday(date)                          -- „2026-10-01“ → 0 nedeľa … 6 sobota (Sakamoto)
+    local y, m, d = date:match("(%d+)-(%d+)-(%d+)")
+    y, m, d = tonumber(y), tonumber(m), tonumber(d)
+    if not y then return 0 end
+    local t = { 0, 3, 2, 5, 0, 3, 5, 1, 4, 6, 2, 4 }
+    if m < 3 then y = y - 1 end
+    return (y + y // 4 - y // 100 + y // 400 + t[m] + d) % 7
+end
+local function deg(v) return math.floor((v or 0) + 0.5) .. "°" end
+local function paint_wx()
+    text.wx_place = wx_place ~= "" and wx_place or tr("Weather")
+    local d = wxd
+    if not d or not d.daily or not d.hourly then text.wx_sum = tr("No forecast yet"); model.wx = {}; return end
+    local view = tonumber(fact.wx_view) or 0
+    local dl, hr = d.daily, d.hourly
+    local rain = function(i) local p = dl.precipitation_probability_max and dl.precipitation_probability_max[i]; return p and ("   ☂ " .. p .. " %") or "" end
+    if view == 0 then
+        text.wx_sum = wx_glyph(d.current.weather_code or 3) .. " " .. deg(d.current.temperature_2m) .. "    ↑" .. deg(dl.temperature_2m_max[1]) .. " ↓" .. deg(dl.temperature_2m_min[1]) .. rain(1)
+    elseif view == 1 then
+        text.wx_sum = wx_glyph(dl.weather_code[2] or 3) .. "    ↑" .. deg(dl.temperature_2m_max[2]) .. " ↓" .. deg(dl.temperature_2m_min[2]) .. rain(2)
+    else
+        local parts = {}
+        for i = 1, math.min(7, #dl.time) do parts[#parts + 1] = wx_glyph(dl.weather_code[i] or 3) .. deg(dl.temperature_2m_max[i]) end
+        text.wx_sum = table.concat(parts, "  ")
+    end
+    -- Detaily: dnes od tejto hodiny po 3 h, zajtra 0:00…21:00, týždeň po dňoch
+    local out = {}
+    if view == 2 then
+        for i = 1, math.min(8, #dl.time) do
+            out[#out + 1] = { label = tr(WDAY[weekday(dl.time[i]) + 1]), glyph = wx_glyph(dl.weather_code[i] or 3),
+                              temp = deg(dl.temperature_2m_max[i]) .. " / " .. deg(dl.temperature_2m_min[i]) }
+        end
+    else
+        local now = tonumber((d.current.time or ""):match("T(%d+)")) or 0
+        local first = view == 0 and now + 1 or 25
+        for n = 0, 7 do
+            local i = first + n * 3
+            if hr.time[i] then
+                out[#out + 1] = { label = hr.time[i]:match("T(%d+:%d+)") or "", glyph = wx_glyph(hr.weather_code[i] or 3), temp = deg(hr.temperature_2m[i]) }
+            end
+        end
+    end
+    model.wx = out
+end
+on("wx_pick", function() paint_wx() end)
 local function weather()
     run("cat", { "/var/lib/latteos/greeter/greeter.conf" }, function(conf)
         conf = conf or ""
         local lat = conf:match('lat%s*=%s*"([%d.-]+)"') or "48.74"
         local lon = conf:match('lon%s*=%s*"([%d.-]+)"') or "19.15"
         local place = conf:match('place%s*=%s*"([^"]*)"') or ""
+        wx_place = place:match("^[^,]+") or place
         run("curl", { "-s", "-m", "8", "https://api.open-meteo.com/v1/forecast?latitude=" .. lat .. "&longitude=" .. lon
-                      .. "&current=temperature_2m,weather_code" }, function(out)
+                      .. "&current=temperature_2m,weather_code&hourly=temperature_2m,weather_code"
+                      .. "&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max"
+                      .. "&timezone=auto&forecast_days=8" }, function(out)
             local ok, d = pcall(json.decode, out or "")
             if ok and d and d.current then
                 local t = math.floor((d.current.temperature_2m or 0) + 0.5)
                 st.temp = t; wpaint()
                 text.weather = wx_glyph(d.current.weather_code or 3) .. "  " .. t .. " °C" .. (place ~= "" and (" · " .. place) or "")
+                wxd = d
             end
+            paint_wx()
         end)
     end)
 end

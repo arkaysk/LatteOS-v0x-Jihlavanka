@@ -44,6 +44,9 @@ samostatný tekutý prvok.
    Pravý klik v Goobare má zmysel iba na **guľôčkach okien** (ponuka okna, ako vo Windows).
 9. **Okno sa zjaví tam, kde je kvapka:** okno/panel z kvapky vyrastie presne nad miestom kvapky na okraji
    (kvapky sa dajú presúvať — musí to platiť kdekoľvek).
+10. **Goo má vlastný vzhľad ponúk** (1. 10.): ponuky a okná z kvapiek sa **nepreberajú vizuálne** z klasického
+   LatteOS (panely Noctalie). Preberá sa **funkcia** (latte-ai, pohoda, Text Bar, kalendár…), vzhľad je Goo —
+   karta z kvapky, tekuté kapsuly, goo bubliny.
 
 ---
 
@@ -85,8 +88,9 @@ samostatný tekutý prvok.
 - Digitálny čas a dátum. (Upozornenia sa presúvajú do DaNoGoo — 1. 10.; dnes ešte kvapôčky na Hodinách.)
 - **Ľavý klik alebo kláves Win** = **spúšťač**: kvapka vystúpi kolmo, stane sa **trčiacim uchom v rohu okna**
   (s časom), okno z nej vyrastie. Zatvorenie (klik inde, Esc) = okno sa zloží do ucha, ucho odkvapne domov.
-- **Pravý klik** = časové menu (1. 10.): záložka **Čas** z klasického LatteOS (`latteos/time:panel cas`) —
-  časové pásma, stopky, minútka, budíky, počasie — a **well-being**.
+- **Pravý klik** = časové menu: časové pásma, stopky, minútka, budíky a **well-being**. Dočasne otvára záložku
+  **Čas** z klasického LatteOS (`latteos/time:panel cas`) — **používateľovi sa nepáči** (1. 10.), treba vlastný
+  vzhľad Goo (pravidlo 10); funkcie z nej prevziať.
 - **Well-being = existujúca Digitálna pohoda** z klasického LatteOS (`session/apps/pohoda.qml`, inšpirovaná
   Serpantinumom; dáta `~/.local/share/latteos/pohoda/RRRR-MM-DD.json`, podrobnosti v Monitore › Čas v
   aplikáciách). Nič nové sa nevymýšľa: v Kvapkách beží tiež (predtým ju `latte-kvapky` vypínal), v záložke Čas
@@ -101,16 +105,33 @@ samostatný tekutý prvok.
   Bobule = kapsuly (ikona, aplikácia, nadpis); ľavý klik otvorí, pravý iba ak má upozornenie akcie, odhodenie = zahodiť.
   Farby: systémové/varovné červeno-kávové, nedôležité obyčajná káva, aplikácie podľa ikony — **otvorené:**
   čistá farba ikony, alebo káva zafarbená do nej; zatvárať aj Esc / klikom mimo?
-- **Pravý klik** = záložka **Kalendár** z klasického LatteOS (`latteos/time:panel kalendar`): mesiac, plánovač
-  udalostí, úlohy, prepojené kalendáre (Google, iCloud, CalDAV, ICS cez Noctaliu).
+- **Pravý klik** = kalendár: mesiac, plánovač udalostí, úlohy, prepojené kalendáre (Google, iCloud, CalDAV, ICS cez
+  Noctaliu) — funkcia zo záložky Kalendár klasického LatteOS, **vzhľad Goo** (pravidlo 10).
+- **Farby upozornení** (1. 10., voľba A): **čistá farba ikony aplikácie** (nie káva dofarbená).
+- **Hrozno zavrie** klik na DaNoGoo, **Esc aj klik mimo** (1. 10.).
 
-### 4.3 Spúšťač (okno z Hodín)
-- **Hľadanie** (jedno pole): aplikácie · súbory (`fd`) · web (predvolený vyhľadávač) · otázka pre **AI** (webové
-  čety, ktoré prevezmú otázku z adresy: ChatGPT, Claude, Perplexity, Copilot, Le Chat, Google AI). Vpravo druh riadku.
-- **Záložky** s obľúbenými aplikáciami, **pomenované používateľom** (Programy, Hry…); „+“ pridá.
-- Pravý klik: aplikácia → pridať do záložky; web → vyhľadávač; AI → ktoré čety; záložka → premenovať/posunúť/odstrániť.
-- Bez textu: upozornenia a nápoveda. Zámerne **nie** katalóg aplikácií ani prepínanie okien (to robí Goobar).
-- Nastavenia: `~/.config/latteos/spustac.json`.
+### 4.3 Spúšťač (okno z Hodín) — náčrt používateľa 1. 10.
+Karta z ucha TimeGoo, zhora nadol:
+- **Pole s ikonou režimu.** Ikona na začiatku poľa mení obsah: **Ai** (prompt), **lupa** (aplikácie), **priečinok**
+  (súbory, `fd`), **web** (vyhľadávač), **terminál** (Linux príkaz). Klik na ikonu = z nej vytečie tekutý stĺpec
+  režimov; koliesko nad ikonou ich točí; Tab = ďalší (doplnok). Režim si pamätá (`spustac.json`).
+- **Obsah režimu:**
+  - aplikácie: bez textu obľúbené zvolenej záložky (6 × 3), s textom aplikácie + kvapky widgetov + riadky
+    „hľadať v súboroch / na webe / opýtať sa AI“ (prepnú režim, text ostane);
+  - súbory: bez textu priečinky domova, s textom `fd` (Enter otvorí, pravý klik = priečinok, v ktorom je);
+  - web: riadok pre každý vyhľadávač, predvolený prvý;
+  - Linux príkaz: beží v `latte-terminal`; nebezpečné príkazy (zoznam z Text Baru) chcú **druhý Enter**; história;
+  - AI: **rozhovor v goo bublinách**, najnovšia navrchu pri poli (používateľ mlieko vľavo, AI káva vpravo,
+    chvostík ku poľu); kým AI píše, pulzuje kvapka „• • •“ (klik = zastaviť); koliesko roluje; pravý klik = kopírovať.
+- **Riadok režimu** (nad počasím): aplikácie → **záložky** obľúbených + „+“ (pravý klik = premenovať/posunúť/odstrániť);
+  AI → **Nastavenia · služba ▾ · model ▾ · Nový rozhovor**; web → vyhľadávač ▾; súbory → Otvoriť Súbory;
+  príkaz → Otvoriť terminál, Vymazať históriu. Rozbaľovacie ponuky sa otvárajú nahor.
+- **AI = `latte-ai`** z klasického LatteOS (Nastavenia › Softvér › AI): webové čety (odpoveď v prehliadači s
+  prihlásením), Ollama, domáci server, cloud s kľúčom (Claude, ChatGPT, Gemini, Mistral). Rozhovor ide ako JSON
+  v argumente (`latte-ai chat '[…]'`), chyba sa vráti na stdout a ukáže v bubline.
+- **Úzky riadok počasia** úplne dole: miesto · **Dnes / Zajtra / Týždeň** (klik prepne súhrn) · **Detaily**
+  (predpoveď v obsahu: dnes a zajtra po 3 h, týždeň po dňoch). Open-Meteo, miesto z greeter.conf.
+- Upozornenia v spúšťači už nie sú (idú do DaNoGoo). Zámerne **nie** katalóg aplikácií ani prepínanie okien (Goobar).
 
 ### 4.4 PowerGoo (vypínač) — vľavo od Hodín
 - Ľavý klik = ponuka (Zamknúť, Odhlásiť, Uspať, Reštartovať, Vypnúť) ako kapsuly zliate do stĺpca; akcie robí Noctalia.
@@ -150,6 +171,8 @@ samostatný tekutý prvok.
 | textúry kvapiek, farby podľa témy | nie — kvapky sú vždy káva (voda/mlieko); textúry (zlato, ónyx, kov, ľad) iba ako návrh na neskôr |
 | ručičkové hodiny + bočné okienko (Marea) | nie — digitálne hodiny v kvapke (30. 9.) |
 | goo guľôčky vnútri dashboardu | nie — nepôsobili dobre (30. 9.) |
+| vzhľad ponúk z klasického LatteOS v Goo (záložka Čas) | nie — Goo má vlastný vzhľad ponúk (1. 10.) |
+| jedno pole hľadá všetko naraz | nahradené ikonou režimu (náčrt 1. 10.) |
 | klik odlepí lištu | nie — odlepí iba ťahanie |
 | celý strapec sa fyzicky oddelí od okraja | nie — strapce sú ťažké, drží ich okraj |
 | minimalizovanie v páske | nie — ako niri (30. 9.) |
@@ -188,7 +211,12 @@ chyby (neaktívne tvary nulovým polomerom); logika nevie zapisovať súbory (`l
 
 ## 7. Otvorené
 
-- DaNoGoo (4.2b), batéria na PowerGoo — rozhodnuté 1. 10., čaká na farby upozornení a zatváranie
+- DaNoGoo (4.2b), batéria na PowerGoo — rozhodnuté 1. 10., ďalšie na rade
+- časové menu TimeGoo a kalendár DaNoGoo vo vzhľade Goo (pravidlo 10) — čaká na náčrt alebo návrh
+- AI: úroveň uvažovania (napr. „High“ z náčrtu) — `latte-ai` ju zatiaľ nepozná
+- **nápad 1. 10.: bubliny četov** ako v Androide (Messenger chat heads) — kontakt ako samostatná kvapka na okraji,
+  klik = rozhovor vyrastie z kvapky. Nie ako ďalší režim spúšťača (preplnené jedno miesto). Cesta: najprv odpoveď
+  na upozornenie priamo z hrozna DaNoGoo (akcia „inline-reply“ v upozorneniach), neskôr Matrix s mostami
 - **Noctalia nemá slovenský katalóg** (`assets/translations/sk.json` nie je ani u autora, je český `cs.json`):
   pri `LANG=sk` prepne na angličtinu a `translations/sk.json` doplnkov nenačíta — nové texty doplnkov LatteOS
   (napr. well-being v záložke Čas) sú preto po anglicky. Riešenie: slovenský katalóg Noctalie (aj pre autora)

@@ -74,7 +74,7 @@ terminálu. Záplata: keď alokácia s modifiermi zlyhá, lineárny buffer (Vulk
 
 ## Základ (30. 9. 2026)
 
-Záplaty 1–5 (`pleamar-hyprland-okna-8bit.patch`) sú na **pleamar 0.2.2** (upstream 7027fa1, jazyk 0.2,
+Záplaty 1–5 (`pleamar-hyprland-okna-8bit.patch`) sú na **pleamar 0.2.3** (upstream 0728337, jazyk 0.2,
 spätne číta 0.1). Prechod z 5f9cd54 (0.1.0) bez konfliktov. Nové zmeny u autora: `latte-upstream`.
 
 ## noctalia-rohova-lista.patch (Noctalia pre plochu Kvapky, setup/lab/noctalia-kvapky.sh)

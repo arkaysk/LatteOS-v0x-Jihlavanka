@@ -15,6 +15,8 @@ Poskytovatelia (~/.config/latteos/ai.toml, píšu ho Nastavenia › Softvér ›
   latte-ai ask OTÁZKA        odpoveď na stdout (bez <think> blokov); pri „web“ otvorí stránku AI
   latte-ai open [OTÁZKA]     otvorí webový chat zvolenej AI (aj s otázkou) v prehliadači
   latte-ai chat SÚBOR.json   rozhovor: [{"role":"user"|"assistant","content":…}, …] → ďalšia odpoveď na stdout
+  latte-ai chat 'JSON'       to isté priamo v argumente (spúšťač plochy Kvapky, logika nevie zapisovať súbory);
+                             chyba ide tiež na stdout, aby ju spúšťač ukázal v bubline
   latte-ai set KĽÚČ HODNOTA  zapíše voľbu do ai.toml (provider, url, model, ssh, cloud, cloud_model)
   latte-ai key SLUŽBA KĽÚČ   uloží API kľúč cloudu
 """
@@ -40,7 +42,7 @@ DEFAULTS = {
                "Odpovedaj stručne a po slovensky, ak sa ťa používateľ pýta po slovensky."),
 }
 CLOUD = {   # predvolené modely a adresy veľkých AI
-    "anthropic": ("https://api.anthropic.com/v1", "claude-sonnet-5"),
+    "anthropic": ("https://api.anthropic.com/v1", "claude-sonnet-5-5"),
     "openai":    ("https://api.openai.com/v1", "gpt-5-mini"),
     "gemini":    ("https://generativelanguage.googleapis.com/v1beta/openai", "gemini-2.5-flash"),
     "mistral":   ("https://api.mistral.ai/v1", "mistral-large-latest"),
@@ -151,7 +153,8 @@ def models(c):
             for m in http(base.rsplit("/v1", 1)[0] + "/api/v0/models", headers=hdr)["data"]:
                 if m.get("type") in ("llm", "vlm"):
                     out.append((m["id"], m.get("state", "")))
-            return out
+            if out:
+                return out
         except Exception:
             pass
     for m in http(base + "/models", headers=hdr)["data"]:
@@ -193,6 +196,9 @@ def ask(c, q, history=None):
 def main(a):
     c = load()
     cmd = a[0] if a else "status"
+    inline = cmd == "chat" and len(a) == 2 and a[1].lstrip().startswith("[")
+    if inline:
+        sys.stderr = sys.stdout
     try:
         if cmd == "status" and c["provider"] in ("web", "ziadna"):
             print("provider=" + c["provider"])
@@ -226,8 +232,11 @@ def main(a):
         elif cmd == "chat" and len(a) == 2 and c["provider"] in ("web", "ziadna"):
             raise RuntimeError("AI je vypnutá (Bez AI)" if c["provider"] == "ziadna" else "Webová AI odpovedá v prehliadači: latte-ai open")
         elif cmd == "chat" and len(a) == 2:
-            with open(a[1], encoding="utf-8") as f:
-                history = json.load(f)
+            if inline:
+                history = json.loads(a[1])
+            else:
+                with open(a[1], encoding="utf-8") as f:
+                    history = json.load(f)
             text, _model = ask(c, "", history)
             print(text)
         elif cmd == "set" and len(a) == 3 and a[1] in DEFAULTS:
