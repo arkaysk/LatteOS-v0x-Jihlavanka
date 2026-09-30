@@ -23,10 +23,6 @@ draw = f'''    // >>> QueenGoo (queengoo.py)
     fact qg_moved = false
     fact qgd.x = 0
     fact qgd.y = 0
-    fact qgp.x = 0
-    fact qgp.y = 0
-    fact qgq.x = 0
-    fact qgq.y = 0
     fact qg_up = false                       // jej okno je otvorené: ostane vystúpená ako ucho v rohu okna
     fact qg_upd = 0                          // softvér: čakajúce aktualizácie (modrá guľka)
     fact qg_hw = 0                           // hardvér: zariadenia, ktoré potrebujú pozornosť (červená guľka)
@@ -49,8 +45,9 @@ draw = f'''    // >>> QueenGoo (queengoo.py)
     let qg.ty = qg.ay + qg.ny * qg.out + clamp(my - qg.ay, -20, 20) * 0.28 * qg.near * abs(qg.py)
     prop qg.x = 0 ~lively
     prop qg.y = 0 ~lively
-    follow qg.x = if(qg_drag and qg_moved, qgp.x + qgq.x, qg.tx)
-    follow qg.y = if(qg_drag and qg_moved, qgp.y + qgq.y, qg.ty)
+    // ťahanie: za kurzorom (cursor.x/y od Hyprlandu)
+    follow qg.x = if(qg_drag and qg_moved, mx, qg.tx)
+    follow qg.y = if(qg_drag and qg_moved, my, qg.ty)
     let qg.r = (30 + 3 * qg.h) * so
     let qg.jit = 0.05 * sin(time * 9 + 5) * qg.h + qg.wob * 0.01
     // základňa na okraji: pri zdvihnutí (okno otvorené) sa stiahne — neostane ostrov; krk sa natiahne a zmizne
@@ -109,11 +106,10 @@ texts = f'''    // >>> QueenGoo texty (queengoo.py)
 '''
 zones = '''    // >>> QueenGoo zóny (queengoo.py)
     zone ellipse qg_hit { at: qg.x, qg.y; radius: 34; cursor: pointer; active: solo }
-    on press qg_hit { qg_drag = true; qg_moved = false; wd.w = W; wd.h = H; qgp.x = pointer.x; qgp.y = pointer.y; qgq.x = 0; qgq.y = 0 }
-    on drag qg_hit while qg_drag { qgq.x = drag.dx; qgq.y = drag.dy }
+    on press qg_hit { qg_drag = true; qg_moved = false; wd.w = W; wd.h = H }
     on press right qg_hit { impulse qg.wob 140; emit qg_open(1) }
     on drag qg_hit while qg_drag and abs(drag.dx) + abs(drag.dy) > 6 { qg_moved = true }
-    on release qg_hit while qg_drag and qg_moved { qgd.x = pointer.x; qgd.y = pointer.y; impulse qg.wob 300; emit qg_drop; qg_moved = false; qg_drag = false }
+    on release qg_hit while qg_drag and qg_moved { qgd.x = mx; qgd.y = my; impulse qg.wob 300; emit qg_drop; qg_moved = false; qg_drag = false }
     on release qg_hit while qg_drag and not qg_moved { qg_drag = false; impulse qg.wob 160; emit qg_open(0) }
     on enter qg_hit { qg.h: 1 }
     on leave qg_hit { qg.h: 0 }
