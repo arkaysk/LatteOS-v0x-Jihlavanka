@@ -47,6 +47,27 @@ function W.setup()
                      float = true, move = { "12", "monitor_h-window_h-72" } })
     hl.window_rule({ name = "latte-z-listy-zariadenia", match = { class = "^org\\.quickshell$", title = "^Správca zariadení — LatteOS$" },
                      float = true, move = { "monitor_w-window_w-12", "monitor_h-window_h-72" } })
+    -- okno z kvapky (plocha Goo, 1. 10., pravidlo 9): kvapka zapíše titulok okna, bod svojho ucha a smer rastu
+    -- (`latte-kvapky miesto`); okno s tým titulkom sa pri otvorení prisunie ROHOM k uchu (App Manager z QueenGoo,
+    -- Správca zariadení…). Záznam platí 10 s, potom sa zahodí.
+    local place_file = (os.getenv("XDG_RUNTIME_DIR") or "/tmp") .. "/latteos/kvapky-miesto"
+    hl.on("window.open", function(w)
+        local f = io.open(place_file, "r")
+        if not f or not w then if f then f:close() end return end
+        local line = f:read("*l") or ""
+        f:close()
+        local title, ax, ay, sx, sy, t = line:match("^(.-)|(%-?%d+)|(%-?%d+)|(%-?%d+)|(%-?%d+)|(%d+)$")
+        if not title then os.remove(place_file) return end
+        if os.time() - tonumber(t) > 10 then os.remove(place_file) return end
+        if w.title ~= title then return end
+        os.remove(place_file)
+        local sw = (type(w.size) == "table" and (w.size.x or w.size[1])) or 800
+        local sh = (type(w.size) == "table" and (w.size.y or w.size[2])) or 600
+        local m = w.monitor
+        local x = (m and m.x or 0) + (tonumber(sx) > 0 and tonumber(ax) or tonumber(ax) - sw)
+        local y = (m and m.y or 0) + (tonumber(sy) > 0 and tonumber(ay) or tonumber(ay) - sh)
+        hl.dispatch(hl.dsp.window.move({ x = math.floor(x), y = math.floor(y), window = "address:" .. w.address }))
+    end)
     -- páska ako v niri: okno sa neminimalizuje, iba odíde z pohľadu (páska sa posunie na ďalšie okno)
     latte = latte or {}
     function latte.tape_on() return W.current == "paska" end
