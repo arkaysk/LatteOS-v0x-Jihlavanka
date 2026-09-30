@@ -58,6 +58,11 @@ samostatný tekutý prvok.
    tepaný kov vygenerovaný; `session/kvapky/textury.py`). Sklenené témy (Latte, Svetlé sklo, drahokamy, mráz, jantár)
    majú **perleťové dúhové okraje** (pleamar `glass` + `dispersion`). Spúšťač je **čiastočne priehľadný**
    (sklo karty podľa materiálu: sklo 80 %, kov 45 %, klasické témy 0 %).
+13. **Okná aplikácií: sklo z Hyprglass** (1. 10., používateľ poslal ukážku „Caelestia + Hyprglass“ z r/unixporn):
+   plugin Hyprland `hyprnux/hyprglass` (BSD-3, stavaný na 0.56.2) — lom na okrajoch, dúhová chromatická aberácia,
+   matné rozmazanie, odlesk. **Iba plocha Goo a sklenené témy** (`session/hypr/latte/sklo.lua`); okná 93 / 87 %,
+   celá obrazovka a herný režim plné a bez skla. Vypnutie `~/.config/latteos/bez-skla`. Okná Goo (spúšťač…) kreslí
+   pleamar — sklo a textúry si robí sám; okná aplikácií kreslí Hyprland.
 14. **Okno z kvapky sa rodí z bubliny** (1. 10.): kvapka, ktorá otvára samostatné okno (QueenGoo, budúce), ho
    **vypľuje do priestoru ako bublinku**, tá sa zväčší a zmení na klasické okno (posúvateľné, zväčšiteľné,
    minimalizovateľné). **Zatvorenie okna = prasknutie bubliny** (inšpirácia: „Burn My Windows“). **Minimalizácia =
@@ -65,12 +70,6 @@ samostatný tekutý prvok.
 15. **Farby guliek upozornení** (1. 10.): **červená = hardvér** (ako „zariadenie potrebuje pozornosť“ v Správcovi
    zariadení), **zelená = sieť**, **modrá = softvér** (aktualizácie); po otvorení okna je vidieť, čo hlási.
 16. **Všetky kvapky sú drag & drop** (1. 10.) — aj Hodiny (TimeGoo) a vypínač (PowerGoo), nielen samostatné kvapky.
-
-13. **Okná aplikácií: sklo z Hyprglass** (1. 10., používateľ poslal ukážku „Caelestia + Hyprglass“ z r/unixporn):
-   plugin Hyprland `hyprnux/hyprglass` (BSD-3, stavaný na 0.56.2) — lom na okrajoch, dúhová chromatická aberácia,
-   matné rozmazanie, odlesk. **Iba plocha Goo a sklenené témy** (`session/hypr/latte/sklo.lua`); okná 93 / 87 %,
-   celá obrazovka a herný režim plné a bez skla. Vypnutie `~/.config/latteos/bez-skla`. Okná Goo (spúšťač…) kreslí
-   pleamar — sklo a textúry si robí sám; okná aplikácií kreslí Hyprland.
 
 ---
 
