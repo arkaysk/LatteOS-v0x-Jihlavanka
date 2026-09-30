@@ -405,7 +405,7 @@ scene Kvapka {
         zone ellipse start_hit { at: sx, s.y; radius: 34; cursor: pointer; active: solo }
         zone ellipse power_hit { at: px, p.y; radius: 19; cursor: pointer; active: solo }
         repeat k in 0..20 {
-            zone box icon_hit.$k { at: (lx + ux.$k + 2 * noise(k * 0.7, time * 0.35) + if(bdrag == k, bdx, 0)), (mid + uy.$k + 2.5 * noise(5 + k * 1.3, time * 0.3) + if(bdrag == k, bdy, 0)); size: ur.$k * 1.6, ur.$k * 1.6; corner: ur.$k * 0.8; cursor: pointer; active: k < n and not free }
+            zone box icon_hit.$k { at: (lx + ux.$k + 2 * noise(k * 0.7, time * 0.35) + if(bdrag == k, bdx, 0)), (mid + uy.$k + 2.5 * noise(5 + k * 1.3, time * 0.3) + if(bdrag == k, bdy, 0)); size: ur.$k * 2, ur.$k * 2; corner: ur.$k; cursor: pointer; active: k < n and not free }
         }
     }
 
@@ -657,7 +657,8 @@ scene Kvapka {
     // sa k nemu prilepí, inde steká a vynorí sa, kde bola. Pustená skôr, než stopka praskne: vráti sa.
     // Ťahanie, ktoré začalo na hrbolčeku s oknom (icon_press), kvapku nepresúva.
     repeat z in 0..2 {
-        on press base.$z { lpress = true; squish: 1 }
+        // (30. 9.) režim prepína iba hlava (v nej je obraz režimu): klik vedľa guľôčky na telo pásku prepol na dlaždice
+        on press base.$z { lpress = z == 1; squish: 1 }
         on press right base.$z { lpress = false; squish: 1 }
         on drag base.$z while not free and not icon_press { pull: clamp(pick(side, 0 - drag.dy, drag.dy, drag.dx, 0 - drag.dx) / 90, -1, 1) ~0ms }
         on drag base.$z while not free and not icon_press and abs(drag.dx) + abs(drag.dy) > 6 { pulling = true }

@@ -88,7 +88,7 @@ ako samostatná vrstva (layer-shell) nad jej lištou.
 - **kvapky na seba pôsobia**: pri vysúvaní sa nakláňajú k susedovi a spájajú ich goo vlákna (vypínač ↔ Štart ↔
   lišta), roztavené s oboma koncami; odtrhnutá lišta vlákno k Štartu natiahne a pretrhne; myš nad kvapkou ju
   nafúkne a susedov k nej pritiahne; stlačenie prebehne vlnou cez susedov
-- **základňa kvapky** (telo a hlava): ľavý klik = režim okien (plávajúce → dlaždice → páska), koliesko nad
+- **základňa kvapky** (telo a hlava): ľavý klik na hlavu = režim okien (na telo nič — klik vedľa guľôčky prepínal) (plávajúce → dlaždice → páska), koliesko nad
   kvapkou = okná (páska = plynulý posun pásky, plávajúce = ďalšie okno zľava doprava, dokola), ťahanie ľavým aj pravým = presun, pravý klik nič
 - **hrbolčeky s oknami** majú vlastné kliky: ľavý = prepnúť na okno, aktívne sa minimalizuje (ako vo Windows;
   minimalizuje LatteOS na special:minimized, Hyprland žiadosť z protokolu ignoruje), pravý = ponuka okna pri
