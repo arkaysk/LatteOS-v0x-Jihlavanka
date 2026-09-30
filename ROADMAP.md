@@ -320,6 +320,17 @@ texty preložiteľné (`translations`). Noctalia beží bez lišty a robí, čo 
       `~/.local/state/latteos/kvapky/noctalia`; téma LatteOS je spoločná (`latte-theme noctalia` pri štarte Noctalie).
       Zdieľané súbory všetkých prostredí (GTK, dconf, mimeapps, kurzor) prehadzuje pri prihlásení a odhlásení
       `latte-profil` — LatteOS nepokazí iné prostredie (napr. Plasmu) a ono nepokazí LatteOS
+- [x] **Kvapky widgetov** (30. 9.): vstavané widgety Noctalie (ovládacie centrum, hlasitosť, sieť, bluetooth, batéria,
+      médiá, systém, počasie, nočné svetlo, profil napájania…) a ikony programov na pozadí (systémová lišta) ako goo
+      kvapky na okrajoch; kliky podľa Noctalie (`widget_gesture_defaults.cpp`), ťahanie k inému okraju, pridanie
+      zo spúšťača. Spúšťač z Hodín (aplikácie, súbory, web, AI čety, pomenované záložky)
+- [ ] **Komunitné doplnky Noctalie ako kvapky** — prieskum 30. 9.: 235 doplnkov (13 oficiálnych, 222 komunitných,
+      `~/.local/state/noctalia/plugins/sources`), 194 widgetov na lištu (121 jednoduchých: ikona Tabler + text +
+      popis; 73 s vlastným `barWidget.render`), ľavý klik 169, pravý 80. Spúšťať ich kód v pleamare nejde:
+      `noctalia.state` (142 widgetov) je stav zdieľaný so službou a panelom doplnku v Noctalii. Cesta: záplata
+      Noctalie — `noctalia msg` hlási ikonu/text/popis widgetov (bar bez zobrazenia) a prijme klik; pleamar ich
+      kreslí ako kvapky (písmo `noctalia-tabler.ttf` + `tabler.json` sú v /usr/share/noctalia/assets/fonts),
+      panely ostávajú Noctalie (`panel-toggle <doplnok>:<panel>`)
 - [ ] Vlastné `app_id` pre aplikácie LatteOS (dnes podľa titulku) a spúšťače LatteOS preložiteľné (`Name=` anglicky
       + `Name[sk]=`; dnes natvrdo po slovensky, rovnako titulky okien)
 - [ ] Slovenský preklad Noctalie doplniť (ovládacie centrum čiastočne po anglicky) a poslať upstream
