@@ -26,7 +26,8 @@ except OSError:
 ICONS = ICONS or "tabler-icons"
 LOGIC_ICONS = ["sparkles", "search", "folder", "world", "terminal-2", "settings", "plus", "message-plus", "folder-open",
                "trash", "sun", "cloud", "sun-low", "cloud-rain", "cloud-snow", "cloud-storm", "cloud-fog", "sun-high",
-               "map-pin", "check", "chevron-down", "chevron-right", "x"]
+               "map-pin", "check", "chevron-down", "chevron-right", "x",
+               "layout-dashboard", "stopwatch", "hourglass", "alarm"]
 
 # ── farby tém (session/themes/make-themes.py) ──
 src = open(os.path.join(HERE, "..", "themes", "make-themes.py")).read()
@@ -144,9 +145,9 @@ a(f'''    // >>> spúšťač (spustac.py)
     let y0 = d0.y + 64
     let yc = d0.y + 454                        // riadok režimu (čipy)
     let yw = d0.y + 496                        // riadok počasia
-    let show_chat = smode == 0 and not wx_detail
-    let show_favs = smode == 1 and not typing and not wx_detail
-    let show_hits = smode > 0 and not wx_detail and not show_favs
+    let show_chat = tview == 0 and smode == 0 and not wx_detail
+    let show_favs = tview == 0 and smode == 1 and not typing and not wx_detail
+    let show_hits = tview == 0 and smode > 0 and not wx_detail and not show_favs
     prop mo = 0 ~springy
     follow mo = if(mode_open and dash, 1, 0)
     prop aiw = 0 ~lively
@@ -178,7 +179,7 @@ a(f'''    let fav_rows = clamp(floor((favs.count + 5) / 6), 1, 2)
     let wxs = d0.x + 34 + wxp.width + 12       // začiatok variantov počasia
     group {{
         opacity: dshow
-        show: dsh > 0.5
+        show: dsh > 0.5 and tview == 0
         // pole: ikona režimu (klik = výber) + text; tenký akcentový okraj
         box {{ at: d0.x + cw / 2, d0.y + 24; size: cw, 48; corner: 14; color: l.acc; opacity: if(renaming, 100%, 75%) }}
         box {{ at: d0.x + cw / 2, d0.y + 24; size: cw - 3, 45; corner: 12.5; color: l.var }}
@@ -189,6 +190,10 @@ a(f'''    let fav_rows = clamp(floor((favs.count + 5) / 6), 1, 2)
         text "{ICON("chevron-down")}" {{ at: d0.x + 41, d0.y + 25; anchor: center; size: 11; color: l.acc; family: "{ICONS}" }}
         text hint {{ at: d0.x + 66, d0.y + 24; anchor: left center; width: cw - 80; lines: 1; size: 15; color: l.dim; opacity: 80%; show: not typing and not renaming; family: "{UI}" }}
         input query {{ at: d0.x + 66, d0.y + 24; width: cw - 80; size: 15; color: l.fg; selection: l.hover; family: "{UI}" }}
+    }}
+    group {{
+        opacity: dshow
+        show: dsh > 0.5
         // riadky: aplikácie, súbory, vyhľadávače, príkazy — karta s ikonou, názvom a popisom pod ním
         repeat k in 0..{NH} {{
             box {{ at: d0.x + cw / 2, y0 + 22 + k * 48; size: cw, 44; corner: 12; color: if(hits.$k.warn, #e07a5f, if(k == sel and typing, l.acc, if(hit_hot == k, l.hover, l.var))); opacity: if(hits.$k.warn, 35%, if(k == sel and typing, 100%, if(hit_hot == k, 100%, 60%))); show: show_hits and k < hits.count }}
@@ -274,7 +279,101 @@ a(f'''        }}
         text pick(if(wx_detail, 1, 0), "Details", "Close") {{ at: d0.x + cw - 30, yw; anchor: right center; size: 12; weight: 500; color: if(wx_hot == 3 or wx_detail, l.acc, l.fg); family: "{UI}" }}
         text pick(if(wx_detail, 1, 0), "{ICON("chevron-right")}", "{ICON("x")}") {{ at: d0.x + cw - 12, yw + 1; anchor: right center; size: 13; color: if(wx_hot == 3 or wx_detail, l.acc, l.dim); family: "{ICONS}" }}
     }}
-    // výber režimu: vyteká z ikony v poli (goo), riadky s ikonou a názvom, zvolený zvýraznený
+''')
+a(f'''    // ── časové menu TimeGoo (pravý klik): tá istá karta z ucha, obsah Prehľad · Stopky · Minútka · Budíky ──
+    let tv = tview == 1 and not wx_detail
+    let tcx = d0.x + cw / 2
+    group {{
+        opacity: dshow
+        show: dsh > 0.5 and tview == 1
+        // hlavička: čas veľkým písmom, dátum a týždeň vpravo
+        text now.time {{ at: d0.x + 2, d0.y + 24; anchor: left center; size: 40; weight: 300; color: l.fg; family: "{UI}" }}
+        text t_date {{ at: d0.x + cw - 2, d0.y + 14; anchor: right center; size: 14; weight: 500; color: l.fg; family: "{UI}" }}
+        text t_week {{ at: d0.x + cw - 2, d0.y + 36; anchor: right center; size: 12; color: l.dim; family: "{UI}" }}
+    }}
+    group {{
+        opacity: dshow
+        show: dsh > 0.5 and tv and ttab == 0
+        // prehľad: digitálna pohoda (klik = podrobnosti v Monitore), svetové hodiny, najbližší budík / minútka
+        box {{ at: tcx, y0 + 74; size: cw, 140; corner: 14; color: if(t_hot == 70, l.hover, l.var); opacity: if(t_hot == 70, 100%, 55%) }}
+        text "{ICON("leaf")}" {{ at: d0.x + 16, y0 + 24; anchor: left center; size: 15; color: l.acc; family: "{ICONS}" }}
+        text "Digital wellbeing today" {{ at: d0.x + 38, y0 + 24; anchor: left center; size: 12.5; weight: 600; color: l.dim; family: "{UI}" }}
+        text wb_total {{ at: d0.x + cw - 16, y0 + 24; anchor: right center; size: 13; weight: 600; color: l.fg; family: "{UI}" }}
+        repeat k in 0..3 {{
+            text wbl.$k.name {{ at: d0.x + 16, y0 + 56 + k * 30; anchor: left center; width: 170; lines: 1; size: 13; color: l.fg; show: k < wbl.count; family: "{UI}" }}
+            box {{ from: d0.x + 196, y0 + 53 + k * 30; size: cw - 290, 6; corner: 3; color: l.line; opacity: 60%; show: k < wbl.count }}
+            box {{ from: d0.x + 196, y0 + 53 + k * 30; size: (cw - 290) * wbl.$k.frac, 6; corner: 3; color: l.acc; show: k < wbl.count }}
+            text wbl.$k.dur {{ at: d0.x + cw - 16, y0 + 56 + k * 30; anchor: right center; size: 12; color: l.dim; show: k < wbl.count; family: "{UI}" }}
+        }}
+        text "Nothing yet today" {{ at: d0.x + 16, y0 + 56; anchor: left center; size: 13; color: l.dim; show: wbl.count < 1; family: "{UI}" }}
+        text "{ICON("world")}" {{ at: d0.x + 2, y0 + 170; anchor: left center; size: 15; color: l.dim; family: "{ICONS}" }}
+        text "World clocks" {{ at: d0.x + 24, y0 + 170; anchor: left center; size: 12.5; weight: 600; color: l.dim; family: "{UI}" }}
+        repeat k in 0..4 {{
+            box {{ at: d0.x + 144 + (k - 2 * floor(k / 2)) * 296, y0 + 204 + floor(k / 2) * 46; size: 288, 40; corner: 10; color: l.var; opacity: 55%; show: k < zones.count }}
+            text zones.$k.city {{ at: d0.x + 14 + (k - 2 * floor(k / 2)) * 296, y0 + 204 + floor(k / 2) * 46; anchor: left center; width: 150; lines: 1; size: 13.5; color: l.fg; show: k < zones.count; family: "{UI}" }}
+            text zones.$k.diff {{ at: d0.x + 214 + (k - 2 * floor(k / 2)) * 296, y0 + 204 + floor(k / 2) * 46; anchor: right center; size: 11.5; color: l.dim; show: k < zones.count; family: "{UI}" }}
+            text zones.$k.hm {{ at: d0.x + 274 + (k - 2 * floor(k / 2)) * 296, y0 + 204 + floor(k / 2) * 46; anchor: right center; size: 16; weight: 500; color: l.fg; show: k < zones.count; family: "{UI}" }}
+        }}
+        text "Add cities in Settings › Date, time and location." {{ at: d0.x + 2, y0 + 204; anchor: left center; size: 13; color: l.dim; show: zones.count < 1; family: "{UI}" }}
+        text "{ICON("alarm")}" {{ at: d0.x + 2, y0 + 340; anchor: left center; size: 15; color: l.acc; show: t_has_next; family: "{ICONS}" }}
+        text t_next {{ at: d0.x + 24, y0 + 340; anchor: left center; width: cw - 30; lines: 1; size: 13; color: l.fg; show: t_has_next; family: "{UI}" }}
+    }}
+    group {{
+        opacity: dshow
+        show: dsh > 0.5 and tv and ttab == 1
+        // stopky: veľké číslice, tlačidlá štart/pauza (akcent), medzičas, vynulovať; medzičasy pod nimi
+        text t_sw {{ at: tcx, y0 + 76; anchor: center; size: 60; weight: 300; color: l.fg; family: "{UI}" }}
+        ellipse {{ at: tcx, y0 + 168; radius: 32; color: if(t_hot == 1, mix(l.acc, l.fg, 0.15), l.acc) }}
+        text pick(if(sw_run, 1, 0), "{ICON("player-play")}", "{ICON("player-pause")}") {{ at: tcx, y0 + 169; anchor: center; size: 24; color: l.onacc; family: "{ICONS}" }}
+        ellipse {{ at: tcx - 90, y0 + 168; radius: 24; color: if(t_hot == 2, l.hover, l.var); opacity: if(sw_run, 100%, 45%) }}
+        text "{ICON("flag")}" {{ at: tcx - 90, y0 + 169; anchor: center; size: 18; color: l.fg; opacity: if(sw_run, 100%, 45%); family: "{ICONS}" }}
+        ellipse {{ at: tcx + 90, y0 + 168; radius: 24; color: if(t_hot == 3, l.hover, l.var) }}
+        text "{ICON("refresh")}" {{ at: tcx + 90, y0 + 169; anchor: center; size: 18; color: l.fg; family: "{ICONS}" }}
+        repeat k in 0..5 {{
+            box {{ at: tcx, y0 + 236 + k * 26; size: 320, 24; corner: 8; color: l.var; opacity: if(k == 0, 55%, 0); show: k < laps.count }}
+            text laps.$k.label {{ at: tcx - 146, y0 + 236 + k * 26; anchor: left center; size: 12.5; color: l.dim; show: k < laps.count; family: "{UI}" }}
+            text laps.$k.time {{ at: tcx + 146, y0 + 236 + k * 26; anchor: right center; size: 13.5; weight: 500; color: l.fg; show: k < laps.count; family: "{UI}" }}
+        }}
+    }}
+    group {{
+        opacity: dshow
+        show: dsh > 0.5 and tv and ttab == 2
+        // minútka: kruh (koliesko nad ním mení minúty, klik spustí / pozastaví), predvoľby, zrušiť
+        arc {{ at: tcx, y0 + 122; radius: 86; span: 360deg; width: 8; color: l.line; opacity: 60% }}
+        arc {{ at: tcx, y0 + 122; radius: 86; span: t_frac * 360deg; rotate: t_frac * 180deg; width: 8; color: l.acc }}
+        text t_timer {{ at: tcx, y0 + 116; anchor: center; size: 40; weight: 300; color: l.fg; family: "{UI}" }}
+        text pick(if(t_run, 1, 0), "Scroll to set · click to start", "Click to pause") {{ at: tcx, y0 + 152; anchor: center; size: 11.5; color: l.dim; family: "{UI}" }}
+''' + "".join(f'''        box {{ at: tcx + ({k} - 2.5) * 80, y0 + 256; size: 72, 32; corner: 16; color: if(t_hot == {30 + k}, l.hover, l.var); opacity: if(t_hot == {30 + k}, 100%, 80%) }}
+        text "{m} min" {{ at: tcx + ({k} - 2.5) * 80, y0 + 256; anchor: center; size: 12.5; weight: 500; color: l.fg; family: "{UI}" }}
+''' for k, m in enumerate([1, 5, 10, 15, 25, 45])) + f'''        box {{ at: tcx, y0 + 312; size: 120, 32; corner: 16; color: if(t_hot == 21, l.hover, l.var); opacity: if(t_hot == 21, 100%, 80%); show: t_active }}
+        text "Cancel" {{ at: tcx, y0 + 312; anchor: center; size: 12.5; weight: 500; color: l.fg; show: t_active; family: "{UI}" }}
+    }}
+    group {{
+        opacity: dshow
+        show: dsh > 0.5 and tv and ttab == 3
+        // budíky: zoznam s prepínačom a odstránením; nový budík myšou (koliesko nad hodinou a minútou, Pridať)
+        repeat k in 0..5 {{
+            box {{ at: tcx, y0 + 22 + k * 50; size: cw, 44; corner: 12; color: l.var; opacity: 60%; show: k < alarms.count }}
+            text alarms.$k.hm {{ at: d0.x + 16, y0 + 22 + k * 50; anchor: left center; size: 20; weight: 500; color: if(alarms.$k.on, l.fg, l.dim); show: k < alarms.count; family: "{UI}" }}
+            text alarms.$k.label {{ at: d0.x + 92, y0 + 22 + k * 50; anchor: left center; width: cw - 200; lines: 1; size: 12.5; color: l.dim; show: k < alarms.count; family: "{UI}" }}
+            box {{ at: d0.x + cw - 76, y0 + 22 + k * 50; size: 42, 24; corner: 12; color: if(alarms.$k.on, l.acc, l.line); show: k < alarms.count }}
+            ellipse {{ at: d0.x + cw - 76 + if(alarms.$k.on, 9, -9), y0 + 22 + k * 50; radius: 9; color: if(alarms.$k.on, l.onacc, l.var); show: k < alarms.count }}
+            text "{ICON("x")}" {{ at: d0.x + cw - 24, y0 + 23 + k * 50; anchor: center; size: 15; color: if(t_hot == 60 + k, l.acc, l.dim); show: k < alarms.count; family: "{ICONS}" }}
+        }}
+        text "No alarms. They ring even when this menu is closed." {{ at: d0.x + 2, y0 + 22; anchor: left center; size: 13; color: l.dim; show: alarms.count < 1; family: "{UI}" }}
+        text "New alarm" {{ at: d0.x + 2, y0 + 300; anchor: left center; size: 12.5; weight: 600; color: l.dim; family: "{UI}" }}
+        box {{ at: tcx - 34, y0 + 300; size: 60, 44; corner: 12; color: if(t_hot == 81, l.hover, l.var) }}
+        box {{ at: tcx + 34, y0 + 300; size: 60, 44; corner: 12; color: if(t_hot == 82, l.hover, l.var) }}
+        text t_alh {{ at: tcx - 34, y0 + 300; anchor: center; size: 22; weight: 500; color: l.fg; family: "{UI}" }}
+        text ":" {{ at: tcx, y0 + 298; anchor: center; size: 22; color: l.dim; family: "{UI}" }}
+        text t_alm {{ at: tcx + 34, y0 + 300; anchor: center; size: 22; weight: 500; color: l.fg; family: "{UI}" }}
+        text "Scroll to set" {{ at: tcx, y0 + 334; anchor: center; size: 11; color: l.dim; family: "{UI}" }}
+        box {{ at: d0.x + cw - 60, y0 + 300; size: 116, 36; corner: 18; color: l.acc; opacity: if(t_hot == 40, 85%, 100%) }}
+        text "{ICON("alarm-plus")}" {{ at: d0.x + cw - 104, y0 + 300; anchor: left center; size: 15; color: l.onacc; family: "{ICONS}" }}
+        text "Add" {{ at: d0.x + cw - 82, y0 + 300; anchor: left center; size: 13; weight: 600; color: l.onacc; family: "{UI}" }}
+    }}
+''')
+a(f'''    // výber režimu: vyteká z ikony v poli (goo), riadky s ikonou a názvom, zvolený zvýraznený
     body {{
         color: l.var
         rim: 14%
@@ -314,7 +413,7 @@ a(f'''        }}
     }}
     // spúšťač: klikateľné miesta (navrchu)
     zone box dash_card {{ at: dt.x, dt.y; size: dw, dh; active: dash }}
-    zone box mode_btn {{ at: d0.x + 30, d0.y + 24; size: 50, 36; cursor: pointer; active: dash }}
+    zone box mode_btn {{ at: d0.x + 30, d0.y + 24; size: 50, 36; cursor: pointer; active: dash and tview == 0 }}
     repeat k in 0..{NH} {{
         zone box hit_row.$k {{ at: d0.x + cw / 2, y0 + 22 + k * 48; size: cw, 44; cursor: pointer; active: dash and show_hits and k < hits.count and not mode_open }}
     }}
@@ -336,6 +435,23 @@ a(f'''        }}
         zone box wxs_hit.$k {{ at: wxs + k * 62 + 29, yw; size: 60, 28; cursor: pointer; active: dash }}
     }}
     zone box wxd_hit {{ at: d0.x + cw - 44, yw; size: 88, 28; cursor: pointer; active: dash }}
+    // časové menu: klikateľné miesta (kód tlačidla v t_do, koliesko v t_wheel)
+    zone box t_wb {{ at: tcx, y0 + 74; size: cw, 140; cursor: pointer; active: dash and tv and ttab == 0 }}
+    zone ellipse t_sw_go {{ at: tcx, y0 + 168; radius: 32; cursor: pointer; active: dash and tv and ttab == 1 }}
+    zone ellipse t_sw_lap {{ at: tcx - 90, y0 + 168; radius: 24; cursor: pointer; active: dash and tv and ttab == 1 and sw_run }}
+    zone ellipse t_sw_reset {{ at: tcx + 90, y0 + 168; radius: 24; cursor: pointer; active: dash and tv and ttab == 1 }}
+    zone ellipse t_ring {{ at: tcx, y0 + 122; radius: 92; cursor: pointer; active: dash and tv and ttab == 2 }}
+    repeat k in 0..6 {{
+        zone box t_pre.$k {{ at: tcx + (k - 2.5) * 80, y0 + 256; size: 72, 32; cursor: pointer; active: dash and tv and ttab == 2 }}
+    }}
+    zone box t_cancel {{ at: tcx, y0 + 312; size: 120, 32; cursor: pointer; active: dash and tv and ttab == 2 and t_active }}
+    repeat k in 0..5 {{
+        zone box t_al_on.$k {{ at: d0.x + cw - 76, y0 + 22 + k * 50; size: 46, 30; cursor: pointer; active: dash and tv and ttab == 3 and k < alarms.count }}
+        zone ellipse t_al_del.$k {{ at: d0.x + cw - 24, y0 + 22 + k * 50; radius: 14; cursor: pointer; active: dash and tv and ttab == 3 and k < alarms.count }}
+    }}
+    zone box t_al_h {{ at: tcx - 34, y0 + 300; size: 60, 44; cursor: pointer; active: dash and tv and ttab == 3 }}
+    zone box t_al_m {{ at: tcx + 34, y0 + 300; size: 60, 44; cursor: pointer; active: dash and tv and ttab == 3 }}
+    zone box t_al_add {{ at: d0.x + cw - 60, y0 + 300; size: 116, 36; cursor: pointer; active: dash and tv and ttab == 3 }}
     // rozbalený výber režimu: klik mimo neho ho zavrie (pod jeho riadkami)
     zone box mode_away {{ at: W / 2, H / 2; size: W, H; active: dash and mode_open }}
     repeat k in 0..5 {{
@@ -392,8 +508,94 @@ if "on press rec_hit" not in s: once("    // rozhovor: koliesko roluje, pravý k
      f"        on leave rec_hit.$k {{ rec_hot = -1 }}\n"
      f"    }}\n"
      "    // rozhovor: koliesko roluje, pravý klik na bublinu = kopírovať\n")
+# časové menu TimeGoo (raz): deklarácie, kliky na TimeGoo, pravidlá tlačidiel
+once("    event time_menu ->                       // pravý klik na Hodiny: časové menu\n",
+     """    event time_menu ->                       // pravý klik na Hodiny: časové menu
+    // časové menu TimeGoo (1. 10.): tá istá karta z ucha; logika plní a stráži minútku a budíky (v Goo nie je
+    // widget hodín Noctalie, ktorý to robí v klasickom LatteOS)
+    fact tview = 0                           // 0 spúšťač, 1 časové menu
+    fact ttab = 0                            // 0 prehľad, 1 stopky, 2 minútka, 3 budíky
+    text t_date = ""
+    text t_week = ""
+    text t_sw = "00:00,0"
+    text t_timer = "05:00"
+    text t_next = ""
+    text t_alh = "07"
+    text t_alm = "00"
+    text wb_total = ""
+    fact t_frac = 0                          // minútka: zostáva / celkom (kruh)
+    fact t_run = false                       // minútka beží
+    fact t_active = false                    // minútka beží alebo je pozastavená
+    fact sw_run = false
+    fact t_has_next = false
+    fact t_hot = -1
+    model wbl max 3 { name: text; dur: text; frac: number }
+    model zones max 4 { city: text; hm: text; diff: text }
+    model laps max 5 { label: text; time: text }
+    model alarms max 5 { hm: text; label: text; on: bool }
+    event t_do ->
+    event t_wheel ->
+""")
+once("    on press start_hit { toggle dash; pmenu = false }\n    on press right start_hit { dash = false; pmenu = false; emit time_menu }\n",
+     "    on press start_hit { dash = not (dash and tview == 0); tview = 0; pmenu = false }\n    on press right start_hit { dash = not (dash and tview == 1); tview = 1; ttab = 0; wx_detail = false; pmenu = false; emit time_menu }\n")
+once("    on dash_toggle { toggle dash; pmenu = false }\n", "    on dash_toggle { dash = not (dash and tview == 0); tview = 0; pmenu = false }\n")
+once("    on change dash while dash { focus query }\n", "    on change dash while dash and tview == 0 { focus query }\n    on change tview while dash and tview == 0 { focus query }\n")
+if "on press t_sw_go" not in s:
+    rules = """    // časové menu: tlačidlá (kód do logiky), koliesko nad minútkou a nad hodinou / minútou nového budíka
+    on press t_wb { emit t_do(70) }
+    on press t_sw_go { emit t_do(1) }
+    on press t_sw_lap { emit t_do(2) }
+    on press t_sw_reset { emit t_do(3) }
+    on press t_ring { emit t_do(20) }
+    on scroll t_ring { emit t_wheel(if(wheel > 0, 1, 0)) }
+    on press t_cancel { emit t_do(21) }
+    on press t_al_add { emit t_do(40) }
+    on scroll t_al_h { emit t_wheel(if(wheel > 0, 3, 2)) }
+    on scroll t_al_m { emit t_wheel(if(wheel > 0, 5, 4)) }
+    on press t_al_h { emit t_wheel(3) }
+    on press t_al_m { emit t_wheel(5) }
+    on enter t_wb { t_hot = 70 }
+    on leave t_wb { t_hot = -1 }
+    on enter t_sw_go { t_hot = 1 }
+    on leave t_sw_go { t_hot = -1 }
+    on enter t_sw_lap { t_hot = 2 }
+    on leave t_sw_lap { t_hot = -1 }
+    on enter t_sw_reset { t_hot = 3 }
+    on leave t_sw_reset { t_hot = -1 }
+    on enter t_cancel { t_hot = 21 }
+    on leave t_cancel { t_hot = -1 }
+    on enter t_al_add { t_hot = 40 }
+    on leave t_al_add { t_hot = -1 }
+    on enter t_al_h { t_hot = 81 }
+    on leave t_al_h { t_hot = -1 }
+    on enter t_al_m { t_hot = 82 }
+    on leave t_al_m { t_hot = -1 }
+    repeat k in 0..6 {
+        on press t_pre.$k { emit t_do(30 + k) }
+        on enter t_pre.$k { t_hot = 30 + k }
+        on leave t_pre.$k { t_hot = -1 }
+    }
+    repeat k in 0..5 {
+        on press t_al_on.$k { emit t_do(50 + k) }
+        on press t_al_del.$k { emit t_do(60 + k) }
+        on enter t_al_del.$k { t_hot = 60 + k }
+        on leave t_al_del.$k { t_hot = -1 }
+    }
+"""
+    once("    on press wxd_hit { toggle wx_detail; mode_open = false }\n", "    on press wxd_hit { toggle wx_detail; mode_open = false }\n" + rules)
+# oprávnenia časového menu (raz): čas s milisekundami, svetové hodiny, zvonenie
+once('"latte-ai", "latte-terminal" }', '"latte-ai", "latte-terminal", "date", "sh", "notify-send", "paplay" }')
 # preklady (raz)
-TR = {"Recent": "Nedávne", "Forecast · {wx_place}": "Predpoveď · {wx_place}", "Details": "Detaily", "Close": "Zavrieť",
+TR = {"Alarm {t}": "Budík {t}", "Timer {t}": "Minútka {t}", "Lap {n}": "Medzičas {n}", "Week {w} · day {d} of the year": "Týždeň {w} · {d}. deň v roku",
+      "{t} on screen": "{t} pred obrazovkou", "Overview": "Prehľad", "Stopwatch": "Stopky", "Timer": "Minútka", "Alarms": "Budíky",
+      "Time is up ({t})": "Čas vypršal ({t})", "LatteOS alarm": "Budík LatteOS",
+      "1 min": "1 min", "5 min": "5 min", "10 min": "10 min", "15 min": "15 min", "25 min": "25 min", "45 min": "45 min",
+      "Digital wellbeing today": "Digitálna pohoda dnes", "Nothing yet today": "Dnes zatiaľ nič",
+      "World clocks": "Svetové hodiny", "Add cities in Settings › Date, time and location.": "Mestá pridáš v Nastaveniach › Dátum, čas a poloha.",
+      "Scroll to set · click to start": "Kolieskom nastav · klikom spusti", "Click to pause": "Klikom pozastav", "Cancel": "Zrušiť",
+      "No alarms. They ring even when this menu is closed.": "Žiadny budík. Zvonia aj pri zatvorenom menu.",
+      "New alarm": "Nový budík", "Scroll to set": "Kolieskom nastav", "Add": "Pridať",
+      "Recent": "Nedávne", "Forecast · {wx_place}": "Predpoveď · {wx_place}", "Details": "Detaily", "Close": "Zavrieť",
       "Remove from recent": "Odobrať z nedávnych"}
 i = s.index("    translations sk {\n") + len("    translations sk {\n")
 add = "".join(f'        "{k}" = "{v}"\n' for k, v in TR.items() if f'        "{k}" =' not in s)

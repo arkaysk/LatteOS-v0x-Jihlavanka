@@ -102,9 +102,13 @@ samostatný tekutý prvok.
 - Digitálny čas a dátum. (Upozornenia sa presúvajú do DaNoGoo — 1. 10.; dnes ešte kvapôčky na Hodinách.)
 - **Ľavý klik alebo kláves Win** = **spúšťač**: kvapka vystúpi kolmo, stane sa **trčiacim uchom v rohu okna**
   (s časom), okno z nej vyrastie. Zatvorenie (klik inde, Esc) = okno sa zloží do ucha, ucho odkvapne domov.
-- **Pravý klik** = časové menu: časové pásma, stopky, minútka, budíky a **well-being**. Dočasne otvára záložku
-  **Čas** z klasického LatteOS (`latteos/time:panel cas`) — **používateľovi sa nepáči** (1. 10.), treba vlastný
-  vzhľad Goo (pravidlo 10); funkcie z nej prevziať.
+- **Pravý klik** = **časové menu** (1. 10., vzhľad Goo): tá istá karta z ucha ako spúšťač. Hore veľký čas, dátum a
+  týždeň; čipy **Prehľad** (Digitálna pohoda s pruhmi aplikácií — klik = podrobnosti v Monitore, svetové hodiny s
+  posunom, najbližší budík / minútka) · **Stopky** (štart/pauza, medzičas, vynulovať) · **Minútka** (kruh: koliesko
+  nastaví minúty, klik spustí / pozastaví; predvoľby 1–45 min) · **Budíky** (prepínač, odstrániť; nový myšou —
+  koliesko nad hodinou a minútou, Pridať) · ⚙ Nastavenia › Dátum a čas. Dole ten istý riadok počasia.
+  Údaje spoločné s klasickým LatteOS (`casovace.json`, `clock.conf`); **minútku a budíky v Goo stráži a zvoní logika
+  Kvapiek** (upozornenie + zvuk), aj keď je menu zatvorené.
 - **Well-being = existujúca Digitálna pohoda** z klasického LatteOS (`session/apps/pohoda.qml`, inšpirovaná
   Serpantinumom; dáta `~/.local/share/latteos/pohoda/RRRR-MM-DD.json`, podrobnosti v Monitore › Čas v
   aplikáciách). Nič nové sa nevymýšľa: v Kvapkách beží tiež (predtým ju `latte-kvapky` vypínal), v záložke Čas
@@ -230,7 +234,7 @@ chyby (neaktívne tvary nulovým polomerom); logika nevie zapisovať súbory (`l
 Ide sa **po poradí**; nové nápady sa zapíšu na koniec (E), nerozbiehajú sa hneď.
 
 ### A. Dokončiť rozrobené
-1. **Časové menu TimeGoo** vo vzhľade Goo (pravidlá 10–12): karta z ucha ako spúšťač — veľký čas a dátum, čipy
+1. ✅ (1. 10.) **Časové menu TimeGoo** vo vzhľade Goo (pravidlá 10–12): karta z ucha ako spúšťač — veľký čas a dátum, čipy
    Prehľad · Stopky · Minútka · Budíky; well-being, časové pásma (`~/.config/latteos/clock.conf`), stopky, minútka,
    budíky zo spoločného `~/.local/share/latteos/casovace.json` (ten istý ako klasický LatteOS). **Minútku a budíky
    musí v Goo strážiť a zvoniť logika Kvapiek** — v klasickom to robí widget hodín na lište Noctalie, ktorý Goo nemá.
