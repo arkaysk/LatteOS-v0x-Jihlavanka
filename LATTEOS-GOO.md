@@ -81,6 +81,9 @@ samostatný tekutý prvok.
   Strapce okien sú príliš ťažké na to, aby sa odlepili.
 - **Vlákna ako sliz:** keď sa kvapka vzďaľuje (ťahaná guľôčka, Hodiny letiace do ucha), vlákno sa **naťahuje a
   tenčí** a **po určitej dĺžke praskne** (konce sa stiahnu); pri návrate sa znova zlepí.
+- **Zdvihnutá kvapka ťahá sliz** (1. 10., obrázok používateľa): medzi uchom a lištou nie jedno vlákno, ale **sieť
+  lepkavých vláken** — pri uchu a pri lište zliate do blán, v strede tenké s dierami, každé sa kýve po svojom,
+  priečne vlákna; pri koreni rozliata mláka. Kým sú spojené, nepraskne (ucho TimeGoo je 118 px nad lištou).
 - **Hladina pri okraji** (z Marey): okraj obrazovky je voda — keď kvapka odíde alebo sa vráti, hladina sa prehne a
   po nej sa rozbehnú **dve vlnky**; po prasknutí krku ostane chvíľu **zvyšková kvapka**.
 - **Pohyb kolmo na okraj:** kvapka vystúpi **kolmo od okraja**, späť **padne rovno ako pod ťarchou**, s
