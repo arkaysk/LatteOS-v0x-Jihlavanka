@@ -90,7 +90,8 @@ scene Kvapka {
     fact side: dole | hore | vlavo | vpravo = dole   // okraj, pri ktorom lišta je (logika ho pamätá)
     fact pos = 0.4                           // kde na okraji stojí hlava (podiel dĺžky okraja)
     fact pulling = false                     // ťahá sa od okraja (stopka sa naťahuje)
-    fact lpress = false                      // základňa stlačená ľavým (klik = režim okien), nie pravým
+    fact lpress = false                      // hlava stlačená ľavým (klik = režim okien)
+    fact ldrag = false                       // základňa stlačená ľavým: iba ľavé ťahanie lištu presúva (ako vo Windows)
     fact icon_press = false                  // stlačený hrbolček s oknom (ťahanie z neho kvapku nepresúva)
     // ťahanie guľôčky okna: ide za myšou na lepkavom vlákne; pustená medzi inými presunie aplikáciu (poradie v lište),
     // inde sa pružne vráti. Klik bez ťahania = prepnúť okno (vyhodnotí sa až po pustení)
@@ -309,8 +310,10 @@ scene Kvapka {
         pivot: 0, edge
         rotate: pick(side, 0deg, 180deg, 90deg, -90deg)
         move: pick(side, 0, W, 0, W), pick(side, H - edge, 0 - edge, 0 - edge, H - edge)
+        // dve svetlá (30. 9.): pasívne v ploche (light zhora + bodky odlesku hore vľavo) a aktívne — kurzor: svetlá
+        // škvrna na povrchu tekutiny ide za ním, na guľôčkach pribudne odlesk na strane ku kurzoru
         body {
-            color: coffee
+            gradient: radial cu, cv radius 230, mix(coffee, #f3ebdd, 0.16), coffee
             opacity: 1 - 0.42 * v * (1 - m)     // voda: priesvitná (obyčajná priehľadnosť, sklo by farbu zmylo)
             light: 16%, by - 40, 34
             rim: 30%
@@ -446,8 +449,17 @@ scene Kvapka {
             opacity: 70% * ap
             ellipse { at: hx - 14, mid - 32; radius: 4; scale: 1.5, 0.8; rotate: -30deg; color: #fff6ea }
             repeat k in 0..48 {
-                ellipse { at: (lx + ux.$k + 2 * noise(k * 0.7, time * 0.35) + if(bdrag == k, bdx, 0)) - ur.$k * 0.4, (mid + uy.$k + 2.5 * noise(5 + k * 1.3, time * 0.3) + if(bdrag == k, bdy, 0)) - ur.$k * 0.52; radius: 0.11 * ur.$k * b.$k; scale: 1.5, 0.8; rotate: -30deg; color: #fff6ea }
+                // stred guľôčky a vzdialenosť kurzora (aktívne svetlo)
+                let qx = lx + ux.$k + 2 * noise(k * 0.7, time * 0.35) + if(bdrag == k, bdx, 0)
+                let qy = mid + uy.$k + 2.5 * noise(5 + k * 1.3, time * 0.3) + if(bdrag == k, bdy, 0)
+                let qd = length(cu - qx, cv - qy)
+                ellipse { at: qx - ur.$k * 0.4, qy - ur.$k * 0.52; radius: 0.11 * ur.$k * b.$k; scale: 1.5, 0.8; rotate: -30deg; color: #fff6ea }
+                // aktívne svetlo: odlesk na strane ku kurzoru, bližšie = jasnejší
+                ellipse { at: qx + (cu - qx) / max(qd, 1) * ur.$k * 0.55, qy + (cv - qy) / max(qd, 1) * ur.$k * 0.55; radius: 0.13 * ur.$k * b.$k * (1 - smooth(50, 360, qd)); color: #ffe4bd }
             }
+            // hlava a Hodiny: to isté
+            ellipse { at: hx + (cu - hx) / max(length(cu - hx, cv - mid + 8), 1) * 22, mid - 8 + (cv - mid + 8) / max(length(cu - hx, cv - mid + 8), 1) * 22; radius: 5 * (1 - smooth(60, 420, length(cu - hx, cv - mid + 8))); color: #ffe4bd }
+            ellipse { at: sx + (cu - sx) / max(length(cu - sx, cv - s.y), 1) * 20, s.y + (cv - s.y) / max(length(cu - sx, cv - s.y), 1) * 20; radius: 4.5 * so * (1 - smooth(0, 0.12, dsh)) * (1 - smooth(60, 420, length(cu - sx, cv - s.y))); color: #ffe4bd }
         }
         // farba upozornení podľa naliehavosti (nízka mätová, bežná jantárová, kritická červená)
         ellipse { at: sx - 25, s.y - 23; radius: 3.8 * so * (1 - dsh) * if(notes.count > 0, 1, 0); color: pick(notes.0.urgency, #9ed6bd, #e4b283, #e07a5f) }
@@ -692,11 +704,12 @@ scene Kvapka {
     // Ťahanie, ktoré začalo na hrbolčeku s oknom (icon_press), kvapku nepresúva.
     repeat z in 0..2 {
         // (30. 9.) režim prepína iba hlava (v nej je obraz režimu): klik vedľa guľôčky na telo pásku prepol na dlaždice
-        on press base.$z { lpress = z == 1; squish: 1 }
-        on press right base.$z { lpress = false; squish: 1 }
-        on drag base.$z while not free and not icon_press { pull: clamp(pick(side, 0 - drag.dy, drag.dy, drag.dx, 0 - drag.dx) / 90, -1, 1) ~0ms }
-        on drag base.$z while not free and not icon_press and abs(drag.dx) + abs(drag.dy) > 6 { pulling = true }
-        on drag base.$z while free { gx: pointer.x; gy: pointer.y }
+        // (30. 9.) pravý klik na goo nerobí nič — okrem guľôčok okien (ponuka okna), ako na paneli úloh vo Windows
+        on press base.$z { lpress = z == 1; ldrag = true; squish: 1 }
+        on press right base.$z { lpress = false; ldrag = false }
+        on drag base.$z while ldrag and not free and not icon_press { pull: clamp(pick(side, 0 - drag.dy, drag.dy, drag.dx, 0 - drag.dx) / 90, -1, 1) ~0ms }
+        on drag base.$z while ldrag and not free and not icon_press and abs(drag.dx) + abs(drag.dy) > 6 { pulling = true }
+        on drag base.$z while ldrag and free { gx: pointer.x; gy: pointer.y }
         on release base.$z while not free and not pulling and lpress { emit cycle; squish.s: 0.5 after 70ms; squish.p: 0.35 after 140ms }
         on release base.$z while not free { pulling = false; pull: 0; squish: 0; squish.s: 0 after 140ms; squish.p: 0 after 210ms }
         on release base.$z while free and near.edge < 170 and near.edge == H - cursor.y { side = dole; pos = clamp(cursor.x / W, 0.1, 0.6); gx: cursor.x; gy: H; dockt: 1 }
@@ -784,7 +797,7 @@ scene Kvapka {
         on release icon_hit.$k while bmoved { emit bead_drop(k) }
         on enter icon_hit.$k { emit hover(k) }
         on leave icon_hit.$k { emit unhover(k) }
-        on press right icon_hit.$k { icon_press = true; menu.x = cursor.x; menu.y = cursor.y; emit win_menu(k) }
+        on press right icon_hit.$k { icon_press = true; bdrag = -1; menu.x = cursor.x; menu.y = cursor.y; emit win_menu(k) }
         on release icon_hit.$k { icon_press = false; bdx: 0; bdy: 0; impulse wob 40 }
     }
 
