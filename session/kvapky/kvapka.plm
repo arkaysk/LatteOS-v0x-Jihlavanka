@@ -1944,57 +1944,100 @@ scene Kvapka {
     }
     // <<< DaNoGoo zóny
 
-    // ── ponuka Vypnúť (vyteká z kvapky vypínača smerom od okraja) ──
+    // >>> PowerGoo (powergoo.py)
+    // ── PowerGoo: ponuka ako okno Goo, pripojené rohom ku kvapke vypínača (1. 10.) ──
+    fact bat_present = false
+    fact bat_pct = 100
+    fact bat_chg = false
     let pxs = pick(side, px, W - px, edge - p.y, W - edge + p.y)
     let pys = pick(side, p.y + H - edge, edge - p.y, px, H - px)
-    let pw = 230
-    let ph = 5 * 42 + 22
-    let pt.x = if(vert, pxs + away.x * (30 + pw / 2), clamp(pxs + pw / 2 - 34, pw / 2 + 12, W - pw / 2 - 12))
-    let pt.y = if(vert, clamp(pys, ph / 2 + 12, H - ph / 2 - 12), pys + away.y * (30 + ph / 2))
-    let pk.x = clamp(pxs, pt.x - pw / 2 + 20, pt.x + pw / 2 - 20)
-    let pk.y = clamp(pys, pt.y - ph / 2 + 20, pt.y + ph / 2 - 20)
+    let pw = 250
+    let ph = 292 + 28 + if(bat_present, 44, 0)
+    // ucho: kvapka vypínača vystúpi kolmo od okraja; okno rastie od nej tam, kde je miesto (ktorýkoľvek zo 4 rohov)
+    let pk.x = if(vert, pxs + away.x * 58, pxs)
+    let pk.y = if(vert, pys, pys + away.y * 58)
+    let p.sx = if(vert, 0, if(pk.x + pw + 12 <= W, 1, -1))
+    let p.sy = if(vert, if(pk.y + ph + 12 <= H, 1, -1), 0)
+    let pt.x = if(vert, pk.x + away.x * (pw / 2 - 12), pk.x + p.sx * (pw / 2 - 12))
+    let pt.y = if(vert, pk.y + p.sy * (ph / 2 - 12), pk.y + away.y * (ph / 2 - 12))
     let p.swim = smooth(0, 0.45, pm)
     let p.grow = smooth(0.3, 1, pm)
     let pb.x = pxs + (pk.x - pxs) * p.swim
     let pb.y = pys + (pk.y - pys) * p.swim
     let pc.x = pk.x + (pt.x - pk.x) * p.grow
     let pc.y = pk.y + (pt.y - pk.y) * p.grow
-    let p0.y = pt.y - ph / 2 + 11
+    let p0.x = pt.x - pw / 2 + 12
+    let p0.y = pt.y - ph / 2 + 14 + if(bat_present, 44, 0)
+    let p.gx = away.x * pw / 2 * vert
+    let p.gy = away.y * ph / 2 * (1 - vert)
     body {
-        color: coffee
-        rim: 30%
-        shadow: 0, 10, 26, 40% * pm
+        gradient: pc.x + p.gx, pc.y + p.gy to pc.x - p.gx, pc.y - p.gy, l.win, l.win, mix(l.win, coffee, 0.4), coffee
+        glass: 100% * l.glass
+        lens: l.pearl > 0.5
+        shine: pointer
+        refraction: 120% * l.pearl
+        dispersion: 260% * l.pearl
+        rim: 18%
+        light: 6%, pc.y - ph / 2, 40
+        shadow: 0, 10, 26, 38% * pm
         opacity: if(pm > 0.01, 1, 0) * so
-        ellipse { at: pb.x, pb.y; radius: 20 * if(p.grow > 0.02, 0, 1) }
-        box { at: if(p.grow > 0.02, pc.x, pb.x), if(p.grow > 0.02, pc.y, pb.y); size: 40 + (pw - 40) * p.grow, 40 + (ph - 40) * p.grow; corner: 20 - 4 * p.grow }
+        box { at: if(p.grow > 0.02, pc.x, pb.x), if(p.grow > 0.02, pc.y, pb.y); size: 44 + (pw - 44) * p.grow, 44 + (ph - 44) * p.grow; corner: 22 - 6 * p.grow }
+        // ucho = kvapka vypínača v rohu okna (zliata s ním)
+        ellipse { at: pb.x, pb.y; radius: 24 * clamp(pm * 4, 0, 1); blend: 16 * p.grow }
     }
-    // riadky ponuky ako kapsuly zliate do tekutého stĺpca; riadok pod myšou sa vydutí
-    body {
-        color: mix(coffee, #f3ebdd, 0.08)
-        rim: 25%
-        opacity: clamp(pm * 2 - 1, 0, 1) * so
-        box { at: pt.x + 4 * pmh.0, p0.y + 21 + 0 * 42; size: pw - 30 + 10 * pmh.0, 35 + 5 * pmh.0; corner: 18; blend: 16 }
-        box { at: pt.x + 4 * pmh.1, p0.y + 21 + 1 * 42; size: pw - 30 + 10 * pmh.1, 35 + 5 * pmh.1; corner: 18; blend: 16 }
-        box { at: pt.x + 4 * pmh.2, p0.y + 21 + 2 * 42; size: pw - 30 + 10 * pmh.2, 35 + 5 * pmh.2; corner: 18; blend: 16 }
-        box { at: pt.x + 4 * pmh.3, p0.y + 21 + 3 * 42; size: pw - 30 + 10 * pmh.3, 35 + 5 * pmh.3; corner: 18; blend: 16 }
-        box { at: pt.x + 4 * pmh.4, p0.y + 21 + 4 * 42; size: pw - 30 + 10 * pmh.4, 35 + 5 * pmh.4; corner: 18; blend: 16 }
-    }
-    image pm_i.0 = icon "system-lock-screen-symbolic", 18, 18
-    image pm_i.1 = icon "system-log-out-symbolic", 18, 18
-    image pm_i.2 = icon "weather-clear-night-symbolic", 18, 18
-    image pm_i.3 = icon "system-reboot-symbolic", 18, 18
-    image pm_i.4 = icon "system-shutdown-symbolic", 18, 18
+    text "" { at: pb.x, pb.y; anchor: center; size: 16; color: ink; opacity: so * clamp(pm * 3 - 0.5, 0, 1); show: pm > 0.1; family: "noctalia-tabler-icons" }
     group {
         opacity: clamp(pm * 2 - 1, 0, 1)
         show: pm > 0.5
-        repeat k in 0..5 {
-            image pm_i.$k { at: pt.x - pw / 2 + 20, p0.y + 12 + k * 42; size: 18, 18; tint: if(k == 4, #e07a5f, ink) }
-            text pick(k, "Lock", "Sign out", "Sleep", "Restart", "Shut down") { at: pt.x - pw / 2 + 50, p0.y + 21 + k * 42; anchor: left center; size: 13.5; weight: 600; color: ink }
-        }
+        // batéria (notebook): percento, nabíjanie
+        text pick(if(bat_chg, 1, 0), "", "") { at: p0.x + 8, p0.y - 30; anchor: left center; size: 18; color: if(bat_pct < 15 and not bat_chg, #e5484d, l.fg); show: bat_present; family: "noctalia-tabler-icons" }
+        text "{bat_pct} %" { at: p0.x + 36, p0.y - 30; anchor: left center; size: 15; weight: 600; color: l.fg; show: bat_present; family: "Inter" }
+        text pick(if(bat_chg, 1, 0), "On battery", "Charging") { at: p0.x + pw - 32, p0.y - 30; anchor: right center; size: 12; color: l.dim; show: bat_present; family: "Inter" }
+        box { at: pt.x, p0.y - 8; size: pw - 40, 1; color: l.line; show: bat_present }
+        box { at: pt.x, p0.y + 20; size: pw - 24, 36; corner: 10; color: l.hover; opacity: if(pm_hot == 0, 100%, 0) }
+        text "" { at: p0.x + 16, p0.y + 20; anchor: left center; size: 17; color: l.fg; family: "noctalia-tabler-icons" }
+        text "Settings" { at: p0.x + 44, p0.y + 20; anchor: left center; size: 13.5; weight: 500; color: l.fg; family: "Inter" }
+        box { at: pt.x, p0.y + 60; size: pw - 24, 36; corner: 10; color: l.hover; opacity: if(pm_hot == 1, 100%, 0) }
+        text "" { at: p0.x + 16, p0.y + 60; anchor: left center; size: 17; color: l.fg; family: "noctalia-tabler-icons" }
+        text "Monitor" { at: p0.x + 44, p0.y + 60; anchor: left center; size: 13.5; weight: 500; color: l.fg; family: "Inter" }
+        box { at: pt.x, p0.y + 86; size: pw - 40, 1; color: l.line }
+        box { at: pt.x, p0.y + 112; size: pw - 24, 36; corner: 10; color: l.hover; opacity: if(pm_hot == 2, 100%, 0) }
+        text "" { at: p0.x + 16, p0.y + 112; anchor: left center; size: 17; color: l.fg; family: "noctalia-tabler-icons" }
+        text "Lock" { at: p0.x + 44, p0.y + 112; anchor: left center; size: 13.5; weight: 500; color: l.fg; family: "Inter" }
+        box { at: pt.x, p0.y + 152; size: pw - 24, 36; corner: 10; color: l.hover; opacity: if(pm_hot == 3, 100%, 0) }
+        text "" { at: p0.x + 16, p0.y + 152; anchor: left center; size: 17; color: l.fg; family: "noctalia-tabler-icons" }
+        text "Sign out" { at: p0.x + 44, p0.y + 152; anchor: left center; size: 13.5; weight: 500; color: l.fg; family: "Inter" }
+        box { at: pt.x, p0.y + 192; size: pw - 24, 36; corner: 10; color: l.hover; opacity: if(pm_hot == 4, 100%, 0) }
+        text "" { at: p0.x + 16, p0.y + 192; anchor: left center; size: 17; color: l.fg; family: "noctalia-tabler-icons" }
+        text "Sleep" { at: p0.x + 44, p0.y + 192; anchor: left center; size: 13.5; weight: 500; color: l.fg; family: "Inter" }
+        box { at: pt.x, p0.y + 232; size: pw - 24, 36; corner: 10; color: l.hover; opacity: if(pm_hot == 5, 100%, 0) }
+        text "" { at: p0.x + 16, p0.y + 232; anchor: left center; size: 17; color: l.fg; family: "noctalia-tabler-icons" }
+        text "Restart" { at: p0.x + 44, p0.y + 232; anchor: left center; size: 13.5; weight: 500; color: l.fg; family: "Inter" }
+        box { at: pt.x, p0.y + 272; size: pw - 24, 36; corner: 10; color: l.hover; opacity: if(pm_hot == 6, 100%, 0) }
+        text "" { at: p0.x + 16, p0.y + 272; anchor: left center; size: 17; color: #e5484d; family: "noctalia-tabler-icons" }
+        text "Shut down" { at: p0.x + 44, p0.y + 272; anchor: left center; size: 13.5; weight: 500; color: #e5484d; family: "Inter" }
     }
-    repeat k in 0..5 {
-        zone box pm_hit.$k { at: pt.x, p0.y + 21 + k * 42; size: pw - 16, 38; cursor: pointer; active: pmenu }
+    zone box pm_hit.0 { at: pt.x, p0.y + 20; size: pw - 20, 38; cursor: pointer; active: pmenu }
+    zone box pm_hit.1 { at: pt.x, p0.y + 60; size: pw - 20, 38; cursor: pointer; active: pmenu }
+    zone box pm_hit.2 { at: pt.x, p0.y + 112; size: pw - 20, 38; cursor: pointer; active: pmenu }
+    zone box pm_hit.3 { at: pt.x, p0.y + 152; size: pw - 20, 38; cursor: pointer; active: pmenu }
+    zone box pm_hit.4 { at: pt.x, p0.y + 192; size: pw - 20, 38; cursor: pointer; active: pmenu }
+    zone box pm_hit.5 { at: pt.x, p0.y + 232; size: pw - 20, 38; cursor: pointer; active: pmenu }
+    zone box pm_hit.6 { at: pt.x, p0.y + 272; size: pw - 20, 38; cursor: pointer; active: pmenu }
+    // batéria na kvapke vypínača: minibublinky (3 zelené ≥ 60 %, 2 žlté ≥ 30 %, 1 červená), pod 10 % pulzuje,
+    // pri nabíjaní stúpajú a klesajú; na stolnom PC žiadne
+    let bat_n = if(bat_pct >= 60, 3, if(bat_pct >= 30, 2, 1))
+    let bat_pulse = if(bat_pct < 10 and not bat_chg, 1 + 0.25 * sin(time * 8), 1)
+    body {
+        color: pick(bat_n - 1, #e5484d, #f5c542, #46a758)
+        rim: 30%
+        light: 18%, 0, 16
+        opacity: if(bat_present and solo, 1, 0) * (1 - pm)
+        ellipse { at: pxs + (away.x * cos(-32) - away.y * sin(-32)) * (27 + 3 * sin(time * 3 + 0) * if(bat_chg, 1, 0)), pys + (away.y * cos(-32) + away.x * sin(-32)) * (27 + 3 * sin(time * 3 + 0) * if(bat_chg, 1, 0)); radius: 4.5 * if(0 < bat_n, 1, 0) * bat_pulse * so; blend: 4 }
+        ellipse { at: pxs + (away.x * cos(0) - away.y * sin(0)) * (27 + 3 * sin(time * 3 + 2) * if(bat_chg, 1, 0)), pys + (away.y * cos(0) + away.x * sin(0)) * (27 + 3 * sin(time * 3 + 2) * if(bat_chg, 1, 0)); radius: 4.5 * if(1 < bat_n, 1, 0) * bat_pulse * so; blend: 4 }
+        ellipse { at: pxs + (away.x * cos(32) - away.y * sin(32)) * (27 + 3 * sin(time * 3 + 4) * if(bat_chg, 1, 0)), pys + (away.y * cos(32) + away.x * sin(32)) * (27 + 3 * sin(time * 3 + 4) * if(bat_chg, 1, 0)); radius: 4.5 * if(2 < bat_n, 1, 0) * bat_pulse * so; blend: 4 }
     }
+    // <<< PowerGoo
     image power_icon { at: pick(side, px, W - px, edge - p.y, W - edge + p.y) - 8, pick(side, p.y + H - edge, edge - p.y, px, H - px) - 8; size: 16, 16; tint: ink; opacity: so * (0.4 + 0.6 * lift.p) * ap * (1 - smooth(0, 0.2, pm)); show: solo }
 
     text pick(mode, "Floating windows", "Tiles", "Endless strip") { at: pick(side, lx - 30, W - lx - 30, edge - by + 40, W - edge + by - 150), pick(side, by - 56 + H - edge, edge - by + 56, lx - 60, H - lx - 60); anchor: left center; size: 12; weight: 700; color: ink; opacity: 70% * out * ap * if(tight or dash or pmenu, 0, 1) }
@@ -2037,7 +2080,7 @@ scene Kvapka {
     on release start_hit { squish.s: 0; squish.p: 0 after 70ms; squish: 0 after 70ms }
     on press power_hit { toggle pmenu; dash = false; squish.p: 1; squish.s: 0.5 after 70ms; squish: 0.3 after 140ms }
     on change dash while dash { pmenu = false }
-    repeat k in 0..5 {
+    repeat k in 0..7 {
         on press pm_hit.$k { emit power_do(k) }
         on enter pm_hit.$k { pm_hot = k }
         on leave pm_hit.$k { pm_hot = -1 }
@@ -2183,6 +2226,9 @@ scene Kvapka {
     }
 
     translations sk {
+        "Monitor" = "Monitor"
+        "On battery" = "Na batérii"
+        "Charging" = "Nabíja sa"
         "No events" = "Žiadne udalosti"
         "Tasks" = "Úlohy"
         "No tasks" = "Žiadne úlohy"
