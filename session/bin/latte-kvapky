@@ -10,8 +10,10 @@
 # Ostáva aj Kapsa (história schránky), App Manager a systémové ponuky (Ctrl+Alt+Del, kvapka vypínač).
 set -u
 share=/usr/share/latteos
-# stav Noctalie LatteOS je oddelený od pôvodnej Noctalie (latte-session); aj keď latte-kvapky spustí niečo iné
-export NOCTALIA_STATE_HOME="${NOCTALIA_STATE_HOME:-${XDG_STATE_HOME:-$HOME/.local/state}/latteos}"
+# stav Noctalie: klasický LatteOS ~/.local/state/latteos/noctalia, Kvapky ~/.local/state/latteos/kvapky/noctalia —
+# navzájom sa nedeformujú (30. 9.); pôvodná Noctalia má svoj ~/.local/state/noctalia (latte-session)
+st_classic="${XDG_STATE_HOME:-$HOME/.local/state}/latteos"
+st_kvapky="$st_classic/kvapky"
 scene="${LATTE_KVAPKY_SCENE:-$share/kvapky/kvapka.plm}"
 pleamar="${PLEAMAR:-$(command -v pleamar || echo /usr/bin/pleamar)}"
 # klasickí pomocníci z hyprland.lua (autoštart), ktorí patria k Noctalii
@@ -59,7 +61,14 @@ enabled = false
 control_center_placement = "floating"
 control_center_position  = "bottom_left"
 EOF2
-    NOCTALIA_CONFIG_HOME="$dir" setsid -f noctalia >/dev/null 2>&1
+    # prvý štart Kvapiek: nastavenia sa skopírujú z klasického LatteOS, potom každá plocha žije sama
+    if [ ! -e "$st_kvapky/noctalia/settings.toml" ]; then
+        mkdir -p "$st_kvapky/noctalia"
+        [ -f "$st_classic/noctalia/settings.toml" ] && cp "$st_classic/noctalia/settings.toml" "$st_kvapky/noctalia/"
+        touch "$st_kvapky/noctalia/.setup-complete"
+    fi
+    NOCTALIA_CONFIG_HOME="$dir" NOCTALIA_STATE_HOME="$st_kvapky" setsid -f noctalia >/dev/null 2>&1
+    ( sleep 3; latte-theme noctalia ) >/dev/null 2>&1 &     # téma LatteOS je spoločná, stav Noctalie nie
 }
 
 scene_up() {
@@ -98,7 +107,8 @@ case "${1:-}" in
         else
             export NOCTALIA_CONFIG_HOME="$share"
         fi
-        setsid -f noctalia >/dev/null 2>&1
+        NOCTALIA_STATE_HOME="$st_classic" setsid -f noctalia >/dev/null 2>&1
+        ( sleep 3; latte-theme noctalia ) >/dev/null 2>&1 &
         [ -f "${XDG_CONFIG_HOME:-$HOME/.config}/latteos/live-wallpaper" ] && start_app zivatapeta
         for a in netznak kapsavyrez nahlad plocha rychle pohoda maskot; do start_app "$a"; done
         # statická tapeta z mpvpaperu (bez shellu) ustúpi natívnej tapete Noctalie; živé video ostáva

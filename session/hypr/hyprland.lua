@@ -273,6 +273,7 @@ hl.on("hyprland.start", function()
         return
     end
     hl.exec_cmd("noctalia")
+    hl.exec_cmd("sh -c 'sleep 3; latte-theme noctalia'")   -- téma LatteOS je spoločná, stav Noctalie má každá plocha svoj
     -- história schránky pre Kapsu (text aj obrázky)
     hl.exec_cmd("wl-paste --type text --watch latte-kapsa-store")       -- zapnutie a veľkosť histórie: Nastavenia › Schránka
     hl.exec_cmd("wl-paste --type image --watch latte-kapsa-store")
