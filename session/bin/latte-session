@@ -126,6 +126,15 @@ crash_report() {   # $1 rc, $2 trvanie v s, $3 čas štartu (epoch)
 
 # herná relácia (hotový gamescope-session-plus); vráti sa na plochu pri „Prepnúť na desktop“ aj pri páde,
 # riadne vypnutie Steamu (Vypnúť / Odhlásiť v Steame) ukončí prihlásenie
+# systemd používateľa žije pri „linger“ (Sunshine pred prihlásením) od štartu PC, dlhšie než relácia: premenné
+# grafickej relácie (WAYLAND_DISPLAY…) by ostali z predošlej. Herná relácia (gamescope ako služba) ich zdedila,
+# myslela si, že beží v okne inej plochy, a hneď skončila (30. 9.). Čistí sa na začiatku aj po konci relácie.
+clean_env() {
+    systemctl --user unset-environment WAYLAND_DISPLAY DISPLAY HYPRLAND_INSTANCE_SIGNATURE XDG_CURRENT_DESKTOP \
+        XDG_SESSION_DESKTOP XDG_SESSION_ID XDG_SESSION_TYPE LATTE_VARIANT 2>/dev/null || true
+}
+clean_env
+
 run_game() {
     local why rc t0
     if ! why="$(latte-hra stav)"; then echo "HRA nedostupná: $why → plocha"; return 0; fi
@@ -135,6 +144,8 @@ run_game() {
     rc=$?
     echo "herná relácia skončila: rc=$rc po $(( $(date +%s) - t0 )) s, ďalej: $(cat "$flag" 2>/dev/null || echo koniec)"
     if [ "$(cat "$flag" 2>/dev/null)" = desktop ] || [ $rc -ne 0 ]; then rm -f "$flag"; return 0; fi
+    # skončila hneď (gamescope sa nespustil, aj keď hlási 0): plocha, nie návrat k prihláseniu
+    if [ $(( $(date +%s) - t0 )) -lt 15 ]; then echo "herná relácia sa nespustila → plocha"; return 0; fi
     exit 0
 }
 
@@ -174,6 +185,7 @@ while true; do
         echo "pád až pri ukončení (aquamarine #383) → berie sa ako riadne ukončenie"; rc=0
     fi
     systemctl --user stop latte-session.target 2>/dev/null     # portály a služby relácie končia s Hyprlandom
+    clean_env
 
     if [ $rc -eq 0 ]; then
         latte-boot ok >/dev/null     # riadne odhlásenie nie je pád
