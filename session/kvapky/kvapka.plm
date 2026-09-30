@@ -29,7 +29,7 @@ scene Kvapka {
         rate: 60        // pokojný pohyb kvapky nepotrebuje 144 Hz: 12 % → 6 % jadra na RX 640
         keyboard: on_demand while dash   // hľadanie v dashboarde
     }
-    permissions { services: "window", "window.*", "clock", "notifications", "notifications.*", "apps", "apps.*", "network", "network.*", "bluetooth", "bluetooth.*", "audio", "audio.*"; run: "noctalia", "latte-app", "hyprctl", "cat", "printenv", "curl", "latte-spustac", "latte-ponuka", "latte-kvapky", "fd", "xdg-open" }
+    permissions { services: "window", "window.*", "clock", "notifications", "notifications.*", "apps", "apps.*", "network", "network.*", "bluetooth", "bluetooth.*", "audio", "audio.*", "battery", "media"; run: "noctalia", "latte-app", "hyprctl", "cat", "printenv", "curl", "latte-spustac", "latte-ponuka", "latte-kvapky", "fd", "xdg-open" }
 
     // zoznam okien priamo zo služby (wlr-foreign-toplevel), bez logiky; ikona podľa triedy okna
     model wins max 48 { id: text; title: text; class: text; active: bool; minimized: bool }
@@ -708,6 +708,427 @@ scene Kvapka {
         zone box ctx_row.$k { at: cx0 + 120, cy0 + 17 + k * 34; size: 228, 30; cursor: pointer; active: dash and ctx_open and k < ctx.count }
     }
 
+    // >>> kvapky widgetov (widgety.py)
+    // Každá kvapka visí z okraja (side 0 dole, 1 hore, 2 vľavo, 3 vpravo; pos 0..1 pozdĺž neho) na hladine s krkom,
+    // ku kurzoru sa nakloní a nad ňou sa nafúkne (živý tvor). Chytiť a pustiť pri inom okraji = prilepí sa tam;
+    // pustiť ďaleko od okrajov = steká preč (odstráni sa, späť cez spúšťač). Kliky podľa Noctalie (logika).
+    model wdg max 12 { icon: image 22, 22; val: text; hasval: bool; side: number; pos: number; right: bool; wheel: bool; on: bool }
+    fact wdrag = -1
+    fact wmoved = false
+    fact wd.x = 0
+    fact wd.y = 0
+    fact wd.w = 1920
+    fact wd.h = 1080
+    event w_click ->
+    event w_right ->
+    event w_wheel ->
+    event w_drop ->
+    spring splashy = 420, 13
+    let wa.x.0 = pick(wdg.0.side, W * wdg.0.pos, W * wdg.0.pos, 0, W)
+    let wa.y.0 = pick(wdg.0.side, H, 0, H * wdg.0.pos, H * wdg.0.pos)
+    let wn.x.0 = pick(wdg.0.side, 0, 0, 1, -1)
+    let wn.y.0 = pick(wdg.0.side, -1, 1, 0, 0)
+    let wnear.0 = 1 - smooth(0, 170, length(mx - wa.x.0, my - wa.y.0))
+    let wout.0 = 24 + 9 * wnear.0 + 2.5 * noise(time * 0.3 + 0.0)
+    let wt.x.0 = wa.x.0 + wn.x.0 * wout.0 + clamp(mx - wa.x.0, -18, 18) * 0.28 * wnear.0 * (1 - abs(wn.x.0))
+    let wt.y.0 = wa.y.0 + wn.y.0 * wout.0 + clamp(my - wa.y.0, -18, 18) * 0.28 * wnear.0 * (1 - abs(wn.y.0))
+    prop wp.x.0 = 0 ~lively
+    prop wp.y.0 = 0 ~lively
+    follow wp.x.0 = if(wdrag == 0 and wmoved, pointer.x, wt.x.0)
+    follow wp.y.0 = if(wdrag == 0 and wmoved, pointer.y, wt.y.0)
+    prop wb.0 = 0 ~lively
+    follow wb.0 = if(0 < wdg.count, 1, 0)
+    prop wh.0 = 0 ~lively
+    prop wwob.0 = 0 ~splashy
+    let wr.0 = (21 + 3 * wh.0) * wb.0
+    let wjit.0 = 0.05 * sin(time * 9 + 0) * wh.0 + wwob.0 * 0.01
+    let wsheet.0 = wb.0 * if(wdrag == 0 and wmoved, 0, 1)
+    let wa.x.1 = pick(wdg.1.side, W * wdg.1.pos, W * wdg.1.pos, 0, W)
+    let wa.y.1 = pick(wdg.1.side, H, 0, H * wdg.1.pos, H * wdg.1.pos)
+    let wn.x.1 = pick(wdg.1.side, 0, 0, 1, -1)
+    let wn.y.1 = pick(wdg.1.side, -1, 1, 0, 0)
+    let wnear.1 = 1 - smooth(0, 170, length(mx - wa.x.1, my - wa.y.1))
+    let wout.1 = 24 + 9 * wnear.1 + 2.5 * noise(time * 0.3 + 1.7)
+    let wt.x.1 = wa.x.1 + wn.x.1 * wout.1 + clamp(mx - wa.x.1, -18, 18) * 0.28 * wnear.1 * (1 - abs(wn.x.1))
+    let wt.y.1 = wa.y.1 + wn.y.1 * wout.1 + clamp(my - wa.y.1, -18, 18) * 0.28 * wnear.1 * (1 - abs(wn.y.1))
+    prop wp.x.1 = 0 ~lively
+    prop wp.y.1 = 0 ~lively
+    follow wp.x.1 = if(wdrag == 1 and wmoved, pointer.x, wt.x.1)
+    follow wp.y.1 = if(wdrag == 1 and wmoved, pointer.y, wt.y.1)
+    prop wb.1 = 0 ~lively
+    follow wb.1 = if(1 < wdg.count, 1, 0)
+    prop wh.1 = 0 ~lively
+    prop wwob.1 = 0 ~splashy
+    let wr.1 = (21 + 3 * wh.1) * wb.1
+    let wjit.1 = 0.05 * sin(time * 9 + 1) * wh.1 + wwob.1 * 0.01
+    let wsheet.1 = wb.1 * if(wdrag == 1 and wmoved, 0, 1)
+    let wa.x.2 = pick(wdg.2.side, W * wdg.2.pos, W * wdg.2.pos, 0, W)
+    let wa.y.2 = pick(wdg.2.side, H, 0, H * wdg.2.pos, H * wdg.2.pos)
+    let wn.x.2 = pick(wdg.2.side, 0, 0, 1, -1)
+    let wn.y.2 = pick(wdg.2.side, -1, 1, 0, 0)
+    let wnear.2 = 1 - smooth(0, 170, length(mx - wa.x.2, my - wa.y.2))
+    let wout.2 = 24 + 9 * wnear.2 + 2.5 * noise(time * 0.3 + 3.4)
+    let wt.x.2 = wa.x.2 + wn.x.2 * wout.2 + clamp(mx - wa.x.2, -18, 18) * 0.28 * wnear.2 * (1 - abs(wn.x.2))
+    let wt.y.2 = wa.y.2 + wn.y.2 * wout.2 + clamp(my - wa.y.2, -18, 18) * 0.28 * wnear.2 * (1 - abs(wn.y.2))
+    prop wp.x.2 = 0 ~lively
+    prop wp.y.2 = 0 ~lively
+    follow wp.x.2 = if(wdrag == 2 and wmoved, pointer.x, wt.x.2)
+    follow wp.y.2 = if(wdrag == 2 and wmoved, pointer.y, wt.y.2)
+    prop wb.2 = 0 ~lively
+    follow wb.2 = if(2 < wdg.count, 1, 0)
+    prop wh.2 = 0 ~lively
+    prop wwob.2 = 0 ~splashy
+    let wr.2 = (21 + 3 * wh.2) * wb.2
+    let wjit.2 = 0.05 * sin(time * 9 + 2) * wh.2 + wwob.2 * 0.01
+    let wsheet.2 = wb.2 * if(wdrag == 2 and wmoved, 0, 1)
+    let wa.x.3 = pick(wdg.3.side, W * wdg.3.pos, W * wdg.3.pos, 0, W)
+    let wa.y.3 = pick(wdg.3.side, H, 0, H * wdg.3.pos, H * wdg.3.pos)
+    let wn.x.3 = pick(wdg.3.side, 0, 0, 1, -1)
+    let wn.y.3 = pick(wdg.3.side, -1, 1, 0, 0)
+    let wnear.3 = 1 - smooth(0, 170, length(mx - wa.x.3, my - wa.y.3))
+    let wout.3 = 24 + 9 * wnear.3 + 2.5 * noise(time * 0.3 + 5.1)
+    let wt.x.3 = wa.x.3 + wn.x.3 * wout.3 + clamp(mx - wa.x.3, -18, 18) * 0.28 * wnear.3 * (1 - abs(wn.x.3))
+    let wt.y.3 = wa.y.3 + wn.y.3 * wout.3 + clamp(my - wa.y.3, -18, 18) * 0.28 * wnear.3 * (1 - abs(wn.y.3))
+    prop wp.x.3 = 0 ~lively
+    prop wp.y.3 = 0 ~lively
+    follow wp.x.3 = if(wdrag == 3 and wmoved, pointer.x, wt.x.3)
+    follow wp.y.3 = if(wdrag == 3 and wmoved, pointer.y, wt.y.3)
+    prop wb.3 = 0 ~lively
+    follow wb.3 = if(3 < wdg.count, 1, 0)
+    prop wh.3 = 0 ~lively
+    prop wwob.3 = 0 ~splashy
+    let wr.3 = (21 + 3 * wh.3) * wb.3
+    let wjit.3 = 0.05 * sin(time * 9 + 3) * wh.3 + wwob.3 * 0.01
+    let wsheet.3 = wb.3 * if(wdrag == 3 and wmoved, 0, 1)
+    let wa.x.4 = pick(wdg.4.side, W * wdg.4.pos, W * wdg.4.pos, 0, W)
+    let wa.y.4 = pick(wdg.4.side, H, 0, H * wdg.4.pos, H * wdg.4.pos)
+    let wn.x.4 = pick(wdg.4.side, 0, 0, 1, -1)
+    let wn.y.4 = pick(wdg.4.side, -1, 1, 0, 0)
+    let wnear.4 = 1 - smooth(0, 170, length(mx - wa.x.4, my - wa.y.4))
+    let wout.4 = 24 + 9 * wnear.4 + 2.5 * noise(time * 0.3 + 6.8)
+    let wt.x.4 = wa.x.4 + wn.x.4 * wout.4 + clamp(mx - wa.x.4, -18, 18) * 0.28 * wnear.4 * (1 - abs(wn.x.4))
+    let wt.y.4 = wa.y.4 + wn.y.4 * wout.4 + clamp(my - wa.y.4, -18, 18) * 0.28 * wnear.4 * (1 - abs(wn.y.4))
+    prop wp.x.4 = 0 ~lively
+    prop wp.y.4 = 0 ~lively
+    follow wp.x.4 = if(wdrag == 4 and wmoved, pointer.x, wt.x.4)
+    follow wp.y.4 = if(wdrag == 4 and wmoved, pointer.y, wt.y.4)
+    prop wb.4 = 0 ~lively
+    follow wb.4 = if(4 < wdg.count, 1, 0)
+    prop wh.4 = 0 ~lively
+    prop wwob.4 = 0 ~splashy
+    let wr.4 = (21 + 3 * wh.4) * wb.4
+    let wjit.4 = 0.05 * sin(time * 9 + 4) * wh.4 + wwob.4 * 0.01
+    let wsheet.4 = wb.4 * if(wdrag == 4 and wmoved, 0, 1)
+    let wa.x.5 = pick(wdg.5.side, W * wdg.5.pos, W * wdg.5.pos, 0, W)
+    let wa.y.5 = pick(wdg.5.side, H, 0, H * wdg.5.pos, H * wdg.5.pos)
+    let wn.x.5 = pick(wdg.5.side, 0, 0, 1, -1)
+    let wn.y.5 = pick(wdg.5.side, -1, 1, 0, 0)
+    let wnear.5 = 1 - smooth(0, 170, length(mx - wa.x.5, my - wa.y.5))
+    let wout.5 = 24 + 9 * wnear.5 + 2.5 * noise(time * 0.3 + 8.5)
+    let wt.x.5 = wa.x.5 + wn.x.5 * wout.5 + clamp(mx - wa.x.5, -18, 18) * 0.28 * wnear.5 * (1 - abs(wn.x.5))
+    let wt.y.5 = wa.y.5 + wn.y.5 * wout.5 + clamp(my - wa.y.5, -18, 18) * 0.28 * wnear.5 * (1 - abs(wn.y.5))
+    prop wp.x.5 = 0 ~lively
+    prop wp.y.5 = 0 ~lively
+    follow wp.x.5 = if(wdrag == 5 and wmoved, pointer.x, wt.x.5)
+    follow wp.y.5 = if(wdrag == 5 and wmoved, pointer.y, wt.y.5)
+    prop wb.5 = 0 ~lively
+    follow wb.5 = if(5 < wdg.count, 1, 0)
+    prop wh.5 = 0 ~lively
+    prop wwob.5 = 0 ~splashy
+    let wr.5 = (21 + 3 * wh.5) * wb.5
+    let wjit.5 = 0.05 * sin(time * 9 + 5) * wh.5 + wwob.5 * 0.01
+    let wsheet.5 = wb.5 * if(wdrag == 5 and wmoved, 0, 1)
+    let wa.x.6 = pick(wdg.6.side, W * wdg.6.pos, W * wdg.6.pos, 0, W)
+    let wa.y.6 = pick(wdg.6.side, H, 0, H * wdg.6.pos, H * wdg.6.pos)
+    let wn.x.6 = pick(wdg.6.side, 0, 0, 1, -1)
+    let wn.y.6 = pick(wdg.6.side, -1, 1, 0, 0)
+    let wnear.6 = 1 - smooth(0, 170, length(mx - wa.x.6, my - wa.y.6))
+    let wout.6 = 24 + 9 * wnear.6 + 2.5 * noise(time * 0.3 + 10.2)
+    let wt.x.6 = wa.x.6 + wn.x.6 * wout.6 + clamp(mx - wa.x.6, -18, 18) * 0.28 * wnear.6 * (1 - abs(wn.x.6))
+    let wt.y.6 = wa.y.6 + wn.y.6 * wout.6 + clamp(my - wa.y.6, -18, 18) * 0.28 * wnear.6 * (1 - abs(wn.y.6))
+    prop wp.x.6 = 0 ~lively
+    prop wp.y.6 = 0 ~lively
+    follow wp.x.6 = if(wdrag == 6 and wmoved, pointer.x, wt.x.6)
+    follow wp.y.6 = if(wdrag == 6 and wmoved, pointer.y, wt.y.6)
+    prop wb.6 = 0 ~lively
+    follow wb.6 = if(6 < wdg.count, 1, 0)
+    prop wh.6 = 0 ~lively
+    prop wwob.6 = 0 ~splashy
+    let wr.6 = (21 + 3 * wh.6) * wb.6
+    let wjit.6 = 0.05 * sin(time * 9 + 6) * wh.6 + wwob.6 * 0.01
+    let wsheet.6 = wb.6 * if(wdrag == 6 and wmoved, 0, 1)
+    let wa.x.7 = pick(wdg.7.side, W * wdg.7.pos, W * wdg.7.pos, 0, W)
+    let wa.y.7 = pick(wdg.7.side, H, 0, H * wdg.7.pos, H * wdg.7.pos)
+    let wn.x.7 = pick(wdg.7.side, 0, 0, 1, -1)
+    let wn.y.7 = pick(wdg.7.side, -1, 1, 0, 0)
+    let wnear.7 = 1 - smooth(0, 170, length(mx - wa.x.7, my - wa.y.7))
+    let wout.7 = 24 + 9 * wnear.7 + 2.5 * noise(time * 0.3 + 11.9)
+    let wt.x.7 = wa.x.7 + wn.x.7 * wout.7 + clamp(mx - wa.x.7, -18, 18) * 0.28 * wnear.7 * (1 - abs(wn.x.7))
+    let wt.y.7 = wa.y.7 + wn.y.7 * wout.7 + clamp(my - wa.y.7, -18, 18) * 0.28 * wnear.7 * (1 - abs(wn.y.7))
+    prop wp.x.7 = 0 ~lively
+    prop wp.y.7 = 0 ~lively
+    follow wp.x.7 = if(wdrag == 7 and wmoved, pointer.x, wt.x.7)
+    follow wp.y.7 = if(wdrag == 7 and wmoved, pointer.y, wt.y.7)
+    prop wb.7 = 0 ~lively
+    follow wb.7 = if(7 < wdg.count, 1, 0)
+    prop wh.7 = 0 ~lively
+    prop wwob.7 = 0 ~splashy
+    let wr.7 = (21 + 3 * wh.7) * wb.7
+    let wjit.7 = 0.05 * sin(time * 9 + 7) * wh.7 + wwob.7 * 0.01
+    let wsheet.7 = wb.7 * if(wdrag == 7 and wmoved, 0, 1)
+    let wa.x.8 = pick(wdg.8.side, W * wdg.8.pos, W * wdg.8.pos, 0, W)
+    let wa.y.8 = pick(wdg.8.side, H, 0, H * wdg.8.pos, H * wdg.8.pos)
+    let wn.x.8 = pick(wdg.8.side, 0, 0, 1, -1)
+    let wn.y.8 = pick(wdg.8.side, -1, 1, 0, 0)
+    let wnear.8 = 1 - smooth(0, 170, length(mx - wa.x.8, my - wa.y.8))
+    let wout.8 = 24 + 9 * wnear.8 + 2.5 * noise(time * 0.3 + 13.6)
+    let wt.x.8 = wa.x.8 + wn.x.8 * wout.8 + clamp(mx - wa.x.8, -18, 18) * 0.28 * wnear.8 * (1 - abs(wn.x.8))
+    let wt.y.8 = wa.y.8 + wn.y.8 * wout.8 + clamp(my - wa.y.8, -18, 18) * 0.28 * wnear.8 * (1 - abs(wn.y.8))
+    prop wp.x.8 = 0 ~lively
+    prop wp.y.8 = 0 ~lively
+    follow wp.x.8 = if(wdrag == 8 and wmoved, pointer.x, wt.x.8)
+    follow wp.y.8 = if(wdrag == 8 and wmoved, pointer.y, wt.y.8)
+    prop wb.8 = 0 ~lively
+    follow wb.8 = if(8 < wdg.count, 1, 0)
+    prop wh.8 = 0 ~lively
+    prop wwob.8 = 0 ~splashy
+    let wr.8 = (21 + 3 * wh.8) * wb.8
+    let wjit.8 = 0.05 * sin(time * 9 + 8) * wh.8 + wwob.8 * 0.01
+    let wsheet.8 = wb.8 * if(wdrag == 8 and wmoved, 0, 1)
+    let wa.x.9 = pick(wdg.9.side, W * wdg.9.pos, W * wdg.9.pos, 0, W)
+    let wa.y.9 = pick(wdg.9.side, H, 0, H * wdg.9.pos, H * wdg.9.pos)
+    let wn.x.9 = pick(wdg.9.side, 0, 0, 1, -1)
+    let wn.y.9 = pick(wdg.9.side, -1, 1, 0, 0)
+    let wnear.9 = 1 - smooth(0, 170, length(mx - wa.x.9, my - wa.y.9))
+    let wout.9 = 24 + 9 * wnear.9 + 2.5 * noise(time * 0.3 + 15.3)
+    let wt.x.9 = wa.x.9 + wn.x.9 * wout.9 + clamp(mx - wa.x.9, -18, 18) * 0.28 * wnear.9 * (1 - abs(wn.x.9))
+    let wt.y.9 = wa.y.9 + wn.y.9 * wout.9 + clamp(my - wa.y.9, -18, 18) * 0.28 * wnear.9 * (1 - abs(wn.y.9))
+    prop wp.x.9 = 0 ~lively
+    prop wp.y.9 = 0 ~lively
+    follow wp.x.9 = if(wdrag == 9 and wmoved, pointer.x, wt.x.9)
+    follow wp.y.9 = if(wdrag == 9 and wmoved, pointer.y, wt.y.9)
+    prop wb.9 = 0 ~lively
+    follow wb.9 = if(9 < wdg.count, 1, 0)
+    prop wh.9 = 0 ~lively
+    prop wwob.9 = 0 ~splashy
+    let wr.9 = (21 + 3 * wh.9) * wb.9
+    let wjit.9 = 0.05 * sin(time * 9 + 9) * wh.9 + wwob.9 * 0.01
+    let wsheet.9 = wb.9 * if(wdrag == 9 and wmoved, 0, 1)
+    let wa.x.10 = pick(wdg.10.side, W * wdg.10.pos, W * wdg.10.pos, 0, W)
+    let wa.y.10 = pick(wdg.10.side, H, 0, H * wdg.10.pos, H * wdg.10.pos)
+    let wn.x.10 = pick(wdg.10.side, 0, 0, 1, -1)
+    let wn.y.10 = pick(wdg.10.side, -1, 1, 0, 0)
+    let wnear.10 = 1 - smooth(0, 170, length(mx - wa.x.10, my - wa.y.10))
+    let wout.10 = 24 + 9 * wnear.10 + 2.5 * noise(time * 0.3 + 17.0)
+    let wt.x.10 = wa.x.10 + wn.x.10 * wout.10 + clamp(mx - wa.x.10, -18, 18) * 0.28 * wnear.10 * (1 - abs(wn.x.10))
+    let wt.y.10 = wa.y.10 + wn.y.10 * wout.10 + clamp(my - wa.y.10, -18, 18) * 0.28 * wnear.10 * (1 - abs(wn.y.10))
+    prop wp.x.10 = 0 ~lively
+    prop wp.y.10 = 0 ~lively
+    follow wp.x.10 = if(wdrag == 10 and wmoved, pointer.x, wt.x.10)
+    follow wp.y.10 = if(wdrag == 10 and wmoved, pointer.y, wt.y.10)
+    prop wb.10 = 0 ~lively
+    follow wb.10 = if(10 < wdg.count, 1, 0)
+    prop wh.10 = 0 ~lively
+    prop wwob.10 = 0 ~splashy
+    let wr.10 = (21 + 3 * wh.10) * wb.10
+    let wjit.10 = 0.05 * sin(time * 9 + 10) * wh.10 + wwob.10 * 0.01
+    let wsheet.10 = wb.10 * if(wdrag == 10 and wmoved, 0, 1)
+    let wa.x.11 = pick(wdg.11.side, W * wdg.11.pos, W * wdg.11.pos, 0, W)
+    let wa.y.11 = pick(wdg.11.side, H, 0, H * wdg.11.pos, H * wdg.11.pos)
+    let wn.x.11 = pick(wdg.11.side, 0, 0, 1, -1)
+    let wn.y.11 = pick(wdg.11.side, -1, 1, 0, 0)
+    let wnear.11 = 1 - smooth(0, 170, length(mx - wa.x.11, my - wa.y.11))
+    let wout.11 = 24 + 9 * wnear.11 + 2.5 * noise(time * 0.3 + 18.7)
+    let wt.x.11 = wa.x.11 + wn.x.11 * wout.11 + clamp(mx - wa.x.11, -18, 18) * 0.28 * wnear.11 * (1 - abs(wn.x.11))
+    let wt.y.11 = wa.y.11 + wn.y.11 * wout.11 + clamp(my - wa.y.11, -18, 18) * 0.28 * wnear.11 * (1 - abs(wn.y.11))
+    prop wp.x.11 = 0 ~lively
+    prop wp.y.11 = 0 ~lively
+    follow wp.x.11 = if(wdrag == 11 and wmoved, pointer.x, wt.x.11)
+    follow wp.y.11 = if(wdrag == 11 and wmoved, pointer.y, wt.y.11)
+    prop wb.11 = 0 ~lively
+    follow wb.11 = if(11 < wdg.count, 1, 0)
+    prop wh.11 = 0 ~lively
+    prop wwob.11 = 0 ~splashy
+    let wr.11 = (21 + 3 * wh.11) * wb.11
+    let wjit.11 = 0.05 * sin(time * 9 + 11) * wh.11 + wwob.11 * 0.01
+    let wsheet.11 = wb.11 * if(wdrag == 11 and wmoved, 0, 1)
+    body {
+        color: coffee
+        rim: 30%
+        light: 14%, 0, 30
+        glass: 100% * clamp(v * 1.3, 0, 1) * (1 - m)
+        shine: pointer
+        box { at: wa.x.0, wa.y.0; size: 64 * abs(wn.y.0) + 18 * abs(wn.x.0), 18 * abs(wn.y.0) + 64 * abs(wn.x.0); corner: 9; opacity: 1 }
+        ellipse { at: wa.x.0, wa.y.0; radius: 22 * wsheet.0; blend: 14 }
+        ellipse { at: wp.x.0, wp.y.0; radius: wr.0; scale: 1 + wjit.0, 1 - wjit.0; blend: 16 * wsheet.0 + 2 }
+        box { at: wa.x.1, wa.y.1; size: 64 * abs(wn.y.1) + 18 * abs(wn.x.1), 18 * abs(wn.y.1) + 64 * abs(wn.x.1); corner: 9; opacity: 1 }
+        ellipse { at: wa.x.1, wa.y.1; radius: 22 * wsheet.1; blend: 14 }
+        ellipse { at: wp.x.1, wp.y.1; radius: wr.1; scale: 1 + wjit.1, 1 - wjit.1; blend: 16 * wsheet.1 + 2 }
+        box { at: wa.x.2, wa.y.2; size: 64 * abs(wn.y.2) + 18 * abs(wn.x.2), 18 * abs(wn.y.2) + 64 * abs(wn.x.2); corner: 9; opacity: 1 }
+        ellipse { at: wa.x.2, wa.y.2; radius: 22 * wsheet.2; blend: 14 }
+        ellipse { at: wp.x.2, wp.y.2; radius: wr.2; scale: 1 + wjit.2, 1 - wjit.2; blend: 16 * wsheet.2 + 2 }
+        box { at: wa.x.3, wa.y.3; size: 64 * abs(wn.y.3) + 18 * abs(wn.x.3), 18 * abs(wn.y.3) + 64 * abs(wn.x.3); corner: 9; opacity: 1 }
+        ellipse { at: wa.x.3, wa.y.3; radius: 22 * wsheet.3; blend: 14 }
+        ellipse { at: wp.x.3, wp.y.3; radius: wr.3; scale: 1 + wjit.3, 1 - wjit.3; blend: 16 * wsheet.3 + 2 }
+        box { at: wa.x.4, wa.y.4; size: 64 * abs(wn.y.4) + 18 * abs(wn.x.4), 18 * abs(wn.y.4) + 64 * abs(wn.x.4); corner: 9; opacity: 1 }
+        ellipse { at: wa.x.4, wa.y.4; radius: 22 * wsheet.4; blend: 14 }
+        ellipse { at: wp.x.4, wp.y.4; radius: wr.4; scale: 1 + wjit.4, 1 - wjit.4; blend: 16 * wsheet.4 + 2 }
+        box { at: wa.x.5, wa.y.5; size: 64 * abs(wn.y.5) + 18 * abs(wn.x.5), 18 * abs(wn.y.5) + 64 * abs(wn.x.5); corner: 9; opacity: 1 }
+        ellipse { at: wa.x.5, wa.y.5; radius: 22 * wsheet.5; blend: 14 }
+        ellipse { at: wp.x.5, wp.y.5; radius: wr.5; scale: 1 + wjit.5, 1 - wjit.5; blend: 16 * wsheet.5 + 2 }
+        box { at: wa.x.6, wa.y.6; size: 64 * abs(wn.y.6) + 18 * abs(wn.x.6), 18 * abs(wn.y.6) + 64 * abs(wn.x.6); corner: 9; opacity: 1 }
+        ellipse { at: wa.x.6, wa.y.6; radius: 22 * wsheet.6; blend: 14 }
+        ellipse { at: wp.x.6, wp.y.6; radius: wr.6; scale: 1 + wjit.6, 1 - wjit.6; blend: 16 * wsheet.6 + 2 }
+        box { at: wa.x.7, wa.y.7; size: 64 * abs(wn.y.7) + 18 * abs(wn.x.7), 18 * abs(wn.y.7) + 64 * abs(wn.x.7); corner: 9; opacity: 1 }
+        ellipse { at: wa.x.7, wa.y.7; radius: 22 * wsheet.7; blend: 14 }
+        ellipse { at: wp.x.7, wp.y.7; radius: wr.7; scale: 1 + wjit.7, 1 - wjit.7; blend: 16 * wsheet.7 + 2 }
+        box { at: wa.x.8, wa.y.8; size: 64 * abs(wn.y.8) + 18 * abs(wn.x.8), 18 * abs(wn.y.8) + 64 * abs(wn.x.8); corner: 9; opacity: 1 }
+        ellipse { at: wa.x.8, wa.y.8; radius: 22 * wsheet.8; blend: 14 }
+        ellipse { at: wp.x.8, wp.y.8; radius: wr.8; scale: 1 + wjit.8, 1 - wjit.8; blend: 16 * wsheet.8 + 2 }
+        box { at: wa.x.9, wa.y.9; size: 64 * abs(wn.y.9) + 18 * abs(wn.x.9), 18 * abs(wn.y.9) + 64 * abs(wn.x.9); corner: 9; opacity: 1 }
+        ellipse { at: wa.x.9, wa.y.9; radius: 22 * wsheet.9; blend: 14 }
+        ellipse { at: wp.x.9, wp.y.9; radius: wr.9; scale: 1 + wjit.9, 1 - wjit.9; blend: 16 * wsheet.9 + 2 }
+        box { at: wa.x.10, wa.y.10; size: 64 * abs(wn.y.10) + 18 * abs(wn.x.10), 18 * abs(wn.y.10) + 64 * abs(wn.x.10); corner: 9; opacity: 1 }
+        ellipse { at: wa.x.10, wa.y.10; radius: 22 * wsheet.10; blend: 14 }
+        ellipse { at: wp.x.10, wp.y.10; radius: wr.10; scale: 1 + wjit.10, 1 - wjit.10; blend: 16 * wsheet.10 + 2 }
+        box { at: wa.x.11, wa.y.11; size: 64 * abs(wn.y.11) + 18 * abs(wn.x.11), 18 * abs(wn.y.11) + 64 * abs(wn.x.11); corner: 9; opacity: 1 }
+        ellipse { at: wa.x.11, wa.y.11; radius: 22 * wsheet.11; blend: 14 }
+        ellipse { at: wp.x.11, wp.y.11; radius: wr.11; scale: 1 + wjit.11, 1 - wjit.11; blend: 16 * wsheet.11 + 2 }
+    }
+    image wdg.0.icon { at: wp.x.0 - 11, wp.y.0 - 11 - if(wdg.0.hasval, 5, 0); size: 22, 22; tint: ink; opacity: wb.0 * if(wdg.0.on, 100%, 55%); show: 0 < wdg.count }
+    text wdg.0.val { at: wp.x.0, wp.y.0 + 11; anchor: center; size: 9; weight: 700; color: ink; opacity: 85% * wb.0; show: 0 < wdg.count }
+    zone ellipse w_hit.0 { at: wp.x.0, wp.y.0; radius: 24; cursor: pointer; active: 0 < wdg.count and not dash }
+    on press w_hit.0 { wdrag = 0; wmoved = false; wd.w = W; wd.h = H }
+    on drag w_hit.0 while wdrag == 0 and abs(drag.dx) + abs(drag.dy) > 6 { wmoved = true }
+    on release w_hit.0 while wdrag == 0 and wmoved { wd.x = pointer.x; wd.y = pointer.y; impulse wwob.0 300; emit w_drop(0); wmoved = false; wdrag = -1 }
+    on release w_hit.0 while wdrag == 0 and not wmoved { wdrag = -1; impulse wwob.0 120; emit w_click(0) }
+    on press right w_hit.0 while wdg.0.right { impulse wwob.0 120; emit w_right(0) }
+    on scroll w_hit.0 while wdg.0.wheel { emit w_wheel(0 * 2 + if(wheel > 0, 1, 0)) }
+    on enter w_hit.0 { wh.0: 1 }
+    on leave w_hit.0 { wh.0: 0 }
+    image wdg.1.icon { at: wp.x.1 - 11, wp.y.1 - 11 - if(wdg.1.hasval, 5, 0); size: 22, 22; tint: ink; opacity: wb.1 * if(wdg.1.on, 100%, 55%); show: 1 < wdg.count }
+    text wdg.1.val { at: wp.x.1, wp.y.1 + 11; anchor: center; size: 9; weight: 700; color: ink; opacity: 85% * wb.1; show: 1 < wdg.count }
+    zone ellipse w_hit.1 { at: wp.x.1, wp.y.1; radius: 24; cursor: pointer; active: 1 < wdg.count and not dash }
+    on press w_hit.1 { wdrag = 1; wmoved = false; wd.w = W; wd.h = H }
+    on drag w_hit.1 while wdrag == 1 and abs(drag.dx) + abs(drag.dy) > 6 { wmoved = true }
+    on release w_hit.1 while wdrag == 1 and wmoved { wd.x = pointer.x; wd.y = pointer.y; impulse wwob.1 300; emit w_drop(1); wmoved = false; wdrag = -1 }
+    on release w_hit.1 while wdrag == 1 and not wmoved { wdrag = -1; impulse wwob.1 120; emit w_click(1) }
+    on press right w_hit.1 while wdg.1.right { impulse wwob.1 120; emit w_right(1) }
+    on scroll w_hit.1 while wdg.1.wheel { emit w_wheel(1 * 2 + if(wheel > 0, 1, 0)) }
+    on enter w_hit.1 { wh.1: 1 }
+    on leave w_hit.1 { wh.1: 0 }
+    image wdg.2.icon { at: wp.x.2 - 11, wp.y.2 - 11 - if(wdg.2.hasval, 5, 0); size: 22, 22; tint: ink; opacity: wb.2 * if(wdg.2.on, 100%, 55%); show: 2 < wdg.count }
+    text wdg.2.val { at: wp.x.2, wp.y.2 + 11; anchor: center; size: 9; weight: 700; color: ink; opacity: 85% * wb.2; show: 2 < wdg.count }
+    zone ellipse w_hit.2 { at: wp.x.2, wp.y.2; radius: 24; cursor: pointer; active: 2 < wdg.count and not dash }
+    on press w_hit.2 { wdrag = 2; wmoved = false; wd.w = W; wd.h = H }
+    on drag w_hit.2 while wdrag == 2 and abs(drag.dx) + abs(drag.dy) > 6 { wmoved = true }
+    on release w_hit.2 while wdrag == 2 and wmoved { wd.x = pointer.x; wd.y = pointer.y; impulse wwob.2 300; emit w_drop(2); wmoved = false; wdrag = -1 }
+    on release w_hit.2 while wdrag == 2 and not wmoved { wdrag = -1; impulse wwob.2 120; emit w_click(2) }
+    on press right w_hit.2 while wdg.2.right { impulse wwob.2 120; emit w_right(2) }
+    on scroll w_hit.2 while wdg.2.wheel { emit w_wheel(2 * 2 + if(wheel > 0, 1, 0)) }
+    on enter w_hit.2 { wh.2: 1 }
+    on leave w_hit.2 { wh.2: 0 }
+    image wdg.3.icon { at: wp.x.3 - 11, wp.y.3 - 11 - if(wdg.3.hasval, 5, 0); size: 22, 22; tint: ink; opacity: wb.3 * if(wdg.3.on, 100%, 55%); show: 3 < wdg.count }
+    text wdg.3.val { at: wp.x.3, wp.y.3 + 11; anchor: center; size: 9; weight: 700; color: ink; opacity: 85% * wb.3; show: 3 < wdg.count }
+    zone ellipse w_hit.3 { at: wp.x.3, wp.y.3; radius: 24; cursor: pointer; active: 3 < wdg.count and not dash }
+    on press w_hit.3 { wdrag = 3; wmoved = false; wd.w = W; wd.h = H }
+    on drag w_hit.3 while wdrag == 3 and abs(drag.dx) + abs(drag.dy) > 6 { wmoved = true }
+    on release w_hit.3 while wdrag == 3 and wmoved { wd.x = pointer.x; wd.y = pointer.y; impulse wwob.3 300; emit w_drop(3); wmoved = false; wdrag = -1 }
+    on release w_hit.3 while wdrag == 3 and not wmoved { wdrag = -1; impulse wwob.3 120; emit w_click(3) }
+    on press right w_hit.3 while wdg.3.right { impulse wwob.3 120; emit w_right(3) }
+    on scroll w_hit.3 while wdg.3.wheel { emit w_wheel(3 * 2 + if(wheel > 0, 1, 0)) }
+    on enter w_hit.3 { wh.3: 1 }
+    on leave w_hit.3 { wh.3: 0 }
+    image wdg.4.icon { at: wp.x.4 - 11, wp.y.4 - 11 - if(wdg.4.hasval, 5, 0); size: 22, 22; tint: ink; opacity: wb.4 * if(wdg.4.on, 100%, 55%); show: 4 < wdg.count }
+    text wdg.4.val { at: wp.x.4, wp.y.4 + 11; anchor: center; size: 9; weight: 700; color: ink; opacity: 85% * wb.4; show: 4 < wdg.count }
+    zone ellipse w_hit.4 { at: wp.x.4, wp.y.4; radius: 24; cursor: pointer; active: 4 < wdg.count and not dash }
+    on press w_hit.4 { wdrag = 4; wmoved = false; wd.w = W; wd.h = H }
+    on drag w_hit.4 while wdrag == 4 and abs(drag.dx) + abs(drag.dy) > 6 { wmoved = true }
+    on release w_hit.4 while wdrag == 4 and wmoved { wd.x = pointer.x; wd.y = pointer.y; impulse wwob.4 300; emit w_drop(4); wmoved = false; wdrag = -1 }
+    on release w_hit.4 while wdrag == 4 and not wmoved { wdrag = -1; impulse wwob.4 120; emit w_click(4) }
+    on press right w_hit.4 while wdg.4.right { impulse wwob.4 120; emit w_right(4) }
+    on scroll w_hit.4 while wdg.4.wheel { emit w_wheel(4 * 2 + if(wheel > 0, 1, 0)) }
+    on enter w_hit.4 { wh.4: 1 }
+    on leave w_hit.4 { wh.4: 0 }
+    image wdg.5.icon { at: wp.x.5 - 11, wp.y.5 - 11 - if(wdg.5.hasval, 5, 0); size: 22, 22; tint: ink; opacity: wb.5 * if(wdg.5.on, 100%, 55%); show: 5 < wdg.count }
+    text wdg.5.val { at: wp.x.5, wp.y.5 + 11; anchor: center; size: 9; weight: 700; color: ink; opacity: 85% * wb.5; show: 5 < wdg.count }
+    zone ellipse w_hit.5 { at: wp.x.5, wp.y.5; radius: 24; cursor: pointer; active: 5 < wdg.count and not dash }
+    on press w_hit.5 { wdrag = 5; wmoved = false; wd.w = W; wd.h = H }
+    on drag w_hit.5 while wdrag == 5 and abs(drag.dx) + abs(drag.dy) > 6 { wmoved = true }
+    on release w_hit.5 while wdrag == 5 and wmoved { wd.x = pointer.x; wd.y = pointer.y; impulse wwob.5 300; emit w_drop(5); wmoved = false; wdrag = -1 }
+    on release w_hit.5 while wdrag == 5 and not wmoved { wdrag = -1; impulse wwob.5 120; emit w_click(5) }
+    on press right w_hit.5 while wdg.5.right { impulse wwob.5 120; emit w_right(5) }
+    on scroll w_hit.5 while wdg.5.wheel { emit w_wheel(5 * 2 + if(wheel > 0, 1, 0)) }
+    on enter w_hit.5 { wh.5: 1 }
+    on leave w_hit.5 { wh.5: 0 }
+    image wdg.6.icon { at: wp.x.6 - 11, wp.y.6 - 11 - if(wdg.6.hasval, 5, 0); size: 22, 22; tint: ink; opacity: wb.6 * if(wdg.6.on, 100%, 55%); show: 6 < wdg.count }
+    text wdg.6.val { at: wp.x.6, wp.y.6 + 11; anchor: center; size: 9; weight: 700; color: ink; opacity: 85% * wb.6; show: 6 < wdg.count }
+    zone ellipse w_hit.6 { at: wp.x.6, wp.y.6; radius: 24; cursor: pointer; active: 6 < wdg.count and not dash }
+    on press w_hit.6 { wdrag = 6; wmoved = false; wd.w = W; wd.h = H }
+    on drag w_hit.6 while wdrag == 6 and abs(drag.dx) + abs(drag.dy) > 6 { wmoved = true }
+    on release w_hit.6 while wdrag == 6 and wmoved { wd.x = pointer.x; wd.y = pointer.y; impulse wwob.6 300; emit w_drop(6); wmoved = false; wdrag = -1 }
+    on release w_hit.6 while wdrag == 6 and not wmoved { wdrag = -1; impulse wwob.6 120; emit w_click(6) }
+    on press right w_hit.6 while wdg.6.right { impulse wwob.6 120; emit w_right(6) }
+    on scroll w_hit.6 while wdg.6.wheel { emit w_wheel(6 * 2 + if(wheel > 0, 1, 0)) }
+    on enter w_hit.6 { wh.6: 1 }
+    on leave w_hit.6 { wh.6: 0 }
+    image wdg.7.icon { at: wp.x.7 - 11, wp.y.7 - 11 - if(wdg.7.hasval, 5, 0); size: 22, 22; tint: ink; opacity: wb.7 * if(wdg.7.on, 100%, 55%); show: 7 < wdg.count }
+    text wdg.7.val { at: wp.x.7, wp.y.7 + 11; anchor: center; size: 9; weight: 700; color: ink; opacity: 85% * wb.7; show: 7 < wdg.count }
+    zone ellipse w_hit.7 { at: wp.x.7, wp.y.7; radius: 24; cursor: pointer; active: 7 < wdg.count and not dash }
+    on press w_hit.7 { wdrag = 7; wmoved = false; wd.w = W; wd.h = H }
+    on drag w_hit.7 while wdrag == 7 and abs(drag.dx) + abs(drag.dy) > 6 { wmoved = true }
+    on release w_hit.7 while wdrag == 7 and wmoved { wd.x = pointer.x; wd.y = pointer.y; impulse wwob.7 300; emit w_drop(7); wmoved = false; wdrag = -1 }
+    on release w_hit.7 while wdrag == 7 and not wmoved { wdrag = -1; impulse wwob.7 120; emit w_click(7) }
+    on press right w_hit.7 while wdg.7.right { impulse wwob.7 120; emit w_right(7) }
+    on scroll w_hit.7 while wdg.7.wheel { emit w_wheel(7 * 2 + if(wheel > 0, 1, 0)) }
+    on enter w_hit.7 { wh.7: 1 }
+    on leave w_hit.7 { wh.7: 0 }
+    image wdg.8.icon { at: wp.x.8 - 11, wp.y.8 - 11 - if(wdg.8.hasval, 5, 0); size: 22, 22; tint: ink; opacity: wb.8 * if(wdg.8.on, 100%, 55%); show: 8 < wdg.count }
+    text wdg.8.val { at: wp.x.8, wp.y.8 + 11; anchor: center; size: 9; weight: 700; color: ink; opacity: 85% * wb.8; show: 8 < wdg.count }
+    zone ellipse w_hit.8 { at: wp.x.8, wp.y.8; radius: 24; cursor: pointer; active: 8 < wdg.count and not dash }
+    on press w_hit.8 { wdrag = 8; wmoved = false; wd.w = W; wd.h = H }
+    on drag w_hit.8 while wdrag == 8 and abs(drag.dx) + abs(drag.dy) > 6 { wmoved = true }
+    on release w_hit.8 while wdrag == 8 and wmoved { wd.x = pointer.x; wd.y = pointer.y; impulse wwob.8 300; emit w_drop(8); wmoved = false; wdrag = -1 }
+    on release w_hit.8 while wdrag == 8 and not wmoved { wdrag = -1; impulse wwob.8 120; emit w_click(8) }
+    on press right w_hit.8 while wdg.8.right { impulse wwob.8 120; emit w_right(8) }
+    on scroll w_hit.8 while wdg.8.wheel { emit w_wheel(8 * 2 + if(wheel > 0, 1, 0)) }
+    on enter w_hit.8 { wh.8: 1 }
+    on leave w_hit.8 { wh.8: 0 }
+    image wdg.9.icon { at: wp.x.9 - 11, wp.y.9 - 11 - if(wdg.9.hasval, 5, 0); size: 22, 22; tint: ink; opacity: wb.9 * if(wdg.9.on, 100%, 55%); show: 9 < wdg.count }
+    text wdg.9.val { at: wp.x.9, wp.y.9 + 11; anchor: center; size: 9; weight: 700; color: ink; opacity: 85% * wb.9; show: 9 < wdg.count }
+    zone ellipse w_hit.9 { at: wp.x.9, wp.y.9; radius: 24; cursor: pointer; active: 9 < wdg.count and not dash }
+    on press w_hit.9 { wdrag = 9; wmoved = false; wd.w = W; wd.h = H }
+    on drag w_hit.9 while wdrag == 9 and abs(drag.dx) + abs(drag.dy) > 6 { wmoved = true }
+    on release w_hit.9 while wdrag == 9 and wmoved { wd.x = pointer.x; wd.y = pointer.y; impulse wwob.9 300; emit w_drop(9); wmoved = false; wdrag = -1 }
+    on release w_hit.9 while wdrag == 9 and not wmoved { wdrag = -1; impulse wwob.9 120; emit w_click(9) }
+    on press right w_hit.9 while wdg.9.right { impulse wwob.9 120; emit w_right(9) }
+    on scroll w_hit.9 while wdg.9.wheel { emit w_wheel(9 * 2 + if(wheel > 0, 1, 0)) }
+    on enter w_hit.9 { wh.9: 1 }
+    on leave w_hit.9 { wh.9: 0 }
+    image wdg.10.icon { at: wp.x.10 - 11, wp.y.10 - 11 - if(wdg.10.hasval, 5, 0); size: 22, 22; tint: ink; opacity: wb.10 * if(wdg.10.on, 100%, 55%); show: 10 < wdg.count }
+    text wdg.10.val { at: wp.x.10, wp.y.10 + 11; anchor: center; size: 9; weight: 700; color: ink; opacity: 85% * wb.10; show: 10 < wdg.count }
+    zone ellipse w_hit.10 { at: wp.x.10, wp.y.10; radius: 24; cursor: pointer; active: 10 < wdg.count and not dash }
+    on press w_hit.10 { wdrag = 10; wmoved = false; wd.w = W; wd.h = H }
+    on drag w_hit.10 while wdrag == 10 and abs(drag.dx) + abs(drag.dy) > 6 { wmoved = true }
+    on release w_hit.10 while wdrag == 10 and wmoved { wd.x = pointer.x; wd.y = pointer.y; impulse wwob.10 300; emit w_drop(10); wmoved = false; wdrag = -1 }
+    on release w_hit.10 while wdrag == 10 and not wmoved { wdrag = -1; impulse wwob.10 120; emit w_click(10) }
+    on press right w_hit.10 while wdg.10.right { impulse wwob.10 120; emit w_right(10) }
+    on scroll w_hit.10 while wdg.10.wheel { emit w_wheel(10 * 2 + if(wheel > 0, 1, 0)) }
+    on enter w_hit.10 { wh.10: 1 }
+    on leave w_hit.10 { wh.10: 0 }
+    image wdg.11.icon { at: wp.x.11 - 11, wp.y.11 - 11 - if(wdg.11.hasval, 5, 0); size: 22, 22; tint: ink; opacity: wb.11 * if(wdg.11.on, 100%, 55%); show: 11 < wdg.count }
+    text wdg.11.val { at: wp.x.11, wp.y.11 + 11; anchor: center; size: 9; weight: 700; color: ink; opacity: 85% * wb.11; show: 11 < wdg.count }
+    zone ellipse w_hit.11 { at: wp.x.11, wp.y.11; radius: 24; cursor: pointer; active: 11 < wdg.count and not dash }
+    on press w_hit.11 { wdrag = 11; wmoved = false; wd.w = W; wd.h = H }
+    on drag w_hit.11 while wdrag == 11 and abs(drag.dx) + abs(drag.dy) > 6 { wmoved = true }
+    on release w_hit.11 while wdrag == 11 and wmoved { wd.x = pointer.x; wd.y = pointer.y; impulse wwob.11 300; emit w_drop(11); wmoved = false; wdrag = -1 }
+    on release w_hit.11 while wdrag == 11 and not wmoved { wdrag = -1; impulse wwob.11 120; emit w_click(11) }
+    on press right w_hit.11 while wdg.11.right { impulse wwob.11 120; emit w_right(11) }
+    on scroll w_hit.11 while wdg.11.wheel { emit w_wheel(11 * 2 + if(wheel > 0, 1, 0)) }
+    on enter w_hit.11 { wh.11: 1 }
+    on leave w_hit.11 { wh.11: 0 }
+    // <<< kvapky widgetov
+
     // ── ponuka Vypnúť (vyteká z kvapky vypínača smerom od okraja) ──
     let pxs = pick(side, px, W - px, edge - p.y, W - edge + p.y)
     let pys = pick(side, p.y + H - edge, edge - p.y, px, H - px)
@@ -939,5 +1360,22 @@ scene Kvapka {
         "Search engine: {name}" = "Vyhľadávač: {name}"
         "Open containing folder" = "Otvoriť priečinok"
         "Tab name" = "Názov záložky"
+        // kvapky widgetov (logika: tr)
+        "Drop" = "Kvapka"
+        "Drop · shown" = "Kvapka · na ploche"
+        "Control center" = "Ovládacie centrum"
+        "Volume" = "Hlasitosť"
+        "Battery" = "Batéria"
+        "Media" = "Médiá"
+        "System monitor" = "Systém"
+        "Weather" = "Počasie"
+        "Night light" = "Nočné svetlo"
+        "Power profile" = "Profil napájania"
+        "Keep awake" = "Nevypínať obrazovku"
+        "Keyboard layout" = "Rozloženie klávesnice"
+        "Clipboard" = "Schránka"
+        "Screenshot" = "Snímka obrazovky"
+        "Wallpaper" = "Tapeta"
+        "Light and dark" = "Svetlý a tmavý režim"
     }
 }

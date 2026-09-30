@@ -54,6 +54,20 @@ ako samostatná vrstva (layer-shell) nad jej lištou.
   (`blocks` z `hyprctl clients` každých 700 ms). Kým tam okno nie je, zhromaždí sa do výšky; keby okno prekryl,
   stiahne sa k okraju do nízkeho cik-cak radu. Okno na druhom konci obrazovky lištu nezrovná. Aj vysunutie lišty
   (`room`) počíta iba s oknami nad lištou (Hodiny, vypínač a šnúra). Hysterézia 16 px, aby strapec neblikal.
+- **spúšťač z Hodín** (30. 9.; ľavý klik na Hodiny alebo kláves Win): hľadanie v aplikáciách, súboroch (`fd`), na webe
+  (predvolený vyhľadávač) a otázka pre AI (ChatGPT, Claude, Perplexity, Copilot, Le Chat, Google AI — tie, ktoré
+  otázku prevezmú z adresy); záložky s obľúbenými aplikáciami (predvolene Obľúbené z doterajších pripnutých a Hry),
+  pomenované používateľom. Pravý klik: aplikácia → pridať do záložky, web → vyhľadávač, AI → ktoré čety, záložka →
+  premenovať/posunúť/odstrániť. Nastavenia `~/.config/latteos/spustac.json`. Kvapka Hodín sa stane „uchom“ karty.
+- **kvapky widgetov** (30. 9.): widgety Noctalie ako kvapky na okrajoch obrazovky (ovládacie centrum, hlasitosť,
+  sieť, bluetooth, batéria, médiá, systém, počasie, nočné svetlo, profil napájania, nevypínať obrazovku, rozloženie
+  klávesnice, schránka, snímka obrazovky, tapeta, svetlý/tmavý režim). Kliky a koliesko presne podľa Noctalie
+  (`widget_gesture_defaults.cpp`) — kde Noctalia pravý klik nemá, nemá ho ani kvapka. Chytiť a pustiť pri inom okraji
+  = prilepí sa tam; pustiť uprostred = steká preč; pridať cez spúšťač (napr. „hlas“ → Hlasitosť · Kvapka).
+  Rozmiestnenie `~/.config/latteos/kvapky-widgety.json`; šnúra okien sa zastaví pred kvapkami na tom istom okraji.
+  Počet: `python3 session/kvapky/widgety.py N` (WMAX v kvapka.luau)
+- **živý tvor**: Hodiny, vypínač a hlava sa k priblíženému kurzoru nakloní, nad nimi sa nafúknu a netrpezlivo
+  pulzujú; kvapky widgetov tiež
 - **hladina pri okraji ako v Marei** (30. 9., prevzaté z k4ditano/marea-plm, BSD-3): keď Hodiny vyplávajú do panela
   alebo sa vrátia, otvorí/zavrie sa ponuka Vypnúť, pribudne/ubudne okno alebo lišta pristane pri okraji, vyrazia po
   hladine dve malé vlnky doľava a doprava; pod Hodinami sa hladina prehne a po prasknutí krku ostane na okraji
