@@ -50,6 +50,14 @@ ako samostatná vrstva (layer-shell) nad jej lištou.
   dlaždice; pri prepnutí sa okienka prelejú, myš nad hlavou obraz zvýrazní
 - **guľôčky aj v dashboarde a ponuke Vypnúť**: pripnuté aplikácie a rýchle nastavenia sedia v goo guľôčkach spojených
   lepkavým vláknom (myš guľôčku nafúkne a vlákno zhrubne), riadky ponuky Vypnúť sú kapsuly zliate do stĺpca
+- **strapce podľa okien priamo nad sebou** (30. 9.): každý strapec sa pozrie iba na okná nad svojím úsekom okraja
+  (`blocks` z `hyprctl clients` každých 700 ms). Kým tam okno nie je, zhromaždí sa do výšky; keby okno prekryl,
+  stiahne sa k okraju do nízkeho cik-cak radu. Okno na druhom konci obrazovky lištu nezrovná. Aj vysunutie lišty
+  (`room`) počíta iba s oknami nad lištou (Hodiny, vypínač a šnúra). Hysterézia 16 px, aby strapec neblikal.
+- **svetlo**: pasívne v ploche (light zhora, bodka odlesku hore vľavo) a aktívne — kurzor: svetlá škvrna na povrchu
+  ide za ním (radiálny prechod tela) a na každej guľôčke, hlave a Hodinách pribudne odlesk na strane ku kurzoru
+- **pravý klik** na goo nerobí nič, okrem guľôčok okien (ponuka okna) — ako na paneli úloh vo Windows; lištu
+  presúva iba ľavé ťahanie
 - **pod oknom využije voľné miesto**: logika zmeria miesto po najnižšie okno (`room`), lišta sa vysunie presne po
   jeho spodok a strapce sa v tom páse rozložia nepravidelne (cik-cak) — bez prekrytia okna
 - ponuka okna (pravý klik na guľôčku) pri kurzore: poloha priamo od Hyprlandu (`hyprctl -j cursorpos`)
