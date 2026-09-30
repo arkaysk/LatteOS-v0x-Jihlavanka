@@ -243,6 +243,11 @@ scene Kvapka {
     prop pm = 0 ~380ms                       // ponuka Vypnúť
     follow pm = if(pmenu, 1, 0)
     follow dsh = if(dash, 1, 0)
+    spring springy = 170, 11
+    prop dsw = 0 ~springy
+    follow dsw = if(dash or dsh > 0.3, 1, 0)             // ucho ostane v rohu, kým sa karta nezloží
+    prop swob = 0 ~springy
+    on change dsw < 0.05 while dsw < 0.05 and not dash { impulse swob 380; impulse wob 60 }
     on change ap > 0.9 while ap > 0.9 { impulse wob 70 }
 
     // Štart a vypínač: bez odtrhnutia, iba sa vysunú (pri myši napoly von, ako hlavná kvapka)
@@ -345,12 +350,12 @@ scene Kvapka {
     let vd.3 = 10 + 58 * vl.3
     let vh.3 = 12 * (1 - vl.3) * clamp(vl.3 * 6, 0, 1) * ap
     // prehnutie hladiny pod Hodinami, kým vyplávajú do panela (zvon: najväčšie v polovici cesty, ako krk)
-    let sag.s = 16 * 4 * clamp(dsh, 0, 1) * (1 - clamp(dsh, 0, 1)) * so
+    let sag.s = 16 * 4 * clamp(dsw, 0, 1) * (1 - clamp(dsw, 0, 1)) * so
     // kvapka, ktorá ostane po prasknutí krku: chvíľu visí na okraji, potom ju hladina pohltí
     prop stray = 0 ~520ms
     prop stray.x = 0 ~0ms
-    on change dsh > 0.84 while dsh > 0.84 { vx.0: sx ~0ms; vl.0: 0 ~16ms; vl.0: 1 ~900ms after 30ms; stray.x: sx ~0ms; stray: 1 ~16ms; stray: 0 ~520ms after 60ms }
-    on change dsh < 0.06 while dsh < 0.06 { vx.0: sx ~0ms; vl.0: 0 ~16ms; vl.0: 1 ~760ms after 30ms }
+    on change dsw > 0.3 while dsw > 0.3 and dash { vx.0: sx ~0ms; vl.0: 0 ~16ms; vl.0: 1 ~900ms after 30ms; stray.x: sx ~0ms; stray: 1 ~16ms; stray: 0 ~520ms after 60ms }
+    on change dsw < 0.05 while dsw < 0.05 and not dash { vx.0: sx ~0ms; vl.0: 0 ~16ms; vl.0: 1 ~760ms after 30ms }
     on change pm > 0.84 while pm > 0.84 { vx.1: px ~0ms; vl.1: 0 ~16ms; vl.1: 1 ~900ms after 30ms }
     on change pm < 0.06 while pm < 0.06 { vx.1: px ~0ms; vl.1: 0 ~16ms; vl.1: 1 ~760ms after 30ms }
     on change n { vx.2: lx + chain_w * 0.5 ~0ms; vl.2: 0 ~16ms; vl.2: 1 ~900ms after 30ms }
@@ -484,7 +489,7 @@ scene Kvapka {
             line { from: lx + ux.47 + 2 * noise(32.9, time * 0.35) + if(bdrag == 47, bdx, 0), mid + uy.47 + 2.5 * noise(66.1, time * 0.3) + if(bdrag == 47, bdy, 0); to: lx + kx.47, if(uy.47 > -3, edge + 14, mid + ky.47); width: ur.47 * b.47 * 0.3 * if(bdrag == 47, clamp(1 - (abs(bdx) + abs(bdy)) / 520, 0.22, 1), 1) * (1 - o.pull) * ap; blend: 9 }
             // Štart a vypínač: vlastná „voda“ pod okrajom; s hlavou a medzi sebou ich spája most `link`
             box { from: px - 34 - 14 * flow2 * stir, edge; size: (sx - px + 68 + 28 * flow2 * stir) * so, 70 }
-            ellipse { at: sx, s.y; radius: (33 + 3 * hs) * so * (1 - smooth(0, 0.12, dsh)); scale: 1 + squish.s * 0.08 + jit.s, 1 - squish.s * 0.12 - jit.s; blend: link * so }
+            ellipse { at: sx, s.y; radius: (33 + 3 * hs) * so * (1 - smooth(0, 0.08, dsw)); scale: 1 + squish.s * 0.08 + jit.s + swob * 0.01, 1 - squish.s * 0.12 - jit.s - swob * 0.01; blend: link * so }
             // upozornenia: kvapôčky prilepené hore vľavo na Hodinách (najviac tri) a jedna, ktorá práve padá
             ellipse { at: sx - 25, s.y - 23; radius: 6.5 * so * (1 - dsh) * if(notes.count > 0, 1, 0); blend: 8 }
             ellipse { at: sx - 10, s.y - 34; radius: 5.5 * so * (1 - dsh) * if(notes.count > 1, 1, 0); blend: 8 }
@@ -587,9 +592,9 @@ scene Kvapka {
         box { at: tst.x, tst.y; size: 40 + 300 * toast.p, 30 + 14 * toast.p; corner: 22; blend: 22 }
     }
     // hodiny: digitálny čas a dátum v kvapke (bez očí; ľavý klik alebo kláves Win otvorí spúšťač)
-    text now.time { at: cxs, cys - 5; anchor: center; size: 16; weight: 800; color: ink; opacity: so * ap * (1 - smooth(0, 0.2, dsh)); show: solo }
-    text pick(now.weekday, "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat") { at: cxs - 2, cys + 12; anchor: right center; size: 9.5; weight: 600; color: ink; opacity: 70% * so * ap * (1 - smooth(0, 0.2, dsh)); show: solo }
-    text "{now.day}. {now.month}." { at: cxs + 1, cys + 12; anchor: left center; size: 9.5; weight: 600; color: ink; opacity: 70% * so * ap * (1 - smooth(0, 0.2, dsh)); show: solo }
+    text now.time { at: cxs, cys - 5; anchor: center; size: 16; weight: 800; color: ink; opacity: so * ap * (1 - smooth(0, 0.08, dsw)); show: solo }
+    text pick(now.weekday, "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat") { at: cxs - 2, cys + 12; anchor: right center; size: 9.5; weight: 600; color: ink; opacity: 70% * so * ap * (1 - smooth(0, 0.08, dsw)); show: solo }
+    text "{now.day}. {now.month}." { at: cxs + 1, cys + 12; anchor: left center; size: 9.5; weight: 600; color: ink; opacity: 70% * so * ap * (1 - smooth(0, 0.08, dsw)); show: solo }
 
     text toast { at: tst.x - 135, tst.y; anchor: left center; width: 270; lines: 1; size: 12.5; weight: 600; color: ink; opacity: clamp(toast.p * 2 - 1, 0, 1) * so; show: solo }
 
@@ -598,14 +603,15 @@ scene Kvapka {
     let dh = 540
     let dt.x = if(vert, cxs + away.x * (40 + dw / 2), clamp(cxs + 190, dw / 2 + 12, W - dw / 2 - 12))
     let dt.y = if(vert, clamp(cys, dh / 2 + 12, H - dh / 2 - 12), cys + away.y * (40 + dh / 2))
-    // kvapka hodiniek sa odlepí od lišty, dopláva do rohu karty (bod karty najbližší hodinkám) a karta z nej
-    // vyrastie — ako v Marei, kde sa kvapka stane rohom okna („ucho“); na lište po nej ostane iba mláka a vlnky
-    let dk.x = clamp(cxs, dt.x - dw / 2 + 34, dt.x + dw / 2 - 34)
-    let dk.y = clamp(cys, dt.y - dh / 2 + 34, dt.y + dh / 2 - 34)
-    let d.swim = smooth(0, 0.45, dsh)
-    let d.grow = smooth(0.3, 1, dsh)
-    let db.x = cxs + (dk.x - cxs) * d.swim
-    let db.y = cys + (dk.y - cys) * d.swim
+    // kvapka Hodín sa odlepí od lišty, pružne dopláva do rohu karty najbližšieho Hodinám a karta z nej vyrastie;
+    // kým je okno otvorené, ostane v rohu ako trčiace „ucho“ s časom (ako v Marei — je poznať, odkiaľ okno je).
+    // Pri zatvorení sa karta najprv zloží do ucha a až potom ucho pružne odkvapne domov na okraj (odrazí sa,
+    // zachveje, po hladine sa rozbehnú vlnky). dsw: cesta ucha 0 doma … 1 v rohu, pružina s prestrelením.
+    let dk.x = if(cxs < dt.x, dt.x - dw / 2, dt.x + dw / 2)
+    let dk.y = if(cys < dt.y, dt.y - dh / 2, dt.y + dh / 2)
+    let d.grow = smooth(0.35, 1, dsh) * smooth(0.75, 0.97, dsw)
+    let db.x = cxs + (dk.x - cxs) * dsw
+    let db.y = cys + (dk.y - cys) * dsw
     let dc.x = dk.x + (dt.x - dk.x) * d.grow
     let dc.y = dk.y + (dt.y - dk.y) * d.grow
     let d0.x = dt.x - dw / 2 + 28              // obsah: ľavý horný roh
@@ -617,12 +623,12 @@ scene Kvapka {
         light: 10%, dc.y - dh / 2, 60
         rim: 30%
         shadow: 0, 10, 30, 40% * dsh
-        opacity: if(dsh > 0.01, 1, 0) * so
-        ellipse { at: db.x, db.y; radius: 34 * if(d.grow > 0.02, 0, 1) }
-        box { at: if(d.grow > 0.02, dc.x, db.x), if(d.grow > 0.02, dc.y, db.y); size: 68 + (dw - 68) * d.grow, 68 + (dh - 68) * d.grow; corner: 34 - 6 * d.grow }
-        // ucho: kvapka hodiniek ostane v rohu karty (Marea)
-        ellipse { at: dk.x, dk.y; radius: 30 * d.grow; blend: 14 }
+        opacity: if(dsw > 0.02 or dsh > 0.01, 1, 0) * so
+        box { at: dc.x, dc.y; size: (60 + (dw - 60) * d.grow) * if(d.grow > 0.01, 1, 0), (60 + (dh - 60) * d.grow) * if(d.grow > 0.01, 1, 0); corner: 30 - 2 * d.grow }
+        // ucho = kvapka Hodín (trčí z rohu, zliata s kartou)
+        ellipse { at: db.x, db.y; radius: 33 * clamp(dsw * 4, 0, 1); scale: 1 + swob * 0.01, 1 - swob * 0.01; blend: 18 * d.grow }
     }
+    text now.time { at: db.x, db.y - 1; anchor: center; size: 13; weight: 800; color: ink; opacity: so * clamp(dsw * 3 - 0.5, 0, 1); show: dsw > 0.1 }
     group {
         opacity: dshow
         show: dsh > 0.5
