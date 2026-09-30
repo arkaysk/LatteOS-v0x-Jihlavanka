@@ -1,5 +1,7 @@
 # Kvapky — tekutá lišta LatteOS (prototyp)
 
+Čo LatteOS Goo je, pravidlá a správanie: [LATTEOS-GOO.md](../../LATTEOS-GOO.md). Tu je technický zoznam funkcií.
+
 Koncept: [AUDIT-WIN11.md › Koncept „Kvapky“](../../AUDIT-WIN11.md) (súkromné repo), maketa D na plátne dizajnu.
 Beží na [pleamar](https://github.com/k4ditano/pleamar) (BSD-3, Rust + wgpu, SDF, pružiny) **vedľa** Noctalie,
 ako samostatná vrstva (layer-shell) nad jej lištou.
