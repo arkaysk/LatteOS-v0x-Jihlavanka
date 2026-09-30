@@ -50,6 +50,12 @@ enable_daemon = false
 
 [wallpaper]
 enabled = false
+
+# klik na Hodiny otvorí ovládacie centrum Noctalie (dashboard) — lišta Noctalie nie je, preto voľne vľavo dole
+# nad Hodinami, nie prilepené k lište
+[shell.panel]
+control_center_placement = "floating"
+control_center_position  = "bottom_left"
 EOF2
     NOCTALIA_CONFIG_HOME="$dir" setsid -f noctalia >/dev/null 2>&1
 }
