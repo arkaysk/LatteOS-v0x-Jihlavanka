@@ -60,24 +60,34 @@ scene Kvapka {
     fact smode = 1                           // 0 AI, 1 aplikácie, 2 súbory, 3 web, 4 Linux príkaz
     fact mode_open = false                   // rozbalený výber režimu pod ikonou
     fact mode_hot = -1
-    model modes max 5 { name: text; icon: image 20, 20 }
+    model modes max 5 { name: text; glyph: text }
     fact tab = 1                             // záložka obľúbených (1..), v režime aplikácií
     // riadky obsahu: aplikácie, súbory, vyhľadávače, príkazy — vpravo druh
-    model hits max 10 { name: text; sub: text; icon: image 24, 24; warn: bool }
+    model hits max 7 { name: text; sub: text; icon: image 28, 28; warn: bool }
     fact sel = 0
     fact hit_hot = -1
     // obľúbené v záložke: mriežka 6 × 3
-    model favs max 18 { name: text; icon: image 40, 40 }
+    model favs max 12 { name: text; icon: image 36, 36 }
+    text fav_title = ""                      // názov zvolenej záložky nad dlaždicami
+    // nedávno spustené aplikácie (pod obľúbenými, 2 × 2)
+    model recent max 4 { name: text; icon: image 24, 24 }
+    fact rec_hot = -1
+    event rec_open ->
+    event rec_menu ->
+    fact tema = 0                            // téma LatteOS (poradie v session/themes/make-themes.py, logika)
     fact fav_hot = -1
     // AI: rozhovor ako goo bubliny, najnovšia navrchu pri poli (náčrt); me = používateľ
     model chat max 8 { txt: text; me: bool }
     fact ai_wait = false
     // riadok režimu: čipy (záložky, AI služba a model, vyhľadávač…); on = vybraný, drop = otvorí ponuku
-    model chips max 7 { label: text; on: bool; drop: bool }
+    model chips max 7 { label: text; label_on: bool; glyph: text; hasg: bool; on: bool; drop: bool }
     fact chip_hot = -1
     // počasie: miesto, súhrn zvolenej varianty (0 dnes, 1 zajtra, 2 týždeň); Detaily = predpoveď v obsahu
     text wx_place = ""
     text wx_sum = ""
+    text wx_icon = ""
+    text wx_icon = ""
+    text wx_icon = ""
     fact wx_view = 0
     fact wx_detail = false
     fact wx_hot = -1
@@ -625,21 +635,17 @@ scene Kvapka {
     text toast { at: tst.x - 135, tst.y; anchor: left center; width: 270; lines: 1; size: 12.5; weight: 600; color: ink; opacity: clamp(toast.p * 2 - 1, 0, 1) * so; show: solo }
 
     // ── spúšťač (vyteká z hodiniek smerom od okraja; v obrazovke, text rovno) ──
-    // vzhľad spúšťača (1. 10.: používateľovi sa nepáčia písmo a farby → varianty na výber); písmo LatteOS Manrope
-    let l.card = coffee                        // karta (Goo: káva podľa Baristu)
-    let l.glass = 0%
-    let l.ink = ink                            // text
-    let l.acc = #e4b283                        // zvýraznenie (karamel)
-    let l.onacc = #2a170c                      // text na zvýraznení
-    let l.hov = #ffffff                        // podklad riadku pod myšou (s nízkou nepriehľadnosťou)
-    let l.field = #000000                      // podklad poľa
-    let l.sel = #6b4a33                        // výber textu
-    let l.modes = mix(coffee, #e4b283, 0.55)   // ikona režimu a jeho výber
-    let l.menu = mix(coffee, #f3ebdd, 0.08)    // kontextová ponuka
-    let l.bme = #e4b283                        // bublina používateľa
-    let l.bme_ink = #2a170c
-    let l.bai = mix(coffee, #f3ebdd, 0.13)     // bublina AI
-    let l.bai_ink = ink
+    // >>> spúšťač (spustac.py)
+    // Vzhľad (1. 10., používateľ: „moderné ikony, fonty, trošku minimalizmu; chytrosti, vkusnosti a užitočnosti“):
+    // farby z témy LatteOS (fact tema = poradie v make-themes.py), karta od ucha prechádza z kávy do farby okien.
+    let l.acc = mix(mix(mix(mix(mix(mix(mix(mix(mix(mix(mix(mix(mix(#e4b283, #3b8fc4, if(tema == 1, 1, 0)), #5d6b78, if(tema == 2, 1, 0)), #7a8794, if(tema == 3, 1, 0)), #9c7a2e, if(tema == 4, 1, 0)), #8c7b6b, if(tema == 5, 1, 0)), #d9c7b0, if(tema == 6, 1, 0)), #e2963c, if(tema == 7, 1, 0)), #ff96aa, if(tema == 8, 1, 0)), #4f8fc9, if(tema == 9, 1, 0)), #2b6cd6, if(tema == 10, 1, 0)), #66c0f4, if(tema == 11, 1, 0)), #3478f6, if(tema == 12, 1, 0)), #9ad36a, if(tema == 13, 1, 0))
+    let l.onacc = mix(mix(mix(mix(mix(mix(mix(mix(mix(mix(mix(mix(mix(#1e1712, #ffffff, if(tema == 1, 1, 0)), #ffffff, if(tema == 2, 1, 0)), #ffffff, if(tema == 3, 1, 0)), #fff8e6, if(tema == 4, 1, 0)), #ffffff, if(tema == 5, 1, 0)), #1e1c1a, if(tema == 6, 1, 0)), #2a1606, if(tema == 7, 1, 0)), #3a0712, if(tema == 8, 1, 0)), #ffffff, if(tema == 9, 1, 0)), #ffffff, if(tema == 10, 1, 0)), #171d25, if(tema == 11, 1, 0)), #ffffff, if(tema == 12, 1, 0)), #111111, if(tema == 13, 1, 0))
+    let l.win = mix(mix(mix(mix(mix(mix(mix(mix(mix(mix(mix(mix(mix(#1b1410, #eaf4fb, if(tema == 1, 1, 0)), #d9dde1, if(tema == 2, 1, 0)), #e6e9ec, if(tema == 3, 1, 0)), #efe2c4, if(tema == 4, 1, 0)), #f6f2ec, if(tema == 5, 1, 0)), #1e1c1a, if(tema == 6, 1, 0)), #2a1606, if(tema == 7, 1, 0)), #3a0712, if(tema == 8, 1, 0)), #e8eef5, if(tema == 9, 1, 0)), #fafafa, if(tema == 10, 1, 0)), #171d25, if(tema == 11, 1, 0)), #eceef2, if(tema == 12, 1, 0)), #1c1c1c, if(tema == 13, 1, 0))
+    let l.var = mix(mix(mix(mix(mix(mix(mix(mix(mix(mix(mix(mix(mix(#261d17, #d6ecfa, if(tema == 1, 1, 0)), #c9ced3, if(tema == 2, 1, 0)), #d6dadf, if(tema == 3, 1, 0)), #e3cf9f, if(tema == 4, 1, 0)), #e6e0d8, if(tema == 5, 1, 0)), #2a2724, if(tema == 6, 1, 0)), #3d2210, if(tema == 7, 1, 0)), #52101f, if(tema == 8, 1, 0)), #d8e2ee, if(tema == 9, 1, 0)), #e6e6e6, if(tema == 10, 1, 0)), #1b2838, if(tema == 11, 1, 0)), #ffffff, if(tema == 12, 1, 0)), #2e2e2e, if(tema == 13, 1, 0))
+    let l.fg = mix(mix(mix(mix(mix(mix(mix(mix(mix(mix(mix(mix(mix(#f3ebdd, #10283d, if(tema == 1, 1, 0)), #1c2126, if(tema == 2, 1, 0)), #1a1d21, if(tema == 3, 1, 0)), #2b1f08, if(tema == 4, 1, 0)), #2a2622, if(tema == 5, 1, 0)), #ede6dc, if(tema == 6, 1, 0)), #ffe6b4, if(tema == 7, 1, 0)), #ffeff2, if(tema == 8, 1, 0)), #1c2430, if(tema == 9, 1, 0)), #1b1b1b, if(tema == 10, 1, 0)), #c7d5e0, if(tema == 11, 1, 0)), #1d1d1f, if(tema == 12, 1, 0)), #dadada, if(tema == 13, 1, 0))
+    let l.dim = mix(mix(mix(mix(mix(mix(mix(mix(mix(mix(mix(mix(mix(#cdbca6, #3a5a74, if(tema == 1, 1, 0)), #4a525a, if(tema == 2, 1, 0)), #50575f, if(tema == 3, 1, 0)), #5e4a22, if(tema == 4, 1, 0)), #6e6358, if(tema == 5, 1, 0)), #bdb3a6, if(tema == 6, 1, 0)), #e0b98a, if(tema == 7, 1, 0)), #f2b8c4, if(tema == 8, 1, 0)), #4e5b6d, if(tema == 9, 1, 0)), #555555, if(tema == 10, 1, 0)), #8ba3b8, if(tema == 11, 1, 0)), #5b5b60, if(tema == 12, 1, 0)), #a0a0a0, if(tema == 13, 1, 0))
+    let l.line = mix(mix(mix(mix(mix(mix(mix(mix(mix(mix(mix(mix(mix(#4a3b30, #a9c9de, if(tema == 1, 1, 0)), #a3aab1, if(tema == 2, 1, 0)), #b4bbc2, if(tema == 3, 1, 0)), #c7ae74, if(tema == 4, 1, 0)), #cfc6bb, if(tema == 5, 1, 0)), #4a443e, if(tema == 6, 1, 0)), #6b4220, if(tema == 7, 1, 0)), #7d0f24, if(tema == 8, 1, 0)), #b3c2d4, if(tema == 9, 1, 0)), #d0d0d0, if(tema == 10, 1, 0)), #2a475e, if(tema == 11, 1, 0)), #d2d5db, if(tema == 12, 1, 0)), #3a3a3a, if(tema == 13, 1, 0))
+    let l.hover = mix(mix(mix(mix(mix(mix(mix(mix(mix(mix(mix(mix(mix(#3a2d24, #cfe4f3, if(tema == 1, 1, 0)), #bfc5cb, if(tema == 2, 1, 0)), #cdd2d7, if(tema == 3, 1, 0)), #e0cb95, if(tema == 4, 1, 0)), #eae3da, if(tema == 5, 1, 0)), #36322e, if(tema == 6, 1, 0)), #4a2b14, if(tema == 7, 1, 0)), #5e1426, if(tema == 8, 1, 0)), #ccd8e6, if(tema == 9, 1, 0)), #dddddd, if(tema == 10, 1, 0)), #22324a, if(tema == 11, 1, 0)), #e2e5ea, if(tema == 12, 1, 0)), #333333, if(tema == 13, 1, 0))
     let dw = 640
     let dh = 560
     // ucho (roh okna) je presne nad Hodinami (na bočnom okraji presne vedľa): kvapka vystúpi kolmo od okraja a späť
@@ -653,13 +659,11 @@ scene Kvapka {
     let dt.y = if(vert, dk.y + d.sy * dh / 2, dk.y + away.y * dh / 2)
     // kvapka Hodín sa odlepí od lišty, pružne dopláva do rohu karty najbližšieho Hodinám a karta z nej vyrastie;
     // kým je okno otvorené, ostane v rohu ako trčiace „ucho“ s časom (ako v Marei — je poznať, odkiaľ okno je).
-    // Pri zatvorení sa karta najprv zloží do ucha a až potom ucho pružne odkvapne domov na okraj (odrazí sa,
-    // zachveje, po hladine sa rozbehnú vlnky). dsw: cesta ucha 0 doma … 1 v rohu, pružina s prestrelením.
+    // Pri zatvorení sa karta najprv zloží do ucha a až potom ucho pružne odkvapne domov na okraj.
     let d.grow = smooth(0.35, 1, dsh) * smooth(0.75, 0.97, dsw)
     let db.x = cxs + (dk.x - cxs) * dsw
     let db.y = cys + (dk.y - cys) * dsw
-    // vlákno od Hodín k letiacej kvapke (sliz, 1. 10.): čím ďalej, tým tenšie; pri 58 px praskne a konce sa stiahnu,
-    // na spiatočnej ceste sa pod 24 px zlepí
+    // vlákno od Hodín k letiacej kvapke (sliz): čím ďalej, tým tenšie; pri 58 px praskne, pod 24 px sa zlepí
     let e.d = length(db.x - cxs, db.y - cys)
     let e.ux = (db.x - cxs) / max(e.d, 1)
     let e.uy = (db.y - cys) / max(e.d, 1)
@@ -669,14 +673,16 @@ scene Kvapka {
     let d0.y = dt.y - dh / 2 + 24
     let cw = dw - 56                           // šírka obsahu
     let dshow = clamp(dsh * 2 - 1, 0, 1)
+    // prechod farby: ďaleko od ucha farba okien, pri uchu káva
+    let g.ax = away.x * dw / 2 * if(vert, 1, 0)
+    let g.ay = away.y * dh / 2 * if(vert, 0, 1)
     body {
-        color: l.card
-        glass: l.glass
-        light: 10%, dc.y - dh / 2, 60
-        rim: 30%
-        shadow: 0, 10, 30, 40% * dsh
+        gradient: dc.x + g.ax, dc.y + g.ay to dc.x - g.ax, dc.y - g.ay, l.win, l.win, l.win, mix(l.win, coffee, 0.35), coffee
+        light: 6%, dc.y - dh / 2, 60
+        rim: 18%
+        shadow: 0, 12, 34, 38% * dsh
         opacity: if(dsw > 0.02 or dsh > 0.01, 1, 0) * so
-        box { at: dc.x, dc.y; size: (60 + (dw - 60) * d.grow) * if(d.grow > 0.01, 1, 0), (60 + (dh - 60) * d.grow) * if(d.grow > 0.01, 1, 0); corner: 30 - 2 * d.grow }
+        box { at: dc.x, dc.y; size: (60 + (dw - 60) * d.grow) * if(d.grow > 0.01, 1, 0), (60 + (dh - 60) * d.grow) * if(d.grow > 0.01, 1, 0); corner: 30 - 6 * d.grow }
         // vlákno k Hodinám (kým nepraskne) a po prasknutí pahýle na oboch koncoch, ktoré sa stiahnu
         ellipse { at: cxs, cys; radius: 15 * if(dsw > 0.02 and not esnap, 1, 0); blend: 12 }
         line { from: cxs, cys; to: db.x, db.y; width: if(esnap or dsw < 0.02, 0, 5 + 20 * pow(clamp(1 - e.d / 58, 0, 1), 1.4)); blend: 12 * if(esnap, 0, 1) }
@@ -688,15 +694,13 @@ scene Kvapka {
     text now.time { at: db.x, db.y - 1; anchor: center; size: 13; weight: 800; color: ink; opacity: so * clamp(dsw * 3 - 0.5, 0, 1); show: dsw > 0.1 }
     // obsah: y0 = horný okraj obsahu pod poľom; riadok režimu a počasia sú pri spodku karty
     let y0 = d0.y + 64
-    let yc = d0.y + 456                        // riadok režimu (čipy)
-    let yw = d0.y + 494                        // riadok počasia
+    let yc = d0.y + 454                        // riadok režimu (čipy)
+    let yw = d0.y + 496                        // riadok počasia
     let show_chat = smode == 0 and not wx_detail
     let show_favs = smode == 1 and not typing and not wx_detail
     let show_hits = smode > 0 and not wx_detail and not show_favs
-    // výber režimu: tekutý stĺpec kapsúl vyteká z ikony v poli (mo 0 → 1)
     prop mo = 0 ~springy
     follow mo = if(mode_open and dash, 1, 0)
-    // rozhovor s AI: bubliny sa merajú samy, najnovšia navrchu; kým AI píše, navrchu pulzuje kvapka „…“
     prop aiw = 0 ~lively
     follow aiw = if(ai_wait, 1, 0)
     fact chst = 0
@@ -720,23 +724,22 @@ scene Kvapka {
     let cy.6 = cy.5 + if(5 < chat.count, ch.5.height + 34, 0)
     let cy.7 = cy.6 + if(6 < chat.count, ch.6.height + 34, 0)
     let chh = cy.7 + if(7 < chat.count, ch.7.height + 34, 0) - cy.0 + 50 * aiw
-    let bx.0 = if(chat.0.me, d0.x + 4, d0.x + cw - ch.0.width - 30)
+    let bx.0 = if(chat.0.me, d0.x + 4, d0.x + cw - ch.0.width - 32)
     let bv.0 = if(0 < chat.count and show_chat, 1, 0)
-    let bx.1 = if(chat.1.me, d0.x + 4, d0.x + cw - ch.1.width - 30)
+    let bx.1 = if(chat.1.me, d0.x + 4, d0.x + cw - ch.1.width - 32)
     let bv.1 = if(1 < chat.count and show_chat, 1, 0)
-    let bx.2 = if(chat.2.me, d0.x + 4, d0.x + cw - ch.2.width - 30)
+    let bx.2 = if(chat.2.me, d0.x + 4, d0.x + cw - ch.2.width - 32)
     let bv.2 = if(2 < chat.count and show_chat, 1, 0)
-    let bx.3 = if(chat.3.me, d0.x + 4, d0.x + cw - ch.3.width - 30)
+    let bx.3 = if(chat.3.me, d0.x + 4, d0.x + cw - ch.3.width - 32)
     let bv.3 = if(3 < chat.count and show_chat, 1, 0)
-    let bx.4 = if(chat.4.me, d0.x + 4, d0.x + cw - ch.4.width - 30)
+    let bx.4 = if(chat.4.me, d0.x + 4, d0.x + cw - ch.4.width - 32)
     let bv.4 = if(4 < chat.count and show_chat, 1, 0)
-    let bx.5 = if(chat.5.me, d0.x + 4, d0.x + cw - ch.5.width - 30)
+    let bx.5 = if(chat.5.me, d0.x + 4, d0.x + cw - ch.5.width - 32)
     let bv.5 = if(5 < chat.count and show_chat, 1, 0)
-    let bx.6 = if(chat.6.me, d0.x + 4, d0.x + cw - ch.6.width - 30)
+    let bx.6 = if(chat.6.me, d0.x + 4, d0.x + cw - ch.6.width - 32)
     let bv.6 = if(6 < chat.count and show_chat, 1, 0)
-    let bx.7 = if(chat.7.me, d0.x + 4, d0.x + cw - ch.7.width - 30)
+    let bx.7 = if(chat.7.me, d0.x + 4, d0.x + cw - ch.7.width - 32)
     let bv.7 = if(7 < chat.count and show_chat, 1, 0)
-    // čipy v riadku režimu: šírka podľa textu
     measure cm.0
     measure cm.1
     measure cm.2
@@ -744,206 +747,219 @@ scene Kvapka {
     measure cm.4
     measure cm.5
     measure cm.6
+    let cwd.0 = 26 + if(chips.0.hasg, 18, 0) + if(chips.0.label_on, cm.0.width + if(chips.0.hasg, 4, 0), -4) + if(chips.0.drop, 16, 0)
+    let cwd.1 = 26 + if(chips.1.hasg, 18, 0) + if(chips.1.label_on, cm.1.width + if(chips.1.hasg, 4, 0), -4) + if(chips.1.drop, 16, 0)
+    let cwd.2 = 26 + if(chips.2.hasg, 18, 0) + if(chips.2.label_on, cm.2.width + if(chips.2.hasg, 4, 0), -4) + if(chips.2.drop, 16, 0)
+    let cwd.3 = 26 + if(chips.3.hasg, 18, 0) + if(chips.3.label_on, cm.3.width + if(chips.3.hasg, 4, 0), -4) + if(chips.3.drop, 16, 0)
+    let cwd.4 = 26 + if(chips.4.hasg, 18, 0) + if(chips.4.label_on, cm.4.width + if(chips.4.hasg, 4, 0), -4) + if(chips.4.drop, 16, 0)
+    let cwd.5 = 26 + if(chips.5.hasg, 18, 0) + if(chips.5.label_on, cm.5.width + if(chips.5.hasg, 4, 0), -4) + if(chips.5.drop, 16, 0)
+    let cwd.6 = 26 + if(chips.6.hasg, 18, 0) + if(chips.6.label_on, cm.6.width + if(chips.6.hasg, 4, 0), -4) + if(chips.6.drop, 16, 0)
     let chx.0 = d0.x
-    let chx.1 = chx.0 + if(0 < chips.count, cm.0.width + 36, 0)
-    let chx.2 = chx.1 + if(1 < chips.count, cm.1.width + 36, 0)
-    let chx.3 = chx.2 + if(2 < chips.count, cm.2.width + 36, 0)
-    let chx.4 = chx.3 + if(3 < chips.count, cm.3.width + 36, 0)
-    let chx.5 = chx.4 + if(4 < chips.count, cm.4.width + 36, 0)
-    let chx.6 = chx.5 + if(5 < chips.count, cm.5.width + 36, 0)
+    let chx.1 = chx.0 + if(0 < chips.count, cwd.0 + 8, 0)
+    let chx.2 = chx.1 + if(1 < chips.count, cwd.1 + 8, 0)
+    let chx.3 = chx.2 + if(2 < chips.count, cwd.2 + 8, 0)
+    let chx.4 = chx.3 + if(3 < chips.count, cwd.3 + 8, 0)
+    let chx.5 = chx.4 + if(4 < chips.count, cwd.4 + 8, 0)
+    let chx.6 = chx.5 + if(5 < chips.count, cwd.5 + 8, 0)
+    let fav_rows = clamp(floor((favs.count + 5) / 6), 1, 2)
+    let ry0 = y0 + 46 + fav_rows * 90          // nadpis „Nedávne“
     measure wxp
-    let wxs = d0.x + 16 + wxp.width + 14         // začiatok variantov počasia
+    let wxs = d0.x + 34 + wxp.width + 12       // začiatok variantov počasia
     group {
         opacity: dshow
         show: dsh > 0.5
-        // pole: ikona režimu + text (alebo názov záložky pri premenovaní)
-        box { at: d0.x + cw / 2, d0.y + 24; size: cw, 48; corner: 24; color: l.field; opacity: 30% }
-        box { at: d0.x + cw / 2, d0.y + 24; size: cw, 48; corner: 24; color: l.acc; opacity: if(renaming, 22%, 0) }
-        text hint { at: d0.x + 54, d0.y + 24; anchor: left center; width: cw - 70; lines: 1; size: 15; color: l.ink; opacity: 45%; show: not typing and not renaming; family: "Manrope" }
-        input query { at: d0.x + 54, d0.y + 24; width: cw - 70; size: 15; color: l.ink; selection: l.sel; family: "Manrope" }
-    }
-    group {
-        opacity: dshow
-        show: dsh > 0.5
-        // riadky: aplikácie, súbory, vyhľadávače, príkazy
-        repeat k in 0..10 {
-            box { at: d0.x + cw / 2, y0 + 17 + k * 34; size: cw, 32; corner: 12; color: if(hits.$k.warn, #e07a5f, l.hov); opacity: if(hits.$k.warn, 22%, if(k == sel and typing, 11%, if(hit_hot == k, 7%, 0))); show: show_hits and k < hits.count }
-            image hits.$k.icon { at: d0.x + 10, y0 + 5 + k * 34; size: 24, 24; show: show_hits and k < hits.count }
-            text hits.$k.name { at: d0.x + 44, y0 + 17 + k * 34; anchor: left center; width: cw - 190; lines: 1; size: 13.5; color: l.ink; show: show_hits and k < hits.count; family: "Manrope" }
-            text hits.$k.sub { at: d0.x + cw - 10, y0 + 17 + k * 34; anchor: right center; width: 140; lines: 1; size: 11; color: l.ink; opacity: 55%; show: show_hits and k < hits.count; family: "Manrope" }
+        // pole: ikona režimu (klik = výber) + text; tenký akcentový okraj
+        box { at: d0.x + cw / 2, d0.y + 24; size: cw, 48; corner: 14; color: l.acc; opacity: if(renaming, 100%, 75%) }
+        box { at: d0.x + cw / 2, d0.y + 24; size: cw - 3, 45; corner: 12.5; color: l.var }
+        box { at: d0.x + 30, d0.y + 24; size: 48, 34; corner: 10; color: l.acc; opacity: if(mode_open, 26%, 12%) }
+        repeat k in 0..5 {
+            text modes.$k.glyph { at: d0.x + 22, d0.y + 24; anchor: center; size: 18; color: l.acc; show: smode == k; family: "noctalia-tabler-icons" }
         }
-        // záložka: obľúbené aplikácie (6 × 3)
-        repeat k in 0..18 {
-            box { at: d0.x + (k - 6 * floor(k / 6)) * 96 + 48, y0 + 56 + floor(k / 6) * 106; size: 90, 98; corner: 18; color: l.hov; opacity: if(fav_hot == k, 9%, 0); show: show_favs and k < favs.count }
-            image favs.$k.icon { at: d0.x + (k - 6 * floor(k / 6)) * 96 + 28, y0 + 22 + floor(k / 6) * 106; size: 40, 40; show: show_favs and k < favs.count }
-            text favs.$k.name { at: d0.x + (k - 6 * floor(k / 6)) * 96 + 48, y0 + 82 + floor(k / 6) * 106; anchor: center; width: 86; lines: 2; size: 11; color: l.ink; opacity: 85%; show: show_favs and k < favs.count; family: "Manrope" }
+        text "" { at: d0.x + 41, d0.y + 25; anchor: center; size: 11; color: l.acc; family: "noctalia-tabler-icons" }
+        text hint { at: d0.x + 66, d0.y + 24; anchor: left center; width: cw - 80; lines: 1; size: 15; color: l.dim; opacity: 80%; show: not typing and not renaming; family: "Inter" }
+        input query { at: d0.x + 66, d0.y + 24; width: cw - 80; size: 15; color: l.fg; selection: l.hover; family: "Inter" }
+        // riadky: aplikácie, súbory, vyhľadávače, príkazy — karta s ikonou, názvom a popisom pod ním
+        repeat k in 0..7 {
+            box { at: d0.x + cw / 2, y0 + 22 + k * 48; size: cw, 44; corner: 12; color: if(hits.$k.warn, #e07a5f, if(k == sel and typing, l.acc, if(hit_hot == k, l.hover, l.var))); opacity: if(hits.$k.warn, 35%, if(k == sel and typing, 100%, if(hit_hot == k, 100%, 60%))); show: show_hits and k < hits.count }
+            image hits.$k.icon { at: d0.x + 14, y0 + 8 + k * 48; size: 28, 28; show: show_hits and k < hits.count }
+            text hits.$k.name { at: d0.x + 54, y0 + 14 + k * 48; anchor: left center; width: cw - 70; lines: 1; size: 14; weight: 500; color: if(k == sel and typing and not hits.$k.warn, l.onacc, l.fg); show: show_hits and k < hits.count; family: "Inter" }
+            text hits.$k.sub { at: d0.x + 54, y0 + 31 + k * 48; anchor: left center; width: cw - 70; lines: 1; size: 11.5; color: if(k == sel and typing and not hits.$k.warn, l.onacc, l.dim); opacity: 90%; show: show_hits and k < hits.count; family: "Inter" }
+        }
+        // aplikácie bez textu: obľúbené zvolenej záložky ako dlaždice (6 × 2) a nedávne (2 × 2)
+        text fav_title { at: d0.x + 2, y0 + 10; anchor: left center; size: 12.5; weight: 600; color: l.dim; show: show_favs; family: "Inter" }
+        repeat k in 0..12 {
+            box { at: d0.x + 44 + (k - 6 * floor(k / 6)) * 96, y0 + 67 + floor(k / 6) * 90; size: 88, 82; corner: 12; color: if(fav_hot == k, l.hover, l.var); opacity: if(fav_hot == k, 100%, 55%); show: show_favs and k < favs.count }
+            image favs.$k.icon { at: d0.x + 26 + (k - 6 * floor(k / 6)) * 96, y0 + 41 + floor(k / 6) * 90; size: 36, 36; show: show_favs and k < favs.count }
+            text favs.$k.name { at: d0.x + 44 + (k - 6 * floor(k / 6)) * 96, y0 + 91 + floor(k / 6) * 90; anchor: center; width: 80; lines: 1; size: 11.5; color: l.fg; show: show_favs and k < favs.count; family: "Inter" }
+        }
+        text "Recent" { at: d0.x + 2, ry0; anchor: left center; size: 12.5; weight: 600; color: l.dim; show: show_favs and recent.count > 0; family: "Inter" }
+        repeat k in 0..4 {
+            box { at: d0.x + 144 + (k - 2 * floor(k / 2)) * 296, ry0 + 34 + floor(k / 2) * 46; size: 288, 40; corner: 10; color: if(rec_hot == k, l.hover, l.var); opacity: if(rec_hot == k, 100%, 55%); show: show_favs and k < recent.count }
+            image recent.$k.icon { at: d0.x + 12 + (k - 2 * floor(k / 2)) * 296, ry0 + 22 + floor(k / 2) * 46; size: 24, 24; show: show_favs and k < recent.count }
+            text recent.$k.name { at: d0.x + 46 + (k - 2 * floor(k / 2)) * 296, ry0 + 34 + floor(k / 2) * 46; anchor: left center; width: 230; lines: 1; size: 13.5; color: l.fg; show: show_favs and k < recent.count; family: "Inter" }
         }
         // prázdny obsah: nápoveda podľa režimu
-        text note { at: d0.x + 4, y0 + 22; anchor: left center; width: cw - 8; lines: 3; size: 12.5; color: l.ink; opacity: 55%; show: not wx_detail and ((show_chat and chat.count < 1 and not ai_wait) or (show_hits and hits.count < 1) or (show_favs and favs.count < 1)); family: "Manrope" }
+        text note { at: d0.x + 2, y0 + 20; anchor: left center; width: cw - 8; lines: 3; size: 13; color: l.dim; show: not wx_detail and ((show_chat and chat.count < 1 and not ai_wait) or (show_hits and hits.count < 1) or (show_favs and favs.count < 1)); family: "Inter" }
         // predpoveď počasia (Detaily): 8 stĺpcov — hodiny dňa alebo dni týždňa
-        text "FORECAST · {wx_place}" { at: d0.x + 4, y0 + 18; anchor: left center; size: 10.5; weight: 800; color: l.acc; show: wx_detail; family: "Fraunces" }
+        text "Forecast · {wx_place}" { at: d0.x + 2, y0 + 10; anchor: left center; size: 12.5; weight: 600; color: l.dim; show: wx_detail; family: "Inter" }
         repeat k in 0..8 {
-            box { at: d0.x + k * (cw / 8) + cw / 16, y0 + 110; size: cw / 8 - 8, 132; corner: 22; color: l.hov; opacity: 6%; show: wx_detail and k < wx.count }
-            text wx.$k.label { at: d0.x + k * (cw / 8) + cw / 16, y0 + 64; anchor: center; size: 11; weight: 700; color: l.ink; opacity: 70%; show: wx_detail and k < wx.count; family: "Manrope" }
-            text wx.$k.glyph { at: d0.x + k * (cw / 8) + cw / 16, y0 + 106; anchor: center; size: 26; color: l.ink; show: wx_detail and k < wx.count }
-            text wx.$k.temp { at: d0.x + k * (cw / 8) + cw / 16, y0 + 150; anchor: center; size: 12.5; weight: 700; color: l.ink; show: wx_detail and k < wx.count; family: "Manrope" }
+            box { at: d0.x + k * (cw / 8) + cw / 16, y0 + 100; size: cw / 8 - 8, 130; corner: 14; color: l.var; opacity: 60%; show: wx_detail and k < wx.count }
+            text wx.$k.label { at: d0.x + k * (cw / 8) + cw / 16, y0 + 56; anchor: center; size: 11.5; color: l.dim; show: wx_detail and k < wx.count; family: "Inter" }
+            text wx.$k.glyph { at: d0.x + k * (cw / 8) + cw / 16, y0 + 98; anchor: center; size: 26; color: l.fg; show: wx_detail and k < wx.count; family: "noctalia-tabler-icons" }
+            text wx.$k.temp { at: d0.x + k * (cw / 8) + cw / 16, y0 + 140; anchor: center; size: 13; weight: 600; color: l.fg; show: wx_detail and k < wx.count; family: "Inter" }
         }
     }
-    // rozhovor: bubliny používateľa (mlieko, vľavo) a AI (káva, vpravo), každá s kvapôčkou-chvostíkom k poľu
+    // rozhovor: bubliny používateľa (akcent, vľavo) a AI (vpravo), goo s kvapôčkou-chvostíkom k poľu
     group {
         opacity: dshow
         show: dsh > 0.5 and show_chat
         clip box { at: d0.x + cw / 2, y0 + 182; size: cw + 20, 364 }
         body {
-            color: l.bai
-            rim: 30%
-            light: 12%, 0, 30
+            color: l.var
+            rim: 12%
+            light: 5%, 0, 30
             ellipse { at: d0.x + cw - 24, cy.0 - 50 * aiw + 22; radius: 20 * aiw; scale: 1.5 + 0.08 * sin(time * 6), 1; blend: 8 * aiw }
-            box { from: bx.0, cy.0; size: (ch.0.width + 26) * bv.0 * if(chat.0.me, 0, 1), ch.0.height + 22; corner: 18 }
-            ellipse { at: bx.0 + ch.0.width + 24, cy.0 + 2; radius: 6 * bv.0 * if(chat.0.me, 0, 1); blend: 8 * bv.0 * if(chat.0.me, 0, 1) }
-            box { from: bx.1, cy.1; size: (ch.1.width + 26) * bv.1 * if(chat.1.me, 0, 1), ch.1.height + 22; corner: 18 }
-            ellipse { at: bx.1 + ch.1.width + 24, cy.1 + 2; radius: 6 * bv.1 * if(chat.1.me, 0, 1); blend: 8 * bv.1 * if(chat.1.me, 0, 1) }
-            box { from: bx.2, cy.2; size: (ch.2.width + 26) * bv.2 * if(chat.2.me, 0, 1), ch.2.height + 22; corner: 18 }
-            ellipse { at: bx.2 + ch.2.width + 24, cy.2 + 2; radius: 6 * bv.2 * if(chat.2.me, 0, 1); blend: 8 * bv.2 * if(chat.2.me, 0, 1) }
-            box { from: bx.3, cy.3; size: (ch.3.width + 26) * bv.3 * if(chat.3.me, 0, 1), ch.3.height + 22; corner: 18 }
-            ellipse { at: bx.3 + ch.3.width + 24, cy.3 + 2; radius: 6 * bv.3 * if(chat.3.me, 0, 1); blend: 8 * bv.3 * if(chat.3.me, 0, 1) }
-            box { from: bx.4, cy.4; size: (ch.4.width + 26) * bv.4 * if(chat.4.me, 0, 1), ch.4.height + 22; corner: 18 }
-            ellipse { at: bx.4 + ch.4.width + 24, cy.4 + 2; radius: 6 * bv.4 * if(chat.4.me, 0, 1); blend: 8 * bv.4 * if(chat.4.me, 0, 1) }
-            box { from: bx.5, cy.5; size: (ch.5.width + 26) * bv.5 * if(chat.5.me, 0, 1), ch.5.height + 22; corner: 18 }
-            ellipse { at: bx.5 + ch.5.width + 24, cy.5 + 2; radius: 6 * bv.5 * if(chat.5.me, 0, 1); blend: 8 * bv.5 * if(chat.5.me, 0, 1) }
-            box { from: bx.6, cy.6; size: (ch.6.width + 26) * bv.6 * if(chat.6.me, 0, 1), ch.6.height + 22; corner: 18 }
-            ellipse { at: bx.6 + ch.6.width + 24, cy.6 + 2; radius: 6 * bv.6 * if(chat.6.me, 0, 1); blend: 8 * bv.6 * if(chat.6.me, 0, 1) }
-            box { from: bx.7, cy.7; size: (ch.7.width + 26) * bv.7 * if(chat.7.me, 0, 1), ch.7.height + 22; corner: 18 }
-            ellipse { at: bx.7 + ch.7.width + 24, cy.7 + 2; radius: 6 * bv.7 * if(chat.7.me, 0, 1); blend: 8 * bv.7 * if(chat.7.me, 0, 1) }
+            box { from: bx.0, cy.0; size: (ch.0.width + 28) * bv.0 * if(chat.0.me, 0, 1), ch.0.height + 22; corner: 16 }
+            ellipse { at: bx.0 + ch.0.width + 26, cy.0 + 2; radius: 5 * bv.0 * if(chat.0.me, 0, 1); blend: 7 * bv.0 * if(chat.0.me, 0, 1) }
+            box { from: bx.1, cy.1; size: (ch.1.width + 28) * bv.1 * if(chat.1.me, 0, 1), ch.1.height + 22; corner: 16 }
+            ellipse { at: bx.1 + ch.1.width + 26, cy.1 + 2; radius: 5 * bv.1 * if(chat.1.me, 0, 1); blend: 7 * bv.1 * if(chat.1.me, 0, 1) }
+            box { from: bx.2, cy.2; size: (ch.2.width + 28) * bv.2 * if(chat.2.me, 0, 1), ch.2.height + 22; corner: 16 }
+            ellipse { at: bx.2 + ch.2.width + 26, cy.2 + 2; radius: 5 * bv.2 * if(chat.2.me, 0, 1); blend: 7 * bv.2 * if(chat.2.me, 0, 1) }
+            box { from: bx.3, cy.3; size: (ch.3.width + 28) * bv.3 * if(chat.3.me, 0, 1), ch.3.height + 22; corner: 16 }
+            ellipse { at: bx.3 + ch.3.width + 26, cy.3 + 2; radius: 5 * bv.3 * if(chat.3.me, 0, 1); blend: 7 * bv.3 * if(chat.3.me, 0, 1) }
+            box { from: bx.4, cy.4; size: (ch.4.width + 28) * bv.4 * if(chat.4.me, 0, 1), ch.4.height + 22; corner: 16 }
+            ellipse { at: bx.4 + ch.4.width + 26, cy.4 + 2; radius: 5 * bv.4 * if(chat.4.me, 0, 1); blend: 7 * bv.4 * if(chat.4.me, 0, 1) }
+            box { from: bx.5, cy.5; size: (ch.5.width + 28) * bv.5 * if(chat.5.me, 0, 1), ch.5.height + 22; corner: 16 }
+            ellipse { at: bx.5 + ch.5.width + 26, cy.5 + 2; radius: 5 * bv.5 * if(chat.5.me, 0, 1); blend: 7 * bv.5 * if(chat.5.me, 0, 1) }
+            box { from: bx.6, cy.6; size: (ch.6.width + 28) * bv.6 * if(chat.6.me, 0, 1), ch.6.height + 22; corner: 16 }
+            ellipse { at: bx.6 + ch.6.width + 26, cy.6 + 2; radius: 5 * bv.6 * if(chat.6.me, 0, 1); blend: 7 * bv.6 * if(chat.6.me, 0, 1) }
+            box { from: bx.7, cy.7; size: (ch.7.width + 28) * bv.7 * if(chat.7.me, 0, 1), ch.7.height + 22; corner: 16 }
+            ellipse { at: bx.7 + ch.7.width + 26, cy.7 + 2; radius: 5 * bv.7 * if(chat.7.me, 0, 1); blend: 7 * bv.7 * if(chat.7.me, 0, 1) }
         }
         body {
-            color: l.bme
-            rim: 30%
-            light: 16%, 0, 30
-            box { from: bx.0, cy.0; size: (ch.0.width + 26) * bv.0 * if(chat.0.me, 1, 0), ch.0.height + 22; corner: 18 }
-            ellipse { at: bx.0 + 2, cy.0 + 2; radius: 6 * bv.0 * if(chat.0.me, 1, 0); blend: 8 * bv.0 * if(chat.0.me, 1, 0) }
-            box { from: bx.1, cy.1; size: (ch.1.width + 26) * bv.1 * if(chat.1.me, 1, 0), ch.1.height + 22; corner: 18 }
-            ellipse { at: bx.1 + 2, cy.1 + 2; radius: 6 * bv.1 * if(chat.1.me, 1, 0); blend: 8 * bv.1 * if(chat.1.me, 1, 0) }
-            box { from: bx.2, cy.2; size: (ch.2.width + 26) * bv.2 * if(chat.2.me, 1, 0), ch.2.height + 22; corner: 18 }
-            ellipse { at: bx.2 + 2, cy.2 + 2; radius: 6 * bv.2 * if(chat.2.me, 1, 0); blend: 8 * bv.2 * if(chat.2.me, 1, 0) }
-            box { from: bx.3, cy.3; size: (ch.3.width + 26) * bv.3 * if(chat.3.me, 1, 0), ch.3.height + 22; corner: 18 }
-            ellipse { at: bx.3 + 2, cy.3 + 2; radius: 6 * bv.3 * if(chat.3.me, 1, 0); blend: 8 * bv.3 * if(chat.3.me, 1, 0) }
-            box { from: bx.4, cy.4; size: (ch.4.width + 26) * bv.4 * if(chat.4.me, 1, 0), ch.4.height + 22; corner: 18 }
-            ellipse { at: bx.4 + 2, cy.4 + 2; radius: 6 * bv.4 * if(chat.4.me, 1, 0); blend: 8 * bv.4 * if(chat.4.me, 1, 0) }
-            box { from: bx.5, cy.5; size: (ch.5.width + 26) * bv.5 * if(chat.5.me, 1, 0), ch.5.height + 22; corner: 18 }
-            ellipse { at: bx.5 + 2, cy.5 + 2; radius: 6 * bv.5 * if(chat.5.me, 1, 0); blend: 8 * bv.5 * if(chat.5.me, 1, 0) }
-            box { from: bx.6, cy.6; size: (ch.6.width + 26) * bv.6 * if(chat.6.me, 1, 0), ch.6.height + 22; corner: 18 }
-            ellipse { at: bx.6 + 2, cy.6 + 2; radius: 6 * bv.6 * if(chat.6.me, 1, 0); blend: 8 * bv.6 * if(chat.6.me, 1, 0) }
-            box { from: bx.7, cy.7; size: (ch.7.width + 26) * bv.7 * if(chat.7.me, 1, 0), ch.7.height + 22; corner: 18 }
-            ellipse { at: bx.7 + 2, cy.7 + 2; radius: 6 * bv.7 * if(chat.7.me, 1, 0); blend: 8 * bv.7 * if(chat.7.me, 1, 0) }
+            color: l.acc
+            rim: 12%
+            light: 6%, 0, 30
+            box { from: bx.0, cy.0; size: (ch.0.width + 28) * bv.0 * if(chat.0.me, 1, 0), ch.0.height + 22; corner: 16 }
+            ellipse { at: bx.0 + 2, cy.0 + 2; radius: 5 * bv.0 * if(chat.0.me, 1, 0); blend: 7 * bv.0 * if(chat.0.me, 1, 0) }
+            box { from: bx.1, cy.1; size: (ch.1.width + 28) * bv.1 * if(chat.1.me, 1, 0), ch.1.height + 22; corner: 16 }
+            ellipse { at: bx.1 + 2, cy.1 + 2; radius: 5 * bv.1 * if(chat.1.me, 1, 0); blend: 7 * bv.1 * if(chat.1.me, 1, 0) }
+            box { from: bx.2, cy.2; size: (ch.2.width + 28) * bv.2 * if(chat.2.me, 1, 0), ch.2.height + 22; corner: 16 }
+            ellipse { at: bx.2 + 2, cy.2 + 2; radius: 5 * bv.2 * if(chat.2.me, 1, 0); blend: 7 * bv.2 * if(chat.2.me, 1, 0) }
+            box { from: bx.3, cy.3; size: (ch.3.width + 28) * bv.3 * if(chat.3.me, 1, 0), ch.3.height + 22; corner: 16 }
+            ellipse { at: bx.3 + 2, cy.3 + 2; radius: 5 * bv.3 * if(chat.3.me, 1, 0); blend: 7 * bv.3 * if(chat.3.me, 1, 0) }
+            box { from: bx.4, cy.4; size: (ch.4.width + 28) * bv.4 * if(chat.4.me, 1, 0), ch.4.height + 22; corner: 16 }
+            ellipse { at: bx.4 + 2, cy.4 + 2; radius: 5 * bv.4 * if(chat.4.me, 1, 0); blend: 7 * bv.4 * if(chat.4.me, 1, 0) }
+            box { from: bx.5, cy.5; size: (ch.5.width + 28) * bv.5 * if(chat.5.me, 1, 0), ch.5.height + 22; corner: 16 }
+            ellipse { at: bx.5 + 2, cy.5 + 2; radius: 5 * bv.5 * if(chat.5.me, 1, 0); blend: 7 * bv.5 * if(chat.5.me, 1, 0) }
+            box { from: bx.6, cy.6; size: (ch.6.width + 28) * bv.6 * if(chat.6.me, 1, 0), ch.6.height + 22; corner: 16 }
+            ellipse { at: bx.6 + 2, cy.6 + 2; radius: 5 * bv.6 * if(chat.6.me, 1, 0); blend: 7 * bv.6 * if(chat.6.me, 1, 0) }
+            box { from: bx.7, cy.7; size: (ch.7.width + 28) * bv.7 * if(chat.7.me, 1, 0), ch.7.height + 22; corner: 16 }
+            ellipse { at: bx.7 + 2, cy.7 + 2; radius: 5 * bv.7 * if(chat.7.me, 1, 0); blend: 7 * bv.7 * if(chat.7.me, 1, 0) }
         }
-        text "• • •" { at: d0.x + cw - 24, cy.0 - 50 * aiw + 22; anchor: center; size: 12; weight: 800; color: l.bai_ink; opacity: aiw * (0.5 + 0.5 * sin(time * 6)); family: "Manrope" }
+        text "• • •" { at: d0.x + cw - 24, cy.0 - 50 * aiw + 22; anchor: center; size: 12; weight: 800; color: l.fg; opacity: aiw * (0.5 + 0.5 * sin(time * 6)); family: "Inter" }
         repeat k in 0..8 {
-            text chat.$k.txt { at: bx.$k + 13, cy.$k + 11 + ch.$k.height / 2; anchor: left center; size: 13; line_height: 1.3; color: if(chat.$k.me, l.bme_ink, l.bai_ink); measure: ch.$k; show: k < chat.count; family: "Manrope" }
+            text chat.$k.txt { at: bx.$k + 14, cy.$k + 11 + ch.$k.height / 2; anchor: left center; size: 13.5; line_height: 1.35; color: if(chat.$k.me, l.onacc, l.fg); measure: ch.$k; show: k < chat.count; family: "Inter" }
         }
     }
     group {
         opacity: dshow
         show: dsh > 0.5
-        // riadok režimu: čipy (záložky obľúbených + „+“, služba a model AI, vyhľadávač…)
+        // riadok režimu: čipy (záložky obľúbených + „+“, služba a model AI, vyhľadávač…): ikonka, text, šípka ponuky
         repeat k in 0..7 {
-            box { at: chx.$k + (cm.$k.width + 28) / 2, yc; size: cm.$k.width + 28, 32; corner: 16; color: if(chips.$k.on, l.acc, l.hov); opacity: if(chips.$k.on, 90%, if(chip_hot == k, 14%, 7%)); show: k < chips.count }
-            text chips.$k.label { at: chx.$k + 14, yc; anchor: left center; size: 12; weight: 700; color: if(chips.$k.on, l.onacc, l.ink); measure: cm.$k; show: k < chips.count; family: "Manrope" }
+            box { at: chx.$k + cwd.$k / 2, yc; size: cwd.$k, 32; corner: 16; color: if(chips.$k.on, l.acc, if(chip_hot == k, l.hover, l.var)); opacity: if(chips.$k.on or chip_hot == k, 100%, 85%); show: k < chips.count }
+            text chips.$k.glyph { at: chx.$k + 13, yc; anchor: left center; size: 15; color: if(chips.$k.on, l.onacc, l.fg); show: k < chips.count and chips.$k.hasg; family: "noctalia-tabler-icons" }
+            text chips.$k.label { at: chx.$k + 13 + if(chips.$k.hasg, 22, 0), yc; anchor: left center; size: 12.5; weight: 500; color: if(chips.$k.on, l.onacc, l.fg); measure: cm.$k; show: k < chips.count and chips.$k.label_on; family: "Inter" }
+            text "" { at: chx.$k + cwd.$k - 13, yc + 1; anchor: right center; size: 12; color: if(chips.$k.on, l.onacc, l.dim); show: k < chips.count and chips.$k.drop; family: "noctalia-tabler-icons" }
         }
         // úzky riadok počasia: miesto · Dnes / Zajtra / Týždeň · súhrn · Detaily
-        box { at: d0.x + cw / 2, yw; size: cw, 28; corner: 14; color: l.field; opacity: 18% }
-        text wx_place { at: d0.x + 14, yw; anchor: left center; size: 11; weight: 700; color: l.ink; opacity: 75%; measure: wxp; family: "Manrope" }
+        box { at: d0.x + cw / 2, yw; size: cw, 32; corner: 16; color: l.var; opacity: 85% }
+        text "" { at: d0.x + 14, yw; anchor: left center; size: 14; color: l.dim; family: "noctalia-tabler-icons" }
+        text wx_place { at: d0.x + 34, yw; anchor: left center; size: 12; weight: 500; color: l.fg; measure: wxp; family: "Inter" }
         repeat k in 0..3 {
-            box { at: wxs + k * 62 + 29, yw; size: 58, 22; corner: 11; color: if(wx_view == k, l.acc, l.hov); opacity: if(wx_view == k, 85%, if(wx_hot == k, 12%, 0)) }
+            box { at: wxs + k * 62 + 29, yw; size: 58, 24; corner: 12; color: if(wx_view == k, l.acc, l.hover); opacity: if(wx_view == k, 100%, if(wx_hot == k, 100%, 0)) }
         }
-        text "Today" { at: wxs + 29, yw; anchor: center; size: 10.5; weight: 700; color: if(wx_view == 0, l.onacc, l.ink); family: "Manrope" }
-        text "Tomorrow" { at: wxs + 91, yw; anchor: center; size: 10.5; weight: 700; color: if(wx_view == 1, l.onacc, l.ink); family: "Manrope" }
-        text "Week" { at: wxs + 153, yw; anchor: center; size: 10.5; weight: 700; color: if(wx_view == 2, l.onacc, l.ink); family: "Manrope" }
-        text wx_sum { at: wxs + 196, yw; anchor: left center; width: d0.x + cw - 90 - wxs - 196; lines: 1; size: 11; color: l.ink; opacity: 85%; family: "Manrope" }
-        text pick(if(wx_detail, 1, 0), "Details ›", "Close ×") { at: d0.x + cw - 12, yw; anchor: right center; size: 11; weight: 700; color: if(wx_hot == 3 or wx_detail, l.acc, l.ink); opacity: 85%; family: "Manrope" }
+        text "Today" { at: wxs + 29, yw; anchor: center; size: 11.5; weight: 500; color: if(wx_view == 0, l.onacc, l.dim); family: "Inter" }
+        text "Tomorrow" { at: wxs + 91, yw; anchor: center; size: 11.5; weight: 500; color: if(wx_view == 1, l.onacc, l.dim); family: "Inter" }
+        text "Week" { at: wxs + 153, yw; anchor: center; size: 11.5; weight: 500; color: if(wx_view == 2, l.onacc, l.dim); family: "Inter" }
+        text wx_icon { at: wxs + 196, yw; anchor: left center; size: 15; color: l.fg; family: "noctalia-tabler-icons" }
+        text wx_sum { at: wxs + 218, yw; anchor: left center; width: d0.x + cw - 96 - wxs - 218; lines: 1; size: 12; color: l.fg; family: "Inter" }
+        text pick(if(wx_detail, 1, 0), "Details", "Close") { at: d0.x + cw - 30, yw; anchor: right center; size: 12; weight: 500; color: if(wx_hot == 3 or wx_detail, l.acc, l.fg); family: "Inter" }
+        text pick(if(wx_detail, 1, 0), "", "") { at: d0.x + cw - 12, yw + 1; anchor: right center; size: 13; color: if(wx_hot == 3 or wx_detail, l.acc, l.dim); family: "noctalia-tabler-icons" }
     }
-    // ikona režimu a z nej vytekajúci výber (goo: kapsuly zliate s ikonou)
+    // výber režimu: vyteká z ikony v poli (goo), riadky s ikonou a názvom, zvolený zvýraznený
     body {
-        color: l.modes
-        rim: 30%
-        light: 14%, 0, 30
-        glass: 100% * clamp(v * 1.3, 0, 1) * (1 - m)
-        shine: pointer
-        opacity: dshow
-        ellipse { at: d0.x + 24, d0.y + 24; radius: 19 * if(dsh > 0.5, 1, 0) }
-        line { from: d0.x + 24, d0.y + 24; to: d0.x + 24, d0.y + 40 + 40 * 4 * mo; width: 14 * clamp(mo * 3, 0, 1); blend: 10 }
-        box { at: d0.x + 100, d0.y + 66 + 0 * 40 * mo; size: 190 * clamp(mo * 1.6 - 0 * 0.12, 0, 1), 34 * clamp(mo * 1.6 - 0 * 0.12, 0, 1); corner: 17; blend: 12 }
-        box { at: d0.x + 100, d0.y + 66 + 1 * 40 * mo; size: 190 * clamp(mo * 1.6 - 1 * 0.12, 0, 1), 34 * clamp(mo * 1.6 - 1 * 0.12, 0, 1); corner: 17; blend: 12 }
-        box { at: d0.x + 100, d0.y + 66 + 2 * 40 * mo; size: 190 * clamp(mo * 1.6 - 2 * 0.12, 0, 1), 34 * clamp(mo * 1.6 - 2 * 0.12, 0, 1); corner: 17; blend: 12 }
-        box { at: d0.x + 100, d0.y + 66 + 3 * 40 * mo; size: 190 * clamp(mo * 1.6 - 3 * 0.12, 0, 1), 34 * clamp(mo * 1.6 - 3 * 0.12, 0, 1); corner: 17; blend: 12 }
-        box { at: d0.x + 100, d0.y + 66 + 4 * 40 * mo; size: 190 * clamp(mo * 1.6 - 4 * 0.12, 0, 1), 34 * clamp(mo * 1.6 - 4 * 0.12, 0, 1); corner: 17; blend: 12 }
+        color: l.var
+        rim: 14%
+        shadow: 0, 10, 24, 30% * mo
+        opacity: dshow * clamp(mo * 4, 0, 1)
+        ellipse { at: d0.x + 30, d0.y + 58; radius: 8 * clamp(mo * 3, 0, 1) }
+        box { at: d0.x + 110, d0.y + 64 + 104 * mo; size: 220 * clamp(mo * 1.4, 0, 1), 208 * mo; corner: 14; blend: 14 }
     }
     group {
-        opacity: dshow
-        show: dsh > 0.5
+        opacity: dshow * clamp(mo * 2 - 1, 0, 1)
+        show: dsh > 0.5 and mo > 0.5
         repeat k in 0..5 {
-            image modes.$k.icon { at: d0.x + 14, d0.y + 14; size: 20, 20; tint: l.onacc; show: smode == k and k > 0 }
+            box { at: d0.x + 110, d0.y + 84 + k * 40; size: 208, 36; corner: 10; color: if(smode == k, l.acc, l.hover); opacity: if(smode == k, 22%, if(mode_hot == k, 100%, 0)) }
+            text modes.$k.glyph { at: d0.x + 18, d0.y + 84 + k * 40; anchor: left center; size: 17; color: if(smode == k, l.acc, l.fg); family: "noctalia-tabler-icons" }
+            text modes.$k.name { at: d0.x + 46, d0.y + 84 + k * 40; anchor: left center; size: 13.5; weight: 500; color: l.fg; family: "Inter" }
         }
-        text "Ai" { at: d0.x + 24, d0.y + 24; anchor: center; size: 14; weight: 800; color: l.onacc; show: smode == 0; family: "Fraunces" }
-        repeat k in 0..5 {
-            box { at: d0.x + 100, d0.y + 66 + k * 40; size: 180, 30; corner: 15; color: l.hov; opacity: if(mode_hot == k, 22%, if(smode == k, 12%, 0)); show: mo > 0.9 }
-            image modes.$k.icon { at: d0.x + 22, d0.y + 56 + k * 40; size: 20, 20; tint: l.onacc; opacity: clamp(mo * 2 - 1, 0, 1); show: mo > 0.5 and k > 0 }
-            text modes.$k.name { at: d0.x + 52, d0.y + 66 + k * 40; anchor: left center; size: 13; weight: 700; color: l.onacc; opacity: clamp(mo * 2 - 1, 0, 1); show: mo > 0.5; family: "Manrope" }
-        }
-        text "Ai" { at: d0.x + 32, d0.y + 66; anchor: center; size: 13; weight: 800; color: l.onacc; opacity: clamp(mo * 2 - 1, 0, 1); show: mo > 0.5; family: "Fraunces" }
     }
-    // kontextová ponuka (pravý klik v spúšťači): kapsuly zliate do stĺpca pri kurzore
+    // kontextová ponuka (pravý klik, rozbaľovacie čipy)
     let cx0 = clamp(ctx.x, 12, W - 252)
     // pri čipoch dole sa ponuka otvára nahor (ctx_up), inak nadol od kurzora
     fact ctx_up = false
-    let cy0 = clamp(if(ctx_up, ctx.y - 10 - ctx.count * 34, ctx.y), 12, H - 12 - ctx.count * 34)
+    let cy0 = clamp(if(ctx_up, ctx.y - 10 - ctx.count * 36, ctx.y), 12, H - 12 - ctx.count * 36)
     body {
-        color: l.menu
-        rim: 25%
-        shadow: 0, 8, 22, 35%
+        color: l.var
+        rim: 14%
+        shadow: 0, 10, 26, 35%
         opacity: if(ctx_open, 1, 0)
-        box { at: cx0 + 120, cy0 + ctx.count * 17; size: 240, ctx.count * 34 + 10; corner: 18 }
+        box { at: cx0 + 120, cy0 + ctx.count * 18; size: 240, ctx.count * 36 + 12; corner: 14 }
     }
     group {
         show: ctx_open
         repeat k in 0..10 {
-            box { at: cx0 + 120, cy0 + 17 + k * 34; size: 228, 30; corner: 14; color: l.hov; opacity: if(ctx_hot == k, 12%, 0); show: k < ctx.count }
-            text "✓" { at: cx0 + 20, cy0 + 17 + k * 34; anchor: center; size: 12; weight: 800; color: l.acc; show: k < ctx.count and ctx.$k.on == 1; family: "Manrope" }
-            text ctx.$k.label { at: cx0 + 36, cy0 + 17 + k * 34; anchor: left center; width: 196; lines: 1; size: 12.5; color: l.ink; opacity: if(ctx.$k.off, 45%, 100%); show: k < ctx.count; family: "Manrope" }
+            box { at: cx0 + 120, cy0 + 18 + k * 36; size: 228, 32; corner: 9; color: l.hover; opacity: if(ctx_hot == k, 100%, 0); show: k < ctx.count }
+            text "" { at: cx0 + 22, cy0 + 18 + k * 36; anchor: center; size: 14; color: l.acc; show: k < ctx.count and ctx.$k.on == 1; family: "noctalia-tabler-icons" }
+            text ctx.$k.label { at: cx0 + 40, cy0 + 18 + k * 36; anchor: left center; width: 190; lines: 1; size: 13; color: l.fg; opacity: if(ctx.$k.off, 45%, 100%); show: k < ctx.count; family: "Inter" }
         }
     }
     // spúšťač: klikateľné miesta (navrchu)
     zone box dash_card { at: dt.x, dt.y; size: dw, dh; active: dash }
-    zone ellipse mode_btn { at: d0.x + 24, d0.y + 24; radius: 20; cursor: pointer; active: dash }
-    repeat k in 0..10 {
-        zone box hit_row.$k { at: d0.x + cw / 2, y0 + 17 + k * 34; size: cw, 32; cursor: pointer; active: dash and show_hits and k < hits.count and not mode_open }
+    zone box mode_btn { at: d0.x + 30, d0.y + 24; size: 50, 36; cursor: pointer; active: dash }
+    repeat k in 0..7 {
+        zone box hit_row.$k { at: d0.x + cw / 2, y0 + 22 + k * 48; size: cw, 44; cursor: pointer; active: dash and show_hits and k < hits.count and not mode_open }
     }
-    repeat k in 0..18 {
-        zone box fav_hit.$k { at: d0.x + (k - 6 * floor(k / 6)) * 96 + 48, y0 + 56 + floor(k / 6) * 106; size: 90, 98; cursor: pointer; active: dash and show_favs and k < favs.count and not mode_open }
+    repeat k in 0..12 {
+        zone box fav_hit.$k { at: d0.x + 44 + (k - 6 * floor(k / 6)) * 96, y0 + 67 + floor(k / 6) * 90; size: 88, 82; cursor: pointer; active: dash and show_favs and k < favs.count and not mode_open }
+    }
+    repeat k in 0..4 {
+        zone box rec_hit.$k { at: d0.x + 144 + (k - 2 * floor(k / 2)) * 296, ry0 + 34 + floor(k / 2) * 46; size: 288, 40; cursor: pointer; active: dash and show_favs and k < recent.count and not mode_open }
     }
     zone ellipse ai_stop { at: d0.x + cw - 24, cy.0 - 50 * aiw + 22; radius: 26; cursor: pointer; active: dash and show_chat and ai_wait }
     zone box chat_zone { at: d0.x + cw / 2, y0 + 182; size: cw, 364; active: dash and show_chat and not mode_open }
     repeat k in 0..8 {
-        zone box bub_hit.$k { at: bx.$k + (ch.$k.width + 26) / 2, cy.$k + (ch.$k.height + 22) / 2; size: ch.$k.width + 26, ch.$k.height + 22; active: dash and show_chat and k < chat.count and cy.$k > y0 - 10 and cy.$k < y0 + 350 and not mode_open }
+        zone box bub_hit.$k { at: bx.$k + (ch.$k.width + 28) / 2, cy.$k + (ch.$k.height + 22) / 2; size: ch.$k.width + 28, ch.$k.height + 22; active: dash and show_chat and k < chat.count and cy.$k > y0 - 10 and cy.$k < y0 + 350 and not mode_open }
     }
     repeat k in 0..7 {
-        zone box chip_hit.$k { at: chx.$k + (cm.$k.width + 28) / 2, yc; size: cm.$k.width + 28, 32; cursor: pointer; active: dash and k < chips.count }
+        zone box chip_hit.$k { at: chx.$k + cwd.$k / 2, yc; size: cwd.$k, 32; cursor: pointer; active: dash and k < chips.count }
     }
     repeat k in 0..3 {
-        zone box wxs_hit.$k { at: wxs + k * 62 + 29, yw; size: 60, 26; cursor: pointer; active: dash }
+        zone box wxs_hit.$k { at: wxs + k * 62 + 29, yw; size: 60, 28; cursor: pointer; active: dash }
     }
-    zone box wxd_hit { at: d0.x + cw - 40, yw; size: 80, 26; cursor: pointer; active: dash }
+    zone box wxd_hit { at: d0.x + cw - 44, yw; size: 88, 28; cursor: pointer; active: dash }
     // rozbalený výber režimu: klik mimo neho ho zavrie (pod jeho riadkami)
     zone box mode_away { at: W / 2, H / 2; size: W, H; active: dash and mode_open }
     repeat k in 0..5 {
-        zone box mode_row.$k { at: d0.x + 100, d0.y + 66 + k * 40; size: 190, 38; cursor: pointer; active: dash and mode_open }
+        zone box mode_row.$k { at: d0.x + 110, d0.y + 84 + k * 40; size: 208, 38; cursor: pointer; active: dash and mode_open }
     }
     // otvorená ponuka: klik mimo nej ju zavrie (pod jej riadkami)
     zone box ctx_away { at: W / 2, H / 2; size: W, H; active: ctx_open }
     repeat k in 0..10 {
-        zone box ctx_row.$k { at: cx0 + 120, cy0 + 17 + k * 34; size: 228, 30; cursor: pointer; active: ctx_open and k < ctx.count }
+        zone box ctx_row.$k { at: cx0 + 120, cy0 + 18 + k * 36; size: 228, 34; cursor: pointer; active: ctx_open and k < ctx.count }
     }
-
+    // <<< spúšťač
     // >>> kvapky widgetov (widgety.py)
     // Každá kvapka visí z okraja (side 0 dole, 1 hore, 2 vľavo, 3 vpravo; pos 0..1 pozdĺž neho) na hladine s krkom,
     // ku kurzoru sa nakloní a nad ňou sa nafúkne (živý tvor). Chytiť a pustiť pri inom okraji = prilepí sa tam;
@@ -1513,18 +1529,25 @@ scene Kvapka {
         on leave mode_row.$k { mode_hot = -1 }
     }
     // riadky: ľavý klik otvorí, pravý = ponuka (pridať do záložky, otvoriť priečinok…)
-    repeat k in 0..10 {
+    repeat k in 0..7 {
         on press hit_row.$k { emit open_hit(k) }
         on press right hit_row.$k { sel = k; ctx_up = false; ctx.x = mx; ctx.y = my; emit hit_menu(k) }
         on enter hit_row.$k { hit_hot = k }
         on leave hit_row.$k { hit_hot = -1 }
     }
     // obľúbené: ľavý klik spustí, pravý = ponuka (odobrať, posunúť)
-    repeat k in 0..18 {
+    repeat k in 0..12 {
         on press fav_hit.$k { emit fav_open(k) }
         on press right fav_hit.$k { ctx_up = false; ctx.x = mx; ctx.y = my; emit fav_menu(k) }
         on enter fav_hit.$k { fav_hot = k }
         on leave fav_hit.$k { fav_hot = -1 }
+    }
+    // nedávne: ľavý klik spustí, pravý = ponuka (odobrať)
+    repeat k in 0..4 {
+        on press rec_hit.$k { emit rec_open(k) }
+        on press right rec_hit.$k { ctx_up = false; ctx.x = mx; ctx.y = my; emit rec_menu(k) }
+        on enter rec_hit.$k { rec_hot = k }
+        on leave rec_hit.$k { rec_hot = -1 }
     }
     // rozhovor: koliesko roluje, pravý klik na bublinu = kopírovať
     on press ai_stop { emit ai_cancel }
@@ -1580,6 +1603,10 @@ scene Kvapka {
     }
 
     translations sk {
+        "Forecast · {wx_place}" = "Predpoveď · {wx_place}"
+        "Details" = "Detaily"
+        "Close" = "Zavrieť"
+        "Remove from recent" = "Odobrať z nedávnych"
         "AI is turned off. Settings › Software › AI turns it on." = "AI je vypnutá. Zapneš ju v Nastaveniach › Softvér › AI."
         "Ai" = "Ai"
         "Applications" = "Aplikácie"

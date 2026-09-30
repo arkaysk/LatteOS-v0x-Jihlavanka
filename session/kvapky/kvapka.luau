@@ -432,14 +432,18 @@ local ENGINES = {
     { id = "ecosia", name = "Ecosia", url = "https://www.ecosia.org/search?q=%s" },
     { id = "brave", name = "Brave Search", url = "https://search.brave.com/search?q=%s" },
 }
--- režimy v poradí scény (fact smode); ikona AI je v scéne text „Ai“ (náčrt)
+-- ikony Tabler (písmo Noctalie) a poradie tém LatteOS — vygeneroval spustac.py
+local IK = require("ikony")
+local G = IK.glyph
+-- režimy v poradí scény (fact smode)
 local MODES = {
-    { id = "ai", name = "AI", icon = "starred-symbolic", hint = "Ask AI anything…" },
-    { id = "apps", name = "Applications", icon = "system-search-symbolic", hint = "Search apps…" },
-    { id = "files", name = "Files", icon = "folder-symbolic", hint = "Search files…" },
-    { id = "web", name = "Web", icon = "web-browser-symbolic", hint = "Search the web…" },
-    { id = "cmd", name = "Linux command", icon = "utilities-terminal-symbolic", hint = "Run a command…" },
+    { id = "ai", name = "AI", glyph = G.sparkles, hint = "Ask AI anything…" },
+    { id = "apps", name = "Applications", glyph = G.search, hint = "Search apps…" },
+    { id = "files", name = "Files", glyph = G.folder, hint = "Search files…" },
+    { id = "web", name = "Web", glyph = G.world, hint = "Search the web…" },
+    { id = "cmd", name = "Linux command", glyph = G["terminal-2"], hint = "Run a command…" },
 }
+local MAXH = 7                                      -- riadkov obsahu v scéne (model hits)
 -- služby AI na výber (latte-ai set …); web = odpoveď v prehliadači s prihlásením, bez kľúča
 local AI_PRESETS = {
     { name = "Claude (web)", provider = "web", key = "web", value = "claude" },
@@ -456,7 +460,7 @@ local AI_PRESETS = {
 local HOME = nil                                    -- domovský priečinok (printenv, nižšie)
 local MAX_TABS = 5
 local apps, by_id = {}, {}
-local cfg = { engine = "google", mode = 1, tabs = {}, cmds = {} }
+local cfg = { engine = "google", mode = 1, tabs = {}, cmds = {}, recent = {} }
 local cfg_file = nil
 local pin_ids = { "latteos-subory", "org.mozilla.firefox", "latteos-nastavenia", "latteos-aplikacie" }
 local hits, file_hits, favs, places = {}, {}, {}, {}
@@ -509,10 +513,22 @@ local function paint_favs()
     if t then
         for _, id in ipairs(t.apps or {}) do
             local a = by_id[id]
-            if a and #favs < 18 then favs[#favs + 1] = a; out[#out + 1] = { name = a.name, icon = a.icon } end
+            if a and #favs < 12 then favs[#favs + 1] = a; out[#out + 1] = { name = a.name, icon = a.icon } end
         end
     end
     model.favs = out
+    text.fav_title = t and t.name or ""
+end
+-- nedávno spustené (pod obľúbenými, ako „Recent“ vo Windows)
+local recent = {}
+local function paint_recent()
+    recent = {}
+    local out = {}
+    for _, id in ipairs(cfg.recent or {}) do
+        local a = by_id[id]
+        if a and #recent < 4 then recent[#recent + 1] = a; out[#out + 1] = { name = a.name, icon = a.icon } end
+    end
+    model.recent = out
 end
 
 -- ── Linux príkaz: nebezpečné príkazy chcú druhý Enter (zoznam z Text Baru klasického LatteOS) ──
@@ -559,12 +575,12 @@ local function paint_hits()
         end
         for _, list in ipairs({ starts, inside }) do
             for _, a in ipairs(list) do
-                if #hits < 5 then hits[#hits + 1] = { kind = "app", name = a.name, sub = tr("Application"), icon = a.icon, app = a } end
+                if #hits < 4 then hits[#hits + 1] = { kind = "app", name = a.name, sub = a.comment or a.generic or tr("Application"), icon = a.icon, app = a } end
             end
         end
         -- kvapky widgetov: napíš napr. „hlas“ → Hlasitosť; klik ju pridá na okraj (alebo odoberie)
         for _, w in ipairs(widget_rows(ql)) do
-            if #hits < 7 then
+            if #hits < 4 then
                 hits[#hits + 1] = { kind = "wdg", name = w.name, sub = w.on and tr("Drop · shown") or tr("Drop"), icon = w.icon, id = w.id }
             end
         end
@@ -614,8 +630,9 @@ local function paint_hits()
         elseif ai.web then note(fill(tr("Ask anything. {ai} answers in the browser, signed in as you. For answers right here, choose a service below."), { ai = ai.target or "AI" }))
         else note(tr("Ask anything. The answer appears here; the service and the model are chosen below.")) end
     end
+    while #hits > MAXH do table.remove(hits) end
     local out = {}
-    for _, h in ipairs(hits) do out[#out + 1] = { name = h.name, sub = h.sub, icon = h.icon, warn = h.warn == true } end
+    for _, h in ipairs(hits) do out[#out + 1] = { name = h.name, sub = h.sub or "", icon = h.icon, warn = h.warn == true } end
     model.hits = out
     if (tonumber(fact.sel) or 0) >= #hits then fact.sel = 0 end
 end
@@ -755,7 +772,8 @@ local function set_chips(list)
     chip_do = {}
     local out = {}
     for _, c in ipairs(list) do
-        out[#out + 1] = { label = c.label .. (c.drop and "  ▾" or ""), on = c.on == true, drop = c.drop == true }
+        out[#out + 1] = { label = c.label or "", label_on = (c.label or "") ~= "", glyph = c.glyph or "", hasg = c.glyph ~= nil,
+                          on = c.on == true, drop = c.drop == true }
         chip_do[#chip_do + 1] = c
     end
     model.chips = out
@@ -788,15 +806,15 @@ function paint_chips()
                 menu = function() fact.tab = i; paint_chips(); paint_favs(); tab_menu(i) end }
         end
         if #cfg.tabs < MAX_TABS then
-            list[#list + 1] = { label = "+", pick = function()
+            list[#list + 1] = { glyph = G.plus, pick = function()
                 cfg.tabs[#cfg.tabs + 1] = { name = tr("New tab"), apps = {} }
                 save_cfg(); fact.tab = #cfg.tabs; paint_chips(); paint_favs(); start_rename(#cfg.tabs)
             end }
         end
     elseif m == "ai" then
-        list[#list + 1] = { label = tr("Settings"), pick = function() run("latte-app", { "nastavenia", "ai" }); fact.dash = false end }
+        list[#list + 1] = { glyph = G.settings, label = tr("Settings"), pick = function() run("latte-app", { "nastavenia", "ai" }); fact.dash = false end }
         local cur = ai.web and ai.target or ({ lokalne = "Ollama", domaci = tr("Home server") })[ai.provider or ""] or ai.target or "AI"
-        list[#list + 1] = { label = cur, drop = true, pick = function()
+        list[#list + 1] = { glyph = G.sparkles, label = cur, drop = true, pick = function()
             local items = {}
             for _, p in ipairs(AI_PRESETS) do
                 items[#items + 1] = { label = tr(p.name), run = function()
@@ -824,12 +842,12 @@ function paint_chips()
             end }
         end
         if #conv > 0 then
-            list[#list + 1] = { label = tr("New chat"), pick = function() conv = {}; paint_chat(); paint_chips() end }
+            list[#list + 1] = { glyph = G["message-plus"], label = tr("New chat"), pick = function() conv = {}; paint_chat(); paint_chips() end }
         end
     elseif m == "files" then
-        list[#list + 1] = { label = tr("Open Files"), pick = function() run("latte-app", { "subory" }); fact.dash = false end }
+        list[#list + 1] = { glyph = G["folder-open"], label = tr("Open Files"), pick = function() run("latte-app", { "subory" }); fact.dash = false end }
     elseif m == "web" then
-        list[#list + 1] = { label = engine().name, drop = true, pick = function()
+        list[#list + 1] = { glyph = G.world, label = engine().name, drop = true, pick = function()
             local items = {}
             for _, e in ipairs(ENGINES) do
                 items[#items + 1] = { label = e.name, on = e.id == cfg.engine, run = function()
@@ -839,9 +857,9 @@ function paint_chips()
             menu(items)
         end }
     elseif m == "cmd" then
-        list[#list + 1] = { label = tr("Open terminal"), pick = function() run("latte-terminal", {}); fact.dash = false end }
+        list[#list + 1] = { glyph = G["terminal-2"], label = tr("Open terminal"), pick = function() run("latte-terminal", {}); fact.dash = false end }
         if #cfg.cmds > 0 then
-            list[#list + 1] = { label = tr("Clear history"), pick = function() cfg.cmds = {}; save_cfg(); paint_chips(); paint_hits() end }
+            list[#list + 1] = { glyph = G.trash, label = tr("Clear history"), pick = function() cfg.cmds = {}; save_cfg(); paint_chips(); paint_hits() end }
         end
     end
     set_chips(list)
@@ -851,7 +869,7 @@ on("chip_menu", function(k) local c = chip_do[(k or 0) + 1]; if c and c.menu the
 
 local function paint_modes()
     local out = {}
-    for _, m in ipairs(MODES) do out[#out + 1] = { name = tr(m.name), icon = m.icon } end
+    for _, m in ipairs(MODES) do out[#out + 1] = { name = tr(m.name), glyph = m.glyph } end
     model.modes = out
 end
 local function paint_mode()
@@ -870,8 +888,24 @@ end)
 -- ── otvorenie riadkov ──
 local function launch(a)
     if a and a.exec then pcall(sys.call, "apps.launch", a.exec) end
+    if a and a.id then
+        local i = has(cfg.recent, a.id)
+        if i then table.remove(cfg.recent, i) end
+        table.insert(cfg.recent, 1, a.id)
+        while #cfg.recent > 8 do table.remove(cfg.recent) end
+        save_cfg(); paint_recent()
+    end
     fact.dash = false
 end
+on("rec_open", function(i) launch(recent[(i or 0) + 1]) end)
+on("rec_menu", function(k)
+    local a = recent[(k or 0) + 1]
+    if not a then return end
+    menu({ { label = tr("Remove from recent"), run = function()
+        local i = has(cfg.recent, a.id)
+        if i then table.remove(cfg.recent, i); save_cfg(); paint_recent() end
+    end } })
+end)
 local function run_cmd(cmd)
     if dangerous(cmd) and confirm_cmd ~= cmd then confirm_cmd = cmd; paint_hits(); return end
     confirm_cmd = nil
@@ -975,6 +1009,7 @@ local function load_cfg()
             cfg.engine = c.engine or cfg.engine
             cfg.mode = tonumber(c.mode) or cfg.mode
             cfg.cmds = type(c.cmds) == "table" and c.cmds or {}
+            cfg.recent = type(c.recent) == "table" and c.recent or {}
             cfg.tabs = {}
             for _, t in ipairs(c.tabs) do
                 if type(t) == "table" and #cfg.tabs < MAX_TABS then
@@ -987,7 +1022,7 @@ local function load_cfg()
         end
         paint_modes()
         if (tonumber(fact.smode) or 1) ~= cfg.mode then fact.smode = cfg.mode end
-        paint_mode(); paint_favs(); load_places()
+        paint_mode(); paint_favs(); paint_recent(); load_places()
     end)
 end
 
@@ -995,8 +1030,20 @@ sys.watch("apps", function(list)
     apps = list or {}
     by_id = {}
     for _, a in ipairs(apps) do by_id[a.id] = a end
-    index_apps(apps); paint_favs(); search(); layout()
+    index_apps(apps); paint_favs(); paint_recent(); search(); layout()
 end)
+
+-- téma LatteOS (~/.config/latteos/theme): farby karty spúšťača; mení sa aj v Nastaveniach, preto sa číta dookola
+local tema_file = nil
+local function read_tema()
+    if not tema_file then return end
+    run("cat", { tema_file }, function(out)
+        local id = (out or ""):match("[%w-]+") or "latte"
+        local idx = 0
+        for i, t in ipairs(IK.temy) do if t == id then idx = i - 1 end end
+        if fact.tema ~= idx then fact.tema = idx end
+    end)
+end
 
 -- upozornenie v spúšťači: klik = otvoriť (predvolená akcia aplikácie) a zavrieť; „Vymazať všetko“
 on("note_open", function(i)
@@ -1347,27 +1394,41 @@ local function weekday(date)                          -- „2026-10-01“ → 0 
     return (y + y // 4 - y // 100 + y // 400 + t[m] + d) % 7
 end
 local function deg(v) return math.floor((v or 0) + 0.5) .. "°" end
+-- ikony počasia v spúšťači: Tabler (kódy WMO z Open-Meteo)
+local function wx_icon(c)
+    c = tonumber(c) or 3
+    if c == 0 then return G.sun end
+    if c == 1 or c == 2 then return G["sun-low"] end
+    if c == 45 or c == 48 then return G["cloud-fog"] end
+    if c >= 95 then return G["cloud-storm"] end
+    if (c >= 71 and c <= 77) or c == 85 or c == 86 then return G["cloud-snow"] end
+    if (c >= 51 and c <= 67) or (c >= 80 and c <= 82) then return G["cloud-rain"] end
+    return G.cloud
+end
 local function paint_wx()
     text.wx_place = wx_place ~= "" and wx_place or tr("Weather")
     local d = wxd
-    if not d or not d.daily or not d.hourly then text.wx_sum = tr("No forecast yet"); model.wx = {}; return end
+    if not d or not d.daily or not d.hourly then text.wx_sum = tr("No forecast yet"); text.wx_icon = ""; model.wx = {}; return end
     local view = tonumber(fact.wx_view) or 0
     local dl, hr = d.daily, d.hourly
-    local rain = function(i) local p = dl.precipitation_probability_max and dl.precipitation_probability_max[i]; return p and ("   ☂ " .. p .. " %") or "" end
+    local rain = function(i) local p = dl.precipitation_probability_max and dl.precipitation_probability_max[i]; return p and p > 0 and ("  ·  " .. p .. " %") or "" end
     if view == 0 then
-        text.wx_sum = wx_glyph(d.current.weather_code or 3) .. " " .. deg(d.current.temperature_2m) .. "    ↑" .. deg(dl.temperature_2m_max[1]) .. " ↓" .. deg(dl.temperature_2m_min[1]) .. rain(1)
+        text.wx_icon = wx_icon(d.current.weather_code)
+        text.wx_sum = deg(d.current.temperature_2m) .. "  ·  " .. deg(dl.temperature_2m_max[1]) .. " / " .. deg(dl.temperature_2m_min[1]) .. rain(1)
     elseif view == 1 then
-        text.wx_sum = wx_glyph(dl.weather_code[2] or 3) .. "    ↑" .. deg(dl.temperature_2m_max[2]) .. " ↓" .. deg(dl.temperature_2m_min[2]) .. rain(2)
+        text.wx_icon = wx_icon(dl.weather_code[2])
+        text.wx_sum = deg(dl.temperature_2m_max[2]) .. " / " .. deg(dl.temperature_2m_min[2]) .. rain(2)
     else
+        text.wx_icon = G.sun
         local parts = {}
-        for i = 1, math.min(7, #dl.time) do parts[#parts + 1] = wx_glyph(dl.weather_code[i] or 3) .. deg(dl.temperature_2m_max[i]) end
-        text.wx_sum = table.concat(parts, "  ")
+        for i = 2, math.min(6, #dl.time) do parts[#parts + 1] = tr(WDAY[weekday(dl.time[i]) + 1]) .. " " .. deg(dl.temperature_2m_max[i]) end
+        text.wx_sum = table.concat(parts, "  ·  ")
     end
     -- Detaily: dnes od tejto hodiny po 3 h, zajtra 0:00…21:00, týždeň po dňoch
     local out = {}
     if view == 2 then
         for i = 1, math.min(8, #dl.time) do
-            out[#out + 1] = { label = tr(WDAY[weekday(dl.time[i]) + 1]), glyph = wx_glyph(dl.weather_code[i] or 3),
+            out[#out + 1] = { label = tr(WDAY[weekday(dl.time[i]) + 1]), glyph = wx_icon(dl.weather_code[i]),
                               temp = deg(dl.temperature_2m_max[i]) .. " / " .. deg(dl.temperature_2m_min[i]) }
         end
     else
@@ -1376,7 +1437,7 @@ local function paint_wx()
         for n = 0, 7 do
             local i = first + n * 3
             if hr.time[i] then
-                out[#out + 1] = { label = hr.time[i]:match("T(%d+:%d+)") or "", glyph = wx_glyph(hr.weather_code[i] or 3), temp = deg(hr.temperature_2m[i]) }
+                out[#out + 1] = { label = hr.time[i]:match("T(%d+:%d+)") or "", glyph = wx_icon(hr.weather_code[i]), temp = deg(hr.temperature_2m[i]) }
             end
         end
     end
@@ -1431,6 +1492,7 @@ run("printenv", { "HOME" }, function(out)
     if home then
         state = home .. "/.local/state/latteos/window-mode"; read_mode()
         kava_file = home .. "/.config/latteos/kava"; read_kava()
+        tema_file = home .. "/.config/latteos/theme"; read_tema()
         HOME = home
         cfg_file = home .. "/.config/latteos/spustac.json"
         wfile = home .. "/.config/latteos/kvapky-widgety.json"
@@ -1447,4 +1509,4 @@ run("printenv", { "HOME" }, function(out)
         end)
     end
 end)
-every(2000, function() read_mode(); read_kava() end)   -- režim sa dá zmeniť aj inde (Super+W, Nastavenia)
+every(2000, function() read_mode(); read_kava(); read_tema() end)   -- režim sa dá zmeniť aj inde (Super+W, Nastavenia)
