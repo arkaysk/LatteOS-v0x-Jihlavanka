@@ -27,7 +27,7 @@ scene Kvapka {
         level: top
         reserve: -1     // ignorovať vyhradené pásy (lišta Noctalie): okraj kvapky je skutočný okraj obrazovky
         rate: 60        // pokojný pohyb kvapky nepotrebuje 144 Hz: 12 % → 6 % jadra na RX 640
-        keyboard: on_demand while dash   // hľadanie v dashboarde
+        keyboard: on_demand while dash or dn_open   // hľadanie v spúšťači, Esc pri hrozne DaNoGoo
     }
     permissions { services: "window", "window.*", "clock", "notifications", "notifications.*", "apps", "apps.*", "network", "network.*", "bluetooth", "bluetooth.*", "audio", "audio.*", "battery", "media", "tray", "tray.*", "clipboard.set"; run: "noctalia", "latte-app", "hyprctl", "cat", "printenv", "curl", "latte-spustac", "latte-ponuka", "latte-kvapky", "fd", "xdg-open", "latte-ai", "latte-terminal", "date", "sh", "notify-send", "paplay" }
 
@@ -289,7 +289,7 @@ scene Kvapka {
     prop squish.p = 0 ~quick
     prop nfall = 0 ~700ms                    // nové upozornenie padá do Hodín
     prop toast.p = 0 ~lively                 // bublina s textom nového upozornenia
-    on new_note { nfall: 0 ~0ms; nfall: 1 after 20ms; toast.p: 1 after 500ms; toast.p: 0 after 6500ms }
+    on new_note { impulse dn.wob 260; toast.p: 1 after 200ms; toast.p: 0 after 6500ms }
     prop dsh = 0 ~420ms                      // dashboard: 0 = zbalený v Hodinách, 1 = rozliaty
     // rýchle nastavenia v dashboarde a riadky ponuky Vypnúť: myš nad nimi ich trochu nafúkne
     repeat k in 0..4 {
@@ -553,11 +553,6 @@ scene Kvapka {
             // Štart a vypínač: vlastná „voda“ pod okrajom; s hlavou a medzi sebou ich spája most `link`
             box { from: px - 34 - 14 * flow2 * stir, edge; size: (sx - px + 68 + 28 * flow2 * stir) * so, 70 }
             ellipse { at: sx, s.y; radius: (33 + 3 * hs) * so * (1 - smooth(0, 0.08, dsw)); scale: 1 + squish.s * 0.08 + jit.s + swob * 0.01, 1 - squish.s * 0.12 - jit.s - swob * 0.01; blend: link * so }
-            // upozornenia: kvapôčky prilepené hore vľavo na Hodinách (najviac tri) a jedna, ktorá práve padá
-            ellipse { at: sx - 25, s.y - 23; radius: 6.5 * so * (1 - dsh) * if(notes.count > 0, 1, 0); blend: 8 }
-            ellipse { at: sx - 10, s.y - 34; radius: 5.5 * so * (1 - dsh) * if(notes.count > 1, 1, 0); blend: 8 }
-            ellipse { at: sx + 6, s.y - 37; radius: 4.8 * so * (1 - dsh) * if(notes.count > 2, 1, 0); blend: 8 }
-            ellipse { at: sx + 4, s.y - 110 + 72 * nfall; radius: 6 * so * if(nfall > 0.02 and nfall < 0.97, 1, 0); scale: 0.85, 1.25; blend: 10 }
             ellipse { at: px, p.y; radius: (19 + 4 * hp) * so * (1 - smooth(0, 0.12, pm)); scale: 1 + squish.p * 0.08 + jit.p, 1 - squish.p * 0.12 - jit.p; blend: link * so }
             line { from: px, p.y - 4; to: sx, s.y - 6; width: thread.ps * (1 - max(dsh, pm)); blend: 12 * clamp(thread.ps * (1 - max(dsh, pm)) / 3, 0, 1) }
             line { from: sx + 8, s.y - 12; to: bl + 18, bottom - 14; width: thread.sb * ap * (1 - dsh); blend: 14 * clamp(thread.sb * ap * (1 - dsh) / 3, 0, 1) }
@@ -602,10 +597,6 @@ scene Kvapka {
             ellipse { at: hx + (cu - hx) / max(length(cu - hx, cv - mid + 8), 1) * 22, mid - 8 + (cv - mid + 8) / max(length(cu - hx, cv - mid + 8), 1) * 22; radius: 5 * (1 - smooth(60, 420, length(cu - hx, cv - mid + 8))); color: #ffe4bd }
             ellipse { at: sx + (cu - sx) / max(length(cu - sx, cv - s.y), 1) * 20, s.y + (cv - s.y) / max(length(cu - sx, cv - s.y), 1) * 20; radius: 4.5 * so * (1 - smooth(0, 0.12, dsh)) * (1 - smooth(60, 420, length(cu - sx, cv - s.y))); color: #ffe4bd }
         }
-        // farba upozornení podľa naliehavosti (nízka mätová, bežná jantárová, kritická červená)
-        ellipse { at: sx - 25, s.y - 23; radius: 3.8 * so * (1 - dsh) * if(notes.count > 0, 1, 0); color: pick(notes.0.urgency, #9ed6bd, #e4b283, #e07a5f) }
-        ellipse { at: sx - 10, s.y - 34; radius: 3.2 * so * (1 - dsh) * if(notes.count > 1, 1, 0); color: pick(notes.1.urgency, #9ed6bd, #e4b283, #e07a5f) }
-        ellipse { at: sx + 6, s.y - 37; radius: 2.8 * so * (1 - dsh) * if(notes.count > 2, 1, 0); color: pick(notes.2.urgency, #9ed6bd, #e4b283, #e07a5f) }
         // základňa kvapky: telo (0) a hlava (1) — ľavý klik = režim okien, ťahanie ľavým aj pravým = presun,
         // koliesko = okná, pravý klik nič. Hrbolčeky s oknami (icon_hit) majú vlastné kliky a ležia navrchu.
         repeat z in 0..2 {
@@ -637,21 +628,189 @@ scene Kvapka {
     }
 
     image power_icon = icon "system-shutdown-symbolic", 18, 18
+    // >>> DaNoGoo (danogoo.py)
+    // DaNoGoo: dátum + počasie + upozornenia (LATTEOS-GOO.md 4.2b). Poloha na okraji (dn.side, dn.pos) z logiky.
+    fact dn.side = 0                         // 0 dole, 1 hore, 2 vľavo, 3 vpravo
+    fact dn.pos = 0.78                       // 0..1 pozdĺž okraja
+    fact dn_open = false                     // hrozno upozornení vonku
+    fact dn_drag = false
+    fact dn_moved = false
+    fact dnd.x = 0
+    fact dnd.y = 0
+    text dn_date = ""
+    text dn_wx = ""
+    text dn_temp = ""
+    text dn_clear = ""                       // „Vymazať všetko (9)“
+    fact dn_crit = 0                         // systémové výstrahy (kritické)
+    fact dn_norm = 0                         // ostatné upozornenia
+    model berries max 6 { app: text; title: text; body: text; icon: image 24, 24; pal: number; dark: bool; acts: bool }
+    fact berry_hot = -1
+    fact brk = -1                            // ťahaná bobuľa
+    fact brmoved = false
+    fact br.dx = 0
+    fact br.dy = 0
+    event dn_drop
+    event dn_cal
+    event dn_clear_all
+    event berry_open ->
+    event berry_menu ->
+    event berry_dismiss ->
+    spring dnspring = 230, 11
+    spring dnwobble = 420, 13
+    let dn.ax = pick(dn.side, W * dn.pos, W * dn.pos, 0, W)
+    let dn.ay = pick(dn.side, H, 0, H * dn.pos, H * dn.pos)
+    let dn.nx = pick(dn.side, 0, 0, 1, -1)
+    let dn.ny = pick(dn.side, -1, 1, 0, 0)
+    let dn.px = 0 - dn.ny                    // pozdĺž okraja
+    let dn.py = dn.nx
+    let dn.vert = abs(dn.nx)
+    let dn.near = 1 - smooth(0, 190, length(mx - dn.ax, my - dn.ay))
+    prop dn.lift = 0 ~dnspring
+    follow dn.lift = if(dn_open, 1, 0)
+    prop dn.h = 0 ~lively
+    prop dn.wob = 0 ~dnwobble
+    // živý tvor: nakloní sa ku kurzoru, nad ňou sa nafúkne; pri otvorení vystrelí kolmo od okraja (pružina)
+    let dn.out = 32 + 8 * dn.near + 2.5 * noise(time * 0.3 + 11.3) + 62 * dn.lift
+    let dn.tx = dn.ax + dn.nx * dn.out + clamp(mx - dn.ax, -20, 20) * 0.28 * dn.near * abs(dn.px)
+    let dn.ty = dn.ay + dn.ny * dn.out + clamp(my - dn.ay, -20, 20) * 0.28 * dn.near * abs(dn.py)
+    prop dn.x = 0 ~lively
+    prop dn.y = 0 ~lively
+    follow dn.x = if(dn_drag and dn_moved, pointer.x, dn.tx)
+    follow dn.y = if(dn_drag and dn_moved, pointer.y, dn.ty)
+    let dn.r = (31 + 3 * dn.h) * so
+    let dn.jit = 0.05 * sin(time * 9 + 3) * dn.h + dn.wob * 0.01
+    let dn.sheet = if(dn_drag and dn_moved, 0, 1) * so
+    // guľky počtu na vonkajšom oblúku (žlté bežné, červeno-kávová systémová vľavo)
+    let dny.x.0 = dn.x + (dn.nx * cos(-50) + dn.px * sin(-50)) * (dn.r + 2)
+    let dny.y.0 = dn.y + (dn.ny * cos(-50) + dn.py * sin(-50)) * (dn.r + 2)
+    let dny.x.1 = dn.x + (dn.nx * cos(-25) + dn.px * sin(-25)) * (dn.r + 2)
+    let dny.y.1 = dn.y + (dn.ny * cos(-25) + dn.py * sin(-25)) * (dn.r + 2)
+    let dny.x.2 = dn.x + (dn.nx * cos(0) + dn.px * sin(0)) * (dn.r + 2)
+    let dny.y.2 = dn.y + (dn.ny * cos(0) + dn.py * sin(0)) * (dn.r + 2)
+    let dny.x.3 = dn.x + (dn.nx * cos(25) + dn.px * sin(25)) * (dn.r + 2)
+    let dny.y.3 = dn.y + (dn.ny * cos(25) + dn.py * sin(25)) * (dn.r + 2)
+    let dny.x.4 = dn.x + (dn.nx * cos(50) + dn.px * sin(50)) * (dn.r + 2)
+    let dny.y.4 = dn.y + (dn.ny * cos(50) + dn.py * sin(50)) * (dn.r + 2)
+    let dnc.x = dn.x + (dn.nx * cos(-72) + dn.px * sin(-72)) * (dn.r + 3)
+    let dnc.y = dn.y + (dn.ny * cos(-72) + dn.py * sin(-72)) * (dn.r + 3)
+    // hrozno: bobule nad sebou smerom od okraja (pri bočnom okraji vedľa kvapky), najnovšia najďalej
+    let brj.0 = (berries.count - 1 - 0)
+    let brx.0 = if(dn.vert > 0.5, dn.x + dn.nx * (dn.r + 196), clamp(dn.x, 200, W - 200)) + if(brk == 0 and brmoved, br.dx, 0)
+    let bry.0 = if(dn.vert > 0.5, dn.y + (brj.0 - (berries.count - 1) / 2) * 60, dn.y + dn.ny * (dn.r + 46 + brj.0 * 60)) + if(brk == 0 and brmoved, br.dy, 0)
+    let bre.0 = clamp(dn.lift * 1.7 - brj.0 * 0.12 - 0.2, 0, 1) * if(0 < berries.count, 1, 0) * clamp(1 - abs(if(brk == 0 and brmoved, br.dx, 0)) / 260, 0, 1)
+    let brj.1 = (berries.count - 1 - 1)
+    let brx.1 = if(dn.vert > 0.5, dn.x + dn.nx * (dn.r + 196), clamp(dn.x, 200, W - 200)) + if(brk == 1 and brmoved, br.dx, 0)
+    let bry.1 = if(dn.vert > 0.5, dn.y + (brj.1 - (berries.count - 1) / 2) * 60, dn.y + dn.ny * (dn.r + 46 + brj.1 * 60)) + if(brk == 1 and brmoved, br.dy, 0)
+    let bre.1 = clamp(dn.lift * 1.7 - brj.1 * 0.12 - 0.2, 0, 1) * if(1 < berries.count, 1, 0) * clamp(1 - abs(if(brk == 1 and brmoved, br.dx, 0)) / 260, 0, 1)
+    let brj.2 = (berries.count - 1 - 2)
+    let brx.2 = if(dn.vert > 0.5, dn.x + dn.nx * (dn.r + 196), clamp(dn.x, 200, W - 200)) + if(brk == 2 and brmoved, br.dx, 0)
+    let bry.2 = if(dn.vert > 0.5, dn.y + (brj.2 - (berries.count - 1) / 2) * 60, dn.y + dn.ny * (dn.r + 46 + brj.2 * 60)) + if(brk == 2 and brmoved, br.dy, 0)
+    let bre.2 = clamp(dn.lift * 1.7 - brj.2 * 0.12 - 0.2, 0, 1) * if(2 < berries.count, 1, 0) * clamp(1 - abs(if(brk == 2 and brmoved, br.dx, 0)) / 260, 0, 1)
+    let brj.3 = (berries.count - 1 - 3)
+    let brx.3 = if(dn.vert > 0.5, dn.x + dn.nx * (dn.r + 196), clamp(dn.x, 200, W - 200)) + if(brk == 3 and brmoved, br.dx, 0)
+    let bry.3 = if(dn.vert > 0.5, dn.y + (brj.3 - (berries.count - 1) / 2) * 60, dn.y + dn.ny * (dn.r + 46 + brj.3 * 60)) + if(brk == 3 and brmoved, br.dy, 0)
+    let bre.3 = clamp(dn.lift * 1.7 - brj.3 * 0.12 - 0.2, 0, 1) * if(3 < berries.count, 1, 0) * clamp(1 - abs(if(brk == 3 and brmoved, br.dx, 0)) / 260, 0, 1)
+    let brj.4 = (berries.count - 1 - 4)
+    let brx.4 = if(dn.vert > 0.5, dn.x + dn.nx * (dn.r + 196), clamp(dn.x, 200, W - 200)) + if(brk == 4 and brmoved, br.dx, 0)
+    let bry.4 = if(dn.vert > 0.5, dn.y + (brj.4 - (berries.count - 1) / 2) * 60, dn.y + dn.ny * (dn.r + 46 + brj.4 * 60)) + if(brk == 4 and brmoved, br.dy, 0)
+    let bre.4 = clamp(dn.lift * 1.7 - brj.4 * 0.12 - 0.2, 0, 1) * if(4 < berries.count, 1, 0) * clamp(1 - abs(if(brk == 4 and brmoved, br.dx, 0)) / 260, 0, 1)
+    let brj.5 = (berries.count - 1 - 5)
+    let brx.5 = if(dn.vert > 0.5, dn.x + dn.nx * (dn.r + 196), clamp(dn.x, 200, W - 200)) + if(brk == 5 and brmoved, br.dx, 0)
+    let bry.5 = if(dn.vert > 0.5, dn.y + (brj.5 - (berries.count - 1) / 2) * 60, dn.y + dn.ny * (dn.r + 46 + brj.5 * 60)) + if(brk == 5 and brmoved, br.dy, 0)
+    let bre.5 = clamp(dn.lift * 1.7 - brj.5 * 0.12 - 0.2, 0, 1) * if(5 < berries.count, 1, 0) * clamp(1 - abs(if(brk == 5 and brmoved, br.dx, 0)) / 260, 0, 1)
+    let clx = if(dn.vert > 0.5, dn.x + dn.nx * (dn.r + 196), clamp(dn.x, 200, W - 200))
+    let cly = if(dn.vert > 0.5, dn.y + ((berries.count - 1) / 2 + 1) * 60, dn.y + dn.ny * (dn.r + 46 + berries.count * 60))
+    let cle = clamp(dn.lift * 1.7 - berries.count * 0.12 - 0.2, 0, 1) * if(berries.count > 0, 1, 0)
+    let brend.x = if(berries.count > 0, clx, dn.x)
+    let brend.y = if(berries.count > 0, cly, dn.y)
+    body {
+        color: coffee
+        rim: 30%
+        light: 14%, 0, 30
+        glass: 100% * clamp(v * 1.3, 0, 1) * (1 - m)
+        shine: pointer
+        opacity: if(solo, 1, 0)
+        box { at: dn.ax, dn.ay; size: 70 * abs(dn.ny) + 20 * abs(dn.nx), 20 * abs(dn.ny) + 70 * abs(dn.nx); corner: 10 }
+        ellipse { at: dn.ax, dn.ay; radius: 24 * dn.sheet; blend: 16 }
+        ellipse { at: dn.x, dn.y; radius: dn.r; scale: 1 + dn.jit, 1 - dn.jit; blend: 18 * dn.sheet + 2 }
+        // lepkavé vlákno od kvapky cez hrozno (tenšie, čím ďalej)
+        line { from: dn.x, dn.y; to: dn.x + (brend.x - dn.x) * clamp(dn.lift * 1.4, 0, 1), dn.y + (brend.y - dn.y) * clamp(dn.lift * 1.4, 0, 1); width: 7 * clamp(dn.lift * 3, 0, 1); blend: 10 * clamp(dn.lift * 3, 0, 1) }
+        ellipse { at: brx.0 - 176 * bre.0, bry.0; radius: 9 * bre.0; blend: 8 * bre.0 }
+        ellipse { at: brx.1 - 176 * bre.1, bry.1; radius: 9 * bre.1; blend: 8 * bre.1 }
+        ellipse { at: brx.2 - 176 * bre.2, bry.2; radius: 9 * bre.2; blend: 8 * bre.2 }
+        ellipse { at: brx.3 - 176 * bre.3, bry.3; radius: 9 * bre.3; blend: 8 * bre.3 }
+        ellipse { at: brx.4 - 176 * bre.4, bry.4; radius: 9 * bre.4; blend: 8 * bre.4 }
+        ellipse { at: brx.5 - 176 * bre.5, bry.5; radius: 9 * bre.5; blend: 8 * bre.5 }
+    }
+    // guľky počtu upozornení (goo: prilepené na kvapke)
+    body {
+        color: #f2c14e
+        rim: 30%
+        light: 16%, 0, 20
+        opacity: if(solo, 1, 0) * (1 - dn.lift)
+        ellipse { at: dny.x.0, dny.y.0; radius: 6.2 * if(0 < dn_norm, 1, 0) * so; blend: 5 * if(0 < dn_norm, 1, 0) }
+        ellipse { at: dny.x.1, dny.y.1; radius: 6.2 * if(1 < dn_norm, 1, 0) * so; blend: 5 * if(1 < dn_norm, 1, 0) }
+        ellipse { at: dny.x.2, dny.y.2; radius: 6.2 * if(2 < dn_norm, 1, 0) * so; blend: 5 * if(2 < dn_norm, 1, 0) }
+        ellipse { at: dny.x.3, dny.y.3; radius: 6.2 * if(3 < dn_norm, 1, 0) * so; blend: 5 * if(3 < dn_norm, 1, 0) }
+        ellipse { at: dny.x.4, dny.y.4; radius: 6.2 * if(4 < dn_norm, 1, 0) * so; blend: 5 * if(4 < dn_norm, 1, 0) }
+    }
+    body {
+        color: #a8452f
+        rim: 30%
+        light: 16%, 0, 20
+        opacity: if(solo, 1, 0) * (1 - dn.lift)
+        ellipse { at: dnc.x, dnc.y; radius: 9.5 * if(dn_crit > 0, 1, 0) * so }
+    }
+    text "{dn_crit}" { at: dnc.x, dnc.y; anchor: center; size: 9.5; weight: 800; color: #ffffff; opacity: 1 - dn.lift; show: solo and dn_crit > 1; family: "Inter" }
+    // bobule hrozna: kapsula vo farbe ikony aplikácie (ikona, aplikácia, nadpis, text)
+    box { at: brx.0, bry.0; size: 360 * bre.0, 52 * bre.0; corner: 26; color: pick(berries.0.pal, #e5484d, #f76b15, #ffb224, #f5d90a, #99d52a, #46a758, #12a594, #05a2c2, #0090ff, #3e63dd, #6e56cf, #8e4ec6, #ab4aba, #d6409f, #c8cbd0, #5b5f66, #a8452f); opacity: if(berry_hot == 0, 100%, 94%); show: solo and bre.0 > 0.01 }
+    ellipse { at: brx.0 - 152 * bre.0, bry.0; radius: 18 * bre.0; color: #ffffff; opacity: 92%; show: solo and bre.0 > 0.01 }
+    image berries.0.icon { at: brx.0 - 164, bry.0 - 12; size: 24, 24; opacity: clamp(bre.0 * 2 - 1, 0, 1); show: solo and bre.0 > 0.5 }
+    text "{berries.0.app} · {berries.0.title}" { at: brx.0 - 124, bry.0 - 9; anchor: left center; width: 290; lines: 1; size: 12.5; weight: 600; color: if(berries.0.dark, #1b1b1b, #ffffff); opacity: clamp(bre.0 * 2 - 1, 0, 1); show: solo and bre.0 > 0.5; family: "Inter" }
+    text berries.0.body { at: brx.0 - 124, bry.0 + 10; anchor: left center; width: 290; lines: 1; size: 11.5; color: if(berries.0.dark, #1b1b1b, #ffffff); opacity: 80% * clamp(bre.0 * 2 - 1, 0, 1); show: solo and bre.0 > 0.5; family: "Inter" }
+    box { at: brx.1, bry.1; size: 360 * bre.1, 52 * bre.1; corner: 26; color: pick(berries.1.pal, #e5484d, #f76b15, #ffb224, #f5d90a, #99d52a, #46a758, #12a594, #05a2c2, #0090ff, #3e63dd, #6e56cf, #8e4ec6, #ab4aba, #d6409f, #c8cbd0, #5b5f66, #a8452f); opacity: if(berry_hot == 1, 100%, 94%); show: solo and bre.1 > 0.01 }
+    ellipse { at: brx.1 - 152 * bre.1, bry.1; radius: 18 * bre.1; color: #ffffff; opacity: 92%; show: solo and bre.1 > 0.01 }
+    image berries.1.icon { at: brx.1 - 164, bry.1 - 12; size: 24, 24; opacity: clamp(bre.1 * 2 - 1, 0, 1); show: solo and bre.1 > 0.5 }
+    text "{berries.1.app} · {berries.1.title}" { at: brx.1 - 124, bry.1 - 9; anchor: left center; width: 290; lines: 1; size: 12.5; weight: 600; color: if(berries.1.dark, #1b1b1b, #ffffff); opacity: clamp(bre.1 * 2 - 1, 0, 1); show: solo and bre.1 > 0.5; family: "Inter" }
+    text berries.1.body { at: brx.1 - 124, bry.1 + 10; anchor: left center; width: 290; lines: 1; size: 11.5; color: if(berries.1.dark, #1b1b1b, #ffffff); opacity: 80% * clamp(bre.1 * 2 - 1, 0, 1); show: solo and bre.1 > 0.5; family: "Inter" }
+    box { at: brx.2, bry.2; size: 360 * bre.2, 52 * bre.2; corner: 26; color: pick(berries.2.pal, #e5484d, #f76b15, #ffb224, #f5d90a, #99d52a, #46a758, #12a594, #05a2c2, #0090ff, #3e63dd, #6e56cf, #8e4ec6, #ab4aba, #d6409f, #c8cbd0, #5b5f66, #a8452f); opacity: if(berry_hot == 2, 100%, 94%); show: solo and bre.2 > 0.01 }
+    ellipse { at: brx.2 - 152 * bre.2, bry.2; radius: 18 * bre.2; color: #ffffff; opacity: 92%; show: solo and bre.2 > 0.01 }
+    image berries.2.icon { at: brx.2 - 164, bry.2 - 12; size: 24, 24; opacity: clamp(bre.2 * 2 - 1, 0, 1); show: solo and bre.2 > 0.5 }
+    text "{berries.2.app} · {berries.2.title}" { at: brx.2 - 124, bry.2 - 9; anchor: left center; width: 290; lines: 1; size: 12.5; weight: 600; color: if(berries.2.dark, #1b1b1b, #ffffff); opacity: clamp(bre.2 * 2 - 1, 0, 1); show: solo and bre.2 > 0.5; family: "Inter" }
+    text berries.2.body { at: brx.2 - 124, bry.2 + 10; anchor: left center; width: 290; lines: 1; size: 11.5; color: if(berries.2.dark, #1b1b1b, #ffffff); opacity: 80% * clamp(bre.2 * 2 - 1, 0, 1); show: solo and bre.2 > 0.5; family: "Inter" }
+    box { at: brx.3, bry.3; size: 360 * bre.3, 52 * bre.3; corner: 26; color: pick(berries.3.pal, #e5484d, #f76b15, #ffb224, #f5d90a, #99d52a, #46a758, #12a594, #05a2c2, #0090ff, #3e63dd, #6e56cf, #8e4ec6, #ab4aba, #d6409f, #c8cbd0, #5b5f66, #a8452f); opacity: if(berry_hot == 3, 100%, 94%); show: solo and bre.3 > 0.01 }
+    ellipse { at: brx.3 - 152 * bre.3, bry.3; radius: 18 * bre.3; color: #ffffff; opacity: 92%; show: solo and bre.3 > 0.01 }
+    image berries.3.icon { at: brx.3 - 164, bry.3 - 12; size: 24, 24; opacity: clamp(bre.3 * 2 - 1, 0, 1); show: solo and bre.3 > 0.5 }
+    text "{berries.3.app} · {berries.3.title}" { at: brx.3 - 124, bry.3 - 9; anchor: left center; width: 290; lines: 1; size: 12.5; weight: 600; color: if(berries.3.dark, #1b1b1b, #ffffff); opacity: clamp(bre.3 * 2 - 1, 0, 1); show: solo and bre.3 > 0.5; family: "Inter" }
+    text berries.3.body { at: brx.3 - 124, bry.3 + 10; anchor: left center; width: 290; lines: 1; size: 11.5; color: if(berries.3.dark, #1b1b1b, #ffffff); opacity: 80% * clamp(bre.3 * 2 - 1, 0, 1); show: solo and bre.3 > 0.5; family: "Inter" }
+    box { at: brx.4, bry.4; size: 360 * bre.4, 52 * bre.4; corner: 26; color: pick(berries.4.pal, #e5484d, #f76b15, #ffb224, #f5d90a, #99d52a, #46a758, #12a594, #05a2c2, #0090ff, #3e63dd, #6e56cf, #8e4ec6, #ab4aba, #d6409f, #c8cbd0, #5b5f66, #a8452f); opacity: if(berry_hot == 4, 100%, 94%); show: solo and bre.4 > 0.01 }
+    ellipse { at: brx.4 - 152 * bre.4, bry.4; radius: 18 * bre.4; color: #ffffff; opacity: 92%; show: solo and bre.4 > 0.01 }
+    image berries.4.icon { at: brx.4 - 164, bry.4 - 12; size: 24, 24; opacity: clamp(bre.4 * 2 - 1, 0, 1); show: solo and bre.4 > 0.5 }
+    text "{berries.4.app} · {berries.4.title}" { at: brx.4 - 124, bry.4 - 9; anchor: left center; width: 290; lines: 1; size: 12.5; weight: 600; color: if(berries.4.dark, #1b1b1b, #ffffff); opacity: clamp(bre.4 * 2 - 1, 0, 1); show: solo and bre.4 > 0.5; family: "Inter" }
+    text berries.4.body { at: brx.4 - 124, bry.4 + 10; anchor: left center; width: 290; lines: 1; size: 11.5; color: if(berries.4.dark, #1b1b1b, #ffffff); opacity: 80% * clamp(bre.4 * 2 - 1, 0, 1); show: solo and bre.4 > 0.5; family: "Inter" }
+    box { at: brx.5, bry.5; size: 360 * bre.5, 52 * bre.5; corner: 26; color: pick(berries.5.pal, #e5484d, #f76b15, #ffb224, #f5d90a, #99d52a, #46a758, #12a594, #05a2c2, #0090ff, #3e63dd, #6e56cf, #8e4ec6, #ab4aba, #d6409f, #c8cbd0, #5b5f66, #a8452f); opacity: if(berry_hot == 5, 100%, 94%); show: solo and bre.5 > 0.01 }
+    ellipse { at: brx.5 - 152 * bre.5, bry.5; radius: 18 * bre.5; color: #ffffff; opacity: 92%; show: solo and bre.5 > 0.01 }
+    image berries.5.icon { at: brx.5 - 164, bry.5 - 12; size: 24, 24; opacity: clamp(bre.5 * 2 - 1, 0, 1); show: solo and bre.5 > 0.5 }
+    text "{berries.5.app} · {berries.5.title}" { at: brx.5 - 124, bry.5 - 9; anchor: left center; width: 290; lines: 1; size: 12.5; weight: 600; color: if(berries.5.dark, #1b1b1b, #ffffff); opacity: clamp(bre.5 * 2 - 1, 0, 1); show: solo and bre.5 > 0.5; family: "Inter" }
+    text berries.5.body { at: brx.5 - 124, bry.5 + 10; anchor: left center; width: 290; lines: 1; size: 11.5; color: if(berries.5.dark, #1b1b1b, #ffffff); opacity: 80% * clamp(bre.5 * 2 - 1, 0, 1); show: solo and bre.5 > 0.5; family: "Inter" }
+    box { at: clx, cly; size: 190 * cle, 34 * cle; corner: 17; color: mix(coffee, #f3ebdd, 0.12); opacity: 95%; show: solo and cle > 0.01 }
+    text dn_clear { at: clx, cly; anchor: center; size: 12; weight: 600; color: ink; opacity: clamp(cle * 2 - 1, 0, 1); show: solo and cle > 0.5; family: "Inter" }
+    // <<< DaNoGoo
     // Hodiny: čas a dátum stoja rovno v kvapke (bod rámca → obrazovka)
     let cxs = pick(side, sx, W - sx, edge - s.y, W - edge + s.y)
     let cys = pick(side, s.y + H - edge, edge - s.y, sx, H - sx)
-    // bublina nového upozornenia: vyleje sa z Hodín smerom od okraja (v obrazovke, text rovno), 6 s
+    // bublina nového upozornenia: vyleje sa z DaNoGoo smerom od okraja (v obrazovke, text rovno), 6 s
     let vert = if(side == vlavo or side == vpravo, 1, 0)
     let away.x = pick(side, 0, 0, 1, -1)
     let away.y = pick(side, -1, 1, 0, 0)
-    let tst.x = cxs + if(vert, away.x * (40 + 170 * toast.p), 170 * toast.p)
-    let tst.y = cys + if(vert, 0, away.y * (58 * toast.p))
+    let tst.x = dn.x + if(dn.vert > 0.5, dn.nx * (40 + 170 * toast.p), 170 * toast.p * if(dn.x > W - 420, -1, 1))
+    let tst.y = dn.y + if(dn.vert > 0.5, 0, dn.ny * (58 * toast.p))
     body {
         color: coffee
         rim: 30%
         shadow: 0, 6, 16, 30% * toast.p
         opacity: clamp(toast.p * 3, 0, 1) * so
-        ellipse { at: cxs, cys; radius: 33 }
+        ellipse { at: dn.x, dn.y; radius: dn.r }
         box { at: tst.x, tst.y; size: 40 + 300 * toast.p, 30 + 14 * toast.p; corner: 22; blend: 22 }
     }
     // hodiny: digitálny čas a dátum v kvapke (bez očí; ľavý klik alebo kláves Win otvorí spúšťač)
@@ -661,6 +820,12 @@ scene Kvapka {
 
     text toast { at: tst.x - 135, tst.y; anchor: left center; width: 270; lines: 1; size: 12.5; weight: 600; color: ink; opacity: clamp(toast.p * 2 - 1, 0, 1) * so; show: solo }
 
+    // >>> DaNoGoo texty (danogoo.py)
+    // obsah kvapky: dátum a počasie (bez tváre)
+    text dn_date { at: dn.x, dn.y - 7; anchor: center; size: 11; weight: 700; color: ink; opacity: so; show: solo; family: "Inter" }
+    text dn_wx { at: dn.x - 1, dn.y + 9; anchor: right center; size: 12; color: ink; opacity: 85% * so; show: solo; family: "noctalia-tabler-icons" }
+    text dn_temp { at: dn.x + 1, dn.y + 9; anchor: left center; size: 10.5; weight: 600; color: ink; opacity: 85% * so; show: solo; family: "Inter" }
+    // <<< DaNoGoo texty
     // ── spúšťač (vyteká z hodiniek smerom od okraja; v obrazovke, text rovno) ──
     // >>> spúšťač (spustac.py)
     // Vzhľad (1. 10., používateľ: „moderné ikony, fonty, trošku minimalizmu; chytrosti, vkusnosti a užitočnosti“):
@@ -1584,6 +1749,86 @@ scene Kvapka {
     on enter w_hit.11 { wh.11: 1 }
     on leave w_hit.11 { wh.11: 0 }
     // <<< kvapky widgetov
+    // >>> DaNoGoo zóny (danogoo.py)
+    // hrozno: klik mimo neho ho zavrie (pod bobuľami)
+    zone box dn_away { at: W / 2, H / 2; size: W, H; active: dn_open }
+    zone ellipse dn_hit { at: dn.x, dn.y; radius: 34; cursor: pointer; active: solo }
+    zone box br_hit.0 { at: brx.0, bry.0; size: 360, 52; cursor: pointer; active: dn_open and 0 < berries.count and bre.0 > 0.9 }
+    zone box br_hit.1 { at: brx.1, bry.1; size: 360, 52; cursor: pointer; active: dn_open and 1 < berries.count and bre.1 > 0.9 }
+    zone box br_hit.2 { at: brx.2, bry.2; size: 360, 52; cursor: pointer; active: dn_open and 2 < berries.count and bre.2 > 0.9 }
+    zone box br_hit.3 { at: brx.3, bry.3; size: 360, 52; cursor: pointer; active: dn_open and 3 < berries.count and bre.3 > 0.9 }
+    zone box br_hit.4 { at: brx.4, bry.4; size: 360, 52; cursor: pointer; active: dn_open and 4 < berries.count and bre.4 > 0.9 }
+    zone box br_hit.5 { at: brx.5, bry.5; size: 360, 52; cursor: pointer; active: dn_open and 5 < berries.count and bre.5 > 0.9 }
+    zone box dn_clr { at: clx, cly; size: 190, 34; cursor: pointer; active: dn_open and berries.count > 0 and cle > 0.9 }
+    // DaNoGoo: ľavý klik = hrozno (znova klik, Esc alebo klik mimo = späť), ťahanie = iný okraj, pravý = kalendár
+    on press dn_hit { dn_drag = true; dn_moved = false; wd.w = W; wd.h = H }
+    on drag dn_hit while dn_drag and abs(drag.dx) + abs(drag.dy) > 6 { dn_moved = true; dn_open = false }
+    on release dn_hit while dn_drag and dn_moved { dnd.x = pointer.x; dnd.y = pointer.y; impulse dn.wob 300; emit dn_drop; dn_moved = false; dn_drag = false }
+    on release dn_hit while dn_drag and not dn_moved { dn_drag = false; toggle dn_open; impulse dn.wob 160; dash = false; pmenu = false }
+    on press right dn_hit { impulse dn.wob 120; dn_open = false; emit dn_cal }
+    on enter dn_hit { dn.h: 1 }
+    on leave dn_hit { dn.h: 0 }
+    on press dn_away { dn_open = false }
+    on press right dn_away { dn_open = false }
+    on key Escape while dn_open { dn_open = false }
+    on change dn_open while dn_open { toast.p: 0 }
+    on press dn_clr { dn_open = false; emit dn_clear_all }
+    // bobule: ľavý klik = otvoriť, pravý = akcie upozornenia (iba ak nejaké má), odhodenie nabok = zahodiť
+    on press br_hit.0 { brk = 0; brmoved = false; br.dx = 0; br.dy = 0 }
+    on drag br_hit.0 while brk == 0 { br.dx = drag.dx; br.dy = drag.dy * 0.2 }
+    on drag br_hit.0 while brk == 0 and abs(drag.dx) > 10 { brmoved = true }
+    on release br_hit.0 while brk == 0 and brmoved and abs(br.dx) > 140 { brk = -1; brmoved = false; br.dx = 0; br.dy = 0; emit berry_dismiss(0) }
+    on release br_hit.0 while brk == 0 and brmoved { brk = -1; brmoved = false; br.dx = 0; br.dy = 0 }
+    on release br_hit.0 while brk == 0 and not brmoved { brk = -1; emit berry_open(0) }
+    on press right br_hit.0 while berries.0.acts { ctx_up = false; ctx.x = mx; ctx.y = my; emit berry_menu(0) }
+    on enter br_hit.0 { berry_hot = 0 }
+    on leave br_hit.0 { berry_hot = -1 }
+    on press br_hit.1 { brk = 1; brmoved = false; br.dx = 0; br.dy = 0 }
+    on drag br_hit.1 while brk == 1 { br.dx = drag.dx; br.dy = drag.dy * 0.2 }
+    on drag br_hit.1 while brk == 1 and abs(drag.dx) > 10 { brmoved = true }
+    on release br_hit.1 while brk == 1 and brmoved and abs(br.dx) > 140 { brk = -1; brmoved = false; br.dx = 0; br.dy = 0; emit berry_dismiss(1) }
+    on release br_hit.1 while brk == 1 and brmoved { brk = -1; brmoved = false; br.dx = 0; br.dy = 0 }
+    on release br_hit.1 while brk == 1 and not brmoved { brk = -1; emit berry_open(1) }
+    on press right br_hit.1 while berries.1.acts { ctx_up = false; ctx.x = mx; ctx.y = my; emit berry_menu(1) }
+    on enter br_hit.1 { berry_hot = 1 }
+    on leave br_hit.1 { berry_hot = -1 }
+    on press br_hit.2 { brk = 2; brmoved = false; br.dx = 0; br.dy = 0 }
+    on drag br_hit.2 while brk == 2 { br.dx = drag.dx; br.dy = drag.dy * 0.2 }
+    on drag br_hit.2 while brk == 2 and abs(drag.dx) > 10 { brmoved = true }
+    on release br_hit.2 while brk == 2 and brmoved and abs(br.dx) > 140 { brk = -1; brmoved = false; br.dx = 0; br.dy = 0; emit berry_dismiss(2) }
+    on release br_hit.2 while brk == 2 and brmoved { brk = -1; brmoved = false; br.dx = 0; br.dy = 0 }
+    on release br_hit.2 while brk == 2 and not brmoved { brk = -1; emit berry_open(2) }
+    on press right br_hit.2 while berries.2.acts { ctx_up = false; ctx.x = mx; ctx.y = my; emit berry_menu(2) }
+    on enter br_hit.2 { berry_hot = 2 }
+    on leave br_hit.2 { berry_hot = -1 }
+    on press br_hit.3 { brk = 3; brmoved = false; br.dx = 0; br.dy = 0 }
+    on drag br_hit.3 while brk == 3 { br.dx = drag.dx; br.dy = drag.dy * 0.2 }
+    on drag br_hit.3 while brk == 3 and abs(drag.dx) > 10 { brmoved = true }
+    on release br_hit.3 while brk == 3 and brmoved and abs(br.dx) > 140 { brk = -1; brmoved = false; br.dx = 0; br.dy = 0; emit berry_dismiss(3) }
+    on release br_hit.3 while brk == 3 and brmoved { brk = -1; brmoved = false; br.dx = 0; br.dy = 0 }
+    on release br_hit.3 while brk == 3 and not brmoved { brk = -1; emit berry_open(3) }
+    on press right br_hit.3 while berries.3.acts { ctx_up = false; ctx.x = mx; ctx.y = my; emit berry_menu(3) }
+    on enter br_hit.3 { berry_hot = 3 }
+    on leave br_hit.3 { berry_hot = -1 }
+    on press br_hit.4 { brk = 4; brmoved = false; br.dx = 0; br.dy = 0 }
+    on drag br_hit.4 while brk == 4 { br.dx = drag.dx; br.dy = drag.dy * 0.2 }
+    on drag br_hit.4 while brk == 4 and abs(drag.dx) > 10 { brmoved = true }
+    on release br_hit.4 while brk == 4 and brmoved and abs(br.dx) > 140 { brk = -1; brmoved = false; br.dx = 0; br.dy = 0; emit berry_dismiss(4) }
+    on release br_hit.4 while brk == 4 and brmoved { brk = -1; brmoved = false; br.dx = 0; br.dy = 0 }
+    on release br_hit.4 while brk == 4 and not brmoved { brk = -1; emit berry_open(4) }
+    on press right br_hit.4 while berries.4.acts { ctx_up = false; ctx.x = mx; ctx.y = my; emit berry_menu(4) }
+    on enter br_hit.4 { berry_hot = 4 }
+    on leave br_hit.4 { berry_hot = -1 }
+    on press br_hit.5 { brk = 5; brmoved = false; br.dx = 0; br.dy = 0 }
+    on drag br_hit.5 while brk == 5 { br.dx = drag.dx; br.dy = drag.dy * 0.2 }
+    on drag br_hit.5 while brk == 5 and abs(drag.dx) > 10 { brmoved = true }
+    on release br_hit.5 while brk == 5 and brmoved and abs(br.dx) > 140 { brk = -1; brmoved = false; br.dx = 0; br.dy = 0; emit berry_dismiss(5) }
+    on release br_hit.5 while brk == 5 and brmoved { brk = -1; brmoved = false; br.dx = 0; br.dy = 0 }
+    on release br_hit.5 while brk == 5 and not brmoved { brk = -1; emit berry_open(5) }
+    on press right br_hit.5 while berries.5.acts { ctx_up = false; ctx.x = mx; ctx.y = my; emit berry_menu(5) }
+    on enter br_hit.5 { berry_hot = 5 }
+    on leave br_hit.5 { berry_hot = -1 }
+    // <<< DaNoGoo zóny
 
     // ── ponuka Vypnúť (vyteká z kvapky vypínača smerom od okraja) ──
     let pxs = pick(side, px, W - px, edge - p.y, W - edge + p.y)
@@ -1824,6 +2069,7 @@ scene Kvapka {
     }
 
     translations sk {
+        "Clear all ({n})" = "Vymazať všetko ({n})"
         "Alarm {t}" = "Budík {t}"
         "Timer {t}" = "Minútka {t}"
         "Lap {n}" = "Medzičas {n}"

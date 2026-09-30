@@ -114,7 +114,14 @@ samostatný tekutý prvok.
   aplikáciách). Nič nové sa nevymýšľa: v Kvapkách beží tiež (predtým ju `latte-kvapky` vypínal), v záložke Čas
   je súhrn dneška (čas pred obrazovkou, 3 najpoužívanejšie aplikácie) a tlačidlo „Podrobnosti v Monitore“ (1. 10.).
 
-### 4.2b DaNoGoo (dátum + upozornenia) — samostatná kvapka, dá sa presúvať (návrh 1. 10.)
+### 4.2b DaNoGoo (dátum + upozornenia) — samostatná kvapka, dá sa presúvať (hotové 1. 10., kalendár ďalej)
+- **Hotové (1. 10.):** kvapka s dátumom („st 30. 9.“) a počasím (ikona Tabler + teplota), predvolene dole vľavo
+  od rohovej lišty; **ťahaním** k inému okraju (poloha v `spustac.json`); guľky počtu (žlté do 5, červeno-kávová
+  s číslom); **hrozno** na lepkavom vlákne (6 najnovších, najnovšia najďalej, „Vymazať všetko (N)“); bobuľa vo
+  farbe ikony (`latte-kvapky farba`: prevládajúci odtieň ikony → paleta 16 farieb, pamätá sa v
+  `~/.cache/latteos/farby-ikon.json`), systémová výstraha červeno-kávová, bez ikony náhradná; ľavý klik = otvoriť,
+  pravý = akcie upozornenia (iba ak má), odhodenie nabok = zahodiť; zatvorí klik na kvapku / Esc / klik mimo.
+  Bublina nového upozornenia vyteká z DaNoGoo; upozornenia už nie sú na TimeGoo. Generátor `session/kvapky/danogoo.py`.
 - **Viditeľný obsah:** dátum a počasie.
 - **Guľky počtu upozornení:** systémové výstrahy vlastná **červeno-kávová** guľka (+ číslo, ak ich je viac);
   ostatné jednotne **žlté**, viac guliek podľa počtu.
@@ -178,7 +185,9 @@ Karta z ucha TimeGoo, zhora nadol:
 
 ### 4.8 Mimo plochy
 - Prihlasovacia obrazovka latteGoo s výberom relácie; Sunshine beží už pred prihlásením (virtuálny monitor EDID).
-- Relácie na pokusy: Noctalia (čistá), Marea (pleamar-wm / Hyprland), Serpantinum — oddelené od LatteOS.
+- Relácie na pokusy: Noctalia (čistá), **Marea kompletná (pleamar-wm, k4ditano)** — kompletný autorov ekosystém
+  (kompozitor pleamar-wm, Marea, jeho portály a profil `~/.config/pleamar`, najnovšie verzie; 1. 10.), Marea
+  (Hyprland), Serpantinum — oddelené od LatteOS (`setup/lab/marea-povodna.sh`, `latte-marea`).
 
 ---
 
@@ -238,10 +247,12 @@ Ide sa **po poradí**; nové nápady sa zapíšu na koniec (E), nerozbiehajú sa
    Prehľad · Stopky · Minútka · Budíky; well-being, časové pásma (`~/.config/latteos/clock.conf`), stopky, minútka,
    budíky zo spoločného `~/.local/share/latteos/casovace.json` (ten istý ako klasický LatteOS). **Minútku a budíky
    musí v Goo strážiť a zvoniť logika Kvapiek** — v klasickom to robí widget hodín na lište Noctalie, ktorý Goo nemá.
-2. **DaNoGoo** (4.2b): kvapka s dátumom a počasím, guľky počtu upozornení, ľavý klik = pružina + hrozno upozornení
+2. ◐ **DaNoGoo** (4.2b) — kvapka a hrozno hotové 1. 10.; ostáva **kalendár** (pravý klik): kvapka s dátumom a počasím, guľky počtu upozornení, ľavý klik = pružina + hrozno upozornení
    (farba ikony aplikácie, zavrie klik na DaNoGoo / Esc / klik mimo), pravý klik = kalendár vo vzhľade Goo; kvapôčky
    upozornení z TimeGoo preč.
-3. **PowerGoo**: batéria (minibublinky), ponuka Vypnúť vo vzhľade Goo.
+3. **PowerGoo**: batéria (minibublinky), ponuka vo vzhľade Goo **+ položky Nastavenia a Monitor** (1. 10.).
+3b. **Kráľovná** (nápad používateľa 1. 10., čaká na potvrdenie návrhu): dôležitá kvapka pre **inštaláciu programov
+   (App Manager) a zariadenia (Device Manager)** — v Goo dnes nie je, kde inštalovať (spúšťač iba spúšťa).
 4. **Ponuka okna** (pravý klik na guľôčku) vo vzhľade Goo.
 5. **Hyprglass** overiť naživo (sklenená téma v Goo) a doladiť.
 6. **Slovenský katalóg Noctalie** (bez neho Noctalia v LatteOS nenačíta slovenské preklady doplnkov) — pred
@@ -260,6 +271,9 @@ Ide sa **po poradí**; nové nápady sa zapíšu na koniec (E), nerozbiehajú sa
   upozornení, schránka, nočné svetlo, OSD, doplnky z komunitného obchodu, klávesnicové rozloženie
 
 ### D. Rozhodnúť (používateľ, 1. 10.)
+- **Nastavenia (rozhodnuté 1. 10.):** hlavné sú **existujúce Nastavenia z klasického LatteOS**, ale potrebujú veľa
+  práce — dizajn, funkčnosť, prehľadnosť. Napr. **tapety sú riešené na viacerých miestach → zjednotiť**; v Goo
+  nemajú zmysel veci ako GIF pozadia tlačidiel App Managera; **pridať nastavenia pre Noctaliu, pleamar/Mareu** atď.
 - **Odkiaľ systémové nastavenia:** preferované sú **Nastavenia LatteOS** (44 stránok); vybrané položky z nastavení
   Noctalie sa **selektívne integrujú do nášho menu**. Návrh na výber: komunitné doplnky (obchod), widgety rohovej
   lišty, kalendárové účty a pripomienky, filtre a história upozornení, nočné svetlo, OSD, horúce rohy, história

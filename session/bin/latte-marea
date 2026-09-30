@@ -22,7 +22,9 @@ case "${1:-wm}" in
         export XDG_CURRENT_DESKTOP=Hyprland
         exec Hyprland -c /usr/share/latteos/hypr/marea.lua ;;
     *)
-        export XDG_CURRENT_DESKTOP=pleamar
+        # ako autorova relácia (pleamar-wm/install.sh): jediná plocha — programy z dbus a systemd (portály,
+        # upozornenia) sa dozvedia, kde je
+        export XDG_CURRENT_DESKTOP=pleamar XDG_SESSION_DESKTOP=pleamar PLEAMAR_WM_EXPORT=1
         "$M/bin/pleamar-wm" init >/dev/null 2>&1      # ~/.config/pleamar, iba raz (nikdy neprepíše)
         exec "$M/bin/pleamar-session" ;;
 esac
