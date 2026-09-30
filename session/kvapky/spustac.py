@@ -124,13 +124,13 @@ a(f'''    // >>> spúšťač (spustac.py)
         opacity: if(dsw > 0.02 or dsh > 0.01, 1, 0) * so
         box {{ at: dc.x, dc.y; size: (60 + (dw - 60) * d.grow) * if(d.grow > 0.01, 1, 0), (60 + (dh - 60) * d.grow) * if(d.grow > 0.01, 1, 0); corner: 30 - 6 * d.grow }}
         // vlákno k Hodinám (kým nepraskne) a po prasknutí pahýle na oboch koncoch, ktoré sa stiahnu
-        line {{ from: db.x, db.y; to: db.x - e.ux * 22 * estub, db.y - e.uy * 22 * estub; width: 6 * estub; blend: 8 * clamp(estub * 3, 0, 1) }}
-        line {{ from: cxs, cys; to: cxs + e.ux * 22 * estub, cys + e.uy * 22 * estub; width: 6 * estub; blend: 8 * clamp(estub * 3, 0, 1) }}
+        line {{ from: db.x, db.y; to: db.x - e.ux * 22 * estub, db.y - e.uy * 22 * estub; width: 6 * estub; blend: 8 * clamp(estub * 3, 0, 1); show: estub > 0.02 }}
+        line {{ from: cxs, cys; to: cxs + e.ux * 22 * estub, cys + e.uy * 22 * estub; width: 6 * estub; blend: 8 * clamp(estub * 3, 0, 1); show: estub > 0.02 }}
         // ucho = kvapka Hodín (trčí z rohu, zliata s kartou)
         ellipse {{ at: db.x, db.y; radius: 33 * clamp(dsw * 4, 0, 1); scale: 1 + swob * 0.01, 1 - swob * 0.01; blend: 18 * d.grow }}
     }}
-    // spojenie lišty a ucha (1. 10., dohoda): prelievanie ako medzi vypínačom, Hodinami a lištou — iba na takú
-    // vzdialenosť; krk hrubý pri lište, tenší pri uchu; ďalej (nad 100 px) praskne
+    // spojenie lišty a ucha (1. 10., dohoda): kým ucho stúpa, krk sa naťahuje a tenčí (hrubší pri lište); keď ucho
+    // dorazí, spojenie praskne (pahýle sa stiahnu) a ostane iba samotná kvapka — bez výrastku
     body {{
         color: coffee
         rim: 30%
@@ -570,9 +570,9 @@ if "on press t_sw_go" not in s:
 # oprávnenia časového menu (raz): čas s milisekundami, svetové hodiny, zvonenie
 once('"latte-ai", "latte-terminal" }', '"latte-ai", "latte-terminal", "date", "sh", "notify-send", "paplay" }')
 # preklady (raz)
-once("    on change dsw > 0.72 while dsw > 0.72 and dash and not esnap { esnap = true;",
-     "    on change dsw > 0.72 while dsw > 0.72 and dash and not esnap and e.d > 150 { esnap = true;")
-once("and e.d > 150 { esnap = true;", "and e.d > 100 { esnap = true;")
+# prasknutie spojenia, keď ucho dorazí (pôvodné pravidlo); staré podmienky vzdialenosti (1. 10.) preč
+once("and e.d > 150 { esnap = true;", "{ esnap = true;")
+once("and e.d > 100 { esnap = true;", "{ esnap = true;")
 TR = {"Alarm {t}": "Budík {t}", "Timer {t}": "Minútka {t}", "Lap {n}": "Medzičas {n}", "Week {w} · day {d} of the year": "Týždeň {w} · {d}. deň v roku",
       "{t} on screen": "{t} pred obrazovkou", "Overview": "Prehľad", "Stopwatch": "Stopky", "Timer": "Minútka", "Alarms": "Budíky",
       "Time is up ({t})": "Čas vypršal ({t})", "LatteOS alarm": "Budík LatteOS",

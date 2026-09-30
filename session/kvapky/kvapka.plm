@@ -304,7 +304,7 @@ scene Kvapka {
     fact esnap = false
     prop estub = 0 ~320ms
     on change dsw < 0.05 while dsw < 0.05 and not dash { impulse swob 380; impulse wob 60 }
-    on change dsw > 0.72 while dsw > 0.72 and dash and not esnap and e.d > 100 { esnap = true; estub: 1 ~0ms; estub: 0 ~320ms after 16ms; impulse swob 160 }
+    on change dsw > 0.72 while dsw > 0.72 and dash and not esnap { esnap = true; estub: 1 ~0ms; estub: 0 ~320ms after 16ms; impulse swob 160 }
     on change dsw < 0.3 while dsw < 0.3 and not dash and esnap { esnap = false; impulse swob 120 }
     on change ap > 0.9 while ap > 0.9 { impulse wob 70 }
 
@@ -1000,13 +1000,13 @@ scene Kvapka {
         opacity: if(dsw > 0.02 or dsh > 0.01, 1, 0) * so
         box { at: dc.x, dc.y; size: (60 + (dw - 60) * d.grow) * if(d.grow > 0.01, 1, 0), (60 + (dh - 60) * d.grow) * if(d.grow > 0.01, 1, 0); corner: 30 - 6 * d.grow }
         // vlákno k Hodinám (kým nepraskne) a po prasknutí pahýle na oboch koncoch, ktoré sa stiahnu
-        line { from: db.x, db.y; to: db.x - e.ux * 22 * estub, db.y - e.uy * 22 * estub; width: 6 * estub; blend: 8 * clamp(estub * 3, 0, 1) }
-        line { from: cxs, cys; to: cxs + e.ux * 22 * estub, cys + e.uy * 22 * estub; width: 6 * estub; blend: 8 * clamp(estub * 3, 0, 1) }
+        line { from: db.x, db.y; to: db.x - e.ux * 22 * estub, db.y - e.uy * 22 * estub; width: 6 * estub; blend: 8 * clamp(estub * 3, 0, 1); show: estub > 0.02 }
+        line { from: cxs, cys; to: cxs + e.ux * 22 * estub, cys + e.uy * 22 * estub; width: 6 * estub; blend: 8 * clamp(estub * 3, 0, 1); show: estub > 0.02 }
         // ucho = kvapka Hodín (trčí z rohu, zliata s kartou)
         ellipse { at: db.x, db.y; radius: 33 * clamp(dsw * 4, 0, 1); scale: 1 + swob * 0.01, 1 - swob * 0.01; blend: 18 * d.grow }
     }
-    // spojenie lišty a ucha (1. 10., dohoda): prelievanie ako medzi vypínačom, Hodinami a lištou — iba na takú
-    // vzdialenosť; krk hrubý pri lište, tenší pri uchu; ďalej (nad 100 px) praskne
+    // spojenie lišty a ucha (1. 10., dohoda): kým ucho stúpa, krk sa naťahuje a tenčí (hrubší pri lište); keď ucho
+    // dorazí, spojenie praskne (pahýle sa stiahnu) a ostane iba samotná kvapka — bez výrastku
     body {
         color: coffee
         rim: 30%
