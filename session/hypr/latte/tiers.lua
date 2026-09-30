@@ -34,9 +34,10 @@ function T.apply(name, colors)
     })
     if t.anim then
         local s = t.anim   -- > 1 = rýchlejšie (kratšie) animácie
-        hl.animation({ leaf = "global", enabled = true })   -- latte.tape_motion ho pri stupni bez animácií vypína
         hl.curve("latteOut",   { type = "bezier", points = { {0.23, 1}, {0.32, 1} } })
         hl.curve("latteSpring", { type = "spring", mass = 1, stiffness = 238, dampening = 24 })
+        -- latte.tape_motion ho pri stupni bez animácií vypína; Hyprland 0.56 chce speed aj pri zapnutí
+        hl.animation({ leaf = "global", enabled = true, speed = 6 / s, bezier = "latteOut" })
         hl.animation({ leaf = "windows",    enabled = true, speed = 4.8 / s, spring = "latteSpring" })
         hl.animation({ leaf = "windowsIn",  enabled = true, speed = 4.1 / s, spring = "latteSpring", style = "popin 90%" })
         hl.animation({ leaf = "windowsOut", enabled = true, speed = 1.5 / s, bezier = "latteOut", style = "popin 90%" })

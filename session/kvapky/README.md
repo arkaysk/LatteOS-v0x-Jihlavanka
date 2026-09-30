@@ -13,7 +13,11 @@ ako samostatná vrstva (layer-shell) nad jej lištou.
   anglicky) sú vidieť stále, aj v úzkom páse. **Upozornenia** sú farebné kvapôčky na Hodinách (nízka mätová, bežná
   jantárová, kritická červená); nové do nich spadne a vyleje sa pri nich bublina „aplikácia · nadpis“ na 6 s.
   pleamar je vtedy server upozornení — iba v ploche Kvapky, v klasickej ich má Noctalia
-- **dashboard** vyteká z Hodín (klik na Hodiny): veľký čas, dátum, počasie (Open-Meteo, miesto z Nastavení ›
+- **klik na Hodiny = ovládacie centrum Noctalie** (30. 9., predvolené): klasický dashboard Noctalie voľne vľavo dole
+  nad Hodinami (`[shell.panel] control_center_position = "bottom_left"` v zz-kvapky.toml). Dashboard z kvapky (nižšie)
+  iba po zvolení: `echo kvapka > ~/.config/latteos/kvapky-panel`. Guľôčky v dashboarde z kvapky boli zrušené
+  (nepôsobili dobre); ponuka Vypnúť kapsuly zliate do stĺpca má
+- **dashboard** vyteká z Hodín (pri voľbe kvapka): veľký čas, dátum, počasie (Open-Meteo, miesto z Nastavení ›
   Prihlasovanie), **hľadanie aplikácií** (úloha Štartu; píše sa hneď, ↑↓ Enter), upozornenia (klik = otvoriť,
   „Vymazať všetko“), pripnuté (`~/.config/latteos/pripnute`, id .desktop po riadkoch). Esc alebo klik mimo zavrie
 - **každá kvapka sa dvíha sama** (30. 9., po teste myšou): podľa vzdialenosti kurzora od nej — nad vypínačom

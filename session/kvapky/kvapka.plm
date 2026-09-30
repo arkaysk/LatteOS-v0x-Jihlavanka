@@ -60,6 +60,10 @@ scene Kvapka {
     event note_open ->
     event notes_clear ->
     event dash_toggle                        // Super (latte-spustac) v ploche Kvapky
+    // (30. 9.) klik na Hodiny otvorí klasické ovládacie centrum Noctalie (vľavo dole); dashboard z kvapky iba, keď si
+    // ho používateľ zvolí (~/.config/latteos/kvapky-panel = kvapka) — logika fakt nastaví
+    fact panel_noc = true
+    event noc_panel ->
     // ponuka Vypnúť: vyteká z kvapky vypínača (klik); akcie robí Noctalia (`noctalia msg session …`)
     fact pmenu = false
     fact pm_hot = -1
@@ -211,10 +215,7 @@ scene Kvapka {
     prop toast.p = 0 ~lively                 // bublina s textom nového upozornenia
     on new_note { nfall: 0 ~0ms; nfall: 1 after 20ms; toast.p: 1 after 500ms; toast.p: 0 after 6500ms }
     prop dsh = 0 ~420ms                      // dashboard: 0 = zbalený v Hodinách, 1 = rozliaty
-    // guľôčky v dashboarde a v ponuke Vypnúť: myš nad nimi ich nafúkne (lepia sa so susedom)
-    repeat k in 0..6 {
-        prop pinh.$k = 0 ~lively
-    }
+    // rýchle nastavenia v dashboarde a riadky ponuky Vypnúť: myš nad nimi ich trochu nafúkne
     repeat k in 0..4 {
         prop qsh.$k = 0 ~lively
     }
@@ -482,29 +483,6 @@ scene Kvapka {
         ellipse { at: db.x, db.y; radius: 34 * if(d.grow > 0.02, 0, 1) }
         box { at: if(d.grow > 0.02, dc.x, db.x), if(d.grow > 0.02, dc.y, db.y); size: 68 + (dw - 68) * d.grow, 68 + (dh - 68) * d.grow; corner: 34 - 6 * d.grow }
     }
-    // pripnuté a rýchle nastavenia ako kvapky: jedno goo telo o odtieň svetlejšie než karta; nafúknutá guľôčka
-    // sa zlepí so susedom
-    body {
-        color: mix(coffee, #f3ebdd, 0.08)
-        rim: 25%
-        opacity: dshow * so
-        ellipse { at: d0.x + 0 * 84 + 30, d0.y + 352; radius: (27 + 6 * pinh.0) * if(0 < pins.count and not typing and page == 0, 1, 0); blend: 18 }
-        ellipse { at: d0.x + 1 * 84 + 30, d0.y + 352; radius: (27 + 6 * pinh.1) * if(1 < pins.count and not typing and page == 0, 1, 0); blend: 18 }
-        ellipse { at: d0.x + 2 * 84 + 30, d0.y + 352; radius: (27 + 6 * pinh.2) * if(2 < pins.count and not typing and page == 0, 1, 0); blend: 18 }
-        ellipse { at: d0.x + 3 * 84 + 30, d0.y + 352; radius: (27 + 6 * pinh.3) * if(3 < pins.count and not typing and page == 0, 1, 0); blend: 18 }
-        ellipse { at: d0.x + 4 * 84 + 30, d0.y + 352; radius: (27 + 6 * pinh.4) * if(4 < pins.count and not typing and page == 0, 1, 0); blend: 18 }
-        ellipse { at: d0.x + 5 * 84 + 30, d0.y + 352; radius: (27 + 6 * pinh.5) * if(5 < pins.count and not typing and page == 0, 1, 0); blend: 18 }
-        line { from: d0.x + 0 * 84 + 30, d0.y + 352; to: d0.x + (0 + if(1 < pins.count, 1, 0)) * 84 + 30, d0.y + 352 + 3; width: (5 + 4 * max(pinh.0, pinh.1)) * if(1 < pins.count and not typing and page == 0, 1, 0); blend: 14 * if(1 < pins.count and not typing and page == 0, 1, 0) }
-        line { from: d0.x + 1 * 84 + 30, d0.y + 352; to: d0.x + (1 + if(2 < pins.count, 1, 0)) * 84 + 30, d0.y + 352 + -2; width: (5 + 4 * max(pinh.1, pinh.2)) * if(2 < pins.count and not typing and page == 0, 1, 0); blend: 14 * if(2 < pins.count and not typing and page == 0, 1, 0) }
-        line { from: d0.x + 2 * 84 + 30, d0.y + 352; to: d0.x + (2 + if(3 < pins.count, 1, 0)) * 84 + 30, d0.y + 352 + 4; width: (5 + 4 * max(pinh.2, pinh.3)) * if(3 < pins.count and not typing and page == 0, 1, 0); blend: 14 * if(3 < pins.count and not typing and page == 0, 1, 0) }
-        line { from: d0.x + 3 * 84 + 30, d0.y + 352; to: d0.x + (3 + if(4 < pins.count, 1, 0)) * 84 + 30, d0.y + 352 + -3; width: (5 + 4 * max(pinh.3, pinh.4)) * if(4 < pins.count and not typing and page == 0, 1, 0); blend: 14 * if(4 < pins.count and not typing and page == 0, 1, 0) }
-        line { from: d0.x + 4 * 84 + 30, d0.y + 352; to: d0.x + (4 + if(5 < pins.count, 1, 0)) * 84 + 30, d0.y + 352 + 2; width: (5 + 4 * max(pinh.4, pinh.5)) * if(5 < pins.count and not typing and page == 0, 1, 0); blend: 14 * if(5 < pins.count and not typing and page == 0, 1, 0) }
-        line { from: d0.x + 22, d0.y + 446; to: d0.x + 214, d0.y + 446; width: 6 + 3 * max(qsh.0, max(qsh.1, max(qsh.2, qsh.3))); blend: 12 }
-        ellipse { at: d0.x + 22, d0.y + 446; radius: 22 + 5 * qsh.0; blend: 16 }
-        ellipse { at: d0.x + 86, d0.y + 446; radius: (22 + 5 * qsh.1) * if(bt.present, 1, 0); blend: 16 }
-        ellipse { at: d0.x + 150, d0.y + 446; radius: 22 + 5 * qsh.2; blend: 16 }
-        ellipse { at: d0.x + 214, d0.y + 446; radius: 22 + 5 * qsh.3; blend: 16 }
-    }
     group {
         opacity: dshow
         show: dsh > 0.5
@@ -537,9 +515,10 @@ scene Kvapka {
         }
         // rýchle nastavenia (previazané s Noctaliou)
         line { from: d0.x, d0.y + 410; to: d0.x + dw - 56, d0.y + 410; width: 1; color: ink; opacity: 12% }
-        ellipse { at: d0.x + 22, d0.y + 446; radius: 20 + 5 * qsh.0; color: #e4b283; opacity: if(net.wifi, 100%, 0) }
-        ellipse { at: d0.x + 86, d0.y + 446; radius: 20 + 5 * qsh.1; color: #e4b283; opacity: if(bt.powered, 100%, 0); show: bt.present }
-        ellipse { at: d0.x + 150, d0.y + 446; radius: 20 + 5 * qsh.2; color: #e4b283; opacity: if(snd.muted, 0, 100%) }
+        ellipse { at: d0.x + 22, d0.y + 446; radius: 22 + 2 * qsh.0; color: if(net.wifi, #e4b283, #3a2618) }
+        ellipse { at: d0.x + 86, d0.y + 446; radius: 22 + 2 * qsh.1; color: if(bt.powered, #e4b283, #3a2618); show: bt.present }
+        ellipse { at: d0.x + 150, d0.y + 446; radius: 22 + 2 * qsh.2; color: if(snd.muted, #3a2618, #e4b283) }
+        ellipse { at: d0.x + 214, d0.y + 446; radius: 22 + 2 * qsh.3; color: #3a2618 }
         image qs_wifi_i { at: d0.x + 12, d0.y + 436; size: 20, 20; tint: if(net.wifi, #2a170c, cream) }
         image qs_bt_i { at: d0.x + 76, d0.y + 436; size: 20, 20; tint: if(bt.powered, #2a170c, cream); show: bt.present }
         image qs_snd_i { at: d0.x + 140, d0.y + 436; size: 20, 20; tint: if(snd.muted, cream, #2a170c) }
@@ -681,7 +660,9 @@ scene Kvapka {
     // stečenie: po páde sa lišta vynorí na starom mieste
     on change fall > 0.95 while fall > 0.95 and melting { free = false; melting = false; fall: 0 ~0ms; ap: 1 }
     // stlačenie prebehne vlnou cez susedov (vypínač → Štart → hlava a naopak)
-    on press start_hit { toggle dash; squish.s: 1; squish.p: 0.5 after 70ms; squish: 0.4 after 70ms }
+    on press start_hit while panel_noc { emit noc_panel }
+    on press start_hit while not panel_noc { toggle dash }
+    on press start_hit { squish.s: 1; squish.p: 0.5 after 70ms; squish: 0.4 after 70ms }
     on release start_hit { squish.s: 0; squish.p: 0 after 70ms; squish: 0 after 70ms }
     on press power_hit { toggle pmenu; dash = false; squish.p: 1; squish.s: 0.5 after 70ms; squish: 0.3 after 140ms }
     on change dash while dash { pmenu = false }
@@ -701,14 +682,13 @@ scene Kvapka {
     repeat k in 0..6 {
         on press res_hit.$k { emit open_result(k) }
         on press pin_hit.$k { emit pin_open(k) }
-        on enter pin_hit.$k { pinh.$k: 1 }
-        on leave pin_hit.$k { pinh.$k: 0 }
     }
     repeat k in 0..4 {
         on press note_hit.$k { emit note_open(k) }
     }
     on press clear_hit { emit notes_clear }
-    on dash_toggle { toggle dash }
+    on dash_toggle while panel_noc { emit noc_panel }
+    on dash_toggle while not panel_noc { toggle dash }
     on press qs_wifi_hit { emit qs_wifi }
     on enter qs_wifi_hit { qsh.0: 1 }
     on leave qs_wifi_hit { qsh.0: 0 }

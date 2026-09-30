@@ -176,7 +176,7 @@ local function apply_tier(t)
     if windows.current == "paska" and not game_on and t ~= "softver" and not tiers.get(t).anim then
         hl.curve("latteTape", { type = "spring", mass = 1, stiffness = 238, dampening = 24 })
         hl.config({ animations = { enabled = true } })
-        hl.animation({ leaf = "global", enabled = false })
+        hl.animation({ leaf = "global", enabled = false, speed = 1, bezier = "default" })
         hl.animation({ leaf = "windowsMove", enabled = true, speed = 4.8, spring = "latteTape" })
     end
 end

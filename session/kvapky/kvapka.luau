@@ -485,6 +485,17 @@ local kavy = {
     latte = { 0, 0.85 }, ["cierna-s-mliekom"] = { 0.4, 0.3 },
 }
 local kava_file = nil
+-- dashboard pri Hodinách: Noctalia (predvolené) alebo kvapka (~/.config/latteos/kvapky-panel)
+local panel_file = nil
+local function read_panel()
+    if not panel_file then return end
+    run("cat", { panel_file }, function(out)
+        local noc = ((out or ""):match("%a+") or "noctalia") ~= "kvapka"
+        if fact.panel_noc ~= noc then fact.panel_noc = noc end
+    end)
+end
+on("noc_panel", function() run("noctalia", { "msg", "panel-toggle", "control-center" }) end)
+
 local function read_kava()
     if not kava_file then return end
     run("cat", { kava_file }, function(out)
@@ -498,6 +509,7 @@ run("printenv", { "HOME" }, function(out)
     if home then
         state = home .. "/.local/state/latteos/window-mode"; read_mode()
         kava_file = home .. "/.config/latteos/kava"; read_kava()
+        panel_file = home .. "/.config/latteos/kvapky-panel"; read_panel()
         run("cat", { home .. "/.config/latteos/pripnute" }, function(out)
             local ids = {}
             for line in (out or ""):gmatch("[^\n]+") do
@@ -508,4 +520,4 @@ run("printenv", { "HOME" }, function(out)
         end)
     end
 end)
-every(2000, function() read_mode(); read_kava() end)   -- režim sa dá zmeniť aj inde (Super+W, Nastavenia)
+every(2000, function() read_mode(); read_kava(); read_panel() end)   -- režim sa dá zmeniť aj inde (Super+W, Nastavenia)
