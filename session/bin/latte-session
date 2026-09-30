@@ -149,6 +149,14 @@ clean_env() {
 }
 clean_env
 
+# profil prostredia (latte-profil): zdieľané nastavenia (GTK, dconf, predvolené aplikácie, kurzor) má každé prostredie
+# svoje — LatteOS (klasický aj Kvapky) nepokazí iné prostredie (napr. Plasmu) a ono nepokazí LatteOS. SAFE profily
+# neprehadzuje; značka po nej ostane a ďalší vstup „cudzie“ nastavenia nepoškodí.
+profil=latteos
+[ "$LATTE_VARIANT" = noctalia ] && profil=noctalia
+latte-profil vstup "$profil"
+leave() { latte-profil odchod "$profil"; exit 0; }
+
 run_game() {
     local why rc t0
     if ! why="$(latte-hra stav)"; then echo "HRA nedostupná: $why → plocha"; return 0; fi
@@ -160,7 +168,7 @@ run_game() {
     if [ "$(cat "$flag" 2>/dev/null)" = desktop ] || [ $rc -ne 0 ]; then rm -f "$flag"; return 0; fi
     # skončila hneď (gamescope sa nespustil, aj keď hlási 0): plocha, nie návrat k prihláseniu
     if [ $(( $(date +%s) - t0 )) -lt 15 ]; then echo "herná relácia sa nespustila → plocha"; return 0; fi
-    exit 0
+    leave
 }
 
 exit_crash() {   # $1 PID: coredump s pádom v upratovaní na konci procesu (systemd-coredump ho zapíše o chvíľu)
@@ -205,7 +213,7 @@ while true; do
         latte-boot ok >/dev/null     # riadne odhlásenie nie je pád
         if [ "$(cat "$flag" 2>/dev/null)" = hra ]; then rm -f "$flag"; next=hra; continue; fi   # latte-hra
         if headless; then echo "odhlásenie bez monitora → nová relácia (inak by sa vzdialene nedalo pripojiť)"; continue; fi
-        exit 0
+        leave
     fi
     crash_report "$rc" "$dt" "$t0"
     if [ $dt -lt 60 ]; then
