@@ -210,6 +210,8 @@ if kvapky then latte.kvapky_reserve(kvapky) end      -- po reload-e (pri štarte
 -- jednotné okenné tlačidlá (hyprbars): minimalizovať, zväčšiť, zavrieť
 local bars = require("latte.bars")
 bars.setup({ bar_bg = theme.bar_bg, bar_fg = theme.bar_fg, border_active = theme.border_active })
+-- sklo okien aplikácií s perleťovými okrajmi (plugin Hyprglass): iba plocha Goo a sklenené témy
+local glass_on = require("latte.sklo").setup(theme, kvapky ~= nil)
 
 -- herný režim (riadiace centrum Zariadenia / Text Bar): bez efektov a animácií, po vypnutí späť na stupeň.
 -- Stav ~/.local/state/latteos/game-mode (1/0). Volá sa: hyprctl eval 'latte.game(true)'
@@ -218,6 +220,10 @@ latte = latte or {}
 function latte.game(on)
     game_on = on and true or false
     apply_tier(on and "minimalny" or tier)
+    if glass_on then                                                  -- v hre bez skla a bez priehľadných okien
+        hl.plugin.hyprglass.config({ enabled = not on })
+        hl.config({ decoration = { active_opacity = on and 1.0 or 0.93, inactive_opacity = on and 1.0 or 0.87 } })
+    end
     hl.exec_cmd("latte-tapety hra " .. (on and "on" or "off"))       -- živá tapeta: v hre pauza (0 % CPU a GPU)
     hl.config({ decoration = { rounding = on and 0 or 14 }, general = { gaps_in = on and 0 or 5, gaps_out = on and 0 or 10 } })
     local f = io.open(game_file, "w"); if f then f:write(on and "1\n" or "0\n"); f:close() end

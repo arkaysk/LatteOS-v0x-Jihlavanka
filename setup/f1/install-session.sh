@@ -56,6 +56,12 @@ if rpm -q hyprland-devel >/dev/null 2>&1 && "$repo/setup/f1/build-hyprbars.sh" |
 else
     echo "   hyprbars sa nepostavil (chýba hyprland-devel?) — okná bez vlastnej hlavičky budú bez tlačidiel"
 fi
+echo "== sklo okien s perleťovými okrajmi: plugin Hyprglass (iba plocha Goo a sklenené témy, latte/sklo.lua)"
+if rpm -q hyprland-devel >/dev/null 2>&1 && "$repo/setup/f1/build-hyprglass.sh" | sed 's/^/   /'; then
+    sudo install -Dm755 "$repo/resources/upstream/hyprglass/hyprglass.so" /usr/lib64/latteos/hyprglass.so
+else
+    echo "   hyprglass sa nepostavil (chýba hyprland-devel?) — okná bez skla"
+fi
 echo "== prichytenie okien k okrajom: plugin latte-okna (udalosti ťahania pre latte/prichytenie.lua)"
 if rpm -q hyprland-devel >/dev/null 2>&1 && make -s -C "$S/hypr/plugins/latte-okna" >/dev/null; then
     sudo install -Dm755 "$S/hypr/plugins/latte-okna/latte-okna.so" /usr/lib64/latteos/latte-okna.so
