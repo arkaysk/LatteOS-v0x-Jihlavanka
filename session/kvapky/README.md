@@ -27,6 +27,14 @@ ako samostatná vrstva (layer-shell) nad jej lištou.
 - **až 20 okien** v lište (strapce ich zhustia); koliesko nad lištou v plávajúcom režime prepína iba okná na
   ploche, bez minimalizovaných (cez Wayland sa pri tom ukázala celá skrytá plocha `special:minimized` a nové okná
   sa otvárali na nej — vyzerali ako nespustené); LatteOS túto plochu pri prepnutí okna vždy zavrie
+- **minimalizované okná** sú v lište menšie guľôčky so stlmenou ikonou (logika ich zistí z `hyprctl clients`
+  každých 700 ms); koliesko ich vynecháva, klik ich vráti
+- **rovnaké okná sa nepletú**: guľôčka hľadá okno podľa triedy, titulku a poradia (piaty terminál „~“ je piate
+  okno „~“ v Hyprlande) — predtým všetky guľôčky terminálov prepínali to isté, prvé okno
+- **obraz režimu v hlave**: cez hlavu kvapky akoby presvitajú okná — páska (pás okolo valca), plávajúce (nad sebou),
+  dlaždice; pri prepnutí sa okienka prelejú, myš nad hlavou obraz zvýrazní
+- **guľôčky aj v dashboarde a ponuke Vypnúť**: pripnuté aplikácie a rýchle nastavenia sedia v goo guľôčkach spojených
+  lepkavým vláknom (myš guľôčku nafúkne a vlákno zhrubne), riadky ponuky Vypnúť sú kapsuly zliate do stĺpca
 - **pod oknom využije voľné miesto**: logika zmeria miesto po najnižšie okno (`room`), lišta sa vysunie presne po
   jeho spodok a strapce sa v tom páse rozložia nepravidelne (cik-cak) — bez prekrytia okna
 - ponuka okna (pravý klik na guľôčku) pri kurzore: poloha priamo od Hyprlandu (`hyprctl -j cursorpos`)
@@ -75,7 +83,7 @@ ako samostatná vrstva (layer-shell) nad jej lištou.
   lišta), roztavené s oboma koncami; odtrhnutá lišta vlákno k Štartu natiahne a pretrhne; myš nad kvapkou ju
   nafúkne a susedov k nej pritiahne; stlačenie prebehne vlnou cez susedov
 - **základňa kvapky** (telo a hlava): ľavý klik = režim okien (plávajúce → dlaždice → páska), koliesko nad
-  kvapkou = okná (páska = posun, plávajúce = ďalšie okno), ťahanie ľavým aj pravým = presun, pravý klik nič
+  kvapkou = okná (páska aj plávajúce = ďalšie okno zľava doprava, dokola), ťahanie ľavým aj pravým = presun, pravý klik nič
 - **hrbolčeky s oknami** majú vlastné kliky: ľavý = prepnúť na okno, aktívne sa minimalizuje (ako vo Windows;
   minimalizuje LatteOS na special:minimized, Hyprland žiadosť z protokolu ignoruje), pravý = ponuka okna pri
   kurzore; ťahanie z hrbolčeka kvapku nepresúva

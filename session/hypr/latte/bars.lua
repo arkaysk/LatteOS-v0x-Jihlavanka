@@ -49,20 +49,27 @@ function B.setup(theme)
     function latte.win.minimize_addr(address)
         hl.dispatch(hl.dsp.window.move({ workspace = "special:minimized", follow = false, window = "address:" .. address }))
     end
-    -- okno podľa triedy a titulku (kvapka pozná okná zo zoznamu wlr-foreign-toplevel, nie adresy Hyprlandu)
-    local function by(class, title)
-        local hit
+    -- okno podľa triedy a titulku (kvapka pozná okná zo zoznamu wlr-foreign-toplevel, nie adresy Hyprlandu).
+    -- nth: koľké okno s tou istou triedou a titulkom (1 = prvé) — päť terminálov „~“ sú päť rôznych okien;
+    -- oba zoznamy (Hyprland aj foreign-toplevel) idú v poradí otvorenia
+    local function by(class, title, nth)
+        local hit, seen = nil, 0
+        nth = tonumber(nth) or 1
         for _, w in ipairs(hl.get_windows() or {}) do
             if w.class == class then
-                if w.title == title then return w end
+                if w.title == title then
+                    seen = seen + 1
+                    if seen == nth then return w end
+                    hit = hit or w
+                end
                 hit = hit or w
             end
         end
         return hit
     end
     -- klik na okno v lište-kvapke, ako vo Windows: neaktívne sa ukáže (aj z minimalizovaných), aktívne sa minimalizuje
-    function latte.win.toggle_by(class, title)
-        local w = by(class, title)
+    function latte.win.toggle_by(class, title, nth)
+        local w = by(class, title, nth)
         if not w then return end
         local a = hl.get_active_window()
         local hidden = w.workspace and tostring(w.workspace.name or ""):find("^special:minimized")
@@ -79,8 +86,9 @@ function B.setup(theme)
             end
         end
     end
-    -- koliesko nad lištou-kvapkou (plávajúce okná): ďalšie / predošlé okno na aktuálnej ploche, bez minimalizovaných
-    -- (prepnutie na minimalizované cez Wayland ukázalo celú skrytú plochu)
+    -- koliesko nad lištou-kvapkou: ďalšie / predošlé okno na aktuálnej ploche, bez minimalizovaných
+    -- (prepnutie na minimalizované cez Wayland ukázalo celú skrytú plochu). Poradie zľava doprava (v páske
+    -- je to poradie stĺpcov, fokus pásku posunie), na konci dokola
     function latte.win.cycle(dir)
         local ws = hl.get_active_workspace()
         local a = hl.get_active_window()
@@ -92,12 +100,19 @@ function B.setup(theme)
             end
         end
         if #list == 0 then return end
+        local cur_w = list[cur]
+        table.sort(list, function(p, q)
+            if p.at.x ~= q.at.x then return p.at.x < q.at.x end
+            return p.at.y < q.at.y
+        end)
+        cur = 0
+        for i, w in ipairs(list) do if cur_w and w.address == cur_w.address then cur = i end end
         local nxt = ((cur - 1 + (dir or 1)) % #list) + 1
         hl.dispatch(hl.dsp.focus({ window = "address:" .. list[nxt].address }))
         latte.win.hide_special()
     end
-    function latte.win.focus_by(class, title)
-        local w = by(class, title)
+    function latte.win.focus_by(class, title, nth)
+        local w = by(class, title, nth)
         if w then latte.win.activate(w.address) end
     end
 
