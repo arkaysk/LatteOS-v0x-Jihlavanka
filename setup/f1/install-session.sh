@@ -83,7 +83,11 @@ sudo install -Dm644 "$S/noctalia/palettes/Latte.json" /usr/share/latteos/noctali
 sudo install -Dm644 "$S/noctalia/icons/latte-cup.png" /usr/share/latteos/noctalia/icons/latte-cup.png
 for p in "$S"/noctalia/plugins/*/; do   # pluginy LatteOS (zdroj „latteos“ v config.toml)
     n="$(basename "$p")"; sudo install -d "/usr/share/latteos/noctalia/plugins/$n"
-    for f in "$p"*; do [ -f "$f" ] && sudo install -m644 "$f" "/usr/share/latteos/noctalia/plugins/$n/"; done   # iba súbory
+    for f in "$p"*; do [ -f "$f" ] && sudo install -m644 "$f" "/usr/share/latteos/noctalia/plugins/$n/"; done   # súbory
+    if [ -d "$p/translations" ]; then                                    # preklady doplnku (noctalia.tr)
+        sudo install -d "/usr/share/latteos/noctalia/plugins/$n/translations"
+        sudo install -m644 "$p"translations/*.json "/usr/share/latteos/noctalia/plugins/$n/translations/"
+    fi
 done
 # maskoti na lištu: vlastná pixel-art, snímky sa generujú (plugin latteos/cat)
 tmpm="$(mktemp -d)"; python3 "$S/noctalia/plugins/cat/make-mascots.py" "$tmpm" | sed 's/^/   /'

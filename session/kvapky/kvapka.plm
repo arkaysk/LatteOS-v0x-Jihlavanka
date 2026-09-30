@@ -84,6 +84,7 @@ scene Kvapka {
     event note_open ->
     event notes_clear ->
     event dash_toggle                        // kláves Win (latte-spustac) v ploche Kvapky
+    event time_menu ->                       // pravý klik na Hodiny: záložka Čas (panel Noctalie latteos/time)
     // ponuka Vypnúť: vyteká z kvapky vypínača (klik); akcie robí Noctalia (`noctalia msg session …`)
     fact pmenu = false
     fact pm_hot = -1
@@ -1263,8 +1264,10 @@ scene Kvapka {
     // stečenie: po páde sa lišta vynorí na starom mieste
     on change fall > 0.95 while fall > 0.95 and melting { free = false; melting = false; fall: 0 ~0ms; ap: 1 }
     // stlačenie prebehne vlnou cez susedov (vypínač → Štart → hlava a naopak)
-    // hodiny: ľavý klik otvorí / zavrie spúšťač (pravý klik nerobí nič — hodiny ponuku nemajú)
+    // TimeGoo: ľavý klik (alebo Win) otvorí / zavrie spúšťač; pravý = časové menu — záložka Čas z klasického
+    // LatteOS (pásma, stopky, minútka, budíky, well-being), 1. 10.
     on press start_hit { toggle dash; pmenu = false }
+    on press right start_hit { dash = false; pmenu = false; emit time_menu }
     on press start_hit { squish.s: 1; squish.p: 0.5 after 70ms; squish: 0.4 after 70ms }
     on release start_hit { squish.s: 0; squish.p: 0 after 70ms; squish: 0 after 70ms }
     on press power_hit { toggle pmenu; dash = false; squish.p: 1; squish.s: 0.5 after 70ms; squish: 0.3 after 140ms }

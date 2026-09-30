@@ -31,7 +31,8 @@ st_kvapky="$st_classic/kvapky"
 scene="${LATTE_KVAPKY_SCENE:-$share/kvapky/kvapka.plm}"
 pleamar="${PLEAMAR:-$(command -v pleamar || echo /usr/bin/pleamar)}"
 # klasickí pomocníci z hyprland.lua (autoštart), ktorí patria k Noctalii
-classic="netznak kapsavyrez nahlad plocha rychle pohoda maskot zivatapeta"
+# (1. 10.) Digitálna pohoda (well-being) nie je pomocník klasickej lišty — beží aj v Kvapkách (pravý klik na Hodiny)
+classic="netznak kapsavyrez nahlad plocha rychle maskot zivatapeta"
 
 qs_app() { pgrep -f "latteos/apps/$1\.qml" >/dev/null; }
 start_app() { qs_app "$1" || setsid -f latte-app "$1" >/dev/null 2>&1; }
@@ -131,6 +132,7 @@ case "${1:-}" in
         pgrep -f "wl-paste --type image --watch latte-kapsa-store" >/dev/null || setsid -f wl-paste --type image --watch latte-kapsa-store
         start_app spustac
         start_app ponuka
+        start_app pohoda                        # well-being: čas v aplikáciách (skrytá, na pozadí)
         scene_up
         noctalia_up
         ;;
@@ -152,7 +154,7 @@ case "${1:-}" in
         NOCTALIA_STATE_HOME="$st_classic" setsid -f noctalia >/dev/null 2>&1
         ( sleep 3; latte-theme noctalia ) >/dev/null 2>&1 &
         [ -f "${XDG_CONFIG_HOME:-$HOME/.config}/latteos/live-wallpaper" ] && start_app zivatapeta
-        for a in netznak kapsavyrez nahlad plocha rychle pohoda maskot; do start_app "$a"; done
+        for a in netznak kapsavyrez nahlad plocha rychle maskot; do start_app "$a"; done
         # statická tapeta z mpvpaperu (bez shellu) ustúpi natívnej tapete Noctalie; živé video ostáva
         latte-tapety obnov >/dev/null 2>&1
         ;;
