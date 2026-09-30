@@ -34,6 +34,7 @@ function T.apply(name, colors)
     })
     if t.anim then
         local s = t.anim   -- > 1 = rýchlejšie (kratšie) animácie
+        hl.animation({ leaf = "global", enabled = true })   -- latte.tape_motion ho pri stupni bez animácií vypína
         hl.curve("latteOut",   { type = "bezier", points = { {0.23, 1}, {0.32, 1} } })
         hl.curve("latteSpring", { type = "spring", mass = 1, stiffness = 238, dampening = 24 })
         hl.animation({ leaf = "windows",    enabled = true, speed = 4.8 / s, spring = "latteSpring" })
