@@ -77,3 +77,11 @@ terminálu. Záplata: keď alokácia s modifiermi zlyhá, lineárny buffer (Vulk
 Záplaty 1–5 (`pleamar-hyprland-okna-8bit.patch`) sú na **pleamar 0.2.2** (upstream 7027fa1, jazyk 0.2,
 spätne číta 0.1). Prechod z 5f9cd54 (0.1.0) bez konfliktov. Nové zmeny u autora: `latte-upstream`.
 
+## noctalia-rohova-lista.patch (Noctalia pre plochu Kvapky, setup/lab/noctalia-kvapky.sh)
+
+Rohová lišta Noctalie vpravo dole (1. 10. 2026): k súmernému `margin_ends` voliteľné `margin_start` a `margin_end`
+(začiatok = vľavo/hore, koniec = vpravo/dole). Lišta s jedným koncom pri stene a druhým odsadeným má zmiešané
+vyduté rohy: koniec pri stene sa vyduje do bočnej steny (ako lišta cez celú dĺžku), odsadený koniec sa rozleje po
+spodnom okraji (ako odsadená lišta) — goo v rohu. Bez týchto kľúčov sa Noctalia správa ako pôvodná. Preložená
+zvlášť do /usr/lib64/latteos/noctalia-kvapky/noctalia, pôvodná /usr/bin/noctalia ostáva nedotknutá.
+

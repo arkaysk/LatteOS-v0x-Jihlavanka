@@ -66,6 +66,11 @@ ako samostatná vrstva (layer-shell) nad jej lištou.
   = prilepí sa tam; pustiť uprostred = steká preč; pridať cez spúšťač (napr. „hlas“ → Hlasitosť · Kvapka).
   Rozmiestnenie `~/.config/latteos/kvapky-widgety.json`; šnúra okien sa zastaví pred kvapkami na tom istom okraji.
   Počet: `python3 session/kvapky/widgety.py N` (WMAX v kvapka.luau)
+- **rohová lišta Noctalie vpravo dole** (1. 10.): iba pravá časť lišty Noctalie, prilepená do rohu, šírka podľa
+  widgetov (ikony programov na pozadí, sieť, hlasitosť, ovládacie centrum; ďalšie widgety a doplnky Noctalie sa
+  pridávajú v jej nastaveniach). Vpravo sa vyduje hore do bočnej steny, vľavo sa rozleje po spodnom okraji.
+  Záplatovaná Noctalia iba pre Kvapky (setup/lab/noctalia-kvapky.sh); šírku prepočíta `latte-kvapky roh-sirka`.
+  Samostatné kvapky widgetov sú odteraz predvolene prázdne (na iné veci, pridať cez spúšťač)
 - **ikony programov na pozadí** (systémová lišta, napr. Discord) sú kvapky tiež, samy sa objavia vedľa widgetov:
   ľavý klik = aktivovať, pravý = ponuka programu ako goo kapsuly (aj podponuky), koliesko = program; odtiahnutá sa
   zapamätá, pustená uprostred sa skryje (späť: napíš jej názov v spúšťači)
