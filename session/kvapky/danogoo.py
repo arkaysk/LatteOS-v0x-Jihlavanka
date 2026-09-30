@@ -51,9 +51,9 @@ a('''    // >>> DaNoGoo (danogoo.py)
     fact brmoved = false
     fact br.dx = 0
     fact br.dy = 0
-    event dn_drop
+    event dn_drop ->
     event dn_cal
-    event dn_clear_all
+    event dn_clear_all ->
     event berry_open ->
     event berry_menu ->
     event berry_dismiss ->
@@ -72,7 +72,7 @@ a('''    // >>> DaNoGoo (danogoo.py)
     event dc_day ->
     event dc_todo ->
     event dc_ev_menu ->
-    event dc_add
+    event dc_add ->
     spring dnspring = 230, 11
     spring dnwobble = 420, 13
     let dn.ax = pick(dn.side, W * dn.pos, W * dn.pos, 0, W)

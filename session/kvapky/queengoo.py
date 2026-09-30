@@ -32,7 +32,7 @@ draw = f'''    // >>> QueenGoo (queengoo.py)
     fact qg_hw = 0                           // hardvér: zariadenia, ktoré potrebujú pozornosť (červená guľka)
     fact qg_net = 0                          // sieť: výpadok (zelená guľka)
     event qg_open ->
-    event qg_drop
+    event qg_drop ->
     let qg.ax = pick(qg.side, W * qg.pos, W * qg.pos, 0, W)
     let qg.ay = pick(qg.side, H, 0, H * qg.pos, H * qg.pos)
     let qg.nx = pick(qg.side, 0, 0, 1, -1)
