@@ -172,6 +172,14 @@ Karta z ucha TimeGoo, zhora nadol:
 - **Batéria (notebook):** v hlavičke okna percento a stav; na kvapke **minibublinky** 3 zelené (≥ 60 %), 2 žlté
   (≥ 30 %), 1 červená; pod 10 % netrpezlivo pulzuje, pri nabíjaní stúpajú a klesajú. Na stolnom PC žiadne.
 
+### 4.4b QueenGoo — kráľovná (hotové 1. 10.)
+- Kvapka s **korunkou** (zlatá ikona na vonkajšej strane, natočená podľa okraja; tvar ostáva kvapka — tvar koruny
+  je k4ditanov). Vnútri ikona aplikácií, **zlatá guľka s počtom čakajúcich aktualizácií** (`latte-apps updates`).
+- **Ľavý klik = App Manager**, **pravý = Správca zariadení**: kvapka vystúpi ako ucho a okno sa otvorí **rohom pri
+  nej** (`latte-kvapky miesto` → Hyprland `latte/windows.lua` ho pri otvorení prisunie); kým je okno otvorené,
+  ostane vystúpená; znova klik = okno do popredia. Ťahaním k inému okraju. Generátor `session/kvapky/queengoo.py`.
+- **Neoverené naživo** (okná Hyprlandu sa v teste bez relácie nedajú otvoriť) — overiť pri prihlásení.
+
 ### 4.5 Rohová lišta Noctalie — vpravo dole
 - Iba **pravá časť** lišty Noctalie, **natvrdo prilepená** do rohu, **šírka podľa počtu widgetov**; vpravo sa
   vyduje do bočnej steny, vľavo sa rozleje po spodnom okraji.
@@ -258,7 +266,7 @@ Ide sa **po poradí**; nové nápady sa zapíšu na koniec (E), nerozbiehajú sa
    (farba ikony aplikácie, zavrie klik na DaNoGoo / Esc / klik mimo), pravý klik = kalendár vo vzhľade Goo; kvapôčky
    upozornení z TimeGoo preč.
 3. ✅ (1. 10.) **PowerGoo**: batéria (minibublinky), ponuka vo vzhľade Goo + Nastavenia a Monitor.
-3b. **QueenGoo** (rozhodnuté 1. 10.): kvapka s **korunkou** (tvar ostáva kvapka — tvar koruny je k4ditanov);
+3b. ✅ (1. 10., naživo overiť umiestnenie okna) **QueenGoo** (rozhodnuté 1. 10.): kvapka s **korunkou** (tvar ostáva kvapka — tvar koruny je k4ditanov);
    **ľavý klik = premení sa na App Manager** (inštalácia programov), **pravý = Device Manager** (Správca zariadení).
    V Goo dnes nie je, kde inštalovať (spúšťač iba spúšťa).
 4. **Ponuka okna** (pravý klik na guľôčku) vo vzhľade Goo.

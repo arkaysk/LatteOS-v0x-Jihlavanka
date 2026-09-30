@@ -29,7 +29,7 @@ scene Kvapka {
         rate: 60        // pokojný pohyb kvapky nepotrebuje 144 Hz: 12 % → 6 % jadra na RX 640
         keyboard: on_demand while dash or dn_open   // hľadanie v spúšťači, Esc pri hrozne DaNoGoo
     }
-    permissions { services: "window", "window.*", "clock", "notifications", "notifications.*", "apps", "apps.*", "network", "network.*", "bluetooth", "bluetooth.*", "audio", "audio.*", "battery", "media", "tray", "tray.*", "clipboard.set"; run: "noctalia", "latte-app", "hyprctl", "cat", "printenv", "curl", "latte-spustac", "latte-ponuka", "latte-kvapky", "fd", "xdg-open", "latte-ai", "latte-terminal", "date", "sh", "notify-send", "paplay" }
+    permissions { services: "window", "window.*", "clock", "notifications", "notifications.*", "apps", "apps.*", "network", "network.*", "bluetooth", "bluetooth.*", "audio", "audio.*", "battery", "media", "tray", "tray.*", "clipboard.set"; run: "noctalia", "latte-app", "hyprctl", "cat", "printenv", "curl", "latte-spustac", "latte-ponuka", "latte-kvapky", "fd", "xdg-open", "latte-ai", "latte-terminal", "date", "sh", "notify-send", "paplay", "latte-apps" }
 
     // zoznam okien priamo zo služby (wlr-foreign-toplevel), bez logiky; ikona podľa triedy okna
     model wins max 48 { id: text; title: text; class: text; active: bool; minimized: bool }
@@ -807,6 +807,61 @@ scene Kvapka {
     box { at: clx, cly; size: 190 * cle, 34 * cle; corner: 17; color: mix(coffee, #f3ebdd, 0.12); opacity: 95%; show: solo and cle > 0.01 }
     text dn_clear { at: clx, cly; anchor: center; size: 12; weight: 600; color: ink; opacity: clamp(cle * 2 - 1, 0, 1); show: solo and cle > 0.5; family: "Inter" }
     // <<< DaNoGoo
+    // >>> QueenGoo (queengoo.py)
+    // QueenGoo: kvapka s korunkou — App Manager (ľavý klik) a Správca zariadení (pravý); presúva sa ťahaním
+    fact qg.side = 0
+    fact qg.pos = 0.70
+    fact qg_drag = false
+    fact qg_moved = false
+    fact qgd.x = 0
+    fact qgd.y = 0
+    fact qg_up = false                       // jej okno je otvorené: ostane vystúpená ako ucho v rohu okna
+    fact qg_upd = 0                          // čakajúce aktualizácie
+    event qg_open ->
+    event qg_drop
+    let qg.ax = pick(qg.side, W * qg.pos, W * qg.pos, 0, W)
+    let qg.ay = pick(qg.side, H, 0, H * qg.pos, H * qg.pos)
+    let qg.nx = pick(qg.side, 0, 0, 1, -1)
+    let qg.ny = pick(qg.side, -1, 1, 0, 0)
+    let qg.px = 0 - qg.ny
+    let qg.py = qg.nx
+    let qg.near = 1 - smooth(0, 190, length(mx - qg.ax, my - qg.ay))
+    prop qg.lift = 0 ~dnspring
+    follow qg.lift = if(qg_up, 1, 0)
+    prop qg.h = 0 ~lively
+    prop qg.wob = 0 ~dnwobble
+    let qg.out = 32 + 8 * qg.near + 2.5 * noise(time * 0.3 + 21.7) + 70 * qg.lift
+    let qg.tx = qg.ax + qg.nx * qg.out + clamp(mx - qg.ax, -20, 20) * 0.28 * qg.near * abs(qg.px)
+    let qg.ty = qg.ay + qg.ny * qg.out + clamp(my - qg.ay, -20, 20) * 0.28 * qg.near * abs(qg.py)
+    prop qg.x = 0 ~lively
+    prop qg.y = 0 ~lively
+    follow qg.x = if(qg_drag and qg_moved, pointer.x, qg.tx)
+    follow qg.y = if(qg_drag and qg_moved, pointer.y, qg.ty)
+    let qg.r = (30 + 3 * qg.h) * so
+    let qg.jit = 0.05 * sin(time * 9 + 5) * qg.h + qg.wob * 0.01
+    let qg.sheet = if(qg_drag and qg_moved, 0, 1) * so
+    // korunka na vonkajšej strane kvapky, natočená podľa okraja
+    let qg.rot = pick(qg.side, 0, 180, 90, -90)
+    body {
+        color: coffee
+        rim: 30%
+        light: 14%, 0, 30
+        glass: 100% * clamp(v * 1.3, 0, 1) * (1 - m)
+        shine: pointer
+        opacity: if(solo, 1, 0)
+        box { at: qg.ax, qg.ay; size: 70 * abs(qg.ny) + 20 * abs(qg.nx), 20 * abs(qg.ny) + 70 * abs(qg.nx); corner: 10 }
+        ellipse { at: qg.ax, qg.ay; radius: 24 * qg.sheet; blend: 16 }
+        ellipse { at: qg.x, qg.y; radius: qg.r; scale: 1 + qg.jit, 1 - qg.jit; blend: 18 * qg.sheet + 2 }
+    }
+    // guľka aktualizácií (zlatá, s číslom)
+    body {
+        color: #e8b84a
+        rim: 30%
+        light: 18%, 0, 16
+        opacity: if(solo and qg_upd > 0, 1, 0)
+        ellipse { at: qg.x + (qg.nx * cos(58) + qg.px * sin(58)) * (qg.r + 2), qg.y + (qg.ny * cos(58) + qg.py * sin(58)) * (qg.r + 2); radius: 9.5 * so }
+    }
+    // <<< QueenGoo
     // Hodiny: čas a dátum stoja rovno v kvapke (bod rámca → obrazovka)
     let cxs = pick(side, sx, W - sx, edge - s.y, W - edge + s.y)
     let cys = pick(side, s.y + H - edge, edge - s.y, sx, H - sx)
@@ -837,6 +892,16 @@ scene Kvapka {
     text dn_wx { at: dn.x - 1, dn.y + 9; anchor: right center; size: 12; color: ink; opacity: 85% * so; show: solo; family: "noctalia-tabler-icons" }
     text dn_temp { at: dn.x + 1, dn.y + 9; anchor: left center; size: 10.5; weight: 600; color: ink; opacity: 85% * so; show: solo; family: "Inter" }
     // <<< DaNoGoo texty
+    // >>> QueenGoo texty (queengoo.py)
+    group {
+        pivot: qg.x, qg.y
+        rotate: qg.rot * 1deg
+        show: solo
+        text "" { at: qg.x, qg.y - qg.r - 4; anchor: center; size: 22; color: #e8b84a; outline: 1.5, #3a2410; family: "noctalia-tabler-icons" }
+    }
+    text "" { at: qg.x, qg.y + 1; anchor: center; size: 18; color: ink; opacity: 80% * so; show: solo; family: "noctalia-tabler-icons" }
+    text "{qg_upd}" { at: qg.x + (qg.nx * cos(58) + qg.px * sin(58)) * (qg.r + 2), qg.y + (qg.ny * cos(58) + qg.py * sin(58)) * (qg.r + 2); anchor: center; size: 9.5; weight: 800; color: #3a2410; show: solo and qg_upd > 0; family: "Inter" }
+    // <<< QueenGoo texty
     // ── spúšťač (vyteká z hodiniek smerom od okraja; v obrazovke, text rovno) ──
     // >>> spúšťač (spustac.py)
     // Vzhľad (1. 10., používateľ: „moderné ikony, fonty, trošku minimalizmu; chytrosti, vkusnosti a užitočnosti“):
@@ -1943,6 +2008,16 @@ scene Kvapka {
         on press right dc_ev.$k { ctx_up = false; ctx.x = mx; ctx.y = my; emit dc_ev_menu(k) }
     }
     // <<< DaNoGoo zóny
+    // >>> QueenGoo zóny (queengoo.py)
+    zone ellipse qg_hit { at: qg.x, qg.y; radius: 34; cursor: pointer; active: solo }
+    on press qg_hit { qg_drag = true; qg_moved = false; wd.w = W; wd.h = H }
+    on press right qg_hit { impulse qg.wob 140; emit qg_open(1) }
+    on drag qg_hit while qg_drag and abs(drag.dx) + abs(drag.dy) > 6 { qg_moved = true }
+    on release qg_hit while qg_drag and qg_moved { qgd.x = pointer.x; qgd.y = pointer.y; impulse qg.wob 300; emit qg_drop; qg_moved = false; qg_drag = false }
+    on release qg_hit while qg_drag and not qg_moved { qg_drag = false; impulse qg.wob 160; emit qg_open(0) }
+    on enter qg_hit { qg.h: 1 }
+    on leave qg_hit { qg.h: 0 }
+    // <<< QueenGoo zóny
 
     // >>> PowerGoo (powergoo.py)
     // ── PowerGoo: ponuka ako okno Goo, pripojené rohom ku kvapke vypínača (1. 10.) ──

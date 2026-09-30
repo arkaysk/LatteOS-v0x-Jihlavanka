@@ -188,7 +188,7 @@ function layout()
     end
 end
 
-sys.watch("window", function(v) wins = (v and v.list) or {}; layout() end)
+sys.watch("window", function(v) wins = (v and v.list) or {}; layout(); if qg_windows then qg_windows(wins) end end)
 
 -- guľôčka pustená po ťahaní: kde na lište (x od hlavy) → jej aplikácia sa presunie pred strapec, ktorý je tam
 on("bead_drop", function(k)
@@ -1017,6 +1017,11 @@ local function load_cfg()
             cfg.mode = tonumber(c.mode) or cfg.mode
             cfg.cmds = type(c.cmds) == "table" and c.cmds or {}
             cfg.recent = type(c.recent) == "table" and c.recent or {}
+            if type(c.queengoo) == "table" then
+                cfg.queengoo = c.queengoo
+                fact["qg.side"] = tonumber(c.queengoo.side) or 0
+                fact["qg.pos"] = tonumber(c.queengoo.pos) or 0.70
+            end
             if type(c.danogoo) == "table" then
                 cfg.danogoo = c.danogoo
                 fact["dn.side"] = tonumber(c.danogoo.side) or 0
@@ -1150,6 +1155,58 @@ local function dn_date()
 end
 dn_date()
 every(60000, dn_date)
+
+-- ── QueenGoo (1. 10., LATTEOS-GOO.md 4.4b): kvapka s korunkou — ľavý klik App Manager, pravý Správca zariadení ──
+-- Okno sa otvorí rohom pri jej uchu (latte-kvapky miesto → Hyprland latte/windows.lua); kým je otvorené, ostane
+-- vystúpená. Guľka = čakajúce aktualizácie (latte-apps updates, z cache, každých 30 min).
+local QG_WIN = { { app = "aplikacie", title = "Aplikácie — LatteOS" }, { app = "zariadenia", title = "Správca zariadení — LatteOS" } }
+function qg_windows(list)
+    local up = false
+    for _, w in ipairs(list or {}) do
+        for _, q in ipairs(QG_WIN) do if w.title == q.title then up = true end end
+    end
+    if fact.qg_up ~= up then fact.qg_up = up end
+end
+on("qg_open", function(k)
+    local q = QG_WIN[(tonumber(k) or 0) + 1]
+    if not q then return end
+    for _, w in ipairs(wins) do
+        if w.title == q.title then run("hyprctl", { "eval", "latte.win.focus_by('org.quickshell', '" .. q.title .. "')" }); return end
+    end
+    local W, H = tonumber(fact["wd.w"]) or 1920, tonumber(fact["wd.h"]) or 1080
+    local side, pos = tonumber(fact["qg.side"]) or 0, tonumber(fact["qg.pos"]) or 0.7
+    local nx = ({ [0] = 0, 0, 1, -1 })[side] or 0
+    local ny = ({ [0] = -1, 1, 0, 0 })[side] or -1
+    local ax = (side <= 1) and W * pos or (side == 2 and 0 or W)
+    local ay = (side <= 1) and (side == 0 and H or 0) or H * pos
+    ax, ay = ax + nx * 102, ay + ny * 102                              -- ucho: vystúpená kráľovná
+    local sx, sy
+    if side <= 1 then sx = (ax + 900 <= W) and 1 or -1; sy = ny
+    else sx = nx; sy = (ay + 700 <= H) and 1 or -1 end
+    fact.qg_up = true
+    run("latte-kvapky", { "miesto", q.title, tostring(math.floor(ax)), tostring(math.floor(ay)), tostring(sx), tostring(sy) }, function()
+        run("latte-app", { q.app })
+    end)
+end)
+on("qg_drop", function()
+    local x, y = tonumber(fact["qgd.x"]) or 0, tonumber(fact["qgd.y"]) or 0
+    local W, H = tonumber(fact["wd.w"]) or 1920, tonumber(fact["wd.h"]) or 1080
+    local d = { H - y, y, x, W - x }
+    local side, best = 0, d[1]
+    for i = 2, 4 do if d[i] < best then side, best = i - 1, d[i] end end
+    local pos = math.max(0.03, math.min(0.97, (side <= 1) and (x / W) or (y / H)))
+    fact["qg.side"] = side; fact["qg.pos"] = pos
+    cfg.queengoo = { side = side, pos = pos }
+    save_cfg()
+end)
+local function qg_updates()
+    run("latte-apps", { "updates" }, function(out)
+        local ok, list = pcall(json.decode, out or "")
+        if ok and type(list) == "table" then fact.qg_upd = #list end
+    end)
+end
+after(60000, qg_updates)
+every(30 * 60 * 1000, qg_updates)
 
 -- ── časové menu TimeGoo (pravý klik, 1. 10.): Prehľad · Stopky · Minútka · Budíky ─────────────────────────────
 -- Tá istá karta ako spúšťač (fact tview 1). Údaje spoločné s klasickým LatteOS: stopky, minútka a budíky v
