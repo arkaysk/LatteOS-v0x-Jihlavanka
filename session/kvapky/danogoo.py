@@ -97,7 +97,9 @@ a('''    // >>> DaNoGoo (danogoo.py)
     follow dn.y = if(dn_drag and dn_moved, dnp.y + dnq.y, dn.ty)
     let dn.r = (31 + 3 * dn.h) * so
     let dn.jit = 0.05 * sin(time * 9 + 3) * dn.h + dn.wob * 0.01
-    let dn.sheet = if(dn_drag and dn_moved, 0, 1) * so
+    // základňa na okraji: pri zdvihnutí (okno otvorené) sa stiahne — neostane ostrov; krk sa natiahne a zmizne
+    let dn.neck = 16 * (1 - smooth(0.25, 0.8, dn.lift)) * if(dn.lift > 0.02, 1, 0) * so
+    let dn.sheet = if(dn_drag and dn_moved, 0, 1) * so * (1 - smooth(0, 0.5, dn.lift))
     // guľky počtu na vonkajšom oblúku (žlté bežné, červeno-kávová systémová vľavo)
 ''')
 for k in range(NY):
@@ -126,8 +128,9 @@ a('''    let clx = if(dn.vert > 0.5, dn.x + dn.nx * (dn.r + 196), clamp(dn.x, 20
         glass: 100% * clamp(v * 1.3, 0, 1) * (1 - m)
         shine: pointer
         opacity: if(solo, 1, 0)
-        box { at: dn.ax, dn.ay; size: 70 * abs(dn.ny) + 20 * abs(dn.nx), 20 * abs(dn.ny) + 70 * abs(dn.nx); corner: 10 }
-        ellipse { at: dn.ax, dn.ay; radius: 24 * dn.sheet; blend: 16 }
+        box { at: dn.ax, dn.ay; size: (70 * abs(dn.ny) + 20 * abs(dn.nx)) * dn.sheet, (20 * abs(dn.ny) + 70 * abs(dn.nx)) * dn.sheet; corner: 10 }
+        line { from: dn.ax, dn.ay; to: dn.ax + (dn.x - dn.ax) * if(dn.neck > 0.5, 1, 0), dn.ay + (dn.y - dn.ay) * if(dn.neck > 0.5, 1, 0); width: dn.neck; blend: 12 }
+        ellipse { at: dn.ax, dn.ay; radius: 24 * dn.sheet; blend: 16 * dn.sheet }
         ellipse { at: dn.x, dn.y; radius: dn.r; scale: 1 + dn.jit, 1 - dn.jit; blend: 18 * dn.sheet + 2 }
         // lepkavé vlákno od kvapky cez hrozno (tenšie, čím ďalej)
         line { from: dn.x, dn.y; to: dn.x + (brend.x - dn.x) * clamp(dn.lift * 1.4, 0, 1), dn.y + (brend.y - dn.y) * clamp(dn.lift * 1.4, 0, 1); width: 7 * clamp(dn.lift * 3, 0, 1) * if(dn_open, 1, 0); blend: 10 * clamp(dn.lift * 3, 0, 1) }

@@ -81,12 +81,10 @@ samostatný tekutý prvok.
   Strapce okien sú príliš ťažké na to, aby sa odlepili.
 - **Vlákna ako sliz:** keď sa kvapka vzďaľuje (ťahaná guľôčka, Hodiny letiace do ucha), vlákno sa **naťahuje a
   tenčí** a **po určitej dĺžke praskne** (konce sa stiahnu); pri návrate sa znova zlepí.
-- **Sliz je nezávislá mechanika Goo** (1. 10.): keď sa **ktorákoľvek** kvapka zdvihne (TimeGoo, PowerGoo, DaNoGoo,
-  QueenGoo), ťahá lepkavé vlákna k **objektom v okolí** — k okraju pod sebou a ku kvapkám, ktoré ležia pri okraji
-  (Hodiny, vypínač, hlava lišty, DaNoGoo, kráľovná). Používateľ si kvapky rozloží, ako chce, a **tvar vznikne vždy
-  z okolia**. **Počet vláken zodpovedá objektom a vzdialenosti:** k objektu do 130 px 3 vlákna, do 200 px 2, do
-  300 px 1, ďalej žiadne; okraj je objekt vo vzdialenosti výšky zdvihnutia. Vlákna pri koncoch hrubé a zliate,
-  v strede tenké, každé sa kýve po svojom. Jeden aktívny zdroj naraz (výkon). Generátor `session/kvapky/sliz.py`.
+- **Spájanie vláknami a prelievaním — dohoda 1. 10.:** iba na **vzdialenosti, aké sú medzi vypínačom, Hodinami
+  (nezdvihnutými) a lištou** — tam prelievanie funguje výborne. Zdvihnuté ucho TimeGoo (74 px nad lištou) drží krk
+  z kávy, hrubý pri lište a tenší pri uchu; nad 100 px praskne. **DaNoGoo a kráľovná sa pri otvorení vznesú bez
+  základne** (ostrov na okraji sa stiahne, krk sa natiahne a zmizne).
 - **Hladina pri okraji** (z Marey): okraj obrazovky je voda — keď kvapka odíde alebo sa vráti, hladina sa prehne a
   po nej sa rozbehnú **dve vlnky**; po prasknutí krku ostane chvíľu **zvyšková kvapka**.
 - **Pohyb kolmo na okraj:** kvapka vystúpi **kolmo od okraja**, späť **padne rovno ako pod ťarchou**, s
@@ -237,6 +235,7 @@ Karta z ucha TimeGoo, zhora nadol:
 | minimalizovanie v páske | nie — ako niri (30. 9.) |
 | holý Hyprland a gamescope-session v zozname relácií | skryté — nedá sa z nich odísť myšou |
 | kód komunitných doplnkov Noctalie v pleamare | nie — stav doplnku je v Noctalii; namiesto toho rohová lišta Noctalie |
+| sieť slizu k vzdialeným objektom (všeobecný sliz, vejár vláken, sliz.py) | nie — neprirodzené; spájanie iba na vzdialenosti trojice vypínač–Hodiny–lišta (1. 10.) |
 
 ---
 

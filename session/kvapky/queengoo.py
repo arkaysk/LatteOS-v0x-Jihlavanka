@@ -53,7 +53,9 @@ draw = f'''    // >>> QueenGoo (queengoo.py)
     follow qg.y = if(qg_drag and qg_moved, qgp.y + qgq.y, qg.ty)
     let qg.r = (30 + 3 * qg.h) * so
     let qg.jit = 0.05 * sin(time * 9 + 5) * qg.h + qg.wob * 0.01
-    let qg.sheet = if(qg_drag and qg_moved, 0, 1) * so
+    // základňa na okraji: pri zdvihnutí (okno otvorené) sa stiahne — neostane ostrov; krk sa natiahne a zmizne
+    let qg.neck = 16 * (1 - smooth(0.25, 0.8, qg.lift)) * if(qg.lift > 0.02, 1, 0) * so
+    let qg.sheet = if(qg_drag and qg_moved, 0, 1) * so * (1 - smooth(0, 0.5, qg.lift))
     // korunka na vonkajšej strane kvapky, natočená podľa okraja
     let qg.rot = pick(qg.side, 0, 180, 90, -90)
     body {{
@@ -63,8 +65,9 @@ draw = f'''    // >>> QueenGoo (queengoo.py)
         glass: 100% * clamp(v * 1.3, 0, 1) * (1 - m)
         shine: pointer
         opacity: if(solo, 1, 0)
-        box {{ at: qg.ax, qg.ay; size: 70 * abs(qg.ny) + 20 * abs(qg.nx), 20 * abs(qg.ny) + 70 * abs(qg.nx); corner: 10 }}
-        ellipse {{ at: qg.ax, qg.ay; radius: 24 * qg.sheet; blend: 16 }}
+        box {{ at: qg.ax, qg.ay; size: (70 * abs(qg.ny) + 20 * abs(qg.nx)) * qg.sheet, (20 * abs(qg.ny) + 70 * abs(qg.nx)) * qg.sheet; corner: 10 }}
+        line {{ from: qg.ax, qg.ay; to: qg.ax + (qg.x - qg.ax) * if(qg.neck > 0.5, 1, 0), qg.ay + (qg.y - qg.ay) * if(qg.neck > 0.5, 1, 0); width: qg.neck; blend: 12 }}
+        ellipse {{ at: qg.ax, qg.ay; radius: 24 * qg.sheet; blend: 16 * qg.sheet }}
         ellipse {{ at: qg.x, qg.y; radius: qg.r; scale: 1 + qg.jit, 1 - qg.jit; blend: 18 * qg.sheet + 2 }}
     }}
     // guľky upozornení (pravidlo 1. 10.): červená = hardvér, zelená = sieť, modrá = softvér (aktualizácie); s počtom

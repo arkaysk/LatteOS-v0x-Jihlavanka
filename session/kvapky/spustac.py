@@ -84,7 +84,7 @@ a(f'''    // >>> spúšťač (spustac.py)
     let dh = 560
     // ucho (roh okna) je presne nad Hodinami (na bočnom okraji presne vedľa): kvapka vystúpi kolmo od okraja a späť
     // padne rovno ako pod ťarchou. Okno rastie od ucha doprava (dolu), ak je tam miesto, inak doľava (hore).
-    let d.rise = 118                         // ucho vyššie: sliz má kde sa natiahnuť (1. 10.)
+    let d.rise = 74                          // ucho nad lištou: vzdialenosť ako medzi vypínačom, Hodinami a lištou
     let dk.x = if(vert, cxs + away.x * d.rise, cxs)
     let dk.y = if(vert, cys, cys + away.y * d.rise)
     let d.sx = if(vert, 0, if(cxs + dw + 12 <= W, 1, -1))
@@ -101,7 +101,7 @@ a(f'''    // >>> spúšťač (spustac.py)
     let e.d = length(db.x - cxs, db.y - cys)
     let e.ux = (db.x - cxs) / max(e.d, 1)
     let e.uy = (db.y - cys) / max(e.d, 1)
-    let e.k = if(esnap or dsw < 0.02, 0, 1) * clamp(1 - (e.d - 110) / 200, 0.35, 1)
+    let e.k = if(esnap or dsw < 0.02, 0, 1) * clamp(1 - (e.d - 50) / 60, 0.3, 1)
     let dc.x = dk.x + (dt.x - dk.x) * d.grow
     let dc.y = dk.y + (dt.y - dk.y) * d.grow
     let d0.x = dt.x - dw / 2 + 28              // obsah: ľavý horný roh
@@ -128,6 +128,20 @@ a(f'''    // >>> spúšťač (spustac.py)
         line {{ from: cxs, cys; to: cxs + e.ux * 22 * estub, cys + e.uy * 22 * estub; width: 6 * estub; blend: 8 * clamp(estub * 3, 0, 1) }}
         // ucho = kvapka Hodín (trčí z rohu, zliata s kartou)
         ellipse {{ at: db.x, db.y; radius: 33 * clamp(dsw * 4, 0, 1); scale: 1 + swob * 0.01, 1 - swob * 0.01; blend: 18 * d.grow }}
+    }}
+    // spojenie lišty a ucha (1. 10., dohoda): prelievanie ako medzi vypínačom, Hodinami a lištou — iba na takú
+    // vzdialenosť; krk hrubý pri lište, tenší pri uchu; ďalej (nad 100 px) praskne
+    body {{
+        color: coffee
+        rim: 30%
+        light: 14%, 0, 30
+        glass: 100% * clamp(v * 1.3, 0, 1) * (1 - m)
+        shine: pointer
+        opacity: if(dsw > 0.02 and not esnap, 1, 0) * so
+        ellipse {{ at: cxs, cys; radius: 20 * e.k; scale: 1 + 0.6 * abs(e.uy), 1 + 0.6 * abs(e.ux) }}
+        line {{ from: cxs, cys; to: cxs + (db.x - cxs) * 0.45, cys + (db.y - cys) * 0.45; width: 30 * e.k; blend: 14 * e.k }}
+        line {{ from: cxs + (db.x - cxs) * 0.4, cys + (db.y - cys) * 0.4; to: db.x, db.y; width: 18 * e.k; blend: 12 * e.k }}
+        ellipse {{ at: db.x, db.y; radius: 31 * clamp(dsw * 4, 0, 1); blend: 14 * e.k }}
     }}
     text now.time {{ at: db.x, db.y - 1; anchor: center; size: 13; weight: 800; color: ink; opacity: so * clamp(dsw * 3 - 0.5, 0, 1); show: dsw > 0.1 }}
     // textúra materiálu témy (brúsený hliník, striebro, tepané zlato) na časti karty ďaleko od ucha; k uchu sa vytratí
@@ -558,6 +572,7 @@ once('"latte-ai", "latte-terminal" }', '"latte-ai", "latte-terminal", "date", "s
 # preklady (raz)
 once("    on change dsw > 0.72 while dsw > 0.72 and dash and not esnap { esnap = true;",
      "    on change dsw > 0.72 while dsw > 0.72 and dash and not esnap and e.d > 150 { esnap = true;")
+once("and e.d > 150 { esnap = true;", "and e.d > 100 { esnap = true;")
 TR = {"Alarm {t}": "Budík {t}", "Timer {t}": "Minútka {t}", "Lap {n}": "Medzičas {n}", "Week {w} · day {d} of the year": "Týždeň {w} · {d}. deň v roku",
       "{t} on screen": "{t} pred obrazovkou", "Overview": "Prehľad", "Stopwatch": "Stopky", "Timer": "Minútka", "Alarms": "Budíky",
       "Time is up ({t})": "Čas vypršal ({t})", "LatteOS alarm": "Budík LatteOS",
