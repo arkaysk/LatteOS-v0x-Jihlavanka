@@ -306,6 +306,39 @@ scene Kvapka {
     }
     on change n { impulse wob 70 }
 
+    // ── hladina pri okraji (prevzaté z Marey, k4ditano/marea-plm „ripple“, BSD-3) ────────────────────────────
+    // Okraj je voda: odkiaľ kvapka odíde (krk praskne) alebo kam sa vráti (hladina sa nad ňou zatvorí), vyrazia
+    // po hladine dve malé vlny doľava a doprava, zmenšujú sa a zaniknú. Štyri miesta: 0 Hodiny, 1 vypínač,
+    // 2 lišta (okno pribudlo / ubudlo), 3 pustená guľôčka a lišta pristátá pri okraji. vx = kde (v súradniciach
+    // okraja), vl = 0 → 1 cesta vlny. Viditeľná až keď sa oddelí od miesta, kde vznikla (clamp(vl · 6)).
+    prop vl.0 = 1 ~900ms
+    prop vx.0 = 0 ~0ms
+    prop vl.1 = 1 ~900ms
+    prop vx.1 = 0 ~0ms
+    prop vl.2 = 1 ~900ms
+    prop vx.2 = 0 ~0ms
+    prop vl.3 = 1 ~900ms
+    prop vx.3 = 0 ~0ms
+    let vd.0 = 10 + 58 * vl.0
+    let vh.0 = 12 * (1 - vl.0) * clamp(vl.0 * 6, 0, 1) * ap
+    let vd.1 = 10 + 58 * vl.1
+    let vh.1 = 12 * (1 - vl.1) * clamp(vl.1 * 6, 0, 1) * ap
+    let vd.2 = 10 + 58 * vl.2
+    let vh.2 = 12 * (1 - vl.2) * clamp(vl.2 * 6, 0, 1) * ap
+    let vd.3 = 10 + 58 * vl.3
+    let vh.3 = 12 * (1 - vl.3) * clamp(vl.3 * 6, 0, 1) * ap
+    // prehnutie hladiny pod Hodinami, kým vyplávajú do panela (zvon: najväčšie v polovici cesty, ako krk)
+    let sag.s = 16 * 4 * clamp(dsh, 0, 1) * (1 - clamp(dsh, 0, 1)) * so
+    // kvapka, ktorá ostane po prasknutí krku: chvíľu visí na okraji, potom ju hladina pohltí
+    prop stray = 0 ~520ms
+    prop stray.x = 0 ~0ms
+    on change dsh > 0.84 while dsh > 0.84 { vx.0: sx ~0ms; vl.0: 0 ~16ms; vl.0: 1 ~900ms after 30ms; stray.x: sx ~0ms; stray: 1 ~16ms; stray: 0 ~520ms after 60ms }
+    on change dsh < 0.06 while dsh < 0.06 { vx.0: sx ~0ms; vl.0: 0 ~16ms; vl.0: 1 ~760ms after 30ms }
+    on change pm > 0.84 while pm > 0.84 { vx.1: px ~0ms; vl.1: 0 ~16ms; vl.1: 1 ~900ms after 30ms }
+    on change pm < 0.06 while pm < 0.06 { vx.1: px ~0ms; vl.1: 0 ~16ms; vl.1: 1 ~760ms after 30ms }
+    on change n { vx.2: lx + chain_w * 0.5 ~0ms; vl.2: 0 ~16ms; vl.2: 1 ~900ms after 30ms }
+    on change ap > 0.9 while ap > 0.9 { vx.3: lx ~0ms; vl.3: 0 ~16ms; vl.3: 1 ~900ms after 30ms }
+
     // otvorený dashboard: klik kamkoľvek mimo neho ho zavrie (zóna cez celú obrazovku, pod všetkými ostatnými)
     zone box dash_away { at: W / 2, H / 2; size: W, H; active: dash or pmenu }
 
@@ -319,7 +352,13 @@ scene Kvapka {
         // škvrna na povrchu tekutiny ide za ním, na guľôčkach pribudne odlesk na strane ku kurzoru
         body {
             gradient: radial cu, cv radius 230, mix(coffee, #f3ebdd, 0.16), coffee
-            opacity: 1 - 0.42 * v * (1 - m)     // voda: priesvitná (obyčajná priehľadnosť, sklo by farbu zmylo)
+            // vodová káva (lungo, americano) je sklo pleamaru: prepúšťa a láme, čo je za ňou, okraj chytá svetlo
+            // kurzora (shine: pointer), stlačenie pošle ňou kruh svetla; espresso a mliečne kávy ostávajú nepriehľadné
+            glass: 100% * clamp(v * 1.3, 0, 1) * (1 - m)
+            shine: pointer
+            refraction: 110%
+            dispersion: 60%
+            ripple: 100%
             light: 16%, by - 40, 34
             rim: 30%
             shadow: 0, 6, 16, 40% * out
@@ -438,6 +477,18 @@ scene Kvapka {
             line { from: px, p.y - 4; to: sx, s.y - 6; width: thread.ps * (1 - max(dsh, pm)); blend: 12 * clamp(thread.ps * (1 - max(dsh, pm)) / 3, 0, 1) }
             line { from: sx + 8, s.y - 12; to: bl + 18, bottom - 14; width: thread.sb * ap * (1 - dsh); blend: 14 * clamp(thread.sb * ap * (1 - dsh) / 3, 0, 1) }
             ellipse { at: drip.x, drip.y; radius: drip.r * so; blend: 8 }
+            // hladina: prehnutie pod Hodinami, zvyšková kvapka a vlnky (zliate s okrajom, preto bez kreslenia krku)
+            // (neaktívne majú nulový polomer — elipsa stlačená na nulovú výšku by v tele vyrezala diery)
+            ellipse { at: sx, edge; radius: 30 * if(sag.s > 0.3, 1, 0); scale: 1, max(sag.s, 0.3) / 30; blend: 16 * clamp(sag.s / 6, 0, 1) }
+            ellipse { at: stray.x, edge - 5.5 * stray * 0.7; radius: 5.5 * stray * so; blend: 7 * clamp(stray * 5.5 / 3, 0, 1) }
+            ellipse { at: vx.0 - vd.0, edge; radius: 9 * if(vh.0 > 0.3, 1, 0); scale: 1, max(vh.0, 0.3) / 9; blend: 8 * clamp(vh.0 / 3, 0, 1) }
+            ellipse { at: vx.0 + vd.0, edge; radius: 9 * if(vh.0 > 0.3, 1, 0); scale: 1, max(vh.0, 0.3) / 9; blend: 8 * clamp(vh.0 / 3, 0, 1) }
+            ellipse { at: vx.1 - vd.1, edge; radius: 9 * if(vh.1 > 0.3, 1, 0); scale: 1, max(vh.1, 0.3) / 9; blend: 8 * clamp(vh.1 / 3, 0, 1) }
+            ellipse { at: vx.1 + vd.1, edge; radius: 9 * if(vh.1 > 0.3, 1, 0); scale: 1, max(vh.1, 0.3) / 9; blend: 8 * clamp(vh.1 / 3, 0, 1) }
+            ellipse { at: vx.2 - vd.2, edge; radius: 9 * if(vh.2 > 0.3, 1, 0); scale: 1, max(vh.2, 0.3) / 9; blend: 8 * clamp(vh.2 / 3, 0, 1) }
+            ellipse { at: vx.2 + vd.2, edge; radius: 9 * if(vh.2 > 0.3, 1, 0); scale: 1, max(vh.2, 0.3) / 9; blend: 8 * clamp(vh.2 / 3, 0, 1) }
+            ellipse { at: vx.3 - vd.3, edge; radius: 9 * if(vh.3 > 0.3, 1, 0); scale: 1, max(vh.3, 0.3) / 9; blend: 8 * clamp(vh.3 / 3, 0, 1) }
+            ellipse { at: vx.3 + vd.3, edge; radius: 9 * if(vh.3 > 0.3, 1, 0); scale: 1, max(vh.3, 0.3) / 9; blend: 8 * clamp(vh.3 / 3, 0, 1) }
         }
         // obraz režimu okien v hlave (30. 9., návrh používateľa): akoby cez kvapku presvitali okná — páska (pás
         // okolo valca, boky skrátené), plávajúce (nad sebou), dlaždice. Pri prepnutí sa okienka prelejú do nového

@@ -54,6 +54,12 @@ ako samostatná vrstva (layer-shell) nad jej lištou.
   (`blocks` z `hyprctl clients` každých 700 ms). Kým tam okno nie je, zhromaždí sa do výšky; keby okno prekryl,
   stiahne sa k okraju do nízkeho cik-cak radu. Okno na druhom konci obrazovky lištu nezrovná. Aj vysunutie lišty
   (`room`) počíta iba s oknami nad lištou (Hodiny, vypínač a šnúra). Hysterézia 16 px, aby strapec neblikal.
+- **hladina pri okraji ako v Marei** (30. 9., prevzaté z k4ditano/marea-plm, BSD-3): keď Hodiny vyplávajú do panela
+  alebo sa vrátia, otvorí/zavrie sa ponuka Vypnúť, pribudne/ubudne okno alebo lišta pristane pri okraji, vyrazia po
+  hladine dve malé vlnky doľava a doprava; pod Hodinami sa hladina prehne a po prasknutí krku ostane na okraji
+  chvíľu zvyšková kvapka
+- **vodová káva je sklo pleamaru** (lungo, americano): `glass` podľa množstva vody, okraj chytá svetlo kurzora
+  (`shine: pointer`), láme pozadie (`refraction`, `dispersion`), stlačenie pošle kruh svetla (`ripple`)
 - **svetlo**: pasívne v ploche (light zhora, bodka odlesku hore vľavo) a aktívne — kurzor: svetlá škvrna na povrchu
   ide za ním (radiálny prechod tela) a na každej guľôčke, hlave a Hodinách pribudne odlesk na strane ku kurzoru
 - **pravý klik** na goo nerobí nič, okrem guľôčok okien (ponuka okna) — ako na paneli úloh vo Windows; lištu
