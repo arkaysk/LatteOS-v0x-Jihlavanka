@@ -2,6 +2,9 @@
 # setup/lab/marea-povodna.sh — pôvodná Marea (k4ditano: pleamar, pleamar-wm, marea-plm) ako samostatné prostredie
 # na pokusy, oddelené od LatteOS (30. 9. 2026). Robí to isté ako autorov install.sh, ale nie do ~/.local/bin
 # (tam by prebila /usr/bin/pleamar s úpravami LatteOS pre Kvapky) a bez „skill“ pre AI agentov v ~/.claude.
+# Kompletne podľa autora (1. 10.): jeho relácia (XDG_CURRENT_DESKTOP=pleamar, PLEAMAR_WM_EXPORT=1), jeho portály
+# (zdieľanie obrazovky odpovedá pleamar-wm), jeho profil ~/.config/pleamar (session.conf, keys.conf, autostart
+# s Mareou, tapetou a agentom polkit) — LatteOS ho nepoužíva.
 #   setup/lab/marea-povodna.sh          stiahne alebo aktualizuje, preloží, uloží
 # Spúšťa ju latte-marea (relácie „Marea (pleamar-wm)“ a „Marea (Hyprland)“ na prihlasovacej obrazovke).
 set -euo pipefail
@@ -24,6 +27,9 @@ for p in pleamar/target/release/pleamar pleamar-wm/target/release/pleamar-wm; do
     install -m755 "$M/src/$p" "$M/bin/$(basename "$p").new" && mv -f "$M/bin/$(basename "$p").new" "$M/bin/$(basename "$p")"
 done
 install -m755 "$M/src/pleamar-wm/session.sh" "$M/bin/pleamar-session"
+# autorove portály (iba pre reláciu s XDG_CURRENT_DESKTOP=pleamar; iné prostredia sa ich netýkajú)
+sudo install -Dm644 "$M/src/pleamar-wm/pleamar-portals.conf" /usr/share/xdg-desktop-portal/pleamar-portals.conf
+sudo install -Dm644 "$M/src/pleamar-wm/pleamar.portal" /usr/share/xdg-desktop-portal/portals/pleamar.portal
 ln -sf "$M/src/marea-plm/marea" "$M/bin/marea"
 # relácie na prihlasovacej obrazovke a ich spúšťač
 sudo install -m755 "$here/session/bin/latte-marea" /usr/bin/latte-marea

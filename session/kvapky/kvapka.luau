@@ -398,7 +398,6 @@ local function urgency(u)
     return URG[tostring(u or "normal")] or 1
 end
 local function watch_notes()
-    pcall(sys.call, "notifications.keep", true)
     sys.watch("notifications", function(list)
         list = list or {}
         local out, fresh = {}, nil
@@ -410,12 +409,15 @@ local function watch_notes()
             end
         end
         model.notes = out
+        dn_paint(list)
         if fresh and not first_report then
             text.toast = (fresh.app ~= "" and (fresh.app .. " · ") or "") .. (fresh.title or "")
             emit("new_note")
         end
         first_report = false
     end)
+    -- centrum upozornení (hrozno DaNoGoo): nevypršia samy; až po spustení služby, inak sa neuplatní
+    pcall(sys.call, "notifications.keep", true)
 end
 
 -- ── spúšťač (1. 10., náčrt používateľa): vyteká z TimeGoo (ľavý klik alebo kláves Win) ────────────────────────
@@ -1011,6 +1013,11 @@ local function load_cfg()
             cfg.mode = tonumber(c.mode) or cfg.mode
             cfg.cmds = type(c.cmds) == "table" and c.cmds or {}
             cfg.recent = type(c.recent) == "table" and c.recent or {}
+            if type(c.danogoo) == "table" then
+                cfg.danogoo = c.danogoo
+                fact["dn.side"] = tonumber(c.danogoo.side) or 0
+                fact["dn.pos"] = tonumber(c.danogoo.pos) or 0.78
+            end
             cfg.tabs = {}
             for _, t in ipairs(c.tabs) do
                 if type(t) == "table" and #cfg.tabs < MAX_TABS then
@@ -1056,6 +1063,90 @@ end)
 on("notes_clear", function() pcall(sys.call, "notifications.clear") end)
 
 local function noctalia(...) run("noctalia", { "msg", ... }) end
+-- ── DaNoGoo (1. 10., LATTEOS-GOO.md 4.2b): hrozno upozornení, guľky počtu, dátum a počasie na kvapke ──
+-- Farba bobule = farba ikony aplikácie (latte-kvapky farba → číslo v palete scény), pamätá sa.
+local dn_list = {}
+local pal_of, pal_wait, no_icon = {}, {}, {}
+local LIGHT = { [2] = true, [3] = true, [4] = true, [14] = true }     -- svetlé farby: tmavý text
+function dn_paint(list)
+    dn_list = list or dn_list
+    local out, crit, norm = {}, 0, 0
+    for _, n in ipairs(dn_list) do
+        if urgency(n.urgency) == 2 then crit = crit + 1 else norm = norm + 1 end
+    end
+    for i, n in ipairs(dn_list) do
+        if i > 6 then break end
+        local key = (n.icon and n.icon ~= "") and n.icon or ((n.app or ""):lower():gsub("%s+", "-"))
+        local p = pal_of[key]
+        if p == nil and key ~= "" and not pal_wait[key] then
+            pal_wait[key] = true
+            run("latte-kvapky", { "farba", key }, function(o)
+                pal_of[key] = tonumber((o or ""):match("%d+")) or 15
+                if (o or ""):find("-", 1, true) then no_icon[key] = true end
+                pal_wait[key] = nil
+                dn_paint()
+            end)
+        end
+        p = p or 15
+        if urgency(n.urgency) == 2 then p = 16 end                     -- systémová výstraha: červeno-kávová
+        local acts = false
+        for _, act in ipairs(n.actions or {}) do if act.key ~= "default" then acts = true end end
+        out[#out + 1] = { app = n.app or "", title = n.title or "", body = (n.body or ""):gsub("%s+", " "),
+                          icon = (n.icon and n.icon ~= "" and not no_icon[key]) and n.icon or "preferences-system-notifications",
+                          pal = p, dark = LIGHT[p] == true, acts = acts }
+    end
+    model.berries = out
+    fact.dn_crit = crit
+    fact.dn_norm = norm
+    text.dn_clear = #dn_list > 6 and fill(tr("Clear all ({n})"), { n = tostring(#dn_list) }) or tr("Clear all")
+    if #dn_list == 0 and fact.dn_open then fact.dn_open = false end
+end
+on("berry_open", function(k)
+    local n = dn_list[(tonumber(k) or 0) + 1]
+    if not n then return end
+    pcall(sys.call, "notifications.invoke", n.id, "default")
+    pcall(sys.call, "notifications.dismiss", n.id)
+end)
+on("berry_dismiss", function(k)
+    local n = dn_list[(tonumber(k) or 0) + 1]
+    if n then pcall(sys.call, "notifications.dismiss", n.id) end
+end)
+on("berry_menu", function(k)
+    local n = dn_list[(tonumber(k) or 0) + 1]
+    if not n then return end
+    local items = {}
+    for _, act in ipairs(n.actions or {}) do
+        if act.key ~= "default" then
+            items[#items + 1] = { label = act.label or act.key, run = function()
+                pcall(sys.call, "notifications.invoke", n.id, act.key)
+                pcall(sys.call, "notifications.dismiss", n.id)
+            end }
+        end
+    end
+    menu(items)
+end)
+on("dn_clear_all", function() pcall(sys.call, "notifications.clear") end)
+-- poloha DaNoGoo: pustená pri okraji sa prilepí k najbližšiemu (ako kvapky widgetov), uloží sa v spustac.json
+on("dn_drop", function()
+    local x, y = tonumber(fact["dnd.x"]) or 0, tonumber(fact["dnd.y"]) or 0
+    local W, H = tonumber(fact["wd.w"]) or 1920, tonumber(fact["wd.h"]) or 1080
+    local d = { H - y, y, x, W - x }
+    local side, best = 0, d[1]
+    for i = 2, 4 do if d[i] < best then side, best = i - 1, d[i] end end
+    local pos = math.max(0.03, math.min(0.97, (side <= 1) and (x / W) or (y / H)))
+    fact["dn.side"] = side; fact["dn.pos"] = pos
+    cfg.danogoo = { side = side, pos = pos }
+    save_cfg()
+end)
+-- dátum a počasie na kvapke (počasie z weather(), dátum každú minútu)
+local WDAY_SHORT = { "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" }
+local function dn_date()
+    local t = os.date("*t")
+    text.dn_date = tr(WDAY_SHORT[t.wday]) .. " " .. t.day .. ". " .. t.month .. "."
+end
+dn_date()
+every(60000, dn_date)
+
 -- ── časové menu TimeGoo (pravý klik, 1. 10.): Prehľad · Stopky · Minútka · Budíky ─────────────────────────────
 -- Tá istá karta ako spúšťač (fact tview 1). Údaje spoločné s klasickým LatteOS: stopky, minútka a budíky v
 -- ~/.local/share/latteos/casovace.json (zápis cez `latte-kvapky uloz casovace`), časové pásma v
@@ -1713,6 +1804,8 @@ local function weather()
                 st.temp = t; wpaint()
                 text.weather = wx_glyph(d.current.weather_code or 3) .. "  " .. t .. " °C" .. (place ~= "" and (" · " .. place) or "")
                 wxd = d
+                text.dn_wx = wx_icon(d.current.weather_code)
+                text.dn_temp = t .. "°"
             end
             paint_wx()
         end)
