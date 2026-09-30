@@ -214,9 +214,11 @@ chyby (neaktívne tvary nulovým polomerom); logika nevie zapisovať súbory (`l
 - DaNoGoo (4.2b), batéria na PowerGoo — rozhodnuté 1. 10., ďalšie na rade
 - časové menu TimeGoo a kalendár DaNoGoo vo vzhľade Goo (pravidlo 10) — čaká na náčrt alebo návrh
 - AI: úroveň uvažovania (napr. „High“ z náčrtu) — `latte-ai` ju zatiaľ nepozná
-- **nápad 1. 10.: bubliny četov** ako v Androide (Messenger chat heads) — kontakt ako samostatná kvapka na okraji,
-  klik = rozhovor vyrastie z kvapky. Nie ako ďalší režim spúšťača (preplnené jedno miesto). Cesta: najprv odpoveď
-  na upozornenie priamo z hrozna DaNoGoo (akcia „inline-reply“ v upozorneniach), neskôr Matrix s mostami
+- **nápad 1. 10.: bubliny četov** ako v Androide (Messenger chat heads), ale **pre viac kanálov** (Messenger,
+  Telegram, Signal, ICQ…) — forma sa ešte premyslí (používateľ). Nie ako režim spúšťača (preplnené jedno miesto)
+  a **nie spojené s DaNoGoo** (rozhodnutie 1. 10.)
+- **vzhľad spúšťača** (1. 10.): rozloženie a funkcie áno, **písmo a farby nie** → 4 varianty na výber (Káva s písmom
+  LatteOS, Mlieko, Šálka–Hliník, Sklo); farby sú v premenných `l.*` na začiatku spúšťača v kvapka.plm
 - **Noctalia nemá slovenský katalóg** (`assets/translations/sk.json` nie je ani u autora, je český `cs.json`):
   pri `LANG=sk` prepne na angličtinu a `translations/sk.json` doplnkov nenačíta — nové texty doplnkov LatteOS
   (napr. well-being v záložke Čas) sú preto po anglicky. Riešenie: slovenský katalóg Noctalie (aj pre autora)
