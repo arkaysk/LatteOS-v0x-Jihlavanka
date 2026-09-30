@@ -1,0 +1,9 @@
+{
+  "wellbeing": {
+    "heading": "DIGITAL WELLBEING TODAY",
+    "screen": "Screen time",
+    "empty": "Nothing counted yet today.",
+    "off": "Digital wellbeing is off (Settings › Privacy).",
+    "details": "Details in Monitor"
+  }
+}

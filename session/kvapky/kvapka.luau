@@ -728,6 +728,9 @@ end)
 on("notes_clear", function() pcall(sys.call, "notifications.clear") end)
 
 local function noctalia(...) run("noctalia", { "msg", ... }) end
+-- TimeGoo pravým klikom: záložka Čas z klasického LatteOS (plugin latteos/time: pásma, stopky, minútka, budíky,
+-- súhrn Digitálnej pohody)
+on("time_menu", function() noctalia("panel-toggle", "latteos/time:panel", "cas") end)
 
 -- ── kvapky widgetov (30. 9.): widgety Noctalie ako kvapky na okrajoch obrazovky ───────────────────────────────
 -- Akcie myši presne podľa Noctalie (src/shell/bar/widget_gesture_defaults.cpp): kde Noctalia pravý klik nemá, nemá

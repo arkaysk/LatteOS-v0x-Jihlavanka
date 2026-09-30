@@ -209,6 +209,50 @@ function onAlarmAdd(_t)
 end
 
 -- ── Čas ──────────────────────────────────────────────────────────────────────
+-- Digitálna pohoda (well-being, latte-app pohoda): dnešný čas pred obrazovkou a aplikácie s najviac časom;
+-- podrobnosti v Monitore › Čas v aplikáciách. Údaje ~/.local/share/latteos/pohoda/RRRR-MM-DD.json (1. 10.: aj pre
+-- pravý klik na Hodiny v ploche Kvapky). Nové texty cez preklady doplnku (translations/*.json).
+local function dur(s)
+  s = math.floor(s or 0)
+  local h, m = s // 3600, (s % 3600) // 60
+  if h > 0 then return string.format("%d h %02d min", h, m) end
+  return string.format("%d min", m)
+end
+local function appName(cls, title)
+  if string.sub(cls, 1, 6) == "latte:" then return string.sub(cls, 7) end
+  local tail = string.match(cls, "([^%.]+)$") or cls
+  return (string.gsub(tail, "^%l", string.upper))
+end
+local function wellbeing()
+  local out = { heading(noctalia.tr("wellbeing.heading")) }
+  local off = noctalia.readFile(cfgHome .. "/latteos/pohoda")
+  if off and string.find(off, "off") then
+    table.insert(out, note(noctalia.tr("wellbeing.off")))
+    return out
+  end
+  local t = os.date("*t")
+  local raw = noctalia.readFile(dataHome .. "/latteos/pohoda/" .. iso(t.year, t.month, t.day) .. ".json")
+  local ok, d = pcall(noctalia.json.decode, raw or "")
+  if not ok or type(d) ~= "table" or type(d.apps) ~= "table" then
+    table.insert(out, note(noctalia.tr("wellbeing.empty")))
+  else
+    local screen = 0
+    for _, seg in ipairs(d.screen or {}) do screen = screen + ((seg[2] or 0) - (seg[1] or 0)) end
+    table.insert(out, ui.row({ gap = 8 }, { ui.label({ text = noctalia.tr("wellbeing.screen"), fontSize = 13, flexGrow = 1 }),
+                                           ui.label({ text = dur(screen), fontSize = 13, fontWeight = "bold" }) }))
+    local list = {}
+    for cls, v in pairs(d.apps) do table.insert(list, { cls = cls, s = v.s or 0, title = v.title or "" }) end
+    table.sort(list, function(a, b) return a.s > b.s end)
+    for i = 1, math.min(3, #list) do
+      table.insert(out, ui.row({ gap = 8 }, { ui.label({ text = appName(list[i].cls, list[i].title), fontSize = 12, color = "on_surface_variant", flexGrow = 1 }),
+                                             ui.label({ text = dur(list[i].s), fontSize = 12, color = "on_surface_variant" }) }))
+    end
+  end
+  table.insert(out, ui.button({ text = noctalia.tr("wellbeing.details"), glyph = "chart-bar", variant = "ghost", contentAlign = "start",
+                                onClick = function() noctalia.runAsync({ "latte-app", "monitor", "pohoda" }, function() end) end }))
+  return out
+end
+
 local function tabTime()
   local t = os.date("*t")
   local body = {
@@ -216,8 +260,10 @@ local function tabTime()
     ui.label({ text = string.format("%s %d. %s %d", longDays[t.wday], t.day, monthsGen[t.month], t.year), fontSize = 15, color = "on_surface" }),
     ui.label({ text = "týždeň " .. isoWeek(t) .. " · " .. t.yday .. ". deň v roku", fontSize = 12, color = "on_surface_variant" }),
     ui.separator({}),
-    heading("ČASOVÉ PÁSMA"),
   }
+  for _, x in ipairs(wellbeing()) do table.insert(body, x) end
+  table.insert(body, ui.separator({}))
+  table.insert(body, heading("ČASOVÉ PÁSMA"))
   local todayIso = iso(t.year, t.month, t.day)
   if #st.zones == 0 then
     table.insert(body, note("Pridaj mestá v Nastaveniach (Systém › Dátum, čas a poloha) a uvidíš tu ich čas."))

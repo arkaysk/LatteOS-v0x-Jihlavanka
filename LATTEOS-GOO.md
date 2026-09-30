@@ -86,8 +86,11 @@ samostatný tekutý prvok.
 - **Ľavý klik alebo kláves Win** = **spúšťač**: kvapka vystúpi kolmo, stane sa **trčiacim uchom v rohu okna**
   (s časom), okno z nej vyrastie. Zatvorenie (klik inde, Esc) = okno sa zloží do ucha, ucho odkvapne domov.
 - **Pravý klik** = časové menu (1. 10.): záložka **Čas** z klasického LatteOS (`latteos/time:panel cas`) —
-  časové pásma, stopky, minútka, budíky, počasie — a **nové: well-being** (koľko času v ktorej aplikácii;
-  sledovanie spoločné pre klasický LatteOS aj Kvapky).
+  časové pásma, stopky, minútka, budíky, počasie — a **well-being**.
+- **Well-being = existujúca Digitálna pohoda** z klasického LatteOS (`session/apps/pohoda.qml`, inšpirovaná
+  Serpantinumom; dáta `~/.local/share/latteos/pohoda/RRRR-MM-DD.json`, podrobnosti v Monitore › Čas v
+  aplikáciách). Nič nové sa nevymýšľa: v Kvapkách beží tiež (predtým ju `latte-kvapky` vypínal), v záložke Čas
+  je súhrn dneška (čas pred obrazovkou, 3 najpoužívanejšie aplikácie) a tlačidlo „Podrobnosti v Monitore“ (1. 10.).
 
 ### 4.2b DaNoGoo (dátum + upozornenia) — samostatná kvapka, dá sa presúvať (návrh 1. 10.)
 - **Viditeľný obsah:** dátum a počasie.
@@ -185,7 +188,10 @@ chyby (neaktívne tvary nulovým polomerom); logika nevie zapisovať súbory (`l
 
 ## 7. Otvorené
 
-- DaNoGoo (4.2b), well-being, batéria na PowerGoo — rozhodnuté 1. 10., čaká na farby upozornení a zatváranie
+- DaNoGoo (4.2b), batéria na PowerGoo — rozhodnuté 1. 10., čaká na farby upozornení a zatváranie
+- **Noctalia nemá slovenský katalóg** (`assets/translations/sk.json` nie je ani u autora, je český `cs.json`):
+  pri `LANG=sk` prepne na angličtinu a `translations/sk.json` doplnkov nenačíta — nové texty doplnkov LatteOS
+  (napr. well-being v záložke Čas) sú preto po anglicky. Riešenie: slovenský katalóg Noctalie (aj pre autora)
 
 - goo telo z pleamaru pod rohovou lištou (vlnenie, pulzovanie pri zmene stavu widgetu)
 - rozbaľovacia ponuka rýchleho spúšťania ako samostatné kvapky
