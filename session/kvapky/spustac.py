@@ -51,6 +51,18 @@ def pickc(key):
         expr = f"mix({expr}, {v[i]}, if(tema == {i}, 1, 0))"
     return expr
 
+# materiál témy (make-themes.py kľúč „material“): textúra (kov), perleťové dúhové sklo, priehľadnosť karty
+TEX = ["hlinik", "striebro", "zlato"]                     # session/kvapky/textury/<téma>_{v,h}.webp (textury.py)
+mat = {tid: THEMES[tid][4] for tid in order}
+idx = {tid: i for i, tid in enumerate(order)}
+GLASS = {"sklo": 0.80, "fazety": 0.72, "mraz": 0.72, "jantar": 0.62, "kov": 0.45, "kamen": 0.35, "ziadny": 0.0}
+glass_expr = "pick(tema, " + ", ".join(f"{GLASS.get(mat[t], 0.4):.2f}" for t in order) + ")"
+pearl = [t for t in order if mat[t] in ("sklo", "fazety", "mraz", "jantar")]
+pearl_expr = " or ".join(f"tema == {idx[t]}" for t in pearl) or "false"
+TEX_DECL = "".join(f'    image tex.{t}.{o} = file "textury/{t}_{o}.webp", {640}, {560}\n' for t in TEX for o in ("v", "h"))
+TEX_DRAW = "".join(f"            image tex.{t}.{o} {{ at: dc.x - dw / 2, dc.y - dh / 2; size: dw, dh; show: tema == {idx[t]} and {'vert' if o == 'h' else 'not vert'} }}\n"
+                   for t in TEX for o in ("v", "h"))
+
 L = []
 a = L.append
 a(f'''    // >>> spúšťač (spustac.py)
@@ -64,7 +76,10 @@ a(f'''    // >>> spúšťač (spustac.py)
     let l.dim = {pickc("dim")}
     let l.line = {pickc("line")}
     let l.hover = {pickc("hover")}
-    let dw = 640
+    // priehľadnosť (sklo karty) a perleťové dúhové okraje pri sklenených témach; kov má textúru
+    let l.glass = {glass_expr}
+    let l.pearl = if({pearl_expr}, 1, 0)
+{TEX_DECL}    let dw = 640
     let dh = 560
     // ucho (roh okna) je presne nad Hodinami (na bočnom okraji presne vedľa): kvapka vystúpi kolmo od okraja a späť
     // padne rovno ako pod ťarchou. Okno rastie od ucha doprava (dolu), ak je tam miesto, inak doľava (hore).
@@ -96,6 +111,11 @@ a(f'''    // >>> spúšťač (spustac.py)
     let g.ay = away.y * dh / 2 * if(vert, 0, 1)
     body {{
         gradient: dc.x + g.ax, dc.y + g.ay to dc.x - g.ax, dc.y - g.ay, l.win, l.win, l.win, mix(l.win, coffee, 0.35), coffee
+        glass: 100% * l.glass
+        lens: l.pearl > 0.5
+        shine: pointer
+        refraction: 120% * l.pearl
+        dispersion: 260% * l.pearl
         light: 6%, dc.y - dh / 2, 60
         rim: 18%
         shadow: 0, 12, 34, 38% * dsh
@@ -110,6 +130,16 @@ a(f'''    // >>> spúšťač (spustac.py)
         ellipse {{ at: db.x, db.y; radius: 33 * clamp(dsw * 4, 0, 1); scale: 1 + swob * 0.01, 1 - swob * 0.01; blend: 18 * d.grow }}
     }}
     text now.time {{ at: db.x, db.y - 1; anchor: center; size: 13; weight: 800; color: ink; opacity: so * clamp(dsw * 3 - 0.5, 0, 1); show: dsw > 0.1 }}
+    // textúra materiálu témy (brúsený hliník, striebro, tepané zlato) na časti karty ďaleko od ucha; k uchu sa vytratí
+    group {{
+        opacity: dshow
+        show: dsh > 0.5 and d.grow > 0.98
+        clip box {{ at: dc.x, dc.y; size: dw, dh; corner: 24 }}
+        group {{
+            pivot: dc.x, dc.y
+            rotate: if(vert, if(away.x > 0, 0, 180), if(away.y < 0, 0, 180)) * 1deg
+{TEX_DRAW}        }}
+    }}
     // obsah: y0 = horný okraj obsahu pod poľom; riadok režimu a počasia sú pri spodku karty
     let y0 = d0.y + 64
     let yc = d0.y + 454                        // riadok režimu (čipy)

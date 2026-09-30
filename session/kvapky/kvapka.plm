@@ -88,6 +88,8 @@ scene Kvapka {
     text wx_icon = ""
     text wx_icon = ""
     text wx_icon = ""
+    text wx_icon = ""
+    text wx_icon = ""
     fact wx_view = 0
     fact wx_detail = false
     fact wx_hot = -1
@@ -646,6 +648,15 @@ scene Kvapka {
     let l.dim = mix(mix(mix(mix(mix(mix(mix(mix(mix(mix(mix(mix(mix(#cdbca6, #3a5a74, if(tema == 1, 1, 0)), #4a525a, if(tema == 2, 1, 0)), #50575f, if(tema == 3, 1, 0)), #5e4a22, if(tema == 4, 1, 0)), #6e6358, if(tema == 5, 1, 0)), #bdb3a6, if(tema == 6, 1, 0)), #e0b98a, if(tema == 7, 1, 0)), #f2b8c4, if(tema == 8, 1, 0)), #4e5b6d, if(tema == 9, 1, 0)), #555555, if(tema == 10, 1, 0)), #8ba3b8, if(tema == 11, 1, 0)), #5b5b60, if(tema == 12, 1, 0)), #a0a0a0, if(tema == 13, 1, 0))
     let l.line = mix(mix(mix(mix(mix(mix(mix(mix(mix(mix(mix(mix(mix(#4a3b30, #a9c9de, if(tema == 1, 1, 0)), #a3aab1, if(tema == 2, 1, 0)), #b4bbc2, if(tema == 3, 1, 0)), #c7ae74, if(tema == 4, 1, 0)), #cfc6bb, if(tema == 5, 1, 0)), #4a443e, if(tema == 6, 1, 0)), #6b4220, if(tema == 7, 1, 0)), #7d0f24, if(tema == 8, 1, 0)), #b3c2d4, if(tema == 9, 1, 0)), #d0d0d0, if(tema == 10, 1, 0)), #2a475e, if(tema == 11, 1, 0)), #d2d5db, if(tema == 12, 1, 0)), #3a3a3a, if(tema == 13, 1, 0))
     let l.hover = mix(mix(mix(mix(mix(mix(mix(mix(mix(mix(mix(mix(mix(#3a2d24, #cfe4f3, if(tema == 1, 1, 0)), #bfc5cb, if(tema == 2, 1, 0)), #cdd2d7, if(tema == 3, 1, 0)), #e0cb95, if(tema == 4, 1, 0)), #eae3da, if(tema == 5, 1, 0)), #36322e, if(tema == 6, 1, 0)), #4a2b14, if(tema == 7, 1, 0)), #5e1426, if(tema == 8, 1, 0)), #ccd8e6, if(tema == 9, 1, 0)), #dddddd, if(tema == 10, 1, 0)), #22324a, if(tema == 11, 1, 0)), #e2e5ea, if(tema == 12, 1, 0)), #333333, if(tema == 13, 1, 0))
+    // priehľadnosť (sklo karty) a perleťové dúhové okraje pri sklenených témach; kov má textúru
+    let l.glass = pick(tema, 0.80, 0.72, 0.45, 0.45, 0.45, 0.35, 0.35, 0.62, 0.72, 0.72, 0.00, 0.00, 0.80, 0.00)
+    let l.pearl = if(tema == 0 or tema == 1 or tema == 7 or tema == 8 or tema == 9 or tema == 12, 1, 0)
+    image tex.hlinik.v = file "textury/hlinik_v.webp", 640, 560
+    image tex.hlinik.h = file "textury/hlinik_h.webp", 640, 560
+    image tex.striebro.v = file "textury/striebro_v.webp", 640, 560
+    image tex.striebro.h = file "textury/striebro_h.webp", 640, 560
+    image tex.zlato.v = file "textury/zlato_v.webp", 640, 560
+    image tex.zlato.h = file "textury/zlato_h.webp", 640, 560
     let dw = 640
     let dh = 560
     // ucho (roh okna) je presne nad Hodinami (na bočnom okraji presne vedľa): kvapka vystúpi kolmo od okraja a späť
@@ -678,6 +689,11 @@ scene Kvapka {
     let g.ay = away.y * dh / 2 * if(vert, 0, 1)
     body {
         gradient: dc.x + g.ax, dc.y + g.ay to dc.x - g.ax, dc.y - g.ay, l.win, l.win, l.win, mix(l.win, coffee, 0.35), coffee
+        glass: 100% * l.glass
+        lens: l.pearl > 0.5
+        shine: pointer
+        refraction: 120% * l.pearl
+        dispersion: 260% * l.pearl
         light: 6%, dc.y - dh / 2, 60
         rim: 18%
         shadow: 0, 12, 34, 38% * dsh
@@ -692,6 +708,22 @@ scene Kvapka {
         ellipse { at: db.x, db.y; radius: 33 * clamp(dsw * 4, 0, 1); scale: 1 + swob * 0.01, 1 - swob * 0.01; blend: 18 * d.grow }
     }
     text now.time { at: db.x, db.y - 1; anchor: center; size: 13; weight: 800; color: ink; opacity: so * clamp(dsw * 3 - 0.5, 0, 1); show: dsw > 0.1 }
+    // textúra materiálu témy (brúsený hliník, striebro, tepané zlato) na časti karty ďaleko od ucha; k uchu sa vytratí
+    group {
+        opacity: dshow
+        show: dsh > 0.5 and d.grow > 0.98
+        clip box { at: dc.x, dc.y; size: dw, dh; corner: 24 }
+        group {
+            pivot: dc.x, dc.y
+            rotate: if(vert, if(away.x > 0, 0, 180), if(away.y < 0, 0, 180)) * 1deg
+            image tex.hlinik.v { at: dc.x - dw / 2, dc.y - dh / 2; size: dw, dh; show: tema == 2 and not vert }
+            image tex.hlinik.h { at: dc.x - dw / 2, dc.y - dh / 2; size: dw, dh; show: tema == 2 and vert }
+            image tex.striebro.v { at: dc.x - dw / 2, dc.y - dh / 2; size: dw, dh; show: tema == 3 and not vert }
+            image tex.striebro.h { at: dc.x - dw / 2, dc.y - dh / 2; size: dw, dh; show: tema == 3 and vert }
+            image tex.zlato.v { at: dc.x - dw / 2, dc.y - dh / 2; size: dw, dh; show: tema == 4 and not vert }
+            image tex.zlato.h { at: dc.x - dw / 2, dc.y - dh / 2; size: dw, dh; show: tema == 4 and vert }
+        }
+    }
     // obsah: y0 = horný okraj obsahu pod poľom; riadok režimu a počasia sú pri spodku karty
     let y0 = d0.y + 64
     let yc = d0.y + 454                        // riadok režimu (čipy)
