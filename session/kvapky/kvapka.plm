@@ -632,11 +632,6 @@ scene Kvapka {
     fact dn_moved = false
     fact dnd.x = 0
     fact dnd.y = 0
-    // ťahanie: miesto stlačenia + posun (pointer.x platí iba v pravidle, nie vo follow)
-    fact dnp.x = 0
-    fact dnp.y = 0
-    fact dnq.x = 0
-    fact dnq.y = 0
     text dn_date = ""
     text dn_wx = ""
     text dn_temp = ""
@@ -691,8 +686,9 @@ scene Kvapka {
     let dn.ty = dn.ay + dn.ny * dn.out + clamp(my - dn.ay, -20, 20) * 0.28 * dn.near * abs(dn.py)
     prop dn.x = 0 ~lively
     prop dn.y = 0 ~lively
-    follow dn.x = if(dn_drag and dn_moved, dnp.x + dnq.x, dn.tx)
-    follow dn.y = if(dn_drag and dn_moved, dnp.y + dnq.y, dn.ty)
+    // ťahanie: za kurzorom (cursor.x/y od Hyprlandu platí stále; pointer.x iba v pravidle a na tejto vrstve klame)
+    follow dn.x = if(dn_drag and dn_moved, mx, dn.tx)
+    follow dn.y = if(dn_drag and dn_moved, my, dn.ty)
     let dn.r = (31 + 3 * dn.h) * so
     let dn.jit = 0.05 * sin(time * 9 + 3) * dn.h + dn.wob * 0.01
     // základňa na okraji: pri zdvihnutí (okno otvorené) sa stiahne — neostane ostrov; krk sa natiahne a zmizne
@@ -823,10 +819,6 @@ scene Kvapka {
     fact qg_moved = false
     fact qgd.x = 0
     fact qgd.y = 0
-    fact qgp.x = 0
-    fact qgp.y = 0
-    fact qgq.x = 0
-    fact qgq.y = 0
     fact qg_up = false                       // jej okno je otvorené: ostane vystúpená ako ucho v rohu okna
     fact qg_upd = 0                          // softvér: čakajúce aktualizácie (modrá guľka)
     fact qg_hw = 0                           // hardvér: zariadenia, ktoré potrebujú pozornosť (červená guľka)
@@ -849,8 +841,9 @@ scene Kvapka {
     let qg.ty = qg.ay + qg.ny * qg.out + clamp(my - qg.ay, -20, 20) * 0.28 * qg.near * abs(qg.py)
     prop qg.x = 0 ~lively
     prop qg.y = 0 ~lively
-    follow qg.x = if(qg_drag and qg_moved, qgp.x + qgq.x, qg.tx)
-    follow qg.y = if(qg_drag and qg_moved, qgp.y + qgq.y, qg.ty)
+    // ťahanie: za kurzorom (cursor.x/y od Hyprlandu)
+    follow qg.x = if(qg_drag and qg_moved, mx, qg.tx)
+    follow qg.y = if(qg_drag and qg_moved, my, qg.ty)
     let qg.r = (30 + 3 * qg.h) * so
     let qg.jit = 0.05 * sin(time * 9 + 5) * qg.h + qg.wob * 0.01
     // základňa na okraji: pri zdvihnutí (okno otvorené) sa stiahne — neostane ostrov; krk sa natiahne a zmizne
@@ -1407,10 +1400,6 @@ scene Kvapka {
     fact wmoved = false
     fact wd.x = 0
     fact wd.y = 0
-    fact wp0.x = 0                           // ťahanie: miesto stlačenia + posun (pointer.x iba v pravidle)
-    fact wp0.y = 0
-    fact wq.x = 0
-    fact wq.y = 0
     fact wd.w = 1920
     fact wd.h = 1080
     event w_click ->
@@ -1428,8 +1417,8 @@ scene Kvapka {
     let wt.y.0 = wa.y.0 + wn.y.0 * wout.0 + clamp(my - wa.y.0, -18, 18) * 0.28 * wnear.0 * (1 - abs(wn.y.0))
     prop wp.x.0 = 0 ~lively
     prop wp.y.0 = 0 ~lively
-    follow wp.x.0 = if(wdrag == 0 and wmoved, wp0.x + wq.x, wt.x.0)
-    follow wp.y.0 = if(wdrag == 0 and wmoved, wp0.y + wq.y, wt.y.0)
+    follow wp.x.0 = if(wdrag == 0 and wmoved, mx, wt.x.0)
+    follow wp.y.0 = if(wdrag == 0 and wmoved, my, wt.y.0)
     prop wb.0 = 0 ~lively
     follow wb.0 = if(0 < wdg.count, 1, 0)
     prop wh.0 = 0 ~lively
@@ -1447,8 +1436,8 @@ scene Kvapka {
     let wt.y.1 = wa.y.1 + wn.y.1 * wout.1 + clamp(my - wa.y.1, -18, 18) * 0.28 * wnear.1 * (1 - abs(wn.y.1))
     prop wp.x.1 = 0 ~lively
     prop wp.y.1 = 0 ~lively
-    follow wp.x.1 = if(wdrag == 1 and wmoved, wp0.x + wq.x, wt.x.1)
-    follow wp.y.1 = if(wdrag == 1 and wmoved, wp0.y + wq.y, wt.y.1)
+    follow wp.x.1 = if(wdrag == 1 and wmoved, mx, wt.x.1)
+    follow wp.y.1 = if(wdrag == 1 and wmoved, my, wt.y.1)
     prop wb.1 = 0 ~lively
     follow wb.1 = if(1 < wdg.count, 1, 0)
     prop wh.1 = 0 ~lively
@@ -1466,8 +1455,8 @@ scene Kvapka {
     let wt.y.2 = wa.y.2 + wn.y.2 * wout.2 + clamp(my - wa.y.2, -18, 18) * 0.28 * wnear.2 * (1 - abs(wn.y.2))
     prop wp.x.2 = 0 ~lively
     prop wp.y.2 = 0 ~lively
-    follow wp.x.2 = if(wdrag == 2 and wmoved, wp0.x + wq.x, wt.x.2)
-    follow wp.y.2 = if(wdrag == 2 and wmoved, wp0.y + wq.y, wt.y.2)
+    follow wp.x.2 = if(wdrag == 2 and wmoved, mx, wt.x.2)
+    follow wp.y.2 = if(wdrag == 2 and wmoved, my, wt.y.2)
     prop wb.2 = 0 ~lively
     follow wb.2 = if(2 < wdg.count, 1, 0)
     prop wh.2 = 0 ~lively
@@ -1485,8 +1474,8 @@ scene Kvapka {
     let wt.y.3 = wa.y.3 + wn.y.3 * wout.3 + clamp(my - wa.y.3, -18, 18) * 0.28 * wnear.3 * (1 - abs(wn.y.3))
     prop wp.x.3 = 0 ~lively
     prop wp.y.3 = 0 ~lively
-    follow wp.x.3 = if(wdrag == 3 and wmoved, wp0.x + wq.x, wt.x.3)
-    follow wp.y.3 = if(wdrag == 3 and wmoved, wp0.y + wq.y, wt.y.3)
+    follow wp.x.3 = if(wdrag == 3 and wmoved, mx, wt.x.3)
+    follow wp.y.3 = if(wdrag == 3 and wmoved, my, wt.y.3)
     prop wb.3 = 0 ~lively
     follow wb.3 = if(3 < wdg.count, 1, 0)
     prop wh.3 = 0 ~lively
@@ -1504,8 +1493,8 @@ scene Kvapka {
     let wt.y.4 = wa.y.4 + wn.y.4 * wout.4 + clamp(my - wa.y.4, -18, 18) * 0.28 * wnear.4 * (1 - abs(wn.y.4))
     prop wp.x.4 = 0 ~lively
     prop wp.y.4 = 0 ~lively
-    follow wp.x.4 = if(wdrag == 4 and wmoved, wp0.x + wq.x, wt.x.4)
-    follow wp.y.4 = if(wdrag == 4 and wmoved, wp0.y + wq.y, wt.y.4)
+    follow wp.x.4 = if(wdrag == 4 and wmoved, mx, wt.x.4)
+    follow wp.y.4 = if(wdrag == 4 and wmoved, my, wt.y.4)
     prop wb.4 = 0 ~lively
     follow wb.4 = if(4 < wdg.count, 1, 0)
     prop wh.4 = 0 ~lively
@@ -1523,8 +1512,8 @@ scene Kvapka {
     let wt.y.5 = wa.y.5 + wn.y.5 * wout.5 + clamp(my - wa.y.5, -18, 18) * 0.28 * wnear.5 * (1 - abs(wn.y.5))
     prop wp.x.5 = 0 ~lively
     prop wp.y.5 = 0 ~lively
-    follow wp.x.5 = if(wdrag == 5 and wmoved, wp0.x + wq.x, wt.x.5)
-    follow wp.y.5 = if(wdrag == 5 and wmoved, wp0.y + wq.y, wt.y.5)
+    follow wp.x.5 = if(wdrag == 5 and wmoved, mx, wt.x.5)
+    follow wp.y.5 = if(wdrag == 5 and wmoved, my, wt.y.5)
     prop wb.5 = 0 ~lively
     follow wb.5 = if(5 < wdg.count, 1, 0)
     prop wh.5 = 0 ~lively
@@ -1542,8 +1531,8 @@ scene Kvapka {
     let wt.y.6 = wa.y.6 + wn.y.6 * wout.6 + clamp(my - wa.y.6, -18, 18) * 0.28 * wnear.6 * (1 - abs(wn.y.6))
     prop wp.x.6 = 0 ~lively
     prop wp.y.6 = 0 ~lively
-    follow wp.x.6 = if(wdrag == 6 and wmoved, wp0.x + wq.x, wt.x.6)
-    follow wp.y.6 = if(wdrag == 6 and wmoved, wp0.y + wq.y, wt.y.6)
+    follow wp.x.6 = if(wdrag == 6 and wmoved, mx, wt.x.6)
+    follow wp.y.6 = if(wdrag == 6 and wmoved, my, wt.y.6)
     prop wb.6 = 0 ~lively
     follow wb.6 = if(6 < wdg.count, 1, 0)
     prop wh.6 = 0 ~lively
@@ -1561,8 +1550,8 @@ scene Kvapka {
     let wt.y.7 = wa.y.7 + wn.y.7 * wout.7 + clamp(my - wa.y.7, -18, 18) * 0.28 * wnear.7 * (1 - abs(wn.y.7))
     prop wp.x.7 = 0 ~lively
     prop wp.y.7 = 0 ~lively
-    follow wp.x.7 = if(wdrag == 7 and wmoved, wp0.x + wq.x, wt.x.7)
-    follow wp.y.7 = if(wdrag == 7 and wmoved, wp0.y + wq.y, wt.y.7)
+    follow wp.x.7 = if(wdrag == 7 and wmoved, mx, wt.x.7)
+    follow wp.y.7 = if(wdrag == 7 and wmoved, my, wt.y.7)
     prop wb.7 = 0 ~lively
     follow wb.7 = if(7 < wdg.count, 1, 0)
     prop wh.7 = 0 ~lively
@@ -1580,8 +1569,8 @@ scene Kvapka {
     let wt.y.8 = wa.y.8 + wn.y.8 * wout.8 + clamp(my - wa.y.8, -18, 18) * 0.28 * wnear.8 * (1 - abs(wn.y.8))
     prop wp.x.8 = 0 ~lively
     prop wp.y.8 = 0 ~lively
-    follow wp.x.8 = if(wdrag == 8 and wmoved, wp0.x + wq.x, wt.x.8)
-    follow wp.y.8 = if(wdrag == 8 and wmoved, wp0.y + wq.y, wt.y.8)
+    follow wp.x.8 = if(wdrag == 8 and wmoved, mx, wt.x.8)
+    follow wp.y.8 = if(wdrag == 8 and wmoved, my, wt.y.8)
     prop wb.8 = 0 ~lively
     follow wb.8 = if(8 < wdg.count, 1, 0)
     prop wh.8 = 0 ~lively
@@ -1599,8 +1588,8 @@ scene Kvapka {
     let wt.y.9 = wa.y.9 + wn.y.9 * wout.9 + clamp(my - wa.y.9, -18, 18) * 0.28 * wnear.9 * (1 - abs(wn.y.9))
     prop wp.x.9 = 0 ~lively
     prop wp.y.9 = 0 ~lively
-    follow wp.x.9 = if(wdrag == 9 and wmoved, wp0.x + wq.x, wt.x.9)
-    follow wp.y.9 = if(wdrag == 9 and wmoved, wp0.y + wq.y, wt.y.9)
+    follow wp.x.9 = if(wdrag == 9 and wmoved, mx, wt.x.9)
+    follow wp.y.9 = if(wdrag == 9 and wmoved, my, wt.y.9)
     prop wb.9 = 0 ~lively
     follow wb.9 = if(9 < wdg.count, 1, 0)
     prop wh.9 = 0 ~lively
@@ -1618,8 +1607,8 @@ scene Kvapka {
     let wt.y.10 = wa.y.10 + wn.y.10 * wout.10 + clamp(my - wa.y.10, -18, 18) * 0.28 * wnear.10 * (1 - abs(wn.y.10))
     prop wp.x.10 = 0 ~lively
     prop wp.y.10 = 0 ~lively
-    follow wp.x.10 = if(wdrag == 10 and wmoved, wp0.x + wq.x, wt.x.10)
-    follow wp.y.10 = if(wdrag == 10 and wmoved, wp0.y + wq.y, wt.y.10)
+    follow wp.x.10 = if(wdrag == 10 and wmoved, mx, wt.x.10)
+    follow wp.y.10 = if(wdrag == 10 and wmoved, my, wt.y.10)
     prop wb.10 = 0 ~lively
     follow wb.10 = if(10 < wdg.count, 1, 0)
     prop wh.10 = 0 ~lively
@@ -1637,8 +1626,8 @@ scene Kvapka {
     let wt.y.11 = wa.y.11 + wn.y.11 * wout.11 + clamp(my - wa.y.11, -18, 18) * 0.28 * wnear.11 * (1 - abs(wn.y.11))
     prop wp.x.11 = 0 ~lively
     prop wp.y.11 = 0 ~lively
-    follow wp.x.11 = if(wdrag == 11 and wmoved, wp0.x + wq.x, wt.x.11)
-    follow wp.y.11 = if(wdrag == 11 and wmoved, wp0.y + wq.y, wt.y.11)
+    follow wp.x.11 = if(wdrag == 11 and wmoved, mx, wt.x.11)
+    follow wp.y.11 = if(wdrag == 11 and wmoved, my, wt.y.11)
     prop wb.11 = 0 ~lively
     follow wb.11 = if(11 < wdg.count, 1, 0)
     prop wh.11 = 0 ~lively
@@ -1694,12 +1683,11 @@ scene Kvapka {
     image wdg.0.icon { at: wp.x.0 - 12, wp.y.0 - 12; size: 24, 24; opacity: wb.0 * if(wdg.0.on, 100%, 55%); show: 0 < wdg.count and not wdg.0.mono }
     text wdg.0.val { at: wp.x.0, wp.y.0 + 11; anchor: center; size: 9; weight: 700; color: ink; opacity: 85% * wb.0; show: 0 < wdg.count }
     zone ellipse w_hit.0 { at: wp.x.0, wp.y.0; radius: 24; cursor: pointer; active: 0 < wdg.count and not dash }
-    on press w_hit.0 { wdrag = 0; wmoved = false; wd.w = W; wd.h = H; wp0.x = pointer.x; wp0.y = pointer.y; wq.x = 0; wq.y = 0 }
-    on drag w_hit.0 while wdrag == 0 { wq.x = drag.dx; wq.y = drag.dy }
+    on press w_hit.0 { wdrag = 0; wmoved = false; wd.w = W; wd.h = H }
     on drag w_hit.0 while wdrag == 0 and abs(drag.dx) + abs(drag.dy) > 6 { wmoved = true }
-    on release w_hit.0 while wdrag == 0 and wmoved { wd.x = pointer.x; wd.y = pointer.y; impulse wwob.0 300; emit w_drop(0); wmoved = false; wdrag = -1 }
+    on release w_hit.0 while wdrag == 0 and wmoved { wd.x = mx; wd.y = my; impulse wwob.0 300; emit w_drop(0); wmoved = false; wdrag = -1 }
     on release w_hit.0 while wdrag == 0 and not wmoved { wdrag = -1; impulse wwob.0 120; emit w_click(0) }
-    on press right w_hit.0 while wdg.0.right { impulse wwob.0 120; ctx.x = pointer.x - 20; ctx.y = pointer.y - 20 - 34 * 4; emit w_right(0) }
+    on press right w_hit.0 while wdg.0.right { impulse wwob.0 120; ctx.x = mx - 20; ctx.y = my - 20 - 34 * 4; emit w_right(0) }
     on scroll w_hit.0 while wdg.0.wheel { emit w_wheel(0 * 2 + if(wheel > 0, 1, 0)) }
     on enter w_hit.0 { wh.0: 1 }
     on leave w_hit.0 { wh.0: 0 }
@@ -1708,12 +1696,11 @@ scene Kvapka {
     image wdg.1.icon { at: wp.x.1 - 12, wp.y.1 - 12; size: 24, 24; opacity: wb.1 * if(wdg.1.on, 100%, 55%); show: 1 < wdg.count and not wdg.1.mono }
     text wdg.1.val { at: wp.x.1, wp.y.1 + 11; anchor: center; size: 9; weight: 700; color: ink; opacity: 85% * wb.1; show: 1 < wdg.count }
     zone ellipse w_hit.1 { at: wp.x.1, wp.y.1; radius: 24; cursor: pointer; active: 1 < wdg.count and not dash }
-    on press w_hit.1 { wdrag = 1; wmoved = false; wd.w = W; wd.h = H; wp0.x = pointer.x; wp0.y = pointer.y; wq.x = 0; wq.y = 0 }
-    on drag w_hit.1 while wdrag == 1 { wq.x = drag.dx; wq.y = drag.dy }
+    on press w_hit.1 { wdrag = 1; wmoved = false; wd.w = W; wd.h = H }
     on drag w_hit.1 while wdrag == 1 and abs(drag.dx) + abs(drag.dy) > 6 { wmoved = true }
-    on release w_hit.1 while wdrag == 1 and wmoved { wd.x = pointer.x; wd.y = pointer.y; impulse wwob.1 300; emit w_drop(1); wmoved = false; wdrag = -1 }
+    on release w_hit.1 while wdrag == 1 and wmoved { wd.x = mx; wd.y = my; impulse wwob.1 300; emit w_drop(1); wmoved = false; wdrag = -1 }
     on release w_hit.1 while wdrag == 1 and not wmoved { wdrag = -1; impulse wwob.1 120; emit w_click(1) }
-    on press right w_hit.1 while wdg.1.right { impulse wwob.1 120; ctx.x = pointer.x - 20; ctx.y = pointer.y - 20 - 34 * 4; emit w_right(1) }
+    on press right w_hit.1 while wdg.1.right { impulse wwob.1 120; ctx.x = mx - 20; ctx.y = my - 20 - 34 * 4; emit w_right(1) }
     on scroll w_hit.1 while wdg.1.wheel { emit w_wheel(1 * 2 + if(wheel > 0, 1, 0)) }
     on enter w_hit.1 { wh.1: 1 }
     on leave w_hit.1 { wh.1: 0 }
@@ -1722,12 +1709,11 @@ scene Kvapka {
     image wdg.2.icon { at: wp.x.2 - 12, wp.y.2 - 12; size: 24, 24; opacity: wb.2 * if(wdg.2.on, 100%, 55%); show: 2 < wdg.count and not wdg.2.mono }
     text wdg.2.val { at: wp.x.2, wp.y.2 + 11; anchor: center; size: 9; weight: 700; color: ink; opacity: 85% * wb.2; show: 2 < wdg.count }
     zone ellipse w_hit.2 { at: wp.x.2, wp.y.2; radius: 24; cursor: pointer; active: 2 < wdg.count and not dash }
-    on press w_hit.2 { wdrag = 2; wmoved = false; wd.w = W; wd.h = H; wp0.x = pointer.x; wp0.y = pointer.y; wq.x = 0; wq.y = 0 }
-    on drag w_hit.2 while wdrag == 2 { wq.x = drag.dx; wq.y = drag.dy }
+    on press w_hit.2 { wdrag = 2; wmoved = false; wd.w = W; wd.h = H }
     on drag w_hit.2 while wdrag == 2 and abs(drag.dx) + abs(drag.dy) > 6 { wmoved = true }
-    on release w_hit.2 while wdrag == 2 and wmoved { wd.x = pointer.x; wd.y = pointer.y; impulse wwob.2 300; emit w_drop(2); wmoved = false; wdrag = -1 }
+    on release w_hit.2 while wdrag == 2 and wmoved { wd.x = mx; wd.y = my; impulse wwob.2 300; emit w_drop(2); wmoved = false; wdrag = -1 }
     on release w_hit.2 while wdrag == 2 and not wmoved { wdrag = -1; impulse wwob.2 120; emit w_click(2) }
-    on press right w_hit.2 while wdg.2.right { impulse wwob.2 120; ctx.x = pointer.x - 20; ctx.y = pointer.y - 20 - 34 * 4; emit w_right(2) }
+    on press right w_hit.2 while wdg.2.right { impulse wwob.2 120; ctx.x = mx - 20; ctx.y = my - 20 - 34 * 4; emit w_right(2) }
     on scroll w_hit.2 while wdg.2.wheel { emit w_wheel(2 * 2 + if(wheel > 0, 1, 0)) }
     on enter w_hit.2 { wh.2: 1 }
     on leave w_hit.2 { wh.2: 0 }
@@ -1736,12 +1722,11 @@ scene Kvapka {
     image wdg.3.icon { at: wp.x.3 - 12, wp.y.3 - 12; size: 24, 24; opacity: wb.3 * if(wdg.3.on, 100%, 55%); show: 3 < wdg.count and not wdg.3.mono }
     text wdg.3.val { at: wp.x.3, wp.y.3 + 11; anchor: center; size: 9; weight: 700; color: ink; opacity: 85% * wb.3; show: 3 < wdg.count }
     zone ellipse w_hit.3 { at: wp.x.3, wp.y.3; radius: 24; cursor: pointer; active: 3 < wdg.count and not dash }
-    on press w_hit.3 { wdrag = 3; wmoved = false; wd.w = W; wd.h = H; wp0.x = pointer.x; wp0.y = pointer.y; wq.x = 0; wq.y = 0 }
-    on drag w_hit.3 while wdrag == 3 { wq.x = drag.dx; wq.y = drag.dy }
+    on press w_hit.3 { wdrag = 3; wmoved = false; wd.w = W; wd.h = H }
     on drag w_hit.3 while wdrag == 3 and abs(drag.dx) + abs(drag.dy) > 6 { wmoved = true }
-    on release w_hit.3 while wdrag == 3 and wmoved { wd.x = pointer.x; wd.y = pointer.y; impulse wwob.3 300; emit w_drop(3); wmoved = false; wdrag = -1 }
+    on release w_hit.3 while wdrag == 3 and wmoved { wd.x = mx; wd.y = my; impulse wwob.3 300; emit w_drop(3); wmoved = false; wdrag = -1 }
     on release w_hit.3 while wdrag == 3 and not wmoved { wdrag = -1; impulse wwob.3 120; emit w_click(3) }
-    on press right w_hit.3 while wdg.3.right { impulse wwob.3 120; ctx.x = pointer.x - 20; ctx.y = pointer.y - 20 - 34 * 4; emit w_right(3) }
+    on press right w_hit.3 while wdg.3.right { impulse wwob.3 120; ctx.x = mx - 20; ctx.y = my - 20 - 34 * 4; emit w_right(3) }
     on scroll w_hit.3 while wdg.3.wheel { emit w_wheel(3 * 2 + if(wheel > 0, 1, 0)) }
     on enter w_hit.3 { wh.3: 1 }
     on leave w_hit.3 { wh.3: 0 }
@@ -1750,12 +1735,11 @@ scene Kvapka {
     image wdg.4.icon { at: wp.x.4 - 12, wp.y.4 - 12; size: 24, 24; opacity: wb.4 * if(wdg.4.on, 100%, 55%); show: 4 < wdg.count and not wdg.4.mono }
     text wdg.4.val { at: wp.x.4, wp.y.4 + 11; anchor: center; size: 9; weight: 700; color: ink; opacity: 85% * wb.4; show: 4 < wdg.count }
     zone ellipse w_hit.4 { at: wp.x.4, wp.y.4; radius: 24; cursor: pointer; active: 4 < wdg.count and not dash }
-    on press w_hit.4 { wdrag = 4; wmoved = false; wd.w = W; wd.h = H; wp0.x = pointer.x; wp0.y = pointer.y; wq.x = 0; wq.y = 0 }
-    on drag w_hit.4 while wdrag == 4 { wq.x = drag.dx; wq.y = drag.dy }
+    on press w_hit.4 { wdrag = 4; wmoved = false; wd.w = W; wd.h = H }
     on drag w_hit.4 while wdrag == 4 and abs(drag.dx) + abs(drag.dy) > 6 { wmoved = true }
-    on release w_hit.4 while wdrag == 4 and wmoved { wd.x = pointer.x; wd.y = pointer.y; impulse wwob.4 300; emit w_drop(4); wmoved = false; wdrag = -1 }
+    on release w_hit.4 while wdrag == 4 and wmoved { wd.x = mx; wd.y = my; impulse wwob.4 300; emit w_drop(4); wmoved = false; wdrag = -1 }
     on release w_hit.4 while wdrag == 4 and not wmoved { wdrag = -1; impulse wwob.4 120; emit w_click(4) }
-    on press right w_hit.4 while wdg.4.right { impulse wwob.4 120; ctx.x = pointer.x - 20; ctx.y = pointer.y - 20 - 34 * 4; emit w_right(4) }
+    on press right w_hit.4 while wdg.4.right { impulse wwob.4 120; ctx.x = mx - 20; ctx.y = my - 20 - 34 * 4; emit w_right(4) }
     on scroll w_hit.4 while wdg.4.wheel { emit w_wheel(4 * 2 + if(wheel > 0, 1, 0)) }
     on enter w_hit.4 { wh.4: 1 }
     on leave w_hit.4 { wh.4: 0 }
@@ -1764,12 +1748,11 @@ scene Kvapka {
     image wdg.5.icon { at: wp.x.5 - 12, wp.y.5 - 12; size: 24, 24; opacity: wb.5 * if(wdg.5.on, 100%, 55%); show: 5 < wdg.count and not wdg.5.mono }
     text wdg.5.val { at: wp.x.5, wp.y.5 + 11; anchor: center; size: 9; weight: 700; color: ink; opacity: 85% * wb.5; show: 5 < wdg.count }
     zone ellipse w_hit.5 { at: wp.x.5, wp.y.5; radius: 24; cursor: pointer; active: 5 < wdg.count and not dash }
-    on press w_hit.5 { wdrag = 5; wmoved = false; wd.w = W; wd.h = H; wp0.x = pointer.x; wp0.y = pointer.y; wq.x = 0; wq.y = 0 }
-    on drag w_hit.5 while wdrag == 5 { wq.x = drag.dx; wq.y = drag.dy }
+    on press w_hit.5 { wdrag = 5; wmoved = false; wd.w = W; wd.h = H }
     on drag w_hit.5 while wdrag == 5 and abs(drag.dx) + abs(drag.dy) > 6 { wmoved = true }
-    on release w_hit.5 while wdrag == 5 and wmoved { wd.x = pointer.x; wd.y = pointer.y; impulse wwob.5 300; emit w_drop(5); wmoved = false; wdrag = -1 }
+    on release w_hit.5 while wdrag == 5 and wmoved { wd.x = mx; wd.y = my; impulse wwob.5 300; emit w_drop(5); wmoved = false; wdrag = -1 }
     on release w_hit.5 while wdrag == 5 and not wmoved { wdrag = -1; impulse wwob.5 120; emit w_click(5) }
-    on press right w_hit.5 while wdg.5.right { impulse wwob.5 120; ctx.x = pointer.x - 20; ctx.y = pointer.y - 20 - 34 * 4; emit w_right(5) }
+    on press right w_hit.5 while wdg.5.right { impulse wwob.5 120; ctx.x = mx - 20; ctx.y = my - 20 - 34 * 4; emit w_right(5) }
     on scroll w_hit.5 while wdg.5.wheel { emit w_wheel(5 * 2 + if(wheel > 0, 1, 0)) }
     on enter w_hit.5 { wh.5: 1 }
     on leave w_hit.5 { wh.5: 0 }
@@ -1778,12 +1761,11 @@ scene Kvapka {
     image wdg.6.icon { at: wp.x.6 - 12, wp.y.6 - 12; size: 24, 24; opacity: wb.6 * if(wdg.6.on, 100%, 55%); show: 6 < wdg.count and not wdg.6.mono }
     text wdg.6.val { at: wp.x.6, wp.y.6 + 11; anchor: center; size: 9; weight: 700; color: ink; opacity: 85% * wb.6; show: 6 < wdg.count }
     zone ellipse w_hit.6 { at: wp.x.6, wp.y.6; radius: 24; cursor: pointer; active: 6 < wdg.count and not dash }
-    on press w_hit.6 { wdrag = 6; wmoved = false; wd.w = W; wd.h = H; wp0.x = pointer.x; wp0.y = pointer.y; wq.x = 0; wq.y = 0 }
-    on drag w_hit.6 while wdrag == 6 { wq.x = drag.dx; wq.y = drag.dy }
+    on press w_hit.6 { wdrag = 6; wmoved = false; wd.w = W; wd.h = H }
     on drag w_hit.6 while wdrag == 6 and abs(drag.dx) + abs(drag.dy) > 6 { wmoved = true }
-    on release w_hit.6 while wdrag == 6 and wmoved { wd.x = pointer.x; wd.y = pointer.y; impulse wwob.6 300; emit w_drop(6); wmoved = false; wdrag = -1 }
+    on release w_hit.6 while wdrag == 6 and wmoved { wd.x = mx; wd.y = my; impulse wwob.6 300; emit w_drop(6); wmoved = false; wdrag = -1 }
     on release w_hit.6 while wdrag == 6 and not wmoved { wdrag = -1; impulse wwob.6 120; emit w_click(6) }
-    on press right w_hit.6 while wdg.6.right { impulse wwob.6 120; ctx.x = pointer.x - 20; ctx.y = pointer.y - 20 - 34 * 4; emit w_right(6) }
+    on press right w_hit.6 while wdg.6.right { impulse wwob.6 120; ctx.x = mx - 20; ctx.y = my - 20 - 34 * 4; emit w_right(6) }
     on scroll w_hit.6 while wdg.6.wheel { emit w_wheel(6 * 2 + if(wheel > 0, 1, 0)) }
     on enter w_hit.6 { wh.6: 1 }
     on leave w_hit.6 { wh.6: 0 }
@@ -1792,12 +1774,11 @@ scene Kvapka {
     image wdg.7.icon { at: wp.x.7 - 12, wp.y.7 - 12; size: 24, 24; opacity: wb.7 * if(wdg.7.on, 100%, 55%); show: 7 < wdg.count and not wdg.7.mono }
     text wdg.7.val { at: wp.x.7, wp.y.7 + 11; anchor: center; size: 9; weight: 700; color: ink; opacity: 85% * wb.7; show: 7 < wdg.count }
     zone ellipse w_hit.7 { at: wp.x.7, wp.y.7; radius: 24; cursor: pointer; active: 7 < wdg.count and not dash }
-    on press w_hit.7 { wdrag = 7; wmoved = false; wd.w = W; wd.h = H; wp0.x = pointer.x; wp0.y = pointer.y; wq.x = 0; wq.y = 0 }
-    on drag w_hit.7 while wdrag == 7 { wq.x = drag.dx; wq.y = drag.dy }
+    on press w_hit.7 { wdrag = 7; wmoved = false; wd.w = W; wd.h = H }
     on drag w_hit.7 while wdrag == 7 and abs(drag.dx) + abs(drag.dy) > 6 { wmoved = true }
-    on release w_hit.7 while wdrag == 7 and wmoved { wd.x = pointer.x; wd.y = pointer.y; impulse wwob.7 300; emit w_drop(7); wmoved = false; wdrag = -1 }
+    on release w_hit.7 while wdrag == 7 and wmoved { wd.x = mx; wd.y = my; impulse wwob.7 300; emit w_drop(7); wmoved = false; wdrag = -1 }
     on release w_hit.7 while wdrag == 7 and not wmoved { wdrag = -1; impulse wwob.7 120; emit w_click(7) }
-    on press right w_hit.7 while wdg.7.right { impulse wwob.7 120; ctx.x = pointer.x - 20; ctx.y = pointer.y - 20 - 34 * 4; emit w_right(7) }
+    on press right w_hit.7 while wdg.7.right { impulse wwob.7 120; ctx.x = mx - 20; ctx.y = my - 20 - 34 * 4; emit w_right(7) }
     on scroll w_hit.7 while wdg.7.wheel { emit w_wheel(7 * 2 + if(wheel > 0, 1, 0)) }
     on enter w_hit.7 { wh.7: 1 }
     on leave w_hit.7 { wh.7: 0 }
@@ -1806,12 +1787,11 @@ scene Kvapka {
     image wdg.8.icon { at: wp.x.8 - 12, wp.y.8 - 12; size: 24, 24; opacity: wb.8 * if(wdg.8.on, 100%, 55%); show: 8 < wdg.count and not wdg.8.mono }
     text wdg.8.val { at: wp.x.8, wp.y.8 + 11; anchor: center; size: 9; weight: 700; color: ink; opacity: 85% * wb.8; show: 8 < wdg.count }
     zone ellipse w_hit.8 { at: wp.x.8, wp.y.8; radius: 24; cursor: pointer; active: 8 < wdg.count and not dash }
-    on press w_hit.8 { wdrag = 8; wmoved = false; wd.w = W; wd.h = H; wp0.x = pointer.x; wp0.y = pointer.y; wq.x = 0; wq.y = 0 }
-    on drag w_hit.8 while wdrag == 8 { wq.x = drag.dx; wq.y = drag.dy }
+    on press w_hit.8 { wdrag = 8; wmoved = false; wd.w = W; wd.h = H }
     on drag w_hit.8 while wdrag == 8 and abs(drag.dx) + abs(drag.dy) > 6 { wmoved = true }
-    on release w_hit.8 while wdrag == 8 and wmoved { wd.x = pointer.x; wd.y = pointer.y; impulse wwob.8 300; emit w_drop(8); wmoved = false; wdrag = -1 }
+    on release w_hit.8 while wdrag == 8 and wmoved { wd.x = mx; wd.y = my; impulse wwob.8 300; emit w_drop(8); wmoved = false; wdrag = -1 }
     on release w_hit.8 while wdrag == 8 and not wmoved { wdrag = -1; impulse wwob.8 120; emit w_click(8) }
-    on press right w_hit.8 while wdg.8.right { impulse wwob.8 120; ctx.x = pointer.x - 20; ctx.y = pointer.y - 20 - 34 * 4; emit w_right(8) }
+    on press right w_hit.8 while wdg.8.right { impulse wwob.8 120; ctx.x = mx - 20; ctx.y = my - 20 - 34 * 4; emit w_right(8) }
     on scroll w_hit.8 while wdg.8.wheel { emit w_wheel(8 * 2 + if(wheel > 0, 1, 0)) }
     on enter w_hit.8 { wh.8: 1 }
     on leave w_hit.8 { wh.8: 0 }
@@ -1820,12 +1800,11 @@ scene Kvapka {
     image wdg.9.icon { at: wp.x.9 - 12, wp.y.9 - 12; size: 24, 24; opacity: wb.9 * if(wdg.9.on, 100%, 55%); show: 9 < wdg.count and not wdg.9.mono }
     text wdg.9.val { at: wp.x.9, wp.y.9 + 11; anchor: center; size: 9; weight: 700; color: ink; opacity: 85% * wb.9; show: 9 < wdg.count }
     zone ellipse w_hit.9 { at: wp.x.9, wp.y.9; radius: 24; cursor: pointer; active: 9 < wdg.count and not dash }
-    on press w_hit.9 { wdrag = 9; wmoved = false; wd.w = W; wd.h = H; wp0.x = pointer.x; wp0.y = pointer.y; wq.x = 0; wq.y = 0 }
-    on drag w_hit.9 while wdrag == 9 { wq.x = drag.dx; wq.y = drag.dy }
+    on press w_hit.9 { wdrag = 9; wmoved = false; wd.w = W; wd.h = H }
     on drag w_hit.9 while wdrag == 9 and abs(drag.dx) + abs(drag.dy) > 6 { wmoved = true }
-    on release w_hit.9 while wdrag == 9 and wmoved { wd.x = pointer.x; wd.y = pointer.y; impulse wwob.9 300; emit w_drop(9); wmoved = false; wdrag = -1 }
+    on release w_hit.9 while wdrag == 9 and wmoved { wd.x = mx; wd.y = my; impulse wwob.9 300; emit w_drop(9); wmoved = false; wdrag = -1 }
     on release w_hit.9 while wdrag == 9 and not wmoved { wdrag = -1; impulse wwob.9 120; emit w_click(9) }
-    on press right w_hit.9 while wdg.9.right { impulse wwob.9 120; ctx.x = pointer.x - 20; ctx.y = pointer.y - 20 - 34 * 4; emit w_right(9) }
+    on press right w_hit.9 while wdg.9.right { impulse wwob.9 120; ctx.x = mx - 20; ctx.y = my - 20 - 34 * 4; emit w_right(9) }
     on scroll w_hit.9 while wdg.9.wheel { emit w_wheel(9 * 2 + if(wheel > 0, 1, 0)) }
     on enter w_hit.9 { wh.9: 1 }
     on leave w_hit.9 { wh.9: 0 }
@@ -1834,12 +1813,11 @@ scene Kvapka {
     image wdg.10.icon { at: wp.x.10 - 12, wp.y.10 - 12; size: 24, 24; opacity: wb.10 * if(wdg.10.on, 100%, 55%); show: 10 < wdg.count and not wdg.10.mono }
     text wdg.10.val { at: wp.x.10, wp.y.10 + 11; anchor: center; size: 9; weight: 700; color: ink; opacity: 85% * wb.10; show: 10 < wdg.count }
     zone ellipse w_hit.10 { at: wp.x.10, wp.y.10; radius: 24; cursor: pointer; active: 10 < wdg.count and not dash }
-    on press w_hit.10 { wdrag = 10; wmoved = false; wd.w = W; wd.h = H; wp0.x = pointer.x; wp0.y = pointer.y; wq.x = 0; wq.y = 0 }
-    on drag w_hit.10 while wdrag == 10 { wq.x = drag.dx; wq.y = drag.dy }
+    on press w_hit.10 { wdrag = 10; wmoved = false; wd.w = W; wd.h = H }
     on drag w_hit.10 while wdrag == 10 and abs(drag.dx) + abs(drag.dy) > 6 { wmoved = true }
-    on release w_hit.10 while wdrag == 10 and wmoved { wd.x = pointer.x; wd.y = pointer.y; impulse wwob.10 300; emit w_drop(10); wmoved = false; wdrag = -1 }
+    on release w_hit.10 while wdrag == 10 and wmoved { wd.x = mx; wd.y = my; impulse wwob.10 300; emit w_drop(10); wmoved = false; wdrag = -1 }
     on release w_hit.10 while wdrag == 10 and not wmoved { wdrag = -1; impulse wwob.10 120; emit w_click(10) }
-    on press right w_hit.10 while wdg.10.right { impulse wwob.10 120; ctx.x = pointer.x - 20; ctx.y = pointer.y - 20 - 34 * 4; emit w_right(10) }
+    on press right w_hit.10 while wdg.10.right { impulse wwob.10 120; ctx.x = mx - 20; ctx.y = my - 20 - 34 * 4; emit w_right(10) }
     on scroll w_hit.10 while wdg.10.wheel { emit w_wheel(10 * 2 + if(wheel > 0, 1, 0)) }
     on enter w_hit.10 { wh.10: 1 }
     on leave w_hit.10 { wh.10: 0 }
@@ -1848,12 +1826,11 @@ scene Kvapka {
     image wdg.11.icon { at: wp.x.11 - 12, wp.y.11 - 12; size: 24, 24; opacity: wb.11 * if(wdg.11.on, 100%, 55%); show: 11 < wdg.count and not wdg.11.mono }
     text wdg.11.val { at: wp.x.11, wp.y.11 + 11; anchor: center; size: 9; weight: 700; color: ink; opacity: 85% * wb.11; show: 11 < wdg.count }
     zone ellipse w_hit.11 { at: wp.x.11, wp.y.11; radius: 24; cursor: pointer; active: 11 < wdg.count and not dash }
-    on press w_hit.11 { wdrag = 11; wmoved = false; wd.w = W; wd.h = H; wp0.x = pointer.x; wp0.y = pointer.y; wq.x = 0; wq.y = 0 }
-    on drag w_hit.11 while wdrag == 11 { wq.x = drag.dx; wq.y = drag.dy }
+    on press w_hit.11 { wdrag = 11; wmoved = false; wd.w = W; wd.h = H }
     on drag w_hit.11 while wdrag == 11 and abs(drag.dx) + abs(drag.dy) > 6 { wmoved = true }
-    on release w_hit.11 while wdrag == 11 and wmoved { wd.x = pointer.x; wd.y = pointer.y; impulse wwob.11 300; emit w_drop(11); wmoved = false; wdrag = -1 }
+    on release w_hit.11 while wdrag == 11 and wmoved { wd.x = mx; wd.y = my; impulse wwob.11 300; emit w_drop(11); wmoved = false; wdrag = -1 }
     on release w_hit.11 while wdrag == 11 and not wmoved { wdrag = -1; impulse wwob.11 120; emit w_click(11) }
-    on press right w_hit.11 while wdg.11.right { impulse wwob.11 120; ctx.x = pointer.x - 20; ctx.y = pointer.y - 20 - 34 * 4; emit w_right(11) }
+    on press right w_hit.11 while wdg.11.right { impulse wwob.11 120; ctx.x = mx - 20; ctx.y = my - 20 - 34 * 4; emit w_right(11) }
     on scroll w_hit.11 while wdg.11.wheel { emit w_wheel(11 * 2 + if(wheel > 0, 1, 0)) }
     on enter w_hit.11 { wh.11: 1 }
     on leave w_hit.11 { wh.11: 0 }
@@ -1870,10 +1847,9 @@ scene Kvapka {
     zone box br_hit.5 { at: brx.5, bry.5; size: 360, 52; cursor: pointer; active: dn_open and 5 < berries.count and bre.5 > 0.9 }
     zone box dn_clr { at: clx, cly; size: 190, 34; cursor: pointer; active: dn_open and berries.count > 0 and cle > 0.9 }
     // DaNoGoo: ľavý klik = hrozno (znova klik, Esc alebo klik mimo = späť), ťahanie = iný okraj, pravý = kalendár
-    on press dn_hit { dn_drag = true; dn_moved = false; wd.w = W; wd.h = H; dnp.x = pointer.x; dnp.y = pointer.y; dnq.x = 0; dnq.y = 0 }
-    on drag dn_hit while dn_drag { dnq.x = drag.dx; dnq.y = drag.dy }
+    on press dn_hit { dn_drag = true; dn_moved = false; wd.w = W; wd.h = H }
     on drag dn_hit while dn_drag and abs(drag.dx) + abs(drag.dy) > 6 { dn_moved = true; dn_open = false; dc_open = false }
-    on release dn_hit while dn_drag and dn_moved { dnd.x = pointer.x; dnd.y = pointer.y; impulse dn.wob 300; emit dn_drop; dn_moved = false; dn_drag = false }
+    on release dn_hit while dn_drag and dn_moved { dnd.x = mx; dnd.y = my; impulse dn.wob 300; emit dn_drop; dn_moved = false; dn_drag = false }
     on release dn_hit while dn_drag and not dn_moved { dn_drag = false; toggle dn_open; dc_open = false; impulse dn.wob 160; dash = false; pmenu = false }
     on press right dn_hit { impulse dn.wob 120; dn_open = false; toggle dc_open; dash = false; pmenu = false; emit dn_cal }
     on enter dn_hit { dn.h: 1 }
@@ -2073,11 +2049,10 @@ scene Kvapka {
     // <<< DaNoGoo zóny
     // >>> QueenGoo zóny (queengoo.py)
     zone ellipse qg_hit { at: qg.x, qg.y; radius: 34; cursor: pointer; active: solo }
-    on press qg_hit { qg_drag = true; qg_moved = false; wd.w = W; wd.h = H; qgp.x = pointer.x; qgp.y = pointer.y; qgq.x = 0; qgq.y = 0 }
-    on drag qg_hit while qg_drag { qgq.x = drag.dx; qgq.y = drag.dy }
+    on press qg_hit { qg_drag = true; qg_moved = false; wd.w = W; wd.h = H }
     on press right qg_hit { impulse qg.wob 140; emit qg_open(1) }
     on drag qg_hit while qg_drag and abs(drag.dx) + abs(drag.dy) > 6 { qg_moved = true }
-    on release qg_hit while qg_drag and qg_moved { qgd.x = pointer.x; qgd.y = pointer.y; impulse qg.wob 300; emit qg_drop; qg_moved = false; qg_drag = false }
+    on release qg_hit while qg_drag and qg_moved { qgd.x = mx; qgd.y = my; impulse qg.wob 300; emit qg_drop; qg_moved = false; qg_drag = false }
     on release qg_hit while qg_drag and not qg_moved { qg_drag = false; impulse qg.wob 160; emit qg_open(0) }
     on enter qg_hit { qg.h: 1 }
     on leave qg_hit { qg.h: 0 }

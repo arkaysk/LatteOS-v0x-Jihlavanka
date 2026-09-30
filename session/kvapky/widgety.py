@@ -18,10 +18,6 @@ out = [A, f'''    // Každá kvapka visí z okraja (side 0 dole, 1 hore, 2 vľav
     fact wmoved = false
     fact wd.x = 0
     fact wd.y = 0
-    fact wp0.x = 0                           // ťahanie: miesto stlačenia + posun (pointer.x iba v pravidle)
-    fact wp0.y = 0
-    fact wq.x = 0
-    fact wq.y = 0
     fact wd.w = 1920
     fact wd.h = 1080
     event w_click ->
@@ -41,8 +37,8 @@ for k in range(N):
     let wt.y.{k} = wa.y.{k} + wn.y.{k} * wout.{k} + clamp(my - wa.y.{k}, -18, 18) * 0.28 * wnear.{k} * (1 - abs(wn.y.{k}))
     prop wp.x.{k} = 0 ~lively
     prop wp.y.{k} = 0 ~lively
-    follow wp.x.{k} = if(wdrag == {k} and wmoved, wp0.x + wq.x, wt.x.{k})
-    follow wp.y.{k} = if(wdrag == {k} and wmoved, wp0.y + wq.y, wt.y.{k})
+    follow wp.x.{k} = if(wdrag == {k} and wmoved, mx, wt.x.{k})
+    follow wp.y.{k} = if(wdrag == {k} and wmoved, my, wt.y.{k})
     prop wb.{k} = 0 ~lively
     follow wb.{k} = if({k} < wdg.count, 1, 0)
     prop wh.{k} = 0 ~lively
@@ -71,12 +67,11 @@ for k in range(N):
     image wdg.{k}.icon {{ at: wp.x.{k} - 12, wp.y.{k} - 12; size: 24, 24; opacity: wb.{k} * if(wdg.{k}.on, 100%, 55%); show: {k} < wdg.count and not wdg.{k}.mono }}
     text wdg.{k}.val {{ at: wp.x.{k}, wp.y.{k} + 11; anchor: center; size: 9; weight: 700; color: ink; opacity: 85% * wb.{k}; show: {k} < wdg.count }}
     zone ellipse w_hit.{k} {{ at: wp.x.{k}, wp.y.{k}; radius: 24; cursor: pointer; active: {k} < wdg.count and not dash }}
-    on press w_hit.{k} {{ wdrag = {k}; wmoved = false; wd.w = W; wd.h = H; wp0.x = pointer.x; wp0.y = pointer.y; wq.x = 0; wq.y = 0 }}
-    on drag w_hit.{k} while wdrag == {k} {{ wq.x = drag.dx; wq.y = drag.dy }}
+    on press w_hit.{k} {{ wdrag = {k}; wmoved = false; wd.w = W; wd.h = H }}
     on drag w_hit.{k} while wdrag == {k} and abs(drag.dx) + abs(drag.dy) > 6 {{ wmoved = true }}
-    on release w_hit.{k} while wdrag == {k} and wmoved {{ wd.x = pointer.x; wd.y = pointer.y; impulse wwob.{k} 300; emit w_drop({k}); wmoved = false; wdrag = -1 }}
+    on release w_hit.{k} while wdrag == {k} and wmoved {{ wd.x = mx; wd.y = my; impulse wwob.{k} 300; emit w_drop({k}); wmoved = false; wdrag = -1 }}
     on release w_hit.{k} while wdrag == {k} and not wmoved {{ wdrag = -1; impulse wwob.{k} 120; emit w_click({k}) }}
-    on press right w_hit.{k} while wdg.{k}.right {{ impulse wwob.{k} 120; ctx.x = pointer.x - 20; ctx.y = pointer.y - 20 - 34 * 4; emit w_right({k}) }}
+    on press right w_hit.{k} while wdg.{k}.right {{ impulse wwob.{k} 120; ctx.x = mx - 20; ctx.y = my - 20 - 34 * 4; emit w_right({k}) }}
     on scroll w_hit.{k} while wdg.{k}.wheel {{ emit w_wheel({k} * 2 + if(wheel > 0, 1, 0)) }}
     on enter w_hit.{k} {{ wh.{k}: 1 }}
     on leave w_hit.{k} {{ wh.{k}: 0 }}
