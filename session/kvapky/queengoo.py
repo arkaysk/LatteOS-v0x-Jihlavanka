@@ -2,7 +2,8 @@
 # QueenGoo v kvapka.plm (1. 10. 2026, LATTEOS-GOO.md 4.4b): kvapka s korunkou (tvar ostáva kvapka — tvar koruny je
 # k4ditanov). Ľavý klik = premení sa na App Manager (inštalácia programov), pravý = Správca zariadení. Okno sa
 # otvorí ROHOM pri jej uchu (latte-kvapky miesto → Hyprland), kým je otvorené, kráľovná ostane vystúpená ako ucho.
-# Ťahaním k inému okraju (ako DaNoGoo). Guľka s počtom čakajúcich aktualizácií (latte-apps updates).
+# Ťahaním k inému okraju (ako DaNoGoo). Guľky: červená = hardvér (latte-devices), zelená = sieť (výpadok), modrá =
+# softvér (latte-apps updates); klik otvorí okno rovno na tom, čo hlási (Aktualizácie, Siete).
 # Vypíše dva bloky: kreslenie (za DaNoGoo) a zóny + pravidlá (na konci scény).
 # Použitie: python3 session/kvapky/queengoo.py
 import json, os
@@ -22,8 +23,14 @@ draw = f'''    // >>> QueenGoo (queengoo.py)
     fact qg_moved = false
     fact qgd.x = 0
     fact qgd.y = 0
+    fact qgp.x = 0
+    fact qgp.y = 0
+    fact qgq.x = 0
+    fact qgq.y = 0
     fact qg_up = false                       // jej okno je otvorené: ostane vystúpená ako ucho v rohu okna
-    fact qg_upd = 0                          // čakajúce aktualizácie
+    fact qg_upd = 0                          // softvér: čakajúce aktualizácie (modrá guľka)
+    fact qg_hw = 0                           // hardvér: zariadenia, ktoré potrebujú pozornosť (červená guľka)
+    fact qg_net = 0                          // sieť: výpadok (zelená guľka)
     event qg_open ->
     event qg_drop
     let qg.ax = pick(qg.side, W * qg.pos, W * qg.pos, 0, W)
@@ -42,8 +49,8 @@ draw = f'''    // >>> QueenGoo (queengoo.py)
     let qg.ty = qg.ay + qg.ny * qg.out + clamp(my - qg.ay, -20, 20) * 0.28 * qg.near * abs(qg.py)
     prop qg.x = 0 ~lively
     prop qg.y = 0 ~lively
-    follow qg.x = if(qg_drag and qg_moved, pointer.x, qg.tx)
-    follow qg.y = if(qg_drag and qg_moved, pointer.y, qg.ty)
+    follow qg.x = if(qg_drag and qg_moved, qgp.x + qgq.x, qg.tx)
+    follow qg.y = if(qg_drag and qg_moved, qgp.y + qgq.y, qg.ty)
     let qg.r = (30 + 3 * qg.h) * so
     let qg.jit = 0.05 * sin(time * 9 + 5) * qg.h + qg.wob * 0.01
     let qg.sheet = if(qg_drag and qg_moved, 0, 1) * so
@@ -60,9 +67,23 @@ draw = f'''    // >>> QueenGoo (queengoo.py)
         ellipse {{ at: qg.ax, qg.ay; radius: 24 * qg.sheet; blend: 16 }}
         ellipse {{ at: qg.x, qg.y; radius: qg.r; scale: 1 + qg.jit, 1 - qg.jit; blend: 18 * qg.sheet + 2 }}
     }}
-    // guľka aktualizácií (zlatá, s číslom)
+    // guľky upozornení (pravidlo 1. 10.): červená = hardvér, zelená = sieť, modrá = softvér (aktualizácie); s počtom
     body {{
-        color: {GOLD}
+        color: #e5484d
+        rim: 30%
+        light: 18%, 0, 16
+        opacity: if(solo and qg_hw > 0, 1, 0)
+        ellipse {{ at: qg.x + (qg.nx * cos(-58) + qg.px * sin(-58)) * (qg.r + 2), qg.y + (qg.ny * cos(-58) + qg.py * sin(-58)) * (qg.r + 2); radius: 9.5 * so }}
+    }}
+    body {{
+        color: #46a758
+        rim: 30%
+        light: 18%, 0, 16
+        opacity: if(solo and qg_net > 0, 1, 0)
+        ellipse {{ at: qg.x + (qg.nx * cos(-108) + qg.px * sin(-108)) * (qg.r + 2), qg.y + (qg.ny * cos(-108) + qg.py * sin(-108)) * (qg.r + 2); radius: 9.5 * so }}
+    }}
+    body {{
+        color: #0090ff
         rim: 30%
         light: 18%, 0, 16
         opacity: if(solo and qg_upd > 0, 1, 0)
@@ -78,12 +99,15 @@ texts = f'''    // >>> QueenGoo texty (queengoo.py)
         text "{ICON('crown')}" {{ at: qg.x, qg.y - qg.r - 4; anchor: center; size: 22; color: {GOLD}; outline: 1.5, #3a2410; family: "{ICONS}" }}
     }}
     text "{ICON('apps')}" {{ at: qg.x, qg.y + 1; anchor: center; size: 18; color: ink; opacity: 80% * so; show: solo; family: "{ICONS}" }}
-    text "{{qg_upd}}" {{ at: qg.x + (qg.nx * cos(58) + qg.px * sin(58)) * (qg.r + 2), qg.y + (qg.ny * cos(58) + qg.py * sin(58)) * (qg.r + 2); anchor: center; size: 9.5; weight: 800; color: #3a2410; show: solo and qg_upd > 0; family: "{UI}" }}
+    text "{{qg_upd}}" {{ at: qg.x + (qg.nx * cos(58) + qg.px * sin(58)) * (qg.r + 2), qg.y + (qg.ny * cos(58) + qg.py * sin(58)) * (qg.r + 2); anchor: center; size: 9.5; weight: 800; color: #ffffff; show: solo and qg_upd > 0; family: "{UI}" }}
+    text "{{qg_hw}}" {{ at: qg.x + (qg.nx * cos(-58) + qg.px * sin(-58)) * (qg.r + 2), qg.y + (qg.ny * cos(-58) + qg.py * sin(-58)) * (qg.r + 2); anchor: center; size: 9.5; weight: 800; color: #ffffff; show: solo and qg_hw > 0; family: "{UI}" }}
+    text "{{qg_net}}" {{ at: qg.x + (qg.nx * cos(-108) + qg.px * sin(-108)) * (qg.r + 2), qg.y + (qg.ny * cos(-108) + qg.py * sin(-108)) * (qg.r + 2); anchor: center; size: 9.5; weight: 800; color: #ffffff; show: solo and qg_net > 0; family: "{UI}" }}
     // <<< QueenGoo texty
 '''
 zones = '''    // >>> QueenGoo zóny (queengoo.py)
     zone ellipse qg_hit { at: qg.x, qg.y; radius: 34; cursor: pointer; active: solo }
-    on press qg_hit { qg_drag = true; qg_moved = false; wd.w = W; wd.h = H }
+    on press qg_hit { qg_drag = true; qg_moved = false; wd.w = W; wd.h = H; qgp.x = pointer.x; qgp.y = pointer.y; qgq.x = 0; qgq.y = 0 }
+    on drag qg_hit while qg_drag { qgq.x = drag.dx; qgq.y = drag.dy }
     on press right qg_hit { impulse qg.wob 140; emit qg_open(1) }
     on drag qg_hit while qg_drag and abs(drag.dx) + abs(drag.dy) > 6 { qg_moved = true }
     on release qg_hit while qg_drag and qg_moved { qgd.x = pointer.x; qgd.y = pointer.y; impulse qg.wob 300; emit qg_drop; qg_moved = false; qg_drag = false }
@@ -109,5 +133,7 @@ put(texts, "    // >>> QueenGoo texty (queengoo.py)\n", "    // <<< QueenGoo tex
 put(zones, "    // >>> QueenGoo zóny (queengoo.py)\n", "    // <<< QueenGoo zóny\n", "    // <<< DaNoGoo zóny\n", before=False)
 if '"latte-apps"' not in s:
     s = s.replace('"paplay" }', '"paplay", "latte-apps" }', 1)
+if '"latte-devices"' not in s:
+    s = s.replace('"latte-apps" }', '"latte-apps", "latte-devices" }', 1)
 open(PLM, "w").write(s)
 print("kvapka.plm: QueenGoo")

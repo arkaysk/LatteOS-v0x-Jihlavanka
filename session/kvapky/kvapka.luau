@@ -1160,6 +1160,7 @@ every(60000, dn_date)
 -- Okno sa otvorí rohom pri jej uchu (latte-kvapky miesto → Hyprland latte/windows.lua); kým je otvorené, ostane
 -- vystúpená. Guľka = čakajúce aktualizácie (latte-apps updates, z cache, každých 30 min).
 local QG_WIN = { { app = "aplikacie", title = "Aplikácie — LatteOS" }, { app = "zariadenia", title = "Správca zariadení — LatteOS" } }
+local qg_devwarn, qg_offline = 0, false
 function qg_windows(list)
     local up = false
     for _, w in ipairs(list or {}) do
@@ -1184,8 +1185,12 @@ on("qg_open", function(k)
     if side <= 1 then sx = (ax + 900 <= W) and 1 or -1; sy = ny
     else sx = nx; sy = (ay + 700 <= H) and 1 or -1 end
     fact.qg_up = true
+    -- okno rovno na tom, čo guľka hlási: aktualizácie (App Manager), siete pri výpadku (Správca zariadení)
+    local args = { q.app }
+    if q.app == "aplikacie" and (tonumber(fact.qg_upd) or 0) > 0 then args[2] = "aktualizacie" end
+    if q.app == "zariadenia" and qg_offline then args[2] = "siete" end
     run("latte-kvapky", { "miesto", q.title, tostring(math.floor(ax)), tostring(math.floor(ay)), tostring(sx), tostring(sy) }, function()
-        run("latte-app", { q.app })
+        run("latte-app", args)
     end)
 end)
 on("qg_drop", function()
@@ -1199,6 +1204,17 @@ on("qg_drop", function()
     cfg.queengoo = { side = side, pos = pos }
     save_cfg()
 end)
+-- červená guľka = hardvér (zariadenia, ktoré potrebujú pozornosť — latte-devices), zelená = sieť (výpadok)
+local function qg_hw_paint() fact.qg_hw = qg_devwarn; fact.qg_net = qg_offline and 1 or 0 end
+local function qg_devices()
+    run("latte-devices", { "list" }, function(out)
+        local ok, d = pcall(json.decode, out or "")
+        if ok and type(d) == "table" then qg_devwarn = type(d.faults) == "table" and #d.faults or 0; qg_hw_paint() end
+    end)
+end
+function qg_network(n) qg_offline = n ~= nil and n.online == false; qg_hw_paint() end
+after(45000, qg_devices)
+every(30 * 60 * 1000, qg_devices)
 local function qg_updates()
     run("latte-apps", { "updates" }, function(out)
         local ok, list = pcall(json.decode, out or "")
@@ -1864,7 +1880,7 @@ local function wload()
     end)
 end
 sys.watch("audio", function(v) st.snd = v or {}; wpaint() end)
-sys.watch("network", function(v) st.net = v or {}; wpaint() end)
+sys.watch("network", function(v) st.net = v or {}; wpaint(); if qg_network then qg_network(st.net) end end)
 sys.watch("bluetooth", function(v) st.bt = v or {}; wpaint() end)
 sys.watch("battery", function(v)
     st.bat = v or {}; wpaint()

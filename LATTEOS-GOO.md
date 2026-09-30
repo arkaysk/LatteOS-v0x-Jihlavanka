@@ -58,6 +58,14 @@ samostatný tekutý prvok.
    tepaný kov vygenerovaný; `session/kvapky/textury.py`). Sklenené témy (Latte, Svetlé sklo, drahokamy, mráz, jantár)
    majú **perleťové dúhové okraje** (pleamar `glass` + `dispersion`). Spúšťač je **čiastočne priehľadný**
    (sklo karty podľa materiálu: sklo 80 %, kov 45 %, klasické témy 0 %).
+14. **Okno z kvapky sa rodí z bubliny** (1. 10.): kvapka, ktorá otvára samostatné okno (QueenGoo, budúce), ho
+   **vypľuje do priestoru ako bublinku**, tá sa zväčší a zmení na klasické okno (posúvateľné, zväčšiteľné,
+   minimalizovateľné). **Zatvorenie okna = prasknutie bubliny** (inšpirácia: „Burn My Windows“). **Minimalizácia =
+   okno sa zmenší do malej goo kvapky, plynulo padne k ťažisku (lišta dole), žblnkne ako voda a objaví sa v Goobare.**
+15. **Farby guliek upozornení** (1. 10.): **červená = hardvér** (ako „zariadenie potrebuje pozornosť“ v Správcovi
+   zariadení), **zelená = sieť**, **modrá = softvér** (aktualizácie); po otvorení okna je vidieť, čo hlási.
+16. **Všetky kvapky sú drag & drop** (1. 10.) — aj Hodiny (TimeGoo) a vypínač (PowerGoo), nielen samostatné kvapky.
+
 13. **Okná aplikácií: sklo z Hyprglass** (1. 10., používateľ poslal ukážku „Caelestia + Hyprglass“ z r/unixporn):
    plugin Hyprland `hyprnux/hyprglass` (BSD-3, stavaný na 0.56.2) — lom na okrajoch, dúhová chromatická aberácia,
    matné rozmazanie, odlesk. **Iba plocha Goo a sklenené témy** (`session/hypr/latte/sklo.lua`); okná 93 / 87 %,
@@ -174,11 +182,13 @@ Karta z ucha TimeGoo, zhora nadol:
 
 ### 4.4b QueenGoo — kráľovná (hotové 1. 10.)
 - Kvapka s **korunkou** (zlatá ikona na vonkajšej strane, natočená podľa okraja; tvar ostáva kvapka — tvar koruny
-  je k4ditanov). Vnútri ikona aplikácií, **zlatá guľka s počtom čakajúcich aktualizácií** (`latte-apps updates`).
+  je k4ditanov). Vnútri ikona aplikácií. Guľky (pravidlo 15): **červená** = zariadenia, ktoré potrebujú pozornosť
+  (`latte-devices list` → `faults`), **zelená** = výpadok siete, **modrá** = čakajúce aktualizácie (`latte-apps updates`).
+  App Manager sa pri aktualizáciách otvorí rovno na nich, Správca zariadení pri výpadku siete na Sieťach.
 - **Ľavý klik = App Manager**, **pravý = Správca zariadení**: kvapka vystúpi ako ucho a okno sa otvorí **rohom pri
   nej** (`latte-kvapky miesto` → Hyprland `latte/windows.lua` ho pri otvorení prisunie); kým je okno otvorené,
   ostane vystúpená; znova klik = okno do popredia. Ťahaním k inému okraju. Generátor `session/kvapky/queengoo.py`.
-- **Neoverené naživo** (okná Hyprlandu sa v teste bez relácie nedajú otvoriť) — overiť pri prihlásení.
+- Naživo overené 1. 10.: App Manager sa otvoril rohom pri kráľovnej.
 
 ### 4.5 Rohová lišta Noctalie — vpravo dole
 - Iba **pravá časť** lišty Noctalie, **natvrdo prilepená** do rohu, **šírka podľa počtu widgetov**; vpravo sa
@@ -241,7 +251,8 @@ Karta z ucha TimeGoo, zhora nadol:
 | aktualizácie u autorov | `latte-upstream -v` |
 | nasadenie na latte-lab | `sudo install … /usr/share/latteos/kvapky/`, reštart pleamaru; setup skripty v `setup/` |
 
-**Skúšanie bez myši a monitora** (keď používateľ nie je prihlásený): headless `labwc` (`WLR_BACKENDS=headless`),
+**Skúšanie bez myši a monitora** (`scratchpad/test/t.sh`; scéna sa kopíruje ako `kvapkatest.plm` → soket
+`kvapkatest`, **nikdy `pleamar --say kvapka`** — to je živá relácia používateľa, 1. 10. to raz omylom zasiahlo): headless `labwc` (`WLR_BACKENDS=headless`),
 tapeta cez `swaybg`, scéna s oddeleným `HOME`; náhradný kurzor `pleamar --say kvapka "fact tcx 700"` / `tcy`,
 `fact probe 55` (vysunutie lišty), `emit udalosť hodnota`; snímky `grim`, video `wf-recorder`. **Po teste všetko
 zrušiť** (testovací pleamar sa volá rovnako `kvapka` — kolidoval by s reláciou používateľa) a zmazať mŕtve
@@ -275,7 +286,8 @@ Ide sa **po poradí**; nové nápady sa zapíšu na koniec (E), nerozbiehajú sa
    integráciami Noctalie (C).
 
 ### B. Mechanika Goo a ovládanie myšou
-- presúvanie Hodín, vypínača a DaNoGoo samostatne (dnes Hodiny a vypínač s lištou) — rozhodnúť
+- **okno z kvapky ako bublina, zatvorenie = prasknutie, minimalizácia = pád do Goobaru so žblnknutím** (pravidlo 14)
+- **presúvanie Hodín a vypínača samostatne** (pravidlo 16, rozhodnuté 1. 10.; dnes idú s lištou)
 - goo telo pod rohovou lištou; vlnenie a pulzovanie pri udalostiach (upozornenie, zvuk, sťahovanie, zmena widgetu)
 - rozbaľovacia ponuka rýchleho spúšťania ako samostatné kvapky
 - všetko myšou: prejsť každú funkciu Goo, či ide bez klávesnice (pravidlo 1), vrátane premenovania záložiek,

@@ -101,6 +101,7 @@ a(f'''    // >>> spúšťač (spustac.py)
     let e.d = length(db.x - cxs, db.y - cys)
     let e.ux = (db.x - cxs) / max(e.d, 1)
     let e.uy = (db.y - cys) / max(e.d, 1)
+    let e.k = if(esnap or dsw < 0.02, 0, 1) * clamp(1 - (e.d - 70) / 160, 0.35, 1)
     let dc.x = dk.x + (dt.x - dk.x) * d.grow
     let dc.y = dk.y + (dt.y - dk.y) * d.grow
     let d0.x = dt.x - dw / 2 + 28              // obsah: ľavý horný roh
@@ -123,8 +124,11 @@ a(f'''    // >>> spúšťač (spustac.py)
         opacity: if(dsw > 0.02 or dsh > 0.01, 1, 0) * so
         box {{ at: dc.x, dc.y; size: (60 + (dw - 60) * d.grow) * if(d.grow > 0.01, 1, 0), (60 + (dh - 60) * d.grow) * if(d.grow > 0.01, 1, 0); corner: 30 - 6 * d.grow }}
         // vlákno k Hodinám (kým nepraskne) a po prasknutí pahýle na oboch koncoch, ktoré sa stiahnu
-        ellipse {{ at: cxs, cys; radius: 15 * if(dsw > 0.02 and not esnap, 1, 0); blend: 12 }}
-        line {{ from: cxs, cys; to: db.x, db.y; width: if(esnap or dsw < 0.02, 0, 5 + 20 * pow(clamp(1 - e.d / 58, 0, 1), 1.4)); blend: 12 * if(esnap, 0, 1) }}
+        // kým sú spojené, vlákno je pri koreni (lišta) hrubé a k uchu sa zužuje (1. 10., používateľ); ďalej tenšie
+        ellipse {{ at: cxs, cys; radius: 18 * e.k; blend: 14 }}
+        line {{ from: cxs, cys; to: cxs + (db.x - cxs) * 0.4, cys + (db.y - cys) * 0.4; width: 26 * e.k; blend: 12 * e.k }}
+        line {{ from: cxs + (db.x - cxs) * 0.35, cys + (db.y - cys) * 0.35; to: cxs + (db.x - cxs) * 0.75, cys + (db.y - cys) * 0.75; width: 16 * e.k; blend: 12 * e.k }}
+        line {{ from: cxs + (db.x - cxs) * 0.7, cys + (db.y - cys) * 0.7; to: db.x, db.y; width: 9 * e.k; blend: 12 * e.k }}
         line {{ from: db.x, db.y; to: db.x - e.ux * 22 * estub, db.y - e.uy * 22 * estub; width: 6 * estub; blend: 8 * clamp(estub * 3, 0, 1) }}
         line {{ from: cxs, cys; to: cxs + e.ux * 22 * estub, cys + e.uy * 22 * estub; width: 6 * estub; blend: 8 * clamp(estub * 3, 0, 1) }}
         // ucho = kvapka Hodín (trčí z rohu, zliata s kartou)
@@ -557,6 +561,8 @@ if "on press t_sw_go" not in s:
 # oprávnenia časového menu (raz): čas s milisekundami, svetové hodiny, zvonenie
 once('"latte-ai", "latte-terminal" }', '"latte-ai", "latte-terminal", "date", "sh", "notify-send", "paplay" }')
 # preklady (raz)
+once("    on change dsw > 0.72 while dsw > 0.72 and dash and not esnap { esnap = true;",
+     "    on change dsw > 0.72 while dsw > 0.72 and dash and not esnap and e.d > 150 { esnap = true;")
 TR = {"Alarm {t}": "Budík {t}", "Timer {t}": "Minútka {t}", "Lap {n}": "Medzičas {n}", "Week {w} · day {d} of the year": "Týždeň {w} · {d}. deň v roku",
       "{t} on screen": "{t} pred obrazovkou", "Overview": "Prehľad", "Stopwatch": "Stopky", "Timer": "Minútka", "Alarms": "Budíky",
       "Time is up ({t})": "Čas vypršal ({t})", "LatteOS alarm": "Budík LatteOS",

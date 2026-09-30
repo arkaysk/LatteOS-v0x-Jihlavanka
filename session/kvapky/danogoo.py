@@ -34,6 +34,11 @@ a('''    // >>> DaNoGoo (danogoo.py)
     fact dn_moved = false
     fact dnd.x = 0
     fact dnd.y = 0
+    // ťahanie: miesto stlačenia + posun (pointer.x platí iba v pravidle, nie vo follow)
+    fact dnp.x = 0
+    fact dnp.y = 0
+    fact dnq.x = 0
+    fact dnq.y = 0
     text dn_date = ""
     text dn_wx = ""
     text dn_temp = ""
@@ -88,8 +93,8 @@ a('''    // >>> DaNoGoo (danogoo.py)
     let dn.ty = dn.ay + dn.ny * dn.out + clamp(my - dn.ay, -20, 20) * 0.28 * dn.near * abs(dn.py)
     prop dn.x = 0 ~lively
     prop dn.y = 0 ~lively
-    follow dn.x = if(dn_drag and dn_moved, pointer.x, dn.tx)
-    follow dn.y = if(dn_drag and dn_moved, pointer.y, dn.ty)
+    follow dn.x = if(dn_drag and dn_moved, dnp.x + dnq.x, dn.tx)
+    follow dn.y = if(dn_drag and dn_moved, dnp.y + dnq.y, dn.ty)
     let dn.r = (31 + 3 * dn.h) * so
     let dn.jit = 0.05 * sin(time * 9 + 3) * dn.h + dn.wob * 0.01
     let dn.sheet = if(dn_drag and dn_moved, 0, 1) * so
@@ -312,7 +317,8 @@ for k in range(NB):
     z(f"    zone box br_hit.{k} {{ at: brx.{k}, bry.{k}; size: 360, 52; cursor: pointer; active: dn_open and {k} < berries.count and bre.{k} > 0.9 }}\n")
 z('''    zone box dn_clr { at: clx, cly; size: 190, 34; cursor: pointer; active: dn_open and berries.count > 0 and cle > 0.9 }
     // DaNoGoo: ľavý klik = hrozno (znova klik, Esc alebo klik mimo = späť), ťahanie = iný okraj, pravý = kalendár
-    on press dn_hit { dn_drag = true; dn_moved = false; wd.w = W; wd.h = H }
+    on press dn_hit { dn_drag = true; dn_moved = false; wd.w = W; wd.h = H; dnp.x = pointer.x; dnp.y = pointer.y; dnq.x = 0; dnq.y = 0 }
+    on drag dn_hit while dn_drag { dnq.x = drag.dx; dnq.y = drag.dy }
     on drag dn_hit while dn_drag and abs(drag.dx) + abs(drag.dy) > 6 { dn_moved = true; dn_open = false; dc_open = false }
     on release dn_hit while dn_drag and dn_moved { dnd.x = pointer.x; dnd.y = pointer.y; impulse dn.wob 300; emit dn_drop; dn_moved = false; dn_drag = false }
     on release dn_hit while dn_drag and not dn_moved { dn_drag = false; toggle dn_open; dc_open = false; impulse dn.wob 160; dash = false; pmenu = false }

@@ -30,7 +30,7 @@ index 3f10daca9..5d3573555 100644
          field(&BarConfig::marginOppositeEdge, "margin_opposite_edge"),
          field(&BarConfig::padding, "padding"),
 diff --git a/src/shell/bar/bar.cpp b/src/shell/bar/bar.cpp
-index f1f683a5a..30cb4cebb 100644
+index f1f683a5a..c469de8dd 100644
 --- a/src/shell/bar/bar.cpp
 +++ b/src/shell/bar/bar.cpp
 @@ -663,7 +663,8 @@ namespace {
@@ -65,7 +65,18 @@ index f1f683a5a..30cb4cebb 100644
        if (isRight) {
          if (edgeGutter > 0) {
            spec.surfaceWidth = static_cast<std::uint32_t>(sb.left + concaveBulge + barConfig.thickness + edgeGutter);
-@@ -764,6 +765,8 @@ namespace {
+@@ -724,7 +725,9 @@ namespace {
+       }
+     }
+ 
+-    spec.exclusiveZone = barConfig.reserveSpace ? reservedBarExclusiveZone(barConfig, shadowConfig) : 0;
++    // LatteOS Kvapky: lišta bez vyhradeného miesta (rohová lišta) sa neprispôsobuje vyhradeným pásom iných (−1),
++    // inak ju pás pre okná pri okraji plochy Goo (reserved_area) zdvihne nad okraj obrazovky
++    spec.exclusiveZone = barConfig.reserveSpace ? reservedBarExclusiveZone(barConfig, shadowConfig) : -1;
+     return spec;
+   }
+ 
+@@ -764,6 +767,8 @@ namespace {
          && a.radiusBottomRight == b.radiusBottomRight
          && a.concaveEdgeCorners == b.concaveEdgeCorners
          && a.marginEnds == b.marginEnds
@@ -74,7 +85,7 @@ index f1f683a5a..30cb4cebb 100644
          && a.marginEdge == b.marginEdge
          && a.shadow == b.shadow
          && sameShadowSurface
-@@ -796,7 +799,8 @@ namespace {
+@@ -796,7 +801,8 @@ namespace {
        float innerSurfaceExtension = 0.0F
    ) {
      const auto barThickness = static_cast<float>(cfg.thickness);
@@ -84,7 +95,7 @@ index f1f683a5a..30cb4cebb 100644
      const auto marginEdge = static_cast<float>(cfg.marginEdge);
      const bool isBottom = cfg.position == "bottom";
      const bool isRight = cfg.position == "right";
-@@ -819,7 +823,7 @@ namespace {
+@@ -819,7 +825,7 @@ namespace {
  
      if (isVertical) {
        // Vertical bar: edge gap is left/right, ends inset is top/bottom.
@@ -93,7 +104,7 @@ index f1f683a5a..30cb4cebb 100644
        float x = isRight ? (bleedLeft + concaveBulge) : std::min(marginEdge, bleedLeft);
        if (const int gutter = barAutoHideEdgeGutter(cfg); gutter > 0) {
          // The gutter equals marginEdge and sits between the screen edge and the bar.
-@@ -837,12 +841,12 @@ namespace {
+@@ -837,12 +843,12 @@ namespace {
            .x = x,
            .y = y,
            .width = barThickness,
@@ -108,7 +119,7 @@ index f1f683a5a..30cb4cebb 100644
      float y = isBottom ? (bleedUp + concaveBulge) : std::min(marginEdge, bleedUp);
      if (const int gutter = barAutoHideEdgeGutter(cfg); gutter > 0) {
        if (isBottom) {
-@@ -856,7 +860,7 @@ namespace {
+@@ -856,7 +862,7 @@ namespace {
      return {
          .x = x,
          .y = y,
@@ -117,6 +128,15 @@ index f1f683a5a..30cb4cebb 100644
          .height = barThickness,
      };
    }
+@@ -1980,7 +1986,7 @@ void Bar::syncBarExclusiveZone(BarInstance& instance) {
+   }
+   const std::int32_t zone = shouldReserveExclusiveZone(instance)
+       ? reservedBarExclusiveZone(instance.barConfig, m_config->config().shell.shadow)
+-      : 0;
++      : -1;
+   instance.surface->setExclusiveZone(zone);
+ }
+ 
 diff --git a/src/shell/bar/bar_corner_shape.h b/src/shell/bar/bar_corner_shape.h
 index 7fe63201e..c172d780e 100644
 --- a/src/shell/bar/bar_corner_shape.h
