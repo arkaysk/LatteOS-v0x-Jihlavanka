@@ -19,6 +19,7 @@ end
 local wins = {}
 local layout   -- nižšie
 local mon = nil  -- monitor (rozmery; plní hyprctl -j monitors nižšie)
+local hidden, hidden_n = {}, 0  -- okná na skrytej ploche special:minimized (index v wins → true), mark_hidden
 
 -- ── strapce okien (ikry) ──────────────────────────────────────────────────────
 -- Okná tej istej aplikácie sa zlepia do strapca: prvé sedí pri lište, ďalšie sa lepia smerom od nej (ako ikry),
@@ -129,6 +130,10 @@ function layout()
             u = ax + hi * r + r + 12
         end
     end
+    for i, e in pairs(lay) do
+        e.dim = hidden[i] and 1 or 0
+        if hidden[i] then e.r = e.r * 0.84 end
+    end
     model.lay = lay
     fact.chain_w = math.max(50, u - 12)
     last_spans = {}
@@ -190,19 +195,29 @@ end)
 -- hrbolček s oknom, ľavý klik: ako vo Windows — neaktívne okno sa ukáže, aktívne sa minimalizuje.
 -- Minimalizuje LatteOS (plocha special:minimized, latte/bars.lua), nie protokol: Hyprland žiadosť o minimalizáciu
 -- z wlr-foreign-toplevel ignoruje. Okno sa hľadá podľa triedy a titulku (adresy Hyprlandu zoznam nemá).
-local function win_eval(fn, w)
-    run("hyprctl", { "eval", string.format("latte.win.%s(%q, %q)", fn, w.class or "", w.title or "") })
+-- koľké okno s tou istou triedou a titulkom je okno i (terminály majú často rovnaký titulok „~“)
+local function nth_of(i)
+    local w, n = wins[i], 0
+    for j = 1, i do
+        local o = wins[j]
+        if o and o.class == w.class and o.title == w.title then n = n + 1 end
+    end
+    return n
+end
+local function win_eval(fn, i)
+    local w = wins[i]
+    run("hyprctl", { "eval", string.format("latte.win.%s(%q, %q, %d)", fn, w.class or "", w.title or "", nth_of(i)) })
 end
 on("pick", function(k)
-    local w = wins[(k or 0) + 1]
-    if w then win_eval("toggle_by", w) end
+    local i = (k or 0) + 1
+    if wins[i] then win_eval("toggle_by", i) end
 end)
 
 -- pravý klik: ponuka okna (apps/ponuka.qml) pri kurzore, pre to okno (najprv dostane fokus)
 on("win_menu", function(k)
-    local w = wins[(k or 0) + 1]
-    if not w then return end
-    win_eval("focus_by", w)
+    local i = (k or 0) + 1
+    if not wins[i] then return end
+    win_eval("focus_by", i)
     -- poloha ponuky = kurzor v čase kliku, priamo od Hyprlandu (JSON); fakty scény sem prišli neskoro (ponuka vľavo hore)
     run("hyprctl", { "-j", "cursorpos" }, function(out)
         local ok, c = pcall(json.decode, out or "")
@@ -212,13 +227,12 @@ on("win_menu", function(k)
     end)
 end)
 
--- koliesko nad očami: páska = posun (fokus doľava/doprava posúva scrolling layout Hyprlandu),
--- plávajúce = ďalšie/predošlé okno ako Alt+Tab, dlaždice = nič
+-- koliesko nad lištou: páska = ďalší stĺpec (fokus posúva scrolling layout Hyprlandu), plávajúce = ďalšie/predošlé
+-- okno ako Alt+Tab, dlaždice = nič; minimalizované okná vynechá (sú iba v lište, stlmené)
 on("wheel_turn", function(d)
     local dir = (d or 0) > 0 and 1 or -1
-    if mode == "paska" then
-        run("hyprctl", { "eval", 'hl.dispatch(hl.dsp.focus({ direction = "' .. (dir > 0 and "r" or "l") .. '" }))' })
-    elseif mode == "plavajuce" then
+    -- (30. 9.) páska aj plávajúce cez latte.win.cycle: fokus doprava v páske na poslednom stĺpci zastal
+    if mode == "paska" or mode == "plavajuce" then
         -- ďalšie okno na aktuálnej ploche (latte/bars.lua) — nie cez Wayland: prepnutie na minimalizované okno
         -- ukázalo celú skrytú plochu special:minimized a nové okná sa potom otvárali na nej
         run("hyprctl", { "eval", "latte.win.cycle(" .. dir .. ")" })
@@ -253,6 +267,28 @@ run("hyprctl", { "-j", "monitors" }, function(out)
     local ok, ms = pcall(json.decode, out or "")
     if ok and ms then for _, m in ipairs(ms) do if m.focused then mon = m end end end
 end)
+-- minimalizované okná (na skrytej ploche special:minimized) sú v lište stlmené a menšie — koliesko ich
+-- vynecháva, klik ich vráti. Priradenie cez triedu, titulok a poradie (nth_of), ako pri kliku.
+local function mark_hidden(list)
+    local new, changed = {}, false
+    for i, w in ipairs(wins) do
+        local want, seen = nth_of(i), 0
+        for _, c in ipairs(list) do
+            if c.class == w.class and c.title == w.title then
+                seen = seen + 1
+                if seen == want then
+                    new[i] = c.workspace and tostring(c.workspace.name or ""):find("^special:minimized") ~= nil
+                    break
+                end
+            end
+        end
+        if (new[i] or false) ~= (hidden[i] or false) then changed = true end
+    end
+    if #wins ~= hidden_n then changed = true end
+    hidden, hidden_n = new, #wins
+    if changed then layout() end
+end
+
 local function check_tight()
     -- ktorékoľvek viditeľné okno na aktuálnej ploche (nielen aktívne — v Dlaždiciach siahajú k lište všetky)
     run("hyprctl", { "-j", "activeworkspace" }, function(wout)
@@ -273,6 +309,7 @@ local function check_tight()
                     end
                 end
             end
+            if ok and list then mark_hidden(list) end
             if fact.tight ~= tight then fact.tight = tight end
             room = math.floor(math.max(0, room))
             if fact.room ~= room then fact.room = room end
