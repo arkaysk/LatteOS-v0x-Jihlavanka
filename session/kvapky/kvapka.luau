@@ -156,6 +156,11 @@ function layout()
         local len = (side == "vlavo" or side == "vpravo") and mon.height or mon.width
         local avail = len * (1 - (tonumber(fact.pos) or 0.4)) - 24
         local lim = widget_limit and widget_limit(side, len)
+        -- rohová lišta Noctalie vpravo dole (latte-kvapky): šnúra okien sa zastaví pred ňou
+        if side == "dole" and roh_len then
+            local r = len - roh_len()
+            if not lim or r < lim then lim = r end
+        end
         local head = len * (tonumber(fact.pos) or 0.4)
         if lim and lim > head + 120 then avail = math.min(avail, lim - head - 56) end
         if u > avail and u > 0 then
@@ -826,8 +831,9 @@ local function wpaint()
     end
     for _, it in ipairs(tray) do
         local w = tray_place(it)
-        if not (w and w.hidden) and #out < WMAX then
-            local e = w or { id = "tray:" .. it.id, side = 0, pos = free_pos(), auto = true }
+        -- ikona programu je kvapkou, iba ak ju tam používateľ dal (spúšťač); inak je v rohovej lište Noctalie
+        if w and not w.hidden and #out < WMAX then
+            local e = w
             wshown[#wshown + 1] = { kind = "tray", entry = e, item = it }
             out[#out + 1] = { icon = it.icon or "", val = "", hasval = false, mono = false, side = e.side, pos = e.pos,
                               right = true, wheel = true, on = it.status ~= "Passive" }
@@ -929,7 +935,9 @@ end)
 -- pridať / odobrať zo spúšťača (riadok „Kvapka“)
 function widget_toggle(id)
     if id:sub(1, 5) == "tray:" then
-        for _, w in ipairs(wlist) do if w.id == id then w.hidden = not w.hidden or nil end end
+        local found = false
+        for i, w in ipairs(wlist) do if w.id == id then table.remove(wlist, i); found = true; break end end
+        if not found then wlist[#wlist + 1] = { id = id, side = 0, pos = free_pos() } end
         wsave(); wpaint(); layout(); return
     end
     for i, w in ipairs(wlist) do
@@ -961,7 +969,7 @@ function widget_rows(q)
         local t = it.title or it.id or ""
         if t ~= "" and (t:lower():find(q, 1, true) or (it.id or ""):lower():find(q, 1, true)) then
             local w = tray_place(it)
-            rows[#rows + 1] = { id = "tray:" .. it.id, name = t, on = not (w and w.hidden), icon = it.icon }
+            rows[#rows + 1] = { id = "tray:" .. it.id, name = t, on = (w ~= nil and not w.hidden), icon = it.icon }
         end
     end
     return rows
@@ -990,9 +998,9 @@ local function wload()
                 end
             end
         else
-            wlist = { { id = "control-center", side = 0, pos = 0.95 }, { id = "volume", side = 0, pos = 0.92 },
-                      { id = "network", side = 0, pos = 0.89 } }
-            if st.bt.present then wlist[#wlist + 1] = { id = "bluetooth", side = 0, pos = 0.86 } end
+            -- (1. 10.) widgety a ikony programov sú predvolene v rohovej lište Noctalie vpravo dole (latte-kvapky);
+            -- samostatné kvapky sú na iné veci — pridať sa dajú cez spúšťač
+            wlist = {}
             wsave()
         end
         wpaint(); layout()
@@ -1003,7 +1011,20 @@ sys.watch("network", function(v) st.net = v or {}; wpaint() end)
 sys.watch("bluetooth", function(v) st.bt = v or {}; wpaint() end)
 sys.watch("battery", function(v) st.bat = v or {}; wpaint() end)
 sys.watch("media", function(v) st.media = v or {}; wpaint() end)
-sys.watch("tray", function(list) tray = list or {}; wpaint() end)
+-- rohová lišta Noctalie (ikony programov sú v nej): šírka podľa ich počtu, s oneskorením (programy štartujú naraz);
+-- roh_len: jej približná dĺžka pre šnúru okien (rovnaký vzorec ako latte-kvapky roh_start, 3 widgety)
+function roh_len() return 26 + 48 * 3 + 28 * #tray + 20 end
+local roh_gen, roh_n = 0, -1
+local function roh_update()
+    roh_gen = roh_gen + 1
+    local g = roh_gen
+    after(900, function()
+        if g ~= roh_gen or #tray == roh_n then return end
+        roh_n = #tray
+        run("latte-kvapky", { "roh-sirka", tostring(#tray) })
+    end)
+end
+sys.watch("tray", function(list) tray = list or {}; wpaint(); roh_update() end)
 -- vyťaženie CPU (kvapka Systém): z /proc/stat každé 3 s, iba keď tá kvapka je
 local cpu_prev = nil
 every(3000, function()

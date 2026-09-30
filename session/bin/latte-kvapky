@@ -15,6 +15,18 @@ share=/usr/share/latteos
 # stav Noctalie: klasický LatteOS ~/.local/state/latteos/noctalia, Kvapky ~/.local/state/latteos/kvapky/noctalia —
 # navzájom sa nedeformujú (30. 9.); pôvodná Noctalia má svoj ~/.local/state/noctalia (latte-session)
 st_classic="${XDG_STATE_HOME:-$HOME/.local/state}/latteos"
+# Noctalia so záplatou rohovej lišty (setup/lab/noctalia-kvapky.sh); bez nej pôvodná, bez rohovej lišty
+nkvapky=/usr/lib64/latteos/noctalia-kvapky/noctalia
+noc_bin() { if [ -x "$nkvapky" ]; then echo "$nkvapky"; else echo noctalia; fi; }
+ndir="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/latteos/noctalia-kvapky"
+# rohová lišta: šírka podľa widgetov (efektívny zoznam aj po zmene v nastaveniach Noctalie) a ikon programov na pozadí
+roh_start() {   # $1 počet ikon na lište → margin_start (px od ľavého kraja monitora)
+    local w n
+    w="$(hyprctl -j monitors 2>/dev/null | python3 -c 'import json,sys; m=json.load(sys.stdin); print(int(m[0]["width"]/m[0].get("scale",1)))' 2>/dev/null || echo 1920)"
+    n="$(NOCTALIA_ASSETS_DIR=/usr/share/noctalia/assets NOCTALIA_CONFIG_HOME="$ndir" NOCTALIA_STATE_HOME="$st_kvapky" "$(noc_bin)" config export 2>/dev/null \
+         | python3 -c 'import sys,tomllib; c=tomllib.loads(sys.stdin.read()); e=c.get("bar",{}).get("roh",{}).get("end",[]); print(len([x for x in e if x!="tray"]))' 2>/dev/null || echo 3)"
+    echo $(( w - (26 + 48 * n + 28 * ${1:-0}) ))
+}
 st_kvapky="$st_classic/kvapky"
 scene="${LATTE_KVAPKY_SCENE:-$share/kvapky/kvapka.plm}"
 pleamar="${PLEAMAR:-$(command -v pleamar || echo /usr/bin/pleamar)}"
@@ -63,13 +75,41 @@ enabled = false
 control_center_placement = "floating"
 control_center_position  = "bottom_left"
 EOF2
+    # rohová lišta Noctalie vpravo dole (iba so záplatou): iba pravá časť, prilepená do rohu, šírka podľa widgetov;
+    # vpravo sa vyduje hore do bočnej steny, vľavo sa rozleje po spodnom okraji (goo). Widgety a doplnky sa dajú
+    # meniť v nastaveniach Noctalie; šírku prepočíta `latte-kvapky roh-sirka` (logika Kvapiek pri zmene ikon lišty)
+    if [ -x "$nkvapky" ]; then
+        cat >> "$dir/noctalia/zz-kvapky.toml" <<'EOF2'
+
+[bar.roh]
+enabled = true
+position = "bottom"
+thickness = 44
+margin_ends = 0
+margin_start = 1640
+margin_end = 0
+margin_edge = 0
+radius_top_left = 22
+radius_top_right = 22
+radius_bottom_left = 20
+radius_bottom_right = 0
+concave_edge_corners = true
+reserve_space = false
+padding = 12
+start = []
+center = []
+end = ["tray", "network", "volume", "control-center"]
+EOF2
+        sed -i "s/^margin_start = .*/margin_start = $(roh_start 0)/" "$dir/noctalia/zz-kvapky.toml"
+    fi
     # prvý štart Kvapiek: nastavenia sa skopírujú z klasického LatteOS, potom každá plocha žije sama
     if [ ! -e "$st_kvapky/noctalia/settings.toml" ]; then
         mkdir -p "$st_kvapky/noctalia"
         [ -f "$st_classic/noctalia/settings.toml" ] && cp "$st_classic/noctalia/settings.toml" "$st_kvapky/noctalia/"
         touch "$st_kvapky/noctalia/.setup-complete"
     fi
-    NOCTALIA_CONFIG_HOME="$dir" NOCTALIA_STATE_HOME="$st_kvapky" setsid -f noctalia >/dev/null 2>&1
+    NOCTALIA_ASSETS_DIR=/usr/share/noctalia/assets NOCTALIA_CONFIG_HOME="$dir" NOCTALIA_STATE_HOME="$st_kvapky" \
+        setsid -f "$(noc_bin)" >/dev/null 2>&1
     ( sleep 3; latte-theme noctalia ) >/dev/null 2>&1 &     # téma LatteOS je spoločná, stav Noctalie nie
 }
 
@@ -115,6 +155,15 @@ case "${1:-}" in
         for a in netznak kapsavyrez nahlad plocha rychle pohoda maskot; do start_app "$a"; done
         # statická tapeta z mpvpaperu (bez shellu) ustúpi natívnej tapete Noctalie; živé video ostáva
         latte-tapety obnov >/dev/null 2>&1
+        ;;
+    roh-sirka)
+        # šírka rohovej lišty podľa widgetov a počtu ikon programov na pozadí ($2); iba ak sa zmenila
+        f="$ndir/noctalia/zz-kvapky.toml"
+        grep -q '^\[bar.roh\]' "$f" 2>/dev/null || exit 0
+        m="$(roh_start "${2:-0}")"
+        grep -q "^margin_start = $m$" "$f" && exit 0
+        sed -i "s/^margin_start = .*/margin_start = $m/" "$f"
+        noctalia msg config-reload >/dev/null 2>&1
         ;;
     panel-poloha)
         # panel Noctalie sa otvorí pri kvapke, ktorá ho volá (kvapky sa dajú presúvať): poloha z 9 polôh Noctalie,

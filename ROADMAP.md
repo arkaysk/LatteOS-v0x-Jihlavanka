@@ -324,6 +324,9 @@ texty preložiteľné (`translations`). Noctalia beží bez lišty a robí, čo 
       médiá, systém, počasie, nočné svetlo, profil napájania…) a ikony programov na pozadí (systémová lišta) ako goo
       kvapky na okrajoch; kliky podľa Noctalie (`widget_gesture_defaults.cpp`), ťahanie k inému okraju, pridanie
       zo spúšťača. Spúšťač z Hodín (aplikácie, súbory, web, AI čety, pomenované záložky)
+- [x] **Rohová lišta Noctalie** (1. 10.): pravá časť lišty Noctalie v pravom dolnom rohu (záplata margin_start /
+      margin_end, zmiešané vyduté rohy) — všetky widgety a komunitné doplnky Noctalie bežia v nej natívne.
+      Ďalej: priehľadné pozadie a goo telo z pleamaru pod ňou (vlnenie, pulzovanie)
 - [ ] **Komunitné doplnky Noctalie ako kvapky** — prieskum 30. 9.: 235 doplnkov (13 oficiálnych, 222 komunitných,
       `~/.local/state/noctalia/plugins/sources`), 194 widgetov na lištu (121 jednoduchých: ikona Tabler + text +
       popis; 73 s vlastným `barWidget.render`), ľavý klik 169, pravý 80. Spúšťať ich kód v pleamare nejde:
