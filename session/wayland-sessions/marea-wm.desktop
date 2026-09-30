@@ -1,0 +1,8 @@
+[Desktop Entry]
+Name=Marea (pleamar-wm)
+Name[sk]=Marea (pleamar-wm)
+Comment=The original Marea by k4ditano on pleamar-wm, for experiments — kept apart from LatteOS
+Comment[sk]=Pôvodná Marea od k4ditano na jeho kompozitore pleamar-wm — na pokusy, oddelená od LatteOS
+Exec=/usr/bin/latte-marea wm
+Type=Application
+DesktopNames=pleamar
