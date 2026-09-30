@@ -303,12 +303,18 @@ texty preložiteľné (`translations`). Noctalia beží bez lišty a robí, čo 
       podľa DankMaterialShell); Barista zmigrovaný (anglický zdroj + sk.json)
 - [ ] Zmigrovať ostatné aplikácie LatteOS na `i18n.tr` (Nastavenia, Súbory, Monitor, ponuky, …) a súbory tém
       (`name`/`desc` dnes po slovensky → `name[sk]`)
-- [~] **Nová prihlasovacia obrazovka** (greeter) — napísaná 29. 9. v latteGoo vzhľade, v náhľade overená
-      (`LATTE_GREETER_TEST=1`, sk aj en), **čaká na schválenie pred nasadením**: všetky funkcie dnešnej (výber účtu a relácie vrátane Kvapiek,
+- [x] **Nová prihlasovacia obrazovka** (greeter) — napísaná 29. 9. v latteGoo vzhľade, **nasadená 30. 9.** (overiť po
+      reštarte latte-lab). Zoznam relácií číta aj `/usr/share/wayland-sessions` (iné prostredia na pokusy) a roluje sa;
+      nová relácia **Noctalia (čistá)** (`latte-session noctalia`, hypr/noctalia.lua). Predtým v náhľade
+      (`LATTE_GREETER_TEST=1`, sk aj en): všetky funkcie dnešnej (výber účtu a relácie vrátane Kvapiek,
       NORMAL/SAFE a dôvod, posledný pád, Caps/Num Lock, zobraziť heslo, ľavý panel log/RSS/počasie/text, tapeta
       a farba z Nastavení, bez GPU pod labwc/pixman) s lepším vzhľadom v duchu latteGoo (kvapky, káva, pokojný
       pohyb) a **preložiteľná** (popisy relácií z `Comment[jazyk]`, texty cez preklady — dnes natvrdo po slovensky)
 - [x] Ikona a skupina okna zo spúšťača (.desktop): LatteOS podľa titulku = Name, ostatné podľa StartupWMClass/id
+- [~] **Sunshine pred prihlásením** (30. 9., overiť po reštarte): virtuálny monitor na grafickej karte (EDID
+      `LATTE-VIRT` na DP-1 cez parameter jadra, resources/edid), Sunshine od štartu (linger, default.target, KMS) —
+      jeden stream od prihlasovacej obrazovky po akúkoľvek reláciu; bez automatického prihlásenia
+      (setup/lab/vzdialene.sh). Za behu sa to vyskúšať nedalo: Secure Boot zamyká debugfs (lockdown integrity)
 - [ ] Vlastné `app_id` pre aplikácie LatteOS (dnes podľa titulku) a spúšťače LatteOS preložiteľné (`Name=` anglicky
       + `Name[sk]=`; dnes natvrdo po slovensky, rovnako titulky okien)
 - [ ] Slovenský preklad Noctalie doplniť (ovládacie centrum čiastočne po anglicky) a poslať upstream

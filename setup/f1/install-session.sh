@@ -39,10 +39,11 @@ sudo install -d /usr/share/latteos/hypr/latte
 for f in "$S"/hypr/latte/*.lua; do put "$f" "/usr/share/latteos/hypr/latte/$(basename "$f")"; done
 put "$S/hypr/hyprland.conf" /usr/share/latteos/hypr/hyprland.conf
 put "$S/hypr/hyprland.lua" /usr/share/latteos/hypr/hyprland.lua
+put "$S/hypr/noctalia.lua" /usr/share/latteos/hypr/noctalia.lua     # relácia „Noctalia (čistá)“
 for f in rc.xml autostart environment menu.xml; do sudo install -Dm644 "$S/labwc/$f" "/usr/share/latteos/labwc/$f"; done
 # relácie LatteOS: v systémovom zozname (pre iné greetery) aj vo vlastnom, ktorý ponúka latte-greeter
 # (tuigreet by inak ponúkol aj „Hyprland“ z COPR bez Noctalie a bez latte-session)
-for f in latteos.desktop latteos-safe.desktop latteos-hra.desktop latteos-kvapky.desktop; do
+for f in latteos.desktop latteos-safe.desktop latteos-hra.desktop latteos-kvapky.desktop latteos-noctalia.desktop; do
     sudo install -Dm644 "$S/wayland-sessions/$f" "/usr/share/wayland-sessions/$f"
     sudo install -Dm644 "$S/wayland-sessions/$f" "/usr/share/latteos/sessions/$f"
 done

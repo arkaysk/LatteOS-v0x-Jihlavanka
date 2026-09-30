@@ -37,7 +37,29 @@ end
 -- virtuálna obrazovka: bez fyzického monitora (napr. latte-lab ovládaný na diaľku cez Sunshine/Moonlight) si
 -- Hyprland vytvorí LATTE-VIRT 1920×1080; po pripojení monitora ju zruší (setup/lab/vzdialene.sh)
 hl.monitor({ output = "LATTE-VIRT", mode = "1920x1080@60", position = "auto", scale = 1 })
+-- virtuálny monitor na grafickej karte (30. 9.): jadro dá voľnému výstupu EDID „LATTE-VIRT“
+-- (drm.edid_firmware=DP-1:edid/latte-virt-1080p.bin video=DP-1:e, setup/lab/vzdialene.sh) — karta má monitor aj bez
+-- monitora, Sunshine ho sníma cez KMS od prihlasovacej obrazovky. Keď je pripojený skutočný monitor, virtuálny sa vypne.
+local kvirt = nil
+do
+    local f = io.open("/proc/cmdline", "r")
+    if f then kvirt = (f:read("*a") or ""):match("drm%.edid_firmware=([%w%-]+):edid/latte%-virt"); f:close() end
+end
+local kvirt_off = nil
+local function kernel_virtual()
+    if not kvirt then return end
+    local others = 0
+    for _, m in ipairs(hl.get_monitors() or {}) do
+        if m.name ~= kvirt and m.name ~= "LATTE-VIRT" and m.name ~= "FALLBACK" and not m.name:match("^HEADLESS") then others = others + 1 end
+    end
+    local off = others > 0
+    if off == kvirt_off then return end
+    kvirt_off = off
+    if off then hl.monitor({ output = kvirt, disabled = true })
+    else hl.monitor({ output = kvirt, mode = "1920x1080@60", position = "auto", scale = 1 }) end
+end
 local function virtual_screen()
+    kernel_virtual()
     local phys, virt = 0, false
     for _, m in ipairs(hl.get_monitors() or {}) do
         if m.name == "LATTE-VIRT" then virt = true

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# latte-session [safe|hra|kvapky] — relácia LatteOS po prihlásení (spúšťa ju greetd cez wayland-sessions/*.desktop).
+# latte-session [safe|hra|kvapky|noctalia] — relácia LatteOS po prihlásení (spúšťa ju greetd cez wayland-sessions/*.desktop).
 #
 # Režim berie z /run/latteos/session.env (zapísal latte-boot select pri štarte).
 # NORMAL: Hyprland + Noctalia. Ak Hyprland spadne skôr, než je relácia zdravá (60 s),
@@ -43,7 +43,12 @@ next=desktop
 [ "${1:-}" = hra ] && next=hra
 LATTE_VARIANT=klasicke
 [ "${1:-}" = kvapky ] && LATTE_VARIANT=kvapky
+# NOCTALIA (čistá): Hyprland + Noctalia s ich predvolenými nastaveniami, bez úprav LatteOS (hypr/noctalia.lua)
+[ "${1:-}" = noctalia ] && LATTE_VARIANT=noctalia
 export LATTE_VARIANT
+# príznak Kvapiek (latte-kvapky skusit) patrí iba tejto relácii: XDG_RUNTIME_DIR pri „linger“ (Sunshine pred
+# prihlásením) prežije odhlásenie a klasický LatteOS by sa inak spustil ako Kvapky
+[ "$LATTE_VARIANT" = kvapky ] || rm -f "$XDG_RUNTIME_DIR/latteos/kvapky"
 flag="$XDG_RUNTIME_DIR/latteos/relacia"
 mkdir -p "$(dirname "$flag")"; rm -f "$flag"
 export LATTE_MODE LATTE_RENDERER LATTE_TIER
@@ -85,6 +90,7 @@ export XDG_CURRENT_DESKTOP=Hyprland
 # Lua modul LatteOS (F2); starý hyprlang súbor ostáva ako záloha
 hconf="$share/hypr/hyprland.lua"
 [ -f "$hconf" ] || hconf="$share/hypr/hyprland.conf"
+[ "$LATTE_VARIANT" = noctalia ] && [ -f "$share/hypr/noctalia.lua" ] && hconf="$share/hypr/noctalia.lua"
 # strážcom je latte-session (pád → SAFE), nie start-hyprland: ten po páde reštartuje Hyprland
 # bez -c (vygeneruje cudziu konfiguráciu) a zakryje pád. LATTE_HYPRLAND=false simuluje pád (test).
 # Pád PO 60 s (relácia už bola zdravá): Hyprland sa spustí znova, najviac 3× za 10 minút; potom SAFE.
