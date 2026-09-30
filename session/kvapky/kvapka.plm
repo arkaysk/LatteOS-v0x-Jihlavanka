@@ -273,9 +273,15 @@ scene Kvapka {
     let ws = max(wp + wf + wd, 0.05)
     // most sa vytvorí, keď je medzera medzi kvapkami menšia ako asi polovica `link` (smooth min v pleamare):
     // pri vysúvaní sa preto kvapky k sebe nakláňajú — Štart k telu, vypínač k Štartu
-    let sx = sx0 + 18 * lift.s + 10 * hh - 9 * hp + 6 * stir * noise(time * 0.11 + 3) + 3 * lift.s * noise(time * 0.45 + 8)
-    let px = px0 + 12 * lift.p + 12 * hs + 5 * stir * noise(time * 0.1 + 4) + 3 * lift.p * noise(time * 0.5 + 2)
-    let hx = lx - 7 * hs
+    // živý tvor (30. 9.): keď sa kurzor priblíži, kvapka sa k nemu nakloní — venuje mu pozornosť; keď je nad ňou,
+    // mierne sa nafúkne a netrpezlivo pulzuje (jit: rôsolovo, striedavo do šírky a do výšky). Tvár sa nemení.
+    let near.h = 1 - smooth(0, 150, length(cu - lx, max(0, edge - 40 - cv)))
+    let sx = sx0 + 18 * lift.s + 10 * hh - 9 * hp + 6 * stir * noise(time * 0.11 + 3) + 3 * lift.s * noise(time * 0.45 + 8) + clamp(cu - sx0, -26, 26) * 0.3 * near.s
+    let px = px0 + 12 * lift.p + 12 * hs + 5 * stir * noise(time * 0.1 + 4) + 3 * lift.p * noise(time * 0.5 + 2) + clamp(cu - px0, -20, 20) * 0.3 * near.p
+    let hx = lx - 7 * hs + clamp(cu - lx, -22, 22) * 0.25 * near.h
+    let jit.s = 0.045 * sin(time * 8.5) * hs
+    let jit.p = 0.05 * sin(time * 9.3) * hp
+    let jit.h = 0.03 * sin(time * 7.7) * hh
     // v pokoji kvapky pomaly vystupujú z okraja a klesajú (každá v inom rytme), preto vidno aj vlákna a mláku
     // Hodiny sú vidieť stále (aj v pokoji a v úzkom páse): stred 22 px nad okrajom, pri myši o kúsok vyššie
     let s.y = edge - 22 - 24 * lift.s - 3 * hs - 4 * flow * (1 - lift.s) + 70 * (1 - ap)
@@ -377,7 +383,7 @@ scene Kvapka {
             box { at: bl + w / 2, mid; size: w + wob * 0.1, spine.h * (1 - squish * 0.08); corner: spine.h / 2; blend: neck }
             box stalk { from: stalk.x - stalk.w / 2, bottom - 12; size: stalk.w, edge - bottom + 24; corner: stalk.w / 2; blend: 16 * clamp(stalk.w / 10, 0, 1) }
             // hlava: najväčšia guľa, trochu vyššie (nesúmernosť), pomaly dýcha
-            ellipse { at: hx, mid - 8 - wob * 0.05; radius: (36 + 3 * hh) * (1 + 0.03 * noise(time * 0.4)); blend: 22 }
+            ellipse { at: hx, mid - 8 - wob * 0.05 - 3 * near.h; radius: (36 + 3 * hh) * (1 + 0.03 * noise(time * 0.4)); scale: 1 + jit.h, 1 - jit.h; blend: 22 }
             // guľôčky okien: každá pláva a dýcha inak (noise podľa k), vlna pri zmene počtu (wob, striedavo)
             ellipse { at: lx + ux.0 + 2 * noise(0.0, time * 0.35) + if(bdrag == 0, bdx, 0), mid + uy.0 + 2.5 * noise(5.0, time * 0.3) + if(bdrag == 0, bdy, 0); radius: ur.0 * b.0 * (1 + 0.035 * noise(0.0, time * 0.5) + 0.12 * act.0) + wob * 0.04; blend: 13 }
             ellipse { at: lx + ux.1 + 2 * noise(0.7, time * 0.35) + if(bdrag == 1, bdx, 0), mid + uy.1 + 2.5 * noise(6.3, time * 0.3) + if(bdrag == 1, bdy, 0); radius: ur.1 * b.1 * (1 + 0.035 * noise(2.1, time * 0.5) + 0.12 * act.1) - wob * 0.04; blend: 13 }
@@ -478,13 +484,13 @@ scene Kvapka {
             line { from: lx + ux.47 + 2 * noise(32.9, time * 0.35) + if(bdrag == 47, bdx, 0), mid + uy.47 + 2.5 * noise(66.1, time * 0.3) + if(bdrag == 47, bdy, 0); to: lx + kx.47, if(uy.47 > -3, edge + 14, mid + ky.47); width: ur.47 * b.47 * 0.3 * if(bdrag == 47, clamp(1 - (abs(bdx) + abs(bdy)) / 520, 0.22, 1), 1) * (1 - o.pull) * ap; blend: 9 }
             // Štart a vypínač: vlastná „voda“ pod okrajom; s hlavou a medzi sebou ich spája most `link`
             box { from: px - 34 - 14 * flow2 * stir, edge; size: (sx - px + 68 + 28 * flow2 * stir) * so, 70 }
-            ellipse { at: sx, s.y; radius: (33 + 3 * hs) * so * (1 - smooth(0, 0.12, dsh)); scale: 1 + squish.s * 0.08, 1 - squish.s * 0.12; blend: link * so }
+            ellipse { at: sx, s.y; radius: (33 + 3 * hs) * so * (1 - smooth(0, 0.12, dsh)); scale: 1 + squish.s * 0.08 + jit.s, 1 - squish.s * 0.12 - jit.s; blend: link * so }
             // upozornenia: kvapôčky prilepené hore vľavo na Hodinách (najviac tri) a jedna, ktorá práve padá
             ellipse { at: sx - 25, s.y - 23; radius: 6.5 * so * (1 - dsh) * if(notes.count > 0, 1, 0); blend: 8 }
             ellipse { at: sx - 10, s.y - 34; radius: 5.5 * so * (1 - dsh) * if(notes.count > 1, 1, 0); blend: 8 }
             ellipse { at: sx + 6, s.y - 37; radius: 4.8 * so * (1 - dsh) * if(notes.count > 2, 1, 0); blend: 8 }
             ellipse { at: sx + 4, s.y - 110 + 72 * nfall; radius: 6 * so * if(nfall > 0.02 and nfall < 0.97, 1, 0); scale: 0.85, 1.25; blend: 10 }
-            ellipse { at: px, p.y; radius: (19 + 4 * hp) * so * (1 - smooth(0, 0.12, pm)); scale: 1 + squish.p * 0.08, 1 - squish.p * 0.12; blend: link * so }
+            ellipse { at: px, p.y; radius: (19 + 4 * hp) * so * (1 - smooth(0, 0.12, pm)); scale: 1 + squish.p * 0.08 + jit.p, 1 - squish.p * 0.12 - jit.p; blend: link * so }
             line { from: px, p.y - 4; to: sx, s.y - 6; width: thread.ps * (1 - max(dsh, pm)); blend: 12 * clamp(thread.ps * (1 - max(dsh, pm)) / 3, 0, 1) }
             line { from: sx + 8, s.y - 12; to: bl + 18, bottom - 14; width: thread.sb * ap * (1 - dsh); blend: 14 * clamp(thread.sb * ap * (1 - dsh) / 3, 0, 1) }
             ellipse { at: drip.x, drip.y; radius: drip.r * so; blend: 8 }
