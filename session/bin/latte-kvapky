@@ -7,6 +7,7 @@
 #   latte-kvapky spat     späť na klasickú plochu (Noctalia a pomocníci ako pri štarte, bežné okraje okien)
 #   latte-kvapky stav     „kvapky“ alebo „klasicke“
 #   latte-kvapky okraj [dole|hore|vlavo|vpravo POLOHA]   okraj lišty-kvapky (presun ťahaním); bez argumentov vypíše
+#   latte-kvapky uloz spustac JSON   uloží nastavenia spúšťača (logika Kvapiek nevie zapisovať súbory)
 # Ostáva aj Kapsa (história schránky), App Manager a systémové ponuky (Ctrl+Alt+Del, kvapka vypínač).
 set -u
 share=/usr/share/latteos
@@ -113,6 +114,14 @@ case "${1:-}" in
         for a in netznak kapsavyrez nahlad plocha rychle pohoda maskot; do start_app "$a"; done
         # statická tapeta z mpvpaperu (bez shellu) ustúpi natívnej tapete Noctalie; živé video ostáva
         latte-tapety obnov >/dev/null 2>&1
+        ;;
+    uloz)
+        # logika Kvapiek nevie zapisovať súbory: uloží, čo jej patrí (iba tieto súbory, atomicky)
+        case "${2:-}" in
+            spustac) f="${XDG_CONFIG_HOME:-$HOME/.config}/latteos/spustac.json" ;;
+            *) echo "latte-kvapky uloz: neznámy súbor: ${2:-}" >&2; exit 1 ;;
+        esac
+        mkdir -p "$(dirname "$f")"; printf '%s\n' "${3:-}" > "$f.new" && mv -f "$f.new" "$f"
         ;;
     okraj)
         if [ -z "${2:-}" ]; then cat "$okraj" 2>/dev/null || echo "dole 0.400"; exit 0; fi

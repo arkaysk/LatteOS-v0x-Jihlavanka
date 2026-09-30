@@ -410,57 +410,300 @@ local function watch_notes()
     end)
 end
 
--- ── dashboard (vyteká z Hodín) ─────────────────────────────────────────────────
--- Hľadanie aplikácií je úloha Štartu: aplikácie zo služby `apps` (súbory .desktop), ako hľadanie v Marei.
-local apps = {}
-local found = {}
-local function search()
-    local q = (text.query or ""):lower()
-    fact.typing = q ~= ""
-    found = {}
-    if q ~= "" then
+-- ── spúšťač (vyteká z hodiniek: ľavý klik alebo kláves Win) ─────────────────────────────────────────────
+-- Hľadanie v aplikáciách (služba apps), súboroch (fd), na webe (predvolený vyhľadávač) a otázka pre AI (webové
+-- čety, ktoré vezmú otázku z adresy); záložky s obľúbenými aplikáciami, ktoré si používateľ pomenuje sám.
+-- Nastavenia: ~/.config/latteos/spustac.json (logika nevie zapisovať súbory → `latte-kvapky uloz spustac`).
+local ENGINES = {
+    { id = "google", name = "Google", url = "https://www.google.com/search?q=%s" },
+    { id = "bing", name = "Bing", url = "https://www.bing.com/search?q=%s" },
+    { id = "duckduckgo", name = "DuckDuckGo", url = "https://duckduckgo.com/?q=%s" },
+    { id = "startpage", name = "Startpage", url = "https://www.startpage.com/do/search?q=%s" },
+    { id = "ecosia", name = "Ecosia", url = "https://www.ecosia.org/search?q=%s" },
+    { id = "brave", name = "Brave Search", url = "https://search.brave.com/search?q=%s" },
+}
+-- čety, ktoré otázku prevezmú z adresy (?q=); Gemini to nevie, preto tu nie je
+local AIS = {
+    { id = "chatgpt", name = "ChatGPT", url = "https://chatgpt.com/?q=%s" },
+    { id = "claude", name = "Claude", url = "https://claude.ai/new?q=%s" },
+    { id = "perplexity", name = "Perplexity", url = "https://www.perplexity.ai/search?q=%s" },
+    { id = "copilot", name = "Copilot", url = "https://copilot.microsoft.com/?q=%s" },
+    { id = "mistral", name = "Le Chat", url = "https://chat.mistral.ai/chat?q=%s" },
+    { id = "google-ai", name = "Google AI", url = "https://www.google.com/search?udm=50&q=%s" },
+}
+local HOME = nil                                    -- domovský priečinok (printenv, nižšie)
+local MAX_TABS = 4                                 -- používateľove záložky (+ Hľadať = 5 v scéne)
+local apps, by_id = {}, {}
+local cfg = { engine = "google", ai = { chatgpt = true, claude = true, perplexity = true }, tabs = {} }
+local cfg_file = nil
+local pin_ids = { "latteos-subory", "org.mozilla.firefox", "latteos-nastavenia", "latteos-aplikacie" }
+local hits, file_hits, favs = {}, {}, {}
+local renaming_tab = nil
+local ctx_actions = {}
+
+local function fill(s, vars) return (s:gsub("{(%w+)}", function(k) return vars[k] or "" end)) end
+local function urlencode(s)
+    return (s:gsub("[^%w%-%._~]", function(c) return string.format("%%%02X", string.byte(c)) end))
+end
+local function engine() for _, e in ipairs(ENGINES) do if e.id == cfg.engine then return e end end return ENGINES[1] end
+
+local function save_cfg()
+    run("latte-kvapky", { "uloz", "spustac", json.encode(cfg) })
+end
+
+-- ── záložky a obľúbené ──
+local function paint_tabs()
+    local out = { { name = tr("Search") } }
+    for _, t in ipairs(cfg.tabs) do out[#out + 1] = { name = t.name } end
+    model.tabs = out
+    if (tonumber(fact.tab) or 0) > #cfg.tabs then fact.tab = 0 end
+end
+local function paint_favs()
+    favs = {}
+    local out = {}
+    local t = cfg.tabs[tonumber(fact.tab) or 0]
+    if t then
+        for _, id in ipairs(t.apps or {}) do
+            local a = by_id[id]
+            if a and #favs < 18 then favs[#favs + 1] = a; out[#out + 1] = { name = a.name, icon = a.icon } end
+        end
+    end
+    model.favs = out
+end
+
+-- ── hľadanie ──
+local function paint_hits()
+    local q = text.query or ""
+    local ql = q:lower()
+    hits = {}
+    if ql ~= "" then
         local starts, inside = {}, {}
         for _, a in ipairs(apps) do
             local n = (a.name or ""):lower()
-            if n:sub(1, #q) == q then starts[#starts + 1] = a
-            elseif n:find(q, 1, true) then inside[#inside + 1] = a end
+            if n:sub(1, #ql) == ql then starts[#starts + 1] = a
+            elseif n:find(ql, 1, true) then inside[#inside + 1] = a end
         end
-        for _, a in ipairs(starts) do if #found < 6 then found[#found + 1] = a end end
-        for _, a in ipairs(inside) do if #found < 6 then found[#found + 1] = a end end
+        for _, list in ipairs({ starts, inside }) do
+            for _, a in ipairs(list) do
+                if #hits < 4 then hits[#hits + 1] = { kind = "app", name = a.name, sub = tr("Application"), icon = a.icon, app = a } end
+            end
+        end
+        for _, f in ipairs(file_hits) do
+            if #hits < 7 then
+                local name = f.path:match("([^/]+)/?$") or f.path
+                local where = f.path:gsub("^" .. (HOME or "~"):gsub("%p", "%%%0"), "~")
+                hits[#hits + 1] = { kind = "file", name = name .. "   " .. where, sub = f.dir and tr("Folder") or tr("File"),
+                                    icon = f.dir and "folder" or "text-x-generic", path = f.path }
+            end
+        end
+        local e = engine()
+        hits[#hits + 1] = { kind = "web", name = fill(tr("Search the web: {q}"), { q = q }), sub = e.name,
+                            icon = "internet-web-browser", url = e.url:format(urlencode(q)) }
+        for _, ai in ipairs(AIS) do
+            if cfg.ai[ai.id] and #hits < 11 then
+                hits[#hits + 1] = { kind = "ai", name = fill(tr("Ask {ai}: {q}"), { ai = ai.name, q = q }), sub = tr("AI"),
+                                    icon = "dialog-question", url = ai.url:format(urlencode(q)) }
+            end
+        end
     end
     local out = {}
-    for _, a in ipairs(found) do out[#out + 1] = { name = a.name, icon = a.icon } end
-    model.results = out
+    for _, h in ipairs(hits) do out[#out + 1] = { name = h.name, sub = h.sub, icon = h.icon } end
+    model.hits = out
+    if (tonumber(fact.sel) or 0) >= #hits then fact.sel = 0 end
+end
+
+local fd_gen = 0
+local function search()
+    if fact.renaming then fact.typing = false; return end
+    local q = text.query or ""
+    fact.typing = q ~= ""
+    if q ~= "" and (tonumber(fact.tab) or 0) > 0 then fact.tab = 0 end   -- písanie v záložke = hľadanie
     fact.sel = 0
+    file_hits = {}
+    paint_hits()
+    -- súbory: fd po krátkej pauze v písaní (nie po každom písmene), iba ak je čo hľadať
+    fd_gen = fd_gen + 1
+    local gen = fd_gen
+    if #q >= 2 and HOME then
+        after(220, function()
+            if gen ~= fd_gen then return end
+            run("fd", { "--ignore-case", "--max-results", "3", "--max-depth", "6", "--absolute-path", "--", q, HOME }, function(out)
+                if gen ~= fd_gen then return end
+                file_hits = {}
+                for line in (out or ""):gmatch("[^\n]+") do
+                    file_hits[#file_hits + 1] = { path = line:gsub("/$", ""), dir = line:sub(-1) == "/" }
+                end
+                paint_hits()
+            end)
+        end)
+    end
 end
 on("text:query", search)
-
--- pripnuté: ~/.config/latteos/pripnute (id súborov .desktop po riadkoch), inak predvolené
-local PINS = { "latteos-subory", "org.mozilla.firefox", "latteos-nastavenia", "latteos-aplikacie" }
-local pinned = {}
-local pin_ids = PINS
-local function paint_pins()
-    local by_id = {}
-    for _, a in ipairs(apps) do by_id[a.id] = a end
-    pinned = {}
-    local out = {}
-    for _, id in ipairs(pin_ids) do
-        local a = by_id[id]
-        if a and #pinned < 6 then pinned[#pinned + 1] = a; out[#out + 1] = { name = a.name, icon = a.icon } end
-    end
-    model.pins = out
-end
-sys.watch("apps", function(list) apps = list or {}; index_apps(apps); paint_pins(); search(); layout() end)
+on("sel_move", function(d)
+    if #hits == 0 then return end
+    fact.sel = math.max(0, math.min(#hits - 1, (tonumber(fact.sel) or 0) + (tonumber(d) or 0)))
+end)
 
 local function launch(a)
     if a and a.exec then pcall(sys.call, "apps.launch", a.exec) end
     fact.dash = false
 end
-on("open_result", function(i) launch(found[(i or 0) + 1]) end)
-on("pin_open", function(i) launch(pinned[(i or 0) + 1]) end)
-on("fact:dash", function(open) if not open then text.query = "" end end)
+local function open_hit(i)
+    local h = hits[(i or 0) + 1]
+    if not h then return end
+    if h.kind == "app" then launch(h.app)
+    elseif h.kind == "file" then run("xdg-open", { h.path }); fact.dash = false
+    else run("xdg-open", { h.url }); fact.dash = false end
+end
+on("open_hit", open_hit)
+on("fav_open", function(i) launch(favs[(i or 0) + 1]) end)
 
--- upozornenie v dashboarde: klik = otvoriť (predvolená akcia aplikácie) a zavrieť; „Vymazať všetko“
+-- ── premenovanie záložky: pole hľadania slúži ako názov (Enter uloží, Esc zruší) ──
+local function start_rename(t)
+    renaming_tab = t
+    fact.renaming = true
+    fact.typing = false
+    text.query = cfg.tabs[t].name
+    focus("query")
+end
+on("query_submit", function(v)
+    if fact.renaming then
+        local name = (text.query or ""):gsub("^%s+", ""):gsub("%s+$", "")
+        if (tonumber(v) or 1) > 0 and renaming_tab and cfg.tabs[renaming_tab] and name ~= "" then
+            cfg.tabs[renaming_tab].name = name
+            save_cfg()
+        end
+        renaming_tab = nil
+        fact.renaming = false
+        text.query = ""
+        paint_tabs()
+        return
+    end
+    open_hit(tonumber(fact.sel) or 0)
+end)
+on("tab_pick", function(k)
+    if fact.renaming then renaming_tab = nil; fact.renaming = false; text.query = "" end
+    paint_favs()
+    if (tonumber(k) or 0) == 0 then focus("query") end
+end)
+on("tab_add", function()
+    if #cfg.tabs >= MAX_TABS then return end
+    cfg.tabs[#cfg.tabs + 1] = { name = tr("New tab"), apps = {} }
+    save_cfg(); paint_tabs()
+    fact.tab = #cfg.tabs
+    paint_favs()
+    start_rename(#cfg.tabs)
+end)
+on("fact:dash", function(open)
+    if not open then
+        renaming_tab = nil; fact.renaming = false; text.query = ""; fact.ctx_open = false
+    end
+end)
+
+-- ── kontextové ponuky (pravý klik): položky { label, on, run } ──
+local function menu(items)
+    ctx_actions = {}
+    local out = {}
+    for i, it in ipairs(items) do
+        if i > 10 then break end
+        out[#out + 1] = { label = it.label, on = it.on and 1 or 0 }
+        ctx_actions[#ctx_actions + 1] = it.run
+    end
+    model.ctx = out
+    fact.ctx_hot = -1
+    fact.ctx_open = #out > 0
+end
+on("ctx_pick", function(k) local f = ctx_actions[(k or 0) + 1]; if f then f() end end)
+local function has(list, id) for i, v in ipairs(list) do if v == id then return i end end return nil end
+local function move(list, i, d)
+    local j = i + d
+    if j < 1 or j > #list then return end
+    list[i], list[j] = list[j], list[i]
+end
+on("hit_menu", function(k)
+    local h = hits[(k or 0) + 1]
+    if not h then return end
+    local items = {}
+    if h.kind == "app" then
+        for _, t in ipairs(cfg.tabs) do
+            local id = h.app.id
+            items[#items + 1] = { label = fill(tr("Add to “{tab}”"), { tab = t.name }), on = has(t.apps, id) ~= nil, run = function()
+                local at = has(t.apps, id)
+                if at then table.remove(t.apps, at) else t.apps[#t.apps + 1] = id end
+                save_cfg(); paint_favs()
+            end }
+        end
+    elseif h.kind == "file" then
+        items[#items + 1] = { label = tr("Open containing folder"), run = function()
+            run("xdg-open", { h.path:match("^(.*)/[^/]*$") or h.path }); fact.dash = false
+        end }
+    elseif h.kind == "web" then
+        for _, e in ipairs(ENGINES) do
+            items[#items + 1] = { label = fill(tr("Search engine: {name}"), { name = e.name }), on = e.id == cfg.engine, run = function()
+                cfg.engine = e.id; save_cfg(); paint_hits()
+            end }
+        end
+    elseif h.kind == "ai" then
+        for _, ai in ipairs(AIS) do
+            items[#items + 1] = { label = ai.name, on = cfg.ai[ai.id] == true, run = function()
+                cfg.ai[ai.id] = not cfg.ai[ai.id] or nil; save_cfg(); paint_hits()
+            end }
+        end
+    end
+    menu(items)
+end)
+on("fav_menu", function(k)
+    local t = cfg.tabs[tonumber(fact.tab) or 0]
+    local a = favs[(k or 0) + 1]
+    if not t or not a then return end
+    local i = has(t.apps, a.id)
+    menu({
+        { label = tr("Remove from this tab"), run = function() if i then table.remove(t.apps, i) end; save_cfg(); paint_favs() end },
+        { label = tr("Move left"), run = function() if i then move(t.apps, i, -1) end; save_cfg(); paint_favs() end },
+        { label = tr("Move right"), run = function() if i then move(t.apps, i, 1) end; save_cfg(); paint_favs() end },
+    })
+end)
+on("tab_menu", function(k)
+    local i = tonumber(k) or 0
+    if not cfg.tabs[i] then return end
+    menu({
+        { label = tr("Rename"), run = function() start_rename(i) end },
+        { label = tr("Move left"), run = function() if i > 1 then move(cfg.tabs, i, -1); fact.tab = i - 1 end; save_cfg(); paint_tabs(); paint_favs() end },
+        { label = tr("Move right"), run = function() if i < #cfg.tabs then move(cfg.tabs, i, 1); fact.tab = i + 1 end; save_cfg(); paint_tabs(); paint_favs() end },
+        { label = tr("Delete tab"), run = function() table.remove(cfg.tabs, i); fact.tab = 0; save_cfg(); paint_tabs(); paint_favs() end },
+    })
+end)
+
+-- nastavenia: zo súboru; prvý raz obľúbené z doterajších pripnutých (~/.config/latteos/pripnute) a prázdne Hry
+local function load_cfg()
+    if not cfg_file then return end
+    run("cat", { cfg_file }, function(out)
+        local ok, c = pcall(json.decode, out or "")
+        if ok and type(c) == "table" and type(c.tabs) == "table" then
+            cfg.engine = c.engine or cfg.engine
+            if type(c.ai) == "table" then cfg.ai = c.ai end
+            cfg.tabs = {}
+            for _, t in ipairs(c.tabs) do
+                if type(t) == "table" and #cfg.tabs < MAX_TABS then
+                    cfg.tabs[#cfg.tabs + 1] = { name = tostring(t.name or tr("New tab")), apps = type(t.apps) == "table" and t.apps or {} }
+                end
+            end
+        else
+            cfg.tabs = { { name = tr("Favorites"), apps = pin_ids }, { name = tr("Games"), apps = {} } }
+            save_cfg()
+        end
+        paint_tabs(); paint_favs()
+    end)
+end
+
+sys.watch("apps", function(list)
+    apps = list or {}
+    by_id = {}
+    for _, a in ipairs(apps) do by_id[a.id] = a end
+    index_apps(apps); paint_favs(); search(); layout()
+end)
+
+-- upozornenie v spúšťači: klik = otvoriť (predvolená akcia aplikácie) a zavrieť; „Vymazať všetko“
 on("note_open", function(i)
     local n = (model.notes or {})[(i or 0) + 1]
     if not n then return end
@@ -469,41 +712,7 @@ on("note_open", function(i)
 end)
 on("notes_clear", function() pcall(sys.call, "notifications.clear") end)
 
--- rýchle nastavenia: prepína Noctalia (ukáže svoje OSD), „Viac“ otvorí jej ovládacie centrum; hlasitosť priamo
 local function noctalia(...) run("noctalia", { "msg", ... }) end
-on("qs_wifi", function() noctalia("wifi-toggle") end)
-on("qs_bt", function() noctalia("bluetooth-toggle") end)
-on("qs_mute", function() noctalia("volume-mute") end)
-on("qs_more", function() fact.dash = false; run("latte-app", { "nastavenia" }) end)
-
--- stránky ovládacieho centra v dashboarde: rovnaké zoznamy ako v scéne (služby), klik = akcia
-local nets, bts, outs = {}, {}, {}
-sys.watch("network", function(v) nets = (v and v.networks) or {} end)
-sys.watch("bluetooth", function(v) bts = (v and v.devices) or {} end)
-sys.watch("audio", function(v) outs = (v and v.outputs) or {} end)
-on("pg_pick", function(k)
-    local i = (k or 0) + 1
-    local page = tonumber(fact.page) or 0
-    if page == 1 then
-        local n = nets[i]
-        if not n or n.active then return end
-        if n.known or not n.secure then
-            pcall(sys.call, "network.connect", n.ssid)
-        else
-            -- nová zabezpečená sieť potrebuje heslo: to vie Noctalia (jej stránka Wi-Fi)
-            fact.dash = false
-            after(150, function() noctalia("panel-toggle", "control-center", "wifi") end)
-        end
-    elseif page == 2 then
-        local d = bts[i]
-        if not d then return end
-        pcall(sys.call, d.connected and "bluetooth.disconnect" or "bluetooth.connect", d.address)
-    elseif page == 3 then
-        local o = outs[i]
-        if o and not o.default then pcall(sys.call, "audio.default", o.id) end
-    end
-end)
-on("qs_vol", function(v) pcall(sys.call, "audio.volume", math.max(0, math.min(1, tonumber(v) or 0))) end)
 
 -- počasie: Open-Meteo (bez kľúča), miesto z Nastavení › Účet › Prihlasovanie (greeter.conf), každých 20 min
 local WX = { [0] = "☀", [1] = "🌤", [2] = "⛅", [3] = "☁", [45] = "🌫", [48] = "🌫", [95] = "⛈", [96] = "⛈", [99] = "⛈" }
@@ -542,17 +751,6 @@ local kavy = {
     latte = { 0, 0.85 }, ["cierna-s-mliekom"] = { 0.4, 0.3 },
 }
 local kava_file = nil
--- dashboard pri Hodinách: Noctalia (predvolené) alebo kvapka (~/.config/latteos/kvapky-panel)
-local panel_file = nil
-local function read_panel()
-    if not panel_file then return end
-    run("cat", { panel_file }, function(out)
-        local noc = ((out or ""):match("%a+") or "noctalia") ~= "kvapka"
-        if fact.panel_noc ~= noc then fact.panel_noc = noc end
-    end)
-end
-on("noc_panel", function() run("noctalia", { "msg", "panel-toggle", "control-center" }) end)
-
 local function read_kava()
     if not kava_file then return end
     run("cat", { kava_file }, function(out)
@@ -566,15 +764,18 @@ run("printenv", { "HOME" }, function(out)
     if home then
         state = home .. "/.local/state/latteos/window-mode"; read_mode()
         kava_file = home .. "/.config/latteos/kava"; read_kava()
-        panel_file = home .. "/.config/latteos/kvapky-panel"; read_panel()
+        HOME = home
+        cfg_file = home .. "/.config/latteos/spustac.json"
+        -- doterajšie pripnuté (~/.config/latteos/pripnute) sú pri prvom štarte obľúbené spúšťača
         run("cat", { home .. "/.config/latteos/pripnute" }, function(out)
             local ids = {}
             for line in (out or ""):gmatch("[^\n]+") do
                 local id = line:match("^%s*([%w%.%-_]+)")
                 if id then ids[#ids + 1] = id end
             end
-            if #ids > 0 then pin_ids = ids; paint_pins() end
+            if #ids > 0 then pin_ids = ids end
+            load_cfg()
         end)
     end
 end)
-every(2000, function() read_mode(); read_kava(); read_panel() end)   -- režim sa dá zmeniť aj inde (Super+W, Nastavenia)
+every(2000, function() read_mode(); read_kava() end)   -- režim sa dá zmeniť aj inde (Super+W, Nastavenia)
