@@ -143,8 +143,7 @@ a(f'''    // >>> spúšťač (spustac.py)
     }}
     // obsah: y0 = horný okraj obsahu pod poľom; riadok režimu a počasia sú pri spodku karty
     let y0 = d0.y + 64
-    let yc = d0.y + 454                        // riadok režimu (čipy)
-    let yw = d0.y + 496                        // riadok počasia
+    let yc = d0.y + 494                        // riadok režimu (čipy) — úplne dole (počasie je v DaNoGoo, 1. 10.)
     let show_chat = tview == 0 and smode == 0 and not wx_detail
     let show_favs = tview == 0 and smode == 1 and not typing and not wx_detail
     let show_hits = tview == 0 and smode > 0 and not wx_detail and not show_favs
@@ -175,8 +174,6 @@ for k in range(1, NC):
     a(f"    let chx.{k} = chx.{k-1} + if({k-1} < chips.count, cwd.{k-1} + 8, 0)\n")
 a(f'''    let fav_rows = clamp(floor((favs.count + 5) / 6), 1, 2)
     let ry0 = y0 + 46 + fav_rows * 90          // nadpis „Nedávne“
-    measure wxp
-    let wxs = d0.x + 34 + wxp.width + 12       // začiatok variantov počasia
     group {{
         opacity: dshow
         show: dsh > 0.5 and tview == 0
@@ -216,14 +213,6 @@ a(f'''    let fav_rows = clamp(floor((favs.count + 5) / 6), 1, 2)
         }}
         // prázdny obsah: nápoveda podľa režimu
         text note {{ at: d0.x + 2, y0 + 20; anchor: left center; width: cw - 8; lines: 3; size: 13; color: l.dim; show: not wx_detail and ((show_chat and chat.count < 1 and not ai_wait) or (show_hits and hits.count < 1) or (show_favs and favs.count < 1)); family: "{UI}" }}
-        // predpoveď počasia (Detaily): 8 stĺpcov — hodiny dňa alebo dni týždňa
-        text "Forecast · {{wx_place}}" {{ at: d0.x + 2, y0 + 10; anchor: left center; size: 12.5; weight: 600; color: l.dim; show: wx_detail; family: "{UI}" }}
-        repeat k in 0..8 {{
-            box {{ at: d0.x + k * (cw / 8) + cw / 16, y0 + 100; size: cw / 8 - 8, 130; corner: 14; color: l.var; opacity: 60%; show: wx_detail and k < wx.count }}
-            text wx.$k.label {{ at: d0.x + k * (cw / 8) + cw / 16, y0 + 56; anchor: center; size: 11.5; color: l.dim; show: wx_detail and k < wx.count; family: "{UI}" }}
-            text wx.$k.glyph {{ at: d0.x + k * (cw / 8) + cw / 16, y0 + 98; anchor: center; size: 26; color: l.fg; show: wx_detail and k < wx.count; family: "{ICONS}" }}
-            text wx.$k.temp {{ at: d0.x + k * (cw / 8) + cw / 16, y0 + 140; anchor: center; size: 13; weight: 600; color: l.fg; show: wx_detail and k < wx.count; family: "{UI}" }}
-        }}
     }}
     // rozhovor: bubliny používateľa (akcent, vľavo) a AI (vpravo), goo s kvapôčkou-chvostíkom k poľu
     group {{
@@ -264,20 +253,6 @@ a(f'''        }}
             text chips.$k.label {{ at: chx.$k + 13 + if(chips.$k.hasg, 22, 0), yc; anchor: left center; size: 12.5; weight: 500; color: if(chips.$k.on, l.onacc, l.fg); measure: cm.$k; show: k < chips.count and chips.$k.label_on; family: "{UI}" }}
             text "{ICON("chevron-down")}" {{ at: chx.$k + cwd.$k - 13, yc + 1; anchor: right center; size: 12; color: if(chips.$k.on, l.onacc, l.dim); show: k < chips.count and chips.$k.drop; family: "{ICONS}" }}
         }}
-        // úzky riadok počasia: miesto · Dnes / Zajtra / Týždeň · súhrn · Detaily
-        box {{ at: d0.x + cw / 2, yw; size: cw, 32; corner: 16; color: l.var; opacity: 85% }}
-        text "{ICON("map-pin")}" {{ at: d0.x + 14, yw; anchor: left center; size: 14; color: l.dim; family: "{ICONS}" }}
-        text wx_place {{ at: d0.x + 34, yw; anchor: left center; size: 12; weight: 500; color: l.fg; measure: wxp; family: "{UI}" }}
-        repeat k in 0..3 {{
-            box {{ at: wxs + k * 62 + 29, yw; size: 58, 24; corner: 12; color: if(wx_view == k, l.acc, l.hover); opacity: if(wx_view == k, 100%, if(wx_hot == k, 100%, 0)) }}
-        }}
-        text "Today" {{ at: wxs + 29, yw; anchor: center; size: 11.5; weight: 500; color: if(wx_view == 0, l.onacc, l.dim); family: "{UI}" }}
-        text "Tomorrow" {{ at: wxs + 91, yw; anchor: center; size: 11.5; weight: 500; color: if(wx_view == 1, l.onacc, l.dim); family: "{UI}" }}
-        text "Week" {{ at: wxs + 153, yw; anchor: center; size: 11.5; weight: 500; color: if(wx_view == 2, l.onacc, l.dim); family: "{UI}" }}
-        text wx_icon {{ at: wxs + 196, yw; anchor: left center; size: 15; color: l.fg; family: "{ICONS}" }}
-        text wx_sum {{ at: wxs + 218, yw; anchor: left center; width: d0.x + cw - 96 - wxs - 218; lines: 1; size: 12; color: l.fg; family: "{UI}" }}
-        text pick(if(wx_detail, 1, 0), "Details", "Close") {{ at: d0.x + cw - 30, yw; anchor: right center; size: 12; weight: 500; color: if(wx_hot == 3 or wx_detail, l.acc, l.fg); family: "{UI}" }}
-        text pick(if(wx_detail, 1, 0), "{ICON("chevron-right")}", "{ICON("x")}") {{ at: d0.x + cw - 12, yw + 1; anchor: right center; size: 13; color: if(wx_hot == 3 or wx_detail, l.acc, l.dim); family: "{ICONS}" }}
     }}
 ''')
 a(f'''    // ── časové menu TimeGoo (pravý klik): tá istá karta z ucha, obsah Prehľad · Stopky · Minútka · Budíky ──
@@ -431,10 +406,6 @@ a(f'''    // výber režimu: vyteká z ikony v poli (goo), riadky s ikonou a ná
     repeat k in 0..{NC} {{
         zone box chip_hit.$k {{ at: chx.$k + cwd.$k / 2, yc; size: cwd.$k, 32; cursor: pointer; active: dash and k < chips.count }}
     }}
-    repeat k in 0..3 {{
-        zone box wxs_hit.$k {{ at: wxs + k * 62 + 29, yw; size: 60, 28; cursor: pointer; active: dash }}
-    }}
-    zone box wxd_hit {{ at: d0.x + cw - 44, yw; size: 88, 28; cursor: pointer; active: dash }}
     // časové menu: klikateľné miesta (kód tlačidla v t_do, koliesko v t_wheel)
     zone box t_wb {{ at: tcx, y0 + 74; size: cw, 140; cursor: pointer; active: dash and tv and ttab == 0 }}
     zone ellipse t_sw_go {{ at: tcx, y0 + 168; radius: 32; cursor: pointer; active: dash and tv and ttab == 1 }}
@@ -495,7 +466,7 @@ once("    model favs max 18 { name: text; icon: image 40, 40 }\n",
      f"    fact tema = 0                            // téma LatteOS (poradie v session/themes/make-themes.py, logika)\n")
 once("    model chips max 7 { label: text; on: bool; drop: bool }\n",
      f"    model chips max {NC} {{ label: text; label_on: bool; glyph: text; hasg: bool; on: bool; drop: bool }}\n")
-once("    text wx_sum = \"\"\n", "    text wx_sum = \"\"\n    text wx_icon = \"\"\n")
+if "text wx_icon = " not in s: once("    text wx_sum = \"\"\n", "    text wx_sum = \"\"\n    text wx_icon = \"\"\n")
 # pravidlá (raz): riadky 0..NH, dlaždice 0..NF, nedávne
 once("    repeat k in 0..10 {\n        on press hit_row.$k", f"    repeat k in 0..{NH} {{\n        on press hit_row.$k")
 once("    repeat k in 0..18 {\n        on press fav_hit.$k", f"    repeat k in 0..{NF} {{\n        on press fav_hit.$k")
@@ -509,7 +480,7 @@ if "on press rec_hit" not in s: once("    // rozhovor: koliesko roluje, pravý k
      f"    }}\n"
      "    // rozhovor: koliesko roluje, pravý klik na bublinu = kopírovať\n")
 # časové menu TimeGoo (raz): deklarácie, kliky na TimeGoo, pravidlá tlačidiel
-once("    event time_menu ->                       // pravý klik na Hodiny: časové menu\n",
+if "fact tview = 0" not in s: once("    event time_menu ->                       // pravý klik na Hodiny: časové menu\n",
      """    event time_menu ->                       // pravý klik na Hodiny: časové menu
     // časové menu TimeGoo (1. 10.): tá istá karta z ucha; logika plní a stráži minútku a budíky (v Goo nie je
     // widget hodín Noctalie, ktorý to robí v klasickom LatteOS)

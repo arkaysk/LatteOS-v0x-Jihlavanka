@@ -86,11 +86,6 @@ scene Kvapka {
     text wx_place = ""
     text wx_sum = ""
     text wx_icon = ""
-    text wx_icon = ""
-    text wx_icon = ""
-    text wx_icon = ""
-    text wx_icon = ""
-    text wx_icon = ""
     fact wx_view = 0
     fact wx_detail = false
     fact wx_hot = -1
@@ -655,6 +650,22 @@ scene Kvapka {
     event berry_open ->
     event berry_menu ->
     event berry_dismiss ->
+    // karta DaNoGoo (pravý klik): kalendár s udalosťami a úlohami (spoločné s klasickým LatteOS) a počasie
+    fact dc_open = false
+    fact dc_hot = -1
+    fact dc_empty = true                     // pole novej udalosti je prázdne (zástupný text)
+    text dc_month = ""
+    text dc_seltitle = ""
+    text dc_new = ""
+    text dc_hint = ""
+    model days max 42 { d: text; inm: bool; today: bool; sel: bool; dot: bool }
+    model evs max 5 { hm: text; title: text }
+    model tds max 5 { title: text; done: bool }
+    event dc_nav ->
+    event dc_day ->
+    event dc_todo ->
+    event dc_ev_menu ->
+    event dc_add
     spring dnspring = 230, 11
     spring dnwobble = 420, 13
     let dn.ax = pick(dn.side, W * dn.pos, W * dn.pos, 0, W)
@@ -666,7 +677,7 @@ scene Kvapka {
     let dn.vert = abs(dn.nx)
     let dn.near = 1 - smooth(0, 190, length(mx - dn.ax, my - dn.ay))
     prop dn.lift = 0 ~dnspring
-    follow dn.lift = if(dn_open, 1, 0)
+    follow dn.lift = if(dn_open or dc_open, 1, 0)
     prop dn.h = 0 ~lively
     prop dn.wob = 0 ~dnwobble
     // živý tvor: nakloní sa ku kurzoru, nad ňou sa nafúkne; pri otvorení vystrelí kolmo od okraja (pružina)
@@ -697,30 +708,30 @@ scene Kvapka {
     let brj.0 = (berries.count - 1 - 0)
     let brx.0 = if(dn.vert > 0.5, dn.x + dn.nx * (dn.r + 196), clamp(dn.x, 200, W - 200)) + if(brk == 0 and brmoved, br.dx, 0)
     let bry.0 = if(dn.vert > 0.5, dn.y + (brj.0 - (berries.count - 1) / 2) * 60, dn.y + dn.ny * (dn.r + 46 + brj.0 * 60)) + if(brk == 0 and brmoved, br.dy, 0)
-    let bre.0 = clamp(dn.lift * 1.7 - brj.0 * 0.12 - 0.2, 0, 1) * if(0 < berries.count, 1, 0) * clamp(1 - abs(if(brk == 0 and brmoved, br.dx, 0)) / 260, 0, 1)
+    let bre.0 = clamp(dn.lift * 1.7 - brj.0 * 0.12 - 0.2, 0, 1) * if(0 < berries.count and dn_open, 1, 0) * clamp(1 - abs(if(brk == 0 and brmoved, br.dx, 0)) / 260, 0, 1)
     let brj.1 = (berries.count - 1 - 1)
     let brx.1 = if(dn.vert > 0.5, dn.x + dn.nx * (dn.r + 196), clamp(dn.x, 200, W - 200)) + if(brk == 1 and brmoved, br.dx, 0)
     let bry.1 = if(dn.vert > 0.5, dn.y + (brj.1 - (berries.count - 1) / 2) * 60, dn.y + dn.ny * (dn.r + 46 + brj.1 * 60)) + if(brk == 1 and brmoved, br.dy, 0)
-    let bre.1 = clamp(dn.lift * 1.7 - brj.1 * 0.12 - 0.2, 0, 1) * if(1 < berries.count, 1, 0) * clamp(1 - abs(if(brk == 1 and brmoved, br.dx, 0)) / 260, 0, 1)
+    let bre.1 = clamp(dn.lift * 1.7 - brj.1 * 0.12 - 0.2, 0, 1) * if(1 < berries.count and dn_open, 1, 0) * clamp(1 - abs(if(brk == 1 and brmoved, br.dx, 0)) / 260, 0, 1)
     let brj.2 = (berries.count - 1 - 2)
     let brx.2 = if(dn.vert > 0.5, dn.x + dn.nx * (dn.r + 196), clamp(dn.x, 200, W - 200)) + if(brk == 2 and brmoved, br.dx, 0)
     let bry.2 = if(dn.vert > 0.5, dn.y + (brj.2 - (berries.count - 1) / 2) * 60, dn.y + dn.ny * (dn.r + 46 + brj.2 * 60)) + if(brk == 2 and brmoved, br.dy, 0)
-    let bre.2 = clamp(dn.lift * 1.7 - brj.2 * 0.12 - 0.2, 0, 1) * if(2 < berries.count, 1, 0) * clamp(1 - abs(if(brk == 2 and brmoved, br.dx, 0)) / 260, 0, 1)
+    let bre.2 = clamp(dn.lift * 1.7 - brj.2 * 0.12 - 0.2, 0, 1) * if(2 < berries.count and dn_open, 1, 0) * clamp(1 - abs(if(brk == 2 and brmoved, br.dx, 0)) / 260, 0, 1)
     let brj.3 = (berries.count - 1 - 3)
     let brx.3 = if(dn.vert > 0.5, dn.x + dn.nx * (dn.r + 196), clamp(dn.x, 200, W - 200)) + if(brk == 3 and brmoved, br.dx, 0)
     let bry.3 = if(dn.vert > 0.5, dn.y + (brj.3 - (berries.count - 1) / 2) * 60, dn.y + dn.ny * (dn.r + 46 + brj.3 * 60)) + if(brk == 3 and brmoved, br.dy, 0)
-    let bre.3 = clamp(dn.lift * 1.7 - brj.3 * 0.12 - 0.2, 0, 1) * if(3 < berries.count, 1, 0) * clamp(1 - abs(if(brk == 3 and brmoved, br.dx, 0)) / 260, 0, 1)
+    let bre.3 = clamp(dn.lift * 1.7 - brj.3 * 0.12 - 0.2, 0, 1) * if(3 < berries.count and dn_open, 1, 0) * clamp(1 - abs(if(brk == 3 and brmoved, br.dx, 0)) / 260, 0, 1)
     let brj.4 = (berries.count - 1 - 4)
     let brx.4 = if(dn.vert > 0.5, dn.x + dn.nx * (dn.r + 196), clamp(dn.x, 200, W - 200)) + if(brk == 4 and brmoved, br.dx, 0)
     let bry.4 = if(dn.vert > 0.5, dn.y + (brj.4 - (berries.count - 1) / 2) * 60, dn.y + dn.ny * (dn.r + 46 + brj.4 * 60)) + if(brk == 4 and brmoved, br.dy, 0)
-    let bre.4 = clamp(dn.lift * 1.7 - brj.4 * 0.12 - 0.2, 0, 1) * if(4 < berries.count, 1, 0) * clamp(1 - abs(if(brk == 4 and brmoved, br.dx, 0)) / 260, 0, 1)
+    let bre.4 = clamp(dn.lift * 1.7 - brj.4 * 0.12 - 0.2, 0, 1) * if(4 < berries.count and dn_open, 1, 0) * clamp(1 - abs(if(brk == 4 and brmoved, br.dx, 0)) / 260, 0, 1)
     let brj.5 = (berries.count - 1 - 5)
     let brx.5 = if(dn.vert > 0.5, dn.x + dn.nx * (dn.r + 196), clamp(dn.x, 200, W - 200)) + if(brk == 5 and brmoved, br.dx, 0)
     let bry.5 = if(dn.vert > 0.5, dn.y + (brj.5 - (berries.count - 1) / 2) * 60, dn.y + dn.ny * (dn.r + 46 + brj.5 * 60)) + if(brk == 5 and brmoved, br.dy, 0)
-    let bre.5 = clamp(dn.lift * 1.7 - brj.5 * 0.12 - 0.2, 0, 1) * if(5 < berries.count, 1, 0) * clamp(1 - abs(if(brk == 5 and brmoved, br.dx, 0)) / 260, 0, 1)
+    let bre.5 = clamp(dn.lift * 1.7 - brj.5 * 0.12 - 0.2, 0, 1) * if(5 < berries.count and dn_open, 1, 0) * clamp(1 - abs(if(brk == 5 and brmoved, br.dx, 0)) / 260, 0, 1)
     let clx = if(dn.vert > 0.5, dn.x + dn.nx * (dn.r + 196), clamp(dn.x, 200, W - 200))
     let cly = if(dn.vert > 0.5, dn.y + ((berries.count - 1) / 2 + 1) * 60, dn.y + dn.ny * (dn.r + 46 + berries.count * 60))
-    let cle = clamp(dn.lift * 1.7 - berries.count * 0.12 - 0.2, 0, 1) * if(berries.count > 0, 1, 0)
+    let cle = clamp(dn.lift * 1.7 - berries.count * 0.12 - 0.2, 0, 1) * if(berries.count > 0 and dn_open, 1, 0)
     let brend.x = if(berries.count > 0, clx, dn.x)
     let brend.y = if(berries.count > 0, cly, dn.y)
     body {
@@ -734,7 +745,7 @@ scene Kvapka {
         ellipse { at: dn.ax, dn.ay; radius: 24 * dn.sheet; blend: 16 }
         ellipse { at: dn.x, dn.y; radius: dn.r; scale: 1 + dn.jit, 1 - dn.jit; blend: 18 * dn.sheet + 2 }
         // lepkavé vlákno od kvapky cez hrozno (tenšie, čím ďalej)
-        line { from: dn.x, dn.y; to: dn.x + (brend.x - dn.x) * clamp(dn.lift * 1.4, 0, 1), dn.y + (brend.y - dn.y) * clamp(dn.lift * 1.4, 0, 1); width: 7 * clamp(dn.lift * 3, 0, 1); blend: 10 * clamp(dn.lift * 3, 0, 1) }
+        line { from: dn.x, dn.y; to: dn.x + (brend.x - dn.x) * clamp(dn.lift * 1.4, 0, 1), dn.y + (brend.y - dn.y) * clamp(dn.lift * 1.4, 0, 1); width: 7 * clamp(dn.lift * 3, 0, 1) * if(dn_open, 1, 0); blend: 10 * clamp(dn.lift * 3, 0, 1) }
         ellipse { at: brx.0 - 176 * bre.0, bry.0; radius: 9 * bre.0; blend: 8 * bre.0 }
         ellipse { at: brx.1 - 176 * bre.1, bry.1; radius: 9 * bre.1; blend: 8 * bre.1 }
         ellipse { at: brx.2 - 176 * bre.2, bry.2; radius: 9 * bre.2; blend: 8 * bre.2 }
@@ -916,8 +927,7 @@ scene Kvapka {
     }
     // obsah: y0 = horný okraj obsahu pod poľom; riadok režimu a počasia sú pri spodku karty
     let y0 = d0.y + 64
-    let yc = d0.y + 454                        // riadok režimu (čipy)
-    let yw = d0.y + 496                        // riadok počasia
+    let yc = d0.y + 494                        // riadok režimu (čipy) — úplne dole (počasie je v DaNoGoo, 1. 10.)
     let show_chat = tview == 0 and smode == 0 and not wx_detail
     let show_favs = tview == 0 and smode == 1 and not typing and not wx_detail
     let show_hits = tview == 0 and smode > 0 and not wx_detail and not show_favs
@@ -985,8 +995,6 @@ scene Kvapka {
     let chx.6 = chx.5 + if(5 < chips.count, cwd.5 + 8, 0)
     let fav_rows = clamp(floor((favs.count + 5) / 6), 1, 2)
     let ry0 = y0 + 46 + fav_rows * 90          // nadpis „Nedávne“
-    measure wxp
-    let wxs = d0.x + 34 + wxp.width + 12       // začiatok variantov počasia
     group {
         opacity: dshow
         show: dsh > 0.5 and tview == 0
@@ -1026,14 +1034,6 @@ scene Kvapka {
         }
         // prázdny obsah: nápoveda podľa režimu
         text note { at: d0.x + 2, y0 + 20; anchor: left center; width: cw - 8; lines: 3; size: 13; color: l.dim; show: not wx_detail and ((show_chat and chat.count < 1 and not ai_wait) or (show_hits and hits.count < 1) or (show_favs and favs.count < 1)); family: "Inter" }
-        // predpoveď počasia (Detaily): 8 stĺpcov — hodiny dňa alebo dni týždňa
-        text "Forecast · {wx_place}" { at: d0.x + 2, y0 + 10; anchor: left center; size: 12.5; weight: 600; color: l.dim; show: wx_detail; family: "Inter" }
-        repeat k in 0..8 {
-            box { at: d0.x + k * (cw / 8) + cw / 16, y0 + 100; size: cw / 8 - 8, 130; corner: 14; color: l.var; opacity: 60%; show: wx_detail and k < wx.count }
-            text wx.$k.label { at: d0.x + k * (cw / 8) + cw / 16, y0 + 56; anchor: center; size: 11.5; color: l.dim; show: wx_detail and k < wx.count; family: "Inter" }
-            text wx.$k.glyph { at: d0.x + k * (cw / 8) + cw / 16, y0 + 98; anchor: center; size: 26; color: l.fg; show: wx_detail and k < wx.count; family: "noctalia-tabler-icons" }
-            text wx.$k.temp { at: d0.x + k * (cw / 8) + cw / 16, y0 + 140; anchor: center; size: 13; weight: 600; color: l.fg; show: wx_detail and k < wx.count; family: "Inter" }
-        }
     }
     // rozhovor: bubliny používateľa (akcent, vľavo) a AI (vpravo), goo s kvapôčkou-chvostíkom k poľu
     group {
@@ -1098,20 +1098,6 @@ scene Kvapka {
             text chips.$k.label { at: chx.$k + 13 + if(chips.$k.hasg, 22, 0), yc; anchor: left center; size: 12.5; weight: 500; color: if(chips.$k.on, l.onacc, l.fg); measure: cm.$k; show: k < chips.count and chips.$k.label_on; family: "Inter" }
             text "" { at: chx.$k + cwd.$k - 13, yc + 1; anchor: right center; size: 12; color: if(chips.$k.on, l.onacc, l.dim); show: k < chips.count and chips.$k.drop; family: "noctalia-tabler-icons" }
         }
-        // úzky riadok počasia: miesto · Dnes / Zajtra / Týždeň · súhrn · Detaily
-        box { at: d0.x + cw / 2, yw; size: cw, 32; corner: 16; color: l.var; opacity: 85% }
-        text "" { at: d0.x + 14, yw; anchor: left center; size: 14; color: l.dim; family: "noctalia-tabler-icons" }
-        text wx_place { at: d0.x + 34, yw; anchor: left center; size: 12; weight: 500; color: l.fg; measure: wxp; family: "Inter" }
-        repeat k in 0..3 {
-            box { at: wxs + k * 62 + 29, yw; size: 58, 24; corner: 12; color: if(wx_view == k, l.acc, l.hover); opacity: if(wx_view == k, 100%, if(wx_hot == k, 100%, 0)) }
-        }
-        text "Today" { at: wxs + 29, yw; anchor: center; size: 11.5; weight: 500; color: if(wx_view == 0, l.onacc, l.dim); family: "Inter" }
-        text "Tomorrow" { at: wxs + 91, yw; anchor: center; size: 11.5; weight: 500; color: if(wx_view == 1, l.onacc, l.dim); family: "Inter" }
-        text "Week" { at: wxs + 153, yw; anchor: center; size: 11.5; weight: 500; color: if(wx_view == 2, l.onacc, l.dim); family: "Inter" }
-        text wx_icon { at: wxs + 196, yw; anchor: left center; size: 15; color: l.fg; family: "noctalia-tabler-icons" }
-        text wx_sum { at: wxs + 218, yw; anchor: left center; width: d0.x + cw - 96 - wxs - 218; lines: 1; size: 12; color: l.fg; family: "Inter" }
-        text pick(if(wx_detail, 1, 0), "Details", "Close") { at: d0.x + cw - 30, yw; anchor: right center; size: 12; weight: 500; color: if(wx_hot == 3 or wx_detail, l.acc, l.fg); family: "Inter" }
-        text pick(if(wx_detail, 1, 0), "", "") { at: d0.x + cw - 12, yw + 1; anchor: right center; size: 13; color: if(wx_hot == 3 or wx_detail, l.acc, l.dim); family: "noctalia-tabler-icons" }
     }
     // ── časové menu TimeGoo (pravý klik): tá istá karta z ucha, obsah Prehľad · Stopky · Minútka · Budíky ──
     let tv = tview == 1 and not wx_detail
@@ -1273,10 +1259,6 @@ scene Kvapka {
     repeat k in 0..7 {
         zone box chip_hit.$k { at: chx.$k + cwd.$k / 2, yc; size: cwd.$k, 32; cursor: pointer; active: dash and k < chips.count }
     }
-    repeat k in 0..3 {
-        zone box wxs_hit.$k { at: wxs + k * 62 + 29, yw; size: 60, 28; cursor: pointer; active: dash }
-    }
-    zone box wxd_hit { at: d0.x + cw - 44, yw; size: 88, 28; cursor: pointer; active: dash }
     // časové menu: klikateľné miesta (kód tlačidla v t_do, koliesko v t_wheel)
     zone box t_wb { at: tcx, y0 + 74; size: cw, 140; cursor: pointer; active: dash and tv and ttab == 0 }
     zone ellipse t_sw_go { at: tcx, y0 + 168; radius: 32; cursor: pointer; active: dash and tv and ttab == 1 }
@@ -1762,10 +1744,10 @@ scene Kvapka {
     zone box dn_clr { at: clx, cly; size: 190, 34; cursor: pointer; active: dn_open and berries.count > 0 and cle > 0.9 }
     // DaNoGoo: ľavý klik = hrozno (znova klik, Esc alebo klik mimo = späť), ťahanie = iný okraj, pravý = kalendár
     on press dn_hit { dn_drag = true; dn_moved = false; wd.w = W; wd.h = H }
-    on drag dn_hit while dn_drag and abs(drag.dx) + abs(drag.dy) > 6 { dn_moved = true; dn_open = false }
+    on drag dn_hit while dn_drag and abs(drag.dx) + abs(drag.dy) > 6 { dn_moved = true; dn_open = false; dc_open = false }
     on release dn_hit while dn_drag and dn_moved { dnd.x = pointer.x; dnd.y = pointer.y; impulse dn.wob 300; emit dn_drop; dn_moved = false; dn_drag = false }
-    on release dn_hit while dn_drag and not dn_moved { dn_drag = false; toggle dn_open; impulse dn.wob 160; dash = false; pmenu = false }
-    on press right dn_hit { impulse dn.wob 120; dn_open = false; emit dn_cal }
+    on release dn_hit while dn_drag and not dn_moved { dn_drag = false; toggle dn_open; dc_open = false; impulse dn.wob 160; dash = false; pmenu = false }
+    on press right dn_hit { impulse dn.wob 120; dn_open = false; toggle dc_open; dash = false; pmenu = false; emit dn_cal }
     on enter dn_hit { dn.h: 1 }
     on leave dn_hit { dn.h: 0 }
     on press dn_away { dn_open = false }
@@ -1828,6 +1810,134 @@ scene Kvapka {
     on press right br_hit.5 while berries.5.acts { ctx_up = false; ctx.x = mx; ctx.y = my; emit berry_menu(5) }
     on enter br_hit.5 { berry_hot = 5 }
     on leave br_hit.5 { berry_hot = -1 }
+    // karta DaNoGoo: vyrastie z kvapky smerom od okraja, vzhľad ako spúšťač (farby témy → káva pri kvapke)
+    prop dcg = 0 ~dnspring
+    follow dcg = if(dc_open, 1, 0)
+    let kc.tx = if(dn.vert > 0.5, dn.x + dn.nx * (dn.r + 18 + 600 / 2), clamp(dn.x, 600 / 2 + 12, W - 600 / 2 - 12))
+    let kc.ty = if(dn.vert > 0.5, clamp(dn.y, 560 / 2 + 12, H - 560 / 2 - 12), dn.y + dn.ny * (dn.r + 18 + 560 / 2))
+    let kc.x = dn.x + (kc.tx - dn.x) * clamp(dcg, 0, 1.05)
+    let kc.y = dn.y + (kc.ty - dn.y) * clamp(dcg, 0, 1.05)
+    let kc.gx = dn.nx * 600 / 2 * dn.vert
+    let kc.gy = dn.ny * 560 / 2 * (1 - dn.vert)
+    let dcs = clamp(dcg * 2 - 1, 0, 1)
+    let c0.x = kc.tx - 600 / 2 + 24
+    let c0.y = kc.ty - 560 / 2 + 20
+    body {
+        gradient: kc.x + kc.gx, kc.y + kc.gy to kc.x - kc.gx, kc.y - kc.gy, l.win, l.win, l.win, mix(l.win, coffee, 0.35), coffee
+        glass: 100% * l.glass
+        lens: l.pearl > 0.5
+        shine: pointer
+        refraction: 120% * l.pearl
+        dispersion: 260% * l.pearl
+        light: 6%, kc.y - 560 / 2, 60
+        rim: 18%
+        shadow: 0, 12, 34, 38% * dcg
+        opacity: if(dcg > 0.01, 1, 0) * so
+        box { at: kc.x, kc.y; size: (60 + 540 * dcg), (60 + 500 * dcg); corner: 30 - 6 * dcg }
+        ellipse { at: dn.x, dn.y; radius: dn.r * 0.9 * clamp(dcg * 4, 0, 1); blend: 16 }
+        // krk medzi kvapkou a kartou (goo)
+        line { from: dn.x, dn.y; to: dn.x + dn.nx * (dn.r + 40) * dcg, dn.y + dn.ny * (dn.r + 40) * dcg; width: 30 * clamp(dcg * 3, 0, 1); blend: 18 }
+    }
+    group {
+        opacity: dcs
+        show: dcg > 0.5 and solo
+        // hlavička: mesiac, šípky, Dnes
+        text dc_month { at: c0.x + 2, c0.y + 18; anchor: left center; size: 20; weight: 600; color: l.fg; family: "Inter" }
+        ellipse { at: c0.x + 552 - 124, c0.y + 18; radius: 15; color: if(dc_hot == 100, l.hover, l.var) }
+        text "" { at: c0.x + 552 - 124, c0.y + 19; anchor: center; size: 15; color: l.fg; family: "noctalia-tabler-icons" }
+        ellipse { at: c0.x + 552 - 88, c0.y + 18; radius: 15; color: if(dc_hot == 101, l.hover, l.var) }
+        text "" { at: c0.x + 552 - 88, c0.y + 19; anchor: center; size: 15; color: l.fg; family: "noctalia-tabler-icons" }
+        box { at: c0.x + 552 - 30, c0.y + 18; size: 58, 30; corner: 15; color: if(dc_hot == 102, l.hover, l.var) }
+        text "Today" { at: c0.x + 552 - 30, c0.y + 18; anchor: center; size: 12; weight: 500; color: l.fg; family: "Inter" }
+        text "Mo" { at: c0.x + 0 * 42 + 21, c0.y + 56; anchor: center; size: 11; weight: 600; color: l.dim; family: "Inter" }
+        text "Tu" { at: c0.x + 1 * 42 + 21, c0.y + 56; anchor: center; size: 11; weight: 600; color: l.dim; family: "Inter" }
+        text "We" { at: c0.x + 2 * 42 + 21, c0.y + 56; anchor: center; size: 11; weight: 600; color: l.dim; family: "Inter" }
+        text "Th" { at: c0.x + 3 * 42 + 21, c0.y + 56; anchor: center; size: 11; weight: 600; color: l.dim; family: "Inter" }
+        text "Fr" { at: c0.x + 4 * 42 + 21, c0.y + 56; anchor: center; size: 11; weight: 600; color: l.dim; family: "Inter" }
+        text "Sa" { at: c0.x + 5 * 42 + 21, c0.y + 56; anchor: center; size: 11; weight: 600; color: l.dim; family: "Inter" }
+        text "Su" { at: c0.x + 6 * 42 + 21, c0.y + 56; anchor: center; size: 11; weight: 600; color: l.dim; family: "Inter" }
+        repeat k in 0..42 {
+            ellipse { at: c0.x + (k - 7 * floor(k / 7)) * 42 + 21, c0.y + 84 + floor(k / 7) * 38; radius: 16; color: if(days.$k.today, l.acc, l.hover); opacity: if(days.$k.today, 100%, if(days.$k.sel or dc_hot == k, 100%, 0)); show: k < days.count }
+            text days.$k.d { at: c0.x + (k - 7 * floor(k / 7)) * 42 + 21, c0.y + 83 + floor(k / 7) * 38; anchor: center; size: 13; weight: 500; color: if(days.$k.today, l.onacc, if(days.$k.inm, l.fg, l.dim)); opacity: if(days.$k.inm, 100%, 45%); show: k < days.count; family: "Inter" }
+            ellipse { at: c0.x + (k - 7 * floor(k / 7)) * 42 + 21, c0.y + 96 + floor(k / 7) * 38; radius: 2.2; color: if(days.$k.today, l.onacc, l.acc); show: k < days.count and days.$k.dot }
+        }
+        // vybraný deň: udalosti a úlohy, nová udalosť
+        box { at: c0.x + 435, c0.y + 170; size: 234, 300; corner: 14; color: l.var; opacity: 45% }
+        text dc_seltitle { at: c0.x + 332, c0.y + 40; anchor: left center; width: 206; lines: 1; size: 13.5; weight: 600; color: l.fg; family: "Inter" }
+        repeat k in 0..5 {
+            text evs.$k.hm { at: c0.x + 332, c0.y + 66 + k * 28; anchor: left center; size: 11.5; weight: 600; color: l.acc; show: k < evs.count; family: "Inter" }
+            text evs.$k.title { at: c0.x + 400, c0.y + 66 + k * 28; anchor: left center; width: 138; lines: 1; size: 12.5; color: l.fg; show: k < evs.count; family: "Inter" }
+        }
+        text "No events" { at: c0.x + 332, c0.y + 66; anchor: left center; size: 12.5; color: l.dim; show: evs.count < 1; family: "Inter" }
+        text "Tasks" { at: c0.x + 332, c0.y + 212; anchor: left center; size: 12; weight: 600; color: l.dim; family: "Inter" }
+        repeat k in 0..5 {
+            text pick(if(tds.$k.done, 1, 0), "", "") { at: c0.x + 332, c0.y + 238 + k * 26; anchor: left center; size: 15; color: if(tds.$k.done, l.dim, l.acc); show: k < tds.count; family: "noctalia-tabler-icons" }
+            text tds.$k.title { at: c0.x + 356, c0.y + 238 + k * 26; anchor: left center; width: 184; lines: 1; size: 12.5; color: if(tds.$k.done, l.dim, l.fg); show: k < tds.count; family: "Inter" }
+        }
+        text "No tasks" { at: c0.x + 332, c0.y + 238; anchor: left center; size: 12.5; color: l.dim; show: tds.count < 1; family: "Inter" }
+        box { at: c0.x + 435, c0.y + 298; size: 234, 36; corner: 12; color: l.acc; opacity: 75% }
+        box { at: c0.x + 435, c0.y + 298; size: 231, 33; corner: 10.5; color: l.var }
+        text dc_hint { at: c0.x + 330, c0.y + 298; anchor: left center; width: 210; lines: 1; size: 12.5; color: l.dim; show: dc_empty; family: "Inter" }
+        input dc_new { at: c0.x + 330, c0.y + 298; width: 210; size: 12.5; color: l.fg; selection: l.hover; family: "Inter" }
+        // počasie (presunuté z TimeGoo, 1. 10.): miesto, Dnes / Zajtra / Týždeň, súhrn, predpoveď
+        text "" { at: c0.x + 2, c0.y + 350; anchor: left center; size: 14; color: l.dim; family: "noctalia-tabler-icons" }
+        text wx_place { at: c0.x + 22, c0.y + 350; anchor: left center; width: 150; lines: 1; size: 13; weight: 600; color: l.fg; family: "Inter" }
+        repeat k in 0..3 {
+            box { at: c0.x + 214 + k * 64, c0.y + 350; size: 60, 26; corner: 13; color: if(wx_view == k, l.acc, l.hover); opacity: if(wx_view == k, 100%, if(wx_hot == k, 100%, 0)) }
+        }
+        text "Today" { at: c0.x + 214, c0.y + 350; anchor: center; size: 12; weight: 500; color: if(wx_view == 0, l.onacc, l.dim); family: "Inter" }
+        text "Tomorrow" { at: c0.x + 278, c0.y + 350; anchor: center; size: 12; weight: 500; color: if(wx_view == 1, l.onacc, l.dim); family: "Inter" }
+        text "Week" { at: c0.x + 342, c0.y + 350; anchor: center; size: 12; weight: 500; color: if(wx_view == 2, l.onacc, l.dim); family: "Inter" }
+        text wx_icon { at: c0.x + 392, c0.y + 350; anchor: left center; size: 15; color: l.fg; family: "noctalia-tabler-icons" }
+        text wx_sum { at: c0.x + 414, c0.y + 350; anchor: left center; width: 138; lines: 1; size: 12; color: l.fg; family: "Inter" }
+        repeat k in 0..8 {
+            box { at: c0.x + k * 69 + 34, c0.y + 440; size: 62, 124; corner: 14; color: l.var; opacity: 60%; show: k < wx.count }
+            text wx.$k.label { at: c0.x + k * 69 + 34, c0.y + 398; anchor: center; size: 11.5; color: l.dim; show: k < wx.count; family: "Inter" }
+            text wx.$k.glyph { at: c0.x + k * 69 + 34, c0.y + 438; anchor: center; size: 24; color: l.fg; show: k < wx.count; family: "noctalia-tabler-icons" }
+            text wx.$k.temp { at: c0.x + k * 69 + 34, c0.y + 480; anchor: center; size: 12; weight: 600; color: l.fg; show: k < wx.count; family: "Inter" }
+        }
+    }
+    // karta: klik mimo zavrie (pod ňou), karta sama kliky pohltí
+    zone box dc_away { at: W / 2, H / 2; size: W, H; active: dc_open }
+    zone box dc_card { at: kc.tx, kc.ty; size: 600, 560; active: dc_open }
+    zone ellipse dc_prev { at: c0.x + 552 - 124, c0.y + 18; radius: 16; cursor: pointer; active: dc_open }
+    zone ellipse dc_next { at: c0.x + 552 - 88, c0.y + 18; radius: 16; cursor: pointer; active: dc_open }
+    zone box dc_today { at: c0.x + 552 - 30, c0.y + 18; size: 58, 30; cursor: pointer; active: dc_open }
+    repeat k in 0..42 {
+        zone ellipse dc_d.$k { at: c0.x + (k - 7 * floor(k / 7)) * 42 + 21, c0.y + 84 + floor(k / 7) * 38; radius: 18; cursor: pointer; active: dc_open and k < days.count }
+    }
+    repeat k in 0..5 {
+        zone box dc_ev.$k { at: c0.x + 435, c0.y + 66 + k * 28; size: 220, 26; active: dc_open and k < evs.count }
+        zone box dc_td.$k { at: c0.x + 435, c0.y + 238 + k * 26; size: 220, 24; cursor: pointer; active: dc_open and k < tds.count }
+    }
+    repeat k in 0..3 {
+        zone box wxs_hit.$k { at: c0.x + 214 + k * 64, c0.y + 350; size: 62, 28; cursor: pointer; active: dc_open }
+    }
+    zone box wxd_hit { at: 0, 0; size: 1, 1; active: false }
+    on press dc_away { dc_open = false }
+    on press right dc_away { dc_open = false }
+    on key Escape while dc_open { dc_open = false }
+    on change dc_open while dc_open { focus dc_new }
+    on submit dc_new { emit dc_add }
+    on press dc_prev { emit dc_nav(-1) }
+    on press dc_next { emit dc_nav(1) }
+    on press dc_today { emit dc_nav(0) }
+    on scroll dc_card { emit dc_nav(if(wheel > 0, -1, 1)) }
+    on enter dc_prev { dc_hot = 100 }
+    on leave dc_prev { dc_hot = -1 }
+    on enter dc_next { dc_hot = 101 }
+    on leave dc_next { dc_hot = -1 }
+    on enter dc_today { dc_hot = 102 }
+    on leave dc_today { dc_hot = -1 }
+    repeat k in 0..42 {
+        on press dc_d.$k { emit dc_day(k) }
+        on enter dc_d.$k { dc_hot = k }
+        on leave dc_d.$k { dc_hot = -1 }
+    }
+    repeat k in 0..5 {
+        on press dc_td.$k { emit dc_todo(k) }
+        on press right dc_ev.$k { ctx_up = false; ctx.x = mx; ctx.y = my; emit dc_ev_menu(k) }
+    }
     // <<< DaNoGoo zóny
 
     // ── ponuka Vypnúť (vyteká z kvapky vypínača smerom od okraja) ──
@@ -2069,6 +2179,31 @@ scene Kvapka {
     }
 
     translations sk {
+        "No events" = "Žiadne udalosti"
+        "Tasks" = "Úlohy"
+        "No tasks" = "Žiadne úlohy"
+        "All day" = "Celý deň"
+        "Delete event" = "Zmazať udalosť"
+        "New event… 10:30 Meeting · ! task" = "Nová udalosť… 10:30 Porada · ! úloha"
+        "January" = "január"
+        "February" = "február"
+        "March" = "marec"
+        "April" = "apríl"
+        "May" = "máj"
+        "June" = "jún"
+        "July" = "júl"
+        "August" = "august"
+        "September" = "september"
+        "October" = "október"
+        "November" = "november"
+        "December" = "december"
+        "Mo" = "po"
+        "Tu" = "ut"
+        "We" = "st"
+        "Th" = "št"
+        "Fr" = "pi"
+        "Sa" = "so"
+        "Su" = "ne"
         "Clear all ({n})" = "Vymazať všetko ({n})"
         "Alarm {t}" = "Budík {t}"
         "Timer {t}" = "Minútka {t}"
