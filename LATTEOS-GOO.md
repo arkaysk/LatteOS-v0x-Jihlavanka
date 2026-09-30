@@ -81,11 +81,25 @@ samostatný tekutý prvok.
   - minimalizované okno = menšia, stlmená guľôčka; 48 slotov, nad nimi guľôčka „ďalšie okná“ → prehľad
 - Šnúra sa vždy zmestí po kraj (a zastaví sa pred rohovou lištou a kvapkami widgetov).
 
-### 4.2 Hodiny (Štart) — vľavo pri hlave
-- Digitálny čas a dátum; **kvapôčky upozornení** (farba podľa naliehavosti), bublina nového upozornenia.
+### 4.2 TimeGoo (Hodiny, Štart) — vľavo pri hlave
+- Digitálny čas a dátum. (Upozornenia sa presúvajú do DaNoGoo — 1. 10.; dnes ešte kvapôčky na Hodinách.)
 - **Ľavý klik alebo kláves Win** = **spúšťač**: kvapka vystúpi kolmo, stane sa **trčiacim uchom v rohu okna**
   (s časom), okno z nej vyrastie. Zatvorenie (klik inde, Esc) = okno sa zloží do ucha, ucho odkvapne domov.
-- Pravý klik = nič.
+- **Pravý klik** = časové menu (1. 10.): záložka **Čas** z klasického LatteOS (`latteos/time:panel cas`) —
+  časové pásma, stopky, minútka, budíky, počasie — a **nové: well-being** (koľko času v ktorej aplikácii;
+  sledovanie spoločné pre klasický LatteOS aj Kvapky).
+
+### 4.2b DaNoGoo (dátum + upozornenia) — samostatná kvapka, dá sa presúvať (návrh 1. 10.)
+- **Viditeľný obsah:** dátum a počasie.
+- **Guľky počtu upozornení:** systémové výstrahy vlastná **červeno-kávová** guľka (+ číslo, ak ich je viac);
+  ostatné jednotne **žlté**, viac guliek podľa počtu.
+- **Ľavý klik** = kvapka **vystrelí ako pružina** kolmo od okraja a za sebou nechá **hrozno upozornení** na
+  lepkavom vlákne (najnovšie hore). Hrozno prekrýva okná, kým sa klikom na DaNoGoo nevráti dole.
+  Bobule = kapsuly (ikona, aplikácia, nadpis); ľavý klik otvorí, pravý iba ak má upozornenie akcie, odhodenie = zahodiť.
+  Farby: systémové/varovné červeno-kávové, nedôležité obyčajná káva, aplikácie podľa ikony — **otvorené:**
+  čistá farba ikony, alebo káva zafarbená do nej; zatvárať aj Esc / klikom mimo?
+- **Pravý klik** = záložka **Kalendár** z klasického LatteOS (`latteos/time:panel kalendar`): mesiac, plánovač
+  udalostí, úlohy, prepojené kalendáre (Google, iCloud, CalDAV, ICS cez Noctaliu).
 
 ### 4.3 Spúšťač (okno z Hodín)
 - **Hľadanie** (jedno pole): aplikácie · súbory (`fd`) · web (predvolený vyhľadávač) · otázka pre **AI** (webové
@@ -95,8 +109,10 @@ samostatný tekutý prvok.
 - Bez textu: upozornenia a nápoveda. Zámerne **nie** katalóg aplikácií ani prepínanie okien (to robí Goobar).
 - Nastavenia: `~/.config/latteos/spustac.json`.
 
-### 4.4 Vypínač — vľavo od Hodín
+### 4.4 PowerGoo (vypínač) — vľavo od Hodín
 - Ľavý klik = ponuka (Zamknúť, Odhlásiť, Uspať, Reštartovať, Vypnúť) ako kapsuly zliate do stĺpca; akcie robí Noctalia.
+- **Batéria (notebook, 1. 10.):** minibublinky zelená → žltá → červená (návrh: aj počtom 3/2/1, pod 10 %
+  netrpezlivo pulzuje, pri nabíjaní stúpajú do kvapky); na stolnom PC žiadne.
 
 ### 4.5 Rohová lišta Noctalie — vpravo dole
 - Iba **pravá časť** lišty Noctalie, **natvrdo prilepená** do rohu, **šírka podľa počtu widgetov**; vpravo sa
@@ -168,6 +184,8 @@ chyby (neaktívne tvary nulovým polomerom); logika nevie zapisovať súbory (`l
 ---
 
 ## 7. Otvorené
+
+- DaNoGoo (4.2b), well-being, batéria na PowerGoo — rozhodnuté 1. 10., čaká na farby upozornení a zatváranie
 
 - goo telo z pleamaru pod rohovou lištou (vlnenie, pulzovanie pri zmene stavu widgetu)
 - rozbaľovacia ponuka rýchleho spúšťania ako samostatné kvapky
