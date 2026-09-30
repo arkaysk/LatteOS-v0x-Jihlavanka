@@ -105,8 +105,13 @@ a(f'''    // >>> spúšťač (spustac.py)
     // body vláken slizu: kolmica k smeru vlákna (e.px, e.py), prehnutie a kývanie podľa šumu
     let e.px = 0 - e.uy
     let e.py = e.ux
-    let sb.x.0 = cxs + e.px * -36
-    let sb.y.0 = cys + e.py * -36
+    // koreň slizu: okraj obrazovky pod Hodinami (nie kvapka, ktorá sa zdvihne); päty pozdĺž okraja
+    let rt.x = pick(side, cxs, cxs, 0, W)
+    let rt.y = pick(side, H, 0, cys, cys)
+    let ed.x = abs(away.y)
+    let ed.y = abs(away.x)
+    let sb.x.0 = rt.x + ed.x * -78
+    let sb.y.0 = rt.y + ed.y * -78
     let st.x.0 = db.x - e.ux * 20 + e.px * -16
     let st.y.0 = db.y - e.uy * 20 + e.py * -16
     let sw.0 = 9 * noise(time * 0.45 + 0.0) + 4 * sin(time * 1.3 + 0.0)
@@ -116,8 +121,8 @@ a(f'''    // >>> spúšťač (spustac.py)
     let sq.y.0 = (sb.y.0 * 3 + st.y.0) / 4 + e.py * sw.0 * 0.6
     let sr.x.0 = (sb.x.0 + st.x.0 * 3) / 4 + e.px * sw.0 * 0.6
     let sr.y.0 = (sb.y.0 + st.y.0 * 3) / 4 + e.py * sw.0 * 0.6
-    let sb.x.1 = cxs + e.px * -23
-    let sb.y.1 = cys + e.py * -23
+    let sb.x.1 = rt.x + ed.x * -50
+    let sb.y.1 = rt.y + ed.y * -50
     let st.x.1 = db.x - e.ux * 20 + e.px * -10
     let st.y.1 = db.y - e.uy * 20 + e.py * -10
     let sw.1 = 11 * noise(time * 0.45 + 1.7) + 4 * sin(time * 1.3 + 1.1)
@@ -127,8 +132,8 @@ a(f'''    // >>> spúšťač (spustac.py)
     let sq.y.1 = (sb.y.1 * 3 + st.y.1) / 4 + e.py * sw.1 * 0.6
     let sr.x.1 = (sb.x.1 + st.x.1 * 3) / 4 + e.px * sw.1 * 0.6
     let sr.y.1 = (sb.y.1 + st.y.1 * 3) / 4 + e.py * sw.1 * 0.6
-    let sb.x.2 = cxs + e.px * -10
-    let sb.y.2 = cys + e.py * -10
+    let sb.x.2 = rt.x + ed.x * -22
+    let sb.y.2 = rt.y + ed.y * -22
     let st.x.2 = db.x - e.ux * 20 + e.px * -3
     let st.y.2 = db.y - e.uy * 20 + e.py * -3
     let sw.2 = 13 * noise(time * 0.45 + 3.4) + 4 * sin(time * 1.3 + 2.2)
@@ -138,8 +143,8 @@ a(f'''    // >>> spúšťač (spustac.py)
     let sq.y.2 = (sb.y.2 * 3 + st.y.2) / 4 + e.py * sw.2 * 0.6
     let sr.x.2 = (sb.x.2 + st.x.2 * 3) / 4 + e.px * sw.2 * 0.6
     let sr.y.2 = (sb.y.2 + st.y.2 * 3) / 4 + e.py * sw.2 * 0.6
-    let sb.x.3 = cxs + e.px * 5
-    let sb.y.3 = cys + e.py * 5
+    let sb.x.3 = rt.x + ed.x * 12
+    let sb.y.3 = rt.y + ed.y * 12
     let st.x.3 = db.x - e.ux * 20 + e.px * 4
     let st.y.3 = db.y - e.uy * 20 + e.py * 4
     let sw.3 = 9 * noise(time * 0.45 + 5.1) + 4 * sin(time * 1.3 + 3.3)
@@ -149,8 +154,8 @@ a(f'''    // >>> spúšťač (spustac.py)
     let sq.y.3 = (sb.y.3 * 3 + st.y.3) / 4 + e.py * sw.3 * 0.6
     let sr.x.3 = (sb.x.3 + st.x.3 * 3) / 4 + e.px * sw.3 * 0.6
     let sr.y.3 = (sb.y.3 + st.y.3 * 3) / 4 + e.py * sw.3 * 0.6
-    let sb.x.4 = cxs + e.px * 19
-    let sb.y.4 = cys + e.py * 19
+    let sb.x.4 = rt.x + ed.x * 44
+    let sb.y.4 = rt.y + ed.y * 44
     let st.x.4 = db.x - e.ux * 20 + e.px * 10
     let st.y.4 = db.y - e.uy * 20 + e.py * 10
     let sw.4 = 11 * noise(time * 0.45 + 6.8) + 4 * sin(time * 1.3 + 4.4)
@@ -160,8 +165,8 @@ a(f'''    // >>> spúšťač (spustac.py)
     let sq.y.4 = (sb.y.4 * 3 + st.y.4) / 4 + e.py * sw.4 * 0.6
     let sr.x.4 = (sb.x.4 + st.x.4 * 3) / 4 + e.px * sw.4 * 0.6
     let sr.y.4 = (sb.y.4 + st.y.4 * 3) / 4 + e.py * sw.4 * 0.6
-    let sb.x.5 = cxs + e.px * 34
-    let sb.y.5 = cys + e.py * 34
+    let sb.x.5 = rt.x + ed.x * 76
+    let sb.y.5 = rt.y + ed.y * 76
     let st.x.5 = db.x - e.ux * 20 + e.px * 16
     let st.y.5 = db.y - e.uy * 20 + e.py * 16
     let sw.5 = 13 * noise(time * 0.45 + 8.5) + 4 * sin(time * 1.3 + 5.5)
@@ -208,8 +213,8 @@ a(f'''    // >>> spúšťač (spustac.py)
         opacity: if(dsw > 0.02, 1, 0) * so
         ellipse {{ at: db.x, db.y; radius: 31 * clamp(dsw * 4, 0, 1); scale: 1 + swob * 0.01, 1 - swob * 0.01 }}
         // sliz (1. 10., predstava používateľa): zdvihnutá kvapka ťahá z lišty sieť lepkavých vláken — pri koncoch hrubé
-        // a zliate do blán, v strede tenké, každé sa prehýba po svojom, medzi nimi priečne vlákna a diery
-        ellipse {{ at: cxs, cys + 6 * e.uy; radius: 22 * e.k; scale: 1 + 0.9 * abs(e.uy), 1 + 0.9 * abs(e.ux); blend: 14 }}
+        // a zliate do blán, v strede tenké, každé sa prehýba po svojom, medzi nimi priečne vlákna a diery; päty na okraji
+        // obrazovky a pri susedných kvapkách (vypínač, hlava lišty), nie na kvapke, ktorá sa zdvihla
         ellipse {{ at: st.x.0, st.y.0; radius: 6.0 * e.k; blend: 9 * e.k }}
         ellipse {{ at: sb.x.0, sb.y.0; radius: 6.4 * e.k; blend: 9 * e.k }}
         line {{ from: sb.x.0, sb.y.0; to: sq.x.0, sq.y.0; width: 8 * e.k; blend: 7 * e.k }}

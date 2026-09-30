@@ -1134,7 +1134,16 @@ on("berry_menu", function(k)
     end
     menu(items)
 end)
-on("dn_clear_all", function() pcall(sys.call, "notifications.clear") end)
+-- Vymazať všetko: každé upozornenie zvlášť (hromadné notifications.clear pri trvalom uchovávaní nezaberie), potom
+-- aj zvyšok a história
+on("dn_clear_all", function()
+    local ids = {}
+    for _, n in ipairs(dn_list) do ids[#ids + 1] = n.id end
+    for _, id in ipairs(ids) do pcall(sys.call, "notifications.dismiss", id) end
+    pcall(sys.call, "notifications.clear")
+    pcall(sys.call, "notifications.clear_history")
+    dn_paint({})
+end)
 -- poloha DaNoGoo: pustená pri okraji sa prilepí k najbližšiemu (ako kvapky widgetov), uloží sa v spustac.json
 on("dn_drop", function()
     local x, y = tonumber(fact["dnd.x"]) or 0, tonumber(fact["dnd.y"]) or 0
