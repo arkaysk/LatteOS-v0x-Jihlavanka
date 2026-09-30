@@ -28,7 +28,9 @@ regen(r"^\s*ellipse \{ at: lx \+ ux\.\d+ \+ 2 \* noise",
       lambda k: f"ellipse {{ at: {P(k)}; radius: ur.{k} * b.{k} * (1 + 0.035 * noise({2.1*k:.1f}, time * 0.5) + 0.12 * act.{k})"
                 f" {'+' if k % 2 == 0 else '-'} wob * 0.04; blend: 13 }}")
 regen(r"^\s*line \{ from: lx \+ ux\.\d+ \+ 2 \* noise",
+      # (1. 10.) ťahaná guľôčka: vlákno sa naťahuje a tenčí ako sliz, nad 180 px praskne (bsnap), pri návrate sa zlepí
       lambda k: f"line {{ from: {P(k)}; to: lx + kx.{k}, if(uy.{k} > -3, edge + 14, mid + ky.{k}); width: ur.{k} * b.{k} * 0.3"
-                f" * if(bdrag == {k}, clamp(1 - (abs(bdx) + abs(bdy)) / 520, 0.22, 1), 1) * (1 - o.pull) * ap; blend: 9 }}")
+                f" * if(bdrag == {k}, if(bsnap, 0, 0.12 + 0.88 * clamp(1 - length(bdx, bdy) / 180, 0, 1)), 1) * (1 - o.pull) * ap;"
+                f" blend: 9 * if(bdrag == {k} and bsnap, 0, 1) }}")
 open(path, "w").write("\n".join(lines))
 print(f"kvapka.plm: {old} → {N} slotov")
