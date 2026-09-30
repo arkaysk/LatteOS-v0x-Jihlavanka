@@ -296,9 +296,13 @@ end)
 on("start_open", function() run("latte-spustac", { "prepni" }) end)
 -- ponuka Vypnúť (vyteká z kvapky vypínača): akcie relácie robí Noctalia, rovnako ako ponuka LatteOS (ponuka.qml)
 local POWER = { "lock", "logout", "suspend", "reboot", "shutdown" }
+-- PowerGoo (1. 10.): 0 Nastavenia, 1 Monitor, potom Zamknúť … Vypnúť (akcie robí Noctalia)
 on("power_do", function(k)
     fact.pmenu = false
-    local a = POWER[(k or 0) + 1]
+    k = tonumber(k) or 0
+    if k == 0 then run("latte-app", { "nastavenia" }); return end
+    if k == 1 then run("latte-app", { "monitor" }); return end
+    local a = POWER[k - 1]
     if a then after(200, function() run("noctalia", { "msg", "session", a }) end) end
 end)
 
@@ -1805,7 +1809,13 @@ end
 sys.watch("audio", function(v) st.snd = v or {}; wpaint() end)
 sys.watch("network", function(v) st.net = v or {}; wpaint() end)
 sys.watch("bluetooth", function(v) st.bt = v or {}; wpaint() end)
-sys.watch("battery", function(v) st.bat = v or {}; wpaint() end)
+sys.watch("battery", function(v)
+    st.bat = v or {}; wpaint()
+    -- PowerGoo: minibublinky a hlavička ponuky (iba notebook)
+    fact.bat_present = st.bat.present == true
+    fact.bat_pct = math.floor((tonumber(st.bat.percent) or 0) + 0.5)
+    fact.bat_chg = st.bat.charging == true
+end)
 sys.watch("media", function(v) st.media = v or {}; wpaint() end)
 -- rohová lišta Noctalie (ikony programov sú v nej): šírka podľa ich počtu, s oneskorením (programy štartujú naraz);
 -- roh_len: jej približná dĺžka pre šnúru okien (rovnaký vzorec ako latte-kvapky roh_start, 3 widgety)

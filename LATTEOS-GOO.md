@@ -165,10 +165,12 @@ Karta z ucha TimeGoo, zhora nadol:
   Windows. Vzhľad generuje `session/kvapky/spustac.py` (farby 14 tém, ikony → `ikony.luau`).
 - Upozornenia v spúšťači už nie sú (idú do DaNoGoo). Zámerne **nie** katalóg aplikácií ani prepínanie okien (Goobar).
 
-### 4.4 PowerGoo (vypínač) — vľavo od Hodín
-- Ľavý klik = ponuka (Zamknúť, Odhlásiť, Uspať, Reštartovať, Vypnúť) ako kapsuly zliate do stĺpca; akcie robí Noctalia.
-- **Batéria (notebook, 1. 10.):** minibublinky zelená → žltá → červená (návrh: aj počtom 3/2/1, pod 10 %
-  netrpezlivo pulzuje, pri nabíjaní stúpajú do kvapky); na stolnom PC žiadne.
+### 4.4 PowerGoo (vypínač) — vľavo od Hodín (hotové 1. 10.)
+- Ľavý klik = **okno Goo pripojené rohom** (kvapka vystúpi ako ucho): **Nastavenia**, **Monitor**, pod čiarou
+  Zamknúť, Odhlásiť, Uspať, Reštartovať, Vypnúť (ikony Tabler); akcie vypnutia robí Noctalia. Generátor
+  `session/kvapky/powergoo.py`.
+- **Batéria (notebook):** v hlavičke okna percento a stav; na kvapke **minibublinky** 3 zelené (≥ 60 %), 2 žlté
+  (≥ 30 %), 1 červená; pod 10 % netrpezlivo pulzuje, pri nabíjaní stúpajú a klesajú. Na stolnom PC žiadne.
 
 ### 4.5 Rohová lišta Noctalie — vpravo dole
 - Iba **pravá časť** lišty Noctalie, **natvrdo prilepená** do rohu, **šírka podľa počtu widgetov**; vpravo sa
@@ -255,7 +257,7 @@ Ide sa **po poradí**; nové nápady sa zapíšu na koniec (E), nerozbiehajú sa
 2. ✅ (1. 10.) **DaNoGoo** (4.2b) — kvapka, hrozno, karta kalendára a počasia: kvapka s dátumom a počasím, guľky počtu upozornení, ľavý klik = pružina + hrozno upozornení
    (farba ikony aplikácie, zavrie klik na DaNoGoo / Esc / klik mimo), pravý klik = kalendár vo vzhľade Goo; kvapôčky
    upozornení z TimeGoo preč.
-3. **PowerGoo**: batéria (minibublinky), ponuka vo vzhľade Goo **+ položky Nastavenia a Monitor** (1. 10.).
+3. ✅ (1. 10.) **PowerGoo**: batéria (minibublinky), ponuka vo vzhľade Goo + Nastavenia a Monitor.
 3b. **QueenGoo** (rozhodnuté 1. 10.): kvapka s **korunkou** (tvar ostáva kvapka — tvar koruny je k4ditanov);
    **ľavý klik = premení sa na App Manager** (inštalácia programov), **pravý = Device Manager** (Správca zariadení).
    V Goo dnes nie je, kde inštalovať (spúšťač iba spúšťa).
