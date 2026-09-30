@@ -71,6 +71,8 @@ if [ "$LATTE_VARIANT" != noctalia ]; then
     fi
     export NOCTALIA_STATE_HOME="${XDG_STATE_HOME:-$HOME/.local/state}/latteos"
     nstate="$NOCTALIA_STATE_HOME/noctalia"
+    # Kvapky majú vlastný stav (latte-kvapky ho pri prvom štarte skopíruje z klasického)
+    [ "$LATTE_VARIANT" = kvapky ] && export NOCTALIA_STATE_HOME="$NOCTALIA_STATE_HOME/kvapky"
     # prvý štart po oddelení: nastavenia LatteOS zo spoločného priečinka (ak nejaké sú) sa skopírujú
     old="${XDG_STATE_HOME:-$HOME/.local/state}/noctalia/settings.toml"
     [ -e "$nstate/settings.toml" ] || { [ -f "$old" ] && mkdir -p "$nstate" && cp "$old" "$nstate/settings.toml"; }
