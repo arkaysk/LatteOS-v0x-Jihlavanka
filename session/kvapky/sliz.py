@@ -36,43 +36,57 @@ a('''    // >>> sliz (sliz.py)
 ''')
 lets, shapes = [], []
 def strand(name, ax, ay, bx, by, w, sway_seed):
-    """vlákno z A do B: pri koncoch hrubé (zliate), v strede tenké, prehnuté a kývajúce sa kolmo na smer"""
-    lets.append(f"""    let {name}.d = max(length({bx} - {ax}, {by} - {ay}), 1)
-    let {name}.px = 0 - ({by} - {ay}) / {name}.d
-    let {name}.py = ({bx} - {ax}) / {name}.d
-    let {name}.sw = (8 * noise(time * 0.45 + {sway_seed:.1f}) + 3 * sin(time * 1.3 + {sway_seed * 0.7:.1f})) * min({name}.d / 120, 1.4)
-    let {name}.qx = ({ax}) * 0.72 + ({bx}) * 0.28 + {name}.px * {name}.sw * 0.6
-    let {name}.qy = ({ay}) * 0.72 + ({by}) * 0.28 + {name}.py * {name}.sw * 0.6
-    let {name}.mx = ({ax}) * 0.5 + ({bx}) * 0.5 + {name}.px * {name}.sw
-    let {name}.my = ({ay}) * 0.5 + ({by}) * 0.5 + {name}.py * {name}.sw
-    let {name}.rx = ({ax}) * 0.28 + ({bx}) * 0.72 + {name}.px * {name}.sw * 0.6
-    let {name}.ry = ({ay}) * 0.28 + ({by}) * 0.72 + {name}.py * {name}.sw * 0.6
-""")
-    shapes.append(f"""        ellipse {{ at: {ax}, {ay}; radius: {w} * 0.8; blend: 8 * clamp({w}, 0, 1) }}
-        line {{ from: {ax}, {ay}; to: {name}.qx, {name}.qy; width: {w}; blend: 7 * clamp({w}, 0, 1) }}
-        line {{ from: {name}.qx, {name}.qy; to: {name}.mx, {name}.my; width: {w} * 0.5; blend: 4 * clamp({w}, 0, 1) }}
-        line {{ from: {name}.mx, {name}.my; to: {name}.rx, {name}.ry; width: {w} * 0.5; blend: 4 * clamp({w}, 0, 1) }}
-        line {{ from: {name}.rx, {name}.ry; to: {bx}, {by}; width: {w} * 0.9; blend: 8 * clamp({w}, 0, 1) }}
+    """vlákno z A do B: pri koncoch hrubé (zliate), v strede tenké, prehnuté a kývajúce sa kolmo na smer.
+    Bez `let` — výpočty sú v tvaroch skrytého tela, takže v pokoji (nič zdvihnuté) nestoja nič."""
+    ax, ay, bx, by = f"({ax})", f"({ay})", f"({bx})", f"({by})"
+    # neaktívne vlákno (slabšie ako 0,25 px) sa zbalí do bodu objektu — inak by pleamar kreslil tenký okraj čiary
+    gate = f"if(({w}) > 0.25, 1, 0)"
+    bx, by = f"({ax} + ({bx} - {ax}) * {gate})", f"({ay} + ({by} - {ay}) * {gate})"
+    d = f"max(length({bx} - {ax}, {by} - {ay}), 1)"
+    sw = f"((8 * noise(time * 0.45 + {sway_seed:.1f}) + 3 * sin(time * 1.3 + {sway_seed * 0.7:.1f})) * min({d} / 120, 1.4) / {d})"
+    px, py = f"(0 - ({by} - {ay}))", f"({bx} - {ax})"          # kolmica (nenormovaná; delí sa v sw)
+    def pt(t, k):
+        return (f"{ax} + ({bx} - {ax}) * {t} + {px} * {sw} * {k}", f"{ay} + ({by} - {ay}) * {t} + {py} * {sw} * {k}")
+    q, m, r = pt(0.28, 0.6), pt(0.5, 1), pt(0.72, 0.6)
+    ww = f"({w})"
+    shapes.append(f"""        ellipse {{ at: {ax}, {ay}; radius: {ww} * 0.8; blend: 8 * clamp({ww}, 0, 1) }}
+        line {{ from: {ax}, {ay}; to: {q[0]}, {q[1]}; width: {ww}; blend: 7 * clamp({ww}, 0, 1) }}
+        line {{ from: {q[0]}, {q[1]}; to: {m[0]}, {m[1]}; width: {ww} * 0.5; blend: 4 * clamp({ww}, 0, 1) }}
+        line {{ from: {m[0]}, {m[1]}; to: {r[0]}, {r[1]}; width: {ww} * 0.5; blend: 4 * clamp({ww}, 0, 1) }}
+        line {{ from: {r[0]}, {r[1]}; to: {bx}, {by}; width: {ww} * 0.9; blend: 8 * clamp({ww}, 0, 1) }}
 """)
 
 seed = 0.0
-for sname, sx, sy, act, rx, ry, ex, ey in SRC:
-    a(f"    let sl.{sname} = {act}\n")
-    # vejár k okraju pod zdrojom
-    for i, (off, w) in enumerate(FAN):
-        seed += 1.7
-        strand(f"slf.{sname}.{i}", f"({rx} + {ex} * {off})", f"({ry} + {ey} * {off})", f"({sx} + {ex} * {off * 0.28:.1f})", f"({sy} + {ey} * {off * 0.28:.1f})", f"{w} * sl.{sname}", seed)
-    # zväzky ku kvapkám v okolí, ktoré ležia pri okraji
-    for aname, axx, ayy, rest in ANC:
-        if aname == sname:
-            continue
-        for j, (o1, o2, w) in enumerate([(-9, -6, 8), (10, 7, 6)]):
-            seed += 1.3
-            k = f"slp.{sname}.{aname}.{j}"
-            wexpr = f"{w} * sl.{sname} * ({rest}) * smooth({R_FAR}, {R_NEAR}, length({sx} - {axx}, {sy} - {ayy}))"
-            strand(k, f"({axx} + {ex} * {o1})", f"({ayy} + {ey} * {o1})", f"({sx} + {ex} * {o2})", f"({sy} + {ey} * {o2})", wexpr, seed)
+# jeden aktívny zdroj naraz (zdvíha sa prakticky vždy iba jedna kvapka): ktorý, jeho poloha, koreň a os okraja
+names = [n for n, *_ in SRC]
+def chain(vals, default):
+    out = default
+    for k in range(len(SRC) - 1, -1, -1):
+        out = f"if(sl.src == {k}, {vals[k]}, {out})"
+    return out
+a("".join(f"    let sl.{n} = {act}\n" for n, _, _, act, *_ in SRC))
+src_expr = "-1"
+for k in range(len(SRC) - 1, -1, -1):
+    src_expr = f"if(sl.{names[k]} > 0.02, {k}, {src_expr})"
+a(f"    let sl.src = {src_expr}\n")
+a(f"    let sl.a = max({', '.join(f'sl.{n}' for n in names)})\n" if len(names) == 2 else "    let sl.a = " + chain([f"sl.{n}" for n in names], "0") + "\n")
+for key, idx in (("x", 1), ("y", 2), ("rx", 4), ("ry", 5), ("ex", 6), ("ey", 7)):
+    a(f"    let sl.{key} = " + chain([t[idx] for t in SRC], "0") + "\n")
+# počet vláken podľa objektu a vzdialenosti (1. 10., používateľ): ku každému objektu do 130 px 3 vlákna, do 200 px 2,
+# do 300 px 1, ďalej žiadne. Okraj pod kvapkou je tiež objekt (vzdialenosť = výška zdvihnutia).
+TIERS = [(300, 0, 9), (200, 1, 7), (130, 2, 6)]           # (do vzdialenosti, poradie vlákna, hrúbka)
+SPREAD = [(0, 0), (-10, -5), (10, 6)]                     # rozostup vláken pri objekte a pri kvapke
+objs = [("okraj", "sl.rx", "sl.ry", "1")] + [(n, x, y, rest) for n, x, y, rest in ANC]
+for oname, ox, oy, rest in objs:
+    dist = f"length(sl.x - ({ox}), sl.y - ({oy}))"
+    for lim, k, w in TIERS:
+        seed += 1.3
+        o1, o2 = SPREAD[k]
+        wexpr = f"{w} * sl.a * ({rest}) * if({dist} < {lim}, 1, 0) * smooth({lim}, {lim - 40}, {dist})"
+        strand(f"sl.{oname}.{k}", f"({ox}) + sl.ex * {o1}", f"({oy}) + sl.ey * {o1}", f"sl.x + sl.ex * {o2}", f"sl.y + sl.ey * {o2}", wexpr, seed)
 a("".join(lets))
 a('''    body {
+        show: sl.src >= 0
         color: coffee
         rim: 30%
         light: 14%, 0, 30

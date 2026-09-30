@@ -81,10 +81,12 @@ samostatný tekutý prvok.
   Strapce okien sú príliš ťažké na to, aby sa odlepili.
 - **Vlákna ako sliz:** keď sa kvapka vzďaľuje (ťahaná guľôčka, Hodiny letiace do ucha), vlákno sa **naťahuje a
   tenčí** a **po určitej dĺžke praskne** (konce sa stiahnu); pri návrate sa znova zlepí.
-- **Zdvihnutá kvapka ťahá sliz** (1. 10., obrázok používateľa): medzi uchom a lištou nie jedno vlákno, ale **sieť
-  lepkavých vláken** — pri uchu a pri lište zliate do blán, v strede tenké s dierami, každé sa kýve po svojom,
-  priečne vlákna. **Päty vláken sú na okraji obrazovky a na susedných kvapkách** (vypínač, hlava lišty), nie na
-  kvapke, ktorá sa zdvihla. Kým sú spojené, nepraskne (ucho TimeGoo je 118 px nad lištou).
+- **Sliz je nezávislá mechanika Goo** (1. 10.): keď sa **ktorákoľvek** kvapka zdvihne (TimeGoo, PowerGoo, DaNoGoo,
+  QueenGoo), ťahá lepkavé vlákna k **objektom v okolí** — k okraju pod sebou a ku kvapkám, ktoré ležia pri okraji
+  (Hodiny, vypínač, hlava lišty, DaNoGoo, kráľovná). Používateľ si kvapky rozloží, ako chce, a **tvar vznikne vždy
+  z okolia**. **Počet vláken zodpovedá objektom a vzdialenosti:** k objektu do 130 px 3 vlákna, do 200 px 2, do
+  300 px 1, ďalej žiadne; okraj je objekt vo vzdialenosti výšky zdvihnutia. Vlákna pri koncoch hrubé a zliate,
+  v strede tenké, každé sa kýve po svojom. Jeden aktívny zdroj naraz (výkon). Generátor `session/kvapky/sliz.py`.
 - **Hladina pri okraji** (z Marey): okraj obrazovky je voda — keď kvapka odíde alebo sa vráti, hladina sa prehne a
   po nej sa rozbehnú **dve vlnky**; po prasknutí krku ostane chvíľu **zvyšková kvapka**.
 - **Pohyb kolmo na okraj:** kvapka vystúpi **kolmo od okraja**, späť **padne rovno ako pod ťarchou**, s
