@@ -43,7 +43,9 @@ samostatný tekutý prvok.
 8. **Kontextový klik iba tam, kde ho má funkcia.** Ak funkcia kvapky nemá pravý (ľavý) klik, nemá ho ani kvapka.
    Pravý klik v Goobare má zmysel iba na **guľôčkach okien** (ponuka okna, ako vo Windows).
 9. **Okno sa zjaví tam, kde je kvapka:** okno/panel z kvapky vyrastie presne nad miestom kvapky na okraji
-   (kvapky sa dajú presúvať — musí to platiť kdekoľvek).
+   (kvapky sa dajú presúvať — musí to platiť kdekoľvek). **Kvapka sa k oknu pripája ROHOM** (1. 10.): vystúpi
+   vyššie a okno z nej vyrastie tak, aby bolo **celé vidieť**; keďže sa každá kvapka dá presunúť kamkoľvek
+   (**všetky kvapky sú drag & drop**), cieľom pripojenia môže byť **ktorýkoľvek zo 4 rohov okna**.
 10. **Goo má vlastný vzhľad ponúk** (1. 10.): ponuky a okná z kvapiek sa **nepreberajú vizuálne** z klasického
    LatteOS (panely Noctalie). Preberá sa **funkcia** (latte-ai, pohoda, Text Bar, kalendár…), vzhľad je Goo —
    karta z kvapky, tekuté kapsuly, goo bubliny.
