@@ -4,7 +4,8 @@
 // Spúšťa ju latte-greeter pod labwc s pixmanom a Qt software backendom: žiadne GL, žiadne GPU — kvapky kreslí
 // Canvas (statické tvary, prekreslia sa iba pri zmene).
 // Texty po anglicky cez i18n.tr() (apps/common/I18n.qml, preklady /usr/share/latteos/i18n/<jazyk>.json),
-// relácie zo súborov /usr/share/latteos/sessions/*.desktop (Name, Comment a ich [jazyk]).
+// relácie zo súborov /usr/share/latteos/sessions/*.desktop a potom /usr/share/wayland-sessions/*.desktop (iné
+// nainštalované prostredia na pokusy; rovnaký názov súboru iba raz, Hidden/NoDisplay nie) — Name, Comment a ich [jazyk].
 //
 // Vstupy (premenné prostredia z latte-greeter):
 //   LATTE_MODE (normal|safe), LATTE_RENDERER, LATTE_REASON — z /run/latteos (latte-boot select)
@@ -57,16 +58,20 @@ ShellRoot {
     property string lastSession: ""
     Process {
         id: sessProc; running: true
-        command: ["sh", "-c", "lang=\"${1%%.*}\"; short=\"${lang%%_*}\"; for f in /usr/share/latteos/sessions/*.desktop; do "
+        command: ["sh", "-c", "lang=\"${1%%.*}\"; short=\"${lang%%_*}\"; seen=' '; "
+                  + "for f in /usr/share/latteos/sessions/*.desktop /usr/share/wayland-sessions/*.desktop; do [ -f \"$f\" ] || continue; "
+                  + "b=\"$(basename \"$f\" .desktop)\"; case \"$seen\" in *\" $b \"*) continue;; esac; seen=\"$seen$b \"; "
+                  + "grep -qiE '^(Hidden|NoDisplay)=true' \"$f\" && continue; "
                   + "awk -v L=\"$lang\" -v S=\"$short\" -v F=\"$(basename \"$f\" .desktop)\" -F= '"
                   + "$1==\"Name\"{n=$2} $1==\"Name[\"S\"]\"||$1==\"Name[\"L\"]\"{nl=$2} $1==\"Comment\"{c=$2} $1==\"Comment[\"S\"]\"||$1==\"Comment[\"L\"]\"{cl=$2} "
                   + "$1==\"Exec\"{e=substr($0,6)} END{print F\"\\t\"(nl?nl:n)\"\\t\"(cl?cl:c)\"\\t\"e}' \"$f\"; done", "sh", root.localeName]
         stdout: StdioCollector {
             onStreamFinished: {
-                const order = ["latteos", "latteos-safe", "latteos-hra", "latteos-kvapky"];
+                const order = ["latteos", "latteos-safe", "latteos-hra", "latteos-kvapky", "latteos-noctalia"];
                 const list = this.text.split("\n").filter(l => l.trim() !== "").map(l => {
                     const p = l.split("\t");
-                    return { file: p[0], name: p[1], comment: p[2] || "", cmd: (p[3] || "/usr/bin/latte-session").trim().split(/\s+/) };
+                    // polia Exec ako %U/%f (spec .desktop) greetd nepozná
+                    return { file: p[0], name: p[1], comment: p[2] || "", cmd: (p[3] || "/usr/bin/latte-session").trim().split(/\s+/).filter(a => !/^%[a-zA-Z]$/.test(a)) };
                 });
                 list.sort((a, b) => { const ia = order.indexOf(a.file), ib = order.indexOf(b.file);
                                       return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib) || a.name.localeCompare(b.name); });
@@ -667,11 +672,18 @@ ShellRoot {
             Rectangle {
                 visible: root.sessionsOpen
                 anchors { horizontalCenter: drop.horizontalCenter; top: drop.bottom; topMargin: -14 }
-                width: drop.width - 40; height: sessCol.implicitHeight + 16; radius: 22
+                // po spodok obrazovky; viac relácií (iné nainštalované prostredia) sa roluje kolieskom
+                width: drop.width - 40; radius: 22
+                height: Math.min(sessCol.implicitHeight + 16, parent.height - (drop.y + drop.height - 14) - 24)
                 color: root.cGlass; border { color: root.cOutline; width: 1 }
+                Flickable {
+                    anchors { fill: parent; margins: 8 }
+                    clip: true
+                    contentHeight: sessCol.implicitHeight
+                    boundsBehavior: Flickable.StopAtBounds
                 Column {
                     id: sessCol
-                    anchors { left: parent.left; right: parent.right; top: parent.top; margins: 8 }
+                    width: parent.width
                     spacing: 2
                     Repeater {
                         model: root.sessions
@@ -689,6 +701,7 @@ ShellRoot {
                                         onClicked: { root.sessionIndex = index; root.sessionsOpen = false; root.focusPassword(); } }
                         }
                     }
+                }
                 }
             }
         }
