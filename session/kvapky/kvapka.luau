@@ -38,6 +38,18 @@ local JIT = { { 0, 0 }, { 0.06, -0.04 }, { -0.05, 0.07 }, { 0.08, 0.03 }, { -0.0
 -- guľôčok v lište je najviac SLOTS (musí sedieť so session/kvapky/sloty.py); pri viac oknách je posledná guľôčka
 -- „ďalšie okná“ a otvorí prehľad všetkých okien (Super+Tab), takže žiadne okno neostane nedostupné
 local SLOTS = 48
+-- okná nad lištou (30. 9., návrh používateľa): každé ako úsek pozdĺž okraja v súradniciach od hlavy { a0, a1, gap }
+-- (gap = voľno medzi oknom a okrajom). Strapec sa nezrovnáva podľa hocijakého okna na ploche, iba podľa okien
+-- priamo nad sebou: kým tam okno nie je, zhromaždí sa do výšky; keby okno prekryl, stiahne sa k okraju do radu.
+local blocks = {}
+local low_was = {}                        -- kľúč strapca → bol naposledy stiahnutý (hysterézia, aby neblikal)
+local function free_above(x0, x1)
+    local g = 999
+    for _, b in ipairs(blocks) do
+        if b.a1 > x0 and b.a0 < x1 then g = math.min(g, b.gap) end
+    end
+    return g
+end
 local function overflow() return #wins > SLOTS end
 local ZIG = { 0, 0.46, 0.12, 0.52, 0.04, 0.38, 0.18, 0.5 }   -- cik-cak strapca v páse pod oknom (násobky r)
 local hot = nil          -- aplikácia, ktorej strapec je pod myšou (rozvinutý)
@@ -93,13 +105,21 @@ function layout()
     local order, used = {}, {}
     for _, k in ipairs(group_order) do if groups[k] and not used[k] then order[#order + 1] = k; used[k] = true end end
     for _, k in ipairs(first) do if not used[k] then order[#order + 1] = k; used[k] = true end end
-    local tight = fact.tight == true
     local paska = tostring(fact.mode) == "paska"
     local lay, u = {}, 21                  -- u: ľavý okraj ďalšieho strapca (od hlavy; hlava končí na +36)
     for _, key in ipairs(order) do
         local idx = groups[key]
         local m = #idx
         local r = (paska and 24 or R0) * math.max(0.72, 1 - 0.07 * (m - 1))
+        -- strapec: šírka a výška, ktorú by zabral; nad ním musí byť voľno (inak sa stiahne k okraju do radu)
+        local lo, hi, top = 0, 0, 0
+        for j = 1, math.min(m, #OFFS) do
+            local ox = OFFS[j][1] + JIT[j][1]
+            lo = math.min(lo, ox); hi = math.max(hi, ox); top = math.max(top, -(OFFS[j][2] + JIT[j][2]))
+        end
+        local need = top * r + r + 56 + (low_was[key] and 16 or 0)
+        local tight = m > 1 and free_above(u, u + (hi - lo) * r + 2 * r) < need
+        low_was[key] = tight
         local row = tight or m == 1 or key == hot or m > #OFFS    -- nad 20 okien jednej aplikácie rad, nie veža
         if key == hot and not tight then r = paska and 24 or R0 end
         if tight then r = math.min(r, 23) end
@@ -120,11 +140,6 @@ function layout()
             end
             u = u + 2 * r + (m - 1) * step + 12
         else
-            local lo, hi = 0, 0
-            for j = 1, m do
-                local ox = OFFS[j][1] + JIT[j][1]
-                lo = math.min(lo, ox); hi = math.max(hi, ox)
-            end
             local ax = u + r - lo * r
             for j, i in ipairs(idx) do
                 local rr = r * (1 + 0.06 * (((j - 1) * 37) % 5 - 2) / 2)
@@ -327,19 +342,34 @@ local function check_tight()
         run("hyprctl", { "-j", "clients" }, function(out)
             local ok, list = pcall(json.decode, out or "")
             local tight, room = false, 999
+            local nb = {}
             if ok and list and okw and ws and mon then
                 local side = tostring(fact.side or "dole")
+                local W, H = mon.width, mon.height
+                local head = ((side == "vlavo" or side == "vpravo") and H or W) * (tonumber(fact.pos) or 0.4)
                 for _, w in ipairs(list) do
                     if w.workspace and w.workspace.id == ws.id and w.mapped ~= false and not w.hidden and w.at and w.size then
-                        local x, y = w.at[1] - mon.x, w.at[2] - mon.y
-                        local gap = ({ dole = mon.height - (y + w.size[2]), hore = y, vlavo = x,
-                                       vpravo = mon.width - (x + w.size[1]) })[side] or 999
+                        local x, y, ww, wh = w.at[1] - mon.x, w.at[2] - mon.y, w.size[1], w.size[2]
+                        local gap = ({ dole = H - (y + wh), hore = y, vlavo = x, vpravo = W - (x + ww) })[side] or 999
                         if (w.fullscreen or 0) ~= 0 then gap = 0 end
-                        room = math.min(room, gap)
-                        if gap < 64 + 16 then tight = true end
+                        local a0 = ({ dole = x, hore = W - x - ww, vlavo = y, vpravo = H - y - wh })[side] or x
+                        local a1 = a0 + (((side == "vlavo" or side == "vpravo") and wh) or ww)
+                        nb[#nb + 1] = { a0 = a0 - head, a1 = a1 - head, gap = gap }
                     end
                 end
+                -- lišta sa vysúva iba po okná nad sebou (Hodiny a vypínač vľavo od hlavy, šnúra vpravo)
+                for _, b in ipairs(nb) do
+                    if b.a1 > -190 and b.a0 < (fact.chain_w or 50) + 50 then room = math.min(room, b.gap) end
+                end
+                tight = room < 64 + 16
             end
+            local changed = #nb ~= #blocks
+            for i, b in ipairs(nb) do
+                local o = blocks[i]
+                if not o or math.abs(o.a0 - b.a0) > 8 or math.abs(o.a1 - b.a1) > 8 or math.abs(o.gap - b.gap) > 8 then changed = true end
+            end
+            blocks = nb
+            if changed then layout() end
             if ok and list then mark_hidden(list) end
             if fact.tight ~= tight then fact.tight = tight end
             room = math.floor(math.max(0, room))
