@@ -64,3 +64,10 @@ Dve opravy pre Kvapky, obe vhodné na upstream:
    Záplata: zoznam odberateľov, zmenu dostanú všetci.
 
 Použitie: `git apply` v `resources/upstream/pleamar`, potom `cargo build --release`.
+
+## pleamar-wm-linearny-buffer.patch (pôvodná Marea, setup/lab/marea-povodna.sh)
+
+pleamar-wm (k4ditano) žiada obrazový buffer iba s modifiermi. Na latte-lab (RX 640, GFX8) to radeonsi nevie
+(`the card did not make a buffer of 1920×1080: No such file or directory`), obrazovka ostala čierna s textom
+terminálu. Záplata: keď alokácia s modifiermi zlyhá, lineárny buffer (Vulkan ho preberá ako modifier 0) — ako
+„modifier-less allocation“ v aquamarine (Hyprland). Kandidát na hlásenie autorovi (iba ak to používateľ chce).
