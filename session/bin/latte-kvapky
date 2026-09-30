@@ -119,6 +119,7 @@ case "${1:-}" in
         # logika Kvapiek nevie zapisovať súbory: uloží, čo jej patrí (iba tieto súbory, atomicky)
         case "${2:-}" in
             spustac) f="${XDG_CONFIG_HOME:-$HOME/.config}/latteos/spustac.json" ;;
+            widgety) f="${XDG_CONFIG_HOME:-$HOME/.config}/latteos/kvapky-widgety.json" ;;
             *) echo "latte-kvapky uloz: neznámy súbor: ${2:-}" >&2; exit 1 ;;
         esac
         mkdir -p "$(dirname "$f")"; printf '%s\n' "${3:-}" > "$f.new" && mv -f "$f.new" "$f"

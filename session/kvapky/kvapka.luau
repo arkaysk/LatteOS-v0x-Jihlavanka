@@ -155,6 +155,9 @@ function layout()
         local side = tostring(fact.side or "dole")
         local len = (side == "vlavo" or side == "vpravo") and mon.height or mon.width
         local avail = len * (1 - (tonumber(fact.pos) or 0.4)) - 24
+        local lim = widget_limit and widget_limit(side, len)
+        local head = len * (tonumber(fact.pos) or 0.4)
+        if lim and lim > head + 120 then avail = math.min(avail, lim - head - 56) end
         if u > avail and u > 0 then
             local f = math.max(avail / u, 0.25)
             for _, e in pairs(lay) do e.x = e.x * f; e.ax = e.ax * f; e.y = e.y * math.max(f, 0.5); e.r = e.r * math.max(f, 0.5) end
@@ -488,6 +491,12 @@ local function paint_hits()
                 if #hits < 4 then hits[#hits + 1] = { kind = "app", name = a.name, sub = tr("Application"), icon = a.icon, app = a } end
             end
         end
+        -- kvapky widgetov: napíš napr. „hlas“ → Hlasitosť; klik ju pridá na okraj (alebo odoberie)
+        for _, w in ipairs(widget_rows(ql)) do
+            if #hits < 6 then
+                hits[#hits + 1] = { kind = "wdg", name = w.name, sub = w.on and tr("Drop · shown") or tr("Drop"), icon = w.icon, id = w.id }
+            end
+        end
         for _, f in ipairs(file_hits) do
             if #hits < 7 then
                 local name = f.path:match("([^/]+)/?$") or f.path
@@ -551,6 +560,7 @@ end
 local function open_hit(i)
     local h = hits[(i or 0) + 1]
     if not h then return end
+    if h.kind == "wdg" then widget_toggle(h.id); paint_hits(); return end
     if h.kind == "app" then launch(h.app)
     elseif h.kind == "file" then run("xdg-open", { h.path }); fact.dash = false
     else run("xdg-open", { h.url }); fact.dash = false end
@@ -714,6 +724,206 @@ on("notes_clear", function() pcall(sys.call, "notifications.clear") end)
 
 local function noctalia(...) run("noctalia", { "msg", ... }) end
 
+-- ── kvapky widgetov (30. 9.): widgety Noctalie ako kvapky na okrajoch obrazovky ───────────────────────────────
+-- Akcie myši presne podľa Noctalie (src/shell/bar/widget_gesture_defaults.cpp): kde Noctalia pravý klik nemá, nemá
+-- ho ani kvapka. Vykonáva ich Noctalia (`noctalia msg …`), stav a ikonu dávajú služby pleamaru. Rozmiestnenie:
+-- ~/.config/latteos/kvapky-widgety.json ({ list = { { id, side, pos } } }), ukladá `latte-kvapky uloz widgety`.
+local WMAX = 12                                    -- musí sedieť so session/kvapky/widgety.py
+local WIDGETS = {
+    ["control-center"] = { name = "Control center", left = "panel-toggle control-center home" },
+    volume = { name = "Volume", left = "panel-toggle control-center audio", right = "volume-mute", up = "volume-up", down = "volume-down" },
+    network = { name = "Network", left = "panel-toggle control-center network", right = "network-toggle" },
+    bluetooth = { name = "Bluetooth", left = "panel-toggle control-center bluetooth", right = "bluetooth-toggle" },
+    battery = { name = "Battery", left = "panel-toggle control-center power" },
+    media = { name = "Media", left = "panel-toggle control-center media", right = "media toggle", up = "media next", down = "media previous" },
+    sysmon = { name = "System monitor", left = "panel-toggle control-center system" },
+    weather = { name = "Weather", left = "panel-toggle control-center weather" },
+    nightlight = { name = "Night light", left = "nightlight-toggle", right = "nightlight-force-toggle" },
+    power_profile = { name = "Power profile", left = "power-cycle next", right = "power-cycle prev", up = "power-cycle next", down = "power-cycle prev" },
+    caffeine = { name = "Keep awake", left = "caffeine-toggle" },
+    keyboard_layout = { name = "Keyboard layout", left = "keyboard-layout-cycle" },
+    clipboard = { name = "Clipboard", left = "panel-toggle clipboard" },
+    screenshot = { name = "Screenshot", left = "screenshot-region" },
+    wallpaper = { name = "Wallpaper", left = "panel-toggle wallpaper" },
+    theme_mode = { name = "Light and dark", left = "theme-mode-toggle" },
+}
+local WORDER = { "control-center", "volume", "network", "bluetooth", "battery", "media", "sysmon", "weather", "nightlight",
+                 "power_profile", "caffeine", "keyboard_layout", "clipboard", "screenshot", "wallpaper", "theme_mode" }
+local STATIC_ICON = {
+    ["control-center"] = "emblem-system-symbolic", sysmon = "utilities-system-monitor-symbolic",
+    weather = "weather-few-clouds-symbolic", nightlight = "night-light-symbolic", power_profile = "power-profile-balanced-symbolic",
+    caffeine = "preferences-desktop-screensaver-symbolic", keyboard_layout = "input-keyboard-symbolic",
+    clipboard = "edit-paste-symbolic", screenshot = "applets-screenshooter-symbolic",
+    wallpaper = "preferences-desktop-wallpaper-symbolic", theme_mode = "weather-clear-night-symbolic",
+}
+local wlist = {}                                  -- { { id, side, pos } } na obrazovke
+local wfile = nil
+local st = { snd = {}, net = {}, bt = {}, bat = {}, media = {}, cpu = nil, temp = nil }
+
+local function wstate(id)
+    -- ikona, hodnota, zapnuté
+    if id == "volume" then
+        local v, mu = tonumber(st.snd.volume) or 0, st.snd.muted
+        local lvl = mu and "muted" or (v < 0.34 and "low" or (v < 0.67 and "medium" or "high"))
+        return "audio-volume-" .. lvl .. "-symbolic", math.floor(v * 100 + 0.5) .. "%", not mu
+    elseif id == "network" then
+        local n = st.net
+        if n.kind == "wired" then return "network-wired-symbolic", "", n.online ~= false end
+        if n.kind == "wifi" then
+            local s = tonumber(n.strength) or 0
+            local q = s > 75 and "excellent" or (s > 50 and "good" or (s > 25 and "ok" or "weak"))
+            return "network-wireless-signal-" .. q .. "-symbolic", "", true
+        end
+        return "network-offline-symbolic", "", false
+    elseif id == "bluetooth" then
+        local n = 0
+        for _, d in ipairs(st.bt.devices or {}) do if d.connected then n = n + 1 end end
+        return st.bt.powered and "bluetooth-active-symbolic" or "bluetooth-disabled-symbolic", n > 0 and tostring(n) or "", st.bt.powered == true
+    elseif id == "battery" then
+        local p = tonumber(st.bat.percent) or 0
+        local lvl = math.floor(p / 10 + 0.5) * 10
+        return "battery-level-" .. lvl .. (st.bat.charging and "-charging" or "") .. "-symbolic", math.floor(p + 0.5) .. "%", true
+    elseif id == "media" then
+        return st.media.playing and "media-playback-start-symbolic" or "media-playback-pause-symbolic", "", st.media.playing == true
+    elseif id == "sysmon" then
+        return STATIC_ICON.sysmon, st.cpu and (st.cpu .. "%") or "", true
+    elseif id == "weather" then
+        return STATIC_ICON.weather, st.temp and (st.temp .. "°") or "", true
+    end
+    return STATIC_ICON[id] or "emblem-system-symbolic", "", true
+end
+local function wpaint()
+    local out = {}
+    for _, w in ipairs(wlist) do
+        local d = WIDGETS[w.id]
+        if d and #out < WMAX then
+            local icon, val, on = wstate(w.id)
+            out[#out + 1] = { icon = icon, val = val, hasval = val ~= "", side = w.side, pos = w.pos,
+                              right = d.right ~= nil, wheel = d.up ~= nil, on = on }
+        end
+    end
+    model.wdg = out
+end
+local function wsave() run("latte-kvapky", { "uloz", "widgety", json.encode({ list = wlist }) }) end
+local function nmsg(action)
+    local args = { "msg" }
+    for word in action:gmatch("%S+") do args[#args + 1] = word end
+    run("noctalia", args)
+end
+local function wnth(k) return wlist[(k or 0) + 1] end
+on("w_click", function(k) local w = wnth(k); if w then nmsg(WIDGETS[w.id].left) end end)
+on("w_right", function(k) local w = wnth(k); if w and WIDGETS[w.id].right then nmsg(WIDGETS[w.id].right) end end)
+on("w_wheel", function(code)
+    code = tonumber(code) or 0
+    local w = wnth(math.floor(code / 2))
+    if not w then return end
+    local d = WIDGETS[w.id]
+    local a = (code % 2 == 1) and d.up or d.down
+    if a then nmsg(a) end
+end)
+-- pustená kvapka: k najbližšiemu okraju; ďaleko od všetkých (nad 170 px) steká preč
+on("w_drop", function(k)
+    local i = (k or 0) + 1
+    local w = wlist[i]
+    if not w then return end
+    local x, y = tonumber(fact["wd.x"]) or 0, tonumber(fact["wd.y"]) or 0
+    local W, H = tonumber(fact["wd.w"]) or 1920, tonumber(fact["wd.h"]) or 1080
+    local d = { H - y, y, x, W - x }
+    local side, best = 0, d[1]
+    for s = 2, 4 do if d[s] < best then side, best = s - 1, d[s] end end
+    if best > 170 then
+        table.remove(wlist, i)
+    else
+        w.side = side
+        w.pos = math.max(0.02, math.min(0.98, (side <= 1) and (x / W) or (y / H)))
+    end
+    wsave(); wpaint(); layout()
+end)
+-- pridať / odobrať zo spúšťača (riadok „Kvapka“)
+function widget_toggle(id)
+    for i, w in ipairs(wlist) do
+        if w.id == id then table.remove(wlist, i); wsave(); wpaint(); layout(); return end
+    end
+    if #wlist >= WMAX then return end
+    -- voľné miesto dole vpravo, od pravého kraja doľava
+    local pos = 0.95
+    local taken = true
+    while taken and pos > 0.5 do
+        taken = false
+        for _, w in ipairs(wlist) do if w.side == 0 and math.abs(w.pos - pos) < 0.025 then taken = true end end
+        if taken then pos = pos - 0.03 end
+    end
+    wlist[#wlist + 1] = { id = id, side = 0, pos = pos }
+    wsave(); wpaint(); layout()
+end
+function widget_rows(q)
+    local rows = {}
+    for _, id in ipairs(WORDER) do
+        local name = tr(WIDGETS[id].name)
+        if name:lower():find(q, 1, true) or id:find(q, 1, true) then
+            local on = false
+            for _, w in ipairs(wlist) do if w.id == id then on = true end end
+            rows[#rows + 1] = { id = id, name = name, on = on, icon = (wstate(id)) }
+        end
+    end
+    return rows
+end
+-- najbližšia kvapka widgetu na tom istom okraji ako lišta (pozdĺž okraja, v px) — šnúra okien ju neprekryje
+function widget_limit(side, len)
+    local sid = ({ dole = 0, hore = 1, vlavo = 2, vpravo = 3 })[side] or 0
+    local lim = nil
+    for _, w in ipairs(wlist) do
+        if w.side == sid then
+            local u = (sid == 1 or sid == 3) and (1 - w.pos) * len or w.pos * len   -- hore a vpravo je lišta zrkadlená
+            if not lim or u < lim then lim = u end
+        end
+    end
+    return lim
+end
+local function wload()
+    if not wfile then return end
+    run("cat", { wfile }, function(out)
+        local ok, c = pcall(json.decode, out or "")
+        if ok and type(c) == "table" and type(c.list) == "table" then
+            wlist = {}
+            for _, w in ipairs(c.list) do
+                if type(w) == "table" and WIDGETS[w.id] and #wlist < WMAX then
+                    wlist[#wlist + 1] = { id = w.id, side = tonumber(w.side) or 0, pos = tonumber(w.pos) or 0.9 }
+                end
+            end
+        else
+            wlist = { { id = "control-center", side = 0, pos = 0.95 }, { id = "volume", side = 0, pos = 0.92 },
+                      { id = "network", side = 0, pos = 0.89 } }
+            if st.bt.present then wlist[#wlist + 1] = { id = "bluetooth", side = 0, pos = 0.86 } end
+            wsave()
+        end
+        wpaint(); layout()
+    end)
+end
+sys.watch("audio", function(v) st.snd = v or {}; wpaint() end)
+sys.watch("network", function(v) st.net = v or {}; wpaint() end)
+sys.watch("bluetooth", function(v) st.bt = v or {}; wpaint() end)
+sys.watch("battery", function(v) st.bat = v or {}; wpaint() end)
+sys.watch("media", function(v) st.media = v or {}; wpaint() end)
+-- vyťaženie CPU (kvapka Systém): z /proc/stat každé 3 s, iba keď tá kvapka je
+local cpu_prev = nil
+every(3000, function()
+    local want = false
+    for _, w in ipairs(wlist) do if w.id == "sysmon" then want = true end end
+    if not want then return end
+    run("cat", { "/proc/stat" }, function(out)
+        local u, n, s, idle, io, irq, sirq = (out or ""):match("^cpu%s+(%d+)%s+(%d+)%s+(%d+)%s+(%d+)%s+(%d+)%s+(%d+)%s+(%d+)")
+        if not u then return end
+        local busy = u + n + s + irq + sirq
+        local total = busy + idle + io
+        if cpu_prev then
+            local dt = total - cpu_prev[2]
+            if dt > 0 then st.cpu = math.floor((busy - cpu_prev[1]) * 100 / dt + 0.5); wpaint() end
+        end
+        cpu_prev = { busy, total }
+    end)
+end)
+
 -- počasie: Open-Meteo (bez kľúča), miesto z Nastavení › Účet › Prihlasovanie (greeter.conf), každých 20 min
 local WX = { [0] = "☀", [1] = "🌤", [2] = "⛅", [3] = "☁", [45] = "🌫", [48] = "🌫", [95] = "⛈", [96] = "⛈", [99] = "⛈" }
 local function wx_glyph(c)
@@ -733,6 +943,7 @@ local function weather()
             local ok, d = pcall(json.decode, out or "")
             if ok and d and d.current then
                 local t = math.floor((d.current.temperature_2m or 0) + 0.5)
+                st.temp = t; wpaint()
                 text.weather = wx_glyph(d.current.weather_code or 3) .. "  " .. t .. " °C" .. (place ~= "" and (" · " .. place) or "")
             end
         end)
@@ -766,6 +977,8 @@ run("printenv", { "HOME" }, function(out)
         kava_file = home .. "/.config/latteos/kava"; read_kava()
         HOME = home
         cfg_file = home .. "/.config/latteos/spustac.json"
+        wfile = home .. "/.config/latteos/kvapky-widgety.json"
+        after(600, wload)                                    -- po prvej správe služby bluetooth (predvolené)
         -- doterajšie pripnuté (~/.config/latteos/pripnute) sú pri prvom štarte obľúbené spúšťača
         run("cat", { home .. "/.config/latteos/pripnute" }, function(out)
             local ids = {}
