@@ -1,6 +1,6 @@
--- LatteOS › relácia „Noctalia (čistá)“ (latte-session noctalia): Hyprland a Noctalia s ich vlastnými predvolenými
--- nastaveniami, bez úprav LatteOS (lišta, témy, skratky Windows, kvapky) — na pokusy a porovnanie. Noctalia si
--- nastavenia ukladá do ~/.config/latteos/noctalia-cista/noctalia, nie do ~/.config/noctalia (tú má LatteOS).
+-- LatteOS › relácia „Noctalia (čistá)“ (latte-session noctalia): Hyprland a pôvodná Noctalia s jej predvolenými
+-- nastaveniami, bez úprav LatteOS (lišta, témy, skratky Windows, kvapky) — na pokusy a porovnanie. Noctalia
+-- používa svoje pôvodné priečinky ~/.config/noctalia a ~/.local/state/noctalia; LatteOS má vlastné pod latteos/.
 -- Ostáva iba to, bez čoho by sa nedalo pracovať: klávesnica sk/us, virtuálna obrazovka bez monitora a portály.
 hl.monitor({ output = "", mode = "preferred", position = "auto", scale = 1 })
 hl.config({
@@ -10,7 +10,6 @@ hl.config({
 })
 
 local function run(cmd) return hl.dsp.exec_cmd(cmd) end
-local cfg = "$HOME/.config/latteos/noctalia-cista"
 -- myšou: Super + ťahanie presúva / mení veľkosť okna; klávesy iba doplnok (Super = kláves Windows)
 hl.bind("SUPER + mouse:272", hl.dsp.window.drag(), { mouse = true })
 hl.bind("SUPER + mouse:273", hl.dsp.window.resize(), { mouse = true })
@@ -28,5 +27,5 @@ hl.on("hyprland.start", function()
     if n == 0 then hl.exec_cmd("hyprctl output create headless LATTE-VIRT") end
     hl.exec_cmd("sh -c 'dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE "
         .. "HYPRLAND_INSTANCE_SIGNATURE LATTE_VARIANT; systemctl --user start latte-session.target'")
-    hl.exec_cmd("sh -c 'mkdir -p " .. cfg .. "/noctalia && NOCTALIA_CONFIG_HOME=" .. cfg .. " exec noctalia'")
+    hl.exec_cmd("env -u NOCTALIA_CONFIG_HOME -u NOCTALIA_STATE_HOME noctalia")
 end)

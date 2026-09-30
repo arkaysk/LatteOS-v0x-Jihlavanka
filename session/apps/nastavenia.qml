@@ -74,7 +74,7 @@ ShellRoot {
     property var wallpapers: []
     property string greeter: "latte"
     property string modePref: "tema"
-    property var bar: ({})            // prepisy [bar.main] z ~/.local/state/noctalia/settings.toml
+    property var bar: ({})            // prepisy [bar.main] z ~/.local/state/latteos/noctalia/settings.toml
     property var location: ({})       // prepisy [location]
     property var notif: ({})          // prepisy [notification]
     property var access: ({})         // prepisy [accessibility]
@@ -253,7 +253,8 @@ ShellRoot {
         status = "Obrazovka prihlásenia uložená (prejaví sa pri ďalšom prihlásení)";
     }
     FileView {
-        path: app.stateHome + "/noctalia/settings.toml"; printErrors: false; watchChanges: true; onFileChanged: reload()
+        // stav Noctalie LatteOS (oddelený od pôvodnej Noctalie, latte-session)
+        path: app.stateHome + "/latteos/noctalia/settings.toml"; printErrors: false; watchChanges: true; onFileChanged: reload()
         onLoaded: {
             const t = {}; let sec = "";
             for (const l of text().split("\n")) {
@@ -683,19 +684,19 @@ ShellRoot {
     }
     function storedIn(k) {
         return ({
-            domov: "/run/latteos/mode.toml", motiv: "~/.config/latteos/theme\n~/.config/latteos/theme-mode", pozadie: "~/.config/latteos/tapety.json\n~/.local/state/noctalia/settings.toml [wallpaper]", tapetyonline: "~/.local/share/latteos/tapety",
+            domov: "/run/latteos/mode.toml", motiv: "~/.config/latteos/theme\n~/.config/latteos/theme-mode", pozadie: "~/.config/latteos/tapety.json\n~/.local/state/latteos/noctalia/settings.toml [wallpaper]", tapetyonline: "~/.local/share/latteos/tapety",
             okna: "~/.local/state/latteos/window-mode", vykon: "~/.config/latteos/tier", efekty: "~/.config/latteos/live-wallpaper\n~/.config/latteos/tier",
             start: "/etc/latteos/boot.toml\n/var/lib/latteos/", ai: "~/.config/latteos/ai.toml\n~/.config/latteos/ai-keys (0600)",
-            lista: "~/.local/state/noctalia/settings.toml [bar.main]\n~/.config/latteos/bar-anim, bar-scene, bar-scene-vpravo, bar-stlmenie, mascot", cas: "~/.local/state/noctalia/settings.toml [location]\n~/.config/latteos/clock.conf",
+            lista: "~/.local/state/latteos/noctalia/settings.toml [bar.main]\n~/.config/latteos/bar-anim, bar-scene, bar-scene-vpravo, bar-stlmenie, mascot", cas: "~/.local/state/latteos/noctalia/settings.toml [location]\n~/.config/latteos/clock.conf",
             prihlasovanie: "/var/lib/latteos/greeter/greeter.conf", diagnostika: "/var/lib/latteos/greeter/last-crash.log\n/var/lib/latteos/crash-count",
             subory: "~/.config/latteos/subory.json\n~/.config/latteos/tags.json\n~/.config/latteos/subory-tahanie",
-            oznamenia: "~/.local/state/noctalia/settings.toml [notification]",
-            uzamknutie: "~/.local/state/noctalia/settings.toml [idle.behavior.*]",
+            oznamenia: "~/.local/state/latteos/noctalia/settings.toml [notification]",
+            uzamknutie: "~/.local/state/latteos/noctalia/settings.toml [idle.behavior.*]",
             mojucet: "/var/lib/latteos/greeter/avatars/<meno>.png\n~/.face",
             synchronizacia: "~/.config/rclone/rclone.conf\n~/Cloud/<účet>\nsystemd --user latte-cloud@<účet>",
             zalohy: "~/.config/latteos/backup.conf\n<cieľ>/LatteOS-zaloha-<meno>/<dátum>\n~/.config/systemd/user/latte-backup.timer",
             jazyk: "~/.config/latteos/locale (načíta latte-session)\n/etc/locale.conf (systém)",
-            pristupnost: "~/.local/state/noctalia/settings.toml [accessibility]\n~/.config/latteos/no-animations, cursor-size",
+            pristupnost: "~/.local/state/latteos/noctalia/settings.toml [accessibility]\n~/.config/latteos/no-animations, cursor-size",
             klavesnica: "~/.config/latteos/profil-ovladania, numlock\n/usr/share/latteos/hypr/latte/skratky.lua\n~/.config/latteos/hyprland.lua"
         })[k] || dalsie.stored[k] || "—";
     }
