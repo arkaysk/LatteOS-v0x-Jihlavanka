@@ -8,6 +8,7 @@
 #   latte-kvapky stav     „kvapky“ alebo „klasicke“
 #   latte-kvapky okraj [dole|hore|vlavo|vpravo POLOHA]   okraj lišty-kvapky (presun ťahaním); bez argumentov vypíše
 #   latte-kvapky uloz spustac JSON   uloží nastavenia spúšťača (logika Kvapiek nevie zapisovať súbory)
+#   latte-kvapky panel-poloha PANEL POLOHA   panel Noctalie pri kvapke (control_center|clipboard|wallpaper|session, bottom_right…)
 # Ostáva aj Kapsa (história schránky), App Manager a systémové ponuky (Ctrl+Alt+Del, kvapka vypínač).
 set -u
 share=/usr/share/latteos
@@ -114,6 +115,22 @@ case "${1:-}" in
         for a in netznak kapsavyrez nahlad plocha rychle pohoda maskot; do start_app "$a"; done
         # statická tapeta z mpvpaperu (bez shellu) ustúpi natívnej tapete Noctalie; živé video ostáva
         latte-tapety obnov >/dev/null 2>&1
+        ;;
+    panel-poloha)
+        # panel Noctalie sa otvorí pri kvapke, ktorá ho volá (kvapky sa dajú presúvať): poloha z 9 polôh Noctalie,
+        # ktorú zvolí logika Kvapiek; zapíše sa do konfigurácie Noctalie pre Kvapky a tá sa znova načíta
+        case "${2:-}" in control_center|clipboard|wallpaper|session) ;; *) echo "neznámy panel: ${2:-}" >&2; exit 1 ;; esac
+        case "${3:-}" in top_left|top_center|top_right|center_left|center|center_right|bottom_left|bottom_center|bottom_right) ;;
+            *) echo "neznáma poloha: ${3:-}" >&2; exit 1 ;; esac
+        f="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/latteos/noctalia-kvapky/noctalia/zz-kvapky.toml"
+        [ -f "$f" ] || exit 1
+        grep -q '^\[shell.panel\]' "$f" || printf '\n[shell.panel]\n' >> "$f"
+        for k in placement position; do
+            v="$([ $k = placement ] && echo floating || echo "$3")"
+            if grep -q "^${2}_${k} *=" "$f"; then sed -i "s|^${2}_${k} *=.*|${2}_${k} = \"$v\"|" "$f"
+            else sed -i "/^\[shell.panel\]/a ${2}_${k} = \"$v\"" "$f"; fi
+        done
+        noctalia msg config-reload >/dev/null 2>&1
         ;;
     uloz)
         # logika Kvapiek nevie zapisovať súbory: uloží, čo jej patrí (iba tieto súbory, atomicky)

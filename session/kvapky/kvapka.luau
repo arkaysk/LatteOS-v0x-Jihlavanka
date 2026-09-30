@@ -842,10 +842,32 @@ local function nmsg(action)
     run("noctalia", args)
 end
 local function wnth(k) return wshown[(k or 0) + 1] end
+-- panel Noctalie sa otvorí pri kvapke, ktorá ho volá (kvapky sa dajú presúvať): z miesta kvapky najbližšia z 9 polôh
+-- Noctalie; zmena polohy sa zapíše do jej konfigurácie pre Kvapky (latte-kvapky panel-poloha) a až potom sa panel otvorí
+local PANEL_KEY = { ["control-center"] = "control_center", clipboard = "clipboard", wallpaper = "wallpaper", session = "session" }
+local panel_at = {}
+local function near_pos(e)
+    local third = function(p) return p < 0.34 and 1 or (p < 0.67 and 2 or 3) end
+    local t = third(tonumber(e.pos) or 0.5)
+    local side = tonumber(e.side) or 0
+    if side == 0 then return ({ "bottom_left", "bottom_center", "bottom_right" })[t]
+    elseif side == 1 then return ({ "top_left", "top_center", "top_right" })[t]
+    elseif side == 2 then return ({ "top_left", "center_left", "bottom_left" })[t]
+    else return ({ "top_right", "center_right", "bottom_right" })[t] end
+end
+local function waction(e, action)
+    local panel = action:match("^panel%-toggle%s+(%S+)")
+    local key = panel and PANEL_KEY[panel]
+    if not key then nmsg(action); return end
+    local want = near_pos(e.entry)
+    if panel_at[key] == want then nmsg(action); return end
+    panel_at[key] = want
+    run("latte-kvapky", { "panel-poloha", key, want }, function() after(120, function() nmsg(action) end) end)
+end
 on("w_click", function(k)
     local e = wnth(k)
     if not e then return end
-    if e.kind == "tray" then pcall(sys.call, "tray.activate", e.item.key) else nmsg(WIDGETS[e.entry.id].left) end
+    if e.kind == "tray" then pcall(sys.call, "tray.activate", e.item.key) else waction(e, WIDGETS[e.entry.id].left) end
 end)
 -- ponuka ikony z lišty: strom (dbusmenu) ako naše kapsuly; položka s podponukou ju otvorí na tom istom mieste
 local function tray_menu(key, nodes)
@@ -871,7 +893,7 @@ on("w_right", function(k)
         local ok, nodes = pcall(sys.ask, "tray.menu", e.item.key)
         if ok and type(nodes) == "table" and #nodes > 0 then tray_menu(e.item.key, nodes)
         else pcall(sys.call, "tray.context", e.item.key) end            -- program bez dbusmenu: svoju ponuku ukáže sám
-    elseif WIDGETS[e.entry.id].right then nmsg(WIDGETS[e.entry.id].right) end
+    elseif WIDGETS[e.entry.id].right then waction(e, WIDGETS[e.entry.id].right) end
 end)
 on("w_wheel", function(code)
     code = tonumber(code) or 0
