@@ -11,10 +11,13 @@ command -v clang >/dev/null || sudo dnf install -y clang clang-devel
 command -v swaybg >/dev/null || sudo dnf install -y swaybg          # tapeta v pleamar-wm
 mkdir -p "$M/src" "$M/bin"
 for r in pleamar pleamar-wm marea-plm; do
+    [ -d "$M/src/$r/.git" ] && git -C "$M/src/$r" checkout --quiet -- .     # naše záplaty preč, aby šiel pull
     if [ -d "$M/src/$r/.git" ]; then git -C "$M/src/$r" pull --ff-only --quiet || echo "$r: nedá sa aktualizovať"
     else git clone --quiet "https://github.com/k4ditano/$r.git" "$M/src/$r"; fi
     echo "$r: $(git -C "$M/src/$r" log --oneline -1)"
 done
+# záplata pre latte-lab (RX 640 / GFX8): bez nej pleamar-wm nedostane obrazový buffer a obrazovka ostane čierna
+git -C "$M/src/pleamar-wm" apply "$here/resources/patches/pleamar-wm-linearny-buffer.patch" || echo "záplata pleamar-wm sa nedá použiť (možno ju autor už má)"
 (cd "$M/src/pleamar" && cargo build --release --quiet)
 (cd "$M/src/pleamar-wm" && cargo build --release --quiet)
 for p in pleamar/target/release/pleamar pleamar-wm/target/release/pleamar-wm; do
