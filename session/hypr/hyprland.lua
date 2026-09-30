@@ -243,8 +243,9 @@ hl.on("hyprland.start", function()
     -- prostredie pre systemd/D-Bus, potom graphical-session.target (portály pre Flatpak)
     hl.exec_cmd("sh -c 'dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE "
         .. "HYPRLAND_INSTANCE_SIGNATURE LATTE_MODE LATTE_RENDERER LATTE_TIER LATTE_VARIANT; systemctl --user start latte-session.target'")
-    -- relácia LatteOS Kvapky (skúšobná): bez Noctalie a klasických pomocníkov, iba živá tapeta a kvapky
-    if os.getenv("LATTE_VARIANT") == "kvapky" then
+    -- relácia LatteOS Kvapky (skúšobná): bez Noctalie a klasických pomocníkov, iba živá tapeta a kvapky.
+    -- Aj po `latte-kvapky skusit` (príznak v XDG_RUNTIME_DIR): po reštarte Hyprlandu sa inak vrátila klasická plocha
+    if kvapky then
         hl.exec_cmd("latte-kvapky start")
         hl.exec_cmd("latte-boot ok --after 60 --require pleamar")
         return

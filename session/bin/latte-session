@@ -134,12 +134,21 @@ run_game() {
 
 exit_crash() {   # $1 PID: coredump s pádom v upratovaní na konci procesu (systemd-coredump ho zapíše o chvíľu)
     local i bt
-    for i in 1 2 3 4 5 6; do
+    # (30. 9.) aj pád v CCompositor::cleanup (upratovanie okien pri odhlásení) — rovnaká trieda chyby
+    for i in 1 2 3 4 5 6 7 8 9 10 11 12; do
         bt="$(coredumpctl info "$1" --no-pager 2>/dev/null)"
-        if [ -n "$bt" ]; then grep -qE "_dl_fini|__cxa_finalize" <<<"$bt"; return; fi
+        if [ -n "$bt" ]; then grep -qE "_dl_fini|__cxa_finalize|CCompositor7cleanup" <<<"$bt"; return; fi
         sleep 0.5
     done
     return 1
+}
+
+# bez fyzického monitora (vzdialený prístup cez Sunshine/Moonlight, virtuálna obrazovka LATTE-VIRT): prihlasovacia
+# obrazovka by sa nemala kde ukázať a Sunshine beží iba v relácii — odhlásenie by odrezalo prístup až do reštartu PC
+headless() {
+    local s
+    for s in /sys/class/drm/card*-*/status; do [ "$(cat "$s" 2>/dev/null)" = connected ] && return 1; done
+    return 0
 }
 
 restarts=()
@@ -163,6 +172,7 @@ while true; do
     if [ $rc -eq 0 ]; then
         latte-boot ok >/dev/null     # riadne odhlásenie nie je pád
         if [ "$(cat "$flag" 2>/dev/null)" = hra ]; then rm -f "$flag"; next=hra; continue; fi   # latte-hra
+        if headless; then echo "odhlásenie bez monitora → nová relácia (inak by sa vzdialene nedalo pripojiť)"; continue; fi
         exit 0
     fi
     crash_report "$rc" "$dt" "$t0"
