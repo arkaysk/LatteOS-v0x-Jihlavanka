@@ -1682,7 +1682,7 @@ scene Kvapka {
     image wdg.0.icon { at: wp.x.0 - 11, wp.y.0 - 11 - if(wdg.0.hasval, 5, 0); size: 22, 22; tint: ink; opacity: wb.0 * if(wdg.0.on, 100%, 55%); show: 0 < wdg.count and wdg.0.mono }
     image wdg.0.icon { at: wp.x.0 - 12, wp.y.0 - 12; size: 24, 24; opacity: wb.0 * if(wdg.0.on, 100%, 55%); show: 0 < wdg.count and not wdg.0.mono }
     text wdg.0.val { at: wp.x.0, wp.y.0 + 11; anchor: center; size: 9; weight: 700; color: ink; opacity: 85% * wb.0; show: 0 < wdg.count }
-    zone ellipse w_hit.0 { at: wp.x.0, wp.y.0; radius: 24; cursor: pointer; active: 0 < wdg.count and not dash }
+    zone ellipse w_hit.0 { at: wp.x.0, wp.y.0; radius: if(wdrag == 0, 4000, 24); cursor: pointer; active: 0 < wdg.count and not dash }
     on press w_hit.0 { wdrag = 0; wmoved = false; wd.w = W; wd.h = H }
     on drag w_hit.0 while wdrag == 0 and abs(drag.dx) + abs(drag.dy) > 6 { wmoved = true }
     on release w_hit.0 while wdrag == 0 and wmoved { wd.x = mx; wd.y = my; impulse wwob.0 300; emit w_drop(0); wmoved = false; wdrag = -1 }
@@ -1695,7 +1695,7 @@ scene Kvapka {
     image wdg.1.icon { at: wp.x.1 - 11, wp.y.1 - 11 - if(wdg.1.hasval, 5, 0); size: 22, 22; tint: ink; opacity: wb.1 * if(wdg.1.on, 100%, 55%); show: 1 < wdg.count and wdg.1.mono }
     image wdg.1.icon { at: wp.x.1 - 12, wp.y.1 - 12; size: 24, 24; opacity: wb.1 * if(wdg.1.on, 100%, 55%); show: 1 < wdg.count and not wdg.1.mono }
     text wdg.1.val { at: wp.x.1, wp.y.1 + 11; anchor: center; size: 9; weight: 700; color: ink; opacity: 85% * wb.1; show: 1 < wdg.count }
-    zone ellipse w_hit.1 { at: wp.x.1, wp.y.1; radius: 24; cursor: pointer; active: 1 < wdg.count and not dash }
+    zone ellipse w_hit.1 { at: wp.x.1, wp.y.1; radius: if(wdrag == 1, 4000, 24); cursor: pointer; active: 1 < wdg.count and not dash }
     on press w_hit.1 { wdrag = 1; wmoved = false; wd.w = W; wd.h = H }
     on drag w_hit.1 while wdrag == 1 and abs(drag.dx) + abs(drag.dy) > 6 { wmoved = true }
     on release w_hit.1 while wdrag == 1 and wmoved { wd.x = mx; wd.y = my; impulse wwob.1 300; emit w_drop(1); wmoved = false; wdrag = -1 }
@@ -1708,7 +1708,7 @@ scene Kvapka {
     image wdg.2.icon { at: wp.x.2 - 11, wp.y.2 - 11 - if(wdg.2.hasval, 5, 0); size: 22, 22; tint: ink; opacity: wb.2 * if(wdg.2.on, 100%, 55%); show: 2 < wdg.count and wdg.2.mono }
     image wdg.2.icon { at: wp.x.2 - 12, wp.y.2 - 12; size: 24, 24; opacity: wb.2 * if(wdg.2.on, 100%, 55%); show: 2 < wdg.count and not wdg.2.mono }
     text wdg.2.val { at: wp.x.2, wp.y.2 + 11; anchor: center; size: 9; weight: 700; color: ink; opacity: 85% * wb.2; show: 2 < wdg.count }
-    zone ellipse w_hit.2 { at: wp.x.2, wp.y.2; radius: 24; cursor: pointer; active: 2 < wdg.count and not dash }
+    zone ellipse w_hit.2 { at: wp.x.2, wp.y.2; radius: if(wdrag == 2, 4000, 24); cursor: pointer; active: 2 < wdg.count and not dash }
     on press w_hit.2 { wdrag = 2; wmoved = false; wd.w = W; wd.h = H }
     on drag w_hit.2 while wdrag == 2 and abs(drag.dx) + abs(drag.dy) > 6 { wmoved = true }
     on release w_hit.2 while wdrag == 2 and wmoved { wd.x = mx; wd.y = my; impulse wwob.2 300; emit w_drop(2); wmoved = false; wdrag = -1 }
@@ -1721,7 +1721,7 @@ scene Kvapka {
     image wdg.3.icon { at: wp.x.3 - 11, wp.y.3 - 11 - if(wdg.3.hasval, 5, 0); size: 22, 22; tint: ink; opacity: wb.3 * if(wdg.3.on, 100%, 55%); show: 3 < wdg.count and wdg.3.mono }
     image wdg.3.icon { at: wp.x.3 - 12, wp.y.3 - 12; size: 24, 24; opacity: wb.3 * if(wdg.3.on, 100%, 55%); show: 3 < wdg.count and not wdg.3.mono }
     text wdg.3.val { at: wp.x.3, wp.y.3 + 11; anchor: center; size: 9; weight: 700; color: ink; opacity: 85% * wb.3; show: 3 < wdg.count }
-    zone ellipse w_hit.3 { at: wp.x.3, wp.y.3; radius: 24; cursor: pointer; active: 3 < wdg.count and not dash }
+    zone ellipse w_hit.3 { at: wp.x.3, wp.y.3; radius: if(wdrag == 3, 4000, 24); cursor: pointer; active: 3 < wdg.count and not dash }
     on press w_hit.3 { wdrag = 3; wmoved = false; wd.w = W; wd.h = H }
     on drag w_hit.3 while wdrag == 3 and abs(drag.dx) + abs(drag.dy) > 6 { wmoved = true }
     on release w_hit.3 while wdrag == 3 and wmoved { wd.x = mx; wd.y = my; impulse wwob.3 300; emit w_drop(3); wmoved = false; wdrag = -1 }
@@ -1734,7 +1734,7 @@ scene Kvapka {
     image wdg.4.icon { at: wp.x.4 - 11, wp.y.4 - 11 - if(wdg.4.hasval, 5, 0); size: 22, 22; tint: ink; opacity: wb.4 * if(wdg.4.on, 100%, 55%); show: 4 < wdg.count and wdg.4.mono }
     image wdg.4.icon { at: wp.x.4 - 12, wp.y.4 - 12; size: 24, 24; opacity: wb.4 * if(wdg.4.on, 100%, 55%); show: 4 < wdg.count and not wdg.4.mono }
     text wdg.4.val { at: wp.x.4, wp.y.4 + 11; anchor: center; size: 9; weight: 700; color: ink; opacity: 85% * wb.4; show: 4 < wdg.count }
-    zone ellipse w_hit.4 { at: wp.x.4, wp.y.4; radius: 24; cursor: pointer; active: 4 < wdg.count and not dash }
+    zone ellipse w_hit.4 { at: wp.x.4, wp.y.4; radius: if(wdrag == 4, 4000, 24); cursor: pointer; active: 4 < wdg.count and not dash }
     on press w_hit.4 { wdrag = 4; wmoved = false; wd.w = W; wd.h = H }
     on drag w_hit.4 while wdrag == 4 and abs(drag.dx) + abs(drag.dy) > 6 { wmoved = true }
     on release w_hit.4 while wdrag == 4 and wmoved { wd.x = mx; wd.y = my; impulse wwob.4 300; emit w_drop(4); wmoved = false; wdrag = -1 }
@@ -1747,7 +1747,7 @@ scene Kvapka {
     image wdg.5.icon { at: wp.x.5 - 11, wp.y.5 - 11 - if(wdg.5.hasval, 5, 0); size: 22, 22; tint: ink; opacity: wb.5 * if(wdg.5.on, 100%, 55%); show: 5 < wdg.count and wdg.5.mono }
     image wdg.5.icon { at: wp.x.5 - 12, wp.y.5 - 12; size: 24, 24; opacity: wb.5 * if(wdg.5.on, 100%, 55%); show: 5 < wdg.count and not wdg.5.mono }
     text wdg.5.val { at: wp.x.5, wp.y.5 + 11; anchor: center; size: 9; weight: 700; color: ink; opacity: 85% * wb.5; show: 5 < wdg.count }
-    zone ellipse w_hit.5 { at: wp.x.5, wp.y.5; radius: 24; cursor: pointer; active: 5 < wdg.count and not dash }
+    zone ellipse w_hit.5 { at: wp.x.5, wp.y.5; radius: if(wdrag == 5, 4000, 24); cursor: pointer; active: 5 < wdg.count and not dash }
     on press w_hit.5 { wdrag = 5; wmoved = false; wd.w = W; wd.h = H }
     on drag w_hit.5 while wdrag == 5 and abs(drag.dx) + abs(drag.dy) > 6 { wmoved = true }
     on release w_hit.5 while wdrag == 5 and wmoved { wd.x = mx; wd.y = my; impulse wwob.5 300; emit w_drop(5); wmoved = false; wdrag = -1 }
@@ -1760,7 +1760,7 @@ scene Kvapka {
     image wdg.6.icon { at: wp.x.6 - 11, wp.y.6 - 11 - if(wdg.6.hasval, 5, 0); size: 22, 22; tint: ink; opacity: wb.6 * if(wdg.6.on, 100%, 55%); show: 6 < wdg.count and wdg.6.mono }
     image wdg.6.icon { at: wp.x.6 - 12, wp.y.6 - 12; size: 24, 24; opacity: wb.6 * if(wdg.6.on, 100%, 55%); show: 6 < wdg.count and not wdg.6.mono }
     text wdg.6.val { at: wp.x.6, wp.y.6 + 11; anchor: center; size: 9; weight: 700; color: ink; opacity: 85% * wb.6; show: 6 < wdg.count }
-    zone ellipse w_hit.6 { at: wp.x.6, wp.y.6; radius: 24; cursor: pointer; active: 6 < wdg.count and not dash }
+    zone ellipse w_hit.6 { at: wp.x.6, wp.y.6; radius: if(wdrag == 6, 4000, 24); cursor: pointer; active: 6 < wdg.count and not dash }
     on press w_hit.6 { wdrag = 6; wmoved = false; wd.w = W; wd.h = H }
     on drag w_hit.6 while wdrag == 6 and abs(drag.dx) + abs(drag.dy) > 6 { wmoved = true }
     on release w_hit.6 while wdrag == 6 and wmoved { wd.x = mx; wd.y = my; impulse wwob.6 300; emit w_drop(6); wmoved = false; wdrag = -1 }
@@ -1773,7 +1773,7 @@ scene Kvapka {
     image wdg.7.icon { at: wp.x.7 - 11, wp.y.7 - 11 - if(wdg.7.hasval, 5, 0); size: 22, 22; tint: ink; opacity: wb.7 * if(wdg.7.on, 100%, 55%); show: 7 < wdg.count and wdg.7.mono }
     image wdg.7.icon { at: wp.x.7 - 12, wp.y.7 - 12; size: 24, 24; opacity: wb.7 * if(wdg.7.on, 100%, 55%); show: 7 < wdg.count and not wdg.7.mono }
     text wdg.7.val { at: wp.x.7, wp.y.7 + 11; anchor: center; size: 9; weight: 700; color: ink; opacity: 85% * wb.7; show: 7 < wdg.count }
-    zone ellipse w_hit.7 { at: wp.x.7, wp.y.7; radius: 24; cursor: pointer; active: 7 < wdg.count and not dash }
+    zone ellipse w_hit.7 { at: wp.x.7, wp.y.7; radius: if(wdrag == 7, 4000, 24); cursor: pointer; active: 7 < wdg.count and not dash }
     on press w_hit.7 { wdrag = 7; wmoved = false; wd.w = W; wd.h = H }
     on drag w_hit.7 while wdrag == 7 and abs(drag.dx) + abs(drag.dy) > 6 { wmoved = true }
     on release w_hit.7 while wdrag == 7 and wmoved { wd.x = mx; wd.y = my; impulse wwob.7 300; emit w_drop(7); wmoved = false; wdrag = -1 }
@@ -1786,7 +1786,7 @@ scene Kvapka {
     image wdg.8.icon { at: wp.x.8 - 11, wp.y.8 - 11 - if(wdg.8.hasval, 5, 0); size: 22, 22; tint: ink; opacity: wb.8 * if(wdg.8.on, 100%, 55%); show: 8 < wdg.count and wdg.8.mono }
     image wdg.8.icon { at: wp.x.8 - 12, wp.y.8 - 12; size: 24, 24; opacity: wb.8 * if(wdg.8.on, 100%, 55%); show: 8 < wdg.count and not wdg.8.mono }
     text wdg.8.val { at: wp.x.8, wp.y.8 + 11; anchor: center; size: 9; weight: 700; color: ink; opacity: 85% * wb.8; show: 8 < wdg.count }
-    zone ellipse w_hit.8 { at: wp.x.8, wp.y.8; radius: 24; cursor: pointer; active: 8 < wdg.count and not dash }
+    zone ellipse w_hit.8 { at: wp.x.8, wp.y.8; radius: if(wdrag == 8, 4000, 24); cursor: pointer; active: 8 < wdg.count and not dash }
     on press w_hit.8 { wdrag = 8; wmoved = false; wd.w = W; wd.h = H }
     on drag w_hit.8 while wdrag == 8 and abs(drag.dx) + abs(drag.dy) > 6 { wmoved = true }
     on release w_hit.8 while wdrag == 8 and wmoved { wd.x = mx; wd.y = my; impulse wwob.8 300; emit w_drop(8); wmoved = false; wdrag = -1 }
@@ -1799,7 +1799,7 @@ scene Kvapka {
     image wdg.9.icon { at: wp.x.9 - 11, wp.y.9 - 11 - if(wdg.9.hasval, 5, 0); size: 22, 22; tint: ink; opacity: wb.9 * if(wdg.9.on, 100%, 55%); show: 9 < wdg.count and wdg.9.mono }
     image wdg.9.icon { at: wp.x.9 - 12, wp.y.9 - 12; size: 24, 24; opacity: wb.9 * if(wdg.9.on, 100%, 55%); show: 9 < wdg.count and not wdg.9.mono }
     text wdg.9.val { at: wp.x.9, wp.y.9 + 11; anchor: center; size: 9; weight: 700; color: ink; opacity: 85% * wb.9; show: 9 < wdg.count }
-    zone ellipse w_hit.9 { at: wp.x.9, wp.y.9; radius: 24; cursor: pointer; active: 9 < wdg.count and not dash }
+    zone ellipse w_hit.9 { at: wp.x.9, wp.y.9; radius: if(wdrag == 9, 4000, 24); cursor: pointer; active: 9 < wdg.count and not dash }
     on press w_hit.9 { wdrag = 9; wmoved = false; wd.w = W; wd.h = H }
     on drag w_hit.9 while wdrag == 9 and abs(drag.dx) + abs(drag.dy) > 6 { wmoved = true }
     on release w_hit.9 while wdrag == 9 and wmoved { wd.x = mx; wd.y = my; impulse wwob.9 300; emit w_drop(9); wmoved = false; wdrag = -1 }
@@ -1812,7 +1812,7 @@ scene Kvapka {
     image wdg.10.icon { at: wp.x.10 - 11, wp.y.10 - 11 - if(wdg.10.hasval, 5, 0); size: 22, 22; tint: ink; opacity: wb.10 * if(wdg.10.on, 100%, 55%); show: 10 < wdg.count and wdg.10.mono }
     image wdg.10.icon { at: wp.x.10 - 12, wp.y.10 - 12; size: 24, 24; opacity: wb.10 * if(wdg.10.on, 100%, 55%); show: 10 < wdg.count and not wdg.10.mono }
     text wdg.10.val { at: wp.x.10, wp.y.10 + 11; anchor: center; size: 9; weight: 700; color: ink; opacity: 85% * wb.10; show: 10 < wdg.count }
-    zone ellipse w_hit.10 { at: wp.x.10, wp.y.10; radius: 24; cursor: pointer; active: 10 < wdg.count and not dash }
+    zone ellipse w_hit.10 { at: wp.x.10, wp.y.10; radius: if(wdrag == 10, 4000, 24); cursor: pointer; active: 10 < wdg.count and not dash }
     on press w_hit.10 { wdrag = 10; wmoved = false; wd.w = W; wd.h = H }
     on drag w_hit.10 while wdrag == 10 and abs(drag.dx) + abs(drag.dy) > 6 { wmoved = true }
     on release w_hit.10 while wdrag == 10 and wmoved { wd.x = mx; wd.y = my; impulse wwob.10 300; emit w_drop(10); wmoved = false; wdrag = -1 }
@@ -1825,7 +1825,7 @@ scene Kvapka {
     image wdg.11.icon { at: wp.x.11 - 11, wp.y.11 - 11 - if(wdg.11.hasval, 5, 0); size: 22, 22; tint: ink; opacity: wb.11 * if(wdg.11.on, 100%, 55%); show: 11 < wdg.count and wdg.11.mono }
     image wdg.11.icon { at: wp.x.11 - 12, wp.y.11 - 12; size: 24, 24; opacity: wb.11 * if(wdg.11.on, 100%, 55%); show: 11 < wdg.count and not wdg.11.mono }
     text wdg.11.val { at: wp.x.11, wp.y.11 + 11; anchor: center; size: 9; weight: 700; color: ink; opacity: 85% * wb.11; show: 11 < wdg.count }
-    zone ellipse w_hit.11 { at: wp.x.11, wp.y.11; radius: 24; cursor: pointer; active: 11 < wdg.count and not dash }
+    zone ellipse w_hit.11 { at: wp.x.11, wp.y.11; radius: if(wdrag == 11, 4000, 24); cursor: pointer; active: 11 < wdg.count and not dash }
     on press w_hit.11 { wdrag = 11; wmoved = false; wd.w = W; wd.h = H }
     on drag w_hit.11 while wdrag == 11 and abs(drag.dx) + abs(drag.dy) > 6 { wmoved = true }
     on release w_hit.11 while wdrag == 11 and wmoved { wd.x = mx; wd.y = my; impulse wwob.11 300; emit w_drop(11); wmoved = false; wdrag = -1 }
@@ -1838,7 +1838,8 @@ scene Kvapka {
     // >>> DaNoGoo zóny (danogoo.py)
     // hrozno: klik mimo neho ho zavrie (pod bobuľami)
     zone box dn_away { at: W / 2, H / 2; size: W, H; active: dn_open }
-    zone ellipse dn_hit { at: dn.x, dn.y; radius: 34; cursor: pointer; active: solo }
+    // počas ťahania zóna cez celú obrazovku: Hyprland posiela myš iba v zónach a odchod z nej by ťahanie ukončil
+    zone ellipse dn_hit { at: dn.x, dn.y; radius: if(dn_drag, 4000, 34); cursor: pointer; active: solo }
     zone box br_hit.0 { at: brx.0, bry.0; size: 360, 52; cursor: pointer; active: dn_open and 0 < berries.count and bre.0 > 0.9 }
     zone box br_hit.1 { at: brx.1, bry.1; size: 360, 52; cursor: pointer; active: dn_open and 1 < berries.count and bre.1 > 0.9 }
     zone box br_hit.2 { at: brx.2, bry.2; size: 360, 52; cursor: pointer; active: dn_open and 2 < berries.count and bre.2 > 0.9 }
@@ -2048,7 +2049,7 @@ scene Kvapka {
     }
     // <<< DaNoGoo zóny
     // >>> QueenGoo zóny (queengoo.py)
-    zone ellipse qg_hit { at: qg.x, qg.y; radius: 34; cursor: pointer; active: solo }
+    zone ellipse qg_hit { at: qg.x, qg.y; radius: if(qg_drag, 4000, 34); cursor: pointer; active: solo }
     on press qg_hit { qg_drag = true; qg_moved = false; wd.w = W; wd.h = H }
     on press right qg_hit { impulse qg.wob 140; emit qg_open(1) }
     on drag qg_hit while qg_drag and abs(drag.dx) + abs(drag.dy) > 6 { qg_moved = true }

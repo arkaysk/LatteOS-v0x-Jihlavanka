@@ -66,7 +66,7 @@ for k in range(N):
     image wdg.{k}.icon {{ at: wp.x.{k} - 11, wp.y.{k} - 11 - if(wdg.{k}.hasval, 5, 0); size: 22, 22; tint: ink; opacity: wb.{k} * if(wdg.{k}.on, 100%, 55%); show: {k} < wdg.count and wdg.{k}.mono }}
     image wdg.{k}.icon {{ at: wp.x.{k} - 12, wp.y.{k} - 12; size: 24, 24; opacity: wb.{k} * if(wdg.{k}.on, 100%, 55%); show: {k} < wdg.count and not wdg.{k}.mono }}
     text wdg.{k}.val {{ at: wp.x.{k}, wp.y.{k} + 11; anchor: center; size: 9; weight: 700; color: ink; opacity: 85% * wb.{k}; show: {k} < wdg.count }}
-    zone ellipse w_hit.{k} {{ at: wp.x.{k}, wp.y.{k}; radius: 24; cursor: pointer; active: {k} < wdg.count and not dash }}
+    zone ellipse w_hit.{k} {{ at: wp.x.{k}, wp.y.{k}; radius: if(wdrag == {k}, 4000, 24); cursor: pointer; active: {k} < wdg.count and not dash }}
     on press w_hit.{k} {{ wdrag = {k}; wmoved = false; wd.w = W; wd.h = H }}
     on drag w_hit.{k} while wdrag == {k} and abs(drag.dx) + abs(drag.dy) > 6 {{ wmoved = true }}
     on release w_hit.{k} while wdrag == {k} and wmoved {{ wd.x = mx; wd.y = my; impulse wwob.{k} 300; emit w_drop({k}); wmoved = false; wdrag = -1 }}

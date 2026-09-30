@@ -310,7 +310,8 @@ z = Z.append
 z('''    // >>> DaNoGoo zóny (danogoo.py)
     // hrozno: klik mimo neho ho zavrie (pod bobuľami)
     zone box dn_away { at: W / 2, H / 2; size: W, H; active: dn_open }
-    zone ellipse dn_hit { at: dn.x, dn.y; radius: 34; cursor: pointer; active: solo }
+    // počas ťahania zóna cez celú obrazovku: Hyprland posiela myš iba v zónach a odchod z nej by ťahanie ukončil
+    zone ellipse dn_hit { at: dn.x, dn.y; radius: if(dn_drag, 4000, 34); cursor: pointer; active: solo }
 ''')
 for k in range(NB):
     z(f"    zone box br_hit.{k} {{ at: brx.{k}, bry.{k}; size: 360, 52; cursor: pointer; active: dn_open and {k} < berries.count and bre.{k} > 0.9 }}\n")
