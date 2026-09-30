@@ -315,6 +315,11 @@ texty preložiteľné (`translations`). Noctalia beží bez lišty a robí, čo 
       `LATTE-VIRT` na DP-1 cez parameter jadra, resources/edid), Sunshine od štartu (linger, default.target, KMS) —
       jeden stream od prihlasovacej obrazovky po akúkoľvek reláciu; bez automatického prihlásenia
       (setup/lab/vzdialene.sh). Za behu sa to vyskúšať nedalo: Secure Boot zamyká debugfs (lockdown integrity)
+- [x] **Každé prostredie svoje nastavenia** (30. 9.): pôvodná Noctalia (relácia „Noctalia (čistá)“) má svoje
+      `~/.config/noctalia` a `~/.local/state/noctalia`, klasický LatteOS `~/.local/state/latteos/noctalia`, Kvapky
+      `~/.local/state/latteos/kvapky/noctalia`; téma LatteOS je spoločná (`latte-theme noctalia` pri štarte Noctalie).
+      Zdieľané súbory všetkých prostredí (GTK, dconf, mimeapps, kurzor) prehadzuje pri prihlásení a odhlásení
+      `latte-profil` — LatteOS nepokazí iné prostredie (napr. Plasmu) a ono nepokazí LatteOS
 - [ ] Vlastné `app_id` pre aplikácie LatteOS (dnes podľa titulku) a spúšťače LatteOS preložiteľné (`Name=` anglicky
       + `Name[sk]=`; dnes natvrdo po slovensky, rovnako titulky okien)
 - [ ] Slovenský preklad Noctalie doplniť (ovládacie centrum čiastočne po anglicky) a poslať upstream
