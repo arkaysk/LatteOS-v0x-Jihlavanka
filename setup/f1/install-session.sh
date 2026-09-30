@@ -65,6 +65,8 @@ fi
 echo "== Kvapky (skúšobná plocha LatteOS Kvapky): scéna + pleamar so záplatou LatteOS"
 sudo install -d /usr/share/latteos/kvapky
 for f in kvapka.plm kvapka.luau ikony.luau; do put "$S/kvapky/$f" "/usr/share/latteos/kvapky/$f"; done
+sudo install -d /usr/share/latteos/kvapky/textury                     # textúry materiálov okien (textury.py)
+sudo install -m644 "$S"/kvapky/textury/*.webp "$S"/kvapky/textury/LICENCIA.txt /usr/share/latteos/kvapky/textury/
 pl="$repo/resources/upstream/pleamar"
 if [ ! -x "$pl/target/release/pleamar" ] && command -v cargo >/dev/null; then
     "$repo/resources/fetch.sh" pleamar >/dev/null && git -C "$pl" apply --check "$repo/resources/patches/pleamar-hyprland-okna-8bit.patch" 2>/dev/null \

@@ -51,6 +51,11 @@ samostatný tekutý prvok.
    trochu minimalizmu, chytrosť, vkus, užitočnosť.** Farby nie sú cieľ — idú z **témy LatteOS** (farba okien =
    šálka) a karta pri uchu kvapky **prechádza do kávy** (goo). Ikony **Tabler** (písmo Noctalie), písmo **Inter**,
    riadky ako karty (názov + popis), jemné zaoblenia, akcent témy na výbere a okraji poľa.
+12. **Materiál a priehľadnosť** (1. 10.): **prechod z kávy do farby okien ostáva**. Na časti karty ďaleko od ucha je
+   **reálna textúra materiálu témy** — brúsený hliník, striebro, **tepané zlato** (voľné textúry CC0 z ambientCG,
+   tepaný kov vygenerovaný; `session/kvapky/textury.py`). Sklenené témy (Latte, Svetlé sklo, drahokamy, mráz, jantár)
+   majú **perleťové dúhové okraje** (pleamar `glass` + `dispersion`). Spúšťač je **čiastočne priehľadný**
+   (sklo karty podľa materiálu: sklo 80 %, kov 45 %, klasické témy 0 %).
 
 ---
 
