@@ -84,7 +84,7 @@ a(f'''    // >>> spúšťač (spustac.py)
     let dh = 560
     // ucho (roh okna) je presne nad Hodinami (na bočnom okraji presne vedľa): kvapka vystúpi kolmo od okraja a späť
     // padne rovno ako pod ťarchou. Okno rastie od ucha doprava (dolu), ak je tam miesto, inak doľava (hore).
-    let d.rise = 74
+    let d.rise = 118                         // ucho vyššie: sliz má kde sa natiahnuť (1. 10.)
     let dk.x = if(vert, cxs + away.x * d.rise, cxs)
     let dk.y = if(vert, cys, cys + away.y * d.rise)
     let d.sx = if(vert, 0, if(cxs + dw + 12 <= W, 1, -1))
@@ -101,7 +101,76 @@ a(f'''    // >>> spúšťač (spustac.py)
     let e.d = length(db.x - cxs, db.y - cys)
     let e.ux = (db.x - cxs) / max(e.d, 1)
     let e.uy = (db.y - cys) / max(e.d, 1)
-    let e.k = if(esnap or dsw < 0.02, 0, 1) * clamp(1 - (e.d - 70) / 160, 0.35, 1)
+    let e.k = if(esnap or dsw < 0.02, 0, 1) * clamp(1 - (e.d - 110) / 200, 0.35, 1)
+    // body vláken slizu: kolmica k smeru vlákna (e.px, e.py), prehnutie a kývanie podľa šumu
+    let e.px = 0 - e.uy
+    let e.py = e.ux
+    let sb.x.0 = cxs + e.px * -36
+    let sb.y.0 = cys + e.py * -36
+    let st.x.0 = db.x - e.ux * 20 + e.px * -16
+    let st.y.0 = db.y - e.uy * 20 + e.py * -16
+    let sw.0 = 9 * noise(time * 0.45 + 0.0) + 4 * sin(time * 1.3 + 0.0)
+    let sm.x.0 = (sb.x.0 + st.x.0) / 2 + e.px * sw.0
+    let sm.y.0 = (sb.y.0 + st.y.0) / 2 + e.py * sw.0
+    let sq.x.0 = (sb.x.0 * 3 + st.x.0) / 4 + e.px * sw.0 * 0.6
+    let sq.y.0 = (sb.y.0 * 3 + st.y.0) / 4 + e.py * sw.0 * 0.6
+    let sr.x.0 = (sb.x.0 + st.x.0 * 3) / 4 + e.px * sw.0 * 0.6
+    let sr.y.0 = (sb.y.0 + st.y.0 * 3) / 4 + e.py * sw.0 * 0.6
+    let sb.x.1 = cxs + e.px * -23
+    let sb.y.1 = cys + e.py * -23
+    let st.x.1 = db.x - e.ux * 20 + e.px * -10
+    let st.y.1 = db.y - e.uy * 20 + e.py * -10
+    let sw.1 = 11 * noise(time * 0.45 + 1.7) + 4 * sin(time * 1.3 + 1.1)
+    let sm.x.1 = (sb.x.1 + st.x.1) / 2 + e.px * sw.1
+    let sm.y.1 = (sb.y.1 + st.y.1) / 2 + e.py * sw.1
+    let sq.x.1 = (sb.x.1 * 3 + st.x.1) / 4 + e.px * sw.1 * 0.6
+    let sq.y.1 = (sb.y.1 * 3 + st.y.1) / 4 + e.py * sw.1 * 0.6
+    let sr.x.1 = (sb.x.1 + st.x.1 * 3) / 4 + e.px * sw.1 * 0.6
+    let sr.y.1 = (sb.y.1 + st.y.1 * 3) / 4 + e.py * sw.1 * 0.6
+    let sb.x.2 = cxs + e.px * -10
+    let sb.y.2 = cys + e.py * -10
+    let st.x.2 = db.x - e.ux * 20 + e.px * -3
+    let st.y.2 = db.y - e.uy * 20 + e.py * -3
+    let sw.2 = 13 * noise(time * 0.45 + 3.4) + 4 * sin(time * 1.3 + 2.2)
+    let sm.x.2 = (sb.x.2 + st.x.2) / 2 + e.px * sw.2
+    let sm.y.2 = (sb.y.2 + st.y.2) / 2 + e.py * sw.2
+    let sq.x.2 = (sb.x.2 * 3 + st.x.2) / 4 + e.px * sw.2 * 0.6
+    let sq.y.2 = (sb.y.2 * 3 + st.y.2) / 4 + e.py * sw.2 * 0.6
+    let sr.x.2 = (sb.x.2 + st.x.2 * 3) / 4 + e.px * sw.2 * 0.6
+    let sr.y.2 = (sb.y.2 + st.y.2 * 3) / 4 + e.py * sw.2 * 0.6
+    let sb.x.3 = cxs + e.px * 5
+    let sb.y.3 = cys + e.py * 5
+    let st.x.3 = db.x - e.ux * 20 + e.px * 4
+    let st.y.3 = db.y - e.uy * 20 + e.py * 4
+    let sw.3 = 9 * noise(time * 0.45 + 5.1) + 4 * sin(time * 1.3 + 3.3)
+    let sm.x.3 = (sb.x.3 + st.x.3) / 2 + e.px * sw.3
+    let sm.y.3 = (sb.y.3 + st.y.3) / 2 + e.py * sw.3
+    let sq.x.3 = (sb.x.3 * 3 + st.x.3) / 4 + e.px * sw.3 * 0.6
+    let sq.y.3 = (sb.y.3 * 3 + st.y.3) / 4 + e.py * sw.3 * 0.6
+    let sr.x.3 = (sb.x.3 + st.x.3 * 3) / 4 + e.px * sw.3 * 0.6
+    let sr.y.3 = (sb.y.3 + st.y.3 * 3) / 4 + e.py * sw.3 * 0.6
+    let sb.x.4 = cxs + e.px * 19
+    let sb.y.4 = cys + e.py * 19
+    let st.x.4 = db.x - e.ux * 20 + e.px * 10
+    let st.y.4 = db.y - e.uy * 20 + e.py * 10
+    let sw.4 = 11 * noise(time * 0.45 + 6.8) + 4 * sin(time * 1.3 + 4.4)
+    let sm.x.4 = (sb.x.4 + st.x.4) / 2 + e.px * sw.4
+    let sm.y.4 = (sb.y.4 + st.y.4) / 2 + e.py * sw.4
+    let sq.x.4 = (sb.x.4 * 3 + st.x.4) / 4 + e.px * sw.4 * 0.6
+    let sq.y.4 = (sb.y.4 * 3 + st.y.4) / 4 + e.py * sw.4 * 0.6
+    let sr.x.4 = (sb.x.4 + st.x.4 * 3) / 4 + e.px * sw.4 * 0.6
+    let sr.y.4 = (sb.y.4 + st.y.4 * 3) / 4 + e.py * sw.4 * 0.6
+    let sb.x.5 = cxs + e.px * 34
+    let sb.y.5 = cys + e.py * 34
+    let st.x.5 = db.x - e.ux * 20 + e.px * 16
+    let st.y.5 = db.y - e.uy * 20 + e.py * 16
+    let sw.5 = 13 * noise(time * 0.45 + 8.5) + 4 * sin(time * 1.3 + 5.5)
+    let sm.x.5 = (sb.x.5 + st.x.5) / 2 + e.px * sw.5
+    let sm.y.5 = (sb.y.5 + st.y.5) / 2 + e.py * sw.5
+    let sq.x.5 = (sb.x.5 * 3 + st.x.5) / 4 + e.px * sw.5 * 0.6
+    let sq.y.5 = (sb.y.5 * 3 + st.y.5) / 4 + e.py * sw.5 * 0.6
+    let sr.x.5 = (sb.x.5 + st.x.5 * 3) / 4 + e.px * sw.5 * 0.6
+    let sr.y.5 = (sb.y.5 + st.y.5 * 3) / 4 + e.py * sw.5 * 0.6
     let dc.x = dk.x + (dt.x - dk.x) * d.grow
     let dc.y = dk.y + (dt.y - dk.y) * d.grow
     let d0.x = dt.x - dw / 2 + 28              // obsah: ľavý horný roh
@@ -124,15 +193,66 @@ a(f'''    // >>> spúšťač (spustac.py)
         opacity: if(dsw > 0.02 or dsh > 0.01, 1, 0) * so
         box {{ at: dc.x, dc.y; size: (60 + (dw - 60) * d.grow) * if(d.grow > 0.01, 1, 0), (60 + (dh - 60) * d.grow) * if(d.grow > 0.01, 1, 0); corner: 30 - 6 * d.grow }}
         // vlákno k Hodinám (kým nepraskne) a po prasknutí pahýle na oboch koncoch, ktoré sa stiahnu
-        // kým sú spojené, vlákno je pri koreni (lišta) hrubé a k uchu sa zužuje (1. 10., používateľ); ďalej tenšie
-        ellipse {{ at: cxs, cys; radius: 18 * e.k; blend: 14 }}
-        line {{ from: cxs, cys; to: cxs + (db.x - cxs) * 0.4, cys + (db.y - cys) * 0.4; width: 26 * e.k; blend: 12 * e.k }}
-        line {{ from: cxs + (db.x - cxs) * 0.35, cys + (db.y - cys) * 0.35; to: cxs + (db.x - cxs) * 0.75, cys + (db.y - cys) * 0.75; width: 16 * e.k; blend: 12 * e.k }}
-        line {{ from: cxs + (db.x - cxs) * 0.7, cys + (db.y - cys) * 0.7; to: db.x, db.y; width: 9 * e.k; blend: 12 * e.k }}
         line {{ from: db.x, db.y; to: db.x - e.ux * 22 * estub, db.y - e.uy * 22 * estub; width: 6 * estub; blend: 8 * clamp(estub * 3, 0, 1) }}
         line {{ from: cxs, cys; to: cxs + e.ux * 22 * estub, cys + e.uy * 22 * estub; width: 6 * estub; blend: 8 * clamp(estub * 3, 0, 1) }}
         // ucho = kvapka Hodín (trčí z rohu, zliata s kartou)
         ellipse {{ at: db.x, db.y; radius: 33 * clamp(dsw * 4, 0, 1); scale: 1 + swob * 0.01, 1 - swob * 0.01; blend: 18 * d.grow }}
+    }}
+    // sliz medzi lištou a uchom: vlastné telo z kávy (ako kvapka Hodín), zliate s uchom
+    body {{
+        color: coffee
+        rim: 30%
+        light: 14%, 0, 30
+        glass: 100% * clamp(v * 1.3, 0, 1) * (1 - m)
+        shine: pointer
+        opacity: if(dsw > 0.02, 1, 0) * so
+        ellipse {{ at: db.x, db.y; radius: 31 * clamp(dsw * 4, 0, 1); scale: 1 + swob * 0.01, 1 - swob * 0.01 }}
+        // sliz (1. 10., predstava používateľa): zdvihnutá kvapka ťahá z lišty sieť lepkavých vláken — pri koncoch hrubé
+        // a zliate do blán, v strede tenké, každé sa prehýba po svojom, medzi nimi priečne vlákna a diery
+        ellipse {{ at: cxs, cys + 6 * e.uy; radius: 22 * e.k; scale: 1 + 0.9 * abs(e.uy), 1 + 0.9 * abs(e.ux); blend: 14 }}
+        ellipse {{ at: st.x.0, st.y.0; radius: 6.0 * e.k; blend: 9 * e.k }}
+        ellipse {{ at: sb.x.0, sb.y.0; radius: 6.4 * e.k; blend: 9 * e.k }}
+        line {{ from: sb.x.0, sb.y.0; to: sq.x.0, sq.y.0; width: 8 * e.k; blend: 7 * e.k }}
+        line {{ from: sq.x.0, sq.y.0; to: sm.x.0, sm.y.0; width: 4.4 * e.k; blend: 4 * e.k }}
+        line {{ from: sm.x.0, sm.y.0; to: sr.x.0, sr.y.0; width: 4.0 * e.k; blend: 4 * e.k }}
+        line {{ from: sr.x.0, sr.y.0; to: st.x.0, st.y.0; width: 7.2 * e.k; blend: 8 * e.k }}
+        ellipse {{ at: st.x.1, st.y.1; radius: 4.9 * e.k; blend: 9 * e.k }}
+        ellipse {{ at: sb.x.1, sb.y.1; radius: 5.2 * e.k; blend: 9 * e.k }}
+        line {{ from: sb.x.1, sb.y.1; to: sq.x.1, sq.y.1; width: 6.5 * e.k; blend: 7 * e.k }}
+        line {{ from: sq.x.1, sq.y.1; to: sm.x.1, sm.y.1; width: 3.6 * e.k; blend: 4 * e.k }}
+        line {{ from: sm.x.1, sm.y.1; to: sr.x.1, sr.y.1; width: 3.2 * e.k; blend: 4 * e.k }}
+        line {{ from: sr.x.1, sr.y.1; to: st.x.1, st.y.1; width: 5.9 * e.k; blend: 8 * e.k }}
+        ellipse {{ at: st.x.2, st.y.2; radius: 6.8 * e.k; blend: 9 * e.k }}
+        ellipse {{ at: sb.x.2, sb.y.2; radius: 7.2 * e.k; blend: 9 * e.k }}
+        line {{ from: sb.x.2, sb.y.2; to: sq.x.2, sq.y.2; width: 9 * e.k; blend: 7 * e.k }}
+        line {{ from: sq.x.2, sq.y.2; to: sm.x.2, sm.y.2; width: 5.0 * e.k; blend: 4 * e.k }}
+        line {{ from: sm.x.2, sm.y.2; to: sr.x.2, sr.y.2; width: 4.5 * e.k; blend: 4 * e.k }}
+        line {{ from: sr.x.2, sr.y.2; to: st.x.2, st.y.2; width: 8.1 * e.k; blend: 8 * e.k }}
+        ellipse {{ at: st.x.3, st.y.3; radius: 5.6 * e.k; blend: 9 * e.k }}
+        ellipse {{ at: sb.x.3, sb.y.3; radius: 6.0 * e.k; blend: 9 * e.k }}
+        line {{ from: sb.x.3, sb.y.3; to: sq.x.3, sq.y.3; width: 7.5 * e.k; blend: 7 * e.k }}
+        line {{ from: sq.x.3, sq.y.3; to: sm.x.3, sm.y.3; width: 4.1 * e.k; blend: 4 * e.k }}
+        line {{ from: sm.x.3, sm.y.3; to: sr.x.3, sr.y.3; width: 3.8 * e.k; blend: 4 * e.k }}
+        line {{ from: sr.x.3, sr.y.3; to: st.x.3, st.y.3; width: 6.8 * e.k; blend: 8 * e.k }}
+        ellipse {{ at: st.x.4, st.y.4; radius: 4.5 * e.k; blend: 9 * e.k }}
+        ellipse {{ at: sb.x.4, sb.y.4; radius: 4.8 * e.k; blend: 9 * e.k }}
+        line {{ from: sb.x.4, sb.y.4; to: sq.x.4, sq.y.4; width: 6 * e.k; blend: 7 * e.k }}
+        line {{ from: sq.x.4, sq.y.4; to: sm.x.4, sm.y.4; width: 3.3 * e.k; blend: 4 * e.k }}
+        line {{ from: sm.x.4, sm.y.4; to: sr.x.4, sr.y.4; width: 3.0 * e.k; blend: 4 * e.k }}
+        line {{ from: sr.x.4, sr.y.4; to: st.x.4, st.y.4; width: 5.4 * e.k; blend: 8 * e.k }}
+        ellipse {{ at: st.x.5, st.y.5; radius: 6.4 * e.k; blend: 9 * e.k }}
+        ellipse {{ at: sb.x.5, sb.y.5; radius: 6.8 * e.k; blend: 9 * e.k }}
+        line {{ from: sb.x.5, sb.y.5; to: sq.x.5, sq.y.5; width: 8.5 * e.k; blend: 7 * e.k }}
+        line {{ from: sq.x.5, sq.y.5; to: sm.x.5, sm.y.5; width: 4.7 * e.k; blend: 4 * e.k }}
+        line {{ from: sm.x.5, sm.y.5; to: sr.x.5, sr.y.5; width: 4.2 * e.k; blend: 4 * e.k }}
+        line {{ from: sr.x.5, sr.y.5; to: st.x.5, st.y.5; width: 7.7 * e.k; blend: 8 * e.k }}
+        line {{ from: sm.x.0, sm.y.0; to: sq.x.1, sq.y.1; width: 1.8 * e.k; blend: 3 * e.k }}
+        line {{ from: sr.x.1, sr.y.1; to: sm.x.2, sm.y.2; width: 1.8 * e.k; blend: 3 * e.k }}
+        line {{ from: sq.x.2, sq.y.2; to: sr.x.3, sr.y.3; width: 1.8 * e.k; blend: 3 * e.k }}
+        line {{ from: sm.x.3, sm.y.3; to: sq.x.4, sq.y.4; width: 1.8 * e.k; blend: 3 * e.k }}
+        line {{ from: sr.x.4, sr.y.4; to: sm.x.5, sm.y.5; width: 1.8 * e.k; blend: 3 * e.k }}
+        line {{ from: sm.x.1, sm.y.1; to: sm.x.3, sm.y.3; width: 1.8 * e.k; blend: 3 * e.k }}
+        line {{ from: sq.x.2, sq.y.2; to: sr.x.4, sr.y.4; width: 1.8 * e.k; blend: 3 * e.k }}
     }}
     text now.time {{ at: db.x, db.y - 1; anchor: center; size: 13; weight: 800; color: ink; opacity: so * clamp(dsw * 3 - 0.5, 0, 1); show: dsw > 0.1 }}
     // textúra materiálu témy (brúsený hliník, striebro, tepané zlato) na časti karty ďaleko od ucha; k uchu sa vytratí
