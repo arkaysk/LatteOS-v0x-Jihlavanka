@@ -71,3 +71,9 @@ pleamar-wm (k4ditano) žiada obrazový buffer iba s modifiermi. Na latte-lab (RX
 (`the card did not make a buffer of 1920×1080: No such file or directory`), obrazovka ostala čierna s textom
 terminálu. Záplata: keď alokácia s modifiermi zlyhá, lineárny buffer (Vulkan ho preberá ako modifier 0) — ako
 „modifier-less allocation“ v aquamarine (Hyprland). Kandidát na hlásenie autorovi (iba ak to používateľ chce).
+
+## Základ (30. 9. 2026)
+
+Záplaty 1–5 (`pleamar-hyprland-okna-8bit.patch`) sú na **pleamar 0.2.2** (upstream 7027fa1, jazyk 0.2,
+spätne číta 0.1). Prechod z 5f9cd54 (0.1.0) bez konfliktov. Nové zmeny u autora: `latte-upstream`.
+
