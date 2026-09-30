@@ -105,7 +105,7 @@ texts = f'''    // >>> QueenGoo texty (queengoo.py)
     // <<< QueenGoo texty
 '''
 zones = '''    // >>> QueenGoo zóny (queengoo.py)
-    zone ellipse qg_hit { at: qg.x, qg.y; radius: 34; cursor: pointer; active: solo }
+    zone ellipse qg_hit { at: qg.x, qg.y; radius: if(qg_drag, 4000, 34); cursor: pointer; active: solo }
     on press qg_hit { qg_drag = true; qg_moved = false; wd.w = W; wd.h = H }
     on press right qg_hit { impulse qg.wob 140; emit qg_open(1) }
     on drag qg_hit while qg_drag and abs(drag.dx) + abs(drag.dy) > 6 { qg_moved = true }
