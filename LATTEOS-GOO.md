@@ -82,8 +82,8 @@ samostatný tekutý prvok.
 - **Vlákna ako sliz:** keď sa kvapka vzďaľuje (ťahaná guľôčka, Hodiny letiace do ucha), vlákno sa **naťahuje a
   tenčí** a **po určitej dĺžke praskne** (konce sa stiahnu); pri návrate sa znova zlepí.
 - **Spájanie vláknami a prelievaním — dohoda 1. 10.:** iba na **vzdialenosti, aké sú medzi vypínačom, Hodinami
-  (nezdvihnutými) a lištou** — tam prelievanie funguje výborne. Zdvihnuté ucho TimeGoo (74 px nad lištou) drží krk
-  z kávy, hrubý pri lište a tenší pri uchu; nad 100 px praskne. **DaNoGoo a kráľovná sa pri otvorení vznesú bez
+  (nezdvihnutými) a lištou** — tam prelievanie funguje výborne. Keď TimeGoo po kliku stúpa, krk sa **naťahuje a
+  tenčí, až stratí kontakt** — ostane **iba samotná kvapka, bez výrastku** (pahýle sa stiahnu a zmiznú). **DaNoGoo a kráľovná sa pri otvorení vznesú bez
   základne** (ostrov na okraji sa stiahne, krk sa natiahne a zmizne).
 - **Hladina pri okraji** (z Marey): okraj obrazovky je voda — keď kvapka odíde alebo sa vráti, hladina sa prehne a
   po nej sa rozbehnú **dve vlnky**; po prasknutí krku ostane chvíľu **zvyšková kvapka**.
