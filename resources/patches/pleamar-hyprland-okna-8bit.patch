@@ -89,10 +89,10 @@ index ec269dc..f1c6797 100644
              e.report_workspaces();
          }
 diff --git a/src/platform/mod.rs b/src/platform/mod.rs
-index 9e19585..c14ddd4 100644
+index 0ec7aee..657ca84 100644
 --- a/src/platform/mod.rs
 +++ b/src/platform/mod.rs
-@@ -83,7 +83,7 @@ pub fn service(from: &str, name: &str, notify: Box<dyn Fn(SysValue) + Send>) ->
+@@ -131,7 +131,7 @@ fn start_service(from: &str, name: &str, notify: Box<dyn Fn(SysValue) + Send>) -
      // `PLEAMAR_GENERIC=1` skips the Hyprland path: it's how to test here what
      // the other compositors will see.
      #[cfg(target_os = "linux")]
@@ -101,7 +101,7 @@ index 9e19585..c14ddd4 100644
          return hyprland::service(name, notify);
      }
      // Any other Wayland: the protocols everyone understands.
-@@ -141,7 +141,7 @@ pub fn command(from: &str, name: &str, args: &[SysValue]) -> Result<(), String>
+@@ -189,7 +189,7 @@ pub fn command(from: &str, name: &str, args: &[SysValue]) -> Result<(), String>
          return mpris::command(name, args);
      }
      #[cfg(target_os = "linux")]
@@ -110,7 +110,7 @@ index 9e19585..c14ddd4 100644
          return hyprland::command(name, args);
      }
      #[cfg(target_os = "linux")]
-@@ -510,7 +510,7 @@ pub static CURSOR_WANTED: std::sync::atomic::AtomicBool = std::sync::atomic::Ato
+@@ -558,7 +558,7 @@ pub static CURSOR_WANTED: std::sync::atomic::AtomicBool = std::sync::atomic::Ato
  /// arrives, and `cursor.x` is only known over the scene, like `pointer.x`.
  pub fn watch_cursor(to_render: std::sync::mpsc::Sender<crate::scene::ToRender>) {
      #[cfg(target_os = "linux")]
@@ -119,7 +119,7 @@ index 9e19585..c14ddd4 100644
          hyprland::watch_cursor(to_render);
      }
      #[cfg(not(target_os = "linux"))]
-@@ -629,3 +629,18 @@ pub use wayland::icon;
+@@ -677,3 +677,18 @@ pub use wayland::icon;
  pub fn icon(_: &str) -> Option<std::path::PathBuf> {
      None
  }

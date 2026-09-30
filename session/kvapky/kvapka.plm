@@ -29,7 +29,7 @@ scene Kvapka {
         rate: 60        // pokojný pohyb kvapky nepotrebuje 144 Hz: 12 % → 6 % jadra na RX 640
         keyboard: on_demand while dash   // hľadanie v dashboarde
     }
-    permissions { services: "window", "window.*", "clock", "notifications", "notifications.*", "apps", "apps.*", "network", "network.*", "bluetooth", "bluetooth.*", "audio", "audio.*", "battery", "media", "tray", "tray.*"; run: "noctalia", "latte-app", "hyprctl", "cat", "printenv", "curl", "latte-spustac", "latte-ponuka", "latte-kvapky", "fd", "xdg-open" }
+    permissions { services: "window", "window.*", "clock", "notifications", "notifications.*", "apps", "apps.*", "network", "network.*", "bluetooth", "bluetooth.*", "audio", "audio.*", "battery", "media", "tray", "tray.*", "clipboard.set"; run: "noctalia", "latte-app", "hyprctl", "cat", "printenv", "curl", "latte-spustac", "latte-ponuka", "latte-kvapky", "fd", "xdg-open", "latte-ai", "latte-terminal" }
 
     // zoznam okien priamo zo služby (wlr-foreign-toplevel), bez logiky; ikona podľa triedy okna
     model wins max 48 { id: text; title: text; class: text; active: bool; minimized: bool }
@@ -46,26 +46,43 @@ scene Kvapka {
     model notes max 20 { id: number; app: text; title: text; body: text; urgency: number }
     event new_note
     text toast = ""
-    // ── spúšťač (30. 9.): vyteká z hodiniek — ľavý klik na ne alebo kláves Win. Hľadanie v aplikáciách, súboroch, na
-    // webe (predvolený vyhľadávač) a otázka pre AI (viac webových četov); záložky s obľúbenými aplikáciami, ktoré si
-    // používateľ pomenuje sám (Programy, Hry…). Obsah, záložky a nastavenia plní logika (~/.config/latteos/spustac.json).
+    // ── spúšťač (1. 10., náčrt používateľa): vyteká z TimeGoo — ľavý klik na ňu alebo kláves Win. Vlastný vzhľad Goo
+    // (nie menu z klasického LatteOS). Zhora: pole s ikonou režimu (klik = výber, koliesko točí: AI, aplikácie,
+    // súbory, web, Linux príkaz); obsah režimu; riadok režimu (záložky obľúbených, nastavenia AI, vyhľadávač…);
+    // úplne dole úzky riadok počasia (Dnes / Zajtra / Týždeň, Detaily). Plní logika (~/.config/latteos/spustac.json).
     fact dash = false
     text query = ""
+    text hint = ""                           // zástupný text poľa podľa režimu (logika)
+    text note = ""                           // riadok nápovedy v prázdnom obsahu (logika)
     text weather = ""
-    measure wday
-    fact typing = false                      // v hľadaní je niečo napísané (logika; text sa vo výrazoch neporovnáva)
-    fact renaming = false                    // pole hľadania práve slúži ako názov záložky
-    model tabs max 5 { name: text }          // 0 = Hľadať (vždy), 1.. = používateľove záložky
-    fact tab = 0
-    fact tab_hot = -1
-    // riadky hľadania: aplikácie, súbory, web, AI — vpravo druh (ako vo vyhľadávaní Marey)
-    model hits max 11 { name: text; sub: text; icon: image 24, 24 }
+    fact typing = false                      // v poli je niečo napísané (logika; text sa vo výrazoch neporovnáva)
+    fact renaming = false                    // pole práve slúži ako názov záložky
+    fact smode = 1                           // 0 AI, 1 aplikácie, 2 súbory, 3 web, 4 Linux príkaz
+    fact mode_open = false                   // rozbalený výber režimu pod ikonou
+    fact mode_hot = -1
+    model modes max 5 { name: text; icon: image 20, 20 }
+    fact tab = 1                             // záložka obľúbených (1..), v režime aplikácií
+    // riadky obsahu: aplikácie, súbory, vyhľadávače, príkazy — vpravo druh
+    model hits max 10 { name: text; sub: text; icon: image 24, 24; warn: bool }
     fact sel = 0
     fact hit_hot = -1
     // obľúbené v záložke: mriežka 6 × 3
     model favs max 18 { name: text; icon: image 40, 40 }
     fact fav_hot = -1
-    // kontextová ponuka v spúšťači (pravý klik): položky a miesto dáva logika; on 1 = zaškrtnuté
+    // AI: rozhovor ako goo bubliny, najnovšia navrchu pri poli (náčrt); me = používateľ
+    model chat max 8 { txt: text; me: bool }
+    fact ai_wait = false
+    // riadok režimu: čipy (záložky, AI služba a model, vyhľadávač…); on = vybraný, drop = otvorí ponuku
+    model chips max 7 { label: text; on: bool; drop: bool }
+    fact chip_hot = -1
+    // počasie: miesto, súhrn zvolenej varianty (0 dnes, 1 zajtra, 2 týždeň); Detaily = predpoveď v obsahu
+    text wx_place = ""
+    text wx_sum = ""
+    fact wx_view = 0
+    fact wx_detail = false
+    fact wx_hot = -1
+    model wx max 8 { label: text; glyph: text; temp: text }
+    // kontextová ponuka v spúšťači (pravý klik, rozbaľovacie čipy): položky a miesto dáva logika; on 1 = zaškrtnuté
     model ctx max 10 { label: text; on: number; off: bool }
     fact ctx_open = false
     fact ctx.x = 0
@@ -75,16 +92,19 @@ scene Kvapka {
     event hit_menu ->
     event fav_open ->
     event fav_menu ->
-    event tab_pick ->
-    event tab_menu ->
-    event tab_add ->
+    event chip_pick ->
+    event chip_menu ->
+    event mode_pick ->
+    event wx_pick ->
+    event bubble_menu ->
+    event ai_cancel
     event ctx_pick ->
     event query_submit ->
     event sel_move ->
     event note_open ->
     event notes_clear ->
     event dash_toggle                        // kláves Win (latte-spustac) v ploche Kvapky
-    event time_menu ->                       // pravý klik na Hodiny: záložka Čas (panel Noctalie latteos/time)
+    event time_menu ->                       // pravý klik na Hodiny: časové menu
     // ponuka Vypnúť: vyteká z kvapky vypínača (klik); akcie robí Noctalia (`noctalia msg session …`)
     fact pmenu = false
     fact pm_hot = -1
@@ -605,8 +625,8 @@ scene Kvapka {
     text toast { at: tst.x - 135, tst.y; anchor: left center; width: 270; lines: 1; size: 12.5; weight: 600; color: ink; opacity: clamp(toast.p * 2 - 1, 0, 1) * so; show: solo }
 
     // ── spúšťač (vyteká z hodiniek smerom od okraja; v obrazovke, text rovno) ──
-    let dw = 620
-    let dh = 540
+    let dw = 640
+    let dh = 560
     // ucho (roh okna) je presne nad Hodinami (na bočnom okraji presne vedľa): kvapka vystúpi kolmo od okraja a späť
     // padne rovno ako pod ťarchou. Okno rastie od ucha doprava (dolu), ak je tam miesto, inak doľava (hore).
     let d.rise = 74
@@ -650,53 +670,217 @@ scene Kvapka {
         ellipse { at: db.x, db.y; radius: 33 * clamp(dsw * 4, 0, 1); scale: 1 + swob * 0.01, 1 - swob * 0.01; blend: 18 * d.grow }
     }
     text now.time { at: db.x, db.y - 1; anchor: center; size: 13; weight: 800; color: ink; opacity: so * clamp(dsw * 3 - 0.5, 0, 1); show: dsw > 0.1 }
+    // obsah: y0 = horný okraj obsahu pod poľom; riadok režimu a počasia sú pri spodku karty
+    let y0 = d0.y + 64
+    let yc = d0.y + 456                        // riadok režimu (čipy)
+    let yw = d0.y + 494                        // riadok počasia
+    let show_chat = smode == 0 and not wx_detail
+    let show_favs = smode == 1 and not typing and not wx_detail
+    let show_hits = smode > 0 and not wx_detail and not show_favs
+    // výber režimu: tekutý stĺpec kapsúl vyteká z ikony v poli (mo 0 → 1)
+    prop mo = 0 ~springy
+    follow mo = if(mode_open and dash, 1, 0)
+    // rozhovor s AI: bubliny sa merajú samy, najnovšia navrchu; kým AI píše, navrchu pulzuje kvapka „…“
+    prop aiw = 0 ~lively
+    follow aiw = if(ai_wait, 1, 0)
+    fact chst = 0
+    spring glide = 220, 30
+    prop chs = 0 ~glide
+    follow chs = chst
+    measure ch.0
+    measure ch.1
+    measure ch.2
+    measure ch.3
+    measure ch.4
+    measure ch.5
+    measure ch.6
+    measure ch.7
+    let cy.0 = y0 + 8 + 50 * aiw - chs
+    let cy.1 = cy.0 + if(0 < chat.count, ch.0.height + 34, 0)
+    let cy.2 = cy.1 + if(1 < chat.count, ch.1.height + 34, 0)
+    let cy.3 = cy.2 + if(2 < chat.count, ch.2.height + 34, 0)
+    let cy.4 = cy.3 + if(3 < chat.count, ch.3.height + 34, 0)
+    let cy.5 = cy.4 + if(4 < chat.count, ch.4.height + 34, 0)
+    let cy.6 = cy.5 + if(5 < chat.count, ch.5.height + 34, 0)
+    let cy.7 = cy.6 + if(6 < chat.count, ch.6.height + 34, 0)
+    let chh = cy.7 + if(7 < chat.count, ch.7.height + 34, 0) - cy.0 + 50 * aiw
+    let bx.0 = if(chat.0.me, d0.x + 4, d0.x + cw - ch.0.width - 30)
+    let bv.0 = if(0 < chat.count and show_chat, 1, 0)
+    let bx.1 = if(chat.1.me, d0.x + 4, d0.x + cw - ch.1.width - 30)
+    let bv.1 = if(1 < chat.count and show_chat, 1, 0)
+    let bx.2 = if(chat.2.me, d0.x + 4, d0.x + cw - ch.2.width - 30)
+    let bv.2 = if(2 < chat.count and show_chat, 1, 0)
+    let bx.3 = if(chat.3.me, d0.x + 4, d0.x + cw - ch.3.width - 30)
+    let bv.3 = if(3 < chat.count and show_chat, 1, 0)
+    let bx.4 = if(chat.4.me, d0.x + 4, d0.x + cw - ch.4.width - 30)
+    let bv.4 = if(4 < chat.count and show_chat, 1, 0)
+    let bx.5 = if(chat.5.me, d0.x + 4, d0.x + cw - ch.5.width - 30)
+    let bv.5 = if(5 < chat.count and show_chat, 1, 0)
+    let bx.6 = if(chat.6.me, d0.x + 4, d0.x + cw - ch.6.width - 30)
+    let bv.6 = if(6 < chat.count and show_chat, 1, 0)
+    let bx.7 = if(chat.7.me, d0.x + 4, d0.x + cw - ch.7.width - 30)
+    let bv.7 = if(7 < chat.count and show_chat, 1, 0)
+    // čipy v riadku režimu: šírka podľa textu
+    measure cm.0
+    measure cm.1
+    measure cm.2
+    measure cm.3
+    measure cm.4
+    measure cm.5
+    measure cm.6
+    let chx.0 = d0.x
+    let chx.1 = chx.0 + if(0 < chips.count, cm.0.width + 36, 0)
+    let chx.2 = chx.1 + if(1 < chips.count, cm.1.width + 36, 0)
+    let chx.3 = chx.2 + if(2 < chips.count, cm.2.width + 36, 0)
+    let chx.4 = chx.3 + if(3 < chips.count, cm.3.width + 36, 0)
+    let chx.5 = chx.4 + if(4 < chips.count, cm.4.width + 36, 0)
+    let chx.6 = chx.5 + if(5 < chips.count, cm.5.width + 36, 0)
+    measure wxp
+    let wxs = d0.x + 16 + wxp.width + 14         // začiatok variantov počasia
     group {
         opacity: dshow
         show: dsh > 0.5
-        // hlavička: čas, deň, počasie
-        text now.time { at: d0.x, d0.y + 14; anchor: left center; size: 22; weight: 800; family: "Fraunces"; color: ink }
-        text pick(now.weekday, "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday") { at: d0.x + 78, d0.y + 16; anchor: left center; size: 12.5; weight: 600; color: ink; opacity: 75%; measure: wday }
-        text "{now.day}. {now.month}. {now.year}" { at: d0.x + 84 + wday.width, d0.y + 16; anchor: left center; size: 12.5; weight: 600; color: ink; opacity: 75% }
-        text weather { at: d0.x + cw, d0.y + 14; anchor: right center; size: 13; weight: 600; color: ink; opacity: 85% }
-        // pole: hľadanie (alebo názov záložky pri premenovaní)
-        box { at: d0.x + cw / 2, d0.y + 62; size: cw, 46; corner: 23; color: #000000; opacity: 30% }
-        box { at: d0.x + cw / 2, d0.y + 62; size: cw, 46; corner: 23; color: #e4b283; opacity: if(renaming, 22%, 0) }
-        input query { at: d0.x + 22, d0.y + 62; width: cw - 44; size: 15; color: ink; placeholder: "Apps, files, the web or a question for AI…"; selection: #6b4a33 }
-        // záložky: Hľadať + používateľove; „+“ pridá novú
-        repeat k in 0..5 {
-            box { at: d0.x + k * 112 + 52, d0.y + 112; size: 104, 30; corner: 15; color: if(tab == k, #e4b283, #ffffff); opacity: if(tab == k, 90%, if(tab_hot == k, 12%, 6%)); show: k < tabs.count }
-            text tabs.$k.name { at: d0.x + k * 112 + 52, d0.y + 112; anchor: center; width: 92; lines: 1; size: 12; weight: 700; color: if(tab == k, #2a170c, ink); show: k < tabs.count }
+        // pole: ikona režimu + text (alebo názov záložky pri premenovaní)
+        box { at: d0.x + cw / 2, d0.y + 24; size: cw, 48; corner: 24; color: #000000; opacity: 30% }
+        box { at: d0.x + cw / 2, d0.y + 24; size: cw, 48; corner: 24; color: #e4b283; opacity: if(renaming, 22%, 0) }
+        text hint { at: d0.x + 54, d0.y + 24; anchor: left center; width: cw - 70; lines: 1; size: 15; color: ink; opacity: 45%; show: not typing and not renaming }
+        input query { at: d0.x + 54, d0.y + 24; width: cw - 70; size: 15; color: ink; selection: #6b4a33 }
+    }
+    group {
+        opacity: dshow
+        show: dsh > 0.5
+        // riadky: aplikácie, súbory, vyhľadávače, príkazy
+        repeat k in 0..10 {
+            box { at: d0.x + cw / 2, y0 + 17 + k * 34; size: cw, 32; corner: 12; color: if(hits.$k.warn, #e07a5f, #ffffff); opacity: if(hits.$k.warn, 22%, if(k == sel and typing, 11%, if(hit_hot == k, 7%, 0))); show: show_hits and k < hits.count }
+            image hits.$k.icon { at: d0.x + 10, y0 + 5 + k * 34; size: 24, 24; show: show_hits and k < hits.count }
+            text hits.$k.name { at: d0.x + 44, y0 + 17 + k * 34; anchor: left center; width: cw - 190; lines: 1; size: 13.5; color: ink; show: show_hits and k < hits.count }
+            text hits.$k.sub { at: d0.x + cw - 10, y0 + 17 + k * 34; anchor: right center; width: 140; lines: 1; size: 11; color: ink; opacity: 55%; show: show_hits and k < hits.count }
         }
-        ellipse { at: d0.x + tabs.count * 112 + 16, d0.y + 112; radius: 15; color: #ffffff; opacity: 8%; show: tabs.count < 5 }
-        text "+" { at: d0.x + tabs.count * 112 + 16, d0.y + 111; anchor: center; size: 17; weight: 700; color: ink; show: tabs.count < 5 }
-        // Hľadať s textom: riadky (aplikácie, súbory, web, AI)
-        repeat k in 0..11 {
-            box { at: d0.x + cw / 2, d0.y + 158 + k * 34; size: cw, 32; corner: 12; color: #ffffff; opacity: if(k == sel, 11%, if(hit_hot == k, 6%, 0)); show: tab == 0 and typing and k < hits.count }
-            image hits.$k.icon { at: d0.x + 10, d0.y + 146 + k * 34; size: 24, 24; show: tab == 0 and typing and k < hits.count }
-            text hits.$k.name { at: d0.x + 44, d0.y + 158 + k * 34; anchor: left center; width: cw - 170; lines: 1; size: 13.5; color: ink; show: tab == 0 and typing and k < hits.count }
-            text hits.$k.sub { at: d0.x + cw - 10, d0.y + 158 + k * 34; anchor: right center; width: 120; lines: 1; size: 11; color: ink; opacity: 55%; show: tab == 0 and typing and k < hits.count }
-        }
-        text "Nothing found" { at: d0.x, d0.y + 158; anchor: left center; size: 13; color: ink; opacity: 60%; show: tab == 0 and typing and hits.count < 1 }
-        // Hľadať bez textu: upozornenia a nápoveda
-        text "NOTIFICATIONS" { at: d0.x, d0.y + 158; anchor: left center; size: 10.5; weight: 800; color: #e4b283; show: tab == 0 and not typing }
-        text "Clear all" { at: d0.x + cw, d0.y + 158; anchor: right center; size: 11; weight: 700; color: ink; opacity: 70%; show: tab == 0 and not typing and notes.count > 0 }
-        text "No notifications" { at: d0.x, d0.y + 188; anchor: left center; size: 13; color: ink; opacity: 55%; show: tab == 0 and not typing and notes.count < 1 }
-        repeat k in 0..6 {
-            ellipse { at: d0.x + 6, d0.y + 188 + k * 32; radius: 4; color: pick(notes.$k.urgency, #9ed6bd, #e4b283, #e07a5f); show: tab == 0 and not typing and k < notes.count }
-            text "{notes.$k.app} · {notes.$k.title}" { at: d0.x + 20, d0.y + 188 + k * 32; anchor: left center; width: cw - 30; lines: 1; size: 13; color: ink; show: tab == 0 and not typing and k < notes.count }
-        }
-        text "Type to search apps and files, the web with your search engine, or ask AI. Right click sets them up." { at: d0.x, d0.y + dh - 72; anchor: left center; width: cw; lines: 2; size: 11; color: ink; opacity: 50%; show: tab == 0 and not typing }
         // záložka: obľúbené aplikácie (6 × 3)
         repeat k in 0..18 {
-            box { at: d0.x + (k - 6 * floor(k / 6)) * 94 + 46, d0.y + 200 + floor(k / 6) * 104; size: 88, 96; corner: 18; color: #ffffff; opacity: if(fav_hot == k, 9%, 0); show: tab > 0 and k < favs.count }
-            image favs.$k.icon { at: d0.x + (k - 6 * floor(k / 6)) * 94 + 26, d0.y + 166 + floor(k / 6) * 104; size: 40, 40; show: tab > 0 and k < favs.count }
-            text favs.$k.name { at: d0.x + (k - 6 * floor(k / 6)) * 94 + 46, d0.y + 226 + floor(k / 6) * 104; anchor: center; width: 84; lines: 2; size: 11; color: ink; opacity: 85%; show: tab > 0 and k < favs.count }
+            box { at: d0.x + (k - 6 * floor(k / 6)) * 96 + 48, y0 + 56 + floor(k / 6) * 106; size: 90, 98; corner: 18; color: #ffffff; opacity: if(fav_hot == k, 9%, 0); show: show_favs and k < favs.count }
+            image favs.$k.icon { at: d0.x + (k - 6 * floor(k / 6)) * 96 + 28, y0 + 22 + floor(k / 6) * 106; size: 40, 40; show: show_favs and k < favs.count }
+            text favs.$k.name { at: d0.x + (k - 6 * floor(k / 6)) * 96 + 48, y0 + 82 + floor(k / 6) * 106; anchor: center; width: 86; lines: 2; size: 11; color: ink; opacity: 85%; show: show_favs and k < favs.count }
         }
-        text "Empty tab. Search for an app and right click it to add it here." { at: d0.x, d0.y + 170; anchor: left center; width: cw; lines: 2; size: 13; color: ink; opacity: 55%; show: tab > 0 and favs.count < 1 }
+        // prázdny obsah: nápoveda podľa režimu
+        text note { at: d0.x + 4, y0 + 22; anchor: left center; width: cw - 8; lines: 3; size: 12.5; color: ink; opacity: 55%; show: not wx_detail and ((show_chat and chat.count < 1 and not ai_wait) or (show_hits and hits.count < 1) or (show_favs and favs.count < 1)) }
+        // predpoveď počasia (Detaily): 8 stĺpcov — hodiny dňa alebo dni týždňa
+        text "FORECAST · {wx_place}" { at: d0.x + 4, y0 + 18; anchor: left center; size: 10.5; weight: 800; color: #e4b283; show: wx_detail }
+        repeat k in 0..8 {
+            box { at: d0.x + k * (cw / 8) + cw / 16, y0 + 110; size: cw / 8 - 8, 132; corner: 22; color: #ffffff; opacity: 6%; show: wx_detail and k < wx.count }
+            text wx.$k.label { at: d0.x + k * (cw / 8) + cw / 16, y0 + 64; anchor: center; size: 11; weight: 700; color: ink; opacity: 70%; show: wx_detail and k < wx.count }
+            text wx.$k.glyph { at: d0.x + k * (cw / 8) + cw / 16, y0 + 106; anchor: center; size: 26; color: ink; show: wx_detail and k < wx.count }
+            text wx.$k.temp { at: d0.x + k * (cw / 8) + cw / 16, y0 + 150; anchor: center; size: 12.5; weight: 700; color: ink; show: wx_detail and k < wx.count }
+        }
+    }
+    // rozhovor: bubliny používateľa (mlieko, vľavo) a AI (káva, vpravo), každá s kvapôčkou-chvostíkom k poľu
+    group {
+        opacity: dshow
+        show: dsh > 0.5 and show_chat
+        clip box { at: d0.x + cw / 2, y0 + 182; size: cw + 20, 364 }
+        body {
+            color: mix(coffee, #f3ebdd, 0.13)
+            rim: 30%
+            light: 12%, 0, 30
+            ellipse { at: d0.x + cw - 24, cy.0 - 50 * aiw + 22; radius: 20 * aiw; scale: 1.5 + 0.08 * sin(time * 6), 1; blend: 8 * aiw }
+            box { from: bx.0, cy.0; size: (ch.0.width + 26) * bv.0 * if(chat.0.me, 0, 1), ch.0.height + 22; corner: 18 }
+            ellipse { at: bx.0 + ch.0.width + 24, cy.0 + 2; radius: 6 * bv.0 * if(chat.0.me, 0, 1); blend: 8 * bv.0 * if(chat.0.me, 0, 1) }
+            box { from: bx.1, cy.1; size: (ch.1.width + 26) * bv.1 * if(chat.1.me, 0, 1), ch.1.height + 22; corner: 18 }
+            ellipse { at: bx.1 + ch.1.width + 24, cy.1 + 2; radius: 6 * bv.1 * if(chat.1.me, 0, 1); blend: 8 * bv.1 * if(chat.1.me, 0, 1) }
+            box { from: bx.2, cy.2; size: (ch.2.width + 26) * bv.2 * if(chat.2.me, 0, 1), ch.2.height + 22; corner: 18 }
+            ellipse { at: bx.2 + ch.2.width + 24, cy.2 + 2; radius: 6 * bv.2 * if(chat.2.me, 0, 1); blend: 8 * bv.2 * if(chat.2.me, 0, 1) }
+            box { from: bx.3, cy.3; size: (ch.3.width + 26) * bv.3 * if(chat.3.me, 0, 1), ch.3.height + 22; corner: 18 }
+            ellipse { at: bx.3 + ch.3.width + 24, cy.3 + 2; radius: 6 * bv.3 * if(chat.3.me, 0, 1); blend: 8 * bv.3 * if(chat.3.me, 0, 1) }
+            box { from: bx.4, cy.4; size: (ch.4.width + 26) * bv.4 * if(chat.4.me, 0, 1), ch.4.height + 22; corner: 18 }
+            ellipse { at: bx.4 + ch.4.width + 24, cy.4 + 2; radius: 6 * bv.4 * if(chat.4.me, 0, 1); blend: 8 * bv.4 * if(chat.4.me, 0, 1) }
+            box { from: bx.5, cy.5; size: (ch.5.width + 26) * bv.5 * if(chat.5.me, 0, 1), ch.5.height + 22; corner: 18 }
+            ellipse { at: bx.5 + ch.5.width + 24, cy.5 + 2; radius: 6 * bv.5 * if(chat.5.me, 0, 1); blend: 8 * bv.5 * if(chat.5.me, 0, 1) }
+            box { from: bx.6, cy.6; size: (ch.6.width + 26) * bv.6 * if(chat.6.me, 0, 1), ch.6.height + 22; corner: 18 }
+            ellipse { at: bx.6 + ch.6.width + 24, cy.6 + 2; radius: 6 * bv.6 * if(chat.6.me, 0, 1); blend: 8 * bv.6 * if(chat.6.me, 0, 1) }
+            box { from: bx.7, cy.7; size: (ch.7.width + 26) * bv.7 * if(chat.7.me, 0, 1), ch.7.height + 22; corner: 18 }
+            ellipse { at: bx.7 + ch.7.width + 24, cy.7 + 2; radius: 6 * bv.7 * if(chat.7.me, 0, 1); blend: 8 * bv.7 * if(chat.7.me, 0, 1) }
+        }
+        body {
+            color: #e4b283
+            rim: 30%
+            light: 16%, 0, 30
+            box { from: bx.0, cy.0; size: (ch.0.width + 26) * bv.0 * if(chat.0.me, 1, 0), ch.0.height + 22; corner: 18 }
+            ellipse { at: bx.0 + 2, cy.0 + 2; radius: 6 * bv.0 * if(chat.0.me, 1, 0); blend: 8 * bv.0 * if(chat.0.me, 1, 0) }
+            box { from: bx.1, cy.1; size: (ch.1.width + 26) * bv.1 * if(chat.1.me, 1, 0), ch.1.height + 22; corner: 18 }
+            ellipse { at: bx.1 + 2, cy.1 + 2; radius: 6 * bv.1 * if(chat.1.me, 1, 0); blend: 8 * bv.1 * if(chat.1.me, 1, 0) }
+            box { from: bx.2, cy.2; size: (ch.2.width + 26) * bv.2 * if(chat.2.me, 1, 0), ch.2.height + 22; corner: 18 }
+            ellipse { at: bx.2 + 2, cy.2 + 2; radius: 6 * bv.2 * if(chat.2.me, 1, 0); blend: 8 * bv.2 * if(chat.2.me, 1, 0) }
+            box { from: bx.3, cy.3; size: (ch.3.width + 26) * bv.3 * if(chat.3.me, 1, 0), ch.3.height + 22; corner: 18 }
+            ellipse { at: bx.3 + 2, cy.3 + 2; radius: 6 * bv.3 * if(chat.3.me, 1, 0); blend: 8 * bv.3 * if(chat.3.me, 1, 0) }
+            box { from: bx.4, cy.4; size: (ch.4.width + 26) * bv.4 * if(chat.4.me, 1, 0), ch.4.height + 22; corner: 18 }
+            ellipse { at: bx.4 + 2, cy.4 + 2; radius: 6 * bv.4 * if(chat.4.me, 1, 0); blend: 8 * bv.4 * if(chat.4.me, 1, 0) }
+            box { from: bx.5, cy.5; size: (ch.5.width + 26) * bv.5 * if(chat.5.me, 1, 0), ch.5.height + 22; corner: 18 }
+            ellipse { at: bx.5 + 2, cy.5 + 2; radius: 6 * bv.5 * if(chat.5.me, 1, 0); blend: 8 * bv.5 * if(chat.5.me, 1, 0) }
+            box { from: bx.6, cy.6; size: (ch.6.width + 26) * bv.6 * if(chat.6.me, 1, 0), ch.6.height + 22; corner: 18 }
+            ellipse { at: bx.6 + 2, cy.6 + 2; radius: 6 * bv.6 * if(chat.6.me, 1, 0); blend: 8 * bv.6 * if(chat.6.me, 1, 0) }
+            box { from: bx.7, cy.7; size: (ch.7.width + 26) * bv.7 * if(chat.7.me, 1, 0), ch.7.height + 22; corner: 18 }
+            ellipse { at: bx.7 + 2, cy.7 + 2; radius: 6 * bv.7 * if(chat.7.me, 1, 0); blend: 8 * bv.7 * if(chat.7.me, 1, 0) }
+        }
+        text "• • •" { at: d0.x + cw - 24, cy.0 - 50 * aiw + 22; anchor: center; size: 12; weight: 800; color: ink; opacity: aiw * (0.5 + 0.5 * sin(time * 6)) }
+        repeat k in 0..8 {
+            text chat.$k.txt { at: bx.$k + 13, cy.$k + 11 + ch.$k.height / 2; anchor: left center; size: 13; line_height: 1.3; color: if(chat.$k.me, #2a170c, ink); measure: ch.$k; show: k < chat.count }
+        }
+    }
+    group {
+        opacity: dshow
+        show: dsh > 0.5
+        // riadok režimu: čipy (záložky obľúbených + „+“, služba a model AI, vyhľadávač…)
+        repeat k in 0..7 {
+            box { at: chx.$k + (cm.$k.width + 28) / 2, yc; size: cm.$k.width + 28, 32; corner: 16; color: if(chips.$k.on, #e4b283, #ffffff); opacity: if(chips.$k.on, 90%, if(chip_hot == k, 14%, 7%)); show: k < chips.count }
+            text chips.$k.label { at: chx.$k + 14, yc; anchor: left center; size: 12; weight: 700; color: if(chips.$k.on, #2a170c, ink); measure: cm.$k; show: k < chips.count }
+        }
+        // úzky riadok počasia: miesto · Dnes / Zajtra / Týždeň · súhrn · Detaily
+        box { at: d0.x + cw / 2, yw; size: cw, 28; corner: 14; color: #000000; opacity: 18% }
+        text wx_place { at: d0.x + 14, yw; anchor: left center; size: 11; weight: 700; color: ink; opacity: 75%; measure: wxp }
+        repeat k in 0..3 {
+            box { at: wxs + k * 62 + 29, yw; size: 58, 22; corner: 11; color: if(wx_view == k, #e4b283, #ffffff); opacity: if(wx_view == k, 85%, if(wx_hot == k, 12%, 0)) }
+        }
+        text "Today" { at: wxs + 29, yw; anchor: center; size: 10.5; weight: 700; color: if(wx_view == 0, #2a170c, ink) }
+        text "Tomorrow" { at: wxs + 91, yw; anchor: center; size: 10.5; weight: 700; color: if(wx_view == 1, #2a170c, ink) }
+        text "Week" { at: wxs + 153, yw; anchor: center; size: 10.5; weight: 700; color: if(wx_view == 2, #2a170c, ink) }
+        text wx_sum { at: wxs + 196, yw; anchor: left center; width: d0.x + cw - 90 - wxs - 196; lines: 1; size: 11; color: ink; opacity: 85% }
+        text pick(if(wx_detail, 1, 0), "Details ›", "Close ×") { at: d0.x + cw - 12, yw; anchor: right center; size: 11; weight: 700; color: if(wx_hot == 3 or wx_detail, #e4b283, ink); opacity: 85% }
+    }
+    // ikona režimu a z nej vytekajúci výber (goo: kapsuly zliate s ikonou)
+    body {
+        color: mix(coffee, #e4b283, 0.55)
+        rim: 30%
+        light: 14%, 0, 30
+        glass: 100% * clamp(v * 1.3, 0, 1) * (1 - m)
+        shine: pointer
+        opacity: dshow
+        ellipse { at: d0.x + 24, d0.y + 24; radius: 19 * if(dsh > 0.5, 1, 0) }
+        line { from: d0.x + 24, d0.y + 24; to: d0.x + 24, d0.y + 40 + 40 * 4 * mo; width: 14 * clamp(mo * 3, 0, 1); blend: 10 }
+        box { at: d0.x + 100, d0.y + 66 + 0 * 40 * mo; size: 190 * clamp(mo * 1.6 - 0 * 0.12, 0, 1), 34 * clamp(mo * 1.6 - 0 * 0.12, 0, 1); corner: 17; blend: 12 }
+        box { at: d0.x + 100, d0.y + 66 + 1 * 40 * mo; size: 190 * clamp(mo * 1.6 - 1 * 0.12, 0, 1), 34 * clamp(mo * 1.6 - 1 * 0.12, 0, 1); corner: 17; blend: 12 }
+        box { at: d0.x + 100, d0.y + 66 + 2 * 40 * mo; size: 190 * clamp(mo * 1.6 - 2 * 0.12, 0, 1), 34 * clamp(mo * 1.6 - 2 * 0.12, 0, 1); corner: 17; blend: 12 }
+        box { at: d0.x + 100, d0.y + 66 + 3 * 40 * mo; size: 190 * clamp(mo * 1.6 - 3 * 0.12, 0, 1), 34 * clamp(mo * 1.6 - 3 * 0.12, 0, 1); corner: 17; blend: 12 }
+        box { at: d0.x + 100, d0.y + 66 + 4 * 40 * mo; size: 190 * clamp(mo * 1.6 - 4 * 0.12, 0, 1), 34 * clamp(mo * 1.6 - 4 * 0.12, 0, 1); corner: 17; blend: 12 }
+    }
+    group {
+        opacity: dshow
+        show: dsh > 0.5
+        repeat k in 0..5 {
+            image modes.$k.icon { at: d0.x + 14, d0.y + 14; size: 20, 20; tint: #2a170c; show: smode == k and k > 0 }
+        }
+        text "Ai" { at: d0.x + 24, d0.y + 24; anchor: center; size: 14; weight: 800; color: #2a170c; show: smode == 0 }
+        repeat k in 0..5 {
+            box { at: d0.x + 100, d0.y + 66 + k * 40; size: 180, 30; corner: 15; color: #ffffff; opacity: if(mode_hot == k, 22%, if(smode == k, 12%, 0)); show: mo > 0.9 }
+            image modes.$k.icon { at: d0.x + 22, d0.y + 56 + k * 40; size: 20, 20; tint: #2a170c; opacity: clamp(mo * 2 - 1, 0, 1); show: mo > 0.5 and k > 0 }
+            text modes.$k.name { at: d0.x + 52, d0.y + 66 + k * 40; anchor: left center; size: 13; weight: 700; color: #2a170c; opacity: clamp(mo * 2 - 1, 0, 1); show: mo > 0.5 }
+        }
+        text "Ai" { at: d0.x + 32, d0.y + 66; anchor: center; size: 13; weight: 800; color: #2a170c; opacity: clamp(mo * 2 - 1, 0, 1); show: mo > 0.5 }
     }
     // kontextová ponuka (pravý klik v spúšťači): kapsuly zliate do stĺpca pri kurzore
     let cx0 = clamp(ctx.x, 12, W - 252)
-    let cy0 = clamp(ctx.y, 12, H - 12 - ctx.count * 34)
+    // pri čipoch dole sa ponuka otvára nahor (ctx_up), inak nadol od kurzora
+    fact ctx_up = false
+    let cy0 = clamp(if(ctx_up, ctx.y - 10 - ctx.count * 34, ctx.y), 12, H - 12 - ctx.count * 34)
     body {
         color: mix(coffee, #f3ebdd, 0.08)
         rim: 25%
@@ -714,20 +898,30 @@ scene Kvapka {
     }
     // spúšťač: klikateľné miesta (navrchu)
     zone box dash_card { at: dt.x, dt.y; size: dw, dh; active: dash }
-    repeat k in 0..5 {
-        zone box tab_hit.$k { at: d0.x + k * 112 + 52, d0.y + 112; size: 104, 30; cursor: pointer; active: dash and k < tabs.count }
-    }
-    zone ellipse tab_add_hit { at: d0.x + tabs.count * 112 + 16, d0.y + 112; radius: 16; cursor: pointer; active: dash and tabs.count < 5 }
-    repeat k in 0..11 {
-        zone box hit_row.$k { at: d0.x + cw / 2, d0.y + 158 + k * 34; size: cw, 32; cursor: pointer; active: dash and tab == 0 and typing and k < hits.count }
+    zone ellipse mode_btn { at: d0.x + 24, d0.y + 24; radius: 20; cursor: pointer; active: dash }
+    repeat k in 0..10 {
+        zone box hit_row.$k { at: d0.x + cw / 2, y0 + 17 + k * 34; size: cw, 32; cursor: pointer; active: dash and show_hits and k < hits.count and not mode_open }
     }
     repeat k in 0..18 {
-        zone box fav_hit.$k { at: d0.x + (k - 6 * floor(k / 6)) * 94 + 46, d0.y + 200 + floor(k / 6) * 104; size: 88, 96; cursor: pointer; active: dash and tab > 0 and k < favs.count }
+        zone box fav_hit.$k { at: d0.x + (k - 6 * floor(k / 6)) * 96 + 48, y0 + 56 + floor(k / 6) * 106; size: 90, 98; cursor: pointer; active: dash and show_favs and k < favs.count and not mode_open }
     }
-    repeat k in 0..6 {
-        zone box note_hit.$k { at: d0.x + cw / 2, d0.y + 188 + k * 32; size: cw, 30; cursor: pointer; active: dash and tab == 0 and not typing and k < notes.count }
+    zone ellipse ai_stop { at: d0.x + cw - 24, cy.0 - 50 * aiw + 22; radius: 26; cursor: pointer; active: dash and show_chat and ai_wait }
+    zone box chat_zone { at: d0.x + cw / 2, y0 + 182; size: cw, 364; active: dash and show_chat and not mode_open }
+    repeat k in 0..8 {
+        zone box bub_hit.$k { at: bx.$k + (ch.$k.width + 26) / 2, cy.$k + (ch.$k.height + 22) / 2; size: ch.$k.width + 26, ch.$k.height + 22; active: dash and show_chat and k < chat.count and cy.$k > y0 - 10 and cy.$k < y0 + 350 and not mode_open }
     }
-    zone box clear_hit { at: d0.x + cw - 40, d0.y + 158; size: 90, 24; cursor: pointer; active: dash and tab == 0 and not typing and notes.count > 0 }
+    repeat k in 0..7 {
+        zone box chip_hit.$k { at: chx.$k + (cm.$k.width + 28) / 2, yc; size: cm.$k.width + 28, 32; cursor: pointer; active: dash and k < chips.count }
+    }
+    repeat k in 0..3 {
+        zone box wxs_hit.$k { at: wxs + k * 62 + 29, yw; size: 60, 26; cursor: pointer; active: dash }
+    }
+    zone box wxd_hit { at: d0.x + cw - 40, yw; size: 80, 26; cursor: pointer; active: dash }
+    // rozbalený výber režimu: klik mimo neho ho zavrie (pod jeho riadkami)
+    zone box mode_away { at: W / 2, H / 2; size: W, H; active: dash and mode_open }
+    repeat k in 0..5 {
+        zone box mode_row.$k { at: d0.x + 100, d0.y + 66 + k * 40; size: 190, 38; cursor: pointer; active: dash and mode_open }
+    }
     // otvorená ponuka: klik mimo nej ju zavrie (pod jej riadkami)
     zone box ctx_away { at: W / 2, H / 2; size: W, H; active: ctx_open }
     repeat k in 0..10 {
@@ -1278,43 +1472,66 @@ scene Kvapka {
         on leave pm_hit.$k { pm_hot = -1 }
     }
     on release power_hit { squish.p: 0; squish.s: 0 after 70ms; squish: 0 after 140ms }
-    // spúšťač: otvorenie dá kurzor do poľa; Esc zavrie ponuku, potom premenovanie, potom spúšťač; klik mimo zavrie
+    // spúšťač: otvorenie dá kurzor do poľa; Esc zavrie ponuku, výber režimu, predpoveď, premenovanie, potom spúšťač;
+    // klik mimo zavrie
     on change dash while dash { focus query }
-    on change dash while not dash { ctx_open = false; tab = 0 }
+    on change dash while not dash { ctx_open = false; mode_open = false; wx_detail = false }
     on press dash_away { dash = false; pmenu = false }
     on key Escape while ctx_open { ctx_open = false }
-    on key Escape while dash and not ctx_open and renaming { emit query_submit(-1) }
-    on key Escape while dash and not ctx_open and not renaming { dash = false }
+    on key Escape while dash and not ctx_open and mode_open { mode_open = false }
+    on key Escape while dash and not ctx_open and not mode_open and wx_detail { wx_detail = false }
+    on key Escape while dash and not ctx_open and not mode_open and not wx_detail and renaming { emit query_submit(-1) }
+    on key Escape while dash and not ctx_open and not mode_open and not wx_detail and not renaming { dash = false }
     on key Down while dash and not ctx_open { emit sel_move(1) }
     on key Up while dash and not ctx_open { emit sel_move(-1) }
     on submit query { emit query_submit(1) }
     on dash_toggle { toggle dash; pmenu = false }
-    // záložky: ľavý klik prepne, pravý = ponuka (premenovať, posunúť, odstrániť) — iba používateľove
+    // ikona režimu: klik rozbalí výber, koliesko točí režimy; Tab = ďalší režim (doplnok k myši)
+    on press mode_btn { toggle mode_open; ctx_open = false }
+    on scroll mode_btn { smode = smode + if(wheel > 0, 4, 1) - 5 * floor((smode + if(wheel > 0, 4, 1)) / 5); mode_open = false }
+    on key Tab while dash and not ctx_open { smode = smode + 1 - 5 * floor((smode + 1) / 5); mode_open = false }
+    on press mode_away { mode_open = false }
     repeat k in 0..5 {
-        on press tab_hit.$k { tab = k; ctx_open = false; emit tab_pick(k) }
-        on press right tab_hit.$k while k > 0 { tab = k; ctx.x = mx; ctx.y = my; emit tab_menu(k) }
-        on enter tab_hit.$k { tab_hot = k }
-        on leave tab_hit.$k { tab_hot = -1 }
+        on press mode_row.$k { smode = k; mode_open = false; focus query }
+        on enter mode_row.$k { mode_hot = k }
+        on leave mode_row.$k { mode_hot = -1 }
     }
-    on press tab_add_hit { emit tab_add }
-    // riadky hľadania: ľavý klik otvorí, pravý = ponuka (pridať do záložky, vyhľadávač, služby AI)
-    repeat k in 0..11 {
+    // riadky: ľavý klik otvorí, pravý = ponuka (pridať do záložky, otvoriť priečinok…)
+    repeat k in 0..10 {
         on press hit_row.$k { emit open_hit(k) }
-        on press right hit_row.$k { sel = k; ctx.x = mx; ctx.y = my; emit hit_menu(k) }
+        on press right hit_row.$k { sel = k; ctx_up = false; ctx.x = mx; ctx.y = my; emit hit_menu(k) }
         on enter hit_row.$k { hit_hot = k }
         on leave hit_row.$k { hit_hot = -1 }
     }
     // obľúbené: ľavý klik spustí, pravý = ponuka (odobrať, posunúť)
     repeat k in 0..18 {
         on press fav_hit.$k { emit fav_open(k) }
-        on press right fav_hit.$k { ctx.x = mx; ctx.y = my; emit fav_menu(k) }
+        on press right fav_hit.$k { ctx_up = false; ctx.x = mx; ctx.y = my; emit fav_menu(k) }
         on enter fav_hit.$k { fav_hot = k }
         on leave fav_hit.$k { fav_hot = -1 }
     }
-    repeat k in 0..6 {
-        on press note_hit.$k { emit note_open(k) }
+    // rozhovor: koliesko roluje, pravý klik na bublinu = kopírovať
+    on press ai_stop { emit ai_cancel }
+    on scroll chat_zone { chst = clamp(chst - wheel * 60, 0, max(0, chh - 340)) }
+    repeat k in 0..8 {
+        on press right bub_hit.$k { ctx_up = false; ctx.x = mx; ctx.y = my; emit bubble_menu(k) }
     }
-    on press clear_hit { emit notes_clear }
+    // čipy: ľavý klik = akcia alebo rozbaľovacia ponuka (nahor), pravý = ponuka záložky
+    repeat k in 0..7 {
+        on press chip_hit.$k { ctx_up = true; ctx.x = chx.$k; ctx.y = yc - 16; mode_open = false; emit chip_pick(k) }
+        on press right chip_hit.$k { ctx_up = true; ctx.x = chx.$k; ctx.y = yc - 16; mode_open = false; emit chip_menu(k) }
+        on enter chip_hit.$k { chip_hot = k }
+        on leave chip_hit.$k { chip_hot = -1 }
+    }
+    // počasie: Dnes / Zajtra / Týždeň, Detaily = predpoveď v obsahu (znova = zavrieť)
+    repeat k in 0..3 {
+        on press wxs_hit.$k { wx_view = k; emit wx_pick(k) }
+        on enter wxs_hit.$k { wx_hot = k }
+        on leave wxs_hit.$k { wx_hot = -1 }
+    }
+    on press wxd_hit { toggle wx_detail; mode_open = false }
+    on enter wxd_hit { wx_hot = 3 }
+    on leave wxd_hit { wx_hot = -1 }
     // kontextová ponuka
     on press ctx_away { ctx_open = false }
     on press right ctx_away { ctx_open = false }
@@ -1347,6 +1564,59 @@ scene Kvapka {
     }
 
     translations sk {
+        "AI is turned off. Settings › Software › AI turns it on." = "AI je vypnutá. Zapneš ju v Nastaveniach › Softvér › AI."
+        "Ai" = "Ai"
+        "Applications" = "Aplikácie"
+        "Ask AI anything…" = "Opýtaj sa AI na čokoľvek…"
+        "Ask AI: {q}" = "Opýtať sa AI: {q}"
+        "Ask anything. The answer appears here; the service and the model are chosen below." = "Opýtaj sa na čokoľvek. Odpoveď sa ukáže tu; službu a model vyberieš dole."
+        "Ask anything. {ai} answers in the browser, signed in as you. For answers right here, choose a service below." = "Opýtaj sa na čokoľvek. {ai} odpovie v prehliadači s tvojím prihlásením. Pre odpovede priamo tu vyber dole inú službu."
+        "Careful: changes the system" = "Pozor: mení systém"
+        "ChatGPT (API key)" = "ChatGPT (kľúč API)"
+        "ChatGPT (web)" = "ChatGPT (web)"
+        "Claude (API key)" = "Claude (kľúč API)"
+        "Claude (web)" = "Claude (web)"
+        "Clear history" = "Vymazať históriu"
+        "Close ×" = "Zavrieť ×"
+        "Copilot (web)" = "Copilot (web)"
+        "Copy" = "Kopírovať"
+        "Stopped." = "Zastavené."
+        "Details ›" = "Detaily ›"
+        "Enter again to run" = "Spustíš znova Enterom"
+        "FORECAST · {wx_place}" = "PREDPOVEĎ · {wx_place}"
+        "Files" = "Súbory"
+        "Gemini (API key)" = "Gemini (kľúč API)"
+        "Home" = "Domov"
+        "Home server" = "Domáci server"
+        "I opened {ai} in the browser with your question." = "Otvoril som {ai} v prehliadači s tvojou otázkou."
+        "Linux command" = "Linux príkaz"
+        "Mistral (API key)" = "Mistral (kľúč API)"
+        "Model" = "Model"
+        "New chat" = "Nový rozhovor"
+        "No forecast yet" = "Predpoveď zatiaľ nie je"
+        "No models found" = "Žiadne modely"
+        "Ollama" = "Ollama"
+        "Open Files" = "Otvoriť Súbory"
+        "Open terminal" = "Otvoriť terminál"
+        "Perplexity (web)" = "Perplexity (web)"
+        "Recent" = "Nedávne"
+        "Remove from history" = "Odstrániť z histórie"
+        "Run a command…" = "Spusti príkaz…"
+        "Run in terminal" = "Spustiť v termináli"
+        "Search files for “{q}”" = "Hľadať v súboroch „{q}“"
+        "Search files…" = "Hľadať súbory…"
+        "Search the web for “{q}”" = "Hľadať na webe „{q}“"
+        "Search the web…" = "Hľadať na webe…"
+        "Search “{q}”" = "Hľadať „{q}“"
+        "Settings › Software › AI" = "Nastavenia › Softvér › AI"
+        "The AI did not answer." = "AI neodpovedala."
+        "Today" = "Dnes"
+        "Tomorrow" = "Zajtra"
+        "Type a Linux command. It runs in the terminal; commands that can delete or change the system need a second Enter." = "Napíš Linux príkaz. Spustí sa v termináli; príkazy, ktoré môžu mazať alebo meniť systém, treba potvrdiť druhým Enterom."
+        "Type a file or folder name. Enter opens it; right click opens the folder it is in." = "Napíš meno súboru alebo priečinka. Enter ho otvorí; pravý klik otvorí priečinok, v ktorom je."
+        "Type what to look for. Enter searches with your search engine; choose it below." = "Napíš, čo hľadáš. Enter hľadá tvojím vyhľadávačom; vyberieš ho dole."
+        "Week" = "Týždeň"
+        "[LatteOS] Enter closes the terminal…" = "[LatteOS] Enter zatvorí terminál…"
         "Search apps…" = "Hľadať aplikácie…"
         "Nothing found" = "Nič sa nenašlo"
         "NOTIFICATIONS" = "UPOZORNENIA"
