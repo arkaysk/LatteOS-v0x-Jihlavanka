@@ -24,6 +24,10 @@ return {
         ["chevron-down"] = "\u{EA5F}",
         ["chevron-right"] = "\u{EA61}",
         ["x"] = "\u{EB55}",
+        ["layout-dashboard"] = "\u{F02C}",
+        ["stopwatch"] = "\u{FF9B}",
+        ["hourglass"] = "\u{EF93}",
+        ["alarm"] = "\u{EA04}",
     },
     temy = { "latte", "mraz", "hlinik", "striebro", "zlato", "bielyonyx", "onyx", "jantar", "rubin", "zirkon", "kancelaria", "launcher", "svetlesklo", "usporna" },
 }
