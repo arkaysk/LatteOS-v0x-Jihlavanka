@@ -47,6 +47,10 @@ samostatný tekutý prvok.
 10. **Goo má vlastný vzhľad ponúk** (1. 10.): ponuky a okná z kvapiek sa **nepreberajú vizuálne** z klasického
    LatteOS (panely Noctalie). Preberá sa **funkcia** (latte-ai, pohoda, Text Bar, kalendár…), vzhľad je Goo —
    karta z kvapky, tekuté kapsuly, goo bubliny.
+11. **Štýl okien Goo** (1. 10., inšpirácia hľadanie Windows 11 a spúšťač Noctalie): **moderné ikony, písma,
+   trochu minimalizmu, chytrosť, vkus, užitočnosť.** Farby nie sú cieľ — idú z **témy LatteOS** (farba okien =
+   šálka) a karta pri uchu kvapky **prechádza do kávy** (goo). Ikony **Tabler** (písmo Noctalie), písmo **Inter**,
+   riadky ako karty (názov + popis), jemné zaoblenia, akcent témy na výbere a okraji poľa.
 
 ---
 
@@ -131,6 +135,8 @@ Karta z ucha TimeGoo, zhora nadol:
   v argumente (`latte-ai chat '[…]'`), chyba sa vráti na stdout a ukáže v bubline.
 - **Úzky riadok počasia** úplne dole: miesto · **Dnes / Zajtra / Týždeň** (klik prepne súhrn) · **Detaily**
   (predpoveď v obsahu: dnes a zajtra po 3 h, týždeň po dňoch). Open-Meteo, miesto z greeter.conf.
+- Aplikácie bez textu: **obľúbené ako dlaždice** (6 × 2) a pod nimi **Nedávne** (2 × 2, naposledy spustené), ako vo
+  Windows. Vzhľad generuje `session/kvapky/spustac.py` (farby 14 tém, ikony → `ikony.luau`).
 - Upozornenia v spúšťači už nie sú (idú do DaNoGoo). Zámerne **nie** katalóg aplikácií ani prepínanie okien (Goobar).
 
 ### 4.4 PowerGoo (vypínač) — vľavo od Hodín
@@ -217,8 +223,7 @@ chyby (neaktívne tvary nulovým polomerom); logika nevie zapisovať súbory (`l
 - **nápad 1. 10.: bubliny četov** ako v Androide (Messenger chat heads), ale **pre viac kanálov** (Messenger,
   Telegram, Signal, ICQ…) — forma sa ešte premyslí (používateľ). Nie ako režim spúšťača (preplnené jedno miesto)
   a **nie spojené s DaNoGoo** (rozhodnutie 1. 10.)
-- **vzhľad spúšťača** (1. 10.): rozloženie a funkcie áno, **písmo a farby nie** → 4 varianty na výber (Káva s písmom
-  LatteOS, Mlieko, Šálka–Hliník, Sklo); farby sú v premenných `l.*` na začiatku spúšťača v kvapka.plm
+- rovnaký štýl (pravidlo 11) pre časové menu TimeGoo, kalendár a hrozno DaNoGoo, ponuku Vypnúť, ponuku okna
 - **Noctalia nemá slovenský katalóg** (`assets/translations/sk.json` nie je ani u autora, je český `cs.json`):
   pri `LANG=sk` prepne na angličtinu a `translations/sk.json` doplnkov nenačíta — nové texty doplnkov LatteOS
   (napr. well-being v záložke Čas) sú preto po anglicky. Riešenie: slovenský katalóg Noctalie (aj pre autora)

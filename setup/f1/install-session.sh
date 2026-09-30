@@ -64,7 +64,7 @@ else
 fi
 echo "== Kvapky (skúšobná plocha LatteOS Kvapky): scéna + pleamar so záplatou LatteOS"
 sudo install -d /usr/share/latteos/kvapky
-for f in kvapka.plm kvapka.luau; do put "$S/kvapky/$f" "/usr/share/latteos/kvapky/$f"; done
+for f in kvapka.plm kvapka.luau ikony.luau; do put "$S/kvapky/$f" "/usr/share/latteos/kvapky/$f"; done
 pl="$repo/resources/upstream/pleamar"
 if [ ! -x "$pl/target/release/pleamar" ] && command -v cargo >/dev/null; then
     "$repo/resources/fetch.sh" pleamar >/dev/null && git -C "$pl" apply --check "$repo/resources/patches/pleamar-hyprland-okna-8bit.patch" 2>/dev/null \
@@ -101,6 +101,8 @@ done
 rm -rf "$tmpm"
 sudo install -d /usr/share/fonts/latteos /usr/share/backgrounds/latteos
 sudo install -m644 "$S"/fonts/*.ttf "$S"/fonts/OFL-*.txt /usr/share/fonts/latteos/
+# ikony Tabler z Noctalie aj pre pleamar (spúšťač Kvapiek píše ikony ako znaky tohto písma)
+[ -f /usr/share/noctalia/assets/fonts/noctalia-tabler.ttf ] && sudo ln -sf /usr/share/noctalia/assets/fonts/noctalia-tabler.ttf /usr/share/fonts/latteos/noctalia-tabler.ttf
 sudo fc-cache -f /usr/share/fonts/latteos
 sudo install -m644 "$S"/wallpapers/*.jpg /usr/share/backgrounds/latteos/
 sudo install -d /usr/share/latteos/themes
