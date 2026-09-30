@@ -26,6 +26,7 @@ echo "serpantinum: $(git -C "$src" log --oneline -1) (verzia $(cat "$src/version
 mkdir -p "$S/bin" "$S/src"
 cp -r "$src/bin/." "$S/bin/"; cp -r "$src/src/." "$S/src/"
 echo "== satty a wl-gammarelay-rs (nie sú vo Fedore)"
+sudo dnf install -y -q gtk4-devel libadwaita-devel libepoxy-devel     # satty sa prekladá proti GTK 4
 for c in satty wl-gammarelay-rs; do
     command -v "$c" >/dev/null || [ -x "$S/bin/$c" ] || cargo install --locked --quiet --root "$S/cargo" "$c" \
         && { [ -x "$S/cargo/bin/$c" ] && ln -sf "$S/cargo/bin/$c" "$S/bin/$c"; true; } \
