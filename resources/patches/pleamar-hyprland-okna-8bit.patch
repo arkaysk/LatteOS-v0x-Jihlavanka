@@ -1,8 +1,8 @@
 diff --git a/src/gpu.rs b/src/gpu.rs
-index 9ce96bb..1f17718 100644
+index 7b30416..4d264a8 100644
 --- a/src/gpu.rs
 +++ b/src/gpu.rs
-@@ -1647,7 +1647,13 @@ impl Gpu {
+@@ -1651,7 +1651,13 @@ impl Gpu {
                  let caps = first.get_capabilities(&adapter);
                  // No sRGB: the compositor blends the bytes as they are, and premultiplied
                  // alpha only works out if nobody re-encodes them along the way.
@@ -139,10 +139,10 @@ index 9e19585..c14ddd4 100644
 +        }
 +}
 diff --git a/src/platform/wayland.rs b/src/platform/wayland.rs
-index 7bdb639..113b392 100644
+index c04eef0..d025ece 100644
 --- a/src/platform/wayland.rs
 +++ b/src/platform/wayland.rs
-@@ -1556,12 +1556,31 @@ smithay_client_toolkit::delegate_dispatch2!(State);
+@@ -1557,12 +1557,31 @@ smithay_client_toolkit::delegate_dispatch2!(State);
  /// small. Good enough for application icons.
  pub fn icon(name: &str) -> Option<std::path::PathBuf> {
      let home = std::env::var("HOME").unwrap_or_default();
@@ -180,7 +180,7 @@ index 7bdb639..113b392 100644
                  for context in contexts {
                      for ext in ["svg", "png"] {
 diff --git a/src/render.rs b/src/render.rs
-index 3a8a490..bd02256 100644
+index 97a246c..5a3de79 100644
 --- a/src/render.rs
 +++ b/src/render.rs
 @@ -250,6 +250,9 @@ pub fn run(
@@ -193,7 +193,7 @@ index 3a8a490..bd02256 100644
      let mut cursor_set = Cursor::Normal;
  
      // The keyboard that has been asked of the compositor, whether it has the focus, and whether it has
-@@ -1207,7 +1210,23 @@ pub fn run(
+@@ -1241,7 +1244,23 @@ pub fn run(
                          let _ = to_logic.send(Event::Press(scene.zones[k].id));
                      }
                  }

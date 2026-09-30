@@ -157,8 +157,13 @@ scene Kvapka {
     // Každá kvapka sa zdvíha podľa vzdialenosti kurzora od NEJ (lišta, Hodiny, vypínač), nie všetky naraz;
     // sused sa pridá iba trochu (goo ho ťahá). Lišta sa vysúva od štvrtiny výšky obrazovky (270 px pri 1080).
     // myš v rámci okraja (inverzia otočenia skupiny nižšie)
-    let cu = pick(side, cursor.x, W - cursor.x, cursor.y, H - cursor.y)
-    let cv = pick(side, cursor.y - (H - edge), edge - cursor.y, edge - cursor.x, cursor.x - W + edge)
+    // na skúšky bez myši (headless): `pleamar --say kvapka "fact tcx 700"` a `"fact tcy 1000"` — náhradný kurzor
+    fact tcx = -1
+    fact tcy = -1
+    let mx = if(tcx >= 0, tcx, cursor.x)
+    let my = if(tcy >= 0, tcy, cursor.y)
+    let cu = pick(side, mx, W - mx, my, H - my)
+    let cv = pick(side, my - (H - edge), edge - my, edge - mx, mx - W + edge)
     let dist.x = max(0, max(bl - cu, cu - (bl + w)))
     let dist.y = max(0, edge - h * 0.6 - cv)
     let near.s = 1 - smooth(0, 130, length(cu - sx0, max(0, edge - 40 - cv)))     // Hodiny
@@ -204,7 +209,7 @@ scene Kvapka {
     prop gh = 90 ~lively
     prop fall = 0 ~1000ms
     prop dockt = 0 ~260ms
-    let near.edge = min(min(cursor.x, W - cursor.x), min(cursor.y, H - cursor.y))
+    let near.edge = min(min(mx, W - mx), min(my, H - my))
 
     prop wob = 0 ~lively
     prop bdx = 0 ~lively                     // posun ťahanej guľôčky (v rámci okraja)
