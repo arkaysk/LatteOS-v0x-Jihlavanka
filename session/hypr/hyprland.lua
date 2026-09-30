@@ -166,11 +166,22 @@ end
 local tier = mode.tier
 if theme.effects == "ziadne" and (tier == "plny" or tier == "standard" or tier == "usporny") then tier = "minimalny" end
 -- Prístupnosť › Bez animácií (~/.config/latteos/no-animations) platí pri každom stupni aj po hernom režime
+local game_on = false
 local function apply_tier(t)
     tiers.apply(t, colors)
     local f = io.open(cfgdir .. "/no-animations", "r")
-    if f then f:close(); hl.config({ animations = { enabled = false } }) end
+    if f then f:close(); hl.config({ animations = { enabled = false } }); return end
+    -- páska sa hýbe ako fyzická páska (ako v niri) aj pri stupni/téme bez animácií: pohyb okien nesie informáciu,
+    -- kam okno odišlo. Ostatné animácie ostanú vypnuté; nie v hernom režime ani vo VM bez GPU (softver)
+    if windows.current == "paska" and not game_on and t ~= "softver" and not tiers.get(t).anim then
+        hl.curve("latteTape", { type = "spring", mass = 1, stiffness = 238, dampening = 24 })
+        hl.config({ animations = { enabled = true } })
+        hl.animation({ leaf = "global", enabled = false })
+        hl.animation({ leaf = "windowsMove", enabled = true, speed = 4.8, spring = "latteTape" })
+    end
 end
+latte = latte or {}
+function latte.tape_motion() apply_tier(game_on and "minimalny" or tier) end   -- volá latte/windows.lua pri zmene režimu
 apply_tier(tier)
 windows.setup()
 if kvapky then latte.kvapky_reserve(kvapky) end      -- po reload-e (pri štarte ešte monitory nie sú: latte-kvapky start)
@@ -183,6 +194,7 @@ bars.setup({ bar_bg = theme.bar_bg, bar_fg = theme.bar_fg, border_active = theme
 local game_file = (os.getenv("XDG_STATE_HOME") or ((os.getenv("HOME") or "") .. "/.local/state")) .. "/latteos/game-mode"
 latte = latte or {}
 function latte.game(on)
+    game_on = on and true or false
     apply_tier(on and "minimalny" or tier)
     hl.exec_cmd("latte-tapety hra " .. (on and "on" or "off"))       -- živá tapeta: v hre pauza (0 % CPU a GPU)
     hl.config({ decoration = { rounding = on and 0 or 14 }, general = { gaps_in = on and 0 or 5, gaps_out = on and 0 or 10 } })

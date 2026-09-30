@@ -27,6 +27,12 @@ ako samostatná vrstva (layer-shell) nad jej lištou.
 - **až 20 okien** v lište (strapce ich zhustia); koliesko nad lištou v plávajúcom režime prepína iba okná na
   ploche, bez minimalizovaných (cez Wayland sa pri tom ukázala celá skrytá plocha `special:minimized` a nové okná
   sa otvárali na nej — vyzerali ako nespustené); LatteOS túto plochu pri prepnutí okna vždy zavrie
+- **páska ako v niri** (30. 9.): v páske sa nič neminimalizuje — pri prepnutí do pásky sa minimalizované okná vrátia
+  na pásku, tlačidlo – a skratky okno iba pošlú z pohľadu (páska prejde na ďalšie okno), klik na aktívnu guľôčku
+  okno vycentruje. Koliesko nad lištou (alebo Super + Shift + koliesko kdekoľvek) pásku plynulo posúva o štvrť
+  obrazovky; pohyb okien animuje Hyprland aj pri téme bez efektov (`latte.tape_motion`, nie v hernom režime ani pri
+  Prístupnosť › Bez animácií). Dlaždice v páske: okno ťahané za titulok pustené do stredu iného okna sa pridá do
+  jeho stĺpca, pustené k jeho okraju (30 %) vytvorí nový stĺpec (Hyprland scrolling layout)
 - **minimalizované okná** sú v lište menšie guľôčky so stlmenou ikonou (logika ich zistí z `hyprctl clients`
   každých 700 ms); koliesko ich vynecháva, klik ich vráti
 - **rovnaké okná sa nepletú**: guľôčka hľadá okno podľa triedy, titulku a poradia (piaty terminál „~“ je piate
@@ -83,7 +89,7 @@ ako samostatná vrstva (layer-shell) nad jej lištou.
   lišta), roztavené s oboma koncami; odtrhnutá lišta vlákno k Štartu natiahne a pretrhne; myš nad kvapkou ju
   nafúkne a susedov k nej pritiahne; stlačenie prebehne vlnou cez susedov
 - **základňa kvapky** (telo a hlava): ľavý klik = režim okien (plávajúce → dlaždice → páska), koliesko nad
-  kvapkou = okná (páska aj plávajúce = ďalšie okno zľava doprava, dokola), ťahanie ľavým aj pravým = presun, pravý klik nič
+  kvapkou = okná (páska = plynulý posun pásky, plávajúce = ďalšie okno zľava doprava, dokola), ťahanie ľavým aj pravým = presun, pravý klik nič
 - **hrbolčeky s oknami** majú vlastné kliky: ľavý = prepnúť na okno, aktívne sa minimalizuje (ako vo Windows;
   minimalizuje LatteOS na special:minimized, Hyprland žiadosť z protokolu ignoruje), pravý = ponuka okna pri
   kurzore; ťahanie z hrbolčeka kvapku nepresúva

@@ -34,6 +34,8 @@ local function normal_windows(ws_id)
     return out
 end
 local function minimize(w)
+    -- v páske (ako v niri) sa nič neminimalizuje, okno iba odíde z pohľadu
+    if latte and latte.tape_on and latte.tape_on() then latte.tape_away(w); return end
     hl.dispatch(hl.dsp.window.move({ workspace = "special:minimized", follow = false, window = "address:" .. w.address }))
 end
 
@@ -41,6 +43,7 @@ latte = latte or {}
 latte.keys = latte.keys or {}
 -- Win+M: minimalizovať všetko na ploche; Win+Home: všetko okrem aktívneho
 function latte.keys.minimize_all(keep_active)
+    if latte.tape_on and latte.tape_on() then return end   -- páska: nič sa neschováva
     local a = hl.get_active_window()
     for _, w in ipairs(normal_windows(cur_ws())) do
         if not (keep_active and a and w.address == a.address) then minimize(w) end
@@ -176,6 +179,14 @@ local function common()
     bind("SUPER + mouse:273", hl.dsp.window.resize(), { mouse = true })
     bind("SUPER + mouse_down", hl.dsp.focus({ workspace = "e+1" }))
     bind("SUPER + mouse_up",   hl.dsp.focus({ workspace = "e-1" }))
+    -- Super + Shift + koliesko: páska sa plynulo posunie o štvrť obrazovky (ako v niri; kolieskom nad lištou Kvapky bez klávesu)
+    local function tape_step(d)
+        local m = hl.get_active_monitor and hl.get_active_monitor()
+        local px = math.floor(((m and m.width) or 1920) * 0.25)
+        hl.dispatch(hl.dsp.layout(string.format("move %s%d", d > 0 and "-" or "+", px)))
+    end
+    bind("SUPER + SHIFT + mouse_down", function() tape_step(1) end)
+    bind("SUPER + SHIFT + mouse_up",   function() tape_step(-1) end)
     -- LatteOS doplnky (nekolidujú s Windows): Herňa, rozloženia okna, prehľad pásky, plocha, zamknúť, Súbory
     bind("SUPER + G", panel("latteos/games:panel"))
     bind("SUPER + SHIFT + G", run("latte-hra"))                                  -- herný režim: Steam Big Picture (gamescope)

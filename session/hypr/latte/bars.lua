@@ -22,6 +22,7 @@ function B.setup(theme)
     latte.win = latte.win or {}
     function latte.win.minimize()
         local w = hl.get_active_window()
+        if w and latte.tape_on and latte.tape_on() then latte.tape_away(w); return end
         if w then hl.dispatch(hl.dsp.window.move({ workspace = "special:minimized", follow = false, window = "address:" .. w.address })) end
     end
     function latte.win.maximize()
@@ -47,6 +48,7 @@ function B.setup(theme)
         end
     end
     function latte.win.minimize_addr(address)
+        if latte.tape_on and latte.tape_on() then return end
         hl.dispatch(hl.dsp.window.move({ workspace = "special:minimized", follow = false, window = "address:" .. address }))
     end
     -- okno podľa triedy a titulku (kvapka pozná okná zo zoznamu wlr-foreign-toplevel, nie adresy Hyprlandu).
@@ -73,7 +75,10 @@ function B.setup(theme)
         if not w then return end
         local a = hl.get_active_window()
         local hidden = w.workspace and tostring(w.workspace.name or ""):find("^special:minimized")
-        if a and a.address == w.address and not hidden then latte.win.minimize_addr(w.address)
+        if a and a.address == w.address and not hidden then
+            -- v páske sa nič neminimalizuje: klik na aktívne okno ho iba vycentruje
+            if latte.tape_on and latte.tape_on() then hl.dispatch(hl.dsp.layout("center"))
+            else latte.win.minimize_addr(w.address) end
         else latte.win.activate(w.address) end
     end
     -- skrytá plocha minimalizovaných nesmie ostať ukázaná: nové okná by sa otvárali na nej (vyzerali by minimalizované)

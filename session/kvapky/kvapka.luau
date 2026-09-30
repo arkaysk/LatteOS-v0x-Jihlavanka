@@ -227,12 +227,16 @@ on("win_menu", function(k)
     end)
 end)
 
--- koliesko nad lištou: páska = ďalší stĺpec (fokus posúva scrolling layout Hyprlandu), plávajúce = ďalšie/predošlé
--- okno ako Alt+Tab, dlaždice = nič; minimalizované okná vynechá (sú iba v lište, stlmené)
+-- koliesko nad lištou: páska = plynulý posun pásky, plávajúce = ďalšie/predošlé okno ako Alt+Tab, dlaždice = nič;
+-- minimalizované okná (mimo pásky) vynechá — sú iba v lište, stlmené
 on("wheel_turn", function(d)
     local dir = (d or 0) > 0 and 1 or -1
-    -- (30. 9.) páska aj plávajúce cez latte.win.cycle: fokus doprava v páske na poslednom stĺpci zastal
-    if mode == "paska" or mode == "plavajuce" then
+    -- páska sa hýbe ako fyzická páska (ako v niri): každý zúbok ju plynulo posunie o štvrť obrazovky, fokus dostane
+    -- okno v strede. Pohyb okien animuje Hyprland (latte.tape_motion ho nechá zapnutý aj pri téme bez efektov)
+    if mode == "paska" then
+        local px = math.floor(((mon and mon.width) or 1920) * 0.25)
+        run("hyprctl", { "eval", string.format('hl.dispatch(hl.dsp.layout("move %s%d"))', dir > 0 and "-" or "+", px) })
+    elseif mode == "plavajuce" then
         -- ďalšie okno na aktuálnej ploche (latte/bars.lua) — nie cez Wayland: prepnutie na minimalizované okno
         -- ukázalo celú skrytú plochu special:minimized a nové okná sa potom otvárali na nej
         run("hyprctl", { "eval", "latte.win.cycle(" .. dir .. ")" })

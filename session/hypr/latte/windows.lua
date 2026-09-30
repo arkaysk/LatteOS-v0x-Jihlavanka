@@ -47,7 +47,27 @@ function W.setup()
                      float = true, move = { "12", "monitor_h-window_h-72" } })
     hl.window_rule({ name = "latte-z-listy-zariadenia", match = { class = "^org\\.quickshell$", title = "^Správca zariadení — LatteOS$" },
                      float = true, move = { "monitor_w-window_w-12", "monitor_h-window_h-72" } })
+    -- páska ako v niri: okno sa neminimalizuje, iba odíde z pohľadu (páska sa posunie na ďalšie okno)
+    latte = latte or {}
+    function latte.tape_on() return W.current == "paska" end
+    function latte.tape_away(w)
+        local a = hl.get_active_window()
+        if w and a and a.address == w.address and latte.win and latte.win.cycle then latte.win.cycle(1) end
+    end
     W.apply(load_mode(), false)
+end
+
+-- minimalizované okná (skrytá plocha special:minimized) sa pri prepnutí do pásky vrátia na pásku — v páske
+-- nie je nič schované, ako v niri
+local function restore_minimized()
+    local ws = hl.get_active_workspace()
+    if not ws then return end
+    for _, w in ipairs(hl.get_windows() or {}) do
+        if w.workspace and tostring(w.workspace.name or ""):find("^special:minimized") then
+            hl.dispatch(hl.dsp.window.move({ workspace = tostring(ws.id), follow = false, window = "address:" .. w.address }))
+        end
+    end
+    if latte and latte.win and latte.win.hide_special then latte.win.hide_special() end
 end
 
 --- prepne režim; existujúce okná prispôsobí (v plávajúcom ich uvoľní z dlaždíc a naopak)
@@ -56,12 +76,14 @@ function W.apply(mode, notify)
     local floating = (mode == "plavajuce")
     hl.config({ general = { layout = (mode == "paska") and "scrolling" or "dwindle" } })
     if float_rule then float_rule:set_enabled(floating) end
+    if mode == "paska" then restore_minimized() end
     for _, w in ipairs(hl.get_windows() or {}) do
         if w.floating ~= floating then
             hl.dispatch(hl.dsp.window.float({ action = floating and "enable" or "disable", window = "address:" .. w.address }))
         end
     end
     save_mode(mode)
+    if latte and latte.tape_motion then latte.tape_motion() end
     if notify then
         hl.exec_cmd("notify-send -a LatteOS -i view-grid 'Režim okien' '" .. W.label[mode] .. "'")
     end
