@@ -27,6 +27,7 @@ git_new() {   # $1 názov, $2 priečinok s git: počet zmien u autora, ktoré e�
 echo "== LatteOS Kvapky"
 git_new "pleamar (naše záplaty)" "$repo/resources/upstream/pleamar"
 echo "   v systéme: $(pleamar --version 2>/dev/null || echo chýba)"
+git_new "hyprglass (sklo okien)" "$repo/resources/upstream/hyprglass"
 echo "== pokusy (samostatné relácie)"
 for r in pleamar pleamar-wm marea-plm; do git_new "$r (Marea)" "$HOME/.local/share/marea-povodna/src/$r"; done
 git_new "serpantinum" "$HOME/.local/share/serpantinum/zdroj"
