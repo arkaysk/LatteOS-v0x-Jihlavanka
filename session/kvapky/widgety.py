@@ -13,7 +13,7 @@ A, B = "    // >>> kvapky widgetov (widgety.py)\n", "    // <<< kvapky widgetov\
 out = [A, f'''    // Každá kvapka visí z okraja (side 0 dole, 1 hore, 2 vľavo, 3 vpravo; pos 0..1 pozdĺž neho) na hladine s krkom,
     // ku kurzoru sa nakloní a nad ňou sa nafúkne (živý tvor). Chytiť a pustiť pri inom okraji = prilepí sa tam;
     // pustiť ďaleko od okrajov = steká preč (odstráni sa, späť cez spúšťač). Kliky podľa Noctalie (logika).
-    model wdg max {N} {{ icon: image 22, 22; val: text; hasval: bool; side: number; pos: number; right: bool; wheel: bool; on: bool }}
+    model wdg max {N} {{ icon: image 22, 22; val: text; hasval: bool; mono: bool; side: number; pos: number; right: bool; wheel: bool; on: bool }}
     fact wdrag = -1
     fact wmoved = false
     fact wd.x = 0
@@ -62,14 +62,16 @@ for k in range(N):
 out.append('''    }
 ''')
 for k in range(N):
-    out.append(f'''    image wdg.{k}.icon {{ at: wp.x.{k} - 11, wp.y.{k} - 11 - if(wdg.{k}.hasval, 5, 0); size: 22, 22; tint: ink; opacity: wb.{k} * if(wdg.{k}.on, 100%, 55%); show: {k} < wdg.count }}
+    out.append(f'''    // symbolické ikony widgetov v farbe textu; farebné ikony programov (systémová lišta) ako sú
+    image wdg.{k}.icon {{ at: wp.x.{k} - 11, wp.y.{k} - 11 - if(wdg.{k}.hasval, 5, 0); size: 22, 22; tint: ink; opacity: wb.{k} * if(wdg.{k}.on, 100%, 55%); show: {k} < wdg.count and wdg.{k}.mono }}
+    image wdg.{k}.icon {{ at: wp.x.{k} - 12, wp.y.{k} - 12; size: 24, 24; opacity: wb.{k} * if(wdg.{k}.on, 100%, 55%); show: {k} < wdg.count and not wdg.{k}.mono }}
     text wdg.{k}.val {{ at: wp.x.{k}, wp.y.{k} + 11; anchor: center; size: 9; weight: 700; color: ink; opacity: 85% * wb.{k}; show: {k} < wdg.count }}
     zone ellipse w_hit.{k} {{ at: wp.x.{k}, wp.y.{k}; radius: 24; cursor: pointer; active: {k} < wdg.count and not dash }}
     on press w_hit.{k} {{ wdrag = {k}; wmoved = false; wd.w = W; wd.h = H }}
     on drag w_hit.{k} while wdrag == {k} and abs(drag.dx) + abs(drag.dy) > 6 {{ wmoved = true }}
     on release w_hit.{k} while wdrag == {k} and wmoved {{ wd.x = pointer.x; wd.y = pointer.y; impulse wwob.{k} 300; emit w_drop({k}); wmoved = false; wdrag = -1 }}
     on release w_hit.{k} while wdrag == {k} and not wmoved {{ wdrag = -1; impulse wwob.{k} 120; emit w_click({k}) }}
-    on press right w_hit.{k} while wdg.{k}.right {{ impulse wwob.{k} 120; emit w_right({k}) }}
+    on press right w_hit.{k} while wdg.{k}.right {{ impulse wwob.{k} 120; ctx.x = pointer.x - 20; ctx.y = pointer.y - 20 - 34 * 4; emit w_right({k}) }}
     on scroll w_hit.{k} while wdg.{k}.wheel {{ emit w_wheel({k} * 2 + if(wheel > 0, 1, 0)) }}
     on enter w_hit.{k} {{ wh.{k}: 1 }}
     on leave w_hit.{k} {{ wh.{k}: 0 }}
