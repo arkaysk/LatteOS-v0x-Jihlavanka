@@ -61,6 +61,9 @@ ShellRoot {
         command: ["sh", "-c", "lang=\"${1%%.*}\"; short=\"${lang%%_*}\"; seen=' '; "
                   + "for f in /usr/share/latteos/sessions/*.desktop /usr/share/wayland-sessions/*.desktop; do [ -f \"$f\" ] || continue; "
                   + "b=\"$(basename \"$f\" .desktop)\"; case \"$seen\" in *\" $b \"*) continue;; esac; seen=\"$seen$b \"; "
+                  // holý Hyprland nemá lištu ani cestu von myšou (iba Super+M) a gamescope-session-steam je LatteOS Hra
+                  // bez poistiek (návrat na plochu) — v zozname LatteOS nie sú
+                  + "case \"$b\" in hyprland|hyprland-uwsm|gamescope-session-steam) continue;; esac; "
                   + "grep -qiE '^(Hidden|NoDisplay)=true' \"$f\" && continue; "
                   + "awk -v L=\"$lang\" -v S=\"$short\" -v F=\"$(basename \"$f\" .desktop)\" -F= '"
                   + "$1==\"Name\"{n=$2} $1==\"Name[\"S\"]\"||$1==\"Name[\"L\"]\"{nl=$2} $1==\"Comment\"{c=$2} $1==\"Comment[\"S\"]\"||$1==\"Comment[\"L\"]\"{cl=$2} "
