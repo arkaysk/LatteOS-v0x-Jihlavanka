@@ -106,7 +106,7 @@ samostatný tekutý prvok.
   týždeň; čipy **Prehľad** (Digitálna pohoda s pruhmi aplikácií — klik = podrobnosti v Monitore, svetové hodiny s
   posunom, najbližší budík / minútka) · **Stopky** (štart/pauza, medzičas, vynulovať) · **Minútka** (kruh: koliesko
   nastaví minúty, klik spustí / pozastaví; predvoľby 1–45 min) · **Budíky** (prepínač, odstrániť; nový myšou —
-  koliesko nad hodinou a minútou, Pridať) · ⚙ Nastavenia › Dátum a čas. Dole ten istý riadok počasia.
+  koliesko nad hodinou a minútou, Pridať) · ⚙ Nastavenia › Dátum a čas.
   Údaje spoločné s klasickým LatteOS (`casovace.json`, `clock.conf`); **minútku a budíky v Goo stráži a zvoní logika
   Kvapiek** (upozornenie + zvuk), aj keď je menu zatvorené.
 - **Well-being = existujúca Digitálna pohoda** z klasického LatteOS (`session/apps/pohoda.qml`, inšpirovaná
@@ -114,7 +114,7 @@ samostatný tekutý prvok.
   aplikáciách). Nič nové sa nevymýšľa: v Kvapkách beží tiež (predtým ju `latte-kvapky` vypínal), v záložke Čas
   je súhrn dneška (čas pred obrazovkou, 3 najpoužívanejšie aplikácie) a tlačidlo „Podrobnosti v Monitore“ (1. 10.).
 
-### 4.2b DaNoGoo (dátum + upozornenia) — samostatná kvapka, dá sa presúvať (hotové 1. 10., kalendár ďalej)
+### 4.2b DaNoGoo (dátum + upozornenia) — samostatná kvapka, dá sa presúvať (hotové 1. 10.)
 - **Hotové (1. 10.):** kvapka s dátumom („st 30. 9.“) a počasím (ikona Tabler + teplota), predvolene dole vľavo
   od rohovej lišty; **ťahaním** k inému okraju (poloha v `spustac.json`); guľky počtu (žlté do 5, červeno-kávová
   s číslom); **hrozno** na lepkavom vlákne (6 najnovších, najnovšia najďalej, „Vymazať všetko (N)“); bobuľa vo
@@ -130,8 +130,11 @@ samostatný tekutý prvok.
   Bobule = kapsuly (ikona, aplikácia, nadpis); ľavý klik otvorí, pravý iba ak má upozornenie akcie, odhodenie = zahodiť.
   Farby: systémové/varovné červeno-kávové, nedôležité obyčajná káva, aplikácie podľa ikony — **otvorené:**
   čistá farba ikony, alebo káva zafarbená do nej; zatvárať aj Esc / klikom mimo?
-- **Pravý klik** = kalendár: mesiac, plánovač udalostí, úlohy, prepojené kalendáre (Google, iCloud, CalDAV, ICS cez
-  Noctaliu) — funkcia zo záložky Kalendár klasického LatteOS, **vzhľad Goo** (pravidlo 10).
+- **Pravý klik** = **karta kalendára a počasia** (hotové 1. 10., vzhľad Goo): vyrastie z kvapky (goo krk), mesiac od
+  pondelka (šípky, koliesko, Dnes; bodka = udalosť), udalosti a úlohy vybraného dňa (spoločné s klasickým LatteOS:
+  `events.json`, `todo.json`), nová udalosť „10:30 Porada“, úloha „! úloha“; pravý klik na udalosť = zmazať, klik na
+  úlohu = hotovo. Dole **počasie** (1. 10. presunuté z TimeGoo): miesto, Dnes / Zajtra / Týždeň, predpoveď.
+  Prepojené kalendáre (Google, iCloud, CalDAV, ICS) cez Noctaliu — v bode C.
 - **Farby upozornení** (1. 10., voľba A): **čistá farba ikony aplikácie** (nie káva dofarbená).
 - **Hrozno zavrie** klik na DaNoGoo, **Esc aj klik mimo** (1. 10.).
 
@@ -154,8 +157,8 @@ Karta z ucha TimeGoo, zhora nadol:
 - **AI = `latte-ai`** z klasického LatteOS (Nastavenia › Softvér › AI): webové čety (odpoveď v prehliadači s
   prihlásením), Ollama, domáci server, cloud s kľúčom (Claude, ChatGPT, Gemini, Mistral). Rozhovor ide ako JSON
   v argumente (`latte-ai chat '[…]'`), chyba sa vráti na stdout a ukáže v bubline.
-- **Úzky riadok počasia** úplne dole: miesto · **Dnes / Zajtra / Týždeň** (klik prepne súhrn) · **Detaily**
-  (predpoveď v obsahu: dnes a zajtra po 3 h, týždeň po dňoch). Open-Meteo, miesto z greeter.conf.
+- ~~Úzky riadok počasia~~ — **počasie je od 1. 10. v DaNoGoo** (náhľad na kvapke, podrobnosti v jej karte);
+  riadok čipov je úplne dole a obsah má viac miesta.
 - Aplikácie bez textu: **obľúbené ako dlaždice** (6 × 2) a pod nimi **Nedávne** (2 × 2, naposledy spustené), ako vo
   Windows. Vzhľad generuje `session/kvapky/spustac.py` (farby 14 tém, ikony → `ikony.luau`).
 - Upozornenia v spúšťači už nie sú (idú do DaNoGoo). Zámerne **nie** katalóg aplikácií ani prepínanie okien (Goobar).
@@ -247,12 +250,13 @@ Ide sa **po poradí**; nové nápady sa zapíšu na koniec (E), nerozbiehajú sa
    Prehľad · Stopky · Minútka · Budíky; well-being, časové pásma (`~/.config/latteos/clock.conf`), stopky, minútka,
    budíky zo spoločného `~/.local/share/latteos/casovace.json` (ten istý ako klasický LatteOS). **Minútku a budíky
    musí v Goo strážiť a zvoniť logika Kvapiek** — v klasickom to robí widget hodín na lište Noctalie, ktorý Goo nemá.
-2. ◐ **DaNoGoo** (4.2b) — kvapka a hrozno hotové 1. 10.; ostáva **kalendár** (pravý klik): kvapka s dátumom a počasím, guľky počtu upozornení, ľavý klik = pružina + hrozno upozornení
+2. ✅ (1. 10.) **DaNoGoo** (4.2b) — kvapka, hrozno, karta kalendára a počasia: kvapka s dátumom a počasím, guľky počtu upozornení, ľavý klik = pružina + hrozno upozornení
    (farba ikony aplikácie, zavrie klik na DaNoGoo / Esc / klik mimo), pravý klik = kalendár vo vzhľade Goo; kvapôčky
    upozornení z TimeGoo preč.
 3. **PowerGoo**: batéria (minibublinky), ponuka vo vzhľade Goo **+ položky Nastavenia a Monitor** (1. 10.).
-3b. **Kráľovná** (nápad používateľa 1. 10., čaká na potvrdenie návrhu): dôležitá kvapka pre **inštaláciu programov
-   (App Manager) a zariadenia (Device Manager)** — v Goo dnes nie je, kde inštalovať (spúšťač iba spúšťa).
+3b. **QueenGoo** (rozhodnuté 1. 10.): kvapka s **korunkou** (tvar ostáva kvapka — tvar koruny je k4ditanov);
+   **ľavý klik = premení sa na App Manager** (inštalácia programov), **pravý = Device Manager** (Správca zariadení).
+   V Goo dnes nie je, kde inštalovať (spúšťač iba spúšťa).
 4. **Ponuka okna** (pravý klik na guľôčku) vo vzhľade Goo.
 5. **Hyprglass** overiť naživo (sklenená téma v Goo) a doladiť.
 6. **Slovenský katalóg Noctalie** (bez neho Noctalia v LatteOS nenačíta slovenské preklady doplnkov) — pred

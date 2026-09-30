@@ -1402,6 +1402,129 @@ end)
 -- súbor s časovačmi sa môže zmeniť aj v klasickom LatteOS (iná relácia) — pri štarte a raz za minútu znova
 every(60000, function() if not (fact.dash and tonumber(fact.tview) == 1) then load_timers() end end)
 
+-- ── kalendár v karte DaNoGoo (pravý klik, 1. 10.): mesiac od pondelka, udalosti a úlohy (spoločné s klasickým
+-- LatteOS: ~/.local/share/latteos/events.json a todo.json, zápis cez `latte-kvapky uloz udalosti|ulohy`), počasie
+-- (presunuté z TimeGoo). Nová udalosť: „10:30 Porada“ (s časom), „Porada“ (celý deň), „! úloha“ (úloha na vybraný deň).
+local K = { y = nil, m = nil, sel = nil, events = {}, todos = {}, cells = {}, evrow = {}, tdrow = {} }
+local MONTHS = { "January", "February", "March", "April", "May", "June", "July", "August", "September", "October",
+                 "November", "December" }
+local function iso(t) return string.format("%04d-%02d-%02d", t.year, t.month, t.day) end
+local function cal_paint()
+    local now = os.date("*t")
+    K.y = K.y or now.year; K.m = K.m or now.month
+    K.sel = K.sel or iso(now)
+    local today = iso(now)
+    local first = os.date("*t", os.time({ year = K.y, month = K.m, day = 1, hour = 12 }))
+    local lead = (first.wday + 5) % 7                                   -- pondelok = 0
+    local has = {}
+    for _, e in ipairs(K.events) do if type(e) == "table" and e.date then has[e.date] = true end end
+    local out = {}
+    K.cells = {}
+    for i = 0, 41 do
+        local t = os.date("*t", os.time({ year = K.y, month = K.m, day = 1 - lead + i, hour = 12 }))
+        local d = iso(t)
+        K.cells[i + 1] = d
+        out[#out + 1] = { d = tostring(t.day), inm = t.month == K.m, today = d == today, sel = d == K.sel and d ~= today, dot = has[d] == true }
+    end
+    model.days = out
+    text.dc_month = tr(MONTHS[K.m]) .. " " .. K.y
+    local y, m, d = K.sel:match("(%d+)-(%d+)-(%d+)")
+    local st = os.date("*t", os.time({ year = tonumber(y), month = tonumber(m), day = tonumber(d), hour = 12 }))
+    text.dc_seltitle = (K.sel == today and (tr("Today") .. " · ") or "") .. tr(WDAY_FULL[st.wday]) .. " " .. tonumber(d) .. ". " .. tonumber(m) .. "."
+    local evs = {}
+    K.evrow = {}
+    for i, e in ipairs(K.events) do
+        if type(e) == "table" and e.date == K.sel then evs[#evs + 1] = { i = i, e = e } end
+    end
+    table.sort(evs, function(a, b) return (a.e.time or "") < (b.e.time or "") end)
+    local eo = {}
+    for n, it in ipairs(evs) do
+        if n > 5 then break end
+        K.evrow[n] = it.i
+        eo[n] = { hm = (it.e.time and it.e.time ~= "") and it.e.time or tr("All day"), title = it.e.title or "" }
+    end
+    model.evs = eo
+    local open, done = {}, {}
+    for i, t in ipairs(K.todos) do
+        if type(t) == "table" and ((t.date or "") == "" or t.date == K.sel) then
+            if t.done then done[#done + 1] = i else open[#open + 1] = i end
+        end
+    end
+    local to = {}
+    K.tdrow = {}
+    for _, list in ipairs({ open, done }) do
+        for _, i in ipairs(list) do
+            if #to < 5 then K.tdrow[#to + 1] = i; to[#to + 1] = { title = K.todos[i].title or "", done = K.todos[i].done == true } end
+        end
+    end
+    model.tds = to
+    text.dc_hint = tr("New event… 10:30 Meeting · ! task")
+end
+local function cal_load()
+    if not T.share then cal_paint(); return end
+    run("cat", { T.share .. "/latteos/events.json" }, function(out)
+        local ok, d = pcall(json.decode, out or "")
+        K.events = (ok and type(d) == "table") and d or {}
+        run("cat", { T.share .. "/latteos/todo.json" }, function(o2)
+            local ok2, d2 = pcall(json.decode, o2 or "")
+            K.todos = (ok2 and type(d2) == "table") and d2 or {}
+            cal_paint()
+        end)
+    end)
+end
+local function save_events()
+    table.sort(K.events, function(a, b) return ((a.date or "") .. (a.time or "")) < ((b.date or "") .. (b.time or "")) end)
+    run("latte-kvapky", { "uloz", "udalosti", json.encode(K.events) })
+end
+local function save_todos() run("latte-kvapky", { "uloz", "ulohy", json.encode(K.todos) }) end
+on("fact:dc_open", function(v) if v then K.y = nil; K.m = nil; K.sel = nil; cal_load(); if wx_repaint then wx_repaint() end end end)
+on("dc_nav", function(d)
+    d = tonumber(d) or 0
+    if d == 0 then local now = os.date("*t"); K.y, K.m, K.sel = now.year, now.month, iso(now)
+    else
+        K.m = K.m + d
+        if K.m < 1 then K.m = 12; K.y = K.y - 1 elseif K.m > 12 then K.m = 1; K.y = K.y + 1 end
+    end
+    cal_paint()
+end)
+on("dc_day", function(k)
+    local d = K.cells[(tonumber(k) or 0) + 1]
+    if not d then return end
+    K.sel = d
+    local y, m = d:match("(%d+)-(%d+)")
+    K.y, K.m = tonumber(y), tonumber(m)
+    cal_paint()
+end)
+on("dc_todo", function(k)
+    local i = K.tdrow[(tonumber(k) or 0) + 1]
+    if i and K.todos[i] then K.todos[i].done = not K.todos[i].done; save_todos(); cal_paint() end
+end)
+on("dc_ev_menu", function(k)
+    local i = K.evrow[(tonumber(k) or 0) + 1]
+    if not i then return end
+    menu({ { label = tr("Delete event"), run = function() table.remove(K.events, i); save_events(); cal_paint() end } })
+end)
+on("text:dc_new", function() fact.dc_empty = (text.dc_new or "") == "" end)
+on("dc_add", function()
+    local v = (text.dc_new or ""):gsub("^%s+", ""):gsub("%s+$", "")
+    if v == "" then return end
+    if v:sub(1, 1) == "!" then
+        local title = v:sub(2):gsub("^%s+", "")
+        if title ~= "" then K.todos[#K.todos + 1] = { title = title, done = false, date = K.sel }; save_todos() end
+    else
+        local h, mi, title = v:match("^(%d%d?):(%d%d)%s+(.+)$")
+        if h and tonumber(h) < 24 and tonumber(mi) < 60 then
+            K.events[#K.events + 1] = { date = K.sel, time = string.format("%02d:%02d", tonumber(h), tonumber(mi)), title = title }
+        else
+            K.events[#K.events + 1] = { date = K.sel, time = "", title = v }
+        end
+        save_events()
+    end
+    text.dc_new = ""
+    fact.dc_empty = true
+    cal_paint()
+end)
+
 -- ── kvapky widgetov (30. 9.): widgety Noctalie ako kvapky na okrajoch obrazovky ───────────────────────────────
 -- Akcie myši presne podľa Noctalie (src/shell/bar/widget_gesture_defaults.cpp): kde Noctalia pravý klik nemá, nemá
 -- ho ani kvapka. Vykonáva ich Noctalia (`noctalia msg …`), stav a ikonu dávajú služby pleamaru. Rozmiestnenie:
@@ -1787,6 +1910,7 @@ local function paint_wx()
     model.wx = out
 end
 on("wx_pick", function() paint_wx() end)
+wx_repaint = paint_wx                               -- karta DaNoGoo (kalendár je v súbore vyššie)
 local function weather()
     run("cat", { "/var/lib/latteos/greeter/greeter.conf" }, function(conf)
         conf = conf or ""

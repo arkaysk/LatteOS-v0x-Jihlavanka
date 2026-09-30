@@ -7,7 +7,7 @@
 #   latte-kvapky spat     späť na klasickú plochu (Noctalia a pomocníci ako pri štarte, bežné okraje okien)
 #   latte-kvapky stav     „kvapky“ alebo „klasicke“
 #   latte-kvapky okraj [dole|hore|vlavo|vpravo POLOHA]   okraj lišty-kvapky (presun ťahaním); bez argumentov vypíše
-#   latte-kvapky uloz spustac|widgety|casovace JSON   uloží nastavenia (logika Kvapiek nevie zapisovať súbory)
+#   latte-kvapky uloz spustac|widgety|casovace|udalosti|ulohy JSON   uloží nastavenia (logika Kvapiek nevie zapisovať súbory)
 #   latte-kvapky farba IKONA   číslo farby ikony v palete scény (hrozno upozornení DaNoGoo)
 #   latte-kvapky panel-poloha PANEL POLOHA   panel Noctalie pri kvapke (control_center|clipboard|wallpaper|session, bottom_right…)
 # Ostáva aj Kapsa (história schránky), App Manager a systémové ponuky (Ctrl+Alt+Del, kvapka vypínač).
@@ -190,6 +190,8 @@ case "${1:-}" in
             spustac) f="${XDG_CONFIG_HOME:-$HOME/.config}/latteos/spustac.json" ;;
             widgety) f="${XDG_CONFIG_HOME:-$HOME/.config}/latteos/kvapky-widgety.json" ;;
             casovace) f="${XDG_DATA_HOME:-$HOME/.local/share}/latteos/casovace.json" ;;   # stopky, minútka, budíky (spoločné s klasickým LatteOS)
+            udalosti) f="${XDG_DATA_HOME:-$HOME/.local/share}/latteos/events.json" ;;    # kalendár (spoločné s klasickým LatteOS)
+            ulohy) f="${XDG_DATA_HOME:-$HOME/.local/share}/latteos/todo.json" ;;
             *) echo "latte-kvapky uloz: neznámy súbor: ${2:-}" >&2; exit 1 ;;
         esac
         mkdir -p "$(dirname "$f")"; printf '%s\n' "${3:-}" > "$f.new" && mv -f "$f.new" "$f"
