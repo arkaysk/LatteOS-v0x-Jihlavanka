@@ -66,6 +66,9 @@ ako samostatná vrstva (layer-shell) nad jej lištou.
   = prilepí sa tam; pustiť uprostred = steká preč; pridať cez spúšťač (napr. „hlas“ → Hlasitosť · Kvapka).
   Rozmiestnenie `~/.config/latteos/kvapky-widgety.json`; šnúra okien sa zastaví pred kvapkami na tom istom okraji.
   Počet: `python3 session/kvapky/widgety.py N` (WMAX v kvapka.luau)
+- **ikony programov na pozadí** (systémová lišta, napr. Discord) sú kvapky tiež, samy sa objavia vedľa widgetov:
+  ľavý klik = aktivovať, pravý = ponuka programu ako goo kapsuly (aj podponuky), koliesko = program; odtiahnutá sa
+  zapamätá, pustená uprostred sa skryje (späť: napíš jej názov v spúšťači)
 - **živý tvor**: Hodiny, vypínač a hlava sa k priblíženému kurzoru nakloní, nad nimi sa nafúknu a netrpezlivo
   pulzujú; kvapky widgetov tiež
 - **hladina pri okraji ako v Marei** (30. 9., prevzaté z k4ditano/marea-plm, BSD-3): keď Hodiny vyplávajú do panela

@@ -616,7 +616,7 @@ local function menu(items)
     local out = {}
     for i, it in ipairs(items) do
         if i > 10 then break end
-        out[#out + 1] = { label = it.label, on = it.on and 1 or 0 }
+        out[#out + 1] = { label = it.label, on = it.on and 1 or 0, off = it.off == true }
         ctx_actions[#ctx_actions + 1] = it.run
     end
     model.ctx = out
@@ -792,14 +792,45 @@ local function wstate(id)
     end
     return STATIC_ICON[id] or "emblem-system-symbolic", "", true
 end
+-- ikony programov na pozadí (systémová lišta, StatusNotifierItem — napr. Discord) sú kvapky tiež: ľavý klik aktivuje,
+-- pravý ukáže ich ponuku (ako v Noctalii); miesto, kam ich používateľ odtiahol, si pamätá wlist („tray:ID“)
+local tray = {}
+local wshown = {}                                  -- čo je na obrazovke: { kind = "w" | "tray", entry, item }
+local function tray_place(it)
+    for _, w in ipairs(wlist) do if w.id == "tray:" .. it.id then return w end end
+    return nil
+end
+local function free_pos()
+    local pos = 0.95
+    local taken = true
+    while taken and pos > 0.4 do
+        taken = false
+        for _, e in ipairs(wshown) do
+            if e.entry.side == 0 and math.abs(e.entry.pos - pos) < 0.025 then taken = true end
+        end
+        if taken then pos = pos - 0.03 end
+    end
+    return pos
+end
 local function wpaint()
     local out = {}
+    wshown = {}
     for _, w in ipairs(wlist) do
         local d = WIDGETS[w.id]
         if d and #out < WMAX then
             local icon, val, on = wstate(w.id)
-            out[#out + 1] = { icon = icon, val = val, hasval = val ~= "", side = w.side, pos = w.pos,
+            wshown[#wshown + 1] = { kind = "w", entry = w }
+            out[#out + 1] = { icon = icon, val = val, hasval = val ~= "", mono = true, side = w.side, pos = w.pos,
                               right = d.right ~= nil, wheel = d.up ~= nil, on = on }
+        end
+    end
+    for _, it in ipairs(tray) do
+        local w = tray_place(it)
+        if not (w and w.hidden) and #out < WMAX then
+            local e = w or { id = "tray:" .. it.id, side = 0, pos = free_pos(), auto = true }
+            wshown[#wshown + 1] = { kind = "tray", entry = e, item = it }
+            out[#out + 1] = { icon = it.icon or "", val = "", hasval = false, mono = false, side = e.side, pos = e.pos,
+                              right = true, wheel = true, on = it.status ~= "Passive" }
         end
     end
     model.wdg = out
@@ -810,29 +841,63 @@ local function nmsg(action)
     for word in action:gmatch("%S+") do args[#args + 1] = word end
     run("noctalia", args)
 end
-local function wnth(k) return wlist[(k or 0) + 1] end
-on("w_click", function(k) local w = wnth(k); if w then nmsg(WIDGETS[w.id].left) end end)
-on("w_right", function(k) local w = wnth(k); if w and WIDGETS[w.id].right then nmsg(WIDGETS[w.id].right) end end)
+local function wnth(k) return wshown[(k or 0) + 1] end
+on("w_click", function(k)
+    local e = wnth(k)
+    if not e then return end
+    if e.kind == "tray" then pcall(sys.call, "tray.activate", e.item.key) else nmsg(WIDGETS[e.entry.id].left) end
+end)
+-- ponuka ikony z lišty: strom (dbusmenu) ako naše kapsuly; položka s podponukou ju otvorí na tom istom mieste
+local function tray_menu(key, nodes)
+    local items = {}
+    for _, n in ipairs(nodes or {}) do
+        if not n.separator and (n.label or "") ~= "" then
+            local label = (n.label or ""):gsub("_", "")
+            local kids = n.children
+            items[#items + 1] = { label = label .. ((kids and #kids > 0) and "  ›" or ""), on = n.checked == true, off = n.enabled == false,
+                                  run = function()
+                                      if n.enabled == false then return end
+                                      if kids and #kids > 0 then tray_menu(key, kids)
+                                      else pcall(sys.call, "tray.menu_click", key, n.id) end
+                                  end }
+        end
+    end
+    menu(items)
+end
+on("w_right", function(k)
+    local e = wnth(k)
+    if not e then return end
+    if e.kind == "tray" then
+        local ok, nodes = pcall(sys.ask, "tray.menu", e.item.key)
+        if ok and type(nodes) == "table" and #nodes > 0 then tray_menu(e.item.key, nodes)
+        else pcall(sys.call, "tray.context", e.item.key) end            -- program bez dbusmenu: svoju ponuku ukáže sám
+    elseif WIDGETS[e.entry.id].right then nmsg(WIDGETS[e.entry.id].right) end
+end)
 on("w_wheel", function(code)
     code = tonumber(code) or 0
-    local w = wnth(math.floor(code / 2))
-    if not w then return end
-    local d = WIDGETS[w.id]
-    local a = (code % 2 == 1) and d.up or d.down
+    local e = wnth(math.floor(code / 2))
+    if not e then return end
+    local up = code % 2 == 1
+    if e.kind == "tray" then pcall(sys.call, "tray.scroll", e.item.key, up and 1 or -1); return end
+    local d = WIDGETS[e.entry.id]
+    local a = up and d.up or d.down
     if a then nmsg(a) end
 end)
 -- pustená kvapka: k najbližšiemu okraju; ďaleko od všetkých (nad 170 px) steká preč
 on("w_drop", function(k)
-    local i = (k or 0) + 1
-    local w = wlist[i]
-    if not w then return end
+    local e = wnth(k)
+    if not e then return end
+    local w = e.entry
+    if e.kind == "tray" and w.auto then w.auto = nil; wlist[#wlist + 1] = w end   -- odteraz si miesto pamätá
+    local i = nil
+    for n, x in ipairs(wlist) do if x == w then i = n end end
     local x, y = tonumber(fact["wd.x"]) or 0, tonumber(fact["wd.y"]) or 0
     local W, H = tonumber(fact["wd.w"]) or 1920, tonumber(fact["wd.h"]) or 1080
     local d = { H - y, y, x, W - x }
     local side, best = 0, d[1]
     for s = 2, 4 do if d[s] < best then side, best = s - 1, d[s] end end
     if best > 170 then
-        table.remove(wlist, i)
+        if e.kind == "tray" then w.hidden = true elseif i then table.remove(wlist, i) end
     else
         w.side = side
         w.pos = math.max(0.02, math.min(0.98, (side <= 1) and (x / W) or (y / H)))
@@ -841,6 +906,10 @@ on("w_drop", function(k)
 end)
 -- pridať / odobrať zo spúšťača (riadok „Kvapka“)
 function widget_toggle(id)
+    if id:sub(1, 5) == "tray:" then
+        for _, w in ipairs(wlist) do if w.id == id then w.hidden = not w.hidden or nil end end
+        wsave(); wpaint(); layout(); return
+    end
     for i, w in ipairs(wlist) do
         if w.id == id then table.remove(wlist, i); wsave(); wpaint(); layout(); return end
     end
@@ -866,6 +935,13 @@ function widget_rows(q)
             rows[#rows + 1] = { id = id, name = name, on = on, icon = (wstate(id)) }
         end
     end
+    for _, it in ipairs(tray) do
+        local t = it.title or it.id or ""
+        if t ~= "" and (t:lower():find(q, 1, true) or (it.id or ""):lower():find(q, 1, true)) then
+            local w = tray_place(it)
+            rows[#rows + 1] = { id = "tray:" .. it.id, name = t, on = not (w and w.hidden), icon = it.icon }
+        end
+    end
     return rows
 end
 -- najbližšia kvapka widgetu na tom istom okraji ako lišta (pozdĺž okraja, v px) — šnúra okien ju neprekryje
@@ -887,8 +963,8 @@ local function wload()
         if ok and type(c) == "table" and type(c.list) == "table" then
             wlist = {}
             for _, w in ipairs(c.list) do
-                if type(w) == "table" and WIDGETS[w.id] and #wlist < WMAX then
-                    wlist[#wlist + 1] = { id = w.id, side = tonumber(w.side) or 0, pos = tonumber(w.pos) or 0.9 }
+                if type(w) == "table" and (WIDGETS[w.id] or tostring(w.id):sub(1, 5) == "tray:") and #wlist < 40 then
+                    wlist[#wlist + 1] = { id = w.id, side = tonumber(w.side) or 0, pos = tonumber(w.pos) or 0.9, hidden = w.hidden == true or nil }
                 end
             end
         else
@@ -905,6 +981,7 @@ sys.watch("network", function(v) st.net = v or {}; wpaint() end)
 sys.watch("bluetooth", function(v) st.bt = v or {}; wpaint() end)
 sys.watch("battery", function(v) st.bat = v or {}; wpaint() end)
 sys.watch("media", function(v) st.media = v or {}; wpaint() end)
+sys.watch("tray", function(list) tray = list or {}; wpaint() end)
 -- vyťaženie CPU (kvapka Systém): z /proc/stat každé 3 s, iba keď tá kvapka je
 local cpu_prev = nil
 every(3000, function()

@@ -29,7 +29,7 @@ scene Kvapka {
         rate: 60        // pokojný pohyb kvapky nepotrebuje 144 Hz: 12 % → 6 % jadra na RX 640
         keyboard: on_demand while dash   // hľadanie v dashboarde
     }
-    permissions { services: "window", "window.*", "clock", "notifications", "notifications.*", "apps", "apps.*", "network", "network.*", "bluetooth", "bluetooth.*", "audio", "audio.*", "battery", "media"; run: "noctalia", "latte-app", "hyprctl", "cat", "printenv", "curl", "latte-spustac", "latte-ponuka", "latte-kvapky", "fd", "xdg-open" }
+    permissions { services: "window", "window.*", "clock", "notifications", "notifications.*", "apps", "apps.*", "network", "network.*", "bluetooth", "bluetooth.*", "audio", "audio.*", "battery", "media", "tray", "tray.*"; run: "noctalia", "latte-app", "hyprctl", "cat", "printenv", "curl", "latte-spustac", "latte-ponuka", "latte-kvapky", "fd", "xdg-open" }
 
     // zoznam okien priamo zo služby (wlr-foreign-toplevel), bez logiky; ikona podľa triedy okna
     model wins max 48 { id: text; title: text; class: text; active: bool; minimized: bool }
@@ -66,7 +66,7 @@ scene Kvapka {
     model favs max 18 { name: text; icon: image 40, 40 }
     fact fav_hot = -1
     // kontextová ponuka v spúšťači (pravý klik): položky a miesto dáva logika; on 1 = zaškrtnuté
-    model ctx max 10 { label: text; on: number }
+    model ctx max 10 { label: text; on: number; off: bool }
     fact ctx_open = false
     fact ctx.x = 0
     fact ctx.y = 0
@@ -674,16 +674,15 @@ scene Kvapka {
         color: mix(coffee, #f3ebdd, 0.08)
         rim: 25%
         shadow: 0, 8, 22, 35%
-        opacity: if(ctx_open, 1, 0) * dshow
+        opacity: if(ctx_open, 1, 0)
         box { at: cx0 + 120, cy0 + ctx.count * 17; size: 240, ctx.count * 34 + 10; corner: 18 }
     }
     group {
-        opacity: dshow
         show: ctx_open
         repeat k in 0..10 {
             box { at: cx0 + 120, cy0 + 17 + k * 34; size: 228, 30; corner: 14; color: #ffffff; opacity: if(ctx_hot == k, 12%, 0); show: k < ctx.count }
             text "✓" { at: cx0 + 20, cy0 + 17 + k * 34; anchor: center; size: 12; weight: 800; color: #e4b283; show: k < ctx.count and ctx.$k.on == 1 }
-            text ctx.$k.label { at: cx0 + 36, cy0 + 17 + k * 34; anchor: left center; width: 196; lines: 1; size: 12.5; color: ink; show: k < ctx.count }
+            text ctx.$k.label { at: cx0 + 36, cy0 + 17 + k * 34; anchor: left center; width: 196; lines: 1; size: 12.5; color: ink; opacity: if(ctx.$k.off, 45%, 100%); show: k < ctx.count }
         }
     }
     // spúšťač: klikateľné miesta (navrchu)
@@ -703,16 +702,16 @@ scene Kvapka {
     }
     zone box clear_hit { at: d0.x + cw - 40, d0.y + 158; size: 90, 24; cursor: pointer; active: dash and tab == 0 and not typing and notes.count > 0 }
     // otvorená ponuka: klik mimo nej ju zavrie (pod jej riadkami)
-    zone box ctx_away { at: W / 2, H / 2; size: W, H; active: dash and ctx_open }
+    zone box ctx_away { at: W / 2, H / 2; size: W, H; active: ctx_open }
     repeat k in 0..10 {
-        zone box ctx_row.$k { at: cx0 + 120, cy0 + 17 + k * 34; size: 228, 30; cursor: pointer; active: dash and ctx_open and k < ctx.count }
+        zone box ctx_row.$k { at: cx0 + 120, cy0 + 17 + k * 34; size: 228, 30; cursor: pointer; active: ctx_open and k < ctx.count }
     }
 
     // >>> kvapky widgetov (widgety.py)
     // Každá kvapka visí z okraja (side 0 dole, 1 hore, 2 vľavo, 3 vpravo; pos 0..1 pozdĺž neho) na hladine s krkom,
     // ku kurzoru sa nakloní a nad ňou sa nafúkne (živý tvor). Chytiť a pustiť pri inom okraji = prilepí sa tam;
     // pustiť ďaleko od okrajov = steká preč (odstráni sa, späť cez spúšťač). Kliky podľa Noctalie (logika).
-    model wdg max 12 { icon: image 22, 22; val: text; hasval: bool; side: number; pos: number; right: bool; wheel: bool; on: bool }
+    model wdg max 12 { icon: image 22, 22; val: text; hasval: bool; mono: bool; side: number; pos: number; right: bool; wheel: bool; on: bool }
     fact wdrag = -1
     fact wmoved = false
     fact wd.x = 0
@@ -995,135 +994,159 @@ scene Kvapka {
         ellipse { at: wa.x.11, wa.y.11; radius: 22 * wsheet.11; blend: 14 }
         ellipse { at: wp.x.11, wp.y.11; radius: wr.11; scale: 1 + wjit.11, 1 - wjit.11; blend: 16 * wsheet.11 + 2 }
     }
-    image wdg.0.icon { at: wp.x.0 - 11, wp.y.0 - 11 - if(wdg.0.hasval, 5, 0); size: 22, 22; tint: ink; opacity: wb.0 * if(wdg.0.on, 100%, 55%); show: 0 < wdg.count }
+    // symbolické ikony widgetov v farbe textu; farebné ikony programov (systémová lišta) ako sú
+    image wdg.0.icon { at: wp.x.0 - 11, wp.y.0 - 11 - if(wdg.0.hasval, 5, 0); size: 22, 22; tint: ink; opacity: wb.0 * if(wdg.0.on, 100%, 55%); show: 0 < wdg.count and wdg.0.mono }
+    image wdg.0.icon { at: wp.x.0 - 12, wp.y.0 - 12; size: 24, 24; opacity: wb.0 * if(wdg.0.on, 100%, 55%); show: 0 < wdg.count and not wdg.0.mono }
     text wdg.0.val { at: wp.x.0, wp.y.0 + 11; anchor: center; size: 9; weight: 700; color: ink; opacity: 85% * wb.0; show: 0 < wdg.count }
     zone ellipse w_hit.0 { at: wp.x.0, wp.y.0; radius: 24; cursor: pointer; active: 0 < wdg.count and not dash }
     on press w_hit.0 { wdrag = 0; wmoved = false; wd.w = W; wd.h = H }
     on drag w_hit.0 while wdrag == 0 and abs(drag.dx) + abs(drag.dy) > 6 { wmoved = true }
     on release w_hit.0 while wdrag == 0 and wmoved { wd.x = pointer.x; wd.y = pointer.y; impulse wwob.0 300; emit w_drop(0); wmoved = false; wdrag = -1 }
     on release w_hit.0 while wdrag == 0 and not wmoved { wdrag = -1; impulse wwob.0 120; emit w_click(0) }
-    on press right w_hit.0 while wdg.0.right { impulse wwob.0 120; emit w_right(0) }
+    on press right w_hit.0 while wdg.0.right { impulse wwob.0 120; ctx.x = pointer.x - 20; ctx.y = pointer.y - 20 - 34 * 4; emit w_right(0) }
     on scroll w_hit.0 while wdg.0.wheel { emit w_wheel(0 * 2 + if(wheel > 0, 1, 0)) }
     on enter w_hit.0 { wh.0: 1 }
     on leave w_hit.0 { wh.0: 0 }
-    image wdg.1.icon { at: wp.x.1 - 11, wp.y.1 - 11 - if(wdg.1.hasval, 5, 0); size: 22, 22; tint: ink; opacity: wb.1 * if(wdg.1.on, 100%, 55%); show: 1 < wdg.count }
+    // symbolické ikony widgetov v farbe textu; farebné ikony programov (systémová lišta) ako sú
+    image wdg.1.icon { at: wp.x.1 - 11, wp.y.1 - 11 - if(wdg.1.hasval, 5, 0); size: 22, 22; tint: ink; opacity: wb.1 * if(wdg.1.on, 100%, 55%); show: 1 < wdg.count and wdg.1.mono }
+    image wdg.1.icon { at: wp.x.1 - 12, wp.y.1 - 12; size: 24, 24; opacity: wb.1 * if(wdg.1.on, 100%, 55%); show: 1 < wdg.count and not wdg.1.mono }
     text wdg.1.val { at: wp.x.1, wp.y.1 + 11; anchor: center; size: 9; weight: 700; color: ink; opacity: 85% * wb.1; show: 1 < wdg.count }
     zone ellipse w_hit.1 { at: wp.x.1, wp.y.1; radius: 24; cursor: pointer; active: 1 < wdg.count and not dash }
     on press w_hit.1 { wdrag = 1; wmoved = false; wd.w = W; wd.h = H }
     on drag w_hit.1 while wdrag == 1 and abs(drag.dx) + abs(drag.dy) > 6 { wmoved = true }
     on release w_hit.1 while wdrag == 1 and wmoved { wd.x = pointer.x; wd.y = pointer.y; impulse wwob.1 300; emit w_drop(1); wmoved = false; wdrag = -1 }
     on release w_hit.1 while wdrag == 1 and not wmoved { wdrag = -1; impulse wwob.1 120; emit w_click(1) }
-    on press right w_hit.1 while wdg.1.right { impulse wwob.1 120; emit w_right(1) }
+    on press right w_hit.1 while wdg.1.right { impulse wwob.1 120; ctx.x = pointer.x - 20; ctx.y = pointer.y - 20 - 34 * 4; emit w_right(1) }
     on scroll w_hit.1 while wdg.1.wheel { emit w_wheel(1 * 2 + if(wheel > 0, 1, 0)) }
     on enter w_hit.1 { wh.1: 1 }
     on leave w_hit.1 { wh.1: 0 }
-    image wdg.2.icon { at: wp.x.2 - 11, wp.y.2 - 11 - if(wdg.2.hasval, 5, 0); size: 22, 22; tint: ink; opacity: wb.2 * if(wdg.2.on, 100%, 55%); show: 2 < wdg.count }
+    // symbolické ikony widgetov v farbe textu; farebné ikony programov (systémová lišta) ako sú
+    image wdg.2.icon { at: wp.x.2 - 11, wp.y.2 - 11 - if(wdg.2.hasval, 5, 0); size: 22, 22; tint: ink; opacity: wb.2 * if(wdg.2.on, 100%, 55%); show: 2 < wdg.count and wdg.2.mono }
+    image wdg.2.icon { at: wp.x.2 - 12, wp.y.2 - 12; size: 24, 24; opacity: wb.2 * if(wdg.2.on, 100%, 55%); show: 2 < wdg.count and not wdg.2.mono }
     text wdg.2.val { at: wp.x.2, wp.y.2 + 11; anchor: center; size: 9; weight: 700; color: ink; opacity: 85% * wb.2; show: 2 < wdg.count }
     zone ellipse w_hit.2 { at: wp.x.2, wp.y.2; radius: 24; cursor: pointer; active: 2 < wdg.count and not dash }
     on press w_hit.2 { wdrag = 2; wmoved = false; wd.w = W; wd.h = H }
     on drag w_hit.2 while wdrag == 2 and abs(drag.dx) + abs(drag.dy) > 6 { wmoved = true }
     on release w_hit.2 while wdrag == 2 and wmoved { wd.x = pointer.x; wd.y = pointer.y; impulse wwob.2 300; emit w_drop(2); wmoved = false; wdrag = -1 }
     on release w_hit.2 while wdrag == 2 and not wmoved { wdrag = -1; impulse wwob.2 120; emit w_click(2) }
-    on press right w_hit.2 while wdg.2.right { impulse wwob.2 120; emit w_right(2) }
+    on press right w_hit.2 while wdg.2.right { impulse wwob.2 120; ctx.x = pointer.x - 20; ctx.y = pointer.y - 20 - 34 * 4; emit w_right(2) }
     on scroll w_hit.2 while wdg.2.wheel { emit w_wheel(2 * 2 + if(wheel > 0, 1, 0)) }
     on enter w_hit.2 { wh.2: 1 }
     on leave w_hit.2 { wh.2: 0 }
-    image wdg.3.icon { at: wp.x.3 - 11, wp.y.3 - 11 - if(wdg.3.hasval, 5, 0); size: 22, 22; tint: ink; opacity: wb.3 * if(wdg.3.on, 100%, 55%); show: 3 < wdg.count }
+    // symbolické ikony widgetov v farbe textu; farebné ikony programov (systémová lišta) ako sú
+    image wdg.3.icon { at: wp.x.3 - 11, wp.y.3 - 11 - if(wdg.3.hasval, 5, 0); size: 22, 22; tint: ink; opacity: wb.3 * if(wdg.3.on, 100%, 55%); show: 3 < wdg.count and wdg.3.mono }
+    image wdg.3.icon { at: wp.x.3 - 12, wp.y.3 - 12; size: 24, 24; opacity: wb.3 * if(wdg.3.on, 100%, 55%); show: 3 < wdg.count and not wdg.3.mono }
     text wdg.3.val { at: wp.x.3, wp.y.3 + 11; anchor: center; size: 9; weight: 700; color: ink; opacity: 85% * wb.3; show: 3 < wdg.count }
     zone ellipse w_hit.3 { at: wp.x.3, wp.y.3; radius: 24; cursor: pointer; active: 3 < wdg.count and not dash }
     on press w_hit.3 { wdrag = 3; wmoved = false; wd.w = W; wd.h = H }
     on drag w_hit.3 while wdrag == 3 and abs(drag.dx) + abs(drag.dy) > 6 { wmoved = true }
     on release w_hit.3 while wdrag == 3 and wmoved { wd.x = pointer.x; wd.y = pointer.y; impulse wwob.3 300; emit w_drop(3); wmoved = false; wdrag = -1 }
     on release w_hit.3 while wdrag == 3 and not wmoved { wdrag = -1; impulse wwob.3 120; emit w_click(3) }
-    on press right w_hit.3 while wdg.3.right { impulse wwob.3 120; emit w_right(3) }
+    on press right w_hit.3 while wdg.3.right { impulse wwob.3 120; ctx.x = pointer.x - 20; ctx.y = pointer.y - 20 - 34 * 4; emit w_right(3) }
     on scroll w_hit.3 while wdg.3.wheel { emit w_wheel(3 * 2 + if(wheel > 0, 1, 0)) }
     on enter w_hit.3 { wh.3: 1 }
     on leave w_hit.3 { wh.3: 0 }
-    image wdg.4.icon { at: wp.x.4 - 11, wp.y.4 - 11 - if(wdg.4.hasval, 5, 0); size: 22, 22; tint: ink; opacity: wb.4 * if(wdg.4.on, 100%, 55%); show: 4 < wdg.count }
+    // symbolické ikony widgetov v farbe textu; farebné ikony programov (systémová lišta) ako sú
+    image wdg.4.icon { at: wp.x.4 - 11, wp.y.4 - 11 - if(wdg.4.hasval, 5, 0); size: 22, 22; tint: ink; opacity: wb.4 * if(wdg.4.on, 100%, 55%); show: 4 < wdg.count and wdg.4.mono }
+    image wdg.4.icon { at: wp.x.4 - 12, wp.y.4 - 12; size: 24, 24; opacity: wb.4 * if(wdg.4.on, 100%, 55%); show: 4 < wdg.count and not wdg.4.mono }
     text wdg.4.val { at: wp.x.4, wp.y.4 + 11; anchor: center; size: 9; weight: 700; color: ink; opacity: 85% * wb.4; show: 4 < wdg.count }
     zone ellipse w_hit.4 { at: wp.x.4, wp.y.4; radius: 24; cursor: pointer; active: 4 < wdg.count and not dash }
     on press w_hit.4 { wdrag = 4; wmoved = false; wd.w = W; wd.h = H }
     on drag w_hit.4 while wdrag == 4 and abs(drag.dx) + abs(drag.dy) > 6 { wmoved = true }
     on release w_hit.4 while wdrag == 4 and wmoved { wd.x = pointer.x; wd.y = pointer.y; impulse wwob.4 300; emit w_drop(4); wmoved = false; wdrag = -1 }
     on release w_hit.4 while wdrag == 4 and not wmoved { wdrag = -1; impulse wwob.4 120; emit w_click(4) }
-    on press right w_hit.4 while wdg.4.right { impulse wwob.4 120; emit w_right(4) }
+    on press right w_hit.4 while wdg.4.right { impulse wwob.4 120; ctx.x = pointer.x - 20; ctx.y = pointer.y - 20 - 34 * 4; emit w_right(4) }
     on scroll w_hit.4 while wdg.4.wheel { emit w_wheel(4 * 2 + if(wheel > 0, 1, 0)) }
     on enter w_hit.4 { wh.4: 1 }
     on leave w_hit.4 { wh.4: 0 }
-    image wdg.5.icon { at: wp.x.5 - 11, wp.y.5 - 11 - if(wdg.5.hasval, 5, 0); size: 22, 22; tint: ink; opacity: wb.5 * if(wdg.5.on, 100%, 55%); show: 5 < wdg.count }
+    // symbolické ikony widgetov v farbe textu; farebné ikony programov (systémová lišta) ako sú
+    image wdg.5.icon { at: wp.x.5 - 11, wp.y.5 - 11 - if(wdg.5.hasval, 5, 0); size: 22, 22; tint: ink; opacity: wb.5 * if(wdg.5.on, 100%, 55%); show: 5 < wdg.count and wdg.5.mono }
+    image wdg.5.icon { at: wp.x.5 - 12, wp.y.5 - 12; size: 24, 24; opacity: wb.5 * if(wdg.5.on, 100%, 55%); show: 5 < wdg.count and not wdg.5.mono }
     text wdg.5.val { at: wp.x.5, wp.y.5 + 11; anchor: center; size: 9; weight: 700; color: ink; opacity: 85% * wb.5; show: 5 < wdg.count }
     zone ellipse w_hit.5 { at: wp.x.5, wp.y.5; radius: 24; cursor: pointer; active: 5 < wdg.count and not dash }
     on press w_hit.5 { wdrag = 5; wmoved = false; wd.w = W; wd.h = H }
     on drag w_hit.5 while wdrag == 5 and abs(drag.dx) + abs(drag.dy) > 6 { wmoved = true }
     on release w_hit.5 while wdrag == 5 and wmoved { wd.x = pointer.x; wd.y = pointer.y; impulse wwob.5 300; emit w_drop(5); wmoved = false; wdrag = -1 }
     on release w_hit.5 while wdrag == 5 and not wmoved { wdrag = -1; impulse wwob.5 120; emit w_click(5) }
-    on press right w_hit.5 while wdg.5.right { impulse wwob.5 120; emit w_right(5) }
+    on press right w_hit.5 while wdg.5.right { impulse wwob.5 120; ctx.x = pointer.x - 20; ctx.y = pointer.y - 20 - 34 * 4; emit w_right(5) }
     on scroll w_hit.5 while wdg.5.wheel { emit w_wheel(5 * 2 + if(wheel > 0, 1, 0)) }
     on enter w_hit.5 { wh.5: 1 }
     on leave w_hit.5 { wh.5: 0 }
-    image wdg.6.icon { at: wp.x.6 - 11, wp.y.6 - 11 - if(wdg.6.hasval, 5, 0); size: 22, 22; tint: ink; opacity: wb.6 * if(wdg.6.on, 100%, 55%); show: 6 < wdg.count }
+    // symbolické ikony widgetov v farbe textu; farebné ikony programov (systémová lišta) ako sú
+    image wdg.6.icon { at: wp.x.6 - 11, wp.y.6 - 11 - if(wdg.6.hasval, 5, 0); size: 22, 22; tint: ink; opacity: wb.6 * if(wdg.6.on, 100%, 55%); show: 6 < wdg.count and wdg.6.mono }
+    image wdg.6.icon { at: wp.x.6 - 12, wp.y.6 - 12; size: 24, 24; opacity: wb.6 * if(wdg.6.on, 100%, 55%); show: 6 < wdg.count and not wdg.6.mono }
     text wdg.6.val { at: wp.x.6, wp.y.6 + 11; anchor: center; size: 9; weight: 700; color: ink; opacity: 85% * wb.6; show: 6 < wdg.count }
     zone ellipse w_hit.6 { at: wp.x.6, wp.y.6; radius: 24; cursor: pointer; active: 6 < wdg.count and not dash }
     on press w_hit.6 { wdrag = 6; wmoved = false; wd.w = W; wd.h = H }
     on drag w_hit.6 while wdrag == 6 and abs(drag.dx) + abs(drag.dy) > 6 { wmoved = true }
     on release w_hit.6 while wdrag == 6 and wmoved { wd.x = pointer.x; wd.y = pointer.y; impulse wwob.6 300; emit w_drop(6); wmoved = false; wdrag = -1 }
     on release w_hit.6 while wdrag == 6 and not wmoved { wdrag = -1; impulse wwob.6 120; emit w_click(6) }
-    on press right w_hit.6 while wdg.6.right { impulse wwob.6 120; emit w_right(6) }
+    on press right w_hit.6 while wdg.6.right { impulse wwob.6 120; ctx.x = pointer.x - 20; ctx.y = pointer.y - 20 - 34 * 4; emit w_right(6) }
     on scroll w_hit.6 while wdg.6.wheel { emit w_wheel(6 * 2 + if(wheel > 0, 1, 0)) }
     on enter w_hit.6 { wh.6: 1 }
     on leave w_hit.6 { wh.6: 0 }
-    image wdg.7.icon { at: wp.x.7 - 11, wp.y.7 - 11 - if(wdg.7.hasval, 5, 0); size: 22, 22; tint: ink; opacity: wb.7 * if(wdg.7.on, 100%, 55%); show: 7 < wdg.count }
+    // symbolické ikony widgetov v farbe textu; farebné ikony programov (systémová lišta) ako sú
+    image wdg.7.icon { at: wp.x.7 - 11, wp.y.7 - 11 - if(wdg.7.hasval, 5, 0); size: 22, 22; tint: ink; opacity: wb.7 * if(wdg.7.on, 100%, 55%); show: 7 < wdg.count and wdg.7.mono }
+    image wdg.7.icon { at: wp.x.7 - 12, wp.y.7 - 12; size: 24, 24; opacity: wb.7 * if(wdg.7.on, 100%, 55%); show: 7 < wdg.count and not wdg.7.mono }
     text wdg.7.val { at: wp.x.7, wp.y.7 + 11; anchor: center; size: 9; weight: 700; color: ink; opacity: 85% * wb.7; show: 7 < wdg.count }
     zone ellipse w_hit.7 { at: wp.x.7, wp.y.7; radius: 24; cursor: pointer; active: 7 < wdg.count and not dash }
     on press w_hit.7 { wdrag = 7; wmoved = false; wd.w = W; wd.h = H }
     on drag w_hit.7 while wdrag == 7 and abs(drag.dx) + abs(drag.dy) > 6 { wmoved = true }
     on release w_hit.7 while wdrag == 7 and wmoved { wd.x = pointer.x; wd.y = pointer.y; impulse wwob.7 300; emit w_drop(7); wmoved = false; wdrag = -1 }
     on release w_hit.7 while wdrag == 7 and not wmoved { wdrag = -1; impulse wwob.7 120; emit w_click(7) }
-    on press right w_hit.7 while wdg.7.right { impulse wwob.7 120; emit w_right(7) }
+    on press right w_hit.7 while wdg.7.right { impulse wwob.7 120; ctx.x = pointer.x - 20; ctx.y = pointer.y - 20 - 34 * 4; emit w_right(7) }
     on scroll w_hit.7 while wdg.7.wheel { emit w_wheel(7 * 2 + if(wheel > 0, 1, 0)) }
     on enter w_hit.7 { wh.7: 1 }
     on leave w_hit.7 { wh.7: 0 }
-    image wdg.8.icon { at: wp.x.8 - 11, wp.y.8 - 11 - if(wdg.8.hasval, 5, 0); size: 22, 22; tint: ink; opacity: wb.8 * if(wdg.8.on, 100%, 55%); show: 8 < wdg.count }
+    // symbolické ikony widgetov v farbe textu; farebné ikony programov (systémová lišta) ako sú
+    image wdg.8.icon { at: wp.x.8 - 11, wp.y.8 - 11 - if(wdg.8.hasval, 5, 0); size: 22, 22; tint: ink; opacity: wb.8 * if(wdg.8.on, 100%, 55%); show: 8 < wdg.count and wdg.8.mono }
+    image wdg.8.icon { at: wp.x.8 - 12, wp.y.8 - 12; size: 24, 24; opacity: wb.8 * if(wdg.8.on, 100%, 55%); show: 8 < wdg.count and not wdg.8.mono }
     text wdg.8.val { at: wp.x.8, wp.y.8 + 11; anchor: center; size: 9; weight: 700; color: ink; opacity: 85% * wb.8; show: 8 < wdg.count }
     zone ellipse w_hit.8 { at: wp.x.8, wp.y.8; radius: 24; cursor: pointer; active: 8 < wdg.count and not dash }
     on press w_hit.8 { wdrag = 8; wmoved = false; wd.w = W; wd.h = H }
     on drag w_hit.8 while wdrag == 8 and abs(drag.dx) + abs(drag.dy) > 6 { wmoved = true }
     on release w_hit.8 while wdrag == 8 and wmoved { wd.x = pointer.x; wd.y = pointer.y; impulse wwob.8 300; emit w_drop(8); wmoved = false; wdrag = -1 }
     on release w_hit.8 while wdrag == 8 and not wmoved { wdrag = -1; impulse wwob.8 120; emit w_click(8) }
-    on press right w_hit.8 while wdg.8.right { impulse wwob.8 120; emit w_right(8) }
+    on press right w_hit.8 while wdg.8.right { impulse wwob.8 120; ctx.x = pointer.x - 20; ctx.y = pointer.y - 20 - 34 * 4; emit w_right(8) }
     on scroll w_hit.8 while wdg.8.wheel { emit w_wheel(8 * 2 + if(wheel > 0, 1, 0)) }
     on enter w_hit.8 { wh.8: 1 }
     on leave w_hit.8 { wh.8: 0 }
-    image wdg.9.icon { at: wp.x.9 - 11, wp.y.9 - 11 - if(wdg.9.hasval, 5, 0); size: 22, 22; tint: ink; opacity: wb.9 * if(wdg.9.on, 100%, 55%); show: 9 < wdg.count }
+    // symbolické ikony widgetov v farbe textu; farebné ikony programov (systémová lišta) ako sú
+    image wdg.9.icon { at: wp.x.9 - 11, wp.y.9 - 11 - if(wdg.9.hasval, 5, 0); size: 22, 22; tint: ink; opacity: wb.9 * if(wdg.9.on, 100%, 55%); show: 9 < wdg.count and wdg.9.mono }
+    image wdg.9.icon { at: wp.x.9 - 12, wp.y.9 - 12; size: 24, 24; opacity: wb.9 * if(wdg.9.on, 100%, 55%); show: 9 < wdg.count and not wdg.9.mono }
     text wdg.9.val { at: wp.x.9, wp.y.9 + 11; anchor: center; size: 9; weight: 700; color: ink; opacity: 85% * wb.9; show: 9 < wdg.count }
     zone ellipse w_hit.9 { at: wp.x.9, wp.y.9; radius: 24; cursor: pointer; active: 9 < wdg.count and not dash }
     on press w_hit.9 { wdrag = 9; wmoved = false; wd.w = W; wd.h = H }
     on drag w_hit.9 while wdrag == 9 and abs(drag.dx) + abs(drag.dy) > 6 { wmoved = true }
     on release w_hit.9 while wdrag == 9 and wmoved { wd.x = pointer.x; wd.y = pointer.y; impulse wwob.9 300; emit w_drop(9); wmoved = false; wdrag = -1 }
     on release w_hit.9 while wdrag == 9 and not wmoved { wdrag = -1; impulse wwob.9 120; emit w_click(9) }
-    on press right w_hit.9 while wdg.9.right { impulse wwob.9 120; emit w_right(9) }
+    on press right w_hit.9 while wdg.9.right { impulse wwob.9 120; ctx.x = pointer.x - 20; ctx.y = pointer.y - 20 - 34 * 4; emit w_right(9) }
     on scroll w_hit.9 while wdg.9.wheel { emit w_wheel(9 * 2 + if(wheel > 0, 1, 0)) }
     on enter w_hit.9 { wh.9: 1 }
     on leave w_hit.9 { wh.9: 0 }
-    image wdg.10.icon { at: wp.x.10 - 11, wp.y.10 - 11 - if(wdg.10.hasval, 5, 0); size: 22, 22; tint: ink; opacity: wb.10 * if(wdg.10.on, 100%, 55%); show: 10 < wdg.count }
+    // symbolické ikony widgetov v farbe textu; farebné ikony programov (systémová lišta) ako sú
+    image wdg.10.icon { at: wp.x.10 - 11, wp.y.10 - 11 - if(wdg.10.hasval, 5, 0); size: 22, 22; tint: ink; opacity: wb.10 * if(wdg.10.on, 100%, 55%); show: 10 < wdg.count and wdg.10.mono }
+    image wdg.10.icon { at: wp.x.10 - 12, wp.y.10 - 12; size: 24, 24; opacity: wb.10 * if(wdg.10.on, 100%, 55%); show: 10 < wdg.count and not wdg.10.mono }
     text wdg.10.val { at: wp.x.10, wp.y.10 + 11; anchor: center; size: 9; weight: 700; color: ink; opacity: 85% * wb.10; show: 10 < wdg.count }
     zone ellipse w_hit.10 { at: wp.x.10, wp.y.10; radius: 24; cursor: pointer; active: 10 < wdg.count and not dash }
     on press w_hit.10 { wdrag = 10; wmoved = false; wd.w = W; wd.h = H }
     on drag w_hit.10 while wdrag == 10 and abs(drag.dx) + abs(drag.dy) > 6 { wmoved = true }
     on release w_hit.10 while wdrag == 10 and wmoved { wd.x = pointer.x; wd.y = pointer.y; impulse wwob.10 300; emit w_drop(10); wmoved = false; wdrag = -1 }
     on release w_hit.10 while wdrag == 10 and not wmoved { wdrag = -1; impulse wwob.10 120; emit w_click(10) }
-    on press right w_hit.10 while wdg.10.right { impulse wwob.10 120; emit w_right(10) }
+    on press right w_hit.10 while wdg.10.right { impulse wwob.10 120; ctx.x = pointer.x - 20; ctx.y = pointer.y - 20 - 34 * 4; emit w_right(10) }
     on scroll w_hit.10 while wdg.10.wheel { emit w_wheel(10 * 2 + if(wheel > 0, 1, 0)) }
     on enter w_hit.10 { wh.10: 1 }
     on leave w_hit.10 { wh.10: 0 }
-    image wdg.11.icon { at: wp.x.11 - 11, wp.y.11 - 11 - if(wdg.11.hasval, 5, 0); size: 22, 22; tint: ink; opacity: wb.11 * if(wdg.11.on, 100%, 55%); show: 11 < wdg.count }
+    // symbolické ikony widgetov v farbe textu; farebné ikony programov (systémová lišta) ako sú
+    image wdg.11.icon { at: wp.x.11 - 11, wp.y.11 - 11 - if(wdg.11.hasval, 5, 0); size: 22, 22; tint: ink; opacity: wb.11 * if(wdg.11.on, 100%, 55%); show: 11 < wdg.count and wdg.11.mono }
+    image wdg.11.icon { at: wp.x.11 - 12, wp.y.11 - 12; size: 24, 24; opacity: wb.11 * if(wdg.11.on, 100%, 55%); show: 11 < wdg.count and not wdg.11.mono }
     text wdg.11.val { at: wp.x.11, wp.y.11 + 11; anchor: center; size: 9; weight: 700; color: ink; opacity: 85% * wb.11; show: 11 < wdg.count }
     zone ellipse w_hit.11 { at: wp.x.11, wp.y.11; radius: 24; cursor: pointer; active: 11 < wdg.count and not dash }
     on press w_hit.11 { wdrag = 11; wmoved = false; wd.w = W; wd.h = H }
     on drag w_hit.11 while wdrag == 11 and abs(drag.dx) + abs(drag.dy) > 6 { wmoved = true }
     on release w_hit.11 while wdrag == 11 and wmoved { wd.x = pointer.x; wd.y = pointer.y; impulse wwob.11 300; emit w_drop(11); wmoved = false; wdrag = -1 }
     on release w_hit.11 while wdrag == 11 and not wmoved { wdrag = -1; impulse wwob.11 120; emit w_click(11) }
-    on press right w_hit.11 while wdg.11.right { impulse wwob.11 120; emit w_right(11) }
+    on press right w_hit.11 while wdg.11.right { impulse wwob.11 120; ctx.x = pointer.x - 20; ctx.y = pointer.y - 20 - 34 * 4; emit w_right(11) }
     on scroll w_hit.11 while wdg.11.wheel { emit w_wheel(11 * 2 + if(wheel > 0, 1, 0)) }
     on enter w_hit.11 { wh.11: 1 }
     on leave w_hit.11 { wh.11: 0 }
@@ -1230,7 +1253,7 @@ scene Kvapka {
     on change dash while dash { focus query }
     on change dash while not dash { ctx_open = false; tab = 0 }
     on press dash_away { dash = false; pmenu = false }
-    on key Escape while dash and ctx_open { ctx_open = false }
+    on key Escape while ctx_open { ctx_open = false }
     on key Escape while dash and not ctx_open and renaming { emit query_submit(-1) }
     on key Escape while dash and not ctx_open and not renaming { dash = false }
     on key Down while dash and not ctx_open { emit sel_move(1) }
