@@ -16,7 +16,7 @@ opakovať, konfigurácie vymieňa atomicky). Kontrola bez obrazovky: `setup/f1/a
 
 ## Shell (Noctalia) — `noctalia/`
 
-`config.toml` je základ (lišta z ostrovov), zmeny používateľa idú do `~/.local/state/noctalia/settings.toml`
+`config.toml` je základ (lišta z ostrovov), zmeny používateľa idú do `~/.local/state/latteos/noctalia/settings.toml`
 (`bin/latte-shellset`). Pluginy (`noctalia/plugins/`, Luau):
 
 | Plugin | Čo robí |

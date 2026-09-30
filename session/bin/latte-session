@@ -57,13 +57,25 @@ export XDG_SESSION_TYPE=wayland XDG_SESSION_DESKTOP=latteos
 export LIBSEAT_BACKEND="${LIBSEAT_BACKEND:-logind}"   # z greetd seat cez logind; testy zo SSH: seatd
 export QT_QPA_PLATFORM=wayland GDK_BACKEND=wayland,x11 MOZ_ENABLE_WAYLAND=1
 
-# shell Noctalia: vzhľad LatteOS (téma Latte, ostrovy lišty), ak si používateľ nespravil vlastný
-# ~/.config/noctalia/config.toml. Zmeny z Nastavení ukladá Noctalia do ~/.local/state/noctalia.
-if [ ! -f "${XDG_CONFIG_HOME:-$HOME/.config}/noctalia/config.toml" ]; then
-    export NOCTALIA_CONFIG_HOME="$share"
+# shell Noctalia: LatteOS (klasický aj Kvapky) má VLASTNÉ priečinky, pôvodná Noctalia ostáva pôvodná
+# (30. 9.: relácia „Noctalia (čistá)“ si do spoločného ~/.local/state/noctalia zapísala lištu a farby a tie
+# prebili LatteOS). Konfigurácia: ~/.config/latteos/noctalia/config.toml, ak si ju používateľ spravil, inak
+# vzhľad LatteOS zo systému; zmeny z Nastavení: ~/.local/state/latteos/noctalia/settings.toml.
+# Relácia „Noctalia (čistá)“ nedostane nič — Noctalia v nej použije svoje predvolené ~/.config a ~/.local/state.
+unset NOCTALIA_CONFIG_HOME NOCTALIA_STATE_HOME
+if [ "$LATTE_VARIANT" != noctalia ]; then
+    if [ -f "${XDG_CONFIG_HOME:-$HOME/.config}/latteos/noctalia/config.toml" ]; then
+        export NOCTALIA_CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}/latteos"
+    else
+        export NOCTALIA_CONFIG_HOME="$share"
+    fi
+    export NOCTALIA_STATE_HOME="${XDG_STATE_HOME:-$HOME/.local/state}/latteos"
+    nstate="$NOCTALIA_STATE_HOME/noctalia"
+    # prvý štart po oddelení: nastavenia LatteOS zo spoločného priečinka (ak nejaké sú) sa skopírujú
+    old="${XDG_STATE_HOME:-$HOME/.local/state}/noctalia/settings.toml"
+    [ -e "$nstate/settings.toml" ] || { [ -f "$old" ] && mkdir -p "$nstate" && cp "$old" "$nstate/settings.toml"; }
+    [ -e "$nstate/.setup-complete" ] || { mkdir -p "$nstate" && touch "$nstate/.setup-complete"; }  # bez uvítacieho sprievodcu Noctalie
 fi
-nstate="${XDG_STATE_HOME:-$HOME/.local/state}/noctalia"
-[ -e "$nstate/.setup-complete" ] || { mkdir -p "$nstate" && touch "$nstate/.setup-complete"; }  # bez uvítacieho sprievodcu Noctalie
 
 run_safe() {
     echo "SAFE: labwc + pixman (dôvod: ${1:-režim SAFE})"

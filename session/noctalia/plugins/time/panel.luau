@@ -65,7 +65,7 @@ local function wmo(c)
 end
 local function loadWeather()
   if os.time() - weatherAt < 900 and weather then return end
-  local st = noctalia.readFile((noctalia.getenv("XDG_STATE_HOME") or (home .. "/.local/state")) .. "/noctalia/settings.toml") or ""
+  local st = noctalia.readFile((noctalia.getenv("NOCTALIA_STATE_HOME") or ((noctalia.getenv("XDG_STATE_HOME") or (home .. "/.local/state")) .. "/latteos")) .. "/noctalia/settings.toml") or ""
   local loc = string.match(st, "%[location%]([^%[]*)") or ""
   local lat = string.match(loc, "latitude%s*=%s*([%d%.%-]+)") or "48.74"
   local lon = string.match(loc, "longitude%s*=%s*([%d%.%-]+)") or "19.15"
