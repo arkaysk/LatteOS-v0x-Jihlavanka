@@ -796,6 +796,7 @@ local function ai_set(pairs_)
     step(1)
 end
 function paint_chips()
+    if tonumber(fact.tview) == 1 and time_chips then set_chips(time_chips()); return end
     local m = mode_id()
     local list = {}
     if m == "apps" then
@@ -1055,9 +1056,260 @@ end)
 on("notes_clear", function() pcall(sys.call, "notifications.clear") end)
 
 local function noctalia(...) run("noctalia", { "msg", ... }) end
--- TimeGoo pravým klikom: záložka Čas z klasického LatteOS (plugin latteos/time: pásma, stopky, minútka, budíky,
--- súhrn Digitálnej pohody)
-on("time_menu", function() noctalia("panel-toggle", "latteos/time:panel", "cas") end)
+-- ── časové menu TimeGoo (pravý klik, 1. 10.): Prehľad · Stopky · Minútka · Budíky ─────────────────────────────
+-- Tá istá karta ako spúšťač (fact tview 1). Údaje spoločné s klasickým LatteOS: stopky, minútka a budíky v
+-- ~/.local/share/latteos/casovace.json (zápis cez `latte-kvapky uloz casovace`), časové pásma v
+-- ~/.config/latteos/clock.conf, Digitálna pohoda v ~/.local/share/latteos/pohoda/RRRR-MM-DD.json. Minútku a budíky
+-- v Goo stráži a zvoní táto logika (v klasickom LatteOS widget hodín na lište Noctalie, ktorý Goo nemá).
+local T = { data = nil, epoch = nil, c0 = 0, alh = 7, alm = 0, file = nil, cfg = nil, share = nil }
+local function now_ms()
+    if T.epoch then return T.epoch + math.floor((os.clock() - T.c0) * 1000) end
+    return os.time() * 1000
+end
+run("date", { "+%s%3N" }, function(out)
+    local v = tonumber((out or ""):match("%d+"))
+    if v then T.epoch = v; T.c0 = os.clock() end
+end)
+local function fmt_ms(ms, tenths)
+    ms = math.max(0, math.floor(ms))
+    local s = ms // 1000
+    local h, m, sec = s // 3600, (s // 60) % 60, s % 60
+    local out = h > 0 and string.format("%d:%02d:%02d", h, m, sec) or string.format("%02d:%02d", m, sec)
+    if tenths then out = out .. "," .. tostring((ms // 100) % 10) end
+    return out
+end
+local function dur_s(s)
+    s = math.floor(s or 0)
+    local h, m = s // 3600, (s % 3600) // 60
+    if h > 0 then return string.format("%d h %02d min", h, m) end
+    return string.format("%d min", m)
+end
+local function timers()
+    local t = T.data or {}
+    t.sw = t.sw or { running = false, start = 0, acc = 0, laps = {} }
+    t.sw.laps = t.sw.laps or {}
+    t.timer = t.timer or { endMs = 0, durMs = 5 * 60000, left = 0 }
+    t.alarms = t.alarms or {}
+    T.data = t
+    return t
+end
+local function save_timers() run("latte-kvapky", { "uloz", "casovace", json.encode(timers()) }) end
+local function sw_elapsed(sw) return (sw.acc or 0) + ((sw.running and (sw.start or 0) > 0) and (now_ms() - sw.start) or 0) end
+local function ring(title, body)
+    run("notify-send", { "-a", "LatteOS", "-i", "alarm-clock", title, body })
+    local n = 0
+    local function again()
+        n = n + 1
+        if n <= 3 then run("paplay", { "/usr/share/sounds/freedesktop/stereo/alarm-clock-elapsed.oga" }, again) end
+    end
+    again()
+end
+
+-- minútka a stopky: to, čo sa mení každú desatinu sekundy
+local function paint_running()
+    local tm = timers()
+    local sw, tim = tm.sw, tm.timer
+    text.t_sw = fmt_ms(sw_elapsed(sw), true)
+    if fact.sw_run ~= (sw.running == true) then fact.sw_run = sw.running == true end
+    local now = now_ms()
+    local run_ = (tim.endMs or 0) > 0
+    local left = run_ and (tim.endMs - now) or (tim.left or 0)
+    local active = run_ or (tim.left or 0) > 0
+    text.t_timer = fmt_ms(active and (left + (run_ and 999 or 0)) or tim.durMs)
+    local frac = active and math.max(0, math.min(1, left / math.max(tim.durMs or 1, 1))) or 1
+    fact.t_frac = math.floor(frac * 1000) / 1000
+    if fact.t_run ~= run_ then fact.t_run = run_ end
+    if fact.t_active ~= active then fact.t_active = active end
+end
+local function paint_alarms()
+    local tm = timers()
+    local out = {}
+    for i, a in ipairs(tm.alarms) do
+        if i <= 5 then out[#out + 1] = { hm = a.time or "", label = a.label or "", on = a.on == true } end
+    end
+    model.alarms = out
+    text.t_alh = string.format("%02d", T.alh)
+    text.t_alm = string.format("%02d", T.alm)
+    -- prehľad: najbližší zapnutý budík a bežiaca minútka
+    local hm = os.date("%H:%M")
+    local nxt = nil
+    for _, a in ipairs(tm.alarms) do
+        if a.on and (not nxt or ((a.time > hm) and (nxt.time <= hm or a.time < nxt.time))) then nxt = a end
+    end
+    local parts = {}
+    if nxt then parts[#parts + 1] = fill(tr("Alarm {t}"), { t = nxt.time }) .. ((nxt.label or "") ~= "" and (" " .. nxt.label) or "") end
+    if (tm.timer.endMs or 0) > 0 then parts[#parts + 1] = fill(tr("Timer {t}"), { t = fmt_ms(tm.timer.endMs - now_ms() + 999) }) end
+    text.t_next = table.concat(parts, "  ·  ")
+    fact.t_has_next = #parts > 0
+end
+local function paint_laps()
+    local laps = timers().sw.laps
+    local out = {}
+    for i, lap in ipairs(laps) do
+        if i > 5 then break end
+        out[#out + 1] = { label = fill(tr("Lap {n}"), { n = tostring(#laps - i + 1) }), time = fmt_ms(lap, true) }
+    end
+    model.laps = out
+end
+local function load_timers(done)
+    if not T.file then if done then done() end; return end
+    run("cat", { T.file }, function(out)
+        local ok, d = pcall(json.decode, out or "")
+        T.data = (ok and type(d) == "table") and d or {}
+        timers()
+        if done then done() end
+    end)
+end
+
+-- dátum, Digitálna pohoda, svetové hodiny
+local WDAY_FULL = { "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday" }
+local function paint_static()
+    local t = os.date("*t")
+    text.t_date = tr(WDAY_FULL[t.wday]) .. "  " .. t.day .. ". " .. t.month .. ". " .. t.year
+    -- týždeň podľa ISO 8601 (Luau os.date nepozná %V): pondelok = 1
+    local iso_wd = (t.wday + 5) % 7 + 1
+    local week = (t.yday - iso_wd + 10) // 7
+    if week < 1 then week = 52 elseif week == 53 and (t.yday - iso_wd + 10 - 7 * 53) >= 0 and iso_wd < 4 then week = 1 end
+    text.t_week = fill(tr("Week {w} · day {d} of the year"), { w = tostring(week), d = tostring(t.yday) })
+    if T.share then
+        run("cat", { string.format("%s/latteos/pohoda/%04d-%02d-%02d.json", T.share, t.year, t.month, t.day) }, function(out)
+            local ok, d = pcall(json.decode, out or "")
+            local rows = {}
+            if ok and type(d) == "table" and type(d.apps) == "table" then
+                local screen = 0
+                for _, seg in ipairs(d.screen or {}) do screen = screen + ((seg[2] or 0) - (seg[1] or 0)) end
+                local list = {}
+                for cls, v in pairs(d.apps) do list[#list + 1] = { cls = cls, s = v.s or 0 } end
+                table.sort(list, function(a, b) return a.s > b.s end)
+                local top = math.max(list[1] and list[1].s or 1, 1)
+                for i = 1, math.min(3, #list) do
+                    local cls = list[i].cls
+                    local name = cls:sub(1, 6) == "latte:" and cls:sub(7) or ((cls:match("([^%.]+)$") or cls):gsub("^%l", string.upper))
+                    rows[#rows + 1] = { name = name, dur = dur_s(list[i].s), frac = list[i].s / top }
+                end
+                text.wb_total = fill(tr("{t} on screen"), { t = dur_s(screen) })
+            else
+                text.wb_total = ""
+            end
+            model.wbl = rows
+        end)
+    end
+    if T.cfg then
+        run("cat", { T.cfg .. "/latteos/clock.conf" }, function(conf)
+            local zs = (conf or ""):match('zones = "([^"]*)"') or ""
+            local argv = { "-c", "printf 'local|%s\\n' \"$(date +%z)\"; for z in \"$@\"; do printf '%s|' \"$z\"; TZ=\"$z\" date '+%H:%M|%z'; done", "sh" }
+            local n = 0
+            for z in zs:gmatch("[^,%s]+") do if n < 4 then argv[#argv + 1] = z; n = n + 1 end end
+            if n == 0 then model.zones = {}; return end
+            run("sh", argv, function(out)
+                local function mins(z) local s, h, m = z:match("([+-])(%d%d)(%d%d)"); if not s then return 0 end; local v = tonumber(h) * 60 + tonumber(m); return s == "-" and -v or v end
+                local loc = mins((out or ""):match("local|([^\n]+)") or "+0000")
+                local rows = {}
+                for z, hm, off in (out or ""):gmatch("([^|\n]+)|(%d%d:%d%d)|([^\n]+)") do
+                    local d = (mins(off) - loc) / 60
+                    local ds = d == 0 and "" or ((d > 0 and "+" or "−") .. (tostring(math.abs(d)):gsub("%.0$", ""):gsub("%.", ",")) .. " h")
+                    rows[#rows + 1] = { city = ((z:match("([^/]+)$") or z):gsub("_", " ")), hm = hm, diff = ds }
+                end
+                model.zones = rows
+            end)
+        end)
+    end
+end
+local function paint_time()
+    paint_static(); paint_running(); paint_alarms(); paint_laps()
+end
+
+-- čipy riadku režimu v časovom menu
+function time_chips()
+    local cur = tonumber(fact.ttab) or 0
+    local function tab(i, glyph, label) return { glyph = glyph, label = tr(label), on = cur == i, pick = function() fact.ttab = i; time_chips_paint() end } end
+    return {
+        tab(0, G["layout-dashboard"], "Overview"), tab(1, G.stopwatch, "Stopwatch"), tab(2, G.hourglass, "Timer"),
+        tab(3, G.alarm, "Alarms"),
+        { glyph = G.settings, pick = function() run("latte-app", { "nastavenia", "cas" }); fact.dash = false end },
+    }
+end
+function time_chips_paint() if paint_chips then paint_chips() end end
+on("fact:ttab", function() time_chips_paint() end)
+on("fact:tview", function(v)
+    time_chips_paint()
+    if tonumber(v) == 1 then load_timers(paint_time) end
+end)
+on("time_menu", function() load_timers(paint_time) end)
+
+on("t_do", function(code)
+    code = tonumber(code) or 0
+    local tm = timers()
+    local sw, tim = tm.sw, tm.timer
+    if code == 1 then
+        if sw.running then sw.acc = sw_elapsed(sw); sw.running = false else sw.start = now_ms(); sw.running = true end
+    elseif code == 2 then
+        if sw.running then table.insert(sw.laps, 1, sw_elapsed(sw)) end
+    elseif code == 3 then
+        tm.sw = { running = false, start = 0, acc = 0, laps = {} }
+    elseif code == 20 then
+        if (tim.endMs or 0) > 0 then tim.left = tim.endMs - now_ms(); tim.endMs = 0
+        elseif (tim.left or 0) > 0 then tim.endMs = now_ms() + tim.left; tim.left = 0
+        else tim.endMs = now_ms() + (tim.durMs or 300000); tim.left = 0 end
+    elseif code == 21 then
+        tim.endMs = 0; tim.left = 0
+    elseif code >= 30 and code <= 35 then
+        local m = ({ 1, 5, 10, 15, 25, 45 })[code - 29]
+        tim.durMs = m * 60000; tim.endMs = now_ms() + tim.durMs; tim.left = 0
+    elseif code == 40 then
+        if #tm.alarms < 10 then
+            table.insert(tm.alarms, { time = string.format("%02d:%02d", T.alh, T.alm), label = "", on = true, last = "" })
+            table.sort(tm.alarms, function(a, b) return a.time < b.time end)
+        end
+    elseif code >= 50 and code < 60 then
+        local a = tm.alarms[code - 49]
+        if a then a.on = not a.on; a.last = "" end
+    elseif code >= 60 and code < 70 then
+        table.remove(tm.alarms, code - 59)
+    elseif code == 70 then
+        run("latte-app", { "monitor", "pohoda" }); fact.dash = false; return
+    end
+    save_timers(); paint_running(); paint_alarms(); paint_laps()
+end)
+on("t_wheel", function(code)
+    code = tonumber(code) or 0
+    local tim = timers().timer
+    if code <= 1 then
+        if (tim.endMs or 0) > 0 or (tim.left or 0) > 0 then return end        -- beží alebo stojí: najprv zrušiť
+        local m = math.floor((tim.durMs or 300000) / 60000 + 0.5) + (code == 1 and 1 or -1)
+        tim.durMs = math.max(1, math.min(180, m)) * 60000
+        save_timers(); paint_running()
+    elseif code <= 3 then
+        T.alh = (T.alh + (code == 3 and 1 or -1)) % 24; paint_alarms()
+    else
+        T.alm = (T.alm + (code == 5 and 5 or -5)) % 60; paint_alarms()
+    end
+end)
+
+-- stráženie: minútka a budíky (každú sekundu), zobrazenie stopiek a minútky (každú desatinu, iba keď sú vidieť)
+every(100, function()
+    if fact.dash and tonumber(fact.tview) == 1 and T.data then paint_running() end
+end)
+every(1000, function()
+    if not fact.solo or not T.data then return end
+    local tm = timers()
+    local changed = false
+    if (tm.timer.endMs or 0) > 0 and tm.timer.endMs - now_ms() <= 0 then
+        tm.timer.endMs = 0; changed = true
+        ring(tr("Timer"), fill(tr("Time is up ({t})"), { t = fmt_ms(tm.timer.durMs) }))
+    end
+    local hm, today = os.date("%H:%M"), os.date("%Y-%m-%d")
+    for _, a in ipairs(tm.alarms) do
+        if a.on and a.time == hm and a.last ~= today then
+            a.last = today; changed = true
+            ring(fill(tr("Alarm {t}"), { t = hm }), (a.label or "") ~= "" and a.label or tr("LatteOS alarm"))
+            if a.once then a.on = false end
+        end
+    end
+    if changed then save_timers(); paint_running(); paint_alarms() end
+end)
+-- súbor s časovačmi sa môže zmeniť aj v klasickom LatteOS (iná relácia) — pri štarte a raz za minútu znova
+every(60000, function() if not (fact.dash and tonumber(fact.tview) == 1) then load_timers() end end)
 
 -- ── kvapky widgetov (30. 9.): widgety Noctalie ako kvapky na okrajoch obrazovky ───────────────────────────────
 -- Akcie myši presne podľa Noctalie (src/shell/bar/widget_gesture_defaults.cpp): kde Noctalia pravý klik nemá, nemá
@@ -1495,6 +1747,8 @@ run("printenv", { "HOME" }, function(out)
         tema_file = home .. "/.config/latteos/theme"; read_tema()
         HOME = home
         cfg_file = home .. "/.config/latteos/spustac.json"
+        T.file = home .. "/.local/share/latteos/casovace.json"; T.cfg = home .. "/.config"; T.share = home .. "/.local/share"
+        load_timers()
         wfile = home .. "/.config/latteos/kvapky-widgety.json"
         after(600, wload)                                    -- po prvej správe služby bluetooth (predvolené)
         -- doterajšie pripnuté (~/.config/latteos/pripnute) sú pri prvom štarte obľúbené spúšťača
