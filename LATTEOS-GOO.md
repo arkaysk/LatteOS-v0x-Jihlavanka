@@ -225,22 +225,48 @@ chyby (neaktívne tvary nulovým polomerom); logika nevie zapisovať súbory (`l
 
 ---
 
-## 7. Otvorené
+## 7. Poradie práce (1. 10.: „neskákať, dokončiť rozrobené, potom mechanika Goo a ovládanie myšou“)
 
-- DaNoGoo (4.2b), batéria na PowerGoo — rozhodnuté 1. 10., ďalšie na rade
-- časové menu TimeGoo a kalendár DaNoGoo vo vzhľade Goo (pravidlo 10) — čaká na náčrt alebo návrh
-- AI: úroveň uvažovania (napr. „High“ z náčrtu) — `latte-ai` ju zatiaľ nepozná
-- **nápad 1. 10.: bubliny četov** ako v Androide (Messenger chat heads), ale **pre viac kanálov** (Messenger,
-  Telegram, Signal, ICQ…) — forma sa ešte premyslí (používateľ). Nie ako režim spúšťača (preplnené jedno miesto)
-  a **nie spojené s DaNoGoo** (rozhodnutie 1. 10.)
-- rovnaký štýl (pravidlo 11) pre časové menu TimeGoo, kalendár a hrozno DaNoGoo, ponuku Vypnúť, ponuku okna
-- **Noctalia nemá slovenský katalóg** (`assets/translations/sk.json` nie je ani u autora, je český `cs.json`):
-  pri `LANG=sk` prepne na angličtinu a `translations/sk.json` doplnkov nenačíta — nové texty doplnkov LatteOS
-  (napr. well-being v záložke Čas) sú preto po anglicky. Riešenie: slovenský katalóg Noctalie (aj pre autora)
+Ide sa **po poradí**; nové nápady sa zapíšu na koniec (E), nerozbiehajú sa hneď.
 
-- goo telo z pleamaru pod rohovou lištou (vlnenie, pulzovanie pri zmene stavu widgetu)
+### A. Dokončiť rozrobené
+1. **Časové menu TimeGoo** vo vzhľade Goo (pravidlá 10–12): karta z ucha ako spúšťač — veľký čas a dátum, čipy
+   Prehľad · Stopky · Minútka · Budíky; well-being, časové pásma (`~/.config/latteos/clock.conf`), stopky, minútka,
+   budíky zo spoločného `~/.local/share/latteos/casovace.json` (ten istý ako klasický LatteOS). **Minútku a budíky
+   musí v Goo strážiť a zvoniť logika Kvapiek** — v klasickom to robí widget hodín na lište Noctalie, ktorý Goo nemá.
+2. **DaNoGoo** (4.2b): kvapka s dátumom a počasím, guľky počtu upozornení, ľavý klik = pružina + hrozno upozornení
+   (farba ikony aplikácie, zavrie klik na DaNoGoo / Esc / klik mimo), pravý klik = kalendár vo vzhľade Goo; kvapôčky
+   upozornení z TimeGoo preč.
+3. **PowerGoo**: batéria (minibublinky), ponuka Vypnúť vo vzhľade Goo.
+4. **Ponuka okna** (pravý klik na guľôčku) vo vzhľade Goo.
+5. **Hyprglass** overiť naživo (sklenená téma v Goo) a doladiť.
+6. **Slovenský katalóg Noctalie** (bez neho Noctalia v LatteOS nenačíta slovenské preklady doplnkov) — pred
+   integráciami Noctalie (C).
+
+### B. Mechanika Goo a ovládanie myšou
+- presúvanie Hodín, vypínača a DaNoGoo samostatne (dnes Hodiny a vypínač s lištou) — rozhodnúť
+- goo telo pod rohovou lištou; vlnenie a pulzovanie pri udalostiach (upozornenie, zvuk, sťahovanie, zmena widgetu)
 - rozbaľovacia ponuka rýchleho spúšťania ako samostatné kvapky
-- presúvanie Hodín a vypínača samostatne (dnes sa presúvajú s lištou) — čaká na rozhodnutie
-- textúry šálky/témy (zlato, podsvietený ónyx, brúsený kov, ľad) — návrhy
+- všetko myšou: prejsť každú funkciu Goo, či ide bez klávesnice (pravidlo 1), vrátane premenovania záložiek,
+  zadania budíka, AI (vloženie / diktovanie?)
 - úspora výkonu (pleamar ~18 % jadra: prázdne sloty, 30 Hz v pokoji)
-- vlnenie pri zmene stavu widgetu, pulzovanie pri udalostiach (upozornenie, zvuk, sťahovanie)
+
+### C. Integrácie Noctalie (selektívne)
+- čo z Noctalie má Goo prevziať (funkciou, nie vzhľadom — pravidlo 10), napr. kalendárové účty, história a filtre
+  upozornení, schránka, nočné svetlo, OSD, doplnky z komunitného obchodu, klávesnicové rozloženie
+
+### D. Rozhodnúť (používateľ, 1. 10.)
+- **Odkiaľ systémové nastavenia:** preferované sú **Nastavenia LatteOS** (44 stránok); vybrané položky z nastavení
+  Noctalie sa **selektívne integrujú do nášho menu**. Návrh na výber: komunitné doplnky (obchod), widgety rohovej
+  lišty, kalendárové účty a pripomienky, filtre a história upozornení, nočné svetlo, OSD, horúce rohy, história
+  schránky, šablóny farieb aplikácií, rozloženie klávesnice, polkit.
+- **Monitor / správca procesov:** kde v Goo (návrh: systémová ponuka ako Win+X — pozri nižšie).
+- **Správca súborov:** či a kde má ikonu (Windows má Prieskumníka pripnutého na lište).
+- Návrh: **PowerGoo = systémová ponuka ako Win+X vo Windows 11** (Nastavenia, Monitor, Súbory, Terminál, … a pod
+  nimi Zamknúť / Odhlásiť / Uspať / Reštartovať / Vypnúť).
+
+### E. Neskôr / nápady
+- AI: úroveň uvažovania („High“ z náčrtu) — `latte-ai` ju zatiaľ nepozná
+- **bubliny četov** pre viac kanálov (Messenger, Telegram, Signal, ICQ…) — forma sa ešte premyslí (používateľ);
+  nie ako režim spúšťača a **nie spojené s DaNoGoo** (1. 10.)
+- materiál aj na oknách aplikácií pri kovových témach (textúra v hlavičke okna — upravený hyprbars)
