@@ -90,8 +90,9 @@ scene Kvapka {
     fact wx_detail = false
     fact wx_hot = -1
     model wx max 8 { label: text; glyph: text; temp: text }
-    // kontextová ponuka v spúšťači (pravý klik, rozbaľovacie čipy): položky a miesto dáva logika; on 1 = zaškrtnuté
-    model ctx max 10 { label: text; on: number; off: bool }
+    // ponuka Goo (pravý klik na okno, widget, čip…): položky a miesto dáva logika; on 1 = zaškrtnuté, off = nedostupné,
+    // sub = podponuka (ostane otvorená, vnorí sa), sep = čiara nad položkou, y = odsadenie riadku v karte
+    model ctx max 12 { label: text; on: number; off: bool; glyph: text; hint: text; danger: bool; sub: bool; back: bool; sep: bool; y: number }
     fact ctx_open = false
     fact ctx.x = 0
     fact ctx.y = 0
@@ -1508,24 +1509,47 @@ scene Kvapka {
             text modes.$k.name { at: d0.x + 46, d0.y + 84 + k * 40; anchor: left center; size: 13.5; weight: 500; color: l.fg; family: "Inter" }
         }
     }
-    // kontextová ponuka (pravý klik, rozbaľovacie čipy)
-    let cx0 = clamp(ctx.x, 12, W - 252)
-    // pri čipoch dole sa ponuka otvára nahor (ctx_up), inak nadol od kurzora
+    // ponuka Goo (pravý klik — okná, widgety, čipy, nedávne…; 1. 10., pravidlá 9–11): karta pripojená ROHOM k miestu
+    // kliku, vyrastie z neho; pri rohu káva (kvapôčka-ucho), ďalej materiál okien. Položky dáva logika: ikona,
+    // skratka, zaškrtnutie, červená (Zavrieť), podponuka (›, vnorí sa so šípkou späť), čiara nad položkou (sep), y riadku
     fact ctx_up = false
-    let cy0 = clamp(if(ctx_up, ctx.y - 10 - ctx.count * 36, ctx.y), 12, H - 12 - ctx.count * 36)
+    fact ctx_w = 248
+    fact ctx_h = 48
+    prop ctx.p = 0 ~lively
+    follow ctx.p = if(ctx_open, 1, 0)
+    let ctx.sx = if(ctx.x + ctx_w + 12 <= W, 1, -1)
+    let ctx.sy = if(ctx_up, if(ctx.y - ctx_h - 12 >= 0, -1, 1), if(ctx.y + ctx_h + 12 <= H, 1, -1))
+    let cx0 = clamp(if(ctx.sx > 0, ctx.x, ctx.x - ctx_w), 12, W - 12 - ctx_w)
+    let cy0 = clamp(if(ctx.sy > 0, ctx.y, ctx.y - ctx_h), 12, H - 12 - ctx_h)
+    let ctx.ax = if(ctx.sx > 0, cx0, cx0 + ctx_w)
+    let ctx.ay = if(ctx.sy > 0, cy0, cy0 + ctx_h)
+    let ctx.q = clamp(ctx.p, 0, 1.08)
     body {
-        color: l.var
-        rim: 14%
-        shadow: 0, 10, 26, 35%
-        opacity: if(ctx_open, 1, 0)
-        box { at: cx0 + 120, cy0 + ctx.count * 18; size: 240, ctx.count * 36 + 12; corner: 14 }
+        gradient: ctx.ax, ctx.ay to ctx.ax + ctx.sx * ctx_w, ctx.ay + ctx.sy * ctx_h, mix(l.win, coffee, 0.55), l.win, l.win
+        glass: 100% * l.glass
+        lens: l.pearl > 0.5
+        shine: pointer
+        refraction: 120% * l.pearl
+        dispersion: 260% * l.pearl
+        rim: 18%
+        light: 6%, cy0, 40
+        shadow: 0, 10, 26, 35% * clamp(ctx.p, 0, 1)
+        opacity: if(ctx.p > 0.02, 1, 0)
+        box { at: ctx.ax + ctx.sx * ctx_w * ctx.q / 2, ctx.ay + ctx.sy * ctx_h * ctx.q / 2; size: max(ctx_w * ctx.q, 14), max(ctx_h * ctx.q, 14); corner: 14 }
+        // ucho: kvapôčka v rohu, odkiaľ ponuka vyrástla
+        ellipse { at: ctx.ax, ctx.ay; radius: 9 * clamp(ctx.p * 3, 0, 1) + 1; blend: 10 }
     }
     group {
-        show: ctx_open
-        repeat k in 0..10 {
-            box { at: cx0 + 120, cy0 + 18 + k * 36; size: 228, 32; corner: 9; color: l.hover; opacity: if(ctx_hot == k, 100%, 0); show: k < ctx.count }
-            text "" { at: cx0 + 22, cy0 + 18 + k * 36; anchor: center; size: 14; color: l.acc; show: k < ctx.count and ctx.$k.on == 1; family: "noctalia-tabler-icons" }
-            text ctx.$k.label { at: cx0 + 40, cy0 + 18 + k * 36; anchor: left center; width: 190; lines: 1; size: 13; color: l.fg; opacity: if(ctx.$k.off, 45%, 100%); show: k < ctx.count; family: "Inter" }
+        opacity: clamp(ctx.p * 2 - 1, 0, 1)
+        show: ctx_open and ctx.p > 0.5
+        repeat k in 0..12 {
+            box { at: cx0 + ctx_w / 2, cy0 + ctx.$k.y - 6; size: ctx_w - 32, 1; color: l.line; show: k < ctx.count and ctx.$k.sep }
+            box { at: cx0 + ctx_w / 2, cy0 + ctx.$k.y + 18; size: ctx_w - 12, 32; corner: 9; color: if(ctx.$k.danger, #e5484d, l.hover); opacity: if(ctx_hot == k and not ctx.$k.off, if(ctx.$k.danger, 18%, 100%), 0); show: k < ctx.count }
+            text ctx.$k.glyph { at: cx0 + 24, ctx.$k.y + cy0 + 18; anchor: center; size: 16; color: if(ctx.$k.danger, #e5484d, l.fg); opacity: if(ctx.$k.off, 40%, 90%); show: k < ctx.count and ctx.$k.on == 0; family: "noctalia-tabler-icons" }
+            text "" { at: cx0 + 24, cy0 + ctx.$k.y + 18; anchor: center; size: 15; color: l.acc; show: k < ctx.count and ctx.$k.on == 1; family: "noctalia-tabler-icons" }
+            text ctx.$k.label { at: cx0 + 46, cy0 + ctx.$k.y + 18; anchor: left center; width: ctx_w - if(ctx.$k.sub, 82, 70); lines: 1; size: 13; weight: 500; color: if(ctx.$k.danger, #e5484d, l.fg); opacity: if(ctx.$k.off, 45%, 100%); show: k < ctx.count; family: "Inter" }
+            text ctx.$k.hint { at: cx0 + ctx_w - 16, cy0 + ctx.$k.y + 18; anchor: right center; size: 11.5; color: l.dim; show: k < ctx.count and not ctx.$k.sub; family: "Inter" }
+            text "" { at: cx0 + ctx_w - 20, cy0 + ctx.$k.y + 18; anchor: center; size: 14; color: l.dim; show: k < ctx.count and ctx.$k.sub and not ctx.$k.back; family: "noctalia-tabler-icons" }
         }
     }
     // spúšťač: klikateľné miesta (navrchu)
@@ -1572,8 +1596,8 @@ scene Kvapka {
     }
     // otvorená ponuka: klik mimo nej ju zavrie (pod jej riadkami)
     zone box ctx_away { at: W / 2, H / 2; size: W, H; active: ctx_open }
-    repeat k in 0..10 {
-        zone box ctx_row.$k { at: cx0 + 120, cy0 + 18 + k * 36; size: 228, 34; cursor: pointer; active: ctx_open and k < ctx.count }
+    repeat k in 0..12 {
+        zone box ctx_row.$k { at: cx0 + ctx_w / 2, cy0 + ctx.$k.y + 18; size: ctx_w - 12, 34; cursor: pointer; active: ctx_open and ctx.p > 0.5 and k < ctx.count }
     }
     // <<< spúšťač
     // >>> kvapky widgetov (widgety.py)
@@ -1829,7 +1853,7 @@ scene Kvapka {
     on drag w_hit.0 while wdrag == 0 and abs(drag.dx) + abs(drag.dy) > 6 { wmoved = true }
     on release w_hit.0 while wdrag == 0 and wmoved { wd.x = mx; wd.y = my; impulse wwob.0 300; emit w_drop(0); wmoved = false; wdrag = -1 }
     on release w_hit.0 while wdrag == 0 and not wmoved { wdrag = -1; impulse wwob.0 120; emit w_click(0) }
-    on press right w_hit.0 while wdg.0.right { impulse wwob.0 120; ctx.x = mx - 20; ctx.y = my - 20 - 34 * 4; emit w_right(0) }
+    on press right w_hit.0 while wdg.0.right { impulse wwob.0 120; ctx.x = mx; ctx.y = my; ctx_up = my > H / 2; emit w_right(0) }
     on scroll w_hit.0 while wdg.0.wheel { emit w_wheel(0 * 2 + if(wheel > 0, 1, 0)) }
     on enter w_hit.0 { wh.0: 1 }
     on leave w_hit.0 { wh.0: 0 }
@@ -1842,7 +1866,7 @@ scene Kvapka {
     on drag w_hit.1 while wdrag == 1 and abs(drag.dx) + abs(drag.dy) > 6 { wmoved = true }
     on release w_hit.1 while wdrag == 1 and wmoved { wd.x = mx; wd.y = my; impulse wwob.1 300; emit w_drop(1); wmoved = false; wdrag = -1 }
     on release w_hit.1 while wdrag == 1 and not wmoved { wdrag = -1; impulse wwob.1 120; emit w_click(1) }
-    on press right w_hit.1 while wdg.1.right { impulse wwob.1 120; ctx.x = mx - 20; ctx.y = my - 20 - 34 * 4; emit w_right(1) }
+    on press right w_hit.1 while wdg.1.right { impulse wwob.1 120; ctx.x = mx; ctx.y = my; ctx_up = my > H / 2; emit w_right(1) }
     on scroll w_hit.1 while wdg.1.wheel { emit w_wheel(1 * 2 + if(wheel > 0, 1, 0)) }
     on enter w_hit.1 { wh.1: 1 }
     on leave w_hit.1 { wh.1: 0 }
@@ -1855,7 +1879,7 @@ scene Kvapka {
     on drag w_hit.2 while wdrag == 2 and abs(drag.dx) + abs(drag.dy) > 6 { wmoved = true }
     on release w_hit.2 while wdrag == 2 and wmoved { wd.x = mx; wd.y = my; impulse wwob.2 300; emit w_drop(2); wmoved = false; wdrag = -1 }
     on release w_hit.2 while wdrag == 2 and not wmoved { wdrag = -1; impulse wwob.2 120; emit w_click(2) }
-    on press right w_hit.2 while wdg.2.right { impulse wwob.2 120; ctx.x = mx - 20; ctx.y = my - 20 - 34 * 4; emit w_right(2) }
+    on press right w_hit.2 while wdg.2.right { impulse wwob.2 120; ctx.x = mx; ctx.y = my; ctx_up = my > H / 2; emit w_right(2) }
     on scroll w_hit.2 while wdg.2.wheel { emit w_wheel(2 * 2 + if(wheel > 0, 1, 0)) }
     on enter w_hit.2 { wh.2: 1 }
     on leave w_hit.2 { wh.2: 0 }
@@ -1868,7 +1892,7 @@ scene Kvapka {
     on drag w_hit.3 while wdrag == 3 and abs(drag.dx) + abs(drag.dy) > 6 { wmoved = true }
     on release w_hit.3 while wdrag == 3 and wmoved { wd.x = mx; wd.y = my; impulse wwob.3 300; emit w_drop(3); wmoved = false; wdrag = -1 }
     on release w_hit.3 while wdrag == 3 and not wmoved { wdrag = -1; impulse wwob.3 120; emit w_click(3) }
-    on press right w_hit.3 while wdg.3.right { impulse wwob.3 120; ctx.x = mx - 20; ctx.y = my - 20 - 34 * 4; emit w_right(3) }
+    on press right w_hit.3 while wdg.3.right { impulse wwob.3 120; ctx.x = mx; ctx.y = my; ctx_up = my > H / 2; emit w_right(3) }
     on scroll w_hit.3 while wdg.3.wheel { emit w_wheel(3 * 2 + if(wheel > 0, 1, 0)) }
     on enter w_hit.3 { wh.3: 1 }
     on leave w_hit.3 { wh.3: 0 }
@@ -1881,7 +1905,7 @@ scene Kvapka {
     on drag w_hit.4 while wdrag == 4 and abs(drag.dx) + abs(drag.dy) > 6 { wmoved = true }
     on release w_hit.4 while wdrag == 4 and wmoved { wd.x = mx; wd.y = my; impulse wwob.4 300; emit w_drop(4); wmoved = false; wdrag = -1 }
     on release w_hit.4 while wdrag == 4 and not wmoved { wdrag = -1; impulse wwob.4 120; emit w_click(4) }
-    on press right w_hit.4 while wdg.4.right { impulse wwob.4 120; ctx.x = mx - 20; ctx.y = my - 20 - 34 * 4; emit w_right(4) }
+    on press right w_hit.4 while wdg.4.right { impulse wwob.4 120; ctx.x = mx; ctx.y = my; ctx_up = my > H / 2; emit w_right(4) }
     on scroll w_hit.4 while wdg.4.wheel { emit w_wheel(4 * 2 + if(wheel > 0, 1, 0)) }
     on enter w_hit.4 { wh.4: 1 }
     on leave w_hit.4 { wh.4: 0 }
@@ -1894,7 +1918,7 @@ scene Kvapka {
     on drag w_hit.5 while wdrag == 5 and abs(drag.dx) + abs(drag.dy) > 6 { wmoved = true }
     on release w_hit.5 while wdrag == 5 and wmoved { wd.x = mx; wd.y = my; impulse wwob.5 300; emit w_drop(5); wmoved = false; wdrag = -1 }
     on release w_hit.5 while wdrag == 5 and not wmoved { wdrag = -1; impulse wwob.5 120; emit w_click(5) }
-    on press right w_hit.5 while wdg.5.right { impulse wwob.5 120; ctx.x = mx - 20; ctx.y = my - 20 - 34 * 4; emit w_right(5) }
+    on press right w_hit.5 while wdg.5.right { impulse wwob.5 120; ctx.x = mx; ctx.y = my; ctx_up = my > H / 2; emit w_right(5) }
     on scroll w_hit.5 while wdg.5.wheel { emit w_wheel(5 * 2 + if(wheel > 0, 1, 0)) }
     on enter w_hit.5 { wh.5: 1 }
     on leave w_hit.5 { wh.5: 0 }
@@ -1907,7 +1931,7 @@ scene Kvapka {
     on drag w_hit.6 while wdrag == 6 and abs(drag.dx) + abs(drag.dy) > 6 { wmoved = true }
     on release w_hit.6 while wdrag == 6 and wmoved { wd.x = mx; wd.y = my; impulse wwob.6 300; emit w_drop(6); wmoved = false; wdrag = -1 }
     on release w_hit.6 while wdrag == 6 and not wmoved { wdrag = -1; impulse wwob.6 120; emit w_click(6) }
-    on press right w_hit.6 while wdg.6.right { impulse wwob.6 120; ctx.x = mx - 20; ctx.y = my - 20 - 34 * 4; emit w_right(6) }
+    on press right w_hit.6 while wdg.6.right { impulse wwob.6 120; ctx.x = mx; ctx.y = my; ctx_up = my > H / 2; emit w_right(6) }
     on scroll w_hit.6 while wdg.6.wheel { emit w_wheel(6 * 2 + if(wheel > 0, 1, 0)) }
     on enter w_hit.6 { wh.6: 1 }
     on leave w_hit.6 { wh.6: 0 }
@@ -1920,7 +1944,7 @@ scene Kvapka {
     on drag w_hit.7 while wdrag == 7 and abs(drag.dx) + abs(drag.dy) > 6 { wmoved = true }
     on release w_hit.7 while wdrag == 7 and wmoved { wd.x = mx; wd.y = my; impulse wwob.7 300; emit w_drop(7); wmoved = false; wdrag = -1 }
     on release w_hit.7 while wdrag == 7 and not wmoved { wdrag = -1; impulse wwob.7 120; emit w_click(7) }
-    on press right w_hit.7 while wdg.7.right { impulse wwob.7 120; ctx.x = mx - 20; ctx.y = my - 20 - 34 * 4; emit w_right(7) }
+    on press right w_hit.7 while wdg.7.right { impulse wwob.7 120; ctx.x = mx; ctx.y = my; ctx_up = my > H / 2; emit w_right(7) }
     on scroll w_hit.7 while wdg.7.wheel { emit w_wheel(7 * 2 + if(wheel > 0, 1, 0)) }
     on enter w_hit.7 { wh.7: 1 }
     on leave w_hit.7 { wh.7: 0 }
@@ -1933,7 +1957,7 @@ scene Kvapka {
     on drag w_hit.8 while wdrag == 8 and abs(drag.dx) + abs(drag.dy) > 6 { wmoved = true }
     on release w_hit.8 while wdrag == 8 and wmoved { wd.x = mx; wd.y = my; impulse wwob.8 300; emit w_drop(8); wmoved = false; wdrag = -1 }
     on release w_hit.8 while wdrag == 8 and not wmoved { wdrag = -1; impulse wwob.8 120; emit w_click(8) }
-    on press right w_hit.8 while wdg.8.right { impulse wwob.8 120; ctx.x = mx - 20; ctx.y = my - 20 - 34 * 4; emit w_right(8) }
+    on press right w_hit.8 while wdg.8.right { impulse wwob.8 120; ctx.x = mx; ctx.y = my; ctx_up = my > H / 2; emit w_right(8) }
     on scroll w_hit.8 while wdg.8.wheel { emit w_wheel(8 * 2 + if(wheel > 0, 1, 0)) }
     on enter w_hit.8 { wh.8: 1 }
     on leave w_hit.8 { wh.8: 0 }
@@ -1946,7 +1970,7 @@ scene Kvapka {
     on drag w_hit.9 while wdrag == 9 and abs(drag.dx) + abs(drag.dy) > 6 { wmoved = true }
     on release w_hit.9 while wdrag == 9 and wmoved { wd.x = mx; wd.y = my; impulse wwob.9 300; emit w_drop(9); wmoved = false; wdrag = -1 }
     on release w_hit.9 while wdrag == 9 and not wmoved { wdrag = -1; impulse wwob.9 120; emit w_click(9) }
-    on press right w_hit.9 while wdg.9.right { impulse wwob.9 120; ctx.x = mx - 20; ctx.y = my - 20 - 34 * 4; emit w_right(9) }
+    on press right w_hit.9 while wdg.9.right { impulse wwob.9 120; ctx.x = mx; ctx.y = my; ctx_up = my > H / 2; emit w_right(9) }
     on scroll w_hit.9 while wdg.9.wheel { emit w_wheel(9 * 2 + if(wheel > 0, 1, 0)) }
     on enter w_hit.9 { wh.9: 1 }
     on leave w_hit.9 { wh.9: 0 }
@@ -1959,7 +1983,7 @@ scene Kvapka {
     on drag w_hit.10 while wdrag == 10 and abs(drag.dx) + abs(drag.dy) > 6 { wmoved = true }
     on release w_hit.10 while wdrag == 10 and wmoved { wd.x = mx; wd.y = my; impulse wwob.10 300; emit w_drop(10); wmoved = false; wdrag = -1 }
     on release w_hit.10 while wdrag == 10 and not wmoved { wdrag = -1; impulse wwob.10 120; emit w_click(10) }
-    on press right w_hit.10 while wdg.10.right { impulse wwob.10 120; ctx.x = mx - 20; ctx.y = my - 20 - 34 * 4; emit w_right(10) }
+    on press right w_hit.10 while wdg.10.right { impulse wwob.10 120; ctx.x = mx; ctx.y = my; ctx_up = my > H / 2; emit w_right(10) }
     on scroll w_hit.10 while wdg.10.wheel { emit w_wheel(10 * 2 + if(wheel > 0, 1, 0)) }
     on enter w_hit.10 { wh.10: 1 }
     on leave w_hit.10 { wh.10: 0 }
@@ -1972,7 +1996,7 @@ scene Kvapka {
     on drag w_hit.11 while wdrag == 11 and abs(drag.dx) + abs(drag.dy) > 6 { wmoved = true }
     on release w_hit.11 while wdrag == 11 and wmoved { wd.x = mx; wd.y = my; impulse wwob.11 300; emit w_drop(11); wmoved = false; wdrag = -1 }
     on release w_hit.11 while wdrag == 11 and not wmoved { wdrag = -1; impulse wwob.11 120; emit w_click(11) }
-    on press right w_hit.11 while wdg.11.right { impulse wwob.11 120; ctx.x = mx - 20; ctx.y = my - 20 - 34 * 4; emit w_right(11) }
+    on press right w_hit.11 while wdg.11.right { impulse wwob.11 120; ctx.x = mx; ctx.y = my; ctx_up = my > H / 2; emit w_right(11) }
     on scroll w_hit.11 while wdg.11.wheel { emit w_wheel(11 * 2 + if(wheel > 0, 1, 0)) }
     on enter w_hit.11 { wh.11: 1 }
     on leave w_hit.11 { wh.11: 0 }
@@ -2471,8 +2495,8 @@ scene Kvapka {
     // kontextová ponuka
     on press ctx_away { ctx_open = false }
     on press right ctx_away { ctx_open = false }
-    repeat k in 0..10 {
-        on press ctx_row.$k { ctx_open = false; emit ctx_pick(k) }
+    repeat k in 0..12 {
+        on press ctx_row.$k while not ctx.$k.off { ctx_open = ctx.$k.sub; emit ctx_pick(k) }
         on enter ctx_row.$k { ctx_hot = k }
         on leave ctx_row.$k { ctx_hot = -1 }
     }
@@ -2500,6 +2524,24 @@ scene Kvapka {
     }
 
     translations sk {
+        "Back" = "Späť"
+        "Restore" = "Obnoviť"
+        "Minimize" = "Minimalizovať"
+        "Maximize" = "Maximalizovať"
+        "Layout" = "Rozloženie"
+        "Left half" = "Ľavá polovica"
+        "Right half" = "Pravá polovica"
+        "Top left" = "Vľavo hore"
+        "Top right" = "Vpravo hore"
+        "Bottom left" = "Vľavo dole"
+        "Bottom right" = "Vpravo dole"
+        "Two thirds left" = "Dve tretiny vľavo"
+        "One third right" = "Tretina vpravo"
+        "Center" = "Na stred"
+        "Always on top (all desktops)" = "Vždy navrchu (na všetkých plochách)"
+        "Move to desktop" = "Presunúť na plochu"
+        "Desktop {n}" = "Plocha {n}"
+        "New desktop" = "Nová plocha"
         "Monitor" = "Monitor"
         "On battery" = "Na batérii"
         "Charging" = "Nabíja sa"

@@ -319,7 +319,11 @@ Ide sa **po poradí**; nové nápady sa zapíšu na koniec (E), nerozbiehajú sa
 3b. ✅ (1. 10., naživo overiť umiestnenie okna) **QueenGoo** (rozhodnuté 1. 10.): kvapka s **korunkou** (tvar ostáva kvapka — tvar koruny je k4ditanov);
    **ľavý klik = premení sa na App Manager** (inštalácia programov), **pravý = Device Manager** (Správca zariadení).
    V Goo dnes nie je, kde inštalovať (spúšťač iba spúšťa).
-4. **Ponuka okna** (pravý klik na guľôčku) vo vzhľade Goo.
+4. ✅ (1. 10., overené naživo) **Ponuka okna** (pravý klik na guľôčku) vo vzhľade Goo: funkcie z klasickej ponuky
+   okna (`latte.okno.*`: Obnoviť, Minimalizovať, Maximalizovať, Rozloženie ›, Vždy navrchu, Presunúť na plochu ›,
+   Zavrieť), vzhľad Goo — karta pripojená rohom ku guľôčke, rastie od okraja, pri rohu káva; podponuky sa vnoria
+   (‹ Späť). Je to **spoločná ponuka Goo** (`menu()` v logike, kreslí `spustac.py`): ikony, skratky, zaškrtnutie,
+   červená položka, oddeľovač — rovnako ju majú widgety, čipy, nedávne, hrozno a kalendár.
 5. **Hyprglass** overiť naživo (sklenená téma v Goo) a doladiť.
 6. **Slovenský katalóg Noctalie** (bez neho Noctalia v LatteOS nenačíta slovenské preklady doplnkov) — pred
    integráciami Noctalie (C).

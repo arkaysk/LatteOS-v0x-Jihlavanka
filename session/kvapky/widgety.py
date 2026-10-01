@@ -59,7 +59,7 @@ for k in range(N):
     on drag w_hit.{k} while wdrag == {k} and abs(drag.dx) + abs(drag.dy) > 6 {{ wmoved = true }}
     on release w_hit.{k} while wdrag == {k} and wmoved {{ wd.x = mx; wd.y = my; impulse wwob.{k} 300; emit w_drop({k}); wmoved = false; wdrag = -1 }}
     on release w_hit.{k} while wdrag == {k} and not wmoved {{ wdrag = -1; impulse wwob.{k} 120; emit w_click({k}) }}
-    on press right w_hit.{k} while wdg.{k}.right {{ impulse wwob.{k} 120; ctx.x = mx - 20; ctx.y = my - 20 - 34 * 4; emit w_right({k}) }}
+    on press right w_hit.{k} while wdg.{k}.right {{ impulse wwob.{k} 120; ctx.x = mx; ctx.y = my; ctx_up = my > H / 2; emit w_right({k}) }}
     on scroll w_hit.{k} while wdg.{k}.wheel {{ emit w_wheel({k} * 2 + if(wheel > 0, 1, 0)) }}
     on enter w_hit.{k} {{ wh.{k}: 1 }}
     on leave w_hit.{k} {{ wh.{k}: 0 }}
