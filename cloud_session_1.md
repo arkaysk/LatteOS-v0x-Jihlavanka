@@ -382,3 +382,52 @@ pokrýva aj stopku.
 - Device Manager: compat v Hardvéri, SMART, batéria, fwupd, testy kamery/mikrofónu/reproduktorov/gamepadu, správa pre podporu
 - Výstrahy: ručný výber oblasti v Nastaveniach
 - Atomic / live USB / inštalátor — až keď bude LatteOS hotový
+
+### Porovnanie s TimeGoo a PowerGoo, 128 miest, spájanie kvapiek
+
+**Požiadavka:**
+- Pre porovnanie pridať do enginu súčasné PowerGoo a TimeGoo; vidieť, ako sa kvapky spájajú a ovplyvňujú
+  (napr. keď je jedna väčšia alebo nadnesená).
+- Prečo 64? Goobar (panel úloh) nesie vpravo okná ako ikry/hrozno: ikona s náhľadom, okná toho istého programu
+  (Word, SAP…) sa zhlukujú. Pri veľkej RAM môže byť okien veľa → radšej vyšší limit.
+- Prelínanie a spájanie zatiaľ nie je také pekné ako v pôvodnej verzii, tam pôsobí prirodzenejšie.
+
+**Ako to robí pôvodná plocha (rozbor `kvapka.plm`):**
+1. **Susedia sa ovplyvňujú:** `lift.s = near.s + 0,3 · max(near.p, …)` — kvapka sa nadnesie aj vtedy, keď kurzor
+   ide k susedovi; a nakloní sa k nej (`sx += 10 · hh − 9 · hp`).
+2. **Voda pod okrajom:** široký pás pod Štartom a vypínačom. Údolie medzi nimi preto nesiaha k okraju a trojica
+   pôsobí ako jedna hmota.
+3. **Goo vlákna:** vypínač ↔ Hodiny ↔ telo lišty, hrubnú s nadnesením a samy sa tvoria s tokom; po nich tečie
+   kvapôčka.
+4. **Tok:** `flow`, `flow2` — kvapky v pokoji pomaly vystupujú a klesajú. Sila zliatia
+   `link = 10 + 16 · lift + 10 · flow` sa mení, preto sa susedia raz spoja, raz rozdelia.
+5. **Okraj obrazovky je hladina:** pod skupinou nie je pás cez celú šírku.
+
+Engine mal iba zliatie a stopku, bez susedov, vody a toku; preto pôsobil stroho.
+
+**Urobené:**
+- Engine teraz robí body 1–5 všeobecne pre všetky kvapky:
+  - logika nájde susedov na lište podľa polohy (do ~2,6 súčtu polomerov);
+  - scéna odhadne ich blízkosť ku kurzoru;
+  - voda a vlákno k susedovi vpravo;
+  - tok a zliatie ako `link`;
+  - okraj ako hladina.
+- **TimeGoo, PowerGoo a hlava Goobaru** v engine s rozmermi a rozostupmi z Kvapiek:
+  - TimeGoo r 33 (+3), stred 22 px nad okrajom, 92 px vľavo od hlavy, veľký čas + dátum;
+  - PowerGoo r 19 (+4), skoro v okraji, vznos ~1,4 r, 66 px vľavo od TimeGoo;
+  - koliesko mení veľkosť.
+  Nové voľby `pri` + `odstup`, `vyska`, `vznos` do 2.
+- **128 miest.** So záplatou prázdne nestoja nič. Engine so 128 miestami a 17 kvapkami: 32–38 ms na snímku
+  v cloude (CPU llvmpipe); čítanie scény 0,8 ms.
+- Záplata `pleamar-prazdne-tvary` zrýchlila aj **súčasnú plochu Kvapky: 62 → 24 ms** (v cloude).
+
+**Porovnanie** (pôvodná vs. engine; kurzor ďaleko, nad TimeGoo, pri PowerGoo):
+`docs/goo/porovnanie-trojica-cloud.png`. Engine je pôvodnej trojici blízko: pri kurzore sa skupina zleje do
+jednej hmoty.
+
+**Rozdiely, ktoré ostávajú (doladiť naživo na latte-lab):**
+- PowerGoo v Kvapkách vystúpi pri kurzore viac.
+- V pôvodnej sa medzi kvapkami tvoria „oká“ (vlákna + kvapôčka).
+- Hlava Goobaru je tam zaoblený obdĺžnik so strapcom okien, v engine zatiaľ guľa.
+- Ikony v cloude chýbajú (písmo Tabler).
+- Kvapôčka tečúca po vlákne v engine ešte nie je.

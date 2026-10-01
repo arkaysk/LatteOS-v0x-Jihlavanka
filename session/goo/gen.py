@@ -10,7 +10,7 @@ Spúšťa sa po pridaní kvapky programátora (nový súbor v kvapky/) alebo po 
 import glob, os, re
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-N = 64      # počet miest (v scéne max N a repeat 0..N nastaví tento skript)
+N = 128     # počet miest (v scéne max N a repeat 0..N nastaví tento skript)
 
 
 def pick(fmt):
@@ -21,14 +21,16 @@ def pick(fmt):
 def body():
     out = []
     for k in range(N):
-        # stopka k lište (sedí na nej, pri nadnesení sa natiahne a stenčí), potom kvapka; susedné sa zlievajú
-        # o niečo viac, keď sú nadnesené (ako hrozno pri kurzore). Prázdne miesto má nulovú veľkosť:
-        # so záplatou pleamar-prazdne-tvary nestojí nič, bez nej leží pod obrazovkou.
-        out.append(f"        line {{ from: x.{k}, floor + 6; to: x.{k}, y.{k}; width: rr.{k} * 2 * stalk.{k}; blend: 16 }}\n")
-        out.append(f"        ellipse {{ at: x.{k}, y.{k}; radius: rr.{k}; scale: 1 + fxw.{k}, 1 - fxw.{k}; "
-                   f"blend: 12 + 10 * near.{k} + 8 * lifted.{k} }}\n")
+        # mláka pri okraji (ako goo.kvapka v Kvapkách), stopka pri nadnesení, voda k susedovi vpravo, kvapka so zliatím lk (mení sa s tokom
+        # a nadnesením), goo vlákno k susedovi vpravo. Prázdne/nepoužité tvary majú nulovú veľkosť: so záplatou
+        # pleamar-prazdne-tvary nestoja nič.
+        out.append(f"        ellipse {{ at: x.{k}, floor + 3; radius: rr.{k} * 0.62 * base.{k}; scale: 1.7, 0.55; blend: 16 }}\n")
+        out.append(f"        line {{ from: x.{k}, floor + 6; to: x.{k}, y.{k}; width: rr.{k} * 2 * stalk.{k}; blend: 14 }}\n")
+        out.append(f"        line {{ from: x.{k}, floor; to: thx.{k}, floor; width: wa.{k} * 2; blend: 18 }}\n")
+        out.append(f"        ellipse {{ at: x.{k}, y.{k}; radius: rr.{k}; scale: 1 + fxw.{k}, 1 - fxw.{k}; blend: lk.{k} + 6 * near.{k} }}\n")
+        out.append(f"        line {{ from: x.{k}, y.{k}; to: thx.{k}, thy.{k}; width: th.{k}; blend: 12 * clamp(th.{k} / 3, 0, 1) }}\n")
     # krk lepkavej kvapky: ťahá sa naraz iba jedna, preto jeden tvar pre všetky (miesto nk)
-    out.append("        line { from: " + pick("goo.{k}.hx * W") + ", " + pick("floor - goo.{k}.hy") + "; to: "
+    out.append("        line { from: " + pick("goo.{k}.hx * W + goo.{k}.ox") + ", " + pick("floor - goo.{k}.hy") + "; to: "
                + pick("x.{k}") + ", " + pick("y.{k}") + "; width: if(nk >= 0, " + pick("rr.{k} * 0.7 * neck.{k}")
                + ", 0); blend: 22 }\n")
     return "".join(out)

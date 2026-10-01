@@ -150,7 +150,7 @@ Zadanie používateľa: engine, ktorý zastreší všetky kvapky a nastaví prav
 správaním: reakcie na kurzor, prechod myšou, koliesko, ľavé/pravé/stredné tlačidlo, ťahanie, efekty, gravitáciu,
 lepivosť, veľkosť a rezervu na ďalšie efekty.
 
-- Kód: `session/goo` (README.md). Scéna `goo.plm` má **64 miest** (`N` v `gen.py`) cez `repeat`, generátor `gen.py`, logika
+- Kód: `session/goo` (README.md). Scéna `goo.plm` má **128 miest** (`N` v `gen.py`; Goobar nesie okná ako ikry/hrozno, pri veľkej RAM ich je veľa) cez `repeat`, generátor `gen.py`, logika
   `lib/engine.luau` (register, povahy, predvolené správanie, uloženie, nečinnosť). Kvapky používateľa sú JSON
   (`latte-goo`), kvapky programátorov moduly Luau s háčikmi.
 - Iba jazyk pleamar 0.2, bez záplat. Obmedzenie: `repeat` nesmie byť v `body` (telo rozpisuje `gen.py`).
@@ -166,6 +166,12 @@ lepivosť, veľkosť a rezervu na ďalšie efekty.
     do enginu to príde ako druh kvapky.
   - Opravené podľa toho: farby kvapiek preč (pravidlo 6), predvolené pravé, stredné tlačidlo a koliesko preč
     (pravidlo 8), menovka pod kvapkou preč (obsah sa hoverom nemení), stupne nečinnosti 1/3/6 min.
+- **Spájanie kvapiek v engine (prevzaté z TimeGoo/PowerGoo/Goobaru):**
+  - susedia na lište sa navzájom nadnášajú (30 %) a nakláňajú;
+  - spája ich voda pri okraji a goo vlákno;
+  - každá má vlastný tok (vystupuje a klesá), sila zliatia sa mení s ním;
+  - okraj obrazovky je hladina.
+  Porovnanie s pôvodnou trojicou je v `cloud_session_1.md`.
 - **Výkon:** telo goo počíta každý tvar pre každý pixel, aj skrytý. Záplata `pleamar-prazdne-tvary` vyradí tvary
   nulovej veľkosti: v cloude 192 → 21,6 ms na snímku (súčasná scéna Kvapky 62 ms). Bez nej engine funguje, iba
   pomalšie.
