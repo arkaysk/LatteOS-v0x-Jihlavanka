@@ -146,6 +146,13 @@ zmiešaný postup — do Rustu iba neustále bežiaci `stream` (CPU, pamäť, pr
 ostáva všetko na klik a často menené (Autoruns, Služby, detail a akcie procesu, Hardvér, Test výkonu, Pohoda,
 upozornenia). Rovnaký JSON → okno Monitora sa nemení, návrat na Python jedným riadkom. Až po overení fáz 1–6 na latte-lab.
 
+**Otázka: ako je na tom nový Monitor graficky oproti vzorom?** Hodnotené iba z QML kódu (v cloude sa nedá spustiť).
+Obsah na úrovni vzorov; slabšie je vizuálne zvýraznenie nových častí: disky a sieťovky bez grafov (Win11 má zoznam
+s mini grafmi + veľký graf), procesy bez sfarbenia buniek podľa záťaže, detail procesu ako stena textu (Process
+Explorer má karty), Autoruns+ bez farebných riadkov (Autoruns: ružová/žltá), Test výkonu iba text (CPU-Z: pruhy).
+Senzory najbližšie HWiNFO, Služby v poriadku. Návrh: 1 Výkon ako Win11 · 2 heatmapa buniek · 3 detail v kartách ·
+4 farebné riadky a ikony pôvodu v Po štarte · 5 pruhy v Teste výkonu. Čaká sa na rozhodnutie / screenshoty.
+
 ## Nové a zmenené súbory
 
 - `session/bin/`: `gnome-software`, `latte-hladaj`, `latte-riadok`, `latte-pocasie` (nové); `latte-ai`, `latte-apps`,
