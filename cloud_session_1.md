@@ -647,3 +647,31 @@ zisťuje iba cez Hyprland; tvar ikier je podobný.
 **Overené v cloude:** Zvedavka pustená presne na Počítadlo ostala, kde ju pustili (x 0,17). Počítadlo plynule
 odplávalo (331 → 369 px) a reťazovo sa odsunuli aj Pošta a Ťažká (`latte-goo stav`). Snímka:
 `docs/goo/neprekryvanie-cloud.png`.
+
+### Nápad: hra pre Linux na engine Goo
+
+**Otázka:** dal by sa engine (fyzikou podobný World of Goo, zámerne) použiť ako základ linuxovej hry? Niečo
+jednoduché, ale návykovo zábavné.
+
+**Odpoveď:** áno, ale na určitý typ hier.
+- **Engine vie:** goo vzhľad (zlievanie, mostíky, oká, svetlo, jadro, vlnky, ponor), pružiny s odrazom, nadnesenie,
+  lepivosť a odtrhnutie, gravitáciu kurzora, odsúvanie, ovládanie myšou, logiku v Luau, 128 kvapiek, 60 fps na GPU.
+- **Nevie:** skutočnú fyziku sietí guličiek na pružinách s váhou (World of Goo). Pleamar animuje vlastnosti k cieľom
+  a logika nebeží každý snímok. Stavebnica mostov by potrebovala fyziku v Ruste alebo iný engine (Godot) s prenesením
+  vzhľadu goo.
+
+**Nápady (od najjednoduchšieho):**
+1. **Chyť kvapku** (whack-a-goo): kvapky sa vynárajú z hladiny, klikni skôr, než sa ponoria. Jadro určuje body
+   (zlatá bonus, červená neklikať). Vlnky, kombá, zrýchľovanie. Takmer všetko už v engine je; môže byť aj easter egg
+   Goo pri nečinnosti.
+2. **Latte Merge** (ako Suika): kvapky padajú do šálky, rovnaké sa zlejú do väčšej (espresso → cortado → cappuccino →
+   latte), prehráš, keď pretečie. Zlievanie je to, čo pleamar kreslí najlepšie. Treba jednoduchú fyziku kruhov
+   v Luau (~30 Hz), plynulosť overiť.
+3. **Pastier kvapiek** (ako Lemmings): kurzor priťahuje kvapky (už je), preveď ich cez prekážky do šálky.
+4. **Odtrhni** (prak): natiahni kvapku od hladiny a pusti; let po oblúku na cieľ, dopad = vlnky.
+5. **Stavebnica ako World of Goo:** iba s fyzikou v Ruste alebo v inom engine. Mechanika áno, meno a vzhľad World of
+   Goo nie.
+
+**Odporúčanie:** najprv 1 ako ukážku (takmer zadarmo), potom 2 ako skutočnú malú hru (Flatpak, Hry LatteOS); ak Luau
+neutiahne plynulosť, malá fyzikálna služba v Ruste. Pleamar je BSD-3 (hra je v poriadku); gamepad pleamar zatiaľ
+nevie. Čaká na rozhodnutie používateľa.
