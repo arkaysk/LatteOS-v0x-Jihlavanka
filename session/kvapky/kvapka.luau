@@ -453,7 +453,7 @@ local AI_PRESETS = {
     { name = "ChatGPT (web)", provider = "web", key = "web", value = "chatgpt" },
     { name = "Perplexity (web)", provider = "web", key = "web", value = "perplexity" },
     { name = "Copilot (web)", provider = "web", key = "web", value = "copilot" },
-    { name = "Ollama", provider = "lokalne" },                    -- v ponuke „Na tomto PC (Ollama)“ cez preklad
+    { name = "This PC (Ollama)", provider = "lokalne" },
     { name = "Home server", provider = "domaci" },
     { name = "Claude (API key)", provider = "cloud", key = "cloud", value = "anthropic" },
     { name = "ChatGPT (API key)", provider = "cloud", key = "cloud", value = "openai" },
@@ -636,14 +636,25 @@ local function paint_favs()
 end
 -- nedávno spustené (pod obľúbenými, ako „Recent“ vo Windows)
 local recent = {}
+local frequent = {}                                 -- latte-riadok caste: najčastejšie v túto dennú dobu a deň
 local function paint_recent()
     recent = {}
     local out = {}
-    for _, id in ipairs(cfg.recent or {}) do
-        local a = by_id[id]
-        if a and #recent < 4 then recent[#recent + 1] = a; out[#out + 1] = { name = a.name, icon = a.icon } end
+    local seen = {}
+    for _, list in ipairs({ frequent, cfg.recent or {} }) do
+        for _, id in ipairs(list) do
+            local a = by_id[id]
+            if a and not seen[id] and #recent < 4 then seen[id] = true; recent[#recent + 1] = a; out[#out + 1] = { name = a.name, icon = a.icon } end
+        end
     end
     model.recent = out
+end
+local function load_frequent()
+    run("latte-riadok", { "caste", "3" }, function(out)
+        frequent = {}
+        for id in (out or ""):gmatch("[^\n]+") do frequent[#frequent + 1] = id end
+        paint_recent()
+    end)
 end
 
 -- ── Linux príkaz: nebezpečné príkazy chcú druhý Enter (zoznam z Text Baru klasického LatteOS) ──
@@ -676,11 +687,35 @@ end
 
 -- ── obsah podľa režimu ──
 local function note(s) text.note = s end
+-- doplnky riadku (latte-riadok, asynchrónne po pauze v písaní): kalkulačka, Nastavenia, návrhy webu, dopĺňanie príkazu
+local extra = { q = "", calc = nil, sets = {}, sugg = {}, compl = {} }
+-- skratky webu: „w: Bratislava“ → Wikipédia (aj klik na riadok skratky)
+local BANGS = {
+    { k = "w", name = "Wikipedia", url = "https://sk.wikipedia.org/w/index.php?search=%s" },
+    { k = "yt", name = "YouTube", url = "https://www.youtube.com/results?search_query=%s" },
+    { k = "m", name = "Maps", url = "https://www.openstreetmap.org/search?query=%s" },
+    { k = "gm", name = "Google Maps", url = "https://www.google.com/maps/search/%s" },
+    { k = "img", name = "Images", url = "https://duckduckgo.com/?ia=images&iax=images&q=%s" },
+    { k = "tr", name = "Translate", url = "https://translate.google.com/?sl=auto&tl=sk&text=%s" },
+    { k = "gh", name = "GitHub", url = "https://github.com/search?q=%s" },
+    { k = "fh", name = "Flathub", url = "https://flathub.org/apps/search?q=%s" },
+}
+local function as_url(q)
+    q = q:gsub("^%s+", ""):gsub("%s+$", "")
+    if q:find("%s") then return nil end
+    if q:match("^https?://") then return q end
+    if q:match("^[%w%-]+%.[%w%-%.]+[%w]/?.*$") and q:match("%.(%a%a+)/?") then return "https://" .. q end
+    return nil
+end
 local function paint_hits()
     local q = text.query or ""
     local ql = q:lower()
     local m = mode_id()
     hits = {}
+    -- kalkulačka a prevody (aplikácie aj web): výsledok navrchu, klik ho skopíruje
+    if (m == "apps" or m == "web") and extra.q == q and extra.calc then
+        hits[#hits + 1] = { kind = "calc", name = extra.calc.res, sub = extra.calc.desc .. " · " .. tr("click copies"), icon = "accessories-calculator" }
+    end
     if m == "apps" and ql ~= "" then
         local starts, inside = {}, {}
         for _, a in ipairs(apps) do
@@ -688,9 +723,16 @@ local function paint_hits()
             if n:sub(1, #ql) == ql then starts[#starts + 1] = a
             elseif n:find(ql, 1, true) then inside[#inside + 1] = a end
         end
+        local cap = (extra.q == q and #extra.sets > 0) and 3 or 4
+        local napps = 0
         for _, list in ipairs({ starts, inside }) do
             for _, a in ipairs(list) do
-                if #hits < 4 then hits[#hits + 1] = { kind = "app", name = a.name, sub = a.comment or a.generic or tr("Application"), icon = a.icon, app = a } end
+                if napps < cap then napps = napps + 1; hits[#hits + 1] = { kind = "app", name = a.name, sub = a.comment or a.generic or tr("Application"), icon = a.icon, app = a } end
+            end
+        end
+        if extra.q == q then                          -- „wifi“ → Nastavenia › Sieť
+            for i, st in ipairs(extra.sets) do
+                if i <= 2 then hits[#hits + 1] = { kind = "set", name = st.name, sub = tr("Settings"), icon = "preferences-system", area = st.area, page = st.page } end
             end
         end
         -- kvapky widgetov: napíš napr. „hlas“ → Hlasitosť; klik ju pridá na okraj (alebo odoberie)
@@ -722,20 +764,49 @@ local function paint_hits()
              or tr("Type part of a name — accents and typos do not matter. Filters: .pdf  >10MB  today  2024  in:Documents  “exact name”  content:word"))
     elseif m == "web" and ql ~= "" then
         local first = engine()
-        local order = { first }
-        for _, e in ipairs(ENGINES) do if e ~= first then order[#order + 1] = e end end
-        for _, e in ipairs(order) do
-            hits[#hits + 1] = { kind = "web", name = fill(tr("Search “{q}”"), { q = q }), sub = e.name,
-                                icon = "internet-web-browser", url = e.url:format(urlencode(q)) }
+        local bang, rest = q:match("^(%w+):%s*(.*)$")
+        local url = as_url(q)
+        if url then
+            hits[#hits + 1] = { kind = "web", name = fill(tr("Open {u}"), { u = url:gsub("^https?://", "") }), sub = tr("Web address"), icon = "internet-web-browser", url = url }
+        end
+        for _, b in ipairs(BANGS) do
+            if bang and b.k == bang:lower() then
+                hits[#hits + 1] = { kind = "web", name = fill(tr("Search “{q}”"), { q = rest }), sub = tr(b.name), icon = "internet-web-browser", url = b.url:format(urlencode(rest)) }
+            end
+        end
+        hits[#hits + 1] = { kind = "web", name = fill(tr("Search “{q}”"), { q = q }), sub = first.name,
+                            icon = "internet-web-browser", url = first.url:format(urlencode(q)) }
+        if extra.q == q then                          -- návrhy vyhľadávača: klik hľadá, pravý klik vloží do poľa
+            for _, sg in ipairs(extra.sugg) do
+                hits[#hits + 1] = { kind = "web", name = sg, sub = first.name .. " · " .. tr("suggestion"), icon = "edit-find", url = first.url:format(urlencode(sg)), text = sg }
+            end
+        end
+        for _, e in ipairs(ENGINES) do
+            if e ~= first and #hits < MAXH then
+                hits[#hits + 1] = { kind = "web", name = fill(tr("Search “{q}”"), { q = q }), sub = e.name, icon = "internet-web-browser", url = e.url:format(urlencode(q)) }
+            end
         end
     elseif m == "web" then
+        for _, b in ipairs(BANGS) do                  -- skratky ako riadky: klik vloží „w: “ do poľa
+            if #hits < MAXH then hits[#hits + 1] = { kind = "bang", name = b.k .. ":  " .. tr(b.name), sub = tr("click, then type"), icon = "internet-web-browser", text = b.k .. ": " } end
+        end
         note(tr("Type what to look for. Enter searches with your search engine; choose it below."))
     elseif m == "cmd" then
         local cmd = q:gsub("^%s+", "")
         if cmd ~= "" then
             local bad = dangerous(cmd)
             hits[#hits + 1] = { kind = "cmd", cmd = cmd, name = cmd, icon = bad and "dialog-warning" or "utilities-terminal",
-                                warn = bad, sub = bad and (confirm_cmd == cmd and tr("Enter again to run") or tr("Careful: changes the system")) or tr("Run in terminal") }
+                                warn = bad, sub = bad and (confirm_cmd == cmd and tr("Enter again to run") or tr("Careful: changes the system")) or tr("Run in terminal · right click: more") }
+            if bad and not ai.disabled then
+                hits[#hits + 1] = { kind = "explain", cmd = cmd, name = tr("What does this command do?"), sub = tr("AI explains it before you run it"), icon = "dialog-question" }
+            elseif not bad then
+                hits[#hits + 1] = { kind = "out", cmd = cmd, name = tr("Show the output here"), sub = tr("without opening a terminal (read-only commands)"), icon = "utilities-system-monitor" }
+            end
+            if extra.q == q then                      -- dopĺňanie: klik doplní do poľa (myšou namiesto Tabu)
+                for _, c in ipairs(extra.compl) do
+                    if #hits < 5 then hits[#hits + 1] = { kind = "compl", name = c, sub = tr("complete"), icon = "go-next", text = c } end
+                end
+            end
         end
         for _, c in ipairs(cfg.cmds) do
             if #hits < 10 and c ~= cmd and (ql == "" or c:lower():find(ql, 1, true)) then
@@ -769,6 +840,39 @@ local function search()
     -- súbory: fd po krátkej pauze v písaní (nie po každom písmene)
     fd_gen = fd_gen + 1
     local gen = fd_gen
+    -- doplnky riadku: kalkulačka/prevody + Nastavenia (aplikácie), návrhy vyhľadávača (web), dopĺňanie (príkaz)
+    local md = mode_id()
+    if q ~= "" and (md == "apps" or md == "web" or md == "cmd") then
+        after(180, function()
+            if gen ~= fd_gen then return end
+            local got = { q = q, calc = nil, sets = {}, sugg = {}, compl = {} }
+            local pending = 0
+            local function done()
+                pending = pending - 1
+                if pending == 0 and gen == fd_gen then extra = got; paint_hits() end
+            end
+            local function ask(args, fn) pending = pending + 1; run("latte-riadok", args, function(out) fn(out or ""); done() end) end
+            if md ~= "cmd" then
+                ask({ "pocitaj", q }, function(out)
+                    local res, desc = out:match("^([^\t\n]+)\t([^\n]*)")
+                    if res then got.calc = { res = res, desc = desc } end
+                end)
+            end
+            if md == "apps" and #q >= 2 then
+                ask({ "nastavenia", q }, function(out)
+                    for name, area, page in out:gmatch("([^\t\n]+)\t([^\t\n]+)\t([^\n]+)") do got.sets[#got.sets + 1] = { name = name, area = area, page = page } end
+                end)
+            elseif md == "web" and not as_url(q) and not q:match("^%w+:") then
+                ask({ "navrhy", cfg.engine or "google", q }, function(out)
+                    for line in out:gmatch("[^\n]+") do if #got.sugg < 3 then got.sugg[#got.sugg + 1] = line end end
+                end)
+            elseif md == "cmd" then
+                ask({ "dopln", q }, function(out)
+                    for line in out:gmatch("[^\n]+") do got.compl[#got.compl + 1] = line end
+                end)
+            end
+        end)
+    end
     if mode_id() == "files" and #q >= 2 and HOME then
         after(220, function()
             if gen ~= fd_gen then return end
@@ -1022,7 +1126,7 @@ function paint_chips()
             end
             local home = preset_item(preset("Home server")); home.sep = true
             items[#items + 1] = home
-            items[#items + 1] = preset_item(preset("Ollama"))
+            items[#items + 1] = preset_item(preset("This PC (Ollama)"))
             menu(items)
         end }
         if not ai.web and not ai.disabled then
@@ -1153,6 +1257,7 @@ end)
 -- ── otvorenie riadkov ──
 local function launch(a)
     if a and a.exec then pcall(sys.call, "apps.launch", a.exec) end
+    if a and a.id then run("latte-riadok", { "zaznam", a.id }) end   -- časté aplikácie podľa dennej doby
     if a and a.id then
         local i = has(cfg.recent, a.id)
         if i then table.remove(cfg.recent, i) end
@@ -1184,6 +1289,22 @@ local function run_cmd(cmd)
     text.query = ""
     fact.dash = false
 end
+-- krátky výstup príkazu v ponuke pri riadku (myšou: klik Kopírovať / Otvoriť v termináli)
+function show_output(cmd)
+    local lines = {}
+    spawn("latte-riadok", { "vystup", cmd }, function(line) lines[#lines + 1] = line end, function(_, code)
+        if code == 3 then run_cmd(cmd); return end           -- nie je bezpečný na čítanie → terminál ako doteraz
+        local out = table.concat(lines, "\n")
+        local items = {}
+        for _, line in ipairs(lines) do
+            if #items < 10 and line ~= "" then items[#items + 1] = { label = line, off = true } end
+        end
+        if #items == 0 then items[1] = { label = tr("(no output)"), off = true } end
+        items[#items + 1] = { glyph = G.check, label = tr("Copy"), sep = true, run = function() pcall(sys.call, "clipboard.set", out) end }
+        items[#items + 1] = { glyph = G["terminal-2"], label = tr("Open in terminal"), run = function() run_cmd(cmd) end }
+        menu(items, 560)
+    end)
+end
 local function open_hit(i)
     local h = hits[(i or 0) + 1]
     if not h then return end
@@ -1192,6 +1313,13 @@ local function open_hit(i)
     if h.kind == "app" then launch(h.app)
     elseif h.kind == "cmd" then run_cmd(h.cmd)
     elseif h.kind == "file" then run("xdg-open", { h.path }); run("latte-hladaj", { "--otvorene", h.path }); fact.dash = false
+    elseif h.kind == "calc" then pcall(sys.call, "clipboard.set", (h.name:gsub("%s[%a°]+$", ""):gsub(" ", "")))
+    elseif h.kind == "set" then run("latte-app", { "nastavenia", h.page }); fact.dash = false
+    elseif h.kind == "compl" or h.kind == "bang" then text.query = h.text; focus("query")
+    elseif h.kind == "explain" then
+        fact.smode = 0
+        ai_send(fill(tr("Explain what this Linux command does, step by step, and whether it is safe to run: {c}"), { c = h.cmd }))
+    elseif h.kind == "out" then show_output(h.cmd)
     else run("xdg-open", { h.url }); fact.dash = false end
 end
 on("open_hit", open_hit)
@@ -1228,20 +1356,48 @@ on("fact:dash", function(open)
     end
 end)
 
-on("hit_menu", function(k)
-    local h = hits[(k or 0) + 1]
-    if not h then return end
-    local items = {}
-    if h.kind == "app" then
+-- pravý klik na aplikáciu: jej akcie z .desktop (Nové okno, Súkromné okno…) + pridať do záložky
+function app_actions_menu(a, items)
+    items = items or {}
+    run("latte-riadok", { "akcie", a.id or "" }, function(out)
+        local n = 0
+        for name, exec in (out or ""):gmatch("([^\t\n]+)\t([^\n]+)") do
+            if n < 5 then n = n + 1; items[#items + 1] = { glyph = G["chevron-right"], label = name, run = function() pcall(sys.call, "apps.launch", exec); fact.dash = false end } end
+        end
+        local tabs = {}
         for _, t in ipairs(cfg.tabs) do
-            local id = h.app.id
-            items[#items + 1] = { label = fill(tr("Add to “{tab}”"), { tab = t.name }), on = has(t.apps, id) ~= nil, run = function()
+            local id = a.id
+            tabs[#tabs + 1] = { label = t.name, on = has(t.apps, id) ~= nil, run = function()
                 local at = has(t.apps, id)
                 if at then table.remove(t.apps, at) else t.apps[#t.apps + 1] = id end
                 save_cfg(); paint_favs()
             end }
         end
-    elseif h.kind == "file" then
+        if #tabs > 0 then items[#items + 1] = { glyph = G.plus, label = tr("Add to tab"), sub = tabs, sep = n > 0 } end
+        if a.id then items[#items + 1] = { label = tr("Details in App Manager"), run = function() run("latte-app", { "aplikacie", "detail", a.id }); fact.dash = false end } end
+        menu(items, 300)
+    end)
+end
+on("hit_menu", function(k)
+    local h = hits[(k or 0) + 1]
+    if not h then return end
+    local items = {}
+    if h.kind == "app" then
+        app_actions_menu(h.app, items); return
+    end
+    if h.kind == "web" and h.text then
+        items[#items + 1] = { label = tr("Put into the field"), run = function() text.query = h.text; focus("query") end }
+    elseif h.kind == "cmd" then
+        items[#items + 1] = { label = tr("Show the output here"), run = function() show_output(h.cmd) end }
+        if not ai.disabled then
+            items[#items + 1] = { glyph = G.sparkles, label = tr("What does this command do?"), run = function()
+                fact.smode = 0
+                ai_send(fill(tr("Explain what this Linux command does, step by step, and whether it is safe to run: {c}"), { c = h.cmd }))
+            end }
+        end
+        items[#items + 1] = { label = tr("Copy"), run = function() pcall(sys.call, "clipboard.set", h.cmd) end }
+    end
+    if h.kind == "file" then
         local dir = h.path:match("^(.*)/[^/]*$") or h.path
         items[#items + 1] = { glyph = G["folder-open"], label = tr("Show in Files"), run = function()
             run("latte-app", { "subory", h.path }); run("latte-hladaj", { "--otvorene", h.path }); fact.dash = false
@@ -1269,11 +1425,19 @@ on("fav_menu", function(k)
     local a = favs[(k or 0) + 1]
     if not t or not a then return end
     local i = has(t.apps, a.id)
-    menu({
-        { label = tr("Remove from this tab"), run = function() if i then table.remove(t.apps, i) end; save_cfg(); paint_favs() end },
-        { label = tr("Move left"), run = function() if i then move(t.apps, i, -1) end; save_cfg(); paint_favs() end },
-        { label = tr("Move right"), run = function() if i then move(t.apps, i, 1) end; save_cfg(); paint_favs() end },
-    })
+    local acts = {}
+    run("latte-riadok", { "akcie", a.id or "" }, function(out)
+        for name, exec in (out or ""):gmatch("([^\t\n]+)\t([^\n]+)") do
+            if #acts < 4 then acts[#acts + 1] = { glyph = G["chevron-right"], label = name, run = function() pcall(sys.call, "apps.launch", exec); fact.dash = false end } end
+        end
+        local base = {
+            { label = tr("Remove from this tab"), sep = #acts > 0, run = function() if i then table.remove(t.apps, i) end; save_cfg(); paint_favs() end },
+            { label = tr("Move left"), run = function() if i then move(t.apps, i, -1) end; save_cfg(); paint_favs() end },
+            { label = tr("Move right"), run = function() if i then move(t.apps, i, 1) end; save_cfg(); paint_favs() end },
+        }
+        for _, b in ipairs(base) do acts[#acts + 1] = b end
+        menu(acts)
+    end)
 end)
 
 -- nastavenia: zo súboru; prvý raz obľúbené z doterajších pripnutých (~/.config/latteos/pripnute) a prázdne Hry
@@ -1317,7 +1481,7 @@ local function load_cfg()
         end
         paint_modes()
         if (tonumber(fact.smode) or 1) ~= cfg.mode then fact.smode = cfg.mode end
-        paint_mode(); paint_favs(); paint_recent(); load_places()
+        paint_mode(); paint_favs(); paint_recent(); load_places(); load_frequent()
     end)
 end
 
