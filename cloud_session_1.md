@@ -171,6 +171,10 @@ DaNoGoo. Výhrady: **ICQ skončilo v júni 2024**; Telegram (oficiálne API) a S
 Meta služby porušujú ich podmienky (možný zákaz účtu) → upozornenie / webová aplikácia v okne; licencie mostov AGPL.
 Postup: 1 ChatGoo s Telegramom a Signalom · 2 Discord a Meta s upozornením · 3 ostatné ako web v okne. Čaká na výber mena.
 
+**Otázka: je Beeper aj pre Linux?** Áno — oficiálne ako AppImage; Flatpak iba neoficiálne komunitné balíky (nie na
+Flathube). Beeper je uzavretá aplikácia, správy bežne cez servery Beepera. Odporúčanie: Beeper ako alternatíva
+v App Manageri, ChatGoo vlastný na tých istých otvorených mostoch mautrix (lokálne, vzhľad Goo, upozornenia v DaNoGoo).
+
 ## Nové a zmenené súbory
 
 - `session/bin/`: `gnome-software`, `latte-hladaj`, `latte-riadok`, `latte-pocasie` (nové); `latte-ai`, `latte-apps`,
