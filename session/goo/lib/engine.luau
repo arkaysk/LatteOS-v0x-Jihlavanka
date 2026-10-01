@@ -122,10 +122,75 @@ local function neighbours(list)
     end
 end
 
+-- ── kvapky sa nikdy úplne neprekryjú (pravidlo 22) ───────────────────────────────────────────────────────────
+-- Dve kvapky smú byť pri sebe a zlievať sa, ale stredy musia ostať aspoň 0,72 súčtu polomerov od seba. Ak nie (napr.
+-- jedna pustená na druhú), jedna sa plynule odsunie: kvapka na lište pozdĺž lišty, voľná smerom od druhej. Ustúpi
+-- tá, ktorú možno posunúť — nie okná Goobaru (rozloženie) ani kvapky pripnuté k inej (TimeGoo, PowerGoo); z dvoch
+-- posunuteľných ustúpi tá, na ktorú niečo pustili. Odsunutie sa reťazí (najviac 10 kôl) a uloží.
+local save                 -- nižšie (uloženie polôh)
+local MIN_GAP = 0.72
+local sepDirty, sepPrefer = false, nil
+local function movable(d) return not d.def.pri and d.zdroj ~= "dyn" and not d.dragging end
+local function separate()
+    local sw = num(fact.sw, 0)
+    if sw <= 0 then sw = 1920 end
+    local list = {}
+    for k = 0, N - 1 do if slots[k] then table.insert(list, slots[k]) end end
+    local moved = {}
+    for _ = 1, 10 do
+        local any = false
+        for i = 1, #list do
+            for j = i + 1, #list do
+                local a, b = list[i], list[j]
+                -- iba kvapky, ktoré sa môžu stretnúť (to isté goo telo alebo hlava v oboch)
+                local sa, sb = num(a.v.sk, 0), num(b.v.sk, 0)
+                if sa == sb or sa == 2 or sb == 2 then
+                    local ax, ay = a.x * sw + (a.ox or 0), a.y
+                    local bx, by = b.x * sw + (b.ox or 0), b.y
+                    local need = MIN_GAP * (a.v.velkost * a.z + b.v.velkost * b.z)
+                    local dx, dy = bx - ax, by - ay
+                    local dist = math.sqrt(dx * dx + dy * dy)
+                    if dist < need - 0.5 then
+                        -- kto ustúpi: posunuteľná; z dvoch tá, na ktorú pustili (sepPrefer = pustená ostáva)
+                        local mv, other
+                        if movable(b) and (b ~= sepPrefer or not movable(a)) then mv, other = b, a
+                        elseif movable(a) then mv, other = a, b end
+                        if mv then
+                            local ox, oy = mv.x * sw + (mv.ox or 0), mv.y
+                            local px, py = other.x * sw + (other.ox or 0), other.y
+                            local vx, vy = ox - px, oy - py
+                            local docked = oy < mv.v.velkost * mv.z * 1.6
+                            if docked then vy = 0 end
+                            local len = math.sqrt(vx * vx + vy * vy)
+                            if len < 0.5 then vx, vy, len = 1, 0, 1 end      -- presne na sebe: doprava
+                            local push = need - dist + 2
+                            mv.x = clamp((ox + vx / len * push - (mv.ox or 0)) / sw, 0.02, 0.98)
+                            mv.y = math.max(0, oy + vy / len * push)
+                            -- pri okraji obrazovky nemá kam: odsunie sa na druhú stranu
+                            if (mv.x <= 0.02 or mv.x >= 0.98) and docked then
+                                mv.x = clamp((px - vx / len * need - (mv.ox or 0)) / sw, 0.02, 0.98)
+                            end
+                            mv.moved = true
+                            moved[mv] = true
+                            any = true
+                        end
+                    end
+                end
+            end
+        end
+        if not any then break end
+    end
+    for d in pairs(moved) do bump("sqn", d.k) end          -- odsunutá sa zachveje
+    if next(moved) then save() end
+    sepPrefer = nil
+end
+function E.separate(prefer) sepDirty, sepPrefer = true, prefer or sepPrefer end
+
 local function publish()
     if publishing then dirty = true return end
     publishing = true
     after(16, function()                                 -- viac zmien v jednom kroku = jeden zápis
+        if sepDirty then sepDirty = false separate() end
         local live = {}
         for k = 0, N - 1 do if slots[k] then table.insert(live, slots[k]) end end
         neighbours(live)
@@ -150,7 +215,7 @@ E.publish = publish
 
 -- ── uloženie polôh a veľkostí (latte-goo stav / uloz-stav) ─────────────────────────────────────────────────────
 local saveTimer
-local function save()
+save = function()
     if saveTimer then cancel(saveTimer) end
     saveTimer = after(1200, function()
         saveTimer = nil
@@ -170,7 +235,7 @@ function Kvapka:ikona(s) self.v.ikona = s if self.v.druh ~= 2 then E.needGlyph(s
 function Kvapka:hodnota(x) self.v.hodnota = x publish() end
 function Kvapka:efekt(meno, sila) self.v.efekt = meno self.v.sila = sila or self.v.sila publish() end
 function Kvapka:rezerva(i, x) self.e[i] = x publish() end
-function Kvapka:velkost(z) self.z = clamp(z, ZOOM_MIN, ZOOM_MAX) publish() save() end
+function Kvapka:velkost(z) self.z = clamp(z, ZOOM_MIN, ZOOM_MAX) E.separate(self) publish() save() end
 function Kvapka:presun(x, y) self.x, self.y, self.ox = clamp(x, 0.02, 0.98), math.max(0, y), 0 self.moved = true publish() save() end
 function Kvapka:domov() self.x, self.y, self.ox, self.z, self.moved = self.hx0, self.hy0, self.ox0, 1, false publish() save() end
 function Kvapka:poskoc() bump("hopn", self.k) end
@@ -258,6 +323,7 @@ function E.define(def, zdroj)
     d.ox = s and 0 or d.ox0
     d.moved = s ~= nil
     slots[k], byId[def.id] = d, d
+    E.separate()
     E.needGlyph(v.ikona)
     -- chyba jednej kvapky nezhodí ostatné (zapíše sa do logu)
     local function safe(name, f) local ok, err = pcall(f, d) if not ok then log("goo: " .. d.id .. "." .. name .. ": " .. tostring(err)) end end
@@ -285,6 +351,7 @@ function E.upsert(def)
         d.hx0, d.hy0 = num(def.poloha.x, d.hx0), num(def.poloha.y, seat)
     end
     if not d.moved then d.x, d.y, d.ox = d.hx0, d.hy0, d.ox0 end
+    E.separate()
     publish()
     return d
 end
@@ -443,6 +510,8 @@ on("goo_drop", function(k)
         after(260, function() E.vlnka(d:px(), 4 + d.v.velkost * d.z * 0.12, "kamen") end)
     end
     hud(string.format("pustenie · %s · x %.2f y %d", d.id, d.x, d.y))
+    -- pustená na inú: jedna sa odsunie (pravidlo 22); pustená ostane, kde ju pustili
+    E.separate(d)
     -- domov a ťahanie scény naraz (inak by kvapka na snímok skočila späť)
     fact["dx." .. k], fact["dy." .. k], fact["drg." .. k], fact["tr." .. k] = 0, 0, 0, 0
     fact.nk = -1

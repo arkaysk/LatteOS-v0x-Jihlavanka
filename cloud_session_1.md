@@ -627,3 +627,23 @@ Je to iba v jazyku, bez ďalšej záplaty. Neurobené, čaká na súhlas.
 
 **Porovnanie** (`docs/goo/goobar-porovnanie-cloud.png`): pôvodná plocha v cloude neuhne, lebo okná nad lištou
 zisťuje iba cez Hyprland; tvar ikier je podobný.
+
+### Pravidlo 22: kvapky sa nikdy úplne neprekryjú
+
+**Zadanie:**
+- Hlava Goobaru sa s inými goo spája — áno, v engine je v oboch goo telách (spája sa s TimeGoo), ikry okien iba s ňou.
+- Nové pravidlo: goo sa nemôžu úplne prekrývať; vždy sa jedno odsunie od druhého, napr. keď ťahaním pustím jedno
+  na druhé.
+
+**Urobené (`lib/engine.luau` › `separate`):**
+- Stredy dvoch kvapiek, ktoré sa môžu stretnúť (to isté goo telo), ostanú aspoň 0,72 súčtu polomerov od seba.
+  Zlievajú sa, ale neprekryjú.
+- Kontrola po pustení, pridaní kvapky, zmene veľkosti a zmene okien Goobaru.
+- Ustúpi posunuteľná kvapka: kvapka na lište pozdĺž lišty, voľná smerom od druhej; pri okraji obrazovky na druhú
+  stranu. Okná Goobaru (rozloženie) a pripnuté kvapky (TimeGoo, PowerGoo) neustúpia. Z dvoch posunuteľných ustúpi
+  tá, na ktorú niečo pustili.
+- Odsúvanie sa reťazí (do 10 kôl), odsunutá sa zachveje, nové polohy sa uložia.
+
+**Overené v cloude:** Zvedavka pustená presne na Počítadlo ostala, kde ju pustili (x 0,17). Počítadlo plynule
+odplávalo (331 → 369 px) a reťazovo sa odsunuli aj Pošta a Ťažká (`latte-goo stav`). Snímka:
+`docs/goo/neprekryvanie-cloud.png`.

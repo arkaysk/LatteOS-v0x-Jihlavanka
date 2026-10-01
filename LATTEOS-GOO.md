@@ -100,6 +100,10 @@ samostatný tekutý prvok.
    Ostrosť rieši záplata pleamar `pleamar-ostre-okraje` (vyhladenie hrany podľa skutočnej zmeny vzdialenosti na
    pixel), teda v ploche Kvapky aj v engine bez zmeny scény.
 
+22. **Kvapky sa nikdy úplne neprekryjú** (1. 10. večer): môžu byť pri sebe a zlievať sa, ale keď napr. ťahaním
+   pustím jednu na druhú, jedna sa vždy odsunie od druhej. Hlava Goobaru sa s ostatnými kvapkami spája (TimeGoo),
+   ikry okien iba s ňou.
+
 ---
 
 ## 3. Fyzika a správanie kvapiek
@@ -195,6 +199,10 @@ lepivosť, veľkosť a rezervu na ďalšie efekty.
   - vietor (nárazy, smer náhodný, postupná vlna pozdĺž okraja, malé kvapky viac);
   - ponor pri návrate k okraju; odtrhnutie najneskôr po 1,6 polomeru;
   - ostrý okraj (tieň 0, 2, 2).
+- **Pravidlo 22 v engine:** stredy dvoch kvapiek ostanú aspoň 0,72 súčtu polomerov od seba (zliatie áno, prekrytie
+  nie). Po pustení, pridaní, zmene veľkosti a zmene okien sa jedna plynule odsunie: na lište pozdĺž lišty, voľná od
+  druhej. Ustúpi posunuteľná (nie okná Goobaru ani pripnuté TimeGoo a PowerGoo); z dvoch tá, na ktorú pustili.
+  Odsúvanie sa reťazí a uloží.
 - **Luau `emit` nenesie hodnotu** (iba meno): logika → scéna pre jednu kvapku ide cez počítadlo (fakt + `on change`).
   Skok, stlačenie a ponor predtým trafili iba kvapku na mieste 0; opravené.
 - **Goobar a kvapky plochy v engine (1. 10. večer):**

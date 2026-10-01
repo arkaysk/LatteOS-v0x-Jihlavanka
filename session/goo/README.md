@@ -75,6 +75,9 @@ mieste kliku, podponuky, preklady), **guľky** (`d:gulky(n, farby)`), **ikona ap
   najneskôr po 1,6 polomeru (dlhý krk je nepekný).
 - **Oká a ostrý okraj (pravidlo 21):** záplata `pleamar-ostre-okraje` vyhladzuje hranu podľa skutočnej zmeny
   vzdialenosti na pixel, preto je okraj ôk ostrá čiara; tieň je tesný (0, 2, 2).
+- **Neprekrývanie (pravidlo 22):** kvapky sa môžu zlievať, ale nie úplne prekryť. Stredy ostanú aspoň 0,72 súčtu
+  polomerov od seba, inak sa jedna plynule odsunie, aj reťazovo. Ustúpi tá, na ktorú pustili, nikdy okná Goobaru ani
+  pripnuté kvapky. `E.separate()` po pustení, pridaní, zmene veľkosti a zmene okien.
 - **Efekty scény:** `dych`, `kmit`, `tras`, `obeh`, `tlkot` (+ `sila`).
 - **Rezerva na nedefinované efekty:**
   - efekty 6–9 v scéne sú voľné;
