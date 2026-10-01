@@ -94,7 +94,7 @@ local function record(d)
         ikona = ik, text = v.text or "",
         jadro = d.jadroS or 0, jf = d.jadroF or 0, jp = d.jadroP or false,
         obr = v.obr or "", img = (v.obr or "") ~= "", tlm = d.tlm or 0,
-        gn = d.gn or 0, gf = d.gf or 0, gt = d.gt or "",
+        gn = d.gn or 0, gf = d.gf or 0, gt = d.gt or "", sk = num(v.sk, 0), zl = num(v.zliatie, 1), ml = num(v.mlaka, 1),
     }
 end
 
@@ -110,10 +110,15 @@ local function neighbours(list)
         if d.y < d.v.velkost * 1.6 and not d.dragging then table.insert(docked, d) end
     end
     table.sort(docked, function(a, b) return a.x * NOMINAL_W + (a.ox or 0) < b.x * NOMINAL_W + (b.ox or 0) end)
+    -- susedia iba v rámci jedného goo tela: ikry Goobaru (sk 1) s hlavou (sk 2) a navzájom, ostatné (sk 0) s hlavou
+    local function same_body(a, b)
+        local x, y = num(a.v.sk, 0), num(b.v.sk, 0)
+        return x == y or x == 2 or y == 2
+    end
     for i = 1, #docked - 1 do
         local a, b = docked[i], docked[i + 1]
         local gap = (b.x - a.x) * NOMINAL_W + (b.ox or 0) - (a.ox or 0)
-        if gap < 2.6 * (a.v.velkost * a.z + b.v.velkost * b.z) then a.nr, b.nl = b, a end
+        if same_body(a, b) and gap < 2.6 * (a.v.velkost * a.z + b.v.velkost * b.z) then a.nr, b.nl = b, a end
     end
 end
 

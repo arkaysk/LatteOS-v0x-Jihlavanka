@@ -14,7 +14,9 @@ local M = {}
 
 local HEAD = "goobar"
 local SLOTS = 96                    -- okien v lište najviac (engine má 128 miest, ostatné kvapky potrebujú svoje)
-local R0 = 29
+-- ikry sú menšie než ostatné kvapky (nezamieňajú sa s nimi) a lepia sa iba ku Goobaru: vlastné goo telo (sk = 1)
+local R0 = 22
+local R_TIGHT = 17                  -- pod oknom: menšie, v cik-cak rade pri okraji
 local OFFS = { { 0, 0 }, { 1.72, -0.42 }, { 0.78, -1.62 }, { -0.98, -1.3 }, { 2.28, -1.86 },
                { 0.02, -3.0 }, { 1.62, -3.12 }, { -1.25, -2.85 }, { 2.9, -3.0 }, { 0.85, -4.2 },
                { -0.6, -4.3 }, { 2.2, -4.3 }, { 3.4, -1.1 }, { 0.1, -5.4 }, { 1.55, -5.5 },
@@ -23,6 +25,7 @@ local JIT = { { 0, 0 }, { 0.06, -0.04 }, { -0.05, 0.07 }, { 0.08, 0.03 }, { -0.0
               { 0.05, 0.06 }, { -0.04, 0.05 }, { 0.07, -0.06 }, { -0.06, 0.04 }, { 0.04, -0.07 },
               { 0.03, 0.05 }, { -0.05, -0.03 }, { 0.06, 0.02 }, { -0.03, -0.06 }, { 0.05, 0.04 },
               { -0.06, 0.03 }, { 0.02, -0.05 }, { 0.04, 0.06 }, { -0.04, -0.04 }, { 0.06, -0.02 } }
+local ZIG = { 0, 0.46, 0.12, 0.52, 0.04, 0.38, 0.18, 0.5 }   -- cik-cak strapca v páse pod oknom (násobky r)
 local MODE_ICON = { plavajuce = "app-window", dlazdice = "layout-grid", paska = "layout-columns" }
 
 local wins = {}                     -- zoznam okien (služba window), v jej poradí
@@ -32,6 +35,18 @@ local group_order = {}              -- poradie aplikácií, ktoré si používat
 local spans = {}                    -- kľúč skupiny → stred strapca (px od hlavy)
 local hot, hot_gen = nil, 0         -- strapec pod myšou (rozvinutý)
 local mode = "plavajuce"
+-- okná nad lištou (návrh používateľa, Kvapky 30. 9.): každé ako úsek pozdĺž okraja v px od stredu hlavy { a0, a1, gap }
+-- (gap = voľno medzi oknom a okrajom). Strapec sa nezrovnáva podľa hocijakého okna, iba podľa okien priamo nad sebou:
+-- kým tam okno nie je, zhromaždí sa do výšky (hrozno); keby okno prekryl, uhne k okraju do radu.
+local blocks = {}
+local low_was = {}                  -- kľúč strapca → bol naposledy stiahnutý (hysterézia, aby neblikal)
+local function free_above(x0, x1)
+    local g = 999
+    for _, b in ipairs(blocks) do
+        if b.a1 > x0 and b.a0 < x1 then g = math.min(g, b.gap) end
+    end
+    return g
+end
 
 -- ── okno → aplikácia ─────────────────────────────────────────────────────────────────────────────────────────
 local apps_by = { wm = {}, id = {}, tail = {}, name = {} }
@@ -106,16 +121,28 @@ local function layout()
         local idx = groups[key]
         local m = #idx
         local r = (paska and 24 or R0) * math.max(0.72, 1 - 0.07 * (m - 1))
-        local lo, hi = 0, 0
+        local lo, hi, top = 0, 0, 0
         for j = 1, math.min(m, #OFFS) do
             local ox = OFFS[j][1] + JIT[j][1]
-            lo, hi = math.min(lo, ox), math.max(hi, ox)
+            lo, hi, top = math.min(lo, ox), math.max(hi, ox), math.max(top, -(OFFS[j][2] + JIT[j][2]))
         end
-        local row = m == 1 or key == hot or m > #OFFS
-        if key == hot then r = paska and 24 or R0 end
-        if row then
+        -- nad strapcom musí byť voľno na jeho výšku (+ nadnesenie), inak uhne k okraju do radu
+        local need = top * r + r + 56 + (low_was[key] and 16 or 0)
+        local tight = free_above(u, u + (hi - lo) * r + 2 * r) < need
+        low_was[key] = tight
+        local row = tight or m == 1 or key == hot or m > #OFFS
+        if key == hot and not tight then r = paska and 24 or R0 end
+        if tight then r = math.min(r, R_TIGHT) end
+        if row and tight and m > 1 then
+            -- pod oknom: strapec využije pás po spodok okna, nepravidelne (cik-cak), bez prekrytia okna
+            local step = r * 1.45
+            for j, i in ipairs(idx) do
+                lay[i] = { x = u + r + (j - 1) * step, y = -ZIG[((j - 1) % #ZIG) + 1] * r, r = r * (1 + 0.05 * (((j - 1) * 37) % 5 - 2) / 2), tight = true }
+            end
+            u = u + 2 * r + (m - 1) * step + 12
+        elseif row then
             local step = r * 1.86
-            for j, i in ipairs(idx) do lay[i] = { x = u + r + (j - 1) * step, y = 0, r = r } end
+            for j, i in ipairs(idx) do lay[i] = { x = u + r + (j - 1) * step, y = 0, r = r, tight = tight } end
             u = u + 2 * r + (m - 1) * step + 12
         else
             local ax = u + r - lo * r
@@ -150,7 +177,9 @@ local function layout()
                 obr = more and "preferences-system-windows" or icon_of(w), velkost = r,
                 ikona = "app-window",            -- bez spúšťača (žiadna ikona aplikácie): znak okna
                 pri = HEAD, odstup = e.x, vyska = r * 0.8 - e.y, povaha = "pokojna",
-                gravitacia = 0.15, vznos = 0.55, lepivost = 0.35, rast = 0.1, dosah = 160, okno = i,
+                gravitacia = 0.15, vznos = e.tight and 0.15 or 0.55, lepivost = 0.35, rast = 0.1, dosah = 160, okno = i,
+                sk = 1,                          -- vlastné goo telo: lepí sa iba ku Goobaru
+                zliatie = 0.35, mlaka = 0.15,    -- jednotlivé bobule hrozna s tenkými spojmi, nie jedna hmota
                 klik = function(dd) M.click(dd) end, pravy = function(dd) M.menu(dd) end,
                 nad = function(dd) M.hover(dd) end, prec = function(dd) M.unhover(dd) end,
                 pustenie = function(dd, x) return M.drop(dd, x) end,
@@ -294,6 +323,24 @@ local function mark_hidden()
     end)
 end
 
+-- okná nad lištou → úseky pozdĺž okraja v px od stredu hlavy (latte-goo okna: Hyprland, na skúšky Sway)
+local blocks_sig = ""
+function M.read_blocks()
+    run("latte-goo", { "okna" }, function(out)
+        local ok, t = pcall(json.decode, out or "")
+        local head = E.get(HEAD)
+        if not ok or type(t) ~= "table" or not head or (t.h or 0) <= 0 then return end
+        local hx = head.x * (tonumber(fact.sw) or t.w) + (head.ox or 0)
+        local nb = {}
+        for _, w in ipairs(t.okna or {}) do
+            local gap = t.h - (w.y + w.h)
+            if gap < 400 and w.y < t.h then nb[#nb + 1] = { a0 = w.x - hx, a1 = w.x + w.w - hx, gap = math.max(0, gap) } end
+        end
+        local sig = json.encode(nb)
+        if sig ~= blocks_sig then blocks_sig, blocks = sig, nb layout() end
+    end)
+end
+
 function M.start()
     sys.watch("apps", function(list) index_apps(list) layout() end)
     -- `window` dá zoznam iba cez wlr-foreign-toplevel (na Hyprlande so záplatou PLEAMAR_GENERIC=window)
@@ -301,6 +348,7 @@ function M.start()
     if not ok then log("goobar: tento systém nehlási okná") end
     read_mode()
     every(2000, function() read_mode() mark_hidden() end)
+    every(700, M.read_blocks)
 end
 
 return M
