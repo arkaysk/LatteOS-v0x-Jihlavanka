@@ -7,5 +7,6 @@ engine.start({
     moduly = moduly,
     priklady = true,      -- test: aj JSON z priklady/ (používateľove sú v ~/.config/latteos/goo/kvapky/)
     ladenie = true,       -- vľavo hore posledná udalosť (klik, koliesko, pustenie…), na overovanie vstupov
-    prva = 0.58,          -- test: ostatné kvapky vpravo od trojice PowerGoo · TimeGoo · Goobar (porovnanie s Kvapkami)
+    prva = 0.02,          -- test: skúšobné kvapky vľavo na lište (od 2 % šírky, rozostup 3 %), vpravo Goobar s oknami,
+    prva_koniec = 0.33,   -- DaNoGoo a QueenGoo ako v Kvapkách
 })

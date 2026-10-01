@@ -27,6 +27,12 @@ V ploche Kvapky má každá kvapka vlastnú kópiu pravidiel: polohu, ťahanie, 
 | používateľ | `lib/pouzivatel.luau` + `latte-goo` | kvapky z JSON, za behu (bez reštartu) |
 | kvapky | `kvapky/*.luau` | moduly: **TimeGoo, PowerGoo a hlava Goobaru** (rozmery a rozostupy ako v Kvapkách, na porovnanie), počítadlo, hodiny, zvedavka, lepkavá, ťažká, bublinka, kvapôčka |
 | príklady | `priklady/*.json` | kvapky používateľa (kalkulačka, systém) |
+| Goobar | `lib/goobar.luau` | okná ako kvapky (ikry po aplikáciách), pomenovanie okien, ponuka okna, režim okien |
+
+**Kvapky plochy v engine:** `goobar` (hlava + okná), `timegoo`, `powergoo` (ponuka, batéria), `queengoo` (guľky,
+App Manager / Správca zariadení), `danogoo` (dátum, upozornenia). Spoločné: **ponuka Goo** (`E.menu`, karta pri
+mieste kliku, podponuky, preklady), **guľky** (`d:gulky(n, farby)`), **ikona aplikácie** (`d:obrazok(meno)`),
+**`E.upsert`** (kvapky, ktoré vznikajú za behu, napr. okná, bez preskočenia).
 
 ## Čo robí každá kvapka (spoločné pravidlá)
 

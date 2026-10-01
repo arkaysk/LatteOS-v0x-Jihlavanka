@@ -13,6 +13,7 @@ Logika scény beží v pieskovisku pleamar (bez súborov a bez sh) — všetko, 
   latte-goo uloz-stav JSON        uloží ich (atomicky)
   latte-goo ikony MENO…           mená ikon Tabler → znaky písma ({meno: znak}), podľa Noctalie
   latte-goo kava                  pomer vody a mlieka podľa Baristu (~/.config/latteos/kava): [voda, mlieko]
+  latte-goo rezim                 režim okien (plavajuce | dlazdice | paska) z ~/.local/state/latteos/window-mode
 """
 import glob, json, os, re, subprocess, sys
 
@@ -271,6 +272,12 @@ def main(a):
         with open(STATE + ".new", "w") as f:
             json.dump(v, f, ensure_ascii=False)
         os.replace(STATE + ".new", STATE)
+        return 0
+    if c == "rezim":
+        try:
+            print(open(os.path.join(os.environ.get("XDG_STATE_HOME", HOME + "/.local/state"), "latteos", "window-mode")).read().split()[0])
+        except (OSError, IndexError):
+            print("plavajuce")
         return 0
     if c == "kava":
         try:

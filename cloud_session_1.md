@@ -539,3 +539,62 @@ tromi záplatami, rovnaká 18 s cesta kurzora po lište, každé meranie 2×.
 počítal iba s tvarmi svojej skupiny. Odhad: náklad prestane rásť s celkovým počtom kvapiek a bude závisieť od
 veľkosti najväčšej skupiny (strapec okien jednej aplikácie). Pri 17 kvapkách v 4–5 skupinách zhruba 73 → 25–30 ms.
 Je to iba v jazyku, bez ďalšej záplaty. Neurobené, čaká na súhlas.
+
+### Goobar a ostatné kvapky v engine; kto kreslí vyskakovacie okná
+
+**Zadanie:**
+- Vytvoriť v engine Goobar: okná toho istého programu sa zhlukujú ako ikry.
+- Bol problém s tým, ako Hyprland / systém pomenúva okná — pozrieť pôvodnú verziu a preniesť.
+- Preniesť schopnosti ostatných Goo.
+- Kto kreslí obsah vyskakovacích okien?
+
+**Pomenovanie okien (z `kvapka.luau`):**
+- Služba `window` pleamar (wlr-foreign-toplevel) dá iba triedu (app_id), titulok a vlastné id — **bez adresy
+  Hyprlandu**.
+- Skupina strapca a ikona sa preto hľadajú v spúšťačoch (služba `apps`): podľa StartupWMClass, id spúšťača,
+  **koncovky id** (Flatpak: trieda „firefox“ ↔ id „org.mozilla.firefox“), mena.
+- **Všetky aplikácie LatteOS (Quickshell) majú triedu `org.quickshell`** → skupina podľa titulku („Súbory — LatteOS“
+  = Name spúšťača); riešením je vlastné `app_id` (ROADMAP).
+- Okno sa v Hyprlande hľadá podľa triedy, titulku a poradia (`nth_of`), lebo terminály majú rovnaké titulky.
+- Engine to robí rovnako (`lib/goobar.luau`).
+- Overené v cloude: 3 okná `foot` (trieda „foot“) sa našli cez koncovku id spúšťača `org.codeberg.dnkl.foot`
+  a zlepili sa do strapca s ikonou aplikácie. Bublina ukáže „terminál 1 · Foot“. Okná bez spúšťača (weston) dostanú
+  znak okna.
+
+**Goobar v engine** (z `layout()` v Kvapkách):
+- Každé okno je kvapka enginu (`E.upsert`, bez preskočenia pri zmene) s ikonou aplikácie.
+- Ikry: posuny OFFS/JIT, čím viac okien, tým menšie (do 72 %). Myš nad strapcom ho rozvinie do radu, po 0,5 s sa zbalí.
+- Aktívne okno je plnšie, minimalizované (plocha `special:minimized`) menšie a stlmené.
+- Klik = `latte.win.toggle_by`. Pravý = ponuka okna (Obnoviť, Minimalizovať, Maximalizovať, Rozloženie ›, Navrchu,
+  Na plochu ›, Zavrieť).
+- Ťahanie = poradie aplikácií. Šnúra sa zmestí po kraj.
+- Hlava = režim okien (klik), koliesko = páska / ďalšie okno.
+- Nad 96 okien guľôčka „ďalšie okná“ → prehľad.
+- Okná sú susedia na lište, takže medzi nimi je voda, vlákna a oká ako pri iných kvapkách.
+
+**Ostatné kvapky:**
+- **PowerGoo:** ponuka Goo (Nastavenia, Monitor | Zamknúť, Odhlásiť, Uspať, Reštartovať, Vypnúť) + batéria guľkami.
+- **QueenGoo:** guľky zariadenia (červená) / sieť (zelená) / aktualizácie (modrá), ľavý = App Manager (pri
+  aktualizáciách na nich), pravý = Správca zariadení, okno vedľa kráľovnej.
+- **DaNoGoo:** dátum, guľky upozornení (systémové červeno-kávové, ostatné žlté, počet), nové upozornenie zvlní
+  hladinu, klik = zoznam v ponuke + „Vymazať všetko“.
+- **TimeGoo:** čas a dátum, klik = spúšťač LatteOS, pravý = nastavenia času / pohoda.
+- **Spoločné:** ponuka Goo (karta z kávy pri mieste kliku, ucho, podponuky), guľky s vlastnou farbou každej,
+  ikona aplikácie, slovenské preklady.
+- Chyba štartu jednej kvapky už nezhodí ostatné (pcall).
+
+**Zatiaľ iba v Kvapkách:**
+- spúšťač Goo (veľký: hľadanie, AI, súbory…), časové menu (stopky, minútka, budíky);
+- karta kalendára a počasia, hrozno upozornení na vlákne;
+- let bubliny k oknu (pravidlo 14), okná nad lištou (strapec sa stiahne pod okno).
+
+**Kto kreslí vyskakovacie okná (v Kvapkách aj v engine):**
+- **pleamar (naša scéna):** všetko Goo — spúšťač, časové menu, kalendár, ponuka vypínača, kontextové ponuky,
+  hrozno upozornení, bublina, z ktorej vyrastie okno. Je to vrstva (layer-shell) celej obrazovky; Hyprland ju iba
+  zloží s ostatným.
+- **Noctalia (Quickshell):** ovládacie centrum a jeho panely (zvuk, sieť, Bluetooth, batéria), OSD, zámok, rohová
+  lišta.
+- **Hyprland:** riadne okná — App Manager, Nastavenia, Monitor, Správca zariadení, Súbory (aplikácie Quickshell
+  v samostatných procesoch). Hyprland ich umiestni (`latte-kvapky okno`), animuje a dá im sklo (Hyprglass).
+
+**Snímky:** `docs/goo/engine-lista-cloud.png`, `engine-ponuka-powergoo-cloud.png`, `engine-goobar-strapec-cloud.png`.

@@ -197,6 +197,21 @@ lepivosť, veľkosť a rezervu na ďalšie efekty.
   - ostrý okraj (tieň 0, 2, 2).
 - **Luau `emit` nenesie hodnotu** (iba meno): logika → scéna pre jednu kvapku ide cez počítadlo (fakt + `on change`).
   Skok, stlačenie a ponor predtým trafili iba kvapku na mieste 0; opravené.
+- **Goobar a kvapky plochy v engine (1. 10. večer):**
+  - **Goobar** (`lib/goobar.luau`) prenesený z Kvapiek: okná ako kvapky s ikonou aplikácie, strapce ako ikry,
+    rozvinutie pod myšou, aktívne plnšie, minimalizované stlmené, klik = prepnúť/minimalizovať, pravý = ponuka okna,
+    ťahanie = poradie aplikácií, hlava = režim okien, koliesko = páska/ďalšie okno, nad 96 okien „ďalšie okná“.
+  - **Pomenovanie okien (problém z Kvapiek):** služba `window` dá iba triedu a titulok, bez adresy Hyprlandu.
+    Skupina a ikona sa preto hľadajú podľa spúšťača (StartupWMClass, id, koncovka id pre Flatpak, meno).
+    Aplikácie LatteOS majú všetky triedu `org.quickshell` → podľa titulku, kým nedostanú vlastné `app_id`.
+    Okno sa v Hyprlande hľadá podľa triedy, titulku a poradia.
+  - **PowerGoo:** ponuka Goo, batéria guľkami.
+  - **QueenGoo:** guľky zariadenia/sieť/aktualizácie, App Manager / Správca zariadení vedľa nej.
+  - **DaNoGoo:** dátum, guľky upozornení, zoznam v ponuke.
+  - **TimeGoo:** čas, klik = spúšťač LatteOS.
+  - Spoločná **ponuka Goo** (karta pri mieste kliku) a **guľky** pre všetky kvapky.
+  - **Zatiaľ iba v Kvapkách:** spúšťač Goo, časové menu, karta kalendára a počasia, hrozno upozornení na vlákne,
+    let bubliny k oknu (pravidlo 14), okná nad lištou (strapec sa stiahne pod okno).
 - **Výkon:** telo goo počíta každý tvar pre každý pixel, aj skrytý. Záplata `pleamar-prazdne-tvary` vyradí tvary
   nulovej veľkosti: v cloude 192 → 21,6 ms na snímku (súčasná scéna Kvapky 62 ms). Bez nej engine funguje, iba
   pomalšie.

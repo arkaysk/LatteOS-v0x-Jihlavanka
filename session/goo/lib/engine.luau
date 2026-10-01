@@ -93,6 +93,8 @@ local function record(d)
         druh = DRUHY[v.druh] or num(v.druh, 0), hodnota = num(v.hodnota, 0),
         ikona = ik, text = v.text or "",
         jadro = d.jadroS or 0, jf = d.jadroF or 0, jp = d.jadroP or false,
+        obr = v.obr or "", img = (v.obr or "") ~= "", tlm = d.tlm or 0,
+        gn = d.gn or 0, gf = d.gf or 0, gt = d.gt or "",
     }
 end
 
@@ -169,6 +171,22 @@ function Kvapka:domov() self.x, self.y, self.ox, self.z, self.moved = self.hx0, 
 function Kvapka:poskoc() bump("hopn", self.k) end
 function Kvapka:stlac() bump("sqn", self.k) end
 function Kvapka:bublina(s) text.tip = s or "" end
+-- guľky pri kvapke (pravidlo 15): počet 0…5+, farba ("hardver" červená, "siet" zelená, "softver" modrá, "zlta",
+-- "system" červeno-kávová, "svetlo"); nad 4 sa ukáže počet v poslednej
+local GULKY = { hardver = 0, siet = 1, softver = 2, zlta = 3, system = 4, svetlo = 5 }
+-- farba: jedna pre všetky, alebo zoznam po guľkách { "hardver", "siet", "softver" } (QueenGoo)
+function Kvapka:gulky(n, farba)
+    n = math.max(0, math.floor(n or 0))
+    local code = 0
+    for j = 0, 3 do
+        local f = type(farba) == "table" and (farba[j + 1] or farba[#farba]) or farba
+        code = code + (GULKY[f] or num(f, 3)) * 8 ^ j
+    end
+    self.gn, self.gf, self.gt = math.min(n, 5), code, n > 4 and tostring(n) or ""
+    publish()
+end
+function Kvapka:obrazok(meno) self.v.obr = meno or "" publish() end
+function Kvapka:stlm(x) self.tlm = x or 0 publish() end
 function Kvapka:jadro(farba, sila, pulz)
     if farba == nil then self.jadroS = 0
     else self.jadroS, self.jadroF, self.jadroP = sila or 1, JADRO[farba] or num(farba, 5), pulz ~= false end
@@ -197,11 +215,11 @@ end
 
 -- miesto na lište pre kvapku bez polohy: zľava doprava, rozostupy podľa veľkosti
 local function nextDock()
-    local x = 0.06
+    local x = 0.03
     if E.prva then x = E.prva end                       -- test: ďalšie kvapky od tohto miesta (trojica ostane sama)
     for k = 0, N - 1 do
         local d = slots[k]
-        if d and d.hy0 < d.v.velkost * 1.6 and not d.def.pri then x = math.max(x, d.hx0 + 0.045) end
+        if d and d.hy0 < d.v.velkost * 1.6 and not d.def.pri and d.zdroj ~= "dyn" and d.hx0 < (E.prvaKoniec or 1) then x = math.max(x, d.hx0 + 0.03) end
     end
     return x
 end
@@ -236,11 +254,32 @@ function E.define(def, zdroj)
     d.moved = s ~= nil
     slots[k], byId[def.id] = d, d
     E.needGlyph(v.ikona)
+    -- chyba jednej kvapky nezhodí ostatné (zapíše sa do logu)
+    local function safe(name, f) local ok, err = pcall(f, d) if not ok then log("goo: " .. d.id .. "." .. name .. ": " .. tostring(err)) end end
     if def.kazdych and def.tik then
-        d.timer = every(def.kazdych, function() def.tik(d) end)
-        def.tik(d)
+        d.timer = every(def.kazdych, function() safe("tik", def.tik) end)
+        safe("tik", def.tik)
     end
-    if def.start then def.start(d) end
+    if def.start then safe("start", def.start) end
+    publish()
+    return d
+end
+
+-- pridá kvapku, alebo zmení existujúcu bez preskočenia (miesto, poloha a animácia ostanú): pre kvapky, ktoré
+-- vznikajú za behu (okná v Goobari, upozornenia). Nová poloha domova platí, ak ju používateľ nepresunul.
+function E.upsert(def)
+    local d = byId[def.id]
+    if not d then return E.define(def, "dyn") end
+    d.def = def
+    for key, val in pairs(def) do d.v[key] = val end
+    local anchor = def.pri and byId[def.pri]
+    local seat = num(def.vyska, d.v.velkost * 0.8)
+    if anchor then
+        d.hx0, d.ox0, d.hy0 = anchor.hx0, (anchor.ox0 or 0) + num(def.odstup, 0), seat
+    elseif type(def.poloha) == "table" then
+        d.hx0, d.hy0 = num(def.poloha.x, d.hx0), num(def.poloha.y, seat)
+    end
+    if not d.moved then d.x, d.y, d.ox = d.hx0, d.hy0, d.ox0 end
     publish()
     return d
 end
@@ -273,6 +312,48 @@ function E.needGlyph(name)
         end)
     end)
 end
+
+-- ── ponuka Goo (pravidlá 9–11): karta pri mieste kliku; položky { label, glyph (meno Tabler), hint, on, off, danger,
+-- sep, sub = { … } (podponuka so „Späť“), run = funkcia }. Miesto si scéna zapamätá pri stlačení kvapky.
+local ctx_actions = {}
+local CTX_MAX = 14
+function E.menu(items, width)
+    ctx_actions = {}
+    local out, y = {}, 6
+    for _, it in ipairs(items) do
+        if #out >= CTX_MAX then break end
+        if it.sep and #out > 0 then y = y + 12 end
+        E.needGlyph(it.glyph)
+        out[#out + 1] = { label = it.label or "", on = it.on and 1 or 0, off = it.off == true,
+                          glyph = (it.glyph and (glyphs[it.glyph] or (isName(it.glyph) and "" or it.glyph))) or "",
+                          hint = it.hint or "", danger = it.danger == true, sub = it.sub ~= nil or it.back ~= nil,
+                          back = it.back ~= nil, sep = it.sep == true and #out > 0, y = y }
+        y = y + 36
+        if it.sub then
+            local parent = items
+            ctx_actions[#out] = function()
+                local kids = { { label = tr("Back"), glyph = "chevron-left", back = parent } }
+                for j, c in ipairs(it.sub) do
+                    local c2 = {} for kk, vv in pairs(c) do c2[kk] = vv end
+                    if j == 1 then c2.sep = true end
+                    kids[#kids + 1] = c2
+                end
+                E.menu(kids, width)
+            end
+        elseif it.back then
+            ctx_actions[#out] = function() E.menu(it.back, width) end
+        else
+            ctx_actions[#out] = function() fact.ctx_open = false if it.run then it.run() end end
+        end
+    end
+    model.ctx = out
+    fact.ctx_w = width or 248
+    fact.ctx_h = y + 6
+    fact.ctx_hot = -1
+    fact.ctx_open = #out > 0
+end
+on("ctx_pick", function(k) local f = ctx_actions[(k or 0) + 1] if f then f() end end)
+on("ctx_close", function() ctx_actions = {} end)
 
 -- ── vstupy zo scény ──────────────────────────────────────────────────────────────────────────────────────────
 local function hook(d, name, ...)
@@ -426,6 +507,7 @@ function E.start(opts)
     opts = opts or {}
     E.ladenie = opts.ladenie
     E.prva = opts.prva
+    E.prvaKoniec = opts.prva_koniec
     fact.ladenie = opts.ladenie and true or false
     run("latte-goo", { "stav" }, function(out)
         local ok, t = pcall(json.decode, out or "")
