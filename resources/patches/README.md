@@ -97,6 +97,6 @@ Tvar s nulovou veľkosťou (elipsa s polomerom pod štvrť pixela, čiara s nulo
 Pleamar to už robil pre obdĺžniky („pod pol pixela neexistuje“), elipsy a čiary počítal ďalej. Teleso počíta
 každý svoj tvar pre každý pixel a `show: false` tvar z tela nevyradí. Engine Goo má 64 miest, prázdne majú
 nulovú veľkosť. Merané v cloude (llvmpipe, 1280×720): 192 skrytých tvarov **102 ms → 18 ms** na snímku
-(rovnako ako bez nich), celý engine **192 ms → 21,6 ms** (súčasná scéna Kvapky: 62 ms). Zároveň zmizne hrbček,
+(rovnako ako bez nich), celý engine **192 ms → 21,6 ms**. **Pomáha aj súčasnej ploche Kvapky: 62 → 24 ms** (aj ona má v tele skryté tvary). Zároveň zmizne hrbček,
 ktorý bod nulovej veľkosti cez zliatie vydul. Vhodná na upstream. Bez nej engine funguje, iba pomalšie (prázdne
 miesta ležia pod obrazovkou, aby hrbček nebolo vidieť).

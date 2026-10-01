@@ -21,11 +21,11 @@ V ploche Kvapky má každá kvapka vlastnú kópiu pravidiel: polohu, ťahanie, 
 
 | Vrstva | Súbor | Čo robí |
 |---|---|---|
-| scéna | `goo.plm` | fyzika a vstupy myši pre **64 miest** (`repeat`), jedno goo telo s lištou |
+| scéna | `goo.plm` | fyzika a vstupy myši pre **128 miest** (`repeat`), jedno goo telo s okrajom |
 | generátor | `gen.py` | rozpíše telo goo (jazyk nemá `repeat` v `body`), nastaví počet miest `N`, zoznam modulov |
 | logika | `lib/engine.luau` | register kvapiek, povahy, háčiky, uloženie polôh, káva, nečinnosť (hra) |
 | používateľ | `lib/pouzivatel.luau` + `latte-goo` | kvapky z JSON, za behu (bez reštartu) |
-| kvapky | `kvapky/*.luau` | moduly programátorov (počítadlo, hodiny, zvedavka, lepkavá, ťažká, bublinka, kvapôčka) |
+| kvapky | `kvapky/*.luau` | moduly: **TimeGoo, PowerGoo a hlava Goobaru** (rozmery a rozostupy ako v Kvapkách, na porovnanie), počítadlo, hodiny, zvedavka, lepkavá, ťažká, bublinka, kvapôčka |
 | príklady | `priklady/*.json` | kvapky používateľa (kalkulačka, systém) |
 
 ## Čo robí každá kvapka (spoločné pravidlá)
@@ -35,7 +35,15 @@ V ploche Kvapky má každá kvapka vlastnú kópiu pravidiel: polohu, ťahanie, 
 - **Nadnesenie:** keď sa kurzor priblíži, kvapka na lište sa nadnesie (`vznos`), vystúpi kolmo od lišty na
   stopke, ktorá sa naťahuje a tenčí. Susedné kvapky sa pri tom prelievajú a spájajú. Keď kurzor odíde, padne
   späť s prestrelením a odrazom.
-- **Nad kvapkou:** mierne sa nafúkne a netrpezlivo pulzuje. Obsah sa nemení, názov a popis sú iba v bubline.
+- **Susedia na lište** (logika ich nájde podľa polohy, do ~2,6 súčtu polomerov), ako vypínač ↔ Hodiny ↔ hlava
+  v Kvapkách:
+  - keď sa kurzor priblíži k jednej, sused sa nadnesie tiež (o 30 %) a nakloní sa k nej;
+  - spája ich **voda pri okraji**: údolie medzi nimi nesiaha k okraju a skupina pôsobí ako jedna hmota;
+  - spája ich **goo vlákno**: hrubne s nadnesením a samo sa tvorí a trhá s tokom.
+- **Tok:** každá kvapka pomaly vystupuje a klesá vo vlastnom rytme. Sila zliatia (`10 + 16 · nadnesenie +
+  10 · tok`, ako `link` v Kvapkách) sa mení s ním, preto sa susedia raz spoja, raz rozdelia.
+- **Nad kvapkou:** mierne sa nafúkne a rôsolovito pulzuje (do šírky a do výšky). Obsah sa nemení, názov a popis
+  sú iba v bubline. Pri stlačení sa stlačí (squish).
 - **Vlastný pohyb aj bez myši:** dych a pomalý drift.
 - **Vstupy:** ľavé tlačidlo (klik = pustenie bez ťahania), pravé, stredné, podržanie (0,65 s), koliesko.
   **Bez háčika nerobia nič** (pravidlo 8). Veľkosť kolieskom iba s `zoom = true`.
@@ -93,7 +101,8 @@ Príkazy vykoná `latte-goo` podľa id kvapky a mena akcie. Logika scény nikdy 
 - veľkosť a pohyb: `velkost` 8–80, `gravitacia` 0…1, `vznos` 0…1, `dosah`, `lepivost` 0…1, `trhanie`,
   `svetlo`, `rast`, `hmotnost` 0…1;
 - vzhľad: `efekt` + `sila`, `druh` (`ikona` | `ukazovatel` s `hodnota` 0…1);
-- ďalšie: `tahat` (true/false), `poloha` (`x` = podiel šírky, `y` = px nad lištou).
+- ďalšie: `tahat` (true/false), `poloha` (`x` = podiel šírky, `y` = px nad lištou);
+- skupina: `pri` (id inej kvapky) + `odstup` (px), `vyska` (stred nad okrajom, px), `vznos` 0…2.
 
 Farba nie je: kvapky sú vždy káva.
 

@@ -18,6 +18,9 @@
 --   efekt      "dych" "kmit" "tras" "obeh" "tlkot" (+ sila 0…2); rezerva: čísla 6–9 a kanály e1…e4
 --   druh       "ikona" | "ukazovatel" (prstenec podľa hodnota 0…1)
 --   poloha     { x = 0…1 šírky, y = px nad lištou }   (inak sa kvapky radia zľava po lište)
+--   pri, odstup  kvapka vedľa inej o presný odstup v px (napr. PowerGoo 66 px vľavo od TimeGoo)
+--   vyska      výška stredu nad lištou v px, keď na nej sedí (inak 0,8 · velkost)
+--   vznos      0…2 (1 = nadnesie sa o 0,75 polomeru; PowerGoo v Kvapkách skoro 1,4)
 -- Háčiky (funkcie, dostanú kvapku `d`, na ktorej sú metódy nižšie):
 --   start(d) · klik(d) · pravy(d) · stredny(d) · podrz(d) · koliesko(d, smer ±1) · nad(d) · prec(d)
 --   popis(d) → text bubliny · tahanie(d) · pustenie(d, x, y) → false = nepresúvať · necinnost(d, uroven 0…3)
@@ -26,7 +29,7 @@
 --   d:velkost(z) d:presun(x, y) d:domov() d:poskoc() d:bublina(text) d:nastav{…pole = hodnota…}
 
 local E = {}
-local N = 64             -- = gen.py N (miesta v scéne)
+local N = 128            -- = gen.py N (miesta v scéne): Goobar nesie okná ako ikry/hrozno, pri veľkej RAM ich je veľa
 E.N = N
 
 -- efekty scény (čísla v goo.plm); 6–9 rezerva pre efekty, ktoré ešte nie sú
@@ -66,10 +69,11 @@ end
 local function record(d)
     local v = d.v
     local ik = v.ikona or ""
-    if isName(ik) then ik = glyphs[ik] or "" end        -- meno ikony → znak (kým nepríde, bez ikony)
+    -- meno ikony → znak (kým nepríde, bez ikony); druh 2 (hodiny) má v poli ikony veľký text, nie ikonu
+    if isName(ik) and v.druh ~= 2 then ik = glyphs[ik] or "" end
     return {
-        on = true, hx = d.x, hy = d.y, r = v.velkost, z = d.z, rast = v.rast,
-        grav = clamp(num(v.gravitacia, 0), 0, 1), dosah = v.dosah, vz = clamp(num(v.vznos, 1), 0, 1),
+        on = true, hx = d.x, ox = d.ox or 0, hy = d.y, r = v.velkost, z = d.z, rast = v.rast,
+        grav = clamp(num(v.gravitacia, 0), 0, 1), dosah = v.dosah, vz = clamp(num(v.vznos, 1), 0, 2),
         lep = v.lepivost, trh = v.trhanie, svetlo = v.svetlo, tahat = v.tahat,
         fx = EFEKTY[v.efekt] or num(v.efekt, 0), fa = v.sila,
         e1 = d.e[1], e2 = d.e[2], e3 = d.e[3], e4 = d.e[4],
@@ -78,12 +82,43 @@ local function record(d)
     }
 end
 
+-- susedia na lište: kvapky, ktoré na nej sedia, zoradené zľava; susedné do vzdialenosti ~2,6 súčtu polomerov sa
+-- navzájom nadnášajú, nakláňajú a spája ich goo vlákno (ako vypínač ↔ Hodiny ↔ hlava v Kvapkách). Logika nepozná
+-- šírku obrazovky: poradie a medzera sa rátajú pri bežnej šírke 1920 px, scéna polohu prepočíta presne.
+local NOMINAL_W = 1920
+local function neighbours(list)
+    local docked = {}
+    for _, d in ipairs(list) do
+        d.nl, d.nr = nil, nil
+        if d.y < d.v.velkost * 1.6 then table.insert(docked, d) end
+    end
+    table.sort(docked, function(a, b) return a.x * NOMINAL_W + (a.ox or 0) < b.x * NOMINAL_W + (b.ox or 0) end)
+    for i = 1, #docked - 1 do
+        local a, b = docked[i], docked[i + 1]
+        local gap = (b.x - a.x) * NOMINAL_W + (b.ox or 0) - (a.ox or 0)
+        if gap < 2.6 * (a.v.velkost * a.z + b.v.velkost * b.z) then a.nr, b.nl = b, a end
+    end
+end
+
 local function publish()
     if publishing then dirty = true return end
     publishing = true
     after(16, function()                                 -- viac zmien v jednom kroku = jeden zápis
+        local live = {}
+        for k = 0, N - 1 do if slots[k] then table.insert(live, slots[k]) end end
+        neighbours(live)
         local list = {}
-        for k = 0, N - 1 do list[k + 1] = slots[k] and record(slots[k]) or { on = false } end
+        for k = 0, N - 1 do
+            local d = slots[k]
+            if d then
+                local r = record(d)
+                if d.nl then r.nl, r.nlh, r.nlo = true, d.nl.x, d.nl.ox or 0 end
+                if d.nr then r.nr, r.nrh, r.nro, r.nry, r.nrr = true, d.nr.x, d.nr.ox or 0, d.nr.y, d.nr.v.velkost * d.nr.z end
+                list[k + 1] = r
+            else
+                list[k + 1] = { on = false }
+            end
+        end
         model.goo = list
         publishing = false
         if dirty then dirty = false publish() end
@@ -109,13 +144,13 @@ end
 function Kvapka:nastav(t) for key, val in pairs(t) do self.v[key] = val end publish() end
 function Kvapka:text(s) self.v.text = s or "" publish() end
 function Kvapka:nazov(s) self.v.nazov = s or "" publish() end
-function Kvapka:ikona(s) self.v.ikona = s E.needGlyph(s) publish() end
+function Kvapka:ikona(s) self.v.ikona = s if self.v.druh ~= 2 then E.needGlyph(s) end publish() end
 function Kvapka:hodnota(x) self.v.hodnota = x publish() end
 function Kvapka:efekt(meno, sila) self.v.efekt = meno self.v.sila = sila or self.v.sila publish() end
 function Kvapka:rezerva(i, x) self.e[i] = x publish() end
 function Kvapka:velkost(z) self.z = clamp(z, ZOOM_MIN, ZOOM_MAX) publish() save() end
-function Kvapka:presun(x, y) self.x, self.y = clamp(x, 0.02, 0.98), math.max(0, y) self.moved = true publish() save() end
-function Kvapka:domov() self.x, self.y, self.z, self.moved = self.hx0, self.hy0, 1, false publish() save() end
+function Kvapka:presun(x, y) self.x, self.y, self.ox = clamp(x, 0.02, 0.98), math.max(0, y), 0 self.moved = true publish() save() end
+function Kvapka:domov() self.x, self.y, self.ox, self.z, self.moved = self.hx0, self.hy0, self.ox0, 1, false publish() save() end
 function Kvapka:poskoc() emit("goo_hop", self.k) end
 function Kvapka:bublina(s) text.tip = s or "" end
 
@@ -127,9 +162,10 @@ end
 -- miesto na lište pre kvapku bez polohy: zľava doprava, rozostupy podľa veľkosti
 local function nextDock()
     local x = 0.06
+    if E.prva then x = E.prva end                       -- test: ďalšie kvapky od tohto miesta (trojica ostane sama)
     for k = 0, N - 1 do
         local d = slots[k]
-        if d and d.docked then x = math.max(x, d.hx0 + 0.055) end
+        if d and d.hy0 < d.v.velkost * 1.6 and not d.def.pri then x = math.max(x, d.hx0 + 0.055) end
     end
     return x
 end
@@ -148,14 +184,20 @@ function E.define(def, zdroj)
     if def.povaha and E.POVAHY[def.povaha] then for key, val in pairs(E.POVAHY[def.povaha]) do v[key] = val end end
     for key, val in pairs(def) do v[key] = val end
     local d = setmetatable({ id = def.id, k = k, v = v, def = def, zdroj = zdroj or "luau", e = { 0, 0, 0, 0 } }, Kvapka)
-    if type(def.poloha) == "table" then
-        d.hx0, d.hy0, d.docked = num(def.poloha.x, 0.5), num(def.poloha.y, 0), num(def.poloha.y, 0) < 40
+    local seat = num(v.vyska, v.velkost * 0.8)          -- výška stredu nad lištou, keď na nej sedí
+    local anchor = def.pri and byId[def.pri]
+    d.ox0 = 0
+    if anchor then                                      -- pri inej kvapke o presný odstup (px)
+        d.hx0, d.hy0, d.ox0 = anchor.hx0, seat, (anchor.ox0 or 0) + num(def.odstup, 0)
+    elseif type(def.poloha) == "table" then
+        d.hx0, d.hy0 = num(def.poloha.x, 0.5), num(def.poloha.y, seat)
     else
-        d.hx0, d.hy0, d.docked = nextDock(), v.velkost * 0.8, true
+        d.hx0, d.hy0 = nextDock(), seat
     end
     local s = saved[def.id]
     d.x, d.y, d.z = s and s.x or d.hx0, s and s.y or d.hy0, s and s.z or 1
-    d.moved = s ~= nil and (s.x ~= d.hx0 or s.y ~= d.hy0)
+    d.ox = s and 0 or d.ox0
+    d.moved = s ~= nil
     slots[k], byId[def.id] = d, d
     E.needGlyph(v.ikona)
     if def.kazdych and def.tik then
@@ -264,10 +306,10 @@ on("goo_drop", function(k)
     local x, y = fact.rx, fact.ry
     local has, res = hook(d, "pustenie", x, y)
     -- lepivosť k lište: blízko nej sa prilepí; ťažká kvapka spadne na lištu (pružina `pada` s odrazom)
-    if y < d.v.velkost * d.z * 1.6 or d.v.hmotnost > 0.5 then y = d.v.velkost * d.z * 0.8 end
+    if y < d.v.velkost * d.z * 1.6 or d.v.hmotnost > 0.5 then y = num(d.v.vyska, d.v.velkost * 0.8) * d.z end
     if not (has and res == false) then
         d.x, d.y = clamp(x, 0.02, 0.98), math.max(0, y)
-        d.moved, d.docked = true, y < d.v.velkost * d.z * 1.6
+        d.moved, d.ox = true, 0
         save()
     end
     hud(string.format("pustenie · %s · x %.2f y %d", d.id, d.x, d.y))
@@ -339,15 +381,27 @@ end)
 function E.start(opts)
     opts = opts or {}
     E.ladenie = opts.ladenie
+    E.prva = opts.prva
     fact.ladenie = opts.ladenie and true or false
     run("latte-goo", { "stav" }, function(out)
         local ok, t = pcall(json.decode, out or "")
         if ok and type(t) == "table" then saved = t end
+        local defs = {}
         for _, name in ipairs(opts.moduly or {}) do
             local ok2, def = pcall(require, "kvapky/" .. name)
-            if ok2 and type(def) == "table" then E.define(def, "luau")
+            if ok2 and type(def) == "table" then table.insert(defs, def)
             else log("goo: modul kvapky/" .. name .. ": " .. tostring(def)) end
         end
+        -- kvapka `pri` inej prichádza až po nej (PowerGoo po TimeGoo, tá po hlave Goobaru)
+        for _ = 1, #defs do
+            local rest = {}
+            for _, def in ipairs(defs) do
+                if def.pri and not byId[def.pri] then table.insert(rest, def) else E.define(def, "luau") end
+            end
+            defs = rest
+            if #defs == 0 then break end
+        end
+        for _, def in ipairs(defs) do log("goo: " .. def.id .. ": kotva " .. tostring(def.pri) .. " nie je") E.define(def, "luau") end
         if opts.pouzivatel ~= false then require("lib/pouzivatel").start(E, opts) end
         publish()
     end)

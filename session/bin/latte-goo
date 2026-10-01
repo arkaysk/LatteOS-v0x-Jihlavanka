@@ -36,9 +36,9 @@ AKCIE = {"klik", "pravy", "stredny", "podrz", "koliesko", "hore", "dole"}
 VSTAVANE = {"domov", "velkost", "poskoc", "nic"}
 DRUHY_AKCII = ("spusti", "aplikacia", "otvor", "vystup")
 # čísla: (min, max)
-CISLA = {"velkost": (8, 80), "gravitacia": (0, 1), "vznos": (0, 1), "dosah": (40, 800), "lepivost": (0, 1), "trhanie": (20, 400),
+CISLA = {"velkost": (8, 80), "gravitacia": (0, 1), "vznos": (0, 2), "vyska": (0, 300), "odstup": (-2000, 2000), "dosah": (40, 800), "lepivost": (0, 1), "trhanie": (20, 400),
          "svetlo": (0, 1), "rast": (0, 1), "hmotnost": (0, 1), "sila": (0, 2), "hodnota": (0, 1)}
-TEXTY = ("nazov", "ikona", "popis")
+TEXTY = ("nazov", "ikona", "popis", "pri")
 
 VZOR = {
     "id": "", "nazov": "", "ikona": "droplet", "popis": "Moja kvapka",
