@@ -496,3 +496,46 @@ iba zostrí, nikdy nerozmaže viac.
   medzery a trojica bola plná hmota bez ôk.
 - Oká teraz vznikajú medzi TimeGoo a hlavou Goobaru, prichádzajú a miznú s dýchaním, s ostrou čiarou
   (`docs/goo/oka-engine-cloud.png`).
+
+### Je engine plynulejší, celistvejší a lepší než súčasná plocha Kvapky? O koľko? (merané)
+
+**Meranie:** cloud, headless Sway, 1920×1080, softvérové kreslenie (llvmpipe, CPU). Ten istý pleamar so všetkými
+tromi záplatami, rovnaká 18 s cesta kurzora po lište, každé meranie 2×.
+
+| scéna | priemer snímky | p99 (zásek) | čítanie scény (CPU) |
+|---|---|---|---|
+| Kvapky (súčasná, trojica + hlava, bez okien) | 29–31 ms | 45–48 ms | 1,65 ms |
+| engine, rovnaká trojica | **20,9 ms** | **32 ms** | **0,77 ms** |
+| engine, 6 kvapiek | 30,3 ms | 43 ms | 0,87 ms |
+| engine, 12 kvapiek | 54,1 ms | 93 ms | 0,92 ms |
+| engine, 17 kvapiek (celý test) | 73–75 ms | 240–309 ms | 0,94 ms |
+
+**Plynulosť:**
+- Pri rovnakom obsahu je engine asi o **30 % rýchlejší** (priemer aj zásek) a logika scény stojí **2× menej CPU**.
+- **Náklad však rastie s počtom kvapiek lineárne, asi 3,5–4 ms na kvapku.** Všetky kvapky sú v jednom goo tele
+  a pleamar počíta každý jeho tvar pre každý pixel celého obdĺžnika, ktorý telo zaberá (pri kvapkách po celej
+  šírke takmer celý pás). Pre Goobar s 50+ oknami ako hroznom je to zásadné.
+- Súčasná plocha má rovnaký princíp (48 guľôčok okien v jednom tele), len sa to v cloude bez okien neprejaví.
+- Na RX 640 (GPU) budú čísla oveľa nižšie, ale pomer ostane.
+
+**Celistvosť (kód):**
+- TimeGoo, PowerGoo a hlava sú v engine 3 súbory, spolu 32 riadkov.
+- Jadro enginu má 315 riadkov scény (bez generovaných tvarov) a 647 riadkov logiky a generátora; platí pre všetky
+  kvapky (128 miest).
+- V Kvapkách má každá kvapka vlastné pravidlá rozložené v scéne (~2 900 riadkov) a v 8 generátoroch. Porovnanie
+  celkového počtu riadkov nie je férové (Kvapky majú aj spúšťač, okná, upozornenia), preto ho neuvádzam ako číslo.
+
+**Správanie a vzhľad:**
+- Engine má navyše:
+  - vlnky, vietor, jadro (upozornenia), ponor (Marea), nadnesenie ku kurzoru;
+  - nečinnosť s hrou, pravidlá 8 a 17–21, používateľské kvapky z JSON.
+- V Kvapkách je to, čo engine ešte nemá:
+  - Goobar so strapcom okien, spúšťač, okná z kvapiek (pravidlá 9, 14);
+  - kvapôčka tečúca po vlákne.
+- Vzhľad spájania je blízko pôvodného, ale nie 1:1 (posúdiť naživo).
+
+**Záver:** pri rovnakom obsahu áno, o ~30 % plynulejší a celistvejší. Pri mnohých kvapkách zatiaľ nie. Treba
+**ostrovy**: susedné kvapky (skupina podľa susedov, ktorú už logika počíta) v samostatnom tele, aby sa každý pixel
+počítal iba s tvarmi svojej skupiny. Odhad: náklad prestane rásť s celkovým počtom kvapiek a bude závisieť od
+veľkosti najväčšej skupiny (strapec okien jednej aplikácie). Pri 17 kvapkách v 4–5 skupinách zhruba 73 → 25–30 ms.
+Je to iba v jazyku, bez ďalšej záplaty. Neurobené, čaká na súhlas.
