@@ -25,6 +25,7 @@ except OSError:
     ICONS = ""
 ICONS = ICONS or "tabler-icons"
 LOGIC_ICONS = ["sparkles", "search", "folder", "world", "terminal-2", "settings", "plus", "message-plus", "folder-open",
+               "bolt", "paperclip", "microphone", "player-stop", "chart-bar",
                "trash", "sun", "cloud", "sun-low", "cloud-rain", "cloud-snow", "cloud-storm", "cloud-fog", "sun-high",
                "map-pin", "check", "chevron-down", "chevron-right", "x",
                "layout-dashboard", "stopwatch", "hourglass", "alarm",
