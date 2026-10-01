@@ -18,7 +18,8 @@
   latte-apps store home              JSON: obchod — trendy, obľúbené, nové, aktualizované (Flathub API, cache 6 h)
   latte-apps store category KAT      JSON: aplikácie kategórie (game, audiovideo, graphics, network, office, …)
   latte-apps store search TEXT       JSON: vyhľadávanie vo Flathube (a balíky Fedory)
-  latte-apps store app ID            JSON: detail — popis, snímky obrazovky, vývojár, licencia, veľkosť, inštalácie, verzie
+  latte-apps store app ID            JSON: detail — popis, snímky obrazovky, vývojár, licencia, veľkosť, inštalácie, verzie,
+                                     hodnotenie a recenzie používateľov (ODRS — tie isté ako v GNOME Software a KDE Discover)
   latte-apps latteos                 JSON: súčasti LatteOS — nainštalovaná verzia (commit) a čo je nové v repozitári
   latte-apps drivers                 JSON: ovládače a firmvér — fwupd, grafika (NVIDIA/AMD/Intel), odporúčania
   latte-apps defaults                JSON: predvolené aplikácie (prehliadač, pošta, súbory, obrázky, video, hudba, text, PDF, archívy)
@@ -708,6 +709,75 @@ def fh(path, ttl=6 * 3600, post=None):
         return None
 
 
+# ── hodnotenia používateľov: ODRS (Open Desktop Ratings Service, odrs.gnome.org) — spoločné pre GNOME Software,
+# KDE Discover a ďalšie obchody; Flathub vlastné hviezdičky nemá (iba inštalácie a overenie vývojára)
+ODRS = "https://odrs.gnome.org/1.0/reviews/api"
+_ratings = None
+
+
+def odrs_ratings():
+    """všetky hodnotenia naraz (raz denne do cache): id → (priemer 1–5, počet)"""
+    global _ratings
+    if _ratings is not None:
+        return _ratings
+    import time, urllib.request
+    f = os.path.join(CACHE, "odrs-ratings.json")
+    raw = None
+    if os.path.exists(f) and time.time() - os.path.getmtime(f) < 24 * 3600:
+        try:
+            raw = json.load(open(f))
+        except ValueError:
+            raw = None
+    if raw is None:
+        try:
+            req = urllib.request.Request(ODRS + "/ratings", headers={"User-Agent": "LatteOS-AppManager/0.1"})
+            raw = json.load(urllib.request.urlopen(req, timeout=15))
+            os.makedirs(CACHE, exist_ok=True)
+            json.dump(raw, open(f, "w"))
+        except Exception:
+            raw = json.load(open(f)) if os.path.exists(f) else {}
+    _ratings = {}
+    for aid, r in (raw or {}).items():
+        n = sum(int(r.get("star%d" % i, 0)) for i in range(1, 6))
+        if n:
+            avg = sum(i * int(r.get("star%d" % i, 0)) for i in range(1, 6)) / n
+            _ratings[aid.removesuffix(".desktop")] = (round(avg, 1), n)
+    return _ratings
+
+
+def rating_of(aid):
+    r = odrs_ratings().get(aid) or odrs_ratings().get(aid.lower())
+    return {"rating": r[0], "ratingCount": r[1]} if r else {"rating": 0, "ratingCount": 0}
+
+
+def odrs_reviews(aid, limit=5):
+    """posledné recenzie (jazyk podľa systému, inak anglické)"""
+    import hashlib, urllib.request
+    try:
+        mid = open("/etc/machine-id").read().strip()
+    except OSError:
+        mid = "latteos"
+    body = {"app_id": aid, "locale": (os.environ.get("LANG") or "sk_SK").split(".")[0], "distro": "Fedora",
+            "version": "unknown", "user_hash": hashlib.sha1(("latteos" + mid).encode()).hexdigest(), "limit": limit}
+    f = os.path.join(CACHE, "odrs-%s.json" % re.sub(r"[^\w.-]", "_", aid))
+    try:
+        import time
+        if os.path.exists(f) and time.time() - os.path.getmtime(f) < 24 * 3600:
+            data = json.load(open(f))
+        else:
+            req = urllib.request.Request(ODRS + "/fetch", data=json.dumps(body).encode(),
+                                         headers={"Content-Type": "application/json", "User-Agent": "LatteOS-AppManager/0.1"})
+            data = json.load(urllib.request.urlopen(req, timeout=10))
+            json.dump(data, open(f, "w"))
+    except Exception:
+        data = json.load(open(f)) if os.path.exists(f) else []
+    out = []
+    for r in data if isinstance(data, list) else []:
+        out.append({"stars": round((r.get("rating") or 0) / 20), "summary": r.get("summary", ""), "text": (r.get("description") or "")[:500],
+                    "author": r.get("reviewer_name") or "", "version": r.get("version") or "", "date": r.get("date_created") or 0})
+    return out[:limit]
+
+
 def flatpak_installed():
     rc, text, _ = sh(["flatpak", "list", "--app", "--columns=application"], timeout=20)
     return set(l.strip() for l in text.splitlines() if l.strip())
@@ -718,7 +788,7 @@ def card(h, inst):
     return {"id": aid, "name": h.get("name", aid), "summary": h.get("summary", ""), "icon": h.get("icon") or "",
             "developer": h.get("developer_name") or "", "verified": bool(h.get("verification_verified")),
             "installs": h.get("installs_last_month") or 0, "category": h.get("main_categories") or "",
-            "free": h.get("is_free_license", True), "installed": aid in inst}
+            "free": h.get("is_free_license", True), "installed": aid in inst, **rating_of(aid)}
 
 
 def store(a):
@@ -767,7 +837,7 @@ def store(a):
                 "installsTotal": stats.get("installs_total") or 0, "verified": bool(ver.get("verified")),
                 "verifiedBy": ver.get("website") or ver.get("login_name") or "", "releases": rel,
                 "homepage": urls.get("homepage", ""), "help": urls.get("help", ""), "categories": det.get("categories") or [],
-                "installed": aid in inst}
+                "installed": aid in inst, **rating_of(aid), "reviews": odrs_reviews(aid)}
     return None
 
 

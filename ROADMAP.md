@@ -465,7 +465,14 @@ texty preložiteľné (`translations`). Noctalia beží bez lišty a robí, čo 
   TimeGoo strieda čas s bežiacou minútkou / stopkami a dátum s počasím (celá hodina, nová predpoveď, výstraha
   žltá / červená podľa predpovede na 12 h). BarGoo a QueenGoo bez toho. Overiť na latte-lab: plynulosť, prekrytie
   zväčšených Hodín so susedmi na lište, prahy výstrah
-- [ ] Výstrahy SHMÚ / MeteoAlarm (oficiálne stupne) namiesto prahov z predpovede
+- [x] Oficiálne výstrahy ČHMÚ (CAP, ORP) a SHMÚ (MeteoAlarm) — `latte-pocasie`, žltá / oranžová / červená v TimeGoo (1. 10.);
+  overiť skutočné feedy na latte-lab (názvy oblastí, awareness_level), ručný výber oblasti v Nastaveniach
+- [x] App Manager: hodnotenia a recenzie používateľov z ODRS (ako GNOME Software / Discover) na kartách a v detaile
+- [ ] App Manager: inštalácie na pozadí cez službu (prežijú zatvorenie okna, ako Bazaar), „Podobné aplikácie“,
+  ProtonDB pri hrách a .exe, upozornenie na koniec podpory (EOL runtime), vrátenie aktualizácie Flatpaku,
+  veku primerané (OARS) pre detské účty, napísať recenziu (ODRS submit)
+- [ ] Device Manager: `latte-boot compat` v Hardvéri, zdravie diskov (SMART cez udisks2), zdravie batérie, fwupd
+  aktualizácie firmvéru klikom, test kamery / mikrofónu / reproduktorov / gamepadu, správa pre podporu (export)
 - [ ] AI: streamovanie odpovede do bubliny po riadkoch; efektivita a model aj v Nastaveniach
 - [ ] Ollama na CPU s malým modelom (3–4B) priamo v PC. Router lokálne/online podľa otázky.
 - [x] Text Bar: režimy (Lokálne, Súbory, Web, AI, Linux príkaz) a potvrdenie deštruktívnych príkazov (prvé slovo každej časti príkazu + vzory; otestované).

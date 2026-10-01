@@ -498,6 +498,8 @@ Item {
             Text { visible: cardItem.info.installed; text: "✓ nainštalované"; color: theme.primary; font { family: theme.fontUi; pixelSize: 10; weight: Font.Bold } }
             Text { visible: !cardItem.info.installed && !!cardItem.info.verified; text: "✔ overený"; color: theme.primary; font { family: theme.fontUi; pixelSize: 10; weight: Font.Bold } }
             Text { visible: !cardItem.info.installed && (cardItem.info.installs || 0) > 0; text: "↓ " + app.fmtCount(cardItem.info.installs) + "/mes."; color: theme.fgDim; font { family: theme.fontUi; pixelSize: 10 } }
+            Text { visible: (cardItem.info.ratingCount || 0) >= 3; text: "★ " + String(cardItem.info.rating || 0).replace(".", ",") + " (" + app.fmtCount(cardItem.info.ratingCount) + ")"
+                   color: theme.fgDim; font { family: theme.fontUi; pixelSize: 10 } }
         }
         MouseArea {
             id: cm; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; acceptedButtons: Qt.LeftButton | Qt.RightButton
@@ -579,12 +581,33 @@ Item {
                     Repeater {
                         model: parent.d ? [["Na stiahnutie", app.human(parent.d.downloadSize) || "—"], ["Po inštalácii", app.human(parent.d.installedSize) || "—"],
                                            ["Inštalácie", app.fmtCount(parent.d.installsTotal)], ["Verzia", (parent.d.releases[0] || {}).version || "—"],
-                                           ["Licencia", parent.d.free ? "slobodná" : "vlastnícka"], ["Zdroj", "Flathub · izolácia"]] : []
+                                           ["Licencia", parent.d.free ? "slobodná" : "vlastnícka"], ["Zdroj", "Flathub · izolácia"],
+                                           ["Hodnotenie", (parent.d.ratingCount || 0) > 0 ? "★ " + String(parent.d.rating).replace(".", ",") + "  (" + app.fmtCount(parent.d.ratingCount) + ")" : "zatiaľ nie"]] : []
                         Rectangle {
                             required property var modelData
                             width: 150; height: 58; radius: 12; color: theme.field
                             Text { x: 12; y: 9; text: modelData[0].toUpperCase(); color: theme.fgDim; font { family: theme.fontUi; pixelSize: 10; weight: Font.Bold } }
                             Text { x: 12; y: 27; width: parent.width - 24; elide: Text.ElideRight; text: modelData[1]; color: theme.fg; font { family: theme.fontUi; pixelSize: 15; weight: Font.Bold } }
+                        }
+                    }
+                }
+                // recenzie používateľov (ODRS)
+                Column {
+                    readonly property var d: parent.d
+                    visible: !!d && (d.reviews || []).length > 0; width: parent.width; spacing: 8
+                    Text { text: "RECENZIE POUŽÍVATEĽOV"; color: theme.fgDim; font { family: theme.fontUi; pixelSize: 11; weight: Font.Bold } }
+                    Repeater {
+                        model: parent.d ? (parent.d.reviews || []) : []
+                        Rectangle {
+                            required property var modelData
+                            width: parent.width; height: rv.implicitHeight + 20; radius: 12; color: theme.field
+                            Column {
+                                id: rv; x: 12; y: 10; width: parent.width - 24; spacing: 3
+                                Text { width: parent.width; elide: Text.ElideRight; color: theme.fg; font { family: theme.fontUi; pixelSize: 13; weight: Font.Bold }
+                                       text: "★★★★★".slice(0, modelData.stars) + "☆☆☆☆☆".slice(0, 5 - modelData.stars) + "  " + modelData.summary }
+                                Text { width: parent.width; wrapMode: Text.WordWrap; maximumLineCount: 4; elide: Text.ElideRight; text: modelData.text; color: theme.fg; font { family: theme.fontUi; pixelSize: 12 } }
+                                Text { text: (modelData.author || "anonym") + (modelData.version ? " · verzia " + modelData.version : ""); color: theme.fgDim; font { family: theme.fontUi; pixelSize: 10 } }
+                            }
                         }
                     }
                 }
