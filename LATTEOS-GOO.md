@@ -90,6 +90,12 @@ samostatný tekutý prvok.
   (nezdvihnutými) a lištou** — tam prelievanie funguje výborne. Keď TimeGoo po kliku stúpa, krk sa **naťahuje a
   tenčí, až stratí kontakt** — ostane **iba samotná kvapka, bez výrastku** (pahýle sa stiahnu a zmiznú). **DaNoGoo a kráľovná sa pri otvorení vznesú bez
   základne** (ostrov na okraji sa stiahne, krk sa natiahne a zmizne).
+- **Jedny pravidlá pre všetky kvapky (1. 10., výhrada používateľa):** každá kvapka — lišta, Hodiny, vypínač,
+  DaNoGoo, kráľovná, widgety, aj voľne položené — je **v jednom goo tele** (`goo.py`: generátory vkladajú svoje tvary
+  do tela lišty, body z obrazovky sa prepočítajú do jej súradníc). Preto sa každá s každou zlieva, keď sú blízko
+  (vzdialenosť trojice), a všetky majú **to isté svetlo kurzora** (svetlá škvrna tela, odlesk hore vľavo a na
+  strane ku kurzoru), sklo, lem a tieň. Nová kvapka = `goo.kvapka(…)` + `goo.odlesk(…)` + `goo.vloz(…)`, nikdy
+  vlastné `body` (iba farebné guľky upozornení a okná majú vlastné).
 - **Hladina pri okraji** (z Marey): okraj obrazovky je voda — keď kvapka odíde alebo sa vráti, hladina sa prehne a
   po nej sa rozbehnú **dve vlnky**; po prasknutí krku ostane chvíľu **zvyšková kvapka**.
 - **Pohyb kolmo na okraj:** kvapka vystúpi **kolmo od okraja**, späť **padne rovno ako pod ťarchou**, s
@@ -252,6 +258,7 @@ Karta z ucha TimeGoo, zhora nadol:
 | logika (okná, spúšťač, kvapky widgetov, počasie) | `session/kvapky/kvapka.luau` |
 | počet guľôčok okien (goo telo nedovolí `repeat`) | `python3 session/kvapky/sloty.py N` + `SLOTS` v logike |
 | kvapky widgetov | `python3 session/kvapky/widgety.py N` + `WMAX` v logike |
+| jedno goo telo pre všetky kvapky (prepočet súradníc, odlesky) | `session/kvapky/goo.py` (modul generátorov) |
 | voľné Hodiny a vypínač (ťahanie, zóny, skrytie v lište) | `python3 session/kvapky/volne.py` (po `spustac.py`, `powergoo.py`) |
 | štart plochy, Noctalia pre Kvapky, `uloz`, `panel-poloha`, `roh-sirka`, `okraj` | `session/bin/latte-kvapky` |
 | relácia, profily prostredí | `session/bin/latte-session`, `latte-profil` |
