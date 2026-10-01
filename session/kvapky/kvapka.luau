@@ -946,7 +946,7 @@ local function ai_status(done)
         local st = {}
         for k, v in (out or ""):gmatch("(%w+)=([^\n]*)") do st[k] = v end
         ai = { provider = st.provider, target = st.target, model = st.model, ok = st.ok == "1",
-               web = st.web == "1", disabled = st.disabled == "1", effort = st.effort or "", error = st.error }
+               web = st.web == "1", disabled = st.disabled == "1", effort = st.effort or "", error = st.error, setup = st.setup }
         if ai.web then ai.target = (st.model ~= "" and st.model) or "AI" end
         if paint_chips then paint_chips() end
         paint_hits()
@@ -979,6 +979,12 @@ local function ai_send(q)
     ai_files = {}
     if ai.disabled then
         conv[#conv + 1] = { role = "assistant", content = tr("AI is turned off. Settings › Software › AI turns it on.") }
+        paint_chat(); return
+    end
+    -- služba ešte nie je nastavená (nenainštalovaná, neprihlásená, bez kľúča): Nastavenia › AI, všetko klikaním
+    if not ai.web and not ai.ok and (ai.setup or ai.provider == "cloud") then
+        conv[#conv + 1] = { role = "assistant", content = fill(tr("{ai} needs a one-time setup. I opened Settings › AI — everything there is done with clicks; you only type your name and password on the service page. Then ask again."), { ai = ai.target or "AI" }) }
+        run("latte-app", { "nastavenia", "ai" })
         paint_chat(); return
     end
     if ai.web then
@@ -1135,12 +1141,12 @@ function paint_chips()
                 run("latte-ai", { "models" }, function(out)
                     local items = {}
                     if ai.provider == "predplatne" then
-                        items[1] = { label = tr("Service default"), on = (ai.model or "") == "", run = function() ai_set({ { "model", "" } }) end }
+                        items[1] = { label = tr("Service default"), on = (ai.model or "") == "", run = function() ai_set({ { "cli_model", "" } }) end }
                     end
                     for id in (out or ""):gmatch("([^\t\n]+)[^\n]*") do
                         if #items < 10 then
                             items[#items + 1] = { label = id, on = id == ai.model, run = function()
-                                ai_set({ { ai.provider == "cloud" and "cloud_model" or "model", id } })
+                                ai_set({ { ai.provider == "cloud" and "cloud_model" or (ai.provider == "predplatne" and "cli_model") or "model", id } })
                             end }
                         end
                     end

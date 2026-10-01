@@ -33,7 +33,7 @@ DEV=(git gcc-c++ cmake meson ninja-build rust cargo golang
 # --- F1 testy: seatd (kompozitor zo SSH), GL klienti, rozlíšenie ------------------
 TEST=(seatd kitty wlr-randr)
 # --- AI (CPU, malý model; služba sa nepovoľuje) --------------------------------
-AI=(ollama)
+AI=(ollama nodejs-npm)   # npm: nástroje predplatných (ChatGPT, Gemini, Copilot) inštaluje Nastavenia › AI bez sudo
 # --- hľadanie súborov (latte-hladaj): index mien, živé hľadanie, obsah ----------
 FIND=(plocate fd-find ripgrep)
 
