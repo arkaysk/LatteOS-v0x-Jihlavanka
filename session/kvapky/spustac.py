@@ -61,7 +61,7 @@ glass_expr = "pick(tema, " + ", ".join(f"{GLASS.get(mat[t], 0.4):.2f}" for t in 
 pearl = [t for t in order if mat[t] in ("sklo", "fazety", "mraz", "jantar")]
 pearl_expr = " or ".join(f"tema == {idx[t]}" for t in pearl) or "false"
 TEX_DECL = "".join(f'    image tex.{t}.{o} = file "textury/{t}_{o}.webp", {640}, {560}\n' for t in TEX for o in ("v", "h"))
-TEX_DRAW = "".join(f"            image tex.{t}.{o} {{ at: dc.x - dw / 2, dc.y - dh / 2; size: dw, dh; show: tema == {idx[t]} and {'vert' if o == 'h' else 'not vert'} }}\n"
+TEX_DRAW = "".join(f"            image tex.{t}.{o} {{ at: dc.x - dw / 2, dc.y - dh / 2; size: dw, dh; show: tema == {idx[t]} and {'t.vert' if o == 'h' else 'not t.vert'} }}\n"
                    for t in TEX for o in ("v", "h"))
 
 L = []
@@ -85,12 +85,12 @@ a(f'''    // >>> spúšťač (spustac.py)
     // ucho (roh okna) je presne nad Hodinami (na bočnom okraji presne vedľa): kvapka vystúpi kolmo od okraja a späť
     // padne rovno ako pod ťarchou. Okno rastie od ucha doprava (dolu), ak je tam miesto, inak doľava (hore).
     let d.rise = 74                          // ucho nad lištou: vzdialenosť ako medzi vypínačom, Hodinami a lištou
-    let dk.x = if(vert, cxs + away.x * d.rise, cxs)
-    let dk.y = if(vert, cys, cys + away.y * d.rise)
-    let d.sx = if(vert, 0, if(cxs + dw + 12 <= W, 1, -1))
-    let d.sy = if(vert, if(cys + dh + 12 <= H, 1, -1), 0)
-    let dt.x = if(vert, dk.x + away.x * dw / 2, dk.x + d.sx * dw / 2)
-    let dt.y = if(vert, dk.y + d.sy * dh / 2, dk.y + away.y * dh / 2)
+    let dk.x = if(t.vert, cxs + t.ax * d.rise, cxs)
+    let dk.y = if(t.vert, cys, cys + t.ay * d.rise)
+    let d.sx = if(t.vert, 0, if(cxs + dw + 12 <= W, 1, -1))
+    let d.sy = if(t.vert, if(cys + dh + 12 <= H, 1, -1), 0)
+    let dt.x = if(t.vert, dk.x + t.ax * dw / 2, dk.x + d.sx * dw / 2)
+    let dt.y = if(t.vert, dk.y + d.sy * dh / 2, dk.y + t.ay * dh / 2)
     // kvapka Hodín sa odlepí od lišty, pružne dopláva do rohu karty najbližšieho Hodinám a karta z nej vyrastie;
     // kým je okno otvorené, ostane v rohu ako trčiace „ucho“ s časom (ako v Marei — je poznať, odkiaľ okno je).
     // Pri zatvorení sa karta najprv zloží do ucha a až potom ucho pružne odkvapne domov na okraj.
@@ -109,8 +109,8 @@ a(f'''    // >>> spúšťač (spustac.py)
     let cw = dw - 56                           // šírka obsahu
     let dshow = clamp(dsh * 2 - 1, 0, 1)
     // prechod farby: ďaleko od ucha farba okien, pri uchu káva
-    let g.ax = away.x * dw / 2 * if(vert, 1, 0)
-    let g.ay = away.y * dh / 2 * if(vert, 0, 1)
+    let g.ax = t.ax * dw / 2 * if(t.vert, 1, 0)
+    let g.ay = t.ay * dh / 2 * if(t.vert, 0, 1)
     body {{
         gradient: dc.x + g.ax, dc.y + g.ay to dc.x - g.ax, dc.y - g.ay, l.win, l.win, l.win, mix(l.win, coffee, 0.35), coffee
         glass: 100% * l.glass
@@ -151,7 +151,7 @@ a(f'''    // >>> spúšťač (spustac.py)
         clip box {{ at: dc.x, dc.y; size: dw, dh; corner: 24 }}
         group {{
             pivot: dc.x, dc.y
-            rotate: if(vert, if(away.x > 0, 0, 180), if(away.y < 0, 0, 180)) * 1deg
+            rotate: if(t.vert, if(t.ax > 0, 0, 180), if(t.ay < 0, 0, 180)) * 1deg
 {TEX_DRAW}        }}
     }}
     // obsah: y0 = horný okraj obsahu pod poľom; riadok režimu a počasia sú pri spodku karty

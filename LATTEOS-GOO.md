@@ -70,6 +70,11 @@ samostatný tekutý prvok.
 15. **Farby guliek upozornení** (1. 10.): **červená = hardvér** (ako „zariadenie potrebuje pozornosť“ v Správcovi
    zariadení), **zelená = sieť**, **modrá = softvér** (aktualizácie); po otvorení okna je vidieť, čo hlási.
 16. **Všetky kvapky sú drag & drop** (1. 10.) — aj Hodiny (TimeGoo) a vypínač (PowerGoo), nielen samostatné kvapky.
+   Hodiny a vypínač (hotové 1. 10., `volne.py`): klik bez pohybu = spúšťač / ponuka ako doteraz; potiahnuté (> 8 px)
+   idú za kurzorom; pustené ďaleko od lišty sa prilepia k najbližšiemu okraju ako samostatná kvapka (bez vlákien —
+   dohoda o spájaní v §3), pustené do 110 px od svojho miesta v lište sa vrátia do nej (prelievanie v trojici).
+   Spúšťač, časové menu a ponuka vypínača vyrastú z kvapky, kde práve je. Keď odídu Hodiny, vypínač sa posunie na
+   ich miesto. Poloha v `spustac.json` (`timegoo` / `powergoo` = `{ free, side, pos }`).
 
 ---
 
@@ -247,6 +252,7 @@ Karta z ucha TimeGoo, zhora nadol:
 | logika (okná, spúšťač, kvapky widgetov, počasie) | `session/kvapky/kvapka.luau` |
 | počet guľôčok okien (goo telo nedovolí `repeat`) | `python3 session/kvapky/sloty.py N` + `SLOTS` v logike |
 | kvapky widgetov | `python3 session/kvapky/widgety.py N` + `WMAX` v logike |
+| voľné Hodiny a vypínač (ťahanie, zóny, skrytie v lište) | `python3 session/kvapky/volne.py` (po `spustac.py`, `powergoo.py`) |
 | štart plochy, Noctalia pre Kvapky, `uloz`, `panel-poloha`, `roh-sirka`, `okraj` | `session/bin/latte-kvapky` |
 | relácia, profily prostredí | `session/bin/latte-session`, `latte-profil` |
 | Hyprland (režimy okien, rezerva pri okraji, virtuálny monitor) | `session/hypr/hyprland.lua`, `session/hypr/latte/*.lua` |
@@ -264,7 +270,11 @@ sokety v `/run/user/1000/pleamar/`.
 
 **Obmedzenia pleamaru**, na ktoré treba myslieť: v `body` nie je `repeat`/`for` (generátory); `let` a `prop` z
 `repeat` nevidí `let` mimo neho; text sa vo výrazoch neporovnáva (fakt/bool); elipsa stlačená na nulovú výšku robí
-chyby (neaktívne tvary nulovým polomerom); logika nevie zapisovať súbory (`latte-kvapky uloz`).
+chyby (neaktívne tvary nulovým polomerom); logika nevie zapisovať súbory (`latte-kvapky uloz`). **`show:` na tvare
+v `body` tvar neskryje** (iba násobí priehľadnosť, do siluety sa zleje aj tak) — tvar s nulovým polomerom / šírkou
+a `blend` nechá bodku či vlásočnicu; skryté tvary lišty preto odchádzajú do stredu hlavy (`hx, mid - 8`).
+`pointer.x` na celoobrazovkovej vrstve klame — `mx`/`my` (Hyprland); počas ťahania zóna cez celú obrazovku
+(polomer 4000), inak Hyprland pošle pustenie mimo zóny niekam inam.
 
 ---
 
@@ -291,7 +301,7 @@ Ide sa **po poradí**; nové nápady sa zapíšu na koniec (E), nerozbiehajú sa
 
 ### B. Mechanika Goo a ovládanie myšou
 - **okno z kvapky ako bublina, zatvorenie = prasknutie, minimalizácia = pád do Goobaru so žblnknutím** (pravidlo 14)
-- **presúvanie Hodín a vypínača samostatne** (pravidlo 16, rozhodnuté 1. 10.; dnes idú s lištou)
+- ✅ (1. 10., overené naživo virtuálnou myšou) **presúvanie Hodín a vypínača samostatne** (pravidlo 16)
 - goo telo pod rohovou lištou; vlnenie a pulzovanie pri udalostiach (upozornenie, zvuk, sťahovanie, zmena widgetu)
 - rozbaľovacia ponuka rýchleho spúšťania ako samostatné kvapky
 - všetko myšou: prejsť každú funkciu Goo, či ide bez klávesnice (pravidlo 1), vrátane premenovania záložiek,
