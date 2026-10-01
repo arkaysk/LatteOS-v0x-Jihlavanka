@@ -175,6 +175,12 @@ Postup: 1 ChatGoo s Telegramom a Signalom · 2 Discord a Meta s upozornením · 
 Flathube). Beeper je uzavretá aplikácia, správy bežne cez servery Beepera. Odporúčanie: Beeper ako alternatíva
 v App Manageri, ChatGoo vlastný na tých istých otvorených mostoch mautrix (lokálne, vzhľad Goo, upozornenia v DaNoGoo).
 
+**Rozhodnutie používateľa: ChatGoo bude iba addon pre pôvodný Beeper (Linux).** Beeper sa po minimalizácii presunie do
+kvapky ChatGoo, okolo nej sa zobrazujú správy podľa rovnakých pravidiel ako upozornenia (DaNoGoo). Hotové (`477cb7a`):
+zadanie v LATTEOS-GOO.md 4.2c, pomocník `session/bin/latte-chatgoo` (stav / ukaz / skry / prepni / ziskat; Beeper
+z PATH, AppImage v ~/Applications, ~/.local/bin, Stiahnuté, alebo Flatpak), inštalácia v install-session.sh, ROADMAP.
+Scéna (kvapka, hrozno, presmerovanie upozornení) až naživo na latte-lab — generátor z danogoo.py s predponou `cg.`.
+
 ## Nové a zmenené súbory
 
 - `session/bin/`: `gnome-software`, `latte-hladaj`, `latte-riadok`, `latte-pocasie` (nové); `latte-ai`, `latte-apps`,
