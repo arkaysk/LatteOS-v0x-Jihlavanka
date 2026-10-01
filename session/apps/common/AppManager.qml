@@ -99,6 +99,8 @@ Item {
     Cmd { id: storeProc; command: ["latte-apps", "store", "home"]; onDone: (out) => { try { app.store = JSON.parse(out); } catch (e) { app.store = { error: true }; } } }
     Cmd { id: catProc; onDone: (out) => { try { const r = JSON.parse(out); app.categoryApps = app.categoryPage > 1 ? app.categoryApps.concat(r.apps) : r.apps; } catch (e) {} } }
     property var similar: []               // podobné aplikácie v detaile
+    property var kurator: []               // kurátorský výber iných (Bluefin, Bazzite — sekcie obchodu Bazaar), mení sa s nimi
+    Cmd { id: kurProc; command: ["latte-apps", "store", "kurator"]; onDone: (out) => { try { app.kurator = JSON.parse(out).sections || []; } catch (e) {} } }
     property var eolApps: []               // aplikácie na runtime bez podpory
     property int revStars: 0               // písanie recenzie
     Cmd { id: similarProc; onDone: (out) => { try { app.similar = JSON.parse(out).apps || []; } catch (e) { app.similar = []; } } }
@@ -222,6 +224,7 @@ Item {
         if (k === "aktualizacie" && updatesList.length === 0) { updatesLoading = true; updProc.running = true; }
         if (k === "aktualizacie") { latteProc.running = true; drvProc.running = true; eolProc.running = true; }
         if (k === "objavovat" && !store && !storeProc.running) storeProc.running = true;
+        if (k === "objavovat" && app.kurator.length === 0 && !kurProc.running) kurProc.running = true;
         if (k === "check") { dlProc.running = true; if (checkPath !== "") check(checkPath); }
         if (k === "nainstalovane" || k === "opravnenia") { listProc.running = true; if (!wellProc.running) wellProc.running = true; }
     }
@@ -766,9 +769,14 @@ Item {
                 Shelf { title: "Obľúbené"; items: app.store && app.store.oblubene ? app.store.oblubene : [] }
                 Shelf { title: "Nové na Flathube"; items: app.store && app.store.nove ? app.store.nove : [] }
                 Shelf { title: "Nedávno aktualizované"; items: app.store && app.store.aktualizovane ? app.store.aktualizovane : [] }
-                // výber LatteOS
+                // kurátorský výber, ktorý spravujú a priebežne aktualizujú iní (Bluefin, Bazzite); zdroj je v nadpise
                 Repeater {
-                    model: app.picks
+                    model: app.kurator
+                    Shelf { required property var modelData; title: modelData.title + "  ·  vybral " + modelData.source; items: modelData.apps }
+                }
+                // záloha bez internetu (kým sa kurátorský výber nenačíta prvý raz)
+                Repeater {
+                    model: app.kurator.length ? [] : app.picks
                     Column {
                         id: grp
                         required property var modelData

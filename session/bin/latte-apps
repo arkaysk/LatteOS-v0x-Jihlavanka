@@ -26,6 +26,8 @@
                                      s aktuálnou voľbou a kandidátmi podľa MimeType v .desktop (Nastavenia › Predvolené aplikácie)
   latte-apps default KAT DESKTOP_ID  nastaví aplikáciu pre všetky typy kategórie (xdg-mime default → ~/.config/mimeapps.list)
 
+  latte-apps store kurator           JSON: kurátorský výber, ktorý spravujú iní a priebežne aktualizujú — sekcie obchodu
+                                     Bazaar z Bluefinu a Bazzite (curated.yaml / content.yaml na GitHube), cache 24 h
   latte-apps store similar ID        JSON: podobné aplikácie (rovnaká kategória a kľúčové slová, podľa inštalácií)
   latte-apps eol                     JSON: nainštalované aplikácie na runtime bez podpory (koniec bezpečnostných opráv)
   latte-apps rollback ID             vráti Flatpak na predchádzajúcu verziu a podrží ju (flatpak mask) — po zlej aktualizácii
@@ -950,6 +952,73 @@ def card(h, inst):
             "free": h.get("is_free_license", True), "installed": aid in inst, **rating_of(aid)}
 
 
+# kurátorský výber iných (moderne udržiavaný, mení sa s ich vydaniami) — sekcie obchodu Bazaar
+CURATORS = [
+    ("Bluefin", "https://raw.githubusercontent.com/projectbluefin/common/main/system_files/bluefin/etc/bazaar/curated.yaml"),
+    ("Bazzite", "https://raw.githubusercontent.com/ublue-os/bazzite/main/system_files/desktop/shared/usr/share/ublue-os/bazaar/content.yaml"),
+]
+SECTION_SK = {"Bluefin Recommends": "Bluefin odporúča", "Browsers": "Prehliadače", "Gaming": "Hry", "Streaming & Chat": "Streamovanie a chat",
+              "Music & Media": "Hudba a médiá", "Office & Productivity": "Kancelária a produktivita", "Utilities": "Nástroje",
+              "Development": "Vývoj", "Communication": "Komunikácia", "Graphics": "Grafika", "Productivity": "Produktivita",
+              "Media": "Médiá", "Education": "Vzdelávanie", "Science": "Veda", "Security": "Bezpečnosť", "Games": "Hry",
+              "Sustainability & Education": "Udržateľnosť a vzdelávanie", "AI and Machine Learning": "AI a strojové učenie",
+              "Desktop Development": "Vývoj aplikácií", "Cloud Native Development": "Vývoj pre cloud a kontajnery"}
+
+
+def curated_sections(raw):
+    """rows → [(nadpis, podnadpis, [app id])] — vydržať aj staršiu schému (sections/category)"""
+    try:
+        import yaml
+        doc = yaml.safe_load(raw) or {}
+    except Exception:
+        return []
+    rows = doc.get("rows") or doc.get("sections") or []
+    out = []
+    for r in rows:
+        sec = r.get("section") if isinstance(r, dict) and "section" in r else (r if isinstance(r, dict) else None)
+        if not isinstance(sec, dict):
+            continue
+        def txt(v):
+            if isinstance(v, dict):
+                v = v.get("string", v)
+                if isinstance(v, dict):
+                    return v.get("sk") or v.get("cs") or v.get("en") or next(iter(v.values()), "")
+            return v if isinstance(v, str) else ""
+        ids = sec.get("appids")
+        ids = ids.get("list", []) if isinstance(ids, dict) else (ids or [])
+        title = txt(sec.get("title"))
+        if ids:
+            out.append((SECTION_SK.get(title, title), txt(sec.get("subtitle")), [i for i in ids if isinstance(i, str)]))
+    return out
+
+
+def kurator(inst):
+    import time, urllib.request
+    from concurrent.futures import ThreadPoolExecutor
+    res = []
+    for name, url in CURATORS:
+        f = os.path.join(CACHE, "kurator-%s.yaml" % name.lower())
+        raw = None
+        if os.path.exists(f) and time.time() - os.path.getmtime(f) < 24 * 3600:
+            raw = open(f).read()
+        else:
+            try:
+                raw = urllib.request.urlopen(urllib.request.Request(url, headers={"User-Agent": "LatteOS-AppManager/0.1"}), timeout=15).read().decode()
+                os.makedirs(CACHE, exist_ok=True)
+                open(f, "w").write(raw)
+            except Exception:
+                raw = open(f).read() if os.path.exists(f) else ""
+        for title, sub, ids in curated_sections(raw):
+            res.append({"source": name, "title": title, "subtitle": sub, "ids": ids[:24]})
+    allids = sorted({i for r in res for i in r["ids"]})
+    with ThreadPoolExecutor(8) as ex:                 # detaily z Flathubu (cache 7 dní); aplikácie, čo už nie sú, vypadnú
+        dets = dict(zip(allids, ex.map(lambda i: fh("/appstream/" + i, ttl=7 * 24 * 3600), allids)))
+    for r in res:
+        r["apps"] = [card({"app_id": i, "name": dets[i].get("name", i), "summary": dets[i].get("summary", ""), "icon": dets[i].get("icon") or "",
+                           "developer_name": dets[i].get("developer_name", "")}, inst) for i in r.pop("ids") if dets.get(i)]
+    return {"sections": [r for r in res if r["apps"]]}
+
+
 def oars_age(cr):
     """vekové hodnotenie OARS → odporúčaný vek (približne ako Flathub / GNOME Software)"""
     if not isinstance(cr, dict):
@@ -969,6 +1038,8 @@ def oars_age(cr):
 
 def store(a):
     inst = flatpak_installed()
+    if a[0] == "kurator":
+        return kurator(inst)
     if a[0] == "similar" and len(a) > 1:
         det = fh("/appstream/" + a[1], ttl=24 * 3600) or {}
         words = (det.get("keywords") or [])[:3] + [(det.get("categories") or [""])[0]]

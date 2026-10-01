@@ -73,6 +73,16 @@ Overiť na latte-lab: inštalácia z App Managera a zatvorenie okna počas nej (
 Vrátiť verziu (výstup `flatpak remote-info --log`), EOL (formát `flatpak remote-info`), ProtonDB, testy zariadení
 (mpv, speaker-test / paplay, pw-record), správa pre podporu.
 
+## Kurátorský výber obchodu
+
+**Odpoveď:** pôvodný „Výber LatteOS“ bol statický zoznam 16 aplikácií v AppManager.qml. Nahradený kurátorským výberom,
+ktorý spravujú a priebežne aktualizujú iní — sekcie obchodu **Bazaar** z projektov **Bluefin** (`projectbluefin/common`,
+`etc/bazaar/curated.yaml`: Bluefin odporúča, Prehliadače, Médiá, Kancelária, Hry, Nástroje, Vzdelávanie, AI, Vývoj…) a
+**Bazzite** (`ublue-os/bazzite`, `bazaar/content.yaml`: Hry, Streamovanie, Hudba, Kancelária, Nástroje). Sťahuje sa
+z GitHubu raz denne, detaily z Flathubu; v nadpise je „vybral Bluefin / Bazzite“. Statický výber ostáva iba ako záloha
+bez internetu. Blokovací zoznam Bazzite sa nepreberá (je viazaný na ich systém, napr. blokuje Flatpak Steam).
+Overené živo v cloude (raw.githubusercontent.com je dostupný): 10 sekcií Bluefin, 5 Bazzite.
+
 ## Nové a zmenené súbory
 
 - `session/bin/`: `gnome-software`, `latte-hladaj`, `latte-riadok`, `latte-pocasie` (nové); `latte-ai`, `latte-apps`,
