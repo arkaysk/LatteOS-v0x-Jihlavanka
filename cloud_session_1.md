@@ -83,6 +83,50 @@ z GitHubu raz denne, detaily z Flathubu; v nadpise je „vybral Bluefin / Bazzit
 bez internetu. Blokovací zoznam Bazzite sa nepreberá (je viazaný na ich systém, napr. blokuje Flatpak Steam).
 Overené živo v cloude (raw.githubusercontent.com je dostupný): 10 sekcií Bluefin, 5 Bazzite.
 
+## Monitor LatteOS Classic — hodnotenie a postup
+
+**Čo dnes vie** (`session/apps/common/MonitorView.qml`, `data/HardverView.qml`, `data/SenzoryView.qml`, `bin/latte-sysmon`):
+Prehľad (grafy CPU, RAM, GPU, disky, sieť, jadrá, teploty) · Procesy (strom, podľa aplikácií so súčtom, aplikácia →
+zariadenie: mikrofón/kamera/zvuk/GPU, ukončiť/vynútiť/celú aplikáciu, príkaz, priečinok) · Čas v aplikáciách (Digitálna
+pohoda, limity) · Hardvér ako CPU-Z (kódové meno, nm, takty jadier, cache, inštrukcie, doska/BIOS, SPD a sloty so
+správcom, disky, správa) · Senzory ako HWiNFO (hwmon, RAPL W, min/max/priemer, grafy, záznam do CSV, pripnúť na lištu,
+premenovať/skryť) · Po štarte ako Autoruns (XDG autostart, systemd user/system, časovače, cron, štart relácie, prihlasovacie
+skripty, environment.d, moduly jadra; povoliť/zakázať iba používateľské jednotky) · Výstupy telemetrie (JSON pre OLED,
+Stream Deck).
+
+**Porovnanie**
+
+| Oblasť | Vzor (Windows) | Linuxové náprotivky | LatteOS Monitor | Chýba |
+|---|---|---|---|---|
+| Procesy | Správca úloh Win11, Process Explorer / System Informer | Mission Center, Resources, Plasma System Monitor, btop | CPU, RAM, strom, aplikácie, zariadenia — silné | disk I/O, sieť a GPU po procesoch, vlákna, priorita, afinita, pozastaviť, úsporný režim, ukončiť strom, otvorené súbory a spojenia |
+| Výkon | karta Výkon (disk aktívny čas a odozva, každá sieťovka, GPU motory a VRAM, zloženie pamäte) | Mission Center (najbližšie Win11), Resources, nvtop | súhrnné grafy | detail po diskoch/sieťovkách/GPU, zloženie pamäte a zram, **NVIDIA chýba úplne** |
+| Služby, používatelia | karty Služby, Používatelia | System Monitor (čiastočne), systemctl | — | celé |
+| Po štarte | Autoruns (overenie podpisu, skryť Microsoft, VirusTotal, porovnanie, vplyv na štart) | Stacer, GNOME Tweaks (iba aplikácie), systemd-analyze | najširší výpis na Linuxe | overenie (RPM/Flatpak/LatteOS/neznáme), skryť systémové, vplyv na štart, zakázať systémové, porovnanie snímok, ďalšie miesta (ld.so.preload, udev, polkit, sudoers.d, shell rc, Flatpak na pozadí) |
+| Hardvér | CPU-Z (CPU, Caches, Mainboard, Memory, SPD, Graphics, Bench) | **CPU-X** (klon CPU-Z), hardinfo2, inxi | CPU, cache, doska, SPD — dobré | karta Grafika (Vulkan/GL, ovládač, VRAM, takty), Bench s porovnaním, napätie a násobič |
+| Senzory | HWiNFO (min/max/priemer, záznam, upozornenia, OSD, tray, súhrn) | psensor, CoreCtrl, LACT, lm-sensors | min/max/priemer, CSV, grafy, lišta — dobré | upozornenia pri prahu, NVIDIA, throttling, efektívny takt, ventilátory/napätia (moduly nct6775/it87), OSD v hre |
+
+**Zhodnotenie:** koncepciou je Monitor ďalej než Linuxové náprotivky — žiadny z nich nemá v jednom okne Správcu úloh,
+Autoruns, CPU-Z, HWiNFO a digitálnu pohodu. Silné: aplikácie a zariadenia po procesoch, Autoruns, senzory. Slabé:
+stĺpce procesov (iba CPU a RAM), karta Výkon v detaile, služby, NVIDIA, a cena: Python spúšťaný každú sekundu.
+
+**Navrhnutý postup** (každá fáza samostatne použiteľná):
+1. **Procesy ako Win11** — stĺpce Disk (`/proc/PID/io`), GPU (`/proc/PID/fdinfo` drm-engine, amdgpu/i915/xe), Sieť
+   (počet spojení cez `ss`; bajty neskôr eBPF), vlákna, priorita, stav, začiatok; akcie Priorita, Úsporný režim (nice 19
+   + ioprio idle + cpu.weight), Pozastaviť/Pokračovať, Ukončiť strom; detail: otvorené súbory a spojenia, prostredie.
+2. **NVIDIA** — `nvidia-smi --query-gpu` (vyťaženie, VRAM, teplota, takty, výkon W) a procesy na GPU; neskôr NVML.
+3. **Výkon** — karty po diskoch (aktívny čas a odozva z `/proc/diskstats`), sieťovkách, GPU (motory, VRAM), zloženie
+   pamäte (aplikácie, cache, zram a jeho kompresia).
+4. **Služby a Používatelia** — systemd (system aj user): stav, popis, spustiť/zastaviť/reštartovať/povoliť (polkit);
+   prihlásení používatelia a ich spotreba.
+5. **Po štarte ako Autoruns+** — overenie pôvodu (balík RPM, Flatpak, LatteOS, **neznáme** zvýraznené), „Skryť
+   systémové“, vplyv na štart (`systemd-analyze blame`), zakázať aj systémové (polkit), porovnanie s poslednou snímkou
+   („pribudlo od…“), nové miesta (ld.so.preload, udev, polkit, sudoers.d, shell rc, Flatpak na pozadí, Hyprland exec-once).
+6. **CPU-Z / HWiNFO+** — karta Grafika (vulkaninfo/eglinfo, ovládač, VRAM), Bench (krátky test 1 vlákno / všetky
+   s porovnaním s referenčnými CPU), upozornenia senzorov (prah → oznámenie), throttling, efektívny takt, rada na moduly
+   ventilátorov/napätí (cez Device Manager).
+7. **Architektúra** — `latte-sysmon` do Rustu ako služba `latte-sysmond` (stála telemetria z ROADMAP F4/O): jeden
+   proces, socket pre Monitor, lištu, Kvapky a OLED; nižšia cena CPU a pamäte.
+
 ## Nové a zmenené súbory
 
 - `session/bin/`: `gnome-software`, `latte-hladaj`, `latte-riadok`, `latte-pocasie` (nové); `latte-ai`, `latte-apps`,
