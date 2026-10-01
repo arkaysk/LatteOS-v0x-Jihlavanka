@@ -2544,6 +2544,28 @@ function wx_alerts(d, now_t)
     if level > 0 then text.weather = fill(tr("Weather warning: {w}"), { w = txt }) .. "  ·  " .. (text.weather or "") end
     wx_flash()                                       -- nová predpoveď: na chvíľu počasie miesto dátumu
 end
+-- oficiálne výstrahy ČHMÚ (CZ) a SHMÚ (SK, cez MeteoAlarm) — latte-pocasie; majú prednosť pred odhadom z predpovede.
+-- Stupne: 1 žltá, 2 oranžová, 3 červená (farba ikony v TimeGoo)
+local WARN_ICON = { vietor = "alert-triangle", burka = "cloud-storm", sneh = "cloud-snow", dazd = "cloud-rain",
+                    povoden = "cloud-rain", hmla = "cloud-fog" }
+function official_alerts(lat, lon)
+    run("latte-pocasie", { "vystrahy", lat, lon }, function(out)
+        local best = nil
+        for line in (out or ""):gmatch("[^\n]+") do
+            local ok, w = pcall(json.decode, line)
+            if ok and w and (not best or (w.level or 0) > (best.level or 0)) then best = w end
+        end
+        if not best or (best.level or 0) < (tonumber(fact.wx_alert) or 0) then return end
+        fact.wx_alert = math.min(3, best.level)
+        text.tg_wx_icon = G[WARN_ICON[best.type] or "alert-triangle"] or ""
+        local ev = best.event or ""
+        if utf8.len(ev) and utf8.len(ev) > 16 then ev = ev:sub(1, utf8.offset(ev, 16) - 1) .. "…" end
+        text.tg_wx_text = ev
+        text.weather = fill(tr("Weather warning: {w}"), { w = (best.headline or best.event or "") .. " (" .. (best.source or "") .. ")" })
+                       .. "  ·  " .. (text.weather or ""):gsub("^.-  ·  ", "")
+        wx_flash()
+    end)
+end
 local function weather()
     run("cat", { "/var/lib/latteos/greeter/greeter.conf" }, function(conf)
         conf = conf or ""
@@ -2564,6 +2586,7 @@ local function weather()
                 text.dn_wx = wx_icon(d.current.weather_code)
                 text.dn_temp = t .. "°"
                 wx_alerts(d, t)
+                official_alerts(lat, lon)
             end
             paint_wx()
         end)
