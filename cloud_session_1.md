@@ -181,6 +181,13 @@ zadanie v LATTEOS-GOO.md 4.2c, pomocník `session/bin/latte-chatgoo` (stav / uka
 z PATH, AppImage v ~/Applications, ~/.local/bin, Stiahnuté, alebo Flatpak), inštalácia v install-session.sh, ROADMAP.
 Scéna (kvapka, hrozno, presmerovanie upozornení) až naživo na latte-lab — generátor z danogoo.py s predponou `cg.`.
 
+**Nastavenia pre Goo a Classic (zadanie používateľa):** v Goo iba spoločné + **Kvapky (Goo)**, v Classic iba spoločné +
+Lišta a systémové menu. Kvapky (Goo): TimeGoo / PowerGoo / DaNoGoo skryť–ukázať, veľkosť, vrátiť na miesto; ChatGoo
+ako kvapka alebo ikona Beepera v rohovej lište Noctalie (doplnok, nie nutná); **vlastné kvapky** (ikona, klik, text
+z príkazu) ako kvapky widgetov. Súbor `~/.config/latteos/kvapky.json`, logika ho číta každé 2 s. Skrytá kvapka =
+veľkosť 0 (scéna: pružina `zt.s/zp.s/zd.s`, `zt.p = max(0, …)`). Goobar a QueenGoo skrytie po úprave ich scény.
+Overiť na latte-lab: či po skrytí neostanú drobné zvyšky (guľky počtu DaNoGoo, minibubliny batérie, odlesk Hodín).
+
 ## Nové a zmenené súbory
 
 - `session/bin/`: `gnome-software`, `latte-hladaj`, `latte-riadok`, `latte-pocasie` (nové); `latte-ai`, `latte-apps`,

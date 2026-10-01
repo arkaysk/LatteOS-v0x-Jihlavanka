@@ -182,6 +182,16 @@ samostatný tekutý prvok.
   poloha a presun ťahaním ako DaNoGoo; robiť naživo na latte-lab (scéna sa nedá overiť v cloude).
 - Pomocník hotový: `session/bin/latte-chatgoo` (stav, ukaz, skry, prepni, ziskat).
 
+### 4.2d Nastavenia › Kvapky (Goo) — zadanie používateľa 1. 10.
+- Nastavenia ukazujú v Goo iba spoločné stránky + **Kvapky (Goo)**; stránka **Lišta a systémové menu** je iba v Classic
+  (a naopak) — `only: "goo" | "classic"` v `areasAll` (nastavenia.qml).
+- **Kvapky (hotové 1. 10.):** TimeGoo, PowerGoo, DaNoGoo — klik na kartu skryje / ukáže (skrytá = veľkosť 0), Veľkosť
+  100–220 %, Vrátiť na miesto. Goobar a QueenGoo zatiaľ vždy (skrytie po úprave ich scény). Súbor
+  `~/.config/latteos/kvapky.json` (skryte, zoom, reset, chatgoo, vlastne), logika ho číta každé 2 s.
+- **ChatGoo nie je nutná:** voľba „Kvapka ChatGoo“ alebo „Bez kvapky — ikona Beepera v rohovej lište Noctalie“.
+- **Vlastné kvapky (hotové 1. 10.):** názov, ikona (téma ikon alebo obrázok), príkaz po kliknutí, voliteľný príkaz pre text
+  (prvý riadok, 8 znakov, obnova v s); správajú sa ako kvapky widgetov (ťahanie k okraju, pravý klik → nastavenia).
+
 ### 4.3 Spúšťač (okno z Hodín) — náčrt používateľa 1. 10.
 Karta z ucha TimeGoo, zhora nadol:
 - **Pole s ikonou režimu.** Ikona na začiatku poľa mení obsah: **Ai** (prompt), **lupa** (aplikácie), **priečinok**
