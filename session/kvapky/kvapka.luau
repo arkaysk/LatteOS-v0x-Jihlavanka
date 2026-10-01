@@ -1179,37 +1179,54 @@ every(60000, dn_date)
 -- vystúpená. Guľka = čakajúce aktualizácie (latte-apps updates, z cache, každých 30 min).
 local QG_WIN = { { app = "aplikacie", title = "Aplikácie — LatteOS" }, { app = "zariadenia", title = "Správca zariadení — LatteOS" } }
 local qg_devwarn, qg_offline = 0, false
+local bub_wait = nil                                                         -- titulok okna, na ktoré bublina čaká
 function qg_windows(list)
     local up = false
     for _, w in ipairs(list or {}) do
         for _, q in ipairs(QG_WIN) do if w.title == q.title then up = true end end
     end
     if fact.qg_up ~= up then fact.qg_up = up end
+    if bub_wait then
+        for _, w in ipairs(list or {}) do
+            if w.title == bub_wait then bub_wait = nil; emit("bub_done"); after(250, function() fact.bub_on = false end) end
+        end
+    end
 end
+-- okno z bubliny (pravidlo 14, 1. 10.): App Manager a Správca zariadení sú riadne okná — kráľovná ostane na mieste a
+-- vypľuje bublinu (bublina.py), tá sa nafúkne na obdĺžnik okna vedľa nej; okno sa otvorí presne tam, bez animácie
+-- Hyprlandu (latte-kvapky okno → latte/windows.lua), a keď naskočí, bublina zmizne
+local QG_SIZE = { aplikacie = { 1220, 780 }, zariadenia = { 1100, 780 } }   -- implicitWidth/Height v session/apps
+local function clampn(v, lo, hi) return math.max(lo, math.min(hi, v)) end
 on("qg_open", function(k)
     local q = QG_WIN[(tonumber(k) or 0) + 1]
     if not q then return end
     for _, w in ipairs(wins) do
         if w.title == q.title then run("hyprctl", { "eval", "latte.win.focus_by('org.quickshell', '" .. q.title .. "')" }); return end
     end
+    if bub_wait then return end                                              -- bublina už letí
     local W, H = tonumber(fact["wd.w"]) or 1920, tonumber(fact["wd.h"]) or 1080
     local side, pos = tonumber(fact["qg.side"]) or 0, tonumber(fact["qg.pos"]) or 0.7
     local nx = ({ [0] = 0, 0, 1, -1 })[side] or 0
     local ny = ({ [0] = -1, 1, 0, 0 })[side] or -1
-    local ax = (side <= 1) and W * pos or (side == 2 and 0 or W)
-    local ay = (side <= 1) and (side == 0 and H or 0) or H * pos
-    ax, ay = ax + nx * 102, ay + ny * 102                              -- ucho: vystúpená kráľovná
-    local sx, sy
-    if side <= 1 then sx = (ax + 900 <= W) and 1 or -1; sy = ny
-    else sx = nx; sy = (ay + 700 <= H) and 1 or -1 end
-    fact.qg_up = true
+    local qx = ((side <= 1) and W * pos or (side == 2 and 0 or W)) + nx * 36   -- stred kráľovnej
+    local qy = ((side <= 1) and (side == 0 and H or 0) or H * pos) + ny * 36
+    local sz = QG_SIZE[q.app] or { 1000, 700 }
+    local w, h = math.min(sz[1], W - 32), math.min(sz[2], H - 32)
+    local gap = 36 + 34                                                        -- kráľovná + medzera
+    local cx, cy = qx + nx * (gap + w / 2), qy + ny * (gap + h / 2)
+    cx = clampn(cx, 16 + w / 2, W - 16 - w / 2)
+    cy = clampn(cy, 16 + h / 2, H - 16 - h / 2)
+    fact["bub.x"] = cx; fact["bub.y"] = cy; fact["bub.w"] = w; fact["bub.h"] = h
+    emit("bub_go")
+    bub_wait = q.title
     -- okno rovno na tom, čo guľka hlási: aktualizácie (App Manager), siete pri výpadku (Správca zariadení)
     local args = { q.app }
     if q.app == "aplikacie" and (tonumber(fact.qg_upd) or 0) > 0 then args[2] = "aktualizacie" end
     if q.app == "zariadenia" and qg_offline then args[2] = "siete" end
-    run("latte-kvapky", { "miesto", q.title, tostring(math.floor(ax)), tostring(math.floor(ay)), tostring(sx), tostring(sy) }, function()
-        run("latte-app", args)
+    run("latte-kvapky", { "okno", q.title, tostring(math.floor(cx - w / 2)), tostring(math.floor(cy - h / 2)), tostring(w), tostring(h) }, function()
+        after(650, function() run("latte-app", args) end)                    -- naskočí, keď je bublina nafúknutá
     end)
+    after(7000, function() if bub_wait == q.title then bub_wait = nil; emit("bub_done"); fact.bub_on = false end end)
 end)
 on("qg_drop", function()
     local x, y = tonumber(fact["qgd.x"]) or 0, tonumber(fact["qgd.y"]) or 0

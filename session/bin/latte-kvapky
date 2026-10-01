@@ -203,6 +203,12 @@ case "${1:-}" in
         d="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/latteos"; mkdir -p "$d"
         printf '%s|%d|%d|%d|%d|%d\n' "${2:?titul}" "${3:?x}" "${4:?y}" "${5:-1}" "${6:-1}" "$(date +%s)" > "$d/kvapky-miesto"
         ;;
+    okno)
+        # okno z bubliny (pravidlo 14): TITUL a presný obdĺžnik X Y W H, kam sa bublina nafúkla — Hyprland
+        # (latte/windows.lua) okno s týmto titulkom pri otvorení postaví presne tam a bez vlastnej animácie; platí 10 s
+        d="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/latteos"; mkdir -p "$d"
+        printf '%s|%d|%d|%d|%d|%d\n' "${2:?titul}" "${3:?x}" "${4:?y}" "${5:?w}" "${6:?h}" "$(date +%s)" > "$d/kvapky-okno"
+        ;;
     farba)
         # farba ikony aplikácie pre hrozno upozornení DaNoGoo: prevládajúci sýty odtieň ikony → číslo farby v palete
         # scény (0 červená … 13 ružová, 14 svetlosivá, 15 tmavosivá); výsledok sa pamätá v ~/.cache/latteos/farby-ikon.json

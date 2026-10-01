@@ -68,6 +68,27 @@ function W.setup()
         local y = (m and m.y or 0) + (tonumber(sy) > 0 and tonumber(ay) or tonumber(ay) - sh)
         hl.dispatch(hl.dsp.window.move({ x = math.floor(x), y = math.floor(y), window = "address:" .. w.address }))
     end)
+    -- okno z bubliny (plocha Goo, 1. 10., pravidlo 14): kvapka sa nafúkla na obdĺžnik budúceho okna
+    -- (`latte-kvapky okno TITUL X Y W H`); okno s tým titulkom naskočí presne naň, bez vlastnej animácie
+    -- (vznik okna je bublina). Záznam platí 10 s.
+    local bubble_file = (os.getenv("XDG_RUNTIME_DIR") or "/tmp") .. "/latteos/kvapky-okno"
+    hl.on("window.open", function(w)
+        local f = io.open(bubble_file, "r")
+        if not f or not w then if f then f:close() end return end
+        local line = f:read("*l") or ""
+        f:close()
+        local title, x, y, ww, hh, t = line:match("^(.-)|(%-?%d+)|(%-?%d+)|(%d+)|(%d+)|(%d+)$")
+        if not title then os.remove(bubble_file) return end
+        if os.time() - tonumber(t) > 10 then os.remove(bubble_file) return end
+        if w.title ~= title then return end
+        os.remove(bubble_file)
+        local sel = "address:" .. w.address
+        local m = w.monitor
+        hl.dispatch(hl.dsp.window.set_prop({ prop = "no_anim", value = "1", window = sel }))
+        if not w.floating then hl.dispatch(hl.dsp.window.float({ action = "enable", window = sel })) end
+        hl.dispatch(hl.dsp.window.resize({ x = tonumber(ww), y = tonumber(hh), window = sel }))
+        hl.dispatch(hl.dsp.window.move({ x = (m and m.x or 0) + tonumber(x), y = (m and m.y or 0) + tonumber(y), window = sel }))
+    end)
     -- páska ako v niri: okno sa neminimalizuje, iba odíde z pohľadu (páska sa posunie na ďalšie okno)
     latte = latte or {}
     function latte.tape_on() return W.current == "paska" end

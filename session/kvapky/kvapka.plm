@@ -619,7 +619,6 @@ scene Kvapka {
             // >>> QueenGoo (telo, goo.py)
             box { at: if((solo) and qg.sheet > 0.02, pick(side, qg.ax, W - (qg.ax), qg.ay, H - (qg.ay)), hx), if((solo) and qg.sheet > 0.02, pick(side, (qg.ay) - H + edge, edge - (qg.ay), edge - (qg.ax), (qg.ax) - W + edge), mid - 8); size: if(side >= 2, (20 * abs(qg.ny) + 70 * abs(qg.nx)) * qg.sheet, (70 * abs(qg.ny) + 20 * abs(qg.nx)) * qg.sheet), if(side >= 2, (70 * abs(qg.ny) + 20 * abs(qg.nx)) * qg.sheet, (20 * abs(qg.ny) + 70 * abs(qg.nx)) * qg.sheet); corner: 10 }
             ellipse { at: if((solo) and qg.sheet > 0.02, pick(side, qg.ax, W - (qg.ax), qg.ay, H - (qg.ay)), hx), if((solo) and qg.sheet > 0.02, pick(side, (qg.ay) - H + edge, edge - (qg.ay), edge - (qg.ax), (qg.ax) - W + edge), mid - 8); radius: 24 * qg.sheet; blend: 16 * qg.sheet }
-            line { from: if((solo) and qg.neck > 0.5, pick(side, qg.ax, W - (qg.ax), qg.ay, H - (qg.ay)), hx), if((solo) and qg.neck > 0.5, pick(side, (qg.ay) - H + edge, edge - (qg.ay), edge - (qg.ax), (qg.ax) - W + edge), mid - 8); to: if((solo) and qg.neck > 0.5, pick(side, qg.x, W - (qg.x), qg.y, H - (qg.y)), hx), if((solo) and qg.neck > 0.5, pick(side, (qg.y) - H + edge, edge - (qg.y), edge - (qg.x), (qg.x) - W + edge), mid - 8); width: qg.neck; blend: 12 }
             ellipse { at: if(solo, pick(side, qg.x, W - (qg.x), qg.y, H - (qg.y)), hx), if(solo, pick(side, (qg.y) - H + edge, edge - (qg.y), edge - (qg.x), (qg.x) - W + edge), mid - 8); radius: qg.r; scale: 1 + qg.jit, 1 - qg.jit; blend: 20 }
             // <<< QueenGoo (telo)
             // >>> voľné Hodiny (telo, goo.py)
@@ -632,6 +631,9 @@ scene Kvapka {
             ellipse { at: if(((pg_free or pg_moved) and solo and pm < 0.11) and pg.sheet > 0.02, pick(side, pg.ax, W - (pg.ax), pg.ay, H - (pg.ay)), hx), if(((pg_free or pg_moved) and solo and pm < 0.11) and pg.sheet > 0.02, pick(side, (pg.ay) - H + edge, edge - (pg.ay), edge - (pg.ax), (pg.ax) - W + edge), mid - 8); radius: 24 * pg.sheet; blend: 16 * pg.sheet }
             ellipse { at: if((pg_free or pg_moved) and solo and pm < 0.11, pick(side, pg.fx, W - (pg.fx), pg.fy, H - (pg.fy)), hx), if((pg_free or pg_moved) and solo and pm < 0.11, pick(side, (pg.fy) - H + edge, edge - (pg.fy), edge - (pg.fx), (pg.fx) - W + edge), mid - 8); radius: (19 + 4 * hp) * so * (1 - smooth(0, 0.12, pm)); scale: 1 + jit.p, 1 - jit.p; blend: 20 }
             // <<< voľný vypínač (telo)
+            // >>> bublina okna (telo, goo.py)
+            ellipse { at: if(bub_on and bub.a > 0.5 and bub.t > 0.01 and bub.t < 0.3, pick(side, b.x, W - (b.x), b.y, H - (b.y)), hx), if(bub_on and bub.a > 0.5 and bub.t > 0.01 and bub.t < 0.3, pick(side, (b.y) - H + edge, edge - (b.y), edge - (b.x), (b.x) - W + edge), mid - 8); radius: if(bub_on and bub.a > 0.5 and bub.t > 0.01 and bub.t < 0.3, b.r, 1); blend: 16 }
+            // <<< bublina okna (telo)
             // ── koniec kvapiek v tele lišty (goo.py)
         }
         // obraz režimu okien v hlave (30. 9., návrh používateľa): akoby cez kvapku presvitali okná — páska (pás
@@ -707,6 +709,8 @@ scene Kvapka {
             ellipse { at: if((pg_free or pg_moved) and solo and pm < 0.11, pick(side, pg.fx, W - (pg.fx), pg.fy, H - (pg.fy)), hx) - ((19 + 4 * hp) * so * (1 - smooth(0, 0.12, pm))) * 0.4, if((pg_free or pg_moved) and solo and pm < 0.11, pick(side, (pg.fy) - H + edge, edge - (pg.fy), edge - (pg.fx), (pg.fx) - W + edge), mid - 8) - ((19 + 4 * hp) * so * (1 - smooth(0, 0.12, pm))) * 0.52; radius: 0.11 * ((19 + 4 * hp) * so * (1 - smooth(0, 0.12, pm))) * if((pg_free or pg_moved) and solo and pm < 0.11, 1, 0); scale: 1.5, 0.8; rotate: -30deg; color: #fff6ea }
             ellipse { at: pick(side, pg.fx, W - (pg.fx), pg.fy, H - (pg.fy)) + (cu - pick(side, pg.fx, W - (pg.fx), pg.fy, H - (pg.fy))) / max(length(cu - pick(side, pg.fx, W - (pg.fx), pg.fy, H - (pg.fy)), cv - pick(side, (pg.fy) - H + edge, edge - (pg.fy), edge - (pg.fx), (pg.fx) - W + edge)), 1) * ((19 + 4 * hp) * so * (1 - smooth(0, 0.12, pm))) * 0.55, pick(side, (pg.fy) - H + edge, edge - (pg.fy), edge - (pg.fx), (pg.fx) - W + edge) + (cv - pick(side, (pg.fy) - H + edge, edge - (pg.fy), edge - (pg.fx), (pg.fx) - W + edge)) / max(length(cu - pick(side, pg.fx, W - (pg.fx), pg.fy, H - (pg.fy)), cv - pick(side, (pg.fy) - H + edge, edge - (pg.fy), edge - (pg.fx), (pg.fx) - W + edge)), 1) * ((19 + 4 * hp) * so * (1 - smooth(0, 0.12, pm))) * 0.55; radius: 0.13 * ((19 + 4 * hp) * so * (1 - smooth(0, 0.12, pm))) * if((pg_free or pg_moved) and solo and pm < 0.11, 1, 0) * (1 - smooth(50, 360, length(cu - pick(side, pg.fx, W - (pg.fx), pg.fy, H - (pg.fy)), cv - pick(side, (pg.fy) - H + edge, edge - (pg.fy), edge - (pg.fx), (pg.fx) - W + edge)))); color: #ffe4bd }
             // <<< voľný vypínač (odlesk)
+            // >>> bublina okna (odlesk, goo.py)
+            // <<< bublina okna (odlesk)
             // ── koniec odleskov kvapiek (goo.py)
         }
         // základňa kvapky: telo (0) a hlava (1) — ľavý klik = režim okien, ťahanie ľavým aj pravým = presun,
@@ -914,7 +918,7 @@ scene Kvapka {
     fact qg_moved = false
     fact qgd.x = 0
     fact qgd.y = 0
-    fact qg_up = false                       // jej okno je otvorené: ostane vystúpená ako ucho v rohu okna
+    fact qg_up = false                       // jej okno je otvorené (logika)
     fact qg_upd = 0                          // softvér: čakajúce aktualizácie (modrá guľka)
     fact qg_hw = 0                           // hardvér: zariadenia, ktoré potrebujú pozornosť (červená guľka)
     fact qg_net = 0                          // sieť: výpadok (zelená guľka)
@@ -927,11 +931,9 @@ scene Kvapka {
     let qg.px = 0 - qg.ny
     let qg.py = qg.nx
     let qg.near = 1 - smooth(0, 190, length(mx - qg.ax, my - qg.ay))
-    prop qg.lift = 0 ~dnspring
-    follow qg.lift = if(qg_up, 1, 0)
     prop qg.h = 0 ~lively
     prop qg.wob = 0 ~dnwobble
-    let qg.out = 32 + 8 * qg.near + 2.5 * noise(time * 0.3 + 21.7) + 70 * qg.lift
+    let qg.out = 32 + 8 * qg.near + 2.5 * noise(time * 0.3 + 21.7)
     let qg.tx = qg.ax + qg.nx * qg.out + clamp(mx - qg.ax, -20, 20) * 0.28 * qg.near * abs(qg.px)
     let qg.ty = qg.ay + qg.ny * qg.out + clamp(my - qg.ay, -20, 20) * 0.28 * qg.near * abs(qg.py)
     prop qg.x = 0 ~lively
@@ -941,9 +943,8 @@ scene Kvapka {
     follow qg.y = if(qg_drag and qg_moved, my, qg.ty)
     let qg.r = (30 + 3 * qg.h) * so
     let qg.jit = 0.05 * sin(time * 9 + 5) * qg.h + qg.wob * 0.01
-    // základňa na okraji: pri zdvihnutí (okno otvorené) sa stiahne — neostane ostrov; krk sa natiahne a zmizne
-    let qg.neck = 16 * (1 - smooth(0.25, 0.8, qg.lift)) * if(qg.lift > 0.02, 1, 0) * so
-    let qg.sheet = if(qg_drag and qg_moved, 0, 1) * so * (1 - smooth(0, 0.5, qg.lift))
+    // základňa na okraji (pri ťahaní sa stiahne)
+    let qg.sheet = if(qg_drag and qg_moved, 0, 1) * so
     // korunka na vonkajšej strane kvapky, natočená podľa okraja
     let qg.rot = pick(qg.side, 0, 180, 90, -90)
     // telo kráľovnej je v tele lišty (goo.py) — zlieva sa s ostatnými kvapkami a má to isté svetlo
@@ -970,6 +971,51 @@ scene Kvapka {
         ellipse { at: qg.x + (qg.nx * cos(58) + qg.px * sin(58)) * (qg.r + 2), qg.y + (qg.ny * cos(58) + qg.py * sin(58)) * (qg.r + 2); radius: 9.5 * so }
     }
     // <<< QueenGoo
+    // >>> bublina okna (bublina.py)
+    // okno z bubliny (pravidlo 14): vytlačenie (s1), let po oblúku (s2), nafúknutie na okno (s3)
+    fact bub_on = false
+    fact bub.x = 960                         // cieľ: stred a rozmer okna (logika)
+    fact bub.y = 540
+    fact bub.w = 800
+    fact bub.h = 600
+    event bub_go
+    event bub_done
+    prop bub.t = 0 ~900ms
+    prop bub.a = 0 ~160ms
+    let b.s1 = smooth(0, 0.3, bub.t)
+    let b.s2 = smooth(0.25, 0.65, bub.t)
+    let b.s3 = smooth(0.6, 1, bub.t)
+    // odkiaľ: kvapka kráľovnej, smerom od jej okraja
+    let b.p1x = qg.x + qg.nx * (qg.r + 16) * b.s1
+    let b.p1y = qg.y + qg.ny * (qg.r + 16) * b.s1
+    let b.cx = b.p1x + qg.nx * 160
+    let b.cy = b.p1y + qg.ny * 160
+    let b.x = (1 - b.s2) * (1 - b.s2) * b.p1x + 2 * (1 - b.s2) * b.s2 * b.cx + b.s2 * b.s2 * bub.x
+    let b.y = (1 - b.s2) * (1 - b.s2) * b.p1y + 2 * (1 - b.s2) * b.s2 * b.cy + b.s2 * b.s2 * bub.y
+    let b.r = 8 + 8 * b.s1 + 6 * b.s2
+    // blana sa pri nafukovaní trochu chveje, potom sa ustáli
+    let b.wob = 1 + 0.035 * sin(b.s3 * 9.4) * (1 - b.s3)
+    let b.w = (2 * b.r + (bub.w - 2 * b.r) * b.s3) * b.wob
+    let b.h = (2 * b.r + (bub.h - 2 * b.r) * b.s3) * (2 - b.wob)
+    // farba: blízko kráľovnej káva, ďalej materiál okien (pravidlo 11)
+    let b.gx = qg.nx * b.w / 2
+    let b.gy = qg.ny * b.h / 2
+    body {
+        gradient: b.x + b.gx, b.y + b.gy to b.x - b.gx, b.y - b.gy, mix(coffee, l.win, b.s3), mix(coffee, l.win, b.s3 * 0.55)
+        glass: 100% * max(l.glass, 0.7 * (1 - b.s3))
+        lens: l.pearl > 0.5
+        shine: pointer
+        refraction: 120% * max(l.pearl, 1 - b.s3)
+        dispersion: 260% * max(l.pearl, 1 - b.s3)
+        rim: 24%
+        light: 6%, b.y - b.h / 2, 40
+        shadow: 0, 10, 26, 38% * b.s3
+        opacity: bub.a * if(bub.t > 0.27, 1, 0)
+        box { at: b.x, b.y; size: b.w, b.h; corner: b.r + (14 - b.r) * b.s3 }
+    }
+    on bub_go { bub_on = true; bub.t: 0 ~0ms; bub.a: 1 ~0ms; bub.t: 1 ~900ms after 16ms; impulse qg.wob 300 }
+    on bub_done { bub.a: 0 ~180ms }
+    // <<< bublina okna
     // >>> voľné Hodiny a vypínač (volne.py)
     // Hodiny a vypínač ťahaním kamkoľvek (pravidlo 16): pri lište ako doteraz, inak samostatná kvapka pri okraji
     fact tg_free = false
