@@ -743,6 +743,22 @@ scene Kvapka {
     }
 
     image power_icon = icon "system-shutdown-symbolic", 18, 18
+    // Zväčšenie kolieskom nad kvapkou (TimeGoo, PowerGoo, DaNoGoo): 1 = základná veľkosť (minimum), logika drží 1…2,2
+    // a pamätá si ho (spustac.json › zoom); kvapka aj jej obsah rastú plynule (pružina)
+    event goo_wheel ->
+    fact zt = 1
+    fact zp = 1
+    fact zd = 1
+    // 0 = kvapka skrytá (Nastavenia › Kvapky); pružina nesmie preskočiť pod nulu
+    prop zt.s = 1 ~lively
+    prop zp.s = 1 ~lively
+    prop zd.s = 1 ~lively
+    follow zt.s = zt
+    follow zp.s = zp
+    follow zd.s = zd
+    let zt.p = max(0, zt.s)
+    let zp.p = max(0, zp.s)
+    let zd.p = max(0, zd.s)
     // >>> DaNoGoo (danogoo.py)
     // DaNoGoo: dátum + počasie + upozornenia (LATTEOS-GOO.md 4.2b). Poloha na okraji (dn.side, dn.pos) z logiky.
     fact dn.side = 0                         // 0 dole, 1 hore, 2 vľavo, 3 vpravo
@@ -1090,22 +1106,6 @@ scene Kvapka {
         box { at: tst.x, tst.y; size: 40 + 300 * toast.p, 30 + 14 * toast.p; corner: 22; blend: 22 }
     }
     // hodiny: digitálny čas a dátum v kvapke (bez očí; ľavý klik alebo kláves Win otvorí spúšťač)
-    // Zväčšenie kolieskom nad kvapkou (TimeGoo, PowerGoo, DaNoGoo): 1 = základná veľkosť (minimum), logika drží 1…2,2
-    // a pamätá si ho (spustac.json › zoom); kvapka aj jej obsah rastú plynule (pružina)
-    event goo_wheel ->
-    fact zt = 1
-    fact zp = 1
-    fact zd = 1
-    // 0 = kvapka skrytá (Nastavenia › Kvapky); pružina nesmie preskočiť pod nulu
-    prop zt.s = 1 ~lively
-    prop zp.s = 1 ~lively
-    prop zd.s = 1 ~lively
-    follow zt.s = zt
-    follow zp.s = zp
-    follow zd.s = zd
-    let zt.p = max(0, zt.s)
-    let zp.p = max(0, zp.s)
-    let zd.p = max(0, zd.s)
     // Obsah TimeGoo sa strieda (logika plní texty): čas ↔ bežiace stopky alebo minútka (po 4 s);
     // dátum ↔ počasie: na celú hodinu a po novej predpovedi na 10 s, pri výstrahe stále striedavo,
     // ikona žltá (1) alebo červená (2) podľa stupňa
@@ -1120,14 +1120,13 @@ scene Kvapka {
     follow tg.wxf = if(tg_wxflash, 1, 0)
     let tg.wx = max(clamp(tg.wxf, 0, 1), if(wx_alert > 0, smooth(-0.25, 0.25, sin(time * 0.52 + 1.3)), 0)) * (1 - tg.alt)
     let tg.fade = so * ap * (1 - smooth(0, 0.08, dsw))
-    let tg.wxc = pick(wx_alert, ink, #e8a317, #f76b15, #e5484d)   // žltá, oranžová, červená
     text now.time { at: cxs, cys - 5 * zt.p; anchor: center; size: 16 * zt.p; weight: 800; color: ink; opacity: tg.fade * (1 - tg.alt); show: solo }
     text tg_alt_val { at: cxs, cys - 5 * zt.p; anchor: center; size: 16 * zt.p; weight: 800; color: ink; opacity: tg.fade * tg.alt; show: solo }
     text pick(now.weekday, "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat") { at: cxs - 2 * zt.p, cys + 12 * zt.p; anchor: right center; size: 9.5 * zt.p; weight: 600; color: ink; opacity: 70% * tg.fade * (1 - tg.alt) * (1 - tg.wx); show: solo }
     text "{now.day}. {now.month}." { at: cxs + 1 * zt.p, cys + 12 * zt.p; anchor: left center; size: 9.5 * zt.p; weight: 600; color: ink; opacity: 70% * tg.fade * (1 - tg.alt) * (1 - tg.wx); show: solo }
     text tg_alt_label { at: cxs, cys + 12 * zt.p; anchor: center; size: 8 * zt.p; weight: 700; color: ink; opacity: 70% * tg.fade * tg.alt; show: solo }
-    text tg_wx_icon { at: cxs - 1 * zt.p, cys + 12 * zt.p; anchor: right center; size: 11 * zt.p; color: tg.wxc; opacity: tg.fade * tg.wx; show: solo; family: "noctalia-tabler-icons" }
-    text tg_wx_text { at: cxs + 1 * zt.p, cys + 12 * zt.p; anchor: left center; size: 9.5 * zt.p; weight: 700; color: tg.wxc; opacity: tg.fade * tg.wx; show: solo }
+    text tg_wx_icon { at: cxs - 1 * zt.p, cys + 12 * zt.p; anchor: right center; size: 11 * zt.p; color: if(wx_alert >= 3, #e5484d, if(wx_alert >= 2, #f76b15, if(wx_alert >= 1, #e8a317, ink))); opacity: tg.fade * tg.wx; show: solo; family: "noctalia-tabler-icons" }
+    text tg_wx_text { at: cxs + 1 * zt.p, cys + 12 * zt.p; anchor: left center; size: 9.5 * zt.p; weight: 700; color: if(wx_alert >= 3, #e5484d, if(wx_alert >= 2, #f76b15, if(wx_alert >= 1, #e8a317, ink))); opacity: tg.fade * tg.wx; show: solo }
 
     text toast { at: tst.x - 135, tst.y; anchor: left center; width: 270; lines: 1; size: 12.5; weight: 600; color: ink; opacity: clamp(toast.p * 2 - 1, 0, 1) * so; show: solo }
 
