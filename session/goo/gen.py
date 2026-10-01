@@ -24,11 +24,12 @@ def body():
         # mláka pri okraji (ako goo.kvapka v Kvapkách), stopka pri nadnesení, voda k susedovi vpravo, kvapka so zliatím lk (mení sa s tokom
         # a nadnesením), goo vlákno k susedovi vpravo. Prázdne/nepoužité tvary majú nulovú veľkosť: so záplatou
         # pleamar-prazdne-tvary nestoja nič.
-        out.append(f"        ellipse {{ at: x.{k}, floor + 3; radius: rr.{k} * 0.62 * base.{k}; scale: 1.7, 0.55; blend: 16 }}\n")
+        out.append(f"        ellipse {{ at: x.{k}, floor + 4; radius: rr.{k} * 0.5 * base.{k}; scale: 1.6, 0.5; blend: 14 }}\n")
         out.append(f"        line {{ from: x.{k}, floor + 6; to: x.{k}, y.{k}; width: rr.{k} * 2 * stalk.{k}; blend: 14 }}\n")
-        out.append(f"        line {{ from: x.{k}, floor; to: thx.{k}, floor; width: wa.{k} * 2; blend: 18 }}\n")
+        # voda leží POD hladinou (ako „voda pod okrajom“ v Kvapkách): nad ňu sa dvíha iba zliatím, pod vláknom ostane oko
+        out.append(f"        line {{ from: x.{k}, floor + wa.{k}; to: thx.{k}, floor + wa.{k}; width: wa.{k} * 2; blend: 16 }}\n")
         out.append(f"        ellipse {{ at: x.{k}, y.{k}; radius: rr.{k}; scale: 1 + fxw.{k}, 1 - fxw.{k}; blend: lk.{k} + 6 * near.{k} }}\n")
-        out.append(f"        line {{ from: x.{k}, y.{k}; to: thx.{k}, thy.{k}; width: th.{k}; blend: 12 * clamp(th.{k} / 3, 0, 1) }}\n")
+        out.append(f"        line {{ from: x.{k}, y.{k} - thy0.{k}; to: thx.{k}, thy.{k}; width: th.{k}; blend: 12 * clamp(th.{k} / 3, 0, 1) }}\n")
     # vlnky na hladine: kameň = dva hrebene, ktoré sa rozbiehajú od miesta dopadu a slabnú; vibrácia = chvejúci sa hrb
     for i in range(4):
         for sgn in (-1, 1):
