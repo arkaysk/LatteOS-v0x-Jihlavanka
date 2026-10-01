@@ -8,6 +8,7 @@
 # miesta v lište, ktoré od nich závisia.
 # Použitie: python3 session/kvapky/volne.py
 import os
+import goo
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 PLM = os.path.join(HERE, "kvapka.plm")
@@ -40,27 +41,11 @@ def drop(n, seed, dock_x, dock_y, radius):
     let {n}.sheet = if({n}_free and not {n}_moved, 1, 0) * so
 '''
 
-def body(n, r_expr, scale):
-    return f'''    body {{
-        color: coffee
-        rim: 30%
-        light: 14%, 0, 30
-        glass: 100% * clamp(v * 1.3, 0, 1) * (1 - m)
-        shine: pointer
-        opacity: if(({n}_free or {n}_moved) and solo, 1, 0)
-        box {{ at: {n}.ax, {n}.ay; size: (70 * abs({n}.ny) + 20 * abs({n}.nx)) * {n}.sheet, (20 * abs({n}.ny) + 70 * abs({n}.nx)) * {n}.sheet; corner: 10 }}
-        ellipse {{ at: {n}.ax, {n}.ay; radius: 24 * {n}.sheet; blend: 16 * {n}.sheet }}
-        ellipse {{ at: {n}.fx, {n}.fy; radius: {r_expr}; scale: {scale}; blend: 18 * {n}.sheet + 2 }}
-    }}
-'''
-
 draw = ('''    // >>> voľné Hodiny a vypínač (volne.py)
     // Hodiny a vypínač ťahaním kamkoľvek (pravidlo 16): pri lište ako doteraz, inak samostatná kvapka pri okraji
 '''
  + drop("tg", "31.7", "pick(side, sx, W - sx, edge - s.y, W - edge + s.y)", "pick(side, s.y + H - edge, edge - s.y, sx, H - sx)", 33)
  + drop("pg", "37.3", "pick(side, px, W - px, edge - p.y, W - edge + p.y)", "pick(side, p.y + H - edge, edge - p.y, px, H - px)", 22)
- + body("tg", "(33 + 3 * hs) * so * (1 - smooth(0, 0.08, dsw))", "1 + squish.s * 0.08 + jit.s, 1 - squish.s * 0.12 - jit.s")
- + body("pg", "(19 + 4 * hp) * so * (1 - smooth(0, 0.12, pm))", "1 + squish.p * 0.08 + jit.p, 1 - squish.p * 0.12 - jit.p")
  + '''    // <<< voľné
 ''')
 
@@ -140,5 +125,12 @@ once("    let sag.s = 16 * 4 * clamp(dsw, 0, 1) * (1 - clamp(dsw, 0, 1)) * so\n"
      "    let sag.s = 16 * 4 * clamp(dsw, 0, 1) * (1 - clamp(dsw, 0, 1)) * so * if(tg_free or tg_moved, 0, 1)\n")
 once("radius: 4.5 * so * (1 - smooth(0, 0.12, dsh)) * (1 - smooth(60, 420, length(cu - sx, cv - s.y))); color: #ffe4bd }",
      "radius: 4.5 * so * (1 - smooth(0, 0.12, dsh)) * (1 - smooth(60, 420, length(cu - sx, cv - s.y))) * if(tg_free or tg_moved, 0, 1); color: #ffe4bd }")
+# voľné kvapky: telo v tele lišty (goo.py) — zlievajú sa s lištou a ostatnými kvapkami, to isté svetlo
+TGV, PGV = "(tg_free or tg_moved) and solo and dsw < 0.07", "(pg_free or pg_moved) and solo and pm < 0.11"
+TGR, PGR = "(33 + 3 * hs) * so * (1 - smooth(0, 0.08, dsw))", "(19 + 4 * hp) * so * (1 - smooth(0, 0.12, pm))"
+s = goo.vloz(s, "voľné Hodiny", goo.kvapka(TGV, "tg.fx", "tg.fy", TGR, "tg.ax", "tg.ay", "tg.nx", "tg.ny", "tg.sheet", jit="jit.s"),
+             goo.odlesk(TGV, "tg.fx", "tg.fy", TGR))
+s = goo.vloz(s, "voľný vypínač", goo.kvapka(PGV, "pg.fx", "pg.fy", PGR, "pg.ax", "pg.ay", "pg.nx", "pg.ny", "pg.sheet", jit="jit.p"),
+             goo.odlesk(PGV, "pg.fx", "pg.fy", PGR))
 open(PLM, "w").write(s)
 print("kvapka.plm: voľné Hodiny a vypínač")

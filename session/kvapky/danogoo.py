@@ -8,6 +8,7 @@
 #   // >>> DaNoGoo zóny (danogoo.py) … // <<< DaNoGoo zóny  klikateľné miesta a pravidlá (na konci scény, navrchu)
 # Použitie: python3 session/kvapky/danogoo.py
 import os
+import goo
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 PLM = os.path.join(HERE, "kvapka.plm")
@@ -117,24 +118,8 @@ a('''    let clx = if(dn.vert > 0.5, dn.x + dn.nx * (dn.r + 196), clamp(dn.x, 20
     let cle = clamp(dn.lift * 1.7 - berries.count * 0.12 - 0.2, 0, 1) * if(berries.count > 0 and dn_open, 1, 0)
     let brend.x = if(berries.count > 0, clx, dn.x)
     let brend.y = if(berries.count > 0, cly, dn.y)
-    body {
-        color: coffee
-        rim: 30%
-        light: 14%, 0, 30
-        glass: 100% * clamp(v * 1.3, 0, 1) * (1 - m)
-        shine: pointer
-        opacity: if(solo, 1, 0)
-        box { at: dn.ax, dn.ay; size: (70 * abs(dn.ny) + 20 * abs(dn.nx)) * dn.sheet, (20 * abs(dn.ny) + 70 * abs(dn.nx)) * dn.sheet; corner: 10 }
-        line { from: dn.ax, dn.ay; to: dn.ax + (dn.x - dn.ax) * if(dn.neck > 0.5, 1, 0), dn.ay + (dn.y - dn.ay) * if(dn.neck > 0.5, 1, 0); width: dn.neck; blend: 12 }
-        ellipse { at: dn.ax, dn.ay; radius: 24 * dn.sheet; blend: 16 * dn.sheet }
-        ellipse { at: dn.x, dn.y; radius: dn.r; scale: 1 + dn.jit, 1 - dn.jit; blend: 18 * dn.sheet + 2 }
-        // lepkavé vlákno od kvapky cez hrozno (tenšie, čím ďalej)
-        line { from: dn.x, dn.y; to: dn.x + (brend.x - dn.x) * clamp(dn.lift * 1.4, 0, 1), dn.y + (brend.y - dn.y) * clamp(dn.lift * 1.4, 0, 1); width: 7 * clamp(dn.lift * 3, 0, 1) * if(dn_open, 1, 0); blend: 10 * clamp(dn.lift * 3, 0, 1) }
 ''')
-for k in range(NB):
-    a(f"        ellipse {{ at: brx.{k} - 176 * bre.{k}, bry.{k}; radius: 9 * bre.{k}; blend: 8 * bre.{k} }}\n")
-a('''    }
-    // guľky počtu upozornení (goo: prilepené na kvapke)
+a('''    // guľky počtu upozornení (goo: prilepené na kvapke)
     body {
         color: #f2c14e
         rim: 30%
@@ -395,5 +380,13 @@ TR = {"Clear all ({n})": "Vymazať všetko ({n})", "Clear all": "Vymazať všetk
       "December": "december", "Mo": "po", "Tu": "ut", "We": "st", "Th": "št", "Fr": "pi", "Sa": "so", "Su": "ne"}
 i = s.index("    translations sk {\n") + len("    translations sk {\n")
 s = s[:i] + "".join(f'        "{k}" = "{v}"\n' for k, v in TR.items() if f'        "{k}" =' not in s) + s[i:]
+# telo kvapky a strapec hrozna: do tela lišty (jedny pravidlá pre všetky kvapky, goo.py)
+tvary = goo.kvapka("solo", "dn.x", "dn.y", "dn.r", "dn.ax", "dn.ay", "dn.nx", "dn.ny", "dn.sheet", jit="dn.jit", neck="dn.neck")
+gv = "solo and dn_open and dn.lift > 0.05"
+gx, gy = goo.L("dn.x + (brend.x - dn.x) * clamp(dn.lift * 1.4, 0, 1)", "dn.y + (brend.y - dn.y) * clamp(dn.lift * 1.4, 0, 1)")
+tvary.append(f"line {{ from: {goo.at(gv, 'dn.x', 'dn.y')}; to: if({gv}, {gx}, hx), if({gv}, {gy}, mid - 8); width: 7 * clamp(dn.lift * 3, 0, 1); blend: 10 * clamp(dn.lift * 3, 0, 1) }}")
+for k in range(NB):
+    tvary.append(f"ellipse {{ at: {goo.at(f'bre.{k} > 0.02', f'brx.{k} - 176 * bre.{k}', f'bry.{k}')}; radius: 9 * bre.{k}; blend: 8 * bre.{k} }}")
+s = goo.vloz(s, "DaNoGoo", tvary, goo.odlesk("solo", "dn.x", "dn.y", "dn.r"))
 open(PLM, "w").write(s)
 print(f"kvapka.plm: DaNoGoo · {NB} bobúľ")

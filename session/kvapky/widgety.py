@@ -4,6 +4,7 @@
 #   // >>> kvapky widgetov (widgety.py)   …   // <<< kvapky widgetov
 # Použitie: python3 session/kvapky/widgety.py [N]   (predvolene 12; logika: WMAX v kvapka.luau)
 import os, re, sys
+import goo
 
 path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "kvapka.plm")
 N = int(sys.argv[1]) if len(sys.argv) > 1 else 12
@@ -47,20 +48,7 @@ for k in range(N):
     let wjit.{k} = 0.05 * sin(time * 9 + {k}) * wh.{k} + wwob.{k} * 0.01
     let wsheet.{k} = wb.{k} * if(wdrag == {k} and wmoved, 0, 1)
 ''')
-out.append('''    body {
-        color: coffee
-        rim: 30%
-        light: 14%, 0, 30
-        glass: 100% * clamp(v * 1.3, 0, 1) * (1 - m)
-        shine: pointer
-''')
-for k in range(N):
-    out.append(f'''        box {{ at: wa.x.{k}, wa.y.{k}; size: 64 * abs(wn.y.{k}) + 18 * abs(wn.x.{k}), 18 * abs(wn.y.{k}) + 64 * abs(wn.x.{k}); corner: 9; opacity: 1 }}
-        ellipse {{ at: wa.x.{k}, wa.y.{k}; radius: 22 * wsheet.{k}; blend: 14 }}
-        ellipse {{ at: wp.x.{k}, wp.y.{k}; radius: wr.{k}; scale: 1 + wjit.{k}, 1 - wjit.{k}; blend: 16 * wsheet.{k} + 2 }}
-''')
-out.append('''    }
-''')
+# telá kvapiek sú v tele lišty (goo.py): zlievajú sa s ostatnými kvapkami a majú to isté svetlo
 for k in range(N):
     out.append(f'''    // symbolické ikony widgetov v farbe textu; farebné ikony programov (systémová lišta) ako sú
     image wdg.{k}.icon {{ at: wp.x.{k} - 11, wp.y.{k} - 11 - if(wdg.{k}.hasval, 5, 0); size: 22, 22; tint: ink; opacity: wb.{k} * if(wdg.{k}.on, 100%, 55%); show: {k} < wdg.count and wdg.{k}.mono }}
@@ -85,5 +73,11 @@ else:
     # prvý raz: pred ponuku Vypnúť
     anchor = "    // ── ponuka Vypnúť (vyteká z kvapky vypínača smerom od okraja) ──\n"
     s = s.replace(anchor, block + "\n" + anchor, 1)
+tvary, odlesky = [], []
+for k in range(N):
+    v = f"wb.{k} > 0.05 and solo"
+    tvary += goo.kvapka(v, f"wp.x.{k}", f"wp.y.{k}", f"wr.{k} * so", f"wa.x.{k}", f"wa.y.{k}", f"wn.x.{k}", f"wn.y.{k}", f"wsheet.{k} * so", jit=f"wjit.{k}")
+    odlesky += goo.odlesk(v, f"wp.x.{k}", f"wp.y.{k}", f"wr.{k}")
+s = goo.vloz(s, "kvapky widgetov", tvary, odlesky)
 open(path, "w").write(s)
 print(f"kvapka.plm: {N} kvapiek widgetov")

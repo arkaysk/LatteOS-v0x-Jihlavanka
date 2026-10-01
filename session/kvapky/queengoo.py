@@ -7,6 +7,7 @@
 # Vypíše dva bloky: kreslenie (za DaNoGoo) a zóny + pravidlá (na konci scény).
 # Použitie: python3 session/kvapky/queengoo.py
 import json, os
+import goo
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 PLM = os.path.join(HERE, "kvapka.plm")
@@ -55,18 +56,7 @@ draw = f'''    // >>> QueenGoo (queengoo.py)
     let qg.sheet = if(qg_drag and qg_moved, 0, 1) * so * (1 - smooth(0, 0.5, qg.lift))
     // korunka na vonkajšej strane kvapky, natočená podľa okraja
     let qg.rot = pick(qg.side, 0, 180, 90, -90)
-    body {{
-        color: coffee
-        rim: 30%
-        light: 14%, 0, 30
-        glass: 100% * clamp(v * 1.3, 0, 1) * (1 - m)
-        shine: pointer
-        opacity: if(solo, 1, 0)
-        box {{ at: qg.ax, qg.ay; size: (70 * abs(qg.ny) + 20 * abs(qg.nx)) * qg.sheet, (20 * abs(qg.ny) + 70 * abs(qg.nx)) * qg.sheet; corner: 10 }}
-        line {{ from: qg.ax, qg.ay; to: qg.ax + (qg.x - qg.ax) * if(qg.neck > 0.5, 1, 0), qg.ay + (qg.y - qg.ay) * if(qg.neck > 0.5, 1, 0); width: qg.neck; blend: 12 }}
-        ellipse {{ at: qg.ax, qg.ay; radius: 24 * qg.sheet; blend: 16 * qg.sheet }}
-        ellipse {{ at: qg.x, qg.y; radius: qg.r; scale: 1 + qg.jit, 1 - qg.jit; blend: 18 * qg.sheet + 2 }}
-    }}
+    // telo kráľovnej je v tele lišty (goo.py) — zlieva sa s ostatnými kvapkami a má to isté svetlo
     // guľky upozornení (pravidlo 1. 10.): červená = hardvér, zelená = sieť, modrá = softvér (aktualizácie); s počtom
     body {{
         color: #e5484d
@@ -134,5 +124,7 @@ if '"latte-apps"' not in s:
     s = s.replace('"paplay" }', '"paplay", "latte-apps" }', 1)
 if '"latte-devices"' not in s:
     s = s.replace('"latte-apps" }', '"latte-apps", "latte-devices" }', 1)
+s = goo.vloz(s, "QueenGoo", goo.kvapka("solo", "qg.x", "qg.y", "qg.r", "qg.ax", "qg.ay", "qg.nx", "qg.ny", "qg.sheet", jit="qg.jit", neck="qg.neck"),
+             goo.odlesk("solo", "qg.x", "qg.y", "qg.r"))
 open(PLM, "w").write(s)
 print("kvapka.plm: QueenGoo")
