@@ -114,6 +114,34 @@ samostatný tekutý prvok.
 - **Nesúmernosť:** nič nie je dokonale pravidelné (šum, rôzne veľkosti, cik-cak strapcov).
 - **Neprekrývať okná:** kvapky sa pod oknom zmestia do voľného pásu; strapec sa zhromaždí do výšky iba tam, kde
   nad ním nie je okno, inak sa stiahne k okraju.
+- **Základ shellu (1. 10.):** **Goobar, QueenGoo a PowerGoo** tvoria spodnú lištu — vychádzajú z goo maskota Marey
+  (k4ditano), ktorý bol jeden na všetko; LatteOS má viac **špecializovaných** kvapiek s možnosťou tvoriť ďalšie.
+  Tieto tri sa **nedajú skryť** (iba zmeniť veľkosť); skryť sa dá TimeGoo, DaNoGoo a doplnky (ChatGoo, vlastné).
+
+### 3.1 Živé bytosti — správanie pri nečinnosti (zadanie používateľa 1. 10., návrh)
+Kvapky sa majú správať ako **živé bytosti**. Dnes: vlastný pohyb aj bez používateľa (dýchanie, drift), reakcia na
+blízkosť myši; **kurzor je druhý zdroj gravitácie a svetla**. Pribudne správanie **iba pri nečinnosti** používateľa:
+- **Nečinnosť** (myš aj klávesnica; zdroj ext-idle-notify, napr. hypridle → `$XDG_RUNTIME_DIR/latteos/necinnost`):
+  stupne **1** po ~1 min (pokojnejšie dýchanie, kvapky „zaspávajú“), **2** po ~3 min (počasie), **3** po ~6 min (hra).
+- **Prebudenie okamžite:** pohyb myši alebo kláves — všetko pružinou späť na svoje miesto (krátke „vyrušenie“:
+  zachvenie, kvapky sa otočia ku kurzoru).
+- **Stupeň 2 — dážď alebo vietor podľa skutočného počasia** (Open-Meteo, už ho máme): **dážď** = drobné goo kvapky
+  padajú zhora a dopadajú na spodný okraj → **hladina sa zvlní** (impulzy, ktoré sa šíria ako vlnky z Marey) a s ňou
+  **aj pripnuté kvapky** (nadvihnú sa a klesnú s vlnou); **vietor** = pomalé postupné vlny pozdĺž okraja v smere
+  vetra, kvapky sa nakláňajú; jasno = pokojná hladina, iba dýchanie. Sila podľa intenzity zrážok / rýchlosti vetra.
+- **Stupeň 3 — hra:**
+  - **naháňačka:** dve kvapky (napr. QueenGoo a DaNoGoo) sa naháňajú pozdĺž okraja, **zámerne sa zrazia a odrazia**
+    (pružný odraz so stlačením — squish, ako pri kliku);
+  - **behanie:** kvapka sa odlepí a beží po okraji (ostatné jej uhýbajú a zlievajú sa s ňou pri dotyku);
+  - **skákanie:** kvapka preskočí ponad ostatné po oblúku (natiahne sa pri výskoku, sploští pri dopade, vlnky na
+    hladine).
+  - Po hre sa všetko vráti na svoje miesto; pozícia z Nastavení sa nemení.
+- **Kedy nie:** okno na celú obrazovku / hra, uzamknutá obrazovka (`pokoj`), batéria pod 20 % alebo úsporný profil,
+  **stupeň Softvér** (llvmpipe: každá snímka ~45 ms CPU) — tam iba stupeň 1 alebo vôbec; počet snímok pri nečinnosti
+  obmedzený (napr. 20 fps), aby nečinný počítač nekúril. Vypínač v Nastaveniach › Kvapky („Živé správanie“).
+- **Technika (návrh):** jedna funkcia hladiny `vlna(x, t)` (súčet sínusov pre vietor + tlmené impulzy z dopadov)
+  posúva `edge` pre každú kvapku podľa jej x; pohyb hry = cieľové body pre pružiny (`prop … ~lively`) z logiky, zrážky
+  ako vymenené rýchlosti + `squish`. Robiť naživo na latte-lab (scéna), postupne: nečinnosť → dážď/vietor → hra.
 
 ---
 

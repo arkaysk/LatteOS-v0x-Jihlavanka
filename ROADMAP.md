@@ -329,7 +329,10 @@ texty preložiteľné (`translations`). Noctalia beží bez lišty a robí, čo 
       Ďalej: priehľadné pozadie a goo telo z pleamaru pod ňou (vlnenie, pulzovanie)
 - [x] Nastavenia podľa prostredia (1. 10.): v Goo stránka **Kvapky (Goo)** (skryť/ukázať, veľkosť, vrátiť na miesto,
   ChatGoo kvapka alebo ikona v rohovej lište, **vlastné kvapky**), v Classic Lišta a systémové menu
-- [ ] Kvapky: skrytie Goobaru a QueenGoo (scéna), overiť zvyšky po skrytí na latte-lab
+- [ ] Kvapky: overiť zvyšky po skrytí na latte-lab (Goobar, QueenGoo a PowerGoo sú základ shellu — skryť nejdú)
+- [ ] **Živé bytosti pri nečinnosti** (LATTEOS-GOO.md 3.1): zdroj nečinnosti (ext-idle-notify), dážď/vietor podľa
+  skutočného počasia so zvlnením spodnej hrany aj kvapiek, hra (naháňačka so zrážkou a odrazom, behanie, skákanie);
+  nie pri celej obrazovke, zámku, slabej batérii a v stupni Softvér; vypínač v Nastaveniach
 - [ ] **ChatGoo** (addon pre Beeper, LATTEOS-GOO.md 4.2c): kvapka, do ktorej sa minimalizuje Beeper, správy okolo nej
   ako hrozno DaNoGoo (upozornenia aplikácie Beeper presmerované). Pomocník `latte-chatgoo` hotový; scéna naživo na latte-lab
 - [ ] **Komunitné doplnky Noctalie ako kvapky** — prieskum 30. 9.: 235 doplnkov (13 oficiálnych, 222 komunitných,

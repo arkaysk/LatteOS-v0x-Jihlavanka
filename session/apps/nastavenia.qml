@@ -1919,10 +1919,11 @@ ShellRoot {
                         ["zd", "DaNoGoo", "Dátum, počasie, upozornenia, kalendár", "calendar"]]
                 Column {
                     required property var modelData
-                    readonly property bool hid: app.kv.skryte.indexOf(modelData[0]) >= 0
+                    readonly property bool base: modelData[0] === "zp"          // základ shellu (spodná lišta): nedá sa skryť
+                    readonly property bool hid: !base && app.kv.skryte.indexOf(modelData[0]) >= 0
                     width: parent.width; spacing: 6
-                    Card { width: parent.width; height: 64; glyph: modelData[3]; title: modelData[1] + (parent.hid ? "  ·  skrytá" : ""); sub: modelData[2]; selected: !parent.hid
-                           onClicked: app.kvToggle(modelData[0], modelData[1]) }
+                    Card { width: parent.width; height: 64; glyph: modelData[3]; title: modelData[1] + (parent.hid ? "  ·  skrytá" : (parent.base ? "  ·  základ shellu" : "")); sub: modelData[2]; selected: !parent.hid
+                           onClicked: if (!parent.base) app.kvToggle(modelData[0], modelData[1]) }
                     Row {
                         spacing: 10; visible: !parent.hid
                         Stepper { label: "Veľkosť"; unit: " %"; step: 15; min: 100; max: 220
@@ -1934,7 +1935,7 @@ ShellRoot {
                 }
             }
             Text { width: parent.width; wrapMode: Text.WordWrap; color: theme.fgDim; font { family: theme.fontUi; pixelSize: 12 }
-                   text: "Goobar (lišta s oknami) a QueenGoo ostávajú vždy — skrytie pribudne po úprave ich scény. Kliknutím na kartu kvapku skryješ alebo ukážeš." }
+                   text: "Goobar (lišta s oknami), QueenGoo a PowerGoo tvoria základ shellu — spodnú lištu — a nedajú sa skryť (dá sa im zmeniť veľkosť). TimeGoo a DaNoGoo skryješ alebo ukážeš kliknutím na kartu." }
             Heading { text: "CHATGOO (DOPLNOK PRE BEEPER)"; topPadding: 6 }
             Segments {
                 options: [["kvapka", "Kvapka ChatGoo — Beeper sa minimalizuje do nej, správy okolo"], ["lista", "Bez kvapky — ikona Beepera v rohovej lište Noctalie"]]
