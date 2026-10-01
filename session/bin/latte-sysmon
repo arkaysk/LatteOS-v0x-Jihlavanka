@@ -3,10 +3,16 @@
 
   latte-sysmon stream [s]    JSON riadok každú sekundu (alebo každých s): CPU, RAM, disky, sieť, teploty, procesy
   latte-sysmon autorun       JSON: čo sa spúšťa pri štarte (XDG autostart, systemd user/system, časovače, cron,
-                             štart relácie LatteOS, prihlasovacie skripty, environment.d, moduly jadra) — ako Autoruns
+                             štart relácie LatteOS, prihlasovacie skripty, environment.d, moduly jadra, preload knižníc,
+                             sudoers.d, polkit, udev, Hyprland exec) — ako Autoruns: pôvod (balík / Flatpak / LatteOS /
+                             tvoje / neznáme), vplyv na štart (systemd-analyze blame), nové od zapamätaného stavu
   latte-sysmon hw            JSON: hardvér ako CPU-Z/HWiNFO (procesor, cache, doska/BIOS, pamäť, grafika, disky,
                              senzory, batéria, systém)
   latte-sysmon once          jeden snímok (bez procesov)
+  latte-sysmon sluzby                         JSON: služby systému aj používateľa (stav, popis, povolená, pamäť)
+  latte-sysmon sluzba system|user start|stop|restart|enable|disable JEDNOTKA   (systémové → polkit, heslo správcu)
+  latte-sysmon pouzivatelia                   JSON: prihlásení používatelia, relácie a ich procesy (CPU, RAM)
+  latte-sysmon autorun-znam                   zapamätať súčasný stav štartu (porovnanie: „nové od…“ v Po štarte)
   latte-sysmon proces PID                     JSON detail procesu: stav, vlákna, priorita, začiatok, exe, priečinok,
                                               pamäť (PSS, swap), otvorené súbory, sieťové spojenia, pôvod (RPM/Flatpak)
   latte-sysmon proces PID priorita nizka|normalna|vysoka   priorita CPU aj disku (vysoká chce heslo správcu)
@@ -38,6 +44,7 @@ CLK = os.sysconf("SC_CLK_TCK")
 PAGE = os.sysconf("SC_PAGE_SIZE")
 ME = os.getuid()
 RUN = os.path.join(os.environ.get("XDG_RUNTIME_DIR", "/tmp"), "latteos")
+STATE_DIR = os.path.join(os.environ.get("XDG_STATE_HOME", os.path.expanduser("~/.local/state")), "latteos")
 
 # procesy prostredia LatteOS (ukončenie má vplyv na celú plochu → varovanie)
 DESKTOP = {"Hyprland", "noctalia", "labwc", "qs", "quickshell", "greetd", "latte-session", "pipewire", "pipewire-pulse",
@@ -698,8 +705,122 @@ def systemd_units(user):
             continue
         out.append({"id": unit, "kind": "timer" if unit.endswith(".timer") else ("user-service" if user else "service"),
                     "name": unit.rsplit(".", 1)[0], "command": "", "origin": "systemd --user" if user else "systemd (systém)",
-                    "owner": "používateľ" if user else "systém", "enabled": True, "canToggle": bool(user), "note": ""})
+                    "owner": "používateľ" if user else "systém", "enabled": True, "canToggle": True, "note": ""})
     return out
+
+
+def security_items():
+    """miesta, ktoré zneužíva malvér (Autoruns: Image hijacks, LSA…): preload knižníc, sudo, polkit, udev, Hyprland exec"""
+    out = []
+    pre = [l.strip() for l in read("/etc/ld.so.preload").splitlines() if l.strip() and not l.startswith("#")]
+    for lib in pre:                                    # bežný systém tu nemá nič — každá položka je podozrivá
+        out.append({"id": "preload:" + lib, "kind": "security", "name": "Načítanie knižnice do každého programu", "command": lib,
+                    "origin": "/etc/ld.so.preload", "owner": "systém", "enabled": True, "canToggle": False, "note": "pozor", "alert": True})
+    for d, what in (("/etc/sudoers.d", "Práva sudo"), ("/etc/polkit-1/rules.d", "Pravidlá polkit"), ("/etc/udev/rules.d", "Pravidlá udev")):
+        for p in sorted(glob.glob(d + "/*")):
+            if os.path.isfile(p):
+                out.append({"id": "sec:" + p, "kind": "security", "name": what + " · " + os.path.basename(p), "command": "", "origin": p,
+                            "owner": "systém", "enabled": True, "canToggle": False, "note": ""})
+    home = os.path.expanduser("~")
+    for p in sorted(glob.glob(home + "/.config/hypr/*.conf") + glob.glob(home + "/.config/hypr/*.lua") + [home + "/.config/latteos/hyprland.lua"]):
+        for i, line in enumerate(read(p).splitlines()):
+            m = re.match(r"\s*exec(?:-once)?\s*=\s*(.+)$", line) or re.search(r'exec_cmd\("([^"]+)"', line)
+            if m and not line.strip().startswith(("#", "--")):
+                out.append({"id": "hypr:%s:%d" % (p, i), "kind": "session", "name": m.group(1).split()[0], "command": m.group(1), "origin": p,
+                            "owner": "používateľ", "enabled": True, "canToggle": False, "note": "tvoja konfigurácia Hyprlandu"})
+    return out
+
+
+def autorun_enrich(items):
+    """pôvod položky (ako overenie podpisu v Autoruns), vplyv na štart, nové od zapamätaného stavu"""
+    files = sorted({x["origin"] for x in items if (x.get("origin") or "").startswith("/")})
+    owners = {}
+    if files and shutil.which("rpm"):
+        r = subprocess.run(["rpm", "-qf", "--qf", "%{NAME}\n"] + files, capture_output=True, text=True, timeout=20).stdout.splitlines()
+        for f, o in zip(files, r):
+            if o and " " not in o:
+                owners[f] = o
+    home = os.path.expanduser("~")
+    blame = {}
+    for user in (False, True):
+        try:
+            t = subprocess.run(["systemd-analyze"] + (["--user"] if user else []) + ["blame", "--no-pager"], capture_output=True, text=True, timeout=10).stdout
+        except (OSError, subprocess.TimeoutExpired):
+            continue
+        for line in t.splitlines():
+            m = re.match(r"\s*(?:(\d+)min\s*)?(?:([\d.]+)s|([\d.]+)ms)\s+(\S+)", line)
+            if m:
+                ms = int(m.group(1) or 0) * 60000 + float(m.group(2) or 0) * 1000 + float(m.group(3) or 0)
+                blame[m.group(4)] = round(ms)
+    known = {}
+    try:
+        known = json.load(open(os.path.join(STATE_DIR, "autorun-znam.json")))
+    except (OSError, ValueError):
+        pass
+    for x in items:
+        o = x.get("origin") or ""
+        if x["kind"] == "session" and o.startswith("/usr/share/latteos"):
+            x["src"] = "LatteOS"
+        elif o in owners:
+            x["src"] = "LatteOS" if owners[o].startswith("latte") else "balík " + owners[o]
+        elif "flatpak" in o or "flatpak" in (x.get("command") or ""):
+            x["src"] = "Flatpak"
+        elif o.startswith(home) or x["owner"] == "používateľ":
+            x["src"] = "tvoje"
+        elif x["kind"] in ("service", "timer") and not o.startswith("/"):
+            x["src"] = "systém"
+        else:
+            x["src"] = "neznáme"                       # systémový súbor, ktorý nepatrí žiadnemu balíku → stojí za pohľad
+        x["system"] = x["src"].startswith("balík") or x["src"] in ("systém", "LatteOS")
+        if x["id"] in blame:
+            x["impact"] = blame[x["id"]]
+        if known.get("ids"):
+            x["new"] = x["id"] not in known["ids"]
+    return items, known.get("time", 0)
+
+
+def services(user):
+    base = ["systemctl"] + (["--user"] if user else [])
+    try:
+        units = json.loads(subprocess.run(base + ["list-units", "--type=service", "--all", "-o", "json", "--no-pager"], capture_output=True, text=True, timeout=8).stdout or "[]")
+        files = json.loads(subprocess.run(base + ["list-unit-files", "--type=service", "-o", "json", "--no-pager"], capture_output=True, text=True, timeout=8).stdout or "[]")
+    except (OSError, ValueError, subprocess.TimeoutExpired):
+        return []
+    state = {f.get("unit_file"): f.get("state") for f in files}
+    out = []
+    for u in units:
+        if u.get("load") == "not-found":
+            continue
+        out.append({"unit": u.get("unit"), "desc": u.get("description", ""), "active": u.get("active"), "sub": u.get("sub"),
+                    "enabled": state.get(u.get("unit"), ""), "scope": "user" if user else "system"})
+    return out
+
+
+def users_info():
+    out = {}
+    try:
+        sess = json.loads(subprocess.run(["loginctl", "list-sessions", "-o", "json", "--no-pager"], capture_output=True, text=True, timeout=5).stdout or "[]")
+    except (OSError, ValueError, subprocess.TimeoutExpired):
+        sess = []
+    for x in sess:
+        u = out.setdefault(x.get("user", "?"), {"user": x.get("user", "?"), "uid": x.get("uid"), "sessions": [], "procs": 0, "rss": 0})
+        u["sessions"].append({"id": x.get("session"), "seat": x.get("seat") or "", "tty": x.get("tty") or "", "remote": bool(x.get("remote"))})
+    for d in os.listdir("/proc"):
+        if not d.isdigit():
+            continue
+        try:
+            uid = os.stat("/proc/" + d).st_uid
+        except OSError:
+            continue
+        name = user_of(uid)
+        if name in out:
+            st = read("/proc/%s/stat" % d)
+            try:
+                out[name]["procs"] += 1
+                out[name]["rss"] += int(st[st.rindex(")") + 2:].split()[21]) * PAGE
+            except (ValueError, IndexError):
+                pass
+    return list(out.values())
 
 
 def cron():
@@ -1455,11 +1576,26 @@ def main(a):
             print(json.dumps(proc_detail(int(a[1])), ensure_ascii=False))
             return 0
         return proc_action(int(a[1]), a[2], a[3] if len(a) > 3 else "")
-    if cmd == "autorun":
-        items = desktop_entries() + session_items() + systemd_units(True) + systemd_units(False) + cron() + login_scripts() + kernel_modules()
+    if cmd in ("autorun", "autorun-znam"):
+        items = desktop_entries() + session_items() + systemd_units(True) + systemd_units(False) + cron() + login_scripts() + kernel_modules() + security_items()
         for x in items:
             x["missing"] = bool(x.get("command")) and x["kind"] in ("autostart", "session", "cron") and not exists_cmd(x["command"] if x["kind"] != "cron" else " ".join(x["command"].split()[5:]))
+        if cmd == "autorun-znam":
+            os.makedirs(STATE_DIR, exist_ok=True)
+            json.dump({"time": int(time.time()), "ids": [x["id"] for x in items]}, open(os.path.join(STATE_DIR, "autorun-znam.json"), "w"))
+            return 0
+        items, since = autorun_enrich(items)
+        for x in items:
+            x["since"] = since
         print(json.dumps(items, ensure_ascii=False))
+        return 0
+    if cmd == "sluzby":
+        print(json.dumps(services(False) + services(True), ensure_ascii=False))
+        return 0
+    if cmd == "sluzba" and len(a) == 4 and a[1] in ("system", "user") and a[2] in ("start", "stop", "restart", "enable", "disable"):
+        return subprocess.call(["systemctl"] + (["--user"] if a[1] == "user" else []) + [a[2], a[3]])
+    if cmd == "pouzivatelia":
+        print(json.dumps(users_info(), ensure_ascii=False))
         return 0
     if cmd == "zvuk":
         def pj(*args):
