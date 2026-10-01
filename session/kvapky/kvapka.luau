@@ -436,6 +436,12 @@ local MODES = {
     { id = "cmd", name = "Linux command", glyph = G["terminal-2"], hint = "Run a command…" },
 }
 local MAXH = 7                                      -- riadkov obsahu v scéne (model hits)
+-- filtre hľadania súborov (latte-hladaj --typ / slovo času)
+local FILE_TYPES = { { id = "", name = "All types" }, { id = "dokument", name = "Documents" }, { id = "obrazok", name = "Pictures" },
+    { id = "video", name = "Videos" }, { id = "hudba", name = "Music" }, { id = "tabulka", name = "Spreadsheets" },
+    { id = "archiv", name = "Archives" }, { id = "kod", name = "Code" }, { id = "priecinok", name = "Folders" } }
+local FILE_TIMES = { { id = "", name = "Any time" }, { id = "dnes", name = "Today" }, { id = "tyzden", name = "This week" },
+    { id = "mesiac", name = "This month" }, { id = "rok", name = "This year" } }
 -- služby AI na výber (latte-ai set …): predplatné = odpoveď tu v bublinách cez oficiálny nástroj služby
 -- (ako widget v mobile / rozšírenie VS Code), kľúč API, lokálne; web = odpoveď v prehliadači
 local AI_PRESETS = {
@@ -447,7 +453,7 @@ local AI_PRESETS = {
     { name = "ChatGPT (web)", provider = "web", key = "web", value = "chatgpt" },
     { name = "Perplexity (web)", provider = "web", key = "web", value = "perplexity" },
     { name = "Copilot (web)", provider = "web", key = "web", value = "copilot" },
-    { name = "Ollama", provider = "lokalne" },
+    { name = "Ollama", provider = "lokalne" },                    -- v ponuke „Na tomto PC (Ollama)“ cez preklad
     { name = "Home server", provider = "domaci" },
     { name = "Claude (API key)", provider = "cloud", key = "cloud", value = "anthropic" },
     { name = "ChatGPT (API key)", provider = "cloud", key = "cloud", value = "openai" },
@@ -456,6 +462,16 @@ local AI_PRESETS = {
     { name = "DeepSeek (API key)", provider = "cloud", key = "cloud", value = "deepseek" },
     { name = "OpenRouter (API key)", provider = "cloud", key = "cloud", value = "openrouter" },
 }
+-- ponuka služieb: firma › spôsob (predplatné = odpoveď tu, kľúč API, web = prehliadač); posledné dve sú bez internetu
+local AI_SERVICES = {
+    { name = "Claude", ways = { "Claude (subscription)", "Claude (API key)", "Claude (web)" } },
+    { name = "ChatGPT", ways = { "ChatGPT (subscription)", "ChatGPT (API key)", "ChatGPT (web)" } },
+    { name = "Gemini", ways = { "Gemini (Google account)", "Gemini (API key)" } },
+    { name = "Copilot", ways = { "Copilot (subscription)", "Copilot (web)" } },
+    { name = "DeepSeek", ways = { "DeepSeek (API key)" } }, { name = "Mistral", ways = { "Mistral (API key)" } },
+    { name = "Perplexity", ways = { "Perplexity (web)" } }, { name = "OpenRouter", ways = { "OpenRouter (API key)" } },
+}
+local function preset(name) for _, p in ipairs(AI_PRESETS) do if p.name == name then return p end end end
 local EFFORTS = { { id = "", name = "Default" }, { id = "low", name = "Fast" }, { id = "medium", name = "Balanced" }, { id = "high", name = "Thorough" } }
 local HOME = nil                                    -- domovský priečinok (printenv, nižšie)
 local MAX_TABS = 5
@@ -482,6 +498,34 @@ end
 local function engine() for _, e in ipairs(ENGINES) do if e.id == cfg.engine then return e end end return ENGINES[1] end
 local function mode_id() return (MODES[(tonumber(fact.smode) or 1) + 1] or MODES[2]).id end
 local function tilde(path) return (path:gsub("^" .. (HOME or "~"):gsub("%p", "%%%0"), "~")) end
+local function human_size(b)
+    b = tonumber(b) or 0
+    for _, u in ipairs({ "B", "kB", "MB", "GB" }) do
+        if b < 1000 or u == "GB" then return (u == "B" and tostring(math.floor(b)) or string.format("%.1f", b):gsub("%.", ",")) .. " " .. u end
+        b = b / 1000
+    end
+end
+local FILE_ICONS = {   -- prípona → ikona typu (téma ikon), ostatné text-x-generic
+    { "jpg jpeg png gif webp avif heic bmp tif tiff svg psd xcf kra", "image-x-generic" },
+    { "mp4 mkv webm mov avi m4v wmv mpg", "video-x-generic" },
+    { "mp3 flac ogg opus m4a aac wav", "audio-x-generic" },
+    { "pdf", "application-pdf" },
+    { "doc docx odt rtf epub", "x-office-document" },
+    { "xls xlsx ods csv", "x-office-spreadsheet" },
+    { "ppt pptx odp", "x-office-presentation" },
+    { "zip 7z rar tar gz tgz xz zst bz2 iso", "package-x-generic" },
+    { "py rs js ts c h cpp go java sh lua luau qml json toml yaml html css", "text-x-script" },
+    { "exe msi appimage rpm deb apk flatpakref", "application-x-executable" },
+}
+local function file_icon(name)
+    local ext = (name:match("%.([%w]+)$") or ""):lower()
+    if ext ~= "" then
+        for _, row in ipairs(FILE_ICONS) do
+            for e in row[1]:gmatch("%S+") do if e == ext then return row[2] end end
+        end
+    end
+    return "text-x-generic"
+end
 
 local function save_cfg()
     run("latte-kvapky", { "uloz", "spustac", json.encode(cfg) })
@@ -668,11 +712,14 @@ local function paint_hits()
             if #hits < 10 then
                 local name = f.path:match("([^/]+)/?$") or f.path
                 local sub = (ql == "" and tilde(f.path)) or tilde(f.path:match("^(.*)/[^/]*$") or f.path)
+                if f.line and f.line ~= "" then sub = "„" .. f.line:sub(1, 70) .. "“ · " .. sub
+                elseif f.mtime and not f.dir then sub = sub .. " · " .. human_size(f.size) .. " · " .. os.date("%d. %m. %Y", f.mtime) end
                 hits[#hits + 1] = { kind = "file", name = f.name or name, sub = sub,
-                                    icon = f.dir and "folder" or "text-x-generic", path = f.path, dir = f.dir }
+                                    icon = f.dir and "folder" or file_icon(name), path = f.path, dir = f.dir }
             end
         end
-        note(ql ~= "" and tr("Nothing found") or tr("Type a file or folder name. Enter opens it; right click opens the folder it is in."))
+        note(ql ~= "" and tr("Nothing found. Try fewer letters, “content:word” or a type below.")
+             or tr("Type part of a name — accents and typos do not matter. Filters: .pdf  >10MB  today  2024  in:Documents  “exact name”  content:word"))
     elseif m == "web" and ql ~= "" then
         local first = engine()
         local order = { first }
@@ -725,11 +772,18 @@ local function search()
     if mode_id() == "files" and #q >= 2 and HOME then
         after(220, function()
             if gen ~= fd_gen then return end
-            run("fd", { "--ignore-case", "--max-results", "10", "--max-depth", "6", "--absolute-path", "--", q, HOME }, function(out)
+            -- latte-hladaj: index + čerstvé súbory, bez diakritiky, preklepy, filtre v texte (typ:, .pdf, >10MB, dnes, v:…, obsah:)
+            local args = { "--json", "--max", "10" }
+            if (cfg.ftyp or "") ~= "" then args[#args + 1] = "--typ"; args[#args + 1] = cfg.ftyp end
+            if cfg.fobsah then args[#args + 1] = "--obsah" end
+            for w in q:gmatch("%S+") do args[#args + 1] = w end
+            if (cfg.fcas or "") ~= "" then args[#args + 1] = cfg.fcas end
+            run("latte-hladaj", args, function(out)
                 if gen ~= fd_gen then return end
                 file_hits = {}
                 for line in (out or ""):gmatch("[^\n]+") do
-                    file_hits[#file_hits + 1] = { path = line:gsub("/$", ""), dir = line:sub(-1) == "/" }
+                    local ok, r = pcall(json.decode, line)
+                    if ok and r and r.path then file_hits[#file_hits + 1] = r end
                 end
                 paint_hits()
             end)
@@ -881,6 +935,51 @@ local function ai_set(pairs_)
     end
     step(1)
 end
+-- model na tomto PC ako v LM Studio: nainštalované (● = v pamäti), stiahnuť z katalógu podľa RAM, teplota, kontext
+local function pull_model(id)
+    conv[#conv + 1] = { role = "assistant", content = fill(tr("Downloading {m}…"), { m = id }) }
+    local msg = conv[#conv]
+    paint_chat()
+    spawn("latte-ai", { "pull", id }, function(line)
+        local pct = line:match("^(%d+)")
+        if pct then msg.content = fill(tr("Downloading {m}… {p} %"), { m = id, p = pct }); paint_chat() end
+    end, function(_, code)
+        msg.content = code == 0 and fill(tr("{m} is ready. Ask away."), { m = id }) or (fill(tr("Downloading {m} failed."), { m = id }) .. " " .. tr("Is Ollama running?"))
+        if code == 0 then ai_set({ { "model", id } }) end
+        paint_chat()
+    end)
+end
+local function local_menu()
+    run("latte-ai", { "local" }, function(out)
+        local items = {}
+        for id, size, loaded in (out or ""):gmatch("([^\t\n]+)\t([^\t\n]*)\t?([^\n]*)") do
+            if #items < 6 then
+                items[#items + 1] = { label = id .. "  ·  " .. size .. (loaded == "1" and "  ●" or ""), on = id == ai.model,
+                                      run = function() ai_set({ { "model", id } }) end }
+            end
+        end
+        if #items == 0 then items[1] = { label = tr("No model yet — download one"), off = true } end
+        run("latte-ai", { "katalog" }, function(kat)
+            local dl = {}
+            for id, desc in (kat or ""):gmatch("([^\t\n]+)\t([^\n]*)") do
+                dl[#dl + 1] = { label = desc, run = function() pull_model(id) end }
+            end
+            items[#items + 1] = { glyph = G.plus, label = tr("Download a model"), sub = dl, sep = true }
+            local temps = {}
+            for _, t in ipairs({ { "", tr("Model default") }, { "0.2", tr("Precise (0.2)") }, { "0.7", tr("Balanced (0.7)") }, { "1.0", tr("Creative (1.0)") } }) do
+                temps[#temps + 1] = { label = t[2], run = function() ai_set({ { "temperature", t[1] } }) end }
+            end
+            items[#items + 1] = { label = tr("Temperature"), sub = temps }
+            local ctxs = {}
+            for _, n in ipairs({ "", "4096", "8192", "16384", "32768" }) do
+                ctxs[#ctxs + 1] = { label = n == "" and tr("Model default") or (n .. " " .. tr("tokens")), run = function() ai_set({ { "ctx", n } }) end }
+            end
+            items[#items + 1] = { label = tr("Context length"), sub = ctxs }
+            items[#items + 1] = { label = tr("Free memory (unload model)"), run = function() run("latte-ai", { "unload" }, function() ai_status() end) end }
+            menu(items, 360)
+        end)
+    end)
+end
 function paint_chips()
     if tonumber(fact.tview) == 1 and time_chips then set_chips(time_chips()); return end
     local m = mode_id()
@@ -907,19 +1006,28 @@ function paint_chips()
             })
         end }
         local cur = ai.web and ai.target or ({ lokalne = "Ollama", domaci = tr("Home server") })[ai.provider or ""] or ai.target or "AI"
+        local function preset_item(p)
+            return { label = tr(p.name), run = function()
+                local sets = { { "provider", p.provider } }
+                if p.key then sets[#sets + 1] = { p.key, p.value } end
+                ai_set(sets)
+            end }
+        end
         list[#list + 1] = { glyph = G.sparkles, label = cur, drop = true, pick = function()
             local items = {}
-            for _, p in ipairs(AI_PRESETS) do
-                items[#items + 1] = { label = tr(p.name), run = function()
-                    local sets = { { "provider", p.provider } }
-                    if p.key then sets[#sets + 1] = { p.key, p.value } end
-                    ai_set(sets)
-                end }
+            for _, sv in ipairs(AI_SERVICES) do
+                local sub = {}
+                for _, w in ipairs(sv.ways) do if preset(w) then sub[#sub + 1] = preset_item(preset(w)) end end
+                items[#items + 1] = (#sub == 1) and sub[1] or { label = sv.name, sub = sub }
             end
+            local home = preset_item(preset("Home server")); home.sep = true
+            items[#items + 1] = home
+            items[#items + 1] = preset_item(preset("Ollama"))
             menu(items)
         end }
         if not ai.web and not ai.disabled then
             list[#list + 1] = { label = (ai.model and ai.model ~= "") and ai.model or tr("Model"), drop = true, pick = function()
+                if ai.provider == "lokalne" then local_menu(); return end
                 run("latte-ai", { "models" }, function(out)
                     local items = {}
                     if ai.provider == "predplatne" then
@@ -963,7 +1071,7 @@ function paint_chips()
                     end)
                 end
             end }
-            local used = ai_usage.balance or ((tonumber(ai_usage.today_n) or 0) > 0
+            local used = ai_usage.balance or (ai_usage.tps and (ai_usage.tps .. " tok/s")) or ((tonumber(ai_usage.today_n) or 0) > 0
                 and (kilo((tonumber(ai_usage.today_in) or 0) + (tonumber(ai_usage.today_out) or 0)) .. " " .. tr("today")) or nil)
             list[#list + 1] = { glyph = G["chart-bar"], label = used, drop = true, pick = function()
                 local u = ai_usage
@@ -982,6 +1090,27 @@ function paint_chips()
         end
     elseif m == "files" then
         list[#list + 1] = { glyph = G["folder-open"], label = tr("Open Files"), pick = function() run("latte-app", { "subory" }); fact.dash = false end }
+        local tname = tr("All types")
+        for _, t in ipairs(FILE_TYPES) do if t.id == (cfg.ftyp or "") then tname = tr(t.name) end end
+        list[#list + 1] = { label = tname, on = (cfg.ftyp or "") ~= "", drop = true, pick = function()
+            local items = {}
+            for _, t in ipairs(FILE_TYPES) do
+                items[#items + 1] = { label = tr(t.name), on = t.id == (cfg.ftyp or ""), run = function() cfg.ftyp = t.id; save_cfg(); paint_chips(); search() end }
+            end
+            menu(items)
+        end }
+        local cname = tr("Any time")
+        for _, t in ipairs(FILE_TIMES) do if t.id == (cfg.fcas or "") then cname = tr(t.name) end end
+        list[#list + 1] = { label = cname, on = (cfg.fcas or "") ~= "", drop = true, pick = function()
+            local items = {}
+            for _, t in ipairs(FILE_TIMES) do
+                items[#items + 1] = { label = tr(t.name), on = t.id == (cfg.fcas or ""), run = function() cfg.fcas = t.id; save_cfg(); paint_chips(); search() end }
+            end
+            menu(items)
+        end }
+        list[#list + 1] = { label = tr("Inside files"), on = cfg.fobsah == true, pick = function()
+            cfg.fobsah = not cfg.fobsah; save_cfg(); paint_chips(); search()
+        end }
     elseif m == "web" then
         list[#list + 1] = { glyph = G.world, label = engine().name, drop = true, pick = function()
             local items = {}
@@ -1062,7 +1191,7 @@ local function open_hit(i)
     if h.kind == "jump" then fact.smode = h.to; return end
     if h.kind == "app" then launch(h.app)
     elseif h.kind == "cmd" then run_cmd(h.cmd)
-    elseif h.kind == "file" then run("xdg-open", { h.path }); fact.dash = false
+    elseif h.kind == "file" then run("xdg-open", { h.path }); run("latte-hladaj", { "--otvorene", h.path }); fact.dash = false
     else run("xdg-open", { h.url }); fact.dash = false end
 end
 on("open_hit", open_hit)
@@ -1113,9 +1242,20 @@ on("hit_menu", function(k)
             end }
         end
     elseif h.kind == "file" then
-        items[#items + 1] = { label = tr("Open containing folder"), run = function()
-            run("xdg-open", { h.path:match("^(.*)/[^/]*$") or h.path }); fact.dash = false
+        local dir = h.path:match("^(.*)/[^/]*$") or h.path
+        items[#items + 1] = { glyph = G["folder-open"], label = tr("Show in Files"), run = function()
+            run("latte-app", { "subory", h.path }); run("latte-hladaj", { "--otvorene", h.path }); fact.dash = false
         end }
+        items[#items + 1] = { label = tr("Open containing folder"), run = function() run("xdg-open", { dir }); fact.dash = false end }
+        items[#items + 1] = { label = tr("Copy path"), run = function() pcall(sys.call, "clipboard.set", h.path) end }
+        if not h.dir and not ai.disabled then
+            items[#items + 1] = { glyph = G.sparkles, label = tr("Ask AI about this file"), run = function()
+                ai_files = { h.path }; text.query = ""; fact.smode = 0
+            end }
+        end
+        if not h.dir then
+            items[#items + 1] = { label = tr("Search in this folder"), run = function() text.query = "v:" .. tilde(dir) .. " " end }
+        end
     elseif h.kind == "cmd" and h.sub == tr("Recent") then
         items[#items + 1] = { label = tr("Remove from history"), run = function()
             local i = has(cfg.cmds, h.cmd)

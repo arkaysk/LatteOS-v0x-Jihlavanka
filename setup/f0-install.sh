@@ -34,12 +34,14 @@ DEV=(git gcc-c++ cmake meson ninja-build rust cargo golang
 TEST=(seatd kitty wlr-randr)
 # --- AI (CPU, malý model; služba sa nepovoľuje) --------------------------------
 AI=(ollama)
+# --- hľadanie súborov (latte-hladaj): index mien, živé hľadanie, obsah ----------
+FIND=(plocate fd-find ripgrep)
 
 dnf -y install dnf5-plugins
 dnf -y copr enable lionheartp/Hyprland
 
 dnf -y install "${GRAPHICS[@]}" "${VM[@]}" "${SESSION[@]}" "${HYPR[@]}" \
-               "${QT[@]}" "${FONTS[@]}" "${DEV[@]}" "${TEST[@]}" "${AI[@]}"
+               "${QT[@]}" "${FONTS[@]}" "${DEV[@]}" "${TEST[@]}" "${AI[@]}" "${FIND[@]}"
 
 [ ${#VM[@]} -eq 0 ] || systemctl enable --now vboxservice.service || true
 systemctl enable --now seatd.service || true

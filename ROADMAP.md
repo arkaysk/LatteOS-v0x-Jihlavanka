@@ -436,6 +436,15 @@ texty preložiteľné (`translations`). Noctalia beží bez lišty a robí, čo 
   text vložený, obrázky a PDF ako prílohy) · hlas (`latte-ai hlas`: pw-record + whisper.cpp, inak OpenAI) · spotreba
   (`latte-ai usage`: dnes/mesiac podľa tohto PC, zostatok DeepSeek/OpenRouter, limity z hlavičiek API, cena z Claude CLI).
   Overiť na latte-lab: čipy v scéne, ikony (kódy Tabler doplnené ručne — `spustac.py` ich pregeneruje), prihlásenie CLI.
+- [x] AI ponuka podľa firmy (1. 10.): Claude / ChatGPT / Gemini / Copilot › predplatné · kľúč API · web; DeepSeek,
+  Mistral, Perplexity, OpenRouter; Domáci server; **Na tomto PC (Ollama) ako LM Studio**: nainštalované modely
+  (● v pamäti), stiahnuť z katalógu podľa RAM s priebehom v bubline, teplota, dĺžka kontextu, uvoľniť pamäť,
+  rýchlosť tok/s v čipe spotreby, obrázky pre modely s videním (natívne API Ollamy)
+- [x] **Hľadanie súborov** (`latte-hladaj`, režim Súbory v spúšťači Goo): index plocate + čerstvé súbory (fd), bez
+  diakritiky, preklepy, poradie podľa otvárania (aj recently-used.xbel), filtre v texte (typ:, .pdf, >10MB, dnes,
+  2024, v:Dokumenty, "presné meno", obsah:), hľadanie v obsahu (ripgrep, ukáže riadok), čipy Typ · Čas · V obsahu,
+  pravý klik: Ukázať v Súboroch, priečinok, kopírovať cestu, opýtať sa AI na súbor, hľadať v priečinku
+- [ ] Hľadanie: obsah PDF/DOCX (pdftotext/pandoc do vlastného indexu), náhľad obrázka vo výsledku, hľadanie v Súboroch
 - [ ] AI: Nastavenia › Softvér › AI doplniť o predplatné (inštalácia a prihlásenie nástroja jedným klikom), DeepSeek,
   OpenRouter, efektivitu; streamovanie odpovede do bubliny po riadkoch
 - [ ] Ollama na CPU s malým modelom (3–4B) priamo v PC. Router lokálne/online podľa otázky.
