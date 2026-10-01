@@ -15,6 +15,7 @@ return {
         ["microphone"] = "\u{EAF0}",
         ["player-stop"] = "\u{ED4A}",
         ["chart-bar"] = "\u{EA59}",
+        ["alert-triangle"] = "\u{EA06}",
         ["trash"] = "\u{EB41}",
         ["sun"] = "\u{EB30}",
         ["cloud"] = "\u{EA76}",

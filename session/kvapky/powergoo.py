@@ -107,7 +107,7 @@ a('''    // batéria na kvapke vypínača: minibublinky (3 zelené ≥ 60 %, 2 �
 ''')
 for k in range(3):
     ang = (k - 1) * 32
-    a(f"        ellipse {{ at: pxs + (p.ax * cos({ang}) - p.ay * sin({ang})) * (27 + 3 * sin(time * 3 + {k * 2}) * if(bat_chg, 1, 0)), pys + (p.ay * cos({ang}) + p.ax * sin({ang})) * (27 + 3 * sin(time * 3 + {k * 2}) * if(bat_chg, 1, 0)); radius: 4.5 * if({k} < bat_n, 1, 0) * bat_pulse * so; blend: 4 }}\n")
+    a(f"        ellipse {{ at: pxs + (p.ax * cos({ang}) - p.ay * sin({ang})) * zp.p * (27 + 3 * sin(time * 3 + {k * 2}) * if(bat_chg, 1, 0)), pys + (p.ay * cos({ang}) + p.ax * sin({ang})) * zp.p * (27 + 3 * sin(time * 3 + {k * 2}) * if(bat_chg, 1, 0)); radius: 4.5 * if({k} < bat_n, 1, 0) * bat_pulse * so; blend: 4 }}\n")
 a('''    }
     // <<< PowerGoo
 ''')

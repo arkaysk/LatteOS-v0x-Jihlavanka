@@ -548,8 +548,8 @@ scene Kvapka {
             line { from: lx + ux.47 + 2 * noise(32.9, time * 0.35) + if(bdrag == 47, bdx, 0), mid + uy.47 + 2.5 * noise(66.1, time * 0.3) + if(bdrag == 47, bdy, 0); to: lx + kx.47, if(uy.47 > -3, edge + 14, mid + ky.47); width: ur.47 * b.47 * 0.3 * if(bdrag == 47, if(bsnap, 0, 0.12 + 0.88 * clamp(1 - length(bdx, bdy) / 180, 0, 1)), 1) * (1 - o.pull) * ap; blend: 9 * if(bdrag == 47 and bsnap, 0, 1) }
             // Štart a vypínač: vlastná „voda“ pod okrajom; s hlavou a medzi sebou ich spája most `link`
             box { from: if((tg_free or tg_moved) and (pg_free or pg_moved), hx, if((pg_free or pg_moved), sx, px) - 34 - 14 * flow2 * stir), if((tg_free or tg_moved) and (pg_free or pg_moved), mid - 8, edge); size: (if((tg_free or tg_moved), px, sx) - if((pg_free or pg_moved), sx, px) + 68 + 28 * flow2 * stir) * so * if((tg_free or tg_moved) and (pg_free or pg_moved), 0, 1), if((tg_free or tg_moved) and (pg_free or pg_moved), 0, 70) }
-            ellipse { at: if((tg_free or tg_moved), hx, sx), if((tg_free or tg_moved), mid - 8, s.y); radius: (33 + 3 * hs) * so * (1 - smooth(0, 0.08, dsw)) * if((tg_free or tg_moved), 0, 1); scale: 1 + squish.s * 0.08 + jit.s + swob * 0.01, 1 - squish.s * 0.12 - jit.s - swob * 0.01; blend: link * so }
-            ellipse { at: if((pg_free or pg_moved), hx, px), if((pg_free or pg_moved), mid - 8, p.y); radius: (19 + 4 * hp) * so * (1 - smooth(0, 0.12, pm)) * if((pg_free or pg_moved), 0, 1); scale: 1 + squish.p * 0.08 + jit.p, 1 - squish.p * 0.12 - jit.p; blend: link * so }
+            ellipse { at: if((tg_free or tg_moved), hx, sx), if((tg_free or tg_moved), mid - 8, s.y); radius: (33 + 3 * hs) * zt.p * so * (1 - smooth(0, 0.08, dsw)) * if((tg_free or tg_moved), 0, 1); scale: 1 + squish.s * 0.08 + jit.s + swob * 0.01, 1 - squish.s * 0.12 - jit.s - swob * 0.01; blend: link * so }
+            ellipse { at: if((pg_free or pg_moved), hx, px), if((pg_free or pg_moved), mid - 8, p.y); radius: (19 + 4 * hp) * zp.p * so * (1 - smooth(0, 0.12, pm)) * if((pg_free or pg_moved), 0, 1); scale: 1 + squish.p * 0.08 + jit.p, 1 - squish.p * 0.12 - jit.p; blend: link * so }
             line { from: if((tg_free or tg_moved) or (pg_free or pg_moved), hx, px), if((tg_free or tg_moved) or (pg_free or pg_moved), mid - 8, p.y - 4); to: if((tg_free or tg_moved) or (pg_free or pg_moved), hx, sx), if((tg_free or tg_moved) or (pg_free or pg_moved), mid - 8, s.y - 6); width: thread.ps * (1 - max(dsh, pm)) * if((tg_free or tg_moved) or (pg_free or pg_moved), 0, 1); blend: 12 * clamp(thread.ps * (1 - max(dsh, pm)) / 3, 0, 1) }
             line { from: if((tg_free or tg_moved), hx, sx + 8), if((tg_free or tg_moved), mid - 8, s.y - 12); to: if((tg_free or tg_moved), hx, bl + 18), if((tg_free or tg_moved), mid - 8, bottom - 14); width: thread.sb * ap * (1 - dsh) * if((tg_free or tg_moved), 0, 1); blend: 14 * clamp(thread.sb * ap * (1 - dsh) / 3, 0, 1) }
             ellipse { at: if((seg and (tg_free or tg_moved)) or (not seg and ((tg_free or tg_moved) or (pg_free or pg_moved))), hx, drip.x), if((seg and (tg_free or tg_moved)) or (not seg and ((tg_free or tg_moved) or (pg_free or pg_moved))), mid - 8, drip.y); radius: drip.r * so; blend: 8 }
@@ -625,12 +625,12 @@ scene Kvapka {
             // >>> voľné Hodiny (telo, goo.py)
             box { at: if(((tg_free or tg_moved) and solo and dsw < 0.07) and tg.sheet > 0.02, pick(side, tg.ax, W - (tg.ax), tg.ay, H - (tg.ay)), hx), if(((tg_free or tg_moved) and solo and dsw < 0.07) and tg.sheet > 0.02, pick(side, (tg.ay) - H + edge, edge - (tg.ay), edge - (tg.ax), (tg.ax) - W + edge), mid - 8); size: if(side >= 2, (20 * abs(tg.ny) + 70 * abs(tg.nx)) * tg.sheet, (70 * abs(tg.ny) + 20 * abs(tg.nx)) * tg.sheet), if(side >= 2, (70 * abs(tg.ny) + 20 * abs(tg.nx)) * tg.sheet, (20 * abs(tg.ny) + 70 * abs(tg.nx)) * tg.sheet); corner: 10 }
             ellipse { at: if(((tg_free or tg_moved) and solo and dsw < 0.07) and tg.sheet > 0.02, pick(side, tg.ax, W - (tg.ax), tg.ay, H - (tg.ay)), hx), if(((tg_free or tg_moved) and solo and dsw < 0.07) and tg.sheet > 0.02, pick(side, (tg.ay) - H + edge, edge - (tg.ay), edge - (tg.ax), (tg.ax) - W + edge), mid - 8); radius: 24 * tg.sheet; blend: 16 * tg.sheet }
-            ellipse { at: if((tg_free or tg_moved) and solo and dsw < 0.07, pick(side, tg.fx, W - (tg.fx), tg.fy, H - (tg.fy)), hx), if((tg_free or tg_moved) and solo and dsw < 0.07, pick(side, (tg.fy) - H + edge, edge - (tg.fy), edge - (tg.fx), (tg.fx) - W + edge), mid - 8); radius: (33 + 3 * hs) * so * (1 - smooth(0, 0.08, dsw)); scale: 1 + jit.s, 1 - jit.s; blend: 20 }
+            ellipse { at: if((tg_free or tg_moved) and solo and dsw < 0.07, pick(side, tg.fx, W - (tg.fx), tg.fy, H - (tg.fy)), hx), if((tg_free or tg_moved) and solo and dsw < 0.07, pick(side, (tg.fy) - H + edge, edge - (tg.fy), edge - (tg.fx), (tg.fx) - W + edge), mid - 8); radius: (33 + 3 * hs) * zt.p * so * (1 - smooth(0, 0.08, dsw)); scale: 1 + jit.s, 1 - jit.s; blend: 20 }
             // <<< voľné Hodiny (telo)
             // >>> voľný vypínač (telo, goo.py)
             box { at: if(((pg_free or pg_moved) and solo and pm < 0.11) and pg.sheet > 0.02, pick(side, pg.ax, W - (pg.ax), pg.ay, H - (pg.ay)), hx), if(((pg_free or pg_moved) and solo and pm < 0.11) and pg.sheet > 0.02, pick(side, (pg.ay) - H + edge, edge - (pg.ay), edge - (pg.ax), (pg.ax) - W + edge), mid - 8); size: if(side >= 2, (20 * abs(pg.ny) + 70 * abs(pg.nx)) * pg.sheet, (70 * abs(pg.ny) + 20 * abs(pg.nx)) * pg.sheet), if(side >= 2, (70 * abs(pg.ny) + 20 * abs(pg.nx)) * pg.sheet, (20 * abs(pg.ny) + 70 * abs(pg.nx)) * pg.sheet); corner: 10 }
             ellipse { at: if(((pg_free or pg_moved) and solo and pm < 0.11) and pg.sheet > 0.02, pick(side, pg.ax, W - (pg.ax), pg.ay, H - (pg.ay)), hx), if(((pg_free or pg_moved) and solo and pm < 0.11) and pg.sheet > 0.02, pick(side, (pg.ay) - H + edge, edge - (pg.ay), edge - (pg.ax), (pg.ax) - W + edge), mid - 8); radius: 24 * pg.sheet; blend: 16 * pg.sheet }
-            ellipse { at: if((pg_free or pg_moved) and solo and pm < 0.11, pick(side, pg.fx, W - (pg.fx), pg.fy, H - (pg.fy)), hx), if((pg_free or pg_moved) and solo and pm < 0.11, pick(side, (pg.fy) - H + edge, edge - (pg.fy), edge - (pg.fx), (pg.fx) - W + edge), mid - 8); radius: (19 + 4 * hp) * so * (1 - smooth(0, 0.12, pm)); scale: 1 + jit.p, 1 - jit.p; blend: 20 }
+            ellipse { at: if((pg_free or pg_moved) and solo and pm < 0.11, pick(side, pg.fx, W - (pg.fx), pg.fy, H - (pg.fy)), hx), if((pg_free or pg_moved) and solo and pm < 0.11, pick(side, (pg.fy) - H + edge, edge - (pg.fy), edge - (pg.fx), (pg.fx) - W + edge), mid - 8); radius: (19 + 4 * hp) * zp.p * so * (1 - smooth(0, 0.12, pm)); scale: 1 + jit.p, 1 - jit.p; blend: 20 }
             // <<< voľný vypínač (telo)
             // >>> bublina okna (telo, goo.py)
             ellipse { at: if(bub_on and bub.a > 0.5 and bub.t > 0.01 and bub.t < 0.3, pick(side, b.x, W - (b.x), b.y, H - (b.y)), hx), if(bub_on and bub.a > 0.5 and bub.t > 0.01 and bub.t < 0.3, pick(side, (b.y) - H + edge, edge - (b.y), edge - (b.x), (b.x) - W + edge), mid - 8); radius: if(bub_on and bub.a > 0.5 and bub.t > 0.01 and bub.t < 0.3, b.r, 1); blend: 16 }
@@ -703,12 +703,12 @@ scene Kvapka {
             ellipse { at: pick(side, qg.x, W - (qg.x), qg.y, H - (qg.y)) + (cu - pick(side, qg.x, W - (qg.x), qg.y, H - (qg.y))) / max(length(cu - pick(side, qg.x, W - (qg.x), qg.y, H - (qg.y)), cv - pick(side, (qg.y) - H + edge, edge - (qg.y), edge - (qg.x), (qg.x) - W + edge)), 1) * (qg.r) * 0.55, pick(side, (qg.y) - H + edge, edge - (qg.y), edge - (qg.x), (qg.x) - W + edge) + (cv - pick(side, (qg.y) - H + edge, edge - (qg.y), edge - (qg.x), (qg.x) - W + edge)) / max(length(cu - pick(side, qg.x, W - (qg.x), qg.y, H - (qg.y)), cv - pick(side, (qg.y) - H + edge, edge - (qg.y), edge - (qg.x), (qg.x) - W + edge)), 1) * (qg.r) * 0.55; radius: 0.13 * (qg.r) * if(solo, 1, 0) * (1 - smooth(50, 360, length(cu - pick(side, qg.x, W - (qg.x), qg.y, H - (qg.y)), cv - pick(side, (qg.y) - H + edge, edge - (qg.y), edge - (qg.x), (qg.x) - W + edge)))); color: #ffe4bd }
             // <<< QueenGoo (odlesk)
             // >>> voľné Hodiny (odlesk, goo.py)
-            ellipse { at: if((tg_free or tg_moved) and solo and dsw < 0.07, pick(side, tg.fx, W - (tg.fx), tg.fy, H - (tg.fy)), hx) - ((33 + 3 * hs) * so * (1 - smooth(0, 0.08, dsw))) * 0.4, if((tg_free or tg_moved) and solo and dsw < 0.07, pick(side, (tg.fy) - H + edge, edge - (tg.fy), edge - (tg.fx), (tg.fx) - W + edge), mid - 8) - ((33 + 3 * hs) * so * (1 - smooth(0, 0.08, dsw))) * 0.52; radius: 0.11 * ((33 + 3 * hs) * so * (1 - smooth(0, 0.08, dsw))) * if((tg_free or tg_moved) and solo and dsw < 0.07, 1, 0); scale: 1.5, 0.8; rotate: -30deg; color: #fff6ea }
-            ellipse { at: pick(side, tg.fx, W - (tg.fx), tg.fy, H - (tg.fy)) + (cu - pick(side, tg.fx, W - (tg.fx), tg.fy, H - (tg.fy))) / max(length(cu - pick(side, tg.fx, W - (tg.fx), tg.fy, H - (tg.fy)), cv - pick(side, (tg.fy) - H + edge, edge - (tg.fy), edge - (tg.fx), (tg.fx) - W + edge)), 1) * ((33 + 3 * hs) * so * (1 - smooth(0, 0.08, dsw))) * 0.55, pick(side, (tg.fy) - H + edge, edge - (tg.fy), edge - (tg.fx), (tg.fx) - W + edge) + (cv - pick(side, (tg.fy) - H + edge, edge - (tg.fy), edge - (tg.fx), (tg.fx) - W + edge)) / max(length(cu - pick(side, tg.fx, W - (tg.fx), tg.fy, H - (tg.fy)), cv - pick(side, (tg.fy) - H + edge, edge - (tg.fy), edge - (tg.fx), (tg.fx) - W + edge)), 1) * ((33 + 3 * hs) * so * (1 - smooth(0, 0.08, dsw))) * 0.55; radius: 0.13 * ((33 + 3 * hs) * so * (1 - smooth(0, 0.08, dsw))) * if((tg_free or tg_moved) and solo and dsw < 0.07, 1, 0) * (1 - smooth(50, 360, length(cu - pick(side, tg.fx, W - (tg.fx), tg.fy, H - (tg.fy)), cv - pick(side, (tg.fy) - H + edge, edge - (tg.fy), edge - (tg.fx), (tg.fx) - W + edge)))); color: #ffe4bd }
+            ellipse { at: if((tg_free or tg_moved) and solo and dsw < 0.07, pick(side, tg.fx, W - (tg.fx), tg.fy, H - (tg.fy)), hx) - ((33 + 3 * hs) * zt.p * so * (1 - smooth(0, 0.08, dsw))) * 0.4, if((tg_free or tg_moved) and solo and dsw < 0.07, pick(side, (tg.fy) - H + edge, edge - (tg.fy), edge - (tg.fx), (tg.fx) - W + edge), mid - 8) - ((33 + 3 * hs) * zt.p * so * (1 - smooth(0, 0.08, dsw))) * 0.52; radius: 0.11 * ((33 + 3 * hs) * zt.p * so * (1 - smooth(0, 0.08, dsw))) * if((tg_free or tg_moved) and solo and dsw < 0.07, 1, 0); scale: 1.5, 0.8; rotate: -30deg; color: #fff6ea }
+            ellipse { at: pick(side, tg.fx, W - (tg.fx), tg.fy, H - (tg.fy)) + (cu - pick(side, tg.fx, W - (tg.fx), tg.fy, H - (tg.fy))) / max(length(cu - pick(side, tg.fx, W - (tg.fx), tg.fy, H - (tg.fy)), cv - pick(side, (tg.fy) - H + edge, edge - (tg.fy), edge - (tg.fx), (tg.fx) - W + edge)), 1) * ((33 + 3 * hs) * zt.p * so * (1 - smooth(0, 0.08, dsw))) * 0.55, pick(side, (tg.fy) - H + edge, edge - (tg.fy), edge - (tg.fx), (tg.fx) - W + edge) + (cv - pick(side, (tg.fy) - H + edge, edge - (tg.fy), edge - (tg.fx), (tg.fx) - W + edge)) / max(length(cu - pick(side, tg.fx, W - (tg.fx), tg.fy, H - (tg.fy)), cv - pick(side, (tg.fy) - H + edge, edge - (tg.fy), edge - (tg.fx), (tg.fx) - W + edge)), 1) * ((33 + 3 * hs) * zt.p * so * (1 - smooth(0, 0.08, dsw))) * 0.55; radius: 0.13 * ((33 + 3 * hs) * zt.p * so * (1 - smooth(0, 0.08, dsw))) * if((tg_free or tg_moved) and solo and dsw < 0.07, 1, 0) * (1 - smooth(50, 360, length(cu - pick(side, tg.fx, W - (tg.fx), tg.fy, H - (tg.fy)), cv - pick(side, (tg.fy) - H + edge, edge - (tg.fy), edge - (tg.fx), (tg.fx) - W + edge)))); color: #ffe4bd }
             // <<< voľné Hodiny (odlesk)
             // >>> voľný vypínač (odlesk, goo.py)
-            ellipse { at: if((pg_free or pg_moved) and solo and pm < 0.11, pick(side, pg.fx, W - (pg.fx), pg.fy, H - (pg.fy)), hx) - ((19 + 4 * hp) * so * (1 - smooth(0, 0.12, pm))) * 0.4, if((pg_free or pg_moved) and solo and pm < 0.11, pick(side, (pg.fy) - H + edge, edge - (pg.fy), edge - (pg.fx), (pg.fx) - W + edge), mid - 8) - ((19 + 4 * hp) * so * (1 - smooth(0, 0.12, pm))) * 0.52; radius: 0.11 * ((19 + 4 * hp) * so * (1 - smooth(0, 0.12, pm))) * if((pg_free or pg_moved) and solo and pm < 0.11, 1, 0); scale: 1.5, 0.8; rotate: -30deg; color: #fff6ea }
-            ellipse { at: pick(side, pg.fx, W - (pg.fx), pg.fy, H - (pg.fy)) + (cu - pick(side, pg.fx, W - (pg.fx), pg.fy, H - (pg.fy))) / max(length(cu - pick(side, pg.fx, W - (pg.fx), pg.fy, H - (pg.fy)), cv - pick(side, (pg.fy) - H + edge, edge - (pg.fy), edge - (pg.fx), (pg.fx) - W + edge)), 1) * ((19 + 4 * hp) * so * (1 - smooth(0, 0.12, pm))) * 0.55, pick(side, (pg.fy) - H + edge, edge - (pg.fy), edge - (pg.fx), (pg.fx) - W + edge) + (cv - pick(side, (pg.fy) - H + edge, edge - (pg.fy), edge - (pg.fx), (pg.fx) - W + edge)) / max(length(cu - pick(side, pg.fx, W - (pg.fx), pg.fy, H - (pg.fy)), cv - pick(side, (pg.fy) - H + edge, edge - (pg.fy), edge - (pg.fx), (pg.fx) - W + edge)), 1) * ((19 + 4 * hp) * so * (1 - smooth(0, 0.12, pm))) * 0.55; radius: 0.13 * ((19 + 4 * hp) * so * (1 - smooth(0, 0.12, pm))) * if((pg_free or pg_moved) and solo and pm < 0.11, 1, 0) * (1 - smooth(50, 360, length(cu - pick(side, pg.fx, W - (pg.fx), pg.fy, H - (pg.fy)), cv - pick(side, (pg.fy) - H + edge, edge - (pg.fy), edge - (pg.fx), (pg.fx) - W + edge)))); color: #ffe4bd }
+            ellipse { at: if((pg_free or pg_moved) and solo and pm < 0.11, pick(side, pg.fx, W - (pg.fx), pg.fy, H - (pg.fy)), hx) - ((19 + 4 * hp) * zp.p * so * (1 - smooth(0, 0.12, pm))) * 0.4, if((pg_free or pg_moved) and solo and pm < 0.11, pick(side, (pg.fy) - H + edge, edge - (pg.fy), edge - (pg.fx), (pg.fx) - W + edge), mid - 8) - ((19 + 4 * hp) * zp.p * so * (1 - smooth(0, 0.12, pm))) * 0.52; radius: 0.11 * ((19 + 4 * hp) * zp.p * so * (1 - smooth(0, 0.12, pm))) * if((pg_free or pg_moved) and solo and pm < 0.11, 1, 0); scale: 1.5, 0.8; rotate: -30deg; color: #fff6ea }
+            ellipse { at: pick(side, pg.fx, W - (pg.fx), pg.fy, H - (pg.fy)) + (cu - pick(side, pg.fx, W - (pg.fx), pg.fy, H - (pg.fy))) / max(length(cu - pick(side, pg.fx, W - (pg.fx), pg.fy, H - (pg.fy)), cv - pick(side, (pg.fy) - H + edge, edge - (pg.fy), edge - (pg.fx), (pg.fx) - W + edge)), 1) * ((19 + 4 * hp) * zp.p * so * (1 - smooth(0, 0.12, pm))) * 0.55, pick(side, (pg.fy) - H + edge, edge - (pg.fy), edge - (pg.fx), (pg.fx) - W + edge) + (cv - pick(side, (pg.fy) - H + edge, edge - (pg.fy), edge - (pg.fx), (pg.fx) - W + edge)) / max(length(cu - pick(side, pg.fx, W - (pg.fx), pg.fy, H - (pg.fy)), cv - pick(side, (pg.fy) - H + edge, edge - (pg.fy), edge - (pg.fx), (pg.fx) - W + edge)), 1) * ((19 + 4 * hp) * zp.p * so * (1 - smooth(0, 0.12, pm))) * 0.55; radius: 0.13 * ((19 + 4 * hp) * zp.p * so * (1 - smooth(0, 0.12, pm))) * if((pg_free or pg_moved) and solo and pm < 0.11, 1, 0) * (1 - smooth(50, 360, length(cu - pick(side, pg.fx, W - (pg.fx), pg.fy, H - (pg.fy)), cv - pick(side, (pg.fy) - H + edge, edge - (pg.fy), edge - (pg.fx), (pg.fx) - W + edge)))); color: #ffe4bd }
             // <<< voľný vypínač (odlesk)
             // >>> bublina okna (odlesk, goo.py)
             // <<< bublina okna (odlesk)
@@ -809,7 +809,7 @@ scene Kvapka {
     // ťahanie: za kurzorom (cursor.x/y od Hyprlandu platí stále; pointer.x iba v pravidle a na tejto vrstve klame)
     follow dn.x = if(dn_drag and dn_moved, mx, dn.tx)
     follow dn.y = if(dn_drag and dn_moved, my, dn.ty)
-    let dn.r = (31 + 3 * dn.h) * so
+    let dn.r = (31 + 3 * dn.h) * zd.p * so
     let dn.jit = 0.05 * sin(time * 9 + 3) * dn.h + dn.wob * 0.01
     // základňa na okraji: pri zdvihnutí (okno otvorené) sa stiahne — neostane ostrov; krk sa natiahne a zmizne
     let dn.neck = 16 * (1 - smooth(0.25, 0.8, dn.lift)) * if(dn.lift > 0.02, 1, 0) * so
@@ -1090,17 +1090,48 @@ scene Kvapka {
         box { at: tst.x, tst.y; size: 40 + 300 * toast.p, 30 + 14 * toast.p; corner: 22; blend: 22 }
     }
     // hodiny: digitálny čas a dátum v kvapke (bez očí; ľavý klik alebo kláves Win otvorí spúšťač)
-    text now.time { at: cxs, cys - 5; anchor: center; size: 16; weight: 800; color: ink; opacity: so * ap * (1 - smooth(0, 0.08, dsw)); show: solo }
-    text pick(now.weekday, "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat") { at: cxs - 2, cys + 12; anchor: right center; size: 9.5; weight: 600; color: ink; opacity: 70% * so * ap * (1 - smooth(0, 0.08, dsw)); show: solo }
-    text "{now.day}. {now.month}." { at: cxs + 1, cys + 12; anchor: left center; size: 9.5; weight: 600; color: ink; opacity: 70% * so * ap * (1 - smooth(0, 0.08, dsw)); show: solo }
+    // Zväčšenie kolieskom nad kvapkou (TimeGoo, PowerGoo, DaNoGoo): 1 = základná veľkosť (minimum), logika drží 1…2,2
+    // a pamätá si ho (spustac.json › zoom); kvapka aj jej obsah rastú plynule (pružina)
+    event goo_wheel ->
+    fact zt = 1
+    fact zp = 1
+    fact zd = 1
+    prop zt.p = 1 ~lively
+    prop zp.p = 1 ~lively
+    prop zd.p = 1 ~lively
+    follow zt.p = zt
+    follow zp.p = zp
+    follow zd.p = zd
+    // Obsah TimeGoo sa strieda (logika plní texty): čas ↔ bežiace stopky alebo minútka (po 4 s);
+    // dátum ↔ počasie: na celú hodinu a po novej predpovedi na 10 s, pri výstrahe stále striedavo,
+    // ikona žltá (1) alebo červená (2) podľa stupňa
+    text tg_alt_val = ""                      // čas stopiek / minútky
+    text tg_alt_label = ""                    // STOPKY / MINÚTKA
+    text tg_wx_icon = ""                      // ikona počasia alebo výstrahy (písmo Tabler)
+    text tg_wx_text = ""                      // teplota alebo krátky popis výstrahy
+    fact wx_alert = 0                         // 0 nič, 1 žltá, 2 červená
+    fact tg_wxflash = false
+    let tg.alt = if(sw_run or t_active, smooth(-0.25, 0.25, sin(time * 0.785)), 0)
+    prop tg.wxf = 0 ~lively
+    follow tg.wxf = if(tg_wxflash, 1, 0)
+    let tg.wx = max(clamp(tg.wxf, 0, 1), if(wx_alert > 0, smooth(-0.25, 0.25, sin(time * 0.52 + 1.3)), 0)) * (1 - tg.alt)
+    let tg.fade = so * ap * (1 - smooth(0, 0.08, dsw))
+    let tg.wxc = pick(wx_alert, ink, #e8a317, #e5484d)
+    text now.time { at: cxs, cys - 5 * zt.p; anchor: center; size: 16 * zt.p; weight: 800; color: ink; opacity: tg.fade * (1 - tg.alt); show: solo }
+    text tg_alt_val { at: cxs, cys - 5 * zt.p; anchor: center; size: 16 * zt.p; weight: 800; color: ink; opacity: tg.fade * tg.alt; show: solo }
+    text pick(now.weekday, "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat") { at: cxs - 2 * zt.p, cys + 12 * zt.p; anchor: right center; size: 9.5 * zt.p; weight: 600; color: ink; opacity: 70% * tg.fade * (1 - tg.alt) * (1 - tg.wx); show: solo }
+    text "{now.day}. {now.month}." { at: cxs + 1 * zt.p, cys + 12 * zt.p; anchor: left center; size: 9.5 * zt.p; weight: 600; color: ink; opacity: 70% * tg.fade * (1 - tg.alt) * (1 - tg.wx); show: solo }
+    text tg_alt_label { at: cxs, cys + 12 * zt.p; anchor: center; size: 8 * zt.p; weight: 700; color: ink; opacity: 70% * tg.fade * tg.alt; show: solo }
+    text tg_wx_icon { at: cxs - 1 * zt.p, cys + 12 * zt.p; anchor: right center; size: 11 * zt.p; color: tg.wxc; opacity: tg.fade * tg.wx; show: solo; family: "noctalia-tabler-icons" }
+    text tg_wx_text { at: cxs + 1 * zt.p, cys + 12 * zt.p; anchor: left center; size: 9.5 * zt.p; weight: 700; color: tg.wxc; opacity: tg.fade * tg.wx; show: solo }
 
     text toast { at: tst.x - 135, tst.y; anchor: left center; width: 270; lines: 1; size: 12.5; weight: 600; color: ink; opacity: clamp(toast.p * 2 - 1, 0, 1) * so; show: solo }
 
     // >>> DaNoGoo texty (danogoo.py)
     // obsah kvapky: dátum a počasie (bez tváre)
-    text dn_date { at: dn.x, dn.y - 7; anchor: center; size: 11; weight: 700; color: ink; opacity: so; show: solo; family: "Inter" }
-    text dn_wx { at: dn.x - 1, dn.y + 9; anchor: right center; size: 12; color: ink; opacity: 85% * so; show: solo; family: "noctalia-tabler-icons" }
-    text dn_temp { at: dn.x + 1, dn.y + 9; anchor: left center; size: 10.5; weight: 600; color: ink; opacity: 85% * so; show: solo; family: "Inter" }
+    text dn_date { at: dn.x, dn.y - 7 * zd.p; anchor: center; size: 11 * zd.p; weight: 700; color: ink; opacity: so; show: solo; family: "Inter" }
+    text dn_wx { at: dn.x - 1, dn.y + 9 * zd.p; anchor: right center; size: 12 * zd.p; color: ink; opacity: 85% * so; show: solo; family: "noctalia-tabler-icons" }
+    text dn_temp { at: dn.x + 1, dn.y + 9 * zd.p; anchor: left center; size: 10.5 * zd.p; weight: 600; color: ink; opacity: 85% * so; show: solo; family: "Inter" }
     // <<< DaNoGoo texty
     // >>> QueenGoo texty (queengoo.py)
     group {
@@ -2005,7 +2036,7 @@ scene Kvapka {
     // hrozno: klik mimo neho ho zavrie (pod bobuľami)
     zone box dn_away { at: W / 2, H / 2; size: W, H; active: dn_open }
     // počas ťahania zóna cez celú obrazovku: Hyprland posiela myš iba v zónach a odchod z nej by ťahanie ukončil
-    zone ellipse dn_hit { at: dn.x, dn.y; radius: if(dn_drag, 4000, 34); cursor: pointer; active: solo }
+    zone ellipse dn_hit { at: dn.x, dn.y; radius: if(dn_drag, 4000, 34 * zd.p); cursor: pointer; active: solo }
     zone box br_hit.0 { at: brx.0, bry.0; size: 360, 52; cursor: pointer; active: dn_open and 0 < berries.count and bre.0 > 0.9 }
     zone box br_hit.1 { at: brx.1, bry.1; size: 360, 52; cursor: pointer; active: dn_open and 1 < berries.count and bre.1 > 0.9 }
     zone box br_hit.2 { at: brx.2, bry.2; size: 360, 52; cursor: pointer; active: dn_open and 2 < berries.count and bre.2 > 0.9 }
@@ -2014,6 +2045,7 @@ scene Kvapka {
     zone box br_hit.5 { at: brx.5, bry.5; size: 360, 52; cursor: pointer; active: dn_open and 5 < berries.count and bre.5 > 0.9 }
     zone box dn_clr { at: clx, cly; size: 190, 34; cursor: pointer; active: dn_open and berries.count > 0 and cle > 0.9 }
     // DaNoGoo: ľavý klik = hrozno (znova klik, Esc alebo klik mimo = späť), ťahanie = iný okraj, pravý = kalendár
+    on scroll dn_hit { emit goo_wheel(2 * 2 + if(wheel > 0, 1, 0)) }
     on press dn_hit { dn_drag = true; dn_moved = false; wd.w = W; wd.h = H }
     on drag dn_hit while dn_drag and abs(drag.dx) + abs(drag.dy) > 6 { dn_moved = true; dn_open = false; dc_open = false }
     on release dn_hit while dn_drag and dn_moved { dnd.x = mx; dnd.y = my; impulse dn.wob 300; emit dn_drop; dn_moved = false; dn_drag = false }
@@ -2227,8 +2259,10 @@ scene Kvapka {
     // >>> voľné zóny (volne.py)
     // Hodiny a vypínač: klikateľné miesta v súradniciach obrazovky (v lište aj voľne); počas ťahania cez celú
     // obrazovku (Hyprland posiela myš iba v zónach)
-    zone ellipse start_hit { at: cxs, cys; radius: if(tg_press, 4000, 34); cursor: pointer; active: solo }
-    zone ellipse power_hit { at: pxs, pys; radius: if(pg_press, 4000, 22); cursor: pointer; active: solo }
+    zone ellipse start_hit { at: cxs, cys; radius: if(tg_press, 4000, 34 * zt.p); cursor: pointer; active: solo }
+    zone ellipse power_hit { at: pxs, pys; radius: if(pg_press, 4000, 22 * zp.p); cursor: pointer; active: solo }
+    on scroll start_hit { emit goo_wheel(0 * 2 + if(wheel > 0, 1, 0)) }
+    on scroll power_hit { emit goo_wheel(1 * 2 + if(wheel > 0, 1, 0)) }
     on press start_hit { tg_press = true; tg_moved = false; wd.w = W; wd.h = H }
     on drag start_hit while tg_press and abs(drag.dx) + abs(drag.dy) > 8 { tg_moved = true; dash = false; pmenu = false }
     on release start_hit while tg_press and tg_moved { tgd.x = mx; tgd.y = my; tgd.dd = length(mx - tg.dkx, my - tg.dky); tg_moved = false; tg_press = false; impulse swob 300; emit tg_drop }
@@ -2332,12 +2366,12 @@ scene Kvapka {
         rim: 30%
         light: 18%, 0, 16
         opacity: if(bat_present and solo, 1, 0) * (1 - pm)
-        ellipse { at: pxs + (p.ax * cos(-32) - p.ay * sin(-32)) * (27 + 3 * sin(time * 3 + 0) * if(bat_chg, 1, 0)), pys + (p.ay * cos(-32) + p.ax * sin(-32)) * (27 + 3 * sin(time * 3 + 0) * if(bat_chg, 1, 0)); radius: 4.5 * if(0 < bat_n, 1, 0) * bat_pulse * so; blend: 4 }
-        ellipse { at: pxs + (p.ax * cos(0) - p.ay * sin(0)) * (27 + 3 * sin(time * 3 + 2) * if(bat_chg, 1, 0)), pys + (p.ay * cos(0) + p.ax * sin(0)) * (27 + 3 * sin(time * 3 + 2) * if(bat_chg, 1, 0)); radius: 4.5 * if(1 < bat_n, 1, 0) * bat_pulse * so; blend: 4 }
-        ellipse { at: pxs + (p.ax * cos(32) - p.ay * sin(32)) * (27 + 3 * sin(time * 3 + 4) * if(bat_chg, 1, 0)), pys + (p.ay * cos(32) + p.ax * sin(32)) * (27 + 3 * sin(time * 3 + 4) * if(bat_chg, 1, 0)); radius: 4.5 * if(2 < bat_n, 1, 0) * bat_pulse * so; blend: 4 }
+        ellipse { at: pxs + (p.ax * cos(-32) - p.ay * sin(-32)) * zp.p * (27 + 3 * sin(time * 3 + 0) * if(bat_chg, 1, 0)), pys + (p.ay * cos(-32) + p.ax * sin(-32)) * zp.p * (27 + 3 * sin(time * 3 + 0) * if(bat_chg, 1, 0)); radius: 4.5 * if(0 < bat_n, 1, 0) * bat_pulse * so; blend: 4 }
+        ellipse { at: pxs + (p.ax * cos(0) - p.ay * sin(0)) * zp.p * (27 + 3 * sin(time * 3 + 2) * if(bat_chg, 1, 0)), pys + (p.ay * cos(0) + p.ax * sin(0)) * zp.p * (27 + 3 * sin(time * 3 + 2) * if(bat_chg, 1, 0)); radius: 4.5 * if(1 < bat_n, 1, 0) * bat_pulse * so; blend: 4 }
+        ellipse { at: pxs + (p.ax * cos(32) - p.ay * sin(32)) * zp.p * (27 + 3 * sin(time * 3 + 4) * if(bat_chg, 1, 0)), pys + (p.ay * cos(32) + p.ax * sin(32)) * zp.p * (27 + 3 * sin(time * 3 + 4) * if(bat_chg, 1, 0)); radius: 4.5 * if(2 < bat_n, 1, 0) * bat_pulse * so; blend: 4 }
     }
     // <<< PowerGoo
-    image power_icon { at: pxs - 8, pys - 8; size: 16, 16; tint: ink; opacity: so * (0.4 + 0.6 * lift.p) * ap * (1 - smooth(0, 0.2, pm)); show: solo }
+    image power_icon { at: pxs - 8 * zp.p, pys - 8 * zp.p; size: 16 * zp.p, 16 * zp.p; tint: ink; opacity: so * (0.4 + 0.6 * lift.p) * ap * (1 - smooth(0, 0.2, pm)); show: solo }
 
     text pick(mode, "Floating windows", "Tiles", "Endless strip") { at: pick(side, lx - 30, W - lx - 30, edge - by + 40, W - edge + by - 150), pick(side, by - 56 + H - edge, edge - by + 56, lx - 60, H - lx - 60); anchor: left center; size: 12; weight: 700; color: ink; opacity: 70% * out * ap * if(tight or dash or pmenu, 0, 1) }
 
@@ -2620,6 +2654,15 @@ scene Kvapka {
         "Copilot (web)" = "Copilot (web)"
         "Copy" = "Kopírovať"
         "Stopped." = "Zastavené."
+        "STOPWATCH" = "STOPKY"
+        "TIMER" = "MINÚTKA"
+        "wind {v} km/h" = "vietor {v} km/h"
+        "storm" = "búrka"
+        "hail" = "krupobitie"
+        "snow" = "sneh"
+        "ice" = "poľadovica"
+        "rain {v} mm" = "dážď {v} mm"
+        "Weather warning: {w}" = "Výstraha: {w}"
         "{ai} needs a one-time setup. I opened Settings › AI — everything there is done with clicks; you only type your name and password on the service page. Then ask again." = "{ai} treba raz nastaviť. Otvoril som Nastavenia › AI — všetko sa tam robí klikaním, meno a heslo napíšeš iba na stránke služby. Potom sa spýtaj znova."
         "click copies" = "klik skopíruje"
         "Open {u}" = "Otvoriť {u}"
