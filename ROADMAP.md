@@ -333,9 +333,9 @@ texty preložiteľné (`translations`). Noctalia beží bez lišty a robí, čo 
 - [ ] **Živé bytosti pri nečinnosti** (LATTEOS-GOO.md 3.1): zdroj nečinnosti (ext-idle-notify), dážď/vietor podľa
   skutočného počasia so zvlnením spodnej hrany aj kvapiek, hra (naháňačka so zrážkou a odrazom, behanie, skákanie);
   nie pri celej obrazovke, zámku, slabej batérii a v stupni Softvér; vypínač v Nastaveniach
-- [x] **Engine Goo — základ** (LATTEOS-GOO.md 3.2, `session/goo`, 1. 10.): jedny pravidlá pre všetky kvapky (16 miest),
+- [x] **Engine Goo — základ** (LATTEOS-GOO.md 3.2, `session/goo`, 1. 10.): jedny pravidlá pre všetky kvapky (64 miest; záplata pleamar-prazdne-tvary),
   kvapky používateľa (JSON, `latte-goo`) aj programátorov (Luau s háčikmi), všetky vstupy myši, gravitácia/svetlo
-  kurzora, lepivosť s odtrhnutím, veľkosť, efekty + rezerva (fx 6–9, kanály e1–e4), hra pri nečinnosti; relácia
+  kurzora (iba priťahuje), nadnesenie so stopkou a prelievaním susedov, lepivosť s odtrhnutím, veľkosť, efekty + rezerva (fx 6–9, kanály e1–e4), hra pri nečinnosti (1/3/6 min); relácia
   „LatteOS Kvapky – engine test“. Overené v cloude (headless Sway, falošná myš)
 - [ ] Engine Goo na latte-lab: stredné tlačidlo, ikony (písmo Tabler), výkon RX 640; potom presun TimeGoo, PowerGoo,
   DaNoGoo, QueenGoo, ChatGoo na engine; formulár vlastných kvapiek v Nastaveniach › Kvapky nad `latte-goo`

@@ -3,7 +3,7 @@
 -- Akcie (príkazy, aplikácie, odkazy) vykoná latte-goo podľa id a mena akcie — logika nikdy neposiela príkaz sama.
 --
 -- {
---   "id": "kalkulacka", "nazov": "Kalkulačka", "ikona": "calculator", "povaha": "zvedava", "farba": "karamel",
+--   "id": "kalkulacka", "nazov": "Kalkulačka", "ikona": "calculator", "povaha": "zvedava",
 --   "popis": "Klik otvorí kalkulačku", "velkost": 26, "poloha": { "x": 0.3, "y": 0 },
 --   "text": { "prikaz": "date +%H:%M", "kazdych": 30 },
 --   "akcie": { "klik": { "aplikacia": "org.gnome.Calculator" }, "pravy": { "vystup": "uptime -p" },
@@ -44,6 +44,7 @@ local function build(E, j)
         if j.akcie and j.akcie[key] ~= nil then def[key] = function(d) action(E, d, key) end end
     end
     local wheel = j.akcie and j.akcie.koliesko
+    def.zoom = wheel == "velkost"                         -- veľkosť kolieskom iba keď ju kvapka chce (pravidlo 8)
     if type(wheel) == "table" then
         def.koliesko = function(d, dir) action(E, d, dir > 0 and "hore" or "dole") end
     end

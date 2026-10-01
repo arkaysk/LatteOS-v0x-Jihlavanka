@@ -294,6 +294,63 @@ texty, prstence a bublina. Opravené počas testu:
 **Neoverené (latte-lab):** stredné tlačidlo (falošná myš ho nemá), ikony (v cloude nie je písmo Tabler),
 `cursor.x/y` z Hyprlandu, výkon na RX 640.
 
+### Spresnenie: 64+ kvapiek, pravidlá z LATTEOS-GOO.md, nadnesenie
+
+**Otázky a pripomienky používateľa:**
+- Engine iba pre 16 kvapiek? Limit má byť 50 a viac.
+- Čítal som súbor LatteGoo? Je v ňom opísané, ako sa kvapky správajú.
+- Kurzor kvapky vždy iba priťahuje, nikdy neodpudzuje.
+- Pri priblížení sa kvapky nadnášajú, približujú ku kurzoru a prelievajú sa a spájajú (obrázok).
+- Kvapky vyskakovacieho okna sa po kliku vznesú a stanú sa tvarom okna; to je v súčasnej verzii dobre.
+
+**Odpoveď:** `LATTEOS-GOO.md` som pred písaním enginu znova nečítal, vychádzal som zo zhrnutia. Chyba, napravená.
+Engine porušoval viac pravidiel:
+- záporná gravitácia („plachá“);
+- vlastné farby kvapiek (pravidlo 6: vždy káva);
+- predvolené pravé a stredné tlačidlo a koliesko (pravidlo 8: kontextový klik iba tam, kde ho má funkcia);
+- ikona oka (pravidlo 7);
+- menovka pod kvapkou (§3: obsah sa hoverom nemení);
+- nečinnosť 30 s/2 min namiesto 1/3/6 min (§3.1).
+
+Nadnesenie a prelievanie pri priblížení kurzora engine nemal; na mojich snímkach to preto nebolo.
+
+**Opravené:**
+- **64 miest** (`N` v `gen.py`, prepíše aj scénu).
+- Kurzor iba priťahuje.
+- **Nadnesenie:** kvapka na lište vystúpi kolmo na stopke, ktorá sa naťahuje a tenčí, susedné sa prelievajú
+  a spájajú, späť padne s odrazom.
+- Nad kvapkou sa mierne nafúkne a netrpezlivo pulzuje. Dych a drift aj bez myši.
+- Káva podľa Baristu (`latte-goo kava`, rovnaká tabuľka ako Kvapky); `farba` v JSON je chyba s vysvetlením.
+- Vstupy bez háčika nerobia nič. Veľkosť kolieskom iba so `zoom = true` / `"koliesko": "velkost"`.
+- Nečinnosť 1/3/6 min; hra iba na stupni 3: naháňačka so zámernou zrážkou a stlačením (`goo_squish`), behanie,
+  skákanie; po prebudení sa zachvejú.
+- Bublina = názov · popis.
+
+Okno z kvapky (pravidlá 9 a 14) v engine ešte nie je; príde ako druh kvapky.
+
+**Výkon:**
+- Pri 64 miestach mal engine v cloude **192 ms** na snímku. Príčina: pleamar počíta každý tvar tela goo pre
+  každý pixel a `show: false` ho z tela nevyradí (zmerané: 192 skrytých tvarov 102 ms, žiadne 18 ms).
+- Riešenie v jazyku: krk ťahanej kvapky je jeden tvar (`pick(nk, …)`), nie 64; prázdne miesta pod obrazovkou
+  (bod nulovej veľkosti cez zliatie vydul hrbček vľavo dole).
+- **Záplata `pleamar-prazdne-tvary.patch`:** tvar nulovej veľkosti sa do tela nedá (pleamar to už robil pre
+  obdĺžniky). Výsledok **21,6 ms** (súčasná scéna Kvapky 62 ms).
+- `install-session.sh` záplatu použije a pleamar preloží, aj keď už je 0.2.6. Vhodná na upstream.
+- Bez záplaty engine funguje, iba pomalšie.
+
+**Overené v cloude:**
+- `--check` ok.
+- Priblíženie kurzora (snímky: nadnesenie na stopkách, mostíky medzi susedmi).
+- Test nečinnosti 6,5 min: stupne v 60., 180. a 360. s, hra so zrážkou (stlačenie 0,42), prebudenie myšou,
+  priemer **20,8 ms** na snímku.
+- Vstupy znova:
+  - klik, koliesko, pravé, podržanie bez falošného kliku, ťahanie s odtrhnutím, pád ťažkej;
+  - koliesko-veľkosť iba pri kvapkách so `zoom`.
+
+**Chyba nájdená testom:** kurzor pri spodnom okraji zdvihol kvapku nad seba, kvapka mu ušla spod ruky a koliesko,
+pravé a podržanie netrafili. Opravené: kvapka sa nadnesie iba po výšku kurzora (naozaj ku kurzoru) a zóna kliku
+pokrýva aj stopku.
+
 ## Nové a zmenené súbory
 
 - `session/bin/`: `gnome-software`, `latte-hladaj`, `latte-riadok`, `latte-pocasie` (nové); `latte-ai`, `latte-apps`,

@@ -6,7 +6,6 @@
   "povaha": "pokojna",
   "efekt": "tlkot",
   "sila": 0.5,
-  "farba": "visna",
   "poloha": { "x": 0.75, "y": 160 },
   "text": { "prikaz": "cut -d' ' -f1 /proc/loadavg", "kazdych": 5 },
   "akcie": {

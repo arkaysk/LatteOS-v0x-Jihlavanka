@@ -4,7 +4,6 @@ return {
     "hodiny",
     "kvapocka",
     "lepkava",
-    "placha",
     "pocitadlo",
     "tazka",
     "zvedavka",
