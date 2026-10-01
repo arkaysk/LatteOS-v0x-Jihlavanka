@@ -160,6 +160,14 @@ xdg-mime default latteos-heidelberg.desktop text/markdown 2>/dev/null || true
 for m in application/x-rpm application/vnd.flatpak.ref application/x-msdownload application/vnd.android.package-archive application/vnd.debian.binary-package application/x-iso9660-appimage; do
     xdg-mime default latteos-aplikacie.desktop "$m" 2>/dev/null || true
 done
+# AI: nástroje predplatných (Claude, ChatGPT, Gemini, Copilot) hneď pri inštalácii, nie dodatočne — pri výbere služby
+# sa používateľ iba prihlási (meno a heslo) alebo zadá kľúč API. Preskočí sa, ak je AI vypnutá (Bez AI).
+if grep -qs '^provider = "ziadna"' "${XDG_CONFIG_HOME:-$HOME/.config}/latteos/ai.toml"; then
+    echo "== AI vypnutá — nástroje predplatných sa neinštalujú"
+elif command -v npm >/dev/null; then
+    echo "== AI: nástroje predplatných → /usr/local/lib/latteos-ai"
+    sudo /usr/bin/latte-ai instaluj-system || echo "   (nepodarilo sa — Nastavenia › AI ich doinštalujú klikom)"
+fi
 # archívy otvárajú Súbory ako priečinok (bughunt/bug001: .zip nemal čím otvoriť)
 for m in application/zip application/x-7z-compressed application/vnd.rar application/x-rar application/x-tar application/x-compressed-tar application/x-bzip2-compressed-tar application/x-xz-compressed-tar application/x-zstd-compressed-tar application/x-cd-image application/vnd.ms-cab-compressed application/x-cpio; do
     xdg-mime default latteos-subory.desktop "$m" 2>/dev/null || true

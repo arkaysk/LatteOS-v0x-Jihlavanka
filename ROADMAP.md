@@ -459,6 +459,13 @@ texty preložiteľné (`translations`). Noctalia beží bez lišty a robí, čo 
   **Zobraziť terminál** iba na klik (živý záznam inštalácie a prihlásenia pre pokročilých a správcu). Prvá otázka
   nenastavenej službe v spúšťači otvorí Nastavenia › AI. Overiť na latte-lab so skutočnými nástrojmi (texty ich
   úvodných otázok sa môžu meniť — LOGIN_ANSWERS v latte-ai)
+- [x] AI nástroje predplatných sa inštalujú **pri inštalácii LatteOS** (`latte-ai instaluj-system` → /usr/local/lib/latteos-ai,
+  preskočí sa pri „Bez AI“); pri výbere služby už iba Prihlásiť sa (meno a heslo) alebo Mám kľúč API
+- [x] Goo (1. 10.): koliesko nad TimeGoo / PowerGoo / DaNoGoo plynulo zväčší kvapku aj obsah (1–2,2, pamätá sa);
+  TimeGoo strieda čas s bežiacou minútkou / stopkami a dátum s počasím (celá hodina, nová predpoveď, výstraha
+  žltá / červená podľa predpovede na 12 h). BarGoo a QueenGoo bez toho. Overiť na latte-lab: plynulosť, prekrytie
+  zväčšených Hodín so susedmi na lište, prahy výstrah
+- [ ] Výstrahy SHMÚ / MeteoAlarm (oficiálne stupne) namiesto prahov z predpovede
 - [ ] AI: streamovanie odpovede do bubliny po riadkoch; efektivita a model aj v Nastaveniach
 - [ ] Ollama na CPU s malým modelom (3–4B) priamo v PC. Router lokálne/online podľa otázky.
 - [x] Text Bar: režimy (Lokálne, Súbory, Web, AI, Linux príkaz) a potvrdenie deštruktívnych príkazov (prvé slovo každej časti príkazu + vzory; otestované).

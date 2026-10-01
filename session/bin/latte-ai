@@ -27,7 +27,9 @@ Poskytovatelia (~/.config/latteos/ai.toml, píšu ho Nastavenia › Softvér ›
   latte-ai katalog           odporúčané modely na stiahnutie podľa RAM (id<TAB>popis)
   latte-ai pull MODEL        stiahne model (priebeh po riadkoch „percent text“) · rm MODEL · unload
   latte-ai sluzby            predplatné: id<TAB>meno<TAB>nainštalované 0/1<TAB>prihlásené 0/1<TAB>čo urobí prihlásenie
-  latte-ai instaluj ID       nainštaluje nástroj služby do domova (bez sudo, bez terminálu), priebeh po riadkoch
+  latte-ai instaluj ID       nainštaluje nástroj služby do domova (bez sudo, bez terminálu), priebeh po riadkoch —
+                             záloha; bežne sú nástroje v systéme od inštalácie LatteOS:
+  latte-ai instaluj-system   (root, inštalátor LatteOS) všetky nástroje predplatných do /usr/local/lib/latteos-ai
   latte-ai prihlas ID        prihlásenie služby na pozadí: prehliadač s prihlásením (píše sa iba meno a heslo),
                              terminál sa neotvára · odhlas ID
   latte-ai priebeh ID        stav inštalácie/prihlásenia pre Nastavenia: state=, url=, code=, line=, log=
@@ -83,6 +85,8 @@ CLI = {
 # inštalácia: claude oficiálnym skriptom (do ~/.local/bin), ostatné cez npm do vlastného priečinka (bez sudo)
 NPM = {"codex": "@openai/codex", "gemini": "@google/gemini-cli", "copilot": "@github/copilot"}
 NPM_PREFIX = os.path.join(HOME, ".local/share/latteos/ai-nastroje")
+SYS_PREFIX = "/usr/local/lib/latteos-ai"                 # predinštalované pri inštalácii LatteOS (ak AI nie je vypnutá)
+SYS_NPM = {"claude": "@anthropic-ai/claude-code", **NPM}
 # prihlásenie je hotové, keď nástroj uložil svoje prihlasovacie údaje
 CREDS = {"claude": [".claude/.credentials.json"], "codex": [".codex/auth.json"],
          "gemini": [".gemini/oauth_creds.json", ".gemini/google_accounts.json"], "copilot": [".copilot/config.json"]}
@@ -90,7 +94,8 @@ LOGIN_HINT = {"claude": "otvorí sa prehliadač s prihlásením do Claude",
               "codex": "otvorí sa prehliadač s prihlásením do ChatGPT",
               "gemini": "otvorí sa prehliadač s prihlásením do účtu Google",
               "copilot": "otvorí sa prehliadač GitHubu; vpíšeš doň krátky kód, ktorý ukážu Nastavenia"}
-os.environ["PATH"] = os.pathsep.join([os.path.join(HOME, ".local/bin"), os.path.join(NPM_PREFIX, "bin"), os.environ.get("PATH", "")])
+os.environ["PATH"] = os.pathsep.join([os.path.join(HOME, ".local/bin"), os.path.join(NPM_PREFIX, "bin"),
+                                      os.path.join(SYS_PREFIX, "bin"), os.environ.get("PATH", "")])
 STATE = os.path.join(os.environ.get("XDG_STATE_HOME", HOME + "/.local/state"), "latteos")
 USAGE = os.path.join(STATE, "ai-usage.json")
 
@@ -592,6 +597,21 @@ def login(sid):
     print(LOGIN_HINT[sid])
 
 
+def install_system():
+    """inštalátor LatteOS (root): nástroje všetkých predplatných naraz, aby si používateľ pri výbere služby
+    iba prihlásil účet alebo zadal kľúč API; odkazy v /usr/local/bin"""
+    os.makedirs(SYS_PREFIX, exist_ok=True)
+    r = subprocess.run(["npm", "install", "--global", "--prefix", SYS_PREFIX, "--no-fund", "--no-audit"] + list(SYS_NPM.values()))
+    bindir = os.path.join(SYS_PREFIX, "bin")
+    for sid, (_n, exe, _i, _l) in CLI.items():
+        src, dst = os.path.join(bindir, exe), os.path.join("/usr/local/bin", exe)
+        if os.path.exists(src) and not os.path.exists(dst):
+            os.symlink(src, dst)
+        print("%s: %s" % (exe, "pripravené" if os.path.exists(src) else "CHÝBA"))
+    if r.returncode != 0:
+        raise RuntimeError("npm install skončil s kódom %d" % r.returncode)
+
+
 def logout(sid):
     for f in CREDS.get(sid, []):
         try:
@@ -722,6 +742,8 @@ def main(a):
             local_list()
         elif cmd == "sluzby":
             services()
+        elif cmd == "instaluj-system":
+            install_system()
         elif cmd in ("instaluj", "prihlas", "odhlas", "_prihlas") and len(a) == 2 and a[1] in CLI:
             {"instaluj": install, "prihlas": login, "odhlas": logout, "_prihlas": login_worker}[cmd](a[1])
         elif cmd == "priebeh" and len(a) == 2 and a[1] in CLI:
