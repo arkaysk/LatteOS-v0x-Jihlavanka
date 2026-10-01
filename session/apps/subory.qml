@@ -346,11 +346,26 @@ ShellRoot {
         }
         onLoadFailed: { app.openArg(); app.stateLoaded = true; }
     }
-    // latte-app subory <priečinok>: otvorí zadaný priečinok v ľavom paneli (file:// URL alebo cesta)
+    // latte-app subory <priečinok|súbor>: otvorí zadaný priečinok v ľavom paneli (file:// URL alebo cesta);
+    // súbor → jeho priečinok s označeným súborom, archív (Otvoriť pomocou… › Súbory) rovno ako priečinok
     function openArg() {
-        let a = (Quickshell.env("LATTE_APP_ARGS") || "").trim();
+        let a = (Quickshell.env("LATTE_APP_ARGV") || "").split("\n")[0];     // prvý argument celý (cesta s medzerami)
         if (a.startsWith("file://")) a = decodeURIComponent(a.slice(7));
-        if (a !== "") { paneA.go(a); app.activeIndex = 0; }
+        if (a === "") return;
+        app.activeIndex = 0;
+        if (a.indexOf("://") > 0) { paneA.go(a); return; }                  // smb://, sftp://… idú rovno do panela
+        argKind.command = ["test", "-d", a]; argKind.arg = a; argKind.running = true;
+    }
+    Process {
+        id: argKind
+        property string arg
+        onExited: (code) => {
+            const a = argKind.arg;
+            if (code === 0) { paneA.go(a); return; }
+            const dir = a.substring(0, a.lastIndexOf("/")) || "/", name = a.substring(a.lastIndexOf("/") + 1);
+            paneA.selectAfter = name; paneA.go(dir);
+            if (app.archiveRe.test(name)) tcd.open("archiv", [{ path: a, name: name, isDir: false }], dir, dir);
+        }
     }
     function saveState() {
         if (!app.stateLoaded) return;
