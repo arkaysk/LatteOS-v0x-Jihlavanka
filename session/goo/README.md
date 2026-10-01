@@ -39,7 +39,9 @@ V ploche Kvapky má každá kvapka vlastnú kópiu pravidiel: polohu, ťahanie, 
   v Kvapkách:
   - keď sa kurzor priblíži k jednej, sused sa nadnesie tiež (o 30 %) a nakloní sa k nej;
   - spája ich **voda pri okraji**: údolie medzi nimi nesiaha k okraju a skupina pôsobí ako jedna hmota;
-  - spája ich **goo vlákno**: hrubne s nadnesením a samo sa tvorí a trhá s tokom.
+  - spája ich **goo vlákno** medzi hornými časťami: čím sú bližšie, tým je hrubšie; nepravidelné (vlastný šum
+    hrúbky aj koncov), hrubne s nadnesením a samo sa tvorí a trhá s tokom. Pod ním, nad vodou, vznikajú **oká**;
+  - voda leží pod hladinou a nad ňu sa dvíha iba zliatím (inak by zaliala oká).
 - **Tok:** každá kvapka pomaly vystupuje a klesá vo vlastnom rytme. Sila zliatia (`10 + 16 · nadnesenie +
   10 · tok`, ako `link` v Kvapkách) sa mení s ním, preto sa susedia raz spoja, raz rozdelia.
 - **Nad kvapkou:** mierne sa nafúkne a rôsolovito pulzuje (do šírky a do výšky). Obsah sa nemení, názov a popis
@@ -65,7 +67,8 @@ V ploche Kvapky má každá kvapka vlastnú kópiu pravidiel: polohu, ťahanie, 
   Menšie kvapky sa vlnia viac (aj tok a drift).
 - **Návrat k okraju (pravidlo 20, Marea):** kvapka sa ponorí pod hladinu a vynorí, hladina sa zvlní. Odtrhnutie
   najneskôr po 1,6 polomeru (dlhý krk je nepekný).
-- **Oká a ostrý okraj (pravidlo 21):** tieň je iba tesný (0, 2, 2), okraj aj okolo ôk ostáva ostrý.
+- **Oká a ostrý okraj (pravidlo 21):** záplata `pleamar-ostre-okraje` vyhladzuje hranu podľa skutočnej zmeny
+  vzdialenosti na pixel, preto je okraj ôk ostrá čiara; tieň je tesný (0, 2, 2).
 - **Efekty scény:** `dych`, `kmit`, `tras`, `obeh`, `tlkot` (+ `sila`).
 - **Rezerva na nedefinované efekty:**
   - efekty 6–9 v scéne sú voľné;

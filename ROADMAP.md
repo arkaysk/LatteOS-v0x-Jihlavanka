@@ -339,7 +339,8 @@ texty preložiteľné (`translations`). Noctalia beží bez lišty a robí, čo 
   „LatteOS Kvapky – engine test“. Overené v cloude (headless Sway, falošná myš)
 - [x] Engine Goo: pravidlá 17–21 (1. 10. večer) — farebné jadro ako upozornenie, vlnky na hladine (kameň/vibrácia,
   aj zvonka), vietor, ponor pri návrate (Marea), kratší krk, menšie kvapky sa vlnia viac, ostrý okraj
-- [ ] Plocha Kvapky: ostrý okraj ôk (dnes rozmazaný tieňom 0, 6, 16) — iba so súhlasom používateľa (dizajn)
+- [x] Ostrý okraj ôk (plocha Kvapky aj engine): záplata pleamar-ostre-okraje — príčina nebol tieň, ale vyhladenie hrany
+  v zliatí; scéna Kvapky sa nemenila
 - [ ] Hyprland: minimalizované okno → `pleamar --say goo "emit goo_kamen X"` (vlnka, pravidlo 14)
 - [ ] Engine Goo na latte-lab: stredné tlačidlo, ikony (písmo Tabler), výkon RX 640; potom presun TimeGoo, PowerGoo,
   DaNoGoo, QueenGoo, ChatGoo na engine; formulár vlastných kvapiek v Nastaveniach › Kvapky nad `latte-goo`

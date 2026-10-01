@@ -226,14 +226,21 @@ scene Goo {
         follow base.$k = dk.$k * (1 - drg.$k) * if(goo.$k.on, 1, 0)
         // stopka k lište: pri nadnesení sa natiahne a stenčí (§3: vlákna ako sliz)
         follow stalk.$k = dk.$k * (0.5 - 0.22 * lift.$k) * lift.$k * (1 - drg.$k)
-        // goo vlákno k susedovi vpravo (ako vypínač ↔ Hodiny): hrubne s nadnesením oboch, samo sa tvorí a trhá
-        // s tokom; roztavené s oboma koncami, preto uprostred tenšie. Koniec = odhad polohy suseda (zlieva sa s ním)
-        follow th.$k = if(goo.$k.nr, 9 * max(smooth(0.3, 0.9, min(lift.$k, 0.3 * prox.$k + npr.$k) * 1.6), 0.8 * smooth(0.55, 0.85, fl.$k)) * (1 - drg.$k), 0) * min(r0.$k, goo.$k.nrr) / 26
-        follow thx.$k = goo.$k.nrh * W + goo.$k.nro
-        follow thy.$k = floor - goo.$k.nry - clamp(npr.$k + 0.3 * prox.$k, 0, 1) * goo.$k.nrr * 0.6
+        // goo vlákno k susedovi vpravo (ako vypínač ↔ Hodiny): spája HORNÉ časti susedov — pod ním ostane oko, nad
+        // vodou pri okraji. Čím sú susedia bližšie, tým je hrubšie; nepravidelné a organické (každé dýcha vlastným
+        // šumom, konce sa mierne hýbu); samo sa tvorí a trhá s tokom, hrubne s nadnesením; roztavené s oboma koncami
+        let gap.$k = abs(goo.$k.nrh * W + goo.$k.nro - hxp.$k) - r0.$k - goo.$k.nrr
+        let close.$k = clamp(1 - gap.$k / max((r0.$k + goo.$k.nrr) * 0.9, 1), 0, 1)
+        let irr.$k = 0.65 + 0.7 * (0.5 + 0.5 * noise(time * 0.27 + k * 2.9))
+        let thon.$k = max(close.$k * 0.9, max(smooth(0.3, 0.9, min(lift.$k, 0.3 * prox.$k + npr.$k) * 1.6), 0.8 * smooth(0.55, 0.85, fl.$k)))
+        follow th.$k = if(goo.$k.nr, (3 + 11 * close.$k) * irr.$k * thon.$k * (1 - drg.$k), 0) * min(r0.$k, goo.$k.nrr) / 26
+        follow thx.$k = goo.$k.nrh * W + goo.$k.nro + 3 * noise(time * 0.31 + k * 4.1)
+        follow thy.$k = floor - goo.$k.nry - clamp(npr.$k + 0.3 * prox.$k, 0, 1) * goo.$k.nrr * 0.6 - goo.$k.nrr * (0.25 + 0.15 * noise(time * 0.23 + k * 1.9))
+        prop thy0.$k = 0 ~0ms
+        follow thy0.$k = r0.$k * (0.22 + 0.15 * noise(time * 0.19 + k * 3.7))
         // voda medzi susedmi pri okraji (ako „voda pod okrajom“ Štartu a vypínača v Kvapkách): susedné kvapky na lište
         // spája aj dole, údolie medzi nimi nesiaha k lište; dýcha s tokom a rastie s nadnesením
-        follow wa.$k = if(goo.$k.nr, (7 + 7 * fl.$k + 8 * max(lift.$k, npr.$k)) * dk.$k * (1 - drg.$k), 0)
+        follow wa.$k = if(goo.$k.nr, (5 + 5 * fl.$k + 6 * max(lift.$k, npr.$k)) * dk.$k * (1 - drg.$k), 0)
         // krk: kým lepkavá kvapka drží, spája ju s domovom (zmizne po odtrhnutí)
         follow neck.$k = drg.$k * (1 - tr.$k) * goo.$k.lep * clamp(length(dx.$k, dy.$k) / 30, 0, 1)
 
@@ -279,646 +286,646 @@ scene Goo {
         // okraj obrazovky je hladina (ako Kvapky): pás je tesne pod ním, kvapky z neho vystupujú a pri ňom sa rozlievajú
         box bar { from: 0, H; size: W, 40 }
         // >>> telo (gen.py)
-        ellipse { at: x.0, floor + 3; radius: rr.0 * 0.62 * base.0; scale: 1.7, 0.55; blend: 16 }
+        ellipse { at: x.0, floor + 4; radius: rr.0 * 0.5 * base.0; scale: 1.6, 0.5; blend: 14 }
         line { from: x.0, floor + 6; to: x.0, y.0; width: rr.0 * 2 * stalk.0; blend: 14 }
-        line { from: x.0, floor; to: thx.0, floor; width: wa.0 * 2; blend: 18 }
+        line { from: x.0, floor + wa.0; to: thx.0, floor + wa.0; width: wa.0 * 2; blend: 16 }
         ellipse { at: x.0, y.0; radius: rr.0; scale: 1 + fxw.0, 1 - fxw.0; blend: lk.0 + 6 * near.0 }
-        line { from: x.0, y.0; to: thx.0, thy.0; width: th.0; blend: 12 * clamp(th.0 / 3, 0, 1) }
-        ellipse { at: x.1, floor + 3; radius: rr.1 * 0.62 * base.1; scale: 1.7, 0.55; blend: 16 }
+        line { from: x.0, y.0 - thy0.0; to: thx.0, thy.0; width: th.0; blend: 12 * clamp(th.0 / 3, 0, 1) }
+        ellipse { at: x.1, floor + 4; radius: rr.1 * 0.5 * base.1; scale: 1.6, 0.5; blend: 14 }
         line { from: x.1, floor + 6; to: x.1, y.1; width: rr.1 * 2 * stalk.1; blend: 14 }
-        line { from: x.1, floor; to: thx.1, floor; width: wa.1 * 2; blend: 18 }
+        line { from: x.1, floor + wa.1; to: thx.1, floor + wa.1; width: wa.1 * 2; blend: 16 }
         ellipse { at: x.1, y.1; radius: rr.1; scale: 1 + fxw.1, 1 - fxw.1; blend: lk.1 + 6 * near.1 }
-        line { from: x.1, y.1; to: thx.1, thy.1; width: th.1; blend: 12 * clamp(th.1 / 3, 0, 1) }
-        ellipse { at: x.2, floor + 3; radius: rr.2 * 0.62 * base.2; scale: 1.7, 0.55; blend: 16 }
+        line { from: x.1, y.1 - thy0.1; to: thx.1, thy.1; width: th.1; blend: 12 * clamp(th.1 / 3, 0, 1) }
+        ellipse { at: x.2, floor + 4; radius: rr.2 * 0.5 * base.2; scale: 1.6, 0.5; blend: 14 }
         line { from: x.2, floor + 6; to: x.2, y.2; width: rr.2 * 2 * stalk.2; blend: 14 }
-        line { from: x.2, floor; to: thx.2, floor; width: wa.2 * 2; blend: 18 }
+        line { from: x.2, floor + wa.2; to: thx.2, floor + wa.2; width: wa.2 * 2; blend: 16 }
         ellipse { at: x.2, y.2; radius: rr.2; scale: 1 + fxw.2, 1 - fxw.2; blend: lk.2 + 6 * near.2 }
-        line { from: x.2, y.2; to: thx.2, thy.2; width: th.2; blend: 12 * clamp(th.2 / 3, 0, 1) }
-        ellipse { at: x.3, floor + 3; radius: rr.3 * 0.62 * base.3; scale: 1.7, 0.55; blend: 16 }
+        line { from: x.2, y.2 - thy0.2; to: thx.2, thy.2; width: th.2; blend: 12 * clamp(th.2 / 3, 0, 1) }
+        ellipse { at: x.3, floor + 4; radius: rr.3 * 0.5 * base.3; scale: 1.6, 0.5; blend: 14 }
         line { from: x.3, floor + 6; to: x.3, y.3; width: rr.3 * 2 * stalk.3; blend: 14 }
-        line { from: x.3, floor; to: thx.3, floor; width: wa.3 * 2; blend: 18 }
+        line { from: x.3, floor + wa.3; to: thx.3, floor + wa.3; width: wa.3 * 2; blend: 16 }
         ellipse { at: x.3, y.3; radius: rr.3; scale: 1 + fxw.3, 1 - fxw.3; blend: lk.3 + 6 * near.3 }
-        line { from: x.3, y.3; to: thx.3, thy.3; width: th.3; blend: 12 * clamp(th.3 / 3, 0, 1) }
-        ellipse { at: x.4, floor + 3; radius: rr.4 * 0.62 * base.4; scale: 1.7, 0.55; blend: 16 }
+        line { from: x.3, y.3 - thy0.3; to: thx.3, thy.3; width: th.3; blend: 12 * clamp(th.3 / 3, 0, 1) }
+        ellipse { at: x.4, floor + 4; radius: rr.4 * 0.5 * base.4; scale: 1.6, 0.5; blend: 14 }
         line { from: x.4, floor + 6; to: x.4, y.4; width: rr.4 * 2 * stalk.4; blend: 14 }
-        line { from: x.4, floor; to: thx.4, floor; width: wa.4 * 2; blend: 18 }
+        line { from: x.4, floor + wa.4; to: thx.4, floor + wa.4; width: wa.4 * 2; blend: 16 }
         ellipse { at: x.4, y.4; radius: rr.4; scale: 1 + fxw.4, 1 - fxw.4; blend: lk.4 + 6 * near.4 }
-        line { from: x.4, y.4; to: thx.4, thy.4; width: th.4; blend: 12 * clamp(th.4 / 3, 0, 1) }
-        ellipse { at: x.5, floor + 3; radius: rr.5 * 0.62 * base.5; scale: 1.7, 0.55; blend: 16 }
+        line { from: x.4, y.4 - thy0.4; to: thx.4, thy.4; width: th.4; blend: 12 * clamp(th.4 / 3, 0, 1) }
+        ellipse { at: x.5, floor + 4; radius: rr.5 * 0.5 * base.5; scale: 1.6, 0.5; blend: 14 }
         line { from: x.5, floor + 6; to: x.5, y.5; width: rr.5 * 2 * stalk.5; blend: 14 }
-        line { from: x.5, floor; to: thx.5, floor; width: wa.5 * 2; blend: 18 }
+        line { from: x.5, floor + wa.5; to: thx.5, floor + wa.5; width: wa.5 * 2; blend: 16 }
         ellipse { at: x.5, y.5; radius: rr.5; scale: 1 + fxw.5, 1 - fxw.5; blend: lk.5 + 6 * near.5 }
-        line { from: x.5, y.5; to: thx.5, thy.5; width: th.5; blend: 12 * clamp(th.5 / 3, 0, 1) }
-        ellipse { at: x.6, floor + 3; radius: rr.6 * 0.62 * base.6; scale: 1.7, 0.55; blend: 16 }
+        line { from: x.5, y.5 - thy0.5; to: thx.5, thy.5; width: th.5; blend: 12 * clamp(th.5 / 3, 0, 1) }
+        ellipse { at: x.6, floor + 4; radius: rr.6 * 0.5 * base.6; scale: 1.6, 0.5; blend: 14 }
         line { from: x.6, floor + 6; to: x.6, y.6; width: rr.6 * 2 * stalk.6; blend: 14 }
-        line { from: x.6, floor; to: thx.6, floor; width: wa.6 * 2; blend: 18 }
+        line { from: x.6, floor + wa.6; to: thx.6, floor + wa.6; width: wa.6 * 2; blend: 16 }
         ellipse { at: x.6, y.6; radius: rr.6; scale: 1 + fxw.6, 1 - fxw.6; blend: lk.6 + 6 * near.6 }
-        line { from: x.6, y.6; to: thx.6, thy.6; width: th.6; blend: 12 * clamp(th.6 / 3, 0, 1) }
-        ellipse { at: x.7, floor + 3; radius: rr.7 * 0.62 * base.7; scale: 1.7, 0.55; blend: 16 }
+        line { from: x.6, y.6 - thy0.6; to: thx.6, thy.6; width: th.6; blend: 12 * clamp(th.6 / 3, 0, 1) }
+        ellipse { at: x.7, floor + 4; radius: rr.7 * 0.5 * base.7; scale: 1.6, 0.5; blend: 14 }
         line { from: x.7, floor + 6; to: x.7, y.7; width: rr.7 * 2 * stalk.7; blend: 14 }
-        line { from: x.7, floor; to: thx.7, floor; width: wa.7 * 2; blend: 18 }
+        line { from: x.7, floor + wa.7; to: thx.7, floor + wa.7; width: wa.7 * 2; blend: 16 }
         ellipse { at: x.7, y.7; radius: rr.7; scale: 1 + fxw.7, 1 - fxw.7; blend: lk.7 + 6 * near.7 }
-        line { from: x.7, y.7; to: thx.7, thy.7; width: th.7; blend: 12 * clamp(th.7 / 3, 0, 1) }
-        ellipse { at: x.8, floor + 3; radius: rr.8 * 0.62 * base.8; scale: 1.7, 0.55; blend: 16 }
+        line { from: x.7, y.7 - thy0.7; to: thx.7, thy.7; width: th.7; blend: 12 * clamp(th.7 / 3, 0, 1) }
+        ellipse { at: x.8, floor + 4; radius: rr.8 * 0.5 * base.8; scale: 1.6, 0.5; blend: 14 }
         line { from: x.8, floor + 6; to: x.8, y.8; width: rr.8 * 2 * stalk.8; blend: 14 }
-        line { from: x.8, floor; to: thx.8, floor; width: wa.8 * 2; blend: 18 }
+        line { from: x.8, floor + wa.8; to: thx.8, floor + wa.8; width: wa.8 * 2; blend: 16 }
         ellipse { at: x.8, y.8; radius: rr.8; scale: 1 + fxw.8, 1 - fxw.8; blend: lk.8 + 6 * near.8 }
-        line { from: x.8, y.8; to: thx.8, thy.8; width: th.8; blend: 12 * clamp(th.8 / 3, 0, 1) }
-        ellipse { at: x.9, floor + 3; radius: rr.9 * 0.62 * base.9; scale: 1.7, 0.55; blend: 16 }
+        line { from: x.8, y.8 - thy0.8; to: thx.8, thy.8; width: th.8; blend: 12 * clamp(th.8 / 3, 0, 1) }
+        ellipse { at: x.9, floor + 4; radius: rr.9 * 0.5 * base.9; scale: 1.6, 0.5; blend: 14 }
         line { from: x.9, floor + 6; to: x.9, y.9; width: rr.9 * 2 * stalk.9; blend: 14 }
-        line { from: x.9, floor; to: thx.9, floor; width: wa.9 * 2; blend: 18 }
+        line { from: x.9, floor + wa.9; to: thx.9, floor + wa.9; width: wa.9 * 2; blend: 16 }
         ellipse { at: x.9, y.9; radius: rr.9; scale: 1 + fxw.9, 1 - fxw.9; blend: lk.9 + 6 * near.9 }
-        line { from: x.9, y.9; to: thx.9, thy.9; width: th.9; blend: 12 * clamp(th.9 / 3, 0, 1) }
-        ellipse { at: x.10, floor + 3; radius: rr.10 * 0.62 * base.10; scale: 1.7, 0.55; blend: 16 }
+        line { from: x.9, y.9 - thy0.9; to: thx.9, thy.9; width: th.9; blend: 12 * clamp(th.9 / 3, 0, 1) }
+        ellipse { at: x.10, floor + 4; radius: rr.10 * 0.5 * base.10; scale: 1.6, 0.5; blend: 14 }
         line { from: x.10, floor + 6; to: x.10, y.10; width: rr.10 * 2 * stalk.10; blend: 14 }
-        line { from: x.10, floor; to: thx.10, floor; width: wa.10 * 2; blend: 18 }
+        line { from: x.10, floor + wa.10; to: thx.10, floor + wa.10; width: wa.10 * 2; blend: 16 }
         ellipse { at: x.10, y.10; radius: rr.10; scale: 1 + fxw.10, 1 - fxw.10; blend: lk.10 + 6 * near.10 }
-        line { from: x.10, y.10; to: thx.10, thy.10; width: th.10; blend: 12 * clamp(th.10 / 3, 0, 1) }
-        ellipse { at: x.11, floor + 3; radius: rr.11 * 0.62 * base.11; scale: 1.7, 0.55; blend: 16 }
+        line { from: x.10, y.10 - thy0.10; to: thx.10, thy.10; width: th.10; blend: 12 * clamp(th.10 / 3, 0, 1) }
+        ellipse { at: x.11, floor + 4; radius: rr.11 * 0.5 * base.11; scale: 1.6, 0.5; blend: 14 }
         line { from: x.11, floor + 6; to: x.11, y.11; width: rr.11 * 2 * stalk.11; blend: 14 }
-        line { from: x.11, floor; to: thx.11, floor; width: wa.11 * 2; blend: 18 }
+        line { from: x.11, floor + wa.11; to: thx.11, floor + wa.11; width: wa.11 * 2; blend: 16 }
         ellipse { at: x.11, y.11; radius: rr.11; scale: 1 + fxw.11, 1 - fxw.11; blend: lk.11 + 6 * near.11 }
-        line { from: x.11, y.11; to: thx.11, thy.11; width: th.11; blend: 12 * clamp(th.11 / 3, 0, 1) }
-        ellipse { at: x.12, floor + 3; radius: rr.12 * 0.62 * base.12; scale: 1.7, 0.55; blend: 16 }
+        line { from: x.11, y.11 - thy0.11; to: thx.11, thy.11; width: th.11; blend: 12 * clamp(th.11 / 3, 0, 1) }
+        ellipse { at: x.12, floor + 4; radius: rr.12 * 0.5 * base.12; scale: 1.6, 0.5; blend: 14 }
         line { from: x.12, floor + 6; to: x.12, y.12; width: rr.12 * 2 * stalk.12; blend: 14 }
-        line { from: x.12, floor; to: thx.12, floor; width: wa.12 * 2; blend: 18 }
+        line { from: x.12, floor + wa.12; to: thx.12, floor + wa.12; width: wa.12 * 2; blend: 16 }
         ellipse { at: x.12, y.12; radius: rr.12; scale: 1 + fxw.12, 1 - fxw.12; blend: lk.12 + 6 * near.12 }
-        line { from: x.12, y.12; to: thx.12, thy.12; width: th.12; blend: 12 * clamp(th.12 / 3, 0, 1) }
-        ellipse { at: x.13, floor + 3; radius: rr.13 * 0.62 * base.13; scale: 1.7, 0.55; blend: 16 }
+        line { from: x.12, y.12 - thy0.12; to: thx.12, thy.12; width: th.12; blend: 12 * clamp(th.12 / 3, 0, 1) }
+        ellipse { at: x.13, floor + 4; radius: rr.13 * 0.5 * base.13; scale: 1.6, 0.5; blend: 14 }
         line { from: x.13, floor + 6; to: x.13, y.13; width: rr.13 * 2 * stalk.13; blend: 14 }
-        line { from: x.13, floor; to: thx.13, floor; width: wa.13 * 2; blend: 18 }
+        line { from: x.13, floor + wa.13; to: thx.13, floor + wa.13; width: wa.13 * 2; blend: 16 }
         ellipse { at: x.13, y.13; radius: rr.13; scale: 1 + fxw.13, 1 - fxw.13; blend: lk.13 + 6 * near.13 }
-        line { from: x.13, y.13; to: thx.13, thy.13; width: th.13; blend: 12 * clamp(th.13 / 3, 0, 1) }
-        ellipse { at: x.14, floor + 3; radius: rr.14 * 0.62 * base.14; scale: 1.7, 0.55; blend: 16 }
+        line { from: x.13, y.13 - thy0.13; to: thx.13, thy.13; width: th.13; blend: 12 * clamp(th.13 / 3, 0, 1) }
+        ellipse { at: x.14, floor + 4; radius: rr.14 * 0.5 * base.14; scale: 1.6, 0.5; blend: 14 }
         line { from: x.14, floor + 6; to: x.14, y.14; width: rr.14 * 2 * stalk.14; blend: 14 }
-        line { from: x.14, floor; to: thx.14, floor; width: wa.14 * 2; blend: 18 }
+        line { from: x.14, floor + wa.14; to: thx.14, floor + wa.14; width: wa.14 * 2; blend: 16 }
         ellipse { at: x.14, y.14; radius: rr.14; scale: 1 + fxw.14, 1 - fxw.14; blend: lk.14 + 6 * near.14 }
-        line { from: x.14, y.14; to: thx.14, thy.14; width: th.14; blend: 12 * clamp(th.14 / 3, 0, 1) }
-        ellipse { at: x.15, floor + 3; radius: rr.15 * 0.62 * base.15; scale: 1.7, 0.55; blend: 16 }
+        line { from: x.14, y.14 - thy0.14; to: thx.14, thy.14; width: th.14; blend: 12 * clamp(th.14 / 3, 0, 1) }
+        ellipse { at: x.15, floor + 4; radius: rr.15 * 0.5 * base.15; scale: 1.6, 0.5; blend: 14 }
         line { from: x.15, floor + 6; to: x.15, y.15; width: rr.15 * 2 * stalk.15; blend: 14 }
-        line { from: x.15, floor; to: thx.15, floor; width: wa.15 * 2; blend: 18 }
+        line { from: x.15, floor + wa.15; to: thx.15, floor + wa.15; width: wa.15 * 2; blend: 16 }
         ellipse { at: x.15, y.15; radius: rr.15; scale: 1 + fxw.15, 1 - fxw.15; blend: lk.15 + 6 * near.15 }
-        line { from: x.15, y.15; to: thx.15, thy.15; width: th.15; blend: 12 * clamp(th.15 / 3, 0, 1) }
-        ellipse { at: x.16, floor + 3; radius: rr.16 * 0.62 * base.16; scale: 1.7, 0.55; blend: 16 }
+        line { from: x.15, y.15 - thy0.15; to: thx.15, thy.15; width: th.15; blend: 12 * clamp(th.15 / 3, 0, 1) }
+        ellipse { at: x.16, floor + 4; radius: rr.16 * 0.5 * base.16; scale: 1.6, 0.5; blend: 14 }
         line { from: x.16, floor + 6; to: x.16, y.16; width: rr.16 * 2 * stalk.16; blend: 14 }
-        line { from: x.16, floor; to: thx.16, floor; width: wa.16 * 2; blend: 18 }
+        line { from: x.16, floor + wa.16; to: thx.16, floor + wa.16; width: wa.16 * 2; blend: 16 }
         ellipse { at: x.16, y.16; radius: rr.16; scale: 1 + fxw.16, 1 - fxw.16; blend: lk.16 + 6 * near.16 }
-        line { from: x.16, y.16; to: thx.16, thy.16; width: th.16; blend: 12 * clamp(th.16 / 3, 0, 1) }
-        ellipse { at: x.17, floor + 3; radius: rr.17 * 0.62 * base.17; scale: 1.7, 0.55; blend: 16 }
+        line { from: x.16, y.16 - thy0.16; to: thx.16, thy.16; width: th.16; blend: 12 * clamp(th.16 / 3, 0, 1) }
+        ellipse { at: x.17, floor + 4; radius: rr.17 * 0.5 * base.17; scale: 1.6, 0.5; blend: 14 }
         line { from: x.17, floor + 6; to: x.17, y.17; width: rr.17 * 2 * stalk.17; blend: 14 }
-        line { from: x.17, floor; to: thx.17, floor; width: wa.17 * 2; blend: 18 }
+        line { from: x.17, floor + wa.17; to: thx.17, floor + wa.17; width: wa.17 * 2; blend: 16 }
         ellipse { at: x.17, y.17; radius: rr.17; scale: 1 + fxw.17, 1 - fxw.17; blend: lk.17 + 6 * near.17 }
-        line { from: x.17, y.17; to: thx.17, thy.17; width: th.17; blend: 12 * clamp(th.17 / 3, 0, 1) }
-        ellipse { at: x.18, floor + 3; radius: rr.18 * 0.62 * base.18; scale: 1.7, 0.55; blend: 16 }
+        line { from: x.17, y.17 - thy0.17; to: thx.17, thy.17; width: th.17; blend: 12 * clamp(th.17 / 3, 0, 1) }
+        ellipse { at: x.18, floor + 4; radius: rr.18 * 0.5 * base.18; scale: 1.6, 0.5; blend: 14 }
         line { from: x.18, floor + 6; to: x.18, y.18; width: rr.18 * 2 * stalk.18; blend: 14 }
-        line { from: x.18, floor; to: thx.18, floor; width: wa.18 * 2; blend: 18 }
+        line { from: x.18, floor + wa.18; to: thx.18, floor + wa.18; width: wa.18 * 2; blend: 16 }
         ellipse { at: x.18, y.18; radius: rr.18; scale: 1 + fxw.18, 1 - fxw.18; blend: lk.18 + 6 * near.18 }
-        line { from: x.18, y.18; to: thx.18, thy.18; width: th.18; blend: 12 * clamp(th.18 / 3, 0, 1) }
-        ellipse { at: x.19, floor + 3; radius: rr.19 * 0.62 * base.19; scale: 1.7, 0.55; blend: 16 }
+        line { from: x.18, y.18 - thy0.18; to: thx.18, thy.18; width: th.18; blend: 12 * clamp(th.18 / 3, 0, 1) }
+        ellipse { at: x.19, floor + 4; radius: rr.19 * 0.5 * base.19; scale: 1.6, 0.5; blend: 14 }
         line { from: x.19, floor + 6; to: x.19, y.19; width: rr.19 * 2 * stalk.19; blend: 14 }
-        line { from: x.19, floor; to: thx.19, floor; width: wa.19 * 2; blend: 18 }
+        line { from: x.19, floor + wa.19; to: thx.19, floor + wa.19; width: wa.19 * 2; blend: 16 }
         ellipse { at: x.19, y.19; radius: rr.19; scale: 1 + fxw.19, 1 - fxw.19; blend: lk.19 + 6 * near.19 }
-        line { from: x.19, y.19; to: thx.19, thy.19; width: th.19; blend: 12 * clamp(th.19 / 3, 0, 1) }
-        ellipse { at: x.20, floor + 3; radius: rr.20 * 0.62 * base.20; scale: 1.7, 0.55; blend: 16 }
+        line { from: x.19, y.19 - thy0.19; to: thx.19, thy.19; width: th.19; blend: 12 * clamp(th.19 / 3, 0, 1) }
+        ellipse { at: x.20, floor + 4; radius: rr.20 * 0.5 * base.20; scale: 1.6, 0.5; blend: 14 }
         line { from: x.20, floor + 6; to: x.20, y.20; width: rr.20 * 2 * stalk.20; blend: 14 }
-        line { from: x.20, floor; to: thx.20, floor; width: wa.20 * 2; blend: 18 }
+        line { from: x.20, floor + wa.20; to: thx.20, floor + wa.20; width: wa.20 * 2; blend: 16 }
         ellipse { at: x.20, y.20; radius: rr.20; scale: 1 + fxw.20, 1 - fxw.20; blend: lk.20 + 6 * near.20 }
-        line { from: x.20, y.20; to: thx.20, thy.20; width: th.20; blend: 12 * clamp(th.20 / 3, 0, 1) }
-        ellipse { at: x.21, floor + 3; radius: rr.21 * 0.62 * base.21; scale: 1.7, 0.55; blend: 16 }
+        line { from: x.20, y.20 - thy0.20; to: thx.20, thy.20; width: th.20; blend: 12 * clamp(th.20 / 3, 0, 1) }
+        ellipse { at: x.21, floor + 4; radius: rr.21 * 0.5 * base.21; scale: 1.6, 0.5; blend: 14 }
         line { from: x.21, floor + 6; to: x.21, y.21; width: rr.21 * 2 * stalk.21; blend: 14 }
-        line { from: x.21, floor; to: thx.21, floor; width: wa.21 * 2; blend: 18 }
+        line { from: x.21, floor + wa.21; to: thx.21, floor + wa.21; width: wa.21 * 2; blend: 16 }
         ellipse { at: x.21, y.21; radius: rr.21; scale: 1 + fxw.21, 1 - fxw.21; blend: lk.21 + 6 * near.21 }
-        line { from: x.21, y.21; to: thx.21, thy.21; width: th.21; blend: 12 * clamp(th.21 / 3, 0, 1) }
-        ellipse { at: x.22, floor + 3; radius: rr.22 * 0.62 * base.22; scale: 1.7, 0.55; blend: 16 }
+        line { from: x.21, y.21 - thy0.21; to: thx.21, thy.21; width: th.21; blend: 12 * clamp(th.21 / 3, 0, 1) }
+        ellipse { at: x.22, floor + 4; radius: rr.22 * 0.5 * base.22; scale: 1.6, 0.5; blend: 14 }
         line { from: x.22, floor + 6; to: x.22, y.22; width: rr.22 * 2 * stalk.22; blend: 14 }
-        line { from: x.22, floor; to: thx.22, floor; width: wa.22 * 2; blend: 18 }
+        line { from: x.22, floor + wa.22; to: thx.22, floor + wa.22; width: wa.22 * 2; blend: 16 }
         ellipse { at: x.22, y.22; radius: rr.22; scale: 1 + fxw.22, 1 - fxw.22; blend: lk.22 + 6 * near.22 }
-        line { from: x.22, y.22; to: thx.22, thy.22; width: th.22; blend: 12 * clamp(th.22 / 3, 0, 1) }
-        ellipse { at: x.23, floor + 3; radius: rr.23 * 0.62 * base.23; scale: 1.7, 0.55; blend: 16 }
+        line { from: x.22, y.22 - thy0.22; to: thx.22, thy.22; width: th.22; blend: 12 * clamp(th.22 / 3, 0, 1) }
+        ellipse { at: x.23, floor + 4; radius: rr.23 * 0.5 * base.23; scale: 1.6, 0.5; blend: 14 }
         line { from: x.23, floor + 6; to: x.23, y.23; width: rr.23 * 2 * stalk.23; blend: 14 }
-        line { from: x.23, floor; to: thx.23, floor; width: wa.23 * 2; blend: 18 }
+        line { from: x.23, floor + wa.23; to: thx.23, floor + wa.23; width: wa.23 * 2; blend: 16 }
         ellipse { at: x.23, y.23; radius: rr.23; scale: 1 + fxw.23, 1 - fxw.23; blend: lk.23 + 6 * near.23 }
-        line { from: x.23, y.23; to: thx.23, thy.23; width: th.23; blend: 12 * clamp(th.23 / 3, 0, 1) }
-        ellipse { at: x.24, floor + 3; radius: rr.24 * 0.62 * base.24; scale: 1.7, 0.55; blend: 16 }
+        line { from: x.23, y.23 - thy0.23; to: thx.23, thy.23; width: th.23; blend: 12 * clamp(th.23 / 3, 0, 1) }
+        ellipse { at: x.24, floor + 4; radius: rr.24 * 0.5 * base.24; scale: 1.6, 0.5; blend: 14 }
         line { from: x.24, floor + 6; to: x.24, y.24; width: rr.24 * 2 * stalk.24; blend: 14 }
-        line { from: x.24, floor; to: thx.24, floor; width: wa.24 * 2; blend: 18 }
+        line { from: x.24, floor + wa.24; to: thx.24, floor + wa.24; width: wa.24 * 2; blend: 16 }
         ellipse { at: x.24, y.24; radius: rr.24; scale: 1 + fxw.24, 1 - fxw.24; blend: lk.24 + 6 * near.24 }
-        line { from: x.24, y.24; to: thx.24, thy.24; width: th.24; blend: 12 * clamp(th.24 / 3, 0, 1) }
-        ellipse { at: x.25, floor + 3; radius: rr.25 * 0.62 * base.25; scale: 1.7, 0.55; blend: 16 }
+        line { from: x.24, y.24 - thy0.24; to: thx.24, thy.24; width: th.24; blend: 12 * clamp(th.24 / 3, 0, 1) }
+        ellipse { at: x.25, floor + 4; radius: rr.25 * 0.5 * base.25; scale: 1.6, 0.5; blend: 14 }
         line { from: x.25, floor + 6; to: x.25, y.25; width: rr.25 * 2 * stalk.25; blend: 14 }
-        line { from: x.25, floor; to: thx.25, floor; width: wa.25 * 2; blend: 18 }
+        line { from: x.25, floor + wa.25; to: thx.25, floor + wa.25; width: wa.25 * 2; blend: 16 }
         ellipse { at: x.25, y.25; radius: rr.25; scale: 1 + fxw.25, 1 - fxw.25; blend: lk.25 + 6 * near.25 }
-        line { from: x.25, y.25; to: thx.25, thy.25; width: th.25; blend: 12 * clamp(th.25 / 3, 0, 1) }
-        ellipse { at: x.26, floor + 3; radius: rr.26 * 0.62 * base.26; scale: 1.7, 0.55; blend: 16 }
+        line { from: x.25, y.25 - thy0.25; to: thx.25, thy.25; width: th.25; blend: 12 * clamp(th.25 / 3, 0, 1) }
+        ellipse { at: x.26, floor + 4; radius: rr.26 * 0.5 * base.26; scale: 1.6, 0.5; blend: 14 }
         line { from: x.26, floor + 6; to: x.26, y.26; width: rr.26 * 2 * stalk.26; blend: 14 }
-        line { from: x.26, floor; to: thx.26, floor; width: wa.26 * 2; blend: 18 }
+        line { from: x.26, floor + wa.26; to: thx.26, floor + wa.26; width: wa.26 * 2; blend: 16 }
         ellipse { at: x.26, y.26; radius: rr.26; scale: 1 + fxw.26, 1 - fxw.26; blend: lk.26 + 6 * near.26 }
-        line { from: x.26, y.26; to: thx.26, thy.26; width: th.26; blend: 12 * clamp(th.26 / 3, 0, 1) }
-        ellipse { at: x.27, floor + 3; radius: rr.27 * 0.62 * base.27; scale: 1.7, 0.55; blend: 16 }
+        line { from: x.26, y.26 - thy0.26; to: thx.26, thy.26; width: th.26; blend: 12 * clamp(th.26 / 3, 0, 1) }
+        ellipse { at: x.27, floor + 4; radius: rr.27 * 0.5 * base.27; scale: 1.6, 0.5; blend: 14 }
         line { from: x.27, floor + 6; to: x.27, y.27; width: rr.27 * 2 * stalk.27; blend: 14 }
-        line { from: x.27, floor; to: thx.27, floor; width: wa.27 * 2; blend: 18 }
+        line { from: x.27, floor + wa.27; to: thx.27, floor + wa.27; width: wa.27 * 2; blend: 16 }
         ellipse { at: x.27, y.27; radius: rr.27; scale: 1 + fxw.27, 1 - fxw.27; blend: lk.27 + 6 * near.27 }
-        line { from: x.27, y.27; to: thx.27, thy.27; width: th.27; blend: 12 * clamp(th.27 / 3, 0, 1) }
-        ellipse { at: x.28, floor + 3; radius: rr.28 * 0.62 * base.28; scale: 1.7, 0.55; blend: 16 }
+        line { from: x.27, y.27 - thy0.27; to: thx.27, thy.27; width: th.27; blend: 12 * clamp(th.27 / 3, 0, 1) }
+        ellipse { at: x.28, floor + 4; radius: rr.28 * 0.5 * base.28; scale: 1.6, 0.5; blend: 14 }
         line { from: x.28, floor + 6; to: x.28, y.28; width: rr.28 * 2 * stalk.28; blend: 14 }
-        line { from: x.28, floor; to: thx.28, floor; width: wa.28 * 2; blend: 18 }
+        line { from: x.28, floor + wa.28; to: thx.28, floor + wa.28; width: wa.28 * 2; blend: 16 }
         ellipse { at: x.28, y.28; radius: rr.28; scale: 1 + fxw.28, 1 - fxw.28; blend: lk.28 + 6 * near.28 }
-        line { from: x.28, y.28; to: thx.28, thy.28; width: th.28; blend: 12 * clamp(th.28 / 3, 0, 1) }
-        ellipse { at: x.29, floor + 3; radius: rr.29 * 0.62 * base.29; scale: 1.7, 0.55; blend: 16 }
+        line { from: x.28, y.28 - thy0.28; to: thx.28, thy.28; width: th.28; blend: 12 * clamp(th.28 / 3, 0, 1) }
+        ellipse { at: x.29, floor + 4; radius: rr.29 * 0.5 * base.29; scale: 1.6, 0.5; blend: 14 }
         line { from: x.29, floor + 6; to: x.29, y.29; width: rr.29 * 2 * stalk.29; blend: 14 }
-        line { from: x.29, floor; to: thx.29, floor; width: wa.29 * 2; blend: 18 }
+        line { from: x.29, floor + wa.29; to: thx.29, floor + wa.29; width: wa.29 * 2; blend: 16 }
         ellipse { at: x.29, y.29; radius: rr.29; scale: 1 + fxw.29, 1 - fxw.29; blend: lk.29 + 6 * near.29 }
-        line { from: x.29, y.29; to: thx.29, thy.29; width: th.29; blend: 12 * clamp(th.29 / 3, 0, 1) }
-        ellipse { at: x.30, floor + 3; radius: rr.30 * 0.62 * base.30; scale: 1.7, 0.55; blend: 16 }
+        line { from: x.29, y.29 - thy0.29; to: thx.29, thy.29; width: th.29; blend: 12 * clamp(th.29 / 3, 0, 1) }
+        ellipse { at: x.30, floor + 4; radius: rr.30 * 0.5 * base.30; scale: 1.6, 0.5; blend: 14 }
         line { from: x.30, floor + 6; to: x.30, y.30; width: rr.30 * 2 * stalk.30; blend: 14 }
-        line { from: x.30, floor; to: thx.30, floor; width: wa.30 * 2; blend: 18 }
+        line { from: x.30, floor + wa.30; to: thx.30, floor + wa.30; width: wa.30 * 2; blend: 16 }
         ellipse { at: x.30, y.30; radius: rr.30; scale: 1 + fxw.30, 1 - fxw.30; blend: lk.30 + 6 * near.30 }
-        line { from: x.30, y.30; to: thx.30, thy.30; width: th.30; blend: 12 * clamp(th.30 / 3, 0, 1) }
-        ellipse { at: x.31, floor + 3; radius: rr.31 * 0.62 * base.31; scale: 1.7, 0.55; blend: 16 }
+        line { from: x.30, y.30 - thy0.30; to: thx.30, thy.30; width: th.30; blend: 12 * clamp(th.30 / 3, 0, 1) }
+        ellipse { at: x.31, floor + 4; radius: rr.31 * 0.5 * base.31; scale: 1.6, 0.5; blend: 14 }
         line { from: x.31, floor + 6; to: x.31, y.31; width: rr.31 * 2 * stalk.31; blend: 14 }
-        line { from: x.31, floor; to: thx.31, floor; width: wa.31 * 2; blend: 18 }
+        line { from: x.31, floor + wa.31; to: thx.31, floor + wa.31; width: wa.31 * 2; blend: 16 }
         ellipse { at: x.31, y.31; radius: rr.31; scale: 1 + fxw.31, 1 - fxw.31; blend: lk.31 + 6 * near.31 }
-        line { from: x.31, y.31; to: thx.31, thy.31; width: th.31; blend: 12 * clamp(th.31 / 3, 0, 1) }
-        ellipse { at: x.32, floor + 3; radius: rr.32 * 0.62 * base.32; scale: 1.7, 0.55; blend: 16 }
+        line { from: x.31, y.31 - thy0.31; to: thx.31, thy.31; width: th.31; blend: 12 * clamp(th.31 / 3, 0, 1) }
+        ellipse { at: x.32, floor + 4; radius: rr.32 * 0.5 * base.32; scale: 1.6, 0.5; blend: 14 }
         line { from: x.32, floor + 6; to: x.32, y.32; width: rr.32 * 2 * stalk.32; blend: 14 }
-        line { from: x.32, floor; to: thx.32, floor; width: wa.32 * 2; blend: 18 }
+        line { from: x.32, floor + wa.32; to: thx.32, floor + wa.32; width: wa.32 * 2; blend: 16 }
         ellipse { at: x.32, y.32; radius: rr.32; scale: 1 + fxw.32, 1 - fxw.32; blend: lk.32 + 6 * near.32 }
-        line { from: x.32, y.32; to: thx.32, thy.32; width: th.32; blend: 12 * clamp(th.32 / 3, 0, 1) }
-        ellipse { at: x.33, floor + 3; radius: rr.33 * 0.62 * base.33; scale: 1.7, 0.55; blend: 16 }
+        line { from: x.32, y.32 - thy0.32; to: thx.32, thy.32; width: th.32; blend: 12 * clamp(th.32 / 3, 0, 1) }
+        ellipse { at: x.33, floor + 4; radius: rr.33 * 0.5 * base.33; scale: 1.6, 0.5; blend: 14 }
         line { from: x.33, floor + 6; to: x.33, y.33; width: rr.33 * 2 * stalk.33; blend: 14 }
-        line { from: x.33, floor; to: thx.33, floor; width: wa.33 * 2; blend: 18 }
+        line { from: x.33, floor + wa.33; to: thx.33, floor + wa.33; width: wa.33 * 2; blend: 16 }
         ellipse { at: x.33, y.33; radius: rr.33; scale: 1 + fxw.33, 1 - fxw.33; blend: lk.33 + 6 * near.33 }
-        line { from: x.33, y.33; to: thx.33, thy.33; width: th.33; blend: 12 * clamp(th.33 / 3, 0, 1) }
-        ellipse { at: x.34, floor + 3; radius: rr.34 * 0.62 * base.34; scale: 1.7, 0.55; blend: 16 }
+        line { from: x.33, y.33 - thy0.33; to: thx.33, thy.33; width: th.33; blend: 12 * clamp(th.33 / 3, 0, 1) }
+        ellipse { at: x.34, floor + 4; radius: rr.34 * 0.5 * base.34; scale: 1.6, 0.5; blend: 14 }
         line { from: x.34, floor + 6; to: x.34, y.34; width: rr.34 * 2 * stalk.34; blend: 14 }
-        line { from: x.34, floor; to: thx.34, floor; width: wa.34 * 2; blend: 18 }
+        line { from: x.34, floor + wa.34; to: thx.34, floor + wa.34; width: wa.34 * 2; blend: 16 }
         ellipse { at: x.34, y.34; radius: rr.34; scale: 1 + fxw.34, 1 - fxw.34; blend: lk.34 + 6 * near.34 }
-        line { from: x.34, y.34; to: thx.34, thy.34; width: th.34; blend: 12 * clamp(th.34 / 3, 0, 1) }
-        ellipse { at: x.35, floor + 3; radius: rr.35 * 0.62 * base.35; scale: 1.7, 0.55; blend: 16 }
+        line { from: x.34, y.34 - thy0.34; to: thx.34, thy.34; width: th.34; blend: 12 * clamp(th.34 / 3, 0, 1) }
+        ellipse { at: x.35, floor + 4; radius: rr.35 * 0.5 * base.35; scale: 1.6, 0.5; blend: 14 }
         line { from: x.35, floor + 6; to: x.35, y.35; width: rr.35 * 2 * stalk.35; blend: 14 }
-        line { from: x.35, floor; to: thx.35, floor; width: wa.35 * 2; blend: 18 }
+        line { from: x.35, floor + wa.35; to: thx.35, floor + wa.35; width: wa.35 * 2; blend: 16 }
         ellipse { at: x.35, y.35; radius: rr.35; scale: 1 + fxw.35, 1 - fxw.35; blend: lk.35 + 6 * near.35 }
-        line { from: x.35, y.35; to: thx.35, thy.35; width: th.35; blend: 12 * clamp(th.35 / 3, 0, 1) }
-        ellipse { at: x.36, floor + 3; radius: rr.36 * 0.62 * base.36; scale: 1.7, 0.55; blend: 16 }
+        line { from: x.35, y.35 - thy0.35; to: thx.35, thy.35; width: th.35; blend: 12 * clamp(th.35 / 3, 0, 1) }
+        ellipse { at: x.36, floor + 4; radius: rr.36 * 0.5 * base.36; scale: 1.6, 0.5; blend: 14 }
         line { from: x.36, floor + 6; to: x.36, y.36; width: rr.36 * 2 * stalk.36; blend: 14 }
-        line { from: x.36, floor; to: thx.36, floor; width: wa.36 * 2; blend: 18 }
+        line { from: x.36, floor + wa.36; to: thx.36, floor + wa.36; width: wa.36 * 2; blend: 16 }
         ellipse { at: x.36, y.36; radius: rr.36; scale: 1 + fxw.36, 1 - fxw.36; blend: lk.36 + 6 * near.36 }
-        line { from: x.36, y.36; to: thx.36, thy.36; width: th.36; blend: 12 * clamp(th.36 / 3, 0, 1) }
-        ellipse { at: x.37, floor + 3; radius: rr.37 * 0.62 * base.37; scale: 1.7, 0.55; blend: 16 }
+        line { from: x.36, y.36 - thy0.36; to: thx.36, thy.36; width: th.36; blend: 12 * clamp(th.36 / 3, 0, 1) }
+        ellipse { at: x.37, floor + 4; radius: rr.37 * 0.5 * base.37; scale: 1.6, 0.5; blend: 14 }
         line { from: x.37, floor + 6; to: x.37, y.37; width: rr.37 * 2 * stalk.37; blend: 14 }
-        line { from: x.37, floor; to: thx.37, floor; width: wa.37 * 2; blend: 18 }
+        line { from: x.37, floor + wa.37; to: thx.37, floor + wa.37; width: wa.37 * 2; blend: 16 }
         ellipse { at: x.37, y.37; radius: rr.37; scale: 1 + fxw.37, 1 - fxw.37; blend: lk.37 + 6 * near.37 }
-        line { from: x.37, y.37; to: thx.37, thy.37; width: th.37; blend: 12 * clamp(th.37 / 3, 0, 1) }
-        ellipse { at: x.38, floor + 3; radius: rr.38 * 0.62 * base.38; scale: 1.7, 0.55; blend: 16 }
+        line { from: x.37, y.37 - thy0.37; to: thx.37, thy.37; width: th.37; blend: 12 * clamp(th.37 / 3, 0, 1) }
+        ellipse { at: x.38, floor + 4; radius: rr.38 * 0.5 * base.38; scale: 1.6, 0.5; blend: 14 }
         line { from: x.38, floor + 6; to: x.38, y.38; width: rr.38 * 2 * stalk.38; blend: 14 }
-        line { from: x.38, floor; to: thx.38, floor; width: wa.38 * 2; blend: 18 }
+        line { from: x.38, floor + wa.38; to: thx.38, floor + wa.38; width: wa.38 * 2; blend: 16 }
         ellipse { at: x.38, y.38; radius: rr.38; scale: 1 + fxw.38, 1 - fxw.38; blend: lk.38 + 6 * near.38 }
-        line { from: x.38, y.38; to: thx.38, thy.38; width: th.38; blend: 12 * clamp(th.38 / 3, 0, 1) }
-        ellipse { at: x.39, floor + 3; radius: rr.39 * 0.62 * base.39; scale: 1.7, 0.55; blend: 16 }
+        line { from: x.38, y.38 - thy0.38; to: thx.38, thy.38; width: th.38; blend: 12 * clamp(th.38 / 3, 0, 1) }
+        ellipse { at: x.39, floor + 4; radius: rr.39 * 0.5 * base.39; scale: 1.6, 0.5; blend: 14 }
         line { from: x.39, floor + 6; to: x.39, y.39; width: rr.39 * 2 * stalk.39; blend: 14 }
-        line { from: x.39, floor; to: thx.39, floor; width: wa.39 * 2; blend: 18 }
+        line { from: x.39, floor + wa.39; to: thx.39, floor + wa.39; width: wa.39 * 2; blend: 16 }
         ellipse { at: x.39, y.39; radius: rr.39; scale: 1 + fxw.39, 1 - fxw.39; blend: lk.39 + 6 * near.39 }
-        line { from: x.39, y.39; to: thx.39, thy.39; width: th.39; blend: 12 * clamp(th.39 / 3, 0, 1) }
-        ellipse { at: x.40, floor + 3; radius: rr.40 * 0.62 * base.40; scale: 1.7, 0.55; blend: 16 }
+        line { from: x.39, y.39 - thy0.39; to: thx.39, thy.39; width: th.39; blend: 12 * clamp(th.39 / 3, 0, 1) }
+        ellipse { at: x.40, floor + 4; radius: rr.40 * 0.5 * base.40; scale: 1.6, 0.5; blend: 14 }
         line { from: x.40, floor + 6; to: x.40, y.40; width: rr.40 * 2 * stalk.40; blend: 14 }
-        line { from: x.40, floor; to: thx.40, floor; width: wa.40 * 2; blend: 18 }
+        line { from: x.40, floor + wa.40; to: thx.40, floor + wa.40; width: wa.40 * 2; blend: 16 }
         ellipse { at: x.40, y.40; radius: rr.40; scale: 1 + fxw.40, 1 - fxw.40; blend: lk.40 + 6 * near.40 }
-        line { from: x.40, y.40; to: thx.40, thy.40; width: th.40; blend: 12 * clamp(th.40 / 3, 0, 1) }
-        ellipse { at: x.41, floor + 3; radius: rr.41 * 0.62 * base.41; scale: 1.7, 0.55; blend: 16 }
+        line { from: x.40, y.40 - thy0.40; to: thx.40, thy.40; width: th.40; blend: 12 * clamp(th.40 / 3, 0, 1) }
+        ellipse { at: x.41, floor + 4; radius: rr.41 * 0.5 * base.41; scale: 1.6, 0.5; blend: 14 }
         line { from: x.41, floor + 6; to: x.41, y.41; width: rr.41 * 2 * stalk.41; blend: 14 }
-        line { from: x.41, floor; to: thx.41, floor; width: wa.41 * 2; blend: 18 }
+        line { from: x.41, floor + wa.41; to: thx.41, floor + wa.41; width: wa.41 * 2; blend: 16 }
         ellipse { at: x.41, y.41; radius: rr.41; scale: 1 + fxw.41, 1 - fxw.41; blend: lk.41 + 6 * near.41 }
-        line { from: x.41, y.41; to: thx.41, thy.41; width: th.41; blend: 12 * clamp(th.41 / 3, 0, 1) }
-        ellipse { at: x.42, floor + 3; radius: rr.42 * 0.62 * base.42; scale: 1.7, 0.55; blend: 16 }
+        line { from: x.41, y.41 - thy0.41; to: thx.41, thy.41; width: th.41; blend: 12 * clamp(th.41 / 3, 0, 1) }
+        ellipse { at: x.42, floor + 4; radius: rr.42 * 0.5 * base.42; scale: 1.6, 0.5; blend: 14 }
         line { from: x.42, floor + 6; to: x.42, y.42; width: rr.42 * 2 * stalk.42; blend: 14 }
-        line { from: x.42, floor; to: thx.42, floor; width: wa.42 * 2; blend: 18 }
+        line { from: x.42, floor + wa.42; to: thx.42, floor + wa.42; width: wa.42 * 2; blend: 16 }
         ellipse { at: x.42, y.42; radius: rr.42; scale: 1 + fxw.42, 1 - fxw.42; blend: lk.42 + 6 * near.42 }
-        line { from: x.42, y.42; to: thx.42, thy.42; width: th.42; blend: 12 * clamp(th.42 / 3, 0, 1) }
-        ellipse { at: x.43, floor + 3; radius: rr.43 * 0.62 * base.43; scale: 1.7, 0.55; blend: 16 }
+        line { from: x.42, y.42 - thy0.42; to: thx.42, thy.42; width: th.42; blend: 12 * clamp(th.42 / 3, 0, 1) }
+        ellipse { at: x.43, floor + 4; radius: rr.43 * 0.5 * base.43; scale: 1.6, 0.5; blend: 14 }
         line { from: x.43, floor + 6; to: x.43, y.43; width: rr.43 * 2 * stalk.43; blend: 14 }
-        line { from: x.43, floor; to: thx.43, floor; width: wa.43 * 2; blend: 18 }
+        line { from: x.43, floor + wa.43; to: thx.43, floor + wa.43; width: wa.43 * 2; blend: 16 }
         ellipse { at: x.43, y.43; radius: rr.43; scale: 1 + fxw.43, 1 - fxw.43; blend: lk.43 + 6 * near.43 }
-        line { from: x.43, y.43; to: thx.43, thy.43; width: th.43; blend: 12 * clamp(th.43 / 3, 0, 1) }
-        ellipse { at: x.44, floor + 3; radius: rr.44 * 0.62 * base.44; scale: 1.7, 0.55; blend: 16 }
+        line { from: x.43, y.43 - thy0.43; to: thx.43, thy.43; width: th.43; blend: 12 * clamp(th.43 / 3, 0, 1) }
+        ellipse { at: x.44, floor + 4; radius: rr.44 * 0.5 * base.44; scale: 1.6, 0.5; blend: 14 }
         line { from: x.44, floor + 6; to: x.44, y.44; width: rr.44 * 2 * stalk.44; blend: 14 }
-        line { from: x.44, floor; to: thx.44, floor; width: wa.44 * 2; blend: 18 }
+        line { from: x.44, floor + wa.44; to: thx.44, floor + wa.44; width: wa.44 * 2; blend: 16 }
         ellipse { at: x.44, y.44; radius: rr.44; scale: 1 + fxw.44, 1 - fxw.44; blend: lk.44 + 6 * near.44 }
-        line { from: x.44, y.44; to: thx.44, thy.44; width: th.44; blend: 12 * clamp(th.44 / 3, 0, 1) }
-        ellipse { at: x.45, floor + 3; radius: rr.45 * 0.62 * base.45; scale: 1.7, 0.55; blend: 16 }
+        line { from: x.44, y.44 - thy0.44; to: thx.44, thy.44; width: th.44; blend: 12 * clamp(th.44 / 3, 0, 1) }
+        ellipse { at: x.45, floor + 4; radius: rr.45 * 0.5 * base.45; scale: 1.6, 0.5; blend: 14 }
         line { from: x.45, floor + 6; to: x.45, y.45; width: rr.45 * 2 * stalk.45; blend: 14 }
-        line { from: x.45, floor; to: thx.45, floor; width: wa.45 * 2; blend: 18 }
+        line { from: x.45, floor + wa.45; to: thx.45, floor + wa.45; width: wa.45 * 2; blend: 16 }
         ellipse { at: x.45, y.45; radius: rr.45; scale: 1 + fxw.45, 1 - fxw.45; blend: lk.45 + 6 * near.45 }
-        line { from: x.45, y.45; to: thx.45, thy.45; width: th.45; blend: 12 * clamp(th.45 / 3, 0, 1) }
-        ellipse { at: x.46, floor + 3; radius: rr.46 * 0.62 * base.46; scale: 1.7, 0.55; blend: 16 }
+        line { from: x.45, y.45 - thy0.45; to: thx.45, thy.45; width: th.45; blend: 12 * clamp(th.45 / 3, 0, 1) }
+        ellipse { at: x.46, floor + 4; radius: rr.46 * 0.5 * base.46; scale: 1.6, 0.5; blend: 14 }
         line { from: x.46, floor + 6; to: x.46, y.46; width: rr.46 * 2 * stalk.46; blend: 14 }
-        line { from: x.46, floor; to: thx.46, floor; width: wa.46 * 2; blend: 18 }
+        line { from: x.46, floor + wa.46; to: thx.46, floor + wa.46; width: wa.46 * 2; blend: 16 }
         ellipse { at: x.46, y.46; radius: rr.46; scale: 1 + fxw.46, 1 - fxw.46; blend: lk.46 + 6 * near.46 }
-        line { from: x.46, y.46; to: thx.46, thy.46; width: th.46; blend: 12 * clamp(th.46 / 3, 0, 1) }
-        ellipse { at: x.47, floor + 3; radius: rr.47 * 0.62 * base.47; scale: 1.7, 0.55; blend: 16 }
+        line { from: x.46, y.46 - thy0.46; to: thx.46, thy.46; width: th.46; blend: 12 * clamp(th.46 / 3, 0, 1) }
+        ellipse { at: x.47, floor + 4; radius: rr.47 * 0.5 * base.47; scale: 1.6, 0.5; blend: 14 }
         line { from: x.47, floor + 6; to: x.47, y.47; width: rr.47 * 2 * stalk.47; blend: 14 }
-        line { from: x.47, floor; to: thx.47, floor; width: wa.47 * 2; blend: 18 }
+        line { from: x.47, floor + wa.47; to: thx.47, floor + wa.47; width: wa.47 * 2; blend: 16 }
         ellipse { at: x.47, y.47; radius: rr.47; scale: 1 + fxw.47, 1 - fxw.47; blend: lk.47 + 6 * near.47 }
-        line { from: x.47, y.47; to: thx.47, thy.47; width: th.47; blend: 12 * clamp(th.47 / 3, 0, 1) }
-        ellipse { at: x.48, floor + 3; radius: rr.48 * 0.62 * base.48; scale: 1.7, 0.55; blend: 16 }
+        line { from: x.47, y.47 - thy0.47; to: thx.47, thy.47; width: th.47; blend: 12 * clamp(th.47 / 3, 0, 1) }
+        ellipse { at: x.48, floor + 4; radius: rr.48 * 0.5 * base.48; scale: 1.6, 0.5; blend: 14 }
         line { from: x.48, floor + 6; to: x.48, y.48; width: rr.48 * 2 * stalk.48; blend: 14 }
-        line { from: x.48, floor; to: thx.48, floor; width: wa.48 * 2; blend: 18 }
+        line { from: x.48, floor + wa.48; to: thx.48, floor + wa.48; width: wa.48 * 2; blend: 16 }
         ellipse { at: x.48, y.48; radius: rr.48; scale: 1 + fxw.48, 1 - fxw.48; blend: lk.48 + 6 * near.48 }
-        line { from: x.48, y.48; to: thx.48, thy.48; width: th.48; blend: 12 * clamp(th.48 / 3, 0, 1) }
-        ellipse { at: x.49, floor + 3; radius: rr.49 * 0.62 * base.49; scale: 1.7, 0.55; blend: 16 }
+        line { from: x.48, y.48 - thy0.48; to: thx.48, thy.48; width: th.48; blend: 12 * clamp(th.48 / 3, 0, 1) }
+        ellipse { at: x.49, floor + 4; radius: rr.49 * 0.5 * base.49; scale: 1.6, 0.5; blend: 14 }
         line { from: x.49, floor + 6; to: x.49, y.49; width: rr.49 * 2 * stalk.49; blend: 14 }
-        line { from: x.49, floor; to: thx.49, floor; width: wa.49 * 2; blend: 18 }
+        line { from: x.49, floor + wa.49; to: thx.49, floor + wa.49; width: wa.49 * 2; blend: 16 }
         ellipse { at: x.49, y.49; radius: rr.49; scale: 1 + fxw.49, 1 - fxw.49; blend: lk.49 + 6 * near.49 }
-        line { from: x.49, y.49; to: thx.49, thy.49; width: th.49; blend: 12 * clamp(th.49 / 3, 0, 1) }
-        ellipse { at: x.50, floor + 3; radius: rr.50 * 0.62 * base.50; scale: 1.7, 0.55; blend: 16 }
+        line { from: x.49, y.49 - thy0.49; to: thx.49, thy.49; width: th.49; blend: 12 * clamp(th.49 / 3, 0, 1) }
+        ellipse { at: x.50, floor + 4; radius: rr.50 * 0.5 * base.50; scale: 1.6, 0.5; blend: 14 }
         line { from: x.50, floor + 6; to: x.50, y.50; width: rr.50 * 2 * stalk.50; blend: 14 }
-        line { from: x.50, floor; to: thx.50, floor; width: wa.50 * 2; blend: 18 }
+        line { from: x.50, floor + wa.50; to: thx.50, floor + wa.50; width: wa.50 * 2; blend: 16 }
         ellipse { at: x.50, y.50; radius: rr.50; scale: 1 + fxw.50, 1 - fxw.50; blend: lk.50 + 6 * near.50 }
-        line { from: x.50, y.50; to: thx.50, thy.50; width: th.50; blend: 12 * clamp(th.50 / 3, 0, 1) }
-        ellipse { at: x.51, floor + 3; radius: rr.51 * 0.62 * base.51; scale: 1.7, 0.55; blend: 16 }
+        line { from: x.50, y.50 - thy0.50; to: thx.50, thy.50; width: th.50; blend: 12 * clamp(th.50 / 3, 0, 1) }
+        ellipse { at: x.51, floor + 4; radius: rr.51 * 0.5 * base.51; scale: 1.6, 0.5; blend: 14 }
         line { from: x.51, floor + 6; to: x.51, y.51; width: rr.51 * 2 * stalk.51; blend: 14 }
-        line { from: x.51, floor; to: thx.51, floor; width: wa.51 * 2; blend: 18 }
+        line { from: x.51, floor + wa.51; to: thx.51, floor + wa.51; width: wa.51 * 2; blend: 16 }
         ellipse { at: x.51, y.51; radius: rr.51; scale: 1 + fxw.51, 1 - fxw.51; blend: lk.51 + 6 * near.51 }
-        line { from: x.51, y.51; to: thx.51, thy.51; width: th.51; blend: 12 * clamp(th.51 / 3, 0, 1) }
-        ellipse { at: x.52, floor + 3; radius: rr.52 * 0.62 * base.52; scale: 1.7, 0.55; blend: 16 }
+        line { from: x.51, y.51 - thy0.51; to: thx.51, thy.51; width: th.51; blend: 12 * clamp(th.51 / 3, 0, 1) }
+        ellipse { at: x.52, floor + 4; radius: rr.52 * 0.5 * base.52; scale: 1.6, 0.5; blend: 14 }
         line { from: x.52, floor + 6; to: x.52, y.52; width: rr.52 * 2 * stalk.52; blend: 14 }
-        line { from: x.52, floor; to: thx.52, floor; width: wa.52 * 2; blend: 18 }
+        line { from: x.52, floor + wa.52; to: thx.52, floor + wa.52; width: wa.52 * 2; blend: 16 }
         ellipse { at: x.52, y.52; radius: rr.52; scale: 1 + fxw.52, 1 - fxw.52; blend: lk.52 + 6 * near.52 }
-        line { from: x.52, y.52; to: thx.52, thy.52; width: th.52; blend: 12 * clamp(th.52 / 3, 0, 1) }
-        ellipse { at: x.53, floor + 3; radius: rr.53 * 0.62 * base.53; scale: 1.7, 0.55; blend: 16 }
+        line { from: x.52, y.52 - thy0.52; to: thx.52, thy.52; width: th.52; blend: 12 * clamp(th.52 / 3, 0, 1) }
+        ellipse { at: x.53, floor + 4; radius: rr.53 * 0.5 * base.53; scale: 1.6, 0.5; blend: 14 }
         line { from: x.53, floor + 6; to: x.53, y.53; width: rr.53 * 2 * stalk.53; blend: 14 }
-        line { from: x.53, floor; to: thx.53, floor; width: wa.53 * 2; blend: 18 }
+        line { from: x.53, floor + wa.53; to: thx.53, floor + wa.53; width: wa.53 * 2; blend: 16 }
         ellipse { at: x.53, y.53; radius: rr.53; scale: 1 + fxw.53, 1 - fxw.53; blend: lk.53 + 6 * near.53 }
-        line { from: x.53, y.53; to: thx.53, thy.53; width: th.53; blend: 12 * clamp(th.53 / 3, 0, 1) }
-        ellipse { at: x.54, floor + 3; radius: rr.54 * 0.62 * base.54; scale: 1.7, 0.55; blend: 16 }
+        line { from: x.53, y.53 - thy0.53; to: thx.53, thy.53; width: th.53; blend: 12 * clamp(th.53 / 3, 0, 1) }
+        ellipse { at: x.54, floor + 4; radius: rr.54 * 0.5 * base.54; scale: 1.6, 0.5; blend: 14 }
         line { from: x.54, floor + 6; to: x.54, y.54; width: rr.54 * 2 * stalk.54; blend: 14 }
-        line { from: x.54, floor; to: thx.54, floor; width: wa.54 * 2; blend: 18 }
+        line { from: x.54, floor + wa.54; to: thx.54, floor + wa.54; width: wa.54 * 2; blend: 16 }
         ellipse { at: x.54, y.54; radius: rr.54; scale: 1 + fxw.54, 1 - fxw.54; blend: lk.54 + 6 * near.54 }
-        line { from: x.54, y.54; to: thx.54, thy.54; width: th.54; blend: 12 * clamp(th.54 / 3, 0, 1) }
-        ellipse { at: x.55, floor + 3; radius: rr.55 * 0.62 * base.55; scale: 1.7, 0.55; blend: 16 }
+        line { from: x.54, y.54 - thy0.54; to: thx.54, thy.54; width: th.54; blend: 12 * clamp(th.54 / 3, 0, 1) }
+        ellipse { at: x.55, floor + 4; radius: rr.55 * 0.5 * base.55; scale: 1.6, 0.5; blend: 14 }
         line { from: x.55, floor + 6; to: x.55, y.55; width: rr.55 * 2 * stalk.55; blend: 14 }
-        line { from: x.55, floor; to: thx.55, floor; width: wa.55 * 2; blend: 18 }
+        line { from: x.55, floor + wa.55; to: thx.55, floor + wa.55; width: wa.55 * 2; blend: 16 }
         ellipse { at: x.55, y.55; radius: rr.55; scale: 1 + fxw.55, 1 - fxw.55; blend: lk.55 + 6 * near.55 }
-        line { from: x.55, y.55; to: thx.55, thy.55; width: th.55; blend: 12 * clamp(th.55 / 3, 0, 1) }
-        ellipse { at: x.56, floor + 3; radius: rr.56 * 0.62 * base.56; scale: 1.7, 0.55; blend: 16 }
+        line { from: x.55, y.55 - thy0.55; to: thx.55, thy.55; width: th.55; blend: 12 * clamp(th.55 / 3, 0, 1) }
+        ellipse { at: x.56, floor + 4; radius: rr.56 * 0.5 * base.56; scale: 1.6, 0.5; blend: 14 }
         line { from: x.56, floor + 6; to: x.56, y.56; width: rr.56 * 2 * stalk.56; blend: 14 }
-        line { from: x.56, floor; to: thx.56, floor; width: wa.56 * 2; blend: 18 }
+        line { from: x.56, floor + wa.56; to: thx.56, floor + wa.56; width: wa.56 * 2; blend: 16 }
         ellipse { at: x.56, y.56; radius: rr.56; scale: 1 + fxw.56, 1 - fxw.56; blend: lk.56 + 6 * near.56 }
-        line { from: x.56, y.56; to: thx.56, thy.56; width: th.56; blend: 12 * clamp(th.56 / 3, 0, 1) }
-        ellipse { at: x.57, floor + 3; radius: rr.57 * 0.62 * base.57; scale: 1.7, 0.55; blend: 16 }
+        line { from: x.56, y.56 - thy0.56; to: thx.56, thy.56; width: th.56; blend: 12 * clamp(th.56 / 3, 0, 1) }
+        ellipse { at: x.57, floor + 4; radius: rr.57 * 0.5 * base.57; scale: 1.6, 0.5; blend: 14 }
         line { from: x.57, floor + 6; to: x.57, y.57; width: rr.57 * 2 * stalk.57; blend: 14 }
-        line { from: x.57, floor; to: thx.57, floor; width: wa.57 * 2; blend: 18 }
+        line { from: x.57, floor + wa.57; to: thx.57, floor + wa.57; width: wa.57 * 2; blend: 16 }
         ellipse { at: x.57, y.57; radius: rr.57; scale: 1 + fxw.57, 1 - fxw.57; blend: lk.57 + 6 * near.57 }
-        line { from: x.57, y.57; to: thx.57, thy.57; width: th.57; blend: 12 * clamp(th.57 / 3, 0, 1) }
-        ellipse { at: x.58, floor + 3; radius: rr.58 * 0.62 * base.58; scale: 1.7, 0.55; blend: 16 }
+        line { from: x.57, y.57 - thy0.57; to: thx.57, thy.57; width: th.57; blend: 12 * clamp(th.57 / 3, 0, 1) }
+        ellipse { at: x.58, floor + 4; radius: rr.58 * 0.5 * base.58; scale: 1.6, 0.5; blend: 14 }
         line { from: x.58, floor + 6; to: x.58, y.58; width: rr.58 * 2 * stalk.58; blend: 14 }
-        line { from: x.58, floor; to: thx.58, floor; width: wa.58 * 2; blend: 18 }
+        line { from: x.58, floor + wa.58; to: thx.58, floor + wa.58; width: wa.58 * 2; blend: 16 }
         ellipse { at: x.58, y.58; radius: rr.58; scale: 1 + fxw.58, 1 - fxw.58; blend: lk.58 + 6 * near.58 }
-        line { from: x.58, y.58; to: thx.58, thy.58; width: th.58; blend: 12 * clamp(th.58 / 3, 0, 1) }
-        ellipse { at: x.59, floor + 3; radius: rr.59 * 0.62 * base.59; scale: 1.7, 0.55; blend: 16 }
+        line { from: x.58, y.58 - thy0.58; to: thx.58, thy.58; width: th.58; blend: 12 * clamp(th.58 / 3, 0, 1) }
+        ellipse { at: x.59, floor + 4; radius: rr.59 * 0.5 * base.59; scale: 1.6, 0.5; blend: 14 }
         line { from: x.59, floor + 6; to: x.59, y.59; width: rr.59 * 2 * stalk.59; blend: 14 }
-        line { from: x.59, floor; to: thx.59, floor; width: wa.59 * 2; blend: 18 }
+        line { from: x.59, floor + wa.59; to: thx.59, floor + wa.59; width: wa.59 * 2; blend: 16 }
         ellipse { at: x.59, y.59; radius: rr.59; scale: 1 + fxw.59, 1 - fxw.59; blend: lk.59 + 6 * near.59 }
-        line { from: x.59, y.59; to: thx.59, thy.59; width: th.59; blend: 12 * clamp(th.59 / 3, 0, 1) }
-        ellipse { at: x.60, floor + 3; radius: rr.60 * 0.62 * base.60; scale: 1.7, 0.55; blend: 16 }
+        line { from: x.59, y.59 - thy0.59; to: thx.59, thy.59; width: th.59; blend: 12 * clamp(th.59 / 3, 0, 1) }
+        ellipse { at: x.60, floor + 4; radius: rr.60 * 0.5 * base.60; scale: 1.6, 0.5; blend: 14 }
         line { from: x.60, floor + 6; to: x.60, y.60; width: rr.60 * 2 * stalk.60; blend: 14 }
-        line { from: x.60, floor; to: thx.60, floor; width: wa.60 * 2; blend: 18 }
+        line { from: x.60, floor + wa.60; to: thx.60, floor + wa.60; width: wa.60 * 2; blend: 16 }
         ellipse { at: x.60, y.60; radius: rr.60; scale: 1 + fxw.60, 1 - fxw.60; blend: lk.60 + 6 * near.60 }
-        line { from: x.60, y.60; to: thx.60, thy.60; width: th.60; blend: 12 * clamp(th.60 / 3, 0, 1) }
-        ellipse { at: x.61, floor + 3; radius: rr.61 * 0.62 * base.61; scale: 1.7, 0.55; blend: 16 }
+        line { from: x.60, y.60 - thy0.60; to: thx.60, thy.60; width: th.60; blend: 12 * clamp(th.60 / 3, 0, 1) }
+        ellipse { at: x.61, floor + 4; radius: rr.61 * 0.5 * base.61; scale: 1.6, 0.5; blend: 14 }
         line { from: x.61, floor + 6; to: x.61, y.61; width: rr.61 * 2 * stalk.61; blend: 14 }
-        line { from: x.61, floor; to: thx.61, floor; width: wa.61 * 2; blend: 18 }
+        line { from: x.61, floor + wa.61; to: thx.61, floor + wa.61; width: wa.61 * 2; blend: 16 }
         ellipse { at: x.61, y.61; radius: rr.61; scale: 1 + fxw.61, 1 - fxw.61; blend: lk.61 + 6 * near.61 }
-        line { from: x.61, y.61; to: thx.61, thy.61; width: th.61; blend: 12 * clamp(th.61 / 3, 0, 1) }
-        ellipse { at: x.62, floor + 3; radius: rr.62 * 0.62 * base.62; scale: 1.7, 0.55; blend: 16 }
+        line { from: x.61, y.61 - thy0.61; to: thx.61, thy.61; width: th.61; blend: 12 * clamp(th.61 / 3, 0, 1) }
+        ellipse { at: x.62, floor + 4; radius: rr.62 * 0.5 * base.62; scale: 1.6, 0.5; blend: 14 }
         line { from: x.62, floor + 6; to: x.62, y.62; width: rr.62 * 2 * stalk.62; blend: 14 }
-        line { from: x.62, floor; to: thx.62, floor; width: wa.62 * 2; blend: 18 }
+        line { from: x.62, floor + wa.62; to: thx.62, floor + wa.62; width: wa.62 * 2; blend: 16 }
         ellipse { at: x.62, y.62; radius: rr.62; scale: 1 + fxw.62, 1 - fxw.62; blend: lk.62 + 6 * near.62 }
-        line { from: x.62, y.62; to: thx.62, thy.62; width: th.62; blend: 12 * clamp(th.62 / 3, 0, 1) }
-        ellipse { at: x.63, floor + 3; radius: rr.63 * 0.62 * base.63; scale: 1.7, 0.55; blend: 16 }
+        line { from: x.62, y.62 - thy0.62; to: thx.62, thy.62; width: th.62; blend: 12 * clamp(th.62 / 3, 0, 1) }
+        ellipse { at: x.63, floor + 4; radius: rr.63 * 0.5 * base.63; scale: 1.6, 0.5; blend: 14 }
         line { from: x.63, floor + 6; to: x.63, y.63; width: rr.63 * 2 * stalk.63; blend: 14 }
-        line { from: x.63, floor; to: thx.63, floor; width: wa.63 * 2; blend: 18 }
+        line { from: x.63, floor + wa.63; to: thx.63, floor + wa.63; width: wa.63 * 2; blend: 16 }
         ellipse { at: x.63, y.63; radius: rr.63; scale: 1 + fxw.63, 1 - fxw.63; blend: lk.63 + 6 * near.63 }
-        line { from: x.63, y.63; to: thx.63, thy.63; width: th.63; blend: 12 * clamp(th.63 / 3, 0, 1) }
-        ellipse { at: x.64, floor + 3; radius: rr.64 * 0.62 * base.64; scale: 1.7, 0.55; blend: 16 }
+        line { from: x.63, y.63 - thy0.63; to: thx.63, thy.63; width: th.63; blend: 12 * clamp(th.63 / 3, 0, 1) }
+        ellipse { at: x.64, floor + 4; radius: rr.64 * 0.5 * base.64; scale: 1.6, 0.5; blend: 14 }
         line { from: x.64, floor + 6; to: x.64, y.64; width: rr.64 * 2 * stalk.64; blend: 14 }
-        line { from: x.64, floor; to: thx.64, floor; width: wa.64 * 2; blend: 18 }
+        line { from: x.64, floor + wa.64; to: thx.64, floor + wa.64; width: wa.64 * 2; blend: 16 }
         ellipse { at: x.64, y.64; radius: rr.64; scale: 1 + fxw.64, 1 - fxw.64; blend: lk.64 + 6 * near.64 }
-        line { from: x.64, y.64; to: thx.64, thy.64; width: th.64; blend: 12 * clamp(th.64 / 3, 0, 1) }
-        ellipse { at: x.65, floor + 3; radius: rr.65 * 0.62 * base.65; scale: 1.7, 0.55; blend: 16 }
+        line { from: x.64, y.64 - thy0.64; to: thx.64, thy.64; width: th.64; blend: 12 * clamp(th.64 / 3, 0, 1) }
+        ellipse { at: x.65, floor + 4; radius: rr.65 * 0.5 * base.65; scale: 1.6, 0.5; blend: 14 }
         line { from: x.65, floor + 6; to: x.65, y.65; width: rr.65 * 2 * stalk.65; blend: 14 }
-        line { from: x.65, floor; to: thx.65, floor; width: wa.65 * 2; blend: 18 }
+        line { from: x.65, floor + wa.65; to: thx.65, floor + wa.65; width: wa.65 * 2; blend: 16 }
         ellipse { at: x.65, y.65; radius: rr.65; scale: 1 + fxw.65, 1 - fxw.65; blend: lk.65 + 6 * near.65 }
-        line { from: x.65, y.65; to: thx.65, thy.65; width: th.65; blend: 12 * clamp(th.65 / 3, 0, 1) }
-        ellipse { at: x.66, floor + 3; radius: rr.66 * 0.62 * base.66; scale: 1.7, 0.55; blend: 16 }
+        line { from: x.65, y.65 - thy0.65; to: thx.65, thy.65; width: th.65; blend: 12 * clamp(th.65 / 3, 0, 1) }
+        ellipse { at: x.66, floor + 4; radius: rr.66 * 0.5 * base.66; scale: 1.6, 0.5; blend: 14 }
         line { from: x.66, floor + 6; to: x.66, y.66; width: rr.66 * 2 * stalk.66; blend: 14 }
-        line { from: x.66, floor; to: thx.66, floor; width: wa.66 * 2; blend: 18 }
+        line { from: x.66, floor + wa.66; to: thx.66, floor + wa.66; width: wa.66 * 2; blend: 16 }
         ellipse { at: x.66, y.66; radius: rr.66; scale: 1 + fxw.66, 1 - fxw.66; blend: lk.66 + 6 * near.66 }
-        line { from: x.66, y.66; to: thx.66, thy.66; width: th.66; blend: 12 * clamp(th.66 / 3, 0, 1) }
-        ellipse { at: x.67, floor + 3; radius: rr.67 * 0.62 * base.67; scale: 1.7, 0.55; blend: 16 }
+        line { from: x.66, y.66 - thy0.66; to: thx.66, thy.66; width: th.66; blend: 12 * clamp(th.66 / 3, 0, 1) }
+        ellipse { at: x.67, floor + 4; radius: rr.67 * 0.5 * base.67; scale: 1.6, 0.5; blend: 14 }
         line { from: x.67, floor + 6; to: x.67, y.67; width: rr.67 * 2 * stalk.67; blend: 14 }
-        line { from: x.67, floor; to: thx.67, floor; width: wa.67 * 2; blend: 18 }
+        line { from: x.67, floor + wa.67; to: thx.67, floor + wa.67; width: wa.67 * 2; blend: 16 }
         ellipse { at: x.67, y.67; radius: rr.67; scale: 1 + fxw.67, 1 - fxw.67; blend: lk.67 + 6 * near.67 }
-        line { from: x.67, y.67; to: thx.67, thy.67; width: th.67; blend: 12 * clamp(th.67 / 3, 0, 1) }
-        ellipse { at: x.68, floor + 3; radius: rr.68 * 0.62 * base.68; scale: 1.7, 0.55; blend: 16 }
+        line { from: x.67, y.67 - thy0.67; to: thx.67, thy.67; width: th.67; blend: 12 * clamp(th.67 / 3, 0, 1) }
+        ellipse { at: x.68, floor + 4; radius: rr.68 * 0.5 * base.68; scale: 1.6, 0.5; blend: 14 }
         line { from: x.68, floor + 6; to: x.68, y.68; width: rr.68 * 2 * stalk.68; blend: 14 }
-        line { from: x.68, floor; to: thx.68, floor; width: wa.68 * 2; blend: 18 }
+        line { from: x.68, floor + wa.68; to: thx.68, floor + wa.68; width: wa.68 * 2; blend: 16 }
         ellipse { at: x.68, y.68; radius: rr.68; scale: 1 + fxw.68, 1 - fxw.68; blend: lk.68 + 6 * near.68 }
-        line { from: x.68, y.68; to: thx.68, thy.68; width: th.68; blend: 12 * clamp(th.68 / 3, 0, 1) }
-        ellipse { at: x.69, floor + 3; radius: rr.69 * 0.62 * base.69; scale: 1.7, 0.55; blend: 16 }
+        line { from: x.68, y.68 - thy0.68; to: thx.68, thy.68; width: th.68; blend: 12 * clamp(th.68 / 3, 0, 1) }
+        ellipse { at: x.69, floor + 4; radius: rr.69 * 0.5 * base.69; scale: 1.6, 0.5; blend: 14 }
         line { from: x.69, floor + 6; to: x.69, y.69; width: rr.69 * 2 * stalk.69; blend: 14 }
-        line { from: x.69, floor; to: thx.69, floor; width: wa.69 * 2; blend: 18 }
+        line { from: x.69, floor + wa.69; to: thx.69, floor + wa.69; width: wa.69 * 2; blend: 16 }
         ellipse { at: x.69, y.69; radius: rr.69; scale: 1 + fxw.69, 1 - fxw.69; blend: lk.69 + 6 * near.69 }
-        line { from: x.69, y.69; to: thx.69, thy.69; width: th.69; blend: 12 * clamp(th.69 / 3, 0, 1) }
-        ellipse { at: x.70, floor + 3; radius: rr.70 * 0.62 * base.70; scale: 1.7, 0.55; blend: 16 }
+        line { from: x.69, y.69 - thy0.69; to: thx.69, thy.69; width: th.69; blend: 12 * clamp(th.69 / 3, 0, 1) }
+        ellipse { at: x.70, floor + 4; radius: rr.70 * 0.5 * base.70; scale: 1.6, 0.5; blend: 14 }
         line { from: x.70, floor + 6; to: x.70, y.70; width: rr.70 * 2 * stalk.70; blend: 14 }
-        line { from: x.70, floor; to: thx.70, floor; width: wa.70 * 2; blend: 18 }
+        line { from: x.70, floor + wa.70; to: thx.70, floor + wa.70; width: wa.70 * 2; blend: 16 }
         ellipse { at: x.70, y.70; radius: rr.70; scale: 1 + fxw.70, 1 - fxw.70; blend: lk.70 + 6 * near.70 }
-        line { from: x.70, y.70; to: thx.70, thy.70; width: th.70; blend: 12 * clamp(th.70 / 3, 0, 1) }
-        ellipse { at: x.71, floor + 3; radius: rr.71 * 0.62 * base.71; scale: 1.7, 0.55; blend: 16 }
+        line { from: x.70, y.70 - thy0.70; to: thx.70, thy.70; width: th.70; blend: 12 * clamp(th.70 / 3, 0, 1) }
+        ellipse { at: x.71, floor + 4; radius: rr.71 * 0.5 * base.71; scale: 1.6, 0.5; blend: 14 }
         line { from: x.71, floor + 6; to: x.71, y.71; width: rr.71 * 2 * stalk.71; blend: 14 }
-        line { from: x.71, floor; to: thx.71, floor; width: wa.71 * 2; blend: 18 }
+        line { from: x.71, floor + wa.71; to: thx.71, floor + wa.71; width: wa.71 * 2; blend: 16 }
         ellipse { at: x.71, y.71; radius: rr.71; scale: 1 + fxw.71, 1 - fxw.71; blend: lk.71 + 6 * near.71 }
-        line { from: x.71, y.71; to: thx.71, thy.71; width: th.71; blend: 12 * clamp(th.71 / 3, 0, 1) }
-        ellipse { at: x.72, floor + 3; radius: rr.72 * 0.62 * base.72; scale: 1.7, 0.55; blend: 16 }
+        line { from: x.71, y.71 - thy0.71; to: thx.71, thy.71; width: th.71; blend: 12 * clamp(th.71 / 3, 0, 1) }
+        ellipse { at: x.72, floor + 4; radius: rr.72 * 0.5 * base.72; scale: 1.6, 0.5; blend: 14 }
         line { from: x.72, floor + 6; to: x.72, y.72; width: rr.72 * 2 * stalk.72; blend: 14 }
-        line { from: x.72, floor; to: thx.72, floor; width: wa.72 * 2; blend: 18 }
+        line { from: x.72, floor + wa.72; to: thx.72, floor + wa.72; width: wa.72 * 2; blend: 16 }
         ellipse { at: x.72, y.72; radius: rr.72; scale: 1 + fxw.72, 1 - fxw.72; blend: lk.72 + 6 * near.72 }
-        line { from: x.72, y.72; to: thx.72, thy.72; width: th.72; blend: 12 * clamp(th.72 / 3, 0, 1) }
-        ellipse { at: x.73, floor + 3; radius: rr.73 * 0.62 * base.73; scale: 1.7, 0.55; blend: 16 }
+        line { from: x.72, y.72 - thy0.72; to: thx.72, thy.72; width: th.72; blend: 12 * clamp(th.72 / 3, 0, 1) }
+        ellipse { at: x.73, floor + 4; radius: rr.73 * 0.5 * base.73; scale: 1.6, 0.5; blend: 14 }
         line { from: x.73, floor + 6; to: x.73, y.73; width: rr.73 * 2 * stalk.73; blend: 14 }
-        line { from: x.73, floor; to: thx.73, floor; width: wa.73 * 2; blend: 18 }
+        line { from: x.73, floor + wa.73; to: thx.73, floor + wa.73; width: wa.73 * 2; blend: 16 }
         ellipse { at: x.73, y.73; radius: rr.73; scale: 1 + fxw.73, 1 - fxw.73; blend: lk.73 + 6 * near.73 }
-        line { from: x.73, y.73; to: thx.73, thy.73; width: th.73; blend: 12 * clamp(th.73 / 3, 0, 1) }
-        ellipse { at: x.74, floor + 3; radius: rr.74 * 0.62 * base.74; scale: 1.7, 0.55; blend: 16 }
+        line { from: x.73, y.73 - thy0.73; to: thx.73, thy.73; width: th.73; blend: 12 * clamp(th.73 / 3, 0, 1) }
+        ellipse { at: x.74, floor + 4; radius: rr.74 * 0.5 * base.74; scale: 1.6, 0.5; blend: 14 }
         line { from: x.74, floor + 6; to: x.74, y.74; width: rr.74 * 2 * stalk.74; blend: 14 }
-        line { from: x.74, floor; to: thx.74, floor; width: wa.74 * 2; blend: 18 }
+        line { from: x.74, floor + wa.74; to: thx.74, floor + wa.74; width: wa.74 * 2; blend: 16 }
         ellipse { at: x.74, y.74; radius: rr.74; scale: 1 + fxw.74, 1 - fxw.74; blend: lk.74 + 6 * near.74 }
-        line { from: x.74, y.74; to: thx.74, thy.74; width: th.74; blend: 12 * clamp(th.74 / 3, 0, 1) }
-        ellipse { at: x.75, floor + 3; radius: rr.75 * 0.62 * base.75; scale: 1.7, 0.55; blend: 16 }
+        line { from: x.74, y.74 - thy0.74; to: thx.74, thy.74; width: th.74; blend: 12 * clamp(th.74 / 3, 0, 1) }
+        ellipse { at: x.75, floor + 4; radius: rr.75 * 0.5 * base.75; scale: 1.6, 0.5; blend: 14 }
         line { from: x.75, floor + 6; to: x.75, y.75; width: rr.75 * 2 * stalk.75; blend: 14 }
-        line { from: x.75, floor; to: thx.75, floor; width: wa.75 * 2; blend: 18 }
+        line { from: x.75, floor + wa.75; to: thx.75, floor + wa.75; width: wa.75 * 2; blend: 16 }
         ellipse { at: x.75, y.75; radius: rr.75; scale: 1 + fxw.75, 1 - fxw.75; blend: lk.75 + 6 * near.75 }
-        line { from: x.75, y.75; to: thx.75, thy.75; width: th.75; blend: 12 * clamp(th.75 / 3, 0, 1) }
-        ellipse { at: x.76, floor + 3; radius: rr.76 * 0.62 * base.76; scale: 1.7, 0.55; blend: 16 }
+        line { from: x.75, y.75 - thy0.75; to: thx.75, thy.75; width: th.75; blend: 12 * clamp(th.75 / 3, 0, 1) }
+        ellipse { at: x.76, floor + 4; radius: rr.76 * 0.5 * base.76; scale: 1.6, 0.5; blend: 14 }
         line { from: x.76, floor + 6; to: x.76, y.76; width: rr.76 * 2 * stalk.76; blend: 14 }
-        line { from: x.76, floor; to: thx.76, floor; width: wa.76 * 2; blend: 18 }
+        line { from: x.76, floor + wa.76; to: thx.76, floor + wa.76; width: wa.76 * 2; blend: 16 }
         ellipse { at: x.76, y.76; radius: rr.76; scale: 1 + fxw.76, 1 - fxw.76; blend: lk.76 + 6 * near.76 }
-        line { from: x.76, y.76; to: thx.76, thy.76; width: th.76; blend: 12 * clamp(th.76 / 3, 0, 1) }
-        ellipse { at: x.77, floor + 3; radius: rr.77 * 0.62 * base.77; scale: 1.7, 0.55; blend: 16 }
+        line { from: x.76, y.76 - thy0.76; to: thx.76, thy.76; width: th.76; blend: 12 * clamp(th.76 / 3, 0, 1) }
+        ellipse { at: x.77, floor + 4; radius: rr.77 * 0.5 * base.77; scale: 1.6, 0.5; blend: 14 }
         line { from: x.77, floor + 6; to: x.77, y.77; width: rr.77 * 2 * stalk.77; blend: 14 }
-        line { from: x.77, floor; to: thx.77, floor; width: wa.77 * 2; blend: 18 }
+        line { from: x.77, floor + wa.77; to: thx.77, floor + wa.77; width: wa.77 * 2; blend: 16 }
         ellipse { at: x.77, y.77; radius: rr.77; scale: 1 + fxw.77, 1 - fxw.77; blend: lk.77 + 6 * near.77 }
-        line { from: x.77, y.77; to: thx.77, thy.77; width: th.77; blend: 12 * clamp(th.77 / 3, 0, 1) }
-        ellipse { at: x.78, floor + 3; radius: rr.78 * 0.62 * base.78; scale: 1.7, 0.55; blend: 16 }
+        line { from: x.77, y.77 - thy0.77; to: thx.77, thy.77; width: th.77; blend: 12 * clamp(th.77 / 3, 0, 1) }
+        ellipse { at: x.78, floor + 4; radius: rr.78 * 0.5 * base.78; scale: 1.6, 0.5; blend: 14 }
         line { from: x.78, floor + 6; to: x.78, y.78; width: rr.78 * 2 * stalk.78; blend: 14 }
-        line { from: x.78, floor; to: thx.78, floor; width: wa.78 * 2; blend: 18 }
+        line { from: x.78, floor + wa.78; to: thx.78, floor + wa.78; width: wa.78 * 2; blend: 16 }
         ellipse { at: x.78, y.78; radius: rr.78; scale: 1 + fxw.78, 1 - fxw.78; blend: lk.78 + 6 * near.78 }
-        line { from: x.78, y.78; to: thx.78, thy.78; width: th.78; blend: 12 * clamp(th.78 / 3, 0, 1) }
-        ellipse { at: x.79, floor + 3; radius: rr.79 * 0.62 * base.79; scale: 1.7, 0.55; blend: 16 }
+        line { from: x.78, y.78 - thy0.78; to: thx.78, thy.78; width: th.78; blend: 12 * clamp(th.78 / 3, 0, 1) }
+        ellipse { at: x.79, floor + 4; radius: rr.79 * 0.5 * base.79; scale: 1.6, 0.5; blend: 14 }
         line { from: x.79, floor + 6; to: x.79, y.79; width: rr.79 * 2 * stalk.79; blend: 14 }
-        line { from: x.79, floor; to: thx.79, floor; width: wa.79 * 2; blend: 18 }
+        line { from: x.79, floor + wa.79; to: thx.79, floor + wa.79; width: wa.79 * 2; blend: 16 }
         ellipse { at: x.79, y.79; radius: rr.79; scale: 1 + fxw.79, 1 - fxw.79; blend: lk.79 + 6 * near.79 }
-        line { from: x.79, y.79; to: thx.79, thy.79; width: th.79; blend: 12 * clamp(th.79 / 3, 0, 1) }
-        ellipse { at: x.80, floor + 3; radius: rr.80 * 0.62 * base.80; scale: 1.7, 0.55; blend: 16 }
+        line { from: x.79, y.79 - thy0.79; to: thx.79, thy.79; width: th.79; blend: 12 * clamp(th.79 / 3, 0, 1) }
+        ellipse { at: x.80, floor + 4; radius: rr.80 * 0.5 * base.80; scale: 1.6, 0.5; blend: 14 }
         line { from: x.80, floor + 6; to: x.80, y.80; width: rr.80 * 2 * stalk.80; blend: 14 }
-        line { from: x.80, floor; to: thx.80, floor; width: wa.80 * 2; blend: 18 }
+        line { from: x.80, floor + wa.80; to: thx.80, floor + wa.80; width: wa.80 * 2; blend: 16 }
         ellipse { at: x.80, y.80; radius: rr.80; scale: 1 + fxw.80, 1 - fxw.80; blend: lk.80 + 6 * near.80 }
-        line { from: x.80, y.80; to: thx.80, thy.80; width: th.80; blend: 12 * clamp(th.80 / 3, 0, 1) }
-        ellipse { at: x.81, floor + 3; radius: rr.81 * 0.62 * base.81; scale: 1.7, 0.55; blend: 16 }
+        line { from: x.80, y.80 - thy0.80; to: thx.80, thy.80; width: th.80; blend: 12 * clamp(th.80 / 3, 0, 1) }
+        ellipse { at: x.81, floor + 4; radius: rr.81 * 0.5 * base.81; scale: 1.6, 0.5; blend: 14 }
         line { from: x.81, floor + 6; to: x.81, y.81; width: rr.81 * 2 * stalk.81; blend: 14 }
-        line { from: x.81, floor; to: thx.81, floor; width: wa.81 * 2; blend: 18 }
+        line { from: x.81, floor + wa.81; to: thx.81, floor + wa.81; width: wa.81 * 2; blend: 16 }
         ellipse { at: x.81, y.81; radius: rr.81; scale: 1 + fxw.81, 1 - fxw.81; blend: lk.81 + 6 * near.81 }
-        line { from: x.81, y.81; to: thx.81, thy.81; width: th.81; blend: 12 * clamp(th.81 / 3, 0, 1) }
-        ellipse { at: x.82, floor + 3; radius: rr.82 * 0.62 * base.82; scale: 1.7, 0.55; blend: 16 }
+        line { from: x.81, y.81 - thy0.81; to: thx.81, thy.81; width: th.81; blend: 12 * clamp(th.81 / 3, 0, 1) }
+        ellipse { at: x.82, floor + 4; radius: rr.82 * 0.5 * base.82; scale: 1.6, 0.5; blend: 14 }
         line { from: x.82, floor + 6; to: x.82, y.82; width: rr.82 * 2 * stalk.82; blend: 14 }
-        line { from: x.82, floor; to: thx.82, floor; width: wa.82 * 2; blend: 18 }
+        line { from: x.82, floor + wa.82; to: thx.82, floor + wa.82; width: wa.82 * 2; blend: 16 }
         ellipse { at: x.82, y.82; radius: rr.82; scale: 1 + fxw.82, 1 - fxw.82; blend: lk.82 + 6 * near.82 }
-        line { from: x.82, y.82; to: thx.82, thy.82; width: th.82; blend: 12 * clamp(th.82 / 3, 0, 1) }
-        ellipse { at: x.83, floor + 3; radius: rr.83 * 0.62 * base.83; scale: 1.7, 0.55; blend: 16 }
+        line { from: x.82, y.82 - thy0.82; to: thx.82, thy.82; width: th.82; blend: 12 * clamp(th.82 / 3, 0, 1) }
+        ellipse { at: x.83, floor + 4; radius: rr.83 * 0.5 * base.83; scale: 1.6, 0.5; blend: 14 }
         line { from: x.83, floor + 6; to: x.83, y.83; width: rr.83 * 2 * stalk.83; blend: 14 }
-        line { from: x.83, floor; to: thx.83, floor; width: wa.83 * 2; blend: 18 }
+        line { from: x.83, floor + wa.83; to: thx.83, floor + wa.83; width: wa.83 * 2; blend: 16 }
         ellipse { at: x.83, y.83; radius: rr.83; scale: 1 + fxw.83, 1 - fxw.83; blend: lk.83 + 6 * near.83 }
-        line { from: x.83, y.83; to: thx.83, thy.83; width: th.83; blend: 12 * clamp(th.83 / 3, 0, 1) }
-        ellipse { at: x.84, floor + 3; radius: rr.84 * 0.62 * base.84; scale: 1.7, 0.55; blend: 16 }
+        line { from: x.83, y.83 - thy0.83; to: thx.83, thy.83; width: th.83; blend: 12 * clamp(th.83 / 3, 0, 1) }
+        ellipse { at: x.84, floor + 4; radius: rr.84 * 0.5 * base.84; scale: 1.6, 0.5; blend: 14 }
         line { from: x.84, floor + 6; to: x.84, y.84; width: rr.84 * 2 * stalk.84; blend: 14 }
-        line { from: x.84, floor; to: thx.84, floor; width: wa.84 * 2; blend: 18 }
+        line { from: x.84, floor + wa.84; to: thx.84, floor + wa.84; width: wa.84 * 2; blend: 16 }
         ellipse { at: x.84, y.84; radius: rr.84; scale: 1 + fxw.84, 1 - fxw.84; blend: lk.84 + 6 * near.84 }
-        line { from: x.84, y.84; to: thx.84, thy.84; width: th.84; blend: 12 * clamp(th.84 / 3, 0, 1) }
-        ellipse { at: x.85, floor + 3; radius: rr.85 * 0.62 * base.85; scale: 1.7, 0.55; blend: 16 }
+        line { from: x.84, y.84 - thy0.84; to: thx.84, thy.84; width: th.84; blend: 12 * clamp(th.84 / 3, 0, 1) }
+        ellipse { at: x.85, floor + 4; radius: rr.85 * 0.5 * base.85; scale: 1.6, 0.5; blend: 14 }
         line { from: x.85, floor + 6; to: x.85, y.85; width: rr.85 * 2 * stalk.85; blend: 14 }
-        line { from: x.85, floor; to: thx.85, floor; width: wa.85 * 2; blend: 18 }
+        line { from: x.85, floor + wa.85; to: thx.85, floor + wa.85; width: wa.85 * 2; blend: 16 }
         ellipse { at: x.85, y.85; radius: rr.85; scale: 1 + fxw.85, 1 - fxw.85; blend: lk.85 + 6 * near.85 }
-        line { from: x.85, y.85; to: thx.85, thy.85; width: th.85; blend: 12 * clamp(th.85 / 3, 0, 1) }
-        ellipse { at: x.86, floor + 3; radius: rr.86 * 0.62 * base.86; scale: 1.7, 0.55; blend: 16 }
+        line { from: x.85, y.85 - thy0.85; to: thx.85, thy.85; width: th.85; blend: 12 * clamp(th.85 / 3, 0, 1) }
+        ellipse { at: x.86, floor + 4; radius: rr.86 * 0.5 * base.86; scale: 1.6, 0.5; blend: 14 }
         line { from: x.86, floor + 6; to: x.86, y.86; width: rr.86 * 2 * stalk.86; blend: 14 }
-        line { from: x.86, floor; to: thx.86, floor; width: wa.86 * 2; blend: 18 }
+        line { from: x.86, floor + wa.86; to: thx.86, floor + wa.86; width: wa.86 * 2; blend: 16 }
         ellipse { at: x.86, y.86; radius: rr.86; scale: 1 + fxw.86, 1 - fxw.86; blend: lk.86 + 6 * near.86 }
-        line { from: x.86, y.86; to: thx.86, thy.86; width: th.86; blend: 12 * clamp(th.86 / 3, 0, 1) }
-        ellipse { at: x.87, floor + 3; radius: rr.87 * 0.62 * base.87; scale: 1.7, 0.55; blend: 16 }
+        line { from: x.86, y.86 - thy0.86; to: thx.86, thy.86; width: th.86; blend: 12 * clamp(th.86 / 3, 0, 1) }
+        ellipse { at: x.87, floor + 4; radius: rr.87 * 0.5 * base.87; scale: 1.6, 0.5; blend: 14 }
         line { from: x.87, floor + 6; to: x.87, y.87; width: rr.87 * 2 * stalk.87; blend: 14 }
-        line { from: x.87, floor; to: thx.87, floor; width: wa.87 * 2; blend: 18 }
+        line { from: x.87, floor + wa.87; to: thx.87, floor + wa.87; width: wa.87 * 2; blend: 16 }
         ellipse { at: x.87, y.87; radius: rr.87; scale: 1 + fxw.87, 1 - fxw.87; blend: lk.87 + 6 * near.87 }
-        line { from: x.87, y.87; to: thx.87, thy.87; width: th.87; blend: 12 * clamp(th.87 / 3, 0, 1) }
-        ellipse { at: x.88, floor + 3; radius: rr.88 * 0.62 * base.88; scale: 1.7, 0.55; blend: 16 }
+        line { from: x.87, y.87 - thy0.87; to: thx.87, thy.87; width: th.87; blend: 12 * clamp(th.87 / 3, 0, 1) }
+        ellipse { at: x.88, floor + 4; radius: rr.88 * 0.5 * base.88; scale: 1.6, 0.5; blend: 14 }
         line { from: x.88, floor + 6; to: x.88, y.88; width: rr.88 * 2 * stalk.88; blend: 14 }
-        line { from: x.88, floor; to: thx.88, floor; width: wa.88 * 2; blend: 18 }
+        line { from: x.88, floor + wa.88; to: thx.88, floor + wa.88; width: wa.88 * 2; blend: 16 }
         ellipse { at: x.88, y.88; radius: rr.88; scale: 1 + fxw.88, 1 - fxw.88; blend: lk.88 + 6 * near.88 }
-        line { from: x.88, y.88; to: thx.88, thy.88; width: th.88; blend: 12 * clamp(th.88 / 3, 0, 1) }
-        ellipse { at: x.89, floor + 3; radius: rr.89 * 0.62 * base.89; scale: 1.7, 0.55; blend: 16 }
+        line { from: x.88, y.88 - thy0.88; to: thx.88, thy.88; width: th.88; blend: 12 * clamp(th.88 / 3, 0, 1) }
+        ellipse { at: x.89, floor + 4; radius: rr.89 * 0.5 * base.89; scale: 1.6, 0.5; blend: 14 }
         line { from: x.89, floor + 6; to: x.89, y.89; width: rr.89 * 2 * stalk.89; blend: 14 }
-        line { from: x.89, floor; to: thx.89, floor; width: wa.89 * 2; blend: 18 }
+        line { from: x.89, floor + wa.89; to: thx.89, floor + wa.89; width: wa.89 * 2; blend: 16 }
         ellipse { at: x.89, y.89; radius: rr.89; scale: 1 + fxw.89, 1 - fxw.89; blend: lk.89 + 6 * near.89 }
-        line { from: x.89, y.89; to: thx.89, thy.89; width: th.89; blend: 12 * clamp(th.89 / 3, 0, 1) }
-        ellipse { at: x.90, floor + 3; radius: rr.90 * 0.62 * base.90; scale: 1.7, 0.55; blend: 16 }
+        line { from: x.89, y.89 - thy0.89; to: thx.89, thy.89; width: th.89; blend: 12 * clamp(th.89 / 3, 0, 1) }
+        ellipse { at: x.90, floor + 4; radius: rr.90 * 0.5 * base.90; scale: 1.6, 0.5; blend: 14 }
         line { from: x.90, floor + 6; to: x.90, y.90; width: rr.90 * 2 * stalk.90; blend: 14 }
-        line { from: x.90, floor; to: thx.90, floor; width: wa.90 * 2; blend: 18 }
+        line { from: x.90, floor + wa.90; to: thx.90, floor + wa.90; width: wa.90 * 2; blend: 16 }
         ellipse { at: x.90, y.90; radius: rr.90; scale: 1 + fxw.90, 1 - fxw.90; blend: lk.90 + 6 * near.90 }
-        line { from: x.90, y.90; to: thx.90, thy.90; width: th.90; blend: 12 * clamp(th.90 / 3, 0, 1) }
-        ellipse { at: x.91, floor + 3; radius: rr.91 * 0.62 * base.91; scale: 1.7, 0.55; blend: 16 }
+        line { from: x.90, y.90 - thy0.90; to: thx.90, thy.90; width: th.90; blend: 12 * clamp(th.90 / 3, 0, 1) }
+        ellipse { at: x.91, floor + 4; radius: rr.91 * 0.5 * base.91; scale: 1.6, 0.5; blend: 14 }
         line { from: x.91, floor + 6; to: x.91, y.91; width: rr.91 * 2 * stalk.91; blend: 14 }
-        line { from: x.91, floor; to: thx.91, floor; width: wa.91 * 2; blend: 18 }
+        line { from: x.91, floor + wa.91; to: thx.91, floor + wa.91; width: wa.91 * 2; blend: 16 }
         ellipse { at: x.91, y.91; radius: rr.91; scale: 1 + fxw.91, 1 - fxw.91; blend: lk.91 + 6 * near.91 }
-        line { from: x.91, y.91; to: thx.91, thy.91; width: th.91; blend: 12 * clamp(th.91 / 3, 0, 1) }
-        ellipse { at: x.92, floor + 3; radius: rr.92 * 0.62 * base.92; scale: 1.7, 0.55; blend: 16 }
+        line { from: x.91, y.91 - thy0.91; to: thx.91, thy.91; width: th.91; blend: 12 * clamp(th.91 / 3, 0, 1) }
+        ellipse { at: x.92, floor + 4; radius: rr.92 * 0.5 * base.92; scale: 1.6, 0.5; blend: 14 }
         line { from: x.92, floor + 6; to: x.92, y.92; width: rr.92 * 2 * stalk.92; blend: 14 }
-        line { from: x.92, floor; to: thx.92, floor; width: wa.92 * 2; blend: 18 }
+        line { from: x.92, floor + wa.92; to: thx.92, floor + wa.92; width: wa.92 * 2; blend: 16 }
         ellipse { at: x.92, y.92; radius: rr.92; scale: 1 + fxw.92, 1 - fxw.92; blend: lk.92 + 6 * near.92 }
-        line { from: x.92, y.92; to: thx.92, thy.92; width: th.92; blend: 12 * clamp(th.92 / 3, 0, 1) }
-        ellipse { at: x.93, floor + 3; radius: rr.93 * 0.62 * base.93; scale: 1.7, 0.55; blend: 16 }
+        line { from: x.92, y.92 - thy0.92; to: thx.92, thy.92; width: th.92; blend: 12 * clamp(th.92 / 3, 0, 1) }
+        ellipse { at: x.93, floor + 4; radius: rr.93 * 0.5 * base.93; scale: 1.6, 0.5; blend: 14 }
         line { from: x.93, floor + 6; to: x.93, y.93; width: rr.93 * 2 * stalk.93; blend: 14 }
-        line { from: x.93, floor; to: thx.93, floor; width: wa.93 * 2; blend: 18 }
+        line { from: x.93, floor + wa.93; to: thx.93, floor + wa.93; width: wa.93 * 2; blend: 16 }
         ellipse { at: x.93, y.93; radius: rr.93; scale: 1 + fxw.93, 1 - fxw.93; blend: lk.93 + 6 * near.93 }
-        line { from: x.93, y.93; to: thx.93, thy.93; width: th.93; blend: 12 * clamp(th.93 / 3, 0, 1) }
-        ellipse { at: x.94, floor + 3; radius: rr.94 * 0.62 * base.94; scale: 1.7, 0.55; blend: 16 }
+        line { from: x.93, y.93 - thy0.93; to: thx.93, thy.93; width: th.93; blend: 12 * clamp(th.93 / 3, 0, 1) }
+        ellipse { at: x.94, floor + 4; radius: rr.94 * 0.5 * base.94; scale: 1.6, 0.5; blend: 14 }
         line { from: x.94, floor + 6; to: x.94, y.94; width: rr.94 * 2 * stalk.94; blend: 14 }
-        line { from: x.94, floor; to: thx.94, floor; width: wa.94 * 2; blend: 18 }
+        line { from: x.94, floor + wa.94; to: thx.94, floor + wa.94; width: wa.94 * 2; blend: 16 }
         ellipse { at: x.94, y.94; radius: rr.94; scale: 1 + fxw.94, 1 - fxw.94; blend: lk.94 + 6 * near.94 }
-        line { from: x.94, y.94; to: thx.94, thy.94; width: th.94; blend: 12 * clamp(th.94 / 3, 0, 1) }
-        ellipse { at: x.95, floor + 3; radius: rr.95 * 0.62 * base.95; scale: 1.7, 0.55; blend: 16 }
+        line { from: x.94, y.94 - thy0.94; to: thx.94, thy.94; width: th.94; blend: 12 * clamp(th.94 / 3, 0, 1) }
+        ellipse { at: x.95, floor + 4; radius: rr.95 * 0.5 * base.95; scale: 1.6, 0.5; blend: 14 }
         line { from: x.95, floor + 6; to: x.95, y.95; width: rr.95 * 2 * stalk.95; blend: 14 }
-        line { from: x.95, floor; to: thx.95, floor; width: wa.95 * 2; blend: 18 }
+        line { from: x.95, floor + wa.95; to: thx.95, floor + wa.95; width: wa.95 * 2; blend: 16 }
         ellipse { at: x.95, y.95; radius: rr.95; scale: 1 + fxw.95, 1 - fxw.95; blend: lk.95 + 6 * near.95 }
-        line { from: x.95, y.95; to: thx.95, thy.95; width: th.95; blend: 12 * clamp(th.95 / 3, 0, 1) }
-        ellipse { at: x.96, floor + 3; radius: rr.96 * 0.62 * base.96; scale: 1.7, 0.55; blend: 16 }
+        line { from: x.95, y.95 - thy0.95; to: thx.95, thy.95; width: th.95; blend: 12 * clamp(th.95 / 3, 0, 1) }
+        ellipse { at: x.96, floor + 4; radius: rr.96 * 0.5 * base.96; scale: 1.6, 0.5; blend: 14 }
         line { from: x.96, floor + 6; to: x.96, y.96; width: rr.96 * 2 * stalk.96; blend: 14 }
-        line { from: x.96, floor; to: thx.96, floor; width: wa.96 * 2; blend: 18 }
+        line { from: x.96, floor + wa.96; to: thx.96, floor + wa.96; width: wa.96 * 2; blend: 16 }
         ellipse { at: x.96, y.96; radius: rr.96; scale: 1 + fxw.96, 1 - fxw.96; blend: lk.96 + 6 * near.96 }
-        line { from: x.96, y.96; to: thx.96, thy.96; width: th.96; blend: 12 * clamp(th.96 / 3, 0, 1) }
-        ellipse { at: x.97, floor + 3; radius: rr.97 * 0.62 * base.97; scale: 1.7, 0.55; blend: 16 }
+        line { from: x.96, y.96 - thy0.96; to: thx.96, thy.96; width: th.96; blend: 12 * clamp(th.96 / 3, 0, 1) }
+        ellipse { at: x.97, floor + 4; radius: rr.97 * 0.5 * base.97; scale: 1.6, 0.5; blend: 14 }
         line { from: x.97, floor + 6; to: x.97, y.97; width: rr.97 * 2 * stalk.97; blend: 14 }
-        line { from: x.97, floor; to: thx.97, floor; width: wa.97 * 2; blend: 18 }
+        line { from: x.97, floor + wa.97; to: thx.97, floor + wa.97; width: wa.97 * 2; blend: 16 }
         ellipse { at: x.97, y.97; radius: rr.97; scale: 1 + fxw.97, 1 - fxw.97; blend: lk.97 + 6 * near.97 }
-        line { from: x.97, y.97; to: thx.97, thy.97; width: th.97; blend: 12 * clamp(th.97 / 3, 0, 1) }
-        ellipse { at: x.98, floor + 3; radius: rr.98 * 0.62 * base.98; scale: 1.7, 0.55; blend: 16 }
+        line { from: x.97, y.97 - thy0.97; to: thx.97, thy.97; width: th.97; blend: 12 * clamp(th.97 / 3, 0, 1) }
+        ellipse { at: x.98, floor + 4; radius: rr.98 * 0.5 * base.98; scale: 1.6, 0.5; blend: 14 }
         line { from: x.98, floor + 6; to: x.98, y.98; width: rr.98 * 2 * stalk.98; blend: 14 }
-        line { from: x.98, floor; to: thx.98, floor; width: wa.98 * 2; blend: 18 }
+        line { from: x.98, floor + wa.98; to: thx.98, floor + wa.98; width: wa.98 * 2; blend: 16 }
         ellipse { at: x.98, y.98; radius: rr.98; scale: 1 + fxw.98, 1 - fxw.98; blend: lk.98 + 6 * near.98 }
-        line { from: x.98, y.98; to: thx.98, thy.98; width: th.98; blend: 12 * clamp(th.98 / 3, 0, 1) }
-        ellipse { at: x.99, floor + 3; radius: rr.99 * 0.62 * base.99; scale: 1.7, 0.55; blend: 16 }
+        line { from: x.98, y.98 - thy0.98; to: thx.98, thy.98; width: th.98; blend: 12 * clamp(th.98 / 3, 0, 1) }
+        ellipse { at: x.99, floor + 4; radius: rr.99 * 0.5 * base.99; scale: 1.6, 0.5; blend: 14 }
         line { from: x.99, floor + 6; to: x.99, y.99; width: rr.99 * 2 * stalk.99; blend: 14 }
-        line { from: x.99, floor; to: thx.99, floor; width: wa.99 * 2; blend: 18 }
+        line { from: x.99, floor + wa.99; to: thx.99, floor + wa.99; width: wa.99 * 2; blend: 16 }
         ellipse { at: x.99, y.99; radius: rr.99; scale: 1 + fxw.99, 1 - fxw.99; blend: lk.99 + 6 * near.99 }
-        line { from: x.99, y.99; to: thx.99, thy.99; width: th.99; blend: 12 * clamp(th.99 / 3, 0, 1) }
-        ellipse { at: x.100, floor + 3; radius: rr.100 * 0.62 * base.100; scale: 1.7, 0.55; blend: 16 }
+        line { from: x.99, y.99 - thy0.99; to: thx.99, thy.99; width: th.99; blend: 12 * clamp(th.99 / 3, 0, 1) }
+        ellipse { at: x.100, floor + 4; radius: rr.100 * 0.5 * base.100; scale: 1.6, 0.5; blend: 14 }
         line { from: x.100, floor + 6; to: x.100, y.100; width: rr.100 * 2 * stalk.100; blend: 14 }
-        line { from: x.100, floor; to: thx.100, floor; width: wa.100 * 2; blend: 18 }
+        line { from: x.100, floor + wa.100; to: thx.100, floor + wa.100; width: wa.100 * 2; blend: 16 }
         ellipse { at: x.100, y.100; radius: rr.100; scale: 1 + fxw.100, 1 - fxw.100; blend: lk.100 + 6 * near.100 }
-        line { from: x.100, y.100; to: thx.100, thy.100; width: th.100; blend: 12 * clamp(th.100 / 3, 0, 1) }
-        ellipse { at: x.101, floor + 3; radius: rr.101 * 0.62 * base.101; scale: 1.7, 0.55; blend: 16 }
+        line { from: x.100, y.100 - thy0.100; to: thx.100, thy.100; width: th.100; blend: 12 * clamp(th.100 / 3, 0, 1) }
+        ellipse { at: x.101, floor + 4; radius: rr.101 * 0.5 * base.101; scale: 1.6, 0.5; blend: 14 }
         line { from: x.101, floor + 6; to: x.101, y.101; width: rr.101 * 2 * stalk.101; blend: 14 }
-        line { from: x.101, floor; to: thx.101, floor; width: wa.101 * 2; blend: 18 }
+        line { from: x.101, floor + wa.101; to: thx.101, floor + wa.101; width: wa.101 * 2; blend: 16 }
         ellipse { at: x.101, y.101; radius: rr.101; scale: 1 + fxw.101, 1 - fxw.101; blend: lk.101 + 6 * near.101 }
-        line { from: x.101, y.101; to: thx.101, thy.101; width: th.101; blend: 12 * clamp(th.101 / 3, 0, 1) }
-        ellipse { at: x.102, floor + 3; radius: rr.102 * 0.62 * base.102; scale: 1.7, 0.55; blend: 16 }
+        line { from: x.101, y.101 - thy0.101; to: thx.101, thy.101; width: th.101; blend: 12 * clamp(th.101 / 3, 0, 1) }
+        ellipse { at: x.102, floor + 4; radius: rr.102 * 0.5 * base.102; scale: 1.6, 0.5; blend: 14 }
         line { from: x.102, floor + 6; to: x.102, y.102; width: rr.102 * 2 * stalk.102; blend: 14 }
-        line { from: x.102, floor; to: thx.102, floor; width: wa.102 * 2; blend: 18 }
+        line { from: x.102, floor + wa.102; to: thx.102, floor + wa.102; width: wa.102 * 2; blend: 16 }
         ellipse { at: x.102, y.102; radius: rr.102; scale: 1 + fxw.102, 1 - fxw.102; blend: lk.102 + 6 * near.102 }
-        line { from: x.102, y.102; to: thx.102, thy.102; width: th.102; blend: 12 * clamp(th.102 / 3, 0, 1) }
-        ellipse { at: x.103, floor + 3; radius: rr.103 * 0.62 * base.103; scale: 1.7, 0.55; blend: 16 }
+        line { from: x.102, y.102 - thy0.102; to: thx.102, thy.102; width: th.102; blend: 12 * clamp(th.102 / 3, 0, 1) }
+        ellipse { at: x.103, floor + 4; radius: rr.103 * 0.5 * base.103; scale: 1.6, 0.5; blend: 14 }
         line { from: x.103, floor + 6; to: x.103, y.103; width: rr.103 * 2 * stalk.103; blend: 14 }
-        line { from: x.103, floor; to: thx.103, floor; width: wa.103 * 2; blend: 18 }
+        line { from: x.103, floor + wa.103; to: thx.103, floor + wa.103; width: wa.103 * 2; blend: 16 }
         ellipse { at: x.103, y.103; radius: rr.103; scale: 1 + fxw.103, 1 - fxw.103; blend: lk.103 + 6 * near.103 }
-        line { from: x.103, y.103; to: thx.103, thy.103; width: th.103; blend: 12 * clamp(th.103 / 3, 0, 1) }
-        ellipse { at: x.104, floor + 3; radius: rr.104 * 0.62 * base.104; scale: 1.7, 0.55; blend: 16 }
+        line { from: x.103, y.103 - thy0.103; to: thx.103, thy.103; width: th.103; blend: 12 * clamp(th.103 / 3, 0, 1) }
+        ellipse { at: x.104, floor + 4; radius: rr.104 * 0.5 * base.104; scale: 1.6, 0.5; blend: 14 }
         line { from: x.104, floor + 6; to: x.104, y.104; width: rr.104 * 2 * stalk.104; blend: 14 }
-        line { from: x.104, floor; to: thx.104, floor; width: wa.104 * 2; blend: 18 }
+        line { from: x.104, floor + wa.104; to: thx.104, floor + wa.104; width: wa.104 * 2; blend: 16 }
         ellipse { at: x.104, y.104; radius: rr.104; scale: 1 + fxw.104, 1 - fxw.104; blend: lk.104 + 6 * near.104 }
-        line { from: x.104, y.104; to: thx.104, thy.104; width: th.104; blend: 12 * clamp(th.104 / 3, 0, 1) }
-        ellipse { at: x.105, floor + 3; radius: rr.105 * 0.62 * base.105; scale: 1.7, 0.55; blend: 16 }
+        line { from: x.104, y.104 - thy0.104; to: thx.104, thy.104; width: th.104; blend: 12 * clamp(th.104 / 3, 0, 1) }
+        ellipse { at: x.105, floor + 4; radius: rr.105 * 0.5 * base.105; scale: 1.6, 0.5; blend: 14 }
         line { from: x.105, floor + 6; to: x.105, y.105; width: rr.105 * 2 * stalk.105; blend: 14 }
-        line { from: x.105, floor; to: thx.105, floor; width: wa.105 * 2; blend: 18 }
+        line { from: x.105, floor + wa.105; to: thx.105, floor + wa.105; width: wa.105 * 2; blend: 16 }
         ellipse { at: x.105, y.105; radius: rr.105; scale: 1 + fxw.105, 1 - fxw.105; blend: lk.105 + 6 * near.105 }
-        line { from: x.105, y.105; to: thx.105, thy.105; width: th.105; blend: 12 * clamp(th.105 / 3, 0, 1) }
-        ellipse { at: x.106, floor + 3; radius: rr.106 * 0.62 * base.106; scale: 1.7, 0.55; blend: 16 }
+        line { from: x.105, y.105 - thy0.105; to: thx.105, thy.105; width: th.105; blend: 12 * clamp(th.105 / 3, 0, 1) }
+        ellipse { at: x.106, floor + 4; radius: rr.106 * 0.5 * base.106; scale: 1.6, 0.5; blend: 14 }
         line { from: x.106, floor + 6; to: x.106, y.106; width: rr.106 * 2 * stalk.106; blend: 14 }
-        line { from: x.106, floor; to: thx.106, floor; width: wa.106 * 2; blend: 18 }
+        line { from: x.106, floor + wa.106; to: thx.106, floor + wa.106; width: wa.106 * 2; blend: 16 }
         ellipse { at: x.106, y.106; radius: rr.106; scale: 1 + fxw.106, 1 - fxw.106; blend: lk.106 + 6 * near.106 }
-        line { from: x.106, y.106; to: thx.106, thy.106; width: th.106; blend: 12 * clamp(th.106 / 3, 0, 1) }
-        ellipse { at: x.107, floor + 3; radius: rr.107 * 0.62 * base.107; scale: 1.7, 0.55; blend: 16 }
+        line { from: x.106, y.106 - thy0.106; to: thx.106, thy.106; width: th.106; blend: 12 * clamp(th.106 / 3, 0, 1) }
+        ellipse { at: x.107, floor + 4; radius: rr.107 * 0.5 * base.107; scale: 1.6, 0.5; blend: 14 }
         line { from: x.107, floor + 6; to: x.107, y.107; width: rr.107 * 2 * stalk.107; blend: 14 }
-        line { from: x.107, floor; to: thx.107, floor; width: wa.107 * 2; blend: 18 }
+        line { from: x.107, floor + wa.107; to: thx.107, floor + wa.107; width: wa.107 * 2; blend: 16 }
         ellipse { at: x.107, y.107; radius: rr.107; scale: 1 + fxw.107, 1 - fxw.107; blend: lk.107 + 6 * near.107 }
-        line { from: x.107, y.107; to: thx.107, thy.107; width: th.107; blend: 12 * clamp(th.107 / 3, 0, 1) }
-        ellipse { at: x.108, floor + 3; radius: rr.108 * 0.62 * base.108; scale: 1.7, 0.55; blend: 16 }
+        line { from: x.107, y.107 - thy0.107; to: thx.107, thy.107; width: th.107; blend: 12 * clamp(th.107 / 3, 0, 1) }
+        ellipse { at: x.108, floor + 4; radius: rr.108 * 0.5 * base.108; scale: 1.6, 0.5; blend: 14 }
         line { from: x.108, floor + 6; to: x.108, y.108; width: rr.108 * 2 * stalk.108; blend: 14 }
-        line { from: x.108, floor; to: thx.108, floor; width: wa.108 * 2; blend: 18 }
+        line { from: x.108, floor + wa.108; to: thx.108, floor + wa.108; width: wa.108 * 2; blend: 16 }
         ellipse { at: x.108, y.108; radius: rr.108; scale: 1 + fxw.108, 1 - fxw.108; blend: lk.108 + 6 * near.108 }
-        line { from: x.108, y.108; to: thx.108, thy.108; width: th.108; blend: 12 * clamp(th.108 / 3, 0, 1) }
-        ellipse { at: x.109, floor + 3; radius: rr.109 * 0.62 * base.109; scale: 1.7, 0.55; blend: 16 }
+        line { from: x.108, y.108 - thy0.108; to: thx.108, thy.108; width: th.108; blend: 12 * clamp(th.108 / 3, 0, 1) }
+        ellipse { at: x.109, floor + 4; radius: rr.109 * 0.5 * base.109; scale: 1.6, 0.5; blend: 14 }
         line { from: x.109, floor + 6; to: x.109, y.109; width: rr.109 * 2 * stalk.109; blend: 14 }
-        line { from: x.109, floor; to: thx.109, floor; width: wa.109 * 2; blend: 18 }
+        line { from: x.109, floor + wa.109; to: thx.109, floor + wa.109; width: wa.109 * 2; blend: 16 }
         ellipse { at: x.109, y.109; radius: rr.109; scale: 1 + fxw.109, 1 - fxw.109; blend: lk.109 + 6 * near.109 }
-        line { from: x.109, y.109; to: thx.109, thy.109; width: th.109; blend: 12 * clamp(th.109 / 3, 0, 1) }
-        ellipse { at: x.110, floor + 3; radius: rr.110 * 0.62 * base.110; scale: 1.7, 0.55; blend: 16 }
+        line { from: x.109, y.109 - thy0.109; to: thx.109, thy.109; width: th.109; blend: 12 * clamp(th.109 / 3, 0, 1) }
+        ellipse { at: x.110, floor + 4; radius: rr.110 * 0.5 * base.110; scale: 1.6, 0.5; blend: 14 }
         line { from: x.110, floor + 6; to: x.110, y.110; width: rr.110 * 2 * stalk.110; blend: 14 }
-        line { from: x.110, floor; to: thx.110, floor; width: wa.110 * 2; blend: 18 }
+        line { from: x.110, floor + wa.110; to: thx.110, floor + wa.110; width: wa.110 * 2; blend: 16 }
         ellipse { at: x.110, y.110; radius: rr.110; scale: 1 + fxw.110, 1 - fxw.110; blend: lk.110 + 6 * near.110 }
-        line { from: x.110, y.110; to: thx.110, thy.110; width: th.110; blend: 12 * clamp(th.110 / 3, 0, 1) }
-        ellipse { at: x.111, floor + 3; radius: rr.111 * 0.62 * base.111; scale: 1.7, 0.55; blend: 16 }
+        line { from: x.110, y.110 - thy0.110; to: thx.110, thy.110; width: th.110; blend: 12 * clamp(th.110 / 3, 0, 1) }
+        ellipse { at: x.111, floor + 4; radius: rr.111 * 0.5 * base.111; scale: 1.6, 0.5; blend: 14 }
         line { from: x.111, floor + 6; to: x.111, y.111; width: rr.111 * 2 * stalk.111; blend: 14 }
-        line { from: x.111, floor; to: thx.111, floor; width: wa.111 * 2; blend: 18 }
+        line { from: x.111, floor + wa.111; to: thx.111, floor + wa.111; width: wa.111 * 2; blend: 16 }
         ellipse { at: x.111, y.111; radius: rr.111; scale: 1 + fxw.111, 1 - fxw.111; blend: lk.111 + 6 * near.111 }
-        line { from: x.111, y.111; to: thx.111, thy.111; width: th.111; blend: 12 * clamp(th.111 / 3, 0, 1) }
-        ellipse { at: x.112, floor + 3; radius: rr.112 * 0.62 * base.112; scale: 1.7, 0.55; blend: 16 }
+        line { from: x.111, y.111 - thy0.111; to: thx.111, thy.111; width: th.111; blend: 12 * clamp(th.111 / 3, 0, 1) }
+        ellipse { at: x.112, floor + 4; radius: rr.112 * 0.5 * base.112; scale: 1.6, 0.5; blend: 14 }
         line { from: x.112, floor + 6; to: x.112, y.112; width: rr.112 * 2 * stalk.112; blend: 14 }
-        line { from: x.112, floor; to: thx.112, floor; width: wa.112 * 2; blend: 18 }
+        line { from: x.112, floor + wa.112; to: thx.112, floor + wa.112; width: wa.112 * 2; blend: 16 }
         ellipse { at: x.112, y.112; radius: rr.112; scale: 1 + fxw.112, 1 - fxw.112; blend: lk.112 + 6 * near.112 }
-        line { from: x.112, y.112; to: thx.112, thy.112; width: th.112; blend: 12 * clamp(th.112 / 3, 0, 1) }
-        ellipse { at: x.113, floor + 3; radius: rr.113 * 0.62 * base.113; scale: 1.7, 0.55; blend: 16 }
+        line { from: x.112, y.112 - thy0.112; to: thx.112, thy.112; width: th.112; blend: 12 * clamp(th.112 / 3, 0, 1) }
+        ellipse { at: x.113, floor + 4; radius: rr.113 * 0.5 * base.113; scale: 1.6, 0.5; blend: 14 }
         line { from: x.113, floor + 6; to: x.113, y.113; width: rr.113 * 2 * stalk.113; blend: 14 }
-        line { from: x.113, floor; to: thx.113, floor; width: wa.113 * 2; blend: 18 }
+        line { from: x.113, floor + wa.113; to: thx.113, floor + wa.113; width: wa.113 * 2; blend: 16 }
         ellipse { at: x.113, y.113; radius: rr.113; scale: 1 + fxw.113, 1 - fxw.113; blend: lk.113 + 6 * near.113 }
-        line { from: x.113, y.113; to: thx.113, thy.113; width: th.113; blend: 12 * clamp(th.113 / 3, 0, 1) }
-        ellipse { at: x.114, floor + 3; radius: rr.114 * 0.62 * base.114; scale: 1.7, 0.55; blend: 16 }
+        line { from: x.113, y.113 - thy0.113; to: thx.113, thy.113; width: th.113; blend: 12 * clamp(th.113 / 3, 0, 1) }
+        ellipse { at: x.114, floor + 4; radius: rr.114 * 0.5 * base.114; scale: 1.6, 0.5; blend: 14 }
         line { from: x.114, floor + 6; to: x.114, y.114; width: rr.114 * 2 * stalk.114; blend: 14 }
-        line { from: x.114, floor; to: thx.114, floor; width: wa.114 * 2; blend: 18 }
+        line { from: x.114, floor + wa.114; to: thx.114, floor + wa.114; width: wa.114 * 2; blend: 16 }
         ellipse { at: x.114, y.114; radius: rr.114; scale: 1 + fxw.114, 1 - fxw.114; blend: lk.114 + 6 * near.114 }
-        line { from: x.114, y.114; to: thx.114, thy.114; width: th.114; blend: 12 * clamp(th.114 / 3, 0, 1) }
-        ellipse { at: x.115, floor + 3; radius: rr.115 * 0.62 * base.115; scale: 1.7, 0.55; blend: 16 }
+        line { from: x.114, y.114 - thy0.114; to: thx.114, thy.114; width: th.114; blend: 12 * clamp(th.114 / 3, 0, 1) }
+        ellipse { at: x.115, floor + 4; radius: rr.115 * 0.5 * base.115; scale: 1.6, 0.5; blend: 14 }
         line { from: x.115, floor + 6; to: x.115, y.115; width: rr.115 * 2 * stalk.115; blend: 14 }
-        line { from: x.115, floor; to: thx.115, floor; width: wa.115 * 2; blend: 18 }
+        line { from: x.115, floor + wa.115; to: thx.115, floor + wa.115; width: wa.115 * 2; blend: 16 }
         ellipse { at: x.115, y.115; radius: rr.115; scale: 1 + fxw.115, 1 - fxw.115; blend: lk.115 + 6 * near.115 }
-        line { from: x.115, y.115; to: thx.115, thy.115; width: th.115; blend: 12 * clamp(th.115 / 3, 0, 1) }
-        ellipse { at: x.116, floor + 3; radius: rr.116 * 0.62 * base.116; scale: 1.7, 0.55; blend: 16 }
+        line { from: x.115, y.115 - thy0.115; to: thx.115, thy.115; width: th.115; blend: 12 * clamp(th.115 / 3, 0, 1) }
+        ellipse { at: x.116, floor + 4; radius: rr.116 * 0.5 * base.116; scale: 1.6, 0.5; blend: 14 }
         line { from: x.116, floor + 6; to: x.116, y.116; width: rr.116 * 2 * stalk.116; blend: 14 }
-        line { from: x.116, floor; to: thx.116, floor; width: wa.116 * 2; blend: 18 }
+        line { from: x.116, floor + wa.116; to: thx.116, floor + wa.116; width: wa.116 * 2; blend: 16 }
         ellipse { at: x.116, y.116; radius: rr.116; scale: 1 + fxw.116, 1 - fxw.116; blend: lk.116 + 6 * near.116 }
-        line { from: x.116, y.116; to: thx.116, thy.116; width: th.116; blend: 12 * clamp(th.116 / 3, 0, 1) }
-        ellipse { at: x.117, floor + 3; radius: rr.117 * 0.62 * base.117; scale: 1.7, 0.55; blend: 16 }
+        line { from: x.116, y.116 - thy0.116; to: thx.116, thy.116; width: th.116; blend: 12 * clamp(th.116 / 3, 0, 1) }
+        ellipse { at: x.117, floor + 4; radius: rr.117 * 0.5 * base.117; scale: 1.6, 0.5; blend: 14 }
         line { from: x.117, floor + 6; to: x.117, y.117; width: rr.117 * 2 * stalk.117; blend: 14 }
-        line { from: x.117, floor; to: thx.117, floor; width: wa.117 * 2; blend: 18 }
+        line { from: x.117, floor + wa.117; to: thx.117, floor + wa.117; width: wa.117 * 2; blend: 16 }
         ellipse { at: x.117, y.117; radius: rr.117; scale: 1 + fxw.117, 1 - fxw.117; blend: lk.117 + 6 * near.117 }
-        line { from: x.117, y.117; to: thx.117, thy.117; width: th.117; blend: 12 * clamp(th.117 / 3, 0, 1) }
-        ellipse { at: x.118, floor + 3; radius: rr.118 * 0.62 * base.118; scale: 1.7, 0.55; blend: 16 }
+        line { from: x.117, y.117 - thy0.117; to: thx.117, thy.117; width: th.117; blend: 12 * clamp(th.117 / 3, 0, 1) }
+        ellipse { at: x.118, floor + 4; radius: rr.118 * 0.5 * base.118; scale: 1.6, 0.5; blend: 14 }
         line { from: x.118, floor + 6; to: x.118, y.118; width: rr.118 * 2 * stalk.118; blend: 14 }
-        line { from: x.118, floor; to: thx.118, floor; width: wa.118 * 2; blend: 18 }
+        line { from: x.118, floor + wa.118; to: thx.118, floor + wa.118; width: wa.118 * 2; blend: 16 }
         ellipse { at: x.118, y.118; radius: rr.118; scale: 1 + fxw.118, 1 - fxw.118; blend: lk.118 + 6 * near.118 }
-        line { from: x.118, y.118; to: thx.118, thy.118; width: th.118; blend: 12 * clamp(th.118 / 3, 0, 1) }
-        ellipse { at: x.119, floor + 3; radius: rr.119 * 0.62 * base.119; scale: 1.7, 0.55; blend: 16 }
+        line { from: x.118, y.118 - thy0.118; to: thx.118, thy.118; width: th.118; blend: 12 * clamp(th.118 / 3, 0, 1) }
+        ellipse { at: x.119, floor + 4; radius: rr.119 * 0.5 * base.119; scale: 1.6, 0.5; blend: 14 }
         line { from: x.119, floor + 6; to: x.119, y.119; width: rr.119 * 2 * stalk.119; blend: 14 }
-        line { from: x.119, floor; to: thx.119, floor; width: wa.119 * 2; blend: 18 }
+        line { from: x.119, floor + wa.119; to: thx.119, floor + wa.119; width: wa.119 * 2; blend: 16 }
         ellipse { at: x.119, y.119; radius: rr.119; scale: 1 + fxw.119, 1 - fxw.119; blend: lk.119 + 6 * near.119 }
-        line { from: x.119, y.119; to: thx.119, thy.119; width: th.119; blend: 12 * clamp(th.119 / 3, 0, 1) }
-        ellipse { at: x.120, floor + 3; radius: rr.120 * 0.62 * base.120; scale: 1.7, 0.55; blend: 16 }
+        line { from: x.119, y.119 - thy0.119; to: thx.119, thy.119; width: th.119; blend: 12 * clamp(th.119 / 3, 0, 1) }
+        ellipse { at: x.120, floor + 4; radius: rr.120 * 0.5 * base.120; scale: 1.6, 0.5; blend: 14 }
         line { from: x.120, floor + 6; to: x.120, y.120; width: rr.120 * 2 * stalk.120; blend: 14 }
-        line { from: x.120, floor; to: thx.120, floor; width: wa.120 * 2; blend: 18 }
+        line { from: x.120, floor + wa.120; to: thx.120, floor + wa.120; width: wa.120 * 2; blend: 16 }
         ellipse { at: x.120, y.120; radius: rr.120; scale: 1 + fxw.120, 1 - fxw.120; blend: lk.120 + 6 * near.120 }
-        line { from: x.120, y.120; to: thx.120, thy.120; width: th.120; blend: 12 * clamp(th.120 / 3, 0, 1) }
-        ellipse { at: x.121, floor + 3; radius: rr.121 * 0.62 * base.121; scale: 1.7, 0.55; blend: 16 }
+        line { from: x.120, y.120 - thy0.120; to: thx.120, thy.120; width: th.120; blend: 12 * clamp(th.120 / 3, 0, 1) }
+        ellipse { at: x.121, floor + 4; radius: rr.121 * 0.5 * base.121; scale: 1.6, 0.5; blend: 14 }
         line { from: x.121, floor + 6; to: x.121, y.121; width: rr.121 * 2 * stalk.121; blend: 14 }
-        line { from: x.121, floor; to: thx.121, floor; width: wa.121 * 2; blend: 18 }
+        line { from: x.121, floor + wa.121; to: thx.121, floor + wa.121; width: wa.121 * 2; blend: 16 }
         ellipse { at: x.121, y.121; radius: rr.121; scale: 1 + fxw.121, 1 - fxw.121; blend: lk.121 + 6 * near.121 }
-        line { from: x.121, y.121; to: thx.121, thy.121; width: th.121; blend: 12 * clamp(th.121 / 3, 0, 1) }
-        ellipse { at: x.122, floor + 3; radius: rr.122 * 0.62 * base.122; scale: 1.7, 0.55; blend: 16 }
+        line { from: x.121, y.121 - thy0.121; to: thx.121, thy.121; width: th.121; blend: 12 * clamp(th.121 / 3, 0, 1) }
+        ellipse { at: x.122, floor + 4; radius: rr.122 * 0.5 * base.122; scale: 1.6, 0.5; blend: 14 }
         line { from: x.122, floor + 6; to: x.122, y.122; width: rr.122 * 2 * stalk.122; blend: 14 }
-        line { from: x.122, floor; to: thx.122, floor; width: wa.122 * 2; blend: 18 }
+        line { from: x.122, floor + wa.122; to: thx.122, floor + wa.122; width: wa.122 * 2; blend: 16 }
         ellipse { at: x.122, y.122; radius: rr.122; scale: 1 + fxw.122, 1 - fxw.122; blend: lk.122 + 6 * near.122 }
-        line { from: x.122, y.122; to: thx.122, thy.122; width: th.122; blend: 12 * clamp(th.122 / 3, 0, 1) }
-        ellipse { at: x.123, floor + 3; radius: rr.123 * 0.62 * base.123; scale: 1.7, 0.55; blend: 16 }
+        line { from: x.122, y.122 - thy0.122; to: thx.122, thy.122; width: th.122; blend: 12 * clamp(th.122 / 3, 0, 1) }
+        ellipse { at: x.123, floor + 4; radius: rr.123 * 0.5 * base.123; scale: 1.6, 0.5; blend: 14 }
         line { from: x.123, floor + 6; to: x.123, y.123; width: rr.123 * 2 * stalk.123; blend: 14 }
-        line { from: x.123, floor; to: thx.123, floor; width: wa.123 * 2; blend: 18 }
+        line { from: x.123, floor + wa.123; to: thx.123, floor + wa.123; width: wa.123 * 2; blend: 16 }
         ellipse { at: x.123, y.123; radius: rr.123; scale: 1 + fxw.123, 1 - fxw.123; blend: lk.123 + 6 * near.123 }
-        line { from: x.123, y.123; to: thx.123, thy.123; width: th.123; blend: 12 * clamp(th.123 / 3, 0, 1) }
-        ellipse { at: x.124, floor + 3; radius: rr.124 * 0.62 * base.124; scale: 1.7, 0.55; blend: 16 }
+        line { from: x.123, y.123 - thy0.123; to: thx.123, thy.123; width: th.123; blend: 12 * clamp(th.123 / 3, 0, 1) }
+        ellipse { at: x.124, floor + 4; radius: rr.124 * 0.5 * base.124; scale: 1.6, 0.5; blend: 14 }
         line { from: x.124, floor + 6; to: x.124, y.124; width: rr.124 * 2 * stalk.124; blend: 14 }
-        line { from: x.124, floor; to: thx.124, floor; width: wa.124 * 2; blend: 18 }
+        line { from: x.124, floor + wa.124; to: thx.124, floor + wa.124; width: wa.124 * 2; blend: 16 }
         ellipse { at: x.124, y.124; radius: rr.124; scale: 1 + fxw.124, 1 - fxw.124; blend: lk.124 + 6 * near.124 }
-        line { from: x.124, y.124; to: thx.124, thy.124; width: th.124; blend: 12 * clamp(th.124 / 3, 0, 1) }
-        ellipse { at: x.125, floor + 3; radius: rr.125 * 0.62 * base.125; scale: 1.7, 0.55; blend: 16 }
+        line { from: x.124, y.124 - thy0.124; to: thx.124, thy.124; width: th.124; blend: 12 * clamp(th.124 / 3, 0, 1) }
+        ellipse { at: x.125, floor + 4; radius: rr.125 * 0.5 * base.125; scale: 1.6, 0.5; blend: 14 }
         line { from: x.125, floor + 6; to: x.125, y.125; width: rr.125 * 2 * stalk.125; blend: 14 }
-        line { from: x.125, floor; to: thx.125, floor; width: wa.125 * 2; blend: 18 }
+        line { from: x.125, floor + wa.125; to: thx.125, floor + wa.125; width: wa.125 * 2; blend: 16 }
         ellipse { at: x.125, y.125; radius: rr.125; scale: 1 + fxw.125, 1 - fxw.125; blend: lk.125 + 6 * near.125 }
-        line { from: x.125, y.125; to: thx.125, thy.125; width: th.125; blend: 12 * clamp(th.125 / 3, 0, 1) }
-        ellipse { at: x.126, floor + 3; radius: rr.126 * 0.62 * base.126; scale: 1.7, 0.55; blend: 16 }
+        line { from: x.125, y.125 - thy0.125; to: thx.125, thy.125; width: th.125; blend: 12 * clamp(th.125 / 3, 0, 1) }
+        ellipse { at: x.126, floor + 4; radius: rr.126 * 0.5 * base.126; scale: 1.6, 0.5; blend: 14 }
         line { from: x.126, floor + 6; to: x.126, y.126; width: rr.126 * 2 * stalk.126; blend: 14 }
-        line { from: x.126, floor; to: thx.126, floor; width: wa.126 * 2; blend: 18 }
+        line { from: x.126, floor + wa.126; to: thx.126, floor + wa.126; width: wa.126 * 2; blend: 16 }
         ellipse { at: x.126, y.126; radius: rr.126; scale: 1 + fxw.126, 1 - fxw.126; blend: lk.126 + 6 * near.126 }
-        line { from: x.126, y.126; to: thx.126, thy.126; width: th.126; blend: 12 * clamp(th.126 / 3, 0, 1) }
-        ellipse { at: x.127, floor + 3; radius: rr.127 * 0.62 * base.127; scale: 1.7, 0.55; blend: 16 }
+        line { from: x.126, y.126 - thy0.126; to: thx.126, thy.126; width: th.126; blend: 12 * clamp(th.126 / 3, 0, 1) }
+        ellipse { at: x.127, floor + 4; radius: rr.127 * 0.5 * base.127; scale: 1.6, 0.5; blend: 14 }
         line { from: x.127, floor + 6; to: x.127, y.127; width: rr.127 * 2 * stalk.127; blend: 14 }
-        line { from: x.127, floor; to: thx.127, floor; width: wa.127 * 2; blend: 18 }
+        line { from: x.127, floor + wa.127; to: thx.127, floor + wa.127; width: wa.127 * 2; blend: 16 }
         ellipse { at: x.127, y.127; radius: rr.127; scale: 1 + fxw.127, 1 - fxw.127; blend: lk.127 + 6 * near.127 }
-        line { from: x.127, y.127; to: thx.127, thy.127; width: th.127; blend: 12 * clamp(th.127 / 3, 0, 1) }
+        line { from: x.127, y.127 - thy0.127; to: thx.127, thy.127; width: th.127; blend: 12 * clamp(th.127 / 3, 0, 1) }
         ellipse { at: rpx.0 - rpg.0 * 420, floor + rpa.0 * 1.2; radius: rpa.0 * 2.2 * (1 - rpg.0) * if(rpk.0 > 0.5, 0, 1); scale: 2.2, 1; blend: 14 }
         ellipse { at: rpx.0 + rpg.0 * 420, floor + rpa.0 * 1.2; radius: rpa.0 * 2.2 * (1 - rpg.0) * if(rpk.0 > 0.5, 0, 1); scale: 2.2, 1; blend: 14 }
         ellipse { at: rpx.0, floor + 4; radius: rpa.0 * (1.2 + 0.6 * sin(time * 1900)) * (1 - rpg.0) * if(rpk.0 > 0.5, 1, 0); scale: 2.6, 1; blend: 12 }

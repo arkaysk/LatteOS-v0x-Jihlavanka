@@ -94,7 +94,11 @@ samostatný tekutý prvok.
 20. **Naťahovanie za kurzorom od okraja iba po určitú vzdialenosť** (1. 10. večer): dlhý krk-vlák je nepekný —
    kvapka sa odtrhne skôr. **Návrat k okraju (Marea):** keď sa goo vráti k okraju, akoby vnikla pod hladinu a znova
    sa vynorila.
-21. **Oká medzi spojmi kvapiek sú pekné** (1. 10. večer), ale **okrajová čiara musí byť ostrá**, nie rozmazaná.
+21. **Oká medzi spojmi kvapiek sú pekné** (1. 10. večer), ale **okrajová čiara musí byť ostrá**, nie rozmazaná —
+   pekná čiara ohraničenia. Ako vznikajú (vysvetlenie používateľa): jednotlivé bunky dýchajú a mierne sa hýbu;
+   nad otvormi je **vlákno, ktoré spája susedné goo — čím bližšie, tým hrubšie, organické a nepravidelné**.
+   Ostrosť rieši záplata pleamar `pleamar-ostre-okraje` (vyhladenie hrany podľa skutočnej zmeny vzdialenosti na
+   pixel), teda v ploche Kvapky aj v engine bez zmeny scény.
 
 ---
 

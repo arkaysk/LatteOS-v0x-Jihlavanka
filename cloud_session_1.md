@@ -469,3 +469,30 @@ a ponor z logiky preto trafili vždy iba kvapku na mieste 0, aj v teste hry. Ter
 
 **Plocha Kvapky:** oká tam majú rozmazaný okraj (tieň tela 0, 6, 16). Nezmenil som to, lebo by sa zmenil aj tieň
 celej lišty (dizajn) — čaká na súhlas.
+
+### Ostré oká a vlákna medzi kvapkami
+
+**Zadanie:** zostriť okraj ôk v súčasnej ploche Kvapky (pekná čiara ohraničenia). Vysvetlenie používateľa: tvary
+vznikajú tým, že bunky dýchajú a mierne sa hýbu. Nad otvormi je vlákno, ktoré spája susedné goo: čím bližšie, tým
+hrubšie, organicky a nepravidelne.
+
+**Príčina rozmazania (zmerané, zväčšené oko):** nespôsoboval ju tieň ani lem. Varianty s tesným tieňom a s ostrou
+`border` mali oko stále rozmazané, vonkajší obrys bol ostrý vždy. Pleamar vyhladzuje hranu pevnou šírkou 0,75 px,
+ako keby sa vzdialenosť od okraja menila o pixel na pixel. V zliatí (smooth min) je stlačená, preto sa hrana oka
+rozmaže na niekoľko pixelov.
+
+**Riešenie: záplata `pleamar-ostre-okraje.patch`.** Vzdialenosť sa pred vyhladením vydelí jej skutočnou zmenou na
+pixel (`dpdx`/`dpdy`, pleamar ich už počítal pre sklo). Platí pre výplň, `border`, lem aj tieň pod sklom. Hrana sa
+iba zostrí, nikdy nerozmaže viac.
+- **Plocha Kvapky sa nemenila:** oká sú ostré vďaka záplate (`docs/goo/oka-ostre-kvapky-cloud.png`).
+- `install-session.sh` záplatu použije a pleamar preloží. Všetky tri záplaty sedia na čistom pleamar 0.2.6.
+
+**Engine:**
+- **Vlákno** spája horné časti susedov.
+  - Hrúbka 3–14 px podľa blízkosti (`close` = 1 − medzera / 0,9 súčtu polomerov) × nepravidelnosť
+    (vlastný šum 0,65–1,35).
+  - Konce sa mierne hýbu. Samo sa tvorí a trhá s tokom a hrubne s nadnesením.
+- **Voda** medzi susedmi leží pod hladinou (ako „voda pod okrajom“ v Kvapkách) a mláka je menšia. Predtým zaliala
+  medzery a trojica bola plná hmota bez ôk.
+- Oká teraz vznikajú medzi TimeGoo a hlavou Goobaru, prichádzajú a miznú s dýchaním, s ostrou čiarou
+  (`docs/goo/oka-engine-cloud.png`).
