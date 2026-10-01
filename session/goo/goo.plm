@@ -1,0 +1,223 @@
+// LatteOS — engine Goo (jadro, skúšobná scéna; relácia „LatteOS Kvapky – engine test“).
+// Jedny pravidlá pre všetky kvapky: každá kvapka je záznam v modeli `goo` (plní logika, lib/engine.luau) a scéna
+// s ňou robí vždy to isté — poloha s pružinou, gravitácia a svetlo kurzora, lepivosť (ťahanie s odtrhnutím),
+// veľkosť (koliesko, prechod myšou), efekty a vstupy myši (ľavé, pravé, stredné tlačidlo, podržanie, koliesko,
+// prechod, ťahanie). Čím sa kvapky líšia, sú iba ČÍSLA v ich zázname (povaha), nie vlastné pravidlá.
+// Nová kvapka = záznam (JSON používateľa alebo modul Luau programátora), scéna sa nemení. Pozri README.md.
+//
+// Rozšírenie pleamar „ako DLC“: iba zdokumentovaný jazyk 0.2 (bez záplat Rustu), aby to prežilo aktualizácie.
+// Jediné, čo jazyk nedovolí, je `repeat` vnútri `body` (zliatie goo) — telo preto rozpisuje gen.py (16 miest).
+language 0.2
+
+scene Goo {
+    surface {
+        size: full, full    // celá obrazovka: kvapka môže byť kdekoľvek; kliky berú iba zóny
+        anchor: bottom
+        margin: 0
+        level: top
+        reserve: -1
+        rate: 60
+    }
+    permissions { run: "latte-goo", "date"; services: "clock" }
+
+    // ── farby (ako Kvapky: káva a smotana) ───────────────────────────────────────────────────────────────────
+    let coffee = #2a160c
+    let cream = #f3ebdd
+    let ink = #f3ebdd
+    let W = screen.width
+    let H = screen.height
+    let floor = H - 6                          // hladina lišty: kvapky pri nej sa s ňou zlievajú (lepivosť k lište)
+
+    // ── kvapky: jeden záznam = jedna kvapka (miesto k). Polia plní logika; čo chýba, má predvolenú hodnotu ─────
+    //   on      miesto obsadené            hx, hy   domov: hx podiel šírky obrazovky (0…1), hy výška nad lištou (px);
+    //                                               nezávislé od rozlíšenia — logika súradnice obrazovky nepozná
+    //   r       polomer (px)               z        veľkosť (koliesko: 0.6…2.4)       rast  zväčšenie pri prechode myšou
+    //   grav    gravitácia kurzora: + priťahuje (zvedavá), − odpudzuje (plachá)     dosah  dokiaľ ju kurzor cíti (px)
+    //   lep     lepivosť 0…1 (pri ťahaní sa drží domova, natiahne sa a až potom odtrhne)  trh  dĺžka odtrhnutia (px)
+    //   svetlo  odlesk od kurzora (0…1)    tahat    dá sa ťahať     farba  0 káva, 1 karamel, 2 smotana, 3 čokoláda,
+    //                                                                       4 višňa, 5 mäta, 6 levanduľa, 7 med
+    //   fx, fa  efekt scény a jeho sila: 0 nič, 1 dych, 2 kmit, 3 tras, 4 obeh, 5 tlkot, 6–9 REZERVA (zatiaľ nič)
+    //   e1…e4   REZERVA pre efekty logiky (s pružinou): e1 + veľkosť, e2 / e3 posun x / y (px), e4 žiara okraja
+    //   druh    0 ikona + nápis, 1 ukazovateľ (prstenec podľa `hodnota` 0…1), 2–3 REZERVA
+    //   ikona, nazov, text  ikona (znak písma Tabler), nápis pod kvapkou, text v kvapke
+    model goo max 16 {
+        on: bool; hx: number; hy: number; r: number = 26; z: number = 1; rast: number = 0.12
+        grav: number; dosah: number = 220; lep: number; trh: number = 90; svetlo: number = 0.5; tahat: bool = true
+        farba: number; fx: number; fa: number = 1; e1: number; e2: number; e3: number; e4: number
+        druh: number; hodnota: number; ikona: text; nazov: text; text: text
+    }
+    spring plava = 150, 13                    // vodorovne: mäkko, bez odskoku
+    spring pada = 190, 9                      // zvisle: s odrazom (ťažká kvapka dopadne a odskočí)
+    spring rastie = 260, 16
+    spring rezerva = 120, 14                  // kanály e1…e4 (logika ich mení zriedka, pružina to vyhladí)
+
+    // vstupy myši → logika (payload = miesto k; koliesko k * 2 + 1 hore, k * 2 dole)
+    event goo_click ->
+    event goo_right ->
+    event goo_middle ->
+    event goo_hold ->
+    event goo_scroll ->
+    event goo_enter ->
+    event goo_leave ->
+    event goo_hover ->
+    event goo_drag ->
+    event goo_drop ->
+    event goo_idle ->
+    event goo_hop                              // logika → scéna: kvapka k poskočí (hra pri nečinnosti)
+    fact rx = 0                               // kam bola kvapka pustená (číta logika pri goo_drop): ako hx, hy
+    fact ry = 0
+    fact idle = 0                             // 0 aktívny, 1 nečinnosť (30 s), 2 dlhá nečinnosť (2 min)
+
+    // bublina s popisom (prechod myšou; text plní logika)
+    text tip = ""
+    fact tipk = -1
+    fact tipx = 0
+    fact tipy = 0
+    prop tip.p = 0 ~rastie
+    // ladenie (relácia engine test): posledná udalosť vľavo hore
+    text hud = ""
+    fact ladenie = false
+
+    repeat k in 0..16 {
+        // ťahanie (iba scéna): posun od stlačenia, či už ide o ťahanie (drg) a či sa kvapka odtrhla (tr)
+        fact dx.$k = 0
+        fact dy.$k = 0
+        fact drg.$k = 0
+        fact tr.$k = 0
+        fact lp.$k = 0                        // stlačené ľavým (klik = pustenie ľavého bez ťahania)
+        prop hov.$k = 0 ~rastie
+        // gravitácia kurzora: v dosahu ťahá kvapku k sebe (alebo od seba), slabšie čím je lepkavejšia
+        let hxp.$k = goo.$k.hx * W
+        let hyp.$k = floor - goo.$k.hy
+        let cdx.$k = cursor.x - hxp.$k
+        let cdy.$k = cursor.y - hyp.$k
+        let cd.$k = max(length(cdx.$k, cdy.$k), 1)
+        // (smooth() chce stále hranice; dosah je z modelu → vlastná plynulá krivka t²(3 − 2t))
+        let ct.$k = clamp((cd.$k - goo.$k.r) / max(goo.$k.dosah - goo.$k.r, 1), 0, 1)
+        let pull.$k = goo.$k.grav * (1 - ct.$k * ct.$k * (3 - 2 * ct.$k)) * (1 - goo.$k.lep * 0.6) * (1 - drg.$k)
+        let shift.$k = pull.$k * min(cd.$k, goo.$k.dosah) * 0.28
+        // lepivosť: kým sa neodtrhne, ide za myšou iba časť cesty (natiahne sa, krk ostane doma)
+        let mv.$k = if(tr.$k > 0, 1, 1 - goo.$k.lep * 0.75)
+        // efekty scény (bez logiky, plynulo): 1 dych, 2 kmit, 3 tras, 4 obeh, 5 tlkot; 6–9 rezerva
+        // (sin a cos sú v stupňoch: time * 120 = 120 °/s)
+        let fxs.$k = goo.$k.fa * (if(goo.$k.fx == 1, 0.05 * sin(time * 120 + k * 50), 0) + if(goo.$k.fx == 5, 0.09 * smooth(0.82, 1, sin(time * 315 + k * 50)), 0)) + if(idle > 0, 0.03 * sin(time * 75 + k * 50), 0)
+        prop fxw.$k = 0 ~0ms
+        follow fxw.$k = goo.$k.fa * if(goo.$k.fx == 2, 0.07 * noise(k * 1.7, time * 1.6), 0)
+        let fxx.$k = goo.$k.fa * (if(goo.$k.fx == 3, 2.5 * noise(k, time * 18), 0) + if(goo.$k.fx == 4, 4 * cos(time * 80 + k * 40), 0))
+        let fxy.$k = goo.$k.fa * (if(goo.$k.fx == 3, 2.5 * noise(k + 9, time * 18), 0) + if(goo.$k.fx == 4, 4 * sin(time * 80 + k * 40), 0))
+        // rezerva pre logiku (e1…e4), s pružinou
+        prop e1.$k = 0 ~rezerva
+        prop e2.$k = 0 ~rezerva
+        prop e3.$k = 0 ~rezerva
+        prop e4.$k = 0 ~rezerva
+        follow e1.$k = goo.$k.e1
+        follow e2.$k = goo.$k.e2
+        follow e3.$k = goo.$k.e3
+        follow e4.$k = goo.$k.e4
+        // poloha: domov + gravitácia + ťahanie, s pružinou; zobrazená poloha k tomu pridá efekty
+        prop px.$k = 0 ~plava
+        prop py.$k = 0 ~pada
+        follow px.$k = hxp.$k + cdx.$k / cd.$k * shift.$k + dx.$k * mv.$k
+        follow py.$k = hyp.$k + cdy.$k / cd.$k * shift.$k + dy.$k * mv.$k
+        // x, y, rr, near, neck, fxw: pružina ~0ms = tá istá hodnota v tom istom snímku, ale globálna
+        // (let vnútri repeat patrí iba svojej kópii; telo goo a odlesky ich potrebujú zvonka)
+        prop x.$k = 0 ~0ms
+        prop y.$k = 0 ~0ms
+        prop rr.$k = 0 ~0ms
+        prop near.$k = 0 ~0ms
+        prop neck.$k = 0 ~0ms
+        follow x.$k = px.$k + fxx.$k + e2.$k
+        follow y.$k = py.$k + fxy.$k + e3.$k
+        follow rr.$k = goo.$k.r * goo.$k.z * (1 + goo.$k.rast * hov.$k + fxs.$k + e1.$k) * if(goo.$k.on, 1, 0)
+        // pri lište sa s ňou zleje (0 = ďaleko, 1 = dotýka sa)
+        let nt.$k = clamp((floor - y.$k - rr.$k * 0.6) / (rr.$k * 0.4 + 70), 0, 1)
+        follow near.$k = 1 - nt.$k * nt.$k * (3 - 2 * nt.$k)
+        // krk: kým lepkavá kvapka drží, spája ju s domovom (zmizne po odtrhnutí)
+        follow neck.$k = drg.$k * (1 - tr.$k) * goo.$k.lep * clamp(length(dx.$k, dy.$k) / 30, 0, 1)
+
+        zone ellipse hit.$k { at: x.$k, y.$k; radius: if(drg.$k > 0, 4000, max(rr.$k, 12)); cursor: pointer; active: goo.$k.on }
+        on enter hit.$k { hov.$k: 1; emit goo_enter(k) }
+        on leave hit.$k { hov.$k: 0; emit goo_leave(k) }
+        on hover hit.$k for 450ms { tipk = k; tipx = x.$k; tipy = y.$k - rr.$k - 14; tip.p: 1; emit goo_hover(k) }
+        on away hit.$k for 200ms while tipk == k { tip.p: 0 }
+        on press hit.$k { lp.$k = 1 }
+        on press right hit.$k { lp.$k = 0; emit goo_right(k) }
+        on press middle hit.$k { lp.$k = 0; emit goo_middle(k) }
+        on hold hit.$k for 650ms while drg.$k == 0 and lp.$k == 1 { lp.$k = 0; emit goo_hold(k) }
+        on scroll hit.$k { emit goo_scroll(k * 2 + if(wheel > 0, 1, 0)) }
+        on drag hit.$k while goo.$k.tahat { dx.$k = drag.dx; dy.$k = drag.dy }
+        on drag hit.$k while goo.$k.tahat and drg.$k == 0 and length(drag.dx, drag.dy) > 6 { drg.$k = 1; tip.p: 0; emit goo_drag(k) }
+        on drag hit.$k while goo.$k.tahat and tr.$k == 0 and length(drag.dx, drag.dy) > goo.$k.trh * goo.$k.lep { tr.$k = 1 }
+        // pustenie: bez ťahania = klik; po ťahaní povie logike, kam (neodtrhnutá lepkavá kvapka sa vráti domov)
+        on release hit.$k while drg.$k == 0 and lp.$k == 1 { lp.$k = 0; emit goo_click(k) }
+        on release hit.$k while drg.$k > 0 { rx = (hxp.$k + dx.$k * mv.$k) / W; ry = floor - (hyp.$k + dy.$k * mv.$k); emit goo_drop(k) }
+        on goo_hop(v) while v == k { impulse py.$k -520 }
+    }
+
+    // nečinnosť (živé bytosti): logika podľa úrovne spustí hru; pohyb myši ich hneď zobudí
+    on idle for 30s { idle = 1; emit goo_idle(1) }
+    on idle for 120s { idle = 2; emit goo_idle(2) }
+    on change cursor.x while idle > 0 { idle = 0; emit goo_idle(0) }
+    on change cursor.y while idle > 0 { idle = 0; emit goo_idle(0) }
+
+    // ── telo: lišta a všetky kvapky v jednom goo (zliatie) ─────────────────────────────────────────────────────
+    body {
+        // farba lišty; kvapky majú každá svoju (pole farba) a v zliatí sa farby prelievajú
+        color: coffee
+        rim: 28%
+        shadow: 0, 5, 14, 35%
+        box bar { from: 0, floor; size: W, 40; color: coffee }
+        // >>> telo (gen.py)
+        ellipse { at: x.0, y.0; radius: rr.0; scale: 1 + fxw.0, 1 - fxw.0; blend: 12 + 14 * near.0 }
+        line { from: goo.0.hx * W, floor - goo.0.hy; to: x.0, y.0; width: rr.0 * 0.7 * neck.0; blend: 22 * neck.0; show: neck.0 > 0.02 }
+        ellipse { at: x.1, y.1; radius: rr.1; scale: 1 + fxw.1, 1 - fxw.1; blend: 12 + 14 * near.1 }
+        line { from: goo.1.hx * W, floor - goo.1.hy; to: x.1, y.1; width: rr.1 * 0.7 * neck.1; blend: 22 * neck.1; show: neck.1 > 0.02 }
+        ellipse { at: x.2, y.2; radius: rr.2; scale: 1 + fxw.2, 1 - fxw.2; blend: 12 + 14 * near.2 }
+        line { from: goo.2.hx * W, floor - goo.2.hy; to: x.2, y.2; width: rr.2 * 0.7 * neck.2; blend: 22 * neck.2; show: neck.2 > 0.02 }
+        ellipse { at: x.3, y.3; radius: rr.3; scale: 1 + fxw.3, 1 - fxw.3; blend: 12 + 14 * near.3 }
+        line { from: goo.3.hx * W, floor - goo.3.hy; to: x.3, y.3; width: rr.3 * 0.7 * neck.3; blend: 22 * neck.3; show: neck.3 > 0.02 }
+        ellipse { at: x.4, y.4; radius: rr.4; scale: 1 + fxw.4, 1 - fxw.4; blend: 12 + 14 * near.4 }
+        line { from: goo.4.hx * W, floor - goo.4.hy; to: x.4, y.4; width: rr.4 * 0.7 * neck.4; blend: 22 * neck.4; show: neck.4 > 0.02 }
+        ellipse { at: x.5, y.5; radius: rr.5; scale: 1 + fxw.5, 1 - fxw.5; blend: 12 + 14 * near.5 }
+        line { from: goo.5.hx * W, floor - goo.5.hy; to: x.5, y.5; width: rr.5 * 0.7 * neck.5; blend: 22 * neck.5; show: neck.5 > 0.02 }
+        ellipse { at: x.6, y.6; radius: rr.6; scale: 1 + fxw.6, 1 - fxw.6; blend: 12 + 14 * near.6 }
+        line { from: goo.6.hx * W, floor - goo.6.hy; to: x.6, y.6; width: rr.6 * 0.7 * neck.6; blend: 22 * neck.6; show: neck.6 > 0.02 }
+        ellipse { at: x.7, y.7; radius: rr.7; scale: 1 + fxw.7, 1 - fxw.7; blend: 12 + 14 * near.7 }
+        line { from: goo.7.hx * W, floor - goo.7.hy; to: x.7, y.7; width: rr.7 * 0.7 * neck.7; blend: 22 * neck.7; show: neck.7 > 0.02 }
+        ellipse { at: x.8, y.8; radius: rr.8; scale: 1 + fxw.8, 1 - fxw.8; blend: 12 + 14 * near.8 }
+        line { from: goo.8.hx * W, floor - goo.8.hy; to: x.8, y.8; width: rr.8 * 0.7 * neck.8; blend: 22 * neck.8; show: neck.8 > 0.02 }
+        ellipse { at: x.9, y.9; radius: rr.9; scale: 1 + fxw.9, 1 - fxw.9; blend: 12 + 14 * near.9 }
+        line { from: goo.9.hx * W, floor - goo.9.hy; to: x.9, y.9; width: rr.9 * 0.7 * neck.9; blend: 22 * neck.9; show: neck.9 > 0.02 }
+        ellipse { at: x.10, y.10; radius: rr.10; scale: 1 + fxw.10, 1 - fxw.10; blend: 12 + 14 * near.10 }
+        line { from: goo.10.hx * W, floor - goo.10.hy; to: x.10, y.10; width: rr.10 * 0.7 * neck.10; blend: 22 * neck.10; show: neck.10 > 0.02 }
+        ellipse { at: x.11, y.11; radius: rr.11; scale: 1 + fxw.11, 1 - fxw.11; blend: 12 + 14 * near.11 }
+        line { from: goo.11.hx * W, floor - goo.11.hy; to: x.11, y.11; width: rr.11 * 0.7 * neck.11; blend: 22 * neck.11; show: neck.11 > 0.02 }
+        ellipse { at: x.12, y.12; radius: rr.12; scale: 1 + fxw.12, 1 - fxw.12; blend: 12 + 14 * near.12 }
+        line { from: goo.12.hx * W, floor - goo.12.hy; to: x.12, y.12; width: rr.12 * 0.7 * neck.12; blend: 22 * neck.12; show: neck.12 > 0.02 }
+        ellipse { at: x.13, y.13; radius: rr.13; scale: 1 + fxw.13, 1 - fxw.13; blend: 12 + 14 * near.13 }
+        line { from: goo.13.hx * W, floor - goo.13.hy; to: x.13, y.13; width: rr.13 * 0.7 * neck.13; blend: 22 * neck.13; show: neck.13 > 0.02 }
+        ellipse { at: x.14, y.14; radius: rr.14; scale: 1 + fxw.14, 1 - fxw.14; blend: 12 + 14 * near.14 }
+        line { from: goo.14.hx * W, floor - goo.14.hy; to: x.14, y.14; width: rr.14 * 0.7 * neck.14; blend: 22 * neck.14; show: neck.14 > 0.02 }
+        ellipse { at: x.15, y.15; radius: rr.15; scale: 1 + fxw.15, 1 - fxw.15; blend: 12 + 14 * near.15 }
+        line { from: goo.15.hx * W, floor - goo.15.hy; to: x.15, y.15; width: rr.15 * 0.7 * neck.15; blend: 22 * neck.15; show: neck.15 > 0.02 }
+                // <<< telo
+    }
+    // odlesky: svetlo kurzora na každej kvapke (bližšie = jasnejšie)
+    repeat k in 0..16 {
+        let rs.$k = rr.$k / 26                // pomer veľkosti (texty: `size:` = číslo × pomer)
+        // farba kvapky: telo goo má jednu farbu (lišta, zliatie), tón kvapky je vrstva nad ním
+        ellipse { at: x.$k, y.$k; radius: rr.$k * 0.97; scale: 1 + fxw.$k, 1 - fxw.$k; color: if(goo.$k.farba == 7, #a8742a, if(goo.$k.farba == 6, #5b4a7a, if(goo.$k.farba == 5, #2f5d50, if(goo.$k.farba == 4, #6e1f2a, if(goo.$k.farba == 3, #1a0d07, if(goo.$k.farba == 2, #d9c2a0, if(goo.$k.farba == 1, #7a4a24, #2a160c))))))); opacity: if(goo.$k.farba > 0 and goo.$k.on, 0.8, 0) }
+        ellipse { at: x.$k + (cursor.x - x.$k) / max(length(cursor.x - x.$k, cursor.y - y.$k), 1) * rr.$k * 0.45, y.$k + (cursor.y - y.$k) / max(length(cursor.x - x.$k, cursor.y - y.$k), 1) * rr.$k * 0.45; radius: rr.$k * 0.16; scale: 1.4, 0.8; color: cream; opacity: goo.$k.svetlo * (0.25 + 0.5 * clamp(1 - length(cursor.x - x.$k, cursor.y - y.$k) / 420, 0, 1)) }
+        // žiara okraja (rezerva e4)
+        ellipse { at: x.$k, y.$k; radius: rr.$k + 3; stroke: 2.5 * e4.$k; color: #f7c873; opacity: clamp(e4.$k, 0, 1) }
+        // druh 1: ukazovateľ (prstenec podľa hodnoty)
+        arc { at: x.$k, y.$k; radius: rr.$k * 0.78; span: clamp(goo.$k.hodnota, 0, 1) * 360deg; rotate: clamp(goo.$k.hodnota, 0, 1) * 180deg; width: max(2, rr.$k * 0.12); color: #f7c873; opacity: if(goo.$k.druh == 1 and goo.$k.on, 0.9, 0) }
+        text goo.$k.ikona { at: x.$k, y.$k - if(goo.$k.druh == 1, 0, rr.$k * 0.08); anchor: center; size: 20 * rs.$k; color: ink; opacity: if(goo.$k.on, 0.92, 0); family: "noctalia-tabler-icons" }
+        text goo.$k.text { at: x.$k, y.$k + rr.$k * 0.42; anchor: center; size: 9 * rs.$k; weight: 700; color: ink; opacity: if(goo.$k.on, 0.9, 0) }
+        text goo.$k.nazov { at: x.$k, y.$k + rr.$k + 12; anchor: center; size: 11; weight: 600; color: ink; opacity: if(goo.$k.on, 0.35 + 0.6 * hov.$k, 0) * (1 - near.$k * 0.7) }
+    }
+    // bublina s popisom
+    box { from: tipx - 110, tipy - 15; size: 220, 30; corner: 15; color: coffee; opacity: tip.p * 0.94 }
+    text tip { at: tipx, tipy; anchor: center; size: 12; color: ink; opacity: tip.p; width: 210; align: center }
+    text hud { at: 16, 14; size: 12; color: #f3ebdd; opacity: if(ladenie, 0.8, 0); family: "monospace"; show: ladenie }
+}

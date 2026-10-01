@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# latte-session [safe|hra|kvapky|noctalia] — relácia LatteOS po prihlásení (spúšťa ju greetd cez wayland-sessions/*.desktop).
+# latte-session [safe|hra|kvapky|kvapky-engine|noctalia] — relácia LatteOS po prihlásení (spúšťa ju greetd cez wayland-sessions/*.desktop).
 #
 # Režim berie z /run/latteos/session.env (zapísal latte-boot select pri štarte).
 # NORMAL: Hyprland + Noctalia. Ak Hyprland spadne skôr, než je relácia zdravá (60 s),
@@ -43,6 +43,11 @@ next=desktop
 [ "${1:-}" = hra ] && next=hra
 LATTE_VARIANT=klasicke
 [ "${1:-}" = kvapky ] && LATTE_VARIANT=kvapky
+# KVAPKY ENGINE TEST: tá istá plocha Kvapky, ale scéna jednotného enginu Goo (session/goo, LATTEOS-GOO.md 3.2)
+if [ "${1:-}" = kvapky-engine ]; then
+    LATTE_VARIANT=kvapky
+    export LATTE_KVAPKY_SCENE="$share/goo/goo.plm" LATTE_GOO_DIR="$share/goo"
+fi
 # NOCTALIA (čistá): Hyprland + Noctalia s ich predvolenými nastaveniami, bez úprav LatteOS (hypr/noctalia.lua)
 [ "${1:-}" = noctalia ] && LATTE_VARIANT=noctalia
 export LATTE_VARIANT

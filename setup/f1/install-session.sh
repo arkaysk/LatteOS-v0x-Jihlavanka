@@ -14,7 +14,7 @@ user="$(id -un)"
 sudo() { if [ -n "${SUDO_ASKPASS:-}" ]; then command sudo -A "$@"; else command sudo "$@"; fi; }
 
 # kontrola pred prvým zásahom do systému (DSanalyze.md): chýbajúci súbor = poškodený checkout, nie polovičná inštalácia
-BINS="latte-session latte-safe latte-greeter latte-theme latte-app latte-ai latte-shellset latte-sysmon latte-apps latte-devices latte-backup latte-games latte-net latte-cloud latte-siet latte-otvor latte-kos latte-spustac latte-sandbox latte-kopia latte-tc latte-ostrovy latte-rychle latte-tapety latte-vyber latte-ponuka latte-prichytenie latte-snimka latte-emoji latte-nove-okno latte-nahravanie latte-maskoti latte-sklo latte-inspektor latte-terminal latte-hypr-udalosti latte-sukromie latte-kapsa-store latte-hra latte-kvapky latte-profil latte-upstream latte-marea latte-serpantinum latte-hladaj latte-riadok latte-pocasie latte-chatgoo"
+BINS="latte-session latte-safe latte-greeter latte-theme latte-app latte-ai latte-shellset latte-sysmon latte-apps latte-devices latte-backup latte-games latte-net latte-cloud latte-siet latte-otvor latte-kos latte-spustac latte-sandbox latte-kopia latte-tc latte-ostrovy latte-rychle latte-tapety latte-vyber latte-ponuka latte-prichytenie latte-snimka latte-emoji latte-nove-okno latte-nahravanie latte-maskoti latte-sklo latte-inspektor latte-terminal latte-hypr-udalosti latte-sukromie latte-kapsa-store latte-hra latte-kvapky latte-profil latte-upstream latte-marea latte-serpantinum latte-hladaj latte-riadok latte-pocasie latte-chatgoo latte-goo"
 missing=""
 for f in $BINS; do [ -f "$S/bin/$f" ] || missing="$missing $f"; done
 [ -z "$missing" ] || { echo "Chýbajú skripty v $S/bin:$missing — inštaláciu nezačínam (git status / git pull)."; exit 1; }
@@ -43,7 +43,7 @@ put "$S/hypr/noctalia.lua" /usr/share/latteos/hypr/noctalia.lua     # relácia �
 for f in rc.xml autostart environment menu.xml; do sudo install -Dm644 "$S/labwc/$f" "/usr/share/latteos/labwc/$f"; done
 # relácie LatteOS: v systémovom zozname (pre iné greetery) aj vo vlastnom, ktorý ponúka latte-greeter
 # (tuigreet by inak ponúkol aj „Hyprland“ z COPR bez Noctalie a bez latte-session)
-for f in latteos.desktop latteos-safe.desktop latteos-hra.desktop latteos-kvapky.desktop latteos-noctalia.desktop; do
+for f in latteos.desktop latteos-safe.desktop latteos-hra.desktop latteos-kvapky.desktop latteos-goo-engine.desktop latteos-noctalia.desktop; do
     sudo install -Dm644 "$S/wayland-sessions/$f" "/usr/share/wayland-sessions/$f"
     sudo install -Dm644 "$S/wayland-sessions/$f" "/usr/share/latteos/sessions/$f"
 done
@@ -73,11 +73,21 @@ sudo install -d /usr/share/latteos/kvapky
 for f in kvapka.plm kvapka.luau ikony.luau; do put "$S/kvapky/$f" "/usr/share/latteos/kvapky/$f"; done
 sudo install -d /usr/share/latteos/kvapky/textury                     # textúry materiálov okien (textury.py)
 sudo install -m644 "$S"/kvapky/textury/*.webp "$S"/kvapky/textury/LICENCIA.txt /usr/share/latteos/kvapky/textury/
+echo "== engine Goo (relácia LatteOS Kvapky – engine test): scéna, logika, kvapky, príklady"
+( cd "$S/goo" && for f in goo.plm goo.luau README.md lib/*.luau kvapky/*.luau priklady/*.json; do
+    put "$f" "/usr/share/latteos/goo/$f"; done )
 pl="$repo/resources/upstream/pleamar"
-if [ ! -x "$pl/target/release/pleamar" ] && command -v cargo >/dev/null; then
+pl_ver=0.2.6                                       # pripnutá verzia (resources/fetch.sh); staršia sa preloží znova
+if command -v cargo >/dev/null && ! "$pl/target/release/pleamar" --version 2>/dev/null | grep -q "pleamar $pl_ver "; then
     "$repo/resources/fetch.sh" pleamar >/dev/null && git -C "$pl" apply --check "$repo/resources/patches/pleamar-hyprland-okna-8bit.patch" 2>/dev/null \
         && git -C "$pl" apply "$repo/resources/patches/pleamar-hyprland-okna-8bit.patch"
     (cd "$pl" && cargo build --release -q) || true
+fi
+# brána: scéna sa nasadí, iba ak ju tento pleamar prečíta (inak by relácia ukázala iba tapetu)
+if [ -x "$pl/target/release/pleamar" ]; then
+    for sc in "$S/kvapky/kvapka.plm" "$S/goo/goo.plm"; do
+        "$pl/target/release/pleamar" --check "$sc" >/dev/null 2>&1 || echo "   POZOR: $sc nepreložil pleamar $pl_ver: $("$pl/target/release/pleamar" --check "$sc" 2>&1 | head -1)"
+    done
 fi
 if [ -x "$pl/target/release/pleamar" ]; then
     sudo install -Dm755 "$pl/target/release/pleamar" /usr/bin/pleamar
