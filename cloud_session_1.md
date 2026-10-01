@@ -598,3 +598,32 @@ Je to iba v jazyku, bez ďalšej záplaty. Neurobené, čaká na súhlas.
   v samostatných procesoch). Hyprland ich umiestni (`latte-kvapky okno`), animuje a dá im sklo (Hyprglass).
 
 **Snímky:** `docs/goo/engine-lista-cloud.png`, `engine-ponuka-powergoo-cloud.png`, `engine-goobar-strapec-cloud.png`.
+
+### Goobar: ikry sa lepia iba ku Goobaru a uhýbajú oknám
+
+**Zadanie (spresnenie):** Goobar s otvorenými oknami vyzerá v pôvodnej verzii inak.
+- Ikry jednotlivých okien sa nemajú zamieňať s ostatnými kvapkami: sú menšie a lepia sa iba ku Goobaru.
+- Okná tej istej aplikácie sa zhlukujú do hroznových strapcov.
+- Keď by zavadzali otvorenému oknu Hyprlandu nad sebou, uhýbajú k okraju obrazovky.
+
+**Urobené:**
+- **Vlastné goo telo Goobaru** (pole `sk`: 0 hlavné, 1 iba Goobar, 2 obe). Ikry sa zlievajú iba s hlavou Goobaru
+  a navzájom. Hlava je v oboch telách, takže sa spája aj s TimeGoo.
+- Susedia (vlákna, voda) sa hľadajú iba v rámci jedného tela.
+- **Menšie ikry:** R0 22, pod oknom 17.
+- **Bobule namiesto jednej hmoty:** slabšie zliatie (`zliatie` 0,35) a takmer žiadna mláka (`mlaka` 0,15).
+- **Uhýbanie oknám** (z `kvapka.luau` › `free_above`):
+  - `latte-goo okna` dá obdĺžniky viditeľných okien (Hyprland: aktuálna plocha zameraného monitora, bez
+    minimalizovaných; na skúšky Sway);
+  - každých 0,7 s sa prepočítajú na úseky pozdĺž okraja od hlavy;
+  - ak nad strapcom nie je voľno na jeho výšku (+ 56 px, hysteréza 16 px), uhne k okraju do menšieho cik-cak radu
+    a nenadnáša sa;
+  - keď okno odíde, znova sa zhlukne.
+- **Výkon:** druhé telo stálo v cloude 17 ms, lebo pás pri okraji ho roztiahol cez celú šírku. Bez pásu
+  (okraj robia mláky) stojí ~4 ms.
+
+**Overené v cloude** (Sway, plávajúce okná na známych miestach): okno siaha k lište nad Goobarom → strapec 3 okien
+`foot` uhne k okraju; okno sa odsunie → zhlukne sa do hrozna.
+
+**Porovnanie** (`docs/goo/goobar-porovnanie-cloud.png`): pôvodná plocha v cloude neuhne, lebo okná nad lištou
+zisťuje iba cez Hyprland; tvar ikier je podobný.

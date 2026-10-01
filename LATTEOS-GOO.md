@@ -201,6 +201,12 @@ lepivosť, veľkosť a rezervu na ďalšie efekty.
   - **Goobar** (`lib/goobar.luau`) prenesený z Kvapiek: okná ako kvapky s ikonou aplikácie, strapce ako ikry,
     rozvinutie pod myšou, aktívne plnšie, minimalizované stlmené, klik = prepnúť/minimalizovať, pravý = ponuka okna,
     ťahanie = poradie aplikácií, hlava = režim okien, koliesko = páska/ďalšie okno, nad 96 okien „ďalšie okná“.
+  - **Ikry okien (spresnenie používateľa 1. 10.):** sú menšie než ostatné kvapky, aby sa s nimi nezamieňali, a lepia sa
+    **iba ku Goobaru** — v engine majú vlastné goo telo (hlava Goobaru je v oboch, ikry a ostatné kvapky sa nezlejú),
+    slabšie zliatie a takmer žiadnu mláku (bobule s tenkými spojmi). Okná tej istej aplikácie sa zhlukujú do strapca;
+    keď by strapec zavadzal otvorenému oknu (okno Hyprlandu je nad ním a siaha k lište), **uhne k okraju** do
+    menšieho cik-cak radu pod oknom; keď okno odíde, znova sa zhlukne. Okná nad lištou dáva `latte-goo okna`
+    (Hyprland; na skúšky Sway), každých 0,7 s, s hysterézou ako v Kvapkách.
   - **Pomenovanie okien (problém z Kvapiek):** služba `window` dá iba triedu a titulok, bez adresy Hyprlandu.
     Skupina a ikona sa preto hľadajú podľa spúšťača (StartupWMClass, id, koncovka id pre Flatpak, meno).
     Aplikácie LatteOS majú všetky triedu `org.quickshell` → podľa titulku, kým nedostanú vlastné `app_id`.

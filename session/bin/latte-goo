@@ -14,6 +14,9 @@ Logika scény beží v pieskovisku pleamar (bez súborov a bez sh) — všetko, 
   latte-goo ikony MENO…           mená ikon Tabler → znaky písma ({meno: znak}), podľa Noctalie
   latte-goo kava                  pomer vody a mlieka podľa Baristu (~/.config/latteos/kava): [voda, mlieko]
   latte-goo rezim                 režim okien (plavajuce | dlazdice | paska) z ~/.local/state/latteos/window-mode
+  latte-goo okna                  viditeľné okná na aktuálnej ploche zameraného monitora (obdĺžniky voči monitoru):
+                                  {"w", "h", "okna": [{x, y, w, h}]} — Goobar podľa nich uhýba k okraju (Hyprland,
+                                  inak Sway na skúšky)
 """
 import glob, json, os, re, subprocess, sys
 
@@ -203,6 +206,44 @@ def glyphs(names):
     return res
 
 
+def visible_windows():
+    """okná, ktoré na ploche naozaj vidno (nie minimalizované v special:minimized), v súradniciach monitora"""
+    def cmd(*c):
+        try:
+            return json.loads(subprocess.run(c, capture_output=True, text=True, timeout=2).stdout or "null")
+        except (OSError, ValueError, subprocess.TimeoutExpired):
+            return None
+    mons = cmd("hyprctl", "-j", "monitors")
+    if isinstance(mons, list) and mons:
+        m = next((x for x in mons if x.get("focused")), mons[0])
+        ws = (m.get("activeWorkspace") or {}).get("id")
+        out = []
+        for c in cmd("hyprctl", "-j", "clients") or []:
+            w = c.get("workspace") or {}
+            if not c.get("mapped", True) or c.get("hidden") or w.get("id") != ws or str(w.get("name", "")).startswith("special"):
+                continue
+            (x, y), (cw, ch) = c.get("at", [0, 0]), c.get("size", [0, 0])
+            out.append({"x": x - m["x"], "y": y - m["y"], "w": cw, "h": ch})
+        scale = m.get("scale", 1) or 1
+        return {"w": int(m["width"] / scale), "h": int(m["height"] / scale), "okna": out}
+    tree = cmd("swaymsg", "-t", "get_tree")
+    if isinstance(tree, dict):
+        out, mon = [], {"w": 1920, "h": 1080}
+        def walk(n, visible):
+            if n.get("type") == "output" and n.get("name") != "__i3":
+                mon.update(w=n["rect"]["width"], h=n["rect"]["height"])
+            if n.get("type") == "workspace":
+                visible = n.get("visible", False) if "visible" in n else True
+            if (n.get("app_id") is not None or n.get("window")) and visible and n.get("visible", True):
+                r = n["rect"]
+                out.append({"x": r["x"], "y": r["y"], "w": r["width"], "h": r["height"]})
+            for k in n.get("nodes", []) + n.get("floating_nodes", []):
+                walk(k, visible)
+        walk(tree, True)
+        return {"w": mon["w"], "h": mon["h"], "okna": out}
+    return {"w": 0, "h": 0, "okna": []}
+
+
 def main(a):
     c = a[0] if a else ""
     if c == "zoznam":
@@ -273,6 +314,8 @@ def main(a):
             json.dump(v, f, ensure_ascii=False)
         os.replace(STATE + ".new", STATE)
         return 0
+    if c == "okna":
+        print(json.dumps(visible_windows())); return 0
     if c == "rezim":
         try:
             print(open(os.path.join(os.environ.get("XDG_STATE_HOME", HOME + "/.local/state"), "latteos", "window-mode")).read().split()[0])
