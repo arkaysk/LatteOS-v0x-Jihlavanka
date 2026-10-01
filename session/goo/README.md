@@ -51,6 +51,21 @@ V ploche Kvapky má každá kvapka vlastnú kópiu pravidiel: polohu, ťahanie, 
   - `lepivost` 0…1 drží kvapku doma: natiahne krk a odtrhne sa až za `trhanie` px; pustená skôr sa vráti;
   - pri lište sa k nej prilepí;
   - ťažká (`hmotnost`) spadne na lištu a odrazí sa.
+- **Farebné jadro (pravidlo 17):** od stredu prechod z farby do kávy, predvolene upozornenie.
+  - Luau: `d:jadro("siet", 1, true)`, `d:jadro()` zhasne.
+  - JSON: `"jadro": "softver"` (stále) alebo `"upozornenie": {"prikaz": "…", "kazdych": 30}` — výstup príkazu je
+    farba (`hardver`, `siet`, `softver`, `vystraha`, `svetlo`, `ine`), prázdny výstup jadro zhasne; nové
+    upozornenie zvlní hladinu.
+- **Hladina (pravidlo 18):** okraj obrazovky je voda.
+  - Kameň do vody: dve vlny sa rozbehnú od miesta dopadu a slabnú, kvapky na nich sa nadvihnú.
+  - Vibrácia: chvenie na mieste.
+  - Luau: `d:vlnka(sila)`, `d:vibruj(sila)`, `E.vlnka(x_px, sila, "kamen" | "vibracia")`.
+  - Zvonka: `pleamar --say goo "emit goo_kamen 512"` (napr. minimalizované okno padne do lišty).
+- **Vietor (pravidlo 19):** občas zavanie, smer je náhodný; postupná vlna pozdĺž okraja, kvapky sa vlnia ako obilie.
+  Menšie kvapky sa vlnia viac (aj tok a drift).
+- **Návrat k okraju (pravidlo 20, Marea):** kvapka sa ponorí pod hladinu a vynorí, hladina sa zvlní. Odtrhnutie
+  najneskôr po 1,6 polomeru (dlhý krk je nepekný).
+- **Oká a ostrý okraj (pravidlo 21):** tieň je iba tesný (0, 2, 2), okraj aj okolo ôk ostáva ostrý.
 - **Efekty scény:** `dych`, `kmit`, `tras`, `obeh`, `tlkot` (+ `sila`).
 - **Rezerva na nedefinované efekty:**
   - efekty 6–9 v scéne sú voľné;
@@ -129,6 +144,7 @@ return {
 ```
 
 Metódy kvapky:
+- upozornenie a hladina: `d:jadro(farba, sila, pulz)`, `d:vlnka(sila)`, `d:vibruj(sila)`, `d:stlac()`;
 - obsah: `d:text`, `d:ikona`, `d:nazov`, `d:hodnota`, `d:bublina(text)`;
 - vzhľad: `d:efekt(meno, sila)`, `d:rezerva(i, v)`, `d:velkost(z)`;
 - poloha: `d:presun(x, y)`, `d:domov()`, `d:poskoc()`;
@@ -158,6 +174,9 @@ načíta sám. Príkazy, ktoré modul spúšťa cez `run`, musia byť v `permiss
 - **`smooth()` chce stále hranice.** Pre hranice z modelu treba vlastnú krivku t²(3 − 2t).
 - **Veľkosť textu sa píše `číslo × pomer`** (`20 * rs.$k`), nie `rr.$k * 0.78`.
 - **`pick` neberie farby.** Treba vnorené `if`.
+- **`emit` v Luau nenesie hodnotu** (iba meno). Pre jednu kvapku logika zvýši počítadlo (`hopn.k`, `sqn.k`,
+  `dipn.k`, `rpn.i`) a scéna zareaguje cez `on change`. Hodnotu nesie iba `emit` zo scény a `pleamar --say`.
+- **Radiálny prechod (`gradient`) je iba v `body`.** Jadro kvapky je preto malé vlastné telo.
 - **Telo goo počíta každý svoj tvar pre každý pixel** a `show: false` ho nevyradí. Preto existuje záplata
   `pleamar-prazdne-tvary` a krk ťahanej kvapky je jeden tvar (`pick(nk, …)`), nie 64.
 

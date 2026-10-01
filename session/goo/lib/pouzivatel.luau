@@ -10,7 +10,9 @@
 --              "stredny": "domov", "podrz": { "otvor": "https://latteos.sk" }, "koliesko": "velkost" }
 -- }
 -- Akcia: { "spusti": "príkaz" } · { "aplikacia": "id.desktop" } · { "otvor": "súbor alebo adresa" }
---        · { "vystup": "príkaz" } (výstup v bubline) · "domov" · "velkost" · "poskoc" · "nic"
+--        · { "vystup": "príkaz" } (výstup v bubline) · "domov" · "velkost" · "poskoc" · "vlnka" · "vibracia" · "nic"
+-- Jadro: "jadro": "siet" (stále) alebo "upozornenie": { "prikaz": "…", "kazdych": s } — výstup príkazu je farba
+--   (hardver, siet, softver, vystraha, svetlo, ine), prázdny = zhasne; nové upozornenie zvlní hladinu
 local M = {}
 local known = {}          -- id → podpis definície (zmena = nová registrácia)
 
@@ -22,6 +24,8 @@ local function action(E, d, key)
     if a == "domov" then d:domov() return true end
     if a == "velkost" then return false end              -- koliesko: predvolené správanie enginu
     if a == "poskoc" then d:poskoc() return true end
+    if a == "vlnka" then d:vlnka() return true end
+    if a == "vibracia" then d:vibruj() return true end
     if a == "nic" then return true end
     run("latte-goo", { "akcia", d.id, key }, function(out, code)
         if out and out ~= "" then d:bublina(out:gsub("%s+$", "")) end
@@ -33,6 +37,15 @@ end
 local function refreshText(d)
     run("latte-goo", { "text", d.id }, function(out)
         if out then d:text((out:gsub("%s+$", ""))) end
+    end)
+end
+
+local function checkNotice(d)
+    run("latte-goo", { "upozornenie", d.id }, function(out)
+        local f = (out or ""):match("[%w]+")
+        if f and not d.notice then d:vlnka(5) end
+        d.notice = f
+        if f then d:jadro(f, 1, true) else d:jadro(d.def.jadro) end
     end)
 end
 
@@ -51,6 +64,18 @@ local function build(E, j)
     if type(j.text) == "table" and j.text.prikaz then
         def.kazdych = math.max(2, tonumber(j.text.kazdych) or 60) * 1000
         def.tik = refreshText
+    end
+    if type(j.jadro) == "string" then def.start = function(d) d:jadro(j.jadro, 0.8, false) end end
+    if type(j.upozornenie) == "table" and j.upozornenie.prikaz then
+        local textTik = def.tik
+        local every_ = math.max(2, tonumber(j.upozornenie.kazdych) or 30) * 1000
+        local base = def.start
+        def.start = function(d)
+            if base then base(d) end
+            checkNotice(d)
+            d.noticeTimer = every(every_, function() checkNotice(d) end)
+        end
+        def.tik = textTik
     end
     return def
 end

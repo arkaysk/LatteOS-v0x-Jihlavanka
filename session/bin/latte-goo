@@ -8,6 +8,7 @@ Logika scény beží v pieskovisku pleamar (bez súborov a bez sh) — všetko, 
   latte-goo skontroluj            overí všetky kvapky používateľa, ľudsky čitateľne
   latte-goo akcia ID KLUC         vykoná akciu kvapky (klik, pravy, stredny, podrz, hore, dole) podľa jej súboru
   latte-goo text ID               text kvapky z príkazu (prvý riadok, do 5 s)
+  latte-goo upozornenie ID        farba jadra z príkazu upozornenia (hardver|siet|softver|vystraha|svetlo|ine), prázdne = nič
   latte-goo stav                  uložené polohy a veľkosti ({id: {x, y, z}})
   latte-goo uloz-stav JSON        uloží ich (atomicky)
   latte-goo ikony MENO…           mená ikon Tabler → znaky písma ({meno: znak}), podľa Noctalie
@@ -33,7 +34,8 @@ POVAHY = {"pokojna", "zvedava", "lepkava", "tazka", "hrava"}
 EFEKTY = {"nic", "dych", "kmit", "tras", "obeh", "tlkot"}
 DRUHY = {"ikona", "ukazovatel"}
 AKCIE = {"klik", "pravy", "stredny", "podrz", "koliesko", "hore", "dole"}
-VSTAVANE = {"domov", "velkost", "poskoc", "nic"}
+VSTAVANE = {"domov", "velkost", "poskoc", "vlnka", "vibracia", "nic"}
+JADRA = {"hardver", "siet", "softver", "vystraha", "svetlo", "ine"}
 DRUHY_AKCII = ("spusti", "aplikacia", "otvor", "vystup")
 # čísla: (min, max)
 CISLA = {"velkost": (8, 80), "gravitacia": (0, 1), "vznos": (0, 2), "vyska": (0, 300), "odstup": (-2000, 2000), "dosah": (40, 800), "lepivost": (0, 1), "trhanie": (20, 400),
@@ -107,6 +109,15 @@ def validate(j, path):
         if not isinstance(t.get("prikaz"), str):
             return bad("'text' má byť text, alebo {\"prikaz\": \"…\", \"kazdych\": sekundy}")
         out["text"] = {"prikaz": t["prikaz"], "kazdych": max(2, int(t.get("kazdych", 60)))}
+    if "jadro" in j:
+        if j["jadro"] not in JADRA:
+            return bad(f"'jadro' môže byť: {', '.join(sorted(JADRA))}")
+        out["jadro"] = j["jadro"]
+    if "upozornenie" in j:
+        u = j["upozornenie"]
+        if not (isinstance(u, dict) and isinstance(u.get("prikaz"), str)):
+            return bad("'upozornenie' má byť {\"prikaz\": \"…\", \"kazdych\": sekundy}; výstup príkazu = farba jadra")
+        out["upozornenie"] = {"prikaz": u["prikaz"], "kazdych": max(2, int(u.get("kazdych", 30)))}
     if "akcie" in j:
         if not isinstance(j["akcie"], dict):
             return bad("'akcie' má byť objekt")
@@ -232,6 +243,17 @@ def main(a):
             print((out.strip().splitlines() or [""])[0][:12])
         elif isinstance(t, str):
             print(t)
+        return 0
+    if c == "upozornenie" and len(a) == 2:
+        d = find(a[1])
+        u = d and d.get("upozornenie")
+        if u:
+            try:
+                out = subprocess.run(["sh", "-c", u["prikaz"]], capture_output=True, text=True, timeout=5).stdout.strip()
+            except subprocess.TimeoutExpired:
+                out = ""
+            w = (out.split() or [""])[0].lower()
+            print(w if w in JADRA else ("ine" if w else ""))
         return 0
     if c == "stav":
         try:

@@ -52,6 +52,9 @@ scene Goo {
     //   ikona, text  ikona (znak písma Tabler) a text v kvapke (názov a popis sú iba v bubline); druh 2: ikona = veľký
     //           text (čas TimeGoo), text = malý pod ním (dátum)
     //   ox      posun domova v px (kvapka pri inej o presný odstup)
+    //   jadro, jf, jp  farebné jadro (0…1): od stredu prechod z farby do kávy; predvolene druh upozornenia —
+    //           jf 0 hardvér (červená), 1 sieť (zelená), 2 softvér (modrá), 3 výstraha (jantárová), 4 svetlo (žiara), 5 iné;
+    //           jp = pulzuje
     //   nl, nlh, nlo / nr, nrh, nro, nry, nrr  susedia na lište (logika): vľavo / vpravo — x ako hx + ox, výška
     //           nad lištou, polomer
     model goo max 128 {
@@ -60,6 +63,7 @@ scene Goo {
         tahat: bool = true; fx: number; fa: number = 1; e1: number; e2: number; e3: number; e4: number
         druh: number; hodnota: number; ikona: text; text: text
         nl: bool; nlh: number; nlo: number; nr: bool; nrh: number; nro: number; nry: number; nrr: number = 26
+        jadro: number; jf: number; jp: bool
     }
     spring plava = 150, 13                    // vodorovne: mäkko, bez odskoku
     spring pada = 190, 9                      // zvisle: s prestrelením a odrazom („odkvapne“, §3)
@@ -78,8 +82,12 @@ scene Goo {
     event goo_drag ->
     event goo_drop ->
     event goo_idle ->
-    event goo_hop                              // logika → scéna: kvapka k poskočí (hra pri nečinnosti)
-    event goo_squish                           // logika → scéna: kvapka k sa stlačí (zrážka, prebudenie)
+    // logika → scéna: `emit` v Luau nenesie hodnotu (iba meno), preto logika zvyšuje počítadlo kvapky a scéna reaguje
+    // na jeho zmenu (`on change`): hopn.k poskočí (hra), sqn.k stlačí (zrážka, prebudenie), dipn.k ponor pri návrate
+    // k okraju (Marea), rpn.i vlnka i (kameň do vody / vibrácia)
+    // zvonka (pleamar --say goo "emit goo_kamen 512"): napr. minimalizované okno padne do lišty — x v px
+    event goo_kamen ->
+    event goo_vibracia ->
     fact rx = 0                               // kam bola kvapka pustená (číta logika pri goo_drop): ako hx, hy
     fact ry = 0
     fact nk = -1                              // ťahaná kvapka (krk lepkavej v tele goo), −1 žiadna
@@ -94,6 +102,24 @@ scene Goo {
     // ladenie (relácia engine test): posledná udalosť vľavo hore
     text hud = ""
     fact ladenie = false
+
+    // ── hladina (okraj obrazovky): vlnky ako kameň hodený do vody alebo vibrácie; vietor ─────────────────────────
+    // 4 vlnky naraz (logika ich strieda): rpx miesto (px), rpa sila (px), rpk druh (0 kameň, 1 vibrácia), rpg vek 0…1
+    repeat i in 0..4 {
+        fact rpx.$i = 0
+        fact rpa.$i = 0
+        fact rpk.$i = 0
+        prop rpg.$i = 1 ~0ms
+        fact rpn.$i = 0
+        on change rpn.$i { rpg.$i: 0 ~0ms; rpg.$i: 1 ~1800ms after 16ms }
+    }
+    // šírka obrazovky pre logiku (vlnky sú v px; logika inak súradnice nepozná)
+    fact sw = 0
+    every 1s while sw != W { sw = W }
+    // vietor: náhodný smer, nezávislý od ničoho; občas zavanie (aj pri práci) a kvapky sa vlnia ako obilie
+    let gust = smooth(0.58, 0.85, 0.5 + 0.5 * noise(time * 0.045 + 11))
+    let wdir = clamp(noise(time * 0.013 + 3) * 4, -1, 1)
+    spring jadrova = 90, 14
 
     repeat k in 0..128 {
         // ťahanie (iba scéna): posun od stlačenia, či už ide o ťahanie (drg) a či sa kvapka odtrhla (tr)
@@ -125,6 +151,16 @@ scene Goo {
         let npr.$k = if(goo.$k.nr, 1 - rt.$k * rt.$k * (3 - 2 * rt.$k), 0)
         // tok (§3: vlastný pohyb): každá kvapka pomaly vystupuje a klesá v inom rytme, zliatie sa mení s ním
         let fl.$k = 0.5 + 0.5 * noise(time * 0.11 + k * 1.37)
+        // menšie kvapky sa na okraji vlnia viac než väčšie
+        let small.$k = clamp(26 / max(r0.$k, 1), 0.6, 1.8)
+        // vlnky na hladine pod kvapkou: kameň = dve vlny od miesta dopadu (rozbiehajú sa, slabnú), vibrácia = chvenie
+        let wv.$k = rpa.0 * (1 - rpg.0) * if(rpk.0 > 0.5, sin(time * 1900) * max(0, 1 - abs(hxp.$k - rpx.0) / 140), max(0, 1 - pow((abs(hxp.$k - rpx.0) - rpg.0 * 420) / 34, 2))) + rpa.1 * (1 - rpg.1) * if(rpk.1 > 0.5, sin(time * 1900) * max(0, 1 - abs(hxp.$k - rpx.1) / 140), max(0, 1 - pow((abs(hxp.$k - rpx.1) - rpg.1 * 420) / 34, 2))) + rpa.2 * (1 - rpg.2) * if(rpk.2 > 0.5, sin(time * 1900) * max(0, 1 - abs(hxp.$k - rpx.2) / 140), max(0, 1 - pow((abs(hxp.$k - rpx.2) - rpg.2 * 420) / 34, 2))) + rpa.3 * (1 - rpg.3) * if(rpk.3 > 0.5, sin(time * 1900) * max(0, 1 - abs(hxp.$k - rpx.3) / 140), max(0, 1 - pow((abs(hxp.$k - rpx.3) - rpg.3 * 420) / 34, 2)))
+        // vietor: postupná vlna pozdĺž okraja v smere vetra (obilie), kvapka sa nakloní
+        let sway.$k = gust * wdir * (3 + 5 * sin(time * 110 - wdir * hxp.$k * 0.9)) * small.$k
+        // návrat k okraju (Marea): kvapka sa ponorí pod hladinu a znova vynorí
+        prop dip.$k = 0 ~0ms
+        fact dipn.$k = 0
+        on change dipn.$k { dip.$k: 1 ~180ms; dip.$k: 0 ~900ms after 240ms }
         prop lift.$k = 0 ~pada
         follow lift.$k = clamp(prox.$k + 0.3 * max(npl.$k, npr.$k), 0, 1) * goo.$k.vz * if(idle > 0, 0.4, 1) * (1 - drg.$k)
         // nadnesenie: kolmo od lišty KU kurzoru, najviac 0,75 r a po výšku kurzora (pri okraji mu neujde)
@@ -144,7 +180,7 @@ scene Goo {
         let fxs.$k = goo.$k.fa * (if(goo.$k.fx == 1, 0.05 * sin(time * 120 + k * 50), 0) + if(goo.$k.fx == 5, 0.09 * smooth(0.82, 1, sin(time * 315 + k * 50)), 0))
         prop fxw.$k = 0 ~0ms
         follow fxw.$k = goo.$k.fa * if(goo.$k.fx == 2, 0.07 * noise(k * 1.7, time * 1.6), 0) + sq.$k * 0.09 + jit.$k
-        let fxx.$k = goo.$k.fa * (if(goo.$k.fx == 3, 2.5 * noise(k, time * 18), 0) + if(goo.$k.fx == 4, 4 * cos(time * 80 + k * 40), 0)) + (2 + 4 * lift.$k) * noise(time * 0.1 + k * 3.1)
+        let fxx.$k = goo.$k.fa * (if(goo.$k.fx == 3, 2.5 * noise(k, time * 18), 0) + if(goo.$k.fx == 4, 4 * cos(time * 80 + k * 40), 0)) + (2 + 4 * lift.$k) * small.$k * noise(time * 0.1 + k * 3.1) + sway.$k * dk.$k
         let fxy.$k = goo.$k.fa * (if(goo.$k.fx == 3, 2.5 * noise(k + 9, time * 18), 0) + if(goo.$k.fx == 4, 4 * sin(time * 80 + k * 40), 0)) + noise(k * 5.7, time * 0.2)
         // rezerva pre logiku (e1…e4), s pružinou
         prop e1.$k = 0 ~rezerva
@@ -174,10 +210,12 @@ scene Goo {
         prop thx.$k = 0 ~0ms
         prop thy.$k = 0 ~0ms
         prop wa.$k = 0 ~0ms
+        prop jd.$k = 0 ~jadrova
+        follow jd.$k = goo.$k.jadro * if(goo.$k.jp, 0.7 + 0.3 * sin(time * 220 + k * 40), 1) * if(goo.$k.on, 1, 0)
         follow x.$k = px.$k + fxx.$k + e2.$k
         // na lište: v pokoji kúsok vystupuje a klesá s tokom, pri kurzore sa nadnesie. Prázdne miesto pod obrazovku
         // (bez záplaty pleamar-prazdne-tvary by bod nulovej veľkosti cez zliatie vydul hrbček)
-        follow y.$k = if(goo.$k.on, py.$k + fxy.$k + e3.$k - (lift.$k * lup.$k + 4 * fl.$k * (1 - lift.$k)) * dk.$k, H + 400)
+        follow y.$k = if(goo.$k.on, py.$k + fxy.$k + e3.$k - (lift.$k * lup.$k + 4 * fl.$k * small.$k * (1 - lift.$k) + wv.$k * small.$k - dip.$k * r0.$k * 1.4) * dk.$k, H + 400)
         follow rr.$k = r0.$k * (1 + life.$k + fxs.$k + e1.$k) * if(goo.$k.on, 1, 0)
         // zliatie (link v Kvapkách: 10 + 16 · nadnesenie + 10 · tok) — v pokoji spája iba okraj, pri kurzore mosty
         follow lk.$k = 10 + 16 * lift.$k + 10 * fl.$k
@@ -213,12 +251,15 @@ scene Goo {
         on scroll hit.$k { emit goo_scroll(k * 2 + if(wheel > 0, 1, 0)) }
         on drag hit.$k while goo.$k.tahat { dx.$k = drag.dx; dy.$k = drag.dy }
         on drag hit.$k while goo.$k.tahat and drg.$k == 0 and length(drag.dx, drag.dy) > 6 { drg.$k = 1; nk = k; tip.p: 0; emit goo_drag(k) }
-        on drag hit.$k while goo.$k.tahat and tr.$k == 0 and length(drag.dx, drag.dy) > goo.$k.trh * goo.$k.lep { tr.$k = 1 }
+        on drag hit.$k while goo.$k.tahat and tr.$k == 0 and length(drag.dx, drag.dy) > min(goo.$k.trh, r0.$k * 1.6) * goo.$k.lep { tr.$k = 1 }
+        // (odtrhnutie najneskôr po 1,6 polomeru: dlhý krk-vlák je nepekný)
         // pustenie: bez ťahania = klik; po ťahaní povie logike, kam (neodtrhnutá lepkavá kvapka sa vráti domov)
         on release hit.$k while drg.$k == 0 and lp.$k == 1 { lp.$k = 0; emit goo_click(k) }
         on release hit.$k while drg.$k > 0 { rx = (hxp.$k + dx.$k * mv.$k) / W; ry = floor - (hyp.$k + dy.$k * mv.$k); emit goo_drop(k) }
-        on goo_hop(v) while v == k { impulse py.$k -520 }
-        on goo_squish(v) while v == k { impulse sq.$k 9 }
+        fact hopn.$k = 0
+        fact sqn.$k = 0
+        on change hopn.$k { impulse py.$k -520 }
+        on change sqn.$k { impulse sq.$k 9 }
     }
 
     // nečinnosť (§3.1): 1 zaspávajú (menšie nadnesenie), 2 počasie (rezerva), 3 hra; pohyb myši ich hneď zobudí
@@ -233,7 +274,8 @@ scene Goo {
         // jedna káva pre lištu aj všetky kvapky (pravidlo 6), jedno svetlo kurzora (§3)
         gradient: radial cursor.x, cursor.y radius 260, mix(coffee, cream, 0.12), coffee
         rim: 28%
-        shadow: 0, 5, 14, 35%
+        // ostrý okraj (aj okolo ôk medzi spojmi): tieň iba tesný, nerozmazaný
+        shadow: 0, 2, 2, 28%
         // okraj obrazovky je hladina (ako Kvapky): pás je tesne pod ním, kvapky z neho vystupujú a pri ňom sa rozlievajú
         box bar { from: 0, H; size: W, 40 }
         // >>> telo (gen.py)
@@ -877,8 +919,29 @@ scene Goo {
         line { from: x.127, floor; to: thx.127, floor; width: wa.127 * 2; blend: 18 }
         ellipse { at: x.127, y.127; radius: rr.127; scale: 1 + fxw.127, 1 - fxw.127; blend: lk.127 + 6 * near.127 }
         line { from: x.127, y.127; to: thx.127, thy.127; width: th.127; blend: 12 * clamp(th.127 / 3, 0, 1) }
+        ellipse { at: rpx.0 - rpg.0 * 420, floor + rpa.0 * 1.2; radius: rpa.0 * 2.2 * (1 - rpg.0) * if(rpk.0 > 0.5, 0, 1); scale: 2.2, 1; blend: 14 }
+        ellipse { at: rpx.0 + rpg.0 * 420, floor + rpa.0 * 1.2; radius: rpa.0 * 2.2 * (1 - rpg.0) * if(rpk.0 > 0.5, 0, 1); scale: 2.2, 1; blend: 14 }
+        ellipse { at: rpx.0, floor + 4; radius: rpa.0 * (1.2 + 0.6 * sin(time * 1900)) * (1 - rpg.0) * if(rpk.0 > 0.5, 1, 0); scale: 2.6, 1; blend: 12 }
+        ellipse { at: rpx.1 - rpg.1 * 420, floor + rpa.1 * 1.2; radius: rpa.1 * 2.2 * (1 - rpg.1) * if(rpk.1 > 0.5, 0, 1); scale: 2.2, 1; blend: 14 }
+        ellipse { at: rpx.1 + rpg.1 * 420, floor + rpa.1 * 1.2; radius: rpa.1 * 2.2 * (1 - rpg.1) * if(rpk.1 > 0.5, 0, 1); scale: 2.2, 1; blend: 14 }
+        ellipse { at: rpx.1, floor + 4; radius: rpa.1 * (1.2 + 0.6 * sin(time * 1900)) * (1 - rpg.1) * if(rpk.1 > 0.5, 1, 0); scale: 2.6, 1; blend: 12 }
+        ellipse { at: rpx.2 - rpg.2 * 420, floor + rpa.2 * 1.2; radius: rpa.2 * 2.2 * (1 - rpg.2) * if(rpk.2 > 0.5, 0, 1); scale: 2.2, 1; blend: 14 }
+        ellipse { at: rpx.2 + rpg.2 * 420, floor + rpa.2 * 1.2; radius: rpa.2 * 2.2 * (1 - rpg.2) * if(rpk.2 > 0.5, 0, 1); scale: 2.2, 1; blend: 14 }
+        ellipse { at: rpx.2, floor + 4; radius: rpa.2 * (1.2 + 0.6 * sin(time * 1900)) * (1 - rpg.2) * if(rpk.2 > 0.5, 1, 0); scale: 2.6, 1; blend: 12 }
+        ellipse { at: rpx.3 - rpg.3 * 420, floor + rpa.3 * 1.2; radius: rpa.3 * 2.2 * (1 - rpg.3) * if(rpk.3 > 0.5, 0, 1); scale: 2.2, 1; blend: 14 }
+        ellipse { at: rpx.3 + rpg.3 * 420, floor + rpa.3 * 1.2; radius: rpa.3 * 2.2 * (1 - rpg.3) * if(rpk.3 > 0.5, 0, 1); scale: 2.2, 1; blend: 14 }
+        ellipse { at: rpx.3, floor + 4; radius: rpa.3 * (1.2 + 0.6 * sin(time * 1900)) * (1 - rpg.3) * if(rpk.3 > 0.5, 1, 0); scale: 2.6, 1; blend: 12 }
         line { from: pick(nk, goo.0.hx * W + goo.0.ox, goo.1.hx * W + goo.1.ox, goo.2.hx * W + goo.2.ox, goo.3.hx * W + goo.3.ox, goo.4.hx * W + goo.4.ox, goo.5.hx * W + goo.5.ox, goo.6.hx * W + goo.6.ox, goo.7.hx * W + goo.7.ox, goo.8.hx * W + goo.8.ox, goo.9.hx * W + goo.9.ox, goo.10.hx * W + goo.10.ox, goo.11.hx * W + goo.11.ox, goo.12.hx * W + goo.12.ox, goo.13.hx * W + goo.13.ox, goo.14.hx * W + goo.14.ox, goo.15.hx * W + goo.15.ox, goo.16.hx * W + goo.16.ox, goo.17.hx * W + goo.17.ox, goo.18.hx * W + goo.18.ox, goo.19.hx * W + goo.19.ox, goo.20.hx * W + goo.20.ox, goo.21.hx * W + goo.21.ox, goo.22.hx * W + goo.22.ox, goo.23.hx * W + goo.23.ox, goo.24.hx * W + goo.24.ox, goo.25.hx * W + goo.25.ox, goo.26.hx * W + goo.26.ox, goo.27.hx * W + goo.27.ox, goo.28.hx * W + goo.28.ox, goo.29.hx * W + goo.29.ox, goo.30.hx * W + goo.30.ox, goo.31.hx * W + goo.31.ox, goo.32.hx * W + goo.32.ox, goo.33.hx * W + goo.33.ox, goo.34.hx * W + goo.34.ox, goo.35.hx * W + goo.35.ox, goo.36.hx * W + goo.36.ox, goo.37.hx * W + goo.37.ox, goo.38.hx * W + goo.38.ox, goo.39.hx * W + goo.39.ox, goo.40.hx * W + goo.40.ox, goo.41.hx * W + goo.41.ox, goo.42.hx * W + goo.42.ox, goo.43.hx * W + goo.43.ox, goo.44.hx * W + goo.44.ox, goo.45.hx * W + goo.45.ox, goo.46.hx * W + goo.46.ox, goo.47.hx * W + goo.47.ox, goo.48.hx * W + goo.48.ox, goo.49.hx * W + goo.49.ox, goo.50.hx * W + goo.50.ox, goo.51.hx * W + goo.51.ox, goo.52.hx * W + goo.52.ox, goo.53.hx * W + goo.53.ox, goo.54.hx * W + goo.54.ox, goo.55.hx * W + goo.55.ox, goo.56.hx * W + goo.56.ox, goo.57.hx * W + goo.57.ox, goo.58.hx * W + goo.58.ox, goo.59.hx * W + goo.59.ox, goo.60.hx * W + goo.60.ox, goo.61.hx * W + goo.61.ox, goo.62.hx * W + goo.62.ox, goo.63.hx * W + goo.63.ox, goo.64.hx * W + goo.64.ox, goo.65.hx * W + goo.65.ox, goo.66.hx * W + goo.66.ox, goo.67.hx * W + goo.67.ox, goo.68.hx * W + goo.68.ox, goo.69.hx * W + goo.69.ox, goo.70.hx * W + goo.70.ox, goo.71.hx * W + goo.71.ox, goo.72.hx * W + goo.72.ox, goo.73.hx * W + goo.73.ox, goo.74.hx * W + goo.74.ox, goo.75.hx * W + goo.75.ox, goo.76.hx * W + goo.76.ox, goo.77.hx * W + goo.77.ox, goo.78.hx * W + goo.78.ox, goo.79.hx * W + goo.79.ox, goo.80.hx * W + goo.80.ox, goo.81.hx * W + goo.81.ox, goo.82.hx * W + goo.82.ox, goo.83.hx * W + goo.83.ox, goo.84.hx * W + goo.84.ox, goo.85.hx * W + goo.85.ox, goo.86.hx * W + goo.86.ox, goo.87.hx * W + goo.87.ox, goo.88.hx * W + goo.88.ox, goo.89.hx * W + goo.89.ox, goo.90.hx * W + goo.90.ox, goo.91.hx * W + goo.91.ox, goo.92.hx * W + goo.92.ox, goo.93.hx * W + goo.93.ox, goo.94.hx * W + goo.94.ox, goo.95.hx * W + goo.95.ox, goo.96.hx * W + goo.96.ox, goo.97.hx * W + goo.97.ox, goo.98.hx * W + goo.98.ox, goo.99.hx * W + goo.99.ox, goo.100.hx * W + goo.100.ox, goo.101.hx * W + goo.101.ox, goo.102.hx * W + goo.102.ox, goo.103.hx * W + goo.103.ox, goo.104.hx * W + goo.104.ox, goo.105.hx * W + goo.105.ox, goo.106.hx * W + goo.106.ox, goo.107.hx * W + goo.107.ox, goo.108.hx * W + goo.108.ox, goo.109.hx * W + goo.109.ox, goo.110.hx * W + goo.110.ox, goo.111.hx * W + goo.111.ox, goo.112.hx * W + goo.112.ox, goo.113.hx * W + goo.113.ox, goo.114.hx * W + goo.114.ox, goo.115.hx * W + goo.115.ox, goo.116.hx * W + goo.116.ox, goo.117.hx * W + goo.117.ox, goo.118.hx * W + goo.118.ox, goo.119.hx * W + goo.119.ox, goo.120.hx * W + goo.120.ox, goo.121.hx * W + goo.121.ox, goo.122.hx * W + goo.122.ox, goo.123.hx * W + goo.123.ox, goo.124.hx * W + goo.124.ox, goo.125.hx * W + goo.125.ox, goo.126.hx * W + goo.126.ox, goo.127.hx * W + goo.127.ox), pick(nk, floor - goo.0.hy, floor - goo.1.hy, floor - goo.2.hy, floor - goo.3.hy, floor - goo.4.hy, floor - goo.5.hy, floor - goo.6.hy, floor - goo.7.hy, floor - goo.8.hy, floor - goo.9.hy, floor - goo.10.hy, floor - goo.11.hy, floor - goo.12.hy, floor - goo.13.hy, floor - goo.14.hy, floor - goo.15.hy, floor - goo.16.hy, floor - goo.17.hy, floor - goo.18.hy, floor - goo.19.hy, floor - goo.20.hy, floor - goo.21.hy, floor - goo.22.hy, floor - goo.23.hy, floor - goo.24.hy, floor - goo.25.hy, floor - goo.26.hy, floor - goo.27.hy, floor - goo.28.hy, floor - goo.29.hy, floor - goo.30.hy, floor - goo.31.hy, floor - goo.32.hy, floor - goo.33.hy, floor - goo.34.hy, floor - goo.35.hy, floor - goo.36.hy, floor - goo.37.hy, floor - goo.38.hy, floor - goo.39.hy, floor - goo.40.hy, floor - goo.41.hy, floor - goo.42.hy, floor - goo.43.hy, floor - goo.44.hy, floor - goo.45.hy, floor - goo.46.hy, floor - goo.47.hy, floor - goo.48.hy, floor - goo.49.hy, floor - goo.50.hy, floor - goo.51.hy, floor - goo.52.hy, floor - goo.53.hy, floor - goo.54.hy, floor - goo.55.hy, floor - goo.56.hy, floor - goo.57.hy, floor - goo.58.hy, floor - goo.59.hy, floor - goo.60.hy, floor - goo.61.hy, floor - goo.62.hy, floor - goo.63.hy, floor - goo.64.hy, floor - goo.65.hy, floor - goo.66.hy, floor - goo.67.hy, floor - goo.68.hy, floor - goo.69.hy, floor - goo.70.hy, floor - goo.71.hy, floor - goo.72.hy, floor - goo.73.hy, floor - goo.74.hy, floor - goo.75.hy, floor - goo.76.hy, floor - goo.77.hy, floor - goo.78.hy, floor - goo.79.hy, floor - goo.80.hy, floor - goo.81.hy, floor - goo.82.hy, floor - goo.83.hy, floor - goo.84.hy, floor - goo.85.hy, floor - goo.86.hy, floor - goo.87.hy, floor - goo.88.hy, floor - goo.89.hy, floor - goo.90.hy, floor - goo.91.hy, floor - goo.92.hy, floor - goo.93.hy, floor - goo.94.hy, floor - goo.95.hy, floor - goo.96.hy, floor - goo.97.hy, floor - goo.98.hy, floor - goo.99.hy, floor - goo.100.hy, floor - goo.101.hy, floor - goo.102.hy, floor - goo.103.hy, floor - goo.104.hy, floor - goo.105.hy, floor - goo.106.hy, floor - goo.107.hy, floor - goo.108.hy, floor - goo.109.hy, floor - goo.110.hy, floor - goo.111.hy, floor - goo.112.hy, floor - goo.113.hy, floor - goo.114.hy, floor - goo.115.hy, floor - goo.116.hy, floor - goo.117.hy, floor - goo.118.hy, floor - goo.119.hy, floor - goo.120.hy, floor - goo.121.hy, floor - goo.122.hy, floor - goo.123.hy, floor - goo.124.hy, floor - goo.125.hy, floor - goo.126.hy, floor - goo.127.hy); to: pick(nk, x.0, x.1, x.2, x.3, x.4, x.5, x.6, x.7, x.8, x.9, x.10, x.11, x.12, x.13, x.14, x.15, x.16, x.17, x.18, x.19, x.20, x.21, x.22, x.23, x.24, x.25, x.26, x.27, x.28, x.29, x.30, x.31, x.32, x.33, x.34, x.35, x.36, x.37, x.38, x.39, x.40, x.41, x.42, x.43, x.44, x.45, x.46, x.47, x.48, x.49, x.50, x.51, x.52, x.53, x.54, x.55, x.56, x.57, x.58, x.59, x.60, x.61, x.62, x.63, x.64, x.65, x.66, x.67, x.68, x.69, x.70, x.71, x.72, x.73, x.74, x.75, x.76, x.77, x.78, x.79, x.80, x.81, x.82, x.83, x.84, x.85, x.86, x.87, x.88, x.89, x.90, x.91, x.92, x.93, x.94, x.95, x.96, x.97, x.98, x.99, x.100, x.101, x.102, x.103, x.104, x.105, x.106, x.107, x.108, x.109, x.110, x.111, x.112, x.113, x.114, x.115, x.116, x.117, x.118, x.119, x.120, x.121, x.122, x.123, x.124, x.125, x.126, x.127), pick(nk, y.0, y.1, y.2, y.3, y.4, y.5, y.6, y.7, y.8, y.9, y.10, y.11, y.12, y.13, y.14, y.15, y.16, y.17, y.18, y.19, y.20, y.21, y.22, y.23, y.24, y.25, y.26, y.27, y.28, y.29, y.30, y.31, y.32, y.33, y.34, y.35, y.36, y.37, y.38, y.39, y.40, y.41, y.42, y.43, y.44, y.45, y.46, y.47, y.48, y.49, y.50, y.51, y.52, y.53, y.54, y.55, y.56, y.57, y.58, y.59, y.60, y.61, y.62, y.63, y.64, y.65, y.66, y.67, y.68, y.69, y.70, y.71, y.72, y.73, y.74, y.75, y.76, y.77, y.78, y.79, y.80, y.81, y.82, y.83, y.84, y.85, y.86, y.87, y.88, y.89, y.90, y.91, y.92, y.93, y.94, y.95, y.96, y.97, y.98, y.99, y.100, y.101, y.102, y.103, y.104, y.105, y.106, y.107, y.108, y.109, y.110, y.111, y.112, y.113, y.114, y.115, y.116, y.117, y.118, y.119, y.120, y.121, y.122, y.123, y.124, y.125, y.126, y.127); width: if(nk >= 0, pick(nk, rr.0 * 0.7 * neck.0, rr.1 * 0.7 * neck.1, rr.2 * 0.7 * neck.2, rr.3 * 0.7 * neck.3, rr.4 * 0.7 * neck.4, rr.5 * 0.7 * neck.5, rr.6 * 0.7 * neck.6, rr.7 * 0.7 * neck.7, rr.8 * 0.7 * neck.8, rr.9 * 0.7 * neck.9, rr.10 * 0.7 * neck.10, rr.11 * 0.7 * neck.11, rr.12 * 0.7 * neck.12, rr.13 * 0.7 * neck.13, rr.14 * 0.7 * neck.14, rr.15 * 0.7 * neck.15, rr.16 * 0.7 * neck.16, rr.17 * 0.7 * neck.17, rr.18 * 0.7 * neck.18, rr.19 * 0.7 * neck.19, rr.20 * 0.7 * neck.20, rr.21 * 0.7 * neck.21, rr.22 * 0.7 * neck.22, rr.23 * 0.7 * neck.23, rr.24 * 0.7 * neck.24, rr.25 * 0.7 * neck.25, rr.26 * 0.7 * neck.26, rr.27 * 0.7 * neck.27, rr.28 * 0.7 * neck.28, rr.29 * 0.7 * neck.29, rr.30 * 0.7 * neck.30, rr.31 * 0.7 * neck.31, rr.32 * 0.7 * neck.32, rr.33 * 0.7 * neck.33, rr.34 * 0.7 * neck.34, rr.35 * 0.7 * neck.35, rr.36 * 0.7 * neck.36, rr.37 * 0.7 * neck.37, rr.38 * 0.7 * neck.38, rr.39 * 0.7 * neck.39, rr.40 * 0.7 * neck.40, rr.41 * 0.7 * neck.41, rr.42 * 0.7 * neck.42, rr.43 * 0.7 * neck.43, rr.44 * 0.7 * neck.44, rr.45 * 0.7 * neck.45, rr.46 * 0.7 * neck.46, rr.47 * 0.7 * neck.47, rr.48 * 0.7 * neck.48, rr.49 * 0.7 * neck.49, rr.50 * 0.7 * neck.50, rr.51 * 0.7 * neck.51, rr.52 * 0.7 * neck.52, rr.53 * 0.7 * neck.53, rr.54 * 0.7 * neck.54, rr.55 * 0.7 * neck.55, rr.56 * 0.7 * neck.56, rr.57 * 0.7 * neck.57, rr.58 * 0.7 * neck.58, rr.59 * 0.7 * neck.59, rr.60 * 0.7 * neck.60, rr.61 * 0.7 * neck.61, rr.62 * 0.7 * neck.62, rr.63 * 0.7 * neck.63, rr.64 * 0.7 * neck.64, rr.65 * 0.7 * neck.65, rr.66 * 0.7 * neck.66, rr.67 * 0.7 * neck.67, rr.68 * 0.7 * neck.68, rr.69 * 0.7 * neck.69, rr.70 * 0.7 * neck.70, rr.71 * 0.7 * neck.71, rr.72 * 0.7 * neck.72, rr.73 * 0.7 * neck.73, rr.74 * 0.7 * neck.74, rr.75 * 0.7 * neck.75, rr.76 * 0.7 * neck.76, rr.77 * 0.7 * neck.77, rr.78 * 0.7 * neck.78, rr.79 * 0.7 * neck.79, rr.80 * 0.7 * neck.80, rr.81 * 0.7 * neck.81, rr.82 * 0.7 * neck.82, rr.83 * 0.7 * neck.83, rr.84 * 0.7 * neck.84, rr.85 * 0.7 * neck.85, rr.86 * 0.7 * neck.86, rr.87 * 0.7 * neck.87, rr.88 * 0.7 * neck.88, rr.89 * 0.7 * neck.89, rr.90 * 0.7 * neck.90, rr.91 * 0.7 * neck.91, rr.92 * 0.7 * neck.92, rr.93 * 0.7 * neck.93, rr.94 * 0.7 * neck.94, rr.95 * 0.7 * neck.95, rr.96 * 0.7 * neck.96, rr.97 * 0.7 * neck.97, rr.98 * 0.7 * neck.98, rr.99 * 0.7 * neck.99, rr.100 * 0.7 * neck.100, rr.101 * 0.7 * neck.101, rr.102 * 0.7 * neck.102, rr.103 * 0.7 * neck.103, rr.104 * 0.7 * neck.104, rr.105 * 0.7 * neck.105, rr.106 * 0.7 * neck.106, rr.107 * 0.7 * neck.107, rr.108 * 0.7 * neck.108, rr.109 * 0.7 * neck.109, rr.110 * 0.7 * neck.110, rr.111 * 0.7 * neck.111, rr.112 * 0.7 * neck.112, rr.113 * 0.7 * neck.113, rr.114 * 0.7 * neck.114, rr.115 * 0.7 * neck.115, rr.116 * 0.7 * neck.116, rr.117 * 0.7 * neck.117, rr.118 * 0.7 * neck.118, rr.119 * 0.7 * neck.119, rr.120 * 0.7 * neck.120, rr.121 * 0.7 * neck.121, rr.122 * 0.7 * neck.122, rr.123 * 0.7 * neck.123, rr.124 * 0.7 * neck.124, rr.125 * 0.7 * neck.125, rr.126 * 0.7 * neck.126, rr.127 * 0.7 * neck.127), 0); blend: 22 }
                 // <<< telo
+    }
+    // farebné jadro: od stredu prechod z farby do kávy (okraj splynie s kvapkou), predvolene druh upozornenia;
+    // vypnuté má nulovú veľkosť (so záplatou nič nestojí)
+    repeat k in 0..128 {
+        body {
+            gradient: radial x.$k, y.$k radius rr.$k * 0.97, if(goo.$k.jf == 0, #e5484d, if(goo.$k.jf == 1, #30a46c, if(goo.$k.jf == 2, #3e63dd, if(goo.$k.jf == 3, #f5a524, if(goo.$k.jf == 4, #ffe8c2, #8e4ec6))))), coffee
+            opacity: clamp(jd.$k, 0, 1)
+            ellipse { at: x.$k, y.$k; radius: rr.$k * 0.97 * if(jd.$k > 0.02, 1, 0); scale: 1 + fxw.$k, 1 - fxw.$k }
+        }
     }
     // odlesky: svetlo kurzora na každej kvapke (bližšie = jasnejšie)
     repeat k in 0..128 {

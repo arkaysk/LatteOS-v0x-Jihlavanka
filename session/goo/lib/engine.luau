@@ -27,6 +27,10 @@
 --   tik(d) každých `kazdych` ms
 -- Metódy kvapky: d:text(s) d:ikona(meno) d:hodnota(v) d:nazov(s) d:efekt(meno, sila) d:rezerva(i, v)
 --   d:velkost(z) d:presun(x, y) d:domov() d:poskoc() d:bublina(text) d:nastav{…pole = hodnota…}
+--   d:jadro(farba, sila, pulz) — farebné jadro (predvolene upozornenie): "hardver" "siet" "softver" "vystraha"
+--     "svetlo" "ine"; d:jadro() zhasne · d:vlnka(sila) kameň do vody pri kvapke · d:vibruj(sila)
+-- Hladina: E.vlnka(x_px, sila, "kamen"|"vibracia"); zvonka `pleamar --say goo "emit goo_kamen 512"` (x v px),
+--   napr. minimalizované okno padne do lišty (pravidlo 14: „žblnkne ako voda“)
 
 local E = {}
 local N = 128            -- = gen.py N (miesta v scéne): Goobar nesie okná ako ikry/hrozno, pri veľkej RAM ich je veľa
@@ -34,7 +38,9 @@ E.N = N
 
 -- efekty scény (čísla v goo.plm); 6–9 rezerva pre efekty, ktoré ešte nie sú
 local EFEKTY = { nic = 0, dych = 1, kmit = 2, tras = 3, obeh = 4, tlkot = 5 }
-local DRUHY = { ikona = 0, ukazovatel = 1 }
+local DRUHY = { ikona = 0, ukazovatel = 1, hodiny = 2 }
+-- jadro: farby upozornení podľa pravidla 15 (červená hardvér, zelená sieť, modrá softvér) + výstraha, svetlo, iné
+local JADRO = { hardver = 0, siet = 1, softver = 2, vystraha = 3, svetlo = 4, ine = 5 }
 -- povahy: balíky čísel (dajú sa prepísať jednotlivo v definícii)
 E.POVAHY = {
     pokojna = { gravitacia = 0.12, lepivost = 0.2, efekt = "dych", sila = 0.6 },
@@ -61,6 +67,13 @@ local function clamp(v, a, b) return math.max(a, math.min(b, v)) end
 -- meno ikony (napr. "eye", "123") vs. hotový znak písma (jeden znak mimo ASCII, napr. "\u{EA38}")
 local function isName(s) return type(s) == "string" and s ~= "" and s:byte(1) < 128 end
 
+-- logika → scéna pre jednu kvapku: `emit` v Luau nenesie hodnotu, preto počítadlo (scéna: on change)
+local function bump(name, k)
+    local n = name .. "." .. k
+    fact[n] = (fact[n] or 0) + 1
+end
+E.bump = bump
+
 local function hud(s)
     if E.ladenie then text.hud = s end
 end
@@ -79,6 +92,7 @@ local function record(d)
         e1 = d.e[1], e2 = d.e[2], e3 = d.e[3], e4 = d.e[4],
         druh = DRUHY[v.druh] or num(v.druh, 0), hodnota = num(v.hodnota, 0),
         ikona = ik, text = v.text or "",
+        jadro = d.jadroS or 0, jf = d.jadroF or 0, jp = d.jadroP or false,
     }
 end
 
@@ -90,7 +104,8 @@ local function neighbours(list)
     local docked = {}
     for _, d in ipairs(list) do
         d.nl, d.nr = nil, nil
-        if d.y < d.v.velkost * 1.6 then table.insert(docked, d) end
+        -- ťahaná nie je susedom (inak by k jej starému miestu viselo dlhé vlákno)
+        if d.y < d.v.velkost * 1.6 and not d.dragging then table.insert(docked, d) end
     end
     table.sort(docked, function(a, b) return a.x * NOMINAL_W + (a.ox or 0) < b.x * NOMINAL_W + (b.ox or 0) end)
     for i = 1, #docked - 1 do
@@ -151,8 +166,29 @@ function Kvapka:rezerva(i, x) self.e[i] = x publish() end
 function Kvapka:velkost(z) self.z = clamp(z, ZOOM_MIN, ZOOM_MAX) publish() save() end
 function Kvapka:presun(x, y) self.x, self.y, self.ox = clamp(x, 0.02, 0.98), math.max(0, y), 0 self.moved = true publish() save() end
 function Kvapka:domov() self.x, self.y, self.ox, self.z, self.moved = self.hx0, self.hy0, self.ox0, 1, false publish() save() end
-function Kvapka:poskoc() emit("goo_hop", self.k) end
+function Kvapka:poskoc() bump("hopn", self.k) end
+function Kvapka:stlac() bump("sqn", self.k) end
 function Kvapka:bublina(s) text.tip = s or "" end
+function Kvapka:jadro(farba, sila, pulz)
+    if farba == nil then self.jadroS = 0
+    else self.jadroS, self.jadroF, self.jadroP = sila or 1, JADRO[farba] or num(farba, 5), pulz ~= false end
+    publish()
+end
+-- poloha kvapky v px (vlnky): šírku obrazovky povie scéna (fact sw)
+function Kvapka:px() local w = num(fact.sw, 0) return self.x * (w > 0 and w or 1920) + (self.ox or 0) end
+function Kvapka:vlnka(sila) E.vlnka(self:px(), sila or 6, "kamen") end
+function Kvapka:vibruj(sila) E.vlnka(self:px(), sila or 3, "vibracia") end
+
+-- ── hladina: vlnky (4 naraz, strieda sa) ───────────────────────────────────────────────────────────────────────
+local nextRipple = 0
+function E.vlnka(x, sila, druh)
+    local i = nextRipple
+    nextRipple = (nextRipple + 1) % 4
+    fact["rpx." .. i], fact["rpa." .. i], fact["rpk." .. i] = x, sila or 6, druh == "vibracia" and 1 or 0
+    bump("rpn", i)
+end
+on("goo_kamen", function(x) E.vlnka(x, 8, "kamen") end)
+on("goo_vibracia", function(x) E.vlnka(x, 3, "vibracia") end)
 
 -- ── registrácia ──────────────────────────────────────────────────────────────────────────────────────────────
 local function freeSlot()
@@ -165,7 +201,7 @@ local function nextDock()
     if E.prva then x = E.prva end                       -- test: ďalšie kvapky od tohto miesta (trojica ostane sama)
     for k = 0, N - 1 do
         local d = slots[k]
-        if d and d.hy0 < d.v.velkost * 1.6 and not d.def.pri then x = math.max(x, d.hx0 + 0.055) end
+        if d and d.hy0 < d.v.velkost * 1.6 and not d.def.pri then x = math.max(x, d.hx0 + 0.045) end
     end
     return x
 end
@@ -299,11 +335,14 @@ end)
 on("goo_drag", function(k)
     local d = at(k) if not d then return end
     hud("ťahanie · " .. d.id)
+    d.dragging = true
+    publish()
     hook(d, "tahanie")
 end)
 on("goo_drop", function(k)
     local d = at(k) if not d then return end
     local x, y = fact.rx, fact.ry
+    d.dragging = false
     local has, res = hook(d, "pustenie", x, y)
     -- lepivosť k lište: blízko nej sa prilepí; ťažká kvapka spadne na lištu (pružina `pada` s odrazom)
     if y < d.v.velkost * d.z * 1.6 or d.v.hmotnost > 0.5 then y = num(d.v.vyska, d.v.velkost * 0.8) * d.z end
@@ -311,6 +350,11 @@ on("goo_drop", function(k)
         d.x, d.y = clamp(x, 0.02, 0.98), math.max(0, y)
         d.moved, d.ox = true, 0
         save()
+    end
+    -- vrátila sa k okraju: ponorí sa pod hladinu a vynorí (Marea), hladina sa zvlní
+    if d.y < d.v.velkost * d.z * 1.6 then
+        bump("dipn", k)
+        after(260, function() E.vlnka(d:px(), 4 + d.v.velkost * d.z * 0.12, "kamen") end)
     end
     hud(string.format("pustenie · %s · x %.2f y %d", d.id, d.x, d.y))
     -- domov a ťahanie scény naraz (inak by kvapka na snímok skočila späť)
@@ -351,7 +395,7 @@ local function game()
         publish()
         after(650, function()
             if not play then return end
-            emit("goo_squish", d.k) emit("goo_squish", other.k)
+            d:stlac() other:stlac()
             other.x = clamp(other.x - side * 0.08, 0.03, 0.97)
             other:poskoc()
             publish()
@@ -368,7 +412,7 @@ on("goo_idle", function(level)
     if level == 0 then
         local had = play ~= nil
         stopPlay()
-        if had then E.each(function(d) emit("goo_squish", d.k) end) end     -- vyrušené: zachvejú sa
+        if had then E.each(function(d) d:stlac() end) end     -- vyrušené: zachvejú sa
         return
     end
     if level >= 3 and not play then
