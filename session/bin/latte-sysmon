@@ -9,6 +9,8 @@
   latte-sysmon hw            JSON: hardvér ako CPU-Z/HWiNFO (procesor, cache, doska/BIOS, pamäť, grafika, disky,
                              senzory, batéria, systém)
   latte-sysmon once          jeden snímok (bez procesov)
+  latte-sysmon bench                          test výkonu CPU (ako Bench v CPU-Z): 7-Zip benchmark (MIPS, porovnateľné s
+                                              7-cpu.com), inak náhradný test; 1 vlákno aj všetky; história v bench.json
   latte-sysmon sluzby                         JSON: služby systému aj používateľa (stav, popis, povolená, pamäť)
   latte-sysmon sluzba system|user start|stop|restart|enable|disable JEDNOTKA   (systémové → polkit, heslo správcu)
   latte-sysmon pouzivatelia                   JSON: prihlásení používatelia, relácie a ich procesy (CPU, RAM)
@@ -554,6 +556,7 @@ def snapshot(state, with_procs=True):
         state["ticks"] = ticks
     if state.get("withSensors"):
         snap["sensors"] = sensors_all(state)
+        sensor_alerts(snap["sensors"], state)
     state.update(t=t, cpus=cpus, io=(rd, wr, rx, tx))
     return snap
 
@@ -665,6 +668,66 @@ def proc_action(pid, act, arg=""):
                 pass
         return 0
     return 2
+
+
+def sensor_alerts(groups, state):
+    """upozornenie pri prekročení hranice (Senzory › pravý klik › Upozorniť nad…): oznámenie, najviac raz za 10 min"""
+    cfg = os.path.join(os.environ.get("XDG_CONFIG_HOME", os.path.expanduser("~/.config")), "latteos", "senzory.json")
+    if time.monotonic() - state.get("alT", 0) > 10:
+        try:
+            state["alerts"] = json.load(open(cfg)).get("alerts", {})
+        except (OSError, ValueError):
+            state["alerts"] = {}
+        state["alT"] = time.monotonic()
+    al = state.get("alerts") or {}
+    if not al:
+        return
+    last = state.setdefault("alLast", {})
+    for g in groups:
+        for it in g["items"]:
+            lim = al.get(it["id"])
+            if lim is None or not isinstance(it.get("value"), (int, float)):
+                continue
+            if it["value"] > float(lim) and time.time() - last.get(it["id"], 0) > 600:
+                last[it["id"]] = time.time()
+                subprocess.Popen(["notify-send", "-a", "Monitor LatteOS", "-u", "critical", "-i", "dialog-warning",
+                                  "%s · %s" % (g["name"], it["label"]), "%s %s (hranica %s)" % (it["value"], it.get("unit", ""), lim)],
+                                 stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+
+def bench():
+    """test výkonu CPU; výsledok a história v ~/.local/state/latteos/bench.json"""
+    import zlib
+    res = {"time": int(time.time()), "cpu": (re.search(r"model name\s*: (.+)", read("/proc/cpuinfo")) or [None, "?"])[1].strip(),
+           "threads": os.cpu_count()}
+    z7 = shutil.which("7z") or shutil.which("7za") or shutil.which("7zz")
+    if z7:
+        def run7(extra):
+            t = subprocess.run([z7, "b", "-md22"] + extra, capture_output=True, text=True, timeout=300).stdout
+            m = re.search(r"^Tot:\s+\d+\s+\d+\s+(\d+)", t, re.M)
+            return int(m.group(1)) if m else 0
+        res.update(tool="7-Zip benchmark (MIPS)", single=run7(["-mmt1"]), multi=run7([]))
+    else:
+        data = os.urandom(1 << 20) * 8
+        def work(_):
+            t0, n = time.perf_counter(), 0
+            while time.perf_counter() - t0 < 3:
+                zlib.compress(data[:1 << 22], 6); n += 4
+            return n / (time.perf_counter() - t0)
+        single = work(0)
+        from concurrent.futures import ThreadPoolExecutor   # zlib počas kompresie uvoľní GIL → vlákna bežia naozaj súbežne
+        with ThreadPoolExecutor(os.cpu_count()) as ex:
+            multi = sum(ex.map(work, range(os.cpu_count())))
+        res.update(tool="zlib (MB/s)", single=round(single), multi=round(multi))
+    f = os.path.join(STATE_DIR, "bench.json")
+    try:
+        hist = json.load(open(f))
+    except (OSError, ValueError):
+        hist = []
+    hist = (hist + [res])[-20:]
+    os.makedirs(STATE_DIR, exist_ok=True)
+    json.dump(hist, open(f, "w"))
+    return {"now": res, "history": hist}
 
 
 def desktop_entries():
@@ -1163,6 +1226,12 @@ def sensors_all(state):
     g("Systém", "info-circle", [{"id": "sys.load1", "label": "Záťaž (1 min)", "value": float(la[0]) if la else 0, "unit": ""},
                                 {"id": "sys.procs", "label": "Bežiace procesy", "value": int(la[3].split("/")[1]) if len(la) > 3 else 0, "unit": ""}])
     state["sT"] = t
+    # spomaľovanie pri prehriatí (Intel thermal_throttle): rastúci počet = procesor sa brzdí kvôli teplote
+    thr = [int(read(f, "0") or 0) for f in glob.glob("/sys/devices/system/cpu/cpu*/thermal_throttle/core_throttle_count")]
+    pk = [int(read(f, "0") or 0) for f in glob.glob("/sys/devices/system/cpu/cpu*/thermal_throttle/package_throttle_count")]
+    if thr or pk:
+        g("Prehrievanie (spomalenia)", "alert-triangle", [{"id": "cpu.throttle.core", "label": "Spomalenia jadier", "value": sum(thr), "unit": "×"},
+                                                          {"id": "cpu.throttle.pkg", "label": "Spomalenia procesora", "value": max(pk) if pk else 0, "unit": "×"}])
     nv = nvidia_gpu()                                   # NVIDIA (proprietárny ovládač): nvidia-smi
     if nv:
         items = [{"id": "gpu.nv.%s" % k, "label": lbl, "value": v, "unit": u} for k, lbl, v, u in (
@@ -1251,6 +1320,15 @@ def hardware():
         dev = "/sys/bus/pci/devices/" + (g["slot"] if g["slot"].count(":") == 2 else "0000:" + g["slot"])
         g["link"] = (read(dev + "/current_link_speed") + " ×" + read(dev + "/current_link_width")).strip(" ×") if read(dev + "/current_link_speed") else ""
         g["linkMax"] = (read(dev + "/max_link_speed") + " ×" + read(dev + "/max_link_width")).strip(" ×") if read(dev + "/max_link_speed") else ""
+    nv = nvidia_gpu()
+    compat = subprocess.run(["latte-boot", "compat", "--toml"], capture_output=True, text=True, timeout=10).stdout if shutil.which("latte-boot") else ""
+    fams = [dict(re.findall(r'^(\w+) = "?([^"\n]*)"?$', b, re.M)) for b in compat.split("[[platform.gpu]]")[1:]]
+    for i, g in enumerate(gpus):
+        if nv and "nvidia" in (g.get("vendor", "") + g.get("name", "")).lower() and not g.get("vram"):
+            g["vram"] = nv["vramTotal"]
+        if i < len(fams):                             # generácia karty a odporúčaný ovládač (latte-hw::compat)
+            f = fams[i].get
+            g.update(family=f("family", ""), year=f("year", ""), driverRec=f("driver", ""), vulkanOk=f("vulkan", ""), maxTier=f("max_tier", ""))
     info["gpu"] = gpus
     gl = {}
     try:
@@ -1588,6 +1666,9 @@ def main(a):
         for x in items:
             x["since"] = since
         print(json.dumps(items, ensure_ascii=False))
+        return 0
+    if cmd == "bench":
+        print(json.dumps(bench(), ensure_ascii=False))
         return 0
     if cmd == "sluzby":
         print(json.dumps(services(False) + services(True), ensure_ascii=False))
