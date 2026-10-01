@@ -333,8 +333,10 @@ Ide sa **po poradí**; nové nápady sa zapíšu na koniec (E), nerozbiehajú sa
    vidieť — teraz 86/78 %, hrubší perleťový lem (0,12), silnejší lom a dúha. Studený štart overený (nová relácia
    po páde o 08:03 mala Hyprglass načítaný sám). Pád Hyprlandu o 08:03: skončil „riadne“ a spadol v deštruktore
    zdieľania obrazovky (SIGSEGV pri exit) — príčina ukončenia nezistená (odhlásenie?); sledovať.
-6. **Slovenský katalóg Noctalie** (bez neho Noctalia v LatteOS nenačíta slovenské preklady doplnkov) — pred
-   integráciami Noctalie (C).
+6. ✅ (1. 10.) **Slovenský katalóg Noctalie** `session/noctalia/translations/sk.json` (→ `/usr/share/noctalia/assets/
+   translations/`, `install-session.sh`): Noctalia bez `sk.json` bežala celá po anglicky a nenačítala ani preklady
+   doplnkov. Preložené všetko okrem sekcie Nastavenia (876 z 2987; Nastavenia Noctalie prídu s redizajnom D —
+   dávky `sk-*.tsv` + `zluc.py`); chýbajúci kľúč Noctalia berie z angličtiny. Naživo: `language: sk`.
 
 ### B. Mechanika Goo a ovládanie myšou
 - **okno z kvapky ako bublina, zatvorenie = prasknutie, minimalizácia = pád do Goobaru so žblnknutím** (pravidlo 14)
