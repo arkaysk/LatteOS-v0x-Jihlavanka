@@ -324,7 +324,11 @@ Ide sa **po poradí**; nové nápady sa zapíšu na koniec (E), nerozbiehajú sa
    Zavrieť), vzhľad Goo — karta pripojená rohom ku guľôčke, rastie od okraja, pri rohu káva; podponuky sa vnoria
    (‹ Späť). Je to **spoločná ponuka Goo** (`menu()` v logike, kreslí `spustac.py`): ikony, skratky, zaškrtnutie,
    červená položka, oddeľovač — rovnako ju majú widgety, čipy, nedávne, hrozno a kalendár.
-5. **Hyprglass** overiť naživo (sklenená téma v Goo) a doladiť.
+5. ✅ (1. 10.) **Hyprglass** naživo (téma Svetlé sklo v Goo): sklo sa **nenačítalo** — `hl.plugin.load` počas
+   načítania konfigurácie Hyprglass nenačíta, za behu áno. Oprava v `latte/sklo.lua`: načíta a nastaví sa ešte raz
+   po `hyprland.start` a `config.reloaded`; pri téme bez skla sa iba vypne (`enabled = false`, neodpája sa), herný
+   režim rešpektuje. Overené po reload-e (lom a dúhový lem na okrajoch okien); studený štart sa overí pri ďalšom
+   prihlásení.
 6. **Slovenský katalóg Noctalie** (bez neho Noctalia v LatteOS nenačíta slovenské preklady doplnkov) — pred
    integráciami Noctalie (C).
 

@@ -15,14 +15,19 @@ local function file_exists(p)
     return false
 end
 
-function S.setup(theme, goo)
-    if not goo or not GLASS[theme.material or ""] then return false end
-    local cfg = os.getenv("XDG_CONFIG_HOME") or ((os.getenv("HOME") or "") .. "/.config")
-    if file_exists(cfg .. "/latteos/bez-skla") or not file_exists(S.plugin) then return false end
-    local ok = pcall(hl.plugin.load, S.plugin)
-    if not ok or not (hl.plugin and hl.plugin.hyprglass) then return false end
+-- herný režim (latte.game v hyprland.lua): bez skla a bez priehľadných okien
+local function game_on()
+    local f = io.open(((os.getenv("XDG_STATE_HOME") or ((os.getenv("HOME") or "") .. "/.local/state")) .. "/latteos/game-mode"), "r")
+    if not f then return false end
+    local v = f:read("*l"); f:close()
+    return v == "1"
+end
+
+local function apply(theme)
     local hg = hl.plugin.hyprglass
+    local game = game_on()
     hg.config({
+        enabled = not game,
         default_theme = theme.effective_mode == "light" and "light" or "dark",
         default_preset = "latte",
         layers = { enabled = false },
@@ -37,7 +42,28 @@ function S.setup(theme, goo)
         specular_strength = 0.8,
         fresnel_strength = 0.6,
     })
-    hl.config({ decoration = { active_opacity = 0.93, inactive_opacity = 0.87, fullscreen_opacity = 1.0 } })
+    hl.config({ decoration = { active_opacity = game and 1.0 or 0.93, inactive_opacity = game and 1.0 or 0.87, fullscreen_opacity = 1.0 } })
+end
+
+function S.setup(theme, goo)
+    local cfg = os.getenv("XDG_CONFIG_HOME") or ((os.getenv("HOME") or "") .. "/.config")
+    local want = goo and GLASS[theme.material or ""] and not file_exists(cfg .. "/latteos/bez-skla") and file_exists(S.plugin)
+    if not want then
+        -- iná téma / plocha: plugin sa neodpája (odpájanie pluginu so shadermi vie zhodiť Hyprland), iba sa vypne
+        if hl.plugin and hl.plugin.hyprglass then pcall(hl.plugin.hyprglass.config, { enabled = false }) end
+        return false
+    end
+    -- Pri načítaní konfigurácie hl.plugin.load Hyprglass nenačíta (overené 1. 10.: po štarte ani po reload-e nebol
+    -- v `hyprctl plugin list`, za behu sa načíta hneď) — preto ešte raz po štarte a po reload-e konfigurácie
+    local function go()
+        pcall(hl.plugin.load, S.plugin)
+        if hl.plugin and hl.plugin.hyprglass then apply(theme); return true end
+        return false
+    end
+    if not go() then
+        hl.on("hyprland.start", go)
+        hl.on("config.reloaded", go)
+    end
     return true
 end
 

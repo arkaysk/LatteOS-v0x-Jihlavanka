@@ -220,7 +220,7 @@ latte = latte or {}
 function latte.game(on)
     game_on = on and true or false
     apply_tier(on and "minimalny" or tier)
-    if glass_on then                                                  -- v hre bez skla a bez priehľadných okien
+    if glass_on and hl.plugin and hl.plugin.hyprglass then          -- v hre bez skla a bez priehľadných okien
         hl.plugin.hyprglass.config({ enabled = not on })
         hl.config({ decoration = { active_opacity = on and 1.0 or 0.93, inactive_opacity = on and 1.0 or 0.87 } })
     end
