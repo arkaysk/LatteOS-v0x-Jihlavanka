@@ -123,6 +123,15 @@ Item {
         run(["kill", "-TERM"].concat(pids), "Ukončujem aplikáciu " + g.name + "…");
     }
     property int selPid: -1
+    property var pdet: null                // latte-sysmon proces PID: stav, priorita, súbory, spojenia, pôvod
+    onSelPidChanged: { pdet = null; if (selPid > 0) { detProc.command = ["latte-sysmon", "proces", String(selPid)]; detProc.running = true; } }
+    Process { id: detProc; stdout: StdioCollector { onStreamFinished: { try { app.pdet = JSON.parse(this.text); } catch (e) { app.pdet = null; } } } }
+    function procAct(p, act, arg, msg) { run(["latte-sysmon", "proces", String(p.pid), act].concat(arg ? [arg] : []), msg); Qt.callLater(() => { detProc.running = true; }); }
+    function priorityMenu(p, x, y) {
+        ctx.open(x, y, [{ glyph: "chevron-down", label: "Nízka", hint: "na pozadí", action: () => procAct(p, "priorita", "nizka", "Priorita nízka: " + progName(p)) },
+                        { glyph: "minus", label: "Normálna", action: () => procAct(p, "priorita", "normalna", "Priorita normálna: " + progName(p)) },
+                        { glyph: "arrow-up", label: "Vysoká", hint: "heslo správcu", action: () => procAct(p, "priorita", "vysoka", "Priorita vysoká: " + progName(p)) }], "Priorita · " + progName(p));
+    }
     property string confirm: ""           // "term:PID" | "kill:PID" čaká na druhé kliknutie
     property var autorun: []
     readonly property var sel: snap.procs ? (snap.procs.find(p => p.pid === selPid) || null) : null
@@ -220,17 +229,17 @@ Item {
         let list = (snap.procs || []).filter(p => (kindFilter === "" || p.kind === kindFilter)
             && (search === "" || (p.name + " " + (p.cmd || "") + " " + p.pid).toLowerCase().includes(search.toLowerCase())));
         const k = sortKey;
-        const cmp = (a, b) => k === "name" ? progName(a).localeCompare(progName(b)) : (k === "pid" ? a.pid - b.pid : (b[k] - a[k]));
+        const cmp = (a, b) => k === "name" ? progName(a).localeCompare(progName(b)) : (k === "pid" ? a.pid - b.pid : ((b[k] || 0) - (a[k] || 0)));
         if (byApp && !tree) {
             const names = {}, groups = {};
             for (const a of (snap.apps || [])) names[a.key] = a.name;
             for (const p of list) {
                 const key = p.app || "";
-                const g = groups[key] = groups[key] || { group: true, key: key, name: key === "" ? "Ostatné procesy" : (names[key] || key), cpu: 0, rss: 0, pid: 0, n: 0, procs: [], hasWin: false, kind: "app",
+                const g = groups[key] = groups[key] || { group: true, key: key, name: key === "" ? "Ostatné procesy" : (names[key] || key), cpu: 0, rss: 0, disk: 0, gpu: 0, net: 0, pid: 0, n: 0, procs: [], hasWin: false, kind: "app",
                                                          dev: key === "" ? [] : (((snap.apps || []).find(a => a.key === key) || {}).dev || []) };
-                g.cpu += p.cpu; g.rss += p.rss; g.n++; g.procs.push(p); if (p.window) g.hasWin = true;
+                g.cpu += p.cpu; g.rss += p.rss; g.disk += p.disk || 0; g.gpu += p.gpu || 0; g.net += p.net || 0; g.n++; g.procs.push(p); if (p.window) g.hasWin = true;
             }
-            const gcmp = (a, b) => k === "name" ? a.name.localeCompare(b.name) : (k === "pid" || k === "kind" ? a.name.localeCompare(b.name) : (b[k] - a[k]));
+            const gcmp = (a, b) => k === "name" ? a.name.localeCompare(b.name) : (k === "pid" || k === "kind" ? a.name.localeCompare(b.name) : ((b[k] || 0) - (a[k] || 0)));
             const gl = Object.values(groups).filter(g => g.key !== "").sort(gcmp);
             if (groups[""]) gl.push(groups[""]);
             const out = [];
@@ -357,8 +366,14 @@ Item {
                 Repeater {
                     model: parent.p ? [["Používa", app.devText(parent.p.dev)], ["Aplikácia", parent.p.app ? ((app.snap.apps || []).find(a => a.key === parent.p.app) || { name: parent.p.app }).name : "žiadna"],
                                        ["PID / rodič", parent.p.pid + " / " + parent.p.ppid], ["Vlastník", parent.p.user],
-                                       ["CPU", parent.p.cpu.toFixed(1).replace(".", ",") + " %"], ["Pamäť", app.human(parent.p.rss)],
-                                       ["Príkaz", parent.p.cmd || parent.p.name]] : []
+                                       ["CPU", parent.p.cpu.toFixed(1).replace(".", ",") + " %"], ["Pamäť", app.human(parent.p.rss) + (app.pdet && app.pdet.swap ? " · swap " + app.human(app.pdet.swap) : "")],
+                                       ["Stav", app.pdet ? app.pdet.state + " · " + app.pdet.threads + " vlákien · priorita " + (app.pdet.nice > 0 ? "nízka" : (app.pdet.nice < 0 ? "vysoká" : "normálna")) + " (nice " + app.pdet.nice + ")" : "…"],
+                                       ["Disk / GPU / sieť", ((parent.p.disk || 0) > 0 ? app.human(parent.p.disk) + "/s" : "–") + " · " + (parent.p.gpu !== undefined && parent.p.gpu !== null ? parent.p.gpu.toFixed(1).replace(".", ",") + " %" : "–") + " · " + (parent.p.net || 0) + " spojení"],
+                                       ["Pôvod", app.pdet ? app.pdet.origin || "—" : "…"],
+                                       ["Beží od", app.pdet ? Qt.formatDateTime(new Date(app.pdet.start * 1000), "d. M. yyyy HH:mm") : "…"],
+                                       ["Príkaz", parent.p.cmd || parent.p.name],
+                                       ["Otvorené súbory", app.pdet && app.pdet.files.length ? app.pdet.files.slice(0, 8).join("\n") + (app.pdet.files.length > 8 ? "\n… a ďalších " + (app.pdet.files.length - 8) : "") : "—"],
+                                       ["Spojenia", app.pdet && app.pdet.conns.length ? app.pdet.conns.slice(0, 6).map(c => c.proto + " " + c.remote + " (" + c.state + ")").join("\n") : "—"]] : []
                     Column {
                         required property var modelData
                         width: parent.width; spacing: 1
@@ -386,6 +401,17 @@ Item {
                 Action { visible: !!parent.p; on: !!parent.p && parent.p.kind !== "system"; danger: true; glyph: "alert-triangle"
                          label: parent.p && app.confirm === "kill:" + parent.p.pid ? "Naozaj vynútiť?" : "Vynútiť ukončenie"; onClicked: app.stop(app.sel, true) }
                 Action { visible: !!parent.p; glyph: "clipboard"; label: "Kopírovať príkaz"; onClicked: app.run(["wl-copy", "--", app.sel.cmd || app.sel.name], "Príkaz skopírovaný") }
+                // ako Správca úloh Win11: priorita, úsporný režim, pozastaviť, ukončiť strom
+                Action { visible: !!parent.p && parent.p.mine; glyph: "adjustments"; label: "Priorita…"
+                         onClicked: { const q = mapToItem(app, 0, height); app.priorityMenu(app.sel, q.x, q.y); } }
+                Action { visible: !!parent.p && parent.p.mine; glyph: "moon"; label: app.pdet && app.pdet.nice === 19 ? "Vypnúť úsporný režim" : "Úsporný režim"
+                         onClicked: app.procAct(app.sel, "usporny", app.pdet && app.pdet.nice === 19 ? "off" : "on", "Úsporný režim: " + app.progName(app.sel)) }
+                Action { visible: !!parent.p && parent.p.mine; glyph: parent.p && parent.p.state === "T" ? "player-play" : "player-pause"
+                         label: parent.p && parent.p.state === "T" ? "Pokračovať" : "Pozastaviť"
+                         onClicked: app.procAct(app.sel, app.sel.state === "T" ? "pokracuj" : "pauza", "", (app.sel.state === "T" ? "Pokračuje: " : "Pozastavené: ") + app.progName(app.sel)) }
+                Action { visible: !!parent.p && parent.p.mine; danger: true; glyph: "list-tree"
+                         label: parent.p && app.confirm === "tree:" + parent.p.pid ? "Naozaj ukončiť aj potomkov?" : "Ukončiť strom procesov"
+                         onClicked: { if (app.confirm !== "tree:" + app.sel.pid) { app.confirm = "tree:" + app.sel.pid; return; } app.confirm = ""; app.procAct(app.sel, "ukonci-strom", "", "Ukončujem strom: " + app.progName(app.sel)); } }
             }
         }
 
@@ -547,7 +573,7 @@ Item {
                 id: head
                 anchors { top: filters.bottom; topMargin: 12; left: parent.left; right: parent.right }
                 height: 28
-                readonly property real nameW: width - 110 - 80 - 100 - 80
+                readonly property real nameW: width - 110 - 80 - 100 - 90 - 70 - 60 - 80
                 component Col: Item {
                     id: c
                     property string label; property string key; property real w
@@ -560,6 +586,9 @@ Item {
                 Col { label: "Druh"; key: "kind"; w: 110 }
                 Col { label: "CPU"; key: "cpu"; w: 80 }
                 Col { label: "Pamäť"; key: "rss"; w: 100 }
+                Col { label: "Disk"; key: "disk"; w: 90 }
+                Col { label: "GPU"; key: "gpu"; w: 70 }
+                Col { label: "Sieť"; key: "net"; w: 60 }
                 Col { label: "PID"; key: "pid"; w: 80 }
             }
             ListView {
@@ -604,6 +633,14 @@ Item {
                         Text { width: 80; leftPadding: 8; anchors.verticalCenter: parent.verticalCenter; text: row.modelData.cpu.toFixed(1).replace(".", ",") + " %"
                                color: row.modelData.cpu > 50 ? theme.error : theme.fg; font { family: theme.fontUi; pixelSize: 12; weight: Font.DemiBold } }
                         Text { width: 100; leftPadding: 8; anchors.verticalCenter: parent.verticalCenter; text: app.human(row.modelData.rss); color: theme.fgDim; font { family: theme.fontUi; pixelSize: 12 } }
+                        // disk (čítanie + zápis za s), GPU (% času na grafike), sieť (počet spojení) — ako stĺpce Správcu úloh Win11
+                        Text { width: 90; leftPadding: 8; anchors.verticalCenter: parent.verticalCenter; text: (row.modelData.disk || 0) > 0 ? app.human(row.modelData.disk) + "/s" : "–"
+                               color: (row.modelData.disk || 0) > 20971520 ? theme.error : theme.fgDim; font { family: theme.fontUi; pixelSize: 12 } }
+                        Text { width: 70; leftPadding: 8; anchors.verticalCenter: parent.verticalCenter
+                               text: row.modelData.gpu === undefined || row.modelData.gpu === null ? "–" : row.modelData.gpu.toFixed(1).replace(".", ",") + " %"
+                               color: (row.modelData.gpu || 0) > 50 ? theme.error : theme.fgDim; font { family: theme.fontUi; pixelSize: 12 } }
+                        Text { width: 60; leftPadding: 8; anchors.verticalCenter: parent.verticalCenter; text: (row.modelData.net || 0) > 0 ? row.modelData.net : "–"
+                               color: theme.fgDim; font { family: theme.fontUi; pixelSize: 12 } }
                         Text { width: 80; leftPadding: 8; anchors.verticalCenter: parent.verticalCenter; text: row.modelData.group ? "" : row.modelData.pid; color: theme.fgDim; font { family: theme.fontUi; pixelSize: 12 } }
                     }
                     MouseArea {
@@ -632,7 +669,13 @@ Item {
                                 { glyph: "alert-triangle", label: "Vynútiť ukončenie", danger: true, enabled: !sys, action: () => { app.confirm = "kill:" + p.pid; app.stop(p, true); } },
                                 { separator: true },
                                 { glyph: "clipboard", label: "Kopírovať príkaz", action: () => app.run(["wl-copy", "--", p.cmd || p.name], "Príkaz skopírovaný") },
-                                { glyph: "folder", label: "Priečinok programu", action: () => app.run(["sh", "-c", "d=$(dirname \"$(readlink /proc/$1/exe)\") && latte-app subory \"$d\"", "sh", String(p.pid)]) }
+                                { glyph: "folder", label: "Priečinok programu", action: () => app.run(["sh", "-c", "d=$(dirname \"$(readlink /proc/$1/exe)\") && latte-app subory \"$d\"", "sh", String(p.pid)]) },
+                                { separator: true },
+                                { glyph: "adjustments", label: "Priorita…", enabled: p.mine, action: () => Qt.callLater(() => app.priorityMenu(p, pt.x, pt.y)) },
+                                { glyph: "moon", label: p.nice === 19 ? "Vypnúť úsporný režim" : "Úsporný režim", enabled: p.mine, action: () => app.procAct(p, "usporny", p.nice === 19 ? "off" : "on", "Úsporný režim: " + app.progName(p)) },
+                                { glyph: p.state === "T" ? "player-play" : "player-pause", label: p.state === "T" ? "Pokračovať" : "Pozastaviť", enabled: p.mine,
+                                  action: () => app.procAct(p, p.state === "T" ? "pokracuj" : "pauza", "", app.progName(p)) },
+                                { glyph: "list-tree", label: "Ukončiť strom procesov", danger: true, enabled: p.mine, action: () => { app.selPid = p.pid; app.confirm = "tree:" + p.pid; app.status = "Ukončiť " + app.progName(p) + " aj s potomkami? Klikni v detaile znova."; } }
                             ], app.progName(p) + " · " + app.kinds[p.kind]);
                         }
                     }
