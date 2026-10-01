@@ -160,6 +160,13 @@ xdg-mime default latteos-heidelberg.desktop text/markdown 2>/dev/null || true
 for m in application/x-rpm application/vnd.flatpak.ref application/x-msdownload application/vnd.android.package-archive application/vnd.debian.binary-package application/x-iso9660-appimage; do
     xdg-mime default latteos-aplikacie.desktop "$m" 2>/dev/null || true
 done
+# archívy otvárajú Súbory ako priečinok (bughunt/bug001: .zip nemal čím otvoriť)
+for m in application/zip application/x-7z-compressed application/vnd.rar application/x-rar application/x-tar application/x-compressed-tar application/x-bzip2-compressed-tar application/x-xz-compressed-tar application/x-zstd-compressed-tar application/x-cd-image application/vnd.ms-cab-compressed application/x-cpio; do
+    xdg-mime default latteos-subory.desktop "$m" 2>/dev/null || true
+done
+# „Nájsť viac v aplikácii Softvér“ (GTK) a iné volania gnome-software → App Manager, ak skutočný gnome-software chýba
+if [ -x /usr/bin/gnome-software ]; then sudo rm -f /usr/local/bin/gnome-software
+else sudo install -Dm755 "$S/bin/gnome-software" /usr/local/bin/gnome-software; fi
 
 echo "== systemd + tmpfiles + /etc/latteos"
 sudo install -Dm644 "$S/systemd/latte-boot.service" /usr/lib/systemd/system/latte-boot.service
