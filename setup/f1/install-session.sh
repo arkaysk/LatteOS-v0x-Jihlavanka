@@ -116,6 +116,8 @@ sudo install -m644 "$S"/wallpapers/*.jpg /usr/share/backgrounds/latteos/
 sudo install -d /usr/share/latteos/themes
 sudo install -m644 "$S"/themes/*.theme /usr/share/latteos/themes/
 sudo install -m644 "$S"/noctalia/palettes/*.json /usr/share/latteos/noctalia/palettes/
+# slovenský katalóg Noctalie: bez neho je Noctalia celá po anglicky a nenačíta ani preklady doplnkov (1. 10. 2026)
+[ -d /usr/share/noctalia/assets/translations ] && sudo install -m644 "$S/noctalia/translations/sk.json" /usr/share/noctalia/assets/translations/sk.json
 
 echo "== greeter LatteOS (Quickshell QML pod labwc + pixman)"
 sudo install -Dm644 "$S/greeter/shell.qml" /usr/share/latteos/greeter/shell.qml
