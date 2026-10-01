@@ -1260,6 +1260,20 @@ on("fact:smode", function(v)
     paint_mode()
 end)
 
+-- ── koliesko nad TimeGoo / PowerGoo / DaNoGoo: plynulé zväčšenie kvapky aj obsahu (1 = základ, max 2,2) ──
+local ZOOM_KEYS = { "zt", "zp", "zd" }
+on("goo_wheel", function(code)
+    code = tonumber(code) or 0
+    local key = ZOOM_KEYS[math.floor(code / 2) + 1]
+    if not key then return end
+    local v = (tonumber(fact[key]) or 1) + ((code % 2 == 1) and 0.15 or -0.15)
+    v = math.max(1, math.min(2.2, math.floor(v * 100 + 0.5) / 100))
+    fact[key] = v
+    cfg.zoom = cfg.zoom or {}
+    cfg.zoom[key] = v
+    save_cfg()
+end)
+
 -- ── otvorenie riadkov ──
 local function launch(a)
     if a and a.exec then pcall(sys.call, "apps.launch", a.exec) end
@@ -1453,6 +1467,10 @@ local function load_cfg()
         local ok, c = pcall(json.decode, out or "")
         if ok and type(c) == "table" and type(c.tabs) == "table" then
             cfg.engine = c.engine or cfg.engine
+            if type(c.zoom) == "table" then
+                cfg.zoom = c.zoom
+                for _, k in ipairs(ZOOM_KEYS) do if tonumber(c.zoom[k]) then fact[k] = tonumber(c.zoom[k]) end end
+            end
             cfg.mode = tonumber(c.mode) or cfg.mode
             cfg.cmds = type(c.cmds) == "table" and c.cmds or {}
             cfg.recent = type(c.recent) == "table" and c.recent or {}
@@ -1782,6 +1800,9 @@ local function paint_running()
     fact.t_frac = math.floor(frac * 1000) / 1000
     if fact.t_run ~= run_ then fact.t_run = run_ end
     if fact.t_active ~= active then fact.t_active = active end
+    -- TimeGoo strieda čas s bežiacou minútkou (prednosť) alebo stopkami
+    text.tg_alt_val = active and text.t_timer or fmt_ms(sw_elapsed(sw))
+    text.tg_alt_label = active and tr("TIMER") or tr("STOPWATCH")
 end
 local function paint_alarms()
     local tm = timers()
@@ -1954,6 +1975,8 @@ every(100, function()
 end)
 every(1000, function()
     if not fact.solo or not T.data then return end
+    if fact.sw_run or fact.t_active then paint_running() end           -- TimeGoo ukazuje bežiaci čas
+    if os.date("%M:%S") == "00:00" and wx_flash then wx_flash() end   -- celá hodina: na chvíľu počasie miesto dátumu
     local tm = timers()
     local changed = false
     if (tm.timer.endMs or 0) > 0 and tm.timer.endMs - now_ms() <= 0 then
@@ -2488,6 +2511,39 @@ local function paint_wx()
 end
 on("wx_pick", function() paint_wx() end)
 wx_repaint = paint_wx                               -- karta DaNoGoo (kalendár je v súbore vyššie)
+-- výstraha podľa predpovede na najbližších 12 h (Open-Meteo nemá výstrahy SHMÚ; prahy ako žltá/červená výstraha):
+-- vietor v nárazoch, búrka a krupobitie, sneh a poľadovica, prívalový dážď, horúčava a mráz
+function wx_flash()
+    fact.tg_wxflash = true
+    after(10000, function() fact.tg_wxflash = false end)
+end
+function wx_alerts(d, now_t)
+    local hr = d.hourly or {}
+    local level, icon, txt = 0, wx_icon(d.current.weather_code), now_t .. "°"
+    local function raise(l, ic, t) if l > level then level, icon, txt = l, ic, t end end
+    local start = 1
+    local nowh = os.date("%Y-%m-%dT%H:00")
+    for i, tm in ipairs(hr.time or {}) do if tm == nowh then start = i; break end end
+    for i = start, math.min(start + 11, #(hr.time or {})) do
+        local g, code = tonumber((hr.wind_gusts_10m or {})[i]) or 0, tonumber((hr.weather_code or {})[i]) or 0
+        local p, temp = tonumber((hr.precipitation or {})[i]) or 0, tonumber((hr.temperature_2m or {})[i]) or 0
+        if g >= 100 then raise(2, G["alert-triangle"], fill(tr("wind {v} km/h"), { v = math.floor(g) }))
+        elseif g >= 65 then raise(1, G["alert-triangle"], fill(tr("wind {v} km/h"), { v = math.floor(g) })) end
+        if code == 96 or code == 99 then raise(2, G["cloud-storm"], tr("hail"))
+        elseif code == 95 then raise(1, G["cloud-storm"], tr("storm")) end
+        if code == 66 or code == 67 then raise(2, G["cloud-snow"], tr("ice")) end
+        if code == 75 or code == 86 then raise(1, G["cloud-snow"], tr("snow")) end
+        if p >= 30 then raise(2, G["cloud-rain"], fill(tr("rain {v} mm"), { v = math.floor(p) }))
+        elseif p >= 10 then raise(1, G["cloud-rain"], fill(tr("rain {v} mm"), { v = math.floor(p) })) end
+        if temp >= 38 or temp <= -20 then raise(2, G["alert-triangle"], math.floor(temp) .. "°")
+        elseif temp >= 33 or temp <= -12 then raise(1, G["alert-triangle"], math.floor(temp) .. "°") end
+    end
+    fact.wx_alert = level
+    text.tg_wx_icon = icon or ""
+    text.tg_wx_text = txt
+    if level > 0 then text.weather = fill(tr("Weather warning: {w}"), { w = txt }) .. "  ·  " .. (text.weather or "") end
+    wx_flash()                                       -- nová predpoveď: na chvíľu počasie miesto dátumu
+end
 local function weather()
     run("cat", { "/var/lib/latteos/greeter/greeter.conf" }, function(conf)
         conf = conf or ""
@@ -2496,7 +2552,7 @@ local function weather()
         local place = conf:match('place%s*=%s*"([^"]*)"') or ""
         wx_place = place:match("^[^,]+") or place
         run("curl", { "-s", "-m", "8", "https://api.open-meteo.com/v1/forecast?latitude=" .. lat .. "&longitude=" .. lon
-                      .. "&current=temperature_2m,weather_code&hourly=temperature_2m,weather_code"
+                      .. "&current=temperature_2m,weather_code&hourly=temperature_2m,weather_code,wind_gusts_10m,precipitation"
                       .. "&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max"
                       .. "&timezone=auto&forecast_days=8" }, function(out)
             local ok, d = pcall(json.decode, out or "")
@@ -2507,6 +2563,7 @@ local function weather()
                 wxd = d
                 text.dn_wx = wx_icon(d.current.weather_code)
                 text.dn_temp = t .. "°"
+                wx_alerts(d, t)
             end
             paint_wx()
         end)

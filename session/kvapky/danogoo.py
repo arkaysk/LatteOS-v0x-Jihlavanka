@@ -92,7 +92,7 @@ a('''    // >>> DaNoGoo (danogoo.py)
     // ťahanie: za kurzorom (cursor.x/y od Hyprlandu platí stále; pointer.x iba v pravidle a na tejto vrstve klame)
     follow dn.x = if(dn_drag and dn_moved, mx, dn.tx)
     follow dn.y = if(dn_drag and dn_moved, my, dn.ty)
-    let dn.r = (31 + 3 * dn.h) * so
+    let dn.r = (31 + 3 * dn.h) * zd.p * so
     let dn.jit = 0.05 * sin(time * 9 + 3) * dn.h + dn.wob * 0.01
     // základňa na okraji: pri zdvihnutí (okno otvorené) sa stiahne — neostane ostrov; krk sa natiahne a zmizne
     let dn.neck = 16 * (1 - smooth(0.25, 0.8, dn.lift)) * if(dn.lift > 0.02, 1, 0) * so
@@ -287,7 +287,7 @@ c(f"""        repeat k in 0..42 {{
 """)
 card_block = "".join(C)
 drop_texts = """    // >>> DaNoGoo texty (danogoo.py)
-""" + '    // obsah kvapky: dátum a počasie (bez tváre)\n    text dn_date {{ at: dn.x, dn.y - 7; anchor: center; size: 11; weight: 700; color: ink; opacity: so; show: solo; family: "{UI}" }}\n    text dn_wx {{ at: dn.x - 1, dn.y + 9; anchor: right center; size: 12; color: ink; opacity: 85% * so; show: solo; family: "noctalia-tabler-icons" }}\n    text dn_temp {{ at: dn.x + 1, dn.y + 9; anchor: left center; size: 10.5; weight: 600; color: ink; opacity: 85% * so; show: solo; family: "{UI}" }}\n' + """    // <<< DaNoGoo texty
+""" + '    // obsah kvapky: dátum a počasie (bez tváre)\n    text dn_date {{ at: dn.x, dn.y - 7 * zd.p; anchor: center; size: 11 * zd.p; weight: 700; color: ink; opacity: so; show: solo; family: "{UI}" }}\n    text dn_wx {{ at: dn.x - 1, dn.y + 9 * zd.p; anchor: right center; size: 12 * zd.p; color: ink; opacity: 85% * so; show: solo; family: "noctalia-tabler-icons" }}\n    text dn_temp {{ at: dn.x + 1, dn.y + 9 * zd.p; anchor: left center; size: 10.5 * zd.p; weight: 600; color: ink; opacity: 85% * so; show: solo; family: "{UI}" }}\n' + """    // <<< DaNoGoo texty
 """
 
 Z = []
@@ -296,12 +296,13 @@ z('''    // >>> DaNoGoo zóny (danogoo.py)
     // hrozno: klik mimo neho ho zavrie (pod bobuľami)
     zone box dn_away { at: W / 2, H / 2; size: W, H; active: dn_open }
     // počas ťahania zóna cez celú obrazovku: Hyprland posiela myš iba v zónach a odchod z nej by ťahanie ukončil
-    zone ellipse dn_hit { at: dn.x, dn.y; radius: if(dn_drag, 4000, 34); cursor: pointer; active: solo }
+    zone ellipse dn_hit { at: dn.x, dn.y; radius: if(dn_drag, 4000, 34 * zd.p); cursor: pointer; active: solo }
 ''')
 for k in range(NB):
     z(f"    zone box br_hit.{k} {{ at: brx.{k}, bry.{k}; size: 360, 52; cursor: pointer; active: dn_open and {k} < berries.count and bre.{k} > 0.9 }}\n")
 z('''    zone box dn_clr { at: clx, cly; size: 190, 34; cursor: pointer; active: dn_open and berries.count > 0 and cle > 0.9 }
     // DaNoGoo: ľavý klik = hrozno (znova klik, Esc alebo klik mimo = späť), ťahanie = iný okraj, pravý = kalendár
+    on scroll dn_hit { emit goo_wheel(2 * 2 + if(wheel > 0, 1, 0)) }
     on press dn_hit { dn_drag = true; dn_moved = false; wd.w = W; wd.h = H }
     on drag dn_hit while dn_drag and abs(drag.dx) + abs(drag.dy) > 6 { dn_moved = true; dn_open = false; dc_open = false }
     on release dn_hit while dn_drag and dn_moved { dnd.x = mx; dnd.y = my; impulse dn.wob 300; emit dn_drop; dn_moved = false; dn_drag = false }

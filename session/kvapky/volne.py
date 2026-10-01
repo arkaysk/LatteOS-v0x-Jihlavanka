@@ -52,8 +52,10 @@ draw = ('''    // >>> voľné Hodiny a vypínač (volne.py)
 zones = f'''    // >>> voľné zóny (volne.py)
     // Hodiny a vypínač: klikateľné miesta v súradniciach obrazovky (v lište aj voľne); počas ťahania cez celú
     // obrazovku (Hyprland posiela myš iba v zónach)
-    zone ellipse start_hit {{ at: cxs, cys; radius: if(tg_press, 4000, 34); cursor: pointer; active: solo }}
-    zone ellipse power_hit {{ at: pxs, pys; radius: if(pg_press, 4000, 22); cursor: pointer; active: solo }}
+    zone ellipse start_hit {{ at: cxs, cys; radius: if(tg_press, 4000, 34 * zt.p); cursor: pointer; active: solo }}
+    zone ellipse power_hit {{ at: pxs, pys; radius: if(pg_press, 4000, 22 * zp.p); cursor: pointer; active: solo }}
+    on scroll start_hit {{ emit goo_wheel(0 * 2 + if(wheel > 0, 1, 0)) }}
+    on scroll power_hit {{ emit goo_wheel(1 * 2 + if(wheel > 0, 1, 0)) }}
     on press start_hit {{ tg_press = true; tg_moved = false; wd.w = W; wd.h = H }}
     on drag start_hit while tg_press and abs(drag.dx) + abs(drag.dy) > 8 {{ tg_moved = true; dash = false; pmenu = false }}
     on release start_hit while tg_press and tg_moved {{ tgd.x = mx; tgd.y = my; tgd.dd = length(mx - tg.dkx, my - tg.dky); tg_moved = false; tg_press = false; impulse swob 300; emit tg_drop }}
@@ -89,8 +91,8 @@ TF, PF = "(tg_free or tg_moved)", "(pg_free or pg_moved)"
 HIDE = lambda cond, x, y: f"if({cond}, hx, {x}), if({cond}, mid - 8, {y})"
 BAR = [
     f"            box {{ from: {HIDE(TF + ' and ' + PF, f'if({PF}, sx, px) - 34 - 14 * flow2 * stir', 'edge')}; size: (if({TF}, px, sx) - if({PF}, sx, px) + 68 + 28 * flow2 * stir) * so * if({TF} and {PF}, 0, 1), if({TF} and {PF}, 0, 70) }}\n",
-    f"            ellipse {{ at: {HIDE(TF, 'sx', 's.y')}; radius: (33 + 3 * hs) * so * (1 - smooth(0, 0.08, dsw)) * if({TF}, 0, 1); scale: 1 + squish.s * 0.08 + jit.s + swob * 0.01, 1 - squish.s * 0.12 - jit.s - swob * 0.01; blend: link * so }}\n",
-    f"            ellipse {{ at: {HIDE(PF, 'px', 'p.y')}; radius: (19 + 4 * hp) * so * (1 - smooth(0, 0.12, pm)) * if({PF}, 0, 1); scale: 1 + squish.p * 0.08 + jit.p, 1 - squish.p * 0.12 - jit.p; blend: link * so }}\n",
+    f"            ellipse {{ at: {HIDE(TF, 'sx', 's.y')}; radius: (33 + 3 * hs) * zt.p * so * (1 - smooth(0, 0.08, dsw)) * if({TF}, 0, 1); scale: 1 + squish.s * 0.08 + jit.s + swob * 0.01, 1 - squish.s * 0.12 - jit.s - swob * 0.01; blend: link * so }}\n",
+    f"            ellipse {{ at: {HIDE(PF, 'px', 'p.y')}; radius: (19 + 4 * hp) * zp.p * so * (1 - smooth(0, 0.12, pm)) * if({PF}, 0, 1); scale: 1 + squish.p * 0.08 + jit.p, 1 - squish.p * 0.12 - jit.p; blend: link * so }}\n",
     f"            line {{ from: {HIDE(TF + ' or ' + PF, 'px', 'p.y - 4')}; to: {HIDE(TF + ' or ' + PF, 'sx', 's.y - 6')}; width: thread.ps * (1 - max(dsh, pm)) * if({TF} or {PF}, 0, 1); blend: 12 * clamp(thread.ps * (1 - max(dsh, pm)) / 3, 0, 1) }}\n",
     f"            line {{ from: {HIDE(TF, 'sx + 8', 's.y - 12')}; to: {HIDE(TF, 'bl + 18', 'bottom - 14')}; width: thread.sb * ap * (1 - dsh) * if({TF}, 0, 1); blend: 14 * clamp(thread.sb * ap * (1 - dsh) / 3, 0, 1) }}\n",
     f"            ellipse {{ at: {HIDE(f'(seg and {TF}) or (not seg and ({TF} or {PF}))', 'drip.x', 'drip.y')}; radius: drip.r * so; blend: 8 }}\n",
@@ -127,7 +129,7 @@ once("radius: 4.5 * so * (1 - smooth(0, 0.12, dsh)) * (1 - smooth(60, 420, lengt
      "radius: 4.5 * so * (1 - smooth(0, 0.12, dsh)) * (1 - smooth(60, 420, length(cu - sx, cv - s.y))) * if(tg_free or tg_moved, 0, 1); color: #ffe4bd }")
 # voľné kvapky: telo v tele lišty (goo.py) — zlievajú sa s lištou a ostatnými kvapkami, to isté svetlo
 TGV, PGV = "(tg_free or tg_moved) and solo and dsw < 0.07", "(pg_free or pg_moved) and solo and pm < 0.11"
-TGR, PGR = "(33 + 3 * hs) * so * (1 - smooth(0, 0.08, dsw))", "(19 + 4 * hp) * so * (1 - smooth(0, 0.12, pm))"
+TGR, PGR = "(33 + 3 * hs) * zt.p * so * (1 - smooth(0, 0.08, dsw))", "(19 + 4 * hp) * zp.p * so * (1 - smooth(0, 0.12, pm))"
 s = goo.vloz(s, "voľné Hodiny", goo.kvapka(TGV, "tg.fx", "tg.fy", TGR, "tg.ax", "tg.ay", "tg.nx", "tg.ny", "tg.sheet", jit="jit.s"),
              goo.odlesk(TGV, "tg.fx", "tg.fy", TGR))
 s = goo.vloz(s, "voľný vypínač", goo.kvapka(PGV, "pg.fx", "pg.fy", PGR, "pg.ax", "pg.ay", "pg.nx", "pg.ny", "pg.sheet", jit="jit.p"),
