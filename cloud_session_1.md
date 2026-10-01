@@ -127,6 +127,19 @@ stĺpce procesov (iba CPU a RAM), karta Výkon v detaile, služby, NVIDIA, a cen
 7. **Architektúra** — `latte-sysmon` do Rustu ako služba `latte-sysmond` (stála telemetria z ROADMAP F4/O): jeden
    proces, socket pre Monitor, lištu, Kvapky a OLED; nižšia cena CPU a pamäte.
 
+## Monitor — vylepšenie (fázy 1–6)
+
+| Commit | Čo |
+|---|---|
+| `061716e` | **1–2** Procesy ako Správca úloh Win11: stĺpce Disk (`/proc/PID/io`), GPU (fdinfo drm-engine; NVIDIA `nvidia-smi pmon`), Sieť (spojenia cez `ss`), stav, vlákna, priorita; detail procesu (pôvod RPM/Flatpak, PSS, swap, otvorené súbory, spojenia, začiatok); akcie Priorita, Úsporný režim (nice 19 + disk idle), Pozastaviť/Pokračovať, Ukončiť strom (tlačidlá aj pravý klik); **NVIDIA** (vyťaženie, VRAM, teplota, takty, príkon, ventilátor) |
+| `58f37bc` | **3** Výkon po zariadeniach: každý disk (aktívny čas, odozva, čítanie/zápis), každá sieťovka, zloženie pamäte (aplikácie, jadro, zdieľaná, vyrovnávacia, voľná) a zram s kompresiou; NVIDIA v Senzoroch |
+| `b73eaf9` | **4–5** Stránky **Služby** (systemd systém aj účet: stav klikom, reštart, pri štarte; systémové s heslom správcu) a **Používatelia**; **Autoruns+**: pôvod (balík / Flatpak / LatteOS / tvoje / **neznáme**), vplyv na štart (`systemd-analyze blame`), Skryť systémové, Zapamätať súčasný stav → **NOVÉ** položky, skupina Zabezpečenie (ld.so.preload, sudoers.d, polkit, udev, Hyprland exec), vypnutie systémových služieb |
+| `900a424` | **6** Karta **Test výkonu** (7-Zip MIPS porovnateľné s 7-cpu.com, inak zlib; škálovanie, história), Grafika: generácia karty, odporúčaný ovládač, Vulkan, najvyšší stupeň (z `latte-boot compat`), **upozornenia senzorov** (pravý klik › Upozorniť nad hodnotou…, oznámenie), Prehrievanie (počet spomalení) |
+
+Ostáva **7** — `latte-sysmon` do Rustu ako stála služba `latte-sysmond` (nižšia záťaž, telemetria aj bez otvoreného
+Monitora). Overiť na latte-lab: stĺpce GPU/Disk (amdgpu fdinfo), Služby a polkit, Autoruns pôvod (`rpm -qf`), Test výkonu
+(7-Zip: balík `7zip` alebo `p7zip` vo Fedore — treba doinštalovať), upozornenia.
+
 ## Nové a zmenené súbory
 
 - `session/bin/`: `gnome-software`, `latte-hladaj`, `latte-riadok`, `latte-pocasie` (nové); `latte-ai`, `latte-apps`,
