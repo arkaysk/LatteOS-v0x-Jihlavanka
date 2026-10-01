@@ -76,6 +76,51 @@ def meminfo():
             "swapTotal": m.get("SwapTotal", 0), "swapUsed": m.get("SwapTotal", 0) - m.get("SwapFree", 0)}
 
 
+def disk_stats():
+    """fyzické disky: (názov, prečítané B, zapísané B, operácie, ms obsluhy operácií, ms aktívny) — /proc/diskstats"""
+    out = {}
+    for line in read("/proc/diskstats").splitlines():
+        f = line.split()
+        name = f[2]
+        if name.startswith(("loop", "ram", "zram", "dm-", "sr")) or (name[-1].isdigit() and not name.startswith(("nvme", "mmcblk"))):
+            continue
+        if (name.startswith("nvme") and "p" in name[4:]) or (name.startswith("mmcblk") and "p" in name[6:]):
+            continue
+        out[name] = (int(f[5]) * 512, int(f[9]) * 512, int(f[3]) + int(f[7]), int(f[6]) + int(f[10]), int(f[12]))
+    return out
+
+
+def nic_stats():
+    out = {}
+    for line in read("/proc/net/dev").splitlines()[2:]:
+        name, _, rest = line.partition(":")
+        name = name.strip()
+        if name == "lo" or name.startswith(("veth", "docker", "br-", "virbr", "ifb")):
+            continue
+        f = rest.split()
+        out[name] = (int(f[0]), int(f[8]))
+    return out
+
+
+def mem_composition():
+    """zloženie pamäte ako Win11 (používané aplikáciami, vyrovnávacia, voľná) a zram (koľko sa zmestilo do koľko)"""
+    m = {}
+    for line in read("/proc/meminfo").splitlines():
+        k, _, rest = line.partition(":")
+        m[k] = int(rest.split()[0]) * 1024 if rest.strip() else 0
+    cache = m.get("Cached", 0) + m.get("Buffers", 0) + m.get("SReclaimable", 0) - m.get("Shmem", 0)
+    out = {"total": m.get("MemTotal", 0), "free": m.get("MemFree", 0), "cache": max(0, cache), "shared": m.get("Shmem", 0),
+           "kernel": m.get("Slab", 0) - m.get("SReclaimable", 0) + m.get("KernelStack", 0) + m.get("PageTables", 0),
+           "dirty": m.get("Dirty", 0) + m.get("Writeback", 0)}
+    out["apps"] = max(0, out["total"] - out["free"] - out["cache"] - out["shared"] - out["kernel"])
+    for z in glob.glob("/sys/block/zram*"):
+        mm = read(z + "/mm_stat").split()
+        if len(mm) >= 3:
+            out.setdefault("zram", {"orig": 0, "compr": 0, "used": 0})
+            out["zram"]["orig"] += int(mm[0]); out["zram"]["compr"] += int(mm[1]); out["zram"]["used"] += int(mm[2])
+    return out
+
+
 def disk_io():
     rd = wr = 0
     for line in read("/proc/diskstats").splitlines():
@@ -453,6 +498,22 @@ def snapshot(state, with_procs=True):
         "temps": temps(), "fs": filesystems(),
         "freq": cpu_freq(), "gpu": gpu_busy(),
     }
+    # výkon po zariadeniach (karta Výkon vo Win11): aktívny čas a odozva diskov, sieťovky, zloženie pamäte
+    ds, ns = disk_stats(), nic_stats()
+    pds, pns = state.get("ds", ds), state.get("ns", ns)
+    disks = []
+    for n, (r, w, ops, ms, act) in ds.items():
+        pr, pw, pops, pms, pact = pds.get(n, (r, w, ops, ms, act))
+        dops = ops - pops
+        disks.append({"name": n, "read": rate(r, pr), "write": rate(w, pw), "active": min(100, round(100 * (act - pact) / (dt * 1000))) if dt > 0 else 0,
+                      "resp": round((ms - pms) / dops, 1) if dops > 0 else 0,
+                      "model": read("/sys/block/%s/device/model" % n).strip(), "rota": read("/sys/block/%s/queue/rotational" % n) == "1"})
+    snap["disks"] = disks
+    snap["nics"] = [{"name": n, "rx": rate(rx_, pns.get(n, (rx_, tx_))[0]), "tx": rate(tx_, pns.get(n, (rx_, tx_))[1]),
+                     "wifi": os.path.isdir("/sys/class/net/%s/wireless" % n), "speed": read("/sys/class/net/%s/speed" % n)}
+                    for n, (rx_, tx_) in ns.items() if read("/sys/class/net/%s/operstate" % n) in ("up", "unknown")]
+    snap["memc"] = mem_composition()
+    state["ds"], state["ns"] = ds, ns
     if with_procs:
         fresh = state.get("winT", 0) + 5 < t
         if fresh:                                 # okná z Hyprlandu raz za 5 s
@@ -981,6 +1042,14 @@ def sensors_all(state):
     g("Systém", "info-circle", [{"id": "sys.load1", "label": "Záťaž (1 min)", "value": float(la[0]) if la else 0, "unit": ""},
                                 {"id": "sys.procs", "label": "Bežiace procesy", "value": int(la[3].split("/")[1]) if len(la) > 3 else 0, "unit": ""}])
     state["sT"] = t
+    nv = nvidia_gpu()                                   # NVIDIA (proprietárny ovládač): nvidia-smi
+    if nv:
+        items = [{"id": "gpu.nv.%s" % k, "label": lbl, "value": v, "unit": u} for k, lbl, v, u in (
+            ("busy", "Záťaž GPU", nv["busy"], "%"), ("vram", "Použitá VRAM", round(nv["vramUsed"] / 2**20), "MB"),
+            ("temp", "Teplota GPU", nv["temp"], "°C"), ("clk", "Takt jadra GPU", nv["clock"], "MHz"),
+            ("mclk", "Takt pamäte GPU", nv["memClock"], "MHz"), ("power", "Príkon GPU", nv["power"], "W"),
+            ("fan", "Ventilátor GPU", nv["fan"], "%")) if v is not None]
+        g("Grafika NVIDIA · " + nv.get("name", ""), "cpu", items)
     return groups
 
 
