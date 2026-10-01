@@ -436,8 +436,13 @@ local MODES = {
     { id = "cmd", name = "Linux command", glyph = G["terminal-2"], hint = "Run a command…" },
 }
 local MAXH = 7                                      -- riadkov obsahu v scéne (model hits)
--- služby AI na výber (latte-ai set …); web = odpoveď v prehliadači s prihlásením, bez kľúča
+-- služby AI na výber (latte-ai set …): predplatné = odpoveď tu v bublinách cez oficiálny nástroj služby
+-- (ako widget v mobile / rozšírenie VS Code), kľúč API, lokálne; web = odpoveď v prehliadači
 local AI_PRESETS = {
+    { name = "Claude (subscription)", provider = "predplatne", key = "predplatne", value = "claude" },
+    { name = "ChatGPT (subscription)", provider = "predplatne", key = "predplatne", value = "codex" },
+    { name = "Gemini (Google account)", provider = "predplatne", key = "predplatne", value = "gemini" },
+    { name = "Copilot (subscription)", provider = "predplatne", key = "predplatne", value = "copilot" },
     { name = "Claude (web)", provider = "web", key = "web", value = "claude" },
     { name = "ChatGPT (web)", provider = "web", key = "web", value = "chatgpt" },
     { name = "Perplexity (web)", provider = "web", key = "web", value = "perplexity" },
@@ -448,7 +453,10 @@ local AI_PRESETS = {
     { name = "ChatGPT (API key)", provider = "cloud", key = "cloud", value = "openai" },
     { name = "Gemini (API key)", provider = "cloud", key = "cloud", value = "gemini" },
     { name = "Mistral (API key)", provider = "cloud", key = "cloud", value = "mistral" },
+    { name = "DeepSeek (API key)", provider = "cloud", key = "cloud", value = "deepseek" },
+    { name = "OpenRouter (API key)", provider = "cloud", key = "cloud", value = "openrouter" },
 }
+local EFFORTS = { { id = "", name = "Default" }, { id = "low", name = "Fast" }, { id = "medium", name = "Balanced" }, { id = "high", name = "Thorough" } }
 local HOME = nil                                    -- domovský priečinok (printenv, nižšie)
 local MAX_TABS = 5
 local apps, by_id = {}, {}
@@ -461,7 +469,10 @@ local ctx_actions = {}
 local chip_do = {}                                  -- čip → { pick = fn, menu = fn }
 local confirm_cmd = nil                             -- nebezpečný príkaz čaká na druhý Enter
 local ai = {}                                       -- latte-ai status (provider, target, model, ok, web, disabled)
-local conv = {}                                     -- rozhovor s AI, najstarší prvý: { role, content }
+local conv = {}                                     -- rozhovor s AI, najstarší prvý: { role, content, files }
+local ai_files = {}                                 -- prílohy k ďalšej otázke (latte-vyber)
+local ai_usage = {}                                 -- latte-ai usage (key=value)
+local ai_rec = false                                -- beží diktovanie (latte-ai hlas)
 local paint_chips                                   -- (nižšie)
 
 local function fill(s, vars) return (s:gsub("{(%w+)}", function(k) return vars[k] or "" end)) end
@@ -763,7 +774,9 @@ end
 local function paint_chat()
     local out = {}
     for i = #conv, math.max(1, #conv - 7), -1 do
-        out[#out + 1] = { txt = wrap(conv[i].content, 56), me = conv[i].role == "user" }
+        local t = conv[i].content
+        for _, f in ipairs(conv[i].files or {}) do t = t .. "\n📎 " .. (f:match("[^/]+$") or f) end
+        out[#out + 1] = { txt = wrap(t, 56), me = conv[i].role == "user" }
     end
     model.chat = out
     fact.chst = 0
@@ -775,12 +788,23 @@ local function ai_status(done)
         local st = {}
         for k, v in (out or ""):gmatch("(%w+)=([^\n]*)") do st[k] = v end
         ai = { provider = st.provider, target = st.target, model = st.model, ok = st.ok == "1",
-               web = st.web == "1", disabled = st.disabled == "1" }
+               web = st.web == "1", disabled = st.disabled == "1", effort = st.effort or "", error = st.error }
         if ai.web then ai.target = (st.model ~= "" and st.model) or "AI" end
         if paint_chips then paint_chips() end
         paint_hits()
         if done then done() end
     end)
+    run("latte-ai", { "usage" }, function(out)
+        ai_usage = {}
+        for k, v in (out or ""):gmatch("([%w_]+)=([^\n]*)") do ai_usage[k] = v end
+        if paint_chips then paint_chips() end
+    end)
+end
+local function kilo(n)
+    n = tonumber(n) or 0
+    if n >= 1000000 then return string.format("%.1fM", n / 1000000) end
+    if n >= 1000 then return string.format("%.1fk", n / 1000) end
+    return tostring(math.floor(n))
 end
 local ai_job = nil                                  -- beží otázka (spawn), klik na kvapku „…“ ju zruší
 on("ai_cancel", function()
@@ -793,7 +817,8 @@ local function ai_send(q)
     q = q:gsub("^%s+", ""):gsub("%s+$", "")
     if q == "" or fact.ai_wait then return end
     text.query = ""
-    conv[#conv + 1] = { role = "user", content = q }
+    conv[#conv + 1] = { role = "user", content = q, files = (#ai_files > 0) and ai_files or nil }
+    ai_files = {}
     if ai.disabled then
         conv[#conv + 1] = { role = "assistant", content = tr("AI is turned off. Settings › Software › AI turns it on.") }
         paint_chat(); return
@@ -818,6 +843,7 @@ local function ai_send(q)
         end
         conv[#conv + 1] = { role = "assistant", content = a }
         paint_chat()
+        ai_status()                                     -- spotreba po odpovedi
     end)
 end
 on("bubble_menu", function(k)
@@ -873,7 +899,13 @@ function paint_chips()
             end }
         end
     elseif m == "ai" then
-        list[#list + 1] = { glyph = G.settings, label = tr("Settings"), pick = function() run("latte-app", { "nastavenia", "ai" }); fact.dash = false end }
+        -- riadok pod rozhovorom (max. 7 čipov): ⚙ ponuka · služba · model · efektivita · príloha · hlas · spotreba
+        list[#list + 1] = { glyph = G.settings, drop = true, pick = function()
+            menu({
+                { glyph = G["message-plus"], label = tr("New chat"), off = #conv == 0, run = function() conv = {}; ai_files = {}; paint_chat(); paint_chips() end },
+                { glyph = G.settings, label = tr("AI settings…"), run = function() run("latte-app", { "nastavenia", "ai" }); fact.dash = false end },
+            })
+        end }
         local cur = ai.web and ai.target or ({ lokalne = "Ollama", domaci = tr("Home server") })[ai.provider or ""] or ai.target or "AI"
         list[#list + 1] = { glyph = G.sparkles, label = cur, drop = true, pick = function()
             local items = {}
@@ -890,6 +922,9 @@ function paint_chips()
             list[#list + 1] = { label = (ai.model and ai.model ~= "") and ai.model or tr("Model"), drop = true, pick = function()
                 run("latte-ai", { "models" }, function(out)
                     local items = {}
+                    if ai.provider == "predplatne" then
+                        items[1] = { label = tr("Service default"), on = (ai.model or "") == "", run = function() ai_set({ { "model", "" } }) end }
+                    end
                     for id in (out or ""):gmatch("([^\t\n]+)[^\n]*") do
                         if #items < 10 then
                             items[#items + 1] = { label = id, on = id == ai.model, run = function()
@@ -901,9 +936,49 @@ function paint_chips()
                     menu(items)
                 end)
             end }
-        end
-        if #conv > 0 then
-            list[#list + 1] = { glyph = G["message-plus"], label = tr("New chat"), pick = function() conv = {}; paint_chat(); paint_chips() end }
+            local ename = tr("Default")
+            for _, e in ipairs(EFFORTS) do if e.id == ai.effort then ename = tr(e.name) end end
+            list[#list + 1] = { glyph = G.bolt, label = ename, drop = true, pick = function()
+                local items = {}
+                for _, e in ipairs(EFFORTS) do
+                    items[#items + 1] = { label = tr(e.name), on = e.id == (ai.effort or ""), run = function() ai_set({ { "effort", e.id } }) end }
+                end
+                menu(items)
+            end }
+            list[#list + 1] = { glyph = G.paperclip, label = (#ai_files > 0) and tostring(#ai_files) or nil, on = #ai_files > 0, pick = function()
+                run("latte-vyber", { "--viac", "--nazov", tr("Attach files") }, function(out)
+                    for path in (out or ""):gmatch("[^\n]+") do ai_files[#ai_files + 1] = path end
+                    paint_chips()
+                end)
+            end, menu = function() ai_files = {}; paint_chips() end }
+            list[#list + 1] = { glyph = ai_rec and G["player-stop"] or G.microphone, on = ai_rec, pick = function()
+                if not ai_rec then
+                    ai_rec = true; paint_chips()
+                    run("latte-ai", { "hlas", "start" }, function() end)
+                else
+                    ai_rec = false; paint_chips()
+                    run("latte-ai", { "hlas", "stop" }, function(out)
+                        local t = (out or ""):gsub("^%s+", ""):gsub("%s+$", "")
+                        if t ~= "" then text.query = ((text.query or "") ~= "" and (text.query .. " ") or "") .. t end
+                    end)
+                end
+            end }
+            local used = ai_usage.balance or ((tonumber(ai_usage.today_n) or 0) > 0
+                and (kilo((tonumber(ai_usage.today_in) or 0) + (tonumber(ai_usage.today_out) or 0)) .. " " .. tr("today")) or nil)
+            list[#list + 1] = { glyph = G["chart-bar"], label = used, drop = true, pick = function()
+                local u = ai_usage
+                local items = {
+                    { label = fill(tr("Today: {n} questions, {i} in / {o} out tokens"), { n = u.today_n or "0", i = kilo(u.today_in), o = kilo(u.today_out) }), off = true },
+                    { label = fill(tr("This month: {n} questions, {i} in / {o} out tokens"), { n = u.month_n or "0", i = kilo(u.month_in), o = kilo(u.month_out) }), off = true },
+                }
+                if u.month_cost_usd then items[#items + 1] = { label = fill(tr("Cost this month: ${c}"), { c = u.month_cost_usd }), off = true } end
+                if u.balance then items[#items + 1] = { label = fill(tr("Remaining credit: {b}"), { b = u.balance }), off = true } end
+                for k, v in pairs(u) do
+                    if k:match("^limit_") then items[#items + 1] = { label = k:gsub("^limit_", ""):gsub("_", " ") .. ": " .. v, off = true } end
+                end
+                if u.note then items[#items + 1] = { label = u.note, off = true, sep = true } end
+                menu(items, 420)
+            end }
         end
     elseif m == "files" then
         list[#list + 1] = { glyph = G["folder-open"], label = tr("Open Files"), pick = function() run("latte-app", { "subory" }); fact.dash = false end }

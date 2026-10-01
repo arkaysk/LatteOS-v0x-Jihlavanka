@@ -428,6 +428,16 @@ texty preložiteľné (`translations`). Noctalia beží bez lišty a robí, čo 
 ### F7 — AI a Text Bar
 - [x] `latte-ai`: poskytovatelia **lokálne** (Ollama), **domáci server** (OpenAI API: LM Studio, llama.cpp; voliteľne SSH tunel),
   **cloud** (Claude, ChatGPT, Gemini, Mistral s API kľúčom). Text Bar /ai a Nastavenia › Softvér › AI. Overené s LM Studio na hostiteľovi.
+- [x] **AI v spúšťači Goo odpovedá v bublinách aj s predplatným** (1. 10., `latte-ai` + kvapka.luau): poskytovateľ
+  `predplatne` cez oficiálny nástroj služby, do ktorého sa používateľ raz prihlási (Claude Code `claude -p`, Codex
+  `codex exec`, Gemini CLI, Copilot CLI; beží v prázdnom priečinku), ďalej kľúč API (+ DeepSeek, OpenRouter), Ollama,
+  domáci server; web ostáva voľbou. Čipy pod rozhovorom: ⚙ (nový rozhovor, nastavenia) · služba · model ·
+  efektivita (Rýchla/Vyvážená/Dôkladná → `output_config.effort` / `reasoning_effort` / codex) · príloha (latte-vyber;
+  text vložený, obrázky a PDF ako prílohy) · hlas (`latte-ai hlas`: pw-record + whisper.cpp, inak OpenAI) · spotreba
+  (`latte-ai usage`: dnes/mesiac podľa tohto PC, zostatok DeepSeek/OpenRouter, limity z hlavičiek API, cena z Claude CLI).
+  Overiť na latte-lab: čipy v scéne, ikony (kódy Tabler doplnené ručne — `spustac.py` ich pregeneruje), prihlásenie CLI.
+- [ ] AI: Nastavenia › Softvér › AI doplniť o predplatné (inštalácia a prihlásenie nástroja jedným klikom), DeepSeek,
+  OpenRouter, efektivitu; streamovanie odpovede do bubliny po riadkoch
 - [ ] Ollama na CPU s malým modelom (3–4B) priamo v PC. Router lokálne/online podľa otázky.
 - [x] Text Bar: režimy (Lokálne, Súbory, Web, AI, Linux príkaz) a potvrdenie deštruktívnych príkazov (prvé slovo každej časti príkazu + vzory; otestované).
 

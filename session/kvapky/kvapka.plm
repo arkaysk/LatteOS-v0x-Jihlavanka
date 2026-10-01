@@ -29,7 +29,7 @@ scene Kvapka {
         rate: 60        // pokojný pohyb kvapky nepotrebuje 144 Hz: 12 % → 6 % jadra na RX 640
         keyboard: on_demand while dash or dn_open   // hľadanie v spúšťači, Esc pri hrozne DaNoGoo
     }
-    permissions { services: "window", "window.*", "clock", "notifications", "notifications.*", "apps", "apps.*", "network", "network.*", "bluetooth", "bluetooth.*", "audio", "audio.*", "battery", "media", "tray", "tray.*", "clipboard.set"; run: "noctalia", "latte-app", "hyprctl", "cat", "printenv", "curl", "latte-spustac", "latte-ponuka", "latte-kvapky", "fd", "xdg-open", "latte-ai", "latte-terminal", "date", "sh", "notify-send", "paplay", "latte-apps", "latte-devices" }
+    permissions { services: "window", "window.*", "clock", "notifications", "notifications.*", "apps", "apps.*", "network", "network.*", "bluetooth", "bluetooth.*", "audio", "audio.*", "battery", "media", "tray", "tray.*", "clipboard.set"; run: "noctalia", "latte-app", "hyprctl", "cat", "printenv", "curl", "latte-spustac", "latte-ponuka", "latte-kvapky", "fd", "xdg-open", "latte-ai", "latte-vyber", "latte-terminal", "date", "sh", "notify-send", "paplay", "latte-apps", "latte-devices" }
 
     // zoznam okien priamo zo služby (wlr-foreign-toplevel), bez logiky; ikona podľa triedy okna
     model wins max 48 { id: text; title: text; class: text; active: bool; minimized: bool }
@@ -2620,6 +2620,24 @@ scene Kvapka {
         "Copilot (web)" = "Copilot (web)"
         "Copy" = "Kopírovať"
         "Stopped." = "Zastavené."
+        "Claude (subscription)" = "Claude (predplatné)"
+        "ChatGPT (subscription)" = "ChatGPT (predplatné)"
+        "Gemini (Google account)" = "Gemini (účet Google)"
+        "Copilot (subscription)" = "Copilot (predplatné)"
+        "DeepSeek (API key)" = "DeepSeek (kľúč API)"
+        "OpenRouter (API key)" = "OpenRouter (kľúč API)"
+        "Default" = "Predvolená"
+        "Fast" = "Rýchla"
+        "Balanced" = "Vyvážená"
+        "Thorough" = "Dôkladná"
+        "AI settings…" = "Nastavenia AI…"
+        "Service default" = "Predvolený služby"
+        "Attach files" = "Priložiť súbory"
+        "today" = "dnes"
+        "Today: {n} questions, {i} in / {o} out tokens" = "Dnes: {n} otázok, {i} dnu / {o} von tokenov"
+        "This month: {n} questions, {i} in / {o} out tokens" = "Tento mesiac: {n} otázok, {i} dnu / {o} von tokenov"
+        "Cost this month: ${c}" = "Cena tento mesiac: {c} $"
+        "Remaining credit: {b}" = "Zostatok kreditu: {b}"
         "Details ›" = "Detaily ›"
         "Enter again to run" = "Spustíš znova Enterom"
         "FORECAST · {wx_place}" = "PREDPOVEĎ · {wx_place}"
