@@ -29,7 +29,7 @@ scene Kvapka {
         rate: 60        // pokojný pohyb kvapky nepotrebuje 144 Hz: 12 % → 6 % jadra na RX 640
         keyboard: on_demand while dash or dn_open   // hľadanie v spúšťači, Esc pri hrozne DaNoGoo
     }
-    permissions { services: "window", "window.*", "clock", "notifications", "notifications.*", "apps", "apps.*", "network", "network.*", "bluetooth", "bluetooth.*", "audio", "audio.*", "battery", "media", "tray", "tray.*", "clipboard.set"; run: "noctalia", "latte-app", "hyprctl", "cat", "printenv", "curl", "latte-spustac", "latte-ponuka", "latte-kvapky", "fd", "xdg-open", "latte-ai", "latte-vyber", "latte-terminal", "date", "sh", "notify-send", "paplay", "latte-apps", "latte-devices" }
+    permissions { services: "window", "window.*", "clock", "notifications", "notifications.*", "apps", "apps.*", "network", "network.*", "bluetooth", "bluetooth.*", "audio", "audio.*", "battery", "media", "tray", "tray.*", "clipboard.set"; run: "noctalia", "latte-app", "hyprctl", "cat", "printenv", "curl", "latte-spustac", "latte-ponuka", "latte-kvapky", "fd", "xdg-open", "latte-ai", "latte-vyber", "latte-hladaj", "latte-terminal", "date", "sh", "notify-send", "paplay", "latte-apps", "latte-devices" }
 
     // zoznam okien priamo zo služby (wlr-foreign-toplevel), bez logiky; ikona podľa triedy okna
     model wins max 48 { id: text; title: text; class: text; active: bool; minimized: bool }
@@ -2620,6 +2620,43 @@ scene Kvapka {
         "Copilot (web)" = "Copilot (web)"
         "Copy" = "Kopírovať"
         "Stopped." = "Zastavené."
+        "Ollama" = "Na tomto PC (Ollama)"
+        "Downloading {m}…" = "Sťahujem {m}…"
+        "Downloading {m}… {p} %" = "Sťahujem {m}… {p} %"
+        "{m} is ready. Ask away." = "{m} je pripravený. Pýtaj sa."
+        "Downloading {m} failed." = "Stiahnutie {m} zlyhalo."
+        "Is Ollama running?" = "Beží Ollama?"
+        "No model yet — download one" = "Zatiaľ žiadny model — stiahni si jeden"
+        "Download a model" = "Stiahnuť model"
+        "Model default" = "Predvolené modelu"
+        "Precise (0.2)" = "Presná (0.2)"
+        "Balanced (0.7)" = "Vyvážená (0.7)"
+        "Creative (1.0)" = "Tvorivá (1.0)"
+        "Temperature" = "Teplota"
+        "Context length" = "Dĺžka kontextu"
+        "tokens" = "tokenov"
+        "Free memory (unload model)" = "Uvoľniť pamäť (model von)"
+        "Nothing found. Try fewer letters, “content:word” or a type below." = "Nič sa nenašlo. Skús menej písmen, „obsah:slovo“ alebo typ dole."
+        "Type part of a name — accents and typos do not matter. Filters: .pdf  >10MB  today  2024  in:Documents  “exact name”  content:word" = "Napíš časť mena — diakritika ani preklepy nevadia. Filtre: .pdf  >10MB  dnes  2024  v:Dokumenty  „presné meno“  obsah:slovo"
+        "Show in Files" = "Ukázať v Súboroch"
+        "Copy path" = "Kopírovať cestu"
+        "Ask AI about this file" = "Opýtať sa AI na tento súbor"
+        "Search in this folder" = "Hľadať v tomto priečinku"
+        "All types" = "Všetky typy"
+        "Documents" = "Dokumenty"
+        "Pictures" = "Obrázky"
+        "Videos" = "Videá"
+        "Music" = "Hudba"
+        "Spreadsheets" = "Tabuľky"
+        "Archives" = "Archívy"
+        "Code" = "Kód"
+        "Folders" = "Priečinky"
+        "Any time" = "Kedykoľvek"
+        "Today" = "Dnes"
+        "This week" = "Tento týždeň"
+        "This month" = "Tento mesiac"
+        "This year" = "Tento rok"
+        "Inside files" = "V obsahu"
         "Claude (subscription)" = "Claude (predplatné)"
         "ChatGPT (subscription)" = "ChatGPT (predplatné)"
         "Gemini (Google account)" = "Gemini (účet Google)"

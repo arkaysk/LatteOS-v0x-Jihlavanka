@@ -23,6 +23,9 @@ Poskytovatelia (~/.config/latteos/ai.toml, píšu ho Nastavenia › Softvér ›
                              "files": [cesty] — text sa vloží, obrázky a PDF idú ako prílohy (ak ich služba berie)
   latte-ai usage             spotreba a zostatok (key=value): dnes / mesiac tokenov a otázok podľa tohto PC,
                              zostatok kreditu (DeepSeek, OpenRouter), limity za minútu z hlavičiek API, cena (Claude CLI)
+  latte-ai local             Ollama na tomto PC ako LM Studio (riadky id<TAB>veľkosť<TAB>načítaný):
+  latte-ai katalog           odporúčané modely na stiahnutie podľa RAM (id<TAB>popis)
+  latte-ai pull MODEL        stiahne model (priebeh po riadkoch „percent text“) · rm MODEL · unload
   latte-ai hlas start|stop   diktovanie: nahrávanie mikrofónu (pw-record); stop vypíše prepis
                              (whisper.cpp lokálne, inak OpenAI API s kľúčom)
   latte-ai set KĽÚČ HODNOTA  zapíše voľbu do ai.toml (provider, url, model, ssh, cloud, cloud_model)
@@ -46,6 +49,9 @@ DEFAULTS = {
     "web": "claude",
     "predplatne": "claude",
     "effort": "",                                 # ""=predvolené služby | low | medium | high (premýšľanie modelu)
+    "temperature": "",                            # lokálne/domáci: "" = predvolená modelu
+    "ctx": "",                                    # lokálne: dĺžka kontextu (num_ctx), "" = predvolená
+    "keep_alive": "10m",                          # lokálne: ako dlho ostane model v pamäti po otázke
     "system": ("Si asistent v LatteOS. LatteOS je desktopová Linux distribúcia na Fedore pre bežných ľudí a hráčov: "
                "Hyprland (nekonečná páska okien), shell Noctalia so spodnou lištou z ostrovov, témy Latte, Súbory, "
                "Nastavenia, Monitor, App Manager (Flatpak, RPM, kontrola „Bude to fungovať?“), režimy NORMAL a SAFE. "
@@ -331,6 +337,25 @@ def ask(c, q, history=None):
     if not model:
         raise RuntimeError("Na serveri nie je načítaný žiadny model. Vyber ho v Nastaveniach › AI.")
     effort = c["effort"] if c["effort"] in ("low", "medium", "high") else ""
+    if c["provider"] == "lokalne":                  # natívne API Ollamy: nastavenia modelu a rýchlosť (tokeny/s)
+        opts = {}
+        if c["temperature"]:
+            opts["temperature"] = float(c["temperature"])
+        if c["ctx"]:
+            opts["num_ctx"] = int(c["ctx"])
+        body = {"model": model, "stream": False, "keep_alive": c["keep_alive"] or "10m", "options": opts,
+                "messages": [{"role": "system", "content": c["system"]}] + [ollama_msg(m) for m in msgs]}
+        if effort:
+            body["think"] = effort != "low"
+        r = http("http://127.0.0.1:11434/api/chat", body, {}, 600)
+        text = (r.get("message") or {}).get("content", "")
+        tps = r.get("eval_count", 0) / max(r.get("eval_duration", 1) / 1e9, 1e-3)
+        LAST_HEADERS.clear()
+        usage_add(service_id(c), r.get("prompt_eval_count", 0), r.get("eval_count", 0))
+        u = usage_load()
+        u.setdefault("lokalne", {})["tps"] = round(tps, 1)      # rýchlosť poslednej odpovede (ako LM Studio)
+        json.dump(u, open(USAGE, "w"))
+        return re.sub(r"<think>.*?</think>", "", text, flags=re.S).strip(), model
     if c["provider"] == "cloud" and c["cloud"] == "anthropic":
         body = {"model": model, "max_tokens": 16000, "system": c["system"],
                 "messages": [{"role": m["role"], "content": attach(m, "anthropic")} for m in msgs]}
@@ -347,11 +372,66 @@ def ask(c, q, history=None):
                 + [{"role": m["role"], "content": attach(m, "openai" if c["provider"] == "cloud" else "text")} for m in msgs]}
         if effort and c["provider"] == "cloud" and c["cloud"] in ("openai", "gemini", "openrouter"):
             body["reasoning_effort"] = effort
+        if c["temperature"] and c["provider"] == "domaci":
+            body["temperature"] = float(c["temperature"])
         r = http(base + "/chat/completions", body, hdr, 300)
         text = r["choices"][0]["message"].get("content") or ""
         u = r.get("usage") or {}
         usage_add(service_id(c), u.get("prompt_tokens", 0), u.get("completion_tokens", 0))
     return re.sub(r"<think>.*?</think>", "", text, flags=re.S).strip(), model
+
+
+def ollama_msg(m):
+    """správa pre Ollamu: obrázky ako base64 v "images" (modely s videním), text príloh vložený"""
+    import base64
+    imgs = [f for f in (m.get("files") or []) if os.path.splitext(f)[1].lower() in IMG]
+    rest = dict(m, files=[f for f in (m.get("files") or []) if f not in imgs])
+    out = {"role": m["role"], "content": attach(rest, "text")}
+    if imgs:
+        out["images"] = [base64.b64encode(open(os.path.expanduser(f), "rb").read()).decode() for f in imgs]
+    return out
+
+
+# odporúčané modely pre Ollamu: (min. RAM v GB, id, popis) — malé najprv; latte-ai katalog vyberie podľa RAM
+KATALOG = [
+    (4, "llama3.2:3b", "Llama 3.2 3B · rýchly, všeobecný (2 GB)"),
+    (6, "gemma3:4b", "Gemma 3 4B · vidí obrázky (3 GB)"),
+    (6, "qwen3:4b", "Qwen 3 4B · premýšľa, dobrý v slovenčine (2,5 GB)"),
+    (12, "qwen3:8b", "Qwen 3 8B · lepšie odpovede (5 GB)"),
+    (12, "deepseek-r1:8b", "DeepSeek R1 8B · premýšľanie, matematika (5 GB)"),
+    (16, "gemma3:12b", "Gemma 3 12B · vidí obrázky (8 GB)"),
+    (24, "qwen3:14b", "Qwen 3 14B · najlepší pre 32 GB RAM (9 GB)"),
+]
+
+
+def ram_gb():
+    try:
+        return int(re.search(r"MemTotal:\s+(\d+)", open("/proc/meminfo").read()).group(1)) / 1048576
+    except (OSError, AttributeError):
+        return 8
+
+
+def local_list():
+    tags = http("http://127.0.0.1:11434/api/tags").get("models", [])
+    loaded = {m["name"] for m in http("http://127.0.0.1:11434/api/ps").get("models", [])}
+    for m in tags:
+        print("%s\t%.1f GB\t%s" % (m["name"], m.get("size", 0) / 1e9, "1" if m["name"] in loaded else ""))
+
+
+def local_pull(name):
+    """ollama pull s priebehom: riadky „percent text“ pre bublinu spúšťača"""
+    req = urllib.request.Request("http://127.0.0.1:11434/api/pull", data=json.dumps({"model": name}).encode(),
+                                 headers={"Content-Type": "application/json"})
+    last = -1
+    with urllib.request.urlopen(req, timeout=3600) as r:
+        for line in r:
+            j = json.loads(line or b"{}")
+            if j.get("error"):
+                raise RuntimeError(j["error"])
+            pct = int(100 * j["completed"] / j["total"]) if j.get("total") and j.get("completed") else -1
+            if pct != last or "status" in j and pct < 0:
+                print("%d %s" % (max(pct, 0), j.get("status", "")), flush=True)
+                last = pct
 
 
 def usage_report(c):
@@ -364,6 +444,8 @@ def usage_report(c):
         print("%s_in=%d\n%s_out=%d\n%s_n=%d" % (k, d.get("in", 0), k, d.get("out", 0), k, d.get("n", 0)))
         if d.get("cost"):
             print("%s_cost_usd=%.4f" % (k, d["cost"]))
+    if e.get("tps"):
+        print("tps=%s" % e["tps"])
     for k, v in (e.get("limits") or {}).items():
         print("limit_%s=%s" % (re.sub(r"[^a-z0-9]+", "_", k), v))
     key = keys().get(c["cloud"], "")
@@ -467,6 +549,21 @@ def main(a):
                 print(m + "\t" + s)
         elif cmd == "usage":
             usage_report(c)
+        elif cmd == "local":
+            local_list()
+        elif cmd == "katalog":
+            have = ram_gb()
+            for need, mid, desc in KATALOG:
+                if need <= have + 0.5:
+                    print(mid + "\t" + desc)
+        elif cmd == "pull" and len(a) == 2:
+            local_pull(a[1])
+        elif cmd == "rm" and len(a) == 2:
+            req = urllib.request.Request("http://127.0.0.1:11434/api/delete", data=json.dumps({"model": a[1]}).encode(), method="DELETE")
+            urllib.request.urlopen(req, timeout=30).read()
+        elif cmd == "unload":
+            for m in http("http://127.0.0.1:11434/api/ps").get("models", []):
+                http("http://127.0.0.1:11434/api/generate", {"model": m["name"], "keep_alive": 0}, {}, 30)
         elif cmd == "hlas" and len(a) == 2 and a[1] in ("start", "stop"):
             voice(a[1])
         elif cmd == "open" or (cmd == "ask" and c["provider"] == "web"):
