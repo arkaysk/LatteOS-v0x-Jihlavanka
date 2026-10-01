@@ -1,0 +1,8 @@
+[Desktop Entry]
+Name=LatteOS Drops – engine test
+Name[sk]=LatteOS Kvapky – engine test
+Comment=Test of the unified Goo engine: drops with their own behaviour (session/goo)
+Comment[sk]=Test jednotného enginu Goo: kvapky s vlastným správaním (session/goo)
+Exec=/usr/bin/latte-session kvapky-engine
+Type=Application
+DesktopNames=Hyprland

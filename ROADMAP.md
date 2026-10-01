@@ -333,6 +333,13 @@ texty preložiteľné (`translations`). Noctalia beží bez lišty a robí, čo 
 - [ ] **Živé bytosti pri nečinnosti** (LATTEOS-GOO.md 3.1): zdroj nečinnosti (ext-idle-notify), dážď/vietor podľa
   skutočného počasia so zvlnením spodnej hrany aj kvapiek, hra (naháňačka so zrážkou a odrazom, behanie, skákanie);
   nie pri celej obrazovke, zámku, slabej batérii a v stupni Softvér; vypínač v Nastaveniach
+- [x] **Engine Goo — základ** (LATTEOS-GOO.md 3.2, `session/goo`, 1. 10.): jedny pravidlá pre všetky kvapky (16 miest),
+  kvapky používateľa (JSON, `latte-goo`) aj programátorov (Luau s háčikmi), všetky vstupy myši, gravitácia/svetlo
+  kurzora, lepivosť s odtrhnutím, veľkosť, efekty + rezerva (fx 6–9, kanály e1–e4), hra pri nečinnosti; relácia
+  „LatteOS Kvapky – engine test“. Overené v cloude (headless Sway, falošná myš)
+- [ ] Engine Goo na latte-lab: stredné tlačidlo, ikony (písmo Tabler), výkon RX 640; potom presun TimeGoo, PowerGoo,
+  DaNoGoo, QueenGoo, ChatGoo na engine; formulár vlastných kvapiek v Nastaveniach › Kvapky nad `latte-goo`
+- [x] pleamar v0.2.6, pleamar-wm v0.2.5, marea-plm (1. 10.): pripnuté, záplaty sedia, inštalácia preloží novší
 - [ ] **ChatGoo** (addon pre Beeper, LATTEOS-GOO.md 4.2c): kvapka, do ktorej sa minimalizuje Beeper, správy okolo nej
   ako hrozno DaNoGoo (upozornenia aplikácie Beeper presmerované). Pomocník `latte-chatgoo` hotový; scéna naživo na latte-lab
 - [ ] **Komunitné doplnky Noctalie ako kvapky** — prieskum 30. 9.: 235 doplnkov (13 oficiálnych, 222 komunitných,

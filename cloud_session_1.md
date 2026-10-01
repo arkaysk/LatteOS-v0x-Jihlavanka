@@ -244,6 +244,56 @@ upstreame (pleamar **0.2.6**, `8bb920f`; my máme záplaty na 0.2.3, scéna je e
 - Poradie: (a) prechod scény na `language 0.2` a pleamar 0.2.6 na latte-lab, (b) knižnica Goo + `entita.luau`
   po jednej kvapke s porovnaním snímok, (c) ChatGoo a živé bytosti už na DLC. Robí sa naživo na latte-lab.
 
+## Engine Goo — základ (oddelene) a najnovšia Marea
+
+**Zadanie:** do resources prebrať najnovšiu Mareu aj pleamar. Vytvoriť základ enginu, zatiaľ oddelene, a pridať
+reláciu „Kvapky engine test“ na prihlasovaciu obrazovku. Programátor aj používateľ majú môcť kedykoľvek pridať
+kvapku s vlastným správaním: kurzor, prechod myšou, koliesko, ľavé/pravé/stredné tlačidlo, ťahanie, gravitácia,
+lepivosť, veľkosť a rezerva na ďalšie efekty.
+
+**Upstream:** pleamar **v0.2.6** (`8bb920f`), pleamar-wm **v0.2.5** (`c213f55`), marea-plm `a589189`. Obe záplaty
+LatteOS sedia bez úprav. Verzie sú pripnuté v `resources/fetch.sh`, ktorý pri zmene tagu urobí novú kópiu.
+`install-session.sh` preloží pleamar znova, keď nie je 0.2.6, a pred nasadením skontroluje obe scény (`--check`).
+
+**Nová možnosť: pleamar beží aj v cloude.** Preložený so záplatou, `pleamar --check` overí scénu bez obrazovky
+a headless Sway (pixman + llvmpipe) ju ukáže naživo: snímky (grim), falošná myš (`--mouse`), záznam hodnôt
+(`--record`). Engine som tak overoval naozaj, nielen kontrolou syntaxe.
+
+**Našli sa chyby v súčasnej scéne Kvapky (moje skoršie úpravy):**
+1. `kvapka.plm` by sa na latte-lab **vôbec nenačítala**: `dn.r` používal `zd.p` pred jeho deklaráciou a farba
+   výstrahy bola `pick()` (pick farby neberie). Opravené (`c21148b`): zoom pred DaNoGoo, farba cez vnorené `if`.
+2. `sin`/`cos` sú v pleamar **v stupňoch**. Striedanie stopiek/minútky (4 s) a výstrahy (~12 s) v TimeGoo som písal
+   v radiánoch, takže by sa striedali raz za niekoľko minút. Opravené na `time * 45` a `time * 30`.
+
+**Engine (`session/goo`, README.md, LATTEOS-GOO.md 3.2):**
+- `goo.plm`: 16 miest. Všetky pravidlá sú napísané raz (`repeat`): poloha s pružinami, gravitácia kurzora
+  (+ priťahuje, − odpudzuje), svetlo kurzora, lepivosť (krk a odtrhnutie, neodtrhnutá sa vráti), zliatie
+  s lištou, ťažká padne a odrazí sa, veľkosť (koliesko, prechod), efekty dych/kmit/tras/obeh/tlkot. **Rezerva:**
+  efekty 6–9, kanály e1–e4 (veľkosť, posun x/y, žiara) a druhy 2–3. Vstupy: ľavé (klik = pustenie bez
+  ťahania), pravé, stredné, podržanie, koliesko, prechod, bublina, ťahanie, pustenie. Nečinnosť po 30 s a 2 min.
+- `gen.py` rozpisuje telo goo (jazyk nedovolí `repeat` v `body`) a vytvára zoznam modulov.
+- `lib/engine.luau`: register, povahy (pokojná, zvedavá, plachá, lepkavá, ťažká, hravá), predvolené správanie
+  (koliesko = veľkosť, stredné = domov, pravé = meno), háčiky pre programátora, uloženie polôh, hra pri nečinnosti
+  (skoky, túlanie, naháňačka).
+- Kvapky používateľa: JSON v `~/.config/latteos/goo/kvapky/`, za behu do 4 s. `latte-goo novy | skontroluj |
+  zoznam | akcia | text | stav | ikony`; akcie spusti/aplikacia/otvor/vystup vykoná pomocník, nie logika.
+- Príklady: 8 modulov (počítadlo so všetkými vstupmi, hodiny, zvedavka, plachá, lepkavá, ťažká, bublinka,
+  kvapôčka) a 2 JSON (kalkulačka, systém).
+- Relácia: `latteos-goo-engine.desktop` → `latte-session kvapky-engine` (plocha Kvapky + `LATTE_KVAPKY_SCENE`).
+
+**Overené v cloude:** `--check` ok. Naživo prešli prechod, klik, koliesko, pravé, podržanie, ťahanie lepkavej
+s odtrhnutím, hod ťažkej (spadla na lištu), uloženie polôh, hra pri nečinnosti aj prebudenie myšou, a farby,
+texty, prstence a bublina. Opravené počas testu:
+- pravé po ľavom sa rátalo ako klik → `lp`;
+- po podržaní prišiel aj klik;
+- farby (telo goo má jednu farbu) → tón ako vrstva;
+- veľkosť textu (`číslo × pomer`);
+- tenká čiara krku;
+- ikony ako znak vs. meno.
+
+**Neoverené (latte-lab):** stredné tlačidlo (falošná myš ho nemá), ikony (v cloude nie je písmo Tabler),
+`cursor.x/y` z Hyprlandu, výkon na RX 640.
+
 ## Nové a zmenené súbory
 
 - `session/bin/`: `gnome-software`, `latte-hladaj`, `latte-riadok`, `latte-pocasie` (nové); `latte-ai`, `latte-apps`,

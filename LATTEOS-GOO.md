@@ -143,6 +143,24 @@ blízkosť myši; **kurzor je druhý zdroj gravitácie a svetla**. Pribudne spr�
   posúva `edge` pre každú kvapku podľa jej x; pohyb hry = cieľové body pre pružiny (`prop … ~lively`) z logiky, zrážky
   ako vymenené rýchlosti + `squish`. Robiť naživo na latte-lab (scéna), postupne: nečinnosť → dážď/vietor → hra.
 
+### 3.2 Engine Goo — jedny pravidlá pre všetky kvapky (1. 10., základ hotový, oddelene)
+
+Zadanie používateľa: engine, ktorý zastreší všetky kvapky a nastaví pravidlá všeobecne. Je to rozšírenie pleamar
+(„DLC“), ktoré prežije jeho aktualizácie. Programátor aj používateľ môžu kedykoľvek pridať kvapku s vlastným
+správaním: reakcie na kurzor, prechod myšou, koliesko, ľavé/pravé/stredné tlačidlo, ťahanie, efekty, gravitáciu,
+lepivosť, veľkosť a rezervu na ďalšie efekty.
+
+- Kód: `session/goo` (README.md). Scéna `goo.plm` má 16 miest cez `repeat`, generátor `gen.py`, logika
+  `lib/engine.luau` (register, povahy, predvolené správanie, uloženie, nečinnosť). Kvapky používateľa sú JSON
+  (`latte-goo`), kvapky programátorov moduly Luau s háčikmi.
+- Iba jazyk pleamar 0.2, bez záplat. Obmedzenie: `repeat` nesmie byť v `body` (telo rozpisuje `gen.py`).
+  Lety vnútri `repeat` patria iba svojej kópii, preto sú hodnoty potrebné zvonka pružiny `~0ms` (globálne,
+  v tom istom snímku). `sin`/`cos` sú v stupňoch. Veľkosť textu je `číslo × pomer`.
+- Relácia **LatteOS Kvapky – engine test** = plocha Kvapky so scénou enginu (`latte-session kvapky-engine`).
+- Ďalej: overiť na latte-lab (stredné tlačidlo, písmo ikon, výkon na RX 640), potom presunúť TimeGoo, PowerGoo,
+  DaNoGoo, QueenGoo a ChatGoo na engine (po jednej, snímky pred a po). Živé bytosti z 3.1 (dážď/vietor) a formulár
+  v Nastaveniach › Kvapky pribudnú nad enginom.
+
 ---
 
 ## 4. Časti plochy a ich správanie
