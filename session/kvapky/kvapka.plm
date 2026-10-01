@@ -2620,6 +2620,7 @@ scene Kvapka {
         "Copilot (web)" = "Copilot (web)"
         "Copy" = "Kopírovať"
         "Stopped." = "Zastavené."
+        "{ai} needs a one-time setup. I opened Settings › AI — everything there is done with clicks; you only type your name and password on the service page. Then ask again." = "{ai} treba raz nastaviť. Otvoril som Nastavenia › AI — všetko sa tam robí klikaním, meno a heslo napíšeš iba na stránke služby. Potom sa spýtaj znova."
         "click copies" = "klik skopíruje"
         "Open {u}" = "Otvoriť {u}"
         "Web address" = "Webová adresa"

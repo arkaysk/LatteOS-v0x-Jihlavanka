@@ -453,8 +453,13 @@ texty preložiteľné (`translations`). Noctalia beží bez lišty a robí, čo 
   ktoré iba čítajú (ponuka s Kopírovať / Otvoriť v termináli), „Čo tento príkaz urobí?“ cez AI pri nebezpečných
 - [ ] Riadok: Tab na dopĺňanie aj klávesou (potrebuje udalosť v scéne), ikony výsledkov podľa témy overiť na latte-lab
 - [ ] Hľadanie: obsah PDF/DOCX (pdftotext/pandoc do vlastného indexu), náhľad obrázka vo výsledku, hľadanie v Súboroch
-- [ ] AI: Nastavenia › Softvér › AI doplniť o predplatné (inštalácia a prihlásenie nástroja jedným klikom), DeepSeek,
-  OpenRouter, efektivitu; streamovanie odpovede do bubliny po riadkoch
+- [x] **AI bez terminálu** (1. 10.): Nastavenia › AI › Môj účet — Claude / ChatGPT / Gemini / Copilot: Inštalovať (oficiálny
+  nástroj do domova, bez sudo; npm v základe), Prihlásiť sa (na pozadí v pseudoterminále: úvodné otázky odklikne,
+  prehliadač otvorí, kód GitHubu ukáže v Nastaveniach; používateľ píše iba meno a heslo), Použiť, Odhlásiť;
+  **Zobraziť terminál** iba na klik (živý záznam inštalácie a prihlásenia pre pokročilých a správcu). Prvá otázka
+  nenastavenej službe v spúšťači otvorí Nastavenia › AI. Overiť na latte-lab so skutočnými nástrojmi (texty ich
+  úvodných otázok sa môžu meniť — LOGIN_ANSWERS v latte-ai)
+- [ ] AI: streamovanie odpovede do bubliny po riadkoch; efektivita a model aj v Nastaveniach
 - [ ] Ollama na CPU s malým modelom (3–4B) priamo v PC. Router lokálne/online podľa otázky.
 - [x] Text Bar: režimy (Lokálne, Súbory, Web, AI, Linux príkaz) a potvrdenie deštruktívnych príkazov (prvé slovo každej časti príkazu + vzory; otestované).
 

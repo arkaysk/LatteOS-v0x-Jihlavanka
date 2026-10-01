@@ -26,6 +26,12 @@ Poskytovatelia (~/.config/latteos/ai.toml, píšu ho Nastavenia › Softvér ›
   latte-ai local             Ollama na tomto PC ako LM Studio (riadky id<TAB>veľkosť<TAB>načítaný):
   latte-ai katalog           odporúčané modely na stiahnutie podľa RAM (id<TAB>popis)
   latte-ai pull MODEL        stiahne model (priebeh po riadkoch „percent text“) · rm MODEL · unload
+  latte-ai sluzby            predplatné: id<TAB>meno<TAB>nainštalované 0/1<TAB>prihlásené 0/1<TAB>čo urobí prihlásenie
+  latte-ai instaluj ID       nainštaluje nástroj služby do domova (bez sudo, bez terminálu), priebeh po riadkoch
+  latte-ai prihlas ID        prihlásenie služby na pozadí: prehliadač s prihlásením (píše sa iba meno a heslo),
+                             terminál sa neotvára · odhlas ID
+  latte-ai priebeh ID        stav inštalácie/prihlásenia pre Nastavenia: state=, url=, code=, line=, log=
+  latte-ai terminal ID       „Zobraziť terminál“: otvorí terminál so záznamom (čo sa deje pod kapotou)
   latte-ai hlas start|stop   diktovanie: nahrávanie mikrofónu (pw-record); stop vypíše prepis
                              (whisper.cpp lokálne, inak OpenAI API s kľúčom)
   latte-ai set KĽÚČ HODNOTA  zapíše voľbu do ai.toml (provider, url, model, ssh, cloud, cloud_model)
@@ -48,6 +54,7 @@ DEFAULTS = {
     "cloud_model": "",
     "web": "claude",
     "predplatne": "claude",
+    "cli_model": "",                              # model predplatného (claude: opus | sonnet | haiku), "" = predvolený
     "effort": "",                                 # ""=predvolené služby | low | medium | high (premýšľanie modelu)
     "temperature": "",                            # lokálne/domáci: "" = predvolená modelu
     "ctx": "",                                    # lokálne: dĺžka kontextu (num_ctx), "" = predvolená
@@ -66,12 +73,24 @@ CLOUD = {   # predvolené modely a adresy veľkých AI
     "openrouter": ("https://openrouter.ai/api/v1", "openrouter/auto"),
 }
 # predplatné cez oficiálny príkazový nástroj služby: (meno, príkaz, inštalácia, prihlásenie)
+# Používateľ nič nepíše do terminálu: Nastavenia › AI › Inštalovať / Prihlásiť sa (latte-ai instaluj / prihlas)
 CLI = {
-    "claude":  ("Claude", "claude", "curl -fsSL https://claude.ai/install.sh | bash", "claude  (prvé spustenie, /login)"),
-    "codex":   ("ChatGPT", "codex", "npm install -g @openai/codex", "codex login"),
-    "gemini":  ("Gemini", "gemini", "npm install -g @google/gemini-cli", "gemini  (prvé spustenie, Prihlásiť sa cez Google)"),
-    "copilot": ("Copilot", "copilot", "npm install -g @github/copilot", "copilot  (prvé spustenie, /login)"),
+    "claude":  ("Claude", "claude", "Nastavenia › AI › Claude › Inštalovať", "Nastavenia › AI › Claude › Prihlásiť sa"),
+    "codex":   ("ChatGPT", "codex", "Nastavenia › AI › ChatGPT › Inštalovať", "Nastavenia › AI › ChatGPT › Prihlásiť sa"),
+    "gemini":  ("Gemini", "gemini", "Nastavenia › AI › Gemini › Inštalovať", "Nastavenia › AI › Gemini › Prihlásiť sa"),
+    "copilot": ("Copilot", "copilot", "Nastavenia › AI › Copilot › Inštalovať", "Nastavenia › AI › Copilot › Prihlásiť sa"),
 }
+# inštalácia: claude oficiálnym skriptom (do ~/.local/bin), ostatné cez npm do vlastného priečinka (bez sudo)
+NPM = {"codex": "@openai/codex", "gemini": "@google/gemini-cli", "copilot": "@github/copilot"}
+NPM_PREFIX = os.path.join(HOME, ".local/share/latteos/ai-nastroje")
+# prihlásenie je hotové, keď nástroj uložil svoje prihlasovacie údaje
+CREDS = {"claude": [".claude/.credentials.json"], "codex": [".codex/auth.json"],
+         "gemini": [".gemini/oauth_creds.json", ".gemini/google_accounts.json"], "copilot": [".copilot/config.json"]}
+LOGIN_HINT = {"claude": "otvorí sa prehliadač s prihlásením do Claude",
+              "codex": "otvorí sa prehliadač s prihlásením do ChatGPT",
+              "gemini": "otvorí sa prehliadač s prihlásením do účtu Google",
+              "copilot": "otvorí sa prehliadač GitHubu; vpíšeš doň krátky kód, ktorý ukážu Nastavenia"}
+os.environ["PATH"] = os.pathsep.join([os.path.join(HOME, ".local/bin"), os.path.join(NPM_PREFIX, "bin"), os.environ.get("PATH", "")])
 STATE = os.path.join(os.environ.get("XDG_STATE_HOME", HOME + "/.local/state"), "latteos")
 USAGE = os.path.join(STATE, "ai-usage.json")
 
@@ -288,7 +307,7 @@ def ask_cli(c, msgs):
         prompt = "\n\n".join(lines) + "\n\nNová otázka: " + attach(convo[-1], "text")
     else:
         prompt = attach(convo[-1], "text")
-    model, effort = c["model"], c["effort"]
+    model, effort = c["cli_model"], c["effort"]
     out_file = None
     if exe == "claude":
         cmd = ["claude", "-p", prompt, "--output-format", "json", "--append-system-prompt", c["system"]] + (["--model", model] if model else [])
@@ -434,6 +453,153 @@ def local_pull(name):
                 last = pct
 
 
+def logged_in(sid):
+    for f in CREDS.get(sid, []):
+        p = os.path.join(HOME, f)
+        if os.path.exists(p) and (sid != "copilot" or "logged_in_users" in open(p, errors="replace").read()):
+            return True
+    return False
+
+
+def services():
+    import shutil
+    for sid, (name, exe, _i, _l) in CLI.items():
+        print("%s\t%s\t%d\t%d\t%s" % (sid, name, bool(shutil.which(exe)), logged_in(sid), LOGIN_HINT[sid]))
+
+
+def logfile(sid):
+    return os.path.join(RUN, "latte-ai-%s.log" % sid)
+
+
+def progress(sid, **kv):
+    """stav pre Nastavenia (latte-ai priebeh ID)"""
+    p = os.path.join(RUN, "latte-ai-%s.json" % sid)
+    try:
+        st = json.load(open(p))
+    except (OSError, ValueError):
+        st = {}
+    st.update(kv)
+    json.dump(st, open(p, "w"))
+
+
+def install(sid):
+    """inštalácia nástroja služby bez sudo; výstup do záznamu (Zobraziť terminál), posledný riadok do Nastavení"""
+    import shutil
+    name = CLI[sid][0]
+    if sid == "claude":
+        cmd = ["bash", "-c", "curl -fsSL https://claude.ai/install.sh | bash"]
+    else:
+        if not shutil.which("npm"):
+            progress(sid, state="error", line="chýba Node.js (npm)")
+            raise RuntimeError("chýba Node.js (npm) — v LatteOS je v základe; doinštaluj balík nodejs-npm")
+        os.makedirs(NPM_PREFIX, exist_ok=True)
+        cmd = ["npm", "install", "--global", "--prefix", NPM_PREFIX, "--no-fund", "--no-audit", NPM[sid]]
+    progress(sid, state="installing", line="Sťahujem %s…" % name, url="", code="")
+    with open(logfile(sid), "a") as log:
+        log.write("\n$ %s\n" % " ".join(cmd)); log.flush()
+        p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+        for line in p.stdout:
+            log.write(line); log.flush()
+            if line.strip():
+                progress(sid, line=strip_ansi(line.strip())[:100])
+        rc = p.wait()
+    if rc != 0 or not shutil.which(CLI[sid][1]):
+        progress(sid, state="error", line="inštalácia zlyhala (kód %d) — Zobraziť terminál ukáže prečo" % rc)
+        raise RuntimeError("inštalácia %s zlyhala (kód %d)" % (name, rc))
+    progress(sid, state="installed", line="%s je nainštalovaný" % name)
+    print("hotovo: %s je nainštalovaný" % name)
+
+
+ANSI = re.compile(r"\x1b\[[0-9;?]*[ -/]*[@-~]|\x1b\][^\x07]*\x07|\x1b[()][0-9A-B]|\r")
+
+
+def strip_ansi(t):
+    return ANSI.sub("", t)
+
+
+# odpovede na úvodné otázky nástrojov (prvé spustenie): (vzor v texte, čo poslať) — každá raz
+LOGIN_ANSWERS = {
+    "claude": [(r"(?i)choose the text style|dark mode", "\r"), (r"(?i)select login method|claude account with subscription", "\r"),
+               (r"(?i)press enter to (continue|retry)|login successful", "\r")],
+    "gemini": [(r"(?i)login with google", "\r"), (r"(?i)select theme", "\r")],
+    "copilot": [(r"(?i)(^|\s)>\s*$|type @ to mention|enter a prompt", "/login\r"), (r"(?i)github\.com\b.*\n.*ghe|what account do you want", "\r")],
+    "codex": [],
+}
+
+
+def login_worker(sid):
+    """beží na pozadí v pseudoterminále: odpovedá na úvodné otázky, otvorí prehliadač, vytiahne kód,
+    všetko zapisuje do záznamu; skončí po uložení prihlásenia (alebo po 10 min)"""
+    import pty, select, signal
+    exe = CLI[sid][1]
+    argv = {"claude": [exe, "/login"], "codex": [exe, "login"], "gemini": [exe], "copilot": [exe]}[sid]
+    if sid == "claude" and subprocess.run([exe, "auth", "--help"], capture_output=True, timeout=10).returncode == 0:
+        argv = [exe, "auth", "login"]
+    progress(sid, state="login", line="Otváram prihlásenie…", url="", code="")
+    pid, fd = pty.fork()
+    if pid == 0:
+        os.environ["TERM"] = "xterm-256color"
+        os.execvp(argv[0], argv)
+    answers = list(LOGIN_ANSWERS.get(sid, []))
+    seen_url, buf, start = "", "", time.time()
+    with open(logfile(sid), "a") as log:
+        log.write("\n$ %s\n" % " ".join(argv)); log.flush()
+        while time.time() - start < 600:
+            if logged_in(sid):
+                progress(sid, state="done", line="Prihlásené", code="")
+                break
+            r, _, _ = select.select([fd], [], [], 1.0)
+            if not r:
+                continue
+            try:
+                data = os.read(fd, 4096).decode(errors="replace")
+            except OSError:
+                break
+            log.write(data); log.flush()
+            buf = (buf + strip_ansi(data))[-4000:]
+            for i, (pat, ans) in enumerate(answers):
+                if re.search(pat, buf):
+                    time.sleep(0.4)
+                    os.write(fd, ans.encode())
+                    answers.pop(i); buf = ""
+                    break
+            m = re.search(r"https://\S+", buf)
+            if m and m.group(0) != seen_url and ("oauth" in m.group(0) or "login" in m.group(0) or "device" in m.group(0) or "auth" in m.group(0)):
+                seen_url = m.group(0).rstrip(".,)")
+                progress(sid, url=seen_url, line="Prihlás sa v prehliadači (meno a heslo)")
+                try:
+                    subprocess.Popen(["xdg-open", seen_url], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)
+                except OSError:
+                    pass
+            c = re.search(r"\b([A-Z0-9]{4}-[A-Z0-9]{4})\b", buf)
+            if c:
+                progress(sid, code=c.group(1), line="Do prehliadača vpíš kód " + c.group(1))
+        else:
+            progress(sid, state="error", line="Prihlásenie nedobehlo — Zobraziť terminál ukáže prečo")
+    try:
+        os.kill(pid, signal.SIGTERM)
+    except OSError:
+        pass
+
+
+def login(sid):
+    """spustí prihlásenie na pozadí (žiadny terminál); Nastavenia sledujú latte-ai priebeh"""
+    import shutil
+    if not shutil.which(CLI[sid][1]):
+        raise RuntimeError("%s ešte nie je nainštalovaný" % CLI[sid][0])
+    subprocess.Popen([sys.executable, os.path.abspath(__file__), "_prihlas", sid], stdin=subprocess.DEVNULL,
+                     stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)
+    print(LOGIN_HINT[sid])
+
+
+def logout(sid):
+    for f in CREDS.get(sid, []):
+        try:
+            os.unlink(os.path.join(HOME, f))
+        except OSError:
+            pass
+
+
 def usage_report(c):
     """key=value: spotreba podľa tohto PC a zostatok, ak ho služba povie."""
     sid = service_id(c)
@@ -520,15 +686,18 @@ def main(a):
                 print("model=" + WEB.get(c["web"], WEB["claude"])[0]); print("ok=1"); print("web=1")
         elif cmd == "status" and c["provider"] == "predplatne":
             import shutil
-            name, exe, install, login = CLI.get(c["predplatne"], CLI["claude"])
+            name, exe, how_install, how_login = CLI.get(c["predplatne"], CLI["claude"])
             print("provider=predplatne")
+            print("cli=" + c["predplatne"])
             print("target=" + name + " (predplatné)")
-            print("model=" + (c["model"] or name))
+            print("model=" + (c["cli_model"] or name))
             print("effort=" + c["effort"])
-            if shutil.which(exe):
-                print("ok=1")
+            if not shutil.which(exe):
+                print("ok=0"); print("setup=install"); print("error=%s treba raz nainštalovať: %s" % (name, how_install))
+            elif not logged_in(c["predplatne"]):
+                print("ok=0"); print("setup=login"); print("error=Na %s sa treba raz prihlásiť: %s" % (name, how_login))
             else:
-                print("ok=0"); print("error=chýba nástroj %s — inštalácia: %s" % (exe, install))
+                print("ok=1")
         elif cmd == "status":
             print("provider=" + c["provider"])
             print("effort=" + c["effort"])
@@ -551,6 +720,21 @@ def main(a):
             usage_report(c)
         elif cmd == "local":
             local_list()
+        elif cmd == "sluzby":
+            services()
+        elif cmd in ("instaluj", "prihlas", "odhlas", "_prihlas") and len(a) == 2 and a[1] in CLI:
+            {"instaluj": install, "prihlas": login, "odhlas": logout, "_prihlas": login_worker}[cmd](a[1])
+        elif cmd == "priebeh" and len(a) == 2 and a[1] in CLI:
+            try:
+                st = json.load(open(os.path.join(RUN, "latte-ai-%s.json" % a[1])))
+            except (OSError, ValueError):
+                st = {}
+            for k in ("state", "line", "url", "code"):
+                print("%s=%s" % (k, str(st.get(k, "")).replace("\n", " ")))
+            print("log=" + logfile(a[1]))
+        elif cmd == "terminal" and len(a) == 2 and a[1] in CLI:
+            open(logfile(a[1]), "a").close()            # pod kapotou: živý záznam inštalácie a prihlásenia
+            subprocess.Popen(["latte-terminal", "tail", "-n", "200", "-f", logfile(a[1])], start_new_session=True)
         elif cmd == "katalog":
             have = ram_gb()
             for need, mid, desc in KATALOG:

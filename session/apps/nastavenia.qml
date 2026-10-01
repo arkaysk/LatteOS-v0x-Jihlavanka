@@ -100,6 +100,8 @@ ShellRoot {
     property string crashLog: ""
     property var ai: ({})             // latte-ai status
     property var aiModels: []
+    property var aiServices: []           // latte-ai sluzby: predplatné (nainštalované, prihlásené)
+    property var aiProg: ({})             // latte-ai priebeh: stav inštalácie/prihlásenia podľa služby
     property string aiAnswer: ""
     property var clockZones: []
     property string about: ""
@@ -198,7 +200,7 @@ ShellRoot {
         const p = allPages.find(x => x.key === key);
         if (p && p.area) side.openArea = p.area;
         if (push !== false) { history = history.slice(0, historyIndex + 1).concat([key]); historyIndex = history.length - 1; }
-        if (key === "ai") { aiStatus.running = true; aiList.running = true; }
+        if (key === "ai") { aiStatus.running = true; aiList.running = true; aiSvc.running = true; }
         if (key === "o") aboutProc.running = true;
         dalsie.opened(key);
         if (key === "oznamenia") dndProc.running = true;
@@ -400,6 +402,30 @@ ShellRoot {
     Cmd {
         id: aiList; command: ["latte-ai", "models"]
         onDone: (out) => app.aiModels = out.split("\n").filter(l => l !== "").map(l => { const p = l.split("\t"); return { id: p[0], state: p[1] || "" }; })
+    }
+    Cmd {
+        id: aiSvc; command: ["latte-ai", "sluzby"]
+        onDone: (out) => app.aiServices = out.split("\n").filter(l => l !== "").map(l => { const p = l.split("\t"); return { id: p[0], name: p[1], inst: p[2] === "1", logged: p[3] === "1", hint: p[4] || "" }; })
+    }
+    Cmd {
+        id: aiProgCmd; property string sid: ""
+        onDone: (out) => { const s = {}; for (const l of out.split("\n")) { const i = l.indexOf("="); if (i > 0) s[l.slice(0, i)] = l.slice(i + 1); }
+                           const all = Object.assign({}, app.aiProg); all[sid] = s; app.aiProg = all; }
+    }
+    // inštalácia / prihlásenie bežia na pozadí: kým beží, Nastavenia obnovujú stav (terminál sa neotvára)
+    property string aiBusy: ""
+    Timer {
+        interval: 1200; repeat: true; running: app.aiBusy !== ""
+        onTriggered: {
+            aiSvc.running = true
+            aiProgCmd.sid = app.aiBusy; aiProgCmd.command = ["latte-ai", "priebeh", app.aiBusy]; aiProgCmd.running = true
+            const st = (app.aiProg[app.aiBusy] || {}).state
+            if (st === "done" || st === "installed" || st === "error") { app.aiBusy = ""; aiStatus.running = true }
+        }
+    }
+    function aiService(sid, action) {
+        app.aiProg = Object.assign({}, app.aiProg, { [sid]: { state: action === "instaluj" ? "installing" : "login", line: action === "instaluj" ? "Sťahujem…" : "Otváram prihlásenie…" } })
+        app.run(["latte-ai", action, sid]); app.aiBusy = sid
     }
     Cmd {
         id: aiAsk; command: ["latte-ai", "ask", "Predstav sa jednou krátkou vetou po slovensky."]
@@ -919,10 +945,11 @@ ShellRoot {
             Flow {
                 width: parent.width; spacing: 10
                 Repeater {
-                    model: [["lokalne", "Tento počítač", "Ollama, malý model; bez internetu", "device-desktop"],
+                    model: [["predplatne", "Môj účet", "Claude, ChatGPT, Gemini, Copilot — prihlásiš sa menom a heslom, odpovedá priamo v LatteOS", "user"],
+                            ["lokalne", "Tento počítač", "Ollama, malý model; bez internetu", "device-desktop"],
                             ["domaci", "Domáci server", "LM Studio, llama.cpp, Ollama v sieti alebo cez SSH", "server"],
                             ["web", "Prihlásenie v prehliadači", "Claude, ChatGPT, Perplexity, Copilot s tvojím účtom, bez kľúča", "world"],
-                            ["cloud", "Veľké AI (cloud)", "Claude, ChatGPT, Gemini, Mistral — s API kľúčom", "cloud"],
+                            ["cloud", "Veľké AI (cloud)", "Claude, ChatGPT, Gemini, DeepSeek, Mistral, OpenRouter — s API kľúčom", "cloud"],
                             ["ziadna", "Bez AI", "LatteOS AI nikde neponúka (Text Bar, Super+I)", "robot-off"]]
                     Card {
                         required property var modelData
@@ -930,6 +957,52 @@ ShellRoot {
                         onClicked: app.aiSet("provider", modelData[0])
                     }
                 }
+            }
+            // predplatné: všetko klikaním — Inštalovať, Prihlásiť sa (prehliadač, iba meno a heslo), Použiť
+            Column {
+                visible: app.ai.provider === "predplatne"; spacing: 10; width: parent.width
+                Heading { text: "TVOJ ÚČET" }
+                Repeater {
+                    model: app.aiServices
+                    Column {
+                        id: svc
+                        required property var modelData
+                        readonly property var prog: app.aiProg[modelData.id] || ({})
+                        readonly property bool busy: app.aiBusy === modelData.id
+                        width: parent.width; spacing: 6
+                        Card {
+                            width: parent.width; height: 64
+                            glyph: modelData.logged ? "check" : (modelData.inst ? "login" : "download")
+                            title: modelData.name + (app.ai.cli === modelData.id ? "  ·  používa sa" : "")
+                            sub: svc.busy || svc.prog.state === "error" ? (svc.prog.line || "…")
+                                 : modelData.logged ? "Prihlásený — klikni a LatteOS bude odpovedať cez " + modelData.name
+                                 : modelData.inst ? "Nainštalované · treba sa raz prihlásiť (" + modelData.hint + ")"
+                                 : "Klikni Inštalovať — stiahne sa oficiálny nástroj " + modelData.name
+                            selected: app.ai.cli === modelData.id
+                            onClicked: if (modelData.logged) app.aiSet("predplatne", modelData.id)
+                        }
+                        Row {
+                            spacing: 8
+                            Button { visible: !modelData.inst; label: svc.busy ? "Inštalujem…" : "Inštalovať"; glyph: "download"; primaryStyle: true
+                                     onClicked: if (!svc.busy) app.aiService(modelData.id, "instaluj") }
+                            Button { visible: modelData.inst && !modelData.logged; label: svc.busy ? "Čakám na prehliadač…" : "Prihlásiť sa"; glyph: "login"; primaryStyle: true
+                                     onClicked: if (!svc.busy) app.aiService(modelData.id, "prihlas") }
+                            Button { visible: modelData.logged && app.ai.cli !== modelData.id; label: "Použiť"; glyph: "check"; primaryStyle: true
+                                     onClicked: app.aiSet("predplatne", modelData.id) }
+                            Button { visible: !!svc.prog.url && svc.busy; label: "Otvoriť prihlásenie znova"; glyph: "world"
+                                     onClicked: app.run(["xdg-open", svc.prog.url]) }
+                            Button { visible: modelData.logged; label: "Odhlásiť"; glyph: "logout"
+                                     onClicked: { app.run(["latte-ai", "odhlas", modelData.id], modelData.name + ": odhlásené"); aiSvc.running = true; aiRefresh.restart() } }
+                            // pod kapotou: iba na požiadanie (pokročilý používateľ, správca)
+                            Button { visible: modelData.inst || svc.busy || svc.prog.state === "error"; label: "Zobraziť terminál"; glyph: "terminal-2"
+                                     onClicked: app.run(["latte-ai", "terminal", modelData.id]) }
+                        }
+                        Text { visible: !!svc.prog.code && svc.busy; text: "Kód pre prehliadač:  " + (svc.prog.code || "")
+                               color: theme.primary; font { family: theme.fontMono || theme.fontUi; pixelSize: 20; weight: Font.Bold } }
+                    }
+                }
+                Text { width: parent.width; wrapMode: Text.WordWrap; color: theme.fgDim; font { family: theme.fontUi; pixelSize: 12 }
+                       text: "Ako aplikácia v mobile alebo rozšírenie vo VS Code: LatteOS použije oficiálny nástroj služby a tvoje predplatné. Meno a heslo píšeš iba na stránke služby — LatteOS ich nevidí. Nástroj beží v prázdnom priečinku a nevidí tvoje súbory, iba prílohy, ktoré mu pošleš." }
             }
             // webová AI s prihlásením
             Column {
@@ -958,7 +1031,7 @@ ShellRoot {
                 visible: app.ai.provider === "cloud"; spacing: 10; width: parent.width
                 Heading { text: "SLUŽBA" }
                 Segments {
-                    options: [["anthropic", "Claude"], ["openai", "ChatGPT"], ["gemini", "Gemini"], ["mistral", "Mistral"]]
+                    options: [["anthropic", "Claude"], ["openai", "ChatGPT"], ["gemini", "Gemini"], ["deepseek", "DeepSeek"], ["mistral", "Mistral"], ["openrouter", "OpenRouter"]]
                     value: app.ai.target || ""
                     onPicked: (v) => app.aiSet("cloud", v)
                 }
@@ -968,9 +1041,9 @@ ShellRoot {
                     onCommitted: (t) => { if (t !== "") { app.run(["latte-ai", "key", app.ai.target || "anthropic", t], "Kľúč uložený"); text = ""; aiRefresh.restart(); } }
                 }
             }
-            Heading { text: "MODEL"; visible: app.ai.provider !== "cloud" }
+            Heading { text: "MODEL"; visible: app.ai.provider !== "cloud" && app.ai.provider !== "predplatne" && app.ai.provider !== "web" }
             Flow {
-                visible: app.ai.provider !== "cloud"
+                visible: app.ai.provider !== "cloud" && app.ai.provider !== "predplatne" && app.ai.provider !== "web"
                 width: parent.width; spacing: 8
                 Card { width: 220; height: 58; title: "Automaticky"; sub: "načítaný na serveri"; selected: false; onClicked: app.aiSet("model", "") }
                 Repeater {
