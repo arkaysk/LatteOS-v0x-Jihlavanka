@@ -468,11 +468,13 @@ texty preložiteľné (`translations`). Noctalia beží bez lišty a robí, čo 
 - [x] Oficiálne výstrahy ČHMÚ (CAP, ORP) a SHMÚ (MeteoAlarm) — `latte-pocasie`, žltá / oranžová / červená v TimeGoo (1. 10.);
   overiť skutočné feedy na latte-lab (názvy oblastí, awareness_level), ručný výber oblasti v Nastaveniach
 - [x] App Manager: hodnotenia a recenzie používateľov z ODRS (ako GNOME Software / Discover) na kartách a v detaile
-- [ ] App Manager: inštalácie na pozadí cez službu (prežijú zatvorenie okna, ako Bazaar), „Podobné aplikácie“,
-  ProtonDB pri hrách a .exe, upozornenie na koniec podpory (EOL runtime), vrátenie aktualizácie Flatpaku,
-  veku primerané (OARS) pre detské účty, napísať recenziu (ODRS submit)
-- [ ] Device Manager: `latte-boot compat` v Hardvéri, zdravie diskov (SMART cez udisks2), zdravie batérie, fwupd
-  aktualizácie firmvéru klikom, test kamery / mikrofónu / reproduktorov / gamepadu, správa pre podporu (export)
+- [x] App Manager (1. 10., podľa Bazaaru a návrhov): úlohy na pozadí (`latte-apps job`, systemd-run, rad, percentá,
+  **Zobraziť konzolu** iba na klik), Podobné aplikácie, Vrátiť predchádzajúcu verziu (+ mask), blok Bez bezpečnostných
+  opráv (EOL runtime), vek OARS, Tvoja recenzia (ODRS), ProtonDB v Herni (na klik)
+- [ ] App Manager: ProtonDB pri .exe („Bude to fungovať?“ podľa názvu hry), detské účty podľa OARS, zoznam úloh (história)
+- [x] Device Manager (1. 10.): kontrola HW (`latte-boot compat`) v skupine Počítač s radou, zdravie batérie (kapacita,
+  cykly), SMART aj bez správcu (udisks2), testy kamery / reproduktorov / mikrofónu / ovládača (pravý klik aj tlačidlá
+  v detaile), Správa pre podporu (súbor v Súboroch); firmvér ostáva v App Manageri › Aktualizácie (fwupd, bez duplikácie)
 - [ ] AI: streamovanie odpovede do bubliny po riadkoch; efektivita a model aj v Nastaveniach
 - [ ] Ollama na CPU s malým modelom (3–4B) priamo v PC. Router lokálne/online podľa otázky.
 - [x] Text Bar: režimy (Lokálne, Súbory, Web, AI, Linux príkaz) a potvrdenie deštruktívnych príkazov (prvé slovo každej časti príkazu + vzory; otestované).

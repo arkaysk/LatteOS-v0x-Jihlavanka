@@ -157,6 +157,13 @@ Item {
             const ifc = (it.name.match(/·\s*(\S+)$/) || [])[1] || "", on = (det["stav"] || "") === "connected";
             if (ifc) items.push({ glyph: on ? "world-off" : "world", label: on ? "Odpojiť" : "Pripojiť", action: () => run(["nmcli", "device", on ? "disconnect" : "connect", ifc]) });
         }
+        // testy zariadení (myšou, bez terminálu)
+        if (g.key === "kamery") items.push({ glyph: "camera", label: "Vyskúšať kameru", action: () => run(["latte-devices", "test", "kamera", dev], "Náhľad kamery") });
+        if (g.key === "zvuk") {
+            items.push({ glyph: "volume", label: "Skúšobný zvuk vľavo a vpravo", action: () => run(["latte-devices", "test", "reproduktory"], "Prehrávam skúšobný zvuk") });
+            items.push({ glyph: "microphone", label: "Nahrať 3 s a prehrať", action: () => run(["latte-devices", "test", "mikrofon"], "Hovor 3 sekundy…") });
+        }
+        if (g.key === "vstup" && /pad|joy|controller|ovl/i.test(it.name + " " + it.sub)) items.push({ glyph: "device-gamepad-2", label: "Vyskúšať ovládač", action: () => run(["latte-devices", "test", "ovladac"]) });
         if (it.state && it.state !== "ok" && it.state !== "off") items.push({ glyph: "download", label: "Opraviť ovládač", action: () => fix(it) });
         items.push({ glyph: "download", label: "Aktualizovať ovládač (App Manager)", action: () => openWindow(["latte-app", "aplikacie", "aktualizacie"]) });
         items.push({ separator: true });
@@ -226,9 +233,12 @@ Item {
             Btn { required property var modelData; label: modelData[1]; glyph: modelData[2]; on: dm.tab === modelData[0]
                   onClicked: { dm.tab = modelData[0]; if (modelData[0] === "zariadenia") dm.group = ""; } }
         }
-        Text { anchors.verticalCenter: parent.verticalCenter; leftPadding: 8; width: dm.width - 260; elide: Text.ElideRight
+        Text { anchors.verticalCenter: parent.verticalCenter; leftPadding: 8; width: dm.width - 440; elide: Text.ElideRight
                text: dm.tab === "zariadenia" ? (dm.faults.length ? "⚠ " + dm.summary : dm.summary) : (dm.nets.addresses.join(" · ") || "")
                color: dm.faults.length && dm.tab === "zariadenia" ? dm.t.error : dm.t.fgDim; font { family: dm.t.fontUi; pixelSize: 12 } }
+        // správa pre podporu: hardvér, kontrola HW, ovládače, chyby — súbor sa ukáže v Súboroch (pošleš správcovi / na fórum)
+        Btn { visible: dm.tab === "zariadenia"; label: "Správa pre podporu"; glyph: "clipboard"
+              onClicked: dm.run(["latte-devices", "sprava"], "Pripravujem správu pre podporu…") }
     }
 
     Flickable {
@@ -316,6 +326,13 @@ Item {
                     Text { visible: (dm.group === "kamery" || dm.group === "zvuk") && dm.uses.length > 0; width: parent.width; wrapMode: Text.WordWrap
                            color: dm.t.error; font { family: dm.t.fontUi; pixelSize: 12; weight: Font.Bold }
                            text: dm.uses.filter(u => (dm.group === "kamery") === (u[0] === "camera")).map(u => "Práve používa: " + u[1]).join("\n") }
+                    Row {                                // testy priamo pri zariadení (myš prvá; aj v ponuke na pravý klik)
+                        visible: dm.group === "kamery" || dm.group === "zvuk"; spacing: 6
+                        Btn { visible: dm.group === "kamery"; label: "Vyskúšať kameru"; glyph: "camera"
+                              onClicked: dm.run(["latte-devices", "test", "kamera", dd.it && dd.it.details ? (dd.it.details["zariadenie"] || "") : ""], "Náhľad kamery") }
+                        Btn { visible: dm.group === "zvuk"; label: "Skúšobný zvuk"; glyph: "volume"; onClicked: dm.run(["latte-devices", "test", "reproduktory"], "Vľavo, potom vpravo") }
+                        Btn { visible: dm.group === "zvuk"; label: "Test mikrofónu"; glyph: "microphone"; onClicked: dm.run(["latte-devices", "test", "mikrofon"], "Hovor 3 sekundy…") }
+                    }
                     Flow {                               // živé hodnoty z Monitora
                         visible: dm.live.length > 0; width: parent.width; spacing: 6
                         Repeater { model: dm.live.slice(0, 8)
