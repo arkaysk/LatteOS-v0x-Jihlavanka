@@ -987,6 +987,11 @@ ShellRoot {
                                      onClicked: if (!svc.busy) app.aiService(modelData.id, "instaluj") }
                             Button { visible: modelData.inst && !modelData.logged; label: svc.busy ? "Čakám na prehliadač…" : "Prihlásiť sa"; glyph: "login"; primaryStyle: true
                                      onClicked: if (!svc.busy) app.aiService(modelData.id, "prihlas") }
+                            // namiesto predplatného kľúč API tej istej služby (Copilot API nemá)
+                            Button { visible: !modelData.logged && modelData.id !== "copilot" && !svc.busy; label: "Mám kľúč API"; glyph: "key"
+                                     onClicked: { app.run(["sh", "-c", "latte-ai set cloud \"$1\" && latte-ai set provider cloud", "sh",
+                                                           ({ claude: "anthropic", codex: "openai", gemini: "gemini" })[modelData.id]], "AI: kľúč API pre " + modelData.name)
+                                                  aiRefresh.restart() } }
                             Button { visible: modelData.logged && app.ai.cli !== modelData.id; label: "Použiť"; glyph: "check"; primaryStyle: true
                                      onClicked: app.aiSet("predplatne", modelData.id) }
                             Button { visible: !!svc.prog.url && svc.busy; label: "Otvoriť prihlásenie znova"; glyph: "world"
