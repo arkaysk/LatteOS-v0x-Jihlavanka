@@ -195,6 +195,32 @@ iba pri nečinnosti: dážď alebo vietor podľa skutočného počasia (zvlnenie
 (naháňačka so zámernou zrážkou a odrazom, behanie, skákanie ponad ostatné); okamžité prebudenie; nie pri celej
 obrazovke, zámku, slabej batérii a v stupni Softvér. Robiť naživo na latte-lab.
 
+## Spoločný engine pre Goo (posúdenie)
+
+**Otázka: ako je teraz napísané celé Goo prostredie, nebolo by jednoduchšie mať engine so všeobecnými pravidlami?**
+Áno, dojem je správny. Stav: scéna `kvapka.plm` ~2 870 riadkov, logika `kvapka.luau` ~2 730, k tomu 10 generátorov
+(~1 800 riadkov Pythonu), ktoré do scény vkladajú bloky (`// >>> DaNoGoo (danogoo.py)` atď.). Každá kvapka má
+vlastnú predponu (`tg.` 41×, `pg.` 28×, `dn.` 93×, `qg.` 50×) a **vlastnú kópiu** polohy, ťahania, prichytenia
+k okraju, blízkosti kurzora, zväčšenia a zón. Pomocné funkcie `put`/`once` sú v generátoroch trikrát skopírované,
+v logike sú zvlášť `dn_drop` a `free_drop`. Už zjednotené je iba telo (`goo.py`: jedno goo pre všetky kvapky)
+a kvapky widgetov (model `wdg` + tabuľka `WIDGETS`, druhy w/tray/custom) — to je hotový vzor enginu.
+Príčina: jazyk scény (pleamar) nemá v tele cykly, takže každá kvapka sa musí rozpísať zvlášť.
+
+**Odporúčanie — engine v dvoch vrstvách (bez zásahu do vzhľadu):**
+1. **Generátor `entita.py`**: deklaratívna tabuľka kvapiek (predpona, kotva, polomer, správanie: ťahateľná, zväčšiteľná,
+   skrývateľná, základ shellu, bobule/upozornenia, nečinnosť) → z jedných pravidiel vytvorí fyziku, polohu,
+   prichytenie, blízkosť/svetlo kurzora, zoom, odlesk aj zóny. `volne.py`, `powergoo.py`, `danogoo.py`, `queengoo.py`
+   dodajú už len svoj obsah (texty, ikony, bobule). Nová kvapka (ChatGoo) = jeden riadok v tabuľke + obsah.
+2. **Register entít v logike** (ako `WIDGETS`): jedna funkcia pre ťahanie/uloženie/zoom/skrytie/vrátenie na miesto
+   a **spoločné správanie** (živé bytosti: gravitácia a svetlo kurzora, dážď/vietor, naháňačka, zrážky) — napíše sa
+   raz a platí pre všetky kvapky; pravidlá kvapky sú len jej parametre (hmotnosť, pružnosť, povaha).
+- Odhad: menej kódu o 30–40 % v scéne a o ~15 % v logike; ChatGoo a živé bytosti sa robia rovno na engine, nie 4× zvlášť.
+- Hlbšia možnosť: engine priamo v pleamar (Rust) — nová konštrukcia `entity`/cyklus v tele. Najčistejšie, ale zásah do
+  cudzieho jazyka Marey (licencia, aktualizácie) a väčšia práca; až keď vrstva 1–2 ukáže, čo presne chýba.
+- Postup: **najprv refaktor na engine (výsledok musí vyzerať pixel po pixeli rovnako), až potom ChatGoo a živé bytosti.**
+  Robiť naživo na latte-lab (scénu treba vidieť), po kvapkách: Hodiny → vypínač → DaNoGoo → QueenGoo, s porovnaním
+  snímok pred a po. Z cloudu sa scéna nemení bez súhlasu.
+
 ## Nové a zmenené súbory
 
 - `session/bin/`: `gnome-software`, `latte-hladaj`, `latte-riadok`, `latte-pocasie` (nové); `latte-ai`, `latte-apps`,
