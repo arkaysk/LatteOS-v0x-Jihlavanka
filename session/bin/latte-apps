@@ -26,6 +26,17 @@
                                      s aktuálnou voľbou a kandidátmi podľa MimeType v .desktop (Nastavenia › Predvolené aplikácie)
   latte-apps default KAT DESKTOP_ID  nastaví aplikáciu pre všetky typy kategórie (xdg-mime default → ~/.config/mimeapps.list)
 
+  latte-apps store similar ID        JSON: podobné aplikácie (rovnaká kategória a kľúčové slová, podľa inštalácií)
+  latte-apps eol                     JSON: nainštalované aplikácie na runtime bez podpory (koniec bezpečnostných opráv)
+  latte-apps rollback ID             vráti Flatpak na predchádzajúcu verziu a podrží ju (flatpak mask) — po zlej aktualizácii
+  latte-apps unmask ID               znova povolí aktualizácie aplikácie
+  latte-apps recenzia ID HVIEZDY NADPIS TEXT [VERZIA]   pošle recenziu do ODRS (zobrazí sa v GNOME Software, Discover…)
+  latte-apps job run NÁZOV -- PRÍKAZ…   úloha na pozadí (systemd-run --user): prežije zatvorenie okna, úlohy idú v rade
+                                     za sebou; čaká na koniec a vráti jej kód (okno App Managera to len sleduje)
+  latte-apps jobs                    JSON: posledné úlohy — stav (queued/running/done/error), percentá, posledný riadok
+  latte-apps job konzola [ID]        „Zobraziť konzolu“: terminál so živým záznamom úlohy (iba na klik používateľa)
+  latte-apps job zrus ID             zrušiť úlohu
+
 RPM (systém) inštaluje a odinštaluje grafický Inštalátor (latte-app instalator) cez sudo dnf.
 """
 import glob, json, os, re, shutil, subprocess, sys
@@ -128,6 +139,154 @@ def human(n):
             return ("%.0f %s" if u in ("B", "kB") or n >= 10 else "%.1f %s") % (n, u)
         n /= 1024
     return "%.1f TB" % n
+
+
+def eol():
+    """aplikácie, ktorých runtime už nedostáva opravy (flatpak remote-info hlási End-of-life / EOL)"""
+    rc, text, _ = sh(["flatpak", "list", "--app", "--columns=application,runtime,installation"], timeout=20)
+    rts, out = {}, []
+    for line in text.splitlines():
+        p = line.split("\t")
+        if len(p) >= 2:
+            rts.setdefault(p[1], []).append((p[0], p[2] if len(p) > 2 else "user"))
+    for rt, apps in rts.items():
+        _, info, _ = sh(["flatpak", "remote-info", "--" + ("system" if apps[0][1] == "system" else "user"), "flathub", "runtime/" + rt], timeout=20)
+        m = re.search(r"(?im)^\s*(?:end-of-life|eol)(?:-rebase)?\s*:\s*(.+)$", info)
+        if m:
+            out += [{"id": a, "runtime": rt, "reason": m.group(1).strip()} for a, _ in apps]
+    return out
+
+
+def rollback(aid):
+    """predchádzajúca verzia z histórie Flathubu, potom maska (automatická aktualizácia ju nepreskočí späť)"""
+    _, info, _ = sh(["flatpak", "info", "--user", aid], timeout=20)
+    cur = (re.search(r"(?im)^\s*commit:\s*(\w+)", info) or [None, ""])[1]
+    _, log, _ = sh(["flatpak", "remote-info", "--user", "--log", "flathub", aid], timeout=60)
+    commits = re.findall(r"(?im)^\s*commit:\s*(\w+)", log)
+    if cur in commits and commits.index(cur) + 1 < len(commits):
+        prev = commits[commits.index(cur) + 1]
+    elif len(commits) > 1:
+        prev = commits[1]
+    else:
+        print("Staršia verzia na Flathube nie je", file=sys.stderr)
+        return 1
+    rc = subprocess.call(["flatpak", "update", "--user", "-y", "--noninteractive", "--commit=" + prev, aid])
+    if rc == 0:
+        subprocess.call(["flatpak", "mask", "--user", aid])
+    return rc
+
+
+def review(aid, stars, summary, text, version=""):
+    import hashlib, urllib.request
+    try:
+        mid = open("/etc/machine-id").read().strip()
+    except OSError:
+        mid = "latteos"
+    body = {"app_id": aid, "locale": (os.environ.get("LANG") or "sk_SK").split(".")[0], "distro": "Fedora",
+            "version": version or "unknown", "user_hash": hashlib.sha1(("latteos" + mid).encode()).hexdigest(),
+            "user_display": os.environ.get("USER", ""), "summary": summary[:70], "description": text[:3000],
+            "rating": max(1, min(5, int(stars))) * 20, "user_skey": hashlib.sha1(("latteos" + mid + aid).encode()).hexdigest()}
+    req = urllib.request.Request(ODRS + "/submit", data=json.dumps(body).encode(),
+                                 headers={"Content-Type": "application/json", "User-Agent": "LatteOS-AppManager/0.1"})
+    r = json.load(urllib.request.urlopen(req, timeout=15))
+    print(r.get("msg") or "odoslané")
+    return 0 if r.get("success", True) else 1
+
+
+# ── úlohy na pozadí (ako Bazaar: inštalácie nezávislé od okna) ───────────────────
+JOBDIR = os.path.join(os.environ.get("XDG_RUNTIME_DIR", "/tmp"), "latte-apps")
+ANSI = re.compile(r"\x1b\[[0-9;?]*[ -/]*[@-~]|\x1b\][^\x07]*\x07")
+
+
+def job_state(jid, **kv):
+    p = os.path.join(JOBDIR, jid + ".json")
+    try:
+        st = json.load(open(p))
+    except (OSError, ValueError):
+        st = {"id": jid}
+    st.update(kv)
+    tmp = p + ".tmp"
+    json.dump(st, open(tmp, "w"), ensure_ascii=False)
+    os.replace(tmp, p)
+    return st
+
+
+def job_run(title, argv):
+    """založí úlohu, spustí ju mimo okna a počká na jej koniec (kód úlohy)"""
+    import time
+    os.makedirs(JOBDIR, exist_ok=True)
+    jid = time.strftime("%H%M%S") + "-%d" % os.getpid()
+    job_state(jid, title=title, argv=argv, state="queued", percent=-1, line="Čaká v rade…", started=int(time.time()),
+              log=os.path.join(JOBDIR, jid + ".log"))
+    me = os.path.abspath(sys.argv[0])
+    if shutil.which("systemd-run"):
+        rc = subprocess.call(["systemd-run", "--user", "--collect", "--quiet", "--unit", "latte-apps-" + jid,
+                              sys.executable, me, "_job", jid], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    else:
+        rc = 1
+    if rc != 0:                                       # bez systemd používateľa: odpojený proces
+        subprocess.Popen([sys.executable, me, "_job", jid], start_new_session=True,
+                         stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    while True:
+        time.sleep(0.5)
+        st = job_state(jid)
+        if st.get("state") in ("done", "error"):
+            print(st.get("line", ""))
+            return int(st.get("code", 1))
+
+
+def job_worker(jid):
+    """vykoná úlohu v pseudoterminále (flatpak vtedy hlási priebeh), všetko do záznamu; rad cez zámok"""
+    import fcntl, pty, select, time
+    st = job_state(jid)
+    lock = open(os.path.join(JOBDIR, "rad.lock"), "w")
+    fcntl.flock(lock, fcntl.LOCK_EX)                  # jedna úloha naraz (flatpak/dnf nemajú radi súbeh)
+    job_state(jid, state="running", line="Začínam…", pid=os.getpid())
+    pid, fd = pty.fork()
+    if pid == 0:
+        os.environ["TERM"] = "xterm-256color"
+        os.execvp(st["argv"][0], st["argv"])
+    buf = ""
+    with open(st["log"], "a") as log:
+        log.write("$ %s\n" % " ".join(st["argv"])); log.flush()
+        last = 0
+        while True:
+            r, _, _ = select.select([fd], [], [], 1.0)
+            if r:
+                try:
+                    data = os.read(fd, 4096).decode(errors="replace")
+                except OSError:
+                    break
+                if not data:
+                    break
+                log.write(data); log.flush()
+                buf = (buf + ANSI.sub("", data))[-2000:]
+                if time.time() - last > 0.4:          # nezapisovať stav pri každom bajte
+                    last = time.time()
+                    pcts = re.findall(r"(\d{1,3})\s?%", buf[-300:])
+                    lines = [l.strip() for l in re.split(r"[\r\n]+", buf) if l.strip()]
+                    job_state(jid, percent=min(100, int(pcts[-1])) if pcts else -1, line=(lines[-1] if lines else "")[:120])
+            elif os.waitpid(pid, os.WNOHANG) != (0, 0):
+                break
+    try:
+        _, status = os.waitpid(pid, 0)
+        code = os.waitstatus_to_exitcode(status)
+    except ChildProcessError:
+        code = 0
+    lines = [l.strip() for l in re.split(r"[\r\n]+", buf) if l.strip()]
+    job_state(jid, state="done" if code == 0 else "error", code=code, percent=100 if code == 0 else -1,
+              line=("Hotovo: " + st["title"]) if code == 0 else ("Nepodarilo sa (%d): %s" % (code, lines[-1] if lines else "")),
+              ended=int(time.time()))
+
+
+def jobs():
+    out = []
+    for f in sorted(glob.glob(os.path.join(JOBDIR, "*.json")), key=os.path.getmtime, reverse=True)[:20]:
+        try:
+            out.append(json.load(open(f)))
+        except (OSError, ValueError):
+            pass
+    return out
 
 
 def installed():
@@ -791,8 +950,36 @@ def card(h, inst):
             "free": h.get("is_free_license", True), "installed": aid in inst, **rating_of(aid)}
 
 
+def oars_age(cr):
+    """vekové hodnotenie OARS → odporúčaný vek (približne ako Flathub / GNOME Software)"""
+    if not isinstance(cr, dict):
+        return None
+    lvl = {"none": 0, "mild": 1, "moderate": 2, "intense": 3}
+    worst, why = 0, []
+    for k, v in cr.items():
+        if k == "type":
+            continue
+        n = lvl.get(str(v), 0)
+        if n > worst:
+            worst, why = n, [k]
+        elif n == worst and n > 0:
+            why.append(k)
+    return {"age": [0, 7, 12, 18][worst], "reasons": why[:4]}
+
+
 def store(a):
     inst = flatpak_installed()
+    if a[0] == "similar" and len(a) > 1:
+        det = fh("/appstream/" + a[1], ttl=24 * 3600) or {}
+        words = (det.get("keywords") or [])[:3] + [(det.get("categories") or [""])[0]]
+        seen, out = {a[1]}, []
+        for q in [w for w in words if w]:
+            for h in (fh("/search", 24 * 3600, {"query": q}) or {}).get("hits", [])[:20]:
+                c = card(h, inst)
+                if c["id"] not in seen:
+                    seen.add(c["id"]); out.append(c)
+        out.sort(key=lambda c: -(c.get("installs") or 0))
+        return {"apps": out[:8]}
     if a[0] == "home":
         out = {}
         for key, path in (("trendy", "/collection/trending"), ("oblubene", "/collection/popular"),
@@ -837,7 +1024,7 @@ def store(a):
                 "installsTotal": stats.get("installs_total") or 0, "verified": bool(ver.get("verified")),
                 "verifiedBy": ver.get("website") or ver.get("login_name") or "", "releases": rel,
                 "homepage": urls.get("homepage", ""), "help": urls.get("help", ""), "categories": det.get("categories") or [],
-                "installed": aid in inst, **rating_of(aid), "reviews": odrs_reviews(aid)}
+                "installed": aid in inst, **rating_of(aid), "reviews": odrs_reviews(aid), "oars": oars_age(det.get("content_rating"))}
     return None
 
 
@@ -966,6 +1153,34 @@ def main(a):
         print(json.dumps(drivers(), ensure_ascii=False))
     elif cmd == "check" and len(a) == 2:
         print(json.dumps(check(a[1]), ensure_ascii=False))
+    elif cmd == "eol":
+        print(json.dumps(eol(), ensure_ascii=False))
+    elif cmd == "rollback" and len(a) == 2:
+        return rollback(a[1])
+    elif cmd == "unmask" and len(a) == 2:
+        return subprocess.call(["flatpak", "mask", "--user", "--remove", a[1]])
+    elif cmd == "recenzia" and len(a) >= 5:
+        return review(a[1], a[2], a[3], a[4], a[5] if len(a) > 5 else "")
+    elif cmd == "job" and len(a) >= 4 and a[1] == "run" and "--" in a:
+        i = a.index("--")
+        return job_run(" ".join(a[2:i]), a[i + 1:])
+    elif cmd == "_job" and len(a) == 2:
+        job_worker(a[1])
+    elif cmd == "jobs":
+        print(json.dumps(jobs(), ensure_ascii=False))
+    elif cmd == "job" and len(a) >= 2 and a[1] == "konzola":
+        js = [j for j in jobs() if len(a) < 3 or j.get("id") == a[2]]
+        if js:
+            subprocess.Popen(["latte-terminal", "tail", "-n", "+1", "-f", js[0]["log"]], start_new_session=True)
+    elif cmd == "job" and len(a) == 3 and a[1] == "zrus":
+        subprocess.call(["systemctl", "--user", "stop", "latte-apps-" + a[2]], stderr=subprocess.DEVNULL)
+        st = job_state(a[2])
+        if st.get("pid"):
+            try:
+                os.kill(int(st["pid"]), 15)
+            except OSError:
+                pass
+        job_state(a[2], state="error", code=130, line="Zrušené")
     elif cmd in ("install", "remove") and len(a) == 3 and a[1] == "flatpak":
         argv = ["flatpak", "install", "--user", "-y", "--noninteractive", "flathub", a[2]] if cmd == "install" else ["flatpak", "uninstall", "--user", "-y", "--noninteractive", a[2]]
         return subprocess.call(argv)
