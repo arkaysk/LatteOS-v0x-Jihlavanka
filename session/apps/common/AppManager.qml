@@ -98,6 +98,12 @@ Item {
     property bool searchPending: false
     Cmd { id: storeProc; command: ["latte-apps", "store", "home"]; onDone: (out) => { try { app.store = JSON.parse(out); } catch (e) { app.store = { error: true }; } } }
     Cmd { id: catProc; onDone: (out) => { try { const r = JSON.parse(out); app.categoryApps = app.categoryPage > 1 ? app.categoryApps.concat(r.apps) : r.apps; } catch (e) {} } }
+    property var similar: []               // podobné aplikácie v detaile
+    property var eolApps: []               // aplikácie na runtime bez podpory
+    property int revStars: 0               // písanie recenzie
+    Cmd { id: similarProc; onDone: (out) => { try { app.similar = JSON.parse(out).apps || []; } catch (e) { app.similar = []; } } }
+    Cmd { id: eolProc; command: ["latte-apps", "eol"]; onDone: (out) => { try { app.eolApps = JSON.parse(out); } catch (e) { app.eolApps = []; } } }
+    Cmd { id: reviewProc; onDone: (out, code) => { app.status = code === 0 ? "Recenzia odoslaná — ďakujeme" : "Recenziu sa nepodarilo odoslať"; app.revStars = 0 } }
     Cmd { id: appProc; onDone: (out) => { try { const r = JSON.parse(out); if (r && r.id === app.appPageId) app.appPage = r; } catch (e) {} } }
     Cmd { id: wellProc; command: ["latte-sysmon", "pohoda", "30"]; onDone: (out) => { try { app.well = JSON.parse(out); } catch (e) {} } }
     Cmd { id: latteProc; command: ["latte-apps", "latteos"]; onDone: (out) => { try { app.latte = JSON.parse(out); } catch (e) {} } }
@@ -132,12 +138,25 @@ Item {
         planOpen = false;
         if (planInstall) {
             busyId = id; status = "Inštalujem " + planName + " z Flathubu podľa Setup Planu…";
-            installProc.command = ["sh", "-c", "latte-apps install flatpak \"$1\" && latte-apps plan-apply \"$1\" \"$2\"", "sh", id, denied]; installProc.running = true;
+            installProc.command = app.job("Inštalácia " + planName, ["sh", "-c", "latte-apps install flatpak \"$1\" && latte-apps plan-apply \"$1\" \"$2\"", "sh", id, denied]); installProc.running = true;
         } else { planApply.command = ["latte-apps", "plan-apply", id, denied]; planApply.running = true; }
     }
     // okamžité NET potrebuje systémovú službu latte-netd (nftables podľa cgroup)
     property bool netd: true
     Process { running: true; command: ["systemctl", "is-active", "--quiet", "latte-netd"]; onExited: (c) => app.netd = c === 0 }
+    // inštalácie, odinštalovania a aktualizácie bežia ako úlohy na pozadí (latte-apps job): prežijú zatvorenie okna,
+    // idú v rade; okno ich iba sleduje — priebeh v stavovom riadku, konzola iba na klik
+    function job(title, argv) { return ["latte-apps", "job", "run", title, "--"].concat(argv); }
+    property var jobNow: null              // bežiaca úloha (latte-apps jobs)
+    Cmd { id: jobsProc; command: ["latte-apps", "jobs"]
+          onDone: (out) => { let js = []; try { js = JSON.parse(out); } catch (e) {}
+                             const run_ = js.find(j => j.state === "running" || j.state === "queued");
+                             app.jobNow = run_ || null;
+                             if (run_ && app.busyId === "") { app.busyId = run_.title; }      // úloha spred otvorenia okna
+                             if (run_) app.status = run_.title + (run_.percent >= 0 ? " · " + run_.percent + " %" : "") + (run_.line ? " · " + run_.line : "")
+                             else if (app.busyId !== "" && !installProc.running) {             // dobehla úloha, ktorú okno nespustilo
+                                 app.status = (js[0] || {}).line || ""; app.busyId = ""; listProc.running = true } } }
+    Timer { interval: 1000; repeat: true; running: app.busyId !== "" || app.jobNow !== null; triggeredOnStart: true; onTriggered: jobsProc.running = true }
     Process { id: runner }
     function run(cmd, msg) { runner.command = cmd; runner.running = true; if (msg) app.status = msg; }
 
@@ -157,7 +176,7 @@ Item {
     function uninstall(a) {
         if (a.source === "flatpak") {
             busyId = a.id; status = "Odinštalujem " + a.name + "…";
-            installProc.command = ["latte-apps", "remove", "flatpak", a.id]; installProc.running = true;
+            installProc.command = app.job("Odinštalovanie " + a.id, ["latte-apps", "remove", "flatpak", a.id]); installProc.running = true;
         } else if (a.package) run(["latte-app", "instalator", "--nazov=Odinštalovať_" + a.name.replace(/ /g, "_"), "remove", a.package], "Odinštalovanie: " + a.name);
     }
     function launch(a) {
@@ -182,8 +201,9 @@ Item {
     function forward() { if (historyIndex < history.length - 1) { historyIndex++; restore(history[historyIndex]); } }
     function openApp(id, rec) {
         if (rec !== false) push({ section: "objavovat", app: id });
-        appPageId = id; appPage = null; section = "objavovat";
+        appPageId = id; appPage = null; section = "objavovat"; similar = []; revStars = 0;
         appProc.command = ["latte-apps", "store", "app", id]; appProc.running = true;
+        similarProc.command = ["latte-apps", "store", "similar", id]; similarProc.running = true;
         content.contentY = 0;
     }
     function openCategory(key, name, page, rec) {
@@ -200,12 +220,13 @@ Item {
         if (rec !== false) push({ section: k });
         section = k;
         if (k === "aktualizacie" && updatesList.length === 0) { updatesLoading = true; updProc.running = true; }
-        if (k === "aktualizacie") { latteProc.running = true; drvProc.running = true; }
+        if (k === "aktualizacie") { latteProc.running = true; drvProc.running = true; eolProc.running = true; }
         if (k === "objavovat" && !store && !storeProc.running) storeProc.running = true;
         if (k === "check") { dlProc.running = true; if (checkPath !== "") check(checkPath); }
         if (k === "nainstalovane" || k === "opravnenia") { listProc.running = true; if (!wellProc.running) wellProc.running = true; }
     }
     Component.onCompleted: {
+        jobsProc.running = true                      // beží úloha spred otvorenia okna?
         go(section);
         // latte-app aplikacie hladat <názov alebo id> (napr. zo Súborov › Otvoriť v › Nainštalovať): rovno hľadá
         // latte-app aplikacie detail <id> (rýchle spustenie › pravý klik › Detail): stránka aplikácie v obchode
@@ -322,8 +343,14 @@ Item {
             anchors { left: side.right; right: parent.right; bottom: parent.bottom }
             height: 30; color: "transparent"
             Rectangle { width: parent.width; height: 1; color: theme.line }
-            Text { x: 14; anchors.verticalCenter: parent.verticalCenter; text: app.status || (app.busyId ? "Pracujem…" : "Flatpak: pre tvoj účet bez hesla · RPM a systém: Inštalátor s heslom správcu")
+            Text { x: 14; anchors { verticalCenter: parent.verticalCenter; right: konzola.visible ? konzola.left : parent.right; rightMargin: 10 } elide: Text.ElideRight
+                   text: app.status || (app.busyId ? "Pracujem…" : "Flatpak: pre tvoj účet bez hesla · RPM a systém: Inštalátor s heslom správcu")
                    color: theme.fgDim; font { family: theme.fontUi; pixelSize: 12 } }
+            // „Zobraziť konzolu“: živý záznam inštalácie — iba na klik (pokročilý používateľ, správca)
+            Text { id: konzola; visible: app.jobNow !== null; anchors { right: parent.right; rightMargin: 14; verticalCenter: parent.verticalCenter }
+                   text: "Zobraziť konzolu"; color: km.containsMouse ? theme.fg : theme.primary; font { family: theme.fontUi; pixelSize: 12; underline: km.containsMouse }
+                   MouseArea { id: km; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
+                               onClicked: app.run(["latte-apps", "job", "konzola", app.jobNow ? app.jobNow.id : ""]) } }
         }
         PlanSheet { anchors.fill: parent; visible: app.planOpen }
         // bočné tlačidlá myši Späť / Dopredu (ako Microsoft Store)
@@ -516,7 +543,7 @@ Item {
                 items.push({ glyph: "external-link", label: "Otvoriť na Flathube", action: () => Qt.openUrlExternally("https://flathub.org/apps/" + i.id) });
                 items.push({ glyph: "clipboard", label: "Kopírovať ID aplikácie", action: () => app.run(["wl-copy", "--", i.id], "Skopírované: " + i.id) });
                 if (i.installed) { items.push({ separator: true });
-                    items.push({ glyph: "trash", label: "Odinštalovať", danger: true, action: () => { app.busyId = i.id; app.status = "Odinštalujem " + i.name + "…"; installProc.command = ["latte-apps", "remove", "flatpak", i.id]; installProc.running = true; } }); }
+                    items.push({ glyph: "trash", label: "Odinštalovať", danger: true, action: () => { app.busyId = i.id; app.status = "Odinštalujem " + i.name + "…"; installProc.command = app.job("Odinštalovanie " + i.id, ["latte-apps", "remove", "flatpak", i.id]); installProc.running = true; } }); }
                 ctx.open(q.x, q.y, items, i.name);
             }
         }
@@ -569,8 +596,11 @@ Item {
                                    onClicked: app.install("flatpak", parent.d.id, parent.d.name) }
                             Pill { visible: !!parent.d && parent.d.installed; primaryStyle: true; label: "Otvoriť"; onClicked: app.runFlatpak(parent.d.id) }
                             Pill { visible: !!parent.d && parent.d.installed; label: app.busyId !== "" ? "Pracujem…" : "Odinštalovať"; on: app.busyId === ""
-                                   onClicked: { app.busyId = parent.d.id; app.status = "Odinštalujem " + parent.d.name + "…"; installProc.command = ["latte-apps", "remove", "flatpak", parent.d.id]; installProc.running = true; } }
+                                   onClicked: { app.busyId = parent.d.id; app.status = "Odinštalujem " + parent.d.name + "…"; installProc.command = app.job("Odinštalovanie " + parent.d.id, ["latte-apps", "remove", "flatpak", parent.d.id]); installProc.running = true; } }
                             Pill { visible: !!parent.d && parent.d.homepage !== ""; label: "Web ↗"; onClicked: Qt.openUrlExternally(parent.d.homepage) }
+                            // po zlej aktualizácii: predchádzajúca verzia z Flathubu a podržanie (flatpak mask)
+                            Pill { visible: !!parent.d && parent.d.installed; label: "Vrátiť predchádzajúcu verziu"; on: app.busyId === ""
+                                   onClicked: { app.busyId = parent.d.id; installProc.command = app.job("Vrátenie verzie " + parent.d.name, ["latte-apps", "rollback", parent.d.id]); installProc.running = true; } }
                         }
                     }
                 }
@@ -582,6 +612,7 @@ Item {
                         model: parent.d ? [["Na stiahnutie", app.human(parent.d.downloadSize) || "—"], ["Po inštalácii", app.human(parent.d.installedSize) || "—"],
                                            ["Inštalácie", app.fmtCount(parent.d.installsTotal)], ["Verzia", (parent.d.releases[0] || {}).version || "—"],
                                            ["Licencia", parent.d.free ? "slobodná" : "vlastnícka"], ["Zdroj", "Flathub · izolácia"],
+                                           ["Vek", parent.d.oars ? (parent.d.oars.age > 0 ? "od " + parent.d.oars.age + " rokov" : "pre všetkých") : "—"],
                                            ["Hodnotenie", (parent.d.ratingCount || 0) > 0 ? "★ " + String(parent.d.rating).replace(".", ",") + "  (" + app.fmtCount(parent.d.ratingCount) + ")" : "zatiaľ nie"]] : []
                         Rectangle {
                             required property var modelData
@@ -611,6 +642,29 @@ Item {
                         }
                     }
                 }
+                // napísať recenziu (iba nainštalovaná aplikácia): hviezdičky klikom, nadpis a text, Odoslať → ODRS
+                Column {
+                    id: napis
+                    readonly property var d: parent.d
+                    visible: !!d && d.installed; width: parent.width; spacing: 8
+                    Text { text: "TVOJA RECENZIA"; color: theme.fgDim; font { family: theme.fontUi; pixelSize: 11; weight: Font.Bold } }
+                    Row {
+                        spacing: 4
+                        Repeater {
+                            model: 5
+                            Text { required property int index; text: index < app.revStars ? "★" : "☆"; color: theme.primary; font.pixelSize: 26
+                                   MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: app.revStars = index + 1 } }
+                        }
+                    }
+                    Rectangle { visible: app.revStars > 0; width: parent.width; height: 36; radius: 10; color: theme.field
+                        LTextInput { id: revSum; latteTheme: theme; anchors { fill: parent; margins: 9 } color: theme.fg; font { family: theme.fontUi; pixelSize: 13 } } }
+                    Rectangle { visible: app.revStars > 0; width: parent.width; height: 90; radius: 10; color: theme.field
+                        LTextInput { id: revText; latteTheme: theme; anchors { fill: parent; margins: 9 } wrapMode: TextInput.WordWrap; color: theme.fg; font { family: theme.fontUi; pixelSize: 13 } } }
+                    Pill { visible: app.revStars > 0; primaryStyle: true; label: "Odoslať recenziu"; on: revSum.text.trim() !== "" && !reviewProc.running
+                           onClicked: { reviewProc.command = ["latte-apps", "recenzia", napis.d.id, String(app.revStars), revSum.text.trim(), revText.text.trim(),
+                                                              ((napis.d.releases || [])[0] || {}).version || ""]; reviewProc.running = true } }
+                }
+                Shelf { title: "Podobné aplikácie"; items: app.similar }
                 // snímky obrazovky
                 ListView {
                     id: rolovanie3
@@ -780,10 +834,16 @@ Item {
                 Line { visible: upd.rpms.length > 12; text: "… a ďalších " + (upd.rpms.length - 12) }
             }
             Block {
+                visible: app.eolApps.length > 0
+                title: "Bez bezpečnostných opráv"; glyph: "alert-triangle"
+                sub: "Tieto aplikácie bežia na runtime, ktorý už nedostáva opravy. Aktualizácia aplikácie to zvyčajne vyrieši; ak nie, vývojár ju už neudržiava — zváž náhradu (Podobné aplikácie v jej detaile)."
+                Repeater { model: app.eolApps; Line { required property var modelData; text: modelData.id + "  ·  " + modelData.runtime + "  ·  " + modelData.reason } }
+            }
+            Block {
                 title: "Aplikácie (Flatpak)"; glyph: "apps"
                 sub: upd.flats.length ? upd.flats.length + " aplikácií má novú verziu" : "všetky aktuálne"
                 actionLabel: upd.flats.length ? "Aktualizovať aplikácie" : ""; actionOn: app.busyId === ""
-                onAction: { app.busyId = "aktualizácia aplikácií"; app.status = "Aktualizujem aplikácie (Flatpak)…"; installProc.command = ["flatpak", "update", "--user", "-y", "--noninteractive"]; installProc.running = true; }
+                onAction: { app.busyId = "aktualizácia aplikácií"; app.status = "Aktualizujem aplikácie (Flatpak)…"; installProc.command = app.job("Aktualizácia aplikácií", ["flatpak", "update", "--user", "-y", "--noninteractive"]); installProc.running = true; }
                 Repeater { model: upd.flats; Line { required property var modelData; text: modelData.id + "  " + modelData.version } }
             }
             Block {

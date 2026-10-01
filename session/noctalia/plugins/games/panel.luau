@@ -18,6 +18,13 @@ local function load()
   end, 20000)
 end
 
+-- ProtonDB (hry zo Steamu): ako hra beží na Linuxe podľa hlásení hráčov; sťahuje sa iba na klik (latte-games proton)
+local TIER = { platinum = "Platinum", gold = "Gold", silver = "Silver", bronze = "Bronze", borked = "Nefunguje", native = "Natívna" }
+local function proton_refresh()
+  noctalia.notify("Herňa", "Zisťujem hodnotenia ProtonDB…")
+  noctalia.runAsync({ "latte-games", "proton" }, function(_r) load() end, 120000)
+end
+
 local function play(g)
   panel.close()
   noctalia.runAsync({ "latte-games", "play", g.id })       -- bez callbacku = na pozadí, prežije zatvorenie panela
@@ -33,7 +40,8 @@ local function tile(g)
   return ui.column({ width = 150, gap = 4, onClick = function() play(g) end, tooltip = "Hrať · " .. g.source }, {
     cover,
     ui.label({ text = g.name, fontSize = 12, fontWeight = "bold", maxWidth = 150, maxLines = 1 }),
-    ui.label({ text = g.source .. (human(g.size) ~= "" and (" · " .. human(g.size)) or ""), fontSize = 11, color = "on_surface_variant" }),
+    ui.label({ text = g.source .. (human(g.size) ~= "" and (" · " .. human(g.size)) or "")
+                      .. ((g.proton and g.proton ~= "") and (" · ProtonDB " .. (TIER[g.proton] or g.proton)) or ""), fontSize = 11, color = "on_surface_variant" }),
   })
 end
 
@@ -69,6 +77,7 @@ function render()
       ui.glyph({ name = "device-gamepad-2", size = 22, color = "primary" }),
       ui.label({ text = "Herňa", fontSize = 18, fontWeight = "bold" }),
       ui.label({ text = #games .. (#games == 1 and " hra" or ((#games >= 2 and #games <= 4) and " hry" or " hier")) .. " · klik = hrať v hernom režime", fontSize = 12, color = "on_surface_variant", flexGrow = 1 }),
+      ui.button({ text = "ProtonDB", glyph = "brand-steam", variant = "ghost", tooltip = "Hodnotenia hier zo Steamu na Linuxe (protondb.com)", onClick = function() proton_refresh() end }),
       ui.button({ glyph = "refresh", variant = "ghost", tooltip = "Obnoviť", onClick = function() load() end }),
       ui.button({ glyph = "close", variant = "ghost", onClick = function() panel.close() end }),
     }),
