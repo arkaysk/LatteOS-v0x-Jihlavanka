@@ -46,6 +46,8 @@ samostatný tekutý prvok.
    (kvapky sa dajú presúvať — musí to platiť kdekoľvek). **Kvapka sa k oknu pripája ROHOM** (1. 10.): vystúpi
    vyššie a okno z nej vyrastie tak, aby bolo **celé vidieť**; keďže sa každá kvapka dá presunúť kamkoľvek
    (**všetky kvapky sú drag & drop**), cieľom pripojenia môže byť **ktorýkoľvek zo 4 rohov okna**.
+   Platí pre **vyskakovacie** okná a ponuky (spúšťač, časové menu, PowerGoo, kalendár). **Riadne okná** (App
+   Manager, Správca zariadení…) sa nepripájajú — tie rastú z bubliny (pravidlo 14), kvapka ostane na mieste.
 10. **Goo má vlastný vzhľad ponúk** (1. 10.): ponuky a okná z kvapiek sa **nepreberajú vizuálne** z klasického
    LatteOS (panely Noctalie). Preberá sa **funkcia** (latte-ai, pohoda, Text Bar, kalendár…), vzhľad je Goo —
    karta z kvapky, tekuté kapsuly, goo bubliny.
@@ -67,6 +69,11 @@ samostatný tekutý prvok.
    **vypľuje do priestoru ako bublinku**, tá sa zväčší a zmení na klasické okno (posúvateľné, zväčšiteľné,
    minimalizovateľné). **Zatvorenie okna = prasknutie bubliny** (inšpirácia: „Burn My Windows“). **Minimalizácia =
    okno sa zmenší do malej goo kvapky, plynulo padne k ťažisku (lišta dole), žblnkne ako voda a objaví sa v Goobare.**
+   Otvorenie hotové 1. 10. (`bublina.py`): kvapka ostane na mieste, vytlačí kvapôčku (zlieva sa s ňou), tá sa
+   odtrhne, preletí po oblúku na miesto okna a nafúkne sa na jeho obdĺžnik (z kávy do materiálu okien); logika
+   spustí program o 650 ms neskôr a `latte-kvapky okno TITUL X Y W H` povie Hyprlandu (`latte/windows.lua`), aby
+   okno postavil presne na bublinu a **bez vlastnej animácie** (`set_prop no_anim`); keď naskočí, bublina zmizne.
+   Prasknutie pri zatvorení a pád pri minimalizácii ešte nie sú.
 15. **Farby guliek upozornení** (1. 10.): **červená = hardvér** (ako „zariadenie potrebuje pozornosť“ v Správcovi
    zariadení), **zelená = sieť**, **modrá = softvér** (aktualizácie); po otvorení okna je vidieť, čo hlási.
 16. **Všetky kvapky sú drag & drop** (1. 10.) — aj Hodiny (TimeGoo) a vypínač (PowerGoo), nielen samostatné kvapky.
@@ -199,10 +206,10 @@ Karta z ucha TimeGoo, zhora nadol:
   je k4ditanov). Vnútri ikona aplikácií. Guľky (pravidlo 15): **červená** = zariadenia, ktoré potrebujú pozornosť
   (`latte-devices list` → `faults`), **zelená** = výpadok siete, **modrá** = čakajúce aktualizácie (`latte-apps updates`).
   App Manager sa pri aktualizáciách otvorí rovno na nich, Správca zariadení pri výpadku siete na Sieťach.
-- **Ľavý klik = App Manager**, **pravý = Správca zariadení**: kvapka vystúpi ako ucho a okno sa otvorí **rohom pri
-  nej** (`latte-kvapky miesto` → Hyprland `latte/windows.lua` ho pri otvorení prisunie); kým je okno otvorené,
-  ostane vystúpená; znova klik = okno do popredia. Ťahaním k inému okraju. Generátor `session/kvapky/queengoo.py`.
-- Naživo overené 1. 10.: App Manager sa otvoril rohom pri kráľovnej.
+- **Ľavý klik = App Manager**, **pravý = Správca zariadení** — riadne okná, preto (1. 10., používateľ) kráľovná
+  **nevyskočí a nestane sa rohom okna**: ostane na mieste a **vypľuje bublinu**, ktorá sa nafúkne na okno vedľa nej
+  (pravidlo 14, `bublina.py`); znova klik = okno do popredia. Ťahaním k inému okraju. Generátor `queengoo.py`.
+- Naživo overené 1. 10.: bublina z kráľovnej sa nafúkla a App Manager naskočil presne na ňu (1220 × 780).
 
 ### 4.5 Rohová lišta Noctalie — vpravo dole
 - Iba **pravá časť** lišty Noctalie, **natvrdo prilepená** do rohu, **šírka podľa počtu widgetov**; vpravo sa

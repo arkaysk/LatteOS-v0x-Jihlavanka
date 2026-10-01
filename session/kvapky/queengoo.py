@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # QueenGoo v kvapka.plm (1. 10. 2026, LATTEOS-GOO.md 4.4b): kvapka s korunkou (tvar ostáva kvapka — tvar koruny je
-# k4ditanov). Ľavý klik = premení sa na App Manager (inštalácia programov), pravý = Správca zariadení. Okno sa
-# otvorí ROHOM pri jej uchu (latte-kvapky miesto → Hyprland), kým je otvorené, kráľovná ostane vystúpená ako ucho.
+# k4ditanov). Ľavý klik = App Manager (inštalácia programov), pravý = Správca zariadení. Sú to riadne okná, nie
+# vyskakovacie: kráľovná ostane na mieste a VYPĽUJE bublinu, ktorá sa nafúkne na okno (bublina.py, pravidlo 14).
 # Ťahaním k inému okraju (ako DaNoGoo). Guľky: červená = hardvér (latte-devices), zelená = sieť (výpadok), modrá =
 # softvér (latte-apps updates); klik otvorí okno rovno na tom, čo hlási (Aktualizácie, Siete).
 # Vypíše dva bloky: kreslenie (za DaNoGoo) a zóny + pravidlá (na konci scény).
@@ -24,7 +24,7 @@ draw = f'''    // >>> QueenGoo (queengoo.py)
     fact qg_moved = false
     fact qgd.x = 0
     fact qgd.y = 0
-    fact qg_up = false                       // jej okno je otvorené: ostane vystúpená ako ucho v rohu okna
+    fact qg_up = false                       // jej okno je otvorené (logika)
     fact qg_upd = 0                          // softvér: čakajúce aktualizácie (modrá guľka)
     fact qg_hw = 0                           // hardvér: zariadenia, ktoré potrebujú pozornosť (červená guľka)
     fact qg_net = 0                          // sieť: výpadok (zelená guľka)
@@ -37,11 +37,9 @@ draw = f'''    // >>> QueenGoo (queengoo.py)
     let qg.px = 0 - qg.ny
     let qg.py = qg.nx
     let qg.near = 1 - smooth(0, 190, length(mx - qg.ax, my - qg.ay))
-    prop qg.lift = 0 ~dnspring
-    follow qg.lift = if(qg_up, 1, 0)
     prop qg.h = 0 ~lively
     prop qg.wob = 0 ~dnwobble
-    let qg.out = 32 + 8 * qg.near + 2.5 * noise(time * 0.3 + 21.7) + 70 * qg.lift
+    let qg.out = 32 + 8 * qg.near + 2.5 * noise(time * 0.3 + 21.7)
     let qg.tx = qg.ax + qg.nx * qg.out + clamp(mx - qg.ax, -20, 20) * 0.28 * qg.near * abs(qg.px)
     let qg.ty = qg.ay + qg.ny * qg.out + clamp(my - qg.ay, -20, 20) * 0.28 * qg.near * abs(qg.py)
     prop qg.x = 0 ~lively
@@ -51,9 +49,8 @@ draw = f'''    // >>> QueenGoo (queengoo.py)
     follow qg.y = if(qg_drag and qg_moved, my, qg.ty)
     let qg.r = (30 + 3 * qg.h) * so
     let qg.jit = 0.05 * sin(time * 9 + 5) * qg.h + qg.wob * 0.01
-    // základňa na okraji: pri zdvihnutí (okno otvorené) sa stiahne — neostane ostrov; krk sa natiahne a zmizne
-    let qg.neck = 16 * (1 - smooth(0.25, 0.8, qg.lift)) * if(qg.lift > 0.02, 1, 0) * so
-    let qg.sheet = if(qg_drag and qg_moved, 0, 1) * so * (1 - smooth(0, 0.5, qg.lift))
+    // základňa na okraji (pri ťahaní sa stiahne)
+    let qg.sheet = if(qg_drag and qg_moved, 0, 1) * so
     // korunka na vonkajšej strane kvapky, natočená podľa okraja
     let qg.rot = pick(qg.side, 0, 180, 90, -90)
     // telo kráľovnej je v tele lišty (goo.py) — zlieva sa s ostatnými kvapkami a má to isté svetlo
@@ -124,7 +121,7 @@ if '"latte-apps"' not in s:
     s = s.replace('"paplay" }', '"paplay", "latte-apps" }', 1)
 if '"latte-devices"' not in s:
     s = s.replace('"latte-apps" }', '"latte-apps", "latte-devices" }', 1)
-s = goo.vloz(s, "QueenGoo", goo.kvapka("solo", "qg.x", "qg.y", "qg.r", "qg.ax", "qg.ay", "qg.nx", "qg.ny", "qg.sheet", jit="qg.jit", neck="qg.neck"),
+s = goo.vloz(s, "QueenGoo", goo.kvapka("solo", "qg.x", "qg.y", "qg.r", "qg.ax", "qg.ay", "qg.nx", "qg.ny", "qg.sheet", jit="qg.jit"),
              goo.odlesk("solo", "qg.x", "qg.y", "qg.r"))
 open(PLM, "w").write(s)
 print("kvapka.plm: QueenGoo")
