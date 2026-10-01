@@ -444,6 +444,14 @@ texty preložiteľné (`translations`). Noctalia beží bez lišty a robí, čo 
   diakritiky, preklepy, poradie podľa otvárania (aj recently-used.xbel), filtre v texte (typ:, .pdf, >10MB, dnes,
   2024, v:Dokumenty, "presné meno", obsah:), hľadanie v obsahu (ripgrep, ukáže riadok), čipy Typ · Čas · V obsahu,
   pravý klik: Ukázať v Súboroch, priečinok, kopírovať cestu, opýtať sa AI na súbor, hľadať v priečinku
+- [x] **Riadok spúšťača: doplnky ostatných režimov** (1. 10., `latte-riadok`; zásada **myš prvá** — všetko ako klikateľný
+  riadok alebo ponuka na pravý klik, klávesy doplnok): Aplikácie — časté aplikácie podľa dennej doby a dňa (Nedávne),
+  akcie aplikácie z .desktop na pravý klik (aj v obľúbených), Nastavenia podľa slov („wifi“ → Sieť), kalkulačka a prevody
+  (15% z 230, 2^10, 10 km v mil, 20 c v f, 5 eur v czk — kurzy ECB) s klikom na skopírovanie; Web — adresa sa otvorí
+  priamo, skratky w: yt: m: gm: img: tr: gh: fh: (aj ako riadky na klik), návrhy vyhľadávača (klik hľadá, pravý klik
+  vloží do poľa); Linux príkaz — dopĺňanie príkazov a ciest ako riadky (klik doplní), „Ukázať výstup tu“ pre príkazy,
+  ktoré iba čítajú (ponuka s Kopírovať / Otvoriť v termináli), „Čo tento príkaz urobí?“ cez AI pri nebezpečných
+- [ ] Riadok: Tab na dopĺňanie aj klávesou (potrebuje udalosť v scéne), ikony výsledkov podľa témy overiť na latte-lab
 - [ ] Hľadanie: obsah PDF/DOCX (pdftotext/pandoc do vlastného indexu), náhľad obrázka vo výsledku, hľadanie v Súboroch
 - [ ] AI: Nastavenia › Softvér › AI doplniť o predplatné (inštalácia a prihlásenie nástroja jedným klikom), DeepSeek,
   OpenRouter, efektivitu; streamovanie odpovede do bubliny po riadkoch
