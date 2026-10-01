@@ -21,7 +21,8 @@ scene Goo {
         reserve: -1
         rate: 60
     }
-    permissions { run: "latte-goo", "date"; services: "clock" }
+    // povolenia: Goobar (okná, spúšťače aplikácií), DaNoGoo (upozornenia), PowerGoo (batéria, Noctalia), QueenGoo
+    permissions { run: "latte-goo", "date", "hyprctl", "latte-app", "noctalia", "latte-spustac", "latte-devices", "latte-apps", "latte-kvapky"; services: "clock", "window", "window.*", "apps", "apps.*", "notifications", "notifications.*", "battery" }
 
     // ── káva (pravidlo 6): pomer vody a mlieka z Baristu (~/.config/latteos/kava, číta logika) ──────────────────
     spring jemna = 60, 14
@@ -51,6 +52,10 @@ scene Goo {
     //   druh    0 ikona + text, 1 ukazovateľ (prstenec podľa `hodnota` 0…1), 2–3 REZERVA
     //   ikona, text  ikona (znak písma Tabler) a text v kvapke (názov a popis sú iba v bubline); druh 2: ikona = veľký
     //           text (čas TimeGoo), text = malý pod ním (dátum)
+    //   obr, img  ikona aplikácie ako obrázok (meno ikony alebo cesta; okná Goobaru), tlm stlmenie 0…1 (minimalizované)
+    //   gn, gf, gt  guľky pri kvapke: počet 0…5, farby po guľkách ako číslice v osmičkovej sústave (0 červená, 1 zelená,
+    //           2 modrá, 3 žltá, 4 červeno-kávová, 5 svetlo);
+    //           pri viac ako 4 nesie posledná text (počet) — upozornenia DaNoGoo, batéria PowerGoo, stav QueenGoo
     //   ox      posun domova v px (kvapka pri inej o presný odstup)
     //   jadro, jf, jp  farebné jadro (0…1): od stredu prechod z farby do kávy; predvolene druh upozornenia —
     //           jf 0 hardvér (červená), 1 sieť (zelená), 2 softvér (modrá), 3 výstraha (jantárová), 4 svetlo (žiara), 5 iné;
@@ -64,6 +69,7 @@ scene Goo {
         druh: number; hodnota: number; ikona: text; text: text
         nl: bool; nlh: number; nlo: number; nr: bool; nrh: number; nro: number; nry: number; nrr: number = 26
         jadro: number; jf: number; jp: bool
+        obr: text; img: bool; tlm: number; gn: number; gf: number; gt: text
     }
     spring plava = 150, 13                    // vodorovne: mäkko, bez odskoku
     spring pada = 190, 9                      // zvisle: s prestrelením a odrazom („odkvapne“, §3)
@@ -93,6 +99,21 @@ scene Goo {
     fact nk = -1                              // ťahaná kvapka (krk lepkavej v tele goo), −1 žiadna
     fact idle = 0                             // stupeň nečinnosti (§3.1): 0 aktívny, 1 po 1 min, 2 po 3 min, 3 po 6 min
 
+    // ── ponuka Goo (z plochy Kvapky, pravidlá 9–11): karta pripojená rohom k miestu kliku, vyrastie z neho; položky
+    // dáva logika (ikona, skratka, zaškrtnutie, červená, podponuka ›, čiara nad položkou, y riadku). Miesto kliku si
+    // scéna zapamätá pri každom stlačení kvapky (ctx.x, ctx.y), logika ponuku iba otvorí
+    model ctx max 14 { label: text; on: number; off: bool; glyph: text; hint: text; danger: bool; sub: bool; back: bool; sep: bool; y: number }
+    fact ctx_open = false
+    fact ctx.x = 0
+    fact ctx.y = 0
+    fact ctx_up = false
+    fact ctx_w = 248
+    fact ctx_h = 48
+    fact ctx_hot = -1
+    event ctx_pick ->
+    event ctx_close ->
+    prop ctx.p = 0 ~rastie
+    follow ctx.p = if(ctx_open, 1, 0)
     // bublina s názvom a popisom (prechod myšou; text plní logika)
     text tip = ""
     fact tipk = -1
@@ -115,7 +136,8 @@ scene Goo {
     }
     // šírka obrazovky pre logiku (vlnky sú v px; logika inak súradnice nepozná)
     fact sw = 0
-    every 1s while sw != W { sw = W }
+    fact sh = 0
+    every 1s while sw != W or sh != H { sw = W; sh = H }
     // vietor: náhodný smer, nezávislý od ničoho; občas zavanie (aj pri práci) a kvapky sa vlnia ako obilie
     let gust = smooth(0.58, 0.85, 0.5 + 0.5 * noise(time * 0.045 + 11))
     let wdir = clamp(noise(time * 0.013 + 3) * 4, -1, 1)
@@ -251,8 +273,8 @@ scene Goo {
         on leave hit.$k { hov.$k: 0; emit goo_leave(k) }
         on hover hit.$k for 450ms { tipk = k; tipx = x.$k; tipy = y.$k - rr.$k - 14; tip.p: 1; emit goo_hover(k) }
         on away hit.$k for 200ms while tipk == k { tip.p: 0 }
-        on press hit.$k { lp.$k = 1; impulse sq.$k 5 }
-        on press right hit.$k { lp.$k = 0; emit goo_right(k) }
+        on press hit.$k { lp.$k = 1; impulse sq.$k 5; ctx.x = cursor.x; ctx.y = cursor.y; ctx_up = cursor.y > H / 2 }
+        on press right hit.$k { lp.$k = 0; ctx.x = cursor.x; ctx.y = cursor.y; ctx_up = cursor.y > H / 2; emit goo_right(k) }
         on press middle hit.$k { lp.$k = 0; emit goo_middle(k) }
         on hold hit.$k for 650ms while drg.$k == 0 and lp.$k == 1 { lp.$k = 0; emit goo_hold(k) }
         on scroll hit.$k { emit goo_scroll(k * 2 + if(wheel > 0, 1, 0)) }
@@ -958,14 +980,103 @@ scene Goo {
         ellipse { at: x.$k, y.$k; radius: rr.$k + 3; stroke: 2.5 * e4.$k; color: #f7c873; opacity: clamp(e4.$k, 0, 1) }
         // druh 1: ukazovateľ (prstenec podľa hodnoty)
         arc { at: x.$k, y.$k; radius: rr.$k * 0.78; span: clamp(goo.$k.hodnota, 0, 1) * 360deg; rotate: clamp(goo.$k.hodnota, 0, 1) * 180deg; width: max(2, rr.$k * 0.12); color: #f7c873; opacity: if(goo.$k.druh == 1 and goo.$k.on, 0.9, 0) }
-        text goo.$k.ikona { at: x.$k, y.$k - if(goo.$k.druh == 1, 0, rr.$k * 0.08); anchor: center; size: 20 * rs.$k; color: ink; opacity: if(goo.$k.on and goo.$k.druh != 2, 0.92, 0); family: "noctalia-tabler-icons" }
+        text goo.$k.ikona { at: x.$k, y.$k - if(goo.$k.druh == 1, 0, rr.$k * 0.08); anchor: center; size: 20 * rs.$k; color: ink; opacity: if(goo.$k.on and goo.$k.druh != 2 and not goo.$k.img, 0.92, 0) * (1 - 0.55 * goo.$k.tlm); family: "noctalia-tabler-icons" }
+        // ikona aplikácie (okno v Goobari): obrázok podľa mena ikony zo spúšťača; minimalizované okno stlmené
+        image obr.$k = from goo.$k.obr, 30, 30
+        image obr.$k { at: x.$k - rr.$k * 0.52, y.$k - rr.$k * 0.52; size: rr.$k * 1.04, rr.$k * 1.04; opacity: if(goo.$k.on and goo.$k.img, 1 - 0.55 * goo.$k.tlm, 0); show: goo.$k.img }
+        // guľky (pravidlo 15): nad kvapkou na strane od okraja, do 4; pri viac ako 4 posledná väčšia s počtom
+        repeat j in 0..4 {
+            // farba guľky j: číslica j v osmičkovej sústave poľa gf (každá guľka vlastnú farbu, napr. QueenGoo)
+            let gc.$j = floor(goo.$k.gf / pow(8, j)) - 8 * floor(goo.$k.gf / pow(8, j + 1))
+            ellipse { at: x.$k + rr.$k * 0.78 - j * 9, y.$k - rr.$k * 0.82 - j * 1.5; radius: if(j == 3 and goo.$k.gn > 4, 7.5, 4.2); color: if(gc.$j == 0, #e5484d, if(gc.$j == 1, #30a46c, if(gc.$j == 2, #3e63dd, if(gc.$j == 3, #f5c518, if(gc.$j == 4, #8a2a22, #ffe8c2))))); opacity: if(goo.$k.on and j < goo.$k.gn, 0.95, 0); show: goo.$k.gn > j }
+        }
+        text goo.$k.gt { at: x.$k + rr.$k * 0.78 - 27, y.$k - rr.$k * 0.82 - 4.5; anchor: center; size: 8; weight: 700; color: #fff6ea; show: goo.$k.gn > 4; family: "Inter" }
         text goo.$k.text { at: x.$k, y.$k + rr.$k * 0.42; anchor: center; size: 9 * rs.$k; weight: 700; color: ink; opacity: if(goo.$k.on and goo.$k.druh != 2, 0.9, 0) }
         // druh 2 (hodiny, ako TimeGoo): veľký čas a pod ním dátum, písmo Inter
         text goo.$k.ikona { at: x.$k, y.$k - rr.$k * 0.12; anchor: center; size: 14 * rs.$k; weight: 700; color: ink; opacity: if(goo.$k.on and goo.$k.druh == 2, 1, 0); family: "Inter" }
         text goo.$k.text { at: x.$k, y.$k + rr.$k * 0.36; anchor: center; size: 8 * rs.$k; color: ink; opacity: if(goo.$k.on and goo.$k.druh == 2, 0.75, 0); family: "Inter" }
     }
+    // ponuka Goo: karta z kávy do farby okien, ucho v rohu pri mieste kliku
+    let ctx.sx = if(ctx.x + ctx_w + 12 <= W, 1, -1)
+    let ctx.sy = if(ctx_up, if(ctx.y - ctx_h - 12 >= 0, -1, 1), if(ctx.y + ctx_h + 12 <= H, 1, -1))
+    let cx0 = clamp(if(ctx.sx > 0, ctx.x, ctx.x - ctx_w), 12, W - 12 - ctx_w)
+    let cy0 = clamp(if(ctx.sy > 0, ctx.y, ctx.y - ctx_h), 12, H - 12 - ctx_h)
+    let ctx.ax = if(ctx.sx > 0, cx0, cx0 + ctx_w)
+    let ctx.ay = if(ctx.sy > 0, cy0, cy0 + ctx_h)
+    let ctx.q = clamp(ctx.p, 0, 1.08)
+    let card = #2c2019
+    zone box ctx_away { at: W / 2, H / 2; size: W, H; active: ctx_open }
+    on press ctx_away { ctx_open = false; emit ctx_close }
+    on press right ctx_away { ctx_open = false; emit ctx_close }
+    body {
+        gradient: ctx.ax, ctx.ay to ctx.ax + ctx.sx * ctx_w, ctx.ay + ctx.sy * ctx_h, mix(card, coffee, 0.6), card, card
+        rim: 16%
+        shadow: 0, 4, 6, 30% * clamp(ctx.p, 0, 1)
+        opacity: if(ctx.p > 0.02, 1, 0)
+        box { at: ctx.ax + ctx.sx * ctx_w * ctx.q / 2, ctx.ay + ctx.sy * ctx_h * ctx.q / 2; size: max(ctx_w * ctx.q, 14) * if(ctx.p > 0.02, 1, 0), max(ctx_h * ctx.q, 14); corner: 14 }
+        ellipse { at: ctx.ax, ctx.ay; radius: (9 * clamp(ctx.p * 3, 0, 1) + 1) * if(ctx.p > 0.02, 1, 0); blend: 10 }
+    }
+    group {
+        opacity: clamp(ctx.p * 2 - 1, 0, 1)
+        show: ctx_open and ctx.p > 0.5
+        repeat m in 0..14 {
+            box { at: cx0 + ctx_w / 2, cy0 + ctx.$m.y - 6; size: ctx_w - 32, 1; color: #5a463a; show: m < ctx.count and ctx.$m.sep }
+            box { at: cx0 + ctx_w / 2, cy0 + ctx.$m.y + 18; size: ctx_w - 12, 32; corner: 9; color: if(ctx.$m.danger, #e5484d, #4a372b); opacity: if(ctx_hot == m and not ctx.$m.off, if(ctx.$m.danger, 18%, 100%), 0); show: m < ctx.count }
+            text ctx.$m.glyph { at: cx0 + 24, ctx.$m.y + cy0 + 18; anchor: center; size: 16; color: if(ctx.$m.danger, #e5484d, cream); opacity: if(ctx.$m.off, 40%, 90%); show: m < ctx.count and ctx.$m.on == 0; family: "noctalia-tabler-icons" }
+            text "" { at: cx0 + 24, cy0 + ctx.$m.y + 18; anchor: center; size: 15; color: #f7c873; show: m < ctx.count and ctx.$m.on == 1; family: "noctalia-tabler-icons" }
+            text ctx.$m.label { at: cx0 + 46, cy0 + ctx.$m.y + 18; anchor: left center; width: ctx_w - if(ctx.$m.sub, 82, 70); lines: 1; size: 13; weight: 500; color: if(ctx.$m.danger, #e5484d, cream); opacity: if(ctx.$m.off, 45%, 100%); show: m < ctx.count; family: "Inter" }
+            text ctx.$m.hint { at: cx0 + ctx_w - 16, cy0 + ctx.$m.y + 18; anchor: right center; size: 11.5; color: #b8a491; show: m < ctx.count and not ctx.$m.sub; family: "Inter" }
+            text "" { at: cx0 + ctx_w - 20, cy0 + ctx.$m.y + 18; anchor: center; size: 14; color: #b8a491; show: m < ctx.count and ctx.$m.sub and not ctx.$m.back; family: "noctalia-tabler-icons" }
+            zone box ctx_row.$m { at: cx0 + ctx_w / 2, cy0 + ctx.$m.y + 18; size: ctx_w - 12, 34; cursor: pointer; active: ctx_open and m < ctx.count and not ctx.$m.off }
+            on enter ctx_row.$m { ctx_hot = m }
+            on leave ctx_row.$m { ctx_hot = -1 }
+            on press ctx_row.$m { emit ctx_pick(m) }
+        }
+    }
     // bublina s názvom a popisom (§3: obsah kvapky sa hoverom nemení — názov je iba tu)
     box { from: tipx - 110, tipy - 15; size: 220, 30; corner: 15; color: coffee; opacity: tip.p * 0.94 }
     text tip { at: tipx, tipy; anchor: center; size: 12; color: ink; opacity: tip.p; width: 210; align: center }
     text hud { at: 16, 14; size: 12; color: #f3ebdd; opacity: if(ladenie, 0.8, 0); family: "monospace"; show: ladenie }
+    // preklady (pravidlo 4: texty v UI po anglicky + preklad; tr() v logike)
+    translations sk {
+        "Back" = "Späť"
+        "More windows" = "Ďalšie okná"
+        "Restore" = "Obnoviť"
+        "Minimize" = "Minimalizovať"
+        "Maximize" = "Maximalizovať"
+        "Layout" = "Rozloženie"
+        "Left half" = "Ľavá polovica"
+        "Right half" = "Pravá polovica"
+        "Top left" = "Vľavo hore"
+        "Top right" = "Vpravo hore"
+        "Bottom left" = "Vľavo dole"
+        "Bottom right" = "Vpravo dole"
+        "Center" = "Na stred"
+        "Always on top (all desktops)" = "Vždy navrchu (všetky plochy)"
+        "Move to desktop" = "Presunúť na plochu"
+        "Desktop" = "Plocha"
+        "New desktop" = "Nová plocha"
+        "Close" = "Zavrieť"
+        "Floating windows" = "Plávajúce okná"
+        "Tiles" = "Dlaždice"
+        "Tape" = "Páska"
+        "Settings" = "Nastavenia"
+        "Monitor" = "Monitor"
+        "Lock" = "Zamknúť"
+        "Log out" = "Odhlásiť"
+        "Sleep" = "Uspať"
+        "Restart" = "Reštartovať"
+        "Shut down" = "Vypnúť"
+        "charging" = "nabíja sa"
+        "Date and time settings" = "Nastavenia dátumu a času"
+        "Well-being" = "Digitálna pohoda"
+        "left: launcher · wheel: size" = "ľavý: spúšťač · koliesko: veľkosť"
+        "devices need attention" = "zariadení potrebuje pozornosť"
+        "offline" = "bez siete"
+        "updates" = "aktualizácií"
+        "left: App Manager · right: Device Manager" = "ľavý: App Manager · pravý: Správca zariadení"
+        "No notifications" = "Žiadne upozornenia"
+        "Clear all" = "Vymazať všetko"
+        "notifications" = "upozornení"
+    }
 }

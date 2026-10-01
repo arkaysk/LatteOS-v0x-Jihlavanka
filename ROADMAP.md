@@ -342,6 +342,10 @@ texty preložiteľné (`translations`). Noctalia beží bez lišty a robí, čo 
 - [x] Ostrý okraj ôk (plocha Kvapky aj engine): záplata pleamar-ostre-okraje — príčina nebol tieň, ale vyhladenie hrany
   v zliatí; scéna Kvapky sa nemenila
 - [ ] Hyprland: minimalizované okno → `pleamar --say goo "emit goo_kamen X"` (vlnka, pravidlo 14)
+- [x] Engine: Goobar (okná ako ikry, pomenovanie okien, ponuka okna, režim), PowerGoo, QueenGoo, DaNoGoo, TimeGoo,
+  spoločná ponuka Goo a guľky (1. 10. večer)
+- [ ] Engine: spúšťač Goo, časové menu, kalendár a počasie, hrozno upozornení, let bubliny k oknu, okná nad lištou,
+  ostrovy (samostatné telá skupín kvôli výkonu)
 - [ ] Engine Goo na latte-lab: stredné tlačidlo, ikony (písmo Tabler), výkon RX 640; potom presun TimeGoo, PowerGoo,
   DaNoGoo, QueenGoo, ChatGoo na engine; formulár vlastných kvapiek v Nastaveniach › Kvapky nad `latte-goo`
 - [x] pleamar v0.2.6, pleamar-wm v0.2.5, marea-plm (1. 10.): pripnuté, záplaty sedia, inštalácia preloží novší
