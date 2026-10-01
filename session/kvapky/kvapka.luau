@@ -2666,7 +2666,7 @@ local kv_raw, kv_file, kv_reset_t = nil, nil, nil
 local function apply_kv(first)
     for _, k in ipairs({ "zt", "zp", "zd" }) do
         local hid = false
-        for _, h in ipairs(KV.skryte or {}) do if h == k then hid = true end end
+        for _, h in ipairs(KV.skryte or {}) do if h == k and k ~= "zp" then hid = true end end   -- PowerGoo: základ shellu
         local z = tonumber((KV.zoom or {})[k]) or tonumber((cfg.zoom or {})[k]) or 1
         fact[k] = hid and 0 or math.max(1, math.min(2.2, z))
     end

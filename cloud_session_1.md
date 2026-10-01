@@ -188,6 +188,13 @@ z príkazu) ako kvapky widgetov. Súbor `~/.config/latteos/kvapky.json`, logika 
 veľkosť 0 (scéna: pružina `zt.s/zp.s/zd.s`, `zt.p = max(0, …)`). Goobar a QueenGoo skrytie po úprave ich scény.
 Overiť na latte-lab: či po skrytí neostanú drobné zvyšky (guľky počtu DaNoGoo, minibubliny batérie, odlesk Hodín).
 
+**Upresnenie používateľa:** Goobar, QueenGoo a PowerGoo tvoria **základ shellu** (spodnú lištu; z goo maskota Marey,
+ktorý bol jeden na všetko — LatteOS má viac špecializovaných s možnosťou tvoriť ďalšie) → **nedajú sa skryť**
+(opravené v Nastaveniach aj logike: PowerGoo iba veľkosť). **Živé bytosti:** návrh zapísaný v LATTEOS-GOO.md 3.1 —
+iba pri nečinnosti: dážď alebo vietor podľa skutočného počasia (zvlnenie spodnej hrany aj pripnutých kvapiek), hra
+(naháňačka so zámernou zrážkou a odrazom, behanie, skákanie ponad ostatné); okamžité prebudenie; nie pri celej
+obrazovke, zámku, slabej batérii a v stupni Softvér. Robiť naživo na latte-lab.
+
 ## Nové a zmenené súbory
 
 - `session/bin/`: `gnome-software`, `latte-hladaj`, `latte-riadok`, `latte-pocasie` (nové); `latte-ai`, `latte-apps`,
