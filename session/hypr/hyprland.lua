@@ -222,7 +222,7 @@ function latte.game(on)
     apply_tier(on and "minimalny" or tier)
     if glass_on and hl.plugin and hl.plugin.hyprglass then          -- v hre bez skla a bez priehľadných okien
         hl.plugin.hyprglass.config({ enabled = not on })
-        hl.config({ decoration = { active_opacity = on and 1.0 or 0.93, inactive_opacity = on and 1.0 or 0.87 } })
+        hl.config({ decoration = { active_opacity = on and 1.0 or 0.86, inactive_opacity = on and 1.0 or 0.78 } })
     end
     hl.exec_cmd("latte-tapety hra " .. (on and "on" or "off"))       -- živá tapeta: v hre pauza (0 % CPU a GPU)
     hl.config({ decoration = { rounding = on and 0 or 14 }, general = { gaps_in = on and 0 or 5, gaps_out = on and 0 or 10 } })

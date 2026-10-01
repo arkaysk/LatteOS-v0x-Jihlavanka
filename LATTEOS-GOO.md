@@ -281,7 +281,7 @@ Karta z ucha TimeGoo, zhora nadol:
 | záplaty pleamaru / Noctalie / pleamar-wm | `resources/patches/` (README tam) |
 | nastavenia používateľa | `~/.config/latteos/` (kava, spustac.json, kvapky-widgety.json), `~/.local/state/latteos/` (kvapka-okraj, window-mode, kvapky/noctalia) |
 | aktualizácie u autorov | `latte-upstream -v` |
-| nasadenie na latte-lab | `sudo install … /usr/share/latteos/kvapky/`, reštart pleamaru; setup skripty v `setup/` |
+| nasadenie na latte-lab | `sudo install … /usr/share/latteos/kvapky/`, reštart pleamaru; setup skripty v `setup/`. **Súbory Hyprlandu atomicky** (`install` do `.nazov.new` + `mv`): Hyprland ich sleduje a načíta aj napoly vymenené („cannot open … hyprland.lua“) |
 
 **Skúšanie bez myši a monitora** (`scratchpad/test/t.sh`; scéna sa kopíruje ako `kvapkatest.plm` → soket
 `kvapkatest`, **nikdy `pleamar --say kvapka`** — to je živá relácia používateľa, 1. 10. to raz omylom zasiahlo): headless `labwc` (`WLR_BACKENDS=headless`),
@@ -329,6 +329,10 @@ Ide sa **po poradí**; nové nápady sa zapíšu na koniec (E), nerozbiehajú sa
    po `hyprland.start` a `config.reloaded`; pri téme bez skla sa iba vypne (`enabled = false`, neodpája sa), herný
    režim rešpektuje. Overené po reload-e (lom a dúhový lem na okrajoch okien); studený štart sa overí pri ďalšom
    prihlásení.
+   Potom (používateľ: „žiadne okno nemá efekt glass“): pri krytí 93/87 % a plnom pozadí aplikácií sklo nebolo
+   vidieť — teraz 86/78 %, hrubší perleťový lem (0,12), silnejší lom a dúha. Studený štart overený (nová relácia
+   po páde o 08:03 mala Hyprglass načítaný sám). Pád Hyprlandu o 08:03: skončil „riadne“ a spadol v deštruktore
+   zdieľania obrazovky (SIGSEGV pri exit) — príčina ukončenia nezistená (odhlásenie?); sledovať.
 6. **Slovenský katalóg Noctalie** (bez neho Noctalia v LatteOS nenačíta slovenské preklady doplnkov) — pred
    integráciami Noctalie (C).
 
