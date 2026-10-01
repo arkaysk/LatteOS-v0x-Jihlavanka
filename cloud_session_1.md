@@ -67,7 +67,7 @@ kurátorské sekcie, podobné aplikácie, predvolený v Bluefine). Jeho dobré f
 | Commit | Čo |
 |---|---|
 | `6135841` | App Manager: úlohy na pozadí (`latte-apps job run/jobs/konzola/zrus`, systemd-run --user, rad, percentá v stavovom riadku, **Zobraziť konzolu**), Podobné aplikácie, Vrátiť predchádzajúcu verziu (+ flatpak mask), blok Bez bezpečnostných opráv (EOL runtime), vek OARS, Tvoja recenzia (ODRS, hviezdičky klikom); Herňa: ProtonDB (tlačidlo, stupeň pri hre; `latte-games proton`) |
-| (tento) | Device Manager (zároveň Net Manager s Inšpektorom siete — nemenené): kontrola HW v skupine Počítač s radou, zdravie batérie (% pôvodnej kapacity, cykly), SMART bez práv správcu cez udisks2 (predtým iba po Monitore so správcom), testy kamery / reproduktorov / mikrofónu / ovládača (pravý klik aj tlačidlá v detaile), **Správa pre podporu** (`latte-devices sprava` → súbor v Súboroch); firmvér ostáva v App Manageri › Aktualizácie (fwupd) — bez duplikácie |
+| `1909121` | Device Manager (zároveň Net Manager s Inšpektorom siete — nemenené): kontrola HW v skupine Počítač s radou, zdravie batérie (% pôvodnej kapacity, cykly), SMART bez práv správcu cez udisks2 (predtým iba po Monitore so správcom), testy kamery / reproduktorov / mikrofónu / ovládača (pravý klik aj tlačidlá v detaile), **Správa pre podporu** (`latte-devices sprava` → súbor v Súboroch); firmvér ostáva v App Manageri › Aktualizácie (fwupd) — bez duplikácie |
 
 Overiť na latte-lab: inštalácia z App Managera a zatvorenie okna počas nej (musí dobehnúť), Zobraziť konzolu,
 Vrátiť verziu (výstup `flatpak remote-info --log`), EOL (formát `flatpak remote-info`), ProtonDB, testy zariadení
