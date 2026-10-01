@@ -140,6 +140,12 @@ Ostáva **7** — `latte-sysmon` do Rustu ako stála služba `latte-sysmond` (ni
 Monitora). Overiť na latte-lab: stĺpce GPU/Disk (amdgpu fdinfo), Služby a polkit, Autoruns pôvod (`rpm -qf`), Test výkonu
 (7-Zip: balík `7zip` alebo `p7zip` vo Fedore — treba doinštalovať), upozornenia.
 
+**Otázka: bude sa Monitor po prepise do Rustu horšie upravovať?** Trochu áno (kompilácia, prísnejší kód, pomalšie
+ručné ladenie na latte-lab); výhody: chyby pri kompilácii, testy, výrazne nižšia záťaž. **Rozhodnutie (návrh):**
+zmiešaný postup — do Rustu iba neustále bežiaci `stream` (CPU, pamäť, procesy, disky, sieť, senzory); v Pythone
+ostáva všetko na klik a často menené (Autoruns, Služby, detail a akcie procesu, Hardvér, Test výkonu, Pohoda,
+upozornenia). Rovnaký JSON → okno Monitora sa nemení, návrat na Python jedným riadkom. Až po overení fáz 1–6 na latte-lab.
+
 ## Nové a zmenené súbory
 
 - `session/bin/`: `gnome-software`, `latte-hladaj`, `latte-riadok`, `latte-pocasie` (nové); `latte-ai`, `latte-apps`,
