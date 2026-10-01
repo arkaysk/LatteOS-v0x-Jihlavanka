@@ -161,6 +161,16 @@ Senzory najbližšie HWiNFO, Služby v poriadku. Návrh: 1 Výkon ako Win11 · 2
 4. **Po štarte**: celý riadok farebne (neznáme/podozrivé červenkasté, nové farbou témy) a ikona pôvodu,
 5. **Test výkonu ako pruhy** (teraz vs. najlepšie meranie) a história ako stĺpcový graf.
 
+## Kombinovaný messenger v Goo
+
+**Otázka: ako nazvať Goo pre kombinovaný messenger (ICQ, FB Messenger, Telegram, Signal…) a dá sa to zjednotiť?**
+Mená podľa vzoru (funkcia + Goo): **ChatGoo** (odporúčané), KecGoo, KafeGoo, BubbleGoo. Zjednotenie: **Matrix + mosty
+mautrix** (ako Beeper) — Telegram, Signal, Messenger/Instagram, WhatsApp, Discord do jednej schémy (kontakty,
+rozhovory, správy, prílohy, reakcie, prečítané); lokálny server (napr. continuwuity) a mosty na PC; upozornenia do
+DaNoGoo. Výhrady: **ICQ skončilo v júni 2024**; Telegram (oficiálne API) a Signal (prepojené zariadenie) bez rizika;
+Meta služby porušujú ich podmienky (možný zákaz účtu) → upozornenie / webová aplikácia v okne; licencie mostov AGPL.
+Postup: 1 ChatGoo s Telegramom a Signalom · 2 Discord a Meta s upozornením · 3 ostatné ako web v okne. Čaká na výber mena.
+
 ## Nové a zmenené súbory
 
 - `session/bin/`: `gnome-software`, `latte-hladaj`, `latte-riadok`, `latte-pocasie` (nové); `latte-ai`, `latte-apps`,
