@@ -263,20 +263,6 @@ on("pick", function(k)
     if wins[i] then win_eval("toggle_by", i) end
 end)
 
--- pravý klik: ponuka okna (apps/ponuka.qml) pri kurzore, pre to okno (najprv dostane fokus)
-on("win_menu", function(k)
-    local i = (k or 0) + 1
-    if not wins[i] or (overflow() and i == SLOTS) then return end
-    win_eval("focus_by", i)
-    -- poloha ponuky = kurzor v čase kliku, priamo od Hyprlandu (JSON); fakty scény sem prišli neskoro (ponuka vľavo hore)
-    run("hyprctl", { "-j", "cursorpos" }, function(out)
-        local ok, c = pcall(json.decode, out or "")
-        local x = (ok and c and c.x) or math.floor(fact["menu.x"] or 0)
-        local y = (ok and c and c.y) or math.floor(fact["menu.y"] or 0)
-        after(120, function() run("latte-ponuka", { "okno", tostring(math.floor(x)), tostring(math.floor(y)) }) end)
-    end)
-end)
-
 -- koliesko nad lištou: páska = plynulý posun pásky, plávajúce = ďalšie/predošlé okno ako Alt+Tab, dlaždice = nič;
 -- minimalizované okná (mimo pásky) vynechá — sú iba v lište, stlmené
 on("wheel_turn", function(d)
@@ -490,20 +476,88 @@ local function save_cfg()
     run("latte-kvapky", { "uloz", "spustac", json.encode(cfg) })
 end
 
--- ── kontextové a rozbaľovacie ponuky: položky { label, on, off, run } ──
-local function menu(items)
+-- ── ponuka Goo (pravý klik, rozbaľovacie čipy): položky { label, glyph, hint, on, off, danger, sep, run, sub } ──
+-- sub = zoznam položiek podponuky: riadok s › ponuku nezavrie, vnorí sa do nej (prvý riadok „‹ Späť“); sep = čiara nad
+local CTX_MAX = 12
+local function menu(items, width)
     ctx_actions = {}
-    local out = {}
-    for i, it in ipairs(items) do
-        if i > 10 then break end
-        out[#out + 1] = { label = it.label, on = it.on and 1 or 0, off = it.off == true }
-        ctx_actions[#ctx_actions + 1] = it.run or function() end
+    local out, y = {}, 6
+    for _, it in ipairs(items) do
+        if #out >= CTX_MAX then break end
+        if it.sep and #out > 0 then y = y + 12 end
+        out[#out + 1] = { label = it.label, on = it.on and 1 or 0, off = it.off == true, glyph = it.glyph or "",
+                          hint = it.hint or "", danger = it.danger == true, sub = it.sub ~= nil or it.back ~= nil, back = it.back ~= nil, sep = it.sep == true and #out > 0, y = y }
+        y = y + 36
+        if it.sub then
+            local parent = items
+            ctx_actions[#out] = function()
+                local kids = { { label = tr("Back"), glyph = G["chevron-left"], back = parent } }
+                for j, c in ipairs(it.sub) do
+                    local c2 = {}; for kk, vv in pairs(c) do c2[kk] = vv end
+                    if j == 1 then c2.sep = true end
+                    kids[#kids + 1] = c2
+                end
+                menu(kids, width)
+            end
+        elseif it.back then
+            ctx_actions[#out] = function() menu(it.back, width) end
+        else
+            ctx_actions[#out] = it.run or function() end
+        end
     end
     model.ctx = out
+    fact.ctx_w = width or 248
+    fact.ctx_h = y + 6
     fact.ctx_hot = -1
     fact.ctx_open = #out > 0
 end
 on("ctx_pick", function(k) local f = ctx_actions[(k or 0) + 1]; if f then f() end end)
+
+-- pravý klik na guľôčku: ponuka okna vo vzhľade Goo (1. 10., pravidlo 10) — funkcie ako klasická ponuka okna
+-- (apps/ponuka.qml → latte.okno.* v Hyprlande), vzhľad Goo: karta pripojená rohom ku guľôčke, rastie od okraja lišty
+on("win_menu", function(k)
+    local i = (k or 0) + 1
+    if not wins[i] or (overflow() and i == SLOTS) then return end
+    win_eval("focus_by", i)
+    run("hyprctl", { "-j", "cursorpos" }, function(out)
+        local ok, c = pcall(json.decode, out or "")
+        local x = (ok and c and c.x) or math.floor(fact["menu.x"] or 0)
+        local y = (ok and c and c.y) or math.floor(fact["menu.y"] or 0)
+        after(120, function()
+            run("hyprctl", { "-j", "activewindow" }, function(o2)
+                local ok2, w = pcall(json.decode, o2 or "")
+                if not ok2 or type(w) ~= "table" or not w.address then return end
+                local a = w.address
+                local function q(lua) return function() run("hyprctl", { "eval", lua }) end end
+                local function ok_(fn, ...) local args = { ... }; return q(string.format("latte.okno.%s('%s'%s)", fn, a, (#args > 0) and ("," .. table.concat(args, ",")) or "")) end
+                local function lay(z, label, glyph) return { label = tr(label), glyph = G[glyph], run = q(string.format("latte.okno.rozlozenie('%s','%s')", a, z)) } end
+                local max, full = w.fullscreen == 1, w.fullscreen == 2
+                local ws = (type(w.workspace) == "table" and tonumber(w.workspace.id)) or 0
+                local desks = {}
+                for d = 1, 4 do desks[#desks + 1] = { label = fill(tr("Desktop {n}"), { n = tostring(d) }), on = ws == d, run = ok_("na_plochu", d) } end
+                desks[#desks + 1] = { label = tr("New desktop"), glyph = G.plus, run = ok_("na_plochu", 0) }
+                local W, H = tonumber(fact["wd.w"]) or 1920, tonumber(fact["wd.h"]) or 1080
+                fact["ctx.x"] = x; fact["ctx.y"] = y
+                fact.ctx_up = y > H / 2
+                menu({
+                    { label = tr("Restore"), glyph = G["arrows-minimize"], run = ok_("obnovit") },
+                    { label = tr("Minimize"), glyph = G.minus, run = ok_("minimalizovat") },
+                    { label = tr("Maximize"), glyph = G.square, off = max, run = ok_("maximalizovat") },
+                    { label = tr("Layout"), glyph = G["layout-grid"], sub = {
+                        lay("lava", "Left half", "layout-sidebar"), lay("prava", "Right half", "layout-sidebar-right"),
+                        lay("lh", "Top left", "layout-grid"), lay("ph", "Top right", "layout-grid"),
+                        lay("ld", "Bottom left", "layout-grid"), lay("pd", "Bottom right", "layout-grid"),
+                        lay("l23", "Two thirds left", "layout-columns"), lay("p13", "One third right", "layout-columns"),
+                        lay("stred", "Center", "focus-centered") } },
+                    { label = tr("Always on top (all desktops)"), glyph = G.pin, on = w.pinned == true, run = ok_("navrchu") },
+                    { label = tr("Move to desktop"), glyph = G["stack-2"], sub = desks },
+                    { label = tr("Close"), glyph = G.x, hint = "Alt+F4", danger = true, sep = true, run = ok_("zavriet") },
+                }, 320)
+            end)
+        end)
+    end)
+end)
+
 local function has(list, id) for i, v in ipairs(list) do if v == id then return i end end return nil end
 local function move(list, i, d)
     local j = i + d

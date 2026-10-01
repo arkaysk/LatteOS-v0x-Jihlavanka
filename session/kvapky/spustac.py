@@ -27,7 +27,9 @@ ICONS = ICONS or "tabler-icons"
 LOGIC_ICONS = ["sparkles", "search", "folder", "world", "terminal-2", "settings", "plus", "message-plus", "folder-open",
                "trash", "sun", "cloud", "sun-low", "cloud-rain", "cloud-snow", "cloud-storm", "cloud-fog", "sun-high",
                "map-pin", "check", "chevron-down", "chevron-right", "x",
-               "layout-dashboard", "stopwatch", "hourglass", "alarm"]
+               "layout-dashboard", "stopwatch", "hourglass", "alarm",
+               "arrows-minimize", "minus", "square", "layout-grid", "layout-sidebar", "layout-sidebar-right",
+               "layout-columns", "focus-centered", "pin", "stack-2", "chevron-left"]
 
 # ── farby tém (session/themes/make-themes.py) ──
 src = open(os.path.join(HERE, "..", "themes", "make-themes.py")).read()
@@ -379,24 +381,47 @@ a(f'''    // výber režimu: vyteká z ikony v poli (goo), riadky s ikonou a ná
             text modes.$k.name {{ at: d0.x + 46, d0.y + 84 + k * 40; anchor: left center; size: 13.5; weight: 500; color: l.fg; family: "{UI}" }}
         }}
     }}
-    // kontextová ponuka (pravý klik, rozbaľovacie čipy)
-    let cx0 = clamp(ctx.x, 12, W - 252)
-    // pri čipoch dole sa ponuka otvára nahor (ctx_up), inak nadol od kurzora
+    // ponuka Goo (pravý klik — okná, widgety, čipy, nedávne…; 1. 10., pravidlá 9–11): karta pripojená ROHOM k miestu
+    // kliku, vyrastie z neho; pri rohu káva (kvapôčka-ucho), ďalej materiál okien. Položky dáva logika: ikona,
+    // skratka, zaškrtnutie, červená (Zavrieť), podponuka (›, vnorí sa so šípkou späť), čiara nad položkou (sep), y riadku
     fact ctx_up = false
-    let cy0 = clamp(if(ctx_up, ctx.y - 10 - ctx.count * 36, ctx.y), 12, H - 12 - ctx.count * 36)
+    fact ctx_w = 248
+    fact ctx_h = 48
+    prop ctx.p = 0 ~lively
+    follow ctx.p = if(ctx_open, 1, 0)
+    let ctx.sx = if(ctx.x + ctx_w + 12 <= W, 1, -1)
+    let ctx.sy = if(ctx_up, if(ctx.y - ctx_h - 12 >= 0, -1, 1), if(ctx.y + ctx_h + 12 <= H, 1, -1))
+    let cx0 = clamp(if(ctx.sx > 0, ctx.x, ctx.x - ctx_w), 12, W - 12 - ctx_w)
+    let cy0 = clamp(if(ctx.sy > 0, ctx.y, ctx.y - ctx_h), 12, H - 12 - ctx_h)
+    let ctx.ax = if(ctx.sx > 0, cx0, cx0 + ctx_w)
+    let ctx.ay = if(ctx.sy > 0, cy0, cy0 + ctx_h)
+    let ctx.q = clamp(ctx.p, 0, 1.08)
     body {{
-        color: l.var
-        rim: 14%
-        shadow: 0, 10, 26, 35%
-        opacity: if(ctx_open, 1, 0)
-        box {{ at: cx0 + 120, cy0 + ctx.count * 18; size: 240, ctx.count * 36 + 12; corner: 14 }}
+        gradient: ctx.ax, ctx.ay to ctx.ax + ctx.sx * ctx_w, ctx.ay + ctx.sy * ctx_h, mix(l.win, coffee, 0.55), l.win, l.win
+        glass: 100% * l.glass
+        lens: l.pearl > 0.5
+        shine: pointer
+        refraction: 120% * l.pearl
+        dispersion: 260% * l.pearl
+        rim: 18%
+        light: 6%, cy0, 40
+        shadow: 0, 10, 26, 35% * clamp(ctx.p, 0, 1)
+        opacity: if(ctx.p > 0.02, 1, 0)
+        box {{ at: ctx.ax + ctx.sx * ctx_w * ctx.q / 2, ctx.ay + ctx.sy * ctx_h * ctx.q / 2; size: max(ctx_w * ctx.q, 14), max(ctx_h * ctx.q, 14); corner: 14 }}
+        // ucho: kvapôčka v rohu, odkiaľ ponuka vyrástla
+        ellipse {{ at: ctx.ax, ctx.ay; radius: 9 * clamp(ctx.p * 3, 0, 1) + 1; blend: 10 }}
     }}
     group {{
-        show: ctx_open
-        repeat k in 0..10 {{
-            box {{ at: cx0 + 120, cy0 + 18 + k * 36; size: 228, 32; corner: 9; color: l.hover; opacity: if(ctx_hot == k, 100%, 0); show: k < ctx.count }}
-            text "{ICON("check")}" {{ at: cx0 + 22, cy0 + 18 + k * 36; anchor: center; size: 14; color: l.acc; show: k < ctx.count and ctx.$k.on == 1; family: "{ICONS}" }}
-            text ctx.$k.label {{ at: cx0 + 40, cy0 + 18 + k * 36; anchor: left center; width: 190; lines: 1; size: 13; color: l.fg; opacity: if(ctx.$k.off, 45%, 100%); show: k < ctx.count; family: "{UI}" }}
+        opacity: clamp(ctx.p * 2 - 1, 0, 1)
+        show: ctx_open and ctx.p > 0.5
+        repeat k in 0..12 {{
+            box {{ at: cx0 + ctx_w / 2, cy0 + ctx.$k.y - 6; size: ctx_w - 32, 1; color: l.line; show: k < ctx.count and ctx.$k.sep }}
+            box {{ at: cx0 + ctx_w / 2, cy0 + ctx.$k.y + 18; size: ctx_w - 12, 32; corner: 9; color: if(ctx.$k.danger, #e5484d, l.hover); opacity: if(ctx_hot == k and not ctx.$k.off, if(ctx.$k.danger, 18%, 100%), 0); show: k < ctx.count }}
+            text ctx.$k.glyph {{ at: cx0 + 24, ctx.$k.y + cy0 + 18; anchor: center; size: 16; color: if(ctx.$k.danger, #e5484d, l.fg); opacity: if(ctx.$k.off, 40%, 90%); show: k < ctx.count and ctx.$k.on == 0; family: "{ICONS}" }}
+            text "{ICON("check")}" {{ at: cx0 + 24, cy0 + ctx.$k.y + 18; anchor: center; size: 15; color: l.acc; show: k < ctx.count and ctx.$k.on == 1; family: "{ICONS}" }}
+            text ctx.$k.label {{ at: cx0 + 46, cy0 + ctx.$k.y + 18; anchor: left center; width: ctx_w - if(ctx.$k.sub, 82, 70); lines: 1; size: 13; weight: 500; color: if(ctx.$k.danger, #e5484d, l.fg); opacity: if(ctx.$k.off, 45%, 100%); show: k < ctx.count; family: "{UI}" }}
+            text ctx.$k.hint {{ at: cx0 + ctx_w - 16, cy0 + ctx.$k.y + 18; anchor: right center; size: 11.5; color: l.dim; show: k < ctx.count and not ctx.$k.sub; family: "{UI}" }}
+            text "{ICON("chevron-right")}" {{ at: cx0 + ctx_w - 20, cy0 + ctx.$k.y + 18; anchor: center; size: 14; color: l.dim; show: k < ctx.count and ctx.$k.sub and not ctx.$k.back; family: "{ICONS}" }}
         }}
     }}
     // spúšťač: klikateľné miesta (navrchu)
@@ -443,8 +468,8 @@ a(f'''    // výber režimu: vyteká z ikony v poli (goo), riadky s ikonou a ná
     }}
     // otvorená ponuka: klik mimo nej ju zavrie (pod jej riadkami)
     zone box ctx_away {{ at: W / 2, H / 2; size: W, H; active: ctx_open }}
-    repeat k in 0..10 {{
-        zone box ctx_row.$k {{ at: cx0 + 120, cy0 + 18 + k * 36; size: 228, 34; cursor: pointer; active: ctx_open and k < ctx.count }}
+    repeat k in 0..12 {{
+        zone box ctx_row.$k {{ at: cx0 + ctx_w / 2, cy0 + ctx.$k.y + 18; size: ctx_w - 12, 34; cursor: pointer; active: ctx_open and ctx.p > 0.5 and k < ctx.count }}
     }}
     // <<< spúšťač
 ''')
@@ -583,7 +608,12 @@ TR = {"Alarm {t}": "Budík {t}", "Timer {t}": "Minútka {t}", "Lap {n}": "Medzi�
       "No alarms. They ring even when this menu is closed.": "Žiadny budík. Zvonia aj pri zatvorenom menu.",
       "New alarm": "Nový budík", "Scroll to set": "Kolieskom nastav", "Add": "Pridať",
       "Recent": "Nedávne", "Forecast · {wx_place}": "Predpoveď · {wx_place}", "Details": "Detaily", "Close": "Zavrieť",
-      "Remove from recent": "Odobrať z nedávnych"}
+      "Remove from recent": "Odobrať z nedávnych",
+      "Back": "Späť", "Restore": "Obnoviť", "Minimize": "Minimalizovať", "Maximize": "Maximalizovať", "Layout": "Rozloženie",
+      "Left half": "Ľavá polovica", "Right half": "Pravá polovica", "Top left": "Vľavo hore", "Top right": "Vpravo hore",
+      "Bottom left": "Vľavo dole", "Bottom right": "Vpravo dole", "Two thirds left": "Dve tretiny vľavo",
+      "One third right": "Tretina vpravo", "Center": "Na stred", "Always on top (all desktops)": "Vždy navrchu (na všetkých plochách)",
+      "Move to desktop": "Presunúť na plochu", "Desktop {n}": "Plocha {n}", "New desktop": "Nová plocha"}
 i = s.index("    translations sk {\n") + len("    translations sk {\n")
 add = "".join(f'        "{k}" = "{v}"\n' for k, v in TR.items() if f'        "{k}" =' not in s)
 s = s[:i] + add + s[i:]
