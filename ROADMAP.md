@@ -364,6 +364,15 @@ texty preložiteľné (`translations`). Noctalia beží bez lišty a robí, čo 
   (BSD-2). Overiť až na reálnom HW v domácej sieti.
 - [ ] Inšpektor: upozornenie na nové zariadenie v sieti (ako ESET), slabé heslo routera / otvorené porty (iba vlastná
   sieť, so súhlasom), prenos dát podľa zariadenia (vyžaduje router s UPnP štatistikou alebo nftables počítadlá).
+- [x] **Kompatibilita HW** (1. 10., `latte-hw::compat`, `latte-boot compat [--toml]`): cieľ pohodlne na PC do 10 rokov,
+  solídne 10–15 rokov. Platforma (CPU x86-64-v1…v4, vlákna, RAM, swap/zram, koreň na HDD cez LVM/LUKS, voľné miesto,
+  UEFI/BIOS, Secure Boot) a generácia grafiky podľa PCI ID s odporúčaným ovládačom: AMD TeraScale / GCN 1–2 (rada
+  `amdgpu.si_support`/`cik_support`, inak bez Vulkanu) / Polaris / Vega / RDNA, NVIDIA Fermi / Kepler (nouveau + NVK) /
+  Maxwell–Pascal–Volta (580xx) / Turing+ (595+, Secure Boot → mokutil), Intel Gen6–Gen9 / Xe / Arc. Zistenia
+  info/warn/block (kód 0/1/2 pre inštalátor), `[platform]` v mode.toml. Stupeň výkonu znižuje generácia karty aj
+  platforma (pod 6 GB RAM najviac Úsporný, ≤2 vlákna Minimálny). Overiť na latte-lab a na čo najviac starých PC.
+- [ ] Kompatibilita: `latte-boot compat` v inštalátore (f0) a v Device Manageri › Hardvér; tabuľky PCI ID overiť na
+  skutočných kartách (mobilné varianty, Intel Gen7/8 hranice)
 - [ ] Device Manager v Ruste nad `latte-hw`, udisks2, NetworkManager, PipeWire; Wi-Fi a VPN priamo; ovládače NVIDIA/AMD (H).
 - [x] **Monitor** (Process Manager, prototyp v Quickshelli + `latte-sysmon`): Ctrl+Shift+Esc, živý stav s grafmi, procesy podľa
   druhu (aplikácia/prostredie/pomocný/systém) s varovaním a potvrdením, **Po štarte** (XDG autostart, systemd, časovače, cron,

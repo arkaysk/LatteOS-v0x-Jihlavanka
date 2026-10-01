@@ -4,6 +4,8 @@
 //! stupňa výkonu) sem nepatria; spustí ich Device Manager po prihlásení.
 //! Iba štandardná knižnica, žiadne externé závislosti.
 
+pub mod compat;
+
 use std::fmt::Write as _;
 use std::fs;
 use std::path::Path;
@@ -258,6 +260,8 @@ pub struct Probe {
     pub egl_default: Egl,
     /// vynútený softvér: `MESA_LOADER_DRIVER_OVERRIDE=kms_swrast` (llvmpipe)
     pub egl_sw: Egl,
+    /// CPU, RAM, disk, firmvér (compat) — obmedzuje stupeň výkonu
+    pub platform: compat::Platform,
     pub millis: u128,
 }
 
@@ -265,6 +269,7 @@ impl Probe {
     pub fn run() -> Self {
         let start = Instant::now();
         let cmdline = Cmdline::read();
+        let platform = compat::Platform::read();
         let gpus = gpus();
         let has_drm = gpus.iter().any(|g| Path::new(&format!("/dev/dri/{}", g.card)).exists());
         // studená vyrovnávacia pamäť na pomalom HDD: prvé načítanie Mesa pri štarte ~12 s (latte-lab, 29. 9. 2026).
@@ -284,7 +289,7 @@ impl Probe {
             let e = Egl { error: "bez DRM zariadenia alebo nomodeset".into(), ..Default::default() };
             (e.clone(), e)
         };
-        Probe { cmdline, virt: virtualization(), gpus, egl_default, egl_sw, millis: start.elapsed().as_millis() }
+        Probe { cmdline, virt: virtualization(), gpus, egl_default, egl_sw, platform, millis: start.elapsed().as_millis() }
     }
 
     /// TOML výpis (časť `[probe]` v mode.toml).
