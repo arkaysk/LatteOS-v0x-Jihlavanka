@@ -382,6 +382,10 @@ texty preložiteľné (`translations`). Noctalia beží bez lišty a robí, čo 
 - [x] Monitor: aplikácia → zariadenie (mikrofón, kamera, zvuk, GPU; fd na /dev + streamy PipeWire, raz za 5 s).
 - [x] Indikátor súkromia na lište (mikrofón/kamera v použití, červená kapsula v ostrove zariadení, klik = Monitor).
 - [ ] Monitor: stála služba telemetrie.
+- [ ] Monitor podľa hodnotenia 1. 10. (cloud_session_1.md): 1 stĺpce procesov ako Win11 (disk, GPU, sieť, vlákna, priorita,
+  úsporný režim, pozastaviť, ukončiť strom) · 2 NVIDIA (nvidia-smi) · 3 karta Výkon v detaile · 4 Služby a Používatelia ·
+  5 Autoruns+ (pôvod, skryť systémové, vplyv na štart, porovnanie, nové miesta) · 6 CPU-Z/HWiNFO+ (Grafika, Bench,
+  upozornenia, throttling) · 7 latte-sysmond v Ruste
 - [x] Data Manager **prototyp** (Quickshell, `latte-app subory`): Tento počítač (lsblk), dva panely F3/F5/F6, detail, kôš.
 - [x] Data Manager: **kontextové menu** (pravý klik v zozname aj v bočnej lište), **farebné štítky** priečinkov a súborov
   (`~/.config/latteos/tags.json`), vlastné Obľúbené, premenovanie, nový priečinok, terminál tu.
