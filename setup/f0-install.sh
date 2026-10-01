@@ -35,7 +35,7 @@ TEST=(seatd kitty wlr-randr)
 # --- AI (CPU, malý model; služba sa nepovoľuje) --------------------------------
 AI=(ollama nodejs-npm)   # npm: nástroje predplatných (ChatGPT, Gemini, Copilot) inštaluje Nastavenia › AI bez sudo
 # --- hľadanie súborov (latte-hladaj): index mien, živé hľadanie, obsah ----------
-FIND=(plocate fd-find ripgrep)
+FIND=(plocate fd-find ripgrep python3-pyyaml)   # + kurátorský výber obchodu (YAML)
 
 dnf -y install dnf5-plugins
 dnf -y copr enable lionheartp/Hyprland
