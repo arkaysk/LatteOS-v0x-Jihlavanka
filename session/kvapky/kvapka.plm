@@ -1115,10 +1115,10 @@ scene Kvapka {
     text tg_wx_text = ""                      // teplota alebo krátky popis výstrahy
     fact wx_alert = 0                         // 0 nič, 1 žltá, 2 oranžová, 3 červená (ČHMÚ / SHMÚ; z predpovede najviac 2)
     fact tg_wxflash = false
-    let tg.alt = if(sw_run or t_active, smooth(-0.25, 0.25, sin(time * 0.785)), 0)
+    let tg.alt = if(sw_run or t_active, smooth(-0.25, 0.25, sin(time * 45)), 0)
     prop tg.wxf = 0 ~lively
     follow tg.wxf = if(tg_wxflash, 1, 0)
-    let tg.wx = max(clamp(tg.wxf, 0, 1), if(wx_alert > 0, smooth(-0.25, 0.25, sin(time * 0.52 + 1.3)), 0)) * (1 - tg.alt)
+    let tg.wx = max(clamp(tg.wxf, 0, 1), if(wx_alert > 0, smooth(-0.25, 0.25, sin(time * 30 + 75)), 0)) * (1 - tg.alt)
     let tg.fade = so * ap * (1 - smooth(0, 0.08, dsw))
     text now.time { at: cxs, cys - 5 * zt.p; anchor: center; size: 16 * zt.p; weight: 800; color: ink; opacity: tg.fade * (1 - tg.alt); show: solo }
     text tg_alt_val { at: cxs, cys - 5 * zt.p; anchor: center; size: 16 * zt.p; weight: 800; color: ink; opacity: tg.fade * tg.alt; show: solo }
