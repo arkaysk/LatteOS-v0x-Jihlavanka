@@ -77,6 +77,11 @@ terminálu. Záplata: keď alokácia s modifiermi zlyhá, lineárny buffer (Vulk
 Záplaty 1–5 (`pleamar-hyprland-okna-8bit.patch`) sú na **pleamar 0.2.3** (upstream 0728337, jazyk 0.2,
 spätne číta 0.1). Prechod z 5f9cd54 (0.1.0) bez konfliktov. Nové zmeny u autora: `latte-upstream`.
 
+**1. 10. 2026: pleamar v0.2.6** (`8bb920f`), pleamar-wm v0.2.5 (`c213f55`), marea-plm `a589189`: obe záplaty
+(`pleamar-hyprland-okna-8bit.patch`, `pleamar-wm-linearny-buffer.patch`) sedia bez úprav (`git apply --check`),
+pleamar so záplatou sa preloží. Scéna Kvapky aj engine Goo prejdú `pleamar --check` (jazyk 0.2 číta aj 0.1).
+Verzie sú pripnuté v `resources/fetch.sh`; `install-session.sh` preloží pleamar znova, keď sa verzia líši.
+
 ## noctalia-rohova-lista.patch (Noctalia pre plochu Kvapky, setup/lab/noctalia-kvapky.sh)
 
 Rohová lišta Noctalie vpravo dole (1. 10. 2026): k súmernému `margin_ends` voliteľné `margin_start` a `margin_end`

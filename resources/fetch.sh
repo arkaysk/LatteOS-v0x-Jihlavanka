@@ -14,7 +14,15 @@ want() { [ ${#only[@]} -eq 0 ] && return 0; local n; for n in "${only[@]}"; do [
 clone() {
     local name="$1" url="$2" ref="${3:-}"
     want "$name" || return 0
-    if [ -d "upstream/$name/.git" ]; then echo "== $name: už je, preskakujem"; return; fi
+    if [ -d "upstream/$name/.git" ]; then
+        # pripnutá verzia (tag) sa zmenila → nová kópia (napr. pleamar v0.2.3 → v0.2.6); inak preskočiť
+        if [ -n "$ref" ] && [ "$(git -C "upstream/$name" describe --tags --exact-match 2>/dev/null)" != "$ref" ] \
+            && git ls-remote --exit-code --tags "$url" "$ref" >/dev/null 2>&1; then
+            echo "== $name: $ref (bola $(git -C "upstream/$name" describe --tags --always 2>/dev/null))"; rm -rf "upstream/$name"
+        else
+            echo "== $name: už je, preskakujem"; return
+        fi
+    fi
     echo "== $name"
     git -c advice.detachedHead=false clone --quiet --depth 1 ${ref:+--branch "$ref"} "$url" "upstream/$name" \
         || { echo "!! $name: zlyhalo"; return 0; }
@@ -55,8 +63,10 @@ clone matugen             https://github.com/InioX/matugen.git
 clone noctalia-shell      https://github.com/noctalia-dev/noctalia-shell.git
 clone noctalia-greeter    https://github.com/noctalia-dev/noctalia-greeter.git
 clone noctalia-plugins    https://github.com/noctalia-dev/noctalia-plugins.git
-clone pleamar            https://github.com/k4ditano/pleamar.git        # kvapky: SDF, pružiny, BSD-3 (29. 9.)
-clone marea-plm          https://github.com/k4ditano/marea-plm.git      # tekutý spoločník v pleamar, BSD-3
+# pleamar a Marea (k4ditano, BSD-3): pripnuté na overené verzie; záplaty LatteOS na ne sedia (resources/patches)
+clone pleamar            https://github.com/k4ditano/pleamar.git    v0.2.6   # kvapky a engine Goo: SDF, pružiny, jazyk 0.2
+clone pleamar-wm         https://github.com/k4ditano/pleamar-wm.git v0.2.5   # autorov kompozitor (pôvodná Marea)
+clone marea-plm          https://github.com/k4ditano/marea-plm.git            # tekutý spoločník v pleamar (a589189, 30. 9.)
 clone noctalia-official-plugins https://github.com/noctalia-dev/official-plugins.git
 clone end4-dots-hyprland  https://github.com/end-4/dots-hyprland.git
 clone ml4w-dotfiles       https://github.com/mylinuxforwork/dotfiles.git
