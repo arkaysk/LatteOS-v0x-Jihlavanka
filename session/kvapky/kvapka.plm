@@ -1096,12 +1096,16 @@ scene Kvapka {
     fact zt = 1
     fact zp = 1
     fact zd = 1
-    prop zt.p = 1 ~lively
-    prop zp.p = 1 ~lively
-    prop zd.p = 1 ~lively
-    follow zt.p = zt
-    follow zp.p = zp
-    follow zd.p = zd
+    // 0 = kvapka skrytá (Nastavenia › Kvapky); pružina nesmie preskočiť pod nulu
+    prop zt.s = 1 ~lively
+    prop zp.s = 1 ~lively
+    prop zd.s = 1 ~lively
+    follow zt.s = zt
+    follow zp.s = zp
+    follow zd.s = zd
+    let zt.p = max(0, zt.s)
+    let zp.p = max(0, zp.s)
+    let zd.p = max(0, zd.s)
     // Obsah TimeGoo sa strieda (logika plní texty): čas ↔ bežiace stopky alebo minútka (po 4 s);
     // dátum ↔ počasie: na celú hodinu a po novej predpovedi na 10 s, pri výstrahe stále striedavo,
     // ikona žltá (1) alebo červená (2) podľa stupňa
@@ -2654,6 +2658,7 @@ scene Kvapka {
         "Copilot (web)" = "Copilot (web)"
         "Copy" = "Kopírovať"
         "Stopped." = "Zastavené."
+        "Drop settings…" = "Nastavenia kvapky…"
         "STOPWATCH" = "STOPKY"
         "TIMER" = "MINÚTKA"
         "wind {v} km/h" = "vietor {v} km/h"

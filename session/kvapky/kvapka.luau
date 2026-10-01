@@ -1266,6 +1266,7 @@ on("goo_wheel", function(code)
     code = tonumber(code) or 0
     local key = ZOOM_KEYS[math.floor(code / 2) + 1]
     if not key then return end
+    if (tonumber(fact[key]) or 1) <= 0 then return end            -- skrytá kvapka (Nastavenia › Kvapky)
     local v = (tonumber(fact[key]) or 1) + ((code % 2 == 1) and 0.15 or -0.15)
     v = math.max(1, math.min(2.2, math.floor(v * 100 + 0.5) / 100))
     fact[key] = v
@@ -2207,6 +2208,13 @@ local function free_pos()
     end
     return pos
 end
+-- ── nastavenia kvapiek z Nastavení › Kvapky (~/.config/latteos/kvapky.json): skryté, veľkosť, vlastné kvapky ──
+KV = { skryte = {}, vlastne = {}, zoom = {} }
+custom_val = {}
+function custom_def(id)
+    for _, c in ipairs(KV.vlastne or {}) do if "custom:" .. tostring(c.id) == id then return c end end
+    return nil
+end
 local function wpaint()
     local out = {}
     wshown = {}
@@ -2217,6 +2225,16 @@ local function wpaint()
             wshown[#wshown + 1] = { kind = "w", entry = w }
             out[#out + 1] = { icon = icon, val = val, hasval = val ~= "", mono = true, side = w.side, pos = w.pos,
                               right = d.right ~= nil, wheel = d.up ~= nil, on = on }
+        end
+    end
+    -- vlastné kvapky (Nastavenia › Kvapky): ikona, text z príkazu, klik spustí príkaz
+    for _, w in ipairs(wlist) do
+        local c = w.id:match("^custom:(.+)$") and custom_def(w.id)
+        if c and #out < WMAX then
+            wshown[#wshown + 1] = { kind = "custom", entry = w, def = c }
+            local val = custom_val[w.id] or ""
+            out[#out + 1] = { icon = (c.ikona or "") ~= "" and c.ikona or "application-x-executable", val = val, hasval = val ~= "", mono = false,
+                              side = w.side, pos = w.pos, right = true, wheel = false, on = true }
         end
     end
     for _, it in ipairs(tray) do
@@ -2263,6 +2281,7 @@ end
 on("w_click", function(k)
     local e = wnth(k)
     if not e then return end
+    if e.kind == "custom" then if (e.def.klik or "") ~= "" then run("sh", { "-c", e.def.klik }) end; return end
     if e.kind == "tray" then pcall(sys.call, "tray.activate", e.item.key) else waction(e, WIDGETS[e.entry.id].left) end
 end)
 -- ponuka ikony z lišty: strom (dbusmenu) ako naše kapsuly; položka s podponukou ju otvorí na tom istom mieste
@@ -2285,6 +2304,10 @@ end
 on("w_right", function(k)
     local e = wnth(k)
     if not e then return end
+    if e.kind == "custom" then
+        menu({ { label = tr("Drop settings…"), run = function() run("latte-app", { "nastavenia", "kvapky" }) end } })
+        return
+    end
     if e.kind == "tray" then
         local ok, nodes = pcall(sys.ask, "tray.menu", e.item.key)
         if ok and type(nodes) == "table" and #nodes > 0 then tray_menu(e.item.key, nodes)
@@ -2624,6 +2647,7 @@ run("printenv", { "HOME" }, function(out)
         T.file = home .. "/.local/share/latteos/casovace.json"; T.cfg = home .. "/.config"; T.share = home .. "/.local/share"
         load_timers()
         wfile = home .. "/.config/latteos/kvapky-widgety.json"
+        kv_file = home .. "/.config/latteos/kvapky.json"
         after(600, wload)                                    -- po prvej správe služby bluetooth (predvolené)
         -- doterajšie pripnuté (~/.config/latteos/pripnute) sú pri prvom štarte obľúbené spúšťača
         run("cat", { home .. "/.config/latteos/pripnute" }, function(out)
@@ -2637,4 +2661,65 @@ run("printenv", { "HOME" }, function(out)
         end)
     end
 end)
-every(2000, function() read_mode(); read_kava(); read_tema() end)   -- režim sa dá zmeniť aj inde (Super+W, Nastavenia)
+-- Nastavenia › Kvapky: zmena súboru sa prejaví do 2 s (ako téma); skrytá kvapka = veľkosť 0 (TimeGoo, PowerGoo, DaNoGoo)
+local kv_raw, kv_file, kv_reset_t = nil, nil, nil
+local function apply_kv(first)
+    for _, k in ipairs({ "zt", "zp", "zd" }) do
+        local hid = false
+        for _, h in ipairs(KV.skryte or {}) do if h == k then hid = true end end
+        local z = tonumber((KV.zoom or {})[k]) or tonumber((cfg.zoom or {})[k]) or 1
+        fact[k] = hid and 0 or math.max(1, math.min(2.2, z))
+    end
+    -- „Vrátiť na miesto“ (Nastavenia): { kvapka, čas } — raz, nie pri každej ďalšej zmene súboru
+    local r = KV.reset
+    if type(r) == "table" and r.t and first then kv_reset_t = r.t end   -- pri štarte nič nevracať
+    if type(r) == "table" and r.t and r.t ~= kv_reset_t then
+        kv_reset_t = r.t
+        if r.k == "zt" then fact.tg_free = false; cfg.timegoo = { free = false }
+        elseif r.k == "zp" then fact.pg_free = false; cfg.powergoo = { free = false }
+        elseif r.k == "zd" then fact["dn.side"] = 0; fact["dn.pos"] = 0.78; cfg.danogoo = nil end
+        save_cfg()
+    end
+    -- vlastné kvapky: nové dostanú miesto na spodnom okraji, zmazané zmiznú
+    local keep = {}
+    for _, c in ipairs(KV.vlastne or {}) do keep["custom:" .. tostring(c.id)] = true end
+    local changed = false
+    for i = #wlist, 1, -1 do
+        if wlist[i].id:match("^custom:") and not keep[wlist[i].id] then table.remove(wlist, i); changed = true end
+    end
+    for id in pairs(keep) do
+        local found = false
+        for _, w in ipairs(wlist) do if w.id == id then found = true end end
+        if not found then wlist[#wlist + 1] = { id = id, side = 0, pos = free_pos() }; changed = true end
+    end
+    if changed then wsave() end
+    wpaint()
+end
+local function read_kvapky()
+    if not kv_file then return end
+    run("cat", { kv_file }, function(out)
+        if out == kv_raw then return end
+        local first = kv_raw == nil
+        kv_raw = out
+        local ok, d = pcall(json.decode, out or "")
+        KV = (ok and type(d) == "table") and d or { skryte = {}, vlastne = {}, zoom = {} }
+        KV.skryte = KV.skryte or {}; KV.vlastne = KV.vlastne or {}; KV.zoom = KV.zoom or {}
+        apply_kv(first)
+    end)
+end
+-- text vlastných kvapiek (príkaz, prvý riadok, najviac 8 znakov), podľa ich obnovy
+local custom_t = {}
+every(1000, function()
+    for _, c in ipairs(KV.vlastne or {}) do
+        local id = "custom:" .. tostring(c.id)
+        local per = math.max(2, tonumber(c.obnova) or 10)
+        if (c.text or "") ~= "" and (os.time() - (custom_t[id] or 0)) >= per then
+            custom_t[id] = os.time()
+            run("sh", { "-c", c.text }, function(out)
+                local v = ((out or ""):match("[^\n]*") or ""):sub(1, 8)
+                if v ~= custom_val[id] then custom_val[id] = v; wpaint() end
+            end)
+        end
+    end
+end)
+every(2000, function() read_mode(); read_kava(); read_tema(); read_kvapky() end)   -- režim sa dá zmeniť aj inde (Super+W, Nastavenia)

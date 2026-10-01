@@ -100,6 +100,20 @@ ShellRoot {
     property string crashLog: ""
     property var ai: ({})             // latte-ai status
     property var aiModels: []
+    // Nastavenia › Kvapky (Goo): ~/.config/latteos/kvapky.json — logika Kvapiek ho číta každé 2 s
+    property var kv: ({ skryte: [], zoom: {}, vlastne: [], chatgoo: "kvapka" })
+    readonly property string kvFile: (Quickshell.env("XDG_CONFIG_HOME") || ((Quickshell.env("HOME") || "") + "/.config")) + "/latteos/kvapky.json"
+    Process { id: kvRead; command: ["cat", app.kvFile]
+              stdout: StdioCollector { onStreamFinished: { try { app.kv = Object.assign({ skryte: [], zoom: {}, vlastne: [], chatgoo: "kvapka" }, JSON.parse(this.text)); } catch (e) {} } } }
+    function kvSave(k, msg) {
+        app.kv = k;
+        run(["sh", "-c", 'mkdir -p "$(dirname "$1")" && printf "%s\\n" "$2" > "$1.new" && mv -f "$1.new" "$1"', "sh", app.kvFile, JSON.stringify(k)], msg);
+    }
+    function kvToggle(key, name) {
+        const k = JSON.parse(JSON.stringify(app.kv)), h = k.skryte.indexOf(key);
+        if (h >= 0) k.skryte.splice(h, 1); else k.skryte.push(key);
+        kvSave(k, name + (h >= 0 ? " sa ukáže" : " je skrytá"));
+    }
     property var aiServices: []           // latte-ai sluzby: predplatné (nainštalované, prihlásené)
     property var aiProg: ({})             // latte-ai priebeh: stav inštalácie/prihlásenia podľa služby
     property string aiAnswer: ""
@@ -125,7 +139,9 @@ ShellRoot {
 
     // ── strom Nastavení (kanonický, main_setting_v2.md §58) ──────────────────────
     // status: ready = funguje · partial = časť · planned = zatiaľ len plán
-    readonly property var areas: [
+    // Goo a Classic majú vlastné stránky (only: "goo" | "classic"); spoločné bez príznaku
+    readonly property var areas: areasAll.map(a => Object.assign({}, a, { pages: a.pages.filter(p => !p.only || p.only === (app.kvapkyOn ? "goo" : "classic")) }))
+    readonly property var areasAll: [
         { key: "softver", title: "Softvér", glyph: "apps", summary: "AI: " + (ai.ok === "1" ? (ai.model || "pripravené") : "nenastavené"), owner: "App Manager",
           pages: [
             { key: "aplikacie", label: "Aplikácie", glyph: "apps", status: "ready" },
@@ -166,7 +182,8 @@ ShellRoot {
             { key: "pismo", label: "Písmo a mierka", glyph: "typography", status: "ready" },
             { key: "pozadie", label: "Pozadie", glyph: "photo", status: "ready" },
             { key: "okna", label: "Okná", glyph: "layout-columns", status: "ready" },
-            { key: "lista", label: "Lišta a systémové menu", glyph: "layout-bottombar", status: "ready" },
+            { key: "kvapky", label: "Kvapky (Goo)", glyph: "coffee", status: "ready", only: "goo" },
+            { key: "lista", label: "Lišta a systémové menu", glyph: "layout-bottombar", status: "ready", only: "classic" },
             { key: "oznamenia", label: "Oznámenia", glyph: "bell", status: "ready" },
             { key: "efekty", label: "Animácie a efekty", glyph: "sparkles", status: "ready" },
             { key: "pristupnost", label: "Prístupnosť", glyph: "accessible", status: "ready" } ] },
@@ -200,6 +217,7 @@ ShellRoot {
         const p = allPages.find(x => x.key === key);
         if (p && p.area) side.openArea = p.area;
         if (push !== false) { history = history.slice(0, historyIndex + 1).concat([key]); historyIndex = history.length - 1; }
+        if (key === "kvapky") kvRead.running = true;
         if (key === "ai") { aiStatus.running = true; aiList.running = true; aiSvc.running = true; }
         if (key === "o") aboutProc.running = true;
         dalsie.opened(key);
@@ -877,7 +895,7 @@ ShellRoot {
         if (managed[k]) return pManaged;
         if (dalsie.pages[k]) return dalsie.pages[k];
         return ({ domov: pDomov, ai: pAi, subory: pSubory, ulozisko: pUlozisko, vykon: pVykon, diagnostika: pDiag,
-                  prihlasovanie: pGreeter, motiv: pMotiv, pozadie: pozadieTab === "online" ? pTapetyOnline : pPozadie, tapetyonline: pTapetyOnline, okna: pOkna, lista: pLista, efekty: pEfekty,
+                  prihlasovanie: pGreeter, motiv: pMotiv, pozadie: pozadieTab === "online" ? pTapetyOnline : pPozadie, tapetyonline: pTapetyOnline, okna: pOkna, lista: pLista, kvapky: pKvapky, efekty: pEfekty,
                   start: pStart, cas: pCas, o: pO, klavesnica: pKlavesy, oznamenia: pOznamenia, pristupnost: pPristupnost,
                   uzamknutie: pUzamknutie, pokrocile: pPokrocile, schranka: pSchranka, mojucet: pUcet, jazyk: pJazyk, zalohy: pZalohy, pouzivatelia: pPouzivatelia, synchronizacia: pCloud })[k] || pPlan;
     }
@@ -1883,6 +1901,73 @@ ShellRoot {
           }
           Text { width: parent.width; wrapMode: Text.WordWrap; color: theme.fgDim; font { family: theme.fontUi; pixelSize: 12 }
                  text: "Okno pritiahnuté k ľavému alebo pravému okraju zaberie polovicu, k rohu štvrtinu, k hornému okraju celú obrazovku; odtiahnutie vráti pôvodnú veľkosť. Win + šípky robia to isté z klávesnice. V páske a dlaždiciach okná rozkladá systém sám." }
+        }
+    }
+    Component {
+        id: pKvapky
+        Column {
+            id: kvp
+            spacing: 12
+            // formulár vlastnej kvapky
+            property string nName: ""; property string nIcon: ""; property string nClick: ""; property string nText: ""; property int nEvery: 10
+            Text { width: parent.width; wrapMode: Text.WordWrap; color: theme.fgDim; font { family: theme.fontUi; pixelSize: 13 }
+                   text: "Kvapky plochy Goo: zobraziť alebo skryť, veľkosť (to isté robí koliesko nad kvapkou) a návrat na pôvodné miesto. Zmena sa prejaví do dvoch sekúnd." }
+            Heading { text: "KVAPKY" }
+            Repeater {
+                model: [["zt", "TimeGoo", "Hodiny, Štart a spúšťač, stopky, minútka", "clock"],
+                        ["zp", "PowerGoo", "Vypínač a batéria", "power"],
+                        ["zd", "DaNoGoo", "Dátum, počasie, upozornenia, kalendár", "calendar"]]
+                Column {
+                    required property var modelData
+                    readonly property bool hid: app.kv.skryte.indexOf(modelData[0]) >= 0
+                    width: parent.width; spacing: 6
+                    Card { width: parent.width; height: 64; glyph: modelData[3]; title: modelData[1] + (parent.hid ? "  ·  skrytá" : ""); sub: modelData[2]; selected: !parent.hid
+                           onClicked: app.kvToggle(modelData[0], modelData[1]) }
+                    Row {
+                        spacing: 10; visible: !parent.hid
+                        Stepper { label: "Veľkosť"; unit: " %"; step: 15; min: 100; max: 220
+                                  value: Math.round(100 * (parseFloat((app.kv.zoom || {})[modelData[0]]) || 1))
+                                  onStepped: (v) => { const k = JSON.parse(JSON.stringify(app.kv)); k.zoom = k.zoom || {}; k.zoom[modelData[0]] = v / 100; app.kvSave(k, modelData[1] + ": " + v + " %"); } }
+                        Button { label: "Vrátiť na miesto"; glyph: "arrow-back-up"
+                                 onClicked: { const k = JSON.parse(JSON.stringify(app.kv)); k.reset = { k: modelData[0], t: Date.now() }; app.kvSave(k, modelData[1] + " sa vráti na pôvodné miesto"); } }
+                    }
+                }
+            }
+            Text { width: parent.width; wrapMode: Text.WordWrap; color: theme.fgDim; font { family: theme.fontUi; pixelSize: 12 }
+                   text: "Goobar (lišta s oknami) a QueenGoo ostávajú vždy — skrytie pribudne po úprave ich scény. Kliknutím na kartu kvapku skryješ alebo ukážeš." }
+            Heading { text: "CHATGOO (DOPLNOK PRE BEEPER)"; topPadding: 6 }
+            Segments {
+                options: [["kvapka", "Kvapka ChatGoo — Beeper sa minimalizuje do nej, správy okolo"], ["lista", "Bez kvapky — ikona Beepera v rohovej lište Noctalie"]]
+                value: app.kv.chatgoo || "kvapka"
+                onPicked: (v) => { const k = JSON.parse(JSON.stringify(app.kv)); k.chatgoo = v; app.kvSave(k, v === "kvapka" ? "ChatGoo ako kvapka" : "Beeper v rohovej lište"); }
+            }
+            Text { width: parent.width; wrapMode: Text.WordWrap; color: theme.fgDim; font { family: theme.fontUi; pixelSize: 12 }
+                   text: "ChatGoo nie je nutná — je to doplnok. Beeper si nainštaluješ sám (beeper.com, Linux AppImage); kvapka sa ukáže, keď Beeper beží." }
+            Heading { text: "VLASTNÉ KVAPKY"; topPadding: 6 }
+            Repeater {
+                model: app.kv.vlastne || []
+                Row {
+                    required property var modelData
+                    spacing: 8
+                    Card { width: 420; height: 58; glyph: "point"; title: modelData.nazov; sub: (modelData.klik || "") + (modelData.text ? "  ·  text: " + modelData.text : "") }
+                    Button { label: "Odstrániť"; glyph: "trash"; anchors.verticalCenter: parent.verticalCenter
+                             onClicked: { const k = JSON.parse(JSON.stringify(app.kv)); k.vlastne = k.vlastne.filter(x => x.id !== modelData.id); app.kvSave(k, "Kvapka odstránená: " + modelData.nazov); } }
+                }
+            }
+            Text { width: parent.width; wrapMode: Text.WordWrap; color: theme.fgDim; font { family: theme.fontUi; pixelSize: 12 }
+                   text: "Vlastná kvapka sa správa ako kvapky widgetov: ťahaním ju presunieš k ľubovoľnému okraju, klik spustí príkaz, pravý klik otvorí tieto nastavenia. Text (napr. teplota, počet správ) dodá príkaz — prvý riadok, najviac 8 znakov." }
+            Field { placeholder: "Názov (napr. Kalkulačka)"; onEdited: (t) => kvp.nName = t }
+            Field { placeholder: "Ikona — názov z témy ikon (napr. accessories-calculator) alebo cesta k obrázku"; onEdited: (t) => kvp.nIcon = t }
+            Field { placeholder: "Príkaz po kliknutí (napr. gnome-calculator)"; onEdited: (t) => kvp.nClick = t }
+            Field { placeholder: "Príkaz pre text na kvapke (nepovinné, napr. date +%H:%M)"; onEdited: (t) => kvp.nText = t }
+            Stepper { label: "Obnoviť text každých"; unit: " s"; value: kvp.nEvery; step: 5; min: 5; max: 600; onStepped: (v) => kvp.nEvery = v }
+            Button { label: "Pridať kvapku"; glyph: "plus"; primaryStyle: true
+                     onClicked: {
+                         if (kvp.nName.trim() === "" || kvp.nClick.trim() === "") { app.status = "Vyplň aspoň názov a príkaz po kliknutí"; return; }
+                         const k = JSON.parse(JSON.stringify(app.kv)); k.vlastne = k.vlastne || [];
+                         k.vlastne.push({ id: String(Date.now()), nazov: kvp.nName.trim(), ikona: kvp.nIcon.trim(), klik: kvp.nClick.trim(), text: kvp.nText.trim(), obnova: kvp.nEvery });
+                         app.kvSave(k, "Pridaná kvapka: " + kvp.nName.trim() + " (dole na okraji, ťahaním ju presunieš)");
+                     } }
         }
     }
     Component {

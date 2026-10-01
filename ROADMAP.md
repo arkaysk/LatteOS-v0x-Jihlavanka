@@ -327,6 +327,9 @@ texty preložiteľné (`translations`). Noctalia beží bez lišty a robí, čo 
 - [x] **Rohová lišta Noctalie** (1. 10.): pravá časť lišty Noctalie v pravom dolnom rohu (záplata margin_start /
       margin_end, zmiešané vyduté rohy) — všetky widgety a komunitné doplnky Noctalie bežia v nej natívne.
       Ďalej: priehľadné pozadie a goo telo z pleamaru pod ňou (vlnenie, pulzovanie)
+- [x] Nastavenia podľa prostredia (1. 10.): v Goo stránka **Kvapky (Goo)** (skryť/ukázať, veľkosť, vrátiť na miesto,
+  ChatGoo kvapka alebo ikona v rohovej lište, **vlastné kvapky**), v Classic Lišta a systémové menu
+- [ ] Kvapky: skrytie Goobaru a QueenGoo (scéna), overiť zvyšky po skrytí na latte-lab
 - [ ] **ChatGoo** (addon pre Beeper, LATTEOS-GOO.md 4.2c): kvapka, do ktorej sa minimalizuje Beeper, správy okolo nej
   ako hrozno DaNoGoo (upozornenia aplikácie Beeper presmerované). Pomocník `latte-chatgoo` hotový; scéna naživo na latte-lab
 - [ ] **Komunitné doplnky Noctalie ako kvapky** — prieskum 30. 9.: 235 doplnkov (13 oficiálnych, 222 komunitných,
