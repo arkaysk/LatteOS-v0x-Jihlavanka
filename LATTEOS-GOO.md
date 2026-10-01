@@ -188,6 +188,14 @@ Karta z ucha TimeGoo, zhora nadol:
 - **AI = `latte-ai`** z klasického LatteOS (Nastavenia › Softvér › AI): webové čety (odpoveď v prehliadači s
   prihlásením), Ollama, domáci server, cloud s kľúčom (Claude, ChatGPT, Gemini, Mistral). Rozhovor ide ako JSON
   v argumente (`latte-ai chat '[…]'`), chyba sa vráti na stdout a ukáže v bubline.
+- **Rozhovor s AI VŽDY vnútri, nikdy v prehliadači** (1. 10., používateľ, záväzné): keď si vyberiem napr. Claude
+  alebo Gemini a napíšem otázku, nesmie sa otvoriť okno prehliadača — celá diskusia beží v bublinách spúšťača.
+  A to **bez API kľúča**, s prihlásením cez predplatné, ako to robí rozšírenie Claude Code vo VS Code a ďalšie
+  aplikácie: tie spúšťajú oficiálny nástroj príkazového riadka prihlásený účtom používateľa. Teda nový druh
+  poskytovateľa v `latte-ai` (namiesto „web“): **Claude** = `claude -p` (Claude Code, prihlásenie Claude účtom,
+  výstup `--output-format stream-json` → bubliny po kúskoch), **Gemini** = `gemini` CLI (prihlásenie Google
+  účtom), **ChatGPT** = `codex exec` (prihlásenie ChatGPT účtom); prihlásenie raz z Nastavení (otvorí ich vlastné
+  prihlasovacie okno), potom už iba vnútri. Režim „web“ (otvorenie stránky) zostane iba ako posledná možnosť.
 - ~~Úzky riadok počasia~~ — **počasie je od 1. 10. v DaNoGoo** (náhľad na kvapke, podrobnosti v jej karte);
   riadok čipov je úplne dole a obsah má viac miesta.
 - Aplikácie bez textu: **obľúbené ako dlaždice** (6 × 2) a pod nimi **Nedávne** (2 × 2, naposledy spustené), ako vo
@@ -343,6 +351,8 @@ Ide sa **po poradí**; nové nápady sa zapíšu na koniec (E), nerozbiehajú sa
   nimi Zamknúť / Odhlásiť / Uspať / Reštartovať / Vypnúť).
 
 ### E. Neskôr / nápady
+- **AI vnútri bez API kľúča** (1. 10., záväzné — pozri 4.3): poskytovatelia cez prihlásené CLI (Claude Code,
+  Gemini CLI, Codex) namiesto otvárania prehliadača; streamovaná odpoveď do bublín, zastavenie, nový rozhovor
 - AI: úroveň uvažovania („High“ z náčrtu) — `latte-ai` ju zatiaľ nepozná
 - **bubliny četov** pre viac kanálov (Messenger, Telegram, Signal, ICQ…) — forma sa ešte premyslí (používateľ);
   nie ako režim spúšťača a **nie spojené s DaNoGoo** (1. 10.)
