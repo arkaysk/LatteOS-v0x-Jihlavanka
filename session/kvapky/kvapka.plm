@@ -553,17 +553,18 @@ scene Kvapka {
             line { from: if((tg_free or tg_moved), hx, sx + 8), if((tg_free or tg_moved), mid - 8, s.y - 12); to: if((tg_free or tg_moved), hx, bl + 18), if((tg_free or tg_moved), mid - 8, bottom - 14); width: thread.sb * ap * (1 - dsh) * if((tg_free or tg_moved), 0, 1); blend: 14 * clamp(thread.sb * ap * (1 - dsh) / 3, 0, 1) }
             ellipse { at: if((seg and (tg_free or tg_moved)) or (not seg and ((tg_free or tg_moved) or (pg_free or pg_moved))), hx, drip.x), if((seg and (tg_free or tg_moved)) or (not seg and ((tg_free or tg_moved) or (pg_free or pg_moved))), mid - 8, drip.y); radius: drip.r * so; blend: 8 }
             // hladina: prehnutie pod Hodinami, zvyšková kvapka a vlnky (zliate s okrajom, preto bez kreslenia krku)
-            // (neaktívne majú nulový polomer — elipsa stlačená na nulovú výšku by v tele vyrezala diery)
-            ellipse { at: if((tg_free or tg_moved), hx, sx), if((tg_free or tg_moved), mid - 8, edge); radius: 30 * if(sag.s > 0.3, 1, 0); scale: 1, max(sag.s, 0.3) / 30; blend: 16 * clamp(sag.s / 6, 0, 1) }
+            // (neaktívne majú nulový polomer A sploštenie 1 — elipsa s nulovým polomerom a sploštením má vzdialenosť
+            // takmer nulovú po celej vodorovnej čiare cez stred a kvapky v okolí sa k nej lepia; nulová výška vyreže diery)
+            ellipse { at: if((tg_free or tg_moved), hx, sx), if((tg_free or tg_moved), mid - 8, edge); radius: 30 * if(sag.s > 0.3, 1, 0); scale: 1, if(sag.s > 0.3, sag.s / 30, 1); blend: 16 * clamp(sag.s / 6, 0, 1) }
             ellipse { at: stray.x, edge - 5.5 * stray * 0.7; radius: 5.5 * stray * so; blend: 7 * clamp(stray * 5.5 / 3, 0, 1) }
-            ellipse { at: vx.0 - vd.0, edge; radius: 9 * if(vh.0 > 0.3, 1, 0); scale: 1, max(vh.0, 0.3) / 9; blend: 8 * clamp(vh.0 / 3, 0, 1) }
-            ellipse { at: vx.0 + vd.0, edge; radius: 9 * if(vh.0 > 0.3, 1, 0); scale: 1, max(vh.0, 0.3) / 9; blend: 8 * clamp(vh.0 / 3, 0, 1) }
-            ellipse { at: vx.1 - vd.1, edge; radius: 9 * if(vh.1 > 0.3, 1, 0); scale: 1, max(vh.1, 0.3) / 9; blend: 8 * clamp(vh.1 / 3, 0, 1) }
-            ellipse { at: vx.1 + vd.1, edge; radius: 9 * if(vh.1 > 0.3, 1, 0); scale: 1, max(vh.1, 0.3) / 9; blend: 8 * clamp(vh.1 / 3, 0, 1) }
-            ellipse { at: vx.2 - vd.2, edge; radius: 9 * if(vh.2 > 0.3, 1, 0); scale: 1, max(vh.2, 0.3) / 9; blend: 8 * clamp(vh.2 / 3, 0, 1) }
-            ellipse { at: vx.2 + vd.2, edge; radius: 9 * if(vh.2 > 0.3, 1, 0); scale: 1, max(vh.2, 0.3) / 9; blend: 8 * clamp(vh.2 / 3, 0, 1) }
-            ellipse { at: vx.3 - vd.3, edge; radius: 9 * if(vh.3 > 0.3, 1, 0); scale: 1, max(vh.3, 0.3) / 9; blend: 8 * clamp(vh.3 / 3, 0, 1) }
-            ellipse { at: vx.3 + vd.3, edge; radius: 9 * if(vh.3 > 0.3, 1, 0); scale: 1, max(vh.3, 0.3) / 9; blend: 8 * clamp(vh.3 / 3, 0, 1) }
+            ellipse { at: vx.0 - vd.0, edge; radius: 9 * if(vh.0 > 0.3, 1, 0); scale: 1, if(vh.0 > 0.3, vh.0 / 9, 1); blend: 8 * clamp(vh.0 / 3, 0, 1) }
+            ellipse { at: vx.0 + vd.0, edge; radius: 9 * if(vh.0 > 0.3, 1, 0); scale: 1, if(vh.0 > 0.3, vh.0 / 9, 1); blend: 8 * clamp(vh.0 / 3, 0, 1) }
+            ellipse { at: vx.1 - vd.1, edge; radius: 9 * if(vh.1 > 0.3, 1, 0); scale: 1, if(vh.1 > 0.3, vh.1 / 9, 1); blend: 8 * clamp(vh.1 / 3, 0, 1) }
+            ellipse { at: vx.1 + vd.1, edge; radius: 9 * if(vh.1 > 0.3, 1, 0); scale: 1, if(vh.1 > 0.3, vh.1 / 9, 1); blend: 8 * clamp(vh.1 / 3, 0, 1) }
+            ellipse { at: vx.2 - vd.2, edge; radius: 9 * if(vh.2 > 0.3, 1, 0); scale: 1, if(vh.2 > 0.3, vh.2 / 9, 1); blend: 8 * clamp(vh.2 / 3, 0, 1) }
+            ellipse { at: vx.2 + vd.2, edge; radius: 9 * if(vh.2 > 0.3, 1, 0); scale: 1, if(vh.2 > 0.3, vh.2 / 9, 1); blend: 8 * clamp(vh.2 / 3, 0, 1) }
+            ellipse { at: vx.3 - vd.3, edge; radius: 9 * if(vh.3 > 0.3, 1, 0); scale: 1, if(vh.3 > 0.3, vh.3 / 9, 1); blend: 8 * clamp(vh.3 / 3, 0, 1) }
+            ellipse { at: vx.3 + vd.3, edge; radius: 9 * if(vh.3 > 0.3, 1, 0); scale: 1, if(vh.3 > 0.3, vh.3 / 9, 1); blend: 8 * clamp(vh.3 / 3, 0, 1) }
             // >>> kvapky widgetov (telo, goo.py)
             box { at: if((wb.0 > 0.05 and solo) and wsheet.0 * so > 0.02, pick(side, wa.x.0, W - (wa.x.0), wa.y.0, H - (wa.y.0)), hx), if((wb.0 > 0.05 and solo) and wsheet.0 * so > 0.02, pick(side, (wa.y.0) - H + edge, edge - (wa.y.0), edge - (wa.x.0), (wa.x.0) - W + edge), mid - 8); size: if(side >= 2, (20 * abs(wn.y.0) + 70 * abs(wn.x.0)) * wsheet.0 * so, (70 * abs(wn.y.0) + 20 * abs(wn.x.0)) * wsheet.0 * so), if(side >= 2, (70 * abs(wn.y.0) + 20 * abs(wn.x.0)) * wsheet.0 * so, (20 * abs(wn.y.0) + 70 * abs(wn.x.0)) * wsheet.0 * so); corner: 10 }
             ellipse { at: if((wb.0 > 0.05 and solo) and wsheet.0 * so > 0.02, pick(side, wa.x.0, W - (wa.x.0), wa.y.0, H - (wa.y.0)), hx), if((wb.0 > 0.05 and solo) and wsheet.0 * so > 0.02, pick(side, (wa.y.0) - H + edge, edge - (wa.y.0), edge - (wa.x.0), (wa.x.0) - W + edge), mid - 8); radius: 24 * wsheet.0 * so; blend: 16 * wsheet.0 * so }

@@ -280,6 +280,9 @@ sokety v `/run/user/1000/pleamar/`.
 chyby (neaktívne tvary nulovým polomerom); logika nevie zapisovať súbory (`latte-kvapky uloz`). **`show:` na tvare
 v `body` tvar neskryje** (iba násobí priehľadnosť, do siluety sa zleje aj tak) — tvar s nulovým polomerom / šírkou
 a `blend` nechá bodku či vlásočnicu; skryté tvary lišty preto odchádzajú do stredu hlavy (`hx, mid - 8`).
+**Elipsa s nulovým polomerom musí mať sploštenie 1** (`scale: 1, if(aktívna, h / r, 1)`): vzdialenosť elipsy je
+`(length(p / scale) - polomer) * min(scale)`, takže pri polomere 0 a sploštení 0,01 je takmer nulová po celej
+vodorovnej čiare cez stred — kvapky v okolí sa k nej „lepia“ (krídla na kráľovnej, Hodinách, vypínači, 1. 10.).
 `pointer.x` na celoobrazovkovej vrstve klame — `mx`/`my` (Hyprland); počas ťahania zóna cez celú obrazovku
 (polomer 4000), inak Hyprland pošle pustenie mimo zóny niekam inam.
 
