@@ -122,6 +122,10 @@ def pci_state(slot, driver, cls, vendor):
         return "ok", "", [], ""
     if cls.startswith("0x06") or cls.startswith("0x0c05") or cls.startswith("0x0880"):
         return "ok", "most/zbernica — ovládač netreba", [], ""
+    # systémové periférie dosky a CPU (PIC/IOAPIC, DMA, časovač, RTC, IOMMU, RCEC; registre Xeonu 0x1101):
+    # obslúži ich jadro priamo, vlastný ovládač nemajú — inak planý poplach „nepodporované“ (latte-lab, Xeon E5 v2)
+    if cls[:6] in ("0x0800", "0x0801", "0x0802", "0x0803", "0x0804", "0x0806", "0x0807", "0x1101"):
+        return "ok", "systémové zariadenie dosky — ovládač netreba", [], ""
     for (v, c), (repo, pk, why) in NEEDS_REPO.items():
         if vendor == v and cls.startswith(c):
             return "repo", why, pk, repo
