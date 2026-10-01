@@ -221,6 +221,29 @@ Príčina: jazyk scény (pleamar) nemá v tele cykly, takže každá kvapka sa m
   Robiť naživo na latte-lab (scénu treba vidieť), po kvapkách: Hodiny → vypínač → DaNoGoo → QueenGoo, s porovnaním
   snímok pred a po. Z cloudu sa scéna nemení bez súhlasu.
 
+**Návrh používateľa: rozšírenie pleamar ako „DLC“, ktoré prežije aktualizáciu pleamar.** Posúdené na aktuálnom
+upstreame (pleamar **0.2.6**, `8bb920f`; my máme záplaty na 0.2.3, scéna je ešte `language 0.1`).
+- Licencia je **BSD-3-Clause** (nie MIT) — tiež voľná; pri šírení treba ponechať copyright Abela (k4ditano) a jeho
+  meno nepoužiť na propagáciu bez súhlasu.
+- Dôležité zistenie: pleamar 0.2 už **má** to, čo engine potrebuje, cez verejný jazyk (ten sa pri aktualizáciách
+  drží, 0.2 číta aj 0.1): **komponenty s parametrami**, `repeat` a `for` nad modelom, **knižnice** (`import … as`),
+  **pluginy** (knižnica + vlastný `.luau`, vlastné povolenia, schválenie `pleamar --approve`), v logike `require`,
+  a pravidlo **`idle for 14s`** (základ živých bytostí). Jediné obmedzenie: vnútri `body` (goo zliatie) smú byť
+  iba tvary — žiadne `repeat` ani komponenty; preto `goo.py` rozpisuje telá.
+- **DLC = „Goo“ ako vrstva nad pleamar, nie fork:**
+  1. `session/kvapky/goo/goo.plm` — `library Goo`: komponent `Kvapka(id, kotva, polomer, zoom, ťahateľná…)` so
+     zónami, textami, pružinami, blízkosťou kurzora, prichytením; Hodiny, vypínač, DaNoGoo, QueenGoo, ChatGoo
+     a vlastné kvapky sú jeho kópie s obsahom v slotoch.
+  2. `goo/lib/entita.luau` (cez `require`) — register kvapiek: ťahanie, uloženie, zoom, skrytie, vrátenie na miesto,
+     správanie pri nečinnosti (gravitácia a svetlo kurzora, dážď/vietor, naháňačka so zrážkou) — raz pre všetky.
+  3. Telá v `body` ostávajú generované (jediný generátor `goo.py` z tej istej tabuľky), kým pleamar nedovolí
+     `repeat` v `body`. To je **jediná vec do Rustu**: malá záplata + návrh autorovi ako PR (keď dá súhlas).
+  4. Pravidlo trvanlivosti: DLC používa iba zdokumentovaný jazyk a API; záplaty Rustu čo najmenšie, inštalácia
+     ich skúša `git apply --check` a **bez nich scéna funguje ďalej** (iba bez danej vymoženosti). Pri novej verzii
+     pleamar: `run-tests.sh` + načítanie scény (`pleamar --check`) ako brána pred nasadením.
+- Poradie: (a) prechod scény na `language 0.2` a pleamar 0.2.6 na latte-lab, (b) knižnica Goo + `entita.luau`
+  po jednej kvapke s porovnaním snímok, (c) ChatGoo a živé bytosti už na DLC. Robí sa naživo na latte-lab.
+
 ## Nové a zmenené súbory
 
 - `session/bin/`: `gnome-software`, `latte-hladaj`, `latte-riadok`, `latte-pocasie` (nové); `latte-ai`, `latte-apps`,
