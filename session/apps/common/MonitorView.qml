@@ -524,6 +524,49 @@ Item {
                     }
                 }
                 Text { text: "Čítanie " + app.human(app.snap.disk.read) + "/s · zápis " + app.human(app.snap.disk.write) + "/s"; color: theme.fgDim; font { family: theme.fontUi; pixelSize: 12 } }
+                // ── výkon po zariadeniach (ako karta Výkon vo Win11) ──
+                Heading { text: "PAMÄŤ — ZLOŽENIE"; visible: !!app.snap.memc }
+                Rectangle {
+                    visible: !!app.snap.memc; width: Math.min(parent.width, 620); height: 64; radius: 12; color: theme.field
+                    readonly property var m: app.snap.memc || ({ total: 1 })
+                    readonly property var parts: [["Aplikácie", m.apps, theme.primary], ["Jadro", m.kernel, theme.error], ["Zdieľaná", m.shared, theme.fg],
+                                                  ["Vyrovnávacia (uvoľní sa)", m.cache, theme.fgDim], ["Voľná", m.free, theme.line]]
+                    Row { x: 14; y: 12; width: parent.width - 28; height: 10
+                          Repeater { model: parent.parent.parts
+                                     Rectangle { required property var modelData; height: 10; color: modelData[2]
+                                                 width: parent.width * (modelData[1] || 0) / Math.max(1, parent.parent.m.total) } } }
+                    Text { x: 14; y: 32; width: parent.width - 28; elide: Text.ElideRight; color: theme.fgDim; font { family: theme.fontUi; pixelSize: 11 }
+                           text: parent.parts.map(x => x[0] + " " + app.human(x[1] || 0)).join("  ·  ")
+                                 + (parent.m.zram && parent.m.zram.orig > 0 ? "  ·  zram " + app.human(parent.m.zram.orig) + " → " + app.human(parent.m.zram.compr)
+                                    + " (" + (parent.m.zram.orig / Math.max(1, parent.m.zram.compr)).toFixed(1).replace(".", ",") + "×)" : "") }
+                }
+                Heading { text: "DISKY — VÝKON"; visible: (app.snap.disks || []).length > 0 }
+                Repeater {
+                    model: app.snap.disks || []
+                    Rectangle {
+                        required property var modelData
+                        width: Math.min(parent.width, 620); height: 50; radius: 12; color: theme.field
+                        Text { x: 14; y: 8; text: modelData.name + (modelData.model ? "  ·  " + modelData.model : "") + "  ·  " + (modelData.rota ? "HDD" : "SSD")
+                               color: theme.fg; font { family: theme.fontUi; pixelSize: 13; weight: Font.Bold } }
+                        Text { anchors { right: parent.right; rightMargin: 14 } y: 8; color: modelData.active > 80 ? theme.error : theme.fgDim; font { family: theme.fontUi; pixelSize: 12 }
+                               text: "aktívny " + modelData.active + " %  ·  odozva " + String(modelData.resp).replace(".", ",") + " ms  ·  ↓ " + app.human(modelData.read) + "/s  ↑ " + app.human(modelData.write) + "/s" }
+                        Rectangle { x: 14; y: 34; width: parent.width - 28; height: 4; radius: 2; color: theme.line
+                                    Rectangle { width: parent.width * parent.parent.modelData.active / 100; height: 4; radius: 2; color: parent.parent.modelData.active > 80 ? theme.error : theme.primary } }
+                    }
+                }
+                Heading { text: "SIEŤ — PO PRIPOJENIACH"; visible: (app.snap.nics || []).length > 0 }
+                Repeater {
+                    model: app.snap.nics || []
+                    Rectangle {
+                        required property var modelData
+                        width: Math.min(parent.width, 620); height: 36; radius: 12; color: theme.field
+                        Text { x: 14; anchors.verticalCenter: parent.verticalCenter; text: (modelData.wifi ? "Wi-Fi  ·  " : "Ethernet  ·  ") + modelData.name
+                                                                                          + (parseInt(modelData.speed) > 0 ? "  ·  " + modelData.speed + " Mb/s" : "")
+                               color: theme.fg; font { family: theme.fontUi; pixelSize: 13; weight: Font.Bold } }
+                        Text { anchors { right: parent.right; rightMargin: 14; verticalCenter: parent.verticalCenter }
+                               text: "↓ " + app.human(modelData.rx) + "/s   ↑ " + app.human(modelData.tx) + "/s"; color: theme.fgDim; font { family: theme.fontUi; pixelSize: 12 } }
+                    }
+                }
                 Heading { text: "TEPLOTY" }
                 Text {
                     width: parent.width; wrapMode: Text.WordWrap
