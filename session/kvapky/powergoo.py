@@ -32,17 +32,21 @@ a(f'''    // >>> PowerGoo (powergoo.py)
     fact bat_present = false
     fact bat_pct = 100
     fact bat_chg = false
-    let pxs = pick(side, px, W - px, edge - p.y, W - edge + p.y)
-    let pys = pick(side, p.y + H - edge, edge - p.y, px, H - px)
+    // vypínač môže byť voľný (ťahaním na iný okraj, 1. 10.): poloha a orientácia podľa jeho vlastného okraja
+    let pxs = if(pg_free or pg_moved, pg.fx, pick(side, px, W - px, edge - p.y, W - edge + p.y))
+    let pys = if(pg_free or pg_moved, pg.fy, pick(side, p.y + H - edge, edge - p.y, px, H - px))
+    let p.vert = if(pg_free, if(pg.side >= 2, 1, 0), vert)
+    let p.ax = if(pg_free, pick(pg.side, 0, 0, 1, -1), away.x)
+    let p.ay = if(pg_free, pick(pg.side, -1, 1, 0, 0), away.y)
     let pw = {PW}
     let ph = {PH_ROWS} + 28 + if(bat_present, 44, 0)
     // ucho: kvapka vypínača vystúpi kolmo od okraja; okno rastie od nej tam, kde je miesto (ktorýkoľvek zo 4 rohov)
-    let pk.x = if(vert, pxs + away.x * 58, pxs)
-    let pk.y = if(vert, pys, pys + away.y * 58)
-    let p.sx = if(vert, 0, if(pk.x + pw + 12 <= W, 1, -1))
-    let p.sy = if(vert, if(pk.y + ph + 12 <= H, 1, -1), 0)
-    let pt.x = if(vert, pk.x + away.x * (pw / 2 - 12), pk.x + p.sx * (pw / 2 - 12))
-    let pt.y = if(vert, pk.y + p.sy * (ph / 2 - 12), pk.y + away.y * (ph / 2 - 12))
+    let pk.x = if(p.vert, pxs + p.ax * 58, pxs)
+    let pk.y = if(p.vert, pys, pys + p.ay * 58)
+    let p.sx = if(p.vert, 0, if(pk.x + pw + 12 <= W, 1, -1))
+    let p.sy = if(p.vert, if(pk.y + ph + 12 <= H, 1, -1), 0)
+    let pt.x = if(p.vert, pk.x + p.ax * (pw / 2 - 12), pk.x + p.sx * (pw / 2 - 12))
+    let pt.y = if(p.vert, pk.y + p.sy * (ph / 2 - 12), pk.y + p.ay * (ph / 2 - 12))
     let p.swim = smooth(0, 0.45, pm)
     let p.grow = smooth(0.3, 1, pm)
     let pb.x = pxs + (pk.x - pxs) * p.swim
@@ -51,8 +55,8 @@ a(f'''    // >>> PowerGoo (powergoo.py)
     let pc.y = pk.y + (pt.y - pk.y) * p.grow
     let p0.x = pt.x - pw / 2 + 12
     let p0.y = pt.y - ph / 2 + 14 + if(bat_present, 44, 0)
-    let p.gx = away.x * pw / 2 * vert
-    let p.gy = away.y * ph / 2 * (1 - vert)
+    let p.gx = p.ax * pw / 2 * p.vert
+    let p.gy = p.ay * ph / 2 * (1 - p.vert)
     body {{
         gradient: pc.x + p.gx, pc.y + p.gy to pc.x - p.gx, pc.y - p.gy, l.win, l.win, mix(l.win, coffee, 0.4), coffee
         glass: 100% * l.glass
@@ -103,7 +107,7 @@ a('''    // batéria na kvapke vypínača: minibublinky (3 zelené ≥ 60 %, 2 �
 ''')
 for k in range(3):
     ang = (k - 1) * 32
-    a(f"        ellipse {{ at: pxs + (away.x * cos({ang}) - away.y * sin({ang})) * (27 + 3 * sin(time * 3 + {k * 2}) * if(bat_chg, 1, 0)), pys + (away.y * cos({ang}) + away.x * sin({ang})) * (27 + 3 * sin(time * 3 + {k * 2}) * if(bat_chg, 1, 0)); radius: 4.5 * if({k} < bat_n, 1, 0) * bat_pulse * so; blend: 4 }}\n")
+    a(f"        ellipse {{ at: pxs + (p.ax * cos({ang}) - p.ay * sin({ang})) * (27 + 3 * sin(time * 3 + {k * 2}) * if(bat_chg, 1, 0)), pys + (p.ay * cos({ang}) + p.ax * sin({ang})) * (27 + 3 * sin(time * 3 + {k * 2}) * if(bat_chg, 1, 0)); radius: 4.5 * if({k} < bat_n, 1, 0) * bat_pulse * so; blend: 4 }}\n")
 a('''    }
     // <<< PowerGoo
 ''')

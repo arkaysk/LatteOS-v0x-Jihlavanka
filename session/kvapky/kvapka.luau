@@ -1022,6 +1022,15 @@ local function load_cfg()
                 fact["qg.side"] = tonumber(c.queengoo.side) or 0
                 fact["qg.pos"] = tonumber(c.queengoo.pos) or 0.70
             end
+            for n, key in pairs({ tg = "timegoo", pg = "powergoo" }) do
+                local g = c[key]
+                if type(g) == "table" then
+                    cfg[key] = g
+                    fact[n .. "_free"] = g.free == true
+                    fact[n .. ".side"] = tonumber(g.side) or 0
+                    fact[n .. ".pos"] = tonumber(g.pos) or 0.3
+                end
+            end
             if type(c.danogoo) == "table" then
                 cfg.danogoo = c.danogoo
                 fact["dn.side"] = tonumber(c.danogoo.side) or 0
@@ -1213,6 +1222,26 @@ on("qg_drop", function()
     cfg.queengoo = { side = side, pos = pos }
     save_cfg()
 end)
+-- Hodiny (TimeGoo) a vypínač (PowerGoo) ťahaním (pravidlo 16): pustené pri svojom mieste v lište sa vrátia do nej,
+-- inak samostatná kvapka pri najbližšom okraji; uloží sa do spustac.json (timegoo / powergoo = { free, side, pos })
+local function free_drop(n, key)
+    local x, y = tonumber(fact[n .. "d.x"]) or 0, tonumber(fact[n .. "d.y"]) or 0
+    local W, H = tonumber(fact["wd.w"]) or 1920, tonumber(fact["wd.h"]) or 1080
+    if (tonumber(fact[n .. "d.dd"]) or 999) < 110 then
+        fact[n .. "_free"] = false
+        cfg[key] = { free = false }
+    else
+        local d = { H - y, y, x, W - x }
+        local side, best = 0, d[1]
+        for i = 2, 4 do if d[i] < best then side, best = i - 1, d[i] end end
+        local pos = math.max(0.03, math.min(0.97, (side <= 1) and (x / W) or (y / H)))
+        fact[n .. ".side"] = side; fact[n .. ".pos"] = pos; fact[n .. "_free"] = true
+        cfg[key] = { free = true, side = side, pos = pos }
+    end
+    save_cfg()
+end
+on("tg_drop", function() free_drop("tg", "timegoo") end)
+on("pg_drop", function() free_drop("pg", "powergoo") end)
 -- červená guľka = hardvér (zariadenia, ktoré potrebujú pozornosť — latte-devices), zelená = sieť (výpadok)
 local function qg_hw_paint() fact.qg_hw = qg_devwarn; fact.qg_net = qg_offline and 1 or 0 end
 local function qg_devices()
