@@ -100,3 +100,13 @@ nulovú veľkosť. Merané v cloude (llvmpipe, 1280×720): 192 skrytých tvarov 
 (rovnako ako bez nich), celý engine **192 ms → 21,6 ms**. **Pomáha aj súčasnej ploche Kvapky: 62 → 24 ms** (aj ona má v tele skryté tvary). Zároveň zmizne hrbček,
 ktorý bod nulovej veľkosti cez zliatie vydul. Vhodná na upstream. Bez nej engine funguje, iba pomalšie (prázdne
 miesta ležia pod obrazovkou, aby hrbček nebolo vidieť).
+
+## pleamar-ostre-okraje.patch (1. 10. 2026, oká medzi kvapkami, pleamar 0.2.6)
+
+Telo goo vyhladzuje hranu pevnou šírkou (0,75 px), ako keby sa vzdialenosť od okraja menila všade o pixel na pixel.
+V zliatí (smooth min) je však stlačená: mení sa pomalšie, a hrana sa rozmaže na niekoľko pixelov. Najviac to vidno
+na **okách** medzi zliatymi kvapkami (Hodiny ↔ vypínač), ktoré mali rozmazaný okraj; používateľ chce ostrú čiaru
+ohraničenia. Záplata vydelí vzdialenosť jej skutočnou zmenou na pixel (`dpdx`/`dpdy`, už sa počítali pre sklo) pred
+vyhladením výplne, okraja (`border`), lemu a tieňa pod sklom. Hrana sa tak môže iba zostriť (najviac 5×), nikdy
+rozmazať. Overené v cloude na súčasnej scéne Kvapky (zväčšené oko: rozmazaný prstenec → tenká ostrá čiara).
+Vhodná na upstream.
