@@ -153,6 +153,14 @@ Explorer má karty), Autoruns+ bez farebných riadkov (Autoruns: ružová/žltá
 Senzory najbližšie HWiNFO, Služby v poriadku. Návrh: 1 Výkon ako Win11 · 2 heatmapa buniek · 3 detail v kartách ·
 4 farebné riadky a ikony pôvodu v Po štarte · 5 pruhy v Teste výkonu. Čaká sa na rozhodnutie / screenshoty.
 
+**Grafické úpravy Monitora** (pred overením na latte-lab; k Monitoru sa vrátime po overení grafiky):
+1. nová stránka **Výkon** ako Win11 — vľavo zoznam zariadení (procesor, pamäť, každý disk, každá sieťovka, GPU) s malými
+   živými grafmi, vpravo veľký graf vybraného a podrobnosti; zloženie pamäte a zram tu (z Prehľadu presunuté),
+2. **sfarbenie buniek** v Procesoch podľa záťaže (CPU, pamäť, disk, GPU) farbou témy,
+3. **detail procesu v kartách** Prehľad · Súbory (klik → Súbory) · Sieť,
+4. **Po štarte**: celý riadok farebne (neznáme/podozrivé červenkasté, nové farbou témy) a ikona pôvodu,
+5. **Test výkonu ako pruhy** (teraz vs. najlepšie meranie) a história ako stĺpcový graf.
+
 ## Nové a zmenené súbory
 
 - `session/bin/`: `gnome-software`, `latte-hladaj`, `latte-riadok`, `latte-pocasie` (nové); `latte-ai`, `latte-apps`,

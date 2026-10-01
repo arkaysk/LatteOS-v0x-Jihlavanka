@@ -172,6 +172,41 @@ Item {
             id: hcol
             width: hflick.width - 12; spacing: 12
             Text { visible: !hv.hw; text: "Zisťujem hardvér…"; color: hv.theme.fgDim; font { family: hv.theme.fontUi; pixelSize: 13 } }
+            // test výkonu ako pruhy (CPU-Z Bench): teraz vs. najlepšie z histórie, a história všetkých vlákien
+            Rectangle {
+                visible: hv.tab === "bench" && !!hv.bench
+                width: hcol.width; height: bcol.implicitHeight + 24; radius: 12; color: hv.theme.field
+                readonly property var hist: hv.bench ? hv.bench.history.filter(x => x.tool === hv.bench.now.tool) : []
+                readonly property real maxS: Math.max(1, ...hist.map(x => x.single))
+                readonly property real maxM: Math.max(1, ...hist.map(x => x.multi))
+                Column {
+                    id: bcol; x: 14; y: 12; width: parent.width - 28; spacing: 8
+                    Text { text: "VÝSLEDOK · " + (hv.bench ? hv.bench.now.tool.toUpperCase() : ""); color: hv.theme.fgDim; font { family: hv.theme.fontUi; pixelSize: 10; weight: Font.Bold; letterSpacing: 0.6 } }
+                    Repeater {
+                        model: hv.bench ? [["Jedno vlákno", hv.bench.now.single, parent.parent.maxS], ["Všetky vlákna", hv.bench.now.multi, parent.parent.maxM]] : []
+                        Row {
+                            required property var modelData
+                            spacing: 10
+                            Text { width: 110; text: modelData[0]; color: hv.theme.fg; font { family: hv.theme.fontUi; pixelSize: 12; weight: Font.Bold }; anchors.verticalCenter: parent.verticalCenter }
+                            Rectangle { width: bcol.width - 220; height: 18; radius: 9; anchors.verticalCenter: parent.verticalCenter; color: Qt.rgba(0, 0, 0, 0.2)
+                                        Rectangle { width: parent.width * Math.min(1, modelData[1] / modelData[2]); height: parent.height; radius: 9; color: hv.theme.primary } }
+                            Text { width: 90; text: String(modelData[1]); color: hv.theme.fg; font { family: hv.theme.fontMono; pixelSize: 13; weight: Font.Bold }; anchors.verticalCenter: parent.verticalCenter }
+                        }
+                    }
+                    Text { visible: parent.parent.hist.length > 1; topPadding: 6; text: "HISTÓRIA · VŠETKY VLÁKNA"; color: hv.theme.fgDim; font { family: hv.theme.fontUi; pixelSize: 10; weight: Font.Bold; letterSpacing: 0.6 } }
+                    Row {
+                        visible: parent.parent.hist.length > 1; height: 70; spacing: 6
+                        Repeater {
+                            model: parent.parent.parent.hist.slice(-12)
+                            Rectangle {
+                                required property var modelData
+                                width: 26; anchors.bottom: parent.bottom; radius: 5; color: hv.theme.primary; opacity: 0.55 + 0.45 * (modelData.time === hv.bench.now.time ? 1 : 0)
+                                height: Math.max(4, 70 * modelData.multi / bcol.parent.maxM)
+                            }
+                        }
+                    }
+                }
+            }
             // takty a záťaž jadier (ako HWiNFO Core0…)
             Rectangle {
                 visible: hv.tab === "cpu" && hv.liveClocks.length > 0
