@@ -78,9 +78,17 @@ echo "== engine Goo (relácia LatteOS Kvapky – engine test): scéna, logika, k
     put "$f" "/usr/share/latteos/goo/$f"; done )
 pl="$repo/resources/upstream/pleamar"
 pl_ver=0.2.6                                       # pripnutá verzia (resources/fetch.sh); staršia sa preloží znova
-if command -v cargo >/dev/null && ! "$pl/target/release/pleamar" --version 2>/dev/null | grep -q "pleamar $pl_ver "; then
-    "$repo/resources/fetch.sh" pleamar >/dev/null && git -C "$pl" apply --check "$repo/resources/patches/pleamar-hyprland-okna-8bit.patch" 2>/dev/null \
-        && git -C "$pl" apply "$repo/resources/patches/pleamar-hyprland-okna-8bit.patch"
+pl_patched() { git -C "$pl" apply --reverse --check "$repo/resources/patches/$1.patch" 2>/dev/null; }   # už je v zdroji
+if command -v cargo >/dev/null && { ! "$pl/target/release/pleamar" --version 2>/dev/null | grep -q "pleamar $pl_ver " \
+        || ! pl_patched pleamar-prazdne-tvary; }; then
+    "$repo/resources/fetch.sh" pleamar >/dev/null
+    # záplaty LatteOS (resources/patches/README.md); prazdne-tvary: prázdne miesta enginu Goo nič nestoja —
+    # bez nej engine funguje, iba pomalšie
+    for z in pleamar-hyprland-okna-8bit pleamar-prazdne-tvary; do
+        pl_patched "$z" && continue
+        git -C "$pl" apply --check "$repo/resources/patches/$z.patch" 2>/dev/null && git -C "$pl" apply "$repo/resources/patches/$z.patch" \
+            || echo "   záplata $z sa nedá použiť (možno ju autor už má)"
+    done
     (cd "$pl" && cargo build --release -q) || true
 fi
 # brána: scéna sa nasadí, iba ak ju tento pleamar prečíta (inak by relácia ukázala iba tapetu)

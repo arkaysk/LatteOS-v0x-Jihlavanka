@@ -90,3 +90,13 @@ vyduté rohy: koniec pri stene sa vyduje do bočnej steny (ako lišta cez celú 
 spodnom okraji (ako odsadená lišta) — goo v rohu. Bez týchto kľúčov sa Noctalia správa ako pôvodná. Preložená
 zvlášť do /usr/lib64/latteos/noctalia-kvapky/noctalia, pôvodná /usr/bin/noctalia ostáva nedotknutá.
 
+
+## pleamar-prazdne-tvary.patch (1. 10. 2026, engine Goo, pleamar 0.2.6)
+
+Tvar s nulovou veľkosťou (elipsa s polomerom pod štvrť pixela, čiara s nulovou hrúbkou) sa do tela goo nedá.
+Pleamar to už robil pre obdĺžniky („pod pol pixela neexistuje“), elipsy a čiary počítal ďalej. Teleso počíta
+každý svoj tvar pre každý pixel a `show: false` tvar z tela nevyradí. Engine Goo má 64 miest, prázdne majú
+nulovú veľkosť. Merané v cloude (llvmpipe, 1280×720): 192 skrytých tvarov **102 ms → 18 ms** na snímku
+(rovnako ako bez nich), celý engine **192 ms → 21,6 ms** (súčasná scéna Kvapky: 62 ms). Zároveň zmizne hrbček,
+ktorý bod nulovej veľkosti cez zliatie vydul. Vhodná na upstream. Bez nej engine funguje, iba pomalšie (prázdne
+miesta ležia pod obrazovkou, aby hrbček nebolo vidieť).
