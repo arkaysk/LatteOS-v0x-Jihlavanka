@@ -4,7 +4,6 @@
   "ikona": "calculator",
   "popis": "Klik: kalkulačka · pravé: dnešný dátum",
   "povaha": "zvedava",
-  "farba": "smotana",
   "akcie": {
     "klik": { "aplikacia": "org.gnome.Calculator" },
     "pravy": { "vystup": "date '+%A %-d. %B'" },

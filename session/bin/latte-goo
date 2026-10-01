@@ -11,6 +11,7 @@ Logika scény beží v pieskovisku pleamar (bez súborov a bez sh) — všetko, 
   latte-goo stav                  uložené polohy a veľkosti ({id: {x, y, z}})
   latte-goo uloz-stav JSON        uloží ich (atomicky)
   latte-goo ikony MENO…           mená ikon Tabler → znaky písma ({meno: znak}), podľa Noctalie
+  latte-goo kava                  pomer vody a mlieka podľa Baristu (~/.config/latteos/kava): [voda, mlieko]
 """
 import glob, json, os, re, subprocess, sys
 
@@ -22,22 +23,26 @@ SHARE = os.environ.get("LATTE_GOO_DIR") or next(
     (d for d in ("/usr/share/latteos/goo", os.path.join(here, "..", "goo")) if os.path.isdir(d)), "/usr/share/latteos/goo")
 PRIKLADY = os.path.join(SHARE, "priklady")
 TABLER = "/usr/share/noctalia/assets/fonts/tabler.json"
+KAVA = os.path.join(os.environ.get("XDG_CONFIG_HOME", HOME + "/.config"), "latteos", "kava")
+# rovnaké ako plocha Kvapky (kvapka.luau › kavy)
+KAVY = {"espresso": (0, 0), "ristretto": (0, 0), "lungo": (0.35, 0), "americano": (0.7, 0), "macchiato": (0, 0.25),
+        "cortado": (0, 0.4), "flatwhite": (0.05, 0.5), "cappuccino": (0, 0.55), "latte": (0, 0.85),
+        "cierna-s-mliekom": (0.4, 0.3)}
 
-POVAHY = {"pokojna", "zvedava", "placha", "lepkava", "tazka", "hrava"}
-FARBY = {"kava", "karamel", "smotana", "cokolada", "visna", "mata", "levandula", "med"}
+POVAHY = {"pokojna", "zvedava", "lepkava", "tazka", "hrava"}
 EFEKTY = {"nic", "dych", "kmit", "tras", "obeh", "tlkot"}
 DRUHY = {"ikona", "ukazovatel"}
 AKCIE = {"klik", "pravy", "stredny", "podrz", "koliesko", "hore", "dole"}
 VSTAVANE = {"domov", "velkost", "poskoc", "nic"}
 DRUHY_AKCII = ("spusti", "aplikacia", "otvor", "vystup")
 # čísla: (min, max)
-CISLA = {"velkost": (8, 80), "gravitacia": (-1, 1), "dosah": (40, 800), "lepivost": (0, 1), "trhanie": (20, 400),
+CISLA = {"velkost": (8, 80), "gravitacia": (0, 1), "vznos": (0, 1), "dosah": (40, 800), "lepivost": (0, 1), "trhanie": (20, 400),
          "svetlo": (0, 1), "rast": (0, 1), "hmotnost": (0, 1), "sila": (0, 2), "hodnota": (0, 1)}
 TEXTY = ("nazov", "ikona", "popis")
 
 VZOR = {
     "id": "", "nazov": "", "ikona": "droplet", "popis": "Moja kvapka",
-    "povaha": "zvedava", "farba": "karamel", "velkost": 26,
+    "povaha": "zvedava", "velkost": 26,
     "text": {"prikaz": "date +%H:%M", "kazdych": 30},
     "akcie": {"klik": {"spusti": "notify-send Kvapka Ahoj"}, "pravy": {"vystup": "uptime -p"},
               "stredny": "domov", "koliesko": "velkost"},
@@ -81,11 +86,13 @@ def validate(j, path):
             if not isinstance(j[k], (int, float)) or isinstance(j[k], bool):
                 return bad(f"'{k}' má byť číslo ({lo} až {hi})")
             out[k] = max(lo, min(hi, j[k]))
-    for k, allowed in (("povaha", POVAHY), ("farba", FARBY), ("efekt", EFEKTY), ("druh", DRUHY)):
+    for k, allowed in (("povaha", POVAHY), ("efekt", EFEKTY), ("druh", DRUHY)):
         if k in j:
             if j[k] not in allowed:
                 return bad(f"'{k}' môže byť: {', '.join(sorted(allowed))}")
             out[k] = j[k]
+    if "farba" in j:
+        return bad("'farba' nie je: kvapky sú vždy káva (Barista: pomer vody a mlieka)")
     if "tahat" in j:
         out["tahat"] = bool(j["tahat"])
     if "poloha" in j:
@@ -243,6 +250,12 @@ def main(a):
             json.dump(v, f, ensure_ascii=False)
         os.replace(STATE + ".new", STATE)
         return 0
+    if c == "kava":
+        try:
+            name = (re.findall(r"[\w-]+", open(KAVA).read()) or ["espresso"])[0]
+        except OSError:
+            name = "espresso"
+        print(json.dumps(list(KAVY.get(name, KAVY["espresso"])))); return 0
     if c == "ikony":
         print(json.dumps(glyphs(a[1:]), ensure_ascii=False)); return 0
     print(__doc__.strip(), file=sys.stderr)

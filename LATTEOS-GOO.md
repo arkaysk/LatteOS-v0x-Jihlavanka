@@ -150,13 +150,25 @@ Zadanie používateľa: engine, ktorý zastreší všetky kvapky a nastaví prav
 správaním: reakcie na kurzor, prechod myšou, koliesko, ľavé/pravé/stredné tlačidlo, ťahanie, efekty, gravitáciu,
 lepivosť, veľkosť a rezervu na ďalšie efekty.
 
-- Kód: `session/goo` (README.md). Scéna `goo.plm` má 16 miest cez `repeat`, generátor `gen.py`, logika
+- Kód: `session/goo` (README.md). Scéna `goo.plm` má **64 miest** (`N` v `gen.py`) cez `repeat`, generátor `gen.py`, logika
   `lib/engine.luau` (register, povahy, predvolené správanie, uloženie, nečinnosť). Kvapky používateľa sú JSON
   (`latte-goo`), kvapky programátorov moduly Luau s háčikmi.
 - Iba jazyk pleamar 0.2, bez záplat. Obmedzenie: `repeat` nesmie byť v `body` (telo rozpisuje `gen.py`).
   Lety vnútri `repeat` patria iba svojej kópii, preto sú hodnoty potrebné zvonka pružiny `~0ms` (globálne,
   v tom istom snímku). `sin`/`cos` sú v stupňoch. Veľkosť textu je `číslo × pomer`.
 - Relácia **LatteOS Kvapky – engine test** = plocha Kvapky so scénou enginu (`latte-session kvapky-engine`).
+- **Spresnenie používateľa (1. 10. večer):**
+  - Engine musí dodržať tento dokument (§2, §3).
+  - Kurzor kvapky **iba priťahuje, nikdy neodpudzuje**.
+  - Pri priblížení kurzora sa kvapky **nadnášajú** (vystúpia od lišty na stopke), približujú sa ku kurzoru
+    a susedné sa **prelievajú a spájajú** (ako hrozno pri bubline upozornenia).
+  - Kvapky vyskakovacieho okna sa po kliku vznesú a stanú sa tvarom okna. V ploche Kvapky to už funguje dobre,
+    do enginu to príde ako druh kvapky.
+  - Opravené podľa toho: farby kvapiek preč (pravidlo 6), predvolené pravé, stredné tlačidlo a koliesko preč
+    (pravidlo 8), menovka pod kvapkou preč (obsah sa hoverom nemení), stupne nečinnosti 1/3/6 min.
+- **Výkon:** telo goo počíta každý tvar pre každý pixel, aj skrytý. Záplata `pleamar-prazdne-tvary` vyradí tvary
+  nulovej veľkosti: v cloude 192 → 21,6 ms na snímku (súčasná scéna Kvapky 62 ms). Bez nej engine funguje, iba
+  pomalšie.
 - Ďalej: overiť na latte-lab (stredné tlačidlo, písmo ikon, výkon na RX 640), potom presunúť TimeGoo, PowerGoo,
   DaNoGoo, QueenGoo a ChatGoo na engine (po jednej, snímky pred a po). Živé bytosti z 3.1 (dážď/vietor) a formulár
   v Nastaveniach › Kvapky pribudnú nad enginom.
