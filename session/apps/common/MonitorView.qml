@@ -188,7 +188,15 @@ Item {
         command: ["latte-sysmon", "autorun"]
         stdout: StdioCollector { onStreamFinished: { try { app.autorun = JSON.parse(this.text); } catch (e) {} } }
     }
-    function go(k) { section = k; if (k === "pohoda" && !wellProc.running) wellProc.running = true; if (k === "autorun") autorunProc.running = true; if (k === "hardver" && !hwProc.running) hwProc.running = true; }
+    property var services: []
+    property var users: []
+    property bool hideSystem: false          // Po štarte: skryť položky systému a balíkov (ako „Hide Windows Entries“)
+    property string svcFilter: ""
+    Process { id: svcProc; command: ["latte-sysmon", "sluzby"]; stdout: StdioCollector { onStreamFinished: { try { app.services = JSON.parse(this.text); } catch (e) {} } } }
+    Process { id: usrProc; command: ["latte-sysmon", "pouzivatelia"]; stdout: StdioCollector { onStreamFinished: { try { app.users = JSON.parse(this.text); } catch (e) {} } } }
+    Timer { id: reloadSvc; interval: 900; onTriggered: svcProc.running = true }
+    function svc(sv, act) { run(["latte-sysmon", "sluzba", sv.scope, act, sv.unit], ({ start: "Spúšťam ", stop: "Zastavujem ", restart: "Reštartujem ", enable: "Pri štarte: ", disable: "Nie pri štarte: " })[act] + sv.unit); reloadSvc.start(); }
+    function go(k) { if (k === "sluzby") svcProc.running = true; if (k === "pouzivatelia") usrProc.running = true; section = k; if (k === "pohoda" && !wellProc.running) wellProc.running = true; if (k === "autorun") autorunProc.running = true; if (k === "hardver" && !hwProc.running) hwProc.running = true; }
     Process {
         id: hwProc
         command: ["latte-sysmon", "hw"]
@@ -220,7 +228,9 @@ Item {
                      "Zapnuté pri štarte: " + it.name);
         } else if (it.kind === "user-service" || (it.kind === "timer" && it.owner === "používateľ")) {
             run(["systemctl", "--user", it.enabled ? "disable" : "enable", it.id], (it.enabled ? "Vypnuté: " : "Zapnuté: ") + it.id);
-        } else { status = "Systémovú položku mení iba správca"; return; }
+        } else if (it.kind === "service" || it.kind === "timer") {     // systémové: polkit sa opýta na heslo správcu
+            run(["latte-sysmon", "sluzba", "system", it.enabled ? "disable" : "enable", it.id], (it.enabled ? "Vypnuté (systém): " : "Zapnuté (systém): ") + it.id);
+        } else { status = "Túto položku mení iba správca v jej súbore"; return; }
         reloadAutorun.start();
     }
     Timer { id: reloadAutorun; interval: 700; onTriggered: autorunProc.running = true }
@@ -286,6 +296,8 @@ Item {
                 ] },
                 { title: "Správa", items: [
                     { key: "autorun", glyph: "player-play", label: "Po štarte", sub: "ako Autoruns: všetko, čo sa spúšťa" },
+                    { key: "sluzby", glyph: "server", label: "Služby", sub: "systemd: spustiť, zastaviť, pri štarte" },
+                    { key: "pouzivatelia", glyph: "users", label: "Používatelia", sub: "prihlásení a ich procesy" },
                     { key: "telemetria", glyph: "device-desktop", label: "Výstupy telemetrie", sub: "OLED, Stream Deck, panel" }
                 ] }
             ]
@@ -299,15 +311,15 @@ Item {
             windowControls: !app.embedded; netVisible: !app.embedded
             anchors { left: side.right; right: parent.right; top: parent.top }
             title: ({ prehlad: "Prehľad", procesy: "Procesy", autorun: "Po štarte", telemetria: "Výstupy telemetrie", hardver: "Hardvér", senzory: "Senzory", pohoda: "Čas v aplikáciách" })[app.section]
-            searchPlaceholder: app.section === "autorun" ? "Hľadať v štarte" : "Hľadať proces"
-            onSearchChanged: (t) => { if (app.section === "autorun") { app.autorunFilter = t; return; } app.search = t; if (t !== "") app.section = "procesy"; }
+            searchPlaceholder: app.section === "autorun" ? "Hľadať v štarte" : (app.section === "sluzby" ? "Hľadať službu" : "Hľadať proces")
+            onSearchChanged: (t) => { if (app.section === "autorun" || app.section === "sluzby") { app.autorunFilter = t; return; } app.search = t; if (t !== "") app.section = "procesy"; }
             onCloseRequested: app.closeRequested()
         }
 
         Loader {
             id: content
             anchors { left: side.right; top: header.bottom; bottom: statusBar.top; right: app.section === "procesy" ? detail.left : parent.right; margins: 20 }
-            sourceComponent: ({ prehlad: pPrehlad, procesy: pProcesy, autorun: pAutorun, telemetria: pTelemetria, hardver: pHardver, senzory: pSenzory, pohoda: pPohoda })[app.section] || pPrehlad
+            sourceComponent: ({ prehlad: pPrehlad, procesy: pProcesy, autorun: pAutorun, sluzby: pSluzby, pouzivatelia: pPouzivatelia, telemetria: pTelemetria, hardver: pHardver, senzory: pSenzory, pohoda: pPohoda })[app.section] || pPrehlad
         }
 
         // detail vybraného procesu (návrh V2: pravý panel)
@@ -737,14 +749,28 @@ Item {
                 id: acol
                 width: parent.width; spacing: 6
                 Text { width: parent.width; wrapMode: Text.WordWrap; bottomPadding: 6; color: theme.fgDim; font { family: theme.fontUi; pixelSize: 13 }
-                       text: "Čo sa spúšťa po prihlásení a pri štarte systému, odkiaľ to je a aký príkaz. Položky tvojho účtu sa dajú vypnúť; systémové mení iba správca." }
+                       text: "Čo sa spúšťa po prihlásení a pri štarte systému, odkiaľ to je a aký príkaz. Pôvod: balík systému, Flatpak, LatteOS, tvoje — „neznáme“ nepatrí žiadnemu balíku a stojí za pohľad. Systémové položky sa menia s heslom správcu." }
+                Row {
+                    spacing: 8
+                    Rectangle { width: hs.implicitWidth + 24; height: 30; radius: 15; color: app.hideSystem ? Qt.rgba(theme.primary.r, theme.primary.g, theme.primary.b, 0.2) : theme.field
+                                border { color: app.hideSystem ? theme.primary : theme.line; width: 1 }
+                                Text { id: hs; anchors.centerIn: parent; text: (app.hideSystem ? "☑ " : "☐ ") + "Skryť systémové a LatteOS"; color: theme.fg; font { family: theme.fontUi; pixelSize: 12; weight: Font.Bold } }
+                                MouseArea { anchors.fill: parent; onClicked: app.hideSystem = !app.hideSystem } }
+                    Rectangle { width: kn.implicitWidth + 24; height: 30; radius: 15; color: theme.field; border { color: theme.line; width: 1 }
+                                Text { id: kn; anchors.centerIn: parent; text: "Zapamätať súčasný stav"; color: theme.fg; font { family: theme.fontUi; pixelSize: 12; weight: Font.Bold } }
+                                MouseArea { anchors.fill: parent; onClicked: { app.run(["latte-sysmon", "autorun-znam"], "Zapamätané — nové položky sa odteraz označia"); reloadAutorun.start(); } } }
+                    Text { anchors.verticalCenter: parent.verticalCenter; color: theme.fgDim; font { family: theme.fontUi; pixelSize: 12 }
+                           readonly property int nNew: app.autorun.filter(x => x.new).length
+                           text: (app.autorun[0] || {}).since ? (nNew ? "⚠ " + nNew + " nových od " : "nič nové od ") + Qt.formatDate(new Date((app.autorun[0] || {}).since * 1000), "d. M. yyyy") : "porovnanie: najprv Zapamätať súčasný stav" }
+                }
                 Repeater {
                     model: [["session", "ŠTART RELÁCIE LatteOS (hyprland.lua)"], ["autostart", "AUTOŠTART APLIKÁCIÍ (XDG)"], ["user-service", "SLUŽBY TVOJHO ÚČTU (systemd --user)"],
-                            ["timer", "ČASOVAČE"], ["service", "SYSTÉMOVÉ SLUŽBY"], ["cron", "CRON"], ["login", "PRIHLÁSENIE A PROSTREDIE"], ["module", "MODULY JADRA"]]
+                            ["timer", "ČASOVAČE"], ["service", "SYSTÉMOVÉ SLUŽBY"], ["cron", "CRON"], ["login", "PRIHLÁSENIE A PROSTREDIE"], ["module", "MODULY JADRA"],
+                            ["security", "ZABEZPEČENIE (preload knižníc, sudo, polkit, udev)"]]
                     Column {
                         id: grp
                         required property var modelData
-                        readonly property var items: app.autorun.filter(x => x.kind === modelData[0] && (app.autorunFilter === ""
+                        readonly property var items: app.autorun.filter(x => x.kind === modelData[0] && !(app.hideSystem && x.system) && (app.autorunFilter === ""
                                                      || (x.name + " " + (x.command || "") + " " + (x.origin || "")).toLowerCase().includes(app.autorunFilter.toLowerCase())))
                         visible: items.length > 0
                         width: acol.width; spacing: 4
@@ -774,8 +800,11 @@ Item {
                                     x: 14; width: parent.width - 150; anchors.verticalCenter: parent.verticalCenter
                                     Text { width: parent.width; elide: Text.ElideRight; text: (ar.modelData.missing ? "⚠ " : "") + ar.modelData.name + (ar.modelData.note ? "  (" + ar.modelData.note + ")" : "") + (ar.modelData.missing ? "  · súbor chýba" : "")
                                            color: ar.modelData.missing ? theme.error : theme.fg; font { family: theme.fontUi; pixelSize: 13; weight: Font.DemiBold } }
-                                    Text { width: parent.width; elide: Text.ElideMiddle; text: ar.modelData.owner + " · " + (ar.modelData.command || ar.modelData.origin)
-                                           color: theme.fgDim; font { family: theme.fontUi; pixelSize: 11 } }
+                                    Text { width: parent.width; elide: Text.ElideMiddle
+                                           text: (ar.modelData.new ? "NOVÉ · " : "") + (ar.modelData.src ? ar.modelData.src + " · " : ar.modelData.owner + " · ")
+                                                 + (ar.modelData.impact ? "štart " + (ar.modelData.impact >= 1000 ? (ar.modelData.impact / 1000).toFixed(1).replace(".", ",") + " s" : ar.modelData.impact + " ms") + " · " : "")
+                                                 + (ar.modelData.command || ar.modelData.origin)
+                                           color: ar.modelData.alert || ar.modelData.src === "neznáme" || ar.modelData.new ? theme.error : theme.fgDim; font { family: theme.fontUi; pixelSize: 11 } }
                                 }
                                 Rectangle {   // prepínač zapnuté / vypnuté
                                     anchors { right: parent.right; rightMargin: 14; verticalCenter: parent.verticalCenter }
@@ -794,6 +823,88 @@ Item {
         }
     }
 
+    Component {
+        id: pSluzby
+        Flickable {
+            id: rolSvc
+            ScrollHint { flick: rolSvc; colors: theme }
+            contentHeight: scol.implicitHeight; clip: true
+            Column {
+                id: scol
+                width: parent.width; spacing: 4
+                Text { width: parent.width; wrapMode: Text.WordWrap; bottomPadding: 6; color: theme.fgDim; font { family: theme.fontUi; pixelSize: 13 }
+                       text: "Služby systému a tvojho účtu (systemd). Klik na stav ju spustí alebo zastaví, pravý klik ponúkne reštart a štart s počítačom. Systémové služby chcú heslo správcu." }
+                Repeater {
+                    model: [["system", "SYSTÉMOVÉ SLUŽBY"], ["user", "SLUŽBY TVOJHO ÚČTU"]]
+                    Column {
+                        id: sg
+                        required property var modelData
+                        readonly property var items: app.services.filter(x => x.scope === modelData[0] && (app.autorunFilter === ""
+                                                     || (x.unit + " " + x.desc).toLowerCase().includes(app.autorunFilter.toLowerCase())))
+                                                                 .sort((a, b) => (a.active === "active" ? 0 : 1) - (b.active === "active" ? 0 : 1) || a.unit.localeCompare(b.unit))
+                        width: scol.width; spacing: 4
+                        Heading { text: sg.modelData[1] + "  ·  " + sg.items.filter(x => x.active === "active").length + " beží z " + sg.items.length; topPadding: 8 }
+                        Repeater {
+                            model: sg.items.slice(0, 300)
+                            Rectangle {
+                                id: sr
+                                required property var modelData
+                                width: sg.width; height: 44; radius: 10; color: srm.containsMouse ? theme.hover : theme.field
+                                opacity: modelData.active === "active" ? 1 : 0.7
+                                MouseArea { id: srm; anchors.fill: parent; hoverEnabled: true; acceptedButtons: Qt.RightButton
+                                    onClicked: (m) => { const e = sr.modelData, q = mapToItem(app, m.x, m.y);
+                                        ctx.open(q.x, q.y, [
+                                            { glyph: e.active === "active" ? "player-pause" : "player-play", label: e.active === "active" ? "Zastaviť" : "Spustiť", action: () => app.svc(e, e.active === "active" ? "stop" : "start") },
+                                            { glyph: "refresh", label: "Reštartovať", action: () => app.svc(e, "restart") },
+                                            { separator: true },
+                                            { glyph: "power", label: e.enabled === "enabled" ? "Nespúšťať s počítačom" : "Spúšťať s počítačom", enabled: e.enabled === "enabled" || e.enabled === "disabled",
+                                              action: () => app.svc(e, e.enabled === "enabled" ? "disable" : "enable") },
+                                            { glyph: "clipboard", label: "Kopírovať názov", action: () => app.run(["wl-copy", "--", e.unit], "Skopírované") },
+                                            { glyph: "search", label: "Hľadať na webe", action: () => Qt.openUrlExternally("https://duckduckgo.com/?q=" + encodeURIComponent(e.unit + " linux")) }
+                                        ], e.unit); } }
+                                Column { x: 14; width: parent.width - 260; anchors.verticalCenter: parent.verticalCenter
+                                    Text { width: parent.width; elide: Text.ElideRight; text: sr.modelData.unit.replace(/\.service$/, ""); color: sr.modelData.active === "failed" ? theme.error : theme.fg
+                                           font { family: theme.fontUi; pixelSize: 13; weight: Font.DemiBold } }
+                                    Text { width: parent.width; elide: Text.ElideRight; text: sr.modelData.desc; color: theme.fgDim; font { family: theme.fontUi; pixelSize: 11 } } }
+                                Text { anchors { right: stb.left; rightMargin: 12; verticalCenter: parent.verticalCenter } color: theme.fgDim; font { family: theme.fontUi; pixelSize: 11 }
+                                       text: ({ enabled: "pri štarte", disabled: "ručne", static: "závislosť", masked: "zablokovaná", "enabled-runtime": "pri štarte" })[sr.modelData.enabled] || sr.modelData.enabled }
+                                Rectangle {
+                                    id: stb
+                                    anchors { right: parent.right; rightMargin: 12; verticalCenter: parent.verticalCenter }
+                                    width: 110; height: 28; radius: 14
+                                    color: sr.modelData.active === "active" ? Qt.rgba(theme.primary.r, theme.primary.g, theme.primary.b, 0.2) : (sr.modelData.active === "failed" ? Qt.rgba(theme.error.r, theme.error.g, theme.error.b, 0.2) : theme.surface)
+                                    border { color: sr.modelData.active === "active" ? theme.primary : (sr.modelData.active === "failed" ? theme.error : theme.line); width: 1 }
+                                    Text { anchors.centerIn: parent; color: theme.fg; font { family: theme.fontUi; pixelSize: 12; weight: Font.Bold }
+                                           text: ({ active: "● beží", inactive: "○ zastavená", failed: "✕ zlyhala", activating: "… štartuje", deactivating: "… končí" })[sr.modelData.active] || sr.modelData.active }
+                                    MouseArea { anchors.fill: parent; onClicked: app.svc(sr.modelData, sr.modelData.active === "active" ? "stop" : "start") }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    Component {
+        id: pPouzivatelia
+        Column {
+            spacing: 8
+            Text { width: parent.width; wrapMode: Text.WordWrap; color: theme.fgDim; font { family: theme.fontUi; pixelSize: 13 }
+                   text: "Kto je prihlásený na tomto počítači (aj na diaľku cez SSH) a koľko procesov a pamäte používa." }
+            Repeater {
+                model: app.users
+                Rectangle {
+                    required property var modelData
+                    width: Math.min(parent.width, 620); height: 58; radius: 12; color: theme.field
+                    Text { x: 14; y: 10; text: modelData.user + (modelData.sessions.some(x => x.remote) ? "  ·  na diaľku" : ""); color: theme.fg; font { family: theme.fontUi; pixelSize: 14; weight: Font.Bold } }
+                    Text { x: 14; y: 32; color: theme.fgDim; font { family: theme.fontUi; pixelSize: 12 }
+                           text: modelData.sessions.length + (modelData.sessions.length === 1 ? " relácia" : " relácie") + " (" + modelData.sessions.map(x => x.tty || x.seat || x.id).join(", ") + ")  ·  "
+                                 + modelData.procs + " procesov  ·  " + app.human(modelData.rss) }
+                }
+            }
+            Text { visible: app.users.length === 0; text: "Načítavam…"; color: theme.fgDim; font { family: theme.fontUi; pixelSize: 12 } }
+        }
+    }
     Component {
         id: pHardver
         HardverView {
