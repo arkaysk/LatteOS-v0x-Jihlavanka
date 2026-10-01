@@ -83,6 +83,19 @@ samostatný tekutý prvok.
    Spúšťač, časové menu a ponuka vypínača vyrastú z kvapky, kde práve je. Keď odídu Hodiny, vypínač sa posunie na
    ich miesto. Poloha v `spustac.json` (`timegoo` / `powergoo` = `{ free, side, pos }`).
 
+17. **Farebné jadro** (1. 10. večer): od stredu kvapky prechod z farby do prednastavenej (kávy) — farebné jadro goo
+   alebo žiara. **Predvolené použitie: druh upozornenia** (farby podľa pravidla 15: červená hardvér, zelená sieť,
+   modrá softvér; + jantárová výstraha, svetlo, iné), môže pulzovať.
+18. **Vlnky na hladine** (1. 10. večer): okraj okna/obrazovky je hladina. Môže robiť vlnky ako **kameň hodený do vody**
+   (dve vlny sa rozbehnú od miesta dopadu a slabnú, kvapky na nich sa nadvihnú) alebo **vibrácie** (chvenie na mieste).
+   Napr. okno, ktoré po minimalizácii padne do lišty (pravidlo 14).
+19. **Vietor** (1. 10. večer): náhodný smer, nezávislý od ničoho (nie od počasia); občas zavanie aj keď používateľ
+   pracuje a kvapky sa trochu vlnia ako obilie vo vetre. **Menšie kvapky sa na okraji vlnia viac než väčšie.**
+20. **Naťahovanie za kurzorom od okraja iba po určitú vzdialenosť** (1. 10. večer): dlhý krk-vlák je nepekný —
+   kvapka sa odtrhne skôr. **Návrat k okraju (Marea):** keď sa goo vráti k okraju, akoby vnikla pod hladinu a znova
+   sa vynorila.
+21. **Oká medzi spojmi kvapiek sú pekné** (1. 10. večer), ale **okrajová čiara musí byť ostrá**, nie rozmazaná.
+
 ---
 
 ## 3. Fyzika a správanie kvapiek
@@ -172,6 +185,14 @@ lepivosť, veľkosť a rezervu na ďalšie efekty.
   - každá má vlastný tok (vystupuje a klesá), sila zliatia sa mení s ním;
   - okraj obrazovky je hladina.
   Porovnanie s pôvodnou trojicou je v `cloud_session_1.md`.
+- **Pravidlá 17–21 v engine:**
+  - jadro (`d:jadro(farba, sila, pulz)`, JSON `jadro` / `upozornenie`);
+  - vlnky (`E.vlnka`, `d:vlnka`, `d:vibruj`, zvonka `pleamar --say goo "emit goo_kamen X"`);
+  - vietor (nárazy, smer náhodný, postupná vlna pozdĺž okraja, malé kvapky viac);
+  - ponor pri návrate k okraju; odtrhnutie najneskôr po 1,6 polomeru;
+  - ostrý okraj (tieň 0, 2, 2).
+- **Luau `emit` nenesie hodnotu** (iba meno): logika → scéna pre jednu kvapku ide cez počítadlo (fakt + `on change`).
+  Skok, stlačenie a ponor predtým trafili iba kvapku na mieste 0; opravené.
 - **Výkon:** telo goo počíta každý tvar pre každý pixel, aj skrytý. Záplata `pleamar-prazdne-tvary` vyradí tvary
   nulovej veľkosti: v cloude 192 → 21,6 ms na snímku (súčasná scéna Kvapky 62 ms). Bez nej engine funguje, iba
   pomalšie.

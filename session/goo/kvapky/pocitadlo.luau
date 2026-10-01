@@ -3,6 +3,8 @@
 local function show(d)
     d:text(tostring(d.n))
     d:hodnota((d.n % 100) / 100)
+    -- od 10 výstraha v jadre (jantárová), pod nulou hardvér (červená)
+    if d.n >= 10 then d:jadro("vystraha", 0.9, false) elseif d.n < 0 then d:jadro("hardver", 0.9, true) else d:jadro() end
 end
 
 return {

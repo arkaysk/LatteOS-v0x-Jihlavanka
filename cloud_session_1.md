@@ -431,3 +431,41 @@ jednej hmoty.
 - Hlava Goobaru je tam zaoblený obdĺžnik so strapcom okien, v engine zatiaľ guľa.
 - Ikony v cloude chýbajú (písmo Tabler).
 - Kvapôčka tečúca po vlákne v engine ešte nie je.
+
+### Nové pravidlá 17–21: jadro, vlnky, vietor, ponor, krk, oká
+
+**Zadanie (LATTEOS-GOO.md §2, pravidlá 17–21):**
+- **Jadro:** od stredu prechod do prednastavenej farby (farebné jadro goo alebo žiara); predvolene ako
+  druh upozornenia.
+- **Vlnky:** okno môže robiť vlnky ako kameň hodený do vody, alebo vibrácie.
+- **Vietor:** náhodný smer, nezávislý od ničoho; občas, aj pri práci, sa kvapky trochu vlnia ako obilie.
+- **Krk:** naťahovanie za kurzorom od okraja iba po určitú vzdialenosť, dlhý krk-vlák je nepekný.
+- **Malé kvapky** sa na okraji vlnia viac než veľké.
+- **Návrat (Marea):** okraj je hladina; keď sa goo vráti k okraju, akoby vnikla pod hladinu a vynorila sa.
+- **Oká** medzi spojmi sú pekné, ale okrajová čiara má byť ostrá, nie rozmazaná.
+
+**Urobené v engine:**
+- **Jadro:** malé vlastné telo s radiálnym prechodom (pleamar ho vie iba v `body`), farby podľa pravidla 15
+  (+ výstraha, svetlo, iné), pulz. API: `d:jadro`, JSON `jadro` / `upozornenie`, `latte-goo upozornenie ID`.
+  Príklady: Pošta (každých 12 s nová správa; klik prečíta, pravý mení farbu); Počítadlo (od 10 výstraha, pod 0
+  hardvér); Systém (zaťaženie nad 2 = výstraha).
+- **Hladina:**
+  - 4 vlnky naraz; kameň = dva hrebene sa rozbiehajú 420 px a slabnú, kvapky na nich sa nadvihnú;
+    vibrácia = chvenie;
+  - zvonka `pleamar --say goo "emit goo_kamen X"` (napr. hook Hyprlandu po minimalizácii); príklad Kameň.
+  - **Zmerané:** kameň sa pohne prvý, susedia 87 px vedľa o ~120 ms, 260 px vedľa o ~480 ms.
+- **Vietor:** nárazy z pomalého šumu, smer náhodný, postupná vlna pozdĺž okraja. Malé kvapky sa vlnia viac (aj tok
+  a drift; zmerané 60 s: r 18 rozkmit 3,4 px, r 44 1,4 px).
+- **Ponor pri návrate k okraju** (po pustení) + vlnka.
+- **Krk:** odtrhnutie najneskôr po 1,6 polomeru.
+- **Ostrý okraj:** tieň 0, 2, 2. Oká vznikajú pri spojoch (snímka).
+- **Opravená chyba:** pri ťahaní visel od suseda dlhý vlák k starému miestu; ťahaná kvapka už nie je susedom.
+
+**Nájdená chyba pleamar API (moja, nie pleamar):** `emit` v Luau nesie iba meno, hodnotu zahodí. Skok, stlačenie
+a ponor z logiky preto trafili vždy iba kvapku na mieste 0, aj v teste hry. Teraz idú cez počítadlá (fakt
++ `on change`); vlnka overená meraním.
+
+**Snímka:** `docs/goo/jadro-vlnky-cloud.png`.
+
+**Plocha Kvapky:** oká tam majú rozmazaný okraj (tieň tela 0, 6, 16). Nezmenil som to, lebo by sa zmenil aj tieň
+celej lišty (dizajn) — čaká na súhlas.

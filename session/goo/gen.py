@@ -29,6 +29,13 @@ def body():
         out.append(f"        line {{ from: x.{k}, floor; to: thx.{k}, floor; width: wa.{k} * 2; blend: 18 }}\n")
         out.append(f"        ellipse {{ at: x.{k}, y.{k}; radius: rr.{k}; scale: 1 + fxw.{k}, 1 - fxw.{k}; blend: lk.{k} + 6 * near.{k} }}\n")
         out.append(f"        line {{ from: x.{k}, y.{k}; to: thx.{k}, thy.{k}; width: th.{k}; blend: 12 * clamp(th.{k} / 3, 0, 1) }}\n")
+    # vlnky na hladine: kameň = dva hrebene, ktoré sa rozbiehajú od miesta dopadu a slabnú; vibrácia = chvejúci sa hrb
+    for i in range(4):
+        for sgn in (-1, 1):
+            out.append(f"        ellipse {{ at: rpx.{i} {'-' if sgn < 0 else '+'} rpg.{i} * 420, floor + rpa.{i} * 1.2; radius: rpa.{i} * 2.2 * (1 - rpg.{i}) * if(rpk.{i} > 0.5, 0, 1); "
+                       f"scale: 2.2, 1; blend: 14 }}\n")
+        out.append(f"        ellipse {{ at: rpx.{i}, floor + 4; radius: rpa.{i} * (1.2 + 0.6 * sin(time * 1900)) * (1 - rpg.{i}) * if(rpk.{i} > 0.5, 1, 0); "
+                   f"scale: 2.6, 1; blend: 12 }}\n")
     # krk lepkavej kvapky: ťahá sa naraz iba jedna, preto jeden tvar pre všetky (miesto nk)
     out.append("        line { from: " + pick("goo.{k}.hx * W + goo.{k}.ox") + ", " + pick("floor - goo.{k}.hy") + "; to: "
                + pick("x.{k}") + ", " + pick("y.{k}") + "; width: if(nk >= 0, " + pick("rr.{k} * 0.7 * neck.{k}")
