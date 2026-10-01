@@ -169,6 +169,19 @@ samostatný tekutý prvok.
 - **Farby upozornení** (1. 10., voľba A): **čistá farba ikony aplikácie** (nie káva dofarbená).
 - **Hrozno zavrie** klik na DaNoGoo, **Esc aj klik mimo** (1. 10.).
 
+### 4.2c ChatGoo — addon pre Beeper (zadanie používateľa 1. 10., scéna ešte nie je)
+- **ChatGoo je iba addon**, nie vlastný messenger: zastrešuje **pôvodný Beeper pre Linux** (AppImage, prípadne
+  neoficiálny Flatpak). Kvapka sa ukáže, keď je Beeper nainštalovaný alebo beží.
+- **Minimalizácia Beepera = okno vtečie do kvapky ChatGoo** (namiesto guľôčky na lište); klik na kvapku ho vráti
+  (`latte-chatgoo prepni`, mechanika `latte.win.minimize_addr` / `activate`, plocha `special:minimized`).
+- **Správy okolo kvapky podľa rovnakých pravidiel ako upozornenia pri DaNoGoo:** upozornenia aplikácie „Beeper“ sa
+  presmerujú z DaNoGoo k ChatGoo — guľky počtu, hrozno na lepkavom vlákne, bobule vo farbe (tu: odznak služby/odosielateľ),
+  ľavý klik = otvoriť rozhovor (predvolená akcia upozornenia → Beeper otvorí chat), pravý = akcie (ak má), odhodenie
+  = zahodiť, bublina novej správy vyteká z ChatGoo. Neprečítané aj z titulku okna (`unread` v `latte-chatgoo stav`).
+- **Technika (návrh):** generátor ako `danogoo.py` s vlastnou predponou (`cg.`), aby sa mechanika nekopírovala ručne;
+  poloha a presun ťahaním ako DaNoGoo; robiť naživo na latte-lab (scéna sa nedá overiť v cloude).
+- Pomocník hotový: `session/bin/latte-chatgoo` (stav, ukaz, skry, prepni, ziskat).
+
 ### 4.3 Spúšťač (okno z Hodín) — náčrt používateľa 1. 10.
 Karta z ucha TimeGoo, zhora nadol:
 - **Pole s ikonou režimu.** Ikona na začiatku poľa mení obsah: **Ai** (prompt), **lupa** (aplikácie), **priečinok**
