@@ -680,7 +680,7 @@ nevie. Čaká na rozhodnutie používateľa.
 
 **Požiadavka:** „Nie. Len priprav o celom engine čo si spravil, report pre novú session na Claude Code.“
 
-**Odpoveď:** hru nezačínam. Report je v `docs/goo/ENGINE-REPORT.md` a obsahuje:
+**Odpoveď:** report je v `docs/goo/ENGINE-REPORT.md` a obsahuje:
 - pravidlá spolupráce;
 - mapu súborov a záplaty pleamaru;
 - ako funguje scéna `goo.plm` a API `lib/engine.luau`;
@@ -691,3 +691,7 @@ nevie. Čaká na rozhodnutie používateľa.
 - čo je a čo nie je overené, otvorené úlohy a zoznam commitov.
 
 Nová session ho má prečítať ako prvý, spolu s `LATTEOS-GOO.md` a `session/goo/README.md`.
+
+**Upresnenie od používateľa:** „Nemyslel som hry, tu nespomínaj. Myslel som engine pre shell.“
+Z reportu som odstránil zmienku o hre. Report opisuje iba engine Goo ako základ shellu LatteOS. Ostala v ňom iba
+naháňačka kvapiek pri nečinnosti (úroveň 3), lebo je to funkcia shellu.

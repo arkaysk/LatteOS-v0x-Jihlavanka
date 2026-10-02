@@ -16,7 +16,6 @@ Podrobnosti: `session/goo/README.md` (API a pasce), `LATTEOS-GOO.md` §2 (pravid
 - Inštalátor a Atomic sa nerobia, kým LatteOS nie je hotový. Pozície AI bublín sú zámerné.
 - Pleamar a Marea sú od k4ditano, **BSD-3-Clause** (nie MIT): zachovať copyright, bez súhlasu nepoužívať meno na propagáciu.
   O povolenie pred vydaním požiada používateľ sám.
-- Nápady na hru nad enginom používateľ odmietol („Nie“). Nezačínať.
 
 ## 1. Čo engine je
 
@@ -165,7 +164,7 @@ E.define({
 - posúva sa kvapka bez kotvy (`pri`), ktorá nie je `dyn` ani ťahaná; ustúpi tá, na ktorú sa pustilo;
 - ukotvená kvapka sa posúva po x; reťazovo najviac 10 prechodov; pri tom stlačenie a uloženie.
 
-**Hra pri nečinnosti (úroveň 3):** naháňačka s nárazom a stlačením, beh, skok. Prebudenie stlačí všetky kvapky.
+**Nečinnosť úroveň 3 (kvapky sa hrajú):** naháňačka s nárazom a stlačením, beh, skok. Prebudenie stlačí všetky kvapky.
 
 **Služby cez `latte-goo`:** káva (`latte-goo kava`), mená glyfov (`latte-goo ikony`), uloženie pozícií
 (`latte-goo uloz-stav`).
@@ -279,7 +278,7 @@ počtom všetkých kvapiek.
 **Overené v cloude:**
 - Vstupy: všetky okrem stredného tlačidla.
 - Fyzika: lepenie a odtrhnutie, pád ťažkej kvapky, uloženie pozícií.
-- Nečinnosť: úrovne aj hra.
+- Nečinnosť: všetky úrovne vrátane naháňačky.
 - Efekty: vlnky (šírenie zmerané), jadro, vietor, ponor.
 - Goobar: zoskupenie okien foot, rozvinutie strapca, uhnutie pred oknom.
 - Ponuka PowerGoo a pravidlo 22 (reťazové odsunutie).
