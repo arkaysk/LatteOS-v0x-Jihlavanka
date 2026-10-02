@@ -514,7 +514,7 @@ Ide sa **po poradí**; nové nápady sa zapíšu na koniec (E), nerozbiehajú sa
 - materiál aj na oknách aplikácií pri kovových témach (textúra v hlavičke okna — upravený hyprbars)
 Architektúra prostredia a rozhranie Goo
 
-# Architektúra prostredia a rozhranie Goo (LatteOS)
+# Nová Architektúra prostredia a rozhranie Goo (LatteOS) 2.10.2026 23:55
 
 Dokumentácia konceptu, funkcionality a systémového backendu pre používateľské rozhranie založené na kvapkách (Goo).
 
