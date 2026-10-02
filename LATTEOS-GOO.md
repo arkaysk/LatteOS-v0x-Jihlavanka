@@ -512,3 +512,166 @@ Ide sa **po poradí**; nové nápady sa zapíšu na koniec (E), nerozbiehajú sa
 - **bubliny četov** pre viac kanálov (Messenger, Telegram, Signal, ICQ…) — forma sa ešte premyslí (používateľ);
   nie ako režim spúšťača a **nie spojené s DaNoGoo** (1. 10.)
 - materiál aj na oknách aplikácií pri kovových témach (textúra v hlavičke okna — upravený hyprbars)
+Architektúra prostredia a rozhranie Goo
+
+# Architektúra prostredia a rozhranie Goo (LatteOS)
+
+Dokumentácia konceptu, funkcionality a systémového backendu pre používateľské rozhranie založené na kvapkách (Goo).
+
+---
+
+## 1. Základné systémové kvapky (Core Goo)
+
+Základné kvapky sú pevne integrované do rozhrania a nie je možné ich v nastaveniach deaktivovať.
+
+### GooBar (Hlavná lišta a správca okien)
+Nezrušiteľná základná kvapka. Zabezpečuje správu plochy, prepínanie okien a prácu s viacerými monitormi.
+
+* **Správanie a zhlukovanie:**
+  * Z hlavnej kvapky smerom doprava alebo nadol (prípadne reverzne podľa nastavenia `reversed` v nastaveniach) vyrastajú vizuálne odlišné menšie kvapky, ktoré reprezentujú otvorené okná.
+  * Ak patrí viacero okien rovnakej aplikácii, zhlukujú sa do strapcov (ako ikry alebo hrozno).
+  * Kvapky sa nikdy neodpájajú od okraja obrazovky. Do výšky sa vrstvia len vtedy, ak je z jednej aplikácie otvorených viacero okien.
+  * Ak sa okno aplikácie dostane do blízkosti lišty, ikry sa automaticky stiahnu nižšie, aby neprekrývali aktívne okno.
+  * GooBar sa spája s inými kvapkami výhradne zo strany, kde nevyrastajú ikry okien.
+  * **Usporiadanie:** Lišta sa vždy zmestí po kraj obrazovky a zastaví sa pred rohovými prvkami a widgetmi.
+  * **Multi-monitor:** Každá obrazovka má vlastný GooBar. Okná aj ikry je možné plynulo prenášať medzi monitorovými plochami.
+
+* **Hlava (Najväčšia kvapka):**
+  * Zobrazuje aktuálny režim správcu okien (páska / nad sebou / dlaždice).
+  * **Ľavý klik:** Prepnutie na ďalší režim okien.
+  * **Koleso myši:** V režime pásky posúva pásku okien; v režime dlaždíc alebo plávajúcich okien prepína medzi oknami (funkcia Alt+Tab).
+  * **Ťahanie ľavým tlačidlom:** Presun lišty k inému okraju obrazovky (pri pustení uprostred plochy sa vráti späť k okraju).
+
+* **Guľôčky okien / Ikry (Strapce aplikácií):**
+  * S rastúcim počtom okien sa veľkosť ikier automaticky zmenšuje.
+  * **Ľavý klik:** Prepnutie na okno alebo jeho minimalizácia (v režime pásky sa okno neminimalizuje).
+  * **Pravý klik:** Kontextová ponuka okna pod kurzorom.
+  * **Ťahanie:** Reorganizácia aplikácií (vlákno sa správa ako tekutý sliz).
+  * **Minimalizované okno:** Menšia a vizuálne stlmená guľôčka. Kapacita je 48 slotov; pri vyššom počte sa zobrazí zberná guľôčka pre prehľad zvyšných okien.
+
+---
+
+### GooPower (Napájanie a systémový monitor)
+Základná kvapka pre správu relácie, výkonu a batérie.
+
+* **Interakcia:**
+  * **Ľavý klik:** Vystúpi rohožkové okno Goo spojené s kvapkou. Obsahuje *Nastavenia*, *Monitor systému* a sekciu spravovanú službou Noctalia (*Zamknúť*, *Odhlásiť*, *Uspať*, *Reštartovať*, *Vypnúť* s ikonami Tabler).
+  * Generátor rozhrania: `session/kvapky/powergoo.py`.
+
+* **Indikácia batérie (Notebooky):**
+  * Hlavička okna zobrazuje presné percento a stav nabíjania.
+  * Na samotnej kvapke sa zobrazujú mini-bublinky:
+    * 3 zelené bublinky: nabitie >= 60 %
+    * 2 žlté bublinky: nabitie >= 30 %
+    * 1 červená bublinka: nabitie < 30 %
+    * Pri poklese pod 10 % kvapka netrpezlivo pulzuje.
+    * Pri nabíjaní bublinky animovane stúpajú a klesajú.
+  * Na stolných počítačoch je indikátor batérie skrytý.
+
+---
+
+### LensGoo (Univerzálny spúšťač a Lupa)
+Nezrušiteľná základná kvapka označená ikonou lupy, ktorá slúži ako vyhľadávač, spúšťač a rozhranie pre AI.
+
+* **Režimy vyhľadávania (Pole s ikonou):**
+  * Kliknutím na ikonu režimu vytečie tekutý stĺpec možností. Prepínanie je možné aj kolieskom myši nad ikonou alebo klávesom Tab.
+  * Zvolený režim sa ukladá do `spustac.json`.
+  * **Aplikácie (Lupa):** Bez textu zobrazuje obľúbené aplikácie (mriežka 6 x 3) a nedávne spustenia (2 x 2). S textom hľadá aplikácie, widgety a ponúka rýchle prepnutie do iných režimov. Podporuje drag-and-drop presun aplikácií priamo do záložiek obľúbených.
+  * **Súbory (Priečinok):** Bez textu zobrazuje domovské adresáre. S textom využíva bleskový nástroj `fd` (Enter otvorí súbor, pravý klik otvorí nadradený priečinok).
+  * **Web (Web):** Ponúka riadky pre jednotlivé vyhľadávače s predvolenou prvou voľbou.
+  * **Terminál (Príkaz):** Spúšťa príkazy v `latte-terminal`. Nebezpečné príkazy vyžadujú potvrdenie druhým stlačením Enter. Obsahuje históriu príkazov.
+  * **AI Chat (Prompt):** Konverzácia prebieha priamo vo vnútri spúšťača v goo bublinách.
+
+* **Špecifikácia AI integrácie (`latte-ai`):**
+  * **Prísny zákaz otvárania prehliadača:** Všetky konverzácie (Claude, Gemini, ChatGPT, Ollama) bežia výhradne v rozhraní spúšťača bez otvárania webových okien.
+  * **Pripojenie bez API kľúča:** Využívajú sa oficiálne CLI nástroje prihlásené používateľským účtom (napr. `claude -p` pre Claude Code so streamovaným výstupom `--output-format stream-json`, `gemini` CLI alebo `codex exec` pre ChatGPT).
+  * **Indikácia poskytovateľa:** Vizuálny ukazovateľ vedľa modelu jasne rozlišuje lokálne a cloudové modely (napr. zelená bodka pre lokálnu Ollamu, oranžová pre cloudové rozhranie).
+  * Generátor rozhrania: `session/kvapky/spustac.py`.
+
+---
+
+## 2. Rozširujúce systémové kvapky (Optional Goo)
+
+Tieto kvapky je možné podľa potrieb používateľa aktivovať alebo deaktivovať v nastaveniach systému.
+
+### QueenGoo (App Manager a Správca zariadení)
+Kvapka označená ikonou korunky na vonkajšej strane (tvar koruny je prispôsobiteľný v nastaveniach).
+
+* **Stavová indikácia (Pravidlo 15):**
+  * **Červená bodka:** Zariadenie vyžaduje pozornosť (`latte-devices list` -> `faults`).
+  * **Zelená bodka:** Výpadok sieťového pripojenia.
+  * **Modrá bodka:** Čakajúce systémové a aplikáciové aktualizácie (`latte-apps updates`).
+
+* **Správanie okna (Pravidlo 14):**
+  * **Ľavý klik:** Otvorí App Manager (pri aktualizáciách sa otvorí priamo v záložke aktualizácií).
+  * **Pravý klik:** Otvorí Správcu zariadení (pri výpadku siete sa otvorí v sekcii Sietí).
+  * **Mechanizmus nafúknutia:** Kvapka sa nestáva rohom okna, ale zo svojej pozície vypľuje bublinu (`bublina.py`), ktorá sa plynule nafúkne na plnohodnotné okno vedľa kvapky (rozmer 1220 x 780).
+  * Generátor rozhrania: `queengoo.py`.
+
+---
+
+### ClockGoo (Čas, Kalendár, Notifikácie a Well-being)
+Kombinovaná kvapka spájajúca časové funkcie a notifikačné centrum (predtým DaNoGoo).
+
+* **Notifikačný systém (Ľavý klik):**
+  * Kvapka sa pružinovo vymrští od okraja a zanechá za sebou visieť hrozno upozornení na lepkavom vlákne (najnovšie hore).
+  * Upozornenia prekrývajú okná a zatvárajú sa opätovným klikom na kvapku, klávesom Esc alebo kliknutím mimo ich plochy.
+  * Farebné rozlíšenie kapsúl:
+    * Varovné a systémové: červeno-kávový odtieň.
+    * Nedôležité: neutrálny kávový odtieň.
+    * Aplikácie: čisto vo farbe ikony danej aplikácie.
+
+* **Karta času a kalendára (Pravý klik):**
+  * Z kvapky vyrastie spojovací krk s kartou.
+  * **Sekcia digitálnej pohody (Well-being):** Prebratá zo systémovej aplikácie `pohoda.qml` (dáta v `~/.local/share/latteos/pohoda/`). Zobrazuje celkový čas pred obrazovkou, tri najpoužívanejšie aplikácie a tlačidlo pre podrobnosti v Monitore.
+  * **Časové nástroje:** Svetové hodiny, stopky (medzičasy), minútka (kruhové nastavenie kolieskom myši) a budíky. Logika časovačov beží na pozadí prostredníctvom `casovace.json` a `clock.conf`.
+  * **Kalendár a úlohy:** Týždenný/mesačný prehľad od pondelka, podpora udalostí a todo úloh (`events.json`, `todo.json`) so synchronizáciou cez CalDAV, Google a iCloud (cez modul Noctalia).
+  * **Počasie:** Predpoveď na Dnes / Zajtra / Týždeň.
+
+---
+
+### ChatGoo (Integrácia komunikátora Beeper)
+Špecializovaný doplnok pre spravovanie správ a správcu Beeper (AppImage / Flatpak).
+
+* **Správanie:**
+  * Kvapka je aktívna len pri nainštalovanom alebo spustenom Beeperi.
+  * Pri minimalizácii Beepera okno aplikácie "vtečie" priamo do kvapky ChatGoo namiesto štandardnej lišty.
+  * Upozornenia smerované pre Beeper sa automaticky odkláňajú z ClockGoo do ChatGoo.
+  * Správy vytvárajú hrozno bublín na lepkavom vlákne s farebným odznakom konkrétnej siete (WhatsApp, Signal, Telegram atď.).
+  * Pomocný daemon: `session/bin/latte-chatgoo`.
+
+---
+
+## 3. Návrhy nových kvapiek (Backlog & Koncepty)
+
+* **ClipGoo (Správca schránky):** História kopírovania textov, kódu a obrázkov s možnosťou trvalého pripnutia položiek.
+* **MediaGoo (Prehrávač médií):** Kvapka na hladine zobrazujúca práve prehrávané médiá (Now Playing), podcasty a rýchle ovládanie hlasitosti/prehrávania cez MPRIS.
+* **PassGoo:** Bezpečné grafické rozhranie pre systémový keyring a správu hesiel.
+* **CastGoo:** Rýchle streamovanie obrazovky a médií na externé zariadenia (Chromecast, Miracast, AirPlay).
+
+---
+
+## 4. Architektúra systémového backendu
+
+Pre zabezpečenie bleskového chodu a vysokej spandlivosti netreba programy vytvarat, ale použit existujuce, napr definované Linuxové subsystémy a knižnice:
+
+### Sieťová infraštruktúra
+* **NetworkManager (`libnm`):** Hlavný štandard pre automatickú správu Wi-Fi, Ethernetu a VPN profilov (WireGuard, OpenVPN).
+* **iwd (Intel Wireless Daemon):** Ultraľahký daemon bez vonkajších závislostí pre rýchle bezdrôtové pripojenia.
+
+### Súborový systém a vyhľadávanie
+* **Indexovanie:** `Tracker3` / `Baloo` spustené na pozadí pre metadáta a plnotextové indexovanie.
+* **Vyhľadávanie:** `fd` (súbory) a `ripgrep` (obsah) v Ruste pre vyhľadávanie v ráde milisekúnd bez nutnosti veľkých databáz.
+* **Abstrakcia VFS:** Využitie `GVFS` (GNOME Virtual File System) a `KIO` pre zjednotený prístup k lokálnym diskom (`/home`, `/mnt`), sieťovým úložiskám (SMB, WebDAV) a MTP zariadeniam.
+* **Virtualizácia knižníc:** Systémové cesty sa používateľovi prezentujú cez abstraktnú vrstvu do logických knižníc (Dokumenty, Médiá, Projekty).
+
+### Systémové služby a bezpečnosť
+* **Tlač a skenovanie:** CUPS a SANE.
+* **Bluetooth:** BlueZ stack.
+* **Firewall a bezpečnosť:** `nftables` / `firewalld`.
+* **Firmware:** `fwupd` v spojení s Linux Vendor Firmware Service (LVFS).
+
+### Dokumenty, Médiá a Podcasty
+* **Prehliadače dokumentov:** `Okular` core knižnice pre univerzálne zobrazovanie PDF, EPUB, MOBI, DjVu a Markdown.
+* **Zvukový backend:** GStreamer knižnice.
+* **Podcastový engine:** RSS parser na pozadí s automatickým sťahovaním nových epizód, správa prehratého času a automatické čistenie starých súborov (napr. po 7 dňoch).
