@@ -675,3 +675,19 @@ jednoduché, ale návykovo zábavné.
 **Odporúčanie:** najprv 1 ako ukážku (takmer zadarmo), potom 2 ako skutočnú malú hru (Flatpak, Hry LatteOS); ak Luau
 neutiahne plynulosť, malá fyzikálna služba v Ruste. Pleamar je BSD-3 (hra je v poriadku); gamepad pleamar zatiaľ
 nevie. Čaká na rozhodnutie používateľa.
+
+### Report o engine pre novú session
+
+**Požiadavka:** „Nie. Len priprav o celom engine čo si spravil, report pre novú session na Claude Code.“
+
+**Odpoveď:** hru nezačínam. Report je v `docs/goo/ENGINE-REPORT.md` a obsahuje:
+- pravidlá spolupráce;
+- mapu súborov a záplaty pleamaru;
+- ako funguje scéna `goo.plm` a API `lib/engine.luau`;
+- Goobar a prenesené kvapky;
+- príkazy `latte-goo`;
+- pasce jazyka;
+- postup testovania v cloude a merania;
+- čo je a čo nie je overené, otvorené úlohy a zoznam commitov.
+
+Nová session ho má prečítať ako prvý, spolu s `LATTEOS-GOO.md` a `session/goo/README.md`.
