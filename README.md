@@ -36,3 +36,15 @@ Všetko, čo sa teraz napíše, musí bežať vo VM bez GPU.
    (rpm-ostree / bootc, štýl Bazzite / Universal Blue).
 2. **Reálny hardvér s 3D grafikou** — keď bude pripravený stroj,
    postupne sa zapne HW akcelerácia: **AMD (ATI)** aj **NVIDIA**.
+
+
+
+
+ ## Goo Engine.   
+1. oddelenie jadra od renderu (Headless Core): Logika (stav batérie, zoznam okien, notifikácie, AI požiadavky) musí bežať v samostatnom daemone (napr. v Pythone, Go alebo Rust). Quickshell/QML by mala byť len "hlúpa" vizuálna vrstva, ktorá dostáva dáta cez IPC.
+2. Goo API (Event Bus): Definuj si presné rozhranie pre kvapky. Napr. goo.emit("power", "battery_low", 15). Všetky kvapky (aj tie z GitHubu) by mali komunikovať cez tento jednotný most. Vyhneš sa priamemu prepojeniu komponentov, ktoré sa pri aktualizácii Noctalie rozbijú.
+3. Wrapper pre externé moduly: Ak preberáš kód z iného Goo projektu, obaľ ho do vlastnej triedy/funkcie. Nikdy neupravuj priamo kód Noctalie, ak to nie je nevyhnutné. Vždy píš nadstavbu.
+4. optimalizacia
+
+ ## 
+   
