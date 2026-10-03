@@ -1,0 +1,8 @@
+# Zálohované staré verzie dokumentov
+
+Tieto súbory sú presunené z koreňa repa do `docs_zaloha/` pri reorganizácii (2. 10. 2026).
+
+Ak ich potrebuješ:
+- `LATTEOS-GOO.md` → teraz v `docs/goo/` (rozdelené)
+- `session/goo/README.md` → teraz v `docs/goo/ENGINE.md` (rozšírené)
+- `cloud_session_1.md` → teraz v `docs/goo/cloud_session_1.md` (s indexom)
