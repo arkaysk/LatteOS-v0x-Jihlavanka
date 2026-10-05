@@ -260,6 +260,10 @@ Validácia odmietne `farba` (pravidlo 6) a kontroluje čísla, povahu, efekt, dr
 - Viac monitorov: scéna sa kreslí na každom, ale voľné `prop` a `fact` sú **jedny pre všetky kópie** (aj so
   `screens: each`) a `screen.width` je z poslednej kópie. Vlastný stav na monitor = mená s `$screen` alebo jeden
   proces na monitor (`--screen MENO`). Engine zatiaľ beží iba na hlavnom monitore.
+- `scroll zone` dostane **každá** zóna pod kurzorom, nielen vrchná: koliesko nad riadkom príde aj ploche karty —
+  logika si pamätá, že ho použil riadok (`wheel_used`), a plocha karty chvíľu počká (`ctx_bgw`).
+- `lines:` textu chce číslo, nie výraz; `anchor: left top` kreslilo odsek mimo — odsek je `left center` na strede
+  odhadnutej výšky. Text sa s textom porovnať nedá (`a == ""`): pomocné číselné pole.
 - Skrytý `input` (`show: false`) stále berie kliky na svojom mieste: nepoužité pole odsunúť mimo (`-4000`).
 - `keyboard: on_demand` dá klávesnicu až po kliku do plochy; modálna karta potrebuje `exclusive while …`.
 - Chyba v obsluhe udalosti logiky (napr. klik na čip) sa do logu nezapíše — zložitejšie stavanie karty obaliť
@@ -356,7 +360,8 @@ batéria (stolný PC), reálny touchpad.
 1. ✅ (5. 10.) Overenie na latte-lab (§10).
 2. ✅ (5. 10.) Výkon GPU: záplata `pleamar-pasy-tela` namiesto ostrovov. Ostáva CPU (128 miest, §9).
 3. Preniesť zo Kvapiek do enginu (podľa Novej architektúry, `docs/goo/ROZHRANIE.md`):
-   - LensGoo: okno spúšťača z kvapky (režimy, AI);
+   - LensGoo: ✅ (5. 10.) okno spúšťača v karte Goo (`lib/spustac.luau`): Aplikácie, Súbory, Web, Terminál, AI,
+     kláves Windows, ovládanie bez myši; chýba mriežka obľúbených a ťahanie do záložiek;
    - ClockGoo: ✅ (5. 10.) karta času — prehľad, pohoda, svetové hodiny, stopky, minútka, budíky (`lib/cas.luau`);
      ✅ kalendár s udalosťami a úlohami, počasie; chýba synchronizácia kalendára;
    - ✅ (5. 10.) ClockGoo: hrozno upozornení na vlákne (kapsuly `kw`/`t2`, `visi`, lepkavé vlákno, `hr_away`);
@@ -376,6 +381,7 @@ batéria (stolný PC), reálny touchpad.
 
 ## 12. Commity enginu (najnovšie hore)
 
+- 5. 10.: okno spúšťača LensGoo; karta Goo väčšia a pohyblivá, koliesko prepína záložky, ovládanie z klávesnice.
 - 5. 10.: karta času ClockGoo (čipy, veľký riadok, pruh, koliesko v karte Goo; lib/cas.luau; latte-goo cas, zvon).
 - 5. 10.: hrozno upozornení ClockGoo, zakázaná zóna rohovej lišty, korunka QueenGoo, vlákna (strop 2,3, hrubšie korene).
 - 5. 10.: okraje (kvapky sa lepia ku každému okraju), gravitácia pri pustení, hlbšie sadnutie, engine na hlavnom monitore.

@@ -16,6 +16,9 @@ Logika scény beží v pieskovisku pleamar (bez súborov a bez sh) — všetko, 
                                   s plochou Kvapky, ~/.local/share/latteos/casovace.json), "pohoda" (čas pred obrazovkou
                                   a tri najpoužívanejšie aplikácie dnes), "pasma" (svetové hodiny z clock.conf)}
   latte-goo zvon TITUL [TEXT]     minútka alebo budík: upozornenie a trikrát zvuk (logika zvoniť nevie)
+  latte-goo spustac               nastavenie spúšťača spoločné s plochou Kvapky (~/.config/latteos/spustac.json):
+                                  režim, obľúbené záložky, nedávne, história príkazov, vyhľadávač
+  latte-goo spustac-uloz KĽÚČ JSON  zmení v ňom jeden kľúč (mode, recent, cmds), ostatné nechá
   latte-goo kalendar              {"udalosti": [{date, time, title}], "ulohy": [{title, done, date}]} — spoločné
                                   s plochou Kvapky (events.json, todo.json; zápis `latte-kvapky uloz udalosti|ulohy`)
   latte-goo pocasie               predpoveď Open-Meteo pre miesto z Nastavení › Účet › Prihlasovanie (greeter.conf):
@@ -425,6 +428,40 @@ def main(a):
         return 0
     if c == "cas":
         print(json.dumps(cas(), ensure_ascii=False)); return 0
+    if c in ("spustac", "spustac-uloz"):
+        path = os.path.join(os.path.dirname(os.path.dirname(CONF)), "spustac.json")
+        try:
+            cfg = json.load(open(path))
+            assert isinstance(cfg, dict)
+        except (OSError, ValueError, AssertionError):
+            cfg = {}
+        if c == "spustac":
+            # domovské priečinky pre režim Súbory (logika nepozná domov ani xdg-user-dir)
+            def xdg(k, d):
+                try:
+                    p = subprocess.run(["xdg-user-dir", k], capture_output=True, text=True, timeout=2).stdout.strip()
+                except (OSError, subprocess.TimeoutExpired):
+                    p = ""
+                return p if p and p != HOME and os.path.isdir(p) else os.path.join(HOME, d)
+            cfg["_domov"] = HOME
+            cfg["_priecinky"] = [{"name": "Home", "path": HOME, "glyph": "home", "kratko": "~"}] + [
+                {"name": n, "path": xdg(k, d), "glyph": g, "kratko": "~/" + os.path.basename(xdg(k, d))}
+                for n, k, d, g in (("Documents", "DOCUMENTS", "Dokumenty", "file-text"), ("Downloads", "DOWNLOAD", "Stiahnuté", "download"),
+                                   ("Pictures", "PICTURES", "Obrázky", "photo"), ("Music", "MUSIC", "Hudba", "music"),
+                                   ("Videos", "VIDEOS", "Videá", "movie"), ("Desktop", "DESKTOP", "Plocha", "device-desktop"))
+                if os.path.isdir(xdg(k, d))]
+            print(json.dumps(cfg, ensure_ascii=False)); return 0
+        if len(a) != 3 or a[1] not in ("mode", "recent", "cmds"):
+            print("spustac-uloz: kľúč mode | recent | cmds a hodnota JSON", file=sys.stderr); return 1
+        try:
+            cfg[a[1]] = json.loads(a[2])
+        except ValueError:
+            print("spustac-uloz: hodnota nie je JSON", file=sys.stderr); return 1
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path + ".new", "w") as f:
+            json.dump(cfg, f, ensure_ascii=False, separators=(",", ":"))
+        os.replace(path + ".new", path)
+        return 0
     if c == "kalendar":
         print(json.dumps(kalendar(), ensure_ascii=False)); return 0
     if c == "pocasie":

@@ -48,8 +48,18 @@ okraju, zastavenie pred rohovou lištou Noctalie (zakázaná zóna, premenlivá 
 - **AI** (`latte-ai`): rozhovor v goo bublinách priamo v spúšťači, **nikdy neotvára prehliadač**; bez kľúča API
   cez prihlásené nástroje (Claude Code, Gemini, Codex); bodka rozlišuje lokálny a cloudový model
 
-**Engine:** kvapka s lupou na mieste Štartu, ľavý klik otvorí rýchle spustenie LatteOS.
-**Chýba:** okno spúšťača z kvapky s režimami a AI (je v scéne Kvapky, `spustac.py`).
+**Engine:** okno spúšťača v karte Goo (klik na LensGoo alebo **kláves Windows** — dá sa ovládať celé bez myši:
+Tab / Shift+Tab režimy, šípky riadok, Enter, Esc; koliesko v karte tiež prepína režimy):
+- Aplikácie: obľúbené a nedávne, hľadanie s ikonami, kalkulačka a prevody, stránky Nastavení, rýchle prepnutie
+  do iných režimov, pravý klik = akcie aplikácie;
+- Súbory: domovské priečinky, `latte-hladaj`, pravý klik otvorí priečinok so súborom;
+- Web: adresa, predvolený vyhľadávač, návrhy pri písaní, ostatné vyhľadávače;
+- Terminál: príkaz v `latte-terminal` (**terminál po príkaze ostane otvorený**), nebezpečný chce druhý Enter,
+  história a dopĺňanie;
+- AI: rozhovor v bublinách priamo v karte cez `latte-ai`, odpoveď po riadkoch, nikdy neotvára prehliadač.
+Režim, nedávne a história príkazov sú v `spustac.json` spoločne s plochou Kvapky.
+**Chýba:** mriežka obľúbených 6 × 3 a nedávne 2 × 2 (teraz zoznam), ťahanie aplikácií do záložiek obľúbených,
+filtre typov súborov, „Ukázať výstup tu“, prílohy a hlas v AI, farebná bodka lokálny/cloud (teraz text).
 
 ---
 

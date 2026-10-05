@@ -305,6 +305,19 @@ lepivosť, veľkosť a rezervu na ďalšie efekty.
   (`events.json`, `todo.json` — spoločné s Kvapkami) a `latte-goo pocasie` (Open-Meteo, miesto z `greeter.conf`,
   20 min v pamäti). Riadok `info` = údaj na čítanie (neklikateľný, ale nie vyblednutý ako `off`).
   Pasca: skrytý `input` berie kliky aj tak — keď ho karta nemá, leží mimo nej (inak zhltol kliky na záložky).
+- **Karty z kvapiek — požiadavky používateľa (5. 10. večer):**
+  - **koliesko kdekoľvek v otvorenej karte prepína záložky** (riadok s vlastným kolieskom — dĺžka minútky, hodina
+    budíka — má prednosť);
+  - **okno môže byť väčšie**, stále **minimalistické a futuristicky pohyblivé**; ráta sa s hardvérom nie starším
+    než 10 (najviac 15) rokov a **rozlíšením nikdy nie nižším než 1024 × 768**. V engine: riadok 44 px, písmo 15,
+    šírka o pätinu väčšia; karta vyrastie z ucha, rám plynulo mení veľkosť, riadky nabehnú postupne, zvýraznenie
+    riadku a vybraná záložka kĺžu pružinou; riadky, ktoré by sa nezmestili na výšku, sa nepridajú;
+  - **LensGoo sa otvára aj klávesom Windows**, aby sa dali zadať príkazy **aj bez myši**; záložky (režimy) prepína
+    **Tab**; v engine navyše Shift+Tab, šípky vyberú riadok, Enter potvrdí, Esc zavrie;
+  - **po zadaní príkazu ostane konzola otvorená** (za príkazom beží bežný shell).
+- **Okno spúšťača LensGoo v engine (5. 10.):** `lib/spustac.luau` nad kartou Goo — režimy Aplikácie, Súbory, Web,
+  Terminál, AI; pomocníci `latte-riadok`, `latte-hladaj`, `latte-ai` a `spustac.json` sú tie isté ako v Kvapkách.
+  Karta: ikona aplikácie v riadku (`img`), pravý klik (`right`), odsek v bubline (`para`), písanie (`change`).
 - Ďalej: znížiť CPU enginu, potom preniesť okná z kvapiek do enginu (LensGoo spúšťač, karta a hrozno ClockGoo,
   bublina QueenGoo) a ChatGoo (po jednej, snímky pred a po). Živé bytosti z 3.1 (dážď/vietor) a formulár
   v Nastaveniach › Kvapky pribudnú nad enginom.

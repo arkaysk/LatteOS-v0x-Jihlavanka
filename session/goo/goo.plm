@@ -25,7 +25,7 @@ scene Goo {
         keyboard: exclusive while ctx_open or hr_open
     }
     // povolenia: Goobar (okná, spúšťače aplikácií), DaNoGoo (upozornenia), PowerGoo (batéria, Noctalia), QueenGoo
-    permissions { run: "latte-goo", "date", "hyprctl", "latte-app", "noctalia", "latte-spustac", "latte-devices", "latte-apps", "latte-kvapky"; services: "clock", "window", "window.*", "apps", "apps.*", "notifications", "notifications.*", "battery" }
+    permissions { run: "latte-goo", "date", "hyprctl", "latte-app", "noctalia", "latte-spustac", "latte-devices", "latte-apps", "latte-kvapky", "latte-riadok", "latte-hladaj", "latte-ai", "latte-terminal", "xdg-open"; services: "clock", "window", "window.*", "apps", "apps.*", "notifications", "notifications.*", "battery", "clipboard.set" }
 
     // ── káva (pravidlo 6): pomer vody a mlieka z Baristu (~/.config/latteos/kava, číta logika) ──────────────────
     spring jemna = 60, 14
@@ -88,6 +88,7 @@ scene Goo {
     spring plava = 150, 13                    // vodorovne: mäkko, bez odskoku
     spring pada = 190, 9                      // zvisle: s prestrelením a odrazom („odkvapne“, §3)
     spring rastie = 260, 16
+    spring hbita = 520, 34                    // zvýraznenie riadku a vybraná záložka: rýchlo, s jemným dokmitom
     spring sada = 70, 13                      // sadnutie k lište v pokoji: pomaly, bez odrazu
     let GRAV = 800                            // gravitácia (px/s²), NÍZKA (§3): z polovice obrazovky padá asi 1,1 s.
                                               // Rovnaké číslo má logika (lib/engine.luau: GRAV) — počíta čas dopadu
@@ -121,8 +122,9 @@ scene Goo {
     // dáva logika (ikona, skratka, zaškrtnutie, červená, podponuka ›, čiara nad položkou, y riadku). Miesto kliku si
     // scéna zapamätá pri každom stlačení kvapky (ctx.x, ctx.y), logika ponuku iba otvorí
     // riadok karty: big = veľký nadpis (čas, stopky), bar = pruh priebehu 0…1 (−1 žiadny), info = údaj na čítanie
-    // (neklikateľný, ale plne čitateľný — na rozdiel od off, čo je nedostupná voľba)
-    model ctx max 16 { label: text; on: number; off: bool; glyph: text; hint: text; danger: bool; sub: bool; back: bool; sep: bool; y: number; big: bool; bar: number = -1; info: bool }
+    // (neklikateľný, ale plne čitateľný — na rozdiel od off, čo je nedostupná voľba), img/im = ikona aplikácie
+    // (obrázok podľa mena ikony) namiesto znaku, para/pl = odsek textu na pl riadkov v bubline (odpoveď AI)
+    model ctx max 16 { label: text; on: number; off: bool; glyph: text; hint: text; danger: bool; sub: bool; back: bool; sep: bool; y: number; big: bool; bar: number = -1; info: bool; img: text; im: bool; para: bool; pl: number = 1 }
     // čipy záložiek hore v karte (karta ClockGoo: Prehľad · Stopky · Minútka · Budíky)
     model chip max 6 { label: text; glyph: text; on: bool; solo: bool }      // solo = iba znak, bez názvu
     fact chip_hot = -1
@@ -144,6 +146,8 @@ scene Goo {
     event ctx_submit ->
     event ctx_chip ->
     event ctx_scroll ->
+    event ctx_right ->
+    event ctx_chipw ->
     fact ctx_open = false
     // hrozno upozornení (ClockGoo): lepkavé vlákno od okraja ku kvapke, na ňom visia kapsuly; klik mimo ho zavrie
     fact hr_open = false
@@ -162,6 +166,12 @@ scene Goo {
     fact ctx_w = 248
     fact ctx_h = 48
     fact ctx_hot = -1
+    fact ctx_hy = 0                           // riadok pod kurzorom alebo vybraný šípkami: kde je a či je nebezpečný
+    fact ctx_hd = false
+    fact ctx_gen = 0                          // logika zvýši pri novom obsahu karty: riadky nabehnú znova
+    event ctx_bgw ->
+    event ctx_key ->
+    event lens_toggle ->                      // kláves Windows: latte-spustac → pleamar --say goo "emit lens_toggle"
     event ctx_pick ->
     event ctx_close ->
     prop ctx.p = 0 ~rastie
@@ -1249,6 +1259,12 @@ scene Goo {
         text goo.$k.text { at: x.$k, y.$k + rr.$k * 0.36; anchor: center; size: 8 * rs.$k; color: ink; opacity: if(goo.$k.on and goo.$k.druh == 2, 0.75, 0); family: "Inter" }
     }
     // ponuka Goo: karta z kávy do farby okien, ucho v rohu pri mieste kliku
+    // ── karta Goo (ponuky, karta ClockGoo, okno spúšťača LensGoo) ──────────────────────────────────────────────
+    // Väčšia a pohyblivá (používateľ 5. 10.: „môže byť aj väčšie, stále minimalistické a futuristicky pohyblivé“;
+    // najmenšie rozlíšenie 1024 × 768 — výšku stráži logika): riadok 44 px, písmo 15, záložky 38. Pohyb: karta
+    // vyrastie z ucha, rám plynulo mení veľkosť, riadky nabehnú postupne, zvýraznenie a vybraná záložka sa
+    // presúvajú pružinou. Koliesko kdekoľvek v karte prepína záložky (riadok s vlastným kolieskom má prednosť);
+    // z klávesnice Tab / Shift+Tab záložky, šípky riadok, Enter potvrdí, Esc zavrie.
     let ctx.sx = if(ctx.x + ctx_w + 12 <= W, 1, -1)
     let ctx.sy = if(ctx_up, if(ctx.y - ctx_h - 12 >= 0, -1, 1), if(ctx.y + ctx_h + 12 <= H, 1, -1))
     let cx0 = clamp(if(ctx.sx > 0, ctx.x, ctx.x - ctx_w), 12, W - 12 - ctx_w)
@@ -1257,42 +1273,69 @@ scene Goo {
     let ctx.ay = if(ctx.sy > 0, cy0, cy0 + ctx_h)
     let ctx.q = clamp(ctx.p, 0, 1.08)
     let card = #2c2019
+    // rám karty mení veľkosť plynulo (prepnutie záložky), obsah nabieha postupne (rp 0 → 1 po zmene ctx_gen)
+    prop ctx.ws = 290 ~rastie
+    prop ctx.hs = 60 ~rastie
+    follow ctx.ws = ctx_w
+    follow ctx.hs = ctx_h
+    prop rp = 1 ~0ms
+    on change ctx_gen { rp: 0 ~0ms; rp: 1 ~460ms after 16ms }
+    // zvýraznenie riadku pod kurzorom (alebo vybraného šípkami): jedno, presúva sa pružinou
+    prop hl.y = 0 ~hbita
+    prop hl.o = 0 ~rastie
+    follow hl.y = ctx_hy
+    follow hl.o = if(ctx_hot >= 0 and ctx_open, 1, 0)
+    // vybraná záložka: zlatá kapsula, kĺže medzi záložkami
+    let chb = (ctx_w - 16) / (max(chip.count, 1) + if(chip_sel >= 0, 1.2, 0))
+    prop chs = 0 ~hbita
+    follow chs = chb * max(chip_sel, 0)
     zone box ctx_away { at: W / 2, H / 2; size: W, H; active: ctx_open }
     on press ctx_away { ctx_open = false; emit ctx_close }
+    on press right ctx_away { ctx_open = false; emit ctx_close }
     on key Escape while ctx_open { ctx_open = false; emit ctx_close }
     on key Escape while hr_open and not ctx_open { emit hr_close }
-    on press right ctx_away { ctx_open = false; emit ctx_close }
+    on key Tab while ctx_open { emit ctx_chipw(1) }                      // ďalšia záložka (režim spúšťača)
+    on key Shift+Tab while ctx_open { emit ctx_chipw(0) }
+    on key Down while ctx_open { emit ctx_key(1) }                       // výber riadku šípkami (bez myši)
+    on key Up while ctx_open { emit ctx_key(0) }
+    on key Return while ctx_open and ctx_in_y < 0 { emit ctx_submit }    // karta bez poľa: Enter = vybraný riadok
+    // plocha karty: klik do prázdna ju nezavrie; koliesko kdekoľvek v nej prepína záložky
+    zone box ctx_bg { at: cx0 + ctx_w / 2, cy0 + ctx_h / 2; size: ctx_w, ctx_h; active: ctx_open }
+    on press ctx_bg { chip_hot = -1 }
+    on press right ctx_bg { chip_hot = -1 }
+    on scroll ctx_bg { emit ctx_bgw(if(wheel > 0, 0, 1)) }
     body {
         gradient: ctx.ax, ctx.ay to ctx.ax + ctx.sx * ctx_w, ctx.ay + ctx.sy * ctx_h, mix(card, coffee, 0.6), card, card
         rim: 16%
-        shadow: 0, 4, 6, 30% * clamp(ctx.p, 0, 1)
+        shadow: 0, 6, 12, 34% * clamp(ctx.p, 0, 1)
         opacity: if(ctx.p > 0.02, 1, 0)
-        box { at: ctx.ax + ctx.sx * ctx_w * ctx.q / 2, ctx.ay + ctx.sy * ctx_h * ctx.q / 2; size: max(ctx_w * ctx.q, 14) * if(ctx.p > 0.02, 1, 0), max(ctx_h * ctx.q, 14); corner: 14 }
-        ellipse { at: ctx.ax, ctx.ay; radius: (9 * clamp(ctx.p * 3, 0, 1) + 1) * if(ctx.p > 0.02, 1, 0); blend: 10 }
+        box { at: ctx.ax + ctx.sx * ctx.ws * ctx.q / 2, ctx.ay + ctx.sy * ctx.hs * ctx.q / 2; size: max(ctx.ws * ctx.q, 14) * if(ctx.p > 0.02, 1, 0), max(ctx.hs * ctx.q, 14); corner: 18 }
+        ellipse { at: ctx.ax, ctx.ay; radius: (11 * clamp(ctx.p * 3, 0, 1) + 1) * if(ctx.p > 0.02, 1, 0); blend: 12 }
     }
     group {
         opacity: clamp(ctx.p * 2 - 1, 0, 1)
         show: ctx_open and ctx.p > 0.5
+        // záložky
+        box { at: cx0 + 8 + chs + chb * 1.1, cy0 + 29; size: chb * 2.2 - 6, 38; corner: 19; color: #f7c873; opacity: 24%; show: chip_sel >= 0 and chip.count > 0 }
         repeat c in 0..6 {
             // vybraná záložka má 2,2-násobnú šírku (znak aj názov), ostatné iba znak
-            let chb.$c = (ctx_w - 16) / (max(chip.count, 1) + if(chip_sel >= 0, 1.2, 0))
-            let chw.$c = chb.$c * if(c == chip_sel, 2.2, 1)
-            let chx.$c = cx0 + 8 + chb.$c * (c + if(chip_sel >= 0 and chip_sel < c, 1.2, 0))
-            box { at: chx.$c + chw.$c / 2, cy0 + 24; size: chw.$c - 6, 30; corner: 15; color: if(chip.$c.on, #f7c873, #4a372b); opacity: if(chip.$c.on, 24%, if(chip_hot == c, 100%, 45%)); show: c < chip.count }
-            text chip.$c.glyph { at: if(chip.$c.solo or c != chip_sel, chx.$c + chw.$c / 2, chx.$c + 20), cy0 + 24; anchor: center; size: 14; color: if(chip.$c.on, #f7c873, cream); opacity: 90%; show: c < chip.count; family: "noctalia-tabler-icons" }
-            text chip.$c.label { at: chx.$c + 33, cy0 + 24; anchor: left center; width: chw.$c - 42; lines: 1; size: 12; weight: 600; color: if(chip.$c.on, #f7c873, cream); show: c < chip.count and not chip.$c.solo and c == chip_sel; family: "Inter" }
-            zone box chip_z.$c { at: chx.$c + chw.$c / 2, cy0 + 24; size: chw.$c - 6, 32; cursor: pointer; active: ctx_open and c < chip.count }
+            let chw.$c = chb * if(c == chip_sel, 2.2, 1)
+            let chx.$c = cx0 + 8 + chb * (c + if(chip_sel >= 0 and chip_sel < c, 1.2, 0))
+            box { at: chx.$c + chw.$c / 2, cy0 + 29; size: chw.$c - 6, 38; corner: 19; color: #4a372b; opacity: if(c == chip_sel, 0, if(chip_hot == c, 100%, 45%)); show: c < chip.count }
+            text chip.$c.glyph { at: if(chip.$c.solo or c != chip_sel, chx.$c + chw.$c / 2, chx.$c + 24), cy0 + 29; anchor: center; size: 16; color: if(chip.$c.on, #f7c873, cream); opacity: 90%; show: c < chip.count; family: "noctalia-tabler-icons" }
+            text chip.$c.label { at: chx.$c + 40, cy0 + 29; anchor: left center; width: chw.$c - 50; lines: 1; size: 14; weight: 600; color: if(chip.$c.on, #f7c873, cream); show: c < chip.count and not chip.$c.solo and c == chip_sel; family: "Inter" }
+            zone box chip_z.$c { at: chx.$c + chw.$c / 2, cy0 + 29; size: chw.$c - 6, 40; cursor: pointer; active: ctx_open and c < chip.count }
             on enter chip_z.$c { chip_hot = c }
             on leave chip_z.$c { chip_hot = -1 }
             on press chip_z.$c { emit ctx_chip(c) }
         }
         // kalendár: ‹ mesiac rok ›, dni týždňa, 6 × 7 dní (dnes plný kruh, vybraný obrys, bodka = udalosť)
-        let kcw = (ctx_w - 32) / 7
-        text kal_title { at: cx0 + ctx_w / 2, cy0 + kal_y + 16; anchor: center; size: 14; weight: 700; color: cream; show: kal_y >= 0; family: "Inter" }
-        text kal_l { at: cx0 + 30, cy0 + kal_y + 16; anchor: center; size: 16; color: cream; opacity: if(kal_hot == 100, 100%, 60%); show: kal_y >= 0; family: "noctalia-tabler-icons" }
-        text kal_r { at: cx0 + ctx_w - 30, cy0 + kal_y + 16; anchor: center; size: 16; color: cream; opacity: if(kal_hot == 101, 100%, 60%); show: kal_y >= 0; family: "noctalia-tabler-icons" }
-        zone box kal_prev { at: cx0 + 30, cy0 + kal_y + 16; size: 40, 30; cursor: pointer; active: ctx_open and kal_y >= 0 }
-        zone box kal_next { at: cx0 + ctx_w - 30, cy0 + kal_y + 16; size: 40, 30; cursor: pointer; active: ctx_open and kal_y >= 0 }
+        let kcw = (ctx_w - 40) / 7
+        text kal_title { at: cx0 + ctx_w / 2, cy0 + kal_y + 20; anchor: center; size: 16; weight: 700; color: cream; show: kal_y >= 0; family: "Inter" }
+        text kal_l { at: cx0 + 34, cy0 + kal_y + 20; anchor: center; size: 18; color: cream; opacity: if(kal_hot == 100, 100%, 60%); show: kal_y >= 0; family: "noctalia-tabler-icons" }
+        text kal_r { at: cx0 + ctx_w - 34, cy0 + kal_y + 20; anchor: center; size: 18; color: cream; opacity: if(kal_hot == 101, 100%, 60%); show: kal_y >= 0; family: "noctalia-tabler-icons" }
+        zone box kal_prev { at: cx0 + 34, cy0 + kal_y + 20; size: 48, 36; cursor: pointer; active: ctx_open and kal_y >= 0 }
+        zone box kal_next { at: cx0 + ctx_w - 34, cy0 + kal_y + 20; size: 48, 36; cursor: pointer; active: ctx_open and kal_y >= 0 }
         on enter kal_prev { kal_hot = 100 }
         on leave kal_prev { kal_hot = -1 }
         on enter kal_next { kal_hot = 101 }
@@ -1300,43 +1343,56 @@ scene Goo {
         on press kal_prev { emit kal_nav(0) }
         on press kal_next { emit kal_nav(1) }
         repeat w in 0..7 {
-            text kdn.$w { at: cx0 + 16 + kcw * (w + 0.5), cy0 + kal_y + 44; anchor: center; size: 10.5; color: #b8a491; show: kal_y >= 0; family: "Inter" }
+            text kdn.$w { at: cx0 + 20 + kcw * (w + 0.5), cy0 + kal_y + 54; anchor: center; size: 12; color: #b8a491; show: kal_y >= 0; family: "Inter" }
         }
         repeat q in 0..42 {
-            let kqx.$q = cx0 + 16 + kcw * (q - 7 * floor(q / 7) + 0.5)
-            let kqy.$q = cy0 + kal_y + 70 + 28 * floor(q / 7)
-            ellipse { at: kqx.$q, kqy.$q; radius: 12.5; color: #f7c873; opacity: if(kal.$q.today, 100%, if(kal_hot == q, 22%, 0)); show: kal_y >= 0 and q < kal.count }
-            ellipse { at: kqx.$q, kqy.$q; radius: 12.5; stroke: 1.5; color: #f7c873; opacity: if(kal.$q.sel, 90%, 0); show: kal_y >= 0 and q < kal.count }
-            text kal.$q.d { at: kqx.$q, kqy.$q; anchor: center; size: 12; weight: 600; color: if(kal.$q.today, #2c2019, cream); opacity: if(kal.$q.inm, 100%, 35%); show: kal_y >= 0 and q < kal.count; family: "Inter" }
-            ellipse { at: kqx.$q, kqy.$q + 10; radius: 1.8; color: if(kal.$q.today, #2c2019, #f7c873); show: kal_y >= 0 and q < kal.count and kal.$q.dot }
-            zone box kal_z.$q { at: kqx.$q, kqy.$q; size: kcw - 2, 26; cursor: pointer; active: ctx_open and kal_y >= 0 and q < kal.count }
+            let kqx.$q = cx0 + 20 + kcw * (q - 7 * floor(q / 7) + 0.5)
+            let kqy.$q = cy0 + kal_y + 88 + 35 * floor(q / 7)
+            // dni nabehnú po týždňoch (rp)
+            let kqa.$q = clamp(rp * 2.4 - 0.2 * floor(q / 7), 0, 1)
+            ellipse { at: kqx.$q, kqy.$q; radius: 15.5; color: #f7c873; opacity: if(kal.$q.today, 100%, if(kal_hot == q, 22%, 0)) * kqa.$q; show: kal_y >= 0 and q < kal.count }
+            ellipse { at: kqx.$q, kqy.$q; radius: 15.5; stroke: 1.5; color: #f7c873; opacity: if(kal.$q.sel, 90%, 0); show: kal_y >= 0 and q < kal.count }
+            text kal.$q.d { at: kqx.$q, kqy.$q; anchor: center; size: 14; weight: 600; color: if(kal.$q.today, #2c2019, cream); opacity: if(kal.$q.inm, 100%, 35%) * kqa.$q; show: kal_y >= 0 and q < kal.count; family: "Inter" }
+            ellipse { at: kqx.$q, kqy.$q + 12; radius: 2; color: if(kal.$q.today, #2c2019, #f7c873); show: kal_y >= 0 and q < kal.count and kal.$q.dot }
+            zone box kal_z.$q { at: kqx.$q, kqy.$q; size: kcw - 2, 33; cursor: pointer; active: ctx_open and kal_y >= 0 and q < kal.count }
             on enter kal_z.$q { kal_hot = q }
             on leave kal_z.$q { kal_hot = -1 }
             on press kal_z.$q { emit kal_pick(q) }
         }
-        // textové pole karty: klik na riadok doň dá kurzor, Enter odošle (ctx_submit); názov riadku je nápoveď
-        // (skryté pole berie kliky aj tak: keď karta pole nemá, leží ďaleko mimo nej — inak zhltlo kliky na záložky)
-        input ctxq { at: cx0 + 46, if(ctx_in_y >= 0, cy0 + ctx_in_y + 9, -4000); width: ctx_w - 64; size: 13; color: cream; selection: #5a463a; show: ctx_in_y >= 0; family: "Inter" }
-        on submit ctxq { emit ctx_submit }
-        on change ctx_in_y while ctx_in_y >= 0 { focus ctxq }
+        // zvýraznenie riadku (jedno pre všetky, kĺže za kurzorom alebo výberom šípkami)
+        box { at: cx0 + ctx_w / 2, cy0 + hl.y + 22; size: ctx_w - 14, 40; corner: 12; color: if(ctx_hd, #e5484d, #4a372b); opacity: hl.o * if(ctx_hd, 18%, 100%) }
         repeat m in 0..16 {
-            box { at: cx0 + ctx_w / 2, cy0 + ctx.$m.y - 6; size: ctx_w - 32, 1; color: #5a463a; show: m < ctx.count and ctx.$m.sep }
-            box { at: cx0 + ctx_w / 2, cy0 + ctx.$m.y + 18; size: ctx_w - 12, 32; corner: 9; color: if(ctx.$m.danger, #e5484d, #4a372b); opacity: if(ctx_hot == m and not ctx.$m.off, if(ctx.$m.danger, 18%, 100%), 0); show: m < ctx.count }
-            text ctx.$m.glyph { at: cx0 + 24, ctx.$m.y + cy0 + 18; anchor: center; size: 16; color: if(ctx.$m.danger, #e5484d, cream); opacity: if(ctx.$m.off, 40%, 90%); show: m < ctx.count and ctx.$m.on == 0 and not ctx.$m.big; family: "noctalia-tabler-icons" }
-            text "" { at: cx0 + 24, cy0 + ctx.$m.y + 18; anchor: center; size: 15; color: #f7c873; show: m < ctx.count and ctx.$m.on == 1; family: "noctalia-tabler-icons" }
-            text ctx.$m.label { at: cx0 + 46, cy0 + ctx.$m.y + 18; anchor: left center; width: ctx_w - if(ctx.$m.sub, 82, 70); lines: 1; size: 13; weight: 500; color: if(ctx.$m.danger, #e5484d, cream); opacity: if(ctx.$m.off, 45%, 100%) * if(ctx.$m.y == ctx_in_y, if(ctx_in_empty, 0.5, 0), 1); show: m < ctx.count and not ctx.$m.big; family: "Inter" }
-            text ctx.$m.label { at: cx0 + 20, cy0 + ctx.$m.y + 22; anchor: left center; width: ctx_w - 40; lines: 1; size: 26; weight: 700; color: cream; show: m < ctx.count and ctx.$m.big; family: "Inter" }
-            box { from: cx0 + if(ctx.$m.big, 20, 46), cy0 + ctx.$m.y + if(ctx.$m.big, 42, 31); size: ctx_w - if(ctx.$m.big, 40, 62), 3; corner: 1.5; color: #5a463a; show: m < ctx.count and ctx.$m.bar >= 0 }
-            box { from: cx0 + if(ctx.$m.big, 20, 46), cy0 + ctx.$m.y + if(ctx.$m.big, 42, 31); size: (ctx_w - if(ctx.$m.big, 40, 62)) * clamp(ctx.$m.bar, 0, 1), 3; corner: 1.5; color: #f7c873; show: m < ctx.count and ctx.$m.bar > 0 }
-            text ctx.$m.hint { at: cx0 + ctx_w - 16, cy0 + ctx.$m.y + 18; anchor: right center; size: 11.5; color: #b8a491; show: m < ctx.count and not ctx.$m.sub; family: "Inter" }
-            text "" { at: cx0 + ctx_w - 20, cy0 + ctx.$m.y + 18; anchor: center; size: 14; color: #b8a491; show: m < ctx.count and ctx.$m.sub and not ctx.$m.back; family: "noctalia-tabler-icons" }
-            zone box ctx_row.$m { at: cx0 + ctx_w / 2, cy0 + ctx.$m.y + 18; size: ctx_w - 12, 34; cursor: pointer; active: ctx_open and m < ctx.count and not ctx.$m.off and not ctx.$m.info }
-            on enter ctx_row.$m { ctx_hot = m }
+            // postupný nábeh riadkov: každý o kúsok neskôr, s posunom od ucha karty
+            let rt.$m = clamp(rp * 3.2 - 0.14 * m, 0, 1)
+            let ra.$m = rt.$m * rt.$m * (3 - 2 * rt.$m)
+            let rx.$m = (1 - ra.$m) * 18 * ctx.sx
+            box { at: cx0 + ctx_w / 2, cy0 + ctx.$m.y - 7; size: (ctx_w - 36) * ra.$m, 1; color: #5a463a; show: m < ctx.count and ctx.$m.sep }
+            box { from: cx0 + 14, cy0 + ctx.$m.y + 1; size: ctx_w - 28, ctx.$m.pl * 20 + 16; corner: 14; color: #3d2c22; opacity: 85% * ra.$m; show: m < ctx.count and ctx.$m.para }
+            image ctxi.$m = from ctx.$m.img, 28, 28
+            image ctxi.$m { at: cx0 + 15 + rx.$m, cy0 + ctx.$m.y + 9; size: 26, 26; opacity: ra.$m; show: m < ctx.count and ctx.$m.im }
+            text ctx.$m.label { at: cx0 + 56, cy0 + ctx.$m.y + 9 + ctx.$m.pl * 10; anchor: left center; width: ctx_w - 78; lines: 14; size: 14.5; line_height: 20; color: cream; opacity: ra.$m; show: m < ctx.count and ctx.$m.para; family: "Inter" }
+            text ctx.$m.glyph { at: cx0 + 28 + rx.$m, ctx.$m.y + cy0 + if(ctx.$m.para, 19, 22); anchor: center; size: 18; color: if(ctx.$m.danger, #e5484d, cream); opacity: if(ctx.$m.off, 40%, 90%) * ra.$m; show: m < ctx.count and ctx.$m.on == 0 and not ctx.$m.big and not ctx.$m.im; family: "noctalia-tabler-icons" }
+            text "" { at: cx0 + 28 + rx.$m, cy0 + ctx.$m.y + 22; anchor: center; size: 17; color: #f7c873; opacity: ra.$m; show: m < ctx.count and ctx.$m.on == 1; family: "noctalia-tabler-icons" }
+            text ctx.$m.label { at: cx0 + 56 + rx.$m, cy0 + ctx.$m.y + 22; anchor: left center; width: ctx_w - if(ctx.$m.sub, 96, 82); lines: 1; size: 15; weight: 500; color: if(ctx.$m.danger, #e5484d, cream); opacity: if(ctx.$m.off, 45%, 100%) * if(ctx.$m.y == ctx_in_y, if(ctx_in_empty, 0.5, 0), 1) * ra.$m; show: m < ctx.count and not ctx.$m.big and not ctx.$m.para; family: "Inter" }
+            text ctx.$m.label { at: cx0 + 22 + rx.$m, cy0 + ctx.$m.y + 28; anchor: left center; width: ctx_w - 44; lines: 1; size: 34; weight: 700; color: cream; opacity: ra.$m; show: m < ctx.count and ctx.$m.big; family: "Inter" }
+            box { from: cx0 + if(ctx.$m.big, 22, 56), cy0 + ctx.$m.y + if(ctx.$m.big, 54, 38); size: ctx_w - if(ctx.$m.big, 44, 74), 3; corner: 1.5; color: #5a463a; opacity: ra.$m; show: m < ctx.count and ctx.$m.bar >= 0 }
+            box { from: cx0 + if(ctx.$m.big, 22, 56), cy0 + ctx.$m.y + if(ctx.$m.big, 54, 38); size: (ctx_w - if(ctx.$m.big, 44, 74)) * clamp(ctx.$m.bar, 0, 1) * ra.$m, 3; corner: 1.5; color: #f7c873; show: m < ctx.count and ctx.$m.bar > 0 }
+            text ctx.$m.hint { at: cx0 + ctx_w - 18, cy0 + ctx.$m.y + 22; anchor: right center; size: 13; color: #b8a491; opacity: ra.$m; show: m < ctx.count and not ctx.$m.sub; family: "Inter" }
+            text "" { at: cx0 + ctx_w - 22, cy0 + ctx.$m.y + 22; anchor: center; size: 16; color: #b8a491; opacity: ra.$m; show: m < ctx.count and ctx.$m.sub and not ctx.$m.back; family: "noctalia-tabler-icons" }
+            zone box ctx_row.$m { at: cx0 + ctx_w / 2, cy0 + ctx.$m.y + 22; size: ctx_w - 14, 42; cursor: pointer; active: ctx_open and m < ctx.count and not ctx.$m.off and not ctx.$m.info }
+            on enter ctx_row.$m { ctx_hot = m; ctx_hy = ctx.$m.y; ctx_hd = ctx.$m.danger }
             on leave ctx_row.$m { ctx_hot = -1 }
             on press ctx_row.$m { emit ctx_pick(m) }
+            on press right ctx_row.$m { emit ctx_right(m) }
             on press ctx_row.$m while ctx.$m.y == ctx_in_y { focus ctxq }
             on scroll ctx_row.$m { emit ctx_scroll(m * 2 + if(wheel > 0, 1, 0)) }
         }
+        // textové pole karty: Enter odošle (ctx_submit); názov riadku je nápoveď
+        // (skryté pole berie kliky aj tak: keď karta pole nemá, leží ďaleko mimo nej — inak zhltlo kliky na záložky)
+        input ctxq { at: cx0 + 56, if(ctx_in_y >= 0, cy0 + ctx_in_y + 12, -4000); width: ctx_w - 76; size: 15; color: cream; selection: #5a463a; show: ctx_in_y >= 0; family: "Inter" }
+        on submit ctxq { emit ctx_submit }
+        on change ctx_in_y while ctx_in_y >= 0 { focus ctxq }
+        on change ctx_gen while ctx_in_y >= 0 { focus ctxq }
     }
     // bublina s názvom a popisom (§3: obsah kvapky sa hoverom nemení — názov je iba tu)
     let tiph = max(tipm.height, 16) + 14
@@ -1380,6 +1436,42 @@ scene Goo {
         "left: notifications · right: time and calendar" = "ľavý: upozornenia · pravý: čas a kalendár"
         "Battery" = "Batéria"
         "Dismiss" = "Zahodiť"
+        "Applications" = "Aplikácie"
+        "Files" = "Súbory"
+        "Web" = "Web"
+        "Terminal" = "Terminál"
+        "AI" = "AI"
+        "Ask AI anything…" = "Spýtaj sa AI čokoľvek…"
+        "Search apps…" = "Hľadať aplikácie…"
+        "Search files…" = "Hľadať súbory…"
+        "Search the web…" = "Hľadať na webe…"
+        "Run a command…" = "Spustiť príkaz…"
+        "Open" = "Otvoriť"
+        "click copies" = "klik skopíruje"
+        "Search files" = "Hľadať súbory"
+        "Search the web" = "Hľadať na webe"
+        "Ask AI" = "Spýtať sa AI"
+        "Nothing found" = "Nič sa nenašlo"
+        "Searching…" = "Hľadám…"
+        "default" = "predvolený"
+        "Open terminal" = "Otvoriť terminál"
+        "Dangerous command — Enter or click again runs it" = "Nebezpečný príkaz — Enter alebo klik znova ho spustí"
+        "Run in terminal" = "Spustiť v termináli"
+        "The answer appears here, in the launcher" = "Odpoveď sa ukáže tu, v spúšťači"
+        "AI not set up" = "AI nie je nastavená"
+        "answering…" = "odpovedá…"
+        "New conversation" = "Nový rozhovor"
+        "AI settings" = "Nastavenia AI"
+        "No answer (check Settings › AI)" = "Bez odpovede (pozri Nastavenia › AI)"
+        "on this PC" = "na tomto PC"
+        "home server" = "domáci server"
+        "cloud" = "cloud"
+        "Home" = "Domov"
+        "Documents" = "Dokumenty"
+        "Downloads" = "Stiahnuté"
+        "Pictures" = "Obrázky"
+        "Music" = "Hudba"
+        "Videos" = "Videá"
         "Calendar" = "Kalendár"
         "Weather" = "Počasie"
         "Today" = "Dnes"
