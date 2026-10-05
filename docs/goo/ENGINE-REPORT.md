@@ -1,6 +1,6 @@
 # Engine Goo — report pre novú session Claude Code
 
-Stav k 2026-10-05, vetva `gamerdistro`, repo `arkaysk/jihlavanka001`. Engine je **nainštalovaný a overený na
+Stav k 2026-10-05, vetva `gamerdistro` (= **LatteOS GOO**, jediná edícia; Classic zrušený 5. 10.), repo `arkaysk/jihlavanka001`. Engine je **nainštalovaný a overený na
 latte-lab** (5. 10., §10); cloudová časť končí commitom `ad563d0`.
 Tento súbor je odovzdávka: čo engine je, kde čo leží, ako sa testuje, aké pasce jazyk má a čo ostáva.
 Podrobnosti: `session/goo/README.md` (API a pasce), `LATTEOS-GOO.md` §2 (pravidlá 1–22) a §3.2 (engine),

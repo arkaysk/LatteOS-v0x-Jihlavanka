@@ -1,4 +1,9 @@
-# LatteOS Goo (plocha Kvapky)
+# LatteOS GOO (plocha Kvapky)
+
+> **Smer (rozhodnutie používateľa 5. 10. 2026):** doterajšie „gamerdistro“ sa stáva **LatteOS GOO** — jedinou
+> edíciou LatteOS. **LatteOS Classic sa ruší.** Hlavná práca je engine Goo (§3.2, `session/goo`); kvapky sú podľa
+> „Novej architektúry“ na konci tohto dokumentu. Kód Classic zatiaľ ostáva, kým ho GOO nenahradí aj ako predvolená
+> a núdzová relácia; nové funkcie sa preň nerobia.
 
 Spoločný dokument pre používateľa (autora LatteOS) a Clauda: **čo LatteOS Goo je, ako sa má správať a z čoho sa
 skladá**. Platí nezávisle od konverzácie. Pred prácou na Goo ho treba prečítať, a keď sa niečo rozhodne,
@@ -36,7 +41,8 @@ samostatný tekutý prvok.
 3. **Preberať, nevymýšľať:** najprv hotové riešenie (Noctalia, pleamar, Marea), až potom vlastné.
 4. **Preložiteľné:** texty v UI po anglicky + preklad (`translations sk` v scéne, `tr()` v logike), nikdy natvrdo po slovensky.
 5. **Každé prostredie má svoje nastavenia:** Goo, klasický LatteOS, pôvodná Noctalia a cudzie prostredia (Plasma…)
-   sa navzájom nepoškodzujú (`latte-profil`, oddelené priečinky Noctalie).
+   sa navzájom nepoškodzujú (`latte-profil`, oddelené priečinky Noctalie). (5. 10.: Classic je zrušený — pravidlo
+   platí ďalej pre čistú Noctaliu, Mareu a cudzie prostredia.)
 6. **Kvapky sú vždy káva.** Téma LatteOS = šálka (materiál okien); obsah = káva s pomerom **vody a mlieka**
    (Barista). Vodová káva (lungo, americano) je sklo, espresso a mliečne kávy nepriehľadné.
 7. **Kvapky nemajú oči** (ani žiadnu tvár). Hodiny sú **digitálne** (ručičkové hodiny Marey sa nepreberajú).

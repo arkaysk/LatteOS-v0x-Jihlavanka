@@ -35,7 +35,7 @@ crates/latte-hw
 
 ```
 session/bin/latte-session
-├── výber relácie (Classic, Goo, Marea, Noctalia čistá…)
+├── výber relácie (LatteOS GOO; pokusy: Marea, Noctalia čistá; Classic je zrušený)
 ├── profily prostredí (oddelené konfigurácie)
 └── systemd user jednotky
 
@@ -50,7 +50,7 @@ session/bin/latte-greeter
 
 ### Vrstva 3: Shell (Rozhranie)
 
-#### LatteOS Classic
+#### LatteOS Classic (zrušený 5. 10. 2026 — kód ostáva, kým ho GOO nenahradí)
 ```
 Noctalia (panel Noctalie) + Hyprland
 ├── Lišta dole so widgetmi
@@ -138,7 +138,7 @@ Hyprland (WM)
 
 ### Štart
 ```
-LATTE_VARIANT=classic       → LatteOS Classic
+LATTE_VARIANT=classic       → LatteOS Classic (zrušený, na odstránenie)
 LATTE_VARIANT=kvapky        → LatteOS Goo (Kvapky)
 LATTE_VARIANT=goo_engine    → Goo engine test (oddelene)
 ```
@@ -165,7 +165,6 @@ latte-boot FALLBACK → Bez HW akcelerácie (núdzový režim)
 
 ## Ďalej
 
-- [LatteOS Classic — Design](classic/DESIGN.md)
 - [LatteOS Goo — Pravidlá](goo/PRAVIDLA.md)
-- [Engine Goo — API](goo/ENGINE.md)
+- [Engine Goo — API](../session/goo/README.md)
 - [Setup — Inštalácia](../setup/lab/README.md)

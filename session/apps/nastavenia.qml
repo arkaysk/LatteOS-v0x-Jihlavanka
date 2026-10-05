@@ -2241,7 +2241,7 @@ ShellRoot {
                 Column {
                     anchors.verticalCenter: parent.verticalCenter
                     Text { text: "LatteOS"; color: theme.fg; font { family: theme.fontDisplay; pixelSize: 26; weight: Font.DemiBold } }
-                    Text { text: "vývojárska verzia · gamerdistro"; color: theme.fgDim; font { family: theme.fontUi; pixelSize: 13 } }
+                    Text { text: "LatteOS GOO · vývojárska verzia"; color: theme.fgDim; font { family: theme.fontUi; pixelSize: 13 } }
                 }
             }
             Repeater {
