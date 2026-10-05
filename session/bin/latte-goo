@@ -11,6 +11,7 @@ Logika scény beží v pieskovisku pleamar (bez súborov a bez sh) — všetko, 
   latte-goo upozornenie ID        farba jadra z príkazu upozornenia (hardver|siet|softver|vystraha|svetlo|ine), prázdne = nič
   latte-goo stav                  uložené polohy a veľkosti ({id: {x, y, z}})
   latte-goo uloz-stav JSON        uloží ich (atomicky)
+  latte-goo nastavenia            Nastavenia › Kvapky (~/.config/latteos/kvapky.json): skryté, veľkosť, vrátenie
   latte-goo ikony MENO…           mená ikon Tabler → znaky písma ({meno: znak}), podľa Noctalie
   latte-goo kava                  pomer vody a mlieka podľa Baristu (~/.config/latteos/kava): [voda, mlieko]
   latte-goo rezim                 režim okien (plavajuce | dlazdice | paska) z ~/.local/state/latteos/window-mode
@@ -297,6 +298,12 @@ def main(a):
                 out = ""
             w = (out.split() or [""])[0].lower()
             print(w if w in JADRA else ("ine" if w else ""))
+        return 0
+    if c == "nastavenia":      # Nastavenia › Kvapky: skryté voliteľné kvapky, veľkosť, vrátenie na miesto
+        try:
+            print(json.dumps(json.load(open(os.path.join(os.path.dirname(os.path.dirname(CONF)), "kvapky.json"))), ensure_ascii=False))
+        except (OSError, ValueError):
+            print("{}")
         return 0
     if c == "stav":
         try:

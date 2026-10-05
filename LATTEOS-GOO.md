@@ -253,8 +253,15 @@ lepivosť, veľkosť a rezervu na ďalšie efekty.
     hladinu. Merané 50 s: najmenší rozostup 0,95 súčtu polomerov;
   - **kotva (`pri`) sleduje aktuálnu polohu** kotvy: po potiahnutí hlavy Goobaru idú ikry s ňou, PowerGoo s TimeGoo;
   - **veľkosť 100–220 %** (kolieskom sa dalo zmenšiť na 60 %, obsah potom pretekal).
-- Ďalej: znížiť CPU enginu, potom presunúť TimeGoo, PowerGoo,
-  DaNoGoo, QueenGoo a ChatGoo na engine (po jednej, snímky pred a po). Živé bytosti z 3.1 (dážď/vietor) a formulár
+- **Nová architektúra v engine (5. 10.):** kvapky enginu sú `goobar` (GooBar), `goopower` (GooPower, predtým
+  PowerGoo; hlavička ponuky s batériou), `lensgoo` (LensGoo — lupa na mieste Štartu, klik = spúšťač), `queengoo`
+  a `clockgoo` (ClockGoo = čas + dátum + upozornenia; ľavý = upozornenia, pravý = čas a pohoda). Jadro má
+  `zaklad = true` a nedá sa skryť; voliteľné skrýva Nastavenia › Kvapky (`kvapky.json`, engine ho číta každé 2 s:
+  `skryte`, `zoom`, `reset`). Uložené polohy starých kvapiek prešli na nové (timegoo → lensgoo, danogoo →
+  clockgoo, powergoo → goopower). GooBar má 48 miest pre okná. `latte-spustac` v engine relácii otvára rýchle
+  spustenie (predtým volal scénu `kvapka`, ktorá tam nebeží — klik na Štart nerobil nič).
+- Ďalej: znížiť CPU enginu, potom preniesť okná z kvapiek do enginu (LensGoo spúšťač, karta a hrozno ClockGoo,
+  bublina QueenGoo) a ChatGoo (po jednej, snímky pred a po). Živé bytosti z 3.1 (dážď/vietor) a formulár
   v Nastaveniach › Kvapky pribudnú nad enginom.
 
 ---
@@ -536,9 +543,17 @@ Ide sa **po poradí**; nové nápady sa zapíšu na koniec (E), nerozbiehajú sa
 - **bubliny četov** pre viac kanálov (Messenger, Telegram, Signal, ICQ…) — forma sa ešte premyslí (používateľ);
   nie ako režim spúšťača a **nie spojené s DaNoGoo** (1. 10.)
 - materiál aj na oknách aplikácií pri kovových témach (textúra v hlavičke okna — upravený hyprbars)
-Architektúra prostredia a rozhranie Goo
+
+---
 
 # Nová Architektúra prostredia a rozhranie Goo (LatteOS) 2.10.2026 23:55
+
+> **Rozhodnutie používateľa 5. 10. 2026: „ideme podľa novej architektúry“.** Táto časť je záväzná a kde sa líši od
+> §4 vyššie (TimeGoo, DaNoGoo, PowerGoo, „základ shellu“ = Goobar + QueenGoo + PowerGoo), platí ona:
+> **jadro = GooBar, GooPower, LensGoo** (nedajú sa skryť), **voliteľné = QueenGoo, ClockGoo, ChatGoo**.
+> Pravidlá §2 a fyzika §3 platia ďalej. **Engine Goo je už podľa nej** (`session/goo/kvapky/`: `goobar`,
+> `goopower`, `lensgoo`, `queengoo`, `clockgoo`); scéna plochy Kvapky (`kvapka.plm`) ostáva pri starých menách,
+> kým ju engine nenahradí. Stav prenosu: `docs/goo/ENGINE-REPORT.md` §11.
 
 Dokumentácia konceptu, funkcionality a systémového backendu pre používateľské rozhranie založené na kvapkách (Goo).
 

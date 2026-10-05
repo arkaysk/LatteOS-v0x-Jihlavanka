@@ -4,7 +4,7 @@ Spoločný engine pre kvapky LatteOS Goo. Je to rozšírenie pleamar („DLC“)
 a API logiky. Jediná záplata Rustu (`pleamar-prazdne-tvary`) je iba na výkon: bez nej engine funguje, ale pomalšie.
 
 Zatiaľ je oddelený od plochy Kvapky (`session/kvapky`). Skúša sa v relácii **LatteOS Kvapky – engine test**
-na prihlasovacej obrazovke. Keď sa overí, prejdú naň TimeGoo, PowerGoo, DaNoGoo, QueenGoo a ChatGoo.
+na prihlasovacej obrazovke. Kvapky sú podľa Novej architektúry (LATTEOS-GOO.md): jadro GooBar, GooPower, LensGoo; voliteľné QueenGoo, ClockGoo, ChatGoo.
 
 **Pravidlá plochy platia aj tu: [LATTEOS-GOO.md](../../LATTEOS-GOO.md) §2 a §3** (pred prácou prečítať).
 Engine ich nastavuje všeobecne:
@@ -25,12 +25,13 @@ V ploche Kvapky má každá kvapka vlastnú kópiu pravidiel: polohu, ťahanie, 
 | generátor | `gen.py` | rozpíše telo goo (jazyk nemá `repeat` v `body`), nastaví počet miest `N`, zoznam modulov |
 | logika | `lib/engine.luau` | register kvapiek, povahy, háčiky, uloženie polôh, káva, nečinnosť (hra) |
 | používateľ | `lib/pouzivatel.luau` + `latte-goo` | kvapky z JSON, za behu (bez reštartu) |
-| kvapky | `kvapky/*.luau` | moduly: **TimeGoo, PowerGoo a hlava Goobaru** (rozmery a rozostupy ako v Kvapkách, na porovnanie), počítadlo, hodiny, zvedavka, lepkavá, ťažká, bublinka, kvapôčka |
+| kvapky | `kvapky/*.luau` | moduly: **GooBar, GooPower, LensGoo, QueenGoo, ClockGoo** (rozmery a rozostupy trojice ako v Kvapkách), počítadlo, hodiny, zvedavka, lepkavá, ťažká, bublinka, kvapôčka |
 | príklady | `priklady/*.json` | kvapky používateľa (kalkulačka, systém) |
 | Goobar | `lib/goobar.luau` | okná ako kvapky (ikry po aplikáciách, vlastná skupina, menšie, uhýbajú oknám pri lište), pomenovanie okien, ponuka okna, režim okien |
 
-**Kvapky plochy v engine:** `goobar` (hlava + okná), `timegoo`, `powergoo` (ponuka, batéria), `queengoo` (guľky,
-App Manager / Správca zariadení), `danogoo` (dátum, upozornenia). Spoločné: **ponuka Goo** (`E.menu`, karta pri
+**Kvapky plochy v engine:** `goobar` (hlava + okná), `goopower` (ponuka, batéria), `lensgoo` (lupa, spúšťač) — jadro,
+`zaklad = true`, nedajú sa skryť; `queengoo` (guľky, App Manager / Správca zariadení) a `clockgoo` (čas, dátum,
+upozornenia) — voliteľné, skrýva ich Nastavenia › Kvapky (`kvapky.json`). Spoločné: **ponuka Goo** (`E.menu`, karta pri
 mieste kliku, podponuky, preklady), **guľky** (`d:gulky(n, farby)`), **ikona aplikácie** (`d:obrazok(meno)`),
 **`E.upsert`** (kvapky, ktoré vznikajú za behu, napr. okná, bez preskočenia).
 

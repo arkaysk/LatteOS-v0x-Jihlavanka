@@ -13,7 +13,7 @@ local E = require("lib/engine")
 local M = {}
 
 local HEAD = "goobar"
-local SLOTS = 96                    -- okien v lište najviac (engine má 128 miest, ostatné kvapky potrebujú svoje)
+local SLOTS = 48                    -- okien v lište najviac (Nová architektúra: 48 miest, potom zberná guľôčka)
 -- ikry sú menšie než ostatné kvapky (nezamieňajú sa s nimi) a lepia sa iba ku Goobaru: skupina sk = 1 (susedia,
 -- voda a vlákna iba v nej a s hlavou; cudzie kvapky od ikier odsúva pravidlo 22). Telo goo je jedno pre všetky
 local R0 = 22
