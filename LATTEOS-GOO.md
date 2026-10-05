@@ -332,6 +332,38 @@ lepivosť, veľkosť a rezervu na ďalšie efekty.
   bublina QueenGoo) a ChatGoo (po jednej, snímky pred a po). Živé bytosti z 3.1 (dážď/vietor) a formulár
   v Nastaveniach › Kvapky pribudnú nad enginom.
 
+### 3.3 Prístupnosť — ovládanie Goo z klávesnice (návrh schválený 5. 10., ZATIAĽ NEVYTVORENÉ)
+
+Návrh používateľa, upravený po zhodnotení (používateľ: „beriem tvoje návrhy, spíš to do dokumentu, ale ešte
+nevytváraj“). Myš ostáva prvá (pravidlo 1); toto je doplnok pre prácu bez myši a pre ľudí, ktorí myš nepoužívajú.
+
+**Režim sa zapína skratkou a je dočasný** — kým Goo drží klávesnicu, nedá sa písať do aplikácií, preto sa doň vstupuje
+a vystupuje sa z neho klávesom Esc.
+
+| Akcia | Kláves | Poznámka |
+|---|---|---|
+| vstup do Goo | **Win+T** | ako „prejdi na panel úloh“ vo Windows. Pôvodný návrh Win+A je obsadený: v LatteOS aj vo Windows 11 otvára Rýchle nastavenia |
+| medzi kvapkami | **← →** | na bočnom okraji **↑ ↓** (s popup oknami nekoliduje — tie sú vtedy zavreté) |
+| ľavý klik | **Enter**, **medzerník** | medzerník iba mimo textového poľa (v poli píše medzeru) |
+| pravý klik | **Menu** alebo **Shift+F10** | zaužívané klávesy pre kontextovú ponuku |
+| v popup okne | **↑ ↓** riadky, **Tab / Shift+Tab** záložky, **Enter** potvrdí | Tab ostáva Tab (v engine už hotové) |
+| koliesko | **+** a **−** | veľkosť kvapky, dĺžka minútky, hodina budíka |
+| presun kvapky | **Ctrl+šípky**, **Ctrl+Home** vráti na miesto | náhrada ťahania |
+| späť | **Esc** zavrie popup, druhý **Esc** opustí režim | |
+
+**Zamietnuté z pôvodného návrhu (a prečo):**
+- **AltGr ako ľavý klik** — na slovenskej klávesnici sa cez AltGr píšu znaky @ # { } [ ] € \ |; kolidovalo by to s písaním
+  v spúšťači a v poli kalendára, a samotný modifikátor sa spoľahlivo odchytáva iba pri pustení.
+- **medzerník ako pravý klik** — medzerník je všade „stlač tlačidlo“ (ľavý klik); kto ovláda počítač klávesnicou, ním
+  inštinktívne potvrdí a dostal by ponuku namiesto akcie.
+
+**Viditeľný výber (používateľ 5. 10.):** vybraná kvapka **pulzuje farbou s plynulým prechodom — svetlejšia hnedá**.
+Rozdiel je v jase, nie v odtieni, takže stačí aj farboslepému. (Návrh k tomu: vybraná sa zdvihne a ukáže bublinu
+s názvom ako pri myši — netreba nový prvok.)
+
+**Ešte treba pri tvorbe doriešiť:** obmedzenie pohybu (pleamar ho vie vypnúť: pružiny doskočia hneď), väčšie písmo
+a kontrast, prípadne čítanie názvov nahlas.
+
 ---
 
 ## 4. Časti plochy a ich správanie
