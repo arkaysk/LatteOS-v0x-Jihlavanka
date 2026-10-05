@@ -109,7 +109,7 @@ Pred vydaním sa požiada povolenie všetkých strán.
 # Klonovať repo
 git clone https://github.com/arkaysk/jihlavanka001
 cd jihlavanka001
-git checkout gamerdistro
+git checkout main
 
 # Inštalácia
 sudo setup/f0-install.sh        # VM: balíky
@@ -118,7 +118,7 @@ setup/f1/install-session.sh     # relácie
 # Po zmene
 git add .
 git commit -m "goo: zmena"
-git push -u origin gamerdistro
+git push -u origin main
 
 # Aktualizovať dokumentáciu
 # stav enginu: docs/goo/ENGINE-REPORT.md, rozhodnutia: LATTEOS-GOO.md
