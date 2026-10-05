@@ -110,7 +110,8 @@ zlievanie, vstupy, efekty) a kvapka je iba definícia plus háčiky.
 - Klik je pustenie ľavého bez ťahania. Scéna posiela iba `goo_down`/`goo_up`; či je to klik, rozhodne logika
   z poradia udalostí (pravé, stredné, podržanie a ťahanie ho rušia).
 - Pustenie zapíše `rx`, `ry` (px obrazovky). Logika (`goo_drop`): do 130 px od okraja sa kvapka prilepí k najbližšiemu,
-  inak spadne dole (gravitácia); `vratit` (GooBar) sa uprostred vráti. Háčik `pustenie(d, X, Y, okraj)`.
+  inak spadne dole voľným pádom (`fh` výška, `fo` zostávajúca výška = fh − ½·GRAV·t², `GRAV` 800 px/s² v scéne aj
+  v logike); `vratit` (GooBar) sa uprostred vráti. Háčik `pustenie(d, X, Y, okraj)`.
 
 **Nečinnosť:** úrovne pri 60/180/360 s, prebudenie zmenou kurzora.
 

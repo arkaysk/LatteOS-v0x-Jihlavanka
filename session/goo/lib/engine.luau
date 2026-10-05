@@ -208,6 +208,7 @@ function E.separate(prefer) sepDirty, sepPrefer = true, prefer or sepPrefer end
 
 -- kotva (pri): kým kvapku nikto sám nepresunul, drží sa AKTUÁLNEJ polohy svojej kotvy — aj keď kotvu potiahnu
 -- alebo ju odsunie pravidlo 22 (ikry okien pri hlave Goobaru, PowerGoo pri TimeGoo)
+local postPublish = {}
 local function anchor(d, depth)
     local a = d.def.pri and byId[d.def.pri]
     if not a or d.moved or d.dragging or d.wander or depth > 4 then return end
@@ -241,6 +242,10 @@ local function publish()
             end
         end
         model.goo = list
+        -- čo musí prísť do scény v tom istom kroku ako nový domov (inak by kvapka na snímku skočila)
+        local q = postPublish
+        postPublish = {}
+        for _, f in ipairs(q) do f() end
         publishing = false
         if dirty then dirty = false publish() end
     end)
@@ -543,6 +548,7 @@ on("goo_hover", function(k)
 end)
 on("goo_drag", function(k)
     down = nil
+    fact["fh." .. k] = 0                                -- chytená počas pádu: pád končí
     local d = at(k) if not d then return end
     hud("ťahanie · " .. d.id)
     d.dragging = true
@@ -555,6 +561,7 @@ end)
 --     ponorí sa, vynorí a hladina sa zvlní;
 --   · kvapka s `vratit` (GooBar: lišta sa dá preniesť k inému okraju) sa pri pustení uprostred vráti, kde bola.
 local STICK = 130
+local GRAV = 800            -- px/s², rovnaké ako `let GRAV` v scéne: logika z neho počíta čas dopadu
 on("goo_drop", function(k)
     local d = at(k) if not d then return end
     local X, Y = num(fact.rx, 0), num(fact.ry, 0)
@@ -571,6 +578,7 @@ on("goo_drop", function(k)
     local stuck = best < math.huge
     local fell = not stuck                                            -- nebola pri žiadnom okraji: padá
     local has, res = hook(d, "pustenie", X, Y, edge)
+    local fh = 0                                                      -- výška pádu nad novým domovom (px)
     if has and res == false or (fell and d.v.vratit) then
         hud("pustenie · " .. d.id .. " · späť")
     else
@@ -578,24 +586,30 @@ on("goo_drop", function(k)
         d.x = clamp(((edge % 2 == 1) and Y / H or X / W), 0.02, 0.98)
         d.y = num(d.v.vyska, d.v.velkost * 0.8) * d.z
         d.moved, d.ox = true, 0
+        if fell then fh = math.max(0, (H - 6 - d.y) - Y) end
         save()
         hud(string.format("pustenie · %s · okraj %d · %.2f%s", d.id, edge, d.x, fell and " · padá" or ""))
     end
     -- návrat k okraju: ponorí sa pod hladinu a vynorí (Marea); po páde až pri dopade, hladina sa zvlní (iba dole)
-    local wait = fell and 330 or 0
+    -- pád trvá √(2·výška/g): až pri dopade sa sploští a zvlní hladinu; ponor urobí sama pružina (prestrelí pod
+    -- hladinu a vráti sa). Kvapka prilepená k okraju sa ponorí a vynorí hneď.
+    local wait = fh > 0 and math.sqrt(2 * fh / GRAV) * 1000 or 0
     after(wait, function()
         if byId[d.id] ~= d or d.dragging then return end
-        bump("dipn", k)
-        if fell then bump("sqn", k) end                               -- dopad: sploští sa
+        if fh > 0 then bump("sqn", k) else bump("dipn", k) end
         if (d.edge or 0) == 0 then
-            after(200, function() E.vlnka(along(d), (fell and 7 or 4) + r * 0.12, "kamen") end)
+            after(fh > 0 and 60 or 200, function() E.vlnka(along(d), (fh > 0 and 3 + math.min(fh, 900) * 0.008 or 4) + r * 0.12, "kamen") end)
         end
     end)
     -- pustená na inú: jedna sa odsunie (pravidlo 22); pustená ostane, kde ju pustili
     E.separate(d)
-    -- domov a ťahanie scény naraz (inak by kvapka na snímok skočila späť)
-    fact["dx." .. k], fact["dy." .. k], fact["drg." .. k], fact["tr." .. k] = 0, 0, 0, 0
-    fact.nk = -1
+    -- nový domov, koniec ťahania a výška pádu prídu do scény v jednom kroku (inak by kvapka na snímok skočila)
+    table.insert(postPublish, function()
+        fact["dx." .. k], fact["dy." .. k], fact["drg." .. k], fact["tr." .. k] = 0, 0, 0, 0
+        fact.nk = -1
+        fact["fh." .. k] = fh
+        if fh > 0 then bump("falln", k) end
+    end)
     publish()
 end)
 
