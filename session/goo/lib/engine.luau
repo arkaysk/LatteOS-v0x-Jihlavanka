@@ -477,17 +477,31 @@ end
 -- sep, sub = { … } (podponuka so „Späť“), run = funkcia }. Miesto si scéna zapamätá pri stlačení kvapky.
 local ctx_actions, ctx_wheel, chip_actions = {}, {}, {}
 local ctx_id = nil
-local ctx_input = nil                    -- čo urobiť s textom z poľa karty (Enter)
+local ctx_input = nil                    -- čo urobiť s textom z poľa karty (Enter); true = text v poli nechať
+local ctx_change = nil                   -- volá sa pri písaní do poľa (s krátkou pauzou)
+local ctx_rights = {}                    -- pravý klik na riadok
+local ctx_rows, ctx_selectable, ctx_lastsel = {}, {}, -1
+local key_sel = nil                      -- riadok vybraný šípkami (ovládanie bez myši)
+local wheel_used = 0
+local emit_chip
 local CTX_MAX = 16
 -- ktorá karta je práve otvorená (opts.id), aby ju jej majiteľ mohol obnovovať a neprepísal cudziu ponuku
 function E.menuId() return fact.ctx_open and ctx_id or nil end
+-- kam karta vyrastie, keď ju neotvoril klik myšou (kláves Windows → spúšťač): k miestu kvapky na jej okraji
+function E.menuAt(d)
+    local W, H = num(fact.sw, 1920), num(fact.sh, 1080)
+    local e, a, n = d.edge or 0, along(d), d.y + d.v.velkost * d.z * 0.5
+    local x = (e == 1 and 6 + n) or (e == 3 and W - 6 - n) or a
+    local y = (e == 0 and H - 6 - n) or (e == 2 and 6 + n) or a
+    fact["ctx.x"], fact["ctx.y"], fact.ctx_up = x, y, y > H / 2
+end
 -- Karta Goo. Položky ako doteraz, navyše: info = údaj na čítanie (neklikateľný, čitateľný), big = veľký nadpis (čas, stopky), bar = pruh priebehu 0…1, keep = klik
 -- kartu nezavrie (prepínač, štart/stop), wheel = funkcia(smer ±1) pre koliesko nad riadkom.
 -- opts.chips = { { label, glyph, on, run } … } záložky hore; opts.keep = obnovenie otvorenej karty (živé údaje:
 -- nemení zvýraznený riadok)
 function E.menu(items, width, opts)
     opts = opts or {}
-    ctx_actions, ctx_wheel, chip_actions = {}, {}, {}
+    ctx_actions, ctx_wheel, chip_actions, ctx_rights = {}, {}, {}, {}
     ctx_items, ctx_width, ctx_opts = items, width, opts
     ctx_id = opts.id
     local chips = {}
@@ -501,27 +515,49 @@ function E.menu(items, width, opts)
     local sel = -1
     for i, c in ipairs(chips) do if c.on then sel = i - 1 end end
     fact.chip_sel = sel
-    local out, y = {}, (#chips > 0 and 48 or 6)
+    -- rozmery karty (px): riadok 44, veľký nadpis 64, záložky 58, mriežka kalendára 300; šírka o pätinu väčšia než
+    -- zadaná (karty boli malé). Najmenšie rozlíšenie 1024 × 768: riadky, ktoré by sa nezmestili, sa nepridajú
+    local width0 = width
+    width = math.floor((width or 248) * 1.2)
+    local maxH = math.max(400, num(fact.sh, 768) - 24)
+    local out, y = {}, (#chips > 0 and 58 or 8)
     local kal_y, in_y = -1, -1
-    ctx_input = nil
+    local selectable = {}
+    ctx_input, ctx_change = nil, nil
     for _, it in ipairs(items) do
         if #out >= CTX_MAX then break end
         if it.grid then                                   -- mriežka kalendára (model kal plní majiteľ karty)
             kal_y = y
-            y = y + 240
+            y = y + 300
             E.needGlyph("chevron-left") E.needGlyph("chevron-right")
             text.kal_l, text.kal_r = glyphs["chevron-left"] or "‹", glyphs["chevron-right"] or "›"
             continue
         end
-        if it.sep and #out > 0 then y = y + 12 end
-        if it.input then in_y, ctx_input = y, it.submit end      -- textové pole: názov riadku je nápoveď
+        if it.sep and #out > 0 then y = y + 14 end
+        if it.input then in_y, ctx_input, ctx_change = y, it.submit, it.change end   -- textové pole: názov riadku je nápoveď
+        -- odsek (odpoveď AI): koľko riadkov zaberie, odhadom podľa šírky karty
+        local pl = 1
+        if it.para then
+            local cpl = math.max(20, math.floor((width - 78) / 7.3))
+            pl = 0
+            for line in ((it.label or "") .. "\n"):gmatch("(.-)\n") do pl = pl + math.max(1, math.ceil((utf8.len(line) or #line) / cpl)) end
+            pl = math.min(pl, 14)
+        end
         E.needGlyph(it.glyph)
         out[#out + 1] = { label = it.label or "", on = it.on and 1 or 0, off = it.off == true,
                           glyph = (it.glyph and (glyphs[it.glyph] or (isName(it.glyph) and "" or it.glyph))) or "",
                           hint = it.hint or "", danger = it.danger == true, sub = it.sub ~= nil or it.back ~= nil,
                           back = it.back ~= nil, sep = it.sep == true and #out > 0, y = y,
-                          big = it.big == true, bar = num(it.bar, -1), info = it.info == true }
-        y = y + (it.big and 50 or 36)
+                          big = it.big == true, bar = num(it.bar, -1), info = it.info == true or (it.para == true and it.run == nil),
+                          img = it.img or "", im = (it.img or "") ~= "", para = it.para == true, pl = pl }
+        y = y + (it.big and 64 or (it.para and pl * 20 + 24 or 44))
+        if y > maxH - 8 then                               -- nezmestí sa na obrazovku: posledný riadok preč, koniec
+            y = out[#out].y
+            out[#out] = nil
+            break
+        end
+        if not it.input and not it.off and not it.info and not (it.para and not it.run) then selectable[#selectable + 1] = #out end
+        if it.right then ctx_rights[#out] = it.right end
         if it.wheel then ctx_wheel[#out] = it.wheel end
         if it.sub then
             local parent = items
@@ -535,36 +571,96 @@ function E.menu(items, width, opts)
                 -- podponuka nechá záložky, ale stratí meno karty (majiteľ ju neprepíše živým obnovením)
                 local o = {} for kk, vv in pairs(opts) do o[kk] = vv end
                 o.id, o.keep, o.parent = nil, nil, opts
-                E.menu(kids, width, o)
+                E.menu(kids, width0, o)
             end
         elseif it.back then
-            ctx_actions[#out] = function() E.menu(it.back, width, opts.parent or opts) end
+            ctx_actions[#out] = function() E.menu(it.back, width0, opts.parent or opts) end
         elseif it.keep or it.input then
             ctx_actions[#out] = function() if it.run then it.run() end end
         else
             ctx_actions[#out] = function() fact.ctx_open = false if it.run then it.run() end end
         end
     end
+    -- nový obsah (otvorenie, iná záložka): riadky nabehnú postupne
+    if not opts.keep or sel ~= ctx_lastsel then fact.ctx_gen = num(fact.ctx_gen, 0) + 1 key_sel = nil end
+    ctx_lastsel = sel
+    ctx_rows, ctx_selectable = out, selectable
+    if key_sel and not out[key_sel] then key_sel = nil end
     model.ctx = out
     model.chip = chips
     if fact.kal_y ~= kal_y then fact.kal_y = kal_y end
     if fact.ctx_in_y ~= in_y then fact.ctx_in_y = in_y end
-    fact.ctx_w = width or 248
-    fact.ctx_h = y + 6
+    fact.ctx_w = width
+    fact.ctx_h = y + 8
     if not opts.keep then fact.ctx_hot = -1 end
     fact.ctx_open = #out > 0
 end
 on("ctx_pick", function(k) local f = ctx_actions[(k or 0) + 1] if f then f() end end)
-on("ctx_close", function() ctx_actions, ctx_wheel, chip_actions = {}, {}, {} ctx_items = nil end)
-on("ctx_scroll", function(v) local f = ctx_wheel[(v or 0) // 2 + 1] if f then f((v or 0) % 2 == 1 and 1 or -1) end end)
+on("ctx_close", function() ctx_actions, ctx_wheel, chip_actions, ctx_rights = {}, {}, {}, {} ctx_items = nil end)
+on("ctx_scroll", function(v)
+    local f = ctx_wheel[(v or 0) // 2 + 1]
+    if f then wheel_used = os.clock() f((v or 0) % 2 == 1 and 1 or -1) end
+end)
 on("ctx_chip", function(c) local f = chip_actions[(c or 0) + 1] if f then f() end end)
 on("ctx_submit", function()
+    -- riadok vybraný šípkami má prednosť pred textom v poli
+    if key_sel and ctx_actions[key_sel] then
+        local f = ctx_actions[key_sel]
+        key_sel = nil
+        fact.ctx_hot = -1
+        f()
+        return
+    end
     local v = (text.ctxq or ""):gsub("^%s+", ""):gsub("%s+$", "")
-    text.ctxq = ""
-    fact.ctx_in_empty = true
-    if ctx_input and v ~= "" then ctx_input(v) end
+    local keep = ctx_input and v ~= "" and ctx_input(v) == true
+    if not keep then
+        text.ctxq = ""
+        fact.ctx_in_empty = true
+    end
 end)
-on("text:ctxq", function() fact.ctx_in_empty = (text.ctxq or "") == "" end)
+-- šípky hore / dole: výber riadku bez myši (zvýraznenie je to isté ako pod kurzorom)
+on("ctx_key", function(v)
+    local list = ctx_selectable
+    if #list == 0 then return end
+    local at = 0
+    for i, r in ipairs(list) do if r == key_sel then at = i end end
+    at = (v or 1) == 1 and (at % #list + 1) or ((at - 2) % #list + 1)
+    key_sel = list[at]
+    local r = ctx_rows[key_sel]
+    fact.ctx_hy = r.y
+    fact.ctx_hd = r.danger == true
+    fact.ctx_hot = key_sel - 1
+end)
+local typing = nil
+on("text:ctxq", function()
+    fact.ctx_in_empty = (text.ctxq or "") == ""
+    if not ctx_change then return end
+    if typing then cancel(typing) end
+    typing = after(140, function()                      -- až po krátkej pauze v písaní
+        typing = nil
+        if ctx_change and fact.ctx_open then ctx_change(text.ctxq or "") end
+    end)
+end)
+function E.menuText(v) if v ~= nil then text.ctxq = v fact.ctx_in_empty = v == "" end return text.ctxq or "" end
+on("ctx_right", function(k) local f = ctx_rights[(k or 0) + 1] if f then f() end end)
+-- koliesko kdekoľvek v karte prepína záložky; riadok s vlastným kolieskom (dĺžka minútky, hodina budíka) má
+-- prednosť — scéna pošle koliesko obom, preto sa tu chvíľu počká, či si ho nevzal riadok
+on("ctx_bgw", function(v)
+    after(30, function()
+        if os.clock() - wheel_used < 0.12 or not fact.ctx_open then return end
+        emit_chip(v)
+    end)
+end)
+-- Tab / Shift+Tab: ďalšia (1) / predošlá (0) záložka
+on("ctx_chipw", function(v) emit_chip(v) end)
+emit_chip = function(v)
+    local n = 0
+    for i in pairs(chip_actions) do n = math.max(n, i) end
+    if n == 0 then return end
+    local cur = num(fact.chip_sel, -1)
+    local f = chip_actions[(cur + ((v or 1) == 1 and 1 or -1)) % n + 1]
+    if f then f() end
+end
 -- mriežka kalendára: klik na deň (0…41) a šípky mesiaca (−1 / +1) pre majiteľa karty
 local kal_pick, kal_nav = nil, nil
 function E.calendar(pick, nav) kal_pick, kal_nav = pick, nav end

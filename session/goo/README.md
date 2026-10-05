@@ -92,6 +92,10 @@ mieste kliku, podponuky, preklady), **guľky** (`d:gulky(n, farby)`), **ikona ap
   `opts.keep` obnovenie otvorenej karty bez zmeny zvýrazneného riadku (živé údaje).
   Ďalšie položky: `info` (údaj na čítanie), `{ grid = true }` (mriežka kalendára: `model.kal`, `E.calendar(klik, šípky)`),
   `{ input = true, label = nápoveď, submit = function(text) }` (textové pole, Enter odošle). Esc kartu zavrie.
+  V riadku ešte: `img` (ikona aplikácie podľa mena), `right = function()` (pravý klik), `para` (odsek v bubline),
+  pri poli `change = function(text)` (písanie; `submit` vráti `true`, ak má text v poli ostať). `E.menuAt(d)` položí
+  kartu ku kvapke (otvorenie z klávesnice), `E.menuText(v)` číta a nastaví text poľa. Rozmery: zadaná šírka × 1,2,
+  riadok 44 px; koliesko v karte prepína záložky, Tab / Shift+Tab tiež, šípky a Enter vyberú riadok bez myši.
 - **Efekty scény:** `dych`, `kmit`, `tras`, `obeh`, `tlkot` (+ `sila`).
 - **Rezerva na nedefinované efekty:**
   - efekty 6–9 v scéne sú voľné;
