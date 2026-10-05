@@ -32,7 +32,7 @@ return {
             { label = tr("Shut down"), glyph = "power", danger = true, run = session("shutdown") },
         }) do items[#items + 1] = it end
         if d.bat then items[2].sep = true end
-        E.menu(items, 230)
+        E.menu(items, 230, { owner = d })                                 -- ucho = kvapka GooPower v rohu ponuky
     end,
     popis = function(d) return d.bat or "" end,
 }

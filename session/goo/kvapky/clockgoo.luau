@@ -330,7 +330,8 @@ card = function(d, keep)
 end
 build = function(d, keep)
     local items = (tab == 1 and stopwatch or tab == 2 and timer or tab == 3 and alarms or tab == 4 and calendar or tab == 5 and weather or overview)(d)
-    E.menu(items, 384, { id = "clock", chips = chips(d), keep = keep })
+    -- pevná výška (horná hrana pri prepínaní záložiek neskáče); ucho = kvapka ClockGoo v rohu karty
+    E.menu(items, 384, { id = "clock", chips = chips(d), keep = keep, owner = d, height = 690 })
     if not keep then                                                    -- čerstvé údaje pri otvorení
         local function again() if E.menuId() == "clock" then card(d, true) end end
         cas.load(again)
@@ -403,6 +404,7 @@ return {
     end,
     klik = function(d)
         if open then close(d) return end
+        if E.menuId() == "clock" then fact.ctx_open = false E.menuRelease() end      -- karta preč, potom hrozno
         if #notes == 0 then d:bublina(tr("No notifications")) return end
         open = true
         if hang(d) then d:poskoc() return end
@@ -420,7 +422,10 @@ return {
     end,
     -- počas otvoreného hrozna sa kvapka neťahá inam (ostane nad ním)
     pustenie = function(d) if open then return false end end,
-    pravy = function(d) card(d) end,
+    pravy = function(d)
+        if open then close(d) end                                       -- hrozno a karta naraz nie
+        card(d)
+    end,
     popis = function(d)
         return (#notes > 0 and (#notes .. " " .. tr("notifications") .. " · ") or "") .. tr("left: notifications · right: time and calendar")
     end,

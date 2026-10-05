@@ -168,9 +168,15 @@ scene Goo {
     fact ctx_hot = -1
     fact ctx_hy = 0                           // riadok pod kurzorom alebo vybraný šípkami: kde je a či je nebezpečný
     fact ctx_hd = false
+    fact ctx_ear = 10                         // polomer ucha karty: kvapka, z ktorej vyrástla (inak kvapôčka 10 px)
     fact ctx_gen = 0                          // logika zvýši pri novom obsahu karty: riadky nabehnú znova
     event ctx_bgw ->
     event ctx_key ->
+    event win_min ->                          // Hyprland: okno sa minimalizuje (poloha a rozmer vo wm.*)
+    fact wm.x = 0
+    fact wm.y = 0
+    fact wm.w = 0
+    fact wm.h = 0
     event lens_toggle ->                      // kláves Windows: latte-spustac → pleamar --say goo "emit lens_toggle"
     event ctx_pick ->
     event ctx_close ->
@@ -425,6 +431,62 @@ scene Goo {
     on idle for 360s { idle = 3; emit goo_idle(3) }
     on change cursor.x while idle > 0 { idle = 0; emit goo_idle(0) }
     on change cursor.y while idle > 0 { idle = 0; emit goo_idle(0) }
+
+    // ── okno z bubliny (pravidlo 14; prevzaté z bublina.py plochy Kvapky, tu pre ktorúkoľvek kvapku) ───────────────
+    // Kvapka ostane na mieste a VYPĽUJE bublinu: vytlačí sa z nej (s1, zlieva sa s ňou — je v tele goo), odtrhne sa,
+    // preletí po oblúku na miesto okna (s2) a nafúkne sa na jeho obdĺžnik (s3, blana sa chvíľu chveje). Hyprland
+    // potom otvorí skutočné okno presne tam; keď naskočí, bublina zmizne (bub_d).
+    fact bub.x = 960                          // cieľ: stred a rozmer okna (logika)
+    fact bub.y = 540
+    fact bub.w = 800
+    fact bub.h = 600
+    fact bub.sx = 0                           // odkiaľ: stred kvapky, smer od jej okraja, polomer
+    fact bub.sy = 0
+    fact bub.nx = 0
+    fact bub.ny = -1
+    fact bub.sr = 26
+    fact bub_n = 0                            // logika zvýši = vypľuť bublinu
+    fact bub_d = 0                            // logika zvýši = okno naskočilo, bublina zmizne
+    prop bub.t = 0 ~900ms
+    prop bub.a = 0 ~160ms
+    on change bub_n { bub.t: 0 ~0ms; bub.a: 1 ~0ms; bub.t: 1 ~900ms after 16ms }
+    on change bub_d { bub.a: 0 ~180ms }
+    let b.s1 = smooth(0, 0.3, bub.t)
+    let b.s2 = smooth(0.25, 0.65, bub.t)
+    let b.s3 = smooth(0.6, 1, bub.t)
+    let b.p1x = bub.sx + bub.nx * (bub.sr + 16) * b.s1
+    let b.p1y = bub.sy + bub.ny * (bub.sr + 16) * b.s1
+    let b.cx = b.p1x + bub.nx * 160
+    let b.cy = b.p1y + bub.ny * 160
+    let b.x = (1 - b.s2) * (1 - b.s2) * b.p1x + 2 * (1 - b.s2) * b.s2 * b.cx + b.s2 * b.s2 * bub.x
+    let b.y = (1 - b.s2) * (1 - b.s2) * b.p1y + 2 * (1 - b.s2) * b.s2 * b.cy + b.s2 * b.s2 * bub.y
+    let b.r = 8 + 8 * b.s1 + 6 * b.s2
+    let b.wob = 1 + 0.035 * sin(b.s3 * 540) * (1 - b.s3)                 // sin je v stupňoch
+    let b.w = (2 * b.r + (bub.w - 2 * b.r) * b.s3) * b.wob
+    let b.h = (2 * b.r + (bub.h - 2 * b.r) * b.s3) * (2 - b.wob)
+    // ── minimalizované okno (pravidlo 14): zmenší sa do kvapky, padne k hladine (voľný pád ako kvapky), žblnkne
+    // a objaví sa v GooBare. Hyprland to oznámi hneď (latte.goo_min → emit win_min), logika nastaví odkiaľ a kam.
+    fact mf.x0 = 0
+    fact mf.y0 = 0
+    fact mf.x1 = 0
+    fact mf.w = 0
+    fact mf.h = 0
+    fact mf.T = 1                             // trvanie pádu (s), z výšky a GRAV (logika)
+    fact mf_n = 0
+    fact mf.tm = -100
+    on change mf_n { mf.tm = time }
+    let mf.e = max(0, time - mf.tm - 0.2)                                 // prvých 0,2 s sa okno zmenšuje do kvapky
+    let mf.k = clamp((time - mf.tm) / 0.2, 0, 1)
+    let mf.on = if(time - mf.tm < mf.T + 0.45, 1, 0)
+    let mf.x = mf.x0 + (mf.x1 - mf.x0) * clamp(mf.e / mf.T, 0, 1)
+    let mf.y = min(floor + 6, mf.y0 + 0.5 * GRAV * mf.e * mf.e)
+    // ── zatvorené okno z bubliny praskne: prstenec a kvapôčky, ktoré odletia a spadnú
+    fact pop.x = 0
+    fact pop.y = 0
+    fact pop.r = 200
+    fact pop_n = 0
+    prop pop.t = 1 ~0ms
+    on change pop_n { pop.t: 0 ~0ms; pop.t: 1 ~520ms after 16ms }
 
     // ── telo: lišta a všetky kvapky v jednom goo (zliatie) ─────────────────────────────────────────────────────
     body {
@@ -1216,6 +1278,8 @@ scene Goo {
         ellipse { at: rpx.3 - rpg.3 * 420, floor + rpa.3 * 1.2; radius: rpa.3 * 2.2 * (1 - rpg.3) * if(rpk.3 > 0.5, 0, 1); scale: 2.2, 1; blend: 14 }
         ellipse { at: rpx.3 + rpg.3 * 420, floor + rpa.3 * 1.2; radius: rpa.3 * 2.2 * (1 - rpg.3) * if(rpk.3 > 0.5, 0, 1); scale: 2.2, 1; blend: 14 }
         ellipse { at: rpx.3, floor + 4; radius: rpa.3 * (1.2 + 0.6 * sin(time * 1900)) * (1 - rpg.3) * if(rpk.3 > 0.5, 1, 0); scale: 2.6, 1; blend: 12 }
+        ellipse { at: b.p1x, b.p1y; radius: (8 + 8 * b.s1) * if(bub.a > 0.01 and bub.t < 0.3, 1, 0); blend: 14 }
+        ellipse { at: mf.x, mf.y; radius: 16 * if(mf.k >= 1, mf.on, 0) * clamp((mf.T + 0.45 - mf.e) / 0.3, 0, 1); scale: 1 - 0.12 * clamp(mf.e, 0, 1), 1 + 0.2 * clamp(mf.e, 0, 1); blend: 16 }
         line { from: vlx, vly0; to: vlx + 3 * noise(time * 0.3), vly1; width: vlw; blend: 14 }
         line { from: pick(nk, hmx.0, hmx.1, hmx.2, hmx.3, hmx.4, hmx.5, hmx.6, hmx.7, hmx.8, hmx.9, hmx.10, hmx.11, hmx.12, hmx.13, hmx.14, hmx.15, hmx.16, hmx.17, hmx.18, hmx.19, hmx.20, hmx.21, hmx.22, hmx.23, hmx.24, hmx.25, hmx.26, hmx.27, hmx.28, hmx.29, hmx.30, hmx.31, hmx.32, hmx.33, hmx.34, hmx.35, hmx.36, hmx.37, hmx.38, hmx.39, hmx.40, hmx.41, hmx.42, hmx.43, hmx.44, hmx.45, hmx.46, hmx.47, hmx.48, hmx.49, hmx.50, hmx.51, hmx.52, hmx.53, hmx.54, hmx.55, hmx.56, hmx.57, hmx.58, hmx.59, hmx.60, hmx.61, hmx.62, hmx.63, hmx.64, hmx.65, hmx.66, hmx.67, hmx.68, hmx.69, hmx.70, hmx.71, hmx.72, hmx.73, hmx.74, hmx.75, hmx.76, hmx.77, hmx.78, hmx.79, hmx.80, hmx.81, hmx.82, hmx.83, hmx.84, hmx.85, hmx.86, hmx.87, hmx.88, hmx.89, hmx.90, hmx.91, hmx.92, hmx.93, hmx.94, hmx.95, hmx.96, hmx.97, hmx.98, hmx.99, hmx.100, hmx.101, hmx.102, hmx.103, hmx.104, hmx.105, hmx.106, hmx.107, hmx.108, hmx.109, hmx.110, hmx.111, hmx.112, hmx.113, hmx.114, hmx.115, hmx.116, hmx.117, hmx.118, hmx.119, hmx.120, hmx.121, hmx.122, hmx.123, hmx.124, hmx.125, hmx.126, hmx.127), pick(nk, hmy.0, hmy.1, hmy.2, hmy.3, hmy.4, hmy.5, hmy.6, hmy.7, hmy.8, hmy.9, hmy.10, hmy.11, hmy.12, hmy.13, hmy.14, hmy.15, hmy.16, hmy.17, hmy.18, hmy.19, hmy.20, hmy.21, hmy.22, hmy.23, hmy.24, hmy.25, hmy.26, hmy.27, hmy.28, hmy.29, hmy.30, hmy.31, hmy.32, hmy.33, hmy.34, hmy.35, hmy.36, hmy.37, hmy.38, hmy.39, hmy.40, hmy.41, hmy.42, hmy.43, hmy.44, hmy.45, hmy.46, hmy.47, hmy.48, hmy.49, hmy.50, hmy.51, hmy.52, hmy.53, hmy.54, hmy.55, hmy.56, hmy.57, hmy.58, hmy.59, hmy.60, hmy.61, hmy.62, hmy.63, hmy.64, hmy.65, hmy.66, hmy.67, hmy.68, hmy.69, hmy.70, hmy.71, hmy.72, hmy.73, hmy.74, hmy.75, hmy.76, hmy.77, hmy.78, hmy.79, hmy.80, hmy.81, hmy.82, hmy.83, hmy.84, hmy.85, hmy.86, hmy.87, hmy.88, hmy.89, hmy.90, hmy.91, hmy.92, hmy.93, hmy.94, hmy.95, hmy.96, hmy.97, hmy.98, hmy.99, hmy.100, hmy.101, hmy.102, hmy.103, hmy.104, hmy.105, hmy.106, hmy.107, hmy.108, hmy.109, hmy.110, hmy.111, hmy.112, hmy.113, hmy.114, hmy.115, hmy.116, hmy.117, hmy.118, hmy.119, hmy.120, hmy.121, hmy.122, hmy.123, hmy.124, hmy.125, hmy.126, hmy.127); to: pick(nk, x.0, x.1, x.2, x.3, x.4, x.5, x.6, x.7, x.8, x.9, x.10, x.11, x.12, x.13, x.14, x.15, x.16, x.17, x.18, x.19, x.20, x.21, x.22, x.23, x.24, x.25, x.26, x.27, x.28, x.29, x.30, x.31, x.32, x.33, x.34, x.35, x.36, x.37, x.38, x.39, x.40, x.41, x.42, x.43, x.44, x.45, x.46, x.47, x.48, x.49, x.50, x.51, x.52, x.53, x.54, x.55, x.56, x.57, x.58, x.59, x.60, x.61, x.62, x.63, x.64, x.65, x.66, x.67, x.68, x.69, x.70, x.71, x.72, x.73, x.74, x.75, x.76, x.77, x.78, x.79, x.80, x.81, x.82, x.83, x.84, x.85, x.86, x.87, x.88, x.89, x.90, x.91, x.92, x.93, x.94, x.95, x.96, x.97, x.98, x.99, x.100, x.101, x.102, x.103, x.104, x.105, x.106, x.107, x.108, x.109, x.110, x.111, x.112, x.113, x.114, x.115, x.116, x.117, x.118, x.119, x.120, x.121, x.122, x.123, x.124, x.125, x.126, x.127), pick(nk, y.0, y.1, y.2, y.3, y.4, y.5, y.6, y.7, y.8, y.9, y.10, y.11, y.12, y.13, y.14, y.15, y.16, y.17, y.18, y.19, y.20, y.21, y.22, y.23, y.24, y.25, y.26, y.27, y.28, y.29, y.30, y.31, y.32, y.33, y.34, y.35, y.36, y.37, y.38, y.39, y.40, y.41, y.42, y.43, y.44, y.45, y.46, y.47, y.48, y.49, y.50, y.51, y.52, y.53, y.54, y.55, y.56, y.57, y.58, y.59, y.60, y.61, y.62, y.63, y.64, y.65, y.66, y.67, y.68, y.69, y.70, y.71, y.72, y.73, y.74, y.75, y.76, y.77, y.78, y.79, y.80, y.81, y.82, y.83, y.84, y.85, y.86, y.87, y.88, y.89, y.90, y.91, y.92, y.93, y.94, y.95, y.96, y.97, y.98, y.99, y.100, y.101, y.102, y.103, y.104, y.105, y.106, y.107, y.108, y.109, y.110, y.111, y.112, y.113, y.114, y.115, y.116, y.117, y.118, y.119, y.120, y.121, y.122, y.123, y.124, y.125, y.126, y.127); width: if(nk >= 0, pick(nk, rr.0 * 0.7 * neck.0, rr.1 * 0.7 * neck.1, rr.2 * 0.7 * neck.2, rr.3 * 0.7 * neck.3, rr.4 * 0.7 * neck.4, rr.5 * 0.7 * neck.5, rr.6 * 0.7 * neck.6, rr.7 * 0.7 * neck.7, rr.8 * 0.7 * neck.8, rr.9 * 0.7 * neck.9, rr.10 * 0.7 * neck.10, rr.11 * 0.7 * neck.11, rr.12 * 0.7 * neck.12, rr.13 * 0.7 * neck.13, rr.14 * 0.7 * neck.14, rr.15 * 0.7 * neck.15, rr.16 * 0.7 * neck.16, rr.17 * 0.7 * neck.17, rr.18 * 0.7 * neck.18, rr.19 * 0.7 * neck.19, rr.20 * 0.7 * neck.20, rr.21 * 0.7 * neck.21, rr.22 * 0.7 * neck.22, rr.23 * 0.7 * neck.23, rr.24 * 0.7 * neck.24, rr.25 * 0.7 * neck.25, rr.26 * 0.7 * neck.26, rr.27 * 0.7 * neck.27, rr.28 * 0.7 * neck.28, rr.29 * 0.7 * neck.29, rr.30 * 0.7 * neck.30, rr.31 * 0.7 * neck.31, rr.32 * 0.7 * neck.32, rr.33 * 0.7 * neck.33, rr.34 * 0.7 * neck.34, rr.35 * 0.7 * neck.35, rr.36 * 0.7 * neck.36, rr.37 * 0.7 * neck.37, rr.38 * 0.7 * neck.38, rr.39 * 0.7 * neck.39, rr.40 * 0.7 * neck.40, rr.41 * 0.7 * neck.41, rr.42 * 0.7 * neck.42, rr.43 * 0.7 * neck.43, rr.44 * 0.7 * neck.44, rr.45 * 0.7 * neck.45, rr.46 * 0.7 * neck.46, rr.47 * 0.7 * neck.47, rr.48 * 0.7 * neck.48, rr.49 * 0.7 * neck.49, rr.50 * 0.7 * neck.50, rr.51 * 0.7 * neck.51, rr.52 * 0.7 * neck.52, rr.53 * 0.7 * neck.53, rr.54 * 0.7 * neck.54, rr.55 * 0.7 * neck.55, rr.56 * 0.7 * neck.56, rr.57 * 0.7 * neck.57, rr.58 * 0.7 * neck.58, rr.59 * 0.7 * neck.59, rr.60 * 0.7 * neck.60, rr.61 * 0.7 * neck.61, rr.62 * 0.7 * neck.62, rr.63 * 0.7 * neck.63, rr.64 * 0.7 * neck.64, rr.65 * 0.7 * neck.65, rr.66 * 0.7 * neck.66, rr.67 * 0.7 * neck.67, rr.68 * 0.7 * neck.68, rr.69 * 0.7 * neck.69, rr.70 * 0.7 * neck.70, rr.71 * 0.7 * neck.71, rr.72 * 0.7 * neck.72, rr.73 * 0.7 * neck.73, rr.74 * 0.7 * neck.74, rr.75 * 0.7 * neck.75, rr.76 * 0.7 * neck.76, rr.77 * 0.7 * neck.77, rr.78 * 0.7 * neck.78, rr.79 * 0.7 * neck.79, rr.80 * 0.7 * neck.80, rr.81 * 0.7 * neck.81, rr.82 * 0.7 * neck.82, rr.83 * 0.7 * neck.83, rr.84 * 0.7 * neck.84, rr.85 * 0.7 * neck.85, rr.86 * 0.7 * neck.86, rr.87 * 0.7 * neck.87, rr.88 * 0.7 * neck.88, rr.89 * 0.7 * neck.89, rr.90 * 0.7 * neck.90, rr.91 * 0.7 * neck.91, rr.92 * 0.7 * neck.92, rr.93 * 0.7 * neck.93, rr.94 * 0.7 * neck.94, rr.95 * 0.7 * neck.95, rr.96 * 0.7 * neck.96, rr.97 * 0.7 * neck.97, rr.98 * 0.7 * neck.98, rr.99 * 0.7 * neck.99, rr.100 * 0.7 * neck.100, rr.101 * 0.7 * neck.101, rr.102 * 0.7 * neck.102, rr.103 * 0.7 * neck.103, rr.104 * 0.7 * neck.104, rr.105 * 0.7 * neck.105, rr.106 * 0.7 * neck.106, rr.107 * 0.7 * neck.107, rr.108 * 0.7 * neck.108, rr.109 * 0.7 * neck.109, rr.110 * 0.7 * neck.110, rr.111 * 0.7 * neck.111, rr.112 * 0.7 * neck.112, rr.113 * 0.7 * neck.113, rr.114 * 0.7 * neck.114, rr.115 * 0.7 * neck.115, rr.116 * 0.7 * neck.116, rr.117 * 0.7 * neck.117, rr.118 * 0.7 * neck.118, rr.119 * 0.7 * neck.119, rr.120 * 0.7 * neck.120, rr.121 * 0.7 * neck.121, rr.122 * 0.7 * neck.122, rr.123 * 0.7 * neck.123, rr.124 * 0.7 * neck.124, rr.125 * 0.7 * neck.125, rr.126 * 0.7 * neck.126, rr.127 * 0.7 * neck.127), 0); blend: 22 }
                 // <<< telo
@@ -1228,6 +1292,67 @@ scene Goo {
             opacity: clamp(jd.$k, 0, 1)
             ellipse { at: x.$k - goo.$k.kw, y.$k; radius: rr.$k * 0.97 * if(jd.$k > 0.02, 1, 0); scale: 1 + fxw.$k, 1 - fxw.$k }    // kapsula: jadro pri ikone
         }
+    }
+    // bublina okna (pravidlo 14): z kávy do materiálu karty, pri nafukovaní rastie tieň
+    body {
+        gradient: b.x + bub.nx * b.w / 2, b.y + bub.ny * b.h / 2 to b.x - bub.nx * b.w / 2, b.y - bub.ny * b.h / 2, mix(coffee, #2c2019, b.s3), mix(coffee, #2c2019, b.s3 * 0.55)
+        rim: 24%
+        shadow: 0, 10, 26, 38% * b.s3
+        opacity: bub.a * if(bub.t > 0.27, 1, 0)
+        box { at: b.x, b.y; size: b.w * if(bub.a > 0.01, 1, 0), b.h; corner: b.r + (14 - b.r) * b.s3 }
+    }
+    // minimalizované okno sa zmenšuje do kvapky (potom padá v tele goo)
+    body {
+        gradient: mf.x0, mf.y0 - mf.h / 2 to mf.x0, mf.y0 + mf.h / 2, mix(#2c2019, coffee, mf.k), coffee
+        rim: 20%
+        opacity: (1 - mf.k * mf.k) * mf.on
+        box { at: mf.x0, mf.y0; size: (30 + (mf.w - 30) * (1 - mf.k)) * if(mf.k < 1, mf.on, 0), 30 + (mf.h - 30) * (1 - mf.k); corner: 14 + 6 * mf.k }
+    }
+    // prasknutie: prstenec sa rozbehne a zmizne, kvapôčky odletia a klesnú
+    ellipse { at: pop.x, pop.y; radius: pop.r * (0.55 + 0.5 * pop.t); stroke: 4 * (1 - pop.t); color: cream; opacity: 0.7 * (1 - pop.t) * if(pop.t < 1, 1, 0) }
+    repeat i in 0..10 {
+        ellipse { at: pop.x + cos(i * 36 + 12) * pop.r * (0.6 + 0.75 * pop.t), pop.y + sin(i * 36 + 12) * pop.r * (0.6 + 0.75 * pop.t) + 90 * pop.t * pop.t; radius: (5 + 2 * noise(i * 3.1)) * (1 - pop.t) * if(pop.t < 1, 1, 0); color: coffee; opacity: 0.9 }
+    }
+    // ── karta Goo (ponuky, karta ClockGoo, okno spúšťača LensGoo) ──────────────────────────────────────────────
+    // Väčšia a pohyblivá (používateľ 5. 10.: „môže byť aj väčšie, stále minimalistické a futuristicky pohyblivé“;
+    // najmenšie rozlíšenie 1024 × 768 — výšku stráži logika): riadok 44 px, písmo 15, záložky 38. Pohyb: karta
+    // vyrastie z ucha, rám plynulo mení veľkosť, riadky nabehnú postupne, zvýraznenie a vybraná záložka sa
+    // presúvajú pružinou. Koliesko kdekoľvek v karte prepína záložky (riadok s vlastným kolieskom má prednosť);
+    // z klávesnice Tab / Shift+Tab záložky, šípky riadok, Enter potvrdí, Esc zavrie.
+    let ctx.sx = if(ctx.x + ctx_w + 12 <= W, 1, -1)
+    let ctx.sy = if(ctx_up, if(ctx.y - ctx_h - 12 >= 0, -1, 1), if(ctx.y + ctx_h + 12 <= H, 1, -1))
+    let cx0 = clamp(if(ctx.sx > 0, ctx.x, ctx.x - ctx_w), 12, W - 12 - ctx_w)
+    let cy0 = clamp(if(ctx.sy > 0, ctx.y, ctx.y - ctx_h), 12, H - 12 - ctx_h)
+    let ctx.ax = if(ctx.sx > 0, cx0, cx0 + ctx_w)
+    let ctx.ay = if(ctx.sy > 0, cy0, cy0 + ctx_h)
+    let ctx.q = clamp(ctx.p, 0, 1.08)
+    let card = #2c2019
+    // rám karty mení veľkosť plynulo (prepnutie záložky), obsah nabieha postupne (rp 0 → 1 po zmene ctx_gen)
+    prop ctx.ws = 290 ~rastie
+    prop ctx.hs = 60 ~rastie
+    follow ctx.ws = ctx_w
+    follow ctx.hs = ctx_h
+    prop rp = 1 ~0ms
+    on change ctx_gen { rp: 0 ~0ms; rp: 1 ~460ms after 16ms }
+    // zvýraznenie riadku pod kurzorom (alebo vybraného šípkami): jedno, presúva sa pružinou
+    prop hl.y = 0 ~hbita
+    prop hl.o = 0 ~rastie
+    follow hl.y = ctx_hy
+    follow hl.o = if(ctx_hot >= 0 and ctx_open, 1, 0)
+    // vybraná záložka: zlatá kapsula, kĺže medzi záložkami
+    let chb = (ctx_w - 16) / (max(chip.count, 1) + if(chip_sel >= 0, 1.2, 0))
+    prop chs = 0 ~hbita
+    follow chs = chb * max(chip_sel, 0)
+    // rám karty. UCHO ako v pôvodnej ploche Kvapky (spustac.py): kvapka, z ktorej okno vyrástlo, vystúpi od okraja
+    // a sedí v ROHU karty — zliata s ňou, s vlastným obsahom (ikona, čas), aby bolo poznať, odkiaľ okno je. Pri uchu
+    // je karta z kávy a ďalej prechádza do farby okna. Ponuka pri mieste kliku (okno v GooBare) má iba kvapôčku.
+    body {
+        gradient: ctx.ax, ctx.ay to ctx.ax + ctx.sx * ctx_w, ctx.ay + ctx.sy * ctx_h, coffee, mix(card, coffee, 0.4), card, card
+        rim: 16%
+        shadow: 0, 8, 22, 36% * clamp(ctx.p, 0, 1)
+        opacity: if(ctx.p > 0.02, 1, 0)
+        box { at: ctx.ax + ctx.sx * ctx.ws * ctx.q / 2, ctx.ay + ctx.sy * ctx.hs * ctx.q / 2; size: max(ctx.ws * ctx.q, 14) * if(ctx.p > 0.02, 1, 0), max(ctx.hs * ctx.q, 14); corner: if(ctx_ear > 14, 26, 18) }
+        ellipse { at: ctx.ax, ctx.ay; radius: (ctx_ear * clamp(ctx.p * 3, 0, 1) + 1) * if(ctx.p > 0.02, 1, 0); blend: if(ctx_ear > 14, 18, 12) }
     }
     // odlesky: svetlo kurzora na každej kvapke (bližšie = jasnejšie)
     repeat k in 0..128 {
@@ -1259,36 +1384,7 @@ scene Goo {
         text goo.$k.text { at: x.$k, y.$k + rr.$k * 0.36; anchor: center; size: 8 * rs.$k; color: ink; opacity: if(goo.$k.on and goo.$k.druh == 2, 0.75, 0); family: "Inter" }
     }
     // ponuka Goo: karta z kávy do farby okien, ucho v rohu pri mieste kliku
-    // ── karta Goo (ponuky, karta ClockGoo, okno spúšťača LensGoo) ──────────────────────────────────────────────
-    // Väčšia a pohyblivá (používateľ 5. 10.: „môže byť aj väčšie, stále minimalistické a futuristicky pohyblivé“;
-    // najmenšie rozlíšenie 1024 × 768 — výšku stráži logika): riadok 44 px, písmo 15, záložky 38. Pohyb: karta
-    // vyrastie z ucha, rám plynulo mení veľkosť, riadky nabehnú postupne, zvýraznenie a vybraná záložka sa
-    // presúvajú pružinou. Koliesko kdekoľvek v karte prepína záložky (riadok s vlastným kolieskom má prednosť);
-    // z klávesnice Tab / Shift+Tab záložky, šípky riadok, Enter potvrdí, Esc zavrie.
-    let ctx.sx = if(ctx.x + ctx_w + 12 <= W, 1, -1)
-    let ctx.sy = if(ctx_up, if(ctx.y - ctx_h - 12 >= 0, -1, 1), if(ctx.y + ctx_h + 12 <= H, 1, -1))
-    let cx0 = clamp(if(ctx.sx > 0, ctx.x, ctx.x - ctx_w), 12, W - 12 - ctx_w)
-    let cy0 = clamp(if(ctx.sy > 0, ctx.y, ctx.y - ctx_h), 12, H - 12 - ctx_h)
-    let ctx.ax = if(ctx.sx > 0, cx0, cx0 + ctx_w)
-    let ctx.ay = if(ctx.sy > 0, cy0, cy0 + ctx_h)
-    let ctx.q = clamp(ctx.p, 0, 1.08)
-    let card = #2c2019
-    // rám karty mení veľkosť plynulo (prepnutie záložky), obsah nabieha postupne (rp 0 → 1 po zmene ctx_gen)
-    prop ctx.ws = 290 ~rastie
-    prop ctx.hs = 60 ~rastie
-    follow ctx.ws = ctx_w
-    follow ctx.hs = ctx_h
-    prop rp = 1 ~0ms
-    on change ctx_gen { rp: 0 ~0ms; rp: 1 ~460ms after 16ms }
-    // zvýraznenie riadku pod kurzorom (alebo vybraného šípkami): jedno, presúva sa pružinou
-    prop hl.y = 0 ~hbita
-    prop hl.o = 0 ~rastie
-    follow hl.y = ctx_hy
-    follow hl.o = if(ctx_hot >= 0 and ctx_open, 1, 0)
-    // vybraná záložka: zlatá kapsula, kĺže medzi záložkami
-    let chb = (ctx_w - 16) / (max(chip.count, 1) + if(chip_sel >= 0, 1.2, 0))
-    prop chs = 0 ~hbita
-    follow chs = chb * max(chip_sel, 0)
+    // karta Goo: zóny a obsah (rám a ucho sú vyššie, pod obsahom kvapiek — ucho je sama kvapka)
     zone box ctx_away { at: W / 2, H / 2; size: W, H; active: ctx_open }
     on press ctx_away { ctx_open = false; emit ctx_close }
     on press right ctx_away { ctx_open = false; emit ctx_close }
@@ -1304,14 +1400,6 @@ scene Goo {
     on press ctx_bg { chip_hot = -1 }
     on press right ctx_bg { chip_hot = -1 }
     on scroll ctx_bg { emit ctx_bgw(if(wheel > 0, 0, 1)) }
-    body {
-        gradient: ctx.ax, ctx.ay to ctx.ax + ctx.sx * ctx_w, ctx.ay + ctx.sy * ctx_h, mix(card, coffee, 0.6), card, card
-        rim: 16%
-        shadow: 0, 6, 12, 34% * clamp(ctx.p, 0, 1)
-        opacity: if(ctx.p > 0.02, 1, 0)
-        box { at: ctx.ax + ctx.sx * ctx.ws * ctx.q / 2, ctx.ay + ctx.sy * ctx.hs * ctx.q / 2; size: max(ctx.ws * ctx.q, 14) * if(ctx.p > 0.02, 1, 0), max(ctx.hs * ctx.q, 14); corner: 18 }
-        ellipse { at: ctx.ax, ctx.ay; radius: (11 * clamp(ctx.p * 3, 0, 1) + 1) * if(ctx.p > 0.02, 1, 0); blend: 12 }
-    }
     group {
         opacity: clamp(ctx.p * 2 - 1, 0, 1)
         show: ctx_open and ctx.p > 0.5

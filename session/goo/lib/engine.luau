@@ -110,7 +110,7 @@ local function record(d)
     if isName(ik) and v.druh ~= 2 then ik = glyphs[ik] or "" end
     return {
         on = not d.hidden, hx = d.x, ox = d.ox or 0, hy = d.y, r = v.velkost, z = d.z, rast = v.rast,
-        grav = clamp(num(v.gravitacia, 0), 0, 1), dosah = v.dosah, vz = clamp(num(v.vznos, 1), 0, 2),
+        grav = d.pinned and 0 or clamp(num(v.gravitacia, 0), 0, 1), dosah = v.dosah, vz = clamp(num(v.vznos, 1), 0, 2),
         lep = v.lepivost, trh = v.trhanie, svetlo = v.svetlo, tahat = v.tahat,
         fx = EFEKTY[v.efekt] or num(v.efekt, 0), fa = v.sila,
         e1 = d.e[1], e2 = d.e[2], e3 = d.e[3], e4 = d.e[4],
@@ -477,6 +477,9 @@ end
 -- sep, sub = { … } (podponuka so „Späť“), run = funkcia }. Miesto si scéna zapamätá pri stlačení kvapky.
 local ctx_actions, ctx_wheel, chip_actions = {}, {}, {}
 local ctx_id = nil
+local raised = nil                       -- kvapka, ktorá je práve uchom otvorenej karty (vystúpila od okraja)
+local RISE = 74                          -- ako vysoko (px): vzdialenosť ako v ploche Kvapky
+local ctx_hmax = 0
 local ctx_input = nil                    -- čo urobiť s textom z poľa karty (Enter); true = text v poli nechať
 local ctx_change = nil                   -- volá sa pri písaní do poľa (s krátkou pauzou)
 local ctx_rights = {}                    -- pravý klik na riadok
@@ -487,6 +490,16 @@ local emit_chip
 local CTX_MAX = 16
 -- ktorá karta je práve otvorená (opts.id), aby ju jej majiteľ mohol obnovovať a neprepísal cudziu ponuku
 function E.menuId() return fact.ctx_open and ctx_id or nil end
+-- kvapka-ucho sa vráti na okraj (karta sa zavrela): padne späť a ponorí sa
+function E.menuRelease()
+    local d = raised
+    if not d then return end
+    raised = nil
+    d.pinned = false
+    if d.yRest then d.y, d.yRest = d.yRest, nil end
+    bump("dipn", d.k)
+    publish()
+end
 -- kam karta vyrastie, keď ju neotvoril klik myšou (kláves Windows → spúšťač): k miestu kvapky na jej okraji
 function E.menuAt(d)
     local W, H = num(fact.sw, 1920), num(fact.sh, 1080)
@@ -519,7 +532,29 @@ function E.menu(items, width, opts)
     -- zadaná (karty boli malé). Najmenšie rozlíšenie 1024 × 768: riadky, ktoré by sa nezmestili, sa nepridajú
     local width0 = width
     width = math.floor((width or 248) * 1.2)
-    local maxH = math.max(400, num(fact.sh, 768) - 24)
+    local sh = num(fact.sh, 768)
+    local maxH = math.max(400, sh - 24)
+    -- UCHO (pravidlo 9, ako v ploche Kvapky): kvapka, z ktorej karta rastie, vystúpi od okraja a sedí v jej rohu
+    local owner = opts.owner
+    if owner and owner.zdroj ~= "dyn" and not owner.def.visi and (owner.y < owner.v.velkost * owner.z * 1.6 or raised == owner) then
+        if raised and raised ~= owner then E.menuRelease() end
+        if raised ~= owner then
+            raised, owner.yRest, owner.pinned = owner, owner.y, true
+            owner.y = RISE
+            publish()
+        end
+        local x, y = E.screenXY(owner)
+        local e = owner.edge or 0
+        fact["ctx.x"], fact["ctx.y"] = x, y
+        fact.ctx_up = (e == 0) or (e ~= 2 and y > sh / 2)
+        fact.ctx_ear = owner.v.velkost * owner.z
+        -- karta sa musí zmestiť od ucha po okraj obrazovky, inak by ucho nesedelo v jej rohu
+        maxH = math.max(300, math.min(maxH, (e == 2 and sh - y or y) - 12))
+    elseif not opts.keep then
+        if raised then E.menuRelease() end
+        fact.ctx_ear = 10
+    end
+    if not fact.ctx_open then ctx_hmax = 0 end
     local out, y = {}, (#chips > 0 and 58 or 8)
     local kal_y, in_y = -1, -1
     local selectable = {}
@@ -591,7 +626,11 @@ function E.menu(items, width, opts)
     if fact.kal_y ~= kal_y then fact.kal_y = kal_y end
     if fact.ctx_in_y ~= in_y then fact.ctx_in_y = in_y end
     fact.ctx_w = width
-    fact.ctx_h = y + 8
+    -- HORNÁ HRANA NESKÁČE (používateľ 5. 10.): karta so záložkami má pevnú výšku (opts.height), ostatné sa počas
+    -- otvorenia iba zväčšujú (podponuka a návrat kartu nezmenšia) — obsah začína vždy v tej istej výške
+    local h = math.max(y + 8, math.min(num(opts.height, 0), maxH), opts.height and 0 or ctx_hmax)
+    ctx_hmax = math.max(ctx_hmax, h)
+    fact.ctx_h = math.min(h, maxH)
     if not opts.keep then fact.ctx_hot = -1 end
     fact.ctx_open = #out > 0
 end
@@ -804,6 +843,48 @@ on("goo_drop", function(k)
     publish()
 end)
 
+-- ── okno z bubliny, prasknutie, pád minimalizovaného okna (pravidlo 14) ──────────────────────────────────────
+-- kde je kvapka na obrazovke (px) a ktorým smerom od svojho okraja
+local function screenXY(d)
+    local W, H = num(fact.sw, 1920), num(fact.sh, 1080)
+    local e, a = d.edge or 0, along(d)
+    if e == 1 then return 6 + d.y, a, 1, 0 elseif e == 3 then return W - 6 - d.y, a, -1, 0
+    elseif e == 2 then return a, 6 + d.y, 0, 1 end
+    return a, H - 6 - d.y, 0, -1
+end
+E.screenXY = screenXY
+-- kvapka vypľuje bublinu, ktorá preletí na stred budúceho okna a nafúkne sa na jeho rozmer; `E.bubbleDone()` keď
+-- okno naskočilo (bublina zmizne)
+function E.bubble(d, cx, cy, w, h)
+    local x, y, nx, ny = screenXY(d)
+    fact["bub.sx"], fact["bub.sy"], fact["bub.nx"], fact["bub.ny"], fact["bub.sr"] = x, y, nx, ny, d.v.velkost * d.z
+    fact["bub.x"], fact["bub.y"], fact["bub.w"], fact["bub.h"] = cx, cy, w, h
+    fact.bub_n = num(fact.bub_n, 0) + 1
+    d:stlac()
+end
+function E.bubbleDone() fact.bub_d = num(fact.bub_d, 0) + 1 end
+-- zatvorené okno z bubliny praskne (stred a polomer prstenca)
+function E.pop(cx, cy, r)
+    fact["pop.x"], fact["pop.y"], fact["pop.r"] = cx, cy, r or 200
+    fact.pop_n = num(fact.pop_n, 0) + 1
+end
+-- minimalizované okno (Hyprland: latte.goo_min nastaví wm.x, wm.y, wm.w, wm.h a pošle win_min): zmenší sa do kvapky,
+-- voľným pádom spadne k GooBaru, žblnkne a objaví sa medzi ikrami
+E.onWinMin = nil
+on("win_min", function()
+    local x, y, w, h = num(fact["wm.x"], 0), num(fact["wm.y"], 0), num(fact["wm.w"], 0), num(fact["wm.h"], 0)
+    local W, H = num(fact.sw, 1920), num(fact.sh, 1080)
+    if w <= 0 or h <= 0 or x < 0 or y < 0 or x >= W or y >= H then return end      -- okno na inom monitore
+    local cx, cy = x + w / 2, y + h / 2
+    local head = byId.goobar
+    local x1 = (head and (head.edge or 0) == 0) and math.min(along(head) + 90, hiAlong(head)) or cx
+    local T = math.sqrt(2 * math.max(40, H - 6 - cy) / GRAV)
+    fact["mf.x0"], fact["mf.y0"], fact["mf.x1"], fact["mf.w"], fact["mf.h"], fact["mf.T"] = cx, cy, x1, w, h, T
+    fact.mf_n = num(fact.mf_n, 0) + 1
+    after((T + 0.2) * 1000, function() E.vlnka(x1, 7, "kamen") end)
+    if E.onWinMin then after(250, E.onWinMin) end                       -- GooBar hneď prekreslí ikry
+end)
+
 -- ── nečinnosť: živé bytosti (LATTEOS-GOO.md 3.1) ─────────────────────────────────────────────────────────────────
 -- stupeň 1 (1 min) zaspávajú — menšie nadnesenie robí scéna; 2 (3 min) počasie — rezerva, háčik necinnost(d, 2);
 -- 3 (6 min) hra hravých kvapiek: naháňačka so zámernou zrážkou a odrazom (squish), behanie po lište, skákanie.
@@ -982,6 +1063,8 @@ function E.start(opts)
         if opts.pouzivatel ~= false then require("lib/pouzivatel").start(E, opts) end
         settings()
         every(2000, settings)
+        -- karta sa zavrela (klik mimo, Esc, voľba): ucho sa vráti na okraj, až keď sa karta zloží
+        every(120, function() if raised and not fact.ctx_open then E.menuRelease() end end)
         -- rozmer obrazovky príde zo scény až po štarte (a zmení sa s rozlíšením): polohy a zakázanú zónu prepočítať
         local lw, lh = 0, 0
         every(1000, function()

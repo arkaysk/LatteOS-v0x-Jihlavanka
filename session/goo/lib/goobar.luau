@@ -352,6 +352,7 @@ function M.start()
     read_mode()
     every(2000, function() read_mode() mark_hidden() end)
     every(700, M.read_blocks)
+    E.onWinMin = mark_hidden                 -- okno práve padlo do lišty: ikra sa stlmí hneď, nie až o 2 s
 end
 
 return M

@@ -187,10 +187,10 @@ Item {
                         Row {
                             required property var modelData
                             spacing: 10
-                            Text { width: 110; text: modelData[0]; color: hv.theme.fg; font { family: hv.theme.fontUi; pixelSize: 12; weight: Font.Bold }; anchors.verticalCenter: parent.verticalCenter }
+                            Text { width: 110; text: modelData[0]; color: hv.theme.fg; anchors.verticalCenter: parent.verticalCenter; font { family: hv.theme.fontUi; pixelSize: 12; weight: Font.Bold } }
                             Rectangle { width: bcol.width - 220; height: 18; radius: 9; anchors.verticalCenter: parent.verticalCenter; color: Qt.rgba(0, 0, 0, 0.2)
                                         Rectangle { width: parent.width * Math.min(1, modelData[1] / modelData[2]); height: parent.height; radius: 9; color: hv.theme.primary } }
-                            Text { width: 90; text: String(modelData[1]); color: hv.theme.fg; font { family: hv.theme.fontMono; pixelSize: 13; weight: Font.Bold }; anchors.verticalCenter: parent.verticalCenter }
+                            Text { width: 90; text: String(modelData[1]); color: hv.theme.fg; anchors.verticalCenter: parent.verticalCenter; font { family: hv.theme.fontMono; pixelSize: 13; weight: Font.Bold } }
                         }
                     }
                     Text { visible: parent.parent.hist.length > 1; topPadding: 6; text: "HISTÓRIA · VŠETKY VLÁKNA"; color: hv.theme.fgDim; font { family: hv.theme.fontUi; pixelSize: 10; weight: Font.Bold; letterSpacing: 0.6 } }

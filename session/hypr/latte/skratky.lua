@@ -36,10 +36,26 @@ end
 local function minimize(w)
     -- v páske (ako v niri) sa nič neminimalizuje, okno iba odíde z pohľadu
     if latte and latte.tape_on and latte.tape_on() then latte.tape_away(w); return end
+    if latte and latte.goo_min then pcall(latte.goo_min, w) end
     hl.dispatch(hl.dsp.window.move({ workspace = "special:minimized", follow = false, window = "address:" .. w.address }))
 end
 
 latte = latte or {}
+-- engine Goo (LATTEOS-GOO.md pravidlo 14): minimalizované okno padne ako kvapka do GooBaru. Scéne sa povie, odkiaľ:
+-- poloha a rozmer okna ako štyri hodnoty (wm.x, wm.y, wm.w, wm.h) a potom udalosť — číslo pri udalosti z príkazového
+-- riadka má malý rozsah, zbalené do jedného neprešli. Bez scény „goo“ príkazy nič neurobia (iné plochy).
+function latte.goo_min(w)
+    if os.getenv("LATTE_VARIANT") ~= "kvapky" or not w then return end
+    local function xy(v)
+        if type(v) ~= "table" then return 0, 0 end
+        return math.floor(tonumber(v.x or v[1]) or 0), math.floor(tonumber(v.y or v[2]) or 0)
+    end
+    local x, y = xy(w.at)
+    local ww, wh = xy(w.size)
+    if ww <= 0 or wh <= 0 then return end
+    hl.exec_cmd(string.format("pleamar --say goo 'fact wm.x %d' && pleamar --say goo 'fact wm.y %d' && pleamar --say goo 'fact wm.w %d'"
+        .. " && pleamar --say goo 'fact wm.h %d' && pleamar --say goo 'emit win_min 1'", x, y, ww, wh))
+end
 latte.keys = latte.keys or {}
 -- Win+M: minimalizovať všetko na ploche; Win+Home: všetko okrem aktívneho
 function latte.keys.minimize_all(keep_active)

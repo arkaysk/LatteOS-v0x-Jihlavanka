@@ -72,7 +72,8 @@ filtre typov súborov, „Ukázať výstup tu“, prílohy a hlas v AI, farebná
 - **Ľavý klik** = App Manager (pri aktualizáciách rovno na nich), **pravý** = Správca zariadení (pri výpadku na Sieťach)
 - Kvapka sa nestáva rohom okna: vypľuje bublinu, ktorá sa nafúkne na okno vedľa nej (1220 × 780)
 
-**Engine:** bodky, oba kliky, okno vedľa kvapky, korunka. **Chýba:** let bubliny, voliteľný tvar korunky.
+**Engine:** bodky, oba kliky, korunka, okno sa rodí z bubliny (preletí vedľa kvapky a nafúkne sa na okno), zatvorené
+praskne. **Chýba:** voliteľný tvar korunky.
 
 ### ClockGoo — čas, kalendár, upozornenia a pohoda
 

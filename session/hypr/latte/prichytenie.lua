@@ -133,6 +133,7 @@ function P.setup()
     if version >= "0.2" then
         hl.on("latte.minimize_request", function(w)
             if w and w.address then
+                if latte and latte.goo_min then pcall(latte.goo_min, w) end
                 hl.dispatch(hl.dsp.window.move({ workspace = "special:minimized", follow = false, window = "address:" .. w.address }))
             end
         end)
