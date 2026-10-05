@@ -51,7 +51,7 @@ E.POVAHY = {
 }
 local PREDVOLENE = { velkost = 26, gravitacia = 0.3, dosah = 220, vznos = 1, lepivost = 0, trhanie = 90, svetlo = 0.5,
                      rast = 0.08, tahat = true, hmotnost = 0, efekt = "nic", sila = 1, druh = "ikona", zoom = false }
-local ZOOM_MIN, ZOOM_MAX = 0.6, 2.4
+local ZOOM_MIN, ZOOM_MAX = 1, 2.2          -- veľkosť 100–220 % (Nastavenia › Kvapky; ako koliesko v ploche Kvapky)
 
 local slots = {}          -- k (0…N−1) → kvapka
 local byId = {}           -- id → kvapka
@@ -128,7 +128,9 @@ end
 -- tá, ktorú možno posunúť — nie okná Goobaru (rozloženie) ani kvapky pripnuté k inej (TimeGoo, PowerGoo); z dvoch
 -- posunuteľných ustúpi tá, na ktorú niečo pustili. Odsunutie sa reťazí (najviac 10 kôl) a uloží.
 local save                 -- nižšie (uloženie polôh)
-local MIN_GAP = 0.72
+local MIN_GAP = 0.95        -- stredy aspoň 0,95 súčtu polomerov: dotýkajú sa a zlievajú, neprekrývajú (pri 0,72 veľká
+                            -- kvapka malú skoro celú zakryla: TimeGoo pod hlavou Goobaru, latte-lab 5. 10.)
+local GAP_IKRY = 1.2        -- cudzia kvapka pri ikrách okien: mimo dosahu zliatia (ikry sa lepia iba ku Goobaru)
 local sepDirty, sepPrefer = false, nil
 local function movable(d) return not d.def.pri and d.zdroj ~= "dyn" and not d.dragging end
 local function separate()
@@ -142,12 +144,14 @@ local function separate()
         for i = 1, #list do
             for j = i + 1, #list do
                 local a, b = list[i], list[j]
-                -- iba kvapky, ktoré sa môžu stretnúť (to isté goo telo alebo hlava v oboch)
+                -- všetky kvapky sú v jednom goo tele. Ikry okien (sk 1) rozkladá Goobar: medzi sebou a s jeho
+                -- hlavou (sk 2) sa neodsúvajú; cudzia kvapka od nich ustúpi ďalej, aby sa s nimi nezliala
                 local sa, sb = num(a.v.sk, 0), num(b.v.sk, 0)
-                if sa == sb or sa == 2 or sb == 2 then
+                local ikra = sa == 1 or sb == 1
+                if not (ikra and (sa == sb or sa == 2 or sb == 2)) then
                     local ax, ay = a.x * sw + (a.ox or 0), a.y
                     local bx, by = b.x * sw + (b.ox or 0), b.y
-                    local need = MIN_GAP * (a.v.velkost * a.z + b.v.velkost * b.z)
+                    local need = (ikra and GAP_IKRY or MIN_GAP) * (a.v.velkost * a.z + b.v.velkost * b.z)
                     local dx, dy = bx - ax, by - ay
                     local dist = math.sqrt(dx * dx + dy * dy)
                     if dist < need - 0.5 then
@@ -186,11 +190,25 @@ local function separate()
 end
 function E.separate(prefer) sepDirty, sepPrefer = true, prefer or sepPrefer end
 
+-- kotva (pri): kým kvapku nikto sám nepresunul, drží sa AKTUÁLNEJ polohy svojej kotvy — aj keď kotvu potiahnu
+-- alebo ju odsunie pravidlo 22 (ikry okien pri hlave Goobaru, PowerGoo pri TimeGoo)
+local function anchor(d, depth)
+    local a = d.def.pri and byId[d.def.pri]
+    if not a or d.moved or d.dragging or d.wander or depth > 4 then return end
+    anchor(a, depth + 1)
+    d.x, d.ox = a.x, (a.ox or 0) + num(d.def.odstup, 0)
+end
+
 local function publish()
     if publishing then dirty = true return end
     publishing = true
     after(16, function()                                 -- viac zmien v jednom kroku = jeden zápis
-        if sepDirty then sepDirty = false separate() end
+        for k = 0, N - 1 do if slots[k] then anchor(slots[k], 0) end end
+        if sepDirty then
+            sepDirty = false
+            separate()
+            for k = 0, N - 1 do if slots[k] then anchor(slots[k], 0) end end
+        end
         local live = {}
         for k = 0, N - 1 do if slots[k] then table.insert(live, slots[k]) end end
         neighbours(live)
@@ -319,7 +337,7 @@ function E.define(def, zdroj)
         d.hx0, d.hy0 = nextDock(), seat
     end
     local s = saved[def.id]
-    d.x, d.y, d.z = s and s.x or d.hx0, s and s.y or d.hy0, s and s.z or 1
+    d.x, d.y, d.z = s and s.x or d.hx0, s and s.y or d.hy0, clamp(num(s and s.z, 1), ZOOM_MIN, ZOOM_MAX)
     d.ox = s and 0 or d.ox0
     d.moved = s ~= nil
     slots[k], byId[def.id] = d, d
@@ -541,8 +559,10 @@ end)
 -- 3 (6 min) hra hravých kvapiek: naháňačka so zámernou zrážkou a odrazom (squish), behanie po lište, skákanie.
 -- Prebudenie hneď: všetky sa zachvejú a vrátia na svoje miesto (poloha z Nastavení sa nemení).
 local play
+local busy = false          -- beží jeden beh alebo naháňačka (ďalší počká)
 local function stopPlay()
     if play then cancel(play) play = nil end
+    busy = false
     E.each(function(d)
         if d.wander then d.x, d.y, d.wander = d.wx, d.wy, nil end
     end)
@@ -551,33 +571,93 @@ end
 local function wander(d)
     if not d.wander then d.wander, d.wx, d.wy = true, d.x, d.y end
 end
+-- pravidlo 22 platí aj pri hre: bežiaca kvapka nikoho neprekryje — ostatné na lište jej UHNÚ (reťazovo, od nej
+-- preč) a po hre sa všetko vráti na svoje miesto. Ikry okien a hlava Goobaru neuhýbajú (k nim sa nebeží).
+local function px(d) local sw = num(fact.sw, 0) return d.x * (sw > 0 and sw or 1920) + (d.ox or 0) end
+local function rad(d) return d.v.velkost * d.z end
+local function docked(d) return d.y < rad(d) * 1.6 end
+local function toFrac(d, x) local sw = num(fact.sw, 0) return (x - (d.ox or 0)) / (sw > 0 and sw or 1920) end
+-- miesto pre d na x: komu treba uhnúť a kam ({ kvapka = x }); nil = nezmestí sa (okraj obrazovky, Goobar)
+local function shove(d, x)
+    local sw = num(fact.sw, 0) if sw <= 0 then sw = 1920 end
+    if x < 0.03 * sw or x > 0.97 * sw then return nil end
+    local others, fixed = {}, {}
+    E.each(function(o)
+        if o ~= d and docked(o) and not o.dragging then
+            table.insert(num(o.v.sk, 0) >= 1 and fixed or others, o)
+        end
+    end)
+    for _, q in ipairs(fixed) do
+        if math.abs(px(q) - x) < (rad(d) + rad(q)) * GAP_IKRY then return nil end
+    end
+    table.sort(others, function(a, b) return math.abs(px(a) - x) < math.abs(px(b) - x) end)
+    local placed, moves = { { x = x, r = rad(d) } }, {}
+    for _, o in ipairs(others) do
+        local ox = px(o)
+        local side = ox >= x and 1 or -1
+        for _, p in ipairs(placed) do
+            local need = (p.r + rad(o)) * MIN_GAP
+            if math.abs(ox - p.x) < need then ox = p.x + side * need end
+        end
+        if ox ~= px(o) then
+            if ox < 0.02 * sw or ox > 0.98 * sw then return nil end
+            for _, q in ipairs(fixed) do
+                if math.abs(px(q) - ox) < (rad(o) + rad(q)) * MIN_GAP then return nil end
+            end
+            moves[o] = ox
+        end
+        table.insert(placed, { x = ox, r = rad(o) })
+    end
+    return moves
+end
+local function land(d)                                       -- dopad: sploští sa a hladina sa zvlní
+    after(520, function() if play then d:stlac() E.vlnka(px(d), 3, "kamen") end end)
+end
+-- d odbehne na x (ostatné uhnú), po `ms` sa všetci vrátia; počas behu sa nezačne iný
+local function run_to(d, x, moves, ms, meet)
+    busy = true
+    wander(d)
+    d.x = toFrac(d, x)
+    for o, ox in pairs(moves) do wander(o) o.x = toFrac(o, ox) end
+    d:poskoc() land(d) publish()
+    if meet then after(700, function() if play then meet() end end) end
+    after(ms, function()
+        busy = false
+        if not play then return end
+        d.x, d.y, d.wander = d.wx, d.wy, nil
+        for o in pairs(moves) do if o.wander then o.x, o.y, o.wander = o.wx, o.wy, nil end end
+        d:poskoc() land(d) publish()
+    end)
+end
 local function game()
     local players = {}
-    E.each(function(d) if d.v.hrava then table.insert(players, d) end end)
+    E.each(function(d) if d.v.hrava and not d.wander and not d.dragging and docked(d) then table.insert(players, d) end end)
     if #players == 0 then return end
     local d = players[math.random(#players)]
+    local sw = num(fact.sw, 0) if sw <= 0 then sw = 1920 end
     local r = math.random()
-    if r < 0.3 then                                          -- skákanie
-        d:poskoc()
-    elseif r < 0.7 and #players > 1 then                     -- naháňačka: dobehne, zrazí sa, obe sa stlačia, druhá odskočí
-        local other = d
-        while other == d do other = players[math.random(#players)] end
-        wander(d) wander(other)
-        local side = d.x < other.x and -1 or 1
-        d.x = clamp(other.x + side * 0.025, 0.03, 0.97)
-        publish()
-        after(650, function()
-            if not play then return end
-            d:stlac() other:stlac()
-            other.x = clamp(other.x - side * 0.08, 0.03, 0.97)
-            other:poskoc()
-            publish()
-        end)
-    else                                                     -- behanie po lište
-        wander(d)
-        d.x = clamp(d.wx + (math.random() - 0.5) * 0.3, 0.03, 0.97)
-        publish()
+    if not busy and r >= 0.3 and r < 0.65 then               -- naháňačka: dobehne inú, pritisne sa, obe sa stlačia, odrazí sa späť
+        local all = {}
+        E.each(function(o) if o ~= d and docked(o) and num(o.v.sk, 0) == 0 and not o.wander then table.insert(all, o) end end)
+        local other = #all > 0 and all[math.random(#all)]
+        if other then
+            local side = px(d) < px(other) and -1 or 1
+            local x = px(other) + side * (rad(d) + rad(other)) * MIN_GAP
+            local moves = shove(d, x)
+            if moves and not moves[other] and math.abs(x - px(d)) > rad(d) then
+                run_to(d, x, moves, 1700, function() d:stlac() other:stlac() other:poskoc() land(other) end)
+                return
+            end
+        end
+    elseif not busy and r >= 0.65 then                       -- behanie po lište: ostatné uhnú, potom späť
+        local x = clamp(px(d) + (math.random() < 0.5 and -1 or 1) * (0.06 + 0.16 * math.random()) * sw, 0.03 * sw, 0.97 * sw)
+        local moves = shove(d, x)
+        if moves and math.abs(x - px(d)) > rad(d) then
+            run_to(d, x, moves, 2600)
+            return
+        end
     end
+    d:poskoc() land(d)                                       -- skákanie na mieste (aj keď nie je kam bežať)
 end
 on("goo_idle", function(level)
     hud("nečinnosť " .. level)

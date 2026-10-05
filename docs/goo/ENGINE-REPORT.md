@@ -117,8 +117,9 @@ zlievanie, vstupy, efekty) a kvapka je iba definícia plus háčiky.
   - tvary z `gen.py` s podmienkou `sk != 1`;
   - hrebene vlniek;
   - **jeden** globálny krk cez `pick(nk, …)`.
-- **telo Goobaru** (`sk >= 1`): bez boxu na celú šírku. Box stál 17 ms, bez neho telo stojí ≈ 4 ms. Ikry sa preto
-  lepia iba ku Goobaru, nie k ostatným goo.
+- **Goobar a ikry sú v tom istom tele** (od 5. 10.; druhé telo kreslilo okolo hlavy deliaci obrys). `sk` je už iba
+  skupina pre susedov, vodu a vlákna; cudzie kvapky od ikier odsúva pravidlo 22 (1,2·Σr). Cenu rieši záplata pásov.
+- **Sadnutie v pokoji** (`sit.$k`): bez kurzora nablízku sa kvapka zasunie k hladine a sploští, pri kurzore sa zdvihne.
 - **telo jadra** pre každú kvapku: radiálny gradient od farby jadra do kávy (pravidlo 17, predvolene upozornenie).
 - **Nad telami:** odlesky, žiara (`e4`), oblúk merača, ikona aplikácie (`image obr.$k`), 4 guľky, texty
   (`druh 2` používa Inter).
@@ -165,7 +166,9 @@ E.define({
 - `publish()` zapisuje `model.goo` dávkovo.
 
 **Pravidlo 22 (`separate()`)** — kvapky sa nikdy úplne neprekryjú:
-- minimálna medzera je 0.72·Σr;
+- minimálna medzera je 0.95·Σr (dotyk a zliatie, nie prekrytie); pri ikrách okien 1.2·Σr;
+- platí aj pri hre: bežiacej kvapke ostatné uhnú (`shove`), po behu sa vrátia;
+- kotva `pri` sleduje aktuálnu polohu kotvy, kým kvapku nikto sám nepresunul;
 - posúva sa kvapka bez kotvy (`pri`), ktorá nie je `dyn` ani ťahaná; ustúpi tá, na ktorú sa pustilo;
 - ukotvená kvapka sa posúva po x; reťazovo najviac 10 prechodov; pri tom stlačenie a uloženie.
 
@@ -192,7 +195,7 @@ E.define({
 - Konkrétne okno sa adresuje cez `nth_of` a `hyprctl eval latte.win.%s(class, title, nth)`.
 
 **Ikry a strapce:**
-- Menšie (R0 22, tesné 17) v **samostatnom tele** (`sk = 1`, `zliatie 0.35`, `mlaka 0.15`).
+- Menšie (R0 22, tesné 17), **vlastná skupina** v spoločnom tele (`sk = 1`, `zliatie 0.35`, `mlaka 0.15`).
 - Okná tej istej aplikácie tvoria strapec (OFFS/JIT/ZIG). Hover ho rozvinie do radu, zbalí sa po 500 ms.
 - Aktívne okno ×1.06, minimalizované ×0.84 a stlmené.
 - Nad 96 okien vznikne kvapka „Ďalšie okná“, ktorá otvorí prehľad Noctalie.
@@ -348,6 +351,7 @@ batéria (stolný PC), reálny touchpad.
 
 ## 12. Commity enginu (najnovšie hore)
 
+- 5. 10.: jedno telo (spoločný obrys Goobaru), sadnutie v pokoji, pravidlo 22 na 0,95 a pri hre, kotva sleduje, veľkosť 100–220 %.
 - 5. 10.: overenie na latte-lab — ikony, ľavý klik, ponuka a bublina, záplata pásov tela.
 - `ad563d0`: pravidlo 22, neprekrývanie.
 - `e051ab7`: ikry vo vlastnom tele, menšie, uhýbajú oknám.
