@@ -447,7 +447,7 @@ function E.each(fn) for k = 0, N - 1 do if slots[k] then fn(slots[k]) end end en
 
 -- ikony: mená → znaky písma Tabler (latte-goo ikony; Noctalia ho má v /usr/share/noctalia)
 local wanted, glyphTimer = {}, nil
-local ctx_items, ctx_width = nil, nil       -- práve otvorená ponuka Goo (E.menu)
+local ctx_items, ctx_width, ctx_opts = nil, nil, nil       -- práve otvorená ponuka Goo (E.menu)
 function E.needGlyph(name)
     if not isName(name) or glyphs[name] then return end
     wanted[name] = true
@@ -464,19 +464,40 @@ function E.needGlyph(name)
             for _, n in ipairs(names) do glyphs[n] = glyphs[n] or "" end   -- neznáme meno: už sa nepýtať
             publish()
             -- ponuka otvorená skôr, než prišli znaky: nakresliť ju znova s ikonami (prvé otvorenie po štarte)
-            if fact.ctx_open and ctx_items then E.menu(ctx_items, ctx_width) end
+            if fact.ctx_open and ctx_items then
+                local o = {} for kk, vv in pairs(ctx_opts or {}) do o[kk] = vv end
+                o.keep = true
+                E.menu(ctx_items, ctx_width, o)
+            end
         end)
     end)
 end
 
 -- ── ponuka Goo (pravidlá 9–11): karta pri mieste kliku; položky { label, glyph (meno Tabler), hint, on, off, danger,
 -- sep, sub = { … } (podponuka so „Späť“), run = funkcia }. Miesto si scéna zapamätá pri stlačení kvapky.
-local ctx_actions = {}
-local CTX_MAX = 14
-function E.menu(items, width)
-    ctx_actions = {}
-    ctx_items, ctx_width = items, width
-    local out, y = {}, 6
+local ctx_actions, ctx_wheel, chip_actions = {}, {}, {}
+local ctx_id = nil
+local CTX_MAX = 16
+-- ktorá karta je práve otvorená (opts.id), aby ju jej majiteľ mohol obnovovať a neprepísal cudziu ponuku
+function E.menuId() return fact.ctx_open and ctx_id or nil end
+-- Karta Goo. Položky ako doteraz, navyše: big = veľký nadpis (čas, stopky), bar = pruh priebehu 0…1, keep = klik
+-- kartu nezavrie (prepínač, štart/stop), wheel = funkcia(smer ±1) pre koliesko nad riadkom.
+-- opts.chips = { { label, glyph, on, run } … } záložky hore; opts.keep = obnovenie otvorenej karty (živé údaje:
+-- nemení zvýraznený riadok)
+function E.menu(items, width, opts)
+    opts = opts or {}
+    ctx_actions, ctx_wheel, chip_actions = {}, {}, {}
+    ctx_items, ctx_width, ctx_opts = items, width, opts
+    ctx_id = opts.id
+    local chips = {}
+    for i, c in ipairs(opts.chips or {}) do
+        if i > 6 then break end
+        E.needGlyph(c.glyph)
+        local g = c.glyph and (glyphs[c.glyph] or "") or ""
+        chips[i] = { label = c.label or "", glyph = g, on = c.on == true, solo = (c.label or "") == "" }
+        chip_actions[i] = c.run
+    end
+    local out, y = {}, (#chips > 0 and 48 or 6)
     for _, it in ipairs(items) do
         if #out >= CTX_MAX then break end
         if it.sep and #out > 0 then y = y + 12 end
@@ -484,8 +505,10 @@ function E.menu(items, width)
         out[#out + 1] = { label = it.label or "", on = it.on and 1 or 0, off = it.off == true,
                           glyph = (it.glyph and (glyphs[it.glyph] or (isName(it.glyph) and "" or it.glyph))) or "",
                           hint = it.hint or "", danger = it.danger == true, sub = it.sub ~= nil or it.back ~= nil,
-                          back = it.back ~= nil, sep = it.sep == true and #out > 0, y = y }
-        y = y + 36
+                          back = it.back ~= nil, sep = it.sep == true and #out > 0, y = y,
+                          big = it.big == true, bar = num(it.bar, -1) }
+        y = y + (it.big and 50 or 36)
+        if it.wheel then ctx_wheel[#out] = it.wheel end
         if it.sub then
             local parent = items
             ctx_actions[#out] = function()
@@ -499,18 +522,23 @@ function E.menu(items, width)
             end
         elseif it.back then
             ctx_actions[#out] = function() E.menu(it.back, width) end
+        elseif it.keep then
+            ctx_actions[#out] = function() if it.run then it.run() end end
         else
             ctx_actions[#out] = function() fact.ctx_open = false if it.run then it.run() end end
         end
     end
     model.ctx = out
+    model.chip = chips
     fact.ctx_w = width or 248
     fact.ctx_h = y + 6
-    fact.ctx_hot = -1
+    if not opts.keep then fact.ctx_hot = -1 end
     fact.ctx_open = #out > 0
 end
 on("ctx_pick", function(k) local f = ctx_actions[(k or 0) + 1] if f then f() end end)
-on("ctx_close", function() ctx_actions = {} ctx_items = nil end)
+on("ctx_close", function() ctx_actions, ctx_wheel, chip_actions = {}, {}, {} ctx_items = nil end)
+on("ctx_scroll", function(v) local f = ctx_wheel[(v or 0) // 2 + 1] if f then f((v or 0) % 2 == 1 and 1 or -1) end end)
+on("ctx_chip", function(c) local f = chip_actions[(c or 0) + 1] if f then f() end end)
 
 -- ── vstupy zo scény ──────────────────────────────────────────────────────────────────────────────────────────
 local function hook(d, name, ...)

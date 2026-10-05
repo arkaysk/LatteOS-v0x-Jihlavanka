@@ -79,8 +79,11 @@ Spája čas a centrum upozornení (predtým TimeGoo a DaNoGoo).
 
 **Engine:** čas a dátum v kvapke, guľky počtu upozornení; ľavý = **hrozno upozornení** (kapsuly na lepkavom vlákne,
 najnovšie hore, najviac 8; klik otvorí, pravý akcie, odtiahnutie zahodí, klik na kvapku alebo mimo zavrie;
-kritické s červeným jadrom); pravý = vymazať všetko, pohoda a nastavenia času.
-**Chýba:** karta (stopky, minútka, budíky, kalendár, počasie), farba kapsuly podľa ikony aplikácie, Esc.
+kritické s červeným jadrom); pravý = **karta času** so záložkami Prehľad (dátum, týždeň, najbližší budík, digitálna
+pohoda s tromi aplikáciami, svetové hodiny, vymazať upozornenia) · Stopky (medzičasy) · Minútka (dĺžka kolieskom
+alebo predvoľba) · Budíky (hodina a minúta kolieskom). Minútka a budíky zvonia aj pri zavretej karte; bežiaca
+minútka alebo stopky sa ukazujú v kvapke namiesto dátumu. Údaje sú spoločné s plochou Kvapky (`casovace.json`).
+**Chýba:** kalendár s udalosťami a úlohami, počasie, farba kapsuly podľa ikony aplikácie, Esc, názov budíka.
 
 ### ChatGoo — Beeper
 

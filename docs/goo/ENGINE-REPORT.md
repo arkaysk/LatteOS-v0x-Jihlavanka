@@ -353,7 +353,8 @@ batéria (stolný PC), reálny touchpad.
 2. ✅ (5. 10.) Výkon GPU: záplata `pleamar-pasy-tela` namiesto ostrovov. Ostáva CPU (128 miest, §9).
 3. Preniesť zo Kvapiek do enginu (podľa Novej architektúry, `docs/goo/ROZHRANIE.md`):
    - LensGoo: okno spúšťača z kvapky (režimy, AI);
-   - ClockGoo: karta (pohoda, stopky, minútka, budíky, kalendár, počasie);
+   - ClockGoo: ✅ (5. 10.) karta času — prehľad, pohoda, svetové hodiny, stopky, minútka, budíky (`lib/cas.luau`);
+     chýba kalendár s udalosťami a počasie;
    - ✅ (5. 10.) ClockGoo: hrozno upozornení na vlákne (kapsuly `kw`/`t2`, `visi`, lepkavé vlákno, `hr_away`);
    - GooBar: ✅ presun k inému okraju (5. 10.); `reversed`, vlastný na každom monitore (engine je zatiaľ iba na hlavnom);
    - let bubliny do okna (pravidlo 14);
@@ -371,6 +372,7 @@ batéria (stolný PC), reálny touchpad.
 
 ## 12. Commity enginu (najnovšie hore)
 
+- 5. 10.: karta času ClockGoo (čipy, veľký riadok, pruh, koliesko v karte Goo; lib/cas.luau; latte-goo cas, zvon).
 - 5. 10.: hrozno upozornení ClockGoo, zakázaná zóna rohovej lišty, korunka QueenGoo, vlákna (strop 2,3, hrubšie korene).
 - 5. 10.: okraje (kvapky sa lepia ku každému okraju), gravitácia pri pustení, hlbšie sadnutie, engine na hlavnom monitore.
 - 5. 10.: Nová architektúra — GooBar, GooPower, LensGoo (jadro), QueenGoo, ClockGoo (voliteľné); Nastavenia › Kvapky.
