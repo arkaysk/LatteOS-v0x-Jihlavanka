@@ -1,7 +1,8 @@
 -- Goobar (lišta s oknami, LATTEOS-GOO.md 4.1): hlava = obraz režimu okien (plávajúce / dlaždice / páska); vpravo od
 -- nej okná ako ikry/hrozno po aplikáciách (lib/goobar.luau). Ľavý klik na hlavu = ďalší režim okien, koliesko =
 -- páska sa posúva / ďalšie okno. Rozmery a rozostupy ako v ploche Kvapky (TimeGoo 92 px vľavo, PowerGoo ďalších 66).
--- Hlava je v oboch goo telách (sk = 2): spája sa s TimeGoo aj so svojimi oknami; okná iba s ňou.
+-- Hlava patrí do oboch skupín (sk = 2): spája sa s TimeGoo aj so svojimi oknami; okná iba s ňou. Všetko je jedno
+-- goo telo, takže obrys je spoločný (dve telá kreslili okolo hlavy deliacu čiaru aj tam, kde bola zliata).
 local goobar = require("lib/goobar")
 return {
     id = "goobar", nazov = "Goobar", ikona = "app-window", povaha = "pokojna", velkost = 44, vyska = 22, sk = 2,

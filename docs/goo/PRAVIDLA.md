@@ -38,7 +38,7 @@ Zásady správania kvapiek, fyziky a vstupov. **Záväzné pri vývoji.**
 19. **Vietor** — náhodný smer, občas aj pri práci; menšie kvapky sa vlnia viac
 20. **Krk iba po vzdialenosť** — odtrhnutie po 1,6 polomeru (dlhý krk je nepekný), návrat k okraju ako ponor
 21. **Oká ostré** — okrajová čiara medzi spojmi kvapiek je ostrá (nie rozmazaná), vlákno spája susedov
-22. **Neprekrývanie** — kvapky sa zlieva, ale nikdy sa úplne neprekryjú
+22. **Neprekrývanie** — kvapky sa zlievajú, ale neprekrývajú: ani keď je kurzor ďaleko, ani pri hre; zvýraznený okraj zliatych kvapiek je spoločný (bez deliacej čiary)
 
 ---
 
@@ -49,10 +49,14 @@ Zásady správania kvapiek, fyziky a vstupov. **Záväzné pri vývoji.**
 - Vzájomné pôsobenie iba v blízkosti
 - Lepia sa k okraju a k sebe
 
+### Pokoj
+- Kým kurzor nie je nablízku, kvapky si sadnú dole k lište a sploštia sa
+- Pri kurzore sa zdvihnú a zaguľatia
+
 ### Vlákna a spájanie
 - Iba na vzdialenosti trojice (vypínač–Hodiny–lišta)
 - Vlákno sa naťahuje a trhá, po určitej dĺžke praskne
-- Cada kvapka je v **jednom goo tele** — všetky sa spájajú, keď sú blízko
+- Každá kvapka je v **jednom goo tele** — všetky sa spájajú, keď sú blízko (aj Goobar a ikry okien)
 
 ### Hladina
 - Okraj obrazovky = voda
@@ -76,7 +80,7 @@ Zásady správania kvapiek, fyziky a vstupov. **Záväzné pri vývoji.**
 
 - **Stupeň 1** (po ~1 min) — zaspávajú (menšie nadnesenie)
 - **Stupeň 2** (po ~3 min) — počasie: dážď alebo vietor podľa Open-Meteo
-- **Stupeň 3** (po ~6 min) — hra: naháňačka so zrážkou, behanie, skákanie
+- **Stupeň 3** (po ~6 min) — hra: naháňačka so zrážkou, behanie (ostatné uhnú), skákanie; nič sa neprekryje
 
 ### Prebudenie
 - Okamžité — pohyb myši alebo kláves

@@ -14,7 +14,8 @@ local M = {}
 
 local HEAD = "goobar"
 local SLOTS = 96                    -- okien v lište najviac (engine má 128 miest, ostatné kvapky potrebujú svoje)
--- ikry sú menšie než ostatné kvapky (nezamieňajú sa s nimi) a lepia sa iba ku Goobaru: vlastné goo telo (sk = 1)
+-- ikry sú menšie než ostatné kvapky (nezamieňajú sa s nimi) a lepia sa iba ku Goobaru: skupina sk = 1 (susedia,
+-- voda a vlákna iba v nej a s hlavou; cudzie kvapky od ikier odsúva pravidlo 22). Telo goo je jedno pre všetky
 local R0 = 22
 local R_TIGHT = 17                  -- pod oknom: menšie, v cik-cak rade pri okraji
 local OFFS = { { 0, 0 }, { 1.72, -0.42 }, { 0.78, -1.62 }, { -0.98, -1.3 }, { 2.28, -1.86 },
@@ -178,7 +179,7 @@ local function layout()
                 ikona = "app-window",            -- bez spúšťača (žiadna ikona aplikácie): znak okna
                 pri = HEAD, odstup = e.x, vyska = r * 0.8 - e.y, povaha = "pokojna",
                 gravitacia = 0.15, vznos = e.tight and 0.15 or 0.55, lepivost = 0.35, rast = 0.1, dosah = 160, okno = i,
-                sk = 1,                          -- vlastné goo telo: lepí sa iba ku Goobaru
+                sk = 1,                          -- skupina Goobaru: lepí sa iba k nemu
                 zliatie = 0.35, mlaka = 0.15,    -- jednotlivé bobule hrozna s tenkými spojmi, nie jedna hmota
                 klik = function(dd) M.click(dd) end, pravy = function(dd) M.menu(dd) end,
                 nad = function(dd) M.hover(dd) end, prec = function(dd) M.unhover(dd) end,

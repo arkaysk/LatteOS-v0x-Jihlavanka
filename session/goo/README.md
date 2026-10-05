@@ -27,7 +27,7 @@ V ploche Kvapky má každá kvapka vlastnú kópiu pravidiel: polohu, ťahanie, 
 | používateľ | `lib/pouzivatel.luau` + `latte-goo` | kvapky z JSON, za behu (bez reštartu) |
 | kvapky | `kvapky/*.luau` | moduly: **TimeGoo, PowerGoo a hlava Goobaru** (rozmery a rozostupy ako v Kvapkách, na porovnanie), počítadlo, hodiny, zvedavka, lepkavá, ťažká, bublinka, kvapôčka |
 | príklady | `priklady/*.json` | kvapky používateľa (kalkulačka, systém) |
-| Goobar | `lib/goobar.luau` | okná ako kvapky (ikry po aplikáciách, vlastné goo telo, menšie, uhýbajú oknám pri lište), pomenovanie okien, ponuka okna, režim okien |
+| Goobar | `lib/goobar.luau` | okná ako kvapky (ikry po aplikáciách, vlastná skupina, menšie, uhýbajú oknám pri lište), pomenovanie okien, ponuka okna, režim okien |
 
 **Kvapky plochy v engine:** `goobar` (hlava + okná), `timegoo`, `powergoo` (ponuka, batéria), `queengoo` (guľky,
 App Manager / Správca zariadení), `danogoo` (dátum, upozornenia). Spoločné: **ponuka Goo** (`E.menu`, karta pri
@@ -75,7 +75,7 @@ mieste kliku, podponuky, preklady), **guľky** (`d:gulky(n, farby)`), **ikona ap
   najneskôr po 1,6 polomeru (dlhý krk je nepekný).
 - **Oká a ostrý okraj (pravidlo 21):** záplata `pleamar-ostre-okraje` vyhladzuje hranu podľa skutočnej zmeny
   vzdialenosti na pixel, preto je okraj ôk ostrá čiara; tieň je tesný (0, 2, 2).
-- **Neprekrývanie (pravidlo 22):** kvapky sa môžu zlievať, ale nie úplne prekryť. Stredy ostanú aspoň 0,72 súčtu
+- **Neprekrývanie (pravidlo 22):** kvapky sa môžu zlievať, ale nie úplne prekryť. Stredy ostanú aspoň 0,95 súčtu
   polomerov od seba, inak sa jedna plynule odsunie, aj reťazovo. Ustúpi tá, na ktorú pustili, nikdy okná Goobaru ani
   pripnuté kvapky. `E.separate()` po pustení, pridaní, zmene veľkosti a zmene okien.
 - **Efekty scény:** `dych`, `kmit`, `tras`, `obeh`, `tlkot` (+ `sila`).
@@ -130,7 +130,7 @@ Príkazy vykoná `latte-goo` podľa id kvapky a mena akcie. Logika scény nikdy 
 - vzhľad: `efekt` + `sila`, `druh` (`ikona` | `ukazovatel` s `hodnota` 0…1);
 - ďalšie: `tahat` (true/false), `poloha` (`x` = podiel šírky, `y` = px nad lištou);
 - skupina: `pri` (id inej kvapky) + `odstup` (px), `vyska` (stred nad okrajom, px), `vznos` 0…2;
-- goo telo a zliatie: `sk` (0 hlavné, 1 iba telo Goobaru, 2 obe), `zliatie` (sila zliatia so susedmi), `mlaka` (mláka a voda pri okraji 0…1).
+- skupina a zliatie: `sk` (0 ostatné kvapky, 1 ikry Goobaru, 2 hlava Goobaru — patrí do oboch; telo goo je jedno), `zliatie` (sila zliatia so susedmi), `mlaka` (mláka a voda pri okraji 0…1).
 
 Farba nie je: kvapky sú vždy káva.
 

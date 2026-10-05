@@ -102,7 +102,9 @@ samostatný tekutý prvok.
 
 22. **Kvapky sa nikdy úplne neprekryjú** (1. 10. večer): môžu byť pri sebe a zlievať sa, ale keď napr. ťahaním
    pustím jednu na druhú, jedna sa vždy odsunie od druhej. Hlava Goobaru sa s ostatnými kvapkami spája (TimeGoo),
-   ikry okien iba s ňou.
+   ikry okien iba s ňou. **Spresnenie 5. 10. (naživo na latte-lab):** kvapky sa nesmú prekrývať ani vtedy, keď je
+   kurzor ďaleko, ani pri hre (nečinnosť) — iba sa dotýkajú a zlievajú. **Zvýraznený okraj je spoločný:** kde je
+   Goobar zliaty s inou kvapkou, nesmie medzi nimi ostať deliaca čiara obrysu.
 
 ---
 
@@ -128,6 +130,8 @@ samostatný tekutý prvok.
   po nej sa rozbehnú **dve vlnky**; po prasknutí krku ostane chvíľu **zvyšková kvapka**.
 - **Pohyb kolmo na okraj:** kvapka vystúpi **kolmo od okraja**, späť **padne rovno ako pod ťarchou**, s
   prestrelením a odrazom („odkvapne“), zachveje sa.
+- **Pokoj (5. 10.):** kým kurzor nie je nablízku, kvapky na lište si **sadnú** — zasunú sa dole k lište a
+  **sploštia sa**; zdvihnú a zaguľatia sa až pri kurzore.
 - **Živý tvor:** kurzor je pre kvapky to, **po čom túžia** — keď sa priblíži, kvapka sa k nemu **nakloní** (venuje
   mu pozornosť); keď je nad ňou, **mierne sa nafúkne a netrpezlivo pulzuje**. Tvár/obsah sa hoverom **nemení**.
 - **Svetlo:** pasívne svetlo v ploche (zhora vľavo, odlesky) + **kurzor ako aktívne svetlo** (svetlá škvrna na
@@ -199,7 +203,8 @@ lepivosť, veľkosť a rezervu na ďalšie efekty.
   - vietor (nárazy, smer náhodný, postupná vlna pozdĺž okraja, malé kvapky viac);
   - ponor pri návrate k okraju; odtrhnutie najneskôr po 1,6 polomeru;
   - ostrý okraj (tieň 0, 2, 2).
-- **Pravidlo 22 v engine:** stredy dvoch kvapiek ostanú aspoň 0,72 súčtu polomerov od seba (zliatie áno, prekrytie
+- **Pravidlo 22 v engine:** stredy dvoch kvapiek ostanú aspoň 0,95 súčtu polomerov od seba (pôvodne 0,72 — veľká
+  kvapka vtedy malú skoro celú zakryla; zmenené 5. 10.) (zliatie áno, prekrytie
   nie). Po pustení, pridaní, zmene veľkosti a zmene okien sa jedna plynule odsunie: na lište pozdĺž lišty, voľná od
   druhej. Ustúpi posunuteľná (nie okná Goobaru ani pripnuté TimeGoo a PowerGoo); z dvoch tá, na ktorú pustili.
   Odsúvanie sa reťazí a uloží.
@@ -210,7 +215,7 @@ lepivosť, veľkosť a rezervu na ďalšie efekty.
     rozvinutie pod myšou, aktívne plnšie, minimalizované stlmené, klik = prepnúť/minimalizovať, pravý = ponuka okna,
     ťahanie = poradie aplikácií, hlava = režim okien, koliesko = páska/ďalšie okno, nad 96 okien „ďalšie okná“.
   - **Ikry okien (spresnenie používateľa 1. 10.):** sú menšie než ostatné kvapky, aby sa s nimi nezamieňali, a lepia sa
-    **iba ku Goobaru** — v engine majú vlastné goo telo (hlava Goobaru je v oboch, ikry a ostatné kvapky sa nezlejú),
+    **iba ku Goobaru** — v engine sú vlastná skupina (od 5. 10. v spoločnom tele, pozri nižšie; ikry a ostatné kvapky sa nezlejú),
     slabšie zliatie a takmer žiadnu mláku (bobule s tenkými spojmi). Okná tej istej aplikácie sa zhlukujú do strapca;
     keď by strapec zavadzal otvorenému oknu (okno Hyprlandu je nad ním a siaha k lište), **uhne k okraju** do
     menšieho cik-cak radu pod oknom; keď okno odíde, znova sa zhlukne. Okná nad lištou dáva `latte-goo okna`
@@ -236,6 +241,18 @@ lepivosť, veľkosť a rezervu na ďalšie efekty.
   `pleamar-pasy-tela` (pixel počíta iba tvary vo svojom dosahu, obraz rovnaký) to znížila na 35–41 % a záťaž už
   nerastie s počtom kvapiek — „ostrovy“ netreba. Ostáva CPU (asi 1,7× Kvapky). Podrobnosti:
   `docs/goo/ENGINE-REPORT.md` §9–10.
+- **Úpravy 5. 10. podľa pozorovaní používateľa na latte-lab:**
+  - **jedno goo telo** pre všetko vrátane Goobaru a ikier (druhé telo kreslilo okolo hlavy vlastný obrys aj tam, kde
+    bola zliata s TimeGoo); `sk` je už iba skupina — susedia, voda a vlákna v nej; cudzie kvapky drží pravidlo 22
+    od ikier ďalej (1,2 súčtu polomerov), aby sa s nimi nezliali;
+  - **sadnutie v pokoji** (`sit`): kvapka na lište sa zasunie k hladine (stred ostane aspoň 0,45 polomeru nad ňou,
+    aby bolo vidieť obsah) a sploští o 13 %; pri kurzore alebo susedovi sa zdvihne; pri nečinnosti sadne hlbšie.
+    Kvapka s prstencom (druh 1) nesadá;
+  - **hra pri nečinnosti bez prekrývania:** bežiaca kvapka skočí ponad ostatné, tie jej **uhnú** (reťazovo) a po
+    behu sa všetko vráti; pri naháňačke sa iba pritisne (stlačenie oboch) a odrazí späť; dopad sploští a zvlní
+    hladinu. Merané 50 s: najmenší rozostup 0,95 súčtu polomerov;
+  - **kotva (`pri`) sleduje aktuálnu polohu** kotvy: po potiahnutí hlavy Goobaru idú ikry s ňou, PowerGoo s TimeGoo;
+  - **veľkosť 100–220 %** (kolieskom sa dalo zmenšiť na 60 %, obsah potom pretekal).
 - Ďalej: znížiť CPU enginu, potom presunúť TimeGoo, PowerGoo,
   DaNoGoo, QueenGoo a ChatGoo na engine (po jednej, snímky pred a po). Živé bytosti z 3.1 (dážď/vietor) a formulár
   v Nastaveniach › Kvapky pribudnú nad enginom.

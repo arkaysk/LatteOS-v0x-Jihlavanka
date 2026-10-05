@@ -18,15 +18,15 @@ def pick(fmt):
     return "pick(nk, " + ", ".join(fmt.format(k=k) for k in range(N)) + ")"
 
 
-def slot(k, m):
-    """tvary miesta k; m = podmienka tela (hlavné: sk != 1, Goobar: sk >= 1) — inak nulová veľkosť (nič nestoja)"""
+def slot(k):
+    """tvary miesta k; prázdne miesto má nulovú veľkosť (so záplatou pleamar-prazdne-tvary nič nestojí)"""
     return [
-        f"        ellipse {{ at: x.{k}, floor + 4; radius: rr.{k} * 0.5 * base.{k} * {m}; scale: 1.6, 0.5; blend: 14 }}\n",
-        f"        line {{ from: x.{k}, floor + 6; to: x.{k}, y.{k}; width: rr.{k} * 2 * stalk.{k} * {m}; blend: 14 }}\n",
+        f"        ellipse {{ at: x.{k}, floor + 4; radius: rr.{k} * 0.5 * base.{k}; scale: 1.6, 0.5; blend: 14 }}\n",
+        f"        line {{ from: x.{k}, floor + 6; to: x.{k}, y.{k}; width: rr.{k} * 2 * stalk.{k}; blend: 14 }}\n",
         # voda leží POD hladinou (ako „voda pod okrajom“ v Kvapkách): nad ňu sa dvíha iba zliatím, pod vláknom ostane oko
-        f"        line {{ from: x.{k}, floor + wa.{k}; to: thx.{k}, floor + wa.{k}; width: wa.{k} * 2 * {m}; blend: 16 }}\n",
-        f"        ellipse {{ at: x.{k}, y.{k}; radius: rr.{k} * {m}; scale: 1 + fxw.{k}, 1 - fxw.{k}; blend: lk.{k} + 6 * near.{k} }}\n",
-        f"        line {{ from: x.{k}, y.{k} - thy0.{k}; to: thx.{k}, thy.{k}; width: th.{k} * {m}; blend: 12 * clamp(th.{k} / 3, 0, 1) }}\n",
+        f"        line {{ from: x.{k}, floor + wa.{k}; to: thx.{k}, floor + wa.{k}; width: wa.{k} * 2; blend: 16 }}\n",
+        f"        ellipse {{ at: x.{k}, y.{k}; radius: rr.{k}; scale: 1 + fxw.{k}, 1 - fxw.{k}; blend: lk.{k} + 6 * near.{k} }}\n",
+        f"        line {{ from: x.{k}, y.{k} - thy0.{k}; to: thx.{k}, thy.{k}; width: th.{k}; blend: 12 * clamp(th.{k} / 3, 0, 1) }}\n",
     ]
 
 
@@ -36,7 +36,7 @@ def body():
         # mláka pri okraji, stopka pri nadnesení, voda k susedovi vpravo, kvapka so zliatím lk (mení sa s tokom a
         # nadnesením), goo vlákno k susedovi vpravo. Prázdne/nepoužité tvary majú nulovú veľkosť: so záplatou
         # pleamar-prazdne-tvary nestoja nič.
-        out += slot(k, f"if(goo.{k}.sk != 1, 1, 0)")
+        out += slot(k)
     # vlnky na hladine: kameň = dva hrebene, ktoré sa rozbiehajú od miesta dopadu a slabnú; vibrácia = chvejúci sa hrb
     for i in range(4):
         for sgn in (-1, 1):
@@ -51,13 +51,6 @@ def body():
     return "".join(out)
 
 
-def body_goobar():
-    out = []
-    for k in range(N):
-        out += slot(k, f"if(goo.{k}.sk >= 1, 1, 0)")
-    return "".join(out)
-
-
 def put(path, a, b, block):
     s = open(path).read()
     i, j = s.index(a) + len(a), s.index(b)
@@ -67,7 +60,6 @@ def put(path, a, b, block):
 
 p = os.path.join(HERE, "goo.plm")
 put(p, "        // >>> telo (gen.py)\n", "        // <<< telo", body() + "        ")
-put(p, "        // >>> goobar (gen.py)\n", "        // <<< goobar", body_goobar() + "        ")
 s = open(p).read()
 s = re.sub(r"model goo max \d+", f"model goo max {N}", s)
 s = re.sub(r"repeat k in 0\.\.\d+", f"repeat k in 0..{N}", s)
