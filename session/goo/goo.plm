@@ -221,6 +221,8 @@ scene Goo {
         prop hov.$k = 0 ~rastie
         prop sq.$k = 0 ~pada                  // stlačenie (squish) pri zrážke
         prop vib.$k = 0 ~0ms
+        // pomer veľkosti obsahu kvapky (ikona, text) voči polomeru 26 — bez dychu; používa ho skupina s obsahom
+        prop ts.$k = 1 ~rastie
         // domov v px; ox = posun v px (kvapka „pri“ inej o presný odstup, napr. PowerGoo 66 px vľavo od TimeGoo)
         // okraj kvapky: n = kolmo od okraja dnu, t = pozdĺž neho. Všetko ďalej (nadnesenie, sadnutie, mláka, stopka,
         // vlákna) sa počíta v tejto sústave, takže kvapka sa na každom okraji správa rovnako
@@ -353,6 +355,7 @@ scene Goo {
         // na lište: v pokoji kúsok vystupuje a klesá s tokom, pri kurzore sa nadnesie. Prázdne miesto pod obrazovku
         // (bez záplaty pleamar-prazdne-tvary by bod nulovej veľkosti cez zliatie vydul hrbček)
         follow y.$k = if(goo.$k.on, py.$k + fxy.$k + e3.$k + ny.$k * nrm.$k, H + 400)
+        follow ts.$k = r0.$k / 26
         follow rr.$k = r0.$k * (1 + life.$k + fxs.$k + e1.$k) * if(goo.$k.on, 1, 0)
         // zliatie (link v Kvapkách: 10 + 16 · nadnesenie + 10 · tok) — v pokoji spája iba okraj, pri kurzore mosty
         follow lk.$k = (10 + 16 * lift.$k + 10 * fl.$k) * goo.$k.zl
@@ -1360,15 +1363,32 @@ scene Goo {
     }
     // odlesky: svetlo kurzora na každej kvapke (bližšie = jasnejšie)
     repeat k in 0..128 {
-        let rs.$k = rr.$k / 26                // pomer veľkosti (texty: `size:` = číslo × pomer)
         ellipse { at: x.$k + (cursor.x - x.$k) / max(length(cursor.x - x.$k, cursor.y - y.$k), 1) * rr.$k * 0.45, y.$k + (cursor.y - y.$k) / max(length(cursor.x - x.$k, cursor.y - y.$k), 1) * rr.$k * 0.45; radius: rr.$k * 0.16; scale: 1.4, 0.8; color: cream; opacity: goo.$k.svetlo * (0.25 + 0.5 * clamp(1 - length(cursor.x - x.$k, cursor.y - y.$k) / 420, 0, 1)) }
         // žiara okraja (rezerva e4)
         ellipse { at: x.$k, y.$k; radius: rr.$k + 3; stroke: 2.5 * e4.$k; color: #f7c873; opacity: clamp(e4.$k, 0, 1) }
         // druh 1: ukazovateľ (prstenec podľa hodnoty)
         arc { at: x.$k, y.$k; radius: rr.$k * 0.78; span: clamp(goo.$k.hodnota, 0, 1) * 360deg; rotate: clamp(goo.$k.hodnota, 0, 1) * 180deg; width: max(2, rr.$k * 0.12); color: #f7c873; opacity: if(goo.$k.druh == 1 and goo.$k.on, 0.9, 0) }
-        text goo.$k.ikona { at: x.$k - goo.$k.kw, y.$k - if(goo.$k.druh == 1 or goo.$k.kw > 0, 0, rr.$k * 0.08); anchor: center; size: 20 * rs.$k; color: ink; opacity: if(goo.$k.on and goo.$k.druh != 2 and not goo.$k.img, 0.92, 0) * (1 - 0.55 * goo.$k.tlm); family: "noctalia-tabler-icons" }
+        // OBSAH KVAPKY RASTIE S ŇOU (nafukovanie kolieskom). Veľkosť písma je v pleamare iba pevné číslo — násobiteľ sa
+        // ignoruje (overené: `size: 14 * f` kreslí 14). Text je preto nakreslený 2,4× väčší a skupina ho zmenší alebo
+        // zväčší podľa kvapky (gs); posuny vnútri skupiny sú delené gs, aby ostali v pixeloch obrazovky.
+        let gs.$k = max(ts.$k / 2.4, 0.01)
+        group {
+            pivot: x.$k, y.$k
+            scale: gs.$k
+            text goo.$k.ikona { at: x.$k - goo.$k.kw / gs.$k, y.$k - if(goo.$k.druh == 1 or goo.$k.kw > 0, 0, rr.$k * 0.08) / gs.$k; anchor: center; size: 48; color: ink; opacity: if(goo.$k.on and goo.$k.druh != 2 and not goo.$k.img, 0.92, 0) * (1 - 0.55 * goo.$k.tlm); family: "noctalia-tabler-icons" }
+            text goo.$k.nad { at: x.$k + if(goo.$k.ed == 1, 1, if(goo.$k.ed == 3, -1, 0)) * (rr.$k + 5) / gs.$k, y.$k + if(goo.$k.ed == 0, -1, if(goo.$k.ed == 2, 1, 0)) * (rr.$k + 5) / gs.$k; anchor: center; size: 48; color: #e8b84a; outline: 3, #3a2410; opacity: if(goo.$k.on, 1, 0); family: "noctalia-tabler-icons" }
+            text goo.$k.text { at: x.$k, y.$k + rr.$k * 0.42 / gs.$k; anchor: center; size: 21.6; weight: 700; color: ink; opacity: if(goo.$k.on and goo.$k.druh != 2 and goo.$k.kw == 0, 0.9, 0) }
+            // druh 2 (hodiny): pod ním dátum; veľký čas je vo vlastnej skupine (malé goo ho má väčší)
+            text goo.$k.text { at: x.$k, y.$k + rr.$k * 0.36 / gs.$k; anchor: center; size: 19.2; color: ink; opacity: if(goo.$k.on and goo.$k.druh == 2 and goo.$k.z >= 0.8, 0.75, 0); family: "Inter" }
+        }
+        // úroveň detailov: pod 80 % ukáže hodinové goo iba čas — väčší a v strede
+        let gb.$k = gs.$k * if(goo.$k.z < 0.8, 1.25, 1)
+        group {
+            pivot: x.$k, y.$k
+            scale: gb.$k
+            text goo.$k.ikona { at: x.$k, y.$k - rr.$k * if(goo.$k.z < 0.8, 0, 0.12) / gb.$k; anchor: center; size: 33.6; weight: 700; color: ink; opacity: if(goo.$k.on and goo.$k.druh == 2, 1, 0); family: "Inter" }
+        }
         // korunka (QueenGoo): znak na vonkajšej strane kvapky, od okraja preč; zlatá s tmavým obrysom ako v Kvapkách
-        text goo.$k.nad { at: x.$k + if(goo.$k.ed == 1, 1, if(goo.$k.ed == 3, -1, 0)) * (rr.$k + 5), y.$k + if(goo.$k.ed == 0, -1, if(goo.$k.ed == 2, 1, 0)) * (rr.$k + 5); anchor: center; size: 20 * rs.$k; color: #e8b84a; outline: 1.5, #3a2410; opacity: if(goo.$k.on, 1, 0); family: "noctalia-tabler-icons" }
         // ikona aplikácie (okno v Goobari): obrázok podľa mena ikony zo spúšťača; minimalizované okno stlmené
         image obr.$k = from goo.$k.obr, 30, 30
         image obr.$k { at: x.$k - goo.$k.kw - rr.$k * 0.52, y.$k - rr.$k * 0.52; size: rr.$k * 1.04, rr.$k * 1.04; opacity: if(goo.$k.on and goo.$k.img, 1 - 0.55 * goo.$k.tlm, 0); show: goo.$k.img }
@@ -1379,13 +1399,10 @@ scene Goo {
             ellipse { at: x.$k + if(goo.$k.ed == 1, rr.$k * 0.82 + j * 1.5, if(goo.$k.ed == 3, -rr.$k * 0.82 - j * 1.5, rr.$k * 0.78 - j * 9)), y.$k + if(goo.$k.ed == 0, -rr.$k * 0.82 - j * 1.5, if(goo.$k.ed == 2, rr.$k * 0.82 + j * 1.5, -rr.$k * 0.5 + j * 9)); radius: if(j == 3 and goo.$k.gn > 4, 7.5, 4.2); color: if(gc.$j == 0, #e5484d, if(gc.$j == 1, #30a46c, if(gc.$j == 2, #3e63dd, if(gc.$j == 3, #f5c518, if(gc.$j == 4, #8a2a22, #ffe8c2))))); opacity: if(goo.$k.on and j < goo.$k.gn, 0.95, 0); show: goo.$k.gn > j }
         }
         text goo.$k.gt { at: x.$k + if(goo.$k.ed == 1, rr.$k * 0.82 + 4.5, if(goo.$k.ed == 3, -rr.$k * 0.82 - 4.5, rr.$k * 0.78 - 27)), y.$k + if(goo.$k.ed == 0, -rr.$k * 0.82 - 4.5, if(goo.$k.ed == 2, rr.$k * 0.82 + 4.5, -rr.$k * 0.5 + 27)); anchor: center; size: 8; weight: 700; color: #fff6ea; show: goo.$k.gn > 4; family: "Inter" }
-        text goo.$k.text { at: x.$k, y.$k + rr.$k * 0.42; anchor: center; size: 9 * rs.$k; weight: 700; color: ink; opacity: if(goo.$k.on and goo.$k.druh != 2 and goo.$k.kw == 0, 0.9, 0) }
         // kapsula (kw > 0): názov a pod ním popis, vľavo zarovnané za ikonou
         text goo.$k.text { at: x.$k - goo.$k.kw + rr.$k + 2, y.$k - if(goo.$k.kr > 1, 8, 0); anchor: left center; size: 12; weight: 600; color: ink; width: goo.$k.kw * 2 - 6; lines: 1; opacity: if(goo.$k.on and goo.$k.kw > 0, 0.95, 0); family: "Inter" }
         text goo.$k.t2 { at: x.$k - goo.$k.kw + rr.$k + 2, y.$k + 8; anchor: left center; size: 11; color: ink; width: goo.$k.kw * 2 - 6; lines: 1; opacity: if(goo.$k.on and goo.$k.kw > 0, 0.65, 0); family: "Inter" }
         // druh 2 (hodiny, ako TimeGoo): veľký čas a pod ním dátum, písmo Inter
-        text goo.$k.ikona { at: x.$k, y.$k - rr.$k * if(goo.$k.z < 0.8, 0, 0.12); anchor: center; size: 14 * rs.$k * if(goo.$k.z < 0.8, 1.25, 1); weight: 700; color: ink; opacity: if(goo.$k.on and goo.$k.druh == 2, 1, 0); family: "Inter" }
-        text goo.$k.text { at: x.$k, y.$k + rr.$k * 0.36; anchor: center; size: 8 * rs.$k; color: ink; opacity: if(goo.$k.on and goo.$k.druh == 2 and goo.$k.z >= 0.8, 0.75, 0); family: "Inter" }
     }
     // ponuka Goo: karta z kávy do farby okien, ucho v rohu pri mieste kliku
     // karta Goo: zóny a obsah (rám a ucho sú vyššie, pod obsahom kvapiek — ucho je sama kvapka)
