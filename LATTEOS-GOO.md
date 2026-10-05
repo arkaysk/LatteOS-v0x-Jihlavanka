@@ -643,6 +643,14 @@ Ide sa **po poradí**; nové nápady sa zapíšu na koniec (E), nerozbiehajú sa
 - **bubliny četov** pre viac kanálov (Messenger, Telegram, Signal, ICQ…) — forma sa ešte premyslí (používateľ);
   nie ako režim spúšťača a **nie spojené s DaNoGoo** (1. 10.)
 - materiál aj na oknách aplikácií pri kovových témach (textúra v hlavičke okna — upravený hyprbars)
+- **Obchod podľa ZimaOS (používateľ 5. 10., so snímkou ich App Store):** vylepšenia obchodu z cloudu boli myslené
+  takto a „aktuálna ponuka je nedostatočná“. Vzor: vľavo stály panel — hľadanie, Moje aplikácie, **kategórie ako
+  zoznam** (Objavte, Všetko, Médiá, Produktivita, Domácnosť, Sieť, AI, Financie, Sociálne, Vývojár, Ostatné)
+  a **komunitné obchody** (zdroje tretích strán s nastavením); vpravo veľký **kolotoč bannerov** (dva naraz, snímka
+  aplikácie, ikona, názov, slogan, bodky a šípky), pod ním **Trending Now** a **New Arrivals** ako veľké karty
+  s obrázkom, názvom, popisom a ikonou. Dnešný stav: jeden banner, kategórie ako tlačidlá, pásy malých kariet
+  (104 px) a kurátorský výber až úplne dole. Údaje na to už máme (Flathub: snímky, ikony, popisy; kurátorské
+  výbery Bluefin a Bazzite môžu byť „komunitné obchody“ v paneli). Zatiaľ iba zapísané, nevytvorené.
 
 ---
 
