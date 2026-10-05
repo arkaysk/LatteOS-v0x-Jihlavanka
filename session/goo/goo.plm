@@ -220,6 +220,7 @@ scene Goo {
         fact tr.$k = 0
         prop hov.$k = 0 ~rastie
         prop sq.$k = 0 ~pada                  // stlačenie (squish) pri zrážke
+        prop vib.$k = 0 ~0ms
         // domov v px; ox = posun v px (kvapka „pri“ inej o presný odstup, napr. PowerGoo 66 px vľavo od TimeGoo)
         // okraj kvapky: n = kolmo od okraja dnu, t = pozdĺž neho. Všetko ďalej (nadnesenie, sadnutie, mláka, stopka,
         // vlákna) sa počíta v tejto sústave, takže kvapka sa na každom okraji správa rovnako
@@ -300,8 +301,8 @@ scene Goo {
         prop fxw.$k = 0 ~0ms
         follow fxw.$k = (goo.$k.fa * if(goo.$k.fx == 2, 0.07 * noise(k * 1.7, time * 1.6), 0) + sq.$k * 0.09 + jit.$k + sit.$k * 0.13) * if(ty.$k > 0, -1, 1)
         let wob.$k = (2 + 4 * lift.$k) * small.$k * noise(time * 0.1 + k * 3.1) + sway.$k * dk.$k
-        let fxx.$k = goo.$k.fa * (if(goo.$k.fx == 3, 2.5 * noise(k, time * 18), 0) + if(goo.$k.fx == 4, 4 * cos(time * 80 + k * 40), 0)) + wob.$k * tx.$k
-        let fxy.$k = goo.$k.fa * (if(goo.$k.fx == 3, 2.5 * noise(k + 9, time * 18), 0) + if(goo.$k.fx == 4, 4 * sin(time * 80 + k * 40), 0)) + noise(k * 5.7, time * 0.2) + wob.$k * ty.$k
+        let fxx.$k = goo.$k.fa * (if(goo.$k.fx == 3, 2.5 * noise(k, time * 18), 0) + if(goo.$k.fx == 4, 4 * cos(time * 80 + k * 40), 0)) + wob.$k * tx.$k + vib.$k * 4 * sin(time * 2600 + k * 40) * tx.$k
+        let fxy.$k = goo.$k.fa * (if(goo.$k.fx == 3, 2.5 * noise(k + 9, time * 18), 0) + if(goo.$k.fx == 4, 4 * sin(time * 80 + k * 40), 0)) + noise(k * 5.7, time * 0.2) + wob.$k * ty.$k + vib.$k * 4 * sin(time * 2600 + k * 40) * ty.$k
         // rezerva pre logiku (e1…e4), s pružinou
         prop e1.$k = 0 ~rezerva
         prop e2.$k = 0 ~rezerva
@@ -421,8 +422,11 @@ scene Goo {
         on release hit.$k while drg.$k > 0 { rx = hxp.$k + dx.$k * mv.$k; ry = hyp.$k + dy.$k * mv.$k; emit goo_drop(k) }
         fact hopn.$k = 0
         fact sqn.$k = 0
+        fact vibn.$k = 0
         on change hopn.$k { impulse py.$k -520 }
         on change sqn.$k { impulse sq.$k 9 }
+        // zavibrovanie: klik tlačidlom, pre ktoré kvapka nemá funkciu (krátke rýchle chvenie do strán)
+        on change vibn.$k { vib.$k: 1 ~0ms; vib.$k: 0 ~420ms after 16ms }
     }
 
     // nečinnosť (§3.1): 1 zaspávajú (menšie nadnesenie), 2 počasie (rezerva), 3 hra; pohyb myši ich hneď zobudí
@@ -1380,8 +1384,8 @@ scene Goo {
         text goo.$k.text { at: x.$k - goo.$k.kw + rr.$k + 2, y.$k - if(goo.$k.kr > 1, 8, 0); anchor: left center; size: 12; weight: 600; color: ink; width: goo.$k.kw * 2 - 6; lines: 1; opacity: if(goo.$k.on and goo.$k.kw > 0, 0.95, 0); family: "Inter" }
         text goo.$k.t2 { at: x.$k - goo.$k.kw + rr.$k + 2, y.$k + 8; anchor: left center; size: 11; color: ink; width: goo.$k.kw * 2 - 6; lines: 1; opacity: if(goo.$k.on and goo.$k.kw > 0, 0.65, 0); family: "Inter" }
         // druh 2 (hodiny, ako TimeGoo): veľký čas a pod ním dátum, písmo Inter
-        text goo.$k.ikona { at: x.$k, y.$k - rr.$k * 0.12; anchor: center; size: 14 * rs.$k; weight: 700; color: ink; opacity: if(goo.$k.on and goo.$k.druh == 2, 1, 0); family: "Inter" }
-        text goo.$k.text { at: x.$k, y.$k + rr.$k * 0.36; anchor: center; size: 8 * rs.$k; color: ink; opacity: if(goo.$k.on and goo.$k.druh == 2, 0.75, 0); family: "Inter" }
+        text goo.$k.ikona { at: x.$k, y.$k - rr.$k * if(goo.$k.z < 0.8, 0, 0.12); anchor: center; size: 14 * rs.$k * if(goo.$k.z < 0.8, 1.25, 1); weight: 700; color: ink; opacity: if(goo.$k.on and goo.$k.druh == 2, 1, 0); family: "Inter" }
+        text goo.$k.text { at: x.$k, y.$k + rr.$k * 0.36; anchor: center; size: 8 * rs.$k; color: ink; opacity: if(goo.$k.on and goo.$k.druh == 2 and goo.$k.z >= 0.8, 0.75, 0); family: "Inter" }
     }
     // ponuka Goo: karta z kávy do farby okien, ucho v rohu pri mieste kliku
     // karta Goo: zóny a obsah (rám a ucho sú vyššie, pod obsahom kvapiek — ucho je sama kvapka)

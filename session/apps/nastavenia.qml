@@ -1935,7 +1935,7 @@ ShellRoot {
                            onClicked: if (!parent.base) app.kvToggle(modelData[0], modelData[1]) }
                     Row {
                         spacing: 10; visible: !parent.hid
-                        Stepper { label: "Veľkosť"; unit: " %"; step: 15; min: 100; max: 220
+                        Stepper { label: "Veľkosť"; unit: " %"; step: app.gooEngine ? 10 : 15; min: app.gooEngine ? 50 : 100; max: 220
                                   value: Math.round(100 * (parseFloat((app.kv.zoom || {})[modelData[0]]) || 1))
                                   onStepped: (v) => { const k = JSON.parse(JSON.stringify(app.kv)); k.zoom = k.zoom || {}; k.zoom[modelData[0]] = v / 100; app.kvSave(k, modelData[1] + ": " + v + " %"); } }
                         Button { label: "Vrátiť na miesto"; glyph: "arrow-back-up"

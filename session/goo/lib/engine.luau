@@ -51,7 +51,8 @@ E.POVAHY = {
 }
 local PREDVOLENE = { velkost = 26, gravitacia = 0.3, dosah = 220, vznos = 1, lepivost = 0, trhanie = 90, svetlo = 0.5,
                      rast = 0.08, tahat = true, hmotnost = 0, efekt = "nic", sila = 1, druh = "ikona", zoom = false }
-local ZOOM_MIN, ZOOM_MAX = 1, 2.2          -- veľkosť 100–220 % (Nastavenia › Kvapky; ako koliesko v ploche Kvapky)
+local ZOOM_MIN, ZOOM_MAX = 0.5, 2.2        -- veľkosť 50–220 % (používateľ 5. 10.: vyfúknutá môže byť polovičná);
+                                           -- s veľkosťou rastie aj ikona a text, pod 80 % ukáže goo menej detailov
 
 local slots = {}          -- k (0…N−1) → kvapka
 local byId = {}           -- id → kvapka
@@ -311,6 +312,7 @@ function Kvapka:presun(x, y) self.x, self.y, self.ox = clamp(x, 0.02, 0.98), mat
 function Kvapka:domov() self.x, self.y, self.ox, self.z, self.moved, self.edge = self.hx0, self.hy0, self.ox0, 1, false, self.edge0 or 0 publish() save() end
 function Kvapka:poskoc() bump("hopn", self.k) end
 function Kvapka:stlac() bump("sqn", self.k) end
+function Kvapka:zavibruj() bump("vibn", self.k) end   -- „tu nič nie je“: klik tlačidlom bez funkcie
 function Kvapka:bublina(s) text.tip = s or "" end
 -- guľky pri kvapke (pravidlo 15): počet 0…5+, farba ("hardver" červená, "siet" zelená, "softver" modrá, "zlta",
 -- "system" červeno-kávová, "svetlo"); nad 4 sa ukáže počet v poslednej
@@ -729,19 +731,19 @@ on("goo_up", function(k)
     down = nil
     local d = at(k) if not d or was ~= k then return end
     hud("klik · " .. d.id)
-    hook(d, "klik")
+    if not hook(d, "klik") then d:zavibruj() end        -- tlačidlo bez funkcie: goo zavibruje (pravidlo 8 platí ďalej)
 end)
 on("goo_right", function(k)
     down = nil
     local d = at(k) if not d then return end
     hud("pravé · " .. d.id)
-    hook(d, "pravy")                                    -- bez háčika nič (pravidlo 8)
+    if not hook(d, "pravy") then d:zavibruj() end
 end)
 on("goo_middle", function(k)
     down = nil
     local d = at(k) if not d then return end
     hud("stredné · " .. d.id)
-    hook(d, "stredny")                                  -- bez háčika nič (pravidlo 8); domov: Nastavenia › Kvapky
+    if not hook(d, "stredny") then d:zavibruj() end
 end)
 on("goo_hold", function(k)
     if down ~= k then return end                        -- podržanie iba ľavým
