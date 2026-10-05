@@ -294,6 +294,11 @@ lepivosť, veľkosť a rezervu na ďalšie efekty.
   lepkavé vlákno (`vlx`, `vly0`, `vly1`, `vlw`), zóna `hr_away`. Bobule sú dynamické kvapky (`visi` — jediná
   výnimka z „nič nevisí vo vzduchu“, iba kým je hrozno otvorené). Na bočnom okraji ostáva zoznam v ponuke.
 - **QueenGoo má korunku** (`koruna`, pole `nad`: znak na vonkajšej strane kvapky).
+- **Karta času ClockGoo v engine (5. 10.):** karta Goo (`E.menu`) dostala čipy záložiek (`opts.chips`), veľký
+  riadok (`big`), pruh priebehu (`bar`), koliesko nad riadkom (`wheel`), riadok, ktorý kartu nezavrie (`keep`),
+  a živé obnovenie (`opts.keep`, `E.menuId()`). Čas je v `lib/cas.luau` — prevzaté z časového menu Kvapiek, ten
+  istý `casovace.json`; čítanie a zvonenie cez `latte-goo cas` / `zvon`. Všetko myšou: dĺžku minútky a čas budíka
+  nastaví koliesko alebo klik.
 - Ďalej: znížiť CPU enginu, potom preniesť okná z kvapiek do enginu (LensGoo spúšťač, karta a hrozno ClockGoo,
   bublina QueenGoo) a ChatGoo (po jednej, snímky pred a po). Živé bytosti z 3.1 (dážď/vietor) a formulár
   v Nastaveniach › Kvapky pribudnú nad enginom.

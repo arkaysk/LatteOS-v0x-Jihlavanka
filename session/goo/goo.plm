@@ -117,7 +117,13 @@ scene Goo {
     // ── ponuka Goo (z plochy Kvapky, pravidlá 9–11): karta pripojená rohom k miestu kliku, vyrastie z neho; položky
     // dáva logika (ikona, skratka, zaškrtnutie, červená, podponuka ›, čiara nad položkou, y riadku). Miesto kliku si
     // scéna zapamätá pri každom stlačení kvapky (ctx.x, ctx.y), logika ponuku iba otvorí
-    model ctx max 14 { label: text; on: number; off: bool; glyph: text; hint: text; danger: bool; sub: bool; back: bool; sep: bool; y: number }
+    // riadok karty: big = veľký nadpis (čas, stopky), bar = pruh priebehu 0…1 (−1 žiadny)
+    model ctx max 16 { label: text; on: number; off: bool; glyph: text; hint: text; danger: bool; sub: bool; back: bool; sep: bool; y: number; big: bool; bar: number = -1 }
+    // čipy záložiek hore v karte (karta ClockGoo: Prehľad · Stopky · Minútka · Budíky)
+    model chip max 6 { label: text; glyph: text; on: bool; solo: bool }      // solo = iba znak, bez názvu
+    fact chip_hot = -1
+    event ctx_chip ->
+    event ctx_scroll ->
     fact ctx_open = false
     // hrozno upozornení (ClockGoo): lepkavé vlákno od okraja ku kvapke, na ňom visia kapsuly; klik mimo ho zavrie
     fact hr_open = false
@@ -1245,18 +1251,32 @@ scene Goo {
     group {
         opacity: clamp(ctx.p * 2 - 1, 0, 1)
         show: ctx_open and ctx.p > 0.5
-        repeat m in 0..14 {
+        repeat c in 0..6 {
+            let chw.$c = (ctx_w - 16) / max(chip.count, 1)
+            box { at: cx0 + 8 + chw.$c * (c + 0.5), cy0 + 24; size: chw.$c - 6, 30; corner: 15; color: if(chip.$c.on, #f7c873, #4a372b); opacity: if(chip.$c.on, 24%, if(chip_hot == c, 100%, 45%)); show: c < chip.count }
+            text chip.$c.glyph { at: cx0 + 8 + chw.$c * (c + 0.5) - if(chip.$c.solo, 0, chw.$c / 2 - 17), cy0 + 24; anchor: center; size: 14; color: if(chip.$c.on, #f7c873, cream); opacity: 90%; show: c < chip.count; family: "noctalia-tabler-icons" }
+            text chip.$c.label { at: cx0 + 8 + chw.$c * c + 29, cy0 + 24; anchor: left center; width: chw.$c - 36; lines: 1; size: 12; weight: 600; color: if(chip.$c.on, #f7c873, cream); show: c < chip.count and not chip.$c.solo; family: "Inter" }
+            zone box chip_z.$c { at: cx0 + 8 + chw.$c * (c + 0.5), cy0 + 24; size: chw.$c - 6, 32; cursor: pointer; active: ctx_open and c < chip.count }
+            on enter chip_z.$c { chip_hot = c }
+            on leave chip_z.$c { chip_hot = -1 }
+            on press chip_z.$c { emit ctx_chip(c) }
+        }
+        repeat m in 0..16 {
             box { at: cx0 + ctx_w / 2, cy0 + ctx.$m.y - 6; size: ctx_w - 32, 1; color: #5a463a; show: m < ctx.count and ctx.$m.sep }
             box { at: cx0 + ctx_w / 2, cy0 + ctx.$m.y + 18; size: ctx_w - 12, 32; corner: 9; color: if(ctx.$m.danger, #e5484d, #4a372b); opacity: if(ctx_hot == m and not ctx.$m.off, if(ctx.$m.danger, 18%, 100%), 0); show: m < ctx.count }
-            text ctx.$m.glyph { at: cx0 + 24, ctx.$m.y + cy0 + 18; anchor: center; size: 16; color: if(ctx.$m.danger, #e5484d, cream); opacity: if(ctx.$m.off, 40%, 90%); show: m < ctx.count and ctx.$m.on == 0; family: "noctalia-tabler-icons" }
+            text ctx.$m.glyph { at: cx0 + 24, ctx.$m.y + cy0 + 18; anchor: center; size: 16; color: if(ctx.$m.danger, #e5484d, cream); opacity: if(ctx.$m.off, 40%, 90%); show: m < ctx.count and ctx.$m.on == 0 and not ctx.$m.big; family: "noctalia-tabler-icons" }
             text "" { at: cx0 + 24, cy0 + ctx.$m.y + 18; anchor: center; size: 15; color: #f7c873; show: m < ctx.count and ctx.$m.on == 1; family: "noctalia-tabler-icons" }
-            text ctx.$m.label { at: cx0 + 46, cy0 + ctx.$m.y + 18; anchor: left center; width: ctx_w - if(ctx.$m.sub, 82, 70); lines: 1; size: 13; weight: 500; color: if(ctx.$m.danger, #e5484d, cream); opacity: if(ctx.$m.off, 45%, 100%); show: m < ctx.count; family: "Inter" }
+            text ctx.$m.label { at: cx0 + 46, cy0 + ctx.$m.y + 18; anchor: left center; width: ctx_w - if(ctx.$m.sub, 82, 70); lines: 1; size: 13; weight: 500; color: if(ctx.$m.danger, #e5484d, cream); opacity: if(ctx.$m.off, 45%, 100%); show: m < ctx.count and not ctx.$m.big; family: "Inter" }
+            text ctx.$m.label { at: cx0 + 20, cy0 + ctx.$m.y + 22; anchor: left center; width: ctx_w - 40; lines: 1; size: 26; weight: 700; color: cream; show: m < ctx.count and ctx.$m.big; family: "Inter" }
+            box { from: cx0 + if(ctx.$m.big, 20, 46), cy0 + ctx.$m.y + if(ctx.$m.big, 42, 31); size: ctx_w - if(ctx.$m.big, 40, 62), 3; corner: 1.5; color: #5a463a; show: m < ctx.count and ctx.$m.bar >= 0 }
+            box { from: cx0 + if(ctx.$m.big, 20, 46), cy0 + ctx.$m.y + if(ctx.$m.big, 42, 31); size: (ctx_w - if(ctx.$m.big, 40, 62)) * clamp(ctx.$m.bar, 0, 1), 3; corner: 1.5; color: #f7c873; show: m < ctx.count and ctx.$m.bar > 0 }
             text ctx.$m.hint { at: cx0 + ctx_w - 16, cy0 + ctx.$m.y + 18; anchor: right center; size: 11.5; color: #b8a491; show: m < ctx.count and not ctx.$m.sub; family: "Inter" }
             text "" { at: cx0 + ctx_w - 20, cy0 + ctx.$m.y + 18; anchor: center; size: 14; color: #b8a491; show: m < ctx.count and ctx.$m.sub and not ctx.$m.back; family: "noctalia-tabler-icons" }
             zone box ctx_row.$m { at: cx0 + ctx_w / 2, cy0 + ctx.$m.y + 18; size: ctx_w - 12, 34; cursor: pointer; active: ctx_open and m < ctx.count and not ctx.$m.off }
             on enter ctx_row.$m { ctx_hot = m }
             on leave ctx_row.$m { ctx_hot = -1 }
             on press ctx_row.$m { emit ctx_pick(m) }
+            on scroll ctx_row.$m { emit ctx_scroll(m * 2 + if(wheel > 0, 1, 0)) }
         }
     }
     // bublina s názvom a popisom (§3: obsah kvapky sa hoverom nemení — názov je iba tu)
@@ -1301,6 +1321,39 @@ scene Goo {
         "left: notifications · right: time and calendar" = "ľavý: upozornenia · pravý: čas a kalendár"
         "Battery" = "Batéria"
         "Dismiss" = "Zahodiť"
+        "Overview" = "Prehľad"
+        "Stopwatch" = "Stopky"
+        "Timer" = "Minútka"
+        "Alarms" = "Budíky"
+        "Alarm" = "Budík"
+        "week" = "týždeň"
+        "on screen today" = "dnes pred obrazovkou"
+        "details" = "podrobnosti"
+        "Stop" = "Zastaviť"
+        "Start" = "Spustiť"
+        "Lap" = "Medzičas"
+        "Reset" = "Vynulovať"
+        "Pause" = "Pozastaviť"
+        "Resume" = "Pokračovať"
+        "Cancel" = "Zrušiť"
+        "Length" = "Dĺžka"
+        "wheel" = "koliesko"
+        "on" = "zapnutý"
+        "off" = "vypnutý"
+        "No alarms" = "Žiadne budíky"
+        "Hour" = "Hodina"
+        "Minute" = "Minúta"
+        "Add alarm" = "Pridať budík"
+        "Remove alarms that are off" = "Odstrániť vypnuté budíky"
+        "Time is up" = "Čas vypršal"
+        "LatteOS alarm" = "Budík LatteOS"
+        "Sunday" = "Nedeľa"
+        "Monday" = "Pondelok"
+        "Tuesday" = "Utorok"
+        "Wednesday" = "Streda"
+        "Thursday" = "Štvrtok"
+        "Friday" = "Piatok"
+        "Saturday" = "Sobota"
         "devices need attention" = "zariadení potrebuje pozornosť"
         "offline" = "bez siete"
         "updates" = "aktualizácií"
