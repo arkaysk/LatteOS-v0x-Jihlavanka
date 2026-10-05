@@ -5,7 +5,7 @@
 -- goo telo, takže obrys je spoločný (dve telá kreslili okolo hlavy deliacu čiaru aj tam, kde bola zliata).
 local goobar = require("lib/goobar")
 return {
-    id = "goobar", nazov = "GooBar", zaklad = true, ikona = "app-window", povaha = "pokojna", velkost = 44, vyska = 22, sk = 2,
+    id = "goobar", nazov = "GooBar", zaklad = true, vratit = true, ikona = "app-window", povaha = "pokojna", velkost = 44, vyska = 22, sk = 2,
     poloha = { x = 0.42, y = 22 }, gravitacia = 0.25, vznos = 0.7,
     popis = "klik: režim okien · koliesko: ďalšie okno / posun pásky",
     start = function(d) goobar.start() end,

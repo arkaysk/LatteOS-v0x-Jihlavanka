@@ -78,6 +78,15 @@ local function hud(s)
     if E.ladenie then text.hud = s end
 end
 
+-- okraj kvapky (d.edge): 0 dole, 1 vľavo, 2 hore, 3 vpravo. d.x je zlomok DĹŽKY okraja, d.y vzdialenosť od neho (px)
+local function side(d) return (d.edge or 0) % 2 == 1 end
+local function elen(d)
+    local l = num(side(d) and fact.sh or fact.sw, 0)
+    return l > 0 and l or (side(d) and 1080 or 1920)
+end
+local function along(d) return d.x * elen(d) + (d.ox or 0) end
+E.len, E.along = elen, along
+
 -- ── záznam pre scénu ─────────────────────────────────────────────────────────────────────────────────────────
 local function record(d)
     local v = d.v
@@ -95,6 +104,7 @@ local function record(d)
         jadro = d.jadroS or 0, jf = d.jadroF or 0, jp = d.jadroP or false,
         obr = v.obr or "", img = (v.obr or "") ~= "", tlm = d.tlm or 0,
         gn = d.gn or 0, gf = d.gf or 0, gt = d.gt or "", sk = num(v.sk, 0), zl = num(v.zliatie, 1), ml = num(v.mlaka, 1),
+        ed = d.edge or 0,
     }
 end
 
@@ -109,7 +119,10 @@ local function neighbours(list)
         -- ťahaná nie je susedom (inak by k jej starému miestu viselo dlhé vlákno)
         if d.y < d.v.velkost * 1.6 and not d.dragging and not d.hidden then table.insert(docked, d) end
     end
-    table.sort(docked, function(a, b) return a.x * NOMINAL_W + (a.ox or 0) < b.x * NOMINAL_W + (b.ox or 0) end)
+    table.sort(docked, function(a, b)
+        if (a.edge or 0) ~= (b.edge or 0) then return (a.edge or 0) < (b.edge or 0) end
+        return along(a) < along(b)
+    end)
     -- susedia iba v rámci jedného goo tela: ikry Goobaru (sk 1) s hlavou (sk 2) a navzájom, ostatné (sk 0) s hlavou
     local function same_body(a, b)
         local x, y = num(a.v.sk, 0), num(b.v.sk, 0)
@@ -117,8 +130,8 @@ local function neighbours(list)
     end
     for i = 1, #docked - 1 do
         local a, b = docked[i], docked[i + 1]
-        local gap = (b.x - a.x) * NOMINAL_W + (b.ox or 0) - (a.ox or 0)
-        if same_body(a, b) and gap < 2.6 * (a.v.velkost * a.z + b.v.velkost * b.z) then a.nr, b.nl = b, a end
+        local gap = along(b) - along(a)
+        if (a.edge or 0) == (b.edge or 0) and same_body(a, b) and gap < 2.6 * (a.v.velkost * a.z + b.v.velkost * b.z) then a.nr, b.nl = b, a end
     end
 end
 
@@ -150,9 +163,10 @@ local function separate()
                 -- hlavou (sk 2) sa neodsúvajú; cudzia kvapka od nich ustúpi ďalej, aby sa s nimi nezliala
                 local sa, sb = num(a.v.sk, 0), num(b.v.sk, 0)
                 local ikra = sa == 1 or sb == 1
-                if not (ikra and (sa == sb or sa == 2 or sb == 2)) then
-                    local ax, ay = a.x * sw + (a.ox or 0), a.y
-                    local bx, by = b.x * sw + (b.ox or 0), b.y
+                if (a.edge or 0) == (b.edge or 0) and not (ikra and (sa == sb or sa == 2 or sb == 2)) then
+                    local sw = elen(a)
+                    local ax, ay = along(a), a.y
+                    local bx, by = along(b), b.y
                     local need = (ikra and GAP_IKRY or MIN_GAP) * (a.v.velkost * a.z + b.v.velkost * b.z)
                     local dx, dy = bx - ax, by - ay
                     local dist = math.sqrt(dx * dx + dy * dy)
@@ -162,8 +176,8 @@ local function separate()
                         if movable(b) and (b ~= sepPrefer or not movable(a)) then mv, other = b, a
                         elseif movable(a) then mv, other = a, b end
                         if mv then
-                            local ox, oy = mv.x * sw + (mv.ox or 0), mv.y
-                            local px, py = other.x * sw + (other.ox or 0), other.y
+                            local ox, oy = along(mv), mv.y
+                            local px, py = along(other), other.y
                             local vx, vy = ox - px, oy - py
                             local docked = oy < mv.v.velkost * mv.z * 1.6
                             if docked then vy = 0 end
@@ -198,7 +212,7 @@ local function anchor(d, depth)
     local a = d.def.pri and byId[d.def.pri]
     if not a or d.moved or d.dragging or d.wander or depth > 4 then return end
     anchor(a, depth + 1)
-    d.x, d.ox = a.x, (a.ox or 0) + num(d.def.odstup, 0)
+    d.x, d.ox, d.edge = a.x, (a.ox or 0) + num(d.def.odstup, 0), a.edge or 0
 end
 
 local function publish()
@@ -241,7 +255,7 @@ save = function()
         saveTimer = nil
         local out = {}
         for id, d in pairs(byId) do
-            if d.moved or d.z ~= 1 then out[id] = { x = d.x, y = d.y, z = d.z } end
+            if d.moved or d.z ~= 1 then out[id] = { x = d.x, y = d.y, z = d.z, e = d.edge or 0 } end
         end
         run("latte-goo", { "uloz-stav", json.encode(out) }, nil, { output = false })
     end)
@@ -257,7 +271,7 @@ function Kvapka:efekt(meno, sila) self.v.efekt = meno self.v.sila = sila or self
 function Kvapka:rezerva(i, x) self.e[i] = x publish() end
 function Kvapka:velkost(z) self.z = clamp(z, ZOOM_MIN, ZOOM_MAX) E.separate(self) publish() save() end
 function Kvapka:presun(x, y) self.x, self.y, self.ox = clamp(x, 0.02, 0.98), math.max(0, y), 0 self.moved = true publish() save() end
-function Kvapka:domov() self.x, self.y, self.ox, self.z, self.moved = self.hx0, self.hy0, self.ox0, 1, false publish() save() end
+function Kvapka:domov() self.x, self.y, self.ox, self.z, self.moved, self.edge = self.hx0, self.hy0, self.ox0, 1, false, self.edge0 or 0 publish() save() end
 function Kvapka:poskoc() bump("hopn", self.k) end
 function Kvapka:stlac() bump("sqn", self.k) end
 function Kvapka:bublina(s) text.tip = s or "" end
@@ -283,7 +297,7 @@ function Kvapka:jadro(farba, sila, pulz)
     publish()
 end
 -- poloha kvapky v px (vlnky): šírku obrazovky povie scéna (fact sw)
-function Kvapka:px() local w = num(fact.sw, 0) return self.x * (w > 0 and w or 1920) + (self.ox or 0) end
+function Kvapka:px() return along(self) end      -- poloha pozdĺž jej okraja (px); dole = x na obrazovke
 function Kvapka:vlnka(sila) E.vlnka(self:px(), sila or 6, "kamen") end
 function Kvapka:vibruj(sila) E.vlnka(self:px(), sila or 3, "vibracia") end
 
@@ -318,7 +332,7 @@ function E.define(def, zdroj)
     assert(type(def) == "table" and type(def.id) == "string", "kvapka potrebuje id")
     local prev = byId[def.id]                            -- znova (zmenený JSON): ostane, kde ju používateľ nechal
     if prev then
-        saved[def.id] = { x = prev.x, y = prev.y, z = prev.z }
+        saved[def.id] = { x = prev.x, y = prev.y, z = prev.z, e = prev.edge }
         E.remove(def.id)
     end
     local k = freeSlot()
@@ -342,6 +356,11 @@ function E.define(def, zdroj)
     d.x, d.y, d.z = s and s.x or d.hx0, s and s.y or d.hy0, clamp(num(s and s.z, 1), ZOOM_MIN, ZOOM_MAX)
     d.ox = s and 0 or d.ox0
     d.moved = s ~= nil
+    d.edge0 = anchor and (anchor.edge0 or 0) or clamp(math.floor(num(def.okraj, 0)), 0, 3)
+    d.edge = clamp(math.floor(num(s and s.e, d.edge0)), 0, 3)
+    -- gravitácia: nič nevisí vo vzduchu — kvapka uložená alebo zadaná mimo okraja si naň sadne
+    if d.y >= v.velkost * d.z * 1.6 then d.y = seat end
+    if d.hy0 >= v.velkost * 1.6 then d.hy0 = seat end
     slots[k], byId[def.id] = d, d
     E.separate()
     E.needGlyph(v.ikona)
@@ -530,24 +549,48 @@ on("goo_drag", function(k)
     publish()
     hook(d, "tahanie")
 end)
+-- Pustenie po ťahaní (pravidlá 16, 20 a §3): kvapka nikdy neostane visieť vo vzduchu.
+--   · pri ľavom, pravom alebo hornom okraji (do STICK px) sa k nemu PRILEPÍ — kvapky sa lepia ku každému okraju;
+--   · inak na ňu platí GRAVITÁCIA: spadne rovno dole na hladinu, s prestrelením a odrazom (pružina `pada`),
+--     ponorí sa, vynorí a hladina sa zvlní;
+--   · kvapka s `vratit` (GooBar: lišta sa dá preniesť k inému okraju) sa pri pustení uprostred vráti, kde bola.
+local STICK = 130
 on("goo_drop", function(k)
     local d = at(k) if not d then return end
-    local x, y = fact.rx, fact.ry
+    local X, Y = num(fact.rx, 0), num(fact.ry, 0)
+    local W, H = num(fact.sw, 0), num(fact.sh, 0)
+    if W <= 0 then W = 1920 end
+    if H <= 0 then H = 1080 end
     d.dragging = false
-    local has, res = hook(d, "pustenie", x, y)
-    -- lepivosť k lište: blízko nej sa prilepí; ťažká kvapka spadne na lištu (pružina `pada` s odrazom)
-    if y < d.v.velkost * d.z * 1.6 or d.v.hmotnost > 0.5 then y = num(d.v.vyska, d.v.velkost * 0.8) * d.z end
-    if not (has and res == false) then
-        d.x, d.y = clamp(x, 0.02, 0.98), math.max(0, y)
+    local r = d.v.velkost * d.z
+    -- najbližší okraj v dosahu prilepenia; dole je vždy (gravitácia)
+    local edge, best = 0, math.huge
+    for e, dist in ipairs({ H - Y, X, Y, W - X }) do                 -- dole, vľavo, hore, vpravo
+        if dist < STICK and dist < best then edge, best = e - 1, dist end
+    end
+    local stuck = best < math.huge
+    local fell = not stuck                                            -- nebola pri žiadnom okraji: padá
+    local has, res = hook(d, "pustenie", X, Y, edge)
+    if has and res == false or (fell and d.v.vratit) then
+        hud("pustenie · " .. d.id .. " · späť")
+    else
+        d.edge = edge
+        d.x = clamp(((edge % 2 == 1) and Y / H or X / W), 0.02, 0.98)
+        d.y = num(d.v.vyska, d.v.velkost * 0.8) * d.z
         d.moved, d.ox = true, 0
         save()
+        hud(string.format("pustenie · %s · okraj %d · %.2f%s", d.id, edge, d.x, fell and " · padá" or ""))
     end
-    -- vrátila sa k okraju: ponorí sa pod hladinu a vynorí (Marea), hladina sa zvlní
-    if d.y < d.v.velkost * d.z * 1.6 then
+    -- návrat k okraju: ponorí sa pod hladinu a vynorí (Marea); po páde až pri dopade, hladina sa zvlní (iba dole)
+    local wait = fell and 330 or 0
+    after(wait, function()
+        if byId[d.id] ~= d or d.dragging then return end
         bump("dipn", k)
-        after(260, function() E.vlnka(d:px(), 4 + d.v.velkost * d.z * 0.12, "kamen") end)
-    end
-    hud(string.format("pustenie · %s · x %.2f y %d", d.id, d.x, d.y))
+        if fell then bump("sqn", k) end                               -- dopad: sploští sa
+        if (d.edge or 0) == 0 then
+            after(200, function() E.vlnka(along(d), (fell and 7 or 4) + r * 0.12, "kamen") end)
+        end
+    end)
     -- pustená na inú: jedna sa odsunie (pravidlo 22); pustená ostane, kde ju pustili
     E.separate(d)
     -- domov a ťahanie scény naraz (inak by kvapka na snímok skočila späť)
@@ -577,7 +620,7 @@ end
 -- preč) a po hre sa všetko vráti na svoje miesto. Ikry okien a hlava Goobaru neuhýbajú (k nim sa nebeží).
 local function px(d) local sw = num(fact.sw, 0) return d.x * (sw > 0 and sw or 1920) + (d.ox or 0) end
 local function rad(d) return d.v.velkost * d.z end
-local function docked(d) return d.y < rad(d) * 1.6 and not d.hidden end
+local function docked(d) return d.y < rad(d) * 1.6 and not d.hidden and (d.edge or 0) == 0 end
 local function toFrac(d, x) local sw = num(fact.sw, 0) return (x - (d.ox or 0)) / (sw > 0 and sw or 1920) end
 -- miesto pre d na x: komu treba uhnúť a kam ({ kvapka = x }); nil = nezmestí sa (okraj obrazovky, Goobar)
 local function shove(d, x)

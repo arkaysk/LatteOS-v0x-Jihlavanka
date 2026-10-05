@@ -156,9 +156,9 @@ local function layout()
     end
     -- šnúra sa musí zmestiť po kraj: všetko sa zmenší rovnakým pomerom (čím viac ikier, tým menšie)
     local head = E.get(HEAD)
-    local sw = tonumber(fact.sw) or 0
+    local sw = head and E.len(head) or 0
     if head and sw > 0 then
-        local avail = sw * (1 - head.x) - 60
+        local avail = sw * (1 - head.x) - 60           -- po koniec okraja, na ktorom lišta je
         if u > avail and u > 0 then
             local f = math.max(avail / u, 0.25)
             for _, e in pairs(lay) do e.x = e.x * f e.y = e.y * math.max(f, 0.5) e.r = e.r * math.max(f, 0.5) end
@@ -183,7 +183,8 @@ local function layout()
                 zliatie = 0.35, mlaka = 0.15,    -- jednotlivé bobule hrozna s tenkými spojmi, nie jedna hmota
                 klik = function(dd) M.click(dd) end, pravy = function(dd) M.menu(dd) end,
                 nad = function(dd) M.hover(dd) end, prec = function(dd) M.unhover(dd) end,
-                pustenie = function(dd, x) return M.drop(dd, x) end,
+                -- miesto pustenia pozdĺž okraja lišty (na bočnom okraji je to y)
+                pustenie = function(dd, x, y) local h = E.get(HEAD) return M.drop(dd, h and (h.edge or 0) % 2 == 1 and y or x) end,
             })
             if d then d:stlm(hidden[i] and 1 or 0) end
         end
@@ -223,10 +224,9 @@ end
 function M.drop(d, x)
     local i = index_of(d.id)
     local head = E.get(HEAD)
-    local sw = tonumber(fact.sw) or 1920
     if not i or not head then return false end
     local key = M.group_key(wins[i])
-    local rel = (x - head.x) * sw - (head.ox or 0)
+    local rel = x - E.along(head)                   -- x: miesto pustenia pozdĺž okraja lišty (px)
     local keys = {}
     for _, sp in ipairs(spans) do if sp.key ~= key then keys[#keys + 1] = sp end end
     local at = #keys + 1
@@ -331,9 +331,10 @@ function M.read_blocks()
         local ok, t = pcall(json.decode, out or "")
         local head = E.get(HEAD)
         if not ok or type(t) ~= "table" or not head or (t.h or 0) <= 0 then return end
-        local hx = head.x * (tonumber(fact.sw) or t.w) + (head.ox or 0)
+        local hx = E.along(head)
         local nb = {}
-        for _, w in ipairs(t.okna or {}) do
+        -- uhýbanie oknám má zmysel iba na dolnom okraji (okná „nad lištou“); na inom okraji ikry neuhýbajú
+        for _, w in ipairs((head.edge or 0) == 0 and t.okna or {}) do
             local gap = t.h - (w.y + w.h)
             if gap < 400 and w.y < t.h then nb[#nb + 1] = { a0 = w.x - hx, a1 = w.x + w.w - hx, gap = math.max(0, gap) } end
         end
