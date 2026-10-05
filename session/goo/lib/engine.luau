@@ -120,6 +120,7 @@ local function record(d)
         obr = v.obr or "", img = (v.obr or "") ~= "", tlm = d.tlm or 0,
         gn = d.gn or 0, gf = d.gf or 0, gt = d.gt or "", sk = num(v.sk, 0), zl = num(v.zliatie, 1), ml = num(v.mlaka, 1),
         ed = d.edge or 0, nad = v.koruna and (glyphs[v.koruna] or "") or "",
+        kw = num(v.kw, 0), t2 = v.t2 or "", kr = (v.t2 or "") ~= "" and 2 or 1,
     }
 end
 
@@ -395,8 +396,9 @@ function E.define(def, zdroj)
     d.edge0 = anchor and (anchor.edge0 or 0) or clamp(math.floor(num(def.okraj, 0)), 0, 3)
     d.edge = clamp(math.floor(num(s and s.e, d.edge0)), 0, 3)
     -- gravitácia: nič nevisí vo vzduchu — kvapka uložená alebo zadaná mimo okraja si naň sadne
-    if d.y >= v.velkost * d.z * 1.6 then d.y = seat end
-    if d.hy0 >= v.velkost * 1.6 then d.hy0 = seat end
+    -- (výnimka `visi`: bobule hrozna upozornení visia na lepkavom vlákne, kým je hrozno otvorené)
+    if not def.visi and d.y >= v.velkost * d.z * 1.6 then d.y = seat end
+    if not def.visi and d.hy0 >= v.velkost * 1.6 then d.hy0 = seat end
     slots[k], byId[def.id] = d, d
     E.separate()
     E.needGlyph(v.ikona)
@@ -611,7 +613,8 @@ on("goo_drop", function(k)
     local fell = not stuck                                            -- nebola pri žiadnom okraji: padá
     local has, res = hook(d, "pustenie", X, Y, edge)
     local fh = 0                                                      -- výška pádu nad novým domovom (px)
-    if has and res == false or (fell and d.v.vratit) then
+    local back = (has and res == false) or (fell and d.v.vratit)
+    if back then
         hud("pustenie · " .. d.id .. " · späť")
     else
         d.edge = edge
@@ -628,7 +631,7 @@ on("goo_drop", function(k)
     -- hladinu a vráti sa). Kvapka prilepená k okraju sa ponorí a vynorí hneď.
     local wait = fh > 0 and math.sqrt(2 * fh / GRAV) * 1000 or 0
     after(wait, function()
-        if byId[d.id] ~= d or d.dragging then return end
+        if byId[d.id] ~= d or d.dragging or back then return end       -- vrátená na miesto: bez ponoru a vlnky
         if fh > 0 then bump("sqn", k) else bump("dipn", k) end
         if (d.edge or 0) == 0 then
             after(fh > 0 and 60 or 200, function() E.vlnka(along(d), (fh > 0 and 3 + math.min(fh, 900) * 0.008 or 4) + r * 0.12, "kamen") end)

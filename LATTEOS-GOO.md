@@ -284,6 +284,16 @@ lepivosť, veľkosť a rezervu na ďalšie efekty.
 - **Jeden monitor (dočasne):** pleamar má pre všetky kópie scény jeden stav a šírku berie z poslednej, takže na
   druhom monitore s iným rozlíšením boli okraje zle (pravý okraj 640 px od skutočného). Engine sa preto spúšťa iba
   na hlavnom monitore (`latte-kvapky`: `--screen`); vlastný GooBar pre každý monitor je otvorená úloha.
+- **Vlákna (5. 10. večer, snímka používateľa):** vzdialenosť krajných kvapiek na snímke je **maximum**, za ktorým sa
+  vlákno pretrhne (`THREAD_MAX` 2,3 súčtu polomerov, bolo 2,6); krajné sa ťahali príliš tenko — korene sú hrubšie
+  (zliatie rastie s natiahnutím), stred ostáva tenký, najmenej 3,4 px.
+- **Rohová lišta Noctalie je pre Goo zakázaná zóna (5. 10.):** má premenlivú šírku (pribúdajú widgety a doplnky
+  Noctalie). Engine jej obdĺžnik číta každých 0,7 s (`latte-goo okna` › `roh`) a kvapky, ikry GooBaru, pustenie,
+  hrozno aj hra sa pred ňou zastavia; keď sa rozšíri, kvapky ustúpia.
+- **Hrozno upozornení ClockGoo v engine (5. 10.):** kvapka-kapsula (`kw` polovica rovnej časti, `t2` druhý riadok),
+  lepkavé vlákno (`vlx`, `vly0`, `vly1`, `vlw`), zóna `hr_away`. Bobule sú dynamické kvapky (`visi` — jediná
+  výnimka z „nič nevisí vo vzduchu“, iba kým je hrozno otvorené). Na bočnom okraji ostáva zoznam v ponuke.
+- **QueenGoo má korunku** (`koruna`, pole `nad`: znak na vonkajšej strane kvapky).
 - Ďalej: znížiť CPU enginu, potom preniesť okná z kvapiek do enginu (LensGoo spúšťač, karta a hrozno ClockGoo,
   bublina QueenGoo) a ChatGoo (po jednej, snímky pred a po). Živé bytosti z 3.1 (dážď/vietor) a formulár
   v Nastaveniach › Kvapky pribudnú nad enginom.
