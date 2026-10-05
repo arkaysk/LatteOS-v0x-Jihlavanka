@@ -364,6 +364,69 @@ s názvom ako pri myši — netreba nový prvok.)
 **Ešte treba pri tvorbe doriešiť:** obmedzenie pohybu (pleamar ho vie vypnúť: pružiny doskočia hneď), väčšie písmo
 a kontrast, prípadne čítanie názvov nahlas.
 
+### 3.4 Poznámky používateľa z 5. 10. neskoro večer (pred vypnutím latte-lab)
+
+**A. Klik bez funkcie = zavibrovanie.** Keď sa na goo klikne tlačidlom, pre ktoré goo nemá funkciu, goo **zavibruje**
+(spätná väzba „tu nič nie je“). Pravidlo 8 platí ďalej — nevzniká tým žiadna predvolená akcia. *(V engine hotové.)*
+
+**B. Veľkosť kolieskom = nafukovanie a vyfukovanie.** Najmenšia veľkosť môže byť **polovica** bežnej (rozsah 50–220 %,
+bolo 100–220 %). S nafukovaním sa zväčšuje či zmenšuje **aj text, prípadne ikona**, a **prípadne aj množstvo
+detailov** v danom goo (malé goo ukáže menej). *(V engine: rozsah, text a ikona hotové; úrovne detailov sú zatiaľ
+jedna — malý ClockGoo skryje druhý riadok.)*
+
+**C. Hotové doplnky z dokumentácie (časť „Architektúra systémového backendu“) — porovnanie a zhodnotenie.**
+Zásada ostáva: programy nevytvárať, použiť existujúce. Stav na latte-lab (5. 10.) a odporúčanie:
+
+| Oblasť | V dokumente | Na latte-lab | Zhodnotenie |
+|---|---|---|---|
+| Sieť | NetworkManager, iwd | NetworkManager beží, iwd nie je | **NetworkManager ostáva** jediný správca. iwd nie ako druhý správca vedľa neho, iba prípadne ako jeho Wi-Fi backend, keby wpa_supplicant robil problémy |
+| Indexovanie | Tracker3 / Baloo | LocalSearch (= Tracker3) nainštalovaný | **plocate + fd + ripgrep** (už v `latte-hladaj`, ľahké, okamžité) ostávajú základ. LocalSearch iba na metadáta a plný text dokumentov a hudby, keď to bude treba. **Baloo nie** (ťahá KDE) |
+| Súbory v sieti | GVFS, KIO | gvfs áno, bez MTP a SMB; rclone áno | **GVFS áno** — doinštalovať `gvfs-mtp`, `gvfs-smb` (telefóny, zdieľané priečinky). Cloud a FTP/SFTP ďalej cez rclone (`latte-siet`). **KIO nie** (KDE) |
+| Knižnice | virtuálne Dokumenty, Médiá, Projekty | XDG priečinky | použiť XDG priečinky a záložky Súborov; vlastnú vrstvu nevytvárať |
+| Tlač, skenovanie | CUPS, SANE | nenainštalované | doinštalovať `cups`, `sane-backends`, `simple-scan`; tlačiarne do Správcu zariadení |
+| Bluetooth | BlueZ | nainštalovaný, služba vypnutá | zapnúť službu; ovládanie cez Noctaliu a službu pleamaru (engine ju zatiaľ hlási ako nedostupnú) |
+| Firewall | nftables / firewalld | firewalld beží | **firewalld** (Fedora) stačí, nftables má pod sebou |
+| Firmvér | fwupd + LVFS | nainštalovaný | už je v App Manageri › Aktualizácie |
+| Dokumenty | jadro Okularu | iba poppler-utils | **Okular ako knižnica nie** (KDE Frameworks). Prehliadanie: poppler (už máme, Heidelberg) + hotový prehliadač ako Flatpak (Papers alebo Okular ako aplikácia) |
+| Zvuk a médiá | GStreamer | GStreamer, PipeWire, mpv | v poriadku; MediaGoo cez MPRIS (služba `media` pleamaru) |
+| Podcasty | RSS engine | — | hotová aplikácia (Kasts, GNOME Podcasts) + MediaGoo na ovládanie; vlastný engine nevytvárať |
+
+Integrácia do enginu a Nastavení ešte nie je urobená — ide o balíky (`setup/f0-install.sh`) a zapojenie do Správcu
+zariadení, Súborov a budúcich MediaGoo/ClipGoo.
+
+**D. Návrhy vylepšení súčasných goo** (čo ukazujú skúšobné kvapky, ktoré si používateľ nalepil na bok obrazovky,
+a kam by sa to hodilo):
+
+| Skúšobná kvapka ukazuje | Kam to zapojiť |
+|---|---|
+| **Počítadlo / Hodiny**: prstenec podľa hodnoty | **GooPower**: prstenec = batéria alebo záťaž CPU. **ClockGoo**: prstenec = priebeh bežiacej minútky. **QueenGoo**: prstenec = priebeh inštalácie (`latte-apps jobs`) |
+| **Pošta / Systém**: farebné jadro ako druh upozornenia | **ClockGoo**: jadro podľa najvážnejšieho upozornenia. **GooPower**: jantárové jadro pri prehrievaní alebo vysokej záťaži, červené pri slabej batérii (už je). **QueenGoo**: modré jadro počas aktualizácie |
+| **Kameň**: vlnky na hladine | udalosti systému zvlnia hladinu pri príslušnej kvapke — dokončené sťahovanie, pripojené zariadenie, nové upozornenie (už je), zmena hlasitosti |
+| **Systém (JSON)**: text z príkazu, koliesko = hlasitosť | **GooPower** môže ukazovať jeden údaj (teplota, záťaž) — voliteľne v Nastaveniach; hlasitosť patrí budúcej **MediaGoo** |
+| **Kalkulačka (JSON)**: kvapka = aplikácia | pripnuté aplikácie ako vlastné kvapky priamo z LensGoo (pravý klik › Pripnúť ako kvapku) |
+| **Lepkavá / Ťažká**: natiahnutie, odtrhnutie, pád | ikry GooBaru pri ťahaní (už sa naťahujú); okno ťahané z GooBaru na iný monitor |
+| **Bublinka / Kvapôčka**: hravé | hra pri nečinnosti (už je); LensGoo môže jemne pulzovať, kým AI odpovedá |
+
+**E. Nový prihlasovač (zadanie používateľa, zatiaľ nevytvorené).**
+1. Pri štarte z jadra je na obrazovke **šálka** (Plymouth). Animácia: zo šálky **vyskočí kvapka kávy / goo doprostred
+   obrazovky**.
+2. Keď šálka zmizne, goo sa **odvalí asi 5 cm doľava**, čím vytvorí **riadok**. Objaví sa text: **meno a heslo**.
+3. Celá rovina sa posunie dole a v **spodných 2/3 obrazovky sa objaví tekutá hranica** — plocha, ktorá sa z boku
+   správa ako **vodná hladina**.
+4. **Pod hladinou:** ak došlo k pádu, **výpis posledného pádu** (ten istý log musí byť dostupný aj inde v systéme —
+   kde, treba určiť; návrh: Monitor › karta s logmi a `latte-boot status`). Ak k pádu nedošlo, pod hladinou sú
+   **používateľove RSS a správy**, ktoré si nastaví. **Viac používateľov sa neukazuje.**
+5. Ak sa **minútu nikto neprihlási**, z hladiny sa **vynoria ďalšie goo a hrajú sa**; každá nesie inú informáciu —
+   stav batérie, počet upozornení, úloh v kalendári… **Čas nie**: ten je stále zobrazený **jednoduchým veľkým písmom
+   v pravom hornom rohu**. Tieto goo **nie sú klikateľné**.
+6. Klikať sa dá iba na **ikonu Power** a do **riadku vedľa LoginGoo**. **LoginGoo** je kvapka s ikonou Power; po
+   prihlásení sa z nej stane **GooPower**.
+
+Poznámky k tvorbe: dnešný greeter je Quickshell pod labwc (`session/greeter`), predvolená relácia má byť engine Goo
+(rozhodnutie 5. 10.). Prihlasovač v pleamare (jazyk má `kind: lock` a `input … secret`) by dal plynulý prechod
+LoginGoo → GooPower; RSS a upozornenia pred prihlásením znamenajú čítať údaje používateľa bez jeho relácie — treba
+rozhodnúť, čo je bezpečné ukázať na zamknutej obrazovke.
+
 ---
 
 ## 4. Časti plochy a ich správanie
