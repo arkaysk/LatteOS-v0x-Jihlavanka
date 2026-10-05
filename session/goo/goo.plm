@@ -82,6 +82,8 @@ scene Goo {
     spring pada = 190, 9                      // zvisle: s prestrelením a odrazom („odkvapne“, §3)
     spring rastie = 260, 16
     spring sada = 70, 13                      // sadnutie k lište v pokoji: pomaly, bez odrazu
+    let GRAV = 800                            // gravitácia (px/s²), NÍZKA (§3): z polovice obrazovky padá asi 1,1 s.
+                                              // Rovnaké číslo má logika (lib/engine.luau: GRAV) — počíta čas dopadu
     spring rezerva = 120, 14                  // kanály e1…e4 (logika ich mení zriedka, pružina to vyhladí)
 
     // vstupy myši → logika (payload = miesto k; koliesko k * 2 + 1 hore, k * 2 dole)
@@ -204,12 +206,21 @@ scene Goo {
         prop dip.$k = 0 ~0ms
         fact dipn.$k = 0
         on change dipn.$k { dip.$k: 1 ~180ms; dip.$k: 0 ~900ms after 240ms }
+        // pád po pustení vo voľnom priestore (gravitácia, §3): fh = výška nad novým domovom, od okamihu pustenia
+        // (ftm) ubúda ako pri voľnom páde z pokoja, ½·g·t². Kým pravidlo nezapíše čas, drží celú výšku (bez skoku)
+        fact fh.$k = 0
+        fact ftm.$k = -100
+        fact falln.$k = 0
+        fact fq.$k = 0
+        on change falln.$k { ftm.$k = time; fq.$k = falln.$k }
+        let fte.$k = max(0, time - ftm.$k)
+        let fo.$k = if(fq.$k != falln.$k, fh.$k, max(0, fh.$k - 0.5 * GRAV * fte.$k * fte.$k)) * (1 - drg.$k)
         // pokoj: kým kurzor nie je nablízku, kvapka na lište si SADNE — zasunie sa k hladine a sploští; pri kurzore
         // (aj pri susedovi) sa zdvihne a zaguľatí. Pri nečinnosti (zaspávajú) si sadne hlbšie. Stred ostane aspoň
         // 0,28 polomeru nad hladinou (s dvoma riadkami textu 0,45), aby obsah ostal celý vidieť; kvapka s prstencom (druh 1) nesadá —
         // prstenec potrebuje celý kruh
         prop sit.$k = 0 ~sada
-        follow sit.$k = (1 - clamp(prox.$k + 0.3 * max(npl.$k, npr.$k) + hov.$k, 0, 1)) * dk.$k * (1 - drg.$k) * if(idle > 0, 1.3, 1) * if(goo.$k.druh == 1, 0, 1)
+        follow sit.$k = (1 - clamp(prox.$k + 0.3 * max(npl.$k, npr.$k) + hov.$k, 0, 1)) * dk.$k * (1 - drg.$k) * if(idle > 0, 1.3, 1) * if(goo.$k.druh == 1, 0, 1) * if(fo.$k > 1, 0, 1)
         let sink.$k = sit.$k * clamp(goo.$k.hy - r0.$k * if(goo.$k.druh == 2, 0.45, 0.28), 0, r0.$k * 0.5)
         prop lift.$k = 0 ~pada
         follow lift.$k = clamp(prox.$k + 0.3 * max(npl.$k, npr.$k), 0, 1) * goo.$k.vz * if(idle > 0, 0.4, 1) * (1 - drg.$k)
@@ -246,8 +257,8 @@ scene Goo {
         // poloha: domov + gravitácia + ťahanie, s pružinou; zobrazená poloha k tomu pridá nadnesenie, tok a efekty
         prop px.$k = 0 ~plava
         prop py.$k = 0 ~pada
-        follow px.$k = hxp.$k + shx.$k + dx.$k * mv.$k
-        follow py.$k = hyp.$k + shy.$k + dy.$k * mv.$k
+        follow px.$k = hxp.$k + shx.$k + dx.$k * mv.$k + nx.$k * fo.$k
+        follow py.$k = hyp.$k + shy.$k + dy.$k * mv.$k + ny.$k * fo.$k
         // x, y, rr, near, neck, stalk, base, lk, th…: pružina ~0ms = tá istá hodnota v tom istom snímku, ale globálna
         // (let vnútri repeat patrí iba svojej kópii; telo goo a odlesky ich potrebujú zvonka)
         prop x.$k = 0 ~0ms
@@ -290,7 +301,7 @@ scene Goo {
         let nt.$k = clamp((floor - y.$k - rr.$k * 0.6) / (rr.$k * 0.4 + 70), 0, 1)
         follow near.$k = 1 - nt.$k * nt.$k * (3 - 2 * nt.$k)
         // základňa (mláka pri okraji, ako goo.kvapka): kvapka na lište v nej sedí; pri ťahaní sa stiahne
-        follow base.$k = dk.$k * (1 - drg.$k) * if(goo.$k.on, 1, 0) * goo.$k.ml
+        follow base.$k = dk.$k * (1 - drg.$k) * if(goo.$k.on, 1, 0) * goo.$k.ml * if(fo.$k > 12, 0, 1)
         // stopka k lište: pri nadnesení sa natiahne a stenčí (§3: vlákna ako sliz)
         follow stalk.$k = dk.$k * (0.5 - 0.22 * lift.$k) * lift.$k * (1 - drg.$k)
         // goo vlákno k susedovi vpravo (ako vypínač ↔ Hodiny): spája HORNÉ časti susedov — pod ním ostane oko, nad
@@ -326,7 +337,7 @@ scene Goo {
         follow neck.$k = drg.$k * (1 - tr.$k) * goo.$k.lep * clamp(length(dx.$k, dy.$k) / 30, 0, 1)
 
         // zóna: kvapka aj jej stopka k lište (nadnesenú kvapku treba trafiť aj pri okraji); pri ťahaní celá obrazovka
-        let zx.$k = dk.$k * max(0, (x.$k - e0x.$k) * nx.$k + (y.$k - e0y.$k) * ny.$k - rr.$k)      // od kvapky po okraj
+        let zx.$k = dk.$k * if(fo.$k > 12, 0, 1) * max(0, (x.$k - e0x.$k) * nx.$k + (y.$k - e0y.$k) * ny.$k - rr.$k)      // od kvapky po okraj
         zone box hit.$k { at: if(drg.$k > 0, W / 2, x.$k - nx.$k * zx.$k / 2), if(drg.$k > 0, H / 2, y.$k - ny.$k * zx.$k / 2); size: if(drg.$k > 0, W * 3, max(rr.$k * 2, 24) + ty.$k * zx.$k), if(drg.$k > 0, H * 3, max(rr.$k * 2, 24) + tx.$k * zx.$k); corner: max(rr.$k, 12); cursor: pointer; active: goo.$k.on }
         on enter hit.$k { hov.$k: 1; emit goo_enter(k) }
         on leave hit.$k { hov.$k: 0; emit goo_leave(k) }

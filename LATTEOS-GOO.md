@@ -141,7 +141,8 @@ samostatný tekutý prvok.
   **sploštia sa**; zdvihnú a zaguľatia sa až pri kurzore. („Zasunutie pod hladinu môže byť ešte o pár pixelov
   viac“ — prehĺbené 5. 10. večer.)
 - **Gravitácia platí na každú kvapku (5. 10.):** kvapka pustená vo voľnom priestore tam **neostane visieť** —
-  spadne rovno dole na hladinu, ponorí sa a vynorí, hladina sa zvlní.
+  spadne rovno dole na hladinu, ponorí sa a vynorí, hladina sa zvlní. **Pád má byť pád, nie výstrel** (5. 10.:
+  „rýchlosť pádu je príliš veľká… ako keby bola vystrelená k zemi“): z pokoja, s nízkou gravitáciou, plynulo zrýchľuje.
 - **Kvapky sa lepia ku každému okraju, nielen k dnu (5. 10.):** pustená pri ľavom, pravom alebo hornom okraji sa
   k nemu prilepí a správa sa tam rovnako ako dole (sadne si, pri kurzore sa od okraja zdvihne na stopke, zlieva sa
   so susedmi na tom okraji).
@@ -276,7 +277,8 @@ lepivosť, veľkosť a rezervu na ďalšie efekty.
 - **Okraje a gravitácia v engine (5. 10. večer):** každá kvapka má svoj okraj (`ed`: 0 dole, 1 vľavo, 2 hore,
   3 vpravo; v definícii `okraj`); scéna počíta nadnesenie, sadnutie, mláku, stopku, vodu a vlákna kolmo a pozdĺž
   neho. Pustenie: do 130 px od ľavého, pravého alebo horného okraja sa prilepí k najbližšiemu, inak spadne dole
-  (pružina s prestrelením, ponor, sploštenie, vlnka). Nič nevisí vo vzduchu — aj uložená alebo zadaná poloha mimo
+  voľným pádom z pokoja (`GRAV` = 800 px/s² v scéne aj logike: z polovice obrazovky ~1,1 s, z výšky 750 px 1,4 s;
+  pôvodne ju ťahala pružina a „vystrelila“ ju), pri dopade ponor ~27 px, sploštenie a vlnka. Nič nevisí vo vzduchu — aj uložená alebo zadaná poloha mimo
   okraja si sadne. GooBar (`vratit`) sa pri pustení uprostred vráti, pri inom okraji sa k nemu prenesie aj s ikrami.
   Susedia, pravidlo 22 a kotvy platia v rámci jedného okraja; hra pri nečinnosti iba dole.
 - **Jeden monitor (dočasne):** pleamar má pre všetky kópie scény jeden stav a šírku berie z poslednej, takže na
