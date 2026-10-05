@@ -48,6 +48,9 @@ def body():
         out.append(f"        ellipse {{ at: rpx.{i}, floor + 4; radius: rpa.{i} * (1.2 + 0.6 * sin(time * 1900)) * (1 - rpg.{i}) * if(rpk.{i} > 0.5, 1, 0); "
                    f"scale: 2.6, 1; blend: 12 }}\n")
     # krk lepkavej kvapky: ťahá sa naraz iba jedna, preto jeden tvar pre všetky (miesto nk)
+    # bublina okna, kým sa vytláča z kvapky (zlieva sa s ňou), a kvapka z minimalizovaného okna, ktorá padá k hladine
+    out.append("        ellipse { at: b.p1x, b.p1y; radius: (8 + 8 * b.s1) * if(bub.a > 0.01 and bub.t < 0.3, 1, 0); blend: 14 }\n")
+    out.append("        ellipse { at: mf.x, mf.y; radius: 16 * if(mf.k >= 1, mf.on, 0) * clamp((mf.T + 0.45 - mf.e) / 0.3, 0, 1); scale: 1 - 0.12 * clamp(mf.e, 0, 1), 1 + 0.2 * clamp(mf.e, 0, 1); blend: 16 }\n")
     # lepkavé vlákno hrozna upozornení: od okraja ku kvapke, kapsuly sa s ním zlievajú
     out.append("        line { from: vlx, vly0; to: vlx + 3 * noise(time * 0.3), vly1; width: vlw; blend: 14 }\n")
     out.append("        line { from: " + pick("hmx.{k}") + ", " + pick("hmy.{k}") + "; to: "

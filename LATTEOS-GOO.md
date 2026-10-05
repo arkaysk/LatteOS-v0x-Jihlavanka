@@ -315,6 +315,16 @@ lepivosť, veľkosť a rezervu na ďalšie efekty.
   - **LensGoo sa otvára aj klávesom Windows**, aby sa dali zadať príkazy **aj bez myši**; záložky (režimy) prepína
     **Tab**; v engine navyše Shift+Tab, šípky vyberú riadok, Enter potvrdí, Esc zavrie;
   - **po zadaní príkazu ostane konzola otvorená** (za príkazom beží bežný shell).
+- **Ucho a horná hrana okna — pripomienky používateľa (5. 10. neskoro večer):**
+  - **ucho ako v starej verzii** (malá bodka pri mieste kliku bola „škaredá“): kvapka, z ktorej okno rastie, vystúpi
+    74 px od okraja a sedí v ROHU karty, zliata s ňou, so svojím obsahom (pravidlo 9). V engine `opts.owner`
+    (LensGoo, ClockGoo, GooPower); ponuka okna v GooBare má ďalej iba kvapôčku pri mieste kliku;
+  - **horná hrana popup okna nesmie skákať** pri prepínaní funkcií a záložiek — platí pre všetky okná Goo. Karta so
+    záložkami má pevnú výšku (`opts.height`: spúšťač 600, karta času 690), ostatné sa počas otvorenia iba zväčšujú.
+- **Pravidlo 14 v engine (5. 10.):** okno z bubliny (`E.bubble`, prevzaté z `bublina.py`; QueenGoo), prasknutie
+  zatvoreného okna z bubliny (`E.pop`) a pád minimalizovaného okna do GooBaru: Hyprland to oznámi hneď
+  (`latte.goo_min` v `skratky.lua` → `wm.x/y/w/h` + `win_min`), okno sa zmenší do kvapky a voľným pádom spadne
+  k lište, hladina sa zvlní. Okno na inom monitore sa ignoruje (engine beží iba na hlavnom).
 - **Okno spúšťača LensGoo v engine (5. 10.):** `lib/spustac.luau` nad kartou Goo — režimy Aplikácie, Súbory, Web,
   Terminál, AI; pomocníci `latte-riadok`, `latte-hladaj`, `latte-ai` a `spustac.json` sú tie isté ako v Kvapkách.
   Karta: ikona aplikácie v riadku (`img`), pravý klik (`right`), odsek v bubline (`para`), písanie (`change`).

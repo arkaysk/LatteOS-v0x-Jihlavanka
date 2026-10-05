@@ -433,7 +433,7 @@ Item {
                     }
                 }
                 Text { visible: !!parent.p && app.detTab !== "prehlad" && !!app.pdet && (app.detTab === "subory" ? app.pdet.files : app.pdet.conns).length > 12
-                       text: "… a ďalších " + ((app.detTab === "subory" ? app.pdet.files : app.pdet.conns).length - 12); color: theme.fgDim; font { family: theme.fontUi; pixelSize: 11 } }
+                       text: "… a ďalších " + ((((app.detTab === "subory" ? (app.pdet || {}).files : (app.pdet || {}).conns)) || []).length - 12); color: theme.fgDim; font { family: theme.fontUi; pixelSize: 11 } }
                 Text { visible: !!parent.p && app.detTab !== "prehlad" && !!app.pdet && (app.detTab === "subory" ? app.pdet.files : app.pdet.conns).length === 0
                        text: app.detTab === "subory" ? "Proces nemá otvorené súbory" : "Žiadne sieťové spojenia"; color: theme.fgDim; font { family: theme.fontUi; pixelSize: 12 } }
                 Repeater {

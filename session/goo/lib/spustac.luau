@@ -314,8 +314,9 @@ local function build(keep)
         if i == 1 then r.sep = true end
         items[#items + 1] = r
     end
-    lastItems, lastOpts = items, { id = "lens", chips = chips }
-    E.menu(items, W, { id = "lens", chips = chips, keep = keep })
+    -- okno má pevnú výšku (horná hrana pri prepínaní režimov neskáče) a ucho = kvapka LensGoo v jeho rohu
+    lastItems, lastOpts = items, { id = "lens", chips = chips, owner = M.drop, height = 600 }
+    E.menu(items, W, { id = "lens", chips = chips, keep = keep, owner = M.drop, height = 600 })
 end
 render = function(keep)
     local ok, err = pcall(build, keep)
@@ -368,7 +369,7 @@ end
 -- otvorí okno spúšťača pri kvapke (klik na LensGoo alebo kláves Windows — aj bez myši); znova = zavrie
 function M.open(d)
     if E.menuId() == "lens" then close() return end
-    if d then E.menuAt(d) end
+    M.drop = d or M.drop
     q, confirm, extra = "", nil, { caste = extra.caste }
     E.menuText("")
     render(false)
@@ -392,6 +393,7 @@ function M.open(d)
 end
 
 function M.start(d)
+    M.drop = d
     -- kláves Windows (latte-spustac → pleamar --say goo "emit lens_toggle"): spúšťač sa dá otvoriť aj bez myši
     on("lens_toggle", function() M.open(d) end)
     sys.watch("apps", function(list)

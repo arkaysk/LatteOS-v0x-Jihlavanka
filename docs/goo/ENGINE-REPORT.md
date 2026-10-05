@@ -260,6 +260,8 @@ Validácia odmietne `farba` (pravidlo 6) a kontroluje čísla, povahu, efekt, dr
 - Viac monitorov: scéna sa kreslí na každom, ale voľné `prop` a `fact` sú **jedny pre všetky kópie** (aj so
   `screens: each`) a `screen.width` je z poslednej kópie. Vlastný stav na monitor = mená s `$screen` alebo jeden
   proces na monitor (`--screen MENO`). Engine zatiaľ beží iba na hlavnom monitore.
+- Číslo pri `pleamar --say goo "emit udalosť N"` má malý rozsah (zbalené 48-bitové neprešlo): viac hodnôt poslať
+  ako fakty (`fact meno hodnota`) a potom udalosť.
 - `scroll zone` dostane **každá** zóna pod kurzorom, nielen vrchná: koliesko nad riadkom príde aj ploche karty —
   logika si pamätá, že ho použil riadok (`wheel_used`), a plocha karty chvíľu počká (`ctx_bgw`).
 - `lines:` textu chce číslo, nie výraz; `anchor: left top` kreslilo odsek mimo — odsek je `left center` na strede
@@ -368,7 +370,7 @@ batéria (stolný PC), reálny touchpad.
    - GooBar: ✅ presun k inému okraju (5. 10.); `reversed`, vlastný na každom monitore (engine je zatiaľ iba na hlavnom);
    - let bubliny do okna (pravidlo 14);
    - kvapku bežiacu po vlákne.
-4. Háčik v Hyprlande: minimalizované okno vyvolá `pleamar --say goo "emit goo_kamen X"`.
+4. ✅ (5. 10.) Háčik v Hyprlande: minimalizované okno padne ako kvapka do GooBaru (`latte.goo_min` → `win_min`).
 5. Formulár Nastavenia › Kvapky nad `latte-goo`.
 6. Počasie: dážď a vietor (nečinnosť úroveň 2).
 7. Vlastné `app_id` pre aplikácie LatteOS (jednoduchšie párovanie okien).
@@ -381,6 +383,7 @@ batéria (stolný PC), reálny touchpad.
 
 ## 12. Commity enginu (najnovšie hore)
 
+- 5. 10.: ucho = kvapka v rohu karty, pevná výška kariet; pravidlo 14 (bublina, prasknutie, pád minimalizovaného okna).
 - 5. 10.: okno spúšťača LensGoo; karta Goo väčšia a pohyblivá, koliesko prepína záložky, ovládanie z klávesnice.
 - 5. 10.: karta času ClockGoo (čipy, veľký riadok, pruh, koliesko v karte Goo; lib/cas.luau; latte-goo cas, zvon).
 - 5. 10.: hrozno upozornení ClockGoo, zakázaná zóna rohovej lišty, korunka QueenGoo, vlákna (strop 2,3, hrubšie korene).

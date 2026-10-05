@@ -906,8 +906,21 @@ def odrs_ratings():
     return _ratings
 
 
+def odrs_id(aid):
+    """pod akým menom má aplikáciu ODRS: väčšinou id Flatpaku, ale staré známe aplikácie pod krátkym menom
+    (org.mozilla.firefox → firefox, org.mozilla.thunderbird → thunderbird). Krátke meno sa berie iba pri aplikácii
+    s aspoň 50 hodnoteniami — pri menej známych by sa mohlo trafiť do inej aplikácie s rovnakým menom."""
+    r = odrs_ratings()
+    for c in (aid, aid.lower()):
+        if c in r:
+            return c
+    short = aid.split(".")[-1].lower()
+    return short if short in r and r[short][1] >= 50 else None
+
+
 def rating_of(aid):
-    r = odrs_ratings().get(aid) or odrs_ratings().get(aid.lower())
+    k = odrs_id(aid)
+    r = odrs_ratings().get(k) if k else None
     return {"rating": r[0], "ratingCount": r[1]} if r else {"rating": 0, "ratingCount": 0}
 
 
@@ -918,6 +931,7 @@ def odrs_reviews(aid, limit=5):
         mid = open("/etc/machine-id").read().strip()
     except OSError:
         mid = "latteos"
+    aid = (odrs_id(aid) or aid).removesuffix(".desktop") + ".desktop"      # ODRS pozná aplikácie s príponou .desktop
     body = {"app_id": aid, "locale": (os.environ.get("LANG") or "sk_SK").split(".")[0], "distro": "Fedora",
             "version": "unknown", "user_hash": hashlib.sha1(("latteos" + mid).encode()).hexdigest(), "limit": limit}
     f = os.path.join(CACHE, "odrs-%s.json" % re.sub(r"[^\w.-]", "_", aid))

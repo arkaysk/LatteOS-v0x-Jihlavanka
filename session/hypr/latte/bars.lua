@@ -23,6 +23,7 @@ function B.setup(theme)
     function latte.win.minimize()
         local w = hl.get_active_window()
         if w and latte.tape_on and latte.tape_on() then latte.tape_away(w); return end
+        if w and latte.goo_min then pcall(latte.goo_min, w) end
         if w then hl.dispatch(hl.dsp.window.move({ workspace = "special:minimized", follow = false, window = "address:" .. w.address })) end
     end
     function latte.win.maximize()
