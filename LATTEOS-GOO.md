@@ -371,8 +371,10 @@ a kontrast, prípadne čítanie názvov nahlas.
 
 **B. Veľkosť kolieskom = nafukovanie a vyfukovanie.** Najmenšia veľkosť môže byť **polovica** bežnej (rozsah 50–220 %,
 bolo 100–220 %). S nafukovaním sa zväčšuje či zmenšuje **aj text, prípadne ikona**, a **prípadne aj množstvo
-detailov** v danom goo (malé goo ukáže menej). *(V engine: rozsah, text a ikona hotové; úrovne detailov sú zatiaľ
-jedna — malý ClockGoo skryje druhý riadok.)*
+detailov** v danom goo (malé goo ukáže menej). *(V engine hotové a overené na snímkach: pri 200 % veľký ostrý čas,
+pri 60 % iba čas. Prvá verzia text nemenila — používateľ: „text sa nezväčšil“ — lebo pleamar pri texte berie iba
+pevné číslo veľkosti; obsah je teraz v škálovanej skupine. Sediaca kvapka rastie od hladiny. Úrovne detailov sú
+zatiaľ jedna: malý ClockGoo skryje druhý riadok.)*
 
 **C. Hotové doplnky z dokumentácie (časť „Architektúra systémového backendu“) — porovnanie a zhodnotenie.**
 Zásada ostáva: programy nevytvárať, použiť existujúce. Stav na latte-lab (5. 10.) a odporúčanie:

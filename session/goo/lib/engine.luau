@@ -307,7 +307,14 @@ function Kvapka:ikona(s) self.v.ikona = s if self.v.druh ~= 2 then E.needGlyph(s
 function Kvapka:hodnota(x) self.v.hodnota = x publish() end
 function Kvapka:efekt(meno, sila) self.v.efekt = meno self.v.sila = sila or self.v.sila publish() end
 function Kvapka:rezerva(i, x) self.e[i] = x publish() end
-function Kvapka:velkost(z) self.z = clamp(z, ZOOM_MIN, ZOOM_MAX) E.separate(self) publish() save() end
+function Kvapka:velkost(z)
+    local old = self.z
+    self.z = clamp(z, ZOOM_MIN, ZOOM_MAX)
+    -- sediaca kvapka rastie od hladiny: výška stredu nad okrajom sa mení s veľkosťou (inak by väčšej kvapke okraj
+    -- obrazovky orezal spodok obsahu)
+    if old > 0 and self.y < self.v.velkost * old * 1.6 then self.y = self.y / old * self.z end
+    E.separate(self) publish() save()
+end
 function Kvapka:presun(x, y) self.x, self.y, self.ox = clamp(x, 0.02, 0.98), math.max(0, y), 0 self.moved = true publish() save() end
 function Kvapka:domov() self.x, self.y, self.ox, self.z, self.moved, self.edge = self.hx0, self.hy0, self.ox0, 1, false, self.edge0 or 0 publish() save() end
 function Kvapka:poskoc() bump("hopn", self.k) end

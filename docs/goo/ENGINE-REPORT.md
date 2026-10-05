@@ -250,7 +250,10 @@ Validácia odmietne `farba` (pravidlo 6) a kontroluje čísla, povahu, efekt, dr
 - `let` v `repeat` je lokálny pre kópiu. Hodnotu do rovnakého snímku exportuje `prop X.$k = 0 ~0ms` + `follow`.
 - `sin`/`cos` berú **stupne**.
 - `smooth()` chce konštantné hrany, inak treba ručné t²(3−2t).
-- `size:` textu musí začínať číslom (`20 * rs.$k`).
+- `size:` textu je **iba pevné číslo**: `size: 14 * čokoľvek` kreslí 14 (fakt, prop aj let — overené skúšobnou scénou
+  5. 10.). Cloud predpokladal, že násobiteľ funguje; preto sa pri nafukovaní kvapky text nemenil. Text, ktorý má
+  rásť, sa kreslí vo väčšej pevnej veľkosti v `group { pivot; scale }` a posuny vnútri sa delia mierkou.
+  (`letter_scale` nepomôže — písmená sa prekryjú.) To isté platí pre `kvapka.plm` (`size: 16 * zt.p`).
 - `pick()` nevie farby, pomôže vnorený `if`. `gradient` existuje iba v `body`.
 - Tvary tela sa počítajú pre každý pixel a `show:false` ich neodstráni. Preto nulová veľkosť + záplata prazdne-tvary.
 - `while` v pravidle vidí **stav zo začiatku snímky**. Príznak nastavený pri `press` preto `release` v tej istej
