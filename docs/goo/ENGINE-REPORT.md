@@ -41,7 +41,7 @@ zlievanie, vstupy, efekty) a kvapka je iba definícia plus háčiky.
 | `session/goo/lib/engine.luau` | API: register, susedia, publish, pravidlo 22, vlnky, menu, nečinnosť, ukladanie |
 | `session/goo/lib/goobar.luau` | port rozloženia Goobaru z `kvapka.luau`: pomenovanie okien, ikry/strapce, uhýbanie oknám |
 | `session/goo/lib/pouzivatel.luau` | JSON kvapky používateľa (poll 4 s) |
-| `session/goo/kvapky/*.luau` | goobar, timegoo, powergoo, queengoo, danogoo + ukážky (pocitadlo, hodiny, zvedavka, lepkava, tazka, bublinka, kvapocka, kamen, posta) |
+| `session/goo/kvapky/*.luau` | podľa Novej architektúry: goobar, goopower, lensgoo (jadro), queengoo, clockgoo (voliteľné) + ukážky (pocitadlo, hodiny, zvedavka, lepkava, tazka, bublinka, kvapocka, kamen, posta) |
 | `session/goo/priklady/*.json` | kalkulacka, system (záťaž > 2 → jadro výstraha) |
 | `session/bin/latte-goo` | CLI pomocník (viď §6) |
 | `session/bin/latte-session` | `kvapky-engine` → `LATTE_VARIANT=kvapky`, `LATTE_KVAPKY_SCENE=$share/goo/goo.plm`, `LATTE_GOO_DIR` |
@@ -211,7 +211,16 @@ E.define({
 - Keď je nad ikrami otvorené okno Hyprlandu, ikry uhnú k okraju obrazovky.
 - `mark_hidden` každé 2 s cez `hyprctl -j clients`.
 
-### Prenesené kvapky
+### Kvapky podľa Novej architektúry (5. 10.)
+
+- **GooBar** (jadro), **GooPower** (jadro; r 19, kotva lensgoo −62; ponuka s hlavičkou batérie), **LensGoo** (jadro;
+  r 30, kotva goobar −88, lupa, klik = `latte-spustac`), **QueenGoo** (voliteľná), **ClockGoo** (voliteľná; r 33,
+  x 0.79; čas + dátum `druh 2`, guľky upozornení, ľavý = upozornenia, pravý = pohoda a nastavenia času).
+- `zaklad = true` = jadro, nedá sa skryť. Skrývanie, veľkosť a vrátenie číta engine z `kvapky.json`
+  (`latte-goo nastavenia`, každé 2 s); skrytá kvapka má `on = false` a neráta sa do susedov ani pravidla 22.
+- Popis nižšie je pôvodný stav z cloudu (staré mená), ponechaný kvôli histórii.
+
+### Prenesené kvapky (pôvodné mená)
 
 - **TimeGoo** (r 33, kotva goobar −92, hodiny `druh 2`): klik prepne spúšťač, pravý otvorí nastavenie času a pohodu.
 - **PowerGoo** (r 19, kotva timegoo −66, vznos 1.8): ponuka Nastavenia, Monitor, Zamknúť, Odhlásiť, Uspať, Reštart a
@@ -331,11 +340,11 @@ batéria (stolný PC), reálny touchpad.
 
 1. ✅ (5. 10.) Overenie na latte-lab (§10).
 2. ✅ (5. 10.) Výkon GPU: záplata `pleamar-pasy-tela` namiesto ostrovov. Ostáva CPU (128 miest, §9).
-3. Preniesť zo Kvapiek do enginu:
-   - spúšťač Goo;
-   - časové menu (stopky, časovač, budíky);
-   - kartu kalendára s počasím;
-   - hrozno upozornení na vlákne;
+3. Preniesť zo Kvapiek do enginu (podľa Novej architektúry, `docs/goo/ROZHRANIE.md`):
+   - LensGoo: okno spúšťača z kvapky (režimy, AI);
+   - ClockGoo: karta (pohoda, stopky, minútka, budíky, kalendár, počasie);
+   - ClockGoo: hrozno upozornení na vlákne;
+   - GooBar: presun k inému okraju, `reversed`, vlastný na každom monitore;
    - let bubliny do okna (pravidlo 14);
    - kvapku bežiacu po vlákne.
 4. Háčik v Hyprlande: minimalizované okno vyvolá `pleamar --say goo "emit goo_kamen X"`.
@@ -351,6 +360,7 @@ batéria (stolný PC), reálny touchpad.
 
 ## 12. Commity enginu (najnovšie hore)
 
+- 5. 10.: Nová architektúra — GooBar, GooPower, LensGoo (jadro), QueenGoo, ClockGoo (voliteľné); Nastavenia › Kvapky.
 - 5. 10.: jedno telo (spoločný obrys Goobaru), sadnutie v pokoji, pravidlo 22 na 0,95 a pri hre, kotva sleduje, veľkosť 100–220 %.
 - 5. 10.: overenie na latte-lab — ikony, ľavý klik, ponuka a bublina, záplata pásov tela.
 - `ad563d0`: pravidlo 22, neprekrývanie.

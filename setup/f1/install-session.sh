@@ -74,6 +74,7 @@ for f in kvapka.plm kvapka.luau ikony.luau; do put "$S/kvapky/$f" "/usr/share/la
 sudo install -d /usr/share/latteos/kvapky/textury                     # textúry materiálov okien (textury.py)
 sudo install -m644 "$S"/kvapky/textury/*.webp "$S"/kvapky/textury/LICENCIA.txt /usr/share/latteos/kvapky/textury/
 echo "== engine Goo (relácia LatteOS Kvapky – engine test): scéna, logika, kvapky, príklady"
+sudo rm -f /usr/share/latteos/goo/kvapky/*.luau        # premenované kvapky (TimeGoo → LensGoo…) neostanú ako staré súbory
 ( cd "$S/goo" && for f in goo.plm goo.luau README.md lib/*.luau kvapky/*.luau priklady/*.json; do
     put "$f" "/usr/share/latteos/goo/$f"; done )
 pl="$repo/resources/upstream/pleamar"

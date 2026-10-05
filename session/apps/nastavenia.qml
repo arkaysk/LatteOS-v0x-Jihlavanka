@@ -101,6 +101,9 @@ ShellRoot {
     property var ai: ({})             // latte-ai status
     property var aiModels: []
     // Nastavenia › Kvapky (Goo): ~/.config/latteos/kvapky.json — logika Kvapiek ho číta každé 2 s
+    // engine Goo (relácia „Kvapky – engine test“) má kvapky podľa Novej architektúry: jadro sa nedá skryť
+    readonly property bool gooEngine: (Quickshell.env("LATTE_KVAPKY_SCENE") || "").endsWith("goo.plm")
+    I18n { id: i18n }
     property var kv: ({ skryte: [], zoom: {}, vlastne: [], chatgoo: "kvapka" })
     readonly property string kvFile: (Quickshell.env("XDG_CONFIG_HOME") || ((Quickshell.env("HOME") || "") + "/.config")) + "/latteos/kvapky.json"
     Process { id: kvRead; command: ["cat", app.kvFile]
@@ -1914,12 +1917,18 @@ ShellRoot {
                    text: "Kvapky plochy Goo: zobraziť alebo skryť, veľkosť (to isté robí koliesko nad kvapkou) a návrat na pôvodné miesto. Zmena sa prejaví do dvoch sekúnd." }
             Heading { text: "KVAPKY" }
             Repeater {
-                model: [["zt", "TimeGoo", "Hodiny, Štart a spúšťač, stopky, minútka", "clock"],
-                        ["zp", "PowerGoo", "Vypínač a batéria", "power"],
-                        ["zd", "DaNoGoo", "Dátum, počasie, upozornenia, kalendár", "calendar"]]
+                model: app.gooEngine
+                    ? [["goobar", "GooBar", i18n.tr("Main bar and window manager"), "app-window", true],
+                       ["goopower", "GooPower", i18n.tr("Power, session and battery"), "power", true],
+                       ["lensgoo", "LensGoo", i18n.tr("Launcher, search and AI"), "search", true],
+                       ["queengoo", "QueenGoo", i18n.tr("App Manager and Device Manager"), "crown", false],
+                       ["clockgoo", "ClockGoo", i18n.tr("Time, calendar, notifications and well-being"), "clock", false]]
+                    : [["zt", "TimeGoo", "Hodiny, Štart a spúšťač, stopky, minútka", "clock"],
+                       ["zp", "PowerGoo", "Vypínač a batéria", "power"],
+                       ["zd", "DaNoGoo", "Dátum, počasie, upozornenia, kalendár", "calendar"]]
                 Column {
                     required property var modelData
-                    readonly property bool base: modelData[0] === "zp"          // základ shellu (spodná lišta): nedá sa skryť
+                    readonly property bool base: app.gooEngine ? modelData[4] === true : modelData[0] === "zp"   // základ shellu: nedá sa skryť
                     readonly property bool hid: !base && app.kv.skryte.indexOf(modelData[0]) >= 0
                     width: parent.width; spacing: 6
                     Card { width: parent.width; height: 64; glyph: modelData[3]; title: modelData[1] + (parent.hid ? "  ·  skrytá" : (parent.base ? "  ·  základ shellu" : "")); sub: modelData[2]; selected: !parent.hid
@@ -1935,7 +1944,9 @@ ShellRoot {
                 }
             }
             Text { width: parent.width; wrapMode: Text.WordWrap; color: theme.fgDim; font { family: theme.fontUi; pixelSize: 12 }
-                   text: "Goobar (lišta s oknami), QueenGoo a PowerGoo tvoria základ shellu — spodnú lištu — a nedajú sa skryť (dá sa im zmeniť veľkosť). TimeGoo a DaNoGoo skryješ alebo ukážeš kliknutím na kartu." }
+                   text: app.gooEngine
+                       ? i18n.tr("GooBar, GooPower and LensGoo are the core of the shell and cannot be hidden (their size can be changed). QueenGoo and ClockGoo are optional: click a card to hide or show it.")
+                       : "Goobar (lišta s oknami), QueenGoo a PowerGoo tvoria základ shellu — spodnú lištu — a nedajú sa skryť (dá sa im zmeniť veľkosť). TimeGoo a DaNoGoo skryješ alebo ukážeš kliknutím na kartu." }
             Heading { text: "CHATGOO (DOPLNOK PRE BEEPER)"; topPadding: 6 }
             Segments {
                 options: [["kvapka", "Kvapka ChatGoo — Beeper sa minimalizuje do nej, správy okolo"], ["lista", "Bez kvapky — ikona Beepera v rohovej lište Noctalie"]]

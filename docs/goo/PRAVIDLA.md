@@ -113,6 +113,6 @@ Engine dáva spoločné pravidlá pre **všetky kvapky** jednou kópiou:
 
 ## Ďalej
 
-- [Rozhranie — jednotlivé kvapky](ROZHRANIE.md)
-- [Engine — ako programovať](ENGINE.md)
+- [Rozhranie — jednotlivé kvapky podľa Novej architektúry](ROZHRANIE.md)
+- [Engine — report](ENGINE-REPORT.md)
 - [Originál v LATTEOS-GOO.md](../../LATTEOS-GOO.md)

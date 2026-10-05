@@ -1,86 +1,97 @@
 # LatteOS Goo — Rozhranie
 
-Popis jednotlivých kvapiek a ich správania.
+Popis jednotlivých kvapiek a ich správania podľa **Novej architektúry** (rozhodnutie 5. 10. 2026).
 
-*Úplný originál je v [LATTEOS-GOO.md](../../LATTEOS-GOO.md) §4.*
+*Úplný originál je v [LATTEOS-GOO.md](../../LATTEOS-GOO.md), časť „Nová Architektúra prostredia a rozhranie Goo“.
+Staršie rozdelenie (TimeGoo, DaNoGoo, PowerGoo) je v §4 toho istého dokumentu a platí už iba pre scénu plochy
+Kvapky, kým ju engine nenahradí.*
 
-## Základ shellu
+Stĺpec **Engine** hovorí, čo z toho už vie engine Goo (`session/goo`); zvyšok je zatiaľ iba v scéne Kvapky.
 
-Goobar, PowerGoo a QueenGoo tvoria spodný panel (z goo maskota Marey, ktorý bol jeden na všetko). **Nedajú sa skryť**, iba zmeniť veľkosť.
+## Jadro — nedá sa skryť
 
-### Goobar — lišta s oknami
+### GooBar — hlavná lišta a správca okien
 
 - **Hlava** (najväčšia kvapka): ikona režimu okien (páska / nad sebou / dlaždice)
   - Ľavý klik = ďalší režim
-  - Koliesko = posun pásky (páska) alebo ďalšie okno (plávajúce)
-  - Ťahanie = presun lišty k okrajom
+  - Koliesko = posun pásky (páska) alebo ďalšie okno (ako Alt+Tab)
+  - Ťahanie = presun lišty k inému okraju (pustená uprostred sa vráti)
+- **Ikry okien** (strapce po aplikáciách; menšie, aby sa nezamieňali s ostatnými)
+  - Vyrastajú z hlavy doprava alebo nadol (`reversed` v Nastaveniach to otočí)
+  - Čím viac okien, tým menšie; do výšky sa vrstvia iba okná tej istej aplikácie
+  - Okno pri lište → ikry sa stiahnu nižšie
+  - Ľavý klik = prepnúť / minimalizovať (v páske bez minimalizácie), pravý = ponuka okna, ťahanie = poradie
+  - Minimalizované = menšie, stlmené; **48 miest**, potom zberná guľôčka
+- GooBar sa s inými kvapkami spája iba zo strany, kde nevyrastajú ikry
+- Lišta sa zmestí po kraj obrazovky a zastaví pred rohovými prvkami
+- **Viac monitorov:** každá obrazovka má vlastný GooBar, okná sa dajú prenášať
 
-- **Guľôčky okien** (strapce po aplikáciách; menšie, iba 17 px, aby sa nezamieňali s ostatným)
-  - Ľavý klik = prepnúť okno, v páske = bez minimalizácie
-  - Pravý klik = ponuka okna (Obnoviť, Minimalizovať, Maximalizovať, Rozloženie ›, Vždy navrchu, Presunúť na plochu ›, Zavrieť)
-  - Ťahanie = preusporiadanie aplikácií
-  - Minimalizované = menšie, stlmené
-  - Nad 96 okien = guľôčka "Ďalšie okná" → prehľad
+**Engine:** hlava, ikry a strapce, uhýbanie oknám, klik, ponuka okna, poradie ťahaním, 48 miest.
+**Chýba:** presun lišty k inému okraju, `reversed`, vlastný GooBar na každom monitore.
 
-### PowerGoo — Vypínač
+### GooPower — napájanie a monitor systému
 
-- Polomer 19 px, kotva pri TimeGoo
-- **Ľavý klik** = ponuka Goo: Nastavenia, Monitor, Zamknúť, Odhlásiť, Uspať, Reštartovať, Vypnúť
-- **Guľky batérie** (notebook):
-  - ≥ 60 % = 3 zelené
-  - ≥ 30 % = 2 žlté
-  - < 30 % = 1 červená
-  - Pod 10 % = pulzuje
-  - Pri nabíjaní = stúpajú a klesajú
+- **Ľavý klik** = okno Goo spojené s kvapkou: Nastavenia, Monitor systému, a časť Noctalie — Zamknúť, Odhlásiť,
+  Uspať, Reštartovať, Vypnúť
+- **Batéria** (notebook): hlavička okna ukazuje percentá a nabíjanie; na kvapke bublinky —
+  3 zelené ≥ 60 %, 2 žlté ≥ 30 %, 1 červená < 30 %; pod 10 % pulzuje; pri nabíjaní stúpajú a klesajú
+- Na stolnom počítači bez indikátora
 
-### QueenGoo — Kráľovná
+**Engine:** ponuka, hlavička s batériou, bublinky, pulz.
 
-- Polomer 22 px, korunka (ikona), vnútri ikona aplikácie
-- **Guľky:**
-  - Červená = zariadenia, ktoré potrebujú pozornosť
-  - Zelená = výpadok siete
-  - Modrá = čakajúce aktualizácie
+### LensGoo — univerzálny spúšťač a lupa
 
-- **Ľavý klik** = App Manager (inštalácia)
-- **Pravý klik** = Device Manager (správa zariadení)
-- **Správanie:** vypľuje bublinu → nafúkne sa na okno (neostáva na lište ako TimeGoo, ale opúšťa ju ako ponuka)
+- Kvapka s lupou: vyhľadávač, spúšťač a rozhranie pre AI
+- **Režimy** (klik na ikonu režimu, koliesko nad ňou, Tab; pamätá sa v `spustac.json`):
+  Aplikácie · Súbory (`fd`) · Web · Terminál (`latte-terminal`) · AI Chat
+- **AI** (`latte-ai`): rozhovor v goo bublinách priamo v spúšťači, **nikdy neotvára prehliadač**; bez kľúča API
+  cez prihlásené nástroje (Claude Code, Gemini, Codex); bodka rozlišuje lokálny a cloudový model
+
+**Engine:** kvapka s lupou na mieste Štartu, ľavý klik otvorí rýchle spustenie LatteOS.
+**Chýba:** okno spúšťača z kvapky s režimami a AI (je v scéne Kvapky, `spustac.py`).
 
 ---
 
-## Doplnky — dajú sa skryť a presúvať
+## Voliteľné — dajú sa zapnúť a vypnúť v Nastaveniach
 
-### TimeGoo — Hodiny, Štart
+### QueenGoo — App Manager a Správca zariadení
 
-- Polomer 33 px, kotva pri hlave Goobaru
-- **Obsah:** digitálny čas a dátum
-- **Ľavý klik** = **spúšťač** (kvapka sa vznesie, stane sa rohom okna, okno vyrastie)
-- **Pravý klik** = **časové menu** (karta z ucha):
-  - Veľký čas, dátum, týždeň
-  - Čipy: Prehľad · Stopky · Minútka · Budíky · ⚙ Nastavenia
-  - Minútka a budíky jej strážia a zvoní (aj keď je menu zatvorené)
+- Korunka na vonkajšej strane (tvar sa dá zmeniť v Nastaveniach)
+- **Bodky:** červená = zariadenie potrebuje pozornosť, zelená = výpadok siete, modrá = aktualizácie
+- **Ľavý klik** = App Manager (pri aktualizáciách rovno na nich), **pravý** = Správca zariadení (pri výpadku na Sieťach)
+- Kvapka sa nestáva rohom okna: vypľuje bublinu, ktorá sa nafúkne na okno vedľa nej (1220 × 780)
 
-### DaNoGoo — Dátum, Upozornenia
+**Engine:** bodky, oba kliky, okno vedľa kvapky. **Chýba:** korunka, let bubliny.
 
-- Polomer 22 px, ľavo dole od rohovej lišty Noctalie
-- **Obsah:** dátum ("st 30. 9.") a počasie (ikona + teplota)
-- **Guľky:** počet upozornení (žlté < 5, číslované > 5; systémové červeno-kávové)
-- **Ľavý klik** = kvapka sa vznesie, vytvorí sa **hrozno upozornení** na lepkavom vlákne
-  - Bobule = ikona + názov + popis
-  - Ľavý = otvoriť, pravý = akcie (ak má), odhodenie = zahodiť
-  - Zavrie sa klikom na DaNoGoo / Esc / klik mimo
-- **Pravý klik** = **karta kalendára a počasia** (karta z kvapky):
-  - Mesiac od pondelka, udalosti a úlohy
-  - Nová udalosť, úloha; pravý = zmazať
-  - Dole počasie: miesto, Dnes/Zajtra/Týždeň
-- **Ťahanie** = presun na ďalší okraj
+### ClockGoo — čas, kalendár, upozornenia a pohoda
 
-### ChatGoo — Správy (plán)
+Spája čas a centrum upozornení (predtým TimeGoo a DaNoGoo).
 
-- Addon pre **pôvodný Beeper pre Linux**
-- Kvapka sa ukáže, keď je Beeper nainštalovaný
-- **Minimalizácia Beepera** = správy vtečú do kvapky
-- **Správy okolo kvapky** = upozornenia z Beepera (ako v DaNoGoo)
-- Zatiaľ iba plán, scéna sa robí na latte-lab
+- **Ľavý klik** = upozornenia: kvapka sa vymrští a nechá visieť hrozno upozornení na lepkavom vlákne (najnovšie
+  hore); zavrie klik na kvapku, Esc alebo klik mimo. Farby: výstrahy a systém červeno-kávové, nedôležité kávové,
+  aplikácie farbou svojej ikony
+- **Pravý klik** = karta času a kalendára na krku z kvapky:
+  - digitálna pohoda (čas pred obrazovkou, tri najpoužívanejšie aplikácie, podrobnosti v Monitore)
+  - svetové hodiny, stopky, minútka (koliesko), budíky (`casovace.json`, `clock.conf`)
+  - kalendár od pondelka, udalosti a úlohy (CalDAV, Google, iCloud cez Noctaliu)
+  - počasie Dnes / Zajtra / Týždeň
+
+**Engine:** čas a dátum v kvapke, guľky počtu upozornení, ľavý = zoznam upozornení v ponuke, pravý = pohoda
+a nastavenia času. **Chýba:** hrozno na vlákne, karta (stopky, minútka, budíky, kalendár, počasie).
+
+### ChatGoo — Beeper
+
+- Aktívna iba s nainštalovaným alebo bežiacim Beeperom; minimalizovaný Beeper „vtečie“ do kvapky
+- Upozornenia Beepera idú z ClockGoo do ChatGoo; správy ako hrozno bublín s odznakom siete
+- Pomocník `session/bin/latte-chatgoo`
+
+**Engine:** zatiaľ nič.
+
+---
+
+## Návrhy ďalších kvapiek
+
+ClipGoo (schránka), MediaGoo (prehrávač, MPRIS), PassGoo (heslá), CastGoo (streamovanie obrazovky).
 
 ---
 
@@ -88,40 +99,21 @@ Goobar, PowerGoo a QueenGoo tvoria spodný panel (z goo maskota Marey, ktorý bo
 
 - Iba **pravá časť** Noctalie, natvrdo prilepená v rohu
 - Ikony programov na pozadí, sieť, hlasitosť, ovládacie centrum
-- Panely sa otvárajú pri lište
 - Plán: priehľadnosť + goo telo pod ňou
 
----
+## Nastavenia › Kvapky (Goo)
 
-## Mimo plochy
-
-### Prihlasovacia obrazovka
-- Výber relácie: LatteOS Kvapky, LatteOS Classic, Marea, Noctalia čistá…
-- Sunshine (vzdialený prístup) beží už pred prihlásením
-
-### Nastavenia › Kvapky (Goo)
-- **Viditeľnosť:** TimeGoo, PowerGoo, DaNoGoo — zaškrtnutie = skryť (veľkosť 0)
-- **Veľkosť:** 100–220 %
-- **Vrátiť na miesto:** reset polôh
-- **ChatGoo:** "Kvapka" alebo "Bez kvapky — ikona v rohovej lište"
+- Jadro (GooBar, GooPower, LensGoo): iba veľkosť a vrátenie na miesto
+- Voliteľné (QueenGoo, ClockGoo): klik na kartu = skryť / ukázať
+- **Veľkosť:** 100–220 %, **Vrátiť na miesto**
+- **ChatGoo:** kvapka, alebo ikona Beepera v rohovej lište
 - **Vlastné kvapky:** názov, ikona, príkaz
-- Súbor: `~/.config/latteos/kvapky.json` (logika ho číta každé 2 s)
-
----
-
-## Namenovaná podľa
-
-- **Goo** — tekutá podstata, sliz
-- **Goobar** — bar s guľôčkami, ako v paneli úloh
-- **TimeGoo** — čas (Time) + Goo
-- **PowerGoo** — napájanie, vypínač (Power) + Goo
-- **QueenGoo** — kráľovná, korunka + Goo
-- **DaNoGoo** — dátum (Da) + notifikácie (No) + Goo
-- **ChatGoo** — správy (Chat) + Goo
+- Súbor: `~/.config/latteos/kvapky.json` (číta sa každé 2 s)
 
 ---
 
 ## Ďalej
 
-- [Engine — ako programovať](ENGINE.md)
+- [Pravidlá plochy](PRAVIDLA.md)
+- [Engine — report](ENGINE-REPORT.md)
 - [Originál v LATTEOS-GOO.md](../../LATTEOS-GOO.md)

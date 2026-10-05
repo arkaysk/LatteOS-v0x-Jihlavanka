@@ -117,5 +117,11 @@
  "video and music": "video a hudba",
  "voice and chat": "hlas a chat",
  "waiting": "čaká",
- "wind {v} km/h": "vietor {v} km/h"
+ "wind {v} km/h": "vietor {v} km/h",
+ "Main bar and window manager": "Hlavná lišta a správca okien",
+ "Power, session and battery": "Napájanie, relácia a batéria",
+ "Launcher, search and AI": "Spúšťač, hľadanie a AI",
+ "App Manager and Device Manager": "App Manager a Správca zariadení",
+ "Time, calendar, notifications and well-being": "Čas, kalendár, upozornenia a pohoda",
+ "GooBar, GooPower and LensGoo are the core of the shell and cannot be hidden (their size can be changed). QueenGoo and ClockGoo are optional: click a card to hide or show it.": "GooBar, GooPower a LensGoo sú jadro shellu a nedajú sa skryť (dá sa im zmeniť veľkosť). QueenGoo a ClockGoo sú voliteľné: kliknutím na kartu ich skryješ alebo ukážeš."
 }

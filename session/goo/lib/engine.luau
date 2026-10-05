@@ -85,7 +85,7 @@ local function record(d)
     -- meno ikony → znak (kým nepríde, bez ikony); druh 2 (hodiny) má v poli ikony veľký text, nie ikonu
     if isName(ik) and v.druh ~= 2 then ik = glyphs[ik] or "" end
     return {
-        on = true, hx = d.x, ox = d.ox or 0, hy = d.y, r = v.velkost, z = d.z, rast = v.rast,
+        on = not d.hidden, hx = d.x, ox = d.ox or 0, hy = d.y, r = v.velkost, z = d.z, rast = v.rast,
         grav = clamp(num(v.gravitacia, 0), 0, 1), dosah = v.dosah, vz = clamp(num(v.vznos, 1), 0, 2),
         lep = v.lepivost, trh = v.trhanie, svetlo = v.svetlo, tahat = v.tahat,
         fx = EFEKTY[v.efekt] or num(v.efekt, 0), fa = v.sila,
@@ -107,7 +107,7 @@ local function neighbours(list)
     for _, d in ipairs(list) do
         d.nl, d.nr = nil, nil
         -- ťahaná nie je susedom (inak by k jej starému miestu viselo dlhé vlákno)
-        if d.y < d.v.velkost * 1.6 and not d.dragging then table.insert(docked, d) end
+        if d.y < d.v.velkost * 1.6 and not d.dragging and not d.hidden then table.insert(docked, d) end
     end
     table.sort(docked, function(a, b) return a.x * NOMINAL_W + (a.ox or 0) < b.x * NOMINAL_W + (b.ox or 0) end)
     -- susedia iba v rámci jedného goo tela: ikry Goobaru (sk 1) s hlavou (sk 2) a navzájom, ostatné (sk 0) s hlavou
@@ -128,6 +128,8 @@ end
 -- tá, ktorú možno posunúť — nie okná Goobaru (rozloženie) ani kvapky pripnuté k inej (TimeGoo, PowerGoo); z dvoch
 -- posunuteľných ustúpi tá, na ktorú niečo pustili. Odsunutie sa reťazí (najviac 10 kôl) a uloží.
 local save                 -- nižšie (uloženie polôh)
+-- mená kvapiek pred „Novou architektúrou“ (5. 10.): uložená poloha a veľkosť prejdú na novú kvapku
+local STARE = { lensgoo = "timegoo", clockgoo = "danogoo", goopower = "powergoo" }
 local MIN_GAP = 0.95        -- stredy aspoň 0,95 súčtu polomerov: dotýkajú sa a zlievajú, neprekrývajú (pri 0,72 veľká
                             -- kvapka malú skoro celú zakryla: TimeGoo pod hlavou Goobaru, latte-lab 5. 10.)
 local GAP_IKRY = 1.2        -- cudzia kvapka pri ikrách okien: mimo dosahu zliatia (ikry sa lepia iba ku Goobaru)
@@ -137,7 +139,7 @@ local function separate()
     local sw = num(fact.sw, 0)
     if sw <= 0 then sw = 1920 end
     local list = {}
-    for k = 0, N - 1 do if slots[k] then table.insert(list, slots[k]) end end
+    for k = 0, N - 1 do if slots[k] and not slots[k].hidden then table.insert(list, slots[k]) end end
     local moved = {}
     for _ = 1, 10 do
         local any = false
@@ -336,7 +338,7 @@ function E.define(def, zdroj)
     else
         d.hx0, d.hy0 = nextDock(), seat
     end
-    local s = saved[def.id]
+    local s = saved[def.id] or saved[STARE[def.id] or ""]     -- poloha spred premenovania kvapiek
     d.x, d.y, d.z = s and s.x or d.hx0, s and s.y or d.hy0, clamp(num(s and s.z, 1), ZOOM_MIN, ZOOM_MAX)
     d.ox = s and 0 or d.ox0
     d.moved = s ~= nil
@@ -575,7 +577,7 @@ end
 -- preč) a po hre sa všetko vráti na svoje miesto. Ikry okien a hlava Goobaru neuhýbajú (k nim sa nebeží).
 local function px(d) local sw = num(fact.sw, 0) return d.x * (sw > 0 and sw or 1920) + (d.ox or 0) end
 local function rad(d) return d.v.velkost * d.z end
-local function docked(d) return d.y < rad(d) * 1.6 end
+local function docked(d) return d.y < rad(d) * 1.6 and not d.hidden end
 local function toFrac(d, x) local sw = num(fact.sw, 0) return (x - (d.ox or 0)) / (sw > 0 and sw or 1920) end
 -- miesto pre d na x: komu treba uhnúť a kam ({ kvapka = x }); nil = nezmestí sa (okraj obrazovky, Goobar)
 local function shove(d, x)
@@ -674,6 +676,35 @@ on("goo_idle", function(level)
     end
 end)
 
+-- ── Nastavenia › Kvapky (~/.config/latteos/kvapky.json, ten istý súbor ako plocha Kvapky): voliteľné kvapky sa dajú
+-- skryť, základné (zaklad = true: GooBar, GooPower, LensGoo) nie; veľkosť 100–220 %; vrátenie na miesto ──────────
+local lastReset = nil
+local function settings()
+    run("latte-goo", { "nastavenia" }, function(out)
+        local ok, t = pcall(json.decode, out or "")
+        if not ok or type(t) ~= "table" then return end
+        local hide, changed = {}, false
+        for _, id in ipairs(type(t.skryte) == "table" and t.skryte or {}) do hide[id] = true end
+        for id, d in pairs(byId) do
+            local h = hide[id] == true and not d.def.zaklad and d.zdroj ~= "dyn"
+            if h ~= (d.hidden == true) then d.hidden = h changed = true end
+            local z = type(t.zoom) == "table" and tonumber(t.zoom[id])
+            if z and math.abs(clamp(z, ZOOM_MIN, ZOOM_MAX) - (d.zset or 0)) > 0.001 then
+                d.zset = clamp(z, ZOOM_MIN, ZOOM_MAX)             -- iba keď sa zmenilo v Nastaveniach (koliesko ostáva)
+                d:velkost(d.zset)
+            end
+        end
+        local r = type(t.reset) == "table" and t.reset
+        if r and r.t ~= lastReset then
+            if lastReset ~= nil and byId[r.k] then byId[r.k]:domov() end
+            lastReset = r.t
+        elseif not r and lastReset == nil then
+            lastReset = 0
+        end
+        if changed then E.separate() publish() end
+    end)
+end
+
 -- ── štart ────────────────────────────────────────────────────────────────────────────────────────────────────
 function E.start(opts)
     opts = opts or {}
@@ -701,6 +732,8 @@ function E.start(opts)
         end
         for _, def in ipairs(defs) do log("goo: " .. def.id .. ": kotva " .. tostring(def.pri) .. " nie je") E.define(def, "luau") end
         if opts.pouzivatel ~= false then require("lib/pouzivatel").start(E, opts) end
+        settings()
+        every(2000, settings)
         publish()
     end)
     -- káva (pravidlo 6): pomer vody a mlieka z Baristu, ako plocha Kvapky
