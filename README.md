@@ -1,6 +1,6 @@
 # LatteOS GOO
 
-@Arkay · nový štart 23. 9. 2026 · predtým pracovný názov „gamerdistro“
+@Arkay · nový štart 23. 9. 2026 · predtým pracovný názov „gamerdistro“ (vetva `gamerdistro` je od 5. 10. 2026 `main`)
 
 **LatteOS GOO** je linuxová plocha pre ľudí zvyknutých na Windows 11, v ktorej lištu, Štart, hodiny a systémové
 prvky nahrádzajú **tekuté kávové kvapky** (goo): pružia, lepia sa k okraju obrazovky aj k sebe, žijú vlastným
@@ -11,6 +11,8 @@ pohybom a reagujú na kurzor. Všetko sa ovláda myšou.
 - **LatteOS GOO je jediná edícia.** Doterajšie „gamerdistro“ sa ním stáva.
 - **LatteOS Classic sa ruší.** Nové funkcie sa preň nerobia; jeho kód (relácia „LatteOS“ s lištou Noctalie) zatiaľ
   v repozitári ostáva a bude sa odstraňovať postupne, keď ho GOO nahradí aj ako predvolená a núdzová relácia.
+- **Predvolené prihlásenie bude engine Goo.** Prihlasovanie sa ešte prerobí; dovtedy sa engine spúšťa reláciou
+  „LatteOS Kvapky – engine test“.
 - **Hlavná práca je engine Goo** (`session/goo`): jedny pravidlá pre všetky kvapky nad
   [pleamarom](https://github.com/k4ditano/pleamar) (k4ditano, BSD-3-Clause). Je na ňom ešte veľa práce — stav
   a otvorené úlohy sú v [docs/goo/ENGINE-REPORT.md](docs/goo/ENGINE-REPORT.md).

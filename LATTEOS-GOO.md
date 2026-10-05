@@ -3,7 +3,8 @@
 > **Smer (rozhodnutie používateľa 5. 10. 2026):** doterajšie „gamerdistro“ sa stáva **LatteOS GOO** — jedinou
 > edíciou LatteOS. **LatteOS Classic sa ruší.** Hlavná práca je engine Goo (§3.2, `session/goo`); kvapky sú podľa
 > „Novej architektúry“ na konci tohto dokumentu. Kód Classic zatiaľ ostáva, kým ho GOO nenahradí aj ako predvolená
-> a núdzová relácia; nové funkcie sa preň nerobia.
+> a núdzová relácia; nové funkcie sa preň nerobia. **Predvolené prihlásenie bude nový engine** — prihlasovanie sa
+> ešte prerobí. Verejne sa zatiaľ nič nezverejňuje. Vetva `gamerdistro` je od 5. 10. `main` (starý `main` zrušený).
 
 Spoločný dokument pre používateľa (autora LatteOS) a Clauda: **čo LatteOS Goo je, ako sa má správať a z čoho sa
 skladá**. Platí nezávisle od konverzácie. Pred prácou na Goo ho treba prečítať, a keď sa niečo rozhodne,

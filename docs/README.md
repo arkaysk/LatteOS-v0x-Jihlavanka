@@ -96,4 +96,4 @@ LATTEOS-GOO.md (koreň)            ← Záväzný dokument: pravidlá, správani
 2. Zaciluj vrstvu, ktorú potrebuješ zmeniť
 3. Predtým, ako meniškvapky: [Pravidlá](goo/PRAVIDLA.md)
 4. Rozhodnutia zapisuj do [LATTEOS-GOO.md](../LATTEOS-GOO.md), stav enginu do [ENGINE-REPORT.md](goo/ENGINE-REPORT.md)
-5. Commit a `git push -u origin gamerdistro`
+5. Commit a `git push -u origin main`

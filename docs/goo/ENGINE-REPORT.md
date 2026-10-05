@@ -1,6 +1,6 @@
 # Engine Goo — report pre novú session Claude Code
 
-Stav k 2026-10-05, vetva `gamerdistro` (= **LatteOS GOO**, jediná edícia; Classic zrušený 5. 10.), repo `arkaysk/jihlavanka001`. Engine je **nainštalovaný a overený na
+Stav k 2026-10-05, vetva `main` (do 5. 10. `gamerdistro`; = **LatteOS GOO**, jediná edícia, Classic zrušený), repo `arkaysk/jihlavanka001`. Engine je **nainštalovaný a overený na
 latte-lab** (5. 10., §10); cloudová časť končí commitom `ad563d0`.
 Tento súbor je odovzdávka: čo engine je, kde čo leží, ako sa testuje, aké pasce jazyk má a čo ostáva.
 Podrobnosti: `session/goo/README.md` (API a pasce), `LATTEOS-GOO.md` §2 (pravidlá 1–22) a §3.2 (engine),
@@ -10,7 +10,7 @@ Podrobnosti: `session/goo/README.md` (API a pasce), `LATTEOS-GOO.md` §2 (pravid
 
 - Hlavný fokus je **LatteOS Goo** (session „LatteOS Kvapky“: `session/kvapky/kvapka.plm` + `kvapka.luau`).
   Engine je zatiaľ **oddelený test** v session „Kvapky engine test“; Classic ostáva ako alternatíva.
-- **Každú odpoveď a každý krok zapisuj do `cloud_session_1.md`** (koreň repa), potom commit a `git push -u origin gamerdistro`.
+- **Každú odpoveď a každý krok zapisuj do `cloud_session_1.md`** (koreň repa), potom commit a `git push -u origin main` (vetva `gamerdistro` bola 5. 10. premenovaná na `main`).
 - Opatrne, nerozbiť hotový dizajn. Ovládanie je primárne myš (ľavé, pravé, koliesko). Terminál je dostupný iba po
   kliknutí na „Zobraziť terminál“.
 - Pred úpravou správania kvapiek **prečítaj `LATTEOS-GOO.md`** (raz som to neurobil a porušil pravidlá).
@@ -338,6 +338,8 @@ batéria (stolný PC), reálny touchpad.
 
 ## 11. Otvorené úlohy
 
+0. **Engine ako predvolené prihlásenie** (rozhodnutie 5. 10.): prihlasovanie sa ešte prerobí a predvolenou reláciou
+   bude engine Goo. Dovtedy je predvolená pôvodná relácia a engine sa spúšťa ako „Kvapky – engine test“.
 1. ✅ (5. 10.) Overenie na latte-lab (§10).
 2. ✅ (5. 10.) Výkon GPU: záplata `pleamar-pasy-tela` namiesto ostrovov. Ostáva CPU (128 miest, §9).
 3. Preniesť zo Kvapiek do enginu (podľa Novej architektúry, `docs/goo/ROZHRANIE.md`):
