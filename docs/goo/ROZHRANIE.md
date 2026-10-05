@@ -26,8 +26,9 @@ Stĺpec **Engine** hovorí, čo z toho už vie engine Goo (`session/goo`); zvyš
 - Lišta sa zmestí po kraj obrazovky a zastaví pred rohovými prvkami
 - **Viac monitorov:** každá obrazovka má vlastný GooBar, okná sa dajú prenášať
 
-**Engine:** hlava, ikry a strapce, uhýbanie oknám, klik, ponuka okna, poradie ťahaním, 48 miest.
-**Chýba:** presun lišty k inému okraju, `reversed`, vlastný GooBar na každom monitore.
+**Engine:** hlava, ikry a strapce, uhýbanie oknám, klik, ponuka okna, poradie ťahaním, 48 miest, presun lišty k inému
+okraju, zastavenie pred rohovou lištou Noctalie (zakázaná zóna, premenlivá šírka).
+**Chýba:** `reversed`, vlastný GooBar na každom monitore (engine beží zatiaľ iba na hlavnom).
 
 ### GooPower — napájanie a monitor systému
 
@@ -61,7 +62,7 @@ Stĺpec **Engine** hovorí, čo z toho už vie engine Goo (`session/goo`); zvyš
 - **Ľavý klik** = App Manager (pri aktualizáciách rovno na nich), **pravý** = Správca zariadení (pri výpadku na Sieťach)
 - Kvapka sa nestáva rohom okna: vypľuje bublinu, ktorá sa nafúkne na okno vedľa nej (1220 × 780)
 
-**Engine:** bodky, oba kliky, okno vedľa kvapky. **Chýba:** korunka, let bubliny.
+**Engine:** bodky, oba kliky, okno vedľa kvapky, korunka. **Chýba:** let bubliny, voliteľný tvar korunky.
 
 ### ClockGoo — čas, kalendár, upozornenia a pohoda
 
@@ -76,8 +77,10 @@ Spája čas a centrum upozornení (predtým TimeGoo a DaNoGoo).
   - kalendár od pondelka, udalosti a úlohy (CalDAV, Google, iCloud cez Noctaliu)
   - počasie Dnes / Zajtra / Týždeň
 
-**Engine:** čas a dátum v kvapke, guľky počtu upozornení, ľavý = zoznam upozornení v ponuke, pravý = pohoda
-a nastavenia času. **Chýba:** hrozno na vlákne, karta (stopky, minútka, budíky, kalendár, počasie).
+**Engine:** čas a dátum v kvapke, guľky počtu upozornení; ľavý = **hrozno upozornení** (kapsuly na lepkavom vlákne,
+najnovšie hore, najviac 8; klik otvorí, pravý akcie, odtiahnutie zahodí, klik na kvapku alebo mimo zavrie;
+kritické s červeným jadrom); pravý = vymazať všetko, pohoda a nastavenia času.
+**Chýba:** karta (stopky, minútka, budíky, kalendár, počasie), farba kapsuly podľa ikony aplikácie, Esc.
 
 ### ChatGoo — Beeper
 
