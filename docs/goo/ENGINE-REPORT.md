@@ -260,6 +260,10 @@ Validácia odmietne `farba` (pravidlo 6) a kontroluje čísla, povahu, efekt, dr
 - Viac monitorov: scéna sa kreslí na každom, ale voľné `prop` a `fact` sú **jedny pre všetky kópie** (aj so
   `screens: each`) a `screen.width` je z poslednej kópie. Vlastný stav na monitor = mená s `$screen` alebo jeden
   proces na monitor (`--screen MENO`). Engine zatiaľ beží iba na hlavnom monitore.
+- Skrytý `input` (`show: false`) stále berie kliky na svojom mieste: nepoužité pole odsunúť mimo (`-4000`).
+- `keyboard: on_demand` dá klávesnicu až po kliku do plochy; modálna karta potrebuje `exclusive while …`.
+- Chyba v obsluhe udalosti logiky (napr. klik na čip) sa do logu nezapíše — zložitejšie stavanie karty obaliť
+  `pcall` a chybu vypísať (`text.hud`).
 - Skúšobná myš: skok von z kvapky skôr, než sa začne ťahanie (> 6 px vnútri zóny), kompozitor berie ako pustenie.
   Ťahanie v teste začať malými krokmi (ydotool drží tlačidlo, wlrctl alebo ydotool hýbe).
 - `screen.width` je pri dvoch monitoroch jedna hodnota pre obe plochy (scéna má jeden stav): na latte-lab 1920
@@ -354,7 +358,7 @@ batéria (stolný PC), reálny touchpad.
 3. Preniesť zo Kvapiek do enginu (podľa Novej architektúry, `docs/goo/ROZHRANIE.md`):
    - LensGoo: okno spúšťača z kvapky (režimy, AI);
    - ClockGoo: ✅ (5. 10.) karta času — prehľad, pohoda, svetové hodiny, stopky, minútka, budíky (`lib/cas.luau`);
-     chýba kalendár s udalosťami a počasie;
+     ✅ kalendár s udalosťami a úlohami, počasie; chýba synchronizácia kalendára;
    - ✅ (5. 10.) ClockGoo: hrozno upozornení na vlákne (kapsuly `kw`/`t2`, `visi`, lepkavé vlákno, `hr_away`);
    - GooBar: ✅ presun k inému okraju (5. 10.); `reversed`, vlastný na každom monitore (engine je zatiaľ iba na hlavnom);
    - let bubliny do okna (pravidlo 14);
