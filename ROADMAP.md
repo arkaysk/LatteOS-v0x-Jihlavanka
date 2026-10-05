@@ -1,6 +1,11 @@
-# LatteOS — roadmapa (nový štart)
+# LatteOS GOO — roadmapa (nový štart)
 
 23. 9. 2026 · @Arkay · návrh v0.1
+
+> **Zmena smeru 5. 10. 2026:** „gamerdistro“ sa stáva **LatteOS GOO**, jedinou edíciou. **LatteOS Classic sa ruší** —
+> body roadmapy, ktoré sa týkajú iba klasickej plochy (lišta Noctalie, klasický spúšťač a panely), sa ďalej
+> nerozvíjajú; ich funkcie preberá Goo. Prioritou je **engine Goo** (`session/goo`): poradie práce je v
+> [LATTEOS-GOO.md](LATTEOS-GOO.md) §7 a otvorené úlohy enginu v [docs/goo/ENGINE-REPORT.md](docs/goo/ENGINE-REPORT.md) §11.
 
 Podklad: [technologický radar](inspo/LatteOS%20–%20technologický%20radar%202026.md),
 prebraté zdroje v [resources/](resources/MANIFEST.md). Priečinok `old/` sa už **nemení**, slúži len na čítanie.

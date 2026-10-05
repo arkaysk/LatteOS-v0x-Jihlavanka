@@ -1,6 +1,6 @@
 # LatteOS Goo — Začni tu
 
-**Goo** je plocha LatteOS s tekutými kávovými kvapkami na spodnom okraji obrazovky. Je inšpirovaná Windows 11 a fyzikanou tekutiny.
+**LatteOS GOO** (jediná edícia LatteOS; Classic je od 5. 10. 2026 zrušený) je plocha s tekutými kávovými kvapkami na spodnom okraji obrazovky. Je inšpirovaná Windows 11 a fyzikanou tekutiny.
 
 ## Čo to je v 30 sekundách
 
@@ -19,10 +19,10 @@
 
 ### Chcem zmeniť alebo pridať kvapku
 → Najprv: [Pravidlá](PRAVIDLA.md) (§2 a §3)
-→ Potom: [Engine API](ENGINE.md)
+→ Potom: [Engine API](../../session/goo/README.md)
 
 ### Som programátor a resetla sa session
-→ [Cloud session checkpoint](cloud_session_1.md) (s indexom)
+→ [Cloud session — záznam](../../cloud_session_1.md)
 → [Engine report s meraniami](ENGINE-REPORT.md)
 
 ---
@@ -33,9 +33,9 @@
 |----------|------------|
 | [PRAVIDLA.md](PRAVIDLA.md) | 22 zásad správania kvapiek, fyzika, nečinnosť |
 | [ROZHRANIE.md](ROZHRANIE.md) | Jednotlivé kvapky (Goobar, TimeGoo, PowerGoo…) |
-| [ENGINE.md](ENGINE.md) | Ako programovať: API, háčiky, príklady |
+| [session/goo/README.md](../../session/goo/README.md) | Ako programovať: API, háčiky, príklady |
 | [ENGINE-REPORT.md](ENGINE-REPORT.md) | Technický report: záplaty, merania, otvorené úlohy |
-| [cloud_session_1.md](cloud_session_1.md) | História zmien, rozhodnutí a testov |
+| [cloud_session_1.md](../../cloud_session_1.md) | História zmien, rozhodnutí a testov z cloudu |
 
 ---
 
@@ -47,7 +47,7 @@
 
 **Keď chceš zmeniť kvapku:**
 1. Skontroluj, či zmena porušuje [Pravidlá](PRAVIDLA.md) §2
-2. Pozri sa na [ENGINE.md](ENGINE.md) — ako sa to programuje
+2. Pozri sa na [API enginu](../../session/goo/README.md) — ako sa to programuje
 3. Zmeniť kvapku `moja-kvapka.json`:
    ```bash
    latte-goo novy "Moja kvapka"  # vytvorí súbor
@@ -56,9 +56,9 @@
    ```
 
 **Keď padne session:**
-1. Prečítaj index v [cloud_session_1.md](cloud_session_1.md) — čo sa urobilo
+1. Prečítaj [ENGINE-REPORT.md](ENGINE-REPORT.md) — čo je hotové a čo chýba
 2. Zafixuj to, čo treba opraviť
-3. Aktualizuj [cloud_session_1.md](cloud_session_1.md) + commit
+3. Zapíš stav do [ENGINE-REPORT.md](ENGINE-REPORT.md) + commit
 
 ---
 
@@ -121,7 +121,7 @@ git commit -m "goo: zmena"
 git push -u origin gamerdistro
 
 # Aktualizovať dokumentáciu
-echo "..." >> docs/goo/cloud_session_1.md
+# stav enginu: docs/goo/ENGINE-REPORT.md, rozhodnutia: LATTEOS-GOO.md
 ```
 
 ---
