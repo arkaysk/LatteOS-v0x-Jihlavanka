@@ -122,7 +122,15 @@ scene_up() {
     # PLEAMAR_GENERIC=window: zoznam okien z wlr-foreign-toplevel, kurzor z Hyprlandu (resources/patches/pleamar-…)
     local log="${XDG_STATE_HOME:-$HOME/.local/state}/latteos/kvapky.log"
     [ -f "$log" ] && mv -f "$log" "$log.1"          # každý štart s čistým logom (predošlý ostáva ako .1)
-    LATTE_VARIANT=kvapky PLEAMAR_GENERIC=window setsid -f "$pleamar" --scene "$scene" --no-hud >"$log" 2>&1
+    # engine Goo: zatiaľ iba na hlavnom monitore. pleamar má pre všetky kópie scény jeden stav (šírku berie z poslednej),
+    # takže na druhom monitore s iným rozlíšením boli okraje a polohy zle. Vlastný GooBar pre každý monitor príde.
+    local mon=""
+    case "$scene" in */goo.plm)
+        mon=$(hyprctl -j monitors 2>/dev/null | python3 -c 'import json,sys
+m = json.load(sys.stdin)
+print(next((x["name"] for x in m if x["x"] == 0 and x["y"] == 0), m[0]["name"]) if m else "")' 2>/dev/null) ;;
+    esac
+    LATTE_VARIANT=kvapky PLEAMAR_GENERIC=window setsid -f "$pleamar" --scene "$scene" --no-hud ${mon:+--screen "$mon"} >"$log" 2>&1
 }
 
 case "${1:-}" in

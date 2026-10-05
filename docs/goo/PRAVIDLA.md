@@ -50,8 +50,13 @@ Zásady správania kvapiek, fyziky a vstupov. **Záväzné pri vývoji.**
 - Lepia sa k okraju a k sebe
 
 ### Pokoj
-- Kým kurzor nie je nablízku, kvapky si sadnú dole k lište a sploštia sa
+- Kým kurzor nie je nablízku, kvapky si sadnú k okraju (pod hladinu) a sploštia sa
 - Pri kurzore sa zdvihnú a zaguľatia
+
+### Gravitácia a okraje
+- Na každú kvapku platí gravitácia: pustená vo voľnom priestore spadne dole, ponorí sa a vynorí
+- Kvapky sa lepia ku **každému okraju** (dole, vľavo, hore, vpravo), nielen k dnu — pustená pri okraji sa k nemu prilepí
+- Nič nevisí vo vzduchu
 
 ### Vlákna a spájanie
 - Iba na vzdialenosti trojice (vypínač–Hodiny–lišta)

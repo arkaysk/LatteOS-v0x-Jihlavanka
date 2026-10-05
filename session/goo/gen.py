@@ -21,12 +21,13 @@ def pick(fmt):
 def slot(k):
     """tvary miesta k; prázdne miesto má nulovú veľkosť (so záplatou pleamar-prazdne-tvary nič nestojí)"""
     return [
-        f"        ellipse {{ at: x.{k}, floor + 4; radius: rr.{k} * 0.5 * base.{k}; scale: 1.6, 0.5; blend: 14 }}\n",
-        f"        line {{ from: x.{k}, floor + 6; to: x.{k}, y.{k}; width: rr.{k} * 2 * stalk.{k}; blend: 14 }}\n",
+        # mláka pri okraji pod kvapkou (širšia pozdĺž okraja), stopka od okraja ku kvapke
+        f"        ellipse {{ at: bx.{k}, by.{k}; radius: rr.{k} * 0.5 * base.{k}; scale: bsx.{k}, 2.1 - bsx.{k}; blend: 14 }}\n",
+        f"        line {{ from: bx.{k}, by.{k}; to: x.{k}, y.{k}; width: rr.{k} * 2 * stalk.{k}; blend: 14 }}\n",
         # voda leží POD hladinou (ako „voda pod okrajom“ v Kvapkách): nad ňu sa dvíha iba zliatím, pod vláknom ostane oko
-        f"        line {{ from: x.{k}, floor + wa.{k}; to: thx.{k}, floor + wa.{k}; width: wa.{k} * 2; blend: 16 }}\n",
+        f"        line {{ from: wax.{k}, way.{k}; to: wbx.{k}, wby.{k}; width: wa.{k} * 2; blend: 16 }}\n",
         f"        ellipse {{ at: x.{k}, y.{k}; radius: rr.{k}; scale: 1 + fxw.{k}, 1 - fxw.{k}; blend: lk.{k} + 6 * near.{k} }}\n",
-        f"        line {{ from: x.{k}, y.{k} - thy0.{k}; to: thx.{k}, thy.{k}; width: th.{k}; blend: 12 * clamp(th.{k} / 3, 0, 1) }}\n",
+        f"        line {{ from: t0x.{k}, t0y.{k}; to: thx.{k}, thy.{k}; width: th.{k}; blend: 12 * clamp(th.{k} / 3, 0, 1) }}\n",
     ]
 
 
@@ -45,7 +46,7 @@ def body():
         out.append(f"        ellipse {{ at: rpx.{i}, floor + 4; radius: rpa.{i} * (1.2 + 0.6 * sin(time * 1900)) * (1 - rpg.{i}) * if(rpk.{i} > 0.5, 1, 0); "
                    f"scale: 2.6, 1; blend: 12 }}\n")
     # krk lepkavej kvapky: ťahá sa naraz iba jedna, preto jeden tvar pre všetky (miesto nk)
-    out.append("        line { from: " + pick("goo.{k}.hx * W + goo.{k}.ox") + ", " + pick("floor - goo.{k}.hy") + "; to: "
+    out.append("        line { from: " + pick("hmx.{k}") + ", " + pick("hmy.{k}") + "; to: "
                + pick("x.{k}") + ", " + pick("y.{k}") + "; width: if(nk >= 0, " + pick("rr.{k} * 0.7 * neck.{k}")
                + ", 0); blend: 22 }\n")
     return "".join(out)

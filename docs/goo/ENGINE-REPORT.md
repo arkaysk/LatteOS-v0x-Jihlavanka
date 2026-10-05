@@ -78,7 +78,9 @@ zlievanie, vstupy, efekty) a kvapka je iba definícia plus háčiky.
 - guľky: `gn, gf, gt` (`gf` je oktálová farba pre každú bodku);
 - susedia: `nl, nlh, nlo, nr, nrh, nro, nry, nrr`;
 - jadro: `jadro, jf, jp`;
-- telo: `sk` (0 hlavné, 1 iba Goobar, 2 obe), `zl` (zliatie), `ml` (mláka).
+- telo: `sk` (skupina: 0 ostatné, 1 ikry Goobaru, 2 hlava), `zl` (zliatie), `ml` (mláka);
+- okraj: `ed` (0 dole, 1 vľavo, 2 hore, 3 vpravo). `hx` je zlomok dĺžky toho okraja, `hy` vzdialenosť od neho. Scéna
+  počíta v sústave okraja (`nx, ny` kolmo dnu, `tx, ty` pozdĺž; `e0x, e0y` hladina), takže všetko funguje na každom okraji.
 
 **Farby:**
 - Farba je **kávová** z faktov `voda`/`mlieko` (pravidlo 6). Žiadne farby po kvapkách, iba farebné jadro.
@@ -107,7 +109,8 @@ zlievanie, vstupy, efekty) a kvapka je iba definícia plus háčiky.
 - Ťahanie začína od > 6 px a nastaví `nk = k`.
 - Klik je pustenie ľavého bez ťahania. Scéna posiela iba `goo_down`/`goo_up`; či je to klik, rozhodne logika
   z poradia udalostí (pravé, stredné, podržanie a ťahanie ho rušia).
-- Pustenie zapíše `rx` (zlomok) a `ry` (px nad dnom).
+- Pustenie zapíše `rx`, `ry` (px obrazovky). Logika (`goo_drop`): do 130 px od okraja sa kvapka prilepí k najbližšiemu,
+  inak spadne dole (gravitácia); `vratit` (GooBar) sa uprostred vráti. Háčik `pustenie(d, X, Y, okraj)`.
 
 **Nečinnosť:** úrovne pri 60/180/360 s, prebudenie zmenou kurzora.
 
@@ -253,6 +256,11 @@ Validácia odmietne `farba` (pravidlo 6) a kontroluje čísla, povahu, efekt, dr
   snímke (ťuknutie na touchpade, virtuálna myš) nevidí: každý druhý klik sa stratil. Poradie patrí do logiky.
 - `release zone` príde pri pustení **ktoréhokoľvek** tlačidla; v pravidle sa nedá zistiť, ktorého.
 - Po reštarte scény nepríde `enter`, kým sa myš nepohne (Wayland).
+- Viac monitorov: scéna sa kreslí na každom, ale voľné `prop` a `fact` sú **jedny pre všetky kópie** (aj so
+  `screens: each`) a `screen.width` je z poslednej kópie. Vlastný stav na monitor = mená s `$screen` alebo jeden
+  proces na monitor (`--screen MENO`). Engine zatiaľ beží iba na hlavnom monitore.
+- Skúšobná myš: skok von z kvapky skôr, než sa začne ťahanie (> 6 px vnútri zóny), kompozitor berie ako pustenie.
+  Ťahanie v teste začať malými krokmi (ydotool drží tlačidlo, wlrctl alebo ydotool hýbe).
 - `screen.width` je pri dvoch monitoroch jedna hodnota pre obe plochy (scéna má jeden stav): na latte-lab 1920
   aj na monitore 2560. Scéna sa na oboch monitoroch kreslí rovnako, ako pôvodné Kvapky.
 
@@ -346,7 +354,7 @@ batéria (stolný PC), reálny touchpad.
    - LensGoo: okno spúšťača z kvapky (režimy, AI);
    - ClockGoo: karta (pohoda, stopky, minútka, budíky, kalendár, počasie);
    - ClockGoo: hrozno upozornení na vlákne;
-   - GooBar: presun k inému okraju, `reversed`, vlastný na každom monitore;
+   - GooBar: ✅ presun k inému okraju (5. 10.); `reversed`, vlastný na každom monitore (engine je zatiaľ iba na hlavnom);
    - let bubliny do okna (pravidlo 14);
    - kvapku bežiacu po vlákne.
 4. Háčik v Hyprlande: minimalizované okno vyvolá `pleamar --say goo "emit goo_kamen X"`.
@@ -362,6 +370,7 @@ batéria (stolný PC), reálny touchpad.
 
 ## 12. Commity enginu (najnovšie hore)
 
+- 5. 10.: okraje (kvapky sa lepia ku každému okraju), gravitácia pri pustení, hlbšie sadnutie, engine na hlavnom monitore.
 - 5. 10.: Nová architektúra — GooBar, GooPower, LensGoo (jadro), QueenGoo, ClockGoo (voliteľné); Nastavenia › Kvapky.
 - 5. 10.: jedno telo (spoločný obrys Goobaru), sadnutie v pokoji, pravidlo 22 na 0,95 a pri hre, kotva sleduje, veľkosť 100–220 %.
 - 5. 10.: overenie na latte-lab — ikony, ľavý klik, ponuka a bublina, záplata pásov tela.
