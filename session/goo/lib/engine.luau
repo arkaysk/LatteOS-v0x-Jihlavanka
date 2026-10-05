@@ -112,6 +112,9 @@ end
 -- navzájom nadnášajú, nakláňajú a spája ich goo vlákno (ako vypínač ↔ Hodiny ↔ hlava v Kvapkách). Logika nepozná
 -- šírku obrazovky: poradie a medzera sa rátajú pri bežnej šírke 1920 px, scéna polohu prepočíta presne.
 local NOMINAL_W = 1920
+-- najväčšia vzdialenosť stredov, na ktorú sa susedia ešte spoja vláknom (v súčtoch polomerov); ďalej sa pretrhne.
+-- Používateľ 5. 10.: vzdialenosť krajných kvapiek na jeho snímke (~2,3) „nech je maximum“ (bolo 2,6)
+local THREAD_MAX = 2.3
 local function neighbours(list)
     local docked = {}
     for _, d in ipairs(list) do
@@ -131,7 +134,7 @@ local function neighbours(list)
     for i = 1, #docked - 1 do
         local a, b = docked[i], docked[i + 1]
         local gap = along(b) - along(a)
-        if (a.edge or 0) == (b.edge or 0) and same_body(a, b) and gap < 2.6 * (a.v.velkost * a.z + b.v.velkost * b.z) then a.nr, b.nl = b, a end
+        if (a.edge or 0) == (b.edge or 0) and same_body(a, b) and gap < THREAD_MAX * (a.v.velkost * a.z + b.v.velkost * b.z) then a.nr, b.nl = b, a end
     end
 end
 

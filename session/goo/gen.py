@@ -27,7 +27,7 @@ def slot(k):
         # voda leží POD hladinou (ako „voda pod okrajom“ v Kvapkách): nad ňu sa dvíha iba zliatím, pod vláknom ostane oko
         f"        line {{ from: wax.{k}, way.{k}; to: wbx.{k}, wby.{k}; width: wa.{k} * 2; blend: 16 }}\n",
         f"        ellipse {{ at: x.{k}, y.{k}; radius: rr.{k}; scale: 1 + fxw.{k}, 1 - fxw.{k}; blend: lk.{k} + 6 * near.{k} }}\n",
-        f"        line {{ from: t0x.{k}, t0y.{k}; to: thx.{k}, thy.{k}; width: th.{k}; blend: 12 * clamp(th.{k} / 3, 0, 1) }}\n",
+        f"        line {{ from: t0x.{k}, t0y.{k}; to: thx.{k}, thy.{k}; width: th.{k}; blend: thb.{k} }}\n",
     ]
 
 
