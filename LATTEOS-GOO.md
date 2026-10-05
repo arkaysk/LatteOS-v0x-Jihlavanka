@@ -229,7 +229,14 @@ lepivosť, veľkosť a rezervu na ďalšie efekty.
 - **Výkon:** telo goo počíta každý tvar pre každý pixel, aj skrytý. Záplata `pleamar-prazdne-tvary` vyradí tvary
   nulovej veľkosti: v cloude 192 → 21,6 ms na snímku (súčasná scéna Kvapky 62 ms). Bez nej engine funguje, iba
   pomalšie.
-- Ďalej: overiť na latte-lab (stredné tlačidlo, písmo ikon, výkon na RX 640), potom presunúť TimeGoo, PowerGoo,
+- **Overené na latte-lab (5. 10.):** všetky vstupy myšou vrátane stredného tlačidla, podržania a ťahania, ikony,
+  ponuky, Goobar s oknami Hyprlandu (ikry, uhýbanie, ponuka okna), upozornenia, nečinnosť. Opravené: ikony
+  (`latte-goo ikony`), strácanie ľavého kliku (klik teraz rozhoduje logika z `goo_down`/`goo_up`), ponuka bez
+  ikon pri prvom otvorení, bublina cez ponuku. **Výkon:** engine zaťažil RX 640 na 70–77 % (Kvapky 37 %); záplata
+  `pleamar-pasy-tela` (pixel počíta iba tvary vo svojom dosahu, obraz rovnaký) to znížila na 35–41 % a záťaž už
+  nerastie s počtom kvapiek — „ostrovy“ netreba. Ostáva CPU (asi 1,7× Kvapky). Podrobnosti:
+  `docs/goo/ENGINE-REPORT.md` §9–10.
+- Ďalej: znížiť CPU enginu, potom presunúť TimeGoo, PowerGoo,
   DaNoGoo, QueenGoo a ChatGoo na engine (po jednej, snímky pred a po). Živé bytosti z 3.1 (dážď/vietor) a formulár
   v Nastaveniach › Kvapky pribudnú nad enginom.
 

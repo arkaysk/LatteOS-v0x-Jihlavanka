@@ -369,6 +369,7 @@ function E.each(fn) for k = 0, N - 1 do if slots[k] then fn(slots[k]) end end en
 
 -- ikony: mená → znaky písma Tabler (latte-goo ikony; Noctalia ho má v /usr/share/noctalia)
 local wanted, glyphTimer = {}, nil
+local ctx_items, ctx_width = nil, nil       -- práve otvorená ponuka Goo (E.menu)
 function E.needGlyph(name)
     if not isName(name) or glyphs[name] then return end
     wanted[name] = true
@@ -380,7 +381,12 @@ function E.needGlyph(name)
         wanted = {}
         run("latte-goo", { "ikony", table.unpack(names) }, function(out)
             local ok, t = pcall(json.decode, out or "")
-            if ok and type(t) == "table" then for n, g in pairs(t) do glyphs[n] = g end publish() end
+            if not (ok and type(t) == "table") then return end
+            for n, g in pairs(t) do glyphs[n] = g end
+            for _, n in ipairs(names) do glyphs[n] = glyphs[n] or "" end   -- neznáme meno: už sa nepýtať
+            publish()
+            -- ponuka otvorená skôr, než prišli znaky: nakresliť ju znova s ikonami (prvé otvorenie po štarte)
+            if fact.ctx_open and ctx_items then E.menu(ctx_items, ctx_width) end
         end)
     end)
 end
@@ -391,6 +397,7 @@ local ctx_actions = {}
 local CTX_MAX = 14
 function E.menu(items, width)
     ctx_actions = {}
+    ctx_items, ctx_width = items, width
     local out, y = {}, 6
     for _, it in ipairs(items) do
         if #out >= CTX_MAX then break end
@@ -425,7 +432,7 @@ function E.menu(items, width)
     fact.ctx_open = #out > 0
 end
 on("ctx_pick", function(k) local f = ctx_actions[(k or 0) + 1] if f then f() end end)
-on("ctx_close", function() ctx_actions = {} end)
+on("ctx_close", function() ctx_actions = {} ctx_items = nil end)
 
 -- ── vstupy zo scény ──────────────────────────────────────────────────────────────────────────────────────────
 local function hook(d, name, ...)
@@ -441,22 +448,32 @@ E.hook = hook
 
 local function at(k) return slots[k] end
 
-on("goo_click", function(k)
-    local d = at(k) if not d then return end
+-- klik = pustenie ľavého bez ťahania a bez podržania. Scéna posiela iba stlačenie a pustenie; poradie drží logika
+-- (pravé, stredné, podržanie a ťahanie rozrobený klik rušia)
+local down = nil                                        -- miesto, na ktorom je stlačené ľavé
+on("goo_down", function(k) down = k end)
+on("goo_up", function(k)
+    local was = down
+    down = nil
+    local d = at(k) if not d or was ~= k then return end
     hud("klik · " .. d.id)
     hook(d, "klik")
 end)
 on("goo_right", function(k)
+    down = nil
     local d = at(k) if not d then return end
     hud("pravé · " .. d.id)
     hook(d, "pravy")                                    -- bez háčika nič (pravidlo 8)
 end)
 on("goo_middle", function(k)
+    down = nil
     local d = at(k) if not d then return end
     hud("stredné · " .. d.id)
     hook(d, "stredny")                                  -- bez háčika nič (pravidlo 8); domov: Nastavenia › Kvapky
 end)
 on("goo_hold", function(k)
+    if down ~= k then return end                        -- podržanie iba ľavým
+    down = nil
     local d = at(k) if not d then return end
     hud("podržanie · " .. d.id)
     hook(d, "podrz")
@@ -486,6 +503,7 @@ on("goo_hover", function(k)
     d:bublina((p and p ~= "" and p ~= n) and (n ~= "" and n .. " · " .. p or p) or n)
 end)
 on("goo_drag", function(k)
+    down = nil
     local d = at(k) if not d then return end
     hud("ťahanie · " .. d.id)
     d.dragging = true

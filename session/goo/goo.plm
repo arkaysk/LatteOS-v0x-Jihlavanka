@@ -82,7 +82,8 @@ scene Goo {
     spring rezerva = 120, 14                  // kanály e1…e4 (logika ich mení zriedka, pružina to vyhladí)
 
     // vstupy myši → logika (payload = miesto k; koliesko k * 2 + 1 hore, k * 2 dole)
-    event goo_click ->
+    event goo_down ->
+    event goo_up ->
     event goo_right ->
     event goo_middle ->
     event goo_hold ->
@@ -125,6 +126,7 @@ scene Goo {
     fact tipx = 0
     fact tipy = 0
     prop tip.p = 0 ~rastie
+    measure tipm                              // bublina sa prispôsobí textu (dlhý popis má dva riadky)
     // ladenie (relácia engine test): posledná udalosť vľavo hore
     text hud = ""
     fact ladenie = false
@@ -154,7 +156,6 @@ scene Goo {
         fact dy.$k = 0
         fact drg.$k = 0
         fact tr.$k = 0
-        fact lp.$k = 0                        // stlačené ľavým (klik = pustenie ľavého bez ťahania)
         prop hov.$k = 0 ~rastie
         prop sq.$k = 0 ~pada                  // stlačenie (squish) pri zrážke
         // domov v px; ox = posun v px (kvapka „pri“ inej o presný odstup, napr. PowerGoo 66 px vľavo od TimeGoo)
@@ -278,17 +279,19 @@ scene Goo {
         on leave hit.$k { hov.$k: 0; emit goo_leave(k) }
         on hover hit.$k for 450ms { tipk = k; tipx = x.$k; tipy = y.$k - rr.$k - 14; tip.p: 1; emit goo_hover(k) }
         on away hit.$k for 200ms while tipk == k { tip.p: 0 }
-        on press hit.$k { lp.$k = 1; impulse sq.$k 5; ctx.x = cursor.x; ctx.y = cursor.y; ctx_up = cursor.y > H / 2 }
-        on press right hit.$k { lp.$k = 0; ctx.x = cursor.x; ctx.y = cursor.y; ctx_up = cursor.y > H / 2; emit goo_right(k) }
-        on press middle hit.$k { lp.$k = 0; emit goo_middle(k) }
-        on hold hit.$k for 650ms while drg.$k == 0 and lp.$k == 1 { lp.$k = 0; emit goo_hold(k) }
+        on press hit.$k { tip.p: 0; impulse sq.$k 5; ctx.x = cursor.x; ctx.y = cursor.y; ctx_up = cursor.y > H / 2; emit goo_down(k) }
+        on press right hit.$k { tip.p: 0; ctx.x = cursor.x; ctx.y = cursor.y; ctx_up = cursor.y > H / 2; emit goo_right(k) }
+        on press middle hit.$k { emit goo_middle(k) }
+        on hold hit.$k for 650ms while drg.$k == 0 { emit goo_hold(k) }
         on scroll hit.$k { emit goo_scroll(k * 2 + if(wheel > 0, 1, 0)) }
         on drag hit.$k while goo.$k.tahat { dx.$k = drag.dx; dy.$k = drag.dy }
         on drag hit.$k while goo.$k.tahat and drg.$k == 0 and length(drag.dx, drag.dy) > 6 { drg.$k = 1; nk = k; tip.p: 0; emit goo_drag(k) }
         on drag hit.$k while goo.$k.tahat and tr.$k == 0 and length(drag.dx, drag.dy) > min(goo.$k.trh, r0.$k * 1.6) * goo.$k.lep { tr.$k = 1 }
         // (odtrhnutie najneskôr po 1,6 polomeru: dlhý krk-vlák je nepekný)
-        // pustenie: bez ťahania = klik; po ťahaní povie logike, kam (neodtrhnutá lepkavá kvapka sa vráti domov)
-        on release hit.$k while drg.$k == 0 and lp.$k == 1 { lp.$k = 0; emit goo_click(k) }
+        // pustenie bez ťahania: či je to klik (ľavé, bez podržania), rozhodne logika z poradia goo_down … goo_up —
+        // `while` vidí stav zo začiatku snímky, príznak v scéne by stratil stlačenie a pustenie v jednom snímku
+        // (ťuknutie na touchpade). Po ťahaní povie logike, kam (neodtrhnutá lepkavá kvapka sa vráti domov)
+        on release hit.$k while drg.$k == 0 { emit goo_up(k) }
         on release hit.$k while drg.$k > 0 { rx = (hxp.$k + dx.$k * mv.$k) / W; ry = floor - (hyp.$k + dy.$k * mv.$k); emit goo_drop(k) }
         fact hopn.$k = 0
         fact sqn.$k = 0
@@ -1688,8 +1691,9 @@ scene Goo {
         }
     }
     // bublina s názvom a popisom (§3: obsah kvapky sa hoverom nemení — názov je iba tu)
-    box { from: tipx - 110, tipy - 15; size: 220, 30; corner: 15; color: coffee; opacity: tip.p * 0.94 }
-    text tip { at: tipx, tipy; anchor: center; size: 12; color: ink; opacity: tip.p; width: 210; align: center }
+    let tiph = max(tipm.height, 16) + 14
+    box { from: tipx - tipm.width / 2 - 14, tipy + 15 - tiph; size: tipm.width + 28, tiph; corner: min(15, tiph / 2); color: coffee; opacity: tip.p * 0.94 * if(ctx_open, 0, 1) }
+    text tip { at: tipx, tipy + 15 - tiph / 2; anchor: center; measure: tipm; size: 12; color: ink; opacity: tip.p * if(ctx_open, 0, 1); width: 210; align: center }
     text hud { at: 16, 14; size: 12; color: #f3ebdd; opacity: if(ladenie, 0.8, 0); family: "monospace"; show: ladenie }
     // preklady (pravidlo 4: texty v UI po anglicky + preklad; tr() v logike)
     translations sk {

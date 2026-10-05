@@ -142,7 +142,7 @@ Modul `kvapky/<meno>.luau` vracia definíciu: rovnaké polia ako JSON a k nim **
 
 ```lua
 return {
-    id = "pocitadlo", nazov = "Počítadlo", ikona = "123", druh = "ukazovatel", povaha = "pokojna",
+    id = "pocitadlo", nazov = "Počítadlo", ikona = "number-123", druh = "ukazovatel", povaha = "pokojna",
     start    = function(d) d.n = 0 d:text("0") end,
     klik     = function(d) d.n += 1 d:text(tostring(d.n)) d:hodnota(d.n % 100 / 100) end,
     pravy    = function(d) … end,  stredny = function(d) … end,  podrz = function(d) … end,

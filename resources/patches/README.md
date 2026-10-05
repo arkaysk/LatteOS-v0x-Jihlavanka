@@ -110,3 +110,18 @@ ohraničenia. Záplata vydelí vzdialenosť jej skutočnou zmenou na pixel (`dpd
 vyhladením výplne, okraja (`border`), lemu a tieňa pod sklom. Hrana sa tak môže iba zostriť (najviac 5×), nikdy
 rozmazať. Overené v cloude na súčasnej scéne Kvapky (zväčšené oko: rozmazaný prstenec → tenká ostrá čiara).
 Vhodná na upstream.
+
+## pleamar-pasy-tela.patch (5. 10. 2026, engine Goo na latte-lab, pleamar 0.2.6)
+
+Telo goo je jeden obdĺžnik (hranice všetkých jeho tvarov) a shader pre **každý jeho pixel počíta každý tvar tela**
+(pri tieni dvakrát). Lišta s 17 kvapkami má 85 tvarov cez celú šírku obrazovky, hoci na pixel majú vplyv iba tie
+v okolí. Na RX 640 (dva monitory) preto engine v pokoji zaťažil GPU na 70–77 % (pôvodné Kvapky 37 %, plocha bez
+kvapiek 21–27 %) a každá ďalšia kvapka pridala ~3 %.
+Záplata (`src/gpu.rs`, `strips`): telo s 8 a viac tvarmi širšie než 288 px sa nakreslí po zvislých pásoch (96 px)
+a každý pás dostane iba tvary, ktoré naň dosiahnu (hranice tvaru + najväčšie zliatie + dosah tieňa). Obraz je
+rovnaký: zliatie (`smooth_min`) je za hranicou zliatia obyčajné `min`, vzdialený tvar ho nezmení. Overené statickou
+scénou so 41 tvarmi — **0 odlišných pixelov** oproti pleamaru bez záplaty. Telá so sklom (sleduje celú siluetu),
+s transformáciou a malé telá ostávajú ako boli.
+Merané na latte-lab (RX 640, 2560×1080 + 1920×1080, v pokoji): engine 17 kvapiek **70 % → 35 %** GPU, engine
+5 kvapiek 43 % → 33 %, Kvapky 37 % → 36 %. Nahrádza „ostrovy“ navrhnuté v cloude (netreba meniť scénu).
+Sedí aj na pleamar 0.2.17. Vhodná na upstream. Bez nej engine funguje, iba s vyššou záťažou GPU.
