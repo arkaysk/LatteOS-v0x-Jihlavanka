@@ -79,6 +79,17 @@ mieste kliku, podponuky, preklady), **guľky** (`d:gulky(n, farby)`), **ikona ap
 - **Neprekrývanie (pravidlo 22):** kvapky sa môžu zlievať, ale nie úplne prekryť. Stredy ostanú aspoň 0,95 súčtu
   polomerov od seba, inak sa jedna plynule odsunie, aj reťazovo. Ustúpi tá, na ktorú pustili, nikdy okná Goobaru ani
   pripnuté kvapky. `E.separate()` po pustení, pridaní, zmene veľkosti a zmene okien.
+- **Okraje a gravitácia:** kvapka sedí na jednom zo štyroch okrajov (`okraj` 0 dole, 1 vľavo, 2 hore, 3 vpravo;
+  predvolene dole). Pustená do 130 px od okraja sa k nemu prilepí, inak spadne dole voľným pádom (`GRAV`) — nič
+  nevisí vo vzduchu (výnimka `visi`: bobule otvoreného hrozna upozornení). `vratit = true` (GooBar): pri pustení
+  uprostred sa vráti. Háčik `pustenie(d, X, Y, okraj)` dostane miesto v px obrazovky; `false` = nepresúvať.
+  `d:px()` je poloha pozdĺž okraja kvapky; `E.hiAlong(d)` najďalej, kam smie (rohová lišta Noctalie je zakázaná zóna).
+- **Kapsula:** `kw` (polovica rovnej časti, px) a `t2` (druhý riadok) urobia z kvapky kapsulu s ikonou vľavo.
+  `koruna = "crown"` nakreslí znak na vonkajšej strane kvapky.
+- **Karta Goo** `E.menu(items, šírka, opts)`: položky `label, glyph, hint, on, off, danger, sep, sub, run` a navyše
+  `big` (veľký nadpis), `bar` (pruh 0…1), `keep` (klik kartu nezavrie), `wheel = function(smer)` (koliesko nad
+  riadkom). `opts.chips = { { label, glyph, on, run } }` sú záložky hore, `opts.id` meno karty (`E.menuId()`),
+  `opts.keep` obnovenie otvorenej karty bez zmeny zvýrazneného riadku (živé údaje).
 - **Efekty scény:** `dych`, `kmit`, `tras`, `obeh`, `tlkot` (+ `sila`).
 - **Rezerva na nedefinované efekty:**
   - efekty 6–9 v scéne sú voľné;
