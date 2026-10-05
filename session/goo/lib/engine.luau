@@ -87,6 +87,21 @@ end
 local function along(d) return d.x * elen(d) + (d.ox or 0) end
 E.len, E.along = elen, along
 
+-- rohová lišta Noctalie (latte-goo okna › roh, vpravo dole) je pre Goo ZAKÁZANÁ ZÓNA (používateľ 5. 10.): má
+-- premenlivú šírku — pribúdajú do nej widgety a doplnky Noctalie — preto sa číta priebežne a kvapky jej ustúpia.
+-- „Lišta sa zmestí po kraj obrazovky a zastaví pred rohovými prvkami“ (Nová architektúra, GooBar)
+local roh = nil
+local function hiAlong(d)                                -- najďalej pozdĺž okraja, kam smie stred kvapky (px)
+    local l = elen(d)
+    local hi, r = 0.98 * l, d.v.velkost * d.z
+    if roh and (roh.w or 0) > 0 then
+        if (d.edge or 0) == 0 and roh.x > l * 0.5 then hi = math.min(hi, roh.x - 8 - r) end
+        if (d.edge or 0) == 3 and roh.y > l * 0.5 then hi = math.min(hi, roh.y - 8 - r) end
+    end
+    return hi
+end
+E.hiAlong = hiAlong
+
 -- ── záznam pre scénu ─────────────────────────────────────────────────────────────────────────────────────────
 local function record(d)
     local v = d.v
@@ -104,7 +119,7 @@ local function record(d)
         jadro = d.jadroS or 0, jf = d.jadroF or 0, jp = d.jadroP or false,
         obr = v.obr or "", img = (v.obr or "") ~= "", tlm = d.tlm or 0,
         gn = d.gn or 0, gf = d.gf or 0, gt = d.gt or "", sk = num(v.sk, 0), zl = num(v.zliatie, 1), ml = num(v.mlaka, 1),
-        ed = d.edge or 0,
+        ed = d.edge or 0, nad = v.koruna and (glyphs[v.koruna] or "") or "",
     }
 end
 
@@ -157,6 +172,13 @@ local function separate()
     local list = {}
     for k = 0, N - 1 do if slots[k] and not slots[k].hidden then table.insert(list, slots[k]) end end
     local moved = {}
+    -- pred rohovou lištou sa kvapka zastaví (nie ikry — tie rozkladá Goobar po voľnú dĺžku)
+    for _, d in ipairs(list) do
+        if d.zdroj ~= "dyn" and not d.dragging and d.y < d.v.velkost * d.z * 1.6 and along(d) > hiAlong(d) + 0.5 then
+            d.x = (hiAlong(d) - (d.ox or 0)) / elen(d)
+            moved[d] = true
+        end
+    end
     for _ = 1, 10 do
         local any = false
         for i = 1, #list do
@@ -187,10 +209,10 @@ local function separate()
                             local len = math.sqrt(vx * vx + vy * vy)
                             if len < 0.5 then vx, vy, len = 1, 0, 1 end      -- presne na sebe: doprava
                             local push = need - dist + 2
-                            mv.x = clamp((ox + vx / len * push - (mv.ox or 0)) / sw, 0.02, 0.98)
+                            mv.x = clamp((ox + vx / len * push - (mv.ox or 0)) / sw, 0.02, hiAlong(mv) / sw)
                             mv.y = math.max(0, oy + vy / len * push)
                             -- pri okraji obrazovky nemá kam: odsunie sa na druhú stranu
-                            if (mv.x <= 0.02 or mv.x >= 0.98) and docked then
+                            if (mv.x <= 0.02 or mv.x >= hiAlong(mv) / sw - 0.0005) and docked then
                                 mv.x = clamp((px - vx / len * need - (mv.ox or 0)) / sw, 0.02, 0.98)
                             end
                             mv.moved = true
@@ -206,6 +228,12 @@ local function separate()
     for d in pairs(moved) do bump("sqn", d.k) end          -- odsunutá sa zachveje
     if next(moved) then save() end
     sepPrefer = nil
+end
+function E.setCorner(r)
+    local a, b = roh or {}, r or {}
+    if a.x == b.x and a.y == b.y and a.w == b.w and a.h == b.h then return end
+    roh = r
+    E.separate() E.publish()
 end
 function E.separate(prefer) sepDirty, sepPrefer = true, prefer or sepPrefer end
 
@@ -372,6 +400,7 @@ function E.define(def, zdroj)
     slots[k], byId[def.id] = d, d
     E.separate()
     E.needGlyph(v.ikona)
+    E.needGlyph(v.koruna)
     -- chyba jednej kvapky nezhodí ostatné (zapíše sa do logu)
     local function safe(name, f) local ok, err = pcall(f, d) if not ok then log("goo: " .. d.id .. "." .. name .. ": " .. tostring(err)) end end
     if def.kazdych and def.tik then
@@ -587,6 +616,7 @@ on("goo_drop", function(k)
     else
         d.edge = edge
         d.x = clamp(((edge % 2 == 1) and Y / H or X / W), 0.02, 0.98)
+        d.x = math.min(d.x, hiAlong(d) / elen(d))                     -- nie pod rohovú lištu
         d.y = num(d.v.vyska, d.v.velkost * 0.8) * d.z
         d.moved, d.ox = true, 0
         if fell then fh = math.max(0, (H - 6 - d.y) - Y) end
@@ -642,7 +672,7 @@ local function toFrac(d, x) local sw = num(fact.sw, 0) return (x - (d.ox or 0)) 
 -- miesto pre d na x: komu treba uhnúť a kam ({ kvapka = x }); nil = nezmestí sa (okraj obrazovky, Goobar)
 local function shove(d, x)
     local sw = num(fact.sw, 0) if sw <= 0 then sw = 1920 end
-    if x < 0.03 * sw or x > 0.97 * sw then return nil end
+    if x < 0.03 * sw or x > math.min(0.97 * sw, hiAlong(d)) then return nil end
     local others, fixed = {}, {}
     E.each(function(o)
         if o ~= d and docked(o) and not o.dragging then
@@ -662,7 +692,7 @@ local function shove(d, x)
             if math.abs(ox - p.x) < need then ox = p.x + side * need end
         end
         if ox ~= px(o) then
-            if ox < 0.02 * sw or ox > 0.98 * sw then return nil end
+            if ox < 0.02 * sw or ox > hiAlong(o) then return nil end
             for _, q in ipairs(fixed) do
                 if math.abs(px(q) - ox) < (rad(o) + rad(q)) * MIN_GAP then return nil end
             end
@@ -794,6 +824,12 @@ function E.start(opts)
         if opts.pouzivatel ~= false then require("lib/pouzivatel").start(E, opts) end
         settings()
         every(2000, settings)
+        -- rozmer obrazovky príde zo scény až po štarte (a zmení sa s rozlíšením): polohy a zakázanú zónu prepočítať
+        local lw, lh = 0, 0
+        every(1000, function()
+            local w, h = num(fact.sw, 0), num(fact.sh, 0)
+            if w ~= lw or h ~= lh then lw, lh = w, h E.separate() publish() end
+        end)
         publish()
     end)
     -- káva (pravidlo 6): pomer vody a mlieka z Baristu, ako plocha Kvapky

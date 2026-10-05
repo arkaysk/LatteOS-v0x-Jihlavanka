@@ -158,7 +158,7 @@ local function layout()
     local head = E.get(HEAD)
     local sw = head and E.len(head) or 0
     if head and sw > 0 then
-        local avail = sw * (1 - head.x) - 60           -- po koniec okraja, na ktorom lišta je
+        local avail = E.hiAlong(head) - E.along(head) - 20   -- po koniec okraja (alebo po rohovú lištu), na ktorom lišta je
         if u > avail and u > 0 then
             local f = math.max(avail / u, 0.25)
             for _, e in pairs(lay) do e.x = e.x * f e.y = e.y * math.max(f, 0.5) e.r = e.r * math.max(f, 0.5) end
@@ -331,6 +331,7 @@ function M.read_blocks()
         local ok, t = pcall(json.decode, out or "")
         local head = E.get(HEAD)
         if not ok or type(t) ~= "table" or not head or (t.h or 0) <= 0 then return end
+        E.setCorner(type(t.roh) == "table" and t.roh or nil)
         local hx = E.along(head)
         local nb = {}
         -- uhýbanie oknám má zmysel iba na dolnom okraji (okná „nad lištou“); na inom okraji ikry neuhýbajú

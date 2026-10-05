@@ -16,7 +16,8 @@ Logika scény beží v pieskovisku pleamar (bez súborov a bez sh) — všetko, 
   latte-goo kava                  pomer vody a mlieka podľa Baristu (~/.config/latteos/kava): [voda, mlieko]
   latte-goo rezim                 režim okien (plavajuce | dlazdice | paska) z ~/.local/state/latteos/window-mode
   latte-goo okna                  viditeľné okná na aktuálnej ploche zameraného monitora (obdĺžniky voči monitoru):
-                                  {"w", "h", "okna": [{x, y, w, h}]} — Goobar podľa nich uhýba k okraju (Hyprland,
+                                  {"w", "h", "okna": [{x, y, w, h}], "roh": rohová lišta Noctalie} — Goobar podľa
+                                  nich uhýba k okraju a kvapky sa zastavia pred rohovou lištou (Hyprland,
                                   inak Sway na skúšky)
 """
 import glob, json, os, re, subprocess, sys
@@ -217,7 +218,8 @@ def visible_windows():
             return None
     mons = cmd("hyprctl", "-j", "monitors")
     if isinstance(mons, list) and mons:
-        m = next((x for x in mons if x.get("focused")), mons[0])
+        # monitor, na ktorom engine beží (hlavný, ľavý horný roh 0,0 — ako latte-kvapky), nie práve zameraný
+        m = next((x for x in mons if x.get("x") == 0 and x.get("y") == 0), mons[0])
         ws = (m.get("activeWorkspace") or {}).get("id")
         out = []
         for c in cmd("hyprctl", "-j", "clients") or []:
@@ -227,7 +229,13 @@ def visible_windows():
             (x, y), (cw, ch) = c.get("at", [0, 0]), c.get("size", [0, 0])
             out.append({"x": x - m["x"], "y": y - m["y"], "w": cw, "h": ch})
         scale = m.get("scale", 1) or 1
-        return {"w": int(m["width"] / scale), "h": int(m["height"] / scale), "okna": out}
+        # rohová lišta Noctalie na tomto monitore: kvapky sa pred ňou zastavia
+        roh = None
+        for lv in ((cmd("hyprctl", "-j", "layers") or {}).get(m.get("name"), {}).get("levels") or {}).values():
+            for l in lv:
+                if "noctalia-bar" in l.get("namespace", "") and l.get("w", 0) > 0 and l.get("h", 0) > 0:
+                    roh = {"x": l["x"] - m["x"], "y": l["y"] - m["y"], "w": l["w"], "h": l["h"]}
+        return {"w": int(m["width"] / scale), "h": int(m["height"] / scale), "okna": out, "roh": roh}
     tree = cmd("swaymsg", "-t", "get_tree")
     if isinstance(tree, dict):
         out, mon = [], {"w": 1920, "h": 1080}
