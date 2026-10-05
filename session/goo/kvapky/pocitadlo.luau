@@ -8,7 +8,7 @@ local function show(d)
 end
 
 return {
-    id = "pocitadlo", nazov = "Počítadlo", ikona = "123", druh = "ukazovatel", povaha = "pokojna",
+    id = "pocitadlo", nazov = "Počítadlo", ikona = "number-123", druh = "ukazovatel", povaha = "pokojna",
     velkost = 30,
     start = function(d) d.n = 0 show(d) end,
     klik = function(d) d.n += 1 show(d) end,

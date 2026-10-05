@@ -1,6 +1,7 @@
 # Engine Goo — report pre novú session Claude Code
 
-Stav k 2026-10-02, vetva `gamerdistro`, repo `arkaysk/jihlavanka001`, posledný commit enginu `ad563d0`.
+Stav k 2026-10-05, vetva `gamerdistro`, repo `arkaysk/jihlavanka001`. Engine je **nainštalovaný a overený na
+latte-lab** (5. 10., §10); cloudová časť končí commitom `ad563d0`.
 Tento súbor je odovzdávka: čo engine je, kde čo leží, ako sa testuje, aké pasce jazyk má a čo ostáva.
 Podrobnosti: `session/goo/README.md` (API a pasce), `LATTEOS-GOO.md` §2 (pravidlá 1–22) a §3.2 (engine),
 `cloud_session_1.md` (história rozhodnutí a meraní), `ROADMAP.md`.
@@ -59,7 +60,10 @@ zlievanie, vstupy, efekty) a kvapka je iba definícia plus háčiky.
    - Pôvodná scéna Kvapky: 62 → 24 ms.
 3. `pleamar-ostre-okraje.patch` (shape.wgsl): AA podľa skutočného gradientu SDF (`d / |∇d|`) namiesto pevnej šírky.
    Výsledkom sú **ostré obrysy ôk** medzi kvapkami v oboch scénach bez zmeny scén (pravidlo 21).
-4. `pleamar-wm-linearny-buffer.patch`: bez zmeny.
+4. `pleamar-pasy-tela.patch` (gpu.rs, 5. 10.): telo s 8+ tvarmi sa kreslí po zvislých pásoch (96 px) a každý pás
+   počíta iba tvary vo svojom dosahu. Obraz je rovnaký (0 odlišných pixelov), záťaž GPU prestala rásť s počtom
+   kvapiek: engine 17 kvapiek na RX 640 **70 % → 35 %**. Nahrádza navrhované „ostrovy“.
+5. `pleamar-wm-linearny-buffer.patch`: bez zmeny.
 
 `install-session.sh` prebuilduje pleamar, keď verzia nie je 0.2.6 alebo niektorá záplata chýba
 (`git apply --reverse --check`).
@@ -101,7 +105,8 @@ zlievanie, vstupy, efekty) a kvapka je iba definícia plus háčiky.
 - Podržanie 650 ms; ruší klik (`lp = 0`).
 - Koliesko: `k*2 + up`.
 - Ťahanie začína od > 6 px a nastaví `nk = k`.
-- Klik je pustenie ľavého bez ťahania.
+- Klik je pustenie ľavého bez ťahania. Scéna posiela iba `goo_down`/`goo_up`; či je to klik, rozhodne logika
+  z poradia udalostí (pravé, stredné, podržanie a ťahanie ho rušia).
 - Pustenie zapíše `rx` (zlomok) a `ry` (px nad dnom).
 
 **Nečinnosť:** úrovne pri 60/180/360 s, prebudenie zmenou kurzora.
@@ -232,12 +237,20 @@ Validácia odmietne `farba` (pravidlo 6) a kontroluje čísla, povahu, efekt, dr
 - `size:` textu musí začínať číslom (`20 * rs.$k`).
 - `pick()` nevie farby, pomôže vnorený `if`. `gradient` existuje iba v `body`.
 - Tvary tela sa počítajú pre každý pixel a `show:false` ich neodstráni. Preto nulová veľkosť + záplata prazdne-tvary.
+- `while` v pravidle vidí **stav zo začiatku snímky**. Príznak nastavený pri `press` preto `release` v tej istej
+  snímke (ťuknutie na touchpade, virtuálna myš) nevidí: každý druhý klik sa stratil. Poradie patrí do logiky.
+- `release zone` príde pri pustení **ktoréhokoľvek** tlačidla; v pravidle sa nedá zistiť, ktorého.
+- Po reštarte scény nepríde `enter`, kým sa myš nepohne (Wayland).
+- `screen.width` je pri dvoch monitoroch jedna hodnota pre obe plochy (scéna má jeden stav): na latte-lab 1920
+  aj na monitore 2560. Scéna sa na oboch monitoroch kreslí rovnako, ako pôvodné Kvapky.
 
 **Logika (Luau):**
 - `emit(name)` z logiky **nenesie dáta** (opačný smer `emit ev(k)` áno). Signál pre konkrétnu kvapku sa preto posiela
   počítadlom (fakt + `on change`).
 - Luau nemá `goto`. `save` je deklarované dopredu (`local save` … `save = function()`).
 - `sys.watch` musí predchádzať `sys.call` tej istej služby, inak padli ďalšie kvapky.
+- `tabler.json` Noctalie má kódy ako `U+EA35` (nie `0x…`); mená ikon overiť proti nemu (`123` neexistuje,
+  je `number-123`).
 - Logika nepozná rozmer obrazovky: scéna exportuje `fact sw/sh` cez `every 1s while sw != W or sh != H`.
   Na štarte je 0, preto fallback 1920.
 
@@ -270,8 +283,20 @@ Validácia odmietne `farba` (pravidlo 6) a kontroluje čísla, povahu, efekt, dr
 - S oknami a telom Goobaru ≈ 95 ms (Sway tu kompozituje na CPU).
 - Na GPU (RX 640) to ešte nie je zmerané.
 
-**Navrhnuté, čaká na súhlas:** „ostrovy“, čiže samostatné telá pre skupiny susedov, aby cena nerástla lineárne s
-počtom všetkých kvapiek.
+**Latte-lab (5. 10., RX 640, 2560×1080 @144 + 1920×1080 @60, scéna 60 Hz, v pokoji):**
+
+| Scéna | GPU | CPU pleamaru (jadro) |
+|---|---|---|
+| plocha bez kvapiek | 21–27 % | — |
+| pôvodné Kvapky | 36–38 % | 20–27 % |
+| engine, 5 kvapiek shellu, bez záplaty pásov | 43 % | 34 % |
+| engine, 17 kvapiek, bez záplaty pásov | 70–77 % | 33–48 % |
+| engine, 17 kvapiek, **so záplatou pásov** | **35–41 %** | 33–48 % |
+
+- `pleamar --report goo`: 60 fps, medián 16,8 ms, p99 17,5 ms, **žiadna oneskorená snímka**.
+- Ostáva **CPU**: engine berie asi 1,7× viac než Kvapky bez ohľadu na počet kvapiek (pravidlá a pružiny všetkých
+  128 miest: 2,8–3,6 ms na snímku, skladanie 2,0–2,7 ms).
+- „Ostrovy“ navrhnuté v cloude netreba: rieši to záplata `pleamar-pasy-tela` bez zmeny scény.
 
 ## 10. Overené a neoverené
 
@@ -283,16 +308,26 @@ počtom všetkých kvapiek.
 - Goobar: zoskupenie okien foot, rozvinutie strapca, uhnutie pred oknom.
 - Ponuka PowerGoo a pravidlo 22 (reťazové odsunutie).
 
-**Treba overiť na latte-lab (Hyprland):**
-- vstupy a ikony: stredné tlačidlo, ikony Tabler, `cursor.x/y` z Hyprlandu;
-- výkon na RX 640;
-- okná: ponuka okna a minimalizovanie (`latte.okno.*`/`hyprctl`), skutočné uhýbanie oknám;
-- server upozornení.
+**Overené na latte-lab (5. 10., Hyprland 0.56.2, RX 640, wlrctl + ydotool):**
+- vstupy: ľavý, pravý, **stredný**, koliesko, podržanie (650 ms, bez kliku navyše), ťahanie s odtrhnutím, pustenie
+  a uloženie polohy, pravidlo 22 (reťazové odsunutie), bublina, nadnesenie ku kurzoru;
+- ikony Tabler na kvapkách aj v ponukách, ponuka PowerGoo;
+- Goobar: tri okná `foot` ako ikry s ikonou aplikácie, uhnutie pred oknami pri lište, klik (prepnúť /
+  minimalizovať), ponuka okna a Zavrieť cez `latte.okno.*`;
+- upozornenia (guľka a zoznam v DaNoGoo), nečinnosť (stupeň 1 po 60 s, prebudenie myšou), výkon (§9).
+
+**Opravené pri overení:**
+- ikony sa nenačítali vôbec (`latte-goo ikony` čakal `0x…`, Noctalia má `U+…`);
+- ľavý klik sa pri stlačení a pustení v jednej snímke strácal (každý druhý);
+- ponuka pri prvom otvorení bez ikon; bublina s názvom prekrývala ponuku a pri dvoch riadkoch pretekala.
+
+**Ešte neoverené:** stupne nečinnosti 2 a 3 naživo (hra), rozvinutie strapca nad voľnou plochou, veľa okien (50+),
+batéria (stolný PC), reálny touchpad.
 
 ## 11. Otvorené úlohy
 
-1. Overenie na latte-lab (§10).
-2. Ostrovy pre výkon, ale až po súhlase používateľa.
+1. ✅ (5. 10.) Overenie na latte-lab (§10).
+2. ✅ (5. 10.) Výkon GPU: záplata `pleamar-pasy-tela` namiesto ostrovov. Ostáva CPU (128 miest, §9).
 3. Preniesť zo Kvapiek do enginu:
    - spúšťač Goo;
    - časové menu (stopky, časovač, budíky);
@@ -313,6 +348,7 @@ počtom všetkých kvapiek.
 
 ## 12. Commity enginu (najnovšie hore)
 
+- 5. 10.: overenie na latte-lab — ikony, ľavý klik, ponuka a bublina, záplata pásov tela.
 - `ad563d0`: pravidlo 22, neprekrývanie.
 - `e051ab7`: ikry vo vlastnom tele, menšie, uhýbajú oknám.
 - `196eb4d`: Goobar, PowerGoo, QueenGoo, DaNoGoo, TimeGoo, ponuka Goo, guľky.

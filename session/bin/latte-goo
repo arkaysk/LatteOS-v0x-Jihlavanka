@@ -201,8 +201,9 @@ def glyphs(names):
     res = {}
     for n in names:
         e = tab.get(n) or tab.get("tabler-" + n)
-        if e and isinstance(e, dict) and str(e.get("codepoint", "")).startswith("0x"):
-            res[n] = chr(int(e["codepoint"][2:], 16))
+        cp = str(e.get("codepoint", "")) if isinstance(e, dict) else ""
+        if cp[:2] in ("U+", "0x"):                    # tabler.json Noctalie píše „U+EA35“
+            res[n] = chr(int(cp[2:], 16))
     return res
 
 
