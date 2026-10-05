@@ -35,7 +35,7 @@ local function open(d, app)
 end
 
 return {
-    id = "queengoo", nazov = "QueenGoo", ikona = "apps", povaha = "pokojna", velkost = 26, vyska = 18,
+    id = "queengoo", nazov = "QueenGoo", koruna = "crown", ikona = "apps", povaha = "pokojna", velkost = 26, vyska = 18,
     poloha = { x = 0.86, y = 18 }, gravitacia = 0.25,
     start = function(d)
         local function devices()

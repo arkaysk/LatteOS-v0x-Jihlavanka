@@ -61,6 +61,7 @@ scene Goo {
     //   sk      goo telo: 0 hlavné (lišta a kvapky), 1 iba telo Goobaru (ikry okien — nelepia sa k iným kvapkám),
     //           2 obe (hlava Goobaru: spája sa s TimeGoo aj so svojimi oknami)
     //   ox      posun domova v px (kvapka pri inej o presný odstup)
+    //   nad     znak nad kvapkou na vonkajšej strane (korunka QueenGoo)
     //   ed      okraj, na ktorom kvapka sedí: 0 dole, 1 vľavo, 2 hore, 3 vpravo (pravidlo 16: prilepí sa k okraju,
     //           pri ktorom ju pustili; inak spadne dole). hx je potom zlomok DĹŽKY toho okraja, hy vzdialenosť od neho
     //   jadro, jf, jp  farebné jadro (0…1): od stredu prechod z farby do kávy; predvolene druh upozornenia —
@@ -76,7 +77,7 @@ scene Goo {
         nl: bool; nlh: number; nlo: number; nr: bool; nrh: number; nro: number; nry: number; nrr: number = 26
         jadro: number; jf: number; jp: bool
         obr: text; img: bool; tlm: number; gn: number; gf: number; gt: text
-        sk: number; zl: number = 1; ml: number = 1; ed: number
+        sk: number; zl: number = 1; ml: number = 1; ed: number; nad: text
     }
     spring plava = 150, 13                    // vodorovne: mäkko, bez odskoku
     spring pada = 190, 9                      // zvisle: s prestrelením a odrazom („odkvapne“, §3)
@@ -1058,6 +1059,8 @@ scene Goo {
         // druh 1: ukazovateľ (prstenec podľa hodnoty)
         arc { at: x.$k, y.$k; radius: rr.$k * 0.78; span: clamp(goo.$k.hodnota, 0, 1) * 360deg; rotate: clamp(goo.$k.hodnota, 0, 1) * 180deg; width: max(2, rr.$k * 0.12); color: #f7c873; opacity: if(goo.$k.druh == 1 and goo.$k.on, 0.9, 0) }
         text goo.$k.ikona { at: x.$k, y.$k - if(goo.$k.druh == 1, 0, rr.$k * 0.08); anchor: center; size: 20 * rs.$k; color: ink; opacity: if(goo.$k.on and goo.$k.druh != 2 and not goo.$k.img, 0.92, 0) * (1 - 0.55 * goo.$k.tlm); family: "noctalia-tabler-icons" }
+        // korunka (QueenGoo): znak na vonkajšej strane kvapky, od okraja preč; zlatá s tmavým obrysom ako v Kvapkách
+        text goo.$k.nad { at: x.$k + if(goo.$k.ed == 1, 1, if(goo.$k.ed == 3, -1, 0)) * (rr.$k + 5), y.$k + if(goo.$k.ed == 0, -1, if(goo.$k.ed == 2, 1, 0)) * (rr.$k + 5); anchor: center; size: 20 * rs.$k; color: #e8b84a; outline: 1.5, #3a2410; opacity: if(goo.$k.on, 1, 0); family: "noctalia-tabler-icons" }
         // ikona aplikácie (okno v Goobari): obrázok podľa mena ikony zo spúšťača; minimalizované okno stlmené
         image obr.$k = from goo.$k.obr, 30, 30
         image obr.$k { at: x.$k - rr.$k * 0.52, y.$k - rr.$k * 0.52; size: rr.$k * 1.04, rr.$k * 1.04; opacity: if(goo.$k.on and goo.$k.img, 1 - 0.55 * goo.$k.tlm, 0); show: goo.$k.img }
