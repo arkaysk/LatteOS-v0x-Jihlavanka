@@ -16,6 +16,11 @@ Logika scény beží v pieskovisku pleamar (bez súborov a bez sh) — všetko, 
                                   s plochou Kvapky, ~/.local/share/latteos/casovace.json), "pohoda" (čas pred obrazovkou
                                   a tri najpoužívanejšie aplikácie dnes), "pasma" (svetové hodiny z clock.conf)}
   latte-goo zvon TITUL [TEXT]     minútka alebo budík: upozornenie a trikrát zvuk (logika zvoniť nevie)
+  latte-goo kalendar              {"udalosti": [{date, time, title}], "ulohy": [{title, done, date}]} — spoločné
+                                  s plochou Kvapky (events.json, todo.json; zápis `latte-kvapky uloz udalosti|ulohy`)
+  latte-goo pocasie               predpoveď Open-Meteo pre miesto z Nastavení › Účet › Prihlasovanie (greeter.conf):
+                                  {"miesto", "teraz": {t, kod}, "hodiny": [{hm, t, kod}], "dni": [{den 0…6 (0 = pondelok),
+                                  max, min, kod, zrazky %}]}; v pamäti 20 minút
   latte-goo ikony MENO…           mená ikon Tabler → znaky písma ({meno: znak}), podľa Noctalie
   latte-goo kava                  pomer vody a mlieka podľa Baristu (~/.config/latteos/kava): [voda, mlieko]
   latte-goo rezim                 režim okien (plavajuce | dlazdice | paska) z ~/.local/state/latteos/window-mode
@@ -251,6 +256,65 @@ def cas():
     return out
 
 
+def kalendar():
+    share = os.environ.get("XDG_DATA_HOME", HOME + "/.local/share")
+    def load(name):
+        try:
+            v = json.load(open(share + "/latteos/" + name))
+            return [x for x in v if isinstance(x, dict)] if isinstance(v, list) else []
+        except (OSError, ValueError):
+            return []
+    return {"udalosti": load("events.json"), "ulohy": load("todo.json")}
+
+
+def pocasie():
+    """predpoveď ako v ploche Kvapky (kvapka.luau › weather): Open-Meteo bez kľúča, miesto z greeter.conf"""
+    import datetime, time, urllib.request
+    cache = os.path.join(os.environ.get("XDG_CACHE_HOME", HOME + "/.cache"), "latteos", "goo-pocasie.json")
+    try:
+        if time.time() - os.path.getmtime(cache) < 20 * 60:
+            return json.load(open(cache))
+    except (OSError, ValueError):
+        pass
+    try:
+        conf = open("/var/lib/latteos/greeter/greeter.conf").read()
+    except OSError:
+        conf = ""
+    def key(k, d):
+        m = re.search(k + r'\s*=\s*"([^"]*)"', conf)
+        return m.group(1) if m and m.group(1) else d
+    lat, lon, place = key("lat", "48.74"), key("lon", "19.15"), key("place", "")
+    url = ("https://api.open-meteo.com/v1/forecast?latitude=%s&longitude=%s&current=temperature_2m,weather_code"
+           "&hourly=temperature_2m,weather_code&daily=weather_code,temperature_2m_max,temperature_2m_min,"
+           "precipitation_probability_max&timezone=auto&forecast_days=8" % (lat, lon))
+    try:
+        d = json.load(urllib.request.urlopen(url, timeout=8))
+    except Exception:
+        try:
+            return json.load(open(cache))                 # bez siete: posledná známa
+        except (OSError, ValueError):
+            return {}
+    cur, hr, dl = d.get("current") or {}, d.get("hourly") or {}, d.get("daily") or {}
+    out = {"miesto": place.split(",")[0], "teraz": {"t": round(cur.get("temperature_2m") or 0), "kod": cur.get("weather_code", 3)},
+           "hodiny": [], "dni": []}
+    now = (cur.get("time") or "")[:13]
+    times = hr.get("time") or []
+    start = next((i for i, t in enumerate(times) if t[:13] == now), 0) + 1
+    for i in range(start, min(start + 24, len(times)), 3):
+        out["hodiny"].append({"hm": times[i][11:16], "t": round(hr["temperature_2m"][i]), "kod": hr["weather_code"][i]})
+    for i, day in enumerate(dl.get("time") or []):
+        out["dni"].append({"den": datetime.date.fromisoformat(day).weekday(), "max": round(dl["temperature_2m_max"][i]),
+                           "min": round(dl["temperature_2m_min"][i]), "kod": dl["weather_code"][i],
+                           "zrazky": (dl.get("precipitation_probability_max") or [None] * 9)[i] or 0})
+    try:
+        os.makedirs(os.path.dirname(cache), exist_ok=True)
+        json.dump(out, open(cache + ".new", "w"), ensure_ascii=False)
+        os.replace(cache + ".new", cache)
+    except OSError:
+        pass
+    return out
+
+
 def zvon(title, body):
     """upozornenie hneď, zvuk trikrát na pozadí (ako ring() v kvapka.luau)"""
     subprocess.Popen(["notify-send", "-a", "LatteOS", "-i", "alarm-clock", title, body],
@@ -361,6 +425,10 @@ def main(a):
         return 0
     if c == "cas":
         print(json.dumps(cas(), ensure_ascii=False)); return 0
+    if c == "kalendar":
+        print(json.dumps(kalendar(), ensure_ascii=False)); return 0
+    if c == "pocasie":
+        print(json.dumps(pocasie(), ensure_ascii=False)); return 0
     if c == "zvon" and len(a) >= 2:
         zvon(a[1], a[2] if len(a) > 2 else ""); return 0
     if c == "nastavenia":      # Nastavenia › Kvapky: skryté voliteľné kvapky, veľkosť, vrátenie na miesto

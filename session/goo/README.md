@@ -90,6 +90,8 @@ mieste kliku, podponuky, preklady), **guľky** (`d:gulky(n, farby)`), **ikona ap
   `big` (veľký nadpis), `bar` (pruh 0…1), `keep` (klik kartu nezavrie), `wheel = function(smer)` (koliesko nad
   riadkom). `opts.chips = { { label, glyph, on, run } }` sú záložky hore, `opts.id` meno karty (`E.menuId()`),
   `opts.keep` obnovenie otvorenej karty bez zmeny zvýrazneného riadku (živé údaje).
+  Ďalšie položky: `info` (údaj na čítanie), `{ grid = true }` (mriežka kalendára: `model.kal`, `E.calendar(klik, šípky)`),
+  `{ input = true, label = nápoveď, submit = function(text) }` (textové pole, Enter odošle). Esc kartu zavrie.
 - **Efekty scény:** `dych`, `kmit`, `tras`, `obeh`, `tlkot` (+ `sila`).
 - **Rezerva na nedefinované efekty:**
   - efekty 6–9 v scéne sú voľné;

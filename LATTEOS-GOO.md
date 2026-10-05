@@ -299,6 +299,12 @@ lepivosť, veľkosť a rezervu na ďalšie efekty.
   a živé obnovenie (`opts.keep`, `E.menuId()`). Čas je v `lib/cas.luau` — prevzaté z časového menu Kvapiek, ten
   istý `casovace.json`; čítanie a zvonenie cez `latte-goo cas` / `zvon`. Všetko myšou: dĺžku minútky a čas budíka
   nastaví koliesko alebo klik.
+- **Kalendár a počasie v karte ClockGoo (5. 10.):** mriežka mesiaca (`{ grid = true }`, model `kal`, `E.calendar`),
+  textové pole (`{ input = true, submit = … }`, Enter odošle) a klávesnica — kým je otvorená karta alebo hrozno,
+  patrí im (`keyboard: exclusive while …`), takže **Esc ich zavrie** hneď. Údaje: `latte-goo kalendar`
+  (`events.json`, `todo.json` — spoločné s Kvapkami) a `latte-goo pocasie` (Open-Meteo, miesto z `greeter.conf`,
+  20 min v pamäti). Riadok `info` = údaj na čítanie (neklikateľný, ale nie vyblednutý ako `off`).
+  Pasca: skrytý `input` berie kliky aj tak — keď ho karta nemá, leží mimo nej (inak zhltol kliky na záložky).
 - Ďalej: znížiť CPU enginu, potom preniesť okná z kvapiek do enginu (LensGoo spúšťač, karta a hrozno ClockGoo,
   bublina QueenGoo) a ChatGoo (po jednej, snímky pred a po). Živé bytosti z 3.1 (dážď/vietor) a formulár
   v Nastaveniach › Kvapky pribudnú nad enginom.
