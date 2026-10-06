@@ -399,6 +399,12 @@ texty preložiteľné (`translations`). Noctalia beží bez lišty a robí, čo 
   a Súborov (LATTEOS-GOO.md §5)
 - [ ] Nové kvapky: ClipGoo, MediaGoo, PassGoo, CastGoo (LATTEOS-GOO.md §4.11)
 - [ ] Materiál aj na oknách aplikácií pri kovových témach (textúra v hlavičke okna — upravený hyprbars)
+- [x] **Zoznam záujmov nainštalovaný na latte-lab** (6. 10., `setup/lab/zaujmy.sh`) — na skúšanie a rozhodnutie
+  „použiť, prevziať funkcie, alebo napísať vlastné“; nič nie je predvolené ani zapojené do LatteOS:
+  Flathub (pre používateľa) Newelle, Bazaar, Bottles, LocalSend, RustDesk; systém zoxide, syncthing, kde-connect,
+  hyprsunset, whisper-cpp (pritiahol knižnice ROCm, ~570 balíkov, 6 GB — skript ho dáva iba s `--whisper`);
+  zo zdroja do `~/.local/bin` DiskTree, Bumblebee, hyprsession, Flea (bez `--default`), hypruse (bez registrácie
+  do AI nástrojov), Voltage. Zdroje: `resources/fetch.sh` → `resources/upstream/`.
 - [ ] **Nápady zo 6. 10. (prijaté do plánu)** — docs/goo/ROZHODNUTIA.md:
   - [ ] podržanie LensGoo = hovor (whisper.cpp lokálne, `latte-ai hlas`): pri držaní sa pri ikone plynulo ukáže
     mikrofón; výsledok ako príkaz, otázka pre AI alebo text do okna (vzor: Voxtype, Vocalinux)
