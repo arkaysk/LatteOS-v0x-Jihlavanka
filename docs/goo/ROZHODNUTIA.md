@@ -49,6 +49,10 @@ Nové rozhodnutie: jeden riadok sem (dátum, čo, prečo) a oprava platného zne
   hlasitosť v kontextovej ponuke; **kto žerie energiu, dáta, RAM a disk s priebehom po dňoch** patrí do Monitora;
   prostredie Súborov sa ešte musí doriešiť; nie: koliesko na ikre = hlasitosť, poradie spotreby v karte GooPower,
   Kazeta (skôr nie).
+- **Projekty z GitHubu:** áno **Voltage** (webové aplikácie, pôvodný), **DiskTree** (v Monitore aj v Súboroch),
+  **Bottles**, **Zoxide** (LensGoo aj Súbory); dialóg súborov cez portál v jednotnom vzhľade s oknami;
+  **Flea** odložená — pozrieť na latte-lab, možný fork FleaGoo; zatiaľ nie Distrobox a Toolbx; Omarchy skôr ako
+  zdroj nápadov s AI.
 - Správca súborov bude ako Total Commander s dvoma panelmi, alebo náš fork Total Commandera.
 - Ovládacie centrum Noctalie sa otvára **nad rohovou lištou vpravo** (predtým vľavo, zvyšok plochy Kvapky).
 - Na zváženie (nerozhodnuté): „Zásady pre engine Goo“ v README (samostatný daemon, Quickshell ako vizuálna vrstva,

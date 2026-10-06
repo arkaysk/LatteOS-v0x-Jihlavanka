@@ -411,6 +411,14 @@ texty preložiteľné (`translations`). Noctalia beží bez lišty a robí, čo 
   - [ ] **ikra alebo kvapka, ktorá hrá zvuk, sa vlní a vibruje ako reproduktor**; vlastná hlasitosť tej aplikácie
     v jej kontextovej ponuke (ak ju má), inak inde (napr. karta pri hlasitosti)
   - [ ] **Monitor: kto žerie** energiu, dáta, RAM a miesto na disku — po aplikáciách a s priebehom po dňoch
+  - [ ] **webové aplikácie cez Voltage** (db0x/voltage, pôvodný: webová stránka ako samostatná aplikácia
+    s vlastným oknom, profilom a ikrou)
+  - [ ] **DiskTree** (tobi/disktree, čo zapĺňa disk) ako súčasť Monitora aj Súborov
+  - [ ] **Bottles** pri prechode z Windowsu (`.exe` → ponúknuť Bottles)
+  - [ ] **Zoxide** (najpoužívanejšie priečinky) pre LensGoo aj Súbory
+  - [ ] dialóg Otvoriť/Uložiť cez XDG Desktop Portal v **jednotnom vzhľade s oknami** (nie vo vzhľade Goo lišty)
+  - [ ] odložené: **Flea** (thisisgm/flea, Rust + Quickshell, pre Hyprland) ako možný základ Súborov — pozrieť
+    na latte-lab so všetkými nápadmi na rozšírenie; možný fork **FleaGoo**
   - [ ] na rozhodnutie: bublina odchádzajúceho spojenia — nie ako tretia vrstva, iba ako súčasť modelu NET
     (povolenie pri inštalácii + tlačidlo NET), napr. upozornenie pri prvom spojení aplikácie mimo Flatpaku
 - [ ] Ovládacie centrum Noctalie nad rohovou lištou vpravo — overiť na latte-lab (`latte-kvapky`: `bottom_right`)
