@@ -419,6 +419,38 @@ def profil(nastav=None):
 GREETER = "/var/lib/latteos/greeter"
 
 
+def nebo(lat, lon, t=None):
+    """kde je na oblohe slnko a mesiac (výška v stupňoch, t = podiel cesty od východu 0 po západ 1, mimo nej −1)
+    a fáza mesiaca (osvetlená časť 0…1, či dorastá). Nízka presnosť (~1°) — stačí na siluetu pri prihlásení."""
+    import math, time
+    t = time.time() if t is None else t
+    d = t / 86400.0 + 2440587.5 - 2451545.0              # dni od J2000
+    rad, sin, cos = math.radians, math.sin, math.cos
+    g = rad((357.529 + 0.98560028 * d) % 360)
+    L = rad((280.459 + 0.98564736 * d + 1.915 * sin(g) + 0.020 * sin(2 * g)) % 360)   # ekliptikálna dĺžka slnka
+    e = rad(23.439 - 0.00000036 * d)
+    ra_s, dec_s = math.atan2(cos(e) * sin(L), cos(L)), math.asin(sin(e) * sin(L))
+    Mm = rad((134.963 + 13.064993 * d) % 360)
+    lam = rad((218.316 + 13.176396 * d) % 360) + rad(6.289) * sin(Mm)                # mesiac
+    bet = rad(5.128) * sin(rad((93.272 + 13.229350 * d) % 360))
+    ra_m = math.atan2(sin(lam) * cos(e) - math.tan(bet) * sin(e), cos(lam))
+    dec_m = math.asin(sin(bet) * cos(e) + cos(bet) * sin(e) * sin(lam))
+    lst = rad((280.46061837 + 360.98564736629 * d + lon) % 360)
+    fi = rad(lat)
+
+    def poloha(ra, dec):
+        h = (lst - ra + math.pi) % (2 * math.pi) - math.pi                           # hodinový uhol
+        vyska = math.degrees(math.asin(sin(fi) * sin(dec) + cos(fi) * cos(dec) * cos(h)))
+        c = max(-1.0, min(1.0, -math.tan(fi) * math.tan(dec)))
+        h0 = math.acos(c)                                                            # polovica denného oblúka
+        return {"vyska": round(vyska, 1), "t": round((h + h0) / (2 * h0), 4) if h0 > 0.01 and abs(h) <= h0 else -1}
+
+    elong = math.acos(max(-1.0, min(1.0, sin(dec_s) * sin(dec_m) + cos(dec_s) * cos(dec_m) * cos(ra_s - ra_m))))
+    mesiac = poloha(ra_m, dec_m)
+    mesiac.update(faza=round((1 - cos(elong)) / 2, 3), dorasta=sin(lam - L) > 0)
+    return {"slnko": poloha(ra_s, dec_s), "mesiac": mesiac}
+
+
 def prihlasenie():
     """údaje scény prihlásenia (session/goo/login.plm): kto sa prihlasuje, káva, čo je pod hladinou (posledný pád,
     inak novinky z RSS v greeter.conf), informačné goo (batéria, úlohy) a znaky ikon. Beží ako prihlásený používateľ
@@ -467,6 +499,15 @@ def prihlasenie():
             panel = "pad" if riadky else ""
     except OSError:
         pass
+    rss_cache = os.path.join(os.environ.get("XDG_CACHE_HOME", HOME + "/.cache"), "latteos", "login-novinky.json")
+    if not panel and conf.get("rss_url") and conf.get("panel", "rss") != "none":
+        try:                                             # titulky sa nesťahujú pri každom volaní (scéna sa pýta raz za minútu)
+            if time.time() - os.path.getmtime(rss_cache) < 15 * 60:
+                c = json.load(open(rss_cache))
+                if c.get("url") == conf["rss_url"]:
+                    riadky, panel = c.get("riadky", []), "novinky" if c.get("riadky") else ""
+        except (OSError, ValueError, AttributeError):
+            pass
     if not panel and conf.get("rss_url") and conf.get("panel", "rss") != "none":
         try:                                             # novinky: titulky z RSS alebo Atom, krátko čakať
             import urllib.request, xml.etree.ElementTree as ET
@@ -479,8 +520,29 @@ def prihlasenie():
                 if len(riadky) >= 8:
                     break
             panel = "novinky" if riadky else ""
+            os.makedirs(os.path.dirname(rss_cache), exist_ok=True)
+            json.dump({"url": conf["rss_url"], "riadky": riadky}, open(rss_cache, "w"), ensure_ascii=False)
         except Exception:                                # bez siete nič: pod hladinou ostane iba káva
             panel, riadky = "", []
+    # obloha a počasie v mieste z greeter.conf: slnko alebo mesiac na svojom mieste, dážď a sneh, ak padá alebo je
+    # v predpovedi na najbližšie hodiny (zrazky: 0 nič, 1 predpoveď, 2 práve teraz)
+    try:
+        obloha = nebo(float(conf.get("lat", "48.74")), float(conf.get("lon", "19.15")))
+    except ValueError:
+        obloha = {}
+    DAZD = set(range(51, 68)) | {80, 81, 82, 95, 96, 99}
+    SNEH = {71, 73, 75, 77, 85, 86}
+    zrazky, sneh = 0, False
+    try:
+        w = pocasie()
+        teraz = (w.get("teraz") or {}).get("kod")
+        skoro = [h.get("kod") for h in (w.get("hodiny") or [])[:2]]
+        if teraz in DAZD or teraz in SNEH:
+            zrazky, sneh = 2, teraz in SNEH
+        elif any(k in DAZD or k in SNEH for k in skoro):
+            zrazky, sneh = 1, not any(k in DAZD for k in skoro)
+    except Exception:
+        pass
     info = []
     for b in sorted(glob.glob("/sys/class/power_supply/BAT*")):
         try:
@@ -541,7 +603,8 @@ def prihlasenie():
         dev = True
     names = ["power", "arrow-right", "moon", "refresh", "battery-3", "bell", "calendar-event", "device-desktop"] + [i["ikona"] for i in info]
     return {"meno": meno, "login": login, "kava": kava, "panel": panel, "riadky": riadky, "info": info[:3],
-            "goopower": goopower, "relacie": relacie[:6], "relacia": vybrana, "dev": dev, "ikony": glyphs(names)}
+            "goopower": goopower, "relacie": relacie[:6], "relacia": vybrana, "dev": dev, "ikony": glyphs(names),
+            "nebo": obloha, "zrazky": zrazky, "sneh": sneh}
 
 
 def main(a):
