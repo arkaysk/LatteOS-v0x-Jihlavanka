@@ -61,8 +61,8 @@ Kliky jednotlivých kvapiek sú v [LATTEOS-GOO.md §4](LATTEOS-GOO.md). Záväzn
 [ZMENY.md](ZMENY.md). Verzia je v `Cargo.toml`; každé vydanie musí mať novú. Čo ostáva súkromné, určuje
 `setup/verejne/vynechat.txt`; verejné README je `setup/verejne/README.md` (iba LatteOS GOO, Classic sa neopisuje).
 Skúška bez zverejnenia: `setup/verejne/zverejnit.sh --nasucho`. Licencia: MIT ([LICENSE](LICENSE)), cudzie súčasti
-v [TRETIE-STRANY.md](TRETIE-STRANY.md). Verejná kópia je teraz **zastaraná** (29. 9. 2026, ešte s klasickou
-plochou); zverejňuje sa iba na pokyn.
+v [TRETIE-STRANY.md](TRETIE-STRANY.md). Posledné vydanie: **0.3.0 „Jihlavanka“** (6. 10. 2026); zverejňuje
+sa iba na pokyn.
 
 Plán vývoja je v [ROADMAP.md](ROADMAP.md). Nový kód a dáta vznikajú iba mimo `old/`.
 
