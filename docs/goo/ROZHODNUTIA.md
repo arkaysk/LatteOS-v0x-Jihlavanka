@@ -13,6 +13,9 @@ Nové rozhodnutie: jeden riadok sem (dátum, čo, prečo) a oprava platného zne
   test“, SAFE a Hra z ponuky zmizli: SAFE príde sám pri pádoch alebo z GRUB-u, do hry sa prepína z plochy (`latte-hra`),
   kód Classic ostáva pod `latte-session klasicke`. Kde bude výber prostredia v novom prihlasovači (LATTEOS-GOO.md §6.2),
   je otvorené.
+- **Marea na dvoch monitoroch** (latte-lab): guľa žila na vedľajšom monitore a relácia s pleamar-wm ostala čierna
+  (v nastaveniach autorova tapeta, ktorá na Fedore nie je). `latte-marea` jej doplní domov = hlavný monitor LatteOS
+  a platnú tapetu, iba ak chýbajú; `hypr/marea.lua` berie obrazovky z Nastavení LatteOS.
 - **Verejná kópia `arkaysk/latteos` je zastaraná** (29. 9., pred GOO). Classic sa už nevyvíja; po dokončení enginu Goo
   sa zverejní **verejná verzia 0.2** iba s GOO.
 - **Kliky jednotlivých goo** (po zhodnotení ergonómie — niektoré goo mali iba ľavý, iné iba pravý klik): hlava

@@ -2,6 +2,13 @@
 -- Hyprlande, s jej vlastnými skratkami z návodu, bez úprav LatteOS — na pokusy a porovnanie s Kvapkami.
 -- Pôvodný pleamar a marea sú v PATH z ~/.local/share/marea-povodna/bin (latte-marea).
 hl.monitor({ output = "", mode = "preferred", position = "auto", scale = 1 })
+-- obrazovky uložené v LatteOS (Nastavenia › Hardvér › Obrazovky): ten istý hlavný monitor a frekvencia ako v LatteOS GOO
+-- (6. 10.: bez toho bol vedľajší monitor vľavo na 0,0 a hlavný bežal na 60 Hz)
+do
+    local f = (os.getenv("XDG_CONFIG_HOME") or ((os.getenv("HOME") or "") .. "/.config")) .. "/latteos/monitors.lua"
+    local h = io.open(f, "r")
+    if h then h:close(); pcall(dofile, f) end
+end
 hl.config({
     input = { kb_layout = "sk,us", kb_options = "grp:alt_shift_toggle", follow_mouse = 1 },
     general = { layout = "dwindle", gaps_in = 5, gaps_out = 10 },
