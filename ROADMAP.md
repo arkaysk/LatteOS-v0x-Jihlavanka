@@ -8,7 +8,7 @@
 > [LATTEOS-GOO.md](LATTEOS-GOO.md) §7 a otvorené úlohy enginu v [docs/goo/ENGINE-REPORT.md](docs/goo/ENGINE-REPORT.md) §11.
 
 Podklad: [technologický radar](inspo/LatteOS%20–%20technologický%20radar%202026.md),
-prebraté zdroje v [resources/](resources/MANIFEST.md). Priečinok `old/` sa už **nemení**, slúži len na čítanie.
+prebraté zdroje v [resources/](resources/patches/README.md) (`fetch.sh`; pôvodný MANIFEST je v `old/resources/MANIFEST.md`). Priečinok `old/` sa už **nemení**, slúži len na čítanie.
 
 ## Rámec
 
@@ -334,7 +334,7 @@ texty preložiteľné (`translations`). Noctalia beží bez lišty a robí, čo 
       Ďalej: priehľadné pozadie a goo telo z pleamaru pod ňou (vlnenie, pulzovanie)
 - [x] Nastavenia podľa prostredia (1. 10.): v Goo stránka **Kvapky (Goo)** (skryť/ukázať, veľkosť, vrátiť na miesto,
   ChatGoo kvapka alebo ikona v rohovej lište, **vlastné kvapky**), v Classic Lišta a systémové menu
-- [ ] Kvapky: overiť zvyšky po skrytí na latte-lab (Goobar, QueenGoo a PowerGoo sú základ shellu — skryť nejdú)
+- [ ] Kvapky: overiť zvyšky po skrytí na latte-lab (jadro od 5. 10.: GooBar, GooPower a LensGoo — skryť nejdú)
 - [ ] **Živé bytosti pri nečinnosti** (LATTEOS-GOO.md 3.1): zdroj nečinnosti (ext-idle-notify), dážď/vietor podľa
   skutočného počasia so zvlnením spodnej hrany aj kvapiek, hra (naháňačka so zrážkou a odrazom, behanie, skákanie);
   nie pri celej obrazovke, zámku, slabej batérii a v stupni Softvér; vypínač v Nastaveniach
@@ -346,13 +346,17 @@ texty preložiteľné (`translations`). Noctalia beží bez lišty a robí, čo 
   aj zvonka), vietor, ponor pri návrate (Marea), kratší krk, menšie kvapky sa vlnia viac, ostrý okraj
 - [x] Ostrý okraj ôk (plocha Kvapky aj engine): záplata pleamar-ostre-okraje — príčina nebol tieň, ale vyhladenie hrany
   v zliatí; scéna Kvapky sa nemenila
-- [ ] Hyprland: minimalizované okno → `pleamar --say goo "emit goo_kamen X"` (vlnka, pravidlo 14)
+- [x] Hyprland: minimalizované okno padne ako kvapka do GooBaru a zvlní hladinu (`latte.goo_min` → `win_min`, 5. 10., pravidlo 14)
 - [x] Engine: Goobar (okná ako ikry, pomenovanie okien, ponuka okna, režim), PowerGoo, QueenGoo, DaNoGoo, TimeGoo,
   spoločná ponuka Goo a guľky (1. 10. večer)
-- [ ] Engine: spúšťač Goo, časové menu, kalendár a počasie, hrozno upozornení, let bubliny k oknu, okná nad lištou,
-  ostrovy (samostatné telá skupín kvôli výkonu)
-- [ ] Engine Goo na latte-lab: stredné tlačidlo, ikony (písmo Tabler), výkon RX 640; potom presun TimeGoo, PowerGoo,
-  DaNoGoo, QueenGoo, ChatGoo na engine; formulár vlastných kvapiek v Nastaveniach › Kvapky nad `latte-goo`
+- [x] Engine (5. 10.): spúšťač LensGoo, karta času, kalendár a počasie, hrozno upozornení, let bubliny k oknu, okná
+  nad lištou; ostrovy netreba (záplata pleamar-pasy-tela)
+- [x] Engine (6. 10., overiť naživo): kliky goo podľa ergonómie (LATTEOS-GOO.md §3.5) — karta GooPower s účtom
+  a profilom napájania, pás výkonu (CPU, RAM, GPU, VRAM), GooBar pravý = plocha, rýchly zoznam LensGoo, upozornenia
+  a kalendár ClockGoo v jednej karte, zväčšovanie všetkých kvapiek
+- [x] Engine Goo na latte-lab (5. 10.): stredné tlačidlo, ikony (písmo Tabler), výkon RX 640 (docs/goo/ENGINE-REPORT.md §9–10)
+- [ ] Engine ako predvolené prihlásenie a jediná plocha (nahradí scénu Kvapky); ChatGoo; formulár vlastných kvapiek
+  v Nastaveniach › Kvapky nad `latte-goo`
 - [x] pleamar v0.2.6, pleamar-wm v0.2.5, marea-plm (1. 10.): pripnuté, záplaty sedia, inštalácia preloží novší
 - [ ] **ChatGoo** (addon pre Beeper, LATTEOS-GOO.md 4.2c): kvapka, do ktorej sa minimalizuje Beeper, správy okolo nej
   ako hrozno DaNoGoo (upozornenia aplikácie Beeper presmerované). Pomocník `latte-chatgoo` hotový; scéna naživo na latte-lab
