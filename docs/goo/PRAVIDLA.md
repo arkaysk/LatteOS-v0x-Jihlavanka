@@ -12,14 +12,14 @@ Zásady správania kvapiek, fyziky a vstupov. **Záväzné pri vývoji.**
 2. **Návyky Windows 11** — všetko dole, klik v lište prepne/minimalizuje, pravý klik = ponuka okna
 3. **Preberať, nevymýšľať** — Noctalia, pleamar, Marea majú prioritu
 4. **Preložiteľnosť** — texty po anglicky + `translations sk` v scéne
-5. **Oddelení prostredia** — Goo, Classic, Noctalia a cudzie prostredia sa nepoškodzujú
+5. **Oddelené prostredia** — Goo, čistá Noctalia, Marea a cudzie prostredia (Plasma…) sa nepoškodzujú (Classic je zrušený)
 
 ### 6–13: Vzhľad
 
-6. **Kvapky sú vždy káva** — pomer vody a mlieka (Barista); vodená káva (lungo) je sklo, espresso nepriehľadná
-7. **Bez tvár a bez ôk** — digitálne hodiny, bez emócií
-8. **Pravý klik iba tam, kde je** — ak funkcia nemá pravý/ľavý klik, kvapka tiež nie
-9. **Okno z kvapky sa rodí rohom** — vystúpi a pripojí sa rohom, aby bolo viditeľné
+6. **Kvapky sú vždy káva** — pomer vody a mlieka (Barista); vodová káva (lungo, americano) je sklo, espresso a mliečne kávy nepriehľadné
+7. **Bez tváre a bez očí** — hodiny sú digitálne
+8. **Klik iba tam, kde má funkciu** — ak funkcia nemá pravý/ľavý klik, kvapka tiež nie; tlačidlo bez funkcie goo zavibruje. Od 6. 10. má každá základná kvapka funkciu na oboch tlačidlách (LATTEOS-GOO.md §3.5)
+9. **Okno z kvapky rastie z rohu** — vyskakovacie okno vyrastie z kvapky, ktorá vystúpi a sedí v jeho rohu (ucho); riadne okná sa rodia z bubliny (14)
 10. **Vlastný vzhľad ponúk** — rozhranie Goo, nie kopírovanie z Classic
 11. **Moderný štýl** — ikony Tabler, písmo Inter, minimalizmus, vkus, užitočnosť
 12. **Materiál a priehľadnosť** — prechod z kávy do textúry okien (hliník, zlato, sklo)
@@ -59,7 +59,7 @@ Zásady správania kvapiek, fyziky a vstupov. **Záväzné pri vývoji.**
 - Nič nevisí vo vzduchu
 
 ### Vlákna a spájanie
-- Iba na vzdialenosti trojice (vypínač–Hodiny–lišta)
+- Iba na vzdialenosti, aké sú v trojici GooPower – LensGoo – hlava GooBaru (najviac 2,3 súčtu polomerov)
 - Vlákno sa naťahuje a trhá, po určitej dĺžke praskne
 - Každá kvapka je v **jednom goo tele** — všetky sa spájajú, keď sú blízko (aj Goobar a ikry okien)
 
@@ -72,7 +72,7 @@ Zásady správania kvapiek, fyziky a vstupov. **Záväzné pri vývoji.**
 - Pasívne — zhora vľavo
 - **Kurzor = aktívne svetlo** — svetlá škvrna a odlesk na strane ku kurzoru
 
-### Žilosť
+### Živý tvor
 - Kurzor je pre kvapky to, **po čom túžia**
 - Priblíženie → kvapka sa nadnesie (výstup od okraja na stopke)
 - Susedia sa prelievajú a spájajú
@@ -84,7 +84,7 @@ Zásady správania kvapiek, fyziky a vstupov. **Záväzné pri vývoji.**
 ### Nečinnosť (myš + klávesnica)
 
 - **Stupeň 1** (po ~1 min) — zaspávajú (menšie nadnesenie)
-- **Stupeň 2** (po ~3 min) — počasie: dážď alebo vietor podľa Open-Meteo
+- **Stupeň 2** (po ~3 min) — počasie: dážď alebo vietor podľa Open-Meteo (zatiaľ iba rezerva, nie je hotové)
 - **Stupeň 3** (po ~6 min) — hra: naháňačka so zrážkou, behanie (ostatné uhnú), skákanie; nič sa neprekryje
 
 ### Prebudenie

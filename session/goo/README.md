@@ -1,16 +1,18 @@
 # Engine Goo
 
-Spoločný engine pre kvapky LatteOS Goo. Je to rozšírenie pleamar („DLC“), ktoré používa zdokumentovaný jazyk 0.2
-a API logiky. Jediná záplata Rustu (`pleamar-prazdne-tvary`) je iba na výkon: bez nej engine funguje, ale pomalšie.
+Spoločný engine pre kvapky LatteOS Goo. Je to rozšírenie pleamar 0.2.6 („DLC“), ktoré používa zdokumentovaný jazyk
+0.2 a API logiky. Záplaty Rustu (`resources/patches/`: `pleamar-prazdne-tvary` a `pleamar-pasy-tela` na výkon,
+`pleamar-ostre-okraje` na ostré oká) nie sú nutné: bez nich engine funguje, iba pomalšie a s mäkšími okrajmi.
 
-Zatiaľ je oddelený od plochy Kvapky (`session/kvapky`). Skúša sa v relácii **LatteOS Kvapky – engine test**
-na prihlasovacej obrazovke. Kvapky sú podľa Novej architektúry (LATTEOS-GOO.md): jadro GooBar, GooPower, LensGoo; voliteľné QueenGoo, ClockGoo, ChatGoo.
+Zatiaľ je oddelený od plochy Kvapky (`session/kvapky`), ktorú má nahradiť a stať sa predvoleným prihlásením. Skúša sa
+v relácii **LatteOS Kvapky – engine test** na prihlasovacej obrazovke. Kvapky sú podľa Novej architektúry
+(LATTEOS-GOO.md): jadro GooBar, GooPower, LensGoo; voliteľné QueenGoo, ClockGoo (ChatGoo zatiaľ nie je).
 
 **Pravidlá plochy platia aj tu: [LATTEOS-GOO.md](../../LATTEOS-GOO.md) §2 a §3** (pred prácou prečítať).
 Engine ich nastavuje všeobecne:
 - Kvapky sú vždy káva (pomer vody a mlieka z Baristu) a nemajú tvár.
 - Kurzor kvapky **iba priťahuje** a je ich svetlom.
-- Kontextový klik je iba tam, kde ho kvapka má.
+- Klik je iba tam, kde má kvapka funkciu; tlačidlo bez funkcie goo zavibruje (kliky kvapiek shellu: §3.5).
 - Všetky kvapky sú drag & drop.
 - Všetky sú v jednom goo tele s lištou.
 

@@ -67,7 +67,7 @@ docs/
 └── goo/                          ← LatteOS GOO
     ├── README.md                 ← Vstup pre Goo
     ├── PRAVIDLA.md               ← 22 pravidiel kvapiek
-    ├── ROZHRANIE.md              ← Jednotlivé kvapky (Nová architektúra)
+    ├── ROZHRANIE.md              ← Jednotlivé kvapky a ich kliky (Nová architektúra)
     └── ENGINE-REPORT.md          ← Stav enginu, záplaty, merania
 
 session/goo/README.md             ← API enginu pre programátorov
@@ -94,6 +94,6 @@ LATTEOS-GOO.md (koreň)            ← Záväzný dokument: pravidlá, správani
 
 1. Prečítaj [ARCHITECTURE.md](ARCHITECTURE.md)
 2. Zaciluj vrstvu, ktorú potrebuješ zmeniť
-3. Predtým, ako meniškvapky: [Pravidlá](goo/PRAVIDLA.md)
+3. Predtým, ako meníš kvapky: [Pravidlá](goo/PRAVIDLA.md)
 4. Rozhodnutia zapisuj do [LATTEOS-GOO.md](../LATTEOS-GOO.md), stav enginu do [ENGINE-REPORT.md](goo/ENGINE-REPORT.md)
 5. Commit a `git push -u origin main`

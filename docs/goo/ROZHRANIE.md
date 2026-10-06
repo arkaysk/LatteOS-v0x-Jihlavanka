@@ -1,6 +1,19 @@
 # LatteOS Goo — Rozhranie
 
-Popis jednotlivých kvapiek a ich správania podľa **Novej architektúry** (rozhodnutie 5. 10. 2026).
+Popis jednotlivých kvapiek a ich správania podľa **Novej architektúry** (rozhodnutie 5. 10. 2026) a klikov
+podľa rozhodnutia 6. 10. ([LATTEOS-GOO.md §3.5](../../LATTEOS-GOO.md)).
+
+| Goo | Ľavý klik | Pravý klik | Koliesko |
+|---|---|---|---|
+| Hlava GooBaru | ďalší režim okien | ukázať plochu (Win+D) | ďalšie okno / posun pásky |
+| Ikry okien | prepnúť / minimalizovať | ponuka okna | — |
+| GooPower | karta: účet, napájanie, Nastavenia, Monitor, vypnutie | pás výkonu | veľkosť |
+| LensGoo | spúšťač (aj kláves Win) | rýchly zoznam aplikácií | veľkosť |
+| ClockGoo | upozornenia a kalendár | čas, stopky, minútka, budíky, počasie | veľkosť |
+| QueenGoo | App Manager | Správca zariadení | veľkosť |
+
+Stredné tlačidlo nemá žiadna kvapka shellu; tlačidlo bez funkcie goo zavibruje. Veľkosť hlavy GooBaru je
+v Nastaveniach › Kvapky (koliesko na nej prepína okná).
 
 *Úplný originál je v [LATTEOS-GOO.md](../../LATTEOS-GOO.md), časť „Nová Architektúra prostredia a rozhranie Goo“.
 Staršie rozdelenie (TimeGoo, DaNoGoo, PowerGoo) je v §4 toho istého dokumentu a platí už iba pre scénu plochy
@@ -14,6 +27,7 @@ Stĺpec **Engine** hovorí, čo z toho už vie engine Goo (`session/goo`); zvyš
 
 - **Hlava** (najväčšia kvapka): ikona režimu okien (páska / nad sebou / dlaždice)
   - Ľavý klik = ďalší režim
+  - Pravý klik = ukázať plochu (ako Win+D), druhý pravý klik vráti okná
   - Koliesko = posun pásky (páska) alebo ďalšie okno (ako Alt+Tab)
   - Ťahanie = presun lišty k inému okraju (pustená uprostred sa vráti)
 - **Ikry okien** (strapce po aplikáciách; menšie, aby sa nezamieňali s ostatnými)
@@ -26,19 +40,24 @@ Stĺpec **Engine** hovorí, čo z toho už vie engine Goo (`session/goo`); zvyš
 - Lišta sa zmestí po kraj obrazovky a zastaví pred rohovými prvkami
 - **Viac monitorov:** každá obrazovka má vlastný GooBar, okná sa dajú prenášať
 
-**Engine:** hlava, ikry a strapce, uhýbanie oknám, klik, ponuka okna, poradie ťahaním, 48 miest, presun lišty k inému
-okraju, zastavenie pred rohovou lištou Noctalie (zakázaná zóna, premenlivá šírka).
+**Engine:** hlava, ikry a strapce, uhýbanie oknám, klik, ponuka okna, ukázať plochu, poradie ťahaním, 48 miest,
+presun lišty k inému okraju, zastavenie pred rohovou lištou Noctalie (zakázaná zóna, premenlivá šírka), pád
+minimalizovaného okna do lišty (pravidlo 14).
 **Chýba:** `reversed`, vlastný GooBar na každom monitore (engine beží zatiaľ iba na hlavnom).
 
 ### GooPower — napájanie a monitor systému
 
-- **Ľavý klik** = okno Goo spojené s kvapkou: Nastavenia, Monitor systému, a časť Noctalie — Zamknúť, Odhlásiť,
-  Uspať, Reštartovať, Vypnúť
-- **Batéria** (notebook): hlavička okna ukazuje percentá a nabíjanie; na kvapke bublinky —
-  3 zelené ≥ 60 %, 2 žlté ≥ 30 %, 1 červená < 30 %; pod 10 % pulzuje; pri nabíjaní stúpajú a klesajú
-- Na stolnom počítači bez indikátora
+- **Ľavý klik** = karta Goo spojená s kvapkou: profil účtu (portrét, meno, `login@počítač · od HH:MM`), tlačidlá
+  Zamknúť · Odhlásiť; NAPÁJANIE — batéria s pruhom a profil napájania Úspora · Vyvážený · Výkon
+  (`powerprofilesctl`); Nastavenia, Monitor; tlačidlá Uspať · Reštartovať · Vypnúť (akcie relácie robí Noctalia)
+- **Pravý klik** = **pás výkonu**: kvapka sa natiahne pozdĺž okraja do kapsuly s bunkami CPU · RAM · GPU · VRAM
+  (`latte-sysmon goo`, raz za sekundu), okolné goo odtlačí a po vtiahnutí ich vráti; jantárová nad 80 %, červená
+  nad 95 % alebo pri prehriatí; prechod myšou = podrobnosti, klik = Monitor, pravý klik = vtiahnuť. FPS v páse nie
+  je (hra na celú obrazovku je nad vrstvou Goo)
+- **Batéria** (notebook): na kvapke bublinky — 3 zelené ≥ 60 %, 2 žlté ≥ 30 %, 1 červená < 30 %; pod 10 % pulzuje;
+  pri nabíjaní dýcha. Na stolnom počítači bez indikátora
 
-**Engine:** ponuka, hlavička s batériou, bublinky, pulz.
+**Engine:** všetko vyššie (`kvapky/goopower.luau`); overiť naživo.
 
 ### LensGoo — univerzálny spúšťač a lupa
 
@@ -58,8 +77,12 @@ Tab / Shift+Tab režimy, šípky riadok, Enter, Esc; koliesko v karte tiež prep
   história a dopĺňanie;
 - AI: rozhovor v bublinách priamo v karte cez `latte-ai`, odpoveď po riadkoch, nikdy neotvára prehliadač.
 Režim, nedávne a história príkazov sú v `spustac.json` spoločne s plochou Kvapky.
-**Chýba:** mriežka obľúbených 6 × 3 a nedávne 2 × 2 (teraz zoznam), ťahanie aplikácií do záložiek obľúbených,
-filtre typov súborov, „Ukázať výstup tu“, prílohy a hlas v AI, farebná bodka lokálny/cloud (teraz text).
+- **Pravý klik** (6. 10.) = **rýchly zoznam**: naposledy spustené a obľúbené aplikácie ako dlaždice s ikonami
+  (klik spustí), pod nimi Hľadať… (otvorí spúšťač) a App Manager.
+
+**Chýba:** mriežka obľúbených 6 × 3 a nedávne 2 × 2 v spúšťači (teraz zoznam; dlaždice má rýchly zoznam), ťahanie
+aplikácií do záložiek obľúbených, filtre typov súborov, „Ukázať výstup tu“, prílohy a hlas v AI, farebná bodka
+lokálny/cloud (teraz text).
 
 ---
 
@@ -69,7 +92,8 @@ filtre typov súborov, „Ukázať výstup tu“, prílohy a hlas v AI, farebná
 
 - Korunka na vonkajšej strane (tvar sa dá zmeniť v Nastaveniach)
 - **Bodky:** červená = zariadenie potrebuje pozornosť, zelená = výpadok siete, modrá = aktualizácie
-- **Ľavý klik** = App Manager (pri aktualizáciách rovno na nich), **pravý** = Správca zariadení (pri výpadku na Sieťach)
+- **Ľavý klik** = App Manager (pri aktualizáciách rovno na nich), **pravý** = Správca zariadení (pri výpadku na Sieťach),
+  **koliesko** = veľkosť
 - Kvapka sa nestáva rohom okna: vypľuje bublinu, ktorá sa nafúkne na okno vedľa nej (1220 × 780)
 
 **Engine:** bodky, oba kliky, korunka, okno sa rodí z bubliny (preletí vedľa kvapky a nafúkne sa na okno), zatvorené
@@ -77,27 +101,21 @@ praskne. **Chýba:** voliteľný tvar korunky.
 
 ### ClockGoo — čas, kalendár, upozornenia a pohoda
 
-Spája čas a centrum upozornení (predtým TimeGoo a DaNoGoo).
+Spája čas a centrum upozornení (predtým TimeGoo a DaNoGoo). V kvapke veľký čas a dátum s teplotou, guľky počtu
+upozornení; nové upozornenie zvlní hladinu.
 
-- **Ľavý klik** = upozornenia: kvapka sa vymrští a nechá visieť hrozno upozornení na lepkavom vlákne (najnovšie
-  hore); zavrie klik na kvapku, Esc alebo klik mimo. Farby: výstrahy a systém červeno-kávové, nedôležité kávové,
-  aplikácie farbou svojej ikony
-- **Pravý klik** = karta času a kalendára na krku z kvapky:
-  - digitálna pohoda (čas pred obrazovkou, tri najpoužívanejšie aplikácie, podrobnosti v Monitore)
-  - svetové hodiny, stopky, minútka (koliesko), budíky (`casovace.json`, `clock.conf`)
-  - kalendár od pondelka, udalosti a úlohy (CalDAV, Google, iCloud cez Noctaliu)
-  - počasie Dnes / Zajtra / Týždeň
+- **Ľavý klik** (od 6. 10.) = **upozornenia a kalendár** v jednej karte s dvoma stĺpcami (ako centrum upozornení
+  vo Windows 11): vľavo upozornenia (ikona aplikácie, nadpis, telo; klik otvorí, pravý klik akcie a Zahodiť),
+  Nerušiť, Vymazať všetko, Nastavenia oznámení; vpravo mesiac od pondelka, udalosti a úlohy vybraného dňa, nový
+  záznam do poľa („10:30 Porada“, „Porada“, „! úloha“) a Prepojené kalendáre (Google, iCloud, CalDAV cez Noctaliu)
+- **Pravý klik** = **karta času**: Prehľad (dátum, týždeň, najbližší budík, digitálna pohoda s tromi aplikáciami,
+  svetové hodiny) · Stopky (medzičasy) · Minútka (koliesko) · Budíky · Počasie (Dnes / Zajtra / Týždeň)
+- Do 6. 10. bol na ľavom klike **hrozno upozornení** na lepkavom vlákne; scéna ho ešte vie, karta ho nahradila
 
-**Engine:** čas a dátum v kvapke, guľky počtu upozornení; ľavý = **hrozno upozornení** (kapsuly na lepkavom vlákne,
-najnovšie hore, najviac 8; klik otvorí, pravý akcie, odtiahnutie zahodí, klik na kvapku alebo mimo zavrie;
-kritické s červeným jadrom; Esc); pravý = **karta času** so záložkami Prehľad (dátum, týždeň, najbližší budík,
-digitálna pohoda s tromi aplikáciami, svetové hodiny, vymazať upozornenia) · Stopky (medzičasy) · Minútka (dĺžka
-kolieskom alebo predvoľba) · Budíky (hodina a minúta kolieskom) · **Kalendár** (mesiac od pondelka, udalosti
-a úlohy vybraného dňa, nový záznam do poľa: „10:30 Porada“, „Porada“, „! úloha“) · **Počasie** (teraz, dnes po
-troch hodinách, týždeň; teplota aj v kvapke vedľa dátumu). Minútka a budíky zvonia aj pri zavretej karte; bežiaca
-minútka alebo stopky sa ukazujú v kvapke namiesto dátumu. Údaje sú spoločné s plochou Kvapky (`casovace.json`).
-**Chýba:** synchronizácia kalendára (CalDAV, Google, iCloud cez Noctaliu), farba kapsuly podľa ikony aplikácie,
-názov budíka, karta ako okno z rohu kvapky (teraz je to karta Goo pri mieste kliku).
+**Engine:** všetko vyššie (`kvapky/clockgoo.luau`, `lib/cas.luau`). Minútka a budíky zvonia aj pri zavretej karte;
+bežiaca minútka alebo stopky sa ukazujú v kvapke namiesto dátumu. Údaje sú spoločné s plochou Kvapky
+(`casovace.json`, `events.json`, `todo.json`).
+**Chýba:** synchronizácia kalendára (účty spravuje Noctalia, karta ich zatiaľ iba otvorí), názov budíka.
 
 ### ChatGoo — Beeper
 
@@ -125,7 +143,7 @@ ClipGoo (schránka), MediaGoo (prehrávač, MPRIS), PassGoo (heslá), CastGoo (s
 
 - Jadro (GooBar, GooPower, LensGoo): iba veľkosť a vrátenie na miesto
 - Voliteľné (QueenGoo, ClockGoo): klik na kartu = skryť / ukázať
-- **Veľkosť:** 100–220 %, **Vrátiť na miesto**
+- **Veľkosť:** 50–220 % (to isté robí koliesko nad kvapkou), **Vrátiť na miesto**
 - **ChatGoo:** kvapka, alebo ikona Beepera v rohovej lište
 - **Vlastné kvapky:** názov, ikona, príkaz
 - Súbor: `~/.config/latteos/kvapky.json` (číta sa každé 2 s)

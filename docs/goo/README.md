@@ -1,13 +1,15 @@
 # LatteOS Goo — Začni tu
 
-**LatteOS GOO** (jediná edícia LatteOS; Classic je od 5. 10. 2026 zrušený) je plocha s tekutými kávovými kvapkami na spodnom okraji obrazovky. Je inšpirovaná Windows 11 a fyzikanou tekutiny.
+**LatteOS GOO** (jediná edícia LatteOS; Classic je od 5. 10. 2026 zrušený) je plocha s tekutými kávovými kvapkami pri okraji obrazovky (predvolene dole). Je inšpirovaná Windows 11 a fyzikou tekutiny.
 
 ## Čo to je v 30 sekundách
 
-- **Lišta:** skupiny kvapiek na okraji (Goobar s oknami, hodiny, vypínač, upozornenia)
+- **Lišta:** kvapky na okraji — GooBar s oknami, LensGoo (spúšťač), GooPower (vypínač a účet), ClockGoo (čas,
+  upozornenia a kalendár), QueenGoo (App Manager a Správca zariadení)
 - **Fyzika:** pružia sa, lepia na okraj, spájajú sa navzájom, reagujú na kurzor
-- **Vstupy:** myš (všetko sa dá ovládať: klik, pravý, koliesko, ťahanie)
-- **Efekty:** vietor, vlnky pri minimalizácii, rozjasnenie pri nečinnosti
+- **Vstupy:** myš (všetko sa dá ovládať: klik, pravý, koliesko, ťahanie); každá kvapka má funkciu na ľavom aj
+  pravom tlačidle, koliesko mení veľkosť (LATTEOS-GOO.md §3.5)
+- **Efekty:** vietor, vlnky na hladine (aj pri minimalizácii okna), hra pri nečinnosti
 
 ## Čo s tým robím
 
@@ -32,7 +34,7 @@
 | Dokument | Čo v ňom je |
 |----------|------------|
 | [PRAVIDLA.md](PRAVIDLA.md) | 22 zásad správania kvapiek, fyzika, nečinnosť |
-| [ROZHRANIE.md](ROZHRANIE.md) | Jednotlivé kvapky (Goobar, TimeGoo, PowerGoo…) |
+| [ROZHRANIE.md](ROZHRANIE.md) | Jednotlivé kvapky a ich kliky (GooBar, GooPower, LensGoo, QueenGoo, ClockGoo, ChatGoo) |
 | [session/goo/README.md](../../session/goo/README.md) | Ako programovať: API, háčiky, príklady |
 | [ENGINE-REPORT.md](ENGINE-REPORT.md) | Technický report: záplaty, merania, otvorené úlohy |
 | [cloud_session_1.md](../../cloud_session_1.md) | História zmien, rozhodnutí a testov z cloudu |
@@ -71,18 +73,19 @@ session/goo/
 ├── gen.py                  ← Generátor (rozpíše cykly)
 │
 ├── lib/
-│   ├── engine.luau         ← API: register, pravidlá, nečinnosť
+│   ├── engine.luau         ← API: register, pravidlá, karta Goo, nečinnosť
 │   ├── goobar.luau         ← Okná a ich správa
-│   ├── pouzivatel.luau     ← JSON kvapky
-│   └── ...
+│   ├── spustac.luau        ← Spúšťač a rýchly zoznam LensGoo
+│   ├── cas.luau            ← Stopky, minútka, budíky (ClockGoo)
+│   └── pouzivatel.luau     ← JSON kvapky
 │
 ├── kvapky/
-│   ├── goobar.luau         ← Goobar (hlava + okná)
-│   ├── timegoo.luau        ← Hodiny, spúšťač
-│   ├── powergoo.luau       ← Vypínač, nastavenia
+│   ├── goobar.luau         ← GooBar (hlava + okná)
+│   ├── goopower.luau       ← Karta GooPower, pás výkonu
+│   ├── lensgoo.luau        ← Lupa: spúšťač, rýchly zoznam
 │   ├── queengoo.luau       ← Kráľovná (App Manager, Device Manager)
-│   ├── danogoo.luau        ← Dátum, upozornenia
-│   └── príklady (počítadlo…)
+│   ├── clockgoo.luau       ← Čas, upozornenia, kalendár
+│   └── ukážky (počítadlo, hodiny, lepkavá, ťažká…)
 │
 ├── priklady/
 │   ├── kalkulacka.json     ← Príklad: JSON kvapka

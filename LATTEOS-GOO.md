@@ -25,7 +25,7 @@ Stojí na:
 | vrstva | čo robí | kde |
 |---|---|---|
 | **Hyprland 0.56** (Lua) | okná, režimy okien (páska, dlaždice, plávajúce), animácie | `session/hypr/` |
-| **pleamar 0.2.2** (Rust, SDF, goo) | kreslí všetky kvapky, spúšťač, logika v Luau | `session/kvapky/kvapka.plm`, `kvapka.luau` |
+| **pleamar 0.2.6** (Rust, SDF, goo; jazyk 0.2, naše záplaty) | kreslí všetky kvapky a karty Goo, logika v Luau | engine `session/goo/goo.plm` + `lib/*.luau`; plocha Kvapky `session/kvapky/kvapka.plm`, `kvapka.luau` |
 | **Noctalia 5** | ovládacie centrum, panely, widgety a doplnky v rohovej lište, zvuk, sieť, relácia | záplatovaná kópia iba pre Kvapky |
 | **latte-kvapky** | štart plochy, konfigurácia Noctalie pre Kvapky, pomocné príkazy | `session/bin/latte-kvapky` |
 
@@ -158,6 +158,8 @@ samostatný tekutý prvok.
 - **Základ shellu (1. 10.):** **Goobar, QueenGoo a PowerGoo** tvoria spodnú lištu — vychádzajú z goo maskota Marey
   (k4ditano), ktorý bol jeden na všetko; LatteOS má viac **špecializovaných** kvapiek s možnosťou tvoriť ďalšie.
   Tieto tri sa **nedajú skryť** (iba zmeniť veľkosť); skryť sa dá TimeGoo, DaNoGoo a doplnky (ChatGoo, vlastné).
+  *(Od 5. 10. platí Nová architektúra: jadro, ktoré sa nedá skryť, je **GooBar, GooPower a LensGoo**; QueenGoo
+  a ClockGoo sú voliteľné.)*
 
 ### 3.1 Živé bytosti — správanie pri nečinnosti (zadanie používateľa 1. 10., návrh)
 Kvapky sa majú správať ako **živé bytosti**. Dnes: vlastný pohyb aj bez používateľa (dýchanie, drift), reakcia na
@@ -229,7 +231,7 @@ lepivosť, veľkosť a rezervu na ďalšie efekty.
 - **Goobar a kvapky plochy v engine (1. 10. večer):**
   - **Goobar** (`lib/goobar.luau`) prenesený z Kvapiek: okná ako kvapky s ikonou aplikácie, strapce ako ikry,
     rozvinutie pod myšou, aktívne plnšie, minimalizované stlmené, klik = prepnúť/minimalizovať, pravý = ponuka okna,
-    ťahanie = poradie aplikácií, hlava = režim okien, koliesko = páska/ďalšie okno, nad 96 okien „ďalšie okná“.
+    ťahanie = poradie aplikácií, hlava = režim okien, koliesko = páska/ďalšie okno, nad 48 oknami „ďalšie okná“.
   - **Ikry okien (spresnenie používateľa 1. 10.):** sú menšie než ostatné kvapky, aby sa s nimi nezamieňali, a lepia sa
     **iba ku Goobaru** — v engine sú vlastná skupina (od 5. 10. v spoločnom tele, pozri nižšie; ikry a ostatné kvapky sa nezlejú),
     slabšie zliatie a takmer žiadnu mláku (bobule s tenkými spojmi). Okná tej istej aplikácie sa zhlukujú do strapca;
@@ -246,7 +248,8 @@ lepivosť, veľkosť a rezervu na ďalšie efekty.
   - **TimeGoo:** čas, klik = spúšťač LatteOS.
   - Spoločná **ponuka Goo** (karta pri mieste kliku) a **guľky** pre všetky kvapky.
   - **Zatiaľ iba v Kvapkách:** spúšťač Goo, časové menu, karta kalendára a počasia, hrozno upozornení na vlákne,
-    let bubliny k oknu (pravidlo 14), okná nad lištou (strapec sa stiahne pod okno).
+    let bubliny k oknu (pravidlo 14), okná nad lištou (strapec sa stiahne pod okno). *(Všetko prenesené do enginu
+    5. 10. — nižšie.)*
 - **Výkon:** telo goo počíta každý tvar pre každý pixel, aj skrytý. Záplata `pleamar-prazdne-tvary` vyradí tvary
   nulovej veľkosti: v cloude 192 → 21,6 ms na snímku (súčasná scéna Kvapky 62 ms). Bez nej engine funguje, iba
   pomalšie.
@@ -268,10 +271,12 @@ lepivosť, veľkosť a rezervu na ďalšie efekty.
     behu sa všetko vráti; pri naháňačke sa iba pritisne (stlačenie oboch) a odrazí späť; dopad sploští a zvlní
     hladinu. Merané 50 s: najmenší rozostup 0,95 súčtu polomerov;
   - **kotva (`pri`) sleduje aktuálnu polohu** kotvy: po potiahnutí hlavy Goobaru idú ikry s ňou, PowerGoo s TimeGoo;
-  - **veľkosť 100–220 %** (kolieskom sa dalo zmenšiť na 60 %, obsah potom pretekal).
+  - **veľkosť 100–220 %** (kolieskom sa dalo zmenšiť na 60 %, obsah potom pretekal). *(V ten istý večer zmenené na
+    50–220 % s obsahom, ktorý rastie s kvapkou — §3.4 B.)*
 - **Nová architektúra v engine (5. 10.):** kvapky enginu sú `goobar` (GooBar), `goopower` (GooPower, predtým
   PowerGoo; hlavička ponuky s batériou), `lensgoo` (LensGoo — lupa na mieste Štartu, klik = spúšťač), `queengoo`
-  a `clockgoo` (ClockGoo = čas + dátum + upozornenia; ľavý = upozornenia, pravý = čas a pohoda). Jadro má
+  a `clockgoo` (ClockGoo = čas + dátum + upozornenia; ľavý = upozornenia, pravý = čas a pohoda — kliky od 6. 10.
+  v §3.5). Jadro má
   `zaklad = true` a nedá sa skryť; voliteľné skrýva Nastavenia › Kvapky (`kvapky.json`, engine ho číta každé 2 s:
   `skryte`, `zoom`, `reset`). Uložené polohy starých kvapiek prešli na nové (timegoo → lensgoo, danogoo →
   clockgoo, powergoo → goopower). GooBar má 48 miest pre okná. `latte-spustac` v engine relácii otvára rýchle
@@ -330,9 +335,9 @@ lepivosť, veľkosť a rezervu na ďalšie efekty.
 - **Okno spúšťača LensGoo v engine (5. 10.):** `lib/spustac.luau` nad kartou Goo — režimy Aplikácie, Súbory, Web,
   Terminál, AI; pomocníci `latte-riadok`, `latte-hladaj`, `latte-ai` a `spustac.json` sú tie isté ako v Kvapkách.
   Karta: ikona aplikácie v riadku (`img`), pravý klik (`right`), odsek v bubline (`para`), písanie (`change`).
-- Ďalej: znížiť CPU enginu, potom preniesť okná z kvapiek do enginu (LensGoo spúšťač, karta a hrozno ClockGoo,
-  bublina QueenGoo) a ChatGoo (po jednej, snímky pred a po). Živé bytosti z 3.1 (dážď/vietor) a formulár
-  v Nastaveniach › Kvapky pribudnú nad enginom.
+- Ďalej: znížiť CPU enginu a doplniť ChatGoo. Okná z kvapiek (spúšťač LensGoo, karty ClockGoo, bublina QueenGoo) sú
+  v engine od 5. 10., kliky a nové karty od 6. 10. (§3.5). Živé bytosti z 3.1 (dážď/vietor) a formulár vlastných
+  kvapiek v Nastaveniach › Kvapky pribudnú nad enginom.
 
 ### 3.3 Prístupnosť — ovládanie Goo z klávesnice (návrh schválený 5. 10., ZATIAĽ NEVYTVORENÉ)
 
@@ -547,7 +552,7 @@ tlačidiel** (`pills`), **dlaždice** (`tiles`, `per`), **profil** (`pro`), **na
 - Nastavenia ukazujú v Goo iba spoločné stránky + **Kvapky (Goo)**; stránka **Lišta a systémové menu** je iba v Classic
   (a naopak) — `only: "goo" | "classic"` v `areasAll` (nastavenia.qml).
 - **Kvapky (hotové 1. 10.):** TimeGoo, PowerGoo, DaNoGoo — klik na kartu skryje / ukáže (skrytá = veľkosť 0), Veľkosť
-  100–220 %, Vrátiť na miesto. Goobar a QueenGoo zatiaľ vždy (skrytie po úprave ich scény). Súbor
+  100–220 % (v engine 50–220 % pre GooBar, GooPower, LensGoo, QueenGoo, ClockGoo), Vrátiť na miesto. Goobar a QueenGoo zatiaľ vždy (skrytie po úprave ich scény). Súbor
   `~/.config/latteos/kvapky.json` (skryte, zoom, reset, chatgoo, vlastne), logika ho číta každé 2 s.
 - **ChatGoo nie je nutná:** voľba „Kvapka ChatGoo“ alebo „Bez kvapky — ikona Beepera v rohovej lište Noctalie“.
 - **Vlastné kvapky (hotové 1. 10.):** názov, ikona (téma ikon alebo obrázok), príkaz po kliknutí, voliteľný príkaz pre text
@@ -651,6 +656,11 @@ Karta z ucha TimeGoo, zhora nadol:
 
 ## 6. Kde čo je (pre Clauda)
 
+**Engine Goo** (hlavná práca): API a pasce v [session/goo/README.md](session/goo/README.md), stav, merania a otvorené
+úlohy v [docs/goo/ENGINE-REPORT.md](docs/goo/ENGINE-REPORT.md). Scéna `session/goo/goo.plm` (po zmene tela alebo
+počtu miest `python3 session/goo/gen.py`), logika `session/goo/lib/*.luau`, kvapky `session/goo/kvapky/*.luau`,
+pomocníci `session/bin/latte-goo` a `latte-sysmon goo`. Nižšie je **pôvodná plocha Kvapky**:
+
 | čo | kde |
 |---|---|
 | scéna (kreslenie, pružiny, pravidlá, preklady) | `session/kvapky/kvapka.plm` |
@@ -723,7 +733,7 @@ Ide sa **po poradí**; nové nápady sa zapíšu na koniec (E), nerozbiehajú sa
    dávky `sk-*.tsv` + `zluc.py`); chýbajúci kľúč Noctalia berie z angličtiny. Naživo: `language: sk`.
 
 ### B. Mechanika Goo a ovládanie myšou
-- **okno z kvapky ako bublina, zatvorenie = prasknutie, minimalizácia = pád do Goobaru so žblnknutím** (pravidlo 14)
+- ✅ (5. 10., v engine) **okno z kvapky ako bublina, zatvorenie = prasknutie, minimalizácia = pád do Goobaru so žblnknutím** (pravidlo 14)
 - ✅ (1. 10., overené naživo virtuálnou myšou) **presúvanie Hodín a vypínača samostatne** (pravidlo 16)
 - goo telo pod rohovou lištou; vlnenie a pulzovanie pri udalostiach (upozornenie, zvuk, sťahovanie, zmena widgetu)
 - rozbaľovacia ponuka rýchleho spúšťania ako samostatné kvapky
@@ -848,7 +858,7 @@ Nezrušiteľná základná kvapka označená ikonou lupy, ktorá slúži ako vyh
   * **Prísny zákaz otvárania prehliadača:** Všetky konverzácie (Claude, Gemini, ChatGPT, Ollama) bežia výhradne v rozhraní spúšťača bez otvárania webových okien.
   * **Pripojenie bez API kľúča:** Využívajú sa oficiálne CLI nástroje prihlásené používateľským účtom (napr. `claude -p` pre Claude Code so streamovaným výstupom `--output-format stream-json`, `gemini` CLI alebo `codex exec` pre ChatGPT).
   * **Indikácia poskytovateľa:** Vizuálny ukazovateľ vedľa modelu jasne rozlišuje lokálne a cloudové modely (napr. zelená bodka pre lokálnu Ollamu, oranžová pre cloudové rozhranie).
-  * Generátor rozhrania: `session/kvapky/spustac.py`.
+  * Engine: `session/goo/lib/spustac.luau` (plocha Kvapky: generátor `session/kvapky/spustac.py`).
 
 ---
 
@@ -868,7 +878,7 @@ Kvapka označená ikonou korunky na vonkajšej strane (tvar koruny je prispôsob
   * **Ľavý klik:** Otvorí App Manager (pri aktualizáciách sa otvorí priamo v záložke aktualizácií).
   * **Pravý klik:** Otvorí Správcu zariadení (pri výpadku siete sa otvorí v sekcii Sietí).
   * **Mechanizmus nafúknutia:** Kvapka sa nestáva rohom okna, ale zo svojej pozície vypľuje bublinu (`bublina.py`), ktorá sa plynule nafúkne na plnohodnotné okno vedľa kvapky (rozmer 1220 x 780).
-  * Generátor rozhrania: `queengoo.py`.
+  * Engine: `session/goo/kvapky/queengoo.luau` (plocha Kvapky: generátor `session/kvapky/queengoo.py`).
 
 ---
 

@@ -22,29 +22,30 @@ pohybom a reagujú na kurzor. Všetko sa ovláda myšou.
 | | Kvapka | Čo robí |
 |---|---|---|
 | jadro | **GooBar** | hlavná lišta a správca okien — okná ako ikry a strapce po aplikáciách |
-| jadro | **GooPower** | napájanie, relácia, batéria, Nastavenia a Monitor |
-| jadro | **LensGoo** | univerzálny spúšťač a lupa: aplikácie, súbory, web, terminál, AI |
+| jadro | **GooPower** | účet, relácia, napájanie a profil napájania, batéria, Nastavenia, Monitor; pás výkonu (CPU, RAM, GPU, VRAM) |
+| jadro | **LensGoo** | univerzálny spúšťač a lupa: aplikácie, súbory, web, terminál, AI; rýchly zoznam aplikácií |
 | voliteľná | **QueenGoo** | App Manager a Správca zariadení |
-| voliteľná | **ClockGoo** | čas, kalendár, upozornenia a digitálna pohoda |
+| voliteľná | **ClockGoo** | upozornenia a kalendár; čas, stopky, minútka, budíky, počasie a digitálna pohoda |
 | voliteľná | **ChatGoo** | doplnok pre Beeper (plán) |
 
-Záväzné pravidlá a správanie: [LATTEOS-GOO.md](LATTEOS-GOO.md) (pred prácou na kvapkách prečítať),
-prehľad v [docs/goo/](docs/goo/README.md).
+Kliky jednotlivých kvapiek sú v [LATTEOS-GOO.md §3.5](LATTEOS-GOO.md). Záväzné pravidlá a správanie:
+[LATTEOS-GOO.md](LATTEOS-GOO.md) (pred prácou na kvapkách prečítať), prehľad v [docs/goo/](docs/goo/README.md).
 
 ## Stav
 
 - **Plocha Kvapky** (relácia „LatteOS Kvapky“, scéna `session/kvapky/kvapka.plm`) — funkčná plocha so spúšťačom,
   časovým menu, kalendárom, upozorneniami a oknami z kvapiek.
 - **Engine Goo** (relácia „LatteOS Kvapky – engine test“, `session/goo`) — overený na reálnom PC (Hyprland,
-  AMD RX 640): fyzika, vstupy myšou, GooBar s oknami, kvapky novej architektúry. Okná z kvapiek (spúšťač LensGoo,
-  karta ClockGoo, bublina QueenGoo) sa doň ešte len prenášajú.
+  AMD RX 640, 5. 10.): fyzika, vstupy myšou, GooBar s oknami, kvapky novej architektúry. Okná z kvapiek sú
+  prenesené (5.–6. 10.: spúšťač a rýchly zoznam LensGoo, karta GooPower a pás výkonu, upozornenia s kalendárom
+  a karta času ClockGoo, bublina QueenGoo); to, čo pribudlo 6. 10., ešte treba overiť naživo.
 
 ## Štruktúra
 
 | Zložka   | Obsah |
 |----------|-------|
 | `inspo/` | inšpirácia a aktuálna predstava: technologický radar, návrh plochy, obrázky, videá |
-| `resources/` | prebraté projekty z radaru (`fetch.sh`), naše patche, [MANIFEST](resources/MANIFEST.md) |
+| `resources/` | prebraté projekty z radaru (`fetch.sh`), naše [záplaty](resources/patches/README.md), EDID, obrázky maskotov |
 | `crates/` | Rust: `latte-hw` (detekcia HW/grafiky), `latte-boot` (výber režimu NORMAL/SAFE, počítadlo pádov) |
 | `session/goo/` | **engine Goo**: scéna `goo.plm`, logika `lib/engine.luau`, kvapky `kvapky/*.luau` ([README](session/goo/README.md)) |
 | `session/kvapky/` | pôvodná scéna plochy Kvapky (`kvapka.plm`), kým ju engine nenahradí |
@@ -55,7 +56,8 @@ prehľad v [docs/goo/](docs/goo/README.md).
 
 **Toto repo je súkromné** (celá história, `inspo/`, `old/`, ROADMAP). Verejná kópia bez nich je
 [arkaysk/latteos](https://github.com/arkaysk/latteos): zverejňuje sa príkazom `setup/verejne/zverejnit.sh`
-(čo sa vynecháva: `setup/verejne/vynechat.txt`, verejné README: `setup/verejne/README.md`).
+(čo sa vynecháva: `setup/verejne/vynechat.txt`, verejné README: `setup/verejne/README.md`). Naposledy zverejnené
+29. 9. 2026 — ešte pred LatteOS GOO; GOO sa zatiaľ nezverejňuje (LATTEOS-GOO.md, úvod).
 
 Plán vývoja je v [ROADMAP.md](ROADMAP.md). Nový kód a dáta vznikajú iba mimo `old/`.
 

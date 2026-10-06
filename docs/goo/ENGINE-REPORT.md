@@ -1,15 +1,16 @@
 # Engine Goo — report pre novú session Claude Code
 
-Stav k 2026-10-05, vetva `main` (do 5. 10. `gamerdistro`; = **LatteOS GOO**, jediná edícia, Classic zrušený), repo `arkaysk/jihlavanka001`. Engine je **nainštalovaný a overený na
-latte-lab** (5. 10., §10); cloudová časť končí commitom `ad563d0`.
+Stav k 2026-10-06, vetva `main` (do 5. 10. `gamerdistro`; = **LatteOS GOO**, jediná edícia, Classic zrušený), repo `arkaysk/jihlavanka001`. Engine je **nainštalovaný a overený na
+latte-lab** (5. 10., §10); zmeny z 6. 10. (kliky goo, pás výkonu, nové karty — LATTEOS-GOO.md §3.5) ešte naživo
+overené nie sú. Prvá cloudová časť končí commitom `ad563d0`.
 Tento súbor je odovzdávka: čo engine je, kde čo leží, ako sa testuje, aké pasce jazyk má a čo ostáva.
 Podrobnosti: `session/goo/README.md` (API a pasce), `LATTEOS-GOO.md` §2 (pravidlá 1–22) a §3.2 (engine),
 `cloud_session_1.md` (história rozhodnutí a meraní), `ROADMAP.md`.
 
 ## 0. Pravidlá spolupráce (od používateľa)
 
-- Hlavný fokus je **LatteOS Goo** (session „LatteOS Kvapky“: `session/kvapky/kvapka.plm` + `kvapka.luau`).
-  Engine je zatiaľ **oddelený test** v session „Kvapky engine test“; Classic ostáva ako alternatíva.
+- Hlavný fokus je **engine Goo** (`session/goo`, relácia „LatteOS Kvapky – engine test“); bude predvoleným
+  prihlásením a nahradí plochu Kvapky (`session/kvapky/kvapka.plm` + `kvapka.luau`). Classic je od 5. 10. zrušený.
 - **Každú odpoveď a každý krok zapisuj do `cloud_session_1.md`** (koreň repa), potom commit a `git push -u origin main` (vetva `gamerdistro` bola 5. 10. premenovaná na `main`).
 - Opatrne, nerozbiť hotový dizajn. Ovládanie je primárne myš (ľavé, pravé, koliesko). Terminál je dostupný iba po
   kliknutí na „Zobraziť terminál“.
@@ -35,12 +36,14 @@ zlievanie, vstupy, efekty) a kvapka je iba definícia plus háčiky.
 
 | Súbor | Obsah |
 |---|---|
-| `session/goo/goo.plm` (~1740 r.) | scéna: model `goo max 128`, fyzika miesta, telá, menu, tooltip, HUD |
+| `session/goo/goo.plm` (~1800 r.) | scéna: model `goo max 128`, fyzika miesta, telá, karta Goo, pás výkonu, tooltip, HUD |
 | `session/goo/gen.py` | rozpíše telá pre 128 miest (jazyk nemá `repeat` v `body`), prepíše `max N`/`repeat k in 0..N`, vygeneruje `kvapky/zoznam.luau` |
 | `session/goo/goo.luau` | vstup: `engine.start({ moduly, priklady = true, ladenie = true, prva = 0.02, prva_koniec = 0.33 })` |
 | `session/goo/lib/engine.luau` | API: register, susedia, publish, pravidlo 22, vlnky, menu, nečinnosť, ukladanie |
 | `session/goo/lib/goobar.luau` | port rozloženia Goobaru z `kvapka.luau`: pomenovanie okien, ikry/strapce, uhýbanie oknám |
 | `session/goo/lib/pouzivatel.luau` | JSON kvapky používateľa (poll 4 s) |
+| `session/goo/lib/spustac.luau`, `lib/cas.luau` | spúšťač a rýchly zoznam LensGoo; stopky, minútka, budíky ClockGoo |
+| `session/bin/latte-sysmon goo` | údaje pásu výkonu GooPower (CPU, RAM, GPU, VRAM, teploty) raz za sekundu |
 | `session/goo/kvapky/*.luau` | podľa Novej architektúry: goobar, goopower, lensgoo (jadro), queengoo, clockgoo (voliteľné) + ukážky (pocitadlo, hodiny, zvedavka, lepkava, tazka, bublinka, kvapocka, kamen, posta) |
 | `session/goo/priklady/*.json` | kalkulacka, system (záťaž > 2 → jadro výstraha) |
 | `session/bin/latte-goo` | CLI pomocník (viď §6) |
@@ -118,7 +121,7 @@ zlievanie, vstupy, efekty) a kvapka je iba definícia plus háčiky.
 **Telá (kreslenie):**
 - **hlavné telo:**
   - gradient pri kurzore, okraj 28 %, `shadow: 0, 2, 2, 28%` a box lišty na y = H;
-  - tvary z `gen.py` s podmienkou `sk != 1`;
+  - tvary z `gen.py` pre všetky miesta (jedno telo; kapsula pozdĺž okraja);
   - hrebene vlniek;
   - **jeden** globálny krk cez `pick(nk, …)`.
 - **Goobar a ikry sú v tom istom tele** (od 5. 10.; druhé telo kreslilo okolo hlavy deliaci obrys). `sk` je už iba
@@ -129,7 +132,11 @@ zlievanie, vstupy, efekty) a kvapka je iba definícia plus háčiky.
   (`druh 2` používa Inter).
 
 **Ďalšie prvky scény:**
-- Menu Goo: model `ctx max 14`, karta s uškom, zóny `ctx_row.$m`/`ctx_away`, udalosti `ctx_pick`/`ctx_close`.
+- Karta Goo: model `ctx max 24` (riadky s polohou `x, w, h` — dva stĺpce, tlačidlá `pill`, dlaždice `tile`, profil
+  `pro`, nadpis `hd`, druhý riadok `t2`), záložky `chip`, mriežka `kal`; ucho v rohu karty, zóny `ctx_row.$m`/`ctx_away`,
+  udalosti `ctx_pick`/`ctx_close`.
+- Pás výkonu: model `mon max 6`, fakty `mon_*`, poloha kvapky cez `pick(mon_k, …)` (gen.py); kapsula pozdĺž okraja
+  (`kw`, `kd`, pružina `kwa`), `fix` = nesadá.
 - Tooltip `tip`, ladiaci `hud`.
 - Bloky `permissions` (run + services) a `translations sk`.
 
@@ -138,16 +145,17 @@ zlievanie, vstupy, efekty) a kvapka je iba definícia plus háčiky.
 ```lua
 local E = require("lib/engine")
 E.define({
-  id = "moja", r = 24, x = 0.5,            -- alebo pri = "goobar", odstup = -80 (kotva)
-  povaha = "zvedava",                      -- pokojna | zvedava | lepkava | tazka | hrava
-  grav = 0.3, vznos = 1, rast = 0.08, efekt = 1, druh = 0, ikona = "bell",
+  id = "moja", velkost = 24, poloha = { x = 0.5 },   -- alebo pri = "goobar", odstup = -80 (kotva); okraj = 0…3
+  povaha = "zvedava",                                -- pokojna | zvedava | lepkava | tazka | hrava
+  gravitacia = 0.3, vznos = 1, rast = 0.08, efekt = "dych", druh = "ikona", ikona = "bell",
   start = function(d) end,
-  klik = function(d) d:poskoc() end, pravy = function(d) E.menu({ ... }) end,
+  klik = function(d) d:poskoc() end, pravy = function(d) E.menu({ ... }, 300, { owner = d }) end,
   stredny = ..., podrz = ..., koliesko = function(d, smer) end,
-  nad = ..., prec = ..., popis = ..., tahanie = ..., pustenie = function(d, x, y) return false end,
-  necinnost = function(d, uroven) end, tik = function(d) end, kazdych = 5,
-}, "zdroj")
+  nad = ..., prec = ..., popis = ..., tahanie = ..., pustenie = function(d, x, y, okraj) return false end,
+  necinnost = function(d, uroven) end, tik = function(d) end, kazdych = 5000,       -- ms
+}, "luau")
 ```
+Úplný zoznam polí a háčikov je v hlavičke `lib/engine.luau` a v `session/goo/README.md`.
 
 **Registrácia:**
 - `E.define`: háčiky bežia v `pcall`, takže chyba jednej kvapky nezhodí ostatné.
@@ -161,7 +169,9 @@ E.define({
 
 **Globálne funkcie:**
 - `E.vlnka(x_px, sila, "kamen"|"vibracia")`.
-- `E.menu(items, sirka)`: položky `label`, `glyph`, `hint`, `on`, `off`, `danger`, `sep`, `sub`, `run`.
+- `E.menu(items, sirka, opts)`: položky `label`, `glyph`, `hint`, `on`, `off`, `danger`, `sep`, `sub`, `run`, `keep`,
+  `info`, `big`, `bar`, `wheel`, `img`, `right`, `para`, `input`, `grid`, a od 6. 10. `t2`, `hd`, `pro`, `pills`, `tiles`,
+  `col`; `opts`: `owner` (ucho), `chips`, `id`, `keep`, `height`, `cols` (dva stĺpce).
 - `E.separate(prefer)`.
 
 **Susedia a publikovanie:**
@@ -202,7 +212,7 @@ E.define({
 - Menšie (R0 22, tesné 17), **vlastná skupina** v spoločnom tele (`sk = 1`, `zliatie 0.35`, `mlaka 0.15`).
 - Okná tej istej aplikácie tvoria strapec (OFFS/JIT/ZIG). Hover ho rozvinie do radu, zbalí sa po 500 ms.
 - Aktívne okno ×1.06, minimalizované ×0.84 a stlmené.
-- Nad 96 okien vznikne kvapka „Ďalšie okná“, ktorá otvorí prehľad Noctalie.
+- 48 miest; nad 48 oknami je posledná ikra „Ďalšie okná“, ktorá otvorí prehľad Noctalie.
 
 **Ovládanie ikier:**
 - Klik prepne okno (toggle).
@@ -217,9 +227,10 @@ E.define({
 
 ### Kvapky podľa Novej architektúry (5. 10.)
 
-- **GooBar** (jadro), **GooPower** (jadro; r 19, kotva lensgoo −62; ponuka s hlavičkou batérie), **LensGoo** (jadro;
-  r 30, kotva goobar −88, lupa, klik = `latte-spustac`), **QueenGoo** (voliteľná), **ClockGoo** (voliteľná; r 33,
-  x 0.79; čas + dátum `druh 2`, guľky upozornení, ľavý = upozornenia, pravý = pohoda a nastavenia času).
+- **GooBar** (jadro; pravý klik na hlavu = ukázať plochu), **GooPower** (jadro; r 19, kotva lensgoo −62; ľavý =
+  karta s účtom a napájaním, pravý = pás výkonu), **LensGoo** (jadro; r 30, kotva goobar −88, lupa; ľavý =
+  spúšťač, pravý = rýchly zoznam), **QueenGoo** (voliteľná), **ClockGoo** (voliteľná; r 33, x 0.79; čas + dátum
+  `druh 2`, guľky upozornení; ľavý = upozornenia a kalendár, pravý = karta času). Kliky: LATTEOS-GOO.md §3.5.
 - `zaklad = true` = jadro, nedá sa skryť. Skrývanie, veľkosť a vrátenie číta engine z `kvapky.json`
   (`latte-goo nastavenia`, každé 2 s); skrytá kvapka má `on = false` a neráta sa do susedov ani pravidla 22.
 - Popis nižšie je pôvodný stav z cloudu (staré mená), ponechaný kvôli histórii.
@@ -237,8 +248,11 @@ E.define({
 
 ```
 zoznam [--priklady]   novy   skontroluj   akcia ID KLUC   text ID   upozornenie ID
-stav   uloz-stav JSON   ikony…   kava   rezim   okna
+stav   uloz-stav JSON   nastavenia   ikony…   kava   rezim   okna
+cas   zvon   spustac   spustac-uloz   kalendar   pocasie            (karty ClockGoo a LensGoo)
+ucet   profil   profil-nastav   pas [on|off]                        (karta a pás výkonu GooPower, 6. 10.)
 ```
+Úplný popis: `latte-goo` bez argumentov.
 
 Validácia odmietne `farba` (pravidlo 6) a kontroluje čísla, povahu, efekt, druh, jadro a upozornenie.
 
@@ -371,13 +385,16 @@ batéria (stolný PC), reálny touchpad.
      ✅ kalendár s udalosťami a úlohami, počasie; chýba synchronizácia kalendára;
    - ✅ (5. 10.) ClockGoo: hrozno upozornení na vlákne (kapsuly `kw`/`t2`, `visi`, lepkavé vlákno, `hr_away`);
    - GooBar: ✅ presun k inému okraju (5. 10.); `reversed`, vlastný na každom monitore (engine je zatiaľ iba na hlavnom);
-   - let bubliny do okna (pravidlo 14);
+   - ✅ (5. 10.) let bubliny do okna, prasknutie a pád minimalizovaného okna (pravidlo 14);
    - kvapku bežiacu po vlákne.
+3b. Overiť naživo zmeny zo 6. 10.: kliky goo, karta GooPower (portrét, profil napájania), pás výkonu (odtlačenie
+   susedov a ich návrat), rýchly zoznam LensGoo, dvojstĺpcová karta ClockGoo (aj na 1024 × 768).
 4. ✅ (5. 10.) Háčik v Hyprlande: minimalizované okno padne ako kvapka do GooBaru (`latte.goo_min` → `win_min`).
-5. Formulár Nastavenia › Kvapky nad `latte-goo`.
+5. Formulár Nastavenia › Kvapky: skrytie, veľkosť a vrátenie fungujú (`kvapky.json`); chýba formulár vlastných
+   kvapiek enginu nad `latte-goo` (dnes iba JSON).
 6. Počasie: dážď a vietor (nečinnosť úroveň 2).
 7. Vlastné `app_id` pre aplikácie LatteOS (jednoduchšie párovanie okien).
-8. Neskôr presunúť TimeGoo, PowerGoo, DaNoGoo, QueenGoo a ChatGoo v hlavnej session Kvapky na engine.
+8. Engine ako jediná plocha: nahradiť scénu plochy Kvapky (TimeGoo, PowerGoo, DaNoGoo) a doplniť ChatGoo.
 
 **Kto kreslí čo:**
 - **pleamar** (naša scéna): všetky popupy Goo — ponuky, menu času, kalendár, hrozno upozornení, bublina.
@@ -385,6 +402,11 @@ batéria (stolný PC), reálny touchpad.
 - **Hyprland:** skutočné okná aplikácií (App Manager, Nastavenia, Monitor, Device Manager, Súbory).
 
 ## 12. Commity enginu (najnovšie hore)
+
+- 6. 10.: pás výkonu bez FPS (hra na celú obrazovku je nad vrstvou Goo).
+- 6. 10.: kliky goo podľa ergonómie — karta GooPower (účet, profil napájania), pás výkonu, GooBar pravý = plocha,
+  rýchly zoznam LensGoo, upozornenia a kalendár ClockGoo, zväčšovanie všetkých kvapiek; karta Goo vie dva stĺpce,
+  tlačidlá, dlaždice, profil.
 
 - 5. 10.: ucho = kvapka v rohu karty, pevná výška kariet; pravidlo 14 (bublina, prasknutie, pád minimalizovaného okna).
 - 5. 10.: okno spúšťača LensGoo; karta Goo väčšia a pohyblivá, koliesko prepína záložky, ovládanie z klávesnice.
