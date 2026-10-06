@@ -510,15 +510,23 @@ def prihlasenie():
             pass
     if not panel and conf.get("rss_url") and conf.get("panel", "rss") != "none":
         try:                                             # novinky: titulky z RSS alebo Atom, krátko čakať
-            import urllib.request, xml.etree.ElementTree as ET
-            req = urllib.request.Request(conf["rss_url"], headers={"User-Agent": "LatteOS"})
-            root = ET.fromstring(urllib.request.urlopen(req, timeout=4).read())
-            for it in list(root.iter("item")) or [e for e in root.iter() if e.tag.endswith("}entry")]:
-                t = next((c.text for c in it if c.tag.split("}")[-1] == "title" and c.text), "")
-                if t.strip():
-                    riadky.append(" ".join(t.split()))
-                if len(riadky) >= 8:
-                    break
+            import itertools, urllib.request, xml.etree.ElementTree as ET
+            zdroje = []                                  # viac zdrojov (oddelené medzerou, čiarkou alebo bodkočiarkou): striedavo
+            for url in [u for u in re.split(r"[\s,;]+", conf["rss_url"]) if u][:4]:
+                try:
+                    req = urllib.request.Request(url, headers={"User-Agent": "LatteOS"})
+                    root = ET.fromstring(urllib.request.urlopen(req, timeout=4).read())
+                except Exception:
+                    continue
+                tit = []
+                for it in list(root.iter("item")) or [e for e in root.iter() if e.tag.endswith("}entry")]:
+                    t = next((c.text for c in it if c.tag.split("}")[-1] == "title" and c.text), "")
+                    if t.strip():
+                        tit.append(" ".join(t.split()))
+                    if len(tit) >= 8:
+                        break
+                zdroje.append(tit)
+            riadky = [t for kolo in itertools.zip_longest(*zdroje) for t in kolo if t][:8]
             panel = "novinky" if riadky else ""
             os.makedirs(os.path.dirname(rss_cache), exist_ok=True)
             json.dump({"url": conf["rss_url"], "riadky": riadky}, open(rss_cache, "w"), ensure_ascii=False)
@@ -532,10 +540,19 @@ def prihlasenie():
         obloha = {}
     DAZD = set(range(51, 68)) | {80, 81, 82, 95, 96, 99}
     SNEH = {71, 73, 75, 77, 85, 86}
-    zrazky, sneh = 0, False
+    zrazky, sneh, teraz_w = 0, False, None
     try:
         w = pocasie()
         teraz = (w.get("teraz") or {}).get("kod")
+        if teraz is not None and "t" in (w.get("teraz") or {}):
+            k = int(teraz)                               # trieda pre text scény a znak ako v karte ClockGoo
+            trieda, znak = ((1, "sun") if k == 0 else (2, "sun-low") if k in (1, 2) else (4, "cloud-fog") if k in (45, 48)
+                            else (7, "cloud-storm") if k >= 95 else (6, "cloud-snow") if k in SNEH
+                            else (5, "cloud-rain") if k in DAZD else (3, "cloud"))
+            dnes = (w.get("dni") or [{}])[0]
+            rozsah = "%s° / %s°" % (dnes["max"], dnes["min"]) if "max" in dnes and "min" in dnes else ""
+            teraz_w = {"t": "%s°" % w["teraz"]["t"], "trieda": trieda, "ikona": znak,
+                       "miesto": " · ".join(x for x in (w.get("miesto") or "", rozsah) if x)}
         skoro = [h.get("kod") for h in (w.get("hodiny") or [])[:2]]
         if teraz in DAZD or teraz in SNEH:
             zrazky, sneh = 2, teraz in SNEH
@@ -601,10 +618,10 @@ def prihlasenie():
         dev = any(l.startswith("source=") for l in open("/usr/share/latteos/VERSION"))
     except OSError:
         dev = True
-    names = ["power", "arrow-right", "moon", "refresh", "battery-3", "bell", "calendar-event", "device-desktop"] + [i["ikona"] for i in info]
+    names = ["power", "arrow-right", "moon", "refresh", "battery-3", "bell", "calendar-event", "device-desktop"] + [i["ikona"] for i in info] + ([teraz_w["ikona"]] if teraz_w else [])
     return {"meno": meno, "login": login, "kava": kava, "panel": panel, "riadky": riadky, "info": info[:3],
             "goopower": goopower, "relacie": relacie[:6], "relacia": vybrana, "dev": dev, "ikony": glyphs(names),
-            "nebo": obloha, "zrazky": zrazky, "sneh": sneh}
+            "nebo": obloha, "zrazky": zrazky, "sneh": sneh, "pocasie": teraz_w}
 
 
 def main(a):

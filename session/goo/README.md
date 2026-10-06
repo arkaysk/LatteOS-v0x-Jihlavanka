@@ -234,9 +234,15 @@ GooPower a pozadie zmizne. Klik na LoginGoo = Uspať · Reštartovať · Vypnú�
   odchode LoginGoo `latte-greetd koniec` ukončí všeobecnú reláciu a greetd spustí reláciu používateľa (vybranú
   v goo výberu relácie). Bez karty, v režime SAFE alebo keď scéna skončí bez prihlásenia, nasleduje doterajší
   prihlasovač (`latte`). Log scény: `/run/user/<uid prihlasovača>/latte-login/login.log`.
+- **Monitory:** `screens: each` — každý monitor má vlastnú kópiu s vlastným rozložením; fakty a texty (heslo, čas)
+  sú spoločné. Bez toho sa kópie rozložia podľa šírky posledného monitora.
+- **Meno** je pole predvyplnené naposledy prihláseným (Tab prepína meno ↔ heslo); iné účty sa neponúkajú.
+- **Novinky:** `rss_url` v `greeter.conf` môže niesť viac zdrojov (medzera, čiarka); titulky sa striedajú.
 - **Ostáva:** plynulé nadviazanie plochy na posledný obraz (relácia dostane `LATTE_Z_PRIHLASENIA=1`; medzi
   prihlásením a plochou je zatiaľ krátky prestrih pri odovzdaní obrazovky), údaje používateľa pred heslom
-  (upozornenia, úlohy — všeobecná relácia ich nevidí), viac účtov, čo sú „správy“ pod hladinou.
+  (upozornenia, úlohy — všeobecná relácia ich nevidí), viac zdrojov noviniek v Nastaveniach (zatiaľ jedno pole).
+- **Pri skúšaní:** `systemctl restart greetd` počas bežiaceho prihlasovača nechá jeho labwc a scénu bežať
+  (osirelé procesy účtu greetd) — po skúške ich treba ukončiť.
 - Skúšať treba v skutočnej relácii: v skrytom kompozitore (labwc headless) pleamar vykreslí iba prvú snímku.
 
 ## Ďalej (z pravidiel plochy, zatiaľ nie v engine)

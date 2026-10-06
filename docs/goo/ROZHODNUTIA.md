@@ -21,6 +21,12 @@ Nové rozhodnutie: jeden riadok sem (dátum, čo, prečo) a oprava platného zne
 - **Prihlásenie — hladina a obloha:** riadok je mierne NAD hladinou (ako pás výkonu GooPower nad lištou), hladina sa
   mierne vlní; ak vonku prší alebo je to v predpovedi, prší aj pri prihlásení; nenápadná silueta slnka alebo mesiaca
   vychádza a zapadá so skutočným v danom mieste, mesiac v správnej fáze.
+- **Prihlásenie — počasie a LoginGoo:** v opačnom rohu než hodiny aktuálne počasie tým istým písmom. LoginGoo je
+  o niečo väčšia a spodkom sa lepí k hladine ako kvapky enginu k lište; riadok s menom a heslom je pár mm nad
+  hladinou, spojí sa s ním iba najvyššia vlnka.
+- **Prihlásenie — obsah a účty:** „správy“ pod hladinou sú zdroje RSS a noviniek, ktoré si používateľ nastaví
+  v Nastaveniach (ak nie je výpis pádu). Iné účty sa neukazujú (nie ako Windows 11): iba naposledy prihlásený ako
+  **predvyplnené meno**, ktoré sa dá prepísať. Scéna je na **všetkých monitoroch** (jeden môže byť virtuálny).
 - **Nasadzuje sa iba engine Goo.** Pôvodná plocha Kvapky (`session/kvapky`) sa na systém už nenasadzuje.
 - **Ponuka prihlásenia:** ostáva najnovší **LatteOS GOO** (engine Goo, predvolená relácia `latte-session`) a samostatné
   prostredia **Marea** (treba ju opraviť), **Serpantinum** a **Noctalia (čistá)**. Položky Classic, Kvapky, „engine

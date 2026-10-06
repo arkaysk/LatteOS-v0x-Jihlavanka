@@ -22,8 +22,8 @@ local function data()
     run("latte-goo", { "prihlasenie" }, function(out)
         local ok, d = pcall(json.decode, out or "")
         if not ok or type(d) ~= "table" then log("login · latte-goo prihlasenie nič nevrátil") return end
-        text.meno = d.meno or ""
-        ucet = d.login or ""
+        -- meno je predvyplnené naposledy prihláseným; čo doň používateľ napísal, sa ďalším načítaním neprepíše
+        if ucet == "" then ucet = d.login or "" text.ucet = ucet end
         if type(d.kava) == "table" then fact.voda, fact.mlieko = tonumber(d.kava[1]) or 0.55, tonumber(d.kava[2]) or 0 end
         local g = d.ikony or {}
         text.g_power, text.g_sip, text.g_spat, text.g_znova = g.power or "", g["arrow-right"] or "", g.moon or "", g.refresh or ""
@@ -51,6 +51,12 @@ local function data()
             fact.nb = 0
         end
         fact.zrazky, fact.sneh = tonumber(d.zrazky) or 0, d.sneh == true
+        local w = type(d.pocasie) == "table" and d.pocasie or nil
+        if w then
+            text.w_t, text.w_g, text.w_m, fact.wk = w.t or "", g[w.ikona] or "", w.miesto or "", tonumber(w.trieda) or 0
+        else
+            text.w_t, fact.wk = "", 0
+        end
         -- relácie na výber (vývojárska verzia): prvé načítanie nastaví naposledy použitú, ďalšie výber nemenia
         local prve = #relacie == 0
         relacie = type(d.relacie) == "table" and d.relacie or {}
@@ -89,7 +95,9 @@ local function over(pw, hotovo)
     if REZIM == "greetd" then
         -- heslo nejde v argumentoch: do súkromného súboru prihlasovača (tmpfs), latte-greetd ho prečíta a zmaže
         local r = relacie[(fact.rel_sel or 0) + 1] or { subor = "latteos", prikaz = { "/usr/bin/latte-session" } }
-        local args = { "prihlas", ucet, r.subor or "", "--" }
+        local kto = (text.ucet or ""):gsub("^%s+", ""):gsub("%s+$", "")
+        if kto == "" then kto = ucet end
+        local args = { "prihlas", kto, r.subor or "", "--" }
         for _, c in ipairs(r.prikaz or {}) do args[#args + 1] = c end
         if #args == 4 then args[5] = "/usr/bin/latte-session" end
         local okw, err = pcall(sys.call, "files.write", "h.json", { p = pw })
