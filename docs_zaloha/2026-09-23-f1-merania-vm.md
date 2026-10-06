@@ -1,3 +1,5 @@
+> **Archív** (`docs_zaloha/`, presunuté 6. 10. 2026): pôvodne `setup/f1/RESULTS.md` — merania kompozitorov a shellov na VM `latteOSdev` (23. 9., doplnky do 1. 10.).
+
 # F1 — namerané výsledky na `latteOSdev`
 
 23. 9. 2026 · VirtualBox VMSVGA (3D zapnuté), 4 vCPU, 11 GB RAM, výstup 1920×1080 · Mesa 26.2.3

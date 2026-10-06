@@ -30,7 +30,7 @@ def slot(k):
         f"        ellipse {{ at: x.{k}, y.{k}; radius: rr.{k}; scale: 1 + fxw.{k}, 1 - fxw.{k}; blend: lk.{k} + 6 * near.{k} }}\n",
         f"        line {{ from: t0x.{k}, t0y.{k}; to: thx.{k}, thy.{k}; width: th.{k}; blend: thb.{k} }}\n",
         # kapsula: rovná časť POZDĹŽ okraja kvapky (dole a hore vodorovne, na bokoch zvisle); kd = smer, ktorým rastie
-        # (0 na obe strany — bobuľa hrozna, −1 a +1 iba na jednu — pás výkonu GooPower), dĺžka kwa sa mení pružinou
+        # (0 na obe strany — kapsula s textom, −1 a +1 iba na jednu — pás výkonu GooPower), dĺžka kwa sa mení pružinou
         # (kvapka sa do kapsuly natiahne); guľatá kvapka ju má nulovú
         f"        line {{ from: x.{k} + {along('x', k)} * kwa.{k} * (goo.{k}.kd - 1), y.{k} + {along('y', k)} * kwa.{k} * (goo.{k}.kd - 1); "
         f"to: x.{k} + {along('x', k)} * kwa.{k} * (goo.{k}.kd + 1), y.{k} + {along('y', k)} * kwa.{k} * (goo.{k}.kd + 1); "
@@ -74,8 +74,6 @@ def body():
     # bublina okna, kým sa vytláča z kvapky (zlieva sa s ňou), a kvapka z minimalizovaného okna, ktorá padá k hladine
     out.append("        ellipse { at: b.p1x, b.p1y; radius: (8 + 8 * b.s1) * if(bub.a > 0.01 and bub.t < 0.3, 1, 0); blend: 14 }\n")
     out.append("        ellipse { at: mf.x, mf.y; radius: 16 * if(mf.k >= 1, mf.on, 0) * clamp((mf.T + 0.45 - mf.e) / 0.3, 0, 1); scale: 1 - 0.12 * clamp(mf.e, 0, 1), 1 + 0.2 * clamp(mf.e, 0, 1); blend: 16 }\n")
-    # lepkavé vlákno hrozna upozornení: od okraja ku kvapke, kapsuly sa s ním zlievajú
-    out.append("        line { from: vlx, vly0; to: vlx + 3 * noise(time * 0.3), vly1; width: vlw; blend: 14 }\n")
     out.append("        line { from: " + pick("hmx.{k}") + ", " + pick("hmy.{k}") + "; to: "
                + pick("x.{k}") + ", " + pick("y.{k}") + "; width: if(nk >= 0, " + pick("rr.{k} * 0.7 * neck.{k}")
                + ", 0); blend: 22 }\n")

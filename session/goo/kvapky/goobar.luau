@@ -1,4 +1,4 @@
--- Goobar (lišta s oknami, LATTEOS-GOO.md 4.1): hlava = obraz režimu okien (plávajúce / dlaždice / páska); vpravo od
+-- Goobar (lišta s oknami, LATTEOS-GOO.md §4.1): hlava = obraz režimu okien (plávajúce / dlaždice / páska); vpravo od
 -- nej okná ako ikry/hrozno po aplikáciách (lib/goobar.luau). Ľavý klik na hlavu = ďalší režim okien, koliesko =
 -- páska sa posúva / ďalšie okno, pravý klik = UKÁZAŤ PLOCHU (ako roh lišty vo Windows 11 a Win+D: okná zmiznú, druhý
 -- pravý klik ich vráti; používateľ 6. 10.). Veľkosť hlavy je v Nastaveniach › Kvapky (koliesko patrí oknám). Rozmery a rozostupy ako v ploche Kvapky (TimeGoo 92 px vľavo, PowerGoo ďalších 66).

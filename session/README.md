@@ -14,8 +14,8 @@ opakovať, konfigurácie vymieňa atomicky). Kontrola bez obrazovky: `setup/f1/a
 | `hypr/hyprland.lua`, `hypr/latte/*.lua` | Lua modul: stupne výkonu, režimy okien, rozloženia (Super+Z), herný režim, OOM, skratky, gestá |
 | `oom/` | OOM politika (F5): najprv aplikácia, nie relácia |
 
-Plocha **LatteOS GOO** (jediná edícia od 5. 10. 2026): engine Goo v `goo/` ([README](goo/README.md)) a pôvodná
-plocha Kvapky v `kvapky/` ([README](kvapky/README.md)). Pluginy lišty Noctalie nižšie patria zrušenej klasickej
+Plocha **LatteOS GOO** (jediná edícia od 5. 10. 2026): engine Goo v `goo/` ([README](goo/README.md)) — nasadzuje sa
+iba on; pôvodná plocha Kvapky v `kvapky/` sa už nenasadzuje (dokumentácia v `docs_zaloha/`). Pluginy lišty Noctalie nižšie patria zrušenej klasickej
 ploche (Classic); v Goo beží z Noctalie iba rohová lišta, ovládacie centrum, OSD a zámok.
 
 ## Shell (Noctalia) — `noctalia/`

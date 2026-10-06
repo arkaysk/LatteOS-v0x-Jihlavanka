@@ -1,16 +1,15 @@
+> **Archív** (`docs_zaloha/`, presunuté 6. 10. 2026): pôvodne `session/kvapky/README.md` — technický zoznam funkcií pôvodnej plochy Kvapky (prototyp, 29. 9. – 1. 10.). Plocha Kvapky sa od 6. 10. už nenasadzuje — nasadzuje sa iba engine Goo (`session/goo`). Koncept, na ktorý odkazuje (`AUDIT-WIN11.md`), je v `2026-09-29-audit-win11.md`.
+
 # Kvapky — tekutá lišta LatteOS (prototyp)
 
-Čo LatteOS Goo je, pravidlá a správanie: [LATTEOS-GOO.md](../../LATTEOS-GOO.md). Tu je technický zoznam funkcií
-**pôvodnej plochy Kvapky** (relácia „LatteOS Kvapky“), písaný priebežne od 29. 9. — staršie body sú neskôr upresnené
-nižšie alebo v LATTEOS-GOO.md (napr. oči kvapiek boli 29. 9. zrušené). Scéna používa staré mená kvapiek (TimeGoo,
-PowerGoo, DaNoGoo); nahradí ju **engine Goo** ([session/goo](../goo/README.md)) s Novou architektúrou.
+Čo LatteOS Goo je, pravidlá a správanie: [LATTEOS-GOO.md](../../LATTEOS-GOO.md). Tu je technický zoznam funkcií.
 
 Koncept: [AUDIT-WIN11.md › Koncept „Kvapky“](../../AUDIT-WIN11.md) (súkromné repo), maketa D na plátne dizajnu.
 Beží na [pleamar](https://github.com/k4ditano/pleamar) (BSD-3, Rust + wgpu, SDF, pružiny) **vedľa** Noctalie,
 ako samostatná vrstva (layer-shell) nad jej lištou.
 
 ## Čo prototyp vie (29. 9. 2026)
-- zámerne nesúmerná: hlava je vždy na **ľavom** konci, kvapka rastie doprava s každým oknom (ikona + hrbolček)
+- zámerne nesúmerná: hlava s očami je vždy na **ľavom** konci, kvapka rastie doprava s každým oknom (ikona + hrbolček)
 - v pokoji vpitá do spodného okraja obrazovky (zlieva sa s ním skoro do roviny)
 - **priblíženie**: od štvrtiny výšky obrazovky od nej sa začne vysúvať; kým k nej myš dôjde, je napoly vonku na hrubej
   stopke pod hlavou. Myš sa číta kdekoľvek (`cursor.x/y` z Hyprlandu), žiadna neviditeľná zóna nekradne kliky oknám

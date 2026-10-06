@@ -1,4 +1,4 @@
--- engine Goo — Goobar (lišta s oknami, LATTEOS-GOO.md 4.1) prenesený z plochy Kvapky (kvapka.luau › layout):
+-- engine Goo — Goobar (lišta s oknami, LATTEOS-GOO.md §4.1) prenesený z plochy Kvapky (kvapka.luau › layout):
 -- každé okno je kvapka enginu (E.upsert) s ikonou aplikácie; okná tej istej aplikácie sa zlepia do strapca ako ikry
 -- (prvé pri lište, ďalšie smerom od nej, „náhodne“, ale pre každé poradie rovnako), čím viac okien, tým menšie
 -- (do 72 %); myš nad strapcom ho rozvinie do radu. Aktívne okno je plnšie, minimalizované menšie a stlmené.

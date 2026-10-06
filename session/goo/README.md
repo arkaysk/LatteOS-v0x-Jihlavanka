@@ -4,15 +4,15 @@ Spoločný engine pre kvapky LatteOS Goo. Je to rozšírenie pleamar 0.2.6 („D
 0.2 a API logiky. Záplaty Rustu (`resources/patches/`: `pleamar-prazdne-tvary` a `pleamar-pasy-tela` na výkon,
 `pleamar-ostre-okraje` na ostré oká) nie sú nutné: bez nich engine funguje, iba pomalšie a s mäkšími okrajmi.
 
-Zatiaľ je oddelený od plochy Kvapky (`session/kvapky`), ktorú má nahradiť a stať sa predvoleným prihlásením. Skúša sa
-v relácii **LatteOS Kvapky – engine test** na prihlasovacej obrazovke. Kvapky sú podľa Novej architektúry
+Na systém sa nasadzuje iba engine (pôvodná plocha Kvapky `session/kvapky` už nie) a stane sa predvoleným
+prihlásením. Zatiaľ sa spúšťa reláciou **LatteOS Kvapky – engine test** na prihlasovacej obrazovke. Kvapky sú podľa Novej architektúry
 (LATTEOS-GOO.md): jadro GooBar, GooPower, LensGoo; voliteľné QueenGoo, ClockGoo (ChatGoo zatiaľ nie je).
 
 **Pravidlá plochy platia aj tu: [LATTEOS-GOO.md](../../LATTEOS-GOO.md) §2 a §3** (pred prácou prečítať).
 Engine ich nastavuje všeobecne:
 - Kvapky sú vždy káva (pomer vody a mlieka z Baristu) a nemajú tvár.
 - Kurzor kvapky **iba priťahuje** a je ich svetlom.
-- Klik je iba tam, kde má kvapka funkciu; tlačidlo bez funkcie goo zavibruje (kliky kvapiek shellu: §3.5).
+- Klik je iba tam, kde má kvapka funkciu; tlačidlo bez funkcie goo zavibruje (kliky kvapiek shellu: LATTEOS-GOO.md §4).
 - Všetky kvapky sú drag & drop.
 - Všetky sú v jednom goo tele s lištou.
 
@@ -33,7 +33,7 @@ V ploche Kvapky má každá kvapka vlastnú kópiu pravidiel: polohu, ťahanie, 
 
 **Kvapky plochy v engine:** `goobar` (hlava + okná), `goopower` (ponuka, batéria), `lensgoo` (lupa, spúšťač) — jadro,
 `zaklad = true`, nedajú sa skryť; `queengoo` (guľky, App Manager / Správca zariadení) a `clockgoo` (čas, dátum,
-upozornenia) — voliteľné, skrýva ich Nastavenia › Kvapky (`kvapky.json`). Kliky (6. 10., LATTEOS-GOO.md §3.5):
+upozornenia) — voliteľné, skrýva ich Nastavenia › Kvapky (`kvapky.json`). Kliky (LATTEOS-GOO.md §4):
 
 | kvapka | ľavý | pravý |
 |---|---|---|
@@ -93,7 +93,7 @@ mieste kliku, podponuky, preklady), **guľky** (`d:gulky(n, farby)`), **ikona ap
   pripnuté kvapky. `E.separate()` po pustení, pridaní, zmene veľkosti a zmene okien.
 - **Okraje a gravitácia:** kvapka sedí na jednom zo štyroch okrajov (`okraj` 0 dole, 1 vľavo, 2 hore, 3 vpravo;
   predvolene dole). Pustená do 130 px od okraja sa k nemu prilepí, inak spadne dole voľným pádom (`GRAV`) — nič
-  nevisí vo vzduchu (výnimka `visi`: bobule otvoreného hrozna upozornení). `vratit = true` (GooBar): pri pustení
+  nevisí vo vzduchu. `vratit = true` (GooBar): pri pustení
   uprostred sa vráti. Háčik `pustenie(d, X, Y, okraj)` dostane miesto v px obrazovky; `false` = nepresúvať.
   `d:px()` je poloha pozdĺž okraja kvapky; `E.hiAlong(d)` najďalej, kam smie (rohová lišta Noctalie je zakázaná zóna).
 - **Kapsula:** `kw` (polovica rovnej časti, px) a `t2` (druhý riadok) urobia z kvapky kapsulu s ikonou vľavo.
@@ -213,24 +213,71 @@ načíta sám. Príkazy, ktoré modul spúšťa cez `run`, musia byť v `permiss
 
 ## Ďalej (z pravidiel plochy, zatiaľ nie v engine)
 
-- Okno z kvapky (pravidlá 9 a 14): kvapka vystúpi a pripojí sa k oknu rohom, alebo vypľuje bublinu, ktorá sa
-  nafúkne na okno. V ploche Kvapky to funguje; do enginu to príde ako druh kvapky (rezerva 2–3).
-- Dážď a vietor podľa počasia (§3.1 stupeň 2), hladina so vlnkami (§3).
+- Dážď a vietor podľa počasia pri nečinnosti (LATTEOS-GOO.md, nečinnosť stupeň 2). Ostatné otvorené úlohy enginu
+  sú v [ROADMAP.md](../../ROADMAP.md) (F3·G).
 
-## Jazyk pleamar 0.2 — čo treba vedieť
+## Jazyk pleamar 0.2 a Luau — pasce (stálo to čas)
 
-- **`repeat` v `body` nejde.** Telo preto rozpisuje `gen.py`.
-- **`let` vnútri `repeat` patrí iba svojej kópii.** Hodnoty potrebné zvonka sú preto pružiny `~0ms`: globálne,
-  s tou istou hodnotou v tom istom snímku.
-- **`sin` a `cos` sú v stupňoch.**
-- **`smooth()` chce stále hranice.** Pre hranice z modelu treba vlastnú krivku t²(3 − 2t).
-- **Veľkosť textu sa píše `číslo × pomer`** (`20 * rs.$k`), nie `rr.$k * 0.78`.
-- **`pick` neberie farby.** Treba vnorené `if`.
-- **`emit` v Luau nenesie hodnotu** (iba meno). Pre jednu kvapku logika zvýši počítadlo (`hopn.k`, `sqn.k`,
-  `dipn.k`, `rpn.i`) a scéna zareaguje cez `on change`. Hodnotu nesie iba `emit` zo scény a `pleamar --say`.
-- **Radiálny prechod (`gradient`) je iba v `body`.** Jadro kvapky je preto malé vlastné telo.
-- **Telo goo počíta každý svoj tvar pre každý pixel** a `show: false` ho nevyradí. Preto existuje záplata
-  `pleamar-prazdne-tvary` a krk ťahanej kvapky je jeden tvar (`pick(nk, …)`), nie 64.
+**Scéna (pleamar):**
+- V `body` nie je `repeat`, preto existuje `gen.py`. `gen.py` prepisuje **každé** `repeat k in 0..N`, ďalšie cykly
+  musia mať iné meno premennej (menu používa `m`).
+- `let` v `repeat` je lokálny pre kópiu. Hodnotu do rovnakého snímku exportuje `prop X.$k = 0 ~0ms` + `follow`.
+- `sin`/`cos` berú **stupne**.
+- `smooth()` chce konštantné hrany, inak treba ručné t²(3−2t).
+- `size:` textu je **iba pevné číslo**: `size: 14 * čokoľvek` kreslí 14 (fakt, prop aj let — overené skúšobnou scénou
+  5. 10.). Cloud predpokladal, že násobiteľ funguje; preto sa pri nafukovaní kvapky text nemenil. Text, ktorý má
+  rásť, sa kreslí vo väčšej pevnej veľkosti v `group { pivot; scale }` a posuny vnútri sa delia mierkou.
+  (`letter_scale` nepomôže — písmená sa prekryjú.) To isté platí pre `kvapka.plm` (`size: 16 * zt.p`).
+- `pick()` nevie farby, pomôže vnorený `if`. `gradient` existuje iba v `body`.
+- Tvary tela sa počítajú pre každý pixel a `show:false` ich neodstráni. Preto nulová veľkosť + záplata prazdne-tvary.
+- `while` v pravidle vidí **stav zo začiatku snímky**. Príznak nastavený pri `press` preto `release` v tej istej
+  snímke (ťuknutie na touchpade, virtuálna myš) nevidí: každý druhý klik sa stratil. Poradie patrí do logiky.
+- `release zone` príde pri pustení **ktoréhokoľvek** tlačidla; v pravidle sa nedá zistiť, ktorého.
+- Po reštarte scény nepríde `enter`, kým sa myš nepohne (Wayland).
+- Viac monitorov: scéna sa kreslí na každom, ale voľné `prop` a `fact` sú **jedny pre všetky kópie** (aj so
+  `screens: each`) a `screen.width` je z poslednej kópie. Vlastný stav na monitor = mená s `$screen` alebo jeden
+  proces na monitor (`--screen MENO`). Engine zatiaľ beží iba na hlavnom monitore.
+- Číslo pri `pleamar --say goo "emit udalosť N"` má malý rozsah (zbalené 48-bitové neprešlo): viac hodnôt poslať
+  ako fakty (`fact meno hodnota`) a potom udalosť.
+- `scroll zone` dostane **každá** zóna pod kurzorom, nielen vrchná: koliesko nad riadkom príde aj ploche karty —
+  logika si pamätá, že ho použil riadok (`wheel_used`), a plocha karty chvíľu počká (`ctx_bgw`).
+- `lines:` textu chce číslo, nie výraz; `anchor: left top` kreslilo odsek mimo — odsek je `left center` na strede
+  odhadnutej výšky. Text sa s textom porovnať nedá (`a == ""`): pomocné číselné pole.
+- Skrytý `input` (`show: false`) stále berie kliky na svojom mieste: nepoužité pole odsunúť mimo (`-4000`).
+- `keyboard: on_demand` dá klávesnicu až po kliku do plochy; modálna karta potrebuje `exclusive while …`.
+- Chyba v obsluhe udalosti logiky (napr. klik na čip) sa do logu nezapíše — zložitejšie stavanie karty obaliť
+  `pcall` a chybu vypísať (`text.hud`).
+- Skúšobná myš: skok von z kvapky skôr, než sa začne ťahanie (> 6 px vnútri zóny), kompozitor berie ako pustenie.
+  Ťahanie v teste začať malými krokmi (ydotool drží tlačidlo, wlrctl alebo ydotool hýbe).
+- `screen.width` je pri dvoch monitoroch jedna hodnota pre obe plochy (scéna má jeden stav): na latte-lab 1920
+  aj na monitore 2560. Scéna sa na oboch monitoroch kreslí rovnako, ako pôvodné Kvapky.
+
+**Logika (Luau):**
+- `emit(name)` z logiky **nenesie dáta** (opačný smer `emit ev(k)` áno). Signál pre konkrétnu kvapku sa preto posiela
+  počítadlom (fakt + `on change`).
+- Luau nemá `goto`. `save` je deklarované dopredu (`local save` … `save = function()`).
+- `sys.watch` musí predchádzať `sys.call` tej istej služby, inak padli ďalšie kvapky.
+- `tabler.json` Noctalie má kódy ako `U+EA35` (nie `0x…`); mená ikon overiť proti nemu (`123` neexistuje,
+  je `number-123`).
+- Logika nepozná rozmer obrazovky: scéna exportuje `fact sw/sh` cez `every 1s while sw != W or sh != H`.
+  Na štarte je 0, preto fallback 1920.
+
+**CLI pleamaru:**
+- `--mouse` nemá stredné tlačidlo.
+- `click@`/`right@` stlačia a pustia v jednom snímku, testy preto používajú `down@ up@`.
+- `--say` berie meno scény malými písmenami (`goo`).
+
+## Testovanie bez obrazovky (cloud)
+
+1. `resources/fetch.sh` a build pleamaru v `resources/upstream/pleamar` so záplatami.
+   apt balíky: `libxkbcommon-dev libwayland-dev libfontconfig-dev libdbus-1-dev libpam0g-dev`.
+2. `python3 session/goo/gen.py`, potom `pleamar --check session/goo/goo.plm` (aj `session/kvapky/kvapka.plm`).
+3. Headless Sway (pixman, llvmpipe), 1920×1080, plávajúce okná, spúšťané cez `setsid -f`. Sway medzi ťahmi umiera,
+   skript sa musí vytvoriť znova (bol v `/tmp`). Testovacie okná sú `foot`/`weston-terminal`, snímky `grim`, výrezy
+   cez Pillow.
+4. Pleamar: `--scene … --mouse "x,y@ms down@ up@ right@ wheel+@ out@" --record mena --say goo "emit goo_kamen 900"
+   --seconds N --no-hud --no-vsync`.
+5. V cloude chýba font Tabler, takže glyfy nie sú vidieť. To je očakávané.
 
 ## Overenie
 

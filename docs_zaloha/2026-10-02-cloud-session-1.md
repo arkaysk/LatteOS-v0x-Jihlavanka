@@ -1,3 +1,5 @@
+> **Archív** (`docs_zaloha/`, presunuté 6. 10. 2026): pôvodne `cloud_session_1.md` v koreni repa — záznam jednorazovej práce v Claude cloud (1.–2. 10.), aby bolo vidieť, čo sa zmenilo. Už nie je relevantný; nemaže sa. Snímky, na ktoré odkazuje (`docs/goo/*.png`), sú v `2026-10-01-cloud-snimky/`.
+
 # Cloud session 1 — LatteOS (vetva gamerdistro)
 
 1. 10. 2026 · Claude Code v cloude (claude.ai/code) · repo `arkaysk/jihlavanka001`, vetva `gamerdistro`

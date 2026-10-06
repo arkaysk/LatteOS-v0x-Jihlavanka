@@ -5,7 +5,8 @@
 > **Zmena smeru 5. 10. 2026:** „gamerdistro“ sa stáva **LatteOS GOO**, jedinou edíciou. **LatteOS Classic sa ruší** —
 > body roadmapy, ktoré sa týkajú iba klasickej plochy (lišta Noctalie, klasický spúšťač a panely), sa ďalej
 > nerozvíjajú; ich funkcie preberá Goo. Prioritou je **engine Goo** (`session/goo`): poradie práce je v
-> [LATTEOS-GOO.md](LATTEOS-GOO.md) §7 a otvorené úlohy enginu v [docs/goo/ENGINE-REPORT.md](docs/goo/ENGINE-REPORT.md) §11.
+> [LATTEOS-GOO.md](LATTEOS-GOO.md) a otvorené úlohy enginu nižšie v F3·G. Na systém sa nasadzuje **iba engine Goo**
+> (6. 10.); po jeho dokončení sa zverejní **verejná verzia 0.2** (iba GOO).
 
 Podklad: [technologický radar](inspo/LatteOS%20–%20technologický%20radar%202026.md),
 prebraté zdroje v [resources/](resources/patches/README.md) (`fetch.sh`; pôvodný MANIFEST je v `old/resources/MANIFEST.md`). Priečinok `old/` sa už **nemení**, slúži len na čítanie.
@@ -157,7 +158,7 @@ flowchart TD
 - **Návrat:** zo SAFE ide jedným klikom „skúsiť NORMAL“ (vynuluje počítadlo). V NORMAL sa dá zapnúť
   „nabudúce SAFE“.
 
-**Audit podľa Windows 11 a prieskum rozhrania (29. 9.):** [AUDIT-WIN11.md](AUDIT-WIN11.md) — myš ako hlavný ovládač,
+**Audit podľa Windows 11 a prieskum rozhrania (29. 9.):** [audit](docs_zaloha/2026-09-29-audit-win11.md) — myš ako hlavný ovládač,
 stav LatteOS aj Noctalie, novinky, rice, moduly skla, návrh rozhrania a poradie krokov. Rozhodnuté: cesta 2
 (vlastné prostredie Hyprland + Noctalia nad ublue `base-main` + `akmods`, všetko pripnuté).
 
@@ -183,13 +184,13 @@ stav LatteOS aj Noctalie, novinky, rice, moduly skla, návrh rozhrania a poradie
 `MESA_LOADER_DRIVER_OVERRIDE`. Cestu A bude pre Hyprland nastavovať `latte-boot select`.
 
 ### F1 — Grafický stack a režimy *(hotové 23. 9. 2026)*
-- [x] Zmerať kompozitory (A/B/C) na `latteOSdev` → [setup/f1/RESULTS.md](setup/f1/RESULTS.md).
+- [x] Zmerať kompozitory (A/B/C) na `latteOSdev` → [merania](docs_zaloha/2026-09-23-f1-merania-vm.md).
   SAFE (labwc+pixman) ✅, NORMAL swgl ✅ (pokoj 0 % CPU, animácia ~1,3 jadra), vm3d len experimentálne (artefakty).
 - [x] Balík `hyprland-latte` 0.56.2-3.latte: [setup/f1/build-hyprland-latte.sh](setup/f1/build-hyprland-latte.sh), lokálne nainštalovaný.
 - [x] vm3d: zaseknutie GL klientov rieši `render:commit_timing_enabled = false`; biele čiary okrajov ostávajú (kreslenie klienta cez SVGA3D) → vm3d ostáva vypnuté (`allow_vm3d = false`).
-- [x] Noctalia v5 + Noctalia Greeter vo VM → [RESULTS.md](setup/f1/RESULTS.md#noctalia-v5-shell-a-noctalia-greeter): beží v NORMAL aj SAFE, lišta 0 % CPU.
+- [x] Noctalia v5 + Noctalia Greeter vo VM → [merania](docs_zaloha/2026-09-23-f1-merania-vm.md#noctalia-v5-shell-a-noctalia-greeter): beží v NORMAL aj SAFE, lišta 0 % CPU.
 - [x] Záťaž pri otvorenom paneli Noctalie spôsobila interakcia pri živom teste. Bez zásahu 5 % CPU.
-- [x] DMS a Caelestia zmerané rovnakým testom → [porovnanie](setup/f1/RESULTS.md#porovnanie-shellov-noctalia-v5--dms--caelestia).
+- [x] DMS a Caelestia zmerané rovnakým testom → [porovnanie](docs_zaloha/2026-09-23-f1-merania-vm.md#porovnanie-shellov-noctalia-v5--dms--caelestia).
 - [x] `latte-boot` (Rust, [crates/](crates/)): `probe`, `select`, `session-start`, `ok`, `reset`, `force-safe`, `status` → `/run/latteos/{mode.toml,session.env,hyprland.conf}`; výber ~85 ms, 12 testov.
 - [x] Nastavenia pre VM: `latte-boot` generuje `/run/latteos/hyprland.conf` (bez HW kurzora, stupeň Softvér bez efektov; pri vm-3d `commit_timing_enabled = false`). V Lua ich prepíše F2.
 - [x] `latte-boot.service` pred greetd, počítadlo pádov (limit 2, zdravá relácia po 60 s), GRUB položky „LatteOS SAFE“ a „LatteOS SAFE — bez ovládača grafiky“ (kernel-install plugin), Plymouth téma Latte.
@@ -302,7 +303,7 @@ texty preložiteľné (`translations`). Noctalia beží bez lišty a robí, čo 
 - [x] Dashboard vyteká z Hodín: čas, počasie, hľadanie aplikácií, upozornenia, pripnuté, rýchle nastavenia,
       stránky Sieť / Bluetooth / Zvuk; ponuka Vypnúť vyteká z kvapky vypínača
 - [x] Obsah = káva (`~/.config/latteos/kava`): espresso … latte
-- [ ] Ranný test myšou na latte-lab (klik, ťahanie, strapce, dashboard, ponuka Vypnúť)
+- [-] ~~Ranný test myšou na latte-lab (klik, ťahanie, strapce, dashboard, ponuka Vypnúť)~~ — plocha Kvapky sa už nenasadzuje (6. 10.)
 - [x] Barista: „Akú si dáte kávu a do čoho?“ (hrnček = téma okien v jej materiáli, káva = kvapky), náhľad hrnčeka
 - [x] Prekladová vrstva aplikácií LatteOS: `common/I18n.qml` (`i18n.tr`, JSON `/usr/share/latteos/i18n/<jazyk>.json`,
       podľa DankMaterialShell); Barista zmigrovaný (anglický zdroj + sk.json)
@@ -334,7 +335,7 @@ texty preložiteľné (`translations`). Noctalia beží bez lišty a robí, čo 
       Ďalej: priehľadné pozadie a goo telo z pleamaru pod ňou (vlnenie, pulzovanie)
 - [x] Nastavenia podľa prostredia (1. 10.): v Goo stránka **Kvapky (Goo)** (skryť/ukázať, veľkosť, vrátiť na miesto,
   ChatGoo kvapka alebo ikona v rohovej lište, **vlastné kvapky**), v Classic Lišta a systémové menu
-- [ ] Kvapky: overiť zvyšky po skrytí na latte-lab (jadro od 5. 10.: GooBar, GooPower a LensGoo — skryť nejdú)
+- [ ] Engine: overiť zvyšky po skrytí voliteľnej kvapky na latte-lab (jadro GooBar, GooPower, LensGoo sa skryť nedá)
 - [ ] **Živé bytosti pri nečinnosti** (LATTEOS-GOO.md 3.1): zdroj nečinnosti (ext-idle-notify), dážď/vietor podľa
   skutočného počasia so zvlnením spodnej hrany aj kvapiek, hra (naháňačka so zrážkou a odrazom, behanie, skákanie);
   nie pri celej obrazovke, zámku, slabej batérii a v stupni Softvér; vypínač v Nastaveniach
@@ -351,15 +352,36 @@ texty preložiteľné (`translations`). Noctalia beží bez lišty a robí, čo 
   spoločná ponuka Goo a guľky (1. 10. večer)
 - [x] Engine (5. 10.): spúšťač LensGoo, karta času, kalendár a počasie, hrozno upozornení, let bubliny k oknu, okná
   nad lištou; ostrovy netreba (záplata pleamar-pasy-tela)
-- [x] Engine (6. 10., overiť naživo): kliky goo podľa ergonómie (LATTEOS-GOO.md §3.5) — karta GooPower s účtom
+- [x] Engine (6. 10., overiť naživo): kliky goo podľa ergonómie (LATTEOS-GOO.md §4) — karta GooPower s účtom
   a profilom napájania, pás výkonu (CPU, RAM, GPU, VRAM), GooBar pravý = plocha, rýchly zoznam LensGoo, upozornenia
   a kalendár ClockGoo v jednej karte, zväčšovanie všetkých kvapiek
-- [x] Engine Goo na latte-lab (5. 10.): stredné tlačidlo, ikony (písmo Tabler), výkon RX 640 (docs/goo/ENGINE-REPORT.md §9–10)
-- [ ] Engine ako predvolené prihlásenie a jediná plocha (nahradí scénu Kvapky); ChatGoo; formulár vlastných kvapiek
-  v Nastaveniach › Kvapky nad `latte-goo`
+- [x] Engine Goo na latte-lab (5. 10.): stredné tlačidlo, ikony (písmo Tabler), výkon RX 640 (docs_zaloha/2026-10-05-engine-report.md §9–10)
+- [ ] **Nasadzovať iba engine Goo** (rozhodnutie 6. 10.): inštalácia a prihlasovacia obrazovka bez relácie „LatteOS
+  Kvapky“ (pôvodná scéna), engine ako predvolené prihlásenie (nový prihlasovač — LATTEOS-GOO.md §6.2)
+- [ ] Overiť naživo zmeny zo 6. 10. (kliky, karta GooPower, pás výkonu a odtlačenie susedov, rýchly zoznam LensGoo,
+  dvojstĺpcová karta ClockGoo aj na 1024 × 768)
+- [ ] **Korunka QueenGoo:** voliteľný tvar v Nastaveniach › Kvapky (6. 10.: „ešte sa bude robiť“)
+- [ ] GooBar: `reversed` (ikry na druhú stranu), vlastný GooBar na každom monitore (engine beží iba na hlavnom)
+- [ ] Engine: znížiť CPU (pravidlá a pružiny všetkých 128 miest — ~1,7× plocha Kvapky)
+- [ ] Nečinnosť: stupeň 2 (dážď a vietor podľa počasia), obmedzenia „kedy nie“ a vypínač „Živé správanie“
+- [ ] Formulár vlastných kvapiek enginu v Nastaveniach › Kvapky nad `latte-goo`
+- [ ] Synchronizácia kalendára v ClockGoo (účty Noctalie), názov budíka
+- [ ] LensGoo: mriežka obľúbených a nedávnych v spúšťači, ťahanie aplikácií do záložiek, filtre súborov, prílohy
+  a hlas v AI, farebná bodka lokálny/cloud model; AI bez API kľúča cez prihlásené CLI (Claude Code, Gemini, Codex),
+  úroveň uvažovania
+- [ ] Goo telo pod rohovou lištou Noctalie (vlnenie pri udalostiach); rozbaľovacia ponuka rýchleho spúšťania ako
+  kvapky; prejsť každú funkciu, či ide iba myšou
+- [ ] Prístupnosť — ovládanie Goo z klávesnice (LATTEOS-GOO.md §6.1)
+- [ ] Obchod podľa ZimaOS v App Manageri (LATTEOS-GOO.md §6.3)
+- [ ] Systémový backend: balíky (`gvfs-mtp`, `gvfs-smb`, CUPS, SANE, BlueZ zapnúť) a zapojenie do Správcu zariadení
+  a Súborov (LATTEOS-GOO.md §5)
+- [ ] Nové kvapky: ClipGoo, MediaGoo, PassGoo, CastGoo (LATTEOS-GOO.md §4.11)
+- [ ] Materiál aj na oknách aplikácií pri kovových témach (textúra v hlavičke okna — upravený hyprbars)
+- [ ] **Verejná verzia 0.2** (iba GOO) po dokončení enginu: obnoviť `arkaysk/latteos` (`setup/verejne/`), verejné
+  README podľa GOO, licencia
 - [x] pleamar v0.2.6, pleamar-wm v0.2.5, marea-plm (1. 10.): pripnuté, záplaty sedia, inštalácia preloží novší
-- [ ] **ChatGoo** (addon pre Beeper, LATTEOS-GOO.md 4.2c): kvapka, do ktorej sa minimalizuje Beeper, správy okolo nej
-  ako hrozno DaNoGoo (upozornenia aplikácie Beeper presmerované). Pomocník `latte-chatgoo` hotový; scéna naživo na latte-lab
+- [ ] **ChatGoo** (addon pre Beeper, LATTEOS-GOO.md §4.6): kvapka, do ktorej sa minimalizuje Beeper, upozornenia
+  Beepera pri nej (presmerované z ClockGoo). Pomocník `latte-chatgoo` hotový; kvapka v engine ešte nie je
 - [ ] **Komunitné doplnky Noctalie ako kvapky** — prieskum 30. 9.: 235 doplnkov (13 oficiálnych, 222 komunitných,
       `~/.local/state/noctalia/plugins/sources`), 194 widgetov na lištu (121 jednoduchých: ikona Tabler + text +
       popis; 73 s vlastným `barWidget.render`), ľavý klik 169, pravý 80. Spúšťať ich kód v pleamare nejde:
@@ -415,7 +437,7 @@ texty preložiteľné (`translations`). Noctalia beží bez lišty a robí, čo 
 - [x] Monitor: aplikácia → zariadenie (mikrofón, kamera, zvuk, GPU; fd na /dev + streamy PipeWire, raz za 5 s).
 - [x] Indikátor súkromia na lište (mikrofón/kamera v použití, červená kapsula v ostrove zariadení, klik = Monitor).
 - [ ] Monitor: stála služba telemetrie.
-- [x] Monitor podľa hodnotenia 1. 10. — fázy 1–6 hotové (cloud_session_1.md): procesy ako Win11, NVIDIA, výkon po
+- [x] Monitor podľa hodnotenia 1. 10. — fázy 1–6 hotové (docs_zaloha/2026-10-02-cloud-session-1.md): procesy ako Win11, NVIDIA, výkon po
   zariadeniach, Služby, Používatelia, Autoruns+, Test výkonu, upozornenia senzorov, prehrievanie
 - [ ] Monitor 7: latte-sysmond v Ruste (stála služba, telemetria bez otvoreného Monitora); sieť po procesoch v bajtoch (eBPF)
 - [x] Data Manager **prototyp** (Quickshell, `latte-app subory`): Tento počítač (lsblk), dva panely F3/F5/F6, detail, kôš.

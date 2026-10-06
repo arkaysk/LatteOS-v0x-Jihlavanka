@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Slovenský katalóg Noctalie (1. 10. 2026, LATTEOS-GOO.md §7 A6): Noctalia hľadá translations/<jazyk>.json a bez
+# Slovenský katalóg Noctalie (1. 10. 2026, LATTEOS-GOO.md pred 6. 10. §7 A6, docs_zaloha/2026-10-06-latteos-goo-pred-rozdelenim.md): Noctalia hľadá translations/<jazyk>.json a bez
 # neho beží celá po anglicky — a preklady doplnkov (plugins/*/translations/sk.json) vôbec nenačíta. Tento skript
 # zlúči dávky prekladov (sk-*.tsv: kľúč<TAB>text, \n = nový riadok) so súčasným sk.json a zapíše sk.json v poradí
 # kľúčov anglického katalógu; čo nie je preložené, Noctalia vezme z angličtiny (kľúč po kľúči).
