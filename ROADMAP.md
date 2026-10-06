@@ -374,7 +374,12 @@ texty preložiteľné (`translations`). Noctalia beží bez lišty a robí, čo 
   zámok pri nečinnosti novou scénou (dnes Noctalia); overiť skutočný dážď a sneh a Uspať · Reštartovať · Vypnúť
 - [ ] Overiť: Odhlásiť z karty GooPower, dvojstĺpcová karta ClockGoo na 1024 × 768
 - [ ] **Korunka QueenGoo:** voliteľný tvar v Nastaveniach › Kvapky (6. 10.: „ešte sa bude robiť“)
-- [ ] GooBar: `reversed` (ikry na druhú stranu), vlastný GooBar na každom monitore (engine beží iba na hlavnom)
+- [x] **GooBar na každom monitore** (6. 10.): každý ďalší monitor má vlastnú inštanciu enginu iba s GooBarom a oknami
+  toho monitora (ako panel úloh Windows na druhej obrazovke); ostatné kvapky sú iba na hlavnom. Overené na latte-lab
+  s dvoma monitormi (okná sa delia podľa monitora, klik na ikru vo vedľajšej lište). Záťaž: hlavný 17 %, vedľajší
+  15 % jedného jadra. Vypnutie: `~/.config/latteos/goobar-monitory` = `off`.
+- [ ] GooBar: `reversed` (ikry na druhú stranu); monitor pripojený za behu dostane GooBar až po prihlásení;
+  vypínač vedľajších lišt v Nastaveniach
 - [ ] Engine: znížiť CPU (pravidlá a pružiny všetkých 128 miest — ~1,7× plocha Kvapky). **Meranie 6. 10.** (latte-lab,
   pleamar 0.2.24, 16 kvapiek, v pokoji): 42–44 % jedného jadra, celé vo vlákne kreslenia — na snímku pravidlá
   a pružiny 3,6–4,0 ms, skladanie 2,5–2,7 ms, kreslenie 0,56 ms, a to 60× za sekundu aj keď sa nič nedeje; pás

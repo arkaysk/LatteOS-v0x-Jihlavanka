@@ -47,6 +47,10 @@ import glob, json, os, re, subprocess, sys
 HOME = os.path.expanduser("~")
 CONF = os.path.join(os.environ.get("XDG_CONFIG_HOME", HOME + "/.config"), "latteos", "goo", "kvapky")
 STATE = os.path.join(os.environ.get("XDG_STATE_HOME", HOME + "/.local/state"), "latteos", "goo", "stav.json")
+# inštancia enginu na vedľajšom monitore (iba GooBar) má vlastné uložené miesta: stav-<monitor>.json
+VEDLAJSI = re.sub(r"[^A-Za-z0-9_.-]", "", os.environ.get("LATTE_GOO_STAV", ""))
+if VEDLAJSI:
+    STATE = STATE[:-5] + "-" + VEDLAJSI + ".json"
 here = os.path.dirname(os.path.realpath(__file__))
 SHARE = os.environ.get("LATTE_GOO_DIR") or next(
     (d for d in ("/usr/share/latteos/goo", os.path.join(here, "..", "goo")) if os.path.isdir(d)), "/usr/share/latteos/goo")
@@ -350,6 +354,8 @@ def visible_windows():
     if isinstance(mons, list) and mons:
         # monitor, na ktorom engine beží (hlavný, ľavý horný roh 0,0 — ako latte-kvapky), nie práve zameraný
         m = next((x for x in mons if x.get("x") == 0 and x.get("y") == 0), mons[0])
+        meno = os.environ.get("LATTE_GOO_MONITOR", "")              # inštancia enginu na inom monitore (GooBar)
+        m = next((x for x in mons if meno and x.get("name") == meno), m)
         ws = (m.get("activeWorkspace") or {}).get("id")
         out = []
         for c in cmd("hyprctl", "-j", "clients") or []:
@@ -769,7 +775,7 @@ def main(a):
         try:
             import pwd
             x = v.get("goopower", {}).get("x")
-            if isinstance(x, (int, float)) and os.access(GREETER, os.W_OK):
+            if isinstance(x, (int, float)) and os.access(GREETER, os.W_OK) and not VEDLAJSI:
                 p = os.path.join(GREETER, "goo-%s.json" % pwd.getpwuid(os.getuid()).pw_name)
                 try:                                     # výťah píše aj latte-gooconfig (káva): doplniť, neprepísať
                     hint = json.load(open(p))

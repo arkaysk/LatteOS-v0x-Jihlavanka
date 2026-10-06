@@ -254,6 +254,16 @@ GooPower a pozadie zmizne. Klik na LoginGoo = Uspať · Reštartovať · Vypnú�
   (osirelé procesy účtu greetd) — po skúške ich treba ukončiť.
 - Skúšať treba v skutočnej relácii: v skrytom kompozitore (labwc headless) pleamar vykreslí iba prvú snímku.
 
+## GooBar na každom monitore
+
+Hlavný monitor (ľavý horný roh 0,0) má celú plochu so všetkými kvapkami. Každý ďalší monitor má **vlastnú inštanciu
+enginu** iba s GooBarom (`latte-kvapky` › `scene_up`: `LATTE_GOO_VEDLAJSI=1`, malá scéna `m32`, `--screen MENO`) —
+jedna inštancia na monitor, lebo kópie jednej scény majú v pleamare spoločný stav a na monitoroch s rôznym
+rozlíšením by boli polohy zle. Služba `window` nevie, na ktorom monitore okno je, preto GooBar páruje okná
+s `hyprctl clients` a berie iba tie zo svojho monitora (`E.monitorId`, `lib/goobar.luau` › `mark_hidden`). Vedľajšia
+inštancia má vlastné uložené miesta (`stav-<monitor>.json`) a log (`kvapky-<monitor>.log`); na príkazy odpovedá ako
+`goo-<pid>` (meno `goo` má hlavná). Vypnúť: `~/.config/latteos/goobar-monitory` s obsahom `off`.
+
 ## Počet miest podľa potreby
 
 Scéna počíta každú snímku všetky miesta pre kvapky, aj prázdne (pravidlá, pružiny, skladanie): 128 miest 42 % jadra,

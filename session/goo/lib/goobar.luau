@@ -90,6 +90,7 @@ end
 -- koľké okno s tou istou triedou a titulkom je okno i (Hyprland ho hľadá rovnako, latte/bars.lua)
 local function nth_of(i)
     local w, n = wins[i], 0
+    if w and w._nth then return w._nth end                 -- poradie medzi VŠETKÝMI oknami (wins sú iba z tohto monitora)
     for j = 1, i do
         local o = wins[j]
         if o and o.class == w.class and o.title == w.title then n = n + 1 end
@@ -303,25 +304,42 @@ function M.head_wheel(dir)
 end
 
 -- ── minimalizované okná (plocha special:minimized): priradenie cez triedu, titulok a poradie ─────────────────────
+-- Zoznam okien zo služby `window` nevie, na ktorom monitore okno je; vie to Hyprland. Preto sa `raw` (všetky okná)
+-- spáruje s `hyprctl clients` a do `wins` idú iba okná monitora tejto inštancie (E.monitorId; GooBar je na každom
+-- monitore so svojimi oknami, ako panel úloh Windows). Bez Hyprlandu alebo bez čísla monitora idú všetky.
+local raw = {}
 local function mark_hidden()
     run("hyprctl", { "-j", "clients" }, function(out)
         local ok, list = pcall(json.decode, out or "")
-        if not ok or type(list) ~= "table" then return end
-        local new, changed = {}, false
-        for i, w in ipairs(wins) do
-            local want, seen = nth_of(i), 0
+        if not ok or type(list) ~= "table" then
+            if #wins ~= #raw then wins = raw layout() end
+            return
+        end
+        local seen_raw, nw, nh = {}, {}, {}
+        for _, w in ipairs(raw) do
+            local key = (w.class or "") .. "\0" .. (w.title or "")
+            seen_raw[key] = (seen_raw[key] or 0) + 1
+            local want, seen, found = seen_raw[key], 0, nil
             for _, c in ipairs(list) do
                 if c.class == w.class and c.title == w.title then
                     seen = seen + 1
-                    if seen == want then
-                        new[i] = c.workspace and tostring(c.workspace.name or ""):find("^special:minimized") ~= nil
-                        break
-                    end
+                    if seen == want then found = c break end
                 end
             end
-            if (new[i] or false) ~= (hidden[i] or false) then changed = true end
+            local mon = found and tonumber(found.monitor)
+            -- okno, ktoré Hyprland (ešte) nepozná pod týmto titulkom, ukáže iba hlavný monitor — nie obe lišty
+            if E.monitorId == nil or mon == E.monitorId or (mon == nil and not E.vedlajsi) then
+                w._nth = want
+                nw[#nw + 1] = w
+                nh[#nw] = (found and found.workspace and tostring(found.workspace.name or ""):find("^special:minimized") ~= nil) or false
+            end
         end
-        hidden = new
+        local changed = #nw ~= #wins
+        for i, w in ipairs(nw) do
+            local o = wins[i]
+            if not o or o.id ~= w.id or o.title ~= w.title or o.active ~= w.active or (nh[i] or false) ~= (hidden[i] or false) then changed = true break end
+        end
+        wins, hidden = nw, nh
         if changed then layout() end
     end)
 end
@@ -349,7 +367,7 @@ end
 function M.start()
     sys.watch("apps", function(list) index_apps(list) layout() end)
     -- `window` dá zoznam iba cez wlr-foreign-toplevel (na Hyprlande so záplatou PLEAMAR_GENERIC=window)
-    local ok = sys.watch("window", function(v) wins = (v and v.list) or {} layout() end)
+    local ok = sys.watch("window", function(v) raw = (v and v.list) or {} mark_hidden() end)
     if not ok then log("goobar: tento systém nehlási okná") end
     read_mode()
     every(2000, function() read_mode() mark_hidden() end)

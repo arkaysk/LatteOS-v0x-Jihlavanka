@@ -1212,7 +1212,7 @@ every(600000, sky)
 local function potreba(used) return used <= 24 and 32 or (used <= 56 and 64 or 128) end
 local menej, ziadane = 0, false
 local function miesta()
-    if ziadane then return end
+    if ziadane or E.vedlajsi then return end                 -- vedľajší monitor má pevnú malú scénu
     local used = 0
     for k = 0, N - 1 do if slots[k] then used = used + 1 end end
     local chce = potreba(used)
@@ -1297,6 +1297,7 @@ end
 -- ── štart ────────────────────────────────────────────────────────────────────────────────────────────────────
 function E.start(opts)
     opts = opts or {}
+    E.vedlajsi, E.monitorId = opts.vedlajsi == true, opts.monitor_id   -- inštancia vedľajšieho monitora (iba GooBar)
     E.ladenie = opts.ladenie
     E.prva = opts.prva
     E.prvaKoniec = opts.prva_koniec

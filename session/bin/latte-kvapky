@@ -129,23 +129,60 @@ EOF2
     ( sleep 3; latte-theme noctalia ) >/dev/null 2>&1 &     # téma LatteOS je spoločná, stav Noctalie nie
 }
 
+# beží engine (scéna goo.plm) tohto účtu na danom monitore? (iba proces s menom pleamar, nie čokoľvek s tým textom)
+engine_bezi() {
+    local p
+    for p in $(pgrep -u "$(id -u)" -x pleamar); do
+        tr '\0' ' ' < "/proc/$p/cmdline" 2>/dev/null | grep -q -- "/goo\.plm .*--screen $1 " && return 0
+    done
+    return 1
+}
 scene_up() {
-    # iba VLASTNÝ pleamar: scéna prihlásenia beží pod účtom prihlasovača a pri jej dobiehaní (alebo osirelej kópii)
-    # sa engine po prihlásení nespustil — plocha ostala bez kvapiek (latte-lab 6. 10.)
-    pgrep -u "$(id -u)" -x pleamar >/dev/null && return
     [ -x "$pleamar" ] && [ -f "$scene" ] || { notify-send -a LatteOS "Kvapky" "chýba pleamar alebo scéna ($scene)"; return 1; }
-    # PLEAMAR_GENERIC=window: zoznam okien z wlr-foreign-toplevel, kurzor z Hyprlandu (resources/patches/pleamar-…)
-    local log="${XDG_STATE_HOME:-$HOME/.local/state}/latteos/kvapky.log"
-    [ -f "$log" ] && mv -f "$log" "$log.1"          # každý štart s čistým logom (predošlý ostáva ako .1)
-    # engine Goo: zatiaľ iba na hlavnom monitore. pleamar má pre všetky kópie scény jeden stav (šírku berie z poslednej),
-    # takže na druhom monitore s iným rozlíšením boli okraje a polohy zle. Vlastný GooBar pre každý monitor príde.
-    local mon=""
-    case "$scene" in */goo.plm)
-        mon=$(hyprctl -j monitors 2>/dev/null | python3 -c 'import json,sys
+    local dir="${XDG_STATE_HOME:-$HOME/.local/state}/latteos"
+    case "$scene" in
+    */goo.plm)
+        # Engine Goo: hlavný monitor (ľavý horný roh 0,0) má celú plochu so všetkými kvapkami; každý ďalší monitor má
+        # vlastnú inštanciu iba s GooBarom a oknami toho monitora (ako panel úloh Windows na druhej obrazovke).
+        # Jedna inštancia na monitor: pleamar má pre kópie jednej scény spoločný stav, takže by na monitoroch
+        # s rôznym rozlíšením boli polohy zle. Bez vedľajších lišt: ~/.config/latteos/goobar-monitory s obsahom „off“.
+        # PLEAMAR_GENERIC=window: zoznam okien z wlr-foreign-toplevel, kurzor z Hyprlandu (resources/patches/pleamar-…)
+        local mons hlavny meno id mala="$share/goo/m32/goo.plm" prvy=1
+        mons=$(hyprctl -j monitors 2>/dev/null | python3 -c 'import json, sys
 m = json.load(sys.stdin)
-print(next((x["name"] for x in m if x["x"] == 0 and x["y"] == 0), m[0]["name"]) if m else "")' 2>/dev/null) ;;
+m.sort(key=lambda x: (not (x["x"] == 0 and x["y"] == 0), x["x"], x["y"]))
+for x in m: print(x["name"], x["id"])' 2>/dev/null)
+        [ -f "$mala" ] || mala="$scene"
+        [ -n "$mons" ] || mons="- -"
+        echo "$mons" | while read -r meno id; do
+            if [ $prvy = 1 ]; then
+                prvy=0
+                if [ "$meno" = - ]; then                 # monitory sa nedali zistiť: jedna inštancia bez výberu
+                    pgrep -u "$(id -u)" -x pleamar >/dev/null && continue
+                    LATTE_VARIANT=kvapky PLEAMAR_GENERIC=window setsid -f "$pleamar" --scene "$scene" --no-hud >"$dir/kvapky.log" 2>&1
+                    continue
+                fi
+                engine_bezi "$meno" && continue
+                [ -f "$dir/kvapky.log" ] && mv -f "$dir/kvapky.log" "$dir/kvapky.log.1"   # predošlý log ostáva ako .1
+                LATTE_GOO_MONITOR="$meno" LATTE_GOO_MONITOR_ID="$id" LATTE_VARIANT=kvapky PLEAMAR_GENERIC=window \
+                    setsid -f "$pleamar" --scene "$scene" --no-hud --screen "$meno" >"$dir/kvapky.log" 2>&1
+                sleep 0.6                                # hlavná inštancia si prvá vezme meno „goo“ (pleamar --say goo)
+            else
+                [ "$(cat "${XDG_CONFIG_HOME:-$HOME/.config}/latteos/goobar-monitory" 2>/dev/null)" = off ] && continue
+                engine_bezi "$meno" && continue
+                LATTE_GOO_VEDLAJSI=1 LATTE_GOO_STAV="$meno" LATTE_GOO_MONITOR="$meno" LATTE_GOO_MONITOR_ID="$id" \
+                    LATTE_VARIANT=kvapky PLEAMAR_GENERIC=window \
+                    setsid -f "$pleamar" --scene "$mala" --no-hud --screen "$meno" >"$dir/kvapky-$meno.log" 2>&1
+            fi
+        done
+        ;;
+    *)
+        # iná scéna (na pokusy cez LATTE_KVAPKY_SCENE): jedna inštancia
+        pgrep -u "$(id -u)" -x pleamar >/dev/null && return
+        [ -f "$dir/kvapky.log" ] && mv -f "$dir/kvapky.log" "$dir/kvapky.log.1"
+        LATTE_VARIANT=kvapky PLEAMAR_GENERIC=window setsid -f "$pleamar" --scene "$scene" --no-hud >"$dir/kvapky.log" 2>&1
+        ;;
     esac
-    LATTE_VARIANT=kvapky PLEAMAR_GENERIC=window setsid -f "$pleamar" --scene "$scene" --no-hud ${mon:+--screen "$mon"} >"$log" 2>&1
 }
 
 case "${1:-}" in

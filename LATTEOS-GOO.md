@@ -143,6 +143,9 @@ Stredné tlačidlo nemá žiadna kvapka shellu. Ťahanie ľavým = presun (GooBa
 aplikácií). Veľkosť hlavy GooBaru je v Nastaveniach › Kvapky.
 
 ### 4.1 GooBar — lišta a správca okien
+
+Na každom ďalšom monitore je vlastný GooBar s oknami toho monitora (ako panel úloh Windows na druhej obrazovke);
+ostatné kvapky sú iba na hlavnom monitore.
 - **Hlava** (najväčšia kvapka) ukazuje režim okien: **páska** (ako niri — nič sa neminimalizuje), **dlaždice**,
   **plávajúce** (ako Windows).
 - **Ikry okien:** okná ako menšie kvapky s ikonou aplikácie; okná tej istej aplikácie sa zhlukujú do **strapcov**;
