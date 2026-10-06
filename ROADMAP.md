@@ -615,6 +615,12 @@ texty preložiteľné (`translations`). Noctalia beží bez lišty a robí, čo 
   cykly), SMART aj bez správcu (udisks2), testy kamery / reproduktorov / mikrofónu / ovládača (pravý klik aj tlačidlá
   v detaile), Správa pre podporu (súbor v Súboroch); firmvér ostáva v App Manageri › Aktualizácie (fwupd, bez duplikácie)
 - [ ] AI: streamovanie odpovede do bubliny po riadkoch; efektivita a model aj v Nastaveniach
+- [ ] **AI — viac poskytovateľov a prihlásenie výberom** (zadanie 6. 10.): pri prihlasovaní do AI menom a heslom
+  pridať viacerých poskytovateľov, najlepšie inak než dnes — **vyskakovacia ponuka**, kde sa vyberie Claude, Gemini,
+  ChatGPT, Grok, DeepSeek, Perplexity, Kimi a ďalšie bežne používané, a potom sa použije spôsob prihlásenia toho
+  poskytovateľa. **Tá istá ponuka pre API** (kľúč) — bohatý výber. Prihlásenia a nastavenia sa **ukladajú pre každého
+  poskytovateľa zvlášť**: prepnutie modelu alebo poskytovateľa nevyžaduje nové prihlásenie. **Prepínanie modelu
+  a poskytovateľa aj z vyskakovacieho okna** (AI karta LensGoo), nielen z Nastavení.
 - [ ] Ollama na CPU s malým modelom (3–4B) priamo v PC. Router lokálne/online podľa otázky.
 - [x] Text Bar: režimy (Lokálne, Súbory, Web, AI, Linux príkaz) a potvrdenie deštruktívnych príkazov (prvé slovo každej časti príkazu + vzory; otestované).
 
