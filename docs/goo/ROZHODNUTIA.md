@@ -7,6 +7,11 @@ Nové rozhodnutie: jeden riadok sem (dátum, čo, prečo) a oprava platného zne
 
 ## 6. 10. 2026
 
+- **Jeden dokument profilu používateľa** („pre každého používateľa existuje napríklad Arkay@gooconfig, kde sú
+  používateľské dáta: aké goo sú aktivované a kde sa nachádzajú, aký je skin goo a okien, aké widgety sú v Noctalii,
+  aká je tapeta… jeden dokument na rýchle načítanie prostredia“; „ďalší profil, okamžite“): prvá verzia
+  `latte-gooconfig` — dokument `~/.config/latteos/<účet>@gooconfig.json` držaný v zhode s nastaveniami oboma smermi.
+- **Optimalizácia enginu až neskôr**, keď pribudne viac funkcií; teraz iba meranie (výsledok v ROADMAP F3·G).
 - **Nový prihlasovač — začiatok práce** („začnime prihlasovaním“): skúšobná scéna podľa §6.2 (`login.plm`), zatiaľ
   nezapojená. Otvorené: výška hladiny; „správy“ pod hladinou.
 - **Prihlásenie = zámok nad všeobecnou reláciou.** Používateľ: „Zámok po automatickom prihlásení. Ale keďže môže byť

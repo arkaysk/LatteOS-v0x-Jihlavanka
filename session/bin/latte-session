@@ -161,6 +161,9 @@ clean_env
 profil=latteos
 [ "$LATTE_VARIANT" = noctalia ] && profil=noctalia
 latte-profil vstup "$profil"
+# jeden dokument profilu účtu (~/.config/latteos/<účet>@gooconfig.json): prinesený alebo ručne upravený sa pred
+# štartom plochy rozloží do nastavení, inak sa doplní o to, čo sa zmenilo
+[ "$LATTE_VARIANT" = kvapky ] && latte-gooconfig prihlasenie
 leave() { latte-profil odchod "$profil"; exit 0; }
 
 run_game() {

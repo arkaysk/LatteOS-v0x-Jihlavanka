@@ -588,8 +588,11 @@ def prihlasenie():
     try:
         goopower = json.load(open(STATE)).get("goopower", {}).get("x")
     except (OSError, ValueError, AttributeError):
-        try:                                             # prihlasovač: čo si plocha používateľa odložila (uloz-stav)
-            goopower = json.load(open(os.path.join(GREETER, "goo-%s.json" % login))).get("goopower")
+        try:                                             # prihlasovač: výťah z profilu účtu (latte-gooconfig, uloz-stav)
+            hint = json.load(open(os.path.join(GREETER, "goo-%s.json" % login)))
+            goopower = hint.get("goopower")
+            if hint.get("kava") in KAVY:                 # káva pri prihlásení je káva toho, kto sa prihlasuje
+                kava = list(KAVY[hint["kava"]])
         except (OSError, ValueError, AttributeError):
             pass
     # relácie na výber (vývojárska verzia): ako v doterajšom prihlasovači — LatteOS GOO, potom samostatné prostredia
@@ -752,8 +755,14 @@ def main(a):
             x = v.get("goopower", {}).get("x")
             if isinstance(x, (int, float)) and os.access(GREETER, os.W_OK):
                 p = os.path.join(GREETER, "goo-%s.json" % pwd.getpwuid(os.getuid()).pw_name)
+                try:                                     # výťah píše aj latte-gooconfig (káva): doplniť, neprepísať
+                    hint = json.load(open(p))
+                    assert isinstance(hint, dict)
+                except (OSError, ValueError, AssertionError):
+                    hint = {}
+                hint["goopower"] = x
                 with open(p + ".new", "w") as f:
-                    json.dump({"goopower": x}, f)
+                    json.dump(hint, f)
                 os.replace(p + ".new", p)
         except (OSError, KeyError, AttributeError):
             pass
