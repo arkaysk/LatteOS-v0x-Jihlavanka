@@ -295,6 +295,11 @@ a ukáže bublinu s názvom. Pri tvorbe doriešiť: obmedzenie pohybu, väčšie
 Technika: prihlasovač v pleamare (`kind: lock`, `input … secret`) by dal plynulý prechod LoginGoo → GooPower;
 treba rozhodnúť, čo je bezpečné ukázať pred prihlásením (RSS, upozornenia).
 
+**Stav 6. 10.:** prvá verzia scény je hotová na skúšku (`session/goo/login.plm`, `latte-goo login-skuska`), do
+prihlasovania zatiaľ nezapojená — čaká na rozhodnutie: zámok relácie po automatickom prihlásení, alebo skutočný
+prihlasovač pod greetd (podrobnosti v [session/goo/README.md](session/goo/README.md) › Prihlásenie). Hladina je
+v 2/3 výšky obrazovky (rovina „klesne“ zo stredu), pod ňou tretina obrazovky kávy.
+
 ### 6.3 Obchod podľa ZimaOS (App Manager)
 Vľavo stály panel — hľadanie, Moje aplikácie, **kategórie ako zoznam** (Objavte, Všetko, Médiá, Produktivita,
 Domácnosť, Sieť, AI, Financie, Sociálne, Vývojár, Ostatné) a **komunitné obchody** (zdroje tretích strán, napr.

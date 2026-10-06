@@ -211,6 +211,24 @@ načíta sám. Príkazy, ktoré modul spúšťa cez `run`, musia byť v `permiss
   a meno do `EFEKTY` v `lib/engine.luau`.
 - **V logike** (zriedkavé zmeny): kanály `d:rezerva(1…4, hodnota)`, scéna ich vyhladí pružinou.
 
+## Prihlásenie (`login.plm`, `login.luau`) — prvá verzia, skúšobná
+
+Scéna podľa LATTEOS-GOO.md §6.2: šálka z úvodnej obrazovky → kvapka vyskočí doprostred → odvalí sa ~5 cm doľava
+a nechá riadok (LoginGoo s ikonou Power · meno · heslo · šípka) → rovina klesne k hladine (káva v spodnej tretine,
+z boku ako vodná hladina) → pod hladinou výpis posledného pádu, inak novinky z RSS → hodiny vpravo hore → po minúte
+nečinnosti sa vynoria informačné goo (batéria, úlohy; neklikateľné) → po správnom hesle LoginGoo spadne na miesto
+GooPower a pozadie zmizne. Klik na LoginGoo = Uspať · Reštartovať · Vypnúť.
+
+- **Skúška:** `latte-goo login-skuska [sekundy]` — nad bežiacou plochou, heslo „latte“ sedí, iné nie, nič sa nemení
+  a scéna sama skončí (predvolene po 40 s). Odkryť goo bez čakania: `pleamar --say login "emit e_hra"`.
+- **Údaje:** `latte-goo prihlasenie` (meno, káva, pád / novinky, info, znaky ikon, miesto GooPower).
+- **Režim** podľa `LATTE_LOGIN`: `skuska` (predvolené), `zamok` (heslo overí systém cez `auth.check`).
+- **Nezapojené:** do skutočného prihlasovania sa scéna zapojí až po rozhodnutí o spôsobe — zámok relácie po
+  automatickom prihlásení (`kind: lock`, plynulý prechod do GooPower, údaje používateľa pred heslom) alebo skutočný
+  prihlasovač pod greetd (bez údajov používateľa, s prestrihom pri štarte plochy). Otvorené je aj, kde bude výber
+  prostredia (Marea, Noctalia, Serpantinum) a čo sú „správy“ pod hladinou.
+- Skúšať treba v skutočnej relácii: v skrytom kompozitore (labwc headless) pleamar vykreslí iba prvú snímku.
+
 ## Ďalej (z pravidiel plochy, zatiaľ nie v engine)
 
 - Dážď a vietor podľa počasia pri nečinnosti (LATTEOS-GOO.md, nečinnosť stupeň 2). Ostatné otvorené úlohy enginu

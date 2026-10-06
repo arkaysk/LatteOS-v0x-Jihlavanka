@@ -7,6 +7,8 @@ Nové rozhodnutie: jeden riadok sem (dátum, čo, prečo) a oprava platného zne
 
 ## 6. 10. 2026
 
+- **Nový prihlasovač — začiatok práce** („začnime prihlasovaním“): skúšobná scéna podľa §6.2 (`login.plm`), zatiaľ
+  nezapojená. Otvorené: zámok relácie alebo prihlasovač pod greetd; výška hladiny; výber prostredia; „správy“.
 - **Nasadzuje sa iba engine Goo.** Pôvodná plocha Kvapky (`session/kvapky`) sa na systém už nenasadzuje.
 - **Ponuka prihlásenia:** ostáva najnovší **LatteOS GOO** (engine Goo, predvolená relácia `latte-session`) a samostatné
   prostredia **Marea** (treba ju opraviť), **Serpantinum** a **Noctalia (čistá)**. Položky Classic, Kvapky, „engine
