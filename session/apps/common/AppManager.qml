@@ -35,7 +35,21 @@ Item {
     property var downloads: []
     property string busyId: ""
     // obchod (Flathub API cez latte-apps store)
+    I18n { id: i18n }
     property var store: null
+    // obchod podľa ZimaOS (LATTEOS-GOO.md §6.3): kategórie ako zoznam v ľavom paneli (kategórie a podkategórie Flathubu;
+    // „hladaj:“ = hľadanie, kde Flathub kategóriu nemá) a komunitné obchody (kurátorské výbery Bluefin, Bazzite)
+    readonly property var storeCats: [["game", "Games", "device-gamepad-2"], ["audiovideo", "Media", "movie"],
+        ["office", "Productivity", "briefcase"], ["network", "Internet", "world"], ["network/Chat", "Social", "message-circle"],
+        ["hladaj:AI chat", "AI", "robot"], ["office/Finance", "Finance", "coin"], ["graphics", "Graphics", "palette"],
+        ["development", "Developer", "code"], ["education", "Education", "school"], ["science", "Science", "flask"],
+        ["system", "System", "settings"], ["utility", "Tools", "tool"]]
+    property string shop: ""                 // otvorený komunitný obchod (zdroj kurátorského výberu)
+    readonly property var shops: { const s = []; for (const k of kurator) if (s.indexOf(k.source) < 0) s.push(k.source); return s; }
+    function openShop(name, rec) {
+        if (rec !== false) push({ section: "objavovat", shop: name });
+        section = "objavovat"; appPage = null; appPageId = ""; category = ""; header.searchText = ""; shop = name; content.contentY = 0;
+    }
     property string category: ""
     property string categoryName: ""
     property var categoryApps: []
@@ -197,6 +211,7 @@ Item {
     function restore(st) {
         if (st.app) openApp(st.app, false);
         else if (st.cat) openCategory(st.cat, st.catName, 1, false);
+        else if (st.shop) openShop(st.shop, false);
         else { go(st.section, false); if (st.section === "objavovat") storeHome(false); }
     }
     function back() { if (historyIndex > 0) { historyIndex--; restore(history[historyIndex]); } }
@@ -210,11 +225,11 @@ Item {
     }
     function openCategory(key, name, page, rec) {
         if (rec !== false && (page || 1) === 1) push({ section: "objavovat", cat: key, catName: name });
-        category = key; categoryName = name; categoryPage = page || 1; appPage = null; if (categoryPage === 1) categoryApps = [];
+        category = key; categoryName = name; categoryPage = page || 1; appPage = null; shop = ""; section = "objavovat"; appPageId = ""; if (categoryPage === 1) categoryApps = [];
         catProc.command = ["latte-apps", "store", "category", key, String(categoryPage)]; catProc.running = true;
         if (categoryPage === 1) content.contentY = 0;
     }
-    function storeHome(rec) { if (rec !== false) push({ section: "objavovat" }); appPage = null; appPageId = ""; category = ""; header.searchText = ""; content.contentY = 0; }
+    function storeHome(rec) { if (rec !== false) push({ section: "objavovat" }); appPage = null; appPageId = ""; category = ""; shop = ""; header.searchText = ""; content.contentY = 0; }
     function fmtCount(n) { return n >= 1000000 ? (n / 1000000).toFixed(1).replace(".", ",") + " mil." : (n >= 1000 ? Math.round(n / 1000) + " tis." : String(n)); }
     function runFlatpak(id) { run(["sh", "-c", "setsid flatpak run \"$1\" >/dev/null 2>&1 &", "sh", id], "Spúšťam " + id); }
     function check(p) { checkPath = p; verdict = null; checkProc.command = ["latte-apps", "check", p]; checkProc.running = true; }
@@ -247,19 +262,29 @@ Item {
             visible: !app.embedded; width: app.embedded ? 0 : 250
             anchors { left: parent.left; top: parent.top; bottom: parent.bottom }
             heading: "Aplikácie"; headingGlyph: "apps"
-            current: app.section
+            current: app.section !== "objavovat" ? app.section
+                     : (app.appPageId === "" && app.query === "" && app.category !== "" ? "kat:" + app.category
+                        : (app.appPageId === "" && app.query === "" && app.shop !== "" ? "obchod:" + app.shop : "objavovat"))
             model: [
                 { title: "App Manager", items: [
-                    { key: "objavovat", glyph: "search", label: "Obchod", sub: "Flathub, Fedora, výber LatteOS" },
+                    { key: "objavovat", glyph: "compass", label: i18n.tr("Discover"), sub: "Flathub, Fedora" },
                     { key: "aktualizacie", glyph: "refresh", label: "Aktualizácie", sub: app.updatesLoading ? "zisťujem…" : (app.updatesList.length ? app.updatesList.length + " dostupných" : "skontrolovať") },
-                    { key: "nainstalovane", glyph: "apps", label: "Nainštalované", sub: app.installedApps.length + " aplikácií" },
+                    { key: "nainstalovane", glyph: "apps", label: i18n.tr("My apps"), sub: app.installedApps.length + " aplikácií" },
                     { key: "opravnenia", glyph: "shield", label: "Oprávnenia a NET", sub: "internet, súbory, zariadenia" }
                 ] },
+                { title: i18n.tr("Categories"), items: app.storeCats.map(c => ({ key: "kat:" + c[0], glyph: c[2], label: i18n.tr(c[1]) })) },
+                { title: i18n.tr("Community stores"), items: app.shops.map(s => ({ key: "obchod:" + s, glyph: "building-store", label: s, sub: i18n.tr("curated picks, kept up to date by them") })) },
                 { title: "Inštalácia súboru", items: [
                     { key: "check", glyph: "help", label: "Bude to fungovať?", sub: "zložka, CD, .zip .rar .exe .rpm .AppImage" }
                 ] }
             ]
-            onActivated: (it) => app.go(it.key)
+            onActivated: (it) => {
+                const k = String(it.key);
+                if (k.startsWith("kat:hladaj:")) { app.storeHome(); header.searchText = k.slice(11); }
+                else if (k.startsWith("kat:")) app.openCategory(k.slice(4), it.label, 1);
+                else if (k.startsWith("obchod:")) app.openShop(k.slice(7));
+                else { app.go(k); if (k === "objavovat") app.storeHome(false); }
+            }
         }
 
         HeaderBar {
@@ -268,7 +293,7 @@ Item {
             appId: "latteos-aplikacie"
             windowControls: !app.embedded; netVisible: !app.embedded
             anchors { left: side.right; right: parent.right; top: parent.top }
-            title: ({ objavovat: app.appPage ? app.appPage.name : (app.category ? app.categoryName : "Obchod"), aktualizacie: "Aktualizácie", nainstalovane: "Nainštalované", opravnenia: "Oprávnenia a NET", check: "Bude to fungovať?" })[app.section] || ""
+            title: ({ objavovat: app.appPage ? app.appPage.name : (app.category ? app.categoryName : (app.shop ? app.shop : "Obchod")), aktualizacie: "Aktualizácie", nainstalovane: "Nainštalované", opravnenia: "Oprávnenia a NET", check: "Bude to fungovať?" })[app.section] || ""
             canBack: app.historyIndex > 0
             canForward: app.historyIndex < app.history.length - 1
             onBack: app.back()
@@ -551,6 +576,50 @@ Item {
             }
         }
     }
+    // veľká karta (Trendy, Nové — obchod podľa ZimaOS): veľká ikona, názov, slogan, vývojár a tlačidlo
+    component BigCard: Rectangle {
+        id: bc
+        required property var info
+        height: 132; radius: 18
+        color: bm.containsMouse ? theme.hover : theme.field
+        border { color: bm.containsMouse ? Qt.rgba(theme.primary.r, theme.primary.g, theme.primary.b, 0.5) : "transparent"; width: 1 }
+        MouseArea { id: bm; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: app.openApp(bc.info.id) }
+        Rectangle {
+            id: bIc; x: 16; anchors.verticalCenter: parent.verticalCenter; width: 84; height: 84; radius: 20; color: "transparent"; clip: true
+            Image { id: bImg; anchors.fill: parent; source: bc.info.icon || ""; asynchronous: true; fillMode: Image.PreserveAspectFit; sourceSize { width: 168; height: 168 } }
+            Glyph { anchors.centerIn: parent; visible: bImg.status !== Image.Ready; name: "package"; size: 40; color: theme.primary }
+        }
+        Column {
+            x: 114; y: 16; width: parent.width - 130; spacing: 3
+            Text { width: parent.width; elide: Text.ElideRight; text: bc.info.name; color: theme.fg; font { family: theme.fontUi; pixelSize: 17; weight: Font.Bold } }
+            Text { width: parent.width; wrapMode: Text.WordWrap; maximumLineCount: 2; elide: Text.ElideRight; text: bc.info.summary || ""
+                   color: theme.fgDim; font { family: theme.fontUi; pixelSize: 12 } }
+        }
+        Row {
+            x: 114; anchors { bottom: parent.bottom; bottomMargin: 14 } spacing: 10
+            Pill {
+                readonly property bool has: !!bc.info.installed || app.isInstalled(bc.info.id)
+                height: 28; primaryStyle: !has; on: app.busyId === ""
+                label: app.busyId === bc.info.id ? i18n.tr("Installing…") : (has ? i18n.tr("Open") : i18n.tr("Install"))
+                onClicked: has ? app.runFlatpak(bc.info.id) : app.install("flatpak", bc.info.id, bc.info.name)
+            }
+            Text { anchors.verticalCenter: parent.verticalCenter; visible: (bc.info.ratingCount || 0) >= 3
+                   text: "★ " + String(bc.info.rating || 0).replace(".", ","); color: theme.fgDim; font { family: theme.fontUi; pixelSize: 11 } }
+            Text { anchors.verticalCenter: parent.verticalCenter; visible: !!bc.info.verified; text: "✔"; color: theme.primary; font { family: theme.fontUi; pixelSize: 11; weight: Font.Bold } }
+        }
+    }
+    component BigShelf: Column {
+        id: bs
+        property string title; property var items: []
+        width: parent ? parent.width : 600; spacing: 10; visible: items.length > 0
+        Heading { text: bs.title.toUpperCase(); topPadding: 6 }
+        Flow {
+            width: parent.width; spacing: 12
+            Repeater { model: bs.items
+                       BigCard { required property var modelData; info: modelData
+                                 width: Math.floor((bs.width - 24) / (bs.width > 760 ? 3 : 2)) } }
+        }
+    }
     component Shelf: Column {
         id: shelf
         property string title; property var items: []
@@ -733,47 +802,86 @@ Item {
                 Pill { visible: app.categoryApps.length >= 48 * app.categoryPage; label: "Ďalšie"; onClicked: app.openCategory(app.category, app.categoryName, app.categoryPage + 1) }
             }
 
-            // ── úvod obchodu ────────────────────────────────────────────────────
+            // ── komunitný obchod: kurátorský výber, ktorý spravujú iní (zdroj v ľavom paneli) ──
             Column {
-                visible: app.appPageId === "" && app.query === "" && app.category === ""
+                visible: app.appPageId === "" && app.query === "" && app.category === "" && app.shop !== ""
+                width: parent.width; spacing: 16
+                Text { width: parent.width; wrapMode: Text.WordWrap; color: theme.fgDim; font { family: theme.fontUi; pixelSize: 12 }
+                       text: i18n.tr("Picks chosen and kept up to date by the makers of this system; the apps come from Flathub.") }
+                Repeater {
+                    model: app.kurator.filter(k => k.source === app.shop)
+                    Shelf { required property var modelData; title: modelData.title; items: modelData.apps }
+                }
+            }
+
+            // ── úvod obchodu (podľa ZimaOS): kolotoč bannerov, potom Trendy a Nové ako veľké karty ──
+            Column {
+                visible: app.appPageId === "" && app.query === "" && app.category === "" && app.shop === ""
                 width: parent.width; spacing: 16
                 Text { visible: !app.store; text: "Načítavam obchod z Flathubu…"; color: theme.primary; font { family: theme.fontUi; pixelSize: 13 } }
                 Text { visible: !!app.store && !!app.store.error; text: "Obchod sa nenačítal (bez internetu?). Výber LatteOS nižšie funguje."; color: theme.error; font { family: theme.fontUi; pixelSize: 13 } }
-                // banner: trendová aplikácia so snímkou
-                Rectangle {
-                    readonly property var b: app.store ? app.store.banner : null
-                    visible: !!b; width: parent.width; height: 230; radius: 20; clip: true; color: theme.field
-                    Image { anchors.fill: parent; source: parent.b ? parent.b.screenshot : ""; fillMode: Image.PreserveAspectCrop; asynchronous: true; opacity: 0.9 }
-                    Rectangle { anchors.fill: parent; gradient: Gradient { orientation: Gradient.Horizontal
-                        GradientStop { position: 0.0; color: Qt.rgba(theme.surface.r, theme.surface.g, theme.surface.b, 0.97) }
-                        GradientStop { position: 0.55; color: Qt.rgba(theme.surface.r, theme.surface.g, theme.surface.b, 0.75) }
-                        GradientStop { position: 1.0; color: "transparent" } } }
-                    Column {
-                        x: 26; anchors.verticalCenter: parent.verticalCenter; width: parent.width * 0.5; spacing: 8
-                        Text { text: "TRENDY TENTO TÝŽDEŇ"; color: theme.primary; font { family: theme.fontUi; pixelSize: 11; weight: Font.Bold; letterSpacing: 1 } }
-                        Text { text: parent.parent.b ? parent.parent.b.name : ""; color: theme.fg; font { family: theme.fontDisplay; pixelSize: 30; weight: Font.DemiBold } }
-                        Text { width: parent.width; wrapMode: Text.WordWrap; maximumLineCount: 3; elide: Text.ElideRight
-                               text: parent.parent.b ? parent.parent.b.summary : ""; color: theme.fg; font { family: theme.fontUi; pixelSize: 14 } }
-                        Pill { label: "Zobraziť"; primaryStyle: true; onClicked: app.openApp(parent.parent.b.id) }
+                // kolotoč: dva bannery naraz (snímka, ikona, názov, slogan); posúva sa sám, myš nad ním ho zastaví
+                Item {
+                    id: kolotoc
+                    readonly property var items: app.store && app.store.bannery ? app.store.bannery : []
+                    readonly property real bw: (width - 14) / 2
+                    visible: items.length > 0; width: parent.width; height: 250
+                    ListView {
+                        id: pas; anchors.fill: parent; orientation: ListView.Horizontal; spacing: 14; clip: true
+                        model: kolotoc.items; snapMode: ListView.SnapToItem; boundsBehavior: Flickable.StopAtBounds
+                        highlightMoveDuration: 520; highlightRangeMode: ListView.StrictlyEnforceRange
+                        preferredHighlightBegin: 0; preferredHighlightEnd: kolotoc.bw
+                        delegate: Rectangle {
+                            id: ban
+                            required property var modelData
+                            width: kolotoc.bw; height: pas.height; radius: 20; clip: true; color: theme.field
+                            Image { anchors.fill: parent; source: ban.modelData.screenshot || ""; fillMode: Image.PreserveAspectCrop
+                                    verticalAlignment: Image.AlignTop; asynchronous: true; sourceSize.width: 900 }
+                            Rectangle { anchors.fill: parent; gradient: Gradient {
+                                GradientStop { position: 0.0; color: "transparent" }
+                                GradientStop { position: 0.45; color: Qt.rgba(theme.surface.r, theme.surface.g, theme.surface.b, 0.35) }
+                                GradientStop { position: 1.0; color: Qt.rgba(theme.surface.r, theme.surface.g, theme.surface.b, 0.97) } } }
+                            Row {
+                                anchors { left: parent.left; right: parent.right; bottom: parent.bottom; margins: 18 } spacing: 14
+                                Rectangle { width: 60; height: 60; radius: 15; color: Qt.rgba(theme.surface.r, theme.surface.g, theme.surface.b, 0.85); clip: true
+                                            Image { anchors { fill: parent; margins: 6 } source: ban.modelData.icon || ""; asynchronous: true; fillMode: Image.PreserveAspectFit; sourceSize { width: 120; height: 120 } } }
+                                Column {
+                                    width: parent.width - 74; anchors.verticalCenter: parent.verticalCenter; spacing: 2
+                                    Text { width: parent.width; elide: Text.ElideRight; text: ban.modelData.name; color: theme.fg; font { family: theme.fontDisplay; pixelSize: 22; weight: Font.DemiBold } }
+                                    Text { width: parent.width; elide: Text.ElideRight; text: ban.modelData.summary || ""; color: theme.fg; font { family: theme.fontUi; pixelSize: 13 } }
+                                }
+                            }
+                            MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: app.openApp(ban.modelData.id) }
+                        }
                     }
-                }
-                // kategórie
-                Flow {
-                    width: parent.width; spacing: 8
+                    HoverHandler { id: nadKolotocom }
+                    Timer { interval: 6000; repeat: true; running: kolotoc.visible && !nadKolotocom.hovered && kolotoc.items.length > 2
+                            onTriggered: pas.currentIndex = (pas.currentIndex + 1) % Math.max(1, kolotoc.items.length - 1) }
+                    // šípky (pri myši) a bodky
                     Repeater {
-                        model: app.categories
-                        Pill { required property var modelData; label: modelData[1]; onClicked: app.openCategory(modelData[0], modelData[1], 1) }
+                        model: [-1, 1]
+                        Rectangle {
+                            required property int modelData
+                            visible: nadKolotocom.hovered && kolotoc.items.length > 2
+                            x: modelData < 0 ? 10 : kolotoc.width - width - 10; anchors.verticalCenter: parent.verticalCenter
+                            width: 38; height: 38; radius: 19; color: Qt.rgba(theme.surface.r, theme.surface.g, theme.surface.b, 0.9)
+                            Glyph { anchors.centerIn: parent; name: parent.modelData < 0 ? "chevron-left" : "chevron-right"; size: 20; color: theme.fg }
+                            MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor
+                                        onClicked: pas.currentIndex = Math.max(0, Math.min(kolotoc.items.length - 2, pas.currentIndex + parent.modelData)) }
+                        }
+                    }
+                    Row {
+                        anchors { horizontalCenter: parent.horizontalCenter; bottom: parent.bottom; bottomMargin: 6 } spacing: 6
+                        Repeater { model: Math.max(0, kolotoc.items.length - 1)
+                                   Rectangle { required property int index; width: index === pas.currentIndex ? 16 : 6; height: 6; radius: 3
+                                               color: index === pas.currentIndex ? theme.primary : Qt.rgba(theme.fg.r, theme.fg.g, theme.fg.b, 0.35)
+                                               Behavior on width { NumberAnimation { duration: 180 } } } }
                     }
                 }
-                Shelf { title: "Trendy"; items: app.store && app.store.trendy ? app.store.trendy : [] }
+                BigShelf { title: i18n.tr("Trending now"); items: app.store && app.store.trendy ? app.store.trendy.slice(0, 6) : [] }
+                BigShelf { title: i18n.tr("New arrivals"); items: app.store && app.store.nove ? app.store.nove.slice(0, 6) : [] }
                 Shelf { title: "Obľúbené"; items: app.store && app.store.oblubene ? app.store.oblubene : [] }
-                Shelf { title: "Nové na Flathube"; items: app.store && app.store.nove ? app.store.nove : [] }
                 Shelf { title: "Nedávno aktualizované"; items: app.store && app.store.aktualizovane ? app.store.aktualizovane : [] }
-                // kurátorský výber, ktorý spravujú a priebežne aktualizujú iní (Bluefin, Bazzite); zdroj je v nadpise
-                Repeater {
-                    model: app.kurator
-                    Shelf { required property var modelData; title: modelData.title + "  ·  vybral " + modelData.source; items: modelData.apps }
-                }
                 // záloha bez internetu (kým sa kurátorský výber nenačíta prvý raz)
                 Repeater {
                     model: app.kurator.length ? [] : app.picks
