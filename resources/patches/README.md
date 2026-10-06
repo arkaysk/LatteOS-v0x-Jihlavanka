@@ -100,6 +100,10 @@ a pravé tlačidlo má pre akcie. Scény enginu, prihlásenia, zámku aj pôvodn
 záťaž enginu na latte-lab rovnaká ako na v0.2.6 (CPU 43 % jadra, GPU 53 % so zapnutým pásom výkonu), pamäť nižšia
 (150 MB oproti 174 MB).
 
+Pôvodná Marea (`setup/lab/marea-povodna.sh`, 6. 10.): pleamar 0.2.24, **pleamar-wm 0.2.25**, marea-plm `6cfd438` —
+`pleamar-wm-linearny-buffer` aj `pleamar-linearny-dmabuf` sedia bez úprav; na latte-lab relácia s pleamar-wm kreslí
+na oba monitory (prihlásenie do nej cez goo výberu relácie overené).
+
 ## noctalia-rohova-lista.patch (Noctalia pre plochu Kvapky, setup/lab/noctalia-kvapky.sh)
 
 Rohová lišta Noctalie vpravo dole (1. 10. 2026): k súmernému `margin_ends` voliteľné `margin_start` a `margin_end`

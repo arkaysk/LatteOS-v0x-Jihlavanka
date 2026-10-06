@@ -467,6 +467,7 @@ texty preložiteľné (`translations`). Noctalia beží bez lišty a robí, čo 
 - [ ] Vlastné `app_id` pre aplikácie LatteOS (dnes podľa titulku) a spúšťače LatteOS preložiteľné (`Name=` anglicky
       + `Name[sk]=`; dnes natvrdo po slovensky, rovnako titulky okien)
 - [ ] Slovenský preklad Noctalie doplniť (ovládacie centrum čiastočne po anglicky) a poslať upstream
+- [x] pleamar v0.2.24 a pôvodná Marea (pleamar-wm 0.2.25) — 6. 10.: záplaty prenesené, overené na latte-lab
 - [ ] Záplaty pleamaru poslať autorovi (okná na Hyprlande, 8-bit plocha, ťahanie pravým, ikony)
 
 ### F4 — Systémové služby (Rust)
