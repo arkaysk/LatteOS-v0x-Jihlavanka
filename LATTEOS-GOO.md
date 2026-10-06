@@ -334,6 +334,11 @@ Domácnosť, Sieť, AI, Financie, Sociálne, Vývojár, Ostatné) a **komunitné
 kurátorské výbery Bluefin a Bazzite); vpravo veľký **kolotoč bannerov** (dva naraz, snímka, ikona, názov, slogan),
 pod ním **Trending Now** a **New Arrivals** ako veľké karty. Údaje sú (Flathub: snímky, ikony, popisy).
 
+**Stav 6. 10.: vytvorené** v App Manageri (`session/apps/common/AppManager.qml`, `latte-apps store`): kategórie
+a komunitné obchody (Bluefin, Bazzite) ako zoznam v ľavom paneli, kolotoč dvoch bannerov, „Práve letí“ a „Nové
+prírastky“ ako veľké karty s tlačidlom Inštalovať. Hľadanie ostalo v hlavičke okna; Domácnosť Flathub ako kategóriu
+nemá (AI je hľadanie, Financie a Sociálne sú podkategórie Flathubu).
+
 ---
 
 ## 7. Kde čo je (pre Clauda)

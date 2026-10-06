@@ -7,6 +7,15 @@ Text {
     property real size: 18
     readonly property var map: ({
         "logout": 0xEBA8,
+        "briefcase": 0xEA46,                 // obchod: kategórie v ľavom paneli (AppManager)
+        "message-circle": 0xEAED,
+        "robot": 0xF00B,
+        "coin": 0xEB82,
+        "code": 0xEA77,
+        "school": 0xECF7,
+        "flask": 0xEBD2,
+        "compass": 0xEA79,
+        "building-store": 0xEA4E,
         "cut": 0xEA86,              // ponuka úprav textu (LTextInput)
         "arrow-back-up": 0xEB77,
         "arrow-forward-up": 0xEB78,

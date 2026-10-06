@@ -1071,17 +1071,33 @@ def store(a):
                           ("nove", "/collection/recently-added"), ("aktualizovane", "/collection/recently-updated")):
             d = fh(path + "?page=1&per_page=16") or {}
             out[key] = [card(h, inst) for h in d.get("hits", []) if h.get("type", "desktop-application") == "desktop-application"]
-        # úvodný banner: prvá trendová aplikácia so snímkou obrazovky
-        for c in out.get("trendy", [])[:6]:
+        # kolotoč bannerov (obchod podľa ZimaOS: dva naraz — snímka, ikona, názov, slogan): trendové a obľúbené
+        # aplikácie so snímkou obrazovky, striedavo; `banner` (prvý z nich) ostáva pre staršie okno
+        bannery, videne = [], set()
+        for c in [x for dvojica in zip(out.get("trendy", [])[:8], out.get("oblubene", [])[:8]) for x in dvojica]:
+            if c["id"] in videne:
+                continue
+            videne.add(c["id"])
             det = fh("/appstream/" + c["id"], ttl=24 * 3600) or {}
             shot = shots(det)
             if shot:
-                out["banner"] = dict(c, screenshot=shot[0], description=plain(det.get("description", ""))[:260])
+                bannery.append(dict(c, screenshot=shot[0], description=plain(det.get("description", ""))[:260]))
+            if len(bannery) >= 6:
                 break
+        out["bannery"] = bannery
+        if bannery:
+            out["banner"] = bannery[0]
         return out
     if a[0] == "category" and len(a) > 1:
         page = a[2] if len(a) > 2 else "1"
-        d = fh("/collection/category/%s?page=%s&per_page=48" % (a[1], page)) or {}
+        # „kategória/Podkategória“ (napr. office/Finance, network/Chat): zoznam podkategórie Flathubu
+        kat, _, pod = a[1].partition("/")
+        if pod:
+            import urllib.parse
+            d = fh("/collection/category/%s/subcategories?subcategory=%s&page=%s&per_page=48"
+                   % (kat, urllib.parse.quote(pod), page)) or {}
+        else:
+            d = fh("/collection/category/%s?page=%s&per_page=48" % (kat, page)) or {}
         return {"apps": [card(h, inst) for h in d.get("hits", [])], "pages": d.get("totalPages", 1)}
     if a[0] == "search" and len(a) > 1:
         q = " ".join(a[1:])

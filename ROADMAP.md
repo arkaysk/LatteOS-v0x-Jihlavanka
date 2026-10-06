@@ -403,7 +403,9 @@ texty preložiteľné (`translations`). Noctalia beží bez lišty a robí, čo 
   bublinu s názvom. Overené skutočnými klávesmi na latte-lab.
 - [ ] Prístupnosť — zvyšok: obmedzenie pohybu, väčšie písmo a kontrast, čítanie názvov nahlas; režim aj na
   vedľajšom monitore; ovládanie gamepadom na tomto základe — **odložené na neskôr** (6. 10.)
-- [ ] Obchod podľa ZimaOS v App Manageri (LATTEOS-GOO.md §6.3)
+- [x] Obchod podľa ZimaOS v App Manageri (LATTEOS-GOO.md §6.3), 6. 10.: kategórie a komunitné obchody v ľavom paneli,
+  kolotoč dvoch bannerov, veľké karty Práve letí a Nové prírastky. Overené na latte-lab (úvod, Financie, Bluefin, AI).
+- [ ] Obchod — zvyšok: hľadanie v ľavom paneli, kategória Domácnosť, inštalácia priamo z veľkej karty neoverená
 - [ ] Systémový backend: balíky (`gvfs-mtp`, `gvfs-smb`, CUPS, SANE, BlueZ zapnúť) a zapojenie do Správcu zariadení
   a Súborov (LATTEOS-GOO.md §5)
 - [ ] Nové kvapky: ClipGoo, MediaGoo, PassGoo, CastGoo (LATTEOS-GOO.md §4.11)
