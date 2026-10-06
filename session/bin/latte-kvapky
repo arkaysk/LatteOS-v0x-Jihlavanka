@@ -141,13 +141,15 @@ case "${1:-}" in
     start)
         mkdir -p "${XDG_STATE_HOME:-$HOME/.local/state}/latteos"
         gaps "$(side)"
+        # kvapky ako prvé: po prihlásení nadväzujú na jeho posledný obraz (LoginGoo na mieste GooPower na espresso
+        # pozadí), tapeta príde pod ne
+        scene_up
         latte-tapety obnov --bez-shellu
         pgrep -f "wl-paste --type text --watch latte-kapsa-store" >/dev/null || setsid -f wl-paste --type text --watch latte-kapsa-store
         pgrep -f "wl-paste --type image --watch latte-kapsa-store" >/dev/null || setsid -f wl-paste --type image --watch latte-kapsa-store
         start_app spustac
         start_app ponuka
         start_app pohoda                        # well-being: čas v aplikáciách (skrytá, na pozadí)
-        scene_up
         noctalia_up
         ;;
     skusit)
