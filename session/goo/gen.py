@@ -2,7 +2,8 @@
 """gen.py — engine Goo: rozpíše to, čo jazyk pleamar 0.2 nedovolí v cykle, a zoznam modulov kvapiek.
 
   1. telo goo.plm (medzi // >>> telo (gen.py) a // <<< telo): pre každé miesto k kvapka a jej krk
-     (`repeat` vnútri `body` jazyk zatiaľ nemá — keď ho pleamar dostane, tento krok odpadne)
+     (`repeat` vnútri `body` jazyk zatiaľ nemá — keď ho pleamar dostane, tento krok odpadne); a poloha kvapky, ktorá
+     nesie pás výkonu (// >>> pás výkonu): jazyk nemá index na menách, preto pick() cez všetky miesta
   2. kvapky/zoznam.luau: mená všetkých modulov v kvapky/*.luau (Luau nevie čítať priečinok; `require` potrebuje meno)
 
 Spúšťa sa po pridaní kvapky programátora (nový súbor v kvapky/) alebo po zmene počtu miest (N; v goo.plm prepíše `max N` aj `repeat k in 0..N`).
@@ -28,9 +29,31 @@ def slot(k):
         f"        line {{ from: wax.{k}, way.{k}; to: wbx.{k}, wby.{k}; width: wa.{k} * 2; blend: 16 }}\n",
         f"        ellipse {{ at: x.{k}, y.{k}; radius: rr.{k}; scale: 1 + fxw.{k}, 1 - fxw.{k}; blend: lk.{k} + 6 * near.{k} }}\n",
         f"        line {{ from: t0x.{k}, t0y.{k}; to: thx.{k}, thy.{k}; width: th.{k}; blend: thb.{k} }}\n",
-        # kapsula (bobuľa hrozna upozornení): rovná časť cez stred kvapky; guľatá kvapka ju má nulovú
-        f"        line {{ from: x.{k} - goo.{k}.kw, y.{k}; to: x.{k} + goo.{k}.kw, y.{k}; width: rr.{k} * 2 * if(goo.{k}.kw > 0, 1, 0); blend: lk.{k} }}\n",
+        # kapsula: rovná časť POZDĹŽ okraja kvapky (dole a hore vodorovne, na bokoch zvisle); kd = smer, ktorým rastie
+        # (0 na obe strany — bobuľa hrozna, −1 a +1 iba na jednu — pás výkonu GooPower), dĺžka kwa sa mení pružinou
+        # (kvapka sa do kapsuly natiahne); guľatá kvapka ju má nulovú
+        f"        line {{ from: x.{k} + {along('x', k)} * kwa.{k} * (goo.{k}.kd - 1), y.{k} + {along('y', k)} * kwa.{k} * (goo.{k}.kd - 1); "
+        f"to: x.{k} + {along('x', k)} * kwa.{k} * (goo.{k}.kd + 1), y.{k} + {along('y', k)} * kwa.{k} * (goo.{k}.kd + 1); "
+        f"width: rr.{k} * 2 * if(kwa.{k} > 0.5, 1, 0); blend: lk.{k} }}\n",
     ]
+
+
+def along(axis, k):
+    """smer pozdĺž okraja kvapky k: dole a hore os x, na bokoch os y (telo nevidí let z repeat, iba model)"""
+    side = f"goo.{k}.ed == 1 or goo.{k}.ed == 3"
+    return f"if({side}, 0, 1)" if axis == "x" else f"if({side}, 1, 0)"
+
+
+def monitor():
+    """pás výkonu GooPower: poloha a polomer kvapky, ktorá ho nesie (mon_k), pre bunky mimo repeat"""
+    return ("    let mpx = " + pick_k("mon_k", "x.{k}") + "\n"
+            "    let mpy = " + pick_k("mon_k", "y.{k}") + "\n"
+            "    let mpr = " + pick_k("mon_k", "rr.{k}") + "\n"
+            "    let mkw = " + pick_k("mon_k", "kwa.{k}") + "\n")
+
+
+def pick_k(var, fmt):
+    return f"pick(max({var}, 0), " + ", ".join(fmt.format(k=k) for k in range(N)) + ")"
 
 
 def body():
@@ -68,6 +91,7 @@ def put(path, a, b, block):
 
 p = os.path.join(HERE, "goo.plm")
 put(p, "        // >>> telo (gen.py)\n", "        // <<< telo", body() + "        ")
+put(p, "    // >>> pás výkonu (gen.py)\n", "    // <<< pás výkonu", monitor())
 s = open(p).read()
 s = re.sub(r"model goo max \d+", f"model goo max {N}", s)
 s = re.sub(r"repeat k in 0\.\.\d+", f"repeat k in 0..{N}", s)

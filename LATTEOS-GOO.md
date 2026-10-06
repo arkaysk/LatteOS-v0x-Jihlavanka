@@ -48,7 +48,9 @@ samostatný tekutý prvok.
    (Barista). Vodová káva (lungo, americano) je sklo, espresso a mliečne kávy nepriehľadné.
 7. **Kvapky nemajú oči** (ani žiadnu tvár). Hodiny sú **digitálne** (ručičkové hodiny Marey sa nepreberajú).
 8. **Kontextový klik iba tam, kde ho má funkcia.** Ak funkcia kvapky nemá pravý (ľavý) klik, nemá ho ani kvapka.
-   Pravý klik v Goobare má zmysel iba na **guľôčkach okien** (ponuka okna, ako vo Windows).
+   Pravý klik v Goobare má zmysel iba na **guľôčkach okien** (ponuka okna, ako vo Windows). *(6. 10.: každá základná
+   kvapka dostala vlastnú funkciu na oboch tlačidlách — §3.5; tlačidlo bez funkcie goo zavibruje, stredný klik na ikre
+   okna ostáva bez funkcie.)*
 9. **Okno sa zjaví tam, kde je kvapka:** okno/panel z kvapky vyrastie presne nad miestom kvapky na okraji
    (kvapky sa dajú presúvať — musí to platiť kdekoľvek). **Kvapka sa k oknu pripája ROHOM** (1. 10.): vystúpi
    vyššie a okno z nej vyrastie tak, aby bolo **celé vidieť**; keďže sa každá kvapka dá presunúť kamkoľvek
@@ -429,6 +431,54 @@ Poznámky k tvorbe: dnešný greeter je Quickshell pod labwc (`session/greeter`)
 LoginGoo → GooPower; RSS a upozornenia pred prihlásením znamenajú čítať údaje používateľa bez jeho relácie — treba
 rozhodnúť, čo je bezpečné ukázať na zamknutej obrazovke.
 
+### 3.5 Kliky jednotlivých goo — rozhodnutia používateľa 6. 10. (v engine hotové, overiť naživo na latte-lab)
+
+Po zhodnotení ergonómie (niektoré goo mali iba ľavý, iné iba pravý klik) dostala každá kvapka funkciu na oboch
+tlačidlách. **Zväčšovať sa dajú všetky** („každý preferuje svoje potreby“): koliesko nad kvapkou mení veľkosť
+50–220 % pri každej kvapke, ktorá koliesko nepotrebuje na iné (hlava GooBaru ním prepína okná — jej veľkosť je
+v Nastaveniach › Kvapky); ikry okien a bobule sa nezväčšujú (rozkladá ich majiteľ).
+
+| Goo | Ľavý klik | Pravý klik |
+|---|---|---|
+| **Hlava GooBaru** | ďalší režim okien | **ukázať plochu** (ako Win+D: okná zmiznú, druhý klik ich vráti) |
+| **Ikry okien** | prepnúť / minimalizovať | ponuka okna (stredný klik: nič — zavibruje) |
+| **GooPower** | **karta GooPower** (nižšie) | **pás výkonu** zap / vyp |
+| **LensGoo** | spúšťač (aj kláves Win) | **rýchly zoznam**: naposledy spustené a obľúbené aplikácie ako dlaždice s ikonami, Hľadať…, App Manager |
+| **ClockGoo** | **upozornenia a kalendár** v jednej karte | **karta času**: Prehľad, Stopky, Minútka, Budíky, Počasie |
+| **QueenGoo** | App Manager | Správca zariadení |
+
+**Karta GooPower (ľavý klik):** hore **profil účtu** — portrét (`~/.face`, obrázok prihlasovania LatteOS alebo
+AccountsService) v kruhu, meno a `login@počítač · od HH:MM` (klik = Nastavenia › Môj účet); pod ním tlačidlá
+**Zamknúť · Odhlásiť**. Sekcia **NAPÁJANIE**: batéria s pruhom (notebook) a **profil napájania** ako tri tlačidlá
+Úspora · Vyvážený · Výkon (`powerprofilesctl`, na Fedore tuned-ppd; bez neho sa riadok neukáže). Potom Nastavenia,
+Monitor a dole tlačidlá **Uspať · Reštartovať · Vypnúť** (červené). `latte-goo ucet`, `latte-goo profil`.
+
+**Pás výkonu (pravý klik na GooPower):** GooPower sa **natiahne pozdĺž okraja do kapsuly** (na voľnú stranu —
+predvolene doľava, od LensGoo preč; ikona vypínača ostane na konci pri pôvodnom mieste) a **okolné goo odtlačí**
+(pravidlo 22 ráta s celou dĺžkou kapsuly); po vtiahnutí pásu sa odtlačené goo vrátia, ak ich medzitým nikto
+nepresunul. V kapsule bunky **FPS · CPU · RAM · GPU · VRAM** (názov, hodnota, pruh), raz za sekundu z
+`latte-sysmon goo` (iba to, čo pás ukazuje — lacné). Hodnota je káva, **jantárová nad 80 %**, **červená nad 95 %**
+alebo pri prehriatí (CPU 80 / 90 °C, GPU 85 / 95 °C). Prechod myšou nad bunkou = bublina s podrobnosťami (takt,
+teplota, najnáročnejší proces, swap…), klik = Monitor na tej časti, pravý klik = pás sa vtiahne. Zapnutý pás ostane
+aj po ďalšom prihlásení (`latte-goo pas`). Pás je v páse pri okraji, kam okná nesiahajú — neprekáža.
+- **FPS** má zmysel iba pri hre: číta sa zo záznamu **MangoHud** (posledný riadok CSV, ak sa doň zapisovalo pred
+  chvíľou). Záznam zapne `latte-sysmon mangohud on` (alebo klik na bunku FPS): do `~/.config/MangoHud/MangoHud.conf`
+  pridá `output_folder` (`$XDG_RUNTIME_DIR/latteos/mangohud`), `autostart_log`, `log_interval=500`; hra sa potom
+  spúšťa s MangoHud ako doteraz (`mangohud %command%`). Bez hry ukazuje bunka „—“.
+- Hra na celú obrazovku je nad vrstvou Goo — tam ostáva prekrytie MangoHud.
+
+**Upozornenia a kalendár (ľavý klik na ClockGoo):** karta v **dvoch stĺpcoch** (ako centrum upozornení Windows 11,
+väčšia — 744 px, zmestí sa aj na 1024 × 768): vľavo **UPOZORNENIA** (ikona aplikácie, nadpis, telo; klik otvorí,
+pravý klik akcie a Zahodiť; najviac 5, potom „+N ďalších“), tlačidlá **Nerušiť** (Noctalia) a **Vymazať všetko**,
+Nastavenia oznámení; vpravo **mesiac**, deň s udalosťami a úlohami (po 2), pole na novú udalosť a **Prepojené
+kalendáre** (Google, iCloud, CalDAV — účty spravuje Noctalia). **Hrozno upozornení** na lepkavom vlákne už na ľavom
+klike nie je (scéna ho ďalej vie, ak sa vráti).
+
+**Technika:** kapsula má smer `kd` (0 obe strany, −1 / +1 jedna) a leží **pozdĺž okraja** (aj na bokoch zvisle),
+dĺžka sa mení pružinou (`kwa`); `fix` = nesadá. Karta Goo vie **dva stĺpce** (`opts.cols`, `col = 2`), **rad
+tlačidiel** (`pills`), **dlaždice** (`tiles`, `per`), **profil** (`pro`), **nadpis sekcie** (`hd`) a **druhý riadok**
+(`t2`); zvýraznenie kĺže aj medzi stĺpcami a tlačidlami. Podrobne `session/goo/README.md`.
+
 ---
 
 ## 4. Časti plochy a ich správanie
@@ -753,6 +803,7 @@ Nezrušiteľná základná kvapka. Zabezpečuje správu plochy, prepínanie okie
   * **Ľavý klik:** Prepnutie na ďalší režim okien.
   * **Koleso myši:** V režime pásky posúva pásku okien; v režime dlaždíc alebo plávajúcich okien prepína medzi oknami (funkcia Alt+Tab).
   * **Ťahanie ľavým tlačidlom:** Presun lišty k inému okraju obrazovky (pri pustení uprostred plochy sa vráti späť k okraju).
+  * **Pravý klik (6. 10.):** Ukázať plochu (ako Win+D); druhý pravý klik vráti okná.
 
 * **Guľôčky okien / Ikry (Strapce aplikácií):**
   * S rastúcim počtom okien sa veľkosť ikier automaticky zmenšuje.
@@ -767,8 +818,9 @@ Nezrušiteľná základná kvapka. Zabezpečuje správu plochy, prepínanie okie
 Základná kvapka pre správu relácie, výkonu a batérie.
 
 * **Interakcia:**
-  * **Ľavý klik:** Vystúpi rohožkové okno Goo spojené s kvapkou. Obsahuje *Nastavenia*, *Monitor systému* a sekciu spravovanú službou Noctalia (*Zamknúť*, *Odhlásiť*, *Uspať*, *Reštartovať*, *Vypnúť* s ikonami Tabler).
-  * Generátor rozhrania: `session/kvapky/powergoo.py`.
+  * **Ľavý klik:** Vystúpi rohové okno Goo spojené s kvapkou. Od 6. 10.: profil účtu (portrét, meno, údaje) s *Zamknúť* a *Odhlásiť*, napájanie (batéria, profil napájania Úspora · Vyvážený · Výkon), *Nastavenia*, *Monitor systému* a tlačidlá *Uspať*, *Reštartovať*, *Vypnúť* (akcie relácie robí Noctalia) — §3.5.
+  * **Pravý klik (6. 10.):** Pás výkonu — kvapka sa natiahne pozdĺž okraja do kapsuly s FPS, CPU, RAM, GPU a VRAM a okolné goo odtlačí (§3.5).
+  * Engine: `session/goo/kvapky/goopower.luau` (plocha Kvapky: generátor `session/kvapky/powergoo.py`).
 
 * **Indikácia batérie (Notebooky):**
   * Hlavička okna zobrazuje presné percento a stav nabíjania.
@@ -793,6 +845,7 @@ Nezrušiteľná základná kvapka označená ikonou lupy, ktorá slúži ako vyh
   * **Web (Web):** Ponúka riadky pre jednotlivé vyhľadávače s predvolenou prvou voľbou.
   * **Terminál (Príkaz):** Spúšťa príkazy v `latte-terminal`. Nebezpečné príkazy vyžadujú potvrdenie druhým stlačením Enter. Obsahuje históriu príkazov.
   * **AI Chat (Prompt):** Konverzácia prebieha priamo vo vnútri spúšťača v goo bublinách.
+  * **Pravý klik (6. 10.):** Rýchly zoznam — jednoduché okno s ikonami: naposledy spustené a obľúbené aplikácie ako dlaždice (klik spustí), pod nimi Hľadať… a App Manager.
 
 * **Špecifikácia AI integrácie (`latte-ai`):**
   * **Prísny zákaz otvárania prehliadača:** Všetky konverzácie (Claude, Gemini, ChatGPT, Ollama) bežia výhradne v rozhraní spúšťača bez otvárania webových okien.
@@ -825,7 +878,8 @@ Kvapka označená ikonou korunky na vonkajšej strane (tvar koruny je prispôsob
 ### ClockGoo (Čas, Kalendár, Notifikácie a Well-being)
 Kombinovaná kvapka spájajúca časové funkcie a notifikačné centrum (predtým DaNoGoo).
 
-* **Notifikačný systém (Ľavý klik):**
+* **Upozornenia a kalendár (Ľavý klik, od 6. 10.):** jedna karta v dvoch stĺpcoch — upozornenia vľavo, kalendár s udalosťami, úlohami a prepojenými kalendármi vpravo (§3.5). Pravý klik ukazuje ostatné: čas, stopky, minútku, budíky, počasie a digitálnu pohodu.
+* **Notifikačný systém (do 6. 10. na ľavom klike):**
   * Kvapka sa pružinovo vymrští od okraja a zanechá za sebou visieť hrozno upozornení na lepkavom vlákne (najnovšie hore).
   * Upozornenia prekrývajú okná a zatvárajú sa opätovným klikom na kvapku, klávesom Esc alebo kliknutím mimo ich plochy.
   * Farebné rozlíšenie kapsúl:

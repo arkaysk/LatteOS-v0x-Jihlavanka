@@ -392,6 +392,56 @@ function M.open(d)
     end)
 end
 
+-- RÝCHLY ZOZNAM (pravý klik na LensGoo, používateľ 6. 10.): jednoduché okno s ikonami aplikácií — naposledy spustené
+-- a obľúbené ako dlaždice (ikona nad názvom), klik spustí; pod nimi hľadanie (otvorí spúšťač). Bez písania.
+local function quick_items(d)
+    local items, seen = {}, {}
+    local function tiles(ids, max)
+        local t = {}
+        for _, id in ipairs(ids) do
+            local a = byId[id]
+            if a and not seen[id] and #t < max then
+                seen[id] = true
+                t[#t + 1] = { img = a.icon, glyph = "apps", label = a.name or a.id, run = function() launch(a) end }
+            end
+        end
+        return t
+    end
+    local rec = tiles(cfg.recent or {}, 8)
+    local more = tiles(extra.caste or {}, 8 - #rec)                  -- doplnok: časté v túto dennú dobu
+    for _, t in ipairs(more) do rec[#rec + 1] = t end
+    if #rec > 0 then
+        items[#items + 1] = { hd = true, label = tr("RECENTLY USED") }
+        items[#items + 1] = { tiles = rec, per = 4 }
+    end
+    local fav = tiles(((cfg.tabs or {})[1] or {}).apps or {}, 8)
+    if #fav > 0 then
+        items[#items + 1] = { hd = true, sep = #rec > 0, label = tr("FAVOURITES") }
+        items[#items + 1] = { tiles = fav, per = 4 }
+    end
+    if #items == 0 then
+        local first = {}
+        for i = 1, math.min(8, #apps) do first[#first + 1] = apps[i].id end
+        items[#items + 1] = { hd = true, label = tr("APPLICATIONS") }
+        items[#items + 1] = { tiles = tiles(first, 8), per = 4 }
+    end
+    items[#items + 1] = { sep = true, pills = {
+        { glyph = "search", label = tr("Search…"), run = function() after(60, function() M.open(d) end) end },
+        { glyph = "apps", label = tr("App Manager"), run = function() run("latte-app", { "aplikacie" }, nil, { output = false }) end } } }
+    return items
+end
+function M.quick(d)
+    if E.menuId() == "quick" then close() return end
+    local function show(keep) E.menu(quick_items(d), 380, { id = "quick", keep = keep, owner = d }) end
+    show(false)
+    run("latte-goo", { "spustac" }, function(out)
+        local ok, t = pcall(json.decode, out or "")
+        if ok and type(t) == "table" then cfg = t end
+        if E.menuId() == "quick" then show(true) end
+    end)
+    run("latte-riadok", { "caste", "8" }, function(out) extra.caste = lines(out) if E.menuId() == "quick" then show(true) end end)
+end
+
 function M.start(d)
     M.drop = d
     -- kláves Windows (latte-spustac → pleamar --say goo "emit lens_toggle"): spúšťač sa dá otvoriť aj bez myši

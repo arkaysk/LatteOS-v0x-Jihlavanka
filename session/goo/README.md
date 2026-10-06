@@ -31,7 +31,16 @@ V ploche Kvapky má každá kvapka vlastnú kópiu pravidiel: polohu, ťahanie, 
 
 **Kvapky plochy v engine:** `goobar` (hlava + okná), `goopower` (ponuka, batéria), `lensgoo` (lupa, spúšťač) — jadro,
 `zaklad = true`, nedajú sa skryť; `queengoo` (guľky, App Manager / Správca zariadení) a `clockgoo` (čas, dátum,
-upozornenia) — voliteľné, skrýva ich Nastavenia › Kvapky (`kvapky.json`). Spoločné: **ponuka Goo** (`E.menu`, karta pri
+upozornenia) — voliteľné, skrýva ich Nastavenia › Kvapky (`kvapky.json`). Kliky (6. 10., LATTEOS-GOO.md §3.5):
+
+| kvapka | ľavý | pravý |
+|---|---|---|
+| hlava GooBaru | ďalší režim okien | ukázať plochu (Win+D) |
+| ikra okna | prepnúť / minimalizovať | ponuka okna |
+| GooPower | karta: profil účtu, Zamknúť · Odhlásiť, napájanie a profil napájania, Nastavenia, Monitor, Uspať · Reštartovať · Vypnúť | pás výkonu (kapsula s FPS, CPU, RAM, GPU, VRAM — `latte-sysmon goo`) |
+| LensGoo | spúšťač | rýchly zoznam (dlaždice naposledy spustených a obľúbených) |
+| ClockGoo | upozornenia a kalendár (dva stĺpce) | čas: prehľad, stopky, minútka, budíky, počasie |
+| QueenGoo | App Manager | Správca zariadení | Spoločné: **ponuka Goo** (`E.menu`, karta pri
 mieste kliku, podponuky, preklady), **guľky** (`d:gulky(n, farby)`), **ikona aplikácie** (`d:obrazok(meno)`),
 **`E.upsert`** (kvapky, ktoré vznikajú za behu, napr. okná, bez preskočenia).
 
@@ -55,7 +64,8 @@ mieste kliku, podponuky, preklady), **guľky** (`d:gulky(n, farby)`), **ikona ap
   sú iba v bubline. Pri stlačení sa stlačí (squish).
 - **Vlastný pohyb aj bez myši:** dych a pomalý drift.
 - **Vstupy:** ľavé tlačidlo (klik = pustenie bez ťahania), pravé, stredné, podržanie (0,65 s), koliesko.
-  **Bez háčika nerobia nič** (pravidlo 8). Veľkosť kolieskom iba s `zoom = true`.
+  **Bez háčika nerobia nič** (pravidlo 8) — kvapka iba zavibruje. Veľkosť kolieskom má každá kvapka (`zoom`
+  predvolene áno, „zväčšovať sa dajú všetky“), ak koliesko nepoužíva na iné; nie okná GooBaru a bobule.
 - **Ťahanie (všetky kvapky):**
   - `lepivost` 0…1 drží kvapku doma: natiahne krk a odtrhne sa až za `trhanie` px; pustená skôr sa vráti;
   - pri lište sa k nej prilepí;
@@ -85,6 +95,10 @@ mieste kliku, podponuky, preklady), **guľky** (`d:gulky(n, farby)`), **ikona ap
   uprostred sa vráti. Háčik `pustenie(d, X, Y, okraj)` dostane miesto v px obrazovky; `false` = nepresúvať.
   `d:px()` je poloha pozdĺž okraja kvapky; `E.hiAlong(d)` najďalej, kam smie (rohová lišta Noctalie je zakázaná zóna).
 - **Kapsula:** `kw` (polovica rovnej časti, px) a `t2` (druhý riadok) urobia z kvapky kapsulu s ikonou vľavo.
+  Rovná časť leží **pozdĺž okraja** kvapky (na bokoch zvisle) a jej dĺžka sa mení pružinou — kvapka sa do kapsuly
+  natiahne. `kd` = smer: 0 na obe strany (bobuľa), −1 / +1 iba jedným smerom — ikona ostane na konci pri pôvodnej
+  kvapke (pás výkonu GooPower). Pravidlo 22 ráta s celou kapsulou (`E.capOff`): susedia sa odsunú. `fix = true` =
+  kvapka si v pokoji nesadá (obsah musí byť celý vidieť).
   `koruna = "crown"` nakreslí znak na vonkajšej strane kvapky.
 - **Karta Goo** `E.menu(items, šírka, opts)`: položky `label, glyph, hint, on, off, danger, sep, sub, run` a navyše
   `big` (veľký nadpis), `bar` (pruh 0…1), `keep` (klik kartu nezavrie), `wheel = function(smer)` (koliesko nad
@@ -96,6 +110,11 @@ mieste kliku, podponuky, preklady), **guľky** (`d:gulky(n, farby)`), **ikona ap
   pri poli `change = function(text)` (písanie; `submit` vráti `true`, ak má text v poli ostať). `E.menuAt(d)` položí
   kartu ku kvapke (otvorenie z klávesnice), `E.menuText(v)` číta a nastaví text poľa. Rozmery: zadaná šírka × 1,2,
   riadok 44 px; koliesko v karte prepína záložky, Tab / Shift+Tab tiež, šípky a Enter vyberú riadok bez myši.
+  Rozloženie (6. 10.): `t2` druhý riadok pod názvom (telo upozornenia), `hd` nadpis sekcie (malé tučné), `pro`
+  profil účtu (portrét `img` v kruhu, meno `label`, údaje `t2`), `{ pills = { … } }` rad tlačidiel vedľa seba
+  (každé ako položka; `on` = vybrané, `danger` = červené), `{ tiles = { … }, per = 4 }` dlaždice aplikácií (ikona nad
+  názvom); `opts.cols = { šírka1, šírka2 }` karta v dvoch stĺpcoch — položka s `col = 2` (aj mriežka kalendára
+  a textové pole) ide do pravého. Najviac 24 riadkov; čo sa nezmestí na výšku (1024 × 768), sa nepridá.
 - **Efekty scény:** `dych`, `kmit`, `tras`, `obeh`, `tlkot` (+ `sila`).
 - **Rezerva na nedefinované efekty:**
   - efekty 6–9 v scéne sú voľné;

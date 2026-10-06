@@ -291,6 +291,8 @@ local function read_mode()
 end
 -- ľavý klik = ďalší režim okien; koliesko: páska = posun, plávajúce = ďalšie okno (Alt+Tab), dlaždice = nič
 function M.head_click() run("hyprctl", { "eval", 'require("latte.windows").cycle()' }, function() after(250, read_mode) end) end
+-- pravý klik = ukázať plochu (Win+D v Hyprlande, latte/skratky.lua: prázdna plocha; znova = späť na okná)
+function M.show_desktop() run("hyprctl", { "eval", "latte.keys.show_desktop()" }) end
 function M.head_wheel(dir)
     if mode == "paska" then
         local px = math.floor((tonumber(fact.sw) or 1920) * 0.25)
