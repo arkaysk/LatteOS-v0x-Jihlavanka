@@ -352,8 +352,11 @@ return {
         end)
     end,
     start = function(d)
-        local ok = sys.watch("notifications", function(list)
-            notes = list or {}
+        local ok = E.onNotes(function(list)
+            -- upozornenia četu (Beeper) má pri sebe ChatGoo, keď je na ploche (LATTEOS-GOO.md §4.6)
+            notes = {}
+            local chat = E.chatOn()
+            for _, x in ipairs(list or {}) do if not (chat and E.isChat(x)) then notes[#notes + 1] = x end end
             local fresh = false
             for _, x in ipairs(notes) do if not seen[x.id] then seen[x.id] = true fresh = true end end
             if fresh then d:vlnka(5) end

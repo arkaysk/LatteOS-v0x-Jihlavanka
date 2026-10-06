@@ -209,12 +209,17 @@ ostatné kvapky sú iba na hlavnom monitore.
   **Minútka** (dĺžka kolieskom) · **Budíky** · **Počasie** (teraz, dnes, týždeň). Minútka a budíky zvonia aj pri
   zavretej karte. Údaje: `casovace.json`, `clock.conf`, `events.json`, `todo.json`, pohoda z `pohoda.qml`.
 
-### 4.6 ChatGoo — doplnok pre Beeper (voliteľná, plán)
+### 4.6 ChatGoo — doplnok pre Beeper (voliteľná)
 - Iba doplnok, nie vlastný messenger: zastrešuje pôvodný Beeper pre Linux; kvapka sa ukáže, keď je Beeper
   nainštalovaný alebo beží. Nie je nutná — v Nastaveniach voľba „kvapka ChatGoo“ alebo „ikona Beepera v rohovej
   lište“.
 - **Minimalizácia Beepera = okno vtečie do kvapky ChatGoo**; klik ho vráti. Upozornenia Beepera idú do ChatGoo
   (guľky, odznak siete; klik otvorí rozhovor, pravý akcie). Pomocník `session/bin/latte-chatgoo` je hotový.
+- **Stav (6. 10.):** kvapka je v engine (`kvapky/chatgoo.luau`). Je na ploche, iba keď je Beeper nainštalovaný alebo
+  beží; nesie **pôvodnú ikonu Beepera** (zo spúšťača aplikácií). Okno Beepera nemá ikru v GooBar — ľavý klik na
+  kvapku ho ukáže alebo schová, jadro svieti, kým je okno v kvapke. Upozornenia Beepera idú k nej namiesto ClockGoo
+  (modré guľky); pravý klik = karta správ (klik otvorí rozhovor, pravý klik na správu = jej akcie, Vymazať všetko).
+  Ešte nie je: plynulé „vtečenie“ okna do kvapky (teraz iba vlnka), odznak siete, voľba „ikona v rohovej lište“.
 - Bubliny četov pre viac kanálov (Messenger, Telegram, Signal…) — forma sa ešte premyslí; nie ako režim spúšťača.
 
 ### 4.7 Vlastné kvapky

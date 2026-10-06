@@ -70,6 +70,12 @@ function M.app_of(w)
     if c == "org.quickshell" then return apps_by.name[latte_title(w):lower()] end
     return apps_by.wm[c] or apps_by.id[c] or apps_by.tail[c] or apps_by.name[c]
 end
+-- aplikácia zo spúšťača podľa časti mena (ChatGoo: „beeper“ → pôvodná ikona Beepera)
+function M.find_app(part)
+    for _, t in ipairs({ apps_by.wm, apps_by.id, apps_by.name }) do
+        for k, a in pairs(t) do if k:find(part, 1, true) then return a end end
+    end
+end
 function M.group_key(w)
     local a = M.app_of(w)
     if a then return "app:" .. (a.id or a.name) end
@@ -308,6 +314,9 @@ end
 -- spáruje s `hyprctl clients` a do `wins` idú iba okná monitora tejto inštancie (E.monitorId; GooBar je na každom
 -- monitore so svojimi oknami, ako panel úloh Windows). Bez Hyprlandu alebo bez čísla monitora idú všetky.
 local raw = {}
+-- okno četu (Beeper) nepatrí lište, ale kvapke ChatGoo, keď je na ploche: tu sa iba zistí, či beží a či je schované
+local chat = { running = false, minimized = false, title = "" }
+function M.chat() return chat end
 local function mark_hidden()
     run("hyprctl", { "-j", "clients" }, function(out)
         local ok, list = pcall(json.decode, out or "")
@@ -316,6 +325,15 @@ local function mark_hidden()
             return
         end
         local seen_raw, nw, nh = {}, {}, {}
+        local nc = { running = false, minimized = false, title = "" }
+        for _, c in ipairs(list) do
+            if (tostring(c.class or "") .. " " .. tostring(c.initialClass or "")):lower():find("beeper", 1, true) then
+                nc.running, nc.title = true, tostring(c.title or "")
+                nc.minimized = c.workspace ~= nil and tostring(c.workspace.name or ""):find("^special:minimized") ~= nil
+            end
+        end
+        chat = nc
+        local skip_chat = nc.running and E.chatOn()
         for _, w in ipairs(raw) do
             local key = (w.class or "") .. "\0" .. (w.title or "")
             seen_raw[key] = (seen_raw[key] or 0) + 1
@@ -328,7 +346,9 @@ local function mark_hidden()
             end
             local mon = found and tonumber(found.monitor)
             -- okno, ktoré Hyprland (ešte) nepozná pod týmto titulkom, ukáže iba hlavný monitor — nie obe lišty
-            if E.monitorId == nil or mon == E.monitorId or (mon == nil and not E.vedlajsi) then
+            if skip_chat and tostring(w.class or ""):lower():find("beeper", 1, true) then
+                -- okno Beepera: žiadna ikra v lište, drží ho ChatGoo
+            elseif E.monitorId == nil or mon == E.monitorId or (mon == nil and not E.vedlajsi) then
                 w._nth = want
                 nw[#nw + 1] = w
                 nh[#nw] = (found and found.workspace and tostring(found.workspace.name or ""):find("^special:minimized") ~= nil) or false

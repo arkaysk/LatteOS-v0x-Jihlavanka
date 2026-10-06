@@ -7,6 +7,9 @@ Nové rozhodnutie: jeden riadok sem (dátum, čo, prečo) a oprava platného zne
 
 ## 6. 10. 2026
 
+- **ChatGoo nesie pôvodnú ikonu Beepera** („ikonu pre Beeper do goo použi originálnu ikonu“), nie vlastný znak;
+  znak bubliny je iba náhrada, keď sa ikona nenájde.
+
 - **Systémový backend zapojený do Správcu zariadení:** tlač bez ovládačov od výrobcov (CUPS, IPP Everywhere /
   AirPrint, USB cez `ipp-usb`), skenovanie cez SANE a simple-scan (vlastný dialóg sa nerobí), telefón na USB cez GVFS.
   CUPS beží iba na požiadanie (`cups.socket`). Pomalé hľadanie v sieti sa pamätá a obnovuje na pozadí, aby zoznam

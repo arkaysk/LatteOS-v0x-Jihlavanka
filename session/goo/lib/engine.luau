@@ -1350,17 +1350,47 @@ end)
 -- ── Nastavenia › Kvapky (~/.config/latteos/kvapky.json, ten istý súbor ako plocha Kvapky): voliteľné kvapky sa dajú
 -- skryť, základné (zaklad = true: GooBar, GooPower, LensGoo) nie; veľkosť 100–220 %; vrátenie na miesto ──────────
 local lastReset = nil
+local hideSet = {}                -- vypnuté v Nastaveniach
+local function applyHidden()
+    local changed = false
+    for id, d in pairs(byId) do
+        local h = (hideSet[id] == true or d.absent == true) and not d.def.zaklad and d.zdroj ~= "dyn"
+        if h ~= (d.hidden == true) then d.hidden = h changed = true end
+    end
+    return changed
+end
+-- kvapka, ktorá má zmysel iba niekedy (ChatGoo: Beeper je nainštalovaný alebo beží), sa vie sama schovať a ukázať
+function Kvapka:pritomna(on)
+    local a = on == false
+    if a ~= (self.absent == true) then
+        self.absent = a
+        if applyHidden() then E.separate() publish() end
+    end
+end
+-- upozornenia: jedno sledovanie služby pre všetky kvapky (ClockGoo, ChatGoo); každá dostane celý zoznam
+local notesSubs, notesOn = {}, false
+function E.onNotes(fn)
+    notesSubs[#notesSubs + 1] = fn
+    if notesOn then return true end
+    notesOn = sys.watch("notifications", function(list)
+        for _, f in ipairs(notesSubs) do pcall(f, list or {}) end
+    end) and true or false
+    return notesOn
+end
+-- upozornenie patrí četu (Beeper) a kvapka ChatGoo je na ploche → ukáže ho ona, nie ClockGoo
+function E.isChat(x) return tostring(x and x.app or ""):lower():find("beeper", 1, true) ~= nil end
+function E.chatOn() return byId.chatgoo ~= nil and not byId.chatgoo.hidden end
 local function settings()
     run("latte-goo", { "nastavenia" }, function(out)
         local ok, t = pcall(json.decode, out or "")
         if not ok or type(t) ~= "table" then return end
         fact.zive = t.zive ~= false                               -- vypínač Živé správanie (predvolene zapnuté)
         if fact.zive == false then weatherOff() end
-        local hide, changed = {}, false
+        local hide = {}
         for _, id in ipairs(type(t.skryte) == "table" and t.skryte or {}) do hide[id] = true end
+        hideSet = hide
+        local changed = applyHidden()
         for id, d in pairs(byId) do
-            local h = hide[id] == true and not d.def.zaklad and d.zdroj ~= "dyn"
-            if h ~= (d.hidden == true) then d.hidden = h changed = true end
             local z = type(t.zoom) == "table" and tonumber(t.zoom[id])
             if z and math.abs(clamp(z, ZOOM_MIN, ZOOM_MAX) - (d.zset or 0)) > 0.001 then
                 d.zset = clamp(z, ZOOM_MIN, ZOOM_MAX)             -- iba keď sa zmenilo v Nastaveniach (koliesko ostáva)

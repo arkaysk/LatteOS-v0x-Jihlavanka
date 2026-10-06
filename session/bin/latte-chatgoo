@@ -3,7 +3,7 @@
 Beeper po minimalizácii „vtečie“ do kvapky ChatGoo, okolo nej visia správy ako bobule (rovnaké pravidlá ako
 upozornenia pri DaNoGoo), klik na kvapku vráti okno, klik na správu otvorí jej rozhovor (akcia upozornenia).
 
-  latte-chatgoo stav       JSON: installed, running, address, minimized, unread, title, launch
+  latte-chatgoo stav       JSON: installed, running, address, minimized, unread, title, launch, icon
   latte-chatgoo ukaz       ukáže Beeper (obnoví z kvapky alebo spustí)
   latte-chatgoo skry       schová Beeper do kvapky (special:minimized, ako minimalizácia v LatteOS)
   latte-chatgoo prepni     ukáž ↔ skry (klik na kvapku)
@@ -36,6 +36,23 @@ def launcher():
     return None
 
 
+def icon():
+    """pôvodná ikona Beepera: Icon= zo spúšťača (.desktop) — meno ikony z témy alebo cesta k súboru"""
+    dirs = [HOME + "/.local/share/applications", "/usr/share/applications", "/usr/local/share/applications",
+            "/var/lib/flatpak/exports/share/applications", HOME + "/.local/share/flatpak/exports/share/applications"]
+    for d in dirs:
+        for f in sorted(glob.glob(d + "/*.desktop")):
+            if not CLASS.search(os.path.basename(f)):
+                continue
+            try:
+                m = re.search(r"^Icon=(.+)$", open(f, encoding="utf-8", errors="replace").read(), re.M)
+            except OSError:
+                continue
+            if m:
+                return m.group(1).strip()
+    return ""
+
+
 def window():
     try:
         cl = json.loads(subprocess.run(["hyprctl", "clients", "-j"], capture_output=True, text=True, timeout=3).stdout or "[]")
@@ -53,7 +70,7 @@ def state():
     m = re.search(r"\((\d+)\)|^(\d+)\b|\[(\d+)\]", title)
     return {"installed": launcher() is not None, "running": w is not None, "address": (w or {}).get("address", ""),
             "minimized": bool(w) and str((w.get("workspace") or {}).get("name", "")).startswith("special:minimized"),
-            "unread": int(next(g for g in m.groups() if g)) if m else 0, "title": title, "launch": launcher() or []}
+            "unread": int(next(g for g in m.groups() if g)) if m else 0, "title": title, "launch": launcher() or [], "icon": icon()}
 
 
 def hl_eval(code):
