@@ -381,7 +381,9 @@ texty preložiteľné (`translations`). Noctalia beží bez lišty a robí, čo 
   výkonu na tom nič nemení. Príčiny: počítajú sa všetky miesta (128, obsadených 16) a scéna nikdy neodpočíva
   (dych kvapiek beží stále). Kandidáti: menej miest alebo ich zapínanie podľa potreby; pokoj pri nečinnosti.
   Podrobné ladenie až po pridaní ďalších funkcií (dohoda 6. 10.).
-- [ ] Nečinnosť: stupeň 2 (dážď a vietor podľa počasia), obmedzenia „kedy nie“ a vypínač „Živé správanie“
+- [x] Nečinnosť: stupeň 2 (dážď, sneh a vietor podľa skutočného počasia), obmedzenia „kedy nie“ a vypínač „Živé
+  správanie“ v Nastaveniach › Kvapky (6. 10.). Overené vynútene: dážď, sneh, vietor, vypínač, okno na celú
+  obrazovku. Neoverené: úsporný profil a slabá batéria (latte-lab je stolný), spustenie po skutočných 3 minútach.
 - [ ] Formulár vlastných kvapiek enginu v Nastaveniach › Kvapky nad `latte-goo`
 - [ ] Synchronizácia kalendára v ClockGoo (účty Noctalie), názov budíka
 - [ ] LensGoo: mriežka obľúbených a nedávnych v spúšťači, ťahanie aplikácií do záložiek, filtre súborov, prílohy
@@ -448,7 +450,8 @@ texty preložiteľné (`translations`). Noctalia beží bez lišty a robí, čo 
   - [ ] **bezpečnostná kontrola balíkov** (perplexityai/bumblebee, Go, Apache 2.0) aj pre bežného používateľa:
     keď vyjde varovanie o napadnutom balíku alebo rozšírení a na PC je, ukáže sa bublina; spolu s bezpečnostnými
     varovaniami dnf a Flatpaku (F6)
-  - [ ] **deň a noc na hladine**: automatický režim plynulo podľa polohy slnka (poloha z nastavení) — nočné
+  - [x] deň a noc na hladine, prvá časť (6. 10.): svetlo v kvapkách a žiara nad horizontom podľa výšky slnka
+  - [ ] **deň a noc na hladine** — zvyšok: automatický režim plynulo podľa polohy slnka (poloha z nastavení) — nočné
     svetlo (overiť, čo používa Noctalia; prípadne Hyprsunset), vzhľad okien (svetlý/tmavý) a **žiara nad
     horizontom hladiny**: odlesky a obrys kvapiek podľa dennej doby (ráno teplé a nízke, na poludnie biele,
     večer oranžová žiara, v noci tlmené studené), takže už z pohľadu na Goo vidieť, či je vonku deň alebo noc

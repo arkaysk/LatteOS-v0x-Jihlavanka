@@ -1070,19 +1070,94 @@ local function game()
     end
     d:poskoc() land(d)                                       -- skákanie na mieste (aj keď nie je kam bežať)
 end
+-- ── obloha a počasie na hladine (LATTEOS-GOO.md §3.1 stupeň 2; deň a noc) ───────────────────────────────────────
+-- Raz za 10 minút `latte-goo obloha`: výška slnka → svetlo v kvapkách a žiara nad horizontom (scéna: den, zlata);
+-- dážď, sneh a vietor sa ukážu až pri nečinnosti (stupeň 2+): kvapky dopadajú na spodný okraj a vlnky zvlnia hladinu
+-- aj pripnuté kvapky, vietor ženie vlny pozdĺž okraja, jasno = iba dýchanie.
+local wx = { zrazky = 0, sneh = false, vietor = 0 }
+local wxRain, wxWind, windX = nil, nil, 0
+local lowBattery = false
+pcall(sys.watch, "battery", function(b)
+    lowBattery = type(b) == "table" and b.present == true and (tonumber(b.percent) or 100) < 20 and b.charging ~= true
+end)
+local TIER = (function() local ok, v = pcall(sys.ask, "env", "LATTE_TIER") return ok and type(v) == "string" and v or "" end)()
+-- kedy nie (§3.1): vypínač Živé správanie, stupeň výkonu Softvér, batéria pod 20 %, úsporný profil napájania,
+-- okno na celú obrazovku (hra, film). Zamknutú obrazovku rieši kompozitor: scéna vtedy nie je vidno.
+local function allowed(cb)
+    if fact.zive == false or TIER == "softver" or lowBattery then return cb(false) end
+    run("hyprctl", { "activewindow", "-j" }, function(out)
+        local ok, w = pcall(json.decode, out or "")
+        if ok and type(w) == "table" and (tonumber(w.fullscreen) or 0) > 0 then return cb(false) end
+        run("latte-goo", { "profil" }, function(o2)
+            local ok2, p = pcall(json.decode, o2 or "")
+            cb(not (ok2 and type(p) == "table" and p.aktivny == "power-saver"))
+        end)
+    end)
+end
+local function weatherOff()
+    if wxRain then cancel(wxRain) wxRain = nil end
+    if wxWind then cancel(wxWind) wxWind = nil end
+    fact.prsi = 0
+end
+local function weatherOn()
+    weatherOff()
+    local sw = num(fact.sw, 1920)
+    if wx.zrazky > 0 then
+        fact.snezi, fact.prsi = wx.sneh, wx.zrazky
+        if not wx.sneh then
+            wxRain = every(wx.zrazky == 2 and 650 or 1500, function()
+                E.vlnka(math.random() * sw, wx.zrazky == 2 and 2.6 or 1.8, "kamen")
+            end)
+        end
+    elseif wx.vietor >= 30 then
+        windX = 0
+        wxWind = every(420, function()
+            E.vlnka(windX, 3.2, "kamen")
+            windX = windX + sw / 18
+            if windX > sw then windX = 0 end
+        end)
+    end
+end
+local function sky()
+    run("latte-goo", { "obloha" }, function(out)
+        local ok, t = pcall(json.decode, out or "")
+        if not ok or type(t) ~= "table" then return end
+        wx.zrazky, wx.sneh, wx.vietor = tonumber(t.zrazky) or 0, t.sneh == true, tonumber(t.vietor) or 0
+        local a = type(t.nebo) == "table" and type(t.nebo.slnko) == "table" and tonumber(t.nebo.slnko.vyska) or 30
+        fact.den = clamp((a + 6) / 12, 0, 1)                  -- občiansky súmrak … slnko 6° nad obzorom
+        fact.zlata = clamp(1 - math.abs(a - 2) / 10, 0, 1)    -- svitanie a súmrak: slnko medzi −8° a 12°
+    end)
+end
+E.obloha = { zapni = weatherOn, vypni = weatherOff, stav = wx }   -- aj na skúšanie (README)
+after(1500, sky)
+every(600000, sky)
+
 on("goo_idle", function(level)
     hud("nečinnosť " .. level)
     E.each(function(d) hook(d, "necinnost", level) end)
     if level == 0 then
         local had = play ~= nil
+        weatherOff()
         stopPlay()
         if had then E.each(function(d) d:stlac() end) end     -- vyrušené: zachvejú sa
         return
     end
-    if level >= 3 and not play then
-        game()
-        play = every(2200, game)
-    end
+    if level < 2 then return end
+    allowed(function(smie)
+        if not smie or num(fact.idle, 0) < level then return end   -- nesmie, alebo sa medzitým prebudili
+        weatherOn()
+        if level >= 3 and not play then
+            game()
+            play = every(2200, game)
+        end
+    end)
+end)
+-- skúška počasia bez čakania a bez ohľadu na skutočné: pleamar --say goo "emit goo_pocasie N"
+-- (0 vypnúť, 1 riedky dážď, 2 dážď, 3 sneh, 4 vietor); scéna ho ukazuje iba pri nečinnosti (idle ≥ 2)
+on("goo_pocasie", function(n)
+    n = tonumber(n) or 0
+    wx.zrazky, wx.sneh, wx.vietor = (n == 1 or n == 2) and n or (n == 3 and 2 or 0), n == 3, n == 4 and 40 or 0
+    if n == 0 then weatherOff() else weatherOn() end
 end)
 
 -- ── Nastavenia › Kvapky (~/.config/latteos/kvapky.json, ten istý súbor ako plocha Kvapky): voliteľné kvapky sa dajú
@@ -1092,6 +1167,8 @@ local function settings()
     run("latte-goo", { "nastavenia" }, function(out)
         local ok, t = pcall(json.decode, out or "")
         if not ok or type(t) ~= "table" then return end
+        fact.zive = t.zive ~= false                               -- vypínač Živé správanie (predvolene zapnuté)
+        if fact.zive == false then weatherOff() end
         local hide, changed = {}, false
         for _, id in ipairs(type(t.skryte) == "table" and t.skryte or {}) do hide[id] = true end
         for id, d in pairs(byId) do

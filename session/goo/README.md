@@ -254,6 +254,15 @@ GooPower a pozadie zmizne. Klik na LoginGoo = Uspať · Reštartovať · Vypnú�
   (osirelé procesy účtu greetd) — po skúške ich treba ukončiť.
 - Skúšať treba v skutočnej relácii: v skrytom kompozitore (labwc headless) pleamar vykreslí iba prvú snímku.
 
+## Obloha a počasie na hladine
+
+`lib/engine.luau` sa raz za 10 minút spýta `latte-goo obloha` (slnko, mesiac, dážď / sneh, vietor; miesto
+z `greeter.conf`): výška slnka → fakty `den` a `zlata` (svetlo v kvapkách `svit`, žiara nad horizontom). Počasie sa
+ukáže až pri nečinnosti (stupeň 2, po 3 minútach) a iba keď smie (`allowed`: vypínač Živé správanie, nie stupeň
+Softvér, batéria pod 20 %, úsporný profil, okno na celú obrazovku): fakt `prsi` zapne častice, vlnky robí logika
+(`E.vlnka`). Skúška bez čakania: `pleamar --say goo "fact idle 2"` a `"emit goo_pocasie N"` (0 nič, 1 riedky dážď,
+2 dážď, 3 sneh, 4 vietor), späť `"fact idle 0"`. Tú istú funkciu používa prihlásenie (`latte-goo prihlasenie`).
+
 ## Profil používateľa v jednom dokumente (`latte-gooconfig`)
 
 `~/.config/latteos/<účet>@gooconfig.json` (práva 600) — celé prostredie účtu v jednom dokumente: `goo` (kde ktorá
