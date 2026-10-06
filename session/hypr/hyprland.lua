@@ -154,6 +154,8 @@ hl.config({
         disable_splash_rendering = true,
         -- kým sa neukáže tapeta, je obrazovka espresso ako pri prihlásení (nadväzuje naň bez čierneho medzikroku)
         background_color = 0x1a1410,
+        -- zámok obrazovky je scéna enginu Goo (latte-zamok); keby spadla, zámok smie prevziať iný klient (Noctalia)
+        allow_session_lock_restore = true,
         force_default_wallpaper = 0,
         -- strážcom je latte-session (pád → reštart / SAFE, aquamarine #383), nie start-hyprland: ten po páde
         -- spustí Hyprland bez -c. Varovanie „launched without start-hyprland“ je preto zbytočné.

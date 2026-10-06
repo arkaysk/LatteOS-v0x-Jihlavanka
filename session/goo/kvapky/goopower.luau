@@ -148,7 +148,7 @@ local function items(d)
     local list = {
         { pro = true, img = (a.obrazok or "") ~= "" and a.obrazok or nil, glyph = "user", label = a.meno or "…", t2 = who,
           run = function() run("latte-app", { "nastavenia", "mojucet" }) end },
-        { pills = { { glyph = "lock", label = tr("Lock"), run = session("lock") },
+        { pills = { { glyph = "lock", label = tr("Lock"), run = function() after(200, function() run("latte-zamok", {}, nil, { output = false }) end) end },
                     { glyph = "logout", label = tr("Log out"), run = session("logout") } } },
     }
     -- NAPÁJANIE: batéria (notebook) a profil napájania

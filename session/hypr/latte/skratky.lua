@@ -19,6 +19,9 @@ function K.profile()
     return (p == "linux" or p == "mac") and p or "windows"
 end
 
+-- zámok obrazovky: v LatteOS GOO scéna enginu Goo (latte-zamok, pri chybe prejde na zámok Noctalie), inak Noctalia
+local zamok = os.getenv("LATTE_VARIANT") == "kvapky" and "latte-zamok" or "noctalia msg session lock"
+
 local function bind(keys, action, opts) hl.bind(keys, action, opts) end
 local function run(cmd) return hl.dsp.exec_cmd(cmd) end
 local function panel(id, ctx) return run("noctalia msg panel-toggle " .. id .. (ctx and (" " .. ctx) or "")) end
@@ -208,7 +211,7 @@ local function common()
     bind("SUPER + SHIFT + G", run("latte-hra"))                                  -- herný režim: Steam Big Picture (gamescope)
     bind("SUPER + Z", panel("latteos/snap:panel"))
     bind("SUPER + Tab", panel("latteos/overview:panel"))
-    bind("SUPER + L", run("noctalia msg session lock"))
+    bind("SUPER + L", run(zamok))
     bind("SUPER + E", run("latte-app subory"))
     bind("SUPER + SHIFT + left",  hl.dsp.window.move({ monitor = "l" }))
     bind("SUPER + SHIFT + right", hl.dsp.window.move({ monitor = "r" }))
@@ -313,7 +316,7 @@ local function mac()
     bind("SUPER + M", function() latte.win.minimize() end)
     bind("SUPER + H", function() latte.win.minimize() end)
     bind("SUPER + ALT + H", function() latte.keys.minimize_all(true) end)
-    bind("SUPER + CTRL + Q", run("noctalia msg session lock"))
+    bind("SUPER + CTRL + Q", run(zamok))
     bind("SUPER + ALT + Escape", run("latte-app monitor"))                        -- vynútiť ukončenie
     bind("SUPER + SHIFT + 3", run("latte-snimka ulozit"))
     bind("SUPER + SHIFT + 4", run("noctalia msg screenshot-region"))
@@ -334,9 +337,17 @@ end
 
 -- „Zobraziť plochu“: prepne na prázdnu plochu a rovnakou skratkou späť (Win+D, F11 na Macu)
 local desktop_from = nil
+local function ws_empty(ws)
+    for _, w in ipairs(hl.get_windows() or {}) do
+        if w.workspace and tostring(w.workspace.name) == tostring(ws.name) then return false end
+    end
+    return true
+end
 function latte.keys.show_desktop()
     local ws = hl.get_active_workspace()
-    if desktop_from and ws and ws.id ~= desktop_from then
+    -- späť iba z PRÁZDNEJ plochy, na ktorú sa prešlo touto skratkou: kto medzitým prešiel inam (na plochu s oknami),
+    -- tomu ďalšie stlačenie znova ukáže plochu, nie návrat na dávno opustenú (latte-lab 6. 10.)
+    if desktop_from and ws and ws.id ~= desktop_from and ws_empty(ws) then
         hl.dispatch(hl.dsp.focus({ workspace = desktop_from }))
         desktop_from = nil
     else
