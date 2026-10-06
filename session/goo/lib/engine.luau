@@ -415,9 +415,8 @@ function E.define(def, zdroj)
     d.edge0 = anchor and (anchor.edge0 or 0) or clamp(math.floor(num(def.okraj, 0)), 0, 3)
     d.edge = clamp(math.floor(num(s and s.e, d.edge0)), 0, 3)
     -- gravitácia: nič nevisí vo vzduchu — kvapka uložená alebo zadaná mimo okraja si naň sadne
-    -- (výnimka `visi`: bobule hrozna upozornení visia na lepkavom vlákne, kým je hrozno otvorené)
-    if not def.visi and d.y >= v.velkost * d.z * 1.6 then d.y = seat end
-    if not def.visi and d.hy0 >= v.velkost * 1.6 then d.hy0 = seat end
+    if d.y >= v.velkost * d.z * 1.6 then d.y = seat end
+    if d.hy0 >= v.velkost * 1.6 then d.hy0 = seat end
     slots[k], byId[def.id] = d, d
     E.separate()
     E.needGlyph(v.ikona)
@@ -570,7 +569,7 @@ function E.menu(items, width, opts)
     local maxH = math.max(400, sh - 24)
     -- UCHO (pravidlo 9, ako v ploche Kvapky): kvapka, z ktorej karta rastie, vystúpi od okraja a sedí v jej rohu
     local owner = opts.owner
-    if owner and owner.zdroj ~= "dyn" and not owner.def.visi and (owner.y < owner.v.velkost * owner.z * 1.6 or raised == owner) then
+    if owner and owner.zdroj ~= "dyn" and (owner.y < owner.v.velkost * owner.z * 1.6 or raised == owner) then
         if raised and raised ~= owner then E.menuRelease() end
         if raised ~= owner then
             raised, owner.yRest, owner.pinned = owner, owner.y, true
@@ -828,7 +827,7 @@ on("goo_scroll", function(v)
     local d = at(k) if not d then return end
     hud("koliesko " .. (up and "hore" or "dole") .. " · " .. d.id)
     -- veľkosť kolieskom: všetky kvapky, ktoré koliesko nepotrebujú na iné (hlava GooBaru ním prepína okná — jej veľkosť
-    -- je v Nastaveniach › Kvapky); nie okná GooBaru ani bobule hrozna (tie rozkladá ich majiteľ)
+    -- je v Nastaveniach › Kvapky); nie okná GooBaru (tie rozkladá GooBar)
     if not hook(d, "koliesko", up and 1 or -1) and d.v.zoom and d.zdroj ~= "dyn" then d:velkost(d.z + (up and 0.1 or -0.1)) end
 end)
 on("goo_enter", function(k)
@@ -960,7 +959,7 @@ on("win_min", function()
     if E.onWinMin then after(250, E.onWinMin) end                       -- GooBar hneď prekreslí ikry
 end)
 
--- ── nečinnosť: živé bytosti (LATTEOS-GOO.md 3.1) ─────────────────────────────────────────────────────────────────
+-- ── nečinnosť: živé bytosti (LATTEOS-GOO.md §3.1) ─────────────────────────────────────────────────────────────────
 -- stupeň 1 (1 min) zaspávajú — menšie nadnesenie robí scéna; 2 (3 min) počasie — rezerva, háčik necinnost(d, 2);
 -- 3 (6 min) hra hravých kvapiek: naháňačka so zámernou zrážkou a odrazom (squish), behanie po lište, skákanie.
 -- Prebudenie hneď: všetky sa zachvejú a vrátia na svoje miesto (poloha z Nastavení sa nemení).

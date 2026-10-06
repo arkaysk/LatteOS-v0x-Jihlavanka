@@ -1,4 +1,4 @@
--- ClockGoo (čas, kalendár, upozornenia a pohoda, LATTEOS-GOO.md „Nová architektúra“ §2): voliteľná kvapka, ktorá
+-- ClockGoo (čas, kalendár, upozornenia a pohoda, LATTEOS-GOO.md §4.5): voliteľná kvapka, ktorá
 -- spája čas a centrum upozornení (predtým TimeGoo a DaNoGoo). V kvapke veľký čas a dátum; guľky počtu upozornení —
 -- systémové/kritické červeno-kávové, ostatné žlté (do 4, nad 4 s počtom); nové upozornenie zvlní hladinu.
 -- Ľavý klik = UPOZORNENIA A KALENDÁR (používateľ 6. 10.: „upozornenia a kalendárová sekcia vrátane napojených
@@ -9,7 +9,7 @@
 -- Pravý klik = KARTA ČASU (lib/cas.luau, údaje spoločné s plochou Kvapky): Prehľad (dátum, týždeň, najbližší budík,
 -- digitálna pohoda, svetové hodiny) · Stopky (medzičasy) · Minútka (koliesko nastaví dĺžku) · Budíky · Počasie.
 -- Minútka a budíky zvonia, aj keď je karta zatvorená; bežiaca minútka alebo stopky sa ukazujú v kvapke namiesto dátumu.
--- Upozornenia prijíma pleamar — iba jeden proces. (Hrozno upozornení na lepkavom vlákne bolo na ľavom klike do 6. 10.)
+-- Upozornenia prijíma pleamar — iba jeden proces.
 local E = require("lib/engine")
 local cas = require("lib/cas")
 local DNI = { "ne", "po", "ut", "st", "št", "pi", "so" }

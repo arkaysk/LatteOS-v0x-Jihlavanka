@@ -17,13 +17,13 @@
 
 ### 💻 Programátor
 - [Engine Goo — API](../session/goo/README.md) — ako pridať alebo upraviť kvapku
-- [Engine Goo — stav, záplaty, merania](goo/ENGINE-REPORT.md)
+- [Denník rozhodnutí](goo/ROZHODNUTIA.md) — kedy a prečo sa čo rozhodlo, čo bolo zamietnuté
 - [Inštalácia a testy na latte-lab](../setup/lab/README.md)
 - [Roadmapa](../ROADMAP.md)
 
 ### 🤖 Claude Code (po resete)
-- [**Cloud session — záznam**](../cloud_session_1.md) — čo sa urobilo v cloude
-- [**Engine report**](goo/ENGINE-REPORT.md) — stav a merania
+- [**LATTEOS-GOO.md**](../LATTEOS-GOO.md) — čo platí (prečítať ako prvé), [ROADMAP.md](../ROADMAP.md) F3·G — čo ostáva
+- [**Archív**](../docs_zaloha/README.md) — staré reporty a merania (napr. odovzdávka enginu k 5. 10., záznam z cloudu)
 
 ---
 
@@ -52,8 +52,8 @@ jeho kód zatiaľ v `session/` ostáva, kým ho GOO nenahradí aj ako predvolen�
 - [Engine API](../session/goo/README.md) — ako sa dá programovať
 
 ### Keď je session resetnutá
-- [Cloud session — záznam](../cloud_session_1.md)
-- [Engine report — stav](goo/ENGINE-REPORT.md)
+- [LATTEOS-GOO.md](../LATTEOS-GOO.md), [ROZHRANIE.md](goo/ROZHRANIE.md) (stav kvapiek), [ROADMAP.md](../ROADMAP.md) F3·G
+- história: [docs_zaloha/](../docs_zaloha/README.md)
 
 ---
 
@@ -67,17 +67,17 @@ docs/
 └── goo/                          ← LatteOS GOO
     ├── README.md                 ← Vstup pre Goo
     ├── PRAVIDLA.md               ← 22 pravidiel kvapiek
-    ├── ROZHRANIE.md              ← Jednotlivé kvapky a ich kliky (Nová architektúra)
-    └── ENGINE-REPORT.md          ← Stav enginu, záplaty, merania
+    ├── ROZHRANIE.md              ← Jednotlivé kvapky, ich kliky a stav v engine
+    └── ROZHODNUTIA.md            ← Denník rozhodnutí s dátumami, zamietnuté nápady
 
-session/goo/README.md             ← API enginu pre programátorov
-cloud_session_1.md (koreň)        ← Záznam cloudovej session
+session/goo/README.md             ← API enginu, pasce jazyka, testovanie
+docs_zaloha/ (koreň)              ← Archív: staré dokumenty, reporty a merania s dátumom (obsah sa nemení)
 
 setup/
 ├── lab/README.md                 ← Inštalácia na PC
 └── ...
 
-LATTEOS-GOO.md (koreň)            ← Záväzný dokument: pravidlá, správanie, architektúra
+LATTEOS-GOO.md (koreň)            ← Záväzný dokument: čo platí — pravidlá, správanie, kvapky
 ```
 
 ---
@@ -95,5 +95,7 @@ LATTEOS-GOO.md (koreň)            ← Záväzný dokument: pravidlá, správani
 1. Prečítaj [ARCHITECTURE.md](ARCHITECTURE.md)
 2. Zaciluj vrstvu, ktorú potrebuješ zmeniť
 3. Predtým, ako meníš kvapky: [Pravidlá](goo/PRAVIDLA.md)
-4. Rozhodnutia zapisuj do [LATTEOS-GOO.md](../LATTEOS-GOO.md), stav enginu do [ENGINE-REPORT.md](goo/ENGINE-REPORT.md)
+4. Platné znenie oprav v [LATTEOS-GOO.md](../LATTEOS-GOO.md) (a [ROZHRANIE.md](goo/ROZHRANIE.md)), rozhodnutie s dátumom
+   zapíš do [ROZHODNUTIA.md](goo/ROZHODNUTIA.md), plán do [ROADMAP.md](../ROADMAP.md); starý dokument pred zmazaním
+   alebo závažnou zmenou ulož s dátumom do [docs_zaloha/](../docs_zaloha/README.md)
 5. Commit a `git push -u origin main`

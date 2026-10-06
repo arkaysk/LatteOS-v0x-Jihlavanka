@@ -1,4 +1,4 @@
--- lib/spustac.luau — okno spúšťača LensGoo (LATTEOS-GOO.md „Nová architektúra“ §1): hľadanie, spúšťač a AI v karte Goo.
+-- lib/spustac.luau — okno spúšťača LensGoo (LATTEOS-GOO.md §4.3): hľadanie, spúšťač a AI v karte Goo.
 -- Režimy (záložky hore; koliesko nad nimi alebo Tab prepína; pamätá sa v spustac.json — spoločné s plochou Kvapky):
 --   Aplikácie  bez textu obľúbené a nedávne, s textom hľadanie aplikácií, kalkulačka a prevody, stránky Nastavení
 --              a rýchle prepnutie do iných režimov; pravý klik = akcie aplikácie (Nové okno…)

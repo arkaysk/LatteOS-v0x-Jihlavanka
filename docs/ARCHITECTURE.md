@@ -69,7 +69,7 @@ pleamar engine (scéna goo.plm + logika Luau)
 ├── Noctalia (rohová lišta s widgetmi)
 └── Hyprland (okná aplikácií)
 ```
-Pôvodná scéna plochy Kvapky (`session/kvapky/kvapka.plm`) ešte používa staré mená (TimeGoo, PowerGoo, DaNoGoo).
+Pôvodná scéna plochy Kvapky (`session/kvapky/kvapka.plm`, staré mená TimeGoo, PowerGoo, DaNoGoo) sa už nenasadzuje.
 
 **Goo v detaile:**
 - Scéna: `session/goo/goo.plm` (fyzika, vstupy, kresba, karta Goo, pás výkonu)
@@ -119,7 +119,7 @@ Hyprland (WM)
 │   ├── bin/             ← Úkony (latte-session, latte-goo…)
 │   ├── hypr/            ← Hyprland config (Lua)
 │   ├── goo/             ← Engine Goo (scéna + logika)
-│   ├── kvapky/          ← Pôvodná plocha Kvapky (kým ju engine nenahradí)
+│   ├── kvapky/          ← Pôvodná plocha Kvapky (už sa nenasadzuje)
 │   ├── apps/            ← Aplikácie (Quickshell)
 │   ├── noctalia/        ← Noctalia integrácia
 │   └── wayland-sessions/← .desktop súbory
@@ -132,7 +132,7 @@ Hyprland (WM)
 │   └── fetch.sh         ← Sťahovanie
 ├── docs/                ← Táto dokumentácia
 ├── old/                 ← Predchádzajúca verzia (len čítanie)
-└── docs_zaloha/         ← Staré verzie dokumentov (zatiaľ prázdne)
+└── docs_zaloha/         ← Archív: staré dokumenty, reporty a merania s dátumom
 ```
 
 ## Režimy a varianty
@@ -140,7 +140,7 @@ Hyprland (WM)
 ### Relácia (`latte-session [safe|hra|kvapky|kvapky-engine|noctalia]`)
 ```
 bez argumentu   → LATTE_VARIANT=klasicke   LatteOS Classic (zrušený, na odstránenie)
-kvapky          → LATTE_VARIANT=kvapky     plocha Kvapky (session/kvapky/kvapka.plm)
+kvapky          → LATTE_VARIANT=kvapky     plocha Kvapky (session/kvapky/kvapka.plm) — už sa nenasadzuje
 kvapky-engine   → LATTE_VARIANT=kvapky     + LATTE_KVAPKY_SCENE = engine Goo (session/goo/goo.plm)
 noctalia        → LATTE_VARIANT=noctalia   čistá Noctalia na pokusy
 safe, hra       → núdzová relácia, herná relácia

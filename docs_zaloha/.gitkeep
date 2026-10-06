@@ -1,8 +1,0 @@
-# docs_zaloha
-
-Priečinok pre odložené staré verzie dokumentov. Zatiaľ je prázdny: pri reorganizácii dokumentácie (2.–3. 10. 2026)
-sa nič nepresúvalo — pôvodné súbory ostali na svojich miestach:
-
-- `LATTEOS-GOO.md` (koreň) — záväzný dokument; prehľady z neho sú v `docs/goo/`
-- `session/goo/README.md` — API enginu Goo
-- `cloud_session_1.md` (koreň) — záznam cloudovej session

@@ -8,7 +8,7 @@
   upozornenia a kalendár), QueenGoo (App Manager a Správca zariadení)
 - **Fyzika:** pružia sa, lepia na okraj, spájajú sa navzájom, reagujú na kurzor
 - **Vstupy:** myš (všetko sa dá ovládať: klik, pravý, koliesko, ťahanie); každá kvapka má funkciu na ľavom aj
-  pravom tlačidle, koliesko mení veľkosť (LATTEOS-GOO.md §3.5)
+  pravom tlačidle, koliesko mení veľkosť (LATTEOS-GOO.md §4)
 - **Efekty:** vietor, vlnky na hladine (aj pri minimalizácii okna), hra pri nečinnosti
 
 ## Čo s tým robím
@@ -24,8 +24,8 @@
 → Potom: [Engine API](../../session/goo/README.md)
 
 ### Som programátor a resetla sa session
-→ [Cloud session — záznam](../../cloud_session_1.md)
-→ [Engine report s meraniami](ENGINE-REPORT.md)
+→ [LATTEOS-GOO.md](../../LATTEOS-GOO.md) (čo platí), [denník rozhodnutí](ROZHODNUTIA.md), plán v [ROADMAP.md](../../ROADMAP.md) (F3·G)
+→ história a merania: [docs_zaloha/](../../docs_zaloha/README.md)
 
 ---
 
@@ -36,8 +36,8 @@
 | [PRAVIDLA.md](PRAVIDLA.md) | 22 zásad správania kvapiek, fyzika, nečinnosť |
 | [ROZHRANIE.md](ROZHRANIE.md) | Jednotlivé kvapky a ich kliky (GooBar, GooPower, LensGoo, QueenGoo, ClockGoo, ChatGoo) |
 | [session/goo/README.md](../../session/goo/README.md) | Ako programovať: API, háčiky, príklady |
-| [ENGINE-REPORT.md](ENGINE-REPORT.md) | Technický report: záplaty, merania, otvorené úlohy |
-| [cloud_session_1.md](../../cloud_session_1.md) | História zmien, rozhodnutí a testov z cloudu |
+| [ROZHODNUTIA.md](ROZHODNUTIA.md) | Denník rozhodnutí s dátumami a zamietnuté nápady |
+| [docs_zaloha/](../../docs_zaloha/README.md) | Archív: odovzdávka enginu k 5. 10. s meraniami, záznam z cloudu, staré varianty |
 
 ---
 
@@ -58,9 +58,9 @@
    ```
 
 **Keď padne session:**
-1. Prečítaj [ENGINE-REPORT.md](ENGINE-REPORT.md) — čo je hotové a čo chýba
+1. Prečítaj [ROZHRANIE.md](ROZHRANIE.md) (čo je hotové a čo chýba) a ROADMAP F3·G
 2. Zafixuj to, čo treba opraviť
-3. Zapíš stav do [ENGINE-REPORT.md](ENGINE-REPORT.md) + commit
+3. Oprav platný stav (ROZHRANIE.md, LATTEOS-GOO.md), rozhodnutie zapíš do [ROZHODNUTIA.md](ROZHODNUTIA.md) + commit
 
 ---
 
@@ -124,7 +124,7 @@ git commit -m "goo: zmena"
 git push -u origin main
 
 # Aktualizovať dokumentáciu
-# stav enginu: docs/goo/ENGINE-REPORT.md, rozhodnutia: LATTEOS-GOO.md
+# platné: LATTEOS-GOO.md, docs/goo/ROZHRANIE.md · rozhodnutia: docs/goo/ROZHODNUTIA.md · plán: ROADMAP.md
 ```
 
 ---

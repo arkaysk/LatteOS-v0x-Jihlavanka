@@ -1,4 +1,4 @@
--- QueenGoo (App Manager a Správca zariadení, LATTEOS-GOO.md „Nová architektúra“ §2 — voliteľná): ikona aplikácií, guľky podľa pravidla 15 — červená = zariadenia, ktoré
+-- QueenGoo (App Manager a Správca zariadení, LATTEOS-GOO.md §4.4 — voliteľná): ikona aplikácií, guľky podľa pravidla 15 — červená = zariadenia, ktoré
 -- potrebujú pozornosť (latte-devices list › faults), zelená = výpadok siete, modrá = čakajúce aktualizácie
 -- (latte-apps updates). Ľavý klik = App Manager (pri aktualizáciách rovno na nich), pravý = Správca zariadení (pri
 -- výpadku siete na Sieťach). Riadne okná sa rodia z bubliny (pravidlo 14): kráľovná ostane na mieste, vypľuje bublinu,

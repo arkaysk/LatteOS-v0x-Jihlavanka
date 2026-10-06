@@ -1,7 +1,7 @@
 # LatteOS Goo — Rozhranie
 
 Popis jednotlivých kvapiek a ich správania podľa **Novej architektúry** (rozhodnutie 5. 10. 2026) a klikov
-podľa rozhodnutia 6. 10. ([LATTEOS-GOO.md §3.5](../../LATTEOS-GOO.md)).
+podľa rozhodnutia 6. 10. ([LATTEOS-GOO.md §4](../../LATTEOS-GOO.md)).
 
 | Goo | Ľavý klik | Pravý klik | Koliesko |
 |---|---|---|---|
@@ -15,9 +15,8 @@ podľa rozhodnutia 6. 10. ([LATTEOS-GOO.md §3.5](../../LATTEOS-GOO.md)).
 Stredné tlačidlo nemá žiadna kvapka shellu; tlačidlo bez funkcie goo zavibruje. Veľkosť hlavy GooBaru je
 v Nastaveniach › Kvapky (koliesko na nej prepína okná).
 
-*Úplný originál je v [LATTEOS-GOO.md](../../LATTEOS-GOO.md), časť „Nová Architektúra prostredia a rozhranie Goo“.
-Staršie rozdelenie (TimeGoo, DaNoGoo, PowerGoo) je v §4 toho istého dokumentu a platí už iba pre scénu plochy
-Kvapky, kým ju engine nenahradí.*
+*Záväzné znenie je v [LATTEOS-GOO.md](../../LATTEOS-GOO.md) §4. Staršie rozdelenie (TimeGoo, DaNoGoo, PowerGoo)
+patrí pôvodnej ploche Kvapky, ktorá sa už nenasadzuje (archív: `docs_zaloha/`).*
 
 Stĺpec **Engine** hovorí, čo z toho už vie engine Goo (`session/goo`); zvyšok je zatiaľ iba v scéne Kvapky.
 
@@ -153,5 +152,5 @@ ClipGoo (schránka), MediaGoo (prehrávač, MPRIS), PassGoo (heslá), CastGoo (s
 ## Ďalej
 
 - [Pravidlá plochy](PRAVIDLA.md)
-- [Engine — report](ENGINE-REPORT.md)
+- [Denník rozhodnutí](ROZHODNUTIA.md)
 - [Originál v LATTEOS-GOO.md](../../LATTEOS-GOO.md)

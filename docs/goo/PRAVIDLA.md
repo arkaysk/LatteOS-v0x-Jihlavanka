@@ -99,7 +99,7 @@ Zásady správania kvapiek, fyziky a vstupov. **Záväzné pri vývoji.**
 
 ---
 
-## Engine pravidlá (§3.2)
+## Engine (podrobne v session/goo/README.md)
 
 Engine dáva spoločné pravidlá pre **všetky kvapky** jednou kópiou:
 
@@ -119,5 +119,5 @@ Engine dáva spoločné pravidlá pre **všetky kvapky** jednou kópiou:
 ## Ďalej
 
 - [Rozhranie — jednotlivé kvapky podľa Novej architektúry](ROZHRANIE.md)
-- [Engine — report](ENGINE-REPORT.md)
+- [Denník rozhodnutí](ROZHODNUTIA.md)
 - [Originál v LATTEOS-GOO.md](../../LATTEOS-GOO.md)

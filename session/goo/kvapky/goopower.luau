@@ -1,4 +1,4 @@
--- GooPower (napájanie a monitor systému, LATTEOS-GOO.md „Nová architektúra“ §1; predtým PowerGoo): základná kvapka.
+-- GooPower (napájanie a monitor systému, LATTEOS-GOO.md §4.2; predtým PowerGoo): základná kvapka.
 -- Polomer 19, skoro celý v okraji (stred 3 px nad ním), pri kurzore sa nadnesie najviac zo všetkých (~26 px),
 -- 62 px vľavo od LensGoo. Batéria (notebook): guľky 3 zelené (≥ 60 %), 2 žlté (≥ 30 %), 1 červená; pod 10 % jadro
 -- pulzuje, pri nabíjaní dýcha. Na stolnom PC žiadne.
