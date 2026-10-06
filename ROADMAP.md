@@ -377,6 +377,23 @@ texty preložiteľné (`translations`). Noctalia beží bez lišty a robí, čo 
   a Súborov (LATTEOS-GOO.md §5)
 - [ ] Nové kvapky: ClipGoo, MediaGoo, PassGoo, CastGoo (LATTEOS-GOO.md §4.11)
 - [ ] Materiál aj na oknách aplikácií pri kovových témach (textúra v hlavičke okna — upravený hyprbars)
+- [ ] **Nápady zo 6. 10. (prijaté do plánu)** — docs/goo/ROZHODNUTIA.md:
+  - [ ] podržanie LensGoo = hovor (whisper.cpp lokálne, `latte-ai hlas`): pri držaní sa pri ikone plynulo ukáže
+    mikrofón; výsledok ako príkaz, otázka pre AI alebo text do okna (vzor: Voxtype, Vocalinux)
+  - [ ] dlho nepoužitá kvapka sa postupne zmenšuje (nie ikry GooBaru), použitím sa vráti
+  - [ ] odkladacia kvapka na súbory (súbor pritiahnutý k okraju počká v kvapke, ako Dropover)
+  - [ ] zvuková identita Goo (kvapnutie, žblnknutie, prasknutie bubliny) s vypínačom
+  - [ ] telefón v ClockGoo: upozornenia, SMS, schránka a súbory cez KDE Connect (v Classic už bolo)
+  - [ ] pomoc na diaľku jedným klikom (GooPower; RustDesk alebo vstavaný server, ako Quick Assist)
+  - [ ] prechod z Windowsu: import profilov prehliadača, dokumentov a písiem; podržanie Win = prehľad skratiek
+  - [ ] režim sústredenia (minútka + Nerušiť + pokojné kvapky) — najprv zistiť, čo už má Noctalia
+  - [ ] vrátiť späť pri zmene nastavení — ako súčasť okna Nastavení
+  - [ ] ovládanie Goo Steam Controllerom / gamepadom (Steam Input), na základe ovládania z klávesnice (§6.1)
+  - [ ] **AI voliteľná pri inštalácii** (voľba „systém bez AI“); **`latte-mcp`** (engine a pomocníci ako nástroje MCP,
+    potvrdenie zásahov v goo bubline) — na vyriešenie
+  - [ ] na rozhodnutie: stavy hladiny (kľud, vlnenie, príboj, búrka) — k čomu ich naviazať; tekuté zóny okien
+    (ukážka); pamäť obrazovky (Screenpipe/OpenRecall, voliteľná); zdroj výsledku v LensGoo
+- [ ] Ovládacie centrum Noctalie nad rohovou lištou vpravo — overiť na latte-lab (`latte-kvapky`: `bottom_right`)
 - [ ] **Verejná verzia 0.2** (iba GOO) po dokončení enginu: obnoviť `arkaysk/latteos` (`setup/verejne/`), verejné
   README podľa GOO, licencia
 - [x] pleamar v0.2.6, pleamar-wm v0.2.5, marea-plm (1. 10.): pripnuté, záplaty sedia, inštalácia preloží novší
@@ -600,6 +617,9 @@ Kľúčové zistenie: pri softvérovom kreslení stojí **každá snímka** komp
 - [ ] Štart: `systemd-analyze`, čas od greetera po použiteľnú lištu; odložiť nepotrebné démony.
 - [x] Nástroj `setup/test/vykon.sh` (26. 9.): zmeria CPU a PSS relácie za 30 s (pokoj / animácie / otvorené okná) a uloží
   výsledok, aby sa dalo porovnávať medzi commitmi.
+
+### Na koniec — prenos účtu
+- [ ] Expert nastavenia: pripojenie mobilom so svojím účtom na cudzom Goo PC (prenosná relácia, LatteApp — radar)
 
 ### A — Fedora Atomic *(až keď bude F0–F8 + H hotové)*
 - [ ] Obraz LatteOS cez bootc / rpm-ostree podľa vzoru Bazzite (`resources/upstream/bazzite`).

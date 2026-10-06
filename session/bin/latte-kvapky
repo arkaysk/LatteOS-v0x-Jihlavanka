@@ -72,11 +72,11 @@ enable_daemon = false
 [wallpaper]
 enabled = false
 
-# klik na Hodiny otvorí ovládacie centrum Noctalie (dashboard) — lišta Noctalie nie je, preto voľne vľavo dole
-# nad Hodinami, nie prilepené k lište
+# ovládacie centrum Noctalie sa otvára z rohovej lišty vpravo dole — preto vpravo dole, nad lištou (6. 10.:
+# „musí sa otvoriť nad lištou napravo“; predtým vľavo dole nad Hodinami pôvodnej plochy Kvapky)
 [shell.panel]
 control_center_placement = "floating"
-control_center_position  = "bottom_left"
+control_center_position  = "bottom_right"
 EOF2
     # rohová lišta Noctalie vpravo dole (iba so záplatou): iba pravá časť, prilepená do rohu, šírka podľa widgetov;
     # vpravo sa vyduje hore do bočnej steny, vľavo sa rozleje po spodnom okraji (goo). Widgety a doplnky sa dajú
