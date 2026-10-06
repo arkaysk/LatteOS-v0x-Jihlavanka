@@ -254,6 +254,25 @@ GooPower a pozadie zmizne. Klik na LoginGoo = Uspať · Reštartovať · Vypnú�
   (osirelé procesy účtu greetd) — po skúške ich treba ukončiť.
 - Skúšať treba v skutočnej relácii: v skrytom kompozitore (labwc headless) pleamar vykreslí iba prvú snímku.
 
+## Profil používateľa v jednom dokumente (`latte-gooconfig`)
+
+`~/.config/latteos/<účet>@gooconfig.json` (práva 600) — celé prostredie účtu v jednom dokumente: `goo` (kde ktorá
+kvapka sedí a aká je veľká, skryté a vlastné kvapky, káva, pás výkonu), `okna` (téma, režim, stupeň výkonu), `tapeta`,
+`obrazovky`, `noctalia` (widgety rohovej lišty, nastavenia), `spustac`, `subory`, `maskot`, `ai` (bez tajných kľúčov),
+`siet`, `slovnik`. Každý účet má svoj — každý môže mať GooPower inde, iné goo aj tapetu.
+
+- **Stav (prvá verzia, 6. 10.):** programy ešte čítajú svoje pôvodné súbory (`~/.config/latteos/*`,
+  `~/.local/state/latteos/**`); dokument s nimi drží v zhode **oboma smermi** `latte-gooconfig sleduj` (beží
+  s plochou, spúšťa `latte-kvapky start`): zmena nastavení → do 5 s v dokumente; dokument zmenený ručne alebo
+  prinesený → rozloží sa do nastavení a bežiaci engine, tapeta a téma ho prevezmú hneď. Pri prihlásení to isté
+  robí `latte-gooconfig prihlasenie` (`latte-session`) ešte pred štartom plochy.
+- **Príkazy:** `ukaz`, `zber`, `pouzi [SÚBOR] [--hned]`, `export SÚBOR`, `cesta`. Prenos na iný počítač:
+  `export` tam, `pouzi` tu. Mapu „časť dokumentu ↔ súbor“ má skript hore (`MAPA`) — nové nastavenie sa pridá riadkom.
+- **Prihlasovanie** do domova nevidí: dostane iba výťah `/var/lib/latteos/greeter/goo-<účet>.json` (kde sedí
+  GooPower, aká je káva) — LoginGoo padá na miesto GooPower toho, kto sa prihlasuje, a káva je jeho.
+- **Ostáva:** aby programy čítali dokument priamo (engine cez `latte-goo`, Nastavenia, tapety, téma) a pôvodné
+  súbory zanikli; export a import v Nastaveniach › Účet; overiť s druhým účtom.
+
 ## Ďalej (z pravidiel plochy, zatiaľ nie v engine)
 
 - Dážď a vietor podľa počasia pri nečinnosti (LATTEOS-GOO.md, nečinnosť stupeň 2). Ostatné otvorené úlohy enginu
