@@ -1441,7 +1441,8 @@ scene Goo {
     }
     // ── PÁS VÝKONU (pravý klik na GooPower, používateľ 6. 10.): GooPower sa natiahne pozdĺž svojho okraja do kapsuly
     // (kd: na voľnú stranu, ikona ostane na konci pri pôvodnej kvapke; susedné goo odsunie pravidlo 22 v logike)
-    // a v nej sú bunky FPS (hra s MangoHud), CPU, RAM, GPU, VRAM. Údaje dáva logika (latte-sysmon goo, raz za sekundu).
+    // a v nej sú bunky CPU, RAM, GPU, VRAM (FPS nie: hra na celú obrazovku je nad Goo — 6. 10.). Údaje dáva logika
+    // (latte-sysmon goo, raz za sekundu).
     // Bunka: názov, hodnota a pruh; farba podľa záťaže — káva, jantárová (nad 80 %), červená (nad 95 % alebo
     // prehriatie). Myš: prechod = bublina s podrobnosťami, klik = Monitor na tej časti, pravý klik = pás sa vtiahne.
     model mon max 6 { l: text; v: text; lvl: number; c: number }
@@ -1682,9 +1683,6 @@ scene Goo {
         "Graphics" = "Grafika"
         "Video memory" = "Videopamäť"
         "most" = "najviac"
-        "frame" = "snímka"
-        "FPS appears while a game runs with MangoHud" = "FPS sa ukáže, keď beží hra s MangoHud"
-        "FPS: turn on MangoHud logging (click)" = "FPS: zapnúť záznam MangoHud (klik)"
         "NOTIFICATIONS" = "UPOZORNENIA"
         "New ones appear here and ripple the edge" = "Nové sa ukážu tu a zvlnia hladinu"
         "Do not disturb" = "Nerušiť"

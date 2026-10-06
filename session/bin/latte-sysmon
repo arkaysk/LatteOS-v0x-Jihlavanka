@@ -10,11 +10,8 @@
                              senzory, batéria, systém)
   latte-sysmon once          jeden snímok (bez procesov)
   latte-sysmon goo [s]       malý JSON riadok každú sekundu pre pás výkonu GooPower (engine Goo): CPU (a teplota,
-                             takt, najnáročnejší proces), RAM, GPU a VRAM (a teplota), FPS hry z MangoHud — iba to,
-                             čo pás ukazuje, aby bol lacný (latte-sysmon stream číta všetko vrátane procesov a diskov)
-  latte-sysmon mangohud [on|off]  záznam FPS MangoHud pre pás výkonu: zapíše do ~/.config/MangoHud/MangoHud.conf
-                             priečinok záznamu a automatický štart (bez on/off iba vypíše stav); prekrytie v hre ostáva,
-                             ako si ho používateľ nastavil
+                             takt, najnáročnejší proces), RAM, GPU a VRAM (a teplota) — iba to, čo pás ukazuje,
+                             aby bol lacný (latte-sysmon stream číta všetko vrátane procesov a diskov)
   latte-sysmon bench                          test výkonu CPU (ako Bench v CPU-Z): 7-Zip benchmark (MIPS, porovnateľné s
                                               7-cpu.com), inak náhradný test; 1 vlákno aj všetky; história v bench.json
   latte-sysmon sluzby                         JSON: služby systému aj používateľa (stav, popis, povolená, pamäť)
@@ -1653,11 +1650,6 @@ def pohoda_day(date_s, only=None):
 
 
 # ── pás výkonu GooPower (engine Goo): iba to, čo pás ukazuje ────────────────────────────────────────────────────
-MANGO_DIR = os.path.join(RUN, "mangohud")                # sem píše MangoHud záznam FPS (latte-sysmon mangohud on)
-MANGO_CONF = os.path.join(os.environ.get("XDG_CONFIG_HOME", os.path.expanduser("~/.config")), "MangoHud", "MangoHud.conf")
-MANGO_KEYS = {"output_folder": MANGO_DIR, "autostart_log": "1", "log_interval": "500", "log_duration": "0"}
-
-
 def temp_of(names, labels):
     """teplota (°C) prvého senzora hwmon s menom z `names`; prednosť má štítok z `labels` (Tctl, Package id 0, edge)"""
     best = None
@@ -1675,53 +1667,6 @@ def temp_of(names, labels):
             if best is None:
                 best = round(c)
     return best
-
-
-def mangohud_fps():
-    """FPS a čas snímky hry z posledného riadku najnovšieho záznamu MangoHud (CSV), ak sa doň zapisovalo pred chvíľou"""
-    files = glob.glob(os.path.join(MANGO_DIR, "*.csv"))
-    if not files:
-        return None
-    f = max(files, key=os.path.getmtime)
-    if time.time() - os.path.getmtime(f) > 3:
-        return None
-    try:
-        with open(f, "rb") as h:
-            h.seek(0, 2)
-            h.seek(max(0, h.tell() - 8192))
-            tail = h.read().decode("utf-8", "replace").splitlines()
-        head = next((l.split(",") for l in tail if l.startswith("fps,")), None)
-        if head is None:                                 # hlavička je ďaleko hore (dlhý záznam): prečítať ju zo začiatku
-            with open(f, encoding="utf-8", errors="replace") as h:
-                head = next((l.strip().split(",") for _, l in zip(range(40), h) if l.startswith("fps,")), None)
-        last = tail[-1].split(",") if tail else []
-        if not head or len(last) < len(head) or not re.match(r"^[\d.]+$", last[0]):
-            return None
-        row = dict(zip(head, last))
-        app = re.sub(r"_\d{4}-\d{2}-\d{2}.*$", "", os.path.basename(f)[:-4])
-        return {"fps": round(float(row["fps"])), "ms": round(float(row.get("frametime") or 0), 1), "app": app}
-    except (OSError, ValueError, KeyError):
-        return None
-
-
-def mangohud_conf(on=None):
-    """záznam FPS pre pás výkonu v konfigurácii MangoHud: on/off zapíše, None iba povie stav"""
-    try:
-        lines = open(MANGO_CONF).read().splitlines()
-    except OSError:
-        lines = []
-    cur = {l.split("=", 1)[0].strip(): l.split("=", 1)[1].strip() for l in lines if "=" in l and not l.lstrip().startswith("#")}
-    if on is None:
-        return all(cur.get(k) == v for k, v in MANGO_KEYS.items())
-    keep = [l for l in lines if l.split("=", 1)[0].strip() not in MANGO_KEYS and l.strip() != "# LatteOS: pás výkonu GooPower (FPS)"]
-    if on:
-        keep += ["# LatteOS: pás výkonu GooPower (FPS)"] + ["%s=%s" % kv for kv in MANGO_KEYS.items()]
-        os.makedirs(MANGO_DIR, exist_ok=True)
-    os.makedirs(os.path.dirname(MANGO_CONF), exist_ok=True)
-    with open(MANGO_CONF + ".new", "w") as h:
-        h.write("\n".join(keep) + "\n")
-    os.replace(MANGO_CONF + ".new", MANGO_CONF)
-    return on
 
 
 def top_process(prev, dt):
@@ -1748,7 +1693,7 @@ def top_process(prev, dt):
 
 
 def goo_stream(every):
-    """pás výkonu GooPower: jeden JSON riadok každých `every` s (CPU, RAM, GPU, VRAM, teploty, FPS)"""
+    """pás výkonu GooPower: jeden JSON riadok každých `every` s (CPU, RAM, GPU, VRAM, teploty)"""
     prev = cpu_times()[0]
     t0 = time.monotonic()
     procs, top = {}, None
@@ -1772,8 +1717,7 @@ def goo_stream(every):
             gt = g.get("temp")
         out = {"cpu": max(0, min(100, cpu)), "cpuT": temp_of(("k10temp", "coretemp", "zenpower", "cpu_thermal", "acpitz"), ("Tctl", "Tdie", "Package id 0")),
                "mhz": cpu_freq(), "top": top, "ram": mem["used"], "ramT": mem["total"], "swap": mem["swapUsed"],
-               "gpu": g.get("busy"), "gpuT": gt, "vram": g.get("vramUsed"), "vramT": g.get("vramTotal"),
-               "hra": mangohud_fps(), "fpsLog": mangohud_conf()}
+               "gpu": g.get("busy"), "gpuT": gt, "vram": g.get("vramUsed"), "vramT": g.get("vramTotal")}
         try:
             sys.stdout.write(json.dumps(out, ensure_ascii=False) + "\n")
             sys.stdout.flush()
@@ -1874,11 +1818,6 @@ def main(a):
         return 0
     if cmd == "goo":
         return goo_stream(float(a[1]) if len(a) > 1 else 1.0)
-    if cmd == "mangohud":
-        if len(a) > 1 and a[1] in ("on", "off"):
-            mangohud_conf(a[1] == "on")
-        print("on" if mangohud_conf() else "off")
-        return 0
     if cmd == "stream":
         every = float(a[1]) if len(a) > 1 else 1.0
         os.makedirs(RUN, exist_ok=True)

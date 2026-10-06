@@ -37,7 +37,7 @@ upozornenia) — voliteľné, skrýva ich Nastavenia › Kvapky (`kvapky.json`).
 |---|---|---|
 | hlava GooBaru | ďalší režim okien | ukázať plochu (Win+D) |
 | ikra okna | prepnúť / minimalizovať | ponuka okna |
-| GooPower | karta: profil účtu, Zamknúť · Odhlásiť, napájanie a profil napájania, Nastavenia, Monitor, Uspať · Reštartovať · Vypnúť | pás výkonu (kapsula s FPS, CPU, RAM, GPU, VRAM — `latte-sysmon goo`) |
+| GooPower | karta: profil účtu, Zamknúť · Odhlásiť, napájanie a profil napájania, Nastavenia, Monitor, Uspať · Reštartovať · Vypnúť | pás výkonu (kapsula s CPU, RAM, GPU, VRAM — `latte-sysmon goo`) |
 | LensGoo | spúšťač | rýchly zoznam (dlaždice naposledy spustených a obľúbených) |
 | ClockGoo | upozornenia a kalendár (dva stĺpce) | čas: prehľad, stopky, minútka, budíky, počasie |
 | QueenGoo | App Manager | Správca zariadení | Spoločné: **ponuka Goo** (`E.menu`, karta pri

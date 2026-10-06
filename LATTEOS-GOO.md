@@ -456,16 +456,13 @@ Monitor a dole tlačidlá **Uspať · Reštartovať · Vypnúť** (červené). `
 **Pás výkonu (pravý klik na GooPower):** GooPower sa **natiahne pozdĺž okraja do kapsuly** (na voľnú stranu —
 predvolene doľava, od LensGoo preč; ikona vypínača ostane na konci pri pôvodnom mieste) a **okolné goo odtlačí**
 (pravidlo 22 ráta s celou dĺžkou kapsuly); po vtiahnutí pásu sa odtlačené goo vrátia, ak ich medzitým nikto
-nepresunul. V kapsule bunky **FPS · CPU · RAM · GPU · VRAM** (názov, hodnota, pruh), raz za sekundu z
+nepresunul. V kapsule bunky **CPU · RAM · GPU · VRAM** (názov, hodnota, pruh), raz za sekundu z
 `latte-sysmon goo` (iba to, čo pás ukazuje — lacné). Hodnota je káva, **jantárová nad 80 %**, **červená nad 95 %**
 alebo pri prehriatí (CPU 80 / 90 °C, GPU 85 / 95 °C). Prechod myšou nad bunkou = bublina s podrobnosťami (takt,
 teplota, najnáročnejší proces, swap…), klik = Monitor na tej časti, pravý klik = pás sa vtiahne. Zapnutý pás ostane
 aj po ďalšom prihlásení (`latte-goo pas`). Pás je v páse pri okraji, kam okná nesiahajú — neprekáža.
-- **FPS** má zmysel iba pri hre: číta sa zo záznamu **MangoHud** (posledný riadok CSV, ak sa doň zapisovalo pred
-  chvíľou). Záznam zapne `latte-sysmon mangohud on` (alebo klik na bunku FPS): do `~/.config/MangoHud/MangoHud.conf`
-  pridá `output_folder` (`$XDG_RUNTIME_DIR/latteos/mangohud`), `autostart_log`, `log_interval=500`; hra sa potom
-  spúšťa s MangoHud ako doteraz (`mangohud %command%`). Bez hry ukazuje bunka „—“.
-- Hra na celú obrazovku je nad vrstvou Goo — tam ostáva prekrytie MangoHud.
+- **FPS v páse nie je** (používateľ 6. 10.): hra na celú obrazovku je nad vrstvou Goo, takže by ho nebolo vidieť —
+  v hre ostáva prekrytie MangoHud.
 
 **Upozornenia a kalendár (ľavý klik na ClockGoo):** karta v **dvoch stĺpcoch** (ako centrum upozornení Windows 11,
 väčšia — 744 px, zmestí sa aj na 1024 × 768): vľavo **UPOZORNENIA** (ikona aplikácie, nadpis, telo; klik otvorí,
@@ -819,7 +816,7 @@ Základná kvapka pre správu relácie, výkonu a batérie.
 
 * **Interakcia:**
   * **Ľavý klik:** Vystúpi rohové okno Goo spojené s kvapkou. Od 6. 10.: profil účtu (portrét, meno, údaje) s *Zamknúť* a *Odhlásiť*, napájanie (batéria, profil napájania Úspora · Vyvážený · Výkon), *Nastavenia*, *Monitor systému* a tlačidlá *Uspať*, *Reštartovať*, *Vypnúť* (akcie relácie robí Noctalia) — §3.5.
-  * **Pravý klik (6. 10.):** Pás výkonu — kvapka sa natiahne pozdĺž okraja do kapsuly s FPS, CPU, RAM, GPU a VRAM a okolné goo odtlačí (§3.5).
+  * **Pravý klik (6. 10.):** Pás výkonu — kvapka sa natiahne pozdĺž okraja do kapsuly s CPU, RAM, GPU a VRAM a okolné goo odtlačí (§3.5).
   * Engine: `session/goo/kvapky/goopower.luau` (plocha Kvapky: generátor `session/kvapky/powergoo.py`).
 
 * **Indikácia batérie (Notebooky):**
