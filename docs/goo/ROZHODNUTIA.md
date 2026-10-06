@@ -53,6 +53,8 @@ Nové rozhodnutie: jeden riadok sem (dátum, čo, prečo) a oprava platného zne
   **Bottles**, **Zoxide** (LensGoo aj Súbory); dialóg súborov cez portál v jednotnom vzhľade s oknami;
   **Flea** odložená — pozrieť na latte-lab, možný fork FleaGoo; zatiaľ nie Distrobox a Toolbx; Omarchy skôr ako
   zdroj nápadov s AI.
+- **AI podľa Omarchy:** áno „Prečo to spadlo?“; zručnosť LatteOS pre AI asi áno; pomocník je **Barista**,
+  vyvolateľný kontextovou ponukou okna (pravý klik); limity predplatných patria do AI karty v LensGoo (čip spotreby).
 - Správca súborov bude ako Total Commander s dvoma panelmi, alebo náš fork Total Commandera.
 - Ovládacie centrum Noctalie sa otvára **nad rohovou lištou vpravo** (predtým vľavo, zvyšok plochy Kvapky).
 - Na zváženie (nerozhodnuté): „Zásady pre engine Goo“ v README (samostatný daemon, Quickshell ako vizuálna vrstva,

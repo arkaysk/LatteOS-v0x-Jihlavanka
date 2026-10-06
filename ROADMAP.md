@@ -417,6 +417,12 @@ texty preložiteľné (`translations`). Noctalia beží bez lišty a robí, čo 
   - [ ] **Bottles** pri prechode z Windowsu (`.exe` → ponúknuť Bottles)
   - [ ] **Zoxide** (najpoužívanejšie priečinky) pre LensGoo aj Súbory
   - [ ] dialóg Otvoriť/Uložiť cez XDG Desktop Portal v **jednotnom vzhľade s oknami** (nie vo vzhľade Goo lišty)
+  - [ ] **„Prečo to spadlo?“** (nápad z Omarchy): pád programu (systemd-coredump) → bublina s tlačidlom *Prečo?*,
+    vysvetlí lokálny alebo zvolený model; stíšenie pre konkrétny program; bez AI iba upozornenie
+  - [ ] asi áno: **zručnosť LatteOS pre AI** (vie nastavovať systém: témy, kvapky, okná) — cez `latte-mcp`
+  - [ ] **Barista ako pomocník** (nielen sprievodca prvým spustením): vyvolá sa z kontextovej ponuky okna pravým
+    klikom (napr. „Opýtaj sa Baristu o tomto okne“), dostane úlohu aj kontext okna
+  - [ ] čip spotreby v AI karte LensGoo doplniť o **limity predplatných** (relácia / týždeň v %, ako Omarchy)
   - [ ] odložené: **Flea** (thisisgm/flea, Rust + Quickshell, pre Hyprland) ako možný základ Súborov — pozrieť
     na latte-lab so všetkými nápadmi na rozšírenie; možný fork **FleaGoo**
   - [ ] na rozhodnutie: bublina odchádzajúceho spojenia — nie ako tretia vrstva, iba ako súčasť modelu NET
