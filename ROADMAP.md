@@ -399,6 +399,16 @@ texty preložiteľné (`translations`). Noctalia beží bez lišty a robí, čo 
   - [ ] zdroj výsledku v LensGoo (značka Nastavenie / Aplikácia / Súbor / Web), indexovanie najpoužívanejších priečinkov
   - [ ] na rozhodnutie: stavy hladiny (kľud, vlnenie, príboj, búrka) — návrh: kľud = nič, vlnenie = beží sťahovanie
     alebo kopírovanie, príboj = práve skončilo / nové upozornenie, búrka = vážna chyba (disk, prehriatie)
+  - [ ] **AirDrop kvapky (LocalSend)**: pri ťahaní súboru sa pri okraji vynoria kvapky zariadení v sieti (telefóny,
+    PC s LocalSend), pustenie na kvapku = poslať; prijatie ako upozornenie v ClockGoo
+  - [ ] **`latte-mcp` na základe hypruse** (Hyprland ako nástroje MCP); funguje aj s lokálnym modelom
+  - [ ] **App Manager a obchod**: Bazaar (Flathub) ako jadro, obchod podľa ZimaOS, hodnotenia a snímky, aktualizácie
+    na jednom mieste, povolenia Flatpaku čitateľne pri inštalácii
+  - [ ] **synchronizácia zariadení** (Syncthing, neskôr any-sync) a **prostredie Súborov nad pôvodným súborovým
+    systémom**: dva panely, náhľady, značky, synchronizované priečinky so stavom, telefón a sieť ako miesta
+    (vzor: Spacedrive, Nextcloud virtuálne súbory)
+  - [ ] na rozhodnutie: bublina odchádzajúceho spojenia — nie ako tretia vrstva, iba ako súčasť modelu NET
+    (povolenie pri inštalácii + tlačidlo NET), napr. upozornenie pri prvom spojení aplikácie mimo Flatpaku
 - [ ] Ovládacie centrum Noctalie nad rohovou lištou vpravo — overiť na latte-lab (`latte-kvapky`: `bottom_right`)
 - [ ] **Verejná verzia 0.2** (iba GOO) po dokončení enginu: obnoviť `arkaysk/latteos` (`setup/verejne/`), verejné
   README podľa GOO, licencia

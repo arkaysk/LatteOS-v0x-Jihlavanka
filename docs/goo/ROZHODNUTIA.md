@@ -39,6 +39,12 @@ Nové rozhodnutie: jeden riadok sem (dátum, čo, prečo) a oprava platného zne
     **zdroj výsledku v LensGoo**: áno; **pamäť obrazovky: nie**;
   - nie: ťahanie súboru na LensGoo (stačí pravý klik › Otvoriť v); gestá kurzorom (zatras, špirála) — skôr nie;
     prístupnosť zatiaľ iba minimálne.
+- **Hypermoderné nápady** (po prieskume noviniek): prijaté **AirDrop kvapky** cez LocalSend, **hypruse** ako základ
+  `latte-mcp`, **vylepšenia App Managera a obchodu** (Bazaar), **synchronizácia zariadení** (Syncthing / any-sync)
+  a celé **prostredie Súborov nad pôvodným súborovým systémom** („príjemné prostredie, kde sa dá všetko intuitívne
+  spravovať“); bublina odchádzajúceho spojenia na rozhodnutie — prekrýva sa s povolením Flatpaku a tlačidlom NET;
+  nie: plátno ako štvrtý režim, bublina „vrátiť späť“ pri zatvorení, Gradia (skôr nie), živé titulky (vec
+  videoprehrávača).
 - Správca súborov bude ako Total Commander s dvoma panelmi, alebo náš fork Total Commandera.
 - Ovládacie centrum Noctalie sa otvára **nad rohovou lištou vpravo** (predtým vľavo, zvyšok plochy Kvapky).
 - Na zváženie (nerozhodnuté): „Zásady pre engine Goo“ v README (samostatný daemon, Quickshell ako vizuálna vrstva,
@@ -127,5 +133,9 @@ Nové rozhodnutie: jeden riadok sem (dátum, čo, prečo) a oprava platného zne
 | FPS v páse výkonu | nie — hra na celú obrazovku je nad vrstvou Goo (6. 10.) |
 | hrozno upozornení na lepkavom vlákne | už nie — nahradila ho karta upozornení a kalendára (6. 10.) |
 | stredný klik na ikru okna | nie (6. 10.) |
+| plátno (nekonečná plocha) ako štvrtý režim | nie (6. 10.) |
+| bublina „vrátiť späť“ po zatvorení okna | nie (6. 10.) |
+| živé titulky v celom systéme | nie — je to vec videoprehrávača (mpv/VLC + titulky z whisper) (6. 10.) |
+| Gradia (úprava snímok obrazovky) | skôr nie (6. 10.) |
 | LatteOS Classic | zrušený (5. 10.) |
 | nasadzovať pôvodnú plochu Kvapky | nie — iba engine Goo (6. 10.) |
