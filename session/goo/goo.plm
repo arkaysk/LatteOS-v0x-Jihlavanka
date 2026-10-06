@@ -122,6 +122,7 @@ scene Goo {
     fact rx = 0                               // kam bola kvapka pustená (číta logika pri goo_drop): px obrazovky
     fact ry = 0
     fact nk = -1                              // ťahaná kvapka (krk lepkavej v tele goo), −1 žiadna
+    fact miesta = 128                         // koľko miest má táto scéna (gen.py --n; logika podľa toho rozdáva miesta)
     fact zive = true                          // Nastavenia › Kvapky › Živé správanie (kvapky.json: zive)
     // počasie na hladine pri nečinnosti (stupeň 2+, logika podľa skutočného počasia a podmienok „kedy nie“):
     // prsi 0 nič, 1 riedko (v predpovedi), 2 dážď; snezi = namiesto dažďa sneh. Vietor robí logika vlnkami.

@@ -379,7 +379,9 @@ texty preložiteľné (`translations`). Noctalia beží bez lišty a robí, čo 
   pleamar 0.2.24, 16 kvapiek, v pokoji): 42–44 % jedného jadra, celé vo vlákne kreslenia — na snímku pravidlá
   a pružiny 3,6–4,0 ms, skladanie 2,5–2,7 ms, kreslenie 0,56 ms, a to 60× za sekundu aj keď sa nič nedeje; pás
   výkonu na tom nič nemení. Príčiny: počítajú sa všetky miesta (128, obsadených 16) a scéna nikdy neodpočíva
-  (dych kvapiek beží stále). Kandidáti: menej miest alebo ich zapínanie podľa potreby; pokoj pri nečinnosti.
+  (dych kvapiek beží stále). **Hotové 6. 10.: počet miest podľa potreby** — engine beží na najmenšej scéne, do ktorej
+  sa zmestí (32 / 64 / 128, `gen.py --n`, `latte-kvapky miesta N`): 32 miest 18 % jadra (128 miest 42 %); pri 14 oknách
+  sám prešiel na 64 a po ich zatvorení späť. Ostáva: pokoj pri nečinnosti (scéna kreslí 60× za sekundu stále).
   Podrobné ladenie až po pridaní ďalších funkcií (dohoda 6. 10.).
 - [x] Nečinnosť: stupeň 2 (dážď, sneh a vietor podľa skutočného počasia), obmedzenia „kedy nie“ a vypínač „Živé
   správanie“ v Nastaveniach › Kvapky (6. 10.). Overené vynútene: dážď, sneh, vietor, vypínač, okno na celú

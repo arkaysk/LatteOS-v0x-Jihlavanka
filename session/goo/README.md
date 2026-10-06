@@ -254,6 +254,15 @@ GooPower a pozadie zmizne. Klik na LoginGoo = Uspať · Reštartovať · Vypnú�
   (osirelé procesy účtu greetd) — po skúške ich treba ukončiť.
 - Skúšať treba v skutočnej relácii: v skrytom kompozitore (labwc headless) pleamar vykreslí iba prvú snímku.
 
+## Počet miest podľa potreby
+
+Scéna počíta každú snímku všetky miesta pre kvapky, aj prázdne (pravidlá, pružiny, skladanie): 128 miest 42 % jadra,
+64 miest 24 %, 32 miest 17 % (latte-lab, 16 kvapiek). Engine preto beží na najmenšej scéne, do ktorej sa zmestí:
+`gen.py --n 32 --out DIR` vyrobí menšiu scénu (inštalátor: `/usr/share/latteos/goo/m32`, `m64`; logika a kvapky sú
+odkazy na spoločné), scéna nesie `fact miesta` a logika podľa neho rozdáva miesta. Keď ostávajú najviac 4 voľné,
+`E.miesta()` si povie o väčšiu (`latte-kvapky miesta 64|128` — scéna sa vymení, kvapky sa vrátia na miesta); späť
+na menšiu po troch minútach, keď je voľno. Posledná veľkosť: `~/.local/state/latteos/goo/miesta`.
+
 ## Obloha a počasie na hladine
 
 `lib/engine.luau` sa raz za 10 minút spýta `latte-goo obloha` (slnko, mesiac, dážď / sneh, vietor; miesto

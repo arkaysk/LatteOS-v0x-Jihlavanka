@@ -7,11 +7,20 @@
   2. kvapky/zoznam.luau: mená všetkých modulov v kvapky/*.luau (Luau nevie čítať priečinok; `require` potrebuje meno)
 
 Spúšťa sa po pridaní kvapky programátora (nový súbor v kvapky/) alebo po zmene počtu miest (N; v goo.plm prepíše `max N` aj `repeat k in 0..N`).
+
+  gen.py --n 32 --out PRIEČINOK   menšia scéna (PRIEČINOK/goo.plm) s 32 miestami, zdroj sa nemení. Engine počíta
+     každú snímku VŠETKY miesta, aj prázdne (latte-lab 6. 10.: 128 miest 42 % jadra, 64 miest 24 %, 32 miest 17 %),
+     preto beží na najmenšej scéne, do ktorej sa zmestí, a o väčšiu si povie sám (latte-kvapky miesta N).
 """
-import glob, os, re
+import glob, os, re, sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 N = 128     # počet miest (v scéne max N a repeat 0..N nastaví tento skript)
+OUT = None  # --out: kam zapísať variant s iným počtom miest (inak sa prepíše goo.plm tu)
+if "--n" in sys.argv:
+    N = int(sys.argv[sys.argv.index("--n") + 1])
+if "--out" in sys.argv:
+    OUT = sys.argv[sys.argv.index("--out") + 1]
 
 
 def pick(fmt):
@@ -88,12 +97,20 @@ def put(path, a, b, block):
 
 
 p = os.path.join(HERE, "goo.plm")
+if OUT:                                   # variant: zdroj ostáva, píše sa kópia
+    os.makedirs(OUT, exist_ok=True)
+    open(os.path.join(OUT, "goo.plm"), "w").write(open(p).read())
+    p = os.path.join(OUT, "goo.plm")
 put(p, "        // >>> telo (gen.py)\n", "        // <<< telo", body() + "        ")
 put(p, "    // >>> pás výkonu (gen.py)\n", "    // <<< pás výkonu", monitor())
 s = open(p).read()
 s = re.sub(r"model goo max \d+", f"model goo max {N}", s)
 s = re.sub(r"repeat k in 0\.\.\d+", f"repeat k in 0..{N}", s)
+s = re.sub(r"fact miesta = \d+", f"fact miesta = {N}", s)
 open(p, "w").write(s)
+if OUT:
+    print(f"{p}: {N} miest")
+    sys.exit(0)
 
 mods = sorted(os.path.basename(f)[:-5] for f in glob.glob(os.path.join(HERE, "kvapky", "*.luau"))
               if not f.endswith("zoznam.luau"))
