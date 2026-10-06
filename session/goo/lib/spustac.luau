@@ -139,8 +139,8 @@ local function ask_ai(text)
 end
 
 -- ── riadky podľa režimu ──────────────────────────────────────────────────────────────────────────────────────
-local function app_row(a)
-    return { img = a.icon, glyph = "apps", label = a.name or a.id, run = function() launch(a) end,
+local function app_row(a, hint)
+    return { img = a.icon, glyph = "apps", label = a.name or a.id, hint = hint, run = function() launch(a) end,
              right = function()
                  run("latte-riadok", { "akcie", a.id }, function(out)
                      if E.menuId() ~= "lens" then return end
@@ -159,14 +159,35 @@ end
 local function rows_apps()
     local items = {}
     if q == "" then
-        local seen, n = {}, 0
-        local function add(id) local a = byId[id] if a and not seen[id] and n < 11 then seen[id] = true n = n + 1 items[#items + 1] = app_row(a) end end
-        for _, id in ipairs(((cfg.tabs or {})[1] or {}).apps or {}) do add(id) end      -- obľúbené
-        local mark = #items
-        for _, id in ipairs(cfg.recent or {}) do add(id) end                             -- nedávne
-        for _, id in ipairs(extra.caste or {}) do add(id) end                            -- časté pre túto dennú dobu
-        if items[mark + 1] and mark > 0 then items[mark + 1].sep = true end
-        if #items == 0 then for i = 1, math.min(10, #apps) do items[#items + 1] = app_row(apps[i]) end end
+        -- MRIEŽKA (bez textu): obľúbené a naposledy spustené ako dlaždice, 6 v rade; pravý klik = akcie aplikácie.
+        -- Karta má najviac 24 prvkov (model ctx): pole + 2 nadpisy + 21 dlaždíc.
+        local seen = {}
+        local function tiles(ids, max)
+            local t = {}
+            for _, id in ipairs(ids) do
+                local a = byId[id]
+                if a and not seen[id] and #t < max then seen[id] = true t[#t + 1] = app_row(a) end
+            end
+            return t
+        end
+        local fav = tiles(((cfg.tabs or {})[1] or {}).apps or {}, 12)
+        local room = #fav > 6 and 6 or 12
+        local rec = tiles(cfg.recent or {}, room)
+        for _, t in ipairs(tiles(extra.caste or {}, room - #rec)) do rec[#rec + 1] = t end   -- doplnok: časté v túto dennú dobu
+        if #fav > 0 then
+            items[#items + 1] = { hd = true, label = tr("FAVOURITES") }
+            items[#items + 1] = { tiles = fav, per = 6 }
+        end
+        if #rec > 0 then
+            items[#items + 1] = { hd = true, sep = #fav > 0, label = tr("RECENTLY USED") }
+            items[#items + 1] = { tiles = rec, per = 6 }
+        end
+        if #items == 0 then
+            local first = {}
+            for i = 1, math.min(18, #apps) do first[#first + 1] = apps[i].id end
+            items[#items + 1] = { hd = true, label = tr("APPLICATIONS") }
+            items[#items + 1] = { tiles = tiles(first, 18), per = 6 }
+        end
         return items
     end
     if extra.calc then
@@ -181,15 +202,27 @@ local function rows_apps()
         if s > 0 then scored[#scored + 1] = { a = a, s = s } end
     end
     table.sort(scored, function(x, y) if x.s ~= y.s then return x.s > y.s end return (x.a.name or "") < (y.a.name or "") end)
-    for i = 1, math.min(7, #scored) do items[#items + 1] = app_row(scored[i].a) end
+    -- ZDROJ VÝSLEDKU: značka vpravo hovorí, odkiaľ riadok je (Aplikácia / Nastavenia / Súbor / Priečinok / Web)
+    for i = 1, math.min(7, #scored) do items[#items + 1] = app_row(scored[i].a, tr("App")) end
     for i, st in ipairs(extra.settings or {}) do
         if i > 3 then break end
         items[#items + 1] = { glyph = "settings", label = st.name, hint = tr("Settings"), run = function() run("latte-app", { "nastavenia", st.page }, nil, { output = false }) close() end }
     end
+    for i, r in ipairs(extra.afiles or {}) do                       -- pár súborov rovno medzi výsledkami (viac v režime Súbory)
+        if i > 3 then break end
+        local name = r.path:match("([^/]+)/?$") or r.path
+        items[#items + 1] = { glyph = r.dir and "folder" or "file", label = name, hint = r.dir and tr("Folder") or tr("File"),
+                              run = function()
+                                  run("xdg-open", { r.path }, nil, { output = false })
+                                  run("latte-hladaj", { "--otvorene", r.path }, nil, { output = false })
+                                  close()
+                              end,
+                              right = function() run("latte-app", { "subory", r.path }, nil, { output = false }) close() end }
+    end
     -- rýchle prepnutie do iných režimov s tým istým textom
     local text = q
     items[#items + 1] = { sep = true, keep = true, glyph = "folder", label = tr("Search files") .. ": " .. text, run = function() set_mode(2, true) end }
-    items[#items + 1] = { glyph = "world", label = tr("Search the web") .. ": " .. text, run = function() search_web(engine(), text) end }
+    items[#items + 1] = { glyph = "world", label = tr("Search the web") .. ": " .. text, hint = tr("Web"), run = function() search_web(engine(), text) end }
     items[#items + 1] = { keep = true, glyph = "sparkles", label = tr("Ask AI") .. ": " .. text, run = function() set_mode(0) ask_ai(text) end }
     return items
 end
@@ -344,6 +377,17 @@ function M.query()
             end
             if #t > 0 then extra.settings = t render(true) end
         end)
+        if utf8.len(text) and utf8.len(text) >= 3 then
+            run("latte-hladaj", { "--json", "--max", "3", text }, function(out)
+                if not mine() then return end
+                local t = {}
+                for _, l in ipairs(lines(out)) do
+                    local ok, r = pcall(json.decode, l)
+                    if ok and type(r) == "table" and r.path then t[#t + 1] = r end
+                end
+                if #t > 0 then extra.afiles = t render(true) end
+            end)
+        end
     elseif mode == 2 and text ~= "" then
         run("latte-hladaj", { "--json", "--max", "10", text }, function(out)
             if not mine() then return end

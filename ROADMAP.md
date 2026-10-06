@@ -393,7 +393,10 @@ texty preložiteľné (`translations`). Noctalia beží bez lišty a robí, čo 
   obrazovku. Neoverené: úsporný profil a slabá batéria (latte-lab je stolný), spustenie po skutočných 3 minútach.
 - [ ] Formulár vlastných kvapiek enginu v Nastaveniach › Kvapky nad `latte-goo`
 - [ ] Synchronizácia kalendára v ClockGoo (účty Noctalie), názov budíka
-- [ ] LensGoo: mriežka obľúbených a nedávnych v spúšťači, ťahanie aplikácií do záložiek, filtre súborov, prílohy
+- [x] LensGoo, 6. 10.: mriežka obľúbených a naposledy spustených v spúšťači (dlaždice, pravý klik = akcie) a značka
+  zdroja pri výsledkoch (Aplikácia / Nastavenia / Súbor / Web) s prvými tromi súbormi medzi výsledkami. Overené na
+  latte-lab.
+- [ ] LensGoo — zvyšok: ťahanie aplikácií do záložiek, filtre súborov, prílohy
   a hlas v AI, farebná bodka lokálny/cloud model; AI bez API kľúča cez prihlásené CLI (Claude Code, Gemini, Codex),
   úroveň uvažovania
 - [ ] Goo telo pod rohovou lištou Noctalie (vlnenie pri udalostiach); rozbaľovacia ponuka rýchleho spúšťania ako
@@ -442,7 +445,8 @@ texty preložiteľné (`translations`). Noctalia beží bez lišty a robí, čo 
     páska = tekutý „šev“ medzi stĺpcami ukáže, kam sa okno vloží (ako insert hint v niri), do stredu okna = do jeho
     stĺpca; dlaždice = časť cieľového okna, kam okno pôjde, sa zaleje kávou (okraj = rozdelí, stred = vymení)
   - [ ] zatrasenie myšou = kvapky pribehnú ku kurzoru (nájdi kurzor)
-  - [ ] zdroj výsledku v LensGoo (značka Nastavenie / Aplikácia / Súbor / Web), indexovanie najpoužívanejších priečinkov
+  - [x] zdroj výsledku v LensGoo (značka Nastavenie / Aplikácia / Súbor / Web), 6. 10.
+  - [ ] indexovanie najpoužívanejších priečinkov pre LensGoo
   - [ ] na rozhodnutie: stavy hladiny (kľud, vlnenie, príboj, búrka) — návrh: kľud = nič, vlnenie = beží sťahovanie
     alebo kopírovanie, príboj = práve skončilo / nové upozornenie, búrka = vážna chyba (disk, prehriatie)
   - [ ] **AirDrop kvapky (LocalSend)**: pri ťahaní súboru sa pri okraji vynoria kvapky zariadení v sieti (telefóny,

@@ -175,8 +175,10 @@ ostatné kvapky sú iba na hlavnom monitore.
 ### 4.3 LensGoo — spúšťač a lupa
 - Kvapka s lupou na mieste Štartu. **Ľavý klik alebo kláves Windows** = karta spúšťača; dá sa ovládať aj celá bez
   myši (Tab / Shift+Tab režimy, šípky riadok, Enter, Esc). Režim sa pamätá (`spustac.json`).
-- **Režimy:** **Aplikácie** (bez textu obľúbené a nedávne, s textom hľadanie, kalkulačka a prevody, stránky
-  Nastavení, rýchle prepnutie do iných režimov; pravý klik = akcie aplikácie) · **Súbory** (domovské priečinky,
+- **Režimy:** **Aplikácie** (bez textu **mriežka** obľúbených a naposledy spustených, 6 dlaždíc v rade; s textom
+  hľadanie, kalkulačka a prevody, stránky Nastavení, prvé tri nájdené súbory, rýchle prepnutie do iných režimov;
+  každý výsledok má vpravo **značku zdroja** — Aplikácia / Nastavenia / Súbor / Priečinok / Web; pravý klik = akcie
+  aplikácie) · **Súbory** (domovské priečinky,
   `latte-hladaj`; pravý klik = priečinok so súborom) · **Web** (adresa, vyhľadávače, návrhy) · **Terminál**
   (`latte-terminal`, terminál po príkaze ostane otvorený; nebezpečný príkaz chce druhý Enter; história) · **AI**.
 - **AI vždy vnútri, nikdy v prehliadači** (záväzné): rozhovor beží v goo bublinách spúšťača cez `latte-ai`, **bez API
