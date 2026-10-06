@@ -34,7 +34,7 @@ Rectangle {
     activeFocusOnTab: true
 
     function statusMark(s) { return s === "ready" ? "●" : (s === "partial" ? "◐" : "○"); }
-    function statusText(s) { return s === "ready" ? "hotové" : (s === "partial" ? "čiastočne" : "plánované"); }
+    function statusText(s) { return s === "ready" ? i18n.tr("done") : (s === "partial" ? i18n.tr("partly") : i18n.tr("planned")); }
     function openAreaObj() { return areas.find(a => a.key === openArea); }
     function firstPage(a) { return (a.pages || []).find(p => p.status !== "planned") || (a.pages || [])[0]; }
     function openAt(i) {
@@ -93,7 +93,7 @@ Rectangle {
             Behavior on color { ColorAnimation { duration: stack.animMs * 0.6 } }
             Glyph { x: 12; anchors.verticalCenter: parent.verticalCenter; name: "home"; size: 18; color: stack.homeActive ? stack.theme.primary : stack.theme.fg }
             Text {
-                x: 42; anchors.verticalCenter: parent.verticalCenter; text: "Domov · stav systému"; color: stack.theme.fg
+                x: 42; anchors.verticalCenter: parent.verticalCenter; text: i18n.tr("Home · system status"); color: stack.theme.fg
                 font { family: stack.theme.fontUi; pixelSize: 13; weight: stack.homeActive ? Font.Bold : Font.Medium }
             }
             MouseArea { id: hm; anchors.fill: parent; hoverEnabled: true; onClicked: { stack.forceActiveFocus(); stack.homeRequested(); } }

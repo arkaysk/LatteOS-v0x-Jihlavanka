@@ -18,6 +18,7 @@ import "common"
 ShellRoot {
     id: pl
     LatteTheme { id: theme }
+    I18n { id: i18n }
 
     readonly property string home: Quickshell.env("HOME") || "/"
     readonly property string cfg: (Quickshell.env("XDG_CONFIG_HOME") || (home + "/.config")) + "/latteos"

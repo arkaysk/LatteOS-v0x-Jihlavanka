@@ -14,6 +14,7 @@ import "common"
 ShellRoot {
     id: sp
     LatteTheme { id: theme }
+    I18n { id: i18n }
 
     readonly property string state: (Quickshell.env("XDG_STATE_HOME") || ((Quickshell.env("HOME") || "") + "/.local/state")) + "/latteos"
     property bool open: (Quickshell.env("LATTE_APP_ARGS") || "").includes("--ukaz")
@@ -80,7 +81,7 @@ ShellRoot {
         menuEntry = e; menuPath = "";
         whereProc.command = ["sh", "-c", 'for d in "$HOME/.local/share/applications" "$HOME/.local/share/flatpak/exports/share/applications" /var/lib/flatpak/exports/share/applications /usr/share/applications; do [ -f "$d/$1.desktop" ] && { echo "$d/$1.desktop"; exit; }; done', "sh", e.id];
         whereProc.running = true;
-        const items = [{ glyph: "player-play", label: "Otvoriť", action: () => sp.launch(e) }];
+        const items = [{ glyph: "player-play", label: i18n.tr("Open"), action: () => sp.launch(e) }];
         const acts = e.actions || [];
         if (acts.length) {
             items.push({ separator: true });
@@ -88,13 +89,13 @@ ShellRoot {
         }
         items.push({ separator: true });
         const pin = pinned.indexOf(e.id) >= 0, low = bottom.indexOf(e.id) >= 0;
-        items.push({ glyph: "star", label: pin ? "Odopnúť z obľúbených" : "Pripnúť medzi obľúbené", action: () => sp.togglePin(e.id) });
-        items.push({ glyph: "arrow-up", label: low ? "Vrátiť do zoznamu" : "Odsunúť na koniec zoznamu", action: () => sp.toggleBottom(e.id) });
-        items.push({ glyph: "device-desktop", label: "Pridať na plochu", action: () => sp.toDesktop(e) });
+        items.push({ glyph: "star", label: pin ? i18n.tr("Unpin from favourites") : i18n.tr("Pin to favourites"), action: () => sp.togglePin(e.id) });
+        items.push({ glyph: "arrow-up", label: low ? i18n.tr("Return to the list") : i18n.tr("Move to the end of the list"), action: () => sp.toggleBottom(e.id) });
+        items.push({ glyph: "device-desktop", label: i18n.tr("Add to desktop"), action: () => sp.toDesktop(e) });
         items.push({ separator: true });
-        items.push({ glyph: "folder", label: "Otvoriť umiestnenie súboru", action: () => sp.revealEntry(e) });
-        items.push({ glyph: "apps", label: "Detail v App Manageri", action: () => { sp.open = false; run.command = ["latte-app", "aplikacie", "detail", e.id]; run.startDetached(); } });
-        items.push({ glyph: "trash", label: "Odinštalovať…", danger: true, enabled: !e.id.startsWith("latteos-"), action: () => sp.uninstall(e) });
+        items.push({ glyph: "folder", label: i18n.tr("Open file location"), action: () => sp.revealEntry(e) });
+        items.push({ glyph: "apps", label: i18n.tr("Details in App Manager"), action: () => { sp.open = false; run.command = ["latte-app", "aplikacie", "detail", e.id]; run.startDetached(); } });
+        items.push({ glyph: "trash", label: i18n.tr("Uninstall…"), danger: true, enabled: !e.id.startsWith("latteos-"), action: () => sp.uninstall(e) });
         tmenu.open(x, y, items, e.name);
     }
     Process { id: helper }
@@ -120,9 +121,9 @@ ShellRoot {
 
     // skupiny podľa hlavných kategórií freedesktop
     readonly property var groups: [
-        ["latte", "LatteOS"], ["Game", "Hry"], ["Network", "Internet a komunikácia"], ["AudioVideo", "Hudba a video"],
-        ["Graphics", "Grafika a foto"], ["Office", "Kancelária"], ["Development", "Vývoj"], ["Education", "Vzdelávanie a veda"],
-        ["Utility", "Nástroje"], ["System", "Systém"], ["other", "Ostatné"]
+        ["latte", "LatteOS"], ["Game", i18n.tr("Games")], ["Network", i18n.tr("Internet and communication")], ["AudioVideo", i18n.tr("Music and video")],
+        ["Graphics", i18n.tr("Graphics and photo")], ["Office", i18n.tr("Office")], ["Development", i18n.tr("Development")], ["Education", i18n.tr("Education and science")],
+        ["Utility", i18n.tr("Tools")], ["System", i18n.tr("System")], ["other", i18n.tr("Other")]
     ]
     function groupOf(e) {
         if (e.id.startsWith("latteos-")) return "latte";
@@ -204,13 +205,13 @@ ShellRoot {
                 Row {
                     anchors { right: parent.right; rightMargin: 14; verticalCenter: parent.verticalCenter }
                     spacing: 10
-                    Text { anchors.verticalCenter: parent.verticalCenter; text: sp.apps.length + " aplikácií"; color: theme.fgDim; font { family: theme.fontUi; pixelSize: 12 } }
+                    Text { anchors.verticalCenter: parent.verticalCenter; text: i18n.tr("{n} apps", { n: sp.apps.length }); color: theme.fgDim; font { family: theme.fontUi; pixelSize: 12 } }
                     Rectangle {
                         width: tl.implicitWidth + 26; height: 34; radius: 12; color: tfm.containsMouse ? theme.hover : Qt.rgba(theme.surface.r, theme.surface.g, theme.surface.b, 0.85)
                         border { color: theme.outline; width: 1 }
                         Row { id: tl; anchors.centerIn: parent; spacing: 8
                               Glyph { name: "apps"; size: 16; color: theme.primary; anchors.verticalCenter: parent.verticalCenter }
-                              Text { text: "App Manager — inštalácia, aktualizácie, ovládače"; color: theme.fg; font { family: theme.fontUi; pixelSize: 12; weight: Font.DemiBold }
+                              Text { text: i18n.tr("App Manager — install, updates, drivers"); color: theme.fg; font { family: theme.fontUi; pixelSize: 12; weight: Font.DemiBold }
                                      anchors.verticalCenter: parent.verticalCenter } }
                         MouseArea { id: tfm; anchors.fill: parent; hoverEnabled: true; onClicked: sp.fullManager() }
                     }
@@ -244,12 +245,12 @@ ShellRoot {
                         Keys.onReturnPressed: if (sp.found.length) sp.launch(sp.found[0])
                         Connections { target: sp; function onOpenChanged() { if (sp.open) { search.text = ""; search.forceActiveFocus(); } } }
                     }
-                    Text { x: 40; anchors.verticalCenter: parent.verticalCenter; visible: search.text === ""; text: "Hľadať aplikáciu…"; color: theme.fgDim; font { family: theme.fontUi; pixelSize: 14 } }
+                    Text { x: 40; anchors.verticalCenter: parent.verticalCenter; visible: search.text === ""; text: i18n.tr("Search for an app…"); color: theme.fgDim; font { family: theme.fontUi; pixelSize: 14 } }
                 }
                 Row {
                     id: tabs; spacing: 4; anchors.verticalCenter: parent.verticalCenter
                     Repeater {
-                        model: [["apps", "Aplikácie"], ["bg", "Na pozadí" + ((SystemTray.items.values.length + sp.flatpaksOnly.length) ? " · " + (SystemTray.items.values.length + sp.flatpaksOnly.length) : "")]]
+                        model: [["apps", i18n.tr("Apps")], ["bg", i18n.tr("In the background") + ((SystemTray.items.values.length + sp.flatpaksOnly.length) ? " · " + (SystemTray.items.values.length + sp.flatpaksOnly.length) : "")]]
                         Rectangle {
                             required property var modelData
                             width: tt.implicitWidth + 24; height: 34; radius: 17
@@ -265,7 +266,7 @@ ShellRoot {
                     color: pm.containsMouse ? theme.hover : theme.field
                     Row { id: pr; anchors.centerIn: parent; spacing: 4
                           Text { text: "📌"; font.pixelSize: 14; anchors.verticalCenter: parent.verticalCenter }
-                          Text { text: "Pripnúť"; color: theme.fg; font { family: theme.fontUi; pixelSize: 12; weight: Font.DemiBold }
+                          Text { text: i18n.tr("Pin"); color: theme.fg; font { family: theme.fontUi; pixelSize: 12; weight: Font.DemiBold }
                                  anchors.verticalCenter: parent.verticalCenter } }
                     MouseArea { id: pm; anchors.fill: parent; hoverEnabled: true; onClicked: sp.fullManager() }
                 }
@@ -310,11 +311,11 @@ ShellRoot {
                 Column {
                     id: appCol; width: list.width
                     Text { visible: sp.query !== "" && sp.found.length === 0; topPadding: 30; width: parent.width; horizontalAlignment: Text.AlignHCenter
-                           text: "Nič také nie je nainštalované. Skús App Manager ›"; color: theme.fgDim; font { family: theme.fontUi; pixelSize: 13 } }
+                           text: i18n.tr("Nothing like that is installed. Try App Manager ›"); color: theme.fgDim; font { family: theme.fontUi; pixelSize: 13 } }
                     Flow { visible: sp.query !== ""; width: parent.width; Repeater { model: sp.query !== "" ? sp.found : []; AppTile { required property var modelData; entry: modelData } } }
-                    Section { visible: sp.query === "" && sp.pinnedApps.length > 0; text: "PRIPNUTÉ" }
+                    Section { visible: sp.query === "" && sp.pinnedApps.length > 0; text: i18n.tr("PINNED") }
                     Flow { visible: sp.query === ""; width: parent.width; Repeater { model: sp.query === "" ? sp.pinnedApps : []; AppTile { required property var modelData; entry: modelData } } }
-                    Section { visible: sp.query === "" && sp.frequent.length > 0; text: "ČASTO POUŽÍVANÉ" }
+                    Section { visible: sp.query === "" && sp.frequent.length > 0; text: i18n.tr("FREQUENTLY USED") }
                     Flow { visible: sp.query === ""; width: parent.width; Repeater { model: sp.query === "" ? sp.frequent : []; AppTile { required property var modelData; entry: modelData } } }
                     Repeater {
                         model: sp.query === "" ? sp.groups : []
@@ -327,7 +328,7 @@ ShellRoot {
                             Flow { width: parent.width; Repeater { model: grp.items; AppTile { required property var modelData; entry: modelData } } }
                         }
                     }
-                    Section { visible: sp.query === "" && sp.bottomApps.length > 0; text: "ODSUNUTÉ  ·  " + sp.bottomApps.length + "  (pravý klik › Vrátiť do zoznamu)" }
+                    Section { visible: sp.query === "" && sp.bottomApps.length > 0; text: i18n.tr("MOVED TO THE END  ·  {n}  (right click › Return to the list)", { n: sp.bottomApps.length }) }
                     Flow { visible: sp.query === ""; width: parent.width; opacity: 0.7; Repeater { model: sp.query === "" ? sp.bottomApps : []; AppTile { required property var modelData; entry: modelData } } }
                 }
             }
@@ -342,7 +343,7 @@ ShellRoot {
                 Column {
                     id: bgCol; width: bgList.width; spacing: 6
                     Text { width: parent.width; wrapMode: Text.WordWrap; bottomPadding: 6; color: theme.fgDim; font { family: theme.fontUi; pixelSize: 12 }
-                           text: "Aplikácie, ktoré bežia aj bez okna (ako skryté ikony vo Windows). Klik = otvoriť, pravý klik = ich ponuka." }
+                           text: i18n.tr("Apps that run even without a window (like hidden icons in Windows). Click = open, right click = their menu.") }
                     Flow {
                         width: parent.width; spacing: 8
                         Repeater {
@@ -371,8 +372,8 @@ ShellRoot {
                             }
                         }
                     }
-                    Text { visible: SystemTray.items.values.length === 0; text: "Nič nebeží v oblasti oznámení."; color: theme.fgDim; font { family: theme.fontUi; pixelSize: 13 } }
-                    Section { visible: sp.flatpaksOnly.length > 0; text: "ĎALŠIE BEŽIACE APLIKÁCIE (Flatpak, bez ikony v oblasti oznámení)" }
+                    Text { visible: SystemTray.items.values.length === 0; text: i18n.tr("Nothing is running in the notification area."); color: theme.fgDim; font { family: theme.fontUi; pixelSize: 13 } }
+                    Section { visible: sp.flatpaksOnly.length > 0; text: i18n.tr("OTHER RUNNING APPS (Flatpak, without an icon in the notification area)") }
                     Repeater {
                         model: sp.flatpaksOnly
                         Rectangle {
@@ -387,10 +388,10 @@ ShellRoot {
                             Row {
                                 anchors { right: parent.right; rightMargin: 8; verticalCenter: parent.verticalCenter } spacing: 6
                                 Rectangle { visible: !!fr.entry; width: ot.implicitWidth + 20; height: 30; radius: 15; color: om.containsMouse ? theme.hover : theme.surface
-                                            Text { id: ot; anchors.centerIn: parent; text: "Otvoriť"; color: theme.fg; font { family: theme.fontUi; pixelSize: 12 } }
+                                            Text { id: ot; anchors.centerIn: parent; text: i18n.tr("Open"); color: theme.fg; font { family: theme.fontUi; pixelSize: 12 } }
                                             MouseArea { id: om; anchors.fill: parent; hoverEnabled: true; onClicked: sp.launch(fr.entry) } }
                                 Rectangle { width: kt.implicitWidth + 20; height: 30; radius: 15; color: km.containsMouse ? Qt.rgba(theme.error.r, theme.error.g, theme.error.b, 0.2) : theme.surface
-                                            Text { id: kt; anchors.centerIn: parent; text: "Ukončiť"; color: theme.error; font { family: theme.fontUi; pixelSize: 12 } }
+                                            Text { id: kt; anchors.centerIn: parent; text: i18n.tr("Quit"); color: theme.error; font { family: theme.fontUi; pixelSize: 12 } }
                                             MouseArea { id: km; anchors.fill: parent; hoverEnabled: true; onClicked: { killer.command = ["flatpak", "kill", fr.modelData]; killer.running = true; } } }
                             }
                         }

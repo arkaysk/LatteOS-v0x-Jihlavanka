@@ -12,6 +12,7 @@ import "common"
 ShellRoot {
     id: app
     LatteTheme { id: theme }
+    I18n { id: i18n }
 
     readonly property var args: (Quickshell.env("LATTE_APP_ARGS") || "").trim().split(/\s+/).filter(a => a !== "")
     readonly property string title: (args.find(a => a.startsWith("--nazov=")) || "").slice(8).replace(/_/g, " ")

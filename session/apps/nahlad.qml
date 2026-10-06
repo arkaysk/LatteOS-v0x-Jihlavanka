@@ -14,6 +14,7 @@ import "common"
 ShellRoot {
     id: nh
     LatteTheme { id: theme }
+    I18n { id: i18n }
 
     readonly property string state: (Quickshell.env("XDG_STATE_HOME") || ((Quickshell.env("HOME") || "") + "/.local/state")) + "/latteos"
     readonly property bool cheap: ["softver", "safe", "minimalny"].includes(Quickshell.env("LATTE_TIER") || "softver")

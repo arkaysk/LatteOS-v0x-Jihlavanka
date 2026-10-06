@@ -15,6 +15,7 @@ import "common"
 ShellRoot {
     id: nz
     LatteTheme { id: theme }
+    I18n { id: i18n }
 
     // triedy okien s vlastnou hlavičkou: jediný zdroj je latte/bars.lua (Lua vzor → JS regex)
     property var ownRe: /^org\.quickshell$/

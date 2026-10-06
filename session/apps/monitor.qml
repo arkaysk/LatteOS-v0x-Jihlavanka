@@ -7,6 +7,7 @@ import "common"
 ShellRoot {
     id: shell
     LatteTheme { id: theme }
+    I18n { id: i18n }
     readonly property var th: theme
     FloatingWindow {
         onClosed: Qt.quit()              // zavretie z kompozitora (✕ v titulku, Super+Q) ukončí aj proces
