@@ -302,6 +302,9 @@ treba rozhodnúť, čo je bezpečné ukázať pred prihlásením (RSS, upozornen
 10. **Hladina a obloha:** riadok je mierne nad hladinou (ako pás výkonu GooPower), hladina sa mierne vlní; **dážď
    a sneh** podľa počasia vonku (padá, alebo je v predpovedi); nenápadná **silueta slnka alebo mesiaca** tam, kde
    naozaj je (miesto z Nastavení › Prihlasovanie), mesiac v správnej fáze. Obzor je hladina.
+11. **Počasie:** v opačnom rohu než hodiny aktuálna teplota a stav tým istým písmom. **LoginGoo** sa spodkom lepí
+   k hladine; riadok je pár mm nad ňou. **Účty:** iba predvyplnené meno naposledy prihláseného (dá sa prepísať).
+   **Monitory:** scéna je na všetkých. **Pod hladinou** bez pádu: zdroje RSS z Nastavení (aj viac naraz).
 9. **Spôsob:** zámok nad **všeobecnou reláciou** (na PC môže byť viac používateľov) — dáta, rozmiestnenie, nastavenia
    a plocha používateľa sa načítajú až po potvrdení prihlásenia.
 

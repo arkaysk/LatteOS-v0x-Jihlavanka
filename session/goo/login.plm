@@ -6,12 +6,14 @@
 //   2. kvapka sa odvalí asi 5 cm doľava a nechá za sebou riadok; v ňom sa objaví meno a heslo
 //   3. celá rovina klesne k hladine: v spodnej časti obrazovky je káva, z boku ako vodná hladina; riadok sa pod
 //      ňu ponorí a vynorí sa NAD ňu ako ostatné goo
-//   4. pod hladinou: výpis posledného pádu, inak novinky (RSS) používateľa. Iba jeden používateľ.
+//   4. pod hladinou: výpis posledného pádu, inak novinky zo zdrojov RSS nastavených v Nastaveniach. Iné účty sa
+//      neukazujú: meno je predvyplnené naposledy prihláseným a dá sa prepísať.
 //   5. po minúte bez prihlásenia sa z hladiny vynoria ďalšie goo a hrajú sa; každá nesie inú informáciu
 //      (batéria, upozornenia, úlohy) a nedajú sa kliknúť. Čas je stále veľkým písmom vpravo hore.
 //   6. kliknúť sa dá iba na LoginGoo (kvapka s ikonou Power: uspať, reštartovať, vypnúť) a do riadku vedľa nej;
 //      po prihlásení LoginGoo spadne na miesto GooPower na lište
 //   7. vývojárska verzia: na hladine v dosahu riadku sa vynorí ešte jedno goo s výberom relácie (6. 10.)
+//   9. počasie teraz v opačnom rohu než hodiny, tým istým písmom (6. 10.)
 //   8. obloha: nenápadná silueta slnka alebo mesiaca tam, kde naozaj je (vychádza a zapadá so skutočným, mesiac
 //      v správnej fáze); ak vonku prší alebo sneží, alebo je to v predpovedi, padá to aj tu (6. 10.)
 // Čísla a časy riadi logika (login.luau); texty sú po anglicky a prekladá ich blok `translations` (LANG).
@@ -26,6 +28,9 @@ scene Login {
         reserve: -1
         rate: 60
         keyboard: exclusive
+        // na každom monitore vlastná kópia s vlastným rozložením (šírka, výška) a pohybom; fakty a texty — čas, heslo,
+        // čo je pod hladinou — sú spoločné, takže písanie je vidno na všetkých
+        screens: each max 3
     }
     permissions {
         run: "latte-goo", "date", "systemctl", "latte-greetd"
@@ -33,6 +38,7 @@ scene Login {
     }
     translations sk {
         "Password" = "Heslo"
+        "Name" = "Meno"
         "Wrong password" = "Nesprávne heslo"
         "Checking…" = "Overujem…"
         "Last crash" = "Posledný pád"
@@ -40,6 +46,13 @@ scene Login {
         "Sleep" = "Uspať"
         "Restart" = "Reštartovať"
         "Shut down" = "Vypnúť"
+        "Clear · {w_m}" = "Jasno · {w_m}"
+        "Partly cloudy · {w_m}" = "Polojasno · {w_m}"
+        "Overcast · {w_m}" = "Zamračené · {w_m}"
+        "Fog · {w_m}" = "Hmla · {w_m}"
+        "Rain · {w_m}" = "Dážď · {w_m}"
+        "Snow · {w_m}" = "Sneh · {w_m}"
+        "Storm · {w_m}" = "Búrka · {w_m}"
     }
 
     // ── káva (pravidlo 6): pomer vody a mlieka z Baristu, ako v engine ───────────────────────────────────────────
@@ -57,12 +70,13 @@ scene Login {
     let CX = W / 2
     let CY = H / 2
     let HL = H * 2 / 3                         // hladina: rovina „klesne“ zo stredu sem (LATTEOS-GOO.md §6.2 bod 3)
-    let R = 30                                 // LoginGoo
+    let R = 40                                 // LoginGoo
     let RH = 23                                // polovica výšky riadku
     let ROLL = 190                             // „asi 5 cm“ pri 96 dpi
     let EXT = 250                              // o koľko sa riadok natiahne doprava od stredu obrazovky
     let LAND = 130                             // kam kvapka zo šálky doskočí: o toľko bokom (doprava) od stredu
-    let REST = HL - RH - 15                    // riadok je mierne NAD hladinou, ako pás výkonu GooPower nad lištou
+    let REST = HL - RH - 24                    // riadok je pár mm NAD hladinou (spojí sa s ním iba najvyššia vlnka)
+    let BOFF = RH + 28 - R                     // o koľko je stred LoginGoo pod osou riadku: jej spodok sa lepí k hladine
     let SW = 236                               // dĺžka kapsuly výberu relácie
     // šálka úvodnej obrazovky: Plymouth ju kladie na (šírka − 192) × 0,5 a (výška − 192) × 0,42
     let CUPX = (W - 192) * 0.5
@@ -103,9 +117,14 @@ scene Login {
     fact ostane = false                        // všeobecná relácia: pozadie po prihlásení ostáva (plocha príde až potom)
     fact tox = 0.14                            // kam LoginGoo po prihlásení spadne: miesto GooPower na lište (podiel šírky)
     text heslo = ""
-    text meno = ""
+    text ucet = ""                             // prihlasovacie meno: predvyplnené naposledy prihláseným, dá sa prepísať
+    fact pole = 1                              // ktoré pole má klávesnicu: 0 meno, 1 heslo (Tab prepína)
     text cas = ""
     text datum = ""
+    text w_t = ""                              // počasie vľavo hore: teplota, znak, miesto a dnešný rozsah
+    text w_g = ""
+    text w_m = ""
+    fact wk = 0                                // 0 nevieme, 1 jasno, 2 polojasno, 3 zamračené, 4 hmla, 5 dážď, 6 sneh, 7 búrka
     text g_power = ""                          // znaky písma ikon (dosadí logika: latte-goo ikony)
     text g_sip = ""
     text g_spat = ""
@@ -140,10 +159,10 @@ scene Login {
 
     on e_skok { skocil = true; tb = time; clk: 1 ~900ms; gr: 1 ~0ms; cup.a: 0 ~520ms after 380ms }
     on e_val { dx: 0 - ROLL ~1000ms; ika: 1 ~260ms after 900ms }
-    on e_riadok { ext: EXT; fa: 1 ~420ms after 260ms; focus heslo }
+    on e_riadok { ext: EXT; fa: 1 ~420ms after 260ms; pole = 1; focus heslo }
     // rovina klesne: riadok sa ponorí pod stúpajúcu hladinu (texty na chvíľu zmiznú) a vynorí sa nad ňu
     on e_hladina { sl: 1; wl: 1; pl: 1.55 ~650ms after 300ms; pl: 1 ~skace after 950ms; fa: 0 ~160ms after 620ms; fa: 1 ~320ms after 1300ms; pod: 1 ~900ms after 900ms; sg: 1 after 2100ms }
-    on e_zle { impulse tras 1400; zle: 1 ~90ms; zle: 0 ~700ms after 2600ms; focus heslo }
+    on e_zle { impulse tras 1400; zle: 1 ~90ms; zle: 0 ~700ms after 2600ms; pole = 1; focus heslo }
     on e_ok { blur; pm_open = false; rel_open = false; sg: 0; fa: 0 ~220ms; zle: 0 ~100ms; pod: 0 ~320ms; hra: 0; ext: 0 - ROLL after 200ms; wl: 0 after 260ms; von: 1 after 520ms; clk: 0 ~700ms after 900ms; odkry: 1 ~700ms after 1700ms; gr: 0 after 2300ms }
     on e_hra { hra: 1 }
     on e_zobud { hra: 0 }
@@ -171,9 +190,11 @@ scene Login {
     let rr = R * gr * zoom * (1 + 0.025 * sin(time * 150))       // dýcha
     let rlen = (ext - dx) * (1 - von)                            // dĺžka riadku od stredu kvapky
     let fx = gx + R + 18                                         // kde sa začína text v riadku
+    // LoginGoo sedí na hladine ako kvapky enginu na lište (spodok v káve), riadok z nej vychádza vyššie
+    let ky = gy + BOFF * clamp(pl, 0, 1) * (1 - von)
     let sx = gx + rlen + 64                                      // goo výberu relácie: v dosahu, hneď za riadkom
     let sgd = sg * if(dev, 1, 0)
-    let sgy = wy + 36 - (36 + RH + 11) * sgd                     // spodok v jednej rovine s riadkom
+    let sgy = wy + 36 - (36 + RH + 20) * sgd                     // spodok v jednej rovine s riadkom
     let vln = 1 + 0.5 * zrazky                                   // v daždi je hladina nepokojnejšia
 
     box { from: 0, 0; size: W, H; color: #1a1410; opacity: 1 - odkry * if(ostane, 0, 1) }   // espresso pozadie úvodnej obrazovky
@@ -201,6 +222,17 @@ scene Login {
     text cas { at: W - 72, 104; anchor: right center; size: 108; weight: 300; color: cream; opacity: clk; family: "Inter" }
     text datum { at: W - 76, 182; anchor: right center; size: 21; color: cream; opacity: clk * 0.66; family: "Inter" }
 
+    // počasie: v opačnom rohu než hodiny, tým istým písmom (teplota teraz; pod ňou stav, miesto a dnešný rozsah)
+    text w_t { at: 72, 104; anchor: left center; size: 108; weight: 300; color: cream; opacity: clk; family: "Inter" }
+    text w_g { at: 88, 182; anchor: center; size: 22; color: cream; opacity: clk * 0.66; show: wk > 0; family: "noctalia-tabler-icons" }
+    text "Clear · {w_m}" { at: 112, 182; anchor: left center; size: 21; color: cream; opacity: clk * 0.66; show: wk == 1; family: "Inter" }
+    text "Partly cloudy · {w_m}" { at: 112, 182; anchor: left center; size: 21; color: cream; opacity: clk * 0.66; show: wk == 2; family: "Inter" }
+    text "Overcast · {w_m}" { at: 112, 182; anchor: left center; size: 21; color: cream; opacity: clk * 0.66; show: wk == 3; family: "Inter" }
+    text "Fog · {w_m}" { at: 112, 182; anchor: left center; size: 21; color: cream; opacity: clk * 0.66; show: wk == 4; family: "Inter" }
+    text "Rain · {w_m}" { at: 112, 182; anchor: left center; size: 21; color: cream; opacity: clk * 0.66; show: wk == 5; family: "Inter" }
+    text "Snow · {w_m}" { at: 112, 182; anchor: left center; size: 21; color: cream; opacity: clk * 0.66; show: wk == 6; family: "Inter" }
+    text "Storm · {w_m}" { at: 112, 182; anchor: left center; size: 21; color: cream; opacity: clk * 0.66; show: wk == 7; family: "Inter" }
+
     // ── telo: káva, riadok, LoginGoo, ponuka napájania a informačné goo v jednom goo ─────────────────────────────
     body {
         gradient: radial cursor.x, cursor.y radius 360, mix(coffee, cream, 0.16), coffee
@@ -216,8 +248,8 @@ scene Login {
         ellipse { at: W * 0.86 + 62 * sin(time * 18 + 20), wy + 31 + 10 * vln * sin(time * 33 + 310); radius: 120; scale: 2.2, 0.24; blend: 34 }
         ellipse { at: W * 0.97 + 70 * sin(time * 14 + 250), wy + 31 + 11 * vln * sin(time * 37 + 80); radius: 120; scale: 2.4, 0.24; blend: 34 }
         // riadok: stopa, ktorú kvapka nechá, keď sa odvalí
-        line { from: gx, gy; to: gx + rlen, gy; width: 2 * RH * gr * clamp(rlen / 40, 0, 1); blend: 9 }
-        ellipse { at: gx, gy + rr * 0.2 * sqz; radius: rr; scale: 1 + 0.2 * sqz, 1 - 0.2 * sqz; blend: 9 }
+        line { from: gx, gy; to: gx + rlen, gy; width: 2 * RH * gr * clamp(rlen / 40, 0, 1); blend: 12 }
+        ellipse { at: gx, ky + rr * 0.2 * sqz; radius: rr; scale: 1 + 0.2 * sqz, 1 - 0.2 * sqz; blend: 26 }
         // goo výberu relácie a jeho ponuka (kapsuly nad ním)
         line { from: sx, sgy; to: sx + SW, sgy; width: 38 * sgd; blend: 9 }
         line { from: sx, sgy - 44 * so; to: sx + SW, sgy - 44 * so; width: 34 * so * if(rel.count > 0, 1, 0); blend: 14 }
@@ -227,9 +259,9 @@ scene Login {
         line { from: sx, sgy - 220 * so; to: sx + SW, sgy - 220 * so; width: 34 * so * if(rel.count > 4, 1, 0); blend: 14 }
         line { from: sx, sgy - 264 * so; to: sx + SW, sgy - 264 * so; width: 34 * so * if(rel.count > 5, 1, 0); blend: 14 }
         // ponuka napájania: tri kvapôčky vypučia z LoginGoo
-        ellipse { at: gx - 66 * pm, gy - 60 * pm; radius: 21 * pm; blend: 18 }
-        ellipse { at: gx, gy - 88 * pm; radius: 21 * pm; blend: 18 }
-        ellipse { at: gx + 66 * pm, gy - 60 * pm; radius: 21 * pm; blend: 18 }
+        ellipse { at: gx - 76 * pm, ky - 66 * pm; radius: 21 * pm; blend: 18 }
+        ellipse { at: gx, ky - 98 * pm; radius: 21 * pm; blend: 18 }
+        ellipse { at: gx + 76 * pm, ky - 66 * pm; radius: 21 * pm; blend: 18 }
         // informačné goo: vynoria sa z hladiny a poskakujú po nej
         ellipse { at: CX - 430 + 46 * sin(time * 23), wy + 30 - (54 + 74 * abs(sin(time * 96))) * hra; radius: 25 * hra * if(inf.0.on, 1, 0); blend: 24 }
         ellipse { at: CX - 590 + 40 * sin(time * 19 + 120), wy + 30 - (54 + 58 * abs(sin(time * 78 + 50))) * hra; radius: 25 * hra * if(inf.1.on, 1, 0); blend: 24 }
@@ -237,34 +269,39 @@ scene Login {
     }
 
     // ── LoginGoo: pri valení sa v nej otáča odlesk, potom ikona Power ────────────────────────────────────────────
-    ellipse { at: gx + cos(dx * 1.9 - 50) * R * 0.46, gy + sin(dx * 1.9 - 50) * R * 0.46; radius: 5; color: mix(coffee, cream, 0.4); opacity: gr * (1 - ika) * p }
-    text g_power { at: gx, gy; anchor: center; size: 25; color: cream; opacity: ika; family: "noctalia-tabler-icons" }
-    zone ellipse z_goo { at: gx, gy; radius: R + 2; cursor: pointer; active: fa > 0.5 and von < 0.1 }
+    ellipse { at: gx + cos(dx * 1.9 - 50) * R * 0.46, ky + sin(dx * 1.9 - 50) * R * 0.46; radius: 5; color: mix(coffee, cream, 0.4); opacity: gr * (1 - ika) * p }
+    text g_power { at: gx, ky; anchor: center; size: 31; color: cream; opacity: ika; family: "noctalia-tabler-icons" }
+    zone ellipse z_goo { at: gx, ky; radius: R + 2; cursor: pointer; active: fa > 0.5 and von < 0.1 }
     on press z_goo { toggle pm_open }
 
     // ponuka napájania (iba ikony s popisom pod nimi)
-    text g_spat { at: gx - 66 * pm, gy - 60 * pm; anchor: center; size: 19; color: cream; opacity: pm; family: "noctalia-tabler-icons" }
-    text g_znova { at: gx, gy - 88 * pm; anchor: center; size: 19; color: cream; opacity: pm; family: "noctalia-tabler-icons" }
-    text g_power { at: gx + 66 * pm, gy - 60 * pm; anchor: center; size: 19; color: #ff8a80; opacity: pm; family: "noctalia-tabler-icons" }
-    text "Sleep" { at: gx - 66, gy - 96; anchor: center; size: 11.5; color: cream; opacity: pm * 0.7; family: "Inter" }
-    text "Restart" { at: gx, gy - 124; anchor: center; size: 11.5; color: cream; opacity: pm * 0.7; family: "Inter" }
-    text "Shut down" { at: gx + 66, gy - 96; anchor: center; size: 11.5; color: cream; opacity: pm * 0.7; family: "Inter" }
-    zone ellipse z_spat { at: gx - 66, gy - 60; radius: 23; cursor: pointer; active: pm_open and pm > 0.6 }
-    zone ellipse z_znova { at: gx, gy - 88; radius: 23; cursor: pointer; active: pm_open and pm > 0.6 }
-    zone ellipse z_vyp { at: gx + 66, gy - 60; radius: 23; cursor: pointer; active: pm_open and pm > 0.6 }
+    text g_spat { at: gx - 76 * pm, ky - 66 * pm; anchor: center; size: 19; color: cream; opacity: pm; family: "noctalia-tabler-icons" }
+    text g_znova { at: gx, ky - 98 * pm; anchor: center; size: 19; color: cream; opacity: pm; family: "noctalia-tabler-icons" }
+    text g_power { at: gx + 76 * pm, ky - 66 * pm; anchor: center; size: 19; color: #ff8a80; opacity: pm; family: "noctalia-tabler-icons" }
+    text "Sleep" { at: gx - 76, ky - 102; anchor: center; size: 11.5; color: cream; opacity: pm * 0.7; family: "Inter" }
+    text "Restart" { at: gx, ky - 134; anchor: center; size: 11.5; color: cream; opacity: pm * 0.7; family: "Inter" }
+    text "Shut down" { at: gx + 76, ky - 102; anchor: center; size: 11.5; color: cream; opacity: pm * 0.7; family: "Inter" }
+    zone ellipse z_spat { at: gx - 76, ky - 66; radius: 23; cursor: pointer; active: pm_open and pm > 0.6 }
+    zone ellipse z_znova { at: gx, ky - 98; radius: 23; cursor: pointer; active: pm_open and pm > 0.6 }
+    zone ellipse z_vyp { at: gx + 76, ky - 66; radius: 23; cursor: pointer; active: pm_open and pm > 0.6 }
     on press z_spat { pm_open = false; emit e_moc(0) }
     on press z_znova { pm_open = false; emit e_moc(1) }
     on press z_vyp { pm_open = false; emit e_moc(2) }
 
     // ── riadok: meno · heslo · šípka ─────────────────────────────────────────────────────────────────────────────
-    text meno { at: fx, gy; anchor: left center; width: 150; lines: 1; size: 16; weight: 600; color: cream; opacity: fa; family: "Inter" }
+    input ucet { at: fx, if(fa > 0.05, gy - 11, -4000); width: 150; size: 16; weight: 600; color: cream; selection: #5a463a; placeholder: "Name"; opacity: fa; family: "Inter" }
     box { at: fx + 160, gy; size: 1.2, 22; color: cream; opacity: fa * 0.28 }
     input heslo { at: fx + 174, if(fa > 0.05, gy - 11, -4000); width: 180; size: 16; color: cream; selection: #5a463a; placeholder: "Password"; secret: true; opacity: fa; family: "Inter" }
     ellipse { at: gx + rlen - 2, gy; radius: 16; color: mix(coffee, cream, if(caka, 0.5, 0.24)); opacity: fa }
     text g_sip { at: gx + rlen - 2, gy; anchor: center; size: 17; color: cream; opacity: fa; family: "noctalia-tabler-icons" }
-    zone box z_riadok { at: fx + 170, gy; size: 380, 2 * RH; cursor: text; active: fa > 0.5 and von < 0.1 }
+    zone box z_meno { at: fx + 76, gy; size: 164, 2 * RH; cursor: text; active: fa > 0.5 and von < 0.1 }
+    zone box z_riadok { at: fx + 264, gy; size: 204, 2 * RH; cursor: text; active: fa > 0.5 and von < 0.1 }
     zone ellipse z_sip { at: gx + rlen - 2, gy; radius: 18; cursor: pointer; active: fa > 0.5 and von < 0.1 }
-    on press z_riadok { focus heslo }
+    on press z_meno { pole = 0; focus ucet }
+    on press z_riadok { pole = 1; focus heslo }
+    on submit ucet { pole = 1; focus heslo }
+    on key Tab while pole == 0 and fa > 0.5 { pole = 1; focus heslo }
+    on key Tab while pole == 1 and fa > 0.5 { pole = 0; focus ucet }
     on press z_sip { emit e_odosli }
     on submit heslo { emit e_odosli }
     on key Escape while pm_open { pm_open = false }
