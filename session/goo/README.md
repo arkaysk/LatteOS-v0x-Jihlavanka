@@ -211,7 +211,7 @@ načíta sám. Príkazy, ktoré modul spúšťa cez `run`, musia byť v `permiss
   a meno do `EFEKTY` v `lib/engine.luau`.
 - **V logike** (zriedkavé zmeny): kanály `d:rezerva(1…4, hodnota)`, scéna ich vyhladí pružinou.
 
-## Prihlásenie (`login.plm`, `login.luau`) — prvá verzia, skúšobná
+## Prihlásenie (`login.plm`, `login.luau`) — voliteľné (`greeter = "goo"`)
 
 Scéna podľa LATTEOS-GOO.md §6.2: šálka z úvodnej obrazovky → kvapka vyskočí doprostred → odvalí sa ~5 cm doľava
 a nechá riadok (LoginGoo s ikonou Power · meno · heslo · šípka) → rovina klesne k hladine (káva v spodnej tretine,
@@ -222,11 +222,21 @@ GooPower a pozadie zmizne. Klik na LoginGoo = Uspať · Reštartovať · Vypnú�
 - **Skúška:** `latte-goo login-skuska [sekundy]` — nad bežiacou plochou, heslo „latte“ sedí, iné nie, nič sa nemení
   a scéna sama skončí (predvolene po 40 s). Odkryť goo bez čakania: `pleamar --say login "emit e_hra"`.
 - **Údaje:** `latte-goo prihlasenie` (meno, káva, pád / novinky, info, znaky ikon, miesto GooPower).
-- **Režim** podľa `LATTE_LOGIN`: `skuska` (predvolené), `zamok` (heslo overí systém cez `auth.check`).
+- **Režim** podľa `LATTE_LOGIN`: `skuska` (predvolené), `zamok` (heslo overí systém cez `auth.check`), `greetd`
+  (všeobecná relácia prihlasovača).
+- **Obloha a počasie:** silueta slnka alebo mesiaca na skutočnom mieste (obzor = hladina, mesiac vo fáze), dážď
+  a sneh podľa počasia vonku; miesto z `greeter.conf` (Nastavenia › Účet › Prihlasovanie).
 - **Výber relácie** (vývojárska verzia): goo na hladine za riadkom; zoznam ako v doterajšom prihlasovači.
-- **Nezapojené:** rozhodnuté je (6. 10.) prihlásenie ako zámok nad VŠEOBECNOU reláciou — beží pod účtom prihlasovača
-  (greetd), údaje a plocha používateľa sa načítajú až po hesle; jeho relácia potom nadviaže na posledný obraz
-  (LoginGoo → GooPower). Otvorené: čo sú „správy“ pod hladinou.
+- **Zapojenie** (6. 10., rozhodnutie: zámok nad VŠEOBECNOU reláciou): `greeter = "goo"` v `/etc/latteos/boot.toml`
+  → `latte-greeter` spustí labwc s grafickou kartou pod účtom prihlasovača a v ňom `latte-goo-greeter` (scéna na
+  monitore s najväčším rozlíšením, `LATTE_LOGIN=greetd`). Heslo ide z poľa cez `files.write` do súkromného súboru
+  na tmpfs (`$XDG_RUNTIME_DIR/latte-login`), `latte-greetd prihlas` ho prečíta, zmaže a overí cez greetd; po
+  odchode LoginGoo `latte-greetd koniec` ukončí všeobecnú reláciu a greetd spustí reláciu používateľa (vybranú
+  v goo výberu relácie). Bez karty, v režime SAFE alebo keď scéna skončí bez prihlásenia, nasleduje doterajší
+  prihlasovač (`latte`). Log scény: `/run/user/<uid prihlasovača>/latte-login/login.log`.
+- **Ostáva:** plynulé nadviazanie plochy na posledný obraz (relácia dostane `LATTE_Z_PRIHLASENIA=1`; medzi
+  prihlásením a plochou je zatiaľ krátky prestrih pri odovzdaní obrazovky), údaje používateľa pred heslom
+  (upozornenia, úlohy — všeobecná relácia ich nevidí), viac účtov, čo sú „správy“ pod hladinou.
 - Skúšať treba v skutočnej relácii: v skrytom kompozitore (labwc headless) pleamar vykreslí iba prvú snímku.
 
 ## Ďalej (z pravidiel plochy, zatiaľ nie v engine)

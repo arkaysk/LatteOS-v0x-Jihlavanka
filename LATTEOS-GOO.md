@@ -305,8 +305,9 @@ treba rozhodnúť, čo je bezpečné ukázať pred prihlásením (RSS, upozornen
 9. **Spôsob:** zámok nad **všeobecnou reláciou** (na PC môže byť viac používateľov) — dáta, rozmiestnenie, nastavenia
    a plocha používateľa sa načítajú až po potvrdení prihlásenia.
 
-**Stav 6. 10.:** scéna je hotová na skúšku (`session/goo/login.plm`, `latte-goo login-skuska`), do prihlasovania
-zatiaľ nezapojená (podrobnosti v [session/goo/README.md](session/goo/README.md) › Prihlásenie). Hladina je v 2/3
+**Stav 6. 10.:** scéna je hotová (`session/goo/login.plm`, skúška `latte-goo login-skuska`) a dá sa zapnúť ako
+prihlasovanie: `greeter = "goo"` v `/etc/latteos/boot.toml` (predvolený ostáva doterajší prihlasovač; podrobnosti
+v [session/goo/README.md](session/goo/README.md) › Prihlásenie). Hladina je v 2/3
 výšky obrazovky (rovina „klesne“ zo stredu), pod ňou tretina obrazovky kávy.
 
 ### 6.3 Obchod podľa ZimaOS (App Manager)
