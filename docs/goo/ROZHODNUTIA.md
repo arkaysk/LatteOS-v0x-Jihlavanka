@@ -45,6 +45,10 @@ Nové rozhodnutie: jeden riadok sem (dátum, čo, prečo) a oprava platného zne
   spravovať“); bublina odchádzajúceho spojenia na rozhodnutie — prekrýva sa s povolením Flatpaku a tlačidlom NET;
   nie: plátno ako štvrtý režim, bublina „vrátiť späť“ pri zatvorení, Gradia (skôr nie), živé titulky (vec
   videoprehrávača).
+- **Ďalšie kolo:** **obnovenie relácie** áno; ikra/kvapka, ktorá hrá zvuk, sa **vlní ako reproduktor** a má vlastnú
+  hlasitosť v kontextovej ponuke; **kto žerie energiu, dáta, RAM a disk s priebehom po dňoch** patrí do Monitora;
+  prostredie Súborov sa ešte musí doriešiť; nie: koliesko na ikre = hlasitosť, poradie spotreby v karte GooPower,
+  Kazeta (skôr nie).
 - Správca súborov bude ako Total Commander s dvoma panelmi, alebo náš fork Total Commandera.
 - Ovládacie centrum Noctalie sa otvára **nad rohovou lištou vpravo** (predtým vľavo, zvyšok plochy Kvapky).
 - Na zváženie (nerozhodnuté): „Zásady pre engine Goo“ v README (samostatný daemon, Quickshell ako vizuálna vrstva,
@@ -137,5 +141,8 @@ Nové rozhodnutie: jeden riadok sem (dátum, čo, prečo) a oprava platného zne
 | bublina „vrátiť späť“ po zatvorení okna | nie (6. 10.) |
 | živé titulky v celom systéme | nie — je to vec videoprehrávača (mpv/VLC + titulky z whisper) (6. 10.) |
 | Gradia (úprava snímok obrazovky) | skôr nie (6. 10.) |
+| koliesko na ikre = hlasitosť aplikácie | nie — hlasitosť v kontextovej ponuke zvučiacej ikry (6. 10.) |
+| spotreba energie v karte GooPower | nie — patrí do Monitora (s priebehom po dňoch) (6. 10.) |
+| Kazeta (hry ako kazety) | skôr nie (6. 10.) |
 | LatteOS Classic | zrušený (5. 10.) |
 | nasadzovať pôvodnú plochu Kvapky | nie — iba engine Goo (6. 10.) |
