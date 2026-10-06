@@ -55,6 +55,9 @@ Nové rozhodnutie: jeden riadok sem (dátum, čo, prečo) a oprava platného zne
   zdroj nápadov s AI.
 - **AI podľa Omarchy:** áno „Prečo to spadlo?“; zručnosť LatteOS pre AI asi áno; pomocník je **Barista**,
   vyvolateľný kontextovou ponukou okna (pravý klik); limity predplatných patria do AI karty v LensGoo (čip spotreby).
+- **Newelle** ako možné jadro AI — v systéme nemajú byť dve veci, ale jedna použitá dvakrát (LensGoo + samostatné
+  okno); **Bumblebee**: áno, upozornenie na napadnutý balík aj pre bežného používateľa; **deň a noc na hladine**:
+  automatický režim mení nočné svetlo, vzhľad okien aj žiaru a odlesky na kvapkách podľa dennej doby.
 - Správca súborov bude ako Total Commander s dvoma panelmi, alebo náš fork Total Commandera.
 - Ovládacie centrum Noctalie sa otvára **nad rohovou lištou vpravo** (predtým vľavo, zvyšok plochy Kvapky).
 - Na zváženie (nerozhodnuté): „Zásady pre engine Goo“ v README (samostatný daemon, Quickshell ako vizuálna vrstva,
