@@ -254,6 +254,16 @@ GooPower a pozadie zmizne. Klik na LoginGoo = Uspať · Reštartovať · Vypnú�
   (osirelé procesy účtu greetd) — po skúške ich treba ukončiť.
 - Skúšať treba v skutočnej relácii: v skrytom kompozitore (labwc headless) pleamar vykreslí iba prvú snímku.
 
+## Ovládanie z klávesnice
+
+Win+T (`latte/skratky.lua` → `pleamar --say goo "emit kb_toggle"`) zapne režim: scéna drží klávesnicu (`keyboard:
+exclusive while ctx_open or kb`), `kbk` je miesto vybranej kvapky. Klávesy sú pravidlá scény (`on key … while kb and
+not ctx_open`), ktoré posielajú `kb_nav`, `kb_act`, `kb_move`; logika (`lib/engine.luau`) chodí po kvapkách po obvode
+(`kbRing`) a volá tie isté háčiky ako myš (`klik`, `pravy`, `koliesko`). Pasce: písacie pole karty si klávesnicu
+vezme, keď ju plocha dostane — preto `blur` pri vstupe, pri zisku klávesnice a po zatvorení karty; a hodnota udalosti
+je vo `while` ešte z predošlej udalosti — preto bublinu kladie jedno pravidlo podľa `kbx`, `kby` (gen.py), nie
+pravidlo na miesto. Skúška bez klávesnice: `emit kb_toggle`, `emit kb_nav 1`, `emit kb_act 0`.
+
 ## GooBar na každom monitore
 
 Hlavný monitor (ľavý horný roh 0,0) má celú plochu so všetkými kvapkami. Každý ďalší monitor má **vlastnú inštanciu

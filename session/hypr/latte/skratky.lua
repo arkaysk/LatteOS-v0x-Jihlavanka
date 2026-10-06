@@ -212,6 +212,8 @@ local function common()
     bind("SUPER + Z", panel("latteos/snap:panel"))
     bind("SUPER + Tab", panel("latteos/overview:panel"))
     bind("SUPER + L", run(zamok))
+    -- vstup do Goo z klávesnice (ako „prejdi na panel úloh“ vo Windows): šípky po kvapkách, Enter klik, Esc von
+    if os.getenv("LATTE_VARIANT") == "kvapky" then bind("SUPER + T", run('pleamar --say goo "emit kb_toggle"')) end
     bind("SUPER + E", run("latte-app subory"))
     bind("SUPER + SHIFT + left",  hl.dsp.window.move({ monitor = "l" }))
     bind("SUPER + SHIFT + right", hl.dsp.window.move({ monitor = "r" }))

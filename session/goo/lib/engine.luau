@@ -716,7 +716,11 @@ function E.menu(items, width, opts)
     if not opts.keep then fact.ctx_hot = -1 end
     fact.ctx_open = #out > 0
 end
-on("ctx_pick", function(k) local f = ctx_actions[(k or 0) + 1] if f then f() end end)
+on("ctx_pick", function(k)
+    local f = ctx_actions[(k or 0) + 1] if f then f() end
+    -- režim klávesnice: voľba, ktorá kartu zavrela (spustená aplikácia, akcia), ho ukončí — dá sa písať do okna
+    after(200, function() if fact.kb and not fact.ctx_open then emit("kb_out") end end)
+end)
 on("ctx_close", function() ctx_actions, ctx_wheel, chip_actions, ctx_rights = {}, {}, {}, {} ctx_items = nil end)
 on("ctx_scroll", function(v)
     local f = ctx_wheel[(v or 0) // 2 + 1]
@@ -841,6 +845,103 @@ on("goo_scroll", function(v)
     -- je v Nastaveniach › Kvapky); nie okná GooBaru (tie rozkladá GooBar)
     if not hook(d, "koliesko", up and 1 or -1) and d.v.zoom and d.zdroj ~= "dyn" then d:velkost(d.z + (up and 0.1 or -0.1)) end
 end)
+-- ── ovládanie z klávesnice (LATTEOS-GOO.md §6.1) ──────────────────────────────────────────────────────────────────
+-- Myš ostáva prvá; toto je doplnok pre prácu bez nej. Win+T (latte/skratky.lua) vstúpi do Goo: scéna drží klávesnicu,
+-- šípky chodia po kvapkách po obvode obrazovky, Enter / medzerník = ľavý klik, Menu / Shift+F10 = pravý, + a − =
+-- koliesko, Ctrl+šípky kvapku posúvajú, Ctrl+Home ju vráti na miesto, Esc zavrie kartu a druhý Esc režim opustí.
+-- Režim je dočasný (do aplikácií sa v ňom nedá písať): skončí sám po kliku na okno, po voľbe v karte a po minúte
+-- bez klávesu.
+local kbIdle
+local function kbOut() if fact.kb then emit("kb_out") end if kbIdle then cancel(kbIdle) kbIdle = nil end end
+local function kbTouch()
+    if kbIdle then cancel(kbIdle) end
+    kbIdle = after(60000, kbOut)
+end
+-- kvapky v poradí po obvode: dolný okraj zľava doprava, pravý, horný, ľavý
+local function kbRing()
+    local list = {}
+    E.each(function(d) if not d.hidden then table.insert(list, d) end end)
+    local rank = { [0] = 0, [3] = 1, [2] = 2, [1] = 3 }
+    local function key(d)
+        local e, a = d.edge or 0, along(d)
+        if e == 3 or e == 2 then a = elen(d) - a end       -- pravý zdola hore, horný sprava doľava: obvod dokola
+        return (rank[e] or 0) * 1e6 + a
+    end
+    table.sort(list, function(a, b) return key(a) < key(b) end)
+    return list
+end
+-- text bubliny: názov a popis, ako pri prechode myšou (obsah kvapky sa výberom nemení, §3)
+local function tipText(d)
+    local has, res = hook(d, "popis")
+    local p = has and res or d.v.popis
+    local n = d.v.nazov or ""
+    return (p and p ~= "" and p ~= n) and (n ~= "" and n .. " · " .. p or p) or n
+end
+local function kbSelect(d)
+    if not d then return end
+    fact.kbk = d.k
+    d:bublina(tipText(d))
+    after(50, function() if fact.kb and fact.kbk == d.k then emit("kb_sel", d.k) end end)   -- až keď scéna vie, ktorá to je
+end
+local function kbCurrent() return slots[num(fact.kbk, -1)] end
+on("kb_toggle", function()
+    if fact.kb then return kbOut() end
+    local list = kbRing()
+    if #list == 0 then return end
+    fact.kb = true
+    kbTouch()
+    kbSelect(byId.lensgoo and not byId.lensgoo.hidden and byId.lensgoo or list[1])
+    hud("klávesnica")
+end)
+on("kb_exit", function() if kbIdle then cancel(kbIdle) kbIdle = nil end hud("klávesnica von") end)
+-- šípka v smere okraja = ďalšia / predošlá po obvode; na dolnom okraji ← →, na bočných ↑ ↓
+local KB_STEP = { [0] = { [1] = 1, [0] = -1 }, [3] = { [2] = 1, [3] = -1 }, [2] = { [0] = 1, [1] = -1 }, [1] = { [3] = 1, [2] = -1 } }
+on("kb_nav", function(dir)
+    if not fact.kb then return end
+    kbTouch()
+    local list, cur = kbRing(), kbCurrent()
+    if #list == 0 then return end
+    local i = 1
+    for j, d in ipairs(list) do if d == cur then i = j end end
+    local step = cur and (KB_STEP[cur.edge or 0] or {})[dir or 0]
+    if not step then return end
+    kbSelect(list[(i - 1 + step) % #list + 1])
+end)
+on("kb_act", function(a)
+    if not fact.kb then return end
+    kbTouch()
+    local d = kbCurrent() if not d then return end
+    if a == 0 then
+        hud("klávesnica · klik · " .. d.id)
+        if not hook(d, "klik") then d:zavibruj() end
+        if d.zdroj == "dyn" then after(150, kbOut) end        -- okno z GooBaru: klávesnica patrí zase jemu
+    elseif a == 1 then
+        hud("klávesnica · pravé · " .. d.id)
+        if not hook(d, "pravy") then d:zavibruj() end
+    elseif a == 2 or a == 3 then
+        local up = a == 2
+        if not hook(d, "koliesko", up and 1 or -1) and d.v.zoom and d.zdroj ~= "dyn" then d:velkost(d.z + (up and 0.1 or -0.1)) end
+        after(60, function() if fact.kb then kbSelect(d) end end)             -- bublina na novom mieste
+    elseif a == 4 and d.zdroj ~= "dyn" then
+        d:domov() E.separate(d) save()
+        after(400, function() if fact.kb then kbSelect(d) end end)
+    end
+end)
+-- presun kvapky (náhrada ťahania): pozdĺž jej okraja po 2 % jeho dĺžky; na dolnom a hornom ← →, na bočných ↑ ↓
+on("kb_move", function(dir)
+    if not fact.kb then return end
+    kbTouch()
+    local d = kbCurrent()
+    if not d or d.zdroj == "dyn" or d.v.tahat == false then if d then d:zavibruj() end return end
+    local e = d.edge or 0
+    local s = ((e == 0 or e == 2) and (dir == 0 and -1 or dir == 1 and 1 or 0)) or ((e == 1 or e == 3) and (dir == 2 and -1 or dir == 3 and 1 or 0)) or 0
+    if s == 0 then return end
+    d.x = clamp(d.x + s * 0.02, 0.02, 0.98)
+    d.moved = true
+    E.separate(d) publish() save()
+    after(350, function() if fact.kb then kbSelect(d) end end)
+end)
+
 on("goo_enter", function(k)
     local d = at(k) if not d then return end
     hud("nad · " .. d.id)

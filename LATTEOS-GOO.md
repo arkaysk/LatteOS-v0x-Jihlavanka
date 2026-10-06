@@ -287,7 +287,12 @@ klávesnicu, nedá sa písať do aplikácií).
 | späť | **Esc** zavrie kartu, druhý **Esc** opustí režim | |
 
 Vybraná kvapka **pulzuje svetlejšou hnedou** (rozdiel v jase, nie v odtieni — stačí aj farboslepému), zdvihne sa
-a ukáže bublinu s názvom. Pri tvorbe doriešiť: obmedzenie pohybu, väčšie písmo a kontrast, čítanie názvov nahlas.
+a ukáže bublinu s názvom.
+
+**Stav 6. 10.: vytvorené** v engine Goo (scéna `kb`, `kbk`; logika `kb_*` v `lib/engine.luau`; Win+T v
+`latte/skratky.lua`). Šípky chodia po kvapkách dokola po obvode obrazovky, vrátane okien GooBaru. Režim skončí sám
+po kliku na okno, po voľbe v karte a po minúte bez klávesu. Ostáva doriešiť: obmedzenie pohybu, väčšie písmo
+a kontrast, čítanie názvov nahlas; na vedľajšom monitore režim nie je.
 
 ### 6.2 Nový prihlasovač
 1. Pri štarte je na obrazovke **šálka** (Plymouth); zo šálky **vyskočí kvapka kávy doprostred obrazovky**.
