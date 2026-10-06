@@ -126,7 +126,9 @@ echo "== vzhľad: Noctalia (téma Latte), písma Manrope/Fraunces (OFL), tapety 
 put "$S/noctalia/config.toml" /usr/share/latteos/noctalia/config.toml   # Noctalia sleduje priečinok (hot reload)
 sudo install -Dm644 "$S/noctalia/palettes/Latte.json" /usr/share/latteos/noctalia/palettes/Latte.json
 sudo install -Dm644 "$S/noctalia/icons/latte-cup.png" /usr/share/latteos/noctalia/icons/latte-cup.png
+# doplnky lišty a maskoti patria zrušenému Classicu; vo verejnej verzii nie sú (setup/verejne/vynechat.txt) — preskočia sa
 for p in "$S"/noctalia/plugins/*/; do   # pluginy LatteOS (zdroj „latteos“ v config.toml)
+    [ -d "$p" ] || continue
     n="$(basename "$p")"; sudo install -d "/usr/share/latteos/noctalia/plugins/$n"
     for f in "$p"*; do [ -f "$f" ] && sudo install -m644 "$f" "/usr/share/latteos/noctalia/plugins/$n/"; done   # súbory
     if [ -d "$p/translations" ]; then                                    # preklady doplnku (noctalia.tr)
@@ -135,11 +137,15 @@ for p in "$S"/noctalia/plugins/*/; do   # pluginy LatteOS (zdroj „latteos“ v
     fi
 done
 # maskoti na lištu: vlastná pixel-art, snímky sa generujú (plugin latteos/cat)
-tmpm="$(mktemp -d)"; python3 "$S/noctalia/plugins/cat/make-mascots.py" "$tmpm" | sed 's/^/   /'
-sudo install -d /usr/share/latteos/noctalia/plugins/cat/mascots
-sudo install -m644 "$tmpm"/*.png /usr/share/latteos/noctalia/plugins/cat/mascots/
+tmpm="$(mktemp -d)"
+if [ -f "$S/noctalia/plugins/cat/make-mascots.py" ]; then
+    python3 "$S/noctalia/plugins/cat/make-mascots.py" "$tmpm" | sed 's/^/   /'
+    sudo install -d /usr/share/latteos/noctalia/plugins/cat/mascots
+    sudo install -m644 "$tmpm"/*.png /usr/share/latteos/noctalia/plugins/cat/mascots/
+fi
 # balíčky maskotov (plné snímky + pet.json) pre výbehy — apps/maskot.qml
 for d in "$S"/noctalia/plugins/cat/balicky/*/; do
+    [ -d "$d" ] || continue
     n="$(basename "$d")"; sudo install -d "/usr/share/latteos/maskoti/$n"
     sudo install -m644 "$d"* "/usr/share/latteos/maskoti/$n/"
 done
@@ -298,7 +304,7 @@ if [ -f "$copr" ] && ! grep -q '^excludepkgs=hyprland' "$copr"; then
 fi
 
 echo "== verzia súčastí LatteOS (App Manager › Aktualizácie porovnáva s repozitárom)"
-printf 'commit=%s\ndate=%s\nbranch=%s\nsource=%s\n' "$(git -C "$repo" rev-parse --short HEAD 2>/dev/null)" "$(git -C "$repo" log -1 --format=%cs 2>/dev/null)" \
+printf 'version=%s\ncommit=%s\ndate=%s\nbranch=%s\nsource=%s\n' "$(sed -n '/^\[workspace.package\]/,/^\[/s/^version = "\(.*\)"$/\1/p' "$repo/Cargo.toml")" "$(git -C "$repo" rev-parse --short HEAD 2>/dev/null)" "$(git -C "$repo" log -1 --format=%cs 2>/dev/null)" \
     "$(git -C "$repo" rev-parse --abbrev-ref HEAD 2>/dev/null)" "$repo" | sudo tee /usr/share/latteos/VERSION >/dev/null
 
 echo "== prvý výber režimu"

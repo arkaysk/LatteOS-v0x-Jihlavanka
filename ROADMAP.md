@@ -6,7 +6,7 @@
 > body roadmapy, ktoré sa týkajú iba klasickej plochy (lišta Noctalie, klasický spúšťač a panely), sa ďalej
 > nerozvíjajú; ich funkcie preberá Goo. Prioritou je **engine Goo** (`session/goo`): poradie práce je v
 > [LATTEOS-GOO.md](LATTEOS-GOO.md) a otvorené úlohy enginu nižšie v F3·G. Na systém sa nasadzuje **iba engine Goo**
-> (6. 10.); po jeho dokončení sa zverejní **verejná verzia 0.2** (iba GOO).
+> (6. 10.); verejné vydania nesú verziu a značku (prvé: **0.3.0 „Jihlavanka“**, iba GOO) — zverejňuje sa na pokyn.
 
 Podklad: [technologický radar](inspo/LatteOS%20–%20technologický%20radar%202026.md),
 prebraté zdroje v [resources/](resources/patches/README.md) (`fetch.sh`; pôvodný MANIFEST je v `old/resources/MANIFEST.md`). Priečinok `old/` sa už **nemení**, slúži len na čítanie.
@@ -490,8 +490,13 @@ texty preložiteľné (`translations`). Noctalia beží bez lišty a robí, čo 
   - [ ] na rozhodnutie: bublina odchádzajúceho spojenia — nie ako tretia vrstva, iba ako súčasť modelu NET
     (povolenie pri inštalácii + tlačidlo NET), napr. upozornenie pri prvom spojení aplikácie mimo Flatpaku
 - [ ] Ovládacie centrum Noctalie nad rohovou lištou vpravo — overiť na latte-lab (`latte-kvapky`: `bottom_right`)
-- [ ] **Verejná verzia 0.2** (iba GOO) po dokončení enginu: obnoviť `arkaysk/latteos` (`setup/verejne/`), verejné
-  README podľa GOO, licencia
+- [x] Príprava verejného vydania (6. 10.): licencia MIT (`LICENSE`, `TRETIE-STRANY.md`), verejné README iba o GOO,
+  `ZMENY.md`, zoznam súkromných súborov (`setup/verejne/vynechat.txt`), `zverejnit.sh` robí vydanie so značkou
+  `v<verzia>` a skúšku `--nasucho`; inštalátor znesie strom bez doplnkov Classicu a maskotov. Verzia = fáza vývoja:
+  **0.3.0 „Jihlavanka“** (návrh, F3).
+- [ ] **Zverejniť vydanie 0.3.0** do `arkaysk/latteos` — až na pokyn. Pred tým: súhlas autora pleamaru a Marey
+  (používateľ mu napíše), skúška inštalácie z verejného stromu na čistom počítači (inštalátor bez doplnkov Classicu
+  ešte nebol spustený), potvrdiť vetu o grafike vo verejnom README (NVIDIA a virtuálny stroj neoverené)
 - [x] pleamar v0.2.6, pleamar-wm v0.2.5, marea-plm (1. 10.): pripnuté, záplaty sedia, inštalácia preloží novší
 - [x] **ChatGoo** (addon pre Beeper, LATTEOS-GOO.md §4.6), 6. 10.: kvapka v engine — ukáže sa, keď je Beeper
   nainštalovaný alebo beží, nesie jeho pôvodnú ikonu, klik okno ukáže / schová, upozornenia Beepera idú k nej

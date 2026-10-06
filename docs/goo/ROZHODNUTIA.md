@@ -7,6 +7,11 @@ Nové rozhodnutie: jeden riadok sem (dátum, čo, prečo) a oprava platného zne
 
 ## 6. 10. 2026
 
+- **Vývoj a vydania:** súkromné repo má jedinú vetvu `main`; verejné repo dostáva v určitých fázach vydanie pod
+  označením verzie (značka a vydanie na GitHube). Verejne sa opisuje iba LatteOS GOO — Classic sa ruší a neopisuje;
+  GOO síce vychádza z pleamaru a Marey, ale je to už niečo iné. Licencia MIT. Tapety sú vlastné; maskoti patrili
+  Classicu a v GOO nie sú. Zatiaľ žiadna reklama na verejné repo, autorovi pleamaru používateľ ešte napíše.
+
 - **ChatGoo nesie pôvodnú ikonu Beepera** („ikonu pre Beeper do goo použi originálnu ikonu“), nie vlastný znak;
   znak bubliny je iba náhrada, keď sa ikona nenájde.
 

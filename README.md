@@ -55,11 +55,14 @@ Kliky jednotlivých kvapiek sú v [LATTEOS-GOO.md §4](LATTEOS-GOO.md). Záväzn
 | `setup/` | inštalácia a testy na VM: `f0-install.sh`, `f1/install-session.sh`, staré merania v `docs_zaloha/`; reálne PC latte-lab: [`lab/`](setup/lab/README.md) |
 | `old/`   | celý predchádzajúci stav repa, len na čítanie; **už sa doň nezapisuje** |
 
-**Toto repo je súkromné** (celá história, `inspo/`, `old/`, ROADMAP). Verejná kópia bez nich je
-[arkaysk/latteos](https://github.com/arkaysk/latteos): zverejňuje sa príkazom `setup/verejne/zverejnit.sh`
-(čo sa vynecháva: `setup/verejne/vynechat.txt`, verejné README: `setup/verejne/README.md`). Verejná kópia je
-**zastaraná** (29. 9. 2026, ešte pred GOO, s klasickou plochou); po dokončení enginu Goo sa zverejní **verejná
-verzia 0.2** iba s GOO.
+**Toto repo je súkromné** a vyvíja sa v ňom, v jedinej vetve `main`. Verejné je
+[arkaysk/latteos](https://github.com/arkaysk/latteos): v určitých fázach sa doň presunie **vydanie** príkazom
+`setup/verejne/zverejnit.sh` — jeden commit, značka `v<verzia>` a vydanie na GitHube s popisom zo
+[ZMENY.md](ZMENY.md). Verzia je v `Cargo.toml`; každé vydanie musí mať novú. Čo ostáva súkromné, určuje
+`setup/verejne/vynechat.txt`; verejné README je `setup/verejne/README.md` (iba LatteOS GOO, Classic sa neopisuje).
+Skúška bez zverejnenia: `setup/verejne/zverejnit.sh --nasucho`. Licencia: MIT ([LICENSE](LICENSE)), cudzie súčasti
+v [TRETIE-STRANY.md](TRETIE-STRANY.md). Verejná kópia je teraz **zastaraná** (29. 9. 2026, ešte s klasickou
+plochou); zverejňuje sa iba na pokyn.
 
 Plán vývoja je v [ROADMAP.md](ROADMAP.md). Nový kód a dáta vznikajú iba mimo `old/`.
 
