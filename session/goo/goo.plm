@@ -89,6 +89,7 @@ scene Goo {
         obr: text; img: bool; tlm: number; gn: number; gf: number; gt: text
         sk: number; zl: number = 1; ml: number = 1; ed: number; nad: text; kw: number; t2: text; kr: number = 1
         kd: number; fix: bool
+        jmp: bool; ja: number; jb: number; jv: number
     }
     spring plava = 150, 13                    // vodorovne: mäkko, bez odskoku
     spring pada = 190, 9                      // zvisle: s prestrelením a odrazom („odkvapne“, §3)
@@ -301,6 +302,16 @@ scene Goo {
         on change falln.$k { ftm.$k = time; fq.$k = falln.$k }
         let fte.$k = max(0, time - ftm.$k)
         let fo.$k = if(fq.$k != falln.$k, fh.$k, max(0, fh.$k - 0.5 * GRAV * fte.$k * fte.$k)) * (1 - drg.$k)
+        // skok pri hre (§3.1 stupeň 3, „ako staré Worms“): BALISTICKÝ oblúk s tou istou gravitáciou ako pád — nie
+        // pružina. Logika dá miestu rýchlosť odrazu jv (px/s), odkiaľ a kam pozdĺž lišty (ja → jb, px) a zvýši skn;
+        // kvapka letí jv·t − ½·g·t² vysoko a rovnomerne z ja do jb, kým je jmp (potom ju zase vedie pružina px)
+        fact skn.$k = 0
+        fact skt.$k = -100
+        on change skn.$k { skt.$k = time }
+        let sku.$k = max(0, time - skt.$k)
+        let skT.$k = max(0.05, 2 * goo.$k.jv / GRAV)
+        let skp.$k = clamp(sku.$k / skT.$k, 0, 1)
+        let skh.$k = if(sku.$k < skT.$k, goo.$k.jv * sku.$k - 0.5 * GRAV * sku.$k * sku.$k, 0)
         // pokoj: kým kurzor nie je nablízku, kvapka na lište si SADNE — zasunie sa k hladine a sploští; pri kurzore
         // (aj pri susedovi) sa zdvihne a zaguľatí. Pri nečinnosti (zaspávajú) si sadne hlbšie. Stred ostane aspoň
         // 0,28 polomeru nad hladinou (s dvoma riadkami textu 0,45), aby obsah ostal celý vidieť; kvapka s prstencom (druh 1) nesadá —
@@ -377,10 +388,10 @@ scene Goo {
         follow jd.$k = goo.$k.jadro * if(goo.$k.jp, 0.7 + 0.3 * sin(time * 220 + k * 40), 1) * if(goo.$k.on, 1, 0)
         // kolmo na okraj: nadnesenie, tok, vlnka (iba dolná hladina), ponor a sadnutie
         let nrm.$k = (lift.$k * lup.$k + 4 * fl.$k * small.$k * (1 - lift.$k) + wv.$k * small.$k * if(goo.$k.ed == 0, 1, 0) - dip.$k * r0.$k * 1.4) * dk.$k - sink.$k
-        follow x.$k = px.$k + fxx.$k + e2.$k + nx.$k * nrm.$k
+        follow x.$k = if(goo.$k.jmp, goo.$k.ja + (goo.$k.jb - goo.$k.ja) * skp.$k, px.$k) + fxx.$k + e2.$k + nx.$k * nrm.$k
         // na lište: v pokoji kúsok vystupuje a klesá s tokom, pri kurzore sa nadnesie. Prázdne miesto pod obrazovku
         // (bez záplaty pleamar-prazdne-tvary by bod nulovej veľkosti cez zliatie vydul hrbček)
-        follow y.$k = if(goo.$k.on, py.$k + fxy.$k + e3.$k + ny.$k * nrm.$k, H + 400)
+        follow y.$k = if(goo.$k.on, py.$k + fxy.$k + e3.$k + ny.$k * (nrm.$k + skh.$k), H + 400)
         follow ts.$k = r0.$k / 26
         follow rr.$k = r0.$k * (1 + life.$k + fxs.$k + e1.$k) * if(goo.$k.on, 1, 0)
         // zliatie (link v Kvapkách: 10 + 16 · nadnesenie + 10 · tok) — v pokoji spája iba okraj, pri kurzore mosty

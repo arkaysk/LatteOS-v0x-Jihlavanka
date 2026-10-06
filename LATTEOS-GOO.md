@@ -113,8 +113,11 @@ prvok; **karta Goo** = okno, ktoré vyrastie z kvapky (ponuka, spúšťač, kart
   jasno = iba dýchanie. Kvapky padajú iba nízko nad hladinou, nie cez okná.
 - **Deň a noc na hladine:** svetlo, ktoré sa odráža v kvapkách, a žiara nad horizontom hladiny sa menia podľa
   skutočnej polohy slnka — v noci tlmené studené, cez deň biele, pri svitaní a súmraku teplé oranžové.
-- **Stupeň 3 — hra:** naháňačka (zámerná zrážka a odraz so stlačením), behanie po okraji (ostatné uhnú), skákanie
-  ponad ostatné; nič sa neprekryje (22); potom sa všetko vráti na miesto.
+- **Stupeň 3 — hra, ako staré Worms:** skoky sú **realistické oblúky** s gravitáciou enginu (nie pružina) a smú byť
+  vysoké; pred odrazom sa kvapka prikrčí, pri dopade sploští a hladina sa zvlní. Druhy: **plíženie** (prikrčenie,
+  nízky výskok, znova — pár ráz za sebou), veľký skok oblúkom aj ponad ostatné, naháňačka so zrážkou (tá druhá
+  odskočí), výskok na mieste. **Občas rýchlejšia hra.** Kam kvapka doskočí, ostatné uhnú; nič sa neprekryje (22);
+  potom sa všetko vráti na miesto.
 - **Kedy nie:** okno na celú obrazovku / hra, zamknutá obrazovka, batéria pod 20 % alebo úsporný profil, stupeň
   výkonu Softvér (llvmpipe); počet snímok pri nečinnosti obmedzený. Vypínač „Živé správanie“ v Nastaveniach › Kvapky.
   *(V engine sú všetky tri stupne, vypínač aj obmedzenia; počet snímok pri nečinnosti sa ešte neobmedzuje.)*
