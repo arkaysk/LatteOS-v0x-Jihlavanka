@@ -109,12 +109,15 @@ prvok; **karta Goo** = okno, ktoré vyrastie z kvapky (ponuka, spúšťač, kart
 - **Nečinnosť** (myš aj klávesnica): stupeň **1** po ~1 min (kvapky „zaspávajú“), **2** po ~3 min (počasie),
   **3** po ~6 min (hra). **Prebudenie okamžite** pohybom myši alebo klávesom — zachvenie a návrat na miesto.
 - **Stupeň 2 — dážď alebo vietor podľa skutočného počasia** (Open-Meteo): dážď = drobné goo kvapky dopadajú na spodný
-  okraj a zvlnia hladinu aj pripnuté kvapky; vietor = postupné vlny pozdĺž okraja; jasno = iba dýchanie. *(Ešte nie je.)*
+  okraj a zvlnia hladinu aj pripnuté kvapky; vietor (od 30 km/h) = postupné vlny pozdĺž okraja; sneh = vločky;
+  jasno = iba dýchanie. Kvapky padajú iba nízko nad hladinou, nie cez okná.
+- **Deň a noc na hladine:** svetlo, ktoré sa odráža v kvapkách, a žiara nad horizontom hladiny sa menia podľa
+  skutočnej polohy slnka — v noci tlmené studené, cez deň biele, pri svitaní a súmraku teplé oranžové.
 - **Stupeň 3 — hra:** naháňačka (zámerná zrážka a odraz so stlačením), behanie po okraji (ostatné uhnú), skákanie
   ponad ostatné; nič sa neprekryje (22); potom sa všetko vráti na miesto.
 - **Kedy nie:** okno na celú obrazovku / hra, zamknutá obrazovka, batéria pod 20 % alebo úsporný profil, stupeň
   výkonu Softvér (llvmpipe); počet snímok pri nečinnosti obmedzený. Vypínač „Živé správanie“ v Nastaveniach › Kvapky.
-  *(Stupne 1 a 3 sú v engine; obmedzenia „kedy nie“ a vypínač ešte nie.)*
+  *(V engine sú všetky tri stupne, vypínač aj obmedzenia; počet snímok pri nečinnosti sa ešte neobmedzuje.)*
 
 ---
 

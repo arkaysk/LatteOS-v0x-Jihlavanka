@@ -11,6 +11,7 @@ Logika scény beží v pieskovisku pleamar (bez súborov a bez sh) — všetko, 
   latte-goo upozornenie ID        farba jadra z príkazu upozornenia (hardver|siet|softver|vystraha|svetlo|ine), prázdne = nič
   latte-goo stav                  uložené polohy a veľkosti ({id: {x, y, z}})
   latte-goo uloz-stav JSON        uloží ich (atomicky)
+  latte-goo obloha                slnko a mesiac na oblohe, dážď / sneh, vietor a počasie teraz (miesto z greeter.conf)
   latte-goo prihlasenie           údaje scény prihlásenia (login.plm): meno, káva, posledný pád / novinky, info, ikony
   latte-goo goopower-miesto ÚČET  kde má GooPower daný účet (podiel šírky; pre prihlásenie iným menom)
   latte-goo login-skuska [SEK]    scéna prihlásenia na skúšku nad plochou (heslo „latte“, sama skončí; nič nemení)
@@ -296,7 +297,7 @@ def pocasie():
         m = re.search(k + r'\s*=\s*"([^"]*)"', conf)
         return m.group(1) if m and m.group(1) else d
     lat, lon, place = key("lat", "48.74"), key("lon", "19.15"), key("place", "")
-    url = ("https://api.open-meteo.com/v1/forecast?latitude=%s&longitude=%s&current=temperature_2m,weather_code"
+    url = ("https://api.open-meteo.com/v1/forecast?latitude=%s&longitude=%s&current=temperature_2m,weather_code,wind_speed_10m"
            "&hourly=temperature_2m,weather_code&daily=weather_code,temperature_2m_max,temperature_2m_min,"
            "precipitation_probability_max&timezone=auto&forecast_days=8" % (lat, lon))
     try:
@@ -307,7 +308,8 @@ def pocasie():
         except (OSError, ValueError):
             return {}
     cur, hr, dl = d.get("current") or {}, d.get("hourly") or {}, d.get("daily") or {}
-    out = {"miesto": place.split(",")[0], "teraz": {"t": round(cur.get("temperature_2m") or 0), "kod": cur.get("weather_code", 3)},
+    out = {"miesto": place.split(",")[0], "teraz": {"t": round(cur.get("temperature_2m") or 0), "kod": cur.get("weather_code", 3),
+                                                             "vietor": round(cur.get("wind_speed_10m") or 0)},
            "hodiny": [], "dni": []}
     now = (cur.get("time") or "")[:13]
     times = hr.get("time") or []
@@ -452,6 +454,53 @@ def nebo(lat, lon, t=None):
     return {"slnko": poloha(ra_s, dec_s), "mesiac": mesiac}
 
 
+def greeter_conf():
+    conf = {}
+    try:
+        for line in open(os.path.join(GREETER, "greeter.conf"), encoding="utf-8"):
+            m = re.match(r'\s*(\w+)\s*=\s*"?(.*?)"?\s*$', line)
+            if m and not line.lstrip().startswith("#"):
+                conf[m.group(1)] = m.group(2)
+    except OSError:
+        pass
+    return conf
+
+
+def obloha(conf=None):
+    """obloha a počasie v mieste z greeter.conf — pre prihlásenie aj pre hladinu na ploche: kde je slnko a mesiac
+    (nebo), či padá dážď alebo sneh (zrazky: 0 nič, 1 v predpovedi na najbližšie hodiny, 2 práve teraz), vietor
+    v km/h a počasie teraz (teplota, trieda, znak, miesto a dnešný rozsah)"""
+    conf = greeter_conf() if conf is None else conf
+    try:
+        nb = nebo(float(conf.get("lat", "48.74")), float(conf.get("lon", "19.15")))
+    except ValueError:
+        nb = {}
+    DAZD = set(range(51, 68)) | {80, 81, 82, 95, 96, 99}
+    SNEH = {71, 73, 75, 77, 85, 86}
+    zrazky, sneh, teraz_w, vietor = 0, False, None, 0
+    try:
+        w = pocasie()
+        teraz = (w.get("teraz") or {}).get("kod")
+        vietor = round(float((w.get("teraz") or {}).get("vietor") or 0))
+        skoro = [h.get("kod") for h in (w.get("hodiny") or [])[:2]]
+        if teraz in DAZD or teraz in SNEH:
+            zrazky, sneh = 2, teraz in SNEH
+        elif any(k in DAZD or k in SNEH for k in skoro):
+            zrazky, sneh = 1, not any(k in DAZD for k in skoro)
+        if teraz is not None and "t" in (w.get("teraz") or {}):
+            k = int(teraz)                               # trieda pre text scény a znak ako v karte ClockGoo
+            trieda, znak = ((1, "sun") if k == 0 else (2, "sun-low") if k in (1, 2) else (4, "cloud-fog") if k in (45, 48)
+                            else (7, "cloud-storm") if k >= 95 else (6, "cloud-snow") if k in SNEH
+                            else (5, "cloud-rain") if k in DAZD else (3, "cloud"))
+            dnes = (w.get("dni") or [{}])[0]
+            rozsah = "%s° / %s°" % (dnes["max"], dnes["min"]) if "max" in dnes and "min" in dnes else ""
+            teraz_w = {"t": "%s°" % w["teraz"]["t"], "trieda": trieda, "ikona": znak,
+                       "miesto": " · ".join(x for x in (w.get("miesto") or "", rozsah) if x)}
+    except Exception:
+        pass
+    return {"nebo": nb, "zrazky": zrazky, "sneh": sneh, "vietor": vietor, "pocasie": teraz_w}
+
+
 def prihlasenie():
     """údaje scény prihlásenia (session/goo/login.plm): kto sa prihlasuje, káva, čo je pod hladinou (posledný pád,
     inak novinky z RSS v greeter.conf), informačné goo (batéria, úlohy) a znaky ikon. Beží ako prihlásený používateľ
@@ -473,14 +522,7 @@ def prihlasenie():
         kava = list(KAVY.get((re.findall(r"[\w-]+", open(KAVA).read()) or ["espresso"])[0], KAVY["espresso"]))
     except OSError:
         kava = [0.55, 0]
-    conf = {}
-    try:
-        for line in open(os.path.join(GREETER, "greeter.conf"), encoding="utf-8"):
-            m = re.match(r'\s*(\w+)\s*=\s*"?(.*?)"?\s*$', line)
-            if m and not line.lstrip().startswith("#"):
-                conf[m.group(1)] = m.group(2)
-    except OSError:
-        pass
+    conf = greeter_conf()
     # posledný pád: iba ak k nemu došlo od štartu počítača (alebo počítadlo pádov nie je nula)
     panel, riadky = "", []
     log = os.path.join(GREETER, "last-crash.log")
@@ -533,34 +575,8 @@ def prihlasenie():
             json.dump({"url": conf["rss_url"], "riadky": riadky}, open(rss_cache, "w"), ensure_ascii=False)
         except Exception:                                # bez siete nič: pod hladinou ostane iba káva
             panel, riadky = "", []
-    # obloha a počasie v mieste z greeter.conf: slnko alebo mesiac na svojom mieste, dážď a sneh, ak padá alebo je
-    # v predpovedi na najbližšie hodiny (zrazky: 0 nič, 1 predpoveď, 2 práve teraz)
-    try:
-        obloha = nebo(float(conf.get("lat", "48.74")), float(conf.get("lon", "19.15")))
-    except ValueError:
-        obloha = {}
-    DAZD = set(range(51, 68)) | {80, 81, 82, 95, 96, 99}
-    SNEH = {71, 73, 75, 77, 85, 86}
-    zrazky, sneh, teraz_w = 0, False, None
-    try:
-        w = pocasie()
-        teraz = (w.get("teraz") or {}).get("kod")
-        if teraz is not None and "t" in (w.get("teraz") or {}):
-            k = int(teraz)                               # trieda pre text scény a znak ako v karte ClockGoo
-            trieda, znak = ((1, "sun") if k == 0 else (2, "sun-low") if k in (1, 2) else (4, "cloud-fog") if k in (45, 48)
-                            else (7, "cloud-storm") if k >= 95 else (6, "cloud-snow") if k in SNEH
-                            else (5, "cloud-rain") if k in DAZD else (3, "cloud"))
-            dnes = (w.get("dni") or [{}])[0]
-            rozsah = "%s° / %s°" % (dnes["max"], dnes["min"]) if "max" in dnes and "min" in dnes else ""
-            teraz_w = {"t": "%s°" % w["teraz"]["t"], "trieda": trieda, "ikona": znak,
-                       "miesto": " · ".join(x for x in (w.get("miesto") or "", rozsah) if x)}
-        skoro = [h.get("kod") for h in (w.get("hodiny") or [])[:2]]
-        if teraz in DAZD or teraz in SNEH:
-            zrazky, sneh = 2, teraz in SNEH
-        elif any(k in DAZD or k in SNEH for k in skoro):
-            zrazky, sneh = 1, not any(k in DAZD for k in skoro)
-    except Exception:
-        pass
+    o = obloha(conf)
+    obloha_, zrazky, sneh, teraz_w = o["nebo"], o["zrazky"], o["sneh"], o["pocasie"]
     info = []
     for b in sorted(glob.glob("/sys/class/power_supply/BAT*")):
         try:
@@ -628,7 +644,7 @@ def prihlasenie():
     names = ["power", "arrow-right", "moon", "refresh", "battery-3", "bell", "calendar-event", "device-desktop"] + [i["ikona"] for i in info] + ([teraz_w["ikona"]] if teraz_w else [])
     return {"meno": meno, "login": login, "kava": kava, "panel": panel, "riadky": riadky, "info": info[:3],
             "goopower": goopower, "relacie": relacie[:6], "relacia": vybrana, "dev": dev, "ikony": glyphs(names),
-            "nebo": obloha, "zrazky": zrazky, "sneh": sneh, "pocasie": teraz_w}
+            "nebo": obloha_, "zrazky": zrazky, "sneh": sneh, "pocasie": teraz_w}
 
 
 def main(a):
@@ -801,6 +817,8 @@ def main(a):
         except (OSError, ValueError, AttributeError):
             print("")
         return 0
+    if c == "obloha":
+        print(json.dumps(obloha(), ensure_ascii=False)); return 0
     if c == "prihlasenie":
         print(json.dumps(prihlasenie(), ensure_ascii=False)); return 0
     if c == "ucet":

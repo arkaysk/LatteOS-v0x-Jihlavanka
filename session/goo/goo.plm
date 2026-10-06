@@ -26,7 +26,7 @@ scene Goo {
     }
     // povolenia: Goobar (okná, spúšťače aplikácií), DaNoGoo (upozornenia), PowerGoo (batéria, Noctalia, pás výkonu:
     // latte-sysmon), QueenGoo
-    permissions { run: "latte-goo", "date", "hyprctl", "latte-app", "noctalia", "latte-spustac", "latte-devices", "latte-apps", "latte-kvapky", "latte-riadok", "latte-hladaj", "latte-ai", "latte-terminal", "xdg-open", "latte-sysmon", "latte-zamok"; services: "clock", "window", "window.*", "apps", "apps.*", "notifications", "notifications.*", "battery", "clipboard.set" }
+    permissions { run: "latte-goo", "date", "hyprctl", "latte-app", "noctalia", "latte-spustac", "latte-devices", "latte-apps", "latte-kvapky", "latte-riadok", "latte-hladaj", "latte-ai", "latte-terminal", "xdg-open", "latte-sysmon", "latte-zamok"; services: "clock", "window", "window.*", "apps", "apps.*", "notifications", "notifications.*", "battery", "clipboard.set", "env" }
 
     // ── káva (pravidlo 6): pomer vody a mlieka z Baristu (~/.config/latteos/kava, číta logika) ──────────────────
     spring jemna = 60, 14
@@ -112,6 +112,7 @@ scene Goo {
     event goo_drag ->
     event goo_drop ->
     event goo_idle ->
+    event goo_pocasie ->                      // skúška počasia na hladine (logika: 0 nič, 1–2 dážď, 3 sneh, 4 vietor)
     // logika → scéna: `emit` v Luau nenesie hodnotu (iba meno), preto logika zvyšuje počítadlo kvapky a scéna reaguje
     // na jeho zmenu (`on change`): hopn.k poskočí (hra), sqn.k stlačí (zrážka, prebudenie), dipn.k ponor pri návrate
     // k okraju (Marea), rpn.i vlnka i (kameň do vody / vibrácia)
@@ -121,6 +122,20 @@ scene Goo {
     fact rx = 0                               // kam bola kvapka pustená (číta logika pri goo_drop): px obrazovky
     fact ry = 0
     fact nk = -1                              // ťahaná kvapka (krk lepkavej v tele goo), −1 žiadna
+    fact zive = true                          // Nastavenia › Kvapky › Živé správanie (kvapky.json: zive)
+    // počasie na hladine pri nečinnosti (stupeň 2+, logika podľa skutočného počasia a podmienok „kedy nie“):
+    // prsi 0 nič, 1 riedko (v predpovedi), 2 dážď; snezi = namiesto dažďa sneh. Vietor robí logika vlnkami.
+    fact prsi = 0
+    fact snezi = false
+    // deň a noc na hladine: den 0 noc … 1 deň (slnko nad obzorom), zlata 0…1 svitanie a súmrak (slnko nízko)
+    fact den = 1
+    fact zlata = 0
+    prop dn = 1 ~jemna
+    prop zl = 0 ~jemna
+    follow dn = den
+    follow zl = zlata
+    // svetlo, ktoré sa odráža v kvapkách: v noci tlmené studené, cez deň biele, ráno a večer teplé oranžové
+    let svit = mix(mix(#8fa3c8, #fff4e0, dn), #ffb070, zl)
     fact idle = 0                             // stupeň nečinnosti (§3.1): 0 aktívny, 1 po 1 min, 2 po 3 min, 3 po 6 min
 
     // ── ponuka Goo (z plochy Kvapky, pravidlá 9–11): karta pripojená rohom k miestu kliku, vyrastie z neho; položky
@@ -442,10 +457,11 @@ scene Goo {
         on change vibn.$k { vib.$k: 1 ~0ms; vib.$k: 0 ~420ms after 16ms }
     }
 
-    // nečinnosť (§3.1): 1 zaspávajú (menšie nadnesenie), 2 počasie (rezerva), 3 hra; pohyb myši ich hneď zobudí
-    on idle for 60s { idle = 1; emit goo_idle(1) }
-    on idle for 180s { idle = 2; emit goo_idle(2) }
-    on idle for 360s { idle = 3; emit goo_idle(3) }
+    // nečinnosť (§3.1): 1 zaspávajú (menšie nadnesenie), 2 počasie (dážď a vietor podľa skutočného), 3 hra; pohyb myši
+    // ich hneď zobudí. Vypínač „Živé správanie“ (Nastavenia › Kvapky): bez neho kvapky pri nečinnosti iba dýchajú
+    on idle for 60s while zive { idle = 1; emit goo_idle(1) }
+    on idle for 180s while zive { idle = 2; emit goo_idle(2) }
+    on idle for 360s while zive { idle = 3; emit goo_idle(3) }
     on change cursor.x while idle > 0 { idle = 0; emit goo_idle(0) }
     on change cursor.y while idle > 0 { idle = 0; emit goo_idle(0) }
 
@@ -505,10 +521,30 @@ scene Goo {
     prop pop.t = 1 ~0ms
     on change pop_n { pop.t: 0 ~0ms; pop.t: 1 ~520ms after 16ms }
 
+    // ── žiara nad horizontom hladiny (deň a noc): pri svitaní a súmraku teplá, v noci slabá studená; cez deň nič.
+    // Osem plochých vrstiev namiesto rozmazania (to by stálo každú snímku); jemné kroky, aby nebolo vidno pruhy ──
+    ellipse { at: W / 2, H + 30; radius: W * 0.64; scale: 1, 0.090; color: svit; opacity: 0.017 * zl + 0.005 * (1 - dn) }
+    ellipse { at: W / 2, H + 30; radius: W * 0.61; scale: 1, 0.081; color: svit; opacity: 0.017 * zl + 0.005 * (1 - dn) }
+    ellipse { at: W / 2, H + 30; radius: W * 0.58; scale: 1, 0.071; color: svit; opacity: 0.017 * zl + 0.005 * (1 - dn) }
+    ellipse { at: W / 2, H + 30; radius: W * 0.55; scale: 1, 0.061; color: svit; opacity: 0.017 * zl + 0.005 * (1 - dn) }
+    ellipse { at: W / 2, H + 30; radius: W * 0.52; scale: 1, 0.052; color: svit; opacity: 0.017 * zl + 0.005 * (1 - dn) }
+    ellipse { at: W / 2, H + 30; radius: W * 0.49; scale: 1, 0.042; color: svit; opacity: 0.017 * zl + 0.005 * (1 - dn) }
+    ellipse { at: W / 2, H + 30; radius: W * 0.46; scale: 1, 0.033; color: svit; opacity: 0.017 * zl + 0.005 * (1 - dn) }
+    ellipse { at: W / 2, H + 30; radius: W * 0.43; scale: 1, 0.023; color: svit; opacity: 0.017 * zl + 0.005 * (1 - dn) }
+
+    // ── počasie pri nečinnosti (§3.1 stupeň 2): drobné goo kvapky dopadajú na spodný okraj (vlnky robí logika),
+    // namiesto dažďa sneh. Iba nízko nad hladinou, aby nepadali cez okná ─────────────────────────────────────────
+    particles { at: W / 2, H - 340; area: W, 12; count: 30; life: 0.55s .. 0.75s; speed: 430 .. 520; direction: 96deg; spread: 3deg
+                gravity: 0, 500; size: 4, 3; colors: #d9b88e, #c9a47a; opacity: 80%, 45%; shape: spark; emit: zive and idle >= 2 and prsi == 1 and not snezi }
+    particles { at: W / 2, H - 340; area: W, 12; count: 110; life: 0.55s .. 0.75s; speed: 430 .. 520; direction: 96deg; spread: 3deg
+                gravity: 0, 500; size: 4, 3; colors: #d9b88e, #c9a47a; opacity: 85%, 48%; shape: spark; emit: zive and idle >= 2 and prsi == 2 and not snezi }
+    particles { at: W / 2, H - 340; area: W, 12; count: 80; life: 3.5s .. 5s; speed: 60 .. 95; direction: 95deg; spread: 24deg
+                size: 6, 4; colors: #f3ebdd, #f3ebdd; opacity: 75%, 35%; shape: dot; emit: zive and idle >= 2 and prsi > 0 and snezi }
+
     // ── telo: lišta a všetky kvapky v jednom goo (zliatie) ─────────────────────────────────────────────────────
     body {
         // jedna káva pre lištu aj všetky kvapky (pravidlo 6), jedno svetlo kurzora (§3)
-        gradient: radial cursor.x, cursor.y radius 260, mix(coffee, cream, 0.12), coffee
+        gradient: radial cursor.x, cursor.y radius 260, mix(coffee, svit, 0.12 + 0.05 * zl), coffee
         rim: 28%
         // ostrý okraj (aj okolo ôk medzi spojmi): tieň iba tesný, nerozmazaný
         shadow: 0, 2, 2, 28%

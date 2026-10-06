@@ -1956,6 +1956,9 @@ ShellRoot {
                    text: app.gooEngine
                        ? i18n.tr("GooBar, GooPower and LensGoo are the core of the shell and cannot be hidden (their size can be changed). QueenGoo and ClockGoo are optional: click a card to hide or show it.")
                        : "Goobar (lišta s oknami), QueenGoo a PowerGoo tvoria základ shellu — spodnú lištu — a nedajú sa skryť (dá sa im zmeniť veľkosť). TimeGoo a DaNoGoo skryješ alebo ukážeš kliknutím na kartu." }
+            Toggle { visible: app.gooEngine; on: app.kv.zive !== false
+                     label: i18n.tr("Lively behaviour: when you are away, drops play and the surface shows rain, snow and wind as outside")
+                     onToggled: { const k = JSON.parse(JSON.stringify(app.kv)); k.zive = !(app.kv.zive !== false); app.kvSave(k, i18n.tr("Saved")); } }
             Heading { text: "CHATGOO (DOPLNOK PRE BEEPER)"; topPadding: 6 }
             Segments {
                 options: [["kvapka", "Kvapka ChatGoo — Beeper sa minimalizuje do nej, správy okolo"], ["lista", "Bez kvapky — ikona Beepera v rohovej lište Noctalie"]]
