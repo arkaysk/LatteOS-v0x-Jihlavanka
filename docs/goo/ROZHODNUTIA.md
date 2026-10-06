@@ -11,6 +11,8 @@ Nové rozhodnutie: jeden riadok sem (dátum, čo, prečo) a oprava platného zne
   používateľské dáta: aké goo sú aktivované a kde sa nachádzajú, aký je skin goo a okien, aké widgety sú v Noctalii,
   aká je tapeta… jeden dokument na rýchle načítanie prostredia“; „ďalší profil, okamžite“): prvá verzia
   `latte-gooconfig` — dokument `~/.config/latteos/<účet>@gooconfig.json` držaný v zhode s nastaveniami oboma smermi.
+- **Zoznam záujmov nainštalovať** („aplikácie, z ktorých možno vezmeme funkcie, alebo sa rozhodne, či ich použiť alebo
+  vytvoriť vlastné — nainštaluj ich“): `setup/lab/zaujmy.sh`, zoznam v ROADMAP F3·G.
 - **AI — poskytovatelia** (do plánu, ROADMAP F7): výber poskytovateľa z vyskakovacej ponuky (Claude, Gemini, ChatGPT,
   Grok, DeepSeek, Perplexity, Kimi…) pre prihlásenie aj pre API, prihlásenia uložené pre každého zvlášť, prepínanie
   modelu a poskytovateľa aj z vyskakovacieho okna.

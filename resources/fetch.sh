@@ -67,6 +67,15 @@ clone noctalia-plugins    https://github.com/noctalia-dev/noctalia-plugins.git
 clone pleamar            https://github.com/k4ditano/pleamar.git    v0.2.24  # kvapky a engine Goo: SDF, pružiny, jazyk 0.2
 clone pleamar-wm         https://github.com/k4ditano/pleamar-wm.git v0.2.5   # autorov kompozitor (pôvodná Marea)
 clone marea-plm          https://github.com/k4ditano/marea-plm.git            # tekutý spoločník v pleamar (a589189, 30. 9.)
+# zoznam záujmov (ROADMAP F3·G, rozhodnutia 6. 10.): programy, z ktorých možno prevezmeme funkcie, alebo sa rozhodne,
+# či ich použiť, alebo napísať vlastné. Na latte-lab ich prekladá a inštaluje setup/lab/zaujmy.sh.
+clone voltage             https://github.com/db0x/voltage.git               # webová stránka ako samostatná aplikácia
+clone disktree            https://github.com/tobi/disktree.git              # čo zapĺňa disk (Monitor, Súbory)
+clone bumblebee           https://github.com/perplexityai/bumblebee.git     # bezpečnostná kontrola balíkov
+clone flea                https://github.com/thisisgm/flea.git              # správca súborov (Rust + Quickshell), možný FleaGoo
+clone hypruse             https://github.com/IlyasKhallouki/hypruse.git     # Hyprland ako nástroje MCP (latte-mcp)
+clone hyprsession         https://github.com/joshurtree/hyprsession.git     # obnovenie relácie
+clone newelle             https://github.com/qwersyk/Newelle.git            # AI asistent (GTK4), možné jadro AI
 clone noctalia-official-plugins https://github.com/noctalia-dev/official-plugins.git
 clone end4-dots-hyprland  https://github.com/end-4/dots-hyprland.git
 clone ml4w-dotfiles       https://github.com/mylinuxforwork/dotfiles.git
