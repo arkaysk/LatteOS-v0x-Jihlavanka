@@ -21,6 +21,9 @@ for r in pleamar pleamar-wm marea-plm; do
 done
 # záplata pre latte-lab (RX 640 / GFX8): bez nej pleamar-wm nedostane obrazový buffer a obrazovka ostane čierna
 git -C "$M/src/pleamar-wm" apply "$here/resources/patches/pleamar-wm-linearny-buffer.patch" || echo "záplata pleamar-wm sa nedá použiť (možno ju autor už má)"
+# a jeho lineárny buffer musí vedieť prevziať aj Vulkan bez VK_EXT_image_drm_format_modifier (RADV na Polaris), inak
+# monitory ostanú na texte terminálu („session · DP-3: Unexpected“, 6. 10.)
+git -C "$M/src/pleamar" apply "$here/resources/patches/pleamar-linearny-dmabuf.patch" || echo "záplata pleamar (lineárny dmabuf) sa nedá použiť (možno ju autor už má)"
 (cd "$M/src/pleamar" && cargo build --release --quiet)
 (cd "$M/src/pleamar-wm" && cargo build --release --quiet)
 for p in pleamar/target/release/pleamar pleamar-wm/target/release/pleamar-wm; do
