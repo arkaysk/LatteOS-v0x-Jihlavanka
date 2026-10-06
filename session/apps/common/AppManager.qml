@@ -310,7 +310,7 @@ Item {
             contentHeight: body.implicitHeight + 20; clip: true
             Loader {
                 id: body
-                width: content.width
+                width: content.width - 18            // vpravo ostáva pás pre posuvník, karty pod ním nie sú
                 sourceComponent: ({ objavovat: pDiscover, aktualizacie: pUpdates, nainstalovane: pInstalled, opravnenia: pPerms, check: pCheck })[app.section] || pDiscover
             }
         }
@@ -628,7 +628,7 @@ Item {
         ListView {
             id: rolovanie2
             ScrollHint { flick: rolovanie2; colors: theme; horizontal: true }
-            width: parent.width; height: 104; orientation: ListView.Horizontal; spacing: 10; clip: true
+            width: parent.width; height: 104 + 18; orientation: ListView.Horizontal; spacing: 10; clip: true    // + pás posuvníka pod kartami
             model: shelf.items; boundsBehavior: Flickable.StopAtBounds
             delegate: AppCard { required property var modelData; info: modelData }
         }
@@ -742,7 +742,7 @@ Item {
                     id: rolovanie3
                     ScrollHint { flick: rolovanie3; colors: theme; horizontal: true }
                     visible: !!parent.d && parent.d.screenshots.length > 0
-                    width: parent.width; height: 300; orientation: ListView.Horizontal; spacing: 12; clip: true
+                    width: parent.width; height: 300 + 18; orientation: ListView.Horizontal; spacing: 12; clip: true
                     model: parent.d ? parent.d.screenshots : []
                     delegate: Rectangle {
                         required property string modelData

@@ -155,6 +155,7 @@ Text {
         "list-check": 0xEB6A,
         "list": 0xEB6B,
         "printer": 0xEB0E,
+        "scan": 0xEBC8,
         "tool": 0xEB40,
         "network": 0xF09F,
         "menu-2": 0xEC42,

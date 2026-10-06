@@ -406,8 +406,15 @@ texty preložiteľné (`translations`). Noctalia beží bez lišty a robí, čo 
 - [x] Obchod podľa ZimaOS v App Manageri (LATTEOS-GOO.md §6.3), 6. 10.: kategórie a komunitné obchody v ľavom paneli,
   kolotoč dvoch bannerov, veľké karty Práve letí a Nové prírastky. Overené na latte-lab (úvod, Financie, Bluefin, AI).
 - [ ] Obchod — zvyšok: hľadanie v ľavom paneli, kategória Domácnosť, inštalácia priamo z veľkej karty neoverená
-- [ ] Systémový backend: balíky (`gvfs-mtp`, `gvfs-smb`, CUPS, SANE, BlueZ zapnúť) a zapojenie do Správcu zariadení
-  a Súborov (LATTEOS-GOO.md §5)
+- [x] Systémový backend (LATTEOS-GOO.md §5), 6. 10.: balíky v inštalátore (GVFS pre telefóny a SMB, CUPS, `ipp-usb`,
+  SANE, `sane-airscan`, simple-scan), Správca zariadení má Tlačiarne (pridať nájdenú, predvolená, skúšobná strana,
+  odstrániť), Skenery a Telefóny a fotoaparáty; Súbory majú položku Telefóny a fotoaparáty. Overené na latte-lab iba
+  so skúšobnou tlačiarňou do PDF (pridanie, predvolená, skúšobná strana, odstránenie myšou).
+- [ ] Systémový backend — zvyšok: **neoverené so skutočnou tlačiarňou, skenerom ani telefónom** (na latte-lab žiadne
+  nie sú; Bluetooth adaptér tiež nie); telefón sa nepripája sám po zasunutí; sieťové disky Windows (SMB) v Súboroch
+  cez GVFS; texty v `latte-devices` sú ešte po slovensky natvrdo (prechod na preklady, F9)
+- [x] Posuvníky v oknách (`ScrollHint.qml`, spoločné pre všetky aplikácie), 6. 10.: pás na chytenie 16 px, jazdec 8 px
+  a pod myšou 12 px (predtým 4 px); v obchode má zvislý posuvník vlastný pás vedľa kariet a vodorovný pod kartami
 - [ ] Nové kvapky: ClipGoo, MediaGoo, PassGoo, CastGoo (LATTEOS-GOO.md §4.11)
 - [ ] Materiál aj na oknách aplikácií pri kovových témach (textúra v hlavičke okna — upravený hyprbars)
 - [x] **Zoznam záujmov nainštalovaný na latte-lab** (6. 10., `setup/lab/zaujmy.sh`) — na skúšanie a rozhodnutie

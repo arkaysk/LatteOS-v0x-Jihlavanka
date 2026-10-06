@@ -7,6 +7,13 @@ Nové rozhodnutie: jeden riadok sem (dátum, čo, prečo) a oprava platného zne
 
 ## 6. 10. 2026
 
+- **Systémový backend zapojený do Správcu zariadení:** tlač bez ovládačov od výrobcov (CUPS, IPP Everywhere /
+  AirPrint, USB cez `ipp-usb`), skenovanie cez SANE a simple-scan (vlastný dialóg sa nerobí), telefón na USB cez GVFS.
+  CUPS beží iba na požiadanie (`cups.socket`). Pomalé hľadanie v sieti sa pamätá a obnovuje na pozadí, aby zoznam
+  zariadení ostal rýchly (LATTEOS-GOO.md §5).
+- **Posuvníky sa musia dať pohodlne chytiť myšou:** pás 16 px, jazdec 8 px (pod myšou 12 px) vo všetkých oknách
+  aplikácií LatteOS („myš prvá“).
+
 - **Jeden dokument profilu používateľa** („pre každého používateľa existuje napríklad Arkay@gooconfig, kde sú
   používateľské dáta: aké goo sú aktivované a kde sa nachádzajú, aký je skin goo a okien, aké widgety sú v Noctalii,
   aká je tapeta… jeden dokument na rýchle načítanie prostredia“; „ďalší profil, okamžite“): prvá verzia

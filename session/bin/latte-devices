@@ -21,6 +21,11 @@
   latte-devices bt                            JSON: Bluetooth (zapnuté, spárované a pripojené zariadenia, batéria)
   latte-devices bt zapni|vypni|hladaj         napájanie adaptéra; hladaj = 8 s hľadania, vypíše nájdené zariadenia
   latte-devices bt pripoj|odpoj|sparuj|zabudni MAC
+  latte-devices tlac                          JSON: tlačiarne v CUPS a nájdené v sieti (dajú sa pridať bez ovládača)
+  latte-devices tlac pridaj URI [NÁZOV] | predvolena NÁZOV | odstran NÁZOV | test NÁZOV (skúšobná strana)
+  latte-devices skenery [hladaj]              JSON: skenery (SANE, aj sieťové); hladaj = nové hľadanie
+  latte-devices telefon                       JSON: telefóny a fotoaparáty na USB (MTP / PTP)
+  latte-devices telefon pripoj|odpoj URI      pripojí úložisko telefónu (GVFS) a vypíše priečinok pre Súbory
   latte-devices bezpecnost                    JSON: SSH server, firewall (zóny, predvolené pravidlá), tunely (SSH -L/-R/-D, WireGuard)
   latte-devices firewall                      JSON: úplné pravidlá aktívnych zón (firewall-cmd; polkit sa môže opýtať na heslo)
   latte-devices napajanie                     JSON: režim napájania (powerprofilesctl) a herný režim LatteOS
@@ -38,7 +43,7 @@ Zariadenie bez ovládača, ktoré inde nepatrí, je v skupine „Ostatné zariad
 Spolupráca: opravu (balík, firmvér, repozitár) urobí App Manager / Inštalátor, živé hodnoty dodá Monitor (latte-sysmon).
 Ukazuje zariadenia, nie ich obsah (súbory sú v Súboroch). Čo sa nedá zistiť, je v „problems“.
 """
-import glob, json, os, re, subprocess, sys
+import glob, json, os, re, shutil, subprocess, sys
 
 HOME = os.path.expanduser("~")
 CFG = os.path.join(os.environ.get("XDG_CONFIG_HOME", HOME + "/.config"), "latteos")
@@ -354,15 +359,125 @@ def bluetooth():
     return out
 
 
-def printers():
-    out = []
-    rc, o = sh(["lpstat", "-p", "-d"], timeout=5)
+CACHE = os.path.join(os.environ.get("XDG_CACHE_HOME") or os.path.expanduser("~/.cache"), "latteos")
+
+
+def remembered(name, find, age, block):
+    """Pomalé hľadanie (CUPS sa štartuje na požiadanie, sieť, SANE) nesmie brzdiť zoznam zariadení: zoznam berie
+    zapamätaný výsledok a starší než `age` sekúnd obnoví na pozadí (latte-devices NAME hladaj). block = hľadať teraz."""
+    import time
+    p = os.path.join(CACHE, "zariadenia-%s.json" % name)
+    if block:
+        data = find()
+        try:
+            os.makedirs(CACHE, exist_ok=True)
+            json.dump(data, open(p + ".tmp", "w"), ensure_ascii=False)
+            os.replace(p + ".tmp", p)
+        except OSError:
+            pass
+        return data
+    try:
+        old, data = time.time() - os.path.getmtime(p) > age, json.load(open(p))
+    except (OSError, ValueError):
+        old, data = True, []
+    if old:
+        lock = p + ".hlada"                              # jedno hľadanie naraz (skenery hľadajú až 20 s)
+        try:
+            running = time.time() - os.path.getmtime(lock) < 30
+        except OSError:
+            running = False
+        if not running:
+            try:
+                os.makedirs(CACHE, exist_ok=True)
+                open(lock, "w").close()
+                subprocess.Popen([os.path.abspath(sys.argv[0]), name, "hladaj"], stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
+                                 stderr=subprocess.DEVNULL, start_new_session=True)
+            except OSError:
+                pass
+    return data
+
+
+def printers(block=False):
+    """tlačiarne v CUPS a tie, čo sa dajú pridať (sieťové a USB bez ovládača: IPP Everywhere / AirPrint)"""
+    return remembered("tlac", find_printers, 20, block)
+
+
+def find_printers(discover=True):
+    """discover=False: bez hľadania v sieti (3 s) — po pridaní či odstránení sa stav ukáže hneď, nájdené ostanú z pamäte"""
+    out, mam = [], set()
+    # každý lpstat čaká sekundu na tlačiarne ohlásené v sieti, preto oba dotazy naraz
+    from concurrent.futures import ThreadPoolExecutor
+    with ThreadPoolExecutor(2) as ex:
+        q1 = ex.submit(sh, ["lpstat", "-p", "-d"], 5, dict(os.environ, LC_ALL="C"))
+        q2 = ex.submit(sh, ["lpstat", "-v"], 5, dict(os.environ, LC_ALL="C"))
+    (rc, o), (rc, v) = q1.result(), q2.result()
     default = (re.search(r"system default destination: (\S+)", o) or [None, ""])[1]
+    uris = dict(re.findall(r"device for (\S+): (\S+)", v))
     for line in o.splitlines():
         m = re.match(r"printer (\S+) (.*)", line)
         if m:
-            out.append(item(m.group(1), ("predvolená · " if m.group(1) == default else "") + ("pripravená" if "idle" in m.group(2) else m.group(2)[:60]),
-                            "ok" if "idle" in m.group(2) or "printing" in m.group(2) else "warn"))
+            mam.add(uris.get(m.group(1), ""))
+            it = item(m.group(1), ("predvolená · " if m.group(1) == default else "") + ("pripravená" if "idle" in m.group(2) else m.group(2)[:60]),
+                      "ok" if "idle" in m.group(2) or "printing" in m.group(2) else "warn", adresa=uris.get(m.group(1), ""))
+            it["printer"], it["default"] = m.group(1), m.group(1) == default
+            out.append(it)
+    # nájdené v sieti alebo na USB, ešte nepridané (ippfind cez Avahi; bez ovládača od výrobcu)
+    if not discover:
+        try:
+            found = [i["add"] for i in json.load(open(os.path.join(CACHE, "zariadenia-tlac.json"))) if i.get("add")]
+        except (OSError, ValueError):
+            found = []
+    elif shutil.which("ippfind"):
+        rc, f = sh(["ippfind", "-T", "3"], timeout=6)
+        found = f.split()
+    else:
+        found = []
+    if found:
+        for uri in sorted(set(found)):
+            if uri in mam or not re.match(r"ipps?://", uri):
+                continue
+            host = re.sub(r"^ipps?://([^:/]+).*", r"\1", uri).replace(".local", "")
+            it = item(host, "nájdená v sieti · dá sa pridať", "off", adresa=uri)
+            it["add"] = uri
+            out.append(it)
+    return out
+
+
+def scanners(block=False):
+    """skenery (SANE vrátane sieťových cez eSCL / WSD): hľadanie trvá sekundy, výsledok sa pamätá 5 minút"""
+    return remembered("skenery", find_scanners, 300, block)
+
+
+def find_scanners():
+    out = []
+    if shutil.which("scanimage"):
+        rc, o = sh(["scanimage", "-f", "%d\t%v %m\t%t%n"], timeout=20)
+        for line in o.splitlines():
+            p = line.split("\t")
+            if len(p) >= 2 and not p[0].startswith("v4l:"):          # kamery (v4l) sú v skupine Kamery
+                out.append(item(p[1].strip(), (p[2] if len(p) > 2 else "skener"), "ok", adresa=p[0]))
+    return out
+
+
+def phones():
+    """telefóny a fotoaparáty na USB (MTP / PTP): úložisko otvára GVFS, v Súboroch je ako priečinok"""
+    out, uid = [], os.getuid()
+    rc, o = sh(["gio", "mount", "-li"], timeout=6)
+    pripojene = re.findall(r"(?:mtp|gphoto2)://[^\s/]+", o)
+    for dev in glob.glob("/sys/bus/usb/devices/*/"):
+        rc, u = sh(["udevadm", "info", "-q", "property", "-p", dev], timeout=3)
+        if "ID_MTP_DEVICE=1" not in u and "ID_GPHOTO2=1" not in u:
+            continue
+        p = dict(l.split("=", 1) for l in u.splitlines() if "=" in l)
+        name = (p.get("ID_VENDOR_FROM_DATABASE") or p.get("ID_VENDOR", "")).replace("_", " ") + " " + p.get("ID_MODEL", "").replace("_", " ")
+        ptp = "ID_MTP_DEVICE=1" not in u
+        uri = "%s://[usb:%s,%s]/" % ("gphoto2" if ptp else "mtp", p.get("BUSNUM", ""), p.get("DEVNUM", ""))
+        mounted = any(m in o for m in pripojene) and ("mtp://" in o or "gphoto2://" in o)
+        path = next(iter(sorted(glob.glob("/run/user/%d/gvfs/%s*" % (uid, "gphoto2" if ptp else "mtp")))), "")
+        it = item(name.strip() or "Telefón", ("fotoaparát (PTP)" if ptp else "telefón (MTP)") + (" · pripojený" if mounted and path else " · odomkni telefón a povoľ prenos súborov"),
+                  "ok" if mounted and path else "off", adresa=uri)
+        it["phone"], it["folder"] = uri, path if mounted else ""
+        out.append(it)
     return out
 
 
@@ -436,14 +551,16 @@ def computer():
 
 GROUPS = [("obrazovky", "Obrazovky", "device-desktop"), ("grafika", "Grafika", "cpu"), ("zvuk", "Zvuk", "volume"), ("siet", "Sieť", "wifi"),
           ("disky", "Disky", "database"), ("vstup", "Vstup", "keyboard"), ("usb", "USB", "usb"), ("kamery", "Kamery", "camera"),
-          ("bluetooth", "Bluetooth", "bluetooth"), ("tlac", "Tlačiarne", "printer"), ("napajanie", "Napájanie", "battery"), ("pocitac", "Počítač", "server"),
+          ("bluetooth", "Bluetooth", "bluetooth"), ("tlac", "Tlačiarne", "printer"), ("skenery", "Skenery", "scan"),
+          ("telefony", "Telefóny a fotoaparáty", "device-mobile"), ("napajanie", "Napájanie", "battery"), ("pocitac", "Počítač", "server"),
           ("ostatne", "Ostatné zariadenia", "help")]
 
 
 def inventory():
     devs = pci()
     data = {"obrazovky": displays(), "grafika": gpus(devs), "zvuk": audio(devs), "siet": network(), "disky": disks(), "vstup": inputs(),
-            "usb": usb(), "kamery": cameras(), "bluetooth": bluetooth(), "tlac": printers(), "napajanie": power(), "pocitac": computer()}
+            "usb": usb(), "kamery": cameras(), "bluetooth": bluetooth(), "tlac": printers(), "skenery": scanners(), "telefony": phones(),
+            "napajanie": power(), "pocitac": computer()}
     for d in devs:                                   # sieťové karty majú vlastnú skupinu (Sieť)
         if re.search(r"Ethernet|Network|Wireless", d["cls"]):
             d["claimed"] = True
@@ -758,6 +875,36 @@ def main(a):
             cmd = {"pripoj": "connect", "odpoj": "disconnect", "zabudni": "remove"}.get(a[1])
             if cmd:
                 return sh(["bluetoothctl", cmd, mac], timeout=20)[0]
+        return 2
+    if a[:1] == ["tlac"]:
+        # tlačiarne cez CUPS; správca (skupina wheel) ich spravuje bez hesla cez miestny soket
+        if len(a) == 1 or a[1:] == ["hladaj"]:
+            print(json.dumps(printers(True), ensure_ascii=False)); return 0
+        rc = 2
+        if len(a) >= 3 and a[1] == "pridaj" and re.match(r"^(ipps?|usb|socket|lpd|dnssd)://", a[2]):
+            meno = re.sub(r"[^A-Za-z0-9_-]", "_", a[3] if len(a) > 3 else re.sub(r"^\w+://([^:/]+).*", r"\1", a[2]).replace(".local", ""))[:40] or "Tlaciaren"
+            rc = sh(["lpadmin", "-p", meno, "-E", "-v", a[2], "-m", "everywhere"], timeout=40)[0]
+        elif len(a) == 3 and re.match(r"^[A-Za-z0-9_.-]+$", a[2]):
+            if a[1] == "predvolena":
+                rc = sh(["lpadmin", "-d", a[2]], timeout=10)[0]
+            elif a[1] == "odstran":
+                rc = sh(["lpadmin", "-x", a[2]], timeout=10)[0]
+            elif a[1] == "test":
+                strana = next((p for p in ("/usr/share/cups/data/testprint", "/usr/share/cups/data/default-testpage.pdf") if os.path.exists(p)), "")
+                return sh(["lp", "-d", a[2], strana], timeout=20)[0] if strana else 1
+        if rc != 2:
+            remembered("tlac", lambda: find_printers(False), 0, True)     # zoznam zariadení hneď ukáže nový stav
+        return rc
+    if a[:1] == ["skenery"]:
+        print(json.dumps(scanners(True), ensure_ascii=False)); return 0     # hľadá teraz (aj „skenery hladaj“)
+    if a[:1] == ["telefon"]:
+        if len(a) == 1:
+            print(json.dumps(phones(), ensure_ascii=False)); return 0
+        if len(a) == 3 and a[1] in ("pripoj", "odpoj") and re.match(r"^(mtp|gphoto2)://\[usb:\d+,\d+\]/$", a[2]):
+            rc = sh(["gio", "mount"] + (["-u"] if a[1] == "odpoj" else []) + [a[2]], timeout=20)[0]
+            if a[1] == "pripoj":
+                print(next(iter(sorted(glob.glob("/run/user/%d/gvfs/*" % os.getuid()))), ""))
+            return rc
         return 2
     if a[:1] == ["bezpecnost"]:
         print(json.dumps(security_state(), ensure_ascii=False)); return 0
