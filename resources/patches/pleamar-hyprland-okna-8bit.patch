@@ -1,8 +1,8 @@
 diff --git a/src/gpu.rs b/src/gpu.rs
-index 7b30416..4d264a8 100644
+index ef15af6..8375833 100644
 --- a/src/gpu.rs
 +++ b/src/gpu.rs
-@@ -1651,7 +1651,13 @@ impl Gpu {
+@@ -1724,7 +1724,13 @@ impl Gpu {
                  let caps = first.get_capabilities(&adapter);
                  // No sRGB: the compositor blends the bytes as they are, and premultiplied
                  // alpha only works out if nobody re-encodes them along the way.
@@ -89,10 +89,10 @@ index ec269dc..f1c6797 100644
              e.report_workspaces();
          }
 diff --git a/src/platform/mod.rs b/src/platform/mod.rs
-index 0ec7aee..657ca84 100644
+index b1e5091..d2ba038 100644
 --- a/src/platform/mod.rs
 +++ b/src/platform/mod.rs
-@@ -131,7 +131,7 @@ fn start_service(from: &str, name: &str, notify: Box<dyn Fn(SysValue) + Send>) -
+@@ -132,7 +132,7 @@ fn start_service(from: &str, name: &str, notify: Box<dyn Fn(SysValue) + Send>) -
      // `PLEAMAR_GENERIC=1` skips the Hyprland path: it's how to test here what
      // the other compositors will see.
      #[cfg(target_os = "linux")]
@@ -101,8 +101,8 @@ index 0ec7aee..657ca84 100644
          return hyprland::service(name, notify);
      }
      // Any other Wayland: the protocols everyone understands.
-@@ -189,7 +189,7 @@ pub fn command(from: &str, name: &str, args: &[SysValue]) -> Result<(), String>
-         return mpris::command(name, args);
+@@ -194,7 +194,7 @@ pub fn command(from: &str, name: &str, args: &[SysValue]) -> Result<(), String>
+         return thumbnails::command(name, args);
      }
      #[cfg(target_os = "linux")]
 -    if hyprland::is_present() && std::env::var_os("PLEAMAR_GENERIC").is_none() {
@@ -110,16 +110,16 @@ index 0ec7aee..657ca84 100644
          return hyprland::command(name, args);
      }
      #[cfg(target_os = "linux")]
-@@ -558,7 +558,7 @@ pub static CURSOR_WANTED: std::sync::atomic::AtomicBool = std::sync::atomic::Ato
+@@ -619,7 +619,7 @@ pub static CURSOR_WANTED: std::sync::atomic::AtomicBool = std::sync::atomic::Ato
  /// arrives, and `cursor.x` is only known over the scene, like `pointer.x`.
  pub fn watch_cursor(to_render: std::sync::mpsc::Sender<crate::scene::ToRender>) {
      #[cfg(target_os = "linux")]
 -    if hyprland::is_present() && std::env::var_os("PLEAMAR_GENERIC").is_none() {
 +    if hyprland_path("cursor") {
          hyprland::watch_cursor(to_render);
-     }
-     #[cfg(not(target_os = "linux"))]
-@@ -677,3 +677,18 @@ pub use wayland::icon;
+     } else if let Some(dir) = std::env::var("PLEAMAR_SOCKETS").ok().filter(|d| std::path::Path::new(&format!("{d}/cursor.sock")).exists()) {
+         session_cursor(dir, to_render);
+@@ -809,3 +809,18 @@ pub use wayland::icon;
  pub fn icon(_: &str) -> Option<std::path::PathBuf> {
      None
  }
@@ -139,10 +139,10 @@ index 0ec7aee..657ca84 100644
 +        }
 +}
 diff --git a/src/platform/wayland.rs b/src/platform/wayland.rs
-index c04eef0..d025ece 100644
+index de9eead..21e7c24 100644
 --- a/src/platform/wayland.rs
 +++ b/src/platform/wayland.rs
-@@ -1557,12 +1557,31 @@ smithay_client_toolkit::delegate_dispatch2!(State);
+@@ -1727,12 +1727,31 @@ smithay_client_toolkit::delegate_dispatch2!(State);
  /// small. Good enough for application icons.
  pub fn icon(name: &str) -> Option<std::path::PathBuf> {
      let home = std::env::var("HOME").unwrap_or_default();
@@ -179,42 +179,3 @@ index c04eef0..d025ece 100644
              for size in sizes {
                  for context in contexts {
                      for ext in ["svg", "png"] {
-diff --git a/src/render.rs b/src/render.rs
-index 97a246c..5a3de79 100644
---- a/src/render.rs
-+++ b/src/render.rs
-@@ -250,6 +250,9 @@ pub fn run(
-     let mut cursor: Option<((f32, f32), Vec<(String, [i32; 4])>)> = None;
-     // What is being dragged: which zone, and where the mouse was when pressed.
-     let mut drag: Option<(usize, (f32, f32), Instant)> = None;
-+    // The right button can drag too (a bar moved to another edge with either button): its press
-+    // starts the same drag the left one does, and only its own release ends it.
-+    let mut right_drag = false;
-     let mut cursor_set = Cursor::Normal;
- 
-     // The keyboard that has been asked of the compositor, whether it has the focus, and whether it has
-@@ -1241,7 +1244,23 @@ pub fn run(
-                         let _ = to_logic.send(Event::Press(scene.zones[k].id));
-                     }
-                 }
--                (0, false) => {
-+                (0, false) if !right_drag => {
-+                    if let Some((k, _, _)) = drag.take() {
-+                        released = Some(k);
-+                        if let Some(z) = scene.zones.get(k) {
-+                            let _ = to_logic.send(Event::Release(z.id));
-+                        }
-+                    }
-+                }
-+                (1, true) => {
-+                    pressed_with = hovered.map(|k| (k, 1));
-+                    if let (Some(k), Some(p), None) = (hovered, pointer, drag) {
-+                        drag = Some((k, p, now));
-+                        right_drag = true;
-+                    }
-+                }
-+                (1, false) if right_drag => {
-+                    right_drag = false;
-                     if let Some((k, _, _)) = drag.take() {
-                         released = Some(k);
-                         if let Some(z) = scene.zones.get(k) {

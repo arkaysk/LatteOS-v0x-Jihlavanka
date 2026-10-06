@@ -102,6 +102,13 @@ local function over(pw, hotovo)
         local args = { "prihlas", kto, r.subor or "", "--" }
         for _, c in ipairs(r.prikaz or {}) do args[#args + 1] = c end
         if #args == 4 then args[5] = "/usr/bin/latte-session" end
+        -- iný účet než predvyplnený: LoginGoo padne tam, kde má GooPower ON (každý účet má svoje rozloženie)
+        if kto ~= ucet then
+            run("latte-goo", { "goopower-miesto", kto }, function(out)
+                local x = tonumber((out or ""):match("[%d.]+"))
+                fact.tox = (x and x > 0 and x < 1) and x or 0.14
+            end)
+        end
         local okw, err = pcall(sys.call, "files.write", "h.json", { p = pw })
         if not okw then log("login · heslo sa nedalo odovzdať: " .. tostring(err)) return hotovo(false) end
         run("latte-greetd", args, function(out)
