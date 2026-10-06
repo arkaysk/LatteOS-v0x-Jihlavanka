@@ -267,6 +267,13 @@ ShellRoot {
             app.greeterConf = c;
         }
     }
+    // zdroje noviniek pre prihlásenie: viac adries RSS v jednom kľúči, oddelené medzerou (latte-goo ich strieda)
+    function rssList() { return String(greeterConf.rss_url || "").split(/[\s,;]+/).filter(u => u !== ""); }
+    function toggleRss(url) {
+        const l = rssList(), i = l.indexOf(url);
+        if (i >= 0) { if (l.length > 1) l.splice(i, 1); } else l.push(url);
+        setGreeter("rss_url", l.join(" "));
+    }
     function setGreeter(k, v) {
         const c = Object.assign({}, greeterConf); c[k] = v; greeterConf = c;
         let out = "# LatteOS — vzhľad obrazovky prihlásenia (zapísali Nastavenia › Účet › Prihlasovanie)\n";
@@ -1342,11 +1349,13 @@ ShellRoot {
                     width: parent.width; spacing: 8
                     Repeater {
                         model: [["https://www.aktuality.sk/rss/", "Aktuality.sk"], ["https://spravy.stvr.sk/feed/", "Správy STVR"], ["https://www.root.cz/rss/clanky/", "Root.cz"], ["https://www.phoronix.com/rss.php", "Phoronix"]]
-                        Card { required property var modelData; width: 170; height: 48; title: modelData[1]; sub: ""; selected: app.greeterConf.rss_url === modelData[0]
-                               onClicked: { app.setGreeter("rss_url", modelData[0]); app.setGreeter("panel_title", modelData[1]); } }
+                        Card { required property var modelData; width: 170; height: 48; title: modelData[1]; sub: ""; selected: app.rssList().indexOf(modelData[0]) >= 0
+                               onClicked: app.toggleRss(modelData[0]) }
                     }
                 }
-                Field { text: app.greeterConf.rss_url; placeholder: "vlastný RSS odkaz"; onCommitted: (t) => { if (t !== "" && t !== app.greeterConf.rss_url) app.setGreeter("rss_url", t); } }
+                Text { width: parent.width; wrapMode: Text.WordWrap; color: theme.fgDim; font { family: theme.fontUi; pixelSize: 12 }
+                       text: i18n.tr("You can pick several sources; their headlines alternate under the surface of the login screen. Own RSS links: separate them with a space.") }
+                Field { text: app.greeterConf.rss_url; placeholder: i18n.tr("own RSS links"); onCommitted: (t) => { if (t !== "" && t !== app.greeterConf.rss_url) app.setGreeter("rss_url", t); } }
             }
             Column {
                 visible: app.greeterConf.panel === "text"; spacing: 8

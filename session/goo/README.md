@@ -222,8 +222,15 @@ GooPower a pozadie zmizne. Klik na LoginGoo = Uspať · Reštartovať · Vypnú�
 - **Skúška:** `latte-goo login-skuska [sekundy]` — nad bežiacou plochou, heslo „latte“ sedí, iné nie, nič sa nemení
   a scéna sama skončí (predvolene po 40 s). Odkryť goo bez čakania: `pleamar --say login "emit e_hra"`.
 - **Údaje:** `latte-goo prihlasenie` (meno, káva, pád / novinky, info, znaky ikon, miesto GooPower).
-- **Režim** podľa `LATTE_LOGIN`: `skuska` (predvolené), `zamok` (heslo overí systém cez `auth.check`), `greetd`
-  (všeobecná relácia prihlasovača).
+- **Režim** podľa `LATTE_LOGIN`: `skuska` (predvolené), `greetd` (všeobecná relácia prihlasovača), `zamok` (zámok
+  obrazovky). Logika je spoločná: `lib/prihlasenie.luau` (`login.luau` a `zamok.luau` ju iba spustia).
+- **Zámok obrazovky** (Win+L, GooPower › Zamknúť → `latte-zamok`): tá istá scéna ako `kind: lock` — kompozitor ručí,
+  že kým trvá, nič iné nie je vidno ani sa nedá ovládať; heslo overí systém (`auth.check`), po odomknutí LoginGoo
+  spadne na miesto GooPower a scéna skončí. `zamok.plm` sa **generuje** z `login.plm` (`python3 gen_zamok.py`, po
+  každej zmene login.plm; inštalátor to kontroluje). Zámok má na všetkých monitoroch jedno rozloženie (rozmer
+  najmenšieho monitora, vycentrované; pozadie a káva cez celú šírku) — pleamar v zámku nedáva rozmer monitora
+  každej kópii. Keby scéna spadla, zámok prevezme Noctalia (`allow_session_lock_restore`). Zámok pri nečinnosti
+  robí zatiaľ Noctalia svojím.
 - **Obloha a počasie:** silueta slnka alebo mesiaca na skutočnom mieste (obzor = hladina, mesiac vo fáze), dážď
   a sneh podľa počasia vonku; miesto z `greeter.conf` (Nastavenia › Účet › Prihlasovanie).
 - **Výber relácie** (vývojárska verzia): goo na hladine za riadkom; zoznam ako v doterajšom prihlasovači.

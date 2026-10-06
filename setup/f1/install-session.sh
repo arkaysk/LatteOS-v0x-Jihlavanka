@@ -14,7 +14,7 @@ user="$(id -un)"
 sudo() { if [ -n "${SUDO_ASKPASS:-}" ]; then command sudo -A "$@"; else command sudo "$@"; fi; }
 
 # kontrola pred prvým zásahom do systému (DSanalyze.md): chýbajúci súbor = poškodený checkout, nie polovičná inštalácia
-BINS="latte-session latte-safe latte-greeter latte-greetd latte-goo-greeter latte-theme latte-app latte-ai latte-shellset latte-sysmon latte-apps latte-devices latte-backup latte-games latte-net latte-cloud latte-siet latte-otvor latte-kos latte-spustac latte-sandbox latte-kopia latte-tc latte-ostrovy latte-rychle latte-tapety latte-vyber latte-ponuka latte-prichytenie latte-snimka latte-emoji latte-nove-okno latte-nahravanie latte-maskoti latte-sklo latte-inspektor latte-terminal latte-hypr-udalosti latte-sukromie latte-kapsa-store latte-hra latte-kvapky latte-profil latte-upstream latte-marea latte-serpantinum latte-hladaj latte-riadok latte-pocasie latte-chatgoo latte-goo"
+BINS="latte-session latte-safe latte-greeter latte-greetd latte-goo-greeter latte-zamok latte-theme latte-app latte-ai latte-shellset latte-sysmon latte-apps latte-devices latte-backup latte-games latte-net latte-cloud latte-siet latte-otvor latte-kos latte-spustac latte-sandbox latte-kopia latte-tc latte-ostrovy latte-rychle latte-tapety latte-vyber latte-ponuka latte-prichytenie latte-snimka latte-emoji latte-nove-okno latte-nahravanie latte-maskoti latte-sklo latte-inspektor latte-terminal latte-hypr-udalosti latte-sukromie latte-kapsa-store latte-hra latte-kvapky latte-profil latte-upstream latte-marea latte-serpantinum latte-hladaj latte-riadok latte-pocasie latte-chatgoo latte-goo"
 missing=""
 for f in $BINS; do [ -f "$S/bin/$f" ] || missing="$missing $f"; done
 [ -z "$missing" ] || { echo "Chýbajú skripty v $S/bin:$missing — inštaláciu nezačínam (git status / git pull)."; exit 1; }
@@ -80,7 +80,7 @@ sudo rm -f /usr/share/latteos/kvapky/kvapka.plm /usr/share/latteos/kvapky/kvapka
 sudo install -d /usr/share/latteos/kvapky/textury                     # textúry materiálov okien (textury.py)
 sudo install -m644 "$S"/kvapky/textury/*.webp "$S"/kvapky/textury/LICENCIA.txt /usr/share/latteos/kvapky/textury/
 sudo rm -f /usr/share/latteos/goo/kvapky/*.luau        # premenované kvapky (TimeGoo → LensGoo…) neostanú ako staré súbory
-( cd "$S/goo" && for f in goo.plm goo.luau login.plm login.luau README.md lib/*.luau kvapky/*.luau priklady/*.json; do
+( cd "$S/goo" && for f in goo.plm goo.luau login.plm login.luau zamok.plm zamok.luau README.md lib/*.luau kvapky/*.luau priklady/*.json; do
     put "$f" "/usr/share/latteos/goo/$f"; done )
 pl="$repo/resources/upstream/pleamar"
 pl_ver=0.2.6                                       # pripnutá verzia (resources/fetch.sh); staršia sa preloží znova
@@ -100,7 +100,8 @@ if command -v cargo >/dev/null && { ! "$pl/target/release/pleamar" --version 2>/
 fi
 # brána: scéna sa nasadí, iba ak ju tento pleamar prečíta (inak by relácia ukázala iba tapetu)
 if [ -x "$pl/target/release/pleamar" ]; then
-    for sc in "$S/goo/goo.plm" "$S/goo/login.plm"; do
+    python3 "$S/goo/gen_zamok.py" --check || echo "   POZOR: zamok.plm nezodpovedá login.plm — spusti python3 session/goo/gen_zamok.py"
+    for sc in "$S/goo/goo.plm" "$S/goo/login.plm" "$S/goo/zamok.plm"; do
         "$pl/target/release/pleamar" --check "$sc" >/dev/null 2>&1 || echo "   POZOR: $sc nepreložil pleamar $pl_ver: $("$pl/target/release/pleamar" --check "$sc" 2>&1 | head -1)"
     done
 fi

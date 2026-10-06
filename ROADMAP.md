@@ -361,12 +361,13 @@ texty preložiteľné (`translations`). Noctalia beží bez lišty a robí, čo 
 - [x] **Nové prihlásenie** (LATTEOS-GOO.md §6.2, 6. 10.): scéna `session/goo/login.plm` vo všeobecnej relácii
   (`greeter = "goo"`, predvolené; heslo cez greetd) — šálka, výskok oblúkom, riadok, hladina, posledný pád / novinky,
   hodiny a počasie, dážď a sneh, slnko a mesiac, informačné goo, výber relácie, oba monitory. Overené na latte-lab.
-- [ ] Prihlásenie — zvyšky: asi sekunda čiernej medzi prihlásením a plochou; viac zdrojov noviniek a voľba
-  prihlasovača v Nastaveniach › Účet › Prihlasovanie; zámok obrazovky (Win+L) tou istou scénou (`LATTE_LOGIN=zamok`);
-  overiť skutočný dážď a sneh a Uspať · Reštartovať · Vypnúť z prihlásenia
-- [ ] Overiť naživo zvyšok zmien zo 6. 10.: tlačidlá vnútri kariet (Zamknúť, Odhlásiť, profily napájania, Nerušiť),
-  klik na bunku pásu výkonu, pravý klik na hlavu GooBaru, dvojstĺpcová karta ClockGoo na 1024 × 768 (otvorenie kariet,
-  pás výkonu s odtlačením susedov a rýchly zoznam LensGoo overené 6. 10.)
+- [x] **Zámok obrazovky scénou prihlásenia** (6. 10.): Win+L a GooPower › Zamknúť → `latte-zamok` (`kind: lock`,
+  `zamok.plm` generovaný z `login.plm`); overené zamknutie, nesprávne a správne heslo, kliky, oba monitory
+- [x] Overené naživo 6. 10.: profily napájania, Monitor, Nastavenia, Zamknúť, Nerušiť, klik na bunku pásu výkonu,
+  pravý klik na hlavu GooBaru (ukázať plochu — opravený návrat iba z prázdnej plochy)
+- [ ] Prihlásenie — zvyšky: asi sekunda čiernej medzi prihlásením a plochou; voľba prihlasovača v Nastaveniach;
+  zámok pri nečinnosti novou scénou (dnes Noctalia); overiť skutočný dážď a sneh a Uspať · Reštartovať · Vypnúť
+- [ ] Overiť: Odhlásiť z karty GooPower, dvojstĺpcová karta ClockGoo na 1024 × 768
 - [ ] **Korunka QueenGoo:** voliteľný tvar v Nastaveniach › Kvapky (6. 10.: „ešte sa bude robiť“)
 - [ ] GooBar: `reversed` (ikry na druhú stranu), vlastný GooBar na každom monitore (engine beží iba na hlavnom)
 - [ ] Engine: znížiť CPU (pravidlá a pružiny všetkých 128 miest — ~1,7× plocha Kvapky)
