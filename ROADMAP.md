@@ -404,9 +404,13 @@ texty preložiteľné (`translations`). Noctalia beží bez lišty a robí, čo 
   - [ ] **`latte-mcp` na základe hypruse** (Hyprland ako nástroje MCP); funguje aj s lokálnym modelom
   - [ ] **App Manager a obchod**: Bazaar (Flathub) ako jadro, obchod podľa ZimaOS, hodnotenia a snímky, aktualizácie
     na jednom mieste, povolenia Flatpaku čitateľne pri inštalácii
-  - [ ] **synchronizácia zariadení** (Syncthing, neskôr any-sync) a **prostredie Súborov nad pôvodným súborovým
-    systémom**: dva panely, náhľady, značky, synchronizované priečinky so stavom, telefón a sieť ako miesta
-    (vzor: Spacedrive, Nextcloud virtuálne súbory)
+  - [ ] **synchronizácia zariadení** (Syncthing, neskôr any-sync)
+  - [ ] na doriešenie: **prostredie Súborov nad pôvodným súborovým systémom** — návrh: dva panely, náhľady, značky,
+    synchronizované priečinky so stavom, telefón a sieť ako miesta (vzor: Spacedrive, Nextcloud virtuálne súbory)
+  - [ ] **obnovenie relácie**: po reštarte sa okná vrátia na svoje miesta a do svojho režimu (vzor: hyprsession)
+  - [ ] **ikra alebo kvapka, ktorá hrá zvuk, sa vlní a vibruje ako reproduktor**; vlastná hlasitosť tej aplikácie
+    v jej kontextovej ponuke (ak ju má), inak inde (napr. karta pri hlasitosti)
+  - [ ] **Monitor: kto žerie** energiu, dáta, RAM a miesto na disku — po aplikáciách a s priebehom po dňoch
   - [ ] na rozhodnutie: bublina odchádzajúceho spojenia — nie ako tretia vrstva, iba ako súčasť modelu NET
     (povolenie pri inštalácii + tlačidlo NET), napr. upozornenie pri prvom spojení aplikácie mimo Flatpaku
 - [ ] Ovládacie centrum Noctalie nad rohovou lištou vpravo — overiť na latte-lab (`latte-kvapky`: `bottom_right`)
