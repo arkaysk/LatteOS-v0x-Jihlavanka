@@ -211,7 +211,7 @@ načíta sám. Príkazy, ktoré modul spúšťa cez `run`, musia byť v `permiss
   a meno do `EFEKTY` v `lib/engine.luau`.
 - **V logike** (zriedkavé zmeny): kanály `d:rezerva(1…4, hodnota)`, scéna ich vyhladí pružinou.
 
-## Prihlásenie (`login.plm`, `login.luau`) — voliteľné (`greeter = "goo"`)
+## Prihlásenie (`login.plm`, `login.luau`) — predvolené (`greeter = "goo"`)
 
 Scéna podľa LATTEOS-GOO.md §6.2: šálka z úvodnej obrazovky → kvapka vyskočí doprostred → odvalí sa ~5 cm doľava
 a nechá riadok (LoginGoo s ikonou Power · meno · heslo · šípka) → rovina klesne k hladine (káva v spodnej tretine,
@@ -238,8 +238,10 @@ GooPower a pozadie zmizne. Klik na LoginGoo = Uspať · Reštartovať · Vypnú�
   sú spoločné. Bez toho sa kópie rozložia podľa šírky posledného monitora.
 - **Meno** je pole predvyplnené naposledy prihláseným (Tab prepína meno ↔ heslo); iné účty sa neponúkajú.
 - **Novinky:** `rss_url` v `greeter.conf` môže niesť viac zdrojov (medzera, čiarka); titulky sa striedajú.
-- **Ostáva:** plynulé nadviazanie plochy na posledný obraz (relácia dostane `LATTE_Z_PRIHLASENIA=1`; medzi
-  prihlásením a plochou je zatiaľ krátky prestrih pri odovzdaní obrazovky), údaje používateľa pred heslom
+- **Odovzdanie ploche:** LoginGoo padá presne na miesto GooPower používateľa (`latte-goo uloz-stav` ho odkladá do
+  `/var/lib/latteos/greeter/goo-<účet>.json`), plocha spúšťa kvapky pred tapetou a Hyprland má espresso pozadie.
+  Aj tak je medzi prihlásením a plochou asi sekunda čiernej (odovzdanie obrazovky medzi dvoma kompozitormi).
+- **Ostáva:** odstrániť tú čiernu sekundu (relácia dostáva `LATTE_Z_PRIHLASENIA=1`), údaje používateľa pred heslom
   (upozornenia, úlohy — všeobecná relácia ich nevidí), viac zdrojov noviniek v Nastaveniach (zatiaľ jedno pole).
 - **Pri skúšaní:** `systemctl restart greetd` počas bežiaceho prihlasovača nechá jeho labwc a scénu bežať
   (osirelé procesy účtu greetd) — po skúške ich treba ukončiť.

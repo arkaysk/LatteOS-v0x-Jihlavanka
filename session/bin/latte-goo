@@ -587,7 +587,10 @@ def prihlasenie():
     try:
         goopower = json.load(open(STATE)).get("goopower", {}).get("x")
     except (OSError, ValueError, AttributeError):
-        pass
+        try:                                             # prihlasovač: čo si plocha používateľa odložila (uloz-stav)
+            goopower = json.load(open(os.path.join(GREETER, "goo-%s.json" % login))).get("goopower")
+        except (OSError, ValueError, AttributeError):
+            pass
     # relácie na výber (vývojárska verzia): ako v doterajšom prihlasovači — LatteOS GOO, potom samostatné prostredia
     lang = (os.environ.get("LC_ALL") or os.environ.get("LC_MESSAGES") or os.environ.get("LANG") or "").split(".")[0]
     poradie = ["latteos", "marea-wm", "marea-hyprland", "latteos-noctalia", "serpantinum"]
@@ -741,6 +744,18 @@ def main(a):
         with open(STATE + ".new", "w") as f:
             json.dump(v, f, ensure_ascii=False)
         os.replace(STATE + ".new", STATE)
+        # kde sedí GooPower, smie vedieť aj prihlasovanie (iný účet, do domova nevidí): LoginGoo po hesle spadne presne
+        # tam, kde ju plocha po prihlásení ukáže (LATTEOS-GOO.md §6.2)
+        try:
+            import pwd
+            x = v.get("goopower", {}).get("x")
+            if isinstance(x, (int, float)) and os.access(GREETER, os.W_OK):
+                p = os.path.join(GREETER, "goo-%s.json" % pwd.getpwuid(os.getuid()).pw_name)
+                with open(p + ".new", "w") as f:
+                    json.dump({"goopower": x}, f)
+                os.replace(p + ".new", p)
+        except (OSError, KeyError, AttributeError):
+            pass
         return 0
     if c == "okna":
         print(json.dumps(visible_windows())); return 0

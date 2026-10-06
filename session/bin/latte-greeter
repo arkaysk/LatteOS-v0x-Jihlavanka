@@ -24,6 +24,10 @@ tui() {
 greeter="$(sed -n 's/^greeter *= *"\?\([a-z]*\)"\?.*/\1/p' /etc/latteos/boot.toml 2>/dev/null)"
 greeter="${greeter:-latte}"
 
+# osirelé prihlasovače tohto účtu (napr. po `systemctl restart greetd` ostane starý labwc aj so scénou bežať): preč,
+# platný je iba tento
+pkill -u "$(id -u)" -x pleamar 2>/dev/null; pkill -u "$(id -u)" -x labwc 2>/dev/null; pkill -u "$(id -u)" -x qs 2>/dev/null
+
 if [ "$greeter" = goo ]; then
     if [ "$LATTE_MODE" = normal ] && [ "$LATTE_RENDERER" = hw ] && [ -n "${XDG_RUNTIME_DIR:-}" ] \
             && [ -f /usr/share/latteos/goo/login.plm ] && command -v pleamar >/dev/null; then

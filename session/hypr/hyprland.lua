@@ -152,6 +152,8 @@ hl.config({
     misc = {
         disable_hyprland_logo = true,
         disable_splash_rendering = true,
+        -- kým sa neukáže tapeta, je obrazovka espresso ako pri prihlásení (nadväzuje naň bez čierneho medzikroku)
+        background_color = 0x1a1410,
         force_default_wallpaper = 0,
         -- strážcom je latte-session (pád → reštart / SAFE, aquamarine #383), nie start-hyprland: ten po páde
         -- spustí Hyprland bez -c. Varovanie „launched without start-hyprland“ je preto zbytočné.
