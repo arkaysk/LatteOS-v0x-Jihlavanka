@@ -30,7 +30,9 @@ roh_start() {   # $1 počet ikon na lište → margin_start (px od ľavého kraj
     echo $(( w - (26 + 48 * n + 28 * ${1:-0}) ))
 }
 st_kvapky="$st_classic/kvapky"
-scene="${LATTE_KVAPKY_SCENE:-$share/kvapky/kvapka.plm}"
+# scéna: engine Goo; pôvodná plocha Kvapky (session/kvapky/kvapka.plm) sa od 6. 10. nenasadzuje — na pokusy z repa
+# cez LATTE_KVAPKY_SCENE
+scene="${LATTE_KVAPKY_SCENE:-$share/goo/goo.plm}"
 pleamar="${PLEAMAR:-$(command -v pleamar || echo /usr/bin/pleamar)}"
 # klasickí pomocníci z hyprland.lua (autoštart), ktorí patria k Noctalii
 # (1. 10.) Digitálna pohoda (well-being) nie je pomocník klasickej lišty — beží aj v Kvapkách (pravý klik na Hodiny)

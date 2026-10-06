@@ -137,14 +137,17 @@ Hyprland (WM)
 
 ## Režimy a varianty
 
-### Relácia (`latte-session [safe|hra|kvapky|kvapky-engine|noctalia]`)
+### Relácia (`latte-session [safe|hra|noctalia|klasicke]`)
 ```
-bez argumentu   → LATTE_VARIANT=klasicke   LatteOS Classic (zrušený, na odstránenie)
-kvapky          → LATTE_VARIANT=kvapky     plocha Kvapky (session/kvapky/kvapka.plm) — už sa nenasadzuje
-kvapky-engine   → LATTE_VARIANT=kvapky     + LATTE_KVAPKY_SCENE = engine Goo (session/goo/goo.plm)
+bez argumentu   → LATTE_VARIANT=kvapky     LatteOS GOO: engine Goo (LATTE_KVAPKY_SCENE = session/goo/goo.plm)
 noctalia        → LATTE_VARIANT=noctalia   čistá Noctalia na pokusy
-safe, hra       → núdzová relácia, herná relácia
+safe, hra       → núdzová relácia, herná relácia (nie sú v ponuke prihlásenia)
+klasicke        → LATTE_VARIANT=klasicke   LatteOS Classic (zrušený, kód ostáva, v ponuke nie je)
 ```
+Ponuka prihlásenia (6. 10. 2026): **LatteOS GOO**, **Marea**, **Noctalia (čistá)**, **Serpantinum**. Prvé dve položky
+LatteOS inštaluje `setup/f1/install-session.sh`, Mareu `setup/lab/marea-povodna.sh`, Serpantinum
+`setup/lab/serpantinum.sh`. SAFE príde sám (pády, GRUB › LatteOS SAFE), do hry sa prepína z plochy (`latte-hra`).
+Pôvodná plocha Kvapky (`session/kvapky/kvapka.plm`) sa nenasadzuje; staré mená `kvapky` a `kvapky-engine` znamenajú GOO.
 
 ### Štart (`latte-boot select` → `/run/latteos/mode.toml`)
 ```

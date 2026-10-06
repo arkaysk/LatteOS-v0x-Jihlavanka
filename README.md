@@ -11,8 +11,8 @@ pohybom a reagujú na kurzor. Všetko sa ovláda myšou.
 - **LatteOS GOO je jediná edícia.** Doterajšie „gamerdistro“ sa ním stáva.
 - **LatteOS Classic sa ruší.** Nové funkcie sa preň nerobia; jeho kód (relácia „LatteOS“ s lištou Noctalie) zatiaľ
   v repozitári ostáva a bude sa odstraňovať postupne, keď ho GOO nahradí aj ako predvolená a núdzová relácia.
-- **Predvolené prihlásenie bude engine Goo.** Prihlasovanie sa ešte prerobí; dovtedy sa engine spúšťa reláciou
-  „LatteOS Kvapky – engine test“.
+- **Predvolené prihlásenie je engine Goo** (relácia „LatteOS GOO“, 6. 10.); v ponuke prihlásenia sú popri nej samostatné
+  prostredia Marea, Noctalia (čistá) a Serpantinum. Obrazovka prihlásenia sa ešte prerobí.
 - **Hlavná práca je engine Goo** (`session/goo`): jedny pravidlá pre všetky kvapky nad
   [pleamarom](https://github.com/k4ditano/pleamar) (k4ditano, BSD-3-Clause). Je na ňom ešte veľa práce — otvorené
   úlohy sú v [ROADMAP.md](ROADMAP.md) (F3·G). **Na systém sa nasadzuje iba engine Goo** (6. 10.); pôvodná plocha
@@ -34,9 +34,9 @@ Kliky jednotlivých kvapiek sú v [LATTEOS-GOO.md §4](LATTEOS-GOO.md). Záväzn
 
 ## Stav
 
-- **Plocha Kvapky** (relácia „LatteOS Kvapky“, scéna `session/kvapky/kvapka.plm`) — pôvodný prototyp; kód zatiaľ
+- **Plocha Kvapky** (scéna `session/kvapky/kvapka.plm`) — pôvodný prototyp; kód zatiaľ
   ostáva v repozitári, na systém sa už nenasadzuje.
-- **Engine Goo** (relácia „LatteOS Kvapky – engine test“, `session/goo`) — overený na reálnom PC (Hyprland,
+- **Engine Goo** (relácia „LatteOS GOO“, `session/goo`) — overený na reálnom PC (Hyprland,
   AMD RX 640, 5. 10.): fyzika, vstupy myšou, GooBar s oknami, kvapky novej architektúry. Okná z kvapiek sú
   prenesené (5.–6. 10.: spúšťač a rýchly zoznam LensGoo, karta GooPower a pás výkonu, upozornenia s kalendárom
   a karta času ClockGoo, bublina QueenGoo); to, čo pribudlo 6. 10., ešte treba overiť naživo.

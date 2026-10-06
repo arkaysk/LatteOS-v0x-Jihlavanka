@@ -310,8 +310,9 @@ pod ním **Trending Now** a **New Arrivals** ako veľké karty. Údaje sú (Flat
 | engine Goo: scéna, logika, kvapky, API a pasce jazyka | `session/goo/` — [README](session/goo/README.md) |
 | po zmene tela goo alebo počtu miest | `python3 session/goo/gen.py` |
 | pomocníci (kvapky, polohy, účet, kalendár, počasie, okná…; údaje pásu výkonu) | `session/bin/latte-goo`, `latte-sysmon goo` |
-| štart plochy, Noctalia pre Goo | `session/bin/latte-kvapky` (scénu enginu dostane cez `LATTE_KVAPKY_SCENE`) |
-| relácia, profily prostredí | `session/bin/latte-session` (`kvapky-engine`), `latte-profil` |
+| štart plochy, Noctalia pre Goo | `session/bin/latte-kvapky` (inú scénu na pokusy cez `LATTE_KVAPKY_SCENE`) |
+| relácia, profily prostredí | `session/bin/latte-session` (bez argumentu = LatteOS GOO), `latte-profil` |
+| ponuka prihlásenia | LatteOS GOO, Marea, Noctalia (čistá), Serpantinum — `session/wayland-sessions/`, `setup/f1/install-session.sh`, `setup/lab/` |
 | Hyprland (režimy okien, pád minimalizovaného okna, rezerva pri okraji, virtuálny monitor) | `session/hypr/hyprland.lua`, `session/hypr/latte/*.lua` |
 | záplaty pleamaru / Noctalie / Hyprlandu | `resources/patches/` (README tam) |
 | nastavenia používateľa | `~/.config/latteos/` (`kava`, `kvapky.json`, `spustac.json`, `goo/kvapky/*.json`), `~/.local/state/latteos/goo/` (polohy, pás výkonu) |

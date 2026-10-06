@@ -1,7 +1,7 @@
 [Desktop Entry]
-Name=LatteOS
-Comment=The mode chosen at startup (NORMAL: Hyprland + Noctalia)
-Comment[sk]=Režim vybraný pri štarte (NORMAL: Hyprland + Noctalia)
+Name=LatteOS GOO
+Comment=The LatteOS desktop: liquid coffee drops of the Goo engine on Hyprland
+Comment[sk]=Plocha LatteOS: tekuté kávové kvapky enginu Goo na Hyprlande
 Exec=/usr/bin/latte-session
 Type=Application
 DesktopNames=Hyprland

@@ -10,8 +10,8 @@ LATTE_MODE=safe LATTE_RENDERER=pixman
 if [ -z "${LANG:-}" ] && [ -r /etc/locale.conf ]; then set -a; . /etc/locale.conf; set +a; fi
 [ -r /run/latteos/session.env ] && { set -a; . /run/latteos/session.env; set +a; }
 
-session="LatteOS"
-[ "$LATTE_MODE" = safe ] && session="LatteOS SAFE"
+# jediná relácia LatteOS v ponuke; núdzový režim spustí latte-session sám podľa LATTE_MODE
+session="LatteOS GOO"
 export LIBSEAT_BACKEND=logind
 [ "$LATTE_RENDERER" != hw ] && export WLR_RENDERER=pixman LIBGL_ALWAYS_SOFTWARE=1
 
