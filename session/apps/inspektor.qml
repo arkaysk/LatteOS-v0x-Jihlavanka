@@ -8,6 +8,7 @@ import "common"
 ShellRoot {
     id: app
     LatteTheme { id: theme }
+    I18n { id: i18n }
     readonly property var th: theme
     FloatingWindow {
         title: "Inšpektor siete — LatteOS"

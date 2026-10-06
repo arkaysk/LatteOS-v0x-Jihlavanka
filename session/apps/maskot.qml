@@ -1,3 +1,4 @@
+import "common"   // musí byť nad úvodným komentárom: Quickshell číta importy iba po prvý riadok so zloženou zátvorkou
 // LatteOS — výbehy maskota z ostrova (zadanie 24./25. 9.). Postavy sú balíčky /usr/share/latteos/maskoti/<id>/
 // (snímky PNG + pet.json; väčšinu vyrezalo resources/art/maskoti/vyrez.py z koncepčných listov používateľa).
 // Správanie podľa povahy (pet.json › profile):
@@ -27,6 +28,7 @@ import Quickshell.Hyprland
 
 ShellRoot {
     id: mk
+    I18n { id: i18n }
     readonly property string home: Quickshell.env("HOME") || "/"
     readonly property string cfg: (Quickshell.env("XDG_CONFIG_HOME") || (home + "/.config")) + "/latteos"
     readonly property string runFile: (Quickshell.env("XDG_RUNTIME_DIR") || "/tmp") + "/latteos/maskot-von"

@@ -14,6 +14,7 @@ import "common"
 ShellRoot {
     id: app
     LatteTheme { id: theme }
+    I18n { id: i18n }
     property string path: (Quickshell.env("LATTE_APP_ARGS") || "").trim().replace(/^file:\/\//, "")
     property string mode: "text"            // text | hex | obrazok | medium
     property string enc: ""

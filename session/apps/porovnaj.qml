@@ -11,6 +11,7 @@ import "common"
 ShellRoot {
     id: app
     LatteTheme { id: theme }
+    I18n { id: i18n }
     readonly property var args: (Quickshell.env("LATTE_APP_ARGV") || "").split("\n").filter(s => s !== "")
     property string fileA: args[0] || ""
     property string fileB: args[1] || ""

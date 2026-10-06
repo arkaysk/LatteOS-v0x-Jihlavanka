@@ -17,6 +17,7 @@ import "common"
 ShellRoot {
     id: app
     LatteTheme { id: theme }
+    I18n { id: i18n }
 
     readonly property string home: Quickshell.env("HOME") || "/"
     readonly property string docsDir: home + "/Dokumenty"

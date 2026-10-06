@@ -16,6 +16,7 @@ import "common"
 ShellRoot {
     id: pn
     LatteTheme { id: theme }
+    I18n { id: i18n }
 
     property string kind: ""                 // "" = zavreté
     property real atX: 0
@@ -152,27 +153,27 @@ ShellRoot {
     function winxItems() {
         const app = (n) => () => { pn.kind = ""; pn.sh("latte-app " + n); };
         return [
-            { glyph: "apps", label: "Nainštalované aplikácie", action: app("aplikacie") },
-            { glyph: "battery", label: "Možnosti napájania", action: app("nastavenia napajanie") },
-            { glyph: "shield", label: "Systém", action: app("nastavenia system") },
-            { glyph: "cpu", label: "Správca zariadení", action: app("zariadenia") },
-            { glyph: "network", label: "Sieťové pripojenia", action: app("zariadenia siete") },
-            { glyph: "database", label: "Disky", action: app("zariadenia disky") },
+            { glyph: "apps", label: i18n.tr("Installed apps"), action: app("aplikacie") },
+            { glyph: "battery", label: i18n.tr("Power options"), action: app("nastavenia napajanie") },
+            { glyph: "shield", label: i18n.tr("System"), action: app("nastavenia system") },
+            { glyph: "cpu", label: i18n.tr("Device Manager"), action: app("zariadenia") },
+            { glyph: "network", label: i18n.tr("Network connections"), action: app("zariadenia siete") },
+            { glyph: "database", label: i18n.tr("Disks"), action: app("zariadenia disky") },
             { separator: true },
-            { glyph: "terminal", label: "Terminál", action: () => { pn.kind = ""; pn.sh("latte-terminal"); } },
-            { glyph: "terminal-2", label: "Terminál (správca)", action: () => { pn.kind = ""; pn.sh("latte-terminal sudo -i"); } },
-            { glyph: "activity", label: "Správca úloh", hint: "Ctrl+Shift+Esc", action: app("monitor") },
-            { glyph: "settings", label: "Nastavenia", hint: "Win+I", action: app("nastavenia") },
-            { glyph: "folder", label: "Prieskumník súborov", hint: "Win+E", action: app("subory") },
-            { glyph: "search", label: "Hľadať", hint: "Win+S", action: () => { pn.kind = ""; pn.sh("noctalia msg panel-open launcher"); } },
-            { glyph: "player-play", label: "Spustiť", hint: "Win+R", action: () => { pn.kind = ""; pn.sh("noctalia msg panel-open launcher"); } },
+            { glyph: "terminal", label: i18n.tr("Terminal"), action: () => { pn.kind = ""; pn.sh("latte-terminal"); } },
+            { glyph: "terminal-2", label: i18n.tr("Terminal (administrator)"), action: () => { pn.kind = ""; pn.sh("latte-terminal sudo -i"); } },
+            { glyph: "activity", label: i18n.tr("Task Manager"), hint: "Ctrl+Shift+Esc", action: app("monitor") },
+            { glyph: "settings", label: i18n.tr("Settings"), hint: "Win+I", action: app("nastavenia") },
+            { glyph: "folder", label: i18n.tr("File Explorer"), hint: "Win+E", action: app("subory") },
+            { glyph: "search", label: i18n.tr("Search"), hint: "Win+S", action: () => { pn.kind = ""; pn.sh("noctalia msg panel-open launcher"); } },
+            { glyph: "player-play", label: i18n.tr("Run"), hint: "Win+R", action: () => { pn.kind = ""; pn.sh("noctalia msg panel-open launcher"); } },
             { separator: true },
-            { glyph: "power", label: "Vypnúť alebo odhlásiť sa", sub: [
-                { glyph: "logout", label: "Odhlásiť sa", action: () => pn.session("logout") },
-                { glyph: "moon", label: "Uspať", action: () => pn.session("suspend") },
-                { glyph: "power", label: "Vypnúť", action: () => pn.session("shutdown") },
-                { glyph: "refresh", label: "Reštartovať", action: () => pn.session("reboot") }] },
-            { glyph: "device-desktop", label: "Pracovná plocha", hint: "Win+D", action: () => { pn.kind = ""; pn.hyprEval("latte.keys.show_desktop()"); } },
+            { glyph: "power", label: i18n.tr("Shut down or sign out"), sub: [
+                { glyph: "logout", label: i18n.tr("Sign out"), action: () => pn.session("logout") },
+                { glyph: "moon", label: i18n.tr("Sleep"), action: () => pn.session("suspend") },
+                { glyph: "power", label: i18n.tr("Shut down"), action: () => pn.session("shutdown") },
+                { glyph: "refresh", label: i18n.tr("Restart"), action: () => pn.session("reboot") }] },
+            { glyph: "device-desktop", label: i18n.tr("Desktop"), hint: "Win+D", action: () => { pn.kind = ""; pn.hyprEval("latte.keys.show_desktop()"); } },
         ];
     }
     function windowItems() {
@@ -180,22 +181,22 @@ ShellRoot {
         const q = (lua) => () => { pn.kind = ""; pn.hyprEval(lua); };
         const lay = (z, label, glyph) => ({ glyph: glyph, label: label, action: q("latte.okno.rozlozenie('" + a + "','" + z + "')") });
         const desks = [];
-        for (let i = 1; i <= 4; i++) desks.push({ label: "Plocha " + i, checked: w.workspace && w.workspace.id === i, action: q("latte.okno.na_plochu('" + a + "'," + i + ")") });
-        desks.push({ glyph: "plus", label: "Nová plocha", action: q("latte.okno.na_plochu('" + a + "',0)") });
+        for (let i = 1; i <= 4; i++) desks.push({ label: i18n.tr("Desktop {n}", { n: i }), checked: w.workspace && w.workspace.id === i, action: q("latte.okno.na_plochu('" + a + "'," + i + ")") });
+        desks.push({ glyph: "plus", label: i18n.tr("New desktop"), action: q("latte.okno.na_plochu('" + a + "',0)") });
         return [
-            { glyph: "arrows-minimize", label: "Obnoviť", enabled: max || full || !!w.latteSnapped, action: q("latte.okno.obnovit('" + a + "')") },
-            { glyph: "minus", label: "Minimalizovať", action: q("latte.okno.minimalizovat('" + a + "')") },
-            { glyph: "square", label: "Maximalizovať", enabled: !max, action: q("latte.okno.maximalizovat('" + a + "')") },
-            { glyph: "layout-grid", label: "Rozloženie", sub: [
-                lay("lava", "Ľavá polovica", "layout-sidebar"), lay("prava", "Pravá polovica", "layout-sidebar-right"),
-                lay("lh", "Vľavo hore", "layout-grid"), lay("ph", "Vpravo hore", "layout-grid"),
-                lay("ld", "Vľavo dole", "layout-grid"), lay("pd", "Vpravo dole", "layout-grid"),
-                lay("l23", "Dve tretiny vľavo", "layout-columns"), lay("p13", "Tretina vpravo", "layout-columns"),
-                lay("stred", "Na stred", "focus-centered")] },
-            { label: "Vždy navrchu (na všetkých plochách)", checked: !!w.pinned, action: q("latte.okno.navrchu('" + a + "')") },
-            { glyph: "stack-2", label: "Presunúť na plochu", sub: desks },
+            { glyph: "arrows-minimize", label: i18n.tr("Restore"), enabled: max || full || !!w.latteSnapped, action: q("latte.okno.obnovit('" + a + "')") },
+            { glyph: "minus", label: i18n.tr("Minimize"), action: q("latte.okno.minimalizovat('" + a + "')") },
+            { glyph: "square", label: i18n.tr("Maximize"), enabled: !max, action: q("latte.okno.maximalizovat('" + a + "')") },
+            { glyph: "layout-grid", label: i18n.tr("Layout"), sub: [
+                lay("lava", i18n.tr("Left half"), "layout-sidebar"), lay("prava", i18n.tr("Right half"), "layout-sidebar-right"),
+                lay("lh", i18n.tr("Top left"), "layout-grid"), lay("ph", i18n.tr("Top right"), "layout-grid"),
+                lay("ld", i18n.tr("Bottom left"), "layout-grid"), lay("pd", i18n.tr("Bottom right"), "layout-grid"),
+                lay("l23", i18n.tr("Two thirds left"), "layout-columns"), lay("p13", i18n.tr("One third right"), "layout-columns"),
+                lay("stred", i18n.tr("Centre"), "focus-centered")] },
+            { label: i18n.tr("Always on top (on all desktops)"), checked: !!w.pinned, action: q("latte.okno.navrchu('" + a + "')") },
+            { glyph: "stack-2", label: i18n.tr("Move to desktop"), sub: desks },
             { separator: true },
-            { glyph: "x", label: "Zavrieť", hint: "Alt+F4", danger: true, action: q("latte.okno.zavriet('" + a + "')") },
+            { glyph: "x", label: i18n.tr("Close"), hint: "Alt+F4", danger: true, action: q("latte.okno.zavriet('" + a + "')") },
         ];
     }
     // Win+X: nad dlaždicou aplikácií (lišta 56 px + okraj 10 px), ako ponuka nad tlačidlom Štart
@@ -228,10 +229,10 @@ ShellRoot {
                     Text { text: pn.user; color: theme.fgDim; font { family: theme.fontUi; pixelSize: 14 } bottomPadding: 14 }
                     Repeater {
                         model: [
-                            { t: "Zamknúť", a: () => pn.session("lock") },
-                            { t: "Odhlásiť sa", a: () => pn.session("logout") },
-                            { t: "Zmeniť heslo", a: () => { pn.kind = ""; pn.sh("latte-app nastavenia heslo"); } },
-                            { t: "Správca úloh", a: () => { pn.kind = ""; pn.sh("latte-app monitor"); } }]
+                            { t: i18n.tr("Lock"), a: () => pn.session("lock") },
+                            { t: i18n.tr("Sign out"), a: () => pn.session("logout") },
+                            { t: i18n.tr("Change password"), a: () => { pn.kind = ""; pn.sh("latte-app nastavenia heslo"); } },
+                            { t: i18n.tr("Task Manager"), a: () => { pn.kind = ""; pn.sh("latte-app monitor"); } }]
                         Rectangle {
                             required property var modelData
                             width: 300; height: 44; radius: 10
@@ -245,7 +246,7 @@ ShellRoot {
                     Rectangle {
                         width: 120; height: 40; radius: 10; color: cm.containsMouse ? theme.hover : theme.field
                         border { color: theme.outline; width: 1 }
-                        Text { anchors.centerIn: parent; text: "Zrušiť"; color: theme.fg; font { family: theme.fontUi; pixelSize: 14; weight: Font.DemiBold } }
+                        Text { anchors.centerIn: parent; text: i18n.tr("Cancel"); color: theme.fg; font { family: theme.fontUi; pixelSize: 14; weight: Font.DemiBold } }
                         MouseArea { id: cm; anchors.fill: parent; hoverEnabled: true; onClicked: pn.kind = "" }
                     }
                 }
@@ -254,7 +255,7 @@ ShellRoot {
                     anchors { right: parent.right; bottom: parent.bottom; margins: 28 }
                     spacing: 8
                     Repeater {
-                        model: [{ id: "suspend", g: "moon", t: "Uspať" }, { id: "reboot", g: "refresh", t: "Reštartovať" }, { id: "shutdown", g: "power", t: "Vypnúť" }]
+                        model: [{ id: "suspend", g: "moon", t: i18n.tr("Sleep") }, { id: "reboot", g: "refresh", t: i18n.tr("Restart") }, { id: "shutdown", g: "power", t: i18n.tr("Shut down") }]
                         Rectangle {
                             required property var modelData
                             readonly property bool armed: pn.confirm === modelData.id
@@ -262,7 +263,7 @@ ShellRoot {
                             color: armed ? theme.error : (pm.containsMouse ? theme.hover : "transparent")
                             Row { id: row; anchors.centerIn: parent; spacing: 8
                                   Glyph { name: parent.parent.modelData.g; size: 18; color: parent.parent.armed ? "white" : theme.fg; anchors.verticalCenter: parent.verticalCenter }
-                                  Text { text: parent.parent.armed ? "Naozaj? Klikni znova" : parent.parent.modelData.t; color: parent.parent.armed ? "white" : theme.fg
+                                  Text { text: parent.parent.armed ? i18n.tr("Sure? Click again") : parent.parent.modelData.t; color: parent.parent.armed ? "white" : theme.fg
                                          font { family: theme.fontUi; pixelSize: 13 } anchors.verticalCenter: parent.verticalCenter } }
                             MouseArea { id: pm; anchors.fill: parent; hoverEnabled: true
                                         onClicked: { if (parent.armed) pn.session(parent.modelData.id); else pn.confirm = parent.modelData.id; } }
@@ -284,14 +285,14 @@ ShellRoot {
                     x: 20; y: 18; width: parent.width - 40; spacing: 12
                     Row { spacing: 12
                           Glyph { name: "power"; size: 26; color: theme.primary; anchors.verticalCenter: parent.verticalCenter }
-                          Text { text: "Vypnúť LatteOS"; color: theme.fg; font { family: theme.fontDisplay; pixelSize: 20; weight: Font.DemiBold }
+                          Text { text: i18n.tr("Shut down LatteOS"); color: theme.fg; font { family: theme.fontDisplay; pixelSize: 20; weight: Font.DemiBold }
                                  anchors.verticalCenter: parent.verticalCenter } }
-                    Text { text: "Čo má počítač urobiť?"; color: theme.fgDim; font { family: theme.fontUi; pixelSize: 13 } }
+                    Text { text: i18n.tr("What should the computer do?"); color: theme.fgDim; font { family: theme.fontUi; pixelSize: 13 } }
                     Column {
                         width: parent.width; spacing: 2
                         Repeater {
-                            model: [{ id: "lock", t: "Zamknúť" }, { id: "logout", t: "Odhlásiť sa" }, { id: "suspend", t: "Uspať" },
-                                    { id: "shutdown", t: "Vypnúť" }, { id: "reboot", t: "Reštartovať" }]
+                            model: [{ id: "lock", t: i18n.tr("Lock") }, { id: "logout", t: i18n.tr("Sign out") }, { id: "suspend", t: i18n.tr("Sleep") },
+                                    { id: "shutdown", t: i18n.tr("Shut down") }, { id: "reboot", t: i18n.tr("Restart") }]
                             Rectangle {
                                 required property var modelData
                                 width: parent.width; height: 34; radius: 8
@@ -309,7 +310,7 @@ ShellRoot {
                     Row {
                         anchors.right: parent.right; spacing: 8
                         Repeater {
-                            model: [{ t: "OK", ok: true }, { t: "Zrušiť", ok: false }]
+                            model: [{ t: "OK", ok: true }, { t: i18n.tr("Cancel"), ok: false }]
                             Rectangle {
                                 required property var modelData
                                 width: 96; height: 36; radius: 10
@@ -333,9 +334,9 @@ ShellRoot {
                 Column {
                     id: pcol
                     x: 14; y: 14; width: parent.width - 28; spacing: 6
-                    Text { text: "Premietanie"; color: theme.fg; font { family: theme.fontDisplay; pixelSize: 18; weight: Font.DemiBold } bottomPadding: 4 }
+                    Text { text: i18n.tr("Project to a screen"); color: theme.fg; font { family: theme.fontDisplay; pixelSize: 18; weight: Font.DemiBold } bottomPadding: 4 }
                     Repeater {
-                        model: [["pc", "Iba obrazovka PC", "device-laptop"], ["duplikovat", "Duplikovať", "copy"], ["rozsirit", "Rozšíriť", "columns-2"], ["druha", "Iba druhá obrazovka", "device-desktop"]]
+                        model: [["pc", i18n.tr("PC screen only"), "device-laptop"], ["duplikovat", i18n.tr("Duplicate"), "copy"], ["rozsirit", i18n.tr("Extend"), "columns-2"], ["druha", i18n.tr("Second screen only"), "device-desktop"]]
                         Rectangle {
                             required property var modelData
                             readonly property bool on: pn.projMode === modelData[0]
@@ -350,8 +351,8 @@ ShellRoot {
                         }
                     }
                     Text { visible: pn.mons.length < 2; width: parent.width; wrapMode: Text.WordWrap; topPadding: 4
-                           text: "Pripojená je iba jedna obrazovka."; color: theme.fgDim; font { family: theme.fontUi; pixelSize: 12 } }
-                    Text { width: parent.width; wrapMode: Text.WordWrap; topPadding: 2; text: "Rozloženie a rozlíšenie: Správca zariadení › Obrazovky"
+                           text: i18n.tr("Only one screen is connected."); color: theme.fgDim; font { family: theme.fontUi; pixelSize: 12 } }
+                    Text { width: parent.width; wrapMode: Text.WordWrap; topPadding: 2; text: i18n.tr("Layout and resolution: Device Manager › Screens")
                            color: theme.primary; font { family: theme.fontUi; pixelSize: 12; underline: plm.containsMouse }
                            MouseArea { id: plm; anchors.fill: parent; hoverEnabled: true; onClicked: { pn.kind = ""; pn.sh("latte-app zariadenia obrazovky"); } } }
                 }

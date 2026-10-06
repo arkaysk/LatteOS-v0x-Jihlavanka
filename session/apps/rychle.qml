@@ -12,6 +12,7 @@ import "common"
 ShellRoot {
     id: rq
     LatteTheme { id: theme }
+    I18n { id: i18n }
 
     property bool open: (Quickshell.env("LATTE_APP_ARGS") || "").includes("--ukaz")
     IpcHandler {
@@ -124,7 +125,7 @@ ShellRoot {
     function run(argv) { act.running = false; act.command = argv; act.running = true; }
     Process { id: det }
     function detached(argv) { rq.open = false; det.command = argv; det.startDetached(); }
-    readonly property var profileNames: ({ "power-saver": "Úsporný", balanced: "Vyvážený", performance: "Výkon" })
+    readonly property var profileNames: ({ "power-saver": i18n.tr("Power saver"), balanced: i18n.tr("Balanced"), performance: i18n.tr("Performance") })
 
     // GIF / obrázok priamo v ostrove na lište, súvislý s pätou okna L (Noctalia sama GIF nekreslí)
     TileOverlay {
@@ -193,11 +194,11 @@ ShellRoot {
                            onClicked: dmv.group = "kamery" }
                     Chip { visible: rq.micUsers.length > 0; glyph: "microphone"; warn: true; label: rq.micUsers.length > 1 ? rq.micUsers.length + "" : (rq.micUsers[0] || "").slice(0, 12)
                            onClicked: { const q = mapToItem(pmenu.parent, 0, 0);
-                                        pmenu.open(q.x, q.y - 120, [{ glyph: "microphone-off", label: rq.micMuted ? "Zapnúť mikrofón" : "Stlmiť mikrofón", bold: true,
+                                        pmenu.open(q.x, q.y - 120, [{ glyph: "microphone-off", label: rq.micMuted ? i18n.tr("Unmute microphone") : i18n.tr("Mute microphone"), bold: true,
                                                                       action: () => rq.run(["wpctl", "set-mute", "@DEFAULT_AUDIO_SOURCE@", "toggle"]) },
-                                                                    { glyph: "adjustments", label: "Nastavenia zvuku", action: () => { dmv.group = "zvuk"; } },
-                                                                    { glyph: "activity", label: "Ukázať v Monitore", action: () => rq.detached(["latte-app", "monitor", "procesy"]) }],
-                                                   "Mikrofón používa: " + rq.micUsers.join(", ")); } }
+                                                                    { glyph: "adjustments", label: i18n.tr("Sound settings"), action: () => { dmv.group = "zvuk"; } },
+                                                                    { glyph: "activity", label: i18n.tr("Show in Monitor"), action: () => rq.detached(["latte-app", "monitor", "procesy"]) }],
+                                                   i18n.tr("Microphone is used by: {apps}", { apps: rq.micUsers.join(", ") })); } }
                     Chip { glyph: rq.muted ? "volume-off" : "volume"; label: rq.volume === null ? "—" : rq.volume + ""; warn: rq.muted
                            onClicked: rq.run(["wpctl", "set-mute", "@DEFAULT_AUDIO_SINK@", "toggle"])
                            MiniSlider { visible: !rq.tight; value: rq.volume || 0; onMoved: (v) => { rq.volume = v; rq.run(["wpctl", "set-volume", "@DEFAULT_AUDIO_SINK@", v + "%"]); } } }
@@ -205,20 +206,20 @@ ShellRoot {
                            onClicked: rq.run(["wpctl", "set-mute", "@DEFAULT_AUDIO_SOURCE@", "toggle"]) }
                     Chip { glyph: rq.wired ? "network" : (rq.signal < 0 ? "wifi" : (rq.signal >= 70 ? "wifi" : (rq.signal >= 45 ? "wifi-2" : (rq.signal >= 20 ? "wifi-1" : "wifi-0"))))
                            on: !!rq.ssid || !!rq.wired
-                           label: rq.wired ? "Kábel" : (rq.wifi === false ? "Wi-Fi vyp." : (rq.ssid ? (rq.tight && rq.signal >= 0 ? rq.signal + " %" : rq.ssid + (rq.signal >= 0 ? " · " + rq.signal + " %" : "")) : "Wi-Fi"))
+                           label: rq.wired ? i18n.tr("Cable") : (rq.wifi === false ? i18n.tr("Wi-Fi off") : (rq.ssid ? (rq.tight && rq.signal >= 0 ? rq.signal + " %" : rq.ssid + (rq.signal >= 0 ? " · " + rq.signal + " %" : "")) : "Wi-Fi"))
                            onClicked: dmv.tab = "siete" }
                     Chip { visible: rq.btAvail; glyph: "bluetooth"; on: rq.bt === true; onClicked: rq.run(["noctalia", "msg", "bluetooth-toggle"]) }
                     Chip { visible: rq.brightness !== null; glyph: "sun"
                            MiniSlider { width: 64; from: 5; value: rq.brightness || 0; onMoved: (v) => { rq.brightness = v; rq.run(["brightnessctl", "-c", "backlight", "set", v + "%"]); } } }
                     Chip { glyph: rq.battery ? (rq.battery.state === "Charging" ? "battery-charging" : "battery") : "bolt"; warn: !!rq.battery && rq.battery.pct < 15 && rq.battery.state !== "Charging"
-                           label: rq.tight && rq.battery ? rq.battery.pct + " %" : (rq.battery ? rq.battery.pct + " % · " : "") + (rq.game ? "Hra" : (rq.profileNames[rq.profile] || "Výkon"))
+                           label: rq.tight && rq.battery ? rq.battery.pct + " %" : (rq.battery ? rq.battery.pct + " % · " : "") + (rq.game ? i18n.tr("Game") : (rq.profileNames[rq.profile] || i18n.tr("Performance")))
                            onClicked: { const q = mapToItem(pmenu.parent, 0, 0);
                                         pmenu.open(q.x, q.y - 200, rq.profiles.map(p => ({ glyph: "bolt", label: rq.profileNames[p] || p, checked: rq.profile === p, action: () => rq.run(["powerprofilesctl", "set", p]) }))
-                                                   .concat([{ separator: true }, { glyph: "device-gamepad", label: "Herný režim", checked: rq.game, action: () => rq.run(["hyprctl", "eval", "latte.game(" + !rq.game + ")"]) }]), "Režim výkonu"); } }
+                                                   .concat([{ separator: true }, { glyph: "device-gamepad", label: i18n.tr("Game mode"), checked: rq.game, action: () => rq.run(["hyprctl", "eval", "latte.game(" + !rq.game + ")"]) }]), i18n.tr("Power mode")); } }
                     Chip { glyph: "moon"; on: rq.night; onClicked: rq.run(["noctalia", "msg", "nightlight-toggle"]) }
-                    Chip { visible: rq.usbDrives.length > 0; glyph: "usb"; label: rq.usbDrives.length === 1 ? "Odobrať" : "Odobrať (" + rq.usbDrives.length + ")"
+                    Chip { visible: rq.usbDrives.length > 0; glyph: "usb"; label: rq.usbDrives.length === 1 ? i18n.tr("Eject") : i18n.tr("Eject ({n})", { n: rq.usbDrives.length })
                            onClicked: { const q = mapToItem(pmenu.parent, 0, 0);
-                                        pmenu.open(q.x, q.y - 40 * rq.usbDrives.length - 20, rq.usbDrives.map(d => ({ glyph: "usb", label: "Bezpečne odobrať " + d.label, action: () => dmv.safeRemove(d.path, d.label) })), "USB"); } }
+                                        pmenu.open(q.x, q.y - 40 * rq.usbDrives.length - 20, rq.usbDrives.map(d => ({ glyph: "usb", label: i18n.tr("Safely remove {name}", { name: d.label }), action: () => dmv.safeRemove(d.path, d.label) })), "USB"); } }
                 },
                 // ── pás: vybraná kategória / zariadenie ──
                 Row {
@@ -227,9 +228,9 @@ ShellRoot {
                     spacing: 10
                     Glyph { anchors.verticalCenter: parent.verticalCenter; name: dmv.tab === "siete" ? "network" : (dmv.curGroup ? dmv.curGroup.glyph : "cpu"); size: 20; color: theme.primary }
                     Column { anchors.verticalCenter: parent.verticalCenter
-                             Text { text: dmv.tab === "siete" ? "Siete" : ((dmv.curGroup ? dmv.curGroup.title : "") + (dmv.sel ? " › " + dmv.sel.item.name : ""))
+                             Text { text: dmv.tab === "siete" ? i18n.tr("Networks") : ((dmv.curGroup ? dmv.curGroup.title : "") + (dmv.sel ? " › " + dmv.sel.item.name : ""))
                                     color: theme.fg; font { family: theme.fontUi; pixelSize: 13; weight: Font.Bold } }
-                             Text { text: dmv.tab === "siete" ? (rq.wired ? "Kábel · " + rq.wired : (rq.ssid ? "Wi-Fi · " + rq.ssid : "nepripojené"))
+                             Text { text: dmv.tab === "siete" ? (rq.wired ? i18n.tr("Cable") + " · " + rq.wired : (rq.ssid ? "Wi-Fi · " + rq.ssid : i18n.tr("not connected")))
                                                               : (dmv.sel ? (dmv.sel.item.stateTitle || "funguje") + " · " + dmv.sel.item.sub : (dmv.curGroup ? dmv.count(dmv.curGroup.items.length) : ""))
                                     color: theme.fgDim; font { family: theme.fontUi; pixelSize: 11 } } }
                 }
@@ -252,7 +253,7 @@ ShellRoot {
                 Row {
                     anchors { right: parent.right; top: parent.top; margins: 12 }
                     spacing: 4
-                    IconButton { theme: theme; glyph: "external-link"; tip: "Otvoriť ako okno"; onClicked: rq.detached(["latte-app", "zariadenia"]) }
+                    IconButton { theme: theme; glyph: "external-link"; tip: i18n.tr("Open as a window"); onClicked: rq.detached(["latte-app", "zariadenia"]) }
                     IconButton { theme: theme; glyph: "x"; onClicked: rq.open = false }
                 }
                 ContextMenu { id: pmenu; theme: theme }

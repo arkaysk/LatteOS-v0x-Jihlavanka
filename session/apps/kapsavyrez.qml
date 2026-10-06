@@ -15,6 +15,7 @@ import "common"
 ShellRoot {
     id: kv
     LatteTheme { id: theme }
+    I18n { id: i18n }
 
     readonly property string state: (Quickshell.env("XDG_STATE_HOME") || ((Quickshell.env("HOME") || "") + "/.local/state")) + "/latteos"
     property var pos: null                 // { x, y, w, h } výrezu v súradniciach monitora

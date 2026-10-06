@@ -307,8 +307,11 @@ texty preložiteľné (`translations`). Noctalia beží bez lišty a robí, čo 
 - [x] Barista: „Akú si dáte kávu a do čoho?“ (hrnček = téma okien v jej materiáli, káva = kvapky), náhľad hrnčeka
 - [x] Prekladová vrstva aplikácií LatteOS: `common/I18n.qml` (`i18n.tr`, JSON `/usr/share/latteos/i18n/<jazyk>.json`,
       podľa DankMaterialShell); Barista zmigrovaný (anglický zdroj + sk.json)
-- [ ] Zmigrovať ostatné aplikácie LatteOS na `i18n.tr` (Nastavenia, Súbory, Monitor, ponuky, …) a súbory tém
-      (`name`/`desc` dnes po slovensky → `name[sk]`)
+- [~] Zmigrovať ostatné aplikácie LatteOS na `i18n.tr` (Nastavenia, Súbory, Monitor, ponuky, …) a súbory tém
+      (`name`/`desc` dnes po slovensky → `name[sk]`). Postup po dávkach, pomôcka `setup/test/i18n-migruj.py`
+      (`stav` = koľko textov ostáva natvrdo). Každé okno aplikácie má `I18n { id: i18n }`, spoločné prvky berú
+      preklad z neho. **6. 10.: 1. dávka** — systémová ponuka, spúšťač, rýchly panel, hlavička okna, ponuka
+      textového poľa (134 textov; ostáva asi 2 760, najviac Nastavenia 857 a Súbory 427)
 - [x] **Nová prihlasovacia obrazovka** (greeter) — napísaná 29. 9. v latteGoo vzhľade, **nasadená 30. 9.** (overiť po
       reštarte latte-lab). Zoznam relácií číta aj `/usr/share/wayland-sessions` (iné prostredia na pokusy) a roluje sa;
       nová relácia **Noctalia (čistá)** (`latte-session noctalia`, hypr/noctalia.lua). Predtým v náhľade

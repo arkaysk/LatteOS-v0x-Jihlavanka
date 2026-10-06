@@ -28,15 +28,15 @@ TextInput {
         const act = (fn) => () => { field.forceActiveFocus(); fn(); };
         const p = field.mapToItem(m, x, y);
         m.open(p.x, p.y, [
-            { glyph: "arrow-back-up", label: "Späť", hint: "Ctrl+Z", enabled: !readOnly && canUndo, action: act(() => field.undo()) },
-            { glyph: "arrow-forward-up", label: "Znova", hint: "Ctrl+Shift+Z", enabled: !readOnly && canRedo, action: act(() => field.redo()) },
+            { glyph: "arrow-back-up", label: i18n.tr("Undo"), hint: "Ctrl+Z", enabled: !readOnly && canUndo, action: act(() => field.undo()) },
+            { glyph: "arrow-forward-up", label: i18n.tr("Redo"), hint: "Ctrl+Shift+Z", enabled: !readOnly && canRedo, action: act(() => field.redo()) },
             { separator: true },
-            { glyph: "cut", label: "Vystrihnúť", hint: "Ctrl+X", enabled: !readOnly && sel && !secret, action: act(() => field.cut()) },
-            { glyph: "copy", label: "Kopírovať", hint: "Ctrl+C", enabled: sel && !secret, action: act(() => field.copy()) },
-            { glyph: "clipboard", label: "Prilepiť", hint: "Ctrl+V", enabled: !readOnly && canPaste, action: act(() => field.paste()) },
-            { glyph: "backspace", label: "Odstrániť", enabled: !readOnly && sel, action: act(() => field.remove(field.selectionStart, field.selectionEnd)) },
+            { glyph: "cut", label: i18n.tr("Cut"), hint: "Ctrl+X", enabled: !readOnly && sel && !secret, action: act(() => field.cut()) },
+            { glyph: "copy", label: i18n.tr("Copy"), hint: "Ctrl+C", enabled: sel && !secret, action: act(() => field.copy()) },
+            { glyph: "clipboard", label: i18n.tr("Paste"), hint: "Ctrl+V", enabled: !readOnly && canPaste, action: act(() => field.paste()) },
+            { glyph: "backspace", label: i18n.tr("Delete"), enabled: !readOnly && sel, action: act(() => field.remove(field.selectionStart, field.selectionEnd)) },
             { separator: true },
-            { glyph: "select-all", label: "Označiť všetko", hint: "Ctrl+A", enabled: text.length > 0, action: act(() => field.selectAll()) }
+            { glyph: "select-all", label: i18n.tr("Select all"), hint: "Ctrl+A", enabled: text.length > 0, action: act(() => field.selectAll()) }
         ]);
     }
 

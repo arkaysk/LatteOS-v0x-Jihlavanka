@@ -13,7 +13,7 @@ Rectangle {
     signal crumbClicked(string path)
     property bool canBack: false
     property bool canForward: false
-    property string searchPlaceholder: "Hľadať"
+    property string searchPlaceholder: i18n.tr("Search")
     property bool netVisible: true         // aplikácia môže NET úplne skryť (napr. editor bez siete)
     property bool netUsed: false           // NET sa ukáže, až keď aplikácia naozaj otvorí sieťové spojenie
     property bool netOn: true
@@ -71,8 +71,8 @@ Rectangle {
             Row {
                 id: navRow
                 anchors.centerIn: parent
-                IconButton { visible: hb.canBack; theme: hb.theme; glyph: "chevron-left"; tip: "Späť (Alt+←)"; onClicked: hb.back() }
-                IconButton { visible: hb.canForward; theme: hb.theme; glyph: "chevron-right"; tip: "Dopredu (Alt+→)"; onClicked: hb.forward() }
+                IconButton { visible: hb.canBack; theme: hb.theme; glyph: "chevron-left"; tip: i18n.tr("Back (Alt+←)"); onClicked: hb.back() }
+                IconButton { visible: hb.canForward; theme: hb.theme; glyph: "chevron-right"; tip: i18n.tr("Forward (Alt+→)"); onClicked: hb.forward() }
             }
         }
         Shortcut { sequence: "Alt+Left"; enabled: hb.canBack; onActivated: hb.back() }
@@ -189,9 +189,9 @@ Rectangle {
                 Text { anchors.centerIn: parent; text: wb.icon; color: wb.bg === hb.theme.error ? "white" : hb.theme.fgOnPrimary; font { family: hb.theme.fontUi; pixelSize: 12; weight: Font.Bold } }
                 MouseArea { id: wm; anchors.fill: parent; hoverEnabled: true; onClicked: wb.clicked() }
             }
-            WinBtn { icon: "–"; bg: hb.theme.primary; tip: "Minimalizovať"; onClicked: hb.winAction("latte.win.minimize()") }
-            WinBtn { icon: "□"; bg: hb.theme.primary; tip: "Zväčšiť"; onClicked: hb.winAction("latte.win.maximize()") }
-            WinBtn { icon: "✕"; bg: hb.theme.error; tip: "Zavrieť"; onClicked: hb.closeRequested() }
+            WinBtn { icon: "–"; bg: hb.theme.primary; tip: i18n.tr("Minimize"); onClicked: hb.winAction("latte.win.minimize()") }
+            WinBtn { icon: "□"; bg: hb.theme.primary; tip: i18n.tr("Enlarge"); onClicked: hb.winAction("latte.win.maximize()") }
+            WinBtn { icon: "✕"; bg: hb.theme.error; tip: i18n.tr("Close"); onClicked: hb.closeRequested() }
         }
     }
     Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 2; color: hb.theme.primary; opacity: 0.55 }

@@ -11,6 +11,7 @@ import "common"
 ShellRoot {
     id: app
     LatteTheme { id: theme }
+    I18n { id: i18n }
     readonly property string arg: (Quickshell.env("LATTE_APP_ARGS") || "").trim()
     Process { id: det }
 
@@ -31,7 +32,7 @@ ShellRoot {
                 id: header
                 theme: theme
                 anchors { left: parent.left; right: parent.right; top: parent.top }
-                title: dmv.tab === "siete" ? "Siete" : (dmv.curGroup ? dmv.curGroup.title : "Správca zariadení")
+                title: dmv.tab === "siete" ? i18n.tr("Networks") : (dmv.curGroup ? dmv.curGroup.title : i18n.tr("Device Manager"))
                 canBack: dmv.group !== ""
                 onBack: dmv.group = ""
                 netVisible: false

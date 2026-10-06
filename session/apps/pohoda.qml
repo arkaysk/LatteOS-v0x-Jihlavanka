@@ -1,3 +1,4 @@
+import "common"   // musí byť nad úvodným komentárom: Quickshell číta importy iba po prvý riadok so zloženou zátvorkou
 // LatteOS — Digitálna pohoda: koľko času trávim v ktorej aplikácii (zadanie 24. 9. večer; nápad z videa
 // „Hyprland as fluid as it gets“ / serpantinum, rozšírené podľa Pulse — kód je vlastný). Beží skryto na pozadí:
 //   každých 5 s pripočíta čas aktívnemu oknu (trieda okna), ak používateľ nie je nečinný (ext-idle-notify,
@@ -23,6 +24,7 @@ import Quickshell.Wayland
 
 ShellRoot {
     id: ph
+    I18n { id: i18n }
     readonly property string home: Quickshell.env("HOME") || "/"
     readonly property string cfg: (Quickshell.env("XDG_CONFIG_HOME") || (home + "/.config")) + "/latteos"
     readonly property string dir: (Quickshell.env("XDG_DATA_HOME") || (home + "/.local/share")) + "/latteos/pohoda"
