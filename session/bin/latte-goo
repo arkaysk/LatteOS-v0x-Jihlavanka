@@ -25,6 +25,12 @@ Logika scény beží v pieskovisku pleamar (bez súborov a bez sh) — všetko, 
                                   {"miesto", "teraz": {t, kod}, "hodiny": [{hm, t, kod}], "dni": [{den 0…6 (0 = pondelok),
                                   max, min, kod, zrazky %}]}; v pamäti 20 minút
   latte-goo ikony MENO…           mená ikon Tabler → znaky písma ({meno: znak}), podľa Noctalie
+  latte-goo ucet                  prihlásený účet pre kartu GooPower: {"meno", "login", "pocitac", "obrazok" (portrét:
+                                  ~/.face, obrázok prihlasovania LatteOS alebo AccountsService), "od" (prihlásený od HH:MM)}
+  latte-goo profil                profil napájania (powerprofilesctl / tuned-ppd): {"aktivny", "dostupne": [...]},
+                                  {} keď ho systém nemá
+  latte-goo profil-nastav MENO    power-saver | balanced | performance
+  latte-goo pas [on|off]          pás výkonu GooPower zapnutý pri prihlásení (bez argumentu vypíše on/off)
   latte-goo kava                  pomer vody a mlieka podľa Baristu (~/.config/latteos/kava): [voda, mlieko]
   latte-goo rezim                 režim okien (plavajuce | dlazdice | paska) z ~/.local/state/latteos/window-mode
   latte-goo okna                  viditeľné okná na aktuálnej ploche zameraného monitora (obdĺžniky voči monitoru):
@@ -373,6 +379,41 @@ def visible_windows():
     return {"w": 0, "h": 0, "okna": []}
 
 
+def ucet():
+    """prihlásený účet: meno (GECOS), login, počítač, portrét a odkedy je prihlásený"""
+    import pwd, socket
+    login = os.environ.get("USER") or pwd.getpwuid(os.getuid()).pw_name
+    try:
+        meno = pwd.getpwnam(login).pw_gecos.split(",")[0].strip()
+    except KeyError:
+        meno = ""
+    obr = next((p for p in (os.path.join(HOME, ".face"), "/var/lib/latteos/greeter/avatars/%s.png" % login,
+                            "/var/lib/AccountsService/icons/" + login) if os.path.isfile(p) and os.path.getsize(p) > 0), "")
+    od = ""
+    try:                                                 # začiatok relácie: systemd-logind
+        sid = os.environ.get("XDG_SESSION_ID", "")
+        if sid:
+            t = subprocess.run(["loginctl", "show-session", sid, "-p", "Timestamp", "--value"], capture_output=True, text=True, timeout=2).stdout
+            m = re.search(r"(\d{1,2}:\d{2}):\d{2}", t)
+            od = m.group(1) if m else ""
+    except (OSError, subprocess.TimeoutExpired):
+        pass
+    return {"meno": meno or login, "login": login, "pocitac": socket.gethostname().split(".")[0], "obrazok": obr, "od": od}
+
+
+def profil(nastav=None):
+    """profil napájania cez powerprofilesctl (power-profiles-daemon alebo tuned-ppd na Fedore)"""
+    try:
+        if nastav:
+            subprocess.run(["powerprofilesctl", "set", nastav], capture_output=True, timeout=5)
+        akt = subprocess.run(["powerprofilesctl", "get"], capture_output=True, text=True, timeout=3).stdout.strip()
+        zoz = subprocess.run(["powerprofilesctl", "list"], capture_output=True, text=True, timeout=3).stdout
+    except (OSError, subprocess.TimeoutExpired):
+        return {}
+    dost = [m.group(1) for m in re.finditer(r"^\s*\*?\s*([a-z-]+):\s*$", zoz, re.M)]
+    return {"aktivny": akt, "dostupne": dost} if akt else {}
+
+
 def main(a):
     c = a[0] if a else ""
     if c == "zoznam":
@@ -505,6 +546,22 @@ def main(a):
         except OSError:
             name = "espresso"
         print(json.dumps(list(KAVY.get(name, KAVY["espresso"])))); return 0
+    if c == "ucet":
+        print(json.dumps(ucet(), ensure_ascii=False)); return 0
+    if c in ("profil", "profil-nastav"):
+        if c == "profil-nastav" and (len(a) != 2 or a[1] not in ("power-saver", "balanced", "performance")):
+            print("profil-nastav: power-saver | balanced | performance", file=sys.stderr); return 1
+        print(json.dumps(profil(a[1] if c == "profil-nastav" else None))); return 0
+    if c == "pas":
+        f = os.path.join(os.path.dirname(STATE), "pas")
+        if len(a) == 2 and a[1] in ("on", "off"):
+            os.makedirs(os.path.dirname(f), exist_ok=True)
+            open(f, "w").write(a[1] + "\n")
+        try:
+            print(open(f).read().strip() or "off")
+        except OSError:
+            print("off")
+        return 0
     if c == "ikony":
         print(json.dumps(glyphs(a[1:]), ensure_ascii=False)); return 0
     print(__doc__.strip(), file=sys.stderr)

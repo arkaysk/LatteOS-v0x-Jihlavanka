@@ -1,91 +1,21 @@
 -- ClockGoo (čas, kalendár, upozornenia a pohoda, LATTEOS-GOO.md „Nová architektúra“ §2): voliteľná kvapka, ktorá
 -- spája čas a centrum upozornení (predtým TimeGoo a DaNoGoo). V kvapke veľký čas a dátum; guľky počtu upozornení —
 -- systémové/kritické červeno-kávové, ostatné žlté (do 4, nad 4 s počtom); nové upozornenie zvlní hladinu.
--- Ľavý klik = HROZNO UPOZORNENÍ: kvapka sa vymrští od okraja a nechá za sebou visieť kapsuly na lepkavom vlákne
--- (najnovšie hore, najviac 8). Bobuľa: ľavý = otvoriť, pravý = akcie (ak má), odtiahnutie = zahodiť. Zavrie ho klik
--- na kvapku alebo mimo. Kritické a systémové majú červené jadro.
+-- Ľavý klik = UPOZORNENIA A KALENDÁR (používateľ 6. 10.: „upozornenia a kalendárová sekcia vrátane napojených
+-- programov, pekne estetický a ergonomický“; ako centrum upozornení vo Windows 11): karta v dvoch stĺpcoch —
+--   vľavo upozornenia (ikona aplikácie, nadpis, telo; klik otvorí, pravý klik akcie a Zahodiť), Nerušiť, Vymazať
+--   všetko, Nastavenia oznámení; vpravo mesiac (koliesko a šípky), udalosti a úlohy vybraného dňa, nová udalosť
+--   do poľa, prepojené kalendáre (Google, iCloud, CalDAV — Noctalia).
 -- Pravý klik = KARTA ČASU (lib/cas.luau, údaje spoločné s plochou Kvapky): Prehľad (dátum, týždeň, najbližší budík,
--- digitálna pohoda, svetové hodiny) · Stopky (medzičasy) · Minútka (koliesko nastaví dĺžku) · Budíky. Minútka
--- a budíky zvonia, aj keď je karta zatvorená; bežiaca minútka alebo stopky sa ukazujú v kvapke namiesto dátumu.
--- Kalendár s udalosťami a počasie v karte ešte nie sú (sú v scéne plochy Kvapky). Upozornenia prijíma pleamar —
--- iba jeden proces.
+-- digitálna pohoda, svetové hodiny) · Stopky (medzičasy) · Minútka (koliesko nastaví dĺžku) · Budíky · Počasie.
+-- Minútka a budíky zvonia, aj keď je karta zatvorená; bežiaca minútka alebo stopky sa ukazujú v kvapke namiesto dátumu.
+-- Upozornenia prijíma pleamar — iba jeden proces. (Hrozno upozornení na lepkavom vlákne bolo na ľavom klike do 6. 10.)
 local E = require("lib/engine")
 local cas = require("lib/cas")
 local DNI = { "ne", "po", "ut", "st", "št", "pi", "so" }
 local notes, seen = {}, {}
--- hrozno: polomer bobule, polovica rovnej časti kapsuly, rozostup a výška prvej nad okrajom (nad hlavou GooBaru)
-local R, KW, STEP, Y0, MAX = 19, 118, 46, 96, 8
-local open, shown = false, {}
-
-local function close(d)
-    if not open then return end
-    open = false
-    for id in pairs(shown) do E.remove(id) end
-    shown = {}
-    fact.hr_open = false
-    if d.yRest then d.y, d.yRest = d.yRest, nil end
-    d:stlac()
-    E.publish()
-end
-
-local function hang(d)
-    local edge = d.edge or 0
-    local n = math.min(#notes, MAX)
-    if n == 0 or edge % 2 == 1 then close(d) return false end       -- na bočnom okraji hrozno nie je (ponuka)
-    local len, sh = E.len(d), tonumber(fact.sh) or 1080
-    -- kapsuly sa musia zmestiť na obrazovku a nesmú do rohovej lišty Noctalie
-    local hi = math.min(len - 10, E.hiAlong(d) + d.v.velkost * d.z)
-    local ax = math.max(KW + R + 10, math.min(E.along(d), hi - KW - R))
-    local keep = {}
-    for i = 1, n do
-        local x = notes[i]                                            -- služba ich dáva od najnovšieho
-        local id = "nt:" .. tostring(x.id)
-        local crit = (x.urgency or 1) >= 2
-        local body = tostring(x.body or ""):gsub("%s+", " ")
-        local acts = type(x.actions) == "table" and x.actions or {}
-        keep[id] = true
-        local c = E.upsert({
-            id = id, nazov = x.app or "", velkost = R, kw = KW, visi = true, okraj = edge,
-            poloha = { x = ax / len, y = Y0 + (n - i) * STEP },
-            gravitacia = 0, vznos = 0, dosah = 1, rast = 0.04, svetlo = 0.3, mlaka = 0, zliatie = 0.6,
-            ikona = crit and "alert-triangle" or "bell", obr = (x.icon or "") ~= "" and x.icon or nil,
-            text = ((x.app or "") ~= "" and x.app .. " · " or "") .. (x.title or ""), t2 = body,
-            klik = function()
-                pcall(sys.call, "notifications.invoke", x.id, "default")
-                pcall(sys.call, "notifications.dismiss", x.id)
-            end,
-            pravy = #acts > 0 and function()
-                local items = {}
-                for _, a in ipairs(acts) do
-                    items[#items + 1] = { label = a.label or a.key or "", glyph = "chevron-right", run = function()
-                        pcall(sys.call, "notifications.invoke", x.id, a.key)
-                        pcall(sys.call, "notifications.dismiss", x.id)
-                    end }
-                end
-                items[#items + 1] = { label = tr("Dismiss"), glyph = "x", sep = true, run = function() pcall(sys.call, "notifications.dismiss", x.id) end }
-                E.menu(items, 260)
-            end or nil,
-            -- odtiahnutá preč = zahodená; inak sa vráti na vlákno
-            pustenie = function(c, X, Y)
-                local cy = edge == 0 and (sh - 6 - c.y) or (6 + c.y)
-                if math.abs(X - ax) > KW + 60 or math.abs(Y - cy) > 70 then pcall(sys.call, "notifications.dismiss", x.id) end
-                return false
-            end,
-        })
-        if c then if crit then c:jadro("hardver", 0.75, false) else c:jadro() end end
-    end
-    for id in pairs(shown) do if not keep[id] then E.remove(id) end end
-    shown = keep
-    -- kvapka nad hroznom, lepkavé vlákno od okraja k nej
-    if not d.yRest then d.yRest = d.y end
-    d.y = Y0 + n * STEP + 14
-    fact.vlx = E.along(d)
-    fact.vly0 = edge == 0 and sh - 6 or 6
-    fact.vly1 = edge == 0 and sh - 6 - d.y or 6 + d.y
-    fact.hr_open = true
-    E.publish()
-    return true
-end
+local MAX = 5                         -- upozornení v karte (ďalšie: „+N ďalších“)
+local dnd = false                     -- Nerušiť (Noctalia)
 
 local function paint(d)
     local crit, n = 0, #notes
@@ -100,8 +30,9 @@ local tab = 0
 local card
 local function chips(d)
     local function t(i, glyph, label) return { glyph = glyph, label = tr(label), on = tab == i, run = function() tab = i card(d, true) end } end
+    -- (kalendár je od 6. 10. na ľavom klike spolu s upozorneniami)
     return { t(0, "layout-dashboard", "Overview"), t(1, "stopwatch", "Stopwatch"), t(2, "hourglass", "Timer"), t(3, "alarm", "Alarms"),
-             t(4, "calendar-month", "Calendar"), t(5, "cloud", "Weather") }
+             t(5, "cloud", "Weather") }
 end
 local function overview(d)
     local t = os.date("*t")
@@ -131,11 +62,7 @@ local function overview(d)
     for i, z in ipairs(cas.pasma or {}) do
         items[#items + 1] = { info = true, sep = i == 1, glyph = "world", label = z.mesto or "", hint = (z.hm or "") .. ((z.rozdiel or "") ~= "" and "  ·  " .. z.rozdiel or "") }
     end
-    if #notes > 0 then
-        items[#items + 1] = { sep = true, danger = true, glyph = "trash", label = tr("Clear all") .. " (" .. #notes .. " " .. tr("notifications") .. ")",
-                              run = function() pcall(sys.call, "notifications.clear") end }
-    end
-    items[#items + 1] = { sep = #notes == 0, glyph = "settings", label = tr("Date and time settings"), run = function() run("latte-app", { "nastavenia", "cas" }) end }
+    items[#items + 1] = { sep = true, glyph = "settings", label = tr("Date and time settings"), run = function() run("latte-app", { "nastavenia", "cas" }) end }
     return items
 end
 local function stopwatch(d)
@@ -234,35 +161,41 @@ local function save_events()
     run("latte-kvapky", { "uloz", "udalosti", json.encode(K.events) }, nil, { output = false })
 end
 local function save_todos() run("latte-kvapky", { "uloz", "ulohy", json.encode(K.todos) }, nil, { output = false }) end
+-- ── UPOZORNENIA A KALENDÁR (ľavý klik): karta v dvoch stĺpcoch ──────────────────────────────────────────────
+local ncard
+-- pravý stĺpec: mesiac, udalosti a úlohy vybraného dňa, nová udalosť, prepojené kalendáre (na výšku 1024 × 768)
 local function calendar(d)
     cal_paint()
     local now = os.date("*t")
     local y, m, dd = K.sel:match("(%d+)-(%d+)-(%d+)")
     local st = os.date("*t", os.time({ year = tonumber(y), month = tonumber(m), day = tonumber(dd), hour = 12 }))
     local items = {
-        { grid = true },
-        { info = true, sep = true, glyph = "calendar", label = (K.sel == iso(now) and (tr("Today") .. " · ") or "") .. tr(DNI_PLNE[st.wday]) .. " " .. tonumber(dd) .. ". " .. tonumber(m) .. "." },
+        { col = 2, grid = true },
+        { col = 2, info = true, glyph = "calendar", label = (K.sel == iso(now) and (tr("Today") .. " · ") or "") .. tr(DNI_PLNE[st.wday]) .. " " .. tonumber(dd) .. ". " .. tonumber(m) .. "." },
     }
     local evs = {}
     for i, e in ipairs(K.events) do if e.date == K.sel then evs[#evs + 1] = { i = i, e = e } end end
     table.sort(evs, function(a, b) return (a.e.time or "") < (b.e.time or "") end)
     for n, it in ipairs(evs) do
-        if n > 4 then break end
+        if n > 2 then
+            items[#items + 1] = { col = 2, info = true, glyph = "dots", label = "+" .. (#evs - 2) .. " " .. tr("more") }
+            break
+        end
         -- (riadok s podponukou nemá miesto na údaj vpravo: čas je pred názvom)
-        items[#items + 1] = { glyph = "calendar-event", label = ((it.e.time or "") ~= "" and it.e.time or tr("All day")) .. "  " .. (it.e.title or ""),
-                              sub = { { danger = true, glyph = "trash", label = tr("Delete event"), run = function() table.remove(K.events, it.i) save_events() card(d) end } } }
+        items[#items + 1] = { col = 2, glyph = "calendar-event", label = ((it.e.time or "") ~= "" and it.e.time or tr("All day")) .. "  " .. (it.e.title or ""),
+                              sub = { { danger = true, glyph = "trash", label = tr("Delete event"), run = function() table.remove(K.events, it.i) save_events() ncard(d) end } } }
     end
     local n = 0
     for pass = 1, 2 do                                                  -- najprv nedokončené, potom hotové
         for i, t in ipairs(K.todos) do
-            if n < 4 and ((t.date or "") == "" or t.date == K.sel) and (t.done == true) == (pass == 2) then
+            if n < 2 and ((t.date or "") == "" or t.date == K.sel) and (t.done == true) == (pass == 2) then
                 n = n + 1
-                items[#items + 1] = { keep = true, glyph = "square", on = t.done == true, label = t.title or "",
-                                      run = function() t.done = not t.done save_todos() card(d, true) end }
+                items[#items + 1] = { col = 2, keep = true, glyph = "square", on = t.done == true, label = t.title or "",
+                                      run = function() t.done = not t.done save_todos() ncard(d, true) end }
             end
         end
     end
-    items[#items + 1] = { input = true, glyph = "plus", label = tr("New event… 10:30 Meeting · ! task"), submit = function(v)
+    items[#items + 1] = { col = 2, input = true, glyph = "plus", label = tr("New event… 10:30 Meeting · ! task"), submit = function(v)
         if v:sub(1, 1) == "!" then
             local title = v:sub(2):gsub("^%s+", "")
             if title ~= "" then K.todos[#K.todos + 1] = { title = title, done = false, date = K.sel } save_todos() end
@@ -275,9 +208,74 @@ local function calendar(d)
             end
             save_events()
         end
-        card(d, true)
+        ncard(d, true)
     end }
+    -- napojené programy: kalendárové účty (Google, iCloud, CalDAV, ICS) spravuje Noctalia
+    items[#items + 1] = { col = 2, sep = true, glyph = "link", label = tr("Linked calendars"), hint = "Google · iCloud · CalDAV",
+                          run = function() run("noctalia", { "msg", "settings-open" }) end }
     return items
+end
+-- ľavý stĺpec: upozornenia (najnovšie hore), Nerušiť, Vymazať všetko, Nastavenia oznámení
+local function notifications(d)
+    local items = { { hd = true, label = tr("NOTIFICATIONS"), hint = #notes > 0 and tostring(#notes) or "" } }
+    if #notes == 0 then
+        items[#items + 1] = { info = true, glyph = "bell-off", label = tr("No notifications"), t2 = tr("New ones appear here and ripple the edge") }
+    end
+    for i, x in ipairs(notes) do                                        -- služba ich dáva od najnovšieho
+        if i > MAX then
+            items[#items + 1] = { info = true, glyph = "dots", label = "+" .. (#notes - MAX) .. " " .. tr("more") }
+            break
+        end
+        local crit = (x.urgency or 1) >= 2
+        local body = tostring(x.body or ""):gsub("%s+", " ")
+        local acts = type(x.actions) == "table" and x.actions or {}
+        local icon = (x.icon or "") ~= "" and x.icon or nil
+        items[#items + 1] = {
+            img = icon, glyph = crit and "alert-triangle" or "bell", danger = crit,
+            label = (x.title or "") ~= "" and x.title or (x.app or ""),
+            t2 = ((x.app or "") ~= "" and (x.title or "") ~= "" and (x.app .. " · ") or "") .. body,
+            run = function()
+                pcall(sys.call, "notifications.invoke", x.id, "default")
+                pcall(sys.call, "notifications.dismiss", x.id)
+            end,
+            -- pravý klik: akcie upozornenia (ak má) a Zahodiť; Späť vráti celú kartu
+            right = function()
+                local kids = { { label = tr("Back"), glyph = "chevron-left", back = nil } }
+                for _, a in ipairs(acts) do
+                    kids[#kids + 1] = { label = a.label or a.key or "", glyph = "chevron-right", sep = #kids == 1, run = function()
+                        pcall(sys.call, "notifications.invoke", x.id, a.key)
+                        pcall(sys.call, "notifications.dismiss", x.id)
+                    end }
+                end
+                kids[#kids + 1] = { label = tr("Dismiss"), glyph = "x", sep = true, run = function() pcall(sys.call, "notifications.dismiss", x.id) end }
+                kids[1].run, kids[1].keep = function() ncard(d) end, true
+                E.menu(kids, 300, { owner = d })
+            end,
+        }
+    end
+    local row = { { glyph = dnd and "bell-off" or "bell", label = tr("Do not disturb"), on = dnd, keep = true, run = function()
+        dnd = not dnd
+        ncard(d, true)
+        run("noctalia", { "msg", "notification-dnd-toggle" }, nil, { output = false })
+    end } }
+    if #notes > 0 then
+        row[2] = { glyph = "trash", label = tr("Clear all"), danger = true, keep = true, run = function() pcall(sys.call, "notifications.clear") end }
+    end
+    items[#items + 1] = { sep = true, pills = row }
+    items[#items + 1] = { glyph = "settings", label = tr("Notification settings"), run = function() run("latte-app", { "nastavenia", "oznamenia" }) end }
+    return items
+end
+ncard = function(d, keep)
+    local items = notifications(d)
+    for _, it in ipairs(calendar(d)) do items[#items + 1] = it end
+    E.menu(items, 620, { id = "notes", cols = { 300, 320 }, keep = keep, owner = d })
+    if not keep then
+        cal_load(function() if E.menuId() == "notes" then ncard(d, true) end end)
+        run("noctalia", { "msg", "notification-dnd-status" }, function(out)
+            local on = (out or ""):lower():match("true") ~= nil or (out or ""):lower():match("on") ~= nil
+            if on ~= dnd then dnd = on if E.menuId() == "notes" then ncard(d, true) end end
+        end)
+    end
 end
 
 -- ── počasie (záložka 5): Open-Meteo cez `latte-goo pocasie`, ikony ako v Kvapkách ────────────────────────────
@@ -329,13 +327,12 @@ card = function(d, keep)
     end
 end
 build = function(d, keep)
-    local items = (tab == 1 and stopwatch or tab == 2 and timer or tab == 3 and alarms or tab == 4 and calendar or tab == 5 and weather or overview)(d)
+    local items = (tab == 1 and stopwatch or tab == 2 and timer or tab == 3 and alarms or tab == 5 and weather or overview)(d)
     -- pevná výška (horná hrana pri prepínaní záložiek neskáče); ucho = kvapka ClockGoo v rohu karty
-    E.menu(items, 384, { id = "clock", chips = chips(d), keep = keep, owner = d, height = 690 })
+    E.menu(items, 400, { id = "clock", chips = chips(d), keep = keep, owner = d, height = 690 })
     if not keep then                                                    -- čerstvé údaje pri otvorení
         local function again() if E.menuId() == "clock" then card(d, true) end end
         cas.load(again)
-        cal_load(again)
         wx_load(again)
     end
 end
@@ -361,11 +358,10 @@ return {
             for _, x in ipairs(notes) do if not seen[x.id] then seen[x.id] = true fresh = true end end
             if fresh then d:vlnka(5) end
             paint(d)
-            if open then hang(d) end                                  -- otvorené hrozno sleduje zoznam
+            if E.menuId() == "notes" then ncard(d, true) end          -- otvorená karta sleduje zoznam
         end)
         -- upozornenia neexpirujú samy (kvapka je centrum upozornení, ako v Kvapkách)
         if ok then pcall(sys.call, "notifications.keep", true) end
-        on("hr_close", function() close(d) end)
         -- čas: údaje, stráženie minútky a budíkov, živá karta (stopky a minútka 5× za sekundu, prehľad raz)
         cas.load()
         cal_load()
@@ -376,11 +372,11 @@ return {
             K.sel = day
             local y, m = day:match("(%d+)-(%d+)")
             K.y, K.m = tonumber(y), tonumber(m)
-            card(d, true)
+            ncard(d, true)
         end, function(dir)
             K.m = (K.m or os.date("*t").month) + dir
             if K.m < 1 then K.m = 12 K.y = K.y - 1 elseif K.m > 12 then K.m = 1 K.y = K.y + 1 end
-            card(d, true)
+            ncard(d, true)
         end)
         -- počasie: teplota vedľa dátumu v kvapke, nová predpoveď raz za 20 minút
         local function temp() wx_load(function() if wx and d.datum and not d.alt then d:text(d.datum .. "  " .. wx.teraz.t .. "°") end end) end
@@ -402,31 +398,17 @@ return {
             elseif d.alt then d.alt = false d.v.text = (d.datum or "") .. (wx and "  " .. wx.teraz.t .. "°" or "") E.publish() end
         end)
     end,
+    -- ľavý klik: upozornenia a kalendár; znova klik kartu zavrie
     klik = function(d)
-        if open then close(d) return end
-        if E.menuId() == "clock" then fact.ctx_open = false E.menuRelease() end      -- karta preč, potom hrozno
-        if #notes == 0 then d:bublina(tr("No notifications")) return end
-        open = true
-        if hang(d) then d:poskoc() return end
-        -- bočný okraj: zoznam v ponuke Goo
-        open = false
-        local items = {}
-        for i, x in ipairs(notes) do                            -- služba ich dáva od najnovšieho: najnovšie hore
-            if i > MAX then break end
-            items[#items + 1] = { label = (x.app or "") .. ": " .. (x.title or ""), glyph = (x.urgency or 1) >= 2 and "alert-triangle" or "bell",
-                                  run = function() pcall(sys.call, "notifications.invoke", x.id, "default") end }
-        end
-        items[#items + 1] = { label = tr("Clear all") .. " (" .. #notes .. ")", glyph = "trash", sep = true, danger = true,
-                              run = function() pcall(sys.call, "notifications.clear") end }
-        E.menu(items, 340)
+        if E.menuId() == "notes" then fact.ctx_open = false return end
+        ncard(d)
     end,
-    -- počas otvoreného hrozna sa kvapka neťahá inam (ostane nad ním)
-    pustenie = function(d) if open then return false end end,
+    -- pravý klik: karta času (koliesko nad kvapkou mení veľkosť — spoločné pravidlo)
     pravy = function(d)
-        if open then close(d) end                                       -- hrozno a karta naraz nie
+        if E.menuId() == "clock" then fact.ctx_open = false return end
         card(d)
     end,
     popis = function(d)
-        return (#notes > 0 and (#notes .. " " .. tr("notifications") .. " · ") or "") .. tr("left: notifications · right: time and calendar")
+        return (#notes > 0 and (#notes .. " " .. tr("notifications") .. " · ") or "") .. tr("left: notifications and calendar · right: time, timer, alarms, weather")
     end,
 }

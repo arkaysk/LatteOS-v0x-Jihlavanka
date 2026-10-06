@@ -14,7 +14,10 @@
 --   velkost    polomer (px)   (farbu nemá: kvapky sú vždy káva podľa Baristu — pravidlo 6)
 --   gravitacia 0…1 (kurzor iba priťahuje)   dosah px   vznos 0…1 (nadnesenie pri priblížení kurzora)
 --   lepivost 0…1   trhanie px   svetlo 0…1   rast (nafúknutie nad kvapkou)   tahat (bool)
---   hmotnost 0…1 (po pustení padne na lištu)   zoom (bool: koliesko mení veľkosť, ak nemá vlastný háčik)
+--   hmotnost 0…1 (po pustení padne na lištu)   zoom (bool, predvolene áno: koliesko mení veľkosť, ak kvapka nemá
+--              vlastný háčik — „zväčšovať sa dajú všetky“, používateľ 6. 10.; okná GooBaru nie)
+--   kw, kd     kapsula: polovica rovnej časti (px) a smer, kam rastie pozdĺž okraja (0 obe strany, −1 / +1 jedna —
+--              pás výkonu GooPower); pravidlo 22 ráta s celou dĺžkou   fix (bool: nesadá si v pokoji)
 --   efekt      "dych" "kmit" "tras" "obeh" "tlkot" (+ sila 0…2); rezerva: čísla 6–9 a kanály e1…e4
 --   druh       "ikona" | "ukazovatel" (prstenec podľa hodnota 0…1)
 --   poloha     { x = 0…1 šírky, y = px nad lištou }   (inak sa kvapky radia zľava po lište)
@@ -50,7 +53,7 @@ E.POVAHY = {
     hrava   = { gravitacia = 0.4, dosah = 240, efekt = "kmit", sila = 0.8, hrava = true },
 }
 local PREDVOLENE = { velkost = 26, gravitacia = 0.3, dosah = 220, vznos = 1, lepivost = 0, trhanie = 90, svetlo = 0.5,
-                     rast = 0.08, tahat = true, hmotnost = 0, efekt = "nic", sila = 1, druh = "ikona", zoom = false }
+                     rast = 0.08, tahat = true, hmotnost = 0, efekt = "nic", sila = 1, druh = "ikona", zoom = true }
 local ZOOM_MIN, ZOOM_MAX = 0.5, 2.2        -- veľkosť 50–220 % (používateľ 5. 10.: vyfúknutá môže byť polovičná);
                                            -- s veľkosťou rastie aj ikona a text, pod 80 % ukáže goo menej detailov
 
@@ -122,6 +125,7 @@ local function record(d)
         gn = d.gn or 0, gf = d.gf or 0, gt = d.gt or "", sk = num(v.sk, 0), zl = num(v.zliatie, 1), ml = num(v.mlaka, 1),
         ed = d.edge or 0, nad = v.koruna and (glyphs[v.koruna] or "") or "",
         kw = num(v.kw, 0), t2 = v.t2 or "", kr = (v.t2 or "") ~= "" and 2 or 1,
+        kd = num(v.kd, 0), fix = v.fix == true,
     }
 end
 
@@ -168,6 +172,11 @@ local MIN_GAP = 0.95        -- stredy aspoň 0,95 súčtu polomerov: dotýkajú 
 local GAP_IKRY = 1.2        -- cudzia kvapka pri ikrách okien: mimo dosahu zliatia (ikry sa lepia iba ku Goobaru)
 local sepDirty, sepPrefer = false, nil
 local function movable(d) return not d.def.pri and d.zdroj ~= "dyn" and not d.dragging end
+-- kapsula (pás výkonu GooPower): jej stred leží mimo stredu kvapky (kd = smer) a pozdĺž okraja siaha o kw ďalej —
+-- susedia sa odsunú od CELEJ kapsuly (používateľ 6. 10.: „keď sa zväčší na kapsulu, okolné goo odtlačí od seba“)
+local function capOff(d) return num(d.v.kw, 0) * num(d.v.kd, 0) end
+local function reach(d) return d.v.velkost * d.z + num(d.v.kw, 0) end
+E.capOff = capOff
 local function separate()
     local sw = num(fact.sw, 0)
     if sw <= 0 then sw = 1920 end
@@ -192,9 +201,9 @@ local function separate()
                 local ikra = sa == 1 or sb == 1
                 if (a.edge or 0) == (b.edge or 0) and not (ikra and (sa == sb or sa == 2 or sb == 2)) then
                     local sw = elen(a)
-                    local ax, ay = along(a), a.y
-                    local bx, by = along(b), b.y
-                    local need = (ikra and GAP_IKRY or MIN_GAP) * (a.v.velkost * a.z + b.v.velkost * b.z)
+                    local ax, ay = along(a) + capOff(a), a.y
+                    local bx, by = along(b) + capOff(b), b.y
+                    local need = (ikra and GAP_IKRY or MIN_GAP) * (reach(a) + reach(b))
                     local dx, dy = bx - ax, by - ay
                     local dist = math.sqrt(dx * dx + dy * dy)
                     if dist < need - 0.5 then
@@ -203,19 +212,19 @@ local function separate()
                         if movable(b) and (b ~= sepPrefer or not movable(a)) then mv, other = b, a
                         elseif movable(a) then mv, other = a, b end
                         if mv then
-                            local ox, oy = along(mv), mv.y
-                            local px, py = along(other), other.y
+                            local ox, oy = along(mv) + capOff(mv), mv.y
+                            local px, py = along(other) + capOff(other), other.y
                             local vx, vy = ox - px, oy - py
                             local docked = oy < mv.v.velkost * mv.z * 1.6
                             if docked then vy = 0 end
                             local len = math.sqrt(vx * vx + vy * vy)
                             if len < 0.5 then vx, vy, len = 1, 0, 1 end      -- presne na sebe: doprava
                             local push = need - dist + 2
-                            mv.x = clamp((ox + vx / len * push - (mv.ox or 0)) / sw, 0.02, hiAlong(mv) / sw)
+                            mv.x = clamp((ox + vx / len * push - capOff(mv) - (mv.ox or 0)) / sw, 0.02, hiAlong(mv) / sw)
                             mv.y = math.max(0, oy + vy / len * push)
                             -- pri okraji obrazovky nemá kam: odsunie sa na druhú stranu
                             if (mv.x <= 0.02 or mv.x >= hiAlong(mv) / sw - 0.0005) and docked then
-                                mv.x = clamp((px - vx / len * need - (mv.ox or 0)) / sw, 0.02, 0.98)
+                                mv.x = clamp((px - vx / len * need - capOff(mv) - (mv.ox or 0)) / sw, 0.02, 0.98)
                             end
                             mv.moved = true
                             moved[mv] = true
@@ -298,6 +307,7 @@ save = function()
         run("latte-goo", { "uloz-stav", json.encode(out) }, nil, { output = false })
     end)
 end
+E.save = function() save() end
 
 -- ── metódy kvapky (pre háčiky) ───────────────────────────────────────────────────────────────────────────────
 function Kvapka:nastav(t) for key, val in pairs(t) do self.v[key] = val end publish() end
@@ -496,7 +506,7 @@ local ctx_rows, ctx_selectable, ctx_lastsel = {}, {}, -1
 local key_sel = nil                      -- riadok vybraný šípkami (ovládanie bez myši)
 local wheel_used = 0
 local emit_chip
-local CTX_MAX = 16
+local CTX_MAX = 24                       -- = model ctx max v scéne
 -- ktorá karta je práve otvorená (opts.id), aby ju jej majiteľ mohol obnovovať a neprepísal cudziu ponuku
 function E.menuId() return fact.ctx_open and ctx_id or nil end
 -- kvapka-ucho sa vráti na okraj (karta sa zavrela): padne späť a ponorí sa
@@ -521,6 +531,13 @@ end
 -- kartu nezavrie (prepínač, štart/stop), wheel = funkcia(smer ±1) pre koliesko nad riadkom.
 -- opts.chips = { { label, glyph, on, run } … } záložky hore; opts.keep = obnovenie otvorenej karty (živé údaje:
 -- nemení zvýraznený riadok)
+-- Rozloženie (6. 10.):
+--   t2 = druhý riadok pod názvom (telo upozornenia; riadok je vyšší) · hd = nadpis sekcie (malé tučné, neklikateľný)
+--   pro = profil účtu: img = portrét (cesta), label = meno, t2 = údaje; glyph = náhrada bez portrétu
+--   pills = { položky } — rad tlačidiel vedľa seba (každé ako položka: label, glyph, on = vybrané, danger, run…)
+--   tiles = { položky }, per = koľko v rade — dlaždice aplikácií (img = ikona, label = názov pod ňou)
+--   opts.cols = { šírka1, šírka2 } — karta v dvoch stĺpcoch; položka s col = 2 ide do pravého (mriežka kalendára aj)
+local function est(label) return math.floor((utf8.len(label or "") or #(label or "")) * 7.4) end   -- šírka názvu tlačidla (Inter 14, 600)
 function E.menu(items, width, opts)
     opts = opts or {}
     ctx_actions, ctx_wheel, chip_actions, ctx_rights = {}, {}, {}, {}
@@ -541,7 +558,15 @@ function E.menu(items, width, opts)
     -- zadaná (karty boli malé). Najmenšie rozlíšenie 1024 × 768: riadky, ktoré by sa nezmestili, sa nepridajú
     local width0 = width
     width = math.floor((width or 248) * 1.2)
-    local sh = num(fact.sh, 768)
+    -- dva stĺpce: ľavý od 0, pravý od šírky ľavého (opts.cols v tých istých jednotkách ako šírka)
+    local colx, colw = { 0, 0 }, { 0, 0 }
+    if opts.cols then
+        local w1, w2 = math.floor(opts.cols[1] * 1.2), math.floor(opts.cols[2] * 1.2)
+        width = w1 + w2
+        colx, colw = { 0, w1 }, { w1, w2 }
+    end
+    local sh, sw = num(fact.sh, 768), num(fact.sw, 1024)
+    width = math.min(width, sw - 24)
     local maxH = math.max(400, sh - 24)
     -- UCHO (pravidlo 9, ako v ploche Kvapky): kvapka, z ktorej karta rastie, vystúpi od okraja a sedí v jej rohu
     local owner = opts.owner
@@ -564,48 +589,17 @@ function E.menu(items, width, opts)
         fact.ctx_ear = 10
     end
     if not fact.ctx_open then ctx_hmax = 0 end
-    local out, y = {}, (#chips > 0 and 58 or 8)
-    local kal_y, in_y = -1, -1
+    local out = {}
+    local y0 = #chips > 0 and 58 or 8
+    local ys, nin = { y0, y0 }, { 0, 0 }                 -- výška stĺpca a počet riadkov v ňom
+    local kal_y, kal_x, kal_w, in_y, in_m, in_x, in_w = -1, 0, 0, -1, -1, 0, 0
     local selectable = {}
     ctx_input, ctx_change = nil, nil
-    for _, it in ipairs(items) do
-        if #out >= CTX_MAX then break end
-        if it.grid then                                   -- mriežka kalendára (model kal plní majiteľ karty)
-            kal_y = y
-            y = y + 300
-            E.needGlyph("chevron-left") E.needGlyph("chevron-right")
-            text.kal_l, text.kal_r = glyphs["chevron-left"] or "‹", glyphs["chevron-right"] or "›"
-            continue
-        end
-        if it.sep and #out > 0 then y = y + 14 end
-        if it.input then in_y, ctx_input, ctx_change = y, it.submit, it.change end   -- textové pole: názov riadku je nápoveď
-        -- odsek (odpoveď AI): koľko riadkov zaberie, odhadom podľa šírky karty
-        local pl = 1
-        if it.para then
-            local cpl = math.max(20, math.floor((width - 78) / 7.3))
-            pl = 0
-            for line in ((it.label or "") .. "\n"):gmatch("(.-)\n") do pl = pl + math.max(1, math.ceil((utf8.len(line) or #line) / cpl)) end
-            pl = math.min(pl, 14)
-        end
-        E.needGlyph(it.glyph)
-        out[#out + 1] = { label = it.label or "", on = it.on and 1 or 0, off = it.off == true,
-                          glyph = (it.glyph and (glyphs[it.glyph] or (isName(it.glyph) and "" or it.glyph))) or "",
-                          hint = it.hint or "", danger = it.danger == true, sub = it.sub ~= nil or it.back ~= nil,
-                          back = it.back ~= nil, sep = it.sep == true and #out > 0, y = y,
-                          big = it.big == true, bar = num(it.bar, -1), info = it.info == true or (it.para == true and it.run == nil),
-                          img = it.img or "", im = (it.img or "") ~= "", para = it.para == true, pl = pl }
-        y = y + (it.big and 64 or (it.para and pl * 20 + 24 or 44))
-        if y > maxH - 8 then                               -- nezmestí sa na obrazovku: posledný riadok preč, koniec
-            y = out[#out].y
-            out[#out] = nil
-            break
-        end
-        if not it.input and not it.off and not it.info and not (it.para and not it.run) then selectable[#selectable + 1] = #out end
-        if it.right then ctx_rights[#out] = it.right end
-        if it.wheel then ctx_wheel[#out] = it.wheel end
+    -- čo urobí klik na riadok (aj tlačidlo a dlaždicu)
+    local function action(it)
         if it.sub then
             local parent = items
-            ctx_actions[#out] = function()
+            return function()
                 local kids = { { label = tr("Back"), glyph = "chevron-left", back = parent } }
                 for j, c in ipairs(it.sub) do
                     local c2 = {} for kk, vv in pairs(c) do c2[kk] = vv end
@@ -614,16 +608,81 @@ function E.menu(items, width, opts)
                 end
                 -- podponuka nechá záložky, ale stratí meno karty (majiteľ ju neprepíše živým obnovením)
                 local o = {} for kk, vv in pairs(opts) do o[kk] = vv end
-                o.id, o.keep, o.parent = nil, nil, opts
-                E.menu(kids, width0, o)
+                o.id, o.keep, o.parent, o.cols = nil, nil, opts, nil
+                -- z dvojstĺpcovej karty má podponuka šírku svojho stĺpca (Späť vráti oba stĺpce)
+                E.menu(kids, opts.cols and opts.cols[it.col == 2 and 2 or 1] or width0, o)
             end
         elseif it.back then
-            ctx_actions[#out] = function() E.menu(it.back, width0, opts.parent or opts) end
+            return function() E.menu(it.back, width0, opts.parent or opts) end
         elseif it.keep or it.input then
-            ctx_actions[#out] = function() if it.run then it.run() end end
-        else
-            ctx_actions[#out] = function() fact.ctx_open = false if it.run then it.run() end end
+            return function() if it.run then it.run() end end
         end
+        return function() fact.ctx_open = false if it.run then it.run() end end
+    end
+    -- jeden riadok výstupu (x, w: stĺpec alebo tlačidlo v rade; h: výška)
+    local function emit(it, c, y, x, w, h, kind)
+        E.needGlyph(it.glyph)
+        local pl = it.pl or 1
+        out[#out + 1] = { label = it.label or "", on = it.on and 1 or 0, off = it.off == true,
+                          glyph = (it.glyph and (glyphs[it.glyph] or (isName(it.glyph) and "" or it.glyph))) or "",
+                          hint = it.hint or "", danger = it.danger == true, sub = it.sub ~= nil or it.back ~= nil,
+                          back = it.back ~= nil, sep = it.sep == true and nin[c] > 0 and kind ~= "pill" and kind ~= "tile", y = y,
+                          big = it.big == true, bar = num(it.bar, -1), info = it.info == true or (it.para == true and it.run == nil),
+                          img = it.img or "", im = (it.img or "") ~= "", para = it.para == true, pl = pl,
+                          x = x, w = w, h = h, pill = kind == "pill", tile = kind == "tile", pro = it.pro == true, hd = it.hd == true,
+                          t2 = it.t2 or "", lw = kind == "pill" and est(it.label) or 0 }
+        local n = #out
+        if not it.input and not it.off and not it.info and not it.hd and not (it.para and not it.run) then selectable[#selectable + 1] = n end
+        if it.right then ctx_rights[n] = it.right end
+        if it.wheel then ctx_wheel[n] = it.wheel end
+        if it.input then in_y, in_m, in_x, in_w, ctx_input, ctx_change = y, n - 1, x, w, it.submit, it.change end   -- textové pole: názov riadku je nápoveď
+        ctx_actions[n] = action(it)
+    end
+    for _, it in ipairs(items) do
+        if #out >= CTX_MAX then break end
+        local c = (opts.cols and it.col == 2) and 2 or 1
+        local cx, cw = colx[c], colw[c]
+        local y = ys[c]
+        if it.grid then                                   -- mriežka kalendára (model kal plní majiteľ karty)
+            kal_y, kal_x, kal_w = y, cx, cw
+            ys[c] = y + 300
+            nin[c] = nin[c] + 1
+            E.needGlyph("chevron-left") E.needGlyph("chevron-right")
+            text.kal_l, text.kal_r = glyphs["chevron-left"] or "‹", glyphs["chevron-right"] or "›"
+            continue
+        end
+        if it.sep and nin[c] > 0 then y = y + 14 end
+        if it.pills or it.tiles then
+            -- rad tlačidiel alebo dlaždíc: šírka stĺpca (bez okrajov) sa delí rovnako
+            local list = it.pills or it.tiles
+            local per = it.pills and math.max(#list, 1) or (it.per or 4)
+            local h = it.pills and 46 or 88
+            local inner = (cw > 0 and cw or width) - 16
+            local lines = math.ceil(#list / per)
+            if y + h * lines > maxH - 8 then continue end
+            for j, b in ipairs(list) do
+                if #out >= CTX_MAX then break end
+                local col, row = (j - 1) % per, (j - 1) // per
+                emit(b, c, y + row * h, cx + 8 + col * inner / per, inner / per, h, it.pills and "pill" or "tile")
+            end
+            ys[c] = y + h * lines
+            nin[c] = nin[c] + 1                          -- (rad tlačidiel má nad sebou iba medzeru, bez čiary)
+            continue
+        end
+        -- odsek (odpoveď AI): koľko riadkov zaberie, odhadom podľa šírky karty
+        local pl = 1
+        if it.para then
+            local cpl = math.max(20, math.floor(((cw > 0 and cw or width) - 78) / 7.3))
+            pl = 0
+            for line in ((it.label or "") .. "\n"):gmatch("(.-)\n") do pl = pl + math.max(1, math.ceil((utf8.len(line) or #line) / cpl)) end
+            pl = math.min(pl, 14)
+            it.pl = pl
+        end
+        local h = (it.big and 64) or (it.para and pl * 20 + 24) or (it.pro and 84) or (it.hd and 30) or ((it.t2 or "") ~= "" and 54) or 44
+        if y + h > maxH - 8 then continue end            -- nezmestí sa na obrazovku: riadok sa nepridá
+        emit(it, c, y, cx, cw, h, "row")
+        ys[c] = y + h
+        nin[c] = nin[c] + 1
     end
     -- nový obsah (otvorenie, iná záložka): riadky nabehnú postupne
     if not opts.keep or sel ~= ctx_lastsel then fact.ctx_gen = num(fact.ctx_gen, 0) + 1 key_sel = nil end
@@ -633,10 +692,14 @@ function E.menu(items, width, opts)
     model.ctx = out
     model.chip = chips
     if fact.kal_y ~= kal_y then fact.kal_y = kal_y end
+    if fact.kal_x ~= kal_x then fact.kal_x = kal_x end
+    if fact.kal_w ~= kal_w then fact.kal_w = kal_w end
     if fact.ctx_in_y ~= in_y then fact.ctx_in_y = in_y end
+    fact.ctx_in_m, fact.ctx_in_x, fact.ctx_in_w = in_m, in_x, in_w
     fact.ctx_w = width
     -- HORNÁ HRANA NESKÁČE (používateľ 5. 10.): karta so záložkami má pevnú výšku (opts.height), ostatné sa počas
     -- otvorenia iba zväčšujú (podponuka a návrat kartu nezmenšia) — obsah začína vždy v tej istej výške
+    local y = math.max(ys[1], ys[2])
     local h = math.max(y + 8, math.min(num(opts.height, 0), maxH), opts.height and 0 or ctx_hmax)
     ctx_hmax = math.max(ctx_hmax, h)
     fact.ctx_h = math.min(h, maxH)
@@ -675,7 +738,8 @@ on("ctx_key", function(v)
     at = (v or 1) == 1 and (at % #list + 1) or ((at - 2) % #list + 1)
     key_sel = list[at]
     local r = ctx_rows[key_sel]
-    fact.ctx_hy = r.y
+    fact.ctx_hy, fact.ctx_hx, fact.ctx_hw, fact.ctx_hh = r.y, r.x or 0, r.w or 0, r.h or 44
+    fact.ctx_hp = r.pill == true or r.tile == true
     fact.ctx_hd = r.danger == true
     fact.ctx_hot = key_sel - 1
 end)
@@ -763,8 +827,9 @@ on("goo_scroll", function(v)
     local k, up = v // 2, v % 2 == 1
     local d = at(k) if not d then return end
     hud("koliesko " .. (up and "hore" or "dole") .. " · " .. d.id)
-    -- veľkosť kolieskom iba kvapky, ktoré ju majú (zoom = true; Goobar a QueenGoo nie)
-    if not hook(d, "koliesko", up and 1 or -1) and d.v.zoom then d:velkost(d.z + (up and 0.1 or -0.1)) end
+    -- veľkosť kolieskom: všetky kvapky, ktoré koliesko nepotrebujú na iné (hlava GooBaru ním prepína okná — jej veľkosť
+    -- je v Nastaveniach › Kvapky); nie okná GooBaru ani bobule hrozna (tie rozkladá ich majiteľ)
+    if not hook(d, "koliesko", up and 1 or -1) and d.v.zoom and d.zdroj ~= "dyn" then d:velkost(d.z + (up and 0.1 or -0.1)) end
 end)
 on("goo_enter", function(k)
     local d = at(k) if not d then return end
@@ -806,6 +871,7 @@ on("goo_drop", function(k)
     if W <= 0 then W = 1920 end
     if H <= 0 then H = 1080 end
     d.dragging = false
+    d.drops = (d.drops or 0) + 1
     local r = d.v.velkost * d.z
     -- najbližší okraj v dosahu prilepenia; dole je vždy (gravitácia)
     local edge, best = 0, math.huge
