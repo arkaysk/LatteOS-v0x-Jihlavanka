@@ -16,7 +16,7 @@
 // Kvapky na seba pôsobia:
 // keď sa vysúvajú, spájajú ich goo vlákna (vypínač ↔ Štart ↔ hlava), nakláňajú sa k susedovi pod myšou
 // a stlačenie jednej prebehne vlnou cez susedov.
-// Koncept: AUDIT-WIN11.md › Kvapky.
+// Koncept: docs_zaloha/2026-09-29-audit-win11.md › Kvapky.
 language 0.1
 
 scene Kvapka {

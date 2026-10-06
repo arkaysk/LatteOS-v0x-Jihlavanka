@@ -46,10 +46,10 @@ def along(axis, k):
 
 def monitor():
     """pás výkonu GooPower: poloha a polomer kvapky, ktorá ho nesie (mon_k), pre bunky mimo repeat"""
-    return ("    let mpx = " + pick_k("mon_k", "x.{k}") + "\n"
-            "    let mpy = " + pick_k("mon_k", "y.{k}") + "\n"
-            "    let mpr = " + pick_k("mon_k", "rr.{k}") + "\n"
-            "    let mkw = " + pick_k("mon_k", "kwa.{k}") + "\n")
+    # `prop` + `follow`, nie `let`: pomocný výraz na tomto mieste mená kvapiek po jednej (x.0, x.1 …) nepozná —
+    # scéna sa s `let` nepreložila (overené na latte-lab 6. 10.: „there is nothing called 'x.0'“)
+    return "".join(f"    prop {n} = 0 ~0ms\n    follow {n} = " + pick_k("mon_k", f) + "\n"
+                   for n, f in (("mpx", "x.{k}"), ("mpy", "y.{k}"), ("mpr", "rr.{k}"), ("mkw", "kwa.{k}")))
 
 
 def pick_k(var, fmt):

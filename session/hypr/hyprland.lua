@@ -176,7 +176,7 @@ end
 -- Alt+Tab) ostane, kde je — inak skočil do stredu okna a prerušil rolovanie nad lištou (test 30. 9.)
 hl.config({ cursor = { no_warps = true } })
 
--- grafika vo VM: bez HW kurzora; pri vm-3d bez commit timingu (setup/f1/RESULTS.md)
+-- grafika vo VM: bez HW kurzora; pri vm-3d bez commit timingu (docs_zaloha/2026-09-23-f1-merania-vm.md)
 if mode.renderer ~= "hw" then
     hl.config({ cursor = { no_hardware_cursors = true } })
 end
