@@ -119,7 +119,9 @@ EOF2
 }
 
 scene_up() {
-    pgrep -x pleamar >/dev/null && return
+    # iba VLASTNÝ pleamar: scéna prihlásenia beží pod účtom prihlasovača a pri jej dobiehaní (alebo osirelej kópii)
+    # sa engine po prihlásení nespustil — plocha ostala bez kvapiek (latte-lab 6. 10.)
+    pgrep -u "$(id -u)" -x pleamar >/dev/null && return
     [ -x "$pleamar" ] && [ -f "$scene" ] || { notify-send -a LatteOS "Kvapky" "chýba pleamar alebo scéna ($scene)"; return 1; }
     # PLEAMAR_GENERIC=window: zoznam okien z wlr-foreign-toplevel, kurzor z Hyprlandu (resources/patches/pleamar-…)
     local log="${XDG_STATE_HOME:-$HOME/.local/state}/latteos/kvapky.log"
@@ -151,11 +153,11 @@ case "${1:-}" in
     skusit)
         pkill -x noctalia; sleep 0.5          # klasická Noctalia (s lištou) → nahradí ju tá pre Kvapky
         for a in $classic; do pkill -f "latteos/apps/$a\.qml"; done
-        pkill -x pleamar; sleep 0.3          # kvapka z klasickej plochy (ak beží) sa spustí znova ako samostatná
+        pkill -u "$(id -u)" -x pleamar; sleep 0.3          # kvapka z klasickej plochy (ak beží) sa spustí znova ako samostatná
         exec "$0" start
         ;;
     spat)
-        pkill -x pleamar
+        pkill -u "$(id -u)" -x pleamar
         gaps off
         pkill -x noctalia; sleep 0.5          # Noctalia pre Kvapky → klasická (s lištou a upozorneniami)
         if [ -f "${XDG_CONFIG_HOME:-$HOME/.config}/latteos/noctalia/config.toml" ]; then
