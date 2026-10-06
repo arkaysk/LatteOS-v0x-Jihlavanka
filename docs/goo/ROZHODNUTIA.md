@@ -33,7 +33,10 @@ Nové rozhodnutie: jeden riadok sem (dátum, čo, prečo) a oprava platného zne
   - **AI je voliteľná už pri inštalácii** (voľba „systém bez AI“); `latte-mcp` na vyriešenie;
   - **stavy hladiny** (kľud, vlnenie, príboj, búrka) — na čo ich naviazať, nie je rozhodnuté; pri záťaži nemá
     rozhranie pridávať ďalšie efekty;
-  - tekuté zóny okien — ukážka pre používateľa, rozhodne sa po nej;
+  - **tekuté zóny okien: áno, podľa režimu okien** — v plávajúcom (ako Windows) sa pri potiahnutí okna hore ukáže
+    zhora druhá hladina a vynoria sa ponuky; páska a dlaždice po vzore niri, Hyprlandu a COSMIC (tekutý šev pri
+    vkladaní, zaliatie cieľovej časti); **zatrasenie myšou** = nájdi kurzor: áno; **MCP**: áno (voliteľné);
+    **zdroj výsledku v LensGoo**: áno; **pamäť obrazovky: nie**;
   - nie: ťahanie súboru na LensGoo (stačí pravý klik › Otvoriť v); gestá kurzorom (zatras, špirála) — skôr nie;
     prístupnosť zatiaľ iba minimálne.
 - Správca súborov bude ako Total Commander s dvoma panelmi, alebo náš fork Total Commandera.

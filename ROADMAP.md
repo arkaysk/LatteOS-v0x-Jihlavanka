@@ -391,8 +391,14 @@ texty preložiteľné (`translations`). Noctalia beží bez lišty a robí, čo 
   - [ ] ovládanie Goo Steam Controllerom / gamepadom (Steam Input), na základe ovládania z klávesnice (§6.1)
   - [ ] **AI voliteľná pri inštalácii** (voľba „systém bez AI“); **`latte-mcp`** (engine a pomocníci ako nástroje MCP,
     potvrdenie zásahov v goo bubline) — na vyriešenie
-  - [ ] na rozhodnutie: stavy hladiny (kľud, vlnenie, príboj, búrka) — k čomu ich naviazať; tekuté zóny okien
-    (ukážka); pamäť obrazovky (Screenpipe/OpenRecall, voliteľná); zdroj výsledku v LensGoo
+  - [ ] **tekuté zóny okien** podľa režimu: plávajúce = okno potiahnuté hore → zhora sa ukáže druhá hladina
+    a vynoria sa z nej kvapky s rozloženiami (ako Snap layouts vo Windows; k ľavému/pravému okraju = polovica);
+    páska = tekutý „šev“ medzi stĺpcami ukáže, kam sa okno vloží (ako insert hint v niri), do stredu okna = do jeho
+    stĺpca; dlaždice = časť cieľového okna, kam okno pôjde, sa zaleje kávou (okraj = rozdelí, stred = vymení)
+  - [ ] zatrasenie myšou = kvapky pribehnú ku kurzoru (nájdi kurzor)
+  - [ ] zdroj výsledku v LensGoo (značka Nastavenie / Aplikácia / Súbor / Web), indexovanie najpoužívanejších priečinkov
+  - [ ] na rozhodnutie: stavy hladiny (kľud, vlnenie, príboj, búrka) — návrh: kľud = nič, vlnenie = beží sťahovanie
+    alebo kopírovanie, príboj = práve skončilo / nové upozornenie, búrka = vážna chyba (disk, prehriatie)
 - [ ] Ovládacie centrum Noctalie nad rohovou lištou vpravo — overiť na latte-lab (`latte-kvapky`: `bottom_right`)
 - [ ] **Verejná verzia 0.2** (iba GOO) po dokončení enginu: obnoviť `arkaysk/latteos` (`setup/verejne/`), verejné
   README podľa GOO, licencia
