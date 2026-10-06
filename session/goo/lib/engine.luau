@@ -127,6 +127,7 @@ local function record(d)
         ed = d.edge or 0, nad = v.koruna and (glyphs[v.koruna] or "") or "",
         kw = num(v.kw, 0), t2 = v.t2 or "", kr = (v.t2 or "") ~= "" and 2 or 1,
         kd = num(v.kd, 0), fix = v.fix == true,
+        jmp = v.jmp == true, ja = num(v.ja, 0), jb = num(v.jb, 0), jv = num(v.jv, 0),
     }
 end
 
@@ -980,6 +981,7 @@ local function stopPlay()
     busy = false
     E.each(function(d)
         if d.wander then d.x, d.y, d.wander = d.wx, d.wy, nil end
+        d.v.jmp = false                                      -- rozrobený skok: kvapku zase vedie pružina (domov)
     end)
     publish()
 end
@@ -1025,55 +1027,121 @@ local function shove(d, x)
     end
     return moves
 end
-local function land(d)                                       -- dopad: sploští sa a hladina sa zvlní
-    after(520, function() if play then d:stlac() E.vlnka(px(d), 3, "kamen") end end)
-end
--- d odbehne na x (ostatné uhnú), po `ms` sa všetci vrátia; počas behu sa nezačne iný
-local function run_to(d, x, moves, ms, meet)
-    busy = true
-    wander(d)
-    d.x = toFrac(d, x)
-    for o, ox in pairs(moves) do wander(o) o.x = toFrac(o, ox) end
-    d:poskoc() land(d) publish()
-    if meet then after(700, function() if play then meet() end end) end
-    after(ms, function()
-        busy = false
+-- ── hra ako v starých Worms (používateľ 6. 10.) ──────────────────────────────────────────────────────────────────────
+-- Skok je BALISTICKÝ oblúk s gravitáciou enginu (scéna: skn, jv, ja → jb), nie pružina: pred odrazom sa kvapka
+-- prikrčí, letí rovnomerne dopredu a jv·t − ½·g·t² nahor, pri dopade sa sploští a hladina sa zvlní. Druhy hry:
+-- plíženie (pár nízkych skokov za sebou: prikrčenie, výskok), veľký skok oblúkom aj ponad ostatné, naháňačka so
+-- zrážkou a výskok na mieste. Občas sa tempo zrýchli. Kam kvapka doskočí, ostatné na lište uhnú (pravidlo 22);
+-- po výlete sa všetko vráti na svoje miesto.
+local tempo = 1                                              -- 1 pokojne, menej = rýchlejšia hra (kratšie pauzy)
+local function hopT(v0) return 2 * v0 / GRAV end             -- ako dlho letí (s)
+local function sirka() local sw = num(fact.sw, 0) return sw > 0 and sw or 1920 end
+-- jeden skok d na x (px pozdĺž lišty), odraz rýchlosťou v0 (px/s): výška v0² / 2g, let 2·v0 / g
+local function jump(d, x, v0, done)
+    d:stlac()                                                -- prikrčenie
+    after(260, function()
         if not play then return end
-        d.x, d.y, d.wander = d.wx, d.wy, nil
-        for o in pairs(moves) do if o.wander then o.x, o.y, o.wander = o.wx, o.wy, nil end end
-        d:poskoc() land(d) publish()
+        local from = d.v.jmp and num(d.v.jb, px(d)) or px(d)
+        bump("skn", d.k)                                     -- čas odrazu skôr než údaje (inak by na snímku stála v cieli)
+        d.v.jmp, d.v.ja, d.v.jb, d.v.jv = true, from, x, v0
+        d.x = toFrac(d, x)
+        publish()
+        after(hopT(v0) * 1000, function()
+            if not play then return end
+            d:stlac() E.vlnka(x, 2 + v0 / 150, "kamen")       -- dopad: sploští sa, hladina sa zvlní podľa výšky
+            if done then after(140, done) end
+        end)
     end)
 end
+-- výskok na mieste pre kvapku, ktorá nie je na výlete (napr. tá, do ktorej narazili)
+local function spot(o, v0)
+    jump(o, px(o), v0, function() after(300, function() if not o.wander then o.v.jmp = false publish() end end) end)
+end
+-- návrat: ostatní späť na miesta, d jedným skokom domov
+local function back(d, moved, v0)
+    if not play then return end
+    for o in pairs(moved) do if o.wander then o.x, o.y, o.wander = o.wx, o.wy, nil end end
+    jump(d, d.wx * sirka() + (d.ox or 0), v0, function()
+        d.x, d.y, d.wander = d.wx, d.wy, nil
+        publish()
+        after(450, function() d.v.jmp = false publish() busy = false end)
+    end)
+end
+-- postupnosť skokov { { x, v0, pauza_ms }, … }; kam sa nezmestí (okraj, Goobar), tam výlet končí
+local function hops(d, list, finish)
+    busy = true
+    wander(d)
+    local moved = {}
+    local function step(i)
+        if not play then return end
+        local h = list[i]
+        local moves = h and shove(d, h[1])
+        if not h or not moves then return finish(moved) end
+        for o, ox in pairs(moves) do wander(o) o.x = toFrac(o, ox) moved[o] = true end
+        jump(d, h[1], h[2], function() after(h[3] or 300, function() step(i + 1) end) end)
+    end
+    step(1)
+end
 local function game()
+    if busy then return end
     local players = {}
     E.each(function(d) if d.v.hrava and not d.wander and not d.dragging and docked(d) then table.insert(players, d) end end)
     if #players == 0 then return end
+    if math.random() < 0.14 then tempo = tempo == 1 and 0.4 or 1 end      -- občas rýchlejšia hra, potom zase pokoj
     local d = players[math.random(#players)]
-    local sw = num(fact.sw, 0) if sw <= 0 then sw = 1920 end
-    local r = math.random()
-    if not busy and r >= 0.3 and r < 0.65 then               -- naháňačka: dobehne inú, pritisne sa, obe sa stlačia, odrazí sa späť
+    local sw, x0, r = sirka(), px(d), math.random()
+    local dir = math.random() < 0.5 and -1 or 1
+    local lo, hi = 0.03 * sw, math.min(0.97 * sw, hiAlong(d))
+    if r < 0.32 then                                         -- plíženie: prikrčenie, nízky výskok, znova — 3 až 5 ráz
+        local n = 3 + math.random(0, 2)
+        if x0 + dir * n * 70 < lo or x0 + dir * n * 70 > hi then dir = -dir end
+        local list, x = {}, x0
+        for i = 1, n do
+            x = clamp(x + dir * (36 + math.random() * 34), lo, hi)
+            list[i] = { x, 250 + math.random() * 70, (240 + math.random() * 360) * tempo }
+        end
+        hops(d, list, function(moved) after(600 * tempo, function() back(d, moved, 500 + math.random() * 140) end) end)
+    elseif r < 0.58 then                                     -- veľký skok oblúkom (aj ponad ostatné) a späť
+        local x = clamp(x0 + dir * (0.07 + 0.17 * math.random()) * sw, lo, hi)
+        if math.abs(x - x0) < rad(d) * 2 then x = clamp(x0 - dir * 0.12 * sw, lo, hi) end
+        hops(d, { { x, 540 + math.random() * 170, 800 * tempo } },
+            function(moved) back(d, moved, 520 + math.random() * 170) end)
+    elseif r < 0.82 then                                     -- naháňačka: doskáče k inej, vrazí do nej, tá odskočí
         local all = {}
-        E.each(function(o) if o ~= d and docked(o) and num(o.v.sk, 0) == 0 and not o.wander then table.insert(all, o) end end)
+        -- iba za kvapkou nablízku (do tretiny lišty): cez pol obrazovky by to bol jeden dlhý plochý skok
+        E.each(function(o)
+            if o ~= d and docked(o) and num(o.v.sk, 0) == 0 and not o.wander and math.abs(px(o) - x0) < 0.33 * sw then table.insert(all, o) end
+        end)
         local other = #all > 0 and all[math.random(#all)]
-        if other then
-            local side = px(d) < px(other) and -1 or 1
-            local x = px(other) + side * (rad(d) + rad(other)) * MIN_GAP
-            local moves = shove(d, x)
-            if moves and not moves[other] and math.abs(x - px(d)) > rad(d) then
-                run_to(d, x, moves, 1700, function() d:stlac() other:stlac() other:poskoc() land(other) end)
-                return
+        if not other then return spot(d, 380 + math.random() * 200) end
+        local side = x0 < px(other) and -1 or 1
+        local cil = px(other) + side * (rad(d) + rad(other)) * MIN_GAP
+        local list, x, step = {}, x0, (cil > x0 and 1 or -1) * (90 + math.random() * 50)
+        while math.abs(cil - x) > math.abs(step) * 1.3 and #list < 7 do
+            x = x + step
+            list[#list + 1] = { x, 330 + math.random() * 70, (120 + math.random() * 160) * tempo }
+        end
+        list[#list + 1] = { cil, 360 + math.random() * 80, 60 }
+        hops(d, list, function(moved)
+            if math.abs(px(d) - cil) < 4 and not moved[other] then          -- dobehla: zrážka, obe sa stlačia
+                other:stlac()
+                spot(other, 340 + math.random() * 160)
             end
-        end
-    elseif not busy and r >= 0.65 then                       -- behanie po lište: ostatné uhnú, potom späť
-        local x = clamp(px(d) + (math.random() < 0.5 and -1 or 1) * (0.06 + 0.16 * math.random()) * sw, 0.03 * sw, 0.97 * sw)
-        local moves = shove(d, x)
-        if moves and math.abs(x - px(d)) > rad(d) then
-            run_to(d, x, moves, 2600)
-            return
-        end
+            after(900 * tempo, function() back(d, moved, 480 + math.random() * 160) end)
+        end)
+    else                                                     -- výskok na mieste, občas dva za sebou
+        local dva = math.random() < 0.35
+        busy = true
+        jump(d, x0, 400 + math.random() * 240, function()
+            if dva and play then
+                jump(d, x0, 300 + math.random() * 120, function() after(300, function() d.v.jmp = false publish() busy = false end) end)
+            else
+                after(300, function() d.v.jmp = false publish() busy = false end)
+            end
+        end)
     end
-    d:poskoc() land(d)                                       -- skákanie na mieste (aj keď nie je kam bežať)
 end
+
 -- ── obloha a počasie na hladine (LATTEOS-GOO.md §3.1 stupeň 2; deň a noc) ───────────────────────────────────────
 -- Raz za 10 minút `latte-goo obloha`: výška slnka → svetlo v kvapkách a žiara nad horizontom (scéna: den, zlata);
 -- dážď, sneh a vietor sa ukážu až pri nečinnosti (stupeň 2+): kvapky dopadajú na spodný okraj a vlnky zvlnia hladinu
@@ -1181,8 +1249,9 @@ on("goo_idle", function(level)
         if not smie or num(fact.idle, 0) < level then return end   -- nesmie, alebo sa medzitým prebudili
         weatherOn()
         if level >= 3 and not play then
+            -- hra: nový kúsok, keď predošlý skončil; v rýchlom tempe hneď, inak s oddychom
+            play = every(1300, function() if not busy and (tempo < 1 or math.random() < 0.55) then game() end end)
             game()
-            play = every(2200, game)
         end
     end)
 end)
