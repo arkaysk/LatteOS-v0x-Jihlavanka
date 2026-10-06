@@ -493,8 +493,12 @@ texty preložiteľné (`translations`). Noctalia beží bez lišty a robí, čo 
 - [ ] **Verejná verzia 0.2** (iba GOO) po dokončení enginu: obnoviť `arkaysk/latteos` (`setup/verejne/`), verejné
   README podľa GOO, licencia
 - [x] pleamar v0.2.6, pleamar-wm v0.2.5, marea-plm (1. 10.): pripnuté, záplaty sedia, inštalácia preloží novší
-- [ ] **ChatGoo** (addon pre Beeper, LATTEOS-GOO.md §4.6): kvapka, do ktorej sa minimalizuje Beeper, upozornenia
-  Beepera pri nej (presmerované z ClockGoo). Pomocník `latte-chatgoo` hotový; kvapka v engine ešte nie je
+- [x] **ChatGoo** (addon pre Beeper, LATTEOS-GOO.md §4.6), 6. 10.: kvapka v engine — ukáže sa, keď je Beeper
+  nainštalovaný alebo beží, nesie jeho pôvodnú ikonu, klik okno ukáže / schová, upozornenia Beepera idú k nej
+  namiesto ClockGoo, pravý klik = karta správ. **Overené iba s náhradným oknom a náhradnou ikonou** (okno s triedou
+  `beeper`, `notify-send -a Beeper`); so skutočným Beeperom nie — na latte-lab nie je nainštalovaný.
+- [ ] ChatGoo — zvyšok: skúška so skutočným Beeperom, plynulé vtečenie okna do kvapky, odznak siete, voľba „ikona
+  v rohovej lište“ v Nastaveniach, bubliny četov pre viac kanálov
 - [ ] **Komunitné doplnky Noctalie ako kvapky** — prieskum 30. 9.: 235 doplnkov (13 oficiálnych, 222 komunitných,
       `~/.local/state/noctalia/plugins/sources`), 194 widgetov na lištu (121 jednoduchých: ikona Tabler + text +
       popis; 73 s vlastným `barWidget.render`), ľavý klik 169, pravý 80. Spúšťať ich kód v pleamare nejde:
