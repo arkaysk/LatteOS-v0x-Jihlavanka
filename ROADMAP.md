@@ -356,10 +356,17 @@ texty preložiteľné (`translations`). Noctalia beží bez lišty a robí, čo 
   a profilom napájania, pás výkonu (CPU, RAM, GPU, VRAM), GooBar pravý = plocha, rýchly zoznam LensGoo, upozornenia
   a kalendár ClockGoo v jednej karte, zväčšovanie všetkých kvapiek
 - [x] Engine Goo na latte-lab (5. 10.): stredné tlačidlo, ikony (písmo Tabler), výkon RX 640 (docs_zaloha/2026-10-05-engine-report.md §9–10)
-- [ ] **Nasadzovať iba engine Goo** (rozhodnutie 6. 10.): inštalácia a prihlasovacia obrazovka bez relácie „LatteOS
-  Kvapky“ (pôvodná scéna), engine ako predvolené prihlásenie (nový prihlasovač — LATTEOS-GOO.md §6.2)
-- [ ] Overiť naživo zmeny zo 6. 10. (kliky, karta GooPower, pás výkonu a odtlačenie susedov, rýchly zoznam LensGoo,
-  dvojstĺpcová karta ClockGoo aj na 1024 × 768)
+- [x] **Nasadzovať iba engine Goo** (6. 10.): ponuka prihlásenia = LatteOS GOO, Marea, Noctalia (čistá), Serpantinum;
+  `latte-session` bez argumentu je GOO; pôvodná scéna Kvapky sa neinštaluje
+- [x] **Nové prihlásenie** (LATTEOS-GOO.md §6.2, 6. 10.): scéna `session/goo/login.plm` vo všeobecnej relácii
+  (`greeter = "goo"`, predvolené; heslo cez greetd) — šálka, výskok oblúkom, riadok, hladina, posledný pád / novinky,
+  hodiny a počasie, dážď a sneh, slnko a mesiac, informačné goo, výber relácie, oba monitory. Overené na latte-lab.
+- [ ] Prihlásenie — zvyšky: asi sekunda čiernej medzi prihlásením a plochou; viac zdrojov noviniek a voľba
+  prihlasovača v Nastaveniach › Účet › Prihlasovanie; zámok obrazovky (Win+L) tou istou scénou (`LATTE_LOGIN=zamok`);
+  overiť skutočný dážď a sneh a Uspať · Reštartovať · Vypnúť z prihlásenia
+- [ ] Overiť naživo zvyšok zmien zo 6. 10.: tlačidlá vnútri kariet (Zamknúť, Odhlásiť, profily napájania, Nerušiť),
+  klik na bunku pásu výkonu, pravý klik na hlavu GooBaru, dvojstĺpcová karta ClockGoo na 1024 × 768 (otvorenie kariet,
+  pás výkonu s odtlačením susedov a rýchly zoznam LensGoo overené 6. 10.)
 - [ ] **Korunka QueenGoo:** voliteľný tvar v Nastaveniach › Kvapky (6. 10.: „ešte sa bude robiť“)
 - [ ] GooBar: `reversed` (ikry na druhú stranu), vlastný GooBar na každom monitore (engine beží iba na hlavnom)
 - [ ] Engine: znížiť CPU (pravidlá a pružiny všetkých 128 miest — ~1,7× plocha Kvapky)
