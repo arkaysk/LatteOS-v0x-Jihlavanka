@@ -12,6 +12,8 @@
 //   6. kliknúť sa dá iba na LoginGoo (kvapka s ikonou Power: uspať, reštartovať, vypnúť) a do riadku vedľa nej;
 //      po prihlásení LoginGoo spadne na miesto GooPower na lište
 //   7. vývojárska verzia: na hladine v dosahu riadku sa vynorí ešte jedno goo s výberom relácie (6. 10.)
+//   8. obloha: nenápadná silueta slnka alebo mesiaca tam, kde naozaj je (vychádza a zapadá so skutočným, mesiac
+//      v správnej fáze); ak vonku prší alebo sneží, alebo je to v predpovedi, padá to aj tu (6. 10.)
 // Čísla a časy riadi logika (login.luau); texty sú po anglicky a prekladá ich blok `translations` (LANG).
 language 0.2
 
@@ -26,8 +28,8 @@ scene Login {
         keyboard: exclusive
     }
     permissions {
-        run: "latte-goo", "date", "systemctl"
-        services: "env", "auth"
+        run: "latte-goo", "date", "systemctl", "latte-greetd"
+        services: "env", "auth", "files", "files.write"
     }
     translations sk {
         "Password" = "Heslo"
@@ -60,7 +62,7 @@ scene Login {
     let ROLL = 190                             // „asi 5 cm“ pri 96 dpi
     let EXT = 250                              // o koľko sa riadok natiahne doprava od stredu obrazovky
     let LAND = 130                             // kam kvapka zo šálky doskočí: o toľko bokom (doprava) od stredu
-    let REST = HL - RH - 9                     // riadok stojí NAD hladinou ako ostatné goo (s hladinou ho spája krk)
+    let REST = HL - RH - 15                    // riadok je mierne NAD hladinou, ako pás výkonu GooPower nad lištou
     let SW = 236                               // dĺžka kapsuly výberu relácie
     // šálka úvodnej obrazovky: Plymouth ju kladie na (šírka − 192) × 0,5 a (výška − 192) × 0,42
     let CUPX = (W - 192) * 0.5
@@ -87,6 +89,13 @@ scene Login {
     fact tb = 0
     fact dev = false                           // vývojárska verzia: goo s výberom relácie
     fact rel_open = false
+    fact nb = 0                                // obloha: 0 nič, 1 slnko, 2 mesiac
+    fact nt = 0.5                              // kde na ceste od východu (0, vľavo) po západ (1, vpravo)
+    fact nv = 30                               // výška nad obzorom v stupňoch (obzor = hladina)
+    fact nf = 1                                // mesiac: osvetlená časť 0…1 a či dorastá
+    fact nd = true
+    fact zrazky = 0                            // 0 nič, 1 v predpovedi (riedko), 2 práve padá
+    fact sneh = false
     fact rel_sel = 0
     fact caka = false                          // heslo sa overuje
     fact pm_open = false                       // ponuka napájania
@@ -163,11 +172,29 @@ scene Login {
     let fx = gx + R + 18                                         // kde sa začína text v riadku
     let sx = gx + rlen + 64                                      // goo výberu relácie: v dosahu, hneď za riadkom
     let sgd = sg * if(dev, 1, 0)
-    let sgy = wy + 36 - (36 + RH + 9) * sgd
+    let sgy = wy + 36 - (36 + RH + 11) * sgd                     // spodok v jednej rovine s riadkom
+    let vln = 1 + 0.5 * zrazky                                   // v daždi je hladina nepokojnejšia
 
     box { from: 0, 0; size: W, H; color: #1a1410; opacity: 1 - odkry }   // espresso pozadie úvodnej obrazovky
     image salka = file "/usr/share/plymouth/themes/latteos/watermark.png", 192, 192
     image salka { at: CUPX, CUPY; size: 192, 192; opacity: cup.a }
+
+    // ── obloha: silueta slnka alebo mesiaca (obzor je hladina — vychádza z kávy vľavo, zapadá do nej vpravo) ───
+    let nxp = W * (0.06 + 0.88 * nt)
+    let nyp = HL + 20 - (0.12 + 0.88 * clamp(nv / 62, 0, 1)) * (HL - 110)
+    ellipse { at: nxp, nyp; radius: 92; color: #f7c873; opacity: 0.035 * clk; show: nb == 1 }
+    ellipse { at: nxp, nyp; radius: 46; color: #f7c873; opacity: 0.15 * clk; show: nb == 1 }
+    ellipse { at: nxp, nyp; radius: 40; color: cream; opacity: 0.17 * clk; show: nb == 2 }
+    // fáza: tieň vo farbe pozadia posunutý z neosvetlenej strany (dorastajúci mesiac svieti sprava)
+    ellipse { at: nxp + if(nd, -1, 1) * 82 * nf, nyp; radius: 41.5; color: #1a1410; opacity: clk; show: nb == 2 and nf < 0.97 }
+
+    // ── dážď a sneh podľa počasia vonku ─────────────────────────────────────────────────────────────────────────
+    particles { at: W / 2, -30; area: W + 300, 20; count: 110; life: 0.6s .. 0.8s; speed: 950 .. 1150; direction: 98deg; spread: 3deg
+                size: 2, 2; colors: #a9b6c4, #a9b6c4; opacity: 34%, 22%; shape: spark; emit: zrazky == 1 and not sneh and clk > 0.5 and von < 0.1 }
+    particles { at: W / 2, -30; area: W + 300, 20; count: 420; life: 0.6s .. 0.8s; speed: 950 .. 1150; direction: 98deg; spread: 3deg
+                size: 2, 2; colors: #a9b6c4, #a9b6c4; opacity: 40%, 24%; shape: spark; emit: zrazky == 2 and not sneh and clk > 0.5 and von < 0.1 }
+    particles { at: W / 2, -20; area: W + 200, 20; count: 220; life: 5s .. 8s; speed: 70 .. 120; direction: 96deg; spread: 26deg
+                size: 4, 3; colors: #f3ebdd, #f3ebdd; opacity: 55%, 30%; shape: dot; emit: zrazky > 0 and sneh and clk > 0.5 and von < 0.1 }
 
     // hodiny: stále, jednoduchým veľkým písmom vpravo hore
     text cas { at: W - 72, 104; anchor: right center; size: 108; weight: 300; color: cream; opacity: clk; family: "Inter" }
@@ -180,18 +207,18 @@ scene Login {
         shadow: 0, 2, 2, 28%
         box { from: -80, wy; size: W + 160, H }
         // vlnenie hladiny: ploché hrby, ktoré sa pomaly posúvajú a dvíhajú
-        ellipse { at: W * 0.07 + 46 * sin(time * 13), wy + 12 + 6 * sin(time * 38); radius: 120; scale: 2.6, 0.2; blend: 30 }
-        ellipse { at: W * 0.22 + 38 * sin(time * 17 + 60), wy + 12 + 5 * sin(time * 31 + 110); radius: 120; scale: 2.2, 0.2; blend: 30 }
-        ellipse { at: W * 0.38 + 52 * sin(time * 11 + 200), wy + 12 + 6 * sin(time * 43 + 30); radius: 120; scale: 2.8, 0.2; blend: 30 }
-        ellipse { at: W * 0.55 + 40 * sin(time * 15 + 140), wy + 12 + 5 * sin(time * 35 + 250); radius: 120; scale: 2.4, 0.2; blend: 30 }
-        ellipse { at: W * 0.71 + 48 * sin(time * 12 + 300), wy + 12 + 6 * sin(time * 40 + 170); radius: 120; scale: 2.6, 0.2; blend: 30 }
-        ellipse { at: W * 0.86 + 36 * sin(time * 18 + 20), wy + 12 + 5 * sin(time * 33 + 310); radius: 120; scale: 2.2, 0.2; blend: 30 }
-        ellipse { at: W * 0.97 + 44 * sin(time * 14 + 250), wy + 12 + 6 * sin(time * 37 + 80); radius: 120; scale: 2.4, 0.2; blend: 30 }
+        ellipse { at: W * 0.07 + 72 * sin(time * 13), wy + 31 + 11 * vln * sin(time * 38); radius: 120; scale: 2.6, 0.24; blend: 34 }
+        ellipse { at: W * 0.22 + 64 * sin(time * 17 + 60), wy + 31 + 10 * vln * sin(time * 31 + 110); radius: 120; scale: 2.2, 0.24; blend: 34 }
+        ellipse { at: W * 0.38 + 78 * sin(time * 11 + 200), wy + 31 + 11 * vln * sin(time * 43 + 30); radius: 120; scale: 2.8, 0.24; blend: 34 }
+        ellipse { at: W * 0.55 + 66 * sin(time * 15 + 140), wy + 31 + 10 * vln * sin(time * 35 + 250); radius: 120; scale: 2.4, 0.24; blend: 34 }
+        ellipse { at: W * 0.71 + 74 * sin(time * 12 + 300), wy + 31 + 11 * vln * sin(time * 40 + 170); radius: 120; scale: 2.6, 0.24; blend: 34 }
+        ellipse { at: W * 0.86 + 62 * sin(time * 18 + 20), wy + 31 + 10 * vln * sin(time * 33 + 310); radius: 120; scale: 2.2, 0.24; blend: 34 }
+        ellipse { at: W * 0.97 + 70 * sin(time * 14 + 250), wy + 31 + 11 * vln * sin(time * 37 + 80); radius: 120; scale: 2.4, 0.24; blend: 34 }
         // riadok: stopa, ktorú kvapka nechá, keď sa odvalí
-        line { from: gx, gy; to: gx + rlen, gy; width: 2 * RH * gr * clamp(rlen / 40, 0, 1); blend: 22 }
-        ellipse { at: gx, gy + rr * 0.2 * sqz; radius: rr; scale: 1 + 0.2 * sqz, 1 - 0.2 * sqz; blend: 22 }
+        line { from: gx, gy; to: gx + rlen, gy; width: 2 * RH * gr * clamp(rlen / 40, 0, 1); blend: 9 }
+        ellipse { at: gx, gy + rr * 0.2 * sqz; radius: rr; scale: 1 + 0.2 * sqz, 1 - 0.2 * sqz; blend: 9 }
         // goo výberu relácie a jeho ponuka (kapsuly nad ním)
-        line { from: sx, sgy; to: sx + SW, sgy; width: 38 * sgd; blend: 20 }
+        line { from: sx, sgy; to: sx + SW, sgy; width: 38 * sgd; blend: 9 }
         line { from: sx, sgy - 44 * so; to: sx + SW, sgy - 44 * so; width: 34 * so * if(rel.count > 0, 1, 0); blend: 14 }
         line { from: sx, sgy - 88 * so; to: sx + SW, sgy - 88 * so; width: 34 * so * if(rel.count > 1, 1, 0); blend: 14 }
         line { from: sx, sgy - 132 * so; to: sx + SW, sgy - 132 * so; width: 34 * so * if(rel.count > 2, 1, 0); blend: 14 }

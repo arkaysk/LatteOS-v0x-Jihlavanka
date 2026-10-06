@@ -18,6 +18,9 @@ Nové rozhodnutie: jeden riadok sem (dátum, čo, prečo) a oprava platného zne
 - **Kvapka prihlásenia:** zo šálky vyskočí prirodzeným oblúkom dopredu a do boku, plynule rastie (blíži sa z diaľky),
   dva odrazy; pod hladinu sa ponorí a ako ostatné goo sa vynorí nad ňu. Vo vývojárskej verzii sa na hladine v dosahu
   vynorí ešte jedno goo s výberom relácie.
+- **Prihlásenie — hladina a obloha:** riadok je mierne NAD hladinou (ako pás výkonu GooPower nad lištou), hladina sa
+  mierne vlní; ak vonku prší alebo je to v predpovedi, prší aj pri prihlásení; nenápadná silueta slnka alebo mesiaca
+  vychádza a zapadá so skutočným v danom mieste, mesiac v správnej fáze.
 - **Nasadzuje sa iba engine Goo.** Pôvodná plocha Kvapky (`session/kvapky`) sa na systém už nenasadzuje.
 - **Ponuka prihlásenia:** ostáva najnovší **LatteOS GOO** (engine Goo, predvolená relácia `latte-session`) a samostatné
   prostredia **Marea** (treba ju opraviť), **Serpantinum** a **Noctalia (čistá)**. Položky Classic, Kvapky, „engine

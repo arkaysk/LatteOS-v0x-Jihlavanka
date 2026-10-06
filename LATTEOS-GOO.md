@@ -299,6 +299,9 @@ treba rozhodnúť, čo je bezpečné ukázať pred prihlásením (RSS, upozornen
    klesaní roviny sa riadok pod hladinu **ponorí a vynorí sa nad ňu** ako ostatné goo.
 8. **Výber relácie** (vývojárska verzia): na hladine v dosahu riadku sa vynorí ešte jedno goo — LatteOS GOO, Marea,
    Noctalia (čistá), Serpantinum.
+10. **Hladina a obloha:** riadok je mierne nad hladinou (ako pás výkonu GooPower), hladina sa mierne vlní; **dážď
+   a sneh** podľa počasia vonku (padá, alebo je v predpovedi); nenápadná **silueta slnka alebo mesiaca** tam, kde
+   naozaj je (miesto z Nastavení › Prihlasovanie), mesiac v správnej fáze. Obzor je hladina.
 9. **Spôsob:** zámok nad **všeobecnou reláciou** (na PC môže byť viac používateľov) — dáta, rozmiestnenie, nastavenia
    a plocha používateľa sa načítajú až po potvrdení prihlásenia.
 

@@ -4,23 +4,26 @@
 --   skuska (predvolené)  nič v systéme nemení: heslo „latte“ sedí, iné nie; po prihlásení sa úvod zopakuje;
 --                        ponuka napájania iba zapíše do logu
 --   zamok                heslo overí systém (PAM, `auth.check`) — pre zámok relácie
--- Zapojenie do skutočného prihlasovania príde až po rozhodnutí o spôsobe (README › Prihlásenie).
+--   greetd               všeobecná relácia prihlasovača (latte-greeter, greeter = "goo"): heslo overí greetd cez
+--                        latte-greetd a po úvodnej animácii sa spustí relácia používateľa
 local ok_env, env = pcall(sys.ask, "env", "LATTE_LOGIN")
 local REZIM = (ok_env and type(env) == "string" and env ~= "") and env or "skuska"
 
 local function safe(what, f, ...)
     local ok, err = pcall(f, ...)
-    if not ok then print("login · " .. what .. ": " .. tostring(err)) end
+    if not ok then log("login · " .. what .. ": " .. tostring(err)) end
 end
 
 local relacie = {}                                   -- relácie na výber: { subor, meno, prikaz }
+local ucet = ""                                      -- kto sa prihlasuje (login)
 
 -- ── údaje ────────────────────────────────────────────────────────────────────────────────────────────────────
 local function data()
     run("latte-goo", { "prihlasenie" }, function(out)
         local ok, d = pcall(json.decode, out or "")
-        if not ok or type(d) ~= "table" then print("login · latte-goo prihlasenie nič nevrátil") return end
+        if not ok or type(d) ~= "table" then log("login · latte-goo prihlasenie nič nevrátil") return end
         text.meno = d.meno or ""
+        ucet = d.login or ""
         if type(d.kava) == "table" then fact.voda, fact.mlieko = tonumber(d.kava[1]) or 0.55, tonumber(d.kava[2]) or 0 end
         local g = d.ikony or {}
         text.g_power, text.g_sip, text.g_spat, text.g_znova = g.power or "", g["arrow-right"] or "", g.moon or "", g.refresh or ""
@@ -36,6 +39,18 @@ local function data()
         end
         model.inf = inf
         if tonumber(d.goopower) then fact.tox = tonumber(d.goopower) end
+        -- obloha: cez deň slnko, v noci mesiac (ak je nad obzorom), každé na svojom mieste; dážď a sneh podľa počasia
+        local n = type(d.nebo) == "table" and d.nebo or {}
+        local s, m = n.slnko or {}, n.mesiac or {}
+        if (tonumber(s.t) or -1) >= 0 then
+            fact.nb, fact.nt, fact.nv = 1, s.t, math.max(0, tonumber(s.vyska) or 0)
+        elseif (tonumber(m.t) or -1) >= 0 then
+            fact.nb, fact.nt, fact.nv = 2, m.t, math.max(0, tonumber(m.vyska) or 0)
+            fact.nf, fact.nd = tonumber(m.faza) or 1, m.dorasta == true
+        else
+            fact.nb = 0
+        end
+        fact.zrazky, fact.sneh = tonumber(d.zrazky) or 0, d.sneh == true
         -- relácie na výber (vývojárska verzia): prvé načítanie nastaví naposledy použitú, ďalšie výber nemenia
         local prve = #relacie == 0
         relacie = type(d.relacie) == "table" and d.relacie or {}
@@ -66,12 +81,29 @@ local function uvod()
 end
 
 -- ── heslo ────────────────────────────────────────────────────────────────────────────────────────────────────
-local function over(pw)
+local function over(pw, hotovo)
     if REZIM == "zamok" then
         local ok, valid = pcall(sys.ask, "auth.check", pw)
-        return ok and valid == true
+        return hotovo(ok and valid == true)
     end
-    return pw == "latte"
+    if REZIM == "greetd" then
+        -- heslo nejde v argumentoch: do súkromného súboru prihlasovača (tmpfs), latte-greetd ho prečíta a zmaže
+        local r = relacie[(fact.rel_sel or 0) + 1] or { subor = "latteos", prikaz = { "/usr/bin/latte-session" } }
+        local args = { "prihlas", ucet, r.subor or "", "--" }
+        for _, c in ipairs(r.prikaz or {}) do args[#args + 1] = c end
+        if #args == 4 then args[5] = "/usr/bin/latte-session" end
+        local okw, err = pcall(sys.call, "files.write", "h.json", { p = pw })
+        if not okw then log("login · heslo sa nedalo odovzdať: " .. tostring(err)) return hotovo(false) end
+        run("latte-greetd", args, function(out)
+            local ok, d = pcall(json.decode, out or "")
+            if not (ok and type(d) == "table" and d.ok == true) then
+                log("login · greetd: " .. tostring(ok and type(d) == "table" and d.chyba or out))
+            end
+            hotovo(ok and type(d) == "table" and d.ok == true)
+        end)
+        return
+    end
+    hotovo(pw == "latte")
 end
 
 on("e_odosli", function()
@@ -80,17 +112,21 @@ on("e_odosli", function()
         if pw == "" or fact.caka then return end
         fact.caka = true
         after(REZIM == "skuska" and 500 or 16, function()
-            local dobre = over(pw)
-            text.heslo = ""
-            fact.caka = false
-            if dobre then
-                emit("e_ok")
-                if REZIM == "skuska" then
-                    after(4200, function() emit("e_znova") uvod() end)
+            over(pw, function(dobre)
+                text.heslo = ""
+                fact.caka = false
+                if dobre then
+                    emit("e_ok")
+                    if REZIM == "skuska" then
+                        after(4200, function() emit("e_znova") uvod() end)
+                    elseif REZIM == "greetd" then
+                        -- relácia je pripravená: po odchode LoginGoo skončí všeobecná relácia a greetd ju spustí
+                        after(2300, function() run("latte-greetd", { "koniec" }, nil, { output = false }) end)
+                    end
+                else
+                    emit("e_zle")
                 end
-            else
-                emit("e_zle")
-            end
+            end)
         end)
     end)
 end)
@@ -101,14 +137,14 @@ on("e_rel", function(i)
     local r = relacie[(i or 0) + 1]
     if not r then return end
     text.rel_meno = r.meno or r.subor or ""
-    print("login · relácia: " .. tostring(r.subor) .. " (" .. table.concat(r.prikaz or {}, " ") .. ")")
+    log("login · relácia: " .. tostring(r.subor) .. " (" .. table.concat(r.prikaz or {}, " ") .. ")")
 end)
 
 local MOC = { "suspend", "reboot", "poweroff" }
 on("e_moc", function(k)
     local co = MOC[(k or 0) + 1]
     if not co then return end
-    if REZIM == "skuska" then print("login · napájanie (skúška, nič sa nevykoná): " .. co) return end
+    if REZIM == "skuska" then log("login · napájanie (skúška, nič sa nevykoná): " .. co) return end
     run("systemctl", { co }, nil, { output = false })
 end)
 
@@ -117,4 +153,4 @@ clock()
 every(5000, clock)
 every(60000, data)                                   -- novinky a batéria sa občas obnovia
 uvod()
-print("login · režim " .. REZIM)
+log("login · režim " .. REZIM)
