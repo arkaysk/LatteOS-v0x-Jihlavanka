@@ -57,8 +57,15 @@ def monitor():
     """pás výkonu GooPower: poloha a polomer kvapky, ktorá ho nesie (mon_k), pre bunky mimo repeat"""
     # `prop` + `follow`, nie `let`: pomocný výraz na tomto mieste mená kvapiek po jednej (x.0, x.1 …) nepozná —
     # scéna sa s `let` nepreložila (overené na latte-lab 6. 10.: „there is nothing called 'x.0'“)
-    return "".join(f"    prop {n} = 0 ~0ms\n    follow {n} = " + pick_k("mon_k", f) + "\n"
-                   for n, f in (("mpx", "x.{k}"), ("mpy", "y.{k}"), ("mpr", "rr.{k}"), ("mkw", "kwa.{k}")))
+    mon = "".join(f"    prop {n} = 0 ~0ms\n    follow {n} = " + pick_k("mon_k", f) + "\n"
+                  for n, f in (("mpx", "x.{k}"), ("mpy", "y.{k}"), ("mpr", "rr.{k}"), ("mkw", "kwa.{k}")))
+    # výber z klávesnice (kbk): kde vybraná kvapka je, aká je veľká a kam smeruje jej okraj — pre bublinu s názvom
+    kb = "".join(f"    prop {n} = 0 ~0ms\n    follow {n} = " + pick_k("kbk", f) + "\n"
+                 for n, f in (("kbx", "x.{k}"), ("kby", "y.{k}"), ("kbr", "rr.{k}"), ("kbed", "goo.{k}.ed")))
+    # smer od okraja dovnútra obrazovky podľa okraja vybranej (0 dole, 1 vľavo, 2 hore, 3 vpravo)
+    kb += ("    prop kbnx = 0 ~0ms\n    follow kbnx = if(kbed == 1, 1, if(kbed == 3, -1, 0))\n"
+           "    prop kbny = 0 ~0ms\n    follow kbny = if(kbed == 0, -1, if(kbed == 2, 1, 0))\n")
+    return mon + kb
 
 
 def pick_k(var, fmt):

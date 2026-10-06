@@ -22,7 +22,7 @@ scene Goo {
         rate: 60
         // karta je otvorená iba do kliku mimo (ako ponuka): kým je, klávesnica patrí jej — Esc ju zavrie
         // hneď a do poľa karty sa dá písať bez klikania (on_demand by ju dostal až po kliku do karty)
-        keyboard: exclusive while ctx_open
+        keyboard: exclusive while ctx_open or kb
     }
     // povolenia: Goobar (okná, spúšťače aplikácií), DaNoGoo (upozornenia), PowerGoo (batéria, Noctalia, pás výkonu:
     // latte-sysmon), QueenGoo
@@ -113,6 +113,46 @@ scene Goo {
     event goo_drag ->
     event goo_drop ->
     event goo_idle ->
+    // ── ovládanie z klávesnice (LATTEOS-GOO.md §6.1): Win+T vstúpi (latte/skratky.lua → kb_toggle), kým trvá, Goo drží
+    // klávesnicu. Vybraná kvapka (kbk) pulzuje svetlejšou hnedou, zdvihne sa a ukáže bublinu s názvom.
+    event kb_toggle ->
+    event kb_nav ->                           // 0 ←, 1 →, 2 ↑, 3 ↓
+    event kb_act ->                           // 0 ľavý klik, 1 pravý klik, 2 koliesko hore, 3 koliesko dole, 4 späť na miesto
+    event kb_move ->                          // presun kvapky: 0 ←, 1 →, 2 ↑, 3 ↓
+    event kb_exit ->
+    event kb_sel                              // logika: vybraná je kvapka na tomto mieste
+    event kb_out                              // logika: koniec režimu
+    fact kb = false
+    fact kbk = -1
+    on kb_out { kb = false; kbk = -1; tip.p: 0 }
+    // logika vybrala kvapku (kbk už platí; text bubliny dala sama): bublina pri nej a miesto, z ktorého vyrastie karta.
+    // Poloha vybranej je v kbx, kby, kbr, kbnx, kbny (gen.py › pás výkonu) — rozhodovať podľa hodnoty udalosti vo `while`
+    // nejde, tá je vtedy ešte z predošlej udalosti
+    on kb_sel(v) { tipk = v; tipx = kbx + kbnx * (kbr + 130); tipy = kby + kbny * (kbr + 14) + if(kbny > 0, 30, 0); tip.p: 1; ctx.x = kbx; ctx.y = kby; ctx_up = kby > H / 2 }
+    // písacie pole karty si klávesnicu drží aj po jej zatvorení a šípky s Enterom by skončili v ňom: pri vstupe do
+    // režimu a po každom zatvorení karty mu ju vziať
+    on kb_toggle { blur }
+    on change ctx_open while kb { blur }
+    on focus while kb and not ctx_open { blur }      // klávesnicu dostane plocha až po vstupe: pole si ju vtedy vezme
+    on key Left while kb and not ctx_open { emit kb_nav(0) }
+    on key Right while kb and not ctx_open { emit kb_nav(1) }
+    on key Up while kb and not ctx_open { emit kb_nav(2) }
+    on key Down while kb and not ctx_open { emit kb_nav(3) }
+    on key Return while kb and not ctx_open { emit kb_act(0) }
+    on key space while kb and not ctx_open { emit kb_act(0) }
+    on key Menu while kb and not ctx_open { emit kb_act(1) }
+    on key Shift+F10 while kb and not ctx_open { emit kb_act(1) }
+    on key plus while kb and not ctx_open { emit kb_act(2) }
+    on key KP_Add while kb and not ctx_open { emit kb_act(2) }
+    on key minus while kb and not ctx_open { emit kb_act(3) }
+    on key KP_Subtract while kb and not ctx_open { emit kb_act(3) }
+    on key Ctrl+Home while kb and not ctx_open { emit kb_act(4) }
+    on key Ctrl+Left while kb and not ctx_open { emit kb_move(0) }
+    on key Ctrl+Right while kb and not ctx_open { emit kb_move(1) }
+    on key Ctrl+Up while kb and not ctx_open { emit kb_move(2) }
+    on key Ctrl+Down while kb and not ctx_open { emit kb_move(3) }
+    // Esc zavrie kartu (pravidlo karty nižšie), druhý Esc opustí režim
+    on key Escape while kb and not ctx_open { kb = false; kbk = -1; tip.p: 0; emit kb_exit }
     event goo_pocasie ->                      // skúška počasia na hladine (logika: 0 nič, 1–2 dážď, 3 sneh, 4 vietor)
     // logika → scéna: `emit` v Luau nenesie hodnotu (iba meno), preto logika zvyšuje počítadlo kvapky a scéna reaguje
     // na jeho zmenu (`on change`): hopn.k poskočí (hra), sqn.k stlačí (zrážka, prebudenie), dipn.k ponor pri návrate
@@ -305,6 +345,9 @@ scene Goo {
         // skok pri hre (§3.1 stupeň 3, „ako staré Worms“): BALISTICKÝ oblúk s tou istou gravitáciou ako pád — nie
         // pružina. Logika dá miestu rýchlosť odrazu jv (px/s), odkiaľ a kam pozdĺž lišty (ja → jb, px) a zvýši skn;
         // kvapka letí jv·t − ½·g·t² vysoko a rovnomerne z ja do jb, kým je jmp (potom ju zase vedie pružina px)
+        // vybraná z klávesnice (kbk): 0…1 s pružinou — zvýraznenie a zdvihnutie
+        prop kbp.$k = 0 ~hbita
+        follow kbp.$k = if(kb and kbk == k, 1, 0)
         fact skn.$k = 0
         fact skt.$k = -100
         on change skn.$k { skt.$k = time }
@@ -388,10 +431,10 @@ scene Goo {
         follow jd.$k = goo.$k.jadro * if(goo.$k.jp, 0.7 + 0.3 * sin(time * 220 + k * 40), 1) * if(goo.$k.on, 1, 0)
         // kolmo na okraj: nadnesenie, tok, vlnka (iba dolná hladina), ponor a sadnutie
         let nrm.$k = (lift.$k * lup.$k + 4 * fl.$k * small.$k * (1 - lift.$k) + wv.$k * small.$k * if(goo.$k.ed == 0, 1, 0) - dip.$k * r0.$k * 1.4) * dk.$k - sink.$k
-        follow x.$k = if(goo.$k.jmp, goo.$k.ja + (goo.$k.jb - goo.$k.ja) * skp.$k, px.$k) + fxx.$k + e2.$k + nx.$k * nrm.$k
+        follow x.$k = if(goo.$k.jmp, goo.$k.ja + (goo.$k.jb - goo.$k.ja) * skp.$k, px.$k) + fxx.$k + e2.$k + nx.$k * (nrm.$k + 9 * kbp.$k)
         // na lište: v pokoji kúsok vystupuje a klesá s tokom, pri kurzore sa nadnesie. Prázdne miesto pod obrazovku
         // (bez záplaty pleamar-prazdne-tvary by bod nulovej veľkosti cez zliatie vydul hrbček)
-        follow y.$k = if(goo.$k.on, py.$k + fxy.$k + e3.$k + ny.$k * (nrm.$k + skh.$k), H + 400)
+        follow y.$k = if(goo.$k.on, py.$k + fxy.$k + e3.$k + ny.$k * (nrm.$k + skh.$k + 9 * kbp.$k), H + 400)
         follow ts.$k = r0.$k / 26
         follow rr.$k = r0.$k * (1 + life.$k + fxs.$k + e1.$k) * if(goo.$k.on, 1, 0)
         // zliatie (link v Kvapkách: 10 + 16 · nadnesenie + 10 · tok) — v pokoji spája iba okraj, pri kurzore mosty
@@ -1430,6 +1473,9 @@ scene Goo {
     }
     // odlesky: svetlo kurzora na každej kvapke (bližšie = jasnejšie)
     repeat k in 0..128 {
+        // výber z klávesnice: svetlejšia hnedá, ktorá pulzuje (rozdiel v jase, nie v odtieni), s plynulým prechodom
+        ellipse { at: x.$k, y.$k; radius: rr.$k; color: mix(coffee, cream, 0.34); opacity: kbp.$k * (0.24 + 0.16 * sin(time * 210)) }
+        ellipse { at: x.$k, y.$k; radius: rr.$k + 2.5; stroke: 2; color: mix(coffee, cream, 0.55); opacity: kbp.$k * (0.5 + 0.3 * sin(time * 210)) }
         ellipse { at: x.$k + (cursor.x - x.$k) / max(length(cursor.x - x.$k, cursor.y - y.$k), 1) * rr.$k * 0.45, y.$k + (cursor.y - y.$k) / max(length(cursor.x - x.$k, cursor.y - y.$k), 1) * rr.$k * 0.45; radius: rr.$k * 0.16; scale: 1.4, 0.8; color: cream; opacity: goo.$k.svetlo * (0.25 + 0.5 * clamp(1 - length(cursor.x - x.$k, cursor.y - y.$k) / 420, 0, 1)) }
         // žiara okraja (rezerva e4)
         ellipse { at: x.$k, y.$k; radius: rr.$k + 3; stroke: 2.5 * e4.$k; color: #f7c873; opacity: clamp(e4.$k, 0, 1) }
@@ -1502,6 +1548,18 @@ scene Goo {
     follow mpr = pick(max(mon_k, 0), rr.0, rr.1, rr.2, rr.3, rr.4, rr.5, rr.6, rr.7, rr.8, rr.9, rr.10, rr.11, rr.12, rr.13, rr.14, rr.15, rr.16, rr.17, rr.18, rr.19, rr.20, rr.21, rr.22, rr.23, rr.24, rr.25, rr.26, rr.27, rr.28, rr.29, rr.30, rr.31, rr.32, rr.33, rr.34, rr.35, rr.36, rr.37, rr.38, rr.39, rr.40, rr.41, rr.42, rr.43, rr.44, rr.45, rr.46, rr.47, rr.48, rr.49, rr.50, rr.51, rr.52, rr.53, rr.54, rr.55, rr.56, rr.57, rr.58, rr.59, rr.60, rr.61, rr.62, rr.63, rr.64, rr.65, rr.66, rr.67, rr.68, rr.69, rr.70, rr.71, rr.72, rr.73, rr.74, rr.75, rr.76, rr.77, rr.78, rr.79, rr.80, rr.81, rr.82, rr.83, rr.84, rr.85, rr.86, rr.87, rr.88, rr.89, rr.90, rr.91, rr.92, rr.93, rr.94, rr.95, rr.96, rr.97, rr.98, rr.99, rr.100, rr.101, rr.102, rr.103, rr.104, rr.105, rr.106, rr.107, rr.108, rr.109, rr.110, rr.111, rr.112, rr.113, rr.114, rr.115, rr.116, rr.117, rr.118, rr.119, rr.120, rr.121, rr.122, rr.123, rr.124, rr.125, rr.126, rr.127)
     prop mkw = 0 ~0ms
     follow mkw = pick(max(mon_k, 0), kwa.0, kwa.1, kwa.2, kwa.3, kwa.4, kwa.5, kwa.6, kwa.7, kwa.8, kwa.9, kwa.10, kwa.11, kwa.12, kwa.13, kwa.14, kwa.15, kwa.16, kwa.17, kwa.18, kwa.19, kwa.20, kwa.21, kwa.22, kwa.23, kwa.24, kwa.25, kwa.26, kwa.27, kwa.28, kwa.29, kwa.30, kwa.31, kwa.32, kwa.33, kwa.34, kwa.35, kwa.36, kwa.37, kwa.38, kwa.39, kwa.40, kwa.41, kwa.42, kwa.43, kwa.44, kwa.45, kwa.46, kwa.47, kwa.48, kwa.49, kwa.50, kwa.51, kwa.52, kwa.53, kwa.54, kwa.55, kwa.56, kwa.57, kwa.58, kwa.59, kwa.60, kwa.61, kwa.62, kwa.63, kwa.64, kwa.65, kwa.66, kwa.67, kwa.68, kwa.69, kwa.70, kwa.71, kwa.72, kwa.73, kwa.74, kwa.75, kwa.76, kwa.77, kwa.78, kwa.79, kwa.80, kwa.81, kwa.82, kwa.83, kwa.84, kwa.85, kwa.86, kwa.87, kwa.88, kwa.89, kwa.90, kwa.91, kwa.92, kwa.93, kwa.94, kwa.95, kwa.96, kwa.97, kwa.98, kwa.99, kwa.100, kwa.101, kwa.102, kwa.103, kwa.104, kwa.105, kwa.106, kwa.107, kwa.108, kwa.109, kwa.110, kwa.111, kwa.112, kwa.113, kwa.114, kwa.115, kwa.116, kwa.117, kwa.118, kwa.119, kwa.120, kwa.121, kwa.122, kwa.123, kwa.124, kwa.125, kwa.126, kwa.127)
+    prop kbx = 0 ~0ms
+    follow kbx = pick(max(kbk, 0), x.0, x.1, x.2, x.3, x.4, x.5, x.6, x.7, x.8, x.9, x.10, x.11, x.12, x.13, x.14, x.15, x.16, x.17, x.18, x.19, x.20, x.21, x.22, x.23, x.24, x.25, x.26, x.27, x.28, x.29, x.30, x.31, x.32, x.33, x.34, x.35, x.36, x.37, x.38, x.39, x.40, x.41, x.42, x.43, x.44, x.45, x.46, x.47, x.48, x.49, x.50, x.51, x.52, x.53, x.54, x.55, x.56, x.57, x.58, x.59, x.60, x.61, x.62, x.63, x.64, x.65, x.66, x.67, x.68, x.69, x.70, x.71, x.72, x.73, x.74, x.75, x.76, x.77, x.78, x.79, x.80, x.81, x.82, x.83, x.84, x.85, x.86, x.87, x.88, x.89, x.90, x.91, x.92, x.93, x.94, x.95, x.96, x.97, x.98, x.99, x.100, x.101, x.102, x.103, x.104, x.105, x.106, x.107, x.108, x.109, x.110, x.111, x.112, x.113, x.114, x.115, x.116, x.117, x.118, x.119, x.120, x.121, x.122, x.123, x.124, x.125, x.126, x.127)
+    prop kby = 0 ~0ms
+    follow kby = pick(max(kbk, 0), y.0, y.1, y.2, y.3, y.4, y.5, y.6, y.7, y.8, y.9, y.10, y.11, y.12, y.13, y.14, y.15, y.16, y.17, y.18, y.19, y.20, y.21, y.22, y.23, y.24, y.25, y.26, y.27, y.28, y.29, y.30, y.31, y.32, y.33, y.34, y.35, y.36, y.37, y.38, y.39, y.40, y.41, y.42, y.43, y.44, y.45, y.46, y.47, y.48, y.49, y.50, y.51, y.52, y.53, y.54, y.55, y.56, y.57, y.58, y.59, y.60, y.61, y.62, y.63, y.64, y.65, y.66, y.67, y.68, y.69, y.70, y.71, y.72, y.73, y.74, y.75, y.76, y.77, y.78, y.79, y.80, y.81, y.82, y.83, y.84, y.85, y.86, y.87, y.88, y.89, y.90, y.91, y.92, y.93, y.94, y.95, y.96, y.97, y.98, y.99, y.100, y.101, y.102, y.103, y.104, y.105, y.106, y.107, y.108, y.109, y.110, y.111, y.112, y.113, y.114, y.115, y.116, y.117, y.118, y.119, y.120, y.121, y.122, y.123, y.124, y.125, y.126, y.127)
+    prop kbr = 0 ~0ms
+    follow kbr = pick(max(kbk, 0), rr.0, rr.1, rr.2, rr.3, rr.4, rr.5, rr.6, rr.7, rr.8, rr.9, rr.10, rr.11, rr.12, rr.13, rr.14, rr.15, rr.16, rr.17, rr.18, rr.19, rr.20, rr.21, rr.22, rr.23, rr.24, rr.25, rr.26, rr.27, rr.28, rr.29, rr.30, rr.31, rr.32, rr.33, rr.34, rr.35, rr.36, rr.37, rr.38, rr.39, rr.40, rr.41, rr.42, rr.43, rr.44, rr.45, rr.46, rr.47, rr.48, rr.49, rr.50, rr.51, rr.52, rr.53, rr.54, rr.55, rr.56, rr.57, rr.58, rr.59, rr.60, rr.61, rr.62, rr.63, rr.64, rr.65, rr.66, rr.67, rr.68, rr.69, rr.70, rr.71, rr.72, rr.73, rr.74, rr.75, rr.76, rr.77, rr.78, rr.79, rr.80, rr.81, rr.82, rr.83, rr.84, rr.85, rr.86, rr.87, rr.88, rr.89, rr.90, rr.91, rr.92, rr.93, rr.94, rr.95, rr.96, rr.97, rr.98, rr.99, rr.100, rr.101, rr.102, rr.103, rr.104, rr.105, rr.106, rr.107, rr.108, rr.109, rr.110, rr.111, rr.112, rr.113, rr.114, rr.115, rr.116, rr.117, rr.118, rr.119, rr.120, rr.121, rr.122, rr.123, rr.124, rr.125, rr.126, rr.127)
+    prop kbed = 0 ~0ms
+    follow kbed = pick(max(kbk, 0), goo.0.ed, goo.1.ed, goo.2.ed, goo.3.ed, goo.4.ed, goo.5.ed, goo.6.ed, goo.7.ed, goo.8.ed, goo.9.ed, goo.10.ed, goo.11.ed, goo.12.ed, goo.13.ed, goo.14.ed, goo.15.ed, goo.16.ed, goo.17.ed, goo.18.ed, goo.19.ed, goo.20.ed, goo.21.ed, goo.22.ed, goo.23.ed, goo.24.ed, goo.25.ed, goo.26.ed, goo.27.ed, goo.28.ed, goo.29.ed, goo.30.ed, goo.31.ed, goo.32.ed, goo.33.ed, goo.34.ed, goo.35.ed, goo.36.ed, goo.37.ed, goo.38.ed, goo.39.ed, goo.40.ed, goo.41.ed, goo.42.ed, goo.43.ed, goo.44.ed, goo.45.ed, goo.46.ed, goo.47.ed, goo.48.ed, goo.49.ed, goo.50.ed, goo.51.ed, goo.52.ed, goo.53.ed, goo.54.ed, goo.55.ed, goo.56.ed, goo.57.ed, goo.58.ed, goo.59.ed, goo.60.ed, goo.61.ed, goo.62.ed, goo.63.ed, goo.64.ed, goo.65.ed, goo.66.ed, goo.67.ed, goo.68.ed, goo.69.ed, goo.70.ed, goo.71.ed, goo.72.ed, goo.73.ed, goo.74.ed, goo.75.ed, goo.76.ed, goo.77.ed, goo.78.ed, goo.79.ed, goo.80.ed, goo.81.ed, goo.82.ed, goo.83.ed, goo.84.ed, goo.85.ed, goo.86.ed, goo.87.ed, goo.88.ed, goo.89.ed, goo.90.ed, goo.91.ed, goo.92.ed, goo.93.ed, goo.94.ed, goo.95.ed, goo.96.ed, goo.97.ed, goo.98.ed, goo.99.ed, goo.100.ed, goo.101.ed, goo.102.ed, goo.103.ed, goo.104.ed, goo.105.ed, goo.106.ed, goo.107.ed, goo.108.ed, goo.109.ed, goo.110.ed, goo.111.ed, goo.112.ed, goo.113.ed, goo.114.ed, goo.115.ed, goo.116.ed, goo.117.ed, goo.118.ed, goo.119.ed, goo.120.ed, goo.121.ed, goo.122.ed, goo.123.ed, goo.124.ed, goo.125.ed, goo.126.ed, goo.127.ed)
+    prop kbnx = 0 ~0ms
+    follow kbnx = if(kbed == 1, 1, if(kbed == 3, -1, 0))
+    prop kbny = 0 ~0ms
+    follow kbny = if(kbed == 0, -1, if(kbed == 2, 1, 0))
     // <<< pás výkonu
     let mtx = if(mon_ed == 1 or mon_ed == 3, 0, 1)                      // pozdĺž okraja
     let mty = 1 - mtx

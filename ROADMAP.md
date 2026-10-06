@@ -398,7 +398,11 @@ texty preložiteľné (`translations`). Noctalia beží bez lišty a robí, čo 
   úroveň uvažovania
 - [ ] Goo telo pod rohovou lištou Noctalie (vlnenie pri udalostiach); rozbaľovacia ponuka rýchleho spúšťania ako
   kvapky; prejsť každú funkciu, či ide iba myšou
-- [ ] Prístupnosť — ovládanie Goo z klávesnice (LATTEOS-GOO.md §6.1)
+- [x] Prístupnosť — ovládanie Goo z klávesnice (LATTEOS-GOO.md §6.1), 6. 10.: Win+T, šípky po kvapkách, Enter /
+  medzerník, Menu / Shift+F10, + a −, Ctrl+šípky, Ctrl+Home, Esc; vybraná kvapka pulzuje svetlejšou hnedou a ukáže
+  bublinu s názvom. Overené skutočnými klávesmi na latte-lab.
+- [ ] Prístupnosť — zvyšok: obmedzenie pohybu, väčšie písmo a kontrast, čítanie názvov nahlas; režim aj na
+  vedľajšom monitore; ovládanie gamepadom na tomto základe
 - [ ] Obchod podľa ZimaOS v App Manageri (LATTEOS-GOO.md §6.3)
 - [ ] Systémový backend: balíky (`gvfs-mtp`, `gvfs-smb`, CUPS, SANE, BlueZ zapnúť) a zapojenie do Správcu zariadení
   a Súborov (LATTEOS-GOO.md §5)
