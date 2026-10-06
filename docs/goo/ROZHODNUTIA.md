@@ -8,7 +8,16 @@ Nové rozhodnutie: jeden riadok sem (dátum, čo, prečo) a oprava platného zne
 ## 6. 10. 2026
 
 - **Nový prihlasovač — začiatok práce** („začnime prihlasovaním“): skúšobná scéna podľa §6.2 (`login.plm`), zatiaľ
-  nezapojená. Otvorené: zámok relácie alebo prihlasovač pod greetd; výška hladiny; výber prostredia; „správy“.
+  nezapojená. Otvorené: výška hladiny; „správy“ pod hladinou.
+- **Prihlásenie = zámok nad všeobecnou reláciou.** Používateľ: „Zámok po automatickom prihlásení. Ale keďže môže byť
+  viac používateľov na jednom PC, na pozadí beží všeobecná relácia; samotné dáta, rozmiestnenie, nastavenia, plocha
+  atď. sa načítajú až s potvrdením prihlásenia.“ Uskutočnenie: všeobecná relácia je relácia prihlasovača (účet
+  `greetd`, nie konkrétny človek) s enginom Goo a scénou prihlásenia; po hesle sa spustí relácia používateľa a jeho
+  plocha nadviaže na posledný obraz prihlásenia (LoginGoo → GooPower). Proces kompozitora nemôže zmeniť vlastníka,
+  preto sú to dve relácie za sebou s krátkym odovzdaním obrazovky, nie jedna.
+- **Kvapka prihlásenia:** zo šálky vyskočí prirodzeným oblúkom dopredu a do boku, plynule rastie (blíži sa z diaľky),
+  dva odrazy; pod hladinu sa ponorí a ako ostatné goo sa vynorí nad ňu. Vo vývojárskej verzii sa na hladine v dosahu
+  vynorí ešte jedno goo s výberom relácie.
 - **Nasadzuje sa iba engine Goo.** Pôvodná plocha Kvapky (`session/kvapky`) sa na systém už nenasadzuje.
 - **Ponuka prihlásenia:** ostáva najnovší **LatteOS GOO** (engine Goo, predvolená relácia `latte-session`) a samostatné
   prostredia **Marea** (treba ju opraviť), **Serpantinum** a **Noctalia (čistá)**. Položky Classic, Kvapky, „engine

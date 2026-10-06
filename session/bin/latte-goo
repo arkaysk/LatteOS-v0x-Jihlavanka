@@ -509,9 +509,39 @@ def prihlasenie():
         goopower = json.load(open(STATE)).get("goopower", {}).get("x")
     except (OSError, ValueError, AttributeError):
         pass
-    names = ["power", "arrow-right", "moon", "refresh", "battery-3", "bell", "calendar-event"] + [i["ikona"] for i in info]
+    # relácie na výber (vývojárska verzia): ako v doterajšom prihlasovači — LatteOS GOO, potom samostatné prostredia
+    lang = (os.environ.get("LC_ALL") or os.environ.get("LC_MESSAGES") or os.environ.get("LANG") or "").split(".")[0]
+    poradie = ["latteos", "marea-wm", "marea-hyprland", "latteos-noctalia", "serpantinum"]
+    relacie, seen = [], set()
+    for f in sorted(glob.glob("/usr/share/latteos/sessions/*.desktop")) + sorted(glob.glob("/usr/share/wayland-sessions/*.desktop")):
+        b = os.path.basename(f)[:-8]
+        if b in seen or b in ("hyprland", "hyprland-uwsm", "gamescope-session-steam"):
+            continue
+        seen.add(b)
+        kv = {}
+        try:
+            for line in open(f, encoding="utf-8", errors="replace"):
+                k, _, v = line.strip().partition("=")
+                kv.setdefault(k, v)
+        except OSError:
+            continue
+        if kv.get("Hidden", "").lower() == "true" or kv.get("NoDisplay", "").lower() == "true":
+            continue
+        meno_r = kv.get("Name[%s]" % lang) or kv.get("Name[%s]" % lang.split("_")[0]) or kv.get("Name") or b
+        relacie.append({"subor": b, "meno": meno_r, "prikaz": [x for x in kv.get("Exec", "").split() if not re.fullmatch(r"%[a-zA-Z]", x)]})
+    relacie.sort(key=lambda r: (poradie.index(r["subor"]) if r["subor"] in poradie else 99, r["meno"]))
+    try:
+        posl = open("/var/lib/greetd/latte-last-session").read().strip()
+    except OSError:
+        posl = ""
+    vybrana = next((i for i, r in enumerate(relacie) if r["subor"] == posl), 0)
+    try:                                                 # vývojárska verzia = nainštalovaná zo zdrojového stromu
+        dev = any(l.startswith("source=") for l in open("/usr/share/latteos/VERSION"))
+    except OSError:
+        dev = True
+    names = ["power", "arrow-right", "moon", "refresh", "battery-3", "bell", "calendar-event", "device-desktop"] + [i["ikona"] for i in info]
     return {"meno": meno, "login": login, "kava": kava, "panel": panel, "riadky": riadky, "info": info[:3],
-            "goopower": goopower, "ikony": glyphs(names)}
+            "goopower": goopower, "relacie": relacie[:6], "relacia": vybrana, "dev": dev, "ikony": glyphs(names)}
 
 
 def main(a):
