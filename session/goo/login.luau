@@ -148,6 +148,7 @@ on("e_moc", function(k)
     run("systemctl", { co }, nil, { output = false })
 end)
 
+fact.ostane = REZIM == "greetd"
 data()
 clock()
 every(5000, clock)

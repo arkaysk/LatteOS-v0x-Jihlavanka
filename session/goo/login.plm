@@ -100,6 +100,7 @@ scene Login {
     fact caka = false                          // heslo sa overuje
     fact pm_open = false                       // ponuka napájania
     fact panel = 0                             // pod hladinou: 0 nič, 1 posledný pád, 2 novinky
+    fact ostane = false                        // všeobecná relácia: pozadie po prihlásení ostáva (plocha príde až potom)
     fact tox = 0.14                            // kam LoginGoo po prihlásení spadne: miesto GooPower na lište (podiel šírky)
     text heslo = ""
     text meno = ""
@@ -175,7 +176,7 @@ scene Login {
     let sgy = wy + 36 - (36 + RH + 11) * sgd                     // spodok v jednej rovine s riadkom
     let vln = 1 + 0.5 * zrazky                                   // v daždi je hladina nepokojnejšia
 
-    box { from: 0, 0; size: W, H; color: #1a1410; opacity: 1 - odkry }   // espresso pozadie úvodnej obrazovky
+    box { from: 0, 0; size: W, H; color: #1a1410; opacity: 1 - odkry * if(ostane, 0, 1) }   // espresso pozadie úvodnej obrazovky
     image salka = file "/usr/share/plymouth/themes/latteos/watermark.png", 192, 192
     image salka { at: CUPX, CUPY; size: 192, 192; opacity: cup.a }
 
