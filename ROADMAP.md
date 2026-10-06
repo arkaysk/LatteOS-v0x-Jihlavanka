@@ -494,9 +494,11 @@ texty preložiteľné (`translations`). Noctalia beží bez lišty a robí, čo 
   `ZMENY.md`, zoznam súkromných súborov (`setup/verejne/vynechat.txt`), `zverejnit.sh` robí vydanie so značkou
   `v<verzia>` a skúšku `--nasucho`; inštalátor znesie strom bez doplnkov Classicu a maskotov. Verzia = fáza vývoja:
   **0.3.0 „Jihlavanka“** (návrh, F3).
-- [ ] **Zverejniť vydanie 0.3.0** do `arkaysk/latteos` — až na pokyn. Pred tým: súhlas autora pleamaru a Marey
-  (používateľ mu napíše), skúška inštalácie z verejného stromu na čistom počítači (inštalátor bez doplnkov Classicu
-  ešte nebol spustený), potvrdiť vetu o grafike vo verejnom README (NVIDIA a virtuálny stroj neoverené)
+- [x] **Vydanie 0.3.0 „Jihlavanka“ zverejnené** (6. 10., na pokyn): `arkaysk/latteos`, značka `v0.3.0`, vývojové
+  vydanie na GitHube, licencia MIT.
+- [ ] Po vydaní 0.3.0: skúška inštalácie z verejného stromu na čistom počítači (inštalátor bez doplnkov Classicu
+  ešte nebol spustený); autorovi pleamaru a Marey napíše používateľ; ďalšie vydanie = nová verzia v `Cargo.toml`
+  a časť v `ZMENY.md`
 - [x] pleamar v0.2.6, pleamar-wm v0.2.5, marea-plm (1. 10.): pripnuté, záplaty sedia, inštalácia preloží novší
 - [x] **ChatGoo** (addon pre Beeper, LATTEOS-GOO.md §4.6), 6. 10.: kvapka v engine — ukáže sa, keď je Beeper
   nainštalovaný alebo beží, nesie jeho pôvodnú ikonu, klik okno ukáže / schová, upozornenia Beepera idú k nej
