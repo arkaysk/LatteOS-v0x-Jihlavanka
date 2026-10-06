@@ -26,6 +26,14 @@ Item {
     }
 
     // preklad s dosadením {mien}: tr("{n} apps", { n: 3 })
+    // množné číslo: trn("{n} device", "{n} devices", n). Jazyk s vlastným tvarom pre 2–4 (slovenčina: 2 zariadenia,
+    // 5 zariadení) ho má v preklade pod kľúčom „<many> [2-4]“; angličtina ten kľúč nemá a použije <many>.
+    function trn(one, many, n, args) {
+        const a = Object.assign({ n: n }, args || {});
+        if (n === 1) return tr(one, a);
+        const few = many + " [2-4]";
+        return tr(n >= 2 && n <= 4 && root.table && root.table[few] ? few : many, a);
+    }
     function tr(s, args) {
         let out = (root.table && root.table[s]) || s;
         if (args) for (const k in args) out = out.split("{" + k + "}").join(String(args[k]));

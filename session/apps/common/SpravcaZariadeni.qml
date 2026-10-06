@@ -37,7 +37,7 @@ Item {
     property var problems: []
     readonly property var ordered: order.map(k => groups.find(g => g.key === k)).filter(g => !!g).concat(groups.filter(g => order.indexOf(g.key) < 0))
     readonly property var curGroup: groups.find(g => g.key === (only || group)) || null
-    function count(n) { return n + (n === 1 ? " zariadenie" : (n >= 2 && n <= 4 ? " zariadenia" : " zariadení")); }
+    function count(n) { return i18n.trn("{n} device", "{n} devices", n); }
 
     // ── dáta ─────────────────────────────────────────────────────────────────────────
     component Q: Process {
@@ -55,7 +55,7 @@ Item {
     Q { id: qCards; command: ["latte-devices", "audio", "karty"]; done: (d) => dm.cards = d }
     property var bt: ({ available: false, powered: false, devices: [] })
     Q { id: qBt; command: ["latte-devices", "bt"]; done: (d) => dm.bt = d }
-    Q { id: qBtScan; command: ["latte-devices", "bt", "hladaj"]; done: (d) => { dm.bt = d; dm.status = "Hľadanie skončilo"; } }
+    Q { id: qBtScan; command: ["latte-devices", "bt", "hladaj"]; done: (d) => { dm.bt = d; dm.status = i18n.tr("Search finished"); } }
     // tlačiarne a skenery: hľadanie je pomalé (sieť), zoznam zariadení berie zapamätaný výsledok; tu sa hľadá naozaj
     Q { id: qPrn; command: ["latte-devices", "tlac", "hladaj"]; done: (d) => need(qList) }
     Q { id: qScan; command: ["latte-devices", "skenery", "hladaj"]; done: (d) => { dm.status = i18n.tr("Search finished"); need(qList); } }
@@ -67,11 +67,11 @@ Item {
     // inšpektor siete: údaje má komponent InspektorSiete (záložka Siete); tu iba ciele zvuku
     readonly property var insp: inspView.net
     function netSinkFor(name) { return (audio.sinks || []).find(x => x.net && x.desc.toLowerCase().indexOf((name || "").toLowerCase()) >= 0) || null; }
-    Q { id: qFw; command: ["latte-devices", "firewall"]; done: (d) => { dm.fwFull = d; dm.status = d.ok ? "" : "Pravidlá sa nedajú zobraziť bez potvrdenia (polkit)"; } }
+    Q { id: qFw; command: ["latte-devices", "firewall"]; done: (d) => { dm.fwFull = d; dm.status = d.ok ? "" : i18n.tr("The rules cannot be shown without confirmation (polkit)"); } }
     // režim napájania (Windows 11: Úspora / Vyvážený / Najlepší výkon) + herný režim LatteOS
     property var power: ({ cur: "", list: [], game: false })
     Q { id: qPower; command: ["latte-devices", "napajanie"]; done: (d) => dm.power = d }
-    readonly property var powerNames: ({ "power-saver": "Úsporný", balanced: "Vyvážený", performance: "Výkon" })
+    readonly property var powerNames: ({ "power-saver": i18n.tr("Power saver"), balanced: i18n.tr("Balanced"), performance: i18n.tr("Performance") })
     property var live: []
     Q { id: qLive; command: ["latte-sysmon", "senzory"]
         done: (g) => {
@@ -108,7 +108,7 @@ Item {
     function run(cmd, msg) { runner.command = cmd; runner.running = true; if (msg) status = msg; }
     // operácie so správcom: v termináli so sudo (ako Nastavenia › Používatelia)
     function sudo(script, title) {
-        run(["foot", "-T", title, "sh", "-c", script + '; echo; printf "Enter zavrie okno"; read x'], title);
+        run(["foot", "-T", title, "sh", "-c", script + '; echo; printf "%s" "$0"; read x', i18n.tr("Enter closes the window")], title);
     }
     function refreshSel() {
         if (!sel) return;
@@ -121,7 +121,7 @@ Item {
         live = []; refresh();
     }
     function fix(f) {
-        if (f.packages && f.packages.length && !f.repo) run(["latte-app", "instalator", "--nazov=Ovládač_" + f.name.replace(/[^\w]+/g, "_").slice(0, 30), "install"].concat(f.packages), "App Manager inštaluje " + f.packages.join(", "));
+        if (f.packages && f.packages.length && !f.repo) run(["latte-app", "instalator", "--nazov=Ovládač_" + f.name.replace(/[^\w]+/g, "_").slice(0, 30), "install"].concat(f.packages), i18n.tr("App Manager is installing {what}", { what: f.packages.join(", ") }));
         else openWindow(["latte-app", "aplikacie", "aktualizacie"]);
     }
 
@@ -133,11 +133,11 @@ Item {
     function tryDisplay() {
         const it = sel.item;
         trial = { connector: it.connector, mode: pickMode, scale: pickScale, before: it.mode, beforeScale: it.scale };
-        run(["latte-devices", "display", "try", it.connector, pickMode, String(pickScale)], "Skúšam " + pickMode + " · mierka " + pickScale);
+        run(["latte-devices", "display", "try", it.connector, pickMode, String(pickScale)], i18n.tr("Trying {mode} · scale {scale}", { mode: pickMode, scale: pickScale }));
         countdown = 15; tick.start();
     }
-    function keep() { if (!trial) return; tick.stop(); countdown = 0; run(["latte-devices", "display", "keep", trial.connector, trial.mode, String(trial.scale)], "Uložené"); trial = null; }
-    function revert() { if (!trial) return; tick.stop(); countdown = 0; run(["latte-devices", "display", "try", trial.connector, trial.before, String(trial.beforeScale)], "Vrátené"); trial = null; }
+    function keep() { if (!trial) return; tick.stop(); countdown = 0; run(["latte-devices", "display", "keep", trial.connector, trial.mode, String(trial.scale)], i18n.tr("Saved")); trial = null; }
+    function revert() { if (!trial) return; tick.stop(); countdown = 0; run(["latte-devices", "display", "try", trial.connector, trial.before, String(trial.beforeScale)], i18n.tr("Reverted")); trial = null; }
     // odchod zo stránky počas skúšky = návrat (proces komponentu by zanikol s ním)
     Component.onDestruction: if (trial) Quickshell.execDetached(["latte-devices", "display", "try", trial.connector, trial.before, String(trial.beforeScale)])
     Timer { id: tick; interval: 1000; repeat: true; onTriggered: { dm.countdown--; if (dm.countdown <= 0) dm.revert(); } }
@@ -145,39 +145,39 @@ Item {
     // Wi-Fi s heslom
     property string wifiSsid: ""
     property bool wifiSecure: false
-    Process { id: wifiProc; stdinEnabled: true; onExited: (c) => { dm.status = c === 0 ? "Pripojené: " + dm.wifiSsid : "Pripojenie zlyhalo (heslo?)"; dm.wifiSsid = ""; later.restart(); } }
-    function wifiConnect(pw) { wifiProc.stdinEnabled = true; wifiProc.command = ["latte-devices", "wifi", wifiSsid]; wifiProc.running = true; wifiProc.write(pw + "\n"); wifiProc.stdinEnabled = false; status = "Pripájam " + wifiSsid + "…"; }
+    Process { id: wifiProc; stdinEnabled: true; onExited: (c) => { dm.status = c === 0 ? i18n.tr("Connected: {name}", { name: dm.wifiSsid }) : i18n.tr("Connection failed (password?)"); dm.wifiSsid = ""; later.restart(); } }
+    function wifiConnect(pw) { wifiProc.stdinEnabled = true; wifiProc.command = ["latte-devices", "wifi", wifiSsid]; wifiProc.running = true; wifiProc.write(pw + "\n"); wifiProc.stdinEnabled = false; status = i18n.tr("Connecting to {name}…", { name: wifiSsid }); }
     function pickWifi(w) { wifiSsid = w.ssid; wifiSecure = !!w.security; if (!wifiSecure) wifiConnect(""); }
 
     // pravý klik na zariadenie (ako vo Windows: vlastnosti, ovládač, akcie podľa druhu)
     function deviceMenu(g, it, x, y) {
-        const det = it.details || {}, items = [{ glyph: "info-circle", label: "Vlastnosti", action: () => pick(g, it) }];
+        const det = it.details || {}, items = [{ glyph: "info-circle", label: i18n.tr("Properties"), action: () => pick(g, it) }];
         const dev = det["zariadenie"] || "";
         if ((g.key === "disky" || g.key === "usb") && dev) {
-            items.push({ glyph: "folder", label: "Otvoriť v Súboroch", action: () => run(["sh", "-c", 'm=$(lsblk -nro MOUNTPOINT "$1" | grep -m1 .); [ -n "$m" ] && exec latte-app subory "$m"; udisksctl mount -b "$1" >/dev/null 2>&1; m=$(lsblk -nro MOUNTPOINT "$1" | grep -m1 .); [ -n "$m" ] && exec latte-app subory "$m"', "sh", dev]) });
+            items.push({ glyph: "folder", label: i18n.tr("Open in Files"), action: () => run(["sh", "-c", 'm=$(lsblk -nro MOUNTPOINT "$1" | grep -m1 .); [ -n "$m" ] && exec latte-app subory "$m"; udisksctl mount -b "$1" >/dev/null 2>&1; m=$(lsblk -nro MOUNTPOINT "$1" | grep -m1 .); [ -n "$m" ] && exec latte-app subory "$m"', "sh", dev]) });
             if (g.key === "usb" || /usb/i.test(det["pripojenie"] || ""))
-                items.push({ glyph: "usb", label: "Bezpečne odobrať", action: () => safeRemove(dev, it.name) });
+                items.push({ glyph: "usb", label: i18n.tr("Safely remove"), action: () => safeRemove(dev, it.name) });
         }
         if (g.key === "siet") {
             const ifc = (it.name.match(/·\s*(\S+)$/) || [])[1] || "", on = (det["stav"] || "") === "connected";
-            if (ifc) items.push({ glyph: on ? "world-off" : "world", label: on ? "Odpojiť" : "Pripojiť", action: () => run(["nmcli", "device", on ? "disconnect" : "connect", ifc]) });
+            if (ifc) items.push({ glyph: on ? "world-off" : "world", label: on ? i18n.tr("Disconnect") : i18n.tr("Connect"), action: () => run(["nmcli", "device", on ? "disconnect" : "connect", ifc]) });
         }
         // testy zariadení (myšou, bez terminálu)
-        if (g.key === "kamery") items.push({ glyph: "camera", label: "Vyskúšať kameru", action: () => run(["latte-devices", "test", "kamera", dev], "Náhľad kamery") });
+        if (g.key === "kamery") items.push({ glyph: "camera", label: i18n.tr("Test the camera"), action: () => run(["latte-devices", "test", "kamera", dev], i18n.tr("Camera preview")) });
         if (g.key === "zvuk") {
-            items.push({ glyph: "volume", label: "Skúšobný zvuk vľavo a vpravo", action: () => run(["latte-devices", "test", "reproduktory"], "Prehrávam skúšobný zvuk") });
-            items.push({ glyph: "microphone", label: "Nahrať 3 s a prehrať", action: () => run(["latte-devices", "test", "mikrofon"], "Hovor 3 sekundy…") });
+            items.push({ glyph: "volume", label: i18n.tr("Test sound left and right"), action: () => run(["latte-devices", "test", "reproduktory"], i18n.tr("Playing the test sound")) });
+            items.push({ glyph: "microphone", label: i18n.tr("Record 3 s and play back"), action: () => run(["latte-devices", "test", "mikrofon"], i18n.tr("Speak for 3 seconds…")) });
         }
-        if (g.key === "vstup" && /pad|joy|controller|ovl/i.test(it.name + " " + it.sub)) items.push({ glyph: "device-gamepad-2", label: "Vyskúšať ovládač", action: () => run(["latte-devices", "test", "ovladac"]) });
-        if (it.state && it.state !== "ok" && it.state !== "off") items.push({ glyph: "download", label: "Opraviť ovládač", action: () => fix(it) });
-        items.push({ glyph: "download", label: "Aktualizovať ovládač (App Manager)", action: () => openWindow(["latte-app", "aplikacie", "aktualizacie"]) });
+        if (g.key === "vstup" && /pad|joy|controller|ovl/i.test(it.name + " " + it.sub)) items.push({ glyph: "device-gamepad-2", label: i18n.tr("Test the controller"), action: () => run(["latte-devices", "test", "ovladac"]) });
+        if (it.state && it.state !== "ok" && it.state !== "off") items.push({ glyph: "download", label: i18n.tr("Fix the driver"), action: () => fix(it) });
+        items.push({ glyph: "download", label: i18n.tr("Update the driver (App Manager)"), action: () => openWindow(["latte-app", "aplikacie", "aktualizacie"]) });
         items.push({ separator: true });
         const info = it.name + "\n" + it.sub + Object.keys(det).map(k => "\n" + k + ": " + det[k]).join("");
-        items.push({ glyph: "clipboard", label: "Kopírovať informácie", action: () => run(["wl-copy", "--", info], "Skopírované") });
+        items.push({ glyph: "clipboard", label: i18n.tr("Copy information"), action: () => run(["wl-copy", "--", info], i18n.tr("Copied")) });
         menu.open(x, y, items, it.name);
     }
     function safeRemove(dev, name) {
-        run(["sh", "-c", 'for p in $(lsblk -nro PATH "$1" | tail -n +2) "$1"; do udisksctl unmount -b "$p" 2>/dev/null; done; udisksctl power-off -b "$1" && notify-send -a LatteOS "Môžeš odpojiť" "$2"', "sh", dev, name], "Odoberám " + name);
+        run(["sh", "-c", 'for p in $(lsblk -nro PATH "$1" | tail -n +2) "$1"; do udisksctl unmount -b "$p" 2>/dev/null; done; udisksctl power-off -b "$1" && notify-send -a LatteOS "$3" "$2"', "sh", dev, name, i18n.tr("You can unplug it")], i18n.tr("Removing {name}", { name: name }));
     }
 
     // ── spoločné prvky ─────────────────────────────────────────────────────────────
@@ -234,7 +234,7 @@ Item {
         visible: dm.only === ""
         x: 0; y: 0; spacing: 6; height: visible ? 34 : 0
         Repeater {
-            model: [["zariadenia", "Zariadenia", "cpu"], ["siete", "Siete", "network"]]
+            model: [["zariadenia", i18n.tr("Devices"), "cpu"], ["siete", i18n.tr("Networks"), "network"]]
             Btn { required property var modelData; label: modelData[1]; glyph: modelData[2]; on: dm.tab === modelData[0]
                   onClicked: { dm.tab = modelData[0]; if (modelData[0] === "zariadenia") dm.group = ""; } }
         }
@@ -242,8 +242,8 @@ Item {
                text: dm.tab === "zariadenia" ? (dm.faults.length ? "⚠ " + dm.summary : dm.summary) : (dm.nets.addresses.join(" · ") || "")
                color: dm.faults.length && dm.tab === "zariadenia" ? dm.t.error : dm.t.fgDim; font { family: dm.t.fontUi; pixelSize: 12 } }
         // správa pre podporu: hardvér, kontrola HW, ovládače, chyby — súbor sa ukáže v Súboroch (pošleš správcovi / na fórum)
-        Btn { visible: dm.tab === "zariadenia"; label: "Správa pre podporu"; glyph: "clipboard"
-              onClicked: dm.run(["latte-devices", "sprava"], "Pripravujem správu pre podporu…") }
+        Btn { visible: dm.tab === "zariadenia"; label: i18n.tr("Support report"); glyph: "clipboard"
+              onClicked: dm.run(["latte-devices", "sprava"], i18n.tr("Preparing the support report…")) }
     }
 
     Flickable {
@@ -275,7 +275,7 @@ Item {
                         Column { anchors { left: ci.right; leftMargin: 10; right: parent.right; rightMargin: 8; verticalCenter: parent.verticalCenter } spacing: 2
                                  Text { width: parent.width; elide: Text.ElideRight; text: ct.modelData.title; color: dm.t.fg; font { family: dm.t.fontUi; pixelSize: 13; weight: Font.Bold } }
                                  Text { width: parent.width; elide: Text.ElideRight
-                                        text: ct.bad.length ? "⚠ " + ct.bad[0].stateTitle : (ct.empty ? "nič nepripojené" : (ct.modelData.items.length === 1 ? ct.modelData.items[0].name : dm.count(ct.modelData.items.length)))
+                                        text: ct.bad.length ? "⚠ " + ct.bad[0].stateTitle : (ct.empty ? i18n.tr("nothing connected") : (ct.modelData.items.length === 1 ? ct.modelData.items[0].name : dm.count(ct.modelData.items.length)))
                                         color: ct.bad.length ? dm.t.error : dm.t.fgDim; font { family: dm.t.fontUi; pixelSize: 11 } } }
                         MouseArea { id: cm; anchors.fill: parent; hoverEnabled: true; onClicked: dm.group = ct.modelData.key }
                     }
@@ -284,14 +284,14 @@ Item {
             Repeater {                                   // problémy s tlačidlom Doinštalovať
                 model: dm.tab === "zariadenia" && dm.group === "" ? dm.faults : []
                 Row2 { required property var modelData; glyph: "alert-triangle"; label: modelData.name + " · " + modelData.stateTitle; sub: modelData.reason
-                       Btn { label: modelData.packages.length && !modelData.repo ? "Doinštalovať" : "App Manager"; primary: true; onClicked: dm.fix(modelData) } }
+                       Btn { label: modelData.packages.length && !modelData.repo ? i18n.tr("Install missing") : "App Manager"; primary: true; onClicked: dm.fix(modelData) } }
             }
 
             // ═══ Zariadenia · kategória ════════════════════════════════════════════
             Row {
                 visible: dm.tab === "zariadenia" && dm.group !== "" && dm.only === "" && dm.compact
                 spacing: 8
-                Btn { label: "Všetky zariadenia"; glyph: "arrow-left"; onClicked: dm.group = "" }
+                Btn { label: i18n.tr("All devices"); glyph: "arrow-left"; onClicked: dm.group = "" }
                 Text { anchors.verticalCenter: parent.verticalCenter; text: dm.curGroup ? dm.curGroup.title : ""; color: dm.t.fg
                        font { family: dm.t.fontDisplay; pixelSize: 18; weight: Font.DemiBold } }
             }
@@ -302,7 +302,7 @@ Item {
                        text: dm.group === "tlac" ? i18n.tr("No printer yet. Network and USB printers that print without a driver show up here by themselves; turn the printer on and wait a moment.")
                            : dm.group === "skenery" ? i18n.tr("No scanner found. Turn the scanner on and press Search again.")
                            : dm.group === "telefony" ? i18n.tr("No phone or camera on USB. Plug it in, unlock it and choose file transfer on the phone.")
-                           : "Nič nepripojené." }
+                           : i18n.tr("Nothing connected.") }
                 Repeater {
                     model: dm.curGroup ? dm.curGroup.items : []
                     Rectangle {
@@ -331,16 +331,16 @@ Item {
                     readonly property var it: dm.sel ? dm.sel.item : null
                     readonly property bool bad: !!it && !!it.state && it.state !== "ok" && it.state !== "off"
                     Row2 { visible: dd.bad; glyph: "alert-triangle"; label: dd.it ? dd.it.stateTitle : ""; sub: dd.it ? dd.it.reason : ""
-                           Btn { label: dd.it && dd.it.packages && dd.it.packages.length && !dd.it.repo ? "Doinštalovať" : "App Manager"; primary: true; onClicked: dm.fix(dd.it) } }
+                           Btn { label: dd.it && dd.it.packages && dd.it.packages.length && !dd.it.repo ? i18n.tr("Install missing") : "App Manager"; primary: true; onClicked: dm.fix(dd.it) } }
                     Text { visible: (dm.group === "kamery" || dm.group === "zvuk") && dm.uses.length > 0; width: parent.width; wrapMode: Text.WordWrap
                            color: dm.t.error; font { family: dm.t.fontUi; pixelSize: 12; weight: Font.Bold }
-                           text: dm.uses.filter(u => (dm.group === "kamery") === (u[0] === "camera")).map(u => "Práve používa: " + u[1]).join("\n") }
+                           text: dm.uses.filter(u => (dm.group === "kamery") === (u[0] === "camera")).map(u => i18n.tr("In use by: {app}", { app: u[1] })).join("\n") }
                     Row {                                // testy priamo pri zariadení (myš prvá; aj v ponuke na pravý klik)
                         visible: dm.group === "kamery" || dm.group === "zvuk"; spacing: 6
-                        Btn { visible: dm.group === "kamery"; label: "Vyskúšať kameru"; glyph: "camera"
-                              onClicked: dm.run(["latte-devices", "test", "kamera", dd.it && dd.it.details ? (dd.it.details["zariadenie"] || "") : ""], "Náhľad kamery") }
-                        Btn { visible: dm.group === "zvuk"; label: "Skúšobný zvuk"; glyph: "volume"; onClicked: dm.run(["latte-devices", "test", "reproduktory"], "Vľavo, potom vpravo") }
-                        Btn { visible: dm.group === "zvuk"; label: "Test mikrofónu"; glyph: "microphone"; onClicked: dm.run(["latte-devices", "test", "mikrofon"], "Hovor 3 sekundy…") }
+                        Btn { visible: dm.group === "kamery"; label: i18n.tr("Test the camera"); glyph: "camera"
+                              onClicked: dm.run(["latte-devices", "test", "kamera", dd.it && dd.it.details ? (dd.it.details["zariadenie"] || "") : ""], i18n.tr("Camera preview")) }
+                        Btn { visible: dm.group === "zvuk"; label: i18n.tr("Test sound"); glyph: "volume"; onClicked: dm.run(["latte-devices", "test", "reproduktory"], i18n.tr("Left, then right")) }
+                        Btn { visible: dm.group === "zvuk"; label: i18n.tr("Microphone test"); glyph: "microphone"; onClicked: dm.run(["latte-devices", "test", "mikrofon"], i18n.tr("Speak for 3 seconds…")) }
                     }
                     Flow {                               // živé hodnoty z Monitora
                         visible: dm.live.length > 0; width: parent.width; spacing: 6
@@ -364,18 +364,18 @@ Item {
                 Column {
                     visible: dm.group === "zvuk"
                     width: parent.width; spacing: 5
-                    H { text: "VÝSTUP (klik = predvolený)" }
+                    H { text: i18n.tr("OUTPUT (click = default)") }
                     Repeater { model: dm.audio.sinks
-                        Row2 { required property var modelData; glyph: "volume"; label: modelData.desc; sub: modelData.mute ? "stlmené" : modelData.volume + " %"; picked: modelData.default
+                        Row2 { required property var modelData; glyph: "volume"; label: modelData.desc; sub: modelData.mute ? i18n.tr("muted") : modelData.volume + " %"; picked: modelData.default
                                onClicked: dm.run(["latte-devices", "audio", "default", "sink", modelData.name])
                                Slider { width: 110; anchors.verticalCenter: parent.verticalCenter; to: 150; value: modelData.volume
                                         onMoved: (v) => dm.run(["latte-devices", "audio", "volume", "sink", modelData.name, String(v)]) }
-                               Btn { glyph: modelData.mute ? "volume-off" : "volume"; label: modelData.mute ? "Zapnúť" : "Stlmiť"; onClicked: dm.run(["latte-devices", "audio", "mute", "sink", modelData.name]) } } }
-                    H { text: "VSTUP (mikrofón)" }
+                               Btn { glyph: modelData.mute ? "volume-off" : "volume"; label: modelData.mute ? i18n.tr("Turn on") : i18n.tr("Mute"); onClicked: dm.run(["latte-devices", "audio", "mute", "sink", modelData.name]) } } }
+                    H { text: i18n.tr("INPUT (microphone)") }
                     Repeater { model: dm.audio.sources
-                        Row2 { required property var modelData; glyph: "microphone"; label: modelData.desc; sub: modelData.mute ? "stlmené" : modelData.volume + " %"; picked: modelData.default
+                        Row2 { required property var modelData; glyph: "microphone"; label: modelData.desc; sub: modelData.mute ? i18n.tr("muted") : modelData.volume + " %"; picked: modelData.default
                                onClicked: dm.run(["latte-devices", "audio", "default", "source", modelData.name])
-                               Btn { label: modelData.mute ? "Zapnúť" : "Stlmiť"; onClicked: dm.run(["latte-devices", "audio", "mute", "source", modelData.name]) } } }
+                               Btn { label: modelData.mute ? i18n.tr("Turn on") : i18n.tr("Mute"); onClicked: dm.run(["latte-devices", "audio", "mute", "source", modelData.name]) } } }
                     // konektory a konfigurácia reproduktorov každej karty (softvér zvukovky: priradenie jackov a kanálov)
                     Repeater {
                         model: dm.cards.cards
@@ -391,19 +391,19 @@ Item {
                                     Btn { required property var modelData
                                           readonly property string dev: modelData.dir === "out" ? card.sinkName : card.srcName
                                           glyph: modelData.dir === "out" ? "volume" : "microphone"
-                                          label: modelData.desc + (modelData.plugged ? "" : " (nepripojené)")
+                                          label: modelData.desc + (modelData.plugged ? "" : " (" + i18n.tr("not connected") + ")")
                                           on: dev !== "" && dm.cards.active[dev] && dm.cards.active[dev].port === modelData.name
                                           enabled: dev !== ""
-                                          onClicked: dm.run(["latte-devices", "audio", "port", modelData.dir === "out" ? "sink" : "source", dev, modelData.name], "Konektor: " + modelData.desc) } } }
-                            H { text: "KONFIGURÁCIA (kanály)" }
+                                          onClicked: dm.run(["latte-devices", "audio", "port", modelData.dir === "out" ? "sink" : "source", dev, modelData.name], i18n.tr("Connector: {name}", { name: modelData.desc })) } } }
+                            H { text: i18n.tr("CONFIGURATION (channels)") }
                             Flow { width: parent.width; spacing: 5
                                 Repeater { model: card.modelData.profiles.filter(p => p.available)
                                     Btn { required property var modelData; label: modelData.desc; on: card.modelData.active === modelData.name
-                                          onClicked: dm.run(["latte-devices", "audio", "profil", card.modelData.name, modelData.name], "Profil: " + modelData.desc) } } }
+                                          onClicked: dm.run(["latte-devices", "audio", "profil", card.modelData.name, modelData.name], i18n.tr("Profile: {name}", { name: modelData.desc })) } } }
                         }
                     }
-                    H { text: "APLIKÁCIE" }
-                    Note { visible: dm.audio.apps.length === 0; text: "Žiadna aplikácia teraz nehrá." }
+                    H { text: i18n.tr("APPLICATIONS") }
+                    Note { visible: dm.audio.apps.length === 0; text: i18n.tr("No app is playing right now.") }
                     Repeater { model: dm.audio.apps
                         Row2 { required property var modelData; glyph: "player-play"; label: modelData.name; sub: modelData.media
                                Slider { width: 110; anchors.verticalCenter: parent.verticalCenter; to: 150; value: modelData.volume
@@ -413,15 +413,15 @@ Item {
                                Btn { glyph: "cast"; label: ""; onClicked: { const q = mapToItem(dm, 0, height), a = modelData;
                                      menu.open(q.x, q.y, dm.audio.sinks.map(k => ({ glyph: k.net ? "cast" : "device-speaker", label: k.desc, checked: k.id === a.sink,
                                                                                action: () => dm.run(["latte-devices", "audio", "presun", a.id, k.name], a.name + " → " + k.desc) }))
-                                                         .concat([{ separator: true }, { glyph: "radar", label: "Nájsť výstupy v sieti…", action: () => { dm.tab = "siete"; } }]),
-                                               "Prehrávať " + a.name + " na"); } } } }
+                                                         .concat([{ separator: true }, { glyph: "radar", label: i18n.tr("Find outputs on the network…"), action: () => { dm.tab = "siete"; } }]),
+                                               i18n.tr("Play {app} on", { app: a.name })); } } } }
                 }
 
                 // ── OBRAZOVKY: rozlíšenie, mierka, potvrdenie ──
                 Column {
                     visible: dm.group === "obrazovky" && !!dd.it && !!dd.it.modes
                     width: parent.width; spacing: 6
-                    H { text: "ROZLÍŠENIE" }
+                    H { text: i18n.tr("RESOLUTION") }
                     Flow { width: parent.width; spacing: 5
                         Repeater { model: dd.it && dd.it.modes ? dd.it.modes.slice(0, 12) : []
                             Btn { required property string modelData; label: modelData.replace("x", " × ").replace("@", " · ") + " Hz"; on: dm.pickMode === modelData; onClicked: dm.pickMode = modelData } } }
@@ -432,68 +432,68 @@ Item {
                                      return [1, 1.25, 1.5, 1.75, 2].filter(sc => sc === 1 || (Number.isInteger(w / sc) && Number.isInteger(h / sc))); }
                             Btn { required property real modelData; label: (modelData * 100) + " %"; on: Math.abs(dm.pickScale - modelData) < 0.01; onClicked: dm.pickScale = modelData } } }
                     Row { spacing: 8; visible: dm.countdown === 0
-                          Btn { label: "Použiť"; primary: !!dd.it && (dm.pickMode !== dd.it.mode || Math.abs(dm.pickScale - dd.it.scale) > 0.01); onClicked: if (primary) dm.tryDisplay() } }
-                    Row2 { visible: dm.countdown > 0; glyph: "clock"; label: "Ponechať toto nastavenie? Návrat o " + dm.countdown + " s."
-                           Btn { label: "Ponechať"; primary: true; onClicked: dm.keep() }
-                           Btn { label: "Vrátiť"; onClicked: dm.revert() } }
+                          Btn { label: i18n.tr("Apply"); primary: !!dd.it && (dm.pickMode !== dd.it.mode || Math.abs(dm.pickScale - dd.it.scale) > 0.01); onClicked: if (primary) dm.tryDisplay() } }
+                    Row2 { visible: dm.countdown > 0; glyph: "clock"; label: i18n.tr("Keep this setting? Reverting in {n} s.", { n: dm.countdown })
+                           Btn { label: i18n.tr("Keep"); primary: true; onClicked: dm.keep() }
+                           Btn { label: i18n.tr("Revert"); onClicked: dm.revert() } }
                 }
 
                 // ── SIEŤ: Wi-Fi ──
                 Column {
                     visible: dm.group === "siet"
                     width: parent.width; spacing: 5
-                    H { text: "WI-FI V OKOLÍ" }
-                    Note { visible: dm.nets.wifi.length === 0; text: "Žiadna Wi-Fi karta alebo sieť v dosahu." }
+                    H { text: i18n.tr("WI-FI NEARBY") }
+                    Note { visible: dm.nets.wifi.length === 0; text: i18n.tr("No Wi-Fi card or network in range.") }
                     Repeater { model: dm.nets.wifi.slice(0, 8)
                         Row2 { required property var modelData; glyph: "wifi"; label: modelData.ssid; sub: (modelData.security ? "🔒 " : "") + modelData.signal + " %"; picked: modelData.inUse
                                onClicked: dm.pickWifi(modelData) } }
-                    Btn { label: "Siete a VPN"; glyph: "network"; onClicked: dm.tab = "siete" }
+                    Btn { label: i18n.tr("Networks and VPN"); glyph: "network"; onClicked: dm.tab = "siete" }
                 }
 
                 // ── BLUETOOTH ──
                 Column {
                     visible: dm.group === "bluetooth"
                     width: parent.width; spacing: 5
-                    Note { visible: !dm.bt.available; text: "Tento počítač nemá Bluetooth adaptér (alebo je vypnutý v BIOSe)." }
+                    Note { visible: !dm.bt.available; text: i18n.tr("This computer has no Bluetooth adapter (or it is turned off in the BIOS).") }
                     Row { visible: dm.bt.available; spacing: 6
-                          Btn { label: dm.bt.powered ? "Vypnúť Bluetooth" : "Zapnúť Bluetooth"; glyph: "bluetooth"; on: dm.bt.powered
+                          Btn { label: dm.bt.powered ? i18n.tr("Turn Bluetooth off") : i18n.tr("Turn Bluetooth on"); glyph: "bluetooth"; on: dm.bt.powered
                                 onClicked: dm.run(["latte-devices", "bt", dm.bt.powered ? "vypni" : "zapni"]) }
-                          Btn { label: qBtScan.running ? "Hľadám…" : "Pridať zariadenie"; glyph: "plus"; enabled: dm.bt.powered && !qBtScan.running
-                                onClicked: { dm.status = "Hľadám zariadenia (8 s)…"; qBtScan.running = true; } } }
+                          Btn { label: qBtScan.running ? i18n.tr("Searching…") : i18n.tr("Add a device"); glyph: "plus"; enabled: dm.bt.powered && !qBtScan.running
+                                onClicked: { dm.status = i18n.tr("Looking for devices (8 s)…"); qBtScan.running = true; } } }
                     Repeater { model: dm.bt.devices
                         Row2 { required property var modelData; glyph: "bluetooth"; label: modelData.name
-                               sub: (modelData.connected ? "pripojené" : modelData.paired ? "spárované" : "nové") + (modelData.battery !== null ? " · batéria " + modelData.battery + " %" : "")
+                               sub: (modelData.connected ? i18n.tr("connected") : modelData.paired ? i18n.tr("paired") : i18n.tr("new")) + (modelData.battery !== null ? " · " + i18n.tr("battery {n} %", { n: modelData.battery }) : "")
                                picked: modelData.connected
-                               Btn { label: modelData.connected ? "Odpojiť" : (modelData.paired ? "Pripojiť" : "Spárovať")
+                               Btn { label: modelData.connected ? i18n.tr("Disconnect") : (modelData.paired ? i18n.tr("Connect") : i18n.tr("Pair"))
                                      onClicked: dm.run(["latte-devices", "bt", modelData.connected ? "odpoj" : (modelData.paired ? "pripoj" : "sparuj"), modelData.mac], modelData.name) }
-                               Btn { visible: modelData.paired; label: "Zabudnúť"; onClicked: dm.run(["latte-devices", "bt", "zabudni", modelData.mac]) } } }
+                               Btn { visible: modelData.paired; label: i18n.tr("Forget"); onClicked: dm.run(["latte-devices", "bt", "zabudni", modelData.mac]) } } }
                 }
 
                 // ── napájanie: režim ──
                 Column {
                     visible: dm.group === "napajanie"
                     width: parent.width; spacing: 6
-                    H { text: "REŽIM NAPÁJANIA" }
+                    H { text: i18n.tr("POWER MODE") }
                     Flow {
                         width: parent.width; spacing: 6
                         Repeater { model: dm.power.list
                             Btn { required property string modelData; label: dm.powerNames[modelData] || modelData; glyph: "bolt"
                                   on: !dm.power.game && dm.power.cur === modelData
-                                  onClicked: dm.run(["powerprofilesctl", "set", modelData], "Režim: " + label) } }
-                        Btn { label: "Herný režim"; glyph: "device-gamepad"; on: dm.power.game
-                              onClicked: dm.run(["hyprctl", "eval", "latte.game(" + !dm.power.game + ")"], dm.power.game ? "Herný režim vypnutý" : "Herný režim zapnutý") }
+                                  onClicked: dm.run(["powerprofilesctl", "set", modelData], i18n.tr("Mode: {name}", { name: label })) } }
+                        Btn { label: i18n.tr("Game mode"); glyph: "device-gamepad"; on: dm.power.game
+                              onClicked: dm.run(["hyprctl", "eval", "latte.game(" + !dm.power.game + ")"], dm.power.game ? i18n.tr("Game mode off") : i18n.tr("Game mode on")) }
                     }
-                    Note { visible: dm.power.list.length === 0; text: "Profily výkonu nie sú dostupné (power-profiles-daemon)." }
+                    Note { visible: dm.power.list.length === 0; text: i18n.tr("Power profiles are not available (power-profiles-daemon).") }
                 }
 
                 // ── ostatné kategórie: nástroje ──
                 Flow {
                     width: parent.width; spacing: 6
-                    Btn { visible: dm.group === "napajanie"; label: "Uspávanie a vypnutie obrazovky"; glyph: "moon"; onClicked: dm.openWindow(["latte-app", "nastavenia", "uzamknutie"]) }
-                    Btn { visible: dm.group === "vstup"; label: "Myš a touchpad"; glyph: "mouse"; onClicked: dm.openWindow(["latte-app", "nastavenia", "vstup"]) }
-                    Btn { visible: dm.group === "vstup"; label: "Klávesnica a skratky"; glyph: "keyboard"; onClicked: dm.openWindow(["latte-app", "nastavenia", "klavesnica"]) }
-                    Btn { visible: dm.group === "grafika"; label: "Stupeň výkonu"; glyph: "bolt"; onClicked: dm.openWindow(["latte-app", "nastavenia", "vykon"]) }
-                    Btn { visible: dm.group === "grafika" || dm.group === "pocitac"; label: "Hardvér v Monitore"; glyph: "activity"; onClicked: dm.openWindow(["latte-app", "monitor", "hardver"]) }
+                    Btn { visible: dm.group === "napajanie"; label: i18n.tr("Sleep and screen off"); glyph: "moon"; onClicked: dm.openWindow(["latte-app", "nastavenia", "uzamknutie"]) }
+                    Btn { visible: dm.group === "vstup"; label: i18n.tr("Mouse and touchpad"); glyph: "mouse"; onClicked: dm.openWindow(["latte-app", "nastavenia", "vstup"]) }
+                    Btn { visible: dm.group === "vstup"; label: i18n.tr("Keyboard and shortcuts"); glyph: "keyboard"; onClicked: dm.openWindow(["latte-app", "nastavenia", "klavesnica"]) }
+                    Btn { visible: dm.group === "grafika"; label: i18n.tr("Performance tier"); glyph: "bolt"; onClicked: dm.openWindow(["latte-app", "nastavenia", "vykon"]) }
+                    Btn { visible: dm.group === "grafika" || dm.group === "pocitac"; label: i18n.tr("Hardware in Monitor"); glyph: "activity"; onClicked: dm.openWindow(["latte-app", "monitor", "hardver"]) }
                     // tlačiarne: pridanie nájdenej (bez ovládača, IPP Everywhere / AirPrint), predvolená, skúšobná strana, odstránenie
                     Btn { visible: dm.group === "tlac" && !!dd.it && !!dd.it.add; label: i18n.tr("Add this printer"); glyph: "plus"; primary: true
                           onClicked: dm.run(["latte-devices", "tlac", "pridaj", dd.it.add, dd.it.name], i18n.tr("Adding the printer…")) }
@@ -516,12 +516,12 @@ Item {
                           onClicked: dm.openWindow(["latte-app", "subory", dd.it.folder]) }
                     Btn { visible: dm.group === "telefony" && !!dd.it && !!dd.it.folder; label: i18n.tr("Disconnect"); glyph: "usb"
                           onClicked: dm.run(["latte-devices", "telefon", "odpoj", dd.it.phone]) }
-                    Btn { visible: (dm.group === "disky" || dm.group === "usb") && !!dd.it; label: "Otvoriť v Súboroch"; glyph: "folder"
+                    Btn { visible: (dm.group === "disky" || dm.group === "usb") && !!dd.it; label: i18n.tr("Open in Files"); glyph: "folder"
                           onClicked: dm.openWindow(["latte-app", "subory"]) }
                     Btn { visible: (dm.group === "usb" || dm.group === "disky") && !!dd.it && !!(dd.it.details || {})["zariadenie"] && /usb/i.test(((dd.it.details || {})["pripojenie"] || "") + dm.group)
-                          label: "Bezpečne odobrať"; glyph: "usb"; onClicked: dm.safeRemove(dd.it.details["zariadenie"], dd.it.name) }
-                    Btn { visible: dm.group === "kamery" || dm.group === "zvuk"; label: "Kto smie mikrofón a kameru"; glyph: "shield"; onClicked: dm.openWindow(["latte-app", "aplikacie", "opravnenia"]) }
-                    Btn { visible: dm.group === "grafika" || dm.group === "siet" || dm.group === "ostatne"; label: "Ovládače a firmvér"; glyph: "download"; onClicked: dm.openWindow(["latte-app", "aplikacie", "aktualizacie"]) }
+                          label: i18n.tr("Safely remove"); glyph: "usb"; onClicked: dm.safeRemove(dd.it.details["zariadenie"], dd.it.name) }
+                    Btn { visible: dm.group === "kamery" || dm.group === "zvuk"; label: i18n.tr("Who may use the microphone and camera"); glyph: "shield"; onClicked: dm.openWindow(["latte-app", "aplikacie", "opravnenia"]) }
+                    Btn { visible: dm.group === "grafika" || dm.group === "siet" || dm.group === "ostatne"; label: i18n.tr("Drivers and firmware"); glyph: "download"; onClicked: dm.openWindow(["latte-app", "aplikacie", "aktualizacie"]) }
                 }
             }
 
@@ -532,21 +532,21 @@ Item {
                 H { text: "PRIPOJENIA" }
                 Repeater { model: dm.nets.connections.filter(c => !c.vpn)
                     Row2 { required property var modelData; glyph: modelData.type === "Wi-Fi" ? "wifi" : "network"; label: modelData.name
-                           sub: modelData.type + (modelData.device ? " · " + modelData.device : "") + (modelData.active ? " · pripojené" : "") + (modelData.auto ? " · automaticky" : "")
+                           sub: modelData.type + (modelData.device ? " · " + modelData.device : "") + (modelData.active ? " · " + i18n.tr("connected") : "") + (modelData.auto ? " · " + i18n.tr("automatic") : "")
                            picked: modelData.active
-                           Btn { label: modelData.active ? "Odpojiť" : "Pripojiť"; onClicked: dm.run(["latte-devices", "siet", modelData.active ? "odpoj" : "pripoj", modelData.name]) }
+                           Btn { label: modelData.active ? i18n.tr("Disconnect") : i18n.tr("Connect"); onClicked: dm.run(["latte-devices", "siet", modelData.active ? "odpoj" : "pripoj", modelData.name]) }
                            Btn { label: "…"; onClicked: { const q = mapToItem(dm, 0, height), c = modelData;
-                                 menu.open(q.x, q.y, [{ glyph: "settings", label: "Upraviť (nmtui)", action: () => dm.run(["foot", "-e", "nmtui", "edit", c.name]) },
-                                                      { glyph: "trash", label: "Zabudnúť", danger: true, action: () => dm.run(["latte-devices", "siet", "zabudni", c.name]) }], c.name); } } } }
-                H { text: "WI-FI V OKOLÍ" }
-                Note { visible: dm.nets.wifi.length === 0; text: "Žiadna Wi-Fi karta alebo sieť v dosahu." }
+                                 menu.open(q.x, q.y, [{ glyph: "settings", label: i18n.tr("Edit (nmtui)"), action: () => dm.run(["foot", "-e", "nmtui", "edit", c.name]) },
+                                                      { glyph: "trash", label: i18n.tr("Forget"), danger: true, action: () => dm.run(["latte-devices", "siet", "zabudni", c.name]) }], c.name); } } } }
+                H { text: i18n.tr("WI-FI NEARBY") }
+                Note { visible: dm.nets.wifi.length === 0; text: i18n.tr("No Wi-Fi card or network in range.") }
                 Repeater { model: dm.nets.wifi.slice(0, 10)
                     Row2 { required property var modelData; glyph: "wifi"; label: modelData.ssid; sub: (modelData.security ? "🔒 " + modelData.security + " · " : "") + modelData.signal + " %"
                            picked: modelData.inUse; onClicked: dm.pickWifi(modelData) } }
                 Rectangle {
                     visible: dm.wifiSsid !== "" && dm.wifiSecure
                     width: parent.width; height: 40; radius: 9; color: dm.t.field; border { color: dm.t.primary; width: 1 }
-                    Text { id: wl; x: 10; anchors.verticalCenter: parent.verticalCenter; text: "Heslo pre " + dm.wifiSsid + ":"; color: dm.t.fg; font { family: dm.t.fontUi; pixelSize: 12 } }
+                    Text { id: wl; x: 10; anchors.verticalCenter: parent.verticalCenter; text: i18n.tr("Password for {name}:", { name: dm.wifiSsid }); color: dm.t.fg; font { family: dm.t.fontUi; pixelSize: 12 } }
                     TextInput { id: wpw; anchors { left: wl.right; leftMargin: 8; right: parent.right; rightMargin: 10; verticalCenter: parent.verticalCenter }
                                 echoMode: TextInput.Password; passwordCharacter: "•"; color: dm.t.fg; font { family: dm.t.fontUi; pixelSize: 13 }
                                 onVisibleChanged: if (visible) forceActiveFocus()
@@ -554,7 +554,7 @@ Item {
                                 Keys.onEscapePressed: (ev) => { ev.accepted = true; dm.wifiSsid = ""; } }
                 }
                 // ── inšpektor siete (ako ESET Network Inspector): radar, identifikácia zariadení (common/InspektorSiete.qml) ──
-                H { text: "SIEŤ OKOLO · INŠPEKTOR" }
+                H { text: i18n.tr("NETWORK AROUND · INSPECTOR") }
                 InspektorSiete {
                     id: inspView
                     theme: dm.t; compact: dm.compact
@@ -565,61 +565,61 @@ Item {
 
                 // ── zvuk do siete: AirPlay/Snapcast priamo v PipeWire, Spotify Connect v Spotify, DLNA a Chromecast doinštalovať ──
                 H { text: "ZVUK DO SIETE" }
-                Row2 { glyph: "cast"; label: "Prijímače AirPlay ako zvukové výstupy"; picked: !!dm.insp.airplay
-                       sub: dm.insp.airplay ? "zapnuté · receivery a Apple TV sú v zozname výstupov (Zvuk › Aplikácie › ikona vysielania)" : "vypnuté"
-                       Btn { label: dm.insp.airplay ? "Vypnúť" : "Zapnúť"
-                             onClicked: { dm.run(["latte-inspektor", "airplay", dm.insp.airplay ? "vypni" : "zapni"], "AirPlay " + (dm.insp.airplay ? "vypnuté" : "zapnuté"));
+                Row2 { glyph: "cast"; label: i18n.tr("AirPlay receivers as sound outputs"); picked: !!dm.insp.airplay
+                       sub: dm.insp.airplay ? i18n.tr("on · receivers and Apple TV are in the list of outputs (Sound › Applications › cast icon)") : i18n.tr("off")
+                       Btn { label: dm.insp.airplay ? i18n.tr("Turn off") : i18n.tr("Turn on")
+                             onClicked: { dm.run(["latte-inspektor", "airplay", dm.insp.airplay ? "vypni" : "zapni"], "AirPlay " + (dm.insp.airplay ? i18n.tr("off") : i18n.tr("on")));
                                           inspView.net = Object.assign({}, inspView.net, { airplay: !dm.insp.airplay }); } } }
                 Repeater { model: dm.insp.audio || []
                     Row2 { required property var modelData
                            readonly property var sink: modelData.via === "airplay" || modelData.via === "snapcast" ? dm.netSinkFor(modelData.name) : null
                            glyph: modelData.via === "spotify" ? "player-play" : "device-speaker"; label: modelData.name + " · " + modelData.ip; sub: modelData.how
-                           Btn { visible: !!sink; label: "Prehrávať sem"; primary: true
-                                 onClicked: dm.run(["latte-devices", "audio", "default", "sink", sink.name], "Zvuk ide do: " + modelData.name) }
+                           Btn { visible: !!sink; label: i18n.tr("Play here"); primary: true
+                                 onClicked: dm.run(["latte-devices", "audio", "default", "sink", sink.name], i18n.tr("Sound goes to: {name}", { name: modelData.name })) }
                            Btn { visible: !modelData.ready; label: "App Manager"; onClicked: dm.openWindow(["latte-app", "aplikacie", "objavovat"]) } } }
                 Note { visible: (dm.insp.audio || []).length === 0
-                       text: "V sieti zatiaľ nie je receiver, televízor ani reproduktor, ktorý by prijímal zvuk. Spotify vie hrať na zariadenia so Spotify Connect aj sám (ikona zariadení v Spotify)." }
+                       text: i18n.tr("There is no receiver, TV or speaker on the network yet that would accept sound. Spotify can also play to Spotify Connect devices by itself (the devices icon in Spotify).") }
 
                 H { text: "VPN A TUNELY" }
                 Repeater { model: dm.nets.connections.filter(c => c.vpn)
-                    Row2 { required property var modelData; glyph: "lock"; label: modelData.name; sub: modelData.type + (modelData.active ? " · pripojené" : ""); picked: modelData.active
-                           Btn { label: modelData.active ? "Odpojiť" : "Pripojiť"; onClicked: dm.run(["latte-devices", "siet", modelData.active ? "odpoj" : "pripoj", modelData.name]) } } }
+                    Row2 { required property var modelData; glyph: "lock"; label: modelData.name; sub: modelData.type + (modelData.active ? " · " + i18n.tr("connected") : ""); picked: modelData.active
+                           Btn { label: modelData.active ? i18n.tr("Disconnect") : i18n.tr("Connect"); onClicked: dm.run(["latte-devices", "siet", modelData.active ? "odpoj" : "pripoj", modelData.name]) } } }
                 Repeater { model: dm.sec.tunnels
-                    Row2 { required property var modelData; glyph: "arrows-move"; label: "SSH tunel (PID " + modelData.pid + ")"; sub: modelData.cmd
-                           Btn { label: "Ukončiť"; onClicked: dm.run(["kill", String(modelData.pid)], "Tunel ukončený") } } }
-                Note { visible: dm.nets.connections.filter(c => c.vpn).length === 0 && dm.sec.tunnels.length === 0; text: "Žiadna VPN ani tunel." }
+                    Row2 { required property var modelData; glyph: "arrows-move"; label: i18n.tr("SSH tunnel (PID {pid})", { pid: modelData.pid }); sub: modelData.cmd
+                           Btn { label: i18n.tr("Quit"); onClicked: dm.run(["kill", String(modelData.pid)], i18n.tr("Tunnel ended")) } } }
+                Note { visible: dm.nets.connections.filter(c => c.vpn).length === 0 && dm.sec.tunnels.length === 0; text: i18n.tr("No VPN or tunnel.") }
                 Row { spacing: 6
-                      Btn { label: "Pridať VPN / WireGuard"; glyph: "plus"; onClicked: dm.run(["foot", "-e", "nmtui", "connect"]) }
-                      Btn { label: "Pridať SSH tunel"; glyph: "plus"; onClicked: menu.open(0, fl.y + 40, [{ input: "ssh -N -L 8080:localhost:80 meno@server", label: "Príkaz tunela",
-                            action: (c) => { if (/^ssh\s/.test(c)) dm.run(["sh", "-c", c + " >/dev/null 2>&1 &"], "Tunel spustený"); } }], "SSH tunel (-L miestny, -R vzdialený, -D SOCKS)") } }
-                H { text: "SSH SERVER (vzdialený prístup do tohto PC)" }
-                Row2 { glyph: "terminal-2"; label: dm.sec.ssh.active ? "Beží na porte " + dm.sec.ssh.port : "Vypnutý"
-                       sub: dm.sec.ssh.enabled ? "spúšťa sa pri štarte" : "nespúšťa sa pri štarte"; picked: !!dm.sec.ssh.active
-                       Btn { label: dm.sec.ssh.active ? "Vypnúť" : "Zapnúť"
+                      Btn { label: i18n.tr("Add VPN / WireGuard"); glyph: "plus"; onClicked: dm.run(["foot", "-e", "nmtui", "connect"]) }
+                      Btn { label: i18n.tr("Add an SSH tunnel"); glyph: "plus"; onClicked: menu.open(0, fl.y + 40, [{ input: "ssh -N -L 8080:localhost:80 meno@server", label: i18n.tr("Tunnel command"),
+                            action: (c) => { if (/^ssh\s/.test(c)) dm.run(["sh", "-c", c + " >/dev/null 2>&1 &"], i18n.tr("Tunnel started")); } }], i18n.tr("SSH tunnel (-L local, -R remote, -D SOCKS)")) } }
+                H { text: i18n.tr("SSH SERVER (remote access to this PC)") }
+                Row2 { glyph: "terminal-2"; label: dm.sec.ssh.active ? i18n.tr("Running on port {port}", { port: dm.sec.ssh.port }) : i18n.tr("Off")
+                       sub: dm.sec.ssh.enabled ? i18n.tr("starts at boot") : i18n.tr("does not start at boot"); picked: !!dm.sec.ssh.active
+                       Btn { label: dm.sec.ssh.active ? i18n.tr("Turn off") : i18n.tr("Turn on")
                              onClicked: dm.sudo(dm.sec.ssh.active ? "sudo systemctl disable --now sshd" : "sudo systemctl enable --now sshd", "SSH server") } }
                 H { text: "FIREWALL" }
-                Row2 { glyph: "shield"; label: dm.sec.firewall.active ? "Zapnutý · predvolená zóna " + dm.sec.firewall.default : "Vypnutý"
+                Row2 { glyph: "shield"; label: dm.sec.firewall.active ? i18n.tr("On · default zone {zone}", { zone: dm.sec.firewall.default }) : i18n.tr("Off")
                        sub: dm.sec.firewall.zones.map(z => z.name + " (" + z.interfaces.join(", ") + ")").join(" · "); picked: !!dm.sec.firewall.active
-                       Btn { label: dm.sec.firewall.active ? "Vypnúť" : "Zapnúť"; onClicked: dm.sudo(dm.sec.firewall.active ? "sudo systemctl disable --now firewalld" : "sudo systemctl enable --now firewalld", "Firewall") } }
+                       Btn { label: dm.sec.firewall.active ? i18n.tr("Turn off") : i18n.tr("Turn on"); onClicked: dm.sudo(dm.sec.firewall.active ? "sudo systemctl disable --now firewalld" : "sudo systemctl enable --now firewalld", "Firewall") } }
                 Repeater { model: dm.fwFull && dm.fwFull.ok ? [] : dm.sec.firewall.zones
-                    Note { required property var modelData; text: "Povolené (predvolené pre zónu " + modelData.name + "): " + modelData.services.concat(modelData.ports).join(", ") } }
+                    Note { required property var modelData; text: i18n.tr("Allowed (defaults for zone {zone}): {list}", { zone: modelData.name, list: modelData.services.concat(modelData.ports).join(", ") }) } }
                 Column {
                     visible: !!dm.fwFull && dm.fwFull.ok
                     width: parent.width; spacing: 4
-                    Repeater { model: dm.fwFull && dm.fwFull.ok ? [["Služby", "services"], ["Porty", "ports"], ["Presmerovanie portov", "forward_ports"], ["Bohaté pravidlá", "rich_rules"]] : []
-                        Note { required property var modelData; text: modelData[0] + ": " + ((dm.fwFull[modelData[1]] || []).join(", ") || "žiadne") } }
+                    Repeater { model: dm.fwFull && dm.fwFull.ok ? [[i18n.tr("Services"), "services"], [i18n.tr("Ports"), "ports"], [i18n.tr("Port forwarding"), "forward_ports"], [i18n.tr("Rich rules"), "rich_rules"]] : []
+                        Note { required property var modelData; text: modelData[0] + ": " + ((dm.fwFull[modelData[1]] || []).join(", ") || i18n.tr("none")) } }
                 }
                 Row { spacing: 6
-                      Btn { label: dm.fwFull && dm.fwFull.ok ? "Obnoviť pravidlá" : "Zobraziť všetky pravidlá"; glyph: "list-tree"; onClicked: { dm.status = "Firewall sa môže opýtať na heslo…"; qFw.running = true; } }
-                      Btn { label: "Povoliť port…"; glyph: "plus"
-                            onClicked: menu.open(0, fl.y + 60, [{ input: "8080/tcp", label: "Port/protokol",
-                                action: (p) => { if (/^\d+(-\d+)?\/(tcp|udp)$/.test(p)) dm.sudo("sudo firewall-cmd --permanent --add-port=" + p + " && sudo firewall-cmd --reload", "Firewall: povoliť " + p); } }], "Povoliť prichádzajúce spojenia na port") }
-                      Btn { label: "Presmerovať port…"; glyph: "arrows-move"
-                            onClicked: menu.open(0, fl.y + 60, [{ input: "8080:tcp:80", label: "zdroj:protokol:cieľ",
-                                action: (p) => { const m = p.match(/^(\d+):(tcp|udp):(\d+)(?::([\d.]+))?$/); if (m) dm.sudo("sudo firewall-cmd --permanent --add-forward-port=port=" + m[1] + ":proto=" + m[2] + ":toport=" + m[3] + (m[4] ? ":toaddr=" + m[4] : "") + " && sudo firewall-cmd --reload", "Firewall: presmerovanie " + p); } }],
-                                "Presmerovanie: port:protokol:cieľový port[:adresa]") } }
+                      Btn { label: dm.fwFull && dm.fwFull.ok ? i18n.tr("Refresh rules") : i18n.tr("Show all rules"); glyph: "list-tree"; onClicked: { dm.status = i18n.tr("The firewall may ask for a password…"); qFw.running = true; } }
+                      Btn { label: i18n.tr("Allow a port…"); glyph: "plus"
+                            onClicked: menu.open(0, fl.y + 60, [{ input: "8080/tcp", label: i18n.tr("Port/protocol"),
+                                action: (p) => { if (/^\d+(-\d+)?\/(tcp|udp)$/.test(p)) dm.sudo("sudo firewall-cmd --permanent --add-port=" + p + " && sudo firewall-cmd --reload", i18n.tr("Firewall: allow {port}", { port: p })); } }], i18n.tr("Allow incoming connections on a port")) }
+                      Btn { label: i18n.tr("Forward a port…"); glyph: "arrows-move"
+                            onClicked: menu.open(0, fl.y + 60, [{ input: "8080:tcp:80", label: i18n.tr("source:protocol:target"),
+                                action: (p) => { const m = p.match(/^(\d+):(tcp|udp):(\d+)(?::([\d.]+))?$/); if (m) dm.sudo("sudo firewall-cmd --permanent --add-forward-port=port=" + m[1] + ":proto=" + m[2] + ":toport=" + m[3] + (m[4] ? ":toaddr=" + m[4] : "") + " && sudo firewall-cmd --reload", i18n.tr("Firewall: forward {port}", { port: p })); } }],
+                                i18n.tr("Forwarding: port:protocol:target port[:address]")) } }
                 H { text: "ADRESY" }
-                Note { text: dm.nets.addresses.join(" · ") || "žiadne" }
+                Note { text: dm.nets.addresses.join(" · ") || i18n.tr("none") }
 
             }
             Note { visible: dm.status !== ""; text: dm.status; color: dm.t.primary }
