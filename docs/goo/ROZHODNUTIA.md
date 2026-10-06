@@ -23,6 +23,21 @@ Nové rozhodnutie: jeden riadok sem (dátum, čo, prečo) a oprava platného zne
   s dátumom do `docs_zaloha/` (pred zmazaním alebo závažnou zmenou). `cloud_session_1.md` (jednorazová práca
   v Claude cloud) sa nemaže, je v archíve. LATTEOS-GOO.md rozdelený na platné znenie a tento denník.
 - **latte-lab:** karta na fotke je **RX 550**, detektor LatteOS ju hlási ako **RX 640** (ten istý čip Polaris 12).
+- **Brainstorming nových nápadov** (večer, po prieskume trendov):
+  - prijaté do plánu: odkladacia kvapka na súbory; **dlho nepoužitá kvapka sa postupne zmenšuje** (nie ikry
+    GooBaru); zvuková identita (s vypínačom — „väčšina ľudí to vypne“); **podržanie LensGoo = hovor** (pri ikone sa
+    pri držaní plynulo ukáže mikrofón); telefón v ClockGoo (KDE Connect); pomoc na diaľku jedným klikom; prechod
+    z Windowsu (import, prehľad skratiek); režim sústredenia (zistiť, čo už má Noctalia); vrátiť späť pri zmene
+    nastavení ako súčasť okna Nastavení (nie kvapka na okraji); ovládanie Goo **Steam Controllerom** (používateľ
+    má prvú verziu); prenos účtu z mobilu na cudzí Goo PC — koniec roadmapy;
+  - **AI je voliteľná už pri inštalácii** (voľba „systém bez AI“); `latte-mcp` na vyriešenie;
+  - **stavy hladiny** (kľud, vlnenie, príboj, búrka) — na čo ich naviazať, nie je rozhodnuté; pri záťaži nemá
+    rozhranie pridávať ďalšie efekty;
+  - tekuté zóny okien — ukážka pre používateľa, rozhodne sa po nej;
+  - nie: ťahanie súboru na LensGoo (stačí pravý klik › Otvoriť v); gestá kurzorom (zatras, špirála) — skôr nie;
+    prístupnosť zatiaľ iba minimálne.
+- Správca súborov bude ako Total Commander s dvoma panelmi, alebo náš fork Total Commandera.
+- Ovládacie centrum Noctalie sa otvára **nad rohovou lištou vpravo** (predtým vľavo, zvyšok plochy Kvapky).
 - Na zváženie (nerozhodnuté): „Zásady pre engine Goo“ v README (samostatný daemon, Quickshell ako vizuálna vrstva,
   zbernica `goo.emit`) oproti dnešnému enginu (scéna pleamar, logika Luau, pomocník `latte-goo`).
 
