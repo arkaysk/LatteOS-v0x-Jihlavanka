@@ -84,9 +84,9 @@ LATTEOS-GOO.md (koreň)            ← Záväzný dokument: čo platí — pravi
 
 ## Licencie a povolenia
 
-- **pleamar** a **Marea** — BSD-3-Clause, od k4ditano
-- **LatteOS** — vlastný obsah autormi
-- Pred vydaním sa požiada povolenie všetkých strán
+- **LatteOS** — MIT ([LICENSE](../LICENSE))
+- **pleamar** a **Marea** — BSD-3-Clause, od k4ditano; ostatné cudzie súčasti a ich licencie sú
+  v [TRETIE-STRANY.md](../TRETIE-STRANY.md)
 
 ---
 
@@ -98,4 +98,4 @@ LATTEOS-GOO.md (koreň)            ← Záväzný dokument: čo platí — pravi
 4. Platné znenie oprav v [LATTEOS-GOO.md](../LATTEOS-GOO.md) (a [ROZHRANIE.md](goo/ROZHRANIE.md)), rozhodnutie s dátumom
    zapíš do [ROZHODNUTIA.md](goo/ROZHODNUTIA.md), plán do [ROADMAP.md](../ROADMAP.md); starý dokument pred zmazaním
    alebo závažnou zmenou ulož s dátumom do [docs_zaloha/](../docs_zaloha/README.md)
-5. Commit a `git push -u origin main`
+5. Commit a `git push origin main` (jediná vetva); verejné vydanie robí `setup/verejne/zverejnit.sh`
