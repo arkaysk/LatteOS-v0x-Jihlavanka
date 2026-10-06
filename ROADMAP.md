@@ -423,6 +423,17 @@ texty preložiteľné (`translations`). Noctalia beží bez lišty a robí, čo 
   - [ ] **Barista ako pomocník** (nielen sprievodca prvým spustením): vyvolá sa z kontextovej ponuky okna pravým
     klikom (napr. „Opýtaj sa Baristu o tomto okne“), dostane úlohu aj kontext okna
   - [ ] čip spotreby v AI karte LensGoo doplniť o **limity predplatných** (relácia / týždeň v %, ako Omarchy)
+  - [ ] **Newelle** (qwersyk/Newelle, Python + GTK4, GPL-3) preskúmať ako jadro AI: **jedna vec použitá dvakrát** —
+    bubliny v LensGoo aj plnohodnotné samostatné okno nad tým istým jadrom (rozhovory, poskytovatelia, lokálne modely,
+    hlas, MCP, otázky na vlastné dokumenty, dlhodobá pamäť, príkazy z AI po potvrdení). AI v LensGoo ešte nie je
+    plne funkčná — ak Newelle dáva kód alebo funkčnosť podľa zadania, prevziať; prevzatý kód = GPL-3 (licencia 0.2)
+  - [ ] **bezpečnostná kontrola balíkov** (perplexityai/bumblebee, Go, Apache 2.0) aj pre bežného používateľa:
+    keď vyjde varovanie o napadnutom balíku alebo rozšírení a na PC je, ukáže sa bublina; spolu s bezpečnostnými
+    varovaniami dnf a Flatpaku (F6)
+  - [ ] **deň a noc na hladine**: automatický režim plynulo podľa polohy slnka (poloha z nastavení) — nočné
+    svetlo (overiť, čo používa Noctalia; prípadne Hyprsunset), vzhľad okien (svetlý/tmavý) a **žiara nad
+    horizontom hladiny**: odlesky a obrys kvapiek podľa dennej doby (ráno teplé a nízke, na poludnie biele,
+    večer oranžová žiara, v noci tlmené studené), takže už z pohľadu na Goo vidieť, či je vonku deň alebo noc
   - [ ] odložené: **Flea** (thisisgm/flea, Rust + Quickshell, pre Hyprland) ako možný základ Súborov — pozrieť
     na latte-lab so všetkými nápadmi na rozšírenie; možný fork **FleaGoo**
   - [ ] na rozhodnutie: bublina odchádzajúceho spojenia — nie ako tretia vrstva, iba ako súčasť modelu NET
