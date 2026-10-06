@@ -72,6 +72,16 @@ pleamar-wm (k4ditano) žiada obrazový buffer iba s modifiermi. Na latte-lab (RX
 terminálu. Záplata: keď alokácia s modifiermi zlyhá, lineárny buffer (Vulkan ho preberá ako modifier 0) — ako
 „modifier-less allocation“ v aquamarine (Hyprland). Kandidát na hlásenie autorovi (iba ak to používateľ chce).
 
+## pleamar-linearny-dmabuf.patch (pôvodná Marea, setup/lab/marea-povodna.sh)
+
+Druhá polovica toho istého problému (6. 10. 2026): lineárny buffer z predošlej záplaty pleamar-wm odovzdá Vulkanu cez
+`Gpu::import_dmabuf`, a ten cez wgpu vyžaduje `VK_EXT_image_drm_format_modifier`. RADV na Polaris (RX 640) ho nemá —
+import skončil chybou `Unexpected` (`session · DP-3: Unexpected`) a monitory ostali na texte terminálu
+(„pleamar-wm · its log: …“). Záplata: bez toho rozšírenia a s modifierom 0 sa buffer prevezme ako obraz s lineárnym
+uložením (`VK_EXT_external_memory_dma_buf`), iba ak ovládač ukladá riadky rovnako ako buffer. Platí pre kópiu pleamaru
+v `~/.local/share/marea-povodna` (LatteOS `/usr/bin/pleamar` ju nepotrebuje — kreslí ako klient). Okná programov
+na tejto karte ďalej idú cez zdieľanú pamäť (pomalšie). Kandidát na hlásenie autorovi (iba ak to používateľ chce).
+
 ## Základ (30. 9. 2026)
 
 Záplaty 1–5 (`pleamar-hyprland-okna-8bit.patch`) sú na **pleamar 0.2.3** (upstream 0728337, jazyk 0.2,

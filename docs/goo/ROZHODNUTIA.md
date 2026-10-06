@@ -16,6 +16,8 @@ Nové rozhodnutie: jeden riadok sem (dátum, čo, prečo) a oprava platného zne
 - **Marea na dvoch monitoroch** (latte-lab): guľa žila na vedľajšom monitore a relácia s pleamar-wm ostala čierna
   (v nastaveniach autorova tapeta, ktorá na Fedore nie je). `latte-marea` jej doplní domov = hlavný monitor LatteOS
   a platnú tapetu, iba ak chýbajú; `hypr/marea.lua` berie obrazovky z Nastavení LatteOS.
+  Relácia s pleamar-wm na RX 640 vôbec neukázala obraz (ovládač nemá rozšírenie, ktoré pleamar pri odovzdaní obrazu
+  monitoru žiada) — záplata `resources/patches/pleamar-linearny-dmabuf.patch`.
 - **Verejná kópia `arkaysk/latteos` je zastaraná** (29. 9., pred GOO). Classic sa už nevyvíja; po dokončení enginu Goo
   sa zverejní **verejná verzia 0.2** iba s GOO.
 - **Kliky jednotlivých goo** (po zhodnotení ergonómie — niektoré goo mali iba ľavý, iné iba pravý klik): hlava
