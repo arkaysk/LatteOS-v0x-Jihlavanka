@@ -11,6 +11,8 @@ Logika scény beží v pieskovisku pleamar (bez súborov a bez sh) — všetko, 
   latte-goo upozornenie ID        farba jadra z príkazu upozornenia (hardver|siet|softver|vystraha|svetlo|ine), prázdne = nič
   latte-goo stav                  uložené polohy a veľkosti ({id: {x, y, z}})
   latte-goo uloz-stav JSON        uloží ich (atomicky)
+  latte-goo prihlasenie           údaje scény prihlásenia (login.plm): meno, káva, posledný pád / novinky, info, ikony
+  latte-goo login-skuska [SEK]    scéna prihlásenia na skúšku nad plochou (heslo „latte“, sama skončí; nič nemení)
   latte-goo nastavenia            Nastavenia › Kvapky (~/.config/latteos/kvapky.json): skryté, veľkosť, vrátenie
   latte-goo cas                   údaje karty ClockGoo: {"teraz" ms, "casovace" (stopky, minútka, budíky — spoločné
                                   s plochou Kvapky, ~/.local/share/latteos/casovace.json), "pohoda" (čas pred obrazovkou
@@ -414,6 +416,104 @@ def profil(nastav=None):
     return {"aktivny": akt, "dostupne": dost} if akt else {}
 
 
+GREETER = "/var/lib/latteos/greeter"
+
+
+def prihlasenie():
+    """údaje scény prihlásenia (session/goo/login.plm): kto sa prihlasuje, káva, čo je pod hladinou (posledný pád,
+    inak novinky z RSS v greeter.conf), informačné goo (batéria, úlohy) a znaky ikon. Beží ako prihlásený používateľ
+    (zámok relácie) aj ako používateľ prihlasovača (greetd) — vtedy meno berie z posledného prihlásenia."""
+    import pwd, time
+    login = os.environ.get("USER") or pwd.getpwuid(os.getuid()).pw_name
+    if os.getuid() < 1000:                               # prihlasovač: naposledy prihlásený, inak prvý bežný účet
+        try:
+            login = open("/var/lib/greetd/latte-last-user").read().strip() or login
+        except OSError:
+            pass
+        if not login or pwd.getpwnam(login).pw_uid < 1000:
+            login = next((u.pw_name for u in pwd.getpwall() if 1000 <= u.pw_uid < 60000 and "nologin" not in u.pw_shell), login)
+    try:
+        meno = pwd.getpwnam(login).pw_gecos.split(",")[0].strip() or login
+    except KeyError:
+        meno = login
+    try:
+        kava = list(KAVY.get((re.findall(r"[\w-]+", open(KAVA).read()) or ["espresso"])[0], KAVY["espresso"]))
+    except OSError:
+        kava = [0.55, 0]
+    conf = {}
+    try:
+        for line in open(os.path.join(GREETER, "greeter.conf"), encoding="utf-8"):
+            m = re.match(r'\s*(\w+)\s*=\s*"?(.*?)"?\s*$', line)
+            if m and not line.lstrip().startswith("#"):
+                conf[m.group(1)] = m.group(2)
+    except OSError:
+        pass
+    # posledný pád: iba ak k nemu došlo od štartu počítača (alebo počítadlo pádov nie je nula)
+    panel, riadky = "", []
+    log = os.path.join(GREETER, "last-crash.log")
+    try:
+        boot = time.time() - float(open("/proc/uptime").read().split()[0])
+        try:
+            pady = int(open("/var/lib/latteos/crash-count").read().split()[0])
+        except (OSError, ValueError, IndexError):
+            pady = 0
+        if os.path.getmtime(log) >= boot or pady > 0:
+            for line in open(log, encoding="utf-8", errors="replace").read().splitlines():
+                line = line.rstrip()
+                while len(line) > 108:
+                    riadky.append(line[:108]); line = "  " + line[108:]
+                riadky.append(line)
+            riadky = [r for i, r in enumerate(riadky) if r.strip() or (0 < i < len(riadky) - 1)][:14]
+            panel = "pad" if riadky else ""
+    except OSError:
+        pass
+    if not panel and conf.get("rss_url") and conf.get("panel", "rss") != "none":
+        try:                                             # novinky: titulky z RSS alebo Atom, krátko čakať
+            import urllib.request, xml.etree.ElementTree as ET
+            req = urllib.request.Request(conf["rss_url"], headers={"User-Agent": "LatteOS"})
+            root = ET.fromstring(urllib.request.urlopen(req, timeout=4).read())
+            for it in list(root.iter("item")) or [e for e in root.iter() if e.tag.endswith("}entry")]:
+                t = next((c.text for c in it if c.tag.split("}")[-1] == "title" and c.text), "")
+                if t.strip():
+                    riadky.append(" ".join(t.split()))
+                if len(riadky) >= 8:
+                    break
+            panel = "novinky" if riadky else ""
+        except Exception:                                # bez siete nič: pod hladinou ostane iba káva
+            panel, riadky = "", []
+    info = []
+    for b in sorted(glob.glob("/sys/class/power_supply/BAT*")):
+        try:
+            pct = int(open(b + "/capacity").read())
+            nab = open(b + "/status").read().strip() == "Charging"
+            info.append({"ikona": "battery-charging" if nab else "battery-%d" % min(4, max(1, round(pct / 25))), "text": "%d %%" % pct})
+            break
+        except (OSError, ValueError):
+            pass
+    if os.getuid() >= 1000:                              # úlohy a dnešné udalosti: iba vlastné údaje prihláseného
+        base = os.path.join(os.environ.get("XDG_DATA_HOME", HOME + "/.local/share"), "latteos")
+        n = 0
+        try:
+            n += sum(1 for t in json.load(open(os.path.join(base, "todo.json"))) if isinstance(t, dict) and not t.get("done"))
+        except (OSError, ValueError, TypeError):
+            pass
+        try:
+            dnes = time.strftime("%Y-%m-%d")
+            n += sum(1 for e in json.load(open(os.path.join(base, "events.json"))) if isinstance(e, dict) and str(e.get("date", "")) == dnes)
+        except (OSError, ValueError, TypeError):
+            pass
+        if n:
+            info.append({"ikona": "calendar-event", "text": str(n)})
+    goopower = None
+    try:
+        goopower = json.load(open(STATE)).get("goopower", {}).get("x")
+    except (OSError, ValueError, AttributeError):
+        pass
+    names = ["power", "arrow-right", "moon", "refresh", "battery-3", "bell", "calendar-event"] + [i["ikona"] for i in info]
+    return {"meno": meno, "login": login, "kava": kava, "panel": panel, "riadky": riadky, "info": info[:3],
+            "goopower": goopower, "ikony": glyphs(names)}
+
+
 def main(a):
     c = a[0] if a else ""
     if c == "zoznam":
@@ -546,6 +646,20 @@ def main(a):
         except OSError:
             name = "espresso"
         print(json.dumps(list(KAVY.get(name, KAVY["espresso"])))); return 0
+    if c == "login-skuska":
+        # scéna prihlásenia na skúšku nad bežiacou plochou (hlavný monitor): nič nemení, sama skončí
+        sek = a[1] if len(a) > 1 and a[1].isdigit() else "40"
+        mon = ""
+        try:
+            mons = json.loads(subprocess.run(["hyprctl", "-j", "monitors"], capture_output=True, text=True, timeout=2).stdout)
+            mon = next((m["name"] for m in mons if m.get("x") == 0 and m.get("y") == 0), mons[0]["name"]) if mons else ""
+        except (OSError, ValueError, KeyError, IndexError, subprocess.TimeoutExpired):
+            pass
+        os.chdir(SHARE)
+        os.environ["LATTE_LOGIN"] = "skuska"
+        os.execvp("pleamar", ["pleamar", "--scene", "login.plm", "--no-hud", "--seconds", sek] + (["--screen", mon] if mon else []))
+    if c == "prihlasenie":
+        print(json.dumps(prihlasenie(), ensure_ascii=False)); return 0
     if c == "ucet":
         print(json.dumps(ucet(), ensure_ascii=False)); return 0
     if c in ("profil", "profil-nastav"):
