@@ -12,6 +12,7 @@ Logika scény beží v pieskovisku pleamar (bez súborov a bez sh) — všetko, 
   latte-goo stav                  uložené polohy a veľkosti ({id: {x, y, z}})
   latte-goo uloz-stav JSON        uloží ich (atomicky)
   latte-goo prihlasenie           údaje scény prihlásenia (login.plm): meno, káva, posledný pád / novinky, info, ikony
+  latte-goo goopower-miesto ÚČET  kde má GooPower daný účet (podiel šírky; pre prihlásenie iným menom)
   latte-goo login-skuska [SEK]    scéna prihlásenia na skúšku nad plochou (heslo „latte“, sama skončí; nič nemení)
   latte-goo nastavenia            Nastavenia › Kvapky (~/.config/latteos/kvapky.json): skryté, veľkosť, vrátenie
   latte-goo cas                   údaje karty ClockGoo: {"teraz" ms, "casovace" (stopky, minútka, budíky — spoločné
@@ -783,6 +784,14 @@ def main(a):
         os.chdir(SHARE)
         os.environ["LATTE_LOGIN"] = "skuska"
         os.execvp("pleamar", ["pleamar", "--scene", "login.plm", "--no-hud", "--seconds", sek] + (["--screen", mon] if mon else []))
+    if c == "goopower-miesto" and len(a) == 2 and re.fullmatch(r"[A-Za-z0-9._-]{1,64}", a[1]):
+        # kde má GooPower tento účet (odkladá uloz-stav): prihlásenie iným menom než predvyplneným
+        try:
+            x = json.load(open(os.path.join(GREETER, "goo-%s.json" % a[1]))).get("goopower")
+            print(x if isinstance(x, (int, float)) else "")
+        except (OSError, ValueError, AttributeError):
+            print("")
+        return 0
     if c == "prihlasenie":
         print(json.dumps(prihlasenie(), ensure_ascii=False)); return 0
     if c == "ucet":

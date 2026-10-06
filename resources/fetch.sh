@@ -64,7 +64,7 @@ clone noctalia-shell      https://github.com/noctalia-dev/noctalia-shell.git
 clone noctalia-greeter    https://github.com/noctalia-dev/noctalia-greeter.git
 clone noctalia-plugins    https://github.com/noctalia-dev/noctalia-plugins.git
 # pleamar a Marea (k4ditano, BSD-3): pripnuté na overené verzie; záplaty LatteOS na ne sedia (resources/patches)
-clone pleamar            https://github.com/k4ditano/pleamar.git    v0.2.6   # kvapky a engine Goo: SDF, pružiny, jazyk 0.2
+clone pleamar            https://github.com/k4ditano/pleamar.git    v0.2.24  # kvapky a engine Goo: SDF, pružiny, jazyk 0.2
 clone pleamar-wm         https://github.com/k4ditano/pleamar-wm.git v0.2.5   # autorov kompozitor (pôvodná Marea)
 clone marea-plm          https://github.com/k4ditano/marea-plm.git            # tekutý spoločník v pleamar (a589189, 30. 9.)
 clone noctalia-official-plugins https://github.com/noctalia-dev/official-plugins.git

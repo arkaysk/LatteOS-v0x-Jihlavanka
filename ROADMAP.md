@@ -365,6 +365,11 @@ texty preložiteľné (`translations`). Noctalia beží bez lišty a robí, čo 
   `zamok.plm` generovaný z `login.plm`); overené zamknutie, nesprávne a správne heslo, kliky, oba monitory
 - [x] Overené naživo 6. 10.: profily napájania, Monitor, Nastavenia, Zamknúť, Nerušiť, klik na bunku pásu výkonu,
   pravý klik na hlavu GooBaru (ukázať plochu — opravený návrat iba z prázdnej plochy)
+- [ ] **Jeden dokument profilu používateľa** (nápad 6. 10.: „arkay@gooconfig“ — jeden dokument na rýchle načítanie
+  prostredia): ktoré goo sú zapnuté a kde, vzhľad goo (káva) a okien (téma), widgety Noctalie, tapeta, obrazovky…
+  Dnes je to po účtoch oddelené (každý má svoje v domove), ale rozsypané asi v 20 súboroch (`~/.config/latteos/*`,
+  `~/.local/state/latteos/**`). Návrh: jeden profil ako zdroj pre engine (zlúčiť `stav.json`, `kvapky.json`, `kava`)
+  s odkazmi na ostatné a s exportom / importom — súvisí s bodom „Na koniec — prenos účtu“. Na rozhodnutie.
 - [ ] Prihlásenie — zvyšky: asi sekunda čiernej medzi prihlásením a plochou; voľba prihlasovača v Nastaveniach;
   zámok pri nečinnosti novou scénou (dnes Noctalia); overiť skutočný dážď a sneh a Uspať · Reštartovať · Vypnúť
 - [ ] Overiť: Odhlásiť z karty GooPower, dvojstĺpcová karta ClockGoo na 1024 × 768

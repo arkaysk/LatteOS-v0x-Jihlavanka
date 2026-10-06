@@ -92,6 +92,14 @@ spätne číta 0.1). Prechod z 5f9cd54 (0.1.0) bez konfliktov. Nové zmeny u aut
 pleamar so záplatou sa preloží. Scéna Kvapky aj engine Goo prejdú `pleamar --check` (jazyk 0.2 číta aj 0.1).
 Verzie sú pripnuté v `resources/fetch.sh`; `install-session.sh` preloží pleamar znova, keď sa verzia líši.
 
+**6. 10. 2026: pleamar v0.2.24** (`0efbcd9`, 70 zmien od v0.2.6). `pleamar-prazdne-tvary`, `pleamar-ostre-okraje`,
+`pleamar-pasy-tela` a `pleamar-linearny-dmabuf` sedia bez úprav. `pleamar-hyprland-okna-8bit.patch` je nanovo
+vytvorená proti v0.2.24: autor medzitým pridal službu náhľadov na to isté miesto (`platform/mod.rs`), a časť 3
+(ťahanie aj pravým tlačidlom) je **vypustená** — slúžila lište pôvodnej plochy Kvapky, engine Goo ťahá iba ľavým
+a pravé tlačidlo má pre akcie. Scény enginu, prihlásenia, zámku aj pôvodná scéna Kvapky prejdú `pleamar --check`;
+záťaž enginu na latte-lab rovnaká ako na v0.2.6 (CPU 43 % jadra, GPU 53 % so zapnutým pásom výkonu), pamäť nižšia
+(150 MB oproti 174 MB).
+
 ## noctalia-rohova-lista.patch (Noctalia pre plochu Kvapky, setup/lab/noctalia-kvapky.sh)
 
 Rohová lišta Noctalie vpravo dole (1. 10. 2026): k súmernému `margin_ends` voliteľné `margin_start` a `margin_end`
