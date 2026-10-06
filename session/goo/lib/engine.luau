@@ -36,7 +36,8 @@
 --   napr. minimalizované okno padne do lišty (pravidlo 14: „žblnkne ako voda“)
 
 local E = {}
-local N = 128            -- = gen.py N (miesta v scéne): Goobar nesie okná ako ikry/hrozno, pri veľkej RAM ich je veľa
+local N = type(fact.miesta) == "number" and fact.miesta or 128   -- miesta v scéne (gen.py --n): menšia scéna stojí menej
+-- (Goobar nesie okná ako ikry/hrozno, pri veľkej RAM ich je veľa — preto až 128; bežne stačí 32)
 E.N = N
 
 -- efekty scény (čísla v goo.plm); 6–9 rezerva pre efekty, ktoré ešte nie sú
@@ -376,7 +377,10 @@ on("goo_vibracia", function(x) E.vlnka(x, 3, "vibracia") end)
 
 -- ── registrácia ──────────────────────────────────────────────────────────────────────────────────────────────
 local function freeSlot()
-    for k = 0, N - 1 do if not slots[k] then return k end end
+    local first, free = nil, 0
+    for k = 0, N - 1 do if not slots[k] then first = first or k free = free + 1 end end
+    if free <= 4 and E.miesta then after(50, E.miesta) end     -- miesta dochádzajú: o väčšiu scénu (nižšie)
+    return first
 end
 
 -- miesto na lište pre kvapku bez polohy: zľava doprava, rozostupy podľa veľkosti
@@ -1131,6 +1135,36 @@ end
 E.obloha = { zapni = weatherOn, vypni = weatherOff, stav = wx }   -- aj na skúšanie (README)
 after(1500, sky)
 every(600000, sky)
+
+-- ── počet miest podľa potreby ───────────────────────────────────────────────────────────────────────────────────
+-- Scéna počíta každú snímku všetky miesta, aj prázdne (128 miest 42 % jadra, 32 miest 17 %; latte-lab 6. 10.). Engine
+-- preto beží na najmenšej scéne, do ktorej sa zmestí (32 / 64 / 128; menšie vyrába gen.py --n pri inštalácii),
+-- a keď miesta dochádzajú, povie si o väčšiu: `latte-kvapky miesta N` scénu vymení (kvapky na chvíľu zmiznú a vrátia
+-- sa na svoje miesta). Späť na menšiu až po troch minútach, keď je dlho voľno.
+local function potreba(used) return used <= 24 and 32 or (used <= 56 and 64 or 128) end
+local menej, ziadane = 0, false
+local function miesta()
+    if ziadane then return end
+    local used = 0
+    for k = 0, N - 1 do if slots[k] then used = used + 1 end end
+    local chce = potreba(used)
+    if chce > N then
+        menej = 0
+    elseif chce < N then
+        menej = menej + 1
+        if menej < 3 then return end
+    else
+        menej = 0
+        return
+    end
+    ziadane = true
+    log("goo: miesta " .. N .. " → " .. chce .. " (obsadených " .. used .. ")")
+    save()
+    after(1400, function() run("latte-kvapky", { "miesta", tostring(chce) }, nil, { output = false }) end)
+end
+E.miesta = miesta
+after(8000, miesta)
+every(60000, miesta)
 
 on("goo_idle", function(level)
     hud("nečinnosť " .. level)

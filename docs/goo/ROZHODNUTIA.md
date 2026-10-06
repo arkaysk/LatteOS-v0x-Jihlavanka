@@ -15,6 +15,8 @@ Nové rozhodnutie: jeden riadok sem (dátum, čo, prečo) a oprava platného zne
   Grok, DeepSeek, Perplexity, Kimi…) pre prihlásenie aj pre API, prihlásenia uložené pre každého zvlášť, prepínanie
   modelu a poskytovateľa aj z vyskakovacieho okna.
 - **Optimalizácia enginu až neskôr**, keď pribudne viac funkcií; teraz iba meranie (výsledok v ROADMAP F3·G).
+  Výnimka po meraní („dalo by sa nastaviť, aby prepočítaval iba obsadené miesta?“): počet miest podľa potreby
+  (32 / 64 / 128) — záťaž v pokoji zo 42 % na 18 % jedného jadra.
 - **Nový prihlasovač — začiatok práce** („začnime prihlasovaním“): skúšobná scéna podľa §6.2 (`login.plm`), zatiaľ
   nezapojená. Otvorené: výška hladiny; „správy“ pod hladinou.
 - **Prihlásenie = zámok nad všeobecnou reláciou.** Používateľ: „Zámok po automatickom prihlásení. Ale keďže môže byť

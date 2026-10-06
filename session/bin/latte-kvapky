@@ -33,6 +33,17 @@ st_kvapky="$st_classic/kvapky"
 # scéna: engine Goo; pôvodná plocha Kvapky (session/kvapky/kvapka.plm) sa od 6. 10. nenasadzuje — na pokusy z repa
 # cez LATTE_KVAPKY_SCENE
 scene="${LATTE_KVAPKY_SCENE:-$share/goo/goo.plm}"
+# engine beží na najmenšej scéne, do ktorej sa zmestí (prázdne miesta stoja CPU každú snímku): 32 / 64 / 128 miest.
+# Koľko práve treba, si pamätá ~/.local/state/latteos/goo/miesta (píše `latte-kvapky miesta N` na žiadosť enginu);
+# menšie scény sú v $share/goo/m32 a m64 (gen.py --n pri inštalácii). Vlastná scéna z LATTE_KVAPKY_SCENE sa nemení.
+miesta_subor="$st_classic/goo/miesta"
+if [ "$scene" = "$share/goo/goo.plm" ]; then
+    case "$(cat "$miesta_subor" 2>/dev/null)" in
+        128) ;;
+        64) [ -f "$share/goo/m64/goo.plm" ] && scene="$share/goo/m64/goo.plm" ;;
+        *)  [ -f "$share/goo/m32/goo.plm" ] && scene="$share/goo/m32/goo.plm" ;;
+    esac
+fi
 pleamar="${PLEAMAR:-$(command -v pleamar || echo /usr/bin/pleamar)}"
 # klasickí pomocníci z hyprland.lua (autoštart), ktorí patria k Noctalii
 # (1. 10.) Digitálna pohoda (well-being) nie je pomocník klasickej lišty — beží aj v Kvapkách (pravý klik na Hodiny)
@@ -138,6 +149,18 @@ print(next((x["name"] for x in m if x["x"] == 0 and x["y"] == 0), m[0]["name"]) 
 }
 
 case "${1:-}" in
+    miesta)   # engine si pýta scénu s iným počtom miest: zapamätať a scénu vymeniť (kvapky sa vrátia na svoje miesta)
+        case "${2:-}" in 32|64|128) ;; *) echo "latte-kvapky miesta 32|64|128" >&2; exit 2 ;; esac
+        mkdir -p "$(dirname "$miesta_subor")"; echo "$2" > "$miesta_subor"
+        for p in $(pgrep -u "$(id -u)" -x pleamar); do
+            tr '\0' ' ' < "/proc/$p/cmdline" 2>/dev/null | grep -q '/goo\.plm' && kill "$p"
+        done
+        sleep 0.7
+        exec "$0" scena
+        ;;
+    scena)    # iba scéna (bez tapety, Noctalie a pomocníkov)
+        scene_up
+        ;;
     start)
         mkdir -p "${XDG_STATE_HOME:-$HOME/.local/state}/latteos"
         gaps "$(side)"

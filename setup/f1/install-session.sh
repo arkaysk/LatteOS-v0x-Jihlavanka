@@ -82,6 +82,17 @@ sudo install -m644 "$S"/kvapky/textury/*.webp "$S"/kvapky/textury/LICENCIA.txt /
 sudo rm -f /usr/share/latteos/goo/kvapky/*.luau        # premenované kvapky (TimeGoo → LensGoo…) neostanú ako staré súbory
 ( cd "$S/goo" && for f in goo.plm goo.luau login.plm login.luau zamok.plm zamok.luau README.md lib/*.luau kvapky/*.luau priklady/*.json; do
     put "$f" "/usr/share/latteos/goo/$f"; done )
+# menšie scény enginu (32 a 64 miest): prázdne miesta stoja CPU každú snímku, engine preto beží na najmenšej scéne,
+# do ktorej sa zmestí, a o väčšiu si povie sám (latte-kvapky miesta N). Logika a kvapky sú spoločné (odkazy).
+for n in 32 64; do
+    tmpg="$(mktemp -d)"
+    python3 "$S/goo/gen.py" --n "$n" --out "$tmpg" >/dev/null
+    sudo install -d "/usr/share/latteos/goo/m$n"
+    put "$tmpg/goo.plm" "/usr/share/latteos/goo/m$n/goo.plm"
+    put "$S/goo/goo.luau" "/usr/share/latteos/goo/m$n/goo.luau"
+    for l in lib kvapky priklady; do sudo ln -sfn "../$l" "/usr/share/latteos/goo/m$n/$l"; done
+    rm -rf "$tmpg"
+done
 pl="$repo/resources/upstream/pleamar"
 pl_ver=0.2.24                                      # pripnutá verzia (resources/fetch.sh); staršia sa preloží znova
 pl_patched() { git -C "$pl" apply --reverse --check "$repo/resources/patches/$1.patch" 2>/dev/null; }   # už je v zdroji
