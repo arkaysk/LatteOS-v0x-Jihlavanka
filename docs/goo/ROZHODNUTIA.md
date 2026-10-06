@@ -7,6 +7,9 @@ Nové rozhodnutie: jeden riadok sem (dátum, čo, prečo) a oprava platného zne
 
 ## 6. 10. 2026
 
+- **Preklady aplikácií až nakoniec** („preklady odlož nakoniec, ešte nemáme definitívne doriešené aplikácie“):
+  hromadný prechod textov na `i18n.tr` sa po dvoch dávkach zastavil; pokračuje sa vývojom.
+
 - **Vývoj a vydania:** súkromné repo má jedinú vetvu `main`; verejné repo dostáva v určitých fázach vydanie pod
   označením verzie (značka a vydanie na GitHube). Verejne sa opisuje iba LatteOS GOO — Classic sa ruší a neopisuje;
   GOO síce vychádza z pleamaru a Marey, ale je to už niečo iné. Licencia MIT. Tapety sú vlastné; maskoti patrili

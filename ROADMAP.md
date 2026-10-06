@@ -307,12 +307,6 @@ texty preložiteľné (`translations`). Noctalia beží bez lišty a robí, čo 
 - [x] Barista: „Akú si dáte kávu a do čoho?“ (hrnček = téma okien v jej materiáli, káva = kvapky), náhľad hrnčeka
 - [x] Prekladová vrstva aplikácií LatteOS: `common/I18n.qml` (`i18n.tr`, JSON `/usr/share/latteos/i18n/<jazyk>.json`,
       podľa DankMaterialShell); Barista zmigrovaný (anglický zdroj + sk.json)
-- [~] Zmigrovať ostatné aplikácie LatteOS na `i18n.tr` (Nastavenia, Súbory, Monitor, ponuky, …) a súbory tém
-      (`name`/`desc` dnes po slovensky → `name[sk]`). Postup po dávkach, pomôcka `setup/test/i18n-migruj.py`
-      (`stav` = koľko textov ostáva natvrdo). Každé okno aplikácie má `I18n { id: i18n }`, spoločné prvky berú
-      preklad z neho. **6. 10.: 1. a 2. dávka** — systémová ponuka, spúšťač, rýchly panel, hlavička okna,
-      ponuka textového poľa, Správca zariadení (asi 300 textov; množné číslo cez `i18n.trn`). Ostáva asi 2 640,
-      najviac Nastavenia 857 a Súbory 427; texty z pomocníkov v Pythone (`latte-devices`…) ešte nie
 - [x] **Nová prihlasovacia obrazovka** (greeter) — napísaná 29. 9. v latteGoo vzhľade, **nasadená 30. 9.** (overiť po
       reštarte latte-lab). Zoznam relácií číta aj `/usr/share/wayland-sessions` (iné prostredia na pokusy) a roluje sa;
       nová relácia **Noctalia (čistá)** (`latte-session noctalia`, hypr/noctalia.lua). Predtým v náhľade
@@ -522,6 +516,14 @@ texty preložiteľné (`translations`). Noctalia beží bez lišty a robí, čo 
 - [ ] Slovenský preklad Noctalie doplniť (ovládacie centrum čiastočne po anglicky) a poslať upstream
 - [x] pleamar v0.2.24 a pôvodná Marea (pleamar-wm 0.2.25) — 6. 10.: záplaty prenesené, overené na latte-lab
 - [ ] Záplaty pleamaru poslať autorovi (okná na Hyprlande, 8-bit plocha, ťahanie pravým, ikony)
+
+- [~] **Odložené na koniec** (používateľ 6. 10.: „preklady odlož nakoniec, ešte nemáme definitívne doriešené
+      aplikácie“) — zmigrovať ostatné aplikácie LatteOS na `i18n.tr` (Nastavenia, Súbory, Monitor, ponuky, …) a súbory tém
+      (`name`/`desc` dnes po slovensky → `name[sk]`). Postup po dávkach, pomôcka `setup/test/i18n-migruj.py`
+      (`stav` = koľko textov ostáva natvrdo). Každé okno aplikácie má `I18n { id: i18n }`, spoločné prvky berú
+      preklad z neho. **6. 10.: 1. a 2. dávka** — systémová ponuka, spúšťač, rýchly panel, hlavička okna,
+      ponuka textového poľa, Správca zariadení (asi 300 textov; množné číslo cez `i18n.trn`). Ostáva asi 2 640,
+      najviac Nastavenia 857 a Súbory 427; texty z pomocníkov v Pythone (`latte-devices`…) ešte nie
 
 ### F4 — Systémové služby (Rust)
 - [x] **Správca zariadení** (prototyp `latte-app zariadenia` + `latte-devices`): dlaždice po skupinách (obrazovky, grafika, zvuk,
