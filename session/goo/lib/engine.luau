@@ -848,7 +848,8 @@ end)
 -- ── ovládanie z klávesnice (LATTEOS-GOO.md §6.1) ──────────────────────────────────────────────────────────────────
 -- Myš ostáva prvá; toto je doplnok pre prácu bez nej. Win+T (latte/skratky.lua) vstúpi do Goo: scéna drží klávesnicu,
 -- šípky chodia po kvapkách po obvode obrazovky, Enter / medzerník = ľavý klik, Menu / Shift+F10 = pravý, + a − =
--- koliesko, Ctrl+šípky kvapku posúvajú, Ctrl+Home ju vráti na miesto, Esc zavrie kartu a druhý Esc režim opustí.
+-- koliesko, Esc zavrie kartu a druhý Esc režim opustí. Je to NAVIGÁCIA pre núdzu bez myši, nie presúvanie kvapiek
+-- (používateľ 6. 10.: „posúvanie kvapky po obrazovke som nemyslel“) — rozloženie sa z klávesnice nemení.
 -- Režim je dočasný (do aplikácií sa v ňom nedá písať): skončí sám po kliku na okno, po voľbe v karte a po minúte
 -- bez klávesu.
 local kbIdle
@@ -922,26 +923,8 @@ on("kb_act", function(a)
         local up = a == 2
         if not hook(d, "koliesko", up and 1 or -1) and d.v.zoom and d.zdroj ~= "dyn" then d:velkost(d.z + (up and 0.1 or -0.1)) end
         after(60, function() if fact.kb then kbSelect(d) end end)             -- bublina na novom mieste
-    elseif a == 4 and d.zdroj ~= "dyn" then
-        d:domov() E.separate(d) save()
-        after(400, function() if fact.kb then kbSelect(d) end end)
     end
 end)
--- presun kvapky (náhrada ťahania): pozdĺž jej okraja po 2 % jeho dĺžky; na dolnom a hornom ← →, na bočných ↑ ↓
-on("kb_move", function(dir)
-    if not fact.kb then return end
-    kbTouch()
-    local d = kbCurrent()
-    if not d or d.zdroj == "dyn" or d.v.tahat == false then if d then d:zavibruj() end return end
-    local e = d.edge or 0
-    local s = ((e == 0 or e == 2) and (dir == 0 and -1 or dir == 1 and 1 or 0)) or ((e == 1 or e == 3) and (dir == 2 and -1 or dir == 3 and 1 or 0)) or 0
-    if s == 0 then return end
-    d.x = clamp(d.x + s * 0.02, 0.02, 0.98)
-    d.moved = true
-    E.separate(d) publish() save()
-    after(350, function() if fact.kb then kbSelect(d) end end)
-end)
-
 on("goo_enter", function(k)
     local d = at(k) if not d then return end
     hud("nad · " .. d.id)

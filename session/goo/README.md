@@ -258,7 +258,7 @@ GooPower a pozadie zmizne. Klik na LoginGoo = Uspať · Reštartovať · Vypnú�
 
 Win+T (`latte/skratky.lua` → `pleamar --say goo "emit kb_toggle"`) zapne režim: scéna drží klávesnicu (`keyboard:
 exclusive while ctx_open or kb`), `kbk` je miesto vybranej kvapky. Klávesy sú pravidlá scény (`on key … while kb and
-not ctx_open`), ktoré posielajú `kb_nav`, `kb_act`, `kb_move`; logika (`lib/engine.luau`) chodí po kvapkách po obvode
+not ctx_open`), ktoré posielajú `kb_nav` a `kb_act`; logika (`lib/engine.luau`) chodí po kvapkách po obvode
 (`kbRing`) a volá tie isté háčiky ako myš (`klik`, `pravy`, `koliesko`). Pasce: písacie pole karty si klávesnicu
 vezme, keď ju plocha dostane — preto `blur` pri vstupe, pri zisku klávesnice a po zatvorení karty; a hodnota udalosti
 je vo `while` ešte z predošlej udalosti — preto bublinu kladie jedno pravidlo podľa `kbx`, `kby` (gen.py), nie

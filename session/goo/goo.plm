@@ -117,8 +117,7 @@ scene Goo {
     // klávesnicu. Vybraná kvapka (kbk) pulzuje svetlejšou hnedou, zdvihne sa a ukáže bublinu s názvom.
     event kb_toggle ->
     event kb_nav ->                           // 0 ←, 1 →, 2 ↑, 3 ↓
-    event kb_act ->                           // 0 ľavý klik, 1 pravý klik, 2 koliesko hore, 3 koliesko dole, 4 späť na miesto
-    event kb_move ->                          // presun kvapky: 0 ←, 1 →, 2 ↑, 3 ↓
+    event kb_act ->                           // 0 ľavý klik, 1 pravý klik, 2 koliesko hore, 3 koliesko dole
     event kb_exit ->
     event kb_sel                              // logika: vybraná je kvapka na tomto mieste
     event kb_out                              // logika: koniec režimu
@@ -146,11 +145,6 @@ scene Goo {
     on key KP_Add while kb and not ctx_open { emit kb_act(2) }
     on key minus while kb and not ctx_open { emit kb_act(3) }
     on key KP_Subtract while kb and not ctx_open { emit kb_act(3) }
-    on key Ctrl+Home while kb and not ctx_open { emit kb_act(4) }
-    on key Ctrl+Left while kb and not ctx_open { emit kb_move(0) }
-    on key Ctrl+Right while kb and not ctx_open { emit kb_move(1) }
-    on key Ctrl+Up while kb and not ctx_open { emit kb_move(2) }
-    on key Ctrl+Down while kb and not ctx_open { emit kb_move(3) }
     // Esc zavrie kartu (pravidlo karty nižšie), druhý Esc opustí režim
     on key Escape while kb and not ctx_open { kb = false; kbk = -1; tip.p: 0; emit kb_exit }
     event goo_pocasie ->                      // skúška počasia na hladine (logika: 0 nič, 1–2 dážď, 3 sneh, 4 vietor)
