@@ -171,7 +171,13 @@ local MIN_GAP = 0.95        -- stredy aspoň 0,95 súčtu polomerov: dotýkajú 
                             -- kvapka malú skoro celú zakryla: TimeGoo pod hlavou Goobaru, latte-lab 5. 10.)
 local GAP_IKRY = 1.2        -- cudzia kvapka pri ikrách okien: mimo dosahu zliatia (ikry sa lepia iba ku Goobaru)
 local sepDirty, sepPrefer = false, nil
-local function movable(d) return not d.def.pri and d.zdroj ~= "dyn" and not d.dragging end
+-- kvapka pripnutá k inej (pri) neustupuje — iba kapsule so smerom (pás výkonu), ktorá sa jej sama nedrží (inak by ju
+-- kapsula naháňala): pás natiahnutý k LensGoo ju inak celú prekryl (latte-lab 6. 10.); po vtiahnutí ju GooPower vráti
+local function movable(d, other)
+    if d.zdroj == "dyn" or d.dragging then return false end
+    if not d.def.pri then return true end
+    return other ~= nil and num(other.v.kd, 0) ~= 0 and (other.moved == true or other.def.pri ~= d.def.id)
+end
 -- kapsula (pás výkonu GooPower): jej stred leží mimo stredu kvapky (kd = smer) a pozdĺž okraja siaha o kw ďalej —
 -- susedia sa odsunú od CELEJ kapsuly (používateľ 6. 10.: „keď sa zväčší na kapsulu, okolné goo odtlačí od seba“)
 local function capOff(d) return num(d.v.kw, 0) * num(d.v.kd, 0) end
@@ -209,8 +215,8 @@ local function separate()
                     if dist < need - 0.5 then
                         -- kto ustúpi: posunuteľná; z dvoch tá, na ktorú pustili (sepPrefer = pustená ostáva)
                         local mv, other
-                        if movable(b) and (b ~= sepPrefer or not movable(a)) then mv, other = b, a
-                        elseif movable(a) then mv, other = a, b end
+                        if movable(b, a) and (b ~= sepPrefer or not movable(a, b)) then mv, other = b, a
+                        elseif movable(a, b) then mv, other = a, b end
                         if mv then
                             local ox, oy = along(mv) + capOff(mv), mv.y
                             local px, py = along(other) + capOff(other), other.y

@@ -9,7 +9,7 @@ T.levels = {
     standard  = { blur = { size = 4, passes = 1 }, shadow = 14, glow = true,  anim = 1.0, orbit = false },
     usporny   = { blur = nil,                      shadow = nil, glow = false, anim = 1.6 },
     minimalny = { blur = nil,                      shadow = nil, glow = false, anim = nil },
-    -- VM bez GPU: každý pohyb stojí CPU (setup/f1/RESULTS.md) → bez efektov a animácií
+    -- VM bez GPU: každý pohyb stojí CPU (docs_zaloha/2026-09-23-f1-merania-vm.md) → bez efektov a animácií
     softver   = { blur = nil,                      shadow = nil, glow = false, anim = nil },
 }
 
