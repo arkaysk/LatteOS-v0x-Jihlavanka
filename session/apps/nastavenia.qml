@@ -101,7 +101,7 @@ ShellRoot {
     property var ai: ({})             // latte-ai status
     property var aiModels: []
     // Nastavenia › Kvapky (Goo): ~/.config/latteos/kvapky.json — logika Kvapiek ho číta každé 2 s
-    // engine Goo (relácia „Kvapky – engine test“) má kvapky podľa Novej architektúry: jadro sa nedá skryť
+    // engine Goo (relácia „LatteOS GOO“) má kvapky podľa Novej architektúry: jadro sa nedá skryť
     readonly property bool gooEngine: (Quickshell.env("LATTE_KVAPKY_SCENE") || "").endsWith("goo.plm")
     I18n { id: i18n }
     property var kv: ({ skryte: [], zoom: {}, vlastne: [], chatgoo: "kvapka" })

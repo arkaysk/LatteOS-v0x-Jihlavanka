@@ -52,8 +52,8 @@ ShellRoot {
         return loc.toString(d, root.localeName.startsWith("sk") || root.localeName.startsWith("cs") ? "dddd d. MMMM" : "dddd, MMMM d");
     }
 
-    // ── relácie: súbory .desktop (poradie: LatteOS, SAFE, Hra, Kvapky, potom ostatné) ──
-    property var sessions: [{ file: "latteos", name: "LatteOS", comment: "", cmd: ["/usr/bin/latte-session"] }]
+    // ── relácie: súbory .desktop (poradie: LatteOS GOO, Marea, Noctalia, Serpantinum, potom ostatné) ──
+    property var sessions: [{ file: "latteos", name: "LatteOS GOO", comment: "", cmd: ["/usr/bin/latte-session"] }]
     property int sessionIndex: 0
     property string lastSession: ""
     Process {
@@ -70,7 +70,7 @@ ShellRoot {
                   + "$1==\"Exec\"{e=substr($0,6)} END{print F\"\\t\"(nl?nl:n)\"\\t\"(cl?cl:c)\"\\t\"e}' \"$f\"; done", "sh", root.localeName]
         stdout: StdioCollector {
             onStreamFinished: {
-                const order = ["latteos", "latteos-safe", "latteos-hra", "latteos-kvapky", "latteos-noctalia"];
+                const order = ["latteos", "marea-wm", "marea-hyprland", "latteos-noctalia", "serpantinum"];
                 const list = this.text.split("\n").filter(l => l.trim() !== "").map(l => {
                     const p = l.split("\t");
                     // polia Exec ako %U/%f (spec .desktop) greetd nepozná
@@ -84,10 +84,11 @@ ShellRoot {
         }
     }
     FileView { path: "/var/lib/greetd/latte-last-session"; printErrors: false; onLoaded: { root.lastSession = text().trim(); root.pickSession(); } }
-    // SAFE pri štarte má prednosť; inak naposledy zvolená relácia; inak LatteOS
+    // SAFE pri štarte: LatteOS GOO (latte-session ho v núdzovom režime spustí ako SAFE); inak naposledy zvolená
+    // relácia; inak LatteOS GOO
     function pickSession() {
         const find = (f) => sessions.findIndex(s => s.file === f);
-        let i = mode === "safe" ? find("latteos-safe") : find(lastSession);
+        let i = mode === "safe" ? find("latteos") : find(lastSession);
         sessionIndex = i >= 0 ? i : 0;
     }
     property bool sessionsOpen: false

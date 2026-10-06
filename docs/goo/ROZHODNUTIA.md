@@ -8,6 +8,11 @@ Nové rozhodnutie: jeden riadok sem (dátum, čo, prečo) a oprava platného zne
 ## 6. 10. 2026
 
 - **Nasadzuje sa iba engine Goo.** Pôvodná plocha Kvapky (`session/kvapky`) sa na systém už nenasadzuje.
+- **Ponuka prihlásenia:** ostáva najnovší **LatteOS GOO** (engine Goo, predvolená relácia `latte-session`) a samostatné
+  prostredia **Marea** (treba ju opraviť), **Serpantinum** a **Noctalia (čistá)**. Položky Classic, Kvapky, „engine
+  test“, SAFE a Hra z ponuky zmizli: SAFE príde sám pri pádoch alebo z GRUB-u, do hry sa prepína z plochy (`latte-hra`),
+  kód Classic ostáva pod `latte-session klasicke`. Kde bude výber prostredia v novom prihlasovači (LATTEOS-GOO.md §6.2),
+  je otvorené.
 - **Verejná kópia `arkaysk/latteos` je zastaraná** (29. 9., pred GOO). Classic sa už nevyvíja; po dokončení enginu Goo
   sa zverejní **verejná verzia 0.2** iba s GOO.
 - **Kliky jednotlivých goo** (po zhodnotení ergonómie — niektoré goo mali iba ľavý, iné iba pravý klik): hlava

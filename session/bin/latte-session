@@ -1,14 +1,18 @@
 #!/usr/bin/env bash
-# latte-session [safe|hra|kvapky|kvapky-engine|noctalia] — relácia LatteOS po prihlásení (spúšťa ju greetd cez wayland-sessions/*.desktop).
+# latte-session [safe|hra|noctalia|klasicke] — relácia LatteOS po prihlásení (spúšťa ju greetd cez wayland-sessions/*.desktop).
+# Bez argumentu LatteOS GOO (Hyprland + engine Goo) — jediná relácia LatteOS v ponuke prihlásenia (6. 10. 2026).
 #
 # Režim berie z /run/latteos/session.env (zapísal latte-boot select pri štarte).
-# NORMAL: Hyprland + Noctalia. Ak Hyprland spadne skôr, než je relácia zdravá (60 s),
+# NORMAL: Hyprland + engine Goo. Ak Hyprland spadne skôr, než je relácia zdravá (60 s),
 #         relácia sa hneď prepne do SAFE; pád sa zaráta do počítadla (latte-boot session-start).
 # SAFE:   labwc + pixman (bez GL/GPU) + Noctalia, záloha foot; ponuka latte-safe.
 # HRA:    gamescope-session-plus steam (Steam Big Picture); striedanie s plochou v tom istom prihlásení
 #         cez latte-hra ($XDG_RUNTIME_DIR/latteos/relacia), ako SteamOS. Iba s grafickou kartou.
-# KVAPKY: skúšobná plocha — Hyprland bez Noctalie a klasických pomocníkov, iba živá tapeta a tekuté kvapky
-#         (LATTE_VARIANT=kvapky → hyprland.lua spustí latte-kvapky start). Pád → SAFE ako pri NORMAL.
+# SAFE a HRA nie sú v ponuke prihlásenia: SAFE príde sám (pády, GRUB › LatteOS SAFE), do hry sa prepína z plochy
+#         (latte-hra). Argumenty ostávajú pre ne a pre testy (setup/f1/session-test.sh).
+# GOO:    LATTE_VARIANT=kvapky → hyprland.lua spustí latte-kvapky start (živá tapeta, engine Goo, Noctalia pre Goo).
+#         Pád → SAFE. Staré mená `kvapky` a `kvapky-engine` znamenajú to isté.
+# KLASICKE: zrušený LatteOS Classic (Hyprland + lišta Noctalie) — kód ostáva, v ponuke nie je.
 set -u
 
 share=/usr/share/latteos
@@ -41,15 +45,12 @@ chosen_safe=0
 [ "${1:-}" = safe ] && { LATTE_MODE=safe; chosen_safe=1; }
 next=desktop
 [ "${1:-}" = hra ] && next=hra
-LATTE_VARIANT=klasicke
-[ "${1:-}" = kvapky ] && LATTE_VARIANT=kvapky
-# KVAPKY ENGINE TEST: tá istá plocha Kvapky, ale scéna jednotného enginu Goo (session/goo, session/goo/README.md)
-if [ "${1:-}" = kvapky-engine ]; then
-    LATTE_VARIANT=kvapky
-    export LATTE_KVAPKY_SCENE="$share/goo/goo.plm" LATTE_GOO_DIR="$share/goo"
-fi
+# LatteOS GOO je predvolená a jediná plocha LatteOS: scéna jednotného enginu Goo (session/goo, session/goo/README.md)
+LATTE_VARIANT=kvapky
+[ "${1:-}" = klasicke ] && LATTE_VARIANT=klasicke
 # NOCTALIA (čistá): Hyprland + Noctalia s ich predvolenými nastaveniami, bez úprav LatteOS (hypr/noctalia.lua)
 [ "${1:-}" = noctalia ] && LATTE_VARIANT=noctalia
+[ "$LATTE_VARIANT" = kvapky ] && export LATTE_KVAPKY_SCENE="$share/goo/goo.plm" LATTE_GOO_DIR="$share/goo"
 export LATTE_VARIANT
 # príznak Kvapiek (latte-kvapky skusit) patrí iba tejto relácii: XDG_RUNTIME_DIR pri „linger“ (Sunshine pred
 # prihlásením) prežije odhlásenie a klasický LatteOS by sa inak spustil ako Kvapky

@@ -42,10 +42,16 @@ put "$S/hypr/hyprland.lua" /usr/share/latteos/hypr/hyprland.lua
 put "$S/hypr/noctalia.lua" /usr/share/latteos/hypr/noctalia.lua     # relácia „Noctalia (čistá)“
 for f in rc.xml autostart environment menu.xml; do sudo install -Dm644 "$S/labwc/$f" "/usr/share/latteos/labwc/$f"; done
 # relácie LatteOS: v systémovom zozname (pre iné greetery) aj vo vlastnom, ktorý ponúka latte-greeter
-# (tuigreet by inak ponúkol aj „Hyprland“ z COPR bez Noctalie a bez latte-session)
-for f in latteos.desktop latteos-safe.desktop latteos-hra.desktop latteos-kvapky.desktop latteos-goo-engine.desktop latteos-noctalia.desktop; do
+# (tuigreet by inak ponúkol aj „Hyprland“ z COPR bez Noctalie a bez latte-session).
+# Ponuka prihlásenia (6. 10. 2026): LatteOS GOO a Noctalia (čistá) odtiaľto; samostatné prostredia Marea a Serpantinum
+# si svoju položku inštalujú samy (setup/lab/marea-povodna.sh, setup/lab/serpantinum.sh). Mimo ponuky: SAFE (príde
+# sám pri pádoch alebo z GRUB › LatteOS SAFE), Hra (z plochy cez latte-hra), zrušený Classic a pôvodná plocha Kvapky.
+for f in latteos.desktop latteos-noctalia.desktop; do
     sudo install -Dm644 "$S/wayland-sessions/$f" "/usr/share/wayland-sessions/$f"
     sudo install -Dm644 "$S/wayland-sessions/$f" "/usr/share/latteos/sessions/$f"
+done
+for f in latteos-safe.desktop latteos-hra.desktop latteos-kvapky.desktop latteos-goo-engine.desktop; do   # staré položky ponuky
+    sudo rm -f "/usr/share/wayland-sessions/$f" "/usr/share/latteos/sessions/$f"
 done
 
 echo "== latte-shell (fork Noctalie: panely v tvare L z ostrova), ak je zdroj v ~/latte-shell"
@@ -68,12 +74,11 @@ if rpm -q hyprland-devel >/dev/null 2>&1 && make -s -C "$S/hypr/plugins/latte-ok
 else
     echo "   latte-okna sa nepostavil — okná sa nebudú prichytávať ťahaním (Win+←→ a Win+Z fungujú)"
 fi
-echo "== Kvapky (skúšobná plocha LatteOS Kvapky): scéna + pleamar so záplatou LatteOS"
-sudo install -d /usr/share/latteos/kvapky
-for f in kvapka.plm kvapka.luau ikony.luau; do put "$S/kvapky/$f" "/usr/share/latteos/kvapky/$f"; done
+echo "== LatteOS GOO: textúry okien, engine Goo, pleamar so záplatami LatteOS"
+# pôvodná plocha Kvapky (session/kvapky/kvapka.plm) sa od 6. 10. 2026 nenasadzuje; jej scéna z predošlej inštalácie preč
+sudo rm -f /usr/share/latteos/kvapky/kvapka.plm /usr/share/latteos/kvapky/kvapka.luau /usr/share/latteos/kvapky/ikony.luau
 sudo install -d /usr/share/latteos/kvapky/textury                     # textúry materiálov okien (textury.py)
 sudo install -m644 "$S"/kvapky/textury/*.webp "$S"/kvapky/textury/LICENCIA.txt /usr/share/latteos/kvapky/textury/
-echo "== engine Goo (relácia LatteOS Kvapky – engine test): scéna, logika, kvapky, príklady"
 sudo rm -f /usr/share/latteos/goo/kvapky/*.luau        # premenované kvapky (TimeGoo → LensGoo…) neostanú ako staré súbory
 ( cd "$S/goo" && for f in goo.plm goo.luau README.md lib/*.luau kvapky/*.luau priklady/*.json; do
     put "$f" "/usr/share/latteos/goo/$f"; done )
@@ -95,14 +100,14 @@ if command -v cargo >/dev/null && { ! "$pl/target/release/pleamar" --version 2>/
 fi
 # brána: scéna sa nasadí, iba ak ju tento pleamar prečíta (inak by relácia ukázala iba tapetu)
 if [ -x "$pl/target/release/pleamar" ]; then
-    for sc in "$S/kvapky/kvapka.plm" "$S/goo/goo.plm"; do
+    for sc in "$S/goo/goo.plm"; do
         "$pl/target/release/pleamar" --check "$sc" >/dev/null 2>&1 || echo "   POZOR: $sc nepreložil pleamar $pl_ver: $("$pl/target/release/pleamar" --check "$sc" 2>&1 | head -1)"
     done
 fi
 if [ -x "$pl/target/release/pleamar" ]; then
     sudo install -Dm755 "$pl/target/release/pleamar" /usr/bin/pleamar
 else
-    echo "   pleamar sa nepostavil (chýba cargo?) — relácia LatteOS Kvapky ukáže iba tapetu"
+    echo "   pleamar sa nepostavil (chýba cargo?) — relácia LatteOS GOO ukáže iba tapetu"
 fi
 
 echo "== vzhľad: Noctalia (téma Latte), písma Manrope/Fraunces (OFL), tapety LatteOS"

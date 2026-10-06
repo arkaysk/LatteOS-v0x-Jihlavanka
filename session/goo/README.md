@@ -4,8 +4,8 @@ Spoločný engine pre kvapky LatteOS Goo. Je to rozšírenie pleamar 0.2.6 („D
 0.2 a API logiky. Záplaty Rustu (`resources/patches/`: `pleamar-prazdne-tvary` a `pleamar-pasy-tela` na výkon,
 `pleamar-ostre-okraje` na ostré oká) nie sú nutné: bez nich engine funguje, iba pomalšie a s mäkšími okrajmi.
 
-Na systém sa nasadzuje iba engine (pôvodná plocha Kvapky `session/kvapky` už nie) a stane sa predvoleným
-prihlásením. Zatiaľ sa spúšťa reláciou **LatteOS Kvapky – engine test** na prihlasovacej obrazovke. Kvapky sú podľa Novej architektúry
+Na systém sa nasadzuje iba engine (pôvodná plocha Kvapky `session/kvapky` už nie) a je predvoleným
+prihlásením: relácia **LatteOS GOO** na prihlasovacej obrazovke (`latte-session` bez argumentu). Kvapky sú podľa Novej architektúry
 (LATTEOS-GOO.md): jadro GooBar, GooPower, LensGoo; voliteľné QueenGoo, ClockGoo (ChatGoo zatiaľ nie je).
 
 **Pravidlá plochy platia aj tu: [LATTEOS-GOO.md](../../LATTEOS-GOO.md) §2 a §3** (pred prácou prečítať).
