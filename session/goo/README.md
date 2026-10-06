@@ -223,10 +223,10 @@ GooPower a pozadie zmizne. Klik na LoginGoo = Uspať · Reštartovať · Vypnú�
   a scéna sama skončí (predvolene po 40 s). Odkryť goo bez čakania: `pleamar --say login "emit e_hra"`.
 - **Údaje:** `latte-goo prihlasenie` (meno, káva, pád / novinky, info, znaky ikon, miesto GooPower).
 - **Režim** podľa `LATTE_LOGIN`: `skuska` (predvolené), `zamok` (heslo overí systém cez `auth.check`).
-- **Nezapojené:** do skutočného prihlasovania sa scéna zapojí až po rozhodnutí o spôsobe — zámok relácie po
-  automatickom prihlásení (`kind: lock`, plynulý prechod do GooPower, údaje používateľa pred heslom) alebo skutočný
-  prihlasovač pod greetd (bez údajov používateľa, s prestrihom pri štarte plochy). Otvorené je aj, kde bude výber
-  prostredia (Marea, Noctalia, Serpantinum) a čo sú „správy“ pod hladinou.
+- **Výber relácie** (vývojárska verzia): goo na hladine za riadkom; zoznam ako v doterajšom prihlasovači.
+- **Nezapojené:** rozhodnuté je (6. 10.) prihlásenie ako zámok nad VŠEOBECNOU reláciou — beží pod účtom prihlasovača
+  (greetd), údaje a plocha používateľa sa načítajú až po hesle; jeho relácia potom nadviaže na posledný obraz
+  (LoginGoo → GooPower). Otvorené: čo sú „správy“ pod hladinou.
 - Skúšať treba v skutočnej relácii: v skrytom kompozitore (labwc headless) pleamar vykreslí iba prvú snímku.
 
 ## Ďalej (z pravidiel plochy, zatiaľ nie v engine)

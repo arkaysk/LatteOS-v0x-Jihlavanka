@@ -13,6 +13,8 @@ local function safe(what, f, ...)
     if not ok then print("login · " .. what .. ": " .. tostring(err)) end
 end
 
+local relacie = {}                                   -- relácie na výber: { subor, meno, prikaz }
+
 -- ── údaje ────────────────────────────────────────────────────────────────────────────────────────────────────
 local function data()
     run("latte-goo", { "prihlasenie" }, function(out)
@@ -34,6 +36,17 @@ local function data()
         end
         model.inf = inf
         if tonumber(d.goopower) then fact.tox = tonumber(d.goopower) end
+        -- relácie na výber (vývojárska verzia): prvé načítanie nastaví naposledy použitú, ďalšie výber nemenia
+        local prve = #relacie == 0
+        relacie = type(d.relacie) == "table" and d.relacie or {}
+        local rel = {}
+        for _, r in ipairs(relacie) do rel[#rel + 1] = { t = r.meno or r.subor or "?" } end
+        model.rel = rel
+        text.g_rel = g["device-desktop"] or ""
+        fact.dev = d.dev == true and #relacie > 1
+        if prve then fact.rel_sel = math.max(0, math.min(#relacie - 1, tonumber(d.relacia) or 0)) end
+        local r = relacie[(fact.rel_sel or 0) + 1]
+        text.rel_meno = r and (r.meno or r.subor) or ""
     end)
 end
 
@@ -83,6 +96,13 @@ on("e_odosli", function()
 end)
 
 on("text:heslo", function() emit("e_zobud") end)     -- písanie vráti informačné goo pod hladinu
+
+on("e_rel", function(i)
+    local r = relacie[(i or 0) + 1]
+    if not r then return end
+    text.rel_meno = r.meno or r.subor or ""
+    print("login · relácia: " .. tostring(r.subor) .. " (" .. table.concat(r.prikaz or {}, " ") .. ")")
+end)
 
 local MOC = { "suspend", "reboot", "poweroff" }
 on("e_moc", function(k)
