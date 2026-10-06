@@ -8,7 +8,7 @@
 --   NAPÁJANIE: batéria s pruhom, profil napájania (Úspora · Vyvážený · Výkon — powerprofilesctl); Nastavenia, Monitor;
 --   tlačidlá Uspať · Reštartovať · Vypnúť. Akcie relácie robí Noctalia.
 -- Pravý klik = PÁS VÝKONU: kvapka sa natiahne pozdĺž okraja do kapsuly (na voľnú stranu, ikona ostane pri nej), susedné
---   goo odtlačí (pravidlo 22 ráta s celou kapsulou) a v nej sú bunky FPS · CPU · RAM · GPU · VRAM (latte-sysmon goo,
+--   goo odtlačí (pravidlo 22 ráta s celou kapsulou) a v nej sú bunky CPU · RAM · GPU · VRAM (latte-sysmon goo,
 --   raz za sekundu). Farba hodnoty podľa záťaže (jantárová nad 80 %, červená nad 95 % alebo pri prehriatí), prechod
 --   myšou = podrobnosti v bubline, klik = Monitor na tej časti, pravý klik (na bunke aj na kvapke) = pás sa vtiahne
 --   a odtlačené goo sa vrátia, ak ich medzitým nikto nepresunul. Zapnutý pás ostane aj po prihlásení (latte-goo pas).
@@ -33,11 +33,6 @@ local function deg(t) return t and ("  ·  " .. t .. " °C") or "" end
 -- bunky z jedného riadku latte-sysmon goo
 local function cells_of(s)
     local out = {}
-    local hra = type(s.hra) == "table" and s.hra or nil
-    out[#out + 1] = hra and { id = "fps", l = "FPS", v = tostring(hra.fps), lvl = -1, c = (hra.fps < 30 and 2) or (hra.fps < 50 and 1) or 0, sec = "vykon",
-                              tip = (hra.app or "") .. "  ·  " .. hra.fps .. " FPS  ·  " .. tr("frame") .. " " .. tostring(hra.ms):gsub("%.", ",") .. " ms" }
-        or { id = "fps", l = "FPS", v = "—", lvl = -1, c = 0, sec = "hry",
-             tip = s.fpsLog and tr("FPS appears while a game runs with MangoHud") or tr("FPS: turn on MangoHud logging (click)") }
     local top = type(s.top) == "table" and s.top.name and ("  ·  " .. tr("most") .. ": " .. s.top.name .. " " .. (s.top.cpu or 0) .. " %") or ""
     out[#out + 1] = { id = "cpu", l = "CPU", v = (s.cpu or 0) .. " %", lvl = lvl(s.cpu), c = state(s.cpu, s.cpuT, 80, 90), sec = "procesy",
                       tip = tr("Processor") .. " " .. (s.cpu or 0) .. " %" .. ((s.mhz or 0) > 0 and ("  ·  " .. string.format("%.2f", s.mhz / 1000):gsub("%.", ",") .. " GHz") or "") .. deg(s.cpuT) .. top }
@@ -213,11 +208,7 @@ return {
         on("mon_pick", function(u)
             local c = pas.cells[(u or 0) + 1]
             if not c then return end
-            if c.sec == "hry" then
-                run("latte-sysmon", { "mangohud", "on" }, function() d:bublina(tr("FPS appears while a game runs with MangoHud")) end)
-            else
-                run("latte-app", { "monitor", c.sec })
-            end
+            run("latte-app", { "monitor", c.sec })
         end)
         on("mon_close", function() pas_off(d) end)
         run("latte-goo", { "pas" }, function(out) if (out or ""):match("on") then after(1500, function() pas_on(d, true) end) end end)
