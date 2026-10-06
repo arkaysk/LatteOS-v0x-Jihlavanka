@@ -27,8 +27,9 @@ Item {
     property string status: ""
     signal openWindow(var args)                 // otvoriť iné okno (hostiteľ zavrie popup)
     readonly property var t: theme
+    I18n { id: i18n }
 
-    readonly property var order: ["obrazovky", "grafika", "zvuk", "siet", "bluetooth", "napajanie", "disky", "vstup", "kamery", "tlac", "usb", "pocitac", "ostatne"]
+    readonly property var order: ["obrazovky", "grafika", "zvuk", "siet", "bluetooth", "napajanie", "disky", "vstup", "kamery", "tlac", "skenery", "telefony", "usb", "pocitac", "ostatne"]
     property var groups: []
     property var faults: []
     property string summary: ""
@@ -55,6 +56,9 @@ Item {
     property var bt: ({ available: false, powered: false, devices: [] })
     Q { id: qBt; command: ["latte-devices", "bt"]; done: (d) => dm.bt = d }
     Q { id: qBtScan; command: ["latte-devices", "bt", "hladaj"]; done: (d) => { dm.bt = d; dm.status = "Hľadanie skončilo"; } }
+    // tlačiarne a skenery: hľadanie je pomalé (sieť), zoznam zariadení berie zapamätaný výsledok; tu sa hľadá naozaj
+    Q { id: qPrn; command: ["latte-devices", "tlac", "hladaj"]; done: (d) => need(qList) }
+    Q { id: qScan; command: ["latte-devices", "skenery", "hladaj"]; done: (d) => { dm.status = i18n.tr("Search finished"); need(qList); } }
     property var nets: ({ connections: [], wifi: [], addresses: [] })
     Q { id: qNets; command: ["latte-devices", "siete"]; done: (d) => dm.nets = d }
     property var sec: ({ ssh: {}, firewall: { zones: [] }, tunnels: [] })
@@ -87,6 +91,7 @@ Item {
         if (tab === "siete") { need(qNets); need(qSec); need(qAudio); return; }
         if (g === "zvuk") { need(qAudio); need(qCards); }
         if (g === "bluetooth") need(qBt);
+        if (g === "tlac") need(qPrn);
         if (g === "siet") need(qNets);
         if (g === "napajanie") need(qPower);
         if (sel && (sel.item.sensorPrefix || sel.group === "pocitac")) need(qLive);
@@ -94,7 +99,7 @@ Item {
     }
     onActiveChanged: if (active) refresh(); else revert()
     onTabChanged: refresh()
-    onGroupChanged: { sel = null; refresh(); if (curGroup && curGroup.items.length === 1) pick(curGroup, curGroup.items[0]); }
+    onGroupChanged: { sel = null; refresh(); if (group === "skenery") need(qScan); if (curGroup && curGroup.items.length === 1) pick(curGroup, curGroup.items[0]); }
     Component.onCompleted: { if (only) group = only; refresh(); }
     Timer { interval: 4000; repeat: true; running: dm.active && dm.visible && dm.countdown === 0; onTriggered: dm.refresh() }
 
@@ -293,7 +298,11 @@ Item {
             Column {
                 visible: dm.tab === "zariadenia" && dm.group !== ""
                 width: body.width; spacing: 6
-                Note { visible: !!dm.curGroup && dm.curGroup.items.length === 0; text: "Nič nepripojené." }
+                Note { visible: !!dm.curGroup && dm.curGroup.items.length === 0
+                       text: dm.group === "tlac" ? i18n.tr("No printer yet. Network and USB printers that print without a driver show up here by themselves; turn the printer on and wait a moment.")
+                           : dm.group === "skenery" ? i18n.tr("No scanner found. Turn the scanner on and press Search again.")
+                           : dm.group === "telefony" ? i18n.tr("No phone or camera on USB. Plug it in, unlock it and choose file transfer on the phone.")
+                           : "Nič nepripojené." }
                 Repeater {
                     model: dm.curGroup ? dm.curGroup.items : []
                     Rectangle {
@@ -485,7 +494,28 @@ Item {
                     Btn { visible: dm.group === "vstup"; label: "Klávesnica a skratky"; glyph: "keyboard"; onClicked: dm.openWindow(["latte-app", "nastavenia", "klavesnica"]) }
                     Btn { visible: dm.group === "grafika"; label: "Stupeň výkonu"; glyph: "bolt"; onClicked: dm.openWindow(["latte-app", "nastavenia", "vykon"]) }
                     Btn { visible: dm.group === "grafika" || dm.group === "pocitac"; label: "Hardvér v Monitore"; glyph: "activity"; onClicked: dm.openWindow(["latte-app", "monitor", "hardver"]) }
-                    Btn { visible: dm.group === "tlac"; label: "Tlačiarne (CUPS)"; glyph: "printer"; onClicked: dm.openWindow(["xdg-open", "http://localhost:631/printers"]) }
+                    // tlačiarne: pridanie nájdenej (bez ovládača, IPP Everywhere / AirPrint), predvolená, skúšobná strana, odstránenie
+                    Btn { visible: dm.group === "tlac" && !!dd.it && !!dd.it.add; label: i18n.tr("Add this printer"); glyph: "plus"; primary: true
+                          onClicked: dm.run(["latte-devices", "tlac", "pridaj", dd.it.add, dd.it.name], i18n.tr("Adding the printer…")) }
+                    Btn { visible: dm.group === "tlac" && !!dd.it && !!dd.it.printer && !dd.it.default; label: i18n.tr("Make default"); glyph: "star"
+                          onClicked: dm.run(["latte-devices", "tlac", "predvolena", dd.it.printer]) }
+                    Btn { visible: dm.group === "tlac" && !!dd.it && !!dd.it.printer; label: i18n.tr("Print a test page"); glyph: "printer"
+                          onClicked: dm.run(["latte-devices", "tlac", "test", dd.it.printer], i18n.tr("Test page sent to the printer")) }
+                    Btn { visible: dm.group === "tlac" && !!dd.it && !!dd.it.printer; label: i18n.tr("Remove"); glyph: "trash"
+                          onClicked: dm.run(["latte-devices", "tlac", "odstran", dd.it.printer]) }
+                    Btn { visible: dm.group === "tlac"; label: i18n.tr("Printers (CUPS)"); glyph: "printer"; onClicked: dm.openWindow(["xdg-open", "http://localhost:631/printers"]) }
+                    // skenery: skenuje sa v aplikácii Skenovanie dokumentov (simple-scan); hľadanie sieťových trvá pár sekúnd
+                    Btn { visible: dm.group === "skenery" && !!dm.curGroup && dm.curGroup.items.length > 0; label: i18n.tr("Scan"); glyph: "scan"; primary: true
+                          onClicked: dm.openWindow(["simple-scan"]) }
+                    Btn { visible: dm.group === "skenery"; label: qScan.running ? i18n.tr("Searching…") : i18n.tr("Search again"); glyph: "refresh"; enabled: !qScan.running
+                          onClicked: { dm.status = i18n.tr("Looking for scanners (up to 20 s)…"); qScan.running = true; } }
+                    // telefón: úložisko sa pripojí cez GVFS a otvorí v Súboroch
+                    Btn { visible: dm.group === "telefony" && !!dd.it && !!dd.it.phone && !dd.it.folder; label: i18n.tr("Connect"); glyph: "device-mobile"; primary: true
+                          onClicked: dm.run(["latte-devices", "telefon", "pripoj", dd.it.phone], i18n.tr("Unlock the phone and allow file transfer")) }
+                    Btn { visible: dm.group === "telefony" && !!dd.it && !!dd.it.folder; label: i18n.tr("Open in Files"); glyph: "folder"; primary: true
+                          onClicked: dm.openWindow(["latte-app", "subory", dd.it.folder]) }
+                    Btn { visible: dm.group === "telefony" && !!dd.it && !!dd.it.folder; label: i18n.tr("Disconnect"); glyph: "usb"
+                          onClicked: dm.run(["latte-devices", "telefon", "odpoj", dd.it.phone]) }
                     Btn { visible: (dm.group === "disky" || dm.group === "usb") && !!dd.it; label: "Otvoriť v Súboroch"; glyph: "folder"
                           onClicked: dm.openWindow(["latte-app", "subory"]) }
                     Btn { visible: (dm.group === "usb" || dm.group === "disky") && !!dd.it && !!(dd.it.details || {})["zariadenie"] && /usb/i.test(((dd.it.details || {})["pripojenie"] || "") + dm.group)

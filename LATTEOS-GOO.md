@@ -257,7 +257,7 @@ Programy sa nevytvárajú — používajú sa existujúce Linuxové subsystémy 
 | Vyhľadávanie | **plocate + fd + ripgrep** (`latte-hladaj`); LocalSearch (Tracker3) iba na metadáta a plný text, keď bude treba | Baloo (ťahá KDE) |
 | Súbory v sieti | **GVFS** (+ `gvfs-mtp`, `gvfs-smb`), cloud a FTP/SFTP cez rclone (`latte-siet`) | KIO (KDE) |
 | Knižnice | XDG priečinky a záložky Súborov | vlastná vrstva |
-| Tlač, skenovanie | CUPS, SANE, simple-scan; tlačiarne v Správcovi zariadení | — |
+| Tlač, skenovanie | CUPS (tlač bez ovládača: IPP Everywhere / AirPrint, USB cez `ipp-usb`), SANE + `sane-airscan`, simple-scan; tlačiarne a skenery v Správcovi zariadení | ovládače od výrobcov, vlastný dialóg skenovania |
 | Bluetooth | BlueZ (ovládanie cez Noctaliu a službu pleamaru) | — |
 | Firewall | firewalld (nad nftables) | — |
 | Firmvér | fwupd + LVFS (App Manager › Aktualizácie) | — |
@@ -265,7 +265,19 @@ Programy sa nevytvárajú — používajú sa existujúce Linuxové subsystémy 
 | Zvuk a médiá | PipeWire, GStreamer, mpv; MediaGoo cez MPRIS | — |
 | Podcasty | hotová aplikácia (Kasts, GNOME Podcasts) + MediaGoo | vlastný RSS engine |
 
-Balíky a zapojenie do Správcu zariadení, Súborov a budúcich kvapiek ešte nie sú urobené (ROADMAP).
+**Stav (6. 10.):** balíky inštaluje `setup/f1/install-session.sh` (`gvfs-mtp`, `gvfs-gphoto2`, `gvfs-afc`, `gvfs-smb`, CUPS,
+`ipp-usb`, SANE, `sane-airscan`, simple-scan); CUPS sa spúšťa až pri použití (`cups.socket`). Správca zariadení
+(`latte-devices`, `SpravcaZariadeni.qml`) má skupiny:
+
+- **Tlačiarne** — pridané tlačiarne a tie, čo sa našli v sieti a dajú sa pridať jedným tlačidlom; predvolená, skúšobná
+  strana, odstránenie. Správca účtu (skupina wheel) to robí bez hesla.
+- **Skenery** — nájdené cez SANE (aj sieťové); „Skenovať“ otvorí simple-scan, „Hľadať znova“ hľadá nanovo.
+- **Telefóny a fotoaparáty** — zariadenia MTP/PTP na USB; „Pripojiť“ ich pripojí cez GVFS, „Otvoriť v Súboroch“ otvorí
+  ich úložisko. Súbory majú v ľavom paneli položku Telefóny a fotoaparáty.
+
+Pomalé hľadanie (sieť, CUPS, SANE) nebrzdí zoznam zariadení: zoznam berie zapamätaný výsledok
+(`~/.cache/latteos/zariadenia-*.json`) a obnovuje ho na pozadí. Sieťové disky Windows (SMB) v Súboroch a zapojenie
+do budúcich kvapiek ešte nie sú urobené (ROADMAP).
 
 ---
 

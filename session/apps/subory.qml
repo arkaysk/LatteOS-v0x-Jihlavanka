@@ -14,6 +14,7 @@ import "data"
 ShellRoot {
     id: app
     LatteTheme { id: theme }
+    I18n { id: i18n }
 
     readonly property string home: Quickshell.env("HOME") || "/"
     property bool dual: false
@@ -444,7 +445,10 @@ ShellRoot {
         { title: "Systém Linux", items: [
             { key: "sys:root", path: "/", glyph: "server", label: "/ koreň", sub: "skutočná štruktúra, nič skryté" },
             { key: "sys:etc", path: "/etc", glyph: "settings", label: "/etc", sub: "nastavenia systému" },
-            { key: "sys:mnt", path: "/run/media/" + (Quickshell.env("USER") || ""), glyph: "usb", label: "Pripojené médiá" }
+            { key: "sys:mnt", path: "/run/media/" + (Quickshell.env("USER") || ""), glyph: "usb", label: "Pripojené médiá" },
+            // telefóny a fotoaparáty (MTP / PTP cez GVFS): pripájajú sa v Správcovi zariadení › Telefóny a fotoaparáty
+            { key: "sys:gvfs", path: (Quickshell.env("XDG_RUNTIME_DIR") || "/run/user/1000") + "/gvfs", glyph: "device-mobile", label: i18n.tr("Phones and cameras"),
+              sub: i18n.tr("opens after connecting in the Device Manager") }
         ] }
     ]
 

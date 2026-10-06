@@ -180,6 +180,15 @@ rpm -q mpvpaper mpv ffmpegthumbnailer >/dev/null || sudo dnf -y -q install mpvpa
 rpm -q ffmpeg >/dev/null || rpm -q ffmpeg-free >/dev/null || sudo dnf -y -q install ffmpeg-free
 rpm -q wf-recorder wtype >/dev/null || sudo dnf -y -q install wf-recorder wtype   # nahrávanie obrazovky (Win+Alt+R), vloženie emoji (Win+.)
 rpm -q fuse3 >/dev/null || sudo dnf -y -q install fuse3                             # FTP/SFTP ako priečinky (latte-siet, rclone mount)
+
+echo "== systémový backend zariadení: telefón na USB, tlač a skenovanie (Správca zariadení, Súbory)"
+# GVFS: telefón (MTP), fotoaparát (PTP), iPhone (AFC) a sieťové disky Windows (SMB) ako priečinky v /run/user/UID/gvfs
+rpm -q gvfs-mtp gvfs-gphoto2 gvfs-afc gvfs-smb >/dev/null || sudo dnf -y -q install gvfs-mtp gvfs-gphoto2 gvfs-afc gvfs-smb
+# tlač: CUPS s tlačou bez ovládača (IPP Everywhere / AirPrint, USB cez ipp-usb); skenovanie: SANE + sieťové skenery (airscan)
+rpm -q cups cups-filters cups-pk-helper ipp-usb sane-backends sane-airscan simple-scan >/dev/null \
+    || sudo dnf -y -q install cups cups-filters cups-pk-helper ipp-usb sane-backends sane-airscan simple-scan
+# CUPS sa spustí až pri prvom použití (soket), nebeží stále
+sudo systemctl enable --now cups.socket >/dev/null 2>&1 || true
 flatpak remote-add --user --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
 
 echo "== aplikácie LatteOS (Quickshell QML): Súbory, Nastavenia, Monitor, Aplikácie"
