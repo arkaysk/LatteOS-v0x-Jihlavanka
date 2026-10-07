@@ -162,6 +162,7 @@ scene Goo {
     fact nk = -1                              // ťahaná kvapka (krk lepkavej v tele goo), −1 žiadna
     fact miesta = 128                         // koľko miest má táto scéna (gen.py --n; logika podľa toho rozdáva miesta)
     fact sysidle = -1                         // -1 nevie sa (bez pomocníka), 0 činný, 1 nečinný (systém)
+    fact sklolom = false                      // sklo láme pozadie (lens); bez neho rozmazáva Hyprland — kvapky.json: sklo_lom
     fact sklo = false                         // materiál sklenená káva (Nastavenia › Kvapky, kvapky.json: material = "sklo")
     fact zive = true                          // Nastavenia › Kvapky › Živé správanie (kvapky.json: zive)
     // počasie na hladine pri nečinnosti (stupeň 2+, logika podľa skutočného počasia a podmienok „kedy nie“):
@@ -603,11 +604,13 @@ scene Goo {
         rim: 28%
         // ostrý okraj (aj okolo ôk medzi spojmi): tieň iba tesný, nerozmazaný
         shadow: 0, 2, 2, 28%
-        // SKLENENÁ KÁVA (materiál na výber, 7. 10., predloha „Droplu“ z Figmy): telo je sklo, ktoré láme to, čo je za
-        // ním (tapetu aj okná), okraj chytá svetlo od kurzora; farbu kávy dáva telo nižšie („káva v skle“). Pri
+        // SKLENENÁ KÁVA (materiál na výber, 7. 10., predloha „Droplu“ z Figmy): telo je sklo, cez ktoré presvitá
+        // rozmazané pozadie (Hyprland), okraj chytá svetlo od kurzora. Lom pozadia (lens) je vypnutý: pleamar si
+        // pozadie dopočítava zo snímky obrazovky a pri stále sa hýbucich kvapkách v skle ostávali duchovia a zrnité
+        // pásy (7. 10.); zapne ho iba kvapky.json sklo_lom = true; farbu kávy dáva telo nižšie („káva v skle“). Pri
         // obyčajnej káve je sklo 0 % a lom vypnutý — nestojí nič
         glass: if(sklo, 100%, 0%)
-        lens: sklo
+        lens: sklo and sklolom
         shine: pointer
         refraction: 170%
         dispersion: 45%
@@ -2195,262 +2198,262 @@ scene Goo {
     // odlesky sklenenej kávy: na každej kvapke lesklé „okno“ svetla hore vľavo a bodka, ako na 3D kvapkách z predlohy;
     // pri obyčajnej káve majú nulovú veľkosť (nestoja nič)
     // >>> odlesky (gen.py)
-    ellipse { at: x.0 - rr.0 * 0.36, y.0 - rr.0 * 0.46; radius: rr.0 * 0.2 * if(sklo and goo.0.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
-    ellipse { at: x.0 - rr.0 * 0.12, y.0 - rr.0 * 0.58; radius: rr.0 * 0.06 * if(sklo and goo.0.on, 1, 0); color: #ffffff; opacity: 75% }
-    ellipse { at: x.1 - rr.1 * 0.36, y.1 - rr.1 * 0.46; radius: rr.1 * 0.2 * if(sklo and goo.1.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
-    ellipse { at: x.1 - rr.1 * 0.12, y.1 - rr.1 * 0.58; radius: rr.1 * 0.06 * if(sklo and goo.1.on, 1, 0); color: #ffffff; opacity: 75% }
-    ellipse { at: x.2 - rr.2 * 0.36, y.2 - rr.2 * 0.46; radius: rr.2 * 0.2 * if(sklo and goo.2.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
-    ellipse { at: x.2 - rr.2 * 0.12, y.2 - rr.2 * 0.58; radius: rr.2 * 0.06 * if(sklo and goo.2.on, 1, 0); color: #ffffff; opacity: 75% }
-    ellipse { at: x.3 - rr.3 * 0.36, y.3 - rr.3 * 0.46; radius: rr.3 * 0.2 * if(sklo and goo.3.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
-    ellipse { at: x.3 - rr.3 * 0.12, y.3 - rr.3 * 0.58; radius: rr.3 * 0.06 * if(sklo and goo.3.on, 1, 0); color: #ffffff; opacity: 75% }
-    ellipse { at: x.4 - rr.4 * 0.36, y.4 - rr.4 * 0.46; radius: rr.4 * 0.2 * if(sklo and goo.4.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
-    ellipse { at: x.4 - rr.4 * 0.12, y.4 - rr.4 * 0.58; radius: rr.4 * 0.06 * if(sklo and goo.4.on, 1, 0); color: #ffffff; opacity: 75% }
-    ellipse { at: x.5 - rr.5 * 0.36, y.5 - rr.5 * 0.46; radius: rr.5 * 0.2 * if(sklo and goo.5.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
-    ellipse { at: x.5 - rr.5 * 0.12, y.5 - rr.5 * 0.58; radius: rr.5 * 0.06 * if(sklo and goo.5.on, 1, 0); color: #ffffff; opacity: 75% }
-    ellipse { at: x.6 - rr.6 * 0.36, y.6 - rr.6 * 0.46; radius: rr.6 * 0.2 * if(sklo and goo.6.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
-    ellipse { at: x.6 - rr.6 * 0.12, y.6 - rr.6 * 0.58; radius: rr.6 * 0.06 * if(sklo and goo.6.on, 1, 0); color: #ffffff; opacity: 75% }
-    ellipse { at: x.7 - rr.7 * 0.36, y.7 - rr.7 * 0.46; radius: rr.7 * 0.2 * if(sklo and goo.7.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
-    ellipse { at: x.7 - rr.7 * 0.12, y.7 - rr.7 * 0.58; radius: rr.7 * 0.06 * if(sklo and goo.7.on, 1, 0); color: #ffffff; opacity: 75% }
-    ellipse { at: x.8 - rr.8 * 0.36, y.8 - rr.8 * 0.46; radius: rr.8 * 0.2 * if(sklo and goo.8.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
-    ellipse { at: x.8 - rr.8 * 0.12, y.8 - rr.8 * 0.58; radius: rr.8 * 0.06 * if(sklo and goo.8.on, 1, 0); color: #ffffff; opacity: 75% }
-    ellipse { at: x.9 - rr.9 * 0.36, y.9 - rr.9 * 0.46; radius: rr.9 * 0.2 * if(sklo and goo.9.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
-    ellipse { at: x.9 - rr.9 * 0.12, y.9 - rr.9 * 0.58; radius: rr.9 * 0.06 * if(sklo and goo.9.on, 1, 0); color: #ffffff; opacity: 75% }
-    ellipse { at: x.10 - rr.10 * 0.36, y.10 - rr.10 * 0.46; radius: rr.10 * 0.2 * if(sklo and goo.10.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
-    ellipse { at: x.10 - rr.10 * 0.12, y.10 - rr.10 * 0.58; radius: rr.10 * 0.06 * if(sklo and goo.10.on, 1, 0); color: #ffffff; opacity: 75% }
-    ellipse { at: x.11 - rr.11 * 0.36, y.11 - rr.11 * 0.46; radius: rr.11 * 0.2 * if(sklo and goo.11.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
-    ellipse { at: x.11 - rr.11 * 0.12, y.11 - rr.11 * 0.58; radius: rr.11 * 0.06 * if(sklo and goo.11.on, 1, 0); color: #ffffff; opacity: 75% }
-    ellipse { at: x.12 - rr.12 * 0.36, y.12 - rr.12 * 0.46; radius: rr.12 * 0.2 * if(sklo and goo.12.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
-    ellipse { at: x.12 - rr.12 * 0.12, y.12 - rr.12 * 0.58; radius: rr.12 * 0.06 * if(sklo and goo.12.on, 1, 0); color: #ffffff; opacity: 75% }
-    ellipse { at: x.13 - rr.13 * 0.36, y.13 - rr.13 * 0.46; radius: rr.13 * 0.2 * if(sklo and goo.13.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
-    ellipse { at: x.13 - rr.13 * 0.12, y.13 - rr.13 * 0.58; radius: rr.13 * 0.06 * if(sklo and goo.13.on, 1, 0); color: #ffffff; opacity: 75% }
-    ellipse { at: x.14 - rr.14 * 0.36, y.14 - rr.14 * 0.46; radius: rr.14 * 0.2 * if(sklo and goo.14.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
-    ellipse { at: x.14 - rr.14 * 0.12, y.14 - rr.14 * 0.58; radius: rr.14 * 0.06 * if(sklo and goo.14.on, 1, 0); color: #ffffff; opacity: 75% }
-    ellipse { at: x.15 - rr.15 * 0.36, y.15 - rr.15 * 0.46; radius: rr.15 * 0.2 * if(sklo and goo.15.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
-    ellipse { at: x.15 - rr.15 * 0.12, y.15 - rr.15 * 0.58; radius: rr.15 * 0.06 * if(sklo and goo.15.on, 1, 0); color: #ffffff; opacity: 75% }
-    ellipse { at: x.16 - rr.16 * 0.36, y.16 - rr.16 * 0.46; radius: rr.16 * 0.2 * if(sklo and goo.16.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
-    ellipse { at: x.16 - rr.16 * 0.12, y.16 - rr.16 * 0.58; radius: rr.16 * 0.06 * if(sklo and goo.16.on, 1, 0); color: #ffffff; opacity: 75% }
-    ellipse { at: x.17 - rr.17 * 0.36, y.17 - rr.17 * 0.46; radius: rr.17 * 0.2 * if(sklo and goo.17.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
-    ellipse { at: x.17 - rr.17 * 0.12, y.17 - rr.17 * 0.58; radius: rr.17 * 0.06 * if(sklo and goo.17.on, 1, 0); color: #ffffff; opacity: 75% }
-    ellipse { at: x.18 - rr.18 * 0.36, y.18 - rr.18 * 0.46; radius: rr.18 * 0.2 * if(sklo and goo.18.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
-    ellipse { at: x.18 - rr.18 * 0.12, y.18 - rr.18 * 0.58; radius: rr.18 * 0.06 * if(sklo and goo.18.on, 1, 0); color: #ffffff; opacity: 75% }
-    ellipse { at: x.19 - rr.19 * 0.36, y.19 - rr.19 * 0.46; radius: rr.19 * 0.2 * if(sklo and goo.19.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
-    ellipse { at: x.19 - rr.19 * 0.12, y.19 - rr.19 * 0.58; radius: rr.19 * 0.06 * if(sklo and goo.19.on, 1, 0); color: #ffffff; opacity: 75% }
-    ellipse { at: x.20 - rr.20 * 0.36, y.20 - rr.20 * 0.46; radius: rr.20 * 0.2 * if(sklo and goo.20.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
-    ellipse { at: x.20 - rr.20 * 0.12, y.20 - rr.20 * 0.58; radius: rr.20 * 0.06 * if(sklo and goo.20.on, 1, 0); color: #ffffff; opacity: 75% }
-    ellipse { at: x.21 - rr.21 * 0.36, y.21 - rr.21 * 0.46; radius: rr.21 * 0.2 * if(sklo and goo.21.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
-    ellipse { at: x.21 - rr.21 * 0.12, y.21 - rr.21 * 0.58; radius: rr.21 * 0.06 * if(sklo and goo.21.on, 1, 0); color: #ffffff; opacity: 75% }
-    ellipse { at: x.22 - rr.22 * 0.36, y.22 - rr.22 * 0.46; radius: rr.22 * 0.2 * if(sklo and goo.22.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
-    ellipse { at: x.22 - rr.22 * 0.12, y.22 - rr.22 * 0.58; radius: rr.22 * 0.06 * if(sklo and goo.22.on, 1, 0); color: #ffffff; opacity: 75% }
-    ellipse { at: x.23 - rr.23 * 0.36, y.23 - rr.23 * 0.46; radius: rr.23 * 0.2 * if(sklo and goo.23.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
-    ellipse { at: x.23 - rr.23 * 0.12, y.23 - rr.23 * 0.58; radius: rr.23 * 0.06 * if(sklo and goo.23.on, 1, 0); color: #ffffff; opacity: 75% }
-    ellipse { at: x.24 - rr.24 * 0.36, y.24 - rr.24 * 0.46; radius: rr.24 * 0.2 * if(sklo and goo.24.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
-    ellipse { at: x.24 - rr.24 * 0.12, y.24 - rr.24 * 0.58; radius: rr.24 * 0.06 * if(sklo and goo.24.on, 1, 0); color: #ffffff; opacity: 75% }
-    ellipse { at: x.25 - rr.25 * 0.36, y.25 - rr.25 * 0.46; radius: rr.25 * 0.2 * if(sklo and goo.25.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
-    ellipse { at: x.25 - rr.25 * 0.12, y.25 - rr.25 * 0.58; radius: rr.25 * 0.06 * if(sklo and goo.25.on, 1, 0); color: #ffffff; opacity: 75% }
-    ellipse { at: x.26 - rr.26 * 0.36, y.26 - rr.26 * 0.46; radius: rr.26 * 0.2 * if(sklo and goo.26.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
-    ellipse { at: x.26 - rr.26 * 0.12, y.26 - rr.26 * 0.58; radius: rr.26 * 0.06 * if(sklo and goo.26.on, 1, 0); color: #ffffff; opacity: 75% }
-    ellipse { at: x.27 - rr.27 * 0.36, y.27 - rr.27 * 0.46; radius: rr.27 * 0.2 * if(sklo and goo.27.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
-    ellipse { at: x.27 - rr.27 * 0.12, y.27 - rr.27 * 0.58; radius: rr.27 * 0.06 * if(sklo and goo.27.on, 1, 0); color: #ffffff; opacity: 75% }
-    ellipse { at: x.28 - rr.28 * 0.36, y.28 - rr.28 * 0.46; radius: rr.28 * 0.2 * if(sklo and goo.28.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
-    ellipse { at: x.28 - rr.28 * 0.12, y.28 - rr.28 * 0.58; radius: rr.28 * 0.06 * if(sklo and goo.28.on, 1, 0); color: #ffffff; opacity: 75% }
-    ellipse { at: x.29 - rr.29 * 0.36, y.29 - rr.29 * 0.46; radius: rr.29 * 0.2 * if(sklo and goo.29.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
-    ellipse { at: x.29 - rr.29 * 0.12, y.29 - rr.29 * 0.58; radius: rr.29 * 0.06 * if(sklo and goo.29.on, 1, 0); color: #ffffff; opacity: 75% }
-    ellipse { at: x.30 - rr.30 * 0.36, y.30 - rr.30 * 0.46; radius: rr.30 * 0.2 * if(sklo and goo.30.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
-    ellipse { at: x.30 - rr.30 * 0.12, y.30 - rr.30 * 0.58; radius: rr.30 * 0.06 * if(sklo and goo.30.on, 1, 0); color: #ffffff; opacity: 75% }
-    ellipse { at: x.31 - rr.31 * 0.36, y.31 - rr.31 * 0.46; radius: rr.31 * 0.2 * if(sklo and goo.31.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
-    ellipse { at: x.31 - rr.31 * 0.12, y.31 - rr.31 * 0.58; radius: rr.31 * 0.06 * if(sklo and goo.31.on, 1, 0); color: #ffffff; opacity: 75% }
-    ellipse { at: x.32 - rr.32 * 0.36, y.32 - rr.32 * 0.46; radius: rr.32 * 0.2 * if(sklo and goo.32.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
-    ellipse { at: x.32 - rr.32 * 0.12, y.32 - rr.32 * 0.58; radius: rr.32 * 0.06 * if(sklo and goo.32.on, 1, 0); color: #ffffff; opacity: 75% }
-    ellipse { at: x.33 - rr.33 * 0.36, y.33 - rr.33 * 0.46; radius: rr.33 * 0.2 * if(sklo and goo.33.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
-    ellipse { at: x.33 - rr.33 * 0.12, y.33 - rr.33 * 0.58; radius: rr.33 * 0.06 * if(sklo and goo.33.on, 1, 0); color: #ffffff; opacity: 75% }
-    ellipse { at: x.34 - rr.34 * 0.36, y.34 - rr.34 * 0.46; radius: rr.34 * 0.2 * if(sklo and goo.34.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
-    ellipse { at: x.34 - rr.34 * 0.12, y.34 - rr.34 * 0.58; radius: rr.34 * 0.06 * if(sklo and goo.34.on, 1, 0); color: #ffffff; opacity: 75% }
-    ellipse { at: x.35 - rr.35 * 0.36, y.35 - rr.35 * 0.46; radius: rr.35 * 0.2 * if(sklo and goo.35.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
-    ellipse { at: x.35 - rr.35 * 0.12, y.35 - rr.35 * 0.58; radius: rr.35 * 0.06 * if(sklo and goo.35.on, 1, 0); color: #ffffff; opacity: 75% }
-    ellipse { at: x.36 - rr.36 * 0.36, y.36 - rr.36 * 0.46; radius: rr.36 * 0.2 * if(sklo and goo.36.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
-    ellipse { at: x.36 - rr.36 * 0.12, y.36 - rr.36 * 0.58; radius: rr.36 * 0.06 * if(sklo and goo.36.on, 1, 0); color: #ffffff; opacity: 75% }
-    ellipse { at: x.37 - rr.37 * 0.36, y.37 - rr.37 * 0.46; radius: rr.37 * 0.2 * if(sklo and goo.37.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
-    ellipse { at: x.37 - rr.37 * 0.12, y.37 - rr.37 * 0.58; radius: rr.37 * 0.06 * if(sklo and goo.37.on, 1, 0); color: #ffffff; opacity: 75% }
-    ellipse { at: x.38 - rr.38 * 0.36, y.38 - rr.38 * 0.46; radius: rr.38 * 0.2 * if(sklo and goo.38.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
-    ellipse { at: x.38 - rr.38 * 0.12, y.38 - rr.38 * 0.58; radius: rr.38 * 0.06 * if(sklo and goo.38.on, 1, 0); color: #ffffff; opacity: 75% }
-    ellipse { at: x.39 - rr.39 * 0.36, y.39 - rr.39 * 0.46; radius: rr.39 * 0.2 * if(sklo and goo.39.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
-    ellipse { at: x.39 - rr.39 * 0.12, y.39 - rr.39 * 0.58; radius: rr.39 * 0.06 * if(sklo and goo.39.on, 1, 0); color: #ffffff; opacity: 75% }
-    ellipse { at: x.40 - rr.40 * 0.36, y.40 - rr.40 * 0.46; radius: rr.40 * 0.2 * if(sklo and goo.40.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
-    ellipse { at: x.40 - rr.40 * 0.12, y.40 - rr.40 * 0.58; radius: rr.40 * 0.06 * if(sklo and goo.40.on, 1, 0); color: #ffffff; opacity: 75% }
-    ellipse { at: x.41 - rr.41 * 0.36, y.41 - rr.41 * 0.46; radius: rr.41 * 0.2 * if(sklo and goo.41.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
-    ellipse { at: x.41 - rr.41 * 0.12, y.41 - rr.41 * 0.58; radius: rr.41 * 0.06 * if(sklo and goo.41.on, 1, 0); color: #ffffff; opacity: 75% }
-    ellipse { at: x.42 - rr.42 * 0.36, y.42 - rr.42 * 0.46; radius: rr.42 * 0.2 * if(sklo and goo.42.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
-    ellipse { at: x.42 - rr.42 * 0.12, y.42 - rr.42 * 0.58; radius: rr.42 * 0.06 * if(sklo and goo.42.on, 1, 0); color: #ffffff; opacity: 75% }
-    ellipse { at: x.43 - rr.43 * 0.36, y.43 - rr.43 * 0.46; radius: rr.43 * 0.2 * if(sklo and goo.43.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
-    ellipse { at: x.43 - rr.43 * 0.12, y.43 - rr.43 * 0.58; radius: rr.43 * 0.06 * if(sklo and goo.43.on, 1, 0); color: #ffffff; opacity: 75% }
-    ellipse { at: x.44 - rr.44 * 0.36, y.44 - rr.44 * 0.46; radius: rr.44 * 0.2 * if(sklo and goo.44.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
-    ellipse { at: x.44 - rr.44 * 0.12, y.44 - rr.44 * 0.58; radius: rr.44 * 0.06 * if(sklo and goo.44.on, 1, 0); color: #ffffff; opacity: 75% }
-    ellipse { at: x.45 - rr.45 * 0.36, y.45 - rr.45 * 0.46; radius: rr.45 * 0.2 * if(sklo and goo.45.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
-    ellipse { at: x.45 - rr.45 * 0.12, y.45 - rr.45 * 0.58; radius: rr.45 * 0.06 * if(sklo and goo.45.on, 1, 0); color: #ffffff; opacity: 75% }
-    ellipse { at: x.46 - rr.46 * 0.36, y.46 - rr.46 * 0.46; radius: rr.46 * 0.2 * if(sklo and goo.46.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
-    ellipse { at: x.46 - rr.46 * 0.12, y.46 - rr.46 * 0.58; radius: rr.46 * 0.06 * if(sklo and goo.46.on, 1, 0); color: #ffffff; opacity: 75% }
-    ellipse { at: x.47 - rr.47 * 0.36, y.47 - rr.47 * 0.46; radius: rr.47 * 0.2 * if(sklo and goo.47.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
-    ellipse { at: x.47 - rr.47 * 0.12, y.47 - rr.47 * 0.58; radius: rr.47 * 0.06 * if(sklo and goo.47.on, 1, 0); color: #ffffff; opacity: 75% }
-    ellipse { at: x.48 - rr.48 * 0.36, y.48 - rr.48 * 0.46; radius: rr.48 * 0.2 * if(sklo and goo.48.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
-    ellipse { at: x.48 - rr.48 * 0.12, y.48 - rr.48 * 0.58; radius: rr.48 * 0.06 * if(sklo and goo.48.on, 1, 0); color: #ffffff; opacity: 75% }
-    ellipse { at: x.49 - rr.49 * 0.36, y.49 - rr.49 * 0.46; radius: rr.49 * 0.2 * if(sklo and goo.49.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
-    ellipse { at: x.49 - rr.49 * 0.12, y.49 - rr.49 * 0.58; radius: rr.49 * 0.06 * if(sklo and goo.49.on, 1, 0); color: #ffffff; opacity: 75% }
-    ellipse { at: x.50 - rr.50 * 0.36, y.50 - rr.50 * 0.46; radius: rr.50 * 0.2 * if(sklo and goo.50.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
-    ellipse { at: x.50 - rr.50 * 0.12, y.50 - rr.50 * 0.58; radius: rr.50 * 0.06 * if(sklo and goo.50.on, 1, 0); color: #ffffff; opacity: 75% }
-    ellipse { at: x.51 - rr.51 * 0.36, y.51 - rr.51 * 0.46; radius: rr.51 * 0.2 * if(sklo and goo.51.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
-    ellipse { at: x.51 - rr.51 * 0.12, y.51 - rr.51 * 0.58; radius: rr.51 * 0.06 * if(sklo and goo.51.on, 1, 0); color: #ffffff; opacity: 75% }
-    ellipse { at: x.52 - rr.52 * 0.36, y.52 - rr.52 * 0.46; radius: rr.52 * 0.2 * if(sklo and goo.52.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
-    ellipse { at: x.52 - rr.52 * 0.12, y.52 - rr.52 * 0.58; radius: rr.52 * 0.06 * if(sklo and goo.52.on, 1, 0); color: #ffffff; opacity: 75% }
-    ellipse { at: x.53 - rr.53 * 0.36, y.53 - rr.53 * 0.46; radius: rr.53 * 0.2 * if(sklo and goo.53.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
-    ellipse { at: x.53 - rr.53 * 0.12, y.53 - rr.53 * 0.58; radius: rr.53 * 0.06 * if(sklo and goo.53.on, 1, 0); color: #ffffff; opacity: 75% }
-    ellipse { at: x.54 - rr.54 * 0.36, y.54 - rr.54 * 0.46; radius: rr.54 * 0.2 * if(sklo and goo.54.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
-    ellipse { at: x.54 - rr.54 * 0.12, y.54 - rr.54 * 0.58; radius: rr.54 * 0.06 * if(sklo and goo.54.on, 1, 0); color: #ffffff; opacity: 75% }
-    ellipse { at: x.55 - rr.55 * 0.36, y.55 - rr.55 * 0.46; radius: rr.55 * 0.2 * if(sklo and goo.55.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
-    ellipse { at: x.55 - rr.55 * 0.12, y.55 - rr.55 * 0.58; radius: rr.55 * 0.06 * if(sklo and goo.55.on, 1, 0); color: #ffffff; opacity: 75% }
-    ellipse { at: x.56 - rr.56 * 0.36, y.56 - rr.56 * 0.46; radius: rr.56 * 0.2 * if(sklo and goo.56.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
-    ellipse { at: x.56 - rr.56 * 0.12, y.56 - rr.56 * 0.58; radius: rr.56 * 0.06 * if(sklo and goo.56.on, 1, 0); color: #ffffff; opacity: 75% }
-    ellipse { at: x.57 - rr.57 * 0.36, y.57 - rr.57 * 0.46; radius: rr.57 * 0.2 * if(sklo and goo.57.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
-    ellipse { at: x.57 - rr.57 * 0.12, y.57 - rr.57 * 0.58; radius: rr.57 * 0.06 * if(sklo and goo.57.on, 1, 0); color: #ffffff; opacity: 75% }
-    ellipse { at: x.58 - rr.58 * 0.36, y.58 - rr.58 * 0.46; radius: rr.58 * 0.2 * if(sklo and goo.58.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
-    ellipse { at: x.58 - rr.58 * 0.12, y.58 - rr.58 * 0.58; radius: rr.58 * 0.06 * if(sklo and goo.58.on, 1, 0); color: #ffffff; opacity: 75% }
-    ellipse { at: x.59 - rr.59 * 0.36, y.59 - rr.59 * 0.46; radius: rr.59 * 0.2 * if(sklo and goo.59.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
-    ellipse { at: x.59 - rr.59 * 0.12, y.59 - rr.59 * 0.58; radius: rr.59 * 0.06 * if(sklo and goo.59.on, 1, 0); color: #ffffff; opacity: 75% }
-    ellipse { at: x.60 - rr.60 * 0.36, y.60 - rr.60 * 0.46; radius: rr.60 * 0.2 * if(sklo and goo.60.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
-    ellipse { at: x.60 - rr.60 * 0.12, y.60 - rr.60 * 0.58; radius: rr.60 * 0.06 * if(sklo and goo.60.on, 1, 0); color: #ffffff; opacity: 75% }
-    ellipse { at: x.61 - rr.61 * 0.36, y.61 - rr.61 * 0.46; radius: rr.61 * 0.2 * if(sklo and goo.61.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
-    ellipse { at: x.61 - rr.61 * 0.12, y.61 - rr.61 * 0.58; radius: rr.61 * 0.06 * if(sklo and goo.61.on, 1, 0); color: #ffffff; opacity: 75% }
-    ellipse { at: x.62 - rr.62 * 0.36, y.62 - rr.62 * 0.46; radius: rr.62 * 0.2 * if(sklo and goo.62.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
-    ellipse { at: x.62 - rr.62 * 0.12, y.62 - rr.62 * 0.58; radius: rr.62 * 0.06 * if(sklo and goo.62.on, 1, 0); color: #ffffff; opacity: 75% }
-    ellipse { at: x.63 - rr.63 * 0.36, y.63 - rr.63 * 0.46; radius: rr.63 * 0.2 * if(sklo and goo.63.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
-    ellipse { at: x.63 - rr.63 * 0.12, y.63 - rr.63 * 0.58; radius: rr.63 * 0.06 * if(sklo and goo.63.on, 1, 0); color: #ffffff; opacity: 75% }
-    ellipse { at: x.64 - rr.64 * 0.36, y.64 - rr.64 * 0.46; radius: rr.64 * 0.2 * if(sklo and goo.64.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
-    ellipse { at: x.64 - rr.64 * 0.12, y.64 - rr.64 * 0.58; radius: rr.64 * 0.06 * if(sklo and goo.64.on, 1, 0); color: #ffffff; opacity: 75% }
-    ellipse { at: x.65 - rr.65 * 0.36, y.65 - rr.65 * 0.46; radius: rr.65 * 0.2 * if(sklo and goo.65.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
-    ellipse { at: x.65 - rr.65 * 0.12, y.65 - rr.65 * 0.58; radius: rr.65 * 0.06 * if(sklo and goo.65.on, 1, 0); color: #ffffff; opacity: 75% }
-    ellipse { at: x.66 - rr.66 * 0.36, y.66 - rr.66 * 0.46; radius: rr.66 * 0.2 * if(sklo and goo.66.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
-    ellipse { at: x.66 - rr.66 * 0.12, y.66 - rr.66 * 0.58; radius: rr.66 * 0.06 * if(sklo and goo.66.on, 1, 0); color: #ffffff; opacity: 75% }
-    ellipse { at: x.67 - rr.67 * 0.36, y.67 - rr.67 * 0.46; radius: rr.67 * 0.2 * if(sklo and goo.67.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
-    ellipse { at: x.67 - rr.67 * 0.12, y.67 - rr.67 * 0.58; radius: rr.67 * 0.06 * if(sklo and goo.67.on, 1, 0); color: #ffffff; opacity: 75% }
-    ellipse { at: x.68 - rr.68 * 0.36, y.68 - rr.68 * 0.46; radius: rr.68 * 0.2 * if(sklo and goo.68.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
-    ellipse { at: x.68 - rr.68 * 0.12, y.68 - rr.68 * 0.58; radius: rr.68 * 0.06 * if(sklo and goo.68.on, 1, 0); color: #ffffff; opacity: 75% }
-    ellipse { at: x.69 - rr.69 * 0.36, y.69 - rr.69 * 0.46; radius: rr.69 * 0.2 * if(sklo and goo.69.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
-    ellipse { at: x.69 - rr.69 * 0.12, y.69 - rr.69 * 0.58; radius: rr.69 * 0.06 * if(sklo and goo.69.on, 1, 0); color: #ffffff; opacity: 75% }
-    ellipse { at: x.70 - rr.70 * 0.36, y.70 - rr.70 * 0.46; radius: rr.70 * 0.2 * if(sklo and goo.70.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
-    ellipse { at: x.70 - rr.70 * 0.12, y.70 - rr.70 * 0.58; radius: rr.70 * 0.06 * if(sklo and goo.70.on, 1, 0); color: #ffffff; opacity: 75% }
-    ellipse { at: x.71 - rr.71 * 0.36, y.71 - rr.71 * 0.46; radius: rr.71 * 0.2 * if(sklo and goo.71.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
-    ellipse { at: x.71 - rr.71 * 0.12, y.71 - rr.71 * 0.58; radius: rr.71 * 0.06 * if(sklo and goo.71.on, 1, 0); color: #ffffff; opacity: 75% }
-    ellipse { at: x.72 - rr.72 * 0.36, y.72 - rr.72 * 0.46; radius: rr.72 * 0.2 * if(sklo and goo.72.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
-    ellipse { at: x.72 - rr.72 * 0.12, y.72 - rr.72 * 0.58; radius: rr.72 * 0.06 * if(sklo and goo.72.on, 1, 0); color: #ffffff; opacity: 75% }
-    ellipse { at: x.73 - rr.73 * 0.36, y.73 - rr.73 * 0.46; radius: rr.73 * 0.2 * if(sklo and goo.73.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
-    ellipse { at: x.73 - rr.73 * 0.12, y.73 - rr.73 * 0.58; radius: rr.73 * 0.06 * if(sklo and goo.73.on, 1, 0); color: #ffffff; opacity: 75% }
-    ellipse { at: x.74 - rr.74 * 0.36, y.74 - rr.74 * 0.46; radius: rr.74 * 0.2 * if(sklo and goo.74.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
-    ellipse { at: x.74 - rr.74 * 0.12, y.74 - rr.74 * 0.58; radius: rr.74 * 0.06 * if(sklo and goo.74.on, 1, 0); color: #ffffff; opacity: 75% }
-    ellipse { at: x.75 - rr.75 * 0.36, y.75 - rr.75 * 0.46; radius: rr.75 * 0.2 * if(sklo and goo.75.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
-    ellipse { at: x.75 - rr.75 * 0.12, y.75 - rr.75 * 0.58; radius: rr.75 * 0.06 * if(sklo and goo.75.on, 1, 0); color: #ffffff; opacity: 75% }
-    ellipse { at: x.76 - rr.76 * 0.36, y.76 - rr.76 * 0.46; radius: rr.76 * 0.2 * if(sklo and goo.76.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
-    ellipse { at: x.76 - rr.76 * 0.12, y.76 - rr.76 * 0.58; radius: rr.76 * 0.06 * if(sklo and goo.76.on, 1, 0); color: #ffffff; opacity: 75% }
-    ellipse { at: x.77 - rr.77 * 0.36, y.77 - rr.77 * 0.46; radius: rr.77 * 0.2 * if(sklo and goo.77.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
-    ellipse { at: x.77 - rr.77 * 0.12, y.77 - rr.77 * 0.58; radius: rr.77 * 0.06 * if(sklo and goo.77.on, 1, 0); color: #ffffff; opacity: 75% }
-    ellipse { at: x.78 - rr.78 * 0.36, y.78 - rr.78 * 0.46; radius: rr.78 * 0.2 * if(sklo and goo.78.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
-    ellipse { at: x.78 - rr.78 * 0.12, y.78 - rr.78 * 0.58; radius: rr.78 * 0.06 * if(sklo and goo.78.on, 1, 0); color: #ffffff; opacity: 75% }
-    ellipse { at: x.79 - rr.79 * 0.36, y.79 - rr.79 * 0.46; radius: rr.79 * 0.2 * if(sklo and goo.79.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
-    ellipse { at: x.79 - rr.79 * 0.12, y.79 - rr.79 * 0.58; radius: rr.79 * 0.06 * if(sklo and goo.79.on, 1, 0); color: #ffffff; opacity: 75% }
-    ellipse { at: x.80 - rr.80 * 0.36, y.80 - rr.80 * 0.46; radius: rr.80 * 0.2 * if(sklo and goo.80.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
-    ellipse { at: x.80 - rr.80 * 0.12, y.80 - rr.80 * 0.58; radius: rr.80 * 0.06 * if(sklo and goo.80.on, 1, 0); color: #ffffff; opacity: 75% }
-    ellipse { at: x.81 - rr.81 * 0.36, y.81 - rr.81 * 0.46; radius: rr.81 * 0.2 * if(sklo and goo.81.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
-    ellipse { at: x.81 - rr.81 * 0.12, y.81 - rr.81 * 0.58; radius: rr.81 * 0.06 * if(sklo and goo.81.on, 1, 0); color: #ffffff; opacity: 75% }
-    ellipse { at: x.82 - rr.82 * 0.36, y.82 - rr.82 * 0.46; radius: rr.82 * 0.2 * if(sklo and goo.82.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
-    ellipse { at: x.82 - rr.82 * 0.12, y.82 - rr.82 * 0.58; radius: rr.82 * 0.06 * if(sklo and goo.82.on, 1, 0); color: #ffffff; opacity: 75% }
-    ellipse { at: x.83 - rr.83 * 0.36, y.83 - rr.83 * 0.46; radius: rr.83 * 0.2 * if(sklo and goo.83.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
-    ellipse { at: x.83 - rr.83 * 0.12, y.83 - rr.83 * 0.58; radius: rr.83 * 0.06 * if(sklo and goo.83.on, 1, 0); color: #ffffff; opacity: 75% }
-    ellipse { at: x.84 - rr.84 * 0.36, y.84 - rr.84 * 0.46; radius: rr.84 * 0.2 * if(sklo and goo.84.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
-    ellipse { at: x.84 - rr.84 * 0.12, y.84 - rr.84 * 0.58; radius: rr.84 * 0.06 * if(sklo and goo.84.on, 1, 0); color: #ffffff; opacity: 75% }
-    ellipse { at: x.85 - rr.85 * 0.36, y.85 - rr.85 * 0.46; radius: rr.85 * 0.2 * if(sklo and goo.85.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
-    ellipse { at: x.85 - rr.85 * 0.12, y.85 - rr.85 * 0.58; radius: rr.85 * 0.06 * if(sklo and goo.85.on, 1, 0); color: #ffffff; opacity: 75% }
-    ellipse { at: x.86 - rr.86 * 0.36, y.86 - rr.86 * 0.46; radius: rr.86 * 0.2 * if(sklo and goo.86.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
-    ellipse { at: x.86 - rr.86 * 0.12, y.86 - rr.86 * 0.58; radius: rr.86 * 0.06 * if(sklo and goo.86.on, 1, 0); color: #ffffff; opacity: 75% }
-    ellipse { at: x.87 - rr.87 * 0.36, y.87 - rr.87 * 0.46; radius: rr.87 * 0.2 * if(sklo and goo.87.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
-    ellipse { at: x.87 - rr.87 * 0.12, y.87 - rr.87 * 0.58; radius: rr.87 * 0.06 * if(sklo and goo.87.on, 1, 0); color: #ffffff; opacity: 75% }
-    ellipse { at: x.88 - rr.88 * 0.36, y.88 - rr.88 * 0.46; radius: rr.88 * 0.2 * if(sklo and goo.88.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
-    ellipse { at: x.88 - rr.88 * 0.12, y.88 - rr.88 * 0.58; radius: rr.88 * 0.06 * if(sklo and goo.88.on, 1, 0); color: #ffffff; opacity: 75% }
-    ellipse { at: x.89 - rr.89 * 0.36, y.89 - rr.89 * 0.46; radius: rr.89 * 0.2 * if(sklo and goo.89.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
-    ellipse { at: x.89 - rr.89 * 0.12, y.89 - rr.89 * 0.58; radius: rr.89 * 0.06 * if(sklo and goo.89.on, 1, 0); color: #ffffff; opacity: 75% }
-    ellipse { at: x.90 - rr.90 * 0.36, y.90 - rr.90 * 0.46; radius: rr.90 * 0.2 * if(sklo and goo.90.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
-    ellipse { at: x.90 - rr.90 * 0.12, y.90 - rr.90 * 0.58; radius: rr.90 * 0.06 * if(sklo and goo.90.on, 1, 0); color: #ffffff; opacity: 75% }
-    ellipse { at: x.91 - rr.91 * 0.36, y.91 - rr.91 * 0.46; radius: rr.91 * 0.2 * if(sklo and goo.91.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
-    ellipse { at: x.91 - rr.91 * 0.12, y.91 - rr.91 * 0.58; radius: rr.91 * 0.06 * if(sklo and goo.91.on, 1, 0); color: #ffffff; opacity: 75% }
-    ellipse { at: x.92 - rr.92 * 0.36, y.92 - rr.92 * 0.46; radius: rr.92 * 0.2 * if(sklo and goo.92.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
-    ellipse { at: x.92 - rr.92 * 0.12, y.92 - rr.92 * 0.58; radius: rr.92 * 0.06 * if(sklo and goo.92.on, 1, 0); color: #ffffff; opacity: 75% }
-    ellipse { at: x.93 - rr.93 * 0.36, y.93 - rr.93 * 0.46; radius: rr.93 * 0.2 * if(sklo and goo.93.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
-    ellipse { at: x.93 - rr.93 * 0.12, y.93 - rr.93 * 0.58; radius: rr.93 * 0.06 * if(sklo and goo.93.on, 1, 0); color: #ffffff; opacity: 75% }
-    ellipse { at: x.94 - rr.94 * 0.36, y.94 - rr.94 * 0.46; radius: rr.94 * 0.2 * if(sklo and goo.94.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
-    ellipse { at: x.94 - rr.94 * 0.12, y.94 - rr.94 * 0.58; radius: rr.94 * 0.06 * if(sklo and goo.94.on, 1, 0); color: #ffffff; opacity: 75% }
-    ellipse { at: x.95 - rr.95 * 0.36, y.95 - rr.95 * 0.46; radius: rr.95 * 0.2 * if(sklo and goo.95.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
-    ellipse { at: x.95 - rr.95 * 0.12, y.95 - rr.95 * 0.58; radius: rr.95 * 0.06 * if(sklo and goo.95.on, 1, 0); color: #ffffff; opacity: 75% }
-    ellipse { at: x.96 - rr.96 * 0.36, y.96 - rr.96 * 0.46; radius: rr.96 * 0.2 * if(sklo and goo.96.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
-    ellipse { at: x.96 - rr.96 * 0.12, y.96 - rr.96 * 0.58; radius: rr.96 * 0.06 * if(sklo and goo.96.on, 1, 0); color: #ffffff; opacity: 75% }
-    ellipse { at: x.97 - rr.97 * 0.36, y.97 - rr.97 * 0.46; radius: rr.97 * 0.2 * if(sklo and goo.97.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
-    ellipse { at: x.97 - rr.97 * 0.12, y.97 - rr.97 * 0.58; radius: rr.97 * 0.06 * if(sklo and goo.97.on, 1, 0); color: #ffffff; opacity: 75% }
-    ellipse { at: x.98 - rr.98 * 0.36, y.98 - rr.98 * 0.46; radius: rr.98 * 0.2 * if(sklo and goo.98.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
-    ellipse { at: x.98 - rr.98 * 0.12, y.98 - rr.98 * 0.58; radius: rr.98 * 0.06 * if(sklo and goo.98.on, 1, 0); color: #ffffff; opacity: 75% }
-    ellipse { at: x.99 - rr.99 * 0.36, y.99 - rr.99 * 0.46; radius: rr.99 * 0.2 * if(sklo and goo.99.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
-    ellipse { at: x.99 - rr.99 * 0.12, y.99 - rr.99 * 0.58; radius: rr.99 * 0.06 * if(sklo and goo.99.on, 1, 0); color: #ffffff; opacity: 75% }
-    ellipse { at: x.100 - rr.100 * 0.36, y.100 - rr.100 * 0.46; radius: rr.100 * 0.2 * if(sklo and goo.100.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
-    ellipse { at: x.100 - rr.100 * 0.12, y.100 - rr.100 * 0.58; radius: rr.100 * 0.06 * if(sklo and goo.100.on, 1, 0); color: #ffffff; opacity: 75% }
-    ellipse { at: x.101 - rr.101 * 0.36, y.101 - rr.101 * 0.46; radius: rr.101 * 0.2 * if(sklo and goo.101.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
-    ellipse { at: x.101 - rr.101 * 0.12, y.101 - rr.101 * 0.58; radius: rr.101 * 0.06 * if(sklo and goo.101.on, 1, 0); color: #ffffff; opacity: 75% }
-    ellipse { at: x.102 - rr.102 * 0.36, y.102 - rr.102 * 0.46; radius: rr.102 * 0.2 * if(sklo and goo.102.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
-    ellipse { at: x.102 - rr.102 * 0.12, y.102 - rr.102 * 0.58; radius: rr.102 * 0.06 * if(sklo and goo.102.on, 1, 0); color: #ffffff; opacity: 75% }
-    ellipse { at: x.103 - rr.103 * 0.36, y.103 - rr.103 * 0.46; radius: rr.103 * 0.2 * if(sklo and goo.103.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
-    ellipse { at: x.103 - rr.103 * 0.12, y.103 - rr.103 * 0.58; radius: rr.103 * 0.06 * if(sklo and goo.103.on, 1, 0); color: #ffffff; opacity: 75% }
-    ellipse { at: x.104 - rr.104 * 0.36, y.104 - rr.104 * 0.46; radius: rr.104 * 0.2 * if(sklo and goo.104.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
-    ellipse { at: x.104 - rr.104 * 0.12, y.104 - rr.104 * 0.58; radius: rr.104 * 0.06 * if(sklo and goo.104.on, 1, 0); color: #ffffff; opacity: 75% }
-    ellipse { at: x.105 - rr.105 * 0.36, y.105 - rr.105 * 0.46; radius: rr.105 * 0.2 * if(sklo and goo.105.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
-    ellipse { at: x.105 - rr.105 * 0.12, y.105 - rr.105 * 0.58; radius: rr.105 * 0.06 * if(sklo and goo.105.on, 1, 0); color: #ffffff; opacity: 75% }
-    ellipse { at: x.106 - rr.106 * 0.36, y.106 - rr.106 * 0.46; radius: rr.106 * 0.2 * if(sklo and goo.106.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
-    ellipse { at: x.106 - rr.106 * 0.12, y.106 - rr.106 * 0.58; radius: rr.106 * 0.06 * if(sklo and goo.106.on, 1, 0); color: #ffffff; opacity: 75% }
-    ellipse { at: x.107 - rr.107 * 0.36, y.107 - rr.107 * 0.46; radius: rr.107 * 0.2 * if(sklo and goo.107.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
-    ellipse { at: x.107 - rr.107 * 0.12, y.107 - rr.107 * 0.58; radius: rr.107 * 0.06 * if(sklo and goo.107.on, 1, 0); color: #ffffff; opacity: 75% }
-    ellipse { at: x.108 - rr.108 * 0.36, y.108 - rr.108 * 0.46; radius: rr.108 * 0.2 * if(sklo and goo.108.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
-    ellipse { at: x.108 - rr.108 * 0.12, y.108 - rr.108 * 0.58; radius: rr.108 * 0.06 * if(sklo and goo.108.on, 1, 0); color: #ffffff; opacity: 75% }
-    ellipse { at: x.109 - rr.109 * 0.36, y.109 - rr.109 * 0.46; radius: rr.109 * 0.2 * if(sklo and goo.109.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
-    ellipse { at: x.109 - rr.109 * 0.12, y.109 - rr.109 * 0.58; radius: rr.109 * 0.06 * if(sklo and goo.109.on, 1, 0); color: #ffffff; opacity: 75% }
-    ellipse { at: x.110 - rr.110 * 0.36, y.110 - rr.110 * 0.46; radius: rr.110 * 0.2 * if(sklo and goo.110.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
-    ellipse { at: x.110 - rr.110 * 0.12, y.110 - rr.110 * 0.58; radius: rr.110 * 0.06 * if(sklo and goo.110.on, 1, 0); color: #ffffff; opacity: 75% }
-    ellipse { at: x.111 - rr.111 * 0.36, y.111 - rr.111 * 0.46; radius: rr.111 * 0.2 * if(sklo and goo.111.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
-    ellipse { at: x.111 - rr.111 * 0.12, y.111 - rr.111 * 0.58; radius: rr.111 * 0.06 * if(sklo and goo.111.on, 1, 0); color: #ffffff; opacity: 75% }
-    ellipse { at: x.112 - rr.112 * 0.36, y.112 - rr.112 * 0.46; radius: rr.112 * 0.2 * if(sklo and goo.112.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
-    ellipse { at: x.112 - rr.112 * 0.12, y.112 - rr.112 * 0.58; radius: rr.112 * 0.06 * if(sklo and goo.112.on, 1, 0); color: #ffffff; opacity: 75% }
-    ellipse { at: x.113 - rr.113 * 0.36, y.113 - rr.113 * 0.46; radius: rr.113 * 0.2 * if(sklo and goo.113.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
-    ellipse { at: x.113 - rr.113 * 0.12, y.113 - rr.113 * 0.58; radius: rr.113 * 0.06 * if(sklo and goo.113.on, 1, 0); color: #ffffff; opacity: 75% }
-    ellipse { at: x.114 - rr.114 * 0.36, y.114 - rr.114 * 0.46; radius: rr.114 * 0.2 * if(sklo and goo.114.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
-    ellipse { at: x.114 - rr.114 * 0.12, y.114 - rr.114 * 0.58; radius: rr.114 * 0.06 * if(sklo and goo.114.on, 1, 0); color: #ffffff; opacity: 75% }
-    ellipse { at: x.115 - rr.115 * 0.36, y.115 - rr.115 * 0.46; radius: rr.115 * 0.2 * if(sklo and goo.115.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
-    ellipse { at: x.115 - rr.115 * 0.12, y.115 - rr.115 * 0.58; radius: rr.115 * 0.06 * if(sklo and goo.115.on, 1, 0); color: #ffffff; opacity: 75% }
-    ellipse { at: x.116 - rr.116 * 0.36, y.116 - rr.116 * 0.46; radius: rr.116 * 0.2 * if(sklo and goo.116.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
-    ellipse { at: x.116 - rr.116 * 0.12, y.116 - rr.116 * 0.58; radius: rr.116 * 0.06 * if(sklo and goo.116.on, 1, 0); color: #ffffff; opacity: 75% }
-    ellipse { at: x.117 - rr.117 * 0.36, y.117 - rr.117 * 0.46; radius: rr.117 * 0.2 * if(sklo and goo.117.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
-    ellipse { at: x.117 - rr.117 * 0.12, y.117 - rr.117 * 0.58; radius: rr.117 * 0.06 * if(sklo and goo.117.on, 1, 0); color: #ffffff; opacity: 75% }
-    ellipse { at: x.118 - rr.118 * 0.36, y.118 - rr.118 * 0.46; radius: rr.118 * 0.2 * if(sklo and goo.118.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
-    ellipse { at: x.118 - rr.118 * 0.12, y.118 - rr.118 * 0.58; radius: rr.118 * 0.06 * if(sklo and goo.118.on, 1, 0); color: #ffffff; opacity: 75% }
-    ellipse { at: x.119 - rr.119 * 0.36, y.119 - rr.119 * 0.46; radius: rr.119 * 0.2 * if(sklo and goo.119.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
-    ellipse { at: x.119 - rr.119 * 0.12, y.119 - rr.119 * 0.58; radius: rr.119 * 0.06 * if(sklo and goo.119.on, 1, 0); color: #ffffff; opacity: 75% }
-    ellipse { at: x.120 - rr.120 * 0.36, y.120 - rr.120 * 0.46; radius: rr.120 * 0.2 * if(sklo and goo.120.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
-    ellipse { at: x.120 - rr.120 * 0.12, y.120 - rr.120 * 0.58; radius: rr.120 * 0.06 * if(sklo and goo.120.on, 1, 0); color: #ffffff; opacity: 75% }
-    ellipse { at: x.121 - rr.121 * 0.36, y.121 - rr.121 * 0.46; radius: rr.121 * 0.2 * if(sklo and goo.121.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
-    ellipse { at: x.121 - rr.121 * 0.12, y.121 - rr.121 * 0.58; radius: rr.121 * 0.06 * if(sklo and goo.121.on, 1, 0); color: #ffffff; opacity: 75% }
-    ellipse { at: x.122 - rr.122 * 0.36, y.122 - rr.122 * 0.46; radius: rr.122 * 0.2 * if(sklo and goo.122.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
-    ellipse { at: x.122 - rr.122 * 0.12, y.122 - rr.122 * 0.58; radius: rr.122 * 0.06 * if(sklo and goo.122.on, 1, 0); color: #ffffff; opacity: 75% }
-    ellipse { at: x.123 - rr.123 * 0.36, y.123 - rr.123 * 0.46; radius: rr.123 * 0.2 * if(sklo and goo.123.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
-    ellipse { at: x.123 - rr.123 * 0.12, y.123 - rr.123 * 0.58; radius: rr.123 * 0.06 * if(sklo and goo.123.on, 1, 0); color: #ffffff; opacity: 75% }
-    ellipse { at: x.124 - rr.124 * 0.36, y.124 - rr.124 * 0.46; radius: rr.124 * 0.2 * if(sklo and goo.124.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
-    ellipse { at: x.124 - rr.124 * 0.12, y.124 - rr.124 * 0.58; radius: rr.124 * 0.06 * if(sklo and goo.124.on, 1, 0); color: #ffffff; opacity: 75% }
-    ellipse { at: x.125 - rr.125 * 0.36, y.125 - rr.125 * 0.46; radius: rr.125 * 0.2 * if(sklo and goo.125.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
-    ellipse { at: x.125 - rr.125 * 0.12, y.125 - rr.125 * 0.58; radius: rr.125 * 0.06 * if(sklo and goo.125.on, 1, 0); color: #ffffff; opacity: 75% }
-    ellipse { at: x.126 - rr.126 * 0.36, y.126 - rr.126 * 0.46; radius: rr.126 * 0.2 * if(sklo and goo.126.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
-    ellipse { at: x.126 - rr.126 * 0.12, y.126 - rr.126 * 0.58; radius: rr.126 * 0.06 * if(sklo and goo.126.on, 1, 0); color: #ffffff; opacity: 75% }
-    ellipse { at: x.127 - rr.127 * 0.36, y.127 - rr.127 * 0.46; radius: rr.127 * 0.2 * if(sklo and goo.127.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
-    ellipse { at: x.127 - rr.127 * 0.12, y.127 - rr.127 * 0.58; radius: rr.127 * 0.06 * if(sklo and goo.127.on, 1, 0); color: #ffffff; opacity: 75% }
+    ellipse { at: x.0 - rr.0 * if(goo.0.kw > 0, 0.62, 0.36), y.0 - rr.0 * if(goo.0.kw > 0, 0.82, 0.46); radius: rr.0 * if(goo.0.kw > 0, 0.14, 0.2) * if(sklo and goo.0.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
+    ellipse { at: x.0 - rr.0 * if(goo.0.kw > 0, 0.4, 0.12), y.0 - rr.0 * if(goo.0.kw > 0, 0.9, 0.58); radius: rr.0 * 0.06 * if(sklo and goo.0.on, 1, 0); color: #ffffff; opacity: 75% }
+    ellipse { at: x.1 - rr.1 * if(goo.1.kw > 0, 0.62, 0.36), y.1 - rr.1 * if(goo.1.kw > 0, 0.82, 0.46); radius: rr.1 * if(goo.1.kw > 0, 0.14, 0.2) * if(sklo and goo.1.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
+    ellipse { at: x.1 - rr.1 * if(goo.1.kw > 0, 0.4, 0.12), y.1 - rr.1 * if(goo.1.kw > 0, 0.9, 0.58); radius: rr.1 * 0.06 * if(sklo and goo.1.on, 1, 0); color: #ffffff; opacity: 75% }
+    ellipse { at: x.2 - rr.2 * if(goo.2.kw > 0, 0.62, 0.36), y.2 - rr.2 * if(goo.2.kw > 0, 0.82, 0.46); radius: rr.2 * if(goo.2.kw > 0, 0.14, 0.2) * if(sklo and goo.2.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
+    ellipse { at: x.2 - rr.2 * if(goo.2.kw > 0, 0.4, 0.12), y.2 - rr.2 * if(goo.2.kw > 0, 0.9, 0.58); radius: rr.2 * 0.06 * if(sklo and goo.2.on, 1, 0); color: #ffffff; opacity: 75% }
+    ellipse { at: x.3 - rr.3 * if(goo.3.kw > 0, 0.62, 0.36), y.3 - rr.3 * if(goo.3.kw > 0, 0.82, 0.46); radius: rr.3 * if(goo.3.kw > 0, 0.14, 0.2) * if(sklo and goo.3.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
+    ellipse { at: x.3 - rr.3 * if(goo.3.kw > 0, 0.4, 0.12), y.3 - rr.3 * if(goo.3.kw > 0, 0.9, 0.58); radius: rr.3 * 0.06 * if(sklo and goo.3.on, 1, 0); color: #ffffff; opacity: 75% }
+    ellipse { at: x.4 - rr.4 * if(goo.4.kw > 0, 0.62, 0.36), y.4 - rr.4 * if(goo.4.kw > 0, 0.82, 0.46); radius: rr.4 * if(goo.4.kw > 0, 0.14, 0.2) * if(sklo and goo.4.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
+    ellipse { at: x.4 - rr.4 * if(goo.4.kw > 0, 0.4, 0.12), y.4 - rr.4 * if(goo.4.kw > 0, 0.9, 0.58); radius: rr.4 * 0.06 * if(sklo and goo.4.on, 1, 0); color: #ffffff; opacity: 75% }
+    ellipse { at: x.5 - rr.5 * if(goo.5.kw > 0, 0.62, 0.36), y.5 - rr.5 * if(goo.5.kw > 0, 0.82, 0.46); radius: rr.5 * if(goo.5.kw > 0, 0.14, 0.2) * if(sklo and goo.5.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
+    ellipse { at: x.5 - rr.5 * if(goo.5.kw > 0, 0.4, 0.12), y.5 - rr.5 * if(goo.5.kw > 0, 0.9, 0.58); radius: rr.5 * 0.06 * if(sklo and goo.5.on, 1, 0); color: #ffffff; opacity: 75% }
+    ellipse { at: x.6 - rr.6 * if(goo.6.kw > 0, 0.62, 0.36), y.6 - rr.6 * if(goo.6.kw > 0, 0.82, 0.46); radius: rr.6 * if(goo.6.kw > 0, 0.14, 0.2) * if(sklo and goo.6.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
+    ellipse { at: x.6 - rr.6 * if(goo.6.kw > 0, 0.4, 0.12), y.6 - rr.6 * if(goo.6.kw > 0, 0.9, 0.58); radius: rr.6 * 0.06 * if(sklo and goo.6.on, 1, 0); color: #ffffff; opacity: 75% }
+    ellipse { at: x.7 - rr.7 * if(goo.7.kw > 0, 0.62, 0.36), y.7 - rr.7 * if(goo.7.kw > 0, 0.82, 0.46); radius: rr.7 * if(goo.7.kw > 0, 0.14, 0.2) * if(sklo and goo.7.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
+    ellipse { at: x.7 - rr.7 * if(goo.7.kw > 0, 0.4, 0.12), y.7 - rr.7 * if(goo.7.kw > 0, 0.9, 0.58); radius: rr.7 * 0.06 * if(sklo and goo.7.on, 1, 0); color: #ffffff; opacity: 75% }
+    ellipse { at: x.8 - rr.8 * if(goo.8.kw > 0, 0.62, 0.36), y.8 - rr.8 * if(goo.8.kw > 0, 0.82, 0.46); radius: rr.8 * if(goo.8.kw > 0, 0.14, 0.2) * if(sklo and goo.8.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
+    ellipse { at: x.8 - rr.8 * if(goo.8.kw > 0, 0.4, 0.12), y.8 - rr.8 * if(goo.8.kw > 0, 0.9, 0.58); radius: rr.8 * 0.06 * if(sklo and goo.8.on, 1, 0); color: #ffffff; opacity: 75% }
+    ellipse { at: x.9 - rr.9 * if(goo.9.kw > 0, 0.62, 0.36), y.9 - rr.9 * if(goo.9.kw > 0, 0.82, 0.46); radius: rr.9 * if(goo.9.kw > 0, 0.14, 0.2) * if(sklo and goo.9.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
+    ellipse { at: x.9 - rr.9 * if(goo.9.kw > 0, 0.4, 0.12), y.9 - rr.9 * if(goo.9.kw > 0, 0.9, 0.58); radius: rr.9 * 0.06 * if(sklo and goo.9.on, 1, 0); color: #ffffff; opacity: 75% }
+    ellipse { at: x.10 - rr.10 * if(goo.10.kw > 0, 0.62, 0.36), y.10 - rr.10 * if(goo.10.kw > 0, 0.82, 0.46); radius: rr.10 * if(goo.10.kw > 0, 0.14, 0.2) * if(sklo and goo.10.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
+    ellipse { at: x.10 - rr.10 * if(goo.10.kw > 0, 0.4, 0.12), y.10 - rr.10 * if(goo.10.kw > 0, 0.9, 0.58); radius: rr.10 * 0.06 * if(sklo and goo.10.on, 1, 0); color: #ffffff; opacity: 75% }
+    ellipse { at: x.11 - rr.11 * if(goo.11.kw > 0, 0.62, 0.36), y.11 - rr.11 * if(goo.11.kw > 0, 0.82, 0.46); radius: rr.11 * if(goo.11.kw > 0, 0.14, 0.2) * if(sklo and goo.11.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
+    ellipse { at: x.11 - rr.11 * if(goo.11.kw > 0, 0.4, 0.12), y.11 - rr.11 * if(goo.11.kw > 0, 0.9, 0.58); radius: rr.11 * 0.06 * if(sklo and goo.11.on, 1, 0); color: #ffffff; opacity: 75% }
+    ellipse { at: x.12 - rr.12 * if(goo.12.kw > 0, 0.62, 0.36), y.12 - rr.12 * if(goo.12.kw > 0, 0.82, 0.46); radius: rr.12 * if(goo.12.kw > 0, 0.14, 0.2) * if(sklo and goo.12.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
+    ellipse { at: x.12 - rr.12 * if(goo.12.kw > 0, 0.4, 0.12), y.12 - rr.12 * if(goo.12.kw > 0, 0.9, 0.58); radius: rr.12 * 0.06 * if(sklo and goo.12.on, 1, 0); color: #ffffff; opacity: 75% }
+    ellipse { at: x.13 - rr.13 * if(goo.13.kw > 0, 0.62, 0.36), y.13 - rr.13 * if(goo.13.kw > 0, 0.82, 0.46); radius: rr.13 * if(goo.13.kw > 0, 0.14, 0.2) * if(sklo and goo.13.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
+    ellipse { at: x.13 - rr.13 * if(goo.13.kw > 0, 0.4, 0.12), y.13 - rr.13 * if(goo.13.kw > 0, 0.9, 0.58); radius: rr.13 * 0.06 * if(sklo and goo.13.on, 1, 0); color: #ffffff; opacity: 75% }
+    ellipse { at: x.14 - rr.14 * if(goo.14.kw > 0, 0.62, 0.36), y.14 - rr.14 * if(goo.14.kw > 0, 0.82, 0.46); radius: rr.14 * if(goo.14.kw > 0, 0.14, 0.2) * if(sklo and goo.14.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
+    ellipse { at: x.14 - rr.14 * if(goo.14.kw > 0, 0.4, 0.12), y.14 - rr.14 * if(goo.14.kw > 0, 0.9, 0.58); radius: rr.14 * 0.06 * if(sklo and goo.14.on, 1, 0); color: #ffffff; opacity: 75% }
+    ellipse { at: x.15 - rr.15 * if(goo.15.kw > 0, 0.62, 0.36), y.15 - rr.15 * if(goo.15.kw > 0, 0.82, 0.46); radius: rr.15 * if(goo.15.kw > 0, 0.14, 0.2) * if(sklo and goo.15.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
+    ellipse { at: x.15 - rr.15 * if(goo.15.kw > 0, 0.4, 0.12), y.15 - rr.15 * if(goo.15.kw > 0, 0.9, 0.58); radius: rr.15 * 0.06 * if(sklo and goo.15.on, 1, 0); color: #ffffff; opacity: 75% }
+    ellipse { at: x.16 - rr.16 * if(goo.16.kw > 0, 0.62, 0.36), y.16 - rr.16 * if(goo.16.kw > 0, 0.82, 0.46); radius: rr.16 * if(goo.16.kw > 0, 0.14, 0.2) * if(sklo and goo.16.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
+    ellipse { at: x.16 - rr.16 * if(goo.16.kw > 0, 0.4, 0.12), y.16 - rr.16 * if(goo.16.kw > 0, 0.9, 0.58); radius: rr.16 * 0.06 * if(sklo and goo.16.on, 1, 0); color: #ffffff; opacity: 75% }
+    ellipse { at: x.17 - rr.17 * if(goo.17.kw > 0, 0.62, 0.36), y.17 - rr.17 * if(goo.17.kw > 0, 0.82, 0.46); radius: rr.17 * if(goo.17.kw > 0, 0.14, 0.2) * if(sklo and goo.17.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
+    ellipse { at: x.17 - rr.17 * if(goo.17.kw > 0, 0.4, 0.12), y.17 - rr.17 * if(goo.17.kw > 0, 0.9, 0.58); radius: rr.17 * 0.06 * if(sklo and goo.17.on, 1, 0); color: #ffffff; opacity: 75% }
+    ellipse { at: x.18 - rr.18 * if(goo.18.kw > 0, 0.62, 0.36), y.18 - rr.18 * if(goo.18.kw > 0, 0.82, 0.46); radius: rr.18 * if(goo.18.kw > 0, 0.14, 0.2) * if(sklo and goo.18.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
+    ellipse { at: x.18 - rr.18 * if(goo.18.kw > 0, 0.4, 0.12), y.18 - rr.18 * if(goo.18.kw > 0, 0.9, 0.58); radius: rr.18 * 0.06 * if(sklo and goo.18.on, 1, 0); color: #ffffff; opacity: 75% }
+    ellipse { at: x.19 - rr.19 * if(goo.19.kw > 0, 0.62, 0.36), y.19 - rr.19 * if(goo.19.kw > 0, 0.82, 0.46); radius: rr.19 * if(goo.19.kw > 0, 0.14, 0.2) * if(sklo and goo.19.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
+    ellipse { at: x.19 - rr.19 * if(goo.19.kw > 0, 0.4, 0.12), y.19 - rr.19 * if(goo.19.kw > 0, 0.9, 0.58); radius: rr.19 * 0.06 * if(sklo and goo.19.on, 1, 0); color: #ffffff; opacity: 75% }
+    ellipse { at: x.20 - rr.20 * if(goo.20.kw > 0, 0.62, 0.36), y.20 - rr.20 * if(goo.20.kw > 0, 0.82, 0.46); radius: rr.20 * if(goo.20.kw > 0, 0.14, 0.2) * if(sklo and goo.20.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
+    ellipse { at: x.20 - rr.20 * if(goo.20.kw > 0, 0.4, 0.12), y.20 - rr.20 * if(goo.20.kw > 0, 0.9, 0.58); radius: rr.20 * 0.06 * if(sklo and goo.20.on, 1, 0); color: #ffffff; opacity: 75% }
+    ellipse { at: x.21 - rr.21 * if(goo.21.kw > 0, 0.62, 0.36), y.21 - rr.21 * if(goo.21.kw > 0, 0.82, 0.46); radius: rr.21 * if(goo.21.kw > 0, 0.14, 0.2) * if(sklo and goo.21.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
+    ellipse { at: x.21 - rr.21 * if(goo.21.kw > 0, 0.4, 0.12), y.21 - rr.21 * if(goo.21.kw > 0, 0.9, 0.58); radius: rr.21 * 0.06 * if(sklo and goo.21.on, 1, 0); color: #ffffff; opacity: 75% }
+    ellipse { at: x.22 - rr.22 * if(goo.22.kw > 0, 0.62, 0.36), y.22 - rr.22 * if(goo.22.kw > 0, 0.82, 0.46); radius: rr.22 * if(goo.22.kw > 0, 0.14, 0.2) * if(sklo and goo.22.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
+    ellipse { at: x.22 - rr.22 * if(goo.22.kw > 0, 0.4, 0.12), y.22 - rr.22 * if(goo.22.kw > 0, 0.9, 0.58); radius: rr.22 * 0.06 * if(sklo and goo.22.on, 1, 0); color: #ffffff; opacity: 75% }
+    ellipse { at: x.23 - rr.23 * if(goo.23.kw > 0, 0.62, 0.36), y.23 - rr.23 * if(goo.23.kw > 0, 0.82, 0.46); radius: rr.23 * if(goo.23.kw > 0, 0.14, 0.2) * if(sklo and goo.23.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
+    ellipse { at: x.23 - rr.23 * if(goo.23.kw > 0, 0.4, 0.12), y.23 - rr.23 * if(goo.23.kw > 0, 0.9, 0.58); radius: rr.23 * 0.06 * if(sklo and goo.23.on, 1, 0); color: #ffffff; opacity: 75% }
+    ellipse { at: x.24 - rr.24 * if(goo.24.kw > 0, 0.62, 0.36), y.24 - rr.24 * if(goo.24.kw > 0, 0.82, 0.46); radius: rr.24 * if(goo.24.kw > 0, 0.14, 0.2) * if(sklo and goo.24.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
+    ellipse { at: x.24 - rr.24 * if(goo.24.kw > 0, 0.4, 0.12), y.24 - rr.24 * if(goo.24.kw > 0, 0.9, 0.58); radius: rr.24 * 0.06 * if(sklo and goo.24.on, 1, 0); color: #ffffff; opacity: 75% }
+    ellipse { at: x.25 - rr.25 * if(goo.25.kw > 0, 0.62, 0.36), y.25 - rr.25 * if(goo.25.kw > 0, 0.82, 0.46); radius: rr.25 * if(goo.25.kw > 0, 0.14, 0.2) * if(sklo and goo.25.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
+    ellipse { at: x.25 - rr.25 * if(goo.25.kw > 0, 0.4, 0.12), y.25 - rr.25 * if(goo.25.kw > 0, 0.9, 0.58); radius: rr.25 * 0.06 * if(sklo and goo.25.on, 1, 0); color: #ffffff; opacity: 75% }
+    ellipse { at: x.26 - rr.26 * if(goo.26.kw > 0, 0.62, 0.36), y.26 - rr.26 * if(goo.26.kw > 0, 0.82, 0.46); radius: rr.26 * if(goo.26.kw > 0, 0.14, 0.2) * if(sklo and goo.26.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
+    ellipse { at: x.26 - rr.26 * if(goo.26.kw > 0, 0.4, 0.12), y.26 - rr.26 * if(goo.26.kw > 0, 0.9, 0.58); radius: rr.26 * 0.06 * if(sklo and goo.26.on, 1, 0); color: #ffffff; opacity: 75% }
+    ellipse { at: x.27 - rr.27 * if(goo.27.kw > 0, 0.62, 0.36), y.27 - rr.27 * if(goo.27.kw > 0, 0.82, 0.46); radius: rr.27 * if(goo.27.kw > 0, 0.14, 0.2) * if(sklo and goo.27.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
+    ellipse { at: x.27 - rr.27 * if(goo.27.kw > 0, 0.4, 0.12), y.27 - rr.27 * if(goo.27.kw > 0, 0.9, 0.58); radius: rr.27 * 0.06 * if(sklo and goo.27.on, 1, 0); color: #ffffff; opacity: 75% }
+    ellipse { at: x.28 - rr.28 * if(goo.28.kw > 0, 0.62, 0.36), y.28 - rr.28 * if(goo.28.kw > 0, 0.82, 0.46); radius: rr.28 * if(goo.28.kw > 0, 0.14, 0.2) * if(sklo and goo.28.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
+    ellipse { at: x.28 - rr.28 * if(goo.28.kw > 0, 0.4, 0.12), y.28 - rr.28 * if(goo.28.kw > 0, 0.9, 0.58); radius: rr.28 * 0.06 * if(sklo and goo.28.on, 1, 0); color: #ffffff; opacity: 75% }
+    ellipse { at: x.29 - rr.29 * if(goo.29.kw > 0, 0.62, 0.36), y.29 - rr.29 * if(goo.29.kw > 0, 0.82, 0.46); radius: rr.29 * if(goo.29.kw > 0, 0.14, 0.2) * if(sklo and goo.29.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
+    ellipse { at: x.29 - rr.29 * if(goo.29.kw > 0, 0.4, 0.12), y.29 - rr.29 * if(goo.29.kw > 0, 0.9, 0.58); radius: rr.29 * 0.06 * if(sklo and goo.29.on, 1, 0); color: #ffffff; opacity: 75% }
+    ellipse { at: x.30 - rr.30 * if(goo.30.kw > 0, 0.62, 0.36), y.30 - rr.30 * if(goo.30.kw > 0, 0.82, 0.46); radius: rr.30 * if(goo.30.kw > 0, 0.14, 0.2) * if(sklo and goo.30.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
+    ellipse { at: x.30 - rr.30 * if(goo.30.kw > 0, 0.4, 0.12), y.30 - rr.30 * if(goo.30.kw > 0, 0.9, 0.58); radius: rr.30 * 0.06 * if(sklo and goo.30.on, 1, 0); color: #ffffff; opacity: 75% }
+    ellipse { at: x.31 - rr.31 * if(goo.31.kw > 0, 0.62, 0.36), y.31 - rr.31 * if(goo.31.kw > 0, 0.82, 0.46); radius: rr.31 * if(goo.31.kw > 0, 0.14, 0.2) * if(sklo and goo.31.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
+    ellipse { at: x.31 - rr.31 * if(goo.31.kw > 0, 0.4, 0.12), y.31 - rr.31 * if(goo.31.kw > 0, 0.9, 0.58); radius: rr.31 * 0.06 * if(sklo and goo.31.on, 1, 0); color: #ffffff; opacity: 75% }
+    ellipse { at: x.32 - rr.32 * if(goo.32.kw > 0, 0.62, 0.36), y.32 - rr.32 * if(goo.32.kw > 0, 0.82, 0.46); radius: rr.32 * if(goo.32.kw > 0, 0.14, 0.2) * if(sklo and goo.32.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
+    ellipse { at: x.32 - rr.32 * if(goo.32.kw > 0, 0.4, 0.12), y.32 - rr.32 * if(goo.32.kw > 0, 0.9, 0.58); radius: rr.32 * 0.06 * if(sklo and goo.32.on, 1, 0); color: #ffffff; opacity: 75% }
+    ellipse { at: x.33 - rr.33 * if(goo.33.kw > 0, 0.62, 0.36), y.33 - rr.33 * if(goo.33.kw > 0, 0.82, 0.46); radius: rr.33 * if(goo.33.kw > 0, 0.14, 0.2) * if(sklo and goo.33.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
+    ellipse { at: x.33 - rr.33 * if(goo.33.kw > 0, 0.4, 0.12), y.33 - rr.33 * if(goo.33.kw > 0, 0.9, 0.58); radius: rr.33 * 0.06 * if(sklo and goo.33.on, 1, 0); color: #ffffff; opacity: 75% }
+    ellipse { at: x.34 - rr.34 * if(goo.34.kw > 0, 0.62, 0.36), y.34 - rr.34 * if(goo.34.kw > 0, 0.82, 0.46); radius: rr.34 * if(goo.34.kw > 0, 0.14, 0.2) * if(sklo and goo.34.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
+    ellipse { at: x.34 - rr.34 * if(goo.34.kw > 0, 0.4, 0.12), y.34 - rr.34 * if(goo.34.kw > 0, 0.9, 0.58); radius: rr.34 * 0.06 * if(sklo and goo.34.on, 1, 0); color: #ffffff; opacity: 75% }
+    ellipse { at: x.35 - rr.35 * if(goo.35.kw > 0, 0.62, 0.36), y.35 - rr.35 * if(goo.35.kw > 0, 0.82, 0.46); radius: rr.35 * if(goo.35.kw > 0, 0.14, 0.2) * if(sklo and goo.35.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
+    ellipse { at: x.35 - rr.35 * if(goo.35.kw > 0, 0.4, 0.12), y.35 - rr.35 * if(goo.35.kw > 0, 0.9, 0.58); radius: rr.35 * 0.06 * if(sklo and goo.35.on, 1, 0); color: #ffffff; opacity: 75% }
+    ellipse { at: x.36 - rr.36 * if(goo.36.kw > 0, 0.62, 0.36), y.36 - rr.36 * if(goo.36.kw > 0, 0.82, 0.46); radius: rr.36 * if(goo.36.kw > 0, 0.14, 0.2) * if(sklo and goo.36.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
+    ellipse { at: x.36 - rr.36 * if(goo.36.kw > 0, 0.4, 0.12), y.36 - rr.36 * if(goo.36.kw > 0, 0.9, 0.58); radius: rr.36 * 0.06 * if(sklo and goo.36.on, 1, 0); color: #ffffff; opacity: 75% }
+    ellipse { at: x.37 - rr.37 * if(goo.37.kw > 0, 0.62, 0.36), y.37 - rr.37 * if(goo.37.kw > 0, 0.82, 0.46); radius: rr.37 * if(goo.37.kw > 0, 0.14, 0.2) * if(sklo and goo.37.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
+    ellipse { at: x.37 - rr.37 * if(goo.37.kw > 0, 0.4, 0.12), y.37 - rr.37 * if(goo.37.kw > 0, 0.9, 0.58); radius: rr.37 * 0.06 * if(sklo and goo.37.on, 1, 0); color: #ffffff; opacity: 75% }
+    ellipse { at: x.38 - rr.38 * if(goo.38.kw > 0, 0.62, 0.36), y.38 - rr.38 * if(goo.38.kw > 0, 0.82, 0.46); radius: rr.38 * if(goo.38.kw > 0, 0.14, 0.2) * if(sklo and goo.38.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
+    ellipse { at: x.38 - rr.38 * if(goo.38.kw > 0, 0.4, 0.12), y.38 - rr.38 * if(goo.38.kw > 0, 0.9, 0.58); radius: rr.38 * 0.06 * if(sklo and goo.38.on, 1, 0); color: #ffffff; opacity: 75% }
+    ellipse { at: x.39 - rr.39 * if(goo.39.kw > 0, 0.62, 0.36), y.39 - rr.39 * if(goo.39.kw > 0, 0.82, 0.46); radius: rr.39 * if(goo.39.kw > 0, 0.14, 0.2) * if(sklo and goo.39.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
+    ellipse { at: x.39 - rr.39 * if(goo.39.kw > 0, 0.4, 0.12), y.39 - rr.39 * if(goo.39.kw > 0, 0.9, 0.58); radius: rr.39 * 0.06 * if(sklo and goo.39.on, 1, 0); color: #ffffff; opacity: 75% }
+    ellipse { at: x.40 - rr.40 * if(goo.40.kw > 0, 0.62, 0.36), y.40 - rr.40 * if(goo.40.kw > 0, 0.82, 0.46); radius: rr.40 * if(goo.40.kw > 0, 0.14, 0.2) * if(sklo and goo.40.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
+    ellipse { at: x.40 - rr.40 * if(goo.40.kw > 0, 0.4, 0.12), y.40 - rr.40 * if(goo.40.kw > 0, 0.9, 0.58); radius: rr.40 * 0.06 * if(sklo and goo.40.on, 1, 0); color: #ffffff; opacity: 75% }
+    ellipse { at: x.41 - rr.41 * if(goo.41.kw > 0, 0.62, 0.36), y.41 - rr.41 * if(goo.41.kw > 0, 0.82, 0.46); radius: rr.41 * if(goo.41.kw > 0, 0.14, 0.2) * if(sklo and goo.41.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
+    ellipse { at: x.41 - rr.41 * if(goo.41.kw > 0, 0.4, 0.12), y.41 - rr.41 * if(goo.41.kw > 0, 0.9, 0.58); radius: rr.41 * 0.06 * if(sklo and goo.41.on, 1, 0); color: #ffffff; opacity: 75% }
+    ellipse { at: x.42 - rr.42 * if(goo.42.kw > 0, 0.62, 0.36), y.42 - rr.42 * if(goo.42.kw > 0, 0.82, 0.46); radius: rr.42 * if(goo.42.kw > 0, 0.14, 0.2) * if(sklo and goo.42.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
+    ellipse { at: x.42 - rr.42 * if(goo.42.kw > 0, 0.4, 0.12), y.42 - rr.42 * if(goo.42.kw > 0, 0.9, 0.58); radius: rr.42 * 0.06 * if(sklo and goo.42.on, 1, 0); color: #ffffff; opacity: 75% }
+    ellipse { at: x.43 - rr.43 * if(goo.43.kw > 0, 0.62, 0.36), y.43 - rr.43 * if(goo.43.kw > 0, 0.82, 0.46); radius: rr.43 * if(goo.43.kw > 0, 0.14, 0.2) * if(sklo and goo.43.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
+    ellipse { at: x.43 - rr.43 * if(goo.43.kw > 0, 0.4, 0.12), y.43 - rr.43 * if(goo.43.kw > 0, 0.9, 0.58); radius: rr.43 * 0.06 * if(sklo and goo.43.on, 1, 0); color: #ffffff; opacity: 75% }
+    ellipse { at: x.44 - rr.44 * if(goo.44.kw > 0, 0.62, 0.36), y.44 - rr.44 * if(goo.44.kw > 0, 0.82, 0.46); radius: rr.44 * if(goo.44.kw > 0, 0.14, 0.2) * if(sklo and goo.44.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
+    ellipse { at: x.44 - rr.44 * if(goo.44.kw > 0, 0.4, 0.12), y.44 - rr.44 * if(goo.44.kw > 0, 0.9, 0.58); radius: rr.44 * 0.06 * if(sklo and goo.44.on, 1, 0); color: #ffffff; opacity: 75% }
+    ellipse { at: x.45 - rr.45 * if(goo.45.kw > 0, 0.62, 0.36), y.45 - rr.45 * if(goo.45.kw > 0, 0.82, 0.46); radius: rr.45 * if(goo.45.kw > 0, 0.14, 0.2) * if(sklo and goo.45.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
+    ellipse { at: x.45 - rr.45 * if(goo.45.kw > 0, 0.4, 0.12), y.45 - rr.45 * if(goo.45.kw > 0, 0.9, 0.58); radius: rr.45 * 0.06 * if(sklo and goo.45.on, 1, 0); color: #ffffff; opacity: 75% }
+    ellipse { at: x.46 - rr.46 * if(goo.46.kw > 0, 0.62, 0.36), y.46 - rr.46 * if(goo.46.kw > 0, 0.82, 0.46); radius: rr.46 * if(goo.46.kw > 0, 0.14, 0.2) * if(sklo and goo.46.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
+    ellipse { at: x.46 - rr.46 * if(goo.46.kw > 0, 0.4, 0.12), y.46 - rr.46 * if(goo.46.kw > 0, 0.9, 0.58); radius: rr.46 * 0.06 * if(sklo and goo.46.on, 1, 0); color: #ffffff; opacity: 75% }
+    ellipse { at: x.47 - rr.47 * if(goo.47.kw > 0, 0.62, 0.36), y.47 - rr.47 * if(goo.47.kw > 0, 0.82, 0.46); radius: rr.47 * if(goo.47.kw > 0, 0.14, 0.2) * if(sklo and goo.47.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
+    ellipse { at: x.47 - rr.47 * if(goo.47.kw > 0, 0.4, 0.12), y.47 - rr.47 * if(goo.47.kw > 0, 0.9, 0.58); radius: rr.47 * 0.06 * if(sklo and goo.47.on, 1, 0); color: #ffffff; opacity: 75% }
+    ellipse { at: x.48 - rr.48 * if(goo.48.kw > 0, 0.62, 0.36), y.48 - rr.48 * if(goo.48.kw > 0, 0.82, 0.46); radius: rr.48 * if(goo.48.kw > 0, 0.14, 0.2) * if(sklo and goo.48.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
+    ellipse { at: x.48 - rr.48 * if(goo.48.kw > 0, 0.4, 0.12), y.48 - rr.48 * if(goo.48.kw > 0, 0.9, 0.58); radius: rr.48 * 0.06 * if(sklo and goo.48.on, 1, 0); color: #ffffff; opacity: 75% }
+    ellipse { at: x.49 - rr.49 * if(goo.49.kw > 0, 0.62, 0.36), y.49 - rr.49 * if(goo.49.kw > 0, 0.82, 0.46); radius: rr.49 * if(goo.49.kw > 0, 0.14, 0.2) * if(sklo and goo.49.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
+    ellipse { at: x.49 - rr.49 * if(goo.49.kw > 0, 0.4, 0.12), y.49 - rr.49 * if(goo.49.kw > 0, 0.9, 0.58); radius: rr.49 * 0.06 * if(sklo and goo.49.on, 1, 0); color: #ffffff; opacity: 75% }
+    ellipse { at: x.50 - rr.50 * if(goo.50.kw > 0, 0.62, 0.36), y.50 - rr.50 * if(goo.50.kw > 0, 0.82, 0.46); radius: rr.50 * if(goo.50.kw > 0, 0.14, 0.2) * if(sklo and goo.50.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
+    ellipse { at: x.50 - rr.50 * if(goo.50.kw > 0, 0.4, 0.12), y.50 - rr.50 * if(goo.50.kw > 0, 0.9, 0.58); radius: rr.50 * 0.06 * if(sklo and goo.50.on, 1, 0); color: #ffffff; opacity: 75% }
+    ellipse { at: x.51 - rr.51 * if(goo.51.kw > 0, 0.62, 0.36), y.51 - rr.51 * if(goo.51.kw > 0, 0.82, 0.46); radius: rr.51 * if(goo.51.kw > 0, 0.14, 0.2) * if(sklo and goo.51.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
+    ellipse { at: x.51 - rr.51 * if(goo.51.kw > 0, 0.4, 0.12), y.51 - rr.51 * if(goo.51.kw > 0, 0.9, 0.58); radius: rr.51 * 0.06 * if(sklo and goo.51.on, 1, 0); color: #ffffff; opacity: 75% }
+    ellipse { at: x.52 - rr.52 * if(goo.52.kw > 0, 0.62, 0.36), y.52 - rr.52 * if(goo.52.kw > 0, 0.82, 0.46); radius: rr.52 * if(goo.52.kw > 0, 0.14, 0.2) * if(sklo and goo.52.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
+    ellipse { at: x.52 - rr.52 * if(goo.52.kw > 0, 0.4, 0.12), y.52 - rr.52 * if(goo.52.kw > 0, 0.9, 0.58); radius: rr.52 * 0.06 * if(sklo and goo.52.on, 1, 0); color: #ffffff; opacity: 75% }
+    ellipse { at: x.53 - rr.53 * if(goo.53.kw > 0, 0.62, 0.36), y.53 - rr.53 * if(goo.53.kw > 0, 0.82, 0.46); radius: rr.53 * if(goo.53.kw > 0, 0.14, 0.2) * if(sklo and goo.53.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
+    ellipse { at: x.53 - rr.53 * if(goo.53.kw > 0, 0.4, 0.12), y.53 - rr.53 * if(goo.53.kw > 0, 0.9, 0.58); radius: rr.53 * 0.06 * if(sklo and goo.53.on, 1, 0); color: #ffffff; opacity: 75% }
+    ellipse { at: x.54 - rr.54 * if(goo.54.kw > 0, 0.62, 0.36), y.54 - rr.54 * if(goo.54.kw > 0, 0.82, 0.46); radius: rr.54 * if(goo.54.kw > 0, 0.14, 0.2) * if(sklo and goo.54.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
+    ellipse { at: x.54 - rr.54 * if(goo.54.kw > 0, 0.4, 0.12), y.54 - rr.54 * if(goo.54.kw > 0, 0.9, 0.58); radius: rr.54 * 0.06 * if(sklo and goo.54.on, 1, 0); color: #ffffff; opacity: 75% }
+    ellipse { at: x.55 - rr.55 * if(goo.55.kw > 0, 0.62, 0.36), y.55 - rr.55 * if(goo.55.kw > 0, 0.82, 0.46); radius: rr.55 * if(goo.55.kw > 0, 0.14, 0.2) * if(sklo and goo.55.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
+    ellipse { at: x.55 - rr.55 * if(goo.55.kw > 0, 0.4, 0.12), y.55 - rr.55 * if(goo.55.kw > 0, 0.9, 0.58); radius: rr.55 * 0.06 * if(sklo and goo.55.on, 1, 0); color: #ffffff; opacity: 75% }
+    ellipse { at: x.56 - rr.56 * if(goo.56.kw > 0, 0.62, 0.36), y.56 - rr.56 * if(goo.56.kw > 0, 0.82, 0.46); radius: rr.56 * if(goo.56.kw > 0, 0.14, 0.2) * if(sklo and goo.56.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
+    ellipse { at: x.56 - rr.56 * if(goo.56.kw > 0, 0.4, 0.12), y.56 - rr.56 * if(goo.56.kw > 0, 0.9, 0.58); radius: rr.56 * 0.06 * if(sklo and goo.56.on, 1, 0); color: #ffffff; opacity: 75% }
+    ellipse { at: x.57 - rr.57 * if(goo.57.kw > 0, 0.62, 0.36), y.57 - rr.57 * if(goo.57.kw > 0, 0.82, 0.46); radius: rr.57 * if(goo.57.kw > 0, 0.14, 0.2) * if(sklo and goo.57.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
+    ellipse { at: x.57 - rr.57 * if(goo.57.kw > 0, 0.4, 0.12), y.57 - rr.57 * if(goo.57.kw > 0, 0.9, 0.58); radius: rr.57 * 0.06 * if(sklo and goo.57.on, 1, 0); color: #ffffff; opacity: 75% }
+    ellipse { at: x.58 - rr.58 * if(goo.58.kw > 0, 0.62, 0.36), y.58 - rr.58 * if(goo.58.kw > 0, 0.82, 0.46); radius: rr.58 * if(goo.58.kw > 0, 0.14, 0.2) * if(sklo and goo.58.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
+    ellipse { at: x.58 - rr.58 * if(goo.58.kw > 0, 0.4, 0.12), y.58 - rr.58 * if(goo.58.kw > 0, 0.9, 0.58); radius: rr.58 * 0.06 * if(sklo and goo.58.on, 1, 0); color: #ffffff; opacity: 75% }
+    ellipse { at: x.59 - rr.59 * if(goo.59.kw > 0, 0.62, 0.36), y.59 - rr.59 * if(goo.59.kw > 0, 0.82, 0.46); radius: rr.59 * if(goo.59.kw > 0, 0.14, 0.2) * if(sklo and goo.59.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
+    ellipse { at: x.59 - rr.59 * if(goo.59.kw > 0, 0.4, 0.12), y.59 - rr.59 * if(goo.59.kw > 0, 0.9, 0.58); radius: rr.59 * 0.06 * if(sklo and goo.59.on, 1, 0); color: #ffffff; opacity: 75% }
+    ellipse { at: x.60 - rr.60 * if(goo.60.kw > 0, 0.62, 0.36), y.60 - rr.60 * if(goo.60.kw > 0, 0.82, 0.46); radius: rr.60 * if(goo.60.kw > 0, 0.14, 0.2) * if(sklo and goo.60.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
+    ellipse { at: x.60 - rr.60 * if(goo.60.kw > 0, 0.4, 0.12), y.60 - rr.60 * if(goo.60.kw > 0, 0.9, 0.58); radius: rr.60 * 0.06 * if(sklo and goo.60.on, 1, 0); color: #ffffff; opacity: 75% }
+    ellipse { at: x.61 - rr.61 * if(goo.61.kw > 0, 0.62, 0.36), y.61 - rr.61 * if(goo.61.kw > 0, 0.82, 0.46); radius: rr.61 * if(goo.61.kw > 0, 0.14, 0.2) * if(sklo and goo.61.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
+    ellipse { at: x.61 - rr.61 * if(goo.61.kw > 0, 0.4, 0.12), y.61 - rr.61 * if(goo.61.kw > 0, 0.9, 0.58); radius: rr.61 * 0.06 * if(sklo and goo.61.on, 1, 0); color: #ffffff; opacity: 75% }
+    ellipse { at: x.62 - rr.62 * if(goo.62.kw > 0, 0.62, 0.36), y.62 - rr.62 * if(goo.62.kw > 0, 0.82, 0.46); radius: rr.62 * if(goo.62.kw > 0, 0.14, 0.2) * if(sklo and goo.62.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
+    ellipse { at: x.62 - rr.62 * if(goo.62.kw > 0, 0.4, 0.12), y.62 - rr.62 * if(goo.62.kw > 0, 0.9, 0.58); radius: rr.62 * 0.06 * if(sklo and goo.62.on, 1, 0); color: #ffffff; opacity: 75% }
+    ellipse { at: x.63 - rr.63 * if(goo.63.kw > 0, 0.62, 0.36), y.63 - rr.63 * if(goo.63.kw > 0, 0.82, 0.46); radius: rr.63 * if(goo.63.kw > 0, 0.14, 0.2) * if(sklo and goo.63.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
+    ellipse { at: x.63 - rr.63 * if(goo.63.kw > 0, 0.4, 0.12), y.63 - rr.63 * if(goo.63.kw > 0, 0.9, 0.58); radius: rr.63 * 0.06 * if(sklo and goo.63.on, 1, 0); color: #ffffff; opacity: 75% }
+    ellipse { at: x.64 - rr.64 * if(goo.64.kw > 0, 0.62, 0.36), y.64 - rr.64 * if(goo.64.kw > 0, 0.82, 0.46); radius: rr.64 * if(goo.64.kw > 0, 0.14, 0.2) * if(sklo and goo.64.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
+    ellipse { at: x.64 - rr.64 * if(goo.64.kw > 0, 0.4, 0.12), y.64 - rr.64 * if(goo.64.kw > 0, 0.9, 0.58); radius: rr.64 * 0.06 * if(sklo and goo.64.on, 1, 0); color: #ffffff; opacity: 75% }
+    ellipse { at: x.65 - rr.65 * if(goo.65.kw > 0, 0.62, 0.36), y.65 - rr.65 * if(goo.65.kw > 0, 0.82, 0.46); radius: rr.65 * if(goo.65.kw > 0, 0.14, 0.2) * if(sklo and goo.65.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
+    ellipse { at: x.65 - rr.65 * if(goo.65.kw > 0, 0.4, 0.12), y.65 - rr.65 * if(goo.65.kw > 0, 0.9, 0.58); radius: rr.65 * 0.06 * if(sklo and goo.65.on, 1, 0); color: #ffffff; opacity: 75% }
+    ellipse { at: x.66 - rr.66 * if(goo.66.kw > 0, 0.62, 0.36), y.66 - rr.66 * if(goo.66.kw > 0, 0.82, 0.46); radius: rr.66 * if(goo.66.kw > 0, 0.14, 0.2) * if(sklo and goo.66.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
+    ellipse { at: x.66 - rr.66 * if(goo.66.kw > 0, 0.4, 0.12), y.66 - rr.66 * if(goo.66.kw > 0, 0.9, 0.58); radius: rr.66 * 0.06 * if(sklo and goo.66.on, 1, 0); color: #ffffff; opacity: 75% }
+    ellipse { at: x.67 - rr.67 * if(goo.67.kw > 0, 0.62, 0.36), y.67 - rr.67 * if(goo.67.kw > 0, 0.82, 0.46); radius: rr.67 * if(goo.67.kw > 0, 0.14, 0.2) * if(sklo and goo.67.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
+    ellipse { at: x.67 - rr.67 * if(goo.67.kw > 0, 0.4, 0.12), y.67 - rr.67 * if(goo.67.kw > 0, 0.9, 0.58); radius: rr.67 * 0.06 * if(sklo and goo.67.on, 1, 0); color: #ffffff; opacity: 75% }
+    ellipse { at: x.68 - rr.68 * if(goo.68.kw > 0, 0.62, 0.36), y.68 - rr.68 * if(goo.68.kw > 0, 0.82, 0.46); radius: rr.68 * if(goo.68.kw > 0, 0.14, 0.2) * if(sklo and goo.68.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
+    ellipse { at: x.68 - rr.68 * if(goo.68.kw > 0, 0.4, 0.12), y.68 - rr.68 * if(goo.68.kw > 0, 0.9, 0.58); radius: rr.68 * 0.06 * if(sklo and goo.68.on, 1, 0); color: #ffffff; opacity: 75% }
+    ellipse { at: x.69 - rr.69 * if(goo.69.kw > 0, 0.62, 0.36), y.69 - rr.69 * if(goo.69.kw > 0, 0.82, 0.46); radius: rr.69 * if(goo.69.kw > 0, 0.14, 0.2) * if(sklo and goo.69.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
+    ellipse { at: x.69 - rr.69 * if(goo.69.kw > 0, 0.4, 0.12), y.69 - rr.69 * if(goo.69.kw > 0, 0.9, 0.58); radius: rr.69 * 0.06 * if(sklo and goo.69.on, 1, 0); color: #ffffff; opacity: 75% }
+    ellipse { at: x.70 - rr.70 * if(goo.70.kw > 0, 0.62, 0.36), y.70 - rr.70 * if(goo.70.kw > 0, 0.82, 0.46); radius: rr.70 * if(goo.70.kw > 0, 0.14, 0.2) * if(sklo and goo.70.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
+    ellipse { at: x.70 - rr.70 * if(goo.70.kw > 0, 0.4, 0.12), y.70 - rr.70 * if(goo.70.kw > 0, 0.9, 0.58); radius: rr.70 * 0.06 * if(sklo and goo.70.on, 1, 0); color: #ffffff; opacity: 75% }
+    ellipse { at: x.71 - rr.71 * if(goo.71.kw > 0, 0.62, 0.36), y.71 - rr.71 * if(goo.71.kw > 0, 0.82, 0.46); radius: rr.71 * if(goo.71.kw > 0, 0.14, 0.2) * if(sklo and goo.71.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
+    ellipse { at: x.71 - rr.71 * if(goo.71.kw > 0, 0.4, 0.12), y.71 - rr.71 * if(goo.71.kw > 0, 0.9, 0.58); radius: rr.71 * 0.06 * if(sklo and goo.71.on, 1, 0); color: #ffffff; opacity: 75% }
+    ellipse { at: x.72 - rr.72 * if(goo.72.kw > 0, 0.62, 0.36), y.72 - rr.72 * if(goo.72.kw > 0, 0.82, 0.46); radius: rr.72 * if(goo.72.kw > 0, 0.14, 0.2) * if(sklo and goo.72.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
+    ellipse { at: x.72 - rr.72 * if(goo.72.kw > 0, 0.4, 0.12), y.72 - rr.72 * if(goo.72.kw > 0, 0.9, 0.58); radius: rr.72 * 0.06 * if(sklo and goo.72.on, 1, 0); color: #ffffff; opacity: 75% }
+    ellipse { at: x.73 - rr.73 * if(goo.73.kw > 0, 0.62, 0.36), y.73 - rr.73 * if(goo.73.kw > 0, 0.82, 0.46); radius: rr.73 * if(goo.73.kw > 0, 0.14, 0.2) * if(sklo and goo.73.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
+    ellipse { at: x.73 - rr.73 * if(goo.73.kw > 0, 0.4, 0.12), y.73 - rr.73 * if(goo.73.kw > 0, 0.9, 0.58); radius: rr.73 * 0.06 * if(sklo and goo.73.on, 1, 0); color: #ffffff; opacity: 75% }
+    ellipse { at: x.74 - rr.74 * if(goo.74.kw > 0, 0.62, 0.36), y.74 - rr.74 * if(goo.74.kw > 0, 0.82, 0.46); radius: rr.74 * if(goo.74.kw > 0, 0.14, 0.2) * if(sklo and goo.74.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
+    ellipse { at: x.74 - rr.74 * if(goo.74.kw > 0, 0.4, 0.12), y.74 - rr.74 * if(goo.74.kw > 0, 0.9, 0.58); radius: rr.74 * 0.06 * if(sklo and goo.74.on, 1, 0); color: #ffffff; opacity: 75% }
+    ellipse { at: x.75 - rr.75 * if(goo.75.kw > 0, 0.62, 0.36), y.75 - rr.75 * if(goo.75.kw > 0, 0.82, 0.46); radius: rr.75 * if(goo.75.kw > 0, 0.14, 0.2) * if(sklo and goo.75.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
+    ellipse { at: x.75 - rr.75 * if(goo.75.kw > 0, 0.4, 0.12), y.75 - rr.75 * if(goo.75.kw > 0, 0.9, 0.58); radius: rr.75 * 0.06 * if(sklo and goo.75.on, 1, 0); color: #ffffff; opacity: 75% }
+    ellipse { at: x.76 - rr.76 * if(goo.76.kw > 0, 0.62, 0.36), y.76 - rr.76 * if(goo.76.kw > 0, 0.82, 0.46); radius: rr.76 * if(goo.76.kw > 0, 0.14, 0.2) * if(sklo and goo.76.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
+    ellipse { at: x.76 - rr.76 * if(goo.76.kw > 0, 0.4, 0.12), y.76 - rr.76 * if(goo.76.kw > 0, 0.9, 0.58); radius: rr.76 * 0.06 * if(sklo and goo.76.on, 1, 0); color: #ffffff; opacity: 75% }
+    ellipse { at: x.77 - rr.77 * if(goo.77.kw > 0, 0.62, 0.36), y.77 - rr.77 * if(goo.77.kw > 0, 0.82, 0.46); radius: rr.77 * if(goo.77.kw > 0, 0.14, 0.2) * if(sklo and goo.77.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
+    ellipse { at: x.77 - rr.77 * if(goo.77.kw > 0, 0.4, 0.12), y.77 - rr.77 * if(goo.77.kw > 0, 0.9, 0.58); radius: rr.77 * 0.06 * if(sklo and goo.77.on, 1, 0); color: #ffffff; opacity: 75% }
+    ellipse { at: x.78 - rr.78 * if(goo.78.kw > 0, 0.62, 0.36), y.78 - rr.78 * if(goo.78.kw > 0, 0.82, 0.46); radius: rr.78 * if(goo.78.kw > 0, 0.14, 0.2) * if(sklo and goo.78.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
+    ellipse { at: x.78 - rr.78 * if(goo.78.kw > 0, 0.4, 0.12), y.78 - rr.78 * if(goo.78.kw > 0, 0.9, 0.58); radius: rr.78 * 0.06 * if(sklo and goo.78.on, 1, 0); color: #ffffff; opacity: 75% }
+    ellipse { at: x.79 - rr.79 * if(goo.79.kw > 0, 0.62, 0.36), y.79 - rr.79 * if(goo.79.kw > 0, 0.82, 0.46); radius: rr.79 * if(goo.79.kw > 0, 0.14, 0.2) * if(sklo and goo.79.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
+    ellipse { at: x.79 - rr.79 * if(goo.79.kw > 0, 0.4, 0.12), y.79 - rr.79 * if(goo.79.kw > 0, 0.9, 0.58); radius: rr.79 * 0.06 * if(sklo and goo.79.on, 1, 0); color: #ffffff; opacity: 75% }
+    ellipse { at: x.80 - rr.80 * if(goo.80.kw > 0, 0.62, 0.36), y.80 - rr.80 * if(goo.80.kw > 0, 0.82, 0.46); radius: rr.80 * if(goo.80.kw > 0, 0.14, 0.2) * if(sklo and goo.80.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
+    ellipse { at: x.80 - rr.80 * if(goo.80.kw > 0, 0.4, 0.12), y.80 - rr.80 * if(goo.80.kw > 0, 0.9, 0.58); radius: rr.80 * 0.06 * if(sklo and goo.80.on, 1, 0); color: #ffffff; opacity: 75% }
+    ellipse { at: x.81 - rr.81 * if(goo.81.kw > 0, 0.62, 0.36), y.81 - rr.81 * if(goo.81.kw > 0, 0.82, 0.46); radius: rr.81 * if(goo.81.kw > 0, 0.14, 0.2) * if(sklo and goo.81.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
+    ellipse { at: x.81 - rr.81 * if(goo.81.kw > 0, 0.4, 0.12), y.81 - rr.81 * if(goo.81.kw > 0, 0.9, 0.58); radius: rr.81 * 0.06 * if(sklo and goo.81.on, 1, 0); color: #ffffff; opacity: 75% }
+    ellipse { at: x.82 - rr.82 * if(goo.82.kw > 0, 0.62, 0.36), y.82 - rr.82 * if(goo.82.kw > 0, 0.82, 0.46); radius: rr.82 * if(goo.82.kw > 0, 0.14, 0.2) * if(sklo and goo.82.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
+    ellipse { at: x.82 - rr.82 * if(goo.82.kw > 0, 0.4, 0.12), y.82 - rr.82 * if(goo.82.kw > 0, 0.9, 0.58); radius: rr.82 * 0.06 * if(sklo and goo.82.on, 1, 0); color: #ffffff; opacity: 75% }
+    ellipse { at: x.83 - rr.83 * if(goo.83.kw > 0, 0.62, 0.36), y.83 - rr.83 * if(goo.83.kw > 0, 0.82, 0.46); radius: rr.83 * if(goo.83.kw > 0, 0.14, 0.2) * if(sklo and goo.83.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
+    ellipse { at: x.83 - rr.83 * if(goo.83.kw > 0, 0.4, 0.12), y.83 - rr.83 * if(goo.83.kw > 0, 0.9, 0.58); radius: rr.83 * 0.06 * if(sklo and goo.83.on, 1, 0); color: #ffffff; opacity: 75% }
+    ellipse { at: x.84 - rr.84 * if(goo.84.kw > 0, 0.62, 0.36), y.84 - rr.84 * if(goo.84.kw > 0, 0.82, 0.46); radius: rr.84 * if(goo.84.kw > 0, 0.14, 0.2) * if(sklo and goo.84.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
+    ellipse { at: x.84 - rr.84 * if(goo.84.kw > 0, 0.4, 0.12), y.84 - rr.84 * if(goo.84.kw > 0, 0.9, 0.58); radius: rr.84 * 0.06 * if(sklo and goo.84.on, 1, 0); color: #ffffff; opacity: 75% }
+    ellipse { at: x.85 - rr.85 * if(goo.85.kw > 0, 0.62, 0.36), y.85 - rr.85 * if(goo.85.kw > 0, 0.82, 0.46); radius: rr.85 * if(goo.85.kw > 0, 0.14, 0.2) * if(sklo and goo.85.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
+    ellipse { at: x.85 - rr.85 * if(goo.85.kw > 0, 0.4, 0.12), y.85 - rr.85 * if(goo.85.kw > 0, 0.9, 0.58); radius: rr.85 * 0.06 * if(sklo and goo.85.on, 1, 0); color: #ffffff; opacity: 75% }
+    ellipse { at: x.86 - rr.86 * if(goo.86.kw > 0, 0.62, 0.36), y.86 - rr.86 * if(goo.86.kw > 0, 0.82, 0.46); radius: rr.86 * if(goo.86.kw > 0, 0.14, 0.2) * if(sklo and goo.86.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
+    ellipse { at: x.86 - rr.86 * if(goo.86.kw > 0, 0.4, 0.12), y.86 - rr.86 * if(goo.86.kw > 0, 0.9, 0.58); radius: rr.86 * 0.06 * if(sklo and goo.86.on, 1, 0); color: #ffffff; opacity: 75% }
+    ellipse { at: x.87 - rr.87 * if(goo.87.kw > 0, 0.62, 0.36), y.87 - rr.87 * if(goo.87.kw > 0, 0.82, 0.46); radius: rr.87 * if(goo.87.kw > 0, 0.14, 0.2) * if(sklo and goo.87.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
+    ellipse { at: x.87 - rr.87 * if(goo.87.kw > 0, 0.4, 0.12), y.87 - rr.87 * if(goo.87.kw > 0, 0.9, 0.58); radius: rr.87 * 0.06 * if(sklo and goo.87.on, 1, 0); color: #ffffff; opacity: 75% }
+    ellipse { at: x.88 - rr.88 * if(goo.88.kw > 0, 0.62, 0.36), y.88 - rr.88 * if(goo.88.kw > 0, 0.82, 0.46); radius: rr.88 * if(goo.88.kw > 0, 0.14, 0.2) * if(sklo and goo.88.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
+    ellipse { at: x.88 - rr.88 * if(goo.88.kw > 0, 0.4, 0.12), y.88 - rr.88 * if(goo.88.kw > 0, 0.9, 0.58); radius: rr.88 * 0.06 * if(sklo and goo.88.on, 1, 0); color: #ffffff; opacity: 75% }
+    ellipse { at: x.89 - rr.89 * if(goo.89.kw > 0, 0.62, 0.36), y.89 - rr.89 * if(goo.89.kw > 0, 0.82, 0.46); radius: rr.89 * if(goo.89.kw > 0, 0.14, 0.2) * if(sklo and goo.89.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
+    ellipse { at: x.89 - rr.89 * if(goo.89.kw > 0, 0.4, 0.12), y.89 - rr.89 * if(goo.89.kw > 0, 0.9, 0.58); radius: rr.89 * 0.06 * if(sklo and goo.89.on, 1, 0); color: #ffffff; opacity: 75% }
+    ellipse { at: x.90 - rr.90 * if(goo.90.kw > 0, 0.62, 0.36), y.90 - rr.90 * if(goo.90.kw > 0, 0.82, 0.46); radius: rr.90 * if(goo.90.kw > 0, 0.14, 0.2) * if(sklo and goo.90.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
+    ellipse { at: x.90 - rr.90 * if(goo.90.kw > 0, 0.4, 0.12), y.90 - rr.90 * if(goo.90.kw > 0, 0.9, 0.58); radius: rr.90 * 0.06 * if(sklo and goo.90.on, 1, 0); color: #ffffff; opacity: 75% }
+    ellipse { at: x.91 - rr.91 * if(goo.91.kw > 0, 0.62, 0.36), y.91 - rr.91 * if(goo.91.kw > 0, 0.82, 0.46); radius: rr.91 * if(goo.91.kw > 0, 0.14, 0.2) * if(sklo and goo.91.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
+    ellipse { at: x.91 - rr.91 * if(goo.91.kw > 0, 0.4, 0.12), y.91 - rr.91 * if(goo.91.kw > 0, 0.9, 0.58); radius: rr.91 * 0.06 * if(sklo and goo.91.on, 1, 0); color: #ffffff; opacity: 75% }
+    ellipse { at: x.92 - rr.92 * if(goo.92.kw > 0, 0.62, 0.36), y.92 - rr.92 * if(goo.92.kw > 0, 0.82, 0.46); radius: rr.92 * if(goo.92.kw > 0, 0.14, 0.2) * if(sklo and goo.92.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
+    ellipse { at: x.92 - rr.92 * if(goo.92.kw > 0, 0.4, 0.12), y.92 - rr.92 * if(goo.92.kw > 0, 0.9, 0.58); radius: rr.92 * 0.06 * if(sklo and goo.92.on, 1, 0); color: #ffffff; opacity: 75% }
+    ellipse { at: x.93 - rr.93 * if(goo.93.kw > 0, 0.62, 0.36), y.93 - rr.93 * if(goo.93.kw > 0, 0.82, 0.46); radius: rr.93 * if(goo.93.kw > 0, 0.14, 0.2) * if(sklo and goo.93.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
+    ellipse { at: x.93 - rr.93 * if(goo.93.kw > 0, 0.4, 0.12), y.93 - rr.93 * if(goo.93.kw > 0, 0.9, 0.58); radius: rr.93 * 0.06 * if(sklo and goo.93.on, 1, 0); color: #ffffff; opacity: 75% }
+    ellipse { at: x.94 - rr.94 * if(goo.94.kw > 0, 0.62, 0.36), y.94 - rr.94 * if(goo.94.kw > 0, 0.82, 0.46); radius: rr.94 * if(goo.94.kw > 0, 0.14, 0.2) * if(sklo and goo.94.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
+    ellipse { at: x.94 - rr.94 * if(goo.94.kw > 0, 0.4, 0.12), y.94 - rr.94 * if(goo.94.kw > 0, 0.9, 0.58); radius: rr.94 * 0.06 * if(sklo and goo.94.on, 1, 0); color: #ffffff; opacity: 75% }
+    ellipse { at: x.95 - rr.95 * if(goo.95.kw > 0, 0.62, 0.36), y.95 - rr.95 * if(goo.95.kw > 0, 0.82, 0.46); radius: rr.95 * if(goo.95.kw > 0, 0.14, 0.2) * if(sklo and goo.95.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
+    ellipse { at: x.95 - rr.95 * if(goo.95.kw > 0, 0.4, 0.12), y.95 - rr.95 * if(goo.95.kw > 0, 0.9, 0.58); radius: rr.95 * 0.06 * if(sklo and goo.95.on, 1, 0); color: #ffffff; opacity: 75% }
+    ellipse { at: x.96 - rr.96 * if(goo.96.kw > 0, 0.62, 0.36), y.96 - rr.96 * if(goo.96.kw > 0, 0.82, 0.46); radius: rr.96 * if(goo.96.kw > 0, 0.14, 0.2) * if(sklo and goo.96.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
+    ellipse { at: x.96 - rr.96 * if(goo.96.kw > 0, 0.4, 0.12), y.96 - rr.96 * if(goo.96.kw > 0, 0.9, 0.58); radius: rr.96 * 0.06 * if(sklo and goo.96.on, 1, 0); color: #ffffff; opacity: 75% }
+    ellipse { at: x.97 - rr.97 * if(goo.97.kw > 0, 0.62, 0.36), y.97 - rr.97 * if(goo.97.kw > 0, 0.82, 0.46); radius: rr.97 * if(goo.97.kw > 0, 0.14, 0.2) * if(sklo and goo.97.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
+    ellipse { at: x.97 - rr.97 * if(goo.97.kw > 0, 0.4, 0.12), y.97 - rr.97 * if(goo.97.kw > 0, 0.9, 0.58); radius: rr.97 * 0.06 * if(sklo and goo.97.on, 1, 0); color: #ffffff; opacity: 75% }
+    ellipse { at: x.98 - rr.98 * if(goo.98.kw > 0, 0.62, 0.36), y.98 - rr.98 * if(goo.98.kw > 0, 0.82, 0.46); radius: rr.98 * if(goo.98.kw > 0, 0.14, 0.2) * if(sklo and goo.98.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
+    ellipse { at: x.98 - rr.98 * if(goo.98.kw > 0, 0.4, 0.12), y.98 - rr.98 * if(goo.98.kw > 0, 0.9, 0.58); radius: rr.98 * 0.06 * if(sklo and goo.98.on, 1, 0); color: #ffffff; opacity: 75% }
+    ellipse { at: x.99 - rr.99 * if(goo.99.kw > 0, 0.62, 0.36), y.99 - rr.99 * if(goo.99.kw > 0, 0.82, 0.46); radius: rr.99 * if(goo.99.kw > 0, 0.14, 0.2) * if(sklo and goo.99.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
+    ellipse { at: x.99 - rr.99 * if(goo.99.kw > 0, 0.4, 0.12), y.99 - rr.99 * if(goo.99.kw > 0, 0.9, 0.58); radius: rr.99 * 0.06 * if(sklo and goo.99.on, 1, 0); color: #ffffff; opacity: 75% }
+    ellipse { at: x.100 - rr.100 * if(goo.100.kw > 0, 0.62, 0.36), y.100 - rr.100 * if(goo.100.kw > 0, 0.82, 0.46); radius: rr.100 * if(goo.100.kw > 0, 0.14, 0.2) * if(sklo and goo.100.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
+    ellipse { at: x.100 - rr.100 * if(goo.100.kw > 0, 0.4, 0.12), y.100 - rr.100 * if(goo.100.kw > 0, 0.9, 0.58); radius: rr.100 * 0.06 * if(sklo and goo.100.on, 1, 0); color: #ffffff; opacity: 75% }
+    ellipse { at: x.101 - rr.101 * if(goo.101.kw > 0, 0.62, 0.36), y.101 - rr.101 * if(goo.101.kw > 0, 0.82, 0.46); radius: rr.101 * if(goo.101.kw > 0, 0.14, 0.2) * if(sklo and goo.101.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
+    ellipse { at: x.101 - rr.101 * if(goo.101.kw > 0, 0.4, 0.12), y.101 - rr.101 * if(goo.101.kw > 0, 0.9, 0.58); radius: rr.101 * 0.06 * if(sklo and goo.101.on, 1, 0); color: #ffffff; opacity: 75% }
+    ellipse { at: x.102 - rr.102 * if(goo.102.kw > 0, 0.62, 0.36), y.102 - rr.102 * if(goo.102.kw > 0, 0.82, 0.46); radius: rr.102 * if(goo.102.kw > 0, 0.14, 0.2) * if(sklo and goo.102.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
+    ellipse { at: x.102 - rr.102 * if(goo.102.kw > 0, 0.4, 0.12), y.102 - rr.102 * if(goo.102.kw > 0, 0.9, 0.58); radius: rr.102 * 0.06 * if(sklo and goo.102.on, 1, 0); color: #ffffff; opacity: 75% }
+    ellipse { at: x.103 - rr.103 * if(goo.103.kw > 0, 0.62, 0.36), y.103 - rr.103 * if(goo.103.kw > 0, 0.82, 0.46); radius: rr.103 * if(goo.103.kw > 0, 0.14, 0.2) * if(sklo and goo.103.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
+    ellipse { at: x.103 - rr.103 * if(goo.103.kw > 0, 0.4, 0.12), y.103 - rr.103 * if(goo.103.kw > 0, 0.9, 0.58); radius: rr.103 * 0.06 * if(sklo and goo.103.on, 1, 0); color: #ffffff; opacity: 75% }
+    ellipse { at: x.104 - rr.104 * if(goo.104.kw > 0, 0.62, 0.36), y.104 - rr.104 * if(goo.104.kw > 0, 0.82, 0.46); radius: rr.104 * if(goo.104.kw > 0, 0.14, 0.2) * if(sklo and goo.104.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
+    ellipse { at: x.104 - rr.104 * if(goo.104.kw > 0, 0.4, 0.12), y.104 - rr.104 * if(goo.104.kw > 0, 0.9, 0.58); radius: rr.104 * 0.06 * if(sklo and goo.104.on, 1, 0); color: #ffffff; opacity: 75% }
+    ellipse { at: x.105 - rr.105 * if(goo.105.kw > 0, 0.62, 0.36), y.105 - rr.105 * if(goo.105.kw > 0, 0.82, 0.46); radius: rr.105 * if(goo.105.kw > 0, 0.14, 0.2) * if(sklo and goo.105.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
+    ellipse { at: x.105 - rr.105 * if(goo.105.kw > 0, 0.4, 0.12), y.105 - rr.105 * if(goo.105.kw > 0, 0.9, 0.58); radius: rr.105 * 0.06 * if(sklo and goo.105.on, 1, 0); color: #ffffff; opacity: 75% }
+    ellipse { at: x.106 - rr.106 * if(goo.106.kw > 0, 0.62, 0.36), y.106 - rr.106 * if(goo.106.kw > 0, 0.82, 0.46); radius: rr.106 * if(goo.106.kw > 0, 0.14, 0.2) * if(sklo and goo.106.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
+    ellipse { at: x.106 - rr.106 * if(goo.106.kw > 0, 0.4, 0.12), y.106 - rr.106 * if(goo.106.kw > 0, 0.9, 0.58); radius: rr.106 * 0.06 * if(sklo and goo.106.on, 1, 0); color: #ffffff; opacity: 75% }
+    ellipse { at: x.107 - rr.107 * if(goo.107.kw > 0, 0.62, 0.36), y.107 - rr.107 * if(goo.107.kw > 0, 0.82, 0.46); radius: rr.107 * if(goo.107.kw > 0, 0.14, 0.2) * if(sklo and goo.107.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
+    ellipse { at: x.107 - rr.107 * if(goo.107.kw > 0, 0.4, 0.12), y.107 - rr.107 * if(goo.107.kw > 0, 0.9, 0.58); radius: rr.107 * 0.06 * if(sklo and goo.107.on, 1, 0); color: #ffffff; opacity: 75% }
+    ellipse { at: x.108 - rr.108 * if(goo.108.kw > 0, 0.62, 0.36), y.108 - rr.108 * if(goo.108.kw > 0, 0.82, 0.46); radius: rr.108 * if(goo.108.kw > 0, 0.14, 0.2) * if(sklo and goo.108.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
+    ellipse { at: x.108 - rr.108 * if(goo.108.kw > 0, 0.4, 0.12), y.108 - rr.108 * if(goo.108.kw > 0, 0.9, 0.58); radius: rr.108 * 0.06 * if(sklo and goo.108.on, 1, 0); color: #ffffff; opacity: 75% }
+    ellipse { at: x.109 - rr.109 * if(goo.109.kw > 0, 0.62, 0.36), y.109 - rr.109 * if(goo.109.kw > 0, 0.82, 0.46); radius: rr.109 * if(goo.109.kw > 0, 0.14, 0.2) * if(sklo and goo.109.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
+    ellipse { at: x.109 - rr.109 * if(goo.109.kw > 0, 0.4, 0.12), y.109 - rr.109 * if(goo.109.kw > 0, 0.9, 0.58); radius: rr.109 * 0.06 * if(sklo and goo.109.on, 1, 0); color: #ffffff; opacity: 75% }
+    ellipse { at: x.110 - rr.110 * if(goo.110.kw > 0, 0.62, 0.36), y.110 - rr.110 * if(goo.110.kw > 0, 0.82, 0.46); radius: rr.110 * if(goo.110.kw > 0, 0.14, 0.2) * if(sklo and goo.110.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
+    ellipse { at: x.110 - rr.110 * if(goo.110.kw > 0, 0.4, 0.12), y.110 - rr.110 * if(goo.110.kw > 0, 0.9, 0.58); radius: rr.110 * 0.06 * if(sklo and goo.110.on, 1, 0); color: #ffffff; opacity: 75% }
+    ellipse { at: x.111 - rr.111 * if(goo.111.kw > 0, 0.62, 0.36), y.111 - rr.111 * if(goo.111.kw > 0, 0.82, 0.46); radius: rr.111 * if(goo.111.kw > 0, 0.14, 0.2) * if(sklo and goo.111.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
+    ellipse { at: x.111 - rr.111 * if(goo.111.kw > 0, 0.4, 0.12), y.111 - rr.111 * if(goo.111.kw > 0, 0.9, 0.58); radius: rr.111 * 0.06 * if(sklo and goo.111.on, 1, 0); color: #ffffff; opacity: 75% }
+    ellipse { at: x.112 - rr.112 * if(goo.112.kw > 0, 0.62, 0.36), y.112 - rr.112 * if(goo.112.kw > 0, 0.82, 0.46); radius: rr.112 * if(goo.112.kw > 0, 0.14, 0.2) * if(sklo and goo.112.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
+    ellipse { at: x.112 - rr.112 * if(goo.112.kw > 0, 0.4, 0.12), y.112 - rr.112 * if(goo.112.kw > 0, 0.9, 0.58); radius: rr.112 * 0.06 * if(sklo and goo.112.on, 1, 0); color: #ffffff; opacity: 75% }
+    ellipse { at: x.113 - rr.113 * if(goo.113.kw > 0, 0.62, 0.36), y.113 - rr.113 * if(goo.113.kw > 0, 0.82, 0.46); radius: rr.113 * if(goo.113.kw > 0, 0.14, 0.2) * if(sklo and goo.113.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
+    ellipse { at: x.113 - rr.113 * if(goo.113.kw > 0, 0.4, 0.12), y.113 - rr.113 * if(goo.113.kw > 0, 0.9, 0.58); radius: rr.113 * 0.06 * if(sklo and goo.113.on, 1, 0); color: #ffffff; opacity: 75% }
+    ellipse { at: x.114 - rr.114 * if(goo.114.kw > 0, 0.62, 0.36), y.114 - rr.114 * if(goo.114.kw > 0, 0.82, 0.46); radius: rr.114 * if(goo.114.kw > 0, 0.14, 0.2) * if(sklo and goo.114.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
+    ellipse { at: x.114 - rr.114 * if(goo.114.kw > 0, 0.4, 0.12), y.114 - rr.114 * if(goo.114.kw > 0, 0.9, 0.58); radius: rr.114 * 0.06 * if(sklo and goo.114.on, 1, 0); color: #ffffff; opacity: 75% }
+    ellipse { at: x.115 - rr.115 * if(goo.115.kw > 0, 0.62, 0.36), y.115 - rr.115 * if(goo.115.kw > 0, 0.82, 0.46); radius: rr.115 * if(goo.115.kw > 0, 0.14, 0.2) * if(sklo and goo.115.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
+    ellipse { at: x.115 - rr.115 * if(goo.115.kw > 0, 0.4, 0.12), y.115 - rr.115 * if(goo.115.kw > 0, 0.9, 0.58); radius: rr.115 * 0.06 * if(sklo and goo.115.on, 1, 0); color: #ffffff; opacity: 75% }
+    ellipse { at: x.116 - rr.116 * if(goo.116.kw > 0, 0.62, 0.36), y.116 - rr.116 * if(goo.116.kw > 0, 0.82, 0.46); radius: rr.116 * if(goo.116.kw > 0, 0.14, 0.2) * if(sklo and goo.116.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
+    ellipse { at: x.116 - rr.116 * if(goo.116.kw > 0, 0.4, 0.12), y.116 - rr.116 * if(goo.116.kw > 0, 0.9, 0.58); radius: rr.116 * 0.06 * if(sklo and goo.116.on, 1, 0); color: #ffffff; opacity: 75% }
+    ellipse { at: x.117 - rr.117 * if(goo.117.kw > 0, 0.62, 0.36), y.117 - rr.117 * if(goo.117.kw > 0, 0.82, 0.46); radius: rr.117 * if(goo.117.kw > 0, 0.14, 0.2) * if(sklo and goo.117.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
+    ellipse { at: x.117 - rr.117 * if(goo.117.kw > 0, 0.4, 0.12), y.117 - rr.117 * if(goo.117.kw > 0, 0.9, 0.58); radius: rr.117 * 0.06 * if(sklo and goo.117.on, 1, 0); color: #ffffff; opacity: 75% }
+    ellipse { at: x.118 - rr.118 * if(goo.118.kw > 0, 0.62, 0.36), y.118 - rr.118 * if(goo.118.kw > 0, 0.82, 0.46); radius: rr.118 * if(goo.118.kw > 0, 0.14, 0.2) * if(sklo and goo.118.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
+    ellipse { at: x.118 - rr.118 * if(goo.118.kw > 0, 0.4, 0.12), y.118 - rr.118 * if(goo.118.kw > 0, 0.9, 0.58); radius: rr.118 * 0.06 * if(sklo and goo.118.on, 1, 0); color: #ffffff; opacity: 75% }
+    ellipse { at: x.119 - rr.119 * if(goo.119.kw > 0, 0.62, 0.36), y.119 - rr.119 * if(goo.119.kw > 0, 0.82, 0.46); radius: rr.119 * if(goo.119.kw > 0, 0.14, 0.2) * if(sklo and goo.119.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
+    ellipse { at: x.119 - rr.119 * if(goo.119.kw > 0, 0.4, 0.12), y.119 - rr.119 * if(goo.119.kw > 0, 0.9, 0.58); radius: rr.119 * 0.06 * if(sklo and goo.119.on, 1, 0); color: #ffffff; opacity: 75% }
+    ellipse { at: x.120 - rr.120 * if(goo.120.kw > 0, 0.62, 0.36), y.120 - rr.120 * if(goo.120.kw > 0, 0.82, 0.46); radius: rr.120 * if(goo.120.kw > 0, 0.14, 0.2) * if(sklo and goo.120.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
+    ellipse { at: x.120 - rr.120 * if(goo.120.kw > 0, 0.4, 0.12), y.120 - rr.120 * if(goo.120.kw > 0, 0.9, 0.58); radius: rr.120 * 0.06 * if(sklo and goo.120.on, 1, 0); color: #ffffff; opacity: 75% }
+    ellipse { at: x.121 - rr.121 * if(goo.121.kw > 0, 0.62, 0.36), y.121 - rr.121 * if(goo.121.kw > 0, 0.82, 0.46); radius: rr.121 * if(goo.121.kw > 0, 0.14, 0.2) * if(sklo and goo.121.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
+    ellipse { at: x.121 - rr.121 * if(goo.121.kw > 0, 0.4, 0.12), y.121 - rr.121 * if(goo.121.kw > 0, 0.9, 0.58); radius: rr.121 * 0.06 * if(sklo and goo.121.on, 1, 0); color: #ffffff; opacity: 75% }
+    ellipse { at: x.122 - rr.122 * if(goo.122.kw > 0, 0.62, 0.36), y.122 - rr.122 * if(goo.122.kw > 0, 0.82, 0.46); radius: rr.122 * if(goo.122.kw > 0, 0.14, 0.2) * if(sklo and goo.122.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
+    ellipse { at: x.122 - rr.122 * if(goo.122.kw > 0, 0.4, 0.12), y.122 - rr.122 * if(goo.122.kw > 0, 0.9, 0.58); radius: rr.122 * 0.06 * if(sklo and goo.122.on, 1, 0); color: #ffffff; opacity: 75% }
+    ellipse { at: x.123 - rr.123 * if(goo.123.kw > 0, 0.62, 0.36), y.123 - rr.123 * if(goo.123.kw > 0, 0.82, 0.46); radius: rr.123 * if(goo.123.kw > 0, 0.14, 0.2) * if(sklo and goo.123.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
+    ellipse { at: x.123 - rr.123 * if(goo.123.kw > 0, 0.4, 0.12), y.123 - rr.123 * if(goo.123.kw > 0, 0.9, 0.58); radius: rr.123 * 0.06 * if(sklo and goo.123.on, 1, 0); color: #ffffff; opacity: 75% }
+    ellipse { at: x.124 - rr.124 * if(goo.124.kw > 0, 0.62, 0.36), y.124 - rr.124 * if(goo.124.kw > 0, 0.82, 0.46); radius: rr.124 * if(goo.124.kw > 0, 0.14, 0.2) * if(sklo and goo.124.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
+    ellipse { at: x.124 - rr.124 * if(goo.124.kw > 0, 0.4, 0.12), y.124 - rr.124 * if(goo.124.kw > 0, 0.9, 0.58); radius: rr.124 * 0.06 * if(sklo and goo.124.on, 1, 0); color: #ffffff; opacity: 75% }
+    ellipse { at: x.125 - rr.125 * if(goo.125.kw > 0, 0.62, 0.36), y.125 - rr.125 * if(goo.125.kw > 0, 0.82, 0.46); radius: rr.125 * if(goo.125.kw > 0, 0.14, 0.2) * if(sklo and goo.125.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
+    ellipse { at: x.125 - rr.125 * if(goo.125.kw > 0, 0.4, 0.12), y.125 - rr.125 * if(goo.125.kw > 0, 0.9, 0.58); radius: rr.125 * 0.06 * if(sklo and goo.125.on, 1, 0); color: #ffffff; opacity: 75% }
+    ellipse { at: x.126 - rr.126 * if(goo.126.kw > 0, 0.62, 0.36), y.126 - rr.126 * if(goo.126.kw > 0, 0.82, 0.46); radius: rr.126 * if(goo.126.kw > 0, 0.14, 0.2) * if(sklo and goo.126.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
+    ellipse { at: x.126 - rr.126 * if(goo.126.kw > 0, 0.4, 0.12), y.126 - rr.126 * if(goo.126.kw > 0, 0.9, 0.58); radius: rr.126 * 0.06 * if(sklo and goo.126.on, 1, 0); color: #ffffff; opacity: 75% }
+    ellipse { at: x.127 - rr.127 * if(goo.127.kw > 0, 0.62, 0.36), y.127 - rr.127 * if(goo.127.kw > 0, 0.82, 0.46); radius: rr.127 * if(goo.127.kw > 0, 0.14, 0.2) * if(sklo and goo.127.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
+    ellipse { at: x.127 - rr.127 * if(goo.127.kw > 0, 0.4, 0.12), y.127 - rr.127 * if(goo.127.kw > 0, 0.9, 0.58); radius: rr.127 * 0.06 * if(sklo and goo.127.on, 1, 0); color: #ffffff; opacity: 75% }
         // <<< odlesky
     // farebné jadro: od stredu prechod z farby do kávy (okraj splynie s kvapkou), predvolene druh upozornenia;
     // vypnuté má nulovú veľkosť (so záplatou nič nestojí)

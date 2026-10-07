@@ -101,8 +101,10 @@ def highlights():
     out = []
     for k in range(N):
         on = f"if(sklo and goo.{k}.on, 1, 0)"
-        out.append(f"    ellipse {{ at: x.{k} - rr.{k} * 0.36, y.{k} - rr.{k} * 0.46; radius: rr.{k} * 0.2 * {on}; scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }}\n")
-        out.append(f"    ellipse {{ at: x.{k} - rr.{k} * 0.12, y.{k} - rr.{k} * 0.58; radius: rr.{k} * 0.06 * {on}; color: #ffffff; opacity: 75% }}\n")
+        # široká kvapka (ClockGoo: čas a dátum) má odlesk vyššie a bokom, aby neprekryl text
+        wide = f"goo.{k}.kw > 0"
+        out.append(f"    ellipse {{ at: x.{k} - rr.{k} * if({wide}, 0.62, 0.36), y.{k} - rr.{k} * if({wide}, 0.82, 0.46); radius: rr.{k} * if({wide}, 0.14, 0.2) * {on}; scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }}\n")
+        out.append(f"    ellipse {{ at: x.{k} - rr.{k} * if({wide}, 0.4, 0.12), y.{k} - rr.{k} * if({wide}, 0.9, 0.58); radius: rr.{k} * 0.06 * {on}; color: #ffffff; opacity: 75% }}\n")
     return "".join(out)
 
 
