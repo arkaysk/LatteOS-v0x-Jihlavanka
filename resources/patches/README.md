@@ -162,3 +162,12 @@ sklom príde za 2–3 snímky po 50 ms). Overené na latte-lab: série 80 snímo
 ClockGoo trikrát ukázaná a skrytá — bez duchov a pásov; záťaž rovnaká (engine ~41 % jadra, Hyprland ~16 %).
 Pamäť: dve plátna navyše na každú plochu so sklom (pri 2560 × 1080 asi 22 MB videopamäte). Na poslanie autorovi.
 
+## pleamar-apps-znova.patch (7. 10. 2026, pleamar 0.2.24)
+
+Služba `apps` (zoznam nainštalovaných aplikácií) sa prečíta **iba raz** a ďalšie `sys.watch("apps")` iba pridalo
+poslucháča. Aplikácia nainštalovaná počas behu (App Manager, webová aplikácia) sa preto v spúšťači LensGoo ani v GooBare
+neukázala až do reštartu enginu. Záplata (`src/logic_luau.rs`): ten istý poslucháč sa nepridá druhý raz a každé ďalšie
+`sys.watch("apps")` dá zoznam prečítať znova (vo vlastnom vlákne); výsledok dostanú všetci poslucháči. Engine ho volá
+pri otvorení spúšťača a keď GooBar nájde okno neznámej aplikácie (najviac raz za 30 s). Overené na latte-lab:
+webová aplikácia pridaná za behu sa v LensGoo nájde hneď. Na poslanie autorovi.
+

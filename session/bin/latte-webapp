@@ -1,0 +1,152 @@
+#!/usr/bin/env python3
+"""latte-webapp — webová stránka ako samostatná aplikácia (vlastné okno, prihlásenie, ikra v GooBare a spúšťač),
+cez Voltage (db0x/voltage, GPL-3; Electron). LensGoo › Web › „Pridať ako aplikáciu“.
+
+  latte-webapp pridaj URL [MENO]   zostaví aplikáciu na pozadí (asi 20 s) a dá vedieť upozornením
+  latte-webapp zoznam              JSON: webové aplikácie (profil, meno, adresa, nainštalovaná)
+  latte-webapp odober PROFIL       odstráni aplikáciu (spúšťač, AppImage; prihlásenie ostane v ~/.config/voltage)
+
+Voltage sa pri prvom použití stiahne a pripraví do ~/.local/share/latteos/voltage (jednorazovo, ~250 MB, potrebuje
+npm). Každá aplikácia je AppImage (~120 MB; potrebuje FUSE 2 — balík fuse).
+"""
+import json, os, re, shutil, subprocess, sys, time, urllib.parse
+
+HOME = os.path.expanduser("~")
+DIRS = [os.path.join(HOME, ".local/share/latteos/voltage"), os.path.join(HOME, ".local/share/latteos-zaujmy/voltage")]
+URL = "https://github.com/db0x/voltage"
+LOCK = os.path.join(os.environ.get("XDG_RUNTIME_DIR", "/tmp"), "latte-webapp.lock")
+
+
+def notify(title, body, icon="applications-internet"):
+    subprocess.run(["notify-send", "-a", "LatteOS", "-i", icon, title, body], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+
+def env():
+    e = dict(os.environ)
+    e.pop("ELECTRON_RUN_AS_NODE", None)            # nastavuje ho napr. terminál VS Code: Electron by bežal ako Node
+    return e
+
+
+def voltage(install=False):
+    for d in DIRS:
+        if os.path.isfile(os.path.join(d, "package.json")) and os.path.isdir(os.path.join(d, "node_modules")):
+            return d
+    if not install:
+        return None
+    if not shutil.which("npm") or not shutil.which("git"):
+        notify("Webové aplikácie", "Chýba npm alebo git — doinštaluj ich v App Manageri (Vývojár).", "dialog-error")
+        return None
+    d = DIRS[0]
+    notify("Webové aplikácie", "Pripravujem ich jednorazovo (stiahnutie asi 250 MB) — chvíľu to potrvá.")
+    os.makedirs(os.path.dirname(d), exist_ok=True)
+    if not os.path.isdir(d):
+        if subprocess.run(["git", "clone", "-q", "--depth", "1", URL, d]).returncode != 0:
+            notify("Webové aplikácie", "Voltage sa nepodarilo stiahnuť (internet?).", "dialog-error")
+            return None
+    if subprocess.run(["npm", "ci", "--no-audit", "--no-fund"], cwd=d, env=env(), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode != 0:
+        notify("Webové aplikácie", "Príprava Voltage zlyhala (npm).", "dialog-error")
+        return None
+    return d
+
+
+def slug(s):
+    s = re.sub(r"[^a-z0-9]+", "-", s.lower()).strip("-")
+    return s[:40] or "web"
+
+
+def add(url, name=""):
+    if not re.match(r"^[a-z]+://", url):
+        url = "https://" + url
+    host = urllib.parse.urlparse(url).hostname or ""
+    if not host:
+        print("latte-webapp: neplatná adresa", file=sys.stderr)
+        return 2
+    base = re.sub(r"^www\.", "", host)
+    name = name or base.split(".")[0].capitalize()
+    profile = "private." + slug(base)
+    d = voltage(install=True)
+    if not d:
+        return 1
+    # jedno zostavenie naraz (Voltage nevie dve súčasne)
+    for _ in range(120):
+        try:
+            fd = os.open(LOCK, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+            os.close(fd)
+            break
+        except FileExistsError:
+            if time.time() - os.path.getmtime(LOCK) > 600:
+                os.unlink(LOCK)
+            time.sleep(5)
+    try:
+        cfg = {"profile": profile, "url": url, "name": name, "singleInstance": True}
+        with open(os.path.join(d, "webapps", f"build.{profile}.json"), "w", encoding="utf-8") as f:
+            json.dump(cfg, f, ensure_ascii=False, indent=2)
+        r = subprocess.run(["npm", "run", "build", "--", profile], cwd=d, env=env(), capture_output=True, text=True)
+    finally:
+        try:
+            os.unlink(LOCK)
+        except OSError:
+            pass
+    if r.returncode != 0:
+        notify("Webová aplikácia", f"„{name}“ sa nepodarilo vytvoriť.", "dialog-error")
+        print(r.stdout[-2000:] + r.stderr[-2000:], file=sys.stderr)
+        return 1
+    notify("Webová aplikácia je pripravená", f"„{name}“ nájdeš v spúšťači (LensGoo) — otvorí sa vo vlastnom okne.")
+    print(json.dumps({"profile": profile, "name": name, "url": url}, ensure_ascii=False))
+    return 0
+
+
+def apps():
+    d = voltage()
+    out = []
+    if not d:
+        return out
+    for f in sorted(os.listdir(os.path.join(d, "webapps"))):
+        if not (f.startswith("build.private.") and f.endswith(".json")):
+            continue
+        try:
+            c = json.load(open(os.path.join(d, "webapps", f), encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+        prof = c.get("profile", "")
+        art = "v" + prof[:1].upper() + prof[1:]
+        out.append({"profile": prof, "name": c.get("name", prof), "url": c.get("url", ""),
+                    "installed": os.path.exists(os.path.join(HOME, ".local/share/applications", art + ".desktop"))})
+    return out
+
+
+def remove(profile):
+    d = voltage()
+    if not d or not re.match(r"^private\.[a-z0-9-]+$", profile):
+        return 2
+    art = "v" + profile[:1].upper() + profile[1:]
+    for p in (os.path.join(d, "webapps", f"build.{profile}.json"), os.path.join(d, "dist", art), os.path.join(d, "dist", art + ".version"),
+              os.path.join(HOME, ".local/share/applications", art + ".desktop")):
+        try:
+            os.unlink(p)
+        except OSError:
+            pass
+    rt = os.path.join(HOME, ".config/voltage/plugins/routing/routing.json")
+    try:
+        t = json.load(open(rt))
+        for k in [k for k, v in t.get("base", {}).items() if str(v.get("path", "")).endswith("/" + art)]:
+            t["base"].pop(k)
+        json.dump(t, open(rt, "w"), indent=2)
+    except (OSError, ValueError):
+        pass
+    return 0
+
+
+def main(a):
+    if a[:1] == ["pridaj"] and len(a) in (2, 3):
+        return add(a[1], a[2] if len(a) == 3 else "")
+    if a[:1] == ["zoznam"]:
+        print(json.dumps(apps(), ensure_ascii=False)); return 0
+    if a[:1] == ["odober"] and len(a) == 2:
+        return remove(a[1])
+    print(__doc__, file=sys.stderr)
+    return 2
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))

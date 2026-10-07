@@ -14,7 +14,7 @@ user="$(id -un)"
 sudo() { if [ -n "${SUDO_ASKPASS:-}" ]; then command sudo -A "$@"; else command sudo "$@"; fi; }
 
 # kontrola pred prvým zásahom do systému (DSanalyze.md): chýbajúci súbor = poškodený checkout, nie polovičná inštalácia
-BINS="latte-session latte-safe latte-greeter latte-greetd latte-goo-greeter latte-zamok latte-gooconfig latte-relacia latte-theme latte-app latte-ai latte-shellset latte-sysmon latte-apps latte-devices latte-backup latte-games latte-net latte-cloud latte-siet latte-otvor latte-kos latte-spustac latte-sandbox latte-kopia latte-tc latte-ostrovy latte-rychle latte-tapety latte-vyber latte-ponuka latte-prichytenie latte-snimka latte-emoji latte-nove-okno latte-nahravanie latte-maskoti latte-sklo latte-inspektor latte-terminal latte-hypr-udalosti latte-sukromie latte-kapsa-store latte-hra latte-kvapky latte-profil latte-upstream latte-marea latte-serpantinum latte-hladaj latte-riadok latte-pocasie latte-chatgoo latte-goo"
+BINS="latte-session latte-safe latte-greeter latte-greetd latte-goo-greeter latte-zamok latte-gooconfig latte-relacia latte-webapp latte-theme latte-app latte-ai latte-shellset latte-sysmon latte-apps latte-devices latte-backup latte-games latte-net latte-cloud latte-siet latte-otvor latte-kos latte-spustac latte-sandbox latte-kopia latte-tc latte-ostrovy latte-rychle latte-tapety latte-vyber latte-ponuka latte-prichytenie latte-snimka latte-emoji latte-nove-okno latte-nahravanie latte-maskoti latte-sklo latte-inspektor latte-terminal latte-hypr-udalosti latte-sukromie latte-kapsa-store latte-hra latte-kvapky latte-profil latte-upstream latte-marea latte-serpantinum latte-hladaj latte-riadok latte-pocasie latte-chatgoo latte-goo"
 missing=""
 for f in $BINS; do [ -f "$S/bin/$f" ] || missing="$missing $f"; done
 [ -z "$missing" ] || { echo "Chýbajú skripty v $S/bin:$missing — inštaláciu nezačínam (git status / git pull)."; exit 1; }
@@ -98,13 +98,14 @@ pl_ver=0.2.24                                      # pripnutá verzia (resources
 pl_patched() { git -C "$pl" apply --reverse --check "$repo/resources/patches/$1.patch" 2>/dev/null; }   # už je v zdroji
 if command -v cargo >/dev/null && { ! "$pl/target/release/pleamar" --version 2>/dev/null | grep -q "pleamar $pl_ver " \
         || ! pl_patched pleamar-prazdne-tvary || ! pl_patched pleamar-ostre-okraje || ! pl_patched pleamar-pasy-tela \
-        || ! pl_patched pleamar-sklo-stabilne; }; then
+        || ! pl_patched pleamar-sklo-stabilne || ! pl_patched pleamar-apps-znova; }; then
     "$repo/resources/fetch.sh" pleamar >/dev/null
     # záplaty LatteOS (resources/patches/README.md); prazdne-tvary: prázdne miesta enginu Goo nič nestoja (bez nej
     # pomalšie); ostre-okraje: ostrý okraj aj v zliatí (oká medzi kvapkami); pasy-tela: pixel počíta iba tvary
     # vo svojom dosahu (záťaž GPU nerastie s počtom kvapiek); sklo-stabilne: lom skla bez duchov a zrnitých pásov
     # pri hýbucich sa kvapkách (materiál sklenená káva)
-    for z in pleamar-hyprland-okna-8bit pleamar-prazdne-tvary pleamar-ostre-okraje pleamar-pasy-tela pleamar-sklo-stabilne; do
+    # apps-znova: novo nainštalovaná aplikácia sa v spúšťači nájde hneď (inak až po reštarte enginu)
+    for z in pleamar-hyprland-okna-8bit pleamar-prazdne-tvary pleamar-ostre-okraje pleamar-pasy-tela pleamar-sklo-stabilne pleamar-apps-znova; do
         pl_patched "$z" && continue
         git -C "$pl" apply --check "$repo/resources/patches/$z.patch" 2>/dev/null && git -C "$pl" apply "$repo/resources/patches/$z.patch" \
             || echo "   záplata $z sa nedá použiť (možno ju autor už má)"
@@ -188,6 +189,7 @@ rpm -q mpvpaper mpv ffmpegthumbnailer >/dev/null || sudo dnf -y -q install mpvpa
 rpm -q ffmpeg >/dev/null || rpm -q ffmpeg-free >/dev/null || sudo dnf -y -q install ffmpeg-free
 rpm -q wf-recorder wtype >/dev/null || sudo dnf -y -q install wf-recorder wtype   # nahrávanie obrazovky (Win+Alt+R), vloženie emoji (Win+.)
 rpm -q fuse3 >/dev/null || sudo dnf -y -q install fuse3                             # FTP/SFTP ako priečinky (latte-siet, rclone mount)
+rpm -q fuse fuse-libs >/dev/null || sudo dnf -y -q install fuse fuse-libs          # FUSE 2: AppImage (stiahnuté programy, webové aplikácie Voltage)
 # DiskTree (tobi/disktree, MIT): „Čo zapĺňa disk“ v Súboroch a Nastaveniach › Úložisko — preloží sa raz zo zdroja
 if ! command -v disktree >/dev/null && command -v cargo >/dev/null; then
     "$repo/resources/fetch.sh" disktree >/dev/null 2>&1 || true

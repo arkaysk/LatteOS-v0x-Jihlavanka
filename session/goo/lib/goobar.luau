@@ -85,6 +85,7 @@ end
 -- ikona zo spúšťača; okno bez spúšťača (aj bez ikony v téme) dostane znak okna (pole `ikona`), nie prázdnu guľu
 local function icon_of(w)
     local a = M.app_of(w)
+    if not a and (w.class or "") ~= "" and (w.class or "") ~= "org.quickshell" and M.reread then M.reread() end
     return (a and a.icon and a.icon ~= "") and a.icon or ""
 end
 function M.wins() return wins end
@@ -385,7 +386,16 @@ function M.read_blocks()
 end
 
 function M.start()
-    sys.watch("apps", function(list) index_apps(list) layout() end)
+    -- služba `apps` číta aplikácie iba raz: okno, ku ktorému sa aplikácia nenájde (práve nainštalovaná), ich dá
+    -- prečítať znova — najviac raz za 30 s
+    local function onApps(list) index_apps(list) layout() end
+    M.reread = function()
+        local now = os.clock()
+        if M._reread and now - M._reread < 30 then return end
+        M._reread = now
+        pcall(sys.watch, "apps", onApps)
+    end
+    sys.watch("apps", onApps)
     -- `window` dá zoznam iba cez wlr-foreign-toplevel (na Hyprlande so záplatou PLEAMAR_GENERIC=window)
     local ok = sys.watch("window", function(v) raw = (v and v.list) or {} mark_hidden() end)
     if not ok then log("goobar: tento systém nehlási okná") end
