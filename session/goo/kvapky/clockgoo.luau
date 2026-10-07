@@ -16,6 +16,20 @@ local DNI = { "ne", "po", "ut", "st", "št", "pi", "so" }
 local notes, seen = {}, {}
 local MAX = 5                         -- upozornení v karte (ďalšie: „+N ďalších“)
 local dnd = false                     -- Nerušiť (Noctalia)
+-- Nerušiť je vidieť aj bez otvorenia karty (bughunt 712: „vie, prečo nechodia upozornenia“): v druhom riadku hodín
+-- je „Nerušiť“ namiesto dátumu a bublina pri prechode myšou to vysvetlí
+local wx = nil                        -- počasie (záložka 5, nižšie)
+local function dateLine(d)
+    if dnd then return tr("Do not disturb") end
+    return (d.datum or "") .. (wx and "  " .. wx.teraz.t .. "°" or "")
+end
+local function showDnd(d) if not d.alt and d.datum then d:text(dateLine(d)) end end
+local function pollDnd(d, after_fn)
+    run("noctalia", { "msg", "notification-dnd-status" }, function(out)
+        local on = (out or ""):lower():match("true") ~= nil or (out or ""):lower():match("on") ~= nil
+        if on ~= dnd then dnd = on showDnd(d) if after_fn then after_fn() end end
+    end)
+end
 
 local function paint(d)
     local crit, n = 0, #notes
@@ -255,6 +269,7 @@ local function notifications(d)
     end
     local row = { { glyph = dnd and "bell-off" or "bell", label = tr("Do not disturb"), on = dnd, keep = true, run = function()
         dnd = not dnd
+        showDnd(d)
         ncard(d, true)
         run("noctalia", { "msg", "notification-dnd-toggle" }, nil, { output = false })
     end } }
@@ -271,15 +286,11 @@ ncard = function(d, keep)
     E.menu(items, 620, { id = "notes", cols = { 300, 320 }, keep = keep, owner = d })
     if not keep then
         cal_load(function() if E.menuId() == "notes" then ncard(d, true) end end)
-        run("noctalia", { "msg", "notification-dnd-status" }, function(out)
-            local on = (out or ""):lower():match("true") ~= nil or (out or ""):lower():match("on") ~= nil
-            if on ~= dnd then dnd = on if E.menuId() == "notes" then ncard(d, true) end end
-        end)
+        pollDnd(d, function() if E.menuId() == "notes" then ncard(d, true) end end)
     end
 end
 
 -- ── počasie (záložka 5): Open-Meteo cez `latte-goo pocasie`, ikony ako v Kvapkách ────────────────────────────
-local wx = nil
 local function wx_icon(c)
     c = tonumber(c) or 3
     if c == 0 then return "sun" end
@@ -347,11 +358,13 @@ return {
             if hm then
                 d.datum = DNI[tonumber(w) + 1] .. " " .. dd .. ". " .. mm .. "."
                 d:ikona(hm)
-                if not d.alt then d:text(d.datum .. (wx and "  " .. wx.teraz.t .. "°" or "")) end
+                if not d.alt then d:text(dateLine(d)) end
             end
         end)
     end,
     start = function(d)
+        pollDnd(d)
+        every(15000, function() pollDnd(d) end)
         -- skratky ako vo Windows (latte/skratky.lua): Win+N upozornenia a kalendár, Win+Alt+D dátum a čas
         on("clock_notes", function() if E.menuId() == "notes" then fact.ctx_open = false else ncard(d) end end)
         on("clock_card", function() if E.menuId() == "clock" then fact.ctx_open = false else card(d) end end)
@@ -385,7 +398,7 @@ return {
             ncard(d, true)
         end)
         -- počasie: teplota vedľa dátumu v kvapke, nová predpoveď raz za 20 minút
-        local function temp() wx_load(function() if wx and d.datum and not d.alt then d:text(d.datum .. "  " .. wx.teraz.t .. "°") end end) end
+        local function temp() wx_load(function() if wx and d.datum and not d.alt then d:text(dateLine(d)) end end) end
         after(4000, temp)
         every(20 * 60000, temp)
         cas.guard(function() if E.menuId() == "clock" then card(d, true) end end)
@@ -401,7 +414,7 @@ return {
             local sw = cas.timers().sw
             if active then d.alt = true d:text(cas.fmt(left + (running and 999 or 0)))
             elseif sw.running then d.alt = true d:text(cas.fmt(cas.elapsed()))
-            elseif d.alt then d.alt = false d.v.text = (d.datum or "") .. (wx and "  " .. wx.teraz.t .. "°" or "") E.publish() end
+            elseif d.alt then d.alt = false d.v.text = dateLine(d) E.publish() end
         end)
     end,
     -- ľavý klik: upozornenia a kalendár; znova klik kartu zavrie
@@ -415,6 +428,7 @@ return {
         card(d)
     end,
     popis = function(d)
-        return (#notes > 0 and (#notes .. " " .. tr("notifications") .. " · ") or "") .. tr("left: notifications and calendar · right: time, timer, alarms, weather")
+        return (dnd and (tr("Do not disturb is on — notifications wait here quietly") .. " · ") or "")
+            .. (#notes > 0 and (#notes .. " " .. tr("notifications") .. " · ") or "") .. tr("left: notifications and calendar · right: time, timer, alarms, weather")
     end,
 }
