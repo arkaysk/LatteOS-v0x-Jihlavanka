@@ -214,6 +214,9 @@ case "${1:-}" in
         start_app spustac
         start_app ponuka
         start_app pohoda                        # well-being: čas v aplikáciách (skrytá, na pozadí)
+        # ikony na ploche a ponuka plochy (pravý klik: Nový, Prilepiť, Prispôsobiť…) ako vo Windows — bughunt 616, 642;
+        # vypnutie: Nastavenia › Pozadie (desktop-icons = off)
+        start_app plocha
         noctalia_up
         ;;
     skusit)
