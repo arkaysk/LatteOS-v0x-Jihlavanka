@@ -435,7 +435,8 @@ texty preložiteľné (`translations`). Noctalia beží bez lišty a robí, čo 
     Nájsť telefón, Spárovať telefón cez Wi-Fi), Súbory › pravý klik na súbor › Poslať do telefónu; upozornenia a prijaté
     súbory z telefónu chodia ako bežné upozornenia do ClockGoo. Neoverené so skutočným telefónom (žiadny spárovaný).
     Ostáva: SMS a schránka v ClockGoo, batéria telefónu
-  - [ ] pomoc na diaľku jedným klikom (GooPower; RustDesk alebo vstavaný server, ako Quick Assist)
+  - [x] pomoc na diaľku jedným klikom (7. 10.): GooPower › Pomoc na diaľku otvorí RustDesk (číslo a heslo pre pomocníka);
+    bez RustDesku App Manager. Overené na latte-lab (RustDesk potrebuje XWayland — pomocník mu DISPLAY nájde)
   - [ ] prechod z Windowsu: import profilov prehliadača, dokumentov a písiem; podržanie Win = prehľad skratiek
   - [ ] režim sústredenia (minútka + Nerušiť + pokojné kvapky) — najprv zistiť, čo už má Noctalia
   - [ ] vrátiť späť pri zmene nastavení — ako súčasť okna Nastavení

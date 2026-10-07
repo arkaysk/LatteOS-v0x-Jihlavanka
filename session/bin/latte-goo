@@ -42,7 +42,7 @@ Logika scény beží v pieskovisku pleamar (bez súborov a bez sh) — všetko, 
                                   nich uhýba k okraju a kvapky sa zastavia pred rohovou lištou (Hyprland,
                                   inak Sway na skúšky)
 """
-import glob, json, os, re, subprocess, sys
+import glob, json, os, re, shutil, subprocess, sys
 
 HOME = os.path.expanduser("~")
 CONF = os.path.join(os.environ.get("XDG_CONFIG_HOME", HOME + "/.config"), "latteos", "goo", "kvapky")
@@ -756,6 +756,24 @@ def main(a):
         print(json.dumps(pocasie(), ensure_ascii=False)); return 0
     if c == "zvon" and len(a) >= 2:
         zvon(a[1], a[2] if len(a) > 2 else ""); return 0
+    if c == "pomoc":           # GooPower › Pomoc na diaľku: RustDesk (Flathub), bez neho App Manager s ním
+        have = subprocess.run(["flatpak", "info", "com.rustdesk.RustDesk"], capture_output=True).returncode == 0 if shutil.which("flatpak") else False
+        argv = ["flatpak", "run", "com.rustdesk.RustDesk"] if have else ["latte-app", "aplikacie", "objavovat"]
+        env = dict(os.environ)
+        if not env.get("DISPLAY"):        # RustDesk potrebuje XWayland; engine spustený mimo relácie DISPLAY nemá
+            for p in glob.glob("/proc/[0-9]*/cmdline"):
+                try:
+                    a2 = open(p, "rb").read().split(b"\0")
+                except OSError:
+                    continue
+                if a2 and a2[0].endswith(b"Xwayland") and len(a2) > 1 and a2[1].startswith(b":"):
+                    env["DISPLAY"] = a2[1].decode()
+                    break
+        subprocess.Popen(argv, start_new_session=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, env=env)
+        if not have:
+            subprocess.run(["notify-send", "-a", "LatteOS", "-i", "help", "Pomoc na diaľku",
+                            "Nainštaluj si RustDesk z App Managera — potom stačí jeden klik v GooPower."], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        return 0
     if c == "nastavenia":      # Nastavenia › Kvapky: skryté voliteľné kvapky, veľkosť, vrátenie na miesto
         try:
             print(json.dumps(json.load(open(os.path.join(os.path.dirname(os.path.dirname(CONF)), "kvapky.json"))), ensure_ascii=False))
