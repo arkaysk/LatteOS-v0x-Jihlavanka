@@ -567,6 +567,8 @@ texty preložiteľné (`translations`). Noctalia beží bez lišty a robí, čo 
   teraz ju spúšťa aj `latte-kvapky start`. Overené na latte-lab (pravý klik na prázdnu plochu)
 - [x] **Nerušiť je vidieť** (7. 10., bughunt 712): ClockGoo má v druhom riadku „Nerušiť“ namiesto dátumu a bublina
   vysvetlí, že sa upozornenia potichu zbierajú; stav sa zisťuje každých 15 s. Overené na latte-lab
+- [x] **Rozpísaný text v spúšťači neprepadne** (7. 10., bughunt 710): karta LensGoo zavretá uprostred písania (Esc, klik
+  vedľa, kláves Win) a znova otvorená do 2 minút má text späť; po spustení či hľadaní sa nevracia. Overené
 - [ ] Nápad (inspo/dalsie_inspiracie.md, 7. 10.): vlastná ponuka štartu v štýle Goo podľa **nervboot** (Rust, UEFI,
   predradená systemd-boot); dnes GRUB s položkami SAFE
 - [~] **Odložené na koniec** (používateľ 6. 10.: „preklady odlož nakoniec, ešte nemáme definitívne doriešené
