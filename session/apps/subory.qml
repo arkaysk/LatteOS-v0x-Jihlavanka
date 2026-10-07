@@ -263,6 +263,10 @@ ShellRoot {
             items.push({ glyph: "terminal-2", label: "Terminál tu", action: () => app.run(["foot", "--working-directory=" + e.path]) });
             items.push({ glyph: "chart-treemap", label: i18n.tr("What is filling this folder"), action: () => Quickshell.execDetached(["disktree", e.path]) });
         }
+        // poslať do telefónu cez Wi-Fi (KDE Connect; spárované a dostupné telefóny)
+        if (!e.isDir && app.phones.length > 0)
+            items.push({ glyph: "device-mobile", label: i18n.tr("Send to the phone"), sub: app.phones.map(p => ({ glyph: "device-mobile", label: p.name,
+                         action: () => app.run(["kdeconnect-cli", "-d", p.id, "--share", e.path], i18n.tr("Sending to {name}…", { name: p.name })) })) });
         items.push({ separator: true });
         items.push({ glyph: "trash", label: "Do koša", hint: "Del", danger: true, action: () => { app.run(["latte-kos", "vyhod", e.path], "Do koša: " + e.name); trashRefresh.restart(); } });
         ctx.open(x, y, items, e.name);
@@ -306,6 +310,14 @@ ShellRoot {
         findProc.running = true;
     }
 
+    // telefóny dostupné cez KDE Connect (spárované a v sieti) — Súbory › pravý klik › Poslať do telefónu
+    property var phones: []
+    Process {
+        id: kdcScan; running: true
+        command: ["sh", "-c", "command -v kdeconnect-cli >/dev/null && kdeconnect-cli -a --id-name-only 2>/dev/null"]
+        stdout: StdioCollector { onStreamFinished: app.phones = this.text.split("\n").filter(l => l.trim() !== "").map(l => { const i = l.indexOf(" "); return { id: l.slice(0, i), name: l.slice(i + 1) }; }) }
+    }
+    Timer { interval: 30000; repeat: true; running: true; onTriggered: kdcScan.running = true }
     // často používané priečinky (zoxide; Súbory ich priebežne pridávajú, FilePane.qml) — 5 najčastejších mimo Obľúbených
     property var frequent: []
     Process {
