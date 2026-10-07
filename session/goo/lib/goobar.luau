@@ -373,6 +373,7 @@ function M.read_blocks()
         local head = E.get(HEAD)
         if not ok or type(t) ~= "table" or not head or (t.h or 0) <= 0 then return end
         E.setCorner(type(t.roh) == "table" and t.roh or nil)
+        if not E.vedlajsi then E.avoidWindows(type(t.okna) == "table" and t.okna or {}) end
         local hx = E.along(head)
         local nb = {}
         -- uhýbanie oknám má zmysel iba na dolnom okraji (okná „nad lištou“); na inom okraji ikry neuhýbajú

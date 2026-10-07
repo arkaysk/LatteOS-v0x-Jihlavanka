@@ -146,6 +146,9 @@ a QueenGoo pred rohovou lištou Noctalie.
 Stredné tlačidlo nemá žiadna kvapka shellu. Ťahanie ľavým = presun (GooBar celý k inému okraju, ikry = poradie
 aplikácií). Veľkosť hlavy GooBaru je v Nastaveniach › Kvapky.
 
+- **Kvapka uhne oknu** (7. 10.): kvapka na bočnom či hornom okraji nikdy nezakryje titulok okna s tlačidlami —
+  dočasne sa odsunie pozdĺž okraja a keď okno odíde, vráti sa (ako goo uhnú pásu GooPower).
+
 ### 4.1 GooBar — lišta a správca okien
 
 Na každom ďalšom monitore je vlastný GooBar s oknami toho monitora (ako panel úloh Windows na druhej obrazovke);
