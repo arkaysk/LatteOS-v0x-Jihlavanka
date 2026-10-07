@@ -29,7 +29,7 @@ Pôvodný zoznam (7. 10. 2026, 540 testov bez stavu): `docs_zaloha/2026-10-07-st
 |---|---|---|
 | **P1** | základ bežnej práce — bez neho sa vydať nedá | všetko ✅ alebo ⚠️ |
 | **P2** | dôležité, ale chyba nezastaví bežnú prácu | ❌ iba so známou chybou v ROADMAP |
-| **P3** | čaká na budúcu časť (F6 bezpečnostný model, fáza A, iný hardvér) | môže ostať ⏭️ |
+| **P3** | čaká na budúcu časť (F6 bezpečnostný model, iný hardvér) | môže ostať ⏭️ |
 
 *Kurzívou* pri teste: na čom závisí (napr. *po fáze A*, *skutočný HW*) alebo s ktorým testom sa prekrýva
 (*= 435*: vyhodnotiť spolu).
@@ -40,7 +40,7 @@ Pôvodný zoznam (7. 10. 2026, 540 testov bez stavu): `docs_zaloha/2026-10-07-st
 - Opravené znenie: 043 (ChatGoo je doplnok pre Beeper, nie AI), 053 (prichytávanie iba v režime plávajúce),
   082–084 (profily ovládania existujú), 337 (FPS nie je v Goo), 369, 426–427 (Bottles).
 - Označené prekryvy (katastrofické 251–259 sú výsledkom malware scenárov 196–210; 426/476, 435/481, 436/468)
-  a závislosti (rollback po fáze A, model NET vo F6, HDR a vysoké frekvencie len s takým monitorom).
+  a závislosti (rollback dnes cez dnf a snapper, celý obraz po fáze A; model NET vo F6, HDR a vysoké frekvencie len s takým monitorom).
 - **Nové testy 541–564** pre Goo: nečinnosť a únik pamäte enginu, pravidlo 22, pás výkonu, 4 okraje, 1024 × 768,
   Win+T, režimy okien, regresie zo snímok v `bughunt/`, preklad, Bottles, herný režim.
 - **Nová kategória 4 · Ergonómia (601–726):** objaviteľnosť pre človeka z Windowsu, naučené zvyky, myš,
@@ -78,7 +78,7 @@ Pôvodný zoznam (7. 10. 2026, 540 testov bez stavu): `docs_zaloha/2026-10-07-st
 | 017 | Boot s viacerými monitormi | P1 | ⬜ | | |
 | 018 | Boot bez siete | P1 | ⬜ | | |
 | 019 | Boot s veľmi pomalou sieťou | P2 | ⬜ | | |
-| 020 | Boot po neúspešnom update *(po fáze A — Fedora Atomic)* | P3 | ⬜ | | |
+| 020 | Boot po neúspešnom update *(dnes: SAFE › rollback dnf a snímka Btrfs/snapper; celý obraz a automatický návrat po fáze A)* | P2 | ⬜ | | |
 | 541 | Prihlasovač LatteOS: prihlásenie, zlé heslo, výber relácie, prepnutie jazyka a klávesnice *(nové)* | P1 | ⬜ | | |
 
 ### GOO / desktop
@@ -375,10 +375,10 @@ Pôvodný zoznam (7. 10. 2026, 540 testov bez stavu): `docs_zaloha/2026-10-07-st
 | 221 | Systém overí podpis aktualizácie | P1 | ⬜ | | |
 | 222 | Poškodený update sa neinštaluje | P1 | ⬜ | | |
 | 223 | Prerušený update nenechá systém nebootovateľný | P2 | ⬜ | | |
-| 224 | Update môže byť rollbacknutý *(po fáze A)* | P2 | ⬜ | | |
-| 225 | Rollback zachová používateľské dáta *(po fáze A)* | P2 | ⬜ | | |
-| 226 | Rollback zachová funkčné nastavenia *(po fáze A)* | P2 | ⬜ | | |
-| 227 | Rollback odstráni chybný systémový komponent *(po fáze A)* | P2 | ⬜ | | |
+| 224 | Update môže byť rollbacknutý *(dnes: SAFE › rollback dnf a snímka Btrfs/snapper; celý obraz a automatický návrat po fáze A)* | P2 | ⬜ | | |
+| 225 | Rollback zachová používateľské dáta *(dnes: SAFE › rollback dnf a snímka Btrfs/snapper; celý obraz a automatický návrat po fáze A)* | P2 | ⬜ | | |
+| 226 | Rollback zachová funkčné nastavenia *(dnes: SAFE › rollback dnf a snímka Btrfs/snapper; celý obraz a automatický návrat po fáze A)* | P2 | ⬜ | | |
+| 227 | Rollback odstráni chybný systémový komponent *(dnes: SAFE › rollback dnf a snímka Btrfs/snapper; celý obraz a automatický návrat po fáze A)* | P2 | ⬜ | | |
 | 228 | Systém vie zistiť verziu nainštalovaných komponentov | P2 | ⬜ | | |
 | 229 | Systém vie zistiť pôvod nainštalovaného komponentu | P2 | ⬜ | | |
 | 230 | Neautorizovaný repozitár nemožno pridať bez explicitného potvrdenia | P2 | ⬜ | | |
@@ -773,7 +773,7 @@ Pôvodný zoznam (7. 10. 2026, 540 testov bez stavu): `docs_zaloha/2026-10-07-st
 | 514 | Update Wine runtime neporuší existujúce prefixy | P2 | ⬜ | | |
 | 515 | Update Mesa neporuší Vulkan hry | P2 | ⬜ | | |
 | 516 | Update kernelu neporuší ovládač GPU | P2 | ⬜ | | |
-| 517 | Rollback systému obnoví funkčný gaming stack *(po fáze A)* | P2 | ⬜ | | |
+| 517 | Rollback systému obnoví funkčný gaming stack *(dnes: SAFE › rollback dnf a snímka Btrfs/snapper; celý obraz a automatický návrat po fáze A)* | P2 | ⬜ | | |
 | 518 | Staršia hra funguje po update systému | P2 | ⬜ | | |
 | 519 | Novšia hra funguje po update systému | P2 | ⬜ | | |
 | 520 | App Manager správne upozorní na známu regresiu | P2 | ⬜ | | |
