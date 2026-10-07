@@ -1408,7 +1408,7 @@ local function settings()
         fact.zive = t.zive ~= false                               -- vypínač Živé správanie (predvolene zapnuté)
         local sklo = t.material == "sklo"                         -- materiál: obyčajná káva alebo sklenená káva (lom)
         if fact.sklo ~= sklo then fact.sklo = sklo end
-        local lom = t.sklo_lom == true                          -- lom pozadia (pokus; pri pohybe artefakty)
+        local lom = t.sklo_lom ~= false                         -- lom pozadia (záplata pleamar-sklo-stabilne); false = iba rozmazanie
         if fact.sklolom ~= lom then fact.sklolom = lom end
         if fact.zive == false then weatherOff() end
         local hide = {}

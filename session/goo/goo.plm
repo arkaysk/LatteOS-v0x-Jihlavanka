@@ -162,7 +162,7 @@ scene Goo {
     fact nk = -1                              // ťahaná kvapka (krk lepkavej v tele goo), −1 žiadna
     fact miesta = 128                         // koľko miest má táto scéna (gen.py --n; logika podľa toho rozdáva miesta)
     fact sysidle = -1                         // -1 nevie sa (bez pomocníka), 0 činný, 1 nečinný (systém)
-    fact sklolom = false                      // sklo láme pozadie (lens); bez neho rozmazáva Hyprland — kvapky.json: sklo_lom
+    fact sklolom = true                       // sklo láme pozadie (lens); kvapky.json sklo_lom: false = iba rozmazanie (Hyprland)
     fact sklo = false                         // materiál sklenená káva (Nastavenia › Kvapky, kvapky.json: material = "sklo")
     fact zive = true                          // Nastavenia › Kvapky › Živé správanie (kvapky.json: zive)
     // počasie na hladine pri nečinnosti (stupeň 2+, logika podľa skutočného počasia a podmienok „kedy nie“):
@@ -605,9 +605,9 @@ scene Goo {
         // ostrý okraj (aj okolo ôk medzi spojmi): tieň iba tesný, nerozmazaný
         shadow: 0, 2, 2, 28%
         // SKLENENÁ KÁVA (materiál na výber, 7. 10., predloha „Droplu“ z Figmy): telo je sklo, cez ktoré presvitá
-        // rozmazané pozadie (Hyprland), okraj chytá svetlo od kurzora. Lom pozadia (lens) je vypnutý: pleamar si
-        // pozadie dopočítava zo snímky obrazovky a pri stále sa hýbucich kvapkách v skle ostávali duchovia a zrnité
-        // pásy (7. 10.); zapne ho iba kvapky.json sklo_lom = true; farbu kávy dáva telo nižšie („káva v skle“). Pri
+        // a láme sa pozadie (tapeta, okná), okraj chytá svetlo od kurzora. Lom potrebuje našu záplatu
+        // pleamar-sklo-stabilne: bez nej v skle pri hýbucich sa kvapkách ostávali duchovia a zrnité pásy (7. 10.);
+        // vypne ho kvapky.json sklo_lom = false (potom pozadie iba rozmazáva Hyprland); farbu kávy dáva telo nižšie („káva v skle“). Pri
         // obyčajnej káve je sklo 0 % a lom vypnutý — nestojí nič
         glass: if(sklo, 100%, 0%)
         lens: sklo and sklolom

@@ -524,9 +524,9 @@ texty preložiteľné (`translations`). Noctalia beží bez lišty a robí, čo 
   (`session/goo/pokusy/kavove-sklo.plm`). **V engine 7. 10.:** Nastavenia › Kvapky › Materiál kvapiek (Káva /
   Sklenená káva), sklo s lomom + priesvitná káva + odlesk na každej kvapke; prepínanie myšou overené. Cena: engine
   ~27 → ~41 % jadra (druhé telo s tými istými tvarmi). Artefakty v skle (duchovia, zrnité pásy) spôsoboval lom
-  pozadia — vypnutý, sklo rozmazáva Hyprland; odlesk ClockGoo posunutý nad text. Ďalej: znížiť cenu (káva bez
-  druhého tela); lom pozadia pri animovanej scéne nahlásiť autorovi pleamaru (dopočet pozadia zo snímky sa
-  rozchádza s pohybom)
+  pozadia — **vlastná oprava**: záplata `pleamar-sklo-stabilne` (pozadie sa dopočíta iba tam, kde boli posledné tri
+  obrazy rovnaké, pod hustou vrstvou nie, nové sa mieša so starým); overené sériou snímok, lom je znova zapnutý;
+  odlesk ClockGoo posunutý nad text. Ďalej: znížiť cenu (káva bez druhého tela); záplatu poslať autorovi pleamaru
 - [ ] **Nastavenia › Vzhľad › Ikony** (7. 10.): ponuka sád ikon pre Goo aj aplikácie — jednofarebné (Phosphor
   duotone / obrys / plné, Tabler, Material Symbols, Fluent) aj farebné (Fluent Emoji 3D, MIT) a animované (Noto
   Animated Emoji, CC BY 4.0); engine kreslí písmo aj obrázky (farebné sady ako obrázky). Nie Flaticon (licencia)
