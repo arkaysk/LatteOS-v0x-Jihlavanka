@@ -406,5 +406,9 @@
  "DROP MATERIAL": "MATERIÁL KVAPIEK",
  "Coffee": "Káva",
  "Glass coffee — see-through, bends what is behind it": "Sklenená káva — priehľadná, láme to, čo je za ňou",
- "Glass coffee needs a bit more power while something moves on the screen (it looks at what is behind the drops).": "Sklenená káva potrebuje o niečo viac výkonu, kým sa na obrazovke niečo hýbe (pozerá, čo je za kvapkami)."
+ "Glass coffee needs a bit more power while something moves on the screen (it looks at what is behind the drops).": "Sklenená káva potrebuje o niečo viac výkonu, kým sa na obrazovke niečo hýbe (pozerá, čo je za kvapkami).",
+ "AFTER SIGNING IN": "PO PRIHLÁSENÍ",
+ "Open the apps that were open last time, on their desktops and in their places": "Otvoriť aplikácie, ktoré boli otvorené naposledy — na ich plochách a miestach",
+ "Windows will come back after signing in": "Okná sa po prihlásení vrátia",
+ "Windows will not come back after signing in": "Okná sa po prihlásení nevrátia"
 }
