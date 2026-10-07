@@ -132,6 +132,24 @@ Povahy (balík čísel): `pokojna`, `zvedava`, `lepkava`, `tazka`, `hrava`.
 
 ## Nová kvapka — používateľ (bez programovania)
 
+Najjednoduchšie: **Tvorca Goo** v Nastaveniach › Kvapky (7. 10.) — goo z hotových dielov: **aplikácia** (jej pôvodná
+ikona, klik ju spustí), **rýchle spúšťanie** (skupina až 12 aplikácií, klik ukáže kartu s nimi), **údaj** (procesor,
+teplota, pamäť, disk, batéria, počasie alebo vlastný príkaz; prstenec podľa hodnoty) a čo robí myš: bublina pri
+prechode, ľavý, stredný a pravý klik, koliesko (veľkosť, hlasitosť, jas, skladba, plochy). Ešte rýchlejšie: v LensGoo
+pravý klik na aplikáciu › **Pripnúť ako kvapku**. Pravý klik na vlastné goo = Upraviť v Tvorcovi Goo, Vrátiť na
+miesto, Odstrániť goo. Nové goo si samo nájde voľné miesto na lište a zapíše si ho ako domov (`poloha`).
+
+Tvorca píše ten istý súbor JSON ako ruka (nižšie), navyše s poľami:
+
+- `aplikacia` — id aplikácie (`org.mozilla.firefox`); kvapka nesie jej ikonu, klik ju spustí;
+- `skupina` — zoznam id aplikácií; klik (vstavaná akcia `skupina`) otvorí kartu s dlaždicami;
+- `udaj` — `procesor` | `teplota` | `pamat` | `disk` | `bateria` | `pocasie` (+ `kazdych` s); text na kvapke, hodnota
+  pre prstenec (`druh: "ukazovatel"`) a podrobnosti do bubliny;
+- vstavaná akcia `upravit` (predvolená na pravý klik) — ponuka goo;
+- `tvorca` — stav formulára (aby sa goo dalo znova upraviť).
+
+Príkaz textu môže mať viac riadkov: prvý ide na kvapku, ostatné do bubliny (`latte-goo text ID` vracia JSON).
+
 ```sh
 latte-goo novy "Moja kvapka"     # vytvorí ~/.config/latteos/goo/kvapky/moja-kvapka.json zo vzoru
 latte-goo skontroluj             # povie, čo je v súboroch zle

@@ -157,6 +157,7 @@ Text {
         "printer": 0xEB0E,
         "scan": 0xEBC8,
         "chart-treemap": 0xF381,
+        "chart-donut": 0xEA5B,              // Tvorca Goo: goo s údajom
         "send": 0xEB1E,
         "tool": 0xEB40,
         "network": 0xF09F,

@@ -451,6 +451,28 @@ local function nextDock()
     return x
 end
 
+-- kvapka používateľa (Tvorca Goo, JSON) bez polohy: prvé voľné miesto na spodnej lište zľava, kam sa zmestí celá —
+-- nie do pásu výkonu GooPower ani medzi ikry okien (nextDock by ju dal hneď vedľa prvej kvapky a nemala by kam uhnúť)
+local function freeDock(r)
+    local sw = num(fact.sw, 0)
+    if sw <= 0 then sw = 1920 end
+    local busy = {}
+    for k = 0, N - 1 do
+        local d = slots[k]
+        if d and not d.hidden and (d.edge or 0) == 0 and d.y < d.v.velkost * d.z * 1.6 then
+            local c, w = along(d) + capOff(d), reach(d) * (num(d.v.sk, 0) == 1 and GAP_IKRY or 1)
+            busy[#busy + 1] = { c - w, c + w }
+        end
+    end
+    table.sort(busy, function(a, b) return a[1] < b[1] end)
+    local cur, gap = 0.03 * sw, r * 0.25
+    for _, b in ipairs(busy) do
+        if cur + 2 * r + 2 * gap <= b[1] then break end
+        cur = math.max(cur, b[2])
+    end
+    return clamp((cur + gap + r) / sw, 0.02, 0.98)
+end
+
 function E.define(def, zdroj)
     assert(type(def) == "table" and type(def.id) == "string", "kvapka potrebuje id")
     local prev = byId[def.id]                            -- znova (zmenený JSON): ostane, kde ju používateľ nechal
@@ -472,6 +494,8 @@ function E.define(def, zdroj)
         d.hx0, d.hy0, d.ox0 = anchor.hx0, seat, (anchor.ox0 or 0) + num(def.odstup, 0)
     elseif type(def.poloha) == "table" then
         d.hx0, d.hy0 = num(def.poloha.x, 0.5), num(def.poloha.y, seat)
+    elseif d.zdroj == "json" then
+        d.hx0, d.hy0 = freeDock(v.velkost), seat
     else
         d.hx0, d.hy0 = nextDock(), seat
     end

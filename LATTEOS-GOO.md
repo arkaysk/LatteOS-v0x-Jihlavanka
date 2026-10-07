@@ -232,6 +232,12 @@ ostatné kvapky sú iba na hlavnom monitore.
 ### 4.7 Vlastné kvapky
 - Používateľ si pridá kvapku bez programovania (JSON cez `latte-goo novy`, alebo formulár v Nastaveniach › Kvapky):
   názov, ikona, akcie na kliky, text z príkazu, farebné jadro z príkazu. Správa sa podľa rovnakých pravidiel.
+- **Tvorca Goo** (7. 10., Nastavenia › Kvapky): goo z hotových dielov — aplikácia (pôvodná ikona, klik spustí),
+  rýchle spúšťanie (skupina aplikácií, klik ukáže kartu s dlaždicami), údaj (procesor, teplota, pamäť, disk, batéria,
+  počasie, vlastný príkaz; prstenec podľa hodnoty) — a ovládanie myšou: bublina pri prechode, ľavý, stredný, pravý
+  klik, koliesko (veľkosť, hlasitosť, jas, skladba, plochy). Rýchla cesta: LensGoo › pravý klik na aplikáciu ›
+  Pripnúť ako kvapku. Pravý klik na vlastné goo: Upraviť v Tvorcovi Goo, Vrátiť na miesto, Odstrániť goo. Nové goo si
+  nájde voľné miesto na lište (nie v páse výkonu) a zapamätá si ho ako domov.
 - Programátor pridá kvapku s vlastným správaním ako modul Luau (`session/goo/kvapky/`). Podrobne:
   [session/goo/README.md](session/goo/README.md).
 

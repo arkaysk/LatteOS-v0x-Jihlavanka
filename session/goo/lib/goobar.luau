@@ -70,6 +70,8 @@ function M.app_of(w)
     if c == "org.quickshell" then return apps_by.name[latte_title(w):lower()] end
     return apps_by.wm[c] or apps_by.id[c] or apps_by.tail[c] or apps_by.name[c]
 end
+-- aplikácia podľa id spúšťača (Tvorca Goo: kvapka aplikácie a skupina aplikácií)
+function M.app_by_id(id) return id and apps_by.id[(tostring(id):gsub("%.desktop$", "")):lower()] or nil end
 -- aplikácia zo spúšťača podľa časti mena (ChatGoo: „beeper“ → pôvodná ikona Beepera)
 function M.find_app(part)
     for _, t in ipairs({ apps_by.wm, apps_by.id, apps_by.name }) do
