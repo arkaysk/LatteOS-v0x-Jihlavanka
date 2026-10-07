@@ -1,3 +1,6 @@
+POZNÁMKA (7. 10. 2026): pôvodný zoznam z bughunt/strestest. Platný zoznam so stavom testov je bughunt/STRESTEST.md
+(čísla testov ostali rovnaké).
+
 LATTEOS GOO - 101 TESTOV
 
 BOOT / RECOVERY

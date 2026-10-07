@@ -19,3 +19,4 @@ Platná dokumentácia: [docs/README.md](../docs/README.md).
 | `2026-10-02-cloud-session-1.md` | záznam práce v Claude cloud 1.–2. 10. (predtým `cloud_session_1.md`) |
 | `2026-10-05-engine-report.md` | odovzdávka enginu Goo k 5. 10. vrátane meraní (predtým `docs/goo/ENGINE-REPORT.md`) |
 | `2026-10-06-latteos-goo-pred-rozdelenim.md` | `LATTEOS-GOO.md` pred rozdelením na pravidlá a denník rozhodnutí |
+| `2026-10-07-strestest-povodny.txt` | pôvodný zoznam 540 stres testov bez stavu (predtým `bughunt/strestest`; platný je `bughunt/STRESTEST.md`) |
