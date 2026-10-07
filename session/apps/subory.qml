@@ -220,6 +220,8 @@ ShellRoot {
                 { separator: true },
                 { glyph: "terminal-2", label: "Otvoriť v termináli", action: () => app.run(["foot", "--working-directory=" + pane.path]) },
                 { glyph: pane.showHidden ? "eye-off" : "eye", label: pane.showHidden ? "Skryť skryté súbory" : "Ukázať skryté súbory", hint: "Ctrl+H", action: () => pane.showHidden = !pane.showHidden },
+                // čo zapĺňa miesto (DiskTree: mapa priečinka podľa veľkosti, uvoľnenie miesta s potvrdením)
+                { glyph: "chart-treemap", label: i18n.tr("What is filling this folder"), action: () => Quickshell.execDetached(["disktree", pane.path]) },
                 { separator: true },
                 { glyph: "clipboard", label: "Kopírovať cestu priečinka", action: () => app.run(["wl-copy", "--", pane.path], "Cesta skopírovaná") },
                 { glyph: "star", label: app.favorites.indexOf(pane.path) >= 0 ? "Odobrať z Obľúbených" : "Pridať do Obľúbených", action: () => app.toggleFavorite(pane.path) }
@@ -259,6 +261,7 @@ ShellRoot {
         if (e.isDir) {
             items.push({ glyph: "star", label: app.favorites.indexOf(e.path) >= 0 ? "Odobrať z Obľúbených" : "Pridať do Obľúbených", action: () => app.toggleFavorite(e.path) });
             items.push({ glyph: "terminal-2", label: "Terminál tu", action: () => app.run(["foot", "--working-directory=" + e.path]) });
+            items.push({ glyph: "chart-treemap", label: i18n.tr("What is filling this folder"), action: () => Quickshell.execDetached(["disktree", e.path]) });
         }
         items.push({ separator: true });
         items.push({ glyph: "trash", label: "Do koša", hint: "Del", danger: true, action: () => { app.run(["latte-kos", "vyhod", e.path], "Do koša: " + e.name); trashRefresh.restart(); } });

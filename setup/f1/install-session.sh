@@ -188,6 +188,15 @@ rpm -q mpvpaper mpv ffmpegthumbnailer >/dev/null || sudo dnf -y -q install mpvpa
 rpm -q ffmpeg >/dev/null || rpm -q ffmpeg-free >/dev/null || sudo dnf -y -q install ffmpeg-free
 rpm -q wf-recorder wtype >/dev/null || sudo dnf -y -q install wf-recorder wtype   # nahrávanie obrazovky (Win+Alt+R), vloženie emoji (Win+.)
 rpm -q fuse3 >/dev/null || sudo dnf -y -q install fuse3                             # FTP/SFTP ako priečinky (latte-siet, rclone mount)
+# DiskTree (tobi/disktree, MIT): „Čo zapĺňa disk“ v Súboroch a Nastaveniach › Úložisko — preloží sa raz zo zdroja
+if ! command -v disktree >/dev/null && command -v cargo >/dev/null; then
+    "$repo/resources/fetch.sh" disktree >/dev/null 2>&1 || true
+    if [ -d "$repo/resources/upstream/disktree" ]; then
+        rpm -q libxkbcommon-x11-devel >/dev/null || sudo dnf -y -q install libxkbcommon-x11-devel
+        (cd "$repo/resources/upstream/disktree" && cargo build --release -q) && sudo install -m755 "$repo/resources/upstream/disktree/target/release/disktree" /usr/bin/disktree \
+            || echo "   DiskTree sa nepodarilo preložiť (Súbory ponuku „Čo zapĺňa“ ukážu, ale nespustí sa)"
+    fi
+fi
 
 echo "== systémový backend zariadení: telefón na USB, tlač a skenovanie (Správca zariadení, Súbory)"
 # GVFS: telefón (MTP), fotoaparát (PTP), iPhone (AFC) a sieťové disky Windows (SMB) ako priečinky v /run/user/UID/gvfs
