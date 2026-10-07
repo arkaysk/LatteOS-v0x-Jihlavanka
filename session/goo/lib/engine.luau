@@ -1406,6 +1406,8 @@ local function settings()
         local ok, t = pcall(json.decode, out or "")
         if not ok or type(t) ~= "table" then return end
         fact.zive = t.zive ~= false                               -- vypínač Živé správanie (predvolene zapnuté)
+        local sklo = t.material == "sklo"                         -- materiál: obyčajná káva alebo sklenená káva (lom)
+        if fact.sklo ~= sklo then fact.sklo = sklo end
         if fact.zive == false then weatherOff() end
         local hide = {}
         for _, id in ipairs(type(t.skryte) == "table" and t.skryte or {}) do hide[id] = true end

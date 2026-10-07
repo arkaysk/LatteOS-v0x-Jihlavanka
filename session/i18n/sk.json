@@ -402,5 +402,9 @@
  "Allow incoming connections on a port": "Povoliť prichádzajúce spojenia na port",
  "Forward a port…": "Presmerovať port…",
  "source:protocol:target": "zdroj:protokol:cieľ",
- "Forwarding: port:protocol:target port[:address]": "Presmerovanie: port:protokol:cieľový port[:adresa]"
+ "Forwarding: port:protocol:target port[:address]": "Presmerovanie: port:protokol:cieľový port[:adresa]",
+ "DROP MATERIAL": "MATERIÁL KVAPIEK",
+ "Coffee": "Káva",
+ "Glass coffee — see-through, bends what is behind it": "Sklenená káva — priehľadná, láme to, čo je za ňou",
+ "Glass coffee needs a bit more power while something moves on the screen (it looks at what is behind the drops).": "Sklenená káva potrebuje o niečo viac výkonu, kým sa na obrazovke niečo hýbe (pozerá, čo je za kvapkami)."
 }

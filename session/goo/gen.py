@@ -96,6 +96,16 @@ def body():
     return "".join(out)
 
 
+def highlights():
+    """odlesky sklenenej kávy: na každom mieste k lesklé okno svetla a bodka hore vľavo (iba pri materiáli sklo)"""
+    out = []
+    for k in range(N):
+        on = f"if(sklo and goo.{k}.on, 1, 0)"
+        out.append(f"    ellipse {{ at: x.{k} - rr.{k} * 0.36, y.{k} - rr.{k} * 0.46; radius: rr.{k} * 0.2 * {on}; scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }}\n")
+        out.append(f"    ellipse {{ at: x.{k} - rr.{k} * 0.12, y.{k} - rr.{k} * 0.58; radius: rr.{k} * 0.06 * {on}; color: #ffffff; opacity: 75% }}\n")
+    return "".join(out)
+
+
 def put(path, a, b, block):
     s = open(path).read()
     i, j = s.index(a) + len(a), s.index(b)
@@ -109,6 +119,8 @@ if OUT:                                   # variant: zdroj ostáva, píše sa k�
     open(os.path.join(OUT, "goo.plm"), "w").write(open(p).read())
     p = os.path.join(OUT, "goo.plm")
 put(p, "        // >>> telo (gen.py)\n", "        // <<< telo", body() + "        ")
+put(p, "        // >>> sklo (gen.py)\n", "        // <<< sklo", body() + "        ")   # káva v skle: tie isté tvary
+put(p, "    // >>> odlesky (gen.py)\n", "    // <<< odlesky", highlights() + "    ")
 put(p, "    // >>> pás výkonu (gen.py)\n", "    // <<< pás výkonu", monitor())
 s = open(p).read()
 s = re.sub(r"model goo max \d+", f"model goo max {N}", s)

@@ -518,11 +518,13 @@ texty preložiteľné (`translations`). Noctalia beží bez lišty a robí, čo 
 - [x] pleamar v0.2.24 a pôvodná Marea (pleamar-wm 0.2.25) — 6. 10.: záplaty prenesené, overené na latte-lab
 - [ ] Záplaty pleamaru poslať autorovi (okná na Hyprlande, 8-bit plocha, ťahanie pravým, ikony)
 
-- [ ] **Kvapky ako 3D tekuté kvapky v kávových farbách** (7. 10., predloha „Droplu“ z Figmy): priehľadné lesklé
+- [x] **Kvapky ako 3D tekuté kvapky v kávových farbách** (7. 10., predloha „Droplu“ z Figmy): priehľadné lesklé
   telo s lomom svetla (`glass`), odlesk zhora, svetlo prechádzajúce kvapkou, bublinky vzduchu; materiál na výber
   (dnešná káva / sklenená káva: espresso, café crema, latte). **Pokus overený na latte-lab 7. 10.**
-  (`session/goo/pokusy/kavove-sklo.plm`): sklo láme tapetu, káva ako priesvitná vrstva nad lomom; ďalej preniesť do
-  tela enginu Goo (zliate kvapky, výkon s lomom pri pohybe)
+  (`session/goo/pokusy/kavove-sklo.plm`). **V engine 7. 10.:** Nastavenia › Kvapky › Materiál kvapiek (Káva /
+  Sklenená káva), sklo s lomom + priesvitná káva + odlesk na každej kvapke; prepínanie myšou overené. Cena: engine
+  ~27 → ~41 % jadra (druhé telo s tými istými tvarmi). Ďalej: znížiť cenu (káva bez druhého tela), odlesk pri
+  širokých kvapkách (ClockGoo) neprekrývať text
 - [ ] **Nastavenia › Vzhľad › Ikony** (7. 10.): ponuka sád ikon pre Goo aj aplikácie — jednofarebné (Phosphor
   duotone / obrys / plné, Tabler, Material Symbols, Fluent) aj farebné (Fluent Emoji 3D, MIT) a animované (Noto
   Animated Emoji, CC BY 4.0); engine kreslí písmo aj obrázky (farebné sady ako obrázky). Nie Flaticon (licencia)
