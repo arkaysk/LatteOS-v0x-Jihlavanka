@@ -301,7 +301,7 @@ Item {
                 Note { visible: !!dm.curGroup && dm.curGroup.items.length === 0
                        text: dm.group === "tlac" ? i18n.tr("No printer yet. Network and USB printers that print without a driver show up here by themselves; turn the printer on and wait a moment.")
                            : dm.group === "skenery" ? i18n.tr("No scanner found. Turn the scanner on and press Search again.")
-                           : dm.group === "telefony" ? i18n.tr("No phone or camera on USB. Plug it in, unlock it and choose file transfer on the phone.")
+                           : dm.group === "telefony" ? i18n.tr("No phone yet. On USB: plug it in, unlock it and choose file transfer. Over Wi-Fi: install KDE Connect on the phone and pair it below.")
                            : i18n.tr("Nothing connected.") }
                 Repeater {
                     model: dm.curGroup ? dm.curGroup.items : []
@@ -516,6 +516,13 @@ Item {
                           onClicked: dm.openWindow(["latte-app", "subory", dd.it.folder]) }
                     Btn { visible: dm.group === "telefony" && !!dd.it && !!dd.it.folder; label: i18n.tr("Disconnect"); glyph: "usb"
                           onClicked: dm.run(["latte-devices", "telefon", "odpoj", dd.it.phone]) }
+                    // telefón cez Wi-Fi (KDE Connect): poslať súbor, nájsť (zazvoní), spárovanie v aplikácii KDE Connect
+                    Btn { visible: dm.group === "telefony" && !!dd.it && !!dd.it.kdc && dd.it.reach; label: i18n.tr("Send a file…"); glyph: "send"; primary: true
+                          onClicked: dm.run(["sh", "-c", 'f=$(latte-vyber --viac --nazov "$2") || exit 0; printf "%s\\n" "$f" | while IFS= read -r x; do kdeconnect-cli -d "$1" --share "$x"; done', "sh", dd.it.kdc, i18n.tr("Send to the phone")], i18n.tr("Sending to the phone…")) }
+                    Btn { visible: dm.group === "telefony" && !!dd.it && !!dd.it.kdc && dd.it.reach; label: i18n.tr("Find the phone (ring)"); glyph: "bell"
+                          onClicked: dm.run(["kdeconnect-cli", "-d", dd.it.kdc, "--ring"], i18n.tr("The phone is ringing")) }
+                    Btn { visible: dm.group === "telefony"; label: i18n.tr("Pair a phone over Wi-Fi (KDE Connect)"); glyph: "device-mobile"
+                          onClicked: dm.openWindow(["kdeconnect-app"]) }
                     Btn { visible: (dm.group === "disky" || dm.group === "usb") && !!dd.it; label: i18n.tr("Open in Files"); glyph: "folder"
                           onClicked: dm.openWindow(["latte-app", "subory"]) }
                     Btn { visible: (dm.group === "usb" || dm.group === "disky") && !!dd.it && !!(dd.it.details || {})["zariadenie"] && /usb/i.test(((dd.it.details || {})["pripojenie"] || "") + dm.group)

@@ -157,6 +157,7 @@ Text {
         "printer": 0xEB0E,
         "scan": 0xEBC8,
         "chart-treemap": 0xF381,
+        "send": 0xEB1E,
         "tool": 0xEB40,
         "network": 0xF09F,
         "menu-2": 0xEC42,

@@ -413,5 +413,13 @@
  "Windows will not come back after signing in": "Okná sa po prihlásení nevrátia",
  "Frequently used": "Často používané",
  "What is filling this folder": "Čo zapĺňa tento priečinok",
- "What is filling the disk": "Čo zapĺňa disk"
+ "What is filling the disk": "Čo zapĺňa disk",
+ "Send a file…": "Poslať súbor…",
+ "Send to the phone": "Poslať do telefónu",
+ "Sending to the phone…": "Posielam do telefónu…",
+ "Find the phone (ring)": "Nájsť telefón (zazvoní)",
+ "The phone is ringing": "Telefón zvoní",
+ "Pair a phone over Wi-Fi (KDE Connect)": "Spárovať telefón cez Wi-Fi (KDE Connect)",
+ "No phone yet. On USB: plug it in, unlock it and choose file transfer. Over Wi-Fi: install KDE Connect on the phone and pair it below.": "Zatiaľ žiadny telefón. Cez USB: pripoj ho, odomkni a zvoľ prenos súborov. Cez Wi-Fi: nainštaluj do telefónu KDE Connect a spáruj ho nižšie.",
+ "Sending to {name}…": "Posielam do {name}…"
 }

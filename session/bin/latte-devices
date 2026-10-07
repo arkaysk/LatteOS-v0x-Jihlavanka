@@ -478,6 +478,19 @@ def phones():
                   "ok" if mounted and path else "off", adresa=uri)
         it["phone"], it["folder"] = uri, path if mounted else ""
         out.append(it)
+    # telefóny cez Wi-Fi (KDE Connect): spárované; súbory, upozornenia a schránka idú bez kábla
+    if shutil.which("kdeconnect-cli"):
+        rc, known = sh(["kdeconnect-cli", "-l", "--id-name-only"], timeout=5)
+        rc, avail = sh(["kdeconnect-cli", "-a", "--id-only"], timeout=5)
+        reach = set(avail.split())
+        for line in known.splitlines():
+            kid, _, name = line.strip().partition(" ")
+            if not kid:
+                continue
+            it = item(name or kid, "cez Wi-Fi (KDE Connect) · " + ("pripojený" if kid in reach else "nedostupný — je telefón v tej istej sieti?"),
+                      "ok" if kid in reach else "off")
+            it["kdc"], it["reach"] = kid, kid in reach
+            out.append(it)
     return out
 
 

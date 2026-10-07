@@ -431,7 +431,10 @@ texty preložiteľné (`translations`). Noctalia beží bez lišty a robí, čo 
   - [ ] dlho nepoužitá kvapka sa postupne zmenšuje (nie ikry GooBaru), použitím sa vráti
   - [ ] odkladacia kvapka na súbory (súbor pritiahnutý k okraju počká v kvapke, ako Dropover)
   - [ ] zvuková identita Goo (kvapnutie, žblnknutie, prasknutie bubliny) s vypínačom
-  - [ ] telefón v ClockGoo: upozornenia, SMS, schránka a súbory cez KDE Connect (v Classic už bolo)
+  - [~] telefón cez KDE Connect (7. 10.): Správca zariadení › Telefóny ukazuje spárované telefóny cez Wi-Fi (Poslať súbor…,
+    Nájsť telefón, Spárovať telefón cez Wi-Fi), Súbory › pravý klik na súbor › Poslať do telefónu; upozornenia a prijaté
+    súbory z telefónu chodia ako bežné upozornenia do ClockGoo. Neoverené so skutočným telefónom (žiadny spárovaný).
+    Ostáva: SMS a schránka v ClockGoo, batéria telefónu
   - [ ] pomoc na diaľku jedným klikom (GooPower; RustDesk alebo vstavaný server, ako Quick Assist)
   - [ ] prechod z Windowsu: import profilov prehliadača, dokumentov a písiem; podržanie Win = prehľad skratiek
   - [ ] režim sústredenia (minútka + Nerušiť + pokojné kvapky) — najprv zistiť, čo už má Noctalia
