@@ -1,0 +1,113 @@
+#!/usr/bin/env python3
+"""latte-spat — „Vrátiť späť“ pri zmene nastavení (bughunt 711): pred každou zmenou v Nastaveniach sa uloží kópia
+nastavení LatteOS (~/.config/latteos, ~92 kB) a nastavení Noctalie; Vrátiť späť obnoví stav pred poslednou zmenou.
+
+  latte-spat pred POPIS -- PRÍKAZ…   uloží kópiu a spustí PRÍKAZ (tak Nastavenia robia každú zmenu)
+  latte-spat vrat                     vráti posledné uloženie (a znovu načíta Hyprland, Noctaliu a tému)
+  latte-spat posledna                 JSON: popis a pred koľkými sekundami (Nastavenia ukážu Vrátiť späť)
+
+Kópie: ~/.cache/latteos/spat/<čas>/ (práva 700, najviac 10 posledných).
+"""
+import json, os, shutil, subprocess, sys, time
+
+HOME = os.path.expanduser("~")
+CFG = os.path.join(os.environ.get("XDG_CONFIG_HOME") or HOME + "/.config", "latteos")
+STATE = os.path.join(os.environ.get("XDG_STATE_HOME") or HOME + "/.local/state", "latteos")
+NOCT = [os.path.join(STATE, "kvapky", "noctalia", "settings.toml"), os.path.join(STATE, "noctalia", "settings.toml")]
+DIR = os.path.join(os.environ.get("XDG_CACHE_HOME") or HOME + "/.cache", "latteos", "spat")
+KEEP = 10
+
+
+def snapshots():
+    try:
+        return sorted(d for d in os.listdir(DIR) if d.isdigit())
+    except OSError:
+        return []
+
+
+def save(label):
+    os.makedirs(DIR, mode=0o700, exist_ok=True)
+    d = os.path.join(DIR, str(time.time_ns()))
+    os.makedirs(d, mode=0o700)
+    if os.path.isdir(CFG):
+        shutil.copytree(CFG, os.path.join(d, "latteos"), symlinks=True)
+    for i, p in enumerate(NOCT):
+        if os.path.isfile(p):
+            shutil.copy2(p, os.path.join(d, "noctalia-%d.toml" % i))
+    json.dump({"popis": label, "cas": time.time()}, open(os.path.join(d, "info.json"), "w"), ensure_ascii=False)
+    for old in snapshots()[:-KEEP]:
+        shutil.rmtree(os.path.join(DIR, old), ignore_errors=True)
+
+
+def restore():
+    s = snapshots()
+    if not s:
+        print("nič na vrátenie")
+        return 1
+    d = os.path.join(DIR, s[-1])
+    try:
+        info = json.load(open(os.path.join(d, "info.json")))
+    except (OSError, ValueError):
+        info = {}
+    theme_before = open(os.path.join(CFG, "theme")).read() if os.path.isfile(os.path.join(CFG, "theme")) else ""
+    src = os.path.join(d, "latteos")
+    if os.path.isdir(src):
+        # súbory, ktoré zmena pridala, preč; ostatné späť (zápis do dočasného a premenovanie: nič sa nečíta napoly)
+        for root, dirs, files in os.walk(CFG, topdown=False):
+            for f in files:
+                p = os.path.join(root, f)
+                if not os.path.exists(os.path.join(src, os.path.relpath(p, CFG))):
+                    os.unlink(p)
+        for root, dirs, files in os.walk(src):
+            for f in files:
+                a = os.path.join(root, f)
+                b = os.path.join(CFG, os.path.relpath(a, src))
+                os.makedirs(os.path.dirname(b), exist_ok=True)
+                shutil.copy2(a, b + ".spat")
+                os.replace(b + ".spat", b)
+    for i, p in enumerate(NOCT):
+        a = os.path.join(d, "noctalia-%d.toml" % i)
+        if os.path.isfile(a):
+            shutil.copy2(a, p + ".spat")
+            os.replace(p + ".spat", p)
+    shutil.rmtree(d, ignore_errors=True)
+    # znovu načítať, čo z nastavení číta: Hyprland (okná, skratky), Noctalia (lišta, nočné svetlo), téma
+    for cmd in (["hyprctl", "reload"], ["noctalia", "msg", "config-reload"]):
+        subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    theme_after = open(os.path.join(CFG, "theme")).read() if os.path.isfile(os.path.join(CFG, "theme")) else ""
+    if theme_after != theme_before and theme_after.strip():
+        subprocess.run(["latte-theme", "set", theme_after.strip().splitlines()[0]], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    print(info.get("popis", ""))
+    return 0
+
+
+def main(a):
+    if a[:1] == ["pred"] and "--" in a:
+        i = a.index("--")
+        label, cmd = " ".join(a[1:i]), a[i + 1:]
+        try:
+            save(label)
+        except OSError:
+            pass
+        if not cmd:
+            return 0
+        os.execvp(cmd[0], cmd)
+    if a[:1] == ["vrat"]:
+        return restore()
+    if a[:1] == ["posledna"]:
+        s = snapshots()
+        if not s:
+            print("{}")
+            return 0
+        try:
+            info = json.load(open(os.path.join(DIR, s[-1], "info.json")))
+        except (OSError, ValueError):
+            info = {}
+        print(json.dumps({"popis": info.get("popis", ""), "vek": int(time.time() - info.get("cas", 0))}, ensure_ascii=False))
+        return 0
+    print(__doc__, file=sys.stderr)
+    return 2
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))
