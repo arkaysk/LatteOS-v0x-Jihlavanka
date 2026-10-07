@@ -2853,6 +2853,7 @@ scene Goo {
         "Linked calendars" = "Prepojené kalendáre"
         "more" = "ďalších"
         "RECENTLY USED" = "NAPOSLEDY SPUSTENÉ"
+        "Do not disturb is on — notifications wait here quietly" = "Nerušiť je zapnuté — upozornenia sa potichu zbierajú tu"
         "Sure?" = "Naozaj?"
         "windows:" = "okná:"
         "Add as an app" = "Pridať ako aplikáciu"

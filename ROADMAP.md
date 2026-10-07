@@ -565,6 +565,8 @@ texty preložiteľné (`translations`). Noctalia beží bez lišty a robí, čo 
 - [x] **Ikony a ponuka plochy aj na ploche Goo** (7. 10., bughunt 616, 642): `plocha.qml` (Kôš, súbory z ~/Plocha,
   pravý klik: Nový, Prilepiť, Prispôsobiť pozadie / motív, Nastavenia obrazovky) sa spúšťala iba na klasickej ploche;
   teraz ju spúšťa aj `latte-kvapky start`. Overené na latte-lab (pravý klik na prázdnu plochu)
+- [x] **Nerušiť je vidieť** (7. 10., bughunt 712): ClockGoo má v druhom riadku „Nerušiť“ namiesto dátumu a bublina
+  vysvetlí, že sa upozornenia potichu zbierajú; stav sa zisťuje každých 15 s. Overené na latte-lab
 - [ ] Nápad (inspo/dalsie_inspiracie.md, 7. 10.): vlastná ponuka štartu v štýle Goo podľa **nervboot** (Rust, UEFI,
   predradená systemd-boot); dnes GRUB s položkami SAFE
 - [~] **Odložené na koniec** (používateľ 6. 10.: „preklady odlož nakoniec, ešte nemáme definitívne doriešené
