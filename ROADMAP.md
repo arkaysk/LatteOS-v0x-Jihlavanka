@@ -501,6 +501,8 @@ texty preložiteľné (`translations`). Noctalia beží bez lišty a robí, čo 
     keď vyjde varovanie o napadnutom balíku alebo rozšírení a na PC je, ukáže sa bublina; spolu s bezpečnostnými
     varovaniami dnf a Flatpaku (F6)
   - [x] deň a noc na hladine, prvá časť (6. 10.): svetlo v kvapkách a žiara nad horizontom podľa výšky slnka
+  - [~] **nočné svetlo podľa slnka** (7. 10.): Nastavenia › Dátum, čas a poloha › Nočné svetlo — Noctalia ho zapína po
+    západe slnka v zvolenej polohe (bez polohy sa doplní zvolená). Overené zapnutie a vypnutie; večerný prechod okom nie.
   - [ ] **deň a noc na hladine** — zvyšok: automatický režim plynulo podľa polohy slnka (poloha z nastavení) — nočné
     svetlo (overiť, čo používa Noctalia; prípadne Hyprsunset), vzhľad okien (svetlý/tmavý) a **žiara nad
     horizontom hladiny**: odlesky a obrys kvapiek podľa dennej doby (ráno teplé a nízke, na poludnie biele,

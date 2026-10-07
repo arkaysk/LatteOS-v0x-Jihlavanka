@@ -42,6 +42,7 @@ ShellRoot {
                onLoaded: app.kapsaMax = text().trim(); onLoadFailed: app.kapsaMax = "" }
     Process { id: kapsaCnt; command: ["sh", "-c", "cliphist list 2>/dev/null | wc -l"]
               stdout: StdioCollector { onStreamFinished: app.kapsaCount = parseInt(this.text) || 0 } }
+    property bool nightOn: false               // nočné svetlo Noctalie (Nastavenia › Čas)
     property bool syncOn: false                // Syncthing beží (Nastavenia › Cloud)
     // obnovenie relácie (latte-relacia): súbor ~/.config/latteos/relacia = off ho vypne
     property bool restoreOn: true
@@ -2250,6 +2251,16 @@ ShellRoot {
                     }
                 }
             }
+            // nočné svetlo (7. 10.): Noctalia ho zapína podľa západu a východu slnka v tejto polohe; bez polohy sa doplní
+            // tá vybraná vyššie (inak by nevedela, kedy je večer)
+            Component.onCompleted: nightState.running = true
+            Process { id: nightState; command: ["latte-shellset", "get", "nightlight.enabled"]
+                      stdout: StdioCollector { onStreamFinished: app.nightOn = this.text.trim().toLowerCase() === "true" } }
+            Toggle { on: app.nightOn; label: i18n.tr("Night light: warmer colours after sunset, as outside")
+                     onToggled: { app.nightOn = !app.nightOn
+                                  app.run(["sh", "-c", 'latte-shellset set nightlight.enabled "$1"; [ "$1" = true ] && [ -z "$(latte-shellset get location.latitude)" ] && { latte-shellset set location.latitude "$2"; latte-shellset set location.longitude "$3"; }; true',
+                                           "sh", app.nightOn ? "true" : "false", String(parseFloat(app.location.latitude) || 48.74), String(parseFloat(app.location.longitude) || 19.15)],
+                                          app.nightOn ? i18n.tr("Night light follows the sun") : i18n.tr("Night light off")); } }
             Heading { text: "ĎALŠIE ČASOVÉ PÁSMA V PANELI ČAS" }
             Flow {
                 width: parent.width; spacing: 8
