@@ -1144,10 +1144,11 @@ Item {
                     }
                     Pill {
                         visible: !!app.verdict && (app.verdict.action || []).length > 0 && app.verdict.verdict !== "nie"
-                        label: "Inštalovať / spustiť"; primaryStyle: true
+                        label: (app.verdict && app.verdict.actionLabel) || "Inštalovať / spustiť"; primaryStyle: true
                         // argv sa odovzdá ako argumenty ("$@"), názov súboru sa nikdy nevkladá do príkazu shellu
-                        onClicked: app.verdict.action[0] === "latte-app"
-                                   ? app.run(app.verdict.action, "Inštalátor: " + app.verdict.name)          // grafický Inštalátor (RPM)
+                        // gui = program s vlastným oknom (Bottles, AppImage): spustí sa rovno, bez terminálu
+                        onClicked: app.verdict.action[0] === "latte-app" || app.verdict.gui
+                                   ? app.run(app.verdict.action, (app.verdict.actionLabel || "Inštalátor") + ": " + app.verdict.name)          // grafický Inštalátor (RPM)
                                    : app.run(["foot", "-e", "sh", "-c", "\"$@\"; echo; read -p 'Enter zavrie okno…' x", "sh"].concat(app.verdict.action), "V termináli: " + app.verdict.action.join(" "))
                     }
                 }

@@ -211,7 +211,8 @@ xdg-mime default latteos-subory.desktop inode/directory 2>/dev/null || true
 # Markdown otvára Heidelberg (editor dokumentov LatteOS); obyčajný text ostáva na systémovej voľbe
 xdg-mime default latteos-heidelberg.desktop text/markdown 2>/dev/null || true
 # inštalačné súbory otvára App Manager („Bude to fungovať?“)
-for m in application/x-rpm application/vnd.flatpak.ref application/x-msdownload application/vnd.android.package-archive application/vnd.debian.binary-package application/x-iso9660-appimage; do
+# aj .exe a .msi (Bottles) a .flatpak / .AppImage — jedno miesto, ktoré povie, či to pôjde, a ponúkne jedno tlačidlo
+for m in application/x-rpm application/vnd.flatpak.ref application/vnd.flatpak application/x-msdownload application/x-ms-dos-executable application/vnd.microsoft.portable-executable application/x-msi application/x-appimage application/vnd.android.package-archive application/vnd.debian.binary-package application/x-iso9660-appimage; do
     xdg-mime default latteos-aplikacie.desktop "$m" 2>/dev/null || true
 done
 # AI: nástroje predplatných (Claude, ChatGPT, Gemini, Copilot) hneď pri inštalácii, nie dodatočne — pri výbere služby
