@@ -471,7 +471,9 @@ texty preložiteľné (`translations`). Noctalia beží bez lišty a robí, čo 
     tlačidlom **Spustiť cez Bottles** (bez Bottles: Doinštalovať Bottles a spustiť — z Flathubu, bez hesla); Bottles
     otvorí výber fľaše. `.flatpak` aj AppImage idú cez to isté miesto (AppImage sa spustí rovno, bez terminálu).
     Overené s náhradným setup.exe; skutočný inštalátor ešte nie
-  - [ ] **Zoxide** (najpoužívanejšie priečinky) pre LensGoo aj Súbory
+  - [x] **Zoxide** (najpoužívanejšie priečinky) pre LensGoo aj Súbory (7. 10.): Súbory započítajú priečinok, v ktorom
+    človek ostal aspoň 2 s; LensGoo › Súbory a bočný panel Súborov ukazujú 5 Často používaných (mimo Obľúbených);
+    prázdna skupina bočného panela sa neukazuje. Overené na latte-lab
   - [ ] dialóg Otvoriť/Uložiť cez XDG Desktop Portal v **jednotnom vzhľade s oknami** (nie vo vzhľade Goo lišty)
   - [ ] **„Prečo to spadlo?“** (nápad z Omarchy): pád programu (systemd-coredump) → bublina s tlačidlom *Prečo?*,
     vysvetlí lokálny alebo zvolený model; stíšenie pre konkrétny program; bez AI iba upozornenie

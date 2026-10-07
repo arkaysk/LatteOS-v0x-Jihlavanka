@@ -303,6 +303,17 @@ ShellRoot {
         findProc.running = true;
     }
 
+    // často používané priečinky (zoxide; Súbory ich priebežne pridávajú, FilePane.qml) — 5 najčastejších mimo Obľúbených
+    property var frequent: []
+    Process {
+        id: zxScan; running: true
+        command: ["sh", "-c", "zoxide query -l 2>/dev/null | head -12"]
+        stdout: StdioCollector { onStreamFinished: {
+            const fav = [app.home, app.home + "/Plocha", app.home + "/Dokumenty", app.home + "/Stiahnuté", app.home + "/Obrázky", app.home + "/Hudba", app.home + "/Videá"].concat(app.favorites);
+            app.frequent = this.text.split("\n").filter(l => l !== "" && fav.indexOf(l) < 0 && l.indexOf("/.") < 0).slice(0, 5);
+        } }
+    }
+    Timer { interval: 60000; repeat: true; running: true; onTriggered: zxScan.running = true }
     // pripojené cloudové priečinky (~/Cloud/*, latte-cloud)
     property var cloudDirs: []
     Process {
@@ -433,6 +444,9 @@ ShellRoot {
             { key: "fav:trash", path: app.trashDir, glyph: "trash", label: "Kôš", sub: app.trashCount ? app.trashCount + " položiek · pravý klik: vysypať" : "prázdny" }
         ].concat(app.favorites.map(f => ({ key: "fav+:" + f, path: f, glyph: "folder", label: f.split("/").pop() || f, custom: true })))
          .map(it => Object.assign({}, it, { tag: app.tags[it.path] || "" })) },
+        // najpoužívanejšie priečinky (zoxide): iba tie, ktoré nie sú medzi Obľúbenými
+        { title: i18n.tr("Frequently used"), items: app.frequent.map(f => ({ key: "zx:" + f, path: f, glyph: "history", label: f.split("/").pop() || f,
+                                                                       sub: f.replace(app.home, "~").split("/").slice(0, -1).join("/") })) },
         { title: "Cloud", items: app.cloudDirs.map(c => ({ key: "cloud:" + c, path: app.home + "/Cloud/" + c, glyph: "cloud", label: c, sub: "cloudový účet" }))
                                   .concat([{ key: "cloud:add", path: "", glyph: "plus", label: "Pridať cloudový účet", sub: "Nastavenia › Dáta", dim: app.cloudDirs.length > 0 }]) },
         { title: "Sieť", items: app.servers.map(sv => ({ key: "net:" + sv.path, path: sv.path, glyph: "server", label: sv.path.split("/").pop(), sub: sv.url || "server" }))

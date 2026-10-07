@@ -730,6 +730,14 @@ def main(a):
                                    ("Pictures", "PICTURES", "Obrázky", "photo"), ("Music", "MUSIC", "Hudba", "music"),
                                    ("Videos", "VIDEOS", "Videá", "movie"), ("Desktop", "DESKTOP", "Plocha", "device-desktop"))
                 if os.path.isdir(xdg(k, d))]
+            # často používané priečinky (zoxide; pridávajú ich Súbory a LensGoo): 5 najčastejších mimo tých hore
+            known = {f["path"] for f in cfg["_priecinky"]}
+            try:
+                zx = subprocess.run(["zoxide", "query", "-l"], capture_output=True, text=True, timeout=2).stdout.split("\n")
+            except (OSError, subprocess.TimeoutExpired):
+                zx = []
+            cfg["_caste"] = [{"name": os.path.basename(p) or p, "path": p, "kratko": p.replace(HOME, "~", 1)}
+                             for p in zx if p and p not in known and "/." not in p and os.path.isdir(p)][:5]
             print(json.dumps(cfg, ensure_ascii=False)); return 0
         if len(a) != 3 or a[1] not in ("mode", "recent", "cmds"):
             print("spustac-uloz: kľúč mode | recent | cmds a hodnota JSON", file=sys.stderr); return 1
