@@ -115,6 +115,20 @@ Item {
     property var similar: []               // podobné aplikácie v detaile
     property var kurator: []               // kurátorský výber iných (Bluefin, Bazzite — sekcie obchodu Bazaar), mení sa s nimi
     Cmd { id: kurProc; command: ["latte-apps", "store", "kurator"]; onDone: (out) => { try { app.kurator = JSON.parse(out).sections || []; } catch (e) {} } }
+    // vlastné komunitné obchody (ako v ZimaOS, 7. 10.): adresa zoznamu vo formáte obchodu Bazaar; pridanie overí, že na nej
+    // sú aplikácie, a obchod sa hneď ukáže v ľavom paneli; pravý klik na vlastný obchod ho odstráni
+    readonly property var ownShops: { const s = []; for (const k of kurator) if (k.own && s.indexOf(k.source) < 0) s.push(k.source); return s; }
+    Cmd { id: shopAdd; onDone: (out, code) => { let r = {}; try { r = JSON.parse(out); } catch (e) {}
+                                                if (r.ok) { app.status = i18n.tr("Store added: {name} ({n} apps)", { name: r.name, n: r.apps }); kurProc.running = true; app.openShop(r.name); }
+                                                else app.status = r.error || i18n.tr("The store could not be added"); } }
+    property string shopGone: ""           // práve odstraňovaný vlastný obchod (ak je otvorený, vráti sa na Objavte)
+    Cmd { id: shopDel; onDone: (out, code) => { kurProc.running = true; app.status = i18n.tr("Store removed: {name}", { name: app.shopGone });
+                                                if (app.shop === app.shopGone) app.storeHome(); } }
+    function addShopDialog(x, y) {
+        ctx.open(x, y, [{ input: "https://", label: i18n.tr("Address of the app list (curated.yaml, Bazaar format)"),
+                          action: (t) => { t = t.trim(); if (t.length > 8) { app.status = i18n.tr("Checking the store…"); shopAdd.command = ["latte-apps", "obchod-pridaj", t]; shopAdd.running = true; } } }],
+                 i18n.tr("Add a community store"));
+    }
     property var eolApps: []               // aplikácie na runtime bez podpory
     property int revStars: 0               // písanie recenzie
     Cmd { id: similarProc; onDone: (out) => { try { app.similar = JSON.parse(out).apps || []; } catch (e) { app.similar = []; } } }
@@ -273,15 +287,24 @@ Item {
                     { key: "opravnenia", glyph: "shield", label: "Oprávnenia a NET", sub: "internet, súbory, zariadenia" }
                 ] },
                 { title: i18n.tr("Categories"), items: app.storeCats.map(c => ({ key: "kat:" + c[0], glyph: c[2], label: i18n.tr(c[1]) })) },
-                { title: i18n.tr("Community stores"), items: app.shops.map(s => ({ key: "obchod:" + s, glyph: "building-store", label: s, sub: i18n.tr("curated picks, kept up to date by them") })) },
+                { title: i18n.tr("Community stores"), items: app.shops.map(s => ({ key: "obchod:" + s, glyph: "building-store", label: s,
+                                                                                  sub: app.ownShops.indexOf(s) >= 0 ? i18n.tr("your store · right click: remove") : i18n.tr("curated picks, kept up to date by them") }))
+                                                                 .concat([{ key: "obchod+", glyph: "plus", label: i18n.tr("Add a store…"), sub: i18n.tr("like in ZimaOS: address of an app list") }]) },
                 { title: "Inštalácia súboru", items: [
                     { key: "check", glyph: "help", label: "Bude to fungovať?", sub: "zložka, CD, .zip .rar .exe .rpm .AppImage" }
                 ] }
             ]
+            onContextRequested: (it, x, y) => {
+                const k = String(it.key);
+                if (k.startsWith("obchod:") && app.ownShops.indexOf(k.slice(7)) >= 0)
+                    ctx.open(x, y, [{ glyph: "trash", label: i18n.tr("Remove the store"), danger: true,
+                                      action: () => { app.shopGone = k.slice(7); shopDel.command = ["latte-apps", "obchod-odober", k.slice(7)]; shopDel.running = true; } }], k.slice(7));
+            }
             onActivated: (it) => {
                 const k = String(it.key);
                 if (k.startsWith("kat:hladaj:")) { app.storeHome(); header.searchText = k.slice(11); }
                 else if (k.startsWith("kat:")) app.openCategory(k.slice(4), it.label, 1);
+                else if (k === "obchod+") { const q = side.mapToItem(app, side.width - 20, side.height / 2); app.addShopDialog(q.x, q.y); }
                 else if (k.startsWith("obchod:")) app.openShop(k.slice(7));
                 else { app.go(k); if (k === "objavovat") app.storeHome(false); }
             }

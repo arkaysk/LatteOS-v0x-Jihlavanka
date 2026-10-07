@@ -578,8 +578,12 @@ texty preložiteľné (`translations`). Noctalia beží bez lišty a robí, čo 
   12 s predstiera novú správu, druhé Hodiny, Bublinka, Kvapôčka, Lepkavá, Ťažká, Zvedavka), príklady (Kalkulačka,
   Systém) a ladiaci text vľavo hore iba vo **vývojárskom režime** — Nastavenia › Kvapky (súbor
   ~/.config/latteos/goo/vyvoj, `latte-kvapky znova`). Overené na latte-lab: bežná plocha iba s kvapkami GOO
-- [ ] **Komunitné obchody — viac a vlastný** (7. 10.): komunitných obchodov je viac než Bluefin a Bazzite; App Manager
-  má mať možnosť pridať vlastný obchod (adresa so zoznamom aplikácií), rovnako ako ZimaOS
+- [x] **Komunitné obchody — viac a vlastný** (7. 10.): komunitných obchodov je viac než Bluefin a Bazzite; App Manager
+  má mať možnosť pridať vlastný obchod (adresa so zoznamom aplikácií), rovnako ako ZimaOS. Pribudli Aurora, secureblue
+  a Apollo (všetky zoznamy vo formáte obchodu Bazaar, `curated.yaml`). Ľavý panel › „Pridať obchod…“ otvorí pole na
+  adresu; `latte-apps obchod-pridaj` overí, že na nej sú aplikácie, a obchod sa hneď otvorí. Vlastné obchody sú
+  v ~/.config/latteos/obchody.json, pravý klik › „Odstrániť obchod“ (`obchod-odober`) a okno sa vráti na Objavte.
+  Overené na latte-lab: zlá adresa odmietnutá so správou, pridanie cez okno (13 aplikácií), odstránenie pravým klikom
 - [ ] **Tvorca Goo** (7. 10.): dnes sa vlastná kvapka tvorí formulárom „pridať príkaz“. Má byť správca či tvorca goo,
   alebo pomôže Barista vytvoriť goo na mieru zo základnej ponuky: kvapka = aplikácia, kvapka = rýchle spúšťanie
   aplikácií (skupina), goo zobrazuje údaje (napr. teplota, počet správ) — vrátane všetkých možností ovládania:

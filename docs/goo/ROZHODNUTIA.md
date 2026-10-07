@@ -7,7 +7,8 @@ Nové rozhodnutie: jeden riadok sem (dátum, čo, prečo) a oprava platného zne
 
 ## 7. 10. 2026
 
-- **Komunitné obchody:** je ich viac; v App Manageri má ísť pridať vlastný obchod ako v ZimaOS.
+- **Komunitné obchody:** je ich viac; v App Manageri má ísť pridať vlastný obchod ako v ZimaOS. Hotové: vlastný obchod
+  = adresa zoznamu vo formáte Bazaar (`curated.yaml`), aby sa dal použiť každý zoznam iných distribúcií bez prevodu.
 - **Tvorca Goo:** namiesto formulára „pridať príkaz“ správca/tvorca kvapiek alebo Barista, ktorý pomôže vytvoriť goo na
   mieru zo základnej ponuky (aplikácia, rýchle spúšťanie aplikácií, zobrazenie údajov) so všetkými spôsobmi ovládania
   (prechod myšou, koliesko, ľavý a pravý klik).
