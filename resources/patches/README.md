@@ -147,3 +147,18 @@ s transformáciou a malé telá ostávajú ako boli.
 Merané na latte-lab (RX 640, 2560×1080 + 1920×1080, v pokoji): engine 17 kvapiek **70 % → 35 %** GPU, engine
 5 kvapiek 43 % → 33 %, Kvapky 37 % → 36 %. Nahrádza „ostrovy“ navrhnuté v cloude (netreba meniť scénu).
 Sedí aj na pleamar 0.2.17. Vhodná na upstream. Bez nej engine funguje, iba s vyššou záťažou GPU.
+
+## pleamar-sklo-stabilne.patch (7. 10. 2026, materiál sklenená káva, pleamar 0.2.24)
+
+Sklo (`glass` s `lens`) láme to, čo je za ním: pleamar si pozadie dopočíta zo snímky obrazovky, na ktorej je aj
+jeho vlastná vrstva (snímka = naše + (1 − alfa) · pozadie). Odčítava však **iba posledný predvedený obraz**, hoci
+kompozitor môže na snímke ešte mať starší — a kvapky Goo sa hýbu stále. Výsledok bol farebne možný, ale zlý:
+v skle na chvíľu ostávali duchovia (text bubliny, ktorá už zmizla) a pri okrajoch kvapiek zrnité pásy.
+Záplata (`src/lens.rs`, `src/backdrop.wgsl`): engine drží posledné **tri** predvedené obrazy (štyri plátna) a pozadie
+dopočíta iba tam, kde boli všetky tri rovnaké; kde sa naše menilo (hýbuci sa okraj, bublina), ostáva pozadie z minula.
+Pod hustou vrstvou (menej než 10 % priehľadnosti, predtým 3 %) sa pozadie nedopočítava — delenie tam znásobovalo
+zaokrúhlenie snímky na zrno — a nové pozadie sa mieša napoly so starým (zrno sa spriemeruje, skutočná zmena za
+sklom príde za 2–3 snímky po 50 ms). Overené na latte-lab: série 80 snímok lišty pri pohybe kurzora a bublina
+ClockGoo trikrát ukázaná a skrytá — bez duchov a pásov; záťaž rovnaká (engine ~41 % jadra, Hyprland ~16 %).
+Pamäť: dve plátna navyše na každú plochu so sklom (pri 2560 × 1080 asi 22 MB videopamäte). Na poslanie autorovi.
+

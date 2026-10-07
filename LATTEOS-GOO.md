@@ -248,9 +248,10 @@ ostatné kvapky sú iba na hlavnom monitore.
 - **Materiál kvapiek** (7. 10.): **Káva** (predvolená) alebo **Sklenená káva** (`material: "sklo"`) — predloha
   „Droplu“ z Figmy v kávových farbách: telo lišty a kvapiek je sklo, cez ktoré presvitá rozmazané pozadie
   (pleamar `glass`, rozmazanie robí Hyprland; svetlo okraja od kurzora), nad ním priesvitná káva (druhé telo
-  s tými istými tvarmi, 44 %) a na každej kvapke lesklý odlesk. **Lom pozadia (`lens`) je vypnutý** (7. 10.):
-  pleamar si pozadie dopočítava zo snímky obrazovky a pri stále sa hýbucich kvapkách v skle na chvíľu ostávali
-  duchovia (napr. text bubliny) a zrnité pásy; na skúšku ho zapne `sklo_lom: true` v kvapky.json. Cena na latte-lab (RX 640): engine hlavného monitora ~27 % → ~41 % jedného
+  s tými istými tvarmi, 44 %) a na každej kvapke lesklý odlesk. **Lom pozadia** (`lens`) má našu opravu —
+  záplatu `pleamar-sklo-stabilne` (7. 10.): pôvodný pleamar odčítaval iba posledný obraz a pri stále sa hýbucich
+  kvapkách v skle na chvíľu ostávali duchovia a zrnité pásy. Vypne ho `sklo_lom: false` v kvapky.json (potom
+  pozadie iba rozmazáva Hyprland). Cena na latte-lab (RX 640): engine hlavného monitora ~27 % → ~41 % jedného
   jadra, Hyprland bez zmeny (~16 %); pri obyčajnej káve sklo nestojí nič.
 - Hlavné nastavenia systému sú **Nastavenia LatteOS**; vybrané položky z nastavení Noctalie sa do nich selektívne
   integrujú (návrh: komunitné doplnky, widgety rohovej lišty, kalendárové účty, filtre a história upozornení, nočné
