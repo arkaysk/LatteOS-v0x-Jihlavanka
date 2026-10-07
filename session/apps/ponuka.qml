@@ -18,6 +18,13 @@ ShellRoot {
     LatteTheme { id: theme }
     I18n { id: i18n }
 
+    // Nečinnosť celého systému pre engine Goo (myš AJ klávesnica): po 50 s bez dotyku sys_idle 1, pri činnosti 0.
+    // Kvapky tak nezaspia a nehrajú sa, keď niekto píše bez myši; pri prehrávaní videa (inhibítor) sa nečinnosť nehlási.
+    IdleMonitor {
+        timeout: 50; respectInhibitors: true
+        onIsIdleChanged: Quickshell.execDetached(["pleamar", "--say", "goo", "emit sys_idle " + (isIdle ? 1 : 0)])
+    }
+
     property string kind: ""                 // "" = zavreté
     property real atX: 0
     property real atY: 0

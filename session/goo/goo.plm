@@ -113,6 +113,9 @@ scene Goo {
     event goo_drag ->
     event goo_drop ->
     event goo_idle ->
+    // nečinnosť celého systému (myš AJ klávesnica, ext-idle-notify) od pomocníka relácie (apps/ponuka.qml): 1 / 0.
+    // Kým príde, platí vlastná nečinnosť scény (iba myš) — fakt sysidle = -1
+    event sys_idle ->
     // ── ovládanie z klávesnice (LATTEOS-GOO.md §6.1): Win+T vstúpi (latte/skratky.lua → kb_toggle), kým trvá, Goo drží
     // klávesnicu. Vybraná kvapka (kbk) pulzuje svetlejšou hnedou, zdvihne sa a ukáže bublinu s názvom.
     event kb_toggle ->
@@ -158,6 +161,7 @@ scene Goo {
     fact ry = 0
     fact nk = -1                              // ťahaná kvapka (krk lepkavej v tele goo), −1 žiadna
     fact miesta = 128                         // koľko miest má táto scéna (gen.py --n; logika podľa toho rozdáva miesta)
+    fact sysidle = -1                         // -1 nevie sa (bez pomocníka), 0 činný, 1 nečinný (systém)
     fact zive = true                          // Nastavenia › Kvapky › Živé správanie (kvapky.json: zive)
     // počasie na hladine pri nečinnosti (stupeň 2+, logika podľa skutočného počasia a podmienok „kedy nie“):
     // prsi 0 nič, 1 riedko (v predpovedi), 2 dážď; snezi = namiesto dažďa sneh. Vietor robí logika vlnkami.
@@ -508,9 +512,10 @@ scene Goo {
 
     // nečinnosť (§3.1): 1 zaspávajú (menšie nadnesenie), 2 počasie (dážď a vietor podľa skutočného), 3 hra; pohyb myši
     // ich hneď zobudí. Vypínač „Živé správanie“ (Nastavenia › Kvapky): bez neho kvapky pri nečinnosti iba dýchajú
-    on idle for 60s while zive { idle = 1; emit goo_idle(1) }
-    on idle for 180s while zive { idle = 2; emit goo_idle(2) }
-    on idle for 360s while zive { idle = 3; emit goo_idle(3) }
+    // Keď hlási nečinnosť systém (sys_idle, aj klávesnica), stupne riadi logika; tieto pravidlá iba bez neho
+    on idle for 60s while zive and sysidle < 0 { idle = 1; emit goo_idle(1) }
+    on idle for 180s while zive and sysidle < 0 { idle = 2; emit goo_idle(2) }
+    on idle for 360s while zive and sysidle < 0 { idle = 3; emit goo_idle(3) }
     on change cursor.x while idle > 0 { idle = 0; emit goo_idle(0) }
     on change cursor.y while idle > 0 { idle = 0; emit goo_idle(0) }
 
