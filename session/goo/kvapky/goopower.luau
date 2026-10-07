@@ -14,6 +14,29 @@
 --   a odtlačené goo sa vrátia, ak ich medzitým nikto nepresunul. Zapnutý pás ostane aj po prihlásení (latte-goo pas).
 local E = require("lib/engine")
 local function session(a) return function() after(200, function() run("noctalia", { "msg", "session", a }) end) end end
+-- Vypnúť, Reštartovať, Odhlásiť (bughunt 703): keď sú otvorené okná, prvý klik sa iba spýta („Naozaj? N okien“) a karta
+-- ostane otvorená; druhý klik do 4 s to urobí. Pred koncom sa uloží relácia, aby sa okná po prihlásení vrátili.
+local card                          -- karta (nižšie); tu iba ohlásená
+local armed = nil
+local goobar = require("lib/goobar")
+local function guarded(a, d)
+    return function()
+        local n = #goobar.wins()
+        if n > 0 and armed ~= a then
+            armed = a
+            card(d, true)
+            after(4000, function() if armed == a then armed = nil if E.menuId() == "power" then card(d, true) end end end)
+            return
+        end
+        armed = nil
+        fact.ctx_open = false
+        run("latte-relacia", { "uloz" }, function() session(a)() end)
+    end
+end
+local function ask(a, label)
+    if armed ~= a then return tr(label) end
+    return tr("Sure?") .. " (" .. tr("windows:") .. " " .. #goobar.wins() .. ")"
+end
 
 -- ── pás výkonu ───────────────────────────────────────────────────────────────────────────────────────────────
 local CW, CW_BOK = 64, 50             -- dĺžka bunky pozdĺž okraja: dole a hore / na bokoch (text je vždy vodorovný)
@@ -135,7 +158,6 @@ end
 
 -- ── karta (ľavý klik) ────────────────────────────────────────────────────────────────────────────────────────
 local acc, prof = nil, nil
-local card
 local PROFILY = {
     { id = "power-saver", label = "Saver", glyph = "leaf" },
     { id = "balanced", label = "Balanced", glyph = "scale" },
@@ -149,7 +171,7 @@ local function items(d)
         { pro = true, img = (a.obrazok or "") ~= "" and a.obrazok or nil, glyph = "user", label = a.meno or "…", t2 = who,
           run = function() run("latte-app", { "nastavenia", "mojucet" }) end },
         { pills = { { glyph = "lock", label = tr("Lock"), run = function() after(200, function() run("latte-zamok", {}, nil, { output = false }) end) end },
-                    { glyph = "logout", label = tr("Log out"), run = session("logout") } } },
+                    { glyph = "logout", label = ask("logout", "Log out"), keep = true, danger = armed == "logout", run = guarded("logout", d) } } },
     }
     -- NAPÁJANIE: batéria (notebook) a profil napájania
     list[#list + 1] = { hd = true, sep = true, label = tr("POWER") }
@@ -184,8 +206,8 @@ local function items(d)
     -- pomocníkovi; bez RustDesku sa otvorí App Manager
     list[#list + 1] = { glyph = "lifebuoy", label = tr("Remote help"), hint = "RustDesk", run = function() run("latte-goo", { "pomoc" }, nil, { output = false }) end }
     list[#list + 1] = { sep = true, pills = { { glyph = "moon", label = tr("Sleep"), run = session("suspend") },
-                                              { glyph = "refresh", label = tr("Restart"), run = session("reboot") },
-                                              { glyph = "power", label = tr("Shut down"), danger = true, run = session("shutdown") } } }
+                                              { glyph = "refresh", label = ask("reboot", "Restart"), keep = true, danger = armed == "reboot", run = guarded("reboot", d) },
+                                              { glyph = "power", label = ask("shutdown", "Shut down"), keep = true, danger = true, run = guarded("shutdown", d) } } }
     return list
 end
 card = function(d, keep)
