@@ -426,5 +426,8 @@
  "Folders stay the same on this PC, your laptop and phone, directly between them — without a cloud. On the phone use the Syncthing app.": "Priečinky sa držia rovnaké na tomto PC, notebooku aj telefóne, priamo medzi nimi — bez cloudu. V telefóne použi aplikáciu Syncthing.",
  "Synchronize between my devices": "Synchronizovať medzi mojimi zariadeniami",
  "Choose folders and devices": "Vybrať priečinky a zariadenia",
- "CLOUD ACCOUNTS": "CLOUDOVÉ ÚČTY"
+ "CLOUD ACCOUNTS": "CLOUDOVÉ ÚČTY",
+ "Night light: warmer colours after sunset, as outside": "Nočné svetlo: po západe slnka teplejšie farby, ako vonku",
+ "Night light follows the sun": "Nočné svetlo sa riadi slnkom",
+ "Night light off": "Nočné svetlo vypnuté"
 }
