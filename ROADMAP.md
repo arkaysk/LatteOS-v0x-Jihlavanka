@@ -571,6 +571,9 @@ texty preložiteľné (`translations`). Noctalia beží bez lišty a robí, čo 
   vysvetlí, že sa upozornenia potichu zbierajú; stav sa zisťuje každých 15 s. Overené na latte-lab
 - [x] **Rozpísaný text v spúšťači neprepadne** (7. 10., bughunt 710): karta LensGoo zavretá uprostred písania (Esc, klik
   vedľa, kláves Win) a znova otvorená do 2 minút má text späť; po spustení či hľadaní sa nevracia. Overené
+- [x] **Prehľad skratiek** (7. 10., bughunt 686): karta Goo v dvoch stĺpcoch — **Win + F1** alebo LensGoo pravý klik ›
+  Skratky. Podržanie Win sa zmerať nedá (väzba samotného Win sa v Hyprlande 0.56 volá až pri pustení, aj long_press);
+  overené ťukmi na Win cez ydotool (Štart ostal Štartom)
 - [ ] Nápad (inspo/dalsie_inspiracie.md, 7. 10.): vlastná ponuka štartu v štýle Goo podľa **nervboot** (Rust, UEFI,
   predradená systemd-boot); dnes GRUB s položkami SAFE
 - [~] **Odložené na koniec** (používateľ 6. 10.: „preklady odlož nakoniec, ešte nemáme definitívne doriešené
