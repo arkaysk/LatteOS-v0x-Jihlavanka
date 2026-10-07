@@ -1318,7 +1318,7 @@ E.miesta = miesta
 after(8000, miesta)
 every(60000, miesta)
 
-on("goo_idle", function(level)
+local function idleStage(level)
     hud("nečinnosť " .. level)
     E.each(function(d) hook(d, "necinnost", level) end)
     if level == 0 then
@@ -1338,6 +1338,27 @@ on("goo_idle", function(level)
             game()
         end
     end)
+end
+on("goo_idle", idleStage)
+-- NEČINNOSŤ SYSTÉMU (myš aj klávesnica): pomocník relácie (apps/ponuka.qml, IdleMonitor) pošle sys_idle 1 po 50 s
+-- bez dotyku a sys_idle 0 pri akejkoľvek činnosti. Kto píše a nehýbe myšou, nie je nečinný — kvapky nezaspia ani sa
+-- nezačnú hrať. Stupne 1 / 2 / 3 po 1 / 3 / 6 min od posledného dotyku; klávesa ich zobudí rovnako ako myš.
+local sysTimers = {}
+on("sys_idle", function(v)
+    v = tonumber(v) or 0
+    for _, t in ipairs(sysTimers) do cancel(t) end
+    sysTimers = {}
+    fact.sysidle = v
+    if v == 0 then
+        if num(fact.idle, 0) > 0 then fact.idle = 0 idleStage(0) end
+        return
+    end
+    local function at(ms, level)
+        sysTimers[#sysTimers + 1] = after(ms, function()
+            if fact.zive ~= false and num(fact.sysidle, 0) == 1 and num(fact.idle, 0) < level then fact.idle = level idleStage(level) end
+        end)
+    end
+    at(10000, 1) at(130000, 2) at(310000, 3)
 end)
 -- skúška počasia bez čakania a bez ohľadu na skutočné: pleamar --say goo "emit goo_pocasie N"
 -- (0 vypnúť, 1 riedky dážď, 2 dážď, 3 sneh, 4 vietor); scéna ho ukazuje iba pri nečinnosti (idle ≥ 2)

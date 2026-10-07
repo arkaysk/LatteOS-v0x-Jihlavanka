@@ -121,6 +121,10 @@ prvok; **karta Goo** = okno, ktoré vyrastie z kvapky (ponuka, spúšťač, kart
 - **Kedy nie:** okno na celú obrazovku / hra, zamknutá obrazovka, batéria pod 20 % alebo úsporný profil, stupeň
   výkonu Softvér (llvmpipe); počet snímok pri nečinnosti obmedzený. Vypínač „Živé správanie“ v Nastaveniach › Kvapky.
   *(V engine sú všetky tri stupne, vypínač aj obmedzenia; počet snímok pri nečinnosti sa ešte neobmedzuje.)*
+- **Zdroj nečinnosti (7. 10.):** celý systém, myš aj klávesnica — pomocník relácie (`apps/ponuka.qml`, IdleMonitor,
+  ext-idle-notify) pošle po 50 s bez dotyku `sys_idle 1` a pri činnosti `sys_idle 0`; kto píše bez myši, kvapky
+  nezaspia, klávesa ich zobudí. Pri prehrávaní videa (inhibítor) sa nečinnosť nehlási. Bez pomocníka platí
+  nečinnosť scény (iba myš).
 
 ---
 

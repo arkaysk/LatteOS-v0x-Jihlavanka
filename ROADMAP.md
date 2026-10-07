@@ -334,7 +334,8 @@ texty preložiteľné (`translations`). Noctalia beží bez lišty a robí, čo 
 - [x] Nastavenia podľa prostredia (1. 10.): v Goo stránka **Kvapky (Goo)** (skryť/ukázať, veľkosť, vrátiť na miesto,
   ChatGoo kvapka alebo ikona v rohovej lište, **vlastné kvapky**), v Classic Lišta a systémové menu
 - [ ] Engine: overiť zvyšky po skrytí voliteľnej kvapky na latte-lab (jadro GooBar, GooPower, LensGoo sa skryť nedá)
-- [ ] **Živé bytosti pri nečinnosti** (LATTEOS-GOO.md 3.1): zdroj nečinnosti (ext-idle-notify), dážď/vietor podľa
+- [ ] **Živé bytosti pri nečinnosti** (LATTEOS-GOO.md 3.1) — 7. 10. hotový zdroj nečinnosti (ext-idle-notify, myš aj
+  klávesnica; overené na latte-lab); ostáva obmedziť snímky pri nečinnosti. Pôvodné zadanie: dážď/vietor podľa
   skutočného počasia so zvlnením spodnej hrany aj kvapiek, hra (naháňačka so zrážkou a odrazom, behanie, skákanie);
   nie pri celej obrazovke, zámku, slabej batérii a v stupni Softvér; vypínač v Nastaveniach
 - [x] **Engine Goo — základ** (LATTEOS-GOO.md 3.2, `session/goo`, 1. 10.): jedny pravidlá pre všetky kvapky (128 miest — Goobar nesie okná ako hrozno; záplata pleamar-prazdne-tvary),
