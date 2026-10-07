@@ -42,6 +42,10 @@ ShellRoot {
                onLoaded: app.kapsaMax = text().trim(); onLoadFailed: app.kapsaMax = "" }
     Process { id: kapsaCnt; command: ["sh", "-c", "cliphist list 2>/dev/null | wc -l"]
               stdout: StdioCollector { onStreamFinished: app.kapsaCount = parseInt(this.text) || 0 } }
+    // obnovenie relácie (latte-relacia): súbor ~/.config/latteos/relacia = off ho vypne
+    property bool restoreOn: true
+    FileView { path: app.cfgHome + "/latteos/relacia"; printErrors: false
+               onLoaded: app.restoreOn = text().trim() !== "off"; onLoadFailed: app.restoreOn = true }
     property string snapOff: ""
     property string snapBarOff: ""
     FileView { path: app.cfgHome + "/latteos/bez-prichytenia"; printErrors: false; watchChanges: true; onFileChanged: reload()
@@ -1899,6 +1903,11 @@ ShellRoot {
                 }
             }
         }
+          // obnovenie relácie (7. 10., bughunt 721): po prihlásení sa okná vrátia na svoje plochy a miesta
+          Heading { text: i18n.tr("AFTER SIGNING IN"); topPadding: 6 }
+          Toggle { on: app.restoreOn; label: i18n.tr("Open the apps that were open last time, on their desktops and in their places")
+                   onToggled: { app.restoreOn = !app.restoreOn
+                                app.writePref("relacia", app.restoreOn ? "" : "off", app.restoreOn ? i18n.tr("Windows will come back after signing in") : i18n.tr("Windows will not come back after signing in")); } }
           Heading { text: "MULTITASKING (plávajúce okná, ako Windows 11)"; topPadding: 6 }
           Segments {
               options: [["", "Prichytávať okná k okrajom"], ["off", "Neprichytávať"]]

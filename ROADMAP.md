@@ -456,7 +456,11 @@ texty preložiteľné (`translations`). Noctalia beží bez lišty a robí, čo 
   - [ ] **synchronizácia zariadení** (Syncthing, neskôr any-sync)
   - [ ] na doriešenie: **prostredie Súborov nad pôvodným súborovým systémom** — návrh: dva panely, náhľady, značky,
     synchronizované priečinky so stavom, telefón a sieť ako miesta (vzor: Spacedrive, Nextcloud virtuálne súbory)
-  - [ ] **obnovenie relácie**: po reštarte sa okná vrátia na svoje miesta a do svojho režimu (vzor: hyprsession)
+  - [x] **obnovenie relácie** (7. 10., `latte-relacia`): po prihlásení sa aplikácie otvoria na svojich plochách, plávajúce
+    na svojom mieste a vo svojej veľkosti, maximalizované a minimalizované ako boli; ukladá sa priebežne (zmena musí
+    vydržať 10 s, nie medzistav pri odhlásení). Vlastné — hyprsession posiela príkazy Hyprlandu starým spôsobom, ktorý
+    konfigurácia v Lua neprijíma. Vypínač: Nastavenia › Okná › Po prihlásení. Overené cyklom uložiť → zavrieť → obnoviť;
+    skutočné odhlásenie a prihlásenie ešte nie
   - [ ] **ikra alebo kvapka, ktorá hrá zvuk, sa vlní a vibruje ako reproduktor**; vlastná hlasitosť tej aplikácie
     v jej kontextovej ponuke (ak ju má), inak inde (napr. karta pri hlasitosti)
   - [ ] **Monitor: kto žerie** energiu, dáta, RAM a miesto na disku — po aplikáciách a s priebehom po dňoch
