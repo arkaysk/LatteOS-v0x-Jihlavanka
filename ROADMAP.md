@@ -530,6 +530,8 @@ texty preložiteľné (`translations`). Noctalia beží bez lišty a robí, čo 
 - [ ] **Nastavenia › Vzhľad › Ikony** (7. 10.): ponuka sád ikon pre Goo aj aplikácie — jednofarebné (Phosphor
   duotone / obrys / plné, Tabler, Material Symbols, Fluent) aj farebné (Fluent Emoji 3D, MIT) a animované (Noto
   Animated Emoji, CC BY 4.0); engine kreslí písmo aj obrázky (farebné sady ako obrázky). Nie Flaticon (licencia)
+- [ ] Nápad (inspo/dalsie_inspiracie.md, 7. 10.): vlastná ponuka štartu v štýle Goo podľa **nervboot** (Rust, UEFI,
+  predradená systemd-boot); dnes GRUB s položkami SAFE
 - [~] **Odložené na koniec** (používateľ 6. 10.: „preklady odlož nakoniec, ešte nemáme definitívne doriešené
       aplikácie“) — zmigrovať ostatné aplikácie LatteOS na `i18n.tr` (Nastavenia, Súbory, Monitor, ponuky, …) a súbory tém
       (`name`/`desc` dnes po slovensky → `name[sk]`). Postup po dávkach, pomôcka `setup/test/i18n-migruj.py`
