@@ -7,6 +7,12 @@ Nové rozhodnutie: jeden riadok sem (dátum, čo, prečo) a oprava platného zne
 
 ## 7. 10. 2026
 
+- **Teraz používateľský zážitok** („zapoj softvér, ktorý sme sa bavili… zrealizovať funkčnosť všetkých vylepšení GUI,
+  nastavení a ergonómie ovládania… aby bol LatteOS skvelý používateľský zážitok, kde všetko intuitívne pôjde a pôjde
+  správne a dobre“): prednosť má zapojenie softvéru zo zoznamu záujmov (obnovenie relácie, Bottles, zoxide,
+  DiskTree, LocalSend, KDE Connect, RustDesk, Voltage, Bumblebee, nočné svetlo…) a zvyky z Windowsu podľa
+  `bughunt/STRESTEST.md` (kategória 4 · Ergonómia). **Prístupnosť až nakoniec alebo vo verzii Arabica.**
+
 - **Kvapky ako 3D tekuté kvapky z Figmy („Droplu“), ale v kávových farbách:** priehľadné lesklé telo, odlesk
   zhora, svetlo prechádzajúce kvapkou, drobné bublinky vzduchu, lom toho, čo je za kvapkou. Prostriedky enginu:
   `glass` (lom svetla), odlesky, vlastné shadery. Pokus: tri odtiene (espresso, café crema, latte).

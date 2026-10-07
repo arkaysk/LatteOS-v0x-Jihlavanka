@@ -530,6 +530,10 @@ texty preložiteľné (`translations`). Noctalia beží bez lišty a robí, čo 
 - [ ] **Nastavenia › Vzhľad › Ikony** (7. 10.): ponuka sád ikon pre Goo aj aplikácie — jednofarebné (Phosphor
   duotone / obrys / plné, Tabler, Material Symbols, Fluent) aj farebné (Fluent Emoji 3D, MIT) a animované (Noto
   Animated Emoji, CC BY 4.0); engine kreslí písmo aj obrázky (farebné sady ako obrázky). Nie Flaticon (licencia)
+- [x] **Zvyky z Windowsu na ploche Goo** (7. 10., bughunt/STRESTEST.md 601, 608, 622): Win+S a Win+Q = LensGoo
+  (hľadanie), Win+R = LensGoo v režime Terminál, Win+C = LensGoo AI, Win+N = ClockGoo upozornenia a kalendár,
+  Win+Alt+D = karta času, Win+Medzerník = ďalší jazyk klávesnice. Overené na latte-lab (udalosti enginu, väzby
+  Hyprlandu, prepnutie rozloženia). Win+V, Win+Tab, Win+G, Win+Z otvárajú panely Noctalie — fungujú
 - [ ] Nápad (inspo/dalsie_inspiracie.md, 7. 10.): vlastná ponuka štartu v štýle Goo podľa **nervboot** (Rust, UEFI,
   predradená systemd-boot); dnes GRUB s položkami SAFE
 - [~] **Odložené na koniec** (používateľ 6. 10.: „preklady odlož nakoniec, ešte nemáme definitívne doriešené

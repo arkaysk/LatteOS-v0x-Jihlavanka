@@ -352,6 +352,9 @@ return {
         end)
     end,
     start = function(d)
+        -- skratky ako vo Windows (latte/skratky.lua): Win+N upozornenia a kalendár, Win+Alt+D dátum a čas
+        on("clock_notes", function() if E.menuId() == "notes" then fact.ctx_open = false else ncard(d) end end)
+        on("clock_card", function() if E.menuId() == "clock" then fact.ctx_open = false else card(d) end end)
         local ok = E.onNotes(function(list)
             -- upozornenia četu (Beeper) má pri sebe ChatGoo, keď je na ploche (LATTEOS-GOO.md §4.6)
             notes = {}
