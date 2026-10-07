@@ -552,6 +552,9 @@ texty preložiteľné (`translations`). Noctalia beží bez lišty a robí, čo 
   (hľadanie), Win+R = LensGoo v režime Terminál, Win+C = LensGoo AI, Win+N = ClockGoo upozornenia a kalendár,
   Win+Alt+D = karta času, Win+Medzerník = ďalší jazyk klávesnice. Overené na latte-lab (udalosti enginu, väzby
   Hyprlandu, prepnutie rozloženia). Win+V, Win+Tab, Win+G, Win+Z otvárajú panely Noctalie — fungujú
+- [x] **Vypnúť, Reštartovať, Odhlásiť sa pýtajú** (7. 10., bughunt 703): v karte GooPower, keď sú otvorené okná, prvý
+  klik zmení tlačidlo na „Naozaj? (okná: N)“, druhý do 4 s to urobí; pred koncom sa uloží relácia. Overené
+  na latte-lab (Odhlásiť: otázka a návrat po 4 s)
 - [ ] Nápad (inspo/dalsie_inspiracie.md, 7. 10.): vlastná ponuka štartu v štýle Goo podľa **nervboot** (Rust, UEFI,
   predradená systemd-boot); dnes GRUB s položkami SAFE
 - [~] **Odložené na koniec** (používateľ 6. 10.: „preklady odlož nakoniec, ešte nemáme definitívne doriešené
