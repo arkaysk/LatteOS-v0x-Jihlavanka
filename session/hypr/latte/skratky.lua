@@ -234,15 +234,19 @@ local function windows()
     bind("SUPER + SUPER_L", start_key, { release = true })                       -- samotný Win = Štart (App Manager)
     bind("SUPER + SUPER_R", start_key, { release = true })
     bind("CTRL + Escape", start)                                                  -- Štart aj bez klávesu Win
-    bind("SUPER + S", panel("launcher"))                                          -- hľadať (Text Bar)
-    bind("SUPER + Q", panel("launcher"))
-    bind("SUPER + R", panel("launcher"))                                          -- Spustiť
-    bind("SUPER + Space", panel("launcher"))                                      -- Text Bar (rozloženie: Alt+Shift)
+    -- plocha Goo: hľadanie, Spustiť, AI, upozornenia a čas sú kvapky (LensGoo, ClockGoo), nie panely Noctalie
+    local goo = os.getenv("LATTE_VARIANT") == "kvapky"
+    local function goo_say(ev) return run('pleamar --say goo "emit ' .. ev .. '"') end
+    bind("SUPER + S", goo and goo_say("lens_mode 1") or panel("launcher"))       -- hľadať
+    bind("SUPER + Q", goo and goo_say("lens_mode 1") or panel("launcher"))
+    bind("SUPER + R", goo and goo_say("lens_mode 4") or panel("launcher"))       -- Spustiť (príkaz)
+    -- Win+Medzerník = ďalší jazyk klávesnice, ako vo Windows (test 622); Alt+Shift ostáva
+    bind("SUPER + Space", run("hyprctl switchxkblayout all next"))
     bind("SUPER + X", run("latte-ponuka win-x"))                                  -- ponuka pre pokročilých
     bind("SUPER + I", run("latte-app nastavenia"))
     bind("SUPER + A", run("latte-rychle prepni"))                                 -- Rýchle nastavenia (Zariadenia)
-    bind("SUPER + N", panel("latteos/time:panel", "oznamenia"))                   -- oznámenia a kalendár
-    bind("SUPER + ALT + D", panel("latteos/time:panel", "kalendar"))
+    bind("SUPER + N", goo and goo_say("clock_notes") or panel("latteos/time:panel", "oznamenia"))   -- oznámenia a kalendár
+    bind("SUPER + ALT + D", goo and goo_say("clock_card") or panel("latteos/time:panel", "kalendar"))
     bind("SUPER + V", panel("latteos/kapsa:panel"))                               -- história schránky = Kapsa
     bind("SUPER + period", run("latte-emoji"))                                     -- emoji (vloží sa rovno)
     bind("SUPER + semicolon", run("latte-emoji"))
@@ -268,7 +272,7 @@ local function windows()
     bind("SUPER + minus", function() latte.keys.zoom(-1) end)
     bind("SUPER + KP_Subtract", function() latte.keys.zoom(-1) end)
     bind("SUPER + Escape", function() latte.keys.zoom(0) end)
-    bind("SUPER + C", panel("latteos/ai:chat"))                                   -- AI (ako Copilot vo Win11)
+    bind("SUPER + C", goo and goo_say("lens_mode 0") or panel("latteos/ai:chat"))   -- AI (ako Copilot vo Win11)
     bind("ALT + Space", run("latte-ponuka okno"))                                 -- ponuka okna
     return { follow_mouse = 2, middle_click_paste = false }
 end

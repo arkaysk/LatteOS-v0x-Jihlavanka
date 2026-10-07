@@ -242,6 +242,9 @@ scene Goo {
     fact wm.w = 0
     fact wm.h = 0
     event lens_toggle ->                      // kláves Windows: latte-spustac → pleamar --say goo "emit lens_toggle"
+    event lens_mode ->                        // Win+S / Win+R / Win+C: spúšťač v režime (1 aplikácie, 4 príkaz, 0 AI)
+    event clock_notes ->                      // Win+N: ClockGoo upozornenia a kalendár
+    event clock_card ->                       // Win+Alt+D: ClockGoo karta času
     event ctx_pick ->
     event ctx_close ->
     prop ctx.p = 0 ~rastie

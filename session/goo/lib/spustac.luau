@@ -15,6 +15,7 @@ local M = {}
 local W = 540
 local apps, byId = {}, {}
 local cfg = {}
+local forced = nil                   -- režim zo skratky (M.openMode): pri otvorení neprepíše zapamätaný
 local mode = 1                        -- 0 AI, 1 aplikácie, 2 súbory, 3 web, 4 príkaz (poradie ako v Kvapkách: kľúč mode)
 local q = ""
 local gen = 0                         -- poradové číslo dotazu: staršie odpovede pomocníkov sa zahodia
@@ -411,6 +412,15 @@ function M.query()
 end
 
 -- otvorí okno spúšťača pri kvapke (klik na LensGoo alebo kláves Windows — aj bez myši); znova = zavrie
+-- skratka z klávesnice s režimom (Win+S hľadať, Win+R spustiť príkaz, Win+C AI — ako vo Windows): spúšťač rovno
+-- v tom režime; ten istý kláves znova ho zavrie
+function M.openMode(d, m)
+    if not MODES[m] then m = 1 end
+    if E.menuId() == "lens" and mode == m then close() return end
+    if E.menuId() == "lens" then set_mode(m) render(true) return end
+    forced, mode = m, m
+    M.open(d)
+end
 function M.open(d)
     if E.menuId() == "lens" then close() return end
     M.drop = d or M.drop
@@ -422,7 +432,8 @@ function M.open(d)
         if ok and type(t) == "table" then
             cfg = t
             local m = tonumber(t.mode)
-            if m and MODES[m] and #chat == 0 and q == "" then mode = m end
+            if m and MODES[m] and #chat == 0 and q == "" and not forced then mode = m end
+            forced = nil
         end
         if E.menuId() == "lens" then render(true) end
     end)
@@ -490,6 +501,7 @@ function M.start(d)
     M.drop = d
     -- kláves Windows (latte-spustac → pleamar --say goo "emit lens_toggle"): spúšťač sa dá otvoriť aj bez myši
     on("lens_toggle", function() M.open(d) end)
+    on("lens_mode", function(m) M.openMode(d, tonumber(m) or 1) end)
     sys.watch("apps", function(list)
         apps, byId = list or {}, {}
         for _, a in ipairs(apps) do if a.id then byId[a.id] = a end end
