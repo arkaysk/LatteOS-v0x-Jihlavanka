@@ -466,7 +466,9 @@ texty preložiteľné (`translations`). Noctalia beží bez lišty a robí, čo 
   - [ ] **Monitor: kto žerie** energiu, dáta, RAM a miesto na disku — po aplikáciách a s priebehom po dňoch
   - [ ] **webové aplikácie cez Voltage** (db0x/voltage, pôvodný: webová stránka ako samostatná aplikácia
     s vlastným oknom, profilom a ikrou)
-  - [ ] **DiskTree** (tobi/disktree, čo zapĺňa disk) ako súčasť Monitora aj Súborov
+  - [x] **DiskTree** (tobi/disktree, čo zapĺňa disk), 7. 10.: Súbory › pravý klik na priečinok alebo do prázdna →
+    Čo zapĺňa tento priečinok; Nastavenia › Úložisko › Čo zapĺňa disk; inštalátor ho preloží (`/usr/bin/disktree`).
+    Monitor zatiaľ nie
   - [x] **Bottles** pri prechode z Windowsu (7. 10.): dvojklik na `.exe`/`.msi` otvorí „Bude to fungovať?“ s jedným
     tlačidlom **Spustiť cez Bottles** (bez Bottles: Doinštalovať Bottles a spustiť — z Flathubu, bez hesla); Bottles
     otvorí výber fľaše. `.flatpak` aj AppImage idú cez to isté miesto (AppImage sa spustí rovno, bez terminálu).

@@ -1143,6 +1143,8 @@ ShellRoot {
                     }
                 }
             }
+            // čo zapĺňa disk (DiskTree): mapa celého disku podľa veľkosti, uvoľnenie miesta s potvrdením
+            Button { label: i18n.tr("What is filling the disk"); glyph: "chart-treemap"; onClicked: Quickshell.execDetached(["disktree", "-D"]) }
             Item { width: 1; height: 6 }
             Rozsirene {
                 id: ulRz

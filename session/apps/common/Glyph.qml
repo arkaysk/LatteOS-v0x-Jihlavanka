@@ -156,6 +156,7 @@ Text {
         "list": 0xEB6B,
         "printer": 0xEB0E,
         "scan": 0xEBC8,
+        "chart-treemap": 0xF381,
         "tool": 0xEB40,
         "network": 0xF09F,
         "menu-2": 0xEC42,
