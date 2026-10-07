@@ -518,6 +518,12 @@ texty preložiteľné (`translations`). Noctalia beží bez lišty a robí, čo 
 - [x] pleamar v0.2.24 a pôvodná Marea (pleamar-wm 0.2.25) — 6. 10.: záplaty prenesené, overené na latte-lab
 - [ ] Záplaty pleamaru poslať autorovi (okná na Hyprlande, 8-bit plocha, ťahanie pravým, ikony)
 
+- [ ] **Kvapky ako 3D tekuté kvapky v kávových farbách** (7. 10., predloha „Droplu“ z Figmy): priehľadné lesklé
+  telo s lomom svetla (`glass`), odlesk zhora, svetlo prechádzajúce kvapkou, bublinky vzduchu; materiál na výber
+  (dnešná káva / sklenená káva: espresso, café crema, latte). Pokusná scéna pripravená, ešte nespustená
+- [ ] **Nastavenia › Vzhľad › Ikony** (7. 10.): ponuka sád ikon pre Goo aj aplikácie — jednofarebné (Phosphor
+  duotone / obrys / plné, Tabler, Material Symbols, Fluent) aj farebné (Fluent Emoji 3D, MIT) a animované (Noto
+  Animated Emoji, CC BY 4.0); engine kreslí písmo aj obrázky (farebné sady ako obrázky). Nie Flaticon (licencia)
 - [~] **Odložené na koniec** (používateľ 6. 10.: „preklady odlož nakoniec, ešte nemáme definitívne doriešené
       aplikácie“) — zmigrovať ostatné aplikácie LatteOS na `i18n.tr` (Nastavenia, Súbory, Monitor, ponuky, …) a súbory tém
       (`name`/`desc` dnes po slovensky → `name[sk]`). Postup po dávkach, pomôcka `setup/test/i18n-migruj.py`
