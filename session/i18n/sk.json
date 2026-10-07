@@ -421,5 +421,10 @@
  "The phone is ringing": "Telefón zvoní",
  "Pair a phone over Wi-Fi (KDE Connect)": "Spárovať telefón cez Wi-Fi (KDE Connect)",
  "No phone yet. On USB: plug it in, unlock it and choose file transfer. Over Wi-Fi: install KDE Connect on the phone and pair it below.": "Zatiaľ žiadny telefón. Cez USB: pripoj ho, odomkni a zvoľ prenos súborov. Cez Wi-Fi: nainštaluj do telefónu KDE Connect a spáruj ho nižšie.",
- "Sending to {name}…": "Posielam do {name}…"
+ "Sending to {name}…": "Posielam do {name}…",
+ "BETWEEN YOUR DEVICES (SYNCTHING)": "MEDZI TVOJIMI ZARIADENIAMI (SYNCTHING)",
+ "Folders stay the same on this PC, your laptop and phone, directly between them — without a cloud. On the phone use the Syncthing app.": "Priečinky sa držia rovnaké na tomto PC, notebooku aj telefóne, priamo medzi nimi — bez cloudu. V telefóne použi aplikáciu Syncthing.",
+ "Synchronize between my devices": "Synchronizovať medzi mojimi zariadeniami",
+ "Choose folders and devices": "Vybrať priečinky a zariadenia",
+ "CLOUD ACCOUNTS": "CLOUDOVÉ ÚČTY"
 }
