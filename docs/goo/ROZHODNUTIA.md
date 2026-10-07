@@ -7,6 +7,13 @@ Nové rozhodnutie: jeden riadok sem (dátum, čo, prečo) a oprava platného zne
 
 ## 7. 10. 2026
 
+- **Komunitné obchody:** je ich viac; v App Manageri má ísť pridať vlastný obchod ako v ZimaOS.
+- **Tvorca Goo:** namiesto formulára „pridať príkaz“ správca/tvorca kvapiek alebo Barista, ktorý pomôže vytvoriť goo na
+  mieru zo základnej ponuky (aplikácia, rýchle spúšťanie aplikácií, zobrazenie údajov) so všetkými spôsobmi ovládania
+  (prechod myšou, koliesko, ľavý a pravý klik).
+- **latte-lab je testovací počítač:** Claude na ňom pracuje voľne; heslo pre sudo je v gitom ignorovanom
+  `.claude-local/latte-lab.md`, pokyny v `CLAUDE.md` (oboje mimo verejnej verzie).
+
 - **Teraz používateľský zážitok** („zapoj softvér, ktorý sme sa bavili… zrealizovať funkčnosť všetkých vylepšení GUI,
   nastavení a ergonómie ovládania… aby bol LatteOS skvelý používateľský zážitok, kde všetko intuitívne pôjde a pôjde
   správne a dobre“): prednosť má zapojenie softvéru zo zoznamu záujmov (obnovenie relácie, Bottles, zoxide,

@@ -140,6 +140,8 @@ engine_bezi() {
 scene_up() {
     [ -x "$pleamar" ] && [ -f "$scene" ] || { notify-send -a LatteOS "Kvapky" "chýba pleamar alebo scéna ($scene)"; return 1; }
     local dir="${XDG_STATE_HOME:-$HOME/.local/state}/latteos"
+    # vývojársky režim enginu (Nastavenia › Kvapky): skúšobné kvapky, príklady a ladiaci text vľavo hore
+    if [ -e "${XDG_CONFIG_HOME:-$HOME/.config}/latteos/goo/vyvoj" ]; then export LATTE_GOO_VYVOJ=1; else unset LATTE_GOO_VYVOJ; fi
     case "$scene" in
     */goo.plm)
         # Engine Goo: hlavný monitor (ľavý horný roh 0,0) má celú plochu so všetkými kvapkami; každý ďalší monitor má
@@ -197,6 +199,13 @@ case "${1:-}" in
         ;;
     scena)    # iba scéna (bez tapety, Noctalie a pomocníkov)
         scene_up
+        ;;
+    znova)    # scénu spustiť znova (napr. po zapnutí vývojárskeho režimu); kvapky sa vrátia na svoje miesta
+        for p in $(pgrep -u "$(id -u)" -x pleamar); do
+            tr '\0' ' ' < "/proc/$p/cmdline" 2>/dev/null | grep -q '/goo\.plm' && kill "$p"
+        done
+        sleep 0.7
+        exec "$0" scena
         ;;
     start)
         mkdir -p "${XDG_STATE_HOME:-$HOME/.local/state}/latteos"

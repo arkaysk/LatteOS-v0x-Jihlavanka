@@ -12,3 +12,6 @@ offline/
 
 # Rust build
 /target/
+
+# súkromné údaje pre Clauda iba na tomto počítači (heslo latte-lab) — nikdy do gitu
+.claude-local/

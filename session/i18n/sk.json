@@ -1,4 +1,7 @@
 {
+ "Developer mode: test drops and engine debug text": "Vývojársky režim: skúšobné kvapky a ladiaci text enginu",
+ "Developer mode on": "Vývojársky režim zapnutý",
+ "Developer mode off": "Vývojársky režim vypnutý",
  "A mascot sits on the right of the bar. When music plays it taps along; at night it sleeps. Pick yours (or none).": "Na lište vpravo sedí maskot. Keď hrá hudba, ťuká labkami do rytmu; v noci spí. Vyber si svojho (alebo žiadneho).",
  "A question from the Text Bar opens on the AI page (Claude by default) where you are signed in. Change it with a right click on the Text Bar.": "Otázka z Text Baru sa otvorí na stránke AI (predvolene Claude), kde si prihlásený. Zmeníš pravým klikom na Text Bar.",
  "A small model in Ollama, without internet": "Malý model v Ollame, bez internetu",

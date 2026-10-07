@@ -37,3 +37,5 @@ session/kvapky/sloty.py
 session/kvapky/spustac.py
 session/kvapky/volne.py
 session/kvapky/widgety.py
+CLAUDE.md
+.claude-local/
