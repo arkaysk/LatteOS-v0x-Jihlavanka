@@ -1,0 +1,663 @@
+LATTEOS GOO - 101 TESTOV
+
+BOOT / RECOVERY
+001. Cold boot z úplne vypnutého PC
+002. Reboot z LatteOS do LatteOS
+003. Boot po tvrdom vypnutí počas normálnej prevádzky
+004. Boot po výpadku elektriny
+005. Boot s poškodeným posledným session stavom
+006. Boot po páde compositoru
+007. Boot po páde GOO shellu
+008. Boot po páde systémovej služby
+009. Automatický výber NORMAL režimu
+010. Automatický výber SAFE režimu
+011. Ručné vynútenie SAFE režimu
+012. Návrat zo SAFE režimu do NORMAL
+013. Boot s neznámym GPU
+014. Boot bez použiteľnej GPU akcelerácie
+015. Boot s dvoma GPU
+016. Boot s odpojeným monitorom
+017. Boot s viacerými monitormi
+018. Boot bez siete
+019. Boot s veľmi pomalou sieťou
+020. Boot po neúspešnom update
+
+GOO / DESKTOP
+021. GOO sa zobrazí vždy po úspešnom prihlásení
+022. GOO sa spustí bez grafickej akcelerácie
+023. GOO sa obnoví po páde
+024. GooBar reaguje okamžite na myš
+025. GooBar reaguje okamžite na klávesnicu
+026. Goo drop možno presúvať
+027. Goo drop možno meniť veľkosť
+028. Goo drop sa nezasekne mimo obrazovky
+029. Goo drop sa automaticky obnoví po reštarte
+030. Viac dropov sa navzájom správne správa
+031. GooBar nezakrýva maximalizované okná
+032. GooBar nezakrýva fullscreen aplikácie
+033. GooBar správne reaguje na zmenu rozlíšenia
+034. GooBar správne reaguje na zmenu DPI
+035. GooBar funguje na viacerých monitoroch
+036. GooPower funguje pri normálnom aj SAFE režime
+037. ClockGoo zobrazuje správny čas
+038. ClockGoo zvláda zmenu časového pásma
+039. LensGoo vyhľadá aplikáciu
+040. LensGoo vyhľadá súbor
+041. LensGoo vyhľadá systémové nastavenie
+042. LensGoo zvládne neexistujúci výsledok
+043. ChatGoo funguje bez AI backendu
+044. GOO nastavenia prežijú reštart
+045. GOO sa nezrúti pri chybe jedného dropu
+
+WINDOW MANAGEMENT
+046. Otvorenie okna
+047. Minimalizovanie okna
+048. Maximalizovanie okna
+049. Obnovenie maximalizovaného okna
+050. Presúvanie okna myšou
+051. Presúvanie okna klávesnicou
+052. Zmena veľkosti okna
+053. Windows-style snapping
+054. Snap na ľavú polovicu
+055. Snap na pravú polovicu
+056. Snap do rohov
+057. Snap medzi monitormi
+058. Alt+Tab / prechod medzi aplikáciami
+059. Overview všetkých okien
+060. Fullscreen aplikácie
+061. Aplikácia bez titulkového rámu
+062. CSD aplikácia
+063. XWayland aplikácia
+064. Wine aplikácia
+065. Aplikácia s atypickým rozlíšením
+066. Aplikácia s vysokým DPI
+067. Viac okien jednej aplikácie
+068. Okná s modal dialogom
+069. Aplikácia nereaguje
+070. Nútené ukončenie zaseknutej aplikácie
+
+VSTUP / OVLÁDANIE
+071. Klávesnica funguje pri prihlasovaní
+072. Klávesnica funguje po suspend/resume
+073. Myš funguje po hotplug
+074. USB klávesnica hotplug
+075. USB myš hotplug
+076. Touchpad gestá
+077. Scroll
+078. Pravé tlačidlo
+079. Middle click
+080. Klávesové skratky bez konfliktov
+081. Zmena klávesových skratiek
+082. Windows control profile
+083. Linux control profile
+084. macOS control profile
+085. Zablokovanie jednej pokazenej skratky bez pádu shellu
+
+SYSTÉM / HARDWARE
+086. Pripojenie USB zariadenia
+087. Odpojenie USB zariadenia
+088. Pripojenie externého monitora
+089. Odpojenie externého monitora
+090. Zmena rozlíšenia za behu
+091. Zmena obnovovacej frekvencie
+092. Suspend
+093. Resume
+094. Reštart po suspend/resume
+095. Wi-Fi vypnutie/zapnutie
+096. Ethernet odpojenie/pripojenie
+097. Bluetooth zariadenie connect/disconnect
+098. Audio výstup prepnutie medzi zariadeniami
+099. Mikrofón prepnutie a mute
+100. Vybavenie systému po úplne čistej inštalácii
+
+RELEASE TEST
+101. Čistá inštalácia → prvé prihlásenie → sieť → update → inštalácia aplikácie → reštart → bežná práca → hra → suspend/resume → shutdown bez jedinej manuálnej opravy
+
+LATTEOS SECURITY - 100 TESTOV
+
+ZÁKLADNÁ IZOLÁCIA
+
+102. Bežná aplikácia nemá automaticky root práva
+103. Aplikácia nemôže zapisovať do systémových adresárov bez povolenia
+104. Aplikácia nemôže meniť systémové nastavenia bez povolenia
+105. Aplikácia nemôže meniť firewall bez povolenia
+106. Aplikácia nemôže meniť sieťové nastavenia bez povolenia
+107. Aplikácia nemôže pristupovať k heslám iných aplikácií
+108. Aplikácia nemôže čítať súbory iného používateľa
+109. Aplikácia nemôže zapisovať do domovského adresára iného používateľa
+110. Aplikácia nemôže pristupovať k systémovým credentialom
+111. Aplikácia nemôže pristupovať k SSH kľúčom bez explicitného povolenia
+112. Aplikácia nemôže pristupovať k browser profilu bez povolenia
+113. Aplikácia nemôže pristupovať ku cookie databázam bez povolenia
+114. Aplikácia nemôže čítať clipboard bez príslušného mechanizmu
+115. Aplikácia nemôže používať mikrofón bez povolenia
+116. Aplikácia nemôže používať kameru bez povolenia
+117. Aplikácia nemôže zachytávať obrazovku bez povolenia
+118. Aplikácia nemôže sledovať klávesnicu globálne bez povolenia
+119. Aplikácia nemôže manipulovať s inými oknami bez povolenia
+120. Aplikácia nemôže injectovať vstup do inej aplikácie
+
+SÚBORY A DATA
+
+121. Sandboxovaná aplikácia vidí iba povolené súbory
+122. Sandboxovaná aplikácia nemôže obísť file picker
+123. Aplikácia nemôže pristupovať k súboru iba zmenou jeho cesty
+124. Symbolický link nesmie obísť sandbox
+125. Hardlink nesmie obísť sandbox
+126. Aplikácia nemôže uniknúť cez /tmp
+127. Aplikácia nemôže uniknúť cez /proc
+128. Aplikácia nemôže uniknúť cez /sys
+129. Aplikácia nemôže uniknúť cez /dev
+130. Aplikácia nemôže získať citlivé dáta cez environment variables
+131. Aplikácia nemôže čítať command-line argumenty citlivých procesov
+132. Aplikácia nemôže čítať pamäť iného procesu
+133. Aplikácia nemôže pristupovať k DBus službám mimo povoleného rozsahu
+134. Aplikácia nemôže zneužiť file descriptor iného procesu
+135. Odobratie povolenia okamžite zablokuje ďalší prístup
+
+SIEŤ
+
+136. Aplikácia bez sieťového povolenia nemá internet
+137. Aplikácia s povolením iba pre jednu službu nemá prístup inde
+138. Blokovanie siete funguje aj po reštarte aplikácie
+139. Blokovanie siete funguje aj po reštarte systému
+140. Aplikácia nemôže obísť NET kontrolu cez IPv6
+141. Aplikácia nemôže obísť NET kontrolu cez localhost
+142. Aplikácia nemôže obísť NET kontrolu cez DNS
+143. Aplikácia nemôže vytvoriť vlastné VPN spojenie bez povolenia
+144. Aplikácia nemôže vytvoriť raw socket bez povolenia
+145. Aplikácia nemôže meniť routing bez povolenia
+146. Aplikácia nemôže meniť DNS bez povolenia
+147. Latte NET správne identifikuje proces vytvárajúci spojenie
+148. Latte NET zobrazí aktuálne outbound spojenia
+149. Ukončenie aplikácie ukončí jej povolené spojenia
+150. Zablokovanie aplikácie okamžite preruší jej sieť
+151. DNS leak test
+152. IPv6 leak test
+153. VPN leak test
+154. Sandboxovaná aplikácia nemôže použiť inú aplikáciu ako network proxy bez povolenia
+155. Malicious application nemôže potichu povoliť vlastnú sieť
+
+PRÁVA A ELEVÁCIA
+
+156. Žiadosť o administrátorské práva vyvolá správny mechanizmus
+157. Bežná aplikácia nemôže predstierať systémové povolenie
+158. Falošné systémové okno nedokáže získať práva
+159. Aplikácia nemôže manipulovať s autentifikačným UI
+160. Nesprávne heslo nezíska práva
+161. Zrušenie autentifikácie operáciu zastaví
+162. Timeout autentifikácie operáciu zastaví
+163. Jednorazové povolenie sa po operácii skončí
+164. Trvalé povolenie je viditeľné v Settings
+165. Používateľ môže povolenie odobrať
+166. Odobratie povolenia funguje bez reinstallácie aplikácie
+167. Aplikácia nemôže sama sebe udeliť vyššie práva
+168. Root proces nemôže zostať aktívny po skončení potrebnej operácie
+169. Systémové služby používajú minimálne potrebné privilégiá
+170. Latte služby navzájom nemajú zbytočné root oprávnenia
+
+APLIKÁCIE
+
+171. Inštalácia neznámej aplikácie zobrazí jej zdroj
+172. Používateľ vidí požadované oprávnenia aplikácie
+173. Aplikácia nemôže zmeniť svoje deklarované oprávnenia potichu
+174. Aktualizácia aplikácie nemôže automaticky rozšíriť jej oprávnenia bez kontroly
+175. Odstránenie aplikácie odstráni jej sandbox
+176. Odstránenie aplikácie odstráni jej systémové služby
+177. Odstránenie aplikácie odstráni jej autostart
+178. Odstránenie aplikácie odstráni jej povolenia
+179. Aplikácia spustená z neznámeho zdroja je správne označená
+180. Poškodený package sa neinštaluje
+181. Package s nesprávnym podpisom sa neinštaluje
+182. Manipulovaný package je odmietnutý
+183. Downgrade na nebezpečnú verziu je kontrolovaný
+184. Aplikácia nemôže nahradiť systémový binary
+185. Aplikácia nemôže prepisovať LatteOS komponenty
+
+PROCESY
+
+186. Proces nemôže jednoducho uniknúť zo sandboxu
+187. Proces nemôže vytvoriť privilegovaný child proces
+188. Proces nemôže meniť UID/GID podľa vlastnej potreby
+189. Proces nemôže meniť capabilities bez oprávnenia
+190. Proces nemôže pristupovať k cudzím procesom
+191. Proces nemôže ukončiť kritický systémový proces
+192. Proces nemôže vypnúť bezpečnostnú službu
+193. Proces nemôže manipulovať s audit logom
+194. Proces nemôže odstrániť vlastné bezpečnostné záznamy
+195. Fork bomb nezrúti celý systém
+
+MALWARE SCENÁRE
+
+196. Aplikácia sa pokúsi čítať SSH private key
+197. Aplikácia sa pokúsi čítať browser passwords
+198. Aplikácia sa pokúsi čítať browser cookies
+199. Aplikácia sa pokúsi odoslať domovský adresár na internet
+200. Aplikácia sa pokúsi zapnúť mikrofón na pozadí
+201. Aplikácia sa pokúsi zapnúť kameru na pozadí
+202. Aplikácia sa pokúsi zachytiť obrazovku
+203. Aplikácia sa pokúsi sledovať stlačenia kláves
+204. Aplikácia sa pokúsi vytvoriť skrytý autostart
+205. Aplikácia sa pokúsi vytvoriť skrytú systemd službu
+206. Aplikácia sa pokúsi získať root cez nesprávne nastavené práva
+207. Aplikácia sa pokúsi zapisovať mimo sandboxu
+208. Aplikácia sa pokúsi použiť symlink escape
+209. Aplikácia sa pokúsi použiť /proc na získanie citlivých údajov
+210. Aplikácia sa pokúsi obísť sieťové pravidlá
+
+GUI SECURITY
+
+211. Používateľ vždy vie, ktorá aplikácia žiada povolenie
+212. Systémové dialógy nemožno zameniť za dialóg aplikácie
+213. Aplikácia nemôže vytvoriť falošné GOO systémové okno
+214. Aplikácia nemôže vizuálne predstierať systémové oprávnenie
+215. Kritické povolenia majú jasný popis následkov
+216. Zamietnutie povolenia neblokuje celý desktop
+217. Opakované odmietnutie nespôsobuje nekonečný cyklus
+218. Používateľ môže spätne skontrolovať všetky povolenia
+219. Používateľ môže spätne odobrať všetky povolenia
+220. Bezpečnostné upozornenia nie sú spamované pri každom štarte aplikácie
+
+UPDATE / SUPPLY CHAIN
+
+221. Systém overí podpis aktualizácie
+222. Poškodený update sa neinštaluje
+223. Prerušený update nenechá systém nebootovateľný
+224. Update môže byť rollbacknutý
+225. Rollback zachová používateľské dáta
+226. Rollback zachová funkčné nastavenia
+227. Rollback odstráni chybný systémový komponent
+228. Systém vie zistiť verziu nainštalovaných komponentov
+229. Systém vie zistiť pôvod nainštalovaného komponentu
+230. Neautorizovaný repozitár nemožno pridať bez explicitného potvrdenia
+
+BOOT / SYSTEM INTEGRITY
+
+231. Secure Boot funguje
+232. Systém správne reaguje na Secure Boot failure
+233. Nepodpísaný boot komponent je odmietnutý
+234. Manipulovaný kernel je odmietnutý
+235. Manipulovaný initramfs je detegovaný
+236. Manipulovaný boot configuration je detegovaný
+237. Recovery režim neobíde bezpečnostný model bez fyzického prístupu
+238. SAFE režim neudeľuje aplikáciám viac práv než NORMAL
+239. Crash recovery neotvorí privilegovaný shell používateľovi
+240. Boot log neobsahuje citlivé údaje
+
+POUŽÍVATEĽ / PRIVACY
+
+241. Heslo sa nezobrazuje v logoch
+242. Token sa nezobrazuje v logoch
+243. API key sa nezobrazuje v logoch
+244. Network credentials sa nezobrazujú v logoch
+245. Clipboard citlivé dáta sa zbytočne neukladajú
+246. Screenshoty bezpečnostných dialógov neobsahujú tajné údaje
+247. Telemetria je vypnutá alebo transparentne deklarovaná
+248. Používateľ vie, aké dáta systém odosiela
+249. LatteOS funguje bez online účtu
+250. Odpojený internet nezníži lokálnu bezpečnosť systému
+
+KATASTROFICKÉ TESTY
+
+251. Úmyselne škodlivá aplikácia nemá root
+252. Škodlivá aplikácia nemá prístup k osobným súborom
+253. Škodlivá aplikácia nemá prístup k heslám
+254. Škodlivá aplikácia nemá prístup ku kľúčom
+255. Škodlivá aplikácia nemá prístup ku kamere
+256. Škodlivá aplikácia nemá prístup k mikrofónu
+257. Škodlivá aplikácia nemá prístup k obrazovke
+258. Škodlivá aplikácia nemá voľný internet
+259. Škodlivá aplikácia nedokáže vytvoriť persistentný autostart
+260. Škodlivá aplikácia nedokáže vypnúť Latte security služby
+
+261. Po kompromitácii jednej aplikácie zostane zvyšok desktopu izolovaný
+262. Po páde bezpečnostnej služby systém prejde do bezpečného stavu
+263. Po páde NET služby aplikácie automaticky nezískajú unrestricted network access
+264. Po páde App Managera zostane systém použiteľný
+265. Po páde Device Managera zostane systém použiteľný
+266. Po páde GOO zostane možné bezpečne obnoviť session
+267. Po kompromitácii GOO nemožno automaticky získať root
+268. Po kompromitácii bežného používateľa nemožno automaticky získať root
+269. Po reštarte sa bezpečnostné politiky obnovia
+270. Po kompletnom obnovení zo zálohy zostane bezpečnostný model funkčný
+
+FINÁLNY SECURITY TEST
+
+271. Nainštalovať neznámu aplikáciu → spustiť ju → pokúsiť sa o prístup k súborom → heslám → SSH kľúčom → kamere → mikrofónu → obrazovke → sieti → root právam → persistence → system files a overiť, že LatteOS každý pokus správne zablokuje alebo explicitne autorizuje používateľom.
+
+
+LATTEOS GAMING + WINDOWS COMPATIBILITY
+
+GAMING ZÁKLAD
+
+272. Steam sa nainštaluje cez App Manager
+273. Steam sa spustí bez manuálneho zásahu v termináli
+274. Steam vie aktualizovať sám seba
+275. Steam Library sa správne zobrazí
+276. Hra sa nainštaluje do predvoleného umiestnenia
+277. Hra sa nainštaluje na druhý disk
+278. Hra sa odinštaluje
+279. Hra sa znovu nainštaluje
+280. Hra sa aktualizuje
+281. Hra sa spustí cez launcher
+282. Hra sa spustí priamo z desktopu
+283. Hra sa korektne ukončí
+284. Pád hry nezhodí desktop
+285. Pád hry nezhodí GOO
+286. Pád hry nezhodí compositor
+287. Hra beží bez terminálu
+288. Hra funguje bez manuálneho nastavovania Wine/Proton
+289. Používateľ vie zistiť, prečo sa hra nespustila
+290. App Manager vie zobraziť kompatibilitu hry
+
+PROTON
+
+291. Steam Proton sa automaticky nainštaluje
+292. Proton Experimental funguje
+293. Stabilná verzia Proton funguje
+294. Používateľ môže zmeniť Proton verziu
+295. Používateľ môže nastaviť Proton pre konkrétnu hru
+296. Používateľ môže obnoviť automatickú voľbu Protonu
+297. Proton prefix sa vytvorí automaticky
+298. Proton prefix sa nepoškodí po update systému
+299. Hra používa správny prefix
+300. Hra dokáže vytvoriť nový prefix
+301. Poškodený prefix nespôsobí pád systému
+302. Hra môže byť spustená v čistom prefixe
+303. DXVK funguje
+304. VKD3D-Proton funguje
+305. OpenGL cez Proton funguje
+306. DirectX 9 hra funguje
+307. DirectX 10 hra funguje
+308. DirectX 11 hra funguje
+309. DirectX 12 hra funguje
+310. Vulkan hra funguje
+311. 32-bit Windows hra funguje
+312. 64-bit Windows hra funguje
+313. Hra s vlastným launcherom funguje
+314. Hra s externým updaterom funguje
+315. Hra s DLC funguje
+
+GPU
+
+316. AMD GPU funguje
+317. NVIDIA GPU funguje
+318. Intel GPU funguje
+319. Integrovaná GPU funguje
+320. Dedikovaná GPU funguje
+321. Hybridná grafika funguje
+322. Hra používa správnu GPU
+323. Prepnutie GPU funguje
+324. GPU driver update nerozbije Steam
+325. GPU driver update nerozbije Proton
+326. Vulkan funguje
+327. Vulkan device je správne identifikované
+328. OpenGL funguje
+329. Shader compilation funguje
+330. Shader cache funguje
+331. Shader cache prežije reštart
+332. Shader cache sa dá vymazať
+333. Chýbajúci Vulkan driver je správne diagnostikovaný
+334. Chýbajúci 32-bit driver je správne diagnostikovaný
+335. GPU chyba nespôsobí nekonečný crash loop
+
+VÝKON
+
+336. Hra dosahuje očakávaný výkon
+337. FPS counter funguje
+338. Frame pacing je stabilný
+339. VSync funguje
+340. VRR funguje
+341. 60 Hz funguje
+342. 120 Hz funguje
+343. 144 Hz funguje
+344. 165 Hz funguje
+345. 240 Hz funguje
+346. Zmena refresh rate počas hrania funguje
+347. Game Mode funguje
+348. Game Mode neobmedzí systémové procesy potrebné pre hru
+349. Game Mode sa po ukončení hry vypne
+350. Game Mode prežije pád hry
+351. CPU governor/power profile sa správne prepne
+352. GPU power profile sa správne prepne
+353. Notebook power mode funguje
+354. Hra nebeží omylom na CPU renderer
+355. Hra nebeží omylom na nesprávnej GPU
+
+DISPLAY / FULLSCREEN
+
+356. Exclusive fullscreen funguje
+357. Borderless fullscreen funguje
+358. Windowed mode funguje
+359. Prepínanie fullscreen/windowed funguje
+360. Alt+Tab z fullscreen hry funguje
+361. Hra sa po Alt+Tab vráti správne
+362. Zmena rozlíšenia hry funguje
+363. Hra s natívnym rozlíšením funguje
+364. Hra s nenatívnym rozlíšením funguje
+365. Ultrawide rozlíšenie funguje
+366. Viac monitorov funguje
+367. Hra sa otvorí na správnom monitore
+368. Presunutie hry na druhý monitor funguje
+369. GOO sa počas fullscreen hry nespráva ako overlay, ak nemá
+370. Overlay sa dá bezpečne aktivovať
+371. HDR funguje
+372. SDR hra na HDR desktopoch funguje
+373. HDR hra na HDR displeji funguje
+374. VRR + fullscreen funguje
+375. VRR + borderless funguje
+
+INPUT
+
+376. USB gamepad funguje
+377. Bluetooth gamepad funguje
+378. Xbox controller funguje
+379. PlayStation controller funguje
+380. Generic XInput controller funguje
+381. Controller hotplug funguje
+382. Controller disconnect počas hry nespôsobí pád desktopu
+383. Controller reconnect funguje
+384. Steam Input funguje
+385. Hra bez Steam Input funguje
+386. Rumble funguje
+387. Analógové páčky fungujú
+388. Trigger input funguje
+389. Keyboard + mouse fungujú
+390. Prepnutie medzi controllerom a klávesnicou funguje
+
+AUDIO
+
+391. Herný audio výstup funguje
+392. Herný mikrofón funguje
+393. Prepnutie audio zariadenia počas hry funguje
+394. USB headset funguje
+395. Bluetooth headset funguje
+396. HDMI audio funguje
+397. Game audio funguje po suspend/resume
+398. Mikrofón funguje po suspend/resume
+399. Hra nezablokuje systémové audio
+400. Zmena hlasitosti cez GOO funguje počas hry
+
+ANTI-CHEAT
+
+401. Hra bez anti-cheatu funguje
+402. Hra s Easy Anti-Cheat funguje
+403. Hra s BattlEye funguje
+404. Anti-cheat funguje v podporovanom Proton režime
+405. Anti-cheat failure je jasne oznámený
+406. LatteOS nepredstiera podporu nefungujúceho anti-cheatu
+407. Anti-cheat nemôže vypnúť Latte security model
+408. Anti-cheat nemá automaticky root práva
+409. Anti-cheat nemôže čítať ľubovoľné používateľské dáta
+410. Anti-cheat problém je oddelený od problému desktopu
+
+LAUNCHERY
+
+411. Steam launcher funguje
+412. Epic Games launcher funguje
+413. GOG launcher funguje
+414. Ubisoft Connect funguje
+415. EA launcher funguje
+416. Battle.net funguje
+417. Rockstar launcher funguje
+418. Microsoft launcher funguje tam, kde je kompatibilný
+419. Heroic Games Launcher funguje
+420. Lutris funguje
+421. Non-Steam hra sa dá pridať do Steam
+422. Windows launcher sa dá nainštalovať do Wine prefixu
+423. Launcher a hra používajú správny prefix
+424. Launcher update nerozbije hru
+425. Hra spustená cez launcher sa správne zobrazí v Game Mode
+
+WINDOWS APLIKÁCIE
+
+426. Windows .exe sa dá otvoriť cez Files
+427. Files správne ponúkne kompatibilnú aplikáciu
+428. Používateľ nemusí poznať Wine command
+429. Windows aplikácia sa nainštaluje cez GUI
+430. Windows aplikácia sa odinštaluje cez GUI
+431. Windows aplikácia vytvorí desktop shortcut
+432. Windows aplikácia vytvorí menu entry
+433. Windows aplikácia nastaví file associations
+434. Windows aplikácia môže otvoriť dokument dvojklikom
+435. Windows aplikácia môže otvoriť URL
+436. Windows aplikácia môže používať clipboard
+437. Windows aplikácia môže používať zvuk
+438. Windows aplikácia môže používať mikrofón
+439. Windows aplikácia môže používať kameru po povolení
+440. Windows aplikácia môže používať USB zariadenie po povolení
+
+WINE
+
+441. Wine prefix sa vytvorí automaticky
+442. Wine prefix má správne architektúry
+443. Wine aplikácia dostane správne Windows environment variables
+444. Wine aplikácia nevidí systémové súbory mimo povoleného priestoru
+445. Wine aplikácia nemá automatický root
+446. Wine aplikácia má sieť iba podľa svojho security profilu
+447. Wine aplikácia môže byť sandboxovaná
+448. Wine aplikácia môže používať GPU
+449. Wine aplikácia môže používať Vulkan
+450. Wine aplikácia môže používať DXVK
+451. Wine aplikácia môže používať VKD3D
+452. Wine aplikácia môže používať DirectInput
+453. Wine aplikácia môže používať XInput
+454. Wine aplikácia môže používať Windows fonts
+455. Wine aplikácia zvládne Windows installer
+456. Wine aplikácia zvládne MSI installer
+457. Wine aplikácia zvládne aktualizáciu
+458. Wine aplikácia sa dá bezpečne odstrániť
+459. Wine prefix sa dá resetovať
+460. Poškodený Wine prefix neovplyvní ostatné aplikácie
+
+WINDOWS GUI
+
+461. Windows aplikácia má správne DPI
+462. Windows aplikácia má správne fonty
+463. Windows aplikácia má správne menu
+464. Windows aplikácia má správne dialogy
+465. Windows aplikácia má správne context menu
+466. Windows aplikácia správne reaguje na Alt+F4
+467. Windows aplikácia správne reaguje na Win kláves
+468. Windows aplikácia správne používa clipboard
+469. Windows aplikácia správne používa drag & drop
+470. Windows aplikácia správne používa file picker
+471. Windows aplikácia správne používa Open/Save dialog
+472. Windows aplikácia funguje na viacerých monitoroch
+473. Windows aplikácia funguje pri zmene DPI
+474. Windows aplikácia funguje po suspend/resume
+475. Windows aplikácia funguje po zmene audio zariadenia
+
+WINDOWS FILES / INTEGRATION
+
+476. .exe asociácia funguje
+477. .msi asociácia funguje
+478. Windows aplikácia vie otvoriť PDF
+479. Windows aplikácia vie otvoriť obrázok
+480. Windows aplikácia vie otvoriť textový súbor
+481. Windows aplikácia vie otvoriť URL
+482. Linux aplikácia vie otvoriť súbor vytvorený Windows aplikáciou
+483. Windows aplikácia vie otvoriť súbor vytvorený Linux aplikáciou
+484. Drag & drop medzi Linux a Wine aplikáciou funguje
+485. Clipboard medzi Linux a Wine aplikáciou funguje
+486. Copy/paste textu funguje
+487. Copy/paste obrázku funguje
+488. Copy/paste súboru funguje
+
+PERFORMANCE / STABILITY
+
+489. 1 hodina hrania bez pádu
+490. 4 hodiny hrania bez pádu
+491. 8 hodín hrania bez pádu
+492. 8 hodín Steam klienta bez memory leak problémov
+493. 8 hodín GOO + Steam bez memory leak problémov
+494. 8 hodín Wine aplikácie bez memory leak problémov
+495. Opakované spustenie/ukončenie hry 50×
+496. Opakované spustenie/ukončenie Windows aplikácie 50×
+497. Opakovaný Alt+Tab 100×
+498. Opakovaný fullscreen/windowed 100×
+499. Opakované pripojenie/odpojenie controlleru
+500. Opakované pripojenie/odpojenie headsetu
+
+RECOVERY
+
+501. Pád hry obnoví desktop
+502. Pád launcheru nezhodí Steam
+503. Pád Wine procesu nezostane visieť na pozadí
+504. Zaseknutý Wine proces možno ukončiť cez GUI
+505. Zaseknutú hru možno ukončiť cez GOO
+506. Game Mode sa po páde hry vypne
+507. GPU reset nezničí session, ak driver umožní recovery
+508. Po reštarte zostane knižnica hier neporušená
+509. Po páde systému sa Proton prefix nepoškodí
+510. Po páde systému sa Wine prefix nepoškodí
+
+UPDATE / COMPATIBILITY
+
+511. Update LatteOS neporuší Steam
+512. Update LatteOS neporuší Proton
+513. Update GPU drivera neporuší Proton
+514. Update Wine runtime neporuší existujúce prefixy
+515. Update Mesa neporuší Vulkan hry
+516. Update kernelu neporuší ovládač GPU
+517. Rollback systému obnoví funkčný gaming stack
+518. Staršia hra funguje po update systému
+519. Novšia hra funguje po update systému
+520. App Manager správne upozorní na známu regresiu
+
+AUTOMATICKÁ DIAGNOSTIKA
+
+521. Hra bez Vulkanu zobrazí zrozumiteľnú chybu
+522. Chýbajúci 32-bit driver zobrazí zrozumiteľnú chybu
+523. Chýbajúci Proton runtime zobrazí zrozumiteľnú chybu
+524. Anti-cheat problém zobrazí zrozumiteľnú chybu
+525. Chýbajúci Wine dependency zobrazí zrozumiteľnú chybu
+526. GPU problém zobrazí zrozumiteľnú chybu
+527. Audio problém zobrazí zrozumiteľnú chybu
+528. Controller problém zobrazí zrozumiteľnú chybu
+529. Network problém zobrazí zrozumiteľnú chybu
+530. Používateľ dostane odporúčanie opravy bez potreby terminálu
+
+REAL WORLD TEST
+
+531. Nainštalovať Steam → nainštalovať Windows hru → spustiť → hrať → použiť controller → Alt+Tab → zmeniť hlasitosť → vrátiť sa do hry → ukončiť → update → reštart → znovu hrať
+
+532. Nainštalovať Windows aplikáciu → vytvoriť prefix → otvoriť dokument → uložiť dokument → zavrieť → znovu otvoriť → update aplikácie → reštart → pokračovať v práci
+
+533. Nainštalovať launcher → prihlásiť účet → nainštalovať hru → spustiť anti-cheat → hrať → ukončiť → reštartovať → hrať znovu
+
+534. Spustiť hru → odpojiť controller → pripojiť controller → Alt+Tab → odpojiť headset → pripojiť headset → zmeniť audio výstup → pokračovať v hre
+
+535. Spustiť fullscreen hru → prepnúť monitor → zmeniť refresh rate → vrátiť pôvodný monitor → Alt+Tab → pokračovať bez pádu
+
+536. Spustiť hru → suspend → resume → pokračovať v hre
+
+537. Spustiť Windows aplikáciu → suspend → resume → pokračovať v práci
+
+538. Spustiť Steam + GOO + browser + Windows aplikáciu + hru súčasne a overiť, že desktop zostáva stabilný
+
+539. Spustiť hru s aktívnym NET security systémom a overiť, že herná komunikácia funguje iba podľa povolení
+
+540. Kompletný gaming test: čistá inštalácia LatteOS → GPU driver → Steam → Proton → controller → hra → launcher → Windows hra → fullscreen → VRR → audio → suspend/resume → update → rollback → druhý štart hier bez terminálu
+
+
