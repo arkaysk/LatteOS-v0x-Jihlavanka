@@ -429,5 +429,7 @@
  "CLOUD ACCOUNTS": "CLOUDOVÉ ÚČTY",
  "Night light: warmer colours after sunset, as outside": "Nočné svetlo: po západe slnka teplejšie farby, ako vonku",
  "Night light follows the sun": "Nočné svetlo sa riadi slnkom",
- "Night light off": "Nočné svetlo vypnuté"
+ "Night light off": "Nočné svetlo vypnuté",
+ "Undo the change": "Vrátiť späť",
+ "Reverted: {what}": "Vrátené: {what}"
 }

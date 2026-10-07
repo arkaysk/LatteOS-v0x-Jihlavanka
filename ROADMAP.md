@@ -439,7 +439,9 @@ texty preložiteľné (`translations`). Noctalia beží bez lišty a robí, čo 
     bez RustDesku App Manager. Overené na latte-lab (RustDesk potrebuje XWayland — pomocník mu DISPLAY nájde)
   - [ ] prechod z Windowsu: import profilov prehliadača, dokumentov a písiem; podržanie Win = prehľad skratiek
   - [ ] režim sústredenia (minútka + Nerušiť + pokojné kvapky) — najprv zistiť, čo už má Noctalia
-  - [ ] vrátiť späť pri zmene nastavení — ako súčasť okna Nastavení
+  - [x] **vrátiť späť pri zmene nastavení** (7. 10., `latte-spat`, bughunt 711): pred každou zmenou sa uloží kópia nastavení
+    (~/.config/latteos a Noctalia), Nastavenia 30 s ukazujú Vrátiť späť; vráti súbory, znovu načíta Hyprland, Noctaliu
+    a tému. Overené na latte-lab (vypnúť obnovenie relácie → Vrátiť späť → prepínač aj súbor späť)
   - [ ] ovládanie Goo Steam Controllerom / gamepadom (Steam Input), na základe ovládania z klávesnice (§6.1)
   - [ ] **AI voliteľná pri inštalácii** (voľba „systém bez AI“); **`latte-mcp`** (engine a pomocníci ako nástroje MCP,
     potvrdenie zásahov v goo bubline) — na vyriešenie

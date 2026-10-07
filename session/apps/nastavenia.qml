@@ -46,7 +46,7 @@ ShellRoot {
     property bool syncOn: false                // Syncthing beží (Nastavenia › Cloud)
     // obnovenie relácie (latte-relacia): súbor ~/.config/latteos/relacia = off ho vypne
     property bool restoreOn: true
-    FileView { path: app.cfgHome + "/latteos/relacia"; printErrors: false
+    FileView { path: app.cfgHome + "/latteos/relacia"; printErrors: false; watchChanges: true; onFileChanged: reload()
                onLoaded: app.restoreOn = text().trim() !== "off"; onLoadFailed: app.restoreOn = true }
     property string snapOff: ""
     property string snapBarOff: ""
@@ -550,7 +550,25 @@ ShellRoot {
     }
 
     Process { id: runner }
-    function run(cmd, msg) { runner.command = cmd; runner.running = true; if (msg) app.status = msg; }
+    // Vrátiť späť (bughunt 711): každá zmena nastavení ide cez latte-spat, ktorý predtým uloží kópiu nastavení;
+    // pod správou o zmene je potom 30 s odkaz Vrátiť späť. Spustenie aplikácie alebo stránky nie je zmena.
+    property string undoLabel: ""
+    property real undoAt: 0
+    function isChange(cmd) {
+        const w = ["sh", "rm", "latte-shellset", "latte-ai", "latte-theme", "latte-tapety", "systemctl", "gsettings", "hyprctl", "latte-gooconfig", "latte-kvapky"];
+        if (w.indexOf(cmd[0]) < 0) return false;
+        const all = cmd.join(" ");
+        return !/latte-app |xdg-open|foot |flatpak run|latte-terminal/.test(all);
+    }
+    function run(cmd, msg) {
+        if (msg && isChange(cmd)) { runner.command = ["latte-spat", "pred", msg, "--"].concat(cmd); app.undoLabel = msg; app.undoAt = Date.now(); undoTimer.restart(); }
+        else runner.command = cmd;
+        runner.running = true; if (msg) app.status = msg;
+    }
+    Timer { id: undoTimer; interval: 30000; onTriggered: app.undoLabel = "" }
+    Process { id: undoProc; command: ["latte-spat", "vrat"]
+              stdout: StdioCollector { onStreamFinished: { app.status = i18n.tr("Reverted: {what}", { what: this.text.trim() }); kvRead.running = true;
+                                                          const s = app.section; app.section = "domov"; app.section = s; } } }
     function setTier(t) {
         if (t === "auto") run(["sh", "-c", "rm -f \"$1\" && hyprctl reload", "sh", app.cfgHome + "/latteos/tier"], "Stupeň: automaticky");
         else run(["sh", "-c", "mkdir -p \"$(dirname \"$1\")\" && printf '%s\\n' \"$2\" > \"$1\" && hyprctl reload", "sh", app.cfgHome + "/latteos/tier", t], "Stupeň: " + t);
@@ -666,6 +684,16 @@ ShellRoot {
             Text {
                 anchors { left: parent.left; right: parent.right; bottom: parent.bottom; margins: 18 }
                 wrapMode: Text.WordWrap; text: app.status; color: theme.primary; font { family: theme.fontUi; pixelSize: 12 }
+            }
+            // Vrátiť späť: 30 s po zmene, nad správou o nej
+            Rectangle {
+                visible: app.undoLabel !== ""
+                anchors { right: parent.right; bottom: parent.bottom; margins: 18; bottomMargin: 46 }
+                width: undoTxt.implicitWidth + 28; height: 30; radius: 15
+                color: undoMa.containsMouse ? theme.hover : theme.field; border { color: theme.primary; width: 1 }
+                Text { id: undoTxt; anchors.centerIn: parent; text: "↶ " + i18n.tr("Undo the change"); color: theme.primary; font { family: theme.fontUi; pixelSize: 12; weight: Font.DemiBold } }
+                MouseArea { id: undoMa; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
+                            onClicked: { app.undoLabel = ""; undoProc.running = true; } }
             }
         }
     }
