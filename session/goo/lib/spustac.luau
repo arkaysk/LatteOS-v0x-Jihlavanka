@@ -15,6 +15,7 @@ local M = {}
 local W = 540
 local apps, byId = {}, {}
 local cfg = {}
+local keptQ, keptAt = "", 0          -- rozpísaný text spúšťača (vráti sa po zatvorení karty)
 local readApps = nil                 -- znovu načítať zoznam aplikácií (M.start)
 local forced = nil                   -- režim zo skratky (M.openMode): pri otvorení neprepíše zapamätaný
 local mode = 1                        -- 0 AI, 1 aplikácie, 2 súbory, 3 web, 4 príkaz (poradie ako v Kvapkách: kľúč mode)
@@ -53,7 +54,7 @@ local BEZ = { ["á"] = "a", ["ä"] = "a", ["č"] = "c", ["ď"] = "d", ["é"] = "
 local function fold(s) return (tostring(s or ""):gsub("[\xC3-\xC5][\x80-\xBF]", BEZ):lower()) end
 local function urlencode(s) return (s:gsub("[^%w%-%._~]", function(c) return string.format("%%%02X", string.byte(c)) end)) end
 local function lines(out) local t = {} for l in (out or ""):gmatch("[^\n]+") do t[#t + 1] = l end return t end
-local function close() fact.ctx_open = false end
+local function close() keptQ = "" fact.ctx_open = false end   -- po akcii (spustenie, hľadanie…) sa text nevracia
 
 -- nebezpečné príkazy chcú druhý Enter (zoznam z Text Baru klasického LatteOS, ako v Kvapkách)
 local DANGER_WORDS = {
@@ -85,6 +86,7 @@ end
 
 -- ── akcie ────────────────────────────────────────────────────────────────────────────────────────────────────
 local function launch(a)
+    keptQ = ""                                               -- spustilo sa: text sa už nevracia
     if not a then return end
     if a.exec then pcall(sys.call, "apps.launch", a.exec) end
     if a.id then
@@ -348,6 +350,7 @@ local function build(keep)
             v = (v:gsub("^%s+", ""))
             if v == q then return end
             q, confirm = v, nil
+            keptQ, keptAt = v, os.time()                     -- rozpísaný text prežije zatvorenie karty (bughunt 710)
             M.query()
         end,
         submit = function(v)
@@ -428,17 +431,20 @@ end
 -- v tom režime; ten istý kláves znova ho zavrie
 function M.openMode(d, m)
     if not MODES[m] then m = 1 end
-    if E.menuId() == "lens" and mode == m then close() return end
+    if E.menuId() == "lens" and mode == m then fact.ctx_open = false return end
     if E.menuId() == "lens" then set_mode(m) render(true) return end
     forced, mode = m, m
     M.open(d)
 end
 function M.open(d)
-    if E.menuId() == "lens" then close() return end
+    if E.menuId() == "lens" then fact.ctx_open = false return end     -- zatvorenie klávesom: rozpísaný text ostane
     if readApps then readApps() end
     M.drop = d or M.drop
-    q, confirm, extra = "", nil, { caste = extra.caste }
-    E.menuText("")
+    -- karta zavretá uprostred písania (Esc, klik vedľa) a znova otvorená do 2 minút: text sa vráti
+    local back = keptQ ~= "" and os.time() - keptAt < 120 and not forced
+    q, confirm, extra = back and keptQ or "", nil, { caste = extra.caste }
+    E.menuText(q)
+    if back then M.query() end
     render(false)
     run("latte-goo", { "spustac" }, function(out)
         local ok, t = pcall(json.decode, out or "")
