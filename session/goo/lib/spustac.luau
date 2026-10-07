@@ -15,6 +15,7 @@ local M = {}
 local W = 540
 local apps, byId = {}, {}
 local cfg = {}
+local readApps = nil                 -- znovu načítať zoznam aplikácií (M.start)
 local forced = nil                   -- režim zo skratky (M.openMode): pri otvorení neprepíše zapamätaný
 local mode = 1                        -- 0 AI, 1 aplikácie, 2 súbory, 3 web, 4 príkaz (poradie ako v Kvapkách: kľúč mode)
 local q = ""
@@ -268,6 +269,9 @@ local function rows_web()
     if text:match("^[%w%-]+%.[%w%-%.]+[/%S]*$") and not text:find("%s") then
         local url = text:match("^%a+://") and text or ("https://" .. text)
         items[#items + 1] = { glyph = "external-link", label = tr("Open") .. " " .. text, run = function() open_url(url) end }
+        -- webová stránka ako samostatná aplikácia (Voltage): vlastné okno, prihlásenie a ikra v GooBare
+        items[#items + 1] = { glyph = "app-window", label = tr("Add as an app") .. ": " .. text, hint = tr("own window"),
+                              run = function() run("latte-webapp", { "pridaj", url }, nil, { output = false }) close() end }
     end
     local def = engine()
     items[#items + 1] = { glyph = "world", label = def.name .. ": " .. text, run = function() search_web(def, text) end }
@@ -431,6 +435,7 @@ function M.openMode(d, m)
 end
 function M.open(d)
     if E.menuId() == "lens" then close() return end
+    if readApps then readApps() end
     M.drop = d or M.drop
     q, confirm, extra = "", nil, { caste = extra.caste }
     E.menuText("")
@@ -510,10 +515,15 @@ function M.start(d)
     -- kláves Windows (latte-spustac → pleamar --say goo "emit lens_toggle"): spúšťač sa dá otvoriť aj bez myši
     on("lens_toggle", function() M.open(d) end)
     on("lens_mode", function(m) M.openMode(d, tonumber(m) or 1) end)
-    sys.watch("apps", function(list)
+    -- zoznam aplikácií: služba `apps` ho prečíta iba raz, preto znova pri každom otvorení spúšťača (nová aplikácia
+    -- z App Managera alebo webová aplikácia je tak hneď nájditeľná; číta sa vo vlastnom vlákne enginu)
+    local function onApps(list)
         apps, byId = list or {}, {}
         for _, a in ipairs(apps) do if a.id then byId[a.id] = a end end
-    end)
+        if E.menuId() == "lens" and q ~= "" then render(true) end
+    end
+    readApps = function() pcall(sys.watch, "apps", onApps) end
+    readApps()
 end
 
 return M

@@ -26,7 +26,7 @@ scene Goo {
     }
     // povolenia: Goobar (okná, spúšťače aplikácií), DaNoGoo (upozornenia), PowerGoo (batéria, Noctalia, pás výkonu:
     // latte-sysmon), QueenGoo
-    permissions { run: "latte-goo", "date", "hyprctl", "latte-app", "noctalia", "latte-spustac", "latte-devices", "latte-apps", "latte-kvapky", "latte-riadok", "latte-hladaj", "latte-ai", "latte-terminal", "xdg-open", "latte-sysmon", "latte-zamok", "latte-chatgoo", "zoxide"; services: "clock", "window", "window.*", "apps", "apps.*", "notifications", "notifications.*", "battery", "clipboard.set", "env" }
+    permissions { run: "latte-goo", "date", "hyprctl", "latte-app", "noctalia", "latte-spustac", "latte-devices", "latte-apps", "latte-kvapky", "latte-riadok", "latte-hladaj", "latte-ai", "latte-terminal", "xdg-open", "latte-sysmon", "latte-zamok", "latte-chatgoo", "zoxide", "latte-webapp"; services: "clock", "window", "window.*", "apps", "apps.*", "notifications", "notifications.*", "battery", "clipboard.set", "env" }
 
     // ── káva (pravidlo 6): pomer vody a mlieka z Baristu (~/.config/latteos/kava, číta logika) ──────────────────
     spring jemna = 60, 14
@@ -2853,6 +2853,8 @@ scene Goo {
         "Linked calendars" = "Prepojené kalendáre"
         "more" = "ďalších"
         "RECENTLY USED" = "NAPOSLEDY SPUSTENÉ"
+        "Add as an app" = "Pridať ako aplikáciu"
+        "own window" = "vlastné okno"
         "Remote help" = "Pomoc na diaľku"
         "MESSAGES" = "SPRÁVY"
         "No new messages" = "Žiadne nové správy"

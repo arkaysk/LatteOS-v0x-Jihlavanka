@@ -796,10 +796,10 @@ def check(path):
         v.update(verdict="ano" if good else "nie", title="RPM balík pre Fedoru" if good else "RPM sa nedá nainštalovať",
                  reasons=reasons + ["inštaluje sa do systému (heslo správcu), nie je izolovaný"], action=["latte-app", "instalator", "install", path])
     elif low.endswith(".appimage"):
-        fuse2 = sh(["rpm", "-q", "fuse-libs"])[0] == 0
+        fuse2 = sh(["rpm", "-q", "fuse-libs"])[0] == 0 and bool(shutil.which("fusermount"))   # knižnica aj fusermount (balík fuse)
         # spustí sa rovno (bez terminálu): najprv sa označí ako spustiteľný, ako dvojklik vo Windows
         v.update(verdict="ano" if fuse2 else "podmienecne", title="AppImage",
-                 reasons=["prenosný program, netreba inštalovať", "FUSE 2 " + ("je nainštalovaný ✓" if fuse2 else "chýba — väčšina AppImage ho potrebuje (sudo dnf install fuse-libs)"),
+                 reasons=["prenosný program, netreba inštalovať", "FUSE 2 " + ("je nainštalovaný ✓" if fuse2 else "chýba — väčšina AppImage ho potrebuje (sudo dnf install fuse fuse-libs)"),
                           "beží bez izolácie"], action=["sh", "-c", 'chmod +x "$1" && exec "$1"', "sh", path],
                  actionLabel="Spustiť", gui=True)
     elif low.endswith((".exe", ".msi")):

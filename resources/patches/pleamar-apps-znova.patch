@@ -1,0 +1,24 @@
+diff --git a/src/logic_luau.rs b/src/logic_luau.rs
+index 7123b6f..f883e0e 100644
+--- a/src/logic_luau.rs
++++ b/src/logic_luau.rs
+@@ -1019,10 +1019,16 @@ impl LuauScript {
+             let first = {
+                 let mut c = c.lock().unwrap();
+                 let v = c.watchers.entry(name.clone()).or_default();
+-                v.push(f);
+-                v.len() == 1
++                // LatteOS (pleamar-apps-znova): ten istý poslucháč sa nepridá druhý raz; `apps` sa číta iba raz,
++                // preto ďalšie sys.watch("apps") ho dá prečítať znova (práve nainštalovaná aplikácia) — výsledok
++                // dostanú všetci poslucháči
++                let known = v.iter().any(|g| *g == f);
++                if !known {
++                    v.push(f);
++                }
++                v.len() == 1 && !known
+             };
+-            if !first {
++            if !first && name != "apps" {
+                 return Ok(true);
+             }
+             let (to_logic, n) = (Mutex::new(to_logic.clone()), name.clone());

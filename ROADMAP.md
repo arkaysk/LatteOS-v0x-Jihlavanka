@@ -468,8 +468,11 @@ texty preložiteľné (`translations`). Noctalia beží bez lišty a robí, čo 
   - [ ] **ikra alebo kvapka, ktorá hrá zvuk, sa vlní a vibruje ako reproduktor**; vlastná hlasitosť tej aplikácie
     v jej kontextovej ponuke (ak ju má), inak inde (napr. karta pri hlasitosti)
   - [ ] **Monitor: kto žerie** energiu, dáta, RAM a miesto na disku — po aplikáciách a s priebehom po dňoch
-  - [ ] **webové aplikácie cez Voltage** (db0x/voltage, pôvodný: webová stránka ako samostatná aplikácia
-    s vlastným oknom, profilom a ikrou)
+  - [x] **webové aplikácie cez Voltage** (7. 10., `latte-webapp`): LensGoo › Web › adresa › **Pridať ako aplikáciu** —
+    zostaví sa na pozadí (~20 s, AppImage ~120 MB) a dá vedieť upozornením; vlastné okno s vlastnou triedou (ikra),
+    vlastné prihlásenie, spúšťač. Voltage sa pri prvom použití stiahne do ~/.local/share/latteos/voltage (npm).
+    Overené na latte-lab (pridanie z LensGoo, spustenie, odstránenie). Ostáva: ikona stránky (favicon), odobratie
+    v App Manageri; AppImage potrebuje FUSE 2 (`fuse`, `fuse-libs` — v inštalátore)
   - [x] **DiskTree** (tobi/disktree, čo zapĺňa disk), 7. 10.: Súbory › pravý klik na priečinok alebo do prázdna →
     Čo zapĺňa tento priečinok; Nastavenia › Úložisko › Čo zapĺňa disk; inštalátor ho preloží (`/usr/bin/disktree`).
     Monitor zatiaľ nie
