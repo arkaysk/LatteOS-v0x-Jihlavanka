@@ -584,6 +584,10 @@ texty preložiteľné (`translations`). Noctalia beží bez lišty a robí, čo 
   alebo pomôže Barista vytvoriť goo na mieru zo základnej ponuky: kvapka = aplikácia, kvapka = rýchle spúšťanie
   aplikácií (skupina), goo zobrazuje údaje (napr. teplota, počet správ) — vrátane všetkých možností ovládania:
   prechod myšou, koliesko, ľavý a pravý klik
+- [x] **Kvapka uhne oknu** (7. 10., nápad používateľa): kvapka na bočnom alebo hornom okraji sa dočasne odsunie pozdĺž
+  okraja, keď sa pod ňou ocitne titulok okna s tlačidlami (NET, minimalizovať, maximalizovať, zavrieť); na hornom okraji
+  iba miestam s tlačidlami. Keď okno odíde, kvapka sa vráti (posun sa neukladá). `E.avoidWindows` z okien GooBaru
+  (každých 0,7 s). Overené na latte-lab: kvapka pod titulkom App Managera, uhnutie pred titulkom ďalšieho okna, návrat
 - [ ] Nápad (inspo/dalsie_inspiracie.md, 7. 10.): vlastná ponuka štartu v štýle Goo podľa **nervboot** (Rust, UEFI,
   predradená systemd-boot); dnes GRUB s položkami SAFE
 - [~] **Odložené na koniec** (používateľ 6. 10.: „preklady odlož nakoniec, ešte nemáme definitívne doriešené

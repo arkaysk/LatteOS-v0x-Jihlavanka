@@ -114,7 +114,7 @@ local function record(d)
     -- meno ikony → znak (kým nepríde, bez ikony); druh 2 (hodiny) má v poli ikony veľký text, nie ikonu
     if isName(ik) and v.druh ~= 2 then ik = glyphs[ik] or "" end
     return {
-        on = not d.hidden, hx = d.x, ox = d.ox or 0, hy = d.y, r = v.velkost, z = d.z, rast = v.rast,
+        on = not d.hidden, hx = d.x, ox = (d.ox or 0) + (d.wo or 0), hy = d.y, r = v.velkost, z = d.z, rast = v.rast,
         grav = d.pinned and 0 or clamp(num(v.gravitacia, 0), 0, 1), dosah = v.dosah, vz = clamp(num(v.vznos, 1), 0, 2),
         lep = v.lepivost, trh = v.trhanie, svetlo = v.svetlo, tahat = v.tahat,
         fx = EFEKTY[v.efekt] or num(v.efekt, 0), fa = v.sila,
@@ -248,6 +248,62 @@ local function separate()
     if next(moved) then save() end
     sepPrefer = nil
 end
+-- ── KVAPKA UHNE OKNU (používateľ 7. 10.) ─────────────────────────────────────────────────────────────────────
+-- „Keď je naboku či hore prilepená kvapka a pod ňou sa ocitnú tlačidlá okna (NET, minimalizovať, maximalizovať,
+-- zavrieť) alebo iné, kvapka sa odsunie, aby nezavadzala“ — ako goo uhnú rozbalenému pásu GooPower. Titulok okna:
+-- lišta hyprbars nad oknom (30 px) a hlavička aplikácie v ňom; na bočných okrajoch sa uhýba celému titulku, na hornom
+-- iba miestam s tlačidlami (koniec vpravo, začiatok vľavo). Posun je dočasný (d.wo, neukladá sa): keď okno odíde,
+-- kvapka sa vráti. GooBar volá E.avoidWindows so zoznamom okien tohto monitora (latte-goo okna, každých 0,7 s).
+local TITLE_UP, TITLE_DOWN, GAP_WIN = 34, 48, 8
+local BTN_R, BTN_L = 190, 120
+function E.avoidWindows(wins)
+    local W, H = num(fact.sw, 1920), num(fact.sh, 1080)
+    local changed = false
+    for k = 0, N - 1 do
+        local d = slots[k]
+        if d and d.wo and (d.hidden or (d.edge or 0) == 0) then d.wo = nil changed = true end
+        local e = d and (d.edge or 0) or 0
+        if d and not d.hidden and not d.dragging and e ~= 0 and num(d.v.sk, 0) ~= 1 and d.y < d.v.velkost * d.z * 1.6 then
+            local r = d.v.velkost * d.z + num(d.v.kw, 0)
+            local a = d.x * elen(d) + (d.ox or 0)                 -- domov pozdĺž okraja (bez dočasného posunu)
+            local lo, hi = r + 6, elen(d) - r - 6
+            -- pásy pozdĺž okraja, kam stred kvapky nesmie: [od, do]
+            local bans = {}
+            for _, w in ipairs(wins or {}) do
+                local ty0, ty1 = w.y - TITLE_UP, w.y + TITLE_DOWN
+                if e == 1 or e == 3 then
+                    -- bočný okraj: kvapka zasahuje do okna, iba ak je okno pri tom okraji (x kvapky do okna)
+                    local cx = e == 1 and (6 + d.y) or (W - 6 - d.y)
+                    if cx + r > w.x and cx - r < w.x + w.w then bans[#bans + 1] = { ty0 - r - GAP_WIN, ty1 + r + GAP_WIN } end
+                elseif e == 2 then
+                    local cy = 6 + d.y
+                    if cy + r > ty0 and cy - r < ty1 then
+                        bans[#bans + 1] = { w.x + w.w - BTN_R - r - GAP_WIN, w.x + w.w + r + GAP_WIN }   -- tlačidlá vpravo
+                        bans[#bans + 1] = { w.x - r - GAP_WIN, w.x + BTN_L + r + GAP_WIN }               -- vľavo (späť, ponuka)
+                    end
+                end
+            end
+            -- najbližšie voľné miesto k domovu (domov sám, alebo kraj niektorého zakázaného pásu)
+            local function free(p)
+                if p < lo or p > hi then return false end
+                for _, b in ipairs(bans) do if p > b[1] and p < b[2] then return false end end
+                return true
+            end
+            local best = free(a) and a or nil
+            if not best then
+                for _, b in ipairs(bans) do
+                    for _, p in ipairs({ b[1] - 1, b[2] + 1 }) do
+                        if free(p) and (not best or math.abs(p - a) < math.abs(best - a)) then best = p end
+                    end
+                end
+            end
+            local wo = best and (best - a) or 0
+            if math.abs(wo) < 0.5 then wo = nil end
+            if wo ~= d.wo then d.wo = wo changed = true end
+        end
+    end
+    if changed then E.publish() end
+end
 function E.setCorner(r)
     local a, b = roh or {}, r or {}
     if a.x == b.x and a.y == b.y and a.w == b.w and a.h == b.h then return end
@@ -284,8 +340,8 @@ local function publish()
             local d = slots[k]
             if d then
                 local r = record(d)
-                if d.nl then r.nl, r.nlh, r.nlo = true, d.nl.x, d.nl.ox or 0 end
-                if d.nr then r.nr, r.nrh, r.nro, r.nry, r.nrr = true, d.nr.x, d.nr.ox or 0, d.nr.y, d.nr.v.velkost * d.nr.z end
+                if d.nl then r.nl, r.nlh, r.nlo = true, d.nl.x, (d.nl.ox or 0) + (d.nl.wo or 0) end
+                if d.nr then r.nr, r.nrh, r.nro, r.nry, r.nrr = true, d.nr.x, (d.nr.ox or 0) + (d.nr.wo or 0), d.nr.y, d.nr.v.velkost * d.nr.z end
                 list[k + 1] = r
             else
                 list[k + 1] = { on = false }
