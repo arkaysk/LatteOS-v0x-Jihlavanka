@@ -434,5 +434,15 @@
  "Night light follows the sun": "Nočné svetlo sa riadi slnkom",
  "Night light off": "Nočné svetlo vypnuté",
  "Undo the change": "Vrátiť späť",
- "Reverted: {what}": "Vrátené: {what}"
+ "Reverted: {what}": "Vrátené: {what}",
+ "Store added: {name} ({n} apps)": "Obchod pridaný: {name} ({n} aplikácií)",
+ "Store removed: {name}": "Obchod odstránený: {name}",
+ "The store could not be added": "Obchod sa nepodarilo pridať",
+ "Address of the app list (curated.yaml, Bazaar format)": "Adresa zoznamu aplikácií (curated.yaml, formát Bazaar)",
+ "Checking the store…": "Overujem obchod…",
+ "Add a community store": "Pridať komunitný obchod",
+ "your store · right click: remove": "tvoj obchod · pravý klik: odstrániť",
+ "Add a store…": "Pridať obchod…",
+ "like in ZimaOS: address of an app list": "ako v ZimaOS: adresa zoznamu aplikácií",
+ "Remove the store": "Odstrániť obchod"
 }
