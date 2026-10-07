@@ -797,15 +797,32 @@ def check(path):
                  reasons=reasons + ["inštaluje sa do systému (heslo správcu), nie je izolovaný"], action=["latte-app", "instalator", "install", path])
     elif low.endswith(".appimage"):
         fuse2 = sh(["rpm", "-q", "fuse-libs"])[0] == 0
+        # spustí sa rovno (bez terminálu): najprv sa označí ako spustiteľný, ako dvojklik vo Windows
         v.update(verdict="ano" if fuse2 else "podmienecne", title="AppImage",
                  reasons=["prenosný program, netreba inštalovať", "FUSE 2 " + ("je nainštalovaný ✓" if fuse2 else "chýba — väčšina AppImage ho potrebuje (sudo dnf install fuse-libs)"),
-                          "beží bez izolácie"], action=["chmod", "+x", path])
+                          "beží bez izolácie"], action=["sh", "-c", 'chmod +x "$1" && exec "$1"', "sh", path],
+                 actionLabel="Spustiť", gui=True)
     elif low.endswith((".exe", ".msi")):
-        has = shutil.which("umu-run") or shutil.which("wine")
-        v.update(verdict="podmienecne" if has else "nie", title="Windows program",
-                 reasons=["spúšťa sa cez Proton/Wine (F8 herná vrstva)", ("umu-launcher/Wine je nainštalovaný" if has else "umu-launcher ani Wine zatiaľ nie sú nainštalované"),
-                          "hry z obchodov (Steam, GOG, Epic) fungujú cez ich launcher; kontrola proti ProtonDB príde neskôr"],
-                 action=["umu-run", path] if has else [])
+        # Windows program (zvyk z Windowsu: dvojklik na setup.exe): spustí ho Bottles — prostredie Windows v izolácii,
+        # kde sa program nainštaluje a ostane ako aplikácia; bez Bottles sa najprv doinštaluje z Flathubu (bez hesla)
+        bottles = sh(["flatpak", "info", "com.usebottles.bottles"])[0] == 0 if shutil.which("flatpak") else False
+        # ako vlastný spúšťač Bottles: súbor ako URI (@@u) — s obyčajnou cestou Bottles beží, ale okno neotvorí
+        import urllib.parse
+        uri = "file://" + urllib.parse.quote(os.path.abspath(path))
+        run_b = ["flatpak", "run", "--command=bottles", "--file-forwarding", "com.usebottles.bottles", "@@u", uri, "@@"]
+        if bottles:
+            v.update(verdict="podmienecne", title="Windows program", actionLabel="Spustiť cez Bottles", gui=True,
+                     reasons=["spustí sa cez Bottles — prostredie Windows v izolácii od zvyšku systému",
+                              "Bottles sa spýta, do ktorej „fľaše“ (prostredia) program dať; inštalátor potom prebehne ako vo Windows",
+                              "väčšina programov funguje, niektoré (anti-cheat, ovládače) nie; hry z obchodov radšej cez ich launcher"],
+                     action=run_b)
+        elif shutil.which("flatpak"):
+            v.update(verdict="podmienecne", title="Windows program", actionLabel="Doinštalovať Bottles a spustiť", gui=True,
+                     reasons=["Windows programy spúšťa Bottles — ešte nie je nainštalovaný (z Flathubu, pre tvoj účet, bez hesla)",
+                              "po inštalácii sa program hneď otvorí v Bottles"],
+                     action=["sh", "-c", 'flatpak install --user -y --noninteractive flathub com.usebottles.bottles && exec flatpak run --command=bottles --file-forwarding com.usebottles.bottles @@u "$1" @@', "sh", uri])
+        else:
+            v.update(verdict="nie", title="Windows program", reasons=["chýba Flatpak, cez ktorý sa inštaluje Bottles"], action=[])
     elif low.endswith(".apk"):
         has = shutil.which("waydroid")
         v.update(verdict="podmienecne" if has else "nie", title="Android aplikácia",

@@ -467,7 +467,10 @@ texty preložiteľné (`translations`). Noctalia beží bez lišty a robí, čo 
   - [ ] **webové aplikácie cez Voltage** (db0x/voltage, pôvodný: webová stránka ako samostatná aplikácia
     s vlastným oknom, profilom a ikrou)
   - [ ] **DiskTree** (tobi/disktree, čo zapĺňa disk) ako súčasť Monitora aj Súborov
-  - [ ] **Bottles** pri prechode z Windowsu (`.exe` → ponúknuť Bottles)
+  - [x] **Bottles** pri prechode z Windowsu (7. 10.): dvojklik na `.exe`/`.msi` otvorí „Bude to fungovať?“ s jedným
+    tlačidlom **Spustiť cez Bottles** (bez Bottles: Doinštalovať Bottles a spustiť — z Flathubu, bez hesla); Bottles
+    otvorí výber fľaše. `.flatpak` aj AppImage idú cez to isté miesto (AppImage sa spustí rovno, bez terminálu).
+    Overené s náhradným setup.exe; skutočný inštalátor ešte nie
   - [ ] **Zoxide** (najpoužívanejšie priečinky) pre LensGoo aj Súbory
   - [ ] dialóg Otvoriť/Uložiť cez XDG Desktop Portal v **jednotnom vzhľade s oknami** (nie vo vzhľade Goo lišty)
   - [ ] **„Prečo to spadlo?“** (nápad z Omarchy): pád programu (systemd-coredump) → bublina s tlačidlom *Prečo?*,
