@@ -5,6 +5,17 @@ tu je, **kedy a prečo** sa čo rozhodlo, a čo bolo zamietnuté. Podrobné pôv
 z vtedy) je v [docs_zaloha/2026-10-06-latteos-goo-pred-rozdelenim.md](../../docs_zaloha/2026-10-06-latteos-goo-pred-rozdelenim.md).
 Nové rozhodnutie: jeden riadok sem (dátum, čo, prečo) a oprava platného znenia v LATTEOS-GOO.md.
 
+## 7. 10. 2026
+
+- **Kvapky ako 3D tekuté kvapky z Figmy („Droplu“), ale v kávových farbách:** priehľadné lesklé telo, odlesk
+  zhora, svetlo prechádzajúce kvapkou, drobné bublinky vzduchu, lom toho, čo je za kvapkou. Prostriedky enginu:
+  `glass` (lom svetla), odlesky, vlastné shadery. Pokus: tri odtiene (espresso, café crema, latte).
+- **Ikony sú vecou prispôsobenia:** v Nastaveniach › Vzhľad › Ikony bude ponuka sád, aj farebných. Návrhy sád:
+  Phosphor (duotone, obrys, plné), Tabler (dnešná), Material Symbols, Fluent; farebné Fluent Emoji 3D (MIT),
+  animované Noto Animated Emoji (CC BY 4.0). Flaticon nie — jeho licencia nedovoľuje šíriť súbory ikon v otvorenom
+  projekte. Porovnanie: <https://claude.ai/artifact/HDM8y4xMjo9ZN1EKKJHJxb>.
+- **Nečinnosť podľa celého systému** (myš aj klávesnica): kvapky nezaspia a nehrajú sa, keď niekto píše bez myši.
+
 ## 6. 10. 2026
 
 - **Preklady aplikácií až nakoniec** („preklady odlož nakoniec, ešte nemáme definitívne doriešené aplikácie“):
