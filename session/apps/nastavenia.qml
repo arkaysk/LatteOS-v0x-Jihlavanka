@@ -1959,6 +1959,16 @@ ShellRoot {
             Toggle { visible: app.gooEngine; on: app.kv.zive !== false
                      label: i18n.tr("Lively behaviour: when you are away, drops play and the surface shows rain, snow and wind as outside")
                      onToggled: { const k = JSON.parse(JSON.stringify(app.kv)); k.zive = !(app.kv.zive !== false); app.kvSave(k, i18n.tr("Saved")); } }
+            // materiál kvapiek: obyčajná káva, alebo sklenená káva — priehľadná, láme tapetu a okná za sebou (7. 10.)
+            Heading { visible: app.gooEngine; text: i18n.tr("DROP MATERIAL"); topPadding: 6 }
+            Segments {
+                visible: app.gooEngine
+                options: [["kava", i18n.tr("Coffee")], ["sklo", i18n.tr("Glass coffee — see-through, bends what is behind it")]]
+                value: app.kv.material === "sklo" ? "sklo" : "kava"
+                onPicked: (v) => { const k = JSON.parse(JSON.stringify(app.kv)); k.material = v; app.kvSave(k, i18n.tr("Saved")); }
+            }
+            Text { visible: app.gooEngine; width: parent.width; wrapMode: Text.WordWrap; color: theme.fgDim; font { family: theme.fontUi; pixelSize: 12 }
+                   text: i18n.tr("Glass coffee needs a bit more power while something moves on the screen (it looks at what is behind the drops).") }
             Heading { text: "CHATGOO (DOPLNOK PRE BEEPER)"; topPadding: 6 }
             Segments {
                 options: [["kvapka", "Kvapka ChatGoo — Beeper sa minimalizuje do nej, správy okolo"], ["lista", "Bez kvapky — ikona Beepera v rohovej lište Noctalie"]]

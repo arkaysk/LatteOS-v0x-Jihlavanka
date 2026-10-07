@@ -245,6 +245,11 @@ ostatné kvapky sú iba na hlavnom monitore.
 ### 4.10 Nastavenia › Kvapky (Goo)
 - Jadro: veľkosť a Vrátiť na miesto; voliteľné: aj skryť / ukázať; veľkosť 50–220 %. ChatGoo: kvapka alebo ikona
   v rohovej lište. Vlastné kvapky. Súbor `~/.config/latteos/kvapky.json` (engine ho číta každé 2 s).
+- **Materiál kvapiek** (7. 10.): **Káva** (predvolená) alebo **Sklenená káva** (`material: "sklo"`) — predloha
+  „Droplu“ z Figmy v kávových farbách: telo lišty a kvapiek je sklo, ktoré láme tapetu a okná za sebou (pleamar
+  `glass`, `lens`, svetlo okraja od kurzora), nad ním priesvitná káva (druhé telo s tými istými tvarmi, 44 %)
+  a na každej kvapke lesklý odlesk. Cena na latte-lab (RX 640): engine hlavného monitora ~27 % → ~41 % jedného
+  jadra, Hyprland bez zmeny (~16 %); pri obyčajnej káve sklo nestojí nič.
 - Hlavné nastavenia systému sú **Nastavenia LatteOS**; vybrané položky z nastavení Noctalie sa do nich selektívne
   integrujú (návrh: komunitné doplnky, widgety rohovej lišty, kalendárové účty, filtre a história upozornení, nočné
   svetlo, OSD, horúce rohy, história schránky, rozloženie klávesnice). Tapety zjednotiť na jedno miesto.
