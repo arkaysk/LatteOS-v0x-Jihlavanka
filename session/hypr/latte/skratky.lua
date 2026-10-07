@@ -225,6 +225,8 @@ end
 local function windows()
     -- Štart; v hernom režime samotný Win nič neotvorí (ako herný režim klávesníc a Windows), Ctrl+Esc áno
     local game_file = (os.getenv("XDG_STATE_HOME") or ((os.getenv("HOME") or "") .. "/.local/state")) .. "/latteos/game-mode"
+    -- prehľad skratiek (bughunt 686): Win + F1 (F1 = pomoc) a tlačidlo v rýchlom zozname LensGoo. Podržanie Win sa
+    -- zmerať nedá: väzba samotného Win (aj long_press, aj bez release) sa v Hyprlande 0.56 volá až pri pustení (7. 10.)
     local function start_key()
         local f = io.open(game_file, "r")
         if f then local v = f:read("*l"); f:close(); if v == "1" then return end end
@@ -233,6 +235,7 @@ local function windows()
     local start = run("latte-spustac prepni")
     bind("SUPER + SUPER_L", start_key, { release = true })                       -- samotný Win = Štart (App Manager)
     bind("SUPER + SUPER_R", start_key, { release = true })
+    if os.getenv("LATTE_VARIANT") == "kvapky" then bind("SUPER + F1", run('pleamar --say goo "emit goo_skratky"')) end
     bind("CTRL + Escape", start)                                                  -- Štart aj bez klávesu Win
     -- plocha Goo: hľadanie, Spustiť, AI, upozornenia a čas sú kvapky (LensGoo, ClockGoo), nie panely Noctalie
     local goo = os.getenv("LATTE_VARIANT") == "kvapky"

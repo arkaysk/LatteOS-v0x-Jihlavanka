@@ -466,6 +466,29 @@ function M.open(d)
     end)
 end
 
+-- PREHĽAD SKRATIEK (podržanie Win, bughunt 686): karta v dvoch stĺpcoch — čo robí ktorá skratka (profil Windows)
+local SHORTCUTS = {
+    { "Win", "Start: apps, files, web, AI", "search" }, { "Win + S", "Search", "search" }, { "Win + R", "Run a command", "terminal-2" },
+    { "Win + E", "Files", "folder" }, { "Win + I", "Settings", "settings" }, { "Win + L", "Lock", "lock" },
+    { "Win + D", "Show the desktop", "device-desktop" }, { "Win + N", "Notifications and calendar", "bell" },
+    { "Win + V", "Clipboard history", "clipboard" }, { "Win + C", "Ask AI", "sparkles" },
+    { "Win + Space", "Keyboard language", "keyboard" },
+    { "Alt + Tab", "Switch windows", "app-window", 2 }, { "Alt + F4", "Close the window", "x", 2 },
+    { "Win + arrows", "Snap the window", "layout-grid", 2 }, { "Win + Tab", "All windows", "stack-2", 2 },
+    { "Win + 1…9", "Window on the bar", "number-123", 2 }, { "Win + Ctrl + D", "New desktop", "plus", 2 },
+    { "Win + Ctrl + ←/→", "Switch desktop", "arrows-exchange", 2 }, { "Win + Shift + S", "Screenshot of an area", "photo", 2 },
+    { "Ctrl + Shift + Esc", "Monitor (task manager)", "chart-bar", 2 }, { "Win + P", "Project to a screen", "device-desktop", 2 },
+    { "Win + T", "Control Goo with the keyboard", "keyboard", 2 },
+}
+function M.shortcuts(d)
+    if E.menuId() == "skratky" then close() return end
+    local items = { { hd = true, label = tr("SHORTCUTS") }, { hd = true, col = 2, label = tr("WINDOWS") } }
+    for _, s in ipairs(SHORTCUTS) do
+        items[#items + 1] = { col = s[4], glyph = s[3], label = tr(s[2]), hint = tr(s[1]), info = true }
+    end
+    E.menu(items, 760, { id = "skratky", cols = { 380, 380 }, owner = M.drop })
+end
+
 -- RÝCHLY ZOZNAM (pravý klik na LensGoo, používateľ 6. 10.): jednoduché okno s ikonami aplikácií — naposledy spustené
 -- a obľúbené ako dlaždice (ikona nad názvom), klik spustí; pod nimi hľadanie (otvorí spúšťač). Bez písania.
 local function quick_items(d)
@@ -501,7 +524,8 @@ local function quick_items(d)
     end
     items[#items + 1] = { sep = true, pills = {
         { glyph = "search", label = tr("Search…"), run = function() after(60, function() M.open(d) end) end },
-        { glyph = "apps", label = tr("App Manager"), run = function() run("latte-app", { "aplikacie" }, nil, { output = false }) end } } }
+        { glyph = "apps", label = tr("App Manager"), run = function() run("latte-app", { "aplikacie" }, nil, { output = false }) end },
+        { glyph = "keyboard", label = tr("Shortcuts"), keep = true, run = function() after(60, function() M.shortcuts(d) end) end } } }
     return items
 end
 function M.quick(d)
@@ -521,6 +545,7 @@ function M.start(d)
     -- kláves Windows (latte-spustac → pleamar --say goo "emit lens_toggle"): spúšťač sa dá otvoriť aj bez myši
     on("lens_toggle", function() M.open(d) end)
     on("lens_mode", function(m) M.openMode(d, tonumber(m) or 1) end)
+    on("goo_skratky", function() M.shortcuts(d) end)
     -- zoznam aplikácií: služba `apps` ho prečíta iba raz, preto znova pri každom otvorení spúšťača (nová aplikácia
     -- z App Managera alebo webová aplikácia je tak hneď nájditeľná; číta sa vo vlastnom vlákne enginu)
     local function onApps(list)

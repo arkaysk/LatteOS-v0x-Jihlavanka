@@ -242,6 +242,7 @@ scene Goo {
     fact wm.w = 0
     fact wm.h = 0
     event lens_toggle ->                      // kláves Windows: latte-spustac → pleamar --say goo "emit lens_toggle"
+    event goo_skratky ->                      // Win + F1: prehľad skratiek (latte/skratky.lua)
     event lens_mode ->                        // Win+S / Win+R / Win+C: spúšťač v režime (1 aplikácie, 4 príkaz, 0 AI)
     event clock_notes ->                      // Win+N: ClockGoo upozornenia a kalendár
     event clock_card ->                       // Win+Alt+D: ClockGoo karta času
@@ -2853,6 +2854,30 @@ scene Goo {
         "Linked calendars" = "Prepojené kalendáre"
         "more" = "ďalších"
         "RECENTLY USED" = "NAPOSLEDY SPUSTENÉ"
+        "Shortcuts" = "Skratky"
+        "SHORTCUTS" = "SKRATKY"
+        "WINDOWS" = "OKNÁ"
+        "Start: apps, files, web, AI" = "Štart: aplikácie, súbory, web, AI"
+        "Search" = "Hľadať"
+        "Run a command" = "Spustiť príkaz"
+        "Show the desktop" = "Ukázať plochu"
+        "Notifications and calendar" = "Upozornenia a kalendár"
+        "Clipboard history" = "História schránky"
+        "Emoji" = "Emoji"
+        "Keyboard language" = "Jazyk klávesnice"
+        "Win + Space" = "Win + Medzerník"
+        "Switch windows" = "Prepnúť okno"
+        "Close the window" = "Zavrieť okno"
+        "Win + arrows" = "Win + šípky"
+        "Snap the window" = "Prichytiť okno"
+        "All windows" = "Všetky okná"
+        "Window on the bar" = "Okno na lište"
+        "Switch desktop" = "Prepnúť plochu"
+        "Screenshot of an area" = "Snímka časti obrazovky"
+        "Monitor (task manager)" = "Monitor (správca úloh)"
+        "Project to a screen" = "Premietanie"
+        "Control Goo with the keyboard" = "Goo z klávesnice"
+        "Lock, sign out, Monitor" = "Zamknúť, odhlásiť, Monitor"
         "Do not disturb is on — notifications wait here quietly" = "Nerušiť je zapnuté — upozornenia sa potichu zbierajú tu"
         "Sure?" = "Naozaj?"
         "windows:" = "okná:"
