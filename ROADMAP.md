@@ -574,6 +574,16 @@ texty preložiteľné (`translations`). Noctalia beží bez lišty a robí, čo 
 - [x] **Prehľad skratiek** (7. 10., bughunt 686): karta Goo v dvoch stĺpcoch — **Win + F1** alebo LensGoo pravý klik ›
   Skratky. Podržanie Win sa zmerať nedá (väzba samotného Win sa v Hyprlande 0.56 volá až pri pustení, aj long_press);
   overené ťukmi na Win cez ydotool (Štart ostal Štartom)
+- [x] **Bežná plocha bez skúšobných kvapiek** (7. 10.): skúšobné kvapky enginu (Kameň, Počítadlo, Pošta, ktorá každých
+  12 s predstiera novú správu, druhé Hodiny, Bublinka, Kvapôčka, Lepkavá, Ťažká, Zvedavka), príklady (Kalkulačka,
+  Systém) a ladiaci text vľavo hore iba vo **vývojárskom režime** — Nastavenia › Kvapky (súbor
+  ~/.config/latteos/goo/vyvoj, `latte-kvapky znova`). Overené na latte-lab: bežná plocha iba s kvapkami GOO
+- [ ] **Komunitné obchody — viac a vlastný** (7. 10.): komunitných obchodov je viac než Bluefin a Bazzite; App Manager
+  má mať možnosť pridať vlastný obchod (adresa so zoznamom aplikácií), rovnako ako ZimaOS
+- [ ] **Tvorca Goo** (7. 10.): dnes sa vlastná kvapka tvorí formulárom „pridať príkaz“. Má byť správca či tvorca goo,
+  alebo pomôže Barista vytvoriť goo na mieru zo základnej ponuky: kvapka = aplikácia, kvapka = rýchle spúšťanie
+  aplikácií (skupina), goo zobrazuje údaje (napr. teplota, počet správ) — vrátane všetkých možností ovládania:
+  prechod myšou, koliesko, ľavý a pravý klik
 - [ ] Nápad (inspo/dalsie_inspiracie.md, 7. 10.): vlastná ponuka štartu v štýle Goo podľa **nervboot** (Rust, UEFI,
   predradená systemd-boot); dnes GRUB s položkami SAFE
 - [~] **Odložené na koniec** (používateľ 6. 10.: „preklady odlož nakoniec, ešte nemáme definitívne doriešené

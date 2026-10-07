@@ -42,7 +42,10 @@ ShellRoot {
                onLoaded: app.kapsaMax = text().trim(); onLoadFailed: app.kapsaMax = "" }
     Process { id: kapsaCnt; command: ["sh", "-c", "cliphist list 2>/dev/null | wc -l"]
               stdout: StdioCollector { onStreamFinished: app.kapsaCount = parseInt(this.text) || 0 } }
-    property bool nightOn: false               // nočné svetlo Noctalie (Nastavenia › Čas)
+    property bool gooDev: false                // vývojársky režim enginu Goo (~/.config/latteos/goo/vyvoj)
+    FileView { path: app.cfgHome + "/latteos/goo/vyvoj"; printErrors: false; watchChanges: true; onFileChanged: reload()
+               onLoaded: app.gooDev = true; onLoadFailed: app.gooDev = false }
+    property bool nightOn: false              // nočné svetlo Noctalie (Nastavenia › Čas)
     property bool syncOn: false                // Syncthing beží (Nastavenia › Cloud)
     // obnovenie relácie (latte-relacia): súbor ~/.config/latteos/relacia = off ho vypne
     property bool restoreOn: true
@@ -1997,6 +2000,11 @@ ShellRoot {
                    text: app.gooEngine
                        ? i18n.tr("GooBar, GooPower and LensGoo are the core of the shell and cannot be hidden (their size can be changed). QueenGoo and ClockGoo are optional: click a card to hide or show it.")
                        : "Goobar (lišta s oknami), QueenGoo a PowerGoo tvoria základ shellu — spodnú lištu — a nedajú sa skryť (dá sa im zmeniť veľkosť). TimeGoo a DaNoGoo skryješ alebo ukážeš kliknutím na kartu." }
+            // vývojársky režim enginu (7. 10.): skúšobné kvapky (Kameň, Počítadlo, Pošta…), príklady a ladiaci text
+            Toggle { visible: app.gooEngine; on: app.gooDev; label: i18n.tr("Developer mode: test drops and engine debug text")
+                     onToggled: { app.gooDev = !app.gooDev
+                                  app.run(["sh", "-c", 'mkdir -p "$(dirname "$1")"; if [ "$2" = 1 ]; then : > "$1"; else rm -f "$1"; fi; latte-kvapky znova', "sh", app.cfgHome + "/latteos/goo/vyvoj", app.gooDev ? "1" : "0"],
+                                          app.gooDev ? i18n.tr("Developer mode on") : i18n.tr("Developer mode off")); } }
             Toggle { visible: app.gooEngine; on: app.kv.zive !== false
                      label: i18n.tr("Lively behaviour: when you are away, drops play and the surface shows rain, snow and wind as outside")
                      onToggled: { const k = JSON.parse(JSON.stringify(app.kv)); k.zive = !(app.kv.zive !== false); app.kvSave(k, i18n.tr("Saved")); } }
