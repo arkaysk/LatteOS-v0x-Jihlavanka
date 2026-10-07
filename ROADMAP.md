@@ -457,7 +457,9 @@ texty preložiteľné (`translations`). Noctalia beží bez lišty a robí, čo 
   - [ ] **`latte-mcp` na základe hypruse** (Hyprland ako nástroje MCP); funguje aj s lokálnym modelom
   - [ ] **App Manager a obchod**: Bazaar (Flathub) ako jadro, obchod podľa ZimaOS, hodnotenia a snímky, aktualizácie
     na jednom mieste, povolenia Flatpaku čitateľne pri inštalácii
-  - [ ] **synchronizácia zariadení** (Syncthing, neskôr any-sync)
+  - [x] **synchronizácia zariadení** (7. 10.): Nastavenia › Cloud a synchronizácia › Medzi tvojimi zariadeniami — vypínač
+    služby Syncthing (systemd --user) a Vybrať priečinky a zariadenia (jeho stránka v prehliadači). Služba overená
+    (zapnutie, stránka odpovedá, vypnutie); klik na prepínač nie (prekrylo ho iné okno). Neskôr any-sync
   - [ ] na doriešenie: **prostredie Súborov nad pôvodným súborovým systémom** — návrh: dva panely, náhľady, značky,
     synchronizované priečinky so stavom, telefón a sieť ako miesta (vzor: Spacedrive, Nextcloud virtuálne súbory)
   - [x] **obnovenie relácie** (7. 10., `latte-relacia`): po prihlásení sa aplikácie otvoria na svojich plochách, plávajúce
@@ -494,7 +496,8 @@ texty preložiteľné (`translations`). Noctalia beží bez lišty a robí, čo 
     bubliny v LensGoo aj plnohodnotné samostatné okno nad tým istým jadrom (rozhovory, poskytovatelia, lokálne modely,
     hlas, MCP, otázky na vlastné dokumenty, dlhodobá pamäť, príkazy z AI po potvrdení). AI v LensGoo ešte nie je
     plne funkčná — ak Newelle dáva kód alebo funkčnosť podľa zadania, prevziať; prevzatý kód = GPL-3 (licencia 0.2)
-  - [ ] **bezpečnostná kontrola balíkov** (perplexityai/bumblebee, Go, Apache 2.0) aj pre bežného používateľa:
+  - [ ] **bezpečnostná kontrola balíkov** (perplexityai/bumblebee, Go, Apache 2.0) aj pre bežného používateľa — 7. 10.:
+    odložené do F6: Bumblebee iba porovnáva s katalógom hlásení, ktorý mu treba dodať (zdroj napr. OSV, malicious packages);
     keď vyjde varovanie o napadnutom balíku alebo rozšírení a na PC je, ukáže sa bublina; spolu s bezpečnostnými
     varovaniami dnf a Flatpaku (F6)
   - [x] deň a noc na hladine, prvá časť (6. 10.): svetlo v kvapkách a žiara nad horizontom podľa výšky slnka

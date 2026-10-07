@@ -42,6 +42,7 @@ ShellRoot {
                onLoaded: app.kapsaMax = text().trim(); onLoadFailed: app.kapsaMax = "" }
     Process { id: kapsaCnt; command: ["sh", "-c", "cliphist list 2>/dev/null | wc -l"]
               stdout: StdioCollector { onStreamFinished: app.kapsaCount = parseInt(this.text) || 0 } }
+    property bool syncOn: false                // Syncthing beží (Nastavenia › Cloud)
     // obnovenie relácie (latte-relacia): súbor ~/.config/latteos/relacia = off ho vypne
     property bool restoreOn: true
     FileView { path: app.cfgHome + "/latteos/relacia"; printErrors: false
@@ -2293,6 +2294,23 @@ ShellRoot {
         Column {
             id: cloudPage
             spacing: 12
+            // synchronizácia medzi vlastnými zariadeniami (Syncthing, 7. 10.): priečinky sa držia rovnaké na PC, notebooku
+            // a telefóne priamo medzi nimi, bez cloudu; služba účtu (systemd --user)
+            Component.onCompleted: syncState.running = true
+            Process { id: syncState; command: ["systemctl", "--user", "is-active", "syncthing"]
+                      stdout: StdioCollector { onStreamFinished: app.syncOn = this.text.trim() === "active" } }
+            Process { id: syncSet; onExited: syncState.running = true }
+            Heading { text: i18n.tr("BETWEEN YOUR DEVICES (SYNCTHING)") }
+            Text { width: Math.min(parent.width, 680); wrapMode: Text.WordWrap; color: theme.fgDim; font { family: theme.fontUi; pixelSize: 12 }
+                   text: i18n.tr("Folders stay the same on this PC, your laptop and phone, directly between them — without a cloud. On the phone use the Syncthing app.") }
+            Row {
+                spacing: 12
+                Toggle { on: app.syncOn; label: i18n.tr("Synchronize between my devices")
+                         onToggled: { syncSet.command = ["systemctl", "--user", app.syncOn ? "disable" : "enable", "--now", "syncthing"]; syncSet.running = true; app.syncOn = !app.syncOn; } }
+                Button { visible: app.syncOn; label: i18n.tr("Choose folders and devices"); glyph: "external-link"
+                         onClicked: Quickshell.execDetached(["xdg-open", "http://127.0.0.1:8384"]) }
+            }
+            Heading { text: i18n.tr("CLOUD ACCOUNTS"); topPadding: 8 }
             readonly property var types: ({ drive: "Google Drive", onedrive: "OneDrive", dropbox: "Dropbox", webdav: "Nextcloud / WebDAV", s3: "S3", sftp: "SFTP (domáci server)", pcloud: "pCloud", mega: "MEGA", box: "Box", protondrive: "Proton Drive", alias: "priečinok" })
             Text { visible: app.clouds.length === 0; width: parent.width; wrapMode: Text.WordWrap; color: theme.fgDim; font { family: theme.fontUi; pixelSize: 13 }
                    text: "Zatiaľ žiadny účet. Klikni Pridať účet — otvorí sa sprievodca rclone (n = nový, potom vyber službu a prihlás sa v prehliadači)." }
