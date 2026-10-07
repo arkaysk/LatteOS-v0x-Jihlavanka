@@ -233,6 +233,14 @@ local function rows_files()
         for _, f in ipairs(cfg._priecinky or {}) do
             items[#items + 1] = { glyph = f.glyph or "folder", label = tr(f.name), hint = f.kratko or "", run = function() run("latte-app", { "subory", f.path }, nil, { output = false }) close() end }
         end
+        -- často používané priečinky (zoxide): tie, v ktorých človek v Súboroch najčastejšie pracuje
+        for i, f in ipairs(cfg._caste or {}) do
+            items[#items + 1] = { sep = i == 1, glyph = "history", label = f.name, hint = f.kratko or "",
+                                  run = function()
+                                      run("zoxide", { "add", "--", f.path }, nil, { output = false })
+                                      run("latte-app", { "subory", f.path }, nil, { output = false }) close()
+                                  end }
+        end
         return items
     end
     for i, r in ipairs(extra.files or {}) do

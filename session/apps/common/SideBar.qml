@@ -42,6 +42,7 @@ Rectangle {
                     id: sec
                     required property var modelData
                     width: col.width
+                    visible: (modelData.items || []).length > 0          // prázdna skupina (napr. Často používané) sa neukáže
                     readonly property bool open: !bar.collapsed[modelData.title]
 
                     Item {

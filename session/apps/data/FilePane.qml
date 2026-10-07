@@ -202,10 +202,14 @@ Rectangle {
     radius: 10
 
     property string selectAfter: ""       // po návrate o úroveň vyššie označiť priečinok, z ktorého sme prišli
+    // najpoužívanejšie priečinky (zoxide, ROADMAP): započíta sa priečinok, v ktorom človek chvíľu ostal (nie každý,
+    // cez ktorý iba prešiel); LensGoo a bočný panel ich ponúknu ako Často používané
+    Timer { id: zxTimer; interval: 2000; onTriggered: if (pane.path.indexOf("/run/") !== 0 && pane.path.indexOf("/proc") !== 0 && pane.path !== "/") { zx.command = ["zoxide", "add", "--", pane.path]; zx.running = true; } }
+    Process { id: zx }
     function go(p, push) {
         if (!p) return;
         if (p.length > 1 && p.endsWith("/")) p = p.slice(0, -1);
-        if (p !== path) { marked = ({}); anchorIdx = -1; }
+        if (p !== path) { marked = ({}); anchorIdx = -1; zxTimer.restart(); }
         path = p;
         cur = dotdot && p !== "/" ? -1 : (folder.count ? 0 : -1);
         if (push !== false) {
