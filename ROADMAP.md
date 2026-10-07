@@ -486,7 +486,9 @@ texty preložiteľné (`translations`). Noctalia beží bez lišty a robí, čo 
     človek ostal aspoň 2 s; LensGoo › Súbory a bočný panel Súborov ukazujú 5 Často používaných (mimo Obľúbených);
     prázdna skupina bočného panela sa neukazuje. Overené na latte-lab
   - [ ] dialóg Otvoriť/Uložiť cez XDG Desktop Portal v **jednotnom vzhľade s oknami** (nie vo vzhľade Goo lišty)
-  - [ ] **„Prečo to spadlo?“** (nápad z Omarchy): pád programu (systemd-coredump) → bublina s tlačidlom *Prečo?*,
+  - [x] **„Prečo to spadlo?“** (7. 10., `latte-pady`): pád programu → upozornenie v ClockGoo (Prečo? · Neukazovať pre
+    tento program); Prečo? = dokument s vysvetlením od AI a technickými údajmi (bez AI iba údaje). Kompozitor pri
+    odhlásení sa nehlási. Overené skúšobným pádom na latte-lab. Pôvodne:
     vysvetlí lokálny alebo zvolený model; stíšenie pre konkrétny program; bez AI iba upozornenie
   - [ ] asi áno: **zručnosť LatteOS pre AI** (vie nastavovať systém: témy, kvapky, okná) — cez `latte-mcp`
   - [ ] **Barista ako pomocník** (nielen sprievodca prvým spustením): vyvolá sa z kontextovej ponuky okna pravým
