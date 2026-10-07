@@ -180,6 +180,9 @@ local function items(d)
     list[#list + 1] = { sep = true, glyph = "settings", label = tr("Settings"), run = function() run("latte-app", { "nastavenia" }) end }
     list[#list + 1] = { glyph = "chart-bar", label = tr("Monitor"), hint = tr(pas.on and "strip on" or "right click: strip"),
                         run = function() run("latte-app", { "monitor" }) end }
+    -- pomoc na diaľku jedným klikom (ako Rýchla pomoc vo Windows): RustDesk ukáže číslo a heslo, ktoré človek nadiktuje
+    -- pomocníkovi; bez RustDesku sa otvorí App Manager
+    list[#list + 1] = { glyph = "lifebuoy", label = tr("Remote help"), hint = "RustDesk", run = function() run("latte-goo", { "pomoc" }, nil, { output = false }) end }
     list[#list + 1] = { sep = true, pills = { { glyph = "moon", label = tr("Sleep"), run = session("suspend") },
                                               { glyph = "refresh", label = tr("Restart"), run = session("reboot") },
                                               { glyph = "power", label = tr("Shut down"), danger = true, run = session("shutdown") } } }
