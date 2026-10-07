@@ -584,10 +584,17 @@ texty preložiteľné (`translations`). Noctalia beží bez lišty a robí, čo 
   adresu; `latte-apps obchod-pridaj` overí, že na nej sú aplikácie, a obchod sa hneď otvorí. Vlastné obchody sú
   v ~/.config/latteos/obchody.json, pravý klik › „Odstrániť obchod“ (`obchod-odober`) a okno sa vráti na Objavte.
   Overené na latte-lab: zlá adresa odmietnutá so správou, pridanie cez okno (13 aplikácií), odstránenie pravým klikom
-- [ ] **Tvorca Goo** (7. 10.): dnes sa vlastná kvapka tvorí formulárom „pridať príkaz“. Má byť správca či tvorca goo,
+- [x] **Tvorca Goo** (7. 10.): dnes sa vlastná kvapka tvorí formulárom „pridať príkaz“. Má byť správca či tvorca goo,
   alebo pomôže Barista vytvoriť goo na mieru zo základnej ponuky: kvapka = aplikácia, kvapka = rýchle spúšťanie
   aplikácií (skupina), goo zobrazuje údaje (napr. teplota, počet správ) — vrátane všetkých možností ovládania:
-  prechod myšou, koliesko, ľavý a pravý klik
+  prechod myšou, koliesko, ľavý a pravý klik. **Hotové:** Nastavenia › Kvapky › Tvorca Goo (zoznam vlastných goo,
+  Vytvoriť/Upraviť/Odstrániť; 1 druh, 2 aplikácia / skupina s mriežkou ikon a hľadaním / údaj, 3 myš, 4 názov a povaha),
+  LensGoo › pravý klik na aplikáciu › Pripnúť ako kvapku, pravý klik na goo › Upraviť v Tvorcovi Goo (Nastavenia sa
+  otvoria na formulári, aj zo zbalenia, jedno okno cez IPC). Engine: `pouzivatel.luau` (aplikácia, skupina, údaj,
+  ponuka goo), `latte-goo uloz|zmaz|poloha`, údaje z `latte-sysmon goo-raz`; nové goo si nájde voľné miesto (nie
+  v páse výkonu) a zapíše si ho ako domov. Overené na latte-lab: všetky tri druhy, karta skupiny aj s hrami zo Steamu,
+  bublina údaja, pripnutie z LensGoo, úprava a odstránenie z goo, poloha po reštarte enginu. Ešte nie: „počet správ“
+  ako hotový údaj (pošta, chaty) a Barista ako sprievodca tvorbou (zatiaľ formulár)
 - [x] **Kvapka uhne oknu** (7. 10., nápad používateľa): kvapka na bočnom alebo hornom okraji sa dočasne odsunie pozdĺž
   okraja, keď sa pod ňou ocitne titulok okna s tlačidlami (NET, minimalizovať, maximalizovať, zavrieť); na hornom okraji
   iba miestam s tlačidlami. Keď okno odíde, kvapka sa vráti (posun sa neukladá). `E.avoidWindows` z okien GooBaru

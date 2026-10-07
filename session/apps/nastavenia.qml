@@ -66,7 +66,9 @@ ShellRoot {
     readonly property string user: Quickshell.env("USER") || ""
     readonly property string cfgHome: Quickshell.env("XDG_CONFIG_HOME") || (home + "/.config")
     readonly property string stateHome: Quickshell.env("XDG_STATE_HOME") || (home + "/.local/state")
-    property string section: (Quickshell.env("LATTE_APP_ARGS") || "").trim() || "domov"
+    property string section: (Quickshell.env("LATTE_APP_ARGS") || "").trim().split(/\s+/)[0] || "domov"
+    // druhé slovo: `latte-app nastavenia kvapky ID` (pravý klik na vlastné goo › Upraviť v Tvorcovi Goo)
+    property string tvOpenId: (Quickshell.env("LATTE_APP_ARGS") || "").trim().split(/\s+/)[1] || ""
     property var history: []
     property int historyIndex: -1
     property string search: ""
@@ -121,6 +123,113 @@ ShellRoot {
         app.kv = k;
         run(["sh", "-c", 'mkdir -p "$(dirname "$1")" && printf "%s\\n" "$2" > "$1.new" && mv -f "$1.new" "$1"', "sh", app.kvFile, JSON.stringify(k)], msg);
     }
+    // ── Tvorca Goo (7. 10.): vlastné goo z hotových dielov — aplikácia, skupina aplikácií (rýchle spúšťanie), údaj;
+    // ovládanie myšou (bublina, kliky, koliesko). Súbory ~/.config/latteos/goo/kvapky/*.json (latte-goo uloz/zmaz),
+    // engine ich načíta do 4 s; v poli "tvorca" je stav formulára, aby sa goo dalo znova upraviť
+    property var gooList: []
+    property var tv: null                  // otvorený formulár (nové alebo upravované goo)
+    property string tvId: ""               // id upravovaného goo ("" = nové)
+    property string tvSearch: ""
+    readonly property var tvSources: [["procesor", i18n.tr("Processor")], ["teplota", i18n.tr("Temperature")], ["pamat", i18n.tr("Memory")],
+                                      ["disk", i18n.tr("Disk")], ["bateria", i18n.tr("Battery")], ["pocasie", i18n.tr("Weather")], ["prikaz", i18n.tr("Own command")]]
+    readonly property var tvWheels: [["velkost", i18n.tr("Drop size")], ["hlasitost", i18n.tr("Volume")], ["jas", i18n.tr("Brightness")],
+                                     ["skladba", i18n.tr("Next / previous track")], ["plochy", i18n.tr("Workspaces")], ["nic", i18n.tr("Nothing")]]
+    readonly property var tvWheelCmd: ({
+        hlasitost: ["wpctl set-volume -l 1.5 @DEFAULT_AUDIO_SINK@ 5%+", "wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-"],
+        jas: ["brightnessctl -q set 5%+", "brightnessctl -q set 5%-"],
+        skladba: ["playerctl next", "playerctl previous"],
+        plochy: ["hyprctl eval 'hl.dispatch(hl.dsp.focus({ workspace = \"e-1\" }))'", "hyprctl eval 'hl.dispatch(hl.dsp.focus({ workspace = \"e+1\" }))'"]
+    })
+    function tvClicks(druh) {
+        const o = [];
+        if (druh === "aplikacia") o.push(["aplikacia", i18n.tr("Start the app")]);
+        if (druh === "skupina") o.push(["skupina", i18n.tr("Show the apps")]);
+        return o.concat([["upravit", i18n.tr("Goo menu (edit, remove)")], ["otvor", i18n.tr("Open a folder or address")], ["spusti", i18n.tr("Run a command")],
+                         ["vystup", i18n.tr("Show a command's output")], ["poskoc", i18n.tr("Bounce")], ["nic", i18n.tr("Nothing")]]);
+    }
+    // predvolené klik podľa údaja: kam sa pozrieť podrobnejšie
+    readonly property var tvDataClick: ({ procesor: "latte-app monitor", teplota: "latte-app monitor procesy", pamat: "latte-app monitor",
+                                          disk: "latte-app nastavenia ulozisko", bateria: "latte-app zariadenia napajanie" })
+    function tvDefaults(druh) {
+        return { druh: druh, app: "", apps: [], udaj: "procesor", prikaz: "", kazdych: 5, prstenec: true,
+                 klik: druh === "aplikacia" ? "aplikacia" : (druh === "skupina" ? "skupina" : "spusti"), klikArg: druh === "udaj" ? "latte-app monitor" : "",
+                 stredny: "nic", strednyArg: "", pravy: "upravit", pravyArg: "", koliesko: "velkost",
+                 popis: "", nazov: "", ikona: "", povaha: "zvedava" };
+    }
+    // otvorené Nastavenia dostanú stránku od `latte-app nastavenia STRÁNKA [ID]` (druhé okno nevznikne)
+    IpcHandler {
+        target: "nastavenia"
+        function otvor(stranka: string, arg: string): void {
+            if (stranka === "kvapky" && arg) app.tvOpenId = arg;
+            app.go(stranka);
+        }
+    }
+    function tvNew() { tvId = ""; tvSearch = ""; tv = tvDefaults("aplikacia"); }
+    function tvEdit(d) {
+        const t = d.tvorca || {};
+        const druh = t.druh || (d.aplikacia ? "aplikacia" : (d.skupina ? "skupina" : "udaj"));
+        const x = Object.assign(tvDefaults(druh), { nazov: d.nazov || "", popis: d.popis || "", ikona: d.aplikacia ? "" : (d.ikona || ""),
+                                                   app: d.aplikacia || "", apps: d.skupina || [], udaj: d.udaj || (d.text && d.text.prikaz ? "prikaz" : "procesor"),
+                                                   prikaz: d.text && d.text.prikaz ? d.text.prikaz : "" }, t);
+        tvId = d.id; tvSearch = ""; tv = x;
+    }
+    function tvSet(k, v) { const t = Object.assign({}, tv); t[k] = v; tv = t; }
+    function tvAct(typ, arg) {
+        if (typ === "aplikacia") return tv.app ? { aplikacia: tv.app } : "nic";
+        if (typ === "otvor" || typ === "spusti" || typ === "vystup") { if (!arg || !arg.trim()) return "nic"; const o = {}; o[typ] = arg.trim(); return o; }
+        return typ;
+    }
+    function tvJson() {
+        const t = tv, j = { nazov: t.nazov.trim(), povaha: t.povaha, tvorca: t, akcie: {} };
+        if (tvId) j.id = tvId;
+        if (t.popis.trim()) j.popis = t.popis.trim();
+        if (t.druh !== "aplikacia" && t.ikona.trim()) j.ikona = t.ikona.trim();
+        if (t.druh === "aplikacia") j.aplikacia = t.app;
+        if (t.druh === "skupina") j.skupina = t.apps;
+        if (t.druh === "udaj") {
+            if (t.udaj === "prikaz") j.text = { prikaz: t.prikaz.trim(), kazdych: t.kazdych };
+            else { j.udaj = t.udaj; j.kazdych = t.kazdych; if (t.prstenec && t.udaj !== "pocasie") j.druh = "ukazovatel"; }
+        }
+        j.akcie.klik = tvAct(t.klik, t.klikArg); j.akcie.stredny = tvAct(t.stredny, t.strednyArg); j.akcie.pravy = tvAct(t.pravy, t.pravyArg);
+        const w = tvWheelCmd[t.koliesko];
+        j.akcie.koliesko = w ? { hore: { spusti: w[0] }, dole: { spusti: w[1] } } : t.koliesko;
+        return j;
+    }
+    function tvCheck() {
+        const t = tv;
+        if (t.druh === "aplikacia" && !t.app) return i18n.tr("Pick the app");
+        if (t.druh === "skupina" && t.apps.length === 0) return i18n.tr("Pick at least one app");
+        if (t.druh === "udaj" && t.udaj === "prikaz" && !t.prikaz.trim()) return i18n.tr("Write the command for the text");
+        if (!t.nazov.trim()) return i18n.tr("Give the goo a name");
+        return "";
+    }
+    function tvSave() {
+        const e = tvCheck();
+        if (e) { status = e; return; }
+        tvSaveProc.command = ["latte-goo", "uloz", JSON.stringify(tvJson())]; tvSaveProc.running = true;
+    }
+    Cmd { id: tvSaveProc
+          onDone: (out) => { let r = {}; try { r = JSON.parse(out); } catch (e) {}
+                             if (r.ok) { app.status = app.tvId ? i18n.tr("Goo saved: {name}", { name: app.tv.nazov }) : i18n.tr("Goo created: {name} (on the bar, drag it anywhere)", { name: app.tv.nazov });
+                                         app.tv = null; app.tvId = ""; gooListProc.running = true; }
+                             else app.status = r.chyba || i18n.tr("The goo could not be saved"); } }
+    Cmd { id: gooListProc; command: ["latte-goo", "zoznam"]
+          onDone: (out) => { let l = []; try { l = JSON.parse(out); } catch (e) {}
+                             app.gooList = l.filter(d => !d.chyba && String(d.zdroj || "").indexOf("/latteos/goo/kvapky/") >= 0);
+                             if (app.tvOpenId) { const d = app.gooList.find(x => x.id === app.tvOpenId); app.tvOpenId = ""; if (d) { app.tvEdit(d); tvScroll.restart(); } } } }
+    // formulár je na konci stránky Kvapky: po otvorení z goo (pravý klik › Upraviť) sa k nemu stránka posunie
+    property Item tvForm: null
+    Timer { id: tvScroll; interval: 250
+            onTriggered: { if (!app.tvForm) return; const p = app.tvForm.mapToItem(body, 0, 0);
+                           content.contentY = Math.max(0, Math.min(p.y - 16, content.contentHeight - content.height)); } }
+    Cmd { id: tvDelProc; onDone: () => gooListProc.running = true }
+    // goo pribudne aj odinakiaľ (LensGoo › Pripnúť ako kvapku, pravý klik › Odstrániť goo): zoznam sa obnovuje
+    Timer { interval: 4000; repeat: true; running: app.section === "kvapky" && app.gooEngine; onTriggered: if (!gooListProc.running) gooListProc.running = true }
+    function tvDelete(d) { tvDelProc.command = ["latte-goo", "zmaz", d.id]; tvDelProc.running = true; status = i18n.tr("Goo removed: {name}", { name: d.nazov }); if (tvId === d.id) tv = null; }
+    // aplikácie na výber (spúšťač: .desktop bez NoDisplay), podľa mena
+    readonly property var tvApps: DesktopEntries.applications.values.filter(e => !e.noDisplay).map(e => ({ id: e.id, name: e.name, icon: e.icon }))
+                                      .sort((a, b) => a.name.localeCompare(b.name))
+    function tvAppName(id) { const a = tvApps.find(x => x.id === id); return a ? a.name : id; }
     function kvToggle(key, name) {
         const k = JSON.parse(JSON.stringify(app.kv)), h = k.skryte.indexOf(key);
         if (h >= 0) k.skryte.splice(h, 1); else k.skryte.push(key);
@@ -229,7 +338,7 @@ ShellRoot {
         const p = allPages.find(x => x.key === key);
         if (p && p.area) side.openArea = p.area;
         if (push !== false) { history = history.slice(0, historyIndex + 1).concat([key]); historyIndex = history.length - 1; }
-        if (key === "kvapky") kvRead.running = true;
+        if (key === "kvapky") { kvRead.running = true; if (gooEngine) gooListProc.running = true; }
         if (key === "ai") { aiStatus.running = true; aiList.running = true; aiSvc.running = true; }
         if (key === "o") aboutProc.running = true;
         dalsie.opened(key);
@@ -2026,9 +2135,9 @@ ShellRoot {
             }
             Text { width: parent.width; wrapMode: Text.WordWrap; color: theme.fgDim; font { family: theme.fontUi; pixelSize: 12 }
                    text: "ChatGoo nie je nutná — je to doplnok. Beeper si nainštaluješ sám (beeper.com, Linux AppImage); kvapka sa ukáže, keď Beeper beží." }
-            Heading { text: "VLASTNÉ KVAPKY"; topPadding: 6 }
+            Heading { visible: !app.gooEngine; text: "VLASTNÉ KVAPKY"; topPadding: 6 }
             Repeater {
-                model: app.kv.vlastne || []
+                model: app.gooEngine ? [] : (app.kv.vlastne || [])
                 Row {
                     required property var modelData
                     spacing: 8
@@ -2037,20 +2146,148 @@ ShellRoot {
                              onClicked: { const k = JSON.parse(JSON.stringify(app.kv)); k.vlastne = k.vlastne.filter(x => x.id !== modelData.id); app.kvSave(k, "Kvapka odstránená: " + modelData.nazov); } }
                 }
             }
-            Text { width: parent.width; wrapMode: Text.WordWrap; color: theme.fgDim; font { family: theme.fontUi; pixelSize: 12 }
+            Text { visible: !app.gooEngine; width: parent.width; wrapMode: Text.WordWrap; color: theme.fgDim; font { family: theme.fontUi; pixelSize: 12 }
                    text: "Vlastná kvapka sa správa ako kvapky widgetov: ťahaním ju presunieš k ľubovoľnému okraju, klik spustí príkaz, pravý klik otvorí tieto nastavenia. Text (napr. teplota, počet správ) dodá príkaz — prvý riadok, najviac 8 znakov." }
-            Field { placeholder: "Názov (napr. Kalkulačka)"; onEdited: (t) => kvp.nName = t }
-            Field { placeholder: "Ikona — názov z témy ikon (napr. accessories-calculator) alebo cesta k obrázku"; onEdited: (t) => kvp.nIcon = t }
-            Field { placeholder: "Príkaz po kliknutí (napr. gnome-calculator)"; onEdited: (t) => kvp.nClick = t }
-            Field { placeholder: "Príkaz pre text na kvapke (nepovinné, napr. date +%H:%M)"; onEdited: (t) => kvp.nText = t }
-            Stepper { label: "Obnoviť text každých"; unit: " s"; value: kvp.nEvery; step: 5; min: 5; max: 600; onStepped: (v) => kvp.nEvery = v }
-            Button { label: "Pridať kvapku"; glyph: "plus"; primaryStyle: true
+            Field { visible: !app.gooEngine; placeholder: "Názov (napr. Kalkulačka)"; onEdited: (t) => kvp.nName = t }
+            Field { visible: !app.gooEngine; placeholder: "Ikona — názov z témy ikon (napr. accessories-calculator) alebo cesta k obrázku"; onEdited: (t) => kvp.nIcon = t }
+            Field { visible: !app.gooEngine; placeholder: "Príkaz po kliknutí (napr. gnome-calculator)"; onEdited: (t) => kvp.nClick = t }
+            Field { visible: !app.gooEngine; placeholder: "Príkaz pre text na kvapke (nepovinné, napr. date +%H:%M)"; onEdited: (t) => kvp.nText = t }
+            Stepper { visible: !app.gooEngine; label: "Obnoviť text každých"; unit: " s"; value: kvp.nEvery; step: 5; min: 5; max: 600; onStepped: (v) => kvp.nEvery = v }
+            Button { visible: !app.gooEngine; label: "Pridať kvapku"; glyph: "plus"; primaryStyle: true
                      onClicked: {
                          if (kvp.nName.trim() === "" || kvp.nClick.trim() === "") { app.status = "Vyplň aspoň názov a príkaz po kliknutí"; return; }
                          const k = JSON.parse(JSON.stringify(app.kv)); k.vlastne = k.vlastne || [];
                          k.vlastne.push({ id: String(Date.now()), nazov: kvp.nName.trim(), ikona: kvp.nIcon.trim(), klik: kvp.nClick.trim(), text: kvp.nText.trim(), obnova: kvp.nEvery });
                          app.kvSave(k, "Pridaná kvapka: " + kvp.nName.trim() + " (dole na okraji, ťahaním ju presunieš)");
                      } }
+
+            // ── TVORCA GOO (engine Goo) ────────────────────────────────────────────────────────────────────────
+            Heading { visible: app.gooEngine; text: i18n.tr("GOO CREATOR"); topPadding: 6 }
+            Text { visible: app.gooEngine; width: parent.width; wrapMode: Text.WordWrap; color: theme.fgDim; font { family: theme.fontUi; pixelSize: 13 }
+                   text: i18n.tr("Put your own goo together from ready parts: a drop that starts an app, a drop with a group of apps for quick launch, or a drop that shows a value. Then choose what the mouse does: hovering shows a bubble, the wheel, left, middle and right click. Quicker: in LensGoo right-click an app › Pin as a drop.") }
+            Repeater {
+                model: app.gooEngine ? app.gooList : []
+                Row {
+                    required property var modelData
+                    spacing: 8
+                    Card { width: 420; height: 58; selected: app.tvId === modelData.id
+                           glyph: modelData.aplikacia ? "apps" : (modelData.skupina ? "layout-grid" : "chart-donut")
+                           title: modelData.nazov
+                           sub: modelData.aplikacia ? i18n.tr("App: {name}", { name: app.tvAppName(modelData.aplikacia) })
+                              : (modelData.skupina ? i18n.trn("Group of {n} app", "Group of {n} apps", modelData.skupina.length)
+                              : (modelData.udaj ? i18n.tr("Shows: {what}", { what: (app.tvSources.find(x => x[0] === modelData.udaj) || ["", modelData.udaj])[1] }) : i18n.tr("Own goo")))
+                           onClicked: { app.tvEdit(modelData); tvScroll.restart(); } }
+                    Button { label: i18n.tr("Edit"); glyph: "pencil"; anchors.verticalCenter: parent.verticalCenter; onClicked: { app.tvEdit(modelData); tvScroll.restart(); } }
+                    Button { label: i18n.tr("Remove"); glyph: "trash"; danger: true; anchors.verticalCenter: parent.verticalCenter; onClicked: app.tvDelete(modelData) }
+                }
+            }
+            Button { visible: app.gooEngine && !app.tv; label: i18n.tr("Create goo"); glyph: "plus"; primaryStyle: true; onClicked: app.tvNew() }
+            Rectangle {
+                visible: app.gooEngine && app.tv !== null
+                Component.onCompleted: app.tvForm = this
+                width: parent.width; height: tvCol.implicitHeight + 32; radius: 14
+                color: "transparent"; border { color: theme.line; width: 1 }
+                Column {
+                    id: tvCol
+                    x: 16; y: 16; width: parent.width - 32; spacing: 12
+                    readonly property var t: app.tv || app.tvDefaults("aplikacia")
+                    Text { text: app.tvId ? i18n.tr("Edit goo") : i18n.tr("New goo"); color: theme.fg; font { family: theme.fontUi; pixelSize: 16; weight: Font.Bold } }
+                    // 1 · druh
+                    Heading { text: i18n.tr("1 · WHAT SHOULD THE GOO DO") }
+                    Flow {
+                        width: parent.width; spacing: 10
+                        Repeater {
+                            model: [["aplikacia", "apps", i18n.tr("App"), i18n.tr("the app's own icon, a click starts it")],
+                                    ["skupina", "layout-grid", i18n.tr("Quick launch"), i18n.tr("a group of apps, a click shows them")],
+                                    ["udaj", "chart-donut", i18n.tr("Value"), i18n.tr("processor, temperature, memory, disk, battery, weather or a command")]]
+                            Card { required property var modelData
+                                   width: 250; glyph: modelData[1]; title: modelData[2]; sub: modelData[3]; selected: tvCol.t.druh === modelData[0]
+                                   onClicked: if (tvCol.t.druh !== modelData[0]) { const n = app.tvDefaults(modelData[0]); n.nazov = tvCol.t.nazov; n.popis = tvCol.t.popis; n.povaha = tvCol.t.povaha; app.tv = n; } }
+                        }
+                    }
+                    // 2 · aplikácia, skupina alebo údaj
+                    Heading { text: tvCol.t.druh === "aplikacia" ? i18n.tr("2 · THE APP") : (tvCol.t.druh === "skupina" ? i18n.tr("2 · APPS IN THE GROUP (UP TO 12)") : i18n.tr("2 · THE VALUE")) }
+                    Field { visible: tvCol.t.druh !== "udaj"; width: 320; placeholder: i18n.tr("Search apps"); onEdited: (q) => app.tvSearch = q }
+                    Flow {
+                        visible: tvCol.t.druh !== "udaj"
+                        width: parent.width; spacing: 6
+                        Repeater {
+                            model: tvCol.t.druh === "udaj" ? [] : app.tvApps.filter(a => {
+                                       const q = app.tvSearch.trim().toLowerCase();
+                                       return q === "" ? true : (a.name.toLowerCase().indexOf(q) >= 0 || a.id.toLowerCase().indexOf(q) >= 0);
+                                   }).slice(0, 48)
+                            Rectangle {
+                                required property var modelData
+                                readonly property bool on: tvCol.t.druh === "aplikacia" ? tvCol.t.app === modelData.id : tvCol.t.apps.indexOf(modelData.id) >= 0
+                                width: 176; height: 40; radius: 10
+                                color: on ? Qt.rgba(theme.primary.r, theme.primary.g, theme.primary.b, 0.18) : (am.containsMouse ? theme.hover : theme.field)
+                                border { color: on ? theme.primary : "transparent"; width: 1.5 }
+                                Image { id: ai; x: 8; anchors.verticalCenter: parent.verticalCenter; width: 24; height: 24; sourceSize: Qt.size(48, 48)
+                                        source: modelData.icon ? Quickshell.iconPath(modelData.icon, true) : "" }
+                                Text { anchors { left: ai.right; leftMargin: 8; right: parent.right; rightMargin: 8; verticalCenter: parent.verticalCenter }
+                                       elide: Text.ElideRight; text: modelData.name; color: theme.fg; font { family: theme.fontUi; pixelSize: 12; weight: parent.on ? Font.Bold : Font.Medium } }
+                                MouseArea { id: am; anchors.fill: parent; hoverEnabled: true
+                                    onClicked: {
+                                        const t = Object.assign({}, app.tv);
+                                        if (t.druh === "aplikacia") {
+                                            if (!t.nazov.trim() || t.nazov === app.tvAppName(t.app)) t.nazov = modelData.name;
+                                            t.app = modelData.id;
+                                        } else {
+                                            const l = t.apps.slice(), i = l.indexOf(modelData.id);
+                                            if (i >= 0) l.splice(i, 1); else if (l.length < 12) l.push(modelData.id);
+                                            t.apps = l;
+                                        }
+                                        app.tv = t;
+                                    } }
+                            }
+                        }
+                    }
+                    Text { visible: tvCol.t.druh === "skupina"; color: theme.fgDim; font { family: theme.fontUi; pixelSize: 12 }
+                           text: tvCol.t.apps.length ? i18n.tr("In the group: {list}", { list: tvCol.t.apps.map(i => app.tvAppName(i)).join(", ") }) : i18n.tr("Click apps to add them; another click removes them.") }
+                    Segments { visible: tvCol.t.druh === "udaj"; options: app.tvSources; value: tvCol.t.udaj
+                               onPicked: (v) => { const t = Object.assign({}, app.tv); t.udaj = v; t.kazdych = v === "pocasie" ? 600 : (v === "prikaz" ? 30 : 5);
+                                                  if (t.klik === "spusti" && (!t.klikArg || Object.values(app.tvDataClick).indexOf(t.klikArg) >= 0 || t.klikArg === "")) t.klikArg = app.tvDataClick[v] || "";
+                                                  if (!t.nazov.trim() || app.tvSources.some(x => x[1] === t.nazov)) t.nazov = v === "prikaz" ? "" : (app.tvSources.find(x => x[0] === v) || ["", ""])[1];
+                                                  app.tv = t; } }
+                    Field { visible: tvCol.t.druh === "udaj" && tvCol.t.udaj === "prikaz"; width: 520; text: tvCol.t.prikaz
+                            placeholder: i18n.tr("Command: first line goes on the drop, the rest into the bubble (e.g. date +%H:%M)"); onEdited: (q) => app.tv.prikaz = q }
+                    Stepper { visible: tvCol.t.druh === "udaj"; label: i18n.tr("Refresh every"); unit: " s"; value: tvCol.t.kazdych; step: 5; min: 5; max: 3600; onStepped: (v) => app.tvSet("kazdych", v) }
+                    Toggle { visible: tvCol.t.druh === "udaj" && ["procesor", "teplota", "pamat", "disk", "bateria"].indexOf(tvCol.t.udaj) >= 0
+                             on: tvCol.t.prstenec; label: i18n.tr("Ring around the drop by the value"); onToggled: app.tvSet("prstenec", !tvCol.t.prstenec) }
+                    // 3 · myš
+                    Heading { text: i18n.tr("3 · MOUSE"); topPadding: 4 }
+                    Text { text: i18n.tr("Hover — bubble with the name and:"); color: theme.fg; font { family: theme.fontUi; pixelSize: 13 } }
+                    Field { width: 520; text: tvCol.t.popis; onEdited: (q) => app.tv.popis = q
+                            placeholder: tvCol.t.druh === "udaj" ? i18n.tr("empty = details of the value (e.g. 8 cores · 51 °C)") : i18n.tr("your text (optional)") }
+                    Repeater {
+                        model: [["klik", i18n.tr("Left click")], ["stredny", i18n.tr("Middle click")], ["pravy", i18n.tr("Right click")]]
+                        Column {
+                            required property var modelData
+                            width: tvCol.width; spacing: 6
+                            readonly property string typ: tvCol.t[modelData[0]]
+                            Text { text: modelData[1]; color: theme.fg; font { family: theme.fontUi; pixelSize: 13 } }
+                            Segments { options: app.tvClicks(tvCol.t.druh); value: parent.typ; onPicked: (v) => app.tvSet(modelData[0], v) }
+                            Field { visible: ["otvor", "spusti", "vystup"].indexOf(parent.typ) >= 0; width: 520; text: tvCol.t[modelData[0] + "Arg"] || ""
+                                    placeholder: parent.typ === "otvor" ? i18n.tr("Folder, file or web address (e.g. ~/Documents)") : i18n.tr("Command (e.g. gnome-calculator)")
+                                    onEdited: (q) => app.tv[modelData[0] + "Arg"] = q }
+                        }
+                    }
+                    Text { text: i18n.tr("Wheel over the goo"); color: theme.fg; font { family: theme.fontUi; pixelSize: 13 } }
+                    Segments { options: app.tvWheels; value: tvCol.t.koliesko; onPicked: (v) => app.tvSet("koliesko", v) }
+                    // 4 · vzhľad
+                    Heading { text: i18n.tr("4 · NAME AND CHARACTER"); topPadding: 4 }
+                    Field { width: 320; text: tvCol.t.nazov; placeholder: i18n.tr("Name (in the bubble)"); onEdited: (q) => app.tv.nazov = q }
+                    Field { visible: tvCol.t.druh !== "aplikacia"; width: 420; text: tvCol.t.ikona
+                            placeholder: i18n.tr("Icon: name from tabler-icons.io (empty = by the kind)"); onEdited: (q) => app.tv.ikona = q }
+                    Segments { options: [["pokojna", i18n.tr("Calm")], ["zvedava", i18n.tr("Curious")], ["lepkava", i18n.tr("Sticky")], ["tazka", i18n.tr("Heavy")], ["hrava", i18n.tr("Playful")]]
+                               value: tvCol.t.povaha; onPicked: (v) => app.tvSet("povaha", v) }
+                    Row {
+                        spacing: 10; topPadding: 6
+                        Button { label: app.tvId ? i18n.tr("Save changes") : i18n.tr("Create goo"); glyph: "check"; primaryStyle: true; onClicked: app.tvSave() }
+                        Button { label: i18n.tr("Cancel"); glyph: "x"; onClicked: { app.tv = null; app.tvId = ""; } }
+                    }
+                }
+            }
         }
     }
     Component {

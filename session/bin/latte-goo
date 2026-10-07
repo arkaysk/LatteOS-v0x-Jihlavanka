@@ -7,7 +7,12 @@ Logika scény beží v pieskovisku pleamar (bez súborov a bez sh) — všetko, 
   latte-goo novy MENO             nová kvapka zo vzoru (súbor JSON), vypíše cestu — upraviť a uložiť, ukáže sa sama
   latte-goo skontroluj            overí všetky kvapky používateľa, ľudsky čitateľne
   latte-goo akcia ID KLUC         vykoná akciu kvapky (klik, pravy, stredny, podrz, hore, dole) podľa jej súboru
-  latte-goo text ID               text kvapky z príkazu (prvý riadok, do 5 s)
+  latte-goo text ID               text kvapky ako JSON: {"text", "popis", "hodnota", údaje goo} — z príkazu (prvý
+                                  riadok na kvapku, ďalšie do bubliny; do 5 s) alebo z údaja ("udaj": procesor, teplota,
+                                  pamat, disk, bateria, pocasie)
+  latte-goo uloz JSON             Tvorca Goo: overí a uloží kvapku (bez id = nová s id z názvu), vypíše {"ok", "id"}
+  latte-goo poloha ID X [Y]       zapíše kvapke z Tvorcu domov na lište (podiel šírky), ak ho ešte nemá
+  latte-goo zmaz ID               zmaže tvoju kvapku (~/.config/latteos/goo/kvapky/ID.json)
   latte-goo upozornenie ID        farba jadra z príkazu upozornenia (hardver|siet|softver|vystraha|svetlo|ine), prázdne = nič
   latte-goo stav                  uložené polohy a veľkosti ({id: {x, y, z}})
   latte-goo uloz-stav JSON        uloží ich (atomicky)
@@ -66,12 +71,15 @@ POVAHY = {"pokojna", "zvedava", "lepkava", "tazka", "hrava"}
 EFEKTY = {"nic", "dych", "kmit", "tras", "obeh", "tlkot"}
 DRUHY = {"ikona", "ukazovatel"}
 AKCIE = {"klik", "pravy", "stredny", "podrz", "koliesko", "hore", "dole"}
-VSTAVANE = {"domov", "velkost", "poskoc", "vlnka", "vibracia", "nic"}
+VSTAVANE = {"domov", "velkost", "poskoc", "vlnka", "vibracia", "nic", "skupina", "upravit"}
+# goo s údajom (Tvorca Goo, 7. 10.): zdroj → text na kvapke, prstenec 0…1 a údaje pre bublinu (vety skladá logika
+# cez tr(), pomocník nemá preklady)
+UDAJE = {"procesor", "teplota", "pamat", "disk", "bateria", "pocasie"}
 JADRA = {"hardver", "siet", "softver", "vystraha", "svetlo", "ine"}
 DRUHY_AKCII = ("spusti", "aplikacia", "otvor", "vystup")
 # čísla: (min, max)
 CISLA = {"velkost": (8, 80), "gravitacia": (0, 1), "vznos": (0, 2), "vyska": (0, 300), "odstup": (-2000, 2000), "dosah": (40, 800), "lepivost": (0, 1), "trhanie": (20, 400),
-         "svetlo": (0, 1), "rast": (0, 1), "hmotnost": (0, 1), "sila": (0, 2), "hodnota": (0, 1)}
+         "svetlo": (0, 1), "rast": (0, 1), "hmotnost": (0, 1), "sila": (0, 2), "hodnota": (0, 1), "kazdych": (2, 3600)}
 TEXTY = ("nazov", "ikona", "popis", "pri")
 
 VZOR = {
@@ -150,6 +158,23 @@ def validate(j, path):
         if not (isinstance(u, dict) and isinstance(u.get("prikaz"), str)):
             return bad("'upozornenie' má byť {\"prikaz\": \"…\", \"kazdych\": sekundy}; výstup príkazu = farba jadra")
         out["upozornenie"] = {"prikaz": u["prikaz"], "kazdych": max(2, int(u.get("kazdych", 30)))}
+    # Tvorca Goo: kvapka = aplikácia (jej pôvodná ikona, klik ju spustí), skupina aplikácií (klik = karta s nimi),
+    # údaj zo systému; "tvorca" = stav formulára v Nastaveniach (aby sa kvapka dala znova upraviť)
+    if "aplikacia" in j:
+        if not (isinstance(j["aplikacia"], str) and j["aplikacia"].strip()):
+            return bad("'aplikacia' má byť id aplikácie (napr. org.gnome.Calculator)")
+        out["aplikacia"] = j["aplikacia"].strip()[:200]
+    if "skupina" in j:
+        g = j["skupina"]
+        if not (isinstance(g, list) and g and all(isinstance(x, str) and x.strip() for x in g)):
+            return bad("'skupina' má byť zoznam id aplikácií")
+        out["skupina"] = [x.strip()[:200] for x in g][:12]
+    if "udaj" in j:
+        if j["udaj"] not in UDAJE:
+            return bad(f"'udaj' môže byť: {', '.join(sorted(UDAJE))}")
+        out["udaj"] = j["udaj"]
+    if isinstance(j.get("tvorca"), dict) and len(json.dumps(j["tvorca"])) < 8000:
+        out["tvorca"] = j["tvorca"]
     if "akcie" in j:
         if not isinstance(j["akcie"], dict):
             return bad("'akcie' má byť objekt")
@@ -219,6 +244,62 @@ def run_action(a):
             out = "(príkaz nestihol odpovedať do 5 s)"
         print(out.strip()[:300])
     return 0
+
+
+def udaj(name):
+    """údaj pre goo: {"text" (na kvapke), "hodnota" 0…1 (prstenec), surové čísla pre bublinu}"""
+    if name == "pocasie":
+        w = pocasie() or {}
+        now = w.get("teraz") or {}
+        if "t" not in now:
+            return {"text": "—"}
+        day = (w.get("dni") or [{}])[0]
+        return {"text": f"{now['t']}°", "t": now["t"], "kod": now.get("kod"), "miesto": w.get("miesto", ""),
+                "max": day.get("max"), "min": day.get("min")}
+    try:
+        s = json.loads(subprocess.run(["latte-sysmon", "goo-raz"], capture_output=True, text=True, timeout=5).stdout)
+    except (OSError, ValueError, subprocess.TimeoutExpired):
+        return {"text": "…"}
+    if name == "procesor":
+        return {"text": f"{s['cpu']}%", "hodnota": s["cpu"] / 100, "cpu": s["cpu"], "cores": s.get("cores"), "mhz": s.get("mhz"), "cpuT": s.get("cpuT")}
+    if name == "teplota":
+        t = s.get("cpuT")
+        return {"text": f"{t}°" if t is not None else "—", "hodnota": min(1, (t or 0) / 100), "cpuT": t, "cpu": s["cpu"]}
+    if name == "pamat":
+        p = round(100 * s["ram"] / s["ramT"]) if s.get("ramT") else 0
+        return {"text": f"{p}%", "hodnota": p / 100, "used": s["ram"], "total": s["ramT"]}
+    if name == "disk":
+        p = round(100 * s["disk"] / s["diskT"]) if s.get("diskT") else 0
+        return {"text": f"{p}%", "hodnota": p / 100, "used": s["disk"], "total": s["diskT"]}
+    if name == "bateria":
+        b = s.get("bat")
+        if not b:
+            return {"text": "—", "ziadna": True}
+        return {"text": f"{b['pct']}%", "hodnota": b["pct"] / 100, "pct": b["pct"], "stav": b["stav"]}
+    return {"text": "?"}
+
+
+def uloz(j):
+    """uloží kvapku z Tvorcu Goo (overenú) do CONF/<id>.json; nová dostane id z názvu (bez prepísania inej)"""
+    if not isinstance(j, dict):
+        return {"ok": False, "chyba": "čakám objekt JSON"}
+    os.makedirs(CONF, exist_ok=True)
+    i = slug(j.get("id") or "")
+    if not i:
+        base = slug(j.get("nazov") or "") or "goo"
+        i, n = base, 2
+        while os.path.exists(os.path.join(CONF, i + ".json")):
+            i, n = f"{base}-{n}", n + 1
+    j = dict(j, id=i)
+    p = os.path.join(CONF, i + ".json")
+    v = validate(j, p)
+    if "chyba" in v:
+        return {"ok": False, "chyba": v["chyba"]}
+    tmp = p + ".new"
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump(j, f, ensure_ascii=False, indent=2)
+    os.replace(tmp, p)
+    return {"ok": True, "id": i}
 
 
 def glyphs(names):
@@ -674,6 +755,31 @@ def main(a):
         v = dict(VZOR, id=i, nazov=name)
         json.dump(v, open(p, "w", encoding="utf-8"), ensure_ascii=False, indent=2)
         print(p); return 0
+    if c == "uloz" and len(a) == 2:
+        try:
+            r = uloz(json.loads(a[1]))
+        except ValueError as e:
+            r = {"ok": False, "chyba": f"neplatný JSON: {e}"}
+        print(json.dumps(r, ensure_ascii=False)); return 0 if r["ok"] else 1
+    if c == "poloha" and len(a) in (3, 4):
+        # domov kvapky z Tvorcu: prvé voľné miesto, ktoré jej engine našiel na lište (aby ho mala aj po reštarte)
+        p = os.path.join(CONF, slug(a[1]) + ".json")
+        try:
+            j = json.load(open(p, encoding="utf-8"))
+            assert isinstance(j, dict) and "poloha" not in j
+            j["poloha"] = {"x": round(max(0.02, min(0.98, float(a[2]))), 4), "y": round(max(0, float(a[3])), 1) if len(a) == 4 else 0}
+        except (OSError, ValueError, AssertionError):
+            return 1
+        tmp = p + ".new"
+        with open(tmp, "w", encoding="utf-8") as f:
+            json.dump(j, f, ensure_ascii=False, indent=2)
+        os.replace(tmp, p)
+        return 0
+    if c == "zmaz" and len(a) == 2:
+        p = os.path.join(CONF, slug(a[1]) + ".json")
+        if not os.path.isfile(p):
+            print(f"kvapka {a[1]} nie je medzi tvojimi", file=sys.stderr); return 1
+        os.remove(p); return 0
     if c == "akcia" and len(a) == 3:
         d = find(a[1])
         if not d:
@@ -684,16 +790,21 @@ def main(a):
             return 0
         return run_action(act)
     if c == "text" and len(a) == 2:
+        # JSON: {"text" (prvý riadok, do 12 znakov), "popis" (ďalšie riadky → bublina), "hodnota" 0…1 a údaje goo}
         d = find(a[1])
         t = d and d.get("text")
-        if isinstance(t, dict):
+        if d and d.get("udaj"):
+            r = dict(udaj(d["udaj"]), udaj=d["udaj"])
+        elif isinstance(t, dict):
             try:
                 out = subprocess.run(["sh", "-c", t["prikaz"]], capture_output=True, text=True, timeout=5).stdout
             except subprocess.TimeoutExpired:
                 out = "…"
-            print((out.strip().splitlines() or [""])[0][:12])
-        elif isinstance(t, str):
-            print(t)
+            ls = out.strip().splitlines() or [""]
+            r = {"text": ls[0][:12], "popis": "\n".join(ls[1:]).strip()[:300]}
+        else:
+            r = {"text": t if isinstance(t, str) else ""}
+        print(json.dumps(r, ensure_ascii=False))
         return 0
     if c == "upozornenie" and len(a) == 2:
         d = find(a[1])

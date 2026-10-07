@@ -149,7 +149,13 @@ local function app_row(a, hint)
                  run("latte-riadok", { "akcie", a.id }, function(out)
                      if E.menuId() ~= "lens" then return end
                      local kids = { { label = tr("Back"), glyph = "chevron-left", back = lastItems },
-                                    { sep = true, img = a.icon, glyph = "apps", label = tr("Open") .. " " .. (a.name or ""), run = function() launch(a) end } }
+                                    { sep = true, img = a.icon, glyph = "apps", label = tr("Open") .. " " .. (a.name or ""), run = function() launch(a) end },
+                                    -- Tvorca Goo (7. 10.): aplikácia ako vlastná kvapka s jej ikonou (upraví sa pravým klikom na kvapku)
+                                    { glyph = "pin", label = tr("Pin as a drop"), run = function()
+                                        run("latte-goo", { "uloz", json.encode({ nazov = a.name or a.id, aplikacia = a.id,
+                                                                                tvorca = { druh = "aplikacia", app = a.id } }) }, nil, { output = false })
+                                        close()
+                                    end } }
                      for _, l in ipairs(lines(out)) do
                          local name, cmd = l:match("^([^\t]+)\t(.+)$")
                          if name then kids[#kids + 1] = { glyph = "chevron-right", label = name, run = function() pcall(sys.call, "apps.launch", cmd) close() end } end
