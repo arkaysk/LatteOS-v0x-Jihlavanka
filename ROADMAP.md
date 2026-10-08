@@ -333,9 +333,19 @@ texty preložiteľné (`translations`). Noctalia beží bez lišty a robí, čo 
       Ďalej: priehľadné pozadie a goo telo z pleamaru pod ňou (vlnenie, pulzovanie)
 - [x] Nastavenia podľa prostredia (1. 10.): v Goo stránka **Kvapky (Goo)** (skryť/ukázať, veľkosť, vrátiť na miesto,
   ChatGoo kvapka alebo ikona v rohovej lište, **vlastné kvapky**), v Classic Lišta a systémové menu
+- [ ] **SafeGoo** (zadanie 8. 10.): SAFE dnes = labwc + shell Noctalie s dizajnom Classic (zvyšok zrušeného smeru) → nahradiť
+  engine Goo bez GPU (labwc + pixman + llvmpipe). Zložky: GooBar, QueenGoo, LensGoo, GooPower, ClockGoo (nutné na funkčnosť
+  systému; nezaberajú veľa) + **nová kvapka SafeGoo** v rohu: hlási, že si v safe režime, ukáže hneď logy a údaje o páde
+  (`latte-safe-reason`, log relácie, coredump) a ak je dostupná AI, zhodnotí príčinu a nápravu. Núdzová ponuka (diagnostika,
+  skúsiť NORMAL znova, terminál, sieť, vrátiť update, odhlásiť, reštart, vypnúť) sa stane súčasťou Goo.
+  Zistené 8. 10.: pleamar 0.2.29 beží pod labwc/pixman (llvmpipe Vulkan, prvá snímka za ~4 s), ale zlyháva zachytávanie
+  obrazu pod sklom (`zwlr_screencopy_frame_v1: invalid buffer format`) → v safe režime treba sklo a zachytávanie vypnúť;
+  okná cez `PLEAMAR_GENERIC=window` (labwc: wlr-foreign-toplevel), `latte-goo` volá `hyprctl` → treba záložnú cestu.
+  Súvisí: Hyprland pri odhlásení padá v `exit()` (CScreenshareManager) a `latte-session` to nepozná ako riadne ukončenie
+  (rozpoznáva iba `_dl_fini`/`__cxa_finalize`/`CCompositor::cleanup`) → 1. odhlásenie reštartuje Hyprland, 2. (do 60 s) vedie do SAFE.
 - [ ] Engine: overiť zvyšky po skrytí voliteľnej kvapky na latte-lab (jadro GooBar, GooPower, LensGoo sa skryť nedá)
 - [ ] **Živé bytosti pri nečinnosti** (LATTEOS-GOO.md 3.1) — 7. 10. hotový zdroj nečinnosti (ext-idle-notify, myš aj
-  klávesnica; overené na latte-lab); ostáva obmedziť snímky pri nečinnosti. Pôvodné zadanie: dážď/vietor podľa
+  klávesnica; overené na latte-lab); ostáva obmedziť snímky pri nečinnosti — **blokované (8. 10.):** `rate:` povrchu je iba konštanta aj v pleamar 0.2.29 (`rate: if(…)` ani `rate: 20 while …` neprejde kontrolou, overené 8. 10.). Treba buď upstream s dynamickou snímkovou frekvenciou, alebo iný spôsob. Pôvodné zadanie: dážď/vietor podľa
   skutočného počasia so zvlnením spodnej hrany aj kvapiek, hra (naháňačka so zrážkou a odrazom, behanie, skákanie);
   nie pri celej obrazovke, zámku, slabej batérii a v stupni Softvér; vypínač v Nastaveniach
 - [x] **Engine Goo — základ** (LATTEOS-GOO.md 3.2, `session/goo`, 1. 10.): jedny pravidlá pre všetky kvapky (128 miest — Goobar nesie okná ako hrozno; záplata pleamar-prazdne-tvary),

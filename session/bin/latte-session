@@ -183,9 +183,11 @@ run_game() {
 exit_crash() {   # $1 PID: coredump s pádom v upratovaní na konci procesu (systemd-coredump ho zapíše o chvíľu)
     local i bt
     # (30. 9.) aj pád v CCompositor::cleanup (upratovanie okien pri odhlásení) — rovnaká trieda chyby
+    # (8. 10.) aj pád v destruktoroch pri exit() (CScreenshareManager → __run_exit_handlers); bez toho sa odhlásenie
+    # bralo ako pád: prvé odhlásenie reštartovalo Hyprland, druhé (do 60 s) prešlo do SAFE
     for i in 1 2 3 4 5 6 7 8 9 10 11 12; do
         bt="$(coredumpctl info "$1" --no-pager 2>/dev/null)"
-        if [ -n "$bt" ]; then grep -qE "_dl_fini|__cxa_finalize|CCompositor7cleanup" <<<"$bt"; return; fi
+        if [ -n "$bt" ]; then grep -qE "_dl_fini|__cxa_finalize|CCompositor7cleanup|__run_exit_handlers" <<<"$bt"; return; fi
         sleep 0.5
     done
     return 1

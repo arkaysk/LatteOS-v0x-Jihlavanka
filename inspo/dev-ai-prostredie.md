@@ -304,12 +304,13 @@ Cieľ: limit vydrží **do pondelka 15:00**. V pondelok pred resetom zapísať, 
 6. **MCP** s pravidlom v `CLAUDE.md` (§4.5, krok 2); vyskúšať PAUSE / RESUME / CANCEL v paneli (§4.3).
 7. Výsledok zapísať do `docs/goo/ROZHODNUTIA.md`, farmu ako úlohu do `ROADMAP.md`.
 
-## 9. Otvorené otázky
+## 9. Rozhodnuté (8. 10.)
 
-- Zoznam programov „GPU potrebujem ja“ (hry, strih, OBS…)?
-- Má farma bežať aj cez noc? Hlavné PC by muselo ostať zapnuté s LM Studiom (pred spaním RESUME, ráno PAUSE).
-- Pustiť aj Claude vo farme (napr. cez noc pred pondelňajším resetom, `FARM_BURST_HOURS`), aby sa nevyužitý zvyšok
-  týždňa nepremárnil?
+- **GPU:** keď bude Arkay potrebovať hrať, farmu spauzuje (PAUSE). Inak farma beží. Zoznam programov netreba.
+- **Cez deň aj cez noc:** farma beží stále, kým ju Arkay nepauzuje. Hlavné PC ostáva zapnuté s LM Studiom.
+- **Claude vo farme pred týždenným resetom:** Arkay farmu ručne „popostrčí“ (nič automatické, `FARM_BURST_HOURS` netreba).
+
+**Stav krokov:** §8 krok 1 — Ponytail nainštalovaný (8. 10., scope user); `/model` na Sonnet prepína používateľ sám.
 
 ## Zdroje
 

@@ -23,7 +23,7 @@ obrazovky aj k sebe, naťahujú sa a praskajú, žijú vlastným pohybom a reagu
 | vrstva | čo robí | kde |
 |---|---|---|
 | **Hyprland 0.56** (Lua) | okná, režimy okien (páska, dlaždice, plávajúce), animácie, sklo Hyprglass | `session/hypr/` |
-| **pleamar 0.2.24** (k4ditano, BSD-3; Rust, SDF, jazyk 0.2, naše záplaty) | kreslí kvapky a karty Goo, logika v Luau | `session/goo/` (engine Goo) |
+| **pleamar 0.2.29** (k4ditano, BSD-3; Rust, SDF, jazyk 0.3, naše záplaty) | kreslí kvapky a karty Goo, logika v Luau | `session/goo/` (engine Goo) |
 | **Noctalia 5** | rohová lišta (widgety a doplnky), ovládacie centrum, OSD, zámok, akcie relácie | záplatovaná kópia pre Goo |
 | **pomocníci LatteOS** | štart plochy, systémové údaje pre kvapky | `latte-kvapky`, `latte-goo`, `latte-sysmon goo` |
 
