@@ -5,3 +5,8 @@ https://codeberg.org/GuillotineMelody/nervboot
     SAFE) — zaradené na koniec plánu.
 
 -equalizer. kazde z goo sa uz teraz v engine samostatne pohybuje. moznost zapnut v nastaveniach ze goo budu reagovat na hudbu, prehravac a spravat sa ako equalizer. ako špecifikovať ze to bude reakcia len nie na hudbu alebo radio a nie na youtube ci videoprehravač?
+
+-https://github.com/elliotbakke/perplexity-mcp-free
+-https://www.netlify.com/knowledge-base/how-to-call-openai-claude-or-gemini-without-api-keys/
+-https://clixad.io/gemini-cli-alternative/
+-
