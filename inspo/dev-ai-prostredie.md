@@ -219,6 +219,36 @@ Nikto z nich nerobí to hlavné: **spúšťať lokálny model iba vtedy, keď GP
 (Strážca). Front a panel sú malé, preto navrhujem vlastnú jednoduchú Farmu. Paseo ber ako zálohu, ak by sme
 potrebovali viac (mobil, viac strojov).
 
+### 4.7 Smerovač modelov — lokálny podagent priamo v rozhovore (nápad z claude-ui-mod)
+
+[blockshooter/claude-ui-mod](https://gitlab.com/blockshooter/claude-ui-mod) je doplnok pre **Claude Desktop na
+Windows**. Prepisuje súbory aplikácie (`app.asar`). Na náš spôsob práce (rozšírenie vo VS Code cez SSH na latte-lab)
+sa **priamo nedá použiť** a pri aktualizácii Claude Desktop sa môže pokaziť. Má však jeden výborný nápad: **smerovač
+modelov**.
+
+- Claude Code posiela všetky požiadavky na malý miestny server (smerovač) namiesto priamo do Anthropic.
+- Smerovač podľa názvu modelu rozhodne: modely Claude pošle ďalej do Anthropic bez zmeny, model `lokal-…` pošle do
+  LM Studia.
+- Do zoznamu modelov (`/v1/models`) pridá aj lokálne modely, inak by Claude Code podagenta s cudzím modelom odmietol.
+- Výsledok: podagent v `.claude/agents/prekladac.md` s `model: lokal-qwen3-coder` beží **na lokálnom modeli priamo
+  v tom istom rozhovore vo VS Code**. Koordinátor (Opus/Sonnet) mu zadá úlohu ako bežnému podagentovi a dostane iba
+  krátky výsledok, takže ani kontext koordinátora sa nezapĺňa.
+
+Na Linuxe by smerovač bežal na latte-lab ako malá služba a Claude Code vo VS Code by naň ukazoval cez
+`ANTHROPIC_BASE_URL`.
+
+**Treba overiť pred nasadením:**
+
+- **Prihlásenie predplatným cez vlastný smerovač nie je oficiálne podporované** Anthropicom. Funguje to (claude-ui-mod
+  to tak robí), ale môže sa to kedykoľvek zmeniť. Pred použitím treba prečítať aktuálne podmienky.
+- Existuje hotový smerovač pre Claude Code s Linuxom (napr. projekt *claude-code-router*). Overiť, či vie posielať
+  modely Claude ďalej s predplatným a ostatné do LM Studia.
+
+**Vzťah k Farme:** smerovač je na **malé, rýchle úlohy počas rozhovoru** (preklad, súhrn logu, hľadanie). Farma je
+na **dlhšie úlohy vo fronte**, spúšťané iba pri voľnom GPU. Podagent cez smerovač by GPU používal aj vtedy, keď ho
+potrebuješ ty. Preto by mal tiež pozerať na Strážcu: pri obsadenom GPU vráti chybu „GPU obsadené, urob to sám alebo
+pošli farme“.
+
 ---
 
 ## 5. Bezpečnosť
@@ -245,6 +275,14 @@ potrebovali viac (mobil, viac strojov).
    ide na farmu.
 8. **Sledovať spotrebu:** `/usage` v Claude Code. Rozpočet je ~14 % týždňa na deň. Ak je v stredu nad 50 %, zvyšok
    týždňa iba Sonnet a farma.
+9. **Ponytail** ([DietrichGebert/ponytail](https://github.com/DietrichGebert/ponytail)): zručnosť (plugin) pre
+   Claude Code, ktorá agenta učí písať iba nevyhnutný kód. Najprv využije, čo v repe už je, a nepridáva knižnice ani
+   prebytočné vrstvy. Autor uvádza v Claude Code s Opus 5.5 **o 45 % menej tokenov a o 26 % nižšiu cenu** (vlastné
+   meranie autora, nezávisle neoverené). Bezpečnosť, kontroly vstupov a testy rizikovej logiky podľa neho nevynecháva.
+   Inštalácia: `/plugin marketplace add DietrichGebert/ponytail` a `/plugin install ponytail@ponytail`. Má aj
+   `/ponytail-review` na kontrolu diffu, čo sa hodí na kontrolu práce farmy. Verzia `AGENTS.md` sa dá dať aj
+   lokálnym pracovníkom. **Skúsiť jeden týždeň** a porovnať v tabuľke §7. Pozor, aby jeho pravidlá neprebili
+   pravidlá LatteOS (preložiteľné texty, myš ako prvá).
 
 **Bezplatné účty u iných firiem** (máš iba bezplatné) sú iba doplnok:
 
@@ -263,6 +301,7 @@ potrebovali viac (mobil, viac strojov).
 | `/clear` a čítanie iba sekcií dokumentov | stredná až veľká |
 | mechanické úlohy na farmu | stredná (podľa toho, koľko sa ich nájde) |
 | Haiku na prieskum | malá až stredná |
+| Ponytail (ak sa potvrdí meranie autora) | stredná |
 
 Cieľ: limit vydrží **do pondelka 15:00**. V pondelok pred resetom zapísať, kedy sa limit minul.
 
@@ -303,3 +342,5 @@ Cieľ: limit vydrží **do pondelka 15:00**. V pondelok pred resetom zapísať, 
   <https://developers.google.cn/gemini-code-assist/resources/faqs?hl=en>, <https://geminicli.com/docs/quota-and-pricing>
 - Podobné projekty: <https://github.com/Dicklesworthstone/claude_code_agent_farm>,
   <https://github.com/matank001/clodfarm>, <https://github.com/vraj00222/agent-farm>, <https://github.com/getpaseo/paseo>
+- Smerovač modelov: <https://gitlab.com/blockshooter/claude-ui-mod> (docs/agents-and-model-mixing.md)
+- Šetrenie tokenov: <https://github.com/DietrichGebert/ponytail>
