@@ -6,7 +6,7 @@
   <keyboard>
     <keybind key="W-Return"><action name="Execute" command="foot"/></keybind>
     <keybind key="W-space"><action name="Execute" command="foot -T 'LatteOS SAFE' -e latte-safe"/></keybind>
-    <keybind key="W-l"><action name="Execute" command="noctalia msg panel-toggle launcher"/></keybind>
+    <keybind key="W-l"><action name="Execute" command="pleamar --say safe \"focus q\""/></keybind>
     <keybind key="W-q"><action name="Close"/></keybind>
     <keybind key="A-Tab"><action name="NextWindow"/></keybind>
     <keybind key="W-S-m"><action name="Exit"/></keybind>

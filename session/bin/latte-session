@@ -5,7 +5,7 @@
 # Režim berie z /run/latteos/session.env (zapísal latte-boot select pri štarte).
 # NORMAL: Hyprland + engine Goo. Ak Hyprland spadne skôr, než je relácia zdravá (60 s),
 #         relácia sa hneď prepne do SAFE; pád sa zaráta do počítadla (latte-boot session-start).
-# SAFE:   labwc + pixman (bez GL/GPU) + Noctalia, záloha foot; ponuka latte-safe.
+# SAFE:   labwc + pixman (bez GL/GPU) + núdzové rozhranie safe.plm (bez engine Goo, bez Noctalie), záloha foot; ponuka latte-safe.
 # HRA:    gamescope-session-plus steam (Steam Big Picture); striedanie s plochou v tom istom prihlásení
 #         cez latte-hra ($XDG_RUNTIME_DIR/latteos/relacia), ako SteamOS. Iba s grafickou kartou.
 # SAFE a HRA nie sú v ponuke prihlásenia: SAFE príde sám (pády, GRUB › LatteOS SAFE), do hry sa prepína z plochy

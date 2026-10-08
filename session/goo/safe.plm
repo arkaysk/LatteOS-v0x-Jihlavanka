@@ -1,0 +1,228 @@
+// SAFE — núdzové rozhranie LatteOS GOO (labwc + pixman, bez GPU). Bez engine Goo: iba spodná lišta, pozadie s hladinou a
+// veľký čas ako na prihlasovacej obrazovke (rozhodnutie 8. 10.); všetko čo najjednoduchšie a statické. Zľava: červené tlačidlo
+// SAFE (ponuka s logmi), údaje GooPower s tlačidlom vypnutia, App Manager (ten z QueenGoo), Správca zariadení, konzola, potom
+// riadok na písanie z LensGoo s prepínateľným režimom (aplikácie · súbory a priečinky · AI · Linux príkaz), zoznam okien,
+// sieť a batéria. Logika: safe.luau. Texty sú po anglicky, prekladá ich blok `translations`.
+language 0.2
+
+scene Safe {
+    surface {
+        size: full, 48
+        anchor: bottom
+        margin: 0
+        level: top
+        reserve: 48
+        screens: each
+        rate: 15
+        keyboard: on_demand
+    }
+    permissions {
+        run: "foot", "latte-app", "latte-terminal", "latte-zamok", "latte-sysmon", "labwc", "systemctl", "date", "latte-hladaj", "latte-ai", "xdg-open"
+        services: "window", "window.*", "battery", "network", "apps", "apps.*"
+    }
+    translations sk {
+        "Lock" = "Zamknúť"
+        "Log out" = "Odhlásiť"
+        "Sleep" = "Uspať"
+        "Restart" = "Reštartovať"
+        "Shut down" = "Vypnúť"
+        "SAFE" = "SAFE"
+        "AI" = "AI"
+        "New chat" = "Nový rozhovor"
+        "Settings" = "Nastavenia"
+        "Close" = "Zavrieť"
+        "Search apps…" = "Hľadať aplikácie…"
+        "Search files and folders…" = "Hľadať súbory a priečinky…"
+        "Ask AI…" = "Opýtať sa AI…"
+        "Run a Linux command…" = "Spustiť príkaz Linuxu…"
+        "Run in console" = "Spustiť v konzole"
+        "Dangerous command: press Enter again to run it" = "Nebezpečný príkaz: spustíš ho druhým Enterom"
+        "No answer (check Settings › AI)" = "Bez odpovede (pozri Nastavenia › AI)"
+    }
+
+    let coffee = #1c0f09
+    let ink    = #f3ebdd
+    let red    = #d6453d
+    let rim    = #c9a47a
+
+    fact pw_open = 0
+    fact nres = 0
+    fact ai_open = 0
+    fact nmsgs = 0
+    fact qempty = 1
+    fact nwins = 0
+    fact bat = -1
+    text q = ""
+    text stats = ""
+    text net = ""
+    text hint = ""
+    text mode_icon = "system-search-symbolic"
+    text ai_status = ""
+    text cas = ""
+    text datum = ""
+    model wins max 3 { title: text; active: number = 0 }
+    model res max 8 { title: text; sub: text; icon: text }
+    model msgs max 6 { who: number = 1; txt: text }
+    event safe_menu ->
+    event appmgr ->
+    event devmgr ->
+    event term ->
+    event win_go ->
+    event pw_act ->
+    event mode_next ->
+    event q_submit ->
+    event q_clear ->
+    event res_go ->
+    event ai_new ->
+    event ai_settings ->
+    event ai_close ->
+
+    image i_power = icon "system-shutdown-symbolic", 18, 18
+    image i_apps = icon "view-app-grid-symbolic", 20, 20
+    image i_dev = icon "computer-symbolic", 20, 20
+    image i_term = icon "utilities-terminal-symbolic", 20, 20
+    image i_mode = from mode_icon, 20, 20
+
+    // ── červené tlačidlo SAFE ────────────────────────────────────────────────────────────────────────────────────
+    ellipse { at: 30, 24; radius: 19; color: red }
+    text "SAFE" { at: 30, 24; anchor: center; size: 11; weight: 700; color: ink }
+    zone box safe_hit { from: 10, 4; size: 40, 40; cursor: pointer }
+    on press safe_hit { emit safe_menu }
+
+    // ── údaje GooPower (CPU · RAM · GPU · VRAM) a tlačidlo vypnutia ──────────────────────────────────────────────
+    box { from: 58, 8; size: 372, 32; corner: 16; color: coffee }
+    text stats { at: 74, 24; anchor: left center; size: 12.5; weight: 600; color: ink; width: 300; lines: 1 }
+    ellipse { at: 410, 24; radius: 14; stroke: 1.2; color: rim; opacity: 55% }
+    image i_power { at: 400, 14; size: 20, 20; tint: ink }
+    zone box pw_hit { from: 394, 8; size: 32, 32; cursor: pointer }
+    on press pw_hit { pw_open = 1 - pw_open }
+
+    // ── tlačidlá: App Manager (z QueenGoo) · Správca zariadení · konzola ─────────────────────────────────────────
+    ellipse { at: 458, 24; radius: 18; color: coffee }
+    image i_apps { at: 448, 14; size: 20, 20; tint: ink }
+    zone box b2 { from: 440, 6; size: 36, 36; cursor: pointer }
+    on press b2 { emit appmgr }
+    ellipse { at: 504, 24; radius: 18; color: coffee }
+    image i_dev { at: 494, 14; size: 20, 20; tint: ink }
+    zone box b3 { from: 486, 6; size: 36, 36; cursor: pointer }
+    on press b3 { emit devmgr }
+    ellipse { at: 550, 24; radius: 18; color: coffee }
+    image i_term { at: 540, 14; size: 20, 20; tint: ink }
+    zone box b4 { from: 532, 6; size: 36, 36; cursor: pointer }
+    on press b4 { emit term }
+
+    // ── riadok na písanie z LensGoo: ikona režimu (klik / Tab prepne) a pole ────────────────────────────────────
+    ellipse { at: 596, 24; radius: 18; color: coffee }
+    image i_mode { at: 586, 14; size: 20, 20; tint: ink }
+    zone box bm { from: 578, 6; size: 36, 36; cursor: pointer }
+    on press bm { emit mode_next }
+    box { from: 624, 8; size: 316, 32; corner: 16; color: coffee }
+    text hint { at: 640, 24; anchor: left center; size: 13.5; color: ink; opacity: 45% * qempty; width: 290; lines: 1 }
+    input q { at: 640, 14; width: 290; size: 13.5; color: ink; selection: #5a463a }
+    zone box qz { from: 624, 8; size: 316, 32; cursor: text }
+    on press qz { focus q }
+    on submit q { emit q_submit }
+    on key Escape { emit q_clear }
+    on key Tab { emit mode_next }
+
+    // ── okná (klik ich ukáže) ────────────────────────────────────────────────────────────────────────────────────
+    repeat i in 0..3 {
+        box { from: 952 + i * 130, 8; size: 124, 32; corner: 16; color: coffee; opacity: if(nwins > i, 85% + wins.$i.active * 15%, 0%) }
+        text wins.$i.title { at: 964 + i * 130, 24; anchor: left center; size: 12.5; width: 96; lines: 1; color: ink; opacity: if(nwins > i, 100%, 0%) }
+        zone box w.$i { from: 952 + i * 130, 8; size: 124 * if(nwins > i, 1, 0), 32; cursor: pointer }
+        on press w.$i { emit win_go(i) }
+    }
+
+    // ── vpravo: sieť a batéria ───────────────────────────────────────────────────────────────────────────────────
+    box { from: screen.width - 250, 8; size: 240, 32; corner: 16; color: coffee }
+    text net { at: screen.width - 238, 24; anchor: left center; size: 12; color: ink; opacity: 80%; width: 150; lines: 1 }
+    text "{bat} %" { at: screen.width - 22, 24; anchor: right center; size: 12.5; weight: 600; color: ink; opacity: if(bat >= 0, 100%, 0%) }
+
+    // ── výsledky hľadania: malé okno nad riadkom (aplikácie, súbory, upozornenie na nebezpečný príkaz) ─────────────
+    surface rs {
+        size: 460, 310
+        anchor: bottom_left
+        margin: 0, 0, 54, 620
+        level: overlay
+        reserve: -1
+        open: nres > 0
+        // okno rastie nahor podľa počtu riadkov (zvyšok povrchu nechytá myš)
+        let RT = 310 - (12 + nres * 38)
+        box { from: 0, RT; size: 460, 12 + nres * 38; corner: 14; color: coffee }
+        box { from: 0, RT; size: 460, 12 + nres * 38; corner: 14; stroke: 1; color: rim; opacity: 55% }
+        box { from: 6, RT + 6; size: 448, 34; corner: 10; color: ink; opacity: 10% }
+        repeat i in 0..8 {
+            image ri.$i = from res.$i.icon, 24, 24
+            image ri.$i { at: 16, RT + 11 + i * 38; size: 24, 24; opacity: if(nres > i, 100%, 0%) }
+            text res.$i.title { at: 52, RT + 15 + i * 38; anchor: left center; size: 13.5; color: ink; width: 390; lines: 1; opacity: if(nres > i, 100%, 0%) }
+            text res.$i.sub { at: 52, RT + 29 + i * 38; anchor: left center; size: 10.5; color: ink; width: 390; lines: 1; opacity: if(nres > i, 55%, 0%) }
+            zone box rz.$i { from: 6, RT + 6 + i * 38; size: 448 * if(nres > i, 1, 0), 36; cursor: pointer }
+            on press rz.$i { emit res_go(i) }
+        }
+    }
+
+    // ── rozhovor s AI: jednoduché okno s najnutnejšími voľbami ───────────────────────────────────────────────────
+    surface ai {
+        size: 520, 392
+        anchor: bottom_left
+        margin: 0, 0, 54, 620
+        level: overlay
+        reserve: -1
+        open: ai_open > 0.5
+        box { from: 0, 0; size: 520, 392; corner: 14; color: coffee }
+        box { from: 0, 0; size: 520, 392; corner: 14; stroke: 1; color: rim; opacity: 55% }
+        text "AI" { at: 20, 24; anchor: left center; size: 14; weight: 700; color: rim }
+        text ai_status { at: 52, 24; anchor: left center; size: 12; color: ink; opacity: 60%; width: 160; lines: 1 }
+        text "New chat" { at: 300, 24; anchor: center; size: 12; color: ink }
+        zone box ai_b1 { from: 250, 8; size: 100, 32; cursor: pointer }
+        on press ai_b1 { emit ai_new }
+        text "Settings" { at: 398, 24; anchor: center; size: 12; color: ink }
+        zone box ai_b2 { from: 356, 8; size: 84, 32; cursor: pointer }
+        on press ai_b2 { emit ai_settings }
+        text "Close" { at: 480, 24; anchor: center; size: 12; color: ink }
+        zone box ai_b3 { from: 444, 8; size: 66, 32; cursor: pointer }
+        on press ai_b3 { emit ai_close }
+        repeat i in 0..6 {
+            text msgs.$i.txt { at: 20, 52 + i * 56; anchor: left top; size: 12.5; width: 480; lines: 3; color: if(msgs.$i.who == 0, rim, ink); opacity: if(nmsgs > i, 100%, 0%) }
+        }
+    }
+
+    // ── ponuka vypnutia: samostatný malý povrch nad tlačidlom, otvorí sa faktom pw_open ──────────────────────────────
+    surface pm {
+        size: 200, 190
+        anchor: bottom_left
+        margin: 0, 0, 54, 310
+        level: overlay
+        reserve: -1
+        open: pw_open > 0.5
+        box { from: 0, 0; size: 200, 190; corner: 14; color: coffee }
+        box { from: 0, 0; size: 200, 190; corner: 14; stroke: 1; color: rim; opacity: 55% }
+        repeat i in 0..5 {
+            zone box m.$i { from: 6, 6 + i * 36; size: 188, 34; cursor: pointer }
+            on press m.$i { pw_open = 0; emit pw_act(i) }
+        }
+        text "Lock" { at: 20, 23; anchor: left center; size: 13.5; color: ink }
+        text "Log out" { at: 20, 59; anchor: left center; size: 13.5; color: ink }
+        text "Sleep" { at: 20, 95; anchor: left center; size: 13.5; color: ink }
+        text "Restart" { at: 20, 131; anchor: left center; size: 13.5; color: ink }
+        text "Shut down" { at: 20, 167; anchor: left center; size: 13.5; color: red }
+    }
+
+    // ── pozadie ako na prihlasovacej obrazovke, káva siaha vysoko (hladina v H / 3): „hlboko v problémoch“ ───────────
+    surface bg {
+        size: full, full
+        anchor: top
+        margin: 0
+        level: background
+        reserve: -1
+        screens: each
+        rate: 5
+        let HLS = bg.height / 3
+        repeat k in 0..16 { box { from: 0, HLS * k / 16; size: bg.width, HLS / 16 + 1; color: mix(#0b0605, #1d0e08, k / 15) } }
+        repeat k in 0..24 { box { from: 0, HLS + (bg.height - HLS) * k / 24; size: bg.width, (bg.height - HLS) / 24 + 1; color: mix(#3d1e0e, #100804, k / 23) } }
+        box { from: 0, HLS - 1; size: bg.width, 3; color: rim; opacity: 70% }
+        // hodiny presne ako na prihlasovacej obrazovke (login.plm): veľké písmo vpravo hore a pod ním dátum
+        text cas { at: bg.width - 72, 104; anchor: right center; size: 108; weight: 300; color: ink; family: "Inter" }
+        text datum { at: bg.width - 76, 182; anchor: right center; size: 21; color: ink; opacity: 66%; family: "Inter" }
+    }
+}

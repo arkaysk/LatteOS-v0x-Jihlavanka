@@ -35,6 +35,7 @@
 -- Hladina: E.vlnka(x_px, sila, "kamen"|"vibracia"); zvonka `pleamar --say goo "emit goo_kamen 512"` (x v px),
 --   napr. minimalizované okno padne do lišty (pravidlo 14: „žblnkne ako voda“)
 
+local wm = require("lib/wm")                    -- okná a plocha: Hyprland alebo labwc (SafeGoo)
 local E = {}
 local N = type(fact.miesta) == "number" and fact.miesta or 128   -- miesta v scéne (gen.py --n): menšia scéna stojí menej
 -- (Goobar nesie okná ako ikry/hrozno, pri veľkej RAM ich je veľa — preto až 128; bežne stačí 32)
@@ -1321,9 +1322,8 @@ local TIER = (function() local ok, v = pcall(sys.ask, "env", "LATTE_TIER") retur
 -- okno na celú obrazovku (hra, film). Zamknutú obrazovku rieši kompozitor: scéna vtedy nie je vidno.
 local function allowed(cb)
     if fact.zive == false or TIER == "softver" or lowBattery then return cb(false) end
-    run("hyprctl", { "activewindow", "-j" }, function(out)
-        local ok, w = pcall(json.decode, out or "")
-        if ok and type(w) == "table" and (tonumber(w.fullscreen) or 0) > 0 then return cb(false) end
+    wm.active(function(w)
+        if w and (tonumber(w.fullscreen) or 0) > 0 then return cb(false) end
         run("latte-goo", { "profil" }, function(o2)
             local ok2, p = pcall(json.decode, o2 or "")
             cb(not (ok2 and type(p) == "table" and p.aktivny == "power-saver"))

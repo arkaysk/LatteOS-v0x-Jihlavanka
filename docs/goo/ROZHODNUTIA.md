@@ -245,3 +245,5 @@ Nové rozhodnutie: jeden riadok sem (dátum, čo, prečo) a oprava platného zne
 | LatteOS Classic | zrušený (5. 10.) |
 | nasadzovať pôvodnú plochu Kvapky | nie — iba engine Goo (6. 10.) |
 | SAFE Classic (labwc + shell Noctalie) | nahradí **SafeGoo** — engine Goo bez GPU (labwc + pixman + llvmpipe) so zložkami GooBar, QueenGoo, LensGoo, GooPower, ClockGoo a novou kvapkou SafeGoo v rohu (8. 10.) |
+| SafeGoo: statické kvapky (bez pružín, dýchania, naťahovania za kurzorom), jednoduché ako pôvodná Marea | áno — softvérové kreslenie plného `goo.plm` je ~1 s na snímku; vlastná scéna `safe.plm` (8. 10.) |
+| SAFE cez engine Goo (SafeGoo z plného Goo) | nie — samostatné núdzové rozhranie `safe.plm` bez engine Goo (8. 10.) |

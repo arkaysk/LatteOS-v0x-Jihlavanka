@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """gen.py — engine Goo: rozpíše to, čo jazyk pleamar 0.2 nedovolí v cykle, a zoznam modulov kvapiek.
 
-  1. telo goo.plm (medzi // >>> telo (gen.py) a // <<< telo): pre každé miesto k kvapka a jej krk
+  1. telo scény (parts/telo.plm, medzi // >>> telo (gen.py) a // <<< telo; pás výkonu v parts/karty.plm): pre každé miesto k kvapka a jej krk
      (`repeat` vnútri `body` jazyk zatiaľ nemá — keď ho pleamar dostane, tento krok odpadne); a poloha kvapky, ktorá
      nesie pás výkonu (// >>> pás výkonu): jazyk nemá index na menách, preto pick() cez všetky miesta
   2. kvapky/zoznam.luau: mená všetkých modulov v kvapky/*.luau (Luau nevie čítať priečinok; `require` potrebuje meno)
@@ -115,20 +115,26 @@ def put(path, a, b, block):
     open(path, "w").write(s)
 
 
-p = os.path.join(HERE, "goo.plm")
-if OUT:                                   # variant: zdroj ostáva, píše sa kópia
-    os.makedirs(OUT, exist_ok=True)
-    open(os.path.join(OUT, "goo.plm"), "w").write(open(p).read())
-    p = os.path.join(OUT, "goo.plm")
-put(p, "        // >>> telo (gen.py)\n", "        // <<< telo", body() + "        ")
-put(p, "        // >>> sklo (gen.py)\n", "        // <<< sklo", body() + "        ")   # káva v skle: tie isté tvary
-put(p, "    // >>> odlesky (gen.py)\n", "    // <<< odlesky", highlights() + "    ")
-put(p, "    // >>> pás výkonu (gen.py)\n", "    // <<< pás výkonu", monitor())
-s = open(p).read()
-s = re.sub(r"model goo max \d+", f"model goo max {N}", s)
-s = re.sub(r"repeat k in 0\.\.\d+", f"repeat k in 0..{N}", s)
-s = re.sub(r"fact miesta = \d+", f"fact miesta = {N}", s)
-open(p, "w").write(s)
+FILES = ["goo.plm", "parts/rozhranie.plm", "parts/telo.plm", "parts/karty.plm"]   # scéna sa skladá z častí (`include`)
+base = HERE
+if OUT:                                   # variant: zdroj ostáva, píše sa kópia scény aj jej častí
+    for f in FILES:
+        os.makedirs(os.path.dirname(os.path.join(OUT, f)), exist_ok=True)
+        open(os.path.join(OUT, f), "w").write(open(os.path.join(HERE, f)).read())
+    base = OUT
+telo, karty = os.path.join(base, "parts/telo.plm"), os.path.join(base, "parts/karty.plm")
+put(telo, "        // >>> telo (gen.py)\n", "        // <<< telo", body() + "        ")
+put(telo, "        // >>> sklo (gen.py)\n", "        // <<< sklo", body() + "        ")   # káva v skle: tie isté tvary
+put(telo, "    // >>> odlesky (gen.py)\n", "    // <<< odlesky", highlights() + "    ")
+put(karty, "    // >>> pás výkonu (gen.py)\n", "    // <<< pás výkonu", monitor())
+for f in FILES:
+    q = os.path.join(base, f)
+    s = open(q).read()
+    s = re.sub(r"model goo max \d+", f"model goo max {N}", s)
+    s = re.sub(r"repeat k in 0\.\.\d+", f"repeat k in 0..{N}", s)
+    s = re.sub(r"fact miesta = \d+", f"fact miesta = {N}", s)
+    open(q, "w").write(s)
+p = os.path.join(base, "goo.plm")
 if OUT:
     print(f"{p}: {N} miest")
     sys.exit(0)

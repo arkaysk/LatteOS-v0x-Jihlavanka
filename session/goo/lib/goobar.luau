@@ -10,6 +10,7 @@
 -- podľa titulku („Súbory — LatteOS“ = Name spúšťača), kým nedostanú vlastné app_id (ROADMAP). Okno sa v Hyprlande
 -- hľadá podľa triedy, titulku a poradia (`nth_of`: terminály majú často rovnaký titulok „~“).
 local E = require("lib/engine")
+local wm = require("lib/wm")
 local M = {}
 
 local HEAD = "goobar"
@@ -108,7 +109,7 @@ local function nth_of(i)
 end
 local function win_eval(fn, i)
     local w = wins[i]
-    if w then run("hyprctl", { "eval", string.format("latte.win.%s(%q, %q, %d)", fn, w.class or "", w.title or "", nth_of(i)) }) end
+    if w then wm.win(fn, w, nth_of(i)) end
 end
 
 -- ── rozloženie (kvapka.luau › layout, bez okien nad lištou a „tight“ — zatiaľ) ─────────────────────────────────
@@ -141,7 +142,7 @@ local function layout()
         local need = top * r + r + 56 + (low_was[key] and 16 or 0)
         local tight = free_above(u, u + (hi - lo) * r + 2 * r) < need
         low_was[key] = tight
-        local row = tight or m == 1 or key == hot or m > #OFFS
+        local row = wm.safe or tight or m == 1 or key == hot or m > #OFFS   -- SafeGoo: lišta bez strapcov (hrozna), iba rad
         if key == hot and not tight then r = paska and 24 or R0 end
         if tight then r = math.min(r, R_TIGHT) end
         if row and tight and m > 1 then
@@ -216,7 +217,7 @@ M.layout = layout
 function M.click(d)
     local i = index_of(d.id)
     if not i then return end
-    if #wins > SLOTS and i == SLOTS then run("noctalia", { "msg", "panel-toggle", "latteos/overview:panel" }) return end
+    if #wins > SLOTS and i == SLOTS then wm.noctalia({ "msg", "panel-toggle", "latteos/overview:panel" }) return end
     win_eval("toggle_by", i)
 end
 function M.hover(d)
@@ -257,15 +258,23 @@ end
 function M.menu(d)
     local i = index_of(d.id)
     if not i or (#wins > SLOTS and i == SLOTS) then return end
+    if wm.safe then                                       -- SafeGoo (labwc): iba to, čo vie wlr-foreign-toplevel
+        local ww = wins[i]
+        local function act(what) return function() wm.act(what, ww) end end
+        E.menu({
+            { label = tr("Restore"), glyph = "arrows-minimize", run = act("restore") },
+            { label = tr("Minimize"), glyph = "minus", run = act("minimize") },
+            { label = tr("Close"), glyph = "x", hint = "Alt+F4", danger = true, sep = true, run = act("close") },
+        }, 320)
+        return
+    end
     win_eval("focus_by", i)
     after(120, function()
-        run("hyprctl", { "-j", "activewindow" }, function(out)
-            local ok, w = pcall(json.decode, out or "")
-            if not ok or type(w) ~= "table" or not w.address then return end
+        wm.active(function(w)
+            if not w or not w.address then return end
             local a = w.address
-            local function q(lua) return function() run("hyprctl", { "eval", lua }) end end
-            local function ok_(fn, arg) return q(string.format("latte.okno.%s('%s'%s)", fn, a, arg and ("," .. arg) or "")) end
-            local function lay(z, label, glyph) return { label = tr(label), glyph = glyph, run = q(string.format("latte.okno.rozlozenie('%s','%s')", a, z)) } end
+            local function ok_(fn, arg) return function() wm.okno(fn, a, arg) end end
+            local function lay(z, label, glyph) return { label = tr(label), glyph = glyph, run = function() wm.rozlozenie(a, z) end } end
             local ws = (type(w.workspace) == "table" and tonumber(w.workspace.id)) or 0
             local desks = {}
             for n = 1, 4 do desks[#desks + 1] = { label = tr("Desktop") .. " " .. n, on = ws == n, run = ok_("na_plochu", n) } end
@@ -300,15 +309,15 @@ local function read_mode()
     end)
 end
 -- ľavý klik = ďalší režim okien; koliesko: páska = posun, plávajúce = ďalšie okno (Alt+Tab), dlaždice = nič
-function M.head_click() run("hyprctl", { "eval", 'require("latte.windows").cycle()' }, function() after(250, read_mode) end) end
+function M.head_click() wm.cycle_mode(function() after(250, read_mode) end) end
 -- pravý klik = ukázať plochu (Win+D v Hyprlande, latte/skratky.lua: prázdna plocha; znova = späť na okná)
-function M.show_desktop() run("hyprctl", { "eval", "latte.keys.show_desktop()" }) end
+function M.show_desktop() wm.show_desktop() end
 function M.head_wheel(dir)
     if mode == "paska" then
         local px = math.floor((tonumber(fact.sw) or 1920) * 0.25)
-        run("hyprctl", { "eval", string.format('hl.dispatch(hl.dsp.layout("move %s%d"))', dir > 0 and "-" or "+", px) })
+        wm.scroll(dir, px)
     elseif mode == "plavajuce" then
-        run("hyprctl", { "eval", "latte.win.cycle(" .. dir .. ")" })
+        wm.cycle(dir)
     end
 end
 
@@ -321,9 +330,8 @@ local raw = {}
 local chat = { running = false, minimized = false, title = "" }
 function M.chat() return chat end
 local function mark_hidden()
-    run("hyprctl", { "-j", "clients" }, function(out)
-        local ok, list = pcall(json.decode, out or "")
-        if not ok or type(list) ~= "table" then
+    wm.clients(function(list)
+        if not list then
             if #wins ~= #raw then wins = raw layout() end
             return
         end
