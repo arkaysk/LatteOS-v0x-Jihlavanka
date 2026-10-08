@@ -7,7 +7,6 @@ inspo/
 old/
 docs_zaloha/
 bughunt/
-ideas/
 ROADMAP.md
 LATTEOS-GOO.md
 docs/goo/ROZHODNUTIA.md
