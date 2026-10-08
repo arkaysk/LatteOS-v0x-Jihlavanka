@@ -15,3 +15,6 @@ offline/
 
 # súkromné údaje pre Clauda iba na tomto počítači (heslo latte-lab) — nikdy do gitu
 .claude-local/
+
+# ISO obrazy hier z inspo (veľké, nepatria do repa)
+inspo/*.iso

@@ -1,0 +1,511 @@
+#!/usr/bin/env python3
+"""latte-instalator — jadro Baristu pre inštaláciu aplikácií (docs/barista/NAVRH.md).
+
+  latte-instalator analyze CESTA [--json]    zistí, čo je to za zdroj (typ, SHA-256, inštalátor, požiadavky, verdikt)
+                                             BEZ spustenia inštalátora; zdroj sa nemení (ISO sa iba číta cez 7z)
+
+Typ zdroja určí, ako k nemu Barista pristupuje: ISO/CD/DVD, priečinok, samostatný exe, msi, archív, APK, AppImage, rpm, flatpak,
+shell skript. Výsledok je JSON (typ, sha256, instalator, poziadavky, ochrana, dalsie_disky, podtyp, verdikt, dovody).
+Fáza F1 (analýza). Ďalšie fázy: portable exe v bwrap, Wine inštalátor v prefixe, odinštalovanie, APK/natívne balíky.
+"""
+import datetime, glob, hashlib, json, mmap, os, re, shutil, subprocess, sys
+
+# ── typ podľa prípony a magického obsahu ────────────────────────────────────────────────────────────────────────
+ARCHIVY = {".zip", ".rar", ".7z", ".tar", ".gz", ".xz", ".bz2", ".zst", ".tgz"}
+
+
+def sha256(cesta, blok=1 << 20):
+    h = hashlib.sha256()
+    with open(cesta, "rb") as f:
+        for b in iter(lambda: f.read(blok), b""):
+            h.update(b)
+    return h.hexdigest()
+
+
+def hlavicka_exe(data):
+    """'pe32' / 'pe64' / 'ne16' (16-bitový Windows) / 'dos' / None podľa hlavičky MZ"""
+    if data[:2] != b"MZ" or len(data) < 0x40:
+        return None
+    off = int.from_bytes(data[0x3C:0x40], "little")
+    if off + 26 > len(data):
+        return "dos"
+    sig = data[off:off + 2]
+    if sig == b"NE":
+        return "ne16"
+    if data[off:off + 4] == b"PE\0\0":
+        magic = int.from_bytes(data[off + 24:off + 26], "little")
+        return "pe64" if magic == 0x20B else "pe32"
+    return "dos"
+
+
+# podpisy inštalátorov a samorozbaľovacích archívov v samostatnom exe (hľadá sa v celom súbore)
+PODPISY = [
+    ("inno", [b"Inno Setup Setup Data", b"Inno Setup Messages"]),
+    ("nsis", [b"Nullsoft Install System", b"NullsoftInst"]),
+    ("installshield", [b"InstallShield", b"InstallShield Software"]),
+    ("wise", [b"WiseMain", b"Wise Installation"]),
+    ("sfx-rar", [b"Rar!\x1a\x07"]),
+    ("sfx-7z", [b"7z\xbc\xaf\x27\x1c"]),
+    ("sfx-zip", [b"PK\x03\x04"]),
+]
+
+
+def podpis_exe(cesta):
+    """druh inštalátora/SFX podľa bajtov v exe; None, ak sa nenašiel"""
+    try:
+        with open(cesta, "rb") as f, mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ) as m:
+            for druh, znacky in PODPISY:
+                for z in znacky:
+                    if m.find(z) != -1:
+                        return druh
+            # vlastný inštalátor (nie je žiadny známy podpis): odinštalačný záznam + inštalačný priečinok v súbore
+            hlava = m[:4 << 20]
+            if b"UninstallString" in hlava and (b"InstallDir" in hlava or b"Setup" in hlava):
+                return "vlastny-instalator"
+    except (OSError, ValueError):
+        pass
+    return None
+
+
+def zisti_typ(cesta):
+    if os.path.isdir(cesta):
+        return "priecinok"
+    ext = os.path.splitext(cesta)[1].lower()
+    if ext == ".iso" or ext in (".img", ".bin", ".mdf"):
+        return "iso"
+    if ext in (".apk", ".xapk", ".apks", ".apkm"):
+        return "apk"
+    if ext == ".appimage":
+        return "appimage"
+    if ext == ".rpm":
+        return "rpm"
+    if ext in (".flatpak", ".flatpakref"):
+        return "flatpak"
+    if ext == ".msi":
+        return "msi"
+    if ext == ".sh":
+        return "skript"
+    if ext in ARCHIVY or cesta.lower().endswith((".tar.gz", ".tar.xz", ".tar.bz2", ".tar.zst")):
+        return "archiv"
+    if ext == ".exe":
+        return "exe"
+    return "neznamy"
+
+
+# ── zoznam obsahu bez pripojenia (ISO, archív) alebo z priečinka ────────────────────────────────────────────────
+def zoznam_obsahu(cesta, typ):
+    if typ == "priecinok":
+        out = []
+        for koren, _, subory in os.walk(cesta):
+            for s in subory:
+                out.append(os.path.relpath(os.path.join(koren, s), cesta))
+            if len(out) > 20000:
+                break
+        return out
+    if typ in ("iso", "archiv"):
+        p = subprocess.run(["7z", "l", "-slt", cesta], capture_output=True, text=True, errors="replace")
+        out, cur = [], None
+        for riadok in p.stdout.splitlines():
+            if riadok.startswith("Path = "):
+                cur = riadok[7:]
+            elif riadok.startswith("Folder = ") and cur is not None:
+                if riadok[9:] == "-":
+                    out.append(cur)
+                cur = None
+        return [x for x in out if x != cesta and not x.endswith(os.path.basename(cesta))]
+    return []
+
+
+def nacitaj_zaciatok(cesta, typ, vnutri, n=4096):
+    """prvých n bajtov súboru `vnutri` (v ISO/archíve cez 7z, v priečinku priamo)"""
+    try:
+        if typ == "priecinok":
+            with open(os.path.join(cesta, vnutri), "rb") as f:
+                return f.read(n)
+        p = subprocess.run(["7z", "e", "-so", cesta, vnutri], capture_output=True)
+        return p.stdout[:n]
+    except OSError:
+        return b""
+
+
+def volume_id_iso(cesta):
+    try:
+        with open(cesta, "rb") as f:
+            f.seek(0x8000 + 40)
+            return f.read(32).decode("latin-1").strip()
+    except OSError:
+        return ""
+
+
+def dalsie_disky(cesta):
+    """súrodenci ISO s inou číslicou v názve (CD1 → CD2, DISK1 → DISK2…)"""
+    adr, nazov = os.path.split(os.path.abspath(cesta))
+    m = re.search(r"(?i)(cd|disk|disc|dvd|_)(\d)(?=\D*$)", nazov)
+    if not m:
+        return []
+    out = []
+    for c in "123456789":
+        if c == m.group(2):
+            continue
+        kandidat = nazov[:m.start(2)] + c + nazov[m.end(2):]
+        if os.path.exists(os.path.join(adr, kandidat)):
+            out.append(kandidat)
+    return sorted(out)
+
+
+# ── podpisy: inštalátory, požiadavky, ochrany ───────────────────────────────────────────────────────────────────
+def rozpoznaj(subory):
+    """z mien súborov: druh inštalátora, požiadavky, ochrany, hlavný spúšťač inštalácie"""
+    nizke = {s.lower().replace("\\", "/"): s for s in subory}
+    koren = [s for s in nizke if "/" not in s]
+    inst = {"druh": "ziadny", "subor": None}
+    for ime in ("setup.exe", "install.exe", "instalar.exe", "autorun.exe"):
+        if ime in koren:
+            inst["subor"] = nizke[ime]
+            break
+    mena = " ".join(nizke)
+    if any(s.endswith(".inx") or s.endswith(".hdr") for s in nizke) and any(s.endswith(".cab") for s in nizke):
+        inst["druh"] = "installshield"
+    elif any(s.endswith(".msi") for s in koren):
+        inst["druh"] = "msi"
+        inst["subor"] = inst["subor"] or next(nizke[s] for s in koren if s.endswith(".msi"))
+    elif "unins000.exe" in nizke or "unins000.dat" in nizke:
+        inst["druh"] = "inno"
+    elif inst["subor"]:
+        inst["druh"] = "vlastny"
+    poz = []
+    if any(s.startswith("directx/") for s in nizke) or "dxsetup.exe" in nizke:
+        poz.append("directx")
+    if any(s.startswith("gamespy") for s in nizke):
+        poz.append("gamespy")
+    if any("vcredist" in s or "vc_redist" in s for s in nizke):
+        poz.append("vcredist")
+    if any("dotnet" in s or "netfx" in s for s in nizke):
+        poz.append("dotnet")
+    ochr = []
+    if any(re.search(r"(secdrv|drvmgt|safedisc|00000001\.tmp|\.icd$)", s) for s in nizke):
+        ochr.append("safedisc")
+    if any("securom" in s or "sintf" in s for s in nizke):
+        ochr.append("securom")
+    if any(s.endswith(".rez") or s.endswith(".pak") or s.endswith(".bsa") for s in nizke):
+        pass
+    return inst, poz, ochr
+
+
+# ── plán: Wine alebo Proton? Pravidlá z údajov o programe a z receptov, bez AI ────────────────────────────────
+RECEPTY_ADRESARE = [os.environ.get("LATTE_RECEPTY", ""), os.path.expanduser("~/.local/share/latteos/recepty"),
+                    "/usr/share/latteos/recepty"]
+GRAFIKA = re.compile(rb"(?i)\b(d3d8|d3d9|d3d10|d3d11|d3d12|ddraw|opengl32|vulkan-1|glide\d*)\.dll")
+
+
+def profil_programu(cesta, typ, vnutri=None):
+    """rok z hlavičky PE, architektúra a grafické API z importov (z hlavného exe)"""
+    try:
+        if vnutri and typ in ("iso", "archiv"):
+            data = subprocess.run(["7z", "e", "-so", cesta, vnutri], capture_output=True).stdout[:24 << 20]
+        elif vnutri:
+            data = open(os.path.join(cesta, vnutri), "rb").read(24 << 20)
+        else:
+            data = open(cesta, "rb").read(24 << 20)
+    except OSError:
+        return {}
+    arch = hlavicka_exe(data[:4096])
+    rok = None
+    if arch in ("pe32", "pe64"):
+        off = int.from_bytes(data[0x3C:0x40], "little")
+        ts = int.from_bytes(data[off + 8:off + 12], "little")
+        try:
+            r = datetime.datetime.fromtimestamp(ts, datetime.timezone.utc).year
+            rok = r if 1995 <= r <= datetime.datetime.now().year + 1 else None
+        except (OverflowError, OSError, ValueError):
+            pass
+    api = sorted({m.decode().lower() for m in GRAFIKA.findall(data)})
+    return {"architektura": arch, "rok": rok, "grafika": api}
+
+
+def najdi_hlavny_exe(subory):
+    """najväčší exe v koreni, ktorý nie je inštalátor/odinštalátor"""
+    skip = ("setup", "install", "unins", "autorun", "uninst", "dxsetup", "vcredist", "launcher")
+    ex = [s for s in subory if "/" not in s.replace("\\", "/") and s.lower().endswith(".exe") and not any(k in s.lower() for k in skip)]
+    return ex[0] if ex else None
+
+
+def nacitaj_recepty():
+    out = []
+    for d in RECEPTY_ADRESARE:
+        if d and os.path.isdir(d):
+            for f in sorted(glob.glob(os.path.join(d, "*.json"))):
+                try:
+                    out.append(json.load(open(f, encoding="utf-8")))
+                except (OSError, ValueError):
+                    pass
+    return out
+
+
+def zhoda_receptu(recept, subory, volume):
+    z = recept.get("zhoda", {})
+    nizke = {os.path.basename(s.replace("\\", "/")).lower() for s in subory}
+    pot = [x.lower() for x in z.get("subory", [])]
+    if pot and all(x in nizke for x in pot):
+        return True
+    return bool(volume and volume in z.get("volume", []) and not pot)
+
+
+def vyber_rozhranie(rok, grafika, arch):
+    """(runner, winver, dôvody): pravidlá podľa éry a grafického API"""
+    dov = []
+    if arch == "ne16" or arch == "dos":
+        return "dosbox", None, ["program MS-DOS / 16-bit: DOSBox"]
+    d3d12 = "d3d12" in grafika
+    moderne = [a for a in grafika if a in ("d3d10", "d3d11", "d3d12", "vulkan-1")]
+    stare = [a for a in grafika if a in ("ddraw", "d3d8", "glide", "opengl32")]
+    winver = "win10"
+    if rok:
+        winver = "win98" if rok <= 1999 else ("winxp" if rok <= 2008 else ("win7" if rok <= 2014 else "win10"))
+    if d3d12:
+        return "proton", winver, ["DirectX 12: potrebuje vkd3d (Proton)"]
+    if moderne or (rok and rok >= 2012 and arch == "pe64"):
+        return "proton", winver, ["moderná hra (DirectX 10/11/Vulkan alebo 64-bit po roku 2012): Proton s DXVK"]
+    if rok and rok <= 2007 or stare:
+        dov.append(f"stará hra ({rok or '?'}), Direct3D 7–9/OpenGL: Wine je citlivejší na staré programy ako Proton")
+        return "wine", winver, dov
+    if "d3d9" in grafika:
+        return "proton", winver, ["Direct3D 9 po roku 2007: Proton (DXVK) je zvyčajne výkonnejší"]
+    return "wine", winver, ["bez zistenia grafického API: štandardne Wine"]
+
+
+def proton_cesta():
+    """najnovší GE-Proton v /opt/latteos/proton (kontajner Steam Linux Runtime vidí /opt, nie /usr/share)"""
+    adr = sorted(glob.glob("/opt/latteos/proton/GE-Proton*"))
+    return adr[-1] if adr else None
+
+
+def planuj(v):
+    """doplní analýzu o plán: recept, runner (wine/proton/dosbox), winver, závislosti a dôvody"""
+    subory = v.get("_subory", [])
+    recept = next((r for r in nacitaj_recepty() if zhoda_receptu(r, subory, v.get("volume"))), None)
+    plan = {"recept": recept["id"] if recept else None, "dovody": []}
+    if recept:
+        plan.update({k: recept[k] for k in ("runner", "winver", "zavislosti", "prepisy", "siet", "poznamky") if k in recept})
+        plan["dovody"].append(f"recept „{recept['nazov']}“ ({'overený' if recept.get('overeny') else 'neoverený'}, zdroj: {recept.get('zdroj_receptu', '?')})")
+    else:
+        pr = v.get("program") or {}
+        runner, winver, dov = vyber_rozhranie(pr.get("rok"), pr.get("grafika", []), pr.get("architektura"))
+        plan.update({"runner": runner, "winver": winver, "zavislosti": [], "prepisy": {}})
+        plan["dovody"] += dov
+        plan["dovody"].append("bez receptu: pravidlá podľa éry a grafiky (neoverené)")
+    if plan.get("runner") == "proton":
+        pc = proton_cesta()
+        plan["proton"] = {"cesta": pc, "umu": shutil.which("umu-run") is not None}
+        if not pc or not plan["proton"]["umu"]:
+            plan["dovody"].append("Proton alebo umu-launcher chýba: Barista ich doplní (setup/f1/hry.sh)")
+    zav = list(plan.get("zavislosti") or [])
+    for p in v.get("poziadavky", []):
+        if p == "directx" and "directx-z-media" not in zav:
+            zav.append("directx-z-media")
+    plan["zavislosti"] = zav
+    return plan
+
+
+# ── Android: APK a balíky XAPK/APKS (základ + čiastkové APK), architektúry a oprávnenia ─────────────────────────
+ABI = ("arm64_v8a", "armeabi_v7a", "x86_64", "x86")
+
+
+def android_info(cesta):
+    subory = zoznam_obsahu(cesta, "archiv")
+    abi = set()
+    for s in subory:
+        m = re.match(r"(?:lib/|config\.)(arm64[-_]v8a|armeabi[-_]v7a|x86[-_]64|x86)(?:/|\.apk)", s)
+        if m:
+            abi.add(m.group(1).replace("-", "_"))
+    info = {"apk": [s for s in subory if s.lower().endswith(".apk")], "abi": sorted(abi), "balik": len(subory) > 1}
+    if "manifest.json" in subory:                                    # XAPK: popis balíka
+        try:
+            m = json.loads(nacitaj_zaciatok(cesta, "archiv", "manifest.json", 1 << 20) or b"{}")
+            info.update({"package": m.get("package_name"), "nazov": m.get("name"), "verzia": m.get("version_name"),
+                         "min_sdk": m.get("min_sdk_version"), "target_sdk": m.get("target_sdk_version"),
+                         "oprávnenia": len(m.get("permissions") or [])})
+        except ValueError:
+            pass
+    info["obb"] = [s for s in subory if s.lower().endswith(".obb") or "/android/obb/" in s.lower()]
+    return info
+
+
+def analyzuj(cesta):
+    cesta = os.path.abspath(os.path.expanduser(cesta))
+    if not os.path.exists(cesta):
+        return {"cesta": cesta, "chyba": "cesta neexistuje"}
+    typ = zisti_typ(cesta)
+    vysl = {"cesta": cesta, "typ": typ, "nazov": os.path.basename(cesta.rstrip("/"))}
+    if os.path.isfile(cesta):
+        vysl["velkost"] = os.path.getsize(cesta)
+        vysl["sha256"] = sha256(cesta)
+    dovody, ochrana = [], []
+    podtyp, verdikt = "neznamy", "neznamy"
+    wine = shutil.which("wine") is not None
+
+    if typ in ("iso", "priecinok", "archiv"):
+        subory = zoznam_obsahu(cesta, typ)
+        vysl["pocet_suborov"] = len(subory)
+        vysl["_subory"] = subory
+        hlavny = najdi_hlavny_exe(subory)
+        if hlavny:
+            vysl["program"] = {"exe": hlavny, **profil_programu(cesta, typ, hlavny)}
+        if typ == "iso":
+            vysl["volume"] = volume_id_iso(cesta)
+            vysl["dalsie_disky"] = dalsie_disky(cesta)
+        inst, poz, ochrana = rozpoznaj(subory)
+        vysl["instalator"] = inst
+        vysl["poziadavky"] = poz
+        if inst["subor"]:
+            hl = hlavicka_exe(nacitaj_zaciatok(cesta, typ, inst["subor"]))
+            inst["architektura"] = hl
+            if hl == "ne16":
+                dovody.append("inštalátor je 16-bitový Windows program; Wine 64-bit ho nespustí (treba špeciálny prefix)")
+            elif hl in ("pe32", "pe64"):
+                dovody.append(f"inštalátor {inst['subor']} je {'32-bitový' if hl == 'pe32' else '64-bitový'} program Windows")
+            elif hl == "dos":
+                dovody.append("inštalátor je program MS-DOS (DOSBox)")
+        if inst["druh"] != "ziadny":
+            dovody.append(f"druh inštalátora: {inst['druh']}")
+        if "directx" in poz:
+            dovody.append("médium obsahuje DirectX (nainštaluje sa z média)")
+        if "gamespy" in poz:
+            dovody.append("médium obsahuje GameSpy (sieťová hra cez internet/LAN)")
+        if vysl.get("dalsie_disky"):
+            dovody.append("hra je na viacerých diskoch: " + ", ".join(vysl["dalsie_disky"]))
+        if inst["druh"] == "ziadny" and not any(s.lower().endswith(".exe") for s in subory):
+            dovody.append("nenašiel som inštalátor ani spustiteľný súbor")
+            verdikt = "nepojde"
+        else:
+            podtyp = "wine-installer" if inst["subor"] else "wine-portable"
+            hl = (inst.get("architektura") or "")
+            if hl == "ne16":
+                verdikt = "nepojde"
+            elif not wine:
+                verdikt, podtyp = "pojde-s-upravou", podtyp
+                dovody.append("Wine nie je nainštalovaný (Barista ho doplní)")
+            elif ochrana:
+                verdikt = "pojde-s-upravou"
+            else:
+                verdikt = "pojde"
+    elif typ == "exe":
+        hl = hlavicka_exe(open(cesta, "rb").read(4096))
+        vysl["architektura"] = hl
+        druh = podpis_exe(cesta)
+        if druh in ("sfx-rar", "sfx-7z", "sfx-zip"):
+            subory = zoznam_obsahu(cesta, "archiv")
+            if subory:
+                vysl["pocet_suborov"] = len(subory)
+                inst, poz, ochrana = rozpoznaj(subory)
+                vysl["instalator"], vysl["poziadavky"] = inst, poz
+                dovody.append("samorozbaľovací archív (" + druh[4:].upper() + f"), obsahuje {len(subory)} súborov")
+                if inst["subor"]:
+                    dovody.append(f"v archíve je inštalátor {inst['subor']}")
+                podtyp = "wine-installer" if inst["subor"] else "wine-portable"
+            else:
+                podtyp = "wine-installer"
+                dovody.append("samorozbaľovací archív, obsah sa nepodarilo prečítať")
+        elif druh:
+            vysl["instalator"] = {"druh": druh, "subor": os.path.basename(cesta)}
+            podtyp = "wine-installer"
+            dovody.append(f"inštalátor druhu {druh}: nainštaluje sa vo Wine do vlastného prefixu")
+        elif os.path.getsize(cesta) > 50 << 20:
+            vysl["instalator"] = {"druh": "neznamy", "subor": os.path.basename(cesta)}
+            podtyp = "wine-installer"
+            dovody.append("veľký súbor (nad 50 MB) bez známeho podpisu: pravdepodobne inštalátor; skúsi sa vo Wine")
+        else:
+            podtyp = "wine-portable"
+            dovody.append("samostatný program Windows bez inštalátora; spustí sa vo Wine v sandboxe")
+        if hl == "ne16":
+            verdikt = "nepojde"
+            dovody.append("16-bitový program Windows, vo Wine 64-bit nepôjde")
+        else:
+            verdikt = "pojde" if wine else "pojde-s-upravou"
+            if not wine:
+                dovody.append("Wine nie je nainštalovaný (Barista ho doplní)")
+    elif typ == "msi":
+        podtyp = "wine-installer"
+        verdikt = "pojde" if wine else "pojde-s-upravou"
+        dovody.append("balík MSI sa nainštaluje vo Wine")
+    elif typ == "apk":
+        podtyp = "android"
+        verdikt = "pojde"
+        a = android_info(cesta)
+        vysl["android"] = a
+        nm = a.get("nazov") or a.get("package") or "aplikácia"
+        dovody.append(f"aplikácia Android {nm}" + (f" {a['verzia']}" if a.get("verzia") else "") +
+                      (f", balík s {len(a['apk'])} súbormi APK" if a["balik"] else ""))
+        if a.get("min_sdk"):
+            dovody.append(f"vyžaduje Android {a['min_sdk']} alebo novší (SDK)")
+        if shutil.which("waydroid") is None:
+            verdikt = "pojde-s-upravou"
+            dovody.append("Waydroid nie je nainštalovaný: Barista ho doplní (vyžaduje podporu jadra pre Android)")
+        if a["abi"] and not any(x in a["abi"] for x in ("x86_64", "x86")):
+            verdikt = "pojde-s-upravou"
+            dovody.append("natívne knižnice len pre ARM (" + ", ".join(a["abi"]) +
+                          "): Waydroid na x86 potrebuje prekladač ARM→x86, inak sa nemusí spustiť")
+        if a["obb"]:
+            dovody.append("balík obsahuje dátové súbory OBB (kopírujú sa do aplikácie)")
+    elif typ == "appimage":
+        podtyp, verdikt = "native-appimage", "pojde"
+        dovody.append("AppImage sa spustí priamo (Barista pridá záznam do menu)")
+    elif typ == "rpm":
+        podtyp, verdikt = "native-rpm", "pojde"
+        dovody.append("balík RPM sa nainštaluje cez dnf (vyžaduje oprávnenie)")
+    elif typ == "flatpak":
+        podtyp, verdikt = "native-flatpak", "pojde"
+        dovody.append("balík Flatpak sa nainštaluje cez flatpak")
+    elif typ == "skript":
+        podtyp, verdikt = "skript", "pojde-s-upravou"
+        dovody.append("shell skript: spustí sa v sandboxe, bez siete, po potvrdení")
+    else:
+        dovody.append("neznámy typ súboru")
+    vysl["ochrana"] = ochrana
+    if ochrana:
+        dovody.append("ochrana proti kopírovaniu (" + ", ".join(ochrana) + "): môže vyžadovať CD v mechanike")
+    vysl["podtyp"] = podtyp
+    vysl["verdikt"] = verdikt
+    vysl["dovody"] = dovody
+    if podtyp.startswith("wine"):
+        if typ == "exe" and "program" not in vysl:
+            vysl["program"] = {"exe": vysl["nazov"], **profil_programu(cesta, typ)}
+        vysl["plan"] = planuj(vysl)
+    vysl.pop("_subory", None)
+    return vysl
+
+
+def vypis(v):
+    if "chyba" in v:
+        print(v["chyba"])
+        return
+    print(f"{v['nazov']}  ·  typ: {v['typ']}  ·  podtyp: {v['podtyp']}")
+    if v.get("sha256"):
+        print(f"  sha256: {v['sha256']}")
+    print(f"  verdikt: {v['verdikt']}")
+    for d in v["dovody"]:
+        print(f"   - {d}")
+    if v.get("program"):
+        p = v["program"]
+        print(f"  program: {p.get('exe')} · rok {p.get('rok')} · {p.get('architektura')} · grafika {', '.join(p.get('grafika', [])) or 'neznáma'}")
+    if v.get("plan"):
+        pl = v["plan"]
+        print(f"  plán: {pl.get('runner')} ({pl.get('winver')}), závislosti: {', '.join(pl.get('zavislosti') or []) or '—'}")
+        for d in pl["dovody"]:
+            print(f"   · {d}")
+
+
+def main(argv):
+    if len(argv) >= 3 and argv[1] == "analyze":
+        v = analyzuj(argv[2])
+        if "--json" in argv:
+            print(json.dumps(v, ensure_ascii=False, indent=1))
+        else:
+            vypis(v)
+        return 0 if "chyba" not in v else 1
+    print(__doc__)
+    return 2
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv))
