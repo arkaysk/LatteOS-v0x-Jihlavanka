@@ -15,47 +15,45 @@ s vyvíjaným Linuxom, kábel priamo do hlavného PC (hlavné PC `192.168.137.1`
 
 ## 1. Odpovede na hlavné otázky
 
-**Kde beží Claude Code?** Na **latte-lab**. Pri Remote-SSH sa rozšírenie Claude Code spúšťa na vzdialenom PC, nie
-na hlavnom. VS Code na hlavnom PC je iba okno (editor, panel Claude, terminál). Koordinátor tak priamo vidí repo,
-kompiluje a skúša Goo na latte-lab.
+**Rozhodnutie (8. 10.):** farmu nebudeme písať od nuly. Základom je **[clodfarm](https://github.com/matank001/clodfarm)**
+(MIT, Python, kontajner). Vlastná je iba malá aplikácia **Farma Strážca** na hlavnom PC, ktorá stráži grafickú kartu
+(§4). Pravidlo „preberať, nevymýšľať“.
 
-**Kde beží aplikácia Farma?** V **dvoch častiach**, lebo grafická karta je na hlavnom PC a repo s pracovníkmi na
-latte-lab (podrobne §4):
+**Kde beží Claude Code?** Na **latte-lab**. Pri Remote-SSH sa rozšírenie Claude Code spúšťa na vzdialenom PC, nie
+na hlavnom. VS Code na hlavnom PC je iba okno. Koordinátor tak priamo vidí repo, kompiluje a skúša Goo na latte-lab.
+
+**Čo kde beží:**
 
 | časť | kde | čo robí |
 |---|---|---|
-| **Farma Strážca** | hlavné PC (Windows), ikona pri hodinách | sleduje vyťaženie RTX 3060 a programy, ktoré ju potrebujú (hry, strih). Má tlačidlo **▶ / ⏸**. Uvoľní model z LM Studia, keď GPU potrebuješ ty. Stav posiela farme. |
-| **LM Studio server** | hlavné PC | počíta model; nahrá ho až pri úlohe |
-| **Farma** (služba) | latte-lab | front úloh, spúšťa a pozastavuje pracovníkov, ukladá ich priebeh. Má **webový panel**: úlohy, živý náhľad, čo agent práve robí, diff, tlačidlá Prevziať / Zahodiť / Vrátiť. |
-| **Koordinátor** | latte-lab (VS Code + Claude Code) | píše zadania do frontu, kontroluje diffy |
+| **LM Studio server** | hlavné PC | počíta lokálny model na RTX 3060; model nahrá až pri úlohe |
+| **Farma Strážca** (vlastná, malá) | hlavné PC, ikona pri hodinách | sleduje GPU a programy, ktoré ju potrebujú. Tlačidlo **▶ / ⏸** = `clodfarm resume / pause`. Pri hre uvoľní model z LM Studia. |
+| **clodfarm** (kontajner) | latte-lab | front úloh, pracovníci vo vlastných kópiách repa, **webový panel** `:8080` s náhľadom, čo kto robí, kontrola pred zlúčením, rozvrhy, stráženie limitu Claude |
+| **bot „lokal“** v clodfarm | latte-lab → LM Studio | Claude Code na lokálnom modeli; robí mechanické úlohy, **limit predplatného nemíňa** |
+| **Koordinátor** | latte-lab (VS Code + Claude Code) | rozhovor s tebou; úlohy posiela farme cez MCP |
 
-Panel Farmy sa otvorí v prehliadači na hlavnom PC alebo **priamo vo VS Code**. Remote-SSH prepošle port z latte-lab
-sám, takže stačí `http://localhost:8781`. Neskôr môže byť panel aj kvapkou v Goo na latte-lab.
+**Kde sa zadávajú úlohy?** Stále **v paneli Claude Code vo VS Code**. Claude Code sa na clodfarm pripojí ako server
+MCP (`claude mcp add --transport http farm http://localhost:8080/mcp`). Potom mu stačí povedať napríklad „daj farme
+preložiť texty Tvorcu Goo, na bota lokal“. Ďalšie cesty:
 
-**Kde sa zadávajú úlohy?** Stále **v paneli Claude Code vo VS Code**, ako doteraz. Koordinátor (Claude) sám
-rozhodne, čo urobí sám a čo pošle farme. Mechanickú časť napíše ako zadanie a pridá do frontu (`farma pridaj
-zadanie.md`). Farma ho spustí, **až keď je GPU voľné a farma beží (▶)**. Ty môžeš úlohu pridať aj sám v paneli Farmy.
-Podagenti v Claude Code (`.claude/agents`) vedia používať iba modely Claude, preto lokálny model volá Farma ako
-samostatný proces.
+- **panel clodfarm** v prehliadači alebo vo VS Code (Remote-SSH prepošle port `8080` sám),
+- **aplikácia Claude v mobile** (Remote Control): farma je tam ako relácia „[clodfarm]“,
+- príkazový riadok `clodfarm spawn …`.
 
 ```
  HLAVNÉ PC (Windows)                                  LATTE-LAB (Linux)
- ┌──────────────────────────────────┐  Remote-SSH     ┌───────────────────────────────────────────┐
- │ VS Code — iba okno               │═══════════════▶ │ Claude Code = KOORDINÁTOR (predplatné)    │
- │   + panel Farmy (localhost:8781) │                 │      │ farma pridaj <zadanie>             │
- │                                  │                 │      ▼                                    │
- │ Farma Strážca  [▶/⏸] ● GPU voľné │ ── stav ──────▶ │ Farma (služba, :8781)                     │
- │   NVML: vyťaženie, VRAM, procesy │ ◀─ ▶/⏸, stav ── │   front · pracovníci · záznam · diffy     │
- │   lms unload pri hre             │                 │      │ spustí, keď GPU voľné a ▶          │
- │                                  │                 │      ▼                                    │
- │ LM Studio server :1234  ◀────────┼──── HTTP ─────── │ pracovník = Claude Code + lokálny model   │
- │  RTX 3060 12 GB + 80 GB RAM      │                 │   v ~farma/wt-<úloha>, vetva farma/<úloha>│
- └──────────────────────────────────┘                 └───────────────────────────────────────────┘
+ ┌──────────────────────────────────┐  Remote-SSH     ┌────────────────────────────────────────────┐
+ │ VS Code — iba okno               │═══════════════▶ │ Claude Code = KOORDINÁTOR (predplatné)     │
+ │   + panel farmy (localhost:8080) │                 │      │ MCP: spawn --on lokal               │
+ │                                  │                 │      ▼                                     │
+ │ Farma Strážca  [▶/⏸] ● GPU voľné │ ─ pause/resume ▶│ clodfarm (kontajner, :8080)                │
+ │   NVML, zoznam hier, lms unload  │                 │   front · worktree · overenie · panel      │
+ │                                  │                 │   bot „lokal“ = Claude Code               │
+ │ LM Studio server :1234  ◀────────┼── /v1/messages ─│     s ANTHROPIC_BASE_URL na LM Studio      │
+ │  RTX 3060 12 GB + 80 GB RAM      │                 │   → výsledok do miestneho repa farmy       │
+ └──────────────────────────────────┘                 └────────────────────────────────────────────┘
+ mobil: aplikácia Claude ── Remote Control ──▶ clodfarm
 ```
-
-Prečo pracovník = Claude Code: LM Studio od verzie 0.4.1 hovorí formátom Anthropic (`/v1/messages`). Pracovník je
-preto **ten istý Claude Code** s tými istými nástrojmi (čítanie, úpravy, bash), iba s inou adresou modelu, a **limit
-predplatného nemíňa**.
 
 ---
 
@@ -105,119 +103,98 @@ do `ROZHODNUTIA.md`, čokoľvek, čo ide na GitHub.
 
 ---
 
-## 4. Aplikácia Farma
+## 4. Farma: clodfarm + Farma Strážca
 
-### 4.1 Farma Strážca (hlavné PC, Windows)
+### 4.1 Čo clodfarm vie (a prečo ho brať)
 
-Malý program pri hodinách (Python + `pynvml` + `pystray`; neskôr ho možno prepísať v Tauri, ak bude treba).
+Overené z jeho dokumentácie (8. 10. 2026; projekt vznikol 25. 9. 2026, je mladý):
 
-**Ikona a ponuka:** ● zelená = farma pracuje · ● žltá = čaká na voľné GPU · ● sivá = pauza. Položky:
-**▶ Spustiť / ⏸ Pauza**, *Pauza na 1 h / do rána*, *Otvoriť panel*, *Uvoľniť model teraz*.
+- **Úlohy = podagenti:** `clodfarm spawn "Názov" --prompt "…" --on lokal` spustí `claude -p` vo vlastnom
+  `git worktree`. Výsledok sa zlúči do `main` farmy, **iba ak prejde overenie** (`FARM_VERIFY_CMD`). Inak sa
+  pracovník obnoví s výpisom chyby a opraví to.
+- **Boti = iné modely:** bot je ten istý Claude Code s `ANTHROPIC_BASE_URL` na iného poskytovateľa. Podporuje aj
+  „Anthropic-compatible“ adresu, čo LM Studio od 0.4.1 je. Bot berie iba úlohy poslané naň (`--on lokal`), jeho
+  podagenti ostávajú na ňom a **nikdy nemíňa limit Claude**.
+- **Panel** `http://latte-lab:8080`: kto na čom pracuje, podagenti, nástroje, spotreba. K tomu **Remote Control**
+  (ovládanie z aplikácie Claude v mobile), rozvrhy (`schedule`), upozornenia (ntfy), denník udalostí.
+- **Stráženie limitu Claude:** číta skutočné percentá 5-hodinového a týždenného limitu, a to za **celý účet vrátane
+  tvojej práce vo VS Code**. Keď pracuješ ty, farma uberie.
+- **`clodfarm pause` / `resume`:** zastaví a znova spustí štart nových úloh. Presne to potrebuje tlačidlo ▶/⏸.
+- **MCP:** Claude Code vo VS Code vidí farmu a posiela jej úlohy.
 
-**Kedy je GPU „obsadené“** (stačí jedna podmienka):
+### 4.2 Nastavenie clodfarm pre náš cieľ (šetriť, nie míňať)
 
-- beží program zo zoznamu „GPU potrebujem ja“ (napr. `steam`, hry, `obs64`, `Resolve`, `Premiere`) — zoznam sa
-  upravuje v nastaveniach;
-- farma práve nepočíta a GPU je napriek tomu vyťažené nad ~25 % dlhšie ako 20 s (teda ho používa niečo iné);
-- iné programy zaberajú toľko VRAM, že model sa nezmestí.
+clodfarm je od výroby nastavený tak, aby predplatné **vyťažil** (model Opus, do 80 % týždňa). My chceme opak:
 
-**Kedy je „voľné“:** nič z toho neplatí aspoň **3 minúty** (aby farma neskákala pri krátkych výkyvoch).
-
-**Čo urobí pri zmene:**
-
-| udalosť | Strážca | Farma na latte-lab |
+| premenná | hodnota | prečo |
 |---|---|---|
-| GPU obsadené / ⏸ | po dokončení rozpísanej odpovede `lms unload --all` (uvoľní VRAM aj RAM) | nové úlohy nespúšťa, bežiacich pracovníkov **zmrazí** (`SIGSTOP`) |
-| GPU voľné a ▶ | nič (model sa nahrá sám pri prvej požiadavke) | pracovníkov **rozmrazí** (`SIGCONT`) a pokračuje vo fronte |
-| pauza dlhšia ako ~1 h | — | zmrazeného pracovníka ukončí a neskôr ho obnoví (`claude --resume`) v tej istej kópii repa |
+| `FARM_MODEL` | `sonnet` | ak už farma použije Claude, nech je to lacnejší model |
+| `FARM_WEEKLY_TARGET` | napr. `0.20` | Claude vo farme prakticky nepracuje (týždeň míňaš ty vo VS Code), všetko ide na bota |
+| `FARM_MAX_WORKERS` | `1` | jedna grafická karta |
+| `FARM_REPO_URL` | **miestny** repozitár na latte-lab (napr. `/srv/farma.git`), **nie GitHub** | farma zlučuje do svojho `main` sama; na GitHub ide iba to, čo prevezmeš ty |
+| `FARM_VERIFY_CMD` | napr. `cargo check --workspace` | do `main` farmy ide iba kód, ktorý sa preloží |
+| `FARM_PERMISSION_MODE` | `bypassPermissions` (predvolené) | v kontajneri je to bezpečné; kontajner vidí iba repo farmy |
+| `FARM_NOTIFY_URL` | voliteľne ntfy | správa do mobilu, keď je úloha hotová alebo zlyhala |
 
-Strážca posiela stav farme každých pár sekúnd (`POST http://latte-lab:8781/api/gpu`, s tokenom). Ak Strážca nebeží
-(PC vypnuté), farma to berie ako „obsadené“.
+Bot pre LM Studio: v paneli **+ ADD AGENT → ADD AGENT WITH API KEY → Anthropic-compatible**, adresa
+`http://192.168.137.1:1234` (bez `/v1`), kľúč = token z LM Studia, model napr. `qwen3-coder-30b-a3b-instruct`.
+Pri prvom pridaní sa farma spýta modelu na jedno slovo, aby overila spojenie. Voliteľne `--any`, aby bot bral aj
+úlohy bez `--on`.
 
-### 4.2 Farma (latte-lab, služba `systemd --user`)
+**Prevzatie práce farmy:** v hlavnej kópii repa pridať vzdialený repozitár `farma` (`/srv/farma.git`), pozrieť
+`git diff` a zlúčiť do pracovnej vetvy. Kontrolu robí koordinátor (Sonnet) alebo `/ponytail-review`.
 
-Jeden program (Python, ~500–800 riadkov; webový panel v jednom HTML súbore), beží ako používateľ `farma`.
+### 4.3 Farma Strážca (vlastná, hlavné PC, Windows)
 
-- **Front úloh:** `~farma/ulohy/{cakajuce,bezi,hotove,vratene}/<id>.md`. Pridať sa dá z príkazového riadka
-  (`farma pridaj`), z panela alebo neskôr nástrojom MCP.
-- **Pracovník:** pre každú úlohu `git worktree` a vetva `farma/<id>`. Spustí sa
-  `claude -p --output-format stream-json` s adresou LM Studia. Súčasne beží **jeden, najviac dvaja**, lebo
-  grafická karta je iba jedna.
-- **Záznam:** z prúdu udalostí Claude Code sa ukladá, čo pracovník robí (číta súbor X, upravuje Y, spúšťa
-  `cargo build`, jeho text). Panel to ukazuje naživo.
-- **Koniec úlohy:** spustí kontrolu z „Hotovo, keď“, urobí commit a zapíše zhrnutie a štatistiku (čas, tokeny,
-  zmenené súbory).
+Jediné, čo clodfarm nevie: **spúšťať lokálny model iba vtedy, keď grafickú kartu nepotrebuješ ty.** Strážca je
+malý program pri hodinách (Python + `pynvml` + `pystray`, ~150 riadkov):
 
-**Webový panel** (`:8781`):
+- **Ikona:** ● zelená = farma pracuje · ● žltá = čaká na voľné GPU · ● sivá = pauza. Ponuka: **▶ Spustiť / ⏸ Pauza**,
+  *Pauza na 1 h / do rána*, *Otvoriť panel*, *Uvoľniť model teraz*.
+- **GPU je obsadené**, ak beží program zo zoznamu „GPU potrebujem ja“ (hry, strih, OBS…), ak je GPU vyťažené inak
+  ako farmou dlhšie ako ~20 s, alebo ak iné programy zaberajú toľko VRAM, že sa model nezmestí.
+- **GPU je voľné**, keď nič z toho neplatí aspoň 3 minúty.
+- **Pri obsadení:** `ssh latte-lab clodfarm pause "GPU obsadené"` (cez kontajner: `docker exec clodfarm …`). Keď
+  rozpísaná odpoveď dobehne, `lms unload --all`.
+- **Pri uvoľnení a ▶:** `clodfarm resume`. Model sa nahrá sám pri prvej požiadavke.
 
-```
-┌ Farma ──────────────────────────── GPU: ● voľné (3 %)  Model: qwen3-coder-30b  [⏸ Pauza] ┐
-│ Čakajúce (3)        │ Beží: preklad-tvorca-goo  (4 min, 2 140 tok)                       │
-│  · ikony-lensgoo    │  12:01 číta session/goo/tvorca.luau                                │
-│  · zmeny-okt        │  12:02 upravuje session/goo/translations/sk …                      │
-│  · test-hodiny      │  12:04 spúšťa: cargo build -p goo   ✓                              │
-│ Hotové (2)          │  ─────────────────────────────────────────────                     │
-│  ✓ logy-hyprland    │  [Diff]  [Prevziať do vetvy]  [Vrátiť s poznámkou]  [Zahodiť]       │
-└─────────────────────┴────────────────────────────────────────────────────────────────────┘
-```
+**Treba overiť:** `pause` zastaví iba **nové** úlohy, bežiaca úloha dobehne. Pri dlhej úlohe a spustenej hre by
+model ešte chvíľu bral GPU. Možnosti: počkať (väčšinou minúty), alebo model uvoľniť hneď. Bežiaca úloha by potom
+zlyhala a farma ju zopakuje, čo treba vyskúšať.
 
-**Prevziať** = merge `farma/<id>` do tvojej pracovnej vetvy v hlavnej kópii (`~arkay/jihlavanka001`). Merge
-a push na GitHub robíš ty alebo koordinátor, nie farma.
-
-### 4.3 Koordinátor a farma
-
-- Pravidlo v `CLAUDE.md`: mechanické úlohy (§3) Claude nerobí sám, ale napíše zadanie a dá `farma pridaj`.
-- Šablóna zadania (aby mu malý model rozumel):
-
-```markdown
-# Úloha: preklad textov Tvorcu Goo do sk
-Súbory: session/goo/… (presné cesty)
-Urob: …
-Nerob: nemeň logiku, nemeň iné súbory, nič nepushuj
-Hotovo, keď: `cargo build` prejde / súbor X obsahuje …
-```
-
-- Kontrola: koordinátor (Sonnet) číta iba `git diff main..farma/<id>`. Malý diff je lacný.
-- Neskôr: nástroj MCP `farma_pridaj / farma_stav / farma_vysledok`, ktorý môže byť súčasťou plánovaného `latte-mcp`.
-
-### 4.4 Inštalácia (jednorazovo)
+### 4.4 Inštalácia (jednorazovo, latte-lab)
 
 ```bash
-# latte-lab
-sudo useradd -m -s /bin/bash farma              # bez sudo, nevidí ~/.claude-local ani kľúče GitHub
-sudo -u farma git clone ~arkay/jihlavanka001 ~farma/repo
-sudo -u farma bash -c 'curl -fsSL https://claude.ai/install.sh | bash'
-# ~farma/.config/farma.env: ANTHROPIC_BASE_URL=http://192.168.137.1:1234, ANTHROPIC_AUTH_TOKEN=<token LM Studia>,
-#   CLAUDE_CODE_ATTRIBUTION_HEADER=0, FARMA_MODEL=<názov z `lms ls`>, FARMA_TOKEN=<token pre Strážcu>
+sudo dnf install -y podman podman-docker podman-compose  # clodfarm počíta s docker; overiť, či stačí podman
+git init --bare /srv/farma.git && git -C ~/jihlavanka001 push /srv/farma.git main  # miestny repozitár farmy
+git clone https://github.com/matank001/clodfarm ~/clodfarm && cd ~/clodfarm   # pripnúť overenú verziu (tag/commit)
+cp .env.example .env    # nastaviť premenné z §4.2
+docker compose up -d && docker exec -it clodfarm clodfarm login   # prihlásenie tvojím Claude (odkaz + kód)
+claude mcp add --transport http --scope user farm http://localhost:8080/mcp   # koordinátor vo VS Code
 ```
 
-Na hlavnom PC: LM Studio podľa §3 a Strážca (Python + `pip install pynvml pystray`, spúšťaný pri prihlásení).
+Kontajner nedostane `~/.claude-local`, kľúče GitHub ani tvoj domov, iba `/srv/farma.git`.
 
-### 4.5 Čo naprogramovať (poradie)
+### 4.5 Čo naprogramovať / nastaviť (poradie)
 
-| krok | súbor | výsledok |
+| krok | čo | výsledok |
 |---|---|---|
-| 1 | `setup/lab/farma/farma.py` — front + pracovník + záznam (bez panela) | úlohy idú cez príkazový riadok |
-| 2 | `setup/lab/farma/panel.html` + API | náhľad, ▶/⏸, diff, prevziať |
-| 3 | `setup/lab/farma/strazca.py` (Windows) | GPU stráženie, uvoľnenie modelu |
-| 4 | `setup/lab/farma/instaluj.sh`, služba systemd | farma beží sama aj po reštarte |
-| 5 | pravidlo v `CLAUDE.md`, neskôr MCP | koordinátor posiela úlohy sám |
+| 1 | clodfarm na latte-lab (§4.4), bot `lokal`, skúšobná úloha | farma beží, úlohy z panela a príkazového riadka |
+| 2 | MCP vo VS Code + pravidlo v `CLAUDE.md` („mechanické úlohy → `spawn --on lokal`“) | koordinátor posiela úlohy sám |
+| 3 | `setup/lab/farma/strazca.py` (Windows) | ▶/⏸, GPU stráženie, uvoľnenie modelu |
+| 4 | skript na prevzatie práce z `/srv/farma.git` | jednoduché `git diff` / merge do pracovnej vetvy |
 
-### 4.6 Inšpirácie na GitHube (preberať, nevymýšľať)
+**Záloha:** ak by clodfarm nefungoval (mladý projekt, Docker na Fedore, zmena licencie…), vlastná jednoduchá farma
+podľa pôvodného návrhu: front úloh v súboroch, `claude -p --output-format stream-json` vo `git worktree` a webový
+panel. Zhruba 500–800 riadkov Pythonu.
 
-Tvoju staršiu inšpiráciu „AI farma“ som v repách `jihlavanka001` ani `latteos` (ani v ich histórii) nenašiel. Ak si
-ju dával niekam inam, stačí poslať odkaz. Podobné hotové projekty (8. 10. 2026):
+### 4.6 Ďalšie inšpirácie na GitHube
 
-| projekt | čo z neho vziať | prečo nie celý |
-|---|---|---|
-| [Dicklesworthstone/claude_code_agent_farm](https://github.com/Dicklesworthstone/claude_code_agent_farm) (~900 ★) | sledovanie agentov, automatický `/clear`, obnova zaseknutého agenta, správa o behu | cieli na 20+ agentov s predplatným Claude v tmux, nepozná GPU ani lokálny model |
-| [matank001/clodfarm](https://github.com/matank001/clodfarm) | **pauza pri 80 % týždenného limitu Claude**, ovládanie z aplikácie Claude v mobile | ťažký (kontajner, AWS, platby), cieľ je iný |
-| [vraj00222/agent-farm](https://github.com/vraj00222/agent-farm) | presne náš postup: worktree na úlohu, živý výstup, diff, prevziať/zahodiť, `--resume` | iba macOS (Electron) |
-| [getpaseo/paseo](https://github.com/getpaseo/paseo) (~20 tis. ★) | démon + klienti (Windows, Linux, web, mobil), worktree, diffy, **pluginy** (vedia meniť prostredie agenta) | veľký nástroj popri VS Code; GPU stráženie by bol vlastný plugin. **Alternatíva** ku krokom 2–4, ak by vlastný panel rástol |
-
-Nikto z nich nerobí to hlavné: **spúšťať lokálny model iba vtedy, keď GPU nepotrebuješ ty**. To je vlastná časť
-(Strážca). Front a panel sú malé, preto navrhujem vlastnú jednoduchú Farmu. Paseo ber ako zálohu, ak by sme
-potrebovali viac (mobil, viac strojov).
+| projekt | čo z neho vziať |
+|---|---|
+| [Dicklesworthstone/claude_code_agent_farm](https://github.com/Dicklesworthstone/claude_code_agent_farm) | sledovanie agentov, automatický `/clear`, obnova zaseknutého agenta |
+| [vraj00222/agent-farm](https://github.com/vraj00222/agent-farm) | worktree na úlohu, živý výstup, diff, prevziať/zahodiť (iba macOS) |
+| [getpaseo/paseo](https://github.com/getpaseo/paseo) | veľké prostredie s aplikáciou pre Windows a mobil; alternatíva k panelu clodfarm |
 
 ### 4.7 Smerovač modelov — lokálny podagent priamo v rozhovore (nápad z claude-ui-mod)
 
@@ -253,7 +230,12 @@ pošli farme“.
 
 ## 5. Bezpečnosť
 
-- Pracovník = používateľ `farma`: bez sudo, bez hesla, bez kľúčov GitHub. Vidí iba svoj klon repa.
+- Pracovníci bežia v **kontajneri clodfarm** ako neprivilegovaný používateľ: bez sudo, bez hesla, bez kľúčov
+  GitHub. Vidia iba miestny repozitár farmy `/srv/farma.git`, nie tvoj domov ani `.claude-local`.
+- clodfarm drží prihlásenie tvojho Claude v zväzku kontajnera. Panel `:8080` nemá heslo: kto ho vidí, vidí aj
+  farmu. Port preto otvoriť iba pre kábel k hlavnému PC (alebo iba `localhost` a prístup cez Remote-SSH).
+- Podmienky predplatného: clodfarm používa oficiálny Claude Code (headless, Remote Control). Je určený na **vlastné
+  projekty s vlastným prihlásením**. Nezdieľať prihlásenie a neposkytovať farmu iným.
 - Na GitHub pushuje **iba koordinátor a iba na tvoj pokyn** (pravidlo z CLAUDE.md).
 - LM Studio: token a firewall iba pre kábel k latte-lab.
 - Pracovník nedostáva zadania z internetu ani z cudzích súborov. Píše ich iba koordinátor alebo ty.
@@ -313,22 +295,24 @@ Cieľ: limit vydrží **do pondelka 15:00**. V pondelok pred resetom zapísať, 
 
 ## 8. Postup — prvý deň pri hlavnom PC
 
-1. **Hneď (bez inštalácie):** v Claude Code prepnúť `/model` na Sonnet (alebo `opusplan`) a začať dodržiavať §6.
+1. **Hneď (bez inštalácie):** v Claude Code prepnúť `/model` na Sonnet (alebo `opusplan`), nainštalovať Ponytail
+   a začať dodržiavať §6.
 2. **LM Studio na hlavnom PC:** aktualizovať na ≥ 0.4.1 a stiahnuť `gpt-oss-20b` a `Qwen3-Coder-30B-A3B-Instruct`.
    Nastaviť server podľa §3 (sieť, token, JIT, auto-unload) a firewall iba pre `192.168.137.0/24`.
 3. **Test z latte-lab** (terminál vo VS Code): `curl http://192.168.137.1:1234/v1/models -H "Authorization: Bearer
-   <token>"` a potom ručne jeden beh Claude Code s premennými z §4.4 na skúšobnú úlohu. Overiť, že model volá
-   nástroje. To isté s druhým modelom; zapísať rýchlosť (tokeny/s) a či úlohu dotiahol.
-4. **Povedať Claudovi vo VS Code:** „Podľa `inspo/dev-ai-prostredie.md` §4.5 urob krok 1 a 4.“ Najprv farma iba
-   z príkazového riadka, potom panel (krok 2) a Strážca (krok 3).
-5. **Prvá skutočná úloha cez farmu** (napr. preklad textov jednej karty Goo), kontrola diffu, prevzatie.
-6. Výsledok a voľbu modelu zapísať do `docs/goo/ROZHODNUTIA.md`, Farmu ako úlohu do `ROADMAP.md`.
+   <token>"`.
+4. **Povedať Claudovi vo VS Code:** „Podľa `inspo/dev-ai-prostredie.md` §4.4 nainštaluj clodfarm na latte-lab, pridaj
+   bota lokal a pošli mu skúšobnú úlohu.“ Porovnať 2 modely: rýchlosť (tokeny/s) a či úlohu dotiahli.
+5. **Prvá skutočná úloha cez farmu** (napr. preklad textov jednej karty Goo), prevzatie z `/srv/farma.git`.
+6. **Strážca** (§4.3) a MCP s pravidlom v `CLAUDE.md` (§4.5, kroky 2–3).
+7. Výsledok zapísať do `docs/goo/ROZHODNUTIA.md`, farmu ako úlohu do `ROADMAP.md`.
 
 ## 9. Otvorené otázky
 
 - Zoznam programov „GPU potrebujem ja“ (hry, strih, OBS…)?
 - Má farma bežať aj cez noc? Hlavné PC by muselo ostať zapnuté (Strážca to vie ukázať a v ponuke „do rána“ zapnúť).
-- Pridať do panela aj stav týždenného limitu Claude (podľa clodfarm) a pauzu koordinátora pri ~80 %?
+- Pustiť aj Claude vo farme (napr. cez noc pred pondelňajším resetom, `FARM_BURST_HOURS`), aby sa nevyužitý zvyšok
+  týždňa nepremárnil?
 
 ## Zdroje
 
@@ -340,7 +324,8 @@ Cieľ: limit vydrží **do pondelka 15:00**. V pondelok pred resetom zapísať, 
   <https://aiproductivity.ai/news/gemma-4-26b-local-coding-no-gpu/>
 - Gemini CLI zadarmo: <https://www.tembo.io/blog/gemini-cli-pricing>,
   <https://developers.google.cn/gemini-code-assist/resources/faqs?hl=en>, <https://geminicli.com/docs/quota-and-pricing>
+- clodfarm: <https://github.com/matank001/clodfarm> (README, docs/bots.md, docs/budget.md)
 - Podobné projekty: <https://github.com/Dicklesworthstone/claude_code_agent_farm>,
-  <https://github.com/matank001/clodfarm>, <https://github.com/vraj00222/agent-farm>, <https://github.com/getpaseo/paseo>
+  <https://github.com/vraj00222/agent-farm>, <https://github.com/getpaseo/paseo>
 - Smerovač modelov: <https://gitlab.com/blockshooter/claude-ui-mod> (docs/agents-and-model-mixing.md)
 - Šetrenie tokenov: <https://github.com/DietrichGebert/ponytail>
