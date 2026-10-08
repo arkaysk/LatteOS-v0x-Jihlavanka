@@ -13,7 +13,8 @@
 --   myšou = podrobnosti v bubline, klik = Monitor na tej časti, pravý klik (na bunke aj na kvapke) = pás sa vtiahne
 --   a odtlačené goo sa vrátia, ak ich medzitým nikto nepresunul. Zapnutý pás ostane aj po prihlásení (latte-goo pas).
 local E = require("lib/engine")
-local function session(a) return function() after(200, function() run("noctalia", { "msg", "session", a }) end) end end
+local wm = require("lib/wm")
+local function session(a) return function() after(200, function() wm.session(a) end) end end
 -- Vypnúť, Reštartovať, Odhlásiť (bughunt 703): keď sú otvorené okná, prvý klik sa iba spýta („Naozaj? N okien“) a karta
 -- ostane otvorená; druhý klik do 4 s to urobí. Pred koncom sa uloží relácia, aby sa okná po prihlásení vrátili.
 local card                          -- karta (nižšie); tu iba ohlásená

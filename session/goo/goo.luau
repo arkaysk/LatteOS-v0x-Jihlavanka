@@ -10,6 +10,7 @@ local vedlajsi = env("LATTE_GOO_VEDLAJSI") == "1"
 -- príklady a ladiaci text vľavo hore iba vo vývojárskom režime (Nastavenia › Kvapky; latte-kvapky: LATTE_GOO_VYVOJ)
 local vyvoj = env("LATTE_GOO_VYVOJ") == "1"
 local ZAKLAD = { goobar = true, goopower = true, lensgoo = true, queengoo = true, clockgoo = true, chatgoo = true }
+if require("lib/wm").safe then ZAKLAD.chatgoo = nil end   -- SafeGoo: bez ChatGoo (Beeper) — drží scénu v neustálom kreslení (~5 jadier v softvéri)
 local function bezne(list)
     local out = {}
     for _, m in ipairs(list) do if ZAKLAD[m] then out[#out + 1] = m end end

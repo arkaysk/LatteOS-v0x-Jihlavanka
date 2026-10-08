@@ -11,6 +11,7 @@
 -- Minútka a budíky zvonia, aj keď je karta zatvorená; bežiaca minútka alebo stopky sa ukazujú v kvapke namiesto dátumu.
 -- Upozornenia prijíma pleamar — iba jeden proces.
 local E = require("lib/engine")
+local wm = require("lib/wm")
 local cas = require("lib/cas")
 local DNI = { "ne", "po", "ut", "st", "št", "pi", "so" }
 local notes, seen = {}, {}
@@ -25,7 +26,7 @@ local function dateLine(d)
 end
 local function showDnd(d) if not d.alt and d.datum then d:text(dateLine(d)) end end
 local function pollDnd(d, after_fn)
-    run("noctalia", { "msg", "notification-dnd-status" }, function(out)
+    wm.noctalia({ "msg", "notification-dnd-status" }, function(out)
         local on = (out or ""):lower():match("true") ~= nil or (out or ""):lower():match("on") ~= nil
         if on ~= dnd then dnd = on showDnd(d) if after_fn then after_fn() end end
     end)
@@ -226,7 +227,7 @@ local function calendar(d)
     end }
     -- napojené programy: kalendárové účty (Google, iCloud, CalDAV, ICS) spravuje Noctalia
     items[#items + 1] = { col = 2, sep = true, glyph = "link", label = tr("Linked calendars"), hint = "Google · iCloud · CalDAV",
-                          run = function() run("noctalia", { "msg", "settings-open" }) end }
+                          run = function() wm.noctalia({ "msg", "settings-open" }) end }
     return items
 end
 -- ľavý stĺpec: upozornenia (najnovšie hore), Nerušiť, Vymazať všetko, Nastavenia oznámení
@@ -271,7 +272,7 @@ local function notifications(d)
         dnd = not dnd
         showDnd(d)
         ncard(d, true)
-        run("noctalia", { "msg", "notification-dnd-toggle" }, nil, { output = false })
+        wm.noctalia({ "msg", "notification-dnd-toggle" }, nil, { output = false })
     end } }
     if #notes > 0 then
         row[2] = { glyph = "trash", label = tr("Clear all"), danger = true, keep = true, run = function() pcall(sys.call, "notifications.clear") end }

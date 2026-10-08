@@ -5,6 +5,7 @@
 -- tá preletí vedľa nej a nafúkne sa na okno; zatvorené okno praskne. Ak je okno už otvorené, iba sa ukáže.
 local E = require("lib/engine")
 local goobar = require("lib/goobar")
+local wm = require("lib/wm")
 local WIN = { aplikacie = { title = "Aplikácie — LatteOS", w = 1220, h = 780 }, zariadenia = { title = "Správca zariadení — LatteOS", w = 1100, h = 780 } }
 local faults, offline, updates = 0, false, 0
 local born = {}
@@ -20,7 +21,7 @@ end
 local function open(d, app)
     local q = WIN[app]
     for _, w in ipairs(goobar.wins()) do
-        if w.title == q.title then run("hyprctl", { "eval", "latte.win.focus_by('org.quickshell', '" .. q.title .. "')" }) return end
+        if w.title == q.title then wm.focus_app("org.quickshell", q.title, w) return end
     end
     -- okno vedľa kráľovnej, celé na obrazovke (Hyprland ho tam postaví, latte/windows.lua)
     local W, H = tonumber(fact.sw) or 1920, tonumber(fact.sh) or 1080

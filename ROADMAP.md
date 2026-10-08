@@ -341,6 +341,55 @@ texty preložiteľné (`translations`). Noctalia beží bez lišty a robí, čo 
   Zistené 8. 10.: pleamar 0.2.29 beží pod labwc/pixman (llvmpipe Vulkan, prvá snímka za ~4 s), ale zlyháva zachytávanie
   obrazu pod sklom (`zwlr_screencopy_frame_v1: invalid buffer format`) → v safe režime treba sklo a zachytávanie vypnúť;
   okná cez `PLEAMAR_GENERIC=window` (labwc: wlr-foreign-toplevel), `latte-goo` volá `hyprctl` → treba záložnú cestu.
+  **8. 10. večer — prvá verzia:** plné `goo.plm` pod labwc/llvmpipe je nepoužiteľné (~540 ms na snímku, engine ~6 jadier; aj s
+  `--reduced-motion` ~1 s na snímku, lebo SDF tvary na celoobrazovkových plochách stoja v softvéri veľa). Rozhodnutie
+  používateľa: v SafeGoo **statické kvapky** (bez pružín, dýchania, naťahovania za kurzorom), jednoduché ako pôvodná Marea.
+  Hotové: `session/goo/safe.plm` + `safe.luau` (pás 48 px, `rate: 15`, kvapka SAFE s ponukou `latte-safe`, zoznam okien, čas,
+  batéria, sieť; pri nečinnosti 0 % CPU), skúšobná relácia „LatteOS SafeGoo (skúška)“ (`latte-session safegoo`,
+  `LATTE_SAFE_SHELL=goo` v labwc autostart). Ostáva: ovládanie okien v labwc (z pleamar iba čítanie), GooPower, QueenGoo,
+  LensGoo (spúšťač), ClockGoo (karta), kvapka SafeGoo s logmi/AI, potom SafeGoo ako predvolený SAFE.
+  **Architektúra bez duplikácie (návrh 8. 10.):** jeden engine, jedna logika (`goo.luau`, `lib/`, `kvapky/*.luau`) a jedno
+  rozhranie scény (fakty, udalosti, modely, texty, pružiny, pravidlá); líši sa iba **vzhľad**. Pleamar to vie: `include` + `part`
+  (časť patrí scéne). Rozdelenie `goo.plm` na `parts/rozhranie.plm` (spoločné), `parts/vzhlad-plny.plm` (SDF telá, sklo,
+  efekty) a `parts/vzhlad-safe.plm` (jednoduché tvary); `goo.plm` a `safe.plm` sú tenké scény (povrch + include). Okná:
+  vrstva `lib/wm.luau` s dvoma ovládačmi (Hyprland cez `hyprctl`, labwc cez `window.activate|close|minimize|restore` podľa
+  id — pleamar 0.2.29 ich má). Dôvod: plné SDF kreslenie v softvéri je ~0,6 s na snímku aj pri 32 miestach a ploche 520 px
+  (zmerané 8. 10.), takže zdieľať sa dá logika, nie kreslenie. Spúšťa sa po fázach: (1) rozhranie do `part`, (2) `wm.luau`,
+  (3) vzhľad SafeGoo kvapka po kvapke (GooBar, ClockGoo, GooPower, QueenGoo, LensGoo), (4) kvapka SafeGoo s logmi.
+  **Fáza 1 hotová (8. 10.):** `goo.plm` rozdelené na `parts/rozhranie.plm`, `telo.plm`, `karty.plm` (`include`); `gen.py` píše
+  do častí a je idempotentný; `pleamar --check` dáva rovnaké počty ako pred rozdelením (aj m32 a m64); nasadené do
+  `/usr/share/latteos/goo` (aj m32/m64) a do `setup/f1/install-session.sh`. Normálne Goo sa vizuálne neoveruje, kým
+  nebeží Hyprland relácia (rovnaký tok inštrukcií, preto sa nemá čo zmeniť) — overiť po ďalšom prihlásení do Goo.
+  **Fáza 2 hotová (8. 10.):** `lib/wm.luau` (Hyprland = hyprctl ako predtým, labwc = `window.*` podľa id; Noctalia v safe
+  režime preskočená, ponuka relácie GooPower cez `systemctl`/`labwc --exit`/`latte-zamok`). **Fáza 3 rozrobená:**
+  `safegoo.plm` (+ `safegoo.luau` = `require("goo")`) = ten istý engine a rozhranie, namiesto `parts/telo.plm` je
+  `parts/telo-safe.plm` (plochá lišta bez strapcov, jednoduché kapsuly; ikony a texty kreslí spoločná `karty.plm`), pozadie
+  s hladinou v H/3, `rate: 15`, `--reduced-motion`, scéna m32; GooBar v safe = rad okien bez „hrozna“ (`wm.safe` → `row`).
+  Skúšobná relácia „LatteOS SafeGoo (skúška)“ ju spúšťa (`labwc/autostart`). Ostáva: overiť v živej relácii (ikony,
+  klik na okno, ponuka okna, ClockGoo/GooPower/LensGoo/QueenGoo karty pod labwc), kvapka SafeGoo s logmi/AI, výkon
+  kariet v softvéri; starý samostatný `safe.plm` nahradí `safegoo.plm`.
+  **8. 10. neskôr:** SafeGoo statické — `T`/`curx`/`cury` namiesto `time`/`cursor.x/y` v zdieľaných častiach (Goo bez zmeny),
+  povrch 620 px od spodku, bez ChatGoo; po štarte ~1–2 min doznievanie (počasie, aplikácie, senzory), potom ~2 % jadra pri
+  nečinnosti. Chyba z 8. 10.: `permissions` v `part` pleamar ignoruje (logika sa nespustila) → späť v hlavičke scény.
+  **ZMENA SMERU 8. 10. večer (používateľ):** SafeGoo cez engine Goo sa **ruší**. SAFE je samostatné núdzové rozhranie
+  bez engine Goo: `session/goo/safe.plm` + `safe.luau` (pleamar na llvmpipe, 15 snímok/s, ~0 % CPU pri nečinnosti): spodná
+  lišta — červené tlačidlo SAFE (ponuka `latte-safe` s logmi), údaje GooPower (CPU, RAM, GPU, VRAM) s tlačidlom vypnutia
+  (zamknúť, odhlásiť, uspať, reštartovať, vypnúť), App Manager z QueenGoo
+  (`latte-app aplikacie`; Classic spúšťač `latte-spustac` s lištou v tvare L sa ruší, tlačidlo spúšťača v SAFE nie je), Správca zariadení (`latte-app zariadenia`), konzola (`latte-terminal`), zoznam okien (klik ukáže /
+  minimalizuje), sieť, batéria, čas; pozadie s hladinou v H/3. Spúšťa ho `labwc/autostart` (v slučke, pri páde sa spustí
+  znova); Noctalia v SAFE nebeží. Rozdelenie `goo.plm` na `parts/` a `lib/wm.luau` ostávajú (Goo funguje ako predtým), ale
+  nepoužívajú sa na SAFE; `wm.luau` je záloha pre prípadný plný SafeGoo. Známe: tlačidlá okna v hlavičke aplikácií LatteOS
+  (minimalizovať, zväčšiť) volajú `hyprctl`, čo v labwc nefunguje (labwc má vlastné v titulku); App Manager sa podľa
+  používateľa v SAFE ruší — zistiť príčinu. Ostáva: kvapka s logmi a príčinou posledného pádu (dnes ponuka `latte-safe`).
+  **SAFE, stav 8. 10. noc (rozhodnutie používateľa):** Classic a Goo sú definitívne oddelené — SAFE nepoužíva Noctaliu ani Classic
+  spúšťač (`latte-spustac`, L-lišta): `labwc/autostart` spúšťa iba `safe.plm`; `latte-session safe` je teraz toto rozhranie
+  (aj pri pádoch Hyprlandu); skratka Win+L ide na riadok (`focus q`), nie na panel Noctalie. Čas a dátum ako na prihlasovaní
+  (vpravo hore, Inter 108/21). Funkcia LensGoo je prenesená ako **riadok na písanie v lište** s prepínateľnou ikonou režimu
+  (klik alebo Tab; Esc zmaže): aplikácie (okno výsledkov s ikonami, Enter = prvá), súbory a priečinky (`latte-hladaj`),
+  AI (`latte-ai`, jednoduché okno rozhovoru: Nový rozhovor, Nastavenia, Zavrieť) a Linux príkaz (Enter otvorí konzolu;
+  nebezpečný príkaz chce druhý Enter, zoznam spoločný `lib/nebezpecne.luau`; `lib/fold.luau` spoločný s LensGoo).
+  Overené v živom SAFE: hľadanie aplikácií, súborov, AI rozhovor, príkaz aj varovanie. **Neoverené:** skutočné písanie na
+  klávesnici do poľa (kompozitor dá klávesnicu po kliknutí) a Enter/Esc/Tab z klávesnice; Web režim LensGoo v SAFE nie je.
   Súvisí: Hyprland pri odhlásení padá v `exit()` (CScreenshareManager) a `latte-session` to nepozná ako riadne ukončenie
   (rozpoznáva iba `_dl_fini`/`__cxa_finalize`/`CCompositor::cleanup`) → 1. odhlásenie reštartuje Hyprland, 2. (do 60 s) vedie do SAFE.
 - [ ] Engine: overiť zvyšky po skrytí voliteľnej kvapky na latte-lab (jadro GooBar, GooPower, LensGoo sa skryť nedá)
@@ -611,6 +660,15 @@ texty preložiteľné (`translations`). Noctalia beží bez lišty a robí, čo 
   (každých 0,7 s). Overené na latte-lab: kvapka pod titulkom App Managera, uhnutie pred titulkom ďalšieho okna, návrat
 - [ ] Nápad (inspo/dalsie_inspiracie.md, 7. 10.): vlastná ponuka štartu v štýle Goo podľa **nervboot** (Rust, UEFI,
   predradená systemd-boot); dnes GRUB s položkami SAFE
+- [ ] Nápad (inspo/dalsie_inspiracie.md, 8. 10.): **ekvalizér Goo** — každé Goo sa v engine už teraz pohybuje samo; voľba
+  v Nastaveniach, aby kvapky reagovali na hudbu (úroveň zvuku → vlnenie, pulz, výška) ako ekvalizér. Otázka používateľa: ako
+  zariadiť, aby reagovali len na hudbu a rádio a nie na YouTube alebo videoprehrávač? Návrh: (1) zdroj zvuku iba z vybraného
+  prehrávača, nie z celého výstupu — snímať uzol PipeWire jednej aplikácie (nie monitor celého zvuku), takže karta
+  prehliadača s YouTube sa nezachytí; (2) zoznam povolených prehrávačov podľa MPRIS (`org.mpris.MediaPlayer2.<meno>`:
+  hudobné prehrávače, rádio) a zakázaných (videoprehrávače mpv/VLC, prehliadače), upraviteľný v Nastaveniach; (3)
+  prehliadač sa dá povoliť iba s heuristikou: MPRIS `xesam:url` (youtube.com → nie), prítomnosť albumu a obalu;
+  (4) pri hre, videu na celú obrazovku a v stupni Softvér vypnuté. Pleamar má `services.media` (playing, title, artist,
+  album, player, players), spektrum zvuku ale nie — treba FFT nad uzlom PipeWire (pomocník relácie).
 - [~] **Odložené na koniec** (používateľ 6. 10.: „preklady odlož nakoniec, ešte nemáme definitívne doriešené
       aplikácie“) — zmigrovať ostatné aplikácie LatteOS na `i18n.tr` (Nastavenia, Súbory, Monitor, ponuky, …) a súbory tém
       (`name`/`desc` dnes po slovensky → `name[sk]`). Postup po dávkach, pomôcka `setup/test/i18n-migruj.py`

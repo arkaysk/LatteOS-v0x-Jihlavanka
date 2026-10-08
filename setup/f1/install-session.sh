@@ -46,7 +46,7 @@ for f in rc.xml autostart environment menu.xml; do sudo install -Dm644 "$S/labwc
 # Ponuka prihlásenia (6. 10. 2026): LatteOS GOO a Noctalia (čistá) odtiaľto; samostatné prostredia Marea a Serpantinum
 # si svoju položku inštalujú samy (setup/lab/marea-povodna.sh, setup/lab/serpantinum.sh). Mimo ponuky: SAFE (príde
 # sám pri pádoch alebo z GRUB › LatteOS SAFE), Hra (z plochy cez latte-hra), zrušený Classic a pôvodná plocha Kvapky.
-for f in latteos.desktop latteos-noctalia.desktop; do
+for f in latteos.desktop latteos-noctalia.desktop latteos-safe-test.desktop; do
     sudo install -Dm644 "$S/wayland-sessions/$f" "/usr/share/wayland-sessions/$f"
     sudo install -Dm644 "$S/wayland-sessions/$f" "/usr/share/latteos/sessions/$f"
 done
@@ -80,7 +80,7 @@ sudo rm -f /usr/share/latteos/kvapky/kvapka.plm /usr/share/latteos/kvapky/kvapka
 sudo install -d /usr/share/latteos/kvapky/textury                     # textúry materiálov okien (textury.py)
 sudo install -m644 "$S"/kvapky/textury/*.webp "$S"/kvapky/textury/LICENCIA.txt /usr/share/latteos/kvapky/textury/
 sudo rm -f /usr/share/latteos/goo/kvapky/*.luau        # premenované kvapky (TimeGoo → LensGoo…) neostanú ako staré súbory
-( cd "$S/goo" && for f in goo.plm goo.luau login.plm login.luau zamok.plm zamok.luau README.md lib/*.luau kvapky/*.luau priklady/*.json; do
+( cd "$S/goo" && for f in goo.plm goo.luau safe.plm safe.luau login.plm login.luau zamok.plm zamok.luau README.md parts/*.plm lib/*.luau kvapky/*.luau priklady/*.json; do
     put "$f" "/usr/share/latteos/goo/$f"; done )
 # menšie scény enginu (32 a 64 miest): prázdne miesta stoja CPU každú snímku, engine preto beží na najmenšej scéne,
 # do ktorej sa zmestí, a o väčšiu si povie sám (latte-kvapky miesta N). Logika a kvapky sú spoločné (odkazy).
@@ -89,6 +89,7 @@ for n in 32 64; do
     python3 "$S/goo/gen.py" --n "$n" --out "$tmpg" >/dev/null
     sudo install -d "/usr/share/latteos/goo/m$n"
     put "$tmpg/goo.plm" "/usr/share/latteos/goo/m$n/goo.plm"
+    for f in "$tmpg"/parts/*.plm; do put "$f" "/usr/share/latteos/goo/m$n/parts/$(basename "$f")"; done   # scéna sa skladá z častí (`include`)
     put "$S/goo/goo.luau" "/usr/share/latteos/goo/m$n/goo.luau"
     for l in lib kvapky priklady; do sudo ln -sfn "../$l" "/usr/share/latteos/goo/m$n/$l"; done
     rm -rf "$tmpg"
@@ -115,7 +116,7 @@ fi
 # brána: scéna sa nasadí, iba ak ju tento pleamar prečíta (inak by relácia ukázala iba tapetu)
 if [ -x "$pl/target/release/pleamar" ]; then
     python3 "$S/goo/gen_zamok.py" --check || echo "   POZOR: zamok.plm nezodpovedá login.plm — spusti python3 session/goo/gen_zamok.py"
-    for sc in "$S/goo/goo.plm" "$S/goo/login.plm" "$S/goo/zamok.plm"; do
+    for sc in "$S/goo/goo.plm" "$S/goo/safe.plm" "$S/goo/login.plm" "$S/goo/zamok.plm"; do
         "$pl/target/release/pleamar" --check "$sc" >/dev/null 2>&1 || echo "   POZOR: $sc nepreložil pleamar $pl_ver: $("$pl/target/release/pleamar" --check "$sc" 2>&1 | head -1)"
     done
 fi

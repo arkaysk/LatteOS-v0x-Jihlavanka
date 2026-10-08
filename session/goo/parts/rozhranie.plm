@@ -1,0 +1,577 @@
+// Rozhranie scény Goo: fakty, udalosti, modely, pružiny a pravidlá — spoločné pre plný vzhľad aj SafeGoo.
+// Časť scény Goo (`include` z goo.plm; patrí scéne, akoby bola napísaná priamo v nej). Pozri README.md › Časti scény.
+part Rozhranie {
+    // ── káva (pravidlo 6): pomer vody a mlieka z Baristu (~/.config/latteos/kava, číta logika) ──────────────────
+    spring jemna = 60, 14
+    fact voda = 0
+    fact mlieko = 0
+    prop v = 0 ~jemna
+    prop m = 0 ~jemna
+    follow v = voda
+    follow m = mlieko
+    let coffee = mix(mix(#1c0f09, #4a2410, v), #c9a47a, pow(m, 2))   // rovnako ako plocha Kvapky
+    let cream = #f3ebdd
+    let ink = mix(#f3ebdd, #2a170c, smooth(0.62, 0.78, m))          // na mliečnej káve tmavé písmo
+    let W = screen.width
+    let H = screen.height
+    let floor = H - 6                          // hladina lišty: kvapky pri nej sa s ňou zlievajú
+
+    // ── kvapky: jeden záznam = jedna kvapka (miesto k). Polia plní logika; čo chýba, má predvolenú hodnotu ─────
+    //   on      miesto obsadené            hx, hy   domov: hx podiel šírky obrazovky (0…1), hy výška nad lištou (px);
+    //                                               nezávislé od rozlíšenia — logika súradnice obrazovky nepozná
+    //   r       polomer (px)               z        veľkosť (koliesko, ak ho kvapka má)   rast  nafúknutie nad ňou
+    //   grav    gravitácia kurzora 0…1 (iba priťahuje)   dosah  dokiaľ ju kurzor cíti (px)
+    //   vz      nadnesenie pri priblížení kurzora 0…1 (vystúpi od lišty na stopke)
+    //   lep     lepivosť 0…1 (pri ťahaní sa drží domova, natiahne sa a až potom odtrhne)  trh  dĺžka odtrhnutia (px)
+    //   svetlo  odlesk od kurzora (0…1)    tahat    dá sa ťahať (pravidlo 16: všetky kvapky sú drag & drop)
+    //   fx, fa  efekt scény a jeho sila: 0 nič, 1 dych, 2 kmit, 3 tras, 4 obeh, 5 tlkot, 6–9 REZERVA (zatiaľ nič)
+    //   e1…e4   REZERVA pre efekty logiky (s pružinou): e1 + veľkosť, e2 / e3 posun x / y (px), e4 žiara okraja
+    //   druh    0 ikona + text, 1 ukazovateľ (prstenec podľa `hodnota` 0…1), 2–3 REZERVA
+    //   ikona, text  ikona (znak písma Tabler) a text v kvapke (názov a popis sú iba v bubline); druh 2: ikona = veľký
+    //           text (čas TimeGoo), text = malý pod ním (dátum)
+    //   obr, img  ikona aplikácie ako obrázok (meno ikony alebo cesta; okná Goobaru), tlm stlmenie 0…1 (minimalizované)
+    //   gn, gf, gt  guľky pri kvapke: počet 0…5, farby po guľkách ako číslice v osmičkovej sústave (0 červená, 1 zelená,
+    //           2 modrá, 3 žltá, 4 červeno-kávová, 5 svetlo);
+    //           pri viac ako 4 nesie posledná text (počet) — upozornenia DaNoGoo, batéria PowerGoo, stav QueenGoo
+    //   ml      mláka a voda pri okraji 0…1 (ikry okien takmer žiadna: visia ako bobule, nie ako jedna hmota)
+    //   zl      sila zliatia so susedmi (1 bežne; ikry okien menej — jednotlivé bobule hrozna s tenkými spojmi)
+    //   sk      goo telo: 0 hlavné (lišta a kvapky), 1 iba telo Goobaru (ikry okien — nelepia sa k iným kvapkám),
+    //           2 obe (hlava Goobaru: spája sa s TimeGoo aj so svojimi oknami)
+    //   ox      posun domova v px (kvapka pri inej o presný odstup)
+    //   nad     znak nad kvapkou na vonkajšej strane (korunka QueenGoo)
+    //   kr      kapsula: počet riadkov textu (1 iba názov, 2 názov a popis)
+    //   kw, t2  kapsula: polovica dĺžky rovnej časti (px; 0 = guľatá kvapka) a druhý riadok textu (obojsmerná
+    //           kapsula: ikona vľavo, názov a popis vedľa nej). Rovná časť leží POZDĹŽ okraja kvapky
+    //   kd      kam kapsula rastie: 0 na obe strany od stredu, −1 / +1 iba jedným smerom pozdĺž okraja (kvapka ostane
+    //           na mieste a natiahne sa — pás výkonu GooPower; ikona ostane na konci pri pôvodnej kvapke)
+    //   fix     nesadá si v pokoji (obsah musí byť stále celý vidieť — pás výkonu)
+    //   ed      okraj, na ktorom kvapka sedí: 0 dole, 1 vľavo, 2 hore, 3 vpravo (pravidlo 16: prilepí sa k okraju,
+    //           pri ktorom ju pustili; inak spadne dole). hx je potom zlomok DĹŽKY toho okraja, hy vzdialenosť od neho
+    //   jadro, jf, jp  farebné jadro (0…1): od stredu prechod z farby do kávy; predvolene druh upozornenia —
+    //           jf 0 hardvér (červená), 1 sieť (zelená), 2 softvér (modrá), 3 výstraha (jantárová), 4 svetlo (žiara), 5 iné;
+    //           jp = pulzuje
+    //   nl, nlh, nlo / nr, nrh, nro, nry, nrr  susedia na lište (logika): vľavo / vpravo — x ako hx + ox, výška
+    //           nad lištou, polomer
+    model goo max 128 {
+        on: bool; hx: number; ox: number; hy: number; r: number = 26; z: number = 1; rast: number = 0.08
+        grav: number = 0.3; dosah: number = 220; vz: number = 1; lep: number; trh: number = 90; svetlo: number = 0.5
+        tahat: bool = true; fx: number; fa: number = 1; e1: number; e2: number; e3: number; e4: number
+        druh: number; hodnota: number; ikona: text; text: text
+        nl: bool; nlh: number; nlo: number; nr: bool; nrh: number; nro: number; nry: number; nrr: number = 26
+        jadro: number; jf: number; jp: bool
+        obr: text; img: bool; tlm: number; gn: number; gf: number; gt: text
+        sk: number; zl: number = 1; ml: number = 1; ed: number; nad: text; kw: number; t2: text; kr: number = 1
+        kd: number; fix: bool
+        jmp: bool; ja: number; jb: number; jv: number
+    }
+    spring plava = 150, 13                    // vodorovne: mäkko, bez odskoku
+    spring pada = 190, 9                      // zvisle: s prestrelením a odrazom („odkvapne“, §3)
+    spring rastie = 260, 16
+    spring hbita = 520, 34                    // zvýraznenie riadku a vybraná záložka: rýchlo, s jemným dokmitom
+    spring sada = 70, 13                      // sadnutie k lište v pokoji: pomaly, bez odrazu
+    let GRAV = 800                            // gravitácia (px/s²), NÍZKA (§3): z polovice obrazovky padá asi 1,1 s.
+                                              // Rovnaké číslo má logika (lib/engine.luau: GRAV) — počíta čas dopadu
+    spring rezerva = 120, 14                  // kanály e1…e4 (logika ich mení zriedka, pružina to vyhladí)
+
+    // vstupy myši → logika (payload = miesto k; koliesko k * 2 + 1 hore, k * 2 dole)
+    event goo_down ->
+    event goo_up ->
+    event goo_right ->
+    event goo_middle ->
+    event goo_hold ->
+    event goo_scroll ->
+    event goo_enter ->
+    event goo_leave ->
+    event goo_hover ->
+    event goo_drag ->
+    event goo_drop ->
+    event goo_idle ->
+    // nečinnosť celého systému (myš AJ klávesnica, ext-idle-notify) od pomocníka relácie (apps/ponuka.qml): 1 / 0.
+    // Kým príde, platí vlastná nečinnosť scény (iba myš) — fakt sysidle = -1
+    event sys_idle ->
+    // ── ovládanie z klávesnice (LATTEOS-GOO.md §6.1): Win+T vstúpi (latte/skratky.lua → kb_toggle), kým trvá, Goo drží
+    // klávesnicu. Vybraná kvapka (kbk) pulzuje svetlejšou hnedou, zdvihne sa a ukáže bublinu s názvom.
+    event kb_toggle ->
+    event kb_nav ->                           // 0 ←, 1 →, 2 ↑, 3 ↓
+    event kb_act ->                           // 0 ľavý klik, 1 pravý klik, 2 koliesko hore, 3 koliesko dole
+    event kb_exit ->
+    event kb_sel                              // logika: vybraná je kvapka na tomto mieste
+    event kb_out                              // logika: koniec režimu
+    fact kb = false
+    fact kbk = -1
+    on kb_out { kb = false; kbk = -1; tip.p: 0 }
+    // logika vybrala kvapku (kbk už platí; text bubliny dala sama): bublina pri nej a miesto, z ktorého vyrastie karta.
+    // Poloha vybranej je v kbx, kby, kbr, kbnx, kbny (gen.py › pás výkonu) — rozhodovať podľa hodnoty udalosti vo `while`
+    // nejde, tá je vtedy ešte z predošlej udalosti
+    on kb_sel(v) { tipk = v; tipx = kbx + kbnx * (kbr + 130); tipy = kby + kbny * (kbr + 14) + if(kbny > 0, 30, 0); tip.p: 1; ctx.x = kbx; ctx.y = kby; ctx_up = kby > H / 2 }
+    // písacie pole karty si klávesnicu drží aj po jej zatvorení a šípky s Enterom by skončili v ňom: pri vstupe do
+    // režimu a po každom zatvorení karty mu ju vziať
+    on kb_toggle { blur }
+    on change ctx_open while kb { blur }
+    on focus while kb and not ctx_open { blur }      // klávesnicu dostane plocha až po vstupe: pole si ju vtedy vezme
+    on key Left while kb and not ctx_open { emit kb_nav(0) }
+    on key Right while kb and not ctx_open { emit kb_nav(1) }
+    on key Up while kb and not ctx_open { emit kb_nav(2) }
+    on key Down while kb and not ctx_open { emit kb_nav(3) }
+    on key Return while kb and not ctx_open { emit kb_act(0) }
+    on key space while kb and not ctx_open { emit kb_act(0) }
+    on key Menu while kb and not ctx_open { emit kb_act(1) }
+    on key Shift+F10 while kb and not ctx_open { emit kb_act(1) }
+    on key plus while kb and not ctx_open { emit kb_act(2) }
+    on key KP_Add while kb and not ctx_open { emit kb_act(2) }
+    on key minus while kb and not ctx_open { emit kb_act(3) }
+    on key KP_Subtract while kb and not ctx_open { emit kb_act(3) }
+    // Esc zavrie kartu (pravidlo karty nižšie), druhý Esc opustí režim
+    on key Escape while kb and not ctx_open { kb = false; kbk = -1; tip.p: 0; emit kb_exit }
+    event goo_pocasie ->                      // skúška počasia na hladine (logika: 0 nič, 1–2 dážď, 3 sneh, 4 vietor)
+    // logika → scéna: `emit` v Luau nenesie hodnotu (iba meno), preto logika zvyšuje počítadlo kvapky a scéna reaguje
+    // na jeho zmenu (`on change`): hopn.k poskočí (hra), sqn.k stlačí (zrážka, prebudenie), dipn.k ponor pri návrate
+    // k okraju (Marea), rpn.i vlnka i (kameň do vody / vibrácia)
+    // zvonka (pleamar --say goo "emit goo_kamen 512"): napr. minimalizované okno padne do lišty — x v px
+    event goo_kamen ->
+    event goo_vibracia ->
+    fact rx = 0                               // kam bola kvapka pustená (číta logika pri goo_drop): px obrazovky
+    fact ry = 0
+    fact nk = -1                              // ťahaná kvapka (krk lepkavej v tele goo), −1 žiadna
+    fact miesta = 128                         // koľko miest má táto scéna (gen.py --n; logika podľa toho rozdáva miesta)
+    fact sysidle = -1                         // -1 nevie sa (bez pomocníka), 0 činný, 1 nečinný (systém)
+    fact sklolom = true                       // sklo láme pozadie (lens); kvapky.json sklo_lom: false = iba rozmazanie (Hyprland)
+    fact sklo = false                         // materiál sklenená káva (Nastavenia › Kvapky, kvapky.json: material = "sklo")
+    fact zive = true                          // Nastavenia › Kvapky › Živé správanie (kvapky.json: zive)
+    // počasie na hladine pri nečinnosti (stupeň 2+, logika podľa skutočného počasia a podmienok „kedy nie“):
+    // prsi 0 nič, 1 riedko (v predpovedi), 2 dážď; snezi = namiesto dažďa sneh. Vietor robí logika vlnkami.
+    fact prsi = 0
+    fact snezi = false
+    // deň a noc na hladine: den 0 noc … 1 deň (slnko nad obzorom), zlata 0…1 svitanie a súmrak (slnko nízko)
+    fact den = 1
+    fact zlata = 0
+    prop dn = 1 ~jemna
+    prop zl = 0 ~jemna
+    follow dn = den
+    follow zl = zlata
+    // svetlo, ktoré sa odráža v kvapkách: v noci tlmené studené, cez deň biele, ráno a večer teplé oranžové
+    let svit = mix(mix(#8fa3c8, #fff4e0, dn), #ffb070, zl)
+    fact idle = 0                             // stupeň nečinnosti (§3.1): 0 aktívny, 1 po 1 min, 2 po 3 min, 3 po 6 min
+
+    // ── ponuka Goo (z plochy Kvapky, pravidlá 9–11): karta pripojená rohom k miestu kliku, vyrastie z neho; položky
+    // dáva logika (ikona, skratka, zaškrtnutie, červená, podponuka ›, čiara nad položkou, y riadku). Miesto kliku si
+    // scéna zapamätá pri každom stlačení kvapky (ctx.x, ctx.y), logika ponuku iba otvorí
+    // riadok karty: big = veľký nadpis (čas, stopky), bar = pruh priebehu 0…1 (−1 žiadny), info = údaj na čítanie
+    // (neklikateľný, ale plne čitateľný — na rozdiel od off, čo je nedostupná voľba), img/im = ikona aplikácie
+    // (obrázok podľa mena ikony) namiesto znaku, para/pl = odsek textu na pl riadkov v bubline (odpoveď AI)
+    // Rozloženie (6. 10.): x, w = stĺpec karty (posun a šírka; w 0 = celá karta — karta môže mať dva stĺpce), h = výška
+    // riadku; pill = tlačidlo v rade s ďalšími (lw = odhad šírky názvu), tile = dlaždica aplikácie (ikona nad názvom),
+    // pro = profil účtu (portrét, meno, t2 údaje), hd = nadpis sekcie, t2 = druhý riadok (telo upozornenia)
+    model ctx max 24 { label: text; on: number; off: bool; glyph: text; hint: text; danger: bool; sub: bool; back: bool; sep: bool; y: number; big: bool; bar: number = -1; info: bool; img: text; im: bool; para: bool; pl: number = 1
+                       x: number; w: number; h: number = 44; pill: bool; tile: bool; pro: bool; hd: bool; t2: text; lw: number }
+    // čipy záložiek hore v karte (karta ClockGoo: Prehľad · Stopky · Minútka · Budíky)
+    model chip max 6 { label: text; glyph: text; on: bool; solo: bool }      // solo = iba znak, bez názvu
+    fact chip_hot = -1
+    fact chip_sel = -1                        // vybraná záložka je širšia a má názov, ostatné iba znak
+    // mriežka kalendára v karte (ClockGoo): kal_y = kde v karte začína (−1 = nie je), 6 týždňov od pondelka
+    model kal max 42 { d: text; inm: bool; today: bool; sel: bool; dot: bool }
+    fact kal_y = -1
+    fact kal_x = 0                            // stĺpec karty, v ktorom mriežka je (posun a šírka; 0 = celá karta)
+    fact kal_w = 0
+    fact kal_hot = -1
+    text kal_title = ""
+    text kal_l = ""                           // šípky mesiaca (znaky písma ikon, dosadí logika)
+    text kal_r = ""
+    repeat w in 0..7 { text kdn.$w = "" }     // skratky dní týždňa od pondelka (preklad v logike)
+    event kal_pick ->
+    event kal_nav ->
+    // textové pole karty (nová udalosť…): ctx_in_y = riadok, v ktorom je (−1 = nie je)
+    fact ctx_in_y = -1
+    fact ctx_in_m = -1                        // riadok poľa (klik naň dá poľu klávesnicu) a jeho stĺpec
+    fact ctx_in_x = 0
+    fact ctx_in_w = 0
+    fact ctx_in_empty = true
+    text ctxq = ""
+    event ctx_submit ->
+    event ctx_chip ->
+    event ctx_scroll ->
+    event ctx_right ->
+    event ctx_chipw ->
+    fact ctx_open = false
+    fact ctx.x = 0
+    fact ctx.y = 0
+    fact ctx_up = false
+    fact ctx_w = 248
+    fact ctx_h = 48
+    fact ctx_hot = -1
+    fact ctx_hy = 0                           // riadok pod kurzorom alebo vybraný šípkami: kde je a či je nebezpečný
+    fact ctx_hd = false
+    fact ctx_hx = 0                           // … a v ktorom stĺpci, aký široký a vysoký; tlačidlo má okrúhle zvýraznenie
+    fact ctx_hw = 0
+    fact ctx_hh = 44
+    fact ctx_hp = false
+    fact ctx_ear = 10                         // polomer ucha karty: kvapka, z ktorej vyrástla (inak kvapôčka 10 px)
+    fact ctx_gen = 0                          // logika zvýši pri novom obsahu karty: riadky nabehnú znova
+    event ctx_bgw ->
+    event ctx_key ->
+    event win_min ->                          // Hyprland: okno sa minimalizuje (poloha a rozmer vo wm.*)
+    fact wm.x = 0
+    fact wm.y = 0
+    fact wm.w = 0
+    fact wm.h = 0
+    event lens_toggle ->                      // kláves Windows: latte-spustac → pleamar --say goo "emit lens_toggle"
+    event goo_skratky ->                      // Win + F1: prehľad skratiek (latte/skratky.lua)
+    event lens_mode ->                        // Win+S / Win+R / Win+C: spúšťač v režime (1 aplikácie, 4 príkaz, 0 AI)
+    event clock_notes ->                      // Win+N: ClockGoo upozornenia a kalendár
+    event clock_card ->                       // Win+Alt+D: ClockGoo karta času
+    event ctx_pick ->
+    event ctx_close ->
+    prop ctx.p = 0 ~rastie
+    follow ctx.p = if(ctx_open, 1, 0)
+    // bublina s názvom a popisom (prechod myšou; text plní logika)
+    text tip = ""
+    fact tipk = -1
+    fact tipx = 0
+    fact tipy = 0
+    prop tip.p = 0 ~rastie
+    measure tipm                              // bublina sa prispôsobí textu (dlhý popis má dva riadky)
+    // ladenie (relácia engine test): posledná udalosť vľavo hore
+    text hud = ""
+    fact ladenie = false
+
+    // ── hladina (okraj obrazovky): vlnky ako kameň hodený do vody alebo vibrácie; vietor ─────────────────────────
+    // 4 vlnky naraz (logika ich strieda): rpx miesto (px), rpa sila (px), rpk druh (0 kameň, 1 vibrácia), rpg vek 0…1
+    repeat i in 0..4 {
+        fact rpx.$i = 0
+        fact rpa.$i = 0
+        fact rpk.$i = 0
+        prop rpg.$i = 1 ~0ms
+        fact rpn.$i = 0
+        on change rpn.$i { rpg.$i: 0 ~0ms; rpg.$i: 1 ~1800ms after 16ms }
+    }
+    // šírka obrazovky pre logiku (vlnky sú v px; logika inak súradnice nepozná)
+    fact sw = 0
+    fact sh = 0
+    every 1s while sw != W or sh != H { sw = W; sh = H }
+    // vietor: náhodný smer, nezávislý od ničoho; občas zavanie (aj pri práci) a kvapky sa vlnia ako obilie
+    let gust = smooth(0.58, 0.85, 0.5 + 0.5 * noise(T * 0.045 + 11))
+    let wdir = clamp(noise(T * 0.013 + 3) * 4, -1, 1)
+    spring jadrova = 90, 14
+
+    repeat k in 0..128 {
+        // ťahanie (iba scéna): posun od stlačenia, či už ide o ťahanie (drg) a či sa kvapka odtrhla (tr)
+        fact dx.$k = 0
+        fact dy.$k = 0
+        fact drg.$k = 0
+        fact tr.$k = 0
+        prop hov.$k = 0 ~rastie
+        prop sq.$k = 0 ~pada                  // stlačenie (squish) pri zrážke
+        prop vib.$k = 0 ~0ms
+        // pomer veľkosti obsahu kvapky (ikona, text) voči polomeru 26 — bez dychu; používa ho skupina s obsahom
+        prop ts.$k = 1 ~rastie
+        // dĺžka rovnej časti kapsuly s pružinou: kvapka sa do kapsuly plynule natiahne a späť stiahne (pás výkonu)
+        prop kwa.$k = 0 ~rastie
+        follow kwa.$k = goo.$k.kw
+        // domov v px; ox = posun v px (kvapka „pri“ inej o presný odstup, napr. PowerGoo 66 px vľavo od TimeGoo)
+        // okraj kvapky: n = kolmo od okraja dnu, t = pozdĺž neho. Všetko ďalej (nadnesenie, sadnutie, mláka, stopka,
+        // vlákna) sa počíta v tejto sústave, takže kvapka sa na každom okraji správa rovnako
+        let nx.$k = if(goo.$k.ed == 1, 1, if(goo.$k.ed == 3, -1, 0))
+        let ny.$k = if(goo.$k.ed == 0, -1, if(goo.$k.ed == 2, 1, 0))
+        let tx.$k = abs(ny.$k)
+        let ty.$k = abs(nx.$k)
+        let el.$k = if(ty.$k > 0, H, W)                                       // dĺžka okraja
+        let ha.$k = goo.$k.hx * el.$k + goo.$k.ox                             // domov pozdĺž okraja (px)
+        let e0x.$k = if(goo.$k.ed == 1, 6, if(goo.$k.ed == 3, W - 6, 0))      // hladina okraja
+        let e0y.$k = if(goo.$k.ed == 0, floor, if(goo.$k.ed == 2, 6, 0))
+        let hxp.$k = e0x.$k + tx.$k * ha.$k + nx.$k * goo.$k.hy
+        let hyp.$k = e0y.$k + ty.$k * ha.$k + ny.$k * goo.$k.hy
+        let r0.$k = goo.$k.r * goo.$k.z
+        let dk.$k = if(goo.$k.hy < goo.$k.r * 1.6, 1, 0)       // sedí na lište (vs. voľne položená)
+        let cdx.$k = curx - hxp.$k
+        let cdy.$k = cury - hyp.$k
+        let cd.$k = max(length(cdx.$k, cdy.$k), 1)
+        let cdt.$k = cdx.$k * tx.$k + cdy.$k * ty.$k                          // kurzor pozdĺž okraja od kvapky
+        let cdn.$k = cdx.$k * nx.$k + cdy.$k * ny.$k                          // kurzor „nad“ kvapkou (ďalej od okraja)
+        // blízkosť kurzora 0…1 ako v ploche Kvapky (near.s): ráta sa iba výška NAD kvapkou — kurzor pri okraji
+        // obrazovky pod ňou je „pri nej“. smooth() chce stále hranice, dosah je z modelu → krivka t²(3 − 2t)
+        let pd.$k = length(cdt.$k, max(0, cdn.$k - r0.$k * 0.6)) * dk.$k + cd.$k * (1 - dk.$k)
+        let ct.$k = clamp(pd.$k / max(goo.$k.dosah, 1), 0, 1)
+        let prox.$k = (1 - ct.$k * ct.$k * (3 - 2 * ct.$k)) * (1 - drg.$k)
+        // susedia na lište (logika: najbližší vľavo a vpravo, inak −1): ich blízkosť ku kurzoru odhadne scéna
+        // rovnako. Sused sa nadnesie aj s ňou (o 30 %, goo ho ťahá) a nakloní sa k nej — ako Hodiny a vypínač
+        let lt.$k = clamp(length(cdt.$k + ha.$k - goo.$k.nlh * el.$k - goo.$k.nlo, max(0, cdn.$k - 20)) / max(goo.$k.dosah, 1), 0, 1)
+        let rt.$k = clamp(length(cdt.$k + ha.$k - goo.$k.nrh * el.$k - goo.$k.nro, max(0, cdn.$k + goo.$k.hy - goo.$k.nry - 20)) / max(goo.$k.dosah, 1), 0, 1)
+        let npl.$k = if(goo.$k.nl, 1 - lt.$k * lt.$k * (3 - 2 * lt.$k), 0)
+        let npr.$k = if(goo.$k.nr, 1 - rt.$k * rt.$k * (3 - 2 * rt.$k), 0)
+        // tok (§3: vlastný pohyb): každá kvapka pomaly vystupuje a klesá v inom rytme, zliatie sa mení s ním
+        let fl.$k = 0.5 + 0.5 * noise(T * 0.11 + k * 1.37)
+        // menšie kvapky sa na okraji vlnia viac než väčšie
+        let small.$k = clamp(26 / max(r0.$k, 1), 0.6, 1.8)
+        // vlnky na hladine pod kvapkou: kameň = dve vlny od miesta dopadu (rozbiehajú sa, slabnú), vibrácia = chvenie
+        let wv.$k = rpa.0 * (1 - rpg.0) * if(rpk.0 > 0.5, sin(T * 1900) * max(0, 1 - abs(hxp.$k - rpx.0) / 140), max(0, 1 - pow((abs(hxp.$k - rpx.0) - rpg.0 * 420) / 34, 2))) + rpa.1 * (1 - rpg.1) * if(rpk.1 > 0.5, sin(T * 1900) * max(0, 1 - abs(hxp.$k - rpx.1) / 140), max(0, 1 - pow((abs(hxp.$k - rpx.1) - rpg.1 * 420) / 34, 2))) + rpa.2 * (1 - rpg.2) * if(rpk.2 > 0.5, sin(T * 1900) * max(0, 1 - abs(hxp.$k - rpx.2) / 140), max(0, 1 - pow((abs(hxp.$k - rpx.2) - rpg.2 * 420) / 34, 2))) + rpa.3 * (1 - rpg.3) * if(rpk.3 > 0.5, sin(T * 1900) * max(0, 1 - abs(hxp.$k - rpx.3) / 140), max(0, 1 - pow((abs(hxp.$k - rpx.3) - rpg.3 * 420) / 34, 2)))
+        // vietor: postupná vlna pozdĺž okraja v smere vetra (obilie), kvapka sa nakloní
+        let sway.$k = gust * wdir * (3 + 5 * sin(T * 110 - wdir * ha.$k * 0.9)) * small.$k
+        // návrat k okraju (Marea): kvapka sa ponorí pod hladinu a znova vynorí
+        prop dip.$k = 0 ~0ms
+        fact dipn.$k = 0
+        on change dipn.$k { dip.$k: 1 ~180ms; dip.$k: 0 ~900ms after 240ms }
+        // pád po pustení vo voľnom priestore (gravitácia, §3): fh = výška nad novým domovom, od okamihu pustenia
+        // (ftm) ubúda ako pri voľnom páde z pokoja, ½·g·t². Kým pravidlo nezapíše čas, drží celú výšku (bez skoku)
+        fact fh.$k = 0
+        fact ftm.$k = -100
+        fact falln.$k = 0
+        fact fq.$k = 0
+        on change falln.$k { ftm.$k = T; fq.$k = falln.$k }
+        let fte.$k = max(0, T - ftm.$k)
+        let fo.$k = if(fq.$k != falln.$k, fh.$k, max(0, fh.$k - 0.5 * GRAV * fte.$k * fte.$k)) * (1 - drg.$k)
+        // skok pri hre (§3.1 stupeň 3, „ako staré Worms“): BALISTICKÝ oblúk s tou istou gravitáciou ako pád — nie
+        // pružina. Logika dá miestu rýchlosť odrazu jv (px/s), odkiaľ a kam pozdĺž lišty (ja → jb, px) a zvýši skn;
+        // kvapka letí jv·t − ½·g·t² vysoko a rovnomerne z ja do jb, kým je jmp (potom ju zase vedie pružina px)
+        // vybraná z klávesnice (kbk): 0…1 s pružinou — zvýraznenie a zdvihnutie
+        prop kbp.$k = 0 ~hbita
+        follow kbp.$k = if(kb and kbk == k, 1, 0)
+        fact skn.$k = 0
+        fact skt.$k = -100
+        on change skn.$k { skt.$k = T }
+        let sku.$k = max(0, T - skt.$k)
+        let skT.$k = max(0.05, 2 * goo.$k.jv / GRAV)
+        let skp.$k = clamp(sku.$k / skT.$k, 0, 1)
+        let skh.$k = if(sku.$k < skT.$k, goo.$k.jv * sku.$k - 0.5 * GRAV * sku.$k * sku.$k, 0)
+        // pokoj: kým kurzor nie je nablízku, kvapka na lište si SADNE — zasunie sa k hladine a sploští; pri kurzore
+        // (aj pri susedovi) sa zdvihne a zaguľatí. Pri nečinnosti (zaspávajú) si sadne hlbšie. Stred ostane aspoň
+        // 0,28 polomeru nad hladinou (s dvoma riadkami textu 0,45), aby obsah ostal celý vidieť; kvapka s prstencom (druh 1) nesadá —
+        // prstenec potrebuje celý kruh
+        prop sit.$k = 0 ~sada
+        follow sit.$k = (1 - clamp(prox.$k + 0.3 * max(npl.$k, npr.$k) + hov.$k, 0, 1)) * dk.$k * (1 - drg.$k) * if(idle > 0, 1.3, 1) * if(goo.$k.druh == 1 or goo.$k.fix, 0, 1) * if(fo.$k > 1, 0, 1)
+        let sink.$k = sit.$k * clamp(goo.$k.hy - r0.$k * if(goo.$k.druh == 2, 0.45, 0.28), 0, r0.$k * 0.5)
+        prop lift.$k = 0 ~pada
+        follow lift.$k = clamp(prox.$k + 0.3 * max(npl.$k, npr.$k), 0, 1) * goo.$k.vz * if(idle > 0, 0.4, 1) * (1 - drg.$k)
+        // nadnesenie: kolmo od lišty KU kurzoru, najviac 0,75 r a po výšku kurzora (pri okraji mu neujde)
+        let lup.$k = clamp(cdn.$k + r0.$k * 0.3, r0.$k * 0.25, r0.$k * 0.75)
+        // gravitácia kurzora: iba priťahuje; na lište nakloní kvapku k nemu (ako clamp(cu − sx0) · 0,3 v Kvapkách),
+        // voľne položenú posunie k nemu; slabšie čím je lepkavejšia
+        let g.$k = max(0, goo.$k.grav) * prox.$k * (1 - goo.$k.lep * 0.6)
+        let st.$k = clamp(cdt.$k, -r0.$k * 0.8, r0.$k * 0.8) * g.$k + r0.$k * 0.3 * (npr.$k - npl.$k) * (1 - prox.$k)
+        let shx.$k = if(dk.$k > 0, tx.$k * st.$k, cdx.$k / cd.$k * g.$k * min(cd.$k, goo.$k.dosah) * 0.28)
+        let shy.$k = if(dk.$k > 0, ty.$k * st.$k, cdy.$k / cd.$k * g.$k * min(cd.$k, goo.$k.dosah) * 0.28)
+        // lepivosť: kým sa neodtrhne, ide za myšou iba časť cesty (natiahne sa, krk ostane doma)
+        let mv.$k = if(tr.$k > 0, 1, 1 - goo.$k.lep * 0.75)
+        // vlastný pohyb aj bez myši (§3): dych a drift; nad kvapkou nafúknutie a netrpezlivé rôsolovité pulzovanie
+        let life.$k = 0.012 * sin(T * 60 + k * 53) + hov.$k * goo.$k.rast
+        let jit.$k = 0.045 * sin(T * 420 + k * 30) * hov.$k
+        // efekty scény (bez logiky, plynulo): 1 dych, 2 kmit, 3 tras, 4 obeh, 5 tlkot; 6–9 rezerva
+        // (sin a cos sú v stupňoch: time * 120 = 120 °/s)
+        let fxs.$k = goo.$k.fa * (if(goo.$k.fx == 1, 0.05 * sin(T * 120 + k * 50), 0) + if(goo.$k.fx == 5, 0.09 * smooth(0.82, 1, sin(T * 315 + k * 50)), 0))
+        prop fxw.$k = 0 ~0ms
+        follow fxw.$k = (goo.$k.fa * if(goo.$k.fx == 2, 0.07 * noise(k * 1.7, T * 1.6), 0) + sq.$k * 0.09 + jit.$k + sit.$k * 0.13) * if(ty.$k > 0, -1, 1)
+        let wob.$k = (2 + 4 * lift.$k) * small.$k * noise(T * 0.1 + k * 3.1) + sway.$k * dk.$k
+        let fxx.$k = goo.$k.fa * (if(goo.$k.fx == 3, 2.5 * noise(k, T * 18), 0) + if(goo.$k.fx == 4, 4 * cos(T * 80 + k * 40), 0)) + wob.$k * tx.$k + vib.$k * 4 * sin(T * 2600 + k * 40) * tx.$k
+        let fxy.$k = goo.$k.fa * (if(goo.$k.fx == 3, 2.5 * noise(k + 9, T * 18), 0) + if(goo.$k.fx == 4, 4 * sin(T * 80 + k * 40), 0)) + noise(k * 5.7, T * 0.2) + wob.$k * ty.$k + vib.$k * 4 * sin(T * 2600 + k * 40) * ty.$k
+        // rezerva pre logiku (e1…e4), s pružinou
+        prop e1.$k = 0 ~rezerva
+        prop e2.$k = 0 ~rezerva
+        prop e3.$k = 0 ~rezerva
+        prop e4.$k = 0 ~rezerva
+        follow e1.$k = goo.$k.e1
+        follow e2.$k = goo.$k.e2
+        follow e3.$k = goo.$k.e3
+        follow e4.$k = goo.$k.e4
+        // poloha: domov + gravitácia + ťahanie, s pružinou; zobrazená poloha k tomu pridá nadnesenie, tok a efekty
+        prop px.$k = 0 ~plava
+        prop py.$k = 0 ~pada
+        follow px.$k = hxp.$k + shx.$k + dx.$k * mv.$k + nx.$k * fo.$k
+        follow py.$k = hyp.$k + shy.$k + dy.$k * mv.$k + ny.$k * fo.$k
+        // x, y, rr, near, neck, stalk, base, lk, th…: pružina ~0ms = tá istá hodnota v tom istom snímku, ale globálna
+        // (let vnútri repeat patrí iba svojej kópii; telo goo a odlesky ich potrebujú zvonka)
+        prop x.$k = 0 ~0ms
+        prop y.$k = 0 ~0ms
+        prop rr.$k = 0 ~0ms
+        prop near.$k = 0 ~0ms
+        prop neck.$k = 0 ~0ms
+        prop stalk.$k = 0 ~0ms
+        prop base.$k = 0 ~0ms
+        prop lk.$k = 0 ~0ms
+        prop th.$k = 0 ~0ms
+        prop thb.$k = 0 ~0ms
+        prop thx.$k = 0 ~0ms
+        prop thy.$k = 0 ~0ms
+        prop wa.$k = 0 ~0ms
+        // body tela v sústave okraja (telo goo ich potrebuje zvonka): mláka a stopka pri okraji pod kvapkou, voda
+        // k susedovi pod hladinou, začiatok vlákna na vrchu kvapky, domov (krk lepkavej), pomer mláky
+        prop bx.$k = 0 ~0ms
+        prop by.$k = 0 ~0ms
+        prop bsx.$k = 1.6 ~0ms
+        prop wax.$k = 0 ~0ms
+        prop way.$k = 0 ~0ms
+        prop wbx.$k = 0 ~0ms
+        prop wby.$k = 0 ~0ms
+        prop t0x.$k = 0 ~0ms
+        prop t0y.$k = 0 ~0ms
+        prop hmx.$k = 0 ~0ms
+        prop hmy.$k = 0 ~0ms
+        prop jd.$k = 0 ~jadrova
+        follow jd.$k = goo.$k.jadro * if(goo.$k.jp, 0.7 + 0.3 * sin(T * 220 + k * 40), 1) * if(goo.$k.on, 1, 0)
+        // kolmo na okraj: nadnesenie, tok, vlnka (iba dolná hladina), ponor a sadnutie
+        let nrm.$k = (lift.$k * lup.$k + 4 * fl.$k * small.$k * (1 - lift.$k) + wv.$k * small.$k * if(goo.$k.ed == 0, 1, 0) - dip.$k * r0.$k * 1.4) * dk.$k - sink.$k
+        follow x.$k = if(goo.$k.jmp, goo.$k.ja + (goo.$k.jb - goo.$k.ja) * skp.$k, px.$k) + fxx.$k + e2.$k + nx.$k * (nrm.$k + 9 * kbp.$k)
+        // na lište: v pokoji kúsok vystupuje a klesá s tokom, pri kurzore sa nadnesie. Prázdne miesto pod obrazovku
+        // (bez záplaty pleamar-prazdne-tvary by bod nulovej veľkosti cez zliatie vydul hrbček)
+        follow y.$k = if(goo.$k.on, py.$k + fxy.$k + e3.$k + ny.$k * (nrm.$k + skh.$k + 9 * kbp.$k), H + 400)
+        follow ts.$k = r0.$k / 26
+        follow rr.$k = r0.$k * (1 + life.$k + fxs.$k + e1.$k) * if(goo.$k.on, 1, 0)
+        // zliatie (link v Kvapkách: 10 + 16 · nadnesenie + 10 · tok) — v pokoji spája iba okraj, pri kurzore mosty
+        follow lk.$k = (10 + 16 * lift.$k + 10 * fl.$k) * goo.$k.zl
+        // pri lište sa s ňou zleje (0 = ďaleko, 1 = dotýka sa)
+        let nt.$k = clamp((floor - y.$k - rr.$k * 0.6) / (rr.$k * 0.4 + 70), 0, 1)
+        follow near.$k = 1 - nt.$k * nt.$k * (3 - 2 * nt.$k)
+        // základňa (mláka pri okraji, ako goo.kvapka): kvapka na lište v nej sedí; pri ťahaní sa stiahne
+        follow base.$k = dk.$k * (1 - drg.$k) * if(goo.$k.on, 1, 0) * goo.$k.ml * if(fo.$k > 12, 0, 1)
+        // stopka k lište: pri nadnesení sa natiahne a stenčí (§3: vlákna ako sliz)
+        follow stalk.$k = dk.$k * (0.5 - 0.22 * lift.$k) * lift.$k * (1 - drg.$k)
+        // goo vlákno k susedovi vpravo (ako vypínač ↔ Hodiny): spája HORNÉ časti susedov — pod ním ostane oko, nad
+        // vodou pri okraji. Čím sú susedia bližšie, tým je hrubšie; nepravidelné a organické (každé dýcha vlastným
+        // šumom, konce sa mierne hýbu); samo sa tvorí a trhá s tokom, hrubne s nadnesením; roztavené s oboma koncami
+        let gap.$k = abs(goo.$k.nrh * el.$k + goo.$k.nro - ha.$k) - r0.$k - goo.$k.nrr
+        let close.$k = clamp(1 - gap.$k / max((r0.$k + goo.$k.nrr) * 0.9, 1), 0, 1)
+        let irr.$k = 0.65 + 0.7 * (0.5 + 0.5 * noise(T * 0.27 + k * 2.9))
+        let thon.$k = max(close.$k * 0.9, max(smooth(0.3, 0.9, min(lift.$k, 0.3 * prox.$k + npr.$k) * 1.6), 0.8 * smooth(0.55, 0.85, fl.$k)))
+        // najtenšie (natiahnuté na doraz) má 4 px — tenšie sa „ťahalo moc tenko“; pri koreňoch je hrubšie (thb)
+        // (pod ~3,4 px sa vlákno v strede trhalo na čiarky: kým existuje, tenšie nebude)
+        follow th.$k = if(goo.$k.nr, max((4 + 10 * close.$k) * irr.$k * thon.$k * min(r0.$k, goo.$k.nrr) / 26, 3.4 * clamp(thon.$k * 6, 0, 1)) * (1 - drg.$k), 0)
+        // korene vlákna: čím je natiahnutejšie, tým viac sa pri kvapke rozširuje (zliatie s ňou); stred ostane tenký
+        follow thb.$k = (12 + 6 * (1 - close.$k)) * clamp(th.$k / 3, 0, 1)
+        let tha.$k = goo.$k.nrh * el.$k + goo.$k.nro + 3 * noise(T * 0.31 + k * 4.1)          // sused pozdĺž okraja
+        let thn.$k = goo.$k.nry + clamp(npr.$k + 0.3 * prox.$k, 0, 1) * goo.$k.nrr * 0.6 + goo.$k.nrr * (0.25 + 0.15 * noise(T * 0.23 + k * 1.9))
+        follow thx.$k = e0x.$k + tx.$k * tha.$k + nx.$k * thn.$k
+        follow thy.$k = e0y.$k + ty.$k * tha.$k + ny.$k * thn.$k
+        prop thy0.$k = 0 ~0ms
+        follow thy0.$k = r0.$k * (0.22 + 0.15 * noise(T * 0.19 + k * 3.7))
+        // voda medzi susedmi pri okraji (ako „voda pod okrajom“ Štartu a vypínača v Kvapkách): susedné kvapky na lište
+        // spája aj dole, údolie medzi nimi nesiaha k lište; dýcha s tokom a rastie s nadnesením
+        follow wa.$k = if(goo.$k.nr, (5 + 5 * fl.$k + 6 * max(lift.$k, npr.$k)) * dk.$k * (1 - drg.$k), 0) * goo.$k.ml
+        // body tela v sústave okraja (deklarované vyššie)
+        follow bx.$k = if(tx.$k > 0, x.$k, e0x.$k - nx.$k * 4)
+        follow by.$k = if(ty.$k > 0, y.$k, e0y.$k - ny.$k * 4)
+        follow bsx.$k = 0.5 + 1.1 * tx.$k
+        follow wax.$k = if(tx.$k > 0, x.$k, e0x.$k - nx.$k * wa.$k)
+        follow way.$k = if(ty.$k > 0, y.$k, e0y.$k - ny.$k * wa.$k)
+        follow wbx.$k = if(tx.$k > 0, tha.$k, e0x.$k - nx.$k * wa.$k)
+        follow wby.$k = if(ty.$k > 0, tha.$k, e0y.$k - ny.$k * wa.$k)
+        follow t0x.$k = x.$k + nx.$k * thy0.$k
+        follow t0y.$k = y.$k + ny.$k * thy0.$k
+        follow hmx.$k = hxp.$k
+        follow hmy.$k = hyp.$k
+        // krk: kým lepkavá kvapka drží, spája ju s domovom (zmizne po odtrhnutí)
+        follow neck.$k = drg.$k * (1 - tr.$k) * goo.$k.lep * clamp(length(dx.$k, dy.$k) / 30, 0, 1)
+
+        // zóna: kvapka aj jej stopka k lište (nadnesenú kvapku treba trafiť aj pri okraji); pri ťahaní celá obrazovka
+        let zx.$k = dk.$k * if(fo.$k > 12, 0, 1) * max(0, (x.$k - e0x.$k) * nx.$k + (y.$k - e0y.$k) * ny.$k - rr.$k)      // od kvapky po okraj
+        zone box hit.$k { at: if(drg.$k > 0, W / 2, x.$k - nx.$k * zx.$k / 2 + tx.$k * kwa.$k * goo.$k.kd), if(drg.$k > 0, H / 2, y.$k - ny.$k * zx.$k / 2 + ty.$k * kwa.$k * goo.$k.kd); size: if(drg.$k > 0, W * 3, max(rr.$k * 2, 24) + ty.$k * zx.$k + tx.$k * kwa.$k * 2), if(drg.$k > 0, H * 3, max(rr.$k * 2, 24) + tx.$k * zx.$k + ty.$k * kwa.$k * 2); corner: max(rr.$k, 12); cursor: pointer; active: goo.$k.on }
+        on enter hit.$k { hov.$k: 1; emit goo_enter(k) }
+        on leave hit.$k { hov.$k: 0; emit goo_leave(k) }
+        on hover hit.$k for 450ms { tipk = k; tipx = x.$k + nx.$k * (rr.$k + 130); tipy = y.$k + ny.$k * (rr.$k + 14) + if(ny.$k > 0, 30, 0); tip.p: 1; emit goo_hover(k) }
+        on away hit.$k for 200ms while tipk == k { tip.p: 0 }
+        on press hit.$k { tip.p: 0; impulse sq.$k 5; ctx.x = curx; ctx.y = cury; ctx_up = cury > H / 2; emit goo_down(k) }
+        on press right hit.$k { tip.p: 0; ctx.x = curx; ctx.y = cury; ctx_up = cury > H / 2; emit goo_right(k) }
+        on press middle hit.$k { emit goo_middle(k) }
+        on hold hit.$k for 650ms while drg.$k == 0 { emit goo_hold(k) }
+        on scroll hit.$k { emit goo_scroll(k * 2 + if(wheel > 0, 1, 0)) }
+        on drag hit.$k while goo.$k.tahat { dx.$k = drag.dx; dy.$k = drag.dy }
+        on drag hit.$k while goo.$k.tahat and drg.$k == 0 and length(drag.dx, drag.dy) > 6 { drg.$k = 1; nk = k; tip.p: 0; emit goo_drag(k) }
+        on drag hit.$k while goo.$k.tahat and tr.$k == 0 and length(drag.dx, drag.dy) > min(goo.$k.trh, r0.$k * 1.6) * goo.$k.lep { tr.$k = 1 }
+        // (odtrhnutie najneskôr po 1,6 polomeru: dlhý krk-vlák je nepekný)
+        // pustenie bez ťahania: či je to klik (ľavé, bez podržania), rozhodne logika z poradia goo_down … goo_up —
+        // `while` vidí stav zo začiatku snímky, príznak v scéne by stratil stlačenie a pustenie v jednom snímku
+        // (ťuknutie na touchpade). Po ťahaní povie logike, kam (neodtrhnutá lepkavá kvapka sa vráti domov)
+        on release hit.$k while drg.$k == 0 { emit goo_up(k) }
+        on release hit.$k while drg.$k > 0 { rx = hxp.$k + dx.$k * mv.$k; ry = hyp.$k + dy.$k * mv.$k; emit goo_drop(k) }
+        fact hopn.$k = 0
+        fact sqn.$k = 0
+        fact vibn.$k = 0
+        on change hopn.$k { impulse py.$k -520 }
+        on change sqn.$k { impulse sq.$k 9 }
+        // zavibrovanie: klik tlačidlom, pre ktoré kvapka nemá funkciu (krátke rýchle chvenie do strán)
+        on change vibn.$k { vib.$k: 1 ~0ms; vib.$k: 0 ~420ms after 16ms }
+    }
+
+    // nečinnosť (§3.1): 1 zaspávajú (menšie nadnesenie), 2 počasie (dážď a vietor podľa skutočného), 3 hra; pohyb myši
+    // ich hneď zobudí. Vypínač „Živé správanie“ (Nastavenia › Kvapky): bez neho kvapky pri nečinnosti iba dýchajú
+    // Keď hlási nečinnosť systém (sys_idle, aj klávesnica), stupne riadi logika; tieto pravidlá iba bez neho
+    on idle for 60s while zive and sysidle < 0 { idle = 1; emit goo_idle(1) }
+    on idle for 180s while zive and sysidle < 0 { idle = 2; emit goo_idle(2) }
+    on idle for 360s while zive and sysidle < 0 { idle = 3; emit goo_idle(3) }
+    on change curx while idle > 0 { idle = 0; emit goo_idle(0) }
+    on change cury while idle > 0 { idle = 0; emit goo_idle(0) }
+
+    // ── okno z bubliny (pravidlo 14; prevzaté z bublina.py plochy Kvapky, tu pre ktorúkoľvek kvapku) ───────────────
+    // Kvapka ostane na mieste a VYPĽUJE bublinu: vytlačí sa z nej (s1, zlieva sa s ňou — je v tele goo), odtrhne sa,
+    // preletí po oblúku na miesto okna (s2) a nafúkne sa na jeho obdĺžnik (s3, blana sa chvíľu chveje). Hyprland
+    // potom otvorí skutočné okno presne tam; keď naskočí, bublina zmizne (bub_d).
+    fact bub.x = 960                          // cieľ: stred a rozmer okna (logika)
+    fact bub.y = 540
+    fact bub.w = 800
+    fact bub.h = 600
+    fact bub.sx = 0                           // odkiaľ: stred kvapky, smer od jej okraja, polomer
+    fact bub.sy = 0
+    fact bub.nx = 0
+    fact bub.ny = -1
+    fact bub.sr = 26
+    fact bub_n = 0                            // logika zvýši = vypľuť bublinu
+    fact bub_d = 0                            // logika zvýši = okno naskočilo, bublina zmizne
+    prop bub.t = 0 ~900ms
+    prop bub.a = 0 ~160ms
+    on change bub_n { bub.t: 0 ~0ms; bub.a: 1 ~0ms; bub.t: 1 ~900ms after 16ms }
+    on change bub_d { bub.a: 0 ~180ms }
+    let b.s1 = smooth(0, 0.3, bub.t)
+    let b.s2 = smooth(0.25, 0.65, bub.t)
+    let b.s3 = smooth(0.6, 1, bub.t)
+    let b.p1x = bub.sx + bub.nx * (bub.sr + 16) * b.s1
+    let b.p1y = bub.sy + bub.ny * (bub.sr + 16) * b.s1
+    let b.cx = b.p1x + bub.nx * 160
+    let b.cy = b.p1y + bub.ny * 160
+    let b.x = (1 - b.s2) * (1 - b.s2) * b.p1x + 2 * (1 - b.s2) * b.s2 * b.cx + b.s2 * b.s2 * bub.x
+    let b.y = (1 - b.s2) * (1 - b.s2) * b.p1y + 2 * (1 - b.s2) * b.s2 * b.cy + b.s2 * b.s2 * bub.y
+    let b.r = 8 + 8 * b.s1 + 6 * b.s2
+    let b.wob = 1 + 0.035 * sin(b.s3 * 540) * (1 - b.s3)                 // sin je v stupňoch
+    let b.w = (2 * b.r + (bub.w - 2 * b.r) * b.s3) * b.wob
+    let b.h = (2 * b.r + (bub.h - 2 * b.r) * b.s3) * (2 - b.wob)
+    // ── minimalizované okno (pravidlo 14): zmenší sa do kvapky, padne k hladine (voľný pád ako kvapky), žblnkne
+    // a objaví sa v GooBare. Hyprland to oznámi hneď (latte.goo_min → emit win_min), logika nastaví odkiaľ a kam.
+    fact mf.x0 = 0
+    fact mf.y0 = 0
+    fact mf.x1 = 0
+    fact mf.w = 0
+    fact mf.h = 0
+    fact mf.T = 1                             // trvanie pádu (s), z výšky a GRAV (logika)
+    fact mf_n = 0
+    fact mf.tm = -100
+    on change mf_n { mf.tm = T }
+    let mf.e = max(0, T - mf.tm - 0.2)                                 // prvých 0,2 s sa okno zmenšuje do kvapky
+    let mf.k = clamp((T - mf.tm) / 0.2, 0, 1)
+    let mf.on = if(T - mf.tm < mf.T + 0.45, 1, 0)
+    let mf.x = mf.x0 + (mf.x1 - mf.x0) * clamp(mf.e / mf.T, 0, 1)
+    let mf.y = min(floor + 6, mf.y0 + 0.5 * GRAV * mf.e * mf.e)
+    // ── zatvorené okno z bubliny praskne: prstenec a kvapôčky, ktoré odletia a spadnú
+    fact pop.x = 0
+    fact pop.y = 0
+    fact pop.r = 200
+    fact pop_n = 0
+    prop pop.t = 1 ~0ms
+    on change pop_n { pop.t: 0 ~0ms; pop.t: 1 ~520ms after 16ms }
+
+    // ── žiara nad horizontom hladiny (deň a noc): pri svitaní a súmraku teplá, v noci slabá studená; cez deň nič.
+    // Osem plochých vrstiev namiesto rozmazania (to by stálo každú snímku); jemné kroky, aby nebolo vidno pruhy ──
+    ellipse { at: W / 2, H + 30; radius: W * 0.64; scale: 1, 0.090; color: svit; opacity: 0.017 * zl + 0.005 * (1 - dn) }
+    ellipse { at: W / 2, H + 30; radius: W * 0.61; scale: 1, 0.081; color: svit; opacity: 0.017 * zl + 0.005 * (1 - dn) }
+    ellipse { at: W / 2, H + 30; radius: W * 0.58; scale: 1, 0.071; color: svit; opacity: 0.017 * zl + 0.005 * (1 - dn) }
+    ellipse { at: W / 2, H + 30; radius: W * 0.55; scale: 1, 0.061; color: svit; opacity: 0.017 * zl + 0.005 * (1 - dn) }
+    ellipse { at: W / 2, H + 30; radius: W * 0.52; scale: 1, 0.052; color: svit; opacity: 0.017 * zl + 0.005 * (1 - dn) }
+    ellipse { at: W / 2, H + 30; radius: W * 0.49; scale: 1, 0.042; color: svit; opacity: 0.017 * zl + 0.005 * (1 - dn) }
+    ellipse { at: W / 2, H + 30; radius: W * 0.46; scale: 1, 0.033; color: svit; opacity: 0.017 * zl + 0.005 * (1 - dn) }
+    ellipse { at: W / 2, H + 30; radius: W * 0.43; scale: 1, 0.023; color: svit; opacity: 0.017 * zl + 0.005 * (1 - dn) }
+
+    // ── počasie pri nečinnosti (§3.1 stupeň 2): drobné goo kvapky dopadajú na spodný okraj (vlnky robí logika),
+    // namiesto dažďa sneh. Iba nízko nad hladinou, aby nepadali cez okná ─────────────────────────────────────────
+    particles { at: W / 2, H - 340; area: W, 12; count: 30; life: 0.55s .. 0.75s; speed: 430 .. 520; direction: 96deg; spread: 3deg
+                gravity: 0, 500; size: 4, 3; colors: #d9b88e, #c9a47a; opacity: 80%, 45%; shape: spark; emit: zive and idle >= 2 and prsi == 1 and not snezi }
+    particles { at: W / 2, H - 340; area: W, 12; count: 110; life: 0.55s .. 0.75s; speed: 430 .. 520; direction: 96deg; spread: 3deg
+                gravity: 0, 500; size: 4, 3; colors: #d9b88e, #c9a47a; opacity: 85%, 48%; shape: spark; emit: zive and idle >= 2 and prsi == 2 and not snezi }
+    particles { at: W / 2, H - 340; area: W, 12; count: 80; life: 3.5s .. 5s; speed: 60 .. 95; direction: 95deg; spread: 24deg
+                size: 6, 4; colors: #f3ebdd, #f3ebdd; opacity: 75%, 35%; shape: dot; emit: zive and idle >= 2 and prsi > 0 and snezi }
+
+}

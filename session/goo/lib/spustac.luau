@@ -45,44 +45,13 @@ local ENGINES = {
 }
 
 -- ── pomôcky ──────────────────────────────────────────────────────────────────────────────────────────────────
-local BEZ = { ["á"] = "a", ["ä"] = "a", ["č"] = "c", ["ď"] = "d", ["é"] = "e", ["ě"] = "e", ["í"] = "i", ["ĺ"] = "l", ["ľ"] = "l",
-              ["ň"] = "n", ["ó"] = "o", ["ô"] = "o", ["ö"] = "o", ["ŕ"] = "r", ["ř"] = "r", ["š"] = "s", ["ť"] = "t", ["ú"] = "u",
-              ["ů"] = "u", ["ü"] = "u", ["ý"] = "y", ["ž"] = "z",
-              ["Á"] = "a", ["Ä"] = "a", ["Č"] = "c", ["Ď"] = "d", ["É"] = "e", ["Ě"] = "e", ["Í"] = "i", ["Ĺ"] = "l", ["Ľ"] = "l",
-              ["Ň"] = "n", ["Ó"] = "o", ["Ô"] = "o", ["Ö"] = "o", ["Ŕ"] = "r", ["Ř"] = "r", ["Š"] = "s", ["Ť"] = "t", ["Ú"] = "u",
-              ["Ů"] = "u", ["Ü"] = "u", ["Ý"] = "y", ["Ž"] = "z" }
-local function fold(s) return (tostring(s or ""):gsub("[\xC3-\xC5][\x80-\xBF]", BEZ):lower()) end
+local fold = require("lib/fold")                -- text bez diakritiky (spoločné so SAFE)
 local function urlencode(s) return (s:gsub("[^%w%-%._~]", function(c) return string.format("%%%02X", string.byte(c)) end)) end
 local function lines(out) local t = {} for l in (out or ""):gmatch("[^\n]+") do t[#t + 1] = l end return t end
 local function close() keptQ = "" fact.ctx_open = false end   -- po akcii (spustenie, hľadanie…) sa text nevracia
 
--- nebezpečné príkazy chcú druhý Enter (zoznam z Text Baru klasického LatteOS, ako v Kvapkách)
-local DANGER_WORDS = {
-    sudo = true, pkexec = true, su = true, doas = true,
-    rm = true, rmdir = true, shred = true, truncate = true, srm = true, unlink = true,
-    dd = true, wipefs = true, fdisk = true, sfdisk = true, parted = true, blkdiscard = true,
-    kill = true, killall = true, pkill = true, poweroff = true, reboot = true, shutdown = true, halt = true,
-}
-local DANGER = {
-    "mkfs", "%-delete", "chmod%s+%-[%a]*R", "chown%s+%-[%a]*R",
-    ">%s*/dev/[sn]", ">%s*/etc/", ">%s*/boot/", ">%s*/usr/",
-    "%f[%w]mv%s.-%s/[%a]*%s*$",
-    "dnf%s+remove", "dnf%s+erase", "dnf%s+autoremove", "rpm%s+%-e", "flatpak%s+uninstall", "flatpak%s+remove",
-    "systemctl%s+stop", "systemctl%s+disable", "systemctl%s+mask", "systemctl%s+poweroff", "systemctl%s+reboot",
-    "git%s+reset%s+%-%-hard", "git%s+clean%s", "git%s+push%s.-%-%-force", "git%s+push%s.-%-f%f[%W]",
-    "|%s*s?h%f[%W]", "|%s*bash", "|%s*zsh", ":%(%)%s*{",
-}
-local function dangerous(cmd)
-    for seg in string.gmatch(cmd .. ";", "(.-)[;&|`(\n]") do
-        local w = string.match(seg, "^[%s$]*([%w%._/%-]+)")
-        if w then
-            w = string.match(w, "([^/]+)$")
-            if DANGER_WORDS[w] or string.find(w, "^mkfs") then return true end
-        end
-    end
-    for _, p in ipairs(DANGER) do if string.find(cmd, p) then return true end end
-    return false
-end
+-- nebezpečné príkazy chcú druhý Enter (lib/nebezpecne.luau, spoločné so SAFE)
+local dangerous = require("lib/nebezpecne")
 
 -- ── akcie ────────────────────────────────────────────────────────────────────────────────────────────────────
 local function launch(a)

@@ -385,6 +385,21 @@ kvapka sedí a aká je veľká, skryté a vlastné kvapky, káva, pás výkonu),
 - `click@`/`right@` stlačia a pustia v jednom snímku, testy preto používajú `down@ up@`.
 - `--say` berie meno scény malými písmenami (`goo`).
 
+## Časti scény (od 8. 10. 2026)
+
+`goo.plm` je tenká scéna (povrch, povolenia) a zvyšok skladá cez `include` z `parts/`: **`rozhranie.plm`** (fakty,
+udalosti, modely, pružiny, pravidlá — to, čo vidí logika), **`telo.plm`** (kreslenie lišty a všetkých kvapiek v jednom
+goo, SDF tvary; sem píše `gen.py` telo a odlesky) a **`karty.plm`** (karty, pás výkonu, pravidlá z nich; sem píše `gen.py`
+pás výkonu). Časť patrí scéne, akoby bola napísaná priamo v nej, takže rozdelenie nemení výsledok: `pleamar --check`
+dáva rovnaké počty (12807 vlastností, 6076 inštrukcií, 2937 pravidiel, 211 zón). Dôvod: SafeGoo (softvérové kreslenie
+bez GPU) použije **to isté rozhranie a tú istú logiku**, ale namiesto `telo.plm` kreslí jednoduché tvary (plný vzhľad v
+softvéri stojí ~0,6 s na snímku). `gen.py` píše do častí; `gen.py --n N --out PRIEČINOK` skopíruje scénu aj `parts/`.
+
+**Poznámky (8. 10.):** fyzika kvapiek čerpá z času a polohy kurzora; zdieľané časti preto píšu `T`, `curx`, `cury` a `goo.plm` ich
+definuje ako `time`, `cursor.x`, `cursor.y` (správanie bez zmeny: `pleamar --check` dáva rovnaké počty). `permissions` musia byť
+v hlavičke scény, v `part` ich pleamar nebere do úvahy. Núdzový režim SAFE engine Goo nepoužíva — `safe.plm` je samostatná
+jednoduchá lišta (pozri ROADMAP › SAFE).
+
 ## Testovanie bez obrazovky (cloud)
 
 1. `resources/fetch.sh` a build pleamaru v `resources/upstream/pleamar` so záplatami.

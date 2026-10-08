@@ -1,4 +1,7 @@
-# LatteOS SAFE — spúšťa labwc po štarte
+# LatteOS SAFE — spúšťa labwc po štarte. Núdzové rozhranie LatteOS GOO bez engine Goo: spodná lišta, pozadie a veľký čas
+# (session/goo/safe.plm, 15 snímok/s) na pleamar/llvmpipe. Noctalia ani žiadna časť Classicu v SAFE nebeží (rozhodnutie 8. 10.).
+# Spadne-li rozhranie, spustí sa znova; pri nečinnosti stojí ~0 % CPU.
 dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP LATTE_MODE >/dev/null 2>&1 &
-noctalia >/dev/null 2>&1 &
+( while true; do PLEAMAR_GENERIC=window pleamar --scene /usr/share/latteos/goo/safe.plm --no-hud \
+    >>"${XDG_STATE_HOME:-$HOME/.local/state}/latteos/safe.log" 2>&1; sleep 2; done ) &
 foot -T "LatteOS SAFE" -e latte-safe >/dev/null 2>&1 &
