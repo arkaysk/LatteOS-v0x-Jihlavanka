@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="sk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Barista — prototyp inštalácie</title>
+<style>
+/* Farby berie sprievodca zo zvoleného vzhľadu systému (téma LatteOS); tu je predvolená „káva“. */
+:root{--coffee:#1c0f09;--roast:#2a1710;--crema:#c9a47a;--ink:#f3ebdd;--ok:#7fc29b;--warn:#e8c07a;--bad:#e06a5f}
+*{box-sizing:border-box}
+body{margin:0;background:linear-gradient(#0b0605,#1d0e08);color:var(--ink);font:15px/1.5 Inter,system-ui,sans-serif;min-height:100vh;display:grid;place-items:center;padding:24px}
+.okno{width:min(880px,100%);background:var(--coffee);border:1px solid #5a3b27;border-radius:22px;box-shadow:0 20px 60px #000a;overflow:hidden}
+header{display:flex;align-items:center;gap:14px;padding:18px 26px;border-bottom:1px solid #3a2417}
+header h1{font-size:17px;margin:0;font-weight:600}
+.kroky{display:flex;gap:8px;margin-left:auto}
+.kroky i{width:26px;height:6px;border-radius:3px;background:#4a3022}
+.kroky i.on{background:var(--crema)}
+main{padding:28px 30px;min-height:380px}
+select{background:var(--roast);color:var(--ink);border:1px solid #5a3b27;border-radius:10px;padding:4px 8px}
+h2{margin:0 0 4px;font-size:22px;font-weight:600}
+.sub{color:#b9a58f;margin:0 0 22px}
+.karta{background:var(--roast);border:1px solid #3a2417;border-radius:16px;padding:16px 18px;margin:10px 0}
+.riadok{display:flex;align-items:center;gap:12px}
+.ikona{width:40px;height:40px;border-radius:50%;background:#3a2417;display:grid;place-items:center;font-size:19px}
+.vyber{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px}
+.vyber button{all:unset;cursor:pointer;background:var(--roast);border:1px solid #3a2417;border-radius:16px;padding:16px;display:grid;gap:6px}
+.vyber button:hover,.vyber button.sel{border-color:var(--crema);background:#33201a}
+.vyber b{font-weight:600}.vyber span{color:#b9a58f;font-size:13px}
+.verdikt{display:inline-block;padding:3px 12px;border-radius:12px;background:#24402f;color:var(--ok);font-weight:600;font-size:13px}
+ul{margin:8px 0 0;padding-left:20px;color:#d8c9b5}
+.hodnoty{display:grid;grid-template-columns:140px 1fr;gap:6px 14px;font-size:14px}
+.hodnoty dt{color:#b9a58f}.hodnoty dd{margin:0}
+.prepinac{display:flex;gap:10px;align-items:center}
+.prepinac input{accent-color:var(--crema);width:18px;height:18px}
+.pruh{height:10px;background:#3a2417;border-radius:6px;overflow:hidden;margin:14px 0}
+.pruh div{height:100%;width:0;background:linear-gradient(90deg,var(--crema),#e8c07a);transition:width .4s}
+.log{font:12.5px/1.6 ui-monospace,monospace;background:#0f0805;border-radius:12px;padding:12px 14px;height:130px;overflow:auto;color:#cdb99f}
+footer{display:flex;gap:10px;justify-content:space-between;padding:16px 26px;border-top:1px solid #3a2417}
+.tl{all:unset;cursor:pointer;padding:9px 22px;border-radius:20px;border:1px solid #5a3b27}
+.tl.hlavne{background:var(--crema);color:var(--coffee);font-weight:600;border-color:var(--crema)}
+.tl:disabled{opacity:.4;cursor:default}
+.poznamka{color:#b9a58f;font-size:13px;margin-top:14px}
+</style>
+</head>
+<body>
+<div class="okno">
+  <header><div class="ikona">☕</div><h1>Barista · Inštalácia aplikácie</h1><div class="kroky" id="kroky"></div></header>
+  <main id="obsah"></main>
+  <footer><button class="tl" id="spat">Späť</button><button class="tl hlavne" id="dalej">Ďalej</button></footer>
+</div>
+<script>
+const kroky=[
+ {h:'Čo inštalujeme?',s:'Vyberte zdroj. Môže byť na disku, DVD, externom disku alebo v sieti.',v:()=>`
+  <div class="vyber">
+   <button class="sel"><b>📄 Súbor alebo súbory…</b><span>Archív (aj delený), jeden či dva obrazy CD/DVD, .apk, .xapk, .exe, .msi, .AppImage, .rpm</span></button>
+   <button><b>📁 Priečinok…</b><span>Nadradený priečinok s aplikáciou, setupom alebo hrou (disk, externé úložisko, sieť)</span></button>
+  </div>
+  <div class="karta"><div class="riadok"><div class="ikona">💿</div><div><b>AVP2CD1.iso + AVP2CD2.iso</b><br><span class="sub" style="margin:0">Stiahnuté · 2 obrazy disku</span></div></div></div>
+  <p class="poznamka">Zdroj sa nikdy nemení ani nekopíruje; ISO sa len číta.</p>`},
+ {h:'Analýza',s:'Barista sa pozrel dovnútra bez spustenia inštalátora.',v:()=>`
+  <div class="karta"><div class="riadok"><div class="ikona">🎮</div><div><b>Aliens vs. Predator 2</b> (2001) · Fox Interactive<br><span class="verdikt">Pôjde</span></div></div>
+  <ul><li>Inštalátor InstallShield, 32-bit</li><li>Hra je na 2 diskoch (CD2 nájdený)</li><li>CD2 obsahuje DirectX a GameSpy — použijú sa z média</li><li>Odporúčaný spôsob: <b>Wine</b> (staršia hra, Windows XP)</li></ul></div>
+  <div class="karta"><div class="riadok"><div class="ikona">🖥</div><div><b>Pobeží to na tomto počítači?</b><br>Vychádza zo zistenia: staršia hra (2001), grafika podľa nároku nie je problém.<br>
+  <label class="prepinac" style="margin-top:6px"><input type="checkbox"> Vyhľadať na internete nároky a skóre hry a porovnať s týmto PC</label></div></div></div>
+  <p class="poznamka">Recept: vlastný, <i>neoverený</i>. Barista skúsi aj ďalšiu cestu, ak prvá zlyhá.</p>`},
+ {h:'Kam a ako',s:'Všetko, čo hra potrebuje, bude na jednom mieste. Vyberte kam a ako to označiť.',v:()=>`
+  <div class="karta"><dl class="hodnoty"><dt>Názov</dt><dd>Aliens vs. Predator 2</dd><dt>Štítok</dt><dd><select><option>Hry</option><option>Práca</option><option>Hudba</option><option>Vlastný…</option></select> <small>určuje skupinu v menu a priečinok</small></dd><dt>Priečinok</dt><dd>~/Hry/avp2 <button class="tl" style="padding:3px 12px">Zmeniť…</button></dd><dt>Dôvera</dt><dd>Môj vlastný disk (známy zdroj)</dd><dt>Sandbox</dt><dd>Hra uvidí len svoj priečinok</dd></dl></div>
+  <div class="karta"><label class="prepinac"><input type="checkbox" checked> Povoliť sieť pre hru (LAN, GameSpy)</label></div>
+  <p class="poznamka">Každá aplikácia má vlastný priečinok, takže sa hry, práca a hudba nemiešajú. Pri neznámom zdroji je sieť vypnutá.</p>`},
+ {h:'Inštalujem',s:'Nič nemusíte robiť. Ak jedna cesta zlyhá, Barista skúsi druhú.',v:()=>`
+  <div class="pruh"><div id="p"></div></div>
+  <label class="prepinac"><input type="checkbox" id="kon" onchange="document.getElementById('log').style.display=this.checked?'block':'none'"> Zobraziť konzolu (pre pokročilých)</label>
+  <div class="log" id="log" style="display:none;margin-top:10px"></div>`},
+ {h:'Hotovo',s:'Aliens vs. Predator 2 je nainštalované.',v:()=>`
+  <div class="karta"><div class="riadok"><div class="ikona">✔</div><div><b>Skúšobné spustenie prebehlo.</b><br>Záznam v menu a skratka sú pridané.</div></div></div>
+  <div class="karta"><dl class="hodnoty"><dt>Priečinok</dt><dd>~/Hry/avp2 (prefix = C:\\, uloženia, registre)</dd><dt>Odinštalovanie</dt><dd>zmaže celý priečinok a záznamy v menu</dd><dt>Záloha</dt><dd>jeden archív priečinka</dd></dl></div>`}
+];
+const logy=['Zdroj pripojený len na čítanie','Vytváram prostredie hry (Wine, Windows XP)','Inštalujem DirectX z CD2','Spúšťam inštalátor hry v izolácii','Kopírujem súbory (2/2 disky)','Pridávam záznam do menu','Skúšobné spustenie…'];
+let i=0,t;
+const $=s=>document.querySelector(s);
+function kresli(){
+  $('#kroky').innerHTML=kroky.map((_,k)=>`<i class="${k<=i?'on':''}"></i>`).join('');
+  $('#obsah').innerHTML=`<h2>${kroky[i].h}</h2><p class="sub">${kroky[i].s}</p>${kroky[i].v()}`;
+  $('#spat').disabled=i==0||i==3; $('#dalej').textContent=i==2?'Nainštalovať':i==4?'Spustiť hru':'Ďalej'; $('#dalej').disabled=i==3;
+  if(i==3){let n=0;clearInterval(t);t=setInterval(()=>{n++;$('#p').style.width=Math.min(100,n*100/logy.length)+'%';
+    $('#log').innerHTML+=(logy[n-1]||'')+'<br>';$('#log').scrollTop=1e5;
+    if(n>=logy.length){clearInterval(t);setTimeout(()=>{i=4;kresli()},700)}},700)}
+}
+$('#dalej').onclick=()=>{if(i<4){i++;kresli()}};
+$('#spat').onclick=()=>{if(i>0){i--;kresli()}};
+kresli();
+</script>
+</body>
+</html>

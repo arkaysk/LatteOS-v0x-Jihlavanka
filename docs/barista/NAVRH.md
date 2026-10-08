@@ -158,3 +158,11 @@ Overené na latte-lab 8. 10.: `umu-run cmd /c ver` s GE-Proton11-7 vráti „Mic
 - Ktoré prehrávače a inštalátory sa majú rozpoznávať ako „známe zdroje“ (dôvera)?
 - Preklady sprievodcu (sk, cz, en) — všetky texty cez `i18n.tr`.
 - Prístupnosť sprievodcu: zatiaľ odložená (podľa poradia v ROADMAP), ale nech je to v zozname.
+
+## Doplnenia po prvej prezentácii (8. 10.)
+
+- **Krok 1:** dve tlačidlá — *Súbor alebo súbory* (archív aj delený, jeden či dva obrazy CD/DVD, .apk, .xapk, .exe…) a *Priečinok* (nadradený priečinok s aplikáciou/hrou).
+- **Krok 2 (analýza):** aj **zhodnotenie hardvéru**. Barista sa spýta, či má na internete vyhľadať nároky/skóre a porovnať ich s týmto PC (CPU, RAM, GPU, VRAM, ovládač).
+- **Krok 3:** miesto inštalácie a **štítok** (Hry, Práca, Hudba, vlastný) sú voliteľné; každá aplikácia má vlastný priečinok, aby sa nemiešali.
+- **Krok 4:** **konzola** je prístupná a aktivovateľná pre pokročilých (zobrazí log inštalácie).
+- **Vzhľad:** sprievodca preberá farby z vybraného vzhľadu systému.

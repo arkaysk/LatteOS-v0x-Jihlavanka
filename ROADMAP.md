@@ -397,6 +397,15 @@ texty preložiteľné (`translations`). Noctalia beží bez lišty a robí, čo 
   **Základ pre hry a cudzie programy v čistej inštalácii (8. 10.):** `f0-install.sh` (pole HRY) + `setup/f1/hry.sh` (umu-launcher 1.4.4,
   GE-Proton11-7 v `/opt/latteos/proton`, kontrola súčtov); na latte-lab nainštalované a overené (`umu-run` + Proton → Windows 10).
   Android: Waydroid (obraz VANILLA), ARM-only aplikácie (MusicCast) potrebujú prekladač ARM→x86. Nenainštalované: Steam sa nepotrebuje.
+  **Odovzdanie na pondelok (po resete týždenného limitu, 13. 10. 15:00 CEST) — Barista:**
+  hotové: F1 `latte-instalator analyze` (+ plán Wine/Proton/DOSBox, Android), recept AVP2, základ v systéme (wine, winetricks, bwrap,
+  umu 1.4.4, GE-Proton11-7 v /opt/latteos/proton, Waydroid; hry.sh + HRY v f0), návrh a prototyp (`docs/barista/NAVRH.md`, `prototyp.html`).
+  Ďalej v tomto poradí: (1) skontrolovať `waydroid init` (`~/src/waydroid-init.log`, `/var/lib/waydroid/images`), prekladač ARM→x86;
+  (2) **F3 AVP2**: prefix `~/Hry/avp2`, inštalátor vo Wine v `bwrap`, na displeji Hyprland (ISO v `~/Stiahnuté`), potvrdiť/opraviť recept;
+  (3) hardvérová kontrola (CPU/RAM/GPU/VRAM vs nároky) a voliteľné vyhľadanie nárokov na internete; (4) UI Baristu v QML podľa prototypu
+  (2 tlačidlá zdroja, štítok a miesto, konzola pre pokročilých, farby zo skinu); (5) F4 odinštalovanie/záloha, F5 APK a natívne balíky.
+  Otvorené: ARM-only Android aplikácie, sťahovanie komunitných receptov, pravidlá Wine/Proton overiť na reálnych programoch.
+  Nepotvrdené (necommitnuté): všetky zmeny z 8. 10. sú v pracovnom strome latte-lab.
   **Barista F1 hotová (8. 10.):** `session/bin/latte-instalator analyze CESTA [--json]` — typ zdroja, SHA-256, inštalátor, požiadavky,
   ochrany, ďalšie disky, verdikt a **plán** (Wine/Proton/DOSBox, Windows verzia, závislosti) z receptu (`session/recepty/*.json`)
   alebo z pravidiel (rok, API, architektúra), bez AI. Overené na AVP2 CD1/CD2 a CS 1.6. Zásady rozhodovania: docs/barista/NAVRH.md.
