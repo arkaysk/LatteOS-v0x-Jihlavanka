@@ -7,7 +7,7 @@ minie už vo štvrtok, teda približne za 3,5 dňa zo 7. Aby vydržal celý tý�
 prepoliť**. Mechanickú prácu preto prevezme lokálny model, Claude ostane na myslenie, plán a kontrolu.
 
 **Východisko (ako sa pracuje dnes):** na hlavnom PC beží VS Code s rozšírením Claude Code, napojený cez Remote-SSH
-na latte-lab. Hlavné PC: Windows, 80 GB RAM, RTX 3060 12 GB, používa sa aj na inú prácu. latte-lab: samostatné PC
+na latte-lab. Hlavné PC: Windows 11, 80 GB RAM, RTX 3060 12 GB, používa sa aj na inú prácu. latte-lab: samostatné PC
 s vyvíjaným Linuxom, kábel priamo do hlavného PC (hlavné PC `192.168.137.1`, latte-lab `192.168.137.x`, pozri
 [setup/lab/README.md](../setup/lab/README.md) §4).
 
@@ -16,8 +16,8 @@ s vyvíjaným Linuxom, kábel priamo do hlavného PC (hlavné PC `192.168.137.1`
 ## 1. Odpovede na hlavné otázky
 
 **Rozhodnutie (8. 10.):** farmu nebudeme písať od nuly. Základom je **[clodfarm](https://github.com/matank001/clodfarm)**
-(MIT, Python, kontajner). Vlastná je iba malá aplikácia **Farma Strážca** na hlavnom PC, ktorá stráži grafickú kartu
-(§4). Pravidlo „preberať, nevymýšľať“.
+(MIT, Python, kontajner). Farma sa **spúšťa a pauzuje ručne** tlačidlom v jej paneli, takže netreba žiadnu
+vlastnú aplikáciu (§4.3). Pravidlo „preberať, nevymýšľať“.
 
 **Kde beží Claude Code?** Na **latte-lab**. Pri Remote-SSH sa rozšírenie Claude Code spúšťa na vzdialenom PC, nie
 na hlavnom. VS Code na hlavnom PC je iba okno. Koordinátor tak priamo vidí repo, kompiluje a skúša Goo na latte-lab.
@@ -27,8 +27,7 @@ na hlavnom. VS Code na hlavnom PC je iba okno. Koordinátor tak priamo vidí rep
 | časť | kde | čo robí |
 |---|---|---|
 | **LM Studio server** | hlavné PC | počíta lokálny model na RTX 3060; model nahrá až pri úlohe |
-| **Farma Strážca** (vlastná, malá) | hlavné PC, ikona pri hodinách | sleduje GPU a programy, ktoré ju potrebujú. Tlačidlo **▶ / ⏸** = `clodfarm resume / pause`. Pri hre uvoľní model z LM Studia. |
-| **clodfarm** (kontajner) | latte-lab | front úloh, pracovníci vo vlastných kópiách repa, **webový panel** `:8080` s náhľadom, čo kto robí, kontrola pred zlúčením, rozvrhy, stráženie limitu Claude |
+| **clodfarm** (kontajner) | latte-lab | front úloh, pracovníci vo vlastných kópiách repa, **webový panel** `:8080` s náhľadom, čo kto robí, a tlačidlom **PAUSE THE FARM / RESUME**, kontrola pred zlúčením, rozvrhy, stráženie limitu Claude |
 | **bot „lokal“** v clodfarm | latte-lab → LM Studio | Claude Code na lokálnom modeli; robí mechanické úlohy, **limit predplatného nemíňa** |
 | **Koordinátor** | latte-lab (VS Code + Claude Code) | rozhovor s tebou; úlohy posiela farme cez MCP |
 
@@ -46,8 +45,8 @@ preložiť texty Tvorcu Goo, na bota lokal“. Ďalšie cesty:
  │ VS Code — iba okno               │═══════════════▶ │ Claude Code = KOORDINÁTOR (predplatné)     │
  │   + panel farmy (localhost:8080) │                 │      │ MCP: spawn --on lokal               │
  │                                  │                 │      ▼                                     │
- │ Farma Strážca  [▶/⏸] ● GPU voľné │ ─ pause/resume ▶│ clodfarm (kontajner, :8080)                │
- │   NVML, zoznam hier, lms unload  │                 │   front · worktree · overenie · panel      │
+ │ panel farmy: [PAUSE] / [RESUME]  │ ─ ručne ───────▶│ clodfarm (kontajner, :8080)                │
+ │                                  │                 │   front · worktree · overenie · panel      │
  │                                  │                 │   bot „lokal“ = Claude Code               │
  │ LM Studio server :1234  ◀────────┼── /v1/messages ─│     s ANTHROPIC_BASE_URL na LM Studio      │
  │  RTX 3060 12 GB + 80 GB RAM      │                 │   → výsledok do miestneho repa farmy       │
@@ -103,7 +102,7 @@ do `ROZHODNUTIA.md`, čokoľvek, čo ide na GitHub.
 
 ---
 
-## 4. Farma: clodfarm + Farma Strážca
+## 4. Farma: clodfarm
 
 ### 4.1 Čo clodfarm vie (a prečo ho brať)
 
@@ -119,7 +118,8 @@ Overené z jeho dokumentácie (8. 10. 2026; projekt vznikol 25. 9. 2026, je mlad
   (ovládanie z aplikácie Claude v mobile), rozvrhy (`schedule`), upozornenia (ntfy), denník udalostí.
 - **Stráženie limitu Claude:** číta skutočné percentá 5-hodinového a týždenného limitu, a to za **celý účet vrátane
   tvojej práce vo VS Code**. Keď pracuješ ty, farma uberie.
-- **`clodfarm pause` / `resume`:** zastaví a znova spustí štart nových úloh. Presne to potrebuje tlačidlo ▶/⏸.
+- **PAUSE THE FARM / RESUME** v paneli (aj `clodfarm pause` / `resume`): zastaví a znova spustí štart nových úloh.
+  Pri bežiacej úlohe je **CANCEL**, pri hotovej **RETRY**.
 - **MCP:** Claude Code vo VS Code vidí farmu a posiela jej úlohy.
 
 ### 4.2 Nastavenie clodfarm pre náš cieľ (šetriť, nie míňať)
@@ -144,23 +144,22 @@ Pri prvom pridaní sa farma spýta modelu na jedno slovo, aby overila spojenie. 
 **Prevzatie práce farmy:** v hlavnej kópii repa pridať vzdialený repozitár `farma` (`/srv/farma.git`), pozrieť
 `git diff` a zlúčiť do pracovnej vetvy. Kontrolu robí koordinátor (Sonnet) alebo `/ponytail-review`.
 
-### 4.3 Farma Strážca (vlastná, hlavné PC, Windows)
+### 4.3 Spustenie a pauza — ručne (rozhodnutie 8. 10.)
 
-Jediné, čo clodfarm nevie: **spúšťať lokálny model iba vtedy, keď grafickú kartu nepotrebuješ ty.** Strážca je
-malý program pri hodinách (Python + `pynvml` + `pystray`, ~150 riadkov):
+Farmu zapína a pauzuje používateľ sám. Vlastná aplikácia na sledovanie GPU sa **nerobí**.
 
-- **Ikona:** ● zelená = farma pracuje · ● žltá = čaká na voľné GPU · ● sivá = pauza. Ponuka: **▶ Spustiť / ⏸ Pauza**,
-  *Pauza na 1 h / do rána*, *Otvoriť panel*, *Uvoľniť model teraz*.
-- **GPU je obsadené**, ak beží program zo zoznamu „GPU potrebujem ja“ (hry, strih, OBS…), ak je GPU vyťažené inak
-  ako farmou dlhšie ako ~20 s, alebo ak iné programy zaberajú toľko VRAM, že sa model nezmestí.
-- **GPU je voľné**, keď nič z toho neplatí aspoň 3 minúty.
-- **Pri obsadení:** `ssh latte-lab clodfarm pause "GPU obsadené"` (cez kontajner: `docker exec clodfarm …`). Keď
-  rozpísaná odpoveď dobehne, `lms unload --all`.
-- **Pri uvoľnení a ▶:** `clodfarm resume`. Model sa nahrá sám pri prvej požiadavke.
+| chcem | urobím | čo sa stane |
+|---|---|---|
+| nechať farmu pracovať (PC nepotrebujem) | panel → *Tasks* → **RESUME** | farma berie úlohy z frontu |
+| GPU pre seba, nie súrne | panel → **PAUSE THE FARM** | nové úlohy sa nespustia, rozbehnutá **dobehne** (väčšinou minúty) |
+| GPU pre seba hneď (hra, strih) | **PAUSE THE FARM** + pri bežiacej úlohe **CANCEL** | úloha sa zruší bez zlúčenia a dá sa neskôr zopakovať (**RETRY**) |
+| uvoľniť aj VRAM a RAM | v LM Studiu *Eject* (alebo nechať *Auto-unload* po ~15 min) | model zmizne z pamäte; pri ďalšej úlohe sa nahrá sám |
 
-**Treba overiť:** `pause` zastaví iba **nové** úlohy, bežiaca úloha dobehne. Pri dlhej úlohe a spustenej hre by
-model ešte chvíľu bral GPU. Možnosti: počkať (väčšinou minúty), alebo model uvoľniť hneď. Bežiaca úloha by potom
-zlyhala a farma ju zopakuje, čo treba vyskúšať.
+Panel je na `http://latte-lab:8080`: v prehliadači na Windows 11, vo VS Code (Remote-SSH prepošle port sám) alebo
+v mobile. To isté z príkazového riadka: `clodfarm pause` / `resume` / `cancel ID`.
+
+**Neskôr, ak bude ručné ovládanie otravovať:** malý Strážca pri hodinách na Windows (Python + `pynvml`, ~150 riadkov),
+ktorý pri spustení hry sám zavolá `clodfarm pause` a po uvoľnení GPU `resume`. Dnes netreba.
 
 ### 4.4 Inštalácia (jednorazovo, latte-lab)
 
@@ -181,8 +180,7 @@ Kontajner nedostane `~/.claude-local`, kľúče GitHub ani tvoj domov, iba `/srv
 |---|---|---|
 | 1 | clodfarm na latte-lab (§4.4), bot `lokal`, skúšobná úloha | farma beží, úlohy z panela a príkazového riadka |
 | 2 | MCP vo VS Code + pravidlo v `CLAUDE.md` („mechanické úlohy → `spawn --on lokal`“) | koordinátor posiela úlohy sám |
-| 3 | `setup/lab/farma/strazca.py` (Windows) | ▶/⏸, GPU stráženie, uvoľnenie modelu |
-| 4 | skript na prevzatie práce z `/srv/farma.git` | jednoduché `git diff` / merge do pracovnej vetvy |
+| 3 | skript na prevzatie práce z `/srv/farma.git` | jednoduché `git diff` / merge do pracovnej vetvy |
 
 **Záloha:** ak by clodfarm nefungoval (mladý projekt, Docker na Fedore, zmena licencie…), vlastná jednoduchá farma
 podľa pôvodného návrhu: front úloh v súboroch, `claude -p --output-format stream-json` vo `git worktree` a webový
@@ -223,8 +221,7 @@ Na Linuxe by smerovač bežal na latte-lab ako malá služba a Claude Code vo VS
 
 **Vzťah k Farme:** smerovač je na **malé, rýchle úlohy počas rozhovoru** (preklad, súhrn logu, hľadanie). Farma je
 na **dlhšie úlohy vo fronte**, spúšťané iba pri voľnom GPU. Podagent cez smerovač by GPU používal aj vtedy, keď ho
-potrebuješ ty. Preto by mal tiež pozerať na Strážcu: pri obsadenom GPU vráti chybu „GPU obsadené, urob to sám alebo
-pošli farme“.
+potrebuješ ty; pri ručnom ovládaní ho vtedy jednoducho nepoužívaj.
 
 ---
 
@@ -304,13 +301,13 @@ Cieľ: limit vydrží **do pondelka 15:00**. V pondelok pred resetom zapísať, 
 4. **Povedať Claudovi vo VS Code:** „Podľa `inspo/dev-ai-prostredie.md` §4.4 nainštaluj clodfarm na latte-lab, pridaj
    bota lokal a pošli mu skúšobnú úlohu.“ Porovnať 2 modely: rýchlosť (tokeny/s) a či úlohu dotiahli.
 5. **Prvá skutočná úloha cez farmu** (napr. preklad textov jednej karty Goo), prevzatie z `/srv/farma.git`.
-6. **Strážca** (§4.3) a MCP s pravidlom v `CLAUDE.md` (§4.5, kroky 2–3).
+6. **MCP** s pravidlom v `CLAUDE.md` (§4.5, krok 2); vyskúšať PAUSE / RESUME / CANCEL v paneli (§4.3).
 7. Výsledok zapísať do `docs/goo/ROZHODNUTIA.md`, farmu ako úlohu do `ROADMAP.md`.
 
 ## 9. Otvorené otázky
 
 - Zoznam programov „GPU potrebujem ja“ (hry, strih, OBS…)?
-- Má farma bežať aj cez noc? Hlavné PC by muselo ostať zapnuté (Strážca to vie ukázať a v ponuke „do rána“ zapnúť).
+- Má farma bežať aj cez noc? Hlavné PC by muselo ostať zapnuté s LM Studiom (pred spaním RESUME, ráno PAUSE).
 - Pustiť aj Claude vo farme (napr. cez noc pred pondelňajším resetom, `FARM_BURST_HOURS`), aby sa nevyužitý zvyšok
   týždňa nepremárnil?
 
