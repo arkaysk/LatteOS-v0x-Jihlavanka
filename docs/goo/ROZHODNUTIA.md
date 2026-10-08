@@ -247,3 +247,9 @@ Nové rozhodnutie: jeden riadok sem (dátum, čo, prečo) a oprava platného zne
 | SAFE Classic (labwc + shell Noctalie) | nahradí **SafeGoo** — engine Goo bez GPU (labwc + pixman + llvmpipe) so zložkami GooBar, QueenGoo, LensGoo, GooPower, ClockGoo a novou kvapkou SafeGoo v rohu (8. 10.) |
 | SafeGoo: statické kvapky (bez pružín, dýchania, naťahovania za kurzorom), jednoduché ako pôvodná Marea | áno — softvérové kreslenie plného `goo.plm` je ~1 s na snímku; vlastná scéna `safe.plm` (8. 10.) |
 | SAFE cez engine Goo (SafeGoo z plného Goo) | nie — samostatné núdzové rozhranie `safe.plm` bez engine Goo (8. 10.) |
+| Barista inštalácia Windows programov: bez Flatpaku, natívny Wine + `bwrap` | áno — Wine prefix je `C:\`, sandbox `bwrap` (test 8. 10.: domov a zdieľania nevidno, zápis len do priečinka hry) (8. 10.) |
+| Inštalačný priečinok hry: `~/Hry/<id>/` s `manifest.json`, `prefix/`, `logs/` | áno — odinštalovanie zmazaním podľa registra, záloha tarom (8. 10.) |
+| Zdroj inštalátora (ISO, CD, priečinok) sa len pripája na čítanie, nekopíruje | áno (8. 10.) |
+| Neznámy zdroj: sieť počas inštalácie vypnutá, zapnutie len samostatne a viditeľne | áno (8. 10.) |
+| Barista: Wine alebo Proton rozhoduje sám, bez AI a bez pomoci používateľa | áno — recepty (vlastné + komunitné: Lutris, umu, winetricks, AppDB, ProtonDB) → pravidlá z PE (rok, API, architektúra) → reťaz pokusov so snímkou prefixu; AI len voliteľne (8. 10.) |
+| Základ pre cudzie programy (wine, winetricks, bubblewrap, umu, GE-Proton, Waydroid, 7zip, DOSBox) je v systéme od čistej inštalácie | áno — f0-install.sh (HRY) + setup/f1/hry.sh; Proton v /opt/latteos/proton (8. 10.) |

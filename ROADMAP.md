@@ -390,6 +390,28 @@ texty preložiteľné (`translations`). Noctalia beží bez lišty a robí, čo 
   nebezpečný príkaz chce druhý Enter, zoznam spoločný `lib/nebezpecne.luau`; `lib/fold.luau` spoločný s LensGoo).
   Overené v živom SAFE: hľadanie aplikácií, súborov, AI rozhovor, príkaz aj varovanie. **Neoverené:** skutočné písanie na
   klávesnici do poľa (kompozitor dá klávesnicu po kliknutí) a Enter/Esc/Tab z klávesnice; Web režim LensGoo v SAFE nie je.
+  **Zdieľanie latte-lab ↔ hlavné PC (8. 10.):** Samba na latte-lab, zdieľaný priečinok `~/Sdielane` (`\\192.168.137.231\latte-lab`,
+  používateľ arkay, prístup na čítanie aj zápis), firewalld povolí samba, overené z latte-lab (zápis a výpis). Opačný smer
+  (latte-lab → hlavné PC) by vyžadoval SMB na Windows (zatiaľ zatvorený). ISO AVP2 a ich rozbalené kópie zmazané (originály
+  sú na hlavnom PC).
+  **Základ pre hry a cudzie programy v čistej inštalácii (8. 10.):** `f0-install.sh` (pole HRY) + `setup/f1/hry.sh` (umu-launcher 1.4.4,
+  GE-Proton11-7 v `/opt/latteos/proton`, kontrola súčtov); na latte-lab nainštalované a overené (`umu-run` + Proton → Windows 10).
+  Android: Waydroid (obraz VANILLA), ARM-only aplikácie (MusicCast) potrebujú prekladač ARM→x86. Nenainštalované: Steam sa nepotrebuje.
+  **Barista F1 hotová (8. 10.):** `session/bin/latte-instalator analyze CESTA [--json]` — typ zdroja, SHA-256, inštalátor, požiadavky,
+  ochrany, ďalšie disky, verdikt a **plán** (Wine/Proton/DOSBox, Windows verzia, závislosti) z receptu (`session/recepty/*.json`)
+  alebo z pravidiel (rok, API, architektúra), bez AI. Overené na AVP2 CD1/CD2 a CS 1.6. Zásady rozhodovania: docs/barista/NAVRH.md.
+  **Barista — návrh prvej verzie (8. 10.):** `docs/barista/NAVRH.md`. Režimy: inštalácia LatteOS (existuje) a **inštalácia
+  aplikácie** = identifikácia zdroja (APK, archív so setupom, ISO/CD/DVD, priečinok, samostatný exe, msi, AppImage, rpm,
+  flatpak, sh) → interná analýza (typ inštalátora, požiadavky, ochrany, verdikt) → cieľ a bezpečnostný profil (úroveň dôvery,
+  sieť) → inštalácia (log, zrušenie) → register a záver. Podtypy: portable exe v bwrap, Wine inštalátor v prefixe, APK
+  (Waydroid), natívne balíky, skripty. Rozloženie `~/Hry/<id>/` (`manifest.json`, `prefix/` = C:\, `logs/`), odinštalovanie
+  podľa registra, záloha tarom. Fázy F1–F5; prvý prípad AVP2 (test F1: analýza CD1/CD2). Čaká na potvrdenie otvorených otázok.
+  **Inštalácia zo zdroja, sprievodca (8. 10., zadanie používateľa):** App Manager „Bude to fungovať?“ dostane krok
+  **Nainštalovať** pre väčšinu programov. Používateľ vyberá **zdroj**: priečinok (Stiahnuté, Plocha, domov), **externý
+  disk**, **DVD/CD** (mechanika, ISO obraz) alebo **sieťový priečinok**; hľadanie inštalačného súboru v zložkách (setup.exe,
+  .rpm, .AppImage, .zip…). Barista sa zapojí tam, kde App Manager nestačí (OS, zložité programy s inštalátorom): sprievodca
+  krok za krokom, výber zdroja, prefix Wine/Proton, skúška spustenia. Prvý prípad: **Alien vs. Predator 2** (ISO v
+  `~/Stiahnuté/AVP2CD1.iso`, `AVP2CD2.iso`; test Wine 11 a sieťovej hry cez GameSpy/LAN). Zatiaľ len plán, bez implementácie.
   Súvisí: Hyprland pri odhlásení padá v `exit()` (CScreenshareManager) a `latte-session` to nepozná ako riadne ukončenie
   (rozpoznáva iba `_dl_fini`/`__cxa_finalize`/`CCompositor::cleanup`) → 1. odhlásenie reštartuje Hyprland, 2. (do 60 s) vedie do SAFE.
 - [ ] Engine: overiť zvyšky po skrytí voliteľnej kvapky na latte-lab (jadro GooBar, GooPower, LensGoo sa skryť nedá)
@@ -431,7 +453,11 @@ texty preložiteľné (`translations`). Noctalia beží bez lišty a robí, čo 
 - [ ] Prihlásenie — zvyšky: asi sekunda čiernej medzi prihlásením a plochou; voľba prihlasovača v Nastaveniach;
   zámok pri nečinnosti novou scénou (dnes Noctalia); overiť skutočný dážď a sneh a Uspať · Reštartovať · Vypnúť
 - [ ] Overiť: Odhlásiť z karty GooPower, dvojstĺpcová karta ClockGoo na 1024 × 768
-- [ ] **Korunka QueenGoo:** voliteľný tvar v Nastaveniach › Kvapky (6. 10.: „ešte sa bude robiť“)
+- [ ] **Korunka QueenGoo — pokrývky hlavy** (8. 10., zadanie používateľa; mazlíci sú zrušení): koruna nie je len tvar,
+  ale **výber pokrývky hlavy** (koruna, čiapka, klobúk, veniec, čelenka…) v Nastaveniach › Kvapky. Návrhy dizajnov sa zbierajú
+  zvlášť. Má zahŕňať **sezóny, sviatky a udalosti** (Vianoce, Veľká noc, Silvester, narodeniny, štátne sviatky), zatiaľ pre
+  **CZ a SK**, neskôr pre EU a svet (rovnaký systém, iný kalendár sviatkov podľa regiónu). Pokrývka sa mení podľa dátumu,
+  ale používateľ vie zvoliť pevnú.
 - [x] **GooBar na každom monitore** (6. 10.): každý ďalší monitor má vlastnú inštanciu enginu iba s GooBarom a oknami
   toho monitora (ako panel úloh Windows na druhej obrazovke); ostatné kvapky sú iba na hlavnom. Overené na latte-lab
   s dvoma monitormi (okná sa delia podľa monitora, klik na ikru vo vedľajšej lište). Záťaž: hlavný 17 %, vedľajší
@@ -574,6 +600,18 @@ texty preložiteľné (`translations`). Noctalia beží bez lišty a robí, čo 
     na latte-lab so všetkými nápadmi na rozšírenie; možný fork **FleaGoo**
   - [ ] na rozhodnutie: bublina odchádzajúceho spojenia — nie ako tretia vrstva, iba ako súčasť modelu NET
     (povolenie pri inštalácii + tlačidlo NET), napr. upozornenie pri prvom spojení aplikácie mimo Flatpaku
+- [ ] **ClockGoo — prepracovanie celej sekcie** (8. 10., zadanie používateľa): kalendár a čas sa integrujú podľa **regiónu**
+  (štátne sviatky a deň mena podľa krajiny/oblasti — najprv CZ a SK), **meninový kalendár**, **sviatky**, prípadne **pracovný
+  kalendár** (pracovné dni, smeny). Prepracuje sa **celá sekcia pravého aj ľavého kliku** na ClockGoo. Zdroj vizuálnych
+  referencií: používateľ hľadá uspokojivé dizajnové vzory (hľadanie referencií sa robí samostatne; nezačína sa implementáciou).
+  Súvisí s korunkou QueenGoo (sviatky a sezóny) a s indikátorom Nerušiť.
+- [ ] **Nerušiť — indikátor aj pri minimalizovanom ClockGoo** (8. 10., zadanie používateľa): keď je zapnuté Nerušiť, malá
+  žltá bodka (alebo miniatúrny žltý výkričník) vedľa minimalizovaného ClockGoo, v rovnakom štýle ako notifikačné guličky.
+  Dnes sa Nerušiť ukazuje len v rozbalenej karte.
+- [ ] **LensGoo — hĺbková kontrola (po resete session, o pár dní)** (8. 10., zadanie používateľa): vyhľadávanie a spúšťanie
+  aplikácií (kvalita výsledkov, poradie, ikony, pravý klik), vyhľadávanie súborov a priečinkov, a **najmä integrácia AI v
+  tomto menu** — podľa používateľa dnes nie je dobrá (rozhovor, odpovede, voľby, chyby). Úlohu zameriame na AI integráciu.
+  Súvisí s novým SAFE riadkom na písanie (rovnaký základ, `lib/spustac.luau`).
 - [ ] Ovládacie centrum Noctalie nad rohovou lištou vpravo — overiť na latte-lab (`latte-kvapky`: `bottom_right`)
 - [x] Príprava verejného vydania (6. 10.): licencia MIT (`LICENSE`, `TRETIE-STRANY.md`), verejné README iba o GOO,
   `ZMENY.md`, zoznam súkromných súborov (`setup/verejne/vynechat.txt`), `zverejnit.sh` robí vydanie so značkou

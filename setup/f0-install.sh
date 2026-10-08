@@ -36,12 +36,16 @@ TEST=(seatd kitty wlr-randr)
 AI=(ollama nodejs-npm)   # npm: nástroje predplatných (ChatGPT, Gemini, Copilot) inštaluje Nastavenia › AI bez sudo
 # --- hľadanie súborov (latte-hladaj): index mien, živé hľadanie, obsah ----------
 FIND=(plocate fd-find ripgrep python3-pyyaml)   # + kurátorský výber obchodu (YAML)
+# --- hry a programy z iných systémov (Barista: Windows cez Wine/Proton, Android cez Waydroid, DOS; rozhodnutie 8. 10.) ----
+#     umu-launcher a GE-Proton: setup/f1/hry.sh. Steam je voliteľný (RPM Fusion), Barista ho nepotrebuje.
+HRY=(wine winetricks cabextract innoextract bubblewrap 7zip icoutils dosbox-staging waydroid glibc-langpack-en
+     samba samba-client)   # samba: zdieľanie so zvyškom siete (setup/lab)
 
 dnf -y install dnf5-plugins
 dnf -y copr enable lionheartp/Hyprland
 
 dnf -y install "${GRAPHICS[@]}" "${VM[@]}" "${SESSION[@]}" "${HYPR[@]}" \
-               "${QT[@]}" "${FONTS[@]}" "${DEV[@]}" "${TEST[@]}" "${AI[@]}" "${FIND[@]}"
+               "${QT[@]}" "${FONTS[@]}" "${DEV[@]}" "${TEST[@]}" "${AI[@]}" "${FIND[@]}" "${HRY[@]}"
 
 [ ${#VM[@]} -eq 0 ] || systemctl enable --now vboxservice.service || true
 systemctl enable --now seatd.service || true

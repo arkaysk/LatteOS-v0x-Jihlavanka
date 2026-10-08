@@ -14,7 +14,7 @@ user="$(id -un)"
 sudo() { if [ -n "${SUDO_ASKPASS:-}" ]; then command sudo -A "$@"; else command sudo "$@"; fi; }
 
 # kontrola pred prvým zásahom do systému (DSanalyze.md): chýbajúci súbor = poškodený checkout, nie polovičná inštalácia
-BINS="latte-session latte-safe latte-greeter latte-greetd latte-goo-greeter latte-zamok latte-gooconfig latte-relacia latte-webapp latte-pady latte-spat latte-theme latte-app latte-ai latte-shellset latte-sysmon latte-apps latte-devices latte-backup latte-games latte-net latte-cloud latte-siet latte-otvor latte-kos latte-spustac latte-sandbox latte-kopia latte-tc latte-ostrovy latte-rychle latte-tapety latte-vyber latte-ponuka latte-prichytenie latte-snimka latte-emoji latte-nove-okno latte-nahravanie latte-maskoti latte-sklo latte-inspektor latte-terminal latte-hypr-udalosti latte-sukromie latte-kapsa-store latte-hra latte-kvapky latte-profil latte-upstream latte-marea latte-serpantinum latte-hladaj latte-riadok latte-pocasie latte-chatgoo latte-goo"
+BINS="latte-session latte-safe latte-greeter latte-greetd latte-goo-greeter latte-zamok latte-gooconfig latte-relacia latte-webapp latte-pady latte-spat latte-theme latte-app latte-ai latte-shellset latte-sysmon latte-apps latte-devices latte-backup latte-games latte-net latte-cloud latte-siet latte-otvor latte-kos latte-spustac latte-sandbox latte-kopia latte-tc latte-ostrovy latte-rychle latte-tapety latte-vyber latte-ponuka latte-prichytenie latte-snimka latte-emoji latte-nove-okno latte-nahravanie latte-maskoti latte-sklo latte-inspektor latte-terminal latte-hypr-udalosti latte-sukromie latte-kapsa-store latte-hra latte-kvapky latte-profil latte-upstream latte-marea latte-serpantinum latte-hladaj latte-riadok latte-pocasie latte-chatgoo latte-goo latte-instalator"
 missing=""
 for f in $BINS; do [ -f "$S/bin/$f" ] || missing="$missing $f"; done
 [ -z "$missing" ] || { echo "Chýbajú skripty v $S/bin:$missing — inštaláciu nezačínam (git status / git pull)."; exit 1; }
@@ -29,6 +29,8 @@ sudo usermod -aG latte "$user"
 echo "== binárky a skripty → /usr/bin"
 sudo install -Dm755 "$repo/target/release/latte-boot" /usr/bin/latte-boot
 for f in $BINS; do sudo install -Dm755 "$S/bin/$f" "/usr/bin/$f"; done
+sudo install -d /usr/share/latteos/recepty; for f in "$S"/recepty/*.json; do sudo install -Dm644 "$f" "/usr/share/latteos/recepty/$(basename "$f")"; done   # recepty hier (Barista)
+"$repo/setup/f1/hry.sh" || echo "   (umu-launcher / GE-Proton sa nepodarilo — spusti setup/f1/hry.sh ručne)"
 
 echo "== konfigurácie relácií → /usr/share/latteos"
 # bežiaci Hyprland sleduje svoje súbory a pri zmene sa znovu načíta: súbor sa preto vymieňa atomicky
