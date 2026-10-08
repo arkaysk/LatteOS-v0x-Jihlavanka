@@ -94,7 +94,7 @@ for n in 32 64; do
     rm -rf "$tmpg"
 done
 pl="$repo/resources/upstream/pleamar"
-pl_ver=0.2.24                                      # pripnutá verzia (resources/fetch.sh); staršia sa preloží znova
+pl_ver=0.2.29                                      # pripnutá verzia (resources/fetch.sh); staršia sa preloží znova
 pl_patched() { git -C "$pl" apply --reverse --check "$repo/resources/patches/$1.patch" 2>/dev/null; }   # už je v zdroji
 if command -v cargo >/dev/null && { ! "$pl/target/release/pleamar" --version 2>/dev/null | grep -q "pleamar $pl_ver " \
         || ! pl_patched pleamar-prazdne-tvary || ! pl_patched pleamar-ostre-okraje || ! pl_patched pleamar-pasy-tela \

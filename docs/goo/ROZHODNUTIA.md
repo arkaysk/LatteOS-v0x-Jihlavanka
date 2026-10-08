@@ -244,3 +244,4 @@ Nové rozhodnutie: jeden riadok sem (dátum, čo, prečo) a oprava platného zne
 | Kazeta (hry ako kazety) | skôr nie (6. 10.) |
 | LatteOS Classic | zrušený (5. 10.) |
 | nasadzovať pôvodnú plochu Kvapky | nie — iba engine Goo (6. 10.) |
+| SAFE Classic (labwc + shell Noctalie) | nahradí **SafeGoo** — engine Goo bez GPU (labwc + pixman + llvmpipe) so zložkami GooBar, QueenGoo, LensGoo, GooPower, ClockGoo a novou kvapkou SafeGoo v rohu (8. 10.) |
