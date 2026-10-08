@@ -19,42 +19,43 @@ s vyvíjaným Linuxom, kábel priamo do hlavného PC (hlavné PC `192.168.137.1`
 na hlavnom. VS Code na hlavnom PC je iba okno (editor, panel Claude, terminál). Koordinátor tak priamo vidí repo,
 kompiluje a skúša Goo na latte-lab.
 
-**Je potrebná aplikácia, ktorá drží spojenie?** Nie. Jediná služba navyše je **server LM Studia na hlavnom PC**
-(port 1234), lebo tam je grafická karta. Všetko ostatné je na latte-lab a spúšťa sa až na požiadanie:
+**Kde beží aplikácia Farma?** V **dvoch častiach**, lebo grafická karta je na hlavnom PC a repo s pracovníkmi na
+latte-lab (podrobne §4):
 
-| kde | čo | beží stále? |
+| časť | kde | čo robí |
 |---|---|---|
-| hlavné PC | VS Code (okno) | keď pracuješ |
-| hlavné PC | **LM Studio server** — model sa nahrá do GPU až pri prvej úlohe a po nečinnosti sa uvoľní | áno, ako služba (malý) |
-| latte-lab | VS Code Server + **Claude Code = koordinátor** (predplatné) | keď je otvorené VS Code |
-| latte-lab | **`farma`** — skript, ktorý spustí pracovníka na jednu úlohu a skončí | iba počas úlohy |
-| latte-lab | pracovník = Claude Code napojený na LM Studio (limit predplatného nemíňa) | iba počas úlohy |
+| **Farma Strážca** | hlavné PC (Windows), ikona pri hodinách | sleduje vyťaženie RTX 3060 a programy, ktoré ju potrebujú (hry, strih). Má tlačidlo **▶ / ⏸**. Uvoľní model z LM Studia, keď GPU potrebuješ ty. Stav posiela farme. |
+| **LM Studio server** | hlavné PC | počíta model; nahrá ho až pri úlohe |
+| **Farma** (služba) | latte-lab | front úloh, spúšťa a pozastavuje pracovníkov, ukladá ich priebeh. Má **webový panel**: úlohy, živý náhľad, čo agent práve robí, diff, tlačidlá Prevziať / Zahodiť / Vrátiť. |
+| **Koordinátor** | latte-lab (VS Code + Claude Code) | píše zadania do frontu, kontroluje diffy |
+
+Panel Farmy sa otvorí v prehliadači na hlavnom PC alebo **priamo vo VS Code**. Remote-SSH prepošle port z latte-lab
+sám, takže stačí `http://localhost:8781`. Neskôr môže byť panel aj kvapkou v Goo na latte-lab.
 
 **Kde sa zadávajú úlohy?** Stále **v paneli Claude Code vo VS Code**, ako doteraz. Koordinátor (Claude) sám
-rozhodne, čo urobí sám a čo pošle farme. Mechanickú časť napíše ako zadanie a spustí `farma` v pozadí. Keď pracovník
-skončí, koordinátor si pozrie iba diff a dá ti vedieť. Ty sa nemusíš učiť nový nástroj, iba môžeš povedať
-„toto daj farme“.
+rozhodne, čo urobí sám a čo pošle farme. Mechanickú časť napíše ako zadanie a pridá do frontu (`farma pridaj
+zadanie.md`). Farma ho spustí, **až keď je GPU voľné a farma beží (▶)**. Ty môžeš úlohu pridať aj sám v paneli Farmy.
+Podagenti v Claude Code (`.claude/agents`) vedia používať iba modely Claude, preto lokálny model volá Farma ako
+samostatný proces.
 
 ```
- HLAVNÉ PC (Windows)                               LATTE-LAB (Linux)
- ┌────────────────────────────┐   Remote-SSH       ┌──────────────────────────────────────────┐
- │ VS Code — iba okno         │══════════════════▶ │ VS Code Server                           │
- │                            │                    │  └ Claude Code = KOORDINÁTOR             │
- │                            │                    │     (Opus/Sonnet, predplatné)            │
- │                            │                    │        │ zadanie .md                     │
- │                            │                    │        ▼                                 │
- │ LM Studio server :1234  ◀──┼──── HTTP ──────────│   farma <úloha>   (skript)               │
- │  RTX 3060 12 GB + 80 GB RAM│   192.168.137.1    │     └ Claude Code s lokálnym modelom     │
- │  /v1/messages              │                    │        v ~/farma/wt-<úloha> (worktree)   │
- └────────────────────────────┘                    │        → commit na vetve farma/<úloha>   │
-                                                   │        ◀ koordinátor číta git diff        │
-                                                   └──────────────────────────────────────────┘
+ HLAVNÉ PC (Windows)                                  LATTE-LAB (Linux)
+ ┌──────────────────────────────────┐  Remote-SSH     ┌───────────────────────────────────────────┐
+ │ VS Code — iba okno               │═══════════════▶ │ Claude Code = KOORDINÁTOR (predplatné)    │
+ │   + panel Farmy (localhost:8781) │                 │      │ farma pridaj <zadanie>             │
+ │                                  │                 │      ▼                                    │
+ │ Farma Strážca  [▶/⏸] ● GPU voľné │ ── stav ──────▶ │ Farma (služba, :8781)                     │
+ │   NVML: vyťaženie, VRAM, procesy │ ◀─ ▶/⏸, stav ── │   front · pracovníci · záznam · diffy     │
+ │   lms unload pri hre             │                 │      │ spustí, keď GPU voľné a ▶          │
+ │                                  │                 │      ▼                                    │
+ │ LM Studio server :1234  ◀────────┼──── HTTP ─────── │ pracovník = Claude Code + lokálny model   │
+ │  RTX 3060 12 GB + 80 GB RAM      │                 │   v ~farma/wt-<úloha>, vetva farma/<úloha>│
+ └──────────────────────────────────┘                 └───────────────────────────────────────────┘
 ```
 
-Prečo práve takto: LM Studio od verzie 0.4.1 hovorí formátom Anthropic (`/v1/messages`). Pracovník je preto **ten
-istý Claude Code** s tými istými nástrojmi (čítanie, úpravy, bash), iba s inou adresou modelu. Podagenti v Claude
-Code (`.claude/agents`) vedia používať iba modely Claude, preto lokálny model treba volať cez samostatný proces,
-teda cez skript `farma`.
+Prečo pracovník = Claude Code: LM Studio od verzie 0.4.1 hovorí formátom Anthropic (`/v1/messages`). Pracovník je
+preto **ten istý Claude Code** s tými istými nástrojmi (čítanie, úpravy, bash), iba s inou adresou modelu, a **limit
+predplatného nemíňa**.
 
 ---
 
@@ -104,47 +105,69 @@ do `ROZHODNUTIA.md`, čokoľvek, čo ide na GitHub.
 
 ---
 
-## 4. Farma na latte-lab
+## 4. Aplikácia Farma
 
-### 4.1 Prvé nastavenie (jednorazovo)
+### 4.1 Farma Strážca (hlavné PC, Windows)
 
-Pracovník beží pod **samostatným používateľom `farma` bez sudo**. Nevidí `.claude-local/latte-lab.md` (heslo) ani
-tvoje kľúče SSH a GitHub. Koordinátor (beží ako `arkay`) ho smie spustiť iba cez jeden presne povolený príkaz:
+Malý program pri hodinách (Python + `pynvml` + `pystray`; neskôr ho možno prepísať v Tauri, ak bude treba).
 
-```bash
-sudo useradd -m -s /bin/bash farma
-sudo -u farma git clone ~arkay/jihlavanka001 ~farma/repo      # miestny klon, bez prístupu na GitHub
-sudo -u farma bash -c 'curl -fsSL https://claude.ai/install.sh | bash'   # Claude Code pre farmu
-sudo install -m 755 setup/lab/farma.sh /usr/local/bin/farma-beh
-echo 'arkay ALL=(farma) NOPASSWD: /usr/local/bin/farma-beh' | sudo tee /etc/sudoers.d/farma
+**Ikona a ponuka:** ● zelená = farma pracuje · ● žltá = čaká na voľné GPU · ● sivá = pauza. Položky:
+**▶ Spustiť / ⏸ Pauza**, *Pauza na 1 h / do rána*, *Otvoriť panel*, *Uvoľniť model teraz*.
+
+**Kedy je GPU „obsadené“** (stačí jedna podmienka):
+
+- beží program zo zoznamu „GPU potrebujem ja“ (napr. `steam`, hry, `obs64`, `Resolve`, `Premiere`) — zoznam sa
+  upravuje v nastaveniach;
+- farma práve nepočíta a GPU je napriek tomu vyťažené nad ~25 % dlhšie ako 20 s (teda ho používa niečo iné);
+- iné programy zaberajú toľko VRAM, že model sa nezmestí.
+
+**Kedy je „voľné“:** nič z toho neplatí aspoň **3 minúty** (aby farma neskákala pri krátkych výkyvoch).
+
+**Čo urobí pri zmene:**
+
+| udalosť | Strážca | Farma na latte-lab |
+|---|---|---|
+| GPU obsadené / ⏸ | po dokončení rozpísanej odpovede `lms unload --all` (uvoľní VRAM aj RAM) | nové úlohy nespúšťa, bežiacich pracovníkov **zmrazí** (`SIGSTOP`) |
+| GPU voľné a ▶ | nič (model sa nahrá sám pri prvej požiadavke) | pracovníkov **rozmrazí** (`SIGCONT`) a pokračuje vo fronte |
+| pauza dlhšia ako ~1 h | — | zmrazeného pracovníka ukončí a neskôr ho obnoví (`claude --resume`) v tej istej kópii repa |
+
+Strážca posiela stav farme každých pár sekúnd (`POST http://latte-lab:8781/api/gpu`, s tokenom). Ak Strážca nebeží
+(PC vypnuté), farma to berie ako „obsadené“.
+
+### 4.2 Farma (latte-lab, služba `systemd --user`)
+
+Jeden program (Python, ~500–800 riadkov; webový panel v jednom HTML súbore), beží ako používateľ `farma`.
+
+- **Front úloh:** `~farma/ulohy/{cakajuce,bezi,hotove,vratene}/<id>.md`. Pridať sa dá z príkazového riadka
+  (`farma pridaj`), z panela alebo neskôr nástrojom MCP.
+- **Pracovník:** pre každú úlohu `git worktree` a vetva `farma/<id>`. Spustí sa
+  `claude -p --output-format stream-json` s adresou LM Studia. Súčasne beží **jeden, najviac dvaja**, lebo
+  grafická karta je iba jedna.
+- **Záznam:** z prúdu udalostí Claude Code sa ukladá, čo pracovník robí (číta súbor X, upravuje Y, spúšťa
+  `cargo build`, jeho text). Panel to ukazuje naživo.
+- **Koniec úlohy:** spustí kontrolu z „Hotovo, keď“, urobí commit a zapíše zhrnutie a štatistiku (čas, tokeny,
+  zmenené súbory).
+
+**Webový panel** (`:8781`):
+
+```
+┌ Farma ──────────────────────────── GPU: ● voľné (3 %)  Model: qwen3-coder-30b  [⏸ Pauza] ┐
+│ Čakajúce (3)        │ Beží: preklad-tvorca-goo  (4 min, 2 140 tok)                       │
+│  · ikony-lensgoo    │  12:01 číta session/goo/tvorca.luau                                │
+│  · zmeny-okt        │  12:02 upravuje session/goo/translations/sk …                      │
+│  · test-hodiny      │  12:04 spúšťa: cargo build -p goo   ✓                              │
+│ Hotové (2)          │  ─────────────────────────────────────────────                     │
+│  ✓ logy-hyprland    │  [Diff]  [Prevziať do vetvy]  [Vrátiť s poznámkou]  [Zahodiť]       │
+└─────────────────────┴────────────────────────────────────────────────────────────────────┘
 ```
 
-`~farma/.config/farma.env` (čitateľné iba pre `farma`):
+**Prevziať** = merge `farma/<id>` do tvojej pracovnej vetvy v hlavnej kópii (`~arkay/jihlavanka001`). Merge
+a push na GitHub robíš ty alebo koordinátor, nie farma.
 
-```bash
-ANTHROPIC_BASE_URL=http://192.168.137.1:1234
-ANTHROPIC_AUTH_TOKEN=<token z LM Studia>
-CLAUDE_CODE_ATTRIBUTION_HEADER=0
-FARMA_MODEL=qwen3-coder-30b-a3b-instruct    # presný názov podľa `lms ls`
-```
+### 4.3 Koordinátor a farma
 
-Test spojenia z latte-lab: `curl http://192.168.137.1:1234/v1/models -H "Authorization: Bearer <token>"`.
-
-### 4.2 Priebeh jednej úlohy
-
-```
-koordinátor (VS Code)                     farma (latte-lab)
-1. napíše zadanie  ~/farma-ulohy/<id>.md
-2. spustí v pozadí:  farma <id>    ──▶  3. git fetch z hlavnej kópie, worktree farma/<id>
-                                        4. Claude Code s lokálnym modelom urobí úlohu,
-                                           spustí kontrolu z „Hotovo, keď“
-                                        5. commit na vetve farma/<id>, zhrnutie do <id>.vysledok.md
-6. dostane oznámenie o konci       ◀──
-7. git diff main..farma/<id>  (lacné, iba zmeny)
-8. dobré → merge do pracovnej vetvy / zlé → oprava zadania, znova 2.
-```
-
-Zadanie má vždy tie isté časti, aby mu malý model rozumel:
+- Pravidlo v `CLAUDE.md`: mechanické úlohy (§3) Claude nerobí sám, ale napíše zadanie a dá `farma pridaj`.
+- Šablóna zadania (aby mu malý model rozumel):
 
 ```markdown
 # Úloha: preklad textov Tvorcu Goo do sk
@@ -154,23 +177,47 @@ Nerob: nemeň logiku, nemeň iné súbory, nič nepushuj
 Hotovo, keď: `cargo build` prejde / súbor X obsahuje …
 ```
 
-Viac úloh naraz: koordinátor môže spustiť niekoľko `farma` v pozadí. LM Studio ich však na jednej grafickej karte
-spracuje rad za radom, takže reálne **jedna až dve súčasne**.
+- Kontrola: koordinátor (Sonnet) číta iba `git diff main..farma/<id>`. Malý diff je lacný.
+- Neskôr: nástroj MCP `farma_pridaj / farma_stav / farma_vysledok`, ktorý môže byť súčasťou plánovaného `latte-mcp`.
 
-### 4.3 Čo treba naprogramovať
+### 4.4 Inštalácia (jednorazovo)
 
-| súbor | čo robí | rozsah |
+```bash
+# latte-lab
+sudo useradd -m -s /bin/bash farma              # bez sudo, nevidí ~/.claude-local ani kľúče GitHub
+sudo -u farma git clone ~arkay/jihlavanka001 ~farma/repo
+sudo -u farma bash -c 'curl -fsSL https://claude.ai/install.sh | bash'
+# ~farma/.config/farma.env: ANTHROPIC_BASE_URL=http://192.168.137.1:1234, ANTHROPIC_AUTH_TOKEN=<token LM Studia>,
+#   CLAUDE_CODE_ATTRIBUTION_HEADER=0, FARMA_MODEL=<názov z `lms ls`>, FARMA_TOKEN=<token pre Strážcu>
+```
+
+Na hlavnom PC: LM Studio podľa §3 a Strážca (Python + `pip install pynvml pystray`, spúšťaný pri prihlásení).
+
+### 4.5 Čo naprogramovať (poradie)
+
+| krok | súbor | výsledok |
 |---|---|---|
-| `setup/lab/farma.sh` | worktree, spustenie `claude -p` s `farma.env`, časový limit, commit, súbor s výsledkom | ~80 riadkov bash |
-| `setup/lab/farma-instaluj.sh` | používateľ, sudoers, Claude Code pre farmu, šablóna `farma.env` | ~40 riadkov |
-| `.claude/agents/` alebo pravidlo v `CLAUDE.md` | kedy a ako má koordinátor posielať úlohy farme, šablóna zadania | text |
-| neskôr: nástroj MCP v `latte-mcp` | `farma_zadaj`, `farma_stav`, `farma_vysledok` namiesto bash | až keď sa farma osvedčí |
+| 1 | `setup/lab/farma/farma.py` — front + pracovník + záznam (bez panela) | úlohy idú cez príkazový riadok |
+| 2 | `setup/lab/farma/panel.html` + API | náhľad, ▶/⏸, diff, prevziať |
+| 3 | `setup/lab/farma/strazca.py` (Windows) | GPU stráženie, uvoľnenie modelu |
+| 4 | `setup/lab/farma/instaluj.sh`, služba systemd | farma beží sama aj po reštarte |
+| 5 | pravidlo v `CLAUDE.md`, neskôr MCP | koordinátor posiela úlohy sám |
 
-### 4.4 Práca cez noc (voliteľné)
+### 4.6 Inšpirácie na GitHube (preberať, nevymýšľať)
 
-Ak má farma pracovať aj bez otvoreného VS Code, front `~/farma-ulohy/cakajuce/` prechádza služba `systemd --user` na
-latte-lab. Na hlavnom PC musí bežať LM Studio a PC nesmie zaspať. Ráno koordinátor skontroluje vetvy `farma/*`.
-Tu sa oplatí aj silnejší `gpt-oss-120b`.
+Tvoju staršiu inšpiráciu „AI farma“ som v repách `jihlavanka001` ani `latteos` (ani v ich histórii) nenašiel. Ak si
+ju dával niekam inam, stačí poslať odkaz. Podobné hotové projekty (8. 10. 2026):
+
+| projekt | čo z neho vziať | prečo nie celý |
+|---|---|---|
+| [Dicklesworthstone/claude_code_agent_farm](https://github.com/Dicklesworthstone/claude_code_agent_farm) (~900 ★) | sledovanie agentov, automatický `/clear`, obnova zaseknutého agenta, správa o behu | cieli na 20+ agentov s predplatným Claude v tmux, nepozná GPU ani lokálny model |
+| [matank001/clodfarm](https://github.com/matank001/clodfarm) | **pauza pri 80 % týždenného limitu Claude**, ovládanie z aplikácie Claude v mobile | ťažký (kontajner, AWS, platby), cieľ je iný |
+| [vraj00222/agent-farm](https://github.com/vraj00222/agent-farm) | presne náš postup: worktree na úlohu, živý výstup, diff, prevziať/zahodiť, `--resume` | iba macOS (Electron) |
+| [getpaseo/paseo](https://github.com/getpaseo/paseo) (~20 tis. ★) | démon + klienti (Windows, Linux, web, mobil), worktree, diffy, **pluginy** (vedia meniť prostredie agenta) | veľký nástroj popri VS Code; GPU stráženie by bol vlastný plugin. **Alternatíva** ku krokom 2–4, ak by vlastný panel rástol |
+
+Nikto z nich nerobí to hlavné: **spúšťať lokálny model iba vtedy, keď GPU nepotrebuješ ty**. To je vlastná časť
+(Strážca). Front a panel sú malé, preto navrhujem vlastnú jednoduchú Farmu. Paseo ber ako zálohu, ak by sme
+potrebovali viac (mobil, viac strojov).
 
 ---
 
@@ -230,18 +277,19 @@ Cieľ: limit vydrží **do pondelka 15:00**. V pondelok pred resetom zapísať, 
 1. **Hneď (bez inštalácie):** v Claude Code prepnúť `/model` na Sonnet (alebo `opusplan`) a začať dodržiavať §6.
 2. **LM Studio na hlavnom PC:** aktualizovať na ≥ 0.4.1 a stiahnuť `gpt-oss-20b` a `Qwen3-Coder-30B-A3B-Instruct`.
    Nastaviť server podľa §3 (sieť, token, JIT, auto-unload) a firewall iba pre `192.168.137.0/24`.
-3. **Test z latte-lab** (v termináli VS Code): `curl` z §4.1, potom ručne jeden beh Claude Code s premennými
-   z `farma.env` na skúšobnú úlohu. Overiť, že model volá nástroje (číta a upravuje súbory). To isté
-   s druhým modelom; zapísať rýchlosť (tokeny/s v LM Studiu) a či úlohu dotiahol.
-4. **Povedať Claudovi vo VS Code:** „Podľa `inspo/dev-ai-prostredie.md` §4 urob `farma.sh` a `farma-instaluj.sh`.“
-   Inštaláciu potom spustí on (heslo pre sudo pozná z `.claude-local`).
-5. **Prvá skutočná úloha cez farmu** (napr. preklad textov jednej karty Goo), kontrola diffu, merge.
-6. Výsledok a voľbu modelu zapísať do `docs/goo/ROZHODNUTIA.md`, úlohu farmy do `ROADMAP.md`.
+3. **Test z latte-lab** (terminál vo VS Code): `curl http://192.168.137.1:1234/v1/models -H "Authorization: Bearer
+   <token>"` a potom ručne jeden beh Claude Code s premennými z §4.4 na skúšobnú úlohu. Overiť, že model volá
+   nástroje. To isté s druhým modelom; zapísať rýchlosť (tokeny/s) a či úlohu dotiahol.
+4. **Povedať Claudovi vo VS Code:** „Podľa `inspo/dev-ai-prostredie.md` §4.5 urob krok 1 a 4.“ Najprv farma iba
+   z príkazového riadka, potom panel (krok 2) a Strážca (krok 3).
+5. **Prvá skutočná úloha cez farmu** (napr. preklad textov jednej karty Goo), kontrola diffu, prevzatie.
+6. Výsledok a voľbu modelu zapísať do `docs/goo/ROZHODNUTIA.md`, Farmu ako úlohu do `ROADMAP.md`.
 
 ## 9. Otvorené otázky
 
-- Má farma bežať aj cez noc (§4.4)? Hlavné PC by muselo ostať zapnuté s LM Studiom.
-- Kedy hlavné PC farma nesmie zaťažovať (hry, strih)? Dá sa to riešiť ručne (vypnúť server) alebo časovým oknom.
+- Zoznam programov „GPU potrebujem ja“ (hry, strih, OBS…)?
+- Má farma bežať aj cez noc? Hlavné PC by muselo ostať zapnuté (Strážca to vie ukázať a v ponuke „do rána“ zapnúť).
+- Pridať do panela aj stav týždenného limitu Claude (podľa clodfarm) a pauzu koordinátora pri ~80 %?
 
 ## Zdroje
 
@@ -253,3 +301,5 @@ Cieľ: limit vydrží **do pondelka 15:00**. V pondelok pred resetom zapísať, 
   <https://aiproductivity.ai/news/gemma-4-26b-local-coding-no-gpu/>
 - Gemini CLI zadarmo: <https://www.tembo.io/blog/gemini-cli-pricing>,
   <https://developers.google.cn/gemini-code-assist/resources/faqs?hl=en>, <https://geminicli.com/docs/quota-and-pricing>
+- Podobné projekty: <https://github.com/Dicklesworthstone/claude_code_agent_farm>,
+  <https://github.com/matank001/clodfarm>, <https://github.com/vraj00222/agent-farm>, <https://github.com/getpaseo/paseo>
