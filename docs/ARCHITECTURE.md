@@ -174,6 +174,8 @@ Podľa [ROADMAP.md](../ROADMAP.md):
 
 ## Ďalej
 
+- [Východiskový návrh: rámec, režimy, štart](NAVRH-STARTU.md)
+- [Optimalizácia — pravidlá a merania](OPTIMALIZACIA.md)
 - [LatteOS Goo — Pravidlá](goo/PRAVIDLA.md)
 - [Engine Goo — API](../session/goo/README.md)
 - [Setup — Inštalácia](../setup/lab/README.md)
