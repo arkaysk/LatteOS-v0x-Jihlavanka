@@ -1,4 +1,14 @@
-Podklad: [technologický radar] , [technologický radar], [technologický radar]
+Podklady: 
+
+ docs/NAVRH-STARTU.md: rámec, režimy a štart systému (r. 14–164), doslovne.
+
+ docs/OPTIMALIZACIA.md: pravidlá a merania zo sekcie O (r. 912–945), doslovne.
+
+ docs/ARCHITECTURE.md: v časti „Ďalej“ sú odkazy na NAVRH-STARTU a OPTIMALIZACIA.
+
+ nspo/LatteOS – technologický radar 2026.md : zdroj odkial čerpat a kam zapisovat najnovšie vyhladane zaujimavosti použitelne pre LatteOS.
+
+ inspo/dalsie_inspiracie.md : ručne editovany subor kam vkladam ked najdem niečo zaujimave.
 
 
 ## ROADMAP2 — LatteOS od nápadu po hotový produkt
