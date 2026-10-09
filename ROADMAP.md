@@ -1012,3 +1012,410 @@ Kľúčové zistenie: pri softvérovom kreslení stojí **každá snímka** komp
   - [ ] Rozšírenia ako pluginy TC (packer, súborový systém, lister, stĺpce) cez vlastné rozhranie LatteOS
 - [ ] Živá tapeta podľa aura (mpv, pauza pri zakrytí a hre, farby z videa); výber tapiet a prechody podľa skwd-wall
 - [ ] Shaderové efekty (prechody skwd-wall) na popupy a panely LatteOS a cez plugin Hyprlandu na okná — iba stupeň Plný (H)
+
+---
+
+## ROADMAP2 — LatteOS od nápadu po hotový produkt
+
+**Pridané 9. 10. 2026.** Pôvodná roadmapa vyššie zostáva bez zmien a zachováva doterajší plán aj
+záznam práce. Táto časť pridáva produktovú postupnosť: LatteOS nie je iba grafické rozhranie Goo,
+ale integrovaný systém nad Linuxom — od štartu a relácie cez kompozitor, shell, aplikácie a služby
+po hardvérovú podporu, inštaláciu, obnovu a vydanie.
+
+ROADMAP2 zároveň zachytáva **stav a pôvod práce pri prechode z Classicu na GOO** a skladá ho do
+postupnosti až po hotový produkt. Je to pracovný podklad na porovnanie so starou roadmapou; nejde
+zatiaľ o rozhodnutie, že sa staré položky majú vymazať alebo presunúť. Podrobné pôvodné znenie,
+merania a históriu naďalej uchováva roadmapa vyššie; ROADMAP2 ich zhŕňa podľa súčasného produktu.
+
+### Pravidlá práce s ROADMAP2
+
+- Vývojový postup je **po etapách produktu**, ale pracovné prúdy v implementačnej etape môžu napredovať
+  paralelne, ak nemajú vzájomnú závislosť.
+- Každá nová funkcia prejde primerane veľkým cyklom: **nápad a používateľský problém → rozhodnutie →
+  technický návrh a riziká → prototyp → implementácia → integrácia → overenie → vydanie a údržba**.
+  Pri malej zmene sa kroky môžu spojiť; pri zmene štartu, bezpečnosti alebo formátu dát sa nevynecháva
+  návrh, obnova ani test.
+- Nápad v `inspo/` nie je automaticky schválená úloha. Do aktívnej práce sa dostane po pomenovaní
+  prínosu pre LatteOS, porovnaní s tým, čo už existuje, a rozhodnutí o prijatí.
+- **Rozlíšiť pôvod aj platnosť.** Úlohy zo zrušenej Classic vetvy sú história alebo kandidáti na
+  opätovné použitie, nie automaticky úlohy LatteOS GOO. Práca na spoločnej linuxovej platforme a
+  aplikáciách sa prenáša, ak je stále súčasťou produktu. Funkcie vytvorené po prechode sa označia
+  ako GOO.
+- **Detail ostáva pri svojom technickom zdroji, stav patrí aj sem.** ROADMAP2 uvádza, čo je
+  dokončené, rozhodnuté a otvorené, ale podrobné kroky, merania a históriu necháva vo fázach
+  vyššie alebo v dokumentácii. Tak sa pri pondelkovom porovnaní dá určiť, čo premiestniť, zlúčiť,
+  ponechať ako históriu alebo zrušiť.
+- Značky `[x]`, `[~]`, `[ ]` zachovávajú význam používaný v pôvodnej časti roadmapy: hotové, čiastočné /
+  rozpracované, otvorené. **Otvorená otázka alebo nápad bez rozhodnutia nie je schválená implementačná
+  úloha.**
+- Pri každom významnom míľniku sa uvedie výsledok, závislosti a dôkaz overenia (test, meranie, skúška
+  na zariadení alebo používateľský scenár). Funkcia je hotová až vtedy, keď je súčasťou použiteľného
+  systému, nie iba prototypu alebo samostatného programu.
+- Záväzné pravidlá plochy sú v [LATTEOS-GOO.md](LATTEOS-GOO.md), záznam používateľských rozhodnutí
+  v [docs/goo/ROZHODNUTIA.md](docs/goo/ROZHODNUTIA.md), technické detaily v dokumentácii príslušného
+  subsystému.
+
+### Stav vývoja pri prechode na GOO
+
+Toto je orientačný súpis k 9. 10. 2026 podľa stavu a dátumov v pôvodnej roadmap. Značky hovoria
+o **pôvode a platnosti**, nie o technickom stave:
+
+- **HISTÓRIA / CLASSIC** — vzniklo pre zrušený Classic; už sa to nevyvíja ako samostatná plocha.
+- **ZÁKLAD** — vzniklo pred GOO alebo popri ňom, ale stále slúži celej LatteOS a prenáša sa.
+- **GOO** — rozhodnutie alebo práca po prechode na jedinú edíciu LatteOS GOO.
+- Stav práce je zvlášť označený `[x]` hotové, `[~]` čiastočne/rozpracované, `[ ]` otvorené.
+
+#### A. Pôvodná vetva LatteOS Classic — história, nie cieľová edícia
+
+- [x] Classic bol 5. 10. 2026 zrušený; samostatná klasická plocha, jej lišta, panely a spúšťač
+  už nie sú cieľom ďalšieho vývoja.
+- [x] V tejto vetve vznikli alebo sa rozpracovali rozhrania a aplikácie LatteOS (Noctalia/Quickshell,
+  Nastavenia, Súbory, Monitor, App Manager, Barista, Heidelberg, AI/Text Bar, témy a živá tapeta).
+  Ich jednotlivé funkcie majú v pôvodných fázach rôzny stav — dokončené, prototypové aj otvorené;
+  tento súhrn ich **neoznačuje hromadne za hotové**.
+- [ ] Pri pondelkovom porovnaní rozdeliť položky tejto vetvy na: (1) iba Classic — archivovať,
+  (2) spoločný backend alebo aplikácia — ponechať ako základ, (3) GUI/funkcia stále potrebná v GOO —
+  preniesť do správneho pracovného prúdu, (4) zastarané alebo duplicitné — uzavrieť.
+- [ ] Ako Classic-only preveriť najmä pôvodnú klasickú lištu/panely/spúšťač a starú plochu
+  `session/kvapky`; GOO používa engine `session/goo`, nie pôvodnú scénu Kvapky.
+
+#### B. Prenesený základ systému — platný aj pre GOO
+
+- [x] **F0–F2 / ZÁKLAD:** Fedora VM a balíkový základ; softvérové vykresľovanie; NORMAL/SAFE,
+  `latte-boot`, počítanie pádov a návrat do SAFE; Hyprland Lua vrstva, režimy okien, skratky,
+  viacstupňový výkon a herný režim. Tieto práce vznikli pred plným prechodom na GOO, no sú
+  základom súčasného produktu.
+- [x] **ZÁKLAD / systémové rozhrania:** greetd a prihlasovanie, systemd relácia, profily
+  prostredí, portály, PipeWire, D-Bus a pomocné služby sú zavedené v rozsahu opísanom vo F1–F4.
+- [x] **ZÁKLAD / bezpečnosť:** oddelené profily dôvery, D-Bus filter, NET pre Flatpak aj natívne
+  aplikácie a Setup Plan sú implementované podľa F6.
+- [~] **ZÁKLAD / aplikácie:** Súbory, Monitor, Správca zariadení, App Manager, Barista, záloha,
+  cloud a synchronizácia majú použiteľné časti; nejde však automaticky o finálnu integráciu
+  ani úplné pokrytie. Otvorené pokračovania sú rozdelené podľa produktu v časti C.
+- [~] **ZÁKLAD / AI:** `latte-ai` už pripája lokálne, domáce a cloudové modely aj vybrané
+  poskytovateľské CLI. Používateľské AI v LensGoo má samostatne známu kvalitatívnu medzeru.
+- [ ] Reálny hardvér NVIDIA, širšia kompatibilita zariadení, testy čistej inštalácie a dlhodobá
+  stabilita ešte nie sú uzavreté brány produktu.
+
+#### C. Aktuálna produktová vetva LatteOS GOO — od 5. 10. 2026
+
+- [x] **Rozhodnutie:** jediná edícia je LatteOS GOO; nasadzuje sa engine Goo (`session/goo`),
+  pôvodná plocha Kvapky sa nenasadzuje. Pravidlá produktu sú v
+  [LATTEOS-GOO.md](LATTEOS-GOO.md).
+- [x] **Rozhodnutia o správaní GOO:** myš je prvá, klávesnica doplnok; cieľom sú návyky Windows 11;
+  kvapky sú káva, Goo má vlastný vzhľad a karty vyrastajú z kvapiek. Podrobné záväzné pravidlá sú
+  v [LATTEOS-GOO.md](LATTEOS-GOO.md), nie v historických Classic návrhoch.
+- [x] **Rozhodnutie o SAFE:** plné SDF Goo je pri softvérovom kreslení príliš pomalé; SAFE preto
+  používa jednoduché statické kvapky. Ide o stanovený smer, nie dôvod pokúšať sa nasadiť plný
+  dynamický engine v pixman režime.
+- [x] **Rozhodnutie o poradí práce:** najprv dokončiť použiteľné GOO a systémový zážitok; nápady
+  z inšpirácie alebo nové externé projekty sa nepridávajú automaticky ako závislosti.
+- [~] **GOO / engine a plocha:** jadro pravidiel kvapiek, GooBar a správa okien, LensGoo, GooPower,
+  QueenGoo, ClockGoo, karty, upozornenia, sklo a používateľské kvapky sú implementované v rôznom
+  rozsahu a priebežne overované. Samotný engine ešte nie je hotový produkt; SafeGoo a ďalšie
+  otvorené overenia sú uvedené nižšie. Detailný stav ostáva v F3·G.
+- [x] **GOO / integrácia:** GOO je predvolená relácia; Noctalia poskytuje rohovú lištu a systémové
+  funkcie. GooBar pre viac monitorov, profil používateľa, nastavenia kvapiek, Tvorca Goo, skratky,
+  obnovenie relácie, webové aplikácie, Zoxide a DiskTree majú implementované časti opísané vo F3·G.
+- [x] **GOO / verejné vydanie:** príprava a vydanie 0.3.0 „Jihlavanka“ sú zaznamenané ako hotové.
+  [ ] Čistú inštaláciu vydaného verejného stromu treba ešte overiť.
+- [~] **GOO / SAFE:** existuje skúšobný SafeGoo so statickými kvapkami a nízkou spotrebou v
+  softvérovom režime. Chýba dokončenie ovládania okien a potrebných kvapiek/diagnostiky a jeho
+  zapojenie ako predvoleného SAFE shellu.
+- [~] **GOO / LensGoo a AI:** základ spúšťača, hľadania a AI existuje; hĺbková kontrola podľa
+  používateľa má zamerať predovšetkým kvalitu AI rozhovoru, odpovedí, výberov a chybových stavov.
+- [~] **GOO / aplikácie a integrácia:** viacero funkcií je hotových, ale ostávajú reálne testy
+  telefónu/tlačiarne/skenera, verejnej inštalácie, skutočného Beepera, výkonnostné a prekladové
+  medzery a dokončenie App Managera/Baristu. Podrobnosti sú v F3·G a F4–F8.
+- [ ] **GOO / ďalšie rozhodnutia:** nové návrhy z `inspo/` (napr. reakcia kvapiek na hudbu,
+  vizuálne prechody, ďalšie cloudové či bezpečnostné nástroje) sú prieskum, kým sa výslovne
+  neprijmú; existujúce návrhy a verdikty sú v [inspo/dalsie_inspiracie.md](inspo/dalsie_inspiracie.md).
+
+#### D. Otvorené pokračovania podľa pracovného prúdu
+
+Toto sú hlavné zostávajúce celky, nie úplný výpis každého nezaškrtnutého políčka. Presný rozsah sa
+pri porovnaní v pondelok potvrdí oproti pôvodnej roadmap.
+
+- [ ] **LatteOS štart a relácia:** dokončiť tok čistej inštalácie → boot → prihlásenie → GOO/SAFE →
+  obnova po zlyhaní; odlíšiť hotový F1 boot základ od nedokončeného SafeGoo a koncových testov.
+- [ ] **GooEngine:** uzavrieť zdieľanie jednej logiky a dvoch vzhľadov NORMAL/SAFE; doplniť chýbajúce
+  ovládanie okien v labwc, SafeGoo, beh monitorov pripojených za chodu, pokoj pri nečinnosti a
+  meranie výkonu po rozšírení funkcií.
+- [ ] **Goo kvapky:** dokončiť konkrétne otvorené úlohy GooBaru, LensGoo, GooPower, ClockGoo,
+  QueenGoo a ChatGoo. Ďalšie kvapky a vizuálne efekty posudzovať samostatne podľa prínosu a výkonu.
+- [ ] **Súbory:** nadviazať na hotové dvojpanely, prenosy, archívy, vyhľadávanie, sieť a cloud;
+  uzavrieť otvorené rozšírenia/UX, odolnosť pri chybách a potrebné overenie hardvéru.
+- [ ] **Monitor:** nadviazať na existujúce procesy, služby, autoruns a senzory; dokončiť stálu
+  telemetriu a pohľad na spotrebu podľa aplikácie v čase, bez nepresných alebo skrytých zberov.
+- [ ] **Správca zariadení a HW:** dokončiť overenie kompatibility a reálneho HW, ovládačov,
+  tlače/skenerov/telefónov a bezpečnej obnovy po zmene.
+- [ ] **App Manager a Barista:** dokončiť stav úloh, históriu a používateľský tok inštalácie;
+  Barista pokračuje podľa fáz v `docs/barista/NAVRH.md`, prvý plný prípad je AVP2.
+- [ ] **AI:** zlepšiť AI v LensGoo; poskytovateľov, limity, súkromie a systémové nástroje dopĺňať
+  explicitne a iba s potvrdením používateľa.
+- [ ] **Integrácia, kvalita a vydanie:** dotiahnuť jednotné GUI, preklady a prístupnosť po ustálení
+  funkcií; testovať VM aj reálny AMD/NVIDIA HW, čistú inštaláciu, aktualizáciu, obnovu, výkon a
+  regresie pred ďalším vydaním.
+- [ ] **Neskôr:** Fedora Atomic/bootc, rollback, prenos účtu a ďalšie veľké rozšírenia až po
+  uzavretí požadovanej stability a hardvérovej matice.
+
+### Etapy produktu a brány pripravenosti
+
+Nasledujúce etapy opisujú postup od zámeru po vydanie. Sú to brány a výsledky pre celý produkt;
+aktuálne hotové, rozhodnuté a otvorené pracovné celky sú zhrnuté v častiach A–D vyššie a ich
+technický rozpis ostáva v pôvodných fázach.
+
+#### R0 — Zámer, používatelia a rozsah
+
+**Výsledok:** je jasné, pre koho LatteOS je, aký problém rieši, čo je jeho jediná edícia a čo do
+produktu nepatrí. Zaznamenajú sa používateľské scenáre, obmedzenia VM a podporovaného hardvéru,
+zásady ovládania a priority.
+
+- [x] Smer LatteOS GOO, zrušenie Classicu, zásady Goo a základný cieľ používateľského zážitku sú
+  zachytené v existujúcich dokumentoch.
+- [ ] Pri nových väčších funkciách doplniť konkrétny scenár a dôvod: čo chce používateľ dosiahnuť,
+  ako to dnes urobí a ako spozná, že LatteOS to vyriešil lepšie.
+- [ ] Udržiavať jednu aktuálnu hranicu produktu: čo je súčasť systému, čo voliteľná aplikácia /
+  integrácia a čo iba externý alebo vývojársky nástroj.
+
+#### R1 — Prieskum, rozhodnutie a technický návrh
+
+**Výsledok:** pred implementáciou je známe, či sa riešenie preberá, integruje alebo píše; sú určené
+rozhrania s ostatnými časťami systému, licencia, oprávnenia, náklady, riziká a cesta bez GPU.
+
+- [ ] Každý prijatý nápad z inšpiračných zoznamov porovnať s existujúcimi funkciami a plánom; zamietnuté
+  alebo odložené návrhy označiť ako také, nie ako otvorenú prácu.
+- [ ] Pri systémových častiach určiť vlastníctvo dát a API, používateľa procesu, životnosť služby,
+  spôsob aktivácie, zlyhanie a obnovu.
+- [ ] Pri GUI určiť prístup cez myš aj klávesnicu, správanie pri malom rozlíšení a slabom výkone,
+  preklady a súlad s vizuálnymi pravidlami GOO.
+- [ ] Pri sieťových/cloudových/AI integráciách určiť, aké údaje odchádzajú, komu, s akým súhlasom
+  a či existuje lokálna alebo odpojená cesta.
+
+#### R2 — Základ platformy LatteOS
+
+**Výsledok:** čistá Fedora inštalácia vie bezpečne naštartovať do použiteľnej relácie a má spoľahlivý
+základ, na ktorý sa dajú integrovať ostatné pracovné prúdy.
+
+- [x] F0–F2: základ VM, grafický stack, režimy NORMAL/SAFE a základ Lua vrstvy Hyprlandu sú
+  hotové. Boot NORMAL/SAFE bol overený; starý SAFE používa Noctaliu, preto jeho náhrada SafeGoo
+  patrí medzi otvorené práce nižšie.
+- [ ] Overiť celý aktuálny tok po prechode na GOO: čistá inštalácia → boot → GOO prihlasovanie →
+  predvolená Goo relácia → SAFE po zlyhaní → návrat do NORMAL; osobitne potvrdiť, že verejný
+  vydaný strom obsahuje a spúšťa správne relácie.
+- [ ] Dokončiť SafeGoo ako použiteľnú záchrannú reláciu s potrebnými základnými ovládacími prvkami,
+  diagnostikou a funkčným ovládaním okien na labwc; zachovať pixman/bez-GPU obmedzenia.
+- [ ] Overiť čistú inštaláciu, prvé spustenie, aktualizáciu a obnovu po neúspešnom štarte.
+- [ ] Zabezpečiť, aby systémové služby štartovali až vtedy, keď sú potrebné, a aby ich pád nezhodil
+  celú používateľskú reláciu.
+
+#### R3 — Vývoj pracovných prúdov systému
+
+Pracovné prúdy nižšie môžu ísť súbežne, ale každá väčšia funkcia v nich postupuje cez R0/R1, prototyp,
+implementáciu, integráciu a overenie. Podnadpisy sú súčasťou jednej produktovej roadmapy, nie oddelené
+projekty bez spoločného cieľa.
+
+##### R3·A — Plocha a GooEngine
+
+**Cieľ:** dokončiť predvolenú plochu LatteOS GOO ako súdržný engine a používateľský shell. Platné
+pravidlá sú v [LATTEOS-GOO.md](LATTEOS-GOO.md), API a stav enginu v
+[session/goo/README.md](session/goo/README.md), používateľské rozhodnutia v
+[docs/goo/ROZHODNUTIA.md](docs/goo/ROZHODNUTIA.md).
+
+- [ ] **Jadro GooEngine:** jedna spoločná logika a API kvapiek, jasné hranice medzi enginom,
+  scénou, pomocníkmi, kompozitorom a vzhľadom NORMAL/SAFE; zachovať kompatibilitu existujúcich
+  kvapiek a nastavení.
+- [ ] **GooBar a okná:** dokončiť chýbajúce správanie lišty, ovládanie okien v NORMAL aj SAFE,
+  pripájanie monitorov za behu a nastavenia viacerých obrazoviek.
+- [ ] **LensGoo:** samostatne overiť vyhľadávanie a spúšťanie aplikácií/súborov a kvalitu AI
+  rozhovoru; dotiahnuť poskytovateľov, vstupy a chybové stavy bez duplikovania všeobecnej práce
+  na `latte-ai`.
+- [ ] **GooPower a SafeGoo:** systémové akcie a indikátory v bežnej ploche; v SAFE zobrazenie
+  príčiny, logov, diagnostiky a bezpečných možností obnovy.
+- [ ] **ClockGoo, QueenGoo a ChatGoo:** dotiahnuť nedokončené karty, upozornenia, kalendár,
+  zariadenia a overenie so skutočnými aplikáciami/službami, ktoré kvapky zastupujú.
+- [ ] **Vlastné a ďalšie kvapky:** overiť a doplniť napojenie existujúceho Tvorcu Goo na engine;
+  návrhy ClipGoo, MediaGoo, PassGoo a CastGoo prijímať po jednom podľa používateľského prínosu.
+  Každá kvapka používa spoločné pravidlá enginu, nastavení a ovládania.
+- [ ] **Pohyb, zvuk a vizuálne efekty:** zmerať cenu fyziky, skla, dažďa a reakcie na hudbu; efekty
+  musia byť vypnuteľné a nesmú zhoršiť čitateľnosť, SAFE ani stupeň Softvér.
+- [ ] **Brána dokončenia Goo:** všetky základné úkony idú myšou; rozlíšenie najmenej 1024 × 768;
+  funkčné okná/relácie na podporovaných monitoroch; overený výkon a bezchybný návrat po páde enginu.
+
+##### R3·B — Kompozitor, Noctalia a používateľské rozhranie
+
+**Cieľ:** Hyprland, Lua integrácia, Noctalia a Goo spolu tvoria jednu plochu bez konkurenčných
+nastavení, duplicitných panelov alebo nekonzistentného správania.
+
+- [x] Základná integrácia Hyprlandu (okná, režimy, skratky, herný režim) a Noctalie (rohová lišta,
+  systémové funkcie) s GOO existuje; pozri F2 a F3·G.
+- [ ] Overiť zostávajúce okraje integrácie: ovládacie centrum Noctalie, SAFE bez GPU, dynamicky
+  pripojené monitory a čisté nastavenia medzi GOO a ostatnými reláciami.
+- [ ] Dokončiť konkrétne otvorené GUI a interakcie pri malom rozlíšení, vrátane stavov
+  načítania/chyby a návratu rizikovej zmeny; hotové základy tém a nastavení neopakovať.
+- [ ] Preklady a prístupnosť dokončiť podľa schváleného rozsahu po ustálení funkcií; pripraviť
+  testy pre čitateľnosť, kontrast, obmedzenie pohybu a klávesnicové ovládanie.
+- [ ] Tapety, materiály, dážď, sklo a animované prechody zavádzať ako voliteľnú vrstvu vzhľadu,
+  nie ako požiadavku pre funkčnosť desktopu.
+
+##### R3·C — Súbory (File Manager) a používateľské dáta
+
+**Cieľ:** Súbory bezpečne a zrozumiteľne spravujú pôvodný Linuxový súborový systém, pripojené
+zariadenia, sieťové miesta a cloud bez uzamknutia dát do LatteOS.
+
+- [x] Základ správcu súborov zahŕňa dva panely, karty, operácie F5/F6 s radom úloh, archívy,
+  hľadanie, synchronizáciu, sieťové umiestnenia a cloud; presný rozsah je v F4.
+- [ ] Doriešiť otvorené rozšírenia (vlastné stĺpce/pluginy, klávesové skratky a menu) a ergonomické
+  medzery podľa používateľských scenárov.
+- [ ] Dokončiť integráciu úložiska, USB, SMB/GVFS, telefónov a cloudových miest; pri odpájaní,
+  prerušení siete a nedostatku miesta jasne oznámiť stav a zachovať dáta.
+- [ ] Overiť bezpečné správanie pri prerušení kopírovania/synchronizácie, chybe zariadenia a
+  obnove; zachovať už implementované plány synchronizácie, priebeh a zrušenie operácií.
+- [ ] Overiť veľké súbory, archívy, oprávnenia, symlinky, odpojené disky, obmedzený priestor a
+  bezpečné správanie pri chybe; zachovať prístup k súborom aj bez LatteOS UI.
+Nové cloudové služby sa najprv posudzujú ako návrhy; cloud nesmie byť podmienkou lokálnej práce.
+
+##### R3·D — Monitor, systémové služby a diagnostika
+
+**Cieľ:** používateľ vie zistiť, čo sa deje so systémom a aplikáciami, a bezpečne konať bez
+nepriehľadných privilegovaných služieb.
+
+- [x] Základ Monitora už zahŕňa procesy, služby, autoruns, senzory, zariadenia a používateľské
+  položky po štarte.
+- [ ] Dokončiť stály zber telemetrie (`latte-sysmond`) a dlhodobý pohľad na CPU, RAM, GPU, energiu,
+  sieť a disk; odlíšiť živý stav od historického odhadu a primerane uchovávať údaje s možnosťou
+  vypnutia zberu.
+- [ ] Nové akcie pre služby musia zachovať vysvetlenie pôvodu, oprávnení a vratnosť.
+- [ ] Rozhodnúť, ktoré inventárne alebo bezpečnostné schopnosti poskytne existujúci `latte-hw`,
+  Monitor, Inšpektor siete a Barista. Nástroje typu osquery, Velociraptor, Zeek či Suricata
+  nepridávať ako základné služby bez preukázanej potreby a výslovného modelu súhlasu.
+- [ ] Zjednotiť diagnostické záznamy a export podpory tak, aby používateľ vedel skontrolovať,
+  čo export obsahuje; citlivé údaje neodosielať automaticky.
+
+##### R3·E — Správca zariadení a hardvér
+
+**Cieľ:** LatteOS sa nainštaluje a funguje na jasne opísanom rozsahu PC, vrátane GPU, zvuku, siete,
+obrazoviek, napájania, periférií a obnovy pri probléme s ovládačom.
+
+- [x] Základ detekcie kompatibility HW (`latte-hw`, `latte-boot compat`) a stránka informácií
+  o hardvéri v Správcovi zariadení existujú.
+- [ ] Doplniť kompatibilitu do inštalátora a overiť hranice odporúčaní na rôznych CPU/GPU,
+  Secure Boot, notebookoch a starších PC.
+- [ ] Overiť na fyzickom hardvéri AMD aj NVIDIA grafický stack, Hyprland, Goo, hry, SAFE režim,
+  aktualizáciu ovládača a návrat po zlyhaní.
+- [ ] Doriešiť ovládače/zariadenia cez štandardné linuxové služby (udisks2, NetworkManager,
+  PipeWire, fwupd a pod.) a zrozumiteľne oddeliť informáciu, odporúčanie a akciu vyžadujúcu
+  oprávnenie.
+- [ ] Telefóny: overiť KDE Connect a USB; scrcpy prípadne ponúknuť ako vedomý voliteľný nástroj,
+  nie ako náhradu párovania, prenosu súborov alebo Waydroidu.
+- [ ] Všetky rizikové zmeny ovládačov, obrazovky a napájania musia mať potvrdenie, časový limit
+  alebo obnovovaciu cestu.
+
+##### R3·F — App Manager, Barista a inštalácia softvéru
+
+**Cieľ:** inštalácia, aktualizácia a odstránenie aplikácií je jednotná, kontrolovateľná a
+obnoviteľná naprieč Fedora/RPM, Flatpak, webovými aplikáciami, hrami a podporovanými cudzími balíkmi.
+
+- [x] App Manager má základ obchodov/zdrojov, komunitné obchody, oprávnenia a NET, hodnotenia,
+  aktualizácie a viditeľné úlohy pre jeho vlastné operácie.
+- [ ] Doplniť spoločný prehľad úloh aj pre systémové príkazy (dnf, Flatpak, cargo, Waydroid,
+  umu), vrátane stavu, logu a výsledku po reštarte.
+- [~] Barista: analýza a plán bez AI sú hotové; pokračovať inštaláciou a skúškou aplikácie,
+  registrom, odinštalovaním a zálohou podľa fáz v `docs/barista/NAVRH.md`.
+- [ ] Overiť, že úlohy možno bezpečne prerušiť, logy sú dostupné používateľovi a stav po reštarte
+  nezostane falošne „úspešný“.
+- [ ] Predvolené katalógy a recepty musia mať overiteľný zdroj, licenciu a kontrolu integrity;
+  katalógy, ktoré spúšťajú skripty, sa nesmú považovať za dôveryhodné iba podľa vzhľadu.
+
+##### R3·G — AI a vývojové nástroje
+
+**Cieľ:** AI je voliteľná schopnosť systému s jasne oddeleným lokálnym/cloudovým spracovaním a
+bez nečakaného prístupu k systémovým akciám.
+
+- [ ] Dokončiť `latte-ai` a UX v LensGoo/Nastaveniach: poskytovatelia, prihlasovanie, modely,
+  streamovanie, prílohy, hlas, spotreba a limity podľa toho, čo daná služba skutočne poskytuje.
+- [ ] Zviditeľniť, kam odchádza požiadavka, čo sa posiela a či je odpoveď lokálna alebo cloudová;
+  pri cloudových poskytovateľoch rešpektovať súhlas a podmienky služby.
+- [ ] Ak AI dostane nástroje na správu LatteOS, použiť obmedzené rozhranie, náhľad plánovanej
+  zmeny, výslovné potvrdenie a auditovateľný výsledok; online webový chat nedostáva systémové
+  oprávnenia.
+- [ ] Vývojová AI farma a MCP sú vývojárske nástroje, nie predvolená súčasť používateľskej plochy;
+  ich úlohy, tajomstvá a prístup k repozitáru držať oddelene od runtime AI LatteOS.
+
+##### R3·H — Bezpečnosť, súkromie a obnova dát
+
+**Cieľ:** bezpečnosť je vlastnosťou každej etapy a každej oblasti, nie samostatný doplnok na konci.
+
+- [x] Profily dôvery, D-Bus filter, NET pre Flatpak/natívne aplikácie a odpojenie existujúcich
+  spojení sú implementované podľa F6.
+- [ ] Doplniť sieťové profily pre Wine/Proton scenáre a podporované skripty; overiť izoláciu
+  každej novej cesty spúšťania.
+- [ ] Pri integráciách kontrolovať licenciu, pôvod, oprávnenia, aktualizácie, sieťový prístup a
+  spôsob uloženia tajomstiev pred ich prijatím do systému.
+- [x] Záloha domovského priečinka a vrátenie späť pri zmene nastavení sú implementované.
+- [ ] Overiť obnovu používateľských dát a profilov v ďalších scenároch; pred ničivou akciou
+  ukázať rozsah a cieľ.
+- [ ] Voliteľné skeny či bezpečnostné nástroje nesmú sľubovať úplnú ochranu; zobrazovať limity,
+  možné falošné poplachy a vyžadovať súhlas so zberom/analýzou dát.
+
+##### R3·I — Hry a externé prostredia
+
+**Cieľ:** herná relácia a cudzie aplikácie sú integrované bez oslabenia bežného desktopu alebo SAFE.
+
+- [ ] Dokončiť Steam/Proton/umu a Barista herné scenáre na podporovanom skutočnom GPU; vo VM
+  zachovať iba primerané smoke testy.
+- [ ] Overiť prechod Desktop ↔ Hra, návrat profilu výkonu, zvuku, okien a nastavení po skončení hry.
+- [ ] Lepton/Android hry, gvisor, scrcpy a ďalšie externé technológie zostávajú samostatnými
+  rozhodovacími bodmi; do produktu prejdú iba po teste prínosu, kompatibility, bezpečnosti a údržby.
+
+#### R4 — Integrácia do jednej LatteOS
+
+**Výsledok:** pracovné prúdy spolu fungujú ako jeden systém, nie iba ako samostatné aplikácie.
+
+- [ ] Overiť celý tok: inštalácia → boot → SAFE/NORMAL → prihlásenie → načítanie profilu →
+  Goo/Noctalia/Hyprland → aplikácie a zariadenia → odhlásenie → ďalší štart.
+- [ ] Zjednotiť prenos stavov medzi shellom, systémovými službami a aplikáciami: úlohy, oznámenia,
+  nastavenia, témy, profily, povolenia a diagnostika majú jedno miesto pravdy.
+- [ ] Otestovať pády komponentov jednotlivo: engine, shell, kompozitor, služba, aplikácia, úložisko,
+  sieť a aktualizácia. Zlyhanie jednej časti nesmie bezdôvodne znefunkčniť celý systém.
+- [ ] Doplniť medzery medzi UI a backendom: každá akcia má viditeľný priebeh, výsledok alebo chybu;
+  žiadne tiché zlyhanie ani úspech bez vykonanej operácie.
+
+#### R5 — Overenie a pripravenosť produktu
+
+**Výsledok:** LatteOS je opakovateľne inštalovateľný a použiteľný v deklarovanom rozsahu.
+
+- [ ] Udržiavať testovaciu maticu: VM bez GPU (NORMAL aj SAFE), fyzický AMD, fyzický NVIDIA,
+  viac monitorov, malé rozlíšenie, pomalší/starší hardvér, Secure Boot, odpojená sieť a slabé
+  úložisko.
+- [ ] Každý pracovný prúd má funkčné testy svojho backendu a používateľské scenáre; integrované
+  scenáre kontrolujú spoluprácu medzi systémom, shellom a aplikáciami.
+- [ ] Opakovať merania CPU/RAM, štartu, odozvy a grafických efektov po zmenách; stanoviť limity
+  pre NORMAL a SAFE a regresné porovnanie.
+- [ ] Vykonať bughunt a ergonomickú skúšku s myšou aj klávesnicou; skontrolovať preklady, kontrast,
+  stavové hlásenia, poškodenie/obnovu dát a aktualizáciu.
+- [ ] Overiť čistú inštaláciu z presne toho stromu/obrazu, ktorý sa bude vydávať; vývojová VM
+  sama osebe nie je dôkazom pripravenosti vydania.
+
+#### R6 — Vydanie, podpora a údržba
+
+**Výsledok:** vydaná verzia má reprodukovateľný obsah, známe obmedzenia, dokumentáciu a bezpečnú
+cestu k aktualizácii alebo návratu.
+
+- [ ] Pred vydaním uzavrieť rozsah, verziu, zmeny, licencie/tretie strany, inštalačný zdroj,
+  kontrolné súčty a skúšku obnovy.
+- [ ] Zaznamenať podporovaný hardvér, známe problémy a postup diagnostiky bez zverejnenia
+  súkromných údajov alebo tajomstiev.
+- [ ] Po vydaní triediť hlásenia podľa závažnosti, reprodukovať ich, opraviť a overiť regresiu;
+  bezpečnostné aktualizácie a obnova majú prednosť pred novými efektmi.
+- [ ] Prenos účtu/relácie a cloudová služba sa rozvíjajú až po stabilnom lokálnom produkte;
+  používateľ musí vedieť fungovať bez nich.
+
+#### R7 — Neskorší systémový smer
+
+- [ ] Fedora Atomic/bootc a systémový rollback zaradiť až po splnení požiadaviek pôvodnej fázy A:
+  stabilné pracovné prúdy, reálny HW, inštalácia, aktualizácia, obnova a testovací proces.
+- [ ] Vlastný bootloader podľa nervboot, mobilná LatteApp, pokročilá bezpečnostná analytika a
+  ďalšie veľké rozšírenia zostávajú návrhmi, kým neprejdú R0–R1 a nedostanú miesto v etape.
+- [ ] Každé neskoršie rozšírenie zachová základné pravidlo: LatteOS musí zostať použiteľný vo VM
+  bez GPU; akcelerácia pridáva efekty, nie nevyhnutnú funkčnosť.
