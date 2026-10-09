@@ -406,6 +406,12 @@ texty preložiteľné (`translations`). Noctalia beží bez lišty a robí, čo 
   (2 tlačidlá zdroja, štítok a miesto, konzola pre pokročilých, farby zo skinu); (5) F4 odinštalovanie/záloha, F5 APK a natívne balíky.
   Otvorené: ARM-only Android aplikácie, sťahovanie komunitných receptov, pravidlá Wine/Proton overiť na reálnych programoch.
   Nepotvrdené (necommitnuté): všetky zmeny z 8. 10. sú v pracovnom strome latte-lab.
+- [ ] **Úlohy na pozadí viditeľné (App Manager) — zadanie používateľa 8. 10.:** nové okno/karta „Prebiehajúce úlohy“ (konzola App Managera),
+  kde sú **zobrazené** všetky aktuálne **sťahovania, kompilácie a inštalácie** s priebehom (percentá, rýchlosť, zostávajúci čas, log,
+  stav hotovo/chyba), nielen pre Baristu, ale aj dnf, Flatpak, cargo, waydroid init, umu. Dnes sa to dá zistiť len v termináli (`pgrep`,
+  `tail log`). Návrh: spoločný zdroj úloh (register `~/.local/state/latteos/ulohy/*.json` s typom, názvom, priebehom, logom, PID),
+  zapisujú ho pomocníci `latte-instalator`, `latte-apps` a obalenie dlhých príkazov; App Manager ich číta; indikátor aj v GooPower
+  (kvapka „práve sa niečo inštaluje“). Odpovedá na otázku „môžem vypnúť počítač?“ (hotovo / ešte beží).
   **Barista F1 hotová (8. 10.):** `session/bin/latte-instalator analyze CESTA [--json]` — typ zdroja, SHA-256, inštalátor, požiadavky,
   ochrany, ďalšie disky, verdikt a **plán** (Wine/Proton/DOSBox, Windows verzia, závislosti) z receptu (`session/recepty/*.json`)
   alebo z pravidiel (rok, API, architektúra), bez AI. Overené na AVP2 CD1/CD2 a CS 1.6. Zásady rozhodovania: docs/barista/NAVRH.md.
