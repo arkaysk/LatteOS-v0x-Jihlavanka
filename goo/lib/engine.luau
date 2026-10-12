@@ -222,7 +222,7 @@ E.publish = publish
 -- window's title is under it, it steps aside along its edge to the nearest free spot, and comes back when
 -- the window has gone: the step (`aside`) is not kept. On a side edge the whole title counts, on the top
 -- edge only its ends, where the buttons are. `windows`: those in sight, each { x, y, w, h }.
-local TITLE, GAP = 48, 8                 -- how tall a window's own title bar is; how far a drop keeps from it
+local ABOVE, TITLE, GAP = 34, 48, 8      -- the compositor's title bar above a window, the app's own header in it; the room a drop keeps
 local BUTTONS_RIGHT, BUTTONS_LEFT = 190, 120
 function E.avoid(windows)
     local w, changed = num(fact.sw, 1920), false
@@ -235,13 +235,13 @@ function E.avoid(windows)
             local taken = {}                  -- stretches along the edge where its centre must not be
             for _, win in ipairs(windows or {}) do
                 if d.edge == 2 then
-                    if 6 + d.rise + r > win.y and 6 + d.rise - r < win.y + TITLE then
+                    if 6 + d.rise + r > win.y - ABOVE and 6 + d.rise - r < win.y + TITLE then
                         taken[#taken + 1] = { win.x + win.w - BUTTONS_RIGHT - r - GAP, win.x + win.w + r + GAP }
                         taken[#taken + 1] = { win.x - r - GAP, win.x + BUTTONS_LEFT + r + GAP }
                     end
                 else
                     local x = d.edge == 1 and 6 + d.rise or w - 6 - d.rise
-                    if x + r > win.x and x - r < win.x + win.w then taken[#taken + 1] = { win.y - r - GAP, win.y + TITLE + r + GAP } end
+                    if x + r > win.x and x - r < win.x + win.w then taken[#taken + 1] = { win.y - ABOVE - r - GAP, win.y + TITLE + r + GAP } end
                 end
             end
             local function free(p)

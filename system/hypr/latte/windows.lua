@@ -200,6 +200,9 @@ function W.setup()
         end),
         snap = with(snap),
         to_desk = with(function(w, n) hl.dispatch(hl.dsp.window.move({ workspace = n == 0 and "empty" or tostring(n), follow = false, window = sel(w) })) end),
+        -- for the buttons of a title bar: the window that was pressed has the keyboard by then
+        minimize_active = function() local w = hl.get_active_window() if w then minimize(w) end end,
+        maximize_active = function() hl.dispatch(hl.dsp.window.fullscreen({ mode = "maximized", action = "toggle" })) end,
         cycle = cycle,
         -- the tape slides by a quarter of the screen
         scroll = function(dir)

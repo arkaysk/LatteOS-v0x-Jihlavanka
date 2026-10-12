@@ -1,6 +1,6 @@
 # Súčasti tretích strán
 
-Vlastný kód a obsah LatteOS (vrátane tapiet v `session/wallpapers/`) je pod licenciou MIT — pozri [LICENSE](LICENSE).
+Vlastný kód a obsah LatteOS (vrátane tapiet v `assets/wallpapers/`) je pod licenciou MIT — pozri [LICENSE](LICENSE).
 LatteOS stojí na cudzích projektoch. Ich zdrojový kód v tomto repozitári nie je; sťahuje ho `resources/fetch.sh`
 a inštalátor ich prekladá alebo inštaluje z balíkov. V repozitári sú iba naše záplaty k nim (`resources/patches/`)
 — tie sa riadia licenciou projektu, ktorý menia.

@@ -442,10 +442,12 @@ nemá (AI je hľadanie, Financie a Sociálne sú podkategórie Flathubu).
 - **Goo z klávesnice** (§6.1, Win+T): šípky po kvapkách dokola po obvode, Enter a medzerník ľavý klik, Menu a Shift+F10
   pravý, + a − koliesko, Esc von; vybraná kvapka sa zdvihne, pulzuje a ukáže bublinu; skončí sám po voľbe okna,
   po voľbe v karte a po minúte.
-- **Hyprland:** tri režimy okien, minimalizovanie, rozloženia okna, plochy, skratky ako vo Windows.
+- **Hyprland:** tri režimy okien, minimalizovanie, rozloženia okna, plochy, skratky ako vo Windows; tapeta
+  (`~/.config/latteos/wallpaper` alebo tapeta LatteOS, kreslí `swaybg`); okenné tlačidlá – □ ✕ na oknách bez vlastnej
+  hlavičky (plugin hyprbars so záplatou, ak je nainštalovaný; pravý klik na titulok = ponuka okna v karte Goo).
 
 **Ešte nie je** (vráti sa po kusoch, poradie v ROADMAP):
 QueenGoo, ChatGoo, vlastné kvapky a Tvorca Goo, hra pri nečinnosti (§3.1 stupeň 3; príde s vlastnými kvapkami — hrajú sa iba hravé),
 okno z bubliny (14; pád minimalizovaného okna už je), BarGoo na ďalších monitoroch (scéna je iba na hlavnom), režimy LensGoo
 Súbory · Web · AI a kalkulačka, portrét účtu, MediaGoo (čo práve hrá), prepojené kalendáre,
-tapeta, okenné tlačidlá (hyprbars), sklo okien, prichytenie ťahaním, Nastavenia a ostatné aplikácie.
+výber tapety a živé tapety, sklo okien, prichytenie ťahaním, Nastavenia a ostatné aplikácie.

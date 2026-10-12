@@ -37,6 +37,8 @@ scene Goo {
 
     // ── what the desktop around the scene tells it (`pleamar --say goo "emit …"`) ───────────────────────────
     event window_mode ->                       // Hyprland: how windows are arranged now: 0 tape, 1 tiles, 2 floating
+    event win_menu ->                          // the right button on a window's title: the menu of the window `win_asked`
+    text win_asked = ""
     event lens_toggle ->                       // the Windows key: the launcher, open or shut
     event lens_mode ->                         // …or open in one of its modes: 0 apps, 1 a command
     event clock_notes ->                       // Win+N: notifications and the calendar

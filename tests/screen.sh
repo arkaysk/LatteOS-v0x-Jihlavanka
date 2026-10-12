@@ -29,7 +29,10 @@ args=""; [ $# -gt 0 ] && args="$(printf '%q ' "$@")"
 out="${OUT:-$(mktemp -d /tmp/latte-screen.XXXXXX)}"
 size="${SIZE:-1920x1080}"
 scene="$(readlink -f "${SCENE:-$repo/goo/goo.plm}")"
-mkdir -p "$out/labwc" "$out/data" "$out/state"
+mkdir -p "$out/labwc" "$out/data" "$out/state" "$out/share"
+# /usr/share/latteos as it will be, from where its parts are in the repository
+ln -sfn "$repo/system/hypr" "$out/share/hypr"
+ln -sfn "$repo/assets/wallpapers" "$out/share/wallpapers"
 rm -f "$out"/shot*.png "$out/scene.log" "$out/do.log"
 
 # What runs inside the session: the scene, the screenshots, DO.
@@ -63,7 +66,7 @@ EOF
     if [ $nested = 1 ]; then
         # LIBSEAT_BACKEND=logind: should the nested backend fail, Hyprland falls back to the real card. Over ssh
         # logind refuses that, where seatd would let it take the screen from whoever is using it.
-        echo "LIBSEAT_BACKEND=logind LATTE_SHARE=$repo/system LATTE_TIER=${LATTE_TIER:-standard} LATTE_RENDERER=hw XDG_CURRENT_DESKTOP=Hyprland XDG_STATE_HOME=$out/state Hyprland -c $out/hyprland.lua > $out/hyprland.log 2>&1 &"
+        echo "LIBSEAT_BACKEND=logind LATTE_SHARE=$out/share LATTE_TIER=${LATTE_TIER:-standard} LATTE_RENDERER=hw XDG_CURRENT_DESKTOP=Hyprland XDG_STATE_HOME=$out/state Hyprland -c $out/hyprland.lua > $out/hyprland.log 2>&1 &"
         echo "echo \$! > $out/hyprland.pid"
         echo "(sleep $((secs + 4)); labwc --exit) &"
     else

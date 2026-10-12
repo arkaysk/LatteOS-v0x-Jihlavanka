@@ -22,3 +22,22 @@ cargo build --release          # target/release/pleamar goes to /usr/bin/pleamar
 
 When pleamar moves on: apply each patch to the new tag; one that no longer applies was either taken upstream
 (drop it) or needs its context moved (the change itself is small in all five).
+
+## The title bars' plugin
+
+Windows that draw no header of their own get one from the compositor: [hyprbars](https://github.com/hyprwm/hyprland-plugins),
+built for the Hyprland that is installed, with `hyprbars-latte.patch`:
+
+| What it does | Why |
+| --- | --- |
+| The buttons, dragging and the double click answer the left button only; the right button on the title runs `on_right_click`; the pointer resting on a button runs `on_button_hover`. `{x}`, `{y}`, `{address}` and `{index}` in those commands are the pointer, the window and the button. | A right click on a title opens the window's menu, as on Windows; upstream treats every button alike. |
+
+```sh
+git clone https://github.com/hyprwm/hyprland-plugins.git && cd hyprland-plugins
+# hyprpm.toml pins a commit for each Hyprland: take the one for `pkg-config --modversion hyprland`
+git checkout "$(grep -E "# $(pkg-config --modversion hyprland)\s*$" hyprpm.toml | sed -E 's/.*", "([0-9a-f]+)".*/\1/')"
+git apply /path/to/patches/hyprbars-latte.patch
+make -C hyprbars          # needs hyprland-devel; hyprbars/hyprbars.so goes to /usr/lib64/latteos/hyprbars.so
+```
+
+Without the plugin the desktop works: a window is moved with Win and the mouse and closed from the window bar.

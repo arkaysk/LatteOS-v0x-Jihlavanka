@@ -255,6 +255,12 @@ function M.wheel(dir)
     if mode == 0 then wm.scroll(dir) elseif mode == 2 then wm.cycle(dir) after(150, M.refresh) end
 end
 
+-- The right button on a window's own title bar: its menu, where the pointer is (the compositor has said where).
+on("win_menu", function()
+    local address = text.win_asked or ""
+    for _, w in ipairs(wins) do if w.address == address then return menu(w) end end
+end)
+
 -- A window was put away (the compositor says where it was): it falls as a drop into the bar, beside the head,
 -- or straight down when the bar is on another edge, and the surface ripples where it lands.
 on("win_min", function()

@@ -60,11 +60,16 @@
 /usr/share/latteos/hypr/latte/windows.lua               <- system/hypr/latte/windows.lua
 /usr/share/latteos/hypr/latte/keys.lua                  <- system/hypr/latte/keys.lua
 /usr/share/latteos/hypr/latte/tiers.lua                 <- system/hypr/latte/tiers.lua
+/usr/share/latteos/hypr/latte/bars.lua                  <- system/hypr/latte/bars.lua
 /usr/share/latteos/labwc/rc.xml                         <- system/labwc/rc.xml
 /usr/share/latteos/labwc/autostart                      <- system/labwc/autostart
 /usr/share/wayland-sessions/latteos.desktop             <- system/sessions/latteos.desktop
 /usr/share/wayland-sessions/latteos-safe.desktop        <- system/sessions/latteos-safe.desktop
 /usr/share/wayland-sessions/latteos-game.desktop        <- system/sessions/latteos-game.desktop
+/usr/share/latteos/wallpapers/latteos-1.jpg             <- assets/wallpapers/latteos-1.jpg
+/usr/share/latteos/wallpapers/latteos-2.jpg             <- assets/wallpapers/latteos-2.jpg
+/usr/share/latteos/wallpapers/latteos-3.jpg             <- assets/wallpapers/latteos-3.jpg
+/usr/share/latteos/wallpapers/latteos-4.jpg             <- assets/wallpapers/latteos-4.jpg
 /usr/share/fonts/latteos/tabler-icons.ttf               <- assets/fonts/tabler-icons.ttf
 /usr/share/licenses/latteos/LICENSE-tabler-icons.txt    <- assets/fonts/LICENSE-tabler-icons.txt
 /usr/share/plymouth/themes/latteos/latteos.plymouth     <- system/plymouth/latteos.plymouth
@@ -95,6 +100,7 @@
 /boot/loader/entries/*-lattesafe-nomodeset.conf
 $XDG_RUNTIME_DIR/latteos/                               # per user: the reason for SAFE, labwc's menu, where to go next
 ~/.local/state/latteos/                                 # per user: session.log, safe.log, window-mode
+~/.config/latteos/                                      # per user: locale, tier, coffee, wallpaper, hyprland.lua (the user's own choices)
 ~/.local/share/pleamar/goo/                             # per user: where the drops were left, the launcher's memory, settings.json, lock.json, clock.json, timers.json
 /var/lib/latteos/login/user-*.json                      # per user, for the login screen: where the power drop is, the coffee
 ~/.cache/latteos/                                       # per user: the weather and the news last fetched
@@ -104,10 +110,11 @@ $XDG_RUNTIME_DIR/latteos/                               # per user: the reason f
 package: greetd labwc tuigreet plymouth plymouth-plugin-two-step plymouth-theme-spinner egl-utils python3
 package: rsms-inter-fonts jetbrains-mono-fonts policycoreutils-python-utils util-linux-core
 package: foot less NetworkManager-tui                                # the SAFE session's terminal and rescue menu
-package: hyprland wireplumber libnotify                              # the GOO session; wpctl for the volume keys; notify-send when a timer rings
+package: hyprland wireplumber libnotify swaybg                       # the GOO session; wpctl for the volume keys; notify-send when a timer rings; the wallpaper
 optional: brightnessctl power-profiles-daemon                        # the brightness keys; the power profiles in PowerGoo's card
 optional: steam gamescope gamescope-session gamescope-session-steam  # the Game session; without them it is not offered
-/usr/bin/pleamar: pleamar v0.3.2 (github.com/k4ditano/pleamar) built with patches/*.patch; see patches/README.md
+/usr/bin/pleamar: pleamar v0.3.2 (github.com/k4ditano/pleamar) built with patches/pleamar-*.patch; see patches/README.md
+optional /usr/lib64/latteos/hyprbars.so: hyprbars (github.com/hyprwm/hyprland-plugins) built for the installed Hyprland with patches/hyprbars-latte.patch
 
 # What an installer does once the files are in place; removal undoes each line.
 [steps]

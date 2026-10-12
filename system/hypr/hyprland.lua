@@ -41,6 +41,7 @@ local colors = {
     inactive = "rgba(4a3b30aa)",
     shadow = 0xcc0b0806,
     glow = 0xaae4b283,
+    button = "rgb(e4b283)",
 }
 hl.config({
     general = {
@@ -76,6 +77,7 @@ require("latte.tiers").apply(tier, colors)
 -- ── windows, keys ─────────────────────────────────────────────────────────────────────────────────────────
 require("latte.windows").setup()
 require("latte.keys").setup()
+require("latte.bars").setup(colors)
 hl.gesture({ fingers = 3, direction = "horizontal", action = "workspace" })
 
 -- an app's request to maximise itself is not obeyed: it would cover the drops' band
@@ -111,6 +113,16 @@ hl.on("monitor.removed", place_shell)
 
 hl.on("hyprland.start", function()
     place_shell()
+    -- the wallpaper: the user's own choice (a path in ~/.config/latteos/wallpaper), or the one LatteOS brings
+    local picture = share .. "/wallpapers/latteos-2.jpg"
+    local chosen = io.open(config .. "/wallpaper", "r")
+    if chosen then
+        local path = (chosen:read("*l") or ""):gsub("^%s+", ""):gsub("%s+$", "")
+        chosen:close()
+        local there = path ~= "" and io.open(path, "r")
+        if there then there:close() picture = path end
+    end
+    hl.exec_cmd("swaybg -i '" .. picture:gsub("'", "'\\''") .. "' -m fill")
     -- systemd and D-Bus learn where the session is; the target starts the Goo scene and the portals.
     hl.exec_cmd("sh -c 'dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE "
         .. "HYPRLAND_INSTANCE_SIGNATURE LATTE_MODE LATTE_RENDERER LATTE_TIER LANG; systemctl --user start latte-session.target'")
