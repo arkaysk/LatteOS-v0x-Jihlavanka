@@ -20,8 +20,10 @@ Schválené 12. 10. 2026. Pracuje sa **zhora nadol, neskáče sa**; nový nápad
    3 min 37 s → 1 min 12 s), rohová lišta po prihlásení (+8 s, sama), žiadna zlyhaná služba. Test grafiky pri
    studenom štarte vyprší zámerne (pomalý disk, rozhodne ovládač) a prihlasovanie nezdržuje — nie je chyba; zvyšných
    ~25 s je disk a `gssproxy`. Pád Hyprlandu pri konci relácie `latte-session` rozpozná; pri reštarte 12. 10. nenastal.
-   **Ostáva:** tlačidlá Reštartovať · Vypnúť · Odhlásiť v PowerGoo (idú priamo cez systemd, test 036), skutočné
-   prihlásenie do SAFE (v skúške bez obrazovky je lišta bez textu), zlé heslo a výber relácie (541).
+   Overené pádmi 12. 10.: engine sa po páde sám obnoví (doplnené), Hyprland sa po páde spustí znova, druhý pád
+   do 60 s prepne do SAFE, SAFE zvolený aj automatický funguje a čisto končí.
+   **Ostáva:** klik na Reštartovať · Vypnúť v PowerGoo (test 036), zlé heslo a jazyk na prihlásení (541), prečo
+   núdzové rozhranie po páde berie ~2 jadrá (010), okná sa po páde kompozitora nevrátia (006), testy 003–005, 007–008.
    *Hotovo, keď:* testy 001–012, 036, 541, 550 majú stav. Po každom štarte: `setup/test/start.sh` (predošlý: `-1`).
 2. [ ] **Upratanie Classicu.** Súpis z 12. 10.: v repe ostáva `old/` (25 tis. riadkov, nikdy sa neinštaluje), scéna
    `session/kvapky` (z nej sa inštalujú už iba textúry), maskoti; inštaluje sa a cez `latte-session klasicke` /
