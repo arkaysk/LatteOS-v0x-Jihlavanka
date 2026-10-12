@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # latte-greeter: the login screen greetd starts (its default_session).
-# The Goo login is a pleamar scene inside labwc and needs a working graphics card; everything else gets the
-# text login, which works on anything.
+# The login is a pleamar scene inside labwc: the animated one with a working graphics card, the still one
+# without. If neither can run, or the scene dies, the text login takes over: that one works on anything.
 set -u
 share=/usr/share/latteos
 
@@ -16,15 +16,20 @@ text_login() {
 pkill -u "$(id -u)" -x pleamar 2>/dev/null
 pkill -u "$(id -u)" -x labwc 2>/dev/null
 
-# ponytail: SAFE and software rendering get the text login; a static login scene belongs to the SAFE work.
-[ "$LATTE_MODE" = normal ] && [ "$LATTE_RENDERER" = hw ] && [ -n "${XDG_RUNTIME_DIR:-}" ] \
-    && [ -f "$share/goo/login.plm" ] && command -v pleamar >/dev/null && command -v labwc >/dev/null || text_login
+scene=login.plm
+if [ "$LATTE_MODE" != normal ] || [ "$LATTE_RENDERER" != hw ]; then
+    # No card to draw with: the still login screen, and labwc painting in software as well.
+    scene=login-safe.plm
+    export WLR_RENDERER=pixman LIBGL_ALWAYS_SOFTWARE=1
+    unset MESA_LOADER_DRIVER_OVERRIDE
+fi
+[ -n "${XDG_RUNTIME_DIR:-}" ] && [ -f "$share/goo/$scene" ] && command -v pleamar >/dev/null && command -v labwc >/dev/null || text_login
 
 export LATTE_LOGIN=greetd LATTE_LOGIN_RUN="$XDG_RUNTIME_DIR/latte-login"
 export XDG_CURRENT_DESKTOP=labwc:wlroots LIBSEAT_BACKEND=logind
 rm -rf "$LATTE_LOGIN_RUN"; mkdir -p -m 700 "$LATTE_LOGIN_RUN"
 labwc -C "$share/greeter/labwc" \
-    -s "sh -c 'cd $share/goo && pleamar --scene login.plm --no-hud > \"$LATTE_LOGIN_RUN/login.log\" 2>&1; labwc --exit'"
+    -s "sh -c 'cd $share/goo && pleamar --scene $scene --no-hud > \"$LATTE_LOGIN_RUN/login.log\" 2>&1; labwc --exit'"
 # `latte-login done` leaves this mark: greetd starts the user's session once this script ends.
 [ -e "$LATTE_LOGIN_RUN/done" ] && exit 0
 logger -t latte-greeter "the Goo login ended without a login; falling back to the text login"

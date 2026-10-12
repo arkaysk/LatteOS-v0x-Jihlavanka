@@ -1,0 +1,166 @@
+// The login screen where there is no graphics card to draw with: the same row, the same menus and the same
+// logic as login.plm, laid out where its animation comes to rest, with nothing that moves. Software
+// rendering paints the goo of login.plm at two frames a second; this it paints at once.
+language 0.3
+import "lang/sk.plm"
+
+scene LoginSafe {
+    surface {
+        size: full, full
+        anchor: top
+        margin: 0
+        level: overlay
+        reserve: -1
+        rate: 15
+        keyboard: exclusive
+        screens: each max 3
+    }
+    permissions {
+        run: "latte-login", "date", "systemctl"
+        services: "env", "clock"
+    }
+
+    let cream = #f3ebdd
+    let amber = #f7c873
+    let alert = #ff8a80
+    let coffee = #2a160c
+    let rim = #c9a47a
+    let W = screen.width
+    let H = screen.height
+    let LEVEL = H * 2 / 3
+    let GX = W / 2 - 190                       // the power drop
+    let GY = LEVEL - 47                        // the row floats just above the surface
+    let TX = GX + 58                           // where the row's text starts
+    let END = GX + 440                         // the row's right end
+    let SX = END + 64                          // the session chooser
+    let SES = 236
+
+    // What the shared logic reports. This scene has no use for the first few: it draws no goo and no sky.
+    fact water = 0.55
+    fact milk = 0
+    fact power_x = 0.14
+    fact keep_backdrop = false
+    fact sky_body = 0
+    fact sky_t = 0.5
+    fact sky_alt = 30
+    fact moon_lit = 1
+    fact moon_waxing = true
+    fact rain = 0
+    fact snow = false
+    model info max 3 { g: text; v: text; on: bool }
+    event wake
+    event again
+
+    event intro
+    event accepted
+    event rejected
+    event login ->
+    event machine ->
+    event session ->
+    fact checking = false
+    fact field = 1
+    fact power_open = false
+    fact ses_open = false
+    fact ses_sel = 0
+    fact panel = 0
+    fact weather = 0
+    fact wrong = false
+    fact leaving = false
+    service clock as now { time: text }
+    text user = ""
+    text password = ""
+    text date = ""
+    text temp = ""
+    text place = ""
+    text ses_name = ""
+    text g_power = ""
+    text g_go = ""
+    text g_sleep = ""
+    text g_restart = ""
+    text g_session = ""
+    text g_weather = ""
+    model sessions max 6 { name: text }
+    model lines max 14 { t: text }
+
+    on intro { leaving = false; wrong = false; field = 1; focus password }
+    on rejected { wrong = true; field = 1; focus password }
+    on accepted { blur; power_open = false; ses_open = false; wrong = false; leaving = true }
+    on login { wrong = false }
+
+    // ── the background, in bands of plain colour, and the coffee below its surface ──────────────────────────
+    repeat k in 0..16 { box { from: 0, LEVEL * k / 16; size: W, LEVEL / 16 + 1; color: mix(#140e0b, #1a1410, k / 15) } }
+    box { from: 0, LEVEL; size: W, H - LEVEL; color: coffee }
+    box { from: 0, LEVEL - 1; size: W, 2; color: rim; opacity: 45% }
+
+    text now.time { at: W - 72, 104; anchor: right center; size: 108; weight: 300; color: cream; family: "Inter" }
+    text date { at: W - 76, 182; anchor: right center; size: 21; color: cream; opacity: 66%; family: "Inter" }
+    text temp { at: 72, 104; anchor: left center; size: 108; weight: 300; color: cream; family: "Inter" }
+    text g_weather { at: 88, 182; anchor: center; size: 22; color: cream; opacity: 66%; show: weather > 0; family: "tabler-icons" }
+    text pick(weather, "", "Clear{? · {place}}", "Partly cloudy{? · {place}}", "Overcast{? · {place}}", "Fog{? · {place}}", "Rain{? · {place}}", "Snow{? · {place}}", "Storm{? · {place}}") {
+        at: 112, 182; anchor: left center; size: 21; color: cream; opacity: 66%; show: weather > 0; family: "Inter" }
+
+    // ── the row: power · name · password · go ───────────────────────────────────────────────────────────────
+    box { from: GX, GY - 23; size: 440, 46; corner: 23; color: coffee; show: not leaving }
+    box { from: GX, GY - 23; size: 440, 46; corner: 23; stroke: 1; color: rim; opacity: 45%; show: not leaving }
+    ellipse { at: GX, GY + 11; radius: 40; color: coffee; show: not leaving }
+    ellipse { at: GX, GY + 11; radius: 40; stroke: 1; color: rim; opacity: 45%; show: not leaving }
+    text g_power { at: GX, GY + 11; anchor: center; size: 31; color: cream; show: not leaving; family: "tabler-icons" }
+    zone ellipse z_power { at: GX, GY + 11; radius: 42; cursor: pointer; label: "Power"; active: not leaving }
+    on press z_power { toggle power_open }
+
+    input user { at: TX, GY - 11; width: 150; size: 16; weight: 600; color: cream; selection: #5a463a; placeholder: "Name"; show: not leaving; family: "Inter" }
+    box { at: TX + 160, GY; size: 1.2, 22; color: cream; opacity: 28%; show: not leaving }
+    input password { at: TX + 174, GY - 11; width: 180; size: 16; color: cream; selection: #5a463a; placeholder: "Password"; secret: true; show: not leaving; family: "Inter" }
+    ellipse { at: END - 2, GY; radius: 16; color: mix(coffee, cream, if(checking, 0.5, 0.24)); show: not leaving }
+    text g_go { at: END - 2, GY; anchor: center; size: 17; color: cream; show: not leaving; family: "tabler-icons" }
+    zone box z_user { at: TX + 76, GY; size: 164, 46; cursor: text; active: not leaving }
+    zone box z_password { at: TX + 264, GY; size: 204, 46; cursor: text; active: not leaving }
+    zone ellipse z_go { at: END - 2, GY; radius: 18; cursor: pointer; label: "Log in"; active: not leaving }
+    on press z_user { field = 0; focus user }
+    on press z_password { field = 1; focus password }
+    on submit user { field = 1; focus password }
+    on key Tab while field == 0 { field = 1; focus password }
+    on key Tab while field == 1 { field = 0; focus user }
+    on press z_go { emit login }
+    on submit password { emit login }
+    text "Wrong password" { at: TX, GY - 44; anchor: left center; size: 13.5; color: alert; show: wrong and not checking; family: "Inter" }
+    text "Checking…" { at: TX, GY - 44; anchor: left center; size: 13.5; color: cream; opacity: 60%; show: checking; family: "Inter" }
+
+    // ── the power menu, above its button ────────────────────────────────────────────────────────────────────
+    box { from: GX - 40, GY - 170; size: 190, 122; corner: 14; color: coffee; show: power_open }
+    box { from: GX - 40, GY - 170; size: 190, 122; corner: 14; stroke: 1; color: rim; opacity: 55%; show: power_open }
+    text g_sleep { at: GX - 14, GY - 145; anchor: center; size: 17; color: cream; show: power_open; family: "tabler-icons" }
+    text g_restart { at: GX - 14, GY - 109; anchor: center; size: 17; color: cream; show: power_open; family: "tabler-icons" }
+    text g_power { at: GX - 14, GY - 73; anchor: center; size: 17; color: alert; show: power_open; family: "tabler-icons" }
+    text "Sleep" { at: GX + 12, GY - 145; anchor: left center; size: 13.5; color: cream; show: power_open; family: "Inter" }
+    text "Restart" { at: GX + 12, GY - 109; anchor: left center; size: 13.5; color: cream; show: power_open; family: "Inter" }
+    text "Shut down" { at: GX + 12, GY - 73; anchor: left center; size: 13.5; color: alert; show: power_open; family: "Inter" }
+    repeat i in 0..3 {
+        zone box z_machine.$i { from: GX - 36, GY - 164 + i * 36; size: 182, 34; cursor: pointer; active: power_open }
+        on press z_machine.$i { power_open = false; emit machine(i) }
+    }
+    on key Escape while power_open { power_open = false }
+
+    // ── the session chooser and its choices ─────────────────────────────────────────────────────────────────
+    box { from: SX - 19, GY - 19; size: SES + 38, 38; corner: 19; color: coffee; show: sessions.count > 1 and not leaving }
+    box { from: SX - 19, GY - 19; size: SES + 38, 38; corner: 19; stroke: 1; color: rim; opacity: 45%; show: sessions.count > 1 and not leaving }
+    text g_session { at: SX + 2, GY; anchor: center; size: 17; color: cream; show: sessions.count > 1 and not leaving; family: "tabler-icons" }
+    text ses_name { at: SX + 22, GY; anchor: left center; width: SES - 24; lines: 1; size: 13.5; weight: 600; color: cream; show: sessions.count > 1 and not leaving; family: "Inter" }
+    zone box z_session { at: SX + SES / 2, GY; size: SES + 40, 40; cursor: pointer; label: "Session"; active: sessions.count > 1 and not leaving }
+    on press z_session { toggle ses_open }
+    on key Escape while ses_open { ses_open = false }
+    box { from: SX - 19, GY - 34 - sessions.count * 40; size: SES + 38, sessions.count * 40 + 8; corner: 14; color: coffee; show: ses_open }
+    box { from: SX - 19, GY - 34 - sessions.count * 40; size: SES + 38, sessions.count * 40 + 8; corner: 14; stroke: 1; color: rim; opacity: 55%; show: ses_open }
+    repeat i in 0..6 {
+        text sessions.$i.name { at: SX + 4, GY - 50 - i * 40; anchor: left center; width: SES - 6; lines: 1; size: 13.5; color: if(i == ses_sel, amber, cream); show: ses_open and i < sessions.count; family: "Inter" }
+        zone box z_choice.$i { at: SX + SES / 2, GY - 50 - i * 40; size: SES + 36, 38; cursor: pointer; active: ses_open and i < sessions.count }
+        on press z_choice.$i { ses_sel = i; ses_open = false; emit session(i) }
+    }
+
+    // ── under the surface: the last crash, or the news ──────────────────────────────────────────────────────
+    text pick(panel, "", "Last crash", "News") { at: GX - 40, LEVEL + 66; anchor: left center; size: 21; weight: 600; color: cream; opacity: 92%; show: panel > 0; family: "Inter" }
+    repeat i in 0..14 {
+        text lines.$i.t { at: GX - 40, LEVEL + 106 + i * 21; anchor: left center; width: 900; lines: 1; size: 13.5; color: cream; opacity: 60%; show: panel == 1 and i < lines.count and 122 + i * 21 < H - LEVEL; family: "JetBrains Mono" }
+        text lines.$i.t { at: GX - 40, LEVEL + 112 + i * 30; anchor: left center; width: 900; lines: 1; size: 16; color: cream; opacity: 72%; show: panel == 2 and i < lines.count and 132 + i * 30 < H - LEVEL; family: "Inter" }
+    }
+}

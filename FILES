@@ -19,6 +19,9 @@
 /usr/share/latteos/FILES                                <- FILES
 /usr/share/latteos/goo/login.plm                        <- goo/login.plm
 /usr/share/latteos/goo/login.luau                       <- goo/login.luau
+/usr/share/latteos/goo/login-safe.plm                   <- goo/login-safe.plm
+/usr/share/latteos/goo/login-safe.luau                  <- goo/login-safe.luau
+/usr/share/latteos/goo/lib/login.luau                   <- goo/lib/login.luau
 /usr/share/latteos/goo/safe.plm                         <- goo/safe.plm
 /usr/share/latteos/goo/safe.luau                        <- goo/safe.luau
 /usr/share/latteos/goo/lib/icons.luau                   <- goo/lib/icons.luau
