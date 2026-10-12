@@ -6,7 +6,7 @@ runs. So two parts are written here, from the number of places the scene declare
 parts/drops.plm):
 
   parts/shapes.plm   the shapes of every drop and of the ripples, for the one body they melt in
-  parts/picks.plm    the values of ONE drop, chosen by a fact: the drop a card grows from
+  parts/picks.plm    the values of ONE drop, chosen by a fact: the drop a card grows from, the one with the strip
 
   gen.py             write both
   gen.py --check     fail if they are not what would be written (tests/check.sh)
@@ -84,9 +84,15 @@ def shapes(n):
 def picks(n):
     out = [NOTE, "part Picks {\n"]
     # A property that follows, not a `let`: a `let` written here does not see the places' own names.
-    for name, what in (("own.x", "home.x.{k}"), ("own.y", "home.y.{k}"), ("own.r", "goo.{k}.r * goo.{k}.zoom"),
-                       ("own.edge", "goo.{k}.edge")):
-        out.append("    prop %s = 0 ~0ms\n    follow %s = %s\n" % (name, name, pick("card_owner", what, n)))
+    for by, values in (
+        # the drop a card grows from
+        ("card_owner", (("own.x", "home.x.{k}"), ("own.y", "home.y.{k}"), ("own.r", "goo.{k}.r * goo.{k}.zoom"))),
+        # the drop that carries the performance strip
+        ("strip_owner", (("strip.x", "x.{k}"), ("strip.y", "y.{k}"), ("strip.r", "rr.{k}"), ("strip.cap", "cap.{k}"),
+                         ("strip.edge", "goo.{k}.edge"), ("strip.dir", "goo.{k}.cap_dir"))),
+    ):
+        for name, what in values:
+            out.append("    prop %s = 0 ~0ms\n    follow %s = %s\n" % (name, name, pick(by, what, n)))
     out.append("}\n")
     return "".join(out)
 

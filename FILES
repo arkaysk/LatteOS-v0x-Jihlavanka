@@ -36,6 +36,7 @@
 /usr/share/latteos/goo/parts/shapes.plm                 <- goo/parts/shapes.plm
 /usr/share/latteos/goo/parts/card.plm                   <- goo/parts/card.plm
 /usr/share/latteos/goo/parts/faces.plm                  <- goo/parts/faces.plm
+/usr/share/latteos/goo/parts/strip.plm                  <- goo/parts/strip.plm
 /usr/share/latteos/goo/parts/rows.plm                   <- goo/parts/rows.plm
 /usr/share/latteos/goo/lib/engine.luau                  <- goo/lib/engine.luau
 /usr/share/latteos/goo/lib/card.luau                    <- goo/lib/card.luau

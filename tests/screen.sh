@@ -64,6 +64,7 @@ EOF
         # LIBSEAT_BACKEND=logind: should the nested backend fail, Hyprland falls back to the real card. Over ssh
         # logind refuses that, where seatd would let it take the screen from whoever is using it.
         echo "LIBSEAT_BACKEND=logind LATTE_SHARE=$repo/system LATTE_TIER=${LATTE_TIER:-standard} LATTE_RENDERER=hw XDG_CURRENT_DESKTOP=Hyprland XDG_STATE_HOME=$out/state Hyprland -c $out/hyprland.lua > $out/hyprland.log 2>&1 &"
+        echo "echo \$! > $out/hyprland.pid"
         echo "(sleep $((secs + 4)); labwc --exit) &"
     else
         echo "sh $out/inside.sh"
@@ -74,6 +75,13 @@ echo '<?xml version="1.0"?><labwc_config/>' > "$out/labwc/rc.xml"
 
 WLR_BACKENDS=headless WLR_LIBINPUT_NO_DEVICES=1 WLR_RENDERER=gles2 XDG_CURRENT_DESKTOP=labwc:wlroots \
     timeout $((secs + 15)) labwc -C "$out/labwc" > "$out/labwc.log" 2>&1
+# A Hyprland that outlives its labwc spins at full speed: make sure this one is gone, and what it started.
+if [ -s "$out/hyprland.pid" ]; then
+    pid="$(cat "$out/hyprland.pid")"
+    pkill -P "$pid" 2>/dev/null
+    kill "$pid" 2>/dev/null && { sleep 0.5; kill -9 "$pid" 2>/dev/null; }
+    rm -f "$out/hyprland.pid"
+fi
 # what went wrong in the logic, if anything did
 grep -E "^luau|error|panicked|I don't know" "$out/scene.log" 2>/dev/null | grep -v "^luau   · " | head -20
 [ -s "$out/shot.png" ] || { echo "screen.sh: no screenshot; see $out/scene.log and $out/labwc.log"; exit 1; }

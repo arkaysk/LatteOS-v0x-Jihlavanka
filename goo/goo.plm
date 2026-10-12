@@ -11,6 +11,7 @@
 //   body     the goo: every drop and the edge as one body; shapes.plm in it is written by gen.py
 //   card     the card's state and its frame
 //   faces    what each drop shows on itself
+//   strip    the performance strip in PowerGoo's capsule
 //   rows     what is in the card, and the tooltip
 language 0.4
 import "lang/sk.plm"
@@ -28,7 +29,7 @@ scene Goo {
         keyboard: exclusive while card_open
     }
     permissions {
-        run: "latte-sky", "latte-login", "hyprctl", "foot", "hostname", "powerprofilesctl"
+        run: "latte-sky", "latte-login", "latte-stats", "hyprctl", "foot", "hostname", "powerprofilesctl"
         services: "files", "files.write", "env", "clock", "battery", "window", "apps", "apps.launch", "session.*"
     }
 
@@ -42,5 +43,6 @@ scene Goo {
     include "parts/body.plm"
     include "parts/card.plm"
     include "parts/faces.plm"
+    include "parts/strip.plm"
     include "parts/rows.plm"
 }

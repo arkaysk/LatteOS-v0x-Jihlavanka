@@ -1,0 +1,44 @@
+// The performance strip: PowerGoo stretched along its edge into a capsule, with a cell for the processor, the
+// memory, the graphics card and its memory in it (drops/powergoo.luau). A cell is its name, its figure and
+// a bar; the figure turns amber when it runs high and red when it is critical or the part runs hot.
+// The text is always upright: on a side edge the cells stand one above the other.
+part Strip {
+    //   level   how full the bar is, 0…1 · state: 0 fine, 1 high, 2 critical
+    model cell max 6 { name: text; value: text; level: number; state: number }
+    fact strip_on = false
+    fact strip_owner = -1                      // the place of the drop that carries the strip
+    fact strip_cell = 64                       // a cell's length along the edge
+    event strip_hover ->                       // the pointer rests on a cell: the logic writes the tooltip
+    event strip_close ->                       // the right button on a cell draws the strip back in
+    prop strip.p = 0 ~grow
+    follow strip.p = if(strip_on, 1, 0)
+
+    let strip.tx = if(strip.edge == 1 or strip.edge == 3, 0, 1)        // along the edge
+    let strip.ty = 1 - strip.tx
+    let strip.nx = if(strip.edge == 1, 1, if(strip.edge == 3, -1, 0))  // away from it
+    let strip.ny = if(strip.edge == 0, -1, if(strip.edge == 2, 1, 0))
+    // The cells come in one after another, once the capsule has stretched far enough to hold them.
+    let strip.grown = clamp(strip.cap / max(strip_cell * cell.count * 0.5, 1) * 1.25 - 0.25, 0, 1)
+
+    repeat u in 0..6 {
+        // the cell's middle, from the drop's centre along the edge; always in reading order
+        let off.$u = if(strip.dir < 0, 0 - (strip.r * 0.92 + strip_cell * (cell.count - u - 0.5)), strip.r * 0.92 + strip_cell * (u + 0.5))
+        let cx.$u = strip.x + strip.tx * off.$u
+        let cy.$u = strip.y + strip.ty * off.$u
+        let a.$u = clamp(strip.p * 1.7 - 0.12 * u, 0, 1) * strip.grown * if(strip_on and u < cell.count, 1, 0)
+        let bar.$u = if(strip.tx > 0, strip_cell - 18, strip.r * 2 - 18)
+
+        box { at: cx.$u, cy.$u; size: if(strip.tx > 0, strip_cell - 4, strip.r * 2 - 8), if(strip.tx > 0, strip.r * 2 - 8, strip_cell - 4); corner: strip.r * 0.7; color: cream; opacity: 12% * cell_hit.$u.hover * a.$u; show: u < cell.count }
+        // a thin rule between two cells
+        box { at: cx.$u - strip.tx * strip_cell / 2, cy.$u - strip.ty * strip_cell / 2; size: if(strip.tx > 0, 1, strip.r * 1.1), if(strip.tx > 0, strip.r * 1.1, 1); color: ink; opacity: 22% * a.$u; show: u > 0 and u < cell.count }
+        text cell.$u.name { at: cx.$u, cy.$u - strip.r * 0.4; anchor: center; size: 9.5; weight: 700; color: ink; opacity: 62% * a.$u; show: u < cell.count; family: "Inter" }
+        text cell.$u.value { at: cx.$u, cy.$u + strip.r * 0.07; anchor: center; size: 14; weight: 700; color: pick(cell.$u.state, ink, #f5a524, #e5484d); opacity: a.$u; show: u < cell.count; family: "Inter" }
+        box { from: cx.$u - bar.$u / 2, cy.$u + strip.r * 0.56 - 1; size: bar.$u, 2; corner: 1; color: ink; opacity: 18% * a.$u; show: u < cell.count }
+        box { from: cx.$u - bar.$u / 2, cy.$u + strip.r * 0.56 - 1; size: bar.$u * clamp(cell.$u.level, 0, 1) * a.$u, 2; corner: 1; color: pick(cell.$u.state, gold, #f5a524, #e5484d); show: u < cell.count and cell.$u.level > 0 }
+
+        zone box cell_hit.$u { at: cx.$u, cy.$u; size: if(strip.tx > 0, strip_cell - 2, strip.r * 2), if(strip.tx > 0, strip.r * 2, strip_cell - 2); active: strip_on and u < cell.count and strip.p > 0.6; label: "{cell.$u.name} {cell.$u.value}"; role: item }
+        on hover cell_hit.$u for 400ms { tip_k = 200 + u; tip.x = cx.$u + strip.nx * (strip.r + 130); tip.y = cy.$u + strip.ny * (strip.r + 14) + if(strip.ny > 0, 30, 0); tip.p: 1; emit strip_hover(u) }
+        on away cell_hit.$u for 200ms while tip_k == 200 + u { tip.p: 0 }
+        on press right cell_hit.$u { tip.p: 0; emit strip_close }
+    }
+}
