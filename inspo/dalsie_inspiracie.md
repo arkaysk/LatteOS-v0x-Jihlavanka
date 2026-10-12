@@ -242,5 +242,7 @@ https://www.reddit.com/r/homeassistant/s/SyR0gWPGAA
 
 https://github.com/vmaltarello/whyd
 
+https://github.com/JonathanInTheClouds/omarchy-ios-kit 
+
 
 
