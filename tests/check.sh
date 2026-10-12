@@ -57,7 +57,7 @@ for f in filter(None, tracked):
 
 # code is written in English; the user's language lives in goo/lang
 slovak = re.compile("[áäčďéíĺľňóôŕšťúýžÁÄČĎÉÍĹĽŇÓÔŔŠŤÚÝŽ]")
-code = subprocess.run(["git", "ls-files", "--cached", "--others", "--exclude-standard", "bin", "goo", "system", "crates", "tests", "FILES", "Cargo.toml"],
+code = subprocess.run(["git", "ls-files", "--cached", "--others", "--exclude-standard", "bin", "goo", "system", "crates", "tests", "patches", "FILES", "Cargo.toml"],
                       capture_output=True, text=True).stdout.split("\n")
 for f in filter(None, code):
     if f.startswith("goo/lang/") or f in ("tests/check.sh", "goo/lib/fold.luau") or f.endswith((".png", ".ttf", ".txt")):   # these two name the letters

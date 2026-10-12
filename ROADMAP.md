@@ -41,11 +41,12 @@ Schválené 12. 10. 2026. Pracuje sa **zhora nadol, neskáče sa**; nový nápad
      V koreni ostáva: `docs`, `bughunt`, `inspo`, `ROADMAP.md`, `LATTEOS-GOO.md`, `README.md`, `ZMENY.md`,
      `TRETIE-STRANY.md`, `LICENSE`, `CLAUDE.md`. `old/` je predloha: nemení sa a do Fresh sa z neho nekopíruje, píše sa
      podľa neho nanovo.
-   - c. [ ] **pleamar 0.3.2** (12. 10.: v systéme 0.2.29; u autora 82 zmien — služba `polkit`, sieť cez iwd, hra
-     v logike, zoznam do 1024 záznamov, jazyk 0.4). Zo 7 záplat sedia 3; preniesť 5 častí z 33 (`okna-8bit` 1,
-     `ostre-okraje` 2, `pasy-tela` 1, `sklo-stabilne` 1). Overené 12. 10.: autor ich nemá, nesedia iba posunom okolitých riadkov —
-     malá, ohraničená práca; **robí sa ako prvý krok bodu d.3**, aby sa engine písal proti pleamaru, na ktorom pobeží.
-     Zdroj: `~/src/pleamar-0.3.2`, záplaty: `old/resources/patches`.
+   - c. [x] **pleamar 0.3.2** (12. 10.): záplaty prenesené a uložené v `patches/` (päť súborov podľa témy, každý sedí
+     na čistý `v0.3.2` samostatne; popis v `patches/README.md`). Farby 8 bitov má už autor sám, tá časť odpadla.
+     Preložené v `~/src/pleamar-0.3.2`, nainštalované ako `/usr/bin/pleamar` (jazyk 0.4); pôvodný je
+     `/usr/bin/pleamar-0.2.29`. Overené: nové aj staré scény prejdú `--check`, nové prihlásenie aj starý engine sa
+     na neviditeľnej obrazovke kreslia rovnako ako na 0.2.29 (rozdiel do 9 z 255). **Neoverené:** starý engine
+     v skutočnej relácii Hyprlandu na novom pleamare (záťaž, sklo, zoznam okien).
    - d. [~] **Písať načisto, po kusoch** — so skillom `pleamar`, podľa `old/`, ale lepšie. Poradie (používateľ 12. 10.):
      1. [x] **štart po prihlásenie** (12. 10.): `crates/latte-hw`, `crates/latte-boot`, `system/` (služba, greetd, labwc
         prihlasovača, položky SAFE v GRUB-e, Plymouth), `bin/latte-greeter`, `bin/latte-login`, `bin/latte-sky`,
