@@ -12,6 +12,7 @@ local E = require("lib/engine")
 local wm = require("lib/wm")
 local bar = require("lib/bar")
 local lock = require("lib/lock")
+local settings = require("lib/settings")
 -- N marks a text for the translation table (tests/check.sh looks for it); tr() translates it where it is shown.
 local function N(s) return s end
 
@@ -186,6 +187,7 @@ open_card = function(d, keep)
             { label = tr("Performance"), glyph = "rocket", on = profile == "performance", keep = true, run = set_profile("performance", d) },
         } }
     end
+    rows[#rows + 1] = { label = tr("Settings"), glyph = "settings", line = true, keep = true, more = true, run = function() settings.open(d) end }
     rows[#rows + 1] = { line = true, pills = {
         { label = tr("Sleep"), glyph = "moon", run = leave("sleep", d) },
         { label = ask("restart", N("Restart")), glyph = "refresh", on = armed == "restart", keep = true, run = leave("restart", d) },

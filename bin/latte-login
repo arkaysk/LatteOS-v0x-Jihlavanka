@@ -5,8 +5,11 @@
         everything the scene shows, as one JSON object
   latte-login hint USER
         where USER keeps the power drop on the bar (0…1), or nothing
-  latte-login coffee
-        the user's coffee as [water, milk], 0…1 each: what the goo is coloured with
+  latte-login coffee [NAME]
+        the user's coffee as [water, milk], 0…1 each: what the goo is coloured with; with a name, that one
+        becomes the user's
+  latte-login coffees
+        every coffee there is and the one chosen: {"chosen": name, "all": [[name, water, milk], …]}
   latte-login remember X
         called from the session: notes where the user keeps the power drop (X, 0…1 of the bottom edge) and
         which coffee is theirs, so that the login screen can show both before the password is typed
@@ -25,6 +28,7 @@ GREETD = "/var/lib/greetd"                # the login screen's own home
 SESSIONS = "/usr/share/wayland-sessions"
 HOME = os.path.expanduser("~")
 CACHE = os.path.join(os.environ.get("XDG_CACHE_HOME") or HOME + "/.cache", "latteos")
+CONFIG = os.path.join(os.environ.get("XDG_CONFIG_HOME") or HOME + "/.config", "latteos")
 # water and milk for each coffee, 0…1: what the goo is coloured with
 COFFEES = {"espresso": (0, 0), "ristretto": (0, 0), "lungo": (0.35, 0), "americano": (0.7, 0), "macchiato": (0, 0.25),
            "cortado": (0, 0.4), "flatwhite": (0.05, 0.5), "cappuccino": (0, 0.55), "latte": (0, 0.85),
@@ -155,7 +159,7 @@ def hint(user):
 
 def own_coffee():
     """The name of the coffee the user chose (Barista writes it), or nothing."""
-    return (re.findall(r"[\w-]+", read(os.path.join(HOME, ".config/latteos/coffee"))) or [""])[0]
+    return (re.findall(r"[\w-]+", read(os.path.join(CONFIG, "coffee"))) or [""])[0]
 
 
 def remember(x):
@@ -272,8 +276,17 @@ def main(a):
         x = hint(a[1]).get("power_x")
         print(x if isinstance(x, (int, float)) else "")
         return 0
-    if a == ["coffee"]:
+    if a and a[0] == "coffee" and len(a) <= 2:
+        if len(a) == 2:
+            if a[1] not in COFFEES:
+                return 2
+            os.makedirs(CONFIG, exist_ok=True)
+            with open(os.path.join(CONFIG, "coffee"), "w") as f:
+                f.write(a[1] + "\n")
         print(json.dumps(list(COFFEES.get(own_coffee(), (0.55, 0)))))
+        return 0
+    if a == ["coffees"]:
+        print(json.dumps({"chosen": own_coffee(), "all": [[name, w, m] for name, (w, m) in COFFEES.items()]}))
         return 0
     if len(a) == 2 and a[0] == "remember":
         try:

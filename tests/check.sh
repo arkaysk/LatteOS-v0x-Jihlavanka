@@ -13,7 +13,7 @@ for f in bin/*; do
     case "$(head -1 "$f")" in *python*) python3 -c 'import sys; compile(open(sys.argv[1]).read(), sys.argv[1], "exec")' "$f" ;; *) bash -n "$f" ;; esac
 done
 
-for f in system/session-env.sh system/libexec/* system/kernel-install/*; do bash -n "$f"; done
+for f in system/session-env.sh system/libexec/* system/kernel-install/* tests/screen.sh tests/press; do bash -n "$f"; done
 tests/test_session.sh
 
 for f in system/hypr/*.lua system/hypr/latte/*.lua; do luac -p "$f"; done

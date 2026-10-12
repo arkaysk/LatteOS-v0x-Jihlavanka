@@ -704,6 +704,7 @@ end)
 --   { "lively": true, "material": "coffee" | "glass", "bends": true, "hidden": ["clockgoo"], "zoom": { "lensgoo": 1.2 } }
 local SETTINGS = "settings.json"
 local hidden, zooms = {}, {}
+local chosen_settings = {}                   -- the file as it was last read
 function E.apply_hidden()
     local changed = false
     for id, d in pairs(by_id) do
@@ -715,6 +716,7 @@ end
 local function settings()
     local ok, t = pcall(sys.ask, "files.read", SETTINGS, "json")
     if not ok or type(t) ~= "table" then t = {} end
+    chosen_settings = t
     fact.lively = t.lively ~= false
     fact.glassy = t.material == "glass"
     fact.bends = t.bends ~= false
@@ -730,6 +732,25 @@ local function settings()
     if changed then E.apart() publish() end
 end
 
+-- what is set now, and setting one thing: it is written down and taken up at once
+function E.settings() return chosen_settings end
+function E.set(key, value)
+    chosen_settings[key] = value
+    pcall(sys.call, "files.write", SETTINGS, chosen_settings)
+    settings()
+end
+-- every drop that can be hidden, for whoever offers the choice: { id, name, hidden }
+function E.optional()
+    local list = {}
+    E.each(function(d) if not d.def.core and not d.live then list[#list + 1] = { id = d.id, name = d.def.name or d.id, hidden = hidden[d.id] == true } end end)
+    table.sort(list, function(a, b) return a.name < b.name end)
+    return list
+end
+-- every drop back where it belongs and to its own size
+function E.reset_places()
+    E.each(function(d) if not d.live and (d.moved or d.zoom ~= 1) then d:go_home() end end)
+end
+
 -- The coffee the goo is made of: how much water and milk. `emit coffee_changed` from outside reads it again.
 local function coffee()
     run("latte-login", { "coffee" }, function(out)
@@ -738,6 +759,7 @@ local function coffee()
     end)
 end
 on("coffee_changed", coffee)
+E.read_coffee = coffee
 
 -- ── the start ────────────────────────────────────────────────────────────────────────────────────────────────
 -- opts.drops: the names of the modules in drops/, in the order they are defined (one beside another after it)

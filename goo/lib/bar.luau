@@ -248,6 +248,7 @@ function M.band()
     local head = E.get(HEAD)
     if head then wm.band(head.edge) end
 end
+function M.mode() return mode end
 function M.next_mode() wm.next_mode() end
 function M.show_desktop() wm.show_desktop() end
 -- the wheel on the head: the tape slides; floating, the next window comes forward; tiles stay as they are

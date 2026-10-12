@@ -439,6 +439,9 @@ nemá (AI je hľadanie, Financie a Sociálne sú podkategórie Flathubu).
   a mikrofón, programy na pozadí ako dlaždice (pravý klik = ich ponuka). Koliesko na kvapke je hlasitosť, pravý klik
   stlmí; pri každej zmene hlasitosti (aj klávesom) kvapka na chvíľu ukáže prstenec.
 - **Okno s heslom** (polkit): keď program žiada práva správcu, scéna je agentom relácie a pýta heslo kartou.
+- **Nastavenia Goo** (PowerGoo › Nastavenia): karta — ktoré kvapky sú na ploche, vrátiť kvapky na miesto, materiál
+  (káva / sklenená káva), živé správanie, druh kávy, tapeta, režim okien. Zmena platí hneď. Veľké Nastavenia LatteOS
+  (aplikácia) ešte nie sú.
 - **Zámok obrazovky** (Win+L, PowerGoo › Zamknúť; `goo/parts/lock.plm`, `goo/lib/lock.luau`): zamyká kompozitor
   (`ext-session-lock`), heslo overí systém; vyzerá ako prihlásenie v pokoji. Keby scéna pri zamknutí spadla, nová
   zamkne znova. Zamknutie pri nečinnosti ešte nie je.
@@ -453,4 +456,4 @@ nemá (AI je hľadanie, Financie a Sociálne sú podkategórie Flathubu).
 QueenGoo, ChatGoo, vlastné kvapky a Tvorca Goo, hra pri nečinnosti (§3.1 stupeň 3; príde s vlastnými kvapkami — hrajú sa iba hravé),
 okno z bubliny (14; pád minimalizovaného okna už je), BarGoo na ďalších monitoroch (scéna je iba na hlavnom), režim AI v LensGoo,
 portrét účtu, MediaGoo (čo práve hrá), prepojené kalendáre,
-výber tapety a živé tapety, sklo okien, prichytenie ťahaním, Nastavenia a ostatné aplikácie.
+živé tapety a vlastný obrázok tapety, sklo okien, prichytenie ťahaním, Nastavenia a ostatné aplikácie.

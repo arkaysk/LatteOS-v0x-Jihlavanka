@@ -164,6 +164,7 @@ function W.setup()
 
     latte.mode = {
         tell = tell,
+        set = function(mode) if valid(mode) then W.apply(mode) end end,
         next = function()
             local at = 1
             for i, m in ipairs(W.order) do if m == W.current then at = i end end

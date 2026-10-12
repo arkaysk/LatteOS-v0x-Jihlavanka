@@ -111,18 +111,29 @@ end
 hl.on("monitor.added", place_shell)
 hl.on("monitor.removed", place_shell)
 
-hl.on("hyprland.start", function()
-    place_shell()
-    -- the wallpaper: the user's own choice (a path in ~/.config/latteos/wallpaper), or the one LatteOS brings
+-- The wallpaper: the user's own choice (a path in ~/.config/latteos/wallpaper), or the one LatteOS brings.
+-- With a path it becomes the choice; the picture on the screen changes at once.
+function latte.wallpaper(path)
+    if path then
+        os.execute("mkdir -p '" .. config .. "'")
+        local f = io.open(config .. "/wallpaper", "w")
+        if f then f:write(path .. "\n") f:close() end
+    end
     local picture = share .. "/wallpapers/latteos-2.jpg"
     local chosen = io.open(config .. "/wallpaper", "r")
     if chosen then
-        local path = (chosen:read("*l") or ""):gsub("^%s+", ""):gsub("%s+$", "")
+        local kept = (chosen:read("*l") or ""):gsub("^%s+", ""):gsub("%s+$", "")
         chosen:close()
-        local there = path ~= "" and io.open(path, "r")
-        if there then there:close() picture = path end
+        local there = kept ~= "" and io.open(kept, "r")
+        if there then there:close() picture = kept end
     end
-    hl.exec_cmd("swaybg -i '" .. picture:gsub("'", "'\\''") .. "' -m fill")
+    -- the new picture comes up before the old one goes, so the background colour never shows through
+    hl.exec_cmd("sh -c 'old=$(pgrep -x swaybg); swaybg -i \"$1\" -m fill & sleep 0.6; [ -n \"$old\" ] && kill $old' sh '" .. picture:gsub("'", "'\\''") .. "'")
+end
+
+hl.on("hyprland.start", function()
+    place_shell()
+    latte.wallpaper()
     -- systemd and D-Bus learn where the session is; the target starts the Goo scene and the portals.
     hl.exec_cmd("sh -c 'dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE "
         .. "HYPRLAND_INSTANCE_SIGNATURE LATTE_MODE LATTE_RENDERER LATTE_TIER LANG; systemctl --user start latte-session.target'")

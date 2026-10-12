@@ -217,5 +217,19 @@ library Slovak {
         "Pictures" = "Obrázky"
         "Music" = "Hudba"
         "Videos" = "Videá"
+        // the settings card
+        "Settings" = "Nastavenia"
+        "DROPS" = "KVAPKY"
+        "Put every drop back in its place" = "Vrátiť všetky kvapky na miesto"
+        "LOOK" = "VZHĽAD"
+        "Coffee" = "Káva"
+        "Coffee in glass" = "Sklenená káva"
+        "Lively drops" = "Živé správanie"
+        "Left alone they fall asleep and show the weather" = "Pri nečinnosti zaspávajú a ukazujú počasie"
+        "The coffee" = "Druh kávy"
+        "White coffee" = "Biela káva"
+        "Wallpaper" = "Tapeta"
+        "WALLPAPER" = "TAPETA"
+        "WINDOWS" = "OKNÁ"
     }
 }

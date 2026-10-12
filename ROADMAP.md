@@ -96,7 +96,8 @@ Schválené 12. 10. 2026. Pracuje sa **zhora nadol, neskáče sa**; nový nápad
         - [x] tapeta (swaybg, `assets/wallpapers`) a okenné tlačidlá (hyprbars so záplatou `patches/hyprbars-latte.patch`;
           postup v `patches/README.md`) (12. 10.).
         - [x] LensGoo: režimy Súbory a Web, kalkulačka (12. 10.).
-        - [ ] režim AI v LensGoo; výber tapety; sklo okien, prichytenie ťahaním.
+        - [x] nastavenia Goo ako karta (12. 10.): kvapky, materiál, živé správanie, káva, tapeta, režim okien.
+        - [ ] režim AI v LensGoo; sklo okien, prichytenie ťahaním.
         Overené 12. 10. v `tests/screen.sh` (Hyprland bez obrazovky na RX 640, snímky, falošná myš): štart, pokoj
         a nadnesenie, ťahanie k okraju a pád, karty všetkých troch kvapiek, spustenie aplikácie, príkaz s varovaním,
         prepnutie režimu okien, minimalizovanie klikom na ikru, ponuka okna, odhlásenie s otázkou, lišta pri ľavom

@@ -1,0 +1,6 @@
+#!/bin/sh
+# press LABEL: press whatever on the Goo scene says LABEL, as a hand would; for the DO of tests/screen.sh.
+# The scene lists what there is to press by name (`pleamar --say goo describe`); this finds the name by its words.
+name=$(pleamar --say goo describe | grep -v "covered\|inactive" | grep "«$1»" | head -1 | awk '{print $2}')
+[ -n "$name" ] || { echo "nothing says «$1»"; exit 1; }
+pleamar --say goo "press $name" >/dev/null && echo "pressed «$1»"

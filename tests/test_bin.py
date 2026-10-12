@@ -44,15 +44,18 @@ with tempfile.TemporaryDirectory() as d:
     json.dump({"power_x": 0.2, "coffee": "latte"}, open(os.path.join(d, "user-ann.json"), "w"))
     assert login.hint("ann")["power_x"] == 0.2 and login.hint("../etc/passwd") == {}
     # the session's note for the login screen: where the power drop is, and the user's coffee
-    login.HOME = d
-    os.makedirs(os.path.join(d, ".config/latteos"))
-    open(os.path.join(d, ".config/latteos/coffee"), "w").write("flatwhite\n")
+    login.CONFIG = os.path.join(d, "config")
+    os.makedirs(login.CONFIG)
+    open(os.path.join(login.CONFIG, "coffee"), "w").write("flatwhite\n")
     assert login.remember(0.31) == 0 and login.hint(login.who()) == {"coffee": "flatwhite", "power_x": 0.31}
     assert login.remember(7) == 0 and "power_x" not in login.hint(login.who())      # not on the bottom edge: no place
     out = io.StringIO()
     with contextlib.redirect_stdout(out):
         assert login.main(["coffee"]) == 0
     assert json.loads(out.getvalue()) == [0.05, 0.5]
+    with contextlib.redirect_stdout(io.StringIO()):
+        assert login.main(["coffee", "latte"]) == 0 and login.own_coffee() == "latte"
+        assert login.main(["coffee", "tea"]) == 2 and login.own_coffee() == "latte"
 with contextlib.redirect_stderr(io.StringIO()):
     assert login.main(["nonsense"]) == 2
 
