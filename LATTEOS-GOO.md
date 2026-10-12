@@ -425,6 +425,11 @@ nemá (AI je hľadanie, Financie a Sociálne sú podkategórie Flathubu).
   sa najprv spýta); guľky batérie; **pás výkonu** (pravý klik): CPU · RAM · GPU · VRAM z `latte-stats`, farba podľa
   záťaže a teploty, podrobnosti v bubline, susedné goo odtlačí a po vtiahnutí vráti, zapnutý ostane aj po prihlásení.
   Oproti v0.3 v bubline nie je takt, najnáročnejší proces a swap, a klik na bunku nič neotvára (Monitor ešte nie je).
+- **ClockGoo:** čas a dátum s teplotou na kvapke, guľky upozornení; ľavý klik (Win+N) upozornenia a kalendár v dvoch
+  stĺpcoch (akcie upozornenia, Nerušiť, Vymazať všetko; mesiac, udalosti a úlohy dňa, nová udalosť); pravý klik
+  (Win+Alt+D) karta času: Prehľad · Stopky · Minútka · Budíky · Počasie. Upozornenia prijíma pleamar (je serverom
+  upozornení relácie); minútka a budíky zvonia upozornením a tónom. Oproti v0.3 chýba digitálna pohoda, svetové
+  hodiny a prepojené kalendáre (Google, iCloud, CalDAV).
 - **Zámok obrazovky** (Win+L, PowerGoo › Zamknúť; `goo/parts/lock.plm`, `goo/lib/lock.luau`): zamyká kompozitor
   (`ext-session-lock`), heslo overí systém; vyzerá ako prihlásenie v pokoji. Keby scéna pri zamknutí spadla, nová
   zamkne znova. Zamknutie pri nečinnosti ešte nie je.
@@ -433,7 +438,7 @@ nemá (AI je hľadanie, Financie a Sociálne sú podkategórie Flathubu).
   po voľbe v karte a po minúte.
 - **Hyprland:** tri režimy okien, minimalizovanie, rozloženia okna, plochy, skratky ako vo Windows.
 
-**Ešte nie je** (vráti sa po kusoch, poradie v ROADMAP): ClockGoo,
+**Ešte nie je** (vráti sa po kusoch, poradie v ROADMAP):
 QueenGoo, ChatGoo, vlastné kvapky a Tvorca Goo, hra pri nečinnosti (§3.1 stupeň 3; príde s vlastnými kvapkami — hrajú sa iba hravé),
 okno z bubliny (14; pád minimalizovaného okna už je), BarGoo na ďalších monitoroch (scéna je iba na hlavnom), režimy LensGoo
 Súbory · Web · AI a kalkulačka, portrét účtu, náhrada rohovej lišty (ikony na pozadí, sieť, hlasitosť, upozornenia),

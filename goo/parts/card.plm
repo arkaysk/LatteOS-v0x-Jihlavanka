@@ -21,10 +21,26 @@ part Card {
         on: bool; off: bool; quiet: bool; danger: bool; more: bool; line: bool; bar: number = -1; per: number = 4
         list items max 6 { label: text; glyph: text; icon: image 44, 44; has_icon: bool; on: bool; off: bool; danger: bool }
     }
+    // the rows of a second column, beside the first: a card with two things to show at once
+    model card2 max 12 {
+        kind: plain | head | big | para | pills | tiles | profile = plain
+        label: text; hint: text; line2: text; glyph: text; icon: image 64, 64; has_icon: bool; tall: bool
+        on: bool; off: bool; quiet: bool; danger: bool; more: bool; line: bool; bar: number = -1; per: number = 4
+        list items max 6 { label: text; glyph: text; icon: image 44, 44; has_icon: bool; on: bool; off: bool; danger: bool }
+    }
     model tab max 6 { label: text; glyph: text; on: bool }
+    // a month at the top of the second column: six weeks from Monday. `dim`: a day of another month,
+    // `chosen`: the day whose events are shown, `dot`: something is written down for it
+    model day max 42 { n: text; dim: bool; today: bool; chosen: bool; dot: bool }
+    model weekday max 7 { name: text }
+    fact cal_on = false
+    text cal_title = ""
+    event cal_pick ->                          // a day was pressed, by its place among the 42
+    event cal_step ->                          // the arrows and the wheel: 1 the next month, 0 the one before
     fact card_open = false
     fact card_owner = -1                       // the place of the drop it grows from; −1: from the last press
     fact card_w = 300
+    fact card_w2 = 0                           // how wide the second column is; 0: there is none
     fact card_min = 0                          // a card with tabs is at least this tall: its top edge stays put
     fact card_peak = 0                         // …and any card only grows while it is open
     fact card_field = false                    // it has a field to type into, under the tabs
@@ -36,7 +52,9 @@ part Card {
     text g_check = ""                          // glyphs of the icon font the card draws itself; the logic fills them
     text g_more = ""
     text g_search = ""
-    event card_pick ->                         // a row was pressed: row × 8, + 1 + item for a pill or a tile
+    text g_back = ""
+    event card_pick ->                         // a row was pressed: row × 8, + 1 + item for a pill or a tile;
+                                               // the rows of the second column count on from 24
     event card_right ->
     event card_wheel ->                        // the wheel over a row: row × 2, + 1 upwards
     event card_spin ->                         // the wheel over the card, where no list scrolls: 0 up, 1 down
@@ -58,7 +76,7 @@ part Card {
     on change card_gen { reveal: 0 ~0ms; reveal: 1 ~460ms after 16ms }
 
     // Where it stands: its corner at the ear, opening towards the middle of the screen and kept inside it.
-    let card.w = min(card_w, W - 24)
+    let card.w = min(card_w + card_w2, W - 24)
     let card.h = min(max(card_col.height, max(card_min, card_peak)), H - 24)
     on change card_col.height { card_peak = max(card_peak, card_col.height) }
     let card.x = if(card_owner >= 0, own.x, tap.x)

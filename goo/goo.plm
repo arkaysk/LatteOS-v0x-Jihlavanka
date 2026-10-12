@@ -31,14 +31,16 @@ scene Goo {
         keyboard: exclusive while card_open or kb
     }
     permissions {
-        run: "latte-sky", "latte-login", "latte-stats", "hyprctl", "foot", "hostname", "powerprofilesctl", "date"
-        services: "files", "files.write", "env", "clock", "battery", "window", "apps", "apps.launch", "session.*", "auth"
+        run: "latte-sky", "latte-login", "latte-stats", "hyprctl", "foot", "hostname", "powerprofilesctl", "date", "notify-send"
+        services: "files", "files.write", "env", "clock", "battery", "window", "apps", "apps.launch", "session.*", "auth", "notifications", "notifications.*", "sound"
     }
 
     // ── what the desktop around the scene tells it (`pleamar --say goo "emit …"`) ───────────────────────────
     event window_mode ->                       // Hyprland: how windows are arranged now: 0 tape, 1 tiles, 2 floating
     event lens_toggle ->                       // the Windows key: the launcher, open or shut
     event lens_mode ->                         // …or open in one of its modes: 0 apps, 1 a command
+    event clock_notes ->                       // Win+N: notifications and the calendar
+    event clock_time ->                        // Win+Alt+D: the time card
 
     include "parts/drops.plm"
     include "parts/picks.plm"

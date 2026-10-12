@@ -36,6 +36,8 @@ function K.setup()
     bind("SUPER + Q", goo("lens_mode 0"))
     bind("SUPER + R", goo("lens_mode 1"))
 
+    bind("SUPER + N", goo("clock_notes"))
+    bind("SUPER + ALT + D", goo("clock_time"))
     bind("SUPER + L", goo("lock_now"))
     bind("SUPER + T", goo("kb_toggle"))        -- Goo from the keyboard, as Win+T goes to the taskbar on Windows
 

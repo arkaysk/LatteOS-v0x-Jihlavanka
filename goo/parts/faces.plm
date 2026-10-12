@@ -2,11 +2,12 @@
 // It is painted over the card's frame: the drop a card grew from sits in the card's corner with its face on.
 part Faces {
     repeat k in 0..32 {
-        // the pointer is the drops' light: a glint on the side that faces it, brighter the nearer it is
+        // the pointer is the drops' light: a glint on the side that faces it, brighter the nearer it is; with the
+        // pointer on the drop itself it would lie on what the drop shows, so there is none
         let to.x.$k = cursor.x - x.$k
         let to.y.$k = cursor.y - y.$k
         let to.d.$k = max(length(to.x.$k, to.y.$k), 1)
-        ellipse { at: x.$k + to.x.$k / to.d.$k * rr.$k * 0.45, y.$k + to.y.$k / to.d.$k * rr.$k * 0.45; radius: rr.$k * 0.16; scale: 1.4, 0.8; color: cream; opacity: goo.$k.glint * (0.25 + 0.5 * clamp(1 - to.d.$k / 420, 0, 1)) }
+        ellipse { at: x.$k + to.x.$k / to.d.$k * rr.$k * 0.45, y.$k + to.y.$k / to.d.$k * rr.$k * 0.45; radius: rr.$k * 0.16; scale: 1.4, 0.8; color: cream; opacity: goo.$k.glint * (0.25 + 0.5 * clamp(1 - to.d.$k / 420, 0, 1)) * clamp(to.d.$k / max(rr.$k, 1) - 0.5, 0, 1) }
 
         // a ring filled as far as its value
         arc { at: x.$k, y.$k; radius: rr.$k * 0.78; span: clamp(goo.$k.value, 0, 1) * 360deg; rotate: clamp(goo.$k.value, 0, 1) * 180deg; width: max(2, rr.$k * 0.12); color: gold; opacity: if(goo.$k.kind == 1 and goo.$k.on, 0.9, 0) }

@@ -88,8 +88,10 @@ Schválené 12. 10. 2026. Pracuje sa **zhora nadol, neskáče sa**; nový nápad
         - [ ] **jadro kvapiek, zvyšok:** BarGoo na ďalších monitoroch (vlastná inštancia s oknami toho monitora).
           Hra pri nečinnosti príde s vlastnými kvapkami (hrajú sa iba hravé), okno z bubliny s QueenGoo (rodia sa
           z nej riadne okná).
-        - [ ] **náhrada Noctalie:** ClockGoo s upozorneniami a kalendárom, ikony na pozadí, sieť, hlasitosť, Bluetooth,
-          jas, polkit; potom QueenGoo, ChatGoo, vlastné kvapky.
+        - [x] ClockGoo (12. 10.): upozornenia (pleamar je server upozornení) a kalendár, karta času so stopkami,
+          minútkou, budíkmi a počasím; karta vie dva stĺpce a mesiac.
+        - [ ] **náhrada Noctalie:** ikony na pozadí, sieť, hlasitosť, Bluetooth, jas, polkit; potom QueenGoo, ChatGoo,
+          vlastné kvapky; prepojené kalendáre.
         - [ ] režimy LensGoo Súbory · Web · AI a kalkulačka; tapeta; okenné tlačidlá (hyprbars), sklo, prichytenie.
         Overené 12. 10. v `tests/screen.sh` (Hyprland bez obrazovky na RX 640, snímky, falošná myš): štart, pokoj
         a nadnesenie, ťahanie k okraju a pád, karty všetkých troch kvapiek, spustenie aplikácie, príkaz s varovaním,

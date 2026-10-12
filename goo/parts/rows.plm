@@ -20,8 +20,10 @@ part Rows {
     on change card_gen while card_field { focus card_q }
     on change card_field while card_open { focus card_q }
 
-    let card.iw = card.w - 16                  // what the rows have: the card without its padding
-    let tab.wide = max(card.iw - (tab.count - 1) * 50, 44)
+    let card.tw = card.w - 16                  // what the tabs and the field have: the card without its padding
+    let card.iw = card.tw - card_w2            // …the rows of the first column
+    let card.sw = max(card_w2 - 8, 0)          // …and those of the second
+    let tab.wide = max(card.tw - (tab.count - 1) * 50, 44)
 
     group {
         opacity: clamp(card.p * 2 - 1, 0, 1)
@@ -47,27 +49,64 @@ part Rows {
 
             // the field
             group {
-                size: card.iw, 46
+                size: card.tw, 46
                 show: card_field
-                box { from: 0, 2; size: card.iw, 40; corner: 14; color: #3d2c22 }
+                box { from: 0, 2; size: card.tw, 40; corner: 14; color: #3d2c22 }
                 text g_search { at: 22, 22; anchor: center; size: 17; color: dim; family: "tabler-icons" }
-                text card_hint { at: 44, 22; anchor: left center; width: card.iw - 60; lines: 1; size: 15; color: dim; show: not card_typed; family: "Inter" }
-                input card_q { at: 44, 12; width: card.iw - 60; size: 15; color: cream; selection: #5a463a; family: "Inter" }
-                zone box field_hit { from: 0, 2; size: card.iw, 40; cursor: text }
+                text card_hint { at: 44, 22; anchor: left center; width: card.tw - 60; lines: 1; size: 15; color: dim; show: not card_typed; family: "Inter" }
+                input card_q { at: 44, 12; width: card.tw - 60; size: 15; color: cream; selection: #5a463a; family: "Inter" }
+                zone box field_hit { from: 0, 2; size: card.tw, 40; cursor: text }
                 on press field_hit { focus card_q }
             }
 
-            column list {
-                view: card.iw, min(list.content, H - 40 - if(tab.count > 0, 44, 0) - if(card_field, 46, 0))
-                step: 44
-                for r in card { CardRow(r) }
+            row {
+                column list {
+                    view: card.iw, min(list.content, H - 40 - if(tab.count > 0, 44, 0) - if(card_field, 46, 0))
+                    step: 44
+                    for r in card { CardRow(r, 0, card.iw) }
+                }
+                space if(card_w2 > 0, 8, 0)
+                column {
+                    show: card_w2 > 0
+                    // ── a month: its name between two arrows, the days of the week, six weeks of days ───────
+                    group {
+                        size: card.sw, 300
+                        show: cal_on
+                        let cell = (card.sw - 40) / 7
+                        text cal_title { at: card.sw / 2, 20; anchor: center; size: 16; weight: 700; color: cream; family: "Inter" }
+                        text g_back { at: 34, 20; anchor: center; size: 18; color: cream; opacity: 60% + 40% * cal_prev.hover; family: "tabler-icons" }
+                        text g_more { at: card.sw - 34, 20; anchor: center; size: 18; color: cream; opacity: 60% + 40% * cal_next.hover; family: "tabler-icons" }
+                        zone box cal_prev { at: 34, 20; size: 48, 36; cursor: pointer; label: "Previous month" }
+                        zone box cal_next { at: card.sw - 34, 20; size: 48, 36; cursor: pointer; label: "Next month" }
+                        on press cal_prev { emit cal_step(0) }
+                        on press cal_next { emit cal_step(1) }
+                        repeat w in 0..7 {
+                            text weekday.$w.name { at: 20 + cell * (w + 0.5), 54; anchor: center; size: 12; color: dim; family: "Inter" }
+                        }
+                        repeat q in 0..42 {
+                            let dx.$q = 20 + cell * (q - 7 * floor(q / 7) + 0.5)
+                            let dy.$q = 88 + 35 * floor(q / 7)
+                            // the weeks come in one after another
+                            let da.$q = clamp(reveal * 2.4 - 0.2 * floor(q / 7), 0, 1)
+                            ellipse { at: dx.$q, dy.$q; radius: 15.5; color: gold; opacity: if(day.$q.today, 100%, 22% * day_hit.$q.hover) * da.$q; show: q < day.count }
+                            ellipse { at: dx.$q, dy.$q; radius: 15.5; stroke: 1.5; color: gold; opacity: if(day.$q.chosen, 90%, 0); show: q < day.count }
+                            text day.$q.n { at: dx.$q, dy.$q; anchor: center; size: 14; weight: 600; color: if(day.$q.today, paper, cream); opacity: if(day.$q.dim, 35%, 100%) * da.$q; show: q < day.count; family: "Inter" }
+                            ellipse { at: dx.$q, dy.$q + 12; radius: 2; color: if(day.$q.today, paper, gold); show: q < day.count and day.$q.dot }
+                            zone box day_hit.$q { at: dx.$q, dy.$q; size: cell - 2, 33; cursor: pointer; active: card_open and cal_on and q < day.count; label: "{day.$q.n}"; selected: day.$q.chosen }
+                            on press day_hit.$q { emit cal_pick(q) }
+                        }
+                        zone box cal_ground { from: 0, 40; size: card.sw, 40; active: card_open and cal_on; agent: hidden }
+                        on scroll cal_ground { emit cal_step(if(wheel > 0, 0, 1)) }
+                    }
+                    for r in card2 { CardRow(r, 24, card.sw) }
+                }
             }
         }
     }
 
     // ── one row of the card. A `let` only lives in a component, hence one for the row and one for its items.
-    component CardRow(r: record) {
-        size: card.iw, parts.height
+    component CardRow(r: record, base: number, w: number) {
+        size: w, parts.height
         // the rows come in one after another, each a little later, sliding in from the ear's side
         let come = clamp(reveal * 3.2 - 0.1 * r.index, 0, 1)
         let shown = come * come * (3 - 2 * come)
@@ -76,39 +115,39 @@ part Rows {
         column parts {
             // a rule above the row
             group {
-                size: card.iw, 14
+                size: w, 14
                 show: r.line
-                box { at: card.iw / 2, 7; size: (card.iw - 36) * shown, 1; color: #5a463a }
+                box { at: w / 2, 7; size: (w - 36) * shown, 1; color: #5a463a }
             }
 
             // ── a plain row, a heading, a large figure, a profile ───────────────────────────────────────────
             group {
-                size: card.iw, h
+                size: w, h
                 show: r.kind != para and r.kind != pills and r.kind != tiles
                 opacity: shown
                 move: (1 - shown) * 18 * card.sx, 0
 
-                box { at: card.iw / 2, h / 2; size: card.iw, h - 4; corner: 12; color: if(r.danger, red, #4a372b); opacity: max(hit.hover, if(card_sel == r.index * 8, 1, 0)) * if(r.danger, 18%, 100%); show: r.kind == plain or r.kind == big }
+                box { at: w / 2, h / 2; size: w, h - 4; corner: 12; color: if(r.danger, red, #4a372b); opacity: max(hit.hover, if(card_sel == (r.index + base) * 8, 1, 0)) * if(r.danger, 18%, 100%); show: r.kind == plain or r.kind == big }
 
                 // plain
                 image r.icon { at: 15, if(r.tall, 13, 9); size: 26, 26; show: r.kind == plain and r.has_icon }
                 text r.glyph { at: 28, if(r.tall, 26, 22); anchor: center; size: 18; color: if(r.danger, red, cream); opacity: if(r.off, 40%, 90%); show: r.kind == plain and not r.has_icon and not r.on; family: "tabler-icons" }
                 text g_check { at: 28, 22; anchor: center; size: 17; color: gold; show: r.kind == plain and r.on; family: "tabler-icons" }
-                text r.label { at: 56, if(r.tall, 17, 22); anchor: left center; width: card.iw - if(r.more, 96, 82); lines: 1; size: 15; weight: 500; color: if(r.danger, red, cream); opacity: if(r.off, 45%, 100%); show: r.kind == plain; family: "Inter" }
-                text r.line2 { at: 56, 36; anchor: left center; width: card.iw - 82; lines: 1; size: 12.5; color: dim; show: r.kind == plain and r.tall; family: "Inter" }
-                text r.hint { at: card.iw - 18, if(r.tall, 17, 22); anchor: right center; size: 13; color: dim; show: r.kind == plain and not r.more; family: "Inter" }
-                text g_more { at: card.iw - 22, h / 2; anchor: center; size: 16; color: dim; show: (r.kind == plain and r.more) or (r.kind == profile and not r.quiet); family: "tabler-icons" }
+                text r.label { at: 56, if(r.tall, 17, 22); anchor: left center; width: w - if(r.more, 96, 82); lines: 1; size: 15; weight: 500; color: if(r.danger, red, cream); opacity: if(r.off, 45%, 100%); show: r.kind == plain; family: "Inter" }
+                text r.line2 { at: 56, 36; anchor: left center; width: w - 82; lines: 1; size: 12.5; color: dim; show: r.kind == plain and r.tall; family: "Inter" }
+                text r.hint { at: w - 18, if(r.tall, 17, 22); anchor: right center; size: 13; color: dim; show: r.kind == plain and not r.more; family: "Inter" }
+                text g_more { at: w - 22, h / 2; anchor: center; size: 16; color: dim; show: (r.kind == plain and r.more) or (r.kind == profile and not r.quiet); family: "tabler-icons" }
 
                 // a heading
-                text r.label { at: 22, 15; anchor: left center; width: card.iw - 120; lines: 1; size: 11.5; weight: 700; color: dim; show: r.kind == head; family: "Inter" }
-                text r.hint { at: card.iw - 18, 15; anchor: right center; size: 13; color: dim; show: r.kind == head; family: "Inter" }
+                text r.label { at: 22, 15; anchor: left center; width: w - 120; lines: 1; size: 11.5; weight: 700; color: dim; show: r.kind == head; family: "Inter" }
+                text r.hint { at: w - 18, 15; anchor: right center; size: 13; color: dim; show: r.kind == head; family: "Inter" }
 
                 // a large figure
-                text r.label { at: 22, 28; anchor: left center; width: card.iw - 44; lines: 1; size: 34; weight: 700; color: cream; show: r.kind == big; family: "Inter" }
+                text r.label { at: 22, 28; anchor: left center; width: w - 44; lines: 1; size: 34; weight: 700; color: cream; show: r.kind == big; family: "Inter" }
 
                 // a bar under a plain row or a large figure
-                box { from: if(r.kind == big, 22, 56), if(r.kind == big, 54, 38); size: card.iw - if(r.kind == big, 44, 74), 3; corner: 1.5; color: #5a463a; show: r.bar >= 0 }
-                box { from: if(r.kind == big, 22, 56), if(r.kind == big, 54, 38); size: (card.iw - if(r.kind == big, 44, 74)) * clamp(r.bar, 0, 1) * shown, 3; corner: 1.5; color: gold; show: r.bar > 0 }
+                box { from: if(r.kind == big, 22, 56), if(r.kind == big, 54, 38); size: w - if(r.kind == big, 44, 74), 3; corner: 1.5; color: #5a463a; show: r.bar >= 0 }
+                box { from: if(r.kind == big, 22, 56), if(r.kind == big, 54, 38); size: (w - if(r.kind == big, 44, 74)) * clamp(r.bar, 0, 1) * shown, 3; corner: 1.5; color: gold; show: r.bar > 0 }
 
                 // a profile: the portrait cut round by a ring of the card's colour
                 image r.icon { at: 18, 12; size: 60, 60; show: r.kind == profile and r.has_icon }
@@ -116,13 +155,13 @@ part Rows {
                 ellipse { at: 48, 42; radius: 30; color: #4a372b; show: r.kind == profile and not r.has_icon }
                 text r.glyph { at: 48, 42; anchor: center; size: 28; color: cream; opacity: 90%; show: r.kind == profile and not r.has_icon; family: "tabler-icons" }
                 ellipse { at: 48, 42; radius: 30.5; stroke: 1.5; color: gold; opacity: 70%; show: r.kind == profile }
-                text r.label { at: 94, 32; anchor: left center; width: card.iw - 128; lines: 1; size: 18; weight: 700; color: cream; show: r.kind == profile; family: "Inter" }
-                text r.line2 { at: 94, 55; anchor: left center; width: card.iw - 128; lines: 1; size: 12.5; color: dim; show: r.kind == profile; family: "Inter" }
+                text r.label { at: 94, 32; anchor: left center; width: w - 128; lines: 1; size: 18; weight: 700; color: cream; show: r.kind == profile; family: "Inter" }
+                text r.line2 { at: 94, 55; anchor: left center; width: w - 128; lines: 1; size: 12.5; color: dim; show: r.kind == profile; family: "Inter" }
 
-                zone box hit { from: 0, 1; size: card.iw, h - 2; cursor: pointer; active: card_open and not r.off and not r.quiet and r.kind != head; label: "{r.label}"; selected: r.on }
-                on press hit { emit card_pick(r.index * 8) }
-                on press right hit { emit card_right(r.index * 8) }
-                on scroll hit { emit card_wheel(r.index * 2 + if(wheel > 0, 1, 0)) }
+                zone box hit { from: 0, 1; size: w, h - 2; cursor: pointer; active: card_open and not r.off and not r.quiet and r.kind != head; label: "{r.label}"; selected: r.on }
+                on press hit { emit card_pick((r.index + base) * 8) }
+                on press right hit { emit card_right((r.index + base) * 8) }
+                on scroll hit { emit card_wheel((r.index + base) * 2 + if(wheel > 0, 1, 0)) }
             }
 
             // ── a paragraph: as tall as its text ────────────────────────────────────────────────────────────
@@ -134,7 +173,7 @@ part Rows {
                     fill: #3d2c22 85%
                     corner: 14
                     padding: 12
-                    text r.label { width: card.iw - 52; lines: 14; size: 14.5; line_height: 20; color: cream; family: "Inter"; selectable: true; selection: #5a463a }
+                    text r.label { width: w - 52; lines: 14; size: 14.5; line_height: 20; color: cream; family: "Inter"; selectable: true; selection: #5a463a }
                 }
             }
 
@@ -143,15 +182,15 @@ part Rows {
                 show: r.kind == pills or r.kind == tiles
                 opacity: shown
                 wrap: 6
-                for it in r.items { CardItem(r, it) }
+                for it in r.items { CardItem(r, it, base, w) }
             }
         }
     }
 
-    component CardItem(r: record, it: record) {
-        size: card.iw / if(r.kind == tiles, r.per, max(r.items.count, 1)), if(r.kind == tiles, 88, 46)
-        let w = card.iw / if(r.kind == tiles, r.per, max(r.items.count, 1))
-        let lit = max(hit.hover, if(card_sel == r.index * 8 + it.index + 1, 1, 0))
+    component CardItem(r: record, it: record, base: number, cw: number) {
+        size: cw / if(r.kind == tiles, r.per, max(r.items.count, 1)), if(r.kind == tiles, 88, 46)
+        let w = cw / if(r.kind == tiles, r.per, max(r.items.count, 1))
+        let lit = max(hit.hover, if(card_sel == (r.index + base) * 8 + it.index + 1, 1, 0))
 
         // a button: the chosen one gold, one that does not undo red
         box { at: w / 2, 23; size: w - 10, 40; corner: 20; color: if(it.on, gold, if(it.danger, red, #4a372b)); opacity: if(it.on, 26%, if(it.danger, 16% + 12% * lit, 62% + 38% * lit)) * if(it.off, 0.5, 1); show: r.kind == pills }
@@ -172,8 +211,8 @@ part Rows {
         text it.label { at: w / 2, 68; anchor: center; width: w - 14; lines: 1; size: 12.5; weight: 500; color: cream; align: center; show: r.kind == tiles; family: "Inter" }
 
         zone box hit { from: 3, 2; size: w - 6, if(r.kind == tiles, 84, 42); cursor: pointer; active: card_open and not it.off; label: "{it.label}"; selected: it.on }
-        on press hit { emit card_pick(r.index * 8 + it.index + 1) }
-        on press right hit { emit card_right(r.index * 8 + it.index + 1) }
+        on press hit { emit card_pick((r.index + base) * 8 + it.index + 1) }
+        on press right hit { emit card_right((r.index + base) * 8 + it.index + 1) }
     }
 
     // ── the tooltip: a drop's name and what it does. What the drop shows does not change under the pointer.
