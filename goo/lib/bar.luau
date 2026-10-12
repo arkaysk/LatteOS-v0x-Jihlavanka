@@ -285,15 +285,19 @@ function M.refresh()
         for _, w in ipairs(list) do
             sig[#sig + 1] = table.concat({ w.address, w.title, w.class, tostring(w.front), tostring(w.away), tostring(w.maximized), tostring(w.pinned), w.desk }, "\1")
             -- windows right above a bar on the bottom edge: the stretch each covers, and how much room it leaves
+            if w.visible then sig[#sig + 1] = w.x .. ":" .. w.y .. ":" .. w.w .. ":" .. w.h end
             if head and head.edge == 0 and w.visible and h > 0 and h - (w.y + w.h) < 400 then
                 above[#above + 1] = { a0 = w.x - at, a1 = w.x + w.w - at, gap = math.max(0, h - (w.y + w.h)) }
-                sig[#sig + 1] = w.x .. ":" .. w.w .. ":" .. (w.y + w.h)
             end
         end
         local s = table.concat(sig, "\2")
         if s == signature then return end
         signature, wins, blocks = s, list, above
         layout()
+        -- the drops on the other edges step out of the way of the windows in sight
+        local seen = {}
+        for _, w in ipairs(list) do if w.visible and not w.fullscreen then seen[#seen + 1] = w end end
+        E.avoid(seen)
     end)
 end
 

@@ -217,6 +217,53 @@ local function publish()
 end
 E.publish = publish
 
+-- ── a drop gets out of a window's way ────────────────────────────────────────────────────────────────────────
+-- A drop on a side edge or on the top one must not lie over a window's title with its buttons. While a
+-- window's title is under it, it steps aside along its edge to the nearest free spot, and comes back when
+-- the window has gone: the step (`aside`) is not kept. On a side edge the whole title counts, on the top
+-- edge only its ends, where the buttons are. `windows`: those in sight, each { x, y, w, h }.
+local TITLE, GAP = 48, 8                 -- how tall a window's own title bar is; how far a drop keeps from it
+local BUTTONS_RIGHT, BUTTONS_LEFT = 190, 120
+function E.avoid(windows)
+    local w, changed = num(fact.sw, 1920), false
+    for k = 0, N - 1 do
+        local d = slots[k]
+        if d and d.aside ~= 0 and (d.hidden or d.edge == 0) then d.aside, changed = 0, true end
+        if d and not d.hidden and not d.dragging and d.edge ~= 0 and d.v.team ~= 1 and docked(d) then
+            local r, home = span(d), d.at * len(d) + d.shift
+            local lo, hi = r + 6, len(d) - r - 6
+            local taken = {}                  -- stretches along the edge where its centre must not be
+            for _, win in ipairs(windows or {}) do
+                if d.edge == 2 then
+                    if 6 + d.rise + r > win.y and 6 + d.rise - r < win.y + TITLE then
+                        taken[#taken + 1] = { win.x + win.w - BUTTONS_RIGHT - r - GAP, win.x + win.w + r + GAP }
+                        taken[#taken + 1] = { win.x - r - GAP, win.x + BUTTONS_LEFT + r + GAP }
+                    end
+                else
+                    local x = d.edge == 1 and 6 + d.rise or w - 6 - d.rise
+                    if x + r > win.x and x - r < win.x + win.w then taken[#taken + 1] = { win.y - r - GAP, win.y + TITLE + r + GAP } end
+                end
+            end
+            local function free(p)
+                if p < lo or p > hi then return false end
+                for _, t in ipairs(taken) do if p > t[1] and p < t[2] then return false end end
+                return true
+            end
+            local best = free(home) and home or nil
+            if not best then
+                for _, t in ipairs(taken) do
+                    for _, p in ipairs({ t[1] - 1, t[2] + 1 }) do
+                        if free(p) and (not best or math.abs(p - home) < math.abs(best - home)) then best = p end
+                    end
+                end
+            end
+            local aside = best and math.abs(best - home) >= 0.5 and best - home or 0
+            if aside ~= d.aside then d.aside, changed = aside, true end
+        end
+    end
+    if changed then publish() end
+end
+
 -- ── where the user left each drop ────────────────────────────────────────────────────────────────────────────
 local saving
 local savers = {}
