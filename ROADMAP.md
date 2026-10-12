@@ -6,15 +6,44 @@ Podklady:
 
  docs/ARCHITECTURE.md: v časti „Ďalej“ sú odkazy na NAVRH-STARTU a OPTIMALIZACIA.
 
- nspo/LatteOS – technologický radar 2026.md : zdroj odkial čerpat a kam zapisovat najnovšie vyhladane zaujimavosti použitelne pre LatteOS.
+ inspo/LatteOS – technologický radar 2026.md : zdroj odkial čerpat a kam zapisovat najnovšie vyhladane zaujimavosti použitelne pre LatteOS.
 
  inspo/dalsie_inspiracie.md : ručne editovany subor kam vkladam ked najdem niečo zaujimave.
 
 
+## Teraz — poradie práce
+
+Schválené 12. 10. 2026. Pracuje sa **zhora nadol, neskáče sa**; nový nápad ide na koniec tohto zoznamu. Pri práci sa
+číta iba táto sekcia, zvyšok roadmapy sa hľadá podľa prúdu (R2, R3·A…). Stav testov: `python3 bughunt/stav.py`.
+
+1. [~] **Štart (R2).** Opravené a overené reštartom 12. 10.: čakanie na sieť (prihlasovanie 99 s → 36 s, celý štart
+   3 min 37 s → 1 min 12 s), rohová lišta po prihlásení (+8 s, sama), žiadna zlyhaná služba. Test grafiky pri
+   studenom štarte vyprší zámerne (pomalý disk, rozhodne ovládač) a prihlasovanie nezdržuje — nie je chyba; zvyšných
+   ~25 s je disk a `gssproxy`. Pád Hyprlandu pri konci relácie `latte-session` rozpozná; pri reštarte 12. 10. nenastal.
+   **Ostáva:** tlačidlá Reštartovať · Vypnúť · Odhlásiť v PowerGoo (idú priamo cez systemd, test 036), skutočné
+   prihlásenie do SAFE (v skúške bez obrazovky je lišta bez textu), zlé heslo a výber relácie (541).
+   *Hotovo, keď:* testy 001–012, 036, 541, 550 majú stav. Po každom štarte: `setup/test/start.sh` (predošlý: `-1`).
+2. [ ] **Upratanie Classicu.** Súpis z 12. 10.: v repe ostáva `old/` (25 tis. riadkov, nikdy sa neinštaluje), scéna
+   `session/kvapky` (z nej sa inštalujú už iba textúry), maskoti; inštaluje sa a cez `latte-session klasicke` /
+   `latte-kvapky spat` je stále dosiahnuteľná vetva Classic v `hyprland.lua`, 12 doplnkov Noctalie a konfigurácia
+   jej lišty, aplikácie `netznak`, `kapsavyrez`, `nahlad`, `rychle`, `maskot`. Rozhodnuté 12. 10.: **znak NET ostáva**
+   (preniesť do GOO; dnes prekrýva tlačidlá okna), **náhľad okna nad ikrou dorobiť** (ako Windows 11), **Kapsa preč**
+   (schránka sa vytvorí inak), ostatné z Classicu zmazať. *Hotovo, keď:* GOO beží bez zmeny, `setup/test/dym.sh` prejde a na
+   zmazané časti nič neodkazuje.
+3. [ ] **STRESTEST P1 — Boot a GOO** (001–045, 541–554). Strojovo overiteľné robí Claude, klikanie autor.
+   *Hotovo, keď:* každý z týchto testov má stav a zlyhané majú úlohu.
+4. [ ] **SafeGoo** — dokončiť podľa toho, čo ukáže bod 1 (ovládanie okien na labwc, diagnostika pádu).
+5. [ ] **GooEngine:** záťaž v pokoji (12. 10.: 44 % jadra, 6. 10.: 17 %), hĺbková kontrola LensGoo, monitor
+   pripojený za behu, 1024 × 768.
+6. [ ] **Premenovanie kvapiek** (GooBar → BarGoo, GooPower → PowerGoo) jedným skriptom, potom README.
+7. [ ] **Aplikácie podľa Priority UX** — prvý Barista s AVP2 (`docs/barista/NAVRH.md`).
+8. [ ] **Čistá inštalácia verejného stromu**, potom ďalšie vydanie.
+
 ## ROADMAP2 — LatteOS od nápadu po hotový produkt
 
-**Pridané 9. 10. 2026.** Pôvodná roadmapa vyššie zostáva bez zmien a zachováva doterajší plán aj
-záznam práce. Táto časť pridáva produktovú postupnosť: LatteOS nie je iba grafické rozhranie Goo,
+**Pridané 9. 10. 2026.** Pôvodná roadmapa je od 9. 10. v snímke
+[docs_zaloha/2026-10-09-roadmap-pred-ciscenim.md](docs_zaloha/2026-10-09-roadmap-pred-ciscenim.md) („vyššie“ a
+„pôvodné fázy“ v ďalšom texte znamenajú ju) a zachováva doterajší plán aj záznam práce. Táto časť pridáva produktovú postupnosť: LatteOS nie je iba grafické rozhranie Goo,
 ale integrovaný systém nad Linuxom — od štartu a relácie cez kompozitor, shell, aplikácie a služby
 po hardvérovú podporu, inštaláciu, obnovu a vydanie.
 
@@ -72,7 +101,7 @@ o **pôvode a platnosti**, nie o technickom stave:
 - [ ] Pri porovnaní v pondelok 12. 10. rozdeliť položky tejto vetvy na: (1) iba Classic — archivovať,
   (2) spoločný backend alebo aplikácia — ponechať ako základ, (3) GUI/funkcia stále potrebná v GOO —
   preniesť do správneho pracovného prúdu, (4) zastarané alebo duplicitné — uzavrieť.
-- [ ] Ako Classic-only preveriť najmä pôvodnú klasickú lištu/panely/spúšťač a starú plochu
+- [~] (súpis 12. 10. je v „Teraz“, bod 2) Ako Classic-only preveriť najmä pôvodnú klasickú lištu/panely/spúšťač a starú plochu
   `session/kvapky`; GOO používa engine `session/goo`, nie pôvodnú scénu Kvapky.
 
 #### B. Prenesený základ systému — platný aj pre GOO
@@ -264,7 +293,7 @@ Položka je **úloha**, kým nie je označená „návrh“.
 (r. 14–164) sú v [docs/NAVRH-STARTU.md](docs/NAVRH-STARTU.md); sekcia O s meraniami (r. 912–945) v
 [docs/OPTIMALIZACIA.md](docs/OPTIMALIZACIA.md); obe sú odkázané z [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md). Hotové
 fázy F0–F2 a merania VM sú v [docs_zaloha/](docs_zaloha/README.md), ostatné `[x]` sú história. Otvorené otázky a „Zadanie 24. 9.“
-(r. 955–1015): DMS/Caelestia a COPR sú vyriešené, zvyšok je prenesený nižšie. **Starú časť maže autor sám, keď bude s ROADMAP2 spokojný.**
+(r. 955–1015): DMS/Caelestia a COPR sú vyriešené, zvyšok je prenesený nižšie. **Starú časť maže autor sám, keď bude s ROADMAP2 spokojný.** Zmazaná 9. 10.; overené 12. 10.: číslo „r. N“ v tejto roadmape = riadok **N + 3** v snímke.
 
 **R2 — základ a štart:** distribúcia balíkov, COPR (r. 201); grafická SAFE s `nomodeset`, systemd user relácia (r. 202);
 Sunshine pred prihlásením, virtuálny monitor `[~]` (r. 318); prihlásenie — čierna sekunda, voľba prihlasovača v

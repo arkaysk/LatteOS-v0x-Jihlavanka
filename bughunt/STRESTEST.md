@@ -59,18 +59,18 @@ Pôvodný zoznam (7. 10. 2026, 540 testov bez stavu): `docs_zaloha/2026-10-07-st
 
 | # | test | P | stav | dátum · stroj | výsledok |
 |---|---|---|---|---|---|
-| 001 | Cold boot z úplne vypnutého PC | P1 | ⬜ | | |
-| 002 | Reboot z LatteOS do LatteOS | P1 | ⬜ | | |
+| 001 | Cold boot z úplne vypnutého PC | P1 | ⚠️ | 12. 10. · latte-lab | po oprave: prihlasovanie po 36 s (predtým 99 s), celý štart 1 min 12 s, žiadna zlyhaná služba; test grafiky stále vyprší (4,3 s) a rozhodne ovládač |
+| 002 | Reboot z LatteOS do LatteOS | P1 | ⚠️ | 12. 10. · latte-lab | reštart cez `shutdown -r` prešiel čisto, bez pádu Hyprlandu, GOO nabehlo; tlačidlo Reštartovať v PowerGoo je test 036 |
 | 003 | Boot po tvrdom vypnutí počas normálnej prevádzky | P1 | ⬜ | | |
 | 004 | Boot po výpadku elektriny | P1 | ⬜ | | |
 | 005 | Boot s poškodeným posledným session stavom | P1 | ⬜ | | |
 | 006 | Boot po páde compositoru | P1 | ⬜ | | |
 | 007 | Boot po páde GOO shellu | P1 | ⬜ | | |
 | 008 | Boot po páde systémovej služby | P1 | ⬜ | | |
-| 009 | Automatický výber NORMAL režimu | P1 | ⬜ | | |
+| 009 | Automatický výber NORMAL režimu | P1 | ✅ | 12. 10. · latte-lab | latte-boot: normal · hw · usporny (AMD gfx803, 4 GB), počítadlo pádov 0 |
 | 010 | Automatický výber SAFE režimu | P1 | ⬜ | | |
-| 011 | Ručné vynútenie SAFE režimu | P1 | ⬜ | | |
-| 012 | Návrat zo SAFE režimu do NORMAL | P1 | ⬜ | | |
+| 011 | Ručné vynútenie SAFE režimu | P1 | ✅ | 12. 10. · latte-lab | SAFE zvolený na prihlasovacej obrazovke (LatteOS SAFE skúška): lišta s textom, hodiny, ponuka latte-safe, terminál |
+| 012 | Návrat zo SAFE režimu do NORMAL | P1 | ⚠️ | 12. 10. · latte-lab | odhlásenie zo SAFE a prihlásenie do GOO prešlo, počítadlo pádov 0; po SAFE ostala bežať slučka núdzového rozhrania (padala každé 2 s) — opravené v `labwc/autostart`, otestovať znova |
 | 013 | Boot s neznámym GPU | P2 | ⬜ | | |
 | 014 | Boot bez použiteľnej GPU akcelerácie | P2 | ⬜ | | |
 | 015 | Boot s dvoma GPU | P2 | ⬜ | | |
@@ -85,8 +85,8 @@ Pôvodný zoznam (7. 10. 2026, 540 testov bez stavu): `docs_zaloha/2026-10-07-st
 
 | # | test | P | stav | dátum · stroj | výsledok |
 |---|---|---|---|---|---|
-| 021 | GOO sa zobrazí vždy po úspešnom prihlásení | P1 | ⬜ | | |
-| 022 | GOO sa spustí bez grafickej akcelerácie | P1 | ⬜ | | |
+| 021 | GOO sa zobrazí vždy po úspešnom prihlásení | P1 | ✅ | 12. 10. · latte-lab | po reštarte engine (prvá snímka 1,4 s), kvapky aj rohová lišta nabehli samy |
+| 022 | GOO sa spustí bez grafickej akcelerácie | P1 | ✅ | 12. 10. · latte-lab | núdzové rozhranie `safe.plm` na llvmpipe: lišta, pás výkonu, čas (snímka používateľa); CPU 3 % |
 | 023 | GOO sa obnoví po páde | P1 | ⬜ | | |
 | 024 | GooBar reaguje okamžite na myš | P1 | ⬜ | | |
 | 025 | GooBar reaguje okamžite na klávesnicu | P1 | ⬜ | | |
@@ -100,7 +100,7 @@ Pôvodný zoznam (7. 10. 2026, 540 testov bez stavu): `docs_zaloha/2026-10-07-st
 | 033 | GooBar správne reaguje na zmenu rozlíšenia | P1 | ⬜ | | |
 | 034 | GooBar správne reaguje na zmenu DPI | P1 | ⬜ | | |
 | 035 | GooBar funguje na viacerých monitoroch | P1 | ⬜ | | |
-| 036 | GooPower funguje v NORMAL aj SAFE režime (karta, pás výkonu, Uspať · Reštartovať · Vypnúť) | P1 | ⬜ | | |
+| 036 | GooPower funguje v NORMAL aj SAFE režime (karta, pás výkonu, Uspať · Reštartovať · Vypnúť) | P1 | ⚠️ | 12. 10. · latte-lab | Odhlásiť z PowerGoo funguje, v SAFE lišta s vypínačom a pásom výkonu; Reštartovať · Vypnúť idú po oprave priamo cez systemd — klik ešte neoverený |
 | 037 | ClockGoo zobrazuje správny čas | P1 | ⬜ | | |
 | 038 | ClockGoo zvláda zmenu časového pásma | P1 | ⬜ | | |
 | 039 | LensGoo vyhľadá aplikáciu | P1 | ⬜ | | |
@@ -118,7 +118,7 @@ Pôvodný zoznam (7. 10. 2026, 540 testov bez stavu): `docs_zaloha/2026-10-07-st
 | 547 | Rozlíšenie 1024 × 768: všetky karty sa zmestia, texty sa neorežú *(nové)* | P1 | ⬜ | | |
 | 548 | Ikry GooBaru: nové okno pribudne, zavreté zmizne, strapce sa rozvinú, „Ďalšie okná“ nad 48 *(nové)* | P1 | ⬜ | | |
 | 549 | Win+T: ovládanie Goo z klávesnice, režim skončí sám (klik, voľba, minúta bez klávesu) *(nové)* | P2 | ⬜ | | |
-| 550 | Rohová lišta Noctalie a ovládacie centrum sa otvorí nad lištou vpravo *(nové)* | P2 | ⬜ | | |
+| 550 | Rohová lišta Noctalie a ovládacie centrum sa otvorí nad lištou vpravo *(nové)* | P2 | ⚠️ | 12. 10. · latte-lab | po oprave lišta nabehla sama 8 s po prihlásení; otvorenie ovládacieho centra klikom ešte neoverené |
 | 551 | Regresia: artefakty z GooBaru pri zdvihnutí lišty (bughunt/bug artefakty z bargoo…png) *(nové)* | P1 | ⬜ | | |
 | 552 | Regresia: bughunt/bug001.png *(nové)* | P1 | ⬜ | | |
 | 553 | Prepnutie jazyka sk ↔ en: žiadny nepreložený text v Goo, kartách a aplikáciách LatteOS *(nové)* | P2 | ⬜ | | |
