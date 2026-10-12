@@ -1,4 +1,0 @@
-[D-BUS Service]
-Name=org.freedesktop.impl.portal.desktop.latteos
-Exec=/usr/bin/false
-SystemdService=latte-appearance.service

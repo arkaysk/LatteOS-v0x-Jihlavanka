@@ -1,1 +1,0 @@
-"""Proces Manažér/Monitor LatteOS."""

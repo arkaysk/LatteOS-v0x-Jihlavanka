@@ -266,3 +266,11 @@ Nové rozhodnutie: jeden riadok sem (dátum, čo, prečo) a oprava platného zne
 | Neznámy zdroj: sieť počas inštalácie vypnutá, zapnutie len samostatne a viditeľne | áno (8. 10.) |
 | Barista: Wine alebo Proton rozhoduje sám, bez AI a bez pomoci používateľa | áno — recepty (vlastné + komunitné: Lutris, umu, winetricks, AppDB, ProtonDB) → pravidlá z PE (rok, API, architektúra) → reťaz pokusov so snímkou prefixu; AI len voliteľne (8. 10.) |
 | Základ pre cudzie programy (wine, winetricks, bubblewrap, umu, GE-Proton, Waydroid, 7zip, DOSBox) je v systéme od čistej inštalácie | áno — f0-install.sh (HRY) + setup/f1/hry.sh; Proton v /opt/latteos/proton (8. 10.) |
+| v0.4 Fresh: čistý strom vo vetve `v0.4-fresh`, stav pred ním pod značkou `v0.3-archive` | áno — iba prihlasovanie Goo, LatteOS SAFE a LatteOS GOO; strata časti funkcií je prípustná, obnoví sa testovaním (12. 10.) |
+| Noctalia v relácii GOO (rohová lišta, Nerušiť, akcie relácie, prehľad okien) | preč vo Fresh — nahradia ju služby pleamaru a stránky z Marey; doplnky Noctalie tým odpadnú, čím padá aj dôvod rohovej lišty z 1. 10. (12. 10.) |
+| slovenské mená príkazov, súborov a komentáre v kóde | nie vo Fresh — anglicky; text na obrazovke iba cez `tr()` so spoločným jazykovým súborom (12. 10.) |
+| aplikácia menuje inú aplikáciu priamo (napr. Súbory a Monitor → Heidelberg) | nie vo Fresh — kto čo otvára, vie jedno miesto (12. 10.) |
+| skill `pleamar` od autora (`pleamar --install-skill`) | áno — nainštalovaný 12. 10.; scény a logika sa píšu podľa neho (logika nekreslí a nepozná súradnice) |
+| relácia LatteOS Game (Steam Big Picture v gamescope) v ponuke prihlásenia | ostáva, zatiaľ — aj vo Fresh (12. 10.) |
+| Fresh: starý kód | celý strom v0.3 do `old/` ako predloha; kód sa píše načisto so skillom `pleamar`, podľa starého, ale lepšie (12. 10.) |
+| Fresh: zoznam súborov `FILES` (čo LatteOS pridal do systému) | áno, od prvého kusu — aby sa dal odinštalovať; inštalátor a odinštalovanie až neskôr (12. 10.) |

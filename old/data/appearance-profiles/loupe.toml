@@ -1,6 +1,0 @@
-[profile]
-id = "loupe"
-name = "Prehliadač obrázkov"
-match = ["org.gnome.Loupe"]
-toolkit = "gtk4"
-note = "Záhlavie a tlačidlá preberie; obrázok ostáva bez zásahu."

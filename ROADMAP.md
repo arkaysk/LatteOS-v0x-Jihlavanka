@@ -24,22 +24,50 @@ Schválené 12. 10. 2026. Pracuje sa **zhora nadol, neskáče sa**; nový nápad
    do 60 s prepne do SAFE, SAFE zvolený aj automatický funguje a čisto končí.
    **Ostáva:** klik na Reštartovať · Vypnúť v PowerGoo (test 036), zlé heslo a jazyk na prihlásení (541), prečo
    núdzové rozhranie po páde berie ~2 jadrá (010), okná sa po páde kompozitora nevrátia (006), testy 003–005, 007–008.
-   *Hotovo, keď:* testy 001–012, 036, 541, 550 majú stav. Po každom štarte: `setup/test/start.sh` (predošlý: `-1`).
-2. [ ] **Upratanie Classicu.** Súpis z 12. 10.: v repe ostáva `old/` (25 tis. riadkov, nikdy sa neinštaluje), scéna
-   `session/kvapky` (z nej sa inštalujú už iba textúry), maskoti; inštaluje sa a cez `latte-session klasicke` /
-   `latte-kvapky spat` je stále dosiahnuteľná vetva Classic v `hyprland.lua`, 12 doplnkov Noctalie a konfigurácia
-   jej lišty, aplikácie `netznak`, `kapsavyrez`, `nahlad`, `rychle`, `maskot`. Rozhodnuté 12. 10.: **znak NET ostáva**
-   (preniesť do GOO; dnes prekrýva tlačidlá okna), **náhľad okna nad ikrou dorobiť** (ako Windows 11), **Kapsa preč**
-   (schránka sa vytvorí inak), ostatné z Classicu zmazať. *Hotovo, keď:* GOO beží bez zmeny, `setup/test/dym.sh` prejde a na
-   zmazané časti nič neodkazuje.
+   *Hotovo, keď:* testy 001–012, 036, 541, 550 majú stav. Po každom štarte: `old/setup/test/start.sh` (predošlý: `-1`).
+2. [~] **v0.4 Fresh — čistý strom** (schválené 12. 10.; vetva `v0.4-fresh`, predloha pod značkou `v0.3-archive`).
+   Nahrádza body „Upratanie Classicu“, „Premenovanie kvapiek“ a „Čistá inštalácia verejného stromu“. Cieľ: čistá
+   Fedora → prihlasovanie Goo + dve relácie, **LatteOS SAFE** (samostatné GUI) a **LatteOS GOO** (engine Goo so všetkými
+   kvapkami), k nim zatiaľ ostáva herná relácia **LatteOS Game** (Steam + gamescope; rozhodnuté 12. 10.), bez Noctalie a bez zrušených vecí. Pravidlá pre každý kus, ktorý do Fresh vstúpi: kód, mená príkazov,
+   súborov a komentáre po anglicky (komentár iba „prečo“, bez odkazov na staré verzie); text na obrazovke iba cez
+   preklady (scény: vstavané `translations` pleamaru 0.3 s faktom `locale`, prepnutie za behu, logika `tr()`; aplikácie
+   QML `i18n.tr()`); žiadny kus nemenuje inú aplikáciu priamo (kto čo otvára, vie jedno miesto); scény podľa skillu
+   `pleamar` (logika nekreslí a nepozná súradnice), po každej úprave `pleamar --check`. Strata funkcie je prípustná,
+   obnoví sa testovaním; zmazané sa vytiahne cez `git show v0.3-archive:cesta`.
+   - a. [x] značka `v0.3-archive`, vetva `v0.4-fresh` (12. 10.).
+   - b. [x] **Starý kód do `old/`** (12. 10.): celý strom v0.3 (`session`, `setup`, `crates`, `resources`, `Cargo.*`,
+     `docs_zaloha`) je v `old/` bez zmeny obsahu a dá sa z neho ďalej inštalovať (`old/setup/f1/install-session.sh`) —
+     na latte-lab ostáva starý LatteOS na porovnanie. Pôvodný `old/` (Classic v GTK) je zmazaný, ostáva pod značkou.
+     V koreni ostáva: `docs`, `bughunt`, `inspo`, `ROADMAP.md`, `LATTEOS-GOO.md`, `README.md`, `ZMENY.md`,
+     `TRETIE-STRANY.md`, `LICENSE`, `CLAUDE.md`. `old/` je predloha: nemení sa a do Fresh sa z neho nekopíruje, píše sa
+     podľa neho nanovo.
+   - c. [ ] **pleamar 0.3.2** (12. 10.: v systéme 0.2.29; u autora 82 zmien — služba `polkit`, sieť cez iwd, hra
+     v logike, zoznam do 1024 záznamov, jazyk 0.4). Zo 7 záplat sedia 3; preniesť 5 častí z 33 (`okna-8bit` 1,
+     `ostre-okraje` 2, `pasy-tela` 1, `sklo-stabilne` 1) — pri každej najprv overiť, či ju autor medzitým nemá.
+     Zdroj: `~/src/pleamar-0.3.2`, záplaty: `old/resources/patches`.
+   - d. [ ] **Písať načisto, po kusoch, engine prvý** — so skillom `pleamar`, podľa `old/`, ale lepšie. Poradie:
+     engine a jadro kvapiek (overiť, či jazyk 0.4 ešte potrebuje `gen.py`) → prihlásenie a zámok → SAFE → štart
+     relácie (GOO, SAFE, Game) → náhrada Noctalie (rohová lišta: tray, sieť, hlasitosť, ovládacie centrum; Nerušiť,
+     akcie relácie, prehľad okien, účty kalendára, písmo ikon — služby pleamaru `tray`, `network`, `audio`,
+     `bluetooth`, `brightness`, `session`, `polkit` a stránky z Marey, BSD-3) → aplikácie a príkazy, iba tie, ktoré
+     GOO a SAFE potrebujú. Platí z 12. 10.: znak NET do GOO, náhľad okna nad ikrou, Kapsa a maskoti sa neprenášajú.
+     Sem patrí aj premenovanie kvapiek (GooBar → BarGoo, GooPower → PowerGoo).
+   - e. [ ] **Zoznam súborov (`FILES`)** od prvého kusu: každý súbor, ktorý LatteOS pridá do systému, má riadok
+     „cieľ v systéme ← zdroj v repe“. Inštalátor aj odinštalovanie sa neskôr napíšu nad týmto zoznamom; dovtedy
+     sa podľa neho inštaluje ručne. Čo LatteOS v systéme mení (nie pridáva — `/etc/os-release`, greetd), má vlastný oddiel.
+   - f. [ ] **Inštalátor a odinštalovanie** (neskôr): výmena na latte-lab bez preinštalovania Fedory (snímka snapper
+     pred ňou, nastavenia používateľa do zálohy) a čistá Fedora vo VM s voliteľným vzdialeným prístupom
+     (dnes `old/setup/lab/vzdialene.sh`). Až tu sa dokončia zvyšné testy bodu 1.
+   - g. [ ] Fresh → `main`, verzia 0.4.0; verejné vydanie iba na pokyn.
+   - Návrh rozloženia Fresh (čaká na súhlas): `goo/` engine, kvapky, prihlásenie, zámok, SAFE a `lang/` s prekladmi ·
+     `apps/` aplikácie QML · `bin/` príkazy · `system/` Hyprland, labwc, greetd, systemd, plymouth · `assets/` tapety,
+     písma, textúry · `crates/` Rust · `patches/` záplaty pleamaru · `FILES`.
 3. [ ] **STRESTEST P1 — Boot a GOO** (001–045, 541–554). Strojovo overiteľné robí Claude, klikanie autor.
    *Hotovo, keď:* každý z týchto testov má stav a zlyhané majú úlohu.
 4. [ ] **SafeGoo** — dokončiť podľa toho, čo ukáže bod 1 (ovládanie okien na labwc, diagnostika pádu).
 5. [ ] **GooEngine:** záťaž v pokoji (12. 10.: 44 % jadra, 6. 10.: 17 %), hĺbková kontrola LensGoo, monitor
    pripojený za behu, 1024 × 768.
-6. [ ] **Premenovanie kvapiek** (GooBar → BarGoo, GooPower → PowerGoo) jedným skriptom, potom README.
-7. [ ] **Aplikácie podľa Priority UX** — prvý Barista s AVP2 (`docs/barista/NAVRH.md`).
-8. [ ] **Čistá inštalácia verejného stromu**, potom ďalšie vydanie.
+6. [ ] **Aplikácie podľa Priority UX** — prvý Barista s AVP2 (`docs/barista/NAVRH.md`).
 
 ## ROADMAP2 — LatteOS od nápadu po hotový produkt
 

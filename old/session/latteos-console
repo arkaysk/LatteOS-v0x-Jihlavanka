@@ -1,6 +1,0 @@
-#!/bin/sh
-# Vývojový vstup z prihlasovacej obrazovky: textová konzola bez grafického
-# prostredia. Po `exit` sa vráti prihlasovacia obrazovka.
-# Ak posledná relácia spadla, hneď to napíše a povie, ako to zistiť.
-command -v latteos-diag >/dev/null 2>&1 && latteos-diag notice
-exec "${SHELL:-/bin/bash}" -l
