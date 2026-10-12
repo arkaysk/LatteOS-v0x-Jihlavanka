@@ -72,7 +72,7 @@ package: rsms-inter-fonts jetbrains-mono-fonts policycoreutils-python-utils util
 package: foot less NetworkManager-tui                                # the SAFE session's terminal and rescue menu
 package: hyprland                                                    # the GOO session
 optional: steam gamescope gamescope-session gamescope-session-steam  # the Game session; without them it is not offered
-/usr/bin/pleamar: pleamar 0.2.29 or newer (github.com/k4ditano/pleamar) with the patches in old/resources/patches
+/usr/bin/pleamar: pleamar v0.3.2 (github.com/k4ditano/pleamar) built with patches/*.patch; see patches/README.md
 
 # What an installer does once the files are in place; removal undoes each line.
 [steps]
