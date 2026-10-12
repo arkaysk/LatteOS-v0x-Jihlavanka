@@ -120,6 +120,11 @@ Schválené 12. 10. 2026. Pracuje sa **zhora nadol, neskáče sa**; nový nápad
 4. [ ] **SafeGoo** — dokončiť podľa toho, čo ukáže bod 1 (ovládanie okien na labwc, diagnostika pádu).
 5. [ ] **GooEngine:** záťaž v pokoji (12. 10.: 44 % jadra, 6. 10.: 17 %), hĺbková kontrola LensGoo, monitor
    pripojený za behu, 1024 × 768.
+   Fresh, merané 12. 10. v `tests/screen.sh` (RX 640, 60 snímok/s, `PLEAMAR_TIMING=1`): scéna s 32 miestami 24 % jadra
+   (pravidlá a pružiny 1,5 ms, skladanie 1,2 ms, kreslenie 0,7 ms na snímku), so 16 miestami 17 %; každých 16 miest
+   stojí ~7 %, aj prázdnych. Zatvorená karta a prázdne miesta sa už nekreslia (27 → 24 %). Čo by pomohlo najviac:
+   `rate:` podľa podmienky (záplata pleamaru — 30 snímok/s, kým kurzor nie je pri kvapkách; `rate` je dnes iba číslo),
+   prípadne menej miest.
 6. [ ] **Aplikácie podľa Priority UX** — prvý Barista s AVP2 (`docs/barista/NAVRH.md`).
 
 ## ROADMAP2 — LatteOS od nápadu po hotový produkt

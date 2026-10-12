@@ -25,6 +25,8 @@ part Rows {
 
     group {
         opacity: clamp(card.p * 2 - 1, 0, 1)
+        // A closed card is most of the time: nothing of it is worked out then.
+        show: card.p > 0.01
         column card_col {
             at: card.x0, card.y0
             padding: 8
