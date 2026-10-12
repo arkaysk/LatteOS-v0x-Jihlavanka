@@ -7,21 +7,37 @@
 
 [files]
 /usr/bin/latte-boot                                     <- build:latte-boot
+/usr/bin/latte-stats                                    <- build:latte-stats
 /usr/bin/latte-greeter                                  <- bin/latte-greeter
 /usr/bin/latte-login                                    <- bin/latte-login
 /usr/bin/latte-sky                                      <- bin/latte-sky
+/usr/bin/latte-session                                  <- bin/latte-session
+/usr/bin/latte-safe                                     <- bin/latte-safe
+/usr/bin/latte-game                                     <- bin/latte-game
+/usr/libexec/os-session-select                          <- system/libexec/os-session-select
+/usr/share/latteos/session-env.sh                       <- system/session-env.sh
 /usr/share/latteos/FILES                                <- FILES
 /usr/share/latteos/goo/login.plm                        <- goo/login.plm
 /usr/share/latteos/goo/login.luau                       <- goo/login.luau
+/usr/share/latteos/goo/safe.plm                         <- goo/safe.plm
+/usr/share/latteos/goo/safe.luau                        <- goo/safe.luau
 /usr/share/latteos/goo/lib/icons.luau                   <- goo/lib/icons.luau
+/usr/share/latteos/goo/lib/fold.luau                    <- goo/lib/fold.luau
+/usr/share/latteos/goo/lib/dangerous.luau               <- goo/lib/dangerous.luau
 /usr/share/latteos/goo/lang/sk.plm                      <- goo/lang/sk.plm
 /usr/share/latteos/greeter/labwc/rc.xml                 <- system/greeter/labwc/rc.xml
+/usr/share/latteos/labwc/rc.xml                         <- system/labwc/rc.xml
+/usr/share/latteos/labwc/autostart                      <- system/labwc/autostart
+/usr/share/wayland-sessions/latteos.desktop             <- system/sessions/latteos.desktop
+/usr/share/wayland-sessions/latteos-safe.desktop        <- system/sessions/latteos-safe.desktop
+/usr/share/wayland-sessions/latteos-game.desktop        <- system/sessions/latteos-game.desktop
 /usr/share/fonts/latteos/tabler-icons.ttf               <- assets/fonts/tabler-icons.ttf
 /usr/share/licenses/latteos/LICENSE-tabler-icons.txt    <- assets/fonts/LICENSE-tabler-icons.txt
 /usr/share/plymouth/themes/latteos/latteos.plymouth     <- system/plymouth/latteos.plymouth
 /usr/share/plymouth/themes/latteos/watermark.png        <- system/plymouth/watermark.png
 /usr/share/plymouth/themes/latteos/                     <- system:/usr/share/plymouth/themes/spinner/*.png
 /usr/lib/systemd/system/latte-boot.service              <- system/systemd/latte-boot.service
+/usr/lib/systemd/user/latte-session.target              <- system/systemd/latte-session.target
 /usr/lib/tmpfiles.d/latteos.conf                        <- system/systemd/latteos.tmpfiles
 /etc/latteos/boot.toml                                  <- system/boot.toml
 /etc/kernel/install.d/96-latteos-safe.install           <- system/kernel-install/96-latteos-safe.install
@@ -42,11 +58,17 @@
 /var/lib/greetd/latte-last-session
 /boot/loader/entries/*-lattesafe.conf
 /boot/loader/entries/*-lattesafe-nomodeset.conf
+$XDG_RUNTIME_DIR/latteos/                               # per user: the reason for SAFE, labwc's menu, where to go next
+~/.local/state/latteos/                                 # per user: session.log, safe.log
+~/.cache/latteos/                                       # per user: the weather and the news last fetched
 
 # Not in this repository's power to ship: Fedora packages, and programs built from someone else's source.
 [needs]
 package: greetd labwc tuigreet plymouth plymouth-plugin-two-step plymouth-theme-spinner egl-utils python3
 package: rsms-inter-fonts jetbrains-mono-fonts policycoreutils-python-utils util-linux-core
+package: foot less NetworkManager-tui                                # the SAFE session's terminal and rescue menu
+package: hyprland                                                    # the GOO session
+optional: steam gamescope gamescope-session gamescope-session-steam  # the Game session; without them it is not offered
 /usr/bin/pleamar: pleamar 0.2.29 or newer (github.com/k4ditano/pleamar) with the patches in old/resources/patches
 
 # What an installer does once the files are in place; removal undoes each line.

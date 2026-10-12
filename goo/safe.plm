@@ -1,0 +1,166 @@
+// SAFE: the desktop that has to work when nothing else does.
+//
+// It runs on labwc with software rendering, so everything here is flat and still: a bar at the bottom, a
+// background, the time. No goo, no springs. From the left: the red SAFE button (the rescue menu), the load
+// figures with the power menu, a terminal, the typing row with its mode (apps, a Linux command), the open
+// windows; on the right the network and the battery.
+//
+// Positions are plain numbers because a surface's margin takes nothing else: the popups have to be told
+// where the buttons they belong to are. Adding a launcher means shifting what follows it by 46.
+language 0.3
+import "lang/sk.plm"
+
+scene Safe {
+    surface {
+        size: full, 48
+        anchor: bottom
+        margin: 0
+        level: top
+        reserve: 48
+        screens: each
+        rate: 15
+        keyboard: on_demand
+    }
+    permissions {
+        run: "foot", "latte-safe", "latte-stats", "labwc", "systemctl", "date"
+        services: "window", "window.*", "battery", "network", "apps", "apps.launch", "clock"
+    }
+
+    let coffee = #1c0f09
+    let ink    = #f3ebdd
+    let red    = #d6453d
+    let rim    = #c9a47a
+
+    service battery as bat { present: bool; percent: number }
+    service network as net { online: bool; name: text }
+    service clock as now { time: text }
+
+    fact power_open = false
+    fact mode = 0                              // what the typing row does: 0 finds apps, 1 runs a Linux command
+    fact typing = false                        // something is written in the row
+    text q = ""
+    text stats = ""
+    text date = ""
+    model wins max 3 { title: text; active: bool }
+    model results max 8 { title: text; sub: text; icon: text; g: text }
+    // The bar's own icons are glyphs of the font LatteOS brings: SAFE must not depend on an icon theme being found.
+    text g_power = ""
+    text g_term = ""
+    text g_search = ""
+    text g_prompt = ""
+    event menu ->                              // the SAFE button
+    event terminal ->
+    event machine ->                           // the power menu: 0 log out, 1 sleep, 2 restart, 3 shut down
+    event window ->                            // a window's chip, by its place
+    event entered ->                           // Enter in the row
+    event cleared ->                           // Escape
+    event picked ->                            // a result, by its place
+
+    // ── the SAFE button ─────────────────────────────────────────────────────────────────────────────────────
+    ellipse { at: 30, 24; radius: 19; color: red }
+    text "SAFE" { at: 30, 24; anchor: center; size: 11; weight: 700; color: ink }
+    zone box z_safe { from: 10, 4; size: 40, 40; cursor: pointer }
+    on press z_safe { emit menu }
+
+    // ── the load (processor, memory, graphics) and the power button ─────────────────────────────────────────
+    box { from: 58, 8; size: 372, 32; corner: 16; color: coffee }
+    text stats { at: 74, 24; anchor: left center; size: 12.5; weight: 600; color: ink; width: 300; lines: 1 }
+    ellipse { at: 410, 24; radius: 14; stroke: 1.2; color: rim; opacity: 55% }
+    text g_power { at: 410, 24; anchor: center; size: 17; color: ink; family: "tabler-icons" }
+    zone box z_power { from: 394, 8; size: 32, 32; cursor: pointer; label: "Power" }
+    on press z_power { toggle power_open }
+
+    // ── launchers ───────────────────────────────────────────────────────────────────────────────────────────
+    ellipse { at: 458, 24; radius: 18; color: coffee }
+    text g_term { at: 458, 24; anchor: center; size: 19; color: ink; family: "tabler-icons" }
+    zone box z_term { from: 440, 6; size: 36, 36; cursor: pointer; label: "Terminal" }
+    on press z_term { emit terminal }
+
+    // ── the typing row: its mode (a press or Tab changes it) and the field ──────────────────────────────────
+    ellipse { at: 504, 24; radius: 18; color: coffee }
+    text pick(mode, g_search, g_prompt) { at: 504, 24; anchor: center; size: 19; color: ink; family: "tabler-icons" }
+    zone box z_mode { from: 486, 6; size: 36, 36; cursor: pointer; label: "Search mode" }
+    on press z_mode { mode = mod(mode + 1, 2) }
+    on key Tab { mode = mod(mode + 1, 2) }
+    box { from: 532, 8; size: 316, 32; corner: 16; color: coffee }
+    text pick(mode, "Search apps…", "Run a Linux command…") { at: 548, 24; anchor: left center; size: 13.5; color: ink; opacity: 45%; width: 290; lines: 1; show: not typing }
+    input q { at: 548, 14; width: 290; size: 13.5; color: ink; selection: #5a463a }
+    zone box z_row { from: 532, 8; size: 316, 32; cursor: text }
+    on press z_row { focus q }
+    on submit q { emit entered }
+    on key Escape { power_open = false; emit cleared }
+
+    // ── the open windows: a press shows one, or puts the one in front away ──────────────────────────────────
+    repeat i in 0..3 {
+        box { from: 860 + i * 130, 8; size: 124, 32; corner: 16; color: coffee; opacity: if(wins.$i.active, 100%, 85%); show: i < wins.count and 990 + i * 130 < screen.width - 260 }
+        text wins.$i.title { at: 872 + i * 130, 24; anchor: left center; size: 12.5; width: 96; lines: 1; color: ink; show: i < wins.count and 990 + i * 130 < screen.width - 260 }
+        zone box z_win.$i { from: 860 + i * 130, 8; size: 124, 32; cursor: pointer; active: i < wins.count and 990 + i * 130 < screen.width - 260 }
+        on press z_win.$i { emit window(i) }
+    }
+
+    // ── on the right: the network and the battery ───────────────────────────────────────────────────────────
+    box { from: screen.width - 250, 8; size: 240, 32; corner: 16; color: coffee }
+    text pick(if(net.online, 1, 0), "Offline", net.name) { at: screen.width - 238, 24; anchor: left center; size: 12; color: ink; opacity: 80%; width: 150; lines: 1 }
+    text "{bat.percent} %" { at: screen.width - 22, 24; anchor: right center; size: 12.5; weight: 600; color: ink; show: bat.present }
+
+    // ── what the row found: a small window above it that grows upwards with the rows ────────────────────────
+    surface found {
+        size: 460, 310
+        anchor: bottom_left
+        margin: 0, 0, 54, 528
+        level: overlay
+        reserve: -1
+        open: results.count > 0
+        let TOP = 310 - (12 + results.count * 38)
+        box { from: 0, TOP; size: 460, 12 + results.count * 38; corner: 14; color: coffee }
+        box { from: 0, TOP; size: 460, 12 + results.count * 38; corner: 14; stroke: 1; color: rim; opacity: 55% }
+        box { from: 6, TOP + 6; size: 448, 34; corner: 10; color: ink; opacity: 10% }     // Enter takes the first
+        repeat i in 0..8 {
+            image pic.$i = from results.$i.icon, 24, 24
+            image pic.$i { at: 16, TOP + 11 + i * 38; size: 24, 24; show: i < results.count }
+            text results.$i.g { at: 28, TOP + 23 + i * 38; anchor: center; size: 19; color: ink; show: i < results.count; family: "tabler-icons" }
+            text results.$i.title { at: 52, TOP + 15 + i * 38; anchor: left center; size: 13.5; color: ink; width: 390; lines: 1; show: i < results.count }
+            text results.$i.sub { at: 52, TOP + 29 + i * 38; anchor: left center; size: 10.5; color: ink; opacity: 55%; width: 390; lines: 1; show: i < results.count }
+            zone box z_found.$i { from: 6, TOP + 6 + i * 38; size: 448, 36; cursor: pointer; active: i < results.count }
+            on press z_found.$i { emit picked(i) }
+        }
+    }
+
+    // ── the power menu, above its button ────────────────────────────────────────────────────────────────────
+    surface power {
+        size: 200, 154
+        anchor: bottom_left
+        margin: 0, 0, 54, 310
+        level: overlay
+        reserve: -1
+        open: power_open
+        box { from: 0, 0; size: 200, 154; corner: 14; color: coffee }
+        box { from: 0, 0; size: 200, 154; corner: 14; stroke: 1; color: rim; opacity: 55% }
+        text "Log out" { at: 20, 23; anchor: left center; size: 13.5; color: ink }
+        text "Sleep" { at: 20, 59; anchor: left center; size: 13.5; color: ink }
+        text "Restart" { at: 20, 95; anchor: left center; size: 13.5; color: ink }
+        text "Shut down" { at: 20, 131; anchor: left center; size: 13.5; color: red }
+        repeat i in 0..4 {
+            zone box z_machine.$i { from: 6, 6 + i * 36; size: 188, 34; cursor: pointer }
+            on press z_machine.$i { power_open = false; emit machine(i) }
+        }
+    }
+
+    // ── the background: the login screen's, with the coffee standing high — deep in trouble ─────────────────
+    surface back {
+        size: full, full
+        anchor: top
+        margin: 0
+        level: background
+        reserve: -1
+        screens: each
+        rate: 5
+        let LEVEL = back.height / 3
+        // Bands of plain colour stand in for a gradient: software rendering paints them for nothing.
+        repeat k in 0..16 { box { from: 0, LEVEL * k / 16; size: back.width, LEVEL / 16 + 1; color: mix(#0b0605, #1d0e08, k / 15) } }
+        repeat k in 0..24 { box { from: 0, LEVEL + (back.height - LEVEL) * k / 24; size: back.width, (back.height - LEVEL) / 24 + 1; color: mix(#3d1e0e, #100804, k / 23) } }
+        box { from: 0, LEVEL - 1; size: back.width, 3; color: rim; opacity: 70% }
+        text now.time { at: back.width - 72, 104; anchor: right center; size: 108; weight: 300; color: ink; family: "Inter" }
+        text date { at: back.width - 76, 182; anchor: right center; size: 21; color: ink; opacity: 66%; family: "Inter" }
+    }
+}

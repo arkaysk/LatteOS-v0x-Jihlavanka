@@ -1,0 +1,6 @@
+[Desktop Entry]
+Name=LatteOS SAFE
+Comment=Safe mode: labwc, without the graphics card
+Exec=/usr/bin/latte-session safe
+Type=Application
+DesktopNames=labwc;wlroots

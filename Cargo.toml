@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["crates/latte-hw", "crates/latte-boot"]
+members = ["crates/latte-hw", "crates/latte-boot", "crates/latte-stats"]
 exclude = ["old"]
 
 [workspace.package]

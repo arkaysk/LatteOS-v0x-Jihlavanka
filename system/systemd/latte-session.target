@@ -1,0 +1,8 @@
+# The graphical session for systemd --user. Without it graphical-session.target is not active, and
+# xdg-desktop-portal (Requisite=graphical-session.target) does not start: Flatpak apps then have no file
+# chooser, no settings and no screen sharing.
+[Unit]
+Description=LatteOS session
+BindsTo=graphical-session.target
+Wants=graphical-session-pre.target
+After=graphical-session-pre.target

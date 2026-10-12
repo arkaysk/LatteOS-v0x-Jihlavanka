@@ -1,0 +1,6 @@
+[Desktop Entry]
+Name=LatteOS Game
+Comment=Steam Big Picture full screen (gamescope); Steam's "Switch to Desktop" opens LatteOS GOO
+Exec=/usr/bin/latte-session game
+Type=Application
+DesktopNames=gamescope

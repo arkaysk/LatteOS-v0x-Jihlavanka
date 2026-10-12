@@ -13,6 +13,9 @@ for f in bin/*; do
     case "$(head -1 "$f")" in *python*) python3 -c 'import sys; compile(open(sys.argv[1]).read(), sys.argv[1], "exec")' "$f" ;; *) bash -n "$f" ;; esac
 done
 
+for f in system/session-env.sh system/libexec/* system/kernel-install/*; do bash -n "$f"; done
+tests/test_session.sh
+
 echo "== scenes"
 for s in goo/*.plm; do
     out="$(cd goo && LANG=sk_SK.UTF-8 pleamar --check "$(basename "$s")" 2>&1)" || { echo "$out"; exit 1; }
@@ -57,11 +60,18 @@ slovak = re.compile("[áäčďéíĺľňóôŕšťúýžÁÄČĎÉÍĹĽŇÓÔŔ
 code = subprocess.run(["git", "ls-files", "--cached", "--others", "--exclude-standard", "bin", "goo", "system", "crates", "tests", "FILES", "Cargo.toml"],
                       capture_output=True, text=True).stdout.split("\n")
 for f in filter(None, code):
-    if f.startswith("goo/lang/") or f == "tests/check.sh" or f.endswith((".png", ".ttf", ".txt")):   # this file names the letters
+    if f.startswith("goo/lang/") or f in ("tests/check.sh", "goo/lib/fold.luau") or f.endswith((".png", ".ttf", ".txt")):   # these two name the letters
         continue
     for n, line in enumerate(open(f, encoding="utf-8", errors="replace"), 1):
         if slovak.search(line):
             bad.append("%s:%d: Slovak in code: %s" % (f, n, line.strip()[:70]))
+
+# what the commands say goes through the same table as the scenes' texts
+table = open("goo/lang/sk.plm", encoding="utf-8").read()
+for f in ("bin/latte-safe",):
+    for text in sorted(set(re.findall(r'\bt "([^"$]+)"', open(f, encoding="utf-8").read()))):
+        if '"%s" = ' % text not in table:
+            bad.append("%s: no Slovak for «%s»" % (f, text))
 
 print("\n".join(bad) if bad else "   ok")
 sys.exit(1 if bad else 0)

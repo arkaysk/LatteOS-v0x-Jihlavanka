@@ -1,0 +1,8 @@
+# What labwc starts in the SAFE session: the bar, and the rescue menu in a terminal.
+dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP LATTE_MODE >/dev/null 2>&1 &
+# A bar that crashes comes back. The loop is tied to this labwc: left alone, it outlived the logout.
+( while kill -0 "${LABWC_PID:-$PPID}" 2>/dev/null; do
+      pleamar --scene /usr/share/latteos/goo/safe.plm --no-hud >>"${XDG_STATE_HOME:-$HOME/.local/state}/latteos/safe.log" 2>&1
+      sleep 2
+  done ) &
+foot -T "LatteOS SAFE" -e latte-safe >/dev/null 2>&1 &
