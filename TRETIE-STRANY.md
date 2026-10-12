@@ -19,6 +19,7 @@ Priložené súbory s vlastnou licenciou:
 
 | Súbor | Pôvod | Licencia |
 |---|---|---|
+| `assets/fonts/tabler-icons.ttf` | Tabler Icons, písmo ikon 3.34.1 (vetva `v0.4-fresh`) | MIT (`assets/fonts/LICENSE-tabler-icons.txt`) |
 | `session/fonts/Manrope[wght].ttf` | Manrope | SIL OFL 1.1 (`session/fonts/OFL-Manrope.txt`) |
 | `session/fonts/Fraunces[…].ttf` | Fraunces | SIL OFL 1.1 (`session/fonts/OFL-Fraunces.txt`) |
 | `session/kvapky/textury/hlinik_*.webp`, `striebro_*.webp` | ambientCG Metal009, Metal010 | CC0 1.0 (`session/kvapky/textury/LICENCIA.txt`) |

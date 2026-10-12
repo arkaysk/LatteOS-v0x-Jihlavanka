@@ -1,0 +1,5 @@
+# The session runs as the user and has to write the crash count: the latte group may.
+d /var/lib/latteos 2775 root latte -
+d /run/latteos     0755 root root  -
+# What the login screen reads: its settings, the last crash, where each account keeps its power drop.
+d /var/lib/latteos/login 2775 root latte -

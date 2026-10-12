@@ -1,0 +1,7 @@
+# /etc/latteos/boot.toml, read by latte-boot
+
+# NORMAL session crashes in a row before the next start is SAFE
+crash_limit = 2
+
+# a session that lives this many seconds counts as healthy (latte-boot ok --after)
+healthy_secs = 60

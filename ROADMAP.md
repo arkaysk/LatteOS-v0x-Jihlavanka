@@ -45,23 +45,33 @@ Schválené 12. 10. 2026. Pracuje sa **zhora nadol, neskáče sa**; nový nápad
      v logike, zoznam do 1024 záznamov, jazyk 0.4). Zo 7 záplat sedia 3; preniesť 5 častí z 33 (`okna-8bit` 1,
      `ostre-okraje` 2, `pasy-tela` 1, `sklo-stabilne` 1) — pri každej najprv overiť, či ju autor medzitým nemá.
      Zdroj: `~/src/pleamar-0.3.2`, záplaty: `old/resources/patches`.
-   - d. [ ] **Písať načisto, po kusoch, engine prvý** — so skillom `pleamar`, podľa `old/`, ale lepšie. Poradie:
-     engine a jadro kvapiek (overiť, či jazyk 0.4 ešte potrebuje `gen.py`) → prihlásenie a zámok → SAFE → štart
-     relácie (GOO, SAFE, Game) → náhrada Noctalie (rohová lišta: tray, sieť, hlasitosť, ovládacie centrum; Nerušiť,
-     akcie relácie, prehľad okien, účty kalendára, písmo ikon — služby pleamaru `tray`, `network`, `audio`,
-     `bluetooth`, `brightness`, `session`, `polkit` a stránky z Marey, BSD-3) → aplikácie a príkazy, iba tie, ktoré
-     GOO a SAFE potrebujú. Platí z 12. 10.: znak NET do GOO, náhľad okna nad ikrou, Kapsa a maskoti sa neprenášajú.
-     Sem patrí aj premenovanie kvapiek (GooBar → BarGoo, GooPower → PowerGoo).
-   - e. [ ] **Zoznam súborov (`FILES`)** od prvého kusu: každý súbor, ktorý LatteOS pridá do systému, má riadok
+   - d. [~] **Písať načisto, po kusoch** — so skillom `pleamar`, podľa `old/`, ale lepšie. Poradie (používateľ 12. 10.):
+     1. [x] **štart po prihlásenie** (12. 10.): `crates/latte-hw`, `crates/latte-boot`, `system/` (služba, greetd, labwc
+        prihlasovača, položky SAFE v GRUB-e, Plymouth), `bin/latte-greeter`, `bin/latte-login`, `bin/latte-sky`,
+        `goo/login.plm` + `login.luau`, preklady `goo/lang/sk.plm`, vlastné písmo ikon. Oproti starému: úvod riadi
+        scéna (logika iba povie „začni“), heslo ide na vstup príkazu (nie cez súbor), čas zo služby `clock`, rozloženie
+        klávesnice zo systému, bez Noctalie. Odpadlo: prihlasovač v QML a Noctalie (bez grafickej karty je zatiaľ
+        textové prihlásenie `tuigreet`), `vm-3d`, zápis `hyprland.conf`. Overené: `tests/check.sh`, scéna na
+        neviditeľnej obrazovke (snímky, záznam priebehu, zlé a dobré heslo naskúšku). **Neoverené:** skutočné
+        prihlásenie cez greetd — až po nasadení na latte-lab.
+     2. [ ] **SAFE** — dizajn a funkcie ako doteraz, s rezervou na rozširovanie; sem patrí aj prihlásenie bez grafickej
+        karty a spúšťač relácií `latte-session` (GOO, SAFE, Game).
+     3. [ ] **GooEngine** — engine a jadro kvapiek (jazyk 0.3 ani 0.4 nevie cyklus v tele kvapky, `gen.py` treba ďalej),
+        potom náhrada Noctalie (rohová lišta: tray, sieť, hlasitosť, ovládacie centrum; Nerušiť, akcie relácie, prehľad
+        okien, účty kalendára — služby pleamaru `tray`, `network`, `audio`, `bluetooth`, `brightness`, `session`,
+        `polkit` a stránky z Marey, BSD-3), aplikácie a príkazy, iba tie, ktoré GOO a SAFE potrebujú. Platí z 12. 10.:
+        znak NET do GOO, náhľad okna nad ikrou, Kapsa a maskoti sa neprenášajú; kvapky sa premenujú
+        (GooBar → BarGoo, GooPower → PowerGoo).
+   - e. [~] **Zoznam súborov (`FILES`)** od prvého kusu (založený 12. 10., stráži ho `tests/check.sh`): každý súbor, ktorý LatteOS pridá do systému, má riadok
      „cieľ v systéme ← zdroj v repe“. Inštalátor aj odinštalovanie sa neskôr napíšu nad týmto zoznamom; dovtedy
      sa podľa neho inštaluje ručne. Čo LatteOS v systéme mení (nie pridáva — `/etc/os-release`, greetd), má vlastný oddiel.
    - f. [ ] **Inštalátor a odinštalovanie** (neskôr): výmena na latte-lab bez preinštalovania Fedory (snímka snapper
      pred ňou, nastavenia používateľa do zálohy) a čistá Fedora vo VM s voliteľným vzdialeným prístupom
      (dnes `old/setup/lab/vzdialene.sh`). Až tu sa dokončia zvyšné testy bodu 1.
    - g. [ ] Fresh → `main`, verzia 0.4.0; verejné vydanie iba na pokyn.
-   - Návrh rozloženia Fresh (čaká na súhlas): `goo/` engine, kvapky, prihlásenie, zámok, SAFE a `lang/` s prekladmi ·
+   - Rozloženie Fresh (schválené 12. 10.): `goo/` engine, kvapky, prihlásenie, zámok, SAFE a `lang/` s prekladmi ·
      `apps/` aplikácie QML · `bin/` príkazy · `system/` Hyprland, labwc, greetd, systemd, plymouth · `assets/` tapety,
-     písma, textúry · `crates/` Rust · `patches/` záplaty pleamaru · `FILES`.
+     písma, textúry · `crates/` Rust · `patches/` záplaty pleamaru · `tests/` kontroly (`tests/check.sh` pred každým commitom) · `FILES`.
 3. [ ] **STRESTEST P1 — Boot a GOO** (001–045, 541–554). Strojovo overiteľné robí Claude, klikanie autor.
    *Hotovo, keď:* každý z týchto testov má stav a zlyhané majú úlohu.
 4. [ ] **SafeGoo** — dokončiť podľa toho, čo ukáže bod 1 (ovládanie okien na labwc, diagnostika pádu).

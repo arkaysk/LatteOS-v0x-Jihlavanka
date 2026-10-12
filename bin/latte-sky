@@ -1,0 +1,130 @@
+#!/usr/bin/env python3
+"""latte-sky: where the sun and the moon are, and the weather, for the place in login.conf.
+
+Prints one JSON object:
+  sun, moon   {"alt": degrees above the horizon, "t": 0 at rise … 1 at set, -1 while it is down};
+              the moon also "lit" (0…1) and "waxing"
+  rain        0 none, 1 in the next hours, 2 right now;  snow: whether that is snow
+  wind        km/h
+  now         {"temp", "code" (WMO), "kind" 1 clear … 7 storm, "icon"} or null without a forecast
+  place, hours [{time, temp, code}], days [{weekday (0 Monday), max, min, code, rain %}]
+"""
+import datetime, json, math, os, re, sys, time, urllib.request
+
+CONF = "/var/lib/latteos/login/login.conf"
+CACHE = os.path.join(os.environ.get("XDG_CACHE_HOME") or os.path.expanduser("~/.cache"), "latteos", "weather.json")
+RAIN = set(range(51, 68)) | {80, 81, 82, 95, 96, 99}
+SNOW = {71, 73, 75, 77, 85, 86}
+
+
+def conf():
+    try:
+        return dict(re.findall(r'^\s*(\w+)\s*=\s*"?(.*?)"?\s*$', open(CONF, encoding="utf-8").read(), re.M))
+    except OSError:
+        return {}
+
+
+def sky(lat, lon, t=None):
+    """Low precision (~1°): enough for a silhouette on the login screen."""
+    t = time.time() if t is None else t
+    d = t / 86400.0 + 2440587.5 - 2451545.0              # days since J2000
+    rad, sin, cos = math.radians, math.sin, math.cos
+    g = rad((357.529 + 0.98560028 * d) % 360)
+    sun_lon = rad((280.459 + 0.98564736 * d + 1.915 * sin(g) + 0.020 * sin(2 * g)) % 360)
+    e = rad(23.439 - 0.00000036 * d)
+    ra_s, dec_s = math.atan2(cos(e) * sin(sun_lon), cos(sun_lon)), math.asin(sin(e) * sin(sun_lon))
+    anomaly = rad((134.963 + 13.064993 * d) % 360)
+    moon_lon = rad((218.316 + 13.176396 * d) % 360) + rad(6.289) * sin(anomaly)
+    moon_lat = rad(5.128) * sin(rad((93.272 + 13.229350 * d) % 360))
+    ra_m = math.atan2(sin(moon_lon) * cos(e) - math.tan(moon_lat) * sin(e), cos(moon_lon))
+    dec_m = math.asin(sin(moon_lat) * cos(e) + cos(moon_lat) * sin(e) * sin(moon_lon))
+    sidereal = rad((280.46061837 + 360.98564736629 * d + lon) % 360)
+    phi = rad(lat)
+
+    def where(ra, dec):
+        h = (sidereal - ra + math.pi) % (2 * math.pi) - math.pi          # hour angle
+        alt = math.degrees(math.asin(sin(phi) * sin(dec) + cos(phi) * cos(dec) * cos(h)))
+        half_day = math.acos(max(-1.0, min(1.0, -math.tan(phi) * math.tan(dec))))
+        up = half_day > 0.01 and abs(h) <= half_day
+        return {"alt": round(alt, 1), "t": round((h + half_day) / (2 * half_day), 4) if up else -1}
+
+    apart = math.acos(max(-1.0, min(1.0, sin(dec_s) * sin(dec_m) + cos(dec_s) * cos(dec_m) * cos(ra_s - ra_m))))
+    moon = where(ra_m, dec_m)
+    moon.update(lit=round((1 - cos(apart)) / 2, 3), waxing=sin(moon_lon - sun_lon) > 0)
+    return {"sun": where(ra_s, dec_s), "moon": moon}
+
+
+def forecast(lat, lon):
+    """Open-Meteo, no key needed. Asked at most every 20 minutes; with no network, the last one known."""
+    try:
+        if time.time() - os.path.getmtime(CACHE) < 20 * 60:
+            return json.load(open(CACHE))
+    except (OSError, ValueError):
+        pass
+    url = ("https://api.open-meteo.com/v1/forecast?latitude=%s&longitude=%s&current=temperature_2m,weather_code,wind_speed_10m"
+           "&hourly=temperature_2m,weather_code&daily=weather_code,temperature_2m_max,temperature_2m_min,"
+           "precipitation_probability_max&timezone=auto&forecast_days=8" % (lat, lon))
+    try:
+        d = json.load(urllib.request.urlopen(url, timeout=8))
+    except Exception:
+        try:
+            return json.load(open(CACHE))
+        except (OSError, ValueError):
+            return {}
+    cur, hourly, daily = d.get("current") or {}, d.get("hourly") or {}, d.get("daily") or {}
+    out = {"now": {"temp": round(cur.get("temperature_2m") or 0), "code": cur.get("weather_code", 3)},
+           "wind": round(cur.get("wind_speed_10m") or 0), "hours": [], "days": []}
+    times = hourly.get("time") or []
+    start = next((i for i, t in enumerate(times) if t[:13] == (cur.get("time") or "")[:13]), 0) + 1
+    for i in range(start, min(start + 24, len(times)), 3):
+        out["hours"].append({"time": times[i][11:16], "temp": round(hourly["temperature_2m"][i]), "code": hourly["weather_code"][i]})
+    for i, day in enumerate(daily.get("time") or []):
+        out["days"].append({"weekday": datetime.date.fromisoformat(day).weekday(), "max": round(daily["temperature_2m_max"][i]),
+                            "min": round(daily["temperature_2m_min"][i]), "code": daily["weather_code"][i],
+                            "rain": (daily.get("precipitation_probability_max") or [None] * 9)[i] or 0})
+    try:
+        os.makedirs(os.path.dirname(CACHE), exist_ok=True)
+        json.dump(out, open(CACHE + ".new", "w"))
+        os.replace(CACHE + ".new", CACHE)
+    except OSError:
+        pass
+    return out
+
+
+def kind(code):
+    """A WMO weather code as (kind, icon): the seven the scenes tell apart."""
+    return ((1, "sun") if code == 0 else (2, "sun-low") if code in (1, 2) else (4, "cloud-fog") if code in (45, 48)
+            else (7, "cloud-storm") if code >= 95 else (6, "cloud-snow") if code in SNOW
+            else (5, "cloud-rain") if code in RAIN else (3, "cloud"))
+
+
+def report(c=None, f=None):
+    c = conf() if c is None else c
+    try:
+        lat, lon = float(c.get("lat", "")), float(c.get("lon", ""))
+    except ValueError:
+        return {"sun": {"alt": 0, "t": -1}, "moon": {"alt": 0, "t": -1, "lit": 1, "waxing": True},
+                "rain": 0, "snow": False, "wind": 0, "now": None, "place": "", "hours": [], "days": []}
+    f = forecast(lat, lon) if f is None else f
+    out = sky(lat, lon)
+    now = f.get("now")
+    soon = [h.get("code") for h in (f.get("hours") or [])[:2]]
+    code = now.get("code") if now else None
+    if code in RAIN or code in SNOW:
+        rain, snow = 2, code in SNOW
+    elif any(k in RAIN or k in SNOW for k in soon):
+        rain, snow = 1, not any(k in RAIN for k in soon)
+    else:
+        rain, snow = 0, False
+    if now:
+        now = dict(now, **dict(zip(("kind", "icon"), kind(int(code)))))
+    out.update(rain=rain, snow=snow, wind=f.get("wind", 0), now=now, place=c.get("place", "").split(",")[0],
+               hours=f.get("hours") or [], days=f.get("days") or [])
+    return out
+
+
+if __name__ == "__main__":
+    if len(sys.argv) > 1:
+        print(__doc__.strip(), file=sys.stderr)
+        sys.exit(2)
+    print(json.dumps(report(), ensure_ascii=False))
