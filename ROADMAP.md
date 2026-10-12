@@ -43,7 +43,8 @@ Schválené 12. 10. 2026. Pracuje sa **zhora nadol, neskáče sa**; nový nápad
      podľa neho nanovo.
    - c. [ ] **pleamar 0.3.2** (12. 10.: v systéme 0.2.29; u autora 82 zmien — služba `polkit`, sieť cez iwd, hra
      v logike, zoznam do 1024 záznamov, jazyk 0.4). Zo 7 záplat sedia 3; preniesť 5 častí z 33 (`okna-8bit` 1,
-     `ostre-okraje` 2, `pasy-tela` 1, `sklo-stabilne` 1) — pri každej najprv overiť, či ju autor medzitým nemá.
+     `ostre-okraje` 2, `pasy-tela` 1, `sklo-stabilne` 1). Overené 12. 10.: autor ich nemá, nesedia iba posunom okolitých riadkov —
+     malá, ohraničená práca; **robí sa ako prvý krok bodu d.3**, aby sa engine písal proti pleamaru, na ktorom pobeží.
      Zdroj: `~/src/pleamar-0.3.2`, záplaty: `old/resources/patches`.
    - d. [~] **Písať načisto, po kusoch** — so skillom `pleamar`, podľa `old/`, ale lepšie. Poradie (používateľ 12. 10.):
      1. [x] **štart po prihlásenie** (12. 10.): `crates/latte-hw`, `crates/latte-boot`, `system/` (služba, greetd, labwc
