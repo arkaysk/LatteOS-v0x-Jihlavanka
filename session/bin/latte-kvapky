@@ -139,6 +139,18 @@ engine_bezi() {
     done
     return 1
 }
+# engine s obnovou po páde (12. 10.: po páde pleamaru ostala plocha bez lišty a nič ho nevrátilo). Po páde (signál alebo
+# panika) sa scéna spustí znova cez `latte-kvapky scena`; riadny koniec (kill, koniec kompozitora) sa neobnovuje.
+# ponytail: najviac 5 obnov za prihlásenie, aby pokazená scéna netočila procesor; potom až nové prihlásenie.
+strazeny() {   # $1 log, ďalej príkaz enginu
+    local log="$1"; shift
+    setsid -f sh -c 'log="$1"; shift; "$@" >"$log" 2>&1; rc=$?
+        case $rc in 0|1|129|130|143) exit 0 ;; esac
+        n=${LATTE_GOO_OBNOVA:-0}; [ "$n" -lt 5 ] || exit 0
+        [ -S "$XDG_RUNTIME_DIR/hypr/$HYPRLAND_INSTANCE_SIGNATURE/.socket.sock" ] || exit 0
+        echo "$(date "+%F %T") engine spadol (rc=$rc), obnova $((n + 1))/5" >>"$(dirname "$log")/obnova-engine.log"
+        sleep 1; LATTE_GOO_OBNOVA=$((n + 1)) exec latte-kvapky scena' sh "$log" "$@"
+}
 scene_up() {
     [ -x "$pleamar" ] && [ -f "$scene" ] || { notify-send -a LatteOS "Kvapky" "chýba pleamar alebo scéna ($scene)"; return 1; }
     local dir="${XDG_STATE_HOME:-$HOME/.local/state}/latteos"
@@ -169,14 +181,14 @@ for x in m: print(x["name"], x["id"])' 2>/dev/null)
                 engine_bezi "$meno" && continue
                 [ -f "$dir/kvapky.log" ] && mv -f "$dir/kvapky.log" "$dir/kvapky.log.1"   # predošlý log ostáva ako .1
                 LATTE_GOO_MONITOR="$meno" LATTE_GOO_MONITOR_ID="$id" LATTE_VARIANT=kvapky PLEAMAR_GENERIC=window \
-                    setsid -f "$pleamar" --scene "$scene" --no-hud --screen "$meno" >"$dir/kvapky.log" 2>&1
+                    strazeny "$dir/kvapky.log" "$pleamar" --scene "$scene" --no-hud --screen "$meno"
                 sleep 0.6                                # hlavná inštancia si prvá vezme meno „goo“ (pleamar --say goo)
             else
                 [ "$(cat "${XDG_CONFIG_HOME:-$HOME/.config}/latteos/goobar-monitory" 2>/dev/null)" = off ] && continue
                 engine_bezi "$meno" && continue
                 LATTE_GOO_VEDLAJSI=1 LATTE_GOO_STAV="$meno" LATTE_GOO_MONITOR="$meno" LATTE_GOO_MONITOR_ID="$id" \
                     LATTE_VARIANT=kvapky PLEAMAR_GENERIC=window \
-                    setsid -f "$pleamar" --scene "$mala" --no-hud --screen "$meno" >"$dir/kvapky-$meno.log" 2>&1
+                    strazeny "$dir/kvapky-$meno.log" "$pleamar" --scene "$mala" --no-hud --screen "$meno"
             fi
         done
         ;;

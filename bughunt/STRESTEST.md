@@ -64,13 +64,13 @@ Pôvodný zoznam (7. 10. 2026, 540 testov bez stavu): `docs_zaloha/2026-10-07-st
 | 003 | Boot po tvrdom vypnutí počas normálnej prevádzky | P1 | ⬜ | | |
 | 004 | Boot po výpadku elektriny | P1 | ⬜ | | |
 | 005 | Boot s poškodeným posledným session stavom | P1 | ⬜ | | |
-| 006 | Boot po páde compositoru | P1 | ⬜ | | |
+| 006 | Boot po páde compositoru | P1 | ⚠️ | 12. 10. · latte-lab | pád Hyprlandu (ABRT) po 8 min: sám sa spustil znova v tom istom prihlásení, engine aj rohová lišta späť, počítadlo pádov po minúte 0; otvorené okná sa nevrátili |
 | 007 | Boot po páde GOO shellu | P1 | ⬜ | | |
 | 008 | Boot po páde systémovej služby | P1 | ⬜ | | |
 | 009 | Automatický výber NORMAL režimu | P1 | ✅ | 12. 10. · latte-lab | latte-boot: normal · hw · usporny (AMD gfx803, 4 GB), počítadlo pádov 0 |
-| 010 | Automatický výber SAFE režimu | P1 | ⬜ | | |
+| 010 | Automatický výber SAFE režimu | P1 | ⚠️ | 12. 10. · latte-lab | druhý pád Hyprlandu do 60 s → SAFE s dôvodom „Hyprland spadol po 20 s“, ponuka latte-safe; núdzové rozhranie pritom bralo ~2 jadrá (pri SAFE zvolenom na prihlásení 3 % celkom) — zistiť rozdiel |
 | 011 | Ručné vynútenie SAFE režimu | P1 | ✅ | 12. 10. · latte-lab | SAFE zvolený na prihlasovacej obrazovke (LatteOS SAFE skúška): lišta s textom, hodiny, ponuka latte-safe, terminál |
-| 012 | Návrat zo SAFE režimu do NORMAL | P1 | ⚠️ | 12. 10. · latte-lab | odhlásenie zo SAFE a prihlásenie do GOO prešlo, počítadlo pádov 0; po SAFE ostala bežať slučka núdzového rozhrania (padala každé 2 s) — opravené v `labwc/autostart`, otestovať znova |
+| 012 | Návrat zo SAFE režimu do NORMAL | P1 | ✅ | 12. 10. · latte-lab | návrat zo SAFE (reset počítadla, odhlásenie) na prihlasovaciu obrazovku; slučka núdzového rozhrania po oprave skončila so SAFE |
 | 013 | Boot s neznámym GPU | P2 | ⬜ | | |
 | 014 | Boot bez použiteľnej GPU akcelerácie | P2 | ⬜ | | |
 | 015 | Boot s dvoma GPU | P2 | ⬜ | | |
@@ -87,7 +87,7 @@ Pôvodný zoznam (7. 10. 2026, 540 testov bez stavu): `docs_zaloha/2026-10-07-st
 |---|---|---|---|---|---|
 | 021 | GOO sa zobrazí vždy po úspešnom prihlásení | P1 | ✅ | 12. 10. · latte-lab | po reštarte engine (prvá snímka 1,4 s), kvapky aj rohová lišta nabehli samy |
 | 022 | GOO sa spustí bez grafickej akcelerácie | P1 | ✅ | 12. 10. · latte-lab | núdzové rozhranie `safe.plm` na llvmpipe: lišta, pás výkonu, čas (snímka používateľa); CPU 3 % |
-| 023 | GOO sa obnoví po páde | P1 | ⬜ | | |
+| 023 | GOO sa obnoví po páde | P1 | ✅ | 12. 10. · latte-lab | pred opravou engine po páde nič nevrátilo (plocha bez lišty); po oprave v `latte-kvapky` je späť do 3 s (ABRT), riadne ukončenie sa neobnovuje, najviac 5 obnov za prihlásenie |
 | 024 | GooBar reaguje okamžite na myš | P1 | ⬜ | | |
 | 025 | GooBar reaguje okamžite na klávesnicu | P1 | ⬜ | | |
 | 026 | Goo drop možno presúvať | P1 | ⬜ | | |
