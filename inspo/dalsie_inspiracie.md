@@ -235,3 +235,7 @@ https://codeberg.org/GuillotineMelody/nervboot
     automaticky závislosť. Prechody okien/ponúk testovať oddelene od tapety cez Hyprland a Quickshell,
     iba na plnom výkonnostnom stupni; vo VM/SAFE ponechať jednoduché statické pozadie. Zachovať plánované
     pauzovanie pri hre alebo zakrytí a zjednotiť výber tapiet v Nastaveniach.
+
+https://github.com/academa-labs/manimgx
+
+
