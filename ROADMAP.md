@@ -54,8 +54,15 @@ Schválené 12. 10. 2026. Pracuje sa **zhora nadol, neskáče sa**; nový nápad
         textové prihlásenie `tuigreet`), `vm-3d`, zápis `hyprland.conf`. Overené: `tests/check.sh`, scéna na
         neviditeľnej obrazovke (snímky, záznam priebehu, zlé a dobré heslo naskúšku). **Neoverené:** skutočné
         prihlásenie cez greetd — až po nasadení na latte-lab.
-     2. [ ] **SAFE** — dizajn a funkcie ako doteraz, s rezervou na rozširovanie; sem patrí aj prihlásenie bez grafickej
-        karty a spúšťač relácií `latte-session` (GOO, SAFE, Game).
+     2. [x] **SAFE a relácie** (12. 10.): `goo/safe.plm` + `safe.luau` (lišta: záťaž, ponuka napájania, terminál, riadok
+        na písanie s režimami aplikácie a príkaz, okná, sieť, batéria; pozadie s časom), `bin/latte-safe` (záchranná
+        ponuka; texty z toho istého `goo/lang/sk.plm`), `bin/latte-session` (GOO · SAFE · Game, strážca pádov),
+        `bin/latte-game`, `crates/latte-stats`, labwc pre SAFE, tri položky relácií, statické prihlásenie
+        `goo/login-safe.plm` pre softvérové kreslenie (VM, SAFE) so spoločnou logikou `goo/lib/login.luau`.
+        Overené: `tests/check.sh` (aj strážca relácie s napodobenými programami), snímky na neviditeľnej obrazovke.
+        **Zatiaľ chýba** (vráti sa s príslušným programom): zámok obrazovky, hľadanie súborov a AI v riadku, tlačidlá
+        App Manager a Správca zariadení, profily prostredí (`latte-profil`), profil účtu (`latte-gooconfig`).
+        Voľba GOO pri prihlásení skončí v SAFE s dôvodom „plná plocha nie je nainštalovaná“, kým nie je bod 3.
      3. [ ] **GooEngine** — engine a jadro kvapiek (jazyk 0.3 ani 0.4 nevie cyklus v tele kvapky, `gen.py` treba ďalej),
         potom náhrada Noctalie (rohová lišta: tray, sieť, hlasitosť, ovládacie centrum; Nerušiť, akcie relácie, prehľad
         okien, účty kalendára — služby pleamaru `tray`, `network`, `audio`, `bluetooth`, `brightness`, `session`,
