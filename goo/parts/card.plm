@@ -1,0 +1,88 @@
+// The card: the one window of the shell. A menu, a launcher, a panel: whatever a drop opens grows out of it.
+//
+// The drop it belongs to steps away from the edge and sits in the card's corner as its ear, so one can tell
+// whose it is; a card without an owner grows from where the pointer pressed. The logic says what is in it
+// (lib/card.luau): tabs, a field to type into, and rows of a few kinds. How big it comes out is the layout's
+// business (parts/rows.plm), not the logic's.
+//
+// This part is the card's state and its frame, which lies under the drops' faces: the ear is a drop.
+part Card {
+    //   kind     plain: an icon, a label, and on the right a hint or the arrow of a submenu
+    //            head: the heading of a section · big: a large figure · para: a paragraph in a bubble
+    //            pills: its `items` as buttons side by side · tiles: its `items` as apps, an icon over a name
+    //            profile: a portrait, a name and a line under it
+    //   tall     a plain row with a second line under its label (`line2`)
+    //   on       ticked, or the chosen one · off: not available · quiet: to be read, not pressed
+    //   danger   it does not undo: red · more: opens a submenu · line: a rule above it
+    //   bar      a bar filled this far (0…1), none below 0 · per: how many tiles make a line
+    model card max 24 {
+        kind: plain | head | big | para | pills | tiles | profile = plain
+        label: text; hint: text; line2: text; glyph: text; icon: image 64, 64; has_icon: bool; tall: bool
+        on: bool; off: bool; quiet: bool; danger: bool; more: bool; line: bool; bar: number = -1; per: number = 4
+        list items max 6 { label: text; glyph: text; icon: image 44, 44; has_icon: bool; on: bool; off: bool; danger: bool }
+    }
+    model tab max 6 { label: text; glyph: text; on: bool }
+    fact card_open = false
+    fact card_owner = -1                       // the place of the drop it grows from; −1: from the last press
+    fact card_w = 300
+    fact card_min = 0                          // a card with tabs is at least this tall: its top edge stays put
+    fact card_peak = 0                         // …and any card only grows while it is open
+    fact card_field = false                    // it has a field to type into, under the tabs
+    fact card_typed = false                    // …and something is typed in it
+    fact card_sel = -1                         // the row chosen with the arrow keys: row × 8, + 1 + item
+    fact card_gen = 0                          // the logic counts up for new content: the rows come in again
+    text card_q = ""
+    text card_hint = ""
+    text g_check = ""                          // glyphs of the icon font the card draws itself; the logic fills them
+    text g_more = ""
+    text g_search = ""
+    event card_pick ->                         // a row was pressed: row × 8, + 1 + item for a pill or a tile
+    event card_right ->
+    event card_wheel ->                        // the wheel over a row: row × 2, + 1 upwards
+    event card_spin ->                         // the wheel over the card, where no list scrolls: 0 up, 1 down
+    event card_tab ->                          // a tab was pressed
+    event card_next ->                         // Tab and Shift+Tab: 1 the next tab, 0 the one before
+    event card_key ->                          // the arrow keys: 1 down, 0 up
+    event card_enter ->                        // Enter: the chosen row, or what is typed
+    event card_closed ->
+
+    let paper = #2c2019
+    let dim = #b8a491
+    let red = #e5484d
+    spring nimble = 520, 34
+
+    prop card.p = 0 ~grow
+    follow card.p = if(card_open, 1, 0)
+    // The rows come in one after another when the content is new.
+    prop reveal = 1 ~0ms
+    on change card_gen { reveal: 0 ~0ms; reveal: 1 ~460ms after 16ms }
+
+    // Where it stands: its corner at the ear, opening towards the middle of the screen and kept inside it.
+    let card.w = min(card_w, W - 24)
+    let card.h = min(max(card_col.height, max(card_min, card_peak)), H - 24)
+    on change card_col.height { card_peak = max(card_peak, card_col.height) }
+    let card.x = if(card_owner >= 0, own.x, tap.x)
+    let card.y = if(card_owner >= 0, own.y, tap.y)
+    let ear = if(card_owner >= 0, own.r, 10)
+    let card.sx = if(card.x + card.w + 12 <= W, 1, -1)
+    let card.sy = if(card.y > H / 2, if(card.y - card.h - 12 >= 0, -1, 1), if(card.y + card.h + 12 <= H, 1, -1))
+    let card.x0 = clamp(if(card.sx > 0, card.x, card.x - card.w), 12, W - 12 - card.w)
+    let card.y0 = clamp(if(card.sy > 0, card.y, card.y - card.h), 12, H - 12 - card.h)
+    let card.ax = if(card.sx > 0, card.x0, card.x0 + card.w)
+    let card.ay = if(card.sy > 0, card.y0, card.y0 + card.h)
+    let card.q = clamp(card.p, 0, 1.08)
+    prop card.ws = 290 ~grow
+    prop card.hs = 60 ~grow
+    follow card.ws = card.w
+    follow card.hs = card.h
+
+    // The frame: coffee at the ear, turning into the colour of windows further away.
+    body {
+        gradient: card.ax, card.ay to card.ax + card.sx * card.w, card.ay + card.sy * card.h, coffee, mix(paper, coffee, 0.4), paper, paper
+        rim: 16%
+        shadow: 0, 8, 22, 36% * clamp(card.p, 0, 1)
+        opacity: if(card.p > 0.02, 1, 0)
+        box { at: card.ax + card.sx * card.ws * card.q / 2, card.ay + card.sy * card.hs * card.q / 2; size: max(card.ws * card.q, 14) * if(card.p > 0.02, 1, 0), max(card.hs * card.q, 14); corner: if(ear > 14, 26, 18) }
+        ellipse { at: card.ax, card.ay; radius: (ear * clamp(card.p * 3, 0, 1) + 1) * if(card.p > 0.02, 1, 0); blend: if(ear > 14, 18, 12) }
+    }
+}

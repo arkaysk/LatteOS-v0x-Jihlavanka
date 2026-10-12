@@ -1,0 +1,345 @@
+// What a drop is: its record, how it moves and what the mouse does to it. Nothing is painted here.
+//
+// Every drop obeys the same rules; they differ only in the numbers of their record, which the logic fills
+// (lib/engine.luau). A drop sits on one of the four edges of the screen, which is the surface of the coffee:
+// it rests low, rises on a stalk and leans when the pointer comes near, melts with its neighbours, and never
+// hangs in the air. The pointer only ever attracts.
+//
+// A `let` inside `repeat` belongs to its own turn, so what the body and the faces need of a drop is handed out
+// through a property that follows it at once (`~0ms`).
+part Drops {
+    // ── the coffee: how much water and milk is in it, the user's own drink ──────────────────────────────────
+    spring soft = 60, 14
+    fact water = 0
+    fact milk = 0
+    prop wet = 0 ~soft
+    prop white = 0 ~soft
+    follow wet = water
+    follow white = milk
+    let coffee = mix(mix(#1c0f09, #4a2410, wet), #c9a47a, pow(white, 2))
+    let cream = #f3ebdd
+    let ink = mix(#f3ebdd, #2a170c, smooth(0.62, 0.78, white))      // dark writing on a milky coffee
+    let gold = #f7c873
+    let W = screen.width
+    let H = screen.height
+    let LEVEL = 6                              // the surface lies this far inside each edge of the screen
+    let GRAVITY = 800                          // px/s²: low, a fall from mid-screen takes about a second.
+                                               // lib/engine.luau has the same number, to know when a fall ends
+
+    // ── the record of a drop ────────────────────────────────────────────────────────────────────────────────
+    //   on            the place is taken
+    //   name          what it is called, for whoever reads the screen without seeing it
+    //   edge          0 bottom, 1 left, 2 top, 3 right
+    //   at, shift     home along the edge: `at` of its length (0…1) plus `shift` px
+    //   rise          home height of its centre above the edge, px
+    //   r, zoom       radius, and how much the user inflated it
+    //   swell         how much it puffs up under the pointer
+    //   pull, reach   how strongly the pointer attracts it (0…1) and from how far (px)
+    //   lift          how high it rises when the pointer is near (1 = three quarters of its radius)
+    //   sticky, tear  how hard it holds on to home when dragged (0…1) and after how many px it tears off
+    //   glint         the pointer's reflection on it (0…1)
+    //   draggable     it can be dragged
+    //   fx, fx_k      a movement of its own and its strength: 1 breath, 2 wobble, 3 shiver, 4 heartbeat
+    //   kind          0 an icon and a word, 1 a ring filled to `value` (0…1), 2 a clock: `label` large, `line2` under it
+    //   glyph, label  the icon (a glyph of the icon font) and the text in the drop
+    //   icon, dim     an app's icon by name or path instead of the glyph, and how much it is dimmed (0…1)
+    //   beads, bead_hues, bead_text   small beads beside it: how many (0…5), their colours as octal digits
+    //                 (0 red, 1 green, 2 blue, 3 yellow, 4 dark red, 5 light) and the number the last one carries
+    //   core, core_hue, core_beat     a coloured core fading into the coffee: its strength, colour (0 red,
+    //                 1 green, 2 blue, 3 amber, 4 light, 5 violet) and whether it pulses
+    //   melt, puddle  how strongly it melts with its neighbours and how much water lies under it
+    //   crown         a glyph worn on its outer side
+    //   cap, cap_dir  a capsule: half the length of its straight part along the edge (px), and where it grows
+    //                 (0 both ways, −1 or +1 one way: the drop stays where it is and stretches)
+    //   line2, lines  a capsule's second line of text and how many lines it has
+    //   still         it does not sink at rest: what it shows has to stay whole
+    //   left…, right… its neighbours on the edge, as the logic found them: where they are and how big
+    //   hop, squash, dip, shiver   counters: each change makes it jump, flatten, dive under the surface, tremble
+    //   land          counter: the drag has ended and the record says where home is now
+    //   fall, fall_h  counter: it was let go in the air, this many px above its new home
+    model goo max 32 {
+        on: bool; name: text; edge: number; at: number; shift: number; rise: number; r: number = 26; zoom: number = 1
+        swell: number = 0.08; pull: number = 0.3; reach: number = 220; lift: number = 1; sticky: number
+        tear: number = 90; glint: number = 0.5; draggable: bool = true; fx: number; fx_k: number = 1
+        kind: number; value: number; glyph: text; label: text; icon: text; has_icon: bool; dim: number
+        beads: number; bead_hues: number; bead_text: text; core: number; core_hue: number; core_beat: bool
+        melt: number = 1; puddle: number = 1; crown: text; cap: number; cap_dir: number; line2: text
+        lines: number = 1; still: bool
+        left: bool; left_at: number; left_shift: number
+        right: bool; right_at: number; right_shift: number; right_rise: number; right_r: number = 26
+        hop: number; squash: number; dip: number; shiver: number; land: number; fall: number; fall_h: number
+    }
+    fact slots = 32                            // how many places this scene has
+
+    spring glide = 150, 13                     // along the edge: soft, no bounce
+    spring drip = 190, 9                       // away from the edge: it overshoots and comes back
+    spring grow = 260, 16
+    spring settle = 70, 13                     // sinking to rest: slow
+    spring glow = 90, 14
+
+    // ── what the logic hears; the number is the drop's place (the wheel: place × 2, + 1 upwards) ────────────
+    event goo_down ->
+    event goo_up ->                            // released without having been dragged
+    event goo_right ->
+    event goo_middle ->
+    event goo_hold ->
+    event goo_wheel ->
+    event goo_enter ->
+    event goo_leave ->
+    event goo_hover ->                         // the pointer has rested on it: the logic writes the tooltip
+    event goo_grab ->                          // it has become a drag
+    event goo_letgo ->                         // …and was let go at `freed.x`, `freed.y`
+    event goo_idle ->                          // the stage of idleness changed
+    fact freed.x = 0
+    fact freed.y = 0
+    fact tap.x = 0                           // where the last press was: a card may grow from there
+    fact tap.y = 0
+    fact carried = -1                          // the drop being dragged, −1 none: the neck that ties it to home
+    fact sw = 0                                // the screen's size for the logic, which lays the drops out
+    fact sh = 0
+    every 200ms while sw != W or sh != H { sw = W; sh = H }
+
+    // ── settings and the sky ────────────────────────────────────────────────────────────────────────────────
+    event coffee_changed ->                    // whoever changes the user's coffee says so
+    fact lively = true                         // drops fall asleep, watch the weather and play when left alone
+    fact glassy = false                        // the material: coffee in glass instead of plain coffee
+    fact bends = true                          // …and whether that glass bends what is behind it
+    fact idle = 0                              // 0 awake, 1 after a minute, 2 after three, 3 after six
+    fact day = 1                               // 0 night … 1 the sun is up
+    fact golden = 0                            // 0…1 the sun is low: dawn and dusk
+    fact rain = 0                              // shown only when idle: 0 none, 1 thin, 2 rain
+    fact snow = false                          // …or snow instead
+    prop daylight = 1 ~soft
+    prop warmth = 0 ~soft
+    follow daylight = day
+    follow warmth = golden
+    // the light the drops reflect: dim and cold at night, white by day, warm at dawn and dusk
+    let sky = mix(mix(#8fa3c8, #fff4e0, daylight), #ffb070, warmth)
+
+    on idle for 60s while lively { idle = 1; emit goo_idle(1) }
+    on idle for 180s while lively { idle = 2; emit goo_idle(2) }
+    on idle for 360s while lively { idle = 3; emit goo_idle(3) }
+    on change cursor.x while idle > 0 { idle = 0; emit goo_idle(0) }
+    on change cursor.y while idle > 0 { idle = 0; emit goo_idle(0) }
+
+    // ── the surface: ripples along the bottom edge, and the wind ────────────────────────────────────────────
+    // Four ripples at a time, which the logic takes in turn. `at` and `shift` say where, as a drop's home does;
+    // kind 0 is a stone thrown in the water (two crests run apart and fade), 1 a tremble on the spot.
+    model ripple max 4 { at: number; shift: number; force: number; kind: number; n: number }
+    repeat i in 0..4 {
+        prop age.$i = 1 ~0ms
+        on change ripple.$i.n { age.$i: 0 ~0ms; age.$i: 1 ~1800ms after 16ms }
+        prop rip.x.$i = 0 ~0ms
+        prop rip.a.$i = 0 ~0ms
+        follow rip.x.$i = ripple.$i.at * W + ripple.$i.shift
+        follow rip.a.$i = ripple.$i.force * (1 - age.$i)
+    }
+    // A gust now and then, from a side of its own choosing: the drops sway like corn, the small ones more.
+    let gust = smooth(0.58, 0.85, 0.5 + 0.5 * noise(time * 0.045 + 11))
+    let wind = clamp(noise(time * 0.013 + 3) * 4, -1, 1)
+
+    repeat k in 0..32 {
+        fact dx.$k = 0                         // dragging: how far the pointer is from where it pressed
+        fact dy.$k = 0
+        fact held.$k = 0                       // it has moved far enough to be a drag
+        fact torn.$k = 0                       // a sticky drop has let go of home
+        prop hov.$k = 0 ~grow
+        prop sq.$k = 0 ~drip                   // flattened: pressed, landed, bumped into
+        prop shake.$k = 0 ~0ms
+        prop face.$k = 1 ~grow                 // how big its icon and text are drawn
+        prop cap.$k = 0 ~grow                  // a capsule stretches out and draws back
+        follow cap.$k = goo.$k.cap
+
+        // Its edge: n points away from the edge into the screen, t along it. Everything below is worked out
+        // in these two, so a drop behaves alike on all four edges.
+        let nx.$k = if(goo.$k.edge == 1, 1, if(goo.$k.edge == 3, -1, 0))
+        let ny.$k = if(goo.$k.edge == 0, -1, if(goo.$k.edge == 2, 1, 0))
+        let tx.$k = abs(ny.$k)
+        let ty.$k = abs(nx.$k)
+        let len.$k = if(ty.$k > 0, H, W)
+        let along.$k = goo.$k.at * len.$k + goo.$k.shift
+        let e0x.$k = if(goo.$k.edge == 1, LEVEL, if(goo.$k.edge == 3, W - LEVEL, 0))
+        let e0y.$k = if(goo.$k.edge == 0, H - LEVEL, if(goo.$k.edge == 2, LEVEL, 0))
+        let hx.$k = e0x.$k + tx.$k * along.$k + nx.$k * goo.$k.rise
+        let hy.$k = e0y.$k + ty.$k * along.$k + ny.$k * goo.$k.rise
+        let r0.$k = goo.$k.r * goo.$k.zoom
+        let docked.$k = if(goo.$k.rise < goo.$k.r * 1.6, 1, 0)
+
+        // The pointer, seen from home. For a drop on its edge only the height above it counts: a pointer at
+        // the screen's edge under it is still beside it. `smooth` wants fixed bounds and the reach is the
+        // record's, hence the curve written out.
+        let cdx.$k = cursor.x - hx.$k
+        let cdy.$k = cursor.y - hy.$k
+        let cd.$k = max(length(cdx.$k, cdy.$k), 1)
+        let cdt.$k = cdx.$k * tx.$k + cdy.$k * ty.$k
+        let cdn.$k = cdx.$k * nx.$k + cdy.$k * ny.$k
+        let far.$k = length(cdt.$k, max(0, cdn.$k - r0.$k * 0.6)) * docked.$k + cd.$k * (1 - docked.$k)
+        let ct.$k = clamp(far.$k / max(goo.$k.reach, 1), 0, 1)
+        let near.$k = (1 - ct.$k * ct.$k * (3 - 2 * ct.$k)) * (1 - held.$k)
+        // How near the pointer is to each neighbour: a drop rises a little with the one beside it and leans to it.
+        let lt.$k = clamp(length(cdt.$k + along.$k - goo.$k.left_at * len.$k - goo.$k.left_shift, max(0, cdn.$k - 20)) / max(goo.$k.reach, 1), 0, 1)
+        let rt.$k = clamp(length(cdt.$k + along.$k - goo.$k.right_at * len.$k - goo.$k.right_shift, max(0, cdn.$k + goo.$k.rise - goo.$k.right_rise - 20)) / max(goo.$k.reach, 1), 0, 1)
+        let nl.$k = if(goo.$k.left, 1 - lt.$k * lt.$k * (3 - 2 * lt.$k), 0)
+        let nr.$k = if(goo.$k.right, 1 - rt.$k * rt.$k * (3 - 2 * rt.$k), 0)
+
+        // Each drop slowly comes up and goes down in a rhythm of its own, and what melts changes with it.
+        let flow.$k = 0.5 + 0.5 * noise(time * 0.11 + k * 1.37)
+        let small.$k = clamp(26 / max(r0.$k, 1), 0.6, 1.8)
+        // the ripples passing under it
+        let wave.$k = (rip.a.0 * if(ripple.0.kind > 0.5, sin(time * 1900) * max(0, 1 - abs(hx.$k - rip.x.0) / 140), max(0, 1 - pow((abs(hx.$k - rip.x.0) - age.0 * 420) / 34, 2)))
+                    + rip.a.1 * if(ripple.1.kind > 0.5, sin(time * 1900) * max(0, 1 - abs(hx.$k - rip.x.1) / 140), max(0, 1 - pow((abs(hx.$k - rip.x.1) - age.1 * 420) / 34, 2)))
+                    + rip.a.2 * if(ripple.2.kind > 0.5, sin(time * 1900) * max(0, 1 - abs(hx.$k - rip.x.2) / 140), max(0, 1 - pow((abs(hx.$k - rip.x.2) - age.2 * 420) / 34, 2)))
+                    + rip.a.3 * if(ripple.3.kind > 0.5, sin(time * 1900) * max(0, 1 - abs(hx.$k - rip.x.3) / 140), max(0, 1 - pow((abs(hx.$k - rip.x.3) - age.3 * 420) / 34, 2))))
+        let sway.$k = gust * wind * (3 + 5 * sin(time * 110 - wind * along.$k * 0.9)) * small.$k
+
+        // Back at an edge it dives under the surface and comes up again.
+        prop dive.$k = 0 ~0ms
+        on change goo.$k.dip { dive.$k: 1 ~180ms; dive.$k: 0 ~900ms after 240ms }
+        // Let go in the air it falls from rest, ½·g·t². Until the rule has noted the time it keeps its whole
+        // height, so it does not jump for a frame.
+        fact fell_at.$k = -100
+        fact fell_n.$k = 0
+        on change goo.$k.fall { fell_at.$k = time; fell_n.$k = goo.$k.fall }
+        let fall_t.$k = max(0, time - fell_at.$k)
+        let falls.$k = if(fell_n.$k != goo.$k.fall, goo.$k.fall_h, max(0, goo.$k.fall_h - 0.5 * GRAVITY * fall_t.$k * fall_t.$k)) * (1 - held.$k)
+
+        // At rest it sits down: it slides to the surface and flattens, what it shows still in sight. Near the
+        // pointer, or beside a drop that is, it gets up and rounds itself; asleep it sits deeper.
+        prop sit.$k = 0 ~settle
+        follow sit.$k = (1 - clamp(near.$k + 0.3 * max(nl.$k, nr.$k) + hov.$k, 0, 1)) * docked.$k * (1 - held.$k) * if(idle > 0, 1.3, 1) * if(goo.$k.kind == 1 or goo.$k.still, 0, 1) * if(falls.$k > 1, 0, 1)
+        let sink.$k = sit.$k * clamp(goo.$k.rise - r0.$k * if(goo.$k.kind == 2, 0.45, 0.28), 0, r0.$k * 0.5)
+        prop up.$k = 0 ~drip
+        follow up.$k = clamp(near.$k + 0.3 * max(nl.$k, nr.$k), 0, 1) * goo.$k.lift * if(idle > 0, 0.4, 1) * (1 - held.$k)
+        // It rises towards the pointer, three quarters of its radius at most and no higher than the pointer.
+        let reach_up.$k = clamp(cdn.$k + r0.$k * 0.3, r0.$k * 0.25, r0.$k * 0.75)
+        // The pull: on the edge it leans, loose it drifts; the stickier, the less.
+        let g.$k = max(0, goo.$k.pull) * near.$k * (1 - goo.$k.sticky * 0.6)
+        let lean.$k = clamp(cdt.$k, -r0.$k * 0.8, r0.$k * 0.8) * g.$k + r0.$k * 0.3 * (nr.$k - nl.$k) * (1 - near.$k)
+        let pull.x.$k = if(docked.$k > 0, tx.$k * lean.$k, cdx.$k / cd.$k * g.$k * min(cd.$k, goo.$k.reach) * 0.28)
+        let pull.y.$k = if(docked.$k > 0, ty.$k * lean.$k, cdy.$k / cd.$k * g.$k * min(cd.$k, goo.$k.reach) * 0.28)
+        // A sticky drop follows the pointer only part of the way until it tears off.
+        let follows.$k = if(torn.$k > 0, 1, 1 - goo.$k.sticky * 0.75)
+
+        // Never quite still: it breathes, and under the pointer it swells and quivers.
+        let life.$k = 0.012 * sin(time * 60 + k * 53) + hov.$k * goo.$k.swell
+        let quiver.$k = 0.045 * sin(time * 420 + k * 30) * hov.$k
+        let fx.size.$k = goo.$k.fx_k * (if(goo.$k.fx == 1, 0.05 * sin(time * 120 + k * 50), 0) + if(goo.$k.fx == 4, 0.09 * smooth(0.82, 1, sin(time * 315 + k * 50)), 0))
+        let drift.$k = (2 + 4 * up.$k) * small.$k * noise(time * 0.1 + k * 3.1) + sway.$k * docked.$k
+        let fx.x.$k = goo.$k.fx_k * if(goo.$k.fx == 3, 2.5 * noise(k, time * 18), 0) + drift.$k * tx.$k + shake.$k * 4 * sin(time * 2600 + k * 40) * tx.$k
+        let fx.y.$k = goo.$k.fx_k * if(goo.$k.fx == 3, 2.5 * noise(k + 9, time * 18), 0) + noise(k * 5.7, time * 0.2) + drift.$k * ty.$k + shake.$k * 4 * sin(time * 2600 + k * 40) * ty.$k
+
+        // Where it is: home, the pull and the drag on springs; what is drawn adds the rise, the flow and the rest.
+        prop px.$k = 0 ~glide
+        prop py.$k = 0 ~drip
+        follow px.$k = hx.$k + pull.x.$k + dx.$k * follows.$k + nx.$k * falls.$k
+        follow py.$k = hy.$k + pull.y.$k + dy.$k * follows.$k + ny.$k * falls.$k
+        let rises.$k = (up.$k * reach_up.$k + 4 * flow.$k * small.$k * (1 - up.$k) + wave.$k * small.$k * if(goo.$k.edge == 0, 1, 0) - dive.$k * r0.$k * 1.4) * docked.$k - sink.$k
+
+        // A drop that has just come to be is at home at once: it does not fly in from the screen's corner.
+        on change goo.$k.on { px.$k: hx.$k ~0ms; py.$k: hy.$k ~0ms }
+
+        // ── what the body and the faces need ────────────────────────────────────────────────────────────────
+        prop x.$k = 0 ~0ms
+        prop y.$k = 0 ~0ms
+        prop rr.$k = 0 ~0ms                    // its radius as drawn
+        prop wide.$k = 0 ~0ms                  // how much wider than tall it is drawn
+        prop link.$k = 0 ~0ms                  // how far it melts into what is beside it
+        prop base.$k = 0 ~0ms                  // the puddle it sits in, and the stalk it rises on
+        prop base.x.$k = 0 ~0ms
+        prop base.y.$k = 0 ~0ms
+        prop base.w.$k = 1.6 ~0ms
+        prop stalk.$k = 0 ~0ms
+        prop water.w.$k = 0 ~0ms               // the water that joins it to the neighbour on its right
+        prop water.ax.$k = 0 ~0ms
+        prop water.ay.$k = 0 ~0ms
+        prop water.bx.$k = 0 ~0ms
+        prop water.by.$k = 0 ~0ms
+        prop thread.w.$k = 0 ~0ms              // the thread of goo between their upper parts
+        prop thread.root.$k = 0 ~0ms
+        prop thread.ax.$k = 0 ~0ms
+        prop thread.ay.$k = 0 ~0ms
+        prop thread.bx.$k = 0 ~0ms
+        prop thread.by.$k = 0 ~0ms
+        prop home.x.$k = 0 ~0ms
+        prop home.y.$k = 0 ~0ms
+        prop neck.$k = 0 ~0ms                  // a sticky drop being dragged is still tied to home
+        prop core.$k = 0 ~glow
+
+        // A place nobody has is kept far below the screen and of no size.
+        follow x.$k = px.$k + fx.x.$k + nx.$k * rises.$k
+        follow y.$k = if(goo.$k.on, py.$k + fx.y.$k + ny.$k * rises.$k, H + 400)
+        follow rr.$k = r0.$k * (1 + life.$k + fx.size.$k) * if(goo.$k.on, 1, 0)
+        follow wide.$k = (goo.$k.fx_k * if(goo.$k.fx == 2, 0.07 * noise(k * 1.7, time * 1.6), 0) + sq.$k * 0.09 + quiver.$k + sit.$k * 0.13) * if(ty.$k > 0, -1, 1)
+        follow face.$k = r0.$k / 26
+        follow link.$k = (10 + 16 * up.$k + 10 * flow.$k) * goo.$k.melt + 6 * (1 - smooth(0, 1, clamp((H - LEVEL - y.$k - rr.$k * 0.6) / (rr.$k * 0.4 + 70), 0, 1)))
+        follow base.$k = docked.$k * (1 - held.$k) * if(goo.$k.on, 1, 0) * goo.$k.puddle * if(falls.$k > 12, 0, 1)
+        follow base.x.$k = if(tx.$k > 0, x.$k, e0x.$k - nx.$k * 4)
+        follow base.y.$k = if(ty.$k > 0, y.$k, e0y.$k - ny.$k * 4)
+        follow base.w.$k = 0.5 + 1.1 * tx.$k
+        // the stalk stretches and thins as the drop rises
+        follow stalk.$k = docked.$k * (0.5 - 0.22 * up.$k) * up.$k * (1 - held.$k)
+
+        // The thread to the neighbour on the right joins their upper parts, so an eye stays open under it, above
+        // the water. The nearer they are the thicker it is; it thickens as they rise, forms and snaps with the
+        // flow, and is never thinner than 3.4 px while it exists (thinner, it broke into dashes).
+        let gap.$k = abs(goo.$k.right_at * len.$k + goo.$k.right_shift - along.$k) - r0.$k - goo.$k.right_r
+        let close.$k = clamp(1 - gap.$k / max((r0.$k + goo.$k.right_r) * 0.9, 1), 0, 1)
+        let uneven.$k = 0.65 + 0.7 * (0.5 + 0.5 * noise(time * 0.27 + k * 2.9))
+        let joined.$k = max(close.$k * 0.9, max(smooth(0.3, 0.9, min(up.$k, 0.3 * near.$k + nr.$k) * 1.6), 0.8 * smooth(0.55, 0.85, flow.$k)))
+        follow thread.w.$k = if(goo.$k.right, max((4 + 10 * close.$k) * uneven.$k * joined.$k * min(r0.$k, goo.$k.right_r) / 26, 3.4 * clamp(joined.$k * 6, 0, 1)) * (1 - held.$k), 0)
+        follow thread.root.$k = (12 + 6 * (1 - close.$k)) * clamp(thread.w.$k / 3, 0, 1)
+        let right.t.$k = goo.$k.right_at * len.$k + goo.$k.right_shift + 3 * noise(time * 0.31 + k * 4.1)
+        let right.n.$k = goo.$k.right_rise + clamp(nr.$k + 0.3 * near.$k, 0, 1) * goo.$k.right_r * 0.6 + goo.$k.right_r * (0.25 + 0.15 * noise(time * 0.23 + k * 1.9))
+        let thread.up.$k = r0.$k * (0.22 + 0.15 * noise(time * 0.19 + k * 3.7))
+        follow thread.ax.$k = x.$k + nx.$k * thread.up.$k
+        follow thread.ay.$k = y.$k + ny.$k * thread.up.$k
+        follow thread.bx.$k = e0x.$k + tx.$k * right.t.$k + nx.$k * right.n.$k
+        follow thread.by.$k = e0y.$k + ty.$k * right.t.$k + ny.$k * right.n.$k
+        // The water lies under the surface and comes above it only by melting: the valley between two
+        // neighbours never reaches the edge.
+        follow water.w.$k = if(goo.$k.right, (5 + 5 * flow.$k + 6 * max(up.$k, nr.$k)) * docked.$k * (1 - held.$k), 0) * goo.$k.puddle
+        follow water.ax.$k = if(tx.$k > 0, x.$k, e0x.$k - nx.$k * water.w.$k)
+        follow water.ay.$k = if(ty.$k > 0, y.$k, e0y.$k - ny.$k * water.w.$k)
+        follow water.bx.$k = if(tx.$k > 0, right.t.$k, e0x.$k - nx.$k * water.w.$k)
+        follow water.by.$k = if(ty.$k > 0, right.t.$k, e0y.$k - ny.$k * water.w.$k)
+        follow home.x.$k = hx.$k
+        follow home.y.$k = hy.$k
+        follow neck.$k = held.$k * (1 - torn.$k) * goo.$k.sticky * clamp(length(dx.$k, dy.$k) / 30, 0, 1)
+        follow core.$k = goo.$k.core * if(goo.$k.core_beat, 0.7 + 0.3 * sin(time * 220 + k * 40), 1) * if(goo.$k.on, 1, 0)
+
+        // ── the mouse ───────────────────────────────────────────────────────────────────────────────────────
+        // The zone is the drop and its stalk down to the edge, so a risen drop is hit at the edge too.
+        let foot.$k = docked.$k * if(falls.$k > 12, 0, 1) * max(0, (x.$k - e0x.$k) * nx.$k + (y.$k - e0y.$k) * ny.$k - rr.$k)
+        zone box hit.$k {
+            at: if(held.$k > 0, W / 2, x.$k - nx.$k * foot.$k / 2 + tx.$k * cap.$k * goo.$k.cap_dir), if(held.$k > 0, H / 2, y.$k - ny.$k * foot.$k / 2 + ty.$k * cap.$k * goo.$k.cap_dir)
+            size: if(held.$k > 0, W * 3, max(rr.$k * 2, 24) + ty.$k * foot.$k + tx.$k * cap.$k * 2), if(held.$k > 0, H * 3, max(rr.$k * 2, 24) + tx.$k * foot.$k + ty.$k * cap.$k * 2)
+            corner: max(rr.$k, 12)
+            cursor: pointer
+            active: goo.$k.on
+            label: "{goo.$k.name}"
+            role: button
+        }
+        on enter hit.$k { hov.$k: 1; emit goo_enter(k) }
+        on leave hit.$k { hov.$k: 0; emit goo_leave(k) }
+        on hover hit.$k for 450ms { tip_k = k; tip.x = x.$k + nx.$k * (rr.$k + 130); tip.y = y.$k + ny.$k * (rr.$k + 14) + if(ny.$k > 0, 30, 0); tip.p: 1; emit goo_hover(k) }
+        on away hit.$k for 200ms while tip_k == k { tip.p: 0 }
+        on press hit.$k { tip.p: 0; impulse sq.$k 5; tap.x = cursor.x; tap.y = cursor.y; emit goo_down(k) }
+        on press right hit.$k { tip.p: 0; tap.x = cursor.x; tap.y = cursor.y; emit goo_right(k) }
+        on press middle hit.$k { emit goo_middle(k) }
+        on hold hit.$k for 650ms while held.$k == 0 { emit goo_hold(k) }
+        on scroll hit.$k { emit goo_wheel(k * 2 + if(wheel > 0, 1, 0)) }
+        on drag hit.$k while goo.$k.draggable { dx.$k = drag.dx; dy.$k = drag.dy }
+        on drag hit.$k while goo.$k.draggable and held.$k == 0 and length(drag.dx, drag.dy) > 6 { held.$k = 1; carried = k; tip.p: 0; emit goo_grab(k) }
+        // It tears off after 1.6 radii at the latest: a long neck is not pretty.
+        on drag hit.$k while goo.$k.draggable and torn.$k == 0 and length(drag.dx, drag.dy) > min(goo.$k.tear, r0.$k * 1.6) * goo.$k.sticky { torn.$k = 1 }
+        // Whether a release is a click is the logic's to say, from the order of what it heard: a rule's
+        // `while` sees the frame's beginning, and a tap presses and releases within one.
+        on release hit.$k while held.$k == 0 { emit goo_up(k) }
+        on release hit.$k while held.$k > 0 { freed.x = hx.$k + dx.$k * follows.$k; freed.y = hy.$k + dy.$k * follows.$k; emit goo_letgo(k) }
+        // The record now says where home is: the drag's offset goes in the same frame, so nothing jumps.
+        on change goo.$k.land { dx.$k = 0; dy.$k = 0; held.$k = 0; torn.$k = 0; carried = -1 }
+        on change goo.$k.hop { impulse py.$k -520 }
+        on change goo.$k.squash { impulse sq.$k 9 }
+        on change goo.$k.shiver { shake.$k: 1 ~0ms; shake.$k: 0 ~420ms after 16ms }
+    }
+}

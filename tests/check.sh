@@ -16,7 +16,10 @@ done
 for f in system/session-env.sh system/libexec/* system/kernel-install/*; do bash -n "$f"; done
 tests/test_session.sh
 
+for f in system/hypr/*.lua system/hypr/latte/*.lua; do luac -p "$f"; done
+
 echo "== scenes"
+python3 goo/gen.py --check
 for s in goo/*.plm; do
     out="$(cd goo && LANG=sk_SK.UTF-8 pleamar --check "$(basename "$s")" 2>&1)" || { echo "$out"; exit 1; }
     echo "$out" | tail -1
@@ -50,7 +53,7 @@ for s in sorted(sources):
         bad.append("FILES: no such source " + s)
 tracked = subprocess.run(["git", "ls-files", "--cached", "--others", "--exclude-standard", "bin", "goo", "system", "assets"],
                          capture_output=True, text=True).stdout.split("\n")
-tools = {"system/plymouth/make-logo.py"}            # they make a file that is listed; they are not installed
+tools = {"system/plymouth/make-logo.py", "goo/gen.py"}      # they make a file that is listed; they are not installed
 for f in filter(None, tracked):
     if f not in sources and f not in tools:
         bad.append("FILES: %s is not listed" % f)
@@ -66,10 +69,13 @@ for f in filter(None, code):
         if slovak.search(line):
             bad.append("%s:%d: Slovak in code: %s" % (f, n, line.strip()[:70]))
 
-# what the commands say goes through the same table as the scenes' texts
+# what the commands and the scenes' logic say goes through the same table as the scenes' texts
 table = open("goo/lang/sk.plm", encoding="utf-8").read()
-for f in ("bin/latte-safe",):
-    for text in sorted(set(re.findall(r'\bt "([^"$]+)"', open(f, encoding="utf-8").read()))):
+said = {"bin/latte-safe": r'\bt "([^"$]+)"'}
+for f in filter(None, code):
+    if f.endswith(".luau"): said[f] = r'\b(?:tr|N)\("((?:[^"\\]|\\.)+)"\)'      # N marks a text that tr() is given later
+for f, pattern in sorted(said.items()):
+    for text in sorted(set(re.findall(pattern, open(f, encoding="utf-8").read()))):
         if '"%s" = ' % text not in table:
             bad.append("%s: no Slovak for «%s»" % (f, text))
 

@@ -1,0 +1,208 @@
+// Written by goo/gen.py from the number of places in parts/drops.plm. Do not edit: run gen.py.
+part Shapes {
+    ellipse { at: base.x.0, base.y.0; radius: rr.0 * 0.5 * base.0; scale: base.w.0, 2.1 - base.w.0; blend: 14 }
+    line { from: base.x.0, base.y.0; to: x.0, y.0; width: rr.0 * 2 * stalk.0; blend: 14 }
+    line { from: water.ax.0, water.ay.0; to: water.bx.0, water.by.0; width: water.w.0 * 2; blend: 16 }
+    ellipse { at: x.0, y.0; radius: rr.0; scale: 1 + wide.0, 1 - wide.0; blend: link.0 }
+    line { from: thread.ax.0, thread.ay.0; to: thread.bx.0, thread.by.0; width: thread.w.0; blend: thread.root.0 }
+    line { from: x.0 + if(goo.0.edge == 1 or goo.0.edge == 3, 0, 1) * cap.0 * (goo.0.cap_dir - 1), y.0 + if(goo.0.edge == 1 or goo.0.edge == 3, 1, 0) * cap.0 * (goo.0.cap_dir - 1); to: x.0 + if(goo.0.edge == 1 or goo.0.edge == 3, 0, 1) * cap.0 * (goo.0.cap_dir + 1), y.0 + if(goo.0.edge == 1 or goo.0.edge == 3, 1, 0) * cap.0 * (goo.0.cap_dir + 1); width: rr.0 * 2 * if(cap.0 > 0.5, 1, 0); blend: link.0 }
+    ellipse { at: base.x.1, base.y.1; radius: rr.1 * 0.5 * base.1; scale: base.w.1, 2.1 - base.w.1; blend: 14 }
+    line { from: base.x.1, base.y.1; to: x.1, y.1; width: rr.1 * 2 * stalk.1; blend: 14 }
+    line { from: water.ax.1, water.ay.1; to: water.bx.1, water.by.1; width: water.w.1 * 2; blend: 16 }
+    ellipse { at: x.1, y.1; radius: rr.1; scale: 1 + wide.1, 1 - wide.1; blend: link.1 }
+    line { from: thread.ax.1, thread.ay.1; to: thread.bx.1, thread.by.1; width: thread.w.1; blend: thread.root.1 }
+    line { from: x.1 + if(goo.1.edge == 1 or goo.1.edge == 3, 0, 1) * cap.1 * (goo.1.cap_dir - 1), y.1 + if(goo.1.edge == 1 or goo.1.edge == 3, 1, 0) * cap.1 * (goo.1.cap_dir - 1); to: x.1 + if(goo.1.edge == 1 or goo.1.edge == 3, 0, 1) * cap.1 * (goo.1.cap_dir + 1), y.1 + if(goo.1.edge == 1 or goo.1.edge == 3, 1, 0) * cap.1 * (goo.1.cap_dir + 1); width: rr.1 * 2 * if(cap.1 > 0.5, 1, 0); blend: link.1 }
+    ellipse { at: base.x.2, base.y.2; radius: rr.2 * 0.5 * base.2; scale: base.w.2, 2.1 - base.w.2; blend: 14 }
+    line { from: base.x.2, base.y.2; to: x.2, y.2; width: rr.2 * 2 * stalk.2; blend: 14 }
+    line { from: water.ax.2, water.ay.2; to: water.bx.2, water.by.2; width: water.w.2 * 2; blend: 16 }
+    ellipse { at: x.2, y.2; radius: rr.2; scale: 1 + wide.2, 1 - wide.2; blend: link.2 }
+    line { from: thread.ax.2, thread.ay.2; to: thread.bx.2, thread.by.2; width: thread.w.2; blend: thread.root.2 }
+    line { from: x.2 + if(goo.2.edge == 1 or goo.2.edge == 3, 0, 1) * cap.2 * (goo.2.cap_dir - 1), y.2 + if(goo.2.edge == 1 or goo.2.edge == 3, 1, 0) * cap.2 * (goo.2.cap_dir - 1); to: x.2 + if(goo.2.edge == 1 or goo.2.edge == 3, 0, 1) * cap.2 * (goo.2.cap_dir + 1), y.2 + if(goo.2.edge == 1 or goo.2.edge == 3, 1, 0) * cap.2 * (goo.2.cap_dir + 1); width: rr.2 * 2 * if(cap.2 > 0.5, 1, 0); blend: link.2 }
+    ellipse { at: base.x.3, base.y.3; radius: rr.3 * 0.5 * base.3; scale: base.w.3, 2.1 - base.w.3; blend: 14 }
+    line { from: base.x.3, base.y.3; to: x.3, y.3; width: rr.3 * 2 * stalk.3; blend: 14 }
+    line { from: water.ax.3, water.ay.3; to: water.bx.3, water.by.3; width: water.w.3 * 2; blend: 16 }
+    ellipse { at: x.3, y.3; radius: rr.3; scale: 1 + wide.3, 1 - wide.3; blend: link.3 }
+    line { from: thread.ax.3, thread.ay.3; to: thread.bx.3, thread.by.3; width: thread.w.3; blend: thread.root.3 }
+    line { from: x.3 + if(goo.3.edge == 1 or goo.3.edge == 3, 0, 1) * cap.3 * (goo.3.cap_dir - 1), y.3 + if(goo.3.edge == 1 or goo.3.edge == 3, 1, 0) * cap.3 * (goo.3.cap_dir - 1); to: x.3 + if(goo.3.edge == 1 or goo.3.edge == 3, 0, 1) * cap.3 * (goo.3.cap_dir + 1), y.3 + if(goo.3.edge == 1 or goo.3.edge == 3, 1, 0) * cap.3 * (goo.3.cap_dir + 1); width: rr.3 * 2 * if(cap.3 > 0.5, 1, 0); blend: link.3 }
+    ellipse { at: base.x.4, base.y.4; radius: rr.4 * 0.5 * base.4; scale: base.w.4, 2.1 - base.w.4; blend: 14 }
+    line { from: base.x.4, base.y.4; to: x.4, y.4; width: rr.4 * 2 * stalk.4; blend: 14 }
+    line { from: water.ax.4, water.ay.4; to: water.bx.4, water.by.4; width: water.w.4 * 2; blend: 16 }
+    ellipse { at: x.4, y.4; radius: rr.4; scale: 1 + wide.4, 1 - wide.4; blend: link.4 }
+    line { from: thread.ax.4, thread.ay.4; to: thread.bx.4, thread.by.4; width: thread.w.4; blend: thread.root.4 }
+    line { from: x.4 + if(goo.4.edge == 1 or goo.4.edge == 3, 0, 1) * cap.4 * (goo.4.cap_dir - 1), y.4 + if(goo.4.edge == 1 or goo.4.edge == 3, 1, 0) * cap.4 * (goo.4.cap_dir - 1); to: x.4 + if(goo.4.edge == 1 or goo.4.edge == 3, 0, 1) * cap.4 * (goo.4.cap_dir + 1), y.4 + if(goo.4.edge == 1 or goo.4.edge == 3, 1, 0) * cap.4 * (goo.4.cap_dir + 1); width: rr.4 * 2 * if(cap.4 > 0.5, 1, 0); blend: link.4 }
+    ellipse { at: base.x.5, base.y.5; radius: rr.5 * 0.5 * base.5; scale: base.w.5, 2.1 - base.w.5; blend: 14 }
+    line { from: base.x.5, base.y.5; to: x.5, y.5; width: rr.5 * 2 * stalk.5; blend: 14 }
+    line { from: water.ax.5, water.ay.5; to: water.bx.5, water.by.5; width: water.w.5 * 2; blend: 16 }
+    ellipse { at: x.5, y.5; radius: rr.5; scale: 1 + wide.5, 1 - wide.5; blend: link.5 }
+    line { from: thread.ax.5, thread.ay.5; to: thread.bx.5, thread.by.5; width: thread.w.5; blend: thread.root.5 }
+    line { from: x.5 + if(goo.5.edge == 1 or goo.5.edge == 3, 0, 1) * cap.5 * (goo.5.cap_dir - 1), y.5 + if(goo.5.edge == 1 or goo.5.edge == 3, 1, 0) * cap.5 * (goo.5.cap_dir - 1); to: x.5 + if(goo.5.edge == 1 or goo.5.edge == 3, 0, 1) * cap.5 * (goo.5.cap_dir + 1), y.5 + if(goo.5.edge == 1 or goo.5.edge == 3, 1, 0) * cap.5 * (goo.5.cap_dir + 1); width: rr.5 * 2 * if(cap.5 > 0.5, 1, 0); blend: link.5 }
+    ellipse { at: base.x.6, base.y.6; radius: rr.6 * 0.5 * base.6; scale: base.w.6, 2.1 - base.w.6; blend: 14 }
+    line { from: base.x.6, base.y.6; to: x.6, y.6; width: rr.6 * 2 * stalk.6; blend: 14 }
+    line { from: water.ax.6, water.ay.6; to: water.bx.6, water.by.6; width: water.w.6 * 2; blend: 16 }
+    ellipse { at: x.6, y.6; radius: rr.6; scale: 1 + wide.6, 1 - wide.6; blend: link.6 }
+    line { from: thread.ax.6, thread.ay.6; to: thread.bx.6, thread.by.6; width: thread.w.6; blend: thread.root.6 }
+    line { from: x.6 + if(goo.6.edge == 1 or goo.6.edge == 3, 0, 1) * cap.6 * (goo.6.cap_dir - 1), y.6 + if(goo.6.edge == 1 or goo.6.edge == 3, 1, 0) * cap.6 * (goo.6.cap_dir - 1); to: x.6 + if(goo.6.edge == 1 or goo.6.edge == 3, 0, 1) * cap.6 * (goo.6.cap_dir + 1), y.6 + if(goo.6.edge == 1 or goo.6.edge == 3, 1, 0) * cap.6 * (goo.6.cap_dir + 1); width: rr.6 * 2 * if(cap.6 > 0.5, 1, 0); blend: link.6 }
+    ellipse { at: base.x.7, base.y.7; radius: rr.7 * 0.5 * base.7; scale: base.w.7, 2.1 - base.w.7; blend: 14 }
+    line { from: base.x.7, base.y.7; to: x.7, y.7; width: rr.7 * 2 * stalk.7; blend: 14 }
+    line { from: water.ax.7, water.ay.7; to: water.bx.7, water.by.7; width: water.w.7 * 2; blend: 16 }
+    ellipse { at: x.7, y.7; radius: rr.7; scale: 1 + wide.7, 1 - wide.7; blend: link.7 }
+    line { from: thread.ax.7, thread.ay.7; to: thread.bx.7, thread.by.7; width: thread.w.7; blend: thread.root.7 }
+    line { from: x.7 + if(goo.7.edge == 1 or goo.7.edge == 3, 0, 1) * cap.7 * (goo.7.cap_dir - 1), y.7 + if(goo.7.edge == 1 or goo.7.edge == 3, 1, 0) * cap.7 * (goo.7.cap_dir - 1); to: x.7 + if(goo.7.edge == 1 or goo.7.edge == 3, 0, 1) * cap.7 * (goo.7.cap_dir + 1), y.7 + if(goo.7.edge == 1 or goo.7.edge == 3, 1, 0) * cap.7 * (goo.7.cap_dir + 1); width: rr.7 * 2 * if(cap.7 > 0.5, 1, 0); blend: link.7 }
+    ellipse { at: base.x.8, base.y.8; radius: rr.8 * 0.5 * base.8; scale: base.w.8, 2.1 - base.w.8; blend: 14 }
+    line { from: base.x.8, base.y.8; to: x.8, y.8; width: rr.8 * 2 * stalk.8; blend: 14 }
+    line { from: water.ax.8, water.ay.8; to: water.bx.8, water.by.8; width: water.w.8 * 2; blend: 16 }
+    ellipse { at: x.8, y.8; radius: rr.8; scale: 1 + wide.8, 1 - wide.8; blend: link.8 }
+    line { from: thread.ax.8, thread.ay.8; to: thread.bx.8, thread.by.8; width: thread.w.8; blend: thread.root.8 }
+    line { from: x.8 + if(goo.8.edge == 1 or goo.8.edge == 3, 0, 1) * cap.8 * (goo.8.cap_dir - 1), y.8 + if(goo.8.edge == 1 or goo.8.edge == 3, 1, 0) * cap.8 * (goo.8.cap_dir - 1); to: x.8 + if(goo.8.edge == 1 or goo.8.edge == 3, 0, 1) * cap.8 * (goo.8.cap_dir + 1), y.8 + if(goo.8.edge == 1 or goo.8.edge == 3, 1, 0) * cap.8 * (goo.8.cap_dir + 1); width: rr.8 * 2 * if(cap.8 > 0.5, 1, 0); blend: link.8 }
+    ellipse { at: base.x.9, base.y.9; radius: rr.9 * 0.5 * base.9; scale: base.w.9, 2.1 - base.w.9; blend: 14 }
+    line { from: base.x.9, base.y.9; to: x.9, y.9; width: rr.9 * 2 * stalk.9; blend: 14 }
+    line { from: water.ax.9, water.ay.9; to: water.bx.9, water.by.9; width: water.w.9 * 2; blend: 16 }
+    ellipse { at: x.9, y.9; radius: rr.9; scale: 1 + wide.9, 1 - wide.9; blend: link.9 }
+    line { from: thread.ax.9, thread.ay.9; to: thread.bx.9, thread.by.9; width: thread.w.9; blend: thread.root.9 }
+    line { from: x.9 + if(goo.9.edge == 1 or goo.9.edge == 3, 0, 1) * cap.9 * (goo.9.cap_dir - 1), y.9 + if(goo.9.edge == 1 or goo.9.edge == 3, 1, 0) * cap.9 * (goo.9.cap_dir - 1); to: x.9 + if(goo.9.edge == 1 or goo.9.edge == 3, 0, 1) * cap.9 * (goo.9.cap_dir + 1), y.9 + if(goo.9.edge == 1 or goo.9.edge == 3, 1, 0) * cap.9 * (goo.9.cap_dir + 1); width: rr.9 * 2 * if(cap.9 > 0.5, 1, 0); blend: link.9 }
+    ellipse { at: base.x.10, base.y.10; radius: rr.10 * 0.5 * base.10; scale: base.w.10, 2.1 - base.w.10; blend: 14 }
+    line { from: base.x.10, base.y.10; to: x.10, y.10; width: rr.10 * 2 * stalk.10; blend: 14 }
+    line { from: water.ax.10, water.ay.10; to: water.bx.10, water.by.10; width: water.w.10 * 2; blend: 16 }
+    ellipse { at: x.10, y.10; radius: rr.10; scale: 1 + wide.10, 1 - wide.10; blend: link.10 }
+    line { from: thread.ax.10, thread.ay.10; to: thread.bx.10, thread.by.10; width: thread.w.10; blend: thread.root.10 }
+    line { from: x.10 + if(goo.10.edge == 1 or goo.10.edge == 3, 0, 1) * cap.10 * (goo.10.cap_dir - 1), y.10 + if(goo.10.edge == 1 or goo.10.edge == 3, 1, 0) * cap.10 * (goo.10.cap_dir - 1); to: x.10 + if(goo.10.edge == 1 or goo.10.edge == 3, 0, 1) * cap.10 * (goo.10.cap_dir + 1), y.10 + if(goo.10.edge == 1 or goo.10.edge == 3, 1, 0) * cap.10 * (goo.10.cap_dir + 1); width: rr.10 * 2 * if(cap.10 > 0.5, 1, 0); blend: link.10 }
+    ellipse { at: base.x.11, base.y.11; radius: rr.11 * 0.5 * base.11; scale: base.w.11, 2.1 - base.w.11; blend: 14 }
+    line { from: base.x.11, base.y.11; to: x.11, y.11; width: rr.11 * 2 * stalk.11; blend: 14 }
+    line { from: water.ax.11, water.ay.11; to: water.bx.11, water.by.11; width: water.w.11 * 2; blend: 16 }
+    ellipse { at: x.11, y.11; radius: rr.11; scale: 1 + wide.11, 1 - wide.11; blend: link.11 }
+    line { from: thread.ax.11, thread.ay.11; to: thread.bx.11, thread.by.11; width: thread.w.11; blend: thread.root.11 }
+    line { from: x.11 + if(goo.11.edge == 1 or goo.11.edge == 3, 0, 1) * cap.11 * (goo.11.cap_dir - 1), y.11 + if(goo.11.edge == 1 or goo.11.edge == 3, 1, 0) * cap.11 * (goo.11.cap_dir - 1); to: x.11 + if(goo.11.edge == 1 or goo.11.edge == 3, 0, 1) * cap.11 * (goo.11.cap_dir + 1), y.11 + if(goo.11.edge == 1 or goo.11.edge == 3, 1, 0) * cap.11 * (goo.11.cap_dir + 1); width: rr.11 * 2 * if(cap.11 > 0.5, 1, 0); blend: link.11 }
+    ellipse { at: base.x.12, base.y.12; radius: rr.12 * 0.5 * base.12; scale: base.w.12, 2.1 - base.w.12; blend: 14 }
+    line { from: base.x.12, base.y.12; to: x.12, y.12; width: rr.12 * 2 * stalk.12; blend: 14 }
+    line { from: water.ax.12, water.ay.12; to: water.bx.12, water.by.12; width: water.w.12 * 2; blend: 16 }
+    ellipse { at: x.12, y.12; radius: rr.12; scale: 1 + wide.12, 1 - wide.12; blend: link.12 }
+    line { from: thread.ax.12, thread.ay.12; to: thread.bx.12, thread.by.12; width: thread.w.12; blend: thread.root.12 }
+    line { from: x.12 + if(goo.12.edge == 1 or goo.12.edge == 3, 0, 1) * cap.12 * (goo.12.cap_dir - 1), y.12 + if(goo.12.edge == 1 or goo.12.edge == 3, 1, 0) * cap.12 * (goo.12.cap_dir - 1); to: x.12 + if(goo.12.edge == 1 or goo.12.edge == 3, 0, 1) * cap.12 * (goo.12.cap_dir + 1), y.12 + if(goo.12.edge == 1 or goo.12.edge == 3, 1, 0) * cap.12 * (goo.12.cap_dir + 1); width: rr.12 * 2 * if(cap.12 > 0.5, 1, 0); blend: link.12 }
+    ellipse { at: base.x.13, base.y.13; radius: rr.13 * 0.5 * base.13; scale: base.w.13, 2.1 - base.w.13; blend: 14 }
+    line { from: base.x.13, base.y.13; to: x.13, y.13; width: rr.13 * 2 * stalk.13; blend: 14 }
+    line { from: water.ax.13, water.ay.13; to: water.bx.13, water.by.13; width: water.w.13 * 2; blend: 16 }
+    ellipse { at: x.13, y.13; radius: rr.13; scale: 1 + wide.13, 1 - wide.13; blend: link.13 }
+    line { from: thread.ax.13, thread.ay.13; to: thread.bx.13, thread.by.13; width: thread.w.13; blend: thread.root.13 }
+    line { from: x.13 + if(goo.13.edge == 1 or goo.13.edge == 3, 0, 1) * cap.13 * (goo.13.cap_dir - 1), y.13 + if(goo.13.edge == 1 or goo.13.edge == 3, 1, 0) * cap.13 * (goo.13.cap_dir - 1); to: x.13 + if(goo.13.edge == 1 or goo.13.edge == 3, 0, 1) * cap.13 * (goo.13.cap_dir + 1), y.13 + if(goo.13.edge == 1 or goo.13.edge == 3, 1, 0) * cap.13 * (goo.13.cap_dir + 1); width: rr.13 * 2 * if(cap.13 > 0.5, 1, 0); blend: link.13 }
+    ellipse { at: base.x.14, base.y.14; radius: rr.14 * 0.5 * base.14; scale: base.w.14, 2.1 - base.w.14; blend: 14 }
+    line { from: base.x.14, base.y.14; to: x.14, y.14; width: rr.14 * 2 * stalk.14; blend: 14 }
+    line { from: water.ax.14, water.ay.14; to: water.bx.14, water.by.14; width: water.w.14 * 2; blend: 16 }
+    ellipse { at: x.14, y.14; radius: rr.14; scale: 1 + wide.14, 1 - wide.14; blend: link.14 }
+    line { from: thread.ax.14, thread.ay.14; to: thread.bx.14, thread.by.14; width: thread.w.14; blend: thread.root.14 }
+    line { from: x.14 + if(goo.14.edge == 1 or goo.14.edge == 3, 0, 1) * cap.14 * (goo.14.cap_dir - 1), y.14 + if(goo.14.edge == 1 or goo.14.edge == 3, 1, 0) * cap.14 * (goo.14.cap_dir - 1); to: x.14 + if(goo.14.edge == 1 or goo.14.edge == 3, 0, 1) * cap.14 * (goo.14.cap_dir + 1), y.14 + if(goo.14.edge == 1 or goo.14.edge == 3, 1, 0) * cap.14 * (goo.14.cap_dir + 1); width: rr.14 * 2 * if(cap.14 > 0.5, 1, 0); blend: link.14 }
+    ellipse { at: base.x.15, base.y.15; radius: rr.15 * 0.5 * base.15; scale: base.w.15, 2.1 - base.w.15; blend: 14 }
+    line { from: base.x.15, base.y.15; to: x.15, y.15; width: rr.15 * 2 * stalk.15; blend: 14 }
+    line { from: water.ax.15, water.ay.15; to: water.bx.15, water.by.15; width: water.w.15 * 2; blend: 16 }
+    ellipse { at: x.15, y.15; radius: rr.15; scale: 1 + wide.15, 1 - wide.15; blend: link.15 }
+    line { from: thread.ax.15, thread.ay.15; to: thread.bx.15, thread.by.15; width: thread.w.15; blend: thread.root.15 }
+    line { from: x.15 + if(goo.15.edge == 1 or goo.15.edge == 3, 0, 1) * cap.15 * (goo.15.cap_dir - 1), y.15 + if(goo.15.edge == 1 or goo.15.edge == 3, 1, 0) * cap.15 * (goo.15.cap_dir - 1); to: x.15 + if(goo.15.edge == 1 or goo.15.edge == 3, 0, 1) * cap.15 * (goo.15.cap_dir + 1), y.15 + if(goo.15.edge == 1 or goo.15.edge == 3, 1, 0) * cap.15 * (goo.15.cap_dir + 1); width: rr.15 * 2 * if(cap.15 > 0.5, 1, 0); blend: link.15 }
+    ellipse { at: base.x.16, base.y.16; radius: rr.16 * 0.5 * base.16; scale: base.w.16, 2.1 - base.w.16; blend: 14 }
+    line { from: base.x.16, base.y.16; to: x.16, y.16; width: rr.16 * 2 * stalk.16; blend: 14 }
+    line { from: water.ax.16, water.ay.16; to: water.bx.16, water.by.16; width: water.w.16 * 2; blend: 16 }
+    ellipse { at: x.16, y.16; radius: rr.16; scale: 1 + wide.16, 1 - wide.16; blend: link.16 }
+    line { from: thread.ax.16, thread.ay.16; to: thread.bx.16, thread.by.16; width: thread.w.16; blend: thread.root.16 }
+    line { from: x.16 + if(goo.16.edge == 1 or goo.16.edge == 3, 0, 1) * cap.16 * (goo.16.cap_dir - 1), y.16 + if(goo.16.edge == 1 or goo.16.edge == 3, 1, 0) * cap.16 * (goo.16.cap_dir - 1); to: x.16 + if(goo.16.edge == 1 or goo.16.edge == 3, 0, 1) * cap.16 * (goo.16.cap_dir + 1), y.16 + if(goo.16.edge == 1 or goo.16.edge == 3, 1, 0) * cap.16 * (goo.16.cap_dir + 1); width: rr.16 * 2 * if(cap.16 > 0.5, 1, 0); blend: link.16 }
+    ellipse { at: base.x.17, base.y.17; radius: rr.17 * 0.5 * base.17; scale: base.w.17, 2.1 - base.w.17; blend: 14 }
+    line { from: base.x.17, base.y.17; to: x.17, y.17; width: rr.17 * 2 * stalk.17; blend: 14 }
+    line { from: water.ax.17, water.ay.17; to: water.bx.17, water.by.17; width: water.w.17 * 2; blend: 16 }
+    ellipse { at: x.17, y.17; radius: rr.17; scale: 1 + wide.17, 1 - wide.17; blend: link.17 }
+    line { from: thread.ax.17, thread.ay.17; to: thread.bx.17, thread.by.17; width: thread.w.17; blend: thread.root.17 }
+    line { from: x.17 + if(goo.17.edge == 1 or goo.17.edge == 3, 0, 1) * cap.17 * (goo.17.cap_dir - 1), y.17 + if(goo.17.edge == 1 or goo.17.edge == 3, 1, 0) * cap.17 * (goo.17.cap_dir - 1); to: x.17 + if(goo.17.edge == 1 or goo.17.edge == 3, 0, 1) * cap.17 * (goo.17.cap_dir + 1), y.17 + if(goo.17.edge == 1 or goo.17.edge == 3, 1, 0) * cap.17 * (goo.17.cap_dir + 1); width: rr.17 * 2 * if(cap.17 > 0.5, 1, 0); blend: link.17 }
+    ellipse { at: base.x.18, base.y.18; radius: rr.18 * 0.5 * base.18; scale: base.w.18, 2.1 - base.w.18; blend: 14 }
+    line { from: base.x.18, base.y.18; to: x.18, y.18; width: rr.18 * 2 * stalk.18; blend: 14 }
+    line { from: water.ax.18, water.ay.18; to: water.bx.18, water.by.18; width: water.w.18 * 2; blend: 16 }
+    ellipse { at: x.18, y.18; radius: rr.18; scale: 1 + wide.18, 1 - wide.18; blend: link.18 }
+    line { from: thread.ax.18, thread.ay.18; to: thread.bx.18, thread.by.18; width: thread.w.18; blend: thread.root.18 }
+    line { from: x.18 + if(goo.18.edge == 1 or goo.18.edge == 3, 0, 1) * cap.18 * (goo.18.cap_dir - 1), y.18 + if(goo.18.edge == 1 or goo.18.edge == 3, 1, 0) * cap.18 * (goo.18.cap_dir - 1); to: x.18 + if(goo.18.edge == 1 or goo.18.edge == 3, 0, 1) * cap.18 * (goo.18.cap_dir + 1), y.18 + if(goo.18.edge == 1 or goo.18.edge == 3, 1, 0) * cap.18 * (goo.18.cap_dir + 1); width: rr.18 * 2 * if(cap.18 > 0.5, 1, 0); blend: link.18 }
+    ellipse { at: base.x.19, base.y.19; radius: rr.19 * 0.5 * base.19; scale: base.w.19, 2.1 - base.w.19; blend: 14 }
+    line { from: base.x.19, base.y.19; to: x.19, y.19; width: rr.19 * 2 * stalk.19; blend: 14 }
+    line { from: water.ax.19, water.ay.19; to: water.bx.19, water.by.19; width: water.w.19 * 2; blend: 16 }
+    ellipse { at: x.19, y.19; radius: rr.19; scale: 1 + wide.19, 1 - wide.19; blend: link.19 }
+    line { from: thread.ax.19, thread.ay.19; to: thread.bx.19, thread.by.19; width: thread.w.19; blend: thread.root.19 }
+    line { from: x.19 + if(goo.19.edge == 1 or goo.19.edge == 3, 0, 1) * cap.19 * (goo.19.cap_dir - 1), y.19 + if(goo.19.edge == 1 or goo.19.edge == 3, 1, 0) * cap.19 * (goo.19.cap_dir - 1); to: x.19 + if(goo.19.edge == 1 or goo.19.edge == 3, 0, 1) * cap.19 * (goo.19.cap_dir + 1), y.19 + if(goo.19.edge == 1 or goo.19.edge == 3, 1, 0) * cap.19 * (goo.19.cap_dir + 1); width: rr.19 * 2 * if(cap.19 > 0.5, 1, 0); blend: link.19 }
+    ellipse { at: base.x.20, base.y.20; radius: rr.20 * 0.5 * base.20; scale: base.w.20, 2.1 - base.w.20; blend: 14 }
+    line { from: base.x.20, base.y.20; to: x.20, y.20; width: rr.20 * 2 * stalk.20; blend: 14 }
+    line { from: water.ax.20, water.ay.20; to: water.bx.20, water.by.20; width: water.w.20 * 2; blend: 16 }
+    ellipse { at: x.20, y.20; radius: rr.20; scale: 1 + wide.20, 1 - wide.20; blend: link.20 }
+    line { from: thread.ax.20, thread.ay.20; to: thread.bx.20, thread.by.20; width: thread.w.20; blend: thread.root.20 }
+    line { from: x.20 + if(goo.20.edge == 1 or goo.20.edge == 3, 0, 1) * cap.20 * (goo.20.cap_dir - 1), y.20 + if(goo.20.edge == 1 or goo.20.edge == 3, 1, 0) * cap.20 * (goo.20.cap_dir - 1); to: x.20 + if(goo.20.edge == 1 or goo.20.edge == 3, 0, 1) * cap.20 * (goo.20.cap_dir + 1), y.20 + if(goo.20.edge == 1 or goo.20.edge == 3, 1, 0) * cap.20 * (goo.20.cap_dir + 1); width: rr.20 * 2 * if(cap.20 > 0.5, 1, 0); blend: link.20 }
+    ellipse { at: base.x.21, base.y.21; radius: rr.21 * 0.5 * base.21; scale: base.w.21, 2.1 - base.w.21; blend: 14 }
+    line { from: base.x.21, base.y.21; to: x.21, y.21; width: rr.21 * 2 * stalk.21; blend: 14 }
+    line { from: water.ax.21, water.ay.21; to: water.bx.21, water.by.21; width: water.w.21 * 2; blend: 16 }
+    ellipse { at: x.21, y.21; radius: rr.21; scale: 1 + wide.21, 1 - wide.21; blend: link.21 }
+    line { from: thread.ax.21, thread.ay.21; to: thread.bx.21, thread.by.21; width: thread.w.21; blend: thread.root.21 }
+    line { from: x.21 + if(goo.21.edge == 1 or goo.21.edge == 3, 0, 1) * cap.21 * (goo.21.cap_dir - 1), y.21 + if(goo.21.edge == 1 or goo.21.edge == 3, 1, 0) * cap.21 * (goo.21.cap_dir - 1); to: x.21 + if(goo.21.edge == 1 or goo.21.edge == 3, 0, 1) * cap.21 * (goo.21.cap_dir + 1), y.21 + if(goo.21.edge == 1 or goo.21.edge == 3, 1, 0) * cap.21 * (goo.21.cap_dir + 1); width: rr.21 * 2 * if(cap.21 > 0.5, 1, 0); blend: link.21 }
+    ellipse { at: base.x.22, base.y.22; radius: rr.22 * 0.5 * base.22; scale: base.w.22, 2.1 - base.w.22; blend: 14 }
+    line { from: base.x.22, base.y.22; to: x.22, y.22; width: rr.22 * 2 * stalk.22; blend: 14 }
+    line { from: water.ax.22, water.ay.22; to: water.bx.22, water.by.22; width: water.w.22 * 2; blend: 16 }
+    ellipse { at: x.22, y.22; radius: rr.22; scale: 1 + wide.22, 1 - wide.22; blend: link.22 }
+    line { from: thread.ax.22, thread.ay.22; to: thread.bx.22, thread.by.22; width: thread.w.22; blend: thread.root.22 }
+    line { from: x.22 + if(goo.22.edge == 1 or goo.22.edge == 3, 0, 1) * cap.22 * (goo.22.cap_dir - 1), y.22 + if(goo.22.edge == 1 or goo.22.edge == 3, 1, 0) * cap.22 * (goo.22.cap_dir - 1); to: x.22 + if(goo.22.edge == 1 or goo.22.edge == 3, 0, 1) * cap.22 * (goo.22.cap_dir + 1), y.22 + if(goo.22.edge == 1 or goo.22.edge == 3, 1, 0) * cap.22 * (goo.22.cap_dir + 1); width: rr.22 * 2 * if(cap.22 > 0.5, 1, 0); blend: link.22 }
+    ellipse { at: base.x.23, base.y.23; radius: rr.23 * 0.5 * base.23; scale: base.w.23, 2.1 - base.w.23; blend: 14 }
+    line { from: base.x.23, base.y.23; to: x.23, y.23; width: rr.23 * 2 * stalk.23; blend: 14 }
+    line { from: water.ax.23, water.ay.23; to: water.bx.23, water.by.23; width: water.w.23 * 2; blend: 16 }
+    ellipse { at: x.23, y.23; radius: rr.23; scale: 1 + wide.23, 1 - wide.23; blend: link.23 }
+    line { from: thread.ax.23, thread.ay.23; to: thread.bx.23, thread.by.23; width: thread.w.23; blend: thread.root.23 }
+    line { from: x.23 + if(goo.23.edge == 1 or goo.23.edge == 3, 0, 1) * cap.23 * (goo.23.cap_dir - 1), y.23 + if(goo.23.edge == 1 or goo.23.edge == 3, 1, 0) * cap.23 * (goo.23.cap_dir - 1); to: x.23 + if(goo.23.edge == 1 or goo.23.edge == 3, 0, 1) * cap.23 * (goo.23.cap_dir + 1), y.23 + if(goo.23.edge == 1 or goo.23.edge == 3, 1, 0) * cap.23 * (goo.23.cap_dir + 1); width: rr.23 * 2 * if(cap.23 > 0.5, 1, 0); blend: link.23 }
+    ellipse { at: base.x.24, base.y.24; radius: rr.24 * 0.5 * base.24; scale: base.w.24, 2.1 - base.w.24; blend: 14 }
+    line { from: base.x.24, base.y.24; to: x.24, y.24; width: rr.24 * 2 * stalk.24; blend: 14 }
+    line { from: water.ax.24, water.ay.24; to: water.bx.24, water.by.24; width: water.w.24 * 2; blend: 16 }
+    ellipse { at: x.24, y.24; radius: rr.24; scale: 1 + wide.24, 1 - wide.24; blend: link.24 }
+    line { from: thread.ax.24, thread.ay.24; to: thread.bx.24, thread.by.24; width: thread.w.24; blend: thread.root.24 }
+    line { from: x.24 + if(goo.24.edge == 1 or goo.24.edge == 3, 0, 1) * cap.24 * (goo.24.cap_dir - 1), y.24 + if(goo.24.edge == 1 or goo.24.edge == 3, 1, 0) * cap.24 * (goo.24.cap_dir - 1); to: x.24 + if(goo.24.edge == 1 or goo.24.edge == 3, 0, 1) * cap.24 * (goo.24.cap_dir + 1), y.24 + if(goo.24.edge == 1 or goo.24.edge == 3, 1, 0) * cap.24 * (goo.24.cap_dir + 1); width: rr.24 * 2 * if(cap.24 > 0.5, 1, 0); blend: link.24 }
+    ellipse { at: base.x.25, base.y.25; radius: rr.25 * 0.5 * base.25; scale: base.w.25, 2.1 - base.w.25; blend: 14 }
+    line { from: base.x.25, base.y.25; to: x.25, y.25; width: rr.25 * 2 * stalk.25; blend: 14 }
+    line { from: water.ax.25, water.ay.25; to: water.bx.25, water.by.25; width: water.w.25 * 2; blend: 16 }
+    ellipse { at: x.25, y.25; radius: rr.25; scale: 1 + wide.25, 1 - wide.25; blend: link.25 }
+    line { from: thread.ax.25, thread.ay.25; to: thread.bx.25, thread.by.25; width: thread.w.25; blend: thread.root.25 }
+    line { from: x.25 + if(goo.25.edge == 1 or goo.25.edge == 3, 0, 1) * cap.25 * (goo.25.cap_dir - 1), y.25 + if(goo.25.edge == 1 or goo.25.edge == 3, 1, 0) * cap.25 * (goo.25.cap_dir - 1); to: x.25 + if(goo.25.edge == 1 or goo.25.edge == 3, 0, 1) * cap.25 * (goo.25.cap_dir + 1), y.25 + if(goo.25.edge == 1 or goo.25.edge == 3, 1, 0) * cap.25 * (goo.25.cap_dir + 1); width: rr.25 * 2 * if(cap.25 > 0.5, 1, 0); blend: link.25 }
+    ellipse { at: base.x.26, base.y.26; radius: rr.26 * 0.5 * base.26; scale: base.w.26, 2.1 - base.w.26; blend: 14 }
+    line { from: base.x.26, base.y.26; to: x.26, y.26; width: rr.26 * 2 * stalk.26; blend: 14 }
+    line { from: water.ax.26, water.ay.26; to: water.bx.26, water.by.26; width: water.w.26 * 2; blend: 16 }
+    ellipse { at: x.26, y.26; radius: rr.26; scale: 1 + wide.26, 1 - wide.26; blend: link.26 }
+    line { from: thread.ax.26, thread.ay.26; to: thread.bx.26, thread.by.26; width: thread.w.26; blend: thread.root.26 }
+    line { from: x.26 + if(goo.26.edge == 1 or goo.26.edge == 3, 0, 1) * cap.26 * (goo.26.cap_dir - 1), y.26 + if(goo.26.edge == 1 or goo.26.edge == 3, 1, 0) * cap.26 * (goo.26.cap_dir - 1); to: x.26 + if(goo.26.edge == 1 or goo.26.edge == 3, 0, 1) * cap.26 * (goo.26.cap_dir + 1), y.26 + if(goo.26.edge == 1 or goo.26.edge == 3, 1, 0) * cap.26 * (goo.26.cap_dir + 1); width: rr.26 * 2 * if(cap.26 > 0.5, 1, 0); blend: link.26 }
+    ellipse { at: base.x.27, base.y.27; radius: rr.27 * 0.5 * base.27; scale: base.w.27, 2.1 - base.w.27; blend: 14 }
+    line { from: base.x.27, base.y.27; to: x.27, y.27; width: rr.27 * 2 * stalk.27; blend: 14 }
+    line { from: water.ax.27, water.ay.27; to: water.bx.27, water.by.27; width: water.w.27 * 2; blend: 16 }
+    ellipse { at: x.27, y.27; radius: rr.27; scale: 1 + wide.27, 1 - wide.27; blend: link.27 }
+    line { from: thread.ax.27, thread.ay.27; to: thread.bx.27, thread.by.27; width: thread.w.27; blend: thread.root.27 }
+    line { from: x.27 + if(goo.27.edge == 1 or goo.27.edge == 3, 0, 1) * cap.27 * (goo.27.cap_dir - 1), y.27 + if(goo.27.edge == 1 or goo.27.edge == 3, 1, 0) * cap.27 * (goo.27.cap_dir - 1); to: x.27 + if(goo.27.edge == 1 or goo.27.edge == 3, 0, 1) * cap.27 * (goo.27.cap_dir + 1), y.27 + if(goo.27.edge == 1 or goo.27.edge == 3, 1, 0) * cap.27 * (goo.27.cap_dir + 1); width: rr.27 * 2 * if(cap.27 > 0.5, 1, 0); blend: link.27 }
+    ellipse { at: base.x.28, base.y.28; radius: rr.28 * 0.5 * base.28; scale: base.w.28, 2.1 - base.w.28; blend: 14 }
+    line { from: base.x.28, base.y.28; to: x.28, y.28; width: rr.28 * 2 * stalk.28; blend: 14 }
+    line { from: water.ax.28, water.ay.28; to: water.bx.28, water.by.28; width: water.w.28 * 2; blend: 16 }
+    ellipse { at: x.28, y.28; radius: rr.28; scale: 1 + wide.28, 1 - wide.28; blend: link.28 }
+    line { from: thread.ax.28, thread.ay.28; to: thread.bx.28, thread.by.28; width: thread.w.28; blend: thread.root.28 }
+    line { from: x.28 + if(goo.28.edge == 1 or goo.28.edge == 3, 0, 1) * cap.28 * (goo.28.cap_dir - 1), y.28 + if(goo.28.edge == 1 or goo.28.edge == 3, 1, 0) * cap.28 * (goo.28.cap_dir - 1); to: x.28 + if(goo.28.edge == 1 or goo.28.edge == 3, 0, 1) * cap.28 * (goo.28.cap_dir + 1), y.28 + if(goo.28.edge == 1 or goo.28.edge == 3, 1, 0) * cap.28 * (goo.28.cap_dir + 1); width: rr.28 * 2 * if(cap.28 > 0.5, 1, 0); blend: link.28 }
+    ellipse { at: base.x.29, base.y.29; radius: rr.29 * 0.5 * base.29; scale: base.w.29, 2.1 - base.w.29; blend: 14 }
+    line { from: base.x.29, base.y.29; to: x.29, y.29; width: rr.29 * 2 * stalk.29; blend: 14 }
+    line { from: water.ax.29, water.ay.29; to: water.bx.29, water.by.29; width: water.w.29 * 2; blend: 16 }
+    ellipse { at: x.29, y.29; radius: rr.29; scale: 1 + wide.29, 1 - wide.29; blend: link.29 }
+    line { from: thread.ax.29, thread.ay.29; to: thread.bx.29, thread.by.29; width: thread.w.29; blend: thread.root.29 }
+    line { from: x.29 + if(goo.29.edge == 1 or goo.29.edge == 3, 0, 1) * cap.29 * (goo.29.cap_dir - 1), y.29 + if(goo.29.edge == 1 or goo.29.edge == 3, 1, 0) * cap.29 * (goo.29.cap_dir - 1); to: x.29 + if(goo.29.edge == 1 or goo.29.edge == 3, 0, 1) * cap.29 * (goo.29.cap_dir + 1), y.29 + if(goo.29.edge == 1 or goo.29.edge == 3, 1, 0) * cap.29 * (goo.29.cap_dir + 1); width: rr.29 * 2 * if(cap.29 > 0.5, 1, 0); blend: link.29 }
+    ellipse { at: base.x.30, base.y.30; radius: rr.30 * 0.5 * base.30; scale: base.w.30, 2.1 - base.w.30; blend: 14 }
+    line { from: base.x.30, base.y.30; to: x.30, y.30; width: rr.30 * 2 * stalk.30; blend: 14 }
+    line { from: water.ax.30, water.ay.30; to: water.bx.30, water.by.30; width: water.w.30 * 2; blend: 16 }
+    ellipse { at: x.30, y.30; radius: rr.30; scale: 1 + wide.30, 1 - wide.30; blend: link.30 }
+    line { from: thread.ax.30, thread.ay.30; to: thread.bx.30, thread.by.30; width: thread.w.30; blend: thread.root.30 }
+    line { from: x.30 + if(goo.30.edge == 1 or goo.30.edge == 3, 0, 1) * cap.30 * (goo.30.cap_dir - 1), y.30 + if(goo.30.edge == 1 or goo.30.edge == 3, 1, 0) * cap.30 * (goo.30.cap_dir - 1); to: x.30 + if(goo.30.edge == 1 or goo.30.edge == 3, 0, 1) * cap.30 * (goo.30.cap_dir + 1), y.30 + if(goo.30.edge == 1 or goo.30.edge == 3, 1, 0) * cap.30 * (goo.30.cap_dir + 1); width: rr.30 * 2 * if(cap.30 > 0.5, 1, 0); blend: link.30 }
+    ellipse { at: base.x.31, base.y.31; radius: rr.31 * 0.5 * base.31; scale: base.w.31, 2.1 - base.w.31; blend: 14 }
+    line { from: base.x.31, base.y.31; to: x.31, y.31; width: rr.31 * 2 * stalk.31; blend: 14 }
+    line { from: water.ax.31, water.ay.31; to: water.bx.31, water.by.31; width: water.w.31 * 2; blend: 16 }
+    ellipse { at: x.31, y.31; radius: rr.31; scale: 1 + wide.31, 1 - wide.31; blend: link.31 }
+    line { from: thread.ax.31, thread.ay.31; to: thread.bx.31, thread.by.31; width: thread.w.31; blend: thread.root.31 }
+    line { from: x.31 + if(goo.31.edge == 1 or goo.31.edge == 3, 0, 1) * cap.31 * (goo.31.cap_dir - 1), y.31 + if(goo.31.edge == 1 or goo.31.edge == 3, 1, 0) * cap.31 * (goo.31.cap_dir - 1); to: x.31 + if(goo.31.edge == 1 or goo.31.edge == 3, 0, 1) * cap.31 * (goo.31.cap_dir + 1), y.31 + if(goo.31.edge == 1 or goo.31.edge == 3, 1, 0) * cap.31 * (goo.31.cap_dir + 1); width: rr.31 * 2 * if(cap.31 > 0.5, 1, 0); blend: link.31 }
+    ellipse { at: rip.x.0 - age.0 * 420, H - LEVEL + ripple.0.force * 1.2; radius: rip.a.0 * 2.2 * if(ripple.0.kind > 0.5, 0, 1); scale: 2.2, 1; blend: 14 }
+    ellipse { at: rip.x.0 + age.0 * 420, H - LEVEL + ripple.0.force * 1.2; radius: rip.a.0 * 2.2 * if(ripple.0.kind > 0.5, 0, 1); scale: 2.2, 1; blend: 14 }
+    ellipse { at: rip.x.0, H - LEVEL + 4; radius: rip.a.0 * (1.2 + 0.6 * sin(time * 1900)) * if(ripple.0.kind > 0.5, 1, 0); scale: 2.6, 1; blend: 12 }
+    ellipse { at: rip.x.1 - age.1 * 420, H - LEVEL + ripple.1.force * 1.2; radius: rip.a.1 * 2.2 * if(ripple.1.kind > 0.5, 0, 1); scale: 2.2, 1; blend: 14 }
+    ellipse { at: rip.x.1 + age.1 * 420, H - LEVEL + ripple.1.force * 1.2; radius: rip.a.1 * 2.2 * if(ripple.1.kind > 0.5, 0, 1); scale: 2.2, 1; blend: 14 }
+    ellipse { at: rip.x.1, H - LEVEL + 4; radius: rip.a.1 * (1.2 + 0.6 * sin(time * 1900)) * if(ripple.1.kind > 0.5, 1, 0); scale: 2.6, 1; blend: 12 }
+    ellipse { at: rip.x.2 - age.2 * 420, H - LEVEL + ripple.2.force * 1.2; radius: rip.a.2 * 2.2 * if(ripple.2.kind > 0.5, 0, 1); scale: 2.2, 1; blend: 14 }
+    ellipse { at: rip.x.2 + age.2 * 420, H - LEVEL + ripple.2.force * 1.2; radius: rip.a.2 * 2.2 * if(ripple.2.kind > 0.5, 0, 1); scale: 2.2, 1; blend: 14 }
+    ellipse { at: rip.x.2, H - LEVEL + 4; radius: rip.a.2 * (1.2 + 0.6 * sin(time * 1900)) * if(ripple.2.kind > 0.5, 1, 0); scale: 2.6, 1; blend: 12 }
+    ellipse { at: rip.x.3 - age.3 * 420, H - LEVEL + ripple.3.force * 1.2; radius: rip.a.3 * 2.2 * if(ripple.3.kind > 0.5, 0, 1); scale: 2.2, 1; blend: 14 }
+    ellipse { at: rip.x.3 + age.3 * 420, H - LEVEL + ripple.3.force * 1.2; radius: rip.a.3 * 2.2 * if(ripple.3.kind > 0.5, 0, 1); scale: 2.2, 1; blend: 14 }
+    ellipse { at: rip.x.3, H - LEVEL + 4; radius: rip.a.3 * (1.2 + 0.6 * sin(time * 1900)) * if(ripple.3.kind > 0.5, 1, 0); scale: 2.6, 1; blend: 12 }
+    line { from: pick(max(carried, 0), home.x.0, home.x.1, home.x.2, home.x.3, home.x.4, home.x.5, home.x.6, home.x.7, home.x.8, home.x.9, home.x.10, home.x.11, home.x.12, home.x.13, home.x.14, home.x.15, home.x.16, home.x.17, home.x.18, home.x.19, home.x.20, home.x.21, home.x.22, home.x.23, home.x.24, home.x.25, home.x.26, home.x.27, home.x.28, home.x.29, home.x.30, home.x.31), pick(max(carried, 0), home.y.0, home.y.1, home.y.2, home.y.3, home.y.4, home.y.5, home.y.6, home.y.7, home.y.8, home.y.9, home.y.10, home.y.11, home.y.12, home.y.13, home.y.14, home.y.15, home.y.16, home.y.17, home.y.18, home.y.19, home.y.20, home.y.21, home.y.22, home.y.23, home.y.24, home.y.25, home.y.26, home.y.27, home.y.28, home.y.29, home.y.30, home.y.31); to: pick(max(carried, 0), x.0, x.1, x.2, x.3, x.4, x.5, x.6, x.7, x.8, x.9, x.10, x.11, x.12, x.13, x.14, x.15, x.16, x.17, x.18, x.19, x.20, x.21, x.22, x.23, x.24, x.25, x.26, x.27, x.28, x.29, x.30, x.31), pick(max(carried, 0), y.0, y.1, y.2, y.3, y.4, y.5, y.6, y.7, y.8, y.9, y.10, y.11, y.12, y.13, y.14, y.15, y.16, y.17, y.18, y.19, y.20, y.21, y.22, y.23, y.24, y.25, y.26, y.27, y.28, y.29, y.30, y.31); width: if(carried >= 0, pick(max(carried, 0), rr.0 * 0.7 * neck.0, rr.1 * 0.7 * neck.1, rr.2 * 0.7 * neck.2, rr.3 * 0.7 * neck.3, rr.4 * 0.7 * neck.4, rr.5 * 0.7 * neck.5, rr.6 * 0.7 * neck.6, rr.7 * 0.7 * neck.7, rr.8 * 0.7 * neck.8, rr.9 * 0.7 * neck.9, rr.10 * 0.7 * neck.10, rr.11 * 0.7 * neck.11, rr.12 * 0.7 * neck.12, rr.13 * 0.7 * neck.13, rr.14 * 0.7 * neck.14, rr.15 * 0.7 * neck.15, rr.16 * 0.7 * neck.16, rr.17 * 0.7 * neck.17, rr.18 * 0.7 * neck.18, rr.19 * 0.7 * neck.19, rr.20 * 0.7 * neck.20, rr.21 * 0.7 * neck.21, rr.22 * 0.7 * neck.22, rr.23 * 0.7 * neck.23, rr.24 * 0.7 * neck.24, rr.25 * 0.7 * neck.25, rr.26 * 0.7 * neck.26, rr.27 * 0.7 * neck.27, rr.28 * 0.7 * neck.28, rr.29 * 0.7 * neck.29, rr.30 * 0.7 * neck.30, rr.31 * 0.7 * neck.31), 0); blend: 22 }
+}

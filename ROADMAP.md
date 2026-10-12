@@ -65,12 +65,32 @@ Schválené 12. 10. 2026. Pracuje sa **zhora nadol, neskáče sa**; nový nápad
         **Zatiaľ chýba** (vráti sa s príslušným programom): zámok obrazovky, hľadanie súborov a AI v riadku, tlačidlá
         App Manager a Správca zariadení, profily prostredí (`latte-profil`), profil účtu (`latte-gooconfig`).
         Voľba GOO pri prihlásení skončí v SAFE s dôvodom „plná plocha nie je nainštalovaná“, kým nie je bod 3.
-     3. [ ] **GooEngine** — engine a jadro kvapiek (jazyk 0.3 ani 0.4 nevie cyklus v tele kvapky, `gen.py` treba ďalej),
-        potom náhrada Noctalie (rohová lišta: tray, sieť, hlasitosť, ovládacie centrum; Nerušiť, akcie relácie, prehľad
-        okien, účty kalendára — služby pleamaru `tray`, `network`, `audio`, `bluetooth`, `brightness`, `session`,
-        `polkit` a stránky z Marey, BSD-3), aplikácie a príkazy, iba tie, ktoré GOO a SAFE potrebujú. Platí z 12. 10.:
-        znak NET do GOO, náhľad okna nad ikrou, Kapsa a maskoti sa neprenášajú; kvapky sa premenujú
-        (GooBar → BarGoo, GooPower → PowerGoo).
+     3. [~] **GooEngine** — engine a jadro kvapiek, potom náhrada Noctalie (rohová lišta: tray, sieť, hlasitosť,
+        ovládacie centrum; Nerušiť, akcie relácie, prehľad okien, účty kalendára — služby pleamaru `tray`, `network`,
+        `audio`, `bluetooth`, `brightness`, `session`, `polkit` a stránky z Marey, BSD-3), aplikácie a príkazy, iba tie,
+        ktoré GOO a SAFE potrebujú. Platí z 12. 10.: znak NET do GOO, náhľad okna nad ikrou, Kapsa a maskoti sa
+        neprenášajú; kvapky sa premenovali (GooBar → BarGoo, GooPower → PowerGoo).
+        - [x] **engine** (12. 10.): `goo/goo.plm` + `goo/parts/`, `goo/gen.py` (tvary tela — jazyk 0.4 cyklus v tele
+          stále nevie), `goo/lib/engine.luau`, karta `goo/lib/card.luau`. Oproti starému: karta sa skladá rozložením
+          scény, signály idú cez záznam kvapky, stav a nastavenia sú v priečinku scény, jedna scéna s 32 miestami.
+        - [x] **Hyprland pre GOO** (12. 10.): `system/hypr/` (režimy okien, minimalizovanie, rozloženia, plochy, skratky
+          ako vo Windows, stupne výkonu), `system/systemd/latte-goo.service`.
+        - [x] **jadro kvapiek, prvá časť** (12. 10.): BarGoo (hlava, ikry okien, ponuka okna), LensGoo (Aplikácie,
+          Príkaz, rýchly zoznam), PowerGoo (karta: účet, odhlásenie, batéria, profil napájania, uspať · reštartovať ·
+          vypnúť). Čo je a čo chýba: LATTEOS-GOO.md §8.
+        - [ ] **jadro kvapiek, zvyšok:** pás výkonu PowerGoo (`latte-stats`), zámok obrazovky (Win+L, Zamknúť),
+          ovládanie Goo z klávesnice, hra pri nečinnosti, okno z bubliny a pád minimalizovaného okna, kvapka uhne oknu,
+          BarGoo na ďalších monitoroch.
+        - [ ] **náhrada Noctalie:** ClockGoo s upozorneniami a kalendárom, ikony na pozadí, sieť, hlasitosť, Bluetooth,
+          jas, polkit; potom QueenGoo, ChatGoo, vlastné kvapky.
+        - [ ] režimy LensGoo Súbory · Web · AI a kalkulačka; tapeta; okenné tlačidlá (hyprbars), sklo, prichytenie.
+        Overené 12. 10. v `tests/screen.sh` (Hyprland bez obrazovky na RX 640, snímky, falošná myš): štart, pokoj
+        a nadnesenie, ťahanie k okraju a pád, karty všetkých troch kvapiek, spustenie aplikácie, príkaz s varovaním,
+        prepnutie režimu okien, minimalizovanie klikom na ikru, ponuka okna, odhlásenie s otázkou, lišta pri ľavom
+        okraji s pásom, sklenená káva a zmena nastavení za behu. Záťaž v pokoji: scéna 17 % jadra, Hyprland 4 %.
+        **Neoverené:** skutočné prihlásenie (greetd → `latte-session` → Hyprland na obrazovke) — až po nasadení na
+        latte-lab (bod f); batéria (latte-lab ju nemá); viac monitorov; uspanie, reštart a vypnutie (v skúške sa
+        nestláčali naostro).
    - e. [~] **Zoznam súborov (`FILES`)** od prvého kusu (založený 12. 10., stráži ho `tests/check.sh`): každý súbor, ktorý LatteOS pridá do systému, má riadok
      „cieľ v systéme ← zdroj v repe“. Inštalátor aj odinštalovanie sa neskôr napíšu nad týmto zoznamom; dovtedy
      sa podľa neho inštaluje ručne. Čo LatteOS v systéme mení (nie pridáva — `/etc/os-release`, greetd), má vlastný oddiel.

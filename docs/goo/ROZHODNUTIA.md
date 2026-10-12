@@ -274,3 +274,11 @@ Nové rozhodnutie: jeden riadok sem (dátum, čo, prečo) a oprava platného zne
 | relácia LatteOS Game (Steam Big Picture v gamescope) v ponuke prihlásenia | ostáva, zatiaľ — aj vo Fresh (12. 10.) |
 | Fresh: starý kód | celý strom v0.3 do `old/` ako predloha; kód sa píše načisto so skillom `pleamar`, podľa starého, ale lepšie (12. 10.) |
 | Fresh: zoznam súborov `FILES` (čo LatteOS pridal do systému) | áno, od prvého kusu — aby sa dal odinštalovať; inštalátor a odinštalovanie až neskôr (12. 10.) |
+| Fresh, engine Goo: karta sa skladá rozložením scény (`column`, `for`, komponenty), logika dáva iba riadky a nepočíta súradnice ani šírky textu | áno — podľa skillu `pleamar`; odpadol odhad šírok a výšok v logike (12. 10.) |
+| Fresh, engine Goo: signály logika → scéna (poskoč, stlač, ponor, zachvej, pád, koniec ťahania) ako počítadlá v zázname kvapky | áno — udalosť z logiky nenesie hodnotu ani v pleamare 0.3.2 (overené); logika zapisuje iba model, nie vnútorné fakty scény (12. 10.) |
+| Fresh, engine Goo: jedna scéna s 32 miestami | áno — výmena scén podľa počtu kvapiek (m32 / m64 / 128) odpadla; počet miest mení `goo/gen.py --slots` (12. 10.) |
+| Fresh: okná v BarGoo podľa adresy z `hyprctl clients`, služba `window` iba hlási zmenu | áno — hľadanie okna podľa triedy, titulku a poradia odpadlo (12. 10.) |
+| Fresh: polohy kvapiek, nastavenia kvapiek a pamäť spúšťača v priečinku scény (`~/.local/share/pleamar/goo/`, služba `files`) | áno — bez pomocného príkazu; `settings.json` scéna sleduje, zmena platí hneď (12. 10.) |
+| Fresh: engine Goo ako služba systemd `latte-goo.service` pri `latte-session.target` | áno — po páde ho vráti systemd, vlastná slučka odpadla (12. 10.) |
+| Fresh: pás pre kvapky ide za lištou BarGoo k jej okraju | áno — okná nechajú voľný okraj, pri ktorom lišta práve je (12. 10.) |
+| Fresh: skúška relácie GOO bez obrazovky a bez prihlásenia (`tests/screen.sh`) | áno — labwc bez výstupu → Hyprland → scéna na skutočnej karte; Hyprland vždy s `LIBSEAT_BACKEND=logind`, inak si z ssh otvorí skutočnú obrazovku (12. 10.) |

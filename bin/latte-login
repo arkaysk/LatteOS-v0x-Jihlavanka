@@ -5,6 +5,11 @@
         everything the scene shows, as one JSON object
   latte-login hint USER
         where USER keeps the power drop on the bar (0…1), or nothing
+  latte-login coffee
+        the user's coffee as [water, milk], 0…1 each: what the goo is coloured with
+  latte-login remember X
+        called from the session: notes where the user keeps the power drop (X, 0…1 of the bottom edge) and
+        which coffee is theirs, so that the login screen can show both before the password is typed
   latte-login auth USER SESSION -- COMMAND…
         checks the password and prepares the user's session through greetd;
         prints {"ok": true} or {"ok": false, "error": "…"}
@@ -148,10 +153,32 @@ def hint(user):
     return read_json(os.path.join(STATE, "user-%s.json" % user)) if re.fullmatch(r"[A-Za-z0-9._-]{1,64}", user) else {}
 
 
+def own_coffee():
+    """The name of the coffee the user chose (Barista writes it), or nothing."""
+    return (re.findall(r"[\w-]+", read(os.path.join(HOME, ".config/latteos/coffee"))) or [""])[0]
+
+
+def remember(x):
+    """The session's note for the login screen. The latte group may write there; who may not, simply has no note."""
+    user = who()
+    note = {"coffee": own_coffee()}
+    if 0 <= x <= 1:
+        note["power_x"] = round(x, 4)
+    path = os.path.join(STATE, "user-%s.json" % user)
+    try:
+        with open(path + ".tmp", "w") as f:
+            json.dump(note, f)
+        os.replace(path + ".tmp", path)
+        os.chmod(path, 0o664)
+    except OSError:
+        return 1
+    return 0
+
+
 def data():
     user, c = who(), conf()
     h = hint(user)
-    coffee = h.get("coffee") or (re.findall(r"[\w-]+", read(os.path.join(HOME, ".config/latteos/coffee"))) or [""])[0]
+    coffee = h.get("coffee") or own_coffee()
     lines, panel = crash_lines(), "crash"
     if not lines:
         lines, panel = (headlines(c["news_url"]), "news") if c.get("news_url") and c.get("panel", "news") != "none" else ([], "")
@@ -245,6 +272,14 @@ def main(a):
         x = hint(a[1]).get("power_x")
         print(x if isinstance(x, (int, float)) else "")
         return 0
+    if a == ["coffee"]:
+        print(json.dumps(list(COFFEES.get(own_coffee(), (0.55, 0)))))
+        return 0
+    if len(a) == 2 and a[0] == "remember":
+        try:
+            return remember(float(a[1]))
+        except ValueError:
+            return 2
     if len(a) >= 5 and a[0] == "auth" and a[3] == "--":
         return auth(a[1], a[2], a[4:])
     if a == ["done"]:

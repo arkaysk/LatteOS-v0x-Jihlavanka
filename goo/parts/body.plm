@@ -1,0 +1,62 @@
+// The goo: every drop and the edge of the screen painted as one body, so that what is near melts together.
+part Body {
+    // ── the glow above the horizon: warm at dawn and dusk, faint and cold at night, none by day ─────────────
+    // Flat layers instead of a blur, which would cost every frame; the steps are small enough not to show.
+    repeat g in 0..8 {
+        ellipse { at: W / 2, H + 30; radius: W * (0.64 - 0.03 * g); scale: 1, 0.09 - 0.0096 * g; color: sky; opacity: 0.017 * warmth + 0.005 * (1 - daylight) }
+    }
+
+    // ── the weather outside, shown when the desktop is left alone: drops of rain on the bottom edge, or snow.
+    // Only low above the surface, so that it does not fall across the windows.
+    particles { at: W / 2, H - 340; area: W, 12; count: 30; life: 0.55s .. 0.75s; speed: 430 .. 520; direction: 96deg; spread: 3deg
+                gravity: 0, 500; size: 4, 3; colors: #d9b88e, #c9a47a; opacity: 80%, 45%; shape: spark; emit: lively and idle >= 2 and rain == 1 and not snow }
+    particles { at: W / 2, H - 340; area: W, 12; count: 110; life: 0.55s .. 0.75s; speed: 430 .. 520; direction: 96deg; spread: 3deg
+                gravity: 0, 500; size: 4, 3; colors: #d9b88e, #c9a47a; opacity: 85%, 48%; shape: spark; emit: lively and idle >= 2 and rain == 2 and not snow }
+    particles { at: W / 2, H - 340; area: W, 12; count: 80; life: 3.5s .. 5s; speed: 60 .. 95; direction: 95deg; spread: 24deg
+                size: 6, 4; colors: #f3ebdd, #f3ebdd; opacity: 75%, 35%; shape: dot; emit: lively and idle >= 2 and rain > 0 and snow }
+
+    body {
+        // one coffee for all of it, and one light: the pointer
+        gradient: radial cursor.x, cursor.y radius 260, mix(coffee, sky, 0.12 + 0.05 * warmth), coffee
+        rim: 28%
+        // The shadow is tight and sharp: the eyes left open between melted drops have a crisp outline.
+        shadow: 0, 2, 2, 28%
+        // Coffee in glass: the body is glass that bends what is behind it and catches the pointer's light;
+        // the coffee's colour comes from the second body below. With plain coffee none of it is worked out.
+        glass: if(glassy, 100%, 0%)
+        lens: glassy and bends
+        shine: pointer
+        refraction: 170%
+        dispersion: 45%
+        dome: 30%
+        // The bottom edge is a band just under the screen: the drops come out of it and spread at it.
+        box { from: 0, H; size: W, 40 }
+        include "shapes.plm"
+    }
+    // the coffee inside the glass: the same shapes, see-through, over what the glass bent
+    body {
+        gradient: radial cursor.x, cursor.y radius 260, mix(coffee, sky, 0.18 + 0.05 * warmth), coffee
+        opacity: 44%
+        show: glassy
+        box { from: 0, H; size: W, 40 }
+        include "shapes.plm"
+    }
+
+    repeat k in 0..32 {
+        // glass shines: a window of light and a dot on its upper left, higher and aside on a wide drop so
+        // that they do not cover its text
+        ellipse { at: x.$k - rr.$k * if(goo.$k.cap > 0, 0.62, 0.36), y.$k - rr.$k * if(goo.$k.cap > 0, 0.82, 0.46); radius: rr.$k * if(goo.$k.cap > 0, 0.14, 0.2) * if(glassy and goo.$k.on, 1, 0); scale: 1.9, 0.85; color: #fff6ea; opacity: 52% }
+        ellipse { at: x.$k - rr.$k * if(goo.$k.cap > 0, 0.4, 0.12), y.$k - rr.$k * if(goo.$k.cap > 0, 0.9, 0.58); radius: rr.$k * 0.06 * if(glassy and goo.$k.on, 1, 0); color: #ffffff; opacity: 75% }
+
+        // The coloured core: from its colour in the middle out into the coffee, so that its edge is the drop's.
+        // In a capsule that grew one way it stays where the drop was, with the icon.
+        let core.off.$k = if(goo.$k.cap_dir < 0, 0, cap.$k * (goo.$k.cap_dir - 1))
+        let core.x.$k = x.$k + if(goo.$k.edge == 1 or goo.$k.edge == 3, 0, core.off.$k)
+        let core.y.$k = y.$k + if(goo.$k.edge == 1 or goo.$k.edge == 3, core.off.$k, 0)
+        body {
+            gradient: radial core.x.$k, core.y.$k radius rr.$k * 0.97, pick(goo.$k.core_hue, #e5484d, #30a46c, #3e63dd, #f5a524, #ffe8c2, #8e4ec6), coffee
+            opacity: clamp(core.$k, 0, 1)
+            ellipse { at: core.x.$k, core.y.$k; radius: rr.$k * 0.97 * if(core.$k > 0.02, 1, 0); scale: 1 + wide.$k, 1 - wide.$k }
+        }
+    }
+}

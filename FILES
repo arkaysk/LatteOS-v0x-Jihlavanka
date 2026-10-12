@@ -28,7 +28,30 @@
 /usr/share/latteos/goo/lib/fold.luau                    <- goo/lib/fold.luau
 /usr/share/latteos/goo/lib/dangerous.luau               <- goo/lib/dangerous.luau
 /usr/share/latteos/goo/lang/sk.plm                      <- goo/lang/sk.plm
+/usr/share/latteos/goo/goo.plm                          <- goo/goo.plm
+/usr/share/latteos/goo/goo.luau                         <- goo/goo.luau
+/usr/share/latteos/goo/parts/drops.plm                  <- goo/parts/drops.plm
+/usr/share/latteos/goo/parts/picks.plm                  <- goo/parts/picks.plm
+/usr/share/latteos/goo/parts/body.plm                   <- goo/parts/body.plm
+/usr/share/latteos/goo/parts/shapes.plm                 <- goo/parts/shapes.plm
+/usr/share/latteos/goo/parts/card.plm                   <- goo/parts/card.plm
+/usr/share/latteos/goo/parts/faces.plm                  <- goo/parts/faces.plm
+/usr/share/latteos/goo/parts/rows.plm                   <- goo/parts/rows.plm
+/usr/share/latteos/goo/lib/engine.luau                  <- goo/lib/engine.luau
+/usr/share/latteos/goo/lib/card.luau                    <- goo/lib/card.luau
+/usr/share/latteos/goo/lib/bar.luau                     <- goo/lib/bar.luau
+/usr/share/latteos/goo/lib/lens.luau                    <- goo/lib/lens.luau
+/usr/share/latteos/goo/lib/wm.luau                      <- goo/lib/wm.luau
+/usr/share/latteos/goo/lib/open.luau                    <- goo/lib/open.luau
+/usr/share/latteos/goo/lib/find.luau                    <- goo/lib/find.luau
+/usr/share/latteos/goo/drops/bargoo.luau                <- goo/drops/bargoo.luau
+/usr/share/latteos/goo/drops/lensgoo.luau               <- goo/drops/lensgoo.luau
+/usr/share/latteos/goo/drops/powergoo.luau              <- goo/drops/powergoo.luau
 /usr/share/latteos/greeter/labwc/rc.xml                 <- system/greeter/labwc/rc.xml
+/usr/share/latteos/hypr/hyprland.lua                    <- system/hypr/hyprland.lua
+/usr/share/latteos/hypr/latte/windows.lua               <- system/hypr/latte/windows.lua
+/usr/share/latteos/hypr/latte/keys.lua                  <- system/hypr/latte/keys.lua
+/usr/share/latteos/hypr/latte/tiers.lua                 <- system/hypr/latte/tiers.lua
 /usr/share/latteos/labwc/rc.xml                         <- system/labwc/rc.xml
 /usr/share/latteos/labwc/autostart                      <- system/labwc/autostart
 /usr/share/wayland-sessions/latteos.desktop             <- system/sessions/latteos.desktop
@@ -41,6 +64,7 @@
 /usr/share/plymouth/themes/latteos/                     <- system:/usr/share/plymouth/themes/spinner/*.png
 /usr/lib/systemd/system/latte-boot.service              <- system/systemd/latte-boot.service
 /usr/lib/systemd/user/latte-session.target              <- system/systemd/latte-session.target
+/usr/lib/systemd/user/latte-goo.service                 <- system/systemd/latte-goo.service
 /usr/lib/tmpfiles.d/latteos.conf                        <- system/systemd/latteos.tmpfiles
 /etc/latteos/boot.toml                                  <- system/boot.toml
 /etc/kernel/install.d/96-latteos-safe.install           <- system/kernel-install/96-latteos-safe.install
@@ -62,7 +86,9 @@
 /boot/loader/entries/*-lattesafe.conf
 /boot/loader/entries/*-lattesafe-nomodeset.conf
 $XDG_RUNTIME_DIR/latteos/                               # per user: the reason for SAFE, labwc's menu, where to go next
-~/.local/state/latteos/                                 # per user: session.log, safe.log
+~/.local/state/latteos/                                 # per user: session.log, safe.log, window-mode
+~/.local/share/pleamar/goo/                             # per user: where the drops were left, the launcher's memory, settings.json
+/var/lib/latteos/login/user-*.json                      # per user, for the login screen: where the power drop is, the coffee
 ~/.cache/latteos/                                       # per user: the weather and the news last fetched
 
 # Not in this repository's power to ship: Fedora packages, and programs built from someone else's source.
@@ -70,7 +96,8 @@ $XDG_RUNTIME_DIR/latteos/                               # per user: the reason f
 package: greetd labwc tuigreet plymouth plymouth-plugin-two-step plymouth-theme-spinner egl-utils python3
 package: rsms-inter-fonts jetbrains-mono-fonts policycoreutils-python-utils util-linux-core
 package: foot less NetworkManager-tui                                # the SAFE session's terminal and rescue menu
-package: hyprland                                                    # the GOO session
+package: hyprland wireplumber                                        # the GOO session; wpctl for the volume keys
+optional: brightnessctl power-profiles-daemon                        # the brightness keys; the power profiles in PowerGoo's card
 optional: steam gamescope gamescope-session gamescope-session-steam  # the Game session; without them it is not offered
 /usr/bin/pleamar: pleamar v0.3.2 (github.com/k4ditano/pleamar) built with patches/*.patch; see patches/README.md
 

@@ -1,0 +1,14 @@
+# The Goo scene: the shell of the full desktop. It belongs to the session's target, so it starts once
+# Hyprland has told systemd where the session is, comes back if it crashes and goes when the session ends.
+[Unit]
+Description=LatteOS Goo
+PartOf=latte-session.target
+After=latte-session.target
+
+[Service]
+# With this the list of windows comes from the generic protocols and everything else from Hyprland
+# (patches/pleamar-windows-and-icons.patch): Hyprland's own socket only reports the window in front.
+Environment=PLEAMAR_GENERIC=window
+ExecStart=/usr/bin/pleamar --scene /usr/share/latteos/goo/goo.plm --no-hud
+Restart=on-failure
+RestartSec=1

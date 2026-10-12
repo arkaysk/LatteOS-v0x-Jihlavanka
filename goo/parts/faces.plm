@@ -1,0 +1,61 @@
+// What each drop shows on itself: the pointer's glint, its icon and text, a ring, beads, a crown.
+// It is painted over the card's frame: the drop a card grew from sits in the card's corner with its face on.
+part Faces {
+    repeat k in 0..32 {
+        // the pointer is the drops' light: a glint on the side that faces it, brighter the nearer it is
+        let to.x.$k = cursor.x - x.$k
+        let to.y.$k = cursor.y - y.$k
+        let to.d.$k = max(length(to.x.$k, to.y.$k), 1)
+        ellipse { at: x.$k + to.x.$k / to.d.$k * rr.$k * 0.45, y.$k + to.y.$k / to.d.$k * rr.$k * 0.45; radius: rr.$k * 0.16; scale: 1.4, 0.8; color: cream; opacity: goo.$k.glint * (0.25 + 0.5 * clamp(1 - to.d.$k / 420, 0, 1)) }
+
+        // a ring filled as far as its value
+        arc { at: x.$k, y.$k; radius: rr.$k * 0.78; span: clamp(goo.$k.value, 0, 1) * 360deg; rotate: clamp(goo.$k.value, 0, 1) * 180deg; width: max(2, rr.$k * 0.12); color: gold; opacity: if(goo.$k.kind == 1 and goo.$k.on, 0.9, 0) }
+
+        // What it shows grows with it. A text's size is a plain number, so the text is drawn 2.4 times too big
+        // in a group that is scaled to the drop; offsets inside are divided by the scale to stay screen pixels.
+        let fs.$k = max(face.$k / 2.4, 0.01)
+        // in a capsule that grew one way the icon stays where the drop was
+        let icon.off.$k = if(goo.$k.cap_dir < 0, 0, cap.$k * (goo.$k.cap_dir - 1))
+        let icon.x.$k = if(goo.$k.edge == 1 or goo.$k.edge == 3, 0, icon.off.$k)
+        let icon.y.$k = if(goo.$k.edge == 1 or goo.$k.edge == 3, icon.off.$k, 0)
+        let out.x.$k = if(goo.$k.edge == 1, 1, if(goo.$k.edge == 3, -1, 0))        // away from its edge
+        let out.y.$k = if(goo.$k.edge == 0, -1, if(goo.$k.edge == 2, 1, 0))
+        group {
+            pivot: x.$k, y.$k
+            scale: fs.$k
+            text goo.$k.glyph { at: x.$k + icon.x.$k / fs.$k, y.$k + (icon.y.$k - if(goo.$k.kind == 1 or goo.$k.cap > 0, 0, rr.$k * 0.08)) / fs.$k; anchor: center; size: 48; color: ink; opacity: if(goo.$k.on and goo.$k.kind != 2 and not goo.$k.has_icon, 0.92, 0) * (1 - 0.55 * goo.$k.dim); family: "tabler-icons" }
+            text goo.$k.crown { at: x.$k + out.x.$k * (rr.$k + 5) / fs.$k, y.$k + out.y.$k * (rr.$k + 5) / fs.$k; anchor: center; size: 48; color: #e8b84a; outline: 3, #3a2410; opacity: if(goo.$k.on, 1, 0); family: "tabler-icons" }
+            text goo.$k.label { at: x.$k, y.$k + rr.$k * 0.42 / fs.$k; anchor: center; size: 21.6; weight: 700; color: ink; opacity: if(goo.$k.on and goo.$k.kind != 2 and goo.$k.cap == 0, 0.9, 0); family: "Inter" }
+            // a clock: the line under the time
+            text goo.$k.line2 { at: x.$k, y.$k + rr.$k * 0.36 / fs.$k; anchor: center; size: 19.2; color: ink; opacity: if(goo.$k.on and goo.$k.kind == 2 and goo.$k.zoom >= 0.8, 0.75, 0); family: "Inter" }
+        }
+        // …and the time itself. Deflated below 80 % a clock shows the time alone, larger and in the middle.
+        let ts.$k = fs.$k * if(goo.$k.zoom < 0.8, 1.25, 1)
+        group {
+            pivot: x.$k, y.$k
+            scale: ts.$k
+            text goo.$k.label { at: x.$k, y.$k - rr.$k * if(goo.$k.zoom < 0.8, 0, 0.12) / ts.$k; anchor: center; size: 33.6; weight: 700; color: ink; opacity: if(goo.$k.on and goo.$k.kind == 2, 1, 0); family: "Inter" }
+        }
+        // an app's own icon instead of the glyph: a window in the bar, dimmed when it is put away
+        image icon.$k = from goo.$k.icon, 30, 30
+        image icon.$k { at: x.$k + icon.x.$k - rr.$k * 0.52, y.$k + icon.y.$k - rr.$k * 0.52; size: rr.$k * 1.04, rr.$k * 1.04; opacity: if(goo.$k.on and goo.$k.has_icon, 1 - 0.55 * goo.$k.dim, 0); show: goo.$k.has_icon }
+
+        // Beads on the side away from the edge, four at most; with more than four the last is bigger and
+        // carries the count. Each takes its colour from its own octal digit of `bead_hues`.
+        repeat j in 0..4 {
+            let hue.$j = floor(goo.$k.bead_hues / pow(8, j)) - 8 * floor(goo.$k.bead_hues / pow(8, j + 1))
+            ellipse {
+                at: x.$k + if(goo.$k.edge == 1, rr.$k * 0.82 + j * 1.5, if(goo.$k.edge == 3, -rr.$k * 0.82 - j * 1.5, rr.$k * 0.78 - j * 9)), y.$k + if(goo.$k.edge == 0, -rr.$k * 0.82 - j * 1.5, if(goo.$k.edge == 2, rr.$k * 0.82 + j * 1.5, -rr.$k * 0.5 + j * 9))
+                radius: if(j == 3 and goo.$k.beads > 4, 7.5, 4.2)
+                color: pick(hue.$j, #e5484d, #30a46c, #3e63dd, #f5c518, #8a2a22, #ffe8c2)
+                opacity: if(goo.$k.on and j < goo.$k.beads, 0.95, 0)
+                show: goo.$k.beads > j
+            }
+        }
+        text goo.$k.bead_text { at: x.$k + if(goo.$k.edge == 1, rr.$k * 0.82 + 4.5, if(goo.$k.edge == 3, -rr.$k * 0.82 - 4.5, rr.$k * 0.78 - 27)), y.$k + if(goo.$k.edge == 0, -rr.$k * 0.82 - 4.5, if(goo.$k.edge == 2, rr.$k * 0.82 + 4.5, -rr.$k * 0.5 + 27)); anchor: center; size: 8; weight: 700; color: #fff6ea; show: goo.$k.beads > 4; family: "Inter" }
+
+        // a capsule that grew both ways: its two lines of text beside the icon
+        text goo.$k.label { at: x.$k - cap.$k + rr.$k + 2, y.$k - if(goo.$k.lines > 1, 8, 0); anchor: left center; size: 12; weight: 600; color: ink; width: goo.$k.cap * 2 - 6; lines: 1; opacity: if(goo.$k.on and goo.$k.cap > 0 and goo.$k.cap_dir == 0, 0.95, 0); family: "Inter" }
+        text goo.$k.line2 { at: x.$k - cap.$k + rr.$k + 2, y.$k + 8; anchor: left center; size: 11; color: ink; width: goo.$k.cap * 2 - 6; lines: 1; opacity: if(goo.$k.on and goo.$k.cap > 0 and goo.$k.cap_dir == 0, 0.65, 0); family: "Inter" }
+    }
+}

@@ -1,16 +1,17 @@
 -- SAFE's logic: it reports the load, the windows and the date, starts what the bar's buttons ask for and
 -- serves the typing row. A mode of the row is one entry in MODES and one branch in `search`.
-local fold = require("lib/fold")
+local find = require("lib/find")
 local dangerous = require("lib/dangerous")
 local icons = require("lib/icons")
+local open = require("lib/open")
 
 text.g_power, text.g_term, text.g_search, text.g_prompt = icons["power"], icons["terminal-2"], icons["search"], icons["prompt"]
 
 local function go(cmd, args) run(cmd, args or {}, nil, { output = false }) end
 local function trim(s) return (tostring(s or ""):gsub("^%s+", ""):gsub("%s+$", "")) end
 
-on("menu", function() go("foot", { "-T", "LatteOS SAFE", "-e", "latte-safe" }) end)
-on("terminal", function() go("foot") end)
+on("menu", function() open.in_terminal("LatteOS SAFE", "latte-safe") end)
+on("terminal", open.terminal)
 
 -- in the order the power menu draws them
 local MACHINE = { [0] = { "labwc", { "--exit" } }, { "systemctl", { "suspend" } }, { "systemctl", { "reboot" } },
@@ -74,28 +75,17 @@ local function show(found)
 end
 local function clear() text.q = "" confirm = nil show({}) end
 
--- An app ranks by where its name matches: at the start, at the start of a word, anywhere; then by its id.
 local function find_apps(q)
-    local want, hits = fold(q), {}
-    for _, a in ipairs(apps) do
-        local name = fold(a.name)
-        local at = name:find(want, 1, true)
-        local score = at == 1 and 3 or (at and name:sub(at - 1, at - 1):match("[%s%-_]") and 2) or (at and 1)
-            or (fold(a.id):find(want, 1, true) and 0.5) or 0
-        if score > 0 then hits[#hits + 1] = { app = a, score = score, name = name } end
-    end
-    table.sort(hits, function(x, y) if x.score ~= y.score then return x.score > y.score end return x.name < y.name end)
     local found = {}
-    for i = 1, math.min(#hits, 8) do
-        local a = hits[i].app
+    for i, a in ipairs(find(apps, q, 8)) do
         found[i] = { title = a.name or a.id, sub = a.generic or a.comment or "", icon = a.icon or "application-x-executable",
-                     act = function() if a.exec then pcall(sys.call, "apps.launch", a.exec) end end }
+                     act = function() open.app(a) end }
     end
     return found
 end
 
 local function run_code(cmd)
-    go("foot", { "sh", "-c", cmd .. '; exec "${SHELL:-/bin/bash}"' })     -- the terminal stays open after the command
+    open.shell(cmd)
     clear()
 end
 

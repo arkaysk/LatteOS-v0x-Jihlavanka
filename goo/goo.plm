@@ -1,0 +1,46 @@
+// LatteOS GOO: the shell of the desktop. Where a taskbar, a Start button and a clock would be there are drops
+// of coffee on the edges of the screen, all of one goo.
+//
+// The scene is one rule for every drop: a drop is a record the logic fills (lib/engine.luau), and what makes
+// two drops differ is the numbers in it. The scene moves and paints them; the logic decides what a press
+// does. It covers the whole screen, because a drop may be anywhere; only the zones take the mouse.
+//
+// Its parts, in the order they are painted:
+//   drops    what a drop is: its record, how it moves, what the mouse does to it
+//   picks    (written by gen.py) the one drop a card grows from
+//   body     the goo: every drop and the edge as one body; shapes.plm in it is written by gen.py
+//   card     the card's state and its frame
+//   faces    what each drop shows on itself
+//   rows     what is in the card, and the tooltip
+language 0.4
+import "lang/sk.plm"
+
+scene Goo {
+    surface {
+        size: full, full
+        anchor: bottom
+        margin: 0
+        level: top
+        reserve: -1
+        rate: 60
+        // An open card is a menu: it has the keyboard until a press elsewhere, so Escape closes it at once
+        // and its field is typed into without a press.
+        keyboard: exclusive while card_open
+    }
+    permissions {
+        run: "latte-sky", "latte-login", "hyprctl", "foot", "hostname", "powerprofilesctl"
+        services: "files", "files.write", "env", "clock", "battery", "window", "apps", "apps.launch", "session.*"
+    }
+
+    // ── what the desktop around the scene tells it (`pleamar --say goo "emit …"`) ───────────────────────────
+    event window_mode ->                       // Hyprland: how windows are arranged now: 0 tape, 1 tiles, 2 floating
+    event lens_toggle ->                       // the Windows key: the launcher, open or shut
+    event lens_mode ->                         // …or open in one of its modes: 0 apps, 1 a command
+
+    include "parts/drops.plm"
+    include "parts/picks.plm"
+    include "parts/body.plm"
+    include "parts/card.plm"
+    include "parts/faces.plm"
+    include "parts/rows.plm"
+}
