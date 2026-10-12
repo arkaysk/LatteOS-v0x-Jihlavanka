@@ -11,6 +11,9 @@ function M.terminal() go(TERMINAL) end
 function M.shell(command) go(TERMINAL, { "sh", "-c", command .. '; exec "${SHELL:-/bin/bash}"' }) end
 -- a program that needs a terminal to show itself; the window closes with it
 function M.in_terminal(title, program) go(TERMINAL, { "-T", title, "-e", program }) end
+-- a file or a folder with the app the user set for its kind; an address with the browser
+function M.path(path) go("xdg-open", { path }) end
+function M.url(url) go("xdg-open", { url }) end
 -- an app, as the `apps` service lists it
 function M.app(a) if a and a.exec then pcall(sys.call, "apps.launch", a.exec) end end
 

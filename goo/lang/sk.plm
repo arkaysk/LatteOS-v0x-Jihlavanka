@@ -201,5 +201,21 @@ library Slovak {
         "It did not connect" = "Nepodarilo sa pripojiť"
         "IN THE BACKGROUND" = "NA POZADÍ"
         "PASSWORD NEEDED" = "TREBA HESLO"
+        // the launcher's other modes
+        "Files" = "Súbory"
+        "Web" = "Web"
+        "Search files…" = "Hľadať súbory…"
+        "Search the web…" = "Hľadať na webe…"
+        "Search files" = "Hľadať súbory"
+        "Search the web" = "Hľadať na webe"
+        "Searching…" = "Hľadám…"
+        "Open" = "Otvoriť"
+        "click copies" = "klik skopíruje"
+        "Home" = "Domov"
+        "Documents" = "Dokumenty"
+        "Downloads" = "Stiahnuté"
+        "Pictures" = "Obrázky"
+        "Music" = "Hudba"
+        "Videos" = "Videá"
     }
 }

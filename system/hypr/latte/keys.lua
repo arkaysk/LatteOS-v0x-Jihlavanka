@@ -34,7 +34,7 @@ function K.setup()
     bind("CTRL + Escape", goo("lens_toggle"))
     bind("SUPER + S", goo("lens_mode 0"))
     bind("SUPER + Q", goo("lens_mode 0"))
-    bind("SUPER + R", goo("lens_mode 1"))
+    bind("SUPER + R", goo("lens_mode 3"))
 
     bind("SUPER + A", goo("quick_toggle"))
     bind("SUPER + N", goo("clock_notes"))

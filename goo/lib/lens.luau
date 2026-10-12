@@ -1,10 +1,14 @@
 -- The launcher: the card LensGoo opens. What is typed is searched for in the mode the tabs choose:
---   Applications   with nothing typed the apps used last, as tiles; typing finds apps
+--   Applications   with nothing typed the apps used last, as tiles; typing finds apps, works out a line of
+--                  arithmetic, and offers to take the text to the files or to the web
+--   Files          with nothing typed the home folders; typing finds files and folders by name (fd)
+--   Web            an address opens; anything else goes to a search engine, the user's own first
 --   Command        a line for the terminal, which stays open afterwards; a dangerous one asks once more
--- Enter takes the first row. A mode is one entry in MODES and one branch in `rows`.
--- The mode, the apps used last and the commands run are kept in lens.json in the scene's folder.
+-- Enter takes the first row. A mode is one entry in MODES with its rows.
+-- The mode, the apps used last, the commands run and the search engine are kept in lens.json in the scene's folder.
 local card = require("lib/card")
 local find = require("lib/find")
+local calc = require("lib/calc")
 local dangerous = require("lib/dangerous")
 local open = require("lib/open")
 local M = {}
@@ -13,23 +17,40 @@ local function N(s) return s end
 
 local WIDTH = 450
 local FILE = "lens.json"
-local MODES = {
-    [0] = { glyph = "apps", name = N("Applications"), hint = N("Search apps…") },
-    [1] = { glyph = "terminal-2", name = N("Command"), hint = N("Run a command…") },
+local ENGINES = {
+    { id = "duckduckgo", name = "DuckDuckGo", url = "https://duckduckgo.com/?q=%s" },
+    { id = "google", name = "Google", url = "https://www.google.com/search?q=%s" },
+    { id = "bing", name = "Bing", url = "https://www.bing.com/search?q=%s" },
+    { id = "startpage", name = "Startpage", url = "https://www.startpage.com/do/search?q=%s" },
+    { id = "ecosia", name = "Ecosia", url = "https://www.ecosia.org/search?q=%s" },
+    { id = "brave", name = "Brave Search", url = "https://search.brave.com/search?q=%s" },
 }
+-- the user's folders, by the names xdg-user-dir knows them by
+local FOLDERS = { { key = "DOCUMENTS", name = N("Documents"), glyph = "file" }, { key = "DOWNLOAD", name = N("Downloads"), glyph = "arrow-right" },
+                  { key = "PICTURES", name = N("Pictures"), glyph = "sun" }, { key = "MUSIC", name = N("Music"), glyph = "volume" },
+                  { key = "VIDEOS", name = N("Videos"), glyph = "player-play" } }
+
 local apps, by_id = {}, {}
-local kept = { mode = 0, recent = {}, commands = {} }
+local kept = { mode = 0, recent = {}, commands = {}, engine = "duckduckgo" }
 local owner                          -- LensGoo
+local home, folders = "", {}
 local typed, confirm = "", nil       -- what is in the field; the dangerous command asked about
-local render
+local found, asked = nil, 0          -- the files found for what is typed; which question the answer is to
+local render, set_mode
 
 local function save() pcall(sys.call, "files.write", FILE, kept) end
-
--- The card lets go of the keyboard first and the app starts a moment later: a window that opens while the
+local function short(path) return home ~= "" and path:sub(1, #home) == home and ("~" .. path:sub(#home + 1)) or path end
+local function urlencode(s) return (s:gsub("[^%w%-%._~]", function(c) return string.format("%%%02X", string.byte(c)) end)) end
+local function engine()
+    for _, e in ipairs(ENGINES) do if e.id == kept.engine then return e end end
+    return ENGINES[1]
+end
+-- The card lets go of the keyboard first and the thing starts a moment later: a window that opens while the
 -- shell still holds the keyboard does not get it when the shell lets go.
+local function then_do(f) card.close() after(80, f) end
+
 local function launch(a)
-    card.close()
-    after(80, function() open.app(a) end)
+    then_do(function() open.app(a) end)
     if not a.id then return end
     local recent = { a.id }
     for _, id in ipairs(kept.recent) do if id ~= a.id and #recent < 18 then recent[#recent + 1] = id end end
@@ -41,8 +62,7 @@ local function run_command(cmd)
     for _, c in ipairs(kept.commands) do if c ~= cmd and #commands < 12 then commands[#commands + 1] = c end end
     kept.commands = commands
     save()
-    card.close()
-    after(80, function() open.shell(cmd) end)
+    then_do(function() open.shell(cmd) end)
 end
 -- a dangerous command is asked about once: entered again, it runs
 local function confirmed(cmd)
@@ -51,58 +71,140 @@ local function confirmed(cmd)
     render(true)
     return false
 end
-
+local function search_web(e, text) then_do(function() open.url(string.format(e.url, urlencode(text))) end) end
 local function tile(a) return { label = a.local_name or a.name or a.id, icon = a.icon or "", glyph = "apps", run = function() launch(a) end } end
-local function rows()
-    local out = {}
-    if kept.mode == 1 then
-        if typed ~= "" then
-            if confirm == typed then out[#out + 1] = { label = tr("Dangerous command: press Enter again to run it"), glyph = "alert-triangle", danger = true, quiet = true } end
-            out[#out + 1] = { label = tr("Run in terminal"), line2 = typed, glyph = "terminal-2", run = function() if confirmed(typed) then run_command(typed) end end, keep = true }
-        else
-            out[#out + 1] = { label = tr("Open terminal"), glyph = "terminal-2", run = function() after(80, open.terminal) end }
-            for i, c in ipairs(kept.commands) do
-                if i == 1 then out[#out + 1] = { head = true, label = tr("RECENTLY USED"), line = true } end
-                out[#out + 1] = { label = c, glyph = "history", run = function() if confirmed(c) then run_command(c) end end, keep = true }
-            end
-        end
-        return out
-    end
-    if typed ~= "" then
-        for _, a in ipairs(find(apps, typed, 8)) do
-            out[#out + 1] = { label = a.local_name or a.name or a.id, icon = a.icon or "", glyph = "apps", hint = tr("App"), run = function() launch(a) end }
-        end
-        if #out == 0 then out[1] = { label = tr("Nothing found"), glyph = "search", quiet = true } end
-        return out
-    end
-    -- nothing typed: the apps used last, and failing that the first ones there are
-    local tiles, seen = {}, {}
-    for _, id in ipairs(kept.recent) do
-        local a = by_id[id]
-        if a and not seen[id] and #tiles < 18 then seen[id] = true tiles[#tiles + 1] = tile(a) end
-    end
-    local head = N("RECENTLY USED")
-    if #tiles == 0 then
-        head = N("APPLICATIONS")
-        for i = 1, math.min(18, #apps) do tiles[i] = tile(apps[i]) end
-    end
-    return { { head = true, label = tr(head) }, { tiles = tiles, per = 6 } }
+local function number(v)
+    local s = string.format("%.10g", v)
+    return (tr("%d.%d G"):find(",", 1, true) and s:gsub("%.", ",") or s)       -- the decimal mark of the user's language
 end
 
-local function set_mode(m)
+-- ── what each mode shows ─────────────────────────────────────────────────────────────────────────────────────
+local function rows_apps()
+    if typed == "" then
+        -- nothing typed: the apps used last, and failing that the first ones there are
+        local tiles, seen = {}, {}
+        for _, id in ipairs(kept.recent) do
+            local a = by_id[id]
+            if a and not seen[id] and #tiles < 18 then seen[id] = true tiles[#tiles + 1] = tile(a) end
+        end
+        local head = N("RECENTLY USED")
+        if #tiles == 0 then
+            head = N("APPLICATIONS")
+            for i = 1, math.min(18, #apps) do tiles[i] = tile(apps[i]) end
+        end
+        return { { head = true, label = tr(head) }, { tiles = tiles, per = 6 } }
+    end
+    local rows = {}
+    local result = calc(typed)
+    if result then
+        local shown = number(result)
+        rows[#rows + 1] = { label = shown, glyph = "calculator", hint = tr("click copies"), run = function() pcall(sys.call, "clipboard.set", shown) end }
+    end
+    for _, a in ipairs(find(apps, typed, 7)) do
+        rows[#rows + 1] = { label = a.local_name or a.name or a.id, icon = a.icon or "", glyph = "apps", hint = tr("App"), run = function() launch(a) end }
+    end
+    -- the same text, taken elsewhere
+    local text = typed
+    rows[#rows + 1] = { label = tr("Search files") .. ": " .. text, glyph = "folder", line = #rows > 0, keep = true, run = function() set_mode(1, true) end }
+    rows[#rows + 1] = { label = tr("Search the web") .. ": " .. text, glyph = "world", hint = engine().name, run = function() search_web(engine(), text) end }
+    return rows
+end
+
+local function look_for_files()
+    asked += 1
+    local mine, text = asked, typed
+    found = nil
+    if text == "" or home == "" then return end
+    run("fd", { "--max-results", "10", "--absolute-path", "--ignore-case", "--", text, home }, function(out)
+        if mine ~= asked then return end                 -- something else has been typed since
+        found = {}
+        for path in (out or ""):gmatch("[^\n]+") do found[#found + 1] = path end
+        if card.id() == "lens" and kept.mode == 1 then render(true) end
+    end)
+end
+local function rows_files()
+    local rows = {}
+    if typed == "" then
+        rows[1] = { label = tr("Home"), glyph = "home-2", hint = "~", run = function() then_do(function() open.path(home) end) end }
+        for _, f in ipairs(folders) do
+            rows[#rows + 1] = { label = tr(f.name), glyph = f.glyph, hint = short(f.path), run = function() then_do(function() open.path(f.path) end) end }
+        end
+        return rows
+    end
+    for _, path in ipairs(found or {}) do
+        local folder = path:sub(-1) == "/"
+        local clean = folder and path:sub(1, -2) or path
+        local parent = clean:match("^(.*)/[^/]*$") or "/"
+        rows[#rows + 1] = { label = clean:match("([^/]+)$") or clean, glyph = folder and "folder" or "file", hint = short(parent),
+                            run = function() then_do(function() open.path(clean) end) end,
+                            right = function() then_do(function() open.path(parent) end) end }
+    end
+    if #rows == 0 then rows[1] = { label = found and tr("Nothing found") or tr("Searching…"), glyph = "search", quiet = true } end
+    return rows
+end
+
+local function rows_web()
+    local rows, default = {}, engine()
+    if typed == "" then
+        -- the engines: a press makes one the user's own
+        for _, e in ipairs(ENGINES) do
+            rows[#rows + 1] = { label = e.name, glyph = "world", on = e.id == default.id, keep = true, run = function() kept.engine = e.id save() render(true) end }
+        end
+        return rows
+    end
+    local text = typed
+    if text:match("^[%w%-]+%.[%w%-%.]+[/%S]*$") or text:match("^%a+://%S+$") then
+        local url = text:match("^%a+://") and text or ("https://" .. text)
+        rows[#rows + 1] = { label = tr("Open") .. " " .. text, glyph = "world-www", run = function() then_do(function() open.url(url) end) end }
+    end
+    rows[#rows + 1] = { label = default.name .. ": " .. text, glyph = "search", run = function() search_web(default, text) end }
+    for _, e in ipairs(ENGINES) do
+        if e.id ~= default.id then rows[#rows + 1] = { label = e.name .. ": " .. text, glyph = "world", line = #rows == (rows[1].glyph == "world-www" and 2 or 1), run = function() search_web(e, text) end } end
+    end
+    return rows
+end
+
+local function rows_command()
+    local rows = {}
+    if typed ~= "" then
+        if confirm == typed then rows[#rows + 1] = { label = tr("Dangerous command: press Enter again to run it"), glyph = "alert-triangle", danger = true, quiet = true } end
+        local cmd = typed
+        rows[#rows + 1] = { label = tr("Run in terminal"), line2 = cmd, glyph = "terminal-2", keep = true, run = function() if confirmed(cmd) then run_command(cmd) end end }
+        return rows
+    end
+    rows[1] = { label = tr("Open terminal"), glyph = "terminal-2", run = function() after(80, open.terminal) end }
+    for i, c in ipairs(kept.commands) do
+        if i == 1 then rows[#rows + 1] = { head = true, label = tr("RECENTLY USED"), line = true } end
+        rows[#rows + 1] = { label = c, glyph = "history", keep = true, run = function() if confirmed(c) then run_command(c) end end }
+    end
+    return rows
+end
+
+local MODES = {
+    [0] = { glyph = "apps", name = N("Applications"), hint = N("Search apps…"), rows = rows_apps },
+    [1] = { glyph = "folder", name = N("Files"), hint = N("Search files…"), rows = rows_files },
+    [2] = { glyph = "world", name = N("Web"), hint = N("Search the web…"), rows = rows_web },
+    [3] = { glyph = "terminal-2", name = N("Command"), hint = N("Run a command…"), rows = rows_command },
+}
+
+-- to another mode; `keep_text` takes what is typed along
+set_mode = function(m, keep_text)
     if kept.mode == m then return end
-    kept.mode, typed, confirm = m, "", nil
+    kept.mode, confirm = m, nil
+    if not keep_text then typed = "" end
     save()
-    card.text("")
+    if m == 1 then look_for_files() end
     render(false)
 end
 
+local shown = {}
 render = function(keep)
     local tabs = {}
     for m = 0, #MODES do
         tabs[#tabs + 1] = { label = tr(MODES[m].name), glyph = MODES[m].glyph, on = kept.mode == m, run = function() set_mode(m) end }
     end
-    card.open(rows(), {
+    shown = MODES[kept.mode].rows()
+    card.open(shown, {
         owner = owner, id = "lens", width = WIDTH, keep = keep, tabs = tabs, min_height = 330,
         field = {
             hint = tr(MODES[kept.mode].hint), text = typed,
@@ -110,17 +212,15 @@ render = function(keep)
                 t = t:gsub("^%s+", ""):gsub("%s+$", "")
                 if t == typed then return end
                 typed, confirm = t, nil
+                if kept.mode == 1 then look_for_files() end
                 render(true)
             end,
-            -- Enter: the first thing found; a command runs as typed
-            submit = function(t)
-                if kept.mode == 1 then
-                    if confirmed(t) then run_command(t) end
-                    return true
+            -- Enter: the first row that does something; what was typed stays if nothing did
+            submit = function()
+                for _, r in ipairs(shown) do
+                    if r.run and not r.quiet and not r.off then r.run() return true end
                 end
-                local first = find(apps, t, 1)[1]
-                if first then launch(first) end
-                return first == nil
+                return true
             end,
         },
     })
@@ -128,7 +228,7 @@ end
 
 function M.open(m)
     if m and MODES[m] then kept.mode = m end
-    typed, confirm = "", nil
+    typed, confirm, found = "", nil, nil
     render(false)
 end
 function M.toggle()
@@ -147,7 +247,7 @@ function M.quick()
         out[#out + 1] = { tiles = tiles, per = 4 }
     end
     out[#out + 1] = { label = tr("Search…"), glyph = "search", line = #tiles > 0, run = function() after(60, M.open) end }
-    card.open(out, { owner = owner, id = "quick", width = 300 })
+    card.open(out, { owner = owner, id = "quick-apps", width = 300 })
 end
 
 function M.start(d)
@@ -157,6 +257,17 @@ function M.start(d)
         kept.mode = MODES[saved.mode] and saved.mode or 0
         kept.recent = type(saved.recent) == "table" and saved.recent or {}
         kept.commands = type(saved.commands) == "table" and saved.commands or {}
+        kept.engine = type(saved.engine) == "string" and saved.engine or kept.engine
+    end
+    local got, h = pcall(sys.ask, "env", "HOME")
+    home = got and type(h) == "string" and h or ""
+    for i, f in ipairs(FOLDERS) do
+        run("xdg-user-dir", { f.key }, function(out)
+            local path = (out or ""):gsub("%s+$", "")
+            if path == "" or path == home then return end
+            folders[#folders + 1] = { name = f.name, glyph = f.glyph, path = path, place = i }
+            table.sort(folders, function(a, b) return a.place < b.place end)      -- the answers come in any order
+        end)
     end
     sys.watch("apps", function(list)
         apps, by_id = list or {}, {}

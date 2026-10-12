@@ -419,8 +419,11 @@ nemá (AI je hľadanie, Financie a Sociálne sú podkategórie Flathubu).
 - **BarGoo:** hlava s režimom okien (ľavý klik ďalší režim, pravý ukázať plochu, koliesko), ikry okien po aplikáciách
   so strapcami, klik prepne / minimalizuje, pravý klik ponuka okna, ťahaním poradie aplikácií; pás pri okraji lišty
   patrí kvapkám (okná ho neprekryjú, ani keď sa lišta presunie k inému okraju).
-- **LensGoo:** spúšťač (kláves Win) v režimoch **Aplikácie** (naposledy spustené ako dlaždice, hľadanie) a **Príkaz**
-  (terminál ostane otvorený, nebezpečný príkaz chce druhý Enter); pravý klik rýchly zoznam.
+- **LensGoo:** spúšťač (kláves Win) v režimoch **Aplikácie** (naposledy spustené ako dlaždice, hľadanie, kalkulačka,
+  rýchle prepnutie do súborov a na web), **Súbory** (domovské priečinky, hľadanie podľa mena cez `fd`; pravý klik
+  otvorí priečinok), **Web** (adresa alebo vyhľadávač, vlastný sa volí klikom) a **Príkaz** (terminál ostane otvorený,
+  nebezpečný príkaz chce druhý Enter); pravý klik rýchly zoznam. Chýba režim AI, prevody jednotiek, stránky
+  Nastavení a akcie aplikácie na pravý klik.
 - **PowerGoo:** karta — účet, Odhlásiť, batéria, profil napájania, Uspať · Reštartovať · Vypnúť (s otvorenými oknami
   sa najprv spýta); guľky batérie; **pás výkonu** (pravý klik): CPU · RAM · GPU · VRAM z `latte-stats`, farba podľa
   záťaže a teploty, podrobnosti v bubline, susedné goo odtlačí a po vtiahnutí vráti, zapnutý ostane aj po prihlásení.
@@ -448,6 +451,6 @@ nemá (AI je hľadanie, Financie a Sociálne sú podkategórie Flathubu).
 
 **Ešte nie je** (vráti sa po kusoch, poradie v ROADMAP):
 QueenGoo, ChatGoo, vlastné kvapky a Tvorca Goo, hra pri nečinnosti (§3.1 stupeň 3; príde s vlastnými kvapkami — hrajú sa iba hravé),
-okno z bubliny (14; pád minimalizovaného okna už je), BarGoo na ďalších monitoroch (scéna je iba na hlavnom), režimy LensGoo
-Súbory · Web · AI a kalkulačka, portrét účtu, MediaGoo (čo práve hrá), prepojené kalendáre,
+okno z bubliny (14; pád minimalizovaného okna už je), BarGoo na ďalších monitoroch (scéna je iba na hlavnom), režim AI v LensGoo,
+portrét účtu, MediaGoo (čo práve hrá), prepojené kalendáre,
 výber tapety a živé tapety, sklo okien, prichytenie ťahaním, Nastavenia a ostatné aplikácie.
