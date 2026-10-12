@@ -1,0 +1,81 @@
+#!/usr/bin/env bash
+# latte-safe: the rescue menu of the SAFE session. Plain text in a terminal, so it works when no scene does.
+#
+#   latte-safe              the menu (the SAFE button and Super+Space open it)
+#   latte-safe try-normal   clears the crash count and logs out: the next login tries the full desktop
+#   latte-safe menu-xml     labwc's right-click menu, in the user's language
+share="${LATTE_SHARE:-/usr/share/latteos}"
+
+# The words come from the table the scenes use, so SAFE speaks the language the rest of the desktop does.
+declare -A WORDS
+lang="${LC_ALL:-${LC_MESSAGES:-${LANG:-}}}"
+if [ -r "$share/goo/lang/${lang%%_*}.plm" ]; then
+    while IFS= read -r line; do
+        [[ $line =~ ^[[:space:]]*\"(.*)\"[[:space:]]*=[[:space:]]*\"(.*)\"[[:space:]]*$ ]] && WORDS["${BASH_REMATCH[1]}"]="${BASH_REMATCH[2]}"
+    done < "$share/goo/lang/${lang%%_*}.plm"
+fi
+t() { printf '%s' "${WORDS[$1]:-$1}"; }
+
+case "${1:-}" in
+try-normal)
+    latte-boot reset && labwc --exit
+    exit ;;
+menu-xml)
+    item() { printf '    <item label="%s"><action name="%s"%s</item>\n' "$1" "$2" "${3:+ command=\"$3\"}/>"; }
+    echo '<?xml version="1.0" encoding="UTF-8"?>'
+    echo '<openbox_menu>'
+    echo '  <menu id="root-menu" label="LatteOS SAFE">'
+    item "$(t "Rescue menu")" Execute "foot -T 'LatteOS SAFE' -e latte-safe"
+    item "$(t "Terminal")" Execute foot
+    item "$(t "Try the full desktop again")" Execute "latte-safe try-normal"
+    echo '    <separator/>'
+    item "$(t "Log out")" Exit
+    item "$(t "Restart")" Execute "systemctl reboot"
+    item "$(t "Shut down")" Execute "systemctl poweroff"
+    echo '  </menu>'
+    echo '</openbox_menu>'
+    exit ;;
+esac
+
+# Why this is SAFE: latte-session leaves the reason's key and, on a second line, the technical detail.
+{ read -r why; read -r detail; } < "${XDG_RUNTIME_DIR:-/tmp}/latteos/safe-reason" 2>/dev/null
+case "${why:-}" in
+    chosen)           reason="$(t "You chose SAFE at login")" ;;
+    kernel-safe)      reason="$(t "SAFE was asked for in the boot menu")" ;;
+    forced-once)      reason="$(t "SAFE was asked for this one start")" ;;
+    crashes|desktop-crashes) reason="$(t "The desktop kept crashing")" ;;
+    desktop-crash)    reason="$(t "The desktop crashed right after it started")" ;;
+    nomodeset|no-gpu|no-gl|renderer-pixman) reason="$(t "No working graphics driver")" ;;
+    not-installed)    reason="$(t "The full desktop is not installed")" ;;
+    *)                reason="$(t "SAFE mode")" ;;
+esac
+log="${XDG_STATE_HOME:-$HOME/.local/state}/latteos/session.log"
+
+while true; do
+    clear
+    printf '\n  LatteOS SAFE\n\n  %s%s\n\n' "$reason" "${detail:+ ($detail)}"
+    printf '  1) %s\n' "$(t "Diagnostics: the last log of the session and of the desktop")"
+    printf '  2) %s\n' "$(t "Try the full desktop again")"
+    printf '  3) %s\n' "$(t "Terminal")"
+    printf '  4) %s\n' "$(t "Network")"
+    printf '  5) %s\n' "$(t "Undo the last update")"
+    printf '  6) %s\n' "$(t "What was decided at boot")"
+    printf '  7) %s\n' "$(t "Log out")"
+    printf '  8) %s\n' "$(t "Restart")"
+    printf '  9) %s\n' "$(t "Shut down")"
+    printf '  q) %s\n\n' "$(t "Close this menu")"
+    read -r -n1 -p "  > " choice; echo
+    case "$choice" in
+        1) { echo "== $log"; tail -n 80 "$log"; echo; echo "== Hyprland";
+             tail -n 60 "$(ls -t "$XDG_RUNTIME_DIR"/hypr/*/hyprland.log 2>/dev/null | head -1)" 2>/dev/null; } | less -R ;;
+        2) exec "$0" try-normal ;;
+        3) foot & ;;
+        4) nmtui ;;
+        5) sudo dnf history undo last; read -r -p "Enter…" ;;
+        6) latte-boot status | less ;;
+        7) labwc --exit ;;
+        8) systemctl reboot ;;
+        9) systemctl poweroff ;;
+        q|Q) exit 0 ;;
+    esac
+done

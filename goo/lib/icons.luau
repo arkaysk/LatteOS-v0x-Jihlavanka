@@ -1,6 +1,7 @@
 -- Glyphs of the Tabler icon font (assets/fonts/tabler-icons.ttf) by name.
 -- Only what the scenes use: add a line when one needs another (tests/check.sh compares them with the font).
 return {
+    ["alert-triangle"] = "\u{EA06}",
     ["arrow-right"] = "\u{EA1F}",
     ["battery-1"] = "\u{EA2F}",
     ["battery-2"] = "\u{EA30}",
@@ -17,7 +18,10 @@ return {
     ["device-desktop"] = "\u{EA89}",
     ["moon"] = "\u{EAF8}",
     ["power"] = "\u{EB0D}",
+    ["prompt"] = "\u{EB0F}",
     ["refresh"] = "\u{EB13}",
+    ["search"] = "\u{EB1C}",
     ["sun"] = "\u{EB30}",
     ["sun-low"] = "\u{F237}",
+    ["terminal-2"] = "\u{EBEF}",
 }

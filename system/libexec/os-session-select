@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+# The hook gamescope-session calls when "Switch to Desktop" is pressed in Steam (steamos-session-select).
+# LatteOS switches inside its own session, through latte-game.
+case "${1:-gamescope}" in
+    gamescope) exec latte-game ;;
+    *)         exec latte-game desktop ;;     # plasma, plasma-wayland, desktop…
+esac

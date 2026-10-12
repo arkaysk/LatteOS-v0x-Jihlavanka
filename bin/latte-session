@@ -1,0 +1,166 @@
+#!/usr/bin/env bash
+# latte-session [safe|game]: a LatteOS session after login. greetd starts it through the entries in
+# /usr/share/wayland-sessions.
+#
+#   (no argument)   GOO: Hyprland with the Goo engine. Only in the NORMAL mode latte-boot decided at boot.
+#   safe            SAFE: labwc with software rendering and the SAFE bar (goo/safe.plm)
+#   game            Steam Big Picture in gamescope; it switches with GOO inside the same login (latte-game)
+#
+# This script is the session's guard. Hyprland crashing before the session counts as healthy (60 s) ends in
+# SAFE at once, and the crash is counted (latte-boot session-start). A later crash starts Hyprland again,
+# three times in ten minutes at most: an occasional crash should not throw the user back to the login.
+set -u
+# LATTE_SHARE, LATTE_RUN_DIR and LATTE_STATE_DIR move the system paths aside, for tests/test_session.sh.
+share="${LATTE_SHARE:-/usr/share/latteos}"
+state="${XDG_STATE_HOME:-$HOME/.local/state}/latteos"
+mkdir -p "$state"
+exec >>"$state/session.log" 2>&1
+echo "=== latte-session $(date -Is) $*"
+
+. "$share/session-env.sh"
+config="${XDG_CONFIG_HOME:-$HOME/.config}/latteos"
+# the user's own language and formats (LANG=…, LC_TIME=…)
+[ -r "$config/locale" ] && { set -a; . "$config/locale"; set +a; }
+# the tier the user chose wins over the one the hardware suggests
+if [ "$LATTE_MODE" = normal ] && [ -r "$config/tier" ]; then
+    chosen="$(tr -dc 'a-z' < "$config/tier")"
+    case "$chosen" in full|standard|eco|minimal|software) export LATTE_TIER="$chosen" ;; esac
+fi
+# The list of apps only watches folders that exist when it starts: without this one, the first Flatpak
+# installed would not show up until the next login.
+mkdir -p "$HOME/.local/share/flatpak/exports/share/applications" 2>/dev/null
+
+export XDG_SESSION_TYPE=wayland XDG_SESSION_DESKTOP=latteos
+export LIBSEAT_BACKEND="${LIBSEAT_BACKEND:-logind}"
+export QT_QPA_PLATFORM=wayland GDK_BACKEND=wayland,x11 MOZ_ENABLE_WAYLAND=1
+
+run="$XDG_RUNTIME_DIR/latteos"
+next="$run/next-session"                   # latte-game writes where to go when the running session ends
+mkdir -p "$run"; rm -f "$next"
+
+run_safe() {   # $1 the reason's key, $2 the technical detail; latte-safe shows both
+    echo "SAFE: $1 ${2:-}"
+    printf '%s\n%s\n' "$1" "${2:-}" > "$run/safe-reason"
+    export LATTE_MODE=safe WLR_RENDERER=pixman LIBGL_ALWAYS_SOFTWARE=1 XDG_CURRENT_DESKTOP=labwc:wlroots
+    unset MESA_LOADER_DRIVER_OVERRIDE
+    # labwc reads its menu from a file, so it is written here, in the user's language
+    rm -rf "$run/labwc"; mkdir -p "$run/labwc"
+    ln -s "$share/labwc/rc.xml" "$share/labwc/autostart" "$run/labwc/"
+    latte-safe menu-xml > "$run/labwc/menu.xml"
+    exec labwc -C "$run/labwc"
+}
+
+[ "${1:-}" = safe ] && run_safe chosen
+mode_toml() { sed -n "s/^$1 = \"\(.*\)\"$/\1/p" "${LATTE_RUN_DIR:-/run/latteos}/mode.toml" 2>/dev/null | head -1; }
+[ "$LATTE_MODE" = normal ] || run_safe "$(mode_toml reason_id)" "$(mode_toml reason)"
+latte-boot session-start
+[ $? -eq 3 ] && run_safe crashes
+
+hconf="$share/hypr/hyprland.lua"
+[ -f "$hconf" ] || run_safe not-installed "$hconf"
+export XDG_CURRENT_DESKTOP=Hyprland
+
+# What the login screen shows under the surface after a crash. The latte group may write there.
+crash_report() {   # $1 exit code, $2 seconds it ran, $3 when it started (epoch)
+    local out="${LATTE_STATE_DIR:-/var/lib/latteos}/login/last-crash.log" hlog report
+    [ -w "$(dirname "$out")" ] || return 0
+    hlog="$(ls -t "$XDG_RUNTIME_DIR"/hypr/*/hyprland.log 2>/dev/null | head -1)"
+    report="$(ls -t "$HOME"/.cache/hyprland/hyprlandCrashReport*.txt 2>/dev/null | head -1)"
+    {
+        echo "$(date '+%Y-%m-%d %H:%M') · $USER"
+        echo "Hyprland exit $1 after $2 s · renderer ${LATTE_RENDERER:-?} · tier ${LATTE_TIER:-?}"
+        echo
+        if [ -n "$report" ] && [ "$(stat -c %Y "$report")" -ge "$3" ]; then
+            echo "── crash report ($(basename "$report"))"
+            grep -m1 -i "signal\|reason" "$report"
+            sed -n '/Backtrace/,/^$/p' "$report" | head -14
+            echo
+        fi
+        echo "── kernel"
+        journalctl -k -b --since "@$3" --no-pager -o cat 2>/dev/null | grep -i -m6 "segfault\|vmwgfx\|drm\|oom" || echo "(nothing)"
+        if [ -n "$hlog" ]; then
+            echo
+            echo "── hyprland.log"
+            grep -v "^DEBUG" "$hlog" | tail -12
+        fi
+    } > "$out.tmp" 2>/dev/null && mv -f "$out.tmp" "$out"
+    chmod 0664 "$out" 2>/dev/null
+}
+
+# With lingering on (remote access that starts before login) the user's systemd outlives the session and
+# keeps its WAYLAND_DISPLAY: the game session then believes it runs inside another desktop and quits.
+clean_env() {
+    systemctl --user unset-environment WAYLAND_DISPLAY DISPLAY HYPRLAND_INSTANCE_SIGNATURE XDG_CURRENT_DESKTOP \
+        XDG_SESSION_DESKTOP XDG_SESSION_ID XDG_SESSION_TYPE 2>/dev/null || true
+}
+clean_env
+
+# Back to the desktop on "Switch to Desktop" and on a crash; leaving Steam the regular way ends the login.
+run_game() {
+    local why rc t0
+    if ! why="$(latte-game status)"; then echo "no game session: $why; going to the desktop"; return 0; fi
+    echo "game: gamescope-session-plus steam"
+    rm -f "$next"; t0=$(date +%s)
+    ( unset XDG_CURRENT_DESKTOP; exec gamescope-session-plus steam )
+    rc=$?
+    echo "the game session ended: exit $rc after $(( $(date +%s) - t0 )) s, next: $(cat "$next" 2>/dev/null || echo logout)"
+    if [ "$(cat "$next" 2>/dev/null)" = desktop ] || [ $rc -ne 0 ]; then rm -f "$next"; return 0; fi
+    # It ended at once (gamescope never came up, though it says 0): the desktop, not the login screen.
+    if [ $(( $(date +%s) - t0 )) -lt 15 ]; then echo "the game session did not start; going to the desktop"; return 0; fi
+    exit 0
+}
+
+# Hyprland may segfault while it shuts down (aquamarine issue 383: destructors run at exit). That is a
+# logout, not a crash; the backtrace in the core dump, which systemd writes a moment later, tells them apart.
+crashed_on_exit() {   # $1 pid
+    local i bt
+    for i in 1 2 3 4 5 6 7 8 9 10 11 12; do
+        bt="$(coredumpctl info "$1" --no-pager 2>/dev/null)"
+        if [ -n "$bt" ]; then grep -qE "_dl_fini|__cxa_finalize|CCompositor7cleanup|__run_exit_handlers" <<<"$bt"; return; fi
+        sleep 0.5
+    done
+    return 1
+}
+
+# No monitor plugged in means the machine is used remotely, and the remote access lives inside the session:
+# a logout would cut it off until the machine is restarted.
+headless() {
+    local s
+    for s in /sys/class/drm/card*-*/status; do [ "$(cat "$s" 2>/dev/null)" = connected ] && return 1; done
+    return 0
+}
+
+go_next=desktop
+[ "${1:-}" = game ] && go_next=game
+restarts=()
+while true; do
+    if [ "$go_next" = game ]; then run_game; go_next=desktop; export XDG_CURRENT_DESKTOP=Hyprland; fi
+    t0=$(date +%s)
+    # LATTE_HYPRLAND=false fakes a crash, for testing this guard.
+    "${LATTE_HYPRLAND:-Hyprland}" -c "$hconf" &
+    hpid=$!
+    wait $hpid
+    rc=$?
+    dt=$(( $(date +%s) - t0 ))
+    echo "Hyprland ended: exit $rc after $dt s"
+    if [ $rc -eq 139 ] && { [ -s "$next" ] || crashed_on_exit $hpid; }; then
+        echo "it crashed while shutting down: taken as a regular end"; rc=0
+    fi
+    systemctl --user stop latte-session.target 2>/dev/null
+    clean_env
+
+    if [ $rc -eq 0 ]; then
+        latte-boot ok >/dev/null                 # a logout is not a crash
+        if [ "$(cat "$next" 2>/dev/null)" = game ]; then rm -f "$next"; go_next=game; continue; fi
+        if headless; then echo "logout with no monitor: starting the session again"; continue; fi
+        exit 0
+    fi
+    crash_report "$rc" "$dt" "$t0"
+    [ $dt -lt 60 ] && run_safe desktop-crash "Hyprland exit $rc after $dt s"
+    now=$(date +%s); keep=()
+    for t in "${restarts[@]}"; do [ $(( now - t )) -lt 600 ] && keep+=("$t"); done
+    restarts=("${keep[@]}" "$now")
+    [ ${#restarts[@]} -gt 3 ] && run_safe desktop-crashes "Hyprland crashed ${#restarts[@]} times in 10 minutes"
+    echo "Hyprland crashed after $dt s: restart ${#restarts[@]} of 3"
+    latte-boot session-start >/dev/null
+done

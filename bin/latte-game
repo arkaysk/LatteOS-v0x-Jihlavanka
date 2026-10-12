@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+# latte-game: switches between the desktop and the game session inside the same login, as SteamOS does.
+#
+#   latte-game            from the desktop to the game session (Steam Big Picture in gamescope)
+#   latte-game desktop    from the game session back to the desktop (Steam's "Switch to Desktop" does this)
+#   latte-game status     "ok", or why the game session cannot run
+#
+# It only says where to go next and ends what is running; latte-session starts the other one.
+set -u
+next="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/latteos/next-session"
+mkdir -p "$(dirname "$next")"
+
+available() {
+    [ -r /run/latteos/session.env ] && . /run/latteos/session.env
+    [ "${LATTE_RENDERER:-}" = hw ] || { echo "the game session needs a working graphics card (now: ${LATTE_RENDERER:-unknown})"; return 1; }
+    command -v gamescope-session-plus >/dev/null || { echo "gamescope-session is not installed"; return 1; }
+    command -v steam >/dev/null || { echo "Steam is not installed"; return 1; }
+    echo ok
+}
+
+case "${1:-game}" in
+    status) available ;;
+    game)
+        why="$(available)" || { notify-send -a LatteOS "LatteOS Game" "$why" 2>/dev/null; echo "$why" >&2; exit 1; }
+        echo game > "$next"
+        hyprctl dispatch exit >/dev/null ;;
+    desktop)
+        echo desktop > "$next"
+        steam -shutdown >/dev/null 2>&1 & ;;
+    *) sed -n '2,7p' "$0"; exit 2 ;;
+esac
