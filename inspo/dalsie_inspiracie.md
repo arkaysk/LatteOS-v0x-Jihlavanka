@@ -252,7 +252,7 @@ https://m.youtube.com/watch?v=V7AfAcQwLW0&t=1874s&pp=2AHSDpACAQ%3D%3D
 
 zaujimavy projekt.o altenativnem taskbare. autor https://www.reddit.com/r/unixporn/s/FhK3eotuOZ predvadza odkladanie otrenych okien na okraj obrazovky. okna su tahanim pritahovane a len kusok je vydiet.
 
-
+https://github.com/iluaii/fwm tekute prostredie
 
 
 
