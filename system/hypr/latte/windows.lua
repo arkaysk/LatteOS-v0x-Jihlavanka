@@ -126,8 +126,8 @@ local function minimize(w)
     local x, y = xy(w.at)
     local width, height = xy(w.size)
     local m = w.monitor
-    hl.exec_cmd(string.format('pleamar --say goo "fact win.x %d" "fact win.y %d" "fact win.w %d" "fact win.h %d" "emit win_min"',
-                              x - (m and m.x or 0), y - (m and m.y or 0), width, height))
+    hl.exec_cmd(string.format('pleamar --say goo "fact win.x %d" "fact win.y %d" "fact win.w %d" "fact win.h %d" "fact win.on %d" "emit win_min"',
+                              x - (m and m.x or 0), y - (m and m.y or 0), width, height, m and m.id or 0))
     hl.dispatch(hl.dsp.window.move({ workspace = MINIMIZED, follow = false, window = sel(w) }))
 end
 

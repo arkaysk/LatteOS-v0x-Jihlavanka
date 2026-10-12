@@ -132,6 +132,7 @@ part Drops {
     fact win.y = 0
     fact win.w = 0
     fact win.h = 0
+    fact win.on = 0                            // the number of the monitor it was on; x and y are counted from its corner
     fact gone.x0 = 0                           // the window's middle
     fact gone.y0 = 0
     fact gone.x1 = 0                           // where along the bottom edge it lands

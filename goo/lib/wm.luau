@@ -10,16 +10,26 @@ local function decode(out)
     return ok and type(t) == "table" and t or nil
 end
 
--- Every window there is: answer(list), each { address, class, title, pid, monitor, desk, visible (on a desktop
--- that is shown), away (put away), front (it has the keyboard), maximized, fullscreen, floating, pinned,
--- x, y, w, h }; nil without a compositor.
+-- Every window there is: answer(list), each { address, class, title, pid, desk, here (it is on the scene's own
+-- monitor), visible (on a desktop that is shown), away (put away), front (it has the keyboard), maximized,
+-- fullscreen, floating, pinned, x, y, w, h }; nil without a compositor. x and y are counted from the corner of
+-- the scene's monitor, as everything in the scene is.
+local SCREEN = (function() local ok, v = pcall(sys.ask, "env", "LATTE_GOO_SCREEN") return ok and type(v) == "string" and v or "" end)()
+local own = { id = nil, x = 0, y = 0 }       -- the scene's monitor, as the compositor knows it
+function M.monitor() return own.id end
 function M.windows(answer)
-    -- one call: the two answers come one after the other, with empty lines between them
-    hyprctl({ "--batch", "j/clients ; j/activewindow" }, function(out)
-        local first, second = (out or ""):match("^(.-)\n\n\n(.*)$")
+    -- one call: the answers come one after the other, with empty lines between them
+    hyprctl({ "--batch", "j/clients ; j/activewindow ; j/monitors" }, function(out)
+        local first, second, third = (out or ""):match("^(.-)\n\n\n(.-)\n\n\n(.*)$")
         local list = decode(first)
         if not list then return answer(nil) end
         local front = (decode(second) or {}).address
+        -- The scene is on the monitor it was started for; started for none, on the one that has the pointer.
+        local mine
+        for _, m in ipairs(decode(third) or {}) do
+            if m.name == SCREEN or (SCREEN == "" and m.focused and not mine) then mine = m end
+        end
+        if mine then own = { id = tonumber(mine.id), x = tonumber(mine.x) or 0, y = tonumber(mine.y) or 0 } end
         local wins = {}
         for _, c in ipairs(list) do
             if c.mapped ~= false and (c.class or "") .. (c.title or "") ~= "" then
@@ -27,10 +37,12 @@ function M.windows(answer)
                 local at, size = type(c.at) == "table" and c.at or {}, type(c.size) == "table" and c.size or {}
                 local away = tostring(ws.name or ""):find("^special:minimized") ~= nil
                 wins[#wins + 1] = {
-                    address = c.address, class = c.class or "", title = c.title or "", pid = c.pid, monitor = tonumber(c.monitor),
+                    address = c.address, class = c.class or "", title = c.title or "", pid = c.pid,
+                    here = own.id == nil or tonumber(c.monitor) == own.id,
                     desk = tonumber(ws.id) or 0, visible = c.visible == true and not away, away = away, front = c.address == front and not away,
                     maximized = c.fullscreen == 1, fullscreen = (tonumber(c.fullscreen) or 0) >= 2, floating = c.floating == true,
-                    pinned = c.pinned == true, x = tonumber(at[1]) or 0, y = tonumber(at[2]) or 0, w = tonumber(size[1]) or 0, h = tonumber(size[2]) or 0,
+                    pinned = c.pinned == true, x = (tonumber(at[1]) or 0) - own.x, y = (tonumber(at[2]) or 0) - own.y,
+                    w = tonumber(size[1]) or 0, h = tonumber(size[2]) or 0,
                 }
             end
         end

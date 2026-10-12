@@ -260,7 +260,8 @@ end
 on("win_min", function()
     local x, y, w, h = fact["win.x"], fact["win.y"], fact["win.w"], fact["win.h"]
     local sw, sh = tonumber(fact.sw) or 0, tonumber(fact.sh) or 0
-    if w <= 0 or h <= 0 or sw <= 0 or x < 0 or y < 0 or x >= sw or y >= sh then return end      -- on another monitor
+    if wm.monitor() and fact["win.on"] ~= wm.monitor() then return end                           -- on another monitor
+    if w <= 0 or h <= 0 or sw <= 0 or x >= sw or y >= sh then return end
     local head = E.get(HEAD)
     local cx, cy = x + w / 2, y + h / 2
     local to = (head and head.edge == 0) and math.min(E.along(head) + 90, E.limit(head)) or cx
@@ -285,8 +286,8 @@ function M.refresh()
         for _, w in ipairs(list) do
             sig[#sig + 1] = table.concat({ w.address, w.title, w.class, tostring(w.front), tostring(w.away), tostring(w.maximized), tostring(w.pinned), w.desk }, "\1")
             -- windows right above a bar on the bottom edge: the stretch each covers, and how much room it leaves
-            if w.visible then sig[#sig + 1] = w.x .. ":" .. w.y .. ":" .. w.w .. ":" .. w.h end
-            if head and head.edge == 0 and w.visible and h > 0 and h - (w.y + w.h) < 400 then
+            if w.visible and w.here then sig[#sig + 1] = w.x .. ":" .. w.y .. ":" .. w.w .. ":" .. w.h end
+            if head and head.edge == 0 and w.visible and w.here and h > 0 and h - (w.y + w.h) < 400 then
                 above[#above + 1] = { a0 = w.x - at, a1 = w.x + w.w - at, gap = math.max(0, h - (w.y + w.h)) }
             end
         end
@@ -296,7 +297,7 @@ function M.refresh()
         layout()
         -- the drops on the other edges step out of the way of the windows in sight
         local seen = {}
-        for _, w in ipairs(list) do if w.visible and not w.fullscreen then seen[#seen + 1] = w end end
+        for _, w in ipairs(list) do if w.visible and w.here and not w.fullscreen then seen[#seen + 1] = w end end
         E.avoid(seen)
     end)
 end
@@ -304,7 +305,7 @@ end
 function M.start()
     -- a film or a game over the whole screen: no weather on the surface meanwhile
     E.busy = function(answer)
-        for _, w in ipairs(wins) do if w.fullscreen and w.visible then return answer(true) end end
+        for _, w in ipairs(wins) do if w.fullscreen and w.visible and w.here then return answer(true) end end
         answer(false)
     end
     sys.watch("apps", function(list) index(list) signature = "" M.refresh() end)

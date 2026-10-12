@@ -435,6 +435,6 @@ nemá (AI je hľadanie, Financie a Sociálne sú podkategórie Flathubu).
 
 **Ešte nie je** (vráti sa po kusoch, poradie v ROADMAP): ClockGoo,
 QueenGoo, ChatGoo, vlastné kvapky a Tvorca Goo, hra pri nečinnosti (§3.1 stupeň 3; príde s vlastnými kvapkami — hrajú sa iba hravé),
-okno z bubliny a pád minimalizovaného okna (14), kvapka uhne oknu, BarGoo na ďalších monitoroch, režimy LensGoo
+okno z bubliny (14; pád minimalizovaného okna už je), BarGoo na ďalších monitoroch (scéna je iba na hlavnom), režimy LensGoo
 Súbory · Web · AI a kalkulačka, portrét účtu, náhrada rohovej lišty (ikony na pozadí, sieť, hlasitosť, upozornenia),
 tapeta, okenné tlačidlá (hyprbars), sklo okien, prichytenie ťahaním, Nastavenia a ostatné aplikácie.

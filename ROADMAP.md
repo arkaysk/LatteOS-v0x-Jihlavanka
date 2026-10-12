@@ -82,9 +82,12 @@ Schválené 12. 10. 2026. Pracuje sa **zhora nadol, neskáče sa**; nový nápad
         - [x] zámok obrazovky (12. 10.): Win+L a PowerGoo › Zamknúť; overené zlé aj dobré heslo a zamknutie po páde
           scény. Chýba zamknutie pri nečinnosti a pred uspaním.
         - [x] ovládanie Goo z klávesnice (12. 10., Win+T).
-        - [ ] **jadro kvapiek, zvyšok:**
-          pád minimalizovaného okna do lišty, kvapka uhne oknu, BarGoo na ďalších monitoroch. Hra pri nečinnosti
-          príde s vlastnými kvapkami (hrajú sa iba hravé), okno z bubliny s QueenGoo (rodia sa z nej riadne okná).
+        - [x] pád minimalizovaného okna do lišty, kvapka uhne titulku okna (12. 10.).
+        - [x] viac monitorov, prvá časť (12. 10.): scéna je iba na hlavnom monitore (Hyprland jej povie ktorý,
+          pri zmene monitorov ju presunie), okná z iných monitorov sú v lište, ale neuhýba sa im.
+        - [ ] **jadro kvapiek, zvyšok:** BarGoo na ďalších monitoroch (vlastná inštancia s oknami toho monitora).
+          Hra pri nečinnosti príde s vlastnými kvapkami (hrajú sa iba hravé), okno z bubliny s QueenGoo (rodia sa
+          z nej riadne okná).
         - [ ] **náhrada Noctalie:** ClockGoo s upozorneniami a kalendárom, ikony na pozadí, sieť, hlasitosť, Bluetooth,
           jas, polkit; potom QueenGoo, ChatGoo, vlastné kvapky.
         - [ ] režimy LensGoo Súbory · Web · AI a kalkulačka; tapeta; okenné tlačidlá (hyprbars), sklo, prichytenie.

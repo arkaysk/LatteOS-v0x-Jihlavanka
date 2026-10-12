@@ -87,7 +87,30 @@ hl.on("window.open", function(w)
 end)
 
 -- ── the start ─────────────────────────────────────────────────────────────────────────────────────────────
+-- The Goo scene belongs on the main monitor, the one in the corner of the layout: it is told its name, or it
+-- would come up on whichever monitor the pointer happens to be over. When monitors come and go and the main
+-- one is another, the scene starts again there.
+local shell_on = nil
+local function main_monitor()
+    local first
+    for _, m in ipairs(hl.get_monitors() or {}) do
+        first = first or m.name
+        if m.x == 0 and m.y == 0 then return m.name end
+    end
+    return first
+end
+local function place_shell()
+    local name = main_monitor()
+    if not name or name == shell_on then return end
+    local again = shell_on ~= nil
+    shell_on = name
+    hl.exec_cmd("sh -c 'systemctl --user set-environment LATTE_GOO_SCREEN=" .. name .. (again and "; systemctl --user restart latte-goo.service" or "") .. "'")
+end
+hl.on("monitor.added", place_shell)
+hl.on("monitor.removed", place_shell)
+
 hl.on("hyprland.start", function()
+    place_shell()
     -- systemd and D-Bus learn where the session is; the target starts the Goo scene and the portals.
     hl.exec_cmd("sh -c 'dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE "
         .. "HYPRLAND_INSTANCE_SIGNATURE LATTE_MODE LATTE_RENDERER LATTE_TIER LANG; systemctl --user start latte-session.target'")
