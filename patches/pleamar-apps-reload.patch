@@ -1,16 +1,15 @@
 diff --git a/src/logic_luau.rs b/src/logic_luau.rs
-index 5952cfc..215253f 100644
+index 5952cfc..7494e3a 100644
 --- a/src/logic_luau.rs
 +++ b/src/logic_luau.rs
-@@ -1187,10 +1187,16 @@ impl LuauScript {
+@@ -1187,10 +1187,15 @@ impl LuauScript {
              let first = {
                  let mut c = c.lock().unwrap();
                  let v = c.watchers.entry(name.clone()).or_default();
 -                v.push(f);
 -                v.len() == 1
-+                // LatteOS (pleamar-apps-znova): ten istý poslucháč sa nepridá druhý raz; `apps` sa číta iba raz,
-+                // preto ďalšie sys.watch("apps") ho dá prečítať znova (práve nainštalovaná aplikácia) — výsledok
-+                // dostanú všetci poslucháči
++                // The same listener is not added twice. `apps` is read once, so watching it again asks for
++                // it to be read again (an app that has just been installed): every listener gets the result.
 +                let known = v.iter().any(|g| *g == f);
 +                if !known {
 +                    v.push(f);

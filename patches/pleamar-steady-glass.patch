@@ -1,12 +1,12 @@
 diff --git a/src/backdrop.wgsl b/src/backdrop.wgsl
-index 8384b61..2af6b99 100644
+index 8384b61..675f9ae 100644
 --- a/src/backdrop.wgsl
 +++ b/src/backdrop.wgsl
 @@ -33,6 +33,9 @@ struct Bounds {
      opacity: f32,
  };
  @group(0) @binding(4) var<uniform> bounds: Bounds;
-+// LatteOS (pleamar-sklo-stabilne): the two canvases presented before `canvas`.
++// The two canvases presented before `canvas`.
 +@group(0) @binding(5) var older0: texture_2d<f32>;
 +@group(0) @binding(6) var older1: texture_2d<f32>;
  
@@ -16,7 +16,7 @@ index 8384b61..2af6b99 100644
      // Ours, as the compositor blended it: times its opacity.
      let s = textureLoad(canvas, px, 0) * bounds.opacity;
      let a = textureLoad(previous, px, 0);
-+    // LatteOS (pleamar-sklo-stabilne): the capture can be of any of the last
++    // The capture can be of any of the last
 +    // frames, not only of `canvas`. Where ours changed between them —a moving
 +    // edge, a bubble that came or went— the capture cannot be unmixed without
 +    // guessing which frame it holds, and a wrong guess gives a colour that is
@@ -56,7 +56,7 @@ index 8384b61..2af6b99 100644
  
  // ── own ───────────────────────────────────────────────────────────
 diff --git a/src/lens.rs b/src/lens.rs
-index c129550..4eccb98 100644
+index c129550..9a6eb87 100644
 --- a/src/lens.rs
 +++ b/src/lens.rs
 @@ -89,10 +89,14 @@ pub const WARM_UP_TIME: std::time::Duration = std::time::Duration::from_millis(1
@@ -65,7 +65,7 @@ index c129550..4eccb98 100644
      pub px: (u32, u32),
 -    /// Two canvases: one gets painted, the other is the one the compositor has.
 -    canvases: [(wgpu::Texture, wgpu::TextureView); 2],
-+    /// Four canvases (LatteOS, pleamar-sklo-stabilne): one gets painted, and the last three presented. The
++    /// Four canvases: one gets painted, and the last three presented. The
 +    /// compositor's capture can be of any of them —it is taken after presenting, but the compositor may still
 +    /// show an older frame—, so a pixel is unmixed only where ours was the same in all three.
 +    canvases: [(wgpu::Texture, wgpu::TextureView); 4],
