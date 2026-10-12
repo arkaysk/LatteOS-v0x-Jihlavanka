@@ -1,7 +1,9 @@
 # Pre Clauda — LatteOS (súkromné repo jihlavanka001)
 
 Odpovedať po slovensky. Pred prácou na Goo čítať `LATTEOS-GOO.md`, rozhodnutia zapisovať do `docs/goo/ROZHODNUTIA.md`,
-plán je v `ROADMAP.md`. Tento súbor sa nezverejňuje (`setup/verejne/vynechat.txt`).
+plán je v `ROADMAP.md`:
+čítať iba jeho sekciu **„Teraz — poradie práce“** (ide sa zhora, neskáče sa), zvyšok hľadať cez grep podľa prúdu — celý súbor
+má ~25 tis. tokenov. Tento súbor sa nezverejňuje (`setup/verejne/vynechat.txt`).
 
 ## latte-lab = testovací počítač
 

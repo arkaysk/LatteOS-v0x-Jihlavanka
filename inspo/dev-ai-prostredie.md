@@ -312,6 +312,26 @@ Cieľ: limit vydrží **do pondelka 15:00**. V pondelok pred resetom zapísať, 
 
 **Stav krokov:** §8 krok 1 — Ponytail nainštalovaný (8. 10., scope user); `/model` na Sonnet prepína používateľ sám.
 
+### Skúška bota `edge` — edge0-8b-a1b-preview-aidememo (12. 10.)
+
+LM Studio, Q4_K_M, kontext 131 072, clodfarm 1.12.0, bot cez Anthropic-compatible. **Rýchlosť:** výstup ~130 tok/s,
+vstup 19 tis. tokenov za ~6 s (uvažujúci model: časť výstupu je uvažovanie).
+
+| úloha | výsledok | čas |
+|---|---|---|
+| čítanie kódu (`tier_for`, dve otázky) | správne aj so zdôvodnením | 37 s |
+| 3 testy v Ruste podľa vzoru | kód správny (na latte-lab 3/3 prešli), ale úlohu nedokončil: kontajner nemá `cargo`, 7 min skúšal inštalovať Rust a gcc (117 príkazov), zrušené | — |
+| 6 prekladov do `sk.json` | JSON a rozsah zmeny v poriadku, slovenčina zlá (4 zo 6: „Žiadna sieťová spojenie“, „Vôbľné miesto“) | 119 s |
+| skript v bashi podľa zadania | beží, ale chýba záverečný riadok a počítadlo je zle; v správe tvrdil, že je hotový | 32 s |
+| počty značiek v ROADMAP cez `grep` | čísla správne, v tabuľke „[-~]“ namiesto „[~]“; 73 krokov | 447 s |
+
+**Záver:** rýchly, na čítanie kódu a krátke úpravy podľa vzoru použiteľný, ale každý výsledok treba skontrolovať
+(vlastné hlásenie „hotovo“ nie je spoľahlivé). Na slovenské preklady nie. Rovnakých päť zadaní (sú v histórii úloh
+farmy) použiť na porovnanie s Qwen3-Coder-30B.
+
+**Zistené na farme:** `FARM_VERIFY_CMD=git diff --check HEAD~1` pri úlohe bez commitu kontroluje cudzí posledný commit
+(bot kvôli nemu upravil ROADMAP.md); kontajner nemá Rust, takže úlohy s kompiláciou musia mať v zadaní „neprekladaj“.
+
 ## Zdroje
 
 - LM Studio + Claude Code (rozhranie `/v1/messages` od 0.4.1): <https://lmstudio.ai/blog/claudecode>,

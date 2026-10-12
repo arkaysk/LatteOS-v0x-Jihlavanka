@@ -5,6 +5,19 @@ tu je, **kedy a prečo** sa čo rozhodlo, a čo bolo zamietnuté. Podrobné pôv
 z vtedy) je v [docs_zaloha/2026-10-06-latteos-goo-pred-rozdelenim.md](../../docs_zaloha/2026-10-06-latteos-goo-pred-rozdelenim.md).
 Nové rozhodnutie: jeden riadok sem (dátum, čo, prečo) a oprava platného znenia v LATTEOS-GOO.md.
 
+## 12. 10. 2026
+
+- **Classic:** je to celé rozhranie spred zapojenia Marey a pleamaru (lišta s tlačidlami, vysúvacie okná App Managera a
+  Správcu zariadení s koreňmi v tvare L, voliteľný gif, maznáčik). Ostali z neho iba nápady; kód, ktorý GOO nepoužíva,
+  sa uprace (ROADMAP „Teraz“, bod 2).
+- **Znak NET** na cudzích oknách a jeho funkcia **ostávajú** — preniesť do GOO. Skúška 12. 10.: `netznak` v GOO beží,
+  ale jazýček prekrýva tlačidlá okna (Firefox); treba mu nájsť miesto.
+- **Živý náhľad okna:** keď je kurzor nad ikrou bežiacej aplikácie, ukáže sa náhľad ako vo Windows 11. V GOO ešte
+  nefunguje — dorobiť.
+- **Kapsa sa zahodí.** Správca schránky sa nepreberie, vytvorí sa inak.
+- **Poradie práce** je v ROADMAP.md, sekcia „Teraz — poradie práce“; číta sa iba ona.
+- **Modely pre farmu:** cieľ sú Gemma 4 a Qwen3 pod 10 GB (rýchlosť a miesto na kontext), porovnávajú sa s Edge0.
+
 ## 7. 10. 2026
 
 - **Komunitné obchody:** je ich viac; v App Manageri má ísť pridať vlastný obchod ako v ZimaOS. Hotové: vlastný obchod

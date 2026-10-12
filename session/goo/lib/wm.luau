@@ -70,15 +70,19 @@ function M.rozlozenie(address, zone) if not hl then return end eval(string.forma
 -- Noctalia (`noctalia msg …`): v safe režime nebeží, volanie sa preskočí
 function M.noctalia(args, cb, opts) if M.safe then return end run("noctalia", args, cb, opts) end
 
--- ponuka relácie GooPower (lock | logout | suspend | reboot | shutdown): Hyprland cez Noctaliu, labwc priamo
-local SAFE_SESSION = {
+-- ponuka relácie GooPower (lock | logout | suspend | reboot | shutdown). Uspať, reštartovať a vypnúť idú vždy priamo
+-- cez systemd: cez Noctaliu nerobili nič, keď nebežala alebo nepatrila do miestnej relácie (12. 10.). Zamknutie
+-- a odhlásenie robí na Hyprlande Noctalia; keď neodpovie, priamo.
+local DIRECT = {
     lock = { "latte-zamok", {} }, logout = { "labwc", { "--exit" } }, suspend = { "systemctl", { "suspend" } },
     reboot = { "systemctl", { "reboot" } }, shutdown = { "systemctl", { "poweroff" } },
 }
 function M.session(a)
-    if not M.safe then run("noctalia", { "msg", "session", a }) return end
-    local c = SAFE_SESSION[a]
-    if c then run(c[1], c[2]) end
+    local c = DIRECT[a]
+    if not c then return end
+    if M.safe or (a ~= "lock" and a ~= "logout") then run(c[1], c[2]) return end
+    if a == "logout" then c = { "hyprctl", { "dispatch", "exit" } } end
+    run("noctalia", { "msg", "session", a }, function(_, code) if code ~= 0 then run(c[1], c[2]) end end)
 end
 
 return M

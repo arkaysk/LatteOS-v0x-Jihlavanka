@@ -57,7 +57,10 @@ local dangerous = require("lib/nebezpecne")
 local function launch(a)
     keptQ = ""                                               -- spustilo sa: text sa už nevracia
     if not a then return end
-    if a.exec then pcall(sys.call, "apps.launch", a.exec) end
+    -- najprv uvoľniť klávesnicu (exclusive), až potom spustiť: inak sa okno aplikácie namapuje, kým ju drží Goo,
+    -- a po uvoľnení ho Hyprland nepovažuje za novo zaostrené → do Firefoxu sa nedalo písať (12. 10.)
+    close()
+    if a.exec then after(80, function() pcall(sys.call, "apps.launch", a.exec) end) end
     if a.id then
         run("latte-riadok", { "zaznam", a.id }, nil, { output = false })       -- časté aplikácie podľa dennej doby
         local rec = { a.id }
@@ -65,7 +68,6 @@ local function launch(a)
         cfg.recent = rec
         run("latte-goo", { "spustac-uloz", "recent", json.encode(rec) }, nil, { output = false })
     end
-    close()
 end
 local function open_url(url) run("xdg-open", { url }, nil, { output = false }) close() end
 local function search_web(e, text) open_url(string.format(e.url, urlencode(text))) end
@@ -127,7 +129,7 @@ local function app_row(a, hint)
                                     end } }
                      for _, l in ipairs(lines(out)) do
                          local name, cmd = l:match("^([^\t]+)\t(.+)$")
-                         if name then kids[#kids + 1] = { glyph = "chevron-right", label = name, run = function() pcall(sys.call, "apps.launch", cmd) close() end } end
+                         if name then kids[#kids + 1] = { glyph = "chevron-right", label = name, run = function() close() after(80, function() pcall(sys.call, "apps.launch", cmd) end) end } end
                      end
                      local o = {} for k, v in pairs(lastOpts or {}) do o[k] = v end
                      o.id, o.keep, o.parent = nil, nil, lastOpts

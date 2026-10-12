@@ -332,6 +332,9 @@ latte-boot status | sed 's/^/   /'
 if [ $enable -eq 1 ]; then
     echo "== zapínam grafický štart: latte-boot + greetd, graphical.target"
     sudo systemctl enable latte-boot.service greetd.service
+    # prihlásenie nečaká na sieť: na základe Fedora Server drží iscsi.service štart, kým nevyprší
+    # NetworkManager-wait-online (60 s; latte-lab 12. 10.: prihlasovanie až po 1 min 28 s). Späť: systemctl enable.
+    sudo systemctl disable NetworkManager-wait-online.service >/dev/null 2>&1 || true
     sudo systemctl set-default graphical.target
     echo "   Pri ďalšom reštarte naštartuje LatteOS greeter. Konzola ostáva na Ctrl+Alt+F2, SSH beží ďalej."
 else
