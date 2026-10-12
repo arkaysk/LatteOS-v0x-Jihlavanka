@@ -36,6 +36,8 @@ function K.setup()
     bind("SUPER + Q", goo("lens_mode 0"))
     bind("SUPER + R", goo("lens_mode 1"))
 
+    bind("SUPER + L", goo("lock_now"))
+
     -- windows
     bind("ALT + F4", hl.dsp.window.close())
     bind("ALT + Tab", function() latte.win.cycle(1) end)

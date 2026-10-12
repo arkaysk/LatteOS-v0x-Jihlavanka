@@ -11,6 +11,7 @@ local card = require("lib/card")
 local E = require("lib/engine")
 local wm = require("lib/wm")
 local bar = require("lib/bar")
+local lock = require("lib/lock")
 -- N marks a text for the translation table (tests/check.sh looks for it); tr() translates it where it is shown.
 local function N(s) return s end
 
@@ -170,7 +171,8 @@ end
 open_card = function(d, keep)
     local rows = {
         { profile = true, glyph = "user", label = user, line2 = user .. "@" .. host .. " · " .. tr("since") .. " " .. since, quiet = true },
-        { pills = { { label = ask("logout", N("Log out")), glyph = "logout", on = armed == "logout", keep = true, run = leave("logout", d) } } },
+        { pills = { { label = tr("Lock"), glyph = "lock", run = function() after(200, lock.lock) end },
+                    { label = ask("logout", N("Log out")), glyph = "logout", on = armed == "logout", keep = true, run = leave("logout", d) } } },
     }
     if battery or profiles then rows[#rows + 1] = { head = true, label = tr("POWER"), line = true } end
     if battery then

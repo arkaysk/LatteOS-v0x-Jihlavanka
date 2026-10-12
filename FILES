@@ -38,10 +38,12 @@
 /usr/share/latteos/goo/parts/faces.plm                  <- goo/parts/faces.plm
 /usr/share/latteos/goo/parts/strip.plm                  <- goo/parts/strip.plm
 /usr/share/latteos/goo/parts/rows.plm                   <- goo/parts/rows.plm
+/usr/share/latteos/goo/parts/lock.plm                   <- goo/parts/lock.plm
 /usr/share/latteos/goo/lib/engine.luau                  <- goo/lib/engine.luau
 /usr/share/latteos/goo/lib/card.luau                    <- goo/lib/card.luau
 /usr/share/latteos/goo/lib/bar.luau                     <- goo/lib/bar.luau
 /usr/share/latteos/goo/lib/lens.luau                    <- goo/lib/lens.luau
+/usr/share/latteos/goo/lib/lock.luau                    <- goo/lib/lock.luau
 /usr/share/latteos/goo/lib/wm.luau                      <- goo/lib/wm.luau
 /usr/share/latteos/goo/lib/open.luau                    <- goo/lib/open.luau
 /usr/share/latteos/goo/lib/find.luau                    <- goo/lib/find.luau
@@ -88,7 +90,7 @@
 /boot/loader/entries/*-lattesafe-nomodeset.conf
 $XDG_RUNTIME_DIR/latteos/                               # per user: the reason for SAFE, labwc's menu, where to go next
 ~/.local/state/latteos/                                 # per user: session.log, safe.log, window-mode
-~/.local/share/pleamar/goo/                             # per user: where the drops were left, the launcher's memory, settings.json
+~/.local/share/pleamar/goo/                             # per user: where the drops were left, the launcher's memory, settings.json, lock.json
 /var/lib/latteos/login/user-*.json                      # per user, for the login screen: where the power drop is, the coffee
 ~/.cache/latteos/                                       # per user: the weather and the news last fetched
 

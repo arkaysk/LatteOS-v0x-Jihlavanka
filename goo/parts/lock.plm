@@ -1,0 +1,65 @@
+// The lock screen. It is the compositor that locks the session (ext-session-lock): while this surface is
+// open nothing else is seen or touched on any monitor, and only the logic's check of the password closes it
+// (lib/lock.luau). It looks like the login screen come to rest: the coffee in the lower third, the time, a row
+// to type the password into. Nothing moves, so a locked machine costs nothing.
+//
+// The surface is a box laid in the middle of every monitor, with everything that can be pressed inside it:
+// monitors differ in size, and the box fits the smallest. Only the background is painted beyond it.
+part Lock {
+    fact locked = false
+    fact lock_checking = false
+    fact lock_wrong = false
+    text lock_user = ""
+    text lock_password = ""
+    text lock_date = ""
+    text g_lock = ""                           // glyphs of the icon font, put in by the logic
+    text g_go = ""
+    event lock_now ->                          // from a key, a card or outside: lock the session
+    event lock_try ->                          // Enter or the arrow: the logic checks what was typed
+    service clock as now { time: text }
+
+    surface lockscreen {
+        kind: lock
+        size: 960, 600
+        open: locked
+
+        let L.w = lockscreen.width             // the largest monitor: a background this big covers them all
+        let L.h = lockscreen.height
+        let L.level = 400                      // the coffee's surface, two thirds down the box
+        let L.x = 290                          // the lock drop
+        let L.y = L.level - 47                 // the row floats just above the surface
+        let L.text = L.x + 58
+        let L.end = L.x + 380
+        let rim = #c9a47a
+        let alert = #ff8a80
+
+        // the background in bands of plain colour, the coffee below its surface
+        repeat b in 0..16 { box { at: 480, L.level - L.h * (15.5 - b) / 16; size: L.w * 2, L.h / 16 + 1; color: mix(#140e0b, #1a1410, b / 15) } }
+        box { at: 480, L.level + L.h; size: L.w * 2, L.h * 2; color: coffee }
+        box { at: 480, L.level; size: L.w * 2, 2; color: rim; opacity: 45% }
+
+        text now.time { at: 960, 74; anchor: right center; size: 108; weight: 300; color: cream; family: "Inter" }
+        text lock_date { at: 956, 152; anchor: right center; size: 21; color: cream; opacity: 66%; family: "Inter" }
+
+        // the row: who is logged in, and the password
+        box { from: L.x, L.y - 23; size: 380, 46; corner: 23; color: coffee }
+        box { from: L.x, L.y - 23; size: 380, 46; corner: 23; stroke: 1; color: rim; opacity: 45% }
+        ellipse { at: L.x, L.y + 11; radius: 40; color: coffee }
+        ellipse { at: L.x, L.y + 11; radius: 40; stroke: 1; color: rim; opacity: 45% }
+        // The padlock is drawn shut only once the compositor says the session is locked: a picture proves nothing.
+        text g_lock { at: L.x, L.y + 11; anchor: center; size: 31; color: cream; opacity: 30% + 70% * lock.held; family: "tabler-icons" }
+        text lock_user { at: L.text, L.y; anchor: left center; width: 110; lines: 1; size: 16; weight: 600; color: cream; family: "Inter" }
+        box { at: L.text + 120, L.y; size: 1.2, 22; color: cream; opacity: 28% }
+        input lock_password { at: L.text + 134, L.y - 11; width: 150; size: 16; color: cream; selection: #5a463a; placeholder: "Password"; secret: true; family: "Inter"; agent: no }
+        ellipse { at: L.end - 2, L.y; radius: 16; color: mix(coffee, cream, if(lock_checking, 0.5, 0.24)) }
+        text g_go { at: L.end - 2, L.y; anchor: center; size: 17; color: cream; family: "tabler-icons" }
+        zone box z_lock_password { at: L.text + 204, L.y; size: 170, 46; cursor: text }
+        zone ellipse z_lock_go { at: L.end - 2, L.y; radius: 18; cursor: pointer; label: "Unlock"; agent: no }
+        text "Wrong password" { at: L.text, L.y - 44; anchor: left center; size: 13.5; color: alert; show: lock_wrong and not lock_checking; family: "Inter" }
+        text "Checking…" { at: L.text, L.y - 44; anchor: left center; size: 13.5; color: cream; opacity: 60%; show: lock_checking; family: "Inter" }
+    }
+    on press z_lock_password { focus lock_password }
+    on press z_lock_go { emit lock_try }
+    on submit lock_password { emit lock_try }
+    on lock_try { lock_wrong = false }
+}

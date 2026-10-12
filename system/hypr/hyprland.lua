@@ -55,6 +55,8 @@ hl.config({
         force_default_wallpaper = 0,
         -- bin/latte-session is the watchdog: it restarts Hyprland after a crash or goes to SAFE
         disable_watchdog_warning = true,
+        -- Should the Goo scene die while it holds the lock, the one started in its place may lock again.
+        allow_session_lock_restore = true,
         middle_click_paste = false,
     },
     ecosystem = { no_update_news = true, no_donation_nag = true },

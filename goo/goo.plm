@@ -13,6 +13,7 @@
 //   faces    what each drop shows on itself
 //   strip    the performance strip in PowerGoo's capsule
 //   rows     what is in the card, and the tooltip
+//   lock     the lock screen, a surface of its own
 language 0.4
 import "lang/sk.plm"
 
@@ -29,8 +30,8 @@ scene Goo {
         keyboard: exclusive while card_open
     }
     permissions {
-        run: "latte-sky", "latte-login", "latte-stats", "hyprctl", "foot", "hostname", "powerprofilesctl"
-        services: "files", "files.write", "env", "clock", "battery", "window", "apps", "apps.launch", "session.*"
+        run: "latte-sky", "latte-login", "latte-stats", "hyprctl", "foot", "hostname", "powerprofilesctl", "date"
+        services: "files", "files.write", "env", "clock", "battery", "window", "apps", "apps.launch", "session.*", "auth"
     }
 
     // ── what the desktop around the scene tells it (`pleamar --say goo "emit …"`) ───────────────────────────
@@ -45,4 +46,5 @@ scene Goo {
     include "parts/faces.plm"
     include "parts/strip.plm"
     include "parts/rows.plm"
+    include "parts/lock.plm"
 }

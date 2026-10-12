@@ -79,7 +79,9 @@ Schválené 12. 10. 2026. Pracuje sa **zhora nadol, neskáče sa**; nový nápad
           Príkaz, rýchly zoznam), PowerGoo (karta: účet, odhlásenie, batéria, profil napájania, uspať · reštartovať ·
           vypnúť). Čo je a čo chýba: LATTEOS-GOO.md §8.
         - [x] pás výkonu PowerGoo (12. 10.; `latte-stats` hlási aj teplotu procesora a karty).
-        - [ ] **jadro kvapiek, zvyšok:** zámok obrazovky (Win+L, Zamknúť),
+        - [x] zámok obrazovky (12. 10.): Win+L a PowerGoo › Zamknúť; overené zlé aj dobré heslo a zamknutie po páde
+          scény. Chýba zamknutie pri nečinnosti a pred uspaním.
+        - [ ] **jadro kvapiek, zvyšok:**
           ovládanie Goo z klávesnice, hra pri nečinnosti, okno z bubliny a pád minimalizovaného okna, kvapka uhne oknu,
           BarGoo na ďalších monitoroch.
         - [ ] **náhrada Noctalie:** ClockGoo s upozorneniami a kalendárom, ikony na pozadí, sieť, hlasitosť, Bluetooth,

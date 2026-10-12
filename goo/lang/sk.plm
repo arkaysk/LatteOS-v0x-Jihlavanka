@@ -99,6 +99,8 @@ library Slovak {
         "Balanced" = "Vyvážený"
         "Performance" = "Výkon"
         "Sure?" = "Naozaj?"
+        "Lock" = "Zamknúť"
+        "Unlock" = "Odomknúť"
         "windows:" = "okná:"
     }
 }

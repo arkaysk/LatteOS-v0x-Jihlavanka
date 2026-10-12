@@ -425,9 +425,12 @@ nemá (AI je hľadanie, Financie a Sociálne sú podkategórie Flathubu).
   sa najprv spýta); guľky batérie; **pás výkonu** (pravý klik): CPU · RAM · GPU · VRAM z `latte-stats`, farba podľa
   záťaže a teploty, podrobnosti v bubline, susedné goo odtlačí a po vtiahnutí vráti, zapnutý ostane aj po prihlásení.
   Oproti v0.3 v bubline nie je takt, najnáročnejší proces a swap, a klik na bunku nič neotvára (Monitor ešte nie je).
+- **Zámok obrazovky** (Win+L, PowerGoo › Zamknúť; `goo/parts/lock.plm`, `goo/lib/lock.luau`): zamyká kompozitor
+  (`ext-session-lock`), heslo overí systém; vyzerá ako prihlásenie v pokoji. Keby scéna pri zamknutí spadla, nová
+  zamkne znova. Zamknutie pri nečinnosti ešte nie je.
 - **Hyprland:** tri režimy okien, minimalizovanie, rozloženia okna, plochy, skratky ako vo Windows.
 
-**Ešte nie je** (vráti sa po kusoch, poradie v ROADMAP): Zamknúť (zámok obrazovky), ClockGoo,
+**Ešte nie je** (vráti sa po kusoch, poradie v ROADMAP): ClockGoo,
 QueenGoo, ChatGoo, vlastné kvapky a Tvorca Goo, ovládanie Goo z klávesnice (§6.1), hra pri nečinnosti (§3.1 stupeň 3),
 okno z bubliny a pád minimalizovaného okna (14), kvapka uhne oknu, BarGoo na ďalších monitoroch, režimy LensGoo
 Súbory · Web · AI a kalkulačka, portrét účtu, náhrada rohovej lišty (ikony na pozadí, sieť, hlasitosť, upozornenia),
