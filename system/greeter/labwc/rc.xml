@@ -1,0 +1,6 @@
+<?xml version="1.0"?>
+<!-- labwc only carries the login scene: no decorations, no shortcuts of its own. -->
+<labwc_config>
+  <core><decoration>none</decoration></core>
+  <keyboard><default/></keyboard>
+</labwc_config>

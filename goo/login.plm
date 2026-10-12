@@ -1,0 +1,326 @@
+// The login screen.
+//
+// It starts as the boot splash ends: the same cup in the same place on the same background. A drop of coffee
+// leaps out of the cup, bounces twice, rolls aside and leaves the login row behind it. Then the whole plane
+// sinks to the surface of the coffee that fills the lower third of the screen. Under the surface is the last
+// crash, or the news; left alone for a minute, small goo come up with what else is worth knowing.
+//
+// Only the power drop and the row can be pressed. Everything that moves is moved here, by the renderer: the
+// logic (login.luau) says when the intro may start, fills in the facts and checks the password.
+language 0.3
+import "lang/sk.plm"
+
+scene Login {
+    surface {
+        size: full, full
+        anchor: top
+        margin: 0
+        level: overlay
+        reserve: -1
+        rate: 60
+        keyboard: exclusive
+        // A copy per monitor, each laid out for its own size; facts and texts are shared, so what is typed
+        // shows on all of them. One of the monitors may be a virtual one nobody is looking at.
+        screens: each max 3
+    }
+    permissions {
+        run: "latte-login", "date", "systemctl"
+        services: "env", "clock"
+    }
+
+    let espresso = #1a1410
+    let cream = #f3ebdd
+    let amber = #f7c873
+    let alert = #ff8a80
+    let drizzle = #a9b6c4
+
+    // ── the coffee: how much water and milk is in it, as the user's own drink ──────────────────────────────
+    spring mellow = 60, 14
+    fact water = 0.55
+    fact milk = 0
+    prop wet = 0.55 ~mellow
+    prop white = 0 ~mellow
+    follow wet = water
+    follow white = milk
+    let coffee = mix(mix(#1c0f09, #4a2410, wet), #c9a47a, pow(white, 2))
+
+    // ── measures ────────────────────────────────────────────────────────────────────────────────────────────
+    let W = screen.width
+    let H = screen.height
+    let CX = W / 2
+    let CY = H / 2
+    let LEVEL = H * 2 / 3                      // where the coffee's surface comes to rest
+    let R = 40                                 // the power drop
+    let ROW = 23                               // half the height of the login row
+    let ROLL = 190                             // how far the drop rolls: about 5 cm at 96 dpi
+    let EXT = 250                              // how far the row reaches right of the middle of the screen
+    let LAND = 130                             // where the leap from the cup lands, right of the middle
+    let REST = LEVEL - ROW - 24                // the row floats just above the surface
+    let SINK = ROW + 28 - R                    // the drop sits lower than the row: its bottom is in the coffee
+    let SES = 236                              // the length of the session chooser
+    // The boot splash puts its cup at (width − 192) × 0.5 and (height − 192) × 0.42.
+    let CUPX = (W - 192) * 0.5
+    let CUPY = (H - 192) * 0.42
+
+    spring soft = 120, 14
+    spring bouncy = 210, 11
+    spring flow = 46, 11
+
+    // ── what happens ────────────────────────────────────────────────────────────────────────────────────────
+    event intro                                // the logic is up: the whole opening runs from here
+    event accepted                             // the password was right
+    event rejected
+    event wake                                 // someone is typing: the small goo go back under
+    event again                                // a dry run starts over
+    event login ->                             // Enter, or the arrow: the logic checks the password
+    event machine ->                           // 0 sleep, 1 restart, 2 shut down
+    event session ->                           // the session chosen, by its place in `sessions`
+
+    fact leaped = false                        // the drop has left the cup; its arc is worked out from t_leap
+    fact t_leap = 0
+    fact checking = false
+    fact field = 1                             // which field has the keyboard: 0 name, 1 password
+    fact power_open = false
+    fact ses_open = false
+    fact ses_sel = 0
+    fact panel = 0                             // under the surface: 0 nothing, 1 the last crash, 2 the news
+    fact keep_backdrop = false                 // a real login keeps the background: the desktop comes after it
+    fact power_x = 0.14                        // where the user's power drop sits on the bar, as a share of the width
+    fact sky_body = 0                          // 0 nothing, 1 the sun, 2 the moon
+    fact sky_t = 0.5                           // its way from rising (0, left) to setting (1, right)
+    fact sky_alt = 30                          // degrees above the horizon, which is the surface
+    fact moon_lit = 1
+    fact moon_waxing = true
+    fact rain = 0                              // 0 none, 1 forecast soon, 2 falling now
+    fact snow = false
+    fact weather = 0                           // 0 unknown, then 1 clear … 7 storm, as the words below
+
+    service clock as now { time: text }
+    text user = ""                             // filled with whoever logged in last; can be typed over
+    text password = ""
+    text date = ""
+    text temp = ""
+    text place = ""
+    text ses_name = ""
+    text g_power = ""                          // glyphs of the icon font, put in by the logic
+    text g_go = ""
+    text g_sleep = ""
+    text g_restart = ""
+    text g_session = ""
+    text g_weather = ""
+    model sessions max 6 { name: text }
+    model lines max 14 { t: text }
+    model info max 3 { g: text; v: text; on: bool }
+
+    prop cup.a = 1 ~0ms
+    prop here = 0 ~bouncy                      // the power drop is on stage
+    prop slide = 0 ~flow                       // the row slides to the middle as the plane sinks
+    prop rolled = 0 ~0ms                       // px
+    prop stretch = 0 ~soft                     // the row, to the right (px)
+    prop icon_in = 0 ~0ms
+    prop fields = 0 ~0ms                       // the name and the password
+    prop plane = 0 ~flow                       // 0 the middle of the screen, 1 on the surface
+    prop tide = 0 ~flow                        // 0 the coffee is below the screen, 1 up to its level
+    prop under = 0 ~0ms                        // the text under the surface
+    prop clock_in = 0 ~0ms
+    prop wrong = 0 ~0ms
+    prop shake = 0 ~spring(620, 13)
+    prop gone = 0 ~flow                        // leaving after a login
+    prop power_menu = 0 ~bouncy
+    prop ses = 0 ~bouncy                       // the session chooser has come up
+    prop ses_menu = 0 ~bouncy
+    prop bob = 0 ~flow                         // the small goo are up
+    prop uncover = 0 ~0ms                      // a dry run fades to the desktop underneath
+    follow power_menu = if(power_open and gone < 0.1 and fields > 0.5, 1, 0)
+    follow ses_menu = if(ses_open and ses > 0.6 and gone < 0.1, 1, 0)
+
+    // The opening, in one piece: the cup stands for a moment, the drop leaps (0.7 s), rolls (1.9 s), the row
+    // unfolds (2.9 s) and the plane sinks to the surface (3.5 s), dipping the row under it on the way.
+    on intro {
+        leaped = true; t_leap = time + 0.7; field = 1; focus password
+        clock_in: 1 ~900ms after 700ms; here: 1 ~0ms after 700ms; cup.a: 0 ~520ms after 1080ms
+        rolled: 0 - ROLL ~1000ms after 1900ms; icon_in: 1 ~260ms after 2800ms
+        stretch: EXT after 2900ms; fields: 1 ~420ms after 3160ms
+        slide: 1 after 3500ms; tide: 1 after 3500ms
+        plane: 1.55 ~650ms after 3800ms; plane: 1 ~bouncy after 4450ms
+        fields: 0 ~160ms after 4120ms; fields: 1 ~320ms after 4800ms
+        under: 1 ~900ms after 4400ms; ses: 1 after 5600ms
+    }
+    on rejected { impulse shake 1400; wrong: 1 ~90ms; wrong: 0 ~700ms after 2600ms; field = 1; focus password }
+    on accepted {
+        blur; power_open = false; ses_open = false
+        ses: 0; fields: 0 ~220ms; wrong: 0 ~100ms; under: 0 ~320ms; bob: 0
+        stretch: 0 - ROLL after 200ms; tide: 0 after 260ms; gone: 1 after 520ms
+        clock_in: 0 ~700ms after 900ms; uncover: 1 ~700ms after 1700ms; here: 0 after 2300ms
+    }
+    on again {
+        leaped = false; ses_open = false
+        slide: 0 ~0ms; ses: 0 ~0ms; cup.a: 1 ~0ms; here: 0 ~0ms; rolled: 0 ~0ms; stretch: 0 ~0ms; icon_in: 0 ~0ms
+        fields: 0 ~0ms; plane: 0 ~0ms; tide: 0 ~0ms; under: 0 ~0ms; gone: 0 ~0ms; bob: 0 ~0ms; clock_in: 0 ~0ms
+        uncover: 0 ~0ms
+    }
+    // A minute with nobody there and the small goo come up; the first move or key sends them back.
+    on idle for 60s while fields > 0.5 and gone < 0.1 { bob: 1 }
+    on wake { bob: 0 }
+    on change cursor.x while bob > 0.5 { bob: 0 }
+    on change cursor.y while bob > 0.5 { bob: 0 }
+
+    // ── where everything is ─────────────────────────────────────────────────────────────────────────────────
+    let tide_y = H + 70 - (H + 70 - LEVEL) * tide
+    let plane_y = CY + (REST - CY) * plane                       // past 1 the row is under the surface
+    // The leap: an arc forwards and sideways, then two bounces, all from the seconds since it started.
+    let t = if(leaped, max(0, time - t_leap), 0)
+    let arc = clamp(t / 0.62, 0, 1)
+    let b1 = clamp((t - 0.62) / 0.34, 0, 1)
+    let b2 = clamp((t - 0.96) / 0.22, 0, 1)
+    let hop = 160 * 4 * arc * (1 - arc) + 46 * 4 * b1 * (1 - b1) + 15 * 4 * b2 * (1 - b2)
+    let squash = max(0, 1 - abs(t - 0.62) * 13) + 0.55 * max(0, 1 - abs(t - 0.96) * 15)
+    let zoom = 0.2 + 0.8 * smooth(0, 1, arc)                     // it grows: it comes from far away
+    let bx = CX + 6 + (LAND * (1 - slide) + rolled - 6) * arc + shake
+    let by = CUPY + 72 + (plane_y - CUPY - 72) * arc - hop
+    let gx = bx + (power_x * W - bx) * gone                      // after a login: to the power drop's place on the bar
+    let gy = by + (H - 3 - by) * gone
+    let rr = R * here * zoom * (1 + 0.025 * sin(time * 150))     // it breathes
+    let row_len = (stretch - rolled) * (1 - gone)
+    let text_x = gx + R + 18
+    let goo_y = gy + SINK * clamp(plane, 0, 1) * (1 - gone)
+    let ses_x = gx + row_len + 64                                // the chooser is within reach, right after the row
+    let ses_on = ses * if(sessions.count > 1, 1, 0)              // one session is no choice
+    let ses_y = tide_y + 36 - (36 + ROW + 20) * ses_on
+    let chop = 1 + 0.5 * rain                                    // rain makes the surface restless
+    // The small goo: each sways and hops along the surface at its own pace.
+    let bob_x.0 = CX - 430 + 46 * sin(time * 23)
+    let bob_x.1 = CX - 590 + 40 * sin(time * 19 + 120)
+    let bob_x.2 = CX - 750 + 52 * sin(time * 27 + 240)
+    let bob_up.0 = (54 + 74 * abs(sin(time * 96))) * bob
+    let bob_up.1 = (54 + 58 * abs(sin(time * 78 + 50))) * bob
+    let bob_up.2 = (54 + 88 * abs(sin(time * 110 + 100))) * bob
+
+    box { from: 0, 0; size: W, H; color: espresso; opacity: 1 - uncover * if(keep_backdrop, 0, 1) }
+    image cup = file "/usr/share/plymouth/themes/latteos/watermark.png", 192, 192
+    image cup { at: CUPX, CUPY; size: 192, 192; opacity: cup.a }
+
+    // ── the sky: a faint sun or moon where it really is; it rises out of the coffee and sets into it ────────
+    let sky_x = W * (0.06 + 0.88 * sky_t)
+    let sky_y = LEVEL + 20 - (0.12 + 0.88 * clamp(sky_alt / 62, 0, 1)) * (LEVEL - 110)
+    ellipse { at: sky_x, sky_y; radius: 92; color: amber; opacity: 0.035 * clock_in; show: sky_body == 1 }
+    ellipse { at: sky_x, sky_y; radius: 46; color: amber; opacity: 0.15 * clock_in; show: sky_body == 1 }
+    ellipse { at: sky_x, sky_y; radius: 40; color: cream; opacity: 0.17 * clock_in; show: sky_body == 2 }
+    // The phase is a shadow in the background's colour, pushed in from the dark side.
+    ellipse { at: sky_x + if(moon_waxing, -1, 1) * 82 * moon_lit, sky_y; radius: 41.5; color: espresso; opacity: clock_in; show: sky_body == 2 and moon_lit < 0.97 }
+
+    // ── what falls outside falls here too ───────────────────────────────────────────────────────────────────
+    particles { at: W / 2, -30; area: W + 300, 20; count: 110; life: 0.6s .. 0.8s; speed: 950 .. 1150; direction: 98deg; spread: 3deg
+                size: 2, 2; colors: drizzle, drizzle; opacity: 34%, 22%; shape: spark; emit: rain == 1 and not snow and clock_in > 0.5 and gone < 0.1 }
+    particles { at: W / 2, -30; area: W + 300, 20; count: 420; life: 0.6s .. 0.8s; speed: 950 .. 1150; direction: 98deg; spread: 3deg
+                size: 2, 2; colors: drizzle, drizzle; opacity: 40%, 24%; shape: spark; emit: rain == 2 and not snow and clock_in > 0.5 and gone < 0.1 }
+    particles { at: W / 2, -20; area: W + 200, 20; count: 220; life: 5s .. 8s; speed: 70 .. 120; direction: 96deg; spread: 26deg
+                size: 4, 3; colors: cream, cream; opacity: 55%, 30%; shape: dot; emit: rain > 0 and snow and clock_in > 0.5 and gone < 0.1 }
+
+    // ── the time, top right, and the weather opposite it in the same hand ───────────────────────────────────
+    text now.time { at: W - 72, 104; anchor: right center; size: 108; weight: 300; color: cream; opacity: clock_in; family: "Inter" }
+    text date { at: W - 76, 182; anchor: right center; size: 21; color: cream; opacity: clock_in * 0.66; family: "Inter" }
+    text temp { at: 72, 104; anchor: left center; size: 108; weight: 300; color: cream; opacity: clock_in; family: "Inter" }
+    text g_weather { at: 88, 182; anchor: center; size: 22; color: cream; opacity: clock_in * 0.66; show: weather > 0; family: "tabler-icons" }
+    text pick(weather, "", "Clear{? · {place}}", "Partly cloudy{? · {place}}", "Overcast{? · {place}}", "Fog{? · {place}}", "Rain{? · {place}}", "Snow{? · {place}}", "Storm{? · {place}}") {
+        at: 112, 182; anchor: left center; size: 21; color: cream; opacity: clock_in * 0.66; show: weather > 0; family: "Inter" }
+
+    // ── one body of goo: the coffee, the row, the power drop, its menu, the chooser and the small goo ───────
+    body {
+        gradient: radial cursor.x, cursor.y radius 360, mix(coffee, cream, 0.16), coffee
+        rim: 28%
+        shadow: 0, 2, 2, 28%
+        box { from: -80, tide_y; size: W + 160, H }
+        // The swell: flat humps that drift and rise slowly.
+        ellipse { at: W * 0.07 + 72 * sin(time * 13), tide_y + 31 + 11 * chop * sin(time * 38); radius: 120; scale: 2.6, 0.24; blend: 34 }
+        ellipse { at: W * 0.22 + 64 * sin(time * 17 + 60), tide_y + 31 + 10 * chop * sin(time * 31 + 110); radius: 120; scale: 2.2, 0.24; blend: 34 }
+        ellipse { at: W * 0.38 + 78 * sin(time * 11 + 200), tide_y + 31 + 11 * chop * sin(time * 43 + 30); radius: 120; scale: 2.8, 0.24; blend: 34 }
+        ellipse { at: W * 0.55 + 66 * sin(time * 15 + 140), tide_y + 31 + 10 * chop * sin(time * 35 + 250); radius: 120; scale: 2.4, 0.24; blend: 34 }
+        ellipse { at: W * 0.71 + 74 * sin(time * 12 + 300), tide_y + 31 + 11 * chop * sin(time * 40 + 170); radius: 120; scale: 2.6, 0.24; blend: 34 }
+        ellipse { at: W * 0.86 + 62 * sin(time * 18 + 20), tide_y + 31 + 10 * chop * sin(time * 33 + 310); radius: 120; scale: 2.2, 0.24; blend: 34 }
+        ellipse { at: W * 0.97 + 70 * sin(time * 14 + 250), tide_y + 31 + 11 * chop * sin(time * 37 + 80); radius: 120; scale: 2.4, 0.24; blend: 34 }
+        // The row is the trail the drop leaves as it rolls away.
+        line { from: gx, gy; to: gx + row_len, gy; width: 2 * ROW * here * clamp(row_len / 40, 0, 1); blend: 12 }
+        ellipse { at: gx, goo_y + rr * 0.2 * squash; radius: rr; scale: 1 + 0.2 * squash, 1 - 0.2 * squash; blend: 26 }
+        // The session chooser and its choices, one capsule above another. A body takes no loops.
+        line { from: ses_x, ses_y; to: ses_x + SES, ses_y; width: 38 * ses_on; blend: 9 }
+        line { from: ses_x, ses_y - 44 * ses_menu; to: ses_x + SES, ses_y - 44 * ses_menu; width: 34 * ses_menu * if(sessions.count > 0, 1, 0); blend: 14 }
+        line { from: ses_x, ses_y - 88 * ses_menu; to: ses_x + SES, ses_y - 88 * ses_menu; width: 34 * ses_menu * if(sessions.count > 1, 1, 0); blend: 14 }
+        line { from: ses_x, ses_y - 132 * ses_menu; to: ses_x + SES, ses_y - 132 * ses_menu; width: 34 * ses_menu * if(sessions.count > 2, 1, 0); blend: 14 }
+        line { from: ses_x, ses_y - 176 * ses_menu; to: ses_x + SES, ses_y - 176 * ses_menu; width: 34 * ses_menu * if(sessions.count > 3, 1, 0); blend: 14 }
+        line { from: ses_x, ses_y - 220 * ses_menu; to: ses_x + SES, ses_y - 220 * ses_menu; width: 34 * ses_menu * if(sessions.count > 4, 1, 0); blend: 14 }
+        line { from: ses_x, ses_y - 264 * ses_menu; to: ses_x + SES, ses_y - 264 * ses_menu; width: 34 * ses_menu * if(sessions.count > 5, 1, 0); blend: 14 }
+        // The power menu: three droplets bud from the power drop.
+        ellipse { at: gx - 76 * power_menu, goo_y - 66 * power_menu; radius: 21 * power_menu; blend: 18 }
+        ellipse { at: gx, goo_y - 98 * power_menu; radius: 21 * power_menu; blend: 18 }
+        ellipse { at: gx + 76 * power_menu, goo_y - 66 * power_menu; radius: 21 * power_menu; blend: 18 }
+        ellipse { at: bob_x.0, tide_y + 30 - bob_up.0; radius: 25 * bob * if(info.0.on, 1, 0); blend: 24 }
+        ellipse { at: bob_x.1, tide_y + 30 - bob_up.1; radius: 25 * bob * if(info.1.on, 1, 0); blend: 24 }
+        ellipse { at: bob_x.2, tide_y + 30 - bob_up.2; radius: 25 * bob * if(info.2.on, 1, 0); blend: 24 }
+    }
+
+    // ── the power drop: a glint turns in it while it rolls, then the power icon ─────────────────────────────
+    ellipse { at: gx + cos(rolled * 1.9 - 50) * R * 0.46, goo_y + sin(rolled * 1.9 - 50) * R * 0.46; radius: 5; color: mix(coffee, cream, 0.4); opacity: here * (1 - icon_in) * arc }
+    text g_power { at: gx, goo_y; anchor: center; size: 31; color: cream; opacity: icon_in; family: "tabler-icons" }
+    zone ellipse z_power { at: gx, goo_y; radius: R + 2; cursor: pointer; label: "Power"; active: fields > 0.5 and gone < 0.1 }
+    on press z_power { toggle power_open }
+
+    text g_sleep { at: gx - 76 * power_menu, goo_y - 66 * power_menu; anchor: center; size: 19; color: cream; opacity: power_menu; family: "tabler-icons" }
+    text g_restart { at: gx, goo_y - 98 * power_menu; anchor: center; size: 19; color: cream; opacity: power_menu; family: "tabler-icons" }
+    text g_power { at: gx + 76 * power_menu, goo_y - 66 * power_menu; anchor: center; size: 19; color: alert; opacity: power_menu; family: "tabler-icons" }
+    text "Sleep" { at: gx - 76, goo_y - 102; anchor: center; size: 11.5; color: cream; opacity: power_menu * 0.7; family: "Inter" }
+    text "Restart" { at: gx, goo_y - 134; anchor: center; size: 11.5; color: cream; opacity: power_menu * 0.7; family: "Inter" }
+    text "Shut down" { at: gx + 76, goo_y - 102; anchor: center; size: 11.5; color: cream; opacity: power_menu * 0.7; family: "Inter" }
+    zone ellipse z_sleep { at: gx - 76, goo_y - 66; radius: 23; cursor: pointer; label: "Sleep"; active: power_open and power_menu > 0.6 }
+    zone ellipse z_restart { at: gx, goo_y - 98; radius: 23; cursor: pointer; label: "Restart"; active: power_open and power_menu > 0.6 }
+    zone ellipse z_off { at: gx + 76, goo_y - 66; radius: 23; cursor: pointer; label: "Shut down"; agent: no; active: power_open and power_menu > 0.6 }
+    on press z_sleep { power_open = false; emit machine(0) }
+    on press z_restart { power_open = false; emit machine(1) }
+    on press z_off { power_open = false; emit machine(2) }
+    on key Escape while power_open { power_open = false }
+
+    // ── the row: name · password · go ───────────────────────────────────────────────────────────────────────
+    input user { at: text_x, gy - 11; width: 150; size: 16; weight: 600; color: cream; selection: #5a463a; placeholder: "Name"; opacity: fields; show: fields > 0.05; family: "Inter" }
+    box { at: text_x + 160, gy; size: 1.2, 22; color: cream; opacity: fields * 0.28 }
+    input password { at: text_x + 174, gy - 11; width: 180; size: 16; color: cream; selection: #5a463a; placeholder: "Password"; secret: true; opacity: fields; show: fields > 0.05; family: "Inter" }
+    ellipse { at: gx + row_len - 2, gy; radius: 16; color: mix(coffee, cream, if(checking, 0.5, 0.24)); opacity: fields }
+    text g_go { at: gx + row_len - 2, gy; anchor: center; size: 17; color: cream; opacity: fields; family: "tabler-icons" }
+    zone box z_user { at: text_x + 76, gy; size: 164, 2 * ROW; cursor: text; active: fields > 0.5 and gone < 0.1 }
+    zone box z_password { at: text_x + 264, gy; size: 204, 2 * ROW; cursor: text; active: fields > 0.5 and gone < 0.1 }
+    zone ellipse z_go { at: gx + row_len - 2, gy; radius: 18; cursor: pointer; label: "Log in"; active: fields > 0.5 and gone < 0.1 }
+    on press z_user { field = 0; focus user }
+    on press z_password { field = 1; focus password }
+    on submit user { field = 1; focus password }
+    on key Tab while field == 0 and fields > 0.5 { field = 1; focus password }
+    on key Tab while field == 1 and fields > 0.5 { field = 0; focus user }
+    on press z_go { emit login }
+    on submit password { emit login }
+    text "Wrong password" { at: text_x, gy - 44; anchor: left center; size: 13.5; color: alert; opacity: wrong; family: "Inter" }
+    text "Checking…" { at: text_x, gy - 44; anchor: left center; size: 13.5; color: cream; opacity: fields * 0.6; show: checking; family: "Inter" }
+
+    // ── the session chooser: the one chosen; a press opens the choices above it ─────────────────────────────
+    text g_session { at: ses_x + 2, ses_y; anchor: center; size: 17; color: cream; opacity: ses_on * (1 - gone); family: "tabler-icons" }
+    text ses_name { at: ses_x + 22, ses_y; anchor: left center; width: SES - 24; lines: 1; size: 13.5; weight: 600; color: cream; opacity: ses_on * (1 - gone); family: "Inter" }
+    zone box z_session { at: ses_x + SES / 2, ses_y; size: SES + 40, 40; cursor: pointer; label: "Session"; active: ses_on > 0.6 and gone < 0.1 }
+    on press z_session { toggle ses_open }
+    on key Escape while ses_open { ses_open = false }
+    repeat i in 0..6 {
+        text sessions.$i.name { at: ses_x + 4, ses_y - 44 * (i + 1) * ses_menu; anchor: left center; width: SES - 6; lines: 1; size: 13.5; color: if(i == ses_sel, amber, cream); opacity: ses_menu; show: i < sessions.count; family: "Inter" }
+        zone box z_choice.$i { at: ses_x + SES / 2, ses_y - 44 * (i + 1); size: SES + 36, 40; cursor: pointer; active: ses_open and ses_menu > 0.6 and i < sessions.count }
+        on press z_choice.$i { ses_sel = i; ses_open = false; emit session(i) }
+    }
+
+    // ── under the surface: the last crash, or the news ──────────────────────────────────────────────────────
+    let under_x = CX - ROLL - R
+    text pick(panel, "", "Last crash", "News") { at: under_x, tide_y + 66; anchor: left center; size: 21; weight: 600; color: cream; opacity: under * 0.92; show: panel > 0; family: "Inter" }
+    repeat i in 0..14 {
+        text lines.$i.t { at: under_x, tide_y + 106 + i * 21; anchor: left center; width: 900; lines: 1; size: 13.5; color: cream; opacity: under * 0.6; show: panel == 1 and i < lines.count and 122 + i * 21 < H - LEVEL; family: "JetBrains Mono" }
+        text lines.$i.t { at: under_x, tide_y + 112 + i * 30; anchor: left center; width: 900; lines: 1; size: 16; color: cream; opacity: under * 0.72; show: panel == 2 and i < lines.count and 132 + i * 30 < H - LEVEL; family: "Inter" }
+    }
+
+    // ── the small goo: an icon and a number each; they tell, they do not take a press ───────────────────────
+    repeat i in 0..3 {
+        text info.$i.g { at: bob_x.$i, tide_y + 22 - bob_up.$i; anchor: center; size: 17; color: cream; opacity: bob; show: info.$i.on; family: "tabler-icons" }
+        text info.$i.v { at: bob_x.$i, tide_y + 40 - bob_up.$i; anchor: center; size: 11.5; weight: 600; color: cream; opacity: bob; show: info.$i.on; family: "Inter" }
+    }
+}

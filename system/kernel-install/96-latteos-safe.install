@@ -1,0 +1,30 @@
+#!/usr/bin/bash
+# kernel-install plugin: gives every kernel two more boot entries (BLS).
+#   "LatteOS SAFE"                        latte.mode=safe
+#   "LatteOS SAFE — no graphics driver"   latte.mode=safe nomodeset   (simpledrm, the last resort)
+# By hand: 96-latteos-safe.install add <version>
+COMMAND="$1"
+KERNEL_VERSION="$2"
+dir=/boot/loader/entries
+mid="$(cat /etc/machine-id 2>/dev/null)"
+src="$dir/$mid-$KERNEL_VERSION.conf"
+
+case "$COMMAND" in
+add)
+    [ -f "$src" ] || { echo "latteos-safe: no $src, skipping" >&2; exit 0; }
+    entry() { # suffix title-suffix extra-options
+        # A version ending in "~…" sorts right under its kernel in GRUB; the default entry stays what it was.
+        sed -e "s|^title .*|title LatteOS SAFE$2 ($KERNEL_VERSION)|" \
+            -e "s|^version .*|version $KERNEL_VERSION~latte$1|" \
+            -e "s|^options \(.*\)|options \1 latte.mode=safe$3|" \
+            -e 's|  *| |g' \
+            "$src" > "$dir/$mid-$KERNEL_VERSION-latte$1.conf"
+    }
+    entry safe "" ""
+    entry safe-nomodeset " — no graphics driver" " nomodeset"
+    ;;
+remove)
+    rm -f "$dir/$mid-$KERNEL_VERSION-lattesafe.conf" "$dir/$mid-$KERNEL_VERSION-lattesafe-nomodeset.conf"
+    ;;
+esac
+exit 0

@@ -1,0 +1,10 @@
+[package]
+name = "latte-boot"
+description = "LatteOS boot: picks the NORMAL or SAFE mode and counts session crashes"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+
+[dependencies]
+latte-hw = { path = "../latte-hw" }

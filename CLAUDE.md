@@ -7,7 +7,7 @@ má ~25 tis. tokenov. Tento súbor sa nezverejňuje (`old/setup/verejne/vynechat
 
 Vetva `v0.4-fresh` (od 12. 10. 2026): celý strom v0.3 je v `old/` — predloha, nemení sa a nekopíruje sa z nej. Nový kód sa
 píše načisto podľa pravidiel v `ROADMAP.md` („Teraz“, bod 2) a so skillom `pleamar`; každý súbor, ktorý LatteOS pridá
-do systému, sa zapíše do `FILES`.
+do systému, sa zapíše do `FILES`. Pred commitom spustiť `tests/check.sh` (Rust, príkazy, scény, FILES, angličtina v kóde).
 
 ## latte-lab = testovací počítač
 

@@ -1,0 +1,257 @@
+#!/usr/bin/env python3
+"""latte-login: what the login scene (goo/login.plm) asks of the system.
+
+  latte-login data
+        everything the scene shows, as one JSON object
+  latte-login hint USER
+        where USER keeps the power drop on the bar (0…1), or nothing
+  latte-login auth USER SESSION -- COMMAND…
+        checks the password and prepares the user's session through greetd;
+        prints {"ok": true} or {"ok": false, "error": "…"}
+  latte-login done
+        ends the login compositor: greetd starts the prepared session once the login screen is gone
+
+The password comes on standard input, never as an argument: every user can read those in /proc.
+"""
+import glob, itertools, json, os, pwd, re, socket, struct, subprocess, sys, time
+
+STATE = "/var/lib/latteos/login"          # the latte group writes it, the login screen reads it
+GREETD = "/var/lib/greetd"                # the login screen's own home
+SESSIONS = "/usr/share/wayland-sessions"
+HOME = os.path.expanduser("~")
+CACHE = os.path.join(os.environ.get("XDG_CACHE_HOME") or HOME + "/.cache", "latteos")
+# water and milk for each coffee, 0…1: what the goo is coloured with
+COFFEES = {"espresso": (0, 0), "ristretto": (0, 0), "lungo": (0.35, 0), "americano": (0.7, 0), "macchiato": (0, 0.25),
+           "cortado": (0, 0.4), "flatwhite": (0.05, 0.5), "cappuccino": (0, 0.55), "latte": (0, 0.85),
+           "white-coffee": (0.4, 0.3)}
+
+
+def read(path, default=""):
+    try:
+        return open(path, encoding="utf-8", errors="replace").read()
+    except OSError:
+        return default
+
+
+def read_json(path):
+    try:
+        d = json.load(open(path))
+        return d if isinstance(d, dict) else {}
+    except (OSError, ValueError):
+        return {}
+
+
+def conf():
+    return dict(re.findall(r'^\s*(\w+)\s*=\s*"?(.*?)"?\s*$', read(os.path.join(STATE, "login.conf")), re.M))
+
+
+def who():
+    """As the login screen: whoever logged in last, else the first regular account. In a session: its user."""
+    user = os.environ.get("USER") or pwd.getpwuid(os.getuid()).pw_name
+    if os.getuid() >= 1000:
+        return user
+    last = read(os.path.join(GREETD, "latte-last-user")).strip()
+    try:
+        if last and pwd.getpwnam(last).pw_uid >= 1000:
+            return last
+    except KeyError:
+        pass
+    return next((u.pw_name for u in pwd.getpwall() if 1000 <= u.pw_uid < 60000 and "nologin" not in u.pw_shell), user)
+
+
+def crash_lines(width=108, most=14):
+    """The last crash, but only one from this boot (or one the crash count still remembers)."""
+    log = os.path.join(STATE, "last-crash.log")
+    try:
+        booted = time.time() - float(read("/proc/uptime", "0").split()[0])
+        crashes = int((read("/var/lib/latteos/crash-count").split() or ["0"])[0])
+        if os.path.getmtime(log) < booted and crashes == 0:
+            return []
+    except (OSError, ValueError):
+        return []
+    lines = []
+    for line in read(log).splitlines():
+        line = line.rstrip()
+        while len(line) > width:
+            lines.append(line[:width])
+            line = "  " + line[width:]
+        lines.append(line)
+    return [l for i, l in enumerate(lines) if l.strip() or 0 < i < len(lines) - 1][:most]
+
+
+def headlines(urls, most=8):
+    """Titles from RSS or Atom feeds, taken in turns. Fetched at most every 15 minutes."""
+    cache = os.path.join(CACHE, "login-news.json")
+    try:
+        if time.time() - os.path.getmtime(cache) < 15 * 60:
+            c = read_json(cache)
+            if c.get("url") == urls:
+                return c.get("lines", [])
+    except OSError:
+        pass
+    import urllib.request, xml.etree.ElementTree as ET
+    feeds = []
+    for url in [u for u in re.split(r"[\s,;]+", urls) if u][:4]:
+        try:
+            req = urllib.request.Request(url, headers={"User-Agent": "LatteOS"})
+            root = ET.fromstring(urllib.request.urlopen(req, timeout=4).read())
+        except Exception:               # no network, a broken feed: the login works without news
+            continue
+        titles = []
+        for item in list(root.iter("item")) or [e for e in root.iter() if e.tag.endswith("}entry")]:
+            t = next((c.text for c in item if c.tag.split("}")[-1] == "title" and c.text), "")
+            if t.strip():
+                titles.append(" ".join(t.split()))
+            if len(titles) >= most:
+                break
+        feeds.append(titles)
+    lines = [t for turn in itertools.zip_longest(*feeds) for t in turn if t][:most]
+    try:
+        os.makedirs(CACHE, exist_ok=True)
+        json.dump({"url": urls, "lines": lines}, open(cache, "w"))
+    except OSError:
+        pass
+    return lines
+
+
+def battery():
+    for b in sorted(glob.glob("/sys/class/power_supply/BAT*")):
+        try:
+            pct = int(read(b + "/capacity"))
+        except ValueError:
+            continue
+        charging = read(b + "/status").strip() == "Charging"
+        return [{"icon": "battery-charging" if charging else "battery-%d" % min(4, max(1, round(pct / 25))), "text": "%d %%" % pct}]
+    return []
+
+
+def sessions(lang):
+    """The LatteOS sessions offered at login; other desktops installed beside it are not LatteOS's to start."""
+    found = []
+    for f in sorted(glob.glob(os.path.join(SESSIONS, "latteos*.desktop"))):
+        kv = {}
+        for line in read(f).splitlines():
+            k, _, v = line.strip().partition("=")
+            kv.setdefault(k, v)
+        if "true" in (kv.get("Hidden", "").lower(), kv.get("NoDisplay", "").lower()):
+            continue
+        name = kv.get("Name[%s]" % lang) or kv.get("Name[%s]" % lang.split("_")[0]) or kv.get("Name") or os.path.basename(f)[:-8]
+        cmd = [x for x in kv.get("Exec", "").split() if not re.fullmatch(r"%[a-zA-Z]", x)]
+        if cmd:
+            found.append({"file": os.path.basename(f)[:-8], "name": name, "cmd": cmd})
+    found.sort(key=lambda s: (s["file"] != "latteos", s["name"]))       # the full session first
+    return found
+
+
+def hint(user):
+    """What the session left for the login screen about this account: {"power_x": 0…1, "coffee": name}."""
+    return read_json(os.path.join(STATE, "user-%s.json" % user)) if re.fullmatch(r"[A-Za-z0-9._-]{1,64}", user) else {}
+
+
+def data():
+    user, c = who(), conf()
+    h = hint(user)
+    coffee = h.get("coffee") or (re.findall(r"[\w-]+", read(os.path.join(HOME, ".config/latteos/coffee"))) or [""])[0]
+    lines, panel = crash_lines(), "crash"
+    if not lines:
+        lines, panel = (headlines(c["news_url"]), "news") if c.get("news_url") and c.get("panel", "news") != "none" else ([], "")
+    try:
+        sky = json.loads(subprocess.run(["latte-sky"], capture_output=True, text=True, timeout=12).stdout)
+    except (OSError, ValueError, subprocess.TimeoutExpired):
+        sky = {}
+    lang = (os.environ.get("LC_ALL") or os.environ.get("LC_MESSAGES") or os.environ.get("LANG") or "").split(".")[0]
+    all_sessions = sessions(lang)
+    last = read(os.path.join(GREETD, "latte-last-session")).strip()
+    return {"user": user, "coffee": list(COFFEES.get(coffee, (0.55, 0))), "panel": panel if lines else "", "lines": lines,
+            "info": battery(), "power_x": h.get("power_x"), "sessions": all_sessions[:6],
+            "session": next((i for i, s in enumerate(all_sessions[:6]) if s["file"] == last), 0), "sky": sky}
+
+
+class Greetd:
+    """greetd's protocol: 4 bytes of length and JSON, on the socket in $GREETD_SOCK."""
+
+    def __init__(self):
+        self.s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+        self.s.settimeout(30)
+        self.s.connect(os.environ["GREETD_SOCK"])
+
+    def ask(self, **msg):
+        raw = json.dumps(msg).encode()
+        self.s.sendall(struct.pack("=I", len(raw)) + raw)
+        n = struct.unpack("=I", self._read(4))[0]
+        return json.loads(self._read(n))
+
+    def _read(self, n):
+        buf = b""
+        while len(buf) < n:
+            part = self.s.recv(n - len(buf))
+            if not part:
+                raise OSError("greetd closed the connection")
+            buf += part
+        return buf
+
+
+def auth(user, session, cmd):
+    password = sys.stdin.readline().rstrip("\n")
+
+    def out(error=""):
+        print(json.dumps({"ok": not error, "error": error}))
+        return 1 if error else 0
+
+    if "GREETD_SOCK" not in os.environ:
+        return out("greetd")
+    try:
+        g = Greetd()
+        r = g.ask(type="create_session", username=user)
+        for _ in range(4):                      # PAM may ask more than once; only a secret question gets the password
+            if r.get("type") != "auth_message":
+                break
+            r = g.ask(type="post_auth_message_response", response=password if r.get("auth_message_type") == "secret" else None)
+        if r.get("type") != "success":
+            try:
+                g.ask(type="cancel_session")
+            except OSError:
+                pass
+            return out("auth" if r.get("error_type") == "auth_error" else str(r.get("description") or "greetd"))
+        # The session learns it follows the login animation, so the power drop can land where the login one left.
+        r = g.ask(type="start_session", cmd=cmd, env=["LATTE_FROM_LOGIN=1"])
+        if r.get("type") != "success":
+            return out(str(r.get("description") or "start"))
+    except (OSError, ValueError, struct.error) as e:
+        return out("greetd: %s" % e)
+    for name, value in (("latte-last-user", user), ("latte-last-session", session)):
+        try:
+            if value:
+                open(os.path.join(GREETD, name), "w").write(value + "\n")
+        except OSError:
+            pass
+    return out()
+
+
+def done():
+    try:
+        open(os.path.join(os.environ["LATTE_LOGIN_RUN"], "done"), "w").close()   # latte-greeter: a login, not a crash
+    except (KeyError, OSError):
+        pass
+    subprocess.run(["labwc", "--exit"], check=False)
+    return 0
+
+
+def main(a):
+    if a == ["data"]:
+        print(json.dumps(data(), ensure_ascii=False))
+        return 0
+    if len(a) == 2 and a[0] == "hint":
+        x = hint(a[1]).get("power_x")
+        print(x if isinstance(x, (int, float)) else "")
+        return 0
+    if len(a) >= 5 and a[0] == "auth" and a[3] == "--":
+        return auth(a[1], a[2], a[4:])
+    if a == ["done"]:
+        return done()
+    print(__doc__.strip(), file=sys.stderr)
+    return 2
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))

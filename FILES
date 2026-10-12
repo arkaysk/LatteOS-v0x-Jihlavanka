@@ -1,0 +1,64 @@
+# FILES: everything LatteOS puts on a system, so that it can be installed and taken off again.
+#
+# One line a file:   target <- source     The source is a path in this repository, or
+#   build:NAME       the program cargo builds from crates/NAME
+#   system:PATH      a file the system already has, copied
+# tests/check.sh fails when a source is missing here or a file meant for the system is not listed.
+
+[files]
+/usr/bin/latte-boot                                     <- build:latte-boot
+/usr/bin/latte-greeter                                  <- bin/latte-greeter
+/usr/bin/latte-login                                    <- bin/latte-login
+/usr/bin/latte-sky                                      <- bin/latte-sky
+/usr/share/latteos/FILES                                <- FILES
+/usr/share/latteos/goo/login.plm                        <- goo/login.plm
+/usr/share/latteos/goo/login.luau                       <- goo/login.luau
+/usr/share/latteos/goo/lib/icons.luau                   <- goo/lib/icons.luau
+/usr/share/latteos/goo/lang/sk.plm                      <- goo/lang/sk.plm
+/usr/share/latteos/greeter/labwc/rc.xml                 <- system/greeter/labwc/rc.xml
+/usr/share/fonts/latteos/tabler-icons.ttf               <- assets/fonts/tabler-icons.ttf
+/usr/share/licenses/latteos/LICENSE-tabler-icons.txt    <- assets/fonts/LICENSE-tabler-icons.txt
+/usr/share/plymouth/themes/latteos/latteos.plymouth     <- system/plymouth/latteos.plymouth
+/usr/share/plymouth/themes/latteos/watermark.png        <- system/plymouth/watermark.png
+/usr/share/plymouth/themes/latteos/                     <- system:/usr/share/plymouth/themes/spinner/*.png
+/usr/lib/systemd/system/latte-boot.service              <- system/systemd/latte-boot.service
+/usr/lib/tmpfiles.d/latteos.conf                        <- system/systemd/latteos.tmpfiles
+/etc/latteos/boot.toml                                  <- system/boot.toml
+/etc/kernel/install.d/96-latteos-safe.install           <- system/kernel-install/96-latteos-safe.install
+
+# These exist before LatteOS: the original is kept beside the file as *.pre-latteos and put back on removal.
+[replaces]
+/etc/greetd/config.toml                                 <- system/greetd/config.toml
+
+# Copied only when missing; from then on they are the user's settings and stay unless asked otherwise.
+[seeds]
+/var/lib/latteos/login/login.conf                       <- system/login.conf
+
+# Made while LatteOS runs; they go with it.
+[state]
+/run/latteos/
+/var/lib/latteos/
+/var/lib/greetd/latte-last-user
+/var/lib/greetd/latte-last-session
+/boot/loader/entries/*-lattesafe.conf
+/boot/loader/entries/*-lattesafe-nomodeset.conf
+
+# Not in this repository's power to ship: Fedora packages, and programs built from someone else's source.
+[needs]
+package: greetd labwc tuigreet plymouth plymouth-plugin-two-step plymouth-theme-spinner egl-utils python3
+package: rsms-inter-fonts jetbrains-mono-fonts policycoreutils-python-utils util-linux-core
+/usr/bin/pleamar: pleamar 0.2.29 or newer (github.com/k4ditano/pleamar) with the patches in old/resources/patches
+
+# What an installer does once the files are in place; removal undoes each line.
+[steps]
+groupadd -f latte, and every user of the desktop joins it (usermod -aG latte USER)
+systemd-tmpfiles --create /usr/lib/tmpfiles.d/latteos.conf
+semanage fcontext -a -t xdm_var_run_t '/run/latteos(/.*)?'          # the login screen runs as xdm_t and may read only its own labels
+semanage fcontext -a -t xdm_var_lib_t '/var/lib/latteos/login(/.*)?'
+restorecon -R /run/latteos /var/lib/latteos/login
+fc-cache /usr/share/fonts/latteos
+plymouth-set-default-theme latteos -R                               # rebuilds the initramfs
+/etc/kernel/install.d/96-latteos-safe.install add VERSION           # for every kernel already installed
+systemctl enable latte-boot.service greetd.service
+systemctl disable NetworkManager-wait-online.service                # it held the login screen back for a minute
+systemctl set-default graphical.target

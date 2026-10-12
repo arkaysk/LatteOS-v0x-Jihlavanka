@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+# latte-greeter: the login screen greetd starts (its default_session).
+# The Goo login is a pleamar scene inside labwc and needs a working graphics card; everything else gets the
+# text login, which works on anything.
+set -u
+share=/usr/share/latteos
+
+# greetd hands over no locale and no keyboard layout: both come from the system's own settings.
+[ -z "${LANG:-}" ] && [ -r /etc/locale.conf ] && { set -a; . /etc/locale.conf; set +a; }
+xkb() { sed -n "s/.*Option *\"$1\" *\"\([^\"]*\)\".*/\1/p" /etc/X11/xorg.conf.d/00-keyboard.conf 2>/dev/null | head -1; }
+export XKB_DEFAULT_LAYOUT="$(xkb XkbLayout)" XKB_DEFAULT_VARIANT="$(xkb XkbVariant)" XKB_DEFAULT_OPTIONS="$(xkb XkbOptions)"
+# Two layouts and no way to switch would lock out whoever has the password in the second one.
+case "$XKB_DEFAULT_LAYOUT" in *,*) : "${XKB_DEFAULT_OPTIONS:=grp:alt_shift_toggle}" ;; esac
+
+LATTE_MODE=safe LATTE_RENDERER=pixman
+[ -r /run/latteos/session.env ] && { set -a; . /run/latteos/session.env; set +a; }
+
+text_login() {
+    exec tuigreet --time --remember --remember-session --sessions /usr/share/wayland-sessions \
+        --greeting "LatteOS (${LATTE_MODE^^})"
+}
+
+# After `systemctl restart greetd` the previous login screen is still alive; only this one counts.
+pkill -u "$(id -u)" -x pleamar 2>/dev/null
+pkill -u "$(id -u)" -x labwc 2>/dev/null
+
+# ponytail: SAFE and software rendering get the text login; a static login scene belongs to the SAFE work.
+[ "$LATTE_MODE" = normal ] && [ "$LATTE_RENDERER" = hw ] && [ -n "${XDG_RUNTIME_DIR:-}" ] \
+    && [ -f "$share/goo/login.plm" ] && command -v pleamar >/dev/null && command -v labwc >/dev/null || text_login
+
+export LATTE_LOGIN=greetd LATTE_LOGIN_RUN="$XDG_RUNTIME_DIR/latte-login"
+export XDG_CURRENT_DESKTOP=labwc:wlroots LIBSEAT_BACKEND=logind
+rm -rf "$LATTE_LOGIN_RUN"; mkdir -p -m 700 "$LATTE_LOGIN_RUN"
+labwc -C "$share/greeter/labwc" \
+    -s "sh -c 'cd $share/goo && pleamar --scene login.plm --no-hud > \"$LATTE_LOGIN_RUN/login.log\" 2>&1; labwc --exit'"
+# `latte-login done` leaves this mark: greetd starts the user's session once this script ends.
+[ -e "$LATTE_LOGIN_RUN/done" ] && exit 0
+logger -t latte-greeter "the Goo login ended without a login; falling back to the text login"
+text_login

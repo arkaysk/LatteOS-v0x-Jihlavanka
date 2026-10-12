@@ -1,0 +1,27 @@
+// Slovak for every scene in goo/: one table, so a text is translated once however many scenes show it.
+// A scene imports this file; what it does not show is simply not used.
+library Slovak {
+    translations sk {
+        "Name" = "Meno"
+        "Password" = "Heslo"
+        "Wrong password" = "Nesprávne heslo"
+        "Checking…" = "Overujem…"
+        "Log in" = "Prihlásiť"
+        "Power" = "Napájanie"
+        "Session" = "Relácia"
+        "Last crash" = "Posledný pád"
+        "News" = "Novinky"
+        "Sleep" = "Uspať"
+        "Restart" = "Reštartovať"
+        "Shut down" = "Vypnúť"
+        // the date under the clock, as date(1) formats it
+        "%A, %-d %B" = "%A %-d. %B"
+        "Clear{? · {place}}" = "Jasno{? · {place}}"
+        "Partly cloudy{? · {place}}" = "Polojasno{? · {place}}"
+        "Overcast{? · {place}}" = "Zamračené{? · {place}}"
+        "Fog{? · {place}}" = "Hmla{? · {place}}"
+        "Rain{? · {place}}" = "Dážď{? · {place}}"
+        "Snow{? · {place}}" = "Sneh{? · {place}}"
+        "Storm{? · {place}}" = "Búrka{? · {place}}"
+    }
+}
