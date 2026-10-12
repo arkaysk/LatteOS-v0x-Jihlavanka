@@ -1,6 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16">
-  <!-- LatteOS: AI (dve iskry). Symbolická ikona, farbu jej dáva téma. -->
-  <path fill="#bebebe" d="M6.5 1.5c.3 2.9 1.6 4.2 4.5 4.5-2.9.3-4.2 1.6-4.5 4.5C6.2 7.6 4.9 6.3 2 6c2.9-.3 4.2-1.6 4.5-4.5z"/>
-  <path fill="#bebebe" d="M12 9.5c.2 1.6.9 2.3 2.5 2.5-1.6.2-2.3.9-2.5 2.5-.2-1.6-.9-2.3-2.5-2.5 1.6-.2 2.3-.9 2.5-2.5z"/>
-</svg>

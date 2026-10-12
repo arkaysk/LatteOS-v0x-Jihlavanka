@@ -3,7 +3,11 @@
 Odpovedať po slovensky. Pred prácou na Goo čítať `LATTEOS-GOO.md`, rozhodnutia zapisovať do `docs/goo/ROZHODNUTIA.md`,
 plán je v `ROADMAP.md`:
 čítať iba jeho sekciu **„Teraz — poradie práce“** (ide sa zhora, neskáče sa), zvyšok hľadať cez grep podľa prúdu — celý súbor
-má ~25 tis. tokenov. Tento súbor sa nezverejňuje (`setup/verejne/vynechat.txt`).
+má ~25 tis. tokenov. Tento súbor sa nezverejňuje (`old/setup/verejne/vynechat.txt`).
+
+Vetva `v0.4-fresh` (od 12. 10. 2026): celý strom v0.3 je v `old/` — predloha, nemení sa a nekopíruje sa z nej. Nový kód sa
+píše načisto podľa pravidiel v `ROADMAP.md` („Teraz“, bod 2) a so skillom `pleamar`; každý súbor, ktorý LatteOS pridá
+do systému, sa zapíše do `FILES`.
 
 ## latte-lab = testovací počítač
 

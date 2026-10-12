@@ -1,32 +1,8 @@
-#!/bin/sh
-# Odovzdá prostredie systemd a spustí reláciu. Komponenty (latte-shell, ...)
-# bežia ako user služby pod latte-session.target; ak spadnú, systemd ich
-# reštartuje. Zoznam premenných musí sedieť s session/latteos-session.
-VARS="WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_DESKTOP XDG_SESSION_TYPE XDG_SESSION_ID LABWC_PID GSK_RENDERER XCURSOR_THEME XCURSOR_SIZE"
-systemctl --user import-environment $VARS
-dbus-update-activation-environment --systemd $VARS
-systemctl --user start --no-block latte-session.target
-
-# Polkit agent (dialóg pre heslo správcu) NErobí user služba: polkit vyžaduje, aby agent
-# bežal v tej istej relácii, pre ktorú sa registruje, a služba pod user@ v nej nie je
-# ("Passed session and the session the caller is in differs"). Preto ho spúšťa labwc
-# ako svoje dieťa; tools/run-polkit.sh ho po páde reštartuje.
-if command -v latte-polkit >/dev/null 2>&1; then
-    if command -v systemd-cat >/dev/null 2>&1; then
-        systemd-cat -t latte-polkit latte-polkit &
-    else
-        latte-polkit &
-    fi
-fi
-
-# Uložené nastavenie monitorov (Nastavenia › Obrazovky): labwc si rozlíšenie, mierku a otočenie sám
-# nepamätá, preto ich pri každom prihlásení použijeme znova. Monitor bez uloženej voľby dostane
-# najvyššie bezpečné rozlíšenie (inak by ostal na 640 × 480, ak ho grafika nehlási ako preferované).
-# PATH z prihlasovacieho manažéra nemusí obsahovať ~/.local/bin, preto sa hľadá aj tam; chyby idú do
-# journalu (labwc beží pod systemd-cat).
-DEVICES=$(command -v latte-devices || echo "$HOME/.local/bin/latte-devices")
-if [ -x "$DEVICES" ]; then
-    "$DEVICES" display apply &
-else
-    echo "latte-devices sa nenašiel, rozlíšenie monitorov sa nenastaví (spusti tools/install-session.sh)" >&2
-fi
+# LatteOS SAFE — spúšťa labwc po štarte. Núdzové rozhranie LatteOS GOO bez engine Goo: spodná lišta, pozadie a veľký čas
+# (session/goo/safe.plm, 15 snímok/s) na pleamar/llvmpipe. Noctalia ani žiadna časť Classicu v SAFE nebeží (rozhodnutie 8. 10.).
+# Spadne-li rozhranie, spustí sa znova; pri nečinnosti stojí ~0 % CPU.
+dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP LATTE_MODE >/dev/null 2>&1 &
+# slučka žije iba s týmto labwc: po odhlásení zo SAFE inak bežala ďalej a každé 2 s padala (12. 10.)
+( while kill -0 "${LABWC_PID:-$PPID}" 2>/dev/null; do PLEAMAR_GENERIC=window pleamar --scene /usr/share/latteos/goo/safe.plm --no-hud \
+    >>"${XDG_STATE_HOME:-$HOME/.local/state}/latteos/safe.log" 2>&1; sleep 2; done ) &
+foot -T "LatteOS SAFE" -e latte-safe >/dev/null 2>&1 &

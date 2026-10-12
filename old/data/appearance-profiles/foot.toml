@@ -1,6 +1,0 @@
-[profile]
-id = "foot"
-name = "Terminál foot"
-match = ["foot", "footclient"]
-toolkit = "terminal"
-note = "Rám okna kreslí kompozitor v téme LatteOS, farby obsahu určuje foot.ini."

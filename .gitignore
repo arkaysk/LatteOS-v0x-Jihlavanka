@@ -5,13 +5,14 @@ __pycache__/
 .vscode/
 
 # cudzie repozitáre a uložené články z resources/fetch.sh — netrackované
-resources/upstream/
-resources/docs/
-resources/fetch.log
+old/resources/upstream/
+old/resources/docs/
+old/resources/fetch.log
 offline/
 
 # Rust build
 /target/
+/old/target/
 
 # súkromné údaje pre Clauda iba na tomto počítači (heslo latte-lab) — nikdy do gitu
 .claude-local/

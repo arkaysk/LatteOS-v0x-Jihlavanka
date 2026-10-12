@@ -1,6 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16">
-  <!-- LatteOS: procesor (čip s vývodmi). Symbolická ikona, farbu jej dáva téma. -->
-  <path fill="#bebebe" fill-rule="evenodd" d="M4 4h8v8H4zm1 1v6h6V5z"/>
-  <path fill="#bebebe" d="M7 7h2v2H7zM5.5 2h1v2h-1zM7.5 2h1v2h-1zM9.5 2h1v2h-1zM5.5 12h1v2h-1zM7.5 12h1v2h-1zM9.5 12h1v2h-1zM2 5.5h2v1H2zM2 7.5h2v1H2zM2 9.5h2v1H2zM12 5.5h2v1h-2zM12 7.5h2v1h-2zM12 9.5h2v1h-2z"/>
-</svg>

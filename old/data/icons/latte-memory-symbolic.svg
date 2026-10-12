@@ -1,6 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16">
-  <!-- LatteOS: operačná pamäť (modul s čipmi a kontaktmi). Symbolická ikona, farbu jej dáva téma. -->
-  <path fill="#bebebe" fill-rule="evenodd" d="M1.5 3.5h13v7h-13zm1 1v5h11v-5z"/>
-  <path fill="#bebebe" d="M3.5 5.5h2v3h-2zM7 5.5h2v3H7zM10.5 5.5h2v3h-2zM2.5 11.5h1v2h-1zM4.5 11.5h1v2h-1zM6.5 11.5h1v2h-1zM8.5 11.5h1v2h-1zM10.5 11.5h1v2h-1zM12.5 11.5h1v2h-1z"/>
-</svg>
