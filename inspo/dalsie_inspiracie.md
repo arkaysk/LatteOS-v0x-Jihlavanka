@@ -254,6 +254,8 @@ zaujimavy projekt.o altenativnem taskbare. autor https://www.reddit.com/r/unixpo
 
 https://github.com/iluaii/fwm tekute prostredie
 
+https://github.com/lgse/strata
+
 
 
 
