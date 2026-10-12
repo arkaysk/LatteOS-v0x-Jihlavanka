@@ -31,8 +31,8 @@ scene Goo {
         keyboard: exclusive while card_open or kb
     }
     permissions {
-        run: "latte-sky", "latte-login", "latte-stats", "hyprctl", "foot", "hostname", "powerprofilesctl", "date", "notify-send"
-        services: "files", "files.write", "env", "clock", "battery", "window", "apps", "apps.launch", "session.*", "auth", "notifications", "notifications.*", "sound"
+        run: "latte-sky", "latte-login", "latte-stats", "hyprctl", "foot", "hostname", "powerprofilesctl", "date", "notify-send", "nmcli"
+        services: "files", "files.write", "env", "clock", "battery", "window", "apps", "apps.launch", "session.*", "auth", "notifications", "notifications.*", "sound", "audio", "audio.*", "brightness", "brightness.*", "network", "network.*", "bluetooth", "bluetooth.*", "tray", "tray.*", "polkit", "polkit.*"
     }
 
     // ── what the desktop around the scene tells it (`pleamar --say goo "emit …"`) ───────────────────────────
@@ -41,6 +41,7 @@ scene Goo {
     event lens_mode ->                         // …or open in one of its modes: 0 apps, 1 a command
     event clock_notes ->                       // Win+N: notifications and the calendar
     event clock_time ->                        // Win+Alt+D: the time card
+    event quick_toggle ->                      // Win+A: the quick settings
 
     include "parts/drops.plm"
     include "parts/picks.plm"

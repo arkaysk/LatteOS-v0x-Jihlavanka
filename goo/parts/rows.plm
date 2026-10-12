@@ -16,9 +16,7 @@ part Rows {
     on key Up while card_open { emit card_key(0) }
     on key Return while card_open and not card_field { emit card_enter }
     on submit card_q { emit card_enter }
-    // New content with a field in it: what is typed goes there without a press.
-    on change card_gen while card_field { focus card_q }
-    on change card_field while card_open { focus card_q }
+    on submit card_pw { emit card_enter }
 
     let card.tw = card.w - 16                  // what the tabs and the field have: the card without its padding
     let card.iw = card.tw - card_w2            // …the rows of the first column
@@ -52,11 +50,14 @@ part Rows {
                 size: card.tw, 46
                 show: card_field
                 box { from: 0, 2; size: card.tw, 40; corner: 14; color: #3d2c22 }
-                text g_search { at: 22, 22; anchor: center; size: 17; color: dim; family: "tabler-icons" }
+                text pick(card_secret, g_search, g_key) { at: 22, 22; anchor: center; size: 17; color: dim; family: "tabler-icons" }
                 text card_hint { at: 44, 22; anchor: left center; width: card.tw - 60; lines: 1; size: 15; color: dim; show: not card_typed; family: "Inter" }
-                input card_q { at: 44, 12; width: card.tw - 60; size: 15; color: cream; selection: #5a463a; family: "Inter" }
+                input card_q { at: 44, 12; width: card.tw - 60; size: 15; color: cream; selection: #5a463a; show: not card_secret; family: "Inter" }
+                // a password is typed into a field of its own, which shows dots
+                input card_pw { at: 44, if(card_secret, 12, -4000); width: card.tw - 60; size: 15; color: cream; selection: #5a463a; secret: true; show: card_secret; family: "Inter"; agent: no }
                 zone box field_hit { from: 0, 2; size: card.tw, 40; cursor: text }
-                on press field_hit { focus card_q }
+                on press field_hit while not card_secret { focus card_q }
+                on press field_hit while card_secret { focus card_pw }
             }
 
             row {
@@ -110,7 +111,7 @@ part Rows {
         // the rows come in one after another, each a little later, sliding in from the ear's side
         let come = clamp(reveal * 3.2 - 0.1 * r.index, 0, 1)
         let shown = come * come * (3 - 2 * come)
-        let h = pick(r.kind, if(r.tall, 54, 44), 30, 64, 0, 0, 0, 84)
+        let h = pick(r.kind, if(r.tall, 54, 44), 30, 64, 0, 0, 0, 84, 44)
 
         column parts {
             // a rule above the row
@@ -146,8 +147,8 @@ part Rows {
                 text r.label { at: 22, 28; anchor: left center; width: w - 44; lines: 1; size: 34; weight: 700; color: cream; show: r.kind == big; family: "Inter" }
 
                 // a bar under a plain row or a large figure
-                box { from: if(r.kind == big, 22, 56), if(r.kind == big, 54, 38); size: w - if(r.kind == big, 44, 74), 3; corner: 1.5; color: #5a463a; show: r.bar >= 0 }
-                box { from: if(r.kind == big, 22, 56), if(r.kind == big, 54, 38); size: (w - if(r.kind == big, 44, 74)) * clamp(r.bar, 0, 1) * shown, 3; corner: 1.5; color: gold; show: r.bar > 0 }
+                box { from: if(r.kind == big, 22, 56), if(r.kind == big, 54, 38); size: w - if(r.kind == big, 44, 74), 3; corner: 1.5; color: #5a463a; show: r.bar >= 0 and r.kind != slide }
+                box { from: if(r.kind == big, 22, 56), if(r.kind == big, 54, 38); size: (w - if(r.kind == big, 44, 74)) * clamp(r.bar, 0, 1) * shown, 3; corner: 1.5; color: gold; show: r.bar > 0 and r.kind != slide }
 
                 // a profile: the portrait cut round by a ring of the card's colour
                 image r.icon { at: 18, 12; size: 60, 60; show: r.kind == profile and r.has_icon }
@@ -158,8 +159,19 @@ part Rows {
                 text r.label { at: 94, 32; anchor: left center; width: w - 128; lines: 1; size: 18; weight: 700; color: cream; show: r.kind == profile; family: "Inter" }
                 text r.line2 { at: 94, 55; anchor: left center; width: w - 128; lines: 1; size: 12.5; color: dim; show: r.kind == profile; family: "Inter" }
 
-                zone box hit { from: 0, 1; size: w, h - 2; cursor: pointer; active: card_open and not r.off and not r.quiet and r.kind != head; label: "{r.label}"; selected: r.on }
-                on press hit { emit card_pick((r.index + base) * 8) }
+                // a slider: its icon, the track with what is filled, the knob, and the figure on the right
+                text r.glyph { at: 28, 22; anchor: center; size: 18; color: cream; opacity: 60% + 40% * knob_hit.hover; show: r.kind == slide; family: "tabler-icons" }
+                box { from: 56, 20.5; size: w - 130, 3; corner: 1.5; color: #5a463a; show: r.kind == slide }
+                box { from: 56, 20.5; size: (w - 130) * clamp(r.bar, 0, 1), 3; corner: 1.5; color: gold; opacity: if(r.off, 40%, 100%); show: r.kind == slide }
+                ellipse { at: 56 + (w - 130) * clamp(r.bar, 0, 1), 22; radius: 6 + 1.5 * hit.hover; color: if(r.off, dim, gold); show: r.kind == slide }
+                text r.hint { at: w - 18, 22; anchor: right center; size: 13; color: dim; show: r.kind == slide; family: "Inter" }
+
+                zone box hit { from: if(r.kind == slide, 46, 0), 1; size: w - if(r.kind == slide, 100, 0), h - 2; cursor: pointer; active: card_open and not r.off and not r.quiet and r.kind != head; label: "{r.label}"; selected: r.on }
+                zone box knob_hit { from: 4, 1; size: 42, h - 2; cursor: pointer; active: card_open and r.kind == slide; label: "{r.label}" }
+                on press knob_hit { emit card_pick((r.index + base) * 8) }
+                on press hit while r.kind == slide { emit card_slide((r.index + base) * 1024 + round(clamp((local.x - 56) / (w - 130), 0, 1) * 1000)) }
+                on drag hit while r.kind == slide { emit card_slide((r.index + base) * 1024 + round(clamp((local.x - 56) / (w - 130), 0, 1) * 1000)) }
+                on press hit while r.kind != slide { emit card_pick((r.index + base) * 8) }
                 on press right hit { emit card_right((r.index + base) * 8) }
                 on scroll hit { emit card_wheel((r.index + base) * 2 + if(wheel > 0, 1, 0)) }
             }
@@ -173,7 +185,7 @@ part Rows {
                     fill: #3d2c22 85%
                     corner: 14
                     padding: 12
-                    text r.label { width: w - 52; lines: 14; size: 14.5; line_height: 20; color: cream; family: "Inter"; selectable: true; selection: #5a463a }
+                    text r.label { width: w - 52; lines: 14; size: 14.5; line_height: 1.4; color: cream; family: "Inter"; selectable: true; selection: #5a463a }
                 }
             }
 

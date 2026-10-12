@@ -133,7 +133,7 @@ bol GooPower); **kvapka** = každý samostatný tekutý prvok; **karta Goo** = o
 
 **Jadro** (nedá sa skryť, iba zmeniť veľkosť): **BarGoo, PowerGoo, LensGoo.** **Voliteľné** (Nastavenia › Kvapky):
 **QueenGoo, ClockGoo, ChatGoo.** Predvolene dole: PowerGoo – LensGoo – hlava BarGoo s ikrami, vpravo ClockGoo
-a QueenGoo pred rohovou lištou Noctalie.
+a QuickGoo (vo Fresh; do v0.3 QueenGoo pred rohovou lištou Noctalie).
 
 | Goo | Ľavý klik | Pravý klik | Koliesko |
 |---|---|---|---|
@@ -430,6 +430,12 @@ nemá (AI je hľadanie, Financie a Sociálne sú podkategórie Flathubu).
   (Win+Alt+D) karta času: Prehľad · Stopky · Minútka · Budíky · Počasie. Upozornenia prijíma pleamar (je serverom
   upozornení relácie); minútka a budíky zvonia upozornením a tónom. Oproti v0.3 chýba digitálna pohoda, svetové
   hodiny a prepojené kalendáre (Google, iCloud, CalDAV).
+- **QuickGoo** (návrh Clauda z 12. 10., meno a podoba čakajú na potvrdenie): to, čo robila rohová lišta Noctalie —
+  sieť, zvuk, Bluetooth, jas a programy na pozadí. Kvapka ukazuje sieť; ľavý klik (Win+A) karta: Wi-Fi a Bluetooth
+  zap / vyp, hlasitosť a jas posuvníkmi, siete (pripojenie aj s heslom, zabudnutie), zariadenia Bluetooth, výstupy
+  a mikrofón, programy na pozadí ako dlaždice (pravý klik = ich ponuka). Koliesko na kvapke je hlasitosť, pravý klik
+  stlmí; pri každej zmene hlasitosti (aj klávesom) kvapka na chvíľu ukáže prstenec.
+- **Okno s heslom** (polkit): keď program žiada práva správcu, scéna je agentom relácie a pýta heslo kartou.
 - **Zámok obrazovky** (Win+L, PowerGoo › Zamknúť; `goo/parts/lock.plm`, `goo/lib/lock.luau`): zamyká kompozitor
   (`ext-session-lock`), heslo overí systém; vyzerá ako prihlásenie v pokoji. Keby scéna pri zamknutí spadla, nová
   zamkne znova. Zamknutie pri nečinnosti ešte nie je.
@@ -441,5 +447,5 @@ nemá (AI je hľadanie, Financie a Sociálne sú podkategórie Flathubu).
 **Ešte nie je** (vráti sa po kusoch, poradie v ROADMAP):
 QueenGoo, ChatGoo, vlastné kvapky a Tvorca Goo, hra pri nečinnosti (§3.1 stupeň 3; príde s vlastnými kvapkami — hrajú sa iba hravé),
 okno z bubliny (14; pád minimalizovaného okna už je), BarGoo na ďalších monitoroch (scéna je iba na hlavnom), režimy LensGoo
-Súbory · Web · AI a kalkulačka, portrét účtu, náhrada rohovej lišty (ikony na pozadí, sieť, hlasitosť, upozornenia),
+Súbory · Web · AI a kalkulačka, portrét účtu, MediaGoo (čo práve hrá), prepojené kalendáre,
 tapeta, okenné tlačidlá (hyprbars), sklo okien, prichytenie ťahaním, Nastavenia a ostatné aplikácie.

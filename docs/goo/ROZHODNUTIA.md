@@ -282,3 +282,7 @@ Nové rozhodnutie: jeden riadok sem (dátum, čo, prečo) a oprava platného zne
 | Fresh: engine Goo ako služba systemd `latte-goo.service` pri `latte-session.target` | áno — po páde ho vráti systemd, vlastná slučka odpadla (12. 10.) |
 | Fresh: pás pre kvapky ide za lištou BarGoo k jej okraju | áno — okná nechajú voľný okraj, pri ktorom lišta práve je (12. 10.) |
 | Fresh: skúška relácie GOO bez obrazovky a bez prihlásenia (`tests/screen.sh`) | áno — labwc bez výstupu → Hyprland → scéna na skutočnej karte; Hyprland vždy s `LIBSEAT_BACKEND=logind`, inak si z ssh otvorí skutočnú obrazovku (12. 10.) |
+| Fresh: kvapka **QuickGoo** namiesto rohovej lišty Noctalie — sieť, hlasitosť, Bluetooth, jas a programy na pozadí v jednej karte (ako rýchle nastavenia Windows 11, Win+A) | **návrh Clauda, čaká na používateľa** (meno, podoba, miesto vpravo dole pri ClockGoo); funkcie idú zo služieb pleamaru (12. 10.) |
+| Fresh: zámok obrazovky je plocha scény Goo (`kind: lock`), nie samostatná scéna generovaná z prihlásenia | áno — zamyká hneď, bez štartu ďalšieho procesu; stav v `lock.json`, aby scéna po páde zamkla znova (12. 10.) |
+| Fresh: heslo pre práva správcu (polkit) pýta karta Goo | áno — scéna je agentom relácie cez službu `polkit` pleamaru (12. 10.) |
+| Fresh: hra pri nečinnosti a okno z bubliny | odložené — hrajú sa iba hravé kvapky (prídu s vlastnými kvapkami), z bubliny sa rodia okná QueenGoo (12. 10.) |

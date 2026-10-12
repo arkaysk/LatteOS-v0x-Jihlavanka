@@ -45,6 +45,7 @@
 /usr/share/latteos/goo/lib/bar.luau                     <- goo/lib/bar.luau
 /usr/share/latteos/goo/lib/lens.luau                    <- goo/lib/lens.luau
 /usr/share/latteos/goo/lib/lock.luau                    <- goo/lib/lock.luau
+/usr/share/latteos/goo/lib/polkit.luau                  <- goo/lib/polkit.luau
 /usr/share/latteos/goo/lib/timers.luau                  <- goo/lib/timers.luau
 /usr/share/latteos/goo/lib/wm.luau                      <- goo/lib/wm.luau
 /usr/share/latteos/goo/lib/open.luau                    <- goo/lib/open.luau
@@ -53,6 +54,7 @@
 /usr/share/latteos/goo/drops/clockgoo.luau              <- goo/drops/clockgoo.luau
 /usr/share/latteos/goo/drops/lensgoo.luau               <- goo/drops/lensgoo.luau
 /usr/share/latteos/goo/drops/powergoo.luau              <- goo/drops/powergoo.luau
+/usr/share/latteos/goo/drops/quickgoo.luau              <- goo/drops/quickgoo.luau
 /usr/share/latteos/greeter/labwc/rc.xml                 <- system/greeter/labwc/rc.xml
 /usr/share/latteos/hypr/hyprland.lua                    <- system/hypr/hyprland.lua
 /usr/share/latteos/hypr/latte/windows.lua               <- system/hypr/latte/windows.lua

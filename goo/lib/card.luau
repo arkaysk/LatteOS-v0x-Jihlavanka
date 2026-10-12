@@ -9,18 +9,21 @@
 --       on      ticked · off: not available · quiet: to be read, not pressed · danger: it does not undo
 --       line    a rule above it · bar: a bar filled this far (0…1) · line2: a second line under the label
 --       run     what a press does; the card closes unless `keep` · right: the right button
---       wheel   function(direction ±1) · sub: rows of a submenu, which gets a row to go back
+--       wheel   function(direction ±1) · sub: rows of a submenu, which gets a row to go back · more: the arrow
+--               of a submenu on a row that opens another card itself
 --   { head = true, label, hint }                    the heading of a section
 --   { big = true, label, bar }                      a large figure
 --   { para = true, label }                          a paragraph
 --   { profile = true, icon, glyph, label, line2, run }
+--   { slide = true, glyph, label, value, hint, off, run, set }     a slider: `value` 0…1, set = function(0…1) as it
+--       is pressed or dragged, `run` a press on its icon (to mute), `wheel` as on any row
 --   { pills = { { label, glyph, on, off, danger, keep, run }, … } }     buttons side by side, six at most
 --   { tiles = { { label, icon, glyph, run, right }, … }, per = 4 }     apps as tiles, `per` in a line
 -- A card may have a second column: `width2` in the options, and the rows that go there say `col = 2`. At its
 -- top it can show a month: `calendar = { title, weekdays = { 7 names }, days = { 42 × { n, dim, today, chosen,
 -- dot } }, pick = function(place 0…41), step = function(±1) }`.
--- A tab is { label, glyph, on, run }. The field is { hint, text, change = function(text), submit = function(text) };
--- `submit` returns true to keep what was typed.
+-- A tab is { label, glyph, on, run }. The field is { hint, text, secret, change = function(text), submit =
+-- function(text) }; `submit` returns true to keep what was typed, `secret` hides it as a password.
 -- Options: `keep` refreshes an open card in place (live figures): the rows do not come in again and the row
 -- chosen with the keys stays.
 local icons = require("lib/icons")
@@ -31,14 +34,14 @@ local RISE = 74                             -- how far from the edge the owner s
 local engine                                -- set by lib/engine.luau, which owns the drops
 
 local shown = { rows = {}, opts = {} }      -- the card as it was last opened
-local actions, rights, wheels, tab_runs = {}, {}, {}, {}
+local actions, rights, wheels, slides, tab_runs = {}, {}, {}, {}, {}
 local choosable, chosen = {}, nil            -- what the arrow keys walk through, and where they are
 local field = nil
 local calendar = nil                         -- the month shown, if any: who hears a day pressed
 local ear = nil                              -- the drop that stepped out for the open card
 local wheel_at = 0                           -- when a row last used the wheel itself
 
-text.g_check, text.g_more, text.g_back, text.g_search = icons["check"], icons["chevron-right"], icons["chevron-left"], icons["search"]
+text.g_check, text.g_more, text.g_back, text.g_search, text.g_key = icons["check"], icons["chevron-right"], icons["chevron-left"], icons["search"], icons["key"]
 
 local function glyph(name) return name and (icons[name] or (name:byte(1) or 0) >= 128 and name) or "" end
 
@@ -56,7 +59,7 @@ end
 
 function M.close()
     if fact.card_open then fact.card_open = false end
-    actions, rights, wheels, tab_runs = {}, {}, {}, {}
+    actions, rights, wheels, slides, tab_runs = {}, {}, {}, {}, {}
     release()
 end
 
@@ -68,7 +71,7 @@ end
 function M.open(rows, opts)
     opts = opts or {}
     local out = {}
-    actions, rights, wheels, tab_runs = {}, {}, {}, {}
+    actions, rights, wheels, slides, tab_runs = {}, {}, {}, {}, {}
     choosable = {}
 
     -- what choosing a row does
@@ -118,13 +121,14 @@ function M.open(rows, opts)
             end
             return
         end
-        local kind = (it.head and "head") or (it.big and "big") or (it.para and "para") or (it.profile and "profile") or "plain"
-        local pressed = (kind == "plain" or kind == "profile" or (kind == "big" and it.run ~= nil)) and not it.quiet
+        local kind = (it.head and "head") or (it.big and "big") or (it.para and "para") or (it.profile and "profile") or (it.slide and "slide") or "plain"
+        local pressed = (kind == "plain" or kind == "profile" or kind == "slide" or (kind == "big" and it.run ~= nil)) and not it.quiet
+        if kind == "slide" then it = table.clone(it) it.bar, it.keep = it.value or 0, true slides[base + #to] = it.set end
         to[#to + 1] = {
             kind = kind, label = it.label or "", hint = it.hint or "", line2 = it.line2 or "", glyph = glyph(it.glyph),
             icon = it.icon or "", has_icon = (it.icon or "") ~= "", tall = kind == "plain" and (it.line2 or "") ~= "",
             on = it.on == true, off = it.off == true, quiet = not pressed,
-            danger = it.danger == true, more = it.sub ~= nil, line = it.line == true and #to > 0,
+            danger = it.danger == true, more = it.sub ~= nil or it.more == true, line = it.line == true and #to > 0,
             bar = type(it.bar) == "number" and it.bar or -1,
         }
         if pressed then bind((base + #to - 1) * 8, it) end
@@ -163,10 +167,17 @@ function M.open(rows, opts)
         chosen = nil
         fact.card_sel = -1
     end
+    local had = field ~= nil and fact.card_open
     field = opts.field
-    if field and fresh then
+    if field then
         text.card_hint = field.hint or ""
+        fact.card_secret = field.secret == true
+    end
+    if field and (fresh or not had) then
+        text.card_q, text.card_pw = "", ""
         M.text(field.text or "")
+        -- what is typed goes to the field without a press
+        after(60, function() if field then focus(field.secret and "card_pw" or "card_q") end end)
     end
     shown = { rows = rows, opts = opts }
     model.card = out
@@ -188,8 +199,9 @@ end
 
 -- what is typed in the field: read it, or put something there
 function M.text(v)
-    if v ~= nil then text.card_q, fact.card_typed = v, v ~= "" end
-    return text.card_q or ""
+    local name = (field and field.secret) and "card_pw" or "card_q"
+    if v ~= nil then text[name], fact.card_typed = v, v ~= "" end
+    return text[name] or ""
 end
 
 on("card_pick", function(id)
@@ -203,6 +215,10 @@ end)
 on("card_wheel", function(v)
     local f = wheels[(v or 0) // 2]
     if f then wheel_at = os.clock() f((v or 0) % 2 == 1 and 1 or -1) end
+end)
+on("card_slide", function(v)
+    local set = slides[(v or 0) // 1024]
+    if set then set(((v or 0) % 1024) / 1000) end
 end)
 on("card_closed", function() M.close() end)
 on("cal_pick", function(place) if calendar and calendar.pick and fact.card_open then calendar.pick(place or 0) end end)
@@ -244,21 +260,24 @@ on("card_enter", function()
         return
     end
     if not field then return end
-    local v = (text.card_q or ""):gsub("^%s+", ""):gsub("%s+$", "")
+    local v = M.text()
+    if not field.secret then v = v:gsub("^%s+", ""):gsub("%s+$", "") end
     local keep = field.submit and v ~= "" and field.submit(v) == true
     if not keep then M.text("") end
 end)
 
 -- Typing is reported after a short pause, not for every letter.
 local typing = nil
-on("text:card_q", function()
-    fact.card_typed = (text.card_q or "") ~= ""
+local function typed()
+    fact.card_typed = M.text() ~= ""
     if not (field and field.change) then return end
     if typing then cancel(typing) end
     typing = after(140, function()
         typing = nil
-        if field and field.change and fact.card_open then field.change(text.card_q or "") end
+        if field and field.change and fact.card_open then field.change(M.text()) end
     end)
-end)
+end
+on("text:card_q", typed)
+on("text:card_pw", typed)
 
 return M

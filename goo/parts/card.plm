@@ -11,19 +11,20 @@ part Card {
     //            head: the heading of a section · big: a large figure · para: a paragraph in a bubble
     //            pills: its `items` as buttons side by side · tiles: its `items` as apps, an icon over a name
     //            profile: a portrait, a name and a line under it
+    //            slide: a slider, set by pressing or dragging along it; its icon is pressed on its own
     //   tall     a plain row with a second line under its label (`line2`)
     //   on       ticked, or the chosen one · off: not available · quiet: to be read, not pressed
     //   danger   it does not undo: red · more: opens a submenu · line: a rule above it
     //   bar      a bar filled this far (0…1), none below 0 · per: how many tiles make a line
     model card max 24 {
-        kind: plain | head | big | para | pills | tiles | profile = plain
+        kind: plain | head | big | para | pills | tiles | profile | slide = plain
         label: text; hint: text; line2: text; glyph: text; icon: image 64, 64; has_icon: bool; tall: bool
         on: bool; off: bool; quiet: bool; danger: bool; more: bool; line: bool; bar: number = -1; per: number = 4
         list items max 6 { label: text; glyph: text; icon: image 44, 44; has_icon: bool; on: bool; off: bool; danger: bool }
     }
     // the rows of a second column, beside the first: a card with two things to show at once
     model card2 max 12 {
-        kind: plain | head | big | para | pills | tiles | profile = plain
+        kind: plain | head | big | para | pills | tiles | profile | slide = plain
         label: text; hint: text; line2: text; glyph: text; icon: image 64, 64; has_icon: bool; tall: bool
         on: bool; off: bool; quiet: bool; danger: bool; more: bool; line: bool; bar: number = -1; per: number = 4
         list items max 6 { label: text; glyph: text; icon: image 44, 44; has_icon: bool; on: bool; off: bool; danger: bool }
@@ -45,17 +46,21 @@ part Card {
     fact card_peak = 0                         // …and any card only grows while it is open
     fact card_field = false                    // it has a field to type into, under the tabs
     fact card_typed = false                    // …and something is typed in it
+    fact card_secret = false                   // …that must not be read over the shoulder: a password
     fact card_sel = -1                         // the row chosen with the arrow keys: row × 8, + 1 + item
     fact card_gen = 0                          // the logic counts up for new content: the rows come in again
     text card_q = ""
+    text card_pw = ""
     text card_hint = ""
     text g_check = ""                          // glyphs of the icon font the card draws itself; the logic fills them
     text g_more = ""
     text g_search = ""
+    text g_key = ""
     text g_back = ""
     event card_pick ->                         // a row was pressed: row × 8, + 1 + item for a pill or a tile;
                                                // the rows of the second column count on from 24
     event card_right ->
+    event card_slide ->                        // a slider was moved: row × 1024 + where to, in thousandths
     event card_wheel ->                        // the wheel over a row: row × 2, + 1 upwards
     event card_spin ->                         // the wheel over the card, where no list scrolls: 0 up, 1 down
     event card_tab ->                          // a tab was pressed

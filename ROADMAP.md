@@ -90,8 +90,9 @@ Schválené 12. 10. 2026. Pracuje sa **zhora nadol, neskáče sa**; nový nápad
           z nej riadne okná).
         - [x] ClockGoo (12. 10.): upozornenia (pleamar je server upozornení) a kalendár, karta času so stopkami,
           minútkou, budíkmi a počasím; karta vie dva stĺpce a mesiac.
-        - [ ] **náhrada Noctalie:** ikony na pozadí, sieť, hlasitosť, Bluetooth, jas, polkit; potom QueenGoo, ChatGoo,
-          vlastné kvapky; prepojené kalendáre.
+        - [x] náhrada rohovej lišty (12. 10.): kvapka **QuickGoo** (sieť, hlasitosť, Bluetooth, jas, programy na
+          pozadí — návrh, čaká na potvrdenie mena a podoby) a okno s heslom pre polkit.
+        - [ ] QueenGoo, ChatGoo, vlastné kvapky (s nimi hra pri nečinnosti), MediaGoo, prepojené kalendáre.
         - [ ] režimy LensGoo Súbory · Web · AI a kalkulačka; tapeta; okenné tlačidlá (hyprbars), sklo, prichytenie.
         Overené 12. 10. v `tests/screen.sh` (Hyprland bez obrazovky na RX 640, snímky, falošná myš): štart, pokoj
         a nadnesenie, ťahanie k okraju a pád, karty všetkých troch kvapiek, spustenie aplikácie, príkaz s varovaním,
