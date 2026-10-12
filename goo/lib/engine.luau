@@ -87,7 +87,7 @@ local function record(d)
         beads = d.beads or 0, bead_hues = d.bead_hues or 0, bead_text = d.bead_text or "",
         core = d.core or 0, core_hue = d.core_hue or 0, core_beat = d.core_beat == true,
         melt = num(v.melt, 1), puddle = num(v.puddle, 1), crown = glyph(v.crown), cap = num(v.cap, 0), cap_dir = num(v.cap_dir, 0),
-        line2 = v.line2 or "", lines = (v.line2 or "") ~= "" and 2 or 1, still = v.still == true,
+        line2 = v.line2 or "", lines = (v.line2 or "") ~= "" and 2 or 1, still = v.still == true, chosen = d.chosen == true,
         hop = d.n.hop, squash = d.n.squash, dip = d.n.dip, shiver = d.n.shiver, land = d.n.land, fall = d.n.fall, fall_h = d.fall_h or 0,
     }
 end
@@ -457,13 +457,16 @@ on("goo_wheel", function(v)
 end)
 on("goo_enter", function(k) local d = slots[k] if d then call(d, "enter") end end)
 on("goo_leave", function(k) local d = slots[k] if d then call(d, "leave") end end)
-on("goo_hover", function(k)
-    local d = slots[k]
-    if not d then return end
+-- the tooltip: the drop's name and what it does
+local function tip_of(d)
     local about = d.def.about
     if type(about) == "function" then local _, res = call(d, "about") about = res end
     local name = d.v.name or ""
-    d:tip((about and about ~= "" and about ~= name) and (name ~= "" and name .. " · " .. about or about) or name)
+    return (about and about ~= "" and about ~= name) and (name ~= "" and name .. " · " .. about or about) or name
+end
+on("goo_hover", function(k)
+    local d = slots[k]
+    if d then d:tip(tip_of(d)) end
 end)
 on("goo_grab", function(k)
     down = nil
@@ -517,6 +520,85 @@ on("goo_letgo", function(k)
         after(fall > 0 and 60 or 200, function() E.ripple(d, (fall > 0 and 3 + math.min(fall, 900) * 0.008 or 4) + radius(d) * 0.12, "stone") end)
     end)
 end)
+
+-- ── Goo from the keyboard (parts/keys.plm) ───────────────────────────────────────────────────────────────────
+-- A way around when there is no mouse, not a second way of arranging things: the arrows only walk. The scene
+-- holds the keyboard meanwhile and nothing can be typed into a window, so it ends by itself: after a window
+-- was chosen, after a choice in a card, after a minute without a key.
+local chosen, kb_timer = nil, nil
+local function choose(d)
+    if chosen and by_id[chosen.id] == chosen then chosen.chosen = false end
+    chosen = d
+    if d then
+        d.chosen = true
+        fact.kb_at = d.k
+        d:tip(tip_of(d))
+    else
+        fact.kb_at = -1
+    end
+    publish()
+end
+local function kb_leave()
+    if kb_timer then cancel(kb_timer) kb_timer = nil end
+    if fact.kb then fact.kb = false end
+    choose(nil)
+end
+local function kb_touch()
+    if kb_timer then cancel(kb_timer) end
+    kb_timer = after(60000, kb_leave)
+end
+-- the drops in order around the screen: the bottom edge left to right, up the right one, back along the top, down the left
+local function ring()
+    local list = {}
+    E.each(function(d) if not d.hidden then list[#list + 1] = d end end)
+    local turn = { [0] = 0, [3] = 1, [2] = 2, [1] = 3 }
+    local function place(d)
+        local a = along(d)
+        if d.edge == 3 or d.edge == 2 then a = len(d) - a end
+        return turn[d.edge] * 1e6 + a
+    end
+    table.sort(list, function(a, b) return place(a) < place(b) end)
+    return list
+end
+on("kb_toggle", function()
+    if fact.kb then return kb_leave() end
+    local list = ring()
+    if #list == 0 then return end
+    fact.kb = true
+    kb_touch()
+    local lens = by_id.lensgoo
+    choose(lens and not lens.hidden and lens or list[1])
+end)
+on("kb_exit", kb_leave)
+-- An arrow along the drop's edge goes to the next one round, or the one before: left and right on the bottom
+-- edge, up and down on the sides. The scene counts the arrows 0 left, 1 right, 2 up, 3 down.
+local STEP = { [0] = { [1] = 1, [0] = -1 }, [3] = { [2] = 1, [3] = -1 }, [2] = { [0] = 1, [1] = -1 }, [1] = { [3] = 1, [2] = -1 } }
+on("kb_nav", function(arrow)
+    if not fact.kb or not chosen then return end
+    kb_touch()
+    local list = ring()
+    local step = STEP[chosen.edge][arrow or 0]
+    if not step or #list == 0 then return end
+    local at = 1
+    for i, d in ipairs(list) do if d == chosen then at = i end end
+    choose(list[(at - 1 + step) % #list + 1])
+end)
+on("kb_act", function(what)
+    local d = chosen
+    if not fact.kb or not d then return end
+    kb_touch()
+    if what == 0 then
+        if not call(d, "click") then d:shiver() end
+        if d.live then after(150, kb_leave) end           -- a window was chosen: the keyboard is its own again
+    elseif what == 1 then
+        if not call(d, "right") then d:shiver() end
+    else
+        local dir = what == 2 and 1 or -1
+        if not call(d, "wheel", dir) and d.v.zoomable and not d.live then d:resize(d.zoom + dir * 0.1) end
+    end
+end)
+-- a choice in a card that closed it was what the keyboard was wanted for
+on("card_pick", function() after(200, function() if fact.kb and not fact.card_open then kb_leave() end end) end)
 
 -- ── left alone: asleep after a minute, then the weather outside on the surface ───────────────────────────────
 local weather = { rain = 0, snow = false, wind = 0 }

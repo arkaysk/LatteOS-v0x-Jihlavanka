@@ -6,7 +6,7 @@ runs. So two parts are written here, from the number of places the scene declare
 parts/drops.plm):
 
   parts/shapes.plm   the shapes of every drop and of the ripples, for the one body they melt in
-  parts/picks.plm    the values of ONE drop, chosen by a fact: the drop a card grows from, the one with the strip
+  parts/picks.plm    the values of ONE drop, chosen by a fact: the drop a card grows from, the one chosen from the keyboard, the one with the strip
 
   gen.py             write both
   gen.py --check     fail if they are not what would be written (tests/check.sh)
@@ -87,6 +87,8 @@ def picks(n):
     for by, values in (
         # the drop a card grows from
         ("card_owner", (("own.x", "home.x.{k}"), ("own.y", "home.y.{k}"), ("own.r", "goo.{k}.r * goo.{k}.zoom"))),
+        # the drop chosen from the keyboard
+        ("kb_at", (("kb.x", "x.{k}"), ("kb.y", "y.{k}"), ("kb.r", "rr.{k}"), ("kb.edge", "goo.{k}.edge"))),
         # the drop that carries the performance strip
         ("strip_owner", (("strip.x", "x.{k}"), ("strip.y", "y.{k}"), ("strip.r", "rr.{k}"), ("strip.cap", "cap.{k}"),
                          ("strip.edge", "goo.{k}.edge"), ("strip.dir", "goo.{k}.cap_dir"))),

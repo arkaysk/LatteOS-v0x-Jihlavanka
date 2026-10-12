@@ -37,6 +37,7 @@ function K.setup()
     bind("SUPER + R", goo("lens_mode 1"))
 
     bind("SUPER + L", goo("lock_now"))
+    bind("SUPER + T", goo("kb_toggle"))        -- Goo from the keyboard, as Win+T goes to the taskbar on Windows
 
     -- windows
     bind("ALT + F4", hl.dsp.window.close())

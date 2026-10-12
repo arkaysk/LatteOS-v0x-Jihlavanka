@@ -12,6 +12,7 @@
 //   card     the card's state and its frame
 //   faces    what each drop shows on itself
 //   strip    the performance strip in PowerGoo's capsule
+//   keys     Goo from the keyboard: the keys, and the mark on the drop chosen
 //   rows     what is in the card, and the tooltip
 //   lock     the lock screen, a surface of its own
 language 0.4
@@ -26,8 +27,8 @@ scene Goo {
         reserve: -1
         rate: 60
         // An open card is a menu: it has the keyboard until a press elsewhere, so Escape closes it at once
-        // and its field is typed into without a press.
-        keyboard: exclusive while card_open
+        // and its field is typed into without a press. So has Goo while it is walked with the arrow keys.
+        keyboard: exclusive while card_open or kb
     }
     permissions {
         run: "latte-sky", "latte-login", "latte-stats", "hyprctl", "foot", "hostname", "powerprofilesctl", "date"
@@ -45,6 +46,7 @@ scene Goo {
     include "parts/card.plm"
     include "parts/faces.plm"
     include "parts/strip.plm"
+    include "parts/keys.plm"
     include "parts/rows.plm"
     include "parts/lock.plm"
 }

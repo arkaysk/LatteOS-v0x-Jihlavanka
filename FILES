@@ -37,6 +37,7 @@
 /usr/share/latteos/goo/parts/card.plm                   <- goo/parts/card.plm
 /usr/share/latteos/goo/parts/faces.plm                  <- goo/parts/faces.plm
 /usr/share/latteos/goo/parts/strip.plm                  <- goo/parts/strip.plm
+/usr/share/latteos/goo/parts/keys.plm                   <- goo/parts/keys.plm
 /usr/share/latteos/goo/parts/rows.plm                   <- goo/parts/rows.plm
 /usr/share/latteos/goo/parts/lock.plm                   <- goo/parts/lock.plm
 /usr/share/latteos/goo/lib/engine.luau                  <- goo/lib/engine.luau

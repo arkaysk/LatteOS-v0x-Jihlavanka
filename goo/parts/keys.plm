@@ -1,0 +1,38 @@
+// Goo from the keyboard, for when there is no mouse: Win+T enters, the arrows walk from drop to drop around
+// the screen's edges, Enter or the space bar is the left button, Menu or Shift+F10 the right one, plus and
+// minus the wheel, Escape leaves. The logic says which drop is chosen (lib/keys.luau); it rises as it does
+// for the pointer, shows its tooltip and pulses lighter: a change of brightness, not of hue, so that it shows
+// to someone who cannot tell colours apart. While it lasts the scene holds the keyboard, so it ends by itself.
+part Keys {
+    fact kb = false
+    fact kb_at = -1                            // the place of the drop chosen
+    event kb_toggle ->                         // Win+T
+    event kb_nav ->                            // 0 left, 1 right, 2 up, 3 down
+    event kb_act ->                            // 0 the left button, 1 the right, 2 the wheel up, 3 the wheel down
+    event kb_exit ->
+
+    on key Left while kb and not card_open { emit kb_nav(0) }
+    on key Right while kb and not card_open { emit kb_nav(1) }
+    on key Up while kb and not card_open { emit kb_nav(2) }
+    on key Down while kb and not card_open { emit kb_nav(3) }
+    // A card opened from here grows from the drop, as it does from where the pointer pressed.
+    on key Return while kb and not card_open { tap.x = kb.x; tap.y = kb.y; emit kb_act(0) }
+    on key space while kb and not card_open { tap.x = kb.x; tap.y = kb.y; emit kb_act(0) }
+    on key Menu while kb and not card_open { tap.x = kb.x; tap.y = kb.y; emit kb_act(1) }
+    on key Shift+F10 while kb and not card_open { tap.x = kb.x; tap.y = kb.y; emit kb_act(1) }
+    on key plus while kb and not card_open { emit kb_act(2) }
+    on key KP_Add while kb and not card_open { emit kb_act(2) }
+    on key minus while kb and not card_open { emit kb_act(3) }
+    on key KP_Subtract while kb and not card_open { emit kb_act(3) }
+    // Escape closes a card first (parts/rows.plm); with none open it leaves.
+    on key Escape while kb and not card_open { kb = false; kb_at = -1; emit kb_exit }
+    // A card's field keeps the caret after the card has closed, and the arrows would end up in it.
+    on kb_toggle { blur }
+    on change card_open while kb { blur }
+    on focus while kb and not card_open { blur }
+
+    prop kb.p = 0 ~nimble
+    follow kb.p = if(kb and kb_at >= 0, 1, 0)
+    ellipse { at: kb.x, kb.y; radius: kb.r; color: mix(coffee, cream, 0.34); opacity: kb.p * (0.24 + 0.16 * sin(time * 210)) }
+    ellipse { at: kb.x, kb.y; radius: kb.r + 2.5; stroke: 2; color: mix(coffee, cream, 0.55); opacity: kb.p * (0.5 + 0.3 * sin(time * 210)) }
+}

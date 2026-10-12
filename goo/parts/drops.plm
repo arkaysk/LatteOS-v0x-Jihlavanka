@@ -53,6 +53,7 @@ part Drops {
     //                 (0 both ways, −1 or +1 one way: the drop stays where it is and stretches)
     //   line2, lines  a capsule's second line of text and how many lines it has
     //   still         it does not sink at rest: what it shows has to stay whole
+    //   chosen        it is the one the keyboard is on: it rises as if the pointer were at it
     //   left…, right… its neighbours on the edge, as the logic found them: where they are and how big
     //   hop, squash, dip, shiver   counters: each change makes it jump, flatten, dive under the surface, tremble
     //   land          counter: the drag has ended and the record says where home is now
@@ -64,7 +65,7 @@ part Drops {
         kind: number; value: number; glyph: text; label: text; icon: text; has_icon: bool; dim: number
         beads: number; bead_hues: number; bead_text: text; core: number; core_hue: number; core_beat: bool
         melt: number = 1; puddle: number = 1; crown: text; cap: number; cap_dir: number; line2: text
-        lines: number = 1; still: bool
+        lines: number = 1; still: bool; chosen: bool
         left: bool; left_at: number; left_shift: number
         right: bool; right_at: number; right_shift: number; right_rise: number; right_r: number = 26
         hop: number; squash: number; dip: number; shiver: number; land: number; fall: number; fall_h: number
@@ -206,10 +207,10 @@ part Drops {
         // At rest it sits down: it slides to the surface and flattens, what it shows still in sight. Near the
         // pointer, or beside a drop that is, it gets up and rounds itself; asleep it sits deeper.
         prop sit.$k = 0 ~settle
-        follow sit.$k = (1 - clamp(near.$k + 0.3 * max(nl.$k, nr.$k) + hov.$k, 0, 1)) * docked.$k * (1 - held.$k) * if(idle > 0, 1.3, 1) * if(goo.$k.kind == 1 or goo.$k.still, 0, 1) * if(falls.$k > 1, 0, 1)
+        follow sit.$k = (1 - clamp(near.$k + 0.3 * max(nl.$k, nr.$k) + hov.$k + if(goo.$k.chosen, 1, 0), 0, 1)) * docked.$k * (1 - held.$k) * if(idle > 0, 1.3, 1) * if(goo.$k.kind == 1 or goo.$k.still, 0, 1) * if(falls.$k > 1, 0, 1)
         let sink.$k = sit.$k * clamp(goo.$k.rise - r0.$k * if(goo.$k.kind == 2, 0.45, 0.28), 0, r0.$k * 0.5)
         prop up.$k = 0 ~drip
-        follow up.$k = clamp(near.$k + 0.3 * max(nl.$k, nr.$k), 0, 1) * goo.$k.lift * if(idle > 0, 0.4, 1) * (1 - held.$k)
+        follow up.$k = clamp(near.$k + 0.3 * max(nl.$k, nr.$k) + if(goo.$k.chosen, 1, 0), 0, 1) * goo.$k.lift * if(idle > 0, 0.4, 1) * (1 - held.$k)
         // It rises towards the pointer, three quarters of its radius at most and no higher than the pointer.
         let reach_up.$k = clamp(cdn.$k + r0.$k * 0.3, r0.$k * 0.25, r0.$k * 0.75)
         // The pull: on the edge it leans, loose it drifts; the stickier, the less.

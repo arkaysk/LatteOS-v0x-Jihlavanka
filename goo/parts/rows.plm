@@ -184,6 +184,12 @@ part Rows {
     prop tip.p = 0 ~grow
     measure tip_size
     let tip.h = max(tip_size.height, 16) + 14
-    box { from: tip.x - tip_size.width / 2 - 14, tip.y + 15 - tip.h; size: tip_size.width + 28, tip.h; corner: min(15, tip.h / 2); color: coffee; opacity: tip.p * 0.94 * if(card_open, 0, 1) }
-    text tip { at: tip.x, tip.y + 15 - tip.h / 2; anchor: center; measure: tip_size; size: 12; color: ink; opacity: tip.p * if(card_open, 0, 1); width: 210; align: center; family: "Inter" }
+    // Chosen from the keyboard, a drop's tooltip stays beside it wherever it moves.
+    let kb.nx = if(kb.edge == 1, 1, if(kb.edge == 3, -1, 0))
+    let kb.ny = if(kb.edge == 0, -1, if(kb.edge == 2, 1, 0))
+    let tip.cx = if(kb, kb.x + kb.nx * (kb.r + 130), tip.x)
+    let tip.cy = if(kb, kb.y + kb.ny * (kb.r + 14) + if(kb.ny > 0, 30, 0), tip.y)
+    let tip.a = max(tip.p, kb.p) * if(card_open, 0, 1)
+    box { from: tip.cx - tip_size.width / 2 - 14, tip.cy + 15 - tip.h; size: tip_size.width + 28, tip.h; corner: min(15, tip.h / 2); color: coffee; opacity: tip.a * 0.94 }
+    text tip { at: tip.cx, tip.cy + 15 - tip.h / 2; anchor: center; measure: tip_size; size: 12; color: ink; opacity: tip.a; width: 210; align: center; family: "Inter" }
 }

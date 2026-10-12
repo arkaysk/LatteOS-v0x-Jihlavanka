@@ -81,9 +81,10 @@ Schválené 12. 10. 2026. Pracuje sa **zhora nadol, neskáče sa**; nový nápad
         - [x] pás výkonu PowerGoo (12. 10.; `latte-stats` hlási aj teplotu procesora a karty).
         - [x] zámok obrazovky (12. 10.): Win+L a PowerGoo › Zamknúť; overené zlé aj dobré heslo a zamknutie po páde
           scény. Chýba zamknutie pri nečinnosti a pred uspaním.
+        - [x] ovládanie Goo z klávesnice (12. 10., Win+T).
         - [ ] **jadro kvapiek, zvyšok:**
-          ovládanie Goo z klávesnice, hra pri nečinnosti, okno z bubliny a pád minimalizovaného okna, kvapka uhne oknu,
-          BarGoo na ďalších monitoroch.
+          pád minimalizovaného okna do lišty, kvapka uhne oknu, BarGoo na ďalších monitoroch. Hra pri nečinnosti
+          príde s vlastnými kvapkami (hrajú sa iba hravé), okno z bubliny s QueenGoo (rodia sa z nej riadne okná).
         - [ ] **náhrada Noctalie:** ClockGoo s upozorneniami a kalendárom, ikony na pozadí, sieť, hlasitosť, Bluetooth,
           jas, polkit; potom QueenGoo, ChatGoo, vlastné kvapky.
         - [ ] režimy LensGoo Súbory · Web · AI a kalkulačka; tapeta; okenné tlačidlá (hyprbars), sklo, prichytenie.

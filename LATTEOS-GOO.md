@@ -428,10 +428,13 @@ nemá (AI je hľadanie, Financie a Sociálne sú podkategórie Flathubu).
 - **Zámok obrazovky** (Win+L, PowerGoo › Zamknúť; `goo/parts/lock.plm`, `goo/lib/lock.luau`): zamyká kompozitor
   (`ext-session-lock`), heslo overí systém; vyzerá ako prihlásenie v pokoji. Keby scéna pri zamknutí spadla, nová
   zamkne znova. Zamknutie pri nečinnosti ešte nie je.
+- **Goo z klávesnice** (§6.1, Win+T): šípky po kvapkách dokola po obvode, Enter a medzerník ľavý klik, Menu a Shift+F10
+  pravý, + a − koliesko, Esc von; vybraná kvapka sa zdvihne, pulzuje a ukáže bublinu; skončí sám po voľbe okna,
+  po voľbe v karte a po minúte.
 - **Hyprland:** tri režimy okien, minimalizovanie, rozloženia okna, plochy, skratky ako vo Windows.
 
 **Ešte nie je** (vráti sa po kusoch, poradie v ROADMAP): ClockGoo,
-QueenGoo, ChatGoo, vlastné kvapky a Tvorca Goo, ovládanie Goo z klávesnice (§6.1), hra pri nečinnosti (§3.1 stupeň 3),
+QueenGoo, ChatGoo, vlastné kvapky a Tvorca Goo, hra pri nečinnosti (§3.1 stupeň 3; príde s vlastnými kvapkami — hrajú sa iba hravé),
 okno z bubliny a pád minimalizovaného okna (14), kvapka uhne oknu, BarGoo na ďalších monitoroch, režimy LensGoo
 Súbory · Web · AI a kalkulačka, portrét účtu, náhrada rohovej lišty (ikony na pozadí, sieť, hlasitosť, upozornenia),
 tapeta, okenné tlačidlá (hyprbars), sklo okien, prichytenie ťahaním, Nastavenia a ostatné aplikácie.
