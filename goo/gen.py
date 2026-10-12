@@ -5,7 +5,7 @@ A `body` takes no `repeat`, and a name cannot be indexed by a number that is onl
 runs. So two parts are written here, from the number of places the scene declares (`model goo max N` in
 parts/drops.plm):
 
-  parts/shapes.plm   the shapes of every drop and of the ripples, for the one body they melt in
+  parts/shapes.plm   the shapes of every drop, of the ripples and of a falling window, for the one body they melt in
   parts/picks.plm    the values of ONE drop, chosen by a fact: the drop a card grows from, the one chosen from the keyboard, the one with the strip
 
   gen.py             write both
@@ -73,6 +73,9 @@ def shapes(n):
                        "radius: rip.a.{i} * 2.2 * if(ripple.{i}.kind > 0.5, 0, 1); scale: 2.2, 1; blend: 14 }}\n".format(i=i, s=sign))
         out.append("    ellipse {{ at: rip.x.{i}, H - LEVEL + 4; radius: rip.a.{i} * (1.2 + 0.6 * sin(time * 1900)) * "
                    "if(ripple.{i}.kind > 0.5, 1, 0); scale: 2.6, 1; blend: 12 }}\n".format(i=i))
+    # a window put away, on its way down into the bar
+    out.append("    ellipse { at: going.x, going.y; radius: 16 * if(going.k >= 1, going.on, 0) * clamp((gone.for + 0.45 - going.t) / 0.3, 0, 1); "
+               "scale: 1 - 0.12 * clamp(going.t, 0, 1), 1 + 0.2 * clamp(going.t, 0, 1); blend: 16 }\n")
     # the neck of the one drop being dragged, from its home to where it is
     out.append("    line {{ from: {hx}, {hy}; to: {x}, {y}; width: if(carried >= 0, {w}, 0); blend: 22 }}\n".format(
         hx=pick("carried", "home.x.{k}", n), hy=pick("carried", "home.y.{k}", n), x=pick("carried", "x.{k}", n),

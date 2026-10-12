@@ -42,6 +42,14 @@ part Body {
         include "shapes.plm"
     }
 
+    // a window put away shrinks into a drop where it was; from there it falls as part of the goo
+    body {
+        gradient: gone.x0, gone.y0 - gone.h / 2 to gone.x0, gone.y0 + gone.h / 2, mix(#2c2019, coffee, going.k), coffee
+        rim: 20%
+        opacity: (1 - going.k * going.k) * going.on
+        box { at: gone.x0, gone.y0; size: (30 + (gone.w - 30) * (1 - going.k)) * if(going.k < 1, going.on, 0), 30 + (gone.h - 30) * (1 - going.k); corner: 14 + 6 * going.k }
+    }
+
     repeat k in 0..32 {
         // glass shines: a window of light and a dot on its upper left, higher and aside on a wide drop so
         // that they do not cover its text

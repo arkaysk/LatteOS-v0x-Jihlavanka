@@ -255,6 +255,22 @@ function M.wheel(dir)
     if mode == 0 then wm.scroll(dir) elseif mode == 2 then wm.cycle(dir) after(150, M.refresh) end
 end
 
+-- A window was put away (the compositor says where it was): it falls as a drop into the bar, beside the head,
+-- or straight down when the bar is on another edge, and the surface ripples where it lands.
+on("win_min", function()
+    local x, y, w, h = fact["win.x"], fact["win.y"], fact["win.w"], fact["win.h"]
+    local sw, sh = tonumber(fact.sw) or 0, tonumber(fact.sh) or 0
+    if w <= 0 or h <= 0 or sw <= 0 or x < 0 or y < 0 or x >= sw or y >= sh then return end      -- on another monitor
+    local head = E.get(HEAD)
+    local cx, cy = x + w / 2, y + h / 2
+    local to = (head and head.edge == 0) and math.min(E.along(head) + 90, E.limit(head)) or cx
+    local takes = math.sqrt(2 * math.max(40, sh - 6 - cy) / 800)            -- the scene's gravity, px/s²
+    fact["gone.x0"], fact["gone.y0"], fact["gone.x1"], fact["gone.w"], fact["gone.h"], fact["gone.for"] = cx, cy, to, w, h, takes
+    fact.gone_n += 1
+    after((takes + 0.2) * 1000, function() E.ripple(to / sw, 7, "stone") end)
+    after(250, M.refresh)                    -- its berry dims at once
+end)
+
 -- ── keeping up with the windows ──────────────────────────────────────────────────────────────────────────────
 local asked, signature = false, ""
 function M.refresh()

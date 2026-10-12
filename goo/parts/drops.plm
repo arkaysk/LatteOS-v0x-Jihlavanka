@@ -123,6 +123,30 @@ part Drops {
     on change cursor.x while idle > 0 { idle = 0; emit goo_idle(0) }
     on change cursor.y while idle > 0 { idle = 0; emit goo_idle(0) }
 
+    // ── a window put away falls into the window bar ─────────────────────────────────────────────────────────
+    // The compositor says where the window was (`win.*`, then the event); the logic works out where it lands
+    // and how long that takes (`gone.*`) and counts up. The window shrinks into a drop where it was, the drop
+    // falls from rest as any drop does, and the surface ripples where it lands.
+    event win_min ->
+    fact win.x = 0
+    fact win.y = 0
+    fact win.w = 0
+    fact win.h = 0
+    fact gone.x0 = 0                           // the window's middle
+    fact gone.y0 = 0
+    fact gone.x1 = 0                           // where along the bottom edge it lands
+    fact gone.w = 0
+    fact gone.h = 0
+    fact gone.for = 1                          // how long the fall takes, s
+    fact gone_n = 0
+    fact gone.at = -100
+    on change gone_n { gone.at = time }
+    let going.k = clamp((time - gone.at) / 0.2, 0, 1)                   // the first 0.2 s it shrinks into a drop
+    let going.t = max(0, time - gone.at - 0.2)
+    let going.on = if(time - gone.at < gone.for + 0.65, 1, 0)
+    let going.x = gone.x0 + (gone.x1 - gone.x0) * clamp(going.t / gone.for, 0, 1)
+    let going.y = min(H, gone.y0 + 0.5 * GRAVITY * going.t * going.t)
+
     // ── the surface: ripples along the bottom edge, and the wind ────────────────────────────────────────────
     // Four ripples at a time, which the logic takes in turn. `at` and `shift` say where, as a drop's home does;
     // kind 0 is a stone thrown in the water (two crests run apart and fade), 1 a tremble on the spot.
