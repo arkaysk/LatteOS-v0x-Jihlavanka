@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+# fresh-install: v0.3 off this machine and v0.4 Fresh on it, in one go. Run it as root, over ssh:
+#   sudo ./fresh-install
+# A btrfs snapshot comes first (snapper), then a copy of the user's settings; if a step fails it stops there.
+# It does not restart the session or the machine: reboot when it is done.
+set -euo pipefail
+cd "$(dirname "$(readlink -f "$0")")"
+[ "$(id -u)" = 0 ] || { echo "run it with sudo"; exit 1; }
+user="${SUDO_USER:-arkay}"
+home="$(getent passwd "$user" | cut -d: -f6)"
+stamp="$(date +%Y%m%d-%H%M%S)"
+
+echo "== snapshot"
+snapper -c root create -d "before LatteOS 0.4 Fresh" --print-number
+
+echo "== the user's settings → /var/backups/latteos-$stamp.tar.gz"
+mkdir -p /var/backups
+tar -czf "/var/backups/latteos-$stamp.tar.gz" -C "$home" --ignore-failed-read \
+    .config/latteos .config/pleamar .local/share/pleamar .local/state/latteos .config/sunshine 2>/dev/null || true
+
+echo "== what LatteOS needs"
+dnf install -y NetworkManager-tui
+
+echo "== Fresh"
+./install --go --prune
+
+echo "== what v0.3 left"
+./migrate-v03 --go
+
+echo "== done: check ./install and ./migrate-v03, then reboot"

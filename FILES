@@ -138,6 +138,28 @@
 /etc/kernel/install.d/96-latteos-safe.install           <- system/kernel-install/96-latteos-safe.install
 
 # These exist before LatteOS: the original is kept beside the file as *.pre-latteos and put back on removal.
+# Out of memory: the session's services are guarded and the applications go first (system/oom/)
+/usr/lib/systemd/user/dbus-broker.service.d/50-latteos-oom.conf                                         <- system/oom/user-service.conf
+/usr/lib/systemd/user/dbus.service.d/50-latteos-oom.conf                                                <- system/oom/user-service.conf
+/usr/lib/systemd/user/pipewire.service.d/50-latteos-oom.conf                                            <- system/oom/user-service.conf
+/usr/lib/systemd/user/pipewire-pulse.service.d/50-latteos-oom.conf                                      <- system/oom/user-service.conf
+/usr/lib/systemd/user/wireplumber.service.d/50-latteos-oom.conf                                         <- system/oom/user-service.conf
+/usr/lib/systemd/user/xdg-desktop-portal.service.d/50-latteos-oom.conf                                  <- system/oom/user-service.conf
+/usr/lib/systemd/user/xdg-desktop-portal-gtk.service.d/50-latteos-oom.conf                              <- system/oom/user-service.conf
+/usr/lib/systemd/user/xdg-desktop-portal-hyprland.service.d/50-latteos-oom.conf                         <- system/oom/user-service.conf
+/usr/lib/systemd/user/xdg-document-portal.service.d/50-latteos-oom.conf                                 <- system/oom/user-service.conf
+/usr/lib/systemd/user/xdg-permission-store.service.d/50-latteos-oom.conf                                <- system/oom/user-service.conf
+/usr/lib/systemd/user/at-spi-dbus-bus.service.d/50-latteos-oom.conf                                     <- system/oom/user-service.conf
+/usr/lib/systemd/user/dconf.service.d/50-latteos-oom.conf                                               <- system/oom/user-service.conf
+/usr/lib/systemd/user/gvfs-daemon.service.d/50-latteos-oom.conf                                         <- system/oom/user-service.conf
+/usr/lib/systemd/user/gvfs-metadata.service.d/50-latteos-oom.conf                                       <- system/oom/user-service.conf
+/usr/lib/systemd/user/gvfs-udisks2-volume-monitor.service.d/50-latteos-oom.conf                         <- system/oom/user-service.conf
+/usr/lib/systemd/user/gnome-keyring-daemon.service.d/50-latteos-oom.conf                                <- system/oom/user-service.conf
+/usr/lib/systemd/user/ssh-agent.service.d/50-latteos-oom.conf                                           <- system/oom/user-service.conf
+/usr/lib/systemd/user.conf.d/50-latteos-oom.conf                                                        <- system/oom/user-manager.conf
+/usr/lib/systemd/system/user@.service.d/50-latteos-oom.conf                                             <- system/oom/user@.conf
+/usr/lib/systemd/system/user@.service.d/52-latteos-oomd.conf                                            <- system/oom/user@-oomd.conf
+
 [replaces]
 /etc/greetd/config.toml                                 <- system/greetd/config.toml
 

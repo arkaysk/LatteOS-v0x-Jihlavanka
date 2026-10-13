@@ -257,6 +257,15 @@ Schválené 12. 10. 2026. Pracuje sa **zhora nadol, neskáče sa**; nový nápad
    kvapku (vzor fwm, R3·A). Znamená prepísať pohybovú časť `goo/parts/drops.plm` a presunúť neprekrývanie z
    `goo/lib/engine.luau` do scény; najprv zmerať cenu na snímku (dnešné pružiny: 24 % jadra pri 32 miestach).
 
+9. [ ] **Inštalátor so sprievodcom (provizórny, rozhodnuté 13. 10.)** — grafické UI s Baristom, kroky ako pri inštalácii
+   Fedory: jazyk a klávesnica, disk (automaticky a pár predvolieb; /boot, /, /data, formát, veľkosti), účet, AI áno/nie
+   (bez nej sa prvky AI nezobrazia; s ňou model podľa GPU a RAM sa sťahuje počas inštalácie), káva a šálka (odtieň kvapiek
+   a okien), výber súčastí od autorov. **Provizórny:** kroky Fedory sú vypísané, ale neaktívne (Fedora Server na latte-lab
+   už je); aktívne je to, čo je LatteOS. Beží priamo na latte-lab (cez ssh, nie vo VM), nad `./install` a `FILES`;
+   starý v0.3 sa z latte-lab odoberie a nainštaluje sa 0.4 Fresh. Live USB: režim GOO alebo SAFE rozhoduje už dnešné
+   `latte-boot` (predštartová identifikácia), obraz ju musí niesť; ostáva ju posilniť a skúsiť. Základ Fedora/Atomic: zatiaľ jedno.
+   *Pred odobratím v0.3:* snímka snapper, záloha nastavení používateľa, kroky sa zapíšu a overia suchým `./install`.
+
 ## ROADMAP2 — LatteOS od nápadu po hotový produkt
 
 **Pridané 9. 10. 2026.** Pôvodná roadmapa je od 9. 10. v snímke

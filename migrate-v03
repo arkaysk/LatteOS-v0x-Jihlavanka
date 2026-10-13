@@ -1,0 +1,108 @@
+#!/usr/bin/env python3
+"""migrate-v03: what v0.3 left on this system outside LatteOS's own folders, and what must stay.
+
+  ./migrate-v03        says what is left and what it keeps; nothing is changed
+  sudo ./migrate-v03 --go    removes what it listed, and the packages
+
+Meant to run after `sudo ./install --go --prune`: a file that Fresh puts on the system itself (FILES) is never
+listed. v0.3 has no uninstaller, so this is the list of what it scattered.
+"""
+import glob
+import os
+import re
+import shutil
+import subprocess
+import sys
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+
+# where v0.3 put things outside /usr/share/latteos, /usr/lib64/latteos and the other folders `./install --prune` knows
+LEFT = [
+    "/usr/bin/latte-*", "/usr/bin/noctalia*", "/usr/libexec/latteos/*",
+    "/usr/local/bin/noctalia", "/usr/local/share/noctalia", "/usr/share/noctalia", "/usr/share/noctalia-greeter",
+    "/usr/share/doc/noctalia*", "/usr/share/licenses/noctalia*", "/usr/share/bash-completion/completions/noctalia",
+    "/usr/share/polkit-1/actions/org.noctalia.*", "/usr/share/applications/dev.noctalia.*",
+    "/usr/share/applications/latteos-*.desktop", "/usr/share/wayland-sessions/latteos*.desktop",
+    "/usr/lib/systemd/system/latte-*", "/usr/lib/systemd/user/latte-*",
+    "/usr/lib/systemd/user/*.service.d/50-latteos-*", "/usr/lib/systemd/user.conf.d/50-latteos-*",
+    "/usr/lib/systemd/system/user@.service.d/5*-latteos-*",
+    "/usr/lib/tmpfiles.d/latteos*",
+]
+GONE_PACKAGES = ["noctalia-git", "noctalia-greeter-git"]          # Fresh has no Noctalia
+
+# not LatteOS's to remove, or the lifeline of this machine: shown so that nobody takes them away by mistake
+KEEP = [
+    ("/usr/lib/firmware/edid/latte-virt-1080p.bin", "the virtual monitor's EDID (remote access)"),
+    ("/etc/dracut.conf.d/latte-virt-edid.conf", "…and its copy in the initramfs"),
+    ("/etc/yum.repos.d/latteos-local.repo", "repository of the Hyprland that is built here (vmwgfx patch)"),
+    ("/var/lib/latteos/repo", "…its packages: this is not a v0.3 folder to clean"),
+    ("/etc/yum.repos.d/terra-latteos.repo", "repository Terra"),
+    ("/usr/local/lib/latteos-ai", "Claude, Codex, Copilot, Gemini (their /usr/local/bin links too)"),
+    ("/opt/latteos/proton", "Proton for the game session"),
+    ("/etc/greetd/config.toml.pre-latteos", "greetd as it was before LatteOS"),
+    ("/etc/latteos", "settings of this machine"),
+]
+KEEP_PACKAGES = ["Sunshine", "hyprland", "greetd", "NetworkManager"]
+
+
+def fresh_targets():
+    targets = set()
+    with open(os.path.join(HERE, "FILES"), encoding="utf-8") as f:
+        for line in f:
+            m = re.match(r"^(/\S+)\s+<-", line)
+            if m:
+                targets.add(m.group(1))
+    return targets
+
+
+def present(path):
+    return os.path.lexists(path)
+
+
+def main():
+    fresh = fresh_targets()
+    found = []
+    for pattern in LEFT:
+        for path in sorted(glob.glob(pattern)):
+            if path not in fresh and path not in found:
+                found.append(path)
+    print("== v0.3 left behind (not in FILES): %d" % len(found))
+    for path in found:
+        print("   " + path)
+    print("== packages that go: " + (", ".join(p for p in GONE_PACKAGES if subprocess.run(["rpm", "-q", p], capture_output=True).returncode == 0) or "none"))
+    print("== stays")
+    for path, why in KEEP:
+        print("   %-8s %s — %s" % ("there" if present(path) else "MISSING", path, why))
+    for package in KEEP_PACKAGES:
+        have = subprocess.run(["rpm", "-q", package], capture_output=True).returncode == 0
+        print("   %-8s package %s" % ("there" if have else "MISSING", package))
+    cmdline = open("/proc/cmdline").read()
+    virt = re.findall(r"\S*(?:drm\.edid_firmware|video=)\S*", cmdline)
+    print("   %-8s kernel parameter of the virtual monitor: %s" % ("there" if virt else "MISSING", " ".join(virt) or "-"))
+
+
+    return found
+
+
+def go(found):
+    if os.geteuid() != 0:
+        sys.exit("migrate-v03: --go needs root (sudo)")
+    for path in found:
+        if os.path.isdir(path) and not os.path.islink(path):
+            shutil.rmtree(path)
+        else:
+            os.remove(path)
+        parent = os.path.dirname(path)
+        if parent.endswith(".service.d") and not os.listdir(parent):
+            os.rmdir(parent)                  # a drop-in folder that was only ours
+    gone = [p for p in GONE_PACKAGES if subprocess.run(["rpm", "-q", p], capture_output=True).returncode == 0]
+    if gone:
+        subprocess.run(["dnf", "remove", "-y"] + gone, check=True)
+    subprocess.run(["systemctl", "daemon-reload"], check=True)
+    print("== removed %d paths and %d packages" % (len(found), len(gone)))
+
+
+if __name__ == "__main__":
+    left = main()
+    if "--go" in sys.argv[1:]:
+        go(left)
