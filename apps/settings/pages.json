@@ -33,14 +33,14 @@
     "name": "Default apps",
     "icon": "star",
     "status": "ready",
-    "words": "browser mail open with file types"
+    "words": "browser mail open with file types default app pdf video music pictures"
    },
    {
     "id": "ai",
     "name": "AI",
     "icon": "sparkles",
     "status": "ready",
-    "words": "assistant claude model provider"
+    "words": "assistant claude model provider ai turn off"
    }
   ]
  },
@@ -54,7 +54,7 @@
     "name": "Storage",
     "icon": "disc",
     "status": "ready",
-    "words": "disk space drives usage"
+    "words": "disk space drives usage free trash folders cleanup"
    },
    {
     "id": "backup",
@@ -82,21 +82,21 @@
     "name": "Performance and graphics",
     "icon": "activity",
     "status": "ready",
-    "words": "tier gpu fps speed"
+    "words": "tier gpu fps speed graphics card blur shadows animations effects"
    },
    {
     "id": "displays",
     "name": "Displays",
     "icon": "device-desktop",
     "status": "ready",
-    "words": "monitor resolution refresh scale screen"
+    "words": "monitor resolution refresh scale screen rotate rotation hz main second arrange"
    },
    {
     "id": "sound",
     "name": "Sound",
     "icon": "device-speaker",
     "status": "ready",
-    "words": "volume speaker microphone output input"
+    "words": "volume speaker microphone output input mute headphones"
    },
    {
     "id": "network",
@@ -140,7 +140,7 @@
     "name": "My account",
     "icon": "user",
     "status": "ready",
-    "words": "name picture profile"
+    "words": "name picture profile avatar user"
    },
    {
     "id": "password",
@@ -175,7 +175,7 @@
     "name": "Background",
     "icon": "photo",
     "status": "ready",
-    "words": "wallpaper picture live video desktop"
+    "words": "wallpaper picture live video desktop file"
    },
    {
     "id": "windows",
@@ -224,28 +224,28 @@
     "name": "Language and region",
     "icon": "world",
     "status": "ready",
-    "words": "locale slovak english keyboard layout format"
+    "words": "locale slovak english format region date number currency"
    },
    {
     "id": "time",
     "name": "Date and time",
     "icon": "clock-hour-4",
     "status": "ready",
-    "words": "clock timezone"
+    "words": "clock timezone date time zone automatic ntp"
    },
    {
     "id": "keyboard",
     "name": "Keyboard and shortcuts",
     "icon": "keyboard",
     "status": "ready",
-    "words": "keys shortcut layout win super"
+    "words": "keys shortcut layout win super qwerty qwertz switch"
    },
    {
     "id": "startmode",
     "name": "Start and safe mode",
     "icon": "shield-check",
     "status": "ready",
-    "words": "boot safe mode crash tier"
+    "words": "boot safe mode crash rescue start"
    }
   ]
  }
