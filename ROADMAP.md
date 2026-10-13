@@ -114,6 +114,10 @@ Schválené 12. 10. 2026. Pracuje sa **zhora nadol, neskáče sa**; nový nápad
           pravý = Správca zariadení. Okno z bubliny neskôr.
         - [x] **Správca zariadení** (13. 10.): `apps/devices.qml` + `bin/latte-devices` — prehľad počítača, skupiny
           zariadení, ovládač a stav každého, správa na skopírovanie. Iba číta; čo chýba oproti v0.3: LATTEOS-GOO.md §4.4.
+        - [ ] **Vzhľad aplikácií** (13. 10., používateľovi sa prvý nepáči): na výber štyri smery — A Hladina, B Kaviareň,
+          C Časopis, D streamovacie menu (jeho nápad). Hotový diel pre každý smer: kávová hladina na spodku okna,
+          ktorá sa jemne vlní a zavlní sa pri pohybe okna (`apps/common/Surface.qml`, `window-place`); do okien
+          sa dá až po výbere smeru.
         - [ ] **Barista** v App Manageri (stránka je pripravená, sprievodca podľa `docs/barista/NAVRH.md` nie).
         - [x] tapeta (swaybg, `assets/wallpapers`) a okenné tlačidlá (hyprbars so záplatou `patches/hyprbars-latte.patch`;
           postup v `patches/README.md`) (12. 10.).

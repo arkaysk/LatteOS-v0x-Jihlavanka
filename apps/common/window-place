@@ -1,0 +1,42 @@
+#!/usr/bin/env python3
+"""window-place: where the window of the app that started this is on the screen, a line "x y" each time it moves.
+
+A Wayland window is not told where it is. The surface of coffee in an app's window (Surface.qml) swings when the
+window is carried about, as coffee in a carried cup does, so it has to know: Hyprland is asked, over its socket,
+five times a second, and forty times a second for a while after the window has moved. Nothing is started for a
+question, and without Hyprland this ends at once and the coffee only laps.
+"""
+import json
+import os
+import socket
+import sys
+import time
+
+path = os.path.join(os.environ.get("XDG_RUNTIME_DIR", ""), "hypr", os.environ.get("HYPRLAND_INSTANCE_SIGNATURE", ""), ".socket.sock")
+app = os.getppid()
+
+
+def place():
+    with socket.socket(socket.AF_UNIX) as s:
+        s.settimeout(0.5)
+        s.connect(path)
+        s.sendall(b"j/clients")
+        data = b""
+        while chunk := s.recv(65536):
+            data += chunk
+    for c in json.loads(data):
+        if c.get("pid") == app:
+            return tuple(c.get("at") or (0, 0))
+    return None
+
+
+last, moved = None, 0.0
+while os.getppid() == app:                     # the app has gone: so does this
+    try:
+        at = place()
+    except (OSError, ValueError):
+        sys.exit(0)
+    if at is not None and at != last:
+        last, moved = at, time.monotonic()
+        print(at[0], at[1], flush=True)
+    time.sleep(0.025 if time.monotonic() - moved < 1.5 else 0.2)
