@@ -61,7 +61,7 @@ rm -f "$out"/shot*.png "$out/scene.log" "$out/do.log"
 cat > "$out/hyprland.lua" <<EOF
 local real = hl.exec_cmd
 hl.exec_cmd = function(cmd)
-    if cmd:find("systemctl") or cmd:find("latte%-boot") then return end
+    if cmd:find("systemctl") or cmd:find("latte%-boot") or cmd:find("latte%-screens") then return end
     return real(cmd)
 end
 dofile("$repo/system/hypr/hyprland.lua")

@@ -13,7 +13,7 @@ for f in bin/*; do
     case "$(head -1 "$f")" in *python*) python3 -c 'import sys; compile(open(sys.argv[1]).read(), sys.argv[1], "exec")' "$f" ;; *) bash -n "$f" ;; esac
 done
 
-for f in system/session-env.sh system/libexec/* system/kernel-install/* tests/screen.sh tests/press; do
+for f in system/session-env.sh system/libexec/* system/kernel-install/* tests/screen.sh tests/press tests/test_screens.sh; do
     case "$(head -1 "$f")" in *python*) python3 -c 'import sys; compile(open(sys.argv[1]).read(), sys.argv[1], "exec")' "$f" ;; *) bash -n "$f" ;; esac
 done
 # a shader is loaded as built: the built file must be the one its source gives
@@ -32,6 +32,7 @@ left="$(find "$stage" -type f | head -5)"; [ -z "$left" ] || { echo "install --r
 rm -rf "$stage" "$stage.log"
 for f in install tests/pointer.py tests/fake-player.py; do python3 -c 'import sys; compile(open(sys.argv[1]).read(), sys.argv[1], "exec")' "$f"; done
 tests/test_session.sh
+tests/test_screens.sh
 
 for f in system/hypr/*.lua system/hypr/latte/*.lua; do luac -p "$f"; done
 

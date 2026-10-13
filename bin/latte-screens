@@ -1,0 +1,25 @@
+#!/bin/sh
+# latte-screens [--start] MAIN [OTHER…]: the Goo scene on the main monitor and a window bar on every other.
+# Hyprland calls it whenever monitors come or go (system/hypr/hyprland.lua). It compares with what runs, so it
+# may be called at any time and as often as one likes. --start: the session begins; its target is started too.
+start=0
+[ "${1:-}" = --start ] && { start=1; shift; }
+main="${1:-}"
+[ -n "$main" ] || exit 0
+shift
+[ $start = 1 ] || systemctl --user -q is-active latte-session.target || exit 0
+
+now="$(systemctl --user show-environment | sed -n 's/^LATTE_GOO_SCREEN=//p')"
+if [ "$now" != "$main" ]; then
+    systemctl --user set-environment "LATTE_GOO_SCREEN=$main"
+    [ $start = 1 ] || systemctl --user restart latte-goo.service
+fi
+[ $start = 1 ] && systemctl --user start latte-session.target
+
+for unit in $(systemctl --user list-units --plain --no-legend --state=active,activating,failed 'latte-goo-side@*' | awk '{ print $1 }'); do
+    name="${unit#latte-goo-side@}"
+    name="${name%.service}"
+    case " $* " in *" $name "*) ;; *) systemctl --user stop "$unit" ;; esac
+done
+for name in "$@"; do systemctl --user start "latte-goo-side@$name.service"; done
+exit 0

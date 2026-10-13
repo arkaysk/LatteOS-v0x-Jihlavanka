@@ -209,7 +209,11 @@ Schválené 12. 10. 2026. Pracuje sa **zhora nadol, neskáče sa**; nový nápad
      (`--purge` aj to, čo vzniklo počas behu); `--root DIR` inštaluje do priečinka bez krokov (skúška, balíček);
      `--prune` odstráni z vlastných priečinkov LatteOS to, čo ostalo po staršej verzii. `tests/check.sh` pri každej
      kontrole nainštaluje do dočasného priečinka a zasa odoberie.
-     **Ostáva (s používateľom):** výmena na latte-lab bez preinštalovania Fedory — snímka snapper pred ňou,
+     **Urobené 13. 10.:** výmena na latte-lab jedným príkazom `sudo ./fresh-install` (snímka snapper, záloha nastavení
+     do `/var/backups`, `./install --go --prune`, potom `./migrate-v03 --go` — 80 zvyškov v0.3 mimo vlastných
+     priečinkov a balíky Noctalie); ochrana pred nedostatkom pamäte (`system/oom/`) prenesená do Fresh. Po reštarte
+     beží 0.4: greetd → `latte-session` → Hyprland → Goo; Sunshine, EDID a repozitáre ostali.
+     **Pôvodne ostávalo (s používateľom):** výmena na latte-lab bez preinštalovania Fedory — snímka snapper pred ňou,
      nastavenia používateľa do zálohy, odobratie v0.3 mimo vlastných priečinkov (v0.3 odinštalátor nemá: staré
      jednotky systemd, `/usr/libexec/latteos`, staré príkazy v `/usr/bin`, Noctalia) — a čistá Fedora vo VM
      s voliteľným vzdialeným prístupom (dnes `old/setup/lab/vzdialene.sh`). Až tu sa dokončia zvyšné testy bodu 1.
@@ -274,6 +278,11 @@ Schválené 12. 10. 2026. Pracuje sa **zhora nadol, neskáče sa**; nový nápad
    na hlavný (Hyprland `mirror`; overené 13. 10., zrkadlo aj škáluje), bez neho je hlavný on; (c) zmena pri
    pripojení a odpojení za behu (scéna Goo sa presunie, dnes ju presúva `place_shell`); (d) voľba „Duplikovať“
    v Nastaveniach › Obrazovky; (e) inštalátor to pri viacerých obrazovkách nastaví sám. Overiť so Sunshine (KMS).
+   **Urobené 13. 10.: (a), (b), (c)** — `main_monitor()` berie skutočný monitor pred virtuálnym a z nich ten najviac
+   vľavo; virtuálny sa pri skutočnom zrkadlí a po jeho odchode je zasa sám sebou; ktoré scény bežia, rieši
+   `bin/latte-screens` podľa toho, čo naozaj beží (predtým si to pamätal Hyprland a po `hyprctl reload` to stratil).
+   Overené bez obrazovky s napodobeným virtuálnym monitorom a v `tests/test_screens.sh`. **Neoverené:** na latte-lab
+   so skutočným monitorom a s Moonlight. Ostáva (d), (e).
 
 ## ROADMAP2 — LatteOS od nápadu po hotový produkt
 

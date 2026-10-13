@@ -126,47 +126,52 @@ hl.on("window.open", function(w)
 end)
 
 -- ── the start ─────────────────────────────────────────────────────────────────────────────────────────────
--- The Goo scene belongs on the main monitor, the one in the corner of the layout: it is told its name, or it
--- would come up on whichever monitor the pointer happens to be over. When monitors come and go and the main
--- one is another, the scene starts again there.
-local shell_on = nil
+-- The Goo scene belongs on the main monitor: a real one before the virtual one a machine without a screen is
+-- reached through (its EDID says LATTE-VIRT), and of those the leftmost. It is told its name, or it would come
+-- up on whichever monitor the pointer happens to be over.
+local function virtual(m) return (m.description or ""):find("LATTE-VIRT", 1, true) ~= nil or m.name == os.getenv("LATTE_VIRT") end
 local function main_monitor()
-    local first
+    local best
     for _, m in ipairs(hl.get_monitors() or {}) do
-        first = first or m.name
-        if m.x == 0 and m.y == 0 then return m.name end
+        if not best or (virtual(best) and not virtual(m)) or (virtual(best) == virtual(m) and m.x < best.x) then best = m end
     end
-    return first
+    return best
 end
--- Every other monitor has a window bar of its own, a scene for each (latte-goo-side@NAME.service).
--- `first`: what starts the session's services, once; until then a monitor that comes changes nothing.
-local sides, started = {}, false
-local function place_shell(first)
-    if type(first) ~= "string" then first = nil end
-    if not started and not first then return end
-    started = true
-    local name, todo = main_monitor(), {}
-    if name and name ~= shell_on then
-        todo[#todo + 1] = "systemctl --user set-environment LATTE_GOO_SCREEN=" .. name
-        if shell_on then todo[#todo + 1] = "systemctl --user restart latte-goo.service" end
-        shell_on = name
+-- Beside a real monitor the virtual one shows the same picture: nobody sits in front of it, and a window that
+-- went there could not be found. When the real one goes it is a monitor of its own again.
+local mirrored = nil
+local function mirror()
+    local main = main_monitor()
+    if not main then
+        if mirrored then hl.monitor({ output = mirrored, mode = "preferred", position = "auto", scale = 1, reserved_area = band(edges[mirrored] or edges[""] or "bottom") }) end
+        mirrored = nil
+        return
     end
-    todo[#todo + 1] = first
-    local there = {}
+    if virtual(main) then return end
     for _, m in ipairs(hl.get_monitors() or {}) do
-        if m.name ~= shell_on then
-            there[m.name] = true
-            if not sides[m.name] then todo[#todo + 1] = "systemctl --user start latte-goo-side@" .. m.name .. ".service" end
+        if virtual(m) then
+            hl.monitor({ output = m.name, mode = string.format("%dx%d@%.3f", m.width, m.height, m.refresh_rate), position = "auto", scale = 1, mirror = main.name })
+            mirrored = m.name
         end
     end
-    for gone in pairs(sides) do
-        if not there[gone] then todo[#todo + 1] = "systemctl --user stop latte-goo-side@" .. gone .. ".service" end
+end
+-- Every other monitor has a window bar of its own, a scene for each (latte-goo-side@NAME.service). Which scenes
+-- run is latte-screens's business: it looks at what runs, so nothing is remembered here that a reload would lose.
+-- `before`: what the session's start says first.
+local function place_shell(before)
+    if type(before) ~= "string" then before = nil end
+    mirror()
+    local main = main_monitor()
+    if not main then return end
+    local names = { main.name }
+    for _, m in ipairs(hl.get_monitors() or {}) do
+        if m.name ~= main.name and m.name ~= mirrored then names[#names + 1] = m.name end
     end
-    sides = there
-    if #todo > 0 then hl.exec_cmd("sh -c '" .. table.concat(todo, "; ") .. "'") end
+    hl.exec_cmd("sh -c '" .. (before and (before .. "; latte-screens --start ") or "latte-screens ") .. table.concat(names, " ") .. "'")
 end
 hl.on("monitor.added", place_shell)
 hl.on("monitor.removed", place_shell)
+hl.on("config.reloaded", place_shell)
 -- A screen as the user wants it now; with `keep` it also comes up so the next time. Settings tries a change
 -- without keeping it and puts the old one back unless the user says the picture is fine.
 function latte.screen(name, mode, position, scale, turn, keep)
@@ -216,7 +221,7 @@ hl.on("hyprland.start", function()
     latte.cup()
     -- systemd and D-Bus learn where the session is; the target starts the Goo scene and the portals.
     place_shell("dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE "
-        .. "HYPRLAND_INSTANCE_SIGNATURE LATTE_MODE LATTE_RENDERER LATTE_TIER LANG; systemctl --user start latte-session.target")
+        .. "HYPRLAND_INSTANCE_SIGNATURE LATTE_MODE LATTE_RENDERER LATTE_TIER LANG")
     -- What is copied is kept (cliphist), for the clipboard in the shore's panel; without cliphist nothing is.
     hl.exec_cmd("sh -c 'command -v cliphist >/dev/null && exec wl-paste --watch cliphist store'")
     -- A session whose shell is still up after a minute is a healthy one: the crash count goes back to zero.
