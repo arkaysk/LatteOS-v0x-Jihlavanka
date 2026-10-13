@@ -140,7 +140,7 @@ bol GooPower); **kvapka** = každý samostatný tekutý prvok; **karta Goo** = o
 
 **Jadro** (nedá sa skryť, iba zmeniť veľkosť): **BarGoo, PowerGoo, LensGoo.** **Voliteľné** (Nastavenia › Kvapky):
 **QueenGoo, ClockGoo, ChatGoo.** Predvolene dole: PowerGoo – LensGoo – hlava BarGoo s ikrami, vpravo ClockGoo
-a QuickGoo (vo Fresh; do v0.3 QueenGoo pred rohovou lištou Noctalie).
+a v rohu tvrdé Pobrežie (vo Fresh; do v0.3 rohová lišta Noctalie); QuickGoo (rýchle spúšťanie) vľavo od PowerGoo.
 
 | Goo | Ľavý klik | Pravý klik | Koliesko |
 |---|---|---|---|
@@ -149,6 +149,7 @@ a QuickGoo (vo Fresh; do v0.3 QueenGoo pred rohovou lištou Noctalie).
 | **PowerGoo** | karta PowerGoo | pás výkonu zap / vyp | veľkosť |
 | **LensGoo** | spúšťač (aj kláves Win) | rýchly zoznam aplikácií | veľkosť |
 | **ClockGoo** | upozornenia a kalendár | karta času | veľkosť |
+| **QuickGoo** | páska s aplikáciami poruke | — | veľkosť |
 | **QueenGoo** | App Manager | Správca zariadení | veľkosť |
 
 Stredné tlačidlo nemá žiadna kvapka shellu. Ťahanie ľavým = presun (BarGoo celý k inému okraju, ikry = poradie
@@ -273,6 +274,7 @@ ostatné kvapky sú iba na hlavnom monitore.
   [goo/lib/engine.luau](goo/lib/engine.luau).
 
 ### 4.8 Rohová lišta Noctalie — vpravo dole
+*(Fresh, 13. 10.: namiesto nej je vlastné **Pobrežie** — tvrdý roh, popis v §8. Nasledujúce platilo do v0.3.)*
 - Iba **pravá časť** lišty Noctalie, **natvrdo prilepená** do rohu, šírka podľa počtu widgetov. Obsahuje ikony
   programov na pozadí, sieť, hlasitosť, ovládacie centrum; **ďalšie widgety a komunitné doplnky** Noctalie sa
   pridávajú v jej nastaveniach a bežia natívne. Kliky podľa Noctalie, panely sa otvárajú pri lište.
@@ -472,11 +474,19 @@ nemá (AI je hľadanie, Financie a Sociálne sú podkategórie Flathubu).
   nejaký prehrávač, a kým hrá, tlčie. Ľavý klik = karta (obal, názov, interpret, Predošlá · Prehrať/Pozastaviť ·
   Ďalšia, hlasitosť, pri viacerých prehrávačoch ich zoznam), pravý = prehrať/pozastaviť, koliesko = hlasitosť.
   Overené s napodobeným prehrávačom (`tests/fake-player.py`), nie so skutočným.
-- **QuickGoo** (návrh Clauda z 12. 10., meno a podoba čakajú na potvrdenie): to, čo robila rohová lišta Noctalie —
-  sieť, zvuk, Bluetooth, jas a programy na pozadí. Kvapka ukazuje sieť; ľavý klik (Win+A) karta: Wi-Fi a Bluetooth
-  zap / vyp, hlasitosť a jas posuvníkmi, siete (pripojenie aj s heslom, zabudnutie), zariadenia Bluetooth, výstupy
-  a mikrofón, programy na pozadí ako dlaždice (pravý klik = ich ponuka). Koliesko na kvapke je hlasitosť, pravý klik
-  stlmí; pri každej zmene hlasitosti (aj klávesom) kvapka na chvíľu ukáže prstenec.
+- **QuickGoo** (používateľ, 13. 10.; `goo/drops/quickgoo.luau`, `goo/parts/launch.plm`): **rýchle spúšťanie**. Ľavý
+  klik kvapku natiahne do pásky s ikonami aplikácií, ktoré má používateľ poruke (najviac 8); klik na ikonu
+  aplikáciu spustí a páska sa zasunie, druhý klik na kvapku tiež. Aplikáciu na pásku pridá alebo odoberie LensGoo ›
+  pravý klik na aplikáciu, odobrať ju dá aj pravý klik na ikonu. Kým si používateľ nič nevybral, stoja na páske
+  naposledy spúšťané aplikácie.
+- **Pobrežie** (používateľ, 13. 10.; `goo/parts/shore.plm`, `goo/lib/shore.luau`): **tvrdý roh** vpravo dole, kde
+  goo končí — doska z materiálu šálky (ako titulky okien), dlhá podľa obsahu. Kvapky sa k nemu **nelepia**:
+  pustená nad ním dopadne na dosku a odskočí do goo, na okraji sa pred ním zastaví a skĺzne mimo. Na ňom zľava:
+  **okrúhla šípka**, **programy na pozadí** (klik ako v každom tray, pravý klik ponuka programu), **sieť**,
+  **hlasitosť** (koliesko mení, pravý klik stlmí, zmena sa na chvíľu ukáže prstencom), na notebooku **batéria**.
+  Šípka (aj Win+A) vysunie **panel až po horný okraj**: Wi-Fi a Bluetooth, hlasitosť a jas, siete, zariadenia,
+  výstupy zvuku a **schránka** — čo sa naposledy skopírovalo (uchováva `cliphist`), klik to skopíruje znova.
+  Hodiny v ňom nie sú, ostávajú v ClockGoo. Na ďalších monitoroch Pobrežie nie je.
 - **Okno s heslom** (polkit): keď program žiada práva správcu, scéna je agentom relácie a pýta heslo kartou.
 - **Nastavenia Goo** (PowerGoo › Nastavenia): karta — ktoré kvapky sú na ploche, vrátiť kvapky na miesto, materiál
   (káva / sklenená káva), živé správanie, druh kávy, tapeta, režim okien. Zmena platí hneď. Veľké Nastavenia LatteOS

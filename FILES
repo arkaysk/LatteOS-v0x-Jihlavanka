@@ -43,6 +43,7 @@
 /usr/share/latteos/goo/parts/card.plm                   <- goo/parts/card.plm
 /usr/share/latteos/goo/parts/faces.plm                  <- goo/parts/faces.plm
 /usr/share/latteos/goo/parts/strip.plm                  <- goo/parts/strip.plm
+/usr/share/latteos/goo/parts/launch.plm                 <- goo/parts/launch.plm
 /usr/share/latteos/goo/parts/shore.plm                  <- goo/parts/shore.plm
 /usr/share/latteos/goo/parts/keys.plm                   <- goo/parts/keys.plm
 /usr/share/latteos/goo/parts/rows.plm                   <- goo/parts/rows.plm
@@ -65,6 +66,7 @@
 /usr/share/latteos/goo/drops/clockgoo.luau              <- goo/drops/clockgoo.luau
 /usr/share/latteos/goo/drops/lensgoo.luau               <- goo/drops/lensgoo.luau
 /usr/share/latteos/goo/drops/powergoo.luau              <- goo/drops/powergoo.luau
+/usr/share/latteos/goo/drops/quickgoo.luau              <- goo/drops/quickgoo.luau
 /usr/share/latteos/goo/drops/mediagoo.luau              <- goo/drops/mediagoo.luau
 /usr/share/latteos/greeter/labwc/rc.xml                 <- system/greeter/labwc/rc.xml
 /usr/share/latteos/hypr/hyprland.lua                    <- system/hypr/hyprland.lua
@@ -127,6 +129,7 @@ package: greetd labwc tuigreet plymouth plymouth-plugin-two-step plymouth-theme-
 package: rsms-inter-fonts jetbrains-mono-fonts policycoreutils-python-utils util-linux-core
 package: foot less NetworkManager-tui                                # the SAFE session's terminal and rescue menu
 package: hyprland wireplumber libnotify swaybg hypridle              # the GOO session; wpctl for the volume keys; notify-send when a timer rings; the wallpaper; the lock when idle
+optional: cliphist wl-clipboard                                      # the clipboard in the shore's panel: what was copied lately
 package: fd-find xdg-utils xdg-user-dirs                             # the launcher: finding files, opening them, the home folders
 optional: brightnessctl power-profiles-daemon                        # the brightness keys; the power profiles in PowerGoo's card
 optional: steam gamescope gamescope-session gamescope-session-steam  # the Game session; without them it is not offered

@@ -6,7 +6,7 @@ runs. So two parts are written here, from the number of places the scene declare
 parts/drops.plm):
 
   parts/shapes.plm   the shapes of every drop, of the ripples and of a falling window, for the one body they melt in
-  parts/picks.plm    the values of ONE drop, chosen by a fact: the drop a card grows from, the one chosen from the keyboard, the one with the strip
+  parts/picks.plm    the values of ONE drop, chosen by a fact: the drop a card grows from, the one chosen from the keyboard, the ones with a strip
 
   gen.py             write both
   gen.py --check     fail if they are not what would be written (tests/check.sh)
@@ -95,6 +95,9 @@ def picks(n):
         # the drop that carries the performance strip
         ("strip_owner", (("strip.x", "x.{k}"), ("strip.y", "y.{k}"), ("strip.r", "rr.{k}"), ("strip.cap", "cap.{k}"),
                          ("strip.edge", "goo.{k}.edge"), ("strip.dir", "goo.{k}.cap_dir"))),
+        # the drop that carries the quick-launch strip
+        ("launch_owner", (("launch.x", "x.{k}"), ("launch.y", "y.{k}"), ("launch.r", "rr.{k}"), ("launch.cap", "cap.{k}"),
+                          ("launch.edge", "goo.{k}.edge"), ("launch.dir", "goo.{k}.cap_dir"))),
     ):
         for name, what in values:
             out.append("    prop %s = 0 ~0ms\n    follow %s = %s\n" % (name, name, pick(by, what, n)))

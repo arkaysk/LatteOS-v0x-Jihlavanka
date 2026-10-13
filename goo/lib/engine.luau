@@ -325,6 +325,41 @@ function Drop:go_home()
     self.at, self.rise, self.shift, self.zoom, self.edge, self.moved = self.home.at, self.home.rise, self.home.shift, 1, self.home.edge, false
     publish() save()
 end
+-- Stretched along its edge into a capsule, `cap` px to one side and of radius `r`: the drop comes up whole and
+-- stops sinking and leaning, for what it shows has to stay readable; it grows to the side that has room and
+-- the others step aside. Drawn back in, everything is as it was, except what somebody has dragged since.
+function Drop:stretch(cap, r)
+    if not self.stretched then
+        local before = {}
+        E.each(function(o)
+            if o ~= self and not o.live then before[o] = { at = o.at, rise = o.rise, edge = o.edge, moved = o.moved, drops = o.drops } end
+        end)
+        self.stretched = { before = before, size = self.v.size, rise = self.rise, seat = self.v.seat, lift = self.v.lift, pull = self.v.pull, swell = self.v.swell }
+        self.rise = math.max(self.rise, (r + 4) * self.zoom)
+        self:set({ size = r, seat = r + 4, lift = 0, pull = 0, swell = 0.04, still = true })
+    end
+    local dir = (along(self) - (2 * cap + r * self.zoom + 8) > 0.02 * len(self)) and -1 or 1
+    self:set({ cap = cap, cap_dir = dir })
+    E.apart(self)
+    publish()
+end
+function Drop:shrink()
+    local k = self.stretched
+    if not k then return end
+    self.stretched = nil
+    self.rise = k.rise or self.rise
+    self:set({ cap = 0, cap_dir = 0, still = false, size = k.size, seat = k.seat, lift = k.lift, pull = k.pull, swell = k.swell })
+    local back = false
+    for o, was in pairs(k.before) do
+        if by_id[o.id] == o and (o.drops or 0) == (was.drops or 0) and (o.at ~= was.at or o.rise ~= was.rise) then
+            o.at, o.rise, o.edge, o.moved = was.at, was.rise, was.edge, was.moved
+            back = true
+        end
+    end
+    if back then save() end
+    E.apart()
+    publish()
+end
 function Drop:hop() self.n.hop += 1 publish() end
 function Drop:squash() self.n.squash += 1 publish() end
 -- A throw along its edge to `at` (nil: up and down on the spot), up at `speed` px/s; whoever sits where it

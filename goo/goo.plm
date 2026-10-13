@@ -13,6 +13,7 @@
 //   card     the card's state and its frame
 //   faces    what each drop shows on itself
 //   strip    the performance strip in PowerGoo's capsule
+//   launch   the quick-launch strip in QuickGoo's capsule
 //   keys     Goo from the keyboard: the keys, and the mark on the drop chosen
 //   rows     what is in the card, and the tooltip
 //   lock     the lock screen, a surface of its own
@@ -53,6 +54,7 @@ scene Goo {
     include "parts/card.plm"
     include "parts/faces.plm"
     include "parts/strip.plm"
+    include "parts/launch.plm"
     include "parts/keys.plm"
     include "parts/rows.plm"
     include "parts/lock.plm"

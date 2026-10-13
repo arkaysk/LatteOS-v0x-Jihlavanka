@@ -1,0 +1,38 @@
+// The quick-launch strip: QuickGoo stretched along its edge into a capsule with the icons of the apps the user
+// keeps at hand (drops/quickgoo.luau). A press on one starts it and the strip draws back in; the right button
+// takes the app off the strip. On a side edge the icons stand one above the other.
+part Launch {
+    model pin max 8 { icon: image 30, 30; has_icon: bool; glyph: text; name: text }
+    fact launch_on = false
+    fact launch_owner = -1                     // the place of the drop that carries the strip
+    fact launch_cell = 44                      // an icon's room along the edge
+    event launch_pick ->                       // an icon was pressed: its place
+    event launch_right ->
+    event launch_hover ->                      // the pointer rests on an icon: the logic writes its name
+    prop launch.p = 0 ~grow
+    follow launch.p = if(launch_on, 1, 0)
+
+    let launch.tx = if(launch.edge == 1 or launch.edge == 3, 0, 1)        // along the edge
+    let launch.ty = 1 - launch.tx
+    // The icons come in one after another, once the capsule has stretched far enough to hold them.
+    let launch.grown = clamp(launch.cap / max(launch_cell * pin.count * 0.5, 1) * 1.25 - 0.25, 0, 1)
+
+    repeat u in 0..8 {
+        // the icon's middle, from the drop's centre along the edge; always in reading order
+        let off.$u = if(launch.dir < 0, 0 - (launch.r * 0.92 + launch_cell * (pin.count - u - 0.5)), launch.r * 0.92 + launch_cell * (u + 0.5))
+        let cx.$u = launch.x + launch.tx * off.$u
+        let cy.$u = launch.y + launch.ty * off.$u
+        let a.$u = clamp(launch.p * 1.7 - 0.12 * u, 0, 1) * launch.grown * if(launch_on and u < pin.count, 1, 0)
+        let big.$u = 1 + 0.14 * pin_hit.$u.hover
+
+        box { at: cx.$u, cy.$u; size: launch_cell - 6, launch.r * 2 - 8; corner: launch.r * 0.6; color: cream; opacity: 12% * pin_hit.$u.hover * a.$u; show: u < pin.count }
+        image pin.$u.icon { at: cx.$u - 15 * big.$u, cy.$u - 15 * big.$u; size: 30 * big.$u, 30 * big.$u; opacity: a.$u; show: u < pin.count and pin.$u.has_icon }
+        text pin.$u.glyph { at: cx.$u, cy.$u; anchor: center; size: 22; color: ink; opacity: 0.9 * a.$u; show: u < pin.count and not pin.$u.has_icon; family: "tabler-icons" }
+
+        zone box pin_hit.$u { at: cx.$u, cy.$u; size: if(launch.tx > 0, launch_cell - 2, launch.r * 2), if(launch.tx > 0, launch.r * 2, launch_cell - 2); cursor: pointer; role: button; active: launch_on and u < pin.count and launch.p > 0.6; label: "{pin.$u.name}" }
+        on press pin_hit.$u { tip.p: 0; emit launch_pick(u) }
+        on press right pin_hit.$u { tip.p: 0; emit launch_right(u) }
+        on hover pin_hit.$u for 400ms { tip_k = 400 + u; tip.x = cx.$u; tip.y = cy.$u - launch.r - 14; tip.p: 1; emit launch_hover(u) }
+        on away pin_hit.$u for 200ms while tip_k == 400 + u { tip.p: 0 }
+    }
+}

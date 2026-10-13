@@ -94,8 +94,10 @@ Schválené 12. 10. 2026. Pracuje sa **zhora nadol, neskáče sa**; nový nápad
         - [ ] **jadro kvapiek, zvyšok:** okno z bubliny príde s QueenGoo (rodia sa z nej riadne okná).
         - [x] ClockGoo (12. 10.): upozornenia (pleamar je server upozornení) a kalendár, karta času so stopkami,
           minútkou, budíkmi a počasím; karta vie dva stĺpce a mesiac.
-        - [x] náhrada rohovej lišty (12. 10.): kvapka **QuickGoo** (sieť, hlasitosť, Bluetooth, jas, programy na
-          pozadí — návrh, čaká na potvrdenie mena a podoby) a okno s heslom pre polkit.
+        - [x] náhrada rohovej lišty (13. 10.): **Pobrežie** — tvrdý roh vpravo dole s programami na pozadí, sieťou,
+          hlasitosťou a batériou; šípka vysunie panel po horný okraj (rýchle nastavenia, schránka cez `cliphist`);
+          kvapky sa k nemu nelepia a odrazia sa. Okno s heslom pre polkit (12. 10.).
+        - [x] **QuickGoo** = rýchle spúšťanie (13. 10.): páska s ikonami aplikácií poruke.
         - [x] vlastné kvapky (13. 10.): `goo/lib/own.luau`, zoznam `drops.json` v priečinku scény — aplikácia
           alebo ikona s príkazmi a textom z príkazu; LensGoo › pravý klik na aplikáciu › Pripnúť ako kvapku, pravý
           klik na kvapku › Odstrániť. Tvorca Goo (formulár v Nastaveniach) príde s aplikáciou Nastavenia.

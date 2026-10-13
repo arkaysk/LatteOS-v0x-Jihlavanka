@@ -12,6 +12,7 @@ local calc = require("lib/calc")
 local dangerous = require("lib/dangerous")
 local open = require("lib/open")
 local own = require("lib/own")
+local quick = require("drops/quickgoo")
 local M = {}
 -- N marks a text for the translation table (tests/check.sh looks for it); tr() translates it where it is shown.
 local function N(s) return s end
@@ -78,7 +79,9 @@ local function app_menu(a)
     local pinned = own.pinned(a)
     card.open({
         { label = a.local_name or a.name or a.id, icon = a.icon or "", glyph = "apps", run = function() launch(a) end },
-        { label = pinned and tr("Unpin the drop") or tr("Pin as a drop"), glyph = "pin", line = true,
+        { label = quick.has(a) and tr("Take off QuickGoo") or tr("Keep at hand in QuickGoo"), glyph = "rocket", line = true,
+          run = function() if quick.has(a) then quick.remove(a) else quick.add(a) end end },
+        { label = pinned and tr("Unpin the drop") or tr("Pin as a drop"), glyph = "pin",
           run = function() if pinned then own.remove(a.id) else own.pin(a) end end },
     }, { owner = owner, id = "lens-app", width = 280 })
 end
@@ -318,6 +321,7 @@ end
 
 function M.start(d)
     owner = d
+    quick.lately(function() return kept.recent end)
     local ok, saved = pcall(sys.ask, "files.read", FILE, "json")
     if ok and type(saved) == "table" then
         kept.mode = MODES[saved.mode] and saved.mode or 0

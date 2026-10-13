@@ -26,7 +26,7 @@ local open_card
 local FILE = "power.json"
 local CELL, CELL_SIDE = 64, 50                -- a cell's length along the bottom and top edges; on the sides
 local R = 22                                  -- the capsule's radius: a cell holds a name, a figure and a bar
-local strip = { on = false, job = nil, cells = {}, before = {}, keep = nil }
+local strip = { on = false, job = nil, cells = {} }
 
 local function gb(bytes)
     local tenths = math.floor((bytes or 0) / 2 ^ 30 * 10 + 0.5)
@@ -63,12 +63,8 @@ end
 -- edge ends there.
 local function shape(d)
     local cell = d.edge % 2 == 1 and CELL_SIDE or CELL
-    local cap = math.max(#strip.cells, 1) * cell / 2 + 3
-    local dir = (E.along(d) - (2 * cap + R * d.zoom + 8) > 0.02 * E.len(d)) and -1 or 1
-    d:set({ cap = cap, cap_dir = dir })
     fact.strip_owner, fact.strip_cell = d.k, cell
-    E.apart(d)
-    E.publish()
+    d:stretch(math.max(#strip.cells, 1) * cell / 2 + 3, R)
 end
 local function paint(d, s)
     local cells = cells_of(s)
@@ -89,14 +85,6 @@ end
 local function strip_on(d, quiet)
     if strip.on then return end
     strip.on = true
-    -- The drop comes up as a whole capsule and stops sinking and leaning: what it shows has to stay readable.
-    strip.keep = { size = d.v.size, rise = d.rise, seat = d.v.seat, lift = d.v.lift, pull = d.v.pull, swell = d.v.swell }
-    strip.before = {}
-    E.each(function(o)
-        if o ~= d and not o.live then strip.before[o] = { at = o.at, rise = o.rise, edge = o.edge, moved = o.moved, drops = o.drops } end
-    end)
-    d.rise = math.max(d.rise, (R + 4) * d.zoom)
-    d:set({ size = R, seat = R + 4, lift = 0, pull = 0, swell = 0.04, still = true })
     strip.cells = cells_of({ cpu = 0 })
     model.cell = {}
     shape(d)
@@ -112,21 +100,7 @@ local function strip_off(d)
     strip.on = false
     if strip.job then pcall(kill, strip.job) strip.job = nil end
     fact.strip_on = false
-    local k = strip.keep or {}
-    d.rise = k.rise or d.rise
-    d:set({ cap = 0, cap_dir = 0, still = false, size = k.size, seat = k.seat, lift = k.lift, pull = k.pull, swell = k.swell })
-    -- the drops that were pushed aside go back, those nobody has dragged since
-    local back = false
-    for o, was in pairs(strip.before) do
-        if E.get(o.id) == o and (o.drops or 0) == (was.drops or 0) and (o.at ~= was.at or o.rise ~= was.rise) then
-            o.at, o.rise, o.edge, o.moved = was.at, was.rise, was.edge, was.moved
-            back = true
-        end
-    end
-    strip.before = {}
-    if back then E.save() end
-    E.apart()
-    E.publish()
+    d:shrink()
     d:ripple(3)
     pcall(sys.call, "files.write", FILE, { strip = false })
 end
