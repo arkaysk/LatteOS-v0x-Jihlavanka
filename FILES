@@ -53,6 +53,7 @@
 /usr/share/latteos/goo/lib/timers.luau                  <- goo/lib/timers.luau
 /usr/share/latteos/goo/lib/wm.luau                      <- goo/lib/wm.luau
 /usr/share/latteos/goo/lib/open.luau                    <- goo/lib/open.luau
+/usr/share/latteos/goo/lib/own.luau                     <- goo/lib/own.luau
 /usr/share/latteos/goo/lib/find.luau                    <- goo/lib/find.luau
 /usr/share/latteos/goo/lib/calc.luau                    <- goo/lib/calc.luau
 /usr/share/latteos/goo/drops/bargoo.luau                <- goo/drops/bargoo.luau

@@ -11,6 +11,7 @@ local find = require("lib/find")
 local calc = require("lib/calc")
 local dangerous = require("lib/dangerous")
 local open = require("lib/open")
+local own = require("lib/own")
 local M = {}
 -- N marks a text for the translation table (tests/check.sh looks for it); tr() translates it where it is shown.
 local function N(s) return s end
@@ -72,7 +73,16 @@ local function confirmed(cmd)
     return false
 end
 local function search_web(e, text) then_do(function() open.url(string.format(e.url, urlencode(text))) end) end
-local function tile(a) return { label = a.local_name or a.name or a.id, icon = a.icon or "", glyph = "apps", run = function() launch(a) end } end
+-- the right button on an app: it can be pinned to the desktop as a drop of its own
+local function app_menu(a)
+    local pinned = own.pinned(a)
+    card.open({
+        { label = a.local_name or a.name or a.id, icon = a.icon or "", glyph = "apps", run = function() launch(a) end },
+        { label = pinned and tr("Unpin the drop") or tr("Pin as a drop"), glyph = "pin", line = true,
+          run = function() if pinned then own.remove(a.id) else own.pin(a) end end },
+    }, { owner = owner, id = "lens-app", width = 280 })
+end
+local function tile(a) return { label = a.local_name or a.name or a.id, icon = a.icon or "", glyph = "apps", run = function() launch(a) end, right = function() app_menu(a) end } end
 local function number(v)
     local s = string.format("%.10g", v)
     return (tr("%d.%d G"):find(",", 1, true) and s:gsub("%.", ",") or s)       -- the decimal mark of the user's language
@@ -101,7 +111,7 @@ local function rows_apps()
         rows[#rows + 1] = { label = shown, glyph = "calculator", hint = tr("click copies"), run = function() pcall(sys.call, "clipboard.set", shown) end }
     end
     for _, a in ipairs(find(apps, typed, 7)) do
-        rows[#rows + 1] = { label = a.local_name or a.name or a.id, icon = a.icon or "", glyph = "apps", hint = tr("App"), run = function() launch(a) end }
+        rows[#rows + 1] = { label = a.local_name or a.name or a.id, icon = a.icon or "", glyph = "apps", hint = tr("App"), run = function() launch(a) end, right = function() app_menu(a) end }
     end
     -- the same text, taken elsewhere
     local text = typed

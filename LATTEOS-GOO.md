@@ -243,6 +243,12 @@ ostatné kvapky sú iba na hlavnom monitore.
   klik, koliesko (veľkosť, hlasitosť, jas, skladba, plochy). Rýchla cesta: LensGoo › pravý klik na aplikáciu ›
   Pripnúť ako kvapku. Pravý klik na vlastné goo: Upraviť v Tvorcovi Goo, Vrátiť na miesto, Odstrániť goo. Nové goo si
   nájde voľné miesto na lište (nie v páse výkonu) a zapamätá si ho ako domov.
+- *(Fresh, 13. 10.: `goo/lib/own.luau` — kvapky sú zoznam v `drops.json` v priečinku scény
+  (`~/.local/share/pleamar/goo/`), berú sa hneď po uložení: aplikácia (`app`), alebo ikona s príkazom na ľavý
+  a stredný klik (`click`, `middle`) a textom z príkazu (`text`, `every`), povaha (`nature`). LensGoo › pravý klik
+  na aplikáciu › Pripnúť ako kvapku; pravý klik na vlastnú kvapku: Vrátiť na miesto, Odstrániť kvapku. Skryť sa dá
+  v Nastaveniach ako každá voliteľná. Ešte nie je: Tvorca Goo (formulár), údaj s prstencom, farebné jadro z príkazu,
+  skupina aplikácií, voľba kolieska.)*
 - Programátor pridá kvapku s vlastným správaním ako modul Luau (`goo/drops/`); ako, je v hlavičke
   [goo/lib/engine.luau](goo/lib/engine.luau).
 
@@ -458,7 +464,7 @@ nemá (AI je hľadanie, Financie a Sociálne sú podkategórie Flathubu).
   hlavičky (plugin hyprbars so záplatou, ak je nainštalovaný; pravý klik na titulok = ponuka okna v karte Goo).
 
 **Ešte nie je** (vráti sa po kusoch, poradie v ROADMAP):
-QueenGoo, ChatGoo, vlastné kvapky a Tvorca Goo, hra pri nečinnosti (§3.1 stupeň 3; príde s vlastnými kvapkami — hrajú sa iba hravé),
+QueenGoo (čaká na App Manager a Správcu zariadení), ChatGoo (čaká na Beeper), Tvorca Goo (vlastné kvapky už sú: §4.7), hra pri nečinnosti (§3.1 stupeň 3; príde s vlastnými kvapkami — hrajú sa iba hravé),
 okno z bubliny (14; pád minimalizovaného okna už je), prenášanie ikier medzi monitormi, režim AI v LensGoo,
 portrét účtu, MediaGoo (čo práve hrá), prepojené kalendáre,
 živé tapety a vlastný obrázok tapety, sklo okien, prichytenie ťahaním, Nastavenia a ostatné aplikácie.

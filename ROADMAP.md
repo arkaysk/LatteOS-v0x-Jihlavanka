@@ -97,7 +97,12 @@ Schválené 12. 10. 2026. Pracuje sa **zhora nadol, neskáče sa**; nový nápad
           minútkou, budíkmi a počasím; karta vie dva stĺpce a mesiac.
         - [x] náhrada rohovej lišty (12. 10.): kvapka **QuickGoo** (sieť, hlasitosť, Bluetooth, jas, programy na
           pozadí — návrh, čaká na potvrdenie mena a podoby) a okno s heslom pre polkit.
-        - [ ] QueenGoo, ChatGoo, vlastné kvapky (s nimi hra pri nečinnosti), MediaGoo, prepojené kalendáre.
+        - [x] vlastné kvapky (13. 10.): `goo/lib/own.luau`, zoznam `drops.json` v priečinku scény — aplikácia
+          alebo ikona s príkazmi a textom z príkazu; LensGoo › pravý klik na aplikáciu › Pripnúť ako kvapku, pravý
+          klik na kvapku › Odstrániť. Tvorca Goo (formulár v Nastaveniach) príde s aplikáciou Nastavenia.
+        - [ ] hra pri nečinnosti (hravé kvapky), MediaGoo, prepojené kalendáre. **QueenGoo** čaká na App Manager
+          a Správcu zariadení (aplikácie, bod 6 — kvapka bez nich nemá čo otvoriť), **ChatGoo** na Beeper
+          (na latte-lab nie je nainštalovaný, nedá sa overiť).
         - [x] tapeta (swaybg, `assets/wallpapers`) a okenné tlačidlá (hyprbars so záplatou `patches/hyprbars-latte.patch`;
           postup v `patches/README.md`) (12. 10.).
         - [x] LensGoo: režimy Súbory a Web, kalkulačka (12. 10.).
