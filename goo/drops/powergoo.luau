@@ -170,7 +170,7 @@ open_card = function(d, keep)
         { label = ask("off", N("Shut down")), glyph = "power", danger = true, on = armed == "off", keep = true, run = leave("off", d) },
     } }
     -- With the strip out it stays where it is, and the card grows from where the press was.
-    card.open(rows, { owner = not strip.on and d or nil, id = "power", width = 330, keep = keep })
+    card.open(rows, { owner = not strip.on and d or nil, strip = strip.on, id = "power", width = 330, keep = keep })
 end
 
 return {
