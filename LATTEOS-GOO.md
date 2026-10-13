@@ -200,6 +200,10 @@ ostatné kvapky sú iba na hlavnom monitore.
   kľúča** — cez oficiálne nástroje prihlásené účtom používateľa (Claude = `claude -p` so `stream-json`, Gemini =
   `gemini` CLI, ChatGPT = `codex exec`), prípadne Ollama alebo domáci server; prihlásenie raz z Nastavení. Otvorenie
   webu je iba posledná možnosť. Ukazovateľ pri modeli rozlišuje lokálny a cloudový model.
+  *(Fresh, 13. 10.: režim AI je v LensGoo (Win+C), keď `bin/latte-ai providers` niečo nájde — zatiaľ iba Claude
+  (`claude -p`, bez nástrojov, bez osobných nastavení používateľa, rozhovor sa neukladá). Odpoveď príde naraz
+  (nie postupne), posledné štyri výmeny idú ako kontext, Kopírovať odpoveď, Nový rozhovor. Chýba: Gemini, ChatGPT,
+  Ollama a domáci server (na latte-lab sa nedali vyskúšať), prihlásenie z Nastavení, postupné písanie, prílohy.)*
 - **Rýchly zoznam (pravý klik):** jednoduché okno s ikonami — naposledy spustené a obľúbené aplikácie ako dlaždice
   (klik spustí), pod nimi Hľadať… (otvorí spúšťač) a App Manager.
 
@@ -474,6 +478,6 @@ nemá (AI je hľadanie, Financie a Sociálne sú podkategórie Flathubu).
 
 **Ešte nie je** (vráti sa po kusoch, poradie v ROADMAP):
 QueenGoo (čaká na App Manager a Správcu zariadení), ChatGoo (čaká na Beeper), Tvorca Goo (vlastné kvapky už sú: §4.7),
-okno z bubliny (14; pád minimalizovaného okna už je), prenášanie ikier medzi monitormi, režim AI v LensGoo,
+okno z bubliny (14; pád minimalizovaného okna už je), prenášanie ikier medzi monitormi, ďalší poskytovatelia AI,
 portrét účtu, účty kalendárov so zápisom (CalDAV),
 živé tapety a vlastný obrázok tapety, sklo okien, prichytenie ťahaním, Nastavenia a ostatné aplikácie.

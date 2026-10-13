@@ -35,6 +35,7 @@ function K.setup()
     bind("SUPER + S", goo("lens_mode 0"))
     bind("SUPER + Q", goo("lens_mode 0"))
     bind("SUPER + R", goo("lens_mode 3"))
+    bind("SUPER + C", goo("lens_mode 4"))      -- the assistant, as Win+C is on Windows
 
     bind("SUPER + A", goo("quick_toggle"))
     bind("SUPER + N", goo("clock_notes"))

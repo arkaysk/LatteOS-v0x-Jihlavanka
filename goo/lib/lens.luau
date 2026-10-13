@@ -190,6 +190,62 @@ local function rows_command()
     return rows
 end
 
+-- ── AI: a conversation in the card. Who answers is latte-ai's to know; the mode is there only if somebody does ──
+local ai = { providers = {}, at = 1, talk = {}, waiting = nil }
+local function ask(question)
+    local p = ai.providers[ai.at]
+    if not p or ai.waiting then return end
+    ai.talk[#ai.talk + 1] = { role = "user", content = question }
+    while #ai.talk > 8 do table.remove(ai.talk, 1) end           -- what it is reminded of: the last four turns
+    local lines = {}
+    ai.waiting = spawn("latte-ai", { "ask", p.id, json.encode(ai.talk) }, function(line) lines[#lines + 1] = line end, function()
+        ai.waiting = nil
+        ai.talk[#ai.talk + 1] = { role = "assistant", content = table.concat(lines, "\n") }
+        if card.id() == "lens" and kept.mode == 4 then render(true) end
+    end)
+    typed = ""
+    card.text("")
+    render(true)
+end
+-- an answer as bubbles, a few paragraphs each: a bubble holds fourteen lines
+local function bubbles(answer)
+    local out, now = {}, ""
+    for part in (answer .. "\n\n"):gmatch("(.-)\n%s*\n") do
+        part = part:gsub("^%s+", ""):gsub("%s+$", "")
+        if part ~= "" then
+            if now ~= "" and #now + #part > 600 then out[#out + 1] = now now = "" end
+            now = now == "" and part or (now .. "\n\n" .. part)
+        end
+    end
+    if now ~= "" then out[#out + 1] = now end
+    local rows = {}
+    for i = 1, math.min(#out, 4) do rows[i] = { para = true, label = (#out[i] > 900 and (out[i]:sub(1, 900) .. " …") or out[i]) .. ((i == 4 and #out > 4) and " …" or "") } end
+    return rows
+end
+local function rows_ai()
+    local p = ai.providers[ai.at]
+    if not p then return { { label = tr("No AI on this computer"), glyph = "sparkles", quiet = true } } end
+    local rows = {}
+    if typed ~= "" and not ai.waiting then
+        local question = typed
+        rows[#rows + 1] = { label = tr("Ask") .. ": " .. question, glyph = "sparkles", keep = true, run = function() ask(question) end }
+    end
+    -- who answers, and whether the question leaves this computer; a press takes the next one there is
+    rows[#rows + 1] = { label = p.name, glyph = p["local"] and "device-desktop" or "cloud", hint = p["local"] and tr("on this computer") or tr("online service"),
+                        quiet = #ai.providers < 2, keep = true, run = function() ai.at = ai.at % #ai.providers + 1 render(true) end }
+    local question, answer
+    for _, m in ipairs(ai.talk) do if m.role == "user" then question, answer = m.content, nil else answer = m.content end end
+    if question then rows[#rows + 1] = { label = question, glyph = "user", quiet = true, line = true } end
+    if ai.waiting then
+        rows[#rows + 1] = { para = true, label = tr("Thinking…") }
+    elseif answer then
+        for _, r in ipairs(bubbles(answer)) do rows[#rows + 1] = r end
+        rows[#rows + 1] = { label = tr("Copy the answer"), glyph = "copy", keep = true, line = true, run = function() pcall(sys.call, "clipboard.set", answer) end }
+        rows[#rows + 1] = { label = tr("New conversation"), glyph = "plus", keep = true, run = function() ai.talk = {} render(true) end }
+    end
+    return rows
+end
+
 local MODES = {
     [0] = { glyph = "apps", name = N("Applications"), hint = N("Search apps…"), rows = rows_apps },
     [1] = { glyph = "folder", name = N("Files"), hint = N("Search files…"), rows = rows_files },
@@ -279,6 +335,12 @@ function M.start(d)
             table.sort(folders, function(a, b) return a.place < b.place end)      -- the answers come in any order
         end)
     end
+    run("latte-ai", { "providers" }, function(out)
+        local found_any, list = pcall(json.decode, out or "")
+        if not found_any or type(list) ~= "table" or #list == 0 then return end
+        ai.providers = list
+        MODES[4] = { glyph = "sparkles", name = N("AI"), hint = N("Ask anything…"), rows = rows_ai }
+    end)
     sys.watch("apps", function(list)
         apps, by_id = list or {}, {}
         for _, a in ipairs(apps) do if a.id then by_id[a.id] = a end end

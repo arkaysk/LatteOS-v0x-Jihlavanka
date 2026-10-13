@@ -13,6 +13,7 @@
 /usr/bin/latte-sky                                      <- bin/latte-sky
 /usr/bin/latte-say                                      <- bin/latte-say
 /usr/bin/latte-cal                                      <- bin/latte-cal
+/usr/bin/latte-ai                                       <- bin/latte-ai
 /usr/bin/latte-session                                  <- bin/latte-session
 /usr/bin/latte-safe                                     <- bin/latte-safe
 /usr/bin/latte-game                                     <- bin/latte-game

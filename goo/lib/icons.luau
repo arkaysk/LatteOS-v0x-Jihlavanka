@@ -35,6 +35,7 @@ return {
     ["cloud-rain"] = "\u{EA72}",
     ["cloud-snow"] = "\u{EA73}",
     ["cloud-storm"] = "\u{EA74}",
+    ["copy"] = "\u{EA7A}",
     ["cup"] = "\u{EF28}",
     ["device-desktop"] = "\u{EA89}",
     ["device-speaker"] = "\u{EA8B}",

@@ -152,4 +152,9 @@ t, whole = cal.when("", "20250305T120000Z")
 assert not whole and t == dt.datetime(2025, 3, 5, 12, tzinfo=dt.timezone.utc).astimezone().replace(tzinfo=None)
 assert cal.times(dt.datetime(2025, 1, 1), "FREQ=DAILY", dt.datetime(2026, 1, 1), dt.datetime(2026, 1, 3)) == [
     dt.datetime(2026, 1, 1), dt.datetime(2026, 1, 2), dt.datetime(2026, 1, 3)]
+ai = load("latte-ai")
+assert ai.as_prompt([{"role": "user", "content": "Hi"}]) == "Hi" and ai.as_prompt([]) == ""
+p = ai.as_prompt([{"role": "user", "content": "A"}, {"role": "assistant", "content": "B"}, {"role": "user", "content": "C"}])
+assert "User: A\nAssistant: B" in p and p.endswith("C"), p
+assert ai.claude("q")[:3] == ["claude", "-p", "q"] and ai.claude("q")[-2:] == ["--tools", ""]      # the question first: --tools takes all that follows
 print("bin: ok")

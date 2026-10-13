@@ -1,0 +1,82 @@
+#!/usr/bin/env python3
+"""latte-ai: who answers in LensGoo's AI mode. No API key: the official tool of a service answers, with the
+account the user is logged in to it with.
+
+  latte-ai providers        what there is on this computer: [{"id", "name", "local"}]; "local" tells an answer
+                            made on this machine from one that goes to a service
+  latte-ai ask ID JSON      the next answer in a conversation, on stdout. JSON is the conversation so far:
+                            [{"role": "user" | "assistant", "content": …}, …], the question last.
+                            What went wrong is said on stdout too, so that it shows where the answer would.
+"""
+import json
+import os
+import shutil
+import subprocess
+import sys
+
+SYSTEM = ("You are the assistant in the launcher of the LatteOS desktop. Answer briefly and to the point, in the "
+          "language of the question, in plain text: no Markdown, no headings.")
+# Where a tool is run: an empty folder of its own, so that it finds no project there to read.
+ROOM = os.path.join(os.environ.get("XDG_STATE_HOME") or os.path.expanduser("~/.local/state"), "latteos", "ai")
+
+
+def claude(prompt):
+    # No tools: it answers, it does not act on the computer. The conversation is not kept among the user's own,
+    # and what the user set up for their own work with the tool (hooks, instructions) stays out of the answers.
+    return ["claude", "-p", prompt, "--system-prompt", SYSTEM, "--output-format", "text", "--no-session-persistence",
+            "--setting-sources", "project", "--tools", ""]
+
+
+# ponytail: one service, the one that could be tried. Another is a line here and a function that makes its command.
+PROVIDERS = {"claude": {"name": "Claude", "local": False, "tool": "claude", "command": claude}}
+
+
+def providers():
+    return [{"id": i, "name": p["name"], "local": p["local"]} for i, p in PROVIDERS.items() if shutil.which(p["tool"])]
+
+
+def as_prompt(talk):
+    """The conversation as one question: the tools are asked afresh each time."""
+    talk = [m for m in talk if isinstance(m, dict) and m.get("content")]
+    if len(talk) <= 1:
+        return talk[0]["content"] if talk else ""
+    lines = ["%s: %s" % ("User" if m.get("role") == "user" else "Assistant", m["content"]) for m in talk[:-1]]
+    return "The conversation so far:\n" + "\n".join(lines) + "\n\nNow answer this:\n" + talk[-1]["content"]
+
+
+def ask(provider, talk):
+    p = PROVIDERS.get(provider)
+    if not p or not shutil.which(p["tool"]):
+        print("latte-ai: no such provider here: " + provider)
+        return 1
+    prompt = as_prompt(talk)
+    if not prompt:
+        return 1
+    os.makedirs(ROOM, exist_ok=True)
+    try:
+        done = subprocess.run(p["command"](prompt), cwd=ROOM, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
+                              stderr=subprocess.STDOUT, text=True, timeout=180)
+    except subprocess.TimeoutExpired:
+        print("latte-ai: no answer in three minutes")
+        return 1
+    print(done.stdout.strip())
+    return done.returncode
+
+
+def main(a):
+    if a == ["providers"]:
+        print(json.dumps(providers()))
+        return 0
+    if len(a) == 3 and a[0] == "ask":
+        try:
+            talk = json.loads(a[2])
+        except ValueError:
+            talk = None
+        if isinstance(talk, list):
+            return ask(a[1], talk)
+    print(__doc__.strip())
+    return 2
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))
