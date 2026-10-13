@@ -8,7 +8,10 @@ parts/drops.plm):
   parts/shapes.plm   the shapes of every drop, of the ripples and of a falling window, for the one body they melt in
   parts/picks.plm    the values of ONE drop, chosen by a fact: the drop a card grows from, the one chosen from the keyboard, the ones with a strip
 
-  gen.py             write both
+  parts/waves.plm    the login screen's coffee surface: where each point of it is, from a sum of Gerstner waves
+  parts/surface.plm  the lines that join those points, for the login screen's body
+
+  gen.py             write them all
   gen.py --check     fail if they are not what would be written (tests/check.sh)
   gen.py --slots N   change the number of places in the scene, then write both
 """
@@ -105,12 +108,42 @@ def picks(n):
     return "".join(out)
 
 
+# The coffee's surface as the side of a few Gerstner waves: (wavelength px, amplitude px, degrees per second, phase).
+# goo/shaders/water.wgsl bends the light with the same table: change both.
+WAVES = ((820, 7.0, 22, 0), (430, 4.2, 31, 70), (250, 2.6, 44, 200), (150, 1.5, 63, 310))
+SPAN = 32                                   # the surface is SPAN lines, from a little left of the screen to a little right
+THICK = 30                                  # half the width of a line: how far the coffee reaches up from its centre
+
+
+def waves():
+    out = [NOTE.replace("parts/drops.plm", "WAVES in gen.py"), "part Waves {\n"]
+    for i in range(SPAN + 1):
+        x0 = "(-80 + (W + 160) * %d / %d)" % (i, SPAN)
+        th = ["(360 * %s / %d - %d * time + %d)" % (x0, wl, om, ph) for wl, _, om, ph in WAVES]
+        # a crest leans over the way the wave goes: the point moves along as well as up
+        out.append("    let wave_x.%d = %s - 2.5 * chop * (%s)\n" % (
+            i, x0, " + ".join("%g * sin%s" % (a, t) for (_, a, _, _), t in zip(WAVES, th))))
+        out.append("    let wave_y.%d = 0 - chop * (%s)\n" % (
+            i, " + ".join("%g * cos%s" % (a, t) for (_, a, _, _), t in zip(WAVES, th))))
+    out.append("}\n")
+    return "".join(out)
+
+
+def surface():
+    out = [NOTE.replace("parts/drops.plm", "WAVES in gen.py"), "part Surface {\n"]
+    for i in range(SPAN):
+        out.append("    line { from: wave_x.%d, tide_y + %d + wave_y.%d; to: wave_x.%d, tide_y + %d + wave_y.%d; width: %d; blend: 34 }\n" % (
+            i, THICK, i, i + 1, THICK, i + 1, 2 * THICK))
+    out.append("}\n")
+    return "".join(out)
+
+
 def main():
     if "--slots" in sys.argv:
         set_slots(int(sys.argv[sys.argv.index("--slots") + 1]))
     n = slots()
     stale = []
-    for name, text in (("shapes.plm", shapes(n)), ("picks.plm", picks(n))):
+    for name, text in (("shapes.plm", shapes(n)), ("picks.plm", picks(n)), ("waves.plm", waves()), ("surface.plm", surface())):
         path = os.path.join(HERE, "parts", name)
         if "--check" in sys.argv:
             if not os.path.exists(path) or open(path).read() != text:

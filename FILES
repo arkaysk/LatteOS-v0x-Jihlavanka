@@ -78,6 +78,8 @@
 /usr/share/latteos/goo/parts/body.plm                   <- goo/parts/body.plm
 /usr/share/latteos/goo/parts/shapes.plm                 <- goo/parts/shapes.plm
 /usr/share/latteos/goo/parts/card.plm                   <- goo/parts/card.plm
+/usr/share/latteos/goo/parts/waves.plm                   <- goo/parts/waves.plm
+/usr/share/latteos/goo/parts/surface.plm                 <- goo/parts/surface.plm
 /usr/share/latteos/goo/parts/faces.plm                  <- goo/parts/faces.plm
 /usr/share/latteos/goo/parts/strip.plm                  <- goo/parts/strip.plm
 /usr/share/latteos/goo/parts/launch.plm                 <- goo/parts/launch.plm

@@ -926,5 +926,11 @@ cestu k aktualizácii alebo návratu.
     v daždi, v softvérovom režime nič). Nevzali sme simuláciu (SPH, FFT): hladina je bokom čiara, ktorú tvorí telo
     goo, a FFT by bol predražený. **Možný ďalší krok:** profil hladiny ako súčet 3–5 Gerstnerových vĺn (trochoida
     je presne rez takou vlnou) namiesto dnešných siedmich „hrbov“, a lom lúčov podľa toho istého profilu.
+    **Urobené 13. 10.:** hladina je súčet štyroch Gerstnerových vĺn (`WAVES` v `goo/gen.py` → `parts/waves.plm`,
+    `parts/surface.plm`: 32 úsečiek v tele goo); shader `water.wgsl` ohýba lúče podľa sklonu tej istej hladiny,
+    vypuklý hrebeň ich zbiera, šachty a kaustiky sú šum (nie pravidelný vzor — používateľ: „priveľmi symetrické“),
+    a na dne sú vlnové vrásky piesku (nahradili päť tmavých elíps). SedFoam (OpenFOAM, CFD) a wavesed (pyReef,
+    pobrežné sedimenty) sú simulácie na iný účel; zo sedimentu sa vzal iba obraz: rovnobežné vrásky, ktoré
+    pomaly putujú smerom vĺn.
 12. [ ] **PowerGoo s lištou údajov:** kartu vysunúť z celého celku Goo + lišta, aby tvorili vizuálne jeden kus
     (dnes je ucho karty pri ľavom kliku malé a lišta ostáva vedľa). Režimy okien (4.) sú bod 7 (Glance).

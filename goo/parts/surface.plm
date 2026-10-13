@@ -1,0 +1,35 @@
+// Written by goo/gen.py from the number of places in WAVES in gen.py. Do not edit: run gen.py.
+part Surface {
+    line { from: wave_x.0, tide_y + 30 + wave_y.0; to: wave_x.1, tide_y + 30 + wave_y.1; width: 60; blend: 34 }
+    line { from: wave_x.1, tide_y + 30 + wave_y.1; to: wave_x.2, tide_y + 30 + wave_y.2; width: 60; blend: 34 }
+    line { from: wave_x.2, tide_y + 30 + wave_y.2; to: wave_x.3, tide_y + 30 + wave_y.3; width: 60; blend: 34 }
+    line { from: wave_x.3, tide_y + 30 + wave_y.3; to: wave_x.4, tide_y + 30 + wave_y.4; width: 60; blend: 34 }
+    line { from: wave_x.4, tide_y + 30 + wave_y.4; to: wave_x.5, tide_y + 30 + wave_y.5; width: 60; blend: 34 }
+    line { from: wave_x.5, tide_y + 30 + wave_y.5; to: wave_x.6, tide_y + 30 + wave_y.6; width: 60; blend: 34 }
+    line { from: wave_x.6, tide_y + 30 + wave_y.6; to: wave_x.7, tide_y + 30 + wave_y.7; width: 60; blend: 34 }
+    line { from: wave_x.7, tide_y + 30 + wave_y.7; to: wave_x.8, tide_y + 30 + wave_y.8; width: 60; blend: 34 }
+    line { from: wave_x.8, tide_y + 30 + wave_y.8; to: wave_x.9, tide_y + 30 + wave_y.9; width: 60; blend: 34 }
+    line { from: wave_x.9, tide_y + 30 + wave_y.9; to: wave_x.10, tide_y + 30 + wave_y.10; width: 60; blend: 34 }
+    line { from: wave_x.10, tide_y + 30 + wave_y.10; to: wave_x.11, tide_y + 30 + wave_y.11; width: 60; blend: 34 }
+    line { from: wave_x.11, tide_y + 30 + wave_y.11; to: wave_x.12, tide_y + 30 + wave_y.12; width: 60; blend: 34 }
+    line { from: wave_x.12, tide_y + 30 + wave_y.12; to: wave_x.13, tide_y + 30 + wave_y.13; width: 60; blend: 34 }
+    line { from: wave_x.13, tide_y + 30 + wave_y.13; to: wave_x.14, tide_y + 30 + wave_y.14; width: 60; blend: 34 }
+    line { from: wave_x.14, tide_y + 30 + wave_y.14; to: wave_x.15, tide_y + 30 + wave_y.15; width: 60; blend: 34 }
+    line { from: wave_x.15, tide_y + 30 + wave_y.15; to: wave_x.16, tide_y + 30 + wave_y.16; width: 60; blend: 34 }
+    line { from: wave_x.16, tide_y + 30 + wave_y.16; to: wave_x.17, tide_y + 30 + wave_y.17; width: 60; blend: 34 }
+    line { from: wave_x.17, tide_y + 30 + wave_y.17; to: wave_x.18, tide_y + 30 + wave_y.18; width: 60; blend: 34 }
+    line { from: wave_x.18, tide_y + 30 + wave_y.18; to: wave_x.19, tide_y + 30 + wave_y.19; width: 60; blend: 34 }
+    line { from: wave_x.19, tide_y + 30 + wave_y.19; to: wave_x.20, tide_y + 30 + wave_y.20; width: 60; blend: 34 }
+    line { from: wave_x.20, tide_y + 30 + wave_y.20; to: wave_x.21, tide_y + 30 + wave_y.21; width: 60; blend: 34 }
+    line { from: wave_x.21, tide_y + 30 + wave_y.21; to: wave_x.22, tide_y + 30 + wave_y.22; width: 60; blend: 34 }
+    line { from: wave_x.22, tide_y + 30 + wave_y.22; to: wave_x.23, tide_y + 30 + wave_y.23; width: 60; blend: 34 }
+    line { from: wave_x.23, tide_y + 30 + wave_y.23; to: wave_x.24, tide_y + 30 + wave_y.24; width: 60; blend: 34 }
+    line { from: wave_x.24, tide_y + 30 + wave_y.24; to: wave_x.25, tide_y + 30 + wave_y.25; width: 60; blend: 34 }
+    line { from: wave_x.25, tide_y + 30 + wave_y.25; to: wave_x.26, tide_y + 30 + wave_y.26; width: 60; blend: 34 }
+    line { from: wave_x.26, tide_y + 30 + wave_y.26; to: wave_x.27, tide_y + 30 + wave_y.27; width: 60; blend: 34 }
+    line { from: wave_x.27, tide_y + 30 + wave_y.27; to: wave_x.28, tide_y + 30 + wave_y.28; width: 60; blend: 34 }
+    line { from: wave_x.28, tide_y + 30 + wave_y.28; to: wave_x.29, tide_y + 30 + wave_y.29; width: 60; blend: 34 }
+    line { from: wave_x.29, tide_y + 30 + wave_y.29; to: wave_x.30, tide_y + 30 + wave_y.30; width: 60; blend: 34 }
+    line { from: wave_x.30, tide_y + 30 + wave_y.30; to: wave_x.31, tide_y + 30 + wave_y.31; width: 60; blend: 34 }
+    line { from: wave_x.31, tide_y + 30 + wave_y.31; to: wave_x.32, tide_y + 30 + wave_y.32; width: 60; blend: 34 }
+}
