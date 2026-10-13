@@ -202,7 +202,7 @@
     "id": "notifications",
     "name": "Notifications",
     "icon": "bell",
-    "status": "planned",
+    "status": "ready",
     "words": "do not disturb alerts"
    },
    {

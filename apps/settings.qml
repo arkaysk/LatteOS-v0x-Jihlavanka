@@ -794,6 +794,13 @@ ShellRoot {
             Label { visible: shell.page === "lock"; width: view.room; wrapMode: Text.WordWrap; color: Theme.dim; font.pixelSize: 13
                     text: I18n.tr("The session also locks before the computer goes to sleep. Win+L locks it at once.") }
 
+            // notifications: what a new one does. They wait in ClockGoo either way.
+            Part { visible: shell.page === "notifications"; width: view.room; title: I18n.tr("When a notification comes"); note: I18n.tr("Every notification waits in ClockGoo until you have read it or cleared it.")
+                Switch { width: view.room; text: I18n.tr("Do not disturb"); hint: I18n.tr("Nothing is shown and nothing sounds; notifications wait quietly."); on: goo.kept.quiet === true; onPressed: goo.set("quiet", !on) }
+                Switch { width: view.room; text: I18n.tr("Show it in the corner"); hint: I18n.tr("A note for a few seconds above the right end of the bar. A press opens the notifications."); on: goo.kept.banners !== false; onPressed: goo.set("banners", !on) }
+                Switch { width: view.room; text: I18n.tr("Play a sound"); hint: I18n.tr("A short, quiet tone."); on: goo.kept.notify_sound !== false; onPressed: goo.set("notify_sound", !on) } }
+            Pill { visible: shell.page === "notifications"; icon: "bell"; text: I18n.tr("Try it"); onPressed: Quickshell.execDetached(["notify-send", "LatteOS", I18n.tr("This is how a notification looks.")]) }
+
             // the password
             Part { visible: shell.page === "password"; width: view.room; title: I18n.tr("Change your password"); note: I18n.tr("Type the new one twice. The system then asks for the present one in its own window.")
                 Field { id: pass1; width: 320; icon: "lock"; secret: true; hint: I18n.tr("New password") }

@@ -39,8 +39,10 @@ local function read_linked(then_do)
 end
 
 local function save() pcall(sys.call, "files.write", FILE, kept) end
+-- Do not disturb, the note in the corner and its sound are the Goo's settings (settings.json): the Settings app sets them too
+local function quiet() return E.settings().quiet == true end
 local function second_line()
-    if kept.quiet then return tr("Do not disturb") end
+    if quiet() then return tr("Do not disturb") end
     return date .. ((sky and sky.now) and ("  " .. tostring(sky.now.temp) .. "°") or "")
 end
 local function show_face(d) if not busy_face then d:set({ line2 = second_line() }) end end
@@ -85,9 +87,8 @@ local function note_rows(d)
             end,
         }
     end
-    local pills = { { glyph = kept.quiet and "bell-off" or "bell", label = tr("Do not disturb"), on = kept.quiet, keep = true, run = function()
-        kept.quiet = not kept.quiet
-        save()
+    local pills = { { glyph = quiet() and "bell-off" or "bell", label = tr("Do not disturb"), on = quiet(), keep = true, run = function()
+        E.set("quiet", not quiet())
         show_face(d)
         open_notes(d, true)
     end } }
@@ -360,13 +361,13 @@ return {
     id = "clockgoo", name = "ClockGoo", kind = "clock", nature = "calm", size = 33, swell = 0.09, seat = 22,
     home = { edge = 0, at = 0.79 }, pull = 0.25, reach = 130,
     about = function()
-        return (kept.quiet and (tr("Do not disturb is on: notifications wait here quietly") .. " · ") or "")
+        return (quiet() and (tr("Do not disturb is on: notifications wait here quietly") .. " · ") or "")
             .. (#notes > 0 and (#notes .. " " .. tr("notifications") .. " · ") or "") .. tr("left: notifications and calendar · right: time, timer, alarms, weather")
     end,
     start = function(d)
         local ok, saved = pcall(sys.ask, "files.read", FILE, "json")
         if ok and type(saved) == "table" then
-            kept.quiet = saved.quiet == true
+            if saved.quiet == true and E.settings().quiet == nil then E.set("quiet", true) end      -- where it was kept before
             kept.events = type(saved.events) == "table" and saved.events or {}
             kept.tasks = type(saved.tasks) == "table" and saved.tasks or {}
             kept.calendars = type(saved.calendars) == "table" and saved.calendars or {}
@@ -384,12 +385,23 @@ return {
         local served = pcall(sys.watch, "notifications", function(list)
             notes = list or {}
             local fresh = false
-            for _, n in ipairs(notes) do if not seen[n.id] then seen[n.id], fresh = true, true end end
-            if fresh and not kept.quiet then d:ripple(5) end
+            local newest = nil
+            for _, n in ipairs(notes) do if not seen[n.id] then seen[n.id], fresh = true, true newest = newest or n end end
+            if fresh and not quiet() then
+                d:ripple(5)
+                local set = E.settings()
+                if newest and set.banners ~= false then
+                    text.toast_title = ((newest.title or "") ~= "" and newest.title or (newest.app or "")):sub(1, 80)
+                    text.toast_body = tostring(newest.body or ""):gsub("%s+", " "):sub(1, 160)
+                    fact.toast_n += 1
+                end
+                if set.notify_sound ~= false then pcall(sound.tone, { wave = "sine", freq = 740, to = 990, ms = 160, release = 220, volume = 0.35 }) end
+            end
             show_beads(d)
             if card.id() == "notes" then open_notes(d, true) end
         end)
         if served then pcall(sys.call, "notifications.keep", true) end
+        on("toast_press", function() open_notes(d) end)
         on("clock_notes", function() if card.id() == "notes" then card.close() else open_notes(d) end end)
         on("clock_time", function() if card.id() == "time" then card.close() else open_time(d) end end)
         -- the weather beside the date, fresh every twenty minutes
