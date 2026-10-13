@@ -97,8 +97,25 @@ Barista ide zhora nadol. Pri každej otázke je napísané, **kto odpovedá**: s
 | 2.5 | Je chránená proti kopírovaniu? | stroj | podpisy SafeDisc, SecuROM, StarForce v súboroch |
 | 2.6 | Stačí tento počítač? | stroj | miesto na disku, grafická karta, pamäť |
 
-Verdikt, ktorý človek vidí: **pôjde** (recept, ktorý už niekto vyskúšal) · **asi pôjde** (iba pravidlá) ·
-**nepôjde** (s dôvodom). Dôvody sú vždy vypísané.
+**Čo človek na obrazovke 2 vidí** (rozhodnutie používateľa, 14. 10.): všetko, čo stroj zistil, ľudskou
+rečou, nie iba verdikt —
+
+- čo to je: názov, vydavateľ, rok, z čoho sa inštaluje (2 disky, 1 GB);
+- ako je zabalené: „inštalátor InstallShield; obídem ho a prečítam jeho archívy priamo“;
+- v čom pobeží a prečo: „Wine s Windows XP — hra je z roku 2001“;
+- čo potrebuje a odkiaľ to bude: „DirectX: netreba, je vo Wine · .NET: stiahnem“;
+- ochrana proti kopírovaniu, ak je;
+- či stačí počítač: miesto, grafická karta, pamäť;
+- **verdikt**: *pôjde* (recept, ktorý už niekto vyskúšal) · *asi pôjde* (iba pravidlá) · *nepôjde* (s dôvodom).
+
+| # | otázka | odpovedá | ako |
+|---|---|---|---|
+| 2.7 | Smiem zistiť viac na internete? | **človek** | dve tlačidlá: *Zistiť viac na internete* · *Pokračovať offline* |
+
+Offline je plnohodnotná cesta: recepty a pravidlá sú v počítači. Z internetu sa dá doplniť: nároky hry
+a porovnanie s týmto počítačom, známe opravy (databázy Lutris, umu/protonfixes, winetricks), novší recept.
+Bez povolenia Barista na internet nejde vôbec — ani po knižnice; ak nejakú treba a nie je na médiu,
+povie to a opýta sa znova.
 
 **Vetva A — recept existuje.** Kroky sú dané, človek iba potvrdí.
 
@@ -133,27 +150,33 @@ Neznámy zdroj: sieť ostáva vypnutá aj počas inštalácie a nedá sa zapnú�
 Stroj robí kroky a hovorí ľudsky, čo práve robí („Čítam disk 2“, „Pripravujem Windows pre hru“,
 „Rozbaľujem“). Technický výpis je v logu a ukáže sa iba na požiadanie.
 
-Po inštalácii **skúšobné spustenie** — stroj, bez človeka: spustí hru na 30 s a pozrie, či (a) proces
-žije, (b) otvoril okno, (c) v logu nie je `err:module` (chýbajúca knižnica) ani pád.
+**Skúšobné spustenie robí človek** (rozhodnutie používateľa, 14. 10.), nie stroj. Po inštalácii obrazovka
+ponúkne, ešte pred spustením:
 
-| čo skúška ukáže | čo Barista spraví sám |
+- **Otvoriť priečinok aplikácie** (`~/Games/<id>`),
+- **Ukázať log inštalácie** (`logs/install.log`),
+- **Spustiť na skúšku**.
+
+Po skúške sa Barista opýta: *Fungovalo to?* — *Áno* · *Nie: nespustilo sa* · *Nie: spustilo sa, ale zle*.
+Pri „nie“ pozrie do logu spustenia a navrhne ďalší krok z tabuľky; človek ho potvrdí a skúsi znova.
+
+| čo je v logu spustenia | čo Barista navrhne |
 |---|---|
-| chýba `d3dx9_*.dll`, `msvcp*.dll`, `mfc*.dll`, `mscoree.dll` | `winetricks` s príslušným verbom (d3dx9, vcrun…, dotnet…) do prefixu hry, skúsi znova |
-| pád pri Direct3D | prepne DXVK ↔ vstavané wined3d, skúsi znova |
-| nič nepomohlo vo Wine | pred pokusom si odložil prefix; vráti ho a skúsi Proton (umu-run) |
-| pýta si CD | pripojí obraz disku ako mechaniku prefixu, skúsi znova |
-| nič z toho | „Nepodarilo sa“ + dôvod + kde je log; nič po sebe nenechá |
+| chýba `d3dx9_*.dll`, `msvcp*.dll`, `mfc*.dll`, `mscoree.dll` | doplniť knižnicu (`winetricks` do prefixu hry; sťahuje — iba s povolením z 2.7) |
+| pád pri Direct3D | prepnúť DXVK ↔ vstavané wined3d |
+| nič nepomohlo vo Wine | skúsiť Proton (umu-run); prefix spred pokusu je odložený a dá sa vrátiť |
+| pýta si CD | pripojiť obraz disku ako mechaniku |
+| nič z toho | „Neviem si rady“ + kde je log; ponúkne odinštalovať |
 
-Každý pokus sa zapíše. Poradie pokusov je pevné, takže dva počítače dôjdu k tomu istému.
+Každý pokus sa zapíše. Poradie návrhov je pevné, takže dva počítače dôjdu k tomu istému.
 
 ### Obrazovka 5 — Hotovo
 
 | # | otázka | odpovedá |
 |---|---|---|
-| 5.1 | Spustiť teraz? | človek |
-| 5.2 | Fungovalo to? (po prvom hraní) | človek: *Áno* · *Nie, …* |
+| 5.1 | Spustiť · Otvoriť priečinok · Ukázať log · Odinštalovať | človek |
 
-Odpoveď „Áno“ urobí z toho, čo stroj zistil, **recept** v `~/.local/share/latteos/recipes/` — tak ako
+Odpoveď „Áno“ na skúške (obrazovka 4) urobí z toho, čo stroj zistil, **recept** v `~/.local/share/latteos/recipes/` — tak ako
 vznikol recept AVP2. Nabudúce (a u každého, komu sa recept pošle) je to vetva A.
 
 ## 3. Čo je dnes hotové a čo nie
@@ -165,7 +188,8 @@ vznikol recept AVP2. Nabudúce (a u každého, komu sa recept pošle) je to vetv
 | obrazovky sprievodcu 1–5 | nie sú; Barista je zatiaľ príkaz |
 | vetva B (bez receptu): rozpoznanie inštalátora, výber runnera | pravidlá sú vo v0.3 (`old/session/bin/latte-instalator`), do 0.4 neprenesené |
 | ďalšie typy zdrojov (archív, exe, msi, apk…) | nie |
-| skúšobné spustenie a reťaz pokusov | nie |
+| skúšobné spustenie človekom, tlačidlá Priečinok a Log, návrhy podľa logu | nie |
+| povolenie ísť na internet (2.7) | nie; dnes Barista na internet nejde vôbec |
 | závislosti cez winetricks | nie |
 | pripojenie disku pre kontrolu CD | nie |
 | recept z úspešnej inštalácie | nie (recept AVP2 je písaný ručne) |
