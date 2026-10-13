@@ -100,7 +100,7 @@ Pôvodný zoznam (7. 10. 2026, 540 testov bez stavu): `docs_zaloha/2026-10-07-st
 | 033 | GooBar správne reaguje na zmenu rozlíšenia | P1 | ⬜ | | |
 | 034 | GooBar správne reaguje na zmenu DPI | P1 | ⬜ | | |
 | 035 | GooBar funguje na viacerých monitoroch | P1 | ⬜ | | |
-| 036 | GooPower funguje v NORMAL aj SAFE režime (karta, pás výkonu, Uspať · Reštartovať · Vypnúť) | P1 | ⚠️ | 12. 10. · latte-lab | 13. 10.: klik na Reštartovať nespravil nič — engine beží mimo prihlasovacej relácie, polkit pre neho dáva `challenge` (heslo nikto nezadá) a `pcall` chybu zhltol. Oprava: `wm.machine` spúšťa `systemctl` cez Hyprland (z neho `CanReboot` = `yes`); po nasadení klik overiť znova |
+| 036 | GooPower funguje v NORMAL aj SAFE režime (karta, pás výkonu, Uspať · Reštartovať · Vypnúť) | P1 | ✅ | 12. 10. · latte-lab | 13. 10. · latte-lab | klik na Reštartovať v PowerGoo reštartoval počítač (reboot.target 19:10:42, čistý štart, relácia GOO nabehla). Pôvodná chyba: engine mimo relácie logind, polkit `challenge`; opravené `wm.machine`. Uspať a Vypnúť idú tou istou cestou, naostro neskúšané |
 | 037 | ClockGoo zobrazuje správny čas | P1 | ⬜ | | |
 | 038 | ClockGoo zvláda zmenu časového pásma | P1 | ⬜ | | |
 | 039 | LensGoo vyhľadá aplikáciu | P1 | ⬜ | | |
