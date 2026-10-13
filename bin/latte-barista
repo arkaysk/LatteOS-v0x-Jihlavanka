@@ -1,0 +1,280 @@
+#!/usr/bin/env python3
+"""latte-barista: puts a Windows program on this computer and runs it, each in a folder and a sandbox of its own.
+
+  latte-barista analyze SOURCE…     what the sources are and whether it will work, as JSON:
+                                    {"sources": [{"path", "type", "sha256"}], "recipe", "name", "verdict", "reasons": […], "missing": […]}
+                                    verdict: "works" (a recipe that was tried), "may" (rules only) or "no"
+  latte-barista install SOURCE…     installs it; prints a JSON line for each step {"step", "at", "of"} and at the
+                                    end {"ok": true, "id"} or {"ok": false, "error"}
+  latte-barista run ID              starts it, in its sandbox
+  latte-barista list                what is installed: [{"id", "name", "size", "installed"}]
+  latte-barista remove ID           takes it away: its folder (saves too) and its entry in the menu
+
+A SOURCE is a disc image (.iso) or a folder; the other discs of a set are found beside the first one.
+Nothing of a source is changed. A program lives in ~/Games/ID: `prefix` is its Windows (drive C:, the registry,
+its saves), `manifest.json` says what was installed from what, `logs` keeps what it said.
+It runs under bubblewrap: the system read-only, of the user's home only its own folder, and no network unless
+its recipe asks for it. That is a fence, not a virtual machine.
+How a program is installed is a recipe (/usr/share/latteos/recipes/*.json, the user's own in
+~/.local/share/latteos/recipes): which files tell it apart, what is taken from the discs, how it is started.
+"""
+import datetime, glob, hashlib, json, os, shutil, subprocess, sys
+
+HOME = os.path.expanduser("~")
+GAMES = os.environ.get("LATTE_GAMES") or os.path.join(HOME, "Games")
+SHARE = os.environ.get("LATTE_SHARE") or "/usr/share/latteos"
+DATA = os.environ.get("XDG_DATA_HOME") or os.path.join(HOME, ".local/share")
+RUNTIME = os.environ.get("XDG_RUNTIME_DIR") or "/run/user/%d" % os.getuid()
+
+
+def say(**what):
+    print(json.dumps(what, ensure_ascii=False), flush=True)
+
+
+def sha256(path):
+    h = hashlib.sha256()
+    with open(path, "rb") as f:
+        for block in iter(lambda: f.read(1 << 20), b""):
+            h.update(block)
+    return h.hexdigest()
+
+
+def recipes():
+    found = {}
+    for folder in (os.path.join(SHARE, "recipes"), os.path.join(DATA, "latteos", "recipes")):
+        for path in sorted(glob.glob(os.path.join(folder, "*.json"))):
+            try:
+                r = json.load(open(path))
+                found[r["id"]] = r
+            except (OSError, ValueError, KeyError):
+                pass
+    return found
+
+
+def kind(path):
+    if os.path.isdir(path):
+        return "folder"
+    return "iso" if path.lower().endswith(".iso") else "unknown"
+
+
+def names(path):
+    """The files at the top of a source, lower case."""
+    if os.path.isdir(path):
+        return {n.lower() for n in os.listdir(path)}
+    try:
+        out = subprocess.run(["7z", "l", "-slt", path], capture_output=True, text=True, timeout=120).stdout
+    except (OSError, subprocess.TimeoutExpired):
+        return set()
+    return {l[7:].lower() for l in out.splitlines() if l.startswith("Path = ") and "/" not in l[7:] and "\\" not in l[7:]}
+
+
+def with_siblings(sources):
+    """The sources given, and the other disc images beside the first: a set of discs is asked for once."""
+    out = [os.path.abspath(s) for s in sources]
+    first = out[0]
+    if kind(first) == "iso":
+        out += [p for p in sorted(glob.glob(os.path.join(os.path.dirname(first), "*.[iI][sS][oO]"))) if p not in out]
+    return out
+
+
+def find_recipe(sources):
+    """The recipe whose telltale files are in the sources, the sources that belong to it, and what it still lacks."""
+    listed = {s: names(s) for s in with_siblings(sources)}
+    given = [os.path.abspath(s) for s in sources]
+    for r in recipes().values():
+        want = [n.lower() for n in r.get("match", [])]
+        have = set().union(*[listed[s] for s in given])
+        if not want or not all(n in have for n in want):
+            continue
+        used = list(given)
+        for n in [x.lower() for x in r.get("needs", [])]:
+            if n in have:
+                continue
+            more = next((s for s in listed if s not in used and n in listed[s]), None)
+            if more:
+                used.append(more)
+                have |= listed[more]
+        return r, used, [n for n in r.get("needs", []) if n.lower() not in have]
+    return None, given, []
+
+
+def analyze(sources):
+    r, used, missing = find_recipe(sources)
+    out = {"sources": [{"path": s, "type": kind(s), "sha256": sha256(s) if os.path.isfile(s) else ""} for s in used],
+           "recipe": r["id"] if r else "", "name": r["name"] if r else "", "missing": missing, "reasons": []}
+    if not r:
+        out["verdict"] = "no"
+        out["reasons"].append("no recipe knows this program yet")
+    elif missing:
+        out["verdict"] = "no"
+        out["reasons"].append("a disc is missing: nothing here has " + ", ".join(missing))
+    else:
+        out["verdict"] = "works" if r.get("verified") else "may"
+        out["reasons"].append(("tried: " + r["verified"]) if r.get("verified") else "a recipe exists, nobody has tried it yet")
+        if not shutil.which("wine"):
+            out["verdict"] = "no"
+            out["reasons"].append("Wine is not installed")
+    return out
+
+
+def folder_of(ident):
+    return os.path.join(GAMES, ident)
+
+
+def wine_env(home):
+    return dict(os.environ, WINEPREFIX=os.path.join(home, "prefix"), WINEDEBUG="-all", WINEDLLOVERRIDES="winemenubuilder.exe=d")
+
+
+def install(sources):
+    r, used, missing = find_recipe(sources)
+    if not r or missing:
+        return say(ok=False, error="no recipe" if not r else "missing: " + ", ".join(missing)) or 1
+    home = folder_of(r["id"])
+    if os.path.exists(os.path.join(home, "manifest.json")):
+        return say(ok=False, error="installed already") or 1
+    steps = 2 + len(used) + len(r.get("install", []))
+    at = 0
+
+    def step(what):
+        nonlocal at
+        at += 1
+        say(step=what, at=at, of=steps)
+
+    media, target = os.path.join(home, ".media"), os.path.join(home, "prefix", "drive_c", *r["folder"].split("/"))
+    os.makedirs(os.path.join(home, "logs"), exist_ok=True)
+    log = open(os.path.join(home, "logs", "install.log"), "a")
+    run = lambda argv, **kw: subprocess.run(argv, stdout=log, stderr=log, **kw).returncode
+    try:
+        shutil.rmtree(media, ignore_errors=True)
+        os.makedirs(media)
+        for s in used:
+            step("reading " + os.path.basename(s))
+            if os.path.isdir(s):
+                shutil.copytree(s, media, dirs_exist_ok=True)
+            elif run(["7z", "x", "-y", "-o" + media, s]) != 0:
+                raise RuntimeError("could not read " + os.path.basename(s))
+        step("making its Windows")
+        if run(["wineboot", "-i"], env=wine_env(home)) != 0:
+            raise RuntimeError("Wine could not make the prefix")
+        run(["wine", "winecfg", "-v", r.get("winver", "win10")], env=wine_env(home))
+        run(["wineserver", "-w"], env=wine_env(home))
+        # the program has no business in the rest of the computer: no drive Z:
+        z = os.path.join(home, "prefix", "dosdevices", "z:")
+        if os.path.islink(z):
+            os.remove(z)
+        os.makedirs(target, exist_ok=True)
+        for part in r.get("install", []):
+            if "unshield" in part:
+                step("unpacking " + part["unshield"])
+                cab = os.path.join(media, ".cab")
+                if run(["unshield", "-d", cab, "x", os.path.join(media, part["unshield"])]) != 0:
+                    raise RuntimeError("could not unpack " + part["unshield"])
+                for group in part.get("take", []):
+                    shutil.copytree(os.path.join(cab, group), target, dirs_exist_ok=True)
+                shutil.rmtree(cab, ignore_errors=True)
+            elif "copy" in part:
+                step("copying files")
+                for name in part["copy"]:
+                    shutil.copy(os.path.join(media, name), target)
+        step("writing it down")
+        icon = ""
+        if r.get("icon") and shutil.which("icotool"):
+            run(["icotool", "-x", "-o", home, os.path.join(media, r["icon"])])
+            pictures = sorted(glob.glob(os.path.join(home, "*.png")), key=os.path.getsize)
+            if pictures:
+                icon = os.path.join(home, "icon.png")
+                os.replace(pictures[-1], icon)
+                for p in pictures[:-1]:
+                    os.remove(p)
+        entry = os.path.join(DATA, "applications", "latteos-%s.desktop" % r["id"])
+        os.makedirs(os.path.dirname(entry), exist_ok=True)
+        with open(entry, "w") as f:
+            f.write("[Desktop Entry]\nType=Application\nName=%s\nExec=latte-barista run %s\nIcon=%s\nCategories=Game;\n" % (r["name"], r["id"], icon or "applications-games"))
+        manifest = {"id": r["id"], "name": r["name"], "publisher": r.get("publisher", ""), "runner": r.get("runner", "wine"), "winver": r.get("winver", ""),
+                    "sources": [{"path": s, "sha256": sha256(s) if os.path.isfile(s) else ""} for s in used],
+                    "folder": r["folder"], "run": r["run"], "network": r.get("network", False), "menu": [entry],
+                    "installed": datetime.datetime.now().isoformat(timespec="seconds")}
+        with open(os.path.join(home, "manifest.json"), "w") as f:
+            json.dump(manifest, f, indent=1, ensure_ascii=False)
+    except (RuntimeError, OSError) as e:
+        shutil.rmtree(media, ignore_errors=True)
+        return say(ok=False, error=str(e)) or 1
+    shutil.rmtree(media, ignore_errors=True)
+    say(ok=True, id=r["id"])
+    return 0
+
+
+def manifest_of(ident):
+    try:
+        return json.load(open(os.path.join(folder_of(ident), "manifest.json")))
+    except (OSError, ValueError):
+        return None
+
+
+def fence(home, network):
+    """bubblewrap: the system as it is but read-only, the user's home empty but for this program's folder."""
+    a = ["bwrap", "--die-with-parent", "--ro-bind", "/", "/", "--dev-bind", "/dev", "/dev", "--proc", "/proc", "--tmpfs", "/tmp",
+         "--tmpfs", HOME, "--bind", home, home, "--bind", RUNTIME, RUNTIME]
+    if os.path.isdir("/tmp/.X11-unix"):
+        a += ["--ro-bind", "/tmp/.X11-unix", "/tmp/.X11-unix"]
+    for keep in (".Xauthority", ".config/fontconfig", ".local/share/fonts"):
+        if os.path.exists(os.path.join(HOME, keep)):
+            a += ["--ro-bind", os.path.join(HOME, keep), os.path.join(HOME, keep)]
+    return a + ([] if network else ["--unshare-net"])
+
+
+def run_it(ident):
+    m = manifest_of(ident)
+    if not m:
+        print("latte-barista: nothing installed is called " + ident, file=sys.stderr)
+        return 1
+    home = folder_of(ident)
+    where = os.path.join(home, "prefix", "drive_c", *m["folder"].split("/"))
+    argv = ["wine", m["run"]["exe"]] + list(m["run"].get("args", []))
+    if shutil.which("bwrap"):
+        argv = fence(home, m.get("network", False)) + ["--chdir", where] + argv
+    with open(os.path.join(home, "logs", "run.log"), "w") as log:
+        return subprocess.run(argv, cwd=where, env=wine_env(home), stdout=log, stderr=log).returncode
+
+
+def size(path):
+    total = 0
+    for root, _, files in os.walk(path):
+        for f in files:
+            try:
+                total += os.lstat(os.path.join(root, f)).st_size
+            except OSError:
+                pass
+    return total
+
+
+def main(a):
+    if len(a) >= 2 and a[0] == "analyze":
+        say(**analyze(a[1:]))
+    elif len(a) >= 2 and a[0] == "install":
+        return install(a[1:])
+    elif len(a) == 2 and a[0] == "run":
+        return run_it(a[1])
+    elif a == ["list"]:
+        out = []
+        for path in sorted(glob.glob(os.path.join(GAMES, "*", "manifest.json"))):
+            m = manifest_of(os.path.basename(os.path.dirname(path)))
+            if m:
+                out.append({"id": m["id"], "name": m["name"], "size": size(os.path.dirname(path)), "installed": m.get("installed", "")})
+        print(json.dumps(out, ensure_ascii=False))
+    elif len(a) == 2 and a[0] == "remove":
+        m = manifest_of(a[1])
+        if not m:
+            return 1
+        for entry in m.get("menu", []):
+            if os.path.dirname(entry) == os.path.join(DATA, "applications") and os.path.exists(entry):
+                os.remove(entry)
+        shutil.rmtree(folder_of(m["id"]))
+    else:
+        print(__doc__.strip(), file=sys.stderr)
+        return 2
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))

@@ -24,6 +24,8 @@
 /usr/bin/latte-settings                                 <- bin/latte-settings
 /usr/bin/latte-desktop                                  <- bin/latte-desktop
 /usr/bin/latte-wall                                     <- bin/latte-wall
+/usr/bin/latte-barista                                  <- bin/latte-barista
+/usr/share/latteos/recipes/avp2.json                    <- recipes/avp2.json
 /usr/bin/latte-walls                                    <- bin/latte-walls
 /usr/bin/latte-session                                  <- bin/latte-session
 /usr/bin/latte-screens                                  <- bin/latte-screens
@@ -211,6 +213,9 @@ optional: brightnessctl power-profiles-daemon                        # the brigh
 optional: steam gamescope gamescope-session gamescope-session-steam  # the Game session; without them it is not offered
 /usr/bin/pleamar: pleamar v0.3.2 (github.com/k4ditano/pleamar) built with patches/pleamar-*.patch; see patches/README.md
 optional /usr/lib64/latteos/hyprbars.so: hyprbars (github.com/hyprwm/hyprland-plugins) built for the installed Hyprland with patches/hyprbars-latte.patch
+package: wine winetricks cabextract unshield innoextract 7zip icoutils bubblewrap    # Barista: Windows programs, each in a folder and a fence of its own
+optional: wine-dxvk wine-dxvk-d3d9 wine-dxvk-d3d8 mingw32-wine-gecko mingw64-wine-gecko wine-mono    # Direct3D 8 to 11 over Vulkan; web views and .NET inside Wine
+optional: umu-launcher protontricks lutris gamemode mangohud dosbox-staging xorriso     # Proton outside Steam (GE-Proton in /opt/latteos/proton), other runners and tools
 optional: yaru-icon-theme                                             # the icons files, folders and apps are shown with; others installed are offered in the Settings
 optional /usr/bin/skwd-wall-v2: skwd-wall (github.com/liixini/skwd-wall; Fedora: dnf copr enable piixini/skwd-wall-v2, then skwd-wall-v2): the wallpaper picker, transitions, scenes, and the colours of the theme "from the wallpaper"
 optional /usr/bin/whyd: whyd (github.com/vmaltarello/whyd, the rpm of its releases): SAFE then says why the last session ended, from the journal

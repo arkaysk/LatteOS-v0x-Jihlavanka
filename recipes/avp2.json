@@ -1,0 +1,24 @@
+{
+  "id": "avp2",
+  "name": "Aliens versus Predator 2",
+  "publisher": "Fox Interactive · Monolith · Sierra",
+  "year": 2001,
+  "match": ["AVP2.exe", "ALIEN.REZ", "MARINE.REZ", "PREDATOR.REZ", "data1.cab"],
+  "needs": ["data3.cab"],
+  "runner": "wine",
+  "winver": "winxp",
+  "folder": "Games/AVP2",
+  "install": [
+    { "unshield": "data1.cab", "take": ["Program_Files", "Resources", "English"] },
+    { "copy": ["ALIEN.REZ", "MARINE.REZ", "MULTI.REZ", "PREDATOR.REZ"] }
+  ],
+  "icon": "AutoRun.ico",
+  "run": {
+    "exe": "lithtech.exe",
+    "args": ["-windowtitle", "Aliens versus Predator 2", "-rez", "AVP2.REZ", "-rez", "SOUNDS.REZ", "-rez", "ALIEN.REZ", "-rez", "MARINE.REZ",
+             "-rez", "PREDATOR.REZ", "-rez", "MULTI.REZ", "-rez", "AVP2DLL.REZ", "-rez", "AVP2L.REZ"]
+  },
+  "network": false,
+  "verified": "2026-10-14, latte-lab, Wine 11.0: installed from the two discs without the InstallShield setup; the intro films play",
+  "notes": "The discs' own setup is a 16/32-bit InstallShield 6 that wants DCOM95; its cabinets are read directly instead. DirectX on disc 2 is not needed: Wine has it. GameSpy Arcade is gone from the internet; LAN play needs the network turned on."
+}

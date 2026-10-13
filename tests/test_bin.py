@@ -260,3 +260,20 @@ with tempfile.TemporaryDirectory() as d:
     for f in ("usr/lib64/latteos/p.so", "usr/share/latteos/old.qml", "usr/share/latteos/kept"): open(os.path.join(d, f), "w").close()
     assert inst.leftovers(d, ["/usr/share/latteos/kept"], sec) == [os.path.join(d, "usr/share/latteos/old.qml")]      # the plugin FILES asks for is not a leftover
 print("bin: ok")
+
+# Barista: a recipe is found by the files that tell a program apart, and a missing disc is said, not guessed at.
+barista = load("latte-barista")
+with tempfile.TemporaryDirectory() as t:
+    disc1, disc2 = os.path.join(t, "one"), os.path.join(t, "two")
+    os.makedirs(disc1), os.makedirs(disc2)
+    for name in ("AVP2.exe", "ALIEN.REZ", "MARINE.REZ", "PREDATOR.REZ", "data1.cab"):
+        open(os.path.join(disc1, name), "w").close()
+    barista.SHARE = ROOT
+    a = barista.analyze([disc1])
+    assert (a["recipe"], a["verdict"], a["missing"]) == ("avp2", "no", ["data3.cab"]), a
+    open(os.path.join(disc2, "data3.cab"), "w").close()
+    a = barista.analyze([disc1, disc2])
+    assert a["recipe"] == "avp2" and a["missing"] == [] and a["verdict"] in ("works", "no"), a      # "no" only where Wine is not installed
+    assert barista.analyze([disc2])["recipe"] == ""
+    assert "--unshare-net" in barista.fence("/x", False) and "--unshare-net" not in barista.fence("/x", True)
+

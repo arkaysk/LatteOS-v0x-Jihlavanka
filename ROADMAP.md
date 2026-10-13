@@ -1086,4 +1086,24 @@ cestu k aktualizácii alebo návratu.
     náhľady v Parkingu režimu Glance, Súbory (dnes Nautilus), plocha: Späť a „Tento počítač“, skratka na výber
     tapety, stránky Nastavení Tlačiarne · Zálohovanie · Cloud, jazyk z prihlásenia do relácie, Barista,
     inštalátor so sprievodcom, ChatGoo (Beeper), okno z bubliny QueenGoo.
+17. [~] **Barista — Windows programy** (používateľ, 14. 10.: pripraviť knižnice a pustiť sa do Baristu, prvý prípad AVP2).
+    **Zázemie na latte-lab (14. 10.):** už bolo Wine 11.0 (Staging), wine-mono, wine-gecko, wine-dxvk, winetricks,
+    cabextract, innoextract, 7zip, icoutils, bubblewrap, dosbox-staging, umu-launcher + runtime (662 MB),
+    GE-Proton11-7 v `/opt/latteos/proton`, Steam, gamescope, gamemode, MangoHud, 32-bit Vulkan a Mesa, Bottles
+    (Flatpak). Doinštalované: **unshield**, protontricks, lutris, wine-dxvk-d3d8/d3d9/dxgi, xorriso. DirectX 8–11
+    rieši DXVK a Wine sám; DirectX 12 má Proton (vkd3d). **.NET, vcredist a staré d3dx9 sa nedávajú do systému,
+    ale do prefixu konkrétnej hry** (winetricks, na pokyn receptu) — vopred sa stiahnuť nedajú bez inštalácie.
+    Chýba: GE-Proton11-8 (je 11-7), vkd3d-proton ako balík (Fedora ho nemá, je v Protone).
+    **`bin/latte-barista` (14. 10.):** `analyze` (typ, SHA-256, recept, verdikt, chýbajúce disky; ďalšie disky
+    hľadá vedľa prvého), `install` (číta disky cez 7z, Windows = vlastný prefix, kroky receptu: `unshield` a
+    `copy`, ikona, položka v ponuke, `manifest.json`), `run` (bubblewrap: systém len na čítanie, z domova iba
+    priečinok hry, bez siete, ak recept nepovie inak), `list`, `remove`. Hry sú v `~/Games/<id>`. Recepty
+    `recipes/*.json`.
+    **AVP2 overené naostro:** inštalácia z dvoch ISO za 1 min 37 s **bez inštalátora InstallShield** (jeho
+    kabinety číta unshield), spustenie v ohrade: prehrali sa úvodné logá (Fox, Sierra) so zvukom. 2,7 GB.
+    **Neoverené:** menu a samotná hra (treba myš a klávesnicu pri obrazovke), ukladanie, sieťová hra.
+    **Známe:** hra beží 640 × 480 v rohu obrazovky — treba škálovanie (gamescope) alebo rozlíšenie v `autoexec.cfg`.
+    **Ostáva:** sprievodca v App Manageri (5 obrazoviek podľa `docs/barista/NAVRH.md`), rozpoznanie bez receptu
+    (pravidlá Wine/Proton z v0.3 `latte-instalator`), ďalšie typy zdrojov (archív, exe, msi, apk…), závislosti
+    cez winetricks, reťaz pokusov, záloha.
 
