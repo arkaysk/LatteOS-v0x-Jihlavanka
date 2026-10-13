@@ -1,8 +1,10 @@
 -- The shore's logic (parts/shore.plm): the hard corner of the screen. What Windows keeps beside its clock: the
 -- programs that run in the background, the network, the volume, and on a laptop the battery.
--- Its arrow brings out the panel above it, up to the top of the screen: Wi-Fi and Bluetooth on and off, the
--- volume and the brightness as sliders, the networks, the devices and the speakers each on a page of their own,
--- and what was copied lately (cliphist keeps that; a press copies it again).
+-- Its arrow brings out the dashboard above it, low and wide along the bottom: on the left what is switched and
+-- set (Wi-Fi and Bluetooth on and off, the volume and the brightness as sliders; the networks, the devices and
+-- the speakers each on a page of their own), on the right what is going on (what plays, with its buttons, and
+-- what was copied lately: cliphist keeps that, a press copies it again). The calendar, the weather and the
+-- notifications are ClockGoo's and stay there.
 -- A background program's icon is pressed as in any tray; its right button shows the program's own menu.
 -- The wheel on the volume changes it, the right button mutes; a change shows for a moment as a ring.
 -- All of it comes from pleamar's services, which talk to NetworkManager, PipeWire and BlueZ themselves.
@@ -12,7 +14,7 @@ local icons = require("lib/icons")
 -- N marks a text for the translation table (tests/check.sh looks for it); tr() translates it where it is shown.
 local function N(s) return s end
 
-local audio, light, net, blue, tray = {}, {}, {}, {}, {}
+local audio, light, net, blue, tray, media = {}, {}, {}, {}, {}, {}
 local has_wifi = false                       -- the machine has a Wi-Fi adapter: one that is switched off still counts
 local showing = nil                          -- which page of the panel is out, to keep it up to date
 local clips = {}                             -- what was copied lately: { id, text }
@@ -74,7 +76,7 @@ local function panel(rows, opts)
     opts = opts or {}
     local w, h = tonumber(fact.sw) or 1920, tonumber(fact.sh) or 1080
     fact["tap.x"], fact["tap.y"] = w - 6, h - HEIGHT - 4
-    opts.id, opts.owner, opts.min_height = "shore", nil, h - HEIGHT - 28
+    opts.id, opts.owner = "shore", nil
     opts.width = opts.width or 320
     card.open(rows, opts)
     if not fact.shore_open then fact.shore_open = true show_signs() end
@@ -244,16 +246,31 @@ open_main = function(keep)
     if audio.volume ~= nil then
         rows[#rows + 1] = { label = tr("Sound"), glyph = "device-speaker", keep = true, more = true, line2 = output_name(), run = function() open_sound() end }
     end
-    -- what was copied lately: a press copies it again
-    if #clips > 0 then
-        rows[#rows + 1] = { head = true, label = tr("CLIPBOARD"), line = true }
-        for _, c in ipairs(clips) do
-            rows[#rows + 1] = { label = c.text, glyph = "clipboard", run = function() run("sh", { "-c", "cliphist decode " .. c.id .. " | wl-copy" }, nil, { output = false }) end }
-        end
-        rows[#rows + 1] = { label = tr("Forget what was copied"), glyph = "trash", danger = true, keep = true,
-                            run = function() run("cliphist", { "wipe" }, function() clips = {} open_main(true) end) end }
+    -- the right half: what is going on
+    local right = {}
+    if (media.title or "") ~= "" or (media.player or "") ~= "" then
+        right[#right + 1] = { head = true, label = tr("NOW PLAYING") }
+        right[#right + 1] = { profile = true, icon = (media.art or "") ~= "" and media.art or nil, glyph = "music", quiet = true,
+                              label = (media.title or "") ~= "" and media.title or (media.player or ""), line2 = media.artist or "" }
+        right[#right + 1] = { pills = {
+            { glyph = "player-skip-back", label = tr("Previous"), keep = true, run = function() call("media.previous") end },
+            { glyph = media.playing and "player-pause" or "player-play", label = media.playing and tr("Pause") or tr("Play"), on = media.playing == true, keep = true, run = function() call("media.toggle") end },
+            { glyph = "player-skip-forward", label = tr("Next"), keep = true, run = function() call("media.next") end },
+        } }
     end
-    panel(rows, { width = 320, keep = keep })
+    -- what was copied lately: a press copies it again
+    right[#right + 1] = { head = true, label = tr("CLIPBOARD"), line = #right > 0 }
+    if #clips == 0 then right[#right + 1] = { label = tr("Nothing was copied yet"), glyph = "clipboard", quiet = true } end
+    for i, c in ipairs(clips) do
+        if i > 6 then break end
+        right[#right + 1] = { label = c.text, glyph = "clipboard", run = function() run("sh", { "-c", "cliphist decode " .. c.id .. " | wl-copy" }, nil, { output = false }) end }
+    end
+    if #clips > 0 then
+        right[#right + 1] = { label = tr("Forget what was copied"), glyph = "trash", danger = true, keep = true,
+                              run = function() run("cliphist", { "wipe" }, function() clips = {} open_main(true) end) end }
+    end
+    for _, r in ipairs(right) do r.col = 2 rows[#rows + 1] = r end
+    panel(rows, { width = 330, width2 = 330, keep = keep })
 end
 
 -- what the pointer rests on: 0 the arrow, 1 the network, 2 the volume, 3 the battery, 10… the programs
@@ -285,6 +302,7 @@ function M.start()
     -- An adapter whose radio is off reports nothing; NetworkManager knows it is there.
     run("nmcli", { "-t", "-f", "TYPE", "device" }, function(out) if (out or ""):find("wifi", 1, true) then has_wifi = true refresh() end end)
     watch("bluetooth", function(v) blue = type(v) == "table" and v or {} end)
+    watch("media", function(v) media = type(v) == "table" and v or {} end)
     watch("brightness", function(v) light = type(v) == "table" and v or {} end)
     watch("tray", function(v) tray = type(v) == "table" and v or {} lay_out() end)
     watch("battery", function(v)
