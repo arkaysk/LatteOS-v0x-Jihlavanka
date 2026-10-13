@@ -20,6 +20,7 @@
 /usr/bin/latte-devices                                  <- bin/latte-devices
 /usr/bin/latte-monitor                                  <- bin/latte-monitor
 /usr/bin/latte-network                                  <- bin/latte-network
+/usr/bin/latte-settings                                 <- bin/latte-settings
 /usr/bin/latte-session                                  <- bin/latte-session
 /usr/bin/latte-safe                                     <- bin/latte-safe
 /usr/bin/latte-game                                     <- bin/latte-game
@@ -44,6 +45,8 @@
 /usr/share/latteos/apps/appmanager.qml                  <- apps/appmanager.qml
 /usr/share/latteos/apps/devices.qml                     <- apps/devices.qml
 /usr/share/latteos/apps/monitor.qml                     <- apps/monitor.qml
+/usr/share/latteos/apps/settings.qml                    <- apps/settings.qml
+/usr/share/latteos/apps/settings/pages.json             <- apps/settings/pages.json
 /usr/share/latteos/apps/common/Theme.qml                <- apps/common/Theme.qml
 /usr/share/latteos/apps/common/I18n.qml                 <- apps/common/I18n.qml
 /usr/share/latteos/apps/common/Icons.qml                <- apps/common/Icons.qml
@@ -60,6 +63,7 @@
 /usr/share/applications/latteos-appmanager.desktop      <- system/applications/latteos-appmanager.desktop
 /usr/share/applications/latteos-devices.desktop         <- system/applications/latteos-devices.desktop
 /usr/share/applications/latteos-monitor.desktop         <- system/applications/latteos-monitor.desktop
+/usr/share/applications/latteos-settings.desktop        <- system/applications/latteos-settings.desktop
 /usr/share/latteos/goo/parts/drops.plm                  <- goo/parts/drops.plm
 /usr/share/latteos/goo/parts/picks.plm                  <- goo/parts/picks.plm
 /usr/share/latteos/goo/parts/body.plm                   <- goo/parts/body.plm
@@ -154,6 +158,7 @@ package: greetd labwc tuigreet plymouth plymouth-plugin-two-step plymouth-theme-
 package: rsms-inter-fonts jetbrains-mono-fonts policycoreutils-python-utils util-linux-core
 package: foot less NetworkManager-tui                                # the SAFE session's terminal and rescue menu
 package: hyprland wireplumber libnotify swaybg hypridle              # the GOO session; wpctl for the volume keys; notify-send when a timer rings; the wallpaper; the lock when idle
+optional: mpvpaper                                                   # a film as the desktop's background
 optional: cliphist wl-clipboard                                      # the clipboard in the shore's panel: what was copied lately
 package: quickshell flatpak                                          # LatteOS's own apps are drawn by Quickshell; the App Manager's shop is Flathub
 package: fd-find xdg-utils xdg-user-dirs                             # the launcher: finding files, opening them, the home folders

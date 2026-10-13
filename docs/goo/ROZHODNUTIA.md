@@ -306,6 +306,10 @@ Nové rozhodnutie: jeden riadok sem (dátum, čo, prečo) a oprava platného zne
 | Kávová hladina v oknách: rozhranie k spodnej časti okna (iba v nesklenenej časti), inak nenápadné pohyblivé pozadie; pri pohybe okna sa zavlní | áno (používateľ, 13. 10.) — `apps/common/Surface.qml` |
 | Tlačidlá minimalizovať a maximalizovať v hlavičke okna | iba v režime plávajúce (používateľ, 13. 10.); v páske a dlaždiciach iba ✕ |
 | Prechody bannerov podľa skwd-wall | nápad používateľa (13. 10.); kód skwd-wall sa nepreberá (GPL-3.0, Rust/Vulkan), prechody sa napíšu vlastné |
+| Okno vždy na dosah: zmena veľkosti od okrajov, chytenie celého okna kúsok za okrajom v prázdne, pustené okno sa vráti na obrazovku | áno (používateľ, 13. 10.) — stávalo sa, že ✕ bolo za hranou obrazovky |
+| Správca zariadení má časti Zariadenia a Sieť (pripojenie, inšpektor siete) | áno (používateľ, 13. 10.) |
+| Nastavenia: jedna aplikácia po oblastiach (Softvér · Dáta · Hardvér · Účet · Prostredie · Systém) s hľadaním; LensGoo hľadá aj v nich, pod čiarou | áno (používateľ, 13. 10.) |
+| „Akú si dáte kávu a do akého pohára?“ — káva = farba goo, šálka = z čoho sú okná (téma okien) | áno (používateľ, 13. 10.); šálky zatiaľ espresso, mocha, porcelain |
 | Fresh: hra pri nečinnosti a okno z bubliny | hra je (13. 10.) — hrajú sa iba hravé kvapky, teda vlastné s povahou `playful`; okno z bubliny odložené, rodia sa z nej okná QueenGoo (12. 10.) |
 | whyd (prečo počítač spadol, z žurnálu predošlého štartu) | áno — do SafeGoo ako diagnostika pádu, voliteľný samostatný program vedľa `last-crash.log` z `latte-session`; najprv skúška na latte-lab (13. 10.) |
 | Inšpektor siete: zariadenia Matter a Thread (podľa UniFi Network 11) | áno, pasívne z mDNS, bez párovania (R3·E); párovanie ako ďalší správca a topológia Thread iba návrh (13. 10.) |

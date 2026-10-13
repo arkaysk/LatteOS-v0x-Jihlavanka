@@ -1,0 +1,256 @@
+[
+ {
+  "id": "software",
+  "name": "Software",
+  "icon": "apps",
+  "pages": [
+   {
+    "id": "apps",
+    "name": "Apps",
+    "icon": "apps",
+    "status": "planned",
+    "words": "install remove uninstall programs store",
+    "elsewhere": "appmanager"
+   },
+   {
+    "id": "updates",
+    "name": "Updates",
+    "icon": "refresh",
+    "status": "planned",
+    "words": "update upgrade system packages flatpak",
+    "elsewhere": "appmanager updates"
+   },
+   {
+    "id": "startup",
+    "name": "Startup and background",
+    "icon": "player-play",
+    "status": "planned",
+    "words": "autostart services boot login tasks",
+    "elsewhere": "monitor startup"
+   },
+   {
+    "id": "defaults",
+    "name": "Default apps",
+    "icon": "star",
+    "status": "planned",
+    "words": "browser mail open with file types"
+   },
+   {
+    "id": "ai",
+    "name": "AI",
+    "icon": "sparkles",
+    "status": "planned",
+    "words": "assistant claude model provider"
+   }
+  ]
+ },
+ {
+  "id": "data",
+  "name": "Data",
+  "icon": "folder",
+  "pages": [
+   {
+    "id": "storage",
+    "name": "Storage",
+    "icon": "disc",
+    "status": "planned",
+    "words": "disk space drives usage",
+    "elsewhere": "devices disks"
+   },
+   {
+    "id": "backup",
+    "name": "Backup and restore",
+    "icon": "history",
+    "status": "planned",
+    "words": "snapshot restore copy"
+   },
+   {
+    "id": "sync",
+    "name": "Cloud and sync",
+    "icon": "cloud",
+    "status": "planned",
+    "words": "drive sync accounts"
+   }
+  ]
+ },
+ {
+  "id": "hardware",
+  "name": "Hardware",
+  "icon": "cpu",
+  "pages": [
+   {
+    "id": "performance",
+    "name": "Performance and graphics",
+    "icon": "activity",
+    "status": "planned",
+    "words": "tier gpu fps speed",
+    "elsewhere": "monitor"
+   },
+   {
+    "id": "displays",
+    "name": "Displays",
+    "icon": "device-desktop",
+    "status": "planned",
+    "words": "monitor resolution refresh scale screen",
+    "elsewhere": "devices displays"
+   },
+   {
+    "id": "sound",
+    "name": "Sound",
+    "icon": "device-speaker",
+    "status": "planned",
+    "words": "volume speaker microphone output input",
+    "elsewhere": "devices sound"
+   },
+   {
+    "id": "network",
+    "name": "Network",
+    "icon": "network",
+    "status": "planned",
+    "words": "wifi ethernet internet vpn ip dns",
+    "elsewhere": "devices connection"
+   },
+   {
+    "id": "bluetooth",
+    "name": "Bluetooth and devices",
+    "icon": "bluetooth",
+    "status": "planned",
+    "words": "pair headphones mouse keyboard",
+    "elsewhere": "devices"
+   },
+   {
+    "id": "printers",
+    "name": "Printers and scanners",
+    "icon": "printer",
+    "status": "planned",
+    "words": "print scan"
+   },
+   {
+    "id": "power",
+    "name": "Power",
+    "icon": "battery-4",
+    "status": "planned",
+    "words": "battery sleep suspend profile energy"
+   }
+  ]
+ },
+ {
+  "id": "account",
+  "name": "Account",
+  "icon": "user",
+  "pages": [
+   {
+    "id": "me",
+    "name": "My account",
+    "icon": "user",
+    "status": "planned",
+    "words": "name picture profile"
+   },
+   {
+    "id": "password",
+    "name": "Password and security",
+    "icon": "lock",
+    "status": "planned",
+    "words": "password change key"
+   },
+   {
+    "id": "lock",
+    "name": "Lock and idle",
+    "icon": "lock",
+    "status": "planned",
+    "words": "lock screen idle sleep timeout screensaver"
+   }
+  ]
+ },
+ {
+  "id": "look",
+  "name": "Look",
+  "icon": "palette",
+  "pages": [
+   {
+    "id": "coffee",
+    "name": "Coffee and cup",
+    "icon": "cup",
+    "status": "ready",
+    "words": "colour color theme goo drops windows material glass dark light coffee cup milk water"
+   },
+   {
+    "id": "background",
+    "name": "Background",
+    "icon": "photo",
+    "status": "ready",
+    "words": "wallpaper picture live video desktop"
+   },
+   {
+    "id": "windows",
+    "name": "Windows",
+    "icon": "app-window",
+    "status": "ready",
+    "words": "tape tiles floating layout glass side panel arrange"
+   },
+   {
+    "id": "drops",
+    "name": "Drops (Goo)",
+    "icon": "droplet",
+    "status": "ready",
+    "words": "goo drops lively weather play bend material"
+   },
+   {
+    "id": "notifications",
+    "name": "Notifications",
+    "icon": "bell",
+    "status": "planned",
+    "words": "do not disturb alerts"
+   },
+   {
+    "id": "accessibility",
+    "name": "Accessibility",
+    "icon": "user",
+    "status": "planned",
+    "words": "contrast zoom large text screen reader"
+   }
+  ]
+ },
+ {
+  "id": "system",
+  "name": "System",
+  "icon": "settings",
+  "pages": [
+   {
+    "id": "about",
+    "name": "About this computer",
+    "icon": "info-circle",
+    "status": "ready",
+    "words": "version latteos fedora kernel name hardware"
+   },
+   {
+    "id": "language",
+    "name": "Language and region",
+    "icon": "world",
+    "status": "planned",
+    "words": "locale slovak english keyboard layout format"
+   },
+   {
+    "id": "time",
+    "name": "Date and time",
+    "icon": "clock-hour-4",
+    "status": "planned",
+    "words": "clock timezone"
+   },
+   {
+    "id": "keyboard",
+    "name": "Keyboard and shortcuts",
+    "icon": "keyboard",
+    "status": "planned",
+    "words": "keys shortcut layout win super"
+   },
+   {
+    "id": "startmode",
+    "name": "Start and safe mode",
+    "icon": "shield-check",
+    "status": "planned",
+    "words": "boot safe mode crash tier"
+   }
+  ]
+ }
+]

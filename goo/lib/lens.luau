@@ -38,6 +38,7 @@ local owner                          -- LensGoo
 local home, folders = "", {}
 local typed, confirm = "", nil       -- what is in the field; the dangerous command asked about
 local found, asked = nil, 0          -- the files found for what is typed; which question the answer is to
+local pages, pages_for = {}, ""      -- the pages of the Settings that match what is typed; what that was
 local render, set_mode
 
 local function save() pcall(sys.call, "files.write", FILE, kept) end
@@ -116,11 +117,29 @@ local function rows_apps()
     for _, a in ipairs(find(apps, typed, 7)) do
         rows[#rows + 1] = { label = a.local_name or a.name or a.id, icon = a.icon or "", glyph = "apps", hint = tr("App"), run = function() launch(a) end, right = function() app_menu(a) end }
     end
+    -- under a line: what the Settings have about it
+    for i, p in ipairs(pages_for == typed and pages or {}) do
+        if i > 4 then break end
+        rows[#rows + 1] = { label = p.name, glyph = p.icon, hint = tr("Settings") .. " · " .. p.area_name, line = i == 1,
+                            run = function() then_do(function() open.settings(p.page) end) end }
+    end
     -- the same text, taken elsewhere
     local text = typed
     rows[#rows + 1] = { label = tr("Search files") .. ": " .. text, glyph = "folder", line = #rows > 0, keep = true, run = function() set_mode(1, true) end }
     rows[#rows + 1] = { label = tr("Search the web") .. ": " .. text, glyph = "world", hint = engine().name, run = function() search_web(engine(), text) end }
     return rows
+end
+
+-- the Settings' pages that are about what is typed (bin/latte-settings knows them, in the user's language too)
+local function look_for_settings()
+    local text = typed
+    if #text < 2 then pages, pages_for = {}, text return end
+    run("latte-settings", { "find", text }, function(out)
+        if text ~= typed then return end                  -- something else has been typed since
+        local ok, list = pcall(json.decode, out or "")
+        pages, pages_for = ok and type(list) == "table" and list or {}, text
+        if card.id() == "lens" and kept.mode == 0 and #pages > 0 then render(true) end
+    end)
 end
 
 local function look_for_files()
@@ -282,6 +301,7 @@ render = function(keep)
                 if t == typed then return end
                 typed, confirm = t, nil
                 if kept.mode == 1 then look_for_files() end
+                if kept.mode == 0 then look_for_settings() end
                 render(true)
             end,
             -- Enter: the first row that does something; what was typed stays if nothing did

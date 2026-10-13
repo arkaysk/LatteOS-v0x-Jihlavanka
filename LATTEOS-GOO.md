@@ -434,6 +434,20 @@ výšky obrazovky (rovina „klesne“ zo stredu), pod ňou tretina obrazovky k�
   vlastné; systémové sa iba ukazuje.
 - **Senzory:** teploty, ventilátory, napätia a príkon po čipoch.
 
+### 6.2·2 Nastavenia (Fresh, 13. 10.)
+`apps/settings.qml`, Win+I, PowerGoo › Nastavenia › Všetky nastavenia. Jedno miesto na všetko, čo sa dá nastaviť,
+po oblastiach používateľa: **Softvér · Dáta · Hardvér · Účet · Prostredie · Systém**. Bočný panel je rozkladacie menu
+(oblasť → stránky), bodka pri stránke hovorí, či už funguje. Hľadanie v hlavičke; to isté hľadanie má **LensGoo**
+v režime Aplikácie — pod čiarou pod aplikáciami ponúkne stránky nastavení (`bin/latte-settings find`).
+- **Káva a šálka** — Baristova otázka „Akú si dáte kávu a do akého pohára?“: káva je farba goo (voda a mlieko),
+  šálka je to, z čoho sú okná (`~/.config/latteos/cup`: espresso tmavá · mocha teplá hnedá · porcelain svetlá);
+  sklenená káva robí kvapky aj okná zo skla.
+- **Pozadie** — obrázky LatteOS a z priečinka Obrázky; **živé pozadia** sú filmy z priečinka Videá (mpvpaper).
+- **Okná** — páska · dlaždice · plávajúce; sklo bočných panelov (frost · smoke · clear · milk).
+- **Kvapky (Goo)** — živé správanie, prehýbanie hladiny. **O tomto počítači.**
+- Stránka, ktorú LatteOS ešte nemá, je v zozname tiež a povie, kde sa to robí zatiaľ (App Manager, Monitor,
+  Správca zariadení).
+
 ### 6.3·0 Okno aplikácie LatteOS (rozhodnuté 13. 10.)
 Každá aplikácia LatteOS žije v tom istom okne (`apps/common/AppWindow.qml`), podľa ForkLiftu a nákresu V2:
 - **Bočný panel zo skla od vrchu po spodok** okna — stránky aplikácie, jej miesta, to, čo má poruke (rozkladacie menu,

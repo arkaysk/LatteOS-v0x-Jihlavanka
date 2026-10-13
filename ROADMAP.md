@@ -140,9 +140,14 @@ Schválené 12. 10. 2026. Pracuje sa **zhora nadol, neskáče sa**; nový nápad
              predtým; nové zariadenie zlato; zariadeniu sa dá dať meno a druh, alebo ho zabudnúť. Inteligentná
              domácnosť sa pozná pasívne z ohlásení Matter a Thread. Chýba: zoznam namiesto radaru, „Moja sieť“
              a upozornenie na nové zariadenie, pripájanie a VPN (to prvé je v paneli Pobrežia), AirPlay.
-          4. [ ] **Nastavenia** — hlavné, prehľadne po kategóriách ako Windows 11 + možnosti Linuxu, s hľadaním
-             funkcií; LensGoo v režime aplikácií hľadá aj v nastaveniach (pod čiarou/hladinou); tapety a živé tapety,
-             témy okien, farebnosť Goo („akú si dáte kávu a do akého pohára“ = farba goo a farba okien).
+          4. [~] **Nastavenia** (13. 10.): `apps/settings.qml`, zoznam stránok `apps/settings/pages.json`, Win+I.
+             Rozkladací bočný panel po oblastiach (Softvér · Dáta · Hardvér · Účet · Prostredie · Systém, 29 stránok)
+             s bodkou stavu; hľadanie v hlavičke; **LensGoo hľadá aj v nastaveniach** (pod čiarou, `bin/latte-settings`).
+             Hotové stránky: **Káva a šálka** (druh kávy = farba goo; šálka = z čoho sú okná: espresso, mokka,
+             porcelán — svetlá; sklenená káva), **Pozadie** (obrázky LatteOS a z priečinka Obrázky; živé pozadia
+             = filmy z priečinka Videá cez mpvpaper), **Okná** (režim; sklo bočných panelov), **Kvapky**, **O počítači**.
+             Ostatných 24 stránok je vypísaných ako „ešte nie je“ s odkazom, kde sa to robí zatiaľ. Chýba: šálka
+             v kartách Goo a v okrajoch Hyprlandu, výber vlastného súboru tapety, všetky stránky Hardvér/Účet/Systém.
         - [ ] **Barista** v App Manageri (stránka je pripravená, sprievodca podľa `docs/barista/NAVRH.md` nie).
         - [x] tapeta (swaybg, `assets/wallpapers`) a okenné tlačidlá (hyprbars so záplatou `patches/hyprbars-latte.patch`;
           postup v `patches/README.md`) (12. 10.).

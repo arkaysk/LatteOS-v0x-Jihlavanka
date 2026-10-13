@@ -5,6 +5,7 @@ local E = require("lib/engine")
 local card = require("lib/card")
 local wm = require("lib/wm")
 local bar = require("lib/bar")
+local open = require("lib/open")
 local M = {}
 -- N marks a text for the translation table (tests/check.sh looks for it); tr() translates it where it is shown.
 local function N(s) return s end
@@ -69,6 +70,7 @@ open_main = function(d, keep)
     local modes = {}
     for m = 0, 2 do modes[#modes + 1] = { label = tr(MODES[m]), on = bar.mode() == m, keep = true, run = function() wm.set_mode(m) after(300, function() if card.id() == "settings" then open_main(d, true) end end) end } end
     rows[#rows + 1] = { pills = modes }
+    rows[#rows + 1] = { label = tr("All settings…"), glyph = "settings", hint = "Win+I", line = true, run = function() after(80, function() open.settings() end) end }
     card.open(rows, { owner = d, id = "settings", width = 360, keep = keep })
 end
 

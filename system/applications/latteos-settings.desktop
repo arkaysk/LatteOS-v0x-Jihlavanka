@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Settings
+Name[sk]=Nastavenia
+Comment=Everything about the computer and the desktop that can be set
+Comment[sk]=Všetko o počítači a ploche, čo sa dá nastaviť
+Exec=latte-app settings
+Icon=preferences-system
+Categories=Settings;
+StartupWMClass=org.quickshell

@@ -212,13 +212,13 @@ ShellRoot {
             Item { x: 24; width: baristaRow.implicitWidth; height: 44; anchors.verticalCenter: parent.verticalCenter
                 Row { id: baristaRow; spacing: 12; anchors.verticalCenter: parent.verticalCenter
                     Glyph { name: "disc"; font.pixelSize: 24; color: Theme.gold; anchors.verticalCenter: parent.verticalCenter }
-                    Label { text: "Barista"; font.weight: 800; font.pixelSize: 15; anchors.verticalCenter: parent.verticalCenter }
+                    Label { text: "Barista"; color: Theme.inkOnCoffee; font.weight: 800; font.pixelSize: 15; anchors.verticalCenter: parent.verticalCenter }
                     Label { text: I18n.tr("Install from a file, a folder or a disc"); color: "#e0c9b1"; font.pixelSize: 13; anchors.verticalCenter: parent.verticalCenter } }
                 MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: shell.go("barista") } },
             Row { visible: shell.job !== null; anchors.right: parent.right; anchors.rightMargin: 24; anchors.verticalCenter: parent.verticalCenter; spacing: 10
                 Glyph { id: spin; name: "refresh"; color: Theme.gold; font.pixelSize: 16; anchors.verticalCenter: parent.verticalCenter
                         NumberAnimation on rotation { running: shell.job !== null; from: 0; to: 360; duration: 1100; loops: Animation.Infinite } }
-                Label { text: shell.job ? shell.job.name + (shell.queue.length > 0 ? "  +" + shell.queue.length : "") : ""; font.weight: 700; anchors.verticalCenter: parent.verticalCenter }
+                Label { text: shell.job ? shell.job.name + (shell.queue.length > 0 ? "  +" + shell.queue.length : "") : ""; color: Theme.inkOnCoffee; font.weight: 700; anchors.verticalCenter: parent.verticalCenter }
                 Label { text: shell.job ? shell.job.line : ""; color: "#e0c9b1"; font.pixelSize: 12; width: Math.min(implicitWidth, 420); anchors.verticalCenter: parent.verticalCenter } }
         ]
 

@@ -1,0 +1,86 @@
+#!/usr/bin/env python3
+"""latte-settings: finds a page of the Settings by what it is about. For LensGoo, which offers settings under the apps.
+
+  latte-settings find TEXT      [{"area", "page", "name", "area_name", "icon"}] — the pages whose name or keywords
+                                have every word of TEXT, in the user's language or in English; the best first
+  latte-settings pages          every page, the same way
+  latte-settings wallpapers     the pictures and the films a desktop can have behind it: [{"path", "live", "own"}] —
+                                LatteOS's own, then what is in the user's Pictures and Videos folders (and in a
+                                folder Wallpapers in either); live: it is a film
+
+A page is opened with `latte-app settings PAGE`. The pages are listed in apps/settings/pages.json, the one list the
+Settings app itself is built from.
+"""
+import json
+import os
+import re
+import sys
+import unicodedata
+
+SHARE = os.environ.get("LATTE_SHARE") or "/usr/share/latteos"
+
+
+def plain(s):
+    return "".join(c for c in unicodedata.normalize("NFD", s.lower()) if not unicodedata.combining(c))
+
+
+def words():
+    """The user's language: {"English": "translation"} from the table the whole desktop uses."""
+    lang = (os.environ.get("LC_ALL") or os.environ.get("LC_MESSAGES") or os.environ.get("LANG") or "").split("_")[0].split(".")[0]
+    try:
+        with open(os.path.join(SHARE, "goo", "lang", lang + ".plm"), encoding="utf-8") as f:
+            return dict(re.findall(r'^\s*"((?:[^"\\]|\\.)*)"\s*=\s*"((?:[^"\\]|\\.)*)"\s*$', f.read(), re.M))
+    except OSError:
+        return {}
+
+
+def pages():
+    with open(os.path.join(SHARE, "apps", "settings", "pages.json"), encoding="utf-8") as f:
+        areas = json.load(f)
+    tr = words()
+    return [{"area": a["id"], "page": p["id"], "name": tr.get(p["name"], p["name"]), "area_name": tr.get(a["name"], a["name"]), "icon": p["icon"],
+             "hay": plain(" ".join([p["name"], tr.get(p["name"], ""), a["name"], tr.get(a["name"], ""), p.get("words", ""), tr.get(p.get("words", ""), "")]))}
+            for a in areas for p in a["pages"]]
+
+
+def find(text):
+    asked = plain(text).split()
+    found = [p for p in pages() if asked and all(w in p["hay"] for w in asked)]
+    found.sort(key=lambda p: (not plain(p["name"]).startswith(asked[0]) if asked else 0, p["name"]))
+    return found
+
+
+def wallpapers():
+    import glob
+    import subprocess
+    found = [{"path": p, "live": False, "own": False} for p in sorted(glob.glob(os.path.join(SHARE, "wallpapers", "*")))]
+    for kind, still in (("PICTURES", True), ("VIDEOS", False)):
+        try:
+            folder = subprocess.run(["xdg-user-dir", kind], capture_output=True, text=True, timeout=5).stdout.strip()
+        except (OSError, subprocess.TimeoutExpired):
+            folder = ""
+        if not folder or folder == os.path.expanduser("~"):
+            continue
+        ends = (".jpg", ".jpeg", ".png", ".webp") if still else (".mp4", ".webm", ".mkv", ".mov")
+        files = [p for d in (folder, os.path.join(folder, "Wallpapers")) for p in sorted(glob.glob(os.path.join(d, "*"))) if p.lower().endswith(ends)]
+        found += [{"path": p, "live": not still, "own": True} for p in files[:60]]
+    return found
+
+
+def main(a):
+    if a == ["wallpapers"]:
+        print(json.dumps(wallpapers(), ensure_ascii=False))
+        return 0
+    if a[:1] == ["find"] and len(a) >= 2:
+        result = find(" ".join(a[1:]))
+    elif a == ["pages"]:
+        result = pages()
+    else:
+        print(__doc__.strip())
+        return 2
+    print(json.dumps([{k: v for k, v in p.items() if k != "hay"} for p in result], ensure_ascii=False))
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))

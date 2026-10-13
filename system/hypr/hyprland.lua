@@ -151,8 +151,11 @@ function latte.wallpaper(path)
         local there = kept ~= "" and io.open(kept, "r")
         if there then there:close() picture = kept end
     end
-    -- the new picture comes up before the old one goes, so the background colour never shows through
-    hl.exec_cmd("sh -c 'old=$(pgrep -x swaybg); swaybg -i \"$1\" -m fill & sleep 0.6; [ -n \"$old\" ] && kill $old' sh '" .. picture:gsub("'", "'\\''") .. "'")
+    -- The new one comes up before the old one goes, so the background colour never shows through. A film is
+    -- played by mpvpaper, silent and round again; a picture is shown by swaybg.
+    local film = picture:lower():match("%.mp4$") or picture:lower():match("%.webm$") or picture:lower():match("%.mkv$") or picture:lower():match("%.mov$")
+    local show = film and "mpvpaper -o \"no-audio loop\" \"*\" \"$1\"" or "swaybg -i \"$1\" -m fill"
+    hl.exec_cmd("sh -c 'old=$(pgrep -x swaybg; pgrep -x mpvpaper); " .. show .. " & sleep 0.8; [ -n \"$old\" ] && kill $old' sh '" .. picture:gsub("'", "'\\''") .. "'")
 end
 
 hl.on("hyprland.start", function()

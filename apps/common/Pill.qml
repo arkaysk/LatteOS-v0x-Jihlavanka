@@ -20,8 +20,8 @@ Rectangle {
     Behavior on color { ColorAnimation { duration: 120 } }
     Row { id: row; anchors.centerIn: parent; spacing: 7
         Glyph { name: pill.icon; visible: pill.icon !== ""; font.pixelSize: 16; anchors.verticalCenter: parent.verticalCenter
-                color: pill.busy ? Theme.dim : (pill.strong ? Theme.ground : (pill.danger ? Theme.red : Theme.cream))
+                color: pill.busy ? Theme.dim : (pill.strong ? Theme.inkOnGold : (pill.danger ? Theme.red : Theme.cream))
                 rotation: pill.busy ? pill.turn : 0 }
-        Label { text: pill.text; font.weight: 600; color: pill.busy ? Theme.dim : (pill.strong ? Theme.ground : (pill.danger ? Theme.red : Theme.cream)); anchors.verticalCenter: parent.verticalCenter } }
+        Label { text: pill.text; font.weight: 600; color: pill.busy ? Theme.dim : (pill.strong ? Theme.inkOnGold : (pill.danger ? Theme.red : Theme.cream)); anchors.verticalCenter: parent.verticalCenter } }
     MouseArea { id: hit; anchors.fill: parent; hoverEnabled: true; enabled: !pill.busy; cursorShape: Qt.PointingHandCursor; onClicked: pill.pressed() }
 }

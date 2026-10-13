@@ -18,6 +18,7 @@ function M.url(url) go("xdg-open", { url }) end
 function M.apps(page) go("latte-app", page and { "appmanager", page } or { "appmanager" }) end
 function M.devices(page) go("latte-app", page and { "devices", page } or { "devices" }) end
 function M.monitor(page) go("latte-app", page and { "monitor", page } or { "monitor" }) end
+function M.settings(page) go("latte-app", page and { "settings", page } or { "settings" }) end
 -- an app, as the `apps` service lists it
 function M.app(a) if a and a.exec then pcall(sys.call, "apps.launch", a.exec) end end
 
