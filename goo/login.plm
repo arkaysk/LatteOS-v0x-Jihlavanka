@@ -271,7 +271,7 @@ scene Login {
 
     // ── the light that goes into the coffee: from the sun or the moon, as it stands over the surface ─────────
     shader water { at: 0, tide_y + 8; size: W, H + 62 - tide_y; show: gone < 0.5 and tide > 0.5
-                   values: if(sky_body > 0, 1, 0) * if(sky_body == 2, 0.55, 1) * (1 - 0.3 * rain) * clock_in * (1 - gone), sky_x, (0.5 - sky_t) * 0.9, if(sky_body == 2, 1, 0), H - tide_y - 8
+                   values: pick(sky_body, 0.22, 1, 0.55) * (1 - 0.3 * rain) * clock_in * (1 - gone), sky_x, (0.5 - sky_t) * 0.9, if(sky_body == 1, 0, 1), H - tide_y - 8
                    colors: amber, #cfd8ff }
 
     // ── the power drop: a glint turns in it while it rolls, then the power icon ─────────────────────────────

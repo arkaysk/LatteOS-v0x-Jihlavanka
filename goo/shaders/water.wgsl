@@ -56,15 +56,18 @@ fn shade(s: Shader) -> vec4<f32> {
     let net = pow(c1 * c2, 5.0) * exp(-d / 60.0) * focus * clear_water;
     let light = clamp(s.a.x * (0.15 * beams + 0.3 * net) * smoothstep(0.0, 28.0, d), 0.0, 0.5);
 
-    // the bed: asymmetric ripple marks, steeper on the side the waves come from, in the last 70 px
+    // the bed: asymmetric ripple marks, steeper on the side the waves come from, in the last 90 px. Their
+    // crests catch what light there is (a little always: the sky), the troughs are dark.
     let up = s.b.x - d;
-    let near = smoothstep(70.0, 0.0, up);
+    let near = smoothstep(90.0, 0.0, up);
     let crest = x * 0.052 + 2.0 * sin(x * 0.0113 + up * 0.03) - t * 0.05;
     let ridge = pow(0.5 + 0.5 * sin(crest + 0.7 * sin(crest)), 2.0);
-    let bed = near * (0.12 + 0.2 * ridge) * 0.9;
+    let grain = 0.8 + 0.4 * vnoise(vec2<f32>(x * 0.08, up * 0.2));
+    let bed = near * (0.18 + 0.32 * ridge) * grain;
+    let sand = mix(vec3<f32>(0.03, 0.015, 0.01), vec3<f32>(0.55, 0.36, 0.2), ridge);
 
     let a = light + bed * (1.0 - light);
     let tint = mix(s.color.rgb, s.color2.rgb, s.a.w);
-    let rgb = (tint * light + vec3<f32>(0.05, 0.025, 0.015) * bed * (1.0 - light)) / max(a, 0.001);
+    let rgb = (tint * light + sand * bed * (1.0 - light)) / max(a, 0.001);
     return vec4<f32>(rgb, a);
 }
