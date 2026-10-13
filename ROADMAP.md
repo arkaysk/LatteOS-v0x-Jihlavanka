@@ -124,8 +124,9 @@ Schválené 12. 10. 2026. Pracuje sa **zhora nadol, neskáče sa**; nový nápad
           pod GPL-3.0, jeho shadery sa do okna v QML nedajú vložiť; podobné prechody treba napísať vlastné
           (QML `ShaderEffect`, `qsb` je v systéme). Dnes sa bannery posúvajú.
         - **Poradie od používateľa z rána 13. 10.** (ide sa zhora, Barista zatiaľ stojí):
-          1. [ ] okná ako vo Windows: od okrajov sa mení veľkosť, kúsok za okrajom v prázdne sa okno ťahá celé,
-             a okno nesmie skončiť tam, kde naň nedočiahneš (✕ za hranou obrazovky);
+          1. [x] okná ako vo Windows (13. 10.): od okrajov sa mení veľkosť (Hyprland), kúsok za okrajom v prázdne
+             (do 36 px) sa okno ťahá celé (plugin `latte-events`), a pustené okno sa vráti tak, aby jeho vrch
+             s hlavičkou ostal na obrazovke a dalo sa chytiť. Platí pre plávajúce okná.
           2. [ ] **Monitor** — skontrolovať starý, nájsť návrhy vylepšení, prepísať;
           3. [ ] Správca zariadení: rozdeliť na **zariadenia** a **sieť** (správca siete, inšpektor siete);
           4. [ ] **Nastavenia** — hlavné, prehľadne po kategóriách ako Windows 11 + možnosti Linuxu, s hľadaním

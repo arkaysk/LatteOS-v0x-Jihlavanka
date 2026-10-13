@@ -296,6 +296,9 @@ ostatné kvapky sú iba na hlavnom monitore.
   maximalizuje, pri bočnom zaberie polovicu, pri rohu štvrtinu; odtiahnuté z miesta dostane späť svoju veľkosť.
   Kedy bolo okno pustené, hovorí plugin `plugins/latte-events` (Hyprland 0.56 na to udalosť nemá); bez neho sa
   neprichytáva. Pri Win + ťahaní sa prichytí až s prvým pohybom myši po pustení. Náhľad cieľa ešte nie je.
+- **Okno vždy na dosah** (používateľ, 13. 10.; plávajúce okná): od okraja sa mení veľkosť v tom smere; kúsok za
+  okrajom v prázdne (do 36 px) sa okno chytí celé a ťahá; pustené okno sa vráti tak, aby jeho vrch ostal na obrazovke
+  a aspoň 140 px z neho bolo vidieť — ✕ sa už nedá stratiť za hranou. Chytenie za okraj robí plugin `latte-events`.
 - Režimy **páska** (nekonečná, ako niri), **dlaždice**, **plávajúce** (ako Windows). Štvrtý, **Glance** pre široké
   monitory (Main · Stash · Parking), je rozhodnutý a čaká v poradí: ROADMAP „Teraz“, bod 7. Okná neprekrývajú pás kvapiek
   pri okraji (ani maximalizované); celú obrazovku kreslí Hyprland nad vrstvou Goo.

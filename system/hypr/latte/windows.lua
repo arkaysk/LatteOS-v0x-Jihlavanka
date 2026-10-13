@@ -96,6 +96,17 @@ local function edge_zone(m, x, y)
     end
     return (ry <= EDGE and open_edge(x, m.y - 2)) and "full" or nil
 end
+-- Wherever it is let go, a window stays within reach: its top on the screen, where its header and its buttons
+-- are, and enough of it to take hold of. One that was dropped further out comes back that far.
+local function within_reach(w, m)
+    local scale, res = m.scale or 1, m.reserved or { top = 0, right = 0, bottom = 0, left = 0 }
+    local mw, mh = m.width / scale, m.height / scale
+    local x, y = xy(w.at)
+    local width = xy(w.size)
+    local nx = math.max(m.x - width + 140, math.min(x, m.x + mw - 140))
+    local ny = math.max(m.y + (res.top or 0), math.min(y, m.y + mh - (res.bottom or 0) - 70))
+    if nx ~= x or ny ~= y then hl.dispatch(hl.dsp.window.move({ x = math.floor(nx), y = math.floor(ny), window = sel(w) })) end
+end
 local function dropped(w, x, y)
     if not w or W.current ~= "floating" then return end
     local m = hl.get_monitor_at(x, y) or w.monitor
@@ -110,6 +121,7 @@ local function dropped(w, x, y)
             before[w.address] = nil
             hl.dispatch(hl.dsp.window.resize({ x = r.w, y = r.h, window = sel(w) }))
         end
+        if m then within_reach(w, m) end
     end
 end
 hl.on("window.close", function(w) if w then before[w.address] = nil end end)
