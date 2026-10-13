@@ -109,6 +109,8 @@ end
 function latte.cup(name)
     name = name or chosen_cup()
     require("latte.bars").cup(name)
+    local border = require("latte.bars").border(name) or colors
+    hl.config({ general = { col = { active_border = border.active, inactive_border = border.inactive } } })
     hl.exec_cmd("gsettings set org.gnome.desktop.interface color-scheme " .. (name == "porcelain" and "prefer-light" or "prefer-dark"))
 end
 require("latte.bars").cup(chosen_cup())    -- here too: the configuration is read anew at times

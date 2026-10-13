@@ -20,8 +20,16 @@ local function from_wallpaper()
     if not f then return nil end
     local all = f:read("*a") or ""
     f:close()
-    local bar, text = all:match('"surfaceVariant"%s*:%s*"#(%x%x%x%x%x%x)"'), all:match('"surfaceText"%s*:%s*"#(%x%x%x%x%x%x)"')
-    return bar and text and { "rgb(" .. bar .. ")", "rgb(" .. text .. ")" } or nil
+    local function of(name) return all:match('"' .. name .. '"%s*:%s*"#(%x%x%x%x%x%x)"') end
+    local bar, text = of("surfaceVariant"), of("surfaceText")
+    -- the bar, its writing; then what the border of the window in front is made of, and of the others
+    return bar and text and { "rgb(" .. bar .. ")", "rgb(" .. text .. ")", of("primary"), of("tertiary"), of("outline") } or nil
+end
+-- the border of windows for that cup: nil for the three cups of coffee, which keep the desktop's own
+function B.border(name)
+    local c = name == "wallpaper" and from_wallpaper() or nil
+    if not c or not c[3] then return nil end
+    return { active = { colors = { "rgb(" .. c[3] .. ")", "rgb(" .. (c[4] or c[3]) .. ")" }, angle = 45 }, inactive = "rgba(" .. (c[5] or "4a3b30") .. "66)" }
 end
 function B.cup(name)
     local c = name == "wallpaper" and (from_wallpaper() or CUPS.espresso) or CUPS[name]
