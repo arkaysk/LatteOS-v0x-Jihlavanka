@@ -227,6 +227,7 @@ open_main = function(keep)
                               run = function() call("bluetooth.power", not blue.powered) end }
     end
     if #pills > 0 then rows[#rows + 1] = { pills = pills } end
+    if audio.volume ~= nil or light.present then rows[#rows + 1] = { head = true, label = tr("SOUND AND LIGHT") } end
     if audio.volume ~= nil then
         rows[#rows + 1] = { slide = true, glyph = volume_glyph(), label = tr("Volume"), value = audio.volume, off = audio.muted == true, hint = percent(audio.volume),
                             run = function() call("audio.mute") end, set = function(v) call("audio.volume", v) end, wheel = function(dir) call("audio.step", dir * 0.05) end }
@@ -236,7 +237,8 @@ open_main = function(keep)
                             set = function(v) call("brightness.level", math.max(0.02, v)) end,
                             wheel = function(dir) call("brightness.level", math.clamp((light.level or 0) + dir * 0.05, 0.02, 1)) end }
     end
-    rows[#rows + 1] = { label = tr("Network"), glyph = net_glyph(), line = #rows > 0, keep = true, more = true, run = function() open_networks() end,
+    rows[#rows + 1] = { head = true, label = tr("CONNECTIONS") }
+    rows[#rows + 1] = { label = tr("Network"), glyph = net_glyph(), keep = true, more = true, run = function() open_networks() end,
                         line2 = net.online and ((net.name or "") ~= "" and net.name or tr("Wired network")) or tr("Offline") }
     if blue.present then
         local names = connected()
@@ -270,7 +272,7 @@ open_main = function(keep)
                               run = function() run("cliphist", { "wipe" }, function() clips = {} open_main(true) end) end }
     end
     for _, r in ipairs(right) do r.col = 2 rows[#rows + 1] = r end
-    panel(rows, { width = 330, width2 = 330, keep = keep })
+    panel(rows, { width = 340, width2 = 340, keep = keep, tiles = true })
 end
 
 -- what the pointer rests on: 0 the arrow, 1 the network, 2 the volume, 3 the battery, 10… the programs

@@ -132,7 +132,10 @@ part Rows {
                 opacity: shown
                 move: (1 - shown) * 18 * card.sx, 0
 
-                box { at: w / 2, h / 2; size: w, h - 4; corner: 12; color: if(r.danger, red, #4a372b); opacity: max(hit.hover, if(card_sel == (r.index + base) * 8, 1, 0)) * if(r.danger, 18%, 100%); show: r.kind == plain or r.kind == big }
+                // A tile is drawn row by row: each lays its piece and, unless it is the last, reaches under the next
+                // one, which covers that with its own; so the tile's corners are round only at its two ends.
+                box { from: 2, if(r.tile == 1 or r.tile == 4, 1, 0); size: w - 4, h + if(r.tile == 1 or r.tile == 2, 14, -1) - if(r.tile == 1 or r.tile == 4, 1, 0); corner: 15; color: mix(paper, cream, 0.075); show: r.tile > 0 }
+                box { at: w / 2, h / 2; size: w - if(r.tile > 0, 12, 0), h - 4; corner: 12; color: if(r.danger, red, #4a372b); opacity: max(hit.hover, if(card_sel == (r.index + base) * 8, 1, 0)) * if(r.danger, 18%, 100%); show: r.kind == plain or r.kind == big }
 
                 // plain
                 image r.icon { at: 15, if(r.tall, 13, 9); size: 26, 26; show: r.kind == plain and r.has_icon }

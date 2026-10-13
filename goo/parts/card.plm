@@ -20,6 +20,7 @@ part Card {
         kind: plain | head | big | para | pills | tiles | profile | slide = plain
         label: text; hint: text; line2: text; glyph: text; icon: image 64, 64; has_icon: bool; tall: bool
         on: bool; off: bool; quiet: bool; danger: bool; more: bool; line: bool; bar: number = -1; per: number = 4
+        tile: number = 0                       // part of a tile, a card within the card: 1 its first row, 2 inside, 3 its last, 4 alone
         list items max 6 { label: text; glyph: text; icon: image 44, 44; has_icon: bool; on: bool; off: bool; danger: bool }
     }
     // the rows of a second column, beside the first: a card with two things to show at once
@@ -27,6 +28,7 @@ part Card {
         kind: plain | head | big | para | pills | tiles | profile | slide = plain
         label: text; hint: text; line2: text; glyph: text; icon: image 64, 64; has_icon: bool; tall: bool
         on: bool; off: bool; quiet: bool; danger: bool; more: bool; line: bool; bar: number = -1; per: number = 4
+        tile: number = 0                       // part of a tile, a card within the card: 1 its first row, 2 inside, 3 its last, 4 alone
         list items max 6 { label: text; glyph: text; icon: image 44, 44; has_icon: bool; on: bool; off: bool; danger: bool }
     }
     model tab max 6 { label: text; glyph: text; on: bool }

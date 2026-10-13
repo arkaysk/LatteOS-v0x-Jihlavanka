@@ -24,6 +24,8 @@
 -- dot } }, pick = function(place 0…41), step = function(±1) }`.
 -- A tab is { label, glyph, on, run }. The field is { hint, text, secret, change = function(text), submit =
 -- function(text) }; `submit` returns true to keep what was typed, `secret` hides it as a password.
+-- `tiles`: the rows between two headings are laid as a tile, a card within the card (rules between them are
+-- dropped: the tile is what holds them together).
 -- Options: `keep` refreshes an open card in place (live figures): the rows do not come in again and the row
 -- chosen with the keys stays.
 local icons = require("lib/icons")
@@ -143,6 +145,23 @@ function M.open(rows, opts)
     local out2 = {}
     for _, it in ipairs(rows) do
         if it.col == 2 and opts.width2 then add(it, out2, ROWS, ROWS2) else add(it, out, 0, ROWS) end
+    end
+    if opts.tiles then
+        local IN = { plain = true, slide = true, profile = true, big = true }
+        for _, list in ipairs({ out, out2 }) do
+            local from = nil
+            for i = 1, #list + 1 do
+                local inside = list[i] ~= nil and IN[list[i].kind] == true
+                if inside and not from then from = i end
+                if not inside and from then
+                    for k = from, i - 1 do
+                        list[k].tile = (i - 1 == from and 4) or (k == from and 1) or (k == i - 1 and 3) or 2
+                        list[k].line = false
+                    end
+                    from = nil
+                end
+            end
+        end
     end
 
     local tabs = {}
