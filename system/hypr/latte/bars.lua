@@ -14,8 +14,17 @@ local OWN_HEADER = "^(org\\.quickshell|xdg-desktop-portal.*|org\\.mozilla\\.fire
 -- The cup the windows are made of (Settings › Coffee and cup, ~/.config/latteos/cup): the bar's colour and its text's,
 -- as apps/common/Theme.qml has them for the apps of LatteOS.
 local CUPS = { espresso = { "rgb(261d17)", "rgb(f3ebdd)" }, mocha = { "rgb(3e3027)", "rgb(f6eee2)" }, porcelain = { "rgb(ebe2d2)", "rgb(2a170c)" } }
+-- "wallpaper": the colours skwd-wall works out of the wallpaper (bin/latte-wall), read from its palette
+local function from_wallpaper()
+    local f = io.open((os.getenv("XDG_CACHE_HOME") or ((os.getenv("HOME") or "") .. "/.cache")) .. "/skwd-wall-v2/colors.json", "r")
+    if not f then return nil end
+    local all = f:read("*a") or ""
+    f:close()
+    local bar, text = all:match('"surfaceVariant"%s*:%s*"#(%x%x%x%x%x%x)"'), all:match('"surfaceText"%s*:%s*"#(%x%x%x%x%x%x)"')
+    return bar and text and { "rgb(" .. bar .. ")", "rgb(" .. text .. ")" } or nil
+end
 function B.cup(name)
-    local c = CUPS[name]
+    local c = name == "wallpaper" and (from_wallpaper() or CUPS.espresso) or CUPS[name]
     if not c or not (hl.plugin and hl.plugin.hyprbars) then return end
     hl.config({ plugin = { hyprbars = { bar_color = c[1] } } })
     -- the text's colour as a rule: a title already written is written again only when a rule says its colour changed

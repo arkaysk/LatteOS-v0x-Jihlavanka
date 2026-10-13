@@ -181,7 +181,8 @@ ShellRoot {
                 { icon: "file-text", text: I18n.tr("Text Document"), run: () => desk.create(I18n.tr("New Text Document"), ".txt", false) }] },
             { line: true },
             { icon: "device-desktop", text: I18n.tr("Display settings"), run: () => Quickshell.execDetached(["latte-app", "settings", "displays"]) },
-            { icon: "palette", text: I18n.tr("Personalize"), run: () => Quickshell.execDetached(["latte-app", "settings", "background"]) },
+            { icon: "palette", text: I18n.tr("Personalize"), run: () => Quickshell.execDetached(["latte-app", "settings", "coffee"]) },
+            { icon: "photo", text: I18n.tr("Change wallpaper"), run: () => Quickshell.execDetached(["latte-wall", "pick"]) },
             { line: true },
             { icon: "terminal-2", text: I18n.tr("Open in Terminal"), run: () => Quickshell.execDetached(["sh", "-c", "cd \"$1\" && exec foot", "sh", desk.folder]) }])
     }

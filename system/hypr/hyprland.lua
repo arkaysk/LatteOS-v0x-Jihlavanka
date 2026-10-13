@@ -209,14 +209,8 @@ function latte.wallpaper(path)
         local there = kept ~= "" and io.open(kept, "r")
         if there then there:close() picture = kept end
     end
-    -- The new one comes up before the old one goes, so the background colour never shows through. A film is
-    -- played by mpvpaper, silent and round again; a picture is shown by swaybg.
-    local film = picture:lower():match("%.mp4$") or picture:lower():match("%.webm$") or picture:lower():match("%.mkv$") or picture:lower():match("%.mov$")
-    local show = film and "mpvpaper -o \"no-audio loop\" \"*\" \"$1\"" or "swaybg -i \"$1\" -m fill"
-    -- The one before goes once the new one is up; only this session's: another compositor of the same user
-    -- (a second seat, a test without a screen) has a wallpaper of its own.
-    hl.exec_cmd("sh -c 'old=$(for p in $(pgrep -x swaybg; pgrep -x mpvpaper); do grep -qzx \"WAYLAND_DISPLAY=$WAYLAND_DISPLAY\" /proc/$p/environ 2>/dev/null && echo $p; done); "
-        .. show .. " & sleep 0.8; [ -n \"$old\" ] && kill $old' sh '" .. picture:gsub("'", "'\\''") .. "'")
+    -- who draws it is bin/latte-wall's to know: skwd-wall where it is installed, swaybg or mpvpaper otherwise
+    hl.exec_cmd("latte-wall show '" .. picture:gsub("'", "'\\''") .. "'")
 end
 
 hl.on("hyprland.start", function()

@@ -12,8 +12,20 @@ Singleton {
         "mocha":     { ground: "#2a1f19", surface: "#32261f", card: "#3e3027", raised: "#4f3d31", line: "#624c3e", cream: "#f6eee2", dim: "#c9b5a2", faint: "#9d8775", gold: "#f7c873", coffee: "#d59a66" },
         "porcelain": { ground: "#f5eee2", surface: "#ebe2d2", card: "#fffaf1", raised: "#e6d9c5", line: "#d5c4ad", cream: "#2a170c", dim: "#6b5444", faint: "#9a8672", gold: "#b5651d", coffee: "#8a4b22" } })
     property string cup: "espresso"
-    readonly property var made: cups[cup] || cups.espresso
+    // "wallpaper" is the fourth: the colours skwd-wall works out of the wallpaper, taken anew each time it changes
+    property var fromWallpaper: null
+    readonly property var made: (cup === "wallpaper" && fromWallpaper) || cups[cup] || cups.espresso
     readonly property bool light: cup === "porcelain"
+    function mix(a, b, t) { const x = Qt.color(a), y = Qt.color(b); return Qt.rgba(x.r + (y.r - x.r) * t, x.g + (y.g - x.g) * t, x.b + (y.b - x.b) * t, 1).toString() }
+    FileView {
+        id: palette
+        path: (Quickshell.env("XDG_CACHE_HOME") || (Quickshell.env("HOME") + "/.cache")) + "/skwd-wall-v2/colors.json"
+        printErrors: false; watchChanges: true
+        onFileChanged: reload()
+        onLoaded: { try { const c = JSON.parse(text())
+            fromWallpaper = { ground: c.background, surface: c.surface, card: c.surfaceVariant, raised: c.surfaceContainer, line: mix(c.surfaceContainer, c.outline, 0.35),
+                              cream: c.surfaceText, dim: mix(c.surfaceText, c.outline, 0.6), faint: c.outline, gold: c.primary, coffee: c.tertiary } } catch (e) {} }
+    }
     readonly property color ground: made.ground          // what a window stands on
     readonly property color surface: made.surface
     readonly property color card: made.card
@@ -52,7 +64,7 @@ Singleton {
         path: (Quickshell.env("XDG_CONFIG_HOME") || (Quickshell.env("HOME") + "/.config")) + "/latteos/cup"
         printErrors: false; watchChanges: true
         onFileChanged: reload()
-        onLoaded: { const word = text().trim(); if (cups[word]) cup = word }
+        onLoaded: { const word = text().trim(); if (cups[word] || word === "wallpaper") cup = word }
     }
     // A choice that has never been made has no file yet, and a file that is not there cannot be watched: it is
     // looked for now and then, so that every open window takes the choice up when it is first made.

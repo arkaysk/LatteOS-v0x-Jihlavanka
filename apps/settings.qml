@@ -46,6 +46,7 @@ ShellRoot {
         function choose(word) { value = word; Quickshell.execDetached(["sh", "-c", "mkdir -p \"$1\" && printf '%s\\n' \"$3\" > \"$1/$2\"", "sh", shell.config, name, word]) }
     }
     Word { id: cup; name: "cup" }
+    function cupOf(id) { return id === "wallpaper" ? (Theme.fromWallpaper || Theme.cups.espresso) : Theme.cups[id] }
     Word { id: glass; name: "glass" }
     Word { id: wallpaper; name: "wallpaper" }
     Word { id: icons; name: "desktop-icons" }
@@ -359,13 +360,14 @@ ShellRoot {
             Part { visible: shell.page === "coffee"; width: view.room; title: I18n.tr("And in what cup?"); note: I18n.tr("The cup is what the windows are made of.")
                 Repeater { model: [{ id: "espresso", name: QT_TR_NOOP("Espresso cup"), hint: QT_TR_NOOP("dark") }, { id: "mocha", name: QT_TR_NOOP("Mocha cup"), hint: QT_TR_NOOP("warm brown") },
                                    { id: "porcelain", name: QT_TR_NOOP("Porcelain"), hint: QT_TR_NOOP("light") }]
+                           .concat(Theme.fromWallpaper ? [{ id: "wallpaper", name: QT_TR_NOOP("From the wallpaper"), hint: QT_TR_NOOP("its colours, each time it changes") }] : [])
                     Choice { required property var modelData; width: 190; text: I18n.tr(modelData.name); hint: I18n.tr(modelData.hint); on: Theme.cup === modelData.id; onPressed: { cup.choose(modelData.id); Theme.cup = modelData.id; Quickshell.execDetached(["hyprctl", "eval", "latte.cup(\"" + modelData.id + "\")"]) }
                         // a small window made of that cup
-                        Rectangle { anchors.fill: parent; radius: 10; color: Theme.cups[parent.parent.modelData.id].ground; border.width: 1; border.color: Theme.cups[parent.parent.modelData.id].line
-                            Rectangle { width: parent.width * 0.3; height: parent.height; radius: 10; color: Theme.cups[parent.parent.parent.modelData.id].surface }
-                            Rectangle { x: parent.width * 0.38; y: 12; width: parent.width * 0.5; height: 8; radius: 4; color: Theme.cups[parent.parent.parent.modelData.id].cream }
-                            Rectangle { x: parent.width * 0.38; y: 28; width: parent.width * 0.36; height: 6; radius: 3; color: Theme.cups[parent.parent.parent.modelData.id].dim }
-                            Rectangle { x: parent.width * 0.38; y: 46; width: 40; height: 16; radius: 8; color: Theme.cups[parent.parent.parent.modelData.id].gold } } } } }
+                        Rectangle { anchors.fill: parent; radius: 10; color: shell.cupOf(parent.parent.modelData.id).ground; border.width: 1; border.color: shell.cupOf(parent.parent.modelData.id).line
+                            Rectangle { width: parent.width * 0.3; height: parent.height; radius: 10; color: shell.cupOf(parent.parent.parent.modelData.id).surface }
+                            Rectangle { x: parent.width * 0.38; y: 12; width: parent.width * 0.5; height: 8; radius: 4; color: shell.cupOf(parent.parent.parent.modelData.id).cream }
+                            Rectangle { x: parent.width * 0.38; y: 28; width: parent.width * 0.36; height: 6; radius: 3; color: shell.cupOf(parent.parent.parent.modelData.id).dim }
+                            Rectangle { x: parent.width * 0.38; y: 46; width: 40; height: 16; radius: 8; color: shell.cupOf(parent.parent.parent.modelData.id).gold } } } } }
             Part { visible: shell.page === "coffee"; width: view.room; title: I18n.tr("Icons"); note: I18n.tr("What files, folders and apps are shown with: on the desktop, in LatteOS's apps and in apps that follow the system.")
                 Repeater { model: iconsets.data ? iconsets.data.sets : []
                     Choice { id: set; required property var modelData; width: 200; text: modelData.name; on: iconsets.data.chosen === modelData.id
@@ -397,6 +399,7 @@ ShellRoot {
                                     onClicked: { wallpaper.value = parent.modelData.path; Quickshell.execDetached(["hyprctl", "eval", "latte.wallpaper(" + JSON.stringify(parent.modelData.path) + ")"]) } } } } }
 
             Pill { visible: shell.page === "background"; icon: "folder"; text: I18n.tr("Another file…"); onPressed: { chooser.what = "wallpaper"; chooser.open() } }
+            Pill { visible: shell.page === "background"; icon: "photo"; strong: true; text: I18n.tr("Wallpaper picker"); onPressed: Quickshell.execDetached(["latte-wall", "pick"]) }
             Switch { visible: shell.page === "background"; width: view.room; text: I18n.tr("Icons on the desktop"); on: icons.value !== "off"
                      hint: I18n.tr("The Recycle Bin and what is in your Desktop folder, over the background.")
                      onPressed: { const next = on ? "off" : "on"; icons.value = next; Quickshell.execDetached(["latte-desktop", next]) } }

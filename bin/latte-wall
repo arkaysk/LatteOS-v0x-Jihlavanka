@@ -1,0 +1,55 @@
+#!/bin/sh
+# latte-wall: the wallpaper, whoever draws it.
+#
+#   latte-wall show PATH    puts that picture or film behind the desktop
+#   latte-wall pick         opens the wallpaper picker (skwd-wall), or the Settings' page without it
+#   latte-wall engine       prints "skwd" or "plain": who draws
+#   latte-wall changed [PATH]   skwd-wall's hook: the choice is noted and the colours taken from the wallpaper go round
+#
+# With skwd-wall installed (github.com/liixini/skwd-wall, its own package) it draws the wallpaper: pictures, films
+# and scenes, with a transition from one to the next, and it works a palette out of each one, which is the theme
+# "from the wallpaper" (apps/common/Theme.qml, system/hypr/latte/bars.lua). Without it a picture is swaybg's and a
+# film mpvpaper's, as plain as that.
+config="${XDG_CONFIG_HOME:-$HOME/.config}/latteos"
+
+skwd() { command -v skwd-helm >/dev/null 2>&1 && systemctl --user cat skwd-walld.service >/dev/null 2>&1; }
+# this session's own plain wallpapers: another compositor of the same user has its own
+plain() { for p in $(pgrep -x swaybg; pgrep -x mpvpaper); do grep -qzx "WAYLAND_DISPLAY=$WAYLAND_DISPLAY" "/proc/$p/environ" 2>/dev/null && echo "$p"; done; }
+
+case "${1:-}" in
+engine) skwd && echo skwd || echo plain ;;
+show)
+    picture="${2:?latte-wall show PATH}"
+    if skwd; then
+        systemctl --user start skwd-walld.service 2>/dev/null
+        # it says when a wallpaper was chosen in its picker: one listener a session
+        pgrep -u "$(id -u)" -f 'skwd-helm watch --exec latte-wall' >/dev/null || setsid -f skwd-helm watch --exec 'latte-wall changed %path%' >/dev/null 2>&1
+        n=0; until skwd-helm apply "$picture" >/dev/null 2>&1 || [ $n -ge 20 ]; do n=$((n + 1)); sleep 0.3; done
+        old="$(plain)"; [ -n "$old" ] && kill $old
+        exit 0
+    fi
+    # The new one comes up before the old one goes, so the background colour never shows through.
+    old="$(plain)"
+    case "$(printf '%s' "$picture" | tr 'A-Z' 'a-z')" in
+        *.mp4|*.webm|*.mkv|*.mov) setsid -f mpvpaper -o "no-audio loop" "*" "$picture" >/dev/null 2>&1 ;;
+        *) setsid -f swaybg -i "$picture" -m fill >/dev/null 2>&1 ;;
+    esac
+    sleep 0.8; [ -n "$old" ] && kill $old ;;
+pick)
+    if skwd && command -v skwd-wall-v2 >/dev/null 2>&1; then
+        # its library is the folder Wallpapers in the user's Pictures: LatteOS's own are put there to choose from
+        lib="$(xdg-user-dir PICTURES 2>/dev/null)"; lib="${lib:-$HOME/Pictures}/Wallpapers"
+        mkdir -p "$lib" && for f in "${LATTE_SHARE:-/usr/share/latteos}"/wallpapers/*; do
+            [ -e "$f" ] && [ ! -e "$lib/$(basename "$f")" ] && ln -s "$f" "$lib/"
+        done
+        skwd-helm ui toggle >/dev/null 2>&1 || setsid -f skwd-wall-v2 >/dev/null 2>&1
+    else
+        setsid -f latte-app settings background >/dev/null 2>&1
+    fi ;;
+changed)
+    if [ -n "${2:-}" ]; then mkdir -p "$config" && printf '%s\n' "$2" > "$config/wallpaper"; fi
+    # the title bars take the colours anew; the apps watch the palette's file themselves
+    [ "$(head -n1 "$config/cup" 2>/dev/null)" = wallpaper ] && hyprctl eval 'latte.cup()' >/dev/null 2>&1
+    exit 0 ;;
+*) sed -n '2,9p' "$0" | sed 's/^# \{0,1\}//' >&2; exit 2 ;;
+esac
