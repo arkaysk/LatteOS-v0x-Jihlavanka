@@ -22,6 +22,7 @@
 /usr/bin/latte-net                                      <- bin/latte-net
 /usr/bin/latte-network                                  <- bin/latte-network
 /usr/bin/latte-settings                                 <- bin/latte-settings
+/usr/bin/latte-desktop                                  <- bin/latte-desktop
 /usr/bin/latte-session                                  <- bin/latte-session
 /usr/bin/latte-screens                                  <- bin/latte-screens
 /usr/bin/latte-safe                                     <- bin/latte-safe
@@ -206,6 +207,7 @@ optional: brightnessctl power-profiles-daemon                        # the brigh
 optional: steam gamescope gamescope-session gamescope-session-steam  # the Game session; without them it is not offered
 /usr/bin/pleamar: pleamar v0.3.2 (github.com/k4ditano/pleamar) built with patches/pleamar-*.patch; see patches/README.md
 optional /usr/lib64/latteos/hyprbars.so: hyprbars (github.com/hyprwm/hyprland-plugins) built for the installed Hyprland with patches/hyprbars-latte.patch
+optional: pcmanfm-qt breeze-icon-theme                               # the icons on the desktop (bin/latte-desktop); without it the desktop has its menu only
 optional /usr/bin/whyd: whyd (github.com/vmaltarello/whyd, the rpm of its releases): SAFE then says why the last session ended, from the journal
 optional /usr/lib64/latteos/hyprglass.so: hyprglass (github.com/hyprnux/hyprglass) built for the installed Hyprland: the glass windows that go with drops of glass
 

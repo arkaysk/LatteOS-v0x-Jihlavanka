@@ -305,6 +305,8 @@ library Slovak {
         "Set the clock by itself" = "Nastavovať hodiny samo"
         "The login screen starts with the layouts of the whole system; there one is chosen with a click." = "Prihlasovacia obrazovka začína s rozloženiami celého systému; tam sa jedno vyberie klikom."
         "The last crash" = "Posledný pád"
+        "Icons on the desktop" = "Ikony na ploche"
+        "The Trash, your home and what is in your Desktop folder, over the background. Needs pcmanfm-qt." = "Kôš, domov a to, čo je v priečinku Plocha, nad pozadím. Potrebuje pcmanfm-qt."
         "Open in terminal" = "Otvoriť v termináli"
         "Display settings" = "Nastavenia obrazovky"
         "Personalize" = "Prispôsobiť"

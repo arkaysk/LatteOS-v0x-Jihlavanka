@@ -4,7 +4,7 @@
 `pleamar --mouse` is a scene's own fake mouse; this one is the compositor's, so it can press a window's title,
 drag it and let it go. Steps, in order:
   X,Y      go there (pixels of a screen WIDTH × HEIGHT), in small moves, as a hand does
-  down     press the left button          up     let it go
+  down     press the left button          up     let it go          rdown, rup   the right one
   0.5      wait that many seconds
 For the DO of tests/screen.sh:   pointer.py 1920x1080 400,300 down 2,300 0.3 up
 
@@ -88,8 +88,8 @@ def main(a):
         w.send(pointer, 4)                                                              # frame
 
     for step in a[1:]:
-        if step in ("down", "up"):
-            w.send(pointer, 2, struct.pack("<III", now(), BTN_LEFT, 1 if step == "down" else 0))
+        if step in ("down", "up", "rdown", "rup"):
+            w.send(pointer, 2, struct.pack("<III", now(), BTN_LEFT + (1 if step[0] == "r" else 0), 1 if step.endswith("down") else 0))
             w.send(pointer, 4)
         elif "," in step:
             x, y = (float(v) for v in step.split(","))

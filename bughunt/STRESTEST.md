@@ -79,7 +79,7 @@ Pôvodný zoznam (7. 10. 2026, 540 testov bez stavu): `docs_zaloha/2026-10-07-st
 | 018 | Boot bez siete | P1 | ⬜ | | |
 | 019 | Boot s veľmi pomalou sieťou | P2 | ⬜ | | |
 | 020 | Boot po neúspešnom update *(dnes: SAFE › rollback dnf a snímka Btrfs/snapper; celý obraz a automatický návrat po fáze A)* | P2 | ⬜ | | |
-| 541 | Prihlasovač LatteOS: prihlásenie, zlé heslo, výber relácie, prepnutie jazyka a klávesnice *(nové)* | P1 | ⚠️ | 13. 10. · latte-lab | zlé heslo odmietnuté pekne; **jazyk a klávesnica sa na prihlásení prepnúť nedajú** (žiadna ponuka) — ROADMAP bod 11a |
+| 541 | Prihlasovač LatteOS: prihlásenie, zlé heslo, výber relácie, prepnutie jazyka a klávesnice *(nové)* | P1 | ⚠️ | 13. 10. · latte-lab | zlé heslo odmietnuté pekne; **jazyk a klávesnica sa na prihlásení prepnúť nedajú** (žiadna ponuka) — ROADMAP bod 11a · **13. 10. večer, skutočné prihlásenie na latte-lab (greetd, RX 640):** klik na jazyk prepol texty na English hneď; klik na klávesnicu spustil prihlásenie znova s `us,sk` a jazyk ostal (overené z prostredia procesu a snímkou; klikala virtuálna myš). Ostáva: napísať heslo v druhom rozložení rukou |
 
 ### GOO / desktop
 

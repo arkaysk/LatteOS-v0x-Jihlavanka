@@ -110,6 +110,7 @@ function latte.cup(name)
     name = name or chosen_cup()
     require("latte.bars").cup(name)
     hl.exec_cmd("gsettings set org.gnome.desktop.interface color-scheme " .. (name == "porcelain" and "prefer-light" or "prefer-dark"))
+    hl.exec_cmd("latte-desktop restart")       -- its menus and its writing are the cup's colours too
 end
 require("latte.bars").cup(chosen_cup())    -- here too: the configuration is read anew at times
 require("latte.glass").setup(tier)
@@ -213,7 +214,9 @@ function latte.wallpaper(path)
     -- played by mpvpaper, silent and round again; a picture is shown by swaybg.
     local film = picture:lower():match("%.mp4$") or picture:lower():match("%.webm$") or picture:lower():match("%.mkv$") or picture:lower():match("%.mov$")
     local show = film and "mpvpaper -o \"no-audio loop\" \"*\" \"$1\"" or "swaybg -i \"$1\" -m fill"
-    hl.exec_cmd("sh -c 'old=$(pgrep -x swaybg; pgrep -x mpvpaper); " .. show .. " & sleep 0.8; [ -n \"$old\" ] && kill $old' sh '" .. picture:gsub("'", "'\\''") .. "'")
+    -- The icons of the desktop (bin/latte-desktop) are on the same layer as the wallpaper, and the one that came
+    -- last is on top: they are put back once the new wallpaper is there.
+    hl.exec_cmd("sh -c 'old=$(pgrep -x swaybg; pgrep -x mpvpaper); " .. show .. " & sleep 0.8; [ -n \"$old\" ] && kill $old; latte-desktop restart' sh '" .. picture:gsub("'", "'\\''") .. "'")
 end
 
 hl.on("hyprland.start", function()

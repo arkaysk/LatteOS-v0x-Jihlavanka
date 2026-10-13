@@ -48,6 +48,7 @@ ShellRoot {
     Word { id: cup; name: "cup" }
     Word { id: glass; name: "glass" }
     Word { id: wallpaper; name: "wallpaper" }
+    Word { id: icons; name: "desktop-icons" }
     // what the Goo scene keeps for itself: it takes a change up as soon as its file is written
     FileView {
         id: goo
@@ -388,6 +389,9 @@ ShellRoot {
                                     onClicked: { wallpaper.value = parent.modelData.path; Quickshell.execDetached(["hyprctl", "eval", "latte.wallpaper(" + JSON.stringify(parent.modelData.path) + ")"]) } } } } }
 
             Pill { visible: shell.page === "background"; icon: "folder"; text: I18n.tr("Another file…"); onPressed: { chooser.what = "wallpaper"; chooser.open() } }
+            Switch { visible: shell.page === "background"; width: view.room; text: I18n.tr("Icons on the desktop"); on: icons.value !== "off"
+                     hint: I18n.tr("The Trash, your home and what is in your Desktop folder, over the background. Needs pcmanfm-qt.")
+                     onPressed: { const next = on ? "off" : "on"; icons.value = next; Quickshell.execDetached(["latte-desktop", next]) } }
 
             // windows: how they are arranged, and the glass of the side panels
             Part { visible: shell.page === "windows"; width: view.room; title: I18n.tr("How windows are arranged")

@@ -1,9 +1,12 @@
 // The desktop itself: a surface under the windows that only listens. The right button on the bare desktop
 // opens the desktop's menu where it was pressed (lib/desk.luau), as on Windows; a window in the way takes
-// the press itself, as it should.
+// the press itself, as it should. With icons on the desktop (bin/latte-desktop) the desktop is theirs, with
+// the menu that goes with files: this surface is then closed, or no icon could be pressed through it.
 part Desk {
     event desk_menu ->
+    fact desk_icons = false
     surface desk {
+        open: not desk_icons
         size: full, full
         anchor: bottom
         margin: 0
