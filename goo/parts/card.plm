@@ -126,6 +126,14 @@ part Card {
         rim: 16%
         shadow: 0, 8, 22, 36% * clamp(card.p, 0, 1)
         opacity: if(card.p > 0.02, 1, 0)
+        // With the goo of glass the card is frosted glass too: what is behind shows through it, blurred and
+        // smoked so that the light writing on it reads over anything.
+        glass: material * 100%
+        lens: material > 0.02
+        shine: pointer
+        frost: 100%
+        smoke: 62% * material
+        refraction: 120% * material
         box { at: card.ax + card.sx * card.cw / 2, card.ay + card.sy * card.ch / 2; size: card.cw * if(card.p > 0.02, 1, 0), card.ch; corner: min(if(ear > 14, 26, 18) + (card.round - 18), min(card.cw, card.ch) / 2) }
         ellipse { at: card.ax, card.ay; radius: (ear * clamp(card.p * 3, 0, 1) + 1) * if(card.p > 0.02, 1, 0); blend: 4 + 30 * 4 * card.t * (1 - card.t) }
         line { from: card.bx, card.by; to: card.bx + cap.tx * cap.len * strip.dir, card.by + (1 - cap.tx) * cap.len * strip.dir; width: ear * 2 * clamp(card.p * 3, 0, 1) * if(cap.len > 0 and card.p > 0.02, 1, 0); blend: 4 + 30 * 4 * card.t * (1 - card.t) }
