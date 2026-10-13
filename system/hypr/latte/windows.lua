@@ -132,6 +132,7 @@ local function dropped(w, x, y)
         if m then within_reach(w, m) end
     end
 end
+local cut = {}                              -- address → true: windows of an app cut off the internet (below)
 hl.on("window.close", function(w) if w then before[w.address] = nil cut[w.address] = nil end end)
 -- ── a window that plays a sound or asks to be looked at says so itself: its border pulses ────────────────
 -- Where one looks for it is the window. Which windows ask for attention the compositor knows; which ones
@@ -141,7 +142,7 @@ local wanting, sounding = {}, {}           -- address → true
 local ATTENTION, SOUND = "rgb(e5484d)", "rgb(ffe8c2)"
 local beat, lit, slow = nil, false, 0
 -- An app cut off the internet (bin/latte-net) says so too: its windows keep a border the colour of cold steel.
-local cut, CUT = {}, "rgb(6c7a89)"
+local CUT = "rgb(6c7a89)"
 local function border(address, color, size)
     if not color and cut[address] then color = CUT end
     local set = function(prop, value) hl.dispatch(hl.dsp.window.set_prop({ prop = prop, value = value or "unset", window = "address:" .. address })) end
