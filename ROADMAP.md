@@ -223,6 +223,10 @@ Schválené 12. 10. 2026. Pracuje sa **zhora nadol, neskáče sa**; nový nápad
      `apps/` aplikácie QML · `bin/` príkazy · `system/` Hyprland, labwc, greetd, systemd, plymouth · `assets/` tapety,
      písma, textúry · `crates/` Rust · `patches/` záplaty pleamaru · `tests/` kontroly (`tests/check.sh` pred každým commitom) · `FILES`.
 3. [ ] **STRESTEST P1 — Boot a GOO** (001–045, 541–554). Strojovo overiteľné robí Claude, klikanie autor.
+   **Odložené (používateľ, 13. 10.): testuje sa, až keď sú dokončené všetky prvky systému** — najprv body 4–12,
+   potom sa sem vrátiť. Dovtedy sa test robí iba vtedy, keď overuje práve dokončený kus. Stav z 13. 10.: 27 z 219
+   testov P1 má výsledok (zapísané v `bughunt/STRESTEST.md`); z nich na opravu: 031 (hlava BarGoo čnie ~9 px cez
+   spodný okraj maximalizovaného okna), 541 (overiť prepínač jazyka a klávesnice na skutočnom prihlásení).
    *Hotovo, keď:* každý z týchto testov má stav a zlyhané majú úlohu.
 4. [ ] **SafeGoo** — dokončiť podľa toho, čo ukáže bod 1 (ovládanie okien na labwc, diagnostika pádu).
    - **Diagnostika pádu podľa whyd** (schválené 13. 10.; [whyd](https://github.com/vmaltarello/whyd), Go, GPL-3.0,
