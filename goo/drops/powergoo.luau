@@ -8,6 +8,7 @@
 -- On a laptop it carries the battery as beads: three green from 60 %, two yellow from 30 %, one red below;
 -- under 10 % its core pulses red, and while charging it breathes.
 local card = require("lib/card")
+local open = require("lib/open")
 local E = require("lib/engine")
 local wm = require("lib/wm")
 local bar = require("lib/bar")
@@ -162,6 +163,7 @@ open_card = function(d, keep)
         } }
     end
     rows[#rows + 1] = { label = tr("Settings"), glyph = "settings", line = true, keep = true, more = true, run = function() settings.open(d) end }
+    rows[#rows + 1] = { label = tr("Monitor"), glyph = "activity", hint = "Ctrl+Shift+Esc", run = function() after(80, function() open.monitor() end) end }
     rows[#rows + 1] = { line = true, pills = {
         { label = tr("Sleep"), glyph = "moon", run = leave("sleep", d) },
         { label = ask("restart", N("Restart")), glyph = "refresh", on = armed == "restart", keep = true, run = leave("restart", d) },

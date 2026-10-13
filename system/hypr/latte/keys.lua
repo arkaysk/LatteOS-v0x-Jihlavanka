@@ -32,6 +32,7 @@ function K.setup()
     bind("SUPER + SUPER_L", goo("lens_toggle"), { release = true })
     bind("SUPER + SUPER_R", goo("lens_toggle"), { release = true })
     bind("CTRL + Escape", goo("lens_toggle"))
+    bind("CTRL + SHIFT + Escape", run("latte-app monitor"))       -- the Task Manager's key
     bind("SUPER + S", goo("lens_mode 0"))
     bind("SUPER + Q", goo("lens_mode 0"))
     bind("SUPER + R", goo("lens_mode 3"))

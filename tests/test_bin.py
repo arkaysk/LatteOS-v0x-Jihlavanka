@@ -179,4 +179,15 @@ blob[72:90] = b"\x00\x00\x00\xfc\x00" + b"Test Screen\n "
 assert devices.edid(bytes(blob)) == ("Test Screen", "1920×1080", 60, 24), devices.edid(bytes(blob))
 assert devices.edid(b"junk") == ("", "", 0, 0)
 assert devices.device("  A   B ", "x")["name"] == "A B"
+monitor = load("latte-monitor")
+assert monitor.cores("cpu  1 2 3 4 5 6 7 8\ncpu0 10 0 10 70 10 0 0 0 0 0\ncpu1 5 0 5 80 10 0 0 0\nintr 1") == [(100, 80), (100, 90)]
+assert monitor.origin(monitor.HOME + "/.config/systemd/user/x.service") == "yours" and monitor.origin("/usr/lib/systemd/user/latte-goo.service") == "LatteOS"
+with tempfile.TemporaryDirectory() as d:
+    mine, theirs = os.path.join(d, "mine"), os.path.join(d, "theirs")
+    os.makedirs(theirs)
+    monitor.AUTOSTART = [mine, theirs]
+    open(os.path.join(theirs, "a.desktop"), "w").write("[Desktop Entry]\nName=A\nExec=a\n")
+    assert monitor.startup_set("app:a.desktop", False) == 0 and "Hidden=true" in open(os.path.join(mine, "a.desktop")).read()
+    assert monitor.startup_set("app:a.desktop", True) == 0 and not os.path.exists(os.path.join(mine, "a.desktop"))     # back as it was
+    assert monitor.startup_set("app:../x.desktop", False) == 2 and monitor.startup_set("system:x.service", False) == 2
 print("bin: ok")

@@ -1,0 +1,244 @@
+// Monitor: what the computer is doing, what runs on it, what starts by itself and why, and what its sensors say.
+// The whole machine is latte-stats's to tell (processor, memory, graphics, once a second); the programs, the
+// network and the disks latte-monitor's (every two seconds).   latte-app monitor [processes | startup | sensors]
+//
+// The pages: the overview (four live pictures and the most demanding programs) · processes (the programs with a
+// window, then the rest; one can be ended) · startup (everything that starts by itself, with what it is, where
+// it comes from and how long it took; the user's own can be switched off, and on again) · sensors.
+import QtQuick
+import QtQuick.Shapes
+import Quickshell
+import Quickshell.Io
+import "common"
+
+ShellRoot {
+    id: shell
+    readonly property var words: (Quickshell.env("LATTE_APP_ARGS") || "").split("\n").filter(w => w !== "")
+    property string page: "overview"
+    readonly property var pages: [{ id: "overview", name: QT_TR_NOOP("Overview"), icon: "compass" }, { id: "processes", name: QT_TR_NOOP("Processes"), icon: "apps" },
+                                  { id: "startup", name: QT_TR_NOOP("Startup"), icon: "rocket" }, { id: "sensors", name: QT_TR_NOOP("Sensors"), icon: "activity" }]
+
+    // ── what is known, and the last minute of it ──────────────────────────────────────────────────────────
+    property var now: ({})                     // latte-stats's last line
+    property var run: null                     // latte-monitor's last line
+    property var past: ({ cpu: [], ram: [], gpu: [], down: [], up: [] })
+    function keep(name, value) { const l = past[name].concat([value]); return l.length > 60 ? l.slice(l.length - 60) : l }
+    Process {
+        running: true; command: ["latte-stats", "1"]
+        stdout: SplitParser { onRead: line => { try {
+            const s = JSON.parse(line)
+            shell.now = s
+            shell.past = { cpu: shell.keep("cpu", s.cpu / 100), ram: shell.keep("ram", s.ram / Math.max(1, s.ram_total)), gpu: shell.keep("gpu", (s.gpu || 0) / 100), down: shell.past.down, up: shell.past.up }
+        } catch (e) {} } }
+    }
+    Process {
+        running: true; command: ["latte-monitor", "watch", "2"]
+        stdout: SplitParser { onRead: line => { try {
+            const r = JSON.parse(line)
+            shell.run = r
+            shell.past = { cpu: shell.past.cpu, ram: shell.past.ram, gpu: shell.past.gpu, down: shell.keep("down", r.net.down), up: shell.keep("up", r.net.up) }
+        } catch (e) {} } }
+    }
+    component Ask: Process {
+        id: q
+        property var data: null
+        property string buf: ""
+        function ask(args) { running = false; command = ["latte-monitor"].concat(args); running = true }
+        stdout: StdioCollector { onStreamFinished: q.buf = this.text }
+        onExited: { try { data = JSON.parse(buf) } catch (e) {} }
+    }
+    Ask { id: starts }
+    Ask { id: sense }
+    Process { id: doer; onExited: starts.ask(["startup"]) }
+    function act(args) { doer.running = false; doer.command = ["latte-monitor"].concat(args); doer.running = true }
+    Timer { interval: 3000; repeat: true; running: shell.page === "sensors"; triggeredOnStart: true; onTriggered: sense.ask(["sensors"]) }
+    onPageChanged: if (page === "startup" && !starts.data) starts.ask(["startup"])
+    Component.onCompleted: if (pages.some(p => p.id === words[0])) page = words[0]
+
+    function bytes(n) { return n >= 1073741824 ? (n / 1073741824).toFixed(1) + " GB" : (n >= 1048576 ? Math.round(n / 1048576) + " MB" : Math.round(n / 1024) + " kB") }
+    function rate(n) { return bytes(n) + "/s" }
+    property string find: ""                   // what the processes are searched for
+    property string order: "cpu"
+    function listed(list) {
+        const f = find.toLowerCase()
+        return (list || []).filter(p => f === "" || p.name.toLowerCase().includes(f)).slice().sort((a, b) => order === "cpu" ? (b.cpu - a.cpu) || (b.mem - a.mem) : b.mem - a.mem)
+    }
+
+    // ── a picture of the last minute: a line with what is under it filled ─────────────────────────────────
+    component Graph: Item {
+        id: graph
+        property var values: []                // 0…1, the newest last
+        property color tint: Theme.gold
+        readonly property var line: {
+            // the minute is as wide as the picture; what has been seen of it so far stands at its right end
+            const n = 59, from = width * (60 - Math.max(1, values.length)) / n
+            const pts = [Qt.point(from, height)]
+            for (let i = 0; i < values.length; i++) pts.push(Qt.point(width * (i + 60 - values.length) / n, height - Math.min(1, Math.max(0, values[i])) * (height - 3) - 1))
+            pts.push(Qt.point(width, height))
+            return pts
+        }
+        Shape { anchors.fill: parent; preferredRendererType: Shape.CurveRenderer
+            ShapePath { strokeColor: graph.tint; strokeWidth: 1.8
+                fillGradient: LinearGradient { x1: 0; y1: 0; x2: 0; y2: graph.height
+                    GradientStop { position: 0; color: Qt.rgba(graph.tint.r, graph.tint.g, graph.tint.b, 0.38) } GradientStop { position: 1; color: Qt.rgba(graph.tint.r, graph.tint.g, graph.tint.b, 0.02) } }
+                PathPolyline { path: graph.line } } }
+    }
+    // one of the overview's four pictures
+    component Meter: Rectangle {
+        id: meter
+        property string title
+        property string icon
+        property string figure
+        property string note
+        property var values: []
+        property color tint: Theme.gold
+        default property alias more: extra.data
+        height: 196; radius: 22; color: Theme.card; clip: true
+        Graph { anchors.bottom: parent.bottom; width: parent.width; height: 96; values: meter.values; tint: meter.tint }
+        Row { x: 20; y: 16; spacing: 9
+            Glyph { name: meter.icon; color: meter.tint; font.pixelSize: 19; anchors.verticalCenter: parent.verticalCenter }
+            Label { text: meter.title; color: Theme.dim; font.weight: 600; anchors.verticalCenter: parent.verticalCenter } }
+        Label { x: 20; y: 44; text: meter.figure; font.pixelSize: 36; font.weight: 800 }
+        Label { x: 20; y: 90; text: meter.note; color: Theme.dim; font.pixelSize: 12 }
+        Item { id: extra; anchors.right: parent.right; anchors.rightMargin: 18; y: 18; width: 150; height: 70 }
+    }
+    component Line: Rectangle {
+        id: line
+        property var what
+        property bool canEnd: true
+        height: 46; radius: 12; color: lineHit.hovered ? Theme.card : "transparent"
+        HoverHandler { id: lineHit }
+        Label { x: 14; width: parent.width - 330; text: line.what.name + (line.what.pids.length > 1 ? "  (" + line.what.pids.length + ")" : ""); font.weight: 600; anchors.verticalCenter: parent.verticalCenter }
+        Label { anchors.right: parent.right; anchors.rightMargin: 226; text: line.what.cpu.toFixed(1) + " %"; color: line.what.cpu >= 25 ? Theme.gold : Theme.dim; anchors.verticalCenter: parent.verticalCenter }
+        Rectangle { anchors.right: parent.right; anchors.rightMargin: 226; y: parent.height - 7; height: 3; radius: 2; color: Theme.gold; opacity: 0.7; width: Math.min(70, line.what.cpu * 0.7) }
+        Label { anchors.right: parent.right; anchors.rightMargin: 120; text: shell.bytes(line.what.mem); color: Theme.dim; anchors.verticalCenter: parent.verticalCenter }
+        Pill { visible: lineHit.hovered && line.canEnd; anchors.right: parent.right; anchors.rightMargin: 10; anchors.verticalCenter: parent.verticalCenter; implicitHeight: 30; danger: true; icon: "x"; text: I18n.tr("End")
+               onPressed: shell.act(["end"].concat(line.what.pids.map(String))) }
+    }
+
+    AppWindow {
+        title: I18n.tr("Monitor")
+        heading: I18n.tr((shell.pages.find(p => p.id === shell.page) || shell.pages[0]).name)
+        implicitWidth: 1180; implicitHeight: 780
+        searchHint: shell.page === "processes" ? I18n.tr("Find a process…") : ""
+        onSearchTextChanged: shell.find = searchText.trim()
+        side: [
+            Column { x: 14; y: 14; spacing: 4
+                Row { x: 6; spacing: 10; height: 40
+                    Glyph { name: "activity"; font.pixelSize: 24; color: Theme.gold; anchors.verticalCenter: parent.verticalCenter }
+                    Label { text: I18n.tr("Monitor"); font.pixelSize: 17; font.weight: 700; anchors.verticalCenter: parent.verticalCenter } }
+                Item { width: 1; height: 8 }
+                Repeater { model: shell.pages
+                    Nav { required property var modelData; text: I18n.tr(modelData.name); icon: modelData.icon; on: shell.page === modelData.id; onPressed: shell.page = modelData.id } }
+            },
+            // the machine at a glance, whatever page is open
+            Column { x: 20; spacing: 10; anchors.bottom: parent.bottom; anchors.bottomMargin: 20; width: 210
+                Repeater { model: [{ n: QT_TR_NOOP("Processor"), v: (shell.now.cpu || 0) / 100, t: (shell.now.cpu || 0) + " %" },
+                                   { n: QT_TR_NOOP("Memory"), v: (shell.now.ram || 0) / Math.max(1, shell.now.ram_total || 1), t: shell.bytes(shell.now.ram || 0) }]
+                    Column { required property var modelData; width: parent.width; spacing: 4
+                        Row { width: parent.width
+                            Label { text: I18n.tr(modelData.n); color: Theme.dim; font.pixelSize: 12; width: parent.width - fig.implicitWidth }
+                            Label { id: fig; text: modelData.t; font.pixelSize: 12; font.weight: 700 } }
+                        Rectangle { width: parent.width; height: 5; radius: 3; color: Qt.rgba(1, 1, 1, 0.12)
+                            Rectangle { height: 5; radius: 3; color: modelData.v > 0.85 ? Theme.red : Theme.gold; width: parent.width * Math.min(1, modelData.v); Behavior on width { NumberAnimation { duration: 400 } } } } } }
+            }
+        ]
+
+        // ── the overview ──────────────────────────────────────────────────────────────────────────────────
+        Scroll {
+            id: over
+            visible: shell.page === "overview"
+            Grid { columns: over.room > 760 ? 2 : 1; spacing: 16
+                readonly property real each: (over.room - (columns - 1) * 16) / columns
+                Meter { width: parent.each; title: I18n.tr("Processor"); icon: "cpu"; values: shell.past.cpu
+                        figure: (shell.now.cpu || 0) + " %"; note: shell.now.cpu_temp ? shell.now.cpu_temp + " °C" : ""
+                        // every core as a bar
+                        Row { anchors.right: parent.right; anchors.bottom: parent.bottom; spacing: 3; height: 54
+                            Repeater { model: shell.run ? shell.run.cores : []
+                                Rectangle { required property int modelData; width: 7; radius: 3; anchors.bottom: parent.bottom; color: Theme.gold; opacity: 0.35 + modelData / 160
+                                            height: 4 + 50 * modelData / 100; Behavior on height { NumberAnimation { duration: 500 } } } } } }
+                Meter { width: parent.each; title: I18n.tr("Memory"); icon: "cpu-2"; values: shell.past.ram; tint: Theme.coffee
+                        figure: shell.bytes(shell.now.ram || 0); note: I18n.tr("of {n}", { n: shell.bytes(shell.now.ram_total || 0) }) + (shell.run && shell.run.swap > 0 ? "  ·  " + I18n.tr("swap") + " " + shell.bytes(shell.run.swap) : "") }
+                Meter { width: parent.each; visible: shell.now.gpu !== undefined; title: I18n.tr("Graphics"); icon: "device-desktop"; values: shell.past.gpu; tint: "#9ed6bd"
+                        figure: (shell.now.gpu || 0) + " %"
+                        note: I18n.tr("Video memory") + " " + shell.bytes(shell.now.vram || 0) + " / " + shell.bytes(shell.now.vram_total || 0) + (shell.now.gpu_temp ? "  ·  " + shell.now.gpu_temp + " °C" : "") }
+                Meter { width: parent.each; title: I18n.tr("Network and disks"); icon: "network"; tint: "#8fb6e8"
+                        values: { const top = Math.max(65536, ...shell.past.down, ...shell.past.up); return shell.past.down.map(v => v / top) }
+                        figure: shell.run ? "↓ " + shell.rate(shell.run.net.down) : "—"
+                        note: shell.run ? "↑ " + shell.rate(shell.run.net.up) + "  ·  " + I18n.tr("disk") + " " + shell.rate(shell.run.disk.read + shell.run.disk.write) : "" }
+            }
+            Column { width: over.room; spacing: 4
+                Label { text: I18n.tr("MOST DEMANDING NOW"); color: Theme.faint; font.pixelSize: 11; font.weight: 700; font.letterSpacing: 0.8; bottomPadding: 6 }
+                Repeater { model: shell.run ? shell.run.apps.concat(shell.run.background).sort((a, b) => (b.cpu - a.cpu) || (b.mem - a.mem)).slice(0, 5) : []
+                    Line { required property var modelData; width: over.room; canEnd: false; what: modelData } }
+            }
+        }
+
+        // ── processes ─────────────────────────────────────────────────────────────────────────────────────
+        Scroll {
+            id: procs
+            visible: shell.page === "processes"
+            Row { spacing: 8
+                Label { text: I18n.tr("Sort by"); color: Theme.dim; anchors.verticalCenter: parent.verticalCenter }
+                Pill { text: I18n.tr("Processor"); strong: shell.order === "cpu"; implicitHeight: 32; onPressed: shell.order = "cpu" }
+                Pill { text: I18n.tr("Memory"); strong: shell.order === "mem"; implicitHeight: 32; onPressed: shell.order = "mem" } }
+            Repeater { model: [{ title: QT_TR_NOOP("APPS"), key: "apps" }, { title: QT_TR_NOOP("IN THE BACKGROUND"), key: "background" }]
+                Column { id: part; required property var modelData; width: procs.room; spacing: 2
+                    readonly property var rows: shell.listed(shell.run ? shell.run[modelData.key] : [])
+                    visible: rows.length > 0
+                    Label { text: I18n.tr(part.modelData.title) + "  " + part.rows.length; color: Theme.faint; font.pixelSize: 11; font.weight: 700; font.letterSpacing: 0.8; bottomPadding: 6 }
+                    // a line stays the same line while its program runs: only its figures change
+                    Repeater { model: ScriptModel { values: part.rows.map(p => p.name + "\n" + p.pids[0]) }
+                        Line { required property string modelData; width: procs.room
+                               what: part.rows.find(p => p.name + "\n" + p.pids[0] === modelData) || { name: "", pids: [], cpu: 0, mem: 0 } } } } }
+        }
+
+        // ── what starts by itself ─────────────────────────────────────────────────────────────────────────
+        Scroll {
+            id: start
+            visible: shell.page === "startup"
+            Waiting { visible: !starts.data; text: I18n.tr("Looking…"); width: start.room; topPadding: 160 }
+            Repeater { model: [{ kind: "app", title: QT_TR_NOOP("WHEN YOU LOG IN"), note: QT_TR_NOOP("Programs that open with your desktop. Switching one off only stops it from starting by itself.") },
+                               { kind: "user", title: QT_TR_NOOP("YOUR SERVICES"), note: QT_TR_NOOP("Run in the background for you alone. They can be switched off here and on again.") },
+                               { kind: "system", title: QT_TR_NOOP("SERVICES OF THE SYSTEM"), note: QT_TR_NOOP("Belong to the whole computer. They are shown, not switched: that takes the administrator.") }]
+                Column { id: group; required property var modelData; width: start.room; spacing: 6
+                    readonly property var rows: (starts.data || []).filter(s => s.kind === modelData.kind)
+                    visible: rows.length > 0
+                    Label { text: I18n.tr(group.modelData.title) + "  " + group.rows.length; color: Theme.faint; font.pixelSize: 11; font.weight: 700; font.letterSpacing: 0.8 }
+                    Label { text: I18n.tr(group.modelData.note); color: Theme.dim; font.pixelSize: 12; width: parent.width; wrapMode: Text.WordWrap; bottomPadding: 4 }
+                    Repeater { model: group.rows
+                        Rectangle { id: item; required property var modelData; width: start.room; height: 64; radius: 16; color: Theme.card; opacity: modelData.on ? 1 : 0.6
+                            Rectangle { x: 16; width: 10; height: 10; radius: 5; anchors.verticalCenter: parent.verticalCenter; color: !item.modelData.on ? Theme.faint : (item.modelData.running || item.modelData.kind === "app" ? Theme.ok : Theme.gold) }
+                            Column { x: 40; width: parent.width - 40 - tail.width - 30; anchors.verticalCenter: parent.verticalCenter; spacing: 3
+                                Label { text: item.modelData.name; font.weight: 600; width: parent.width }
+                                Label { text: item.modelData.what; color: Theme.dim; font.pixelSize: 12; width: parent.width; visible: text !== "" } }
+                            Row { id: tail; anchors.right: parent.right; anchors.rightMargin: 14; anchors.verticalCenter: parent.verticalCenter; spacing: 10
+                                Label { visible: item.modelData.took >= 100; text: (item.modelData.took / 1000).toFixed(1) + " s"; color: item.modelData.took >= 2000 ? Theme.gold : Theme.faint; font.pixelSize: 12; anchors.verticalCenter: parent.verticalCenter }
+                                Rectangle { width: from.implicitWidth + 16; height: 22; radius: 11; color: Theme.raised; anchors.verticalCenter: parent.verticalCenter
+                                    Label { id: from; anchors.centerIn: parent; font.pixelSize: 11; color: Theme.dim
+                                            text: item.modelData.origin === "yours" ? I18n.tr("yours") : (item.modelData.origin === "system" ? I18n.tr("the system's") : item.modelData.origin) } }
+                                // the switch: only on what is the user's own
+                                Rectangle { visible: item.modelData.mine; width: 46; height: 26; radius: 13; color: item.modelData.on ? Theme.gold : Theme.raised; anchors.verticalCenter: parent.verticalCenter
+                                    Behavior on color { ColorAnimation { duration: 140 } }
+                                    Rectangle { width: 20; height: 20; radius: 10; y: 3; x: item.modelData.on ? 23 : 3; color: item.modelData.on ? Theme.ground : Theme.dim; Behavior on x { NumberAnimation { duration: 140 } } }
+                                    MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: shell.act(["startup-set", item.modelData.id, item.modelData.on ? "off" : "on"]) } } } } } } }
+        }
+
+        // ── what the sensors say ──────────────────────────────────────────────────────────────────────────
+        Scroll {
+            id: sensors
+            visible: shell.page === "sensors"
+            readonly property var chips: { const seen = []; for (const s of (sense.data || [])) if (!seen.includes(s.chip)) seen.push(s.chip); return seen }
+            Repeater { model: sensors.chips
+                Column { id: chip; required property string modelData; width: sensors.room; spacing: 10
+                    Label { text: chip.modelData.toUpperCase(); color: Theme.faint; font.pixelSize: 11; font.weight: 700; font.letterSpacing: 0.8 }
+                    Flow { width: parent.width; spacing: 12
+                        Repeater { model: (sense.data || []).filter(s => s.chip === chip.modelData)
+                            Rectangle { required property var modelData; width: 176; height: 78; radius: 16; color: Theme.card
+                                readonly property bool hot: modelData.unit === "°C" && modelData.value >= 85
+                                border.width: 1; border.color: hot ? Theme.red : "transparent"
+                                Label { x: 14; y: 12; width: parent.width - 28; text: parent.modelData.name; color: Theme.dim; font.pixelSize: 12 }
+                                Label { x: 14; y: 32; text: parent.modelData.value + " " + parent.modelData.unit; font.pixelSize: 24; font.weight: 800; color: parent.hot ? Theme.red : Theme.cream } } } } } }
+        }
+    }
+}

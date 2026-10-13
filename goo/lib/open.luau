@@ -17,6 +17,7 @@ function M.url(url) go("xdg-open", { url }) end
 -- LatteOS's own apps (bin/latte-app); `page`: where in the app to begin
 function M.apps(page) go("latte-app", page and { "appmanager", page } or { "appmanager" }) end
 function M.devices(page) go("latte-app", page and { "devices", page } or { "devices" }) end
+function M.monitor(page) go("latte-app", page and { "monitor", page } or { "monitor" }) end
 -- an app, as the `apps` service lists it
 function M.app(a) if a and a.exec then pcall(sys.call, "apps.launch", a.exec) end end
 

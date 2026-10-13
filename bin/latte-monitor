@@ -1,0 +1,282 @@
+#!/usr/bin/env python3
+"""latte-monitor: what runs on this computer and what starts by itself, for the Monitor.
+
+  latte-monitor watch [SECONDS]      a JSON line now and one every SECONDS (default 2), until killed:
+                                     {"cores": [percent…], "swap", "swap_total", "net": {"down", "up"}, "disk": {"read",
+                                     "write"} (bytes a second), "apps": […], "background": […]}
+                                     apps are the programs that have a window, background the rest; each is
+                                     {"name", "pids": […], "cpu": percent of the whole processor, "mem": bytes, "user"}
+  latte-monitor startup              what starts by itself, and why: [{"id", "kind", "name", "what", "where", "origin",
+                                     "on", "running", "mine", "took"}]   kind: "app" (starts when the user logs in),
+                                     "user" (a service of the user's), "system" (a service of the system's);
+                                     mine: it can be switched here, with no password, and back again;
+                                     took: milliseconds it added to the last start, where the system says
+  latte-monitor startup-set ID on|off    switches one of the user's own (kind "app" or "user")
+  latte-monitor sensors              [{"chip", "name", "value", "unit"}]: temperatures, fans, voltages, power
+  latte-monitor end PID…             asks those processes to end (TERM)
+  latte-monitor kill PID…            ends them at once (KILL)
+
+The processor, the memory and the graphics card as a whole are latte-stats's to tell. Everything is read from
+/proc, /sys and systemd as the user; only the user's own things can be changed here.
+"""
+import configparser
+import glob
+import json
+import os
+import pwd
+import re
+import shutil
+import signal
+import subprocess
+import sys
+import time
+
+TICK = os.sysconf("SC_CLK_TCK")
+PAGE = os.sysconf("SC_PAGE_SIZE")
+HOME = os.path.expanduser("~")
+AUTOSTART = [os.path.join(os.environ.get("XDG_CONFIG_HOME") or HOME + "/.config", "autostart"), "/etc/xdg/autostart"]
+
+
+def read(path, default=""):
+    try:
+        with open(path, errors="replace") as f:
+            return f.read()
+    except OSError:
+        return default
+
+
+def out(*argv, timeout=15):
+    try:
+        return subprocess.run(argv, capture_output=True, text=True, timeout=timeout).stdout
+    except (OSError, subprocess.TimeoutExpired):
+        return ""
+
+
+# ── what runs ────────────────────────────────────────────────────────────────────────────────────────────────
+def processes():
+    """{pid: (name, parent, ticks of processor used, bytes of memory, uid)}"""
+    found = {}
+    for path in glob.glob("/proc/[0-9]*"):
+        stat = read(path + "/stat")
+        if not stat:
+            continue
+        name = stat[stat.find("(") + 1:stat.rfind(")")]
+        rest = stat[stat.rfind(")") + 2:].split()
+        try:
+            found[int(path[6:])] = (name, int(rest[1]), int(rest[11]) + int(rest[12]), int(rest[21]) * PAGE, os.stat(path).st_uid)
+        except (IndexError, ValueError, OSError):
+            pass
+    return found
+
+
+def cores(text):
+    return [(sum(v), v[3] + v[4]) for v in ([int(x) for x in line.split()[1:9]] for line in text.splitlines() if re.match(r"cpu\d", line))]
+
+
+def traffic():
+    down = up = 0
+    for line in read("/proc/net/dev").splitlines()[2:]:
+        name, _, rest = line.partition(":")
+        if name.strip() != "lo" and rest:
+            v = rest.split()
+            down, up = down + int(v[0]), up + int(v[8])
+    done = read("/proc/diskstats").splitlines()
+    sectors = [(int(v[5]), int(v[9])) for v in (l.split() for l in done) if len(v) > 9 and re.fullmatch(r"sd[a-z]+|nvme\d+n\d+|vd[a-z]+|mmcblk\d+", v[2])]
+    return down, up, sum(s[0] for s in sectors) * 512, sum(s[1] for s in sectors) * 512
+
+
+def windows():
+    """The pids of the programs that have a window, as the compositor lists them."""
+    try:
+        return {c.get("pid") for c in json.loads(out("hyprctl", "-j", "clients", timeout=3) or "[]")}
+    except ValueError:
+        return set()
+
+
+def grouped(now, before, elapsed, ncpu, shown):
+    """Processes as programs: one line for a program and everything it started that bears no window of its own."""
+    kids = {}
+    for pid, p in now.items():
+        kids.setdefault(p[1], []).append(pid)
+    apps, used = [], set()
+
+    def family(pid, into):
+        into.append(pid)
+        used.add(pid)
+        for k in kids.get(pid, []):
+            if k not in shown and k not in used:
+                family(k, into)
+
+    def line(name, pids):
+        cpu = sum(max(0, now[p][2] - before[p][2]) for p in pids if p in before) / TICK / max(elapsed, 0.01) / ncpu * 100
+        try:
+            user = pwd.getpwuid(now[pids[0]][4]).pw_name
+        except KeyError:
+            user = str(now[pids[0]][4])
+        return {"name": name, "pids": pids, "cpu": round(cpu, 1), "mem": sum(now[p][3] for p in pids), "user": user}
+
+    for pid in sorted(shown & set(now)):
+        pids = []
+        family(pid, pids)
+        apps.append(line(now[pid][0], pids))
+    rest = {}
+    for pid, p in now.items():
+        if pid not in used and p[3] > 0:                # kernel threads have no memory of their own: not shown
+            rest.setdefault((p[0], p[4]), []).append(pid)
+    background = [line(name, pids) for (name, _), pids in rest.items()]
+    order = lambda l: sorted(l, key=lambda a: (-a["cpu"], -a["mem"]))
+    return order(apps), order(background)[:120]
+
+
+def watch(seconds):
+    ncpu = os.cpu_count() or 1
+    before, cpu0, io0, t0 = processes(), cores(read("/proc/stat")), traffic(), time.monotonic()
+    time.sleep(0.5)
+    while True:
+        now, cpu1, io1, t1 = processes(), cores(read("/proc/stat")), traffic(), time.monotonic()
+        dt = t1 - t0
+        mem = dict(re.findall(r"(\w+):\s+(\d+)", read("/proc/meminfo")))
+        apps, background = grouped(now, before, dt, ncpu, windows())
+        print(json.dumps({
+            "cores": [round(100 * (1 - (b[1] - a[1]) / max(1, b[0] - a[0]))) for a, b in zip(cpu0, cpu1)],
+            "swap": (int(mem.get("SwapTotal", 0)) - int(mem.get("SwapFree", 0))) * 1024, "swap_total": int(mem.get("SwapTotal", 0)) * 1024,
+            "net": {"down": round((io1[0] - io0[0]) / dt), "up": round((io1[1] - io0[1]) / dt)},
+            "disk": {"read": round((io1[2] - io0[2]) / dt), "write": round((io1[3] - io0[3]) / dt)},
+            "apps": apps, "background": background}), flush=True)
+        before, cpu0, io0, t0 = now, cpu1, io1, t1
+        time.sleep(seconds)
+
+
+# ── what starts by itself ────────────────────────────────────────────────────────────────────────────────────
+def desktop(path):
+    p = configparser.RawConfigParser(strict=False, interpolation=None)
+    p.optionxform = str
+    try:
+        p.read(path, encoding="utf-8")
+        return p["Desktop Entry"]
+    except (KeyError, configparser.Error, UnicodeDecodeError, OSError):
+        return None
+
+
+def origin(path):
+    if path.startswith(HOME): return "yours"
+    if "/latteos" in path or "latte-" in os.path.basename(path): return "LatteOS"
+    if "/flatpak/" in path: return "Flatpak"
+    return "system"
+
+
+def units(scope):
+    """The services of the system or of the user that are set to start by themselves, with what systemd says of them."""
+    ctl = ["systemctl"] + (["--user"] if scope == "user" else [])
+    names = [l.split()[0] for l in out(*ctl, "list-unit-files", "--state=enabled", "--type=service,timer,socket", "--no-legend", "--plain").splitlines() if l.split()]
+    if not names:
+        return []
+    took = {}
+    for l in out("systemd-analyze", *(["--user"] if scope == "user" else []), "blame", "--no-pager").splitlines():
+        m = re.match(r"\s*((?:[\d.]+(?:min|ms|s)\s*)+)\s+(\S+)$", l)
+        if m:
+            ms = sum(float(v) * {"min": 60000, "s": 1000, "ms": 1}[u] for v, u in re.findall(r"([\d.]+)(min|ms|s)", m.group(1)))
+            took[m.group(2)] = round(ms)
+    found = []
+    for block in out(*ctl, "show", "-p", "Id,Description,FragmentPath,ActiveState", *names).strip().split("\n\n"):
+        f = dict(l.split("=", 1) for l in block.splitlines() if "=" in l)
+        if f.get("Id"):
+            path = f.get("FragmentPath", "")
+            found.append({"id": scope + ":" + f["Id"], "kind": scope, "name": f["Id"], "what": f.get("Description", ""), "where": path,
+                          "origin": origin(path), "on": True, "running": f.get("ActiveState") == "active",
+                          # the user's own to switch are those the user put there: the desktop needs the ones the system brings
+                          "mine": scope == "user" and path.startswith(HOME),
+                          "took": took.get(f["Id"], 0)})
+    return found
+
+
+def startup():
+    found, seen = [], set()
+    for folder in AUTOSTART:
+        for path in sorted(glob.glob(folder + "/*.desktop")):
+            name = os.path.basename(path)
+            if name in seen:
+                continue
+            seen.add(name)
+            e = desktop(path)
+            if e is None or (e.get("OnlyShowIn") and "Hyprland" not in e.get("OnlyShowIn", "")):
+                continue
+            # the program itself is the system's when the user's file only switches a system one off
+            base = next((p for p in (f + "/" + name for f in AUTOSTART[1:]) if os.path.exists(p)), path)
+            found.append({"id": "app:" + name, "kind": "app", "name": e.get("Name", name[:-8]), "what": e.get("Comment", "") or e.get("Exec", ""),
+                          "where": base, "origin": origin(base), "on": e.get("Hidden", "").lower() != "true", "running": False, "mine": True, "took": 0})
+    # the user's services that are switched off are listed too, where they are the user's own to switch back on
+    return found + units("user") + units("system")
+
+
+def startup_set(ident, on):
+    kind, _, name = ident.partition(":")
+    if kind == "user" and re.fullmatch(r"[\w@.:-]+", name):
+        return subprocess.run(["systemctl", "--user", "enable" if on else "disable", name]).returncode
+    if kind != "app" or "/" in name or not name.endswith(".desktop"):
+        return 2
+    mine = os.path.join(AUTOSTART[0], name)
+    theirs = next((p for p in (f + "/" + name for f in AUTOSTART[1:]) if os.path.exists(p)), None)
+    if on:
+        e = read(mine)
+        if theirs and re.sub(r"(?m)^Hidden=.*\n?", "", e).strip() == read(theirs).strip():
+            os.remove(mine)                             # it only switched the system's one off: without it that one starts again
+        elif e:
+            with open(mine, "w") as f:
+                f.write(re.sub(r"(?m)^Hidden=.*\n?", "", e))
+    else:
+        text = read(mine) or read(theirs or "")
+        if not text:
+            return 2
+        os.makedirs(AUTOSTART[0], exist_ok=True)
+        text = re.sub(r"(?m)^Hidden=.*\n?", "", text)
+        with open(mine, "w") as f:
+            f.write(text.rstrip("\n") + "\nHidden=true\n")
+    return 0
+
+
+# ── what the sensors say ─────────────────────────────────────────────────────────────────────────────────────
+def sensors():
+    kinds = {"temp": ("°C", 1000), "fan": ("RPM", 1), "in": ("V", 1000), "power": ("W", 1000000), "curr": ("A", 1000)}
+    found = []
+    for chip in sorted(glob.glob("/sys/class/hwmon/hwmon*")):
+        name = read(chip + "/name").strip()
+        for path in sorted(glob.glob(chip + "/*_input")):
+            m = re.match(r"(temp|fan|in|power|curr)(\d+)_input", os.path.basename(path))
+            try:
+                value = int(read(path).strip())
+            except ValueError:
+                continue
+            if m:
+                unit, by = kinds[m.group(1)]
+                label = read(path[:-6] + "_label").strip() or (m.group(1) + m.group(2))
+                found.append({"chip": name, "name": label, "value": round(value / by, 2 if by > 1 and unit != "°C" else 0), "unit": unit})
+    return found
+
+
+def main(a):
+    if a[:1] == ["watch"]:
+        try:
+            watch(max(1, float(a[1])) if len(a) > 1 else 2)
+        except (BrokenPipeError, KeyboardInterrupt):
+            os._exit(0)                                 # whoever listened has gone: nothing is left to say, or to flush
+    elif a == ["startup"]:
+        print(json.dumps(startup(), ensure_ascii=False))
+    elif len(a) == 3 and a[0] == "startup-set" and a[2] in ("on", "off"):
+        return startup_set(a[1], a[2] == "on")
+    elif a == ["sensors"]:
+        print(json.dumps(sensors(), ensure_ascii=False))
+    elif a[:1] in (["end"], ["kill"]) and len(a) > 1 and all(p.isdigit() for p in a[1:]):
+        for pid in a[1:]:
+            try:
+                os.kill(int(pid), signal.SIGTERM if a[0] == "end" else signal.SIGKILL)
+            except OSError as e:
+                print(e, file=sys.stderr)
+    else:
+        print(__doc__.strip())
+        return 2
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))

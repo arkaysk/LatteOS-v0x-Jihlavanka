@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Monitor
+Comment=What the computer is doing, what runs on it and what starts by itself
+Comment[sk]=Čo počítač robí, čo na ňom beží a čo sa spúšťa samo
+Exec=latte-app monitor
+Icon=utilities-system-monitor
+Categories=System;Monitor;
+StartupWMClass=org.quickshell

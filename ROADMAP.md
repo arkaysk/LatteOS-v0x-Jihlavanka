@@ -127,7 +127,13 @@ Schválené 12. 10. 2026. Pracuje sa **zhora nadol, neskáče sa**; nový nápad
           1. [x] okná ako vo Windows (13. 10.): od okrajov sa mení veľkosť (Hyprland), kúsok za okrajom v prázdne
              (do 36 px) sa okno ťahá celé (plugin `latte-events`), a pustené okno sa vráti tak, aby jeho vrch
              s hlavičkou ostal na obrazovke a dalo sa chytiť. Platí pre plávajúce okná.
-          2. [ ] **Monitor** — skontrolovať starý, nájsť návrhy vylepšení, prepísať;
+          2. [x] **Monitor** (13. 10.): `apps/monitor.qml` + `bin/latte-monitor` (a `latte-stats`). Prehľad (procesor
+             s jadrami, pamäť, grafika, sieť a disky — živé obrázky poslednej minúty, najnáročnejšie programy),
+             Procesy (aplikácie s oknom, potom pozadie; hľadanie, zoradenie, Ukončiť), Po štarte (čo sa spúšťa samo:
+             čo to je, odkiaľ je, koľko pridalo k štartu; vlastné veci sa dajú vypnúť a zasa zapnúť — návrh podľa
+             BetterWindowsServices), Senzory. PowerGoo › Monitor, Ctrl+Shift+Esc. Oproti v0.3 chýba: všetky služby
+             so štartom a zastavením, detail procesu (priorita, pauza, súbory, spojenia), hardvér ako CPU-Z, test
+             výkonu, Digitálna pohoda, strom disku, dlhodobá telemetria („kto žerie“ po dňoch).
           3. [ ] Správca zariadení: rozdeliť na **zariadenia** a **sieť** (správca siete, inšpektor siete);
           4. [ ] **Nastavenia** — hlavné, prehľadne po kategóriách ako Windows 11 + možnosti Linuxu, s hľadaním
              funkcií; LensGoo v režime aplikácií hľadá aj v nastaveniach (pod čiarou/hladinou); tapety a živé tapety,

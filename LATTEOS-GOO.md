@@ -420,6 +420,18 @@ páde scény nasleduje doterajší prihlasovač; podrobnosti
 v `old/session/goo/README.md` › Prihlásenie). Hladina je v 2/3
 výšky obrazovky (rovina „klesne“ zo stredu), pod ňou tretina obrazovky kávy.
 
+### 6.2·1 Monitor (Fresh, 13. 10.)
+`apps/monitor.qml`, `bin/latte-monitor`, `latte-stats`; PowerGoo › Monitor, Ctrl+Shift+Esc.
+- **Prehľad:** štyri živé obrázky poslednej minúty — procesor (aj každé jadro a teplota), pamäť (aj odkladací
+  priestor), grafika (video pamäť, teplota), sieť a disky — a päť práve najnáročnejších programov. V bočnom paneli
+  je procesor a pamäť vidieť na každej stránke.
+- **Procesy:** programy s oknom a zvlášť pozadie; program je jeden riadok so všetkým, čo spustil; hľadanie v hlavičke,
+  zoradenie podľa procesora alebo pamäte, **Ukončiť**.
+- **Po štarte:** všetko, čo sa spúšťa samo, v troch skupinách — po prihlásení, tvoje služby, služby systému —
+  s tým, čo to je, odkiaľ to je a koľko pridalo k štartu. Vypnúť a zasa zapnúť sa dá iba to, čo je používateľovo
+  vlastné; systémové sa iba ukazuje.
+- **Senzory:** teploty, ventilátory, napätia a príkon po čipoch.
+
 ### 6.3·0 Okno aplikácie LatteOS (rozhodnuté 13. 10.)
 Každá aplikácia LatteOS žije v tom istom okne (`apps/common/AppWindow.qml`), podľa ForkLiftu a nákresu V2:
 - **Bočný panel zo skla od vrchu po spodok** okna — stránky aplikácie, jej miesta, to, čo má poruke (rozkladacie menu,
