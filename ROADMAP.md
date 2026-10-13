@@ -1013,3 +1013,21 @@ cestu k aktualizácii alebo návratu.
     tekuté sklo, panely vytekajúce z lišty, výber tapiet, kalendár s počasím, ponuka programu v skle shellu).
     Kroky: (a) téma ako jedno miesto pre aplikácie (`Theme.qml`), titulky okien (`latte/bars.lua`) aj Goo;
     (b) `cup = wallpaper`: paleta vypočítaná z tapety pri jej zmene; (c) prejsť Vitreus a vybrať, čo prevziať.
+    **Urobené 13. 10. v noci:** sada ikon sa volí v Nastaveniach › Káva a šálka › Ikony (`latte-settings icons`,
+    `~/.config/latteos/icons`, číta `latte-app`; predvolená **Yaru**; ponúkne každú nainštalovanú z Yaru, Papirus,
+    elementary, Fluent, Mint-Y, Breeze, Adwaita) a ikony na ploche majú aj veľmi veľké a obrovské.
+    **Vitreus pozretý 13. 10.** (zdroják stiahnutý, snímky z `tour.webp` a zo štyroch panelov; pohyb okien samotný
+    som nevidel, iba panely a výmenu tapety). Čo tam robí dojem okrem skla:
+    - *rozloženie:* panel je dlaždice v dlaždici — veľké zaoblené karty, v nich menšie; hlavičky sekcií malými
+      verzálkami (VISUALS, SYSTEM, BUILD); jedno veľké číslo ako kotva (čas 6:44, 50 %); omrvinky v hlavičke
+      nastavení; vľavo úzky zoznam, vpravo obsah; riadok s tlačidlami na spodku karty;
+    - *živosť:* panel vyteká z lišty tekutým krkom a tou istou pružinou sa do nej vracia; nad záložkami
+      hľadania sa za kurzorom vlečie svetlá kvapka; riadky prichádzajú postupne; tapeta sa mení rozsypaním do
+      štvorčekov a s ňou sa prefarbí celé sklo aj akcent (rad farebných bodiek = akcent, alebo z tapety);
+    - *výber tapety:* plást šesťuholníkov zo skla, ten pod kurzorom sa nadvihne a nakloní;
+    - *plocha („Desk“):* veľké hodiny, poznámky, časovač ako sklenené predmety, ktoré sa dajú ťahať.
+    **Návrh pre LatteOS (čaká na súhlas):** (1) výsuvný panel Pobrežia prerobiť na **dashboard pri spodnom
+    okraji**: počasie + kalendár + ovládanie (sieť, Bluetooth, Nerušiť, jas, hlasitosť) + prehrávač + upozornenia
+    ako dlaždice v jednom skle; (2) dlaždicové rozloženie a malé hlavičky do kariet Goo a do `AppWindow`;
+    (3) akcent a tón skla z tapety (bod b); (4) prechod tapety a plást na jej výber (bod 14 namiesto skwd-wall
+    alebo vedľa neho).
