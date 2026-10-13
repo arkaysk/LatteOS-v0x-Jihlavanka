@@ -8,6 +8,7 @@
 // Its parts, in the order they are painted:
 //   drops    what a drop is: its record, how it moves, what the mouse does to it
 //   picks    (written by gen.py) the one drop a card grows from
+//   shore    the hard corner at the bottom right: background programs, the network, the volume
 //   body     the goo: every drop and the edge as one body; shapes.plm in it is written by gen.py
 //   card     the card's state and its frame
 //   faces    what each drop shows on itself
@@ -31,7 +32,7 @@ scene Goo {
         keyboard: exclusive while card_open or kb
     }
     permissions {
-        run: "latte-sky", "latte-login", "latte-stats", "hyprctl", "foot", "hostname", "powerprofilesctl", "date", "notify-send", "nmcli", "xdg-open", "xdg-user-dir", "fd", "latte-say", "sh", "latte-cal", "latte-ai"
+        run: "latte-sky", "latte-login", "latte-stats", "hyprctl", "foot", "hostname", "powerprofilesctl", "date", "notify-send", "nmcli", "xdg-open", "xdg-user-dir", "fd", "latte-say", "sh", "latte-cal", "latte-ai", "cliphist"
         services: "files", "files.write", "env", "clock", "battery", "window", "apps", "apps.launch", "session.*", "auth", "notifications", "notifications.*", "sound", "audio", "audio.*", "brightness", "brightness.*", "network", "network.*", "bluetooth", "bluetooth.*", "tray", "tray.*", "polkit", "polkit.*", "clipboard.set", "media", "media.*"
     }
 
@@ -43,10 +44,11 @@ scene Goo {
     event lens_mode ->                         // …or open in one of its modes: 0 apps, 1 files, 2 the web, 3 a command, 4 AI
     event clock_notes ->                       // Win+N: notifications and the calendar
     event clock_time ->                        // Win+Alt+D: the time card
-    event quick_toggle ->                      // Win+A: the quick settings
+    event quick_toggle ->                      // Win+A: the shore's panel, the quick settings
 
     include "parts/drops.plm"
     include "parts/picks.plm"
+    include "parts/shore.plm"
     include "parts/body.plm"
     include "parts/card.plm"
     include "parts/faces.plm"

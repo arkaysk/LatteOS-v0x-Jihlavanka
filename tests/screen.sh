@@ -44,7 +44,7 @@ rm -f "$out"/shot*.png "$out/scene.log" "$out/do.log"
 # What runs inside the session: the scene, the screenshots, DO.
 {
     echo "cd $(dirname "$scene")"
-    echo "export PATH=\"$repo/bin:$repo/target/release:$repo/tests:\$PATH\" LANG=\"${LANG:-sk_SK.UTF-8}\" PLEAMAR_GENERIC=window XDG_DATA_HOME=$out/data XDG_STATE_HOME=$out/state XDG_CONFIG_HOME=$out/config"
+    echo "export PATH=\"$repo/bin:$repo/target/release:$repo/tests:\$PATH\" LANG=\"${LANG:-sk_SK.UTF-8}\" PLEAMAR_GENERIC=window XDG_DATA_HOME=$out/data XDG_STATE_HOME=$out/state XDG_CONFIG_HOME=$out/config XDG_CACHE_HOME=$out/cache"
     # Under a labwc with no screen Hyprland's nested output never becomes a monitor; one of its own does.
     [ $nested = 1 ] && echo "hyprctl output create headless LATTE-TEST >/dev/null; sleep 0.5"
     echo "pleamar --scene $scene --no-hud --seconds $secs $args > $out/scene.log 2>&1 &"
@@ -72,7 +72,7 @@ EOF
     if [ $nested = 1 ]; then
         # LIBSEAT_BACKEND=logind: should the nested backend fail, Hyprland falls back to the real card. Over ssh
         # logind refuses that, where seatd would let it take the screen from whoever is using it.
-        echo "PATH=\"$repo/bin:\$PATH\" LIBSEAT_BACKEND=logind LATTE_SHARE=$out/share LATTE_PLUGINS=$out/plugins LATTE_TIER=${LATTE_TIER:-standard} LATTE_RENDERER=hw XDG_CURRENT_DESKTOP=Hyprland XDG_STATE_HOME=$out/state XDG_CONFIG_HOME=$out/config Hyprland -c $out/hyprland.lua > $out/hyprland.log 2>&1 &"
+        echo "PATH=\"$repo/bin:\$PATH\" LIBSEAT_BACKEND=logind LATTE_SHARE=$out/share LATTE_PLUGINS=$out/plugins LATTE_TIER=${LATTE_TIER:-standard} LATTE_RENDERER=hw XDG_CURRENT_DESKTOP=Hyprland XDG_STATE_HOME=$out/state XDG_CONFIG_HOME=$out/config XDG_CACHE_HOME=$out/cache Hyprland -c $out/hyprland.lua > $out/hyprland.log 2>&1 &"
         echo "echo \$! > $out/hyprland.pid"
         echo "(sleep $((secs + 4)); labwc --exit) &"
     else

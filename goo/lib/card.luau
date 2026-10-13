@@ -57,10 +57,16 @@ local function release()
     engine.lower(d)
 end
 
+-- whoever wants to know which card is out now (its id, nil for none), each time one opens or closes
+local watchers = {}
+function M.watch(f) watchers[#watchers + 1] = f end
+local function tell() for _, f in ipairs(watchers) do f(M.id()) end end
+
 function M.close()
     if fact.card_open then fact.card_open = false end
     actions, rights, wheels, slides, tab_runs = {}, {}, {}, {}, {}
     release()
+    tell()
 end
 
 local function item_record(it)
@@ -195,6 +201,7 @@ function M.open(rows, opts)
     fact.card_min = opts.min_height or 0
     fact.card_field = field ~= nil
     fact.card_open = #out > 0 or field ~= nil
+    tell()
 end
 
 -- what is typed in the field: read it, or put something there

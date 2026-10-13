@@ -1,0 +1,80 @@
+// The shore: the bottom right corner of the screen, where the goo ends. It is hard: a plate of the cup's own
+// material, as the windows' title bars are. Drops do not stick to it; let go over it they land on it and hop
+// off into the goo (lib/engine.luau knows where it is). On it, from the left: the arrow that brings out the
+// panel above it (lib/shore.luau: the quick settings and the clipboard), the programs that run in the
+// background, the network, the volume, and on a laptop the battery.
+// The logic says how long it is (`shore_w`); with 0 there is none, as on a monitor that is not the main one.
+part Shore {
+    model bg max 10 { icon: image 22, 22; has_icon: bool; glyph: text; title: text }
+    fact shore_w = 0
+    fact shore_open = false                    // the panel is out: the arrow points down
+    fact shore_signs = 2                       // how many signs stand at its end: the network, the volume, the battery
+    text shore_arrow = ""                      // glyphs of the icon font, from the logic
+    text shore_net = ""
+    text shore_vol = ""
+    text shore_bat = ""
+    fact shore_level = 0                       // the volume, 0…1, shown as a ring for a moment when it changes
+    fact shore_rang = 0                        // …counted up each time it does
+    event shore_more ->                        // the arrow was pressed
+    event shore_bg ->                          // a background program: its place
+    event shore_bg_right ->
+    event shore_sign ->                        // 0 the network, 1 the volume, 2 the battery
+    event shore_sign_right ->
+    event shore_wheel ->                       // over the volume: 1 up, 0 down
+    event shore_hover ->                       // the pointer rests on: 0 the arrow, 1… the signs, 10… the programs
+
+    let SHORE_H = 46
+    let shore.x0 = W - shore_w
+    let shore.cy = H - SHORE_H / 2 + 1
+    let shore.plate = #261d17
+    prop ring = 0 ~grow
+    on change shore_rang { ring: 1 ~0ms; ring: 0 ~500ms after 1400ms }
+
+    group {
+        show: shore_w > 0
+        // the plate reaches past the screen's corner, so only its corner towards the desktop is round
+        box { from: shore.x0 - 1, H - SHORE_H - 1; size: shore_w + 40, SHORE_H + 40; corner: 17; color: #6b5444 }
+        box { from: shore.x0, H - SHORE_H; size: shore_w + 40, SHORE_H + 40; corner: 16; color: shore.plate }
+        box { from: shore.x0 + 14, H - SHORE_H + 1; size: shore_w, 1; color: cream; opacity: 7% }
+
+        // the arrow, in a round button
+        ellipse { at: shore.x0 + 26, shore.cy; radius: 14; color: mix(#3d2c22, gold, 0.25 * arrow_hit.hover + if(shore_open, 0.2, 0)) }
+        text shore_arrow { at: shore.x0 + 26, shore.cy; anchor: center; size: 17; color: cream; family: "tabler-icons" }
+        zone box arrow_hit { at: shore.x0 + 26, shore.cy; size: 36, SHORE_H; cursor: pointer; role: button; label: "Panel"; active: shore_w > 0 }
+        on press arrow_hit { tip.p: 0; emit shore_more }
+        on hover arrow_hit for 450ms { tip_k = 300; tip.x = shore.x0 + 26; tip.y = H - SHORE_H - 14; tip.p: 1; emit shore_hover(0) }
+        on away arrow_hit for 200ms while tip_k == 300 { tip.p: 0 }
+
+        // the programs that run in the background
+        repeat j in 0..10 {
+            let bx.$j = shore.x0 + 48 + 30 * j + 15
+            box { at: bx.$j, shore.cy; size: 28, 30; corner: 9; color: cream; opacity: 10% * bg_hit.$j.hover; show: j < bg.count }
+            image bg.$j.icon { at: bx.$j - 11, shore.cy - 11; size: 22, 22; show: j < bg.count and bg.$j.has_icon }
+            text bg.$j.glyph { at: bx.$j, shore.cy; anchor: center; size: 18; color: cream; opacity: 85%; show: j < bg.count and not bg.$j.has_icon; family: "tabler-icons" }
+            zone box bg_hit.$j { at: bx.$j, shore.cy; size: 30, SHORE_H; cursor: pointer; role: button; label: "{bg.$j.title}"; active: shore_w > 0 and j < bg.count }
+            on press bg_hit.$j { tip.p: 0; emit shore_bg(j) }
+            on press right bg_hit.$j { tip.p: 0; tap.x = bx.$j; tap.y = H - SHORE_H; emit shore_bg_right(j) }
+            on hover bg_hit.$j for 450ms { tip_k = 310 + j; tip.x = bx.$j; tip.y = H - SHORE_H - 14; tip.p: 1; emit shore_hover(10 + j) }
+            on away bg_hit.$j for 200ms while tip_k == 310 + j { tip.p: 0 }
+        }
+
+        // the signs at its end, counted from the corner: the volume last
+        let sign.0 = W - 28 - 34 * (shore_signs - 1)
+        let sign.1 = sign.0 + 34
+        let sign.2 = sign.0 + 68
+        repeat s in 0..3 {
+            let sx.$s = sign.0 + 34 * s
+            box { at: sx.$s, shore.cy; size: 30, 30; corner: 9; color: cream; opacity: 10% * sign_hit.$s.hover; show: s < shore_signs }
+            zone box sign_hit.$s { at: sx.$s, shore.cy; size: 34, SHORE_H; cursor: pointer; role: button; label: pick(s, "Network", "Volume", "Battery"); active: shore_w > 0 and s < shore_signs }
+            on press sign_hit.$s { tip.p: 0; emit shore_sign(s) }
+            on press right sign_hit.$s { tip.p: 0; emit shore_sign_right(s) }
+            on scroll sign_hit.$s { emit shore_wheel(s * 2 + if(wheel > 0, 1, 0)) }
+            on hover sign_hit.$s for 450ms { tip_k = 301 + s; tip.x = min(sx.$s, W - 120); tip.y = H - SHORE_H - 14; tip.p: 1; emit shore_hover(1 + s) }
+            on away sign_hit.$s for 200ms while tip_k == 301 + s { tip.p: 0 }
+        }
+        text shore_net { at: sign.0, shore.cy; anchor: center; size: 19; color: cream; opacity: 90%; family: "tabler-icons" }
+        text shore_vol { at: sign.1, shore.cy; anchor: center; size: 19; color: cream; opacity: 90%; family: "tabler-icons" }
+        text shore_bat { at: sign.2, shore.cy; anchor: center; size: 19; color: cream; opacity: 90%; show: shore_signs > 2; family: "tabler-icons" }
+        arc { at: sign.1, shore.cy; radius: 15; span: clamp(shore_level, 0, 1) * 360deg; rotate: clamp(shore_level, 0, 1) * 180deg; width: 2.5; color: gold; opacity: ring }
+    }
+}

@@ -72,7 +72,14 @@ end
 local function along(d) return d.at * len(d) + d.shift end
 local function radius(d) return d.v.size * d.zoom end
 local function docked(d) return d.rise < radius(d) * 1.6 end
-local function limit(d) return 0.98 * len(d) end           -- how far along its edge a drop's centre may be
+-- The shore: the hard corner at the bottom right (parts/shore.plm), this long along the bottom edge and this
+-- high up the right one. No drop sits there or sticks to it.
+local shore = { w = 0, h = 0 }
+local function limit(d)                                      -- how far along its edge a drop's centre may be
+    local l = len(d)
+    local taken = (d.edge == 0 and shore.w) or (d.edge == 3 and shore.h) or 0
+    return math.min(0.98 * l, taken > 0 and l - taken - radius(d) - 8 or l)
+end
 -- a capsule reaches further along the edge than a drop, and its middle is off the drop's centre
 local function cap_shift(d) return num(d.v.cap, 0) * num(d.v.cap_dir, 0) end
 local function span(d) return radius(d) + num(d.v.cap, 0) end
@@ -136,6 +143,12 @@ end
 local function apart()
     local list, moved = {}, {}
     for k = 0, N - 1 do if slots[k] and not slots[k].hidden then list[#list + 1] = slots[k] end end
+    -- nobody sits on the shore: whoever would slides along the edge until it is off it
+    for _, d in ipairs(list) do
+        if docked(d) and not d.dragging and not d.on_shore and not d.def.beside and along(d) > limit(d) then
+            d.at, d.shift = limit(d) / len(d), 0
+        end
+    end
     for _ = 1, 10 do
         local any = false
         for i = 1, #list do
@@ -180,6 +193,11 @@ local function apart()
     apart_keep = nil
 end
 function E.apart(keep) apart_wanted, apart_keep = true, keep or apart_keep end
+function E.shore(w, h)
+    if shore.w == w and shore.h == h then return end
+    shore.w, shore.h = w, h
+    E.apart() E.publish()
+end
 
 -- A drop beside another keeps to where that one is now, until the user moves it away himself.
 local function follow_anchor(d, depth)
@@ -564,6 +582,24 @@ on("goo_letgo", function(k)
         d.at = math.min(clamp(edge % 2 == 1 and y / h or x / w, 0.02, 0.98), limit(d) / len(d))
         d.rise = num(d.v.seat, d.v.size * 0.8) * d.zoom
         d.moved, d.shift = true, 0
+        -- Over the shore it comes down on the plate, which is hard: it does not stick, it hops off into the goo.
+        if edge == 0 and shore.w > 0 and x > w - shore.w - radius(d) then
+            local seat = d.rise
+            d.on_shore = true
+            d.at, d.rise = clamp(x / w, 0.02, 0.99), shore.h + radius(d) * 0.75
+            fell = true
+            after(math.sqrt(2 * math.max(0, (h - 6 - d.rise) - y) / GRAVITY) * 1000 + 90, function()
+                d.on_shore = nil
+                if by_id[d.id] ~= d or d.dragging then return end
+                -- it leaves the plate at the plate's height and comes down to the goo from the top of its hop
+                local takes = d:jump(limit(d) / len(d) - 0.01, 300)
+                after(takes * 0.6, function()
+                    if by_id[d.id] ~= d or d.dragging then return end
+                    d.rise = seat
+                    publish() save()
+                end)
+            end)
+        end
         if fell then fall = math.max(0, (h - 6 - d.rise) - y) end
         save()
     end
@@ -578,8 +614,10 @@ on("goo_letgo", function(k)
     -- When it lands it flattens and the surface ripples; stuck to an edge it dives and comes up at once.
     after(fall > 0 and math.sqrt(2 * fall / GRAVITY) * 1000 or 0, function()
         if by_id[d.id] ~= d or d.dragging then return end
-        if fall > 0 then d.n.squash += 1 else d.n.dip += 1 end
+        -- on the shore there is nothing to dive into, and no water to ripple
+        if fall > 0 or d.on_shore then d.n.squash += 1 else d.n.dip += 1 end
         publish()
+        if d.on_shore then return end
         after(fall > 0 and 60 or 200, function() E.ripple(d, (fall > 0 and 3 + math.min(fall, 900) * 0.008 or 4) + radius(d) * 0.12, "stone") end)
     end)
 end)

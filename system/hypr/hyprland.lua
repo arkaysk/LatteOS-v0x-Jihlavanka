@@ -160,6 +160,8 @@ hl.on("hyprland.start", function()
     -- systemd and D-Bus learn where the session is; the target starts the Goo scene and the portals.
     place_shell("dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE "
         .. "HYPRLAND_INSTANCE_SIGNATURE LATTE_MODE LATTE_RENDERER LATTE_TIER LANG; systemctl --user start latte-session.target")
+    -- What is copied is kept (cliphist), for the clipboard in the shore's panel; without cliphist nothing is.
+    hl.exec_cmd("sh -c 'command -v cliphist >/dev/null && exec wl-paste --watch cliphist store'")
     -- A session whose shell is still up after a minute is a healthy one: the crash count goes back to zero.
     hl.exec_cmd("latte-boot ok --after 60 --require pleamar")
 end)

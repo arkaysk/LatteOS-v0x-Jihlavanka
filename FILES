@@ -43,6 +43,7 @@
 /usr/share/latteos/goo/parts/card.plm                   <- goo/parts/card.plm
 /usr/share/latteos/goo/parts/faces.plm                  <- goo/parts/faces.plm
 /usr/share/latteos/goo/parts/strip.plm                  <- goo/parts/strip.plm
+/usr/share/latteos/goo/parts/shore.plm                  <- goo/parts/shore.plm
 /usr/share/latteos/goo/parts/keys.plm                   <- goo/parts/keys.plm
 /usr/share/latteos/goo/parts/rows.plm                   <- goo/parts/rows.plm
 /usr/share/latteos/goo/parts/lock.plm                   <- goo/parts/lock.plm
@@ -57,13 +58,13 @@
 /usr/share/latteos/goo/lib/wm.luau                      <- goo/lib/wm.luau
 /usr/share/latteos/goo/lib/open.luau                    <- goo/lib/open.luau
 /usr/share/latteos/goo/lib/own.luau                     <- goo/lib/own.luau
+/usr/share/latteos/goo/lib/shore.luau                   <- goo/lib/shore.luau
 /usr/share/latteos/goo/lib/find.luau                    <- goo/lib/find.luau
 /usr/share/latteos/goo/lib/calc.luau                    <- goo/lib/calc.luau
 /usr/share/latteos/goo/drops/bargoo.luau                <- goo/drops/bargoo.luau
 /usr/share/latteos/goo/drops/clockgoo.luau              <- goo/drops/clockgoo.luau
 /usr/share/latteos/goo/drops/lensgoo.luau               <- goo/drops/lensgoo.luau
 /usr/share/latteos/goo/drops/powergoo.luau              <- goo/drops/powergoo.luau
-/usr/share/latteos/goo/drops/quickgoo.luau              <- goo/drops/quickgoo.luau
 /usr/share/latteos/goo/drops/mediagoo.luau              <- goo/drops/mediagoo.luau
 /usr/share/latteos/greeter/labwc/rc.xml                 <- system/greeter/labwc/rc.xml
 /usr/share/latteos/hypr/hyprland.lua                    <- system/hypr/hyprland.lua

@@ -98,6 +98,7 @@ library Slovak {
         "since" = "od"
         "POWER" = "NAPÁJANIE"
         "Battery" = "Batéria"
+        "Panel" = "Panel"
         "charging" = "nabíja sa"
         "Saver" = "Úspora"
         "Balanced" = "Vyvážený"
@@ -201,7 +202,11 @@ library Slovak {
         "Time is up" = "Čas vypršal"
         "LatteOS alarm" = "Budík LatteOS"
         // QuickGoo
-        "left: quick settings · wheel: volume · right: mute" = "ľavý: rýchle nastavenia · koliesko: hlasitosť · pravý: stlmiť"
+        "wheel: volume · right: mute" = "koliesko: hlasitosť · pravý: stlmiť"
+        "CLIPBOARD" = "SCHRÁNKA"
+        "Forget what was copied" = "Zabudnúť skopírované"
+        "Close the panel" = "Zavrieť panel"
+        "Quick settings and the clipboard" = "Rýchle nastavenia a schránka"
         "Volume" = "Hlasitosť"
         "Brightness" = "Jas"
         "Sound" = "Zvuk"
@@ -222,7 +227,6 @@ library Slovak {
         "This kind of network is not supported" = "Tento druh siete nie je podporovaný"
         "Another connection is being made" = "Práve sa pripája iná sieť"
         "It did not connect" = "Nepodarilo sa pripojiť"
-        "IN THE BACKGROUND" = "NA POZADÍ"
         "PASSWORD NEEDED" = "TREBA HESLO"
         // the launcher's other modes
         "Files" = "Súbory"
