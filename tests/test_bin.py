@@ -170,4 +170,13 @@ hit = {"app_id": "org.a.B", "name": "B", "summary": "s", "icon": "i", "verificat
 assert apps.cards({"hits": [hit, dict(hit, type="addon")]}, {"org.a.B"}) == [
     {"id": "org.a.B", "name": "B", "summary": "s", "icon": "i", "developer": "", "verified": True, "installs": 5, "installed": True}]
 assert apps.shots({"screenshots": [{"sizes": [{"src": "small", "width": "300"}, {"src": "right", "width": "752"}, {"src": "big", "width": "1600"}]}]}) == ["right"]
+devices = load("latte-devices")
+blob = bytearray(128)
+blob[:8] = b"\x00\xff\xff\xff\xff\xff\xff\x00"
+blob[21], blob[22] = 53, 30                                    # cm across and down
+blob[54:72] = bytes([0x02, 0x3A, 0x80, 0x18, 0x71, 0x38, 0x2D, 0x40]) + bytes(10)      # 148.5 MHz, 1920+280 × 1080+45
+blob[72:90] = b"\x00\x00\x00\xfc\x00" + b"Test Screen\n "
+assert devices.edid(bytes(blob)) == ("Test Screen", "1920×1080", 60, 24), devices.edid(bytes(blob))
+assert devices.edid(b"junk") == ("", "", 0, 0)
+assert devices.device("  A   B ", "x")["name"] == "A B"
 print("bin: ok")

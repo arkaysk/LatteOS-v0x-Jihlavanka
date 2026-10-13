@@ -1,14 +1,14 @@
 // The icons by name, from the one table the Goo scenes use (goo/lib/icons.luau): glyphs of the icon font.
-//   Icons { id: icons }      Text { text: icons.of("search"); font.family: theme.icons }
+//   Text { text: Icons.of("search"); font.family: Theme.icons }
 // Qt draws only parts of a few of the font's outlines ("world", "arrow-left"): an app uses another of the
 // kind ("world-www", "chevron-left") and looks at each icon it adds.
+pragma Singleton
 import QtQuick
 import Quickshell
 import Quickshell.Io
 
-Item {
+Singleton {
     id: root
-    visible: false
     readonly property string share: Quickshell.env("LATTE_SHARE") || "/usr/share/latteos"
     property var table: ({})
 

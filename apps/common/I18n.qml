@@ -1,13 +1,13 @@
 // What an app says, in the user's language: texts are written in English and tr() looks them up in the table
 // the Goo scenes use (goo/lang/<language>.plm), so a word is translated once for the whole desktop.
-//   I18n { id: i18n }      Text { text: i18n.tr("{n} a month", { n: 12 }) }
+//   Text { text: I18n.tr("{n} a month", { n: 12 }) }
+pragma Singleton
 import QtQuick
 import Quickshell
 import Quickshell.Io
 
-Item {
+Singleton {
     id: root
-    visible: false
     readonly property string share: Quickshell.env("LATTE_SHARE") || "/usr/share/latteos"
     readonly property string lang: ((Quickshell.env("LC_ALL") || Quickshell.env("LC_MESSAGES") || Quickshell.env("LANG") || "en").split(/[_.@]/)[0] || "en").toLowerCase()
     property var table: ({})

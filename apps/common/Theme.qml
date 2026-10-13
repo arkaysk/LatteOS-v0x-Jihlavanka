@@ -1,7 +1,9 @@
-// The colours and the letters of LatteOS's apps: the coffee the desktop is made of.
+// The colours and the letters of LatteOS's apps: the coffee the desktop is made of. One for every file: Theme.gold
+pragma Singleton
 import QtQuick
+import Quickshell
 
-QtObject {
+Singleton {
     readonly property color ground: "#17110d"      // espresso: what a window stands on
     readonly property color surface: "#1f1611"
     readonly property color card: "#2a1e17"

@@ -1,0 +1,9 @@
+singleton Theme Theme.qml
+singleton I18n I18n.qml
+singleton Icons Icons.qml
+Glyph Glyph.qml
+Label Label.qml
+Pill Pill.qml
+Nav Nav.qml
+Scroll Scroll.qml
+Waiting Waiting.qml

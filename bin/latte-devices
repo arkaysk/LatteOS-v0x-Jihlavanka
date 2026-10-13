@@ -1,0 +1,234 @@
+#!/usr/bin/env python3
+"""latte-devices: what this computer is made of, for the Device Manager and for QueenGoo.
+
+  latte-devices list      {"computer": {…}, "groups": [{"id", "name", "icon", "devices": [{"name", "detail", "driver",
+                          "state", "note"}]}], "findings": [{"level", "text", "fix"}], "faults": N}
+  latte-devices faults    N alone: how many devices need attention
+
+A device is in one group, by what it does: a USB keyboard is an input device, a USB disk a disk. `state` is "ok",
+"no-driver" (the system has nothing that drives it) or "firmware" (its driver asked for a file that is missing);
+`faults` counts those two. A device that is in no other group and has no driver is listed under "other": nothing
+is left out because it is unknown. `findings` is what latte-boot says about this computer as a whole.
+Everything is read from the system as the user: nothing here asks for a password or changes anything.
+"""
+import glob
+import json
+import os
+import re
+import subprocess
+import sys
+import tomllib
+
+
+def read(path, default=""):
+    try:
+        with open(path, errors="replace") as f:
+            return f.read().strip()
+    except OSError:
+        return default
+
+
+def out(*argv, timeout=10):
+    try:
+        return subprocess.run(argv, capture_output=True, text=True, timeout=timeout).stdout
+    except (OSError, subprocess.TimeoutExpired):
+        return ""
+
+
+def device(name, detail="", driver="", state="ok", note=""):
+    return {"name": " ".join(name.split()), "detail": detail, "driver": driver, "state": state, "note": note}
+
+
+# ── the parts ────────────────────────────────────────────────────────────────────────────────────────────────
+def edid(blob):
+    """What a monitor says about itself: (its name, "W×H", Hz, inches across) as far as it says."""
+    if len(blob) < 128 or blob[:8] != b"\x00\xff\xff\xff\xff\xff\xff\x00":
+        return "", "", 0, 0
+    name = ""
+    for i in range(54, 126, 18):
+        d = blob[i:i + 18]
+        if d[:3] == b"\x00\x00\x00" and d[3] == 0xFC:
+            name = d[5:18].decode("ascii", "replace").split("\n")[0].strip()
+    t = blob[54:72]
+    clock = (t[0] | t[1] << 8) * 10000
+    w, h = t[2] | (t[4] & 0xF0) << 4, t[5] | (t[7] & 0xF0) << 4
+    total = (w + (t[3] | (t[4] & 0x0F) << 8)) * (h + (t[6] | (t[7] & 0x0F) << 8))
+    inches = round((blob[21] ** 2 + blob[22] ** 2) ** 0.5 / 2.54) if blob[21] and blob[22] else 0
+    return name, ("%d×%d" % (w, h)) if clock and w else "", round(clock / total) if clock and total else 0, inches
+
+
+def displays():
+    found = []
+    for path in sorted(glob.glob("/sys/class/drm/card*-*")):
+        if read(path + "/status") != "connected":
+            continue
+        try:
+            with open(path + "/edid", "rb") as f:
+                name, mode, hz, inches = edid(f.read())
+        except OSError:
+            name, mode, hz, inches = "", "", 0, 0
+        port = re.sub(r"^card\d+-", "", os.path.basename(path))
+        mode = mode or read(path + "/modes").split("\n")[0]
+        about = [mode + (" · %d Hz" % hz if hz else "")] if mode else []
+        if inches: about.append('%d"' % inches)
+        found.append(device(name or port, " · ".join(about + [port])))
+    return found
+
+
+WANTED = {"01": "disks", "02": "network", "03": "graphics", "04": "sound", "0c03": "usb", "0d": "network"}   # classes that do nothing without a driver
+
+
+def pci():
+    """PCI devices by group: {group: [device]}. A device of a class that needs a driver and has none is a fault."""
+    groups = {}
+    for block in out("lspci", "-vmm", "-k", "-nn").strip().split("\n\n"):
+        f = dict(line.split(":\t", 1) for line in block.splitlines() if ":\t" in line)
+        code = (re.search(r"\[([0-9a-f]{4})\]$", f.get("Class", "")) or [None, ""])[1]
+        group = WANTED.get(code) or WANTED.get(code[:2])
+        if not group:
+            continue
+        clean = lambda s: re.sub(r"\s*\[[0-9a-f:]+\]$", "", s or "")
+        vendor = re.sub(r",? (Inc\.?|Corporation|Corp\.?|Co\.,? Ltd\.?|Ltd\.?|Technology|Technologies|Semiconductor).*$", "", clean(f.get("Vendor")))
+        vendor = vendor.replace("Advanced Micro Devices", "AMD")
+        driver = f.get("Driver", "")
+        groups.setdefault(group, []).append(device((vendor + " " + clean(f.get("Device"))).strip(), clean(f.get("Class")), driver,
+                                                   "ok" if driver else "no-driver"))
+    return groups
+
+
+def usb():
+    """USB devices that are not hubs, by what their interfaces are for: {group: [device]}."""
+    kinds = {"03": "input", "0e": "cameras", "01": "sound", "08": "disks", "e0": "bluetooth", "07": "printers", "02": "network", "ff": "other"}
+    groups = {}
+    for path in sorted(glob.glob("/sys/bus/usb/devices/*")):
+        if not os.path.exists(path + "/idVendor") or read(path + "/bDeviceClass") == "09":
+            continue
+        classes, drivers = [], []
+        for face in glob.glob(path + "/*:*"):
+            classes.append(read(face + "/bInterfaceClass"))
+            if os.path.islink(face + "/driver"):
+                drivers.append(os.path.basename(os.readlink(face + "/driver")))
+        group = next((kinds[c] for c in ("0e", "08", "07", "e0", "01", "02", "03", "ff") if c in classes and c in kinds), "other")
+        if group in ("disks", "input", "cameras", "bluetooth"):
+            continue                       # these are listed from where the system keeps them, with more to say
+        name = (read(path + "/manufacturer") + " " + read(path + "/product")).strip() or "USB %s:%s" % (read(path + "/idVendor"), read(path + "/idProduct"))
+        groups.setdefault(group, []).append(device(name, "USB", ", ".join(sorted(set(drivers))), "ok" if drivers or not classes else "no-driver"))
+    return groups
+
+
+def network():
+    found = []
+    for path in sorted(glob.glob("/sys/class/net/*")):
+        if not os.path.exists(path + "/device"):
+            continue                       # loopback, bridges, tunnels: not hardware
+        name, wifi = os.path.basename(path), os.path.isdir(path + "/wireless")
+        up = read(path + "/operstate") == "up"
+        speed = read(path + "/speed")
+        about = ["Wi-Fi" if wifi else "Ethernet", "connected" if up else "not connected"]
+        if up and speed.isdigit() and int(speed) > 0 and not wifi: about.append("%s Mb/s" % speed)
+        found.append((name, about))
+    return found
+
+
+def disks():
+    found = []
+    try:
+        listed = json.loads(out("lsblk", "-J", "-d", "-b", "-o", "NAME,MODEL,SIZE,TYPE,TRAN,ROTA,RM") or "{}").get("blockdevices") or []
+    except ValueError:
+        listed = []
+    for d in listed:
+        if d.get("type") != "disk" or re.match(r"(zram|loop|ram)", d.get("name") or ""):
+            continue
+        size = int(d.get("size") or 0)
+        kind = "USB" if d.get("tran") == "usb" else ("NVMe" if d.get("tran") == "nvme" else ("HDD" if d.get("rota") else "SSD"))
+        found.append(device(d.get("model") or d["name"], "%s · %s" % (kind, ("%.0f GB" % (size / 1e9)) if size < 1e12 else ("%.1f TB" % (size / 1e12)))))
+    return found
+
+
+def inputs():
+    found, seen = [], set()
+    for block in read("/proc/bus/input/devices").split("\n\n"):
+        name = (re.search(r'N: Name="(.*)"', block) or [None, ""])[1]
+        handlers = (re.search(r"H: Handlers=(.*)", block) or [None, ""])[1].split()
+        kind = "gamepad" if any(h.startswith("js") for h in handlers) else ("mouse" if any(h.startswith("mouse") for h in handlers) else
+                ("keyboard" if "kbd" in handlers and re.search(r"keyboard", name, re.I) else ""))
+        short = re.sub(r"\s+(Mouse|Keyboard|Consumer Control|System Control)$", "", name)
+        if kind and (short, kind) not in seen and not re.search(r"button|video bus|hdmi|speaker|virtual|wlr|ydotool", name, re.I):
+            seen.add((short, kind))
+            found.append(device(name, kind))
+    return found
+
+
+def computer():
+    cpu = (re.search(r"model name\s*:\s*(.*)", read("/proc/cpuinfo")) or [None, ""])[1]
+    ram = int((re.search(r"MemTotal:\s*(\d+)", read("/proc/meminfo")) or [None, "0"])[1]) / 1048576
+    dmi = lambda what: read("/sys/class/dmi/id/" + what)
+    maker, model = dmi("sys_vendor"), dmi("product_name")
+    vague = re.compile(r"to be filled|system manufacturer|system product|default string|^$", re.I)
+    if vague.search(maker) or vague.search(model):
+        maker, model = dmi("board_vendor"), dmi("board_name")
+    return {"host": read("/proc/sys/kernel/hostname"), "model": (maker + " " + model).strip(), "cpu": re.sub(r"\s+", " ", re.sub(r"\((R|TM)\)| CPU| @.*", "", cpu)),
+            "threads": os.cpu_count() or 0, "ram_gb": round(ram), "kernel": os.uname().release, "firmware": dmi("bios_version")}
+
+
+def findings():
+    try:
+        told = tomllib.loads(out("latte-boot", "compat", "--toml"))
+    except (tomllib.TOMLDecodeError, ValueError):
+        return []
+    return [{"level": f.get("level", "info"), "text": f.get("text", ""), "fix": f.get("fix", "")} for f in told.get("platform", {}).get("finding", [])]
+
+
+def no_firmware():
+    """The drivers that asked for a firmware file this boot and did not get it, as the kernel's log has it."""
+    log = out("journalctl", "-k", "-b", "--no-pager", "-q", "-g", "firmware.*(failed|error)", timeout=8)
+    return set(re.findall(r"kernel: (\w[\w-]*) [0-9a-f:.]+: (?:Direct )?firmware", log))
+
+
+GROUPS = [("displays", "Displays", "device-desktop"), ("graphics", "Graphics", "photo"), ("sound", "Sound", "volume"), ("network", "Network", "network"),
+          ("disks", "Disks", "disc"), ("input", "Keyboards, mice and gamepads", "device-gamepad-2"), ("cameras", "Cameras", "photo"),
+          ("bluetooth", "Bluetooth", "bluetooth"), ("printers", "Printers", "file-text"), ("usb", "USB", "package"), ("power", "Power", "battery-4"),
+          ("other", "Other devices", "box")]
+
+
+def everything():
+    groups = pci()
+    for group, found in usb().items():
+        groups.setdefault(group, []).extend(found)
+    groups["displays"] = displays()
+    groups["disks"] = disks() + groups.get("disks", [])         # the disks first, then what they are plugged into
+    groups["input"] = inputs()
+    # a network card is its PCI or USB device; what the system calls it and whether it is connected goes with it
+    cards = groups.get("network", [])
+    for i, (name, about) in enumerate(network()):
+        if i < len(cards):
+            cards[i]["detail"] = " · ".join(about + [name])
+        else:
+            cards.append(device(name, " · ".join(about)))
+    groups["cameras"] = [device(n, "") for n in sorted({read(p + "/name") for p in glob.glob("/sys/class/video4linux/video*")}) if n]
+    groups["bluetooth"] = [device("Bluetooth", os.path.basename(p)) for p in sorted(glob.glob("/sys/class/bluetooth/hci*")) if ":" not in os.path.basename(p)]
+    groups["power"] = [device(read(p + "/model_name") or os.path.basename(p), "%s %% · %s" % (read(p + "/capacity"), read(p + "/status").lower()))
+                       for p in sorted(glob.glob("/sys/class/power_supply/BAT*"))]
+    starved = no_firmware()
+    for found in groups.values():
+        for d in found:
+            if d["driver"] and d["driver"].split(", ")[0] in starved:
+                d["state"] = "firmware"
+    listed = [{"id": g, "name": name, "icon": icon, "devices": groups[g]} for g, name, icon in GROUPS if groups.get(g)]
+    return {"computer": computer(), "groups": listed, "findings": findings(),
+            "faults": sum(1 for g in listed for d in g["devices"] if d["state"] != "ok")}
+
+
+def main(a):
+    if a == ["list"]:
+        print(json.dumps(everything(), ensure_ascii=False))
+    elif a == ["faults"]:
+        print(everything()["faults"])
+    else:
+        print(__doc__.strip())
+        return 2
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))

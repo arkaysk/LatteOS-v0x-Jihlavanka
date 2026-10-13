@@ -17,6 +17,7 @@
 /usr/bin/latte-ai                                       <- bin/latte-ai
 /usr/bin/latte-app                                      <- bin/latte-app
 /usr/bin/latte-apps                                     <- bin/latte-apps
+/usr/bin/latte-devices                                  <- bin/latte-devices
 /usr/bin/latte-session                                  <- bin/latte-session
 /usr/bin/latte-safe                                     <- bin/latte-safe
 /usr/bin/latte-game                                     <- bin/latte-game
@@ -42,6 +43,13 @@
 /usr/share/latteos/apps/common/Theme.qml                <- apps/common/Theme.qml
 /usr/share/latteos/apps/common/I18n.qml                 <- apps/common/I18n.qml
 /usr/share/latteos/apps/common/Icons.qml                <- apps/common/Icons.qml
+/usr/share/latteos/apps/common/Glyph.qml                        <- apps/common/Glyph.qml
+/usr/share/latteos/apps/common/Label.qml                        <- apps/common/Label.qml
+/usr/share/latteos/apps/common/Pill.qml                         <- apps/common/Pill.qml
+/usr/share/latteos/apps/common/Nav.qml                          <- apps/common/Nav.qml
+/usr/share/latteos/apps/common/Scroll.qml                       <- apps/common/Scroll.qml
+/usr/share/latteos/apps/common/Waiting.qml                      <- apps/common/Waiting.qml
+/usr/share/latteos/apps/common/qmldir                           <- apps/common/qmldir
 /usr/share/applications/latteos-appmanager.desktop      <- system/applications/latteos-appmanager.desktop
 /usr/share/latteos/goo/parts/drops.plm                  <- goo/parts/drops.plm
 /usr/share/latteos/goo/parts/picks.plm                  <- goo/parts/picks.plm
