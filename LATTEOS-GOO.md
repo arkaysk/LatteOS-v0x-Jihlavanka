@@ -227,6 +227,10 @@ ostatné kvapky sú iba na hlavnom monitore.
   Sieťach). Sú to riadne okná: kráľovná ostane na mieste a **vypľuje bublinu**, ktorá sa nafúkne na okno vedľa nej
   (14); otvorené okno sa iba ukáže.
 
+- *(Fresh, 13. 10.: kvapka je — `goo/drops/queengoo.luau`: korunka, modrá guľka pri aktualizáciách, zelená pri výpadku
+  siete, ľavý klik otvorí App Manager (pri aktualizáciách na nich). Pravý klik a červená guľka prídu so Správcom
+  zariadení; okno sa zatiaľ rodí obyčajne, nie z bubliny.)*
+
 ### 4.5 ClockGoo — čas, upozornenia, kalendár a pohoda (voliteľná)
 - V kvapke veľký digitálny čas, dátum a teplota; bežiaca minútka alebo stopky namiesto dátumu. Guľky počtu
   upozornení — systémové a kritické červeno-kávové, ostatné žlté; nové upozornenie zvlní hladinu.
@@ -407,6 +411,13 @@ v `old/session/goo/README.md` › Prihlásenie). Hladina je v 2/3
 výšky obrazovky (rovina „klesne“ zo stredu), pod ňou tretina obrazovky kávy.
 
 ### 6.3 Obchod podľa ZimaOS (App Manager)
+*(Fresh, 13. 10.: napísaný nanovo — `apps/appmanager.qml` (QML, Quickshell), príkaz `bin/latte-apps`, spúšťač
+`bin/latte-app`. Vľavo hľadanie, Objavovať, Moje aplikácie, Aktualizácie, kategórie a **Barista** (miesto pre
+špeciálne inštalácie — zatiaľ iba stránka, čo vezme); vpravo dva veľké bannery so snímkou, ktoré sa samy striedajú,
+pod nimi police Práve letí, Nové prírastky a Najpoužívanejšie; stránka aplikácie so snímkami, veľkosťou, licenciou;
+inštalácia, odstránenie a aktualizácia Flatpakov s priebehom, aktualizácia systému cez heslo správcu. Jedna úloha
+naraz, ostatné čakajú v rade. Oproti v0.3 chýba: komunitné obchody, hodnotenia a recenzie, oprávnenia a NET,
+ovládače a firmvér, „Bude to fungovať?“, úlohy, ktoré prežijú zatvorenie okna, RPM aplikácie v obchode.)*
 Vľavo stály panel — hľadanie, Moje aplikácie, **kategórie ako zoznam** (Objavte, Všetko, Médiá, Produktivita,
 Domácnosť, Sieť, AI, Financie, Sociálne, Vývojár, Ostatné) a **komunitné obchody** (zdroje tretích strán, napr.
 kurátorské výbery Bluefin a Bazzite); vpravo veľký **kolotoč bannerov** (dva naraz, snímka, ikona, názov, slogan),
@@ -503,7 +514,7 @@ nemá (AI je hľadanie, Financie a Sociálne sú podkategórie Flathubu).
   hlavičky (plugin hyprbars so záplatou, ak je nainštalovaný; pravý klik na titulok = ponuka okna v karte Goo).
 
 **Ešte nie je** (vráti sa po kusoch, poradie v ROADMAP):
-QueenGoo (čaká na App Manager a Správcu zariadení), ChatGoo (čaká na Beeper), Tvorca Goo (vlastné kvapky už sú: §4.7),
+Správca zariadení (pravý klik QueenGoo), ChatGoo (čaká na Beeper), Tvorca Goo (vlastné kvapky už sú: §4.7),
 okno z bubliny (14; pád minimalizovaného okna už je), prenášanie ikier medzi monitormi, ďalší poskytovatelia AI,
 portrét účtu, účty kalendárov so zápisom (CalDAV),
 živé tapety a vlastný obrázok tapety, náhľad cieľa a lišta rozložení pri ťahaní okna, Nastavenia a ostatné aplikácie.

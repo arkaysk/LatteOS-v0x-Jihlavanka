@@ -48,6 +48,7 @@ return {
     ["code"] = "\u{EA77}",
     ["compass"] = "\u{EA79}",
     ["copy"] = "\u{EA7A}",
+    ["crown"] = "\u{ED12}",
     ["cup"] = "\u{EF28}",
     ["device-desktop"] = "\u{EA89}",
     ["device-gamepad-2"] = "\u{F1D2}",

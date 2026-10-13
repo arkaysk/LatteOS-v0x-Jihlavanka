@@ -171,6 +171,8 @@ library Slovak {
         "Lap" = "Medzičas"
         "Reset" = "Vynulovať"
         "Pause" = "Pozastaviť"
+        "updates wait" = "čakajú aktualizácie"
+        "left: App Manager" = "ľavý: App Manager"
         ".apk, .xapk" = ".apk, .xapk"
         ".iso, several discs" = ".iso, aj viac diskov"
         ".rpm, .flatpak, .AppImage" = ".rpm, .flatpak, .AppImage"

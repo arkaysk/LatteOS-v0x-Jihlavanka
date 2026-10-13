@@ -105,9 +105,14 @@ Schválené 12. 10. 2026. Pracuje sa **zhora nadol, neskáče sa**; nový nápad
           plíženie, veľký oblúk, naháňačka; skok je hod s gravitáciou scény, po prebudení je všetko na mieste.
         - [x] MediaGoo (13. 10.): čo hrá, predošlá · pauza · ďalšia, hlasitosť; je na ploche, iba kým beží prehrávač.
         - [x] prepojené kalendáre (13. 10.): adresy .ics v karte ClockGoo, číta `bin/latte-cal` (opakované udalosti,
-          časové pásma); iba na čítanie, bez účtov. **QueenGoo** čaká na App Manager
-          a Správcu zariadení (aplikácie, bod 6 — kvapka bez nich nemá čo otvoriť), **ChatGoo** na Beeper
+          časové pásma); iba na čítanie, bez účtov. **ChatGoo** čaká na Beeper
           (na latte-lab nie je nainštalovaný, nedá sa overiť).
+        - [x] **App Manager** (13. 10., na pokyn mimo poradia): `apps/appmanager.qml` + `bin/latte-apps` + `bin/latte-app`;
+          obchod Flathub (bannery, police, kategórie, hľadanie, stránka aplikácie), moje aplikácie, aktualizácie,
+          miesto pre Baristu. Inštalácia a odstránenie overené naostro. Chýba: LATTEOS-GOO.md §6.3.
+        - [~] **QueenGoo** (13. 10.): korunka, guľky aktualizácií a výpadku siete, ľavý klik = App Manager. Pravý klik
+          a červená guľka čakajú na Správcu zariadení; okno z bubliny neskôr.
+        - [ ] **Správca zariadení** (ďalší na rade).
         - [x] tapeta (swaybg, `assets/wallpapers`) a okenné tlačidlá (hyprbars so záplatou `patches/hyprbars-latte.patch`;
           postup v `patches/README.md`) (12. 10.).
         - [x] LensGoo: režimy Súbory a Web, kalkulačka (12. 10.).
