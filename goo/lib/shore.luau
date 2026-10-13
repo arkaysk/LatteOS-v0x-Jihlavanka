@@ -76,7 +76,7 @@ local function panel(rows, opts)
     opts = opts or {}
     local w, h = tonumber(fact.sw) or 1920, tonumber(fact.sh) or 1080
     fact["tap.x"], fact["tap.y"] = w - 6, h - HEIGHT - 4
-    opts.id, opts.owner = "shore", nil
+    opts.id, opts.owner, opts.dock = "shore", nil, tonumber(fact.shore_w) or 0
     opts.width = opts.width or 320
     card.open(rows, opts)
     if not fact.shore_open then fact.shore_open = true show_signs() end

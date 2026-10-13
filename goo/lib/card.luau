@@ -182,6 +182,7 @@ function M.open(rows, opts)
         fact.card_owner = -1
     end
 
+    fact.card_dock, fact.card_dock_w = opts.dock ~= nil, tonumber(opts.dock) or 0
     fact.card_strip = opts.strip == true          -- its owner is stretched into a strip: the card grows out of all of it
 
     local fresh = not opts.keep or not fact.card_open

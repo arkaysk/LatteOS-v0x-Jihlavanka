@@ -42,6 +42,8 @@ part Card {
     event cal_step ->                          // the arrows and the wheel: 1 the next month, 0 the one before
     fact card_open = false
     fact card_owner = -1                       // the place of the drop it grows from; −1: from the last press
+    fact card_dock_w = 0                       // …and how long that plate is, to join the two without a seam
+    fact card_dock = false                     // it is the shore's panel: no goo, a plate that stands on the shore's own, one piece with it
     fact card_strip = false                    // that drop is stretched into a strip: grow out of the whole capsule
     fact card_w = 300
     fact card_w2 = 0                           // how wide the second column is; 0: there is none
@@ -102,10 +104,12 @@ part Card {
     let card.sy = if(cap.v > 0, if(strip.dir > 0, if(card.by + card.h + 12 <= H, 1, -1), if(card.by - card.h - 12 >= 0, -1, 1)), if(card.by > H / 2, if(card.by - card.h - 12 >= 0, -1, 1), if(card.by + card.h + 12 <= H, 1, -1)))
     let card.x = card.bx - cap.h * card.sx * ear                 // from the drop's far side, so the card holds all of it
     let card.y = card.by - cap.v * card.sy * ear
-    let card.x0 = clamp(if(card.sx > 0, card.x, card.x - card.w), 12, W - 12 - card.w)
-    let card.y0 = clamp(if(card.sy > 0, card.y, card.y - card.h), 12, H - 12 - card.h)
+    // docked, it stands on the shore's plate (46 px high, parts/shore.plm), flush with the screen's right edge
+    let card.x0 = if(card_dock, W - card.w, clamp(if(card.sx > 0, card.x, card.x - card.w), 12, W - 12 - card.w))
+    let card.y0 = if(card_dock, H - 46 - card.h, clamp(if(card.sy > 0, card.y, card.y - card.h), 12, H - 12 - card.h))
     let card.ax = if(card.sx > 0, card.x0, card.x0 + card.w)
     let card.ay = if(card.sy > 0, card.y0, card.y0 + card.h)
+    let card.glass = if(card_dock, 0, material)                  // the shore is hard: its panel is never glass
     let card.q = clamp(card.p, 0, 1.08)
     prop card.ws = 290 ~grow
     prop card.hs = 60 ~grow
@@ -118,24 +122,34 @@ part Card {
     // (4·t·(1−t)). On the overshoot of the spring it swells wider too, not only taller.
     let card.t = clamp(card.p, 0, 1)
     let card.over = max(0, card.p - 1)
-    let card.cw = max((ear * 1.8 + cap.h * cap.len) * (1 - card.t) + card.ws * (card.t * card.t * card.t + card.over * 0.6), 14)
+    let card.cw = if(card_dock, card.ws, 0) + if(card_dock, 0, 1) * max((ear * 1.8 + cap.h * cap.len) * (1 - card.t) + card.ws * (card.t * card.t * card.t + card.over * 0.6), 14)
     let card.ch = max(cap.v * (cap.len + ear * 2) * (1 - card.t) + card.hs * card.q, 14)
     let card.round = 18 + 40 * (1 - card.t) * (1 - card.t)
     body {
         gradient: card.ax, card.ay to card.ax + card.sx * card.w, card.ay + card.sy * card.h, coffee, mix(paper, coffee, 0.4), paper, paper
         rim: 16%
         shadow: 0, 8, 22, 36% * clamp(card.p, 0, 1)
-        opacity: if(card.p > 0.02, 1, 0)
+        opacity: if(card.p > 0.02 and not card_dock, 1, 0)
         // With the goo of glass the card is frosted glass too: what is behind shows through it, blurred and
         // smoked so that the light writing on it reads over anything.
-        glass: material * 100%
-        lens: material > 0.02
+        glass: card.glass * 100%
+        lens: card.glass > 0.02
         shine: pointer
         frost: 100%
-        smoke: 62% * material
-        refraction: 120% * material
+        smoke: 62% * card.glass
+        refraction: 120% * card.glass
         box { at: card.ax + card.sx * card.cw / 2, card.ay + card.sy * card.ch / 2; size: card.cw * if(card.p > 0.02, 1, 0), card.ch; corner: min(if(ear > 14, 26, 18) + (card.round - 18), min(card.cw, card.ch) / 2) }
         ellipse { at: card.ax, card.ay; radius: (ear * clamp(card.p * 3, 0, 1) + 1) * if(card.p > 0.02, 1, 0); blend: 4 + 30 * 4 * card.t * (1 - card.t) }
         line { from: card.bx, card.by; to: card.bx + cap.tx * cap.len * strip.dir, card.by + (1 - cap.tx) * cap.len * strip.dir; width: ear * 2 * clamp(card.p * 3, 0, 1) * if(cap.len > 0 and card.p > 0.02, 1, 0); blend: 4 + 30 * 4 * card.t * (1 - card.t) }
+    }
+    // The shore's panel: a plate like the shore's, rising out of it and reaching past the screen's edge, so
+    // the two are one piece.
+    group {
+        show: card_dock and card.p > 0.02
+        box { from: card.x0 - 1, card.ay - card.ch - 1; size: card.w + 41, card.ch + 2; corner: 19; color: #6b5444 }
+        box { from: card.x0, card.ay - card.ch; size: card.w + 40, card.ch; corner: 18; color: #261d17 }
+        // over the shore the panel's foot is square and covers the plate's upper rim: no line between the two
+        box { from: W - card_dock_w + 17, card.ay - min(20, card.ch); size: card_dock_w + 23, min(20, card.ch) + 2; color: #261d17 }
+        box { from: card.x0 + 16, card.ay - card.ch + 1; size: card.w, 1; color: cream; opacity: 7% }
     }
 }
