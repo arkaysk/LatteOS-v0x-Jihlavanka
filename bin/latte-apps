@@ -1,0 +1,282 @@
+#!/usr/bin/env python3
+"""latte-apps: what the App Manager knows and does. Everything it prints is JSON, but for the three that work.
+
+  latte-apps installed            the apps on this computer: [{id, name, summary, icon, source, version, size, removable}]
+                                  source: "flatpak" (the user's own), "flatpak-system", "rpm", "local"
+  latte-apps updates              what can be updated: {"apps": [{id, name, icon, version, source}], "system": N}
+                                  apps are Flatpaks; "system" counts Fedora's packages (asked at most once an hour)
+  latte-apps store home           the shop's front page: {"banners", "trending", "new", "popular"}, each a list of apps
+  latte-apps store categories     ["audiovideo", "game", …]
+  latte-apps store category NAME  the apps of one
+  latte-apps store search TEXT
+  latte-apps store app ID         one app in full: description, screenshots, licence, sizes, links
+  latte-apps install ID           from Flathub, for this user, no password
+  latte-apps remove ID            a Flatpak
+  latte-apps update [ID]          one Flatpak, or all of them
+  latte-apps update-system        Fedora's packages (asks for the administrator's password)
+                                  These four print what the tool underneath says, line by line, and end with its code.
+
+The shop is Flathub (its API v2). What it answered is kept for six hours in ~/.cache/latteos/flathub, and shown
+again when there is no network.
+"""
+import configparser
+import concurrent.futures
+import glob
+import hashlib
+import json
+import os
+import re
+import shutil
+import subprocess
+import sys
+import time
+import urllib.request
+
+HOME = os.path.expanduser("~")
+FLATHUB = "https://flathub.org/api/v2"
+CACHE = os.path.join(os.environ.get("XDG_CACHE_HOME") or HOME + "/.cache", "latteos", "flathub")
+# where apps announce themselves, and what kind of app that makes them; the first place that has an id wins
+PLACES = [("flatpak", HOME + "/.local/share/flatpak/exports/share"), ("flatpak-system", "/var/lib/flatpak/exports/share"),
+          ("local", HOME + "/.local/share"), ("rpm", "/usr/share")]
+
+
+def out(code, *argv, timeout=60):
+    try:
+        r = subprocess.run(argv, capture_output=True, text=True, timeout=timeout)
+        return (r.returncode, r.stdout) if code else r.stdout
+    except (OSError, subprocess.TimeoutExpired):
+        return (1, "") if code else ""
+
+
+def language():
+    return (os.environ.get("LC_ALL") or os.environ.get("LC_MESSAGES") or os.environ.get("LANG") or "").split("_")[0].split(".")[0]
+
+
+def entry(path, lang=""):
+    """A .desktop file as {id, name, summary, icon, flatpak}, or nothing if it is not an app to show."""
+    p = configparser.RawConfigParser(strict=False, interpolation=None)
+    p.optionxform = str
+    try:
+        p.read(path, encoding="utf-8")
+        e = p["Desktop Entry"]
+    except (KeyError, configparser.Error, UnicodeDecodeError, OSError):
+        return None
+    if e.get("Type", "Application") != "Application" or e.get("NoDisplay", "").lower() == "true" or e.get("Hidden", "").lower() == "true":
+        return None
+    said = lambda key: e.get("%s[%s]" % (key, lang)) or e.get(key, "")
+    return {"id": os.path.basename(path)[:-len(".desktop")], "name": said("Name"), "summary": said("Comment"),
+            "icon": e.get("Icon", ""), "flatpak": e.get("X-Flatpak", "")}
+
+
+def icon_file(share, name):
+    """A Flatpak's icon as a file: it is not in any icon theme a program would look in."""
+    if os.path.isabs(name):
+        return name
+    for size in ("128x128", "scalable", "256x256", "64x64"):
+        for f in glob.glob(os.path.join(share, "icons", "hicolor", size, "apps", name + ".*")):
+            return f
+    return name
+
+
+def flatpaks():
+    """{id: (version, size)} of the Flatpak apps installed."""
+    found = {}
+    for line in out(False, "flatpak", "list", "--app", "--columns=application,version,size").splitlines():
+        parts = line.split("\t")
+        if parts and "." in parts[0]:
+            found[parts[0]] = ((parts[1:2] or [""])[0], (parts[2:3] or [""])[0].replace(" ", " "))
+    return found
+
+
+def installed():
+    lang, packed, seen, apps = language(), flatpaks(), set(), []
+    for source, share in PLACES:
+        for path in sorted(glob.glob(os.path.join(share, "applications", "*.desktop"))):
+            e = entry(path, lang)
+            if not e or e["id"] in seen:
+                continue
+            seen.add(e["id"])
+            app = e["flatpak"] or e["id"]
+            version, size = packed.get(app, ("", "")) if source.startswith("flatpak") else ("", "")
+            apps.append({"id": app if source.startswith("flatpak") else e["id"], "name": e["name"] or e["id"], "summary": e["summary"],
+                         "icon": icon_file(share, e["icon"]) if source.startswith("flatpak") else e["icon"],
+                         "source": source, "version": version, "size": size, "removable": source.startswith("flatpak")})
+    return sorted(apps, key=lambda a: a["name"].lower())
+
+
+def system_updates():
+    """How many of Fedora's packages can be updated. Asking takes a while and the network: once an hour is enough."""
+    note = os.path.join(CACHE, "..", "system-updates")
+    try:
+        if time.time() - os.path.getmtime(note) < 3600:
+            return int(open(note).read().strip() or 0)
+    except (OSError, ValueError):
+        pass
+    code, text = out(True, "dnf", "-q", "check-update", timeout=120)
+    n = len([l for l in text.splitlines() if re.match(r"^\S+\.\S+\s+\S+\s+\S+", l)]) if code == 100 else 0
+    if code in (0, 100):
+        os.makedirs(os.path.dirname(note), exist_ok=True)
+        with open(note, "w") as f:
+            f.write(str(n))
+    return n
+
+
+def updates():
+    names = {a["id"]: a for a in installed()}
+    apps = []
+    # ponytail: the user's own Flatpaks only. Asking about the system's ones wants the administrator's password
+    # (Fedora's remote), and looking for updates must never ask for one; they are updated with "update" all the same.
+    for line in out(False, "flatpak", "remote-ls", "--user", "--updates", "--app", "--columns=application,version", timeout=120).splitlines():
+        parts = line.split("\t")
+        if parts and "." in parts[0] and not any(a["id"] == parts[0] for a in apps):
+            a = names.get(parts[0], {})
+            apps.append({"id": parts[0], "name": a.get("name") or parts[0], "icon": a.get("icon", ""), "version": (parts[1:2] or [""])[0], "source": a.get("source", "flatpak")})
+    return {"apps": apps, "system": system_updates()}
+
+
+# ── the shop ─────────────────────────────────────────────────────────────────────────────────────────────────
+def ask(path, keep=6 * 3600, post=None):
+    """Flathub's answer to a question; the one it gave last time while that is fresh, or when it cannot be reached."""
+    os.makedirs(CACHE, exist_ok=True)
+    note = os.path.join(CACHE, hashlib.sha1((path + json.dumps(post or "")).encode()).hexdigest() + ".json")
+    try:
+        if time.time() - os.path.getmtime(note) < keep:
+            with open(note) as f:
+                return json.load(f)
+    except (OSError, ValueError):
+        pass
+    try:
+        req = urllib.request.Request(FLATHUB + path, data=json.dumps(post).encode() if post is not None else None,
+                                     headers={"Content-Type": "application/json", "User-Agent": "LatteOS"})
+        with urllib.request.urlopen(req, timeout=15) as r:
+            data = json.load(r)
+        with open(note, "w") as f:
+            json.dump(data, f)
+        return data
+    except Exception:
+        try:
+            with open(note) as f:
+                return json.load(f)
+        except (OSError, ValueError):
+            return None
+
+
+def card(hit, have):
+    """One app as the shop's lists show it."""
+    app = hit.get("app_id") or hit.get("id") or ""
+    return {"id": app, "name": hit.get("name") or app, "summary": hit.get("summary") or "", "icon": hit.get("icon") or "",
+            "developer": hit.get("developer_name") or "", "verified": hit.get("verification_verified") is True,
+            "installs": hit.get("installs_last_month") or 0, "installed": app in have}
+
+
+def cards(answer, have, most=48):
+    return [card(h, have) for h in ((answer or {}).get("hits") or [])[:most] if h.get("type", "desktop-application").startswith("desktop")]
+
+
+def plain(html):
+    """A description written as HTML, as paragraphs and bullets of plain text."""
+    t = re.sub(r"\s*\n\s*", " ", html or "")
+    t = re.sub(r"<li>\s*", "\n• ", t)
+    t = re.sub(r"</(p|ul|ol)>\s*", "\n\n", t)
+    t = re.sub(r"<[^>]+>", "", t)
+    for a, b in (("&amp;", "&"), ("&lt;", "<"), ("&gt;", ">"), ("&quot;", '"'), ("&#39;", "'"), ("&apos;", "'")):
+        t = t.replace(a, b)
+    return re.sub(r"\n\s*\n\s*\n+", "\n\n", re.sub(r"[ \t]+", " ", t)).strip()
+
+
+def shots(detail, most=6):
+    """A picture of each screenshot about 900 px wide: sharp in the window, quick to fetch."""
+    found = []
+    for s in detail.get("screenshots") or []:
+        sizes = [z for z in s.get("sizes") or [] if z.get("src")]
+        if sizes:
+            found.append(min(sizes, key=lambda z: abs(int(z.get("width") or 0) - 900))["src"])
+    return found[:most]
+
+
+def home():
+    have = set(flatpaks())
+    with concurrent.futures.ThreadPoolExecutor(3) as pool:
+        trending, new, popular = pool.map(lambda p: ask("/collection/%s?page=1&per_page=24" % p), ("trending", "recently-added", "popular"))
+    if trending is None and new is None and popular is None:
+        return {"offline": True, "banners": [], "trending": [], "new": [], "popular": []}
+    front = {"trending": cards(trending, have, 12), "new": cards(new, have, 12), "popular": cards(popular, have, 12)}
+    # a banner is an app with a picture of itself: the first few trending ones that have a screenshot
+    with concurrent.futures.ThreadPoolExecutor(6) as pool:
+        details = list(pool.map(lambda a: ask("/appstream/" + a["id"], keep=7 * 24 * 3600) or {}, front["trending"][:8]))
+    front["banners"] = [dict(a, shot=shots(d, 1)[0]) for a, d in zip(front["trending"], details) if shots(d, 1)][:6]
+    return front
+
+
+def app(ident):
+    with concurrent.futures.ThreadPoolExecutor(3) as pool:
+        d, size, stats = pool.map(lambda p: ask(p, keep=24 * 3600) or {}, ("/appstream/" + ident, "/summary/" + ident, "/stats/" + ident))
+    if not d:
+        return {"id": ident, "missing": True}
+    release = (d.get("releases") or [{}])[0]
+    urls = d.get("urls") or {}
+    return {"id": ident, "name": d.get("name") or ident, "summary": d.get("summary") or "", "icon": d.get("icon") or "",
+            "developer": d.get("developer_name") or "", "description": plain(d.get("description")), "screenshots": shots(d),
+            "license": d.get("project_license") or "", "free": d.get("is_free_license") is True,
+            "version": release.get("version") or "", "released": int(release.get("timestamp") or 0),
+            "download": size.get("download_size") or 0, "size": size.get("installed_size") or 0,
+            "installs": stats.get("installs_last_month") or 0, "homepage": urls.get("homepage") or "",
+            "installed": ident in flatpaks()}
+
+
+def store(a):
+    if a == ["home"]:
+        return home()
+    if a == ["categories"]:
+        return ask("/collection/category", keep=7 * 24 * 3600) or []
+    if len(a) == 2 and a[0] == "category" and re.fullmatch(r"[a-z]+", a[1]):
+        return cards(ask("/collection/category/%s?page=1&per_page=48" % a[1]), set(flatpaks()))
+    if len(a) == 2 and a[0] == "search":
+        return cards(ask("/search", keep=3600, post={"query": a[1]}), set(flatpaks()), 30)
+    if len(a) == 2 and a[0] == "app" and re.fullmatch(r"[\w.-]+", a[1]):
+        return app(a[1])
+    return None
+
+
+# ── what changes the computer ────────────────────────────────────────────────────────────────────────────────
+def work(*argv):
+    """Runs it with its words going straight to whoever listens, and ends as it ended."""
+    try:
+        return subprocess.run(argv, stdin=subprocess.DEVNULL).returncode
+    except OSError as e:
+        print(e, flush=True)
+        return 127
+
+
+def main(a):
+    valid = len(a) == 2 and re.fullmatch(r"[\w.-]+", a[1]) is not None
+    if a == ["installed"]:
+        print(json.dumps(installed(), ensure_ascii=False))
+    elif a == ["updates"]:
+        print(json.dumps(updates(), ensure_ascii=False))
+    elif a[:1] == ["store"] and store(a[1:]) is not None:
+        print(json.dumps(store(a[1:]), ensure_ascii=False))
+    elif a[:1] == ["install"] and valid:
+        if "flathub" not in out(False, "flatpak", "remotes", "--columns=name"):
+            work("flatpak", "remote-add", "--user", "--if-not-exists", "flathub", "https://dl.flathub.org/repo/flathub.flatpakrepo")
+        return work("flatpak", "install", "--user", "--noninteractive", "-y", "flathub", a[1])
+    elif a[:1] == ["remove"] and valid:
+        return work("flatpak", "uninstall", "--noninteractive", "-y", a[1])
+    elif a == ["update"] or (a[:1] == ["update"] and valid):
+        return work("flatpak", "update", "--noninteractive", "-y", *a[1:])
+    elif a == ["update-system"]:
+        code = work("pkexec", "dnf", "-y", "upgrade", "--refresh")
+        if code == 0 and shutil.which("dnf"):
+            try:
+                os.remove(os.path.join(CACHE, "..", "system-updates"))
+            except OSError:
+                pass
+        return code
+    else:
+        print(__doc__.strip())
+        return 2
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))

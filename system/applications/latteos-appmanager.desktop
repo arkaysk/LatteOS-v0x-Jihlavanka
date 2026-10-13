@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=App Manager
+Name[sk]=App Manager
+Comment=Find, install and update apps
+Comment[sk]=Hľadať, inštalovať a aktualizovať aplikácie
+Exec=latte-app appmanager
+Icon=system-software-install
+Categories=System;PackageManager;
+StartupWMClass=org.quickshell

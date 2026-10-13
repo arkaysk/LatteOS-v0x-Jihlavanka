@@ -36,6 +36,8 @@ mkdir -p "$out/labwc" "$out/data" "$out/state" "$out/share" "$out/config"
 # /usr/share/latteos as it will be, from where its parts are in the repository
 ln -sfn "$repo/system/hypr" "$out/share/hypr"
 ln -sfn "$repo/assets/wallpapers" "$out/share/wallpapers"
+ln -sfn "$repo/goo" "$out/share/goo"
+ln -sfn "$repo/apps" "$out/share/apps"
 # the plugins: this repository's own as it was last built (make -C plugins/latte-events), the title bars and the glass from the system
 mkdir -p "$out/plugins"
 for p in "$repo/plugins/latte-events/latte-events.so" /usr/lib64/latteos/hyprbars.so /usr/lib64/latteos/hyprglass.so; do [ -f "$p" ] && ln -sfn "$p" "$out/plugins/"; done
@@ -44,7 +46,7 @@ rm -f "$out"/shot*.png "$out/scene.log" "$out/do.log"
 # What runs inside the session: the scene, the screenshots, DO.
 {
     echo "cd $(dirname "$scene")"
-    echo "export PATH=\"$repo/bin:$repo/target/release:$repo/tests:\$PATH\" LANG=\"${LANG:-sk_SK.UTF-8}\" PLEAMAR_GENERIC=window XDG_DATA_HOME=$out/data XDG_STATE_HOME=$out/state XDG_CONFIG_HOME=$out/config XDG_CACHE_HOME=$out/cache"
+    echo "export PATH=\"$repo/bin:$repo/target/release:$repo/tests:\$PATH\" LANG=\"${LANG:-sk_SK.UTF-8}\" PLEAMAR_GENERIC=window XDG_DATA_HOME=$out/data XDG_STATE_HOME=$out/state XDG_CONFIG_HOME=$out/config XDG_CACHE_HOME=$out/cache LATTE_SHARE=$out/share"
     # Under a labwc with no screen Hyprland's nested output never becomes a monitor; one of its own does.
     [ $nested = 1 ] && echo "hyprctl output create headless LATTE-TEST >/dev/null; sleep 0.5"
     echo "pleamar --scene $scene --no-hud --seconds $secs $args > $out/scene.log 2>&1 &"

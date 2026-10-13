@@ -58,7 +58,7 @@ for s in sorted(sources):
         if not os.path.isfile("plugins/" + s[7:] + "/main.cpp"): bad.append("FILES: no plugin " + s[7:])
     elif not s.startswith("system:") and not os.path.isfile(s):
         bad.append("FILES: no such source " + s)
-tracked = subprocess.run(["git", "ls-files", "--cached", "--others", "--exclude-standard", "bin", "goo", "system", "assets"],
+tracked = subprocess.run(["git", "ls-files", "--cached", "--others", "--exclude-standard", "bin", "goo", "apps", "system", "assets"],
                          capture_output=True, text=True).stdout.split("\n")
 tools = {"system/plymouth/make-logo.py", "goo/gen.py"}      # they make a file that is listed; they are not installed
 for f in filter(None, tracked):
@@ -67,13 +67,13 @@ for f in filter(None, tracked):
 
 # code is written in English; the user's language lives in goo/lang
 slovak = re.compile("[áäčďéíĺľňóôŕšťúýžÁÄČĎÉÍĹĽŇÓÔŔŠŤÚÝŽ]")
-code = subprocess.run(["git", "ls-files", "--cached", "--others", "--exclude-standard", "bin", "goo", "system", "crates", "plugins", "tests", "patches", "FILES", "Cargo.toml"],
+code = subprocess.run(["git", "ls-files", "--cached", "--others", "--exclude-standard", "bin", "goo", "apps", "system", "crates", "plugins", "tests", "patches", "FILES", "Cargo.toml"],
                       capture_output=True, text=True).stdout.split("\n")
 for f in filter(None, code):
     if f.startswith("goo/lang/") or f in ("tests/check.sh", "goo/lib/fold.luau") or f.endswith((".png", ".ttf", ".txt")):   # these two name the letters
         continue
     for n, line in enumerate(open(f, encoding="utf-8", errors="replace"), 1):
-        if slovak.search(line):
+        if slovak.search(line) and not (f.endswith(".desktop") and re.match(r"\w+\[\w+\]=", line)):     # Name[sk]= is where a launcher's translation goes
             bad.append("%s:%d: Slovak in code: %s" % (f, n, line.strip()[:70]))
 
 # what the commands and the scenes' logic say goes through the same table as the scenes' texts
@@ -81,6 +81,7 @@ table = open("goo/lang/sk.plm", encoding="utf-8").read()
 said = {"bin/latte-safe": r'\bt "([^"$]+)"'}
 for f in filter(None, code):
     if f.endswith(".luau"): said[f] = r'\b(?:tr|N)\("((?:[^"\\]|\\.)+)"\)'      # N marks a text that tr() is given later
+    if f.endswith(".qml"): said[f] = r'\b(?:tr|QT_TR_NOOP)\("((?:[^"\\]|\\.)+)"'     # QT_TR_NOOP marks one, in a list
 for f, pattern in sorted(said.items()):
     for text in sorted(set(re.findall(pattern, open(f, encoding="utf-8").read()))):
         if '"%s" = ' % text not in table:

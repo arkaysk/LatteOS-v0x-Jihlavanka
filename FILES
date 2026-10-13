@@ -15,6 +15,8 @@
 /usr/bin/latte-say                                      <- bin/latte-say
 /usr/bin/latte-cal                                      <- bin/latte-cal
 /usr/bin/latte-ai                                       <- bin/latte-ai
+/usr/bin/latte-app                                      <- bin/latte-app
+/usr/bin/latte-apps                                     <- bin/latte-apps
 /usr/bin/latte-session                                  <- bin/latte-session
 /usr/bin/latte-safe                                     <- bin/latte-safe
 /usr/bin/latte-game                                     <- bin/latte-game
@@ -36,6 +38,11 @@
 /usr/share/latteos/goo/goo.luau                         <- goo/goo.luau
 /usr/share/latteos/goo/side.plm                         <- goo/side.plm
 /usr/share/latteos/goo/side.luau                        <- goo/side.luau
+/usr/share/latteos/apps/appmanager.qml                  <- apps/appmanager.qml
+/usr/share/latteos/apps/common/Theme.qml                <- apps/common/Theme.qml
+/usr/share/latteos/apps/common/I18n.qml                 <- apps/common/I18n.qml
+/usr/share/latteos/apps/common/Icons.qml                <- apps/common/Icons.qml
+/usr/share/applications/latteos-appmanager.desktop      <- system/applications/latteos-appmanager.desktop
 /usr/share/latteos/goo/parts/drops.plm                  <- goo/parts/drops.plm
 /usr/share/latteos/goo/parts/picks.plm                  <- goo/parts/picks.plm
 /usr/share/latteos/goo/parts/body.plm                   <- goo/parts/body.plm
@@ -130,6 +137,7 @@ package: rsms-inter-fonts jetbrains-mono-fonts policycoreutils-python-utils util
 package: foot less NetworkManager-tui                                # the SAFE session's terminal and rescue menu
 package: hyprland wireplumber libnotify swaybg hypridle              # the GOO session; wpctl for the volume keys; notify-send when a timer rings; the wallpaper; the lock when idle
 optional: cliphist wl-clipboard                                      # the clipboard in the shore's panel: what was copied lately
+package: quickshell flatpak                                          # LatteOS's own apps are drawn by Quickshell; the App Manager's shop is Flathub
 package: fd-find xdg-utils xdg-user-dirs                             # the launcher: finding files, opening them, the home folders
 optional: brightnessctl power-profiles-daemon                        # the brightness keys; the power profiles in PowerGoo's card
 optional: steam gamescope gamescope-session gamescope-session-steam  # the Game session; without them it is not offered

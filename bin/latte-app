@@ -1,0 +1,10 @@
+#!/bin/sh
+# latte-app NAME [WORD…]: opens one of LatteOS's own apps, a window drawn by Quickshell from apps/NAME.qml.
+#   latte-app appmanager [updates | mine | app ID]
+# The words after the name say where in the app to begin; the app reads them from LATTE_APP_ARGS, one a line.
+share="${LATTE_SHARE:-/usr/share/latteos}"
+app="${1:?latte-app NAME [WORD…]}"; shift
+[ -f "$share/apps/$app.qml" ] || { echo "latte-app: no such app: $app" >&2; exit 1; }
+# with no graphics card Qt draws by itself: cheaper than a card made of software
+case "${LATTE_TIER:-}" in software|minimal) export QT_QUICK_BACKEND=software ;; esac
+LATTE_APP_ARGS="$(printf '%s\n' "$@")" exec qs -n -p "$share/apps/$app.qml"

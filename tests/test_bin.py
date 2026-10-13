@@ -157,4 +157,17 @@ assert ai.as_prompt([{"role": "user", "content": "Hi"}]) == "Hi" and ai.as_promp
 p = ai.as_prompt([{"role": "user", "content": "A"}, {"role": "assistant", "content": "B"}, {"role": "user", "content": "C"}])
 assert "User: A\nAssistant: B" in p and p.endswith("C"), p
 assert ai.claude("q")[:3] == ["claude", "-p", "q"] and ai.claude("q")[-2:] == ["--tools", ""]      # the question first: --tools takes all that follows
+apps = load("latte-apps")
+with tempfile.TemporaryDirectory() as d:
+    f = os.path.join(d, "org.example.App.desktop")
+    open(f, "w").write("[Desktop Entry]\nType=Application\nName=App\nName[sk]=Aplikacia\nComment=Does things\nIcon=org.example.App\nX-Flatpak=org.example.App\n")
+    e = apps.entry(f, "sk")
+    assert (e["id"], e["name"], e["summary"], e["flatpak"]) == ("org.example.App", "Aplikacia", "Does things", "org.example.App"), e
+    open(f, "w").write("[Desktop Entry]\nName=Hidden\nNoDisplay=true\n")
+    assert apps.entry(f) is None and apps.entry(os.path.join(d, "none.desktop")) is None
+assert apps.plain("<p>One &amp; two</p><ul><li>a</li><li>b</li></ul>") == "One & two\n\n• a\n• b"
+hit = {"app_id": "org.a.B", "name": "B", "summary": "s", "icon": "i", "verification_verified": True, "installs_last_month": 5, "type": "desktop-application"}
+assert apps.cards({"hits": [hit, dict(hit, type="addon")]}, {"org.a.B"}) == [
+    {"id": "org.a.B", "name": "B", "summary": "s", "icon": "i", "developer": "", "verified": True, "installs": 5, "installed": True}]
+assert apps.shots({"screenshots": [{"sizes": [{"src": "small", "width": "300"}, {"src": "right", "width": "752"}, {"src": "big", "width": "1600"}]}]}) == ["right"]
 print("bin: ok")
