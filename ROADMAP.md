@@ -1002,7 +1002,17 @@ cestu k aktualizácii alebo návratu.
     premenovanie, Prilepiť, Vlastnosti, viac monitorov (ikony sú na hlavnom). **Chýba:** Otvoriť v programe…,
     Späť (Ctrl+Z), „Tento počítač“. **Čaká na používateľa:** ktorá sada ikon (poslaný prehľad: breeze, Papirus,
     elementary, Yaru, Mint-Y, Fluent).
-14. [ ] **skwd-wall ako výber tapety** (používateľ, 13. 10.: „trvám na live wallpaper ako v 0.3 a samozrejme aj
+14. [~] **skwd-wall — urobené 13. 10. v noci:** nainštalovaný z COPR `piixini/skwd-wall-v2` (1.0.0 beta 24) a zapojený
+    cez `bin/latte-wall`: kde je, kreslí tapetu on (`skwd-walld` + `skwd-paper`: obrázky, filmy, scény Wallpaper
+    Engine, prechody), `latte-wall pick` otvorí jeho výber (Nastavenia › Pozadie › Výber tapety; ponuka plochy ›
+    Zmeniť tapetu), jeho udalosti (`skwd-helm watch`) zapíšu voľbu do `~/.config/latteos/wallpaper`. Bez neho
+    ostáva swaybg a mpvpaper. Z jeho palety (`~/.cache/skwd-wall-v2/colors.json`) je **téma „Podľa tapety“**
+    (štvrtá šálka: `Theme.qml` pre aplikácie a plochu, `latte/bars.lua` pre titulky okien) — mení sa sama pri
+    každej zmene tapety, aj v otvorenom okne. Tapety LatteOS sa do jeho knižnice (`Obrázky/Wallpapers`) kopírujú.
+    Overené naostro: kreslenie, výber, paleta z modrej tapety prefarbila Nastavenia. **Chýba:** farby kvapiek
+    Goo a okrajov okien podľa tapety (dnes káva a pevné farby v `hyprland.lua`); klávesová skratka na výber;
+    nastavenie `skwd-walld` pri inštalácii (dnes ho spustí prvé `latte-wall show`); `skwd-lens` s modelom
+    570 MB sa nainštaloval podľa návodu autora a nie je nutný. Pôvodný zápis: **skwd-wall ako výber tapety** (používateľ, 13. 10.: „trvám na live wallpaper ako v 0.3 a samozrejme aj
     skwd wall“). Živé tapety 0.4 má (mpvpaper, Nastavenia › Pozadie). skwd-wall (Rust, Vulkan, GPL-3.0) je
     samostatný program: zistiť, čo presne z neho (výber s prechodmi, alebo aj kreslenie tapety), a ako voliteľnú
     závislosť ho zapojiť vedľa mpvpaper.
@@ -1026,7 +1036,10 @@ cestu k aktualizácii alebo návratu.
       štvorčekov a s ňou sa prefarbí celé sklo aj akcent (rad farebných bodiek = akcent, alebo z tapety);
     - *výber tapety:* plást šesťuholníkov zo skla, ten pod kurzorom sa nadvihne a nakloní;
     - *plocha („Desk“):* veľké hodiny, poznámky, časovač ako sklenené predmety, ktoré sa dajú ťahať.
-    **Návrh pre LatteOS (čaká na súhlas):** (1) výsuvný panel Pobrežia prerobiť na **dashboard pri spodnom
+    **13. 10. v noci urobené z návrhu:** (1) dashboard — výsuvný panel Pobrežia je nízky a široký pri spodnom
+    okraji: vľavo ovládanie, vpravo čo hrá a schránka; kalendár, počasie a upozornenia ostávajú v ClockGoo
+    (rozhodnutie používateľa); (3) farby z tapety pre okná a aplikácie — bod 14. Ostáva (2) a prefarbenie Goo.
+    **Návrh pre LatteOS (pôvodný):** (1) výsuvný panel Pobrežia prerobiť na **dashboard pri spodnom
     okraji**: počasie + kalendár + ovládanie (sieť, Bluetooth, Nerušiť, jas, hlasitosť) + prehrávač + upozornenia
     ako dlaždice v jednom skle; (2) dlaždicové rozloženie a malé hlavičky do kariet Goo a do `AppWindow`;
     (3) akcent a tón skla z tapety (bod b); (4) prechod tapety a plást na jej výber (bod 14 namiesto skwd-wall

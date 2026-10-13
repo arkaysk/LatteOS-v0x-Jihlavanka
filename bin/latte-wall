@@ -37,10 +37,11 @@ show)
     sleep 0.8; [ -n "$old" ] && kill $old ;;
 pick)
     if skwd && command -v skwd-wall-v2 >/dev/null 2>&1; then
-        # its library is the folder Wallpapers in the user's Pictures: LatteOS's own are put there to choose from
+        # Its library is the folder Wallpapers in the user's Pictures: LatteOS's own are put there to choose from.
+        # As copies: its scanner reads nothing a link points to outside that folder.
         lib="$(xdg-user-dir PICTURES 2>/dev/null)"; lib="${lib:-$HOME/Pictures}/Wallpapers"
         mkdir -p "$lib" && for f in "${LATTE_SHARE:-/usr/share/latteos}"/wallpapers/*; do
-            [ -e "$f" ] && [ ! -e "$lib/$(basename "$f")" ] && ln -s "$f" "$lib/"
+            [ -f "$f" ] && [ ! -e "$lib/$(basename "$f")" ] && cp -- "$f" "$lib/"
         done
         skwd-helm ui toggle >/dev/null 2>&1 || setsid -f skwd-wall-v2 >/dev/null 2>&1
     else
