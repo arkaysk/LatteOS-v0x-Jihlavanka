@@ -1,0 +1,15 @@
+// The desktop itself: a surface under the windows that only listens. The right button on the bare desktop
+// opens the desktop's menu where it was pressed (lib/desk.luau), as on Windows; a window in the way takes
+// the press itself, as it should.
+part Desk {
+    event desk_menu ->
+    surface desk {
+        size: full, full
+        anchor: bottom
+        margin: 0
+        level: bottom
+        reserve: -1
+        zone box desk_hit { from: 0, 0; size: desk.width, desk.height; label: "Desktop"; role: item }
+        on press right desk_hit { tap.x = cursor.x; tap.y = cursor.y; emit desk_menu }
+    }
+}

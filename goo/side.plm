@@ -15,7 +15,7 @@ scene GooSide {
         keyboard: exclusive while card_open or kb
     }
     permissions {
-        run: "latte-sky", "latte-login", "hyprctl", "latte-say", "latte-net"
+        run: "latte-sky", "latte-login", "hyprctl", "latte-say", "latte-net", "foot", "xdg-open", "latte-app"
         services: "files", "env", "window", "apps", "audio"
     }
 
@@ -32,4 +32,5 @@ scene GooSide {
     include "parts/launch.plm"
     include "parts/keys.plm"
     include "parts/rows.plm"
+    include "parts/desk.plm"
 }
