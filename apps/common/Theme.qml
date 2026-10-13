@@ -41,15 +41,20 @@ Singleton {
     readonly property string icons: Icons.family
 
     FileView {
+        id: glassWord
         path: (Quickshell.env("XDG_CONFIG_HOME") || (Quickshell.env("HOME") + "/.config")) + "/latteos/glass"
         printErrors: false; watchChanges: true
         onFileChanged: reload()
         onLoaded: { const word = text().trim(); if (glasses[word]) glass = word }
     }
     FileView {
+        id: cupWord
         path: (Quickshell.env("XDG_CONFIG_HOME") || (Quickshell.env("HOME") + "/.config")) + "/latteos/cup"
         printErrors: false; watchChanges: true
         onFileChanged: reload()
         onLoaded: { const word = text().trim(); if (cups[word]) cup = word }
     }
+    // A choice that has never been made has no file yet, and a file that is not there cannot be watched: it is
+    // looked for now and then, so that every open window takes the choice up when it is first made.
+    Timer { interval: 2500; repeat: true; running: true; onTriggered: { if (!cupWord.loaded) cupWord.reload(); if (!glassWord.loaded) glassWord.reload() } }
 }
