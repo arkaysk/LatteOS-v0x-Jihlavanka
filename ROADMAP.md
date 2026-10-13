@@ -914,6 +914,9 @@ cestu k aktualizácii alebo návratu.
     dopadne a vlní hladinu; (e) pod hladinou posledný log z pádu, inak aktuality z RSS (zdroj v Nastaveniach;
     prístup k logu aj zvnútra systému, v SAFE aj NORMAL); (f) hore vľavo počasie, vpravo čas; (g) kurzor ako
     zdroj svetla, slnko a mesiac podľa skutočnej polohy; (h) výber relácií: LatteOS GOO, SAFE, SteamOS a iné GUI.
-    *Na zistenie pred (a):* ako pleamar zistí a prepne skupinu xkb v labwc (dnes iba Alt+Shift z `session-env.sh`).
+    **Urobené 13. 10.:** (b) Caps Lock a Num Lock z diód klávesnice (`latte-login locks`, kontrola po 0,7 s) ako
+    vznášajúci sa text nad heslom; zdroj RSS, panel a miesto počasia v **Nastaveniach › Prihlasovacia obrazovka**
+    (`latte-settings loginscreen`, miesto sa hľadá podľa mena cez open-meteo); (f), (g) a (h) už boli.
+    **Ostáva:** (c) sedlina na dne, (d) vlnenie od kvapky, (e) log pádu aj zvnútra systému (SAFE aj NORMAL).
 12. [ ] **PowerGoo s lištou údajov:** kartu vysunúť z celého celku Goo + lišta, aby tvorili vizuálne jeden kus
     (dnes je ucho karty pri ľavom kliku malé a lišta ostáva vedľa). Režimy okien (4.) sú bod 7 (Glance).

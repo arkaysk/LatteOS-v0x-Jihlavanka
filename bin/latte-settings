@@ -22,6 +22,10 @@
   latte-settings sizes          {"folders": [{"id", "path", "size"}], "trash", "cache"}: how much the user's own
                                 folders hold, in bytes; it reads them all, so it takes a while
   latte-settings account        {"uid", "user", "name", "picture"}: who the user is to the system
+  latte-settings loginscreen    {"panel", "news_url", "place", "lat", "lon"}: what the login screen shows (login.conf)
+  latte-settings loginscreen panel news|none     what is under the surface when nothing crashed
+  latte-settings loginscreen news URL…           the feeds, RSS or Atom, one or more (empty: none)
+  latte-settings loginscreen place NAME          looks the place up and sets it; prints {"ok", "place"} (empty: no weather)
 
 The user's choices are kept in ~/.config/latteos/: `locale` and `keyboard` are read by latte-session when it starts.
 
@@ -194,6 +198,62 @@ def region():
             "locales": sorted(found, key=lambda l: (plain(l["name"]), l["place"]))}
 
 
+LOGIN_CONF = "/var/lib/latteos/login/login.conf"
+
+
+def login_conf():
+    try:
+        return dict(re.findall(r'^\s*(\w+)\s*=\s*"?(.*?)"?\s*$', open(LOGIN_CONF, encoding="utf-8").read(), re.M))
+    except OSError:
+        return {}
+
+
+def set_login_conf(**values):
+    """Changes only the lines it is told about: the file's comments say what each is for."""
+    try:
+        lines = open(LOGIN_CONF, encoding="utf-8").read().splitlines()
+        for key, value in values.items():
+            line = '%s = "%s"' % (key, value.replace('"', ""))
+            at = next((i for i, l in enumerate(lines) if re.match(r"\s*%s\s*=" % key, l)), None)
+            if at is None:
+                lines.append(line)
+            else:
+                lines[at] = line
+        with open(LOGIN_CONF + ".new", "w", encoding="utf-8") as f:
+            f.write("\n".join(lines) + "\n")
+        os.replace(LOGIN_CONF + ".new", LOGIN_CONF)
+    except OSError:
+        return False
+    return True
+
+
+def loginscreen(a):
+    c = login_conf()
+    if a[:1] == ["panel"] and a[1:] in (["news"], ["none"]):
+        return {"ok": set_login_conf(panel=a[1])}
+    if a[:1] == ["news"]:
+        urls = a[1:]
+        if not all(re.fullmatch(r"https?://\S+", u) for u in urls):
+            return {"ok": False, "error": "not an address"}
+        return {"ok": set_login_conf(news_url=" ".join(urls))}
+    if a[:1] == ["place"]:
+        name = " ".join(a[1:]).strip()
+        if not name:
+            return {"ok": set_login_conf(lat="", lon="", place="")}
+        import urllib.parse, urllib.request
+        try:
+            url = "https://geocoding-api.open-meteo.com/v1/search?count=1&name=" + urllib.parse.quote(name)
+            hit = (json.load(urllib.request.urlopen(url, timeout=8)).get("results") or [None])[0]
+        except (OSError, ValueError):
+            return {"ok": False, "error": "no network"}
+        if not hit:
+            return {"ok": False, "error": "not found"}
+        place = ", ".join(x for x in (hit.get("name"), hit.get("admin1"), hit.get("country")) if x)
+        return {"ok": set_login_conf(lat=str(hit["latitude"]), lon=str(hit["longitude"]), place=place), "place": place}
+    return {"panel": c.get("panel", "news"), "news_url": c.get("news_url", ""), "place": c.get("place", ""),
+            "lat": c.get("lat", ""), "lon": c.get("lon", "")}
+
+
 def clock():
     said = dict(line.split("=", 1) for line in out("timedatectl", "show").splitlines() if "=" in line)
     return {"zone": said.get("Timezone", ""), "auto": said.get("NTP") == "yes", "zones": out("timedatectl", "list-timezones").split()}
@@ -287,6 +347,9 @@ def main(a):
         if a == [word]:
             print(json.dumps(what(), ensure_ascii=False))
             return 0
+    if a[:1] == ["loginscreen"]:
+        print(json.dumps(loginscreen(a[1:]), ensure_ascii=False))
+        return 0
     if a == ["region"]:
         print(json.dumps(region(), ensure_ascii=False))
         return 0

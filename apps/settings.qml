@@ -99,7 +99,7 @@ ShellRoot {
     readonly property var asks: ({ "sound": [[sound, ["latte-settings", "sound"]]], "defaults": [[opens, ["latte-settings", "defaults"]]], "language": [[region, ["latte-settings", "region"]]],
                                    "time": [[clock, ["latte-settings", "time"]]], "keyboard": [[keys, ["latte-settings", "keyboard"]], [binds, ["hyprctl", "binds", "-j"]]], "displays": [[screens, ["hyprctl", "monitors", "-j"]]],
                                    "storage": [[disks, ["latte-settings", "storage"]], [held, ["latte-settings", "sizes"]]], "ai": [[helpers, ["latte-ai", "providers", "all"]]],
-                                   "me": [[who, ["latte-settings", "account"]], [pictures, ["latte-settings", "wallpapers"]]], "performance": [[machine, ["latte-devices", "list"]]] })
+                                   "me": [[who, ["latte-settings", "account"]], [pictures, ["latte-settings", "wallpapers"]]], "performance": [[machine, ["latte-devices", "list"]]], "loginscreen": [[logon, ["latte-settings", "loginscreen"]]] })
     function ask() { (asks[page] || []).forEach(a => a[0].ask(a[1])); force.reload() }
     Timer { id: later; interval: 900; onTriggered: shell.ask() }       // what was asked of the compositor takes a moment to be so
 
@@ -113,6 +113,7 @@ ShellRoot {
     Run { id: held }
     Run { id: helpers }
     Run { id: who }
+    Run { id: logon }
     Word { id: tier; name: "tier" }
     Word { id: ai; name: "ai" }
     // what latte-boot decided for this start, and whether the next one was asked to be SAFE
@@ -641,7 +642,7 @@ ShellRoot {
                         Rectangle { id: keyed; anchors.right: parent.right; anchors.rightMargin: 10; anchors.verticalCenter: parent.verticalCenter; width: keyedText.implicitWidth + 20; height: 28; radius: 8; color: Theme.ground
                             Label { id: keyedText; anchors.centerIn: parent; text: shell.pressed(bound.modelData); font.pixelSize: 12; font.weight: 700; color: Theme.gold } } } } }
             Label { visible: shell.page === "keyboard"; width: view.room; wrapMode: Text.WordWrap; color: Theme.dim; font.pixelSize: 13
-                    text: I18n.tr("The login screen keeps the layout of the whole system, so a password is typed there as it always was.") }
+                    text: I18n.tr("The login screen starts with the layouts of the whole system; there one is chosen with a click.") }
 
             // when it locks, when the screens go dark
             Part { visible: shell.page === "lock"; width: view.room; title: I18n.tr("Lock the session after"); note: I18n.tr("Left alone that long, the session locks; the password opens it again. A window that fills the screen keeps it awake.")
@@ -652,6 +653,21 @@ ShellRoot {
                     Pill { required property var modelData; text: I18n.tr(modelData.name); strong: idle.screen === modelData.s; onPressed: idle.choose(idle.lock, modelData.s) } } }
             Label { visible: shell.page === "lock"; width: view.room; wrapMode: Text.WordWrap; color: Theme.dim; font.pixelSize: 13
                     text: I18n.tr("The session also locks before the computer goes to sleep. Win+L locks it at once.") }
+
+            // the login screen: what it shows besides the login
+            Part { visible: shell.page === "loginscreen"; width: view.room; title: I18n.tr("Under the surface"); note: I18n.tr("A crash is always shown first. Otherwise the headlines of the feeds below.")
+                Pill { text: I18n.tr("News"); strong: logon.data !== null && logon.data.panel !== "none"; onPressed: shell.order(["latte-settings", "loginscreen", "panel", "news"]) }
+                Pill { text: I18n.tr("Nothing"); strong: logon.data !== null && logon.data.panel === "none"; onPressed: shell.order(["latte-settings", "loginscreen", "panel", "none"]) } }
+            Part { visible: shell.page === "loginscreen"; width: view.room; title: I18n.tr("News feeds"); note: I18n.tr("RSS or Atom addresses, separated by a space. Fetched at most every 15 minutes.")
+                Field { id: feedField; width: Math.min(560, view.room); icon: "rss"; hint: I18n.tr("https://…"); text: logon.data ? logon.data.news_url : ""
+                        onAccepted: shell.order(["latte-settings", "loginscreen", "news"].concat(feedField.text.trim().split(/\s+/).filter(u => u !== ""))) }
+                Pill { icon: "check"; text: I18n.tr("Save"); onPressed: shell.order(["latte-settings", "loginscreen", "news"].concat(feedField.text.trim().split(/\s+/).filter(u => u !== ""))) } }
+            Part { visible: shell.page === "loginscreen"; width: view.room; title: I18n.tr("Sky and weather"); note: logon.data && logon.data.place !== "" ? logon.data.place : I18n.tr("No place: the login screen shows no sky and no weather.")
+                Field { id: placeField; width: Math.min(420, view.room); icon: "map-pin"; hint: I18n.tr("A city, e.g. Vienna"); onAccepted: shell.order(["latte-settings", "loginscreen", "place", placeField.text.trim()]) }
+                Pill { icon: "search"; text: I18n.tr("Find"); onPressed: shell.order(["latte-settings", "loginscreen", "place", placeField.text.trim()]) }
+                Pill { icon: "x"; text: I18n.tr("No weather"); onPressed: { placeField.text = ""; shell.order(["latte-settings", "loginscreen", "place"]) } } }
+            Label { visible: shell.page === "loginscreen"; width: view.room; wrapMode: Text.WordWrap; color: Theme.dim; font.pixelSize: 13
+                    text: I18n.tr("The language and the keyboard layout are chosen on the login screen itself, with a click.") }
 
             // power
             Part { visible: shell.page === "power"; width: view.room; title: I18n.tr("Power profile"); note: shell.profile === "" ? I18n.tr("This computer offers no power profiles.") : ""
