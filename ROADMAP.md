@@ -920,5 +920,11 @@ cestu k aktualizácii alebo návratu.
     Tiež (c) sedlina na dne (päť tmavých plochých tvarov, ktoré sa pomaly posúvajú), (d) dve vlny sa rozbehnú po
     hladine od miesta, kde kvapka vojde do kávy, a (e) **Nastavenia › Štart a režim SAFE › Posledný pád** (správa
     na skopírovanie; v SAFE je to položka 1 v ponuke). Bod 11 je tým hotový, ostáva overiť na skutočnom prihlásení.
+    **Realnejšia hladina (13. 10., návrh používateľa; FlowLab = SPH, osgw = Gerstnerove vlny, OceanFFT = FFT oceán,
+    všetko MIT, ale 3D/zhora, nie bokom):** urobené iba svetlo pod hladinou — vlastný shader
+    `goo/shaders/water.wgsl` (lúče zo slnka alebo mesiaca šikmo podľa polohy, sieť kaustík pri hladine, slabšie
+    v daždi, v softvérovom režime nič). Nevzali sme simuláciu (SPH, FFT): hladina je bokom čiara, ktorú tvorí telo
+    goo, a FFT by bol predražený. **Možný ďalší krok:** profil hladiny ako súčet 3–5 Gerstnerových vĺn (trochoida
+    je presne rez takou vlnou) namiesto dnešných siedmich „hrbov“, a lom lúčov podľa toho istého profilu.
 12. [ ] **PowerGoo s lištou údajov:** kartu vysunúť z celého celku Goo + lišta, aby tvorili vizuálne jeden kus
     (dnes je ucho karty pri ľavom kliku malé a lišta ostáva vedľa). Režimy okien (4.) sú bod 7 (Glance).

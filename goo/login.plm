@@ -28,6 +28,8 @@ scene Login {
         services: "env", "clock"
     }
 
+    shader water = file "shaders/water.wgsl"
+
     let espresso = #1a1410
     let cream = #f3ebdd
     let amber = #f7c873
@@ -271,6 +273,11 @@ scene Login {
         ellipse { at: bob_x.1, tide_y + 30 - bob_up.1; radius: 25 * bob * if(info.1.on, 1, 0); blend: 24 }
         ellipse { at: bob_x.2, tide_y + 30 - bob_up.2; radius: 25 * bob * if(info.2.on, 1, 0); blend: 24 }
     }
+
+    // ── the light that goes into the coffee: from the sun or the moon, as it stands over the surface ─────────
+    shader water { at: 0, tide_y + 8; size: W, H + 62 - tide_y; show: sky_body > 0 and gone < 0.5 and tide > 0.5
+                   values: if(sky_body == 2, 0.55, 1) * (1 - 0.3 * rain) * clock_in * (1 - gone), sky_x, (0.5 - sky_t) * 0.9, if(sky_body == 2, 1, 0)
+                   colors: amber, #cfd8ff }
 
     // ── the grounds on the bottom: dark shapes that shift slowly, like shadows under the coffee ──────────────
     ellipse { at: W * 0.12 + 90 * sin(time * 5), H - 18; radius: 160; scale: 3.2, 0.16; color: #0c0604; opacity: 0.32 * tide }

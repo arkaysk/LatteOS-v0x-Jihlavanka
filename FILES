@@ -32,6 +32,7 @@
 /usr/share/latteos/session-env.sh                       <- system/session-env.sh
 /usr/share/latteos/FILES                                <- FILES
 /usr/share/latteos/goo/login.plm                        <- goo/login.plm
+/usr/share/latteos/goo/shaders/water.wgsl               <- goo/shaders/water.wgsl
 /usr/share/latteos/goo/login.luau                       <- goo/login.luau
 /usr/share/latteos/goo/login-safe.plm                   <- goo/login-safe.plm
 /usr/share/latteos/goo/login-safe.luau                  <- goo/login-safe.luau
