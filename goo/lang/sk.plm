@@ -171,6 +171,7 @@ library Slovak {
         "Lap" = "Medzičas"
         "Reset" = "Vynulovať"
         "Pause" = "Pozastaviť"
+        "Verified" = "Overená"
         "Bluetooth" = "Bluetooth"
         "Cameras" = "Kamery"
         "Copied" = "Skopírované"

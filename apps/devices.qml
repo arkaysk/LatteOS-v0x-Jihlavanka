@@ -54,16 +54,19 @@ ShellRoot {
             Label { text: parent.parent.text; font.pixelSize: 13; color: Theme.dim; anchors.verticalCenter: parent.verticalCenter } }
     }
 
-    FloatingWindow {
+    AppWindow {
         title: I18n.tr("Device Manager")
+        heading: shell.here ? I18n.tr(shell.here.name) : I18n.tr("Device Manager")
         implicitWidth: 1120; implicitHeight: 760
-        color: Theme.ground
-        onClosed: Qt.quit()
-
-        Rectangle {
-            id: side
-            width: 250; height: parent.height; color: Theme.surface
-            Column { x: 14; y: 18; spacing: 4
+        arrows: true; canGoBack: shell.here !== null; onBack: shell.page = ""
+        tools: [
+            Pill { id: copy; property bool done: false; implicitHeight: 34; icon: done ? "check" : "copy"; text: done ? I18n.tr("Copied") : I18n.tr("Copy a report")
+                   onPressed: { Quickshell.clipboardText = shell.report(); done = true; again.restart() }
+                   Timer { id: again; interval: 1800; onTriggered: copy.done = false } },
+            Pill { implicitHeight: 34; icon: "refresh"; text: I18n.tr("Look again"); busy: asker.running; onPressed: asker.ask() }
+        ]
+        side: [
+            Column { x: 14; y: 14; spacing: 4
                 Row { x: 6; spacing: 10; height: 40
                     Glyph { name: "cpu"; font.pixelSize: 24; color: Theme.gold; anchors.verticalCenter: parent.verticalCenter }
                     Label { text: I18n.tr("Device Manager"); font.pixelSize: 17; font.weight: 700; anchors.verticalCenter: parent.verticalCenter } }
@@ -76,16 +79,7 @@ ShellRoot {
                     Nav { required property var modelData; text: I18n.tr(modelData.name); icon: modelData.icon; height: 36
                           on: shell.page === modelData.id; badge: shell.faults(modelData); onPressed: shell.page = modelData.id } }
             }
-            Column { x: 14; spacing: 8; anchors.bottom: parent.bottom; anchors.bottomMargin: 14
-                Pill { id: copy; property bool done: false; width: 222; icon: done ? "check" : "copy"; text: done ? I18n.tr("Copied") : I18n.tr("Copy a report")
-                       onPressed: { Quickshell.clipboardText = shell.report(); done = true; back.restart() }
-                       Timer { id: back; interval: 1800; onTriggered: copy.done = false } }
-                Pill { width: 222; icon: "refresh"; text: I18n.tr("Look again"); busy: asker.running; onPressed: asker.ask() }
-            }
-        }
-
-        Item {
-            anchors.left: side.right; anchors.right: parent.right; height: parent.height
+        ]
 
             // ── the overview ──────────────────────────────────────────────────────────────────────────────
             Scroll {
@@ -157,10 +151,6 @@ ShellRoot {
             Scroll {
                 id: group
                 visible: shell.here !== null
-                Row { spacing: 14
-                    Pill { icon: "chevron-left"; text: I18n.tr("Overview"); onPressed: shell.page = "" }
-                    Glyph { name: shell.here ? shell.here.icon : ""; font.pixelSize: 26; color: Theme.gold; anchors.verticalCenter: parent.verticalCenter }
-                    Label { text: shell.here ? I18n.tr(shell.here.name) : ""; font.pixelSize: 26; font.weight: 800; anchors.verticalCenter: parent.verticalCenter } }
                 // screens are drawn as they are shaped, side by side
                 Row { visible: shell.page === "displays"; spacing: 18; height: 150
                     Repeater { model: shell.page === "displays" && shell.here ? shell.here.devices : []
@@ -183,6 +173,5 @@ ShellRoot {
                                 Chip { icon: "settings"; text: dev.modelData.driver; color: Theme.ground }
                                 Chip { icon: dev.how.icon; tint: dev.how.color; text: I18n.tr(dev.how.text); color: Theme.ground } } } } }
             }
-        }
     }
 }

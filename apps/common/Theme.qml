@@ -2,6 +2,7 @@
 pragma Singleton
 import QtQuick
 import Quickshell
+import Quickshell.Io
 
 Singleton {
     readonly property color ground: "#17110d"      // espresso: what a window stands on
@@ -16,6 +17,21 @@ Singleton {
     readonly property color coffee: "#c98a55"
     readonly property color ok: "#4cc38a"
     readonly property color red: "#e5484d"
+    // The glass an app's side panel is made of: what is behind the window shows through it, blurred by the
+    // compositor. Which glass is the user's choice (a word in ~/.config/latteos/glass); where the compositor
+    // does not blur (the lower tiers) the panel is solid, or nothing on it could be read.
+    readonly property var glasses: ({ "frost": Qt.rgba(0.13, 0.09, 0.07, 0.62), "smoke": Qt.rgba(0.07, 0.05, 0.04, 0.80),
+                                      "clear": Qt.rgba(0.13, 0.09, 0.07, 0.36), "milk": Qt.rgba(0.36, 0.29, 0.24, 0.50) })
+    property string glass: "frost"
+    readonly property bool blurred: ["full", "standard"].includes(Quickshell.env("LATTE_TIER") || "")
+    readonly property color pane: blurred ? (glasses[glass] || glasses.frost) : surface
     readonly property string font: "Inter Variable"
-    readonly property string icons: "tabler-icons"
+    readonly property string icons: Icons.family
+
+    FileView {
+        path: (Quickshell.env("XDG_CONFIG_HOME") || (Quickshell.env("HOME") + "/.config")) + "/latteos/glass"
+        printErrors: false; watchChanges: true
+        onFileChanged: reload()
+        onLoaded: { const word = text().trim(); if (glasses[word]) glass = word }
+    }
 }

@@ -97,7 +97,7 @@ ShellRoot {
     readonly property var categories: [
         { id: "game", name: QT_TR_NOOP("Games"), icon: "device-gamepad-2" }, { id: "audiovideo", name: QT_TR_NOOP("Music and video"), icon: "music" },
         { id: "graphics", name: QT_TR_NOOP("Graphics and photos"), icon: "palette" }, { id: "office", name: QT_TR_NOOP("Office"), icon: "file-text" },
-        { id: "network", name: QT_TR_NOOP("Internet"), icon: "world-www" }, { id: "development", name: QT_TR_NOOP("Development"), icon: "code" },
+        { id: "network", name: QT_TR_NOOP("Internet"), icon: "world" }, { id: "development", name: QT_TR_NOOP("Development"), icon: "code" },
         { id: "education", name: QT_TR_NOOP("Education"), icon: "school" }, { id: "science", name: QT_TR_NOOP("Science"), icon: "flask" },
         { id: "system", name: QT_TR_NOOP("System"), icon: "settings" }, { id: "utility", name: QT_TR_NOOP("Tools"), icon: "tool" },
         { id: "healthfitness", name: QT_TR_NOOP("Health"), icon: "heart" }]
@@ -126,42 +126,48 @@ ShellRoot {
         text: busy ? I18n.tr("Working…") : (there ? I18n.tr("Installed") : I18n.tr("Install"))
         onPressed: there ? shell.go("app", app.id) : shell.work("install", app.id, app.name)
     }
-    // an app as a card on a shelf
-    component AppCard: Rectangle {
-        id: tile
+    // An app as a poster: its icon on a tile of a colour of its own, its name under it. The colour is told from
+    // the app's id, so that an app has the same one wherever it shows.
+    readonly property var tints: ["#3a2a20", "#2c3833", "#3a2c38", "#2b3440", "#40352a", "#33302a", "#2f2a3a", "#39302b"]
+    function tint(id) { let h = 0; for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) % 9973; return tints[h % tints.length] }
+    component Poster: Column {
+        id: poster
         property var app
-        width: 268; height: 108
-        radius: 18
-        color: over.containsMouse ? Theme.raised : Theme.card
-        border.color: over.containsMouse ? Qt.rgba(0.97, 0.78, 0.45, 0.45) : "transparent"; border.width: 1
-        scale: over.containsMouse ? 1.025 : 1
-        Behavior on scale { NumberAnimation { duration: 140; easing.type: Easing.OutCubic } }
-        Behavior on color { ColorAnimation { duration: 140 } }
-        MouseArea { id: over; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: shell.go("app", tile.app.id) }
-        AppIcon { id: pic; x: 16; anchors.verticalCenter: parent.verticalCenter; icon: tile.app.icon; side: 60 }
-        Column { anchors.left: pic.right; anchors.leftMargin: 14; anchors.right: parent.right; anchors.rightMargin: 14; anchors.verticalCenter: parent.verticalCenter; spacing: 3
-            Row { spacing: 5; width: parent.width
-                Label { text: tile.app.name; font.pixelSize: 15; font.weight: 700; width: Math.min(implicitWidth, parent.width - (seal.visible ? 22 : 0)) }
-                Glyph { id: seal; name: "rosette-discount-check"; visible: tile.app.verified === true; font.pixelSize: 15; color: Theme.gold; anchors.verticalCenter: parent.verticalCenter } }
-            Label { text: tile.app.summary; color: Theme.dim; font.pixelSize: 13; width: parent.width; wrapMode: Text.WordWrap; maximumLineCount: 2; lineHeight: 1.15 }
-            Row { spacing: 5; visible: (tile.app.installs || 0) > 0 || shell.has(tile.app.id)
-                Glyph { name: shell.has(tile.app.id) ? "circle-check" : "download"; font.pixelSize: 12; color: shell.has(tile.app.id) ? Theme.ok : Theme.faint; anchors.verticalCenter: parent.verticalCenter }
-                Label { text: shell.has(tile.app.id) ? I18n.tr("Installed") : I18n.tr("{n} a month", { n: shell.count(tile.app.installs || 0) }); color: shell.has(tile.app.id) ? Theme.ok : Theme.faint; font.pixelSize: 12 } } }
+        property real side: 150
+        width: side; spacing: 8
+        Rectangle { width: poster.side; height: poster.side; radius: 22; color: shell.tint(poster.app.id)
+            border.width: 1; border.color: over.containsMouse ? Qt.rgba(0.97, 0.78, 0.45, 0.6) : "transparent"
+            scale: over.containsMouse ? 1.04 : 1
+            Behavior on scale { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
+            AppIcon { anchors.centerIn: parent; icon: poster.app.icon; side: poster.side * 0.64 }
+            Rectangle { visible: shell.has(poster.app.id); width: 24; height: 24; radius: 12; color: Theme.ok; x: parent.width - 32; y: 8
+                Glyph { anchors.centerIn: parent; name: "check"; font.pixelSize: 14; color: Theme.ground } }
+            MouseArea { id: over; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: shell.go("app", poster.app.id) } }
+        Label { text: poster.app.name; font.weight: 700; width: parent.width }
+        Row { spacing: 5; width: parent.width
+            Label { text: poster.app.developer || "Flathub"; color: Theme.faint; font.pixelSize: 12; width: Math.min(implicitWidth, poster.side - 62) }
+            Label { text: "•"; color: Theme.faint; font.pixelSize: 12; visible: (poster.app.installs || 0) > 0 }
+            Glyph { name: "download"; font.pixelSize: 12; color: Theme.gold; anchors.verticalCenter: parent.verticalCenter; visible: (poster.app.installs || 0) > 0 }
+            Label { text: shell.count(poster.app.installs || 0); font.pixelSize: 12; font.weight: 700; visible: (poster.app.installs || 0) > 0 } }
     }
-    // a shelf: a heading and the cards under it, as many in a row as fit
-    component Shelf: Column {
-        property string title
-        property string icon
+    // a row of posters, as many as fit across, the rest below
+    component Posters: Flow {
         property var apps: []
         property real room: 800
-        spacing: 12
-        visible: apps.length > 0
-        Row { spacing: 9
-            Glyph { name: icon; color: Theme.gold; font.pixelSize: 19; anchors.verticalCenter: parent.verticalCenter }
-            Label { text: title; font.pixelSize: 19; font.weight: 700 } }
-        Flow { width: room; spacing: 14
-            Repeater { model: apps; AppCard { required property var modelData; app: modelData; width: Math.floor((room - 14 * (Math.max(1, Math.floor(room / 270)) - 1)) / Math.max(1, Math.floor(room / 270))) } } }
+        readonly property int across: Math.max(2, Math.floor((room + 18) / 168))
+        width: room; spacing: 18
+        Repeater { model: apps; Poster { required property var modelData; app: modelData; side: Math.floor((room - 18 * (across - 1)) / across) } }
     }
+    // a word on a picture
+    component Tag: Rectangle { property string text; visible: text !== ""; height: 28; width: tagText.implicitWidth + 22; radius: 14; color: "#99241a14"; border.color: "#33f3ebdd"
+        Label { id: tagText; anchors.centerIn: parent; text: parent.text; font.pixelSize: 12 } }
+    // one of the rows to choose from
+    component Choice: Rectangle { id: choice; property string text; property bool on: false; signal pressed()
+        height: 40; width: choiceText.implicitWidth + 34; radius: 20
+        color: on ? Theme.cream : (choiceHit.containsMouse ? Theme.raised : Theme.card)
+        Behavior on color { ColorAnimation { duration: 120 } }
+        Label { id: choiceText; anchors.centerIn: parent; text: choice.text; color: choice.on ? Theme.ground : Theme.cream; font.weight: choice.on ? 700 : 400 }
+        MouseArea { id: choiceHit; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: choice.pressed() } }
 
     // one thing known about an app, as a chip
     component Fact: Rectangle { property string icon; property string text; visible: text !== ""; height: 34; width: factRow.implicitWidth + 26; radius: 17; color: Theme.card
@@ -169,32 +175,25 @@ ShellRoot {
             Glyph { name: icon; font.pixelSize: 15; color: Theme.gold; anchors.verticalCenter: parent.verticalCenter }
             Label { text: parent.parent.text; font.pixelSize: 13; color: Theme.dim; anchors.verticalCenter: parent.verticalCenter } } }
 
-    FloatingWindow {
+    readonly property string where: page === "discover" ? I18n.tr("Discover") : page === "mine" ? I18n.tr("My apps") : page === "updates" ? I18n.tr("Updates")
+        : page === "barista" ? "Barista" : page === "search" ? I18n.tr("Results for “{what}”", { what: arg })
+        : page === "category" ? I18n.tr((categories.find(c => c.id === arg) || { name: "" }).name) : (detail.data && detail.data.name ? detail.data.name : "")
+
+    AppWindow {
         id: win
         title: I18n.tr("App Manager")
+        heading: shell.where
         implicitWidth: 1240; implicitHeight: 800
-        color: Theme.ground
-        onClosed: Qt.quit()
+        arrows: true; canGoBack: shell.trail.length > 0 || shell.page !== "discover"; onBack: shell.back()
+        searchHint: I18n.tr("Search apps…"); onSearched: text => shell.go("search", text)
 
         // ── the side ──────────────────────────────────────────────────────────────────────────────────────
-        Rectangle {
-            id: side
-            width: 250; height: parent.height
-            color: Theme.surface
+        side: [
             Column {
-                x: 14; y: 18; spacing: 4
+                x: 14; y: 14; spacing: 4
                 Row { x: 6; spacing: 10; height: 40
                     Glyph { name: "cup"; font.pixelSize: 24; color: Theme.gold; anchors.verticalCenter: parent.verticalCenter }
                     Label { text: I18n.tr("App Manager"); font.pixelSize: 17; font.weight: 700; anchors.verticalCenter: parent.verticalCenter } }
-                Item { width: 1; height: 6 }
-                Rectangle {
-                    width: 222; height: 40; radius: 20; color: Theme.ground; border.color: field.activeFocus ? Theme.gold : Theme.line; border.width: 1
-                    Glyph { x: 13; name: "search"; font.pixelSize: 16; color: Theme.dim; anchors.verticalCenter: parent.verticalCenter }
-                    TextInput { id: field; x: 38; width: parent.width - 50; anchors.verticalCenter: parent.verticalCenter; color: Theme.cream; font.family: Theme.font; font.pixelSize: 14; clip: true; selectByMouse: true
-                                selectionColor: Theme.coffee
-                                onAccepted: if (text.trim() !== "") shell.go("search", text.trim()) }
-                    Label { x: 38; text: I18n.tr("Search apps…"); color: Theme.faint; visible: field.text === "" && !field.activeFocus; anchors.verticalCenter: parent.verticalCenter }
-                }
                 Item { width: 1; height: 8 }
                 Nav { text: I18n.tr("Discover"); icon: "compass"; on: shell.page === "discover"; onPressed: shell.go("discover") }
                 Nav { text: I18n.tr("My apps"); icon: "apps"; on: shell.page === "mine"; onPressed: shell.go("mine") }
@@ -206,39 +205,24 @@ ShellRoot {
                     Nav { required property var modelData; text: I18n.tr(modelData.name); icon: modelData.icon; height: 34
                           on: shell.page === "category" && shell.arg === modelData.id; onPressed: shell.go("category", modelData.id) } }
             }
-            // Barista, and under him what is being done right now
-            Column {
-                x: 14; width: 222; spacing: 10
-                anchors.bottom: parent.bottom; anchors.bottomMargin: 14
-                Rectangle {
-                    visible: shell.job !== null
-                    width: 222; height: 58; radius: 14; color: Theme.card
-                    Glyph { x: 12; y: 11; name: "refresh"; color: Theme.gold; font.pixelSize: 16
-                            RotationAnimation on rotation { running: shell.job !== null; from: 0; to: 360; duration: 1100; loops: Animation.Infinite } }
-                    Label { x: 38; y: 9; width: 174; text: shell.job ? shell.job.name + (shell.queue.length > 0 ? "  +" + shell.queue.length : "") : ""; font.weight: 600; font.pixelSize: 13 }
-                    Label { x: 12; y: 32; width: 200; text: shell.job ? shell.job.line : ""; color: Theme.dim; font.pixelSize: 12 }
-                }
-                Rectangle {
-                    id: barista
-                    width: 222; height: 78; radius: 18
-                    gradient: Gradient { orientation: Gradient.Horizontal
-                        GradientStop { position: 0; color: shell.page === "barista" ? "#6b4526" : "#4a3020" }
-                        GradientStop { position: 1; color: shell.page === "barista" ? "#3d2c22" : "#2a1e17" } }
-                    border.color: baristaHit.containsMouse || shell.page === "barista" ? Theme.gold : "transparent"; border.width: 1
-                    Glyph { x: 14; name: "disc"; font.pixelSize: 26; color: Theme.gold; anchors.verticalCenter: parent.verticalCenter }
-                    Column { x: 52; width: 160; anchors.verticalCenter: parent.verticalCenter; spacing: 2
-                        Label { text: "Barista"; font.weight: 700; font.pixelSize: 15 }
-                        Label { text: I18n.tr("Install from a file, a folder or a disc"); color: Theme.dim; font.pixelSize: 12; width: parent.width; wrapMode: Text.WordWrap; maximumLineCount: 2 } }
-                    MouseArea { id: baristaHit; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: shell.go("barista") }
-                }
-            }
-        }
+        ]
+
+        // ── in the coffee: Barista, and what is being done right now ─────────────────────────────────────
+        foot: [
+            Item { x: 24; width: baristaRow.implicitWidth; height: 44; anchors.verticalCenter: parent.verticalCenter
+                Row { id: baristaRow; spacing: 12; anchors.verticalCenter: parent.verticalCenter
+                    Glyph { name: "disc"; font.pixelSize: 24; color: Theme.gold; anchors.verticalCenter: parent.verticalCenter }
+                    Label { text: "Barista"; font.weight: 800; font.pixelSize: 15; anchors.verticalCenter: parent.verticalCenter }
+                    Label { text: I18n.tr("Install from a file, a folder or a disc"); color: "#e0c9b1"; font.pixelSize: 13; anchors.verticalCenter: parent.verticalCenter } }
+                MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: shell.go("barista") } },
+            Row { visible: shell.job !== null; anchors.right: parent.right; anchors.rightMargin: 24; anchors.verticalCenter: parent.verticalCenter; spacing: 10
+                Glyph { id: spin; name: "refresh"; color: Theme.gold; font.pixelSize: 16; anchors.verticalCenter: parent.verticalCenter
+                        NumberAnimation on rotation { running: shell.job !== null; from: 0; to: 360; duration: 1100; loops: Animation.Infinite } }
+                Label { text: shell.job ? shell.job.name + (shell.queue.length > 0 ? "  +" + shell.queue.length : "") : ""; font.weight: 700; anchors.verticalCenter: parent.verticalCenter }
+                Label { text: shell.job ? shell.job.line : ""; color: "#e0c9b1"; font.pixelSize: 12; width: Math.min(implicitWidth, 420); anchors.verticalCenter: parent.verticalCenter } }
+        ]
 
         // ── the pages ─────────────────────────────────────────────────────────────────────────────────────
-        Item {
-            id: stage
-            anchors.left: side.right; anchors.right: parent.right; height: parent.height
-
             // what went wrong last, until it is pressed away
             Rectangle {
                 z: 5; visible: shell.lastError !== ""
@@ -249,21 +233,22 @@ ShellRoot {
                 MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: shell.lastError = "" }
             }
 
-            // discover: banners, then the shelves
+            // discover, as a streaming menu: one big banner with the next looking in, rows to choose from, posters
             Scroll {
                 id: discover
+                property string row: "trending"
                 visible: shell.page === "discover"
                 Waiting { visible: front.busy && !front.data; text: I18n.tr("Looking what is new…"); width: discover.room; topPadding: 180 }
                 Label { visible: front.data && front.data.offline === true; text: I18n.tr("The shop cannot be reached. What is installed and what is to update works without it."); color: Theme.dim; width: discover.room; wrapMode: Text.WordWrap; topPadding: 120; horizontalAlignment: Text.AlignHCenter }
-                // the banners: two side by side where there is room, turning by themselves
                 Item {
                     id: hero
                     readonly property var all: front.data ? front.data.banners : []
-                    readonly property int shown: discover.room > 900 ? 2 : 1
+                    readonly property real each: width - 130
                     property int at: 0
-                    width: discover.room; height: all.length > 0 ? 300 : 0
+                    function turn() { at = (at + 1) % Math.max(1, all.length) }
+                    width: discover.room; height: all.length > 0 ? 300 : 0; clip: true
                     visible: all.length > 0
-                    Timer { interval: 6500; repeat: true; running: hero.visible && shell.page === "discover" && !heroHover.hovered; onTriggered: hero.at = (hero.at + 1) % Math.max(1, hero.all.length) }
+                    Timer { interval: 7000; repeat: true; running: hero.visible && shell.page === "discover" && !heroHover.hovered; onTriggered: hero.turn() }
                     HoverHandler { id: heroHover }
                     Repeater {
                         model: hero.all
@@ -272,51 +257,63 @@ ShellRoot {
                             required property var modelData
                             required property int index
                             readonly property int place: (index - hero.at + hero.all.length) % hero.all.length
-                            readonly property real each: (hero.width - 16 * (hero.shown - 1)) / hero.shown
-                            width: each; height: 280; radius: 26
-                            color: Theme.card
-                            x: place * (each + 16)
-                            opacity: place < hero.shown ? 1 : 0
+                            readonly property bool front: place === 0
+                            width: hero.each; height: front ? 300 : 256; radius: 24; color: Theme.card
+                            x: place === 0 ? 0 : (place === 1 ? hero.each + 16 : (place === hero.all.length - 1 ? -hero.each - 16 : hero.each * 2))
+                            y: front ? 0 : 22
+                            opacity: place <= 1 || place === hero.all.length - 1 ? 1 : 0
                             visible: opacity > 0.01
-                            Behavior on x { NumberAnimation { duration: 520; easing.type: Easing.OutCubic } }
-                            Behavior on opacity { NumberAnimation { duration: 380 } }
+                            Behavior on x { NumberAnimation { duration: 620; easing.type: Easing.InOutCubic } }
+                            Behavior on y { NumberAnimation { duration: 620; easing.type: Easing.InOutCubic } }
+                            Behavior on height { NumberAnimation { duration: 620; easing.type: Easing.InOutCubic } }
                             Image { anchors.fill: parent; source: banner.modelData.shot; fillMode: Image.PreserveAspectCrop; asynchronous: true
-                                    scale: bannerHit.containsMouse ? 1.05 : 1; Behavior on scale { NumberAnimation { duration: 900; easing.type: Easing.OutCubic } } }
+                                    scale: bannerHit.containsMouse && banner.front ? 1.04 : 1; Behavior on scale { NumberAnimation { duration: 900; easing.type: Easing.OutCubic } } }
                             Rectangle { anchors.fill: parent; gradient: Gradient {
-                                GradientStop { position: 0.0; color: "#0017110d" } GradientStop { position: 0.45; color: "#6617110d" } GradientStop { position: 1.0; color: "#f217110d" } } }
-                            MouseArea { id: bannerHit; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: shell.go("app", banner.modelData.id) }
-                            AppIcon { id: bannerIcon; x: 24; anchors.bottom: parent.bottom; anchors.bottomMargin: 22; icon: banner.modelData.icon; side: 72 }
-                            Column { anchors.left: bannerIcon.right; anchors.leftMargin: 16; anchors.right: bannerAct.left; anchors.rightMargin: 12; anchors.bottom: parent.bottom; anchors.bottomMargin: 24; spacing: 3
-                                Label { text: banner.modelData.name; font.pixelSize: 24; font.weight: 800; width: parent.width }
-                                Label { text: banner.modelData.summary; color: Theme.cream; opacity: 0.85; width: parent.width; maximumLineCount: 2; wrapMode: Text.WordWrap } }
-                            Act { id: bannerAct; app: banner.modelData; anchors.right: parent.right; anchors.rightMargin: 22; anchors.bottom: parent.bottom; anchors.bottomMargin: 30 }
+                                GradientStop { position: 0.0; color: "#5517110d" } GradientStop { position: 0.5; color: "#2217110d" } GradientStop { position: 1.0; color: "#f017110d" } } }
+                            Rectangle { anchors.fill: parent; color: Theme.ground; opacity: banner.front ? 0 : 0.5; Behavior on opacity { NumberAnimation { duration: 500 } } }
+                            MouseArea { id: bannerHit; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
+                                        onClicked: banner.front ? shell.go("app", banner.modelData.id) : hero.turn() }
+                            Row { x: 18; y: 18; spacing: 8; opacity: banner.front ? 1 : 0; Behavior on opacity { NumberAnimation { duration: 400 } }
+                                Tag { text: banner.modelData.developer }
+                                Tag { text: banner.modelData.verified ? I18n.tr("Verified") : "" }
+                                Tag { text: banner.modelData.installs > 0 ? I18n.tr("{n} a month", { n: shell.count(banner.modelData.installs) }) : "" } }
+                            // the round button: the thing to do with it
+                            Rectangle { id: go; x: 22; y: parent.height - 74; width: 52; height: 52; radius: 26; visible: banner.front
+                                readonly property bool there: shell.has(banner.modelData.id)
+                                color: goHit.containsMouse ? Theme.gold : Theme.cream
+                                scale: goHit.pressed ? 0.94 : 1
+                                Glyph { anchors.centerIn: parent; name: shell.doing(banner.modelData.id) ? "refresh" : (go.there ? "player-play" : "download"); color: Theme.ground; font.pixelSize: 22
+                                        NumberAnimation on rotation { running: shell.doing(banner.modelData.id); from: 0; to: 360; duration: 1100; loops: Animation.Infinite } }
+                                MouseArea { id: goHit; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
+                                            onClicked: go.there ? Quickshell.execDetached(["flatpak", "run", banner.modelData.id]) : shell.work("install", banner.modelData.id, banner.modelData.name) } }
+                            Column { x: 88; y: parent.height - 76; width: parent.width - 120; spacing: 3; visible: banner.front
+                                Label { text: banner.modelData.name; font.pixelSize: 25; font.weight: 800; width: parent.width }
+                                Label { text: (shell.has(banner.modelData.id) ? I18n.tr("Open") : I18n.tr("Install")) + "  ·  " + banner.modelData.summary; color: "#e6dccf"; font.pixelSize: 13; width: parent.width } }
                         }
                     }
-                    Row { anchors.horizontalCenter: parent.horizontalCenter; anchors.bottom: parent.bottom; spacing: 7
+                    Row { anchors.right: parent.right; anchors.rightMargin: 4; y: 4; spacing: 6
                         Repeater { model: hero.all.length
-                            Rectangle { required property int index; width: index === hero.at ? 22 : 7; height: 7; radius: 4; color: index === hero.at ? Theme.gold : Theme.line
+                            Rectangle { required property int index; width: index === hero.at ? 18 : 6; height: 6; radius: 3; color: index === hero.at ? Theme.cream : "#55f3ebdd"
                                         Behavior on width { NumberAnimation { duration: 200 } }
-                                        MouseArea { anchors.fill: parent; anchors.margins: -5; cursorShape: Qt.PointingHandCursor; onClicked: hero.at = parent.index } } } }
+                                        MouseArea { anchors.fill: parent; anchors.margins: -6; cursorShape: Qt.PointingHandCursor; onClicked: hero.at = parent.index } } } }
                 }
-                Shelf { title: I18n.tr("Trending now"); icon: "flame"; apps: front.data ? front.data.trending : []; room: discover.room }
-                Shelf { title: I18n.tr("New arrivals"); icon: "sparkles"; apps: front.data ? front.data["new"] : []; room: discover.room }
-                Shelf { title: I18n.tr("Most used"); icon: "star"; apps: front.data ? front.data.popular : []; room: discover.room }
+                Flow { width: discover.room; spacing: 10; visible: front.data && !front.data.offline
+                    Choice { text: I18n.tr("Trending now"); on: discover.row === "trending"; onPressed: discover.row = "trending" }
+                    Choice { text: I18n.tr("New arrivals"); on: discover.row === "new"; onPressed: discover.row = "new" }
+                    Choice { text: I18n.tr("Most used"); on: discover.row === "popular"; onPressed: discover.row = "popular" }
+                    Repeater { model: shell.categories.slice(0, 4)
+                        Choice { required property var modelData; text: I18n.tr(modelData.name); onPressed: shell.go("category", modelData.id) } } }
+                Posters { apps: front.data ? (front.data[discover.row] || []) : []; room: discover.room }
             }
 
             // a category, or what was searched for
             Scroll {
                 id: listing
-                readonly property bool searching: shell.page === "search"
-                readonly property var from: searching ? found : category
+                readonly property var from: shell.page === "search" ? found : category
                 visible: shell.page === "category" || shell.page === "search"
-                Row { spacing: 12
-                    Pill { icon: "chevron-left"; text: I18n.tr("Back"); onPressed: shell.back() }
-                    Label { anchors.verticalCenter: parent.verticalCenter; font.pixelSize: 22; font.weight: 700
-                            text: listing.searching ? I18n.tr("Results for “{what}”", { what: shell.arg }) : I18n.tr((shell.categories.find(c => c.id === shell.arg) || { name: "" }).name) } }
                 Waiting { visible: listing.from.busy; text: I18n.tr("Looking…"); width: listing.room; topPadding: 120 }
                 Label { visible: !listing.from.busy && listing.from.data && listing.from.data.length === 0; text: I18n.tr("Nothing found"); color: Theme.dim; width: listing.room; horizontalAlignment: Text.AlignHCenter; topPadding: 100 }
-                Flow { width: listing.room; spacing: 14; visible: !listing.from.busy
-                    Repeater { model: listing.from.busy ? [] : (listing.from.data || []); AppCard { required property var modelData; app: modelData } } }
+                Posters { apps: listing.from.busy ? [] : (listing.from.data || []); room: listing.room; visible: !listing.from.busy }
             }
 
             // one app in full
@@ -324,7 +321,6 @@ ShellRoot {
                 id: about
                 readonly property var app: detail.data
                 visible: shell.page === "app"
-                Pill { icon: "chevron-left"; text: I18n.tr("Back"); onPressed: shell.back() }
                 Waiting { visible: !about.app; text: I18n.tr("Looking…"); width: about.room; topPadding: 120 }
                 Label { visible: about.app && about.app.missing === true; text: I18n.tr("The shop does not have this app."); color: Theme.dim }
                 Item {
@@ -356,7 +352,7 @@ ShellRoot {
                     Fact { icon: "package"; text: about.app && about.app.size > 0 ? shell.megabytes(about.app.size) : "" }
                     Fact { icon: "sparkles"; text: about.app && about.app.version ? about.app.version : "" }
                     Fact { icon: "shield-check"; text: about.app && about.app.license ? about.app.license : "" }
-                    Fact { icon: "world-www"; text: about.app && about.app.homepage ? about.app.homepage.replace(/^https?:\/\//, "").replace(/\/$/, "") : ""
+                    Fact { icon: "world"; text: about.app && about.app.homepage ? about.app.homepage.replace(/^https?:\/\//, "").replace(/\/$/, "") : ""
                            MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: Quickshell.execDetached(["xdg-open", about.app.homepage]) } }
                 }
                 ListView {
@@ -458,6 +454,5 @@ ShellRoot {
                     Glyph { x: 16; name: "clock-hour-4"; color: Theme.gold; anchors.verticalCenter: parent.verticalCenter }
                     Label { x: 46; width: parent.width - 60; text: I18n.tr("Barista is being prepared: he is not behind the bar yet."); color: Theme.dim; anchors.verticalCenter: parent.verticalCenter } }
             }
-        }
     }
 }

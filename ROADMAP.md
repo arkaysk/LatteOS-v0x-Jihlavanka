@@ -114,10 +114,15 @@ Schválené 12. 10. 2026. Pracuje sa **zhora nadol, neskáče sa**; nový nápad
           pravý = Správca zariadení. Okno z bubliny neskôr.
         - [x] **Správca zariadení** (13. 10.): `apps/devices.qml` + `bin/latte-devices` — prehľad počítača, skupiny
           zariadení, ovládač a stav každého, správa na skopírovanie. Iba číta; čo chýba oproti v0.3: LATTEOS-GOO.md §4.4.
-        - [ ] **Vzhľad aplikácií** (13. 10., používateľovi sa prvý nepáči): na výber štyri smery — A Hladina, B Kaviareň,
-          C Časopis, D streamovacie menu (jeho nápad). Hotový diel pre každý smer: kávová hladina na spodku okna,
-          ktorá sa jemne vlní a zavlní sa pri pohybe okna (`apps/common/Surface.qml`, `window-place`); do okien
-          sa dá až po výbere smeru.
+        - [x] **Okno aplikácií LatteOS** (rozhodnuté 13. 10. podľa používateľovho V2 a ForkLiftu): `apps/common/AppWindow.qml`
+          — bočný panel zo skla od vrchu po spodok, hore lišta s funkciami (šípky, názov, nástroje aplikácie, hľadanie),
+          úplne vpravo okenné tlačidlá; kávová hladina je rozhraním k spodnej časti okna, alebo iba tichým pozadím.
+          App Manager je v ňom ako streamovacie menu (banner s ďalším nakúkajúcim, rad volieb, plagáty).
+        - [ ] **NET v hlavičke okna** — odstaviť aplikáciu od internetu hneď (služba s právami správcu a nftables ako
+          v0.3 `latte-net`/`latte-netd`); miesto v hlavičke je, tlačidlo sa ukáže, až bude mať čo robiť.
+        - [ ] **Prechody bannerov** v App Manageri v duchu skwd-wall (používateľ, 13. 10.). skwd-wall je Rust a Vulkan
+          pod GPL-3.0, jeho shadery sa do okna v QML nedajú vložiť; podobné prechody treba napísať vlastné
+          (QML `ShaderEffect`, `qsb` je v systéme). Dnes sa bannery posúvajú.
         - [ ] **Barista** v App Manageri (stránka je pripravená, sprievodca podľa `docs/barista/NAVRH.md` nie).
         - [x] tapeta (swaybg, `assets/wallpapers`) a okenné tlačidlá (hyprbars so záplatou `patches/hyprbars-latte.patch`;
           postup v `patches/README.md`) (12. 10.).

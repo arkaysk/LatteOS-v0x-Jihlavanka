@@ -7,7 +7,7 @@ local B = {}
 
 B.plugin = (os.getenv("LATTE_PLUGINS") or "/usr/lib64/latteos") .. "/hyprbars.so"
 -- classes of windows that draw their own header
-local OWN_HEADER = "^(org\\.mozilla\\.firefox|firefox|chromium.*|google-chrome.*|brave.*|com\\.discordapp\\.Discord|discord|steam|"
+local OWN_HEADER = "^(org\\.quickshell|org\\.mozilla\\.firefox|firefox|chromium.*|google-chrome.*|brave.*|com\\.discordapp\\.Discord|discord|steam|"
     .. "com\\.valvesoftware\\.Steam|org\\.gnome\\..*|gnome-.*|code|Code|code-oss|electron.*|Spotify|spotify|obsidian|signal|"
     .. "org\\.signal\\.Signal|com\\.heroicgameslauncher\\.hgl|heroic|org\\.kde\\.kdenlive)$"
 

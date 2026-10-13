@@ -110,6 +110,7 @@ return {
     ["power"] = "\u{EB0D}",
     ["printer"] = "\u{EB0E}",
     ["prompt"] = "\u{EB0F}",
+    ["rectangle"] = "\u{ED37}",
     ["refresh"] = "\u{EB13}",
     ["rocket"] = "\u{EC45}",
     ["rosette-discount-check"] = "\u{F1F8}",

@@ -52,6 +52,7 @@
 /usr/share/latteos/apps/common/Waiting.qml                      <- apps/common/Waiting.qml
 /usr/share/latteos/apps/common/qmldir                           <- apps/common/qmldir
 /usr/share/latteos/apps/common/Surface.qml              <- apps/common/Surface.qml
+/usr/share/latteos/apps/common/AppWindow.qml            <- apps/common/AppWindow.qml
 /usr/share/latteos/apps/common/window-place             <- apps/common/window-place
 /usr/share/applications/latteos-appmanager.desktop      <- system/applications/latteos-appmanager.desktop
 /usr/share/applications/latteos-devices.desktop         <- system/applications/latteos-devices.desktop

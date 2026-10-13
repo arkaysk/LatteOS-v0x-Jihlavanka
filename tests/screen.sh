@@ -38,6 +38,7 @@ ln -sfn "$repo/system/hypr" "$out/share/hypr"
 ln -sfn "$repo/assets/wallpapers" "$out/share/wallpapers"
 ln -sfn "$repo/goo" "$out/share/goo"
 ln -sfn "$repo/apps" "$out/share/apps"
+mkdir -p "$out/fonts"; ln -sfn "$repo/assets/fonts" "$out/fonts/latteos"      # /usr/share/fonts/latteos, beside /usr/share/latteos
 # the plugins: this repository's own as it was last built (make -C plugins/latte-events), the title bars and the glass from the system
 mkdir -p "$out/plugins"
 for p in "$repo/plugins/latte-events/latte-events.so" /usr/lib64/latteos/hyprbars.so /usr/lib64/latteos/hyprglass.so; do [ -f "$p" ] && ln -sfn "$p" "$out/plugins/"; done
