@@ -47,6 +47,7 @@ scene LoginSafe {
     fact moon_waxing = true
     fact rain = 0
     fact snow = false
+    fact wind = 0
     model info max 3 { g: text; v: text; on: bool }
     event wake
     event again

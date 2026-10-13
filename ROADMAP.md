@@ -932,5 +932,11 @@ cestu k aktualizácii alebo návratu.
     a na dne sú vlnové vrásky piesku (nahradili päť tmavých elíps). SedFoam (OpenFOAM, CFD) a wavesed (pyReef,
     pobrežné sedimenty) sú simulácie na iný účel; zo sedimentu sa vzal iba obraz: rovnobežné vrásky, ktoré
     pomaly putujú smerom vĺn.
+    **Počasie na hladine (13. 10.):** vietor z `latte-sky` (fakt `wind`, km/h → `gale`) dvíha a zostruje vlny
+    a pridáva krátku piatu vlnu; pri daždi dopadajú kvapky na 9 miest hladiny (krúžok dvoch hrebeňov; pri snehu
+    nie). Svetlo je jeden lom na tej istej hladine (jas = ako blízko sa zbehli susedné lúče), farba klesá od
+    jantárovej k tmavočervenej (hustá kvapalina), na dne tmavé tvary sedliny a pod nimi vrásky piesku.
+    Merané na RX 640: skladanie 1,0 ms, kreslenie 0,7 ms, 60 snímok/s. Výška vĺn je zámerne obmedzená, aby
+    víchrica nezaliala riadok s heslom.
 12. [ ] **PowerGoo s lištou údajov:** kartu vysunúť z celého celku Goo + lišta, aby tvorili vizuálne jeden kus
     (dnes je ucho karty pri ľavom kliku malé a lišta ostáva vedľa). Režimy okien (4.) sú bod 7 (Glance).

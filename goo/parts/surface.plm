@@ -32,4 +32,31 @@ part Surface {
     line { from: wave_x.29, tide_y + 30 + wave_y.29; to: wave_x.30, tide_y + 30 + wave_y.30; width: 60; blend: 34 }
     line { from: wave_x.30, tide_y + 30 + wave_y.30; to: wave_x.31, tide_y + 30 + wave_y.31; width: 60; blend: 34 }
     line { from: wave_x.31, tide_y + 30 + wave_y.31; to: wave_x.32, tide_y + 30 + wave_y.32; width: 60; blend: 34 }
+    ellipse { at: rain_x.0 - 6 - 46 * rain_age.0, tide_y + 30; radius: 7 * sin(180 * rain_age.0) * raining; scale: 2.2, 0.35; blend: 20 }
+    ellipse { at: rain_x.0 + 6 + 46 * rain_age.0, tide_y + 30; radius: 7 * sin(180 * rain_age.0) * raining; scale: 2.2, 0.35; blend: 20 }
+    ellipse { at: rain_x.0, tide_y + 30 - 4; radius: 5 * clamp(1 - rain_age.0 * 5, 0, 1) * raining; blend: 16 }
+    ellipse { at: rain_x.1 - 6 - 46 * rain_age.1, tide_y + 30; radius: 7 * sin(180 * rain_age.1) * raining; scale: 2.2, 0.35; blend: 20 }
+    ellipse { at: rain_x.1 + 6 + 46 * rain_age.1, tide_y + 30; radius: 7 * sin(180 * rain_age.1) * raining; scale: 2.2, 0.35; blend: 20 }
+    ellipse { at: rain_x.1, tide_y + 30 - 4; radius: 5 * clamp(1 - rain_age.1 * 5, 0, 1) * raining; blend: 16 }
+    ellipse { at: rain_x.2 - 6 - 46 * rain_age.2, tide_y + 30; radius: 7 * sin(180 * rain_age.2) * raining; scale: 2.2, 0.35; blend: 20 }
+    ellipse { at: rain_x.2 + 6 + 46 * rain_age.2, tide_y + 30; radius: 7 * sin(180 * rain_age.2) * raining; scale: 2.2, 0.35; blend: 20 }
+    ellipse { at: rain_x.2, tide_y + 30 - 4; radius: 5 * clamp(1 - rain_age.2 * 5, 0, 1) * raining; blend: 16 }
+    ellipse { at: rain_x.3 - 6 - 46 * rain_age.3, tide_y + 30; radius: 7 * sin(180 * rain_age.3) * raining; scale: 2.2, 0.35; blend: 20 }
+    ellipse { at: rain_x.3 + 6 + 46 * rain_age.3, tide_y + 30; radius: 7 * sin(180 * rain_age.3) * raining; scale: 2.2, 0.35; blend: 20 }
+    ellipse { at: rain_x.3, tide_y + 30 - 4; radius: 5 * clamp(1 - rain_age.3 * 5, 0, 1) * raining; blend: 16 }
+    ellipse { at: rain_x.4 - 6 - 46 * rain_age.4, tide_y + 30; radius: 7 * sin(180 * rain_age.4) * raining; scale: 2.2, 0.35; blend: 20 }
+    ellipse { at: rain_x.4 + 6 + 46 * rain_age.4, tide_y + 30; radius: 7 * sin(180 * rain_age.4) * raining; scale: 2.2, 0.35; blend: 20 }
+    ellipse { at: rain_x.4, tide_y + 30 - 4; radius: 5 * clamp(1 - rain_age.4 * 5, 0, 1) * raining; blend: 16 }
+    ellipse { at: rain_x.5 - 6 - 46 * rain_age.5, tide_y + 30; radius: 7 * sin(180 * rain_age.5) * raining; scale: 2.2, 0.35; blend: 20 }
+    ellipse { at: rain_x.5 + 6 + 46 * rain_age.5, tide_y + 30; radius: 7 * sin(180 * rain_age.5) * raining; scale: 2.2, 0.35; blend: 20 }
+    ellipse { at: rain_x.5, tide_y + 30 - 4; radius: 5 * clamp(1 - rain_age.5 * 5, 0, 1) * raining; blend: 16 }
+    ellipse { at: rain_x.6 - 6 - 46 * rain_age.6, tide_y + 30; radius: 7 * sin(180 * rain_age.6) * raining; scale: 2.2, 0.35; blend: 20 }
+    ellipse { at: rain_x.6 + 6 + 46 * rain_age.6, tide_y + 30; radius: 7 * sin(180 * rain_age.6) * raining; scale: 2.2, 0.35; blend: 20 }
+    ellipse { at: rain_x.6, tide_y + 30 - 4; radius: 5 * clamp(1 - rain_age.6 * 5, 0, 1) * raining; blend: 16 }
+    ellipse { at: rain_x.7 - 6 - 46 * rain_age.7, tide_y + 30; radius: 7 * sin(180 * rain_age.7) * raining; scale: 2.2, 0.35; blend: 20 }
+    ellipse { at: rain_x.7 + 6 + 46 * rain_age.7, tide_y + 30; radius: 7 * sin(180 * rain_age.7) * raining; scale: 2.2, 0.35; blend: 20 }
+    ellipse { at: rain_x.7, tide_y + 30 - 4; radius: 5 * clamp(1 - rain_age.7 * 5, 0, 1) * raining; blend: 16 }
+    ellipse { at: rain_x.8 - 6 - 46 * rain_age.8, tide_y + 30; radius: 7 * sin(180 * rain_age.8) * raining; scale: 2.2, 0.35; blend: 20 }
+    ellipse { at: rain_x.8 + 6 + 46 * rain_age.8, tide_y + 30; radius: 7 * sin(180 * rain_age.8) * raining; scale: 2.2, 0.35; blend: 20 }
+    ellipse { at: rain_x.8, tide_y + 30 - 4; radius: 5 * clamp(1 - rain_age.8 * 5, 0, 1) * raining; blend: 16 }
 }

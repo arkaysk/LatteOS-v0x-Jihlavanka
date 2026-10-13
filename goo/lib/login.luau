@@ -29,6 +29,7 @@ return function()
             fact.sky_body = 0
         end
         fact.rain, fact.snow = tonumber(s.rain) or 0, s.snow == true
+        fact.wind = tonumber(s.wind) or 0
         local now = type(s.now) == "table" and s.now or nil
         if not now then text.temp = "" fact.weather = 0 return end
         local today = type(s.days) == "table" and s.days[1] or nil

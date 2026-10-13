@@ -108,11 +108,13 @@ def picks(n):
     return "".join(out)
 
 
-# The coffee's surface as the side of a few Gerstner waves: (wavelength px, amplitude px, degrees per second, phase).
-# goo/shaders/water.wgsl bends the light with the same table: change both.
-WAVES = ((820, 7.0, 22, 0), (430, 4.2, 31, 70), (250, 2.6, 44, 200), (150, 1.5, 63, 310))
+# The coffee's surface as the side of a few Gerstner waves: (wavelength px, amplitude, degrees per second, phase).
+# An amplitude is px or an expression: the fifth is the chop a wind raises. goo/shaders/water.wgsl bends the
+# light with the same table (and a few ripples too small to be seen): change both.
+WAVES = ((820, "7", 22, 0), (430, "4.2", 31, 70), (250, "2.6", 44, 200), (150, "1.5", 63, 310), (70, "1.8 * gale", 90, 40))
 SPAN = 32                                   # the surface is SPAN lines, from a little left of the screen to a little right
 THICK = 30                                  # half the width of a line: how far the coffee reaches up from its centre
+RAIN = 9                                    # places on the surface where a drop can fall, each at its own pace
 
 
 def waves():
@@ -121,10 +123,15 @@ def waves():
         x0 = "(-80 + (W + 160) * %d / %d)" % (i, SPAN)
         th = ["(360 * %s / %d - %d * time + %d)" % (x0, wl, om, ph) for wl, _, om, ph in WAVES]
         # a crest leans over the way the wave goes: the point moves along as well as up
-        out.append("    let wave_x.%d = %s - 2.5 * chop * (%s)\n" % (
-            i, x0, " + ".join("%g * sin%s" % (a, t) for (_, a, _, _), t in zip(WAVES, th))))
+        out.append("    let wave_x.%d = %s - (2.5 + 1.5 * gale) * chop * (%s)\n" % (
+            i, x0, " + ".join("(%s) * sin%s" % (a, t) for (_, a, _, _), t in zip(WAVES, th))))
         out.append("    let wave_y.%d = 0 - chop * (%s)\n" % (
-            i, " + ".join("%g * cos%s" % (a, t) for (_, a, _, _), t in zip(WAVES, th))))
+            i, " + ".join("(%s) * cos%s" % (a, t) for (_, a, _, _), t in zip(WAVES, th))))
+    # the rain: where each drop falls is worked out again every time it lands, from which time it is
+    for k in range(RAIN):
+        period = 0.55 + 0.29 * k
+        out.append("    let rain_age.%d = fract(time / %g)\n" % (k, period))
+        out.append("    let rain_x.%d = (W + 160) * fract(sin(floor(time / %g) * 127.1 + %d * 311.7) * 43758.5453) - 80\n" % (k, period, k))
     out.append("}\n")
     return "".join(out)
 
@@ -134,6 +141,11 @@ def surface():
     for i in range(SPAN):
         out.append("    line { from: wave_x.%d, tide_y + %d + wave_y.%d; to: wave_x.%d, tide_y + %d + wave_y.%d; width: %d; blend: 34 }\n" % (
             i, THICK, i, i + 1, THICK, i + 1, 2 * THICK))
+    # a drop on the surface: a ring of two crests running apart and dying away, and a hump where it fell
+    for k in range(RAIN):
+        out.append("    ellipse { at: rain_x.%d - 6 - 46 * rain_age.%d, tide_y + %d; radius: 7 * sin(180 * rain_age.%d) * raining; scale: 2.2, 0.35; blend: 20 }\n" % (k, k, THICK, k))
+        out.append("    ellipse { at: rain_x.%d + 6 + 46 * rain_age.%d, tide_y + %d; radius: 7 * sin(180 * rain_age.%d) * raining; scale: 2.2, 0.35; blend: 20 }\n" % (k, k, THICK, k))
+        out.append("    ellipse { at: rain_x.%d, tide_y + %d - 4; radius: 5 * clamp(1 - rain_age.%d * 5, 0, 1) * raining; blend: 16 }\n" % (k, THICK, k))
     out.append("}\n")
     return "".join(out)
 

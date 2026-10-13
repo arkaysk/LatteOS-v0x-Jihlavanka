@@ -98,6 +98,7 @@ scene Login {
     fact moon_waxing = true
     fact rain = 0                              // 0 none, 1 forecast soon, 2 falling now
     fact snow = false
+    fact wind = 0                              // km/h, as latte-sky says
     fact weather = 0                           // 0 unknown, then 1 clear … 7 storm, as the words below
 
     service clock as now { time: text }
@@ -197,7 +198,9 @@ scene Login {
     let ses_x = gx + row_len + 64                                // the chooser is within reach, right after the row
     let ses_on = ses * if(sessions.count > 1, 1, 0)              // one session is no choice
     let ses_y = tide_y + 36 - (36 + ROW + 20) * ses_on
-    let chop = 1 + 0.5 * rain                                    // rain makes the surface restless
+    let gale = clamp(wind / 60, 0, 1.6)                           // 60 km/h is a gale; the sea gets steeper and choppier with it
+    let chop = 1 + 0.2 * rain + 0.3 * gale                       // rain and wind make the surface restless; not so high that it floods the row
+    let raining = if(rain > 1.5 and not snow, 1, 0)              // drops land only while it falls, and not as snow
     include "parts/waves.plm"
     // The small goo: each sways and hops along the surface at its own pace.
     let bob_x.0 = CX - 430 + 46 * sin(time * 23)
@@ -271,7 +274,7 @@ scene Login {
 
     // ── the light that goes into the coffee: from the sun or the moon, as it stands over the surface ─────────
     shader water { at: 0, tide_y + 8; size: W, H + 62 - tide_y; show: gone < 0.5 and tide > 0.5
-                   values: pick(sky_body, 0.22, 1, 0.55) * (1 - 0.3 * rain) * clock_in * (1 - gone), sky_x, (0.5 - sky_t) * 0.9, if(sky_body == 1, 0, 1), H - tide_y - 8
+                   values: pick(sky_body, 0.22, 1, 0.55) * (1 - 0.3 * rain) * clock_in * (1 - gone), sky_x, (0.5 - sky_t) * 0.9, if(sky_body == 1, 0, 1), H - tide_y - 8, gale
                    colors: amber, #cfd8ff }
 
     // ── the power drop: a glint turns in it while it rolls, then the power icon ─────────────────────────────
