@@ -61,6 +61,7 @@
 /usr/share/latteos/goo/drops/lensgoo.luau               <- goo/drops/lensgoo.luau
 /usr/share/latteos/goo/drops/powergoo.luau              <- goo/drops/powergoo.luau
 /usr/share/latteos/goo/drops/quickgoo.luau              <- goo/drops/quickgoo.luau
+/usr/share/latteos/goo/drops/mediagoo.luau              <- goo/drops/mediagoo.luau
 /usr/share/latteos/greeter/labwc/rc.xml                 <- system/greeter/labwc/rc.xml
 /usr/share/latteos/hypr/hyprland.lua                    <- system/hypr/hyprland.lua
 /usr/share/latteos/hypr/latte/windows.lua               <- system/hypr/latte/windows.lua

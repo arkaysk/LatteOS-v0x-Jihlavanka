@@ -32,7 +32,7 @@ scene Goo {
     }
     permissions {
         run: "latte-sky", "latte-login", "latte-stats", "hyprctl", "foot", "hostname", "powerprofilesctl", "date", "notify-send", "nmcli", "xdg-open", "xdg-user-dir", "fd", "latte-say", "sh"
-        services: "files", "files.write", "env", "clock", "battery", "window", "apps", "apps.launch", "session.*", "auth", "notifications", "notifications.*", "sound", "audio", "audio.*", "brightness", "brightness.*", "network", "network.*", "bluetooth", "bluetooth.*", "tray", "tray.*", "polkit", "polkit.*", "clipboard.set"
+        services: "files", "files.write", "env", "clock", "battery", "window", "apps", "apps.launch", "session.*", "auth", "notifications", "notifications.*", "sound", "audio", "audio.*", "brightness", "brightness.*", "network", "network.*", "bluetooth", "bluetooth.*", "tray", "tray.*", "polkit", "polkit.*", "clipboard.set", "media", "media.*"
     }
 
     // ── what the desktop around the scene tells it (`pleamar --say goo "emit …"`) ───────────────────────────

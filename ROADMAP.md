@@ -101,7 +101,8 @@ Schválené 12. 10. 2026. Pracuje sa **zhora nadol, neskáče sa**; nový nápad
           klik na kvapku › Odstrániť. Tvorca Goo (formulár v Nastaveniach) príde s aplikáciou Nastavenia.
         - [x] hra pri nečinnosti (13. 10.): po 6 min sa hravé kvapky (`"nature": "playful"`) hrajú — výskok,
           plíženie, veľký oblúk, naháňačka; skok je hod s gravitáciou scény, po prebudení je všetko na mieste.
-        - [ ] MediaGoo, prepojené kalendáre. **QueenGoo** čaká na App Manager
+        - [x] MediaGoo (13. 10.): čo hrá, predošlá · pauza · ďalšia, hlasitosť; je na ploche, iba kým beží prehrávač.
+        - [ ] prepojené kalendáre. **QueenGoo** čaká na App Manager
           a Správcu zariadení (aplikácie, bod 6 — kvapka bez nich nemá čo otvoriť), **ChatGoo** na Beeper
           (na latte-lab nie je nainštalovaný, nedá sa overiť).
         - [x] tapeta (swaybg, `assets/wallpapers`) a okenné tlačidlá (hyprbars so záplatou `patches/hyprbars-latte.patch`;

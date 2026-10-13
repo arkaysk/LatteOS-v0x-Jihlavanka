@@ -446,6 +446,10 @@ nemá (AI je hľadanie, Financie a Sociálne sú podkategórie Flathubu).
   (Win+Alt+D) karta času: Prehľad · Stopky · Minútka · Budíky · Počasie. Upozornenia prijíma pleamar (je serverom
   upozornení relácie); minútka a budíky zvonia upozornením a tónom. Oproti v0.3 chýba digitálna pohoda, svetové
   hodiny a prepojené kalendáre (Google, iCloud, CalDAV).
+- **MediaGoo** (13. 10., `goo/drops/mediagoo.luau`, služba `media` pleamaru — MPRIS): na ploche je, iba kým beží
+  nejaký prehrávač, a kým hrá, tlčie. Ľavý klik = karta (obal, názov, interpret, Predošlá · Prehrať/Pozastaviť ·
+  Ďalšia, hlasitosť, pri viacerých prehrávačoch ich zoznam), pravý = prehrať/pozastaviť, koliesko = hlasitosť.
+  Overené s napodobeným prehrávačom (`tests/fake-player.py`), nie so skutočným.
 - **QuickGoo** (návrh Clauda z 12. 10., meno a podoba čakajú na potvrdenie): to, čo robila rohová lišta Noctalie —
   sieť, zvuk, Bluetooth, jas a programy na pozadí. Kvapka ukazuje sieť; ľavý klik (Win+A) karta: Wi-Fi a Bluetooth
   zap / vyp, hlasitosť a jas posuvníkmi, siete (pripojenie aj s heslom, zabudnutie), zariadenia Bluetooth, výstupy
@@ -469,5 +473,5 @@ nemá (AI je hľadanie, Financie a Sociálne sú podkategórie Flathubu).
 **Ešte nie je** (vráti sa po kusoch, poradie v ROADMAP):
 QueenGoo (čaká na App Manager a Správcu zariadení), ChatGoo (čaká na Beeper), Tvorca Goo (vlastné kvapky už sú: §4.7),
 okno z bubliny (14; pád minimalizovaného okna už je), prenášanie ikier medzi monitormi, režim AI v LensGoo,
-portrét účtu, MediaGoo (čo práve hrá), prepojené kalendáre,
+portrét účtu, prepojené kalendáre,
 živé tapety a vlastný obrázok tapety, sklo okien, prichytenie ťahaním, Nastavenia a ostatné aplikácie.
