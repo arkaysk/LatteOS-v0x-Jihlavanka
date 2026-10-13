@@ -105,7 +105,9 @@ part Drops {
     // ── settings and the sky ────────────────────────────────────────────────────────────────────────────────
     event coffee_changed ->                    // whoever changes the user's coffee says so
     fact lively = true                         // drops fall asleep, watch the weather and play when left alone
-    fact glassy = false                        // the material: coffee in glass instead of plain coffee
+    fact glassy = 0                            // the material, one number: 0 plain coffee … 1 clear glass
+    prop material = 0 ~calm                    // …which the goo only slowly turns into: water and milk mix
+    follow material = glassy
     fact bends = true                          // …and whether that glass bends what is behind it
     fact idle = 0                              // 0 awake, 1 after a minute, 2 after three, 3 after six
     fact day = 1                               // 0 night … 1 the sun is up

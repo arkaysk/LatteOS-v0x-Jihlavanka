@@ -58,8 +58,8 @@ open_main = function(d, keep)
     rows[#rows + 1] = { label = tr("Put every drop back in its place"), glyph = "arrow-back-up", keep = true, run = function() E.reset_places() end }
     rows[#rows + 1] = { head = true, label = tr("LOOK"), line = true }
     rows[#rows + 1] = { pills = {
-        { label = tr("Coffee"), glyph = "cup", on = s.material ~= "glass", keep = true, run = function() E.set("material", "coffee") open_main(d, true) end },
-        { label = tr("Coffee in glass"), glyph = "glass", on = s.material == "glass", keep = true, run = function() E.set("material", "glass") open_main(d, true) end },
+        { label = tr("Coffee"), glyph = "cup", on = (tonumber(s.material) or (s.material == "glass" and 1 or 0)) < 0.5, keep = true, run = function() E.set("material", 0) open_main(d, true) end },
+        { label = tr("Coffee in glass"), glyph = "glass", on = (tonumber(s.material) or (s.material == "glass" and 1 or 0)) >= 0.5, keep = true, run = function() E.set("material", 1) open_main(d, true) end },
     } }
     rows[#rows + 1] = { label = tr("Lively drops"), line2 = tr("Left alone they fall asleep and show the weather"), glyph = "sparkles", on = s.lively ~= false, keep = true,
                         run = function() E.set("lively", s.lively == false) open_main(d, true) end }

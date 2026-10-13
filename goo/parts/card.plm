@@ -73,8 +73,9 @@ part Card {
     let dim = #b8a491
     let red = #e5484d
     spring nimble = 520, 34
+    spring land = 630, 14                      // a quarter of a second to the target, two bounces that can be seen
 
-    prop card.p = 0 ~grow
+    prop card.p = 0 ~land
     follow card.p = if(card_open, 1, 0)
     // The rows come in one after another when the content is new.
     prop reveal = 1 ~0ms
@@ -100,12 +101,20 @@ part Card {
     follow card.hs = card.h
 
     // The frame: coffee at the ear, turning into the colour of windows further away.
+    // It grows out of the ear as a drop does that is let go of: first round and narrower than the drop was,
+    // then it straightens into the card; the neck that ties it to the ear is a bell, thickest halfway
+    // (4·t·(1−t)). On the overshoot of the spring it swells wider too, not only taller.
+    let card.t = clamp(card.p, 0, 1)
+    let card.over = max(0, card.p - 1)
+    let card.cw = max(ear * 1.8 * (1 - card.t) + card.ws * (card.t * card.t * card.t + card.over * 0.6), 14)
+    let card.ch = max(card.hs * card.q, 14)
+    let card.round = 18 + 40 * (1 - card.t) * (1 - card.t)
     body {
         gradient: card.ax, card.ay to card.ax + card.sx * card.w, card.ay + card.sy * card.h, coffee, mix(paper, coffee, 0.4), paper, paper
         rim: 16%
         shadow: 0, 8, 22, 36% * clamp(card.p, 0, 1)
         opacity: if(card.p > 0.02, 1, 0)
-        box { at: card.ax + card.sx * card.ws * card.q / 2, card.ay + card.sy * card.hs * card.q / 2; size: max(card.ws * card.q, 14) * if(card.p > 0.02, 1, 0), max(card.hs * card.q, 14); corner: if(ear > 14, 26, 18) }
-        ellipse { at: card.ax, card.ay; radius: (ear * clamp(card.p * 3, 0, 1) + 1) * if(card.p > 0.02, 1, 0); blend: if(ear > 14, 18, 12) }
+        box { at: card.ax + card.sx * card.cw / 2, card.ay + card.sy * card.ch / 2; size: card.cw * if(card.p > 0.02, 1, 0), card.ch; corner: min(if(ear > 14, 26, 18) + (card.round - 18), min(card.cw, card.ch) / 2) }
+        ellipse { at: card.ax, card.ay; radius: (ear * clamp(card.p * 3, 0, 1) + 1) * if(card.p > 0.02, 1, 0); blend: 4 + 30 * 4 * card.t * (1 - card.t) }
     }
 }

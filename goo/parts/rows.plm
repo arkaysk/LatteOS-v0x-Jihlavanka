@@ -27,6 +27,8 @@ part Rows {
         opacity: clamp(card.p * 2 - 1, 0, 1)
         // A closed card is most of the time: nothing of it is worked out then.
         show: card.p > 0.01
+        // what is written is not drawn past the frame, which is still narrow while it grows from the ear
+        clip box { at: card.ax + card.sx * card.cw / 2, card.ay + card.sy * card.ch / 2; size: card.cw, card.ch; corner: 18 }
         column card_col {
             at: card.x0, card.y0
             padding: 8

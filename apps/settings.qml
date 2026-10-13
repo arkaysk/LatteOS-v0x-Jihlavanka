@@ -360,8 +360,10 @@ ShellRoot {
                             Rectangle { x: parent.width * 0.38; y: 28; width: parent.width * 0.36; height: 6; radius: 3; color: Theme.cups[parent.parent.parent.modelData.id].dim }
                             Rectangle { x: parent.width * 0.38; y: 46; width: 40; height: 16; radius: 8; color: Theme.cups[parent.parent.parent.modelData.id].gold } } } } }
             Part { visible: shell.page === "coffee"; width: view.room; title: I18n.tr("Glass")
-                Switch { text: I18n.tr("Coffee in glass"); hint: I18n.tr("The drops are glass with coffee in it, and where the graphics card can, the windows are glass too.")
-                         on: goo.kept.material === "glass"; onPressed: goo.set("material", on ? "coffee" : "glass") } }
+                Switch { text: I18n.tr("Coffee in glass"); hint: I18n.tr("The drops are glass with coffee in it. With the graphics card drawing by the processor they stay plain coffee.")
+                         on: goo.kept.material === "glass" || Number(goo.kept.material) > 0.5; onPressed: goo.set("material", on ? 0 : 1) }
+                Switch { text: I18n.tr("Windows of glass"); hint: I18n.tr("The windows are glass too, where the graphics card can: that is the cup's own look, apart from the drops.")
+                         on: goo.kept.windows === "glass"; onPressed: goo.set("windows", on ? "solid" : "glass") } }
 
             // the background: pictures, and films that move
             Part { visible: shell.page === "background"; width: view.room; title: I18n.tr("Pictures"); note: I18n.tr("LatteOS's own, and what is in your Pictures folder.")

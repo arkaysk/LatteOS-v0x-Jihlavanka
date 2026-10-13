@@ -852,13 +852,16 @@ on("goo_idle", function(stage)
 end)
 
 -- ── settings: settings.json in the scene's own folder, taken up as soon as it changes ────────────────────────
---   { "lively": true, "material": "coffee" | "glass", "bends": true, "hidden": ["clockgoo"], "zoom": { "lensgoo": 1.2 } }
+--   { "lively": true, "material": 0…1, "windows": "glass", "bends": true, "hidden": ["clockgoo"], "zoom": { "lensgoo": 1.2 } }
+-- material: the ratio of water to milk of the goo, one number — 0 plain coffee, 1 clear glass ("coffee" and "glass"
+-- of older files read as 0 and 1). windows: the windows are glass too; it is the windows' own choice, not the goo's.
 -- The scenes on the other monitors (side.plm) keep no settings: the main one tells them what it has, when it
 -- changes and when one of them starts (`side_hello`). E.tell says something to every Goo scene, this one too.
 local SETTINGS = "settings.json"
 function E.tell(...) run("latte-say", { ... }) end
 local hidden, zooms = {}, {}
 local glass_told = nil                       -- what the compositor was last told about glass windows
+local software = false                       -- drawn by the processor: the goo stays plain coffee
 local chosen_settings = {}                   -- the file as it was last read
 function E.apply_hidden()
     local changed = false
@@ -873,7 +876,8 @@ local function settings()
     if not ok or type(t) ~= "table" then t = {} end
     chosen_settings = t
     fact.lively = t.lively ~= false
-    fact.glassy = t.material == "glass"
+    local m = t.material == "glass" and 1 or tonumber(t.material) or 0
+    fact.glassy = software and 0 or math.max(0, math.min(1, m))
     fact.bends = t.bends ~= false
     if not fact.lively then weather_off() end
     hidden = {}
@@ -886,7 +890,8 @@ local function settings()
     end
     if changed then E.apart() publish() end
     E.tell("fact lively " .. tostring(fact.lively), "fact glassy " .. tostring(fact.glassy), "fact bends " .. tostring(fact.bends))
-    if glass_told ~= fact.glassy then glass_told = fact.glassy wm.glass(glass_told) end
+    local windows = t.windows == "glass"
+    if glass_told ~= windows then glass_told = windows wm.glass(windows) end
 end
 
 -- what is set now, and setting one thing: it is written down and taken up at once
@@ -936,6 +941,11 @@ function E.start(opts)
         settings()
         pcall(sys.watch, "files:" .. SETTINGS, settings)
         on("side_hello", settings)
+        -- the tier latte-boot chose for the hardware: with drawing by the processor the material stays coffee
+        run("sh", { "-c", "echo $LATTE_TIER" }, function(out)
+            local tier = (out or ""):gsub("%s", "")
+            if tier == "software" or tier == "safe" then software = true settings() end
+        end)
     end
     coffee()
     after(1500, sky)

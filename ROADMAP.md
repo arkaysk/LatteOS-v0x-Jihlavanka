@@ -237,6 +237,9 @@ Schválené 12. 10. 2026. Pracuje sa **zhora nadol, neskáče sa**; nový nápad
    stojí ~7 %, aj prázdnych. Zatvorená karta a prázdne miesta sa už nekreslia (27 → 24 %). Čo by pomohlo najviac:
    `rate:` podľa podmienky (záplata pleamaru — 30 snímok/s, kým kurzor nie je pri kvapkách; `rate` je dnes iba číslo),
    prípadne menej miest.
+   **Z Vitreusu, ešte neurobené (13. 10.):** efekty iba počas pohybu — prechodové efekty zapínať podľa vzdialenosti
+   pružiny od cieľa, v pokoji nulová cena (materiál a rast karty z Vitreusu sú hotové, ostáva merať; sklo pri
+   pokoji dnes nestojí nič, lebo `lens` číta obraz iba pri pohybe).
 6. [ ] **Aplikácie podľa Priority UX** — prvý Barista s AVP2 (`docs/barista/NAVRH.md`).
 7. [ ] **Režim okien Glance** (rozhodnuté 13. 10., podľa [Glance](https://github.com/scottjenson/Glance) Scotta
    Jensona, MIT) — štvrtý režim vedľa pásky, dlaždíc a plávajúcich, ponúka sa **iba na širokom monitore**. V strede
