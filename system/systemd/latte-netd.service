@@ -1,0 +1,25 @@
+# LatteOS: the service behind the NET button (bin/latte-net). It drops the traffic of the apps users cut off
+# the internet, by their cgroup, in its own nftables table.
+[Unit]
+Description=LatteOS NET: apps cut off the internet
+After=network-pre.target
+Wants=network-pre.target
+
+[Service]
+ExecStart=/usr/libexec/latte-netd
+# destroy: no error when the table is not there
+ExecStopPost=-/usr/sbin/nft destroy table inet latteos_net
+# latte-net looks for this folder to know the service runs
+RuntimeDirectory=latteos-netd
+Restart=on-failure
+RestartSec=2
+# nftables, closing sockets, and reading the users' lists under /run/user: nothing else
+ProtectSystem=strict
+ProtectHome=read-only
+PrivateTmp=true
+NoNewPrivileges=true
+CapabilityBoundingSet=CAP_NET_ADMIN CAP_DAC_READ_SEARCH
+AmbientCapabilities=CAP_NET_ADMIN CAP_DAC_READ_SEARCH
+
+[Install]
+WantedBy=multi-user.target

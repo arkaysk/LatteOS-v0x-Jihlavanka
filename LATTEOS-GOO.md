@@ -471,7 +471,7 @@ Každá aplikácia LatteOS žije v tom istom okne (`apps/common/AppWindow.qml`),
   zoznam diskov a obľúbených priečinkov, rýchly prístup k funkciám editora). Sklo rozmazáva Hyprland; druhy
   frost · smoke · clear · milk (`~/.config/latteos/glass`); kde sa nerozmazáva (nižšie stupne výkonu), je panel plný.
 - **Hlavička** vpravo od panela nesie funkcie: šípky späť a vpred, názov, nástroje aplikácie, pole hľadania, **NET**
-  (odstaviť aplikáciu od internetu — zatiaľ iba miesto) a úplne vpravo **✕**. Za hlavičku sa okno ťahá.
+  (odstaviť aplikáciu od internetu hneď: `latte-net`, služba `latte-netd`; to isté je v ponuke každého okna) a úplne vpravo **✕**. Za hlavičku sa okno ťahá.
   Minimalizovať a maximalizovať sú iba medzi plávajúcimi oknami.
 - **Kávová hladina** (`Surface.qml`): keď má aplikácia spodnú časť, je hladina jej rozhraním a to, čo v nej stojí,
   sa hojdá s ňou; inak je iba tichým pohyblivým pozadím. Pri pohybe okna sa zavlní ako káva v nesenej šálke.

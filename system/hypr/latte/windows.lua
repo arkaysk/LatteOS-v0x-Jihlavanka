@@ -132,7 +132,7 @@ local function dropped(w, x, y)
         if m then within_reach(w, m) end
     end
 end
-hl.on("window.close", function(w) if w then before[w.address] = nil end end)
+hl.on("window.close", function(w) if w then before[w.address] = nil cut[w.address] = nil end end)
 -- ── a window that plays a sound or asks to be looked at says so itself: its border pulses ────────────────
 -- Where one looks for it is the window. Which windows ask for attention the compositor knows; which ones
 -- sound, the Goo scene says (`latte.win.sounding`: it hears the mixer). Asking is red and quick and lasts
@@ -140,7 +140,10 @@ hl.on("window.close", function(w) if w then before[w.address] = nil end end)
 local wanting, sounding = {}, {}           -- address → true
 local ATTENTION, SOUND = "rgb(e5484d)", "rgb(ffe8c2)"
 local beat, lit, slow = nil, false, 0
+-- An app cut off the internet (bin/latte-net) says so too: its windows keep a border the colour of cold steel.
+local cut, CUT = {}, "rgb(6c7a89)"
 local function border(address, color, size)
+    if not color and cut[address] then color = CUT end
     local set = function(prop, value) hl.dispatch(hl.dsp.window.set_prop({ prop = prop, value = value or "unset", window = "address:" .. address })) end
     set("active_border_color", color)
     set("inactive_border_color", color)
@@ -297,6 +300,7 @@ function W.setup()
 
     local function with(f) return function(address, ...) local w = find(address) if w then return f(w, ...) end end end
     latte.win = {
+        cut = function(address, on) cut[address] = on or nil border(address) end,
         -- the screens changed (Settings › Displays): no floating window is left where it cannot be reached
         gather = function()
             for _, w in ipairs(hl.get_windows() or {}) do

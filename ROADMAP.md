@@ -118,8 +118,14 @@ Schválené 12. 10. 2026. Pracuje sa **zhora nadol, neskáče sa**; nový nápad
           — bočný panel zo skla od vrchu po spodok, hore lišta s funkciami (šípky, názov, nástroje aplikácie, hľadanie),
           úplne vpravo okenné tlačidlá; kávová hladina je rozhraním k spodnej časti okna, alebo iba tichým pozadím.
           App Manager je v ňom ako streamovacie menu (banner s ďalším nakúkajúcim, rad volieb, plagáty).
-        - [ ] **NET v hlavičke okna** — odstaviť aplikáciu od internetu hneď (služba s právami správcu a nftables ako
-          v0.3 `latte-net`/`latte-netd`); miesto v hlavičke je, tlačidlo sa ukáže, až bude mať čo robiť.
+        - [x] **NET — odstaviť aplikáciu od internetu hneď** (13. 10.): `bin/latte-net` (používateľ, bez hesla) presunie
+          bežiacu aplikáciu do vlastnej cgroup a zapíše ju do `$XDG_RUNTIME_DIR/latteos/net-off`; služba
+          `latte-netd` (root, `system/libexec/latte-netd`) jej v tabuľke nftables `inet latteos_net` zahodí
+          prevádzku a zavrie otvorené spojenia. Ovláda sa z ponuky okna (pravý klik na titulok alebo ikru:
+          „Odstaviť od internetu“) a z hlavičky aplikácií LatteOS (glóbus). Odstavené okno má oceľovosivý okraj.
+          Overené naostro so službou spustenou ručne (spojenie padne do sekundy, po zapnutí ide znova).
+          Platí pre aplikáciu, kým beží; trvalý zákaz je oprávnenie aplikácie a príde s Baristom.
+          Neoverené: jednotka systemd (zapnutá až inštalátorom), tlačidlo na titulkoch hyprbars nie je.
         - [ ] **Prechody bannerov** v App Manageri v duchu skwd-wall (používateľ, 13. 10.). skwd-wall je Rust a Vulkan
           pod GPL-3.0, jeho shadery sa do okna v QML nedajú vložiť; podobné prechody treba napísať vlastné
           (QML `ShaderEffect`, `qsb` je v systéme). Dnes sa bannery posúvajú.

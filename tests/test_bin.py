@@ -7,8 +7,8 @@ sys.dont_write_bytecode = True          # bin/ holds commands, not a place for _
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
-def load(name):
-    loader = importlib.machinery.SourceFileLoader(name.replace("-", "_"), os.path.join(ROOT, "bin", name))
+def load(name, folder="bin"):
+    loader = importlib.machinery.SourceFileLoader(name.replace("-", "_"), os.path.join(ROOT, folder, name))
     module = importlib.util.module_from_spec(importlib.util.spec_from_loader(loader.name, loader))
     loader.exec_module(module)
     return module
@@ -229,4 +229,18 @@ with tempfile.TemporaryDirectory() as d:
     assert settings.set_locale("sk_SK.UTF-8", "sk_SK.UTF-8") == 0 and settings.kept("locale") == {"LANG": "sk_SK.UTF-8"}
 with contextlib.redirect_stdout(io.StringIO()):
     assert settings.main(["default", "nonsense", "a.desktop"]) == 2 and settings.main(["default", "browser", "../a.desktop"]) == 2      # nothing is run for these
+net = load("latte-net")
+mine = net.MINE
+assert net.own(mine + "app.slice/app-flatpak-org.x.Y-123.scope") and net.own(mine + "app.slice/app-latte-net-9.scope")
+assert not net.own(mine + "app.slice/latte-goo.service") and not net.own("user.slice/user-%d.slice/session-4.scope" % net.UID)      # many apps share these
+assert not net.own("user.slice/user-0.slice/user@0.service/app.slice/app-x-1.scope") or net.UID == 0
+assert os.getpid() in net.family(os.getppid()) and net.family(os.getpid()) == [os.getpid()]
+netd = load("latte-netd", "system/libexec")
+ok = "user.slice/user-1000.slice/user@1000.service/app.slice/app-latte-net-7.scope"
+asked = {1000: "\n".join([ok, "user.slice/user-1001.slice/user@1001.service/app.slice/app-theirs-1.scope",        # someone else's app
+                          "user.slice/user-1000.slice/user@1000.service/../../../system.slice", ok + '" drop\n', "system.slice/sshd.service",
+                          "user.slice/user-1000.slice/user@1000.service/app.slice/app-x\\x2dy-1.scope", ""])}
+assert netd.wanted(asked, exists=lambda p: True) == {ok, "user.slice/user-1000.slice/user@1000.service/app.slice/app-x\\x2dy-1.scope"}
+assert netd.wanted(asked, exists=lambda p: False) == set()                       # an app that ended has no group to cut
+assert netd.table({ok}).count('socket cgroupv2 level 5 "%s" drop' % ok) == 2 and "drop" not in netd.table(set())
 print("bin: ok")

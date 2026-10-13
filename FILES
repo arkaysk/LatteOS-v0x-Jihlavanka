@@ -19,6 +19,7 @@
 /usr/bin/latte-apps                                     <- bin/latte-apps
 /usr/bin/latte-devices                                  <- bin/latte-devices
 /usr/bin/latte-monitor                                  <- bin/latte-monitor
+/usr/bin/latte-net                                      <- bin/latte-net
 /usr/bin/latte-network                                  <- bin/latte-network
 /usr/bin/latte-settings                                 <- bin/latte-settings
 /usr/bin/latte-session                                  <- bin/latte-session
@@ -26,6 +27,7 @@
 /usr/bin/latte-game                                     <- bin/latte-game
 /usr/libexec/os-session-select                          <- system/libexec/os-session-select
 /usr/libexec/latte-idle                                 <- system/libexec/latte-idle
+/usr/libexec/latte-netd                                 <- system/libexec/latte-netd
 /usr/share/latteos/session-env.sh                       <- system/session-env.sh
 /usr/share/latteos/FILES                                <- FILES
 /usr/share/latteos/goo/login.plm                        <- goo/login.plm
@@ -124,6 +126,7 @@
 /usr/share/plymouth/themes/latteos/watermark.png        <- system/plymouth/watermark.png
 /usr/share/plymouth/themes/latteos/                     <- system:/usr/share/plymouth/themes/spinner/*.png
 /usr/lib/systemd/system/latte-boot.service              <- system/systemd/latte-boot.service
+/usr/lib/systemd/system/latte-netd.service              <- system/systemd/latte-netd.service
 /usr/lib/systemd/user/latte-session.target              <- system/systemd/latte-session.target
 /usr/lib/systemd/user/latte-goo.service                 <- system/systemd/latte-goo.service
 /usr/lib/systemd/user/latte-idle.service                <- system/systemd/latte-idle.service
@@ -181,6 +184,6 @@ restorecon -R /run/latteos /var/lib/latteos/login
 fc-cache /usr/share/fonts/latteos
 plymouth-set-default-theme latteos -R                               # rebuilds the initramfs
 /etc/kernel/install.d/96-latteos-safe.install add VERSION           # for every kernel already installed
-systemctl enable latte-boot.service greetd.service
+systemctl enable latte-boot.service greetd.service latte-netd.service
 systemctl disable NetworkManager-wait-online.service                # it held the login screen back for a minute
 systemctl set-default graphical.target

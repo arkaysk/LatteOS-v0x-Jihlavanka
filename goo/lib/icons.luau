@@ -148,6 +148,7 @@ return {
     ["wifi-2"] = "\u{EBA5}",
     ["wifi-off"] = "\u{ECFA}",
     ["world"] = "\u{EB54}",
+    ["world-off"] = "\u{F1CA}",
     ["world-www"] = "\u{F38F}",
     ["x"] = "\u{EB55}",
 }

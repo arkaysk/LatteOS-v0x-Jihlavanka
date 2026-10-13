@@ -1,0 +1,146 @@
+#!/usr/bin/env python3
+"""latte-net: cuts a running app off the internet, now, and gives it back. No password: the user decides about
+their own apps, and the service latte-netd (root) does it.
+
+  latte-net off WHAT        the app is cut off: what it has open is closed, nothing new gets through
+  latte-net on WHAT         it has the internet again
+  latte-net toggle WHAT     the other of the two; says which it is now
+  latte-net status WHAT     on | off | none — none: the service is not running, nothing can be cut off
+
+WHAT is a process id, or a window's address as Hyprland gives it (0x…). An app is the group its process runs in
+(a cgroup): a Flatpak has one of its own; any other app is moved into one, with every process it started.
+The groups cut off are listed in $XDG_RUNTIME_DIR/latteos/net-off, which the service reads.
+ponytail: it holds for the app as it runs now. Started again it has the internet; a block that stays is a
+permission of the app and comes with Barista's permissions.
+"""
+import json
+import os
+import re
+import subprocess
+import sys
+import time
+
+UID = os.getuid()
+MINE = "user.slice/user-%d.slice/user@%d.service/" % (UID, UID)
+LIST = os.path.join(os.environ.get("XDG_RUNTIME_DIR") or "/run/user/%d" % UID, "latteos", "net-off")
+SERVICE = "/run/latteos-netd"              # there while latte-netd runs (its RuntimeDirectory)
+
+
+def out(*argv):
+    try:
+        return subprocess.run(argv, capture_output=True, text=True, timeout=8).stdout
+    except (OSError, subprocess.TimeoutExpired):
+        return ""
+
+
+def windows():
+    try:
+        return json.loads(out("hyprctl", "clients", "-j") or "[]")
+    except ValueError:
+        return []
+
+
+def pid_of(what):
+    if what.isdigit():
+        return int(what)
+    return next((w["pid"] for w in windows() if w.get("address") == what), 0)
+
+
+def group_of(pid):
+    try:
+        with open("/proc/%d/cgroup" % pid) as f:
+            return next((line.split("::", 1)[1].strip().lstrip("/") for line in f if line.startswith("0::")), "")
+    except OSError:
+        return ""
+
+
+def own(group):
+    """Whether the group is one app's own: a scope among the user's apps, not the session or a service many share."""
+    return group.startswith(MINE) and re.fullmatch(r"app-.+\.scope", group.rsplit("/", 1)[-1]) is not None
+
+
+def family(pid):
+    """The process and everything it started."""
+    parent = {}
+    for entry in os.listdir("/proc"):
+        if entry.isdigit():
+            try:
+                with open("/proc/%s/stat" % entry) as f:
+                    parent[int(entry)] = int(f.read().rsplit(")", 1)[1].split()[1])
+            except (OSError, ValueError, IndexError):
+                pass
+    found, grew = {pid}, True
+    while grew:
+        more = {p for p, pp in parent.items() if pp in found} - found
+        grew = bool(more)
+        found |= more
+    return sorted(found)
+
+
+def adopt(pid):
+    """Moves the app into a group of its own; answers the group, or "" when systemd would not."""
+    pids = family(pid)
+    subprocess.run(["busctl", "--user", "call", "org.freedesktop.systemd1", "/org/freedesktop/systemd1", "org.freedesktop.systemd1.Manager",
+                    "StartTransientUnit", "ssa(sv)a(sa(sv))", "app-latte-net-%d.scope" % pid, "fail", "1",
+                    "PIDs", "au", str(len(pids)), *map(str, pids), "0"], capture_output=True, timeout=8)
+    for _ in range(20):
+        if own(group_of(pid)):
+            return group_of(pid)
+        time.sleep(0.1)
+    return ""
+
+
+def listed():
+    try:
+        with open(LIST) as f:
+            return [line.strip() for line in f if line.strip()]
+    except OSError:
+        return []
+
+
+def keep(groups):
+    # a group that is gone was an app that ended
+    groups = [g for g in dict.fromkeys(groups) if os.path.isdir("/sys/fs/cgroup/" + g)]
+    os.makedirs(os.path.dirname(LIST), exist_ok=True)
+    with open(LIST + ".new", "w") as f:
+        f.write("".join(g + "\n" for g in groups))
+    os.replace(LIST + ".new", LIST)
+
+
+def mark(pid, cut):
+    """The app's windows say so themselves (system/hypr/latte/windows.lua)."""
+    inside = set(family(pid))
+    for w in windows():
+        if w.get("pid") in inside:
+            out("hyprctl", "eval", 'latte.win.cut("%s", %s)' % (w["address"], "true" if cut else "false"))
+
+
+def main(a):
+    if len(a) != 2 or a[0] not in ("off", "on", "toggle", "status"):
+        print(__doc__.strip())
+        return 2
+    pid = pid_of(a[1])
+    group = group_of(pid) if pid else ""
+    if not group or not os.path.isdir(SERVICE):
+        print("none")
+        return 1
+    cut = group in listed()
+    if a[0] == "status":
+        print("off" if cut else "on")
+        return 0
+    want = not cut if a[0] == "toggle" else a[0] == "off"
+    if want and not cut:
+        group = group if own(group) else adopt(pid)
+        if not group:
+            print("none")
+            return 1
+        keep(listed() + [group])
+    elif not want:
+        keep([g for g in listed() if g != group])
+    mark(pid, want)
+    print("off" if want else "on")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))

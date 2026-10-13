@@ -171,6 +171,7 @@ library Slovak {
         "Lap" = "Medzičas"
         "Reset" = "Vynulovať"
         "Pause" = "Pozastaviť"
+        "Cut off the internet" = "Odstaviť od internetu"
         "The launcher" = "Spúšťač"
         "The launcher, without a Windows key" = "Spúšťač, bez klávesu Windows"
         "Search apps and settings" = "Hľadať aplikácie a nastavenia"

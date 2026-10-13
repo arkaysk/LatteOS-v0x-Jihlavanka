@@ -95,13 +95,14 @@ local function free_above(x0, x1)
     return gap
 end
 
-local function menu(w)
+-- `net`: "on" or "off" when the app can be cut off the internet (bin/latte-net), nil when nothing here does that
+local function menu(w, net)
     local function act(what, arg) return function() wm.win(what, w.address, arg) after(150, M.refresh) end end
     local function zone(id, label, glyph) return { label = tr(label), glyph = glyph, run = act("snap", id) } end
     local desks = {}
     for n = 1, 4 do desks[n] = { label = tr("Desktop") .. " " .. n, on = w.desk == n, run = act("to_desk", n) } end
     desks[#desks + 1] = { label = tr("New desktop"), glyph = "plus", run = act("to_desk", 0) }
-    card.open({
+    local rows = {
         { label = tr("Restore"), glyph = "arrows-minimize", run = act(w.away and "activate" or "restore") },
         { label = tr("Minimize"), glyph = "minus", off = w.away or mode == 0, run = act("minimize") },
         { label = tr("Maximize"), glyph = "arrows-maximize", off = w.maximized, run = act("maximize") },
@@ -113,7 +114,19 @@ local function menu(w)
         { label = tr("Always on top (all desktops)"), glyph = "pin", on = w.pinned, run = act("pin") },
         { label = tr("Move to desktop"), glyph = "stack-2", sub = desks },
         { label = tr("Close"), glyph = "x", hint = "Alt+F4", danger = true, line = true, run = act("close") },
-    }, { width = 280 })
+    }
+    if net then
+        table.insert(rows, #rows, { label = tr("Cut off the internet"), glyph = "world-off", on = net == "off", line = true,
+                                    run = function() run("latte-net", { "toggle", w.address }, function() end) end })
+    end
+    card.open(rows, { width = 280 })
+end
+-- the menu, once it is known whether the app has the internet
+local function ask_menu(w)
+    run("latte-net", { "status", w.address }, function(out)
+        local net = (out or ""):match("^(o[nf]f?)%s*$")
+        menu(w, net)
+    end)
 end
 
 -- the windows that did not fit, as a list
@@ -205,7 +218,7 @@ local function layout()
                 beside = HEAD, gap = p.x, seat = p.r * 0.8 - p.y, nature = "calm", pull = 0.15, lift = p.tight and 0.15 or 0.55, sticky = 0.35,
                 swell = 0.1, reach = 160, team = 1, melt = 0.35, puddle = 0.15,
                 click = function() if more then rest(i) else wm.win("toggle", w.address) after(150, M.refresh) end end,
-                right = function() if not more then menu(w) end end,
+                right = function() if not more then ask_menu(w) end end,
                 enter = function() M.enter(key_of(w)) end,
                 leave = function() M.leave() end,
                 -- let go after a drag: its app moves in front of the bunch it was let go over; the berry stays in the bar
@@ -344,7 +357,7 @@ on("win_menu", function()
         if w.address == address then
             local x, y = wm.origin()         -- the pointer was told as the compositor counts, across all monitors
             fact["tap.x"], fact["tap.y"] = fact["tap.x"] - x, fact["tap.y"] - y
-            return menu(w)
+            return ask_menu(w)
         end
     end
 end)

@@ -45,6 +45,10 @@ FloatingWindow {
 
     // how windows are arranged now, as the compositor keeps it for whoever asks
     property string mode: "tape"
+    // "on" or "off" while this app can be cut off the internet (bin/latte-net), "" when nothing here does that
+    property string net: ""
+    Process { id: net; command: ["latte-net", "status", String(Quickshell.processId)]; running: true
+              stdout: StdioCollector { onStreamFinished: { const said = this.text.trim(); win.net = said === "on" || said === "off" ? said : "" } } }
     FileView {
         path: (Quickshell.env("XDG_STATE_HOME") || (Quickshell.env("HOME") + "/.local/state")) + "/latteos/window-mode"
         printErrors: false; watchChanges: true
@@ -108,6 +112,8 @@ FloatingWindow {
                                 selectionColor: Theme.coffee; onAccepted: if (text.trim() !== "") win.searched(text.trim()) }
                     Label { x: 34; text: win.searchHint; color: Theme.faint; visible: field.text === "" && !field.activeFocus; anchors.verticalCenter: parent.verticalCenter } }
                 Row { spacing: 0; anchors.verticalCenter: parent.verticalCenter
+                    HeadButton { icon: win.net === "off" ? "world-off" : "world"; visible: win.net !== ""; lit: Theme.raised; opacity: win.net === "off" ? 1 : 0.7
+                                 onPressed: { net.command = ["latte-net", "toggle", String(Quickshell.processId)]; net.running = true } }
                     HeadButton { icon: "minus"; visible: win.mode === "floating"; onPressed: win.ask("minimize_active") }
                     HeadButton { icon: "rectangle"; visible: win.mode === "floating"; onPressed: win.ask("maximize_active") }
                     HeadButton { icon: "x"; lit: Theme.red; onPressed: Qt.quit() } } }

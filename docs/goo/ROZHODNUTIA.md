@@ -313,3 +313,6 @@ Nové rozhodnutie: jeden riadok sem (dátum, čo, prečo) a oprava platného zne
 | Fresh: hra pri nečinnosti a okno z bubliny | hra je (13. 10.) — hrajú sa iba hravé kvapky, teda vlastné s povahou `playful`; okno z bubliny odložené, rodia sa z nej okná QueenGoo (12. 10.) |
 | whyd (prečo počítač spadol, z žurnálu predošlého štartu) | áno — do SafeGoo ako diagnostika pádu, voliteľný samostatný program vedľa `last-crash.log` z `latte-session`; najprv skúška na latte-lab (13. 10.) |
 | Inšpektor siete: zariadenia Matter a Thread (podľa UniFi Network 11) | áno, pasívne z mDNS, bez párovania (R3·E); párovanie ako ďalší správca a topológia Thread iba návrh (13. 10.) |
+| NET: odstavenie platí pre bežiacu aplikáciu, nie natrvalo | zatiaľ áno (Claude, 13. 10. — čaká na slovo používateľa): „hneď, teraz“ rieši bežiacu aplikáciu; trvalý zákaz je oprávnenie a patrí k Baristovi |
+| Zmena obrazoviek sa najprv skúsi a bez potvrdenia sa do 15 s vráti | áno (Claude podľa Windowsu, 13. 10.); obrazovky vedľa seba, nad sebou iba cez vlastný `hyprland.lua` |
+| Jazyk a rozloženia klávesnice sú nastavením používateľa, nie systému | áno (13. 10.): `~/.config/latteos/locale` a `keyboard`, bez hesla správcu; prihlasovacia obrazovka ostáva pri systémových |

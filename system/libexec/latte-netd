@@ -1,0 +1,96 @@
+#!/usr/bin/env python3
+"""latte-netd: the service behind `latte-net`, as root. Apps the users cut off the internet lose it at once.
+
+Every second it reads each logged-in user's list ($XDG_RUNTIME_DIR/latteos/net-off: a cgroup a line) and keeps
+the nftables table `inet latteos_net` so: what the sockets of those groups send and receive is dropped, except
+to the computer itself. A group newly cut off has its open connections closed. Turned back on, the rule goes.
+A user's list can name only groups under that user's own systemd: nobody cuts off anyone else's app.
+
+  latte-netd           runs (latte-netd.service)
+  latte-netd rules     prints the table it would load now, and loads nothing
+"""
+import os
+import re
+import stat
+import subprocess
+import sys
+import time
+
+TABLE = "latteos_net"
+CGROUPS = "/sys/fs/cgroup"
+# what a group's name is made of, as systemd writes it; a quote or a line break never gets into the rules
+NAME = re.compile(r"[A-Za-z0-9_.@:\\-]+")
+
+
+def lists():
+    """{uid: text of that user's list}, only from a plain file the user owns."""
+    found = {}
+    try:
+        uids = [int(d) for d in os.listdir("/run/user") if d.isdigit()]
+    except OSError:
+        return found
+    for uid in uids:
+        try:
+            fd = os.open("/run/user/%d/latteos/net-off" % uid, os.O_RDONLY | os.O_NOFOLLOW)
+        except OSError:
+            continue
+        try:
+            st = os.fstat(fd)
+            if stat.S_ISREG(st.st_mode) and st.st_uid == uid and st.st_size <= 65536:
+                found[uid] = os.read(fd, 65536).decode("utf-8", "replace")
+        finally:
+            os.close(fd)
+    return found
+
+
+def wanted(lists, exists=os.path.isdir):
+    """The groups to cut off: each under its user's own systemd, named plainly, and there."""
+    groups = set()
+    for uid, text in lists.items():
+        mine = "user.slice/user-%d.slice/user@%d.service/" % (uid, uid)
+        for line in text.splitlines():
+            g = line.strip()
+            parts = g[len(mine):].split("/")
+            if g.startswith(mine) and all(NAME.fullmatch(p) and p not in (".", "..") for p in parts) and exists(os.path.join(CGROUPS, g)):
+                groups.add(g)
+    return groups
+
+
+def table(groups):
+    """The whole table at once, so that there is no moment without the rules. The first line makes the table
+    if there is none, so that deleting it never fails."""
+    rules = "".join('    socket cgroupv2 level %d "%s" drop\n' % (g.count("/") + 1, g) for g in sorted(groups))
+    return ("table inet %s\ndelete table inet %s\ntable inet %s {\n"
+            "  chain out {\n    type filter hook output priority 0; policy accept;\n    oif lo accept\n%s  }\n"
+            "  chain in {\n    type filter hook input priority 0; policy accept;\n    iif lo accept\n%s  }\n}\n") % (TABLE, TABLE, TABLE, rules, rules)
+
+
+def main(a):
+    if a == ["rules"]:
+        print(table(wanted(lists())), end="")
+        return 0
+    if a or os.geteuid() != 0:
+        print(__doc__.strip())
+        return 2
+    now = None
+    while True:
+        try:
+            want = wanted(lists())
+            if want != now:
+                done = subprocess.run(["nft", "-f", "-"], input=table(want), capture_output=True, text=True)
+                if done.returncode:
+                    print("latte-netd: nft: " + done.stderr.strip()[:300], file=sys.stderr, flush=True)
+                else:
+                    for g in want - (now or set()):
+                        subprocess.run(["ss", "-K", "-a", "cgroup", "/" + g], capture_output=True)
+                        print("cut off: " + g.rsplit("/", 1)[-1], flush=True)
+                    for g in (now or set()) - want:
+                        print("back on: " + g.rsplit("/", 1)[-1], flush=True)
+                    now = want
+        except Exception as e:                  # one user's list must not stop the service for everyone
+            print("latte-netd: %s" % e, file=sys.stderr, flush=True)
+        time.sleep(1)                          # ponytail: a look a second; watching the files (inotify) if it ever shows in a profile
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))
