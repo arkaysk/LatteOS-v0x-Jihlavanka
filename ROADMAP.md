@@ -266,6 +266,15 @@ Schválené 12. 10. 2026. Pracuje sa **zhora nadol, neskáče sa**; nový nápad
    `latte-boot` (predštartová identifikácia), obraz ju musí niesť; ostáva ju posilniť a skúsiť. Základ Fedora/Atomic: zatiaľ jedno.
    *Pred odobratím v0.3:* snímka snapper, záloha nastavení používateľa, kroky sa zapíšu a overia suchým `./install`.
 
+10. [ ] **Rozpoznanie pripojených obrazoviek** (13. 10., z prvého behu Fresh na latte-lab). latte-lab beží väčšinou iba
+   cez Moonlight na virtuálnej DP-1 (EDID LATTE-VIRT); skutočný monitor DP-3 býva pripojený len občas. Prvý štart Fresh
+   so skutočným monitorom dal hlavnú scénu Goo na virtuálnu obrazovku, ktorú nikto nevidí, lebo `main_monitor()`
+   v `system/hypr/hyprland.lua` hľadal monitor presne na 0,0 a pri `position = "auto"` tam žiadny nebol. Treba:
+   (a) hlavný monitor = skutočný (nie LATTE-VIRT), ináč ten najviac vľavo; (b) virtuálny sa pri skutočnom zrkadlí
+   na hlavný (Hyprland `mirror`; overené 13. 10., zrkadlo aj škáluje), bez neho je hlavný on; (c) zmena pri
+   pripojení a odpojení za behu (scéna Goo sa presunie, dnes ju presúva `place_shell`); (d) voľba „Duplikovať“
+   v Nastaveniach › Obrazovky; (e) inštalátor to pri viacerých obrazovkách nastaví sám. Overiť so Sunshine (KMS).
+
 ## ROADMAP2 — LatteOS od nápadu po hotový produkt
 
 **Pridané 9. 10. 2026.** Pôvodná roadmapa je od 9. 10. v snímke
