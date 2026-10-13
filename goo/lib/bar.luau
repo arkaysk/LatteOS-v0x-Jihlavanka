@@ -239,6 +239,9 @@ local function show_mode()
     if head and m then head:glyph(m.glyph) head:name(tr(m.name)) end
 end
 on("window_mode", function(n)
+    -- The compositor says this each time it has read its configuration, and that puts the band back at the bottom.
+    local head = E.get(HEAD)
+    if head and head.edge ~= 0 then M.band() end
     if not MODES[n] or n == mode then return end
     mode = n
     show_mode()
