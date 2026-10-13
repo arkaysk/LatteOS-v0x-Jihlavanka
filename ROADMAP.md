@@ -168,6 +168,12 @@ Schválené 12. 10. 2026. Pracuje sa **zhora nadol, neskáče sa**; nový nápad
    službu `thumbnails`; miesto kvapky dnes nesie ikonu 30 × 30, náhľad potrebuje väčší obrázok a obdĺžnikový tvar),
    odkiaľ je monitor „široký“, čo robí Stash v Hyprlande (pravidlá okien alebo vlastné rozloženie). Náhľady sa
    dovtedy nerobia.
+8. [ ] **Fyzikálne prostredie kvapiek** (rozhodnuté 13. 10.: neskôr, **až po zmeraní a otestovaní Fresh na hardvéri
+   latte-lab**). Dnes majú kvapky jedny pravidlá a spoločné prostredie (gravitácia, hladina, vietor, pružiny), ale
+   nepôsobia na seba silami: neprekrývanie počíta logika, gravitácia platí iba pri páde a skoku, okná nie sú súčasťou
+   prostredia. Cieľ: hmotnosť, zotrvačnosť, vzájomné odpudzovanie a zrážky ako pravidlá scény, rovnaké pre každú
+   kvapku (vzor fwm, R3·A). Znamená prepísať pohybovú časť `goo/parts/drops.plm` a presunúť neprekrývanie z
+   `goo/lib/engine.luau` do scény; najprv zmerať cenu na snímku (dnešné pružiny: 24 % jadra pri 32 miestach).
 
 ## ROADMAP2 — LatteOS od nápadu po hotový produkt
 
