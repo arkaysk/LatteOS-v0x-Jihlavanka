@@ -66,7 +66,7 @@ Pôvodný zoznam (7. 10. 2026, 540 testov bez stavu): `docs_zaloha/2026-10-07-st
 | 005 | Boot s poškodeným posledným session stavom | P1 | ⬜ | | |
 | 006 | Boot po páde compositoru | P1 | ⚠️ | 12. 10. · latte-lab | pád Hyprlandu (ABRT) po 8 min: sám sa spustil znova v tom istom prihlásení, engine aj rohová lišta späť, počítadlo pádov po minúte 0; otvorené okná sa nevrátili |
 | 007 | Boot po páde GOO shellu | P1 | ✅ | 13. 10. · latte-lab | `kill -KILL` na engine Goo za behu: `latte-goo.service` ho do 2 s spustila znova (NRestarts 1), počítadlo pádov ostalo 0, SAFE sa neprepol; SIGSEGV scéna prežila (pleamar ho zachytáva) |
-| 008 | Boot po páde systémovej služby | P1 | ⬜ | | |
+| 008 | Boot po páde systémovej služby | P1 | ✅ | 13. 10. · latte-lab | `systemctl kill -s KILL latte-netd` (root služba): systemd ju po 3 s spustil znova (NRestarts 1), relácia Goo bez zmeny, SAFE sa neprepol. Pád pri vypnutom internete aplikácie (tabuľka nftables) sa neskúšal |
 | 009 | Automatický výber NORMAL režimu | P1 | ✅ | 12. 10. · latte-lab | latte-boot: normal · hw · usporny (AMD gfx803, 4 GB), počítadlo pádov 0 |
 | 010 | Automatický výber SAFE režimu | P1 | ⚠️ | 12. 10. · latte-lab | druhý pád Hyprlandu do 60 s → SAFE s dôvodom „Hyprland spadol po 20 s“, ponuka latte-safe; núdzové rozhranie pritom bralo ~2 jadrá (pri SAFE zvolenom na prihlásení 3 % celkom) — zistiť rozdiel |
 | 011 | Ručné vynútenie SAFE režimu | P1 | ✅ | 12. 10. · latte-lab | SAFE zvolený na prihlasovacej obrazovke (LatteOS SAFE skúška): lišta s textom, hodiny, ponuka latte-safe, terminál |
