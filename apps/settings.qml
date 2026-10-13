@@ -132,6 +132,8 @@ ShellRoot {
         if (path !== "") { shell.bgSet(["picture", path]); pictures.ask(["latte-settings", "wallpapers"]) } } } }
     Word { id: tier; name: "tier" }
     Word { id: ai; name: "ai" }
+    // whatever else in the system is AI hears of the switch: skwd-wall's search model (bin/latte-wall)
+    Timer { id: aiLater; interval: 700; onTriggered: Quickshell.execDetached(["latte-wall", "ai"]) }
     // what latte-boot decided for this start, and whether the next one was asked to be SAFE
     FileView { id: decided; path: "/run/latteos/mode.toml"; printErrors: false
                property string mode: ""; property string renderer: ""; property string tier: ""; property string reason: ""
@@ -636,7 +638,7 @@ ShellRoot {
             Pill { visible: shell.page === "storage"; icon: "disc"; text: I18n.tr("Disks in the Device Manager"); onPressed: Quickshell.execDetached(["latte-app", "devices", "disks"]) }
 
             // the AI
-            Switch { visible: shell.page === "ai"; width: view.room; text: I18n.tr("AI in LatteOS"); on: ai.value !== "off"; onPressed: ai.choose(on ? "off" : "on")
+            Switch { visible: shell.page === "ai"; width: view.room; text: I18n.tr("AI in LatteOS"); on: ai.value !== "off"; onPressed: { ai.choose(on ? "off" : "on"); aiLater.restart() }
                      hint: I18n.tr("The AI mode of LensGoo, Win+C. Turned off, nothing of LatteOS talks to an AI.") }
             Part { visible: shell.page === "ai"; width: view.room; title: I18n.tr("Who answers"); note: I18n.tr("The official tool of a service answers, with the account you are signed in to it with. LatteOS keeps no key and no password of yours.")
                 Label { visible: helpers.data !== null && helpers.data.length === 0; text: I18n.tr("No AI tool is installed on this computer."); color: Theme.dim }

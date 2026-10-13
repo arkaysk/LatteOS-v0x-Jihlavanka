@@ -13,6 +13,7 @@
   latte-wall pause | resume                a film or a scene stands still, and moves again
   latte-wall pick [WORDS…]                 opens skwd-wall's picker (with words: looking for what they describe)
   latte-wall engine                        prints "skwd" or "plain": who draws
+  latte-wall ai                            tells skwd-wall whether its search model may run: only with AI on in LatteOS
 
 An ENTRY is {"kind": "picture" | "color" | "slideshow", "path", "color", "folder", "minutes", "shuffle"}.
 Setting * makes every screen the same and forgets what single screens had; a screen set by itself keeps its own.
@@ -52,11 +53,38 @@ def skwd():
 
 def lens():
     """Looking for wallpapers by what they show: only with skwd-lens there and AI allowed in LatteOS."""
+    return skwd() and shutil.which("skwd-lens") is not None and not ai_off()
+
+
+def ai_off():
     try:
-        off = open(os.path.join(CONFIG, "ai")).read().split()[:1] == ["off"]
+        return open(os.path.join(CONFIG, "ai")).read().split()[:1] == ["off"]
     except OSError:
-        off = False
-    return skwd() and shutil.which("skwd-lens") is not None and not off
+        return False
+
+
+def sync_ai():
+    """skwd-wall's model for looking by meaning (skwd-lens) is AI: with AI off in LatteOS it does not run."""
+    if not skwd():
+        return
+    path = os.path.join(os.environ.get("XDG_CONFIG_HOME") or HOME + "/.config", "skwd-wall-v2", "config.json")
+    try:
+        conf = json.load(open(path))
+    except (OSError, ValueError):
+        conf = {}
+    if not isinstance(conf, dict):
+        return
+    part = conf.get("semantic") if isinstance(conf.get("semantic"), dict) else {}
+    want = not ai_off()
+    if part.get("enabled", True) == want:
+        return
+    part["enabled"] = want
+    conf["semantic"] = part
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path + ".new", "w") as f:
+        json.dump(conf, f, indent=1)
+    os.replace(path + ".new", path)
+    quiet("systemctl", "--user", "try-restart", "skwd-walld.service")       # it reads its settings when it starts
 
 
 def load():
@@ -274,7 +302,10 @@ def main(a):
         print(json.dumps({"engine": "skwd" if skwd() else "plain", "lens": lens(), "fit": s["fit"], "screens": screens(), "all": s["all"],
                           "screens_own": s["screens"], "shown": shown, "library": library()}, ensure_ascii=False))
     elif a == ["restore"]:
+        sync_ai()
         restore(s)
+    elif a == ["ai"]:
+        sync_ai()
     elif len(a) == 2 and a[0] == "show":
         return main(["set", "*", "picture", a[1]])
     elif len(a) >= 4 and a[0] == "set":
