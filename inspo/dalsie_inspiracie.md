@@ -235,3 +235,84 @@ https://codeberg.org/GuillotineMelody/nervboot
     automaticky závislosť. Prechody okien/ponúk testovať oddelene od tapety cez Hyprland a Quickshell,
     iba na plnom výkonnostnom stupni; vo VM/SAFE ponechať jednoduché statické pozadie. Zachovať plánované
     pauzovanie pri hre alebo zakrytí a zjednotiť výber tapiet v Nastaveniach.
+
+https://github.com/academa-labs/manimgx
+  - (Claude, 13. 10.) Matematické a 3D animácie z Pythonu (API Manimu), kreslí Rust/wgpu; MIT, hotové balíky s x264
+    sú GPL. Nápad autora: pomôcť enginu Goo kresliť fyziku a pohyblivú grafiku aj mimo kvapiek.
+  - **Využitie v LatteOS:** na to sa nehodí — manimgx vyrába video vopred (render do MP4), nie obraz za behu, a engine
+    Goo kreslí pleamar. Pohyblivá grafika mimo kvapiek patrí do scén pleamaru alebo shaderov Hyprlandu. manimgx ostáva
+    nástrojom na predvádzacie videá a návody k LatteOS, nie súčasťou systému.
+
+https://www.reddit.com/r/homeassistant/s/SyR0gWPGAA
+  - (Claude, 13. 10., podľa snímky autora) UniFi Network 11 (Ubiquiti, blog.ui.com) „rozumie“ Matteru: po zadaní
+    párovacieho kódu Matter zobrazí stav zariadení (batéria, firmvér, signál) a ako sú pripojené, a v jednej
+    topológii ukáže zariadenia IP aj Thread s vlastnými upozorneniami. Nápad autora: rozšírenie správy siete,
+    doplnok k Inšpektorovi siete (podľa ESET Network Inspector).
+  - **Využitie v LatteOS:** hodí sa do **Inšpektora siete**, ktorý už číta mDNS. V dvoch stupňoch:
+    (1) **pasívne, bez párovania** — zariadenia Matter cez Wi-Fi/Ethernet a hraničné smerovače Thread sa ohlasujú
+    cez mDNS (`_matter._tcp`, `_matterc._udp`, `_meshcop._udp`); Inšpektor ich môže ukázať ako vlastnú skupinu
+    „Inteligentná domácnosť“ (výrobca a typ z údajov ohlásenia, ak ich zariadenie posiela) a upozorniť na nové.
+    (2) **podrobnosti** (batéria, firmvér, signál, topológia Thread) vyžadujú, aby sa LatteOS stal ďalším správcom
+    zariadenia cez párovací kód (Matter multi-admin, napr. python-matter-server), alebo prístup k Home Assistantu či
+    hraničnému smerovaču (REST API OpenThread). Zariadenia Thread sám počítač bez rádia Thread nevidí.
+    Párovanie je zásah do cudzieho zariadenia: iba na výslovnú voľbu používateľa, s možnosťou odobrať sa zo
+    zariadenia; predvolene iba pasívny stupeň (1). Nie skôr ako po Inšpektorovi v R3·E (nové zariadenie, heslo routera).
+    Stupeň (1) prijatý do ROADMAP R3·E 13. 10.; stupeň (2) ostáva návrhom.
+
+https://github.com/vmaltarello/whyd
+  - (Claude, 13. 10.) Go, GPL-3.0, mladý projekt. Zo systémového žurnálu predošlého štartu vysvetlí, prečo počítač
+    zamrzol, spadol alebo sa vypol (OOM, chyby GPU, zlyhané služby, prehriatie); pravidlá v TOML, správa so skrytými
+    údajmi pre fóra.
+  - **Využitie v LatteOS:** prijaté 13. 10. do ROADMAP („Teraz“, bod 4 SafeGoo — diagnostika pádu): skúška na latte-lab,
+    vlastné pravidlá pre reláciu LatteOS, položka v SAFE „Prečo sa skončila minulá relácia“, voliteľná závislosť
+    vedľa `last-crash.log` z `latte-session`.
+
+https://github.com/JonathanInTheClouds/omarchy-ios-kit 
+  - (Claude, 13. 10.) Pozor, nespúšťa aplikácie iOS na Linuxe. Je to súprava na **vývoj** aplikácií pre iPhone bez Macu:
+    Swift a iOS SDK na Linuxe, preklad, nahratie a spustenie na skutočnom iPhone cez USB, ladenie a hot reload.
+    Simulátor iOS nemá. MIT, 5 commitov.
+  - **Využitie v LatteOS:** krok ku kompatibilite s iOS to nie je — spúšťať aplikácie iOS na Linuxe dnes nič použiteľné
+    nevie. Nanajvýš vzor, ako Omarchy dáva vývojárske súpravy jedným príkazom (App Manager, Barista). Pre LatteOS bez
+    priameho využitia.
+
+https://chaldea.vercel.app/  (kód: https://github.com/Aleph1-9012/Chaldea)
+  - (Claude, 13. 10.) Knižnica 38 widgetov pre Quickshell: poznámky, prehrávač (MPRIS), glyfy, interaktívne umenie,
+    zámky obrazovky. Widget sa vyskúša v prehliadači, nastaví a stiahne ako QML. Stránka Apache 2.0, widgety 0BSD;
+    mladý projekt (48 commitov).
+  - **Využitie v LatteOS:** vizuálna inšpirácia pre MediaGoo, zámok obrazovky a poznámky. Vo Fresh kvapky kreslí
+    pleamar, nie Quickshell, takže QML sa nepreberá — píše sa nanovo ako scéna. Licencia 0BSD by prevzatie dovoľovala,
+    pri aplikáciách v QML (`apps/`) sa dá použiť priamo. Nápad „vyskúšať a nastaviť pred pridaním“ sa hodí pre Tvorcu Goo.
+
+https://github.com/scottjenson/Glance
+  - (Claude, 13. 10.) Pokusný efekt pre KWin (MIT) na široké monitory, vznikol podľa prednášky nižšie. Stred je Main
+    (okná v plnej veľkosti), vedľa Stash (zmenšené), na okraji Parking (malé dlaždice, stále použiteľné). Okno sa
+    zmenší potiahnutím k okraju, minimalizácia ho odstaví na okraj namiesto skrytia; pretiahnutý text alebo obrázok
+    sa stane lístkom v `~/Clips`. Viazaný na vnútorné API KWinu.
+  - **Využitie v LatteOS:** kód sa nepreberá; myšlienka sa hodí pre hlavný monitor 2560 × 1080. V Hyprlande by išla
+    cez pravidlá okien a jedno miesto v engine, ktoré pozná zóny; ikry v BarGoo by sa zmenili na odstavené okná
+    na okraji. Zapísané do ROADMAP medzi návrhy R3·A (nie úloha, kým sa neprijme). Lístky ~ odkladacia kvapka (r. 532).
+
+https://m.youtube.com/watch?v=V7AfAcQwLW0&t=1874s&pp=2AHSDpACAQ%3D%3D
+  - Scott Jenson: „Are we really going to use the same Desktop UX forever?“ (KDE, 19. 9. 2026;
+    https://media.ccc.de/v/kde2026-7-are_we_really_going_to_use_the_same_desktop_ux_forever). Plocha sa 20 rokov
+    nezmenila a staré vzory nestačia dnešným potrebám; z prednášky vznikol Glance.
+  - **Využitie v LatteOS:** podklad k otázke autora „je čas zahodiť taskbar?“. BarGoo je dnes stále zoznam okien (ikry),
+    len v tvare kvapky. Zahodiť lištu by znamenalo nahradiť zoznam okien zónami na ploche — pozri Glance.
+
+zaujimavy projekt.o altenativnem taskbare. autor https://www.reddit.com/r/unixporn/s/FhK3eotuOZ predvadza odkladanie otrenych okien na okraj obrazovky. okna su tahanim pritahovane a len kusok je vydiet.
+  - (Claude, 13. 10.) Príspevok sa nedal otvoriť; popis presne zodpovedá Glance (zóna Parking) vyššie.
+
+https://github.com/iluaii/fwm tekute prostredie
+  - (Claude, 13. 10.) Kompozitor pre Wayland v C (wlroots), GPL-2.0, autorovi slúži denne. Okná sú tuhé telesá
+    (Box2D: hmotnosť, hybnosť, hádzanie, gravitácia), pružné okná pri ťahaní, 10 plôch na jednom páse. Autor podľa
+    videa: okná na seba pôsobia ako predmety v nízkej gravitácii a v novej verzii nad ne „vylial“ kvapalinu, ktorá
+    okolo nich tečie a svojou váhou ich posúva.
+  - **Využitie v LatteOS:** kompozitor sa nepreberá. Pre GooEngine vzor, že fyzika potrebuje **pevné pravidlá**:
+    hmotnosť, zotrvačnosť, odpudzovanie, tlmenie a hranice obrazovky, rovnaké pre všetky kvapky — kvapky dnes
+    pružia a dýchajú každá zvlášť. Zapísané medzi návrhy R3·A; cenu fyziky treba zmerať (stupne výkonu, v SAFE vypnuté).
+
+https://github.com/lgse/strata
+  - (Claude, 13. 10.) Správca súborov v Ruste a GTK4 pre Omarchy, MIT, aktívny: stĺpce Millera (ako Finder),
+    ikony a zoznam, približné hľadanie mien, náhľady, ovládanie hlavne klávesnicou.
+  - **Využitie v LatteOS:** inšpirácia na rozšírenie DualBrew — stĺpcové zobrazenie ako ďalší režim panelu,
+    približné hľadanie a skratky. Zapísané do ROADMAP R3·C.

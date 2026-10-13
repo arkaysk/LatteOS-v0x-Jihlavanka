@@ -141,6 +141,15 @@ Schválené 12. 10. 2026. Pracuje sa **zhora nadol, neskáče sa**; nový nápad
 3. [ ] **STRESTEST P1 — Boot a GOO** (001–045, 541–554). Strojovo overiteľné robí Claude, klikanie autor.
    *Hotovo, keď:* každý z týchto testov má stav a zlyhané majú úlohu.
 4. [ ] **SafeGoo** — dokončiť podľa toho, čo ukáže bod 1 (ovládanie okien na labwc, diagnostika pádu).
+   - **Diagnostika pádu podľa whyd** (schválené 13. 10.; [whyd](https://github.com/vmaltarello/whyd), Go, GPL-3.0,
+     samostatný program): dnešný `last-crash.log` z `latte-session` zachytí iba pád Hyprlandu v tej istej relácii.
+     whyd z žurnálu predošlého štartu rozpozná aj zamrznutie s tvrdým vypnutím, OOM, chyby GPU, zlyhané služby
+     a prehriatie (pravidlá v TOML, správa so skrytými údajmi). Postup: (a) vyskúšať ručne na latte-lab
+     (`whyd` po štartoch z bodu 1); (b) vlastné pravidlá pre `latte-session`, Hyprland, engine Goo a prepnutie do SAFE;
+     (c) v SAFE položka „Prečo sa skončila minulá relácia“ — súhrn z `last-crash.log` a z whyd, správa na skopírovanie;
+     (d) whyd ako voliteľná závislosť (balík rpm z vydaní, riadok vo `FILES` a v `TRETIE-STRANY.md`), bez neho ostane
+     dnešný výpis. *Overiť:* či whyd vie aj aktuálny štart od času pádu (pád relácie bez reštartu), inak to ostáva na
+     `latte-session`.
 5. [ ] **GooEngine:** záťaž v pokoji (12. 10.: 44 % jadra, 6. 10.: 17 %), hĺbková kontrola LensGoo, monitor
    pripojený za behu, 1024 × 768.
    Fresh, merané 12. 10. v `tests/screen.sh` (RX 640, 60 snímok/s, `PLEAMAR_TIMING=1`): scéna s 32 miestami 24 % jadra
@@ -149,6 +158,15 @@ Schválené 12. 10. 2026. Pracuje sa **zhora nadol, neskáče sa**; nový nápad
    `rate:` podľa podmienky (záplata pleamaru — 30 snímok/s, kým kurzor nie je pri kvapkách; `rate` je dnes iba číslo),
    prípadne menej miest.
 6. [ ] **Aplikácie podľa Priority UX** — prvý Barista s AVP2 (`docs/barista/NAVRH.md`).
+7. [ ] **Režim okien Glance** (rozhodnuté 13. 10., podľa [Glance](https://github.com/scottjenson/Glance) Scotta
+   Jensona, MIT) — štvrtý režim vedľa pásky, dlaždíc a plávajúcich, ponúka sa **iba na širokom monitore**. V strede
+   **Main** a vedľa neho **Stash**: skutočné okná v skutočnej veľkosti. Pri okraji **Parking**: náhľady odstavených
+   okien, kreslí ich engine Goo, klik okno vráti. Minimalizácia v Glance = odstavenie do Parkingu.
+   *Pripravené:* či a ako BarGoo okná ukazuje, určuje jedno miesto (`berries_out()` v `goo/lib/bar.luau`) — Parking
+   bude ďalšia podoba toho istého zoznamu okien. *Na premyslenie pred prácou:* náhľady okien v engine (pleamar má
+   službu `thumbnails`; miesto kvapky dnes nesie ikonu 30 × 30, náhľad potrebuje väčší obrázok a obdĺžnikový tvar),
+   odkiaľ je monitor „široký“, čo robí Stash v Hyprlande (pravidlá okien alebo vlastné rozloženie). Náhľady sa
+   dovtedy nerobia.
 
 ## ROADMAP2 — LatteOS od nápadu po hotový produkt
 
@@ -424,6 +442,9 @@ tekuté zóny okien (r. 548); nájdi kurzor zatrasením (r. 552); stavy hladiny 
 ikra hrajúca zvuk vibruje (r. 572); ekvalizér Goo (r. 716); bublina odchádzajúceho spojenia v modeli NET (r. 616);
 režim sústredenia (r. 541); gamepad (r. 545); prechod z Windowsu — import profilov, prehľad skratiek (r. 540);
 komunitné doplnky Noctalie ako kvapky (r. 647); ClipGoo, MediaGoo, PassGoo, CastGoo (r. 520); PlayGoo (správca hier alebo prehrávač hudby).
+Z `inspo/` 13. 10.: plocha bez klasickej lišty — zóny Main, Stash a Parking na širokom monitore (Glance, prednáška
+Scotta Jensona pre KDE, 2026) — **rozhodnuté 13. 10. ako štvrtý režim okien, „Teraz“ bod 7**; pevné pravidlá fyziky kvapiek a okien — hmotnosť, zotrvačnosť, vzájomné odpudzovanie,
+kvapalina tečúca okolo okien (fwm); vzhľad prehrávača a zámku obrazovky (widgety Chaldea, 0BSD).
 
 **R3·B — shell a vzhľad:** téma Latte a Úsporná, farby z tapety (r. 274); prvky stupňa Plný, varianty bez shaderov (r. 275–276, 290);
 materiál na oknách pri kovových témach (r. 521); Noctalia prekreslí celý povrch pri zmene widgetu (r. 939); animácie panelov na GPU (r. 968);
@@ -433,13 +454,16 @@ vlastné `app_id` a preložiteľné spúšťače (r. 654); slovenský preklad No
 
 **R3·C — Súbory (DualBrew) a Heidelberg:** prostredie nad pôvodným súborovým systémom (r. 565); **plná funkčnosť Total Commandera** (r. 979:
 vlastné stĺpce r. 985, skratky a menu r. 1008, pluginy r. 1012); Data Manager v Ruste (r. 782); Flea ako možný základ — odložené (r. 614);
-hľadanie v obsahu PDF/DOCX (r. 849); Heidelberg verné docx (r. 792).
+hľadanie v obsahu PDF/DOCX (r. 849); Heidelberg verné docx (r. 792); Strata ako vzor — stĺpcové zobrazenie (Miller), ovládanie klávesnicou, približné hľadanie mien (inspo 13. 10.).
 
 **R3·D — Monitor:** „kto žerie“ energiu, dáta, RAM, disk po aplikáciách (r. 574); `latte-sysmond`, eBPF (r. 775, 778);
 bezpečnostná kontrola balíkov bumblebee (r. 603); Python nástroje — čas štartu (r. 940).
 
 **R3·E — zariadenia a siete:** skúška s reálnou tlačiarňou, skenerom a telefónom (r. 515); KDE Connect `[~]` (r. 534);
-zvuk do DLNA (r. 753); Inšpektor — nové zariadenie, slabé heslo routera (r. 756); `latte-boot compat` v inštalátore (r. 765);
+zvuk do DLNA (r. 753); Inšpektor — nové zariadenie, slabé heslo routera (r. 756); Inšpektor — **zariadenia Matter a Thread pasívne** (schválené 13. 10.):
+skupina „Inteligentná domácnosť“ z ohlásení mDNS (`_matter._tcp`, `_matterc._udp`, hraničné smerovače `_meshcop._udp`),
+výrobca a typ, ak ich zariadenie ohlási, upozornenie na nové zariadenie; bez párovania. Podrobnosti cez párovací kód
+(batéria, firmvér, topológia Thread) sú iba návrh, nie úloha (inspo 13. 10., podľa UniFi Network 11); `latte-boot compat` v inštalátore (r. 765);
 Device Manager v Ruste (r. 767).
 
 **R3·F — App Manager a Barista:** úlohy na pozadí viditeľné (r. 409); obchod — zvyšok (r. 510), Bazaar a ZimaOS (r. 560);

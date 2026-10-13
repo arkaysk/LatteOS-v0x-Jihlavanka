@@ -279,7 +279,8 @@ ostatné kvapky sú iba na hlavnom monitore.
   maximalizuje, pri bočnom zaberie polovicu, pri rohu štvrtinu; odtiahnuté z miesta dostane späť svoju veľkosť.
   Kedy bolo okno pustené, hovorí plugin `plugins/latte-events` (Hyprland 0.56 na to udalosť nemá); bez neho sa
   neprichytáva. Pri Win + ťahaní sa prichytí až s prvým pohybom myši po pustení. Náhľad cieľa ešte nie je.
-- Režimy **páska** (nekonečná, ako niri), **dlaždice**, **plávajúce** (ako Windows). Okná neprekrývajú pás kvapiek
+- Režimy **páska** (nekonečná, ako niri), **dlaždice**, **plávajúce** (ako Windows). Štvrtý, **Glance** pre široké
+  monitory (Main · Stash · Parking), je rozhodnutý a čaká v poradí: ROADMAP „Teraz“, bod 7. Okná neprekrývajú pás kvapiek
   pri okraji (ani maximalizované); celú obrazovku kreslí Hyprland nad vrstvou Goo.
 
 ### 4.10 Nastavenia › Kvapky (Goo)
