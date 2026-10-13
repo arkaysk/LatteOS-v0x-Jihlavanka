@@ -3,7 +3,11 @@
 -- made for games have none).
 local K = {}
 
-local function bind(keys, action, opts) hl.bind(keys, action, opts) end
+-- `what`: what it does, for someone reading the list in Settings › Keyboard (it lists the binds that say so)
+local function bind(keys, action, opts, what)
+    if what then opts = opts or {} opts.description = what end
+    hl.bind(keys, action, opts)
+end
 local function run(cmd) return hl.dsp.exec_cmd(cmd) end
 local function goo(event) return run('pleamar --say goo "emit ' .. event .. '"') end
 
@@ -29,54 +33,55 @@ end
 
 function K.setup()
     -- the launcher: the Windows key alone (on release, or it would fire with every Win+key), and Ctrl+Esc without one
-    bind("SUPER + SUPER_L", goo("lens_toggle"), { release = true })
+    bind("SUPER + SUPER_L", goo("lens_toggle"), { release = true }, "The launcher")
     bind("SUPER + SUPER_R", goo("lens_toggle"), { release = true })
-    bind("CTRL + Escape", goo("lens_toggle"))
-    bind("CTRL + SHIFT + Escape", run("latte-app monitor"))       -- the Task Manager's key
-    bind("SUPER + I", run("latte-app settings"))                  -- and Settings', as on Windows
-    bind("SUPER + S", goo("lens_mode 0"))
+    bind("CTRL + Escape", goo("lens_toggle"), nil, "The launcher, without a Windows key")
+    bind("CTRL + SHIFT + Escape", run("latte-app monitor"), nil, "Monitor")       -- the Task Manager's key
+    bind("SUPER + I", run("latte-app settings"), nil, "Settings")                  -- and Settings', as on Windows
+    bind("SUPER + S", goo("lens_mode 0"), nil, "Search apps and settings")
     bind("SUPER + Q", goo("lens_mode 0"))
-    bind("SUPER + R", goo("lens_mode 3"))
-    bind("SUPER + C", goo("lens_mode 4"))      -- the assistant, as Win+C is on Windows
+    bind("SUPER + R", goo("lens_mode 3"), nil, "Run a command")
+    bind("SUPER + C", goo("lens_mode 4"), nil, "Ask the AI")      -- the assistant, as Win+C is on Windows
 
-    bind("SUPER + A", goo("quick_toggle"))
-    bind("SUPER + N", goo("clock_notes"))
-    bind("SUPER + ALT + D", goo("clock_time"))
-    bind("SUPER + L", goo("lock_now"))
-    bind("SUPER + T", goo("kb_toggle"))        -- Goo from the keyboard, as Win+T goes to the taskbar on Windows
+    bind("SUPER + A", goo("quick_toggle"), nil, "The shore: sound, network, clipboard")
+    bind("SUPER + N", goo("clock_notes"), nil, "Notes")
+    bind("SUPER + ALT + D", goo("clock_time"), nil, "Clock and calendar")
+    bind("SUPER + L", goo("lock_now"), nil, "Lock the session")
+    bind("SUPER + T", goo("kb_toggle"), nil, "The drops from the keyboard")        -- Goo from the keyboard, as Win+T goes to the taskbar on Windows
 
     -- windows
-    bind("ALT + F4", hl.dsp.window.close())
-    bind("ALT + Tab", function() latte.win.cycle(1) end)
+    bind("ALT + F4", hl.dsp.window.close(), nil, "Close the window")
+    bind("ALT + Tab", function() latte.win.cycle(1) end, nil, "The next window")
     bind("ALT + SHIFT + Tab", function() latte.win.cycle(-1) end)
-    bind("SUPER + D", function() latte.desk.show() end)
-    bind("SUPER + M", function() latte.win.minimize_all(false) end)
-    bind("SUPER + SHIFT + M", function() latte.win.restore_all() end)
-    bind("SUPER + Home", function() latte.win.minimize_all(true) end)
-    for _, dir in ipairs({ "up", "down", "left", "right" }) do
-        bind("SUPER + " .. dir, function() latte.win.arrow(dir) end)
+    bind("SUPER + D", function() latte.desk.show() end, nil, "Show the desktop")
+    bind("SUPER + M", function() latte.win.minimize_all(false) end, nil, "Put all windows away")
+    bind("SUPER + SHIFT + M", function() latte.win.restore_all() end, nil, "Bring the windows back")
+    bind("SUPER + Home", function() latte.win.minimize_all(true) end, nil, "Put away all windows but this one")
+    for _, a in ipairs({ { "up", "Fill the screen with the window" }, { "down", "Make the window smaller, then put it away" },
+                         { "left", "The window to the left half" }, { "right", "The window to the right half" } }) do
+        bind("SUPER + " .. a[1], function() latte.win.arrow(a[1]) end, nil, a[2])
     end
-    for i = 1, 9 do bind("SUPER + " .. i, function() latte.win.nth(i) end) end
-    bind("SUPER + SHIFT + left", hl.dsp.window.move({ monitor = "l" }))
-    bind("SUPER + SHIFT + right", hl.dsp.window.move({ monitor = "r" }))
-    bind("SUPER + mouse:272", hl.dsp.window.drag(), { mouse = true })
-    bind("SUPER + mouse:273", hl.dsp.window.resize(), { mouse = true })
+    for i = 1, 9 do bind("SUPER + " .. i, function() latte.win.nth(i) end, nil, i == 1 and "The first window of the bar; 2 to 9 the next ones" or nil) end
+    bind("SUPER + SHIFT + left", hl.dsp.window.move({ monitor = "l" }), nil, "The window to the screen on the left")
+    bind("SUPER + SHIFT + right", hl.dsp.window.move({ monitor = "r" }), nil, "The window to the screen on the right")
+    bind("SUPER + mouse:272", hl.dsp.window.drag(), { mouse = true }, "Move a window, held anywhere")
+    bind("SUPER + mouse:273", hl.dsp.window.resize(), { mouse = true }, "Resize a window, held anywhere")
 
     -- desktops
-    bind("SUPER + CTRL + D", function() latte.desk.new() end)
-    bind("SUPER + CTRL + left", function() latte.desk.step(-1) end)
-    bind("SUPER + CTRL + right", function() latte.desk.step(1) end)
-    bind("SUPER + CTRL + F4", function() latte.desk.close() end)
+    bind("SUPER + CTRL + D", function() latte.desk.new() end, nil, "A new desktop")
+    bind("SUPER + CTRL + left", function() latte.desk.step(-1) end, nil, "The desktop before")
+    bind("SUPER + CTRL + right", function() latte.desk.step(1) end, nil, "The desktop after")
+    bind("SUPER + CTRL + F4", function() latte.desk.close() end, nil, "Close the desktop")
     bind("SUPER + mouse_down", hl.dsp.focus({ workspace = "e+1" }))
     bind("SUPER + mouse_up", hl.dsp.focus({ workspace = "e-1" }))
 
     -- the keyboard's language, the magnifier
-    bind("SUPER + Space", run("hyprctl switchxkblayout all next"))
-    bind("SUPER + equal", function() magnify(1) end)
+    bind("SUPER + Space", run("hyprctl switchxkblayout all next"), nil, "The next keyboard layout")
+    bind("SUPER + equal", function() magnify(1) end, nil, "Magnify around the pointer")
     bind("SUPER + KP_Add", function() magnify(1) end)
-    bind("SUPER + minus", function() magnify(-1) end)
+    bind("SUPER + minus", function() magnify(-1) end, nil, "Magnify less")
     bind("SUPER + KP_Subtract", function() magnify(-1) end)
-    bind("SUPER + Escape", function() magnify(0) end)
+    bind("SUPER + Escape", function() magnify(0) end, nil, "The magnifier off")
 
     -- the keys a keyboard has for sound and brightness
     bind("XF86AudioRaiseVolume", run("wpctl set-volume -l 1 @DEFAULT_AUDIO_SINK@ 5%+"), { locked = true, repeating = true })

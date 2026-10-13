@@ -164,7 +164,9 @@ Schválené 12. 10. 2026. Pracuje sa **zhora nadol, neskáče sa**; nový nápad
              Šálka platí aj mimo aplikácií LatteOS (13. 10.): titulky cudzích okien (hyprbars) berú jej farbu
              a aplikáciám sa povie svetlý/tmavý režim (`latte.cup`, gsettings color-scheme). Vlastný súbor tapety
              a obrázka účtu sa vyberá systémovým oknom (portál; `latte-app` nastavuje `QT_QPA_PLATFORMTHEME`).
-             Chýba: šálka v kartách Goo, zoznam klávesových skratiek, zmena hesla, Bluetooth (latte-lab ho nemá).
+             Stránka Klávesnica vypisuje skratky: popis má každá priamo v `system/hypr/latte/keys.lua`
+             (`hyprctl binds -j`), takže zoznam nemôže zastarať.
+             Chýba: šálka v kartách Goo, zmena hesla, Bluetooth (latte-lab ho nemá).
         - [ ] **Barista** v App Manageri (stránka je pripravená, sprievodca podľa `docs/barista/NAVRH.md` nie).
         - [x] tapeta (swaybg, `assets/wallpapers`) a okenné tlačidlá (hyprbars so záplatou `patches/hyprbars-latte.patch`;
           postup v `patches/README.md`) (12. 10.).

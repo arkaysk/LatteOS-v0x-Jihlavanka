@@ -88,9 +88,16 @@ ShellRoot {
     Run { id: region }
     Run { id: clock }
     Run { id: keys }
+    Run { id: binds }
+    // a bind as it is pressed: "Win + Shift + ←"
+    readonly property var keyNames: ({ "SUPER_L": "", "left": "←", "right": "→", "up": "↑", "down": "↓", "equal": "+", "minus": "−", "Escape": "Esc", "mouse:272": QT_TR_NOOP("left button"), "mouse:273": QT_TR_NOOP("right button") })
+    function pressed(b) {
+        const key = keyNames[b.key] !== undefined ? I18n.tr(keyNames[b.key]) : b.key
+        return [b.modmask & 64 ? "Win" : "", b.modmask & 4 ? "Ctrl" : "", b.modmask & 8 ? "Alt" : "", b.modmask & 1 ? "Shift" : "", key].filter(k => k !== "").join(" + ")
+    }
     // what a page shows is asked for when it opens, and again after anything on it was changed
     readonly property var asks: ({ "sound": [[sound, ["latte-settings", "sound"]]], "defaults": [[opens, ["latte-settings", "defaults"]]], "language": [[region, ["latte-settings", "region"]]],
-                                   "time": [[clock, ["latte-settings", "time"]]], "keyboard": [[keys, ["latte-settings", "keyboard"]]], "displays": [[screens, ["hyprctl", "monitors", "-j"]]],
+                                   "time": [[clock, ["latte-settings", "time"]]], "keyboard": [[keys, ["latte-settings", "keyboard"]], [binds, ["hyprctl", "binds", "-j"]]], "displays": [[screens, ["hyprctl", "monitors", "-j"]]],
                                    "storage": [[disks, ["latte-settings", "storage"]], [held, ["latte-settings", "sizes"]]], "ai": [[helpers, ["latte-ai", "providers", "all"]]],
                                    "me": [[who, ["latte-settings", "account"]], [pictures, ["latte-settings", "wallpapers"]]], "performance": [[machine, ["latte-devices", "list"]]] })
     function ask() { (asks[page] || []).forEach(a => a[0].ask(a[1])); force.reload() }
@@ -608,7 +615,7 @@ ShellRoot {
                     Pill { required property string modelData; text: modelData.replace(/_/g, " "); strong: clock.data.zone === modelData; onPressed: shell.order(["timedatectl", "set-timezone", modelData]) } } }
 
             // the keyboard
-            Part { visible: shell.page === "keyboard"; width: view.room; title: I18n.tr("Keyboard layouts"); note: I18n.tr("The first is the one you type in. With more of them, Alt+Shift goes to the next.")
+            Part { visible: shell.page === "keyboard"; width: view.room; title: I18n.tr("Keyboard layouts"); note: I18n.tr("The first is the one you type in. With more of them, Win+Space goes to the next.")
                 Repeater { model: shell.page === "keyboard" && keys.data ? keys.data.current : []
                     Rectangle { id: lay; required property string modelData; required property int index; width: view.room; height: 56; radius: 16; color: Theme.card
                         border.width: 2; border.color: index === 0 ? Theme.gold : "transparent"
@@ -625,6 +632,12 @@ ShellRoot {
                 Item { width: view.room; height: 1 }
                 Repeater { model: layPart.shown
                     Pill { required property var modelData; icon: "plus"; text: modelData.name; onPressed: { layField.text = ""; shell.order(["latte-settings", "keyboard"].concat(keys.data.current, [modelData.id])) } } } }
+            Part { visible: shell.page === "keyboard"; width: view.room; title: I18n.tr("Shortcuts"); note: I18n.tr("The mouse comes first in LatteOS: each of these is also a drop or a row of a card. Win is the Windows key.")
+                Repeater { model: shell.page === "keyboard" && binds.data ? binds.data.filter(b => b.has_description) : []
+                    Rectangle { id: bound; required property var modelData; width: Math.floor((view.room - 14) / 2); height: 44; radius: 12; color: Theme.card
+                        Label { x: 16; width: parent.width - keyed.width - 40; text: I18n.tr(bound.modelData.description); anchors.verticalCenter: parent.verticalCenter }
+                        Rectangle { id: keyed; anchors.right: parent.right; anchors.rightMargin: 10; anchors.verticalCenter: parent.verticalCenter; width: keyedText.implicitWidth + 20; height: 28; radius: 8; color: Theme.ground
+                            Label { id: keyedText; anchors.centerIn: parent; text: shell.pressed(bound.modelData); font.pixelSize: 12; font.weight: 700; color: Theme.gold } } } } }
             Label { visible: shell.page === "keyboard"; width: view.room; wrapMode: Text.WordWrap; color: Theme.dim; font.pixelSize: 13
                     text: I18n.tr("The login screen keeps the layout of the whole system, so a password is typed there as it always was.") }
 
