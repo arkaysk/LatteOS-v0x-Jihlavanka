@@ -134,7 +134,12 @@ Schválené 12. 10. 2026. Pracuje sa **zhora nadol, neskáče sa**; nový nápad
              BetterWindowsServices), Senzory. PowerGoo › Monitor, Ctrl+Shift+Esc. Oproti v0.3 chýba: všetky služby
              so štartom a zastavením, detail procesu (priorita, pauza, súbory, spojenia), hardvér ako CPU-Z, test
              výkonu, Digitálna pohoda, strom disku, dlhodobá telemetria („kto žerie“ po dňoch).
-          3. [ ] Správca zariadení: rozdeliť na **zariadenia** a **sieť** (správca siete, inšpektor siete);
+          3. [x] Správca zariadení má dve časti (13. 10.): **Zariadenia** a **Sieť** — Pripojenie (adresa, router,
+             DNS, rýchlosť, zapamätané pripojenia) a **Inšpektor siete** (`bin/latte-network`): polkruhový radar,
+             dole tento počítač nad routerom, na vnútornom oblúku zariadenia pripojené teraz, na vonkajšom videné
+             predtým; nové zariadenie zlato; zariadeniu sa dá dať meno a druh, alebo ho zabudnúť. Inteligentná
+             domácnosť sa pozná pasívne z ohlásení Matter a Thread. Chýba: zoznam namiesto radaru, „Moja sieť“
+             a upozornenie na nové zariadenie, pripájanie a VPN (to prvé je v paneli Pobrežia), AirPlay.
           4. [ ] **Nastavenia** — hlavné, prehľadne po kategóriách ako Windows 11 + možnosti Linuxu, s hľadaním
              funkcií; LensGoo v režime aplikácií hľadá aj v nastaveniach (pod čiarou/hladinou); tapety a živé tapety,
              témy okien, farebnosť Goo („akú si dáte kávu a do akého pohára“ = farba goo a farba okien).

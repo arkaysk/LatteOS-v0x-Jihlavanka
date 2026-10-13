@@ -190,4 +190,9 @@ with tempfile.TemporaryDirectory() as d:
     assert monitor.startup_set("app:a.desktop", False) == 0 and "Hidden=true" in open(os.path.join(mine, "a.desktop")).read()
     assert monitor.startup_set("app:a.desktop", True) == 0 and not os.path.exists(os.path.join(mine, "a.desktop"))     # back as it was
     assert monitor.startup_set("app:../x.desktop", False) == 2 and monitor.startup_set("system:x.service", False) == 2
+network = load("latte-network")
+packet = b"\x00" * 12 + b"\x03foo\x05local\x00" + b"\x03bar\xc0\x0c"
+assert network.name_at(packet, 12) == ("foo.local", 23) and network.name_at(packet, 23) == ("bar.foo.local", 29)
+assert network.maker("a2:00:00:00:00:01") == ""                    # an address a phone made up names nobody
+assert network.kind_of({"printer", "pc"}, "", "") == "printer" and network.kind_of(set(), "Espressif Inc.", "") == "home" and network.kind_of(set(), "", "") == "device"
 print("bin: ok")

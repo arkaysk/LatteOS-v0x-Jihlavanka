@@ -1,0 +1,308 @@
+#!/usr/bin/env python3
+"""latte-network: how this computer is connected, and what else is on its network. For the Device Manager.
+
+  latte-network status         {"connections": [{"name", "type", "device", "ip", "prefix", "gateway", "dns": […], "mac",
+                               "speed"}], "saved": [names]}: what NetworkManager and the kernel say
+  latte-network scan           looks who is on the local network and prints
+                               {"me": {"ip", "mac", "name"}, "gateway": ip, "network": id, "devices": [{"key", "ip", "mac",
+                               "name", "given", "vendor", "kind", "online", "first", "last", "fresh", "router"}]}
+                               kind: router · pc · phone · tv · audio · printer · nas · home (a smart-home thing) · device
+                               fresh: it has not been seen on this network before this scan
+  latte-network last           the last scan, at once, without looking again
+  latte-network name KEY NAME [KIND]     what the user calls a device, and what it is; empty NAME takes it back
+  latte-network forget KEY               drops a device from what is remembered
+
+Looking is harmless and needs no password: every address of the local network is sent one empty packet, which
+makes the kernel ask who has it (ARP); the neighbours it then knows are the devices. Their names come from what
+they announce themselves (mDNS) and from the router (reverse DNS), the maker from the first half of the hardware
+address (/usr/share/hwdata/oui.txt). Smart-home things are told by their Matter and Thread announcements; nothing
+is paired with and nothing is asked of them. What was seen is remembered per network in
+~/.local/state/latteos/network.json, so a device that is new can be told from one that is back.
+"""
+import ipaddress
+import json
+import os
+import re
+import socket
+import struct
+import subprocess
+import sys
+import time
+from concurrent.futures import ThreadPoolExecutor
+
+STATE = os.path.join(os.environ.get("XDG_STATE_HOME") or os.path.expanduser("~/.local/state"), "latteos", "network.json")
+# what a device announces, and what that makes it
+SERVICES = {"_matter._tcp": "home", "_matterc._udp": "home", "_meshcop._udp": "home", "_hap._tcp": "home", "_homekit._tcp": "home",
+            "_googlecast._tcp": "tv", "_airplay._tcp": "tv", "_raop._tcp": "audio", "_spotify-connect._tcp": "audio",
+            "_ipp._tcp": "printer", "_ipps._tcp": "printer", "_pdl-datastream._tcp": "printer", "_printer._tcp": "printer",
+            "_smb._tcp": "nas", "_afpovertcp._tcp": "nas", "_nfs._tcp": "nas", "_workstation._tcp": "pc", "_ssh._tcp": "pc",
+            "_companion-link._tcp": "phone", "_apple-mobdev2._tcp": "phone", "_kdeconnect._udp": "phone"}
+
+
+def out(*argv, timeout=8):
+    try:
+        return subprocess.run(argv, capture_output=True, text=True, timeout=timeout).stdout
+    except (OSError, subprocess.TimeoutExpired):
+        return ""
+
+
+def load():
+    try:
+        with open(STATE) as f:
+            return json.load(f)
+    except (OSError, ValueError):
+        return {}
+
+
+def save(data):
+    os.makedirs(os.path.dirname(STATE), exist_ok=True)
+    with open(STATE + ".new", "w") as f:
+        json.dump(data, f)
+    os.replace(STATE + ".new", STATE)
+
+
+# ── how this computer is connected ───────────────────────────────────────────────────────────────────────────
+def links():
+    """The network cards that have an address, with their gateway: [{device, ip, prefix, gateway, mac, speed}]"""
+    try:
+        addrs = json.loads(out("ip", "-j", "-4", "addr", "show", "scope", "global") or "[]")
+        routes = json.loads(out("ip", "-j", "route", "show", "default") or "[]")
+    except ValueError:
+        return []
+    found = []
+    for a in addrs:
+        info = (a.get("addr_info") or [{}])[0]
+        dev = a.get("ifname", "")
+        mac, speed = "", 0
+        try:
+            with open("/sys/class/net/%s/address" % dev) as f:
+                mac = f.read().strip()
+            with open("/sys/class/net/%s/speed" % dev) as f:      # a wireless card has no such figure
+                speed = int(f.read().strip())
+        except (OSError, ValueError):
+            pass
+        found.append({"device": dev, "ip": info.get("local", ""), "prefix": info.get("prefixlen", 24), "mac": mac, "speed": max(speed, 0),
+                      "gateway": next((r.get("gateway", "") for r in routes if r.get("dev") == dev), "")})
+    return found
+
+
+def status():
+    by_device = {l["device"]: l for l in links()}
+    active = []
+    for line in out("nmcli", "-t", "-f", "NAME,TYPE,DEVICE", "connection", "show", "--active").splitlines():
+        name, kind, dev = (line.rsplit(":", 2) + ["", ""])[:3]
+        if dev in by_device:
+            dns = re.findall(r"IP4\.DNS\[\d+\]:(\S+)", out("nmcli", "-t", "-f", "IP4.DNS", "device", "show", dev))
+            active.append(dict(by_device[dev], name=name, type="wifi" if "wireless" in kind else ("wired" if "ethernet" in kind else kind), dns=dns))
+    saved = [l.rsplit(":", 1)[0] for l in out("nmcli", "-t", "-f", "NAME,TYPE", "connection", "show").splitlines() if not l.endswith(":loopback")]
+    return {"connections": active, "saved": saved}
+
+
+# ── who else is there ────────────────────────────────────────────────────────────────────────────────────────
+def knock(network, me):
+    """One empty packet to every address: nothing answers it, but the kernel has to find out who has the address."""
+    with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
+        s.setblocking(False)
+        for host in network.hosts():
+            if str(host) != me:
+                try:
+                    s.sendto(b"", (str(host), 9))
+                except OSError:
+                    pass
+
+
+def neighbours(device):
+    try:
+        return {n["dst"]: n["lladdr"].lower() for n in json.loads(out("ip", "-j", "neigh", "show", "dev", device) or "[]")
+                if n.get("lladdr") and "FAILED" not in n.get("state", []) and ":" not in n["dst"]}
+    except ValueError:
+        return {}
+
+
+def name_at(packet, at, depth=0):
+    """A name in a DNS packet, which may go on somewhere else in it: (the name, where reading goes on)."""
+    parts, after = [], None
+    while at < len(packet) and depth < 12:
+        n = packet[at]
+        if n == 0:
+            at += 1
+            break
+        if n >= 0xC0:
+            after = after or at + 2
+            at = ((n & 0x3F) << 8) | packet[at + 1]
+            depth += 1
+            continue
+        parts.append(packet[at + 1:at + 1 + n].decode("utf-8", "replace"))
+        at += 1 + n
+    return ".".join(parts), after or at
+
+
+def announced(wait=2.2):
+    """What the devices on the network say of themselves: {ip: {"kinds": {…}, "name": …}}"""
+    q = b"\x00\x00\x00\x00" + struct.pack(">HHHH", len(SERVICES), 0, 0, 0)
+    for service in SERVICES:
+        q += b"".join(bytes([len(p)]) + p.encode() for p in (service + ".local").split(".")) + b"\x00" + struct.pack(">HH", 12, 1)
+    found = {}
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, 255)
+        s.settimeout(0.3)
+        s.sendto(q, ("224.0.0.251", 5353))
+    except OSError:
+        return found
+    end = time.monotonic() + wait
+    while time.monotonic() < end:
+        try:
+            packet, (ip, _) = s.recvfrom(9000)
+        except socket.timeout:
+            continue
+        except OSError:
+            break
+        try:
+            questions, answers, authority, extra = struct.unpack(">HHHH", packet[4:12])
+            at = 12
+            for _ in range(questions):
+                at = name_at(packet, at)[1] + 4
+            seen = found.setdefault(ip, {"kinds": set(), "name": ""})
+            for _ in range(answers + authority + extra):
+                name, at = name_at(packet, at)
+                kind, _, _, length = struct.unpack(">HHIH", packet[at:at + 10])
+                at += 10
+                for service, what in SERVICES.items():
+                    if name.startswith(service) or ("." + service) in name:
+                        seen["kinds"].add(what)
+                if kind == 12 and not seen["name"]:                       # PTR: "Living room TV._airplay._tcp.local"
+                    target = name_at(packet, at)[0]
+                    if "._" in target:
+                        seen["name"] = target.split("._")[0]
+                elif kind == 1 and name.endswith(".local") and not seen["name"]:      # A: "kitchen-speaker.local"
+                    seen["name"] = name[:-6]
+                at += length
+        except (struct.error, IndexError):
+            pass
+    s.close()
+    return found
+
+
+MAKERS = {}
+
+
+def maker(mac):
+    """Who made the network card, from the first half of its address; nothing for an address a phone made up."""
+    if int(mac[1], 16) & 2:
+        return ""                                   # locally administered: a private address, it names nobody
+    if not MAKERS:
+        try:
+            with open("/usr/share/hwdata/oui.txt", errors="replace") as f:
+                for line in f:
+                    m = re.match(r"([0-9A-F]{6})\s+\(base 16\)\s+(.+)", line)
+                    if m:
+                        MAKERS[m.group(1)] = m.group(2).strip()
+        except OSError:
+            MAKERS["-"] = ""
+    name = MAKERS.get(mac.replace(":", "").upper()[:6], "")
+    return re.sub(r",? (Inc\.?|Corporation|Corp\.?|Co\.,? ?Ltd\.?|Ltd\.?|GmbH|LLC|Technologies|Technology|Electronics|International).*$", "", name, flags=re.I)
+
+
+def kind_of(kinds, vendor, name):
+    for k in ("home", "printer", "tv", "audio", "nas", "phone", "pc"):
+        if k in kinds:
+            return k
+    text = (vendor + " " + name).lower()
+    for k, words in (("phone", "iphone|ipad|android|galaxy|pixel|xiaomi|huawei|oneplus"), ("tv", "tv|chromecast|roku|bravia"),
+                     ("printer", "printer|laserjet|epson|brother|canon"), ("audio", "sonos|speaker|denon|yamaha"),
+                     ("home", "espressif|tuya|shelly|philips lighting|ikea|aqara|nest|ring"), ("nas", "synology|qnap|nas")):
+        if re.search(words, text):
+            return k
+    return "device"
+
+
+def scan():
+    mine = next((l for l in links() if l["gateway"]), None)
+    if not mine:
+        return {"me": None, "gateway": "", "network": "", "devices": [], "offline": True}
+    network = ipaddress.ip_network("%s/%s" % (mine["ip"], mine["prefix"]), strict=False)
+    if network.num_addresses <= 1024:               # a home network; a bigger one is not swept address by address
+        knock(network, mine["ip"])
+    with ThreadPoolExecutor(1) as pool:
+        said = pool.submit(announced)
+        time.sleep(1.2)
+        near = neighbours(mine["device"])
+        said = said.result()
+    names = {}
+    def lookup(ip):
+        try:
+            name = socket.gethostbyaddr(ip)[0].split(".")[0]
+            return ip, "" if name.startswith("_") else name      # "_gateway" is the resolver's own word, not the router's
+        except OSError:
+            return ip, ""
+    socket.setdefaulttimeout(1.5)
+    with ThreadPoolExecutor(16) as pool:
+        names = dict(pool.map(lookup, near))
+    gateway_mac = near.get(mine["gateway"], "")
+    net_id = gateway_mac or str(network)
+    data = load()
+    known = data.setdefault(net_id, {})
+    now = int(time.time())
+    for ip, mac in near.items():
+        d = known.get(mac)
+        fresh = d is None
+        d = known.setdefault(mac, {"first": now})
+        about = said.get(ip, {"kinds": set(), "name": ""})
+        vendor = maker(mac)
+        d.update(ip=ip, last=now, vendor=vendor, name=about["name"] or names.get(ip, "") or d.get("name", ""),
+                 kind="router" if ip == mine["gateway"] else kind_of(about["kinds"], vendor, about["name"] or names.get(ip, "")), fresh=fresh)
+    save(data)
+    return answer(mine, net_id, known, set(near.values()))
+
+
+def answer(mine, net_id, known, online):
+    devices = [{"key": mac, "ip": d.get("ip", ""), "mac": mac, "name": d.get("given") or d.get("name", ""), "given": d.get("given", ""),
+                "vendor": d.get("vendor", ""), "kind": d.get("given_kind") or d.get("kind", "device"), "online": mac in online,
+                "first": d.get("first", 0), "last": d.get("last", 0), "fresh": bool(d.get("fresh")) and mac in online,
+                "router": d.get("kind") == "router"} for mac, d in known.items()]
+    devices.sort(key=lambda d: (not d["router"], not d["online"], [int(p) for p in d["ip"].split(".")] if d["ip"] else [999]))
+    return {"me": {"ip": mine["ip"], "mac": mine["mac"], "name": socket.gethostname()} if mine else None,
+            "gateway": mine["gateway"] if mine else "", "network": net_id, "devices": devices}
+
+
+def last():
+    mine = next((l for l in links() if l["gateway"]), None)
+    data = load()
+    if not mine:
+        return {"me": None, "gateway": "", "network": "", "devices": [], "offline": True}
+    near = neighbours(mine["device"])
+    net_id = near.get(mine["gateway"], "") or next(iter(data), "")
+    return answer(mine, net_id, data.get(net_id, {}), set())
+
+
+def remember(key, change):
+    data = load()
+    for known in data.values():
+        if key in known:
+            change(known, key)
+    save(data)
+
+
+def main(a):
+    if a == ["status"]:
+        print(json.dumps(status(), ensure_ascii=False))
+    elif a == ["scan"]:
+        print(json.dumps(scan(), ensure_ascii=False))
+    elif a == ["last"]:
+        print(json.dumps(last(), ensure_ascii=False))
+    elif a[:1] == ["name"] and len(a) in (3, 4):
+        def change(known, key):
+            known[key]["given"] = a[2].strip()
+            if len(a) == 4: known[key]["given_kind"] = a[3]
+        remember(a[1].lower(), change)
+    elif a[:1] == ["forget"] and len(a) == 2:
+        remember(a[1].lower(), lambda known, key: known.pop(key))
+    else:
+        print(__doc__.strip())
+        return 2
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))

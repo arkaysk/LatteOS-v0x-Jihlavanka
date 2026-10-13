@@ -234,6 +234,8 @@ ostatné kvapky sú iba na hlavnom monitore.
   procesor, pamäť, jadro, veľký krúžok „Všetko funguje“ alebo počet zariadení, ktoré potrebujú pozornosť; skupiny
   ako dlaždice (Obrazovky, Grafika, Zvuk, Sieť, Disky, Klávesnice a myši, Kamery, Bluetooth, Tlačiarne, USB,
   Napájanie, Ostatné); v skupine každé zariadenie s ovládačom a stavom (Funguje · Chýba ovládač · Chýba firmvér);
+  druhá časť bočného panela je **Sieť**: Pripojenie a **Inšpektor siete** — radar podľa predlohy z 26. 9.
+  (`bin/latte-network`: kto je v sieti, mená z mDNS a routera, výrobca z adresy, pamätá si, kto je nový);
   „Dobre vedieť“ z `latte-boot compat`; Kopírovať správu. Nič nemení — sieť, zvuk a Bluetooth sa nastavujú
   v paneli Pobrežia. Oproti v0.3 chýba: režimy obrazoviek, zvukové karty a profily, tlačiarne a skenery, telefóny,
   firewall, skúšky (kamera, mikrofón, ovládač), oprava chýbajúceho ovládača cez App Manager.

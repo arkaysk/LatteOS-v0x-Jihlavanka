@@ -45,5 +45,5 @@ return {
         open.apps(updates > 0 and "updates" or nil)
         after(60000, function() look(d) end)          -- what was updated there no longer waits
     end,
-    right = function() open.devices(offline and "network" or nil) end,
+    right = function() open.devices(offline and "connection" or nil) end,
 }

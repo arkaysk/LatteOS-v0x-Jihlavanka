@@ -31,6 +31,37 @@ ShellRoot {
     }
     Component.onCompleted: { asker.ask(); if (words[0]) page = words[0] }
 
+    // ── the network: how this computer is connected, and who else is on its network ───────────────────────
+    component Net: Process {
+        id: n
+        property var data: null
+        property string buf: ""
+        function ask(args) { running = false; command = ["latte-network"].concat(args); running = true }
+        stdout: StdioCollector { onStreamFinished: n.buf = this.text }
+        onExited: { try { data = JSON.parse(buf) } catch (e) {} }
+    }
+    Net { id: link }
+    Net { id: lan }                            // the last look, then a new one
+    Net { id: note; onExited: lan.ask(["last"]) }
+    property string chosen: ""                 // the device picked on the radar, by its key
+    readonly property var picked: lan.data ? (lan.data.devices.find(d => d.key === chosen) || null) : null
+    onPageChanged: {
+        if (page === "connection") link.ask(["status"])
+        if (page === "inspector") { if (!lan.data) lan.ask(["last"]); look.restart() }
+    }
+    Timer { id: look; interval: 400; onTriggered: lan.ask(["scan"]) }
+    readonly property var kinds: [{ id: "pc", name: QT_TR_NOOP("Computer"), icon: "device-desktop" }, { id: "phone", name: QT_TR_NOOP("Phone or tablet"), icon: "device-mobile" },
+        { id: "tv", name: QT_TR_NOOP("Television"), icon: "device-tv" }, { id: "audio", name: QT_TR_NOOP("Speaker"), icon: "device-speaker" },
+        { id: "printer", name: QT_TR_NOOP("Printer"), icon: "printer" }, { id: "nas", name: QT_TR_NOOP("Storage"), icon: "server" },
+        { id: "home", name: QT_TR_NOOP("Smart home"), icon: "bulb" }, { id: "router", name: QT_TR_NOOP("Router"), icon: "router" },
+        { id: "device", name: QT_TR_NOOP("Other device"), icon: "devices" }]
+    function kind(id) { return kinds.find(k => k.id === id) || kinds[kinds.length - 1] }
+    function called(d) { return d.name || d.vendor || I18n.tr(kind(d.kind).name) }
+    function ago(t) {
+        const s = Date.now() / 1000 - t
+        return s < 600 ? I18n.tr("now") : s < 86400 ? I18n.tr("today") : I18n.tr("{n} days ago", { n: Math.round(s / 86400) })
+    }
+
     // the whole of it as text, for whoever is asked "what do you have?"
     function report() {
         if (!all) return ""
@@ -56,14 +87,15 @@ ShellRoot {
 
     AppWindow {
         title: I18n.tr("Device Manager")
-        heading: shell.here ? I18n.tr(shell.here.name) : I18n.tr("Device Manager")
+        heading: shell.here ? I18n.tr(shell.here.name) : (shell.page === "connection" ? I18n.tr("Connection") : (shell.page === "inspector" ? I18n.tr("Network inspector") : I18n.tr("Device Manager")))
         implicitWidth: 1120; implicitHeight: 760
-        arrows: true; canGoBack: shell.here !== null; onBack: shell.page = ""
+        arrows: true; canGoBack: shell.page !== ""; onBack: shell.page = ""
         tools: [
             Pill { id: copy; property bool done: false; implicitHeight: 34; icon: done ? "check" : "copy"; text: done ? I18n.tr("Copied") : I18n.tr("Copy a report")
                    onPressed: { Quickshell.clipboardText = shell.report(); done = true; again.restart() }
                    Timer { id: again; interval: 1800; onTriggered: copy.done = false } },
-            Pill { implicitHeight: 34; icon: "refresh"; text: I18n.tr("Look again"); busy: asker.running; onPressed: asker.ask() }
+            Pill { implicitHeight: 34; icon: "refresh"; text: I18n.tr("Look again"); busy: asker.running || lan.running
+                   onPressed: shell.page === "inspector" ? lan.ask(["scan"]) : (shell.page === "connection" ? link.ask(["status"]) : asker.ask()) }
         ]
         side: [
             Column { x: 14; y: 14; spacing: 4
@@ -78,13 +110,19 @@ ShellRoot {
                 Repeater { model: shell.groups
                     Nav { required property var modelData; text: I18n.tr(modelData.name); icon: modelData.icon; height: 36
                           on: shell.page === modelData.id; badge: shell.faults(modelData); onPressed: shell.page = modelData.id } }
+                Item { width: 1; height: 10 }
+                Label { x: 14; text: I18n.tr("NETWORK"); color: Theme.faint; font.pixelSize: 11; font.weight: 700; font.letterSpacing: 0.8 }
+                Item { width: 1; height: 2 }
+                Nav { text: I18n.tr("Connection"); icon: "network"; height: 36; on: shell.page === "connection"; onPressed: shell.page = "connection" }
+                Nav { text: I18n.tr("Network inspector"); icon: "radar-2"; height: 36; on: shell.page === "inspector"; onPressed: shell.page = "inspector"
+                      badge: lan.data ? lan.data.devices.filter(d => d.fresh).length : 0 }
             }
         ]
 
             // ── the overview ──────────────────────────────────────────────────────────────────────────────
             Scroll {
                 id: over
-                visible: shell.page === "" || !shell.here
+                visible: shell.page === "" || (!shell.here && shell.page !== "connection" && shell.page !== "inspector")
                 Waiting { visible: !shell.all; text: I18n.tr("Looking…"); width: over.room; topPadding: 200 }
                 // the computer itself, and beside it whether all of it works
                 Rectangle {
@@ -172,6 +210,121 @@ ShellRoot {
                             Row { id: ends; anchors.right: parent.right; anchors.rightMargin: 16; anchors.verticalCenter: parent.verticalCenter; spacing: 8
                                 Chip { icon: "settings"; text: dev.modelData.driver; color: Theme.ground }
                                 Chip { icon: dev.how.icon; tint: dev.how.color; text: I18n.tr(dev.how.text); color: Theme.ground } } } } }
+            }
+
+            // ── how this computer is connected ────────────────────────────────────────────────────────────
+            Scroll {
+                id: conn
+                visible: shell.page === "connection"
+                Waiting { visible: !link.data; text: I18n.tr("Looking…"); width: conn.room; topPadding: 160 }
+                Label { visible: link.data && link.data.connections.length === 0; text: I18n.tr("This computer is not connected to any network."); color: Theme.dim; topPadding: 60 }
+                Repeater { model: link.data ? link.data.connections : []
+                    Rectangle { id: c; required property var modelData; width: conn.room; height: 190; radius: 24
+                        gradient: Gradient { orientation: Gradient.Horizontal; GradientStop { position: 0; color: "#33402e" } GradientStop { position: 1; color: Theme.card } }
+                        Rectangle { x: 26; y: 26; width: 56; height: 56; radius: 18; color: Theme.ground
+                            Glyph { anchors.centerIn: parent; name: c.modelData.type === "wifi" ? "wifi" : "network"; font.pixelSize: 30; color: Theme.ok } }
+                        Label { x: 98; y: 26; text: c.modelData.name; font.pixelSize: 24; font.weight: 800; width: parent.width - 130 }
+                        Label { x: 98; y: 58; color: Theme.dim; text: (c.modelData.type === "wifi" ? "Wi-Fi" : I18n.tr("Wired network")) + (c.modelData.speed > 0 ? "  ·  " + c.modelData.speed + " Mb/s" : "") + "  ·  " + c.modelData.device }
+                        Flow { x: 26; y: 110; width: parent.width - 52; spacing: 10
+                            Chip { icon: "device-desktop"; text: I18n.tr("Address") + "  " + c.modelData.ip + "/" + c.modelData.prefix; color: Theme.ground }
+                            Chip { icon: "router"; text: I18n.tr("Router") + "  " + c.modelData.gateway; color: Theme.ground }
+                            Chip { icon: "world"; text: c.modelData.dns.length ? "DNS  " + c.modelData.dns.join(", ") : ""; color: Theme.ground }
+                            Chip { icon: "cpu"; text: c.modelData.mac; color: Theme.ground } } } }
+                Column { visible: link.data && link.data.saved.length > 0; width: conn.room; spacing: 8
+                    Label { text: I18n.tr("REMEMBERED CONNECTIONS"); color: Theme.faint; font.pixelSize: 11; font.weight: 700; font.letterSpacing: 0.8 }
+                    Flow { width: parent.width; spacing: 8
+                        Repeater { model: link.data ? link.data.saved : []; Chip { required property string modelData; icon: "network"; text: modelData } } } }
+                Label { text: I18n.tr("Wi-Fi, Bluetooth and the networks in range are in the panel of the screen's corner (Win+A)."); color: Theme.dim; font.pixelSize: 12; width: conn.room; wrapMode: Text.WordWrap }
+            }
+
+            // ── who else is on the network: a radar ───────────────────────────────────────────────────────
+            Item {
+                id: radar
+                anchors.fill: parent
+                visible: shell.page === "inspector"
+                readonly property var all: lan.data ? lan.data.devices.filter(d => !d.router) : []
+                readonly property var near: all.filter(d => d.online)
+                readonly property var gone: all.filter(d => !d.online)
+                property real cx: (width - (shell.picked ? 300 : 0)) / 2
+                readonly property real cy: height - 120
+                readonly property real r1: Math.min(cx - 90, cy - 70) * 0.55
+                readonly property real r2: Math.min(cx - 90, cy - 70)
+                Behavior on cx { NumberAnimation { duration: 260; easing.type: Easing.OutCubic } }
+                Row { x: 28; y: 20; spacing: 10; z: 3
+                    Label { anchors.verticalCenter: parent.verticalCenter; color: Theme.dim
+                            text: lan.data ? I18n.tr("{n} here now", { n: radar.near.length }) + (radar.gone.length ? "  ·  " + I18n.tr("{n} seen before", { n: radar.gone.length }) : "") : "" } }
+                // the two arcs: who is here now, and who was
+                Repeater { model: [radar.r1, radar.r2]
+                    Rectangle { required property real modelData; required property int index; x: radar.cx - modelData; y: radar.cy - modelData; width: modelData * 2; height: modelData * 2; radius: modelData
+                                color: "transparent"; border.width: 1; border.color: index === 0 ? Theme.coffee : Theme.line; opacity: index === 0 ? 0.7 : 0.6 } }
+                // the sweep, while it looks
+                Rectangle { visible: lan.running && lan.command[1] === "scan"; x: radar.cx; y: radar.cy - 1; width: radar.r2; height: 2; transformOrigin: Item.Left
+                            gradient: Gradient { orientation: Gradient.Horizontal; GradientStop { position: 0; color: Theme.gold } GradientStop { position: 1; color: "transparent" } }
+                            NumberAnimation on rotation { running: lan.running; from: -180; to: 0; duration: 1600; loops: Animation.Infinite } }
+                // what is below the middle line is not part of the picture
+                Rectangle { x: 0; y: radar.cy + 2; width: parent.width; height: parent.height; color: Theme.ground }
+                // this computer, and under it the router
+                component Spot: Column {
+                    id: spot
+                    property var device: null
+                    property string icon
+                    property string text
+                    property string under
+                    property bool faded: false
+                    property bool fresh: false
+                    property bool on: false
+                    signal pressed()
+                    spacing: 5; width: 120
+                    Rectangle { width: 54; height: 54; radius: 27; anchors.horizontalCenter: parent.horizontalCenter
+                        color: spot.on ? Theme.raised : Theme.card; opacity: spot.faded ? 0.5 : 1
+                        border.width: spot.fresh || spot.on ? 2 : 1; border.color: spot.fresh ? Theme.gold : (spot.on ? Theme.cream : Theme.line)
+                        scale: spotHit.containsMouse ? 1.12 : 1; Behavior on scale { NumberAnimation { duration: 140 } }
+                        Glyph { anchors.centerIn: parent; name: spot.icon; font.pixelSize: 26; color: spot.fresh ? Theme.gold : Theme.cream }
+                        MouseArea { id: spotHit; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: spot.pressed() } }
+                    Label { text: spot.text; font.pixelSize: 12; font.weight: 600; width: parent.width; horizontalAlignment: Text.AlignHCenter; opacity: spot.faded ? 0.6 : 1 }
+                    Label { text: spot.under; font.pixelSize: 11; color: Theme.faint; width: parent.width; horizontalAlignment: Text.AlignHCenter; visible: text !== "" }
+                }
+                Spot { x: radar.cx - 60; y: radar.cy - 92; icon: "device-desktop"; text: lan.data && lan.data.me ? lan.data.me.name : ""; under: lan.data && lan.data.me ? lan.data.me.ip : "" }
+                Spot { x: radar.cx - 60; y: radar.cy + 24; icon: "router"; text: I18n.tr("Router"); under: lan.data ? lan.data.gateway : ""
+                       readonly property var dev: lan.data ? lan.data.devices.find(d => d.router) : null
+                       on: dev && shell.chosen === dev.key; onPressed: if (dev) shell.chosen = dev.key }
+                Repeater { model: [{ list: radar.near, r: radar.r1 }, { list: radar.gone, r: radar.r2 }]
+                    Item { id: ring; required property var modelData; required property int index
+                        Repeater { model: ring.modelData.list
+                            Spot { required property var modelData; required property int index
+                                readonly property real angle: Math.PI * (1 + (index + 1) / (ring.modelData.list.length + 1))
+                                x: radar.cx + Math.cos(angle) * ring.modelData.r - 60; y: radar.cy + Math.sin(angle) * ring.modelData.r - 27
+                                icon: shell.kind(modelData.kind).icon; text: shell.called(modelData); under: modelData.ip
+                                faded: ring.index === 1; fresh: modelData.fresh; on: shell.chosen === modelData.key
+                                onPressed: shell.chosen = shell.chosen === modelData.key ? "" : modelData.key } } } }
+                Label { visible: lan.data && lan.data.offline === true; anchors.centerIn: parent; text: I18n.tr("This computer is not connected to any network."); color: Theme.dim }
+                // the device that was picked: what is known of it, and what the user calls it
+                Rectangle {
+                    visible: shell.picked !== null
+                    anchors.right: parent.right; anchors.rightMargin: 20; y: 20; width: 290; height: parent.height - 40; radius: 22; color: Theme.card
+                    Column { x: 20; y: 20; width: parent.width - 40; spacing: 10
+                        Row { spacing: 12
+                            Glyph { name: shell.picked ? shell.kind(shell.picked.kind).icon : ""; font.pixelSize: 30; color: Theme.gold }
+                            Label { text: shell.picked ? shell.called(shell.picked) : ""; font.pixelSize: 18; font.weight: 800; width: 200; wrapMode: Text.WordWrap; maximumLineCount: 2 } }
+                        Label { color: Theme.dim; font.pixelSize: 12; width: parent.width; wrapMode: Text.WordWrap; lineHeight: 1.4
+                                text: shell.picked ? shell.picked.ip + "\n" + shell.picked.mac + (shell.picked.vendor ? "\n" + shell.picked.vendor : "")
+                                      + "\n" + (shell.picked.online ? I18n.tr("here now") : I18n.tr("last seen") + " " + shell.ago(shell.picked.last))
+                                      + "  ·  " + I18n.tr("first seen") + " " + shell.ago(shell.picked.first) : "" }
+                        Rectangle { width: parent.width; height: 38; radius: 12; color: Theme.ground; border.width: 1; border.color: rename.activeFocus ? Theme.gold : "transparent"
+                            TextInput { id: rename; x: 12; width: parent.width - 24; anchors.verticalCenter: parent.verticalCenter; color: Theme.cream; font.family: Theme.font; font.pixelSize: 14; clip: true
+                                        text: shell.picked ? shell.picked.given : ""; onAccepted: if (shell.picked) note.ask(["name", shell.picked.key, text.trim(), shell.picked.kind]) }
+                            Label { x: 12; text: I18n.tr("Give it a name…"); color: Theme.faint; visible: rename.text === "" && !rename.activeFocus; anchors.verticalCenter: parent.verticalCenter } }
+                        Label { text: I18n.tr("WHAT IT IS"); color: Theme.faint; font.pixelSize: 11; font.weight: 700; font.letterSpacing: 0.8 }
+                        Flow { width: parent.width; spacing: 6
+                            Repeater { model: shell.kinds.filter(k => k.id !== "router")
+                                Rectangle { required property var modelData; width: 38; height: 38; radius: 12
+                                    color: shell.picked && shell.picked.kind === modelData.id ? Theme.gold : Theme.ground
+                                    Glyph { anchors.centerIn: parent; name: parent.modelData.icon; font.pixelSize: 20; color: shell.picked && shell.picked.kind === parent.modelData.id ? Theme.ground : Theme.cream }
+                                    MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: note.ask(["name", shell.picked.key, shell.picked.given, parent.modelData.id]) } } } }
+                        Item { width: 1; height: 4 }
+                        Pill { icon: "trash"; danger: true; text: I18n.tr("Forget this device"); onPressed: { note.ask(["forget", shell.picked.key]); shell.chosen = "" } }
+                    }
+                }
             }
     }
 }
