@@ -118,6 +118,11 @@ Schválené 12. 10. 2026. Pracuje sa **zhora nadol, neskáče sa**; nový nápad
         a nadnesenie, ťahanie k okraju a pád, karty všetkých troch kvapiek, spustenie aplikácie, príkaz s varovaním,
         prepnutie režimu okien, minimalizovanie klikom na ikru, ponuka okna, odhlásenie s otázkou, lišta pri ľavom
         okraji s pásom, sklenená káva a zmena nastavení za behu. Záťaž v pokoji: scéna 17 % jadra, Hyprland 4 %.
+        Overené 13. 10. tým istým spôsobom: nečinnosť (skrátené časy), dva a tri monitory, vlastné kvapky a ich hra,
+        MediaGoo s napodobeným prehrávačom, kalendár zo súboru .ics, odpoveď AI od Clauda, prichytenie ťahaním
+        (myš kompozitora `tests/pointer.py`), sklo okien. **Neoverené z 13. 10.:** jednotky systemd
+        (`latte-idle`, `latte-goo-side@`) v skutočnej relácii, zamknutie pred uspaním, skutočný prehrávač, kalendár
+        z internetu, ťahanie okna za titulok skutočnou myšou.
         **Neoverené:** skutočné prihlásenie (greetd → `latte-session` → Hyprland na obrazovke) — až po nasadení na
         latte-lab (bod f); batéria (latte-lab ju nemá); viac monitorov; uspanie, reštart a vypnutie (v skúške sa
         nestláčali naostro).
