@@ -4,6 +4,6 @@
 require("lib/engine").start({ drops = { "bargoo", "lensgoo", "powergoo", "quickgoo", "queengoo", "clockgoo", "mediagoo" } })
 require("lib/own").start()
 require("lib/shore").start()
-require("lib/desk").start()
+require("lib/desk").start(true)
 require("lib/lock").start()
 require("lib/polkit").start()

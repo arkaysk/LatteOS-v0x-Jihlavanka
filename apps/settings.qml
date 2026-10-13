@@ -390,7 +390,7 @@ ShellRoot {
 
             Pill { visible: shell.page === "background"; icon: "folder"; text: I18n.tr("Another file…"); onPressed: { chooser.what = "wallpaper"; chooser.open() } }
             Switch { visible: shell.page === "background"; width: view.room; text: I18n.tr("Icons on the desktop"); on: icons.value !== "off"
-                     hint: I18n.tr("The Trash, your home and what is in your Desktop folder, over the background. Needs pcmanfm-qt.")
+                     hint: I18n.tr("The Recycle Bin and what is in your Desktop folder, over the background.")
                      onPressed: { const next = on ? "off" : "on"; icons.value = next; Quickshell.execDetached(["latte-desktop", next]) } }
 
             // windows: how they are arranged, and the glass of the side panels

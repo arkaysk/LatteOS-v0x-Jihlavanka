@@ -1,143 +1,26 @@
-#!/usr/bin/env python3
-"""latte-desktop: the icons on the desktop, which pcmanfm-qt draws (LXQt's file manager, `--desktop`).
+#!/bin/sh
+# latte-desktop: the icons on the desktop (apps/desktop.qml): the Recycle Bin and the user's Desktop folder.
+#
+#   latte-desktop start      shows them, unless the user turned them off
+#   latte-desktop stop       takes them away
+#   latte-desktop restart    again
+#   latte-desktop on | off   the user's choice (~/.config/latteos/desktop-icons), applied at once
+#   latte-desktop status     prints "on" or "off"
+#
+# With icons the bare desktop is theirs, with the menu that goes with files; the Goo's own desktop menu
+# (goo/parts/desk.plm) is told to step back, on the monitor the icons are on.
+flag="${XDG_CONFIG_HOME:-$HOME/.config}/latteos/desktop-icons"
+status() { [ "$(cat "$flag" 2>/dev/null)" = off ] && echo off || echo on; }
+running() { pgrep -u "$(id -u)" -f 'qs .*apps/desktop\.qml' >/dev/null; }
+stop() { pkill -u "$(id -u)" -f 'qs .*apps/desktop\.qml' 2>/dev/null; }
+start() { [ "$(status)" = on ] && { running || setsid -f latte-app desktop >/dev/null 2>&1; }; }
+tell() { pleamar --say goo "fact desk_icons $([ "$(status)" = on ] && echo true || echo false)" >/dev/null 2>&1; }
 
-  latte-desktop start      shows them, unless the user turned them off or pcmanfm-qt is not installed
-  latte-desktop stop       takes them away
-  latte-desktop restart    again: after the wallpaper or the cup changed
-  latte-desktop on | off   the user's choice (~/.config/latteos/desktop-icons), applied at once
-  latte-desktop status     prints "on", "off" or "missing" (no pcmanfm-qt)
-
-The desktop it draws is see-through, so the wallpaper stays whoever's it is: a picture or a film behind it.
-Its menus and its writing take the colours of the cup the user chose (apps/common/Theme.qml is where those
-are). It runs as a profile of its own, `latteos`: a pcmanfm-qt the user opens as a file manager is another.
-"""
-import configparser, os, re, shutil, subprocess, sys, time
-
-SHARE = os.environ.get("LATTE_SHARE") or "/usr/share/latteos"
-CONFIG = os.environ.get("XDG_CONFIG_HOME") or os.path.expanduser("~/.config")
-PROFILE = "latteos"
-WHAT = ["pcmanfm-qt", "--desktop", "--profile", PROFILE]
-
-
-def word(name, default):
-    try:
-        return open(os.path.join(CONFIG, "latteos", name)).read().split()[0]
-    except (OSError, IndexError):
-        return default
-
-
-def cup():
-    """The colours of the user's cup, from the one table the apps take theirs from."""
-    table = {}
-    try:
-        for name, colours in re.findall(r'"(\w+)":\s*\{([^}]*)\}', open(os.path.join(SHARE, "apps/common/Theme.qml")).read()):
-            table[name] = dict(re.findall(r'(\w+):\s*"(#[0-9a-fA-F]{6})"', colours))
-    except OSError:
-        pass
-    name = word("cup", "espresso")
-    c = table.get(name) or table.get("espresso") or {}
-    c.setdefault("ground", "#17110d"); c.setdefault("card", "#2a1e17"); c.setdefault("raised", "#3a2a20")
-    c.setdefault("line", "#4a372b"); c.setdefault("cream", "#f3ebdd"); c.setdefault("faint", "#8a7666"); c.setdefault("gold", "#f7c873")
-    c.setdefault("surface", "#1f1611"); c.setdefault("coffee", "#c98a55")
-    return name, c
-
-
-def prepare():
-    """Its settings and its colours. Only the keys that are LatteOS's are written: the rest is the user's."""
-    name, c = cup()
-    path = os.path.join(CONFIG, "pcmanfm-qt", PROFILE, "settings.conf")
-    ini = configparser.RawConfigParser()
-    ini.optionxform = str
-    ini.read(path)
-    for section, values in (("Desktop", {"WallpaperMode": "none", "BgColor": "#00000000", "FgColor": c["cream"], "ShadowColor": c["ground"]}),
-                            ("System", {"FallbackIconThemeName": "breeze" if name == "porcelain" else "breeze-dark", "Terminal": "foot"})):
-        if not ini.has_section(section):
-            ini.add_section(section)
-        for k, v in values.items():
-            ini.set(section, k, v)
-    if not ini.has_option("Desktop", "DesktopShortcuts"):
-        ini.set("Desktop", "DesktopShortcuts", "Home, Trash")
-    os.makedirs(os.path.dirname(path), exist_ok=True)
-    with open(path, "w") as f:
-        ini.write(f, space_around_delimiters=False)
-    theme(name, c)
-
-
-def theme(name, c):
-    """Qt's own colours for it, through qt6ct: a palette made from the cup. (A style sheet given to pcmanfm-qt
-    crashes it, 2.4.1.) Somebody's own qt6ct settings are theirs: then this writes nothing."""
-    folder = os.path.join(CONFIG, "qt6ct")
-    scheme, conf = os.path.join(folder, "colors", "latteos.conf"), os.path.join(folder, "qt6ct.conf")
-    ini = configparser.RawConfigParser()
-    ini.optionxform = str
-    ini.read(conf)
-    if os.path.exists(conf) and ini.get("Appearance", "color_scheme_path", fallback="") != scheme:
-        return
-    a = lambda colour: "#ff" + colour[1:]
-    # WindowText Button Light Midlight Dark Mid Text BrightText ButtonText Base Window Shadow Highlight
-    # HighlightedText Link LinkVisited AlternateBase NoRole ToolTipBase ToolTipText PlaceholderText
-    def roles(text):
-        return ", ".join(a(x) for x in (text, c["raised"], c["line"], c["raised"], c["ground"], c["line"], text, c["cream"], text, c["card"],
-                                        c["card"], c["ground"], c["gold"], c["ground"], c["gold"], c["coffee"], c["surface"], c["cream"],
-                                        c["card"], c["cream"], c["faint"]))
-    os.makedirs(os.path.dirname(scheme), exist_ok=True)
-    with open(scheme, "w") as f:
-        f.write("[ColorScheme]\nactive_colors=%s\ndisabled_colors=%s\ninactive_colors=%s\n" % (roles(c["cream"]), roles(c["faint"]), roles(c["cream"])))
-    if not ini.has_section("Appearance"):
-        ini.add_section("Appearance")
-    for k, v in (("color_scheme_path", scheme), ("custom_palette", "true"), ("style", "Fusion"),
-                 ("icon_theme", "breeze" if name == "porcelain" else "breeze-dark")):
-        ini.set("Appearance", k, v)
-    with open(conf, "w") as f:
-        ini.write(f, space_around_delimiters=False)
-
-
-def running():
-    return subprocess.run(["pgrep", "-u", str(os.getuid()), "-f", "^pcmanfm-qt --desktop --profile " + PROFILE], capture_output=True).returncode == 0
-
-
-def stop():
-    subprocess.run(["pkill", "-u", str(os.getuid()), "-f", "^pcmanfm-qt --desktop --profile " + PROFILE], check=False)
-
-
-def status():
-    if not shutil.which("pcmanfm-qt"):
-        return "missing"
-    return "off" if word("desktop-icons", "on") == "off" else "on"
-
-
-def start():
-    if status() != "on":
-        return
-    prepare()
-    subprocess.Popen(WHAT, env=dict(os.environ, QT_QPA_PLATFORMTHEME="qt6ct"), stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)
-
-
-def tell_goo():
-    # with icons the bare desktop is theirs: the Goo's own desktop menu steps back
-    subprocess.run(["latte-say", "fact desk_icons " + ("true" if status() == "on" else "false")], check=False)
-
-
-def main(a):
-    if a == ["status"]:
-        print(status())
-        return 0
-    if a in (["on"], ["off"]):
-        os.makedirs(os.path.join(CONFIG, "latteos"), exist_ok=True)
-        with open(os.path.join(CONFIG, "latteos", "desktop-icons"), "w") as f:
-            f.write(a[0] + "\n")
-        a = ["restart"]
-    if a in (["start"], ["stop"], ["restart"]):
-        if a != ["start"] or running():
-            stop()
-            time.sleep(0.4)
-        if a != ["stop"]:
-            start()
-        tell_goo()
-        return 0
-    print(__doc__.strip(), file=sys.stderr)
-    return 2
-
-
-if __name__ == "__main__":
-    sys.exit(main(sys.argv[1:]))
+case "${1:-}" in
+status)  status ;;
+start)   start; tell ;;
+stop)    stop; tell ;;
+restart) stop; sleep 0.3; start; tell ;;
+on|off)  mkdir -p "$(dirname "$flag")"; echo "$1" > "$flag"; stop; sleep 0.3; start; tell ;;
+*)       sed -n '2,10p' "$0" | sed 's/^# \{0,1\}//' >&2; exit 2 ;;
+esac

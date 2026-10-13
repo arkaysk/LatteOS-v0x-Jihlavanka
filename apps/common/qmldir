@@ -12,3 +12,4 @@ AppWindow AppWindow.qml
 Slide Slide.qml
 Field Field.qml
 Reveal Reveal.qml
+Menu Menu.qml

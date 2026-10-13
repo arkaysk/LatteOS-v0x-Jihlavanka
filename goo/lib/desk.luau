@@ -5,8 +5,9 @@ local open = require("lib/open")
 
 local M = {}
 
-function M.start()
-    run("latte-desktop", { "status" }, function(out) fact.desk_icons = (out or ""):match("^on") ~= nil end)
+-- main: the scene of the monitor the desktop's icons are on; with them the bare desktop is theirs
+function M.start(main)
+    if main then run("latte-desktop", { "status" }, function(out) fact.desk_icons = (out or ""):match("^on") ~= nil end) end
     on("desk_menu", function()
         local ok, home = pcall(sys.ask, "env", "HOME")
         local rows = {

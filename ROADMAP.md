@@ -989,7 +989,27 @@ cestu k aktualizácii alebo návratu.
     jeho vlastné „Nastavenia pracovnej plochy“ vedia nastaviť tapetu, ktorá by prekryla našu (pri ďalšom štarte
     sa vráti priehľadná); skúška so živou tapetou. pcmanfm-qt by mohol byť aj **Súbory** pre 0.4 (v kávových
     farbách vyzerá dobre) — na rozhodnutie.
+    **Zmenené 13. 10. v noci (používateľ: „išlo mi len o ikonky a ponuku pravého kliku“, cieľ sú ľudia z Windowsu):**
+    pcmanfm-qt odobratý aj s tým, čo priniesol (terminál, lxqt-sudo, vlastné nastavenia tapety). Plocha je vlastná:
+    `apps/desktop.qml` (+ spoločná ponuka `apps/common/Menu.qml`), spúšťa ju `bin/latte-desktop`. Ponuky podľa
+    Windows 11 — na ploche Zobraziť › (veľké · stredné · malé ikony, automaticky usporiadať, zobraziť ikony),
+    Zoradiť podľa ›, Obnoviť, Prilepiť, Nový › (priečinok, textový dokument), Nastavenia obrazovky, Prispôsobiť,
+    Otvoriť v termináli; na ikone Otvoriť, Vystrihnúť, Kopírovať, Kopírovať ako cestu, Premenovať, Odstrániť,
+    Vlastnosti; Kôš: Otvoriť, Vysypať. Ťahanie ako vo Windows (na priečinok, do Koša, pravým s otázkou, von do
+    aplikácie), výber obdĺžnikom, F2 · Del · Ctrl+C/X/V · F5. Súbory hýbe `gio` (Kôš, kolízie mien), obrázky sú
+    samy sebe náhľadom, ostatné berú ikonu zo sady ikon systému (`QS_ICON_THEME` v `latte-app`). Farby sú témy
+    (`Theme.qml`). Overené naostro v relácii: ikony, výber, obe ponuky s podponukou. **Neoverené:** ťahanie,
+    premenovanie, Prilepiť, Vlastnosti, viac monitorov (ikony sú na hlavnom). **Chýba:** Otvoriť v programe…,
+    Späť (Ctrl+Z), „Tento počítač“. **Čaká na používateľa:** ktorá sada ikon (poslaný prehľad: breeze, Papirus,
+    elementary, Yaru, Mint-Y, Fluent).
 14. [ ] **skwd-wall ako výber tapety** (používateľ, 13. 10.: „trvám na live wallpaper ako v 0.3 a samozrejme aj
     skwd wall“). Živé tapety 0.4 má (mpvpaper, Nastavenia › Pozadie). skwd-wall (Rust, Vulkan, GPL-3.0) je
     samostatný program: zistiť, čo presne z neho (výber s prechodmi, alebo aj kreslenie tapety), a ako voliteľnú
     závislosť ho zapojiť vedľa mpvpaper.
+
+15. [ ] **Vzhľad: téma namiesto „kávy“** (používateľ, 13. 10. v noci). Vzhľad je vec zvolenej témy a nemusí to byť
+    káva; okná sú „šálka“ a tá môže byť širšie spektrum; moderné je brať farby témy **automaticky z tapety**.
+    Smer vzhľadu: **prevziať veľa z Vitreusu** (github.com/natepayn3/Vitreus, MIT, postavený na pleamare:
+    tekuté sklo, panely vytekajúce z lišty, výber tapiet, kalendár s počasím, ponuka programu v skle shellu).
+    Kroky: (a) téma ako jedno miesto pre aplikácie (`Theme.qml`), titulky okien (`latte/bars.lua`) aj Goo;
+    (b) `cup = wallpaper`: paleta vypočítaná z tapety pri jej zmene; (c) prejsť Vitreus a vybrať, čo prevziať.

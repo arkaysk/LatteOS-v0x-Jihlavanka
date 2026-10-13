@@ -52,6 +52,7 @@
 /usr/share/latteos/apps/devices.qml                     <- apps/devices.qml
 /usr/share/latteos/apps/monitor.qml                     <- apps/monitor.qml
 /usr/share/latteos/apps/settings.qml                    <- apps/settings.qml
+/usr/share/latteos/apps/desktop.qml                     <- apps/desktop.qml
 /usr/share/latteos/apps/settings/pages.json             <- apps/settings/pages.json
 /usr/share/latteos/apps/common/Theme.qml                <- apps/common/Theme.qml
 /usr/share/latteos/apps/common/I18n.qml                 <- apps/common/I18n.qml
@@ -68,6 +69,7 @@
 /usr/share/latteos/apps/common/Slide.qml                <- apps/common/Slide.qml
 /usr/share/latteos/apps/common/Field.qml                <- apps/common/Field.qml
 /usr/share/latteos/apps/common/Reveal.qml               <- apps/common/Reveal.qml
+/usr/share/latteos/apps/common/Menu.qml                 <- apps/common/Menu.qml
 /usr/share/latteos/apps/common/shaders/reveal.frag.qsb  <- apps/common/shaders/reveal.frag.qsb
 /usr/share/latteos/apps/common/window-place             <- apps/common/window-place
 /usr/share/applications/latteos-appmanager.desktop      <- system/applications/latteos-appmanager.desktop
@@ -207,7 +209,6 @@ optional: brightnessctl power-profiles-daemon                        # the brigh
 optional: steam gamescope gamescope-session gamescope-session-steam  # the Game session; without them it is not offered
 /usr/bin/pleamar: pleamar v0.3.2 (github.com/k4ditano/pleamar) built with patches/pleamar-*.patch; see patches/README.md
 optional /usr/lib64/latteos/hyprbars.so: hyprbars (github.com/hyprwm/hyprland-plugins) built for the installed Hyprland with patches/hyprbars-latte.patch
-optional: pcmanfm-qt breeze-icon-theme                               # the icons on the desktop (bin/latte-desktop); without it the desktop has its menu only
 optional /usr/bin/whyd: whyd (github.com/vmaltarello/whyd, the rpm of its releases): SAFE then says why the last session ended, from the journal
 optional /usr/lib64/latteos/hyprglass.so: hyprglass (github.com/hyprnux/hyprglass) built for the installed Hyprland: the glass windows that go with drops of glass
 
