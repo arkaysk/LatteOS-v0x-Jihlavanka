@@ -73,5 +73,7 @@ function M.show_desktop() eval("latte.desk.show()") end
 -- the band along an edge that windows leave to the drops: 0 bottom, 1 left, 2 top, 3 right
 function M.band(edge) eval(string.format("latte.band(%q, %q)", ({ [0] = "bottom", "left", "top", "right" })[edge] or "bottom", SCREEN)) end
 function M.logout() eval("hl.dispatch(hl.dsp.exit())") end
+-- started by the compositor, so logind sees the login session; the engine itself is outside it and polkit would ask for a password nobody answers
+function M.machine(what) eval(string.format("hl.exec_cmd(%q)", "systemctl " .. what)) end
 
 return M

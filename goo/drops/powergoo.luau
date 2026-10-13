@@ -108,9 +108,9 @@ end
 
 local LEAVE = {
     logout = wm.logout,
-    sleep = function() pcall(sys.call, "session.suspend") end,
-    restart = function() pcall(sys.call, "session.reboot") end,
-    off = function() pcall(sys.call, "session.poweroff") end,
+    sleep = function() wm.machine("suspend") end,
+    restart = function() wm.machine("reboot") end,
+    off = function() wm.machine("poweroff") end,
 }
 local function leave(how, d)
     return function()
