@@ -1067,3 +1067,23 @@ cestu k aktualizácii alebo návratu.
     ako dlaždice v jednom skle; (2) dlaždicové rozloženie a malé hlavičky do kariet Goo a do `AppWindow`;
     (3) akcent a tón skla z tapety (bod b); (4) prechod tapety a plást na jej výber (bod 14 namiesto skwd-wall
     alebo vedľa neho).
+16. [~] **Dokončenie prvkov prostredia** (používateľ, 13.–14. 10.: najprv prvky prostredia, meranie a STRESTEST potom;
+    **Prístupnosť sa nerobí teraz, až v Arabice 1+**). Urobené 14. 10. v noci:
+    - **AI vypínač a skwd-lens:** `latte-wall ai` zapíše `semantic.enabled` do nastavení skwd-wall a reštartuje
+      jeho službu; volá ho vypínač v Nastaveniach › AI aj štart relácie. Overené: pri vypnutej AI sa nový obrázok
+      neindexuje.
+    - **Okraj okien podľa témy** „Podľa tapety“ (`latte/bars.lua` `B.border`).
+    - **Zmena hesla** (Nastavenia › Heslo a zabezpečenie; AccountsService `SetPassword`, terajšie heslo si pýta
+      polkit). Neoverené naostro (okno na heslo je pri obrazovke).
+    - **Upozornenia:** nové upozornenie sa ukáže ako lístok vpravo dole nad Pobrežím (6,5 s, klik otvorí ClockGoo,
+      neberie klávesnicu) a zaznie tón; Nastavenia › Oznámenia: Nerušiť · Ukázať v rohu · Prehrať zvuk · Vyskúšať.
+      Nerušiť sa presunulo z `clock.json` do nastavení Goo (`settings.json`, kľúč `quiet`).
+    - **Obrazovky: Rozšíriť / Duplikovať** (`latte.duplicate`, `~/.config/latteos/screens`); overené bez
+      obrazovky s dvoma monitormi oboma smermi. Opravené pritom: návrat zo zrkadlenia musí `mirror` zrušiť výslovne
+      (týkalo sa aj virtuálneho monitora po odpojení skutočného).
+    - **Plocha: Otvoriť v programe** (`latte-desktop openers`, spúšťa `gtk-launch`).
+    **Ostáva z prostredia:** dlaždicové rozloženie a malé hlavičky podľa Vitreusu (karty Goo, `AppWindow`),
+    náhľady v Parkingu režimu Glance, Súbory (dnes Nautilus), plocha: Späť a „Tento počítač“, skratka na výber
+    tapety, stránky Nastavení Tlačiarne · Zálohovanie · Cloud, jazyk z prihlásenia do relácie, Barista,
+    inštalátor so sprievodcom, ChatGoo (Beeper), okno z bubliny QueenGoo.
+

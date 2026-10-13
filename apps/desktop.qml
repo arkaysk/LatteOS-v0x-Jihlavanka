@@ -187,7 +187,21 @@ ShellRoot {
             { line: true },
             { icon: "terminal-2", text: I18n.tr("Open in Terminal"), run: () => Quickshell.execDetached(["sh", "-c", "cd \"$1\" && exec foot", "sh", desk.folder]) }])
     }
-    function iconMenu(path, x, y) {
+    // "Open with": the apps the system knows for that kind of file, asked before the menu comes up
+    property var asked: null                   // { path, x, y }: the icon whose menu waits for the answer
+    Process { id: kinds_of
+        stdout: StdioCollector { onStreamFinished: {
+            const apps = this.text.split("\n").filter(l => l.indexOf("\t") > 0).map(l => ({ id: l.split("\t")[0], name: l.split("\t")[1] }))
+            const a = desk.asked; desk.asked = null
+            if (a) desk.iconMenu(a.path, a.x, a.y, apps.slice(0, 8)) } } }
+    function iconMenu(path, x, y, apps) {
+        if (apps === undefined && path !== trash && !isFolder(path) && !path.endsWith(".desktop")) {
+            asked = { path: path, x: x, y: y }
+            kinds_of.running = false
+            kinds_of.command = ["latte-desktop", "openers", path]
+            kinds_of.running = true
+            return
+        }
         if (path === trash) {
             return menu.open(x, y, [{ icon: "external-link", text: I18n.tr("Open"), bold: true, run: () => desk.open(trash) },
                                     { icon: "trash", text: I18n.tr("Empty Recycle Bin"), danger: true, enabled: trashed.count > 0, run: () => desk.sh("gio trash --empty") }])
@@ -195,6 +209,7 @@ ShellRoot {
         if (!chosen[path]) { const s = {}; s[path] = true; chosen = s }
         const many = picked().length > 1
         const rows = [{ icon: "external-link", text: I18n.tr("Open"), bold: true, hint: "Enter", run: () => { for (const p of desk.picked()) desk.open(p) } },
+            ...(apps && apps.length && !many ? [{ icon: "apps", text: I18n.tr("Open with"), more: apps.map(a => ({ text: a.name, run: () => Quickshell.execDetached(["gtk-launch", a.id, path]) })) }] : []),
             { line: true },
             { icon: "cut", text: I18n.tr("Cut"), hint: "Ctrl+X", run: () => desk.clip(true) },
             { icon: "copy", text: I18n.tr("Copy"), hint: "Ctrl+C", run: () => desk.clip(false) },

@@ -305,6 +305,7 @@ library Slovak {
         "Set the clock by itself" = "Nastavovať hodiny samo"
         "The login screen starts with the layouts of the whole system; there one is chosen with a click." = "Prihlasovacia obrazovka začína s rozloženiami celého systému; tam sa jedno vyberie klikom."
         "The last crash" = "Posledný pád"
+        "Open with" = "Otvoriť v programe"
         "More than one screen" = "Viac obrazoviek"
         "Extended, each screen is a desktop of its own. Duplicated, they all show the main one's picture." = "Rozšírené: každá obrazovka je vlastná plocha. Duplikované: všetky ukazujú obraz hlavnej."
         "Extend" = "Rozšíriť"
