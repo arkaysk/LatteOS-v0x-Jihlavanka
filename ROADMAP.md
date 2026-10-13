@@ -1009,8 +1009,9 @@ cestu k aktualizácii alebo návratu.
     ostáva swaybg a mpvpaper. Z jeho palety (`~/.cache/skwd-wall-v2/colors.json`) je **téma „Podľa tapety“**
     (štvrtá šálka: `Theme.qml` pre aplikácie a plochu, `latte/bars.lua` pre titulky okien) — mení sa sama pri
     každej zmene tapety, aj v otvorenom okne. Tapety LatteOS sa do jeho knižnice (`Obrázky/Wallpapers`) kopírujú.
-    Overené naostro: kreslenie, výber, paleta z modrej tapety prefarbila Nastavenia. **Chýba:** farby kvapiek
-    Goo a okrajov okien podľa tapety (dnes káva a pevné farby v `hyprland.lua`); klávesová skratka na výber;
+    Overené naostro: kreslenie, výber, paleta z modrej tapety prefarbila Nastavenia. **Rozhodnuté (používateľ,
+    13. 10.): kvapky Goo ostávajú vo farbách kávy**, téma z tapety sa ich netýka. **Chýba:** okraj aktívneho okna
+    podľa témy (pevné farby v `hyprland.lua`); klávesová skratka na výber;
     nastavenie `skwd-walld` pri inštalácii (dnes ho spustí prvé `latte-wall show`); `skwd-lens` s modelom
     570 MB sa nainštaloval podľa návodu autora a nie je nutný. Pôvodný zápis: **skwd-wall ako výber tapety** (používateľ, 13. 10.: „trvám na live wallpaper ako v 0.3 a samozrejme aj
     skwd wall“). Živé tapety 0.4 má (mpvpaper, Nastavenia › Pozadie). skwd-wall (Rust, Vulkan, GPL-3.0) je
