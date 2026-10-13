@@ -75,6 +75,7 @@ scene Login {
     event login ->                             // Enter, or the arrow: the logic checks the password
     event machine ->                           // 0 sleep, 1 restart, 2 shut down
     event session ->                           // the session chosen, by its place in `sessions`
+    event layout ->                            // the next keyboard layout; its argument is the language now shown (0 en, 1 sk)
 
     fact leaped = false                        // the drop has left the cup; its arc is worked out from t_leap
     fact t_leap = 0
@@ -83,6 +84,7 @@ scene Login {
     fact power_open = false
     fact ses_open = false
     fact ses_sel = 0
+    fact kb_count = 0                          // how many keyboard layouts there are; one is no choice
     fact panel = 0                             // under the surface: 0 nothing, 1 the last crash, 2 the news
     fact keep_backdrop = false                 // a real login keeps the background: the desktop comes after it
     fact power_x = 0.14                        // where the user's power drop sits on the bar, as a share of the width
@@ -108,6 +110,9 @@ scene Login {
     text g_restart = ""
     text g_session = ""
     text g_weather = ""
+    text g_kb = ""
+    text g_lang = ""
+    text kb_name = ""
     model sessions max 6 { name: text }
     model lines max 14 { t: text }
     model info max 3 { g: text; v: text; on: bool }
@@ -278,6 +283,20 @@ scene Login {
     on press z_restart { power_open = false; emit machine(1) }
     on press z_off { power_open = false; emit machine(2) }
     on key Escape while power_open { power_open = false }
+
+    // ── language and keyboard layout, left of the power drop: a press takes the next one ────────────────────
+    let CH = gx - R - 30
+    let CH_A = fields * (1 - gone)
+    text g_lang { at: CH - 112, goo_y; anchor: center; size: 18; color: cream; opacity: CH_A * 0.7; family: "tabler-icons" }
+    text "English" { at: CH - 96, goo_y; anchor: left center; size: 13.5; weight: 600; color: cream; opacity: CH_A * 0.85; family: "Inter" }
+    zone box z_lang { at: CH - 54, goo_y; size: 130, 36; cursor: pointer; label: "Language"; active: fields > 0.5 and gone < 0.1 }
+    on press z_lang while locale == sk { locale = en }
+    on press z_lang while locale == en { locale = sk }
+    text g_kb { at: CH - 174, goo_y; anchor: center; size: 18; color: cream; opacity: CH_A * 0.7; show: kb_count > 1; family: "tabler-icons" }
+    text kb_name { at: CH - 158, goo_y; anchor: left center; size: 13.5; weight: 600; color: cream; opacity: CH_A * 0.85; show: kb_count > 1; family: "Inter" }
+    zone box z_kb { at: CH - 148, goo_y; size: 56, 36; cursor: pointer; label: "Keyboard layout"; active: fields > 0.5 and gone < 0.1 and kb_count > 1 }
+    on press z_kb while locale == sk { emit layout(1) }
+    on press z_kb while locale == en { emit layout(0) }
 
     // ── the row: name · password · go ───────────────────────────────────────────────────────────────────────
     input user { at: text_x, gy - 11; width: 150; size: 16; weight: 600; color: cream; selection: #5a463a; placeholder: "Name"; opacity: fields; show: fields > 0.05; family: "Inter" }

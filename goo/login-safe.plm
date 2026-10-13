@@ -56,6 +56,8 @@ scene LoginSafe {
     event rejected
     event login ->
     event machine ->
+    event layout ->
+    fact kb_count = 0
     event session ->
     fact checking = false
     fact field = 1
@@ -79,6 +81,9 @@ scene LoginSafe {
     text g_restart = ""
     text g_session = ""
     text g_weather = ""
+    text g_kb = ""
+    text g_lang = ""
+    text kb_name = ""
     model sessions max 6 { name: text }
     model lines max 14 { t: text }
 
@@ -140,6 +145,18 @@ scene LoginSafe {
         on press z_machine.$i { power_open = false; emit machine(i) }
     }
     on key Escape while power_open { power_open = false }
+
+    // ── language and keyboard layout, left of the power drop: a press takes the next one ────────────────────
+    text g_lang { at: GX - 104, GY + 11; anchor: center; size: 18; color: cream; opacity: 70%; show: not leaving; family: "tabler-icons" }
+    text "English" { at: GX - 88, GY + 11; anchor: left center; size: 13.5; weight: 600; color: cream; show: not leaving; family: "Inter" }
+    zone box z_lang { at: GX - 46, GY + 11; size: 130, 36; cursor: pointer; label: "Language"; active: not leaving }
+    on press z_lang while locale == sk { locale = en }
+    on press z_lang while locale == en { locale = sk }
+    text g_kb { at: GX - 166, GY + 11; anchor: center; size: 18; color: cream; opacity: 70%; show: kb_count > 1 and not leaving; family: "tabler-icons" }
+    text kb_name { at: GX - 150, GY + 11; anchor: left center; size: 13.5; weight: 600; color: cream; show: kb_count > 1 and not leaving; family: "Inter" }
+    zone box z_kb { at: GX - 140, GY + 11; size: 56, 36; cursor: pointer; label: "Keyboard layout"; active: kb_count > 1 and not leaving }
+    on press z_kb while locale == sk { emit layout(1) }
+    on press z_kb while locale == en { emit layout(0) }
 
     // ── the session chooser and its choices ─────────────────────────────────────────────────────────────────
     box { from: SX - 19, GY - 19; size: SES + 38, 38; corner: 19; color: coffee; show: sessions.count > 1 and not leaving }

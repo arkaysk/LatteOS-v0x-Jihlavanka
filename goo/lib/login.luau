@@ -133,6 +133,31 @@ return function()
         if s then text.ses_name = s.name or s.file or "" end
     end)
 
+    -- The keyboard layouts come in the order the login compositor was started with. labwc cannot be told to
+    -- switch from outside, so a press asks latte-greeter for the login screen again with the next one first.
+    local layouts, layout = {}, 0
+    do
+        local ok, list = pcall(sys.ask, "env", "LATTE_LOGIN_LAYOUTS")
+        for l in tostring(ok and list or ""):gmatch("[^,]+") do layouts[#layouts + 1] = l end
+        local ok2, at = pcall(sys.ask, "env", "LATTE_LOGIN_LAYOUT")
+        layout = tonumber(ok2 and at or 0) or 0
+        if not LIVE then layouts, layout = { "us", "sk" }, 0 end
+    end
+    local function show_layout()
+        fact.kb_count = #layouts
+        text.kb_name = (layouts[layout + 1] or ""):upper()
+    end
+    show_layout()
+    on("layout", function(lang)
+        if #layouts < 2 then return end
+        layout = (layout + 1) % #layouts
+        show_layout()
+        if LIVE then
+            -- the language goes along: the new screen starts in the one chosen here
+            run("latte-login", { "layout", tostring(layout), lang == 1 and "sk" or "en" }, nil, { output = false })
+        end
+    end)
+
     local MACHINE = { "suspend", "reboot", "poweroff" }
     on("machine", function(k)
         local what = MACHINE[(k or 0) + 1]
@@ -143,6 +168,7 @@ return function()
 
     text.g_power, text.g_go, text.g_sleep = icons["power"], icons["arrow-right"], icons["moon"]
     text.g_restart, text.g_session = icons["refresh"], icons["device-desktop"]
+    text.g_kb, text.g_lang = icons["keyboard"], icons["world"]
     fact.keep_backdrop = LIVE
     fill()
     show_date()

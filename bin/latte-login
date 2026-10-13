@@ -16,6 +16,8 @@
   latte-login auth USER SESSION -- COMMAND…
         checks the password and prepares the user's session through greetd;
         prints {"ok": true} or {"ok": false, "error": "…"}
+  latte-login layout N LANG
+        the login screen is to start again with keyboard layout N (its place in the list) and language LANG
   latte-login done
         ends the login compositor: greetd starts the prepared session once the login screen is gone
 
@@ -268,6 +270,16 @@ def done():
     return 0
 
 
+def layout(index, lang):
+    """labwc has no way to switch a layout from outside: leave the choice for latte-greeter and end this compositor."""
+    try:
+        open(os.path.join(os.environ["LATTE_LOGIN_RUN"], "layout"), "w").write("%d %s\n" % (index, lang))
+    except (KeyError, OSError):
+        return 1
+    subprocess.run(["labwc", "--exit"], check=False)
+    return 0
+
+
 def main(a):
     if a == ["data"]:
         print(json.dumps(data(), ensure_ascii=False))
@@ -295,6 +307,8 @@ def main(a):
             return 2
     if len(a) >= 5 and a[0] == "auth" and a[3] == "--":
         return auth(a[1], a[2], a[4:])
+    if len(a) == 3 and a[0] == "layout" and a[1].isdigit() and re.fullmatch(r"[a-z]{2,3}", a[2]):
+        return layout(int(a[1]), a[2])
     if a == ["done"]:
         return done()
     print(__doc__.strip(), file=sys.stderr)

@@ -9,6 +9,8 @@ library Slovak {
         "Log in" = "Prihlásiť"
         "Power" = "Napájanie"
         "Session" = "Relácia"
+        "Keyboard layout" = "Rozloženie klávesnice"
+        "English" = "Slovenčina"      // the language's own name: the chip shows the one in use
         "Last crash" = "Posledný pád"
         "News" = "Novinky"
         "Sleep" = "Uspať"

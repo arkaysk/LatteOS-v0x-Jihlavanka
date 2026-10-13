@@ -903,7 +903,12 @@ cestu k aktualizácii alebo návratu.
 
 11. [ ] **Prihlasovacia obrazovka podľa predstavy používateľa** (13. 10., `bughunt/najdene-chyby.md`; test 541 ukázal,
     že voľba jazyka a klávesnice na prihlásení **nie je**: rozloženie sa prepína iba naslepo Alt+Shift, jazyk vôbec).
-    (a) **Jazyk a rozloženie klávesnice klikom** na prihlásení (aj v SAFE), s ukazovateľom aktuálneho rozloženia;
+    (a) [~] **Jazyk a rozloženie klávesnice klikom** na prihlásení (aj v SAFE), s ukazovateľom aktuálneho rozloženia
+    — urobené 13. 10.: dve chipy vľavo od vypínacej kvapky (jazyk sa prepína za behu faktom `locale`; rozloženie
+    cez nový štart prihlasovača, lebo labwc sa zvonka prepnúť nedá: `latte-login layout` → `latte-greeter`, Alt+Shift
+    na prihlásení odpadol, aby ukazovateľ nikdy nklamal). Overené: dry run (kliky, snímka) a slučka
+    `latte-greeter` s napodobeným labwc. **Neoverené:** skutočné prihlásenie po `sudo ./install --go`. Jazyk platí
+    iba pre prihlasovaciu obrazovku, relácia berie systémový (Nastavenia › Jazyk a región);
     (b) Caps Lock / Num Lock ako text vznášajúci sa nad poľom hesla; (c) hladina v spodných 2/3, na dne
     premenlivé tiene (kávová usadenina); softvérové kreslenie = statická hladina; (d) kvapka z šálky Plymouthu
     dopadne a vlní hladinu; (e) pod hladinou posledný log z pádu, inak aktuality z RSS (zdroj v Nastaveniach;

@@ -28,8 +28,29 @@ fi
 export LATTE_LOGIN=greetd LATTE_LOGIN_RUN="$XDG_RUNTIME_DIR/latte-login"
 export XDG_CURRENT_DESKTOP=labwc:wlroots LIBSEAT_BACKEND=logind
 rm -rf "$LATTE_LOGIN_RUN"; mkdir -p -m 700 "$LATTE_LOGIN_RUN"
-labwc -C "$share/greeter/labwc" \
-    -s "sh -c 'cd $share/goo && pleamar --scene $scene --no-hud > \"$LATTE_LOGIN_RUN/login.log\" 2>&1; labwc --exit'"
+# The layouts as the system keeps them; a press in the scene starts the screen again with the next one first
+# (`latte-login layout`), and the choice comes back in $LATTE_LOGIN_RUN/layout. No Alt+Shift here: what the
+# scene shows is then always the layout that types.
+IFS=, read -ra layouts <<< "$XKB_DEFAULT_LAYOUT"
+IFS=, read -ra variants <<< "$XKB_DEFAULT_VARIANT"
+export LATTE_LOGIN_LAYOUTS="$XKB_DEFAULT_LAYOUT" LATTE_LOGIN_LAYOUT=0
+export XKB_DEFAULT_OPTIONS="$(printf '%s' "${XKB_DEFAULT_OPTIONS:-}" | tr ',' '\n' | grep -v '^grp:' | paste -sd,)"
+while :; do
+    first=$LATTE_LOGIN_LAYOUT
+    ordered=() ordered_variants=()
+    for ((k = 0; k < ${#layouts[@]}; k++)); do
+        at=$(((first + k) % ${#layouts[@]}))
+        ordered+=("${layouts[at]}") ordered_variants+=("${variants[at]:-}")
+    done
+    XKB_DEFAULT_LAYOUT=$(IFS=,; echo "${ordered[*]}") XKB_DEFAULT_VARIANT=$(IFS=,; echo "${ordered_variants[*]}")
+    export XKB_DEFAULT_LAYOUT XKB_DEFAULT_VARIANT
+    labwc -C "$share/greeter/labwc" \
+        -s "sh -c 'cd $share/goo && pleamar --scene $scene --no-hud >> \"$LATTE_LOGIN_RUN/login.log\" 2>&1; labwc --exit'"
+    [ -e "$LATTE_LOGIN_RUN/layout" ] || break
+    read -r at lang < "$LATTE_LOGIN_RUN/layout"; rm -f "$LATTE_LOGIN_RUN/layout"
+    [ "$at" -ge 0 ] 2>/dev/null && [ "$at" -lt "${#layouts[@]}" ] && LATTE_LOGIN_LAYOUT=$at
+    case "$lang" in sk) export LANG=sk_SK.UTF-8 ;; en) export LANG=en_US.UTF-8 ;; esac
+done
 # `latte-login done` leaves this mark: greetd starts the user's session once this script ends.
 [ -e "$LATTE_LOGIN_RUN/done" ] && exit 0
 logger -t latte-greeter "the Goo login ended without a login; falling back to the text login"
