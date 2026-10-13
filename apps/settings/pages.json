@@ -32,7 +32,7 @@
     "id": "defaults",
     "name": "Default apps",
     "icon": "star",
-    "status": "planned",
+    "status": "ready",
     "words": "browser mail open with file types"
    },
    {
@@ -98,9 +98,8 @@
     "id": "sound",
     "name": "Sound",
     "icon": "device-speaker",
-    "status": "planned",
-    "words": "volume speaker microphone output input",
-    "elsewhere": "devices sound"
+    "status": "ready",
+    "words": "volume speaker microphone output input"
    },
    {
     "id": "network",

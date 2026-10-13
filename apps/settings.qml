@@ -82,6 +82,14 @@ ShellRoot {
     property string profile: ""
     Process { id: profiles; command: ["powerprofilesctl", "get"]; stdout: StdioCollector { onStreamFinished: shell.profile = this.text.trim() } }
     Process { id: setProfile; onExited: profiles.running = true }
+    Run { id: sound }
+    Run { id: opens }
+    Process { id: tell; onExited: { if (shell.page === "sound") sound.ask(["latte-settings", "sound"]); if (shell.page === "defaults") opens.ask(["latte-settings", "defaults"]) } }
+    function order(args) { tell.running = false; tell.command = args; tell.running = true }
+    Timer { interval: 2500; repeat: true; running: shell.page === "sound"; onTriggered: if (!tell.running) sound.ask(["latte-settings", "sound"]) }
+    readonly property var kindNames: ({ "browser": QT_TR_NOOP("Web browser"), "mail": QT_TR_NOOP("Mail"), "files": QT_TR_NOOP("Files and folders"), "images": QT_TR_NOOP("Pictures"),
+                                        "video": QT_TR_NOOP("Video"), "music": QT_TR_NOOP("Music"), "text": QT_TR_NOOP("Text"), "pdf": "PDF" })
+    readonly property var kindIcons: ({ "browser": "world", "mail": "file-text", "files": "folder", "images": "photo", "video": "player-play", "music": "music", "text": "file-text", "pdf": "file-text" })
     Run { id: coffees }
     Run { id: pictures }
     Run { id: machine }
@@ -93,6 +101,8 @@ ShellRoot {
         if (page === "background") pictures.ask(["latte-settings", "wallpapers"])
         if (page === "about") machine.ask(["latte-devices", "list"])
         if (page === "power") profiles.running = true
+        if (page === "sound") sound.ask(["latte-settings", "sound"])
+        if (page === "defaults") opens.ask(["latte-settings", "defaults"])
     }
     readonly property var coffeeNames: ({ "espresso": "Espresso", "ristretto": "Ristretto", "lungo": "Lungo", "americano": "Americano", "macchiato": "Macchiato", "cortado": "Cortado",
                                           "flatwhite": "Flat white", "cappuccino": "Cappuccino", "latte": "Latte", "white-coffee": QT_TR_NOOP("White coffee") })
@@ -292,6 +302,47 @@ ShellRoot {
                 Switch { text: I18n.tr("The surface bends"); hint: I18n.tr("Ripples lift the drops and the edge gives under them."); on: goo.kept.bends !== false; onPressed: goo.set("bends", !on) } }
             Label { visible: shell.page === "drops"; width: view.room; wrapMode: Text.WordWrap; color: Theme.dim; font.pixelSize: 13
                     text: I18n.tr("Which drops are on the desktop, and putting them back in their places, is in PowerGoo › Settings on the desktop itself. The coffee they are made of is under Coffee and cup.") }
+
+            // sound: where it goes and where it comes from
+            Repeater { model: shell.page === "sound" ? [{ key: "outputs", title: QT_TR_NOOP("Where the sound goes"), cmd: "sink", icon: "device-speaker" },
+                                                        { key: "inputs", title: QT_TR_NOOP("Where it comes from"), cmd: "source", icon: "microphone" }] : []
+                Column { id: way; required property var modelData; width: view.room; spacing: 8
+                    readonly property var list: sound.data ? sound.data[modelData.key] : []
+                    Label { text: I18n.tr(way.modelData.title); font.pixelSize: 18; font.weight: 700; bottomPadding: 4 }
+                    Label { visible: way.list.length === 0; text: I18n.tr("Nothing is connected."); color: Theme.dim }
+                    Repeater { model: ScriptModel { values: way.list.map(d => d.name) }
+                        Rectangle { id: dev; required property string modelData; width: view.room; height: 70; radius: 16; color: Theme.card
+                            readonly property var d: way.list.find(x => x.name === modelData) || { label: "", volume: 0, muted: false, "default": false }
+                            border.width: 2; border.color: d["default"] ? Theme.gold : "transparent"
+                            Rectangle { x: 14; width: 42; height: 42; radius: 14; color: Theme.ground; anchors.verticalCenter: parent.verticalCenter
+                                Glyph { anchors.centerIn: parent; name: dev.d.muted ? "volume-off" : way.modelData.icon; font.pixelSize: 22; color: dev.d["default"] ? Theme.gold : Theme.dim }
+                                MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: shell.order(["pactl", "set-" + way.modelData.cmd + "-mute", dev.modelData, "toggle"]) } }
+                            Column { x: 70; width: parent.width - 70 - 330; anchors.verticalCenter: parent.verticalCenter; spacing: 3
+                                Label { text: dev.d.label; font.weight: 600; width: parent.width }
+                                Label { text: dev.d["default"] ? I18n.tr("in use") : I18n.tr("press to use"); color: dev.d["default"] ? Theme.gold : Theme.dim; font.pixelSize: 12 } }
+                            MouseArea { x: 70; width: parent.width - 400; height: parent.height; cursorShape: Qt.PointingHandCursor; onClicked: shell.order(["pactl", "set-default-" + way.modelData.cmd, dev.modelData]) }
+                            Slide { anchors.right: parent.right; anchors.rightMargin: 70; anchors.verticalCenter: parent.verticalCenter; width: 230; value: dev.d.volume; off: dev.d.muted
+                                    onMoved: to => shell.order(["pactl", "set-" + way.modelData.cmd + "-volume", dev.modelData, Math.round(to * 100) + "%"]) }
+                            Label { anchors.right: parent.right; anchors.rightMargin: 18; anchors.verticalCenter: parent.verticalCenter; text: Math.round(dev.d.volume * 100) + " %"; color: Theme.dim; font.pixelSize: 12 } } } } }
+
+            // which app opens what
+            Label { visible: shell.page === "defaults"; width: view.room; wrapMode: Text.WordWrap; color: Theme.dim; font.pixelSize: 13
+                    text: I18n.tr("The app that opens a kind of thing when it is pressed in a folder, a mail or a web page. Press another to make it the one.") }
+            Repeater { model: shell.page === "defaults" && opens.data ? opens.data : []
+                Column { id: kindRow; required property var modelData; width: view.room; spacing: 8
+                    Row { spacing: 10
+                        Glyph { name: shell.kindIcons[kindRow.modelData.kind] || "apps"; color: Theme.gold; font.pixelSize: 20; anchors.verticalCenter: parent.verticalCenter }
+                        Label { text: I18n.tr(shell.kindNames[kindRow.modelData.kind] || kindRow.modelData.kind); font.pixelSize: 16; font.weight: 700; anchors.verticalCenter: parent.verticalCenter } }
+                    Label { visible: kindRow.modelData.apps.length === 0; text: I18n.tr("No app for it is installed."); color: Theme.dim; font.pixelSize: 12 }
+                    Flow { width: parent.width; spacing: 8
+                        Repeater { model: kindRow.modelData.apps
+                            Rectangle { id: appChip; required property var modelData; height: 44; width: chipRow.implicitWidth + 28; radius: 14
+                                readonly property bool on: kindRow.modelData.current === modelData.id
+                                color: on ? Theme.raised : Theme.card; border.width: 2; border.color: on ? Theme.gold : "transparent"
+                                Row { id: chipRow; anchors.centerIn: parent; spacing: 9
+                                    Image { width: 26; height: 26; source: appChip.modelData.icon.startsWith("/") ? "file://" + appChip.modelData.icon : Quickshell.iconPath(appChip.modelData.icon, true); sourceSize.width: 64; sourceSize.height: 64; anchors.verticalCenter: parent.verticalCenter; visible: status === Image.Ready }
+                                    Label { text: appChip.modelData.name; font.weight: appChip.on ? 700 : 400; anchors.verticalCenter: parent.verticalCenter } }
+                                MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: shell.order(["latte-settings", "default", kindRow.modelData.kind, appChip.modelData.id]) } } } } } }
 
             // when it locks, when the screens go dark
             Part { visible: shell.page === "lock"; width: view.room; title: I18n.tr("Lock the session after"); note: I18n.tr("Left alone that long, the session locks; the password opens it again. A window that fills the screen keeps it awake.")

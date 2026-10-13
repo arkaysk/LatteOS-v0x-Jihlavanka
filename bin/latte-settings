@@ -7,6 +7,10 @@
   latte-settings wallpapers     the pictures and the films a desktop can have behind it: [{"path", "live", "own"}] —
                                 LatteOS's own, then what is in the user's Pictures and Videos folders (and in a
                                 folder Wallpapers in either); live: it is a film
+  latte-settings sound          {"outputs": […], "inputs": […]}: each {"name", "label", "volume" 0…1.5, "muted", "default"}
+  latte-settings defaults       which app opens what: [{"kind", "current", "apps": [{"id", "name", "icon"}]}] for the
+                                kinds browser, mail, files, images, video, music, text, pdf
+  latte-settings default KIND APP.desktop     makes that app the one for everything of the kind
 
 A page is opened with `latte-app settings PAGE`. The pages are listed in apps/settings/pages.json, the one list the
 Settings app itself is built from.
@@ -67,7 +71,87 @@ def wallpapers():
     return found
 
 
+def sound():
+    import subprocess
+
+    def listed(what, default):
+        try:
+            found = json.loads(subprocess.run(["pactl", "-f", "json", "list", what], capture_output=True, text=True, timeout=8).stdout or "[]")
+        except (OSError, ValueError, subprocess.TimeoutExpired):
+            return []
+        out = []
+        for d in found:
+            if d.get("name", "").endswith(".monitor"):
+                continue                    # what a speaker plays, offered as a microphone: not a thing to choose
+            levels = [int(v.get("value_percent", "0%").rstrip("%")) for v in (d.get("volume") or {}).values()] or [0]
+            out.append({"name": d["name"], "label": d.get("description") or d["name"], "volume": round(sum(levels) / len(levels) / 100, 2),
+                        "muted": d.get("mute") is True, "default": d["name"] == default})
+        return out
+
+    said = lambda *a: subprocess.run(["pactl", *a], capture_output=True, text=True, timeout=8).stdout.strip()
+    try:
+        return {"outputs": listed("sinks", said("get-default-sink")), "inputs": listed("sources", said("get-default-source"))}
+    except (OSError, subprocess.TimeoutExpired):
+        return {"outputs": [], "inputs": []}
+
+
+# what a kind of thing is, as files and addresses name themselves; the first is the one asked about
+KINDS = {"browser": ["x-scheme-handler/https", "x-scheme-handler/http", "text/html"], "mail": ["x-scheme-handler/mailto"],
+         "files": ["inode/directory"], "images": ["image/png", "image/jpeg", "image/webp", "image/gif", "image/bmp"],
+         "video": ["video/mp4", "video/x-matroska", "video/webm", "video/quicktime", "video/x-msvideo"],
+         "music": ["audio/mpeg", "audio/flac", "audio/ogg", "audio/x-wav", "audio/mp4"], "text": ["text/plain"], "pdf": ["application/pdf"]}
+
+
+def launchers():
+    """Every app that says what it can open: {desktop id: (name, icon, {types})}"""
+    import configparser
+    import glob
+    lang = (os.environ.get("LC_ALL") or os.environ.get("LC_MESSAGES") or os.environ.get("LANG") or "").split("_")[0]
+    found = {}
+    for folder in (os.path.expanduser("~/.local/share/applications"), os.path.expanduser("~/.local/share/flatpak/exports/share/applications"),
+                   "/var/lib/flatpak/exports/share/applications", "/usr/share/applications"):
+        for path in sorted(glob.glob(folder + "/*.desktop")):
+            name = os.path.basename(path)
+            if name in found:
+                continue
+            p = configparser.RawConfigParser(strict=False, interpolation=None)
+            p.optionxform = str
+            try:
+                p.read(path, encoding="utf-8")
+                e = p["Desktop Entry"]
+            except (KeyError, configparser.Error, UnicodeDecodeError):
+                continue
+            if e.get("MimeType") and e.get("NoDisplay", "").lower() != "true":
+                found[name] = (e.get("Name[%s]" % lang) or e.get("Name", name), e.get("Icon", ""), set(filter(None, e["MimeType"].split(";"))))
+    return found
+
+
+def defaults():
+    import subprocess
+    apps = launchers()
+    out = []
+    for kind, types in KINDS.items():
+        try:
+            current = subprocess.run(["xdg-mime", "query", "default", types[0]], capture_output=True, text=True, timeout=5).stdout.strip()
+        except (OSError, subprocess.TimeoutExpired):
+            current = ""
+        can = sorted(((i, a) for i, a in apps.items() if types[0] in a[2]), key=lambda x: x[1][0].lower())
+        out.append({"kind": kind, "current": current, "apps": [{"id": i, "name": a[0], "icon": a[1]} for i, a in can]})
+    return out
+
+
 def main(a):
+    if a == ["sound"]:
+        print(json.dumps(sound(), ensure_ascii=False))
+        return 0
+    if a == ["defaults"]:
+        print(json.dumps(defaults(), ensure_ascii=False))
+        return 0
+    if len(a) == 3 and a[0] == "default" and a[1] in KINDS and re.fullmatch(r"[\w.-]+\.desktop", a[2]):
+        import subprocess
+        mine = launchers().get(a[2], ("", "", set()))[2]
+        # everything of the kind that the app says it opens; the first always, or the choice would not show
+        return subprocess.run(["xdg-mime", "default", a[2], *[t for i, t in enumerate(KINDS[a[1]]) if i == 0 or t in mine]]).returncode
     if a == ["wallpapers"]:
         print(json.dumps(wallpapers(), ensure_ascii=False))
         return 0

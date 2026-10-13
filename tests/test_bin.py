@@ -195,4 +195,16 @@ packet = b"\x00" * 12 + b"\x03foo\x05local\x00" + b"\x03bar\xc0\x0c"
 assert network.name_at(packet, 12) == ("foo.local", 23) and network.name_at(packet, 23) == ("bar.foo.local", 29)
 assert network.maker("a2:00:00:00:00:01") == ""                    # an address a phone made up names nobody
 assert network.kind_of({"printer", "pc"}, "", "") == "printer" and network.kind_of(set(), "Espressif Inc.", "") == "home" and network.kind_of(set(), "", "") == "device"
+settings = load("latte-settings")
+with tempfile.TemporaryDirectory() as d:
+    home, os.environ["HOME"] = os.environ.get("HOME"), d
+    os.makedirs(os.path.join(d, ".local/share/applications"))
+    for name, more in (("zz-test-view", "MimeType=image/png;x-test/thing;\n"), ("zz-test-hidden", "MimeType=x-test/thing;\nNoDisplay=true\n"), ("zz-test-plain", "")):
+        open(os.path.join(d, ".local/share/applications", name + ".desktop"), "w").write("[Desktop Entry]\nName=View\nIcon=view\nExec=view\n" + more)
+    found = settings.launchers()
+    os.environ["HOME"] = home
+    assert found["zz-test-view.desktop"] == ("View", "view", {"image/png", "x-test/thing"}), found.get("zz-test-view.desktop")
+    assert "zz-test-hidden.desktop" not in found and "zz-test-plain.desktop" not in found
+with contextlib.redirect_stdout(io.StringIO()):
+    assert settings.main(["default", "nonsense", "a.desktop"]) == 2 and settings.main(["default", "browser", "../a.desktop"]) == 2      # nothing is run for these
 print("bin: ok")
