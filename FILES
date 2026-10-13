@@ -24,6 +24,7 @@
 /usr/bin/latte-settings                                 <- bin/latte-settings
 /usr/bin/latte-desktop                                  <- bin/latte-desktop
 /usr/bin/latte-wall                                     <- bin/latte-wall
+/usr/bin/latte-walls                                    <- bin/latte-walls
 /usr/bin/latte-session                                  <- bin/latte-session
 /usr/bin/latte-screens                                  <- bin/latte-screens
 /usr/bin/latte-safe                                     <- bin/latte-safe

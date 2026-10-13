@@ -1013,7 +1013,19 @@ cestu k aktualizácii alebo návratu.
     13. 10.): kvapky Goo ostávajú vo farbách kávy**, téma z tapety sa ich netýka. **Chýba:** okraj aktívneho okna
     podľa témy (pevné farby v `hyprland.lua`); klávesová skratka na výber;
     nastavenie `skwd-walld` pri inštalácii (dnes ho spustí prvé `latte-wall show`); `skwd-lens` s modelom
-    570 MB sa nainštaloval podľa návodu autora a nie je nutný. Pôvodný zápis: **skwd-wall ako výber tapety** (používateľ, 13. 10.: „trvám na live wallpaper ako v 0.3 a samozrejme aj
+    570 MB sa nainštaloval podľa návodu autora a nie je nutný. **Doplnené 13. 10. pred polnocou (používateľ: z `latte-tapety` v0.3 chce knižnicu, ďalšiu/predošlú, pauzu a
+    katalógy z internetu):** `latte-wall next | prev | pause | resume` (cez skwd-wall, bez neho po priečinku
+    `Obrázky/Wallpapers`), v Nastaveniach › Pozadie tlačidlá Predošlá · Ďalšia · Pozastaviť · Prehrať a časť
+    **Z internetu** (`bin/latte-walls`): **Bing** (fotografie posledných dní) a **MotionBGS** (filmy, s hľadaním);
+    klik stiahne do knižnice a nastaví. Wallhaven má skwd-wall vo vlastnom výbere. Overené naostro: film
+    z MotionBGS (9 MB) stiahnutý a hrá ako tapeta, ~14 % jedného jadra. **skwd-lens** (hľadanie tapiet podľa
+    významu: model SigLIP 2, 598 MB, beží na procesore; latte-lab i7-4820K: 60 obrázkov za 15,5 s ≈ 4 za
+    sekundu na 4 vláknach) smie ostať, **iba keď je AI v LatteOS zapnutá** — väzba na vypínač AI ešte nie je
+    (skwd má nastavenie `semantic.enabled`). Rozšírenie na hľadanie obrázkov v celom počítači: binárka vie
+    stavať vlastný index a pýtať sa, ale iba cez nedokumentované rozhranie (JSON na vstupe) a pri ručnom
+    spustení mi zamrzla — bez podpory autora to nestaviam. **Počasie na ploche** (dážď, sneh podľa predpovede)
+    engine Goo už má: pri nečinnosti a zapnutých „Živých kvapkách“; pohyblivé scény z v0.3 sa nevracajú.
+    Pôvodný zápis: **skwd-wall ako výber tapety** (používateľ, 13. 10.: „trvám na live wallpaper ako v 0.3 a samozrejme aj
     skwd wall“). Živé tapety 0.4 má (mpvpaper, Nastavenia › Pozadie). skwd-wall (Rust, Vulkan, GPL-3.0) je
     samostatný program: zistiť, čo presne z neho (výber s prechodmi, alebo aj kreslenie tapety), a ako voliteľnú
     závislosť ho zapojiť vedľa mpvpaper.

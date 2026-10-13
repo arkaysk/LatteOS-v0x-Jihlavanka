@@ -3,6 +3,8 @@
 #
 #   latte-wall show PATH    puts that picture or film behind the desktop
 #   latte-wall pick         opens the wallpaper picker (skwd-wall), or the Settings' page without it
+#   latte-wall next | prev  the next or the one before from the user's library (Pictures/Wallpapers)
+#   latte-wall pause | resume   a film or a scene stands still, and moves again
 #   latte-wall engine       prints "skwd" or "plain": who draws
 #   latte-wall changed [PATH]   skwd-wall's hook: the choice is noted and the colours taken from the wallpaper go round
 #
@@ -47,6 +49,18 @@ pick)
     else
         setsid -f latte-app settings background >/dev/null 2>&1
     fi ;;
+next|prev)
+    if skwd; then skwd-helm "$1" >/dev/null 2>&1 && exit 0; fi
+    # plainly: the library in the order of its names, from the one shown now
+    lib="$(xdg-user-dir PICTURES 2>/dev/null)"; lib="${lib:-$HOME/Pictures}/Wallpapers"
+    now="$(head -n1 "$config/wallpaper" 2>/dev/null)"
+    list="$(find "$lib" -maxdepth 1 -type f 2>/dev/null | sort)"; [ "$1" = prev ] && list="$(printf '%s\n' "$list" | tac)"
+    [ -n "$list" ] || exit 0
+    to="$(printf '%s\n' "$list" | awk -v now="$now" 'found { print; exit } $0 == now { found = 1 }')"
+    [ -n "$to" ] || to="$(printf '%s\n' "$list" | head -n1)"
+    hyprctl eval "latte.wallpaper(\"$to\")" >/dev/null 2>&1 ;;
+pause|resume)
+    if skwd; then skwd-helm "$1" >/dev/null 2>&1; else pkill "$([ "$1" = pause ] && echo -STOP || echo -CONT)" -x mpvpaper 2>/dev/null; fi ;;
 changed)
     if [ -n "${2:-}" ]; then mkdir -p "$config" && printf '%s\n' "$2" > "$config/wallpaper"; fi
     # the title bars take the colours anew; the apps watch the palette's file themselves

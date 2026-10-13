@@ -1,0 +1,103 @@
+#!/usr/bin/env python3
+"""latte-walls: wallpapers from the internet, for the Settings' Background page.
+
+  latte-walls bing                 the pictures of the last days from Bing: [{"id", "title", "author", "thumb", "url", "film"}]
+  latte-walls motionbgs [WORDS…]   live wallpapers (films) from motionbgs.com, the newest or what the words find
+  latte-walls get URL NAME         fetches one into the user's library (Pictures/Wallpapers) and prints where it is
+
+What is fetched is the user's from then on: a file in their library like any other, shown by bin/latte-wall.
+Each catalogue is its owner's: the pictures are Microsoft's and their photographers', the films motionbgs.com's.
+"""
+import html, json, os, re, subprocess, sys, urllib.parse, urllib.request
+
+AGENT = "Mozilla/5.0 (X11; Linux x86_64; rv:130.0) Gecko/20100101 Firefox/130.0"
+
+
+def fetch(url, accept="*/*", timeout=20):
+    req = urllib.request.Request(url, headers={"User-Agent": AGENT, "Accept": accept})
+    return urllib.request.urlopen(req, timeout=timeout)
+
+
+def bing():
+    lang = (os.environ.get("LANG") or "en_US").split(".")[0].replace("_", "-")
+    out = []
+    for start in (0, 8):
+        try:
+            d = json.load(fetch("https://www.bing.com/HPImageArchive.aspx?format=js&idx=%d&n=8&mkt=%s" % (start, lang)))
+        except (OSError, ValueError):
+            break
+        for img in d.get("images", []):
+            base = img.get("urlbase") or ""
+            if not base or any(o["id"] == img.get("hsh") for o in out):
+                continue
+            title, _, author = (img.get("copyright") or "").partition(" (")
+            out.append({"id": img.get("hsh") or base, "title": title or img.get("title") or "", "author": author.rstrip(")") or "Microsoft Bing", "film": False,
+                        "thumb": "https://www.bing.com%s_1920x1080.jpg&w=480&h=270&rs=1&c=4" % base, "url": "https://www.bing.com%s_UHD.jpg" % base})
+    return out
+
+
+def motionbgs(words):
+    url = "https://motionbgs.com/" if not words else "https://motionbgs.com/search?q=" + urllib.parse.quote_plus(" ".join(words))
+    try:
+        page = fetch(url, "text/html").read().decode("utf-8", "replace")
+    except OSError:
+        return []
+    out, seen = [], set()
+    for m in re.finditer(r'<a[^>]*title="([^"]*)"[^>]*>\s*(?:<[^>]*>\s*)*?<img[^>]*?/media/(\d+)/([^"\'\s>]+?)\.jpg', page):
+        title, number, name = html.unescape(m.group(1)), m.group(2), m.group(3)
+        if number in seen:
+            continue
+        seen.add(number)
+        out.append({"id": number, "title": re.sub(r"\s*live wallpaper$", "", title, flags=re.I), "author": "MotionBGS", "film": True,
+                    "thumb": "https://motionbgs.com/i/c/364x205/media/%s/%s.jpg" % (number, name), "url": "https://motionbgs.com/dl/hd/%s/" % number})
+    return out
+
+
+def library():
+    try:
+        pictures = subprocess.run(["xdg-user-dir", "PICTURES"], capture_output=True, text=True).stdout.strip()
+    except OSError:
+        pictures = ""
+    folder = os.path.join(pictures if pictures and pictures != os.path.expanduser("~") else os.path.expanduser("~/Pictures"), "Wallpapers")
+    os.makedirs(folder, exist_ok=True)
+    return folder
+
+
+def get(url, name):
+    if not re.match(r"https://(www\.bing\.com|motionbgs\.com)/", url):
+        return 2
+    name = re.sub(r"[^\w .-]", "", name, flags=re.U).strip()[:80] or "wallpaper"
+    try:
+        r = fetch(url, timeout=60)
+        kind = r.headers.get("Content-Type", "")
+        ending = ".mp4" if "video" in kind or "mp4" in r.geturl() else ".jpg"
+        path = os.path.join(library(), name + ending)
+        with open(path + ".part", "wb") as f:
+            while True:
+                chunk = r.read(1 << 16)
+                if not chunk:
+                    break
+                f.write(chunk)
+        os.replace(path + ".part", path)
+    except OSError as e:
+        print(e, file=sys.stderr)
+        return 1
+    print(path)
+    return 0
+
+
+def main(a):
+    if a == ["bing"]:
+        print(json.dumps(bing(), ensure_ascii=False))
+        return 0
+    if a[:1] == ["motionbgs"]:
+        print(json.dumps(motionbgs(a[1:]), ensure_ascii=False))
+        return 0
+    if len(a) == 3 and a[0] == "get":
+        return get(a[1], a[2])
+    print(__doc__.strip(), file=sys.stderr)
+    return 2
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))

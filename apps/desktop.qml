@@ -183,6 +183,7 @@ ShellRoot {
             { icon: "device-desktop", text: I18n.tr("Display settings"), run: () => Quickshell.execDetached(["latte-app", "settings", "displays"]) },
             { icon: "palette", text: I18n.tr("Personalize"), run: () => Quickshell.execDetached(["latte-app", "settings", "coffee"]) },
             { icon: "photo", text: I18n.tr("Change wallpaper"), run: () => Quickshell.execDetached(["latte-wall", "pick"]) },
+            { icon: "chevron-right", text: I18n.tr("Next desktop background"), run: () => Quickshell.execDetached(["latte-wall", "next"]) },
             { line: true },
             { icon: "terminal-2", text: I18n.tr("Open in Terminal"), run: () => Quickshell.execDetached(["sh", "-c", "cd \"$1\" && exec foot", "sh", desk.folder]) }])
     }

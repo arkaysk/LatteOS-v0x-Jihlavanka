@@ -114,8 +114,17 @@ def wallpapers():
             continue
         ends = (".jpg", ".jpeg", ".png", ".webp") if still else (".mp4", ".webm", ".mkv", ".mov")
         files = [p for d in (folder, os.path.join(folder, "Wallpapers")) for p in sorted(glob.glob(os.path.join(d, "*"))) if p.lower().endswith(ends)]
-        found += [{"path": p, "live": not still, "own": True} for p in files[:60]]
-    return found
+        if still:       # the library of wallpapers holds films too: what was fetched from the internet lands there
+            files += [p for p in sorted(glob.glob(os.path.join(folder, "Wallpapers", "*"))) if p.lower().endswith((".mp4", ".webm", ".mkv", ".mov"))]
+        found += [{"path": p, "live": not p.lower().endswith((".jpg", ".jpeg", ".png", ".webp")), "own": True} for p in files[:60]]
+    # LatteOS's own are copied into that library for the picker (bin/latte-wall): shown once
+    def same(p):
+        try:
+            return (os.path.basename(p), os.path.getsize(p))
+        except OSError:
+            return (p, -1)
+    ours = {same(w["path"]) for w in found if not w["own"]}
+    return [w for w in found if not (w["own"] and same(w["path"]) in ours)]
 
 
 def sound():

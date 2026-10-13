@@ -117,6 +117,11 @@ ShellRoot {
     Run { id: who }
     Run { id: logon }
     Run { id: iconsets }
+    Run { id: online }
+    property string catalogue: ""              // "bing" or "motionbgs": the wallpapers from the internet that are listed
+    property string fetching: ""               // the one being fetched
+    Process { id: fetcher; stdout: StdioCollector { onStreamFinished: { const path = this.text.trim(); shell.fetching = ""
+        if (path !== "") { wallpaper.value = path; Quickshell.execDetached(["hyprctl", "eval", "latte.wallpaper(" + JSON.stringify(path) + ")"]); pictures.ask(["latte-settings", "wallpapers"]) } } } }
     Word { id: tier; name: "tier" }
     Word { id: ai; name: "ai" }
     // what latte-boot decided for this start, and whether the next one was asked to be SAFE
@@ -400,6 +405,28 @@ ShellRoot {
 
             Pill { visible: shell.page === "background"; icon: "folder"; text: I18n.tr("Another file…"); onPressed: { chooser.what = "wallpaper"; chooser.open() } }
             Pill { visible: shell.page === "background"; icon: "photo"; strong: true; text: I18n.tr("Wallpaper picker"); onPressed: Quickshell.execDetached(["latte-wall", "pick"]) }
+            Row { visible: shell.page === "background"; spacing: 10
+                Pill { icon: "chevron-left"; text: I18n.tr("Previous"); onPressed: Quickshell.execDetached(["latte-wall", "prev"]) }
+                Pill { icon: "chevron-right"; text: I18n.tr("Next"); onPressed: Quickshell.execDetached(["latte-wall", "next"]) }
+                Pill { icon: "player-pause"; text: I18n.tr("Pause"); onPressed: Quickshell.execDetached(["latte-wall", "pause"]) }
+                Pill { icon: "player-play"; text: I18n.tr("Play"); onPressed: Quickshell.execDetached(["latte-wall", "resume"]) } }
+            Part { visible: shell.page === "background"; width: view.room; title: I18n.tr("From the internet")
+                   note: I18n.tr("A press fetches one into your Pictures and puts it behind the desktop. Bing's are photographs, MotionBGS's are films.")
+                Pill { text: "Bing"; strong: shell.catalogue === "bing"; onPressed: { shell.catalogue = "bing"; online.data = null; online.ask(["latte-walls", "bing"]) } }
+                Pill { text: "MotionBGS"; strong: shell.catalogue === "motionbgs"; onPressed: { shell.catalogue = "motionbgs"; online.data = null; online.ask(["latte-walls", "motionbgs"].concat(netField.text.trim().split(/\s+/).filter(w => w !== ""))) } }
+                Field { id: netField; visible: shell.catalogue === "motionbgs"; width: 260; hint: I18n.tr("Search films…")
+                        onAccepted: { online.data = null; online.ask(["latte-walls", "motionbgs"].concat(netField.text.trim().split(/\s+/).filter(w => w !== ""))) } }
+                Item { width: view.room; height: 1 }
+                Waiting { visible: shell.catalogue !== "" && online.data === null }
+                Repeater { model: shell.catalogue !== "" && online.data ? online.data.slice(0, 24) : []
+                    ClippingRectangle { id: net; required property var modelData; width: 232; height: 132; radius: 16; color: Theme.card
+                        border.width: 3; border.color: shell.fetching === modelData.id ? Theme.gold : "transparent"
+                        Image { anchors.fill: parent; anchors.margins: 3; source: net.modelData.thumb; fillMode: Image.PreserveAspectCrop; asynchronous: true; sourceSize.width: 480 }
+                        Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 30; color: Qt.rgba(0, 0, 0, 0.55)
+                            Glyph { x: 10; visible: net.modelData.film; name: "player-play"; font.pixelSize: 13; color: "white"; anchors.verticalCenter: parent.verticalCenter }
+                            Label { x: net.modelData.film ? 28 : 10; width: parent.width - x - 10; text: net.modelData.title; color: "white"; font.pixelSize: 12; anchors.verticalCenter: parent.verticalCenter } }
+                        MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; enabled: shell.fetching === ""
+                                    onClicked: { shell.fetching = net.modelData.id; fetcher.running = false; fetcher.command = ["latte-walls", "get", net.modelData.url, net.modelData.title]; fetcher.running = true } } } } }
             Switch { visible: shell.page === "background"; width: view.room; text: I18n.tr("Icons on the desktop"); on: icons.value !== "off"
                      hint: I18n.tr("The Recycle Bin and what is in your Desktop folder, over the background.")
                      onPressed: { const next = on ? "off" : "on"; icons.value = next; Quickshell.execDetached(["latte-desktop", next]) } }
