@@ -268,6 +268,10 @@ ostatné kvapky sú iba na hlavnom monitore.
 - Plán: priehľadné pozadie a goo telo z pleamaru pod ňou (vlnenie pri zmene stavu).
 
 ### 4.9 Okná (Hyprland)
+- **Prichytenie ťahaním** (Fresh, 13. 10.; plávajúce okná): okno pustené s kurzorom pri hornom okraji sa
+  maximalizuje, pri bočnom zaberie polovicu, pri rohu štvrtinu; odtiahnuté z miesta dostane späť svoju veľkosť.
+  Kedy bolo okno pustené, hovorí plugin `plugins/latte-events` (Hyprland 0.56 na to udalosť nemá); bez neho sa
+  neprichytáva. Pri Win + ťahaní sa prichytí až s prvým pohybom myši po pustení. Náhľad cieľa ešte nie je.
 - Režimy **páska** (nekonečná, ako niri), **dlaždice**, **plávajúce** (ako Windows). Okná neprekrývajú pás kvapiek
   pri okraji (ani maximalizované); celú obrazovku kreslí Hyprland nad vrstvou Goo.
 
@@ -480,4 +484,4 @@ nemá (AI je hľadanie, Financie a Sociálne sú podkategórie Flathubu).
 QueenGoo (čaká na App Manager a Správcu zariadení), ChatGoo (čaká na Beeper), Tvorca Goo (vlastné kvapky už sú: §4.7),
 okno z bubliny (14; pád minimalizovaného okna už je), prenášanie ikier medzi monitormi, ďalší poskytovatelia AI,
 portrét účtu, účty kalendárov so zápisom (CalDAV),
-živé tapety a vlastný obrázok tapety, sklo okien, prichytenie ťahaním, Nastavenia a ostatné aplikácie.
+živé tapety a vlastný obrázok tapety, sklo okien, náhľad cieľa a lišta rozložení pri ťahaní okna, Nastavenia a ostatné aplikácie.

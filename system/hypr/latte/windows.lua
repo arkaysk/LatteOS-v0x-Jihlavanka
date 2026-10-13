@@ -48,8 +48,8 @@ local function place(w, r)
     hl.dispatch(hl.dsp.window.resize({ x = r.w, y = r.h, window = sel(w) }))
     hl.dispatch(hl.dsp.window.move({ x = r.x, y = r.y, window = sel(w) }))
 end
-local function snap(w, zone)
-    local z, m = zones[zone], w.monitor or hl.get_active_monitor()
+local function snap(w, zone, on)
+    local z, m = zones[zone], on or w.monitor or hl.get_active_monitor()
     if not z or not m then return end
     local scale, res = m.scale or 1, m.reserved or { top = 0, right = 0, bottom = 0, left = 0 }
     local ax, ay = m.x + res.left + GAP, m.y + res.top + GAP
@@ -73,6 +73,44 @@ local function unsnap(w)
     before[w.address] = nil
     place(w, r)
     return true
+end
+
+-- ── a window dropped at an edge of the screen is laid there, as on Windows ────────────────────────────────
+-- The pointer at the top edge: maximised; at a side: that half; near a corner of a side: that quarter. A
+-- window taken out of a zone and dropped elsewhere has its own size again. Floating windows only: on the
+-- tape and in tiles the layout places them. Hyprland does not say when a window is let go; the plugin
+-- latte-events does (plugins/latte-events), and without it nothing here happens.
+W.plugin = (os.getenv("LATTE_PLUGINS") or "/usr/lib64/latteos") .. "/latte-events.so"
+local EDGE, CORNER = 8, 0.18         -- px from the edge; the share of a side that counts as its corner
+local function edge_zone(m, x, y)
+    local scale = m.scale or 1
+    local w, h = m.width / scale, m.height / scale
+    local rx, ry = x - m.x, y - m.y
+    -- an edge another monitor continues behind is no edge: the pointer is only on its way there
+    local function open_edge(px, py) local o = hl.get_monitor_at(px, py) return o == nil or o.name == m.name end
+    local side = (rx <= EDGE and open_edge(m.x - 2, y) and "l") or (rx >= w - 1 - EDGE and open_edge(m.x + w + 2, y) and "r") or nil
+    if side then
+        if ry <= h * CORNER then return "t" .. side end
+        if ry >= h * (1 - CORNER) then return "b" .. side end
+        return side == "l" and "left" or "right"
+    end
+    return (ry <= EDGE and open_edge(x, m.y - 2)) and "full" or nil
+end
+local function dropped(w, x, y)
+    if not w or W.current ~= "floating" then return end
+    local m = hl.get_monitor_at(x, y) or w.monitor
+    local zone = m and edge_zone(m, x, y)
+    if zone == "full" then
+        hl.dispatch(hl.dsp.window.fullscreen({ mode = "maximized", action = "set", window = sel(w) }))
+    elseif zone then
+        snap(w, zone, m)
+    else
+        local r = before[w.address]
+        if r then
+            before[w.address] = nil
+            hl.dispatch(hl.dsp.window.resize({ x = r.w, y = r.h, window = sel(w) }))
+        end
+    end
 end
 hl.on("window.close", function(w) if w then before[w.address] = nil end end)
 
@@ -161,6 +199,16 @@ function W.setup()
         dwindle = { preserve_split = true },
     })
     float_rule = hl.window_rule({ name = "latte-floating", match = { class = ".*" }, float = true })
+    local plugin = io.open(W.plugin, "r")
+    if plugin then
+        plugin:close()
+        -- its event is there only once the plugin has really been loaded
+        if pcall(hl.plugin.load, W.plugin) then
+            for _, p in ipairs(hl.get_loaded_plugins() or {}) do
+                if p.name == "latte-events" then hl.on("latte.drag_end", dropped) end
+            end
+        end
+    end
 
     latte.mode = {
         tell = tell,

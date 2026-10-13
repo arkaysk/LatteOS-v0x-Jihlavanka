@@ -3,6 +3,7 @@
 # One line a file:   target <- source     The source is a path in this repository, or
 #   build:NAME       the program cargo builds from crates/NAME
 #   system:PATH      a file the system already has, copied
+#   plugin:NAME      the Hyprland plugin `make` builds in plugins/NAME (needs hyprland-devel; again after every update of Hyprland)
 # tests/check.sh fails when a source is missing here or a file meant for the system is not listed.
 
 [files]
@@ -71,6 +72,7 @@
 /usr/share/latteos/hypr/latte/tiers.lua                 <- system/hypr/latte/tiers.lua
 /usr/share/latteos/hypr/latte/bars.lua                  <- system/hypr/latte/bars.lua
 /usr/share/latteos/hypr/hypridle.conf                   <- system/hypr/hypridle.conf
+/usr/lib64/latteos/latte-events.so                      <- plugin:latte-events
 /usr/share/latteos/labwc/rc.xml                         <- system/labwc/rc.xml
 /usr/share/latteos/labwc/autostart                      <- system/labwc/autostart
 /usr/share/wayland-sessions/latteos.desktop             <- system/sessions/latteos.desktop

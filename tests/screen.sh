@@ -15,7 +15,8 @@
 #   DO='foot & sleep 1; hyprctl …'  shell run inside the session two seconds in
 #   SCENE=goo/login.plm            another scene (default goo/goo.plm)
 #   SIZE=1920x1080
-# The mouse and the keys are the scene's own fake ones (pleamar --help):
+# The compositor has no mouse; tests/pointer.py is one (it can drag a window):  DO='pointer.py 1920x1080 400,300 down 2,300 up'
+# In a scene the mouse and the keys are its own fake ones (pleamar --help):
 #   tests/screen.sh 8 --mouse "718,1056@2000 down@2500 up@2600 type:foo@4000 key:Return@6000"
 # `pleamar --say goo describe`, in DO, lists what is on the screen by name, and `press "Settings"` (tests/press)
 # presses whatever says that:   DO='press PowerGoo; sleep 1; press Settings; sleep 1; pleamar --say goo "get card_open"'
@@ -35,6 +36,9 @@ mkdir -p "$out/labwc" "$out/data" "$out/state" "$out/share" "$out/config"
 # /usr/share/latteos as it will be, from where its parts are in the repository
 ln -sfn "$repo/system/hypr" "$out/share/hypr"
 ln -sfn "$repo/assets/wallpapers" "$out/share/wallpapers"
+# the plugins: this repository's own as it was last built (make -C plugins/latte-events), the title bars from the system
+mkdir -p "$out/plugins"
+for p in "$repo/plugins/latte-events/latte-events.so" /usr/lib64/latteos/hyprbars.so; do [ -f "$p" ] && ln -sfn "$p" "$out/plugins/"; done
 rm -f "$out"/shot*.png "$out/scene.log" "$out/do.log"
 
 # What runs inside the session: the scene, the screenshots, DO.
@@ -68,7 +72,7 @@ EOF
     if [ $nested = 1 ]; then
         # LIBSEAT_BACKEND=logind: should the nested backend fail, Hyprland falls back to the real card. Over ssh
         # logind refuses that, where seatd would let it take the screen from whoever is using it.
-        echo "PATH=\"$repo/bin:\$PATH\" LIBSEAT_BACKEND=logind LATTE_SHARE=$out/share LATTE_TIER=${LATTE_TIER:-standard} LATTE_RENDERER=hw XDG_CURRENT_DESKTOP=Hyprland XDG_STATE_HOME=$out/state XDG_CONFIG_HOME=$out/config Hyprland -c $out/hyprland.lua > $out/hyprland.log 2>&1 &"
+        echo "PATH=\"$repo/bin:\$PATH\" LIBSEAT_BACKEND=logind LATTE_SHARE=$out/share LATTE_PLUGINS=$out/plugins LATTE_TIER=${LATTE_TIER:-standard} LATTE_RENDERER=hw XDG_CURRENT_DESKTOP=Hyprland XDG_STATE_HOME=$out/state XDG_CONFIG_HOME=$out/config Hyprland -c $out/hyprland.lua > $out/hyprland.log 2>&1 &"
         echo "echo \$! > $out/hyprland.pid"
         echo "(sleep $((secs + 4)); labwc --exit) &"
     else
