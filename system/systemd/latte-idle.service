@@ -1,0 +1,12 @@
+# What happens when the session is left alone: the lock, the screens going dark, the lock before sleep
+# (system/hypr/hypridle.conf). With its own file, so a ~/.config/hypr/hypridle.conf the user keeps for
+# another desktop is neither read nor touched.
+[Unit]
+Description=LatteOS idle
+PartOf=latte-session.target
+After=latte-session.target latte-goo.service
+
+[Service]
+ExecStart=/usr/bin/hypridle -q -c /usr/share/latteos/hypr/hypridle.conf
+Restart=on-failure
+RestartSec=2

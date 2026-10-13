@@ -82,6 +82,8 @@ hl.gesture({ fingers = 3, direction = "horizontal", action = "workspace" })
 
 -- an app's request to maximise itself is not obeyed: it would cover the drops' band
 hl.window_rule({ name = "latte-no-self-maximize", match = { class = ".*" }, suppress_event = "maximize" })
+-- a window that fills the screen is being watched or played, with a gamepad as likely as not: nothing locks or goes dark
+hl.window_rule({ name = "latte-fullscreen-awake", match = { class = ".*" }, idle_inhibit = "fullscreen" })
 
 -- When memory runs out, an app's window goes before the compositor and the shell do.
 hl.on("window.open", function(w)

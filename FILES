@@ -63,6 +63,7 @@
 /usr/share/latteos/hypr/latte/keys.lua                  <- system/hypr/latte/keys.lua
 /usr/share/latteos/hypr/latte/tiers.lua                 <- system/hypr/latte/tiers.lua
 /usr/share/latteos/hypr/latte/bars.lua                  <- system/hypr/latte/bars.lua
+/usr/share/latteos/hypr/hypridle.conf                   <- system/hypr/hypridle.conf
 /usr/share/latteos/labwc/rc.xml                         <- system/labwc/rc.xml
 /usr/share/latteos/labwc/autostart                      <- system/labwc/autostart
 /usr/share/wayland-sessions/latteos.desktop             <- system/sessions/latteos.desktop
@@ -80,6 +81,7 @@
 /usr/lib/systemd/system/latte-boot.service              <- system/systemd/latte-boot.service
 /usr/lib/systemd/user/latte-session.target              <- system/systemd/latte-session.target
 /usr/lib/systemd/user/latte-goo.service                 <- system/systemd/latte-goo.service
+/usr/lib/systemd/user/latte-idle.service                <- system/systemd/latte-idle.service
 /usr/lib/tmpfiles.d/latteos.conf                        <- system/systemd/latteos.tmpfiles
 /etc/latteos/boot.toml                                  <- system/boot.toml
 /etc/kernel/install.d/96-latteos-safe.install           <- system/kernel-install/96-latteos-safe.install
@@ -112,7 +114,7 @@ $XDG_RUNTIME_DIR/latteos/                               # per user: the reason f
 package: greetd labwc tuigreet plymouth plymouth-plugin-two-step plymouth-theme-spinner egl-utils python3
 package: rsms-inter-fonts jetbrains-mono-fonts policycoreutils-python-utils util-linux-core
 package: foot less NetworkManager-tui                                # the SAFE session's terminal and rescue menu
-package: hyprland wireplumber libnotify swaybg                       # the GOO session; wpctl for the volume keys; notify-send when a timer rings; the wallpaper
+package: hyprland wireplumber libnotify swaybg hypridle              # the GOO session; wpctl for the volume keys; notify-send when a timer rings; the wallpaper; the lock when idle
 package: fd-find xdg-utils xdg-user-dirs                             # the launcher: finding files, opening them, the home folders
 optional: brightnessctl power-profiles-daemon                        # the brightness keys; the power profiles in PowerGoo's card
 optional: steam gamescope gamescope-session gamescope-session-steam  # the Game session; without them it is not offered

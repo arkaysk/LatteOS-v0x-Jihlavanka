@@ -117,9 +117,15 @@ part Drops {
     // the light the drops reflect: dim and cold at night, white by day, warm at dawn and dusk
     let sky = mix(mix(#8fa3c8, #fff4e0, daylight), #ffb070, warmth)
 
-    on idle for 60s while lively { idle = 1; emit goo_idle(1) }
-    on idle for 180s while lively { idle = 2; emit goo_idle(2) }
-    on idle for 360s while lively { idle = 3; emit goo_idle(3) }
+    // The session tells how long the whole system has been left alone, keys included (system/hypr/hypridle.conf);
+    // once it has spoken, the scene's own count, which knows only the pointer, is not used.
+    event sys_idle
+    fact told = false
+    on sys_idle(v) { told = true }
+    on sys_idle(v) while lively and idle != v { idle = v; emit goo_idle(v) }
+    on idle for 60s while lively and not told { idle = 1; emit goo_idle(1) }
+    on idle for 180s while lively and not told { idle = 2; emit goo_idle(2) }
+    on idle for 360s while lively and not told { idle = 3; emit goo_idle(3) }
     on change cursor.x while idle > 0 { idle = 0; emit goo_idle(0) }
     on change cursor.y while idle > 0 { idle = 0; emit goo_idle(0) }
 

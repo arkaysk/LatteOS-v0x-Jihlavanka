@@ -126,6 +126,8 @@ bol GooPower); **kvapka** = každý samostatný tekutý prvok; **karta Goo** = o
   ext-idle-notify) pošle po 50 s bez dotyku `sys_idle 1` a pri činnosti `sys_idle 0`; kto píše bez myši, kvapky
   nezaspia, klávesa ich zobudí. Pri prehrávaní videa (inhibítor) sa nečinnosť nehlási. Bez pomocníka platí
   nečinnosť scény (iba myš).
+  *(Fresh, 13. 10.: pomocníkom je hypridle — `system/hypr/hypridle.conf` hlási `sys_idle 1/2/3` po 1, 3 a 6 min
+  a `sys_idle 0` pri činnosti; inhibítor aj okno na celú obrazovku nečinnosť zastavia.)*
 
 ---
 
@@ -444,7 +446,8 @@ nemá (AI je hľadanie, Financie a Sociálne sú podkategórie Flathubu).
   (aplikácia) ešte nie sú.
 - **Zámok obrazovky** (Win+L, PowerGoo › Zamknúť; `goo/parts/lock.plm`, `goo/lib/lock.luau`): zamyká kompozitor
   (`ext-session-lock`), heslo overí systém; vyzerá ako prihlásenie v pokoji. Keby scéna pri zamknutí spadla, nová
-  zamkne znova. Zamknutie pri nečinnosti ešte nie je.
+  zamkne znova. Pri nečinnosti (hypridle, `latte-idle.service`) zamkne po 10 min, o pol minúty zhasne obrazovky,
+  zamkne aj pred uspaním; film, hra či hovor (inhibítor) a okno na celú obrazovku tomu bránia. Samo sa neuspáva.
 - **Goo z klávesnice** (§6.1, Win+T): šípky po kvapkách dokola po obvode, Enter a medzerník ľavý klik, Menu a Shift+F10
   pravý, + a − koliesko, Esc von; vybraná kvapka sa zdvihne, pulzuje a ukáže bublinu; skončí sám po voľbe okna,
   po voľbe v karte a po minúte.

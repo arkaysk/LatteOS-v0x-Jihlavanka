@@ -80,7 +80,9 @@ Schválené 12. 10. 2026. Pracuje sa **zhora nadol, neskáče sa**; nový nápad
           vypnúť). Čo je a čo chýba: LATTEOS-GOO.md §8.
         - [x] pás výkonu PowerGoo (12. 10.; `latte-stats` hlási aj teplotu procesora a karty).
         - [x] zámok obrazovky (12. 10.): Win+L a PowerGoo › Zamknúť; overené zlé aj dobré heslo a zamknutie po páde
-          scény. Chýba zamknutie pri nečinnosti a pred uspaním.
+          scény. Pri nečinnosti (13. 10., hypridle, `system/hypr/hypridle.conf`): zamknutie po 10 min, zhasnutie
+          obrazoviek o pol minúty neskôr, zamknutie pred uspaním; okno na celú obrazovku tomu bráni. Samo sa
+          neuspáva. Časy sa zatiaľ nedajú meniť v Nastaveniach.
         - [x] ovládanie Goo z klávesnice (12. 10., Win+T).
         - [x] pád minimalizovaného okna do lišty, kvapka uhne titulku okna (12. 10.).
         - [x] viac monitorov, prvá časť (12. 10.): scéna je iba na hlavnom monitore (Hyprland jej povie ktorý,
