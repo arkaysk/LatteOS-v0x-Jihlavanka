@@ -960,3 +960,10 @@ cestu k aktualizácii alebo návratu.
     Svetlo a sedlina na ploche nie sú — nie je tam hĺbka.
 12. [x] **PowerGoo s lištou údajov** (13. 10.: karta rastie z celej kapsuly — `card_strip`, `cap.len` v `goo/parts/card.plm`; začína širokou ako lišta, otvára sa smerom, ktorým lišta leží, a drží ju v sebe; overené snímkou pri spodnom okraji, pri bočnom nie)**:** kartu vysunúť z celého celku Goo + lišta, aby tvorili vizuálne jeden kus
     (dnes je ucho karty pri ľavom kliku malé a lišta ostáva vedľa). Režimy okien (4.) sú bod 7 (Glance).
+13. [~] **Ponuka plochy na pravý klik** (13. 10., `bughunt/najdene-chyby.md`: „ako vo Windows 11, v 0.3 to bolo“).
+    Urobené 13. 10.: vrstva `desk` pod oknami (`goo/parts/desk.plm`) počúva pravý klik na holú plochu a
+    `goo/lib/desk.luau` otvorí kartu tam, kde sa kliklo: Súbory, Otvoriť v termináli · Nastavenia obrazovky,
+    Tapeta, Prispôsobiť, Kvapky · Monitor, Všetky nastavenia. Aj na ďalších monitoroch (`side.plm`). Nasadené
+    a overené na latte-lab v bežiacej relácii. **Chýba oproti v0.3:** ikony na ploche (Kôš, súbory z ~/Plocha)
+    a s nimi Zobraziť, Zoradiť podľa, Nový, Prilepiť — plocha s ikonami bola v0.3 samostatná aplikácia
+    (`old/session/apps/plocha.qml`); či sa vráti, rozhodne používateľ.
