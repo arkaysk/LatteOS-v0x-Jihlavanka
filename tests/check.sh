@@ -16,6 +16,12 @@ done
 for f in system/session-env.sh system/libexec/* system/kernel-install/* tests/screen.sh tests/press; do
     case "$(head -1 "$f")" in *python*) python3 -c 'import sys; compile(open(sys.argv[1]).read(), sys.argv[1], "exec")' "$f" ;; *) bash -n "$f" ;; esac
 done
+# a shader is loaded as built: the built file must be the one its source gives
+built="$(mktemp)"
+for f in apps/common/shaders/*.frag; do
+    qsb-qt6 --glsl "100 es,120,150" -o "$built" "$f" && cmp -s "$built" "$f.qsb" || { echo "$f.qsb is not built from $f: qsb-qt6 --glsl \"100 es,120,150\" -o $f.qsb $f"; exit 1; }
+done
+rm -f "$built"
 for f in tests/pointer.py tests/fake-player.py; do python3 -c 'import sys; compile(open(sys.argv[1]).read(), sys.argv[1], "exec")' "$f"; done
 tests/test_session.sh
 
@@ -62,7 +68,7 @@ for s in sorted(sources):
         bad.append("FILES: no such source " + s)
 tracked = subprocess.run(["git", "ls-files", "--cached", "--others", "--exclude-standard", "bin", "goo", "apps", "system", "assets"],
                          capture_output=True, text=True).stdout.split("\n")
-tools = {"system/plymouth/make-logo.py", "goo/gen.py"}      # they make a file that is listed; they are not installed
+tools = {"system/plymouth/make-logo.py", "goo/gen.py", "apps/common/shaders/reveal.frag"}      # they make a file that is listed; they are not installed
 for f in filter(None, tracked):
     if f not in sources and f not in tools:
         bad.append("FILES: %s is not listed" % f)

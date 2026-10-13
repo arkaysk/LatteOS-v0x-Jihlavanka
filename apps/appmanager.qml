@@ -244,58 +244,63 @@ ShellRoot {
                     id: hero
                     readonly property var all: front.data ? front.data.banners : []
                     readonly property real each: width - 130
+                    // the banner in front, the one it came from, and how far the picture has changed (0…1)
                     property int at: 0
-                    function turn() { at = (at + 1) % Math.max(1, all.length) }
+                    property int was: 0
+                    property real changed: 1
+                    readonly property var now: all[at] || null
+                    function show(n) { if (n === at || all.length === 0) return; was = at; at = n; change.restart() }
+                    function turn() { show((at + 1) % Math.max(1, all.length)) }
+                    function shot(n) { const b = all[((n % all.length) + all.length) % all.length]; return b ? b.shot : "" }
+                    NumberAnimation { id: change; target: hero; property: "changed"; from: 0; to: 1; duration: 1100; easing.type: Easing.InOutSine }
                     width: discover.room; height: all.length > 0 ? 300 : 0; clip: true
                     visible: all.length > 0
                     Timer { interval: 7000; repeat: true; running: hero.visible && shell.page === "discover" && !heroHover.hovered; onTriggered: hero.turn() }
                     HoverHandler { id: heroHover }
-                    Repeater {
-                        model: hero.all
-                        ClippingRectangle {
-                            id: banner
-                            required property var modelData
-                            required property int index
-                            readonly property int place: (index - hero.at + hero.all.length) % hero.all.length
-                            readonly property bool front: place === 0
-                            width: hero.each; height: front ? 300 : 256; radius: 24; color: Theme.card
-                            x: place === 0 ? 0 : (place === 1 ? hero.each + 16 : (place === hero.all.length - 1 ? -hero.each - 16 : hero.each * 2))
-                            y: front ? 0 : 22
-                            opacity: place <= 1 || place === hero.all.length - 1 ? 1 : 0
-                            visible: opacity > 0.01
-                            Behavior on x { NumberAnimation { duration: 620; easing.type: Easing.InOutCubic } }
-                            Behavior on y { NumberAnimation { duration: 620; easing.type: Easing.InOutCubic } }
-                            Behavior on height { NumberAnimation { duration: 620; easing.type: Easing.InOutCubic } }
-                            Image { anchors.fill: parent; source: banner.modelData.shot; fillMode: Image.PreserveAspectCrop; asynchronous: true
-                                    scale: bannerHit.containsMouse && banner.front ? 1.04 : 1; Behavior on scale { NumberAnimation { duration: 900; easing.type: Easing.OutCubic } } }
-                            Rectangle { anchors.fill: parent; gradient: Gradient {
-                                GradientStop { position: 0.0; color: "#5517110d" } GradientStop { position: 0.5; color: "#2217110d" } GradientStop { position: 1.0; color: "#f017110d" } } }
-                            Rectangle { anchors.fill: parent; color: Theme.ground; opacity: banner.front ? 0 : 0.5; Behavior on opacity { NumberAnimation { duration: 500 } } }
-                            MouseArea { id: bannerHit; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
-                                        onClicked: banner.front ? shell.go("app", banner.modelData.id) : hero.turn() }
-                            Row { x: 18; y: 18; spacing: 8; opacity: banner.front ? 1 : 0; Behavior on opacity { NumberAnimation { duration: 400 } }
-                                Tag { text: banner.modelData.developer }
-                                Tag { text: banner.modelData.verified ? I18n.tr("Verified") : "" }
-                                Tag { text: banner.modelData.installs > 0 ? I18n.tr("{n} a month", { n: shell.count(banner.modelData.installs) }) : "" } }
-                            // the round button: the thing to do with it
-                            Rectangle { id: go; x: 22; y: parent.height - 74; width: 52; height: 52; radius: 26; visible: banner.front
-                                readonly property bool there: shell.has(banner.modelData.id)
-                                color: goHit.containsMouse ? Theme.gold : Theme.cream
-                                scale: goHit.pressed ? 0.94 : 1
-                                Glyph { anchors.centerIn: parent; name: shell.doing(banner.modelData.id) ? "refresh" : (go.there ? "player-play" : "download"); color: Theme.ground; font.pixelSize: 22
-                                        NumberAnimation on rotation { running: shell.doing(banner.modelData.id); from: 0; to: 360; duration: 1100; loops: Animation.Infinite } }
-                                MouseArea { id: goHit; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
-                                            onClicked: go.there ? Quickshell.execDetached(["flatpak", "run", banner.modelData.id]) : shell.work("install", banner.modelData.id, banner.modelData.name) } }
-                            Column { x: 88; y: parent.height - 76; width: parent.width - 120; spacing: 3; visible: banner.front
-                                Label { text: banner.modelData.name; font.pixelSize: 25; font.weight: 800; width: parent.width }
-                                Label { text: (shell.has(banner.modelData.id) ? I18n.tr("Open") : I18n.tr("Install")) + "  ·  " + banner.modelData.summary; color: "#e6dccf"; font.pixelSize: 13; width: parent.width } }
-                        }
+                    // every banner's picture is fetched before its turn comes, or it would pop in half way through
+                    Repeater { model: hero.all; Image { required property var modelData; width: 1; height: 1; opacity: 0; asynchronous: true; source: modelData.shot } }
+                    // the one looking in from the right: the next
+                    ClippingRectangle {
+                        x: hero.each + 16; y: 22; width: hero.each; height: 256; radius: 24; color: Theme.card
+                        Reveal { anchors.fill: parent; from: hero.shot(hero.was + 1); to: hero.shot(hero.at + 1); progress: hero.changed; kind: (hero.at + 1) % 3 }
+                        Rectangle { anchors.fill: parent; color: Theme.ground; opacity: 0.5 }
+                        MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: hero.turn() }
+                    }
+                    ClippingRectangle {
+                        id: banner
+                        readonly property var b: hero.now || ({ id: "", name: "", summary: "", developer: "", verified: false, installs: 0 })
+                        // what is written on it goes out with the old picture and comes in with the new
+                        readonly property real said: Math.min(1, Math.abs(hero.changed - 0.5) * 2.4)
+                        width: hero.each; height: 300; radius: 24; color: Theme.card
+                        Reveal { anchors.fill: parent; from: hero.shot(hero.was); to: hero.shot(hero.at); progress: hero.changed; kind: hero.at % 3
+                                 scale: bannerHit.containsMouse ? 1.04 : 1; Behavior on scale { NumberAnimation { duration: 900; easing.type: Easing.OutCubic } } }
+                        Rectangle { anchors.fill: parent; gradient: Gradient {
+                            GradientStop { position: 0.0; color: "#5517110d" } GradientStop { position: 0.5; color: "#2217110d" } GradientStop { position: 1.0; color: "#f017110d" } } }
+                        MouseArea { id: bannerHit; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: shell.go("app", banner.b.id) }
+                        Row { x: 18; y: 18; spacing: 8; opacity: banner.said
+                            Tag { text: banner.b.developer }
+                            Tag { text: banner.b.verified ? I18n.tr("Verified") : "" }
+                            Tag { text: banner.b.installs > 0 ? I18n.tr("{n} a month", { n: shell.count(banner.b.installs) }) : "" } }
+                        // the round button: the thing to do with it
+                        Rectangle { id: go; x: 22; y: parent.height - 74; width: 52; height: 52; radius: 26
+                            readonly property bool there: shell.has(banner.b.id)
+                            color: goHit.containsMouse ? Theme.gold : Theme.cream
+                            scale: goHit.pressed ? 0.94 : 1
+                            Glyph { anchors.centerIn: parent; name: shell.doing(banner.b.id) ? "refresh" : (go.there ? "player-play" : "download"); color: Theme.ground; font.pixelSize: 22
+                                    NumberAnimation on rotation { running: shell.doing(banner.b.id); from: 0; to: 360; duration: 1100; loops: Animation.Infinite } }
+                            MouseArea { id: goHit; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
+                                        onClicked: go.there ? Quickshell.execDetached(["flatpak", "run", banner.b.id]) : shell.work("install", banner.b.id, banner.b.name) } }
+                        Column { x: 88; y: parent.height - 76; width: parent.width - 120; spacing: 3; opacity: banner.said
+                            // the words change when the picture is half way
+                            readonly property var b: hero.changed < 0.5 ? (hero.all[hero.was] || banner.b) : banner.b
+                            Label { text: parent.b.name; font.pixelSize: 25; font.weight: 800; width: parent.width }
+                            Label { text: (shell.has(parent.b.id) ? I18n.tr("Open") : I18n.tr("Install")) + "  ·  " + parent.b.summary; color: "#e6dccf"; font.pixelSize: 13; width: parent.width } }
                     }
                     Row { anchors.right: parent.right; anchors.rightMargin: 4; y: 4; spacing: 6
                         Repeater { model: hero.all.length
                             Rectangle { required property int index; width: index === hero.at ? 18 : 6; height: 6; radius: 3; color: index === hero.at ? Theme.cream : "#55f3ebdd"
                                         Behavior on width { NumberAnimation { duration: 200 } }
-                                        MouseArea { anchors.fill: parent; anchors.margins: -6; cursorShape: Qt.PointingHandCursor; onClicked: hero.at = parent.index } } } }
+                                        MouseArea { anchors.fill: parent; anchors.margins: -6; cursorShape: Qt.PointingHandCursor; onClicked: hero.show(parent.index) } } } }
                 }
                 Flow { width: discover.room; spacing: 10; visible: front.data && !front.data.offline
                     Choice { text: I18n.tr("Trending now"); on: discover.row === "trending"; onPressed: discover.row = "trending" }

@@ -126,9 +126,12 @@ Schválené 12. 10. 2026. Pracuje sa **zhora nadol, neskáče sa**; nový nápad
           Overené naostro so službou spustenou ručne (spojenie padne do sekundy, po zapnutí ide znova).
           Platí pre aplikáciu, kým beží; trvalý zákaz je oprávnenie aplikácie a príde s Baristom.
           Neoverené: jednotka systemd (zapnutá až inštalátorom), tlačidlo na titulkoch hyprbars nie je.
-        - [ ] **Prechody bannerov** v App Manageri v duchu skwd-wall (používateľ, 13. 10.). skwd-wall je Rust a Vulkan
-          pod GPL-3.0, jeho shadery sa do okna v QML nedajú vložiť; podobné prechody treba napísať vlastné
-          (QML `ShaderEffect`, `qsb` je v systéme). Dnes sa bannery posúvajú.
+        - [x] **Prechody bannerov** v App Manageri v duchu skwd-wall (používateľ, 13. 10.; urobené 13. 10.): vlastný
+          shader `apps/common/shaders/reveal.frag` (`Reveal.qml`) — obrázok ustupuje ďalšiemu pozdĺž živej hrany
+          s linkou cremy: stúpa zdola, rozlieva sa z kvapky pri tlačidle, alebo ho zmetie sprava; druhy sa
+          striedajú. Bannery sa už neposúvajú, menia sa na mieste (predný aj vykúkajúci). Bez grafickej karty
+          (Qt kreslí softvérom) sa prelínajú. `tests/check.sh` stráži, že `.qsb` je postavený zo zdroja.
+          skwd-wall sám (Rust, Vulkan, GPL-3.0) sa do okna v QML vložiť nedá.
         - **Poradie od používateľa z rána 13. 10.** (ide sa zhora, Barista zatiaľ stojí):
           1. [x] okná ako vo Windows (13. 10.): od okrajov sa mení veľkosť (Hyprland), kúsok za okrajom v prázdne
              (do 36 px) sa okno ťahá celé (plugin `latte-events`), a pustené okno sa vráti tak, aby jeho vrch

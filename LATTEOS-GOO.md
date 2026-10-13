@@ -479,7 +479,9 @@ Každá aplikácia LatteOS žije v tom istom okne (`apps/common/AppWindow.qml`),
 
 ### 6.3 Obchod podľa ZimaOS (App Manager)
 *(13. 10. večer: obchod je **streamovacie menu** v okne z §6.3·0 — veľký banner so štítkami a okrúhlym tlačidlom,
-ďalší banner nakúka sprava, pod ním rad volieb a aplikácie ako plagáty; Barista a bežiaca úloha stoja v káve dole.)*
+ďalší banner nakúka sprava, pod ním rad volieb a aplikácie ako plagáty; Barista a bežiaca úloha stoja v káve dole.
+Bannery sa menia na mieste prechodom ako káva: obrázok ustúpi ďalšiemu pozdĺž živej hrany s linkou cremy — stúpa
+zdola, rozleje sa z kvapky, alebo ho zmetie sprava; `apps/common/Reveal.qml`.)*
 *(Fresh, 13. 10.: napísaný nanovo — `apps/appmanager.qml` (QML, Quickshell), príkaz `bin/latte-apps`, spúšťač
 `bin/latte-app`. Vľavo hľadanie, Objavovať, Moje aplikácie, Aktualizácie, kategórie a **Barista** (miesto pre
 špeciálne inštalácie — zatiaľ iba stránka, čo vezme); vpravo dva veľké bannery so snímkou, ktoré sa samy striedajú,
