@@ -91,8 +91,7 @@ Schválené 12. 10. 2026. Pracuje sa **zhora nadol, neskáče sa**; nový nápad
           (`latte-goo-side@.service`), lišta ukazuje iba okná svojho monitora, pás pri okraji má každý monitor
           svoj; `latte-say` povie niečo všetkým scénam Goo. Overené s dvoma a troma monitormi bez obrazovky.
           Chýba prenášanie ikier medzi monitormi; každá ďalšia scéna stojí toľko čo hlavná (bod 5).
-        - [ ] **jadro kvapiek, zvyšok:** hra pri nečinnosti príde s vlastnými kvapkami (hrajú sa iba hravé), okno z bubliny s QueenGoo (rodia sa
-          z nej riadne okná).
+        - [ ] **jadro kvapiek, zvyšok:** okno z bubliny príde s QueenGoo (rodia sa z nej riadne okná).
         - [x] ClockGoo (12. 10.): upozornenia (pleamar je server upozornení) a kalendár, karta času so stopkami,
           minútkou, budíkmi a počasím; karta vie dva stĺpce a mesiac.
         - [x] náhrada rohovej lišty (12. 10.): kvapka **QuickGoo** (sieť, hlasitosť, Bluetooth, jas, programy na
@@ -100,7 +99,9 @@ Schválené 12. 10. 2026. Pracuje sa **zhora nadol, neskáče sa**; nový nápad
         - [x] vlastné kvapky (13. 10.): `goo/lib/own.luau`, zoznam `drops.json` v priečinku scény — aplikácia
           alebo ikona s príkazmi a textom z príkazu; LensGoo › pravý klik na aplikáciu › Pripnúť ako kvapku, pravý
           klik na kvapku › Odstrániť. Tvorca Goo (formulár v Nastaveniach) príde s aplikáciou Nastavenia.
-        - [ ] hra pri nečinnosti (hravé kvapky), MediaGoo, prepojené kalendáre. **QueenGoo** čaká na App Manager
+        - [x] hra pri nečinnosti (13. 10.): po 6 min sa hravé kvapky (`"nature": "playful"`) hrajú — výskok,
+          plíženie, veľký oblúk, naháňačka; skok je hod s gravitáciou scény, po prebudení je všetko na mieste.
+        - [ ] MediaGoo, prepojené kalendáre. **QueenGoo** čaká na App Manager
           a Správcu zariadení (aplikácie, bod 6 — kvapka bez nich nemá čo otvoriť), **ChatGoo** na Beeper
           (na latte-lab nie je nainštalovaný, nedá sa overiť).
         - [x] tapeta (swaybg, `assets/wallpapers`) a okenné tlačidlá (hyprbars so záplatou `patches/hyprbars-latte.patch`;

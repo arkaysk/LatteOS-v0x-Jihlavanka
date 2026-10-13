@@ -122,6 +122,9 @@ bol GooPower); **kvapka** = každý samostatný tekutý prvok; **karta Goo** = o
 - **Kedy nie:** okno na celú obrazovku / hra, zamknutá obrazovka, batéria pod 20 % alebo úsporný profil, stupeň
   výkonu Softvér (llvmpipe); počet snímok pri nečinnosti obmedzený. Vypínač „Živé správanie“ v Nastaveniach › Kvapky.
   *(V engine sú všetky tri stupne, vypínač aj obmedzenia; počet snímok pri nečinnosti sa ešte neobmedzuje.)*
+  *(Fresh, 13. 10.: hrajú sa iba kvapky hravej povahy na spodnom okraji — zatiaľ teda vlastné kvapky s
+  `"nature": "playful"`; skok je hod s gravitáciou scény (`Drop:jump`), druhy: výskok na mieste, plíženie,
+  veľký oblúk, naháňačka. Po prebudení sa všetko vráti na miesto.)*
 - **Zdroj nečinnosti (7. 10.):** celý systém, myš aj klávesnica — pomocník relácie (`apps/ponuka.qml`, IdleMonitor,
   ext-idle-notify) pošle po 50 s bez dotyku `sys_idle 1` a pri činnosti `sys_idle 0`; kto píše bez myši, kvapky
   nezaspia, klávesa ich zobudí. Pri prehrávaní videa (inhibítor) sa nečinnosť nehlási. Bez pomocníka platí
@@ -464,7 +467,7 @@ nemá (AI je hľadanie, Financie a Sociálne sú podkategórie Flathubu).
   hlavičky (plugin hyprbars so záplatou, ak je nainštalovaný; pravý klik na titulok = ponuka okna v karte Goo).
 
 **Ešte nie je** (vráti sa po kusoch, poradie v ROADMAP):
-QueenGoo (čaká na App Manager a Správcu zariadení), ChatGoo (čaká na Beeper), Tvorca Goo (vlastné kvapky už sú: §4.7), hra pri nečinnosti (§3.1 stupeň 3; príde s vlastnými kvapkami — hrajú sa iba hravé),
+QueenGoo (čaká na App Manager a Správcu zariadení), ChatGoo (čaká na Beeper), Tvorca Goo (vlastné kvapky už sú: §4.7),
 okno z bubliny (14; pád minimalizovaného okna už je), prenášanie ikier medzi monitormi, režim AI v LensGoo,
 portrét účtu, MediaGoo (čo práve hrá), prepojené kalendáre,
 živé tapety a vlastný obrázok tapety, sklo okien, prichytenie ťahaním, Nastavenia a ostatné aplikácie.

@@ -58,6 +58,7 @@ part Drops {
     //   hop, squash, dip, shiver   counters: each change makes it jump, flatten, dive under the surface, tremble
     //   land          counter: the drag has ended and the record says where home is now
     //   fall, fall_h  counter: it was let go in the air, this many px above its new home
+    //   jump, jump_v, jump_dx   counter: a throw, up at this many px/s, from this many px along the edge to its home
     model goo max 32 {
         on: bool; name: text; edge: number; at: number; shift: number; rise: number; r: number = 26; zoom: number = 1
         swell: number = 0.08; pull: number = 0.3; reach: number = 220; lift: number = 1; sticky: number
@@ -69,6 +70,7 @@ part Drops {
         left: bool; left_at: number; left_shift: number
         right: bool; right_at: number; right_shift: number; right_rise: number; right_r: number = 26
         hop: number; squash: number; dip: number; shiver: number; land: number; fall: number; fall_h: number
+        jump: number; jump_v: number; jump_dx: number
     }
     fact slots = 32                            // how many places this scene has
 
@@ -236,10 +238,20 @@ part Drops {
         let fall_t.$k = max(0, time - fell_at.$k)
         let falls.$k = if(fell_n.$k != goo.$k.fall, goo.$k.fall_h, max(0, goo.$k.fall_h - 0.5 * GRAVITY * fall_t.$k * fall_t.$k)) * (1 - held.$k)
 
+        // A jump is a throw: it crouches, then goes up against the same gravity while it crosses to its new home
+        // at an even pace, so what is seen is the arc a thrown thing makes.
+        fact jumped_at.$k = -100
+        fact jumped_n.$k = 0
+        on change goo.$k.jump { impulse sq.$k 7; jumped_at.$k = time + 0.16; jumped_n.$k = goo.$k.jump }
+        let jump_t.$k = max(0, time - jumped_at.$k)
+        let fly.$k = if(jumped_n.$k != goo.$k.jump, 0, max(0, goo.$k.jump_v * jump_t.$k - 0.5 * GRAVITY * jump_t.$k * jump_t.$k))
+        let cross.$k = goo.$k.jump_dx * if(jumped_n.$k != goo.$k.jump, 1, max(0, 1 - jump_t.$k * GRAVITY / max(2 * goo.$k.jump_v, 1)))
+        let air.$k = falls.$k + fly.$k
+
         // At rest it sits down: it slides to the surface and flattens, what it shows still in sight. Near the
         // pointer, or beside a drop that is, it gets up and rounds itself; asleep it sits deeper.
         prop sit.$k = 0 ~settle
-        follow sit.$k = (1 - clamp(near.$k + 0.3 * max(nl.$k, nr.$k) + hov.$k + if(goo.$k.chosen, 1, 0), 0, 1)) * docked.$k * (1 - held.$k) * if(idle > 0, 1.3, 1) * if(goo.$k.kind == 1 or goo.$k.still, 0, 1) * if(falls.$k > 1, 0, 1)
+        follow sit.$k = (1 - clamp(near.$k + 0.3 * max(nl.$k, nr.$k) + hov.$k + if(goo.$k.chosen, 1, 0), 0, 1)) * docked.$k * (1 - held.$k) * if(idle > 0, 1.3, 1) * if(goo.$k.kind == 1 or goo.$k.still, 0, 1) * if(air.$k > 1, 0, 1)
         let sink.$k = sit.$k * clamp(goo.$k.rise - r0.$k * if(goo.$k.kind == 2, 0.45, 0.28), 0, r0.$k * 0.5)
         prop up.$k = 0 ~drip
         follow up.$k = clamp(near.$k + 0.3 * max(nl.$k, nr.$k) + if(goo.$k.chosen, 1, 0), 0, 1) * goo.$k.lift * if(idle > 0, 0.4, 1) * (1 - held.$k)
@@ -264,8 +276,8 @@ part Drops {
         // Where it is: home, the pull and the drag on springs; what is drawn adds the rise, the flow and the rest.
         prop px.$k = 0 ~glide
         prop py.$k = 0 ~drip
-        follow px.$k = hx.$k + pull.x.$k + dx.$k * follows.$k + nx.$k * falls.$k
-        follow py.$k = hy.$k + pull.y.$k + dy.$k * follows.$k + ny.$k * falls.$k
+        follow px.$k = hx.$k + pull.x.$k + dx.$k * follows.$k + nx.$k * air.$k + tx.$k * cross.$k
+        follow py.$k = hy.$k + pull.y.$k + dy.$k * follows.$k + ny.$k * air.$k + ty.$k * cross.$k
         let rises.$k = (up.$k * reach_up.$k + 4 * flow.$k * small.$k * (1 - up.$k) + wave.$k * small.$k * if(goo.$k.edge == 0, 1, 0) - dive.$k * r0.$k * 1.4) * docked.$k - sink.$k
 
         // A drop that has just come to be is at home at once: it does not fly in from the screen's corner.
@@ -305,7 +317,7 @@ part Drops {
         follow wide.$k = (goo.$k.fx_k * if(goo.$k.fx == 2, 0.07 * noise(k * 1.7, time * 1.6), 0) + sq.$k * 0.09 + quiver.$k + sit.$k * 0.13) * if(ty.$k > 0, -1, 1)
         follow face.$k = r0.$k / 26
         follow link.$k = (10 + 16 * up.$k + 10 * flow.$k) * goo.$k.melt + 6 * (1 - smooth(0, 1, clamp((H - LEVEL - y.$k - rr.$k * 0.6) / (rr.$k * 0.4 + 70), 0, 1)))
-        follow base.$k = docked.$k * (1 - held.$k) * if(goo.$k.on, 1, 0) * goo.$k.puddle * if(falls.$k > 12, 0, 1)
+        follow base.$k = docked.$k * (1 - held.$k) * if(goo.$k.on, 1, 0) * goo.$k.puddle * if(air.$k > 12, 0, 1)
         follow base.x.$k = if(tx.$k > 0, x.$k, e0x.$k - nx.$k * 4)
         follow base.y.$k = if(ty.$k > 0, y.$k, e0y.$k - ny.$k * 4)
         follow base.w.$k = 0.5 + 1.1 * tx.$k
@@ -342,7 +354,7 @@ part Drops {
 
         // ── the mouse ───────────────────────────────────────────────────────────────────────────────────────
         // The zone is the drop and its stalk down to the edge, so a risen drop is hit at the edge too.
-        let foot.$k = docked.$k * if(falls.$k > 12, 0, 1) * max(0, (x.$k - e0x.$k) * nx.$k + (y.$k - e0y.$k) * ny.$k - rr.$k)
+        let foot.$k = docked.$k * if(air.$k > 12, 0, 1) * max(0, (x.$k - e0x.$k) * nx.$k + (y.$k - e0y.$k) * ny.$k - rr.$k)
         zone box hit.$k {
             at: if(held.$k > 0, W / 2, x.$k - nx.$k * foot.$k / 2 + tx.$k * cap.$k * goo.$k.cap_dir), if(held.$k > 0, H / 2, y.$k - ny.$k * foot.$k / 2 + ty.$k * cap.$k * goo.$k.cap_dir)
             size: if(held.$k > 0, W * 3, max(rr.$k * 2, 24) + ty.$k * foot.$k + tx.$k * cap.$k * 2), if(held.$k > 0, H * 3, max(rr.$k * 2, 24) + tx.$k * foot.$k + ty.$k * cap.$k * 2)

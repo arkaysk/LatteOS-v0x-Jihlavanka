@@ -21,6 +21,7 @@
 --   start · click · right · middle · hold · wheel(d, ±1) · enter · leave · grab
 --   letgo(d, x, y, edge) → false: stay where it was · placed: a drag has ended and it is home, old or new
 --   idle(d, stage 0…3) · tick, every `every` ms
+-- What it can be told is further down (`Drop:…`): set, label, resize, move, jump, hop, ripple…
 -- A press it has nothing for makes the drop shiver: a button does something or says that it does not.
 local icons = require("lib/icons")
 local card = require("lib/card")
@@ -89,6 +90,7 @@ local function record(d)
         melt = num(v.melt, 1), puddle = num(v.puddle, 1), crown = glyph(v.crown), cap = num(v.cap, 0), cap_dir = num(v.cap_dir, 0),
         line2 = v.line2 or "", lines = (v.line2 or "") ~= "" and 2 or 1, still = v.still == true, chosen = d.chosen == true,
         hop = d.n.hop, squash = d.n.squash, dip = d.n.dip, shiver = d.n.shiver, land = d.n.land, fall = d.n.fall, fall_h = d.fall_h or 0,
+        jump = d.n.jump, jump_v = d.jump_v or 0, jump_dx = d.jump_dx or 0,
     }
 end
 
@@ -269,6 +271,7 @@ local saving
 local savers = {}
 function E.on_save(f) savers[#savers + 1] = f end       -- whoever else keeps something about where the drops are
 save = function()
+    if E.playing then return end             -- where a game takes the drops is not where they live
     if saving then cancel(saving) end
     saving = after(1200, function()
         saving = nil
@@ -305,6 +308,18 @@ function Drop:go_home()
 end
 function Drop:hop() self.n.hop += 1 publish() end
 function Drop:squash() self.n.squash += 1 publish() end
+-- A throw along its edge to `at` (nil: up and down on the spot), up at `speed` px/s; whoever sits where it
+-- lands steps aside. It flattens and the surface ripples when it lands; answers how long that takes, in ms.
+function Drop:jump(at, speed)
+    local from = along(self)
+    if at then self.at, self.shift = clamp(at, 0.02, 0.98), 0 end
+    self.jump_v, self.jump_dx = speed, from - along(self)
+    self.n.jump += 1
+    E.apart(self) publish()
+    local takes = 160 + 2 * speed / GRAVITY * 1000
+    after(takes, function() self:squash() E.ripple(self, 2 + speed * 0.006, "stone") end)
+    return takes
+end
 function Drop:shiver() self.n.shiver += 1 publish() end
 function Drop:tip(s) text.tip = s or "" end
 -- Beads beside the drop: how many, and their colour: one for all, or a list, one each.
@@ -381,7 +396,7 @@ function E.define(def, live)
     if not k then log("goo: all " .. N .. " places are taken, no room for " .. def.id) return nil end
     local v = values(def)
     local d = setmetatable({ id = def.id, k = k, v = v, def = def, live = live == true, aside = 0,
-                             n = { hop = 0, squash = 0, dip = 0, shiver = 0, land = 0, fall = 0 } }, Drop)
+                             n = { hop = 0, squash = 0, dip = 0, shiver = 0, land = 0, fall = 0, jump = 0 } }, Drop)
     local seat = num(v.seat, v.size * 0.8)
     local anchor = def.beside and by_id[def.beside]
     if anchor then
@@ -689,13 +704,75 @@ local function sky()
 end
 E.weather = { on = weather_on, off = weather_off, now = weather }
 
+-- ── left alone longer: the playful drops play, as worms once did ─────────────────────────────────────────────
+-- Only drops of a playful nature sitting on the bottom edge, where the surface is. A turn is one of: a jump on
+-- the spot, creeping (three low hops one way), a long throw over the others, and with two players a chase,
+-- where the one landed beside jumps away. Now and then a spell of quicker turns. Whoever is in the way steps
+-- aside; when the game ends everything is back where it was.
+local before, turn = nil, nil
+local function players()
+    local list = {}
+    E.each(function(d) if d.v.nature == "playful" and d.edge == 0 and docked(d) and not d.hidden and not d.dragging then list[#list + 1] = d end end)
+    return list
+end
+local function play_turn(quick)
+    local list = players()
+    local d = list[math.random(math.max(#list, 1))]
+    local wait = quick > 0 and 900 or 2200 + math.random(2600)
+    if d then
+        local l, kind = len(d), math.random(#list > 1 and 4 or 3)
+        if kind == 1 then
+            wait += d:jump(nil, 380 + math.random(160))
+        elseif kind == 2 then
+            local step = (math.random(2) == 1 and 1 or -1) * radius(d) * 1.8 / l
+            for i = 0, 2 do after(i * 760, function() if E.playing then d:jump(d.at + step, 210) end end) end
+            wait += 3 * 760
+        elseif kind == 3 then
+            local to = 0.05 + 0.9 * math.random()
+            if math.abs(to - d.at) * l < 200 then to = d.at < 0.5 and d.at + 0.25 or d.at - 0.25 end
+            wait += d:jump(to, 600 + math.random(160))
+        else
+            local other = list[math.random(#list)]
+            if other == d then other = list[(table.find(list, d) % #list) + 1] end
+            local dir = along(d) < along(other) and -1 or 1
+            local takes = d:jump((along(other) + dir * (radius(d) + radius(other)) * 1.05) / l, 520 + math.random(120))
+            after(takes, function() if E.playing then other:jump(other.at - dir * (150 + math.random(150)) / l, 420) end end)
+            wait += takes + 1200
+        end
+    end
+    quick = quick > 0 and quick - 1 or (math.random(7) == 1 and 6 or 0)
+    turn = after(wait, function() play_turn(quick) end)
+end
+local function play_off()
+    if not E.playing then return end
+    if turn then cancel(turn) turn = nil end
+    for d, was in pairs(before) do
+        if slots[d.k] == d and not d.dragging then
+            if d.at ~= was.at or d.shift ~= was.shift then d.n.shiver += 1 end
+            d.at, d.shift, d.moved = was.at, was.shift, was.moved
+        end
+    end
+    E.playing, before = false, nil
+    publish()
+end
+local function play_on()
+    if E.playing or #players() == 0 then return end
+    E.playing, before = true, {}
+    E.each(function(d) before[d] = { at = d.at, shift = d.shift, moved = d.moved } end)
+    play_turn(0)
+end
+E.play = { on = play_on, off = play_off }
+
 on("goo_idle", function(stage)
     E.each(function(d) call(d, "idle", stage) end)
-    if stage == 0 then return weather_off() end
+    if stage == 0 then play_off() return weather_off() end
     -- Not on a machine that draws in software or is short of battery, and not over a film or a game.
     if stage < 2 or fact.lively == false or TIER == "software" or low_battery then return end
     local function go(busy)
-        if not busy and fact.idle >= stage then weather_on() end
+        if not busy and fact.idle >= stage then
+            weather_on()
+            if stage >= 3 and not select(2, pcall(function() return fact.locked end)) then play_on() end
+        end
     end
     if E.busy then E.busy(go) else go(false) end
 end)
