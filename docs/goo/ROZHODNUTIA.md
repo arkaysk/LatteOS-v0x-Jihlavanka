@@ -274,3 +274,4 @@ Nové rozhodnutie: jeden riadok sem (dátum, čo, prečo) a oprava platného zne
 | relácia LatteOS Game (Steam Big Picture v gamescope) v ponuke prihlásenia | ostáva, zatiaľ — aj vo Fresh (12. 10.) |
 | Fresh: starý kód | celý strom v0.3 do `old/` ako predloha; kód sa píše načisto so skillom `pleamar`, podľa starého, ale lepšie (12. 10.) |
 | Fresh: zoznam súborov `FILES` (čo LatteOS pridal do systému) | áno, od prvého kusu — aby sa dal odinštalovať; inštalátor a odinštalovanie až neskôr (12. 10.) |
+| whyd (prečo počítač spadol, z žurnálu predošlého štartu) | áno — do SafeGoo ako diagnostika pádu, voliteľný samostatný program vedľa `last-crash.log` z `latte-session`; najprv skúška na latte-lab (13. 10.) |
