@@ -85,8 +85,12 @@ EOF
 } > "$out/labwc/autostart"
 echo '<?xml version="1.0"?><labwc_config/>' > "$out/labwc/rc.xml"
 
-WLR_BACKENDS=headless WLR_LIBINPUT_NO_DEVICES=1 WLR_RENDERER=gles2 XDG_CURRENT_DESKTOP=labwc:wlroots \
+# A runtime folder of its own: with the user's, `pleamar --say goo` and `press` reach the Goo of whoever is logged
+# in (the first scene of a name owns it), and what DO presses is pressed on their desktop. Short, for the sockets.
+run="$(mktemp -d /tmp/latte-run.XXXXXX)"; chmod 700 "$run"
+XDG_RUNTIME_DIR="$run" WLR_BACKENDS=headless WLR_LIBINPUT_NO_DEVICES=1 WLR_RENDERER=gles2 XDG_CURRENT_DESKTOP=labwc:wlroots \
     timeout $((secs + 15)) labwc -C "$out/labwc" > "$out/labwc.log" 2>&1
+rm -rf "$run"
 # A Hyprland that outlives its labwc spins at full speed: make sure this one is gone, and what it started.
 if [ -s "$out/hyprland.pid" ]; then
     pid="$(cat "$out/hyprland.pid")"

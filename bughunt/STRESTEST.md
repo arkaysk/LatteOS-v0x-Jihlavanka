@@ -63,7 +63,7 @@ Pôvodný zoznam (7. 10. 2026, 540 testov bez stavu): `docs_zaloha/2026-10-07-st
 | 002 | Reboot z LatteOS do LatteOS | P1 | ⚠️ | 12. 10. · latte-lab | reštart cez `shutdown -r` prešiel čisto, bez pádu Hyprlandu, GOO nabehlo; tlačidlo Reštartovať v PowerGoo je test 036 |
 | 003 | Boot po tvrdom vypnutí počas normálnej prevádzky | P1 | ⬜ | | |
 | 004 | Boot po výpadku elektriny | P1 | ⬜ | | |
-| 005 | Boot s poškodeným posledným session stavom | P1 | ⬜ | | |
+| 005 | Boot s poškodeným posledným session stavom | P1 | ⚠️ | 13. 10. · latte-lab (bez obrazovky) | všetky uložené súbory Goo (`lens`, `lock`, `places`, `power`, `settings`, `timers`, `drops`, `quick`, `clock`.json), `window-mode` a `~/.config/latteos/*` prepísané smetím: Hyprland aj engine nabehli, všetky kvapky na mieste s predvolenými hodnotami, žiadna chyba v logu. Neskúšané: poškodený `crash-count` a `mode.toml`, skutočné prihlásenie |
 | 006 | Boot po páde compositoru | P1 | ⚠️ | 12. 10. · latte-lab | pád Hyprlandu (ABRT) po 8 min: sám sa spustil znova v tom istom prihlásení, engine aj rohová lišta späť, počítadlo pádov po minúte 0; otvorené okná sa nevrátili |
 | 007 | Boot po páde GOO shellu | P1 | ✅ | 13. 10. · latte-lab | `kill -KILL` na engine Goo za behu: `latte-goo.service` ho do 2 s spustila znova (NRestarts 1), počítadlo pádov ostalo 0, SAFE sa neprepol; SIGSEGV scéna prežila (pleamar ho zachytáva) |
 | 008 | Boot po páde systémovej služby | P1 | ✅ | 13. 10. · latte-lab | `systemctl kill -s KILL latte-netd` (root služba): systemd ju po 3 s spustil znova (NRestarts 1), relácia Goo bez zmeny, SAFE sa neprepol. Pád pri vypnutom internete aplikácie (tabuľka nftables) sa neskúšal |
