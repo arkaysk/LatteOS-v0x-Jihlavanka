@@ -100,7 +100,7 @@ ShellRoot {
                                    "time": [[clock, ["latte-settings", "time"]]], "keyboard": [[keys, ["latte-settings", "keyboard"]], [binds, ["hyprctl", "binds", "-j"]]], "displays": [[screens, ["hyprctl", "monitors", "-j"]]],
                                    "storage": [[disks, ["latte-settings", "storage"]], [held, ["latte-settings", "sizes"]]], "ai": [[helpers, ["latte-ai", "providers", "all"]]],
                                    "me": [[who, ["latte-settings", "account"]], [pictures, ["latte-settings", "wallpapers"]]], "performance": [[machine, ["latte-devices", "list"]]], "loginscreen": [[logon, ["latte-settings", "loginscreen"]]] })
-    function ask() { (asks[page] || []).forEach(a => a[0].ask(a[1])); force.reload() }
+    function ask() { (asks[page] || []).forEach(a => a[0].ask(a[1])); force.reload(); crashed.reload() }
     Timer { id: later; interval: 900; onTriggered: shell.ask() }       // what was asked of the compositor takes a moment to be so
 
     // a file of the user's own, from anywhere: for the background ("wallpaper") or for the account's picture ("face")
@@ -120,6 +120,10 @@ ShellRoot {
     FileView { id: decided; path: "/run/latteos/mode.toml"; printErrors: false
                property string mode: ""; property string renderer: ""; property string tier: ""; property string reason: ""
                onLoaded: { const get = k => (text().match(new RegExp("^" + k + " = \"(.*)\"$", "m")) || ["", ""])[1]; decided.mode = get("mode"); decided.renderer = get("renderer"); decided.tier = get("tier"); decided.reason = get("reason") } }
+    // the report latte-session wrote when the desktop last crashed; the login screen shows its head
+    FileView { id: crashed; path: "/var/lib/latteos/login/last-crash.log"; printErrors: false; property string said: ""
+               onLoaded: said = text().trim(); onLoadFailed: said = ""
+               function refresh() { reload() } }
     FileView { id: force; path: "/var/lib/latteos/force-safe"; printErrors: false; property bool there: false; onLoaded: there = true; onLoadFailed: there = false }
     readonly property var tiers: [{ id: "", name: QT_TR_NOOP("As the hardware says"), hint: "", icon: "sparkles" },
                                   { id: "full", name: QT_TR_NOOP("Everything"), hint: QT_TR_NOOP("blur, shadows, glow, a turning border"), icon: "flame" },
@@ -473,6 +477,12 @@ ShellRoot {
                      onPressed: shell.order(["latte-boot", on ? "reset" : "force-safe"]) }
             Label { visible: shell.page === "startmode"; width: view.room; wrapMode: Text.WordWrap; color: Theme.dim; font.pixelSize: 13
                     text: I18n.tr("SAFE can also be chosen on the login screen. Should the full desktop crash right after it starts, LatteOS goes to SAFE by itself.") }
+            Part { visible: shell.page === "startmode"; width: view.room; title: I18n.tr("The last crash")
+                   note: crashed.said === "" ? I18n.tr("No crash is recorded.") : I18n.tr("What LatteOS noted when the desktop last ended badly. Copy it to send it to whoever helps.")
+                Label { visible: crashed.said !== ""; width: view.room; text: crashed.said.split("\n").slice(0, 30).join("\n"); wrapMode: Text.WrapAnywhere
+                        font.family: "JetBrains Mono"; font.pixelSize: 12; color: Theme.dim; maximumLineCount: 30; elide: Text.ElideRight }
+                Pill { visible: crashed.said !== ""; icon: "clipboard"; text: I18n.tr("Copy the report")
+                       onPressed: Quickshell.execDetached(["sh", "-c", "wl-copy < /var/lib/latteos/login/last-crash.log"]) } }
             Pill { visible: shell.page === "startmode"; icon: "activity"; text: I18n.tr("Performance and graphics"); onPressed: shell.go("performance") }
 
             // what is on the disks

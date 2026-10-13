@@ -917,6 +917,8 @@ cestu k aktualizácii alebo návratu.
     **Urobené 13. 10.:** (b) Caps Lock a Num Lock z diód klávesnice (`latte-login locks`, kontrola po 0,7 s) ako
     vznášajúci sa text nad heslom; zdroj RSS, panel a miesto počasia v **Nastaveniach › Prihlasovacia obrazovka**
     (`latte-settings loginscreen`, miesto sa hľadá podľa mena cez open-meteo); (f), (g) a (h) už boli.
-    **Ostáva:** (c) sedlina na dne, (d) vlnenie od kvapky, (e) log pádu aj zvnútra systému (SAFE aj NORMAL).
+    Tiež (c) sedlina na dne (päť tmavých plochých tvarov, ktoré sa pomaly posúvajú), (d) dve vlny sa rozbehnú po
+    hladine od miesta, kde kvapka vojde do kávy, a (e) **Nastavenia › Štart a režim SAFE › Posledný pád** (správa
+    na skopírovanie; v SAFE je to položka 1 v ponuke). Bod 11 je tým hotový, ostáva overiť na skutočnom prihlásení.
 12. [ ] **PowerGoo s lištou údajov:** kartu vysunúť z celého celku Goo + lišta, aby tvorili vizuálne jeden kus
     (dnes je ucho karty pri ľavom kliku malé a lišta ostáva vedľa). Režimy okien (4.) sú bod 7 (Glance).

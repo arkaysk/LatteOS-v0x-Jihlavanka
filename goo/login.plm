@@ -136,6 +136,7 @@ scene Login {
     prop ses = 0 ~bouncy                       // the session chooser has come up
     prop ses_menu = 0 ~bouncy
     prop bob = 0 ~flow                         // the small goo are up
+    prop rip = 0 ~0ms                          // the ring of waves where the drop goes into the coffee, 0…1
     prop uncover = 0 ~0ms                      // a dry run fades to the desktop underneath
     follow power_menu = if(power_open and gone < 0.1 and fields > 0.5, 1, 0)
     follow ses_menu = if(ses_open and ses > 0.6 and gone < 0.1, 1, 0)
@@ -151,6 +152,7 @@ scene Login {
         plane: 1.55 ~650ms after 3800ms; plane: 1 ~bouncy after 4450ms
         fields: 0 ~160ms after 4120ms; fields: 1 ~320ms after 4800ms
         under: 1 ~900ms after 4400ms; ses: 1 after 5600ms
+        rip: 0 ~0ms; rip: 1 ~1900ms after 4150ms
     }
     on rejected { impulse shake 1400; wrong: 1 ~90ms; wrong: 0 ~700ms after 2600ms; field = 1; focus password }
     on accepted {
@@ -163,7 +165,7 @@ scene Login {
         leaped = false; ses_open = false
         slide: 0 ~0ms; ses: 0 ~0ms; cup.a: 1 ~0ms; here: 0 ~0ms; rolled: 0 ~0ms; stretch: 0 ~0ms; icon_in: 0 ~0ms
         fields: 0 ~0ms; plane: 0 ~0ms; tide: 0 ~0ms; under: 0 ~0ms; gone: 0 ~0ms; bob: 0 ~0ms; clock_in: 0 ~0ms
-        uncover: 0 ~0ms
+        uncover: 0 ~0ms; rip: 0 ~0ms
     }
     // A minute with nobody there and the small goo come up; the first move or key sends them back.
     on idle for 60s while fields > 0.5 and gone < 0.1 { bob: 1 }
@@ -245,6 +247,11 @@ scene Login {
         ellipse { at: W * 0.71 + 74 * sin(time * 12 + 300), tide_y + 31 + 11 * chop * sin(time * 40 + 170); radius: 120; scale: 2.6, 0.24; blend: 34 }
         ellipse { at: W * 0.86 + 62 * sin(time * 18 + 20), tide_y + 31 + 10 * chop * sin(time * 33 + 310); radius: 120; scale: 2.2, 0.24; blend: 34 }
         ellipse { at: W * 0.97 + 70 * sin(time * 14 + 250), tide_y + 31 + 11 * chop * sin(time * 37 + 80); radius: 120; scale: 2.4, 0.24; blend: 34 }
+        // Where the drop goes in, a crest runs out each way along the surface and dies away; a second follows it.
+        ellipse { at: CX - ROLL - 340 * rip, tide_y + 30; radius: 30 * sin(180 * rip); scale: 2.4, 0.3; blend: 30 }
+        ellipse { at: CX - ROLL + 340 * rip, tide_y + 30; radius: 30 * sin(180 * rip); scale: 2.4, 0.3; blend: 30 }
+        ellipse { at: CX - ROLL - 200 * rip, tide_y + 30; radius: 22 * sin(180 * clamp(rip * 1.4 - 0.3, 0, 1)); scale: 2.4, 0.3; blend: 30 }
+        ellipse { at: CX - ROLL + 200 * rip, tide_y + 30; radius: 22 * sin(180 * clamp(rip * 1.4 - 0.3, 0, 1)); scale: 2.4, 0.3; blend: 30 }
         // The row is the trail the drop leaves as it rolls away.
         line { from: gx, gy; to: gx + row_len, gy; width: 2 * ROW * here * clamp(row_len / 40, 0, 1); blend: 12 }
         ellipse { at: gx, goo_y + rr * 0.2 * squash; radius: rr; scale: 1 + 0.2 * squash, 1 - 0.2 * squash; blend: 26 }
@@ -264,6 +271,13 @@ scene Login {
         ellipse { at: bob_x.1, tide_y + 30 - bob_up.1; radius: 25 * bob * if(info.1.on, 1, 0); blend: 24 }
         ellipse { at: bob_x.2, tide_y + 30 - bob_up.2; radius: 25 * bob * if(info.2.on, 1, 0); blend: 24 }
     }
+
+    // ── the grounds on the bottom: dark shapes that shift slowly, like shadows under the coffee ──────────────
+    ellipse { at: W * 0.12 + 90 * sin(time * 5), H - 18; radius: 160; scale: 3.2, 0.16; color: #0c0604; opacity: 0.32 * tide }
+    ellipse { at: W * 0.34 + 120 * sin(time * 4 + 80), H - 10; radius: 190; scale: 3.4, 0.14; color: #0c0604; opacity: 0.28 * tide }
+    ellipse { at: W * 0.58 + 100 * sin(time * 6 + 200), H - 22; radius: 150; scale: 3.0, 0.17; color: #0c0604; opacity: 0.3 * tide }
+    ellipse { at: W * 0.8 + 130 * sin(time * 3 + 140), H - 12; radius: 180; scale: 3.3, 0.15; color: #0c0604; opacity: 0.3 * tide }
+    ellipse { at: W * 0.95 + 70 * sin(time * 7 + 20), H - 20; radius: 130; scale: 3.0, 0.18; color: #0c0604; opacity: 0.28 * tide }
 
     // ── the power drop: a glint turns in it while it rolls, then the power icon ─────────────────────────────
     ellipse { at: gx + cos(rolled * 1.9 - 50) * R * 0.46, goo_y + sin(rolled * 1.9 - 50) * R * 0.46; radius: 5; color: mix(coffee, cream, 0.4); opacity: here * (1 - icon_in) * arc }
