@@ -4,7 +4,16 @@
   latte-barista analyze SOURCE…     what the sources are and whether it will work, as JSON:
                                     {"sources": [{"path", "type", "sha256"}], "recipe", "name", "verdict", "reasons": […], "missing": […]}
                                     verdict: "works" (a recipe that was tried), "may" (rules only) or "no"
-  latte-barista install SOURCE…     installs it; prints a JSON line for each step {"step", "at", "of"} and at the
+                                    and, for a person to read: "publisher", "year", "size" (bytes of the sources),
+                                    "packaging" (installshield, inno, nsis, msi or ""), "skips_setup", "runner",
+                                    "winver", "network", "free" (bytes free where it would go), "notes", "installed"
+  latte-barista online NAME…        what the internet knows of it, asked only when the user said so:
+                                    {"ok", "lutris": [{"name", "year", "url"}]}
+  latte-barista info ID             {"id", "name", "folder", "install_log", "run_log", "confirmed"} of an installed one
+  latte-barista worked ID yes|no    the user's word after trying it; "no" answers with what its last run said:
+                                    {"found": [{"what", "detail"}]}; what: missing-dll, direct3d, wants-disc, crashed, nothing
+  latte-barista install [--network] SOURCE…     installs it (--network: it may use the network when it runs); prints a JSON line for each step {"step", "what", "at", "of"}
+                                    (step: reading, windows, unpacking, copying, writing) and at the
                                     end {"ok": true, "id"} or {"ok": false, "error"}
   latte-barista run ID              starts it, in its sandbox
   latte-barista list                what is installed: [{"id", "name", "size", "installed"}]
@@ -98,10 +107,27 @@ def find_recipe(sources):
     return None, given, []
 
 
+def packaging(listed):
+    """Which installer made the discs, by the files it leaves on them."""
+    if "data1.hdr" in listed and any(n.startswith("ikernel") for n in listed):
+        return "installshield"
+    if any(n.endswith(".msi") for n in listed):
+        return "msi"
+    return ""
+
+
 def analyze(sources):
     r, used, missing = find_recipe(sources)
+    listed = set().union(*[names(s) for s in used]) if used else set()
+    os.makedirs(GAMES, exist_ok=True)
     out = {"sources": [{"path": s, "type": kind(s), "sha256": sha256(s) if os.path.isfile(s) else ""} for s in used],
-           "recipe": r["id"] if r else "", "name": r["name"] if r else "", "missing": missing, "reasons": []}
+           "recipe": r["id"] if r else "", "name": r["name"] if r else "", "missing": missing, "reasons": [],
+           "size": sum(os.path.getsize(s) if os.path.isfile(s) else size(s) for s in used), "packaging": packaging(listed),
+           "free": shutil.disk_usage(GAMES).free}
+    if r:
+        out.update(publisher=r.get("publisher", ""), year=r.get("year", 0), runner=r.get("runner", "wine"), winver=r.get("winver", ""),
+                   network=r.get("network", False), notes=r.get("notes", ""), skips_setup=any("unshield" in p for p in r.get("install", [])),
+                   installed=manifest_of(r["id"]) is not None)
     if not r:
         out["verdict"] = "no"
         out["reasons"].append("no recipe knows this program yet")
@@ -114,6 +140,9 @@ def analyze(sources):
         if not shutil.which("wine"):
             out["verdict"] = "no"
             out["reasons"].append("Wine is not installed")
+        if out.get("installed"):
+            out["verdict"] = "no"
+            out["reasons"].append("it is installed already")
     return out
 
 
@@ -125,7 +154,7 @@ def wine_env(home):
     return dict(os.environ, WINEPREFIX=os.path.join(home, "prefix"), WINEDEBUG="-all", WINEDLLOVERRIDES="winemenubuilder.exe=d")
 
 
-def install(sources):
+def install(sources, network=False):
     r, used, missing = find_recipe(sources)
     if not r or missing:
         return say(ok=False, error="no recipe" if not r else "missing: " + ", ".join(missing)) or 1
@@ -135,10 +164,10 @@ def install(sources):
     steps = 2 + len(used) + len(r.get("install", []))
     at = 0
 
-    def step(what):
+    def step(name, what=""):
         nonlocal at
         at += 1
-        say(step=what, at=at, of=steps)
+        say(step=name, what=what, at=at, of=steps)
 
     media, target = os.path.join(home, ".media"), os.path.join(home, "prefix", "drive_c", *r["folder"].split("/"))
     os.makedirs(os.path.join(home, "logs"), exist_ok=True)
@@ -148,16 +177,18 @@ def install(sources):
         shutil.rmtree(media, ignore_errors=True)
         os.makedirs(media)
         for s in used:
-            step("reading " + os.path.basename(s))
+            step("reading", os.path.basename(s))
             if os.path.isdir(s):
                 shutil.copytree(s, media, dirs_exist_ok=True)
             elif run(["7z", "x", "-y", "-o" + media, s]) != 0:
                 raise RuntimeError("could not read " + os.path.basename(s))
-        step("making its Windows")
-        if run(["wineboot", "-i"], env=wine_env(home)) != 0:
+        step("windows")
+        # with no screen to draw on, Wine makes the prefix without its own "please wait" window, and sooner
+        quiet = {k: v for k, v in wine_env(home).items() if k not in ("DISPLAY", "WAYLAND_DISPLAY")}
+        if run(["wineboot", "-i"], env=quiet) != 0:
             raise RuntimeError("Wine could not make the prefix")
-        run(["wine", "winecfg", "-v", r.get("winver", "win10")], env=wine_env(home))
-        run(["wineserver", "-w"], env=wine_env(home))
+        run(["wine", "reg", "add", "HKCU\\Software\\Wine", "/v", "Version", "/d", r.get("winver", "win10"), "/f"], env=quiet)
+        run(["wineserver", "-w"], env=quiet)
         # the program has no business in the rest of the computer: no drive Z:
         z = os.path.join(home, "prefix", "dosdevices", "z:")
         if os.path.islink(z):
@@ -165,7 +196,7 @@ def install(sources):
         os.makedirs(target, exist_ok=True)
         for part in r.get("install", []):
             if "unshield" in part:
-                step("unpacking " + part["unshield"])
+                step("unpacking", part["unshield"])
                 cab = os.path.join(media, ".cab")
                 if run(["unshield", "-d", cab, "x", os.path.join(media, part["unshield"])]) != 0:
                     raise RuntimeError("could not unpack " + part["unshield"])
@@ -173,10 +204,10 @@ def install(sources):
                     shutil.copytree(os.path.join(cab, group), target, dirs_exist_ok=True)
                 shutil.rmtree(cab, ignore_errors=True)
             elif "copy" in part:
-                step("copying files")
+                step("copying")
                 for name in part["copy"]:
                     shutil.copy(os.path.join(media, name), target)
-        step("writing it down")
+        step("writing")
         icon = ""
         if r.get("icon") and shutil.which("icotool"):
             run(["icotool", "-x", "-o", home, os.path.join(media, r["icon"])])
@@ -192,7 +223,7 @@ def install(sources):
             f.write("[Desktop Entry]\nType=Application\nName=%s\nExec=latte-barista run %s\nIcon=%s\nCategories=Game;\n" % (r["name"], r["id"], icon or "applications-games"))
         manifest = {"id": r["id"], "name": r["name"], "publisher": r.get("publisher", ""), "runner": r.get("runner", "wine"), "winver": r.get("winver", ""),
                     "sources": [{"path": s, "sha256": sha256(s) if os.path.isfile(s) else ""} for s in used],
-                    "folder": r["folder"], "run": r["run"], "network": r.get("network", False), "menu": [entry],
+                    "folder": r["folder"], "run": r["run"], "network": network or r.get("network", False), "menu": [entry],
                     "installed": datetime.datetime.now().isoformat(timespec="seconds")}
         with open(os.path.join(home, "manifest.json"), "w") as f:
             json.dump(manifest, f, indent=1, ensure_ascii=False)
@@ -223,6 +254,45 @@ def fence(home, network):
     return a + ([] if network else ["--unshare-net"])
 
 
+def online(words):
+    """Lutris's catalogue: whether others have run it on Linux, and how many ways of installing it they wrote down."""
+    import urllib.parse, urllib.request
+    try:
+        req = urllib.request.Request("https://lutris.net/api/games?search=" + urllib.parse.quote(" ".join(words)), headers={"User-Agent": "LatteOS Barista"})
+        found = json.load(urllib.request.urlopen(req, timeout=12)).get("results", [])
+    except (OSError, ValueError):
+        return {"ok": False, "lutris": []}
+    return {"ok": True, "lutris": [{"name": g.get("name", ""), "year": g.get("year") or 0, "url": "https://lutris.net/games/%s/" % g.get("slug", "")} for g in found[:5]]}
+
+
+def worked(ident, said):
+    m = manifest_of(ident)
+    if not m:
+        return None
+    if said == "yes":
+        m["confirmed"] = datetime.datetime.now().isoformat(timespec="seconds")
+        with open(os.path.join(folder_of(ident), "manifest.json"), "w") as f:
+            json.dump(m, f, indent=1, ensure_ascii=False)
+        return {"ok": True}
+    # what its last run said, in the fixed order Barista goes through them (docs/barista/POSTUP.md)
+    try:
+        log = open(os.path.join(folder_of(ident), "logs", "run.log"), errors="replace").read()
+    except OSError:
+        log = ""
+    import re
+    found = []
+    dlls = sorted(set(re.findall(r"err:module:import_dll Library (\S+)", log)))
+    if dlls:
+        found.append({"what": "missing-dll", "detail": ", ".join(dlls[:6])})
+    if re.search(r"err:(d3d|ddraw|wined3d)|Direct3D|D3DERR", log):
+        found.append({"what": "direct3d", "detail": ""})
+    if re.search(r"(?i)insert (the )?(cd|disc|disk)|no disc|cd-rom", log):
+        found.append({"what": "wants-disc", "detail": ""})
+    if re.search(r"Unhandled (page fault|exception)|err:seh", log):
+        found.append({"what": "crashed", "detail": ""})
+    return {"ok": True, "found": found or [{"what": "nothing", "detail": ""}]}
+
+
 def run_it(ident):
     m = manifest_of(ident)
     if not m:
@@ -234,7 +304,7 @@ def run_it(ident):
     if shutil.which("bwrap"):
         argv = fence(home, m.get("network", False)) + ["--chdir", where] + argv
     with open(os.path.join(home, "logs", "run.log"), "w") as log:
-        return subprocess.run(argv, cwd=where, env=wine_env(home), stdout=log, stderr=log).returncode
+        return subprocess.run(argv, cwd=where, env=dict(wine_env(home), WINEDEBUG="fixme-all"), stdout=log, stderr=log).returncode
 
 
 def size(path):
@@ -252,7 +322,21 @@ def main(a):
     if len(a) >= 2 and a[0] == "analyze":
         say(**analyze(a[1:]))
     elif len(a) >= 2 and a[0] == "install":
-        return install(a[1:])
+        return install([x for x in a[1:] if x != "--network"], "--network" in a)
+    elif len(a) >= 2 and a[0] == "online":
+        say(**online(a[1:]))
+    elif len(a) == 2 and a[0] == "info":
+        m = manifest_of(a[1])
+        if not m:
+            return 1
+        home = folder_of(a[1])
+        say(id=m["id"], name=m["name"], folder=home, install_log=os.path.join(home, "logs", "install.log"), run_log=os.path.join(home, "logs", "run.log"),
+            confirmed=m.get("confirmed", ""))
+    elif len(a) == 3 and a[0] == "worked" and a[2] in ("yes", "no"):
+        r = worked(a[1], a[2])
+        if r is None:
+            return 1
+        say(**r)
     elif len(a) == 2 and a[0] == "run":
         return run_it(a[1])
     elif a == ["list"]:

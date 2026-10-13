@@ -268,7 +268,7 @@ with tempfile.TemporaryDirectory() as t:
     os.makedirs(disc1), os.makedirs(disc2)
     for name in ("AVP2.exe", "ALIEN.REZ", "MARINE.REZ", "PREDATOR.REZ", "data1.cab"):
         open(os.path.join(disc1, name), "w").close()
-    barista.SHARE = ROOT
+    barista.SHARE, barista.GAMES = ROOT, os.path.join(t, "games")
     a = barista.analyze([disc1])
     assert (a["recipe"], a["verdict"], a["missing"]) == ("avp2", "no", ["data3.cab"]), a
     open(os.path.join(disc2, "data3.cab"), "w").close()

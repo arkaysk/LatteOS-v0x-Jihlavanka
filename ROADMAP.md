@@ -1106,4 +1106,16 @@ cestu k aktualizácii alebo návratu.
     **Ostáva:** sprievodca v App Manageri (5 obrazoviek podľa `docs/barista/NAVRH.md`), rozpoznanie bez receptu
     (pravidlá Wine/Proton z v0.3 `latte-instalator`), ďalšie typy zdrojov (archív, exe, msi, apk…), závislosti
     cez winetricks, reťaz pokusov, záloha.
+    **Sprievodca (14. 10. v noci):** stránka Barista v App Manageri je sprievodca s piatimi krokmi podľa
+    `docs/barista/POSTUP.md` — Čo · Pôjde to (všetko zistené ľudskou rečou, verdikt, povolenie ísť na internet:
+    Lutris, alebo pokračovať offline) · Kam a ako (priečinok, ohrada, sieť) · Inštalácia (priebeh; potom Otvoriť
+    priečinok · Ukázať log · Spustiť na skúšku · Fungovalo to? Áno/Nie; pri Nie čo hovorí log spustenia) · Hotovo.
+    `latte-app appmanager barista ZDROJ…` otvorí sprievodcu rovno so zdrojom. Overené naostro klikaním: kroky 1–4
+    s AVP2 vrátane internetu a inštalácie; klik na „Áno“ a krok 5 nie (okno sa pri preinštalovaní LatteOS
+    načítalo znova). Wine už pri inštalácii neukazuje vlastné okno (prefix sa robí bez obrazovky, 55 s namiesto
+    97 s) a verzia Windows sa naozaj nastaví (predtým `winecfg -v` potichu nič nespravil). Poznámky receptu sú
+    po anglicky (recept nemá preklady).
+18. [ ] **Hladina na spodku okna aplikácie ako miesto pre dve veci** (používateľ, 14. 10.): (a) **zaujímavé funkcie**
+    aplikácie, zvýraznené výraznou ikonou ako Barista v App Manageri; (b) **tooltip**: rady a triky, a popis
+    tlačidla, nad ktorým je kurzor. Platí pre každé okno s hladinou (`apps/common/AppWindow.qml`, `Surface.qml`).
 

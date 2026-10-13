@@ -1,10 +1,11 @@
 // App Manager: the shop, what is installed, what can be updated, and Barista, who installs what no shop has.
 // bin/latte-apps knows and does everything; this window shows it. Where it begins is told in words
-// (bin/latte-app):   latte-app appmanager [updates | mine | barista | app ID]
+// (bin/latte-app):   latte-app appmanager [updates | mine | barista [SOURCE…] | app ID]
 //
 // The pages: discover (banners and shelves) · category · search · app (one in full) · mine · updates · barista.
 // One thing is installed, removed or updated at a time; the rest wait in a queue, shown at the bottom of the side.
 import QtQuick
+import QtQuick.Dialogs
 import Quickshell
 import Quickshell.Io
 import Quickshell.Widgets
@@ -42,6 +43,36 @@ ShellRoot {
         onExited: { busy = false; try { data = JSON.parse(buf) } catch (e) { data = null } }
     }
     Ask { id: front }
+    // ── Barista: the wizard's state. bin/latte-barista knows and does; docs/barista/POSTUP.md says in what order.
+    property int bStep: 1                      // 1 what · 2 will it work · 3 where and how · 4 installing, then trying · 5 done
+    property var bSources: []
+    property var bInfo: null                   // what analyze said
+    property var bOnline: null                 // what the internet said, once the user allowed asking
+    property bool bNetwork: false
+    property var bProgress: null
+    property string bError: ""
+    property bool bInstalled: false
+    property var bFound: null                  // what the last run's log says, after "it did not work"
+    property var bPlace: null                  // info of the installed one: folder, logs
+    function bReset() { bStep = 1; bSources = []; bInfo = null; bOnline = null; bProgress = null; bError = ""; bInstalled = false; bFound = null; bPlace = null }
+    function bTake(paths) { if (!paths.length) return; bSources = paths; bInfo = null; bOnline = null; bStep = 2; bAnalyze.running = false; bAnalyze.command = ["latte-barista", "analyze"].concat(paths); bAnalyze.running = true }
+    function bBytes(n) { return n >= 1073741824 ? (n / 1073741824).toFixed(1) + " GB" : Math.round(n / 1048576) + " MB" }
+    readonly property var bSteps: ({ "reading": QT_TR_NOOP("Reading {what}"), "windows": QT_TR_NOOP("Preparing a Windows of its own"), "unpacking": QT_TR_NOOP("Unpacking {what}"),
+                                     "copying": QT_TR_NOOP("Copying files"), "writing": QT_TR_NOOP("Writing it down") })
+    readonly property var bWhy: ({ "missing-dll": QT_TR_NOOP("A library is missing: {detail}. It can be added to this program's Windows."), "direct3d": QT_TR_NOOP("The graphics failed. Another way of drawing can be tried."),
+                                   "wants-disc": QT_TR_NOOP("It asks for its disc. The disc image can be put in as a drive."), "crashed": QT_TR_NOOP("The program crashed."),
+                                   "nothing": QT_TR_NOOP("Its log names no cause I know.") })
+    Process { id: bAnalyze; stdout: StdioCollector { onStreamFinished: { try { shell.bInfo = JSON.parse(this.text); shell.bNetwork = shell.bInfo.network === true } catch (e) { shell.bInfo = { verdict: "no", reasons: [], sources: [] } } } } }
+    Process { id: bAsk; stdout: StdioCollector { onStreamFinished: { try { shell.bOnline = JSON.parse(this.text) } catch (e) { shell.bOnline = { ok: false, lutris: [] } } } } }
+    Process { id: bInstall
+        stdout: SplitParser { onRead: line => { let m = null; try { m = JSON.parse(line) } catch (e) { return }
+            if (m.step) shell.bProgress = m
+            else if (m.ok) { shell.bInstalled = true; bInfoOf.running = false; bInfoOf.command = ["latte-barista", "info", m.id]; bInfoOf.running = true }
+            else shell.bError = m.error || "?" } } }
+    Process { id: bInfoOf; stdout: StdioCollector { onStreamFinished: { try { shell.bPlace = JSON.parse(this.text) } catch (e) {} } } }
+    Process { id: bWorked; stdout: StdioCollector { onStreamFinished: { try { const r = JSON.parse(this.text); if (r.found) shell.bFound = r.found; else shell.bStep = 5 } catch (e) {} } } }
+    FileDialog { id: bFiles; fileMode: FileDialog.OpenFiles; onAccepted: shell.bTake(selectedFiles.map(u => decodeURIComponent(String(u).replace(/^file:\/\//, "")))) }
+    FolderDialog { id: bFolder; onAccepted: shell.bTake([decodeURIComponent(String(selectedFolder).replace(/^file:\/\//, ""))]) }
     Ask { id: category }
     Ask { id: found }
     Ask { id: detail }
@@ -90,8 +121,9 @@ ShellRoot {
     Component.onCompleted: {
         front.ask(["store", "home"])
         reload()
-        if (words[0] === "updates" || words[0] === "mine" || words[0] === "barista") go(words[0], "", true)
-        else if (words[0] === "app" && words[1]) go("app", words[1], true)
+        if (words[0] === "updates" || words[0] === "mine" || words[0] === "barista") shell.go(words[0], "", true)
+        if (words[0] === "barista" && words.length > 1) shell.bTake(words.slice(1))      // latte-app appmanager barista SOURCE…
+        else if (words[0] === "app" && words[1]) shell.go("app", words[1], true)
     }
 
     readonly property var categories: [
@@ -437,6 +469,7 @@ ShellRoot {
                 id: bar
                 visible: shell.page === "barista"
                 Rectangle {
+                    visible: shell.bStep === 1         // what Barista is, until something was handed to him
                     width: bar.room; height: 190; radius: 26
                     gradient: Gradient { orientation: Gradient.Horizontal; GradientStop { position: 0; color: "#6b4526" } GradientStop { position: 1; color: "#2a1e17" } }
                     Glyph { x: 34; name: "disc"; font.pixelSize: 84; color: Theme.gold; anchors.verticalCenter: parent.verticalCenter }
@@ -444,8 +477,8 @@ ShellRoot {
                         Label { text: "Barista"; font.pixelSize: 32; font.weight: 800 }
                         Label { text: I18n.tr("Installs what no shop has: a game on discs, a Windows installer, a folder that only needs to be run, an Android app. He looks at what it is first and says whether it will work, and why."); width: parent.width; wrapMode: Text.WordWrap; color: Theme.cream; opacity: 0.9; lineHeight: 1.3 } }
                 }
-                Label { text: I18n.tr("WHAT HE WILL TAKE"); color: Theme.faint; font.pixelSize: 11; font.weight: 700; font.letterSpacing: 0.8 }
-                Flow { width: bar.room; spacing: 14
+                Label { visible: shell.bStep === 1; text: I18n.tr("WHAT HE WILL TAKE"); color: Theme.faint; font.pixelSize: 11; font.weight: 700; font.letterSpacing: 0.8 }
+                Flow { visible: shell.bStep === 1; width: bar.room; spacing: 14
                     Repeater { model: [
                             { icon: "disc", name: QT_TR_NOOP("A CD or DVD, or its image"), hint: QT_TR_NOOP(".iso, several discs") }, { icon: "brand-windows", name: QT_TR_NOOP("A Windows installer or program"), hint: QT_TR_NOOP("setup.exe, .msi, .exe") },
                             { icon: "file-zip", name: QT_TR_NOOP("An archive"), hint: QT_TR_NOOP(".zip, .rar, .7z, in parts too") }, { icon: "folder", name: QT_TR_NOOP("A folder with a game or an app"), hint: QT_TR_NOOP("also on another disk") },
@@ -455,9 +488,124 @@ ShellRoot {
                             Column { x: 62; width: parent.width - 76; anchors.verticalCenter: parent.verticalCenter; spacing: 3
                                 Label { text: I18n.tr(parent.parent.modelData.name); font.weight: 600; width: parent.width; wrapMode: Text.WordWrap; maximumLineCount: 2 }
                                 Label { text: I18n.tr(parent.parent.modelData.hint); color: Theme.dim; font.pixelSize: 12; width: parent.width } } } } }
-                Rectangle { width: bar.room; height: 52; radius: 16; color: Theme.card; border.color: Theme.line
-                    Glyph { x: 16; name: "clock-hour-4"; color: Theme.gold; anchors.verticalCenter: parent.verticalCenter }
-                    Label { x: 46; width: parent.width - 60; text: I18n.tr("Barista is being prepared: he is not behind the bar yet."); color: Theme.dim; anchors.verticalCenter: parent.verticalCenter } }
+                // ── the wizard: five steps, one after another ──────────────────────────────────────────────────
+                Row { spacing: 8
+                    Repeater { model: [QT_TR_NOOP("What"), QT_TR_NOOP("Will it work"), QT_TR_NOOP("Where and how"), QT_TR_NOOP("Installing"), QT_TR_NOOP("Done")]
+                        Rectangle { required property string modelData; required property int index; height: 30; width: stepName.implicitWidth + 44; radius: 15
+                            color: shell.bStep === index + 1 ? Theme.gold : Theme.card
+                            Label { x: 12; text: String(parent.index + 1); font.weight: 800; color: shell.bStep === parent.index + 1 ? Theme.inkOnGold : Theme.faint; anchors.verticalCenter: parent.verticalCenter }
+                            Label { id: stepName; x: 30; text: I18n.tr(parent.modelData); font.weight: 600; color: shell.bStep === parent.index + 1 ? Theme.inkOnGold : Theme.dim; anchors.verticalCenter: parent.verticalCenter } } } }
+
+                // 1 · what
+                Column { visible: shell.bStep === 1; width: bar.room; spacing: 12
+                    Label { text: I18n.tr("What are we installing?"); font.pixelSize: 22; font.weight: 800 }
+                    Label { text: I18n.tr("Show me the disc images, the installer or the folder. Nothing of it is changed."); color: Theme.dim }
+                    Row { spacing: 12
+                        Pill { icon: "file"; strong: true; text: I18n.tr("A file or files"); onPressed: bFiles.open() }
+                        Pill { icon: "folder"; text: I18n.tr("A folder"); onPressed: bFolder.open() } } }
+
+                // 2 · will it work: all that was found out, in plain words
+                Column { visible: shell.bStep === 2; width: bar.room; spacing: 12
+                    Waiting { visible: shell.bInfo === null }
+                    Label { visible: shell.bInfo === null; text: I18n.tr("Looking at what it is…"); color: Theme.dim }
+                    Rectangle { visible: shell.bInfo !== null; width: parent.width; height: 74; radius: 18
+                        color: shell.bInfo && shell.bInfo.verdict === "works" ? Qt.rgba(Theme.ok.r, Theme.ok.g, Theme.ok.b, 0.16) : (shell.bInfo && shell.bInfo.verdict === "may" ? Theme.raised : Qt.rgba(Theme.red.r, Theme.red.g, Theme.red.b, 0.16))
+                        Glyph { x: 20; font.pixelSize: 32; anchors.verticalCenter: parent.verticalCenter; name: shell.bInfo && shell.bInfo.verdict === "no" ? "circle-x" : "circle-check"
+                                color: shell.bInfo && shell.bInfo.verdict === "works" ? Theme.ok : (shell.bInfo && shell.bInfo.verdict === "may" ? Theme.gold : Theme.red) }
+                        Column { x: 68; width: parent.width - 88; anchors.verticalCenter: parent.verticalCenter; spacing: 3
+                            Label { font.pixelSize: 19; font.weight: 800; text: !shell.bInfo ? "" : shell.bInfo.verdict === "works" ? I18n.tr("It will work") : shell.bInfo.verdict === "may" ? I18n.tr("It should work") : I18n.tr("It will not work") }
+                            Label { width: parent.width; color: Theme.dim; font.pixelSize: 12; elide: Text.ElideRight
+                                    text: !shell.bInfo ? "" : shell.bInfo.verdict === "works" ? I18n.tr("Somebody has installed and started it this way before.")
+                                        : shell.bInfo.verdict === "may" ? I18n.tr("There is a way written down, but nobody has tried it yet.")
+                                        : (shell.bInfo.missing && shell.bInfo.missing.length ? I18n.tr("A disc is missing: nothing here has {file}. Choose all the discs together.", { file: shell.bInfo.missing.join(", ") })
+                                        : (shell.bInfo.installed ? I18n.tr("It is installed already.") : I18n.tr("I do not know this program yet, and installing without a recipe is still to come."))) } } }
+                    Repeater { model: !shell.bInfo || !shell.bInfo.recipe ? [] : [
+                            [ "disc", I18n.tr("What it is"), shell.bInfo.name + (shell.bInfo.year ? " · " + shell.bInfo.year : "") + (shell.bInfo.publisher ? " · " + shell.bInfo.publisher : "") ],
+                            [ "file", I18n.tr("From what"), shell.bInfo.sources.map(x => x.path.split("/").pop()).join(" + ") + " · " + shell.bBytes(shell.bInfo.size) ],
+                            [ "package", I18n.tr("How it is packed"), (shell.bInfo.packaging === "installshield" ? I18n.tr("An InstallShield installer.") : shell.bInfo.packaging === "msi" ? I18n.tr("A Windows Installer package.") : I18n.tr("No installer I know."))
+                                + " " + (shell.bInfo.skips_setup ? I18n.tr("I will not run it: its archives are read directly, which is where old installers fail.") : "") ],
+                            [ "brand-windows", I18n.tr("What it will run in"), (shell.bInfo.runner === "proton" ? "Proton" : "Wine") + " · Windows " + ({ "winxp": "XP", "win7": "7", "win98": "98", "win10": "10" }[shell.bInfo.winver] || shell.bInfo.winver)
+                                + (shell.bInfo.year ? " · " + I18n.tr("the program is from {year}", { year: shell.bInfo.year }) : "") ],
+                            [ "disc", I18n.tr("Room on the disk"), I18n.tr("{free} free; it needs about {need}", { free: shell.bBytes(shell.bInfo.free), need: shell.bBytes(shell.bInfo.size * 2.8) }) ],
+                            [ "info-circle", I18n.tr("Notes"), shell.bInfo.notes ] ]
+                        Rectangle { required property var modelData; width: bar.room; height: Math.max(52, said.implicitHeight + 24); radius: 16; color: Theme.card
+                            Glyph { x: 18; y: 15; name: parent.modelData[0]; color: Theme.gold }
+                            Label { x: 52; y: 16; width: 170; text: parent.modelData[1]; color: Theme.dim; font.pixelSize: 13 }
+                            Label { id: said; x: 230; y: 14; width: parent.width - 250; text: parent.modelData[2]; wrapMode: Text.WordWrap; elide: Text.ElideNone } } }
+                    // more from the internet: only when the user says so
+                    Rectangle { visible: shell.bInfo !== null && shell.bInfo.recipe !== ""; width: parent.width; height: netCol.implicitHeight + 28; radius: 16; color: Theme.card; border.color: Theme.line
+                        Column { id: netCol; x: 18; y: 14; width: parent.width - 36; spacing: 8
+                            Label { width: parent.width; wrapMode: Text.WordWrap; elide: Text.ElideNone
+                                    text: shell.bOnline === null ? I18n.tr("May I look on the internet for more about it? Only its name is sent, to Lutris's catalogue. Without that I go on with what is on this computer.")
+                                        : (!shell.bOnline.ok ? I18n.tr("The internet did not answer.") : (shell.bOnline.lutris.length ? I18n.tr("Lutris knows it: others run it on Linux.") : I18n.tr("Lutris does not know it."))) }
+                            Repeater { model: shell.bOnline && shell.bOnline.ok ? shell.bOnline.lutris.slice(0, 3) : []
+                                Label { required property var modelData; text: "• " + modelData.name + (modelData.year ? " (" + modelData.year + ")" : "") + "  " + modelData.url; color: Theme.dim; font.pixelSize: 12 } }
+                            Row { spacing: 10; visible: shell.bOnline === null
+                                Pill { icon: "world"; text: I18n.tr("Find out more on the internet"); busy: bAsk.running; onPressed: { bAsk.command = ["latte-barista", "online"].concat(shell.bInfo.name.split(" ")); bAsk.running = true } } } } }
+                    Row { spacing: 10; visible: shell.bInfo !== null
+                        Pill { icon: "chevron-left"; text: I18n.tr("Back"); onPressed: shell.bReset() }
+                        Pill { icon: "chevron-right"; strong: true; visible: shell.bInfo !== null && shell.bInfo.verdict !== "no"; text: shell.bOnline === null ? I18n.tr("Go on offline") : I18n.tr("Go on"); onPressed: shell.bStep = 3 } } }
+
+                // 3 · where and how
+                Column { visible: shell.bStep === 3; width: bar.room; spacing: 12
+                    Label { text: I18n.tr("Where and how"); font.pixelSize: 22; font.weight: 800 }
+                    Rectangle { width: parent.width; height: 60; radius: 16; color: Theme.card
+                        Glyph { x: 18; name: "folder"; color: Theme.gold; anchors.verticalCenter: parent.verticalCenter }
+                        Column { x: 52; anchors.verticalCenter: parent.verticalCenter; spacing: 3
+                            Label { text: "~/Games/" + (shell.bInfo ? shell.bInfo.recipe : ""); font.weight: 600 }
+                            Label { text: I18n.tr("A folder of its own: its Windows, its saves and what it says. Removing it removes all of it."); color: Theme.dim; font.pixelSize: 12 } } }
+                    Rectangle { width: parent.width; height: 60; radius: 16; color: Theme.card
+                        Glyph { x: 18; name: "shield-lock"; color: Theme.gold; anchors.verticalCenter: parent.verticalCenter }
+                        Column { x: 52; width: parent.width - 70; anchors.verticalCenter: parent.verticalCenter; spacing: 3
+                            Label { text: I18n.tr("Fenced in"); font.weight: 600 }
+                            Label { width: parent.width; text: I18n.tr("It sees the system read-only and, of your home, only its own folder."); color: Theme.dim; font.pixelSize: 12 } } }
+                    Rectangle { width: parent.width; height: 60; radius: 16; color: Theme.card
+                        Glyph { x: 18; name: shell.bNetwork ? "world" : "world-off"; color: Theme.gold; anchors.verticalCenter: parent.verticalCenter }
+                        Column { x: 52; width: parent.width - 260; anchors.verticalCenter: parent.verticalCenter; spacing: 3
+                            Label { text: shell.bNetwork ? I18n.tr("With the network") : I18n.tr("Without the network"); font.weight: 600 }
+                            Label { width: parent.width; text: I18n.tr("Off unless you play over the network."); color: Theme.dim; font.pixelSize: 12 } }
+                        Pill { anchors.right: parent.right; anchors.rightMargin: 14; anchors.verticalCenter: parent.verticalCenter; text: shell.bNetwork ? I18n.tr("Turn off") : I18n.tr("Turn on"); onPressed: shell.bNetwork = !shell.bNetwork } }
+                    Row { spacing: 10
+                        Pill { icon: "chevron-left"; text: I18n.tr("Back"); onPressed: shell.bStep = 2 }
+                        Pill { icon: "download"; strong: true; text: I18n.tr("Install")
+                               onPressed: { shell.bStep = 4; shell.bError = ""; shell.bProgress = null; shell.bInstalled = false; shell.bFound = null
+                                            bInstall.command = ["latte-barista", "install"].concat(shell.bNetwork ? ["--network"] : []).concat(shell.bSources); bInstall.running = true } } } }
+
+                // 4 · installing; then the user tries it
+                Column { visible: shell.bStep === 4; width: bar.room; spacing: 12
+                    Label { font.pixelSize: 22; font.weight: 800; text: shell.bError !== "" ? I18n.tr("It did not install") : (shell.bInstalled ? I18n.tr("Installed. Try it.") : I18n.tr("Installing…")) }
+                    Rectangle { visible: !shell.bInstalled && shell.bError === ""; width: parent.width; height: 70; radius: 16; color: Theme.card
+                        Label { x: 20; y: 14; text: shell.bProgress ? I18n.tr(shell.bSteps[shell.bProgress.step] || shell.bProgress.step, { what: shell.bProgress.what }) : I18n.tr("Starting…") }
+                        Rectangle { x: 20; y: 46; width: parent.width - 40; height: 8; radius: 4; color: Theme.raised
+                            Rectangle { height: 8; radius: 4; color: Theme.gold; width: parent.width * (shell.bProgress ? (shell.bProgress.at - 0.5) / shell.bProgress.of : 0.02); Behavior on width { NumberAnimation { duration: 300 } } } } }
+                    Label { visible: shell.bError !== ""; text: shell.bError; color: Theme.red }
+                    Label { visible: shell.bInstalled; width: parent.width; wrapMode: Text.WordWrap; elide: Text.ElideNone; color: Theme.dim
+                            text: I18n.tr("Start it and see whether it works: the menu, a moment of play, the sound. Then tell me how it went.") }
+                    Row { spacing: 10; visible: shell.bInstalled && shell.bPlace !== null
+                        Pill { icon: "folder"; text: I18n.tr("Open its folder"); onPressed: Quickshell.execDetached(["xdg-open", shell.bPlace.folder]) }
+                        Pill { icon: "file-text"; text: I18n.tr("Show the installation log"); onPressed: Quickshell.execDetached(["xdg-open", shell.bPlace.install_log]) }
+                        Pill { icon: "player-play"; strong: true; text: I18n.tr("Start it to try"); onPressed: Quickshell.execDetached(["latte-barista", "run", shell.bPlace.id]) } }
+                    Row { spacing: 10; visible: shell.bInstalled && shell.bPlace !== null
+                        Label { text: I18n.tr("Did it work?"); height: 36; verticalAlignment: Text.AlignVCenter }
+                        Pill { icon: "check"; text: I18n.tr("Yes"); onPressed: { bWorked.command = ["latte-barista", "worked", shell.bPlace.id, "yes"]; bWorked.running = true } }
+                        Pill { icon: "x"; text: I18n.tr("No"); onPressed: { bWorked.command = ["latte-barista", "worked", shell.bPlace.id, "no"]; bWorked.running = true } } }
+                    Repeater { model: shell.bFound || []
+                        Rectangle { required property var modelData; width: bar.room; height: 52; radius: 16; color: Theme.card; border.color: Theme.line
+                            Glyph { x: 16; name: "alert-triangle"; color: Theme.gold; anchors.verticalCenter: parent.verticalCenter }
+                            Label { x: 46; width: parent.width - 60; text: I18n.tr(shell.bWhy[parent.modelData.what] || parent.modelData.what, { detail: parent.modelData.detail }); anchors.verticalCenter: parent.verticalCenter } } }
+                    Row { spacing: 10; visible: shell.bFound !== null
+                        Pill { icon: "file-text"; text: I18n.tr("Show what it said"); onPressed: Quickshell.execDetached(["xdg-open", shell.bPlace.run_log]) }
+                        Pill { icon: "trash"; danger: true; text: I18n.tr("Uninstall"); onPressed: { Quickshell.execDetached(["latte-barista", "remove", shell.bPlace.id]); shell.bReset() } } }
+                    Pill { visible: shell.bError !== ""; icon: "chevron-left"; text: I18n.tr("Back"); onPressed: shell.bStep = 3 } }
+
+                // 5 · done
+                Column { visible: shell.bStep === 5; width: bar.room; spacing: 12
+                    Label { text: I18n.tr("Done"); font.pixelSize: 22; font.weight: 800 }
+                    Label { width: parent.width; wrapMode: Text.WordWrap; elide: Text.ElideNone; color: Theme.dim; text: I18n.tr("{name} is among your apps: in the launcher, like any other.", { name: shell.bPlace ? shell.bPlace.name : "" }) }
+                    Row { spacing: 10
+                        Pill { icon: "player-play"; strong: true; text: I18n.tr("Start"); onPressed: Quickshell.execDetached(["latte-barista", "run", shell.bPlace.id]) }
+                        Pill { icon: "folder"; text: I18n.tr("Open its folder"); onPressed: Quickshell.execDetached(["xdg-open", shell.bPlace.folder]) }
+                        Pill { icon: "plus"; text: I18n.tr("Install another"); onPressed: shell.bReset() } } }
             }
     }
 }
