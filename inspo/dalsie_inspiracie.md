@@ -316,3 +316,17 @@ https://github.com/lgse/strata
     ikony a zoznam, približné hľadanie mien, náhľady, ovládanie hlavne klávesnicou.
   - **Využitie v LatteOS:** inšpirácia na rozšírenie DualBrew — stĺpcové zobrazenie ako ďalší režim panelu,
     približné hľadanie a skratky. Zapísané do ROADMAP R3·C.
+
+https://github.com/natepayn3/Vitreus
+  - (Claude, 13. 10.) Shell „z tekutého skla“ priamo pre **pleamar** (MIT, 281 commitov, aktívny, autor priznáva AI).
+    Jedna sklenená lišta, z ktorej vytekajú zásuvky (ovládanie, kalendár, prehrávač, spúšťač, nastavenia, Desk),
+    zámok obrazovky, upozornenia, polkit, vizualizér cez cava. Farby z tapety (Iris → `palette.plm`, scéna sa
+    prenačíta), stránka Sklo (priehľadnosť, svetlo hrany, hrúbka lomu, dúha, `frost` a `frost: auto`), obsidián
+    namiesto skla, vlastné shadery `.wgsl` (liquid, cardrip, wave, pixelate, lockwave, glow). Pružiny a krky zásuviek
+    sú z Marey ako u nás. Scény sú v jazyku 0.1.
+  - **Využitie v LatteOS:** shell sa nepreberá (lišta je proti kvapkám, témy UwU s tvárami a Cassette sú proti
+    zásadám 6 a 7, inštalácia `curl | sh` a balíky z AUR). Preberajú sa postupy, pri prepise GooEngine na 0.4:
+    sklo kvapiek riadené pomerom vody a mlieka (zásada 6) s dúhou na hrane (zásada 12) a `frost: auto`; zvonový krk
+    a pružina „drip“ pre rast karty z ucha (zásada 9); efekty, ktoré bežia iba počas pohybu (v pokoji nestoja nič,
+    ROADMAP „Teraz“ bod 5); vlnka po hrane karty (`cardrip`) a vlna pri zámku (`lockwave`); farby z tapety iba pre
+    akcent a materiál, nie pre kávu (R3·B). Kód iba ako predloha; prevzatý shader s uvedením v `TRETIE-STRANY.md`.
