@@ -81,8 +81,8 @@ Schválené 12. 10. 2026. Pracuje sa **zhora nadol, neskáče sa**; nový nápad
         - [x] pás výkonu PowerGoo (12. 10.; `latte-stats` hlási aj teplotu procesora a karty).
         - [x] zámok obrazovky (12. 10.): Win+L a PowerGoo › Zamknúť; overené zlé aj dobré heslo a zamknutie po páde
           scény. Pri nečinnosti (13. 10., hypridle, `system/hypr/hypridle.conf`): zamknutie po 10 min, zhasnutie
-          obrazoviek o pol minúty neskôr, zamknutie pred uspaním; okno na celú obrazovku tomu bráni. Samo sa
-          neuspáva. Časy sa zatiaľ nedajú meniť v Nastaveniach.
+          obrazoviek po 15 min, zamknutie pred uspaním; okno na celú obrazovku tomu bráni. Samo sa
+          neuspáva. Časy sa menia v Nastaveniach › Uzamknutie a nečinnosť (`~/.config/latteos/idle`).
         - [x] ovládanie Goo z klávesnice (12. 10., Win+T).
         - [x] pád minimalizovaného okna do lišty, kvapka uhne titulku okna (12. 10.).
         - [x] viac monitorov, prvá časť (12. 10.): scéna je iba na hlavnom monitore (Hyprland jej povie ktorý,
@@ -145,8 +145,9 @@ Schválené 12. 10. 2026. Pracuje sa **zhora nadol, neskáče sa**; nový nápad
              s bodkou stavu; hľadanie v hlavičke; **LensGoo hľadá aj v nastaveniach** (pod čiarou, `bin/latte-settings`).
              Hotové stránky: **Káva a šálka** (druh kávy = farba goo; šálka = z čoho sú okná: espresso, mokka,
              porcelán — svetlá; sklenená káva), **Pozadie** (obrázky LatteOS a z priečinka Obrázky; živé pozadia
-             = filmy z priečinka Videá cez mpvpaper), **Okná** (režim; sklo bočných panelov), **Kvapky**, **O počítači**.
-             Ostatných 24 stránok je vypísaných ako „ešte nie je“ s odkazom, kde sa to robí zatiaľ. Chýba: šálka
+             = filmy z priečinka Videá cez mpvpaper), **Okná** (režim; sklo bočných panelov), **Kvapky**, **O počítači**,
+             **Uzamknutie a nečinnosť** (kedy sa zamkne a kedy zhasnú obrazovky), **Napájanie** (profil).
+             Ostatných 22 stránok je vypísaných ako „ešte nie je“ s odkazom, kde sa to robí zatiaľ. Chýba: šálka
              v kartách Goo a v okrajoch Hyprlandu, výber vlastného súboru tapety, všetky stránky Hardvér/Účet/Systém.
         - [ ] **Barista** v App Manageri (stránka je pripravená, sprievodca podľa `docs/barista/NAVRH.md` nie).
         - [x] tapeta (swaybg, `assets/wallpapers`) a okenné tlačidlá (hyprbars so záplatou `patches/hyprbars-latte.patch`;

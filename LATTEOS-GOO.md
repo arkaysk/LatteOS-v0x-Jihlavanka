@@ -556,7 +556,7 @@ nemá (AI je hľadanie, Financie a Sociálne sú podkategórie Flathubu).
   (aplikácia) ešte nie sú.
 - **Zámok obrazovky** (Win+L, PowerGoo › Zamknúť; `goo/parts/lock.plm`, `goo/lib/lock.luau`): zamyká kompozitor
   (`ext-session-lock`), heslo overí systém; vyzerá ako prihlásenie v pokoji. Keby scéna pri zamknutí spadla, nová
-  zamkne znova. Pri nečinnosti (hypridle, `latte-idle.service`) zamkne po 10 min, o pol minúty zhasne obrazovky,
+  zamkne znova. Pri nečinnosti (hypridle, `latte-idle.service`) zamkne po 10 min, po 15 min zhasne obrazovky (časy: Nastavenia › Uzamknutie a nečinnosť),
   zamkne aj pred uspaním; film, hra či hovor (inhibítor) a okno na celú obrazovku tomu bránia. Samo sa neuspáva.
 - **Goo z klávesnice** (§6.1, Win+T): šípky po kvapkách dokola po obvode, Enter a medzerník ľavý klik, Menu a Shift+F10
   pravý, + a − koliesko, Esc von; vybraná kvapka sa zdvihne, pulzuje a ukáže bublinu; skončí sám po voľbe okna,

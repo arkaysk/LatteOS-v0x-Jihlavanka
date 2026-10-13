@@ -129,7 +129,7 @@
     "id": "power",
     "name": "Power",
     "icon": "battery-4",
-    "status": "planned",
+    "status": "ready",
     "words": "battery sleep suspend profile energy"
    }
   ]
@@ -157,7 +157,7 @@
     "id": "lock",
     "name": "Lock and idle",
     "icon": "lock",
-    "status": "planned",
+    "status": "ready",
     "words": "lock screen idle sleep timeout screensaver"
    }
   ]

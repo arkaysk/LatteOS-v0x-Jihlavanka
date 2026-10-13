@@ -65,6 +65,23 @@ ShellRoot {
         stdout: StdioCollector { onStreamFinished: r.buf = this.text }
         onExited: { try { data = JSON.parse(buf) } catch (e) {} }
     }
+    // when the session locks and the screens go dark: seconds, 0 for never (system/libexec/latte-idle reads the file)
+    FileView {
+        id: idle
+        property int lock: 600
+        property int screen: 900
+        path: shell.config + "/idle"; printErrors: false
+        onLoaded: { const l = text().match(/^lock=(\d+)$/m), s = text().match(/^screen=(\d+)$/m); if (l) lock = parseInt(l[1]); if (s) screen = parseInt(s[1]) }
+        function choose(l, s) {
+            lock = l; screen = s
+            Quickshell.execDetached(["sh", "-c", "mkdir -p \"$1\" && printf 'lock=%s\\nscreen=%s\\n' \"$2\" \"$3\" > \"$1/idle\" && systemctl --user restart latte-idle.service", "sh", shell.config, String(l), String(s)])
+        }
+    }
+    readonly property var waits: [{ s: 60, name: QT_TR_NOOP("1 minute") }, { s: 300, name: QT_TR_NOOP("5 minutes") }, { s: 600, name: QT_TR_NOOP("10 minutes") }, { s: 900, name: QT_TR_NOOP("15 minutes") },
+                                  { s: 1800, name: QT_TR_NOOP("30 minutes") }, { s: 3600, name: QT_TR_NOOP("1 hour") }, { s: 0, name: QT_TR_NOOP("Never") }]
+    property string profile: ""
+    Process { id: profiles; command: ["powerprofilesctl", "get"]; stdout: StdioCollector { onStreamFinished: shell.profile = this.text.trim() } }
+    Process { id: setProfile; onExited: profiles.running = true }
     Run { id: coffees }
     Run { id: pictures }
     Run { id: machine }
@@ -75,6 +92,7 @@ ShellRoot {
         if (page === "coffee") coffees.ask(["latte-login", "coffees"])
         if (page === "background") pictures.ask(["latte-settings", "wallpapers"])
         if (page === "about") machine.ask(["latte-devices", "list"])
+        if (page === "power") profiles.running = true
     }
     readonly property var coffeeNames: ({ "espresso": "Espresso", "ristretto": "Ristretto", "lungo": "Lungo", "americano": "Americano", "macchiato": "Macchiato", "cortado": "Cortado",
                                           "flatwhite": "Flat white", "cappuccino": "Cappuccino", "latte": "Latte", "white-coffee": QT_TR_NOOP("White coffee") })
@@ -274,6 +292,26 @@ ShellRoot {
                 Switch { text: I18n.tr("The surface bends"); hint: I18n.tr("Ripples lift the drops and the edge gives under them."); on: goo.kept.bends !== false; onPressed: goo.set("bends", !on) } }
             Label { visible: shell.page === "drops"; width: view.room; wrapMode: Text.WordWrap; color: Theme.dim; font.pixelSize: 13
                     text: I18n.tr("Which drops are on the desktop, and putting them back in their places, is in PowerGoo › Settings on the desktop itself. The coffee they are made of is under Coffee and cup.") }
+
+            // when it locks, when the screens go dark
+            Part { visible: shell.page === "lock"; width: view.room; title: I18n.tr("Lock the session after"); note: I18n.tr("Left alone that long, the session locks; the password opens it again. A window that fills the screen keeps it awake.")
+                Repeater { model: shell.waits
+                    Pill { required property var modelData; text: I18n.tr(modelData.name); strong: idle.lock === modelData.s; onPressed: idle.choose(modelData.s, idle.screen) } } }
+            Part { visible: shell.page === "lock"; width: view.room; title: I18n.tr("Turn the screens off after")
+                Repeater { model: shell.waits
+                    Pill { required property var modelData; text: I18n.tr(modelData.name); strong: idle.screen === modelData.s; onPressed: idle.choose(idle.lock, modelData.s) } } }
+            Label { visible: shell.page === "lock"; width: view.room; wrapMode: Text.WordWrap; color: Theme.dim; font.pixelSize: 13
+                    text: I18n.tr("The session also locks before the computer goes to sleep. Win+L locks it at once.") }
+
+            // power
+            Part { visible: shell.page === "power"; width: view.room; title: I18n.tr("Power profile"); note: shell.profile === "" ? I18n.tr("This computer offers no power profiles.") : ""
+                Repeater { model: shell.profile === "" ? [] : [{ id: "power-saver", name: QT_TR_NOOP("Power saver"), hint: QT_TR_NOOP("quiet and cool"), icon: "battery-1" },
+                                   { id: "balanced", name: QT_TR_NOOP("Balanced"), hint: QT_TR_NOOP("for every day"), icon: "battery-3" },
+                                   { id: "performance", name: QT_TR_NOOP("Performance"), hint: QT_TR_NOOP("everything it has"), icon: "activity" }]
+                    Choice { required property var modelData; width: 190; text: I18n.tr(modelData.name); hint: I18n.tr(modelData.hint); on: shell.profile === modelData.id
+                             onPressed: { setProfile.running = false; setProfile.command = ["powerprofilesctl", "set", modelData.id]; setProfile.running = true }
+                             Glyph { anchors.centerIn: parent; name: parent.parent.modelData.icon; font.pixelSize: 50; color: parent.parent.on ? Theme.gold : Theme.dim } } } }
+            Pill { visible: shell.page === "power"; icon: "lock"; text: I18n.tr("Lock and idle"); onPressed: shell.go("lock") }
 
             // about this computer
             Rectangle { visible: shell.page === "about"; width: view.room; height: 170; radius: 26

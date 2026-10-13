@@ -25,6 +25,7 @@
 /usr/bin/latte-safe                                     <- bin/latte-safe
 /usr/bin/latte-game                                     <- bin/latte-game
 /usr/libexec/os-session-select                          <- system/libexec/os-session-select
+/usr/libexec/latte-idle                                 <- system/libexec/latte-idle
 /usr/share/latteos/session-env.sh                       <- system/session-env.sh
 /usr/share/latteos/FILES                                <- FILES
 /usr/share/latteos/goo/login.plm                        <- goo/login.plm
