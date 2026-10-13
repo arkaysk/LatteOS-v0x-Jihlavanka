@@ -76,6 +76,13 @@ def shapes(n):
                        "radius: rip.a.{i} * 2.2 * if(ripple.{i}.kind > 0.5, 0, 1); scale: 2.2, 1; blend: 14 }}\n".format(i=i, s=sign))
         out.append("    ellipse {{ at: rip.x.{i}, H - LEVEL + 4; radius: rip.a.{i} * (1.2 + 0.6 * sin(time * 1900)) * "
                    "if(ripple.{i}.kind > 0.5, 1, 0); scale: 2.6, 1; blend: 12 }}\n".format(i=i))
+    # The swell: crests that travel along the bottom edge, out of sight under it until `swell` lifts them.
+    # Flat humps, not the login screen's sum of waves: that one costs half a millisecond a frame even at rest,
+    # and here there are a few px of surface to show it on.
+    for i in range(SWELL):
+        speed, high, pace = 46 + 17 * (i * 5 % 7), 7 + 2.5 * (i * 3 % 5), 31 + 9 * (i % 4)
+        out.append("    ellipse {{ at: mod(W * {i} / {n} + {speed} * time, W + 400) - 200, H + 31 - swell * {high} * (0.7 + 0.3 * sin(time * {pace} + {ph})); "
+                   "radius: 120; scale: 2.3, 0.24; blend: 14 }}\n".format(i=i, n=SWELL, speed=speed, high=high, pace=pace, ph=i * 67))
     # a window put away, on its way down into the bar
     out.append("    ellipse { at: going.x, going.y; radius: 16 * if(going.k >= 1, going.on, 0) * clamp((gone.for + 0.45 - going.t) / 0.3, 0, 1); "
                "scale: 1 - 0.12 * clamp(going.t, 0, 1), 1 + 0.2 * clamp(going.t, 0, 1); blend: 16 }\n")
@@ -115,6 +122,7 @@ WAVES = ((820, "7", 22, 0), (430, "4.2", 31, 70), (250, "2.6", 44, 200), (150, "
          (1300, "6 * gale", 17, 120))
 SPAN = 32                                   # the surface is SPAN lines, from a little left of the screen to a little right
 THICK = 30                                  # half the width of a line: how far the coffee reaches up from its centre
+SWELL = 8                                   # crests on the desktop's surface, when something stirs it
 RAIN = 9                                    # places on the surface where a drop can fall, each at its own pace
 
 

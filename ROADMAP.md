@@ -937,6 +937,12 @@ cestu k aktualizácii alebo návratu.
     nie). Svetlo je jeden lom na tej istej hladine (jas = ako blízko sa zbehli susedné lúče), farba klesá od
     jantárovej k tmavočervenej (hustá kvapalina), na dne tmavé tvary sedliny a pod nimi vrásky piesku.
     Merané na RX 640: skladanie 1,0 ms, kreslenie 0,7 ms, 60 snímok/s. Výška vĺn je zámerne obmedzená, aby
-    víchrica nezaliala riadok s heslom.
+    víchrica nezaliala riadok s heslom. (Neskôr 13. 10. na pokyn zrušené: vo víchrici sa vlna cez riadok preleje
+    a odtečie; svetlo o polovicu slabšie.)
+    **Vlnenie hladiny na ploche (13. 10.):** v engine je hladina tesne pod spodným okrajom; kým ju niečo rozvíri
+    (dopad kvapky, dážď a poryvy pri nečinnosti — všetko cez `E.ripple`), zdvihne `swell` osem hrebeňov, ktoré
+    bežia popri okraji, a potom zasa zapadnú. Súčet Gerstnerových vĺn z prihlásenia sa neprevzal: stál 0,5 ms
+    na snímku aj v pokoji (skladanie 1,4 → 1,9 ms); hrebene ako ploché elipsy nestoja nič merateľné (1,4 ms).
+    Svetlo a sedlina na ploche nie sú — nie je tam hĺbka.
 12. [x] **PowerGoo s lištou údajov** (13. 10.: karta rastie z celej kapsuly — `card_strip`, `cap.len` v `goo/parts/card.plm`; začína širokou ako lišta, otvára sa smerom, ktorým lišta leží, a drží ju v sebe; overené snímkou pri spodnom okraji, pri bočnom nie)**:** kartu vysunúť z celého celku Goo + lišta, aby tvorili vizuálne jeden kus
     (dnes je ucho karty pri ľavom kliku malé a lišta ostáva vedľa). Režimy okien (4.) sú bod 7 (Glance).

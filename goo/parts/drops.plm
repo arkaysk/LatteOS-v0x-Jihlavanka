@@ -173,6 +173,10 @@ part Drops {
         follow rip.x.$i = ripple.$i.at * W + ripple.$i.shift
         follow rip.a.$i = ripple.$i.force * (1 - age.$i)
     }
+    // The swell: while something stirs the surface the whole of it heaves, its crests coming up over the bottom
+    // edge; at rest it lies flat just under the edge, out of sight (the crests are in shapes.plm).
+    prop swell = 0 ~600ms
+    follow swell = clamp(max(max(rip.a.0, rip.a.1), max(rip.a.2, rip.a.3)) / 2, 0, 1.4)
     // A gust now and then, from a side of its own choosing: the drops sway like corn, the small ones more.
     let gust = smooth(0.58, 0.85, 0.5 + 0.5 * noise(time * 0.045 + 11))
     let wind = clamp(noise(time * 0.013 + 3) * 4, -1, 1)
