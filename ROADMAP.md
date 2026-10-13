@@ -153,8 +153,12 @@ Schválené 12. 10. 2026. Pracuje sa **zhora nadol, neskáče sa**; nový nápad
              a bez potvrdenia sa do 15 s vráti; uložené v `~/.config/latteos/monitors`, číta `hyprland.lua`;
              plávajúce okná sa po zmene vrátia celé na obrazovku), **Jazyk a región** (`~/.config/latteos/locale`,
              od ďalšieho prihlásenia), **Dátum a čas** (pásmo a automatický čas cez `timedatectl`), **Klávesnica**
-             (rozloženia hneď aj nabudúce, `~/.config/latteos/keyboard`; zoznam skratiek chýba).
-             Ostatných 16 stránok je vypísaných ako „ešte nie je“ s odkazom, kde sa to robí zatiaľ. Chýba: šálka
+             (rozloženia hneď aj nabudúce, `~/.config/latteos/keyboard`; zoznam skratiek chýba),
+             **Výkon a grafika** (stupeň vzhľadu: podľa hardvéru alebo vlastný, `~/.config/latteos/tier`),
+             **Štart a režim SAFE** (ako dopadol tento štart; SAFE na ďalší štart cez `latte-boot force-safe`),
+             **Úložisko** (disky, veľkosť priečinkov, kôš), **AI** (vypínač: `~/.config/latteos/ai`, `latte-ai`
+             potom neponúkne nikoho), **Môj účet** (meno a obrázok cez AccountsService).
+             Ostatných 11 stránok je vypísaných ako „ešte nie je“ s odkazom, kde sa to robí zatiaľ. Chýba: šálka
              v kartách Goo a v okrajoch Hyprlandu, výber vlastného súboru tapety, všetky stránky Hardvér/Účet/Systém.
         - [ ] **Barista** v App Manageri (stránka je pripravená, sprievodca podľa `docs/barista/NAVRH.md` nie).
         - [x] tapeta (swaybg, `assets/wallpapers`) a okenné tlačidlá (hyprbars so záplatou `patches/hyprbars-latte.patch`;

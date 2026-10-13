@@ -2,8 +2,9 @@
 """latte-ai: who answers in LensGoo's AI mode. No API key: the official tool of a service answers, with the
 account the user is logged in to it with.
 
-  latte-ai providers        what there is on this computer: [{"id", "name", "local"}]; "local" tells an answer
-                            made on this machine from one that goes to a service
+  latte-ai providers [all]  what there is on this computer: [{"id", "name", "local"}]; "local" tells an answer
+                            made on this machine from one that goes to a service. None when the user turned the
+                            AI off (Settings › AI: the word "off" in ~/.config/latteos/ai), unless `all` is said
   latte-ai ask ID JSON      the next answer in a conversation, on stdout. JSON is the conversation so far:
                             [{"role": "user" | "assistant", "content": …}, …], the question last.
                             What went wrong is said on stdout too, so that it shows where the answer would.
@@ -31,7 +32,17 @@ def claude(prompt):
 PROVIDERS = {"claude": {"name": "Claude", "local": False, "tool": "claude", "command": claude}}
 
 
-def providers():
+def turned_off():
+    try:
+        with open(os.path.join(os.environ.get("XDG_CONFIG_HOME") or os.path.expanduser("~/.config"), "latteos", "ai")) as f:
+            return f.read().strip() == "off"
+    except OSError:
+        return False
+
+
+def providers(all=False):
+    if turned_off() and not all:
+        return []
     return [{"id": i, "name": p["name"], "local": p["local"]} for i, p in PROVIDERS.items() if shutil.which(p["tool"])]
 
 
@@ -64,8 +75,8 @@ def ask(provider, talk):
 
 
 def main(a):
-    if a == ["providers"]:
-        print(json.dumps(providers()))
+    if a in (["providers"], ["providers", "all"]):
+        print(json.dumps(providers(len(a) == 2)))
         return 0
     if len(a) == 3 and a[0] == "ask":
         try:

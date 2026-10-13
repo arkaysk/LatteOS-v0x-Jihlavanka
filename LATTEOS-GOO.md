@@ -455,6 +455,12 @@ v režime Aplikácie — pod čiarou pod aplikáciami ponúkne stránky nastaven
   od ďalšieho prihlásenia. **Dátum a čas** — pásmo, automatický čas (systémové, pýta heslo správcu).
   **Klávesnica** — rozloženia používateľa (prvé je to, ktorým píše; Alt+Shift prepína), platia hneď;
   prihlasovacia obrazovka ostáva pri rozložení systému.
+- **Výkon a grafika** — koľko plocha míňa na vzhľad: podľa hardvéru (rozhodne `latte-boot`) alebo vlastný stupeň
+  (všetko · štandard · úsporne · holé), od ďalšieho prihlásenia. **Štart a režim SAFE** — ako dopadol tento štart
+  a prečo; vypínač „nabudúce naštartovať do SAFE“ (na jeden štart).
+- **Úložisko** — disky (koľko je voľné), priečinky používateľa s veľkosťou, kôš (vysypanie na druhé stlačenie).
+- **AI** — vypínač AI v LatteOS (vypnutá: LensGoo nemá režim AI a nič z LatteOS s AI nehovorí) a kto odpovedá.
+- **Môj účet** — meno a obrázok, ako ich vidí prihlasovacia obrazovka (AccountsService, bez hesla správcu).
 - Stránka, ktorú LatteOS ešte nemá, je v zozname tiež a povie, kde sa to robí zatiaľ (App Manager, Monitor,
   Správca zariadení).
 

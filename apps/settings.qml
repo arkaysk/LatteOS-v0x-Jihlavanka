@@ -88,10 +88,34 @@ ShellRoot {
     Run { id: clock }
     Run { id: keys }
     // what a page shows is asked for when it opens, and again after anything on it was changed
-    readonly property var asks: ({ "sound": [sound, ["latte-settings", "sound"]], "defaults": [opens, ["latte-settings", "defaults"]], "language": [region, ["latte-settings", "region"]],
-                                   "time": [clock, ["latte-settings", "time"]], "keyboard": [keys, ["latte-settings", "keyboard"]], "displays": [screens, ["hyprctl", "monitors", "-j"]] })
-    function ask() { const a = asks[page]; if (a) a[0].ask(a[1]) }
+    readonly property var asks: ({ "sound": [[sound, ["latte-settings", "sound"]]], "defaults": [[opens, ["latte-settings", "defaults"]]], "language": [[region, ["latte-settings", "region"]]],
+                                   "time": [[clock, ["latte-settings", "time"]]], "keyboard": [[keys, ["latte-settings", "keyboard"]]], "displays": [[screens, ["hyprctl", "monitors", "-j"]]],
+                                   "storage": [[disks, ["latte-settings", "storage"]], [held, ["latte-settings", "sizes"]]], "ai": [[helpers, ["latte-ai", "providers", "all"]]],
+                                   "me": [[who, ["latte-settings", "account"]], [pictures, ["latte-settings", "wallpapers"]]], "performance": [[machine, ["latte-devices", "list"]]] })
+    function ask() { (asks[page] || []).forEach(a => a[0].ask(a[1])); force.reload() }
     Timer { id: later; interval: 900; onTriggered: shell.ask() }       // what was asked of the compositor takes a moment to be so
+
+    Run { id: disks }
+    Run { id: held }
+    Run { id: helpers }
+    Run { id: who }
+    Word { id: tier; name: "tier" }
+    Word { id: ai; name: "ai" }
+    // what latte-boot decided for this start, and whether the next one was asked to be SAFE
+    FileView { id: decided; path: "/run/latteos/mode.toml"; printErrors: false
+               property string mode: ""; property string renderer: ""; property string tier: ""; property string reason: ""
+               onLoaded: { const get = k => (text().match(new RegExp("^" + k + " = \"(.*)\"$", "m")) || ["", ""])[1]; decided.mode = get("mode"); decided.renderer = get("renderer"); decided.tier = get("tier"); decided.reason = get("reason") } }
+    FileView { id: force; path: "/var/lib/latteos/force-safe"; printErrors: false; property bool there: false; onLoaded: there = true; onLoadFailed: there = false }
+    readonly property var tiers: [{ id: "", name: QT_TR_NOOP("As the hardware says"), hint: "", icon: "sparkles" },
+                                  { id: "full", name: QT_TR_NOOP("Everything"), hint: QT_TR_NOOP("blur, shadows, glow, a turning border"), icon: "flame" },
+                                  { id: "standard", name: QT_TR_NOOP("Standard"), hint: QT_TR_NOOP("blur and shadows"), icon: "activity" },
+                                  { id: "eco", name: QT_TR_NOOP("Thrifty"), hint: QT_TR_NOOP("no blur, quicker movement"), icon: "leaf" },
+                                  { id: "minimal", name: QT_TR_NOOP("Bare"), hint: QT_TR_NOOP("nothing moves"), icon: "minus" }]
+    readonly property var folderNames: ({ "DOCUMENTS": QT_TR_NOOP("Documents"), "DOWNLOAD": QT_TR_NOOP("Downloads"), "PICTURES": QT_TR_NOOP("Pictures"), "VIDEOS": QT_TR_NOOP("Videos"),
+                                          "MUSIC": QT_TR_NOOP("Music"), "DESKTOP": QT_TR_NOOP("Desktop") })
+    property bool emptying: false          // the trash is emptied on the second press: what was in it does not come back
+    function bytes(b) { return b >= 1e9 ? Number(b / 1e9).toLocaleString(Qt.locale(), "f", 1) + " GB" : Math.round(b / 1e6) + " MB" }
+    function account(what, value) { order(["busctl", "call", "org.freedesktop.Accounts", "/org/freedesktop/Accounts/User" + who.data.uid, "org.freedesktop.Accounts.User", what, "s", value]) }
 
     // ── the screens: a change is tried, and stays only when the user says the picture is fine ───────────
     Run { id: screens }
@@ -161,6 +185,7 @@ ShellRoot {
         if (page === "coffee") coffees.ask(["latte-login", "coffees"])
         if (page === "background") pictures.ask(["latte-settings", "wallpapers"])
         if (page === "about") machine.ask(["latte-devices", "list"])
+        emptying = false
         if (page === "power") profiles.running = true
         ask()
     }
@@ -403,6 +428,96 @@ ShellRoot {
                                     Image { width: 26; height: 26; source: appChip.modelData.icon.startsWith("/") ? "file://" + appChip.modelData.icon : Quickshell.iconPath(appChip.modelData.icon, true); sourceSize.width: 64; sourceSize.height: 64; anchors.verticalCenter: parent.verticalCenter; visible: status === Image.Ready }
                                     Label { text: appChip.modelData.name; font.weight: appChip.on ? 700 : 400; anchors.verticalCenter: parent.verticalCenter } }
                                 MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: shell.order(["latte-settings", "default", kindRow.modelData.kind, appChip.modelData.id]) } } } } } }
+
+            // how much the desktop spends on looks
+            Part { visible: shell.page === "performance"; width: view.room; title: I18n.tr("How much the desktop spends on looks")
+                   note: I18n.tr("Blur, shadows and movement cost the graphics card. It changes when you sign in the next time.")
+                Repeater { model: shell.tiers
+                    Choice { required property var modelData; width: 158; text: I18n.tr(modelData.name); on: tier.value === modelData.id; onPressed: tier.choose(modelData.id)
+                             hint: modelData.id === "" ? (I18n.tr((shell.tiers.find(t => t.id === decided.tier) || { name: decided.tier }).name)) : I18n.tr(modelData.hint)
+                             Glyph { anchors.centerIn: parent; name: parent.parent.modelData.icon; font.pixelSize: 50; color: parent.parent.on ? Theme.gold : Theme.dim } } } }
+            Label { visible: shell.page === "performance"; width: view.room; wrapMode: Text.WordWrap; color: Theme.dim; font.pixelSize: 13
+                    text: ((machine.data ? machine.data.groups.find(g => g.id === "graphics") : null) || { devices: [] }).devices.map(d => d.name + (d.driver ? "  ·  " + d.driver : "")).join("\n") }
+            Row { visible: shell.page === "performance"; spacing: 10
+                Pill { icon: "activity"; text: I18n.tr("Open the Monitor"); onPressed: Quickshell.execDetached(["latte-app", "monitor"]) }
+                Pill { icon: "shield-check"; text: I18n.tr("Start and safe mode"); onPressed: shell.go("startmode") } }
+
+            // how this start went, and SAFE for the next one
+            Rectangle { visible: shell.page === "startmode"; width: view.room; height: 120; radius: 26
+                gradient: Gradient { orientation: Gradient.Horizontal; GradientStop { position: 0; color: Theme.raised } GradientStop { position: 1; color: Theme.card } }
+                Glyph { x: 30; name: decided.mode === "safe" ? "shield-lock" : "shield-check"; font.pixelSize: 54; color: Theme.gold; anchors.verticalCenter: parent.verticalCenter }
+                Column { x: 110; width: parent.width - 140; anchors.verticalCenter: parent.verticalCenter; spacing: 5
+                    Label { text: decided.mode === "safe" ? I18n.tr("This start is SAFE") : (decided.renderer === "hw" ? I18n.tr("The full desktop, drawn by the graphics card") : I18n.tr("The full desktop, drawn by the processor")); font.pixelSize: 19; font.weight: 700 }
+                    Label { text: decided.reason; visible: text !== ""; color: Theme.dim; font.pixelSize: 12; width: parent.width; wrapMode: Text.WordWrap; maximumLineCount: 3 } } }
+            Switch { visible: shell.page === "startmode"; width: view.room; text: I18n.tr("Start in SAFE the next time"); on: force.there
+                     hint: I18n.tr("A plain desktop that always starts, for when the full one does not. For one start.")
+                     onPressed: shell.order(["latte-boot", on ? "reset" : "force-safe"]) }
+            Label { visible: shell.page === "startmode"; width: view.room; wrapMode: Text.WordWrap; color: Theme.dim; font.pixelSize: 13
+                    text: I18n.tr("SAFE can also be chosen on the login screen. Should the full desktop crash right after it starts, LatteOS goes to SAFE by itself.") }
+            Pill { visible: shell.page === "startmode"; icon: "activity"; text: I18n.tr("Performance and graphics"); onPressed: shell.go("performance") }
+
+            // what is on the disks
+            Repeater { model: shell.page === "storage" && disks.data ? disks.data.disks : []
+                Rectangle { id: disk; required property var modelData; width: view.room; height: 86; radius: 16; color: Theme.card
+                    readonly property real full: modelData.size > 0 ? modelData.used / modelData.size : 0
+                    Glyph { x: 20; y: 18; name: "disc"; font.pixelSize: 24; color: Theme.gold }
+                    Label { x: 58; y: 16; text: disk.modelData.mount === "/" ? I18n.tr("This computer") : disk.modelData.mount; font.weight: 700 }
+                    Label { x: 58; y: 36; color: Theme.dim; font.pixelSize: 12; text: I18n.tr("{free} free of {size}", { free: shell.bytes(disk.modelData.size - disk.modelData.used), size: shell.bytes(disk.modelData.size) }) + "  ·  " + disk.modelData.kind }
+                    Rectangle { x: 20; y: 62; width: parent.width - 40; height: 8; radius: 4; color: Theme.raised
+                        Rectangle { width: parent.width * disk.full; height: 8; radius: 4; color: disk.full > 0.9 ? Theme.red : Theme.gold } } } }
+            Part { visible: shell.page === "storage"; width: view.room; title: I18n.tr("Your folders")
+                Waiting { visible: held.data === null }
+                Repeater { model: shell.page === "storage" && held.data ? held.data.folders : []
+                    Rectangle { id: fold; required property var modelData; width: 250; height: 60; radius: 16; color: foldHit.containsMouse ? Theme.raised : Theme.card
+                        Glyph { x: 16; name: "folder"; font.pixelSize: 22; color: Theme.gold; anchors.verticalCenter: parent.verticalCenter }
+                        Label { x: 50; y: 11; text: I18n.tr(shell.folderNames[fold.modelData.id] || fold.modelData.id); font.weight: 600 }
+                        Label { x: 50; y: 31; text: shell.bytes(fold.modelData.size); color: Theme.dim; font.pixelSize: 12 }
+                        MouseArea { id: foldHit; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: Quickshell.execDetached(["xdg-open", fold.modelData.path]) } } } }
+            Rectangle { visible: shell.page === "storage" && held.data !== null; width: view.room; height: 64; radius: 16; color: Theme.card
+                Glyph { x: 18; name: "trash"; font.pixelSize: 22; color: Theme.dim; anchors.verticalCenter: parent.verticalCenter }
+                Column { x: 54; anchors.verticalCenter: parent.verticalCenter; spacing: 3
+                    Label { text: I18n.tr("Trash"); font.weight: 600 }
+                    Label { text: held.data ? shell.bytes(held.data.trash) : ""; color: Theme.dim; font.pixelSize: 12 } }
+                Pill { anchors.right: parent.right; anchors.rightMargin: 14; anchors.verticalCenter: parent.verticalCenter; visible: held.data !== null && held.data.trash > 0; danger: shell.emptying
+                       icon: "trash"; text: shell.emptying ? I18n.tr("Really empty it? It does not come back.") : I18n.tr("Empty the trash")
+                       onPressed: { if (shell.emptying) shell.order(["gio", "trash", "--empty"]); shell.emptying = !shell.emptying } } }
+            Label { visible: shell.page === "storage" && held.data !== null; width: view.room; wrapMode: Text.WordWrap; color: Theme.dim; font.pixelSize: 13
+                    text: held.data ? I18n.tr("What apps keep to be quicker takes {size}; they fill it again by themselves.", { size: shell.bytes(held.data.cache) }) : "" }
+            Pill { visible: shell.page === "storage"; icon: "disc"; text: I18n.tr("Disks in the Device Manager"); onPressed: Quickshell.execDetached(["latte-app", "devices", "disks"]) }
+
+            // the AI
+            Switch { visible: shell.page === "ai"; width: view.room; text: I18n.tr("AI in LatteOS"); on: ai.value !== "off"; onPressed: ai.choose(on ? "off" : "on")
+                     hint: I18n.tr("The AI mode of LensGoo, Win+C. Turned off, nothing of LatteOS talks to an AI.") }
+            Part { visible: shell.page === "ai"; width: view.room; title: I18n.tr("Who answers"); note: I18n.tr("The official tool of a service answers, with the account you are signed in to it with. LatteOS keeps no key and no password of yours.")
+                Label { visible: helpers.data !== null && helpers.data.length === 0; text: I18n.tr("No AI tool is installed on this computer."); color: Theme.dim }
+                Repeater { model: shell.page === "ai" && helpers.data ? helpers.data : []
+                    Rectangle { id: helper; required property var modelData; width: 300; height: 64; radius: 16; color: Theme.card; opacity: ai.value === "off" ? 0.5 : 1
+                        Glyph { x: 18; name: "sparkles"; font.pixelSize: 24; color: Theme.gold; anchors.verticalCenter: parent.verticalCenter }
+                        Column { x: 56; anchors.verticalCenter: parent.verticalCenter; spacing: 3
+                            Label { text: helper.modelData.name; font.weight: 700 }
+                            Label { text: helper.modelData.local ? I18n.tr("answers on this computer") : I18n.tr("a service on the internet"); color: Theme.dim; font.pixelSize: 12 } } } } }
+            Label { visible: shell.page === "ai"; width: view.room; wrapMode: Text.WordWrap; color: Theme.dim; font.pixelSize: 13
+                    text: I18n.tr("LensGoo takes a change here up when you sign in the next time.") }
+
+            // who the user is
+            Rectangle { visible: shell.page === "me"; width: view.room; height: 150; radius: 26
+                gradient: Gradient { orientation: Gradient.Horizontal; GradientStop { position: 0; color: Theme.raised } GradientStop { position: 1; color: Theme.card } }
+                ClippingRectangle { id: face; x: 30; width: 96; height: 96; radius: 48; color: Theme.ground; anchors.verticalCenter: parent.verticalCenter
+                    Glyph { anchors.centerIn: parent; name: "user"; font.pixelSize: 46; color: Theme.dim; visible: portrait.status !== Image.Ready }
+                    Image { id: portrait; anchors.fill: parent; fillMode: Image.PreserveAspectCrop; sourceSize.width: 192; cache: false; source: who.data && who.data.picture ? "file://" + who.data.picture : "" } }
+                Column { x: 150; anchors.verticalCenter: parent.verticalCenter; spacing: 5
+                    Label { text: who.data ? who.data.name : ""; font.pixelSize: 28; font.weight: 800 }
+                    Label { text: who.data ? who.data.user : ""; color: Theme.dim } } }
+            Part { visible: shell.page === "me"; width: view.room; title: I18n.tr("Name"); note: I18n.tr("As the login screen and the apps call you. The name you sign in with stays.")
+                Field { id: nameField; width: Math.min(360, view.room - 140); icon: "user"; hint: who.data ? who.data.name : ""; onAccepted: if (text.trim() !== "") { shell.account("SetRealName", text.trim()); text = "" } }
+                Pill { strong: true; text: I18n.tr("Save"); visible: nameField.text.trim() !== ""; onPressed: { shell.account("SetRealName", nameField.text.trim()); nameField.text = "" } } }
+            Part { visible: shell.page === "me"; width: view.room; title: I18n.tr("Picture"); note: I18n.tr("One of the pictures in your Pictures folder.")
+                Label { visible: pictures.data !== null && pictures.data.filter(p => p.own && !p.live).length === 0; text: I18n.tr("There are no pictures in it."); color: Theme.dim }
+                Repeater { model: shell.page === "me" && pictures.data ? pictures.data.filter(p => p.own && !p.live).slice(0, 24) : []
+                    ClippingRectangle { id: pick; required property var modelData; width: 76; height: 76; radius: 38; color: Theme.card
+                        border.width: 2; border.color: who.data && who.data.picture === modelData.path ? Theme.gold : "transparent"
+                        Image { anchors.fill: parent; fillMode: Image.PreserveAspectCrop; sourceSize.width: 152; asynchronous: true; source: "file://" + pick.modelData.path }
+                        MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: shell.account("SetIconFile", pick.modelData.path) } } } }
 
             // the screens
             Rectangle { visible: shell.page === "displays" && shell.screenWait > 0; width: view.room; height: 64; radius: 16; color: Theme.raised; border.width: 2; border.color: Theme.gold

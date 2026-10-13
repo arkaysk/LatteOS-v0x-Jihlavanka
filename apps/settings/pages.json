@@ -39,7 +39,7 @@
     "id": "ai",
     "name": "AI",
     "icon": "sparkles",
-    "status": "planned",
+    "status": "ready",
     "words": "assistant claude model provider"
    }
   ]
@@ -53,9 +53,8 @@
     "id": "storage",
     "name": "Storage",
     "icon": "disc",
-    "status": "planned",
-    "words": "disk space drives usage",
-    "elsewhere": "devices disks"
+    "status": "ready",
+    "words": "disk space drives usage"
    },
    {
     "id": "backup",
@@ -82,9 +81,8 @@
     "id": "performance",
     "name": "Performance and graphics",
     "icon": "activity",
-    "status": "planned",
-    "words": "tier gpu fps speed",
-    "elsewhere": "monitor"
+    "status": "ready",
+    "words": "tier gpu fps speed"
    },
    {
     "id": "displays",
@@ -141,7 +139,7 @@
     "id": "me",
     "name": "My account",
     "icon": "user",
-    "status": "planned",
+    "status": "ready",
     "words": "name picture profile"
    },
    {
@@ -246,7 +244,7 @@
     "id": "startmode",
     "name": "Start and safe mode",
     "icon": "shield-check",
-    "status": "planned",
+    "status": "ready",
     "words": "boot safe mode crash tier"
    }
   ]

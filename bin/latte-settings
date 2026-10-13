@@ -18,6 +18,10 @@
   latte-settings keyboard       {"current": ["sk", "us:intl"], "layouts": [{"id", "name"}]}: a layout is LAYOUT or
                                 LAYOUT:VARIANT, named in the user's language
   latte-settings keyboard ID…   the user's layouts, the first is the one typed in; at once and from next login
+  latte-settings storage        {"disks": [{"mount", "device", "kind", "size", "used"}]} in bytes, a disk once
+  latte-settings sizes          {"folders": [{"id", "path", "size"}], "trash", "cache"}: how much the user's own
+                                folders hold, in bytes; it reads them all, so it takes a while
+  latte-settings account        {"uid", "user", "name", "picture"}: who the user is to the system
 
 The user's choices are kept in ~/.config/latteos/: `locale` and `keyboard` are read by latte-session when it starts.
 
@@ -246,7 +250,43 @@ def set_locale(lang, formats):
     return 0
 
 
+def storage():
+    disks, seen = [], set()
+    said = out("df", "-B1", "--output=source,fstype,size,used,target", "-x", "tmpfs", "-x", "devtmpfs", "-x", "efivarfs", "-x", "overlay", "-x", "squashfs")
+    for line in said.splitlines()[1:]:
+        device, kind, size, used, mount = line.split(None, 4)
+        # one disk mounted in several places is one disk; what the computer starts from is not the user's room
+        if device not in seen and device.startswith("/") and size.isdigit() and not mount.startswith(("/boot", "/efi")):
+            seen.add(device)
+            disks.append({"mount": mount, "device": device, "kind": kind, "size": int(size), "used": int(used)})
+    return {"disks": disks}
+
+
+def sizes():
+    home = os.path.expanduser("~")
+    paths = {k: out("xdg-user-dir", k) for k in ("DOCUMENTS", "DOWNLOAD", "PICTURES", "VIDEOS", "MUSIC", "DESKTOP")}
+    paths = {k: p for k, p in paths.items() if p and p != home and os.path.isdir(p)}
+    data = os.environ.get("XDG_DATA_HOME") or os.path.join(home, ".local/share")
+    paths.update({"trash": os.path.join(data, "Trash"), "cache": os.environ.get("XDG_CACHE_HOME") or os.path.join(home, ".cache")})
+    told = dict(reversed(line.split("\t", 1)) for line in out("du", "-sbx", "--", *paths.values(), timeout=60).splitlines() if "\t" in line)
+    size = lambda k: int(told.get(paths[k], 0))
+    return {"folders": [{"id": k, "path": p, "size": size(k)} for k, p in paths.items() if k not in ("trash", "cache")], "trash": size("trash"), "cache": size("cache")}
+
+
+def account():
+    import pwd
+    me = pwd.getpwuid(os.getuid())
+    told = lambda what: (re.search(r'^s "(.*)"$', out("busctl", "get-property", "org.freedesktop.Accounts", "/org/freedesktop/Accounts/User%d" % me.pw_uid,
+                                                      "org.freedesktop.Accounts.User", what)) or [None, ""])[1]
+    picture = told("IconFile")
+    return {"uid": me.pw_uid, "user": me.pw_name, "name": told("RealName") or me.pw_gecos.split(",")[0], "picture": picture if os.path.isfile(picture) else ""}
+
+
 def main(a):
+    for word, what in (("storage", storage), ("sizes", sizes), ("account", account)):
+        if a == [word]:
+            print(json.dumps(what(), ensure_ascii=False))
+            return 0
     if a == ["region"]:
         print(json.dumps(region(), ensure_ascii=False))
         return 0

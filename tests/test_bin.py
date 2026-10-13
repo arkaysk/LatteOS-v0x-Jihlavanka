@@ -157,6 +157,14 @@ assert ai.as_prompt([{"role": "user", "content": "Hi"}]) == "Hi" and ai.as_promp
 p = ai.as_prompt([{"role": "user", "content": "A"}, {"role": "assistant", "content": "B"}, {"role": "user", "content": "C"}])
 assert "User: A\nAssistant: B" in p and p.endswith("C"), p
 assert ai.claude("q")[:3] == ["claude", "-p", "q"] and ai.claude("q")[-2:] == ["--tools", ""]      # the question first: --tools takes all that follows
+with tempfile.TemporaryDirectory() as d:
+    config, os.environ["XDG_CONFIG_HOME"] = os.environ.get("XDG_CONFIG_HOME"), d
+    os.makedirs(os.path.join(d, "latteos"))
+    ai.PROVIDERS = {"sh": {"name": "Shell", "local": True, "tool": "sh", "command": None}}
+    assert not ai.turned_off() and len(ai.providers()) == 1
+    open(os.path.join(d, "latteos", "ai"), "w").write("off\n")
+    assert ai.turned_off() and ai.providers() == [] and len(ai.providers(True)) == 1            # turned off, it is still there to be turned on
+    os.environ.pop("XDG_CONFIG_HOME") if config is None else os.environ.__setitem__("XDG_CONFIG_HOME", config)
 apps = load("latte-apps")
 with tempfile.TemporaryDirectory() as d:
     f = os.path.join(d, "org.example.App.desktop")
@@ -212,6 +220,9 @@ with tempfile.TemporaryDirectory() as d:
     assert settings.kept("keyboard") == {"XKB_DEFAULT_LAYOUT": "sk,us", "XKB_DEFAULT_VARIANT": "qwerty,", "XKB_DEFAULT_OPTIONS": "grp:alt_shift_toggle"}
     assert settings.set_keyboard(["us"]) == 0 and settings.kept("keyboard")["XKB_DEFAULT_OPTIONS"] == ""       # one layout: nothing to switch to
     assert settings.set_keyboard(["us", "us"]) == 2 and settings.set_keyboard([]) == 2 and settings.set_keyboard(['us";os.exit()--']) == 2 and len(said) == 2
+    settings.out = lambda *argv, **env: "Filesystem Type 1B-blocks Used Mounted on\n/dev/sda3 btrfs 1000 400 /\n/dev/sda3 btrfs 1000 400 /home\n/dev/sda1 vfat 10 1 /boot/efi\n/dev/sdb1 ext4 500 5 /run/media/me/My disk\n"
+    assert settings.storage()["disks"] == [{"mount": "/", "device": "/dev/sda3", "kind": "btrfs", "size": 1000, "used": 400},
+                                           {"mount": "/run/media/me/My disk", "device": "/dev/sdb1", "kind": "ext4", "size": 500, "used": 5}]
     settings.region = lambda: {"locales": [{"id": "sk_SK.UTF-8"}, {"id": "en_GB.UTF-8"}]}
     assert settings.set_locale("xx_XX.UTF-8", "") == 2 and settings.set_locale("sk_SK.UTF-8", "$(reboot)") == 2 and not os.path.exists(os.path.join(settings.CONFIG, "locale"))
     assert settings.set_locale("en_GB.UTF-8", "sk_SK.UTF-8") == 0 and settings.kept("locale")["LC_PAPER"] == "sk_SK.UTF-8"
