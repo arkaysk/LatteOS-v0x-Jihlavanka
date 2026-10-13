@@ -967,3 +967,19 @@ cestu k aktualizácii alebo návratu.
     a overené na latte-lab v bežiacej relácii. **Chýba oproti v0.3:** ikony na ploche (Kôš, súbory z ~/Plocha)
     a s nimi Zobraziť, Zoradiť podľa, Nový, Prilepiť — plocha s ikonami bola v0.3 samostatná aplikácia
     (`old/session/apps/plocha.qml`); či sa vráti, rozhodne používateľ.
+    **Rozhodnuté a urobené 13. 10. večer: ikony kreslí hotový program, `pcmanfm-qt --desktop` (LXQt, Fedora 2.4.1)** —
+    `bin/latte-desktop` ho spúšťa ako vlastný profil `latteos` s priehľadnou plochou (tapeta ostáva naša: obrázok
+    aj film cez mpvpaper), s písmom a ponukami vo farbách zvolenej šálky (paleta cez qt6ct z `Theme.qml`; štýl
+    cez `-stylesheet` pcmanfm-qt zhodí) a s ikonami breeze. Vypínač: Nastavenia › Pozadie › Ikony na ploche
+    (`~/.config/latteos/desktop-icons`). S ikonami patrí holá plocha im aj s ich ponukou (Vytvoriť nový, Prilepiť,
+    Zoradiť…), vrstva `desk` enginu sa vtedy zavrie; bez nich ostáva kávová ponuka. Overené naostro po
+    prihlásení cez greetd: Kôš, domov a priečinok z ~/Plocha, ponuka pri kurzore. (Bez obrazovky v skúške
+    vyskočí ponuka v rohu — vec neviditeľného monitora, nie programu.) **Chýba:** položky LatteOS v ponuke
+    pcmanfm-qt (Nastavenia obrazovky, Tapeta, Prispôsobiť) — dajú sa pridať ako „vlastné akcie“ libfm-qt;
+    jeho vlastné „Nastavenia pracovnej plochy“ vedia nastaviť tapetu, ktorá by prekryla našu (pri ďalšom štarte
+    sa vráti priehľadná); skúška so živou tapetou. pcmanfm-qt by mohol byť aj **Súbory** pre 0.4 (v kávových
+    farbách vyzerá dobre) — na rozhodnutie.
+14. [ ] **skwd-wall ako výber tapety** (používateľ, 13. 10.: „trvám na live wallpaper ako v 0.3 a samozrejme aj
+    skwd wall“). Živé tapety 0.4 má (mpvpaper, Nastavenia › Pozadie). skwd-wall (Rust, Vulkan, GPL-3.0) je
+    samostatný program: zistiť, čo presne z neho (výber s prechodmi, alebo aj kreslenie tapety), a ako voliteľnú
+    závislosť ho zapojiť vedľa mpvpaper.
