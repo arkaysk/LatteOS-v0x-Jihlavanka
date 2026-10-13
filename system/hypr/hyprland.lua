@@ -141,19 +141,29 @@ local function main_monitor()
 end
 -- Beside a real monitor the virtual one shows the same picture: nobody sits in front of it, and a window that
 -- went there could not be found. When the real one goes it is a monitor of its own again.
-local mirrored = nil
+-- The user can ask the same of every screen (Settings › Displays › Duplicate, as Win+P on Windows): the word
+-- "duplicate" in ~/.config/latteos/screens. Without it each screen is a desktop of its own.
+local mirrored = {}                        -- name → "virtual" or "chosen": the monitors that show the main one's picture
+local function duplicating()
+    local f = io.open(config .. "/screens", "r")
+    local word = f and (f:read("*l") or "") or ""
+    if f then f:close() end
+    return word:match("%a+") == "duplicate"
+end
 local function mirror()
-    local main = main_monitor()
-    if not main then
-        if mirrored then hl.monitor({ output = mirrored, mode = "preferred", position = "auto", scale = 1, reserved_area = band(edges[mirrored] or edges[""] or "bottom") }) end
-        mirrored = nil
-        return
+    local main, all = main_monitor(), duplicating()
+    for name, why in pairs(mirrored) do
+        if not main or (why == "chosen" and not all) or (why == "virtual" and virtual(main)) then
+            hl.monitor({ output = name, mode = "preferred", position = "auto", scale = 1, mirror = "", reserved_area = band(edges[name] or edges[""] or "bottom") })
+            mirrored[name] = nil
+        end
     end
-    if virtual(main) then return end
+    if not main then return end
     for _, m in ipairs(hl.get_monitors() or {}) do
-        if virtual(m) then
+        local why = (m.name ~= main.name and virtual(m) and not virtual(main) and "virtual") or (m.name ~= main.name and all and "chosen") or nil
+        if why and not mirrored[m.name] then
             hl.monitor({ output = m.name, mode = string.format("%dx%d@%.3f", m.width, m.height, m.refresh_rate), position = "auto", scale = 1, mirror = main.name })
-            mirrored = m.name
+            mirrored[m.name] = why
         end
     end
 end
@@ -167,13 +177,20 @@ local function place_shell(before)
     if not main then return end
     local names = { main.name }
     for _, m in ipairs(hl.get_monitors() or {}) do
-        if m.name ~= main.name and m.name ~= mirrored then names[#names + 1] = m.name end
+        if m.name ~= main.name and not mirrored[m.name] then names[#names + 1] = m.name end
     end
     hl.exec_cmd("sh -c '" .. (before and (before .. "; latte-screens --start ") or "latte-screens ") .. table.concat(names, " ") .. "'")
 end
 hl.on("monitor.added", place_shell)
 hl.on("monitor.removed", place_shell)
 hl.on("config.reloaded", place_shell)
+-- Every screen the same picture, or each its own desktop: kept, and done at once.
+function latte.duplicate(on)
+    os.execute("mkdir -p '" .. config .. "'")
+    local f = io.open(config .. "/screens", "w")
+    if f then f:write((on and "duplicate" or "extend") .. "\n") f:close() end
+    place_shell()
+end
 -- A screen as the user wants it now; with `keep` it also comes up so the next time. Settings tries a change
 -- without keeping it and puts the old one back unless the user says the picture is fine.
 function latte.screen(name, mode, position, scale, turn, keep)

@@ -50,6 +50,7 @@ ShellRoot {
     Word { id: glass; name: "glass" }
     Word { id: wallpaper; name: "wallpaper" }
     Word { id: icons; name: "desktop-icons" }
+    Word { id: screensWord; name: "screens" }
     // what the Goo scene keeps for itself: it takes a change up as soon as its file is written
     FileView {
         id: goo
@@ -724,6 +725,12 @@ ShellRoot {
                 Repeater { model: [{ t: 0, name: QT_TR_NOOP("Upright") }, { t: 1, name: QT_TR_NOOP("On its left side") }, { t: 2, name: QT_TR_NOOP("Upside down") }, { t: 3, name: QT_TR_NOOP("On its right side") }]
                     Pill { required property var modelData; text: I18n.tr(modelData.name); strong: shell.screenHere !== null && shell.screenHere.transform === modelData.t
                            onPressed: shell.changeScreen(shell.screenHere.name, { transform: modelData.t }) } } }
+            Part { visible: shell.page === "displays" && (shell.screenList.length > 1 || screensWord.value === "duplicate"); width: view.room; title: I18n.tr("More than one screen")
+                   note: I18n.tr("Extended, each screen is a desktop of its own. Duplicated, they all show the main one's picture.")
+                Pill { icon: "layout-columns"; text: I18n.tr("Extend"); strong: screensWord.value !== "duplicate"
+                       onPressed: { screensWord.value = "extend"; shell.order(["hyprctl", "eval", "latte.duplicate(false)"]) } }
+                Pill { icon: "copy"; text: I18n.tr("Duplicate"); strong: screensWord.value === "duplicate"
+                       onPressed: { screensWord.value = "duplicate"; shell.order(["hyprctl", "eval", "latte.duplicate(true)"]) } } }
             Part { visible: shell.page === "displays" && shell.screenList.length > 1; width: view.room; title: I18n.tr("Where it stands"); note: I18n.tr("The screens stand side by side as in the picture above. The main one carries the drops; every other has a window bar of its own.")
                 Pill { icon: "chevron-left"; text: I18n.tr("Further left"); onPressed: shell.moveScreen(shell.screenHere.name, -1) }
                 Pill { icon: "chevron-right"; text: I18n.tr("Further right"); onPressed: shell.moveScreen(shell.screenHere.name, 1) }
