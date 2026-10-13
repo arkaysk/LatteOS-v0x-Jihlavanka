@@ -84,6 +84,7 @@ scene Login {
     fact power_open = false
     fact ses_open = false
     fact ses_sel = 0
+    fact kb_lock = 0                           // the lock keys: 1 caps, 2 num, 3 both
     fact kb_count = 0                          // how many keyboard layouts there are; one is no choice
     fact panel = 0                             // under the surface: 0 nothing, 1 the last crash, 2 the news
     fact keep_backdrop = false                 // a real login keeps the background: the desktop comes after it
@@ -315,6 +316,7 @@ scene Login {
     on press z_go { emit login }
     on submit password { emit login }
     text "Wrong password" { at: text_x, gy - 44; anchor: left center; size: 13.5; color: alert; opacity: wrong; family: "Inter" }
+    text pick(kb_lock, "", "Caps Lock", "Num Lock", "Caps Lock · Num Lock") { at: text_x + 174, gy - 44 + 2.5 * sin(time * 70); anchor: left center; size: 12.5; weight: 600; color: amber; opacity: fields * (1 - gone) * 0.85; show: kb_lock > 0; family: "Inter" }
     text "Checking…" { at: text_x, gy - 44; anchor: left center; size: 13.5; color: cream; opacity: fields * 0.6; show: checking; family: "Inter" }
 
     // ── the session chooser: the one chosen; a press opens the choices above it ─────────────────────────────

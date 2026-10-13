@@ -158,6 +158,13 @@ return function()
         end
     end)
 
+    -- Caps Lock and Num Lock, from the keyboard's own lights: the scene cannot read them from the compositor.
+    local function show_locks()
+        run("latte-login", { "locks" }, function(out) fact.kb_lock = tonumber((out or ""):match("%d")) or 0 end)
+    end
+    show_locks()
+    every(700, show_locks)
+
     local MACHINE = { "suspend", "reboot", "poweroff" }
     on("machine", function(k)
         local what = MACHINE[(k or 0) + 1]

@@ -58,6 +58,7 @@ scene LoginSafe {
     event machine ->
     event layout ->
     fact kb_count = 0
+    fact kb_lock = 0
     event session ->
     fact checking = false
     fact field = 1
@@ -129,6 +130,7 @@ scene LoginSafe {
     on press z_go { emit login }
     on submit password { emit login }
     text "Wrong password" { at: TX, GY - 44; anchor: left center; size: 13.5; color: alert; show: wrong and not checking; family: "Inter" }
+    text pick(kb_lock, "", "Caps Lock", "Num Lock", "Caps Lock · Num Lock") { at: TX + 174, GY - 44; anchor: left center; size: 12.5; weight: 600; color: amber; show: kb_lock > 0 and not leaving; family: "Inter" }
     text "Checking…" { at: TX, GY - 44; anchor: left center; size: 13.5; color: cream; opacity: 60%; show: checking; family: "Inter" }
 
     // ── the power menu, above its button ────────────────────────────────────────────────────────────────────

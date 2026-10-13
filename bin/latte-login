@@ -16,6 +16,8 @@
   latte-login auth USER SESSION -- COMMAND…
         checks the password and prepares the user's session through greetd;
         prints {"ok": true} or {"ok": false, "error": "…"}
+  latte-login locks
+        which lock keys are on, by the keyboard's lights: 1 Caps Lock, 2 Num Lock, 3 both, 0 neither
   latte-login layout N LANG
         the login screen is to start again with keyboard layout N (its place in the list) and language LANG
   latte-login done
@@ -270,6 +272,11 @@ def done():
     return 0
 
 
+def locks():
+    on = lambda name: any(read(p).strip() not in ("", "0") for p in glob.glob("/sys/class/leds/*::" + name + "/brightness"))
+    return int(on("capslock")) + 2 * int(on("numlock"))
+
+
 def layout(index, lang):
     """labwc has no way to switch a layout from outside: leave the choice for latte-greeter and end this compositor."""
     try:
@@ -307,6 +314,9 @@ def main(a):
             return 2
     if len(a) >= 5 and a[0] == "auth" and a[3] == "--":
         return auth(a[1], a[2], a[4:])
+    if a == ["locks"]:
+        print(locks())
+        return 0
     if len(a) == 3 and a[0] == "layout" and a[1].isdigit() and re.fullmatch(r"[a-z]{2,3}", a[2]):
         return layout(int(a[1]), a[2])
     if a == ["done"]:

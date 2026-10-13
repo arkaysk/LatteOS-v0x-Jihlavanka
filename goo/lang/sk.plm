@@ -9,6 +9,9 @@ library Slovak {
         "Log in" = "Prihlásiť"
         "Power" = "Napájanie"
         "Session" = "Relácia"
+        "Caps Lock" = "Caps Lock"
+        "Num Lock" = "Num Lock"
+        "Caps Lock · Num Lock" = "Caps Lock · Num Lock"
         "Keyboard layout" = "Rozloženie klávesnice"
         "English" = "Slovenčina"      // the language's own name: the chip shows the one in use
         "Last crash" = "Posledný pád"
