@@ -900,3 +900,15 @@ cestu k aktualizácii alebo návratu.
   ďalšie veľké rozšírenia zostávajú návrhmi, kým neprejdú R0–R1 a nedostanú miesto v etape.
 - [ ] Každé neskoršie rozšírenie zachová základné pravidlo: LatteOS musí zostať použiteľný vo VM
   bez GPU; akcelerácia pridáva efekty, nie nevyhnutnú funkčnosť.
+
+11. [ ] **Prihlasovacia obrazovka podľa predstavy používateľa** (13. 10., `bughunt/najdene-chyby.md`; test 541 ukázal,
+    že voľba jazyka a klávesnice na prihlásení **nie je**: rozloženie sa prepína iba naslepo Alt+Shift, jazyk vôbec).
+    (a) **Jazyk a rozloženie klávesnice klikom** na prihlásení (aj v SAFE), s ukazovateľom aktuálneho rozloženia;
+    (b) Caps Lock / Num Lock ako text vznášajúci sa nad poľom hesla; (c) hladina v spodných 2/3, na dne
+    premenlivé tiene (kávová usadenina); softvérové kreslenie = statická hladina; (d) kvapka z šálky Plymouthu
+    dopadne a vlní hladinu; (e) pod hladinou posledný log z pádu, inak aktuality z RSS (zdroj v Nastaveniach;
+    prístup k logu aj zvnútra systému, v SAFE aj NORMAL); (f) hore vľavo počasie, vpravo čas; (g) kurzor ako
+    zdroj svetla, slnko a mesiac podľa skutočnej polohy; (h) výber relácií: LatteOS GOO, SAFE, SteamOS a iné GUI.
+    *Na zistenie pred (a):* ako pleamar zistí a prepne skupinu xkb v labwc (dnes iba Alt+Shift z `session-env.sh`).
+12. [ ] **PowerGoo s lištou údajov:** kartu vysunúť z celého celku Goo + lišta, aby tvorili vizuálne jeden kus
+    (dnes je ucho karty pri ľavom kliku malé a lišta ostáva vedľa). Režimy okien (4.) sú bod 7 (Glance).
