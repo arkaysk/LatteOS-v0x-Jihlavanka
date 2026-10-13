@@ -11,6 +11,7 @@
 /usr/bin/latte-greeter                                  <- bin/latte-greeter
 /usr/bin/latte-login                                    <- bin/latte-login
 /usr/bin/latte-sky                                      <- bin/latte-sky
+/usr/bin/latte-say                                      <- bin/latte-say
 /usr/bin/latte-session                                  <- bin/latte-session
 /usr/bin/latte-safe                                     <- bin/latte-safe
 /usr/bin/latte-game                                     <- bin/latte-game
@@ -30,6 +31,8 @@
 /usr/share/latteos/goo/lang/sk.plm                      <- goo/lang/sk.plm
 /usr/share/latteos/goo/goo.plm                          <- goo/goo.plm
 /usr/share/latteos/goo/goo.luau                         <- goo/goo.luau
+/usr/share/latteos/goo/side.plm                         <- goo/side.plm
+/usr/share/latteos/goo/side.luau                        <- goo/side.luau
 /usr/share/latteos/goo/parts/drops.plm                  <- goo/parts/drops.plm
 /usr/share/latteos/goo/parts/picks.plm                  <- goo/parts/picks.plm
 /usr/share/latteos/goo/parts/body.plm                   <- goo/parts/body.plm
@@ -82,6 +85,7 @@
 /usr/lib/systemd/user/latte-session.target              <- system/systemd/latte-session.target
 /usr/lib/systemd/user/latte-goo.service                 <- system/systemd/latte-goo.service
 /usr/lib/systemd/user/latte-idle.service                <- system/systemd/latte-idle.service
+/usr/lib/systemd/user/latte-goo-side@.service           <- system/systemd/latte-goo-side@.service
 /usr/lib/tmpfiles.d/latteos.conf                        <- system/systemd/latteos.tmpfiles
 /etc/latteos/boot.toml                                  <- system/boot.toml
 /etc/kernel/install.d/96-latteos-safe.install           <- system/kernel-install/96-latteos-safe.install

@@ -68,7 +68,7 @@ EOF
     if [ $nested = 1 ]; then
         # LIBSEAT_BACKEND=logind: should the nested backend fail, Hyprland falls back to the real card. Over ssh
         # logind refuses that, where seatd would let it take the screen from whoever is using it.
-        echo "LIBSEAT_BACKEND=logind LATTE_SHARE=$out/share LATTE_TIER=${LATTE_TIER:-standard} LATTE_RENDERER=hw XDG_CURRENT_DESKTOP=Hyprland XDG_STATE_HOME=$out/state XDG_CONFIG_HOME=$out/config Hyprland -c $out/hyprland.lua > $out/hyprland.log 2>&1 &"
+        echo "PATH=\"$repo/bin:\$PATH\" LIBSEAT_BACKEND=logind LATTE_SHARE=$out/share LATTE_TIER=${LATTE_TIER:-standard} LATTE_RENDERER=hw XDG_CURRENT_DESKTOP=Hyprland XDG_STATE_HOME=$out/state XDG_CONFIG_HOME=$out/config Hyprland -c $out/hyprland.lua > $out/hyprland.log 2>&1 &"
         echo "echo \$! > $out/hyprland.pid"
         echo "(sleep $((secs + 4)); labwc --exit) &"
     else

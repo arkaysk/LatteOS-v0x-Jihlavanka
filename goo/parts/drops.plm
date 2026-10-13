@@ -120,6 +120,7 @@ part Drops {
     // The session tells how long the whole system has been left alone, keys included (system/hypr/hypridle.conf);
     // once it has spoken, the scene's own count, which knows only the pointer, is not used.
     event sys_idle
+    event side_hello ->                        // the scene of another monitor has started: it wants the settings
     fact told = false
     on sys_idle(v) { told = true }
     on sys_idle(v) while lively and idle != v { idle = v; emit goo_idle(v) }

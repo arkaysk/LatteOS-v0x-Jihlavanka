@@ -1,0 +1,13 @@
+# The Goo of a monitor that is not the main one: its own window bar (goo/side.plm). %i is the monitor's
+# name; Hyprland starts one for each such monitor and stops it when the monitor goes (system/hypr/hyprland.lua).
+[Unit]
+Description=LatteOS Goo on %i
+PartOf=latte-session.target
+After=latte-goo.service
+
+[Service]
+Environment=PLEAMAR_GENERIC=window
+Environment=LATTE_GOO_SCREEN=%i
+ExecStart=/usr/bin/pleamar --scene /usr/share/latteos/goo/side.plm --no-hud --screen %i
+Restart=on-failure
+RestartSec=1

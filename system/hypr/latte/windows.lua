@@ -126,7 +126,7 @@ local function minimize(w)
     local x, y = xy(w.at)
     local width, height = xy(w.size)
     local m = w.monitor
-    hl.exec_cmd(string.format('pleamar --say goo "fact win.x %d" "fact win.y %d" "fact win.w %d" "fact win.h %d" "fact win.on %d" "emit win_min"',
+    hl.exec_cmd(string.format('latte-say "fact win.x %d" "fact win.y %d" "fact win.w %d" "fact win.h %d" "fact win.on %d" "emit win_min"',
                               x - (m and m.x or 0), y - (m and m.y or 0), width, height, m and m.id or 0))
     hl.dispatch(hl.dsp.window.move({ workspace = MINIMIZED, follow = false, window = sel(w) }))
 end
@@ -134,7 +134,7 @@ end
 -- the scene learns the mode by its place in `order`, from 0
 local function tell()
     for i, m in ipairs(W.order) do
-        if m == W.current then hl.exec_cmd('pleamar --say goo "emit window_mode ' .. (i - 1) .. '"') end
+        if m == W.current then hl.exec_cmd('latte-say "emit window_mode ' .. (i - 1) .. '"') end
     end
 end
 

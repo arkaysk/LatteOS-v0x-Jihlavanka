@@ -87,8 +87,11 @@ Schválené 12. 10. 2026. Pracuje sa **zhora nadol, neskáče sa**; nový nápad
         - [x] pád minimalizovaného okna do lišty, kvapka uhne titulku okna (12. 10.).
         - [x] viac monitorov, prvá časť (12. 10.): scéna je iba na hlavnom monitore (Hyprland jej povie ktorý,
           pri zmene monitorov ju presunie), okná z iných monitorov sú v lište, ale neuhýba sa im.
-        - [ ] **jadro kvapiek, zvyšok:** BarGoo na ďalších monitoroch (vlastná inštancia s oknami toho monitora).
-          Hra pri nečinnosti príde s vlastnými kvapkami (hrajú sa iba hravé), okno z bubliny s QueenGoo (rodia sa
+        - [x] BarGoo na ďalších monitoroch (13. 10.): vlastná scéna `goo/side.plm` na každom ďalšom monitore
+          (`latte-goo-side@.service`), lišta ukazuje iba okná svojho monitora, pás pri okraji má každý monitor
+          svoj; `latte-say` povie niečo všetkým scénam Goo. Overené s dvoma a troma monitormi bez obrazovky.
+          Chýba prenášanie ikier medzi monitormi; každá ďalšia scéna stojí toľko čo hlavná (bod 5).
+        - [ ] **jadro kvapiek, zvyšok:** hra pri nečinnosti príde s vlastnými kvapkami (hrajú sa iba hravé), okno z bubliny s QueenGoo (rodia sa
           z nej riadne okná).
         - [x] ClockGoo (12. 10.): upozornenia (pleamar je server upozornení) a kalendár, karta času so stopkami,
           minútkou, budíkmi a počasím; karta vie dva stĺpce a mesiac.

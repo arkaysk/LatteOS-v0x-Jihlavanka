@@ -26,7 +26,7 @@ local function open_coffee(d)
         rows[#rows + 1] = { label = coffee_name(id), glyph = "cup", on = id == coffees.chosen, line = i == 1, keep = true, run = function()
             run("latte-login", { "coffee", id }, function()
                 coffees.chosen = id
-                E.read_coffee()
+                E.tell("emit coffee_changed")
                 open_coffee(d)
             end)
         end }

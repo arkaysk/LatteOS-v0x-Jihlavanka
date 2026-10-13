@@ -1,0 +1,34 @@
+// The Goo of a monitor that is not the main one: BarGoo alone, with the windows of that monitor, as the
+// taskbar on a second screen. It is goo.plm's drops and card without what a session has only once (the other
+// drops, the lock screen, the notifications); one runs for each such monitor (latte-goo-side@.service).
+language 0.4
+import "lang/sk.plm"
+
+scene GooSide {
+    surface {
+        size: full, full
+        anchor: bottom
+        margin: 0
+        level: top
+        reserve: -1
+        rate: 60
+        keyboard: exclusive while card_open or kb
+    }
+    permissions {
+        run: "latte-sky", "latte-login", "hyprctl", "latte-say"
+        services: "files", "env", "window", "apps"
+    }
+
+    event window_mode ->                       // as in goo.plm: Hyprland says how windows are arranged
+    event win_menu ->
+    text win_asked = ""
+
+    include "parts/drops.plm"
+    include "parts/picks.plm"
+    include "parts/body.plm"
+    include "parts/card.plm"
+    include "parts/faces.plm"
+    include "parts/strip.plm"
+    include "parts/keys.plm"
+    include "parts/rows.plm"
+}

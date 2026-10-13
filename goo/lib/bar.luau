@@ -30,7 +30,8 @@ local ZIGZAG = { 0, 0.46, 0.12, 0.52, 0.04, 0.38, 0.18, 0.5 }      -- a row unde
 local MODES = { [0] = { glyph = "layout-columns", name = N("Tape") }, { glyph = "layout-grid", name = N("Tiles") },
                 { glyph = "app-window", name = N("Floating windows") } }
 
-local wins = {}                      -- the windows, as the compositor lists them
+local wins = {}                      -- the windows of this monitor, as the compositor lists them
+local every_win = {}                 -- …and those of every monitor
 local shown = {}                     -- id of a berry → its window
 local order = {}                     -- the apps in the order the user dragged them into
 local middles = {}                   -- { key, x }: where each bunch's middle is, px from the head
@@ -68,7 +69,7 @@ local function app_name(w)
     local a = M.app_of(w)
     return a and (a.local_name or a.name) or w.class
 end
-function M.windows() return wins end
+function M.windows() return every_win end
 
 -- ── where the berries go ─────────────────────────────────────────────────────────────────────────────────────
 local function free_above(x0, x1)
@@ -259,7 +260,13 @@ end
 -- The right button on a window's own title bar: its menu, where the pointer is (the compositor has said where).
 on("win_menu", function()
     local address = text.win_asked or ""
-    for _, w in ipairs(wins) do if w.address == address then return menu(w) end end
+    for _, w in ipairs(wins) do
+        if w.address == address then
+            local x, y = wm.origin()         -- the pointer was told as the compositor counts, across all monitors
+            fact["tap.x"], fact["tap.y"] = fact["tap.x"] - x, fact["tap.y"] - y
+            return menu(w)
+        end
+    end
 end)
 
 -- A window was put away (the compositor says where it was): it falls as a drop into the bar, beside the head,
@@ -284,9 +291,12 @@ local asked, signature = false, ""
 function M.refresh()
     if asked then return end
     asked = true
-    wm.windows(function(list)
+    wm.windows(function(all)
         asked = false
-        if not list then return end
+        if not all then return end
+        local list = {}                      -- every monitor has a bar of its own
+        for _, w in ipairs(all) do if w.here then list[#list + 1] = w end end
+        every_win = all
         local head = E.get(HEAD)
         local at, h = head and E.along(head) or 0, tonumber(fact.sh) or 0
         local sig, above = {}, {}

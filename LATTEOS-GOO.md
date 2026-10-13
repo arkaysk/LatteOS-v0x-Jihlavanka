@@ -163,8 +163,10 @@ ostatné kvapky sú iba na hlavnom monitore.
   Ikry sa lepia iba ku BarGoo. **48 miest**, nad nimi posledná ikra „Ďalšie okná“ otvorí prehľad.
 - Ikry vyrastajú z hlavy na stranu, kde nie sú iné kvapky (nastavenie `reversed` to otočí); BarGoo sa spája s inými
   kvapkami iba z druhej strany. Lišta sa zmestí po kraj a zastaví pred rohovou lištou.
-- **Viac monitorov:** každá obrazovka má vlastný BarGoo, okná a ikry sa dajú prenášať. *(Engine zatiaľ beží iba na
-  hlavnom monitore.)*
+- **Viac monitorov:** každá obrazovka má vlastný BarGoo, okná a ikry sa dajú prenášať. *(Fresh, 13. 10.: na každom ďalšom
+  monitore beží vlastná scéna `goo/side.plm` s BarGoo a oknami toho monitora — `latte-goo-side@MONITOR.service`,
+  spúšťa a zastavuje ju Hyprland; materiál, živé správanie a kávu jej hovorí hlavná scéna cez `latte-say`.
+  Prenášanie ikier medzi monitormi ešte nie je.)*
 
 ### 4.2 PowerGoo — účet, napájanie a výkon
 - **Karta (ľavý klik):** **profil účtu** — portrét v kruhu (`~/.face`, obrázok prihlasovania LatteOS alebo
@@ -457,6 +459,6 @@ nemá (AI je hľadanie, Financie a Sociálne sú podkategórie Flathubu).
 
 **Ešte nie je** (vráti sa po kusoch, poradie v ROADMAP):
 QueenGoo, ChatGoo, vlastné kvapky a Tvorca Goo, hra pri nečinnosti (§3.1 stupeň 3; príde s vlastnými kvapkami — hrajú sa iba hravé),
-okno z bubliny (14; pád minimalizovaného okna už je), BarGoo na ďalších monitoroch (scéna je iba na hlavnom), režim AI v LensGoo,
+okno z bubliny (14; pád minimalizovaného okna už je), prenášanie ikier medzi monitormi, režim AI v LensGoo,
 portrét účtu, MediaGoo (čo práve hrá), prepojené kalendáre,
 živé tapety a vlastný obrázok tapety, sklo okien, prichytenie ťahaním, Nastavenia a ostatné aplikácie.

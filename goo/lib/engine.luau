@@ -702,7 +702,10 @@ end)
 
 -- ── settings: settings.json in the scene's own folder, taken up as soon as it changes ────────────────────────
 --   { "lively": true, "material": "coffee" | "glass", "bends": true, "hidden": ["clockgoo"], "zoom": { "lensgoo": 1.2 } }
+-- The scenes on the other monitors (side.plm) keep no settings: the main one tells them what it has, when it
+-- changes and when one of them starts (`side_hello`). E.tell says something to every Goo scene, this one too.
 local SETTINGS = "settings.json"
+function E.tell(...) run("latte-say", { ... }) end
 local hidden, zooms = {}, {}
 local chosen_settings = {}                   -- the file as it was last read
 function E.apply_hidden()
@@ -730,6 +733,7 @@ local function settings()
         if d and z and zooms[id] ~= z then zooms[id] = z d:resize(z) end
     end
     if changed then E.apart() publish() end
+    E.tell("fact lively " .. tostring(fact.lively), "fact glassy " .. tostring(fact.glassy), "fact bends " .. tostring(fact.bends))
 end
 
 -- what is set now, and setting one thing: it is written down and taken up at once
@@ -759,10 +763,10 @@ local function coffee()
     end)
 end
 on("coffee_changed", coffee)
-E.read_coffee = coffee
 
 -- ── the start ────────────────────────────────────────────────────────────────────────────────────────────────
 -- opts.drops: the names of the modules in drops/, in the order they are defined (one beside another after it)
+-- opts.side: this is the scene of a monitor that is not the main one
 function E.start(opts)
     card.attach(E)
     local ok, saved = pcall(sys.ask, "files.read", PLACES, "json")
@@ -772,8 +776,13 @@ function E.start(opts)
         if found and type(def) == "table" then E.define(def)
         else log("goo: drops/" .. name .. ": " .. tostring(def)) end
     end
-    settings()
-    pcall(sys.watch, "files:" .. SETTINGS, settings)
+    if opts.side then
+        E.tell("emit side_hello")
+    else
+        settings()
+        pcall(sys.watch, "files:" .. SETTINGS, settings)
+        on("side_hello", settings)
+    end
     coffee()
     after(1500, sky)
     every(600000, sky)

@@ -23,10 +23,11 @@ local function band(edge)
     return area
 end
 hl.monitor({ output = "", mode = hardware and "highrr" or "preferred", position = "auto", scale = 1, reserved_area = band("bottom") })
-function latte.band(edge)
+-- the band is where that monitor's window bar is; with no monitor named, on all of them
+function latte.band(edge, name)
     for _, m in ipairs(hl.get_monitors() or {}) do
-        hl.monitor({ output = m.name, mode = string.format("%dx%d@%.3f", m.width, m.height, m.refresh_rate),
-                     position = string.format("%dx%d", m.x, m.y), scale = m.scale, reserved_area = band(edge) })
+        if (name or "") == "" or m.name == name then hl.monitor({ output = m.name, mode = string.format("%dx%d@%.3f", m.width, m.height, m.refresh_rate),
+                     position = string.format("%dx%d", m.x, m.y), scale = m.scale, reserved_area = band(edge) }) end
     end
 end
 
@@ -103,12 +104,32 @@ local function main_monitor()
     end
     return first
 end
-local function place_shell()
-    local name = main_monitor()
-    if not name or name == shell_on then return end
-    local again = shell_on ~= nil
-    shell_on = name
-    hl.exec_cmd("sh -c 'systemctl --user set-environment LATTE_GOO_SCREEN=" .. name .. (again and "; systemctl --user restart latte-goo.service" or "") .. "'")
+-- Every other monitor has a window bar of its own, a scene for each (latte-goo-side@NAME.service).
+-- `first`: what starts the session's services, once; until then a monitor that comes changes nothing.
+local sides, started = {}, false
+local function place_shell(first)
+    if type(first) ~= "string" then first = nil end
+    if not started and not first then return end
+    started = true
+    local name, todo = main_monitor(), {}
+    if name and name ~= shell_on then
+        todo[#todo + 1] = "systemctl --user set-environment LATTE_GOO_SCREEN=" .. name
+        if shell_on then todo[#todo + 1] = "systemctl --user restart latte-goo.service" end
+        shell_on = name
+    end
+    todo[#todo + 1] = first
+    local there = {}
+    for _, m in ipairs(hl.get_monitors() or {}) do
+        if m.name ~= shell_on then
+            there[m.name] = true
+            if not sides[m.name] then todo[#todo + 1] = "systemctl --user start latte-goo-side@" .. m.name .. ".service" end
+        end
+    end
+    for gone in pairs(sides) do
+        if not there[gone] then todo[#todo + 1] = "systemctl --user stop latte-goo-side@" .. gone .. ".service" end
+    end
+    sides = there
+    if #todo > 0 then hl.exec_cmd("sh -c '" .. table.concat(todo, "; ") .. "'") end
 end
 hl.on("monitor.added", place_shell)
 hl.on("monitor.removed", place_shell)
@@ -134,11 +155,10 @@ function latte.wallpaper(path)
 end
 
 hl.on("hyprland.start", function()
-    place_shell()
     latte.wallpaper()
     -- systemd and D-Bus learn where the session is; the target starts the Goo scene and the portals.
-    hl.exec_cmd("sh -c 'dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE "
-        .. "HYPRLAND_INSTANCE_SIGNATURE LATTE_MODE LATTE_RENDERER LATTE_TIER LANG; systemctl --user start latte-session.target'")
+    place_shell("dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE "
+        .. "HYPRLAND_INSTANCE_SIGNATURE LATTE_MODE LATTE_RENDERER LATTE_TIER LANG; systemctl --user start latte-session.target")
     -- A session whose shell is still up after a minute is a healthy one: the crash count goes back to zero.
     hl.exec_cmd("latte-boot ok --after 60 --require pleamar")
 end)

@@ -35,7 +35,7 @@ function B.setup(colors)
     -- built with LatteOS's patch knows the setting.
     local known, value = pcall(hl.get_config, "plugin:hyprbars:on_right_click")
     if known and value ~= nil then
-        hl.config({ plugin = { hyprbars = { on_right_click = [[pleamar --say goo "fact tap.x {x}" "fact tap.y {y}" "text win_asked {address}" "emit win_menu"]] } } })
+        hl.config({ plugin = { hyprbars = { on_right_click = [[latte-say "fact tap.x {x}" "fact tap.y {y}" "text win_asked {address}" "emit win_menu"]] } } })
     end
     -- from the edge inwards: close, maximise, minimise
     hl.plugin.hyprbars.add_button({ bg_color = "rgb(c75b4a)", fg_color = "rgb(ffffff)", size = 17, icon = "✕", action = "hyprctl eval 'hl.dispatch(hl.dsp.window.close())'" })

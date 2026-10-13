@@ -17,6 +17,7 @@ end
 local SCREEN = (function() local ok, v = pcall(sys.ask, "env", "LATTE_GOO_SCREEN") return ok and type(v) == "string" and v or "" end)()
 local own = { id = nil, x = 0, y = 0 }       -- the scene's monitor, as the compositor knows it
 function M.monitor() return own.id end
+function M.origin() return own.x, own.y end  -- its corner among the monitors
 function M.windows(answer)
     -- one call: the answers come one after the other, with empty lines between them
     hyprctl({ "--batch", "j/clients ; j/activewindow ; j/monitors" }, function(out)
@@ -63,7 +64,7 @@ function M.set_mode(n) eval(string.format("latte.mode.set(%q)", ({ [0] = "tape",
 function M.wallpaper(path) eval(string.format("latte.wallpaper(%q)", path)) end
 function M.show_desktop() eval("latte.desk.show()") end
 -- the band along an edge that windows leave to the drops: 0 bottom, 1 left, 2 top, 3 right
-function M.band(edge) eval(string.format("latte.band(%q)", ({ [0] = "bottom", "left", "top", "right" })[edge] or "bottom")) end
+function M.band(edge) eval(string.format("latte.band(%q, %q)", ({ [0] = "bottom", "left", "top", "right" })[edge] or "bottom", SCREEN)) end
 function M.logout() eval("hl.dispatch(hl.dsp.exit())") end
 
 return M
