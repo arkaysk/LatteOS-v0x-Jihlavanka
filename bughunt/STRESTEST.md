@@ -90,32 +90,32 @@ Pôvodný zoznam (7. 10. 2026, 540 testov bez stavu): `docs_zaloha/2026-10-07-st
 | 023 | GOO sa obnoví po páde | P1 | ✅ | 12. 10. · latte-lab | pred opravou engine po páde nič nevrátilo (plocha bez lišty); po oprave v `latte-kvapky` je späť do 3 s (ABRT), riadne ukončenie sa neobnovuje, najviac 5 obnov za prihlásenie |
 | 024 | GooBar reaguje okamžite na myš | P1 | ⬜ | | |
 | 025 | GooBar reaguje okamžite na klávesnicu | P1 | ⬜ | | |
-| 026 | Goo drop možno presúvať | P1 | ⬜ | | |
+| 026 | Goo drop možno presúvať | P1 | ✅ | 13. 10. · latte-lab (bez obrazovky) | LensGoo ťahaná myšou z x 689 na 1000 ostala tam; PowerGoo ide s ňou |
 | 027 | Goo drop možno meniť veľkosť | P1 | ⬜ | | |
 | 028 | Goo drop sa nezasekne mimo obrazovky | P1 | ⬜ | | |
-| 029 | Goo drop sa automaticky obnoví po reštarte | P1 | ⬜ | | |
+| 029 | Goo drop sa automaticky obnoví po reštarte | P1 | ✅ | 13. 10. · latte-lab (bez obrazovky) | po novom štarte scény je LensGoo tam, kde bola pustená (`places.json`) |
 | 030 | Viac dropov sa navzájom správne správa | P1 | ⬜ | | |
-| 031 | GooBar nezakrýva maximalizované okná | P1 | ⬜ | | |
-| 032 | GooBar nezakrýva fullscreen aplikácie | P1 | ⬜ | | |
+| 031 | GooBar nezakrýva maximalizované okná | P1 | ⚠️ | 13. 10. · latte-lab (bez obrazovky) | maximalizované okno končí na y 1014 z 1080, pás lišty ostáva voľný; hlava BarGoo ale čnie ~9 px cez spodný okraj okna |
+| 032 | GooBar nezakrýva fullscreen aplikácie | P1 | ✅ | 13. 10. · latte-lab (bez obrazovky) | okno na celú obrazovku je 1920 × 1080 a z Goo nie je vidno nič |
 | 033 | GooBar správne reaguje na zmenu rozlíšenia | P1 | ⬜ | | |
 | 034 | GooBar správne reaguje na zmenu DPI | P1 | ⬜ | | |
 | 035 | GooBar funguje na viacerých monitoroch | P1 | ⬜ | | |
 | 036 | GooPower funguje v NORMAL aj SAFE režime (karta, pás výkonu, Uspať · Reštartovať · Vypnúť) | P1 | ✅ | 12. 10. · latte-lab | 13. 10. · latte-lab | klik na Reštartovať v PowerGoo reštartoval počítač (reboot.target 19:10:42, čistý štart, relácia GOO nabehla). Pôvodná chyba: engine mimo relácie logind, polkit `challenge`; opravené `wm.machine`. Uspať a Vypnúť idú tou istou cestou, naostro neskúšané |
-| 037 | ClockGoo zobrazuje správny čas | P1 | ⬜ | | |
+| 037 | ClockGoo zobrazuje správny čas | P1 | ✅ | 13. 10. · latte-lab (bez obrazovky) | čas v ClockGoo sedí so systémovým na všetkých dnešných snímkach |
 | 038 | ClockGoo zvláda zmenu časového pásma | P1 | ⬜ | | |
-| 039 | LensGoo vyhľadá aplikáciu | P1 | ⬜ | | |
-| 040 | LensGoo vyhľadá súbor | P1 | ⬜ | | |
-| 041 | LensGoo vyhľadá systémové nastavenie | P1 | ⬜ | | |
-| 042 | LensGoo zvládne neexistujúci výsledok | P1 | ⬜ | | |
+| 039 | LensGoo vyhľadá aplikáciu | P1 | ✅ | 13. 10. · latte-lab (bez obrazovky) | „firefox“ → Firefox ako prvý výsledok |
+| 040 | LensGoo vyhľadá súbor | P1 | ✅ | 13. 10. · latte-lab (bez obrazovky) | karta Súbory: „ROADMAP“ → ROADMAP.md |
+| 041 | LensGoo vyhľadá systémové nastavenie | P1 | ✅ | 13. 10. · latte-lab (bez obrazovky) | „pozadie“ → Pozadie, „klavesnica“ (bez dĺžňov) → Klávesnica a skratky |
+| 042 | LensGoo zvládne neexistujúci výsledok | P1 | ✅ | 13. 10. · latte-lab (bez obrazovky) | nezmysel: v Aplikáciách ponúkne hľadať v súboroch a na webe, v Súboroch „Nič sa nenašlo“; nič nevisí |
 | 043 | ChatGoo bez nainštalovaného Beepera (kvapka sa neukáže alebo ponúkne inštaláciu; ChatGoo nie je AI) | P1 | ⬜ | | |
-| 044 | GOO nastavenia prežijú reštart | P1 | ⬜ | | |
+| 044 | GOO nastavenia prežijú reštart | P1 | ✅ | 13. 10. · latte-lab (bez obrazovky) | zapnutý pás výkonu a miesto kvapky prežili nový štart scény (`power.json`, `places.json`) |
 | 045 | GOO sa nezrúti pri chybe jedného dropu | P1 | ⬜ | | |
 | 542 | Engine Goo v nečinnosti: CPU a RAM pod dohodnutým limitom (10 min, latte-lab) *(nové)* | P1 | ⬜ | | |
 | 543 | Engine Goo 8 h bez úniku pamäte (RSS pleamaru a pomocníkov na začiatku a na konci) *(nové)* | P1 | ⬜ | | |
 | 544 | Kvapky sa po zväčšení neprekrývajú (pravidlo 22: odstup 0,95 Σr, ikry 1,2) *(nové)* | P1 | ⬜ | | |
-| 545 | Pás výkonu (pravý klik GooPower) odtlačí susedov a po vtiahnutí ich vráti na miesto *(nové)* | P1 | ⬜ | | |
+| 545 | Pás výkonu (pravý klik GooPower) odtlačí susedov a po vtiahnutí ich vráti na miesto *(nové)* | P1 | ✅ | 13. 10. · latte-lab (bez obrazovky) | pás výkonu odtlačil BarGoo z x 763 na 603 a po vtiahnutí ju vrátil na 760 |
 | 546 | Kvapky na všetkých štyroch okrajoch: karty sa otvoria dovnútra, nič neujde mimo obrazovky *(nové)* | P1 | ⬜ | | |
-| 547 | Rozlíšenie 1024 × 768: všetky karty sa zmestia, texty sa neorežú *(nové)* | P1 | ⬜ | | |
+| 547 | Rozlíšenie 1024 × 768: všetky karty sa zmestia, texty sa neorežú *(nové)* | P1 | ⚠️ | 13. 10. · latte-lab (bez obrazovky) | 1024 × 768: karty všetkých kvapiek (ľavý aj pravý klik) sú celé na obrazovke; orezanie textov okom neposúdené |
 | 548 | Ikry GooBaru: nové okno pribudne, zavreté zmizne, strapce sa rozvinú, „Ďalšie okná“ nad 48 *(nové)* | P1 | ⬜ | | |
 | 549 | Win+T: ovládanie Goo z klávesnice, režim skončí sám (klik, voľba, minúta bez klávesu) *(nové)* | P2 | ⬜ | | |
 | 550 | Rohová lišta Noctalie a ovládacie centrum sa otvorí nad lištou vpravo *(nové)* | P2 | ⚠️ | 12. 10. · latte-lab | po oprave lišta nabehla sama 8 s po prihlásení; otvorenie ovládacieho centra klikom ešte neoverené |
