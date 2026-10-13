@@ -1,16 +1,17 @@
 -- How windows are arranged, and what the bar asks of them.
 --
--- Three modes, as the head of the window bar shows them:
+-- Four modes, as the head of the window bar shows them:
 --   tape      an endless horizontal strip (Hyprland's scrolling layout); nothing is ever put away
 --   tiles     tiles (dwindle)
 --   floating  every window floats, as on Windows
+--   glance    one window in the middle, the others looking out from the sides (after Scott Jenson's Glance)
 -- The choice is kept in ~/.local/state/latteos/window-mode and told to the Goo scene (its event `window_mode`).
 --
 -- A window put away sits on the hidden workspace special:minimized. The scene knows windows by the address
 -- `hyprctl clients` gives them and calls the functions in `latte.win` with it (goo/lib/wm.luau).
 local W = {}
 
-W.order = { "tape", "tiles", "floating" }
+W.order = { "tape", "tiles", "floating", "glance" }
 local MINIMIZED = "special:minimized"
 local GAP = 10
 local state = (os.getenv("XDG_STATE_HOME") or ((os.getenv("HOME") or "") .. "/.local/state")) .. "/latteos/window-mode"
@@ -115,7 +116,9 @@ local function within_reach(w, m, whole)
     end
     if nx ~= x or ny ~= y then hl.dispatch(hl.dsp.window.move({ x = math.floor(nx), y = math.floor(ny), window = sel(w) })) end
 end
+local glance_dropped                 -- what glance does with a window let go; set further down
 local function dropped(w, x, y)
+    if w and W.current == "glance" then return glance_dropped(w, x, y) end
     if not w or W.current ~= "floating" then return end
     local m = hl.get_monitor_at(x, y) or w.monitor
     local zone = m and edge_zone(m, x, y)
@@ -244,7 +247,96 @@ local function minimize(w)
     hl.exec_cmd(string.format('latte-say "fact win.x %d" "fact win.y %d" "fact win.w %d" "fact win.h %d" "fact win.on %d" "emit win_min"',
                               x - (m and m.x or 0), y - (m and m.y or 0), width, height, m and m.id or 0))
     hl.dispatch(hl.dsp.window.move({ workspace = MINIMIZED, follow = false, window = sel(w) }))
+    if W.current == "glance" and W.glance_next then W.glance_next(w) end      -- the middle does not stay empty
 end
+
+-- ── glance: the window one works in fills the middle; the others look out from the sides ──────────────────
+-- After Scott Jenson's Glance (github.com/scottjenson/Glance, MIT), with what Hyprland has: a window cannot be
+-- drawn smaller than it is, so one at the side keeps the size of the middle and shows the strip of it that the
+-- screen has left there, its title on top; several on a side share the height, one title under another.
+-- Clicking one brings it to the middle and sends the other to where it came from. Putting a window away is
+-- parking it: it becomes a berry of the bar, as in the floating mode.
+-- The middle is as wide as suits its height, never less than half the screen and never so wide that nothing
+-- shows beside it: on a wide monitor the sides hold most of a window, on a small one only a strip to click.
+local SIDE_LEAST = 96                -- px of a window that always shows at a side
+local glance_side, glance_seen, glance_clock = {}, {}, 0      -- address → "l" | "r"; → when it was last in the middle
+local function glance_room(m)
+    local scale, res = m.scale or 1, m.reserved or { top = 0, right = 0, bottom = 0, left = 0 }
+    local mw, mh = m.width / scale, m.height / scale
+    if (m.transform or 0) % 2 == 1 then mw, mh = mh, mw end
+    -- the title bar the compositor draws is above the window's own box (latte/bars.lua): room for it, for every
+    -- window alike, so that their tops are in one line
+    local title = (hl.plugin and hl.plugin.hyprbars) and 30 or 0
+    local ax, ay = m.x + res.left + GAP, m.y + res.top + GAP + title
+    local aw, ah = mw - res.left - res.right - 2 * GAP, mh - res.top - res.bottom - 2 * GAP - title
+    local main = math.floor(math.max(aw * 0.5, math.min(ah * 1.45, aw - 2 * (SIDE_LEAST + GAP))))
+    return ax, ay, aw, ah, main, math.floor(ax + (aw - main) / 2)
+end
+local function glance()
+    if W.current ~= "glance" then return end
+    local ws, active = hl.get_active_workspace(), hl.get_active_window()
+    if not ws then return end
+    local list = windows_on(ws.id)
+    if #list == 0 then return end
+    for _, w in ipairs(list) do if w.fullscreen == 2 then return end end      -- a window on the whole screen: leave all be
+    if active and active.workspace and active.workspace.id == ws.id then
+        glance_clock = glance_clock + 1
+        glance_seen[active.address] = glance_clock
+    end
+    table.sort(list, function(a, b) return (glance_seen[a.address] or 0) > (glance_seen[b.address] or 0) end)
+    local main = list[1]
+    local m = main.monitor or hl.get_active_monitor()
+    if not m then return end
+    local ax, ay, aw, ah, width, mx = glance_room(m)
+    local sides = { l = {}, r = {} }
+    for i = 2, #list do
+        local w = list[i]
+        local side = glance_side[w.address] or (#sides.l <= #sides.r and "l" or "r")
+        glance_side[w.address] = side
+        sides[side][#sides[side] + 1] = w
+    end
+    glance_side[main.address] = nil
+    for side, ws_ in pairs(sides) do
+        local share = ah / math.max(#ws_, 1)
+        for k, w in ipairs(ws_) do
+            if w.fullscreen == 1 then hl.dispatch(hl.dsp.window.fullscreen({ mode = "maximized", action = "unset", window = sel(w) })) end
+            local down = math.floor((k - 1) * share)
+            place(w, { x = side == "l" and (mx - GAP - width) or (mx + width + GAP), y = ay + down, w = width, h = ah - down })
+            hl.dispatch(hl.dsp.window.alter_zorder({ mode = "top", window = sel(w) }))     -- a lower one covers the one above it
+        end
+    end
+    if main.fullscreen ~= 1 then place(main, { x = mx, y = ay, w = width, h = ah }) end
+    hl.dispatch(hl.dsp.window.alter_zorder({ mode = "top", window = sel(main) }))
+end
+-- the window that was in the middle last, other than `w`, comes there
+function W.glance_next(w)
+    local ws = hl.get_active_workspace()
+    local list, best = ws and windows_on(ws.id) or {}, nil
+    for _, o in ipairs(list) do
+        if o.address ~= w.address and (not best or (glance_seen[o.address] or 0) > (glance_seen[best.address] or 0)) then best = o end
+    end
+    if best then hl.dispatch(hl.dsp.focus({ window = sel(best) })) end
+    glance()
+end
+-- to a side on purpose
+local function glance_aside(w, side)
+    glance_side[w.address], glance_seen[w.address] = side, 0
+    W.glance_next(w)
+end
+glance_dropped = function(w, x, y)
+    local m = hl.get_monitor_at(x, y) or w.monitor
+    if not m then return end
+    local _, _, _, _, width, mx = glance_room(m)
+    if x < mx then glance_aside(w, "l")
+    elseif x > mx + width then glance_aside(w, "r")
+    else hl.dispatch(hl.dsp.focus({ window = sel(w) })) glance() end
+end
+hl.on("window.active", function() glance() end)
+hl.on("window.open", function() if W.current == "glance" then hl.timer(function() glance() end, { timeout = 120, type = "oneshot" }) end end)
+hl.on("window.close", function(w)
+    if w then glance_side[w.address], glance_seen[w.address] = nil, nil end
+    if W.current == "glance" then hl.timer(function() glance() end, { timeout = 120, type = "oneshot" }) end
+end)
 
 -- the scene learns the mode by its place in `order`, from 0
 local function tell()
@@ -256,7 +348,7 @@ end
 -- Switches the mode and fits the windows that are there to it.
 function W.apply(mode)
     W.current = mode
-    local floating = mode == "floating"
+    local floating = mode == "floating" or mode == "glance"
     hl.config({ general = { layout = mode == "tape" and "scrolling" or "dwindle" } })
     if float_rule then float_rule:set_enabled(floating) end
     local ws = hl.get_active_workspace()
@@ -268,6 +360,7 @@ function W.apply(mode)
     if mode == "tape" then hide_special() end
     save_mode(mode)
     tell()
+    glance()
 end
 
 function W.setup()
@@ -363,6 +456,13 @@ function W.setup()
         -- the arrow keys with the Windows key: in floating mode as on Windows, otherwise they move the focus
         arrow = function(dir)
             local w = hl.get_active_window()
+            if W.current == "glance" and w then
+                -- left and right: to that side; down: parked in the bar; up: the whole screen and back
+                if dir == "left" or dir == "right" then return glance_aside(w, dir == "left" and "l" or "r") end
+                if dir == "down" then return minimize(w) end
+                hl.dispatch(hl.dsp.window.fullscreen({ mode = "maximized", action = "toggle" }))
+                return glance()
+            end
             if W.current ~= "floating" or not w then return hl.dispatch(hl.dsp.focus({ direction = dir })) end
             if dir == "up" then
                 if w.fullscreen ~= 1 then hl.dispatch(hl.dsp.window.fullscreen({ mode = "maximized", action = "toggle" })) end

@@ -397,7 +397,8 @@ ShellRoot {
             Part { visible: shell.page === "windows"; width: view.room; title: I18n.tr("How windows are arranged")
                 Repeater { model: [{ id: "tape", name: QT_TR_NOOP("Tape"), hint: QT_TR_NOOP("an endless strip, nothing is put away"), icon: "layout-columns" },
                                    { id: "tiles", name: QT_TR_NOOP("Tiles"), hint: QT_TR_NOOP("windows share the screen"), icon: "layout-grid" },
-                                   { id: "floating", name: QT_TR_NOOP("Floating windows"), hint: QT_TR_NOOP("as on Windows"), icon: "app-window" }]
+                                   { id: "floating", name: QT_TR_NOOP("Floating windows"), hint: QT_TR_NOOP("as on Windows"), icon: "app-window" },
+                                   { id: "glance", name: QT_TR_NOOP("Glance"), hint: QT_TR_NOOP("one in the middle, the others at the sides"), icon: "layout-distribute-vertical" }]
                     Choice { required property var modelData; width: 200; text: I18n.tr(modelData.name); hint: I18n.tr(modelData.hint); on: win.mode === modelData.id
                              onPressed: Quickshell.execDetached(["hyprctl", "eval", "latte.mode.set(\"" + modelData.id + "\")"])
                              Glyph { anchors.centerIn: parent; name: parent.parent.modelData.icon; font.pixelSize: 54; color: parent.parent.on ? Theme.gold : Theme.dim } } } }

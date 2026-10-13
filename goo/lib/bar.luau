@@ -36,7 +36,7 @@ local NUDGE = { { 0, 0 }, { 0.06, -0.04 }, { -0.05, 0.07 }, { 0.08, 0.03 }, { -0
 local ZIGZAG = { 0, 0.46, 0.12, 0.52, 0.04, 0.38, 0.18, 0.5 }      -- a row under a window is not straight either
 -- how windows are arranged, as the compositor counts the modes
 local MODES = { [0] = { glyph = "layout-columns", name = N("Tape") }, { glyph = "layout-grid", name = N("Tiles") },
-                { glyph = "app-window", name = N("Floating windows") } }
+                { glyph = "app-window", name = N("Floating windows") }, { glyph = "layout-distribute-vertical", name = N("Glance") } }
 
 local wins = {}                      -- the windows of this monitor, as the compositor lists them
 local every_win = {}                 -- …and those of every monitor
@@ -51,7 +51,7 @@ local urgent = {}                    -- address → true: the windows that want 
 local audio = {}                     -- what is playing, as the service tells it
 
 -- The one place that says how the windows are shown beside the head.
-local function berries_out() return mode == 2 or peeking end
+local function berries_out() return mode >= 2 or peeking end      -- floating and glance: a window put away is a berry
 M.berries_out = berries_out
 
 -- ── a window's app ───────────────────────────────────────────────────────────────────────────────────────────
@@ -347,7 +347,7 @@ function M.next_mode() wm.next_mode() end
 function M.show_desktop() wm.show_desktop() end
 -- the wheel on the head: the tape slides; floating, the next window comes forward; tiles stay as they are
 function M.wheel(dir)
-    if mode == 0 then wm.scroll(dir) elseif mode == 2 then wm.cycle(dir) after(150, M.refresh) end
+    if mode == 0 then wm.scroll(dir) elseif mode >= 2 then wm.cycle(dir) after(150, M.refresh) end
 end
 
 -- The right button on a window's own title bar: its menu, where the pointer is (the compositor has said where).

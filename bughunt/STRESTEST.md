@@ -95,7 +95,7 @@ Pôvodný zoznam (7. 10. 2026, 540 testov bez stavu): `docs_zaloha/2026-10-07-st
 | 028 | Goo drop sa nezasekne mimo obrazovky | P1 | ⬜ | | |
 | 029 | Goo drop sa automaticky obnoví po reštarte | P1 | ✅ | 13. 10. · latte-lab (bez obrazovky) | po novom štarte scény je LensGoo tam, kde bola pustená (`places.json`) |
 | 030 | Viac dropov sa navzájom správne správa | P1 | ⬜ | | |
-| 031 | GooBar nezakrýva maximalizované okná | P1 | ⚠️ | 13. 10. · latte-lab (bez obrazovky) | maximalizované okno končí na y 1014 z 1080, pás lišty ostáva voľný; hlava BarGoo ale čnie ~9 px cez spodný okraj okna |
+| 031 | GooBar nezakrýva maximalizované okná | P1 | ✅ | 13. 10. · latte-lab (bez obrazovky) | maximalizované okno končí na y 1014 z 1080, pás lišty ostáva voľný; hlava BarGoo čnie ~9 px cez spodný okraj okna — používateľ 13. 10.: v poriadku |
 | 032 | GooBar nezakrýva fullscreen aplikácie | P1 | ✅ | 13. 10. · latte-lab (bez obrazovky) | okno na celú obrazovku je 1920 × 1080 a z Goo nie je vidno nič |
 | 033 | GooBar správne reaguje na zmenu rozlíšenia | P1 | ⬜ | | |
 | 034 | GooBar správne reaguje na zmenu DPI | P1 | ⬜ | | |

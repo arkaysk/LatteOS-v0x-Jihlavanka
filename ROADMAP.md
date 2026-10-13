@@ -259,7 +259,17 @@ Schválené 12. 10. 2026. Pracuje sa **zhora nadol, neskáče sa**; nový nápad
    pružiny od cieľa, v pokoji nulová cena (materiál a rast karty z Vitreusu sú hotové, ostáva merať; sklo pri
    pokoji dnes nestojí nič, lebo `lens` číta obraz iba pri pohybe).
 6. [ ] **Aplikácie podľa Priority UX** — prvý Barista s AVP2 (`docs/barista/NAVRH.md`).
-7. [ ] **Režim okien Glance** (rozhodnuté 13. 10., podľa [Glance](https://github.com/scottjenson/Glance) Scotta
+7. [~] **Režim okien Glance** — **urobené 13. 10. večer (prvá verzia, na pokyn „pre rôzne rozlíšenia“):** štvrtý režim
+   `glance` v `system/hypr/latte/windows.lua`, na každom monitore, nie iba širokom. Okno, v ktorom sa pracuje,
+   vyplní stred; ostatné majú veľkosť stredu a vykúkajú zo strán pásom, ktorý obrazovka nechá (titulok hore, viac
+   okien na strane si delí výšku). Stred je široký podľa výšky (1,45 ×), najmenej pol obrazovky a najviac toľko,
+   aby po stranách ostalo aspoň 96 px: 2560 × 1080 → stred 1415 a po 560 px, 1920 × 1080 → po 240 px,
+   1024 × 768 → po 106 px. Klik na okno zboku ho prinesie do stredu; Win+←/→ pošle okno nabok, Win+↓ ho
+   odstaví (ikra BarGoo = Parking), Win+↑ na celú plochu; pustenie ťahaného okna v páse ho tam nechá. BarGoo,
+   karta nastavení Goo aj Nastavenia › Okná režim ponúkajú. Overené bez obrazovky na troch rozlíšeniach
+   (poradie, strany, odstavenie, zavretie). **Chýba oproti predlohe:** zmenšené živé okná (Hyprland okno
+   nezmenší), náhľady v Parkingu (dnes ikony), útržky textu (clips), Meta+dvojklik, mapa pri Alt+Tab.
+   Pôvodný zápis: **Režim okien Glance** (rozhodnuté 13. 10., podľa [Glance](https://github.com/scottjenson/Glance) Scotta
    Jensona, MIT) — štvrtý režim vedľa pásky, dlaždíc a plávajúcich, ponúka sa **iba na širokom monitore**. V strede
    **Main** a vedľa neho **Stash**: skutočné okná v skutočnej veľkosti. Pri okraji **Parking**: náhľady odstavených
    okien, kreslí ich engine Goo, klik okno vráti. Minimalizácia v Glance = odstavenie do Parkingu.

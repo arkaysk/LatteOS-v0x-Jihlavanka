@@ -66,7 +66,7 @@ function M.cycle(dir) eval("latte.win.cycle(" .. dir .. ")") end          -- the
 function M.scroll(dir) eval("latte.win.scroll(" .. dir .. ")") end        -- the tape, by a quarter of the screen
 function M.next_mode() eval("latte.mode.next()") end                      -- the answer comes as the event `window_mode`
 function M.tell_mode() eval("latte.mode.tell()") end
-function M.set_mode(n) eval(string.format("latte.mode.set(%q)", ({ [0] = "tape", "tiles", "floating" })[n] or "tape")) end
+function M.set_mode(n) eval(string.format("latte.mode.set(%q)", ({ [0] = "tape", "tiles", "floating", "glance" })[n] or "tape")) end
 function M.glass(on) eval("latte.glass(" .. tostring(on == true) .. ")") end   -- the windows of glass too, where the card can
 function M.wallpaper(path) eval(string.format("latte.wallpaper(%q)", path)) end
 function M.show_desktop() eval("latte.desk.show()") end

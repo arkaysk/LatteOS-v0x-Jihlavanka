@@ -86,6 +86,7 @@ return {
     ["keyboard"] = "\u{EBD6}",
     ["layout-columns"] = "\u{EAD4}",
     ["layout-dashboard"] = "\u{F02C}",
+    ["layout-distribute-vertical"] = "\u{EAD6}",
     ["layout-grid"] = "\u{EDBA}",
     ["layout-sidebar"] = "\u{EADA}",
     ["layout-sidebar-right"] = "\u{EAD9}",

@@ -12,7 +12,7 @@ local function N(s) return s end
 
 local COFFEES = { espresso = "Espresso", ristretto = "Ristretto", lungo = "Lungo", americano = "Americano", macchiato = "Macchiato",
                   cortado = "Cortado", flatwhite = "Flat white", cappuccino = "Cappuccino", latte = "Latte", ["white-coffee"] = N("White coffee") }
-local MODES = { [0] = N("Tape"), N("Tiles"), N("Floating windows") }
+local MODES = { [0] = N("Tape"), N("Tiles"), N("Floating windows"), N("Glance") }
 local SHARE = (function() local ok, v = pcall(sys.ask, "env", "LATTE_SHARE") return ok and type(v) == "string" and v ~= "" and v or "/usr/share/latteos" end)()
 local coffees = { chosen = "", all = {} }
 local open_main
@@ -68,7 +68,7 @@ open_main = function(d, keep)
     rows[#rows + 1] = { label = tr("Wallpaper"), glyph = "photo", keep = true, more = true, run = function() open_wallpaper(d) end }
     rows[#rows + 1] = { head = true, label = tr("WINDOWS"), line = true }
     local modes = {}
-    for m = 0, 2 do modes[#modes + 1] = { label = tr(MODES[m]), on = bar.mode() == m, keep = true, run = function() wm.set_mode(m) after(300, function() if card.id() == "settings" then open_main(d, true) end end) end } end
+    for m = 0, 3 do modes[#modes + 1] = { label = tr(MODES[m]), on = bar.mode() == m, keep = true, run = function() wm.set_mode(m) after(300, function() if card.id() == "settings" then open_main(d, true) end end) end } end
     rows[#rows + 1] = { pills = modes }
     rows[#rows + 1] = { label = tr("All settings…"), glyph = "settings", hint = "Win+I", line = true, run = function() after(80, function() open.settings() end) end }
     card.open(rows, { owner = d, id = "settings", width = 360, keep = keep })
