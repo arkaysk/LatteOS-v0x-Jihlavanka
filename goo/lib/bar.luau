@@ -4,7 +4,9 @@
 -- spreads it out into a row. The window in front is fuller, one put away smaller and dimmed.
 --
 -- The berries are out only where windows float. On the tape and in tiles every window is in sight already:
--- the head then says how many there are, and waves when one of them plays a sound or wants attention; the
+-- the head then says how many there are. A window that plays a sound or wants attention shows it on its own
+-- border (the compositor does that; which windows sound it is told from here), and the head waves only for one
+-- that is out of sight, on another desktop. The
 -- pointer resting on the head brings the berries out for as long as it stays with them, which is also the way
 -- to a window on another desktop. Whether they are out is `berries_out()`'s to say and nobody else's: nothing
 -- here may take a berry for granted.
@@ -241,30 +243,52 @@ function M.rest(on)
     after(450, function() if mine == hot_n and not berries_out() then peeking = true layout() end end)
 end
 
--- A wave from the head: a window wants to be looked at. Only while the berries are in; out, they are seen.
+-- A wave from the head, for a window that cannot say it itself because it is out of sight. Only while the
+-- berries are in; out, the berry is there to be seen.
 local function wave(force)
     local head = E.get(HEAD)
     if not head or berries_out() then return end
     head:squash()
     head:ripple(force)
 end
--- a window of this bar is playing: what plays is told by its program's name, a window by its class
-local function sounding()
+-- The windows that play a sound. What plays says its program's name (or only its own, or its icon's); a
+-- window says its class: the two are matched by one containing the other.
+local function sounding(list)
+    local out = {}
     for _, s in ipairs(type(audio.apps) == "table" and audio.apps or {}) do
-        local b = (s.binary or s.name or ""):lower()
-        if s.playing and not s.muted and b ~= "" then
-            for _, w in ipairs(wins) do
+        if s.playing and not s.muted then
+            for _, w in ipairs(list) do
                 local c = w.class:lower()
-                if c ~= "" and (c:find(b, 1, true) or b:find(c, 1, true)) then return true end
+                for _, said in ipairs({ s.binary or "", s.name or "", s.icon or "" }) do
+                    local b = said:lower()
+                    if c ~= "" and b ~= "" and (c:find(b, 1, true) or b:find(c, 1, true)) then out[#out + 1] = w break end
+                end
             end
         end
     end
+    return out
+end
+-- The compositor is told which windows sound, by the main scene alone: it is one list for all monitors.
+local told_sound = nil
+local function tell_sound()
+    if E.side then return end
+    local addresses = {}
+    for _, w in ipairs(sounding(every_win)) do addresses[#addresses + 1] = w.address end
+    table.sort(addresses)
+    local s = table.concat(addresses, " ")
+    if s ~= told_sound then told_sound = s wm.sounding(addresses) end
+end
+local function hidden(list)
+    for _, w in ipairs(list) do if not w.visible then return true end end
     return false
 end
 on("win_urgent", function()
     local address = text.win_wants or ""
     for _, w in ipairs(wins) do
-        if w.address == address and not w.front then urgent[address] = true wave(6) end
+        if w.address == address and not w.front then
+            urgent[address] = true
+            if not w.visible then wave(6) end
+        end
     end
 end)
 -- x: where along the bar's edge the berry was let go, px
@@ -294,6 +318,7 @@ on("window_mode", function(n)
     -- The compositor says this each time it has read its configuration, and that puts the band back at the bottom.
     local head = E.get(HEAD)
     if head and head.edge ~= 0 then M.band() end
+    told_sound = nil                         -- …and makes the compositor forget which windows sound
     if not MODES[n] or n == mode then return end
     mode, peeking = n, false
     show_mode()
@@ -392,8 +417,13 @@ function M.start()
         soon = after(60, function() soon = nil M.refresh() end)
     end)
     every(2000, M.refresh)           -- a window moved or resized changes nothing the service reports
-    pcall(sys.watch, "audio", function(v) audio = type(v) == "table" and v or {} end)
-    every(3500, function() if next(urgent) then wave(5) elseif sounding() then wave(2.5) end end)
+    pcall(sys.watch, "audio", function(v) audio = type(v) == "table" and v or {} tell_sound() end)
+    every(3500, function()
+        tell_sound()
+        local asking = {}
+        for _, w in ipairs(wins) do if urgent[w.address] then asking[#asking + 1] = w end end
+        if hidden(asking) then wave(5) elseif hidden(sounding(wins)) then wave(2.5) end
+    end)
     on("fact:sw", function() signature = "" M.refresh() end)
     wm.tell_mode()
     M.band()

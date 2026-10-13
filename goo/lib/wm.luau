@@ -56,6 +56,12 @@ function M.win(what, address, arg)
     if not address then return end
     eval(string.format("latte.win.%s(%q%s)", what, address, arg ~= nil and (", " .. (type(arg) == "string" and string.format("%q", arg) or tostring(arg))) or ""))
 end
+-- the windows that play a sound now (their addresses): the compositor shows it on each one's border
+function M.sounding(addresses)
+    local quoted = {}
+    for i, a in ipairs(addresses) do quoted[i] = string.format("%q", a) end
+    eval("latte.win.sounding({" .. table.concat(quoted, ", ") .. "})")
+end
 function M.cycle(dir) eval("latte.win.cycle(" .. dir .. ")") end          -- the next window, or the one before
 function M.scroll(dir) eval("latte.win.scroll(" .. dir .. ")") end        -- the tape, by a quarter of the screen
 function M.next_mode() eval("latte.mode.next()") end                      -- the answer comes as the event `window_mode`

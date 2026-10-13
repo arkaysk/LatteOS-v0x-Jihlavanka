@@ -848,6 +848,7 @@ on("coffee_changed", coffee)
 -- opts.drops: the names of the modules in drops/, in the order they are defined (one beside another after it)
 -- opts.side: this is the scene of a monitor that is not the main one
 function E.start(opts)
+    E.side = opts.side == true
     card.attach(E)
     local ok, saved = pcall(sys.ask, "files.read", PLACES, "json")
     if ok and type(saved) == "table" then places = saved end

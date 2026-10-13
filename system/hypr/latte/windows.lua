@@ -113,11 +113,59 @@ local function dropped(w, x, y)
     end
 end
 hl.on("window.close", function(w) if w then before[w.address] = nil end end)
--- a window that asks to be looked at: the bar that has it waves
+-- ── a window that plays a sound or asks to be looked at says so itself: its border pulses ────────────────
+-- Where one looks for it is the window. Which windows ask for attention the compositor knows; which ones
+-- sound, the Goo scene says (`latte.win.sounding`: it hears the mixer). Asking is red and quick and lasts
+-- until the window is in front; a sound is pale and slow, and not shown on the window one is working in.
+local wanting, sounding = {}, {}           -- address → true
+local ATTENTION, SOUND = "rgb(e5484d)", "rgb(ffe8c2)"
+local beat, lit, slow = nil, false, 0
+local function border(address, color, size)
+    local set = function(prop, value) hl.dispatch(hl.dsp.window.set_prop({ prop = prop, value = value or "unset", window = "address:" .. address })) end
+    set("active_border_color", color)
+    set("inactive_border_color", color)
+    set("border_size", size)
+end
+local function pulse()
+    lit, slow = not lit, (slow + 1) % 4
+    local active, any = hl.get_active_window(), false
+    for address in pairs(wanting) do
+        if find(address) then any = true border(address, lit and ATTENTION or nil, lit and "3" or nil) else wanting[address] = nil end
+    end
+    for address in pairs(sounding) do
+        if not wanting[address] then
+            if not find(address) then sounding[address] = nil
+            else
+                any = true
+                local mine = active ~= nil and active.address == address
+                if slow % 2 == 0 then border(address, (slow == 0 and not mine) and SOUND or nil) end
+            end
+        end
+    end
+    if not any and beat then beat:set_enabled(false) end
+end
+local function start_pulse()
+    if not beat then beat = hl.timer(pulse, { timeout = 450, type = "repeat" }) end
+    beat:set_enabled(true)
+end
 hl.on("window.urgent", function(w)
     if not w or not w.address then return end
+    wanting[w.address] = true
+    start_pulse()
+    -- the bar waves too when the window is out of sight
     hl.exec_cmd(string.format('latte-say "text win_wants %s" "emit win_urgent"', w.address))
 end)
+hl.on("window.active", function(w)
+    if w and w.address and wanting[w.address] then wanting[w.address] = nil border(w.address) end
+end)
+-- the windows that sound now, as a list of addresses; the ones that no longer do go back to their own border
+local function set_sounding(list)
+    local now = {}
+    for _, address in ipairs(type(list) == "table" and list or {}) do now[address] = true end
+    for address in pairs(sounding) do if not now[address] and not wanting[address] and find(address) then border(address) end end
+    sounding = now
+    if next(now) then start_pulse() end
+end
 
 local function windows_on(workspace)
     local out = {}
@@ -204,6 +252,8 @@ function W.setup()
         dwindle = { preserve_split = true },
     })
     float_rule = hl.window_rule({ name = "latte-floating", match = { class = ".*" }, float = true })
+    -- read anew, the configuration has forgotten which windows were pulsing: none keeps a lit border
+    for _, w in ipairs(hl.get_windows() or {}) do border(w.address) end
     local plugin = io.open(W.plugin, "r")
     if plugin then
         plugin:close()
@@ -253,6 +303,7 @@ function W.setup()
             hl.dispatch(hl.dsp.window.pin({ window = sel(w) }))
         end),
         snap = with(snap),
+        sounding = set_sounding,
         to_desk = with(function(w, n) hl.dispatch(hl.dsp.window.move({ workspace = n == 0 and "empty" or tostring(n), follow = false, window = sel(w) })) end),
         -- for the buttons of a title bar: the window that was pressed has the keyboard by then
         minimize_active = function() local w = hl.get_active_window() if w then minimize(w) end end,

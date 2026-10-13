@@ -164,10 +164,14 @@ ostatné kvapky sú iba na hlavnom monitore.
 - **Hlava** (najväčšia kvapka) ukazuje režim okien: **páska** (ako niri — nič sa neminimalizuje), **dlaždice**,
   **plávajúce** (ako Windows).
 - **Kedy sú ikry vonku (rozhodnuté 13. 10.):** iba v režime **plávajúce**. V **páske** a **dlaždiciach** hlava
-  ukáže **počet okien** a **zavlní sa**, keď niektoré okno hrá zvuk alebo chce pozornosť; keď na hlave postojí myš,
+  ukáže **počet okien**; keď na hlave postojí myš,
   ikry sa dočasne vysunú (aj kvôli oknám na iných plochách) a zasunú sa, keď myš od nich odíde. Či sú vonku,
   určuje jedno miesto v logike (`berries_out()` v `goo/lib/bar.luau`); kreslenie ikier nesmie predpokladať, že sú
   viditeľné — rovnaký prepínač neskôr poslúži režimu Glance (ROADMAP „Teraz“, koniec).
+- **Zvuk a žiadosť o pozornosť sú vidieť na samotnom okne** (rozhodnuté 13. 10.): jeho **okraj pulzuje** — bledo
+  a pomaly, kým okno hrá zvuk (nie na okne, v ktorom sa práve pracuje), červeno a rýchlo, kým chce pozornosť (až kým
+  nie je vpredu). Robí to Hyprland (`system/hypr/latte/windows.lua`); ktoré okná hrajú, mu hovorí scéna. Hlava
+  BarGoo sa zavlní iba vtedy, keď také okno nie je na očiach (iná plocha).
 - **Ikry okien:** okná ako menšie kvapky s ikonou aplikácie; okná tej istej aplikácie sa zhlukujú do **strapcov**;
   čím viac okien, tým menšie; myš nad strapcom ho rozvinie. Aktívne okno plnšie, minimalizované menšie a stlmené.
   Ikry sa lepia iba ku BarGoo. **48 miest**, nad nimi posledná ikra „Ďalšie okná“ otvorí prehľad.
