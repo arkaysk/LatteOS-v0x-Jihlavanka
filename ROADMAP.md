@@ -1025,6 +1025,16 @@ cestu k aktualizácii alebo návratu.
     stavať vlastný index a pýtať sa, ale iba cez nedokumentované rozhranie (JSON na vstupe) a pri ručnom
     spustení mi zamrzla — bez podpory autora to nestaviam. **Počasie na ploche** (dážď, sneh podľa predpovede)
     engine Goo už má: pri nečinnosti a zapnutých „Živých kvapkách“; pohyblivé scény z v0.3 sa nevracajú.
+    **Stránka Pozadie podľa zadania používateľa (13. 10. pred polnocou; vzor: Pozadie vo Windows, rozšírené):**
+    hore náhľad obrazoviek v ich rozložení (klik = voľba len pre ňu; „Rovnaké na každej obrazovke“), pod ním
+    zdroj — Obrázok · Plná farba · Prezentácia (priečinok, interval, náhodné poradie) · MotionBGS · Wallhaven ·
+    Bing · skwd-wall · Opísať slovami (skwd-lens, iba so zapnutou AI) — a pod ním samotný výber; „Prispôsobiť
+    obrázok“ iba keď kreslí swaybg. `bin/latte-wall` je prepísaný (Python): stav pre každú obrazovku
+    v `~/.config/latteos/background.json`, `set TARGET picture|color|slideshow`, `fit`, `restore`, `state`;
+    farba je obrázok jednej farby (vie ho každý kresliaci program), prezentácia vlastná slučka. Čo sa vyberie
+    v okne skwd-wall, zapíše sa sem (`latte-wall follow`). Overené naostro: farba, prezentácia a Ďalšia,
+    vlastná tapeta jednej obrazovky, návrat na všetky. **Neoverené:** dve obrazovky naraz (latte-lab mala jednu),
+    výber priečinka systémovým oknom, sťahovanie z Wallhavenu klikom, „Opísať slovami“ v okne skwd.
     Pôvodný zápis: **skwd-wall ako výber tapety** (používateľ, 13. 10.: „trvám na live wallpaper ako v 0.3 a samozrejme aj
     skwd wall“). Živé tapety 0.4 má (mpvpaper, Nastavenia › Pozadie). skwd-wall (Rust, Vulkan, GPL-3.0) je
     samostatný program: zistiť, čo presne z neho (výber s prechodmi, alebo aj kreslenie tapety), a ako voliteľnú

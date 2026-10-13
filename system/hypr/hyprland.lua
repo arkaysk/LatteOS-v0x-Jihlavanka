@@ -193,24 +193,14 @@ function latte.screen(name, mode, position, scale, turn, keep)
     if f then f:write(table.concat(lines, "\n") .. "\n") f:close() end
 end
 
--- The wallpaper: the user's own choice (a path in ~/.config/latteos/wallpaper), or the one LatteOS brings.
--- With a path it becomes the choice; the picture on the screen changes at once.
+-- The wallpaper is bin/latte-wall's: what is on which screen, and who draws it (skwd-wall where it is installed,
+-- swaybg or mpvpaper otherwise). With a path, that picture goes on every screen; without, all is put back.
 function latte.wallpaper(path)
     if path then
-        os.execute("mkdir -p '" .. config .. "'")
-        local f = io.open(config .. "/wallpaper", "w")
-        if f then f:write(path .. "\n") f:close() end
+        hl.exec_cmd("latte-wall set '*' picture '" .. path:gsub("'", "'\\''") .. "'")
+    else
+        hl.exec_cmd("latte-wall restore")
     end
-    local picture = share .. "/wallpapers/latteos-2.jpg"
-    local chosen = io.open(config .. "/wallpaper", "r")
-    if chosen then
-        local kept = (chosen:read("*l") or ""):gsub("^%s+", ""):gsub("%s+$", "")
-        chosen:close()
-        local there = kept ~= "" and io.open(kept, "r")
-        if there then there:close() picture = kept end
-    end
-    -- who draws it is bin/latte-wall's to know: skwd-wall where it is installed, swaybg or mpvpaper otherwise
-    hl.exec_cmd("latte-wall show '" .. picture:gsub("'", "'\\''") .. "'")
 end
 
 hl.on("hyprland.start", function()

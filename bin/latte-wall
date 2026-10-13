@@ -1,70 +1,357 @@
-#!/bin/sh
-# latte-wall: the wallpaper, whoever draws it.
-#
-#   latte-wall show PATH    puts that picture or film behind the desktop
-#   latte-wall pick         opens the wallpaper picker (skwd-wall), or the Settings' page without it
-#   latte-wall next | prev  the next or the one before from the user's library (Pictures/Wallpapers)
-#   latte-wall pause | resume   a film or a scene stands still, and moves again
-#   latte-wall engine       prints "skwd" or "plain": who draws
-#   latte-wall changed [PATH]   skwd-wall's hook: the choice is noted and the colours taken from the wallpaper go round
-#
-# With skwd-wall installed (github.com/liixini/skwd-wall, its own package) it draws the wallpaper: pictures, films
-# and scenes, with a transition from one to the next, and it works a palette out of each one, which is the theme
-# "from the wallpaper" (apps/common/Theme.qml, system/hypr/latte/bars.lua). Without it a picture is swaybg's and a
-# film mpvpaper's, as plain as that.
-config="${XDG_CONFIG_HOME:-$HOME/.config}/latteos"
+#!/usr/bin/env python3
+"""latte-wall: what is behind the desktop, on every screen, whoever draws it.
 
-skwd() { command -v skwd-helm >/dev/null 2>&1 && systemctl --user cat skwd-walld.service >/dev/null 2>&1; }
-# this session's own plain wallpapers: another compositor of the same user has its own
-plain() { for p in $(pgrep -x swaybg; pgrep -x mpvpaper); do grep -qzx "WAYLAND_DISPLAY=$WAYLAND_DISPLAY" "/proc/$p/environ" 2>/dev/null && echo "$p"; done; }
+  latte-wall state                         JSON for the Settings: {"engine", "lens", "fit", "screens": [{"name", "x", "y",
+                                           "w", "h"}], "all": ENTRY, "screens_own": {NAME: ENTRY}}
+  latte-wall set TARGET picture PATH       a picture or a film; TARGET is a screen's name, or * for every screen
+  latte-wall set TARGET color #RRGGBB      one plain colour
+  latte-wall set TARGET slideshow FOLDER MINUTES [shuffle]     the pictures of a folder, one after another
+  latte-wall fit fill|fit|stretch|center|tile    how a picture is laid on a screen it does not match
+  latte-wall restore                       puts everything back as it was chosen: at the start of the session
+  latte-wall show PATH                     the same as `set * picture PATH`
+  latte-wall next | prev                   the next or the one before: of the slideshow, else of the library
+  latte-wall pause | resume                a film or a scene stands still, and moves again
+  latte-wall pick [WORDS…]                 opens skwd-wall's picker (with words: looking for what they describe)
+  latte-wall engine                        prints "skwd" or "plain": who draws
 
-case "${1:-}" in
-engine) skwd && echo skwd || echo plain ;;
-show)
-    picture="${2:?latte-wall show PATH}"
-    if skwd; then
-        systemctl --user start skwd-walld.service 2>/dev/null
-        # it says when a wallpaper was chosen in its picker: one listener a session
-        pgrep -u "$(id -u)" -f 'skwd-helm watch --exec latte-wall' >/dev/null || setsid -f skwd-helm watch --exec 'latte-wall changed %path%' >/dev/null 2>&1
-        n=0; until skwd-helm apply "$picture" >/dev/null 2>&1 || [ $n -ge 20 ]; do n=$((n + 1)); sleep 0.3; done
-        old="$(plain)"; [ -n "$old" ] && kill $old
-        exit 0
-    fi
+An ENTRY is {"kind": "picture" | "color" | "slideshow", "path", "color", "folder", "minutes", "shuffle"}.
+Setting * makes every screen the same and forgets what single screens had; a screen set by itself keeps its own.
+
+With skwd-wall installed (github.com/liixini/skwd-wall, its own package) it draws: pictures, films and scenes,
+with a transition from one to the next, and it works a palette out of each one, which is the theme "from the
+wallpaper" (apps/common/Theme.qml, system/hypr/latte/bars.lua). What is chosen in its own picker is noted here
+too. Without it a picture is swaybg's and a film mpvpaper's.
+The choices are kept in ~/.config/latteos/background.json.
+"""
+import glob, json, os, random, shutil, signal, struct, subprocess, sys, time, zlib
+
+HOME = os.path.expanduser("~")
+CONFIG = os.path.join(os.environ.get("XDG_CONFIG_HOME") or HOME + "/.config", "latteos")
+CACHE = os.path.join(os.environ.get("XDG_CACHE_HOME") or HOME + "/.cache", "latteos")
+RUN = os.path.join(os.environ.get("XDG_RUNTIME_DIR") or "/tmp", "latteos")
+SHARE = os.environ.get("LATTE_SHARE") or "/usr/share/latteos"
+STATE = os.path.join(CONFIG, "background.json")
+FILMS = (".mp4", ".webm", ".mkv", ".mov")
+STILLS = (".jpg", ".jpeg", ".png", ".webp")
+FITS = ("fill", "fit", "stretch", "center", "tile")
+
+
+def quiet(*argv, **kw):
+    try:
+        return subprocess.run(argv, capture_output=True, text=True, timeout=kw.get("timeout", 15))
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+
+
+def skwd():
+    if not shutil.which("skwd-helm"):
+        return False
+    r = quiet("systemctl", "--user", "cat", "skwd-walld.service")
+    return r is not None and r.returncode == 0
+
+
+def lens():
+    """Looking for wallpapers by what they show: only with skwd-lens there and AI allowed in LatteOS."""
+    try:
+        off = open(os.path.join(CONFIG, "ai")).read().split()[:1] == ["off"]
+    except OSError:
+        off = False
+    return skwd() and shutil.which("skwd-lens") is not None and not off
+
+
+def load():
+    try:
+        s = json.load(open(STATE))
+        if isinstance(s, dict) and isinstance(s.get("all"), dict):
+            s.setdefault("screens", {})
+            s.setdefault("fit", "fill")
+            return s
+    except (OSError, ValueError):
+        pass
+    # the choice of before this file was kept: one path for every screen
+    picture = os.path.join(SHARE, "wallpapers", "latteos-2.jpg")
+    try:
+        kept = open(os.path.join(CONFIG, "wallpaper")).read().strip()
+        if kept and os.path.exists(kept):
+            picture = kept
+    except OSError:
+        pass
+    return {"all": {"kind": "picture", "path": picture}, "screens": {}, "fit": "fill"}
+
+
+def save(s):
+    os.makedirs(CONFIG, exist_ok=True)
+    with open(STATE + ".new", "w") as f:
+        json.dump(s, f, indent=1, ensure_ascii=False)
+    os.replace(STATE + ".new", STATE)
+    # one path for whoever only asks which picture is behind the desktop
+    path = showing(s, "*")
+    if path:
+        with open(os.path.join(CONFIG, "wallpaper"), "w") as f:
+            f.write(path + "\n")
+
+
+def colour_file(colour):
+    """A picture of one colour: every engine can show a picture."""
+    colour = colour.lstrip("#").lower()
+    path = os.path.join(CACHE, "color-%s.png" % colour)
+    if not os.path.exists(path):
+        os.makedirs(CACHE, exist_ok=True)
+        r, g, b = (int(colour[i:i + 2], 16) for i in (0, 2, 4))
+        row = b"\0" + bytes((r, g, b)) * 16
+        chunk = lambda kind, data: struct.pack(">I", len(data)) + kind + data + struct.pack(">I", zlib.crc32(kind + data) & 0xFFFFFFFF)
+        with open(path, "wb") as f:
+            f.write(b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", struct.pack(">IIBBBBB", 16, 16, 8, 2, 0, 0, 0))
+                    + chunk(b"IDAT", zlib.compress(row * 16)) + chunk(b"IEND", b""))
+    return path
+
+
+def pictures_in(folder):
+    return sorted(p for p in glob.glob(os.path.join(folder, "*")) if p.lower().endswith(STILLS + FILMS))
+
+
+def showing(s, target):
+    """The file that is on that screen now, or ""."""
+    e = s["screens"].get(target) or s["all"]
+    kind = e.get("kind")
+    if kind == "color":
+        return colour_file(e.get("color") or "#000000")
+    if kind == "slideshow":
+        files = pictures_in(e.get("folder") or "")
+        return files[int(e.get("at") or 0) % len(files)] if files else ""
+    return e.get("path") or ""
+
+
+# ── drawing ──────────────────────────────────────────────────────────────────────────────────────────────────
+def own_plain(target=None):
+    """This session's swaybg and mpvpaper (another compositor of the same user has its own); for one screen or all."""
+    out = []
+    display = "WAYLAND_DISPLAY=" + (os.environ.get("WAYLAND_DISPLAY") or "")
+    for name in ("swaybg", "mpvpaper"):
+        r = quiet("pgrep", "-u", str(os.getuid()), "-x", name)
+        for pid in (r.stdout.split() if r else []):
+            try:
+                env = open("/proc/%s/environ" % pid, "rb").read().split(b"\0")
+                argv = open("/proc/%s/cmdline" % pid, "rb").read().split(b"\0")
+            except OSError:
+                continue
+            if display.encode() not in env:
+                continue
+            if target in (None, "*") or target.encode() in argv:
+                out.append(int(pid))
+    return out
+
+
+def draw(target, path, fit):
+    if not path or not os.path.exists(path):
+        return
+    if skwd():
+        quiet("systemctl", "--user", "start", "skwd-walld.service")
+        r = quiet("pgrep", "-u", str(os.getuid()), "-f", "latte-wall follow")
+        if not (r and r.stdout.strip()):
+            subprocess.Popen([sys.argv[0], "follow"], stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)
+        argv = ["skwd-helm", "apply", path] + ([] if target == "*" else ["-o", target])
+        for _ in range(20):             # its service may only just have started
+            r = quiet(*argv)
+            if r and r.returncode == 0:
+                break
+            time.sleep(0.3)
+        for pid in own_plain():
+            os.kill(pid, signal.SIGTERM)
+        return
     # The new one comes up before the old one goes, so the background colour never shows through.
-    old="$(plain)"
-    case "$(printf '%s' "$picture" | tr 'A-Z' 'a-z')" in
-        *.mp4|*.webm|*.mkv|*.mov) setsid -f mpvpaper -o "no-audio loop" "*" "$picture" >/dev/null 2>&1 ;;
-        *) setsid -f swaybg -i "$picture" -m fill >/dev/null 2>&1 ;;
-    esac
-    sleep 0.8; [ -n "$old" ] && kill $old ;;
-pick)
-    if skwd && command -v skwd-wall-v2 >/dev/null 2>&1; then
-        # Its library is the folder Wallpapers in the user's Pictures: LatteOS's own are put there to choose from.
-        # As copies: its scanner reads nothing a link points to outside that folder.
-        lib="$(xdg-user-dir PICTURES 2>/dev/null)"; lib="${lib:-$HOME/Pictures}/Wallpapers"
-        mkdir -p "$lib" && for f in "${LATTE_SHARE:-/usr/share/latteos}"/wallpapers/*; do
-            [ -f "$f" ] && [ ! -e "$lib/$(basename "$f")" ] && cp -- "$f" "$lib/"
-        done
-        skwd-helm ui toggle >/dev/null 2>&1 || setsid -f skwd-wall-v2 >/dev/null 2>&1
-    else
-        setsid -f latte-app settings background >/dev/null 2>&1
-    fi ;;
-next|prev)
-    if skwd; then skwd-helm "$1" >/dev/null 2>&1 && exit 0; fi
-    # plainly: the library in the order of its names, from the one shown now
-    lib="$(xdg-user-dir PICTURES 2>/dev/null)"; lib="${lib:-$HOME/Pictures}/Wallpapers"
-    now="$(head -n1 "$config/wallpaper" 2>/dev/null)"
-    list="$(find "$lib" -maxdepth 1 -type f 2>/dev/null | sort)"; [ "$1" = prev ] && list="$(printf '%s\n' "$list" | tac)"
-    [ -n "$list" ] || exit 0
-    to="$(printf '%s\n' "$list" | awk -v now="$now" 'found { print; exit } $0 == now { found = 1 }')"
-    [ -n "$to" ] || to="$(printf '%s\n' "$list" | head -n1)"
-    hyprctl eval "latte.wallpaper(\"$to\")" >/dev/null 2>&1 ;;
-pause|resume)
-    if skwd; then skwd-helm "$1" >/dev/null 2>&1; else pkill "$([ "$1" = pause ] && echo -STOP || echo -CONT)" -x mpvpaper 2>/dev/null; fi ;;
-changed)
-    if [ -n "${2:-}" ]; then mkdir -p "$config" && printf '%s\n' "$2" > "$config/wallpaper"; fi
-    # the title bars take the colours anew; the apps watch the palette's file themselves
-    [ "$(head -n1 "$config/cup" 2>/dev/null)" = wallpaper ] && hyprctl eval 'latte.cup()' >/dev/null 2>&1
-    exit 0 ;;
-*) sed -n '2,9p' "$0" | sed 's/^# \{0,1\}//' >&2; exit 2 ;;
-esac
+    old = own_plain(target)
+    if path.lower().endswith(FILMS):
+        argv = ["mpvpaper", "-o", "no-audio loop", "*" if target == "*" else target, path]
+    else:
+        argv = ["swaybg", "-i", path, "-m", fit if fit in FITS else "fill"] + ([] if target == "*" else ["-o", target])
+    subprocess.Popen(argv, stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)
+    time.sleep(0.8)
+    for pid in old:
+        try:
+            os.kill(pid, signal.SIGTERM)
+        except OSError:
+            pass
+
+
+def slideshow_stop(target):
+    for path in glob.glob(os.path.join(RUN, "slideshow-*.pid")) if target is None else [os.path.join(RUN, "slideshow-%s.pid" % target.replace("*", "all"))]:
+        try:
+            os.kill(int(open(path).read()), signal.SIGTERM)
+        except (OSError, ValueError):
+            pass
+        try:
+            os.remove(path)
+        except OSError:
+            pass
+
+
+def slideshow_start(target):
+    os.makedirs(RUN, exist_ok=True)
+    p = subprocess.Popen([sys.argv[0], "_slideshow", target], stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)
+    with open(os.path.join(RUN, "slideshow-%s.pid" % target.replace("*", "all")), "w") as f:
+        f.write(str(p.pid))
+
+
+def step(s, target, by):
+    e = s["screens"].get(target) or s["all"]
+    files = pictures_in(e.get("folder") or "")
+    if not files:
+        return
+    e["at"] = random.randrange(len(files)) if e.get("shuffle") and by > 0 else (int(e.get("at") or 0) + by) % len(files)
+    save(s)
+    draw(target, files[e["at"]], s["fit"])
+
+
+def apply(s, target):
+    e = s["screens"].get(target) if target != "*" else s["all"]
+    if not e:
+        return
+    slideshow_stop(target)
+    draw(target, showing(s, target), s["fit"])
+    if e.get("kind") == "slideshow":
+        slideshow_start(target)
+
+
+def restore(s):
+    slideshow_stop(None)
+    apply(s, "*")
+    for name in s["screens"]:
+        apply(s, name)
+
+
+# ── what skwd-wall says: a wallpaper chosen in its own picker is the user's choice like any other ───────────────
+def follow():
+    p = subprocess.Popen(["skwd-helm", "watch"], stdout=subprocess.PIPE, text=True)
+    for line in p.stdout:
+        try:
+            ev = json.loads(line)
+        except ValueError:
+            continue
+        data = ev.get("data") or {}
+        if ev.get("event") == "skwd.wall.applied" and data.get("path"):
+            s, target = load(), data.get("output") or "*"
+            if showing(s, target) != data["path"]:
+                entry = {"kind": "picture", "path": data["path"]}
+                if target == "*":
+                    slideshow_stop(None)
+                    s["all"], s["screens"] = entry, {}
+                else:
+                    slideshow_stop(target)
+                    s["screens"][target] = entry
+                save(s)
+        elif ev.get("event") == "skwd.wall.theme_done":
+            try:
+                if open(os.path.join(CONFIG, "cup")).read().split()[:1] == ["wallpaper"]:
+                    quiet("hyprctl", "eval", "latte.cup()")      # the title bars take the colours anew
+            except OSError:
+                pass
+
+
+def library():
+    r = quiet("xdg-user-dir", "PICTURES")
+    pictures = r.stdout.strip() if r else ""
+    return os.path.join(pictures if pictures and pictures != HOME else HOME + "/Pictures", "Wallpapers")
+
+
+def screens():
+    r = quiet("hyprctl", "monitors", "-j")
+    try:
+        return [{"name": m["name"], "x": m["x"], "y": m["y"], "w": int(m["width"] / (m.get("scale") or 1)), "h": int(m["height"] / (m.get("scale") or 1))}
+                for m in json.loads(r.stdout) if not m.get("mirrorOf") or m.get("mirrorOf") == "none"]
+    except (AttributeError, ValueError, KeyError, TypeError):
+        return []
+
+
+def main(a):
+    s = load()
+    if a == ["engine"]:
+        print("skwd" if skwd() else "plain")
+    elif a == ["state"]:
+        shown = {"*": showing(s, "*")}
+        for name in s["screens"]:
+            shown[name] = showing(s, name)
+        print(json.dumps({"engine": "skwd" if skwd() else "plain", "lens": lens(), "fit": s["fit"], "screens": screens(), "all": s["all"],
+                          "screens_own": s["screens"], "shown": shown, "library": library()}, ensure_ascii=False))
+    elif a == ["restore"]:
+        restore(s)
+    elif len(a) == 2 and a[0] == "show":
+        return main(["set", "*", "picture", a[1]])
+    elif len(a) >= 4 and a[0] == "set":
+        target, kind = a[1], a[2]
+        if kind == "picture" and len(a) == 4 and os.path.exists(a[3]):
+            entry = {"kind": "picture", "path": a[3]}
+        elif kind == "color" and len(a) == 4 and len(a[3].lstrip("#")) == 6:
+            int(a[3].lstrip("#"), 16)
+            entry = {"kind": "color", "color": "#" + a[3].lstrip("#").lower()}
+        elif kind == "slideshow" and len(a) in (5, 6) and os.path.isdir(a[3]):
+            entry = {"kind": "slideshow", "folder": a[3], "minutes": max(1, int(float(a[4]))), "shuffle": a[5:] == ["shuffle"], "at": 0}
+        else:
+            return 2
+        if target == "*":
+            slideshow_stop(None)
+            s["all"], s["screens"] = entry, {}
+        else:
+            s["screens"][target] = entry
+        save(s)
+        apply(s, target)
+    elif len(a) == 2 and a[0] == "fit" and a[1] in FITS:
+        s["fit"] = a[1]
+        save(s)
+        restore(s)
+    elif a in (["next"], ["prev"]):
+        by = 1 if a == ["next"] else -1
+        shows = [t for t in ["*"] + list(s["screens"]) if (s["screens"].get(t) or s["all"]).get("kind") == "slideshow" and (t == "*" or t in s["screens"])]
+        if shows:
+            for t in shows:
+                step(s, t, by)
+        elif skwd() and quiet("skwd-helm", a[0]) is not None:
+            pass
+        else:
+            files, now = pictures_in(library()), showing(s, "*")
+            if files:
+                at = files.index(now) if now in files else -1
+                return main(["set", "*", "picture", files[(at + by) % len(files)]])
+    elif a in (["pause"], ["resume"]):
+        if skwd():
+            quiet("skwd-helm", a[0])
+        else:
+            for pid in own_plain():
+                os.kill(pid, signal.SIGSTOP if a == ["pause"] else signal.SIGCONT)
+    elif a[:1] == ["pick"]:
+        if skwd() and shutil.which("skwd-wall-v2"):
+            # Its library is the folder Wallpapers in the user's Pictures: LatteOS's own are put there to choose
+            # from. As copies: its scanner reads nothing a link points to outside that folder.
+            lib = library()
+            os.makedirs(lib, exist_ok=True)
+            for f in glob.glob(os.path.join(SHARE, "wallpapers", "*")):
+                if os.path.isfile(f) and not os.path.exists(os.path.join(lib, os.path.basename(f))):
+                    shutil.copy(f, lib)
+            r = quiet("skwd-helm", "ui", "show")
+            if not (r and r.returncode == 0):
+                subprocess.Popen(["skwd-wall-v2"], stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)
+                time.sleep(2.5)
+            if a[1:]:
+                quiet("skwd-helm", "ui", "filter", " ".join(a[1:]))
+        else:
+            subprocess.Popen(["latte-app", "settings", "background"], stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)
+    elif a == ["follow"]:
+        follow()
+    elif len(a) == 2 and a[0] == "_slideshow":
+        while True:
+            e = load()["screens"].get(a[1]) or load()["all"]
+            if e.get("kind") != "slideshow":
+                return 0
+            time.sleep(max(1, int(e.get("minutes") or 10)) * 60)
+            step(load(), a[1], 1)
+    else:
+        print(__doc__.strip(), file=sys.stderr)
+        return 2
+    return 0
+
+
+if __name__ == "__main__":
+    try:
+        sys.exit(main(sys.argv[1:]))
+    except ValueError:
+        sys.exit(2)

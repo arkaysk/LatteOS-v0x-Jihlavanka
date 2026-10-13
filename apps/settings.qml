@@ -102,7 +102,7 @@ ShellRoot {
                                    "time": [[clock, ["latte-settings", "time"]]], "keyboard": [[keys, ["latte-settings", "keyboard"]], [binds, ["hyprctl", "binds", "-j"]]], "displays": [[screens, ["hyprctl", "monitors", "-j"]]],
                                    "storage": [[disks, ["latte-settings", "storage"]], [held, ["latte-settings", "sizes"]]], "ai": [[helpers, ["latte-ai", "providers", "all"]]],
                                    "me": [[who, ["latte-settings", "account"]], [pictures, ["latte-settings", "wallpapers"]]], "performance": [[machine, ["latte-devices", "list"]]], "loginscreen": [[logon, ["latte-settings", "loginscreen"]]] })
-    function ask() { (asks[page] || []).forEach(a => a[0].ask(a[1])); force.reload(); crashed.reload() }
+    function ask() { (asks[page] || []).forEach(a => a[0].ask(a[1])); force.reload(); crashed.reload(); if (page === "background") wall.ask(["latte-wall", "state"]) }
     Timer { id: later; interval: 900; onTriggered: shell.ask() }       // what was asked of the compositor takes a moment to be so
 
     // a file of the user's own, from anywhere: for the background ("wallpaper") or for the account's picture ("face")
@@ -110,7 +110,7 @@ ShellRoot {
                  nameFilters: what === "face" ? [I18n.tr("Pictures") + " (*.png *.jpg *.jpeg *.webp)"] : [I18n.tr("Pictures and films") + " (*.png *.jpg *.jpeg *.webp *.mp4 *.webm *.mkv *.mov)"]
                  onAccepted: { const path = decodeURIComponent(String(selectedFile).replace(/^file:\/\//, ""))
                                if (what === "face") shell.account("SetIconFile", path)
-                               else { wallpaper.value = path; Quickshell.execDetached(["hyprctl", "eval", "latte.wallpaper(" + JSON.stringify(path) + ")"]) } } }
+                               else shell.bgSet(["picture", path]) } }
     Run { id: disks }
     Run { id: held }
     Run { id: helpers }
@@ -118,10 +118,18 @@ ShellRoot {
     Run { id: logon }
     Run { id: iconsets }
     Run { id: online }
-    property string catalogue: ""              // "bing" or "motionbgs": the wallpapers from the internet that are listed
+    Run { id: wall }                           // what latte-wall says: the screens and what is on each
+    readonly property var bg: wall.data
+    property string bgTarget: "*"              // the screen a choice goes to, or * for every screen
+    property string bgSource: "picture"
+    property string showFolder: ""
+    property int showMinutes: 10
+    property bool showShuffle: false
+    function bgSet(what) { order(["latte-wall", "set", bgTarget].concat(what)) }
+    FolderDialog { id: folders; onAccepted: shell.showFolder = decodeURIComponent(String(selectedFolder).replace(/^file:\/\//, "")) }
     property string fetching: ""               // the one being fetched
     Process { id: fetcher; stdout: StdioCollector { onStreamFinished: { const path = this.text.trim(); shell.fetching = ""
-        if (path !== "") { wallpaper.value = path; Quickshell.execDetached(["hyprctl", "eval", "latte.wallpaper(" + JSON.stringify(path) + ")"]); pictures.ask(["latte-settings", "wallpapers"]) } } } }
+        if (path !== "") { shell.bgSet(["picture", path]); pictures.ask(["latte-settings", "wallpapers"]) } } } }
     Word { id: tier; name: "tier" }
     Word { id: ai; name: "ai" }
     // what latte-boot decided for this start, and whether the next one was asked to be SAFE
@@ -210,7 +218,7 @@ ShellRoot {
                onLoaded: pretty = (text().match(/^PRETTY_NAME="?([^"\n]*)/m) || ["", ""])[1] }
     onPageChanged: {
         if (page === "coffee") { coffees.ask(["latte-login", "coffees"]); iconsets.ask(["latte-settings", "icons"]) }
-        if (page === "background") pictures.ask(["latte-settings", "wallpapers"])
+        if (page === "background") { pictures.ask(["latte-settings", "wallpapers"]); wall.ask(["latte-wall", "state"]) }
         if (page === "about") machine.ask(["latte-devices", "list"])
         emptying = false
         if (page === "power") profiles.running = true
@@ -386,47 +394,117 @@ ShellRoot {
                 Switch { text: I18n.tr("Windows of glass"); hint: I18n.tr("The windows are glass too, where the graphics card can: that is the cup's own look, apart from the drops.")
                          on: goo.kept.windows === "glass"; onPressed: goo.set("windows", on ? "solid" : "glass") } }
 
-            // the background: pictures, and films that move
-            Part { visible: shell.page === "background"; width: view.room; title: I18n.tr("Pictures"); note: I18n.tr("LatteOS's own, and what is in your Pictures folder.")
-                Repeater { model: pictures.data ? pictures.data.filter(p => !p.live) : []
-                    ClippingRectangle { id: pic; required property var modelData; width: 232; height: 132; radius: 16; color: Theme.card
-                        border.width: 3; border.color: wallpaper.value === modelData.path ? Theme.gold : "transparent"
-                        Image { anchors.fill: parent; anchors.margins: 3; source: "file://" + pic.modelData.path; fillMode: Image.PreserveAspectCrop; asynchronous: true; sourceSize.width: 480 }
-                        MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor
-                                    onClicked: { wallpaper.value = pic.modelData.path; Quickshell.execDetached(["hyprctl", "eval", "latte.wallpaper(" + JSON.stringify(pic.modelData.path) + ")"]) } } } } }
-            Part { visible: shell.page === "background"; width: view.room; title: I18n.tr("Live backgrounds")
-                   note: pictures.data && pictures.data.some(p => p.live) ? I18n.tr("Films from your Videos folder, played silently behind the desktop.") : I18n.tr("Put a film (.mp4, .webm, .mkv) in your Videos folder, or in a folder Wallpapers in it, and it shows here.")
-                Repeater { model: pictures.data ? pictures.data.filter(p => p.live) : []
-                    Rectangle { required property var modelData; width: 232; height: 60; radius: 16; color: Theme.card; border.width: 2; border.color: wallpaper.value === modelData.path ? Theme.gold : "transparent"
-                        Glyph { x: 16; name: "player-play"; color: Theme.gold; anchors.verticalCenter: parent.verticalCenter }
-                        Label { x: 46; width: parent.width - 60; text: parent.modelData.path.split("/").pop(); anchors.verticalCenter: parent.verticalCenter }
-                        MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor
-                                    onClicked: { wallpaper.value = parent.modelData.path; Quickshell.execDetached(["hyprctl", "eval", "latte.wallpaper(" + JSON.stringify(parent.modelData.path) + ")"]) } } } } }
-
-            Pill { visible: shell.page === "background"; icon: "folder"; text: I18n.tr("Another file…"); onPressed: { chooser.what = "wallpaper"; chooser.open() } }
-            Pill { visible: shell.page === "background"; icon: "photo"; strong: true; text: I18n.tr("Wallpaper picker"); onPressed: Quickshell.execDetached(["latte-wall", "pick"]) }
+            // The background, as Windows lays it out and a little further: the screens on top (press one to choose
+            // for it alone), then where the picture comes from, then the choice itself. bin/latte-wall does it.
+            Item { visible: shell.page === "background"; width: view.room; height: 250
+                readonly property var list: shell.bg ? shell.bg.screens : []
+                readonly property real x0: list.length ? Math.min(...list.map(m => m.x)) : 0
+                readonly property real y0: list.length ? Math.min(...list.map(m => m.y)) : 0
+                readonly property real wide: list.length ? Math.max(...list.map(m => m.x + m.w)) - x0 : 1920
+                readonly property real high: list.length ? Math.max(...list.map(m => m.y + m.h)) - y0 : 1080
+                readonly property real k: Math.min(Math.min(view.room, 900) / wide, 230 / high)
+                id: stage
+                Repeater { model: stage.list
+                    ClippingRectangle { id: scr; required property var modelData
+                        readonly property string file: shell.bg ? (shell.bg.shown[modelData.name] || shell.bg.shown["*"] || "") : ""
+                        readonly property bool film: /\.(mp4|webm|mkv|mov)$/i.test(file)
+                        x: (modelData.x - stage.x0) * stage.k; y: (modelData.y - stage.y0) * stage.k; width: modelData.w * stage.k - 8; height: modelData.h * stage.k - 8
+                        radius: 14; color: Theme.card; border.width: 3
+                        border.color: shell.bgTarget === "*" || shell.bgTarget === modelData.name ? Theme.gold : Theme.line
+                        Image { anchors.fill: parent; anchors.margins: 3; visible: !scr.film; source: scr.film || scr.file === "" ? "" : "file://" + scr.file; fillMode: Image.PreserveAspectCrop; asynchronous: true; sourceSize.width: 960; cache: false }
+                        Glyph { anchors.centerIn: parent; visible: scr.film; name: "player-play"; font.pixelSize: 44; color: Theme.gold }
+                        Rectangle { x: 10; y: 10; width: tag.implicitWidth + 16; height: 24; radius: 12; color: Qt.rgba(0, 0, 0, 0.55)
+                                    Label { id: tag; anchors.centerIn: parent; text: scr.modelData.name; color: "white"; font.pixelSize: 12; font.weight: 700 } }
+                        MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: shell.bgTarget = scr.modelData.name } } } }
             Row { visible: shell.page === "background"; spacing: 10
-                Pill { icon: "chevron-left"; text: I18n.tr("Previous"); onPressed: Quickshell.execDetached(["latte-wall", "prev"]) }
-                Pill { icon: "chevron-right"; text: I18n.tr("Next"); onPressed: Quickshell.execDetached(["latte-wall", "next"]) }
-                Pill { icon: "player-pause"; text: I18n.tr("Pause"); onPressed: Quickshell.execDetached(["latte-wall", "pause"]) }
-                Pill { icon: "player-play"; text: I18n.tr("Play"); onPressed: Quickshell.execDetached(["latte-wall", "resume"]) } }
-            Part { visible: shell.page === "background"; width: view.room; title: I18n.tr("From the internet")
-                   note: I18n.tr("A press fetches one into your Pictures and puts it behind the desktop. Bing's are photographs, MotionBGS's are films.")
-                Pill { text: "Bing"; strong: shell.catalogue === "bing"; onPressed: { shell.catalogue = "bing"; online.data = null; online.ask(["latte-walls", "bing"]) } }
-                Pill { text: "MotionBGS"; strong: shell.catalogue === "motionbgs"; onPressed: { shell.catalogue = "motionbgs"; online.data = null; online.ask(["latte-walls", "motionbgs"].concat(netField.text.trim().split(/\s+/).filter(w => w !== ""))) } }
-                Field { id: netField; visible: shell.catalogue === "motionbgs"; width: 260; hint: I18n.tr("Search films…")
-                        onAccepted: { online.data = null; online.ask(["latte-walls", "motionbgs"].concat(netField.text.trim().split(/\s+/).filter(w => w !== ""))) } }
+                Pill { icon: "copy"; text: I18n.tr("The same on every screen"); strong: shell.bgTarget === "*"; onPressed: shell.bgTarget = "*" }
+                Repeater { model: shell.bg && shell.bg.screens.length > 1 ? shell.bg.screens : []
+                    Pill { required property var modelData; icon: "device-desktop"; text: I18n.tr("Only {screen}", { screen: modelData.name }); strong: shell.bgTarget === modelData.name; onPressed: shell.bgTarget = modelData.name } } }
+            Part { visible: shell.page === "background"; width: view.room; title: I18n.tr("Background")
+                   note: shell.bgTarget === "*" ? I18n.tr("What you choose goes on every screen.") : I18n.tr("What you choose goes on {screen} only; the others keep theirs.", { screen: shell.bgTarget })
+                Repeater { model: [{ id: "picture", name: QT_TR_NOOP("Picture"), icon: "photo" }, { id: "color", name: QT_TR_NOOP("Solid colour"), icon: "palette" },
+                                   { id: "slideshow", name: QT_TR_NOOP("Slideshow"), icon: "folder" }, { id: "motionbgs", name: "MotionBGS", icon: "player-play" },
+                                   { id: "wallhaven", name: "Wallhaven", icon: "world" }, { id: "bing", name: "Bing", icon: "world" },
+                                   { id: "skwd", name: "skwd-wall", icon: "sparkles" }, { id: "lens", name: QT_TR_NOOP("Describe it"), icon: "search" }]
+                    Pill { required property var modelData; icon: modelData.icon; text: I18n.tr(modelData.name); strong: shell.bgSource === modelData.id
+                           onPressed: { shell.bgSource = modelData.id
+                                        if (["motionbgs", "wallhaven", "bing"].includes(modelData.id)) { online.data = null; online.ask(["latte-walls", modelData.id]) } } } } }
+
+            // a picture or a film of the user's own
+            Part { visible: shell.page === "background" && shell.bgSource === "picture"; width: view.room; title: I18n.tr("Choose a picture"); note: I18n.tr("LatteOS's own, and what is in your Pictures and Videos folders. A film moves behind the desktop, silently.")
+                Repeater { model: pictures.data ? pictures.data : []
+                    ClippingRectangle { id: pic; required property var modelData; width: 200; height: 114; radius: 14; color: Theme.card
+                        border.width: 3; border.color: shell.bg && shell.bg.shown[shell.bgTarget] === modelData.path ? Theme.gold : "transparent"
+                        Image { anchors.fill: parent; anchors.margins: 3; visible: !pic.modelData.live; source: pic.modelData.live ? "" : "file://" + pic.modelData.path; fillMode: Image.PreserveAspectCrop; asynchronous: true; sourceSize.width: 420 }
+                        Glyph { anchors.centerIn: parent; visible: pic.modelData.live; name: "player-play"; font.pixelSize: 30; color: Theme.gold }
+                        Rectangle { visible: pic.modelData.live; anchors.bottom: parent.bottom; width: parent.width; height: 26; color: Qt.rgba(0, 0, 0, 0.5)
+                                    Label { x: 10; width: parent.width - 20; text: pic.modelData.path.split("/").pop(); color: "white"; font.pixelSize: 11; anchors.verticalCenter: parent.verticalCenter } }
+                        MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: shell.bgSet(["picture", pic.modelData.path]) } } }
                 Item { width: view.room; height: 1 }
-                Waiting { visible: shell.catalogue !== "" && online.data === null }
-                Repeater { model: shell.catalogue !== "" && online.data ? online.data.slice(0, 24) : []
-                    ClippingRectangle { id: net; required property var modelData; width: 232; height: 132; radius: 16; color: Theme.card
+                Pill { icon: "folder"; text: I18n.tr("Browse…"); onPressed: { chooser.what = "wallpaper"; chooser.open() } } }
+            Part { visible: shell.page === "background" && ["picture", "slideshow"].includes(shell.bgSource) && shell.bg !== null && shell.bg.engine === "plain"; width: view.room; title: I18n.tr("Choose a fit")
+                Repeater { model: [{ id: "fill", name: QT_TR_NOOP("Fill") }, { id: "fit", name: QT_TR_NOOP("Fit") }, { id: "stretch", name: QT_TR_NOOP("Stretch") }, { id: "center", name: QT_TR_NOOP("Centre") }, { id: "tile", name: QT_TR_NOOP("Tile") }]
+                    Pill { required property var modelData; text: I18n.tr(modelData.name); strong: shell.bg !== null && shell.bg.fit === modelData.id; onPressed: shell.order(["latte-wall", "fit", modelData.id]) } } }
+
+            // one colour
+            Part { visible: shell.page === "background" && shell.bgSource === "color"; width: view.room; title: I18n.tr("Choose a colour")
+                Repeater { model: ["#1a1410", "#2a1f19", "#3b1d10", "#0f1b2d", "#12343b", "#1f3a2a", "#3a1f2b", "#2d2a4a", "#4a4a4a", "#8a5a3a", "#c98a55", "#f3ebdd"]
+                    Rectangle { required property string modelData; width: 54; height: 54; radius: 14; color: modelData
+                                border.width: 3; border.color: shell.bg && (shell.bg.screens_own[shell.bgTarget] || shell.bg.all).color === modelData ? Theme.gold : Theme.line
+                                MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: shell.bgSet(["color", parent.modelData]) } } }
+                Item { width: view.room; height: 1 }
+                Field { id: hexField; width: 180; icon: "palette"; hint: "#RRGGBB"; onAccepted: if (/^#?[0-9a-fA-F]{6}$/.test(text.trim())) shell.bgSet(["color", text.trim()]) }
+                Pill { icon: "check"; text: I18n.tr("Use this colour"); onPressed: if (/^#?[0-9a-fA-F]{6}$/.test(hexField.text.trim())) shell.bgSet(["color", hexField.text.trim()]) } }
+
+            // the pictures of a folder, one after another
+            Part { visible: shell.page === "background" && shell.bgSource === "slideshow"; width: view.room; title: I18n.tr("Choose a folder for the slideshow")
+                   note: shell.showFolder === "" ? I18n.tr("Every picture and film in it takes its turn.") : shell.showFolder
+                Pill { icon: "folder"; text: I18n.tr("Browse…"); onPressed: folders.open() }
+                Item { width: view.room; height: 1 }
+                Label { text: I18n.tr("Change picture every"); color: Theme.dim; height: 36; verticalAlignment: Text.AlignVCenter }
+                Repeater { model: [{ m: 1, name: QT_TR_NOOP("1 minute") }, { m: 10, name: QT_TR_NOOP("10 minutes") }, { m: 30, name: QT_TR_NOOP("30 minutes") }, { m: 60, name: QT_TR_NOOP("1 hour") }, { m: 360, name: QT_TR_NOOP("6 hours") }, { m: 1440, name: QT_TR_NOOP("1 day") }]
+                    Pill { required property var modelData; text: I18n.tr(modelData.name); strong: shell.showMinutes === modelData.m; onPressed: shell.showMinutes = modelData.m } }
+                Item { width: view.room; height: 1 }
+                Pill { icon: "arrows-sort"; text: I18n.tr("Shuffle"); strong: shell.showShuffle; onPressed: shell.showShuffle = !shell.showShuffle }
+                Pill { icon: "player-play"; strong: true; text: I18n.tr("Start the slideshow"); visible: shell.showFolder !== ""
+                       onPressed: shell.bgSet(["slideshow", shell.showFolder, String(shell.showMinutes)].concat(shell.showShuffle ? ["shuffle"] : [])) }
+                Pill { icon: "chevron-left"; text: I18n.tr("Previous"); onPressed: shell.order(["latte-wall", "prev"]) }
+                Pill { icon: "chevron-right"; text: I18n.tr("Next"); onPressed: shell.order(["latte-wall", "next"]) } }
+
+            // from the internet: a press fetches one into the library and puts it on
+            Part { visible: shell.page === "background" && ["motionbgs", "wallhaven", "bing"].includes(shell.bgSource); width: view.room
+                   title: shell.bgSource === "bing" ? I18n.tr("Bing's pictures of the last days") : (shell.bgSource === "wallhaven" ? I18n.tr("Pictures from Wallhaven") : I18n.tr("Live wallpapers from MotionBGS"))
+                   note: I18n.tr("A press fetches one into your Pictures and puts it behind the desktop.")
+                Field { id: netField; visible: shell.bgSource !== "bing"; width: 320; hint: I18n.tr("Search…")
+                        onAccepted: { online.data = null; online.ask(["latte-walls", shell.bgSource].concat(netField.text.trim().split(/\s+/).filter(w => w !== ""))) } }
+                Item { width: view.room; height: 1 }
+                Waiting { visible: online.data === null }
+                Repeater { model: online.data ? online.data.slice(0, 30) : []
+                    ClippingRectangle { id: net; required property var modelData; width: 200; height: 114; radius: 14; color: Theme.card
                         border.width: 3; border.color: shell.fetching === modelData.id ? Theme.gold : "transparent"
-                        Image { anchors.fill: parent; anchors.margins: 3; source: net.modelData.thumb; fillMode: Image.PreserveAspectCrop; asynchronous: true; sourceSize.width: 480 }
-                        Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 30; color: Qt.rgba(0, 0, 0, 0.55)
-                            Glyph { x: 10; visible: net.modelData.film; name: "player-play"; font.pixelSize: 13; color: "white"; anchors.verticalCenter: parent.verticalCenter }
-                            Label { x: net.modelData.film ? 28 : 10; width: parent.width - x - 10; text: net.modelData.title; color: "white"; font.pixelSize: 12; anchors.verticalCenter: parent.verticalCenter } }
+                        Image { anchors.fill: parent; anchors.margins: 3; source: net.modelData.thumb; fillMode: Image.PreserveAspectCrop; asynchronous: true; sourceSize.width: 420 }
+                        Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 26; color: Qt.rgba(0, 0, 0, 0.55)
+                            Glyph { x: 8; visible: net.modelData.film; name: "player-play"; font.pixelSize: 12; color: "white"; anchors.verticalCenter: parent.verticalCenter }
+                            Label { x: net.modelData.film ? 26 : 10; width: parent.width - x - 10; text: net.modelData.title; color: "white"; font.pixelSize: 11; anchors.verticalCenter: parent.verticalCenter } }
+                        Waiting { anchors.centerIn: parent; visible: shell.fetching === net.modelData.id }
                         MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; enabled: shell.fetching === ""
                                     onClicked: { shell.fetching = net.modelData.id; fetcher.running = false; fetcher.command = ["latte-walls", "get", net.modelData.url, net.modelData.title]; fetcher.running = true } } } } }
+
+            // skwd-wall's own picker, and looking for a wallpaper by what it shows
+            Part { visible: shell.page === "background" && shell.bgSource === "skwd"; width: view.room; title: "skwd-wall"
+                   note: shell.bg !== null && shell.bg.engine === "skwd" ? I18n.tr("Its own picker over the desktop: your library with transitions, scenes of Wallpaper Engine, its downloads and playlists. What you choose there is kept here too.")
+                                                                         : I18n.tr("skwd-wall is not installed. With it wallpapers change with a transition and scenes can be shown.")
+                Pill { visible: shell.bg !== null && shell.bg.engine === "skwd"; icon: "sparkles"; strong: true; text: I18n.tr("Open skwd-wall"); onPressed: Quickshell.execDetached(["latte-wall", "pick"]) }
+                Pill { visible: shell.bg !== null && shell.bg.engine === "skwd"; icon: "player-pause"; text: I18n.tr("Pause"); onPressed: Quickshell.execDetached(["latte-wall", "pause"]) }
+                Pill { visible: shell.bg !== null && shell.bg.engine === "skwd"; icon: "player-play"; text: I18n.tr("Play"); onPressed: Quickshell.execDetached(["latte-wall", "resume"]) } }
+            Part { visible: shell.page === "background" && shell.bgSource === "lens"; width: view.room; title: I18n.tr("Describe the wallpaper you want")
+                   note: shell.bg !== null && shell.bg.lens ? I18n.tr("A model on this computer looks through your library for pictures that show what you describe. Nothing leaves the computer.")
+                                                            : I18n.tr("This needs skwd-wall with its search model, and AI turned on in the Settings.")
+                Field { id: lensField; visible: shell.bg !== null && shell.bg.lens; width: 420; hint: I18n.tr("a foggy forest in the morning…")
+                        onAccepted: Quickshell.execDetached(["latte-wall", "pick"].concat(lensField.text.trim().split(/\s+/).filter(w => w !== ""))) }
+                Pill { visible: shell.bg !== null && shell.bg.lens; icon: "search"; strong: true; text: I18n.tr("Look for it")
+                       onPressed: Quickshell.execDetached(["latte-wall", "pick"].concat(lensField.text.trim().split(/\s+/).filter(w => w !== ""))) } }
+
             Switch { visible: shell.page === "background"; width: view.room; text: I18n.tr("Icons on the desktop"); on: icons.value !== "off"
                      hint: I18n.tr("The Recycle Bin and what is in your Desktop folder, over the background.")
                      onPressed: { const next = on ? "off" : "on"; icons.value = next; Quickshell.execDetached(["latte-desktop", next]) } }

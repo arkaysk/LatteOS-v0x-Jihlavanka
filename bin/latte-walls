@@ -3,6 +3,7 @@
 
   latte-walls bing                 the pictures of the last days from Bing: [{"id", "title", "author", "thumb", "url", "film"}]
   latte-walls motionbgs [WORDS…]   live wallpapers (films) from motionbgs.com, the newest or what the words find
+  latte-walls wallhaven [WORDS…]   pictures from wallhaven.cc, the most liked of the month or what the words find
   latte-walls get URL NAME         fetches one into the user's library (Pictures/Wallpapers) and prints where it is
 
 What is fetched is the user's from then on: a file in their library like any other, shown by bin/latte-wall.
@@ -53,6 +54,18 @@ def motionbgs(words):
     return out
 
 
+def wallhaven(words):
+    ask = {"categories": "111", "purity": "100", "atleast": "1920x1080", "sorting": "relevance" if words else "toplist", "topRange": "1M"}
+    if words:
+        ask["q"] = " ".join(words)
+    try:
+        d = json.load(fetch("https://wallhaven.cc/api/v1/search?" + urllib.parse.urlencode(ask)))
+    except (OSError, ValueError):
+        return []
+    return [{"id": e["id"], "title": "Wallhaven " + e["id"] + " · " + e.get("resolution", ""), "author": "Wallhaven", "film": False,
+             "thumb": (e.get("thumbs") or {}).get("small") or "", "url": e.get("path") or ""} for e in d.get("data", []) if e.get("path")]
+
+
 def library():
     try:
         pictures = subprocess.run(["xdg-user-dir", "PICTURES"], capture_output=True, text=True).stdout.strip()
@@ -64,13 +77,13 @@ def library():
 
 
 def get(url, name):
-    if not re.match(r"https://(www\.bing\.com|motionbgs\.com)/", url):
+    if not re.match(r"https://(www\.bing\.com|motionbgs\.com|w\.wallhaven\.cc)/", url):
         return 2
     name = re.sub(r"[^\w .-]", "", name, flags=re.U).strip()[:80] or "wallpaper"
     try:
         r = fetch(url, timeout=60)
         kind = r.headers.get("Content-Type", "")
-        ending = ".mp4" if "video" in kind or "mp4" in r.geturl() else ".jpg"
+        ending = ".mp4" if "video" in kind or "mp4" in r.geturl() else (".png" if "png" in kind else ".jpg")
         path = os.path.join(library(), name + ending)
         with open(path + ".part", "wb") as f:
             while True:
@@ -92,6 +105,9 @@ def main(a):
         return 0
     if a[:1] == ["motionbgs"]:
         print(json.dumps(motionbgs(a[1:]), ensure_ascii=False))
+        return 0
+    if a[:1] == ["wallhaven"]:
+        print(json.dumps(wallhaven(a[1:]), ensure_ascii=False))
         return 0
     if len(a) == 3 and a[0] == "get":
         return get(a[1], a[2])
