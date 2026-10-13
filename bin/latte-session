@@ -40,8 +40,13 @@ run="$XDG_RUNTIME_DIR/latteos"
 next="$run/next-session"                   # latte-game writes where to go when the running session ends
 mkdir -p "$run"; rm -f "$next"
 
+# What ended a session goes to the journal as well: this file is the user's, the journal is what a look
+# back at an earlier start reads (whyd, with the rules in system/whyd). Not from tests/test_session.sh.
+journal() { [ -n "${LATTE_SHARE:-}" ] || logger -t latte-session -p "user.$1" -- "$2" 2>/dev/null; }
+
 run_safe() {   # $1 the reason's key, $2 the technical detail; latte-safe shows both
     echo "SAFE: $1 ${2:-}"
+    case "$1" in chosen|kernel-safe|forced-once) journal notice "SAFE: $1" ;; *) journal err "SAFE: $1 ${2:-}" ;; esac
     printf '%s\n%s\n' "$1" "${2:-}" > "$run/safe-reason"
     export LATTE_MODE=safe WLR_RENDERER=pixman LIBGL_ALWAYS_SOFTWARE=1 XDG_CURRENT_DESKTOP=labwc:wlroots
     unset MESA_LOADER_DRIVER_OVERRIDE
@@ -158,11 +163,13 @@ while true; do
         exit 0
     fi
     crash_report "$rc" "$dt" "$t0"
+    journal warning "Hyprland ended: exit $rc after $dt s"
     [ $dt -lt 60 ] && run_safe desktop-crash "Hyprland exit $rc after $dt s"
     now=$(date +%s); keep=()
     for t in "${restarts[@]}"; do [ $(( now - t )) -lt 600 ] && keep+=("$t"); done
     restarts=("${keep[@]}" "$now")
     [ ${#restarts[@]} -gt 3 ] && run_safe desktop-crashes "Hyprland crashed ${#restarts[@]} times in 10 minutes"
     echo "Hyprland crashed after $dt s: restart ${#restarts[@]} of 3"
+    journal err "Hyprland crashed after $dt s: restart ${#restarts[@]} of 3"
     latte-boot session-start >/dev/null
 done

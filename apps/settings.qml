@@ -482,7 +482,7 @@ ShellRoot {
                 Label { visible: crashed.said !== ""; width: view.room; text: crashed.said.split("\n").slice(0, 30).join("\n"); wrapMode: Text.WrapAnywhere
                         font.family: "JetBrains Mono"; font.pixelSize: 12; color: Theme.dim; maximumLineCount: 30; elide: Text.ElideRight }
                 Pill { visible: crashed.said !== ""; icon: "clipboard"; text: I18n.tr("Copy the report")
-                       onPressed: Quickshell.execDetached(["sh", "-c", "wl-copy < /var/lib/latteos/login/last-crash.log"]) } }
+                       onPressed: Quickshell.execDetached(["latte-safe", "why", "copy"]) } }
             Pill { visible: shell.page === "startmode"; icon: "activity"; text: I18n.tr("Performance and graphics"); onPressed: shell.go("performance") }
 
             // what is on the disks

@@ -238,6 +238,16 @@ Schválené 12. 10. 2026. Pracuje sa **zhora nadol, neskáče sa**; nový nápad
      (d) whyd ako voliteľná závislosť (balík rpm z vydaní, riadok vo `FILES` a v `TRETIE-STRANY.md`), bez neho ostane
      dnešný výpis. *Overiť:* či whyd vie aj aktuálny štart od času pádu (pád relácie bez reštartu), inak to ostáva na
      `latte-session`.
+   **Urobené 13. 10.:** (a) whyd 0.1.1 vyskúšaný na latte-lab z balíka vydania (bez inštalácie): číta tento
+   štart (`-b 0`) aj predošlé, takže pád relácie bez reštartu vidí tiež; (b) vlastné pravidlá
+   `system/whyd/latteos.toml` (prechod do SAFE a prečo, pád a nový štart Hyprlandu, pád enginu Goo, rozhodnutie
+   `latte-boot`) — `whyd rules test` prejde; `latte-session` píše to, čo ukončilo reláciu, aj do žurnálu
+   (predtým iba do `session.log`, ktorý whyd nevidí); (c) `latte-safe why` a v ponuke SAFE položky **w** (prečo
+   sa skončila minulá relácia: zápis LatteOS + whyd pre tento a predošlý štart) a **c** (to isté ako správa do
+   schránky); to isté tlačidlo v Nastaveniach › Štart a režim SAFE; (d) whyd je voliteľný (`FILES`,
+   `TRETIE-STRANY.md`), bez neho ostane zápis LatteOS. **Neoverené:** pravidlá SAFE a pádu na skutočnom páde
+   (iba ich príklady); položky v ponuke SAFE naostro. whyd ukazuje začiatok relácie o 2 h posunutý (jeho chyba
+   s časovým pásmom, nahlásiť autorovi). **Ostáva z bodu 4:** ovládanie okien na labwc — čo presne, ukáže bod 1.
 5. [ ] **GooEngine:** záťaž v pokoji (12. 10.: 44 % jadra, 6. 10.: 17 %), hĺbková kontrola LensGoo, monitor
    pripojený za behu, 1024 × 768.
    Fresh, merané 12. 10. v `tests/screen.sh` (RX 640, 60 snímok/s, `PLEAMAR_TIMING=1`): scéna s 32 miestami 24 % jadra

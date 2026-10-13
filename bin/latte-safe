@@ -4,6 +4,8 @@
 #   latte-safe              the menu (the SAFE button and Super+Space open it)
 #   latte-safe try-normal   clears the crash count and logs out: the next login tries the full desktop
 #   latte-safe menu-xml     labwc's right-click menu, in the user's language
+#   latte-safe why [copy]   why the last session ended: the crash LatteOS noted and, with whyd installed, what the
+#                           journal says of this start and of the one before; `copy` puts a report on the clipboard
 share="${LATTE_SHARE:-/usr/share/latteos}"
 
 # The words come from the table the scenes use, so SAFE speaks the language the rest of the desktop does.
@@ -16,7 +18,32 @@ if [ -r "$share/goo/lang/${lang%%_*}.plm" ]; then
 fi
 t() { printf '%s' "${WORDS[$1]:-$1}"; }
 
+# whyd reads its rules from the user's own folder only: LatteOS's are linked there
+whyd_rules() {
+    command -v whyd >/dev/null || return 1
+    local dir="${XDG_CONFIG_HOME:-$HOME/.config}/whyd/rules"
+    [ -r "$share/whyd/latteos.toml" ] && mkdir -p "$dir" && ln -sfn "$share/whyd/latteos.toml" "$dir/latteos.toml"
+    return 0
+}
+crash_log="${LATTE_STATE_DIR:-/var/lib/latteos}/login/last-crash.log"
+
 case "${1:-}" in
+why)
+    if [ "${2:-}" = copy ]; then
+        { [ -s "$crash_log" ] && { echo '```'; cat "$crash_log"; echo '```'; echo; }
+          whyd_rules && { whyd report -b 0 2>/dev/null; echo; whyd report -b -1 2>/dev/null; }
+        } | wl-copy 2>/dev/null && echo "$(t "The report is on the clipboard")"
+        exit
+    fi
+    echo "== $(t "The last crash")"
+    if [ -s "$crash_log" ]; then cat "$crash_log"; else echo "$(t "No crash is recorded.")"; fi
+    if whyd_rules; then
+        echo; echo "== $(t "This start")"; whyd -b 0 --text 2>&1
+        echo; echo "== $(t "The start before")"; whyd -b -1 --text 2>&1
+    else
+        echo; echo "$(t "With whyd installed, this also says what the journal recorded.")"
+    fi
+    exit ;;
 try-normal)
     latte-boot reset && labwc --exit
     exit ;;
@@ -54,6 +81,8 @@ log="${XDG_STATE_HOME:-$HOME/.local/state}/latteos/session.log"
 while true; do
     clear
     printf '\n  LatteOS SAFE\n\n  %s%s\n\n' "$reason" "${detail:+ ($detail)}"
+    printf '  w) %s\n' "$(t "Why the last session ended")"
+    printf '  c) %s\n' "$(t "Copy that as a report")"
     printf '  1) %s\n' "$(t "Diagnostics: the last log of the session and of the desktop")"
     printf '  2) %s\n' "$(t "Try the full desktop again")"
     printf '  3) %s\n' "$(t "Terminal")"
@@ -68,6 +97,8 @@ while true; do
     case "$choice" in
         1) { echo "== $log"; tail -n 80 "$log"; echo; echo "== Hyprland";
              tail -n 60 "$(ls -t "$XDG_RUNTIME_DIR"/hypr/*/hyprland.log 2>/dev/null | head -1)" 2>/dev/null; } | less -R ;;
+        w|W) "$0" why | less -R ;;
+        c|C) "$0" why copy; read -r -p "Enter…" ;;
         2) exec "$0" try-normal ;;
         3) foot & ;;
         4) nmtui ;;

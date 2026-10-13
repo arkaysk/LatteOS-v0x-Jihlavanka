@@ -1,0 +1,121 @@
+# LatteOS's own rules for whyd (github.com/vmaltarello/whyd): what the session's guard, the boot check and the
+# Goo engine write to the journal, so that "why did the last session end" names them instead of listing them
+# as lines nobody recognised. latte-safe links this file into ~/.config/whyd/rules/.
+
+[[rule]]
+id       = "latteos.safe-chosen"
+kind     = "match"
+category = "session"
+severity = "info"
+title    = "the SAFE desktop was chosen"
+source   = "latte-session"
+message  = '^SAFE: (?:chosen|kernel-safe|forced-once)\b'
+explain  = """
+SAFE was asked for: at the login screen, in the boot menu, or for one start from the Settings.
+Nothing went wrong.
+"""
+[[rule.example]]
+match = "SAFE: chosen"
+[[rule.example]]
+nomatch = "SAFE: desktop-crash Hyprland exit 134 after 20 s"
+
+[[rule]]
+id       = "latteos.safe"
+kind     = "match"
+category = "session"
+severity = "critical"
+title    = "LatteOS went to the SAFE desktop: {why}"
+note     = "{detail}"
+source   = "latte-session"
+message  = '^SAFE: (?P<why>\S+) ?(?P<detail>.*)$'
+explain  = """
+The full desktop could not be used, so the session started the plain one that always works.
+desktop-crash: Hyprland ended within a minute of starting. desktop-crashes: it crashed more than
+three times in ten minutes. crashes: the count kept across starts was too high. Other words are
+what the boot check found (no graphics driver, a boot option).
+
+In SAFE, "Try the full desktop again" clears the count.
+"""
+[[rule.example]]
+match = "SAFE: desktop-crash Hyprland exit 134 after 20 s"
+[[rule.example]]
+match = "SAFE: crashes"
+
+[[rule]]
+id       = "latteos.hyprland-crash"
+kind     = "match"
+category = "session"
+severity = "critical"
+title    = "Hyprland crashed and was started again"
+note     = "after {seconds} s; restart {n} of 3"
+source   = "latte-session"
+message  = '^Hyprland crashed after (?P<seconds>\d+) s: restart (?P<n>\d+) of 3'
+explain  = """
+The compositor of the full desktop ended badly. The windows that were open are gone; the
+session started it again. A fourth crash in ten minutes ends in SAFE.
+"""
+[[rule.example]]
+match = "Hyprland crashed after 480 s: restart 1 of 3"
+
+[[rule]]
+id       = "latteos.hyprland-end"
+kind     = "match"
+category = "session"
+severity = "warning"
+title    = "Hyprland ended with exit code {code}"
+note     = "after {seconds} s"
+source   = "latte-session"
+message  = '^Hyprland ended: exit (?P<code>[1-9]\d*) after (?P<seconds>\d+) s'
+[[rule.example]]
+match = "Hyprland ended: exit 134 after 20 s"
+[[rule.example]]
+nomatch = "Hyprland ended: exit 0 after 5020 s"
+
+[[rule]]
+id       = "latteos.boot-safe"
+kind     = "match"
+category = "boot"
+severity = "warning"
+title    = "the boot check decided on SAFE"
+note     = "{reason}"
+source   = "latte-boot"
+message  = 'latte-boot: safe · (?P<reason>.+)$'
+explain  = """
+Before the login screen LatteOS looks at the graphics card and at how the last starts went.
+It found a reason not to try the full desktop: the line says which.
+"""
+[[rule.example]]
+match = "latte-boot: safe · pixman · safe: 3 crashes in a row"
+[[rule.example]]
+nomatch = "latte-boot: normal · hw · eco: the graphics test timed out (3005 ms), going with the amdgpu driver"
+
+[[rule]]
+id       = "latteos.boot-probe"
+kind     = "match"
+category = "boot"
+severity = "info"
+title    = "the graphics test at boot timed out"
+source   = "latte-boot"
+message  = 'the graphics test timed out'
+explain  = """
+The test of the graphics card did not answer in time, usually because the disk was busy at a
+cold start. LatteOS then goes by the driver alone. The login is not held up by it.
+"""
+[[rule.example]]
+match = "latte-boot: normal · hw · eco: the graphics test timed out (3005 ms), going with the amdgpu driver; tier: AMD gfx803, 4 GB VRAM"
+
+[[rule]]
+id       = "latteos.goo-crash"
+kind     = "match"
+category = "session"
+severity = "warning"
+title    = "the Goo engine crashed and was started again"
+note     = "{unit}: {how} {status}"
+source   = "systemd"
+message  = '^(?P<unit>latte-goo(?:-side@\S+)?\.service): Main process exited, code=(?P<how>killed|dumped|exited), status=(?P<status>\S+)'
+explain  = """
+The scene that draws the drops and the bar ended badly. systemd starts it again within a
+second or two; cards that were open are closed.
+"""
+[[rule.example]]
+match = "latte-goo.service: Main process exited, code=killed, status=9/KILL"

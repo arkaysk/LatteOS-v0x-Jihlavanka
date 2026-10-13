@@ -118,6 +118,7 @@
 /usr/share/latteos/hypr/hypridle.conf                   <- system/hypr/hypridle.conf
 /usr/lib64/latteos/latte-events.so                      <- plugin:latte-events
 /usr/share/latteos/labwc/rc.xml                         <- system/labwc/rc.xml
+/usr/share/latteos/whyd/latteos.toml                    <- system/whyd/latteos.toml
 /usr/share/latteos/labwc/autostart                      <- system/labwc/autostart
 /usr/share/wayland-sessions/latteos.desktop             <- system/sessions/latteos.desktop
 /usr/share/wayland-sessions/latteos-safe.desktop        <- system/sessions/latteos-safe.desktop
@@ -203,6 +204,7 @@ optional: brightnessctl power-profiles-daemon                        # the brigh
 optional: steam gamescope gamescope-session gamescope-session-steam  # the Game session; without them it is not offered
 /usr/bin/pleamar: pleamar v0.3.2 (github.com/k4ditano/pleamar) built with patches/pleamar-*.patch; see patches/README.md
 optional /usr/lib64/latteos/hyprbars.so: hyprbars (github.com/hyprwm/hyprland-plugins) built for the installed Hyprland with patches/hyprbars-latte.patch
+optional /usr/bin/whyd: whyd (github.com/vmaltarello/whyd, the rpm of its releases): SAFE then says why the last session ended, from the journal
 optional /usr/lib64/latteos/hyprglass.so: hyprglass (github.com/hyprnux/hyprglass) built for the installed Hyprland: the glass windows that go with drops of glass
 
 # What `./install --go` runs once the files are in place, a command a line. USER stands for every user of the
