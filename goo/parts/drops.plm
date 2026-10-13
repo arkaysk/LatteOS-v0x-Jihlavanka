@@ -137,6 +137,8 @@ part Drops {
     // and how long that takes (`gone.*`) and counts up. The window shrinks into a drop where it was, the drop
     // falls from rest as any drop does, and the surface ripples where it lands.
     event win_min ->
+    event win_urgent ->                        // the window `win_wants` asks to be looked at
+    text win_wants = ""
     fact win.x = 0
     fact win.y = 0
     fact win.w = 0

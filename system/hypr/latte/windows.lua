@@ -113,6 +113,11 @@ local function dropped(w, x, y)
     end
 end
 hl.on("window.close", function(w) if w then before[w.address] = nil end end)
+-- a window that asks to be looked at: the bar that has it waves
+hl.on("window.urgent", function(w)
+    if not w or not w.address then return end
+    hl.exec_cmd(string.format('latte-say "text win_wants %s" "emit win_urgent"', w.address))
+end)
 
 local function windows_on(workspace)
     local out = {}

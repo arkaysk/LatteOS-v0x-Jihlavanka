@@ -145,7 +145,7 @@ a QuickGoo (vo Fresh; do v0.3 QueenGoo pred rohovou lištou Noctalie).
 | Goo | Ľavý klik | Pravý klik | Koliesko |
 |---|---|---|---|
 | **Hlava BarGoo** | ďalší režim okien | ukázať plochu (ako Win+D; druhý klik vráti okná) | ďalšie okno / posun pásky |
-| **Ikry okien** | prepnúť / minimalizovať | ponuka okna | — |
+| **Ikry okien** (plávajúce okná; inde po postáti myši na hlave) | prepnúť / minimalizovať | ponuka okna | — |
 | **PowerGoo** | karta PowerGoo | pás výkonu zap / vyp | veľkosť |
 | **LensGoo** | spúšťač (aj kláves Win) | rýchly zoznam aplikácií | veľkosť |
 | **ClockGoo** | upozornenia a kalendár | karta času | veľkosť |
@@ -163,6 +163,11 @@ Na každom ďalšom monitore je vlastný BarGoo s oknami toho monitora (ako pane
 ostatné kvapky sú iba na hlavnom monitore.
 - **Hlava** (najväčšia kvapka) ukazuje režim okien: **páska** (ako niri — nič sa neminimalizuje), **dlaždice**,
   **plávajúce** (ako Windows).
+- **Kedy sú ikry vonku (rozhodnuté 13. 10.):** iba v režime **plávajúce**. V **páske** a **dlaždiciach** hlava
+  ukáže **počet okien** a **zavlní sa**, keď niektoré okno hrá zvuk alebo chce pozornosť; keď na hlave postojí myš,
+  ikry sa dočasne vysunú (aj kvôli oknám na iných plochách) a zasunú sa, keď myš od nich odíde. Či sú vonku,
+  určuje jedno miesto v logike (`berries_out()` v `goo/lib/bar.luau`); kreslenie ikier nesmie predpokladať, že sú
+  viditeľné — rovnaký prepínač neskôr poslúži režimu Glance (ROADMAP „Teraz“, koniec).
 - **Ikry okien:** okná ako menšie kvapky s ikonou aplikácie; okná tej istej aplikácie sa zhlukujú do **strapcov**;
   čím viac okien, tým menšie; myš nad strapcom ho rozvinie. Aktívne okno plnšie, minimalizované menšie a stlmené.
   Ikry sa lepia iba ku BarGoo. **48 miest**, nad nimi posledná ikra „Ďalšie okná“ otvorí prehľad.

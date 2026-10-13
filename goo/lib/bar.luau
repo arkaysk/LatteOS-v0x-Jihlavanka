@@ -3,6 +3,12 @@
 -- and the rest above it, the same way every time; the more of them, the smaller. The pointer over a bunch
 -- spreads it out into a row. The window in front is fuller, one put away smaller and dimmed.
 --
+-- The berries are out only where windows float. On the tape and in tiles every window is in sight already:
+-- the head then says how many there are, and waves when one of them plays a sound or wants attention; the
+-- pointer resting on the head brings the berries out for as long as it stays with them, which is also the way
+-- to a window on another desktop. Whether they are out is `berries_out()`'s to say and nobody else's: nothing
+-- here may take a berry for granted.
+--
 -- A bunch only piles up where nothing is above it: under a window it lies down in a row along the edge.
 -- A press on a berry is a press on a taskbar: the window comes forward, the one in front is put away.
 local E = require("lib/engine")
@@ -38,6 +44,13 @@ local middles = {}                   -- { key, x }: where each bunch's middle is
 local hot, hot_n = nil, 0            -- the bunch under the pointer
 local mode = 0
 local blocks, low = {}, {}           -- windows above the bar as stretches along it; which bunches lie low
+local peeking = false                -- the pointer has rested on the head: the berries are out for now
+local urgent = {}                    -- address → true: the windows that want attention
+local audio = {}                     -- what is playing, as the service tells it
+
+-- The one place that says how the windows are shown beside the head.
+local function berries_out() return mode == 2 or peeking end
+M.berries_out = berries_out
 
 -- ── a window's app ───────────────────────────────────────────────────────────────────────────────────────────
 -- The launcher's entry gives a window its icon and says which windows belong together: by the class its
@@ -116,10 +129,13 @@ end
 local function layout()
     local head = E.get(HEAD)
     if not head then return end
+    local out = berries_out()
+    local count = (not out and #wins > 0) and tostring(#wins) or ""
+    head:set({ label = count, still = count ~= "" })         -- with a number on it the head does not sink: it has to stay whole
     local groups, first = {}, {}
     local over = #wins > ROOM
     for i, w in ipairs(wins) do
-        if i > ROOM then break end
+        if not out or i > ROOM then break end
         local key = (over and i == ROOM) and "~more" or key_of(w)
         if not groups[key] then groups[key] = {} first[#first + 1] = key end
         table.insert(groups[key], i)
@@ -214,7 +230,43 @@ function M.leave()
     hot_n += 1
     local mine = hot_n
     after(500, function() if mine == hot_n and hot then hot = nil layout() end end)
+    -- brought out by the pointer, they go back in once it has left them and the head alone
+    after(900, function() if mine == hot_n and peeking then peeking = false layout() end end)
 end
+-- the pointer on the head, or off it: resting there brings the berries out
+function M.rest(on)
+    if not on then return M.leave() end
+    hot_n += 1
+    local mine = hot_n
+    after(450, function() if mine == hot_n and not berries_out() then peeking = true layout() end end)
+end
+
+-- A wave from the head: a window wants to be looked at. Only while the berries are in; out, they are seen.
+local function wave(force)
+    local head = E.get(HEAD)
+    if not head or berries_out() then return end
+    head:squash()
+    head:ripple(force)
+end
+-- a window of this bar is playing: what plays is told by its program's name, a window by its class
+local function sounding()
+    for _, s in ipairs(type(audio.apps) == "table" and audio.apps or {}) do
+        local b = (s.binary or s.name or ""):lower()
+        if s.playing and not s.muted and b ~= "" then
+            for _, w in ipairs(wins) do
+                local c = w.class:lower()
+                if c ~= "" and (c:find(b, 1, true) or b:find(c, 1, true)) then return true end
+            end
+        end
+    end
+    return false
+end
+on("win_urgent", function()
+    local address = text.win_wants or ""
+    for _, w in ipairs(wins) do
+        if w.address == address and not w.front then urgent[address] = true wave(6) end
+    end
+end)
 -- x: where along the bar's edge the berry was let go, px
 function M.reorder(key, x)
     local head = E.get(HEAD)
@@ -243,7 +295,7 @@ on("window_mode", function(n)
     local head = E.get(HEAD)
     if head and head.edge ~= 0 then M.band() end
     if not MODES[n] or n == mode then return end
-    mode = n
+    mode, peeking = n, false
     show_mode()
     layout()
 end)
@@ -281,7 +333,7 @@ on("win_min", function()
     if w <= 0 or h <= 0 or sw <= 0 or x >= sw or y >= sh then return end
     local head = E.get(HEAD)
     local cx, cy = x + w / 2, y + h / 2
-    local to = (head and head.edge == 0) and math.min(E.along(head) + 90, E.limit(head)) or cx
+    local to = (head and head.edge == 0) and math.min(E.along(head) + (berries_out() and 90 or 0), E.limit(head)) or cx
     local takes = math.sqrt(2 * math.max(40, sh - 6 - cy) / 800)            -- the scene's gravity, px/s²
     fact["gone.x0"], fact["gone.y0"], fact["gone.x1"], fact["gone.w"], fact["gone.h"], fact["gone.for"] = cx, cy, to, w, h, takes
     fact.gone_n += 1
@@ -314,6 +366,10 @@ function M.refresh()
         local s = table.concat(sig, "\2")
         if s == signature then return end
         signature, wins, blocks = s, list, above
+        -- a window that wanted attention has it once it is in front, or is gone
+        local there = {}
+        for _, w in ipairs(list) do if urgent[w.address] and not w.front then there[w.address] = true end end
+        urgent = there
         layout()
         -- the drops on the other edges step out of the way of the windows in sight
         local seen = {}
@@ -336,6 +392,8 @@ function M.start()
         soon = after(60, function() soon = nil M.refresh() end)
     end)
     every(2000, M.refresh)           -- a window moved or resized changes nothing the service reports
+    pcall(sys.watch, "audio", function(v) audio = type(v) == "table" and v or {} end)
+    every(3500, function() if next(urgent) then wave(5) elseif sounding() then wave(2.5) end end)
     on("fact:sw", function() signature = "" M.refresh() end)
     wm.tell_mode()
     M.band()

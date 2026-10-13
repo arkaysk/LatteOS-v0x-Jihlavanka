@@ -113,6 +113,8 @@ Schválené 12. 10. 2026. Pracuje sa **zhora nadol, neskáče sa**; nový nápad
         - [x] režim AI v LensGoo (13. 10.): `bin/latte-ai` (zatiaľ iba Claude cez `claude -p`), rozhovor v karte, Win+C.
         - [x] prichytenie ťahaním (13. 10.): plugin `plugins/latte-events` (udalosť „okno pustené“) a zóny
           v `system/hypr/latte/windows.lua`; skúša sa myšou kompozitora `tests/pointer.py`.
+        - [x] BarGoo: ikry iba v režime plávajúce (rozhodnuté a urobené 13. 10.) — v páske a dlaždiciach počet okien
+          na hlave, vlnenie pri zvuku a pri žiadosti okna o pozornosť, ikry po postáti myši na hlave.
         - [x] sklo okien (13. 10.): plugin Hyprglass, zapína sa s materiálom Sklenená káva (`system/hypr/latte/glass.lua`).
         Overené 12. 10. v `tests/screen.sh` (Hyprland bez obrazovky na RX 640, snímky, falošná myš): štart, pokoj
         a nadnesenie, ťahanie k okraju a pád, karty všetkých troch kvapiek, spustenie aplikácie, príkaz s varovaním,
