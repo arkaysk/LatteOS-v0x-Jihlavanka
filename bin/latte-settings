@@ -22,6 +22,8 @@
   latte-settings sizes          {"folders": [{"id", "path", "size"}], "trash", "cache"}: how much the user's own
                                 folders hold, in bytes; it reads them all, so it takes a while
   latte-settings account        {"uid", "user", "name", "picture"}: who the user is to the system
+  latte-settings password       changes the user's own password to the one on standard input (never an argument);
+                                the system asks for the present one itself. Prints {"ok"} or {"ok": false, "error"}
   latte-settings icons          {"chosen", "sets": [{"id", "name", "folder", "file", "trash"}]}: the icon sets this
                                 system has, each with three of its pictures, and the one in use
   latte-settings icons ID       makes that set the one files and apps are shown with (LatteOS's own apps, the
@@ -217,6 +219,29 @@ ICON_SETS = (("Yaru", "Yaru"), ("Papirus", "Papirus"), ("elementary", "elementar
 ICON_DEFAULT = "Yaru"
 
 
+def password():
+    """Through AccountsService, which asks for the present password in the desktop's own dialog (polkit)."""
+    new = sys.stdin.readline().rstrip("\n")
+    if len(new) < 1:
+        return {"ok": False, "error": "empty"}
+    try:
+        hashed = subprocess.run(["openssl", "passwd", "-6", "-stdin"], input=new + "\n", capture_output=True, text=True, timeout=10).stdout.strip()
+    except (OSError, subprocess.TimeoutExpired):
+        hashed = ""
+    if not hashed.startswith("$6$"):
+        return {"ok": False, "error": "no openssl"}
+    try:
+        from gi.repository import Gio, GLib
+        bus = Gio.bus_get_sync(Gio.BusType.SYSTEM, None)
+        bus.call_sync("org.freedesktop.Accounts", "/org/freedesktop/Accounts/User%d" % os.getuid(), "org.freedesktop.Accounts.User", "SetPassword",
+                      GLib.Variant("(ss)", (hashed, "")), None, Gio.DBusCallFlags.NONE, 120000, None)
+    except ImportError:
+        return {"ok": False, "error": "no gi"}
+    except Exception as e:                      # refused, or the dialog was closed
+        return {"ok": False, "error": "refused" if "NotAuthorized" in str(e) or "Dismissed" in str(e) or "PermissionDenied" in str(e) else str(e)[:120]}
+    return {"ok": True}
+
+
 def icon_file(theme, name):
     """A big picture of that name from the set, or "". Sets lay their folders out as size/kind or kind/size."""
     for root in ("/usr/share/icons", os.path.expanduser("~/.local/share/icons"), os.path.expanduser("~/.icons")):
@@ -403,6 +428,9 @@ def main(a):
         if a == [word]:
             print(json.dumps(what(), ensure_ascii=False))
             return 0
+    if a == ["password"]:
+        print(json.dumps(password()))
+        return 0
     if a[:1] == ["icons"] and len(a) <= 2:
         print(json.dumps(icons(a[1:]), ensure_ascii=False))
         return 0

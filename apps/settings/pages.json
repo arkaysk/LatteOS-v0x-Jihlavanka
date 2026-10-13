@@ -146,7 +146,7 @@
     "id": "password",
     "name": "Password and security",
     "icon": "lock",
-    "status": "planned",
+    "status": "ready",
     "words": "password change key"
    },
    {

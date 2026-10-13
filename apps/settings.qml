@@ -131,6 +131,13 @@ ShellRoot {
     Process { id: fetcher; stdout: StdioCollector { onStreamFinished: { const path = this.text.trim(); shell.fetching = ""
         if (path !== "") { shell.bgSet(["picture", path]); pictures.ask(["latte-settings", "wallpapers"]) } } } }
     Word { id: tier; name: "tier" }
+    // the password: the new one goes to latte-settings on its input, the present one is asked for by the system
+    property string passSaid: ""
+    Process { id: passer; command: ["latte-settings", "password"]; stdinEnabled: true
+              property string fresh: ""
+              onStarted: { write(fresh + "\n"); fresh = ""; stdinEnabled = false }
+              stdout: StdioCollector { onStreamFinished: { let r = {}; try { r = JSON.parse(this.text) } catch (e) {}
+                  shell.passSaid = r.ok ? I18n.tr("The password is changed.") : (r.error === "refused" ? I18n.tr("Not changed: the present password was not given.") : I18n.tr("Not changed.")) } } }
     Word { id: ai; name: "ai" }
     // whatever else in the system is AI hears of the switch: skwd-wall's search model (bin/latte-wall)
     Timer { id: aiLater; interval: 700; onTriggered: Quickshell.execDetached(["latte-wall", "ai"]) }
@@ -786,6 +793,17 @@ ShellRoot {
                     Pill { required property var modelData; text: I18n.tr(modelData.name); strong: idle.screen === modelData.s; onPressed: idle.choose(idle.lock, modelData.s) } } }
             Label { visible: shell.page === "lock"; width: view.room; wrapMode: Text.WordWrap; color: Theme.dim; font.pixelSize: 13
                     text: I18n.tr("The session also locks before the computer goes to sleep. Win+L locks it at once.") }
+
+            // the password
+            Part { visible: shell.page === "password"; width: view.room; title: I18n.tr("Change your password"); note: I18n.tr("Type the new one twice. The system then asks for the present one in its own window.")
+                Field { id: pass1; width: 320; icon: "lock"; secret: true; hint: I18n.tr("New password") }
+                Field { id: pass2; width: 320; icon: "lock"; secret: true; hint: I18n.tr("New password again"); onAccepted: changer.pressed() }
+                Item { width: view.room; height: 1 }
+                Pill { id: changer; icon: "check"; strong: pass1.text !== "" && pass1.text === pass2.text; text: I18n.tr("Change password")
+                       onPressed: { if (pass1.text === "" || pass1.text !== pass2.text) { shell.passSaid = I18n.tr("The two do not match."); return }
+                                    shell.passSaid = ""; passer.running = false; passer.stdinEnabled = true; passer.fresh = pass1.text; passer.running = true; pass1.text = ""; pass2.text = "" } }
+                Label { visible: shell.passSaid !== ""; text: shell.passSaid; color: Theme.gold; height: 36; verticalAlignment: Text.AlignVCenter } }
+            Pill { visible: shell.page === "password"; icon: "lock"; text: I18n.tr("Lock and idle"); onPressed: shell.go("lock") }
 
             // the login screen: what it shows besides the login
             Part { visible: shell.page === "loginscreen"; width: view.room; title: I18n.tr("Under the surface"); note: I18n.tr("A crash is always shown first. Otherwise the headlines of the feeds below.")
