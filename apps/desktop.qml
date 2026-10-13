@@ -35,7 +35,7 @@ ShellRoot {
     function set(key, value) { const p = Object.assign({}, prefs); p[key] = value; prefs = p; keep.restart() }
     Timer { id: keep; interval: 400; onTriggered: Quickshell.execDetached(["sh", "-c", "mkdir -p \"$1\" && printf '%s' \"$2\" > \"$1/desktop.json\"", "sh", desk.config, JSON.stringify(desk.prefs)]) }
     // a cell's width and height, and the picture in it
-    readonly property var sizes: ({ small: [84, 78, 36], medium: [104, 98, 52], large: [136, 128, 76] })
+    readonly property var sizes: ({ small: [84, 78, 36], medium: [104, 98, 52], large: [136, 128, 76], xlarge: [176, 166, 112], huge: [236, 220, 164] })
     readonly property var size: sizes[prefs.size] || sizes.medium
     readonly property int cellW: size[0]
     readonly property int cellH: size[1]
@@ -168,7 +168,7 @@ ShellRoot {
         const big = (id, text) => ({ text: text, checked: p.size === id, run: () => desk.set("size", id) })
         const by = (id, text) => ({ text: text, checked: p.sort === id, run: () => { const q = Object.assign({}, desk.prefs); q.sort = id; q.auto = true; desk.prefs = q; keep.restart() } })
         menu.open(x, y, [
-            { icon: "layout-grid", text: I18n.tr("View"), more: [big("large", I18n.tr("Large icons")), big("medium", I18n.tr("Medium icons")), big("small", I18n.tr("Small icons")), { line: true },
+            { icon: "layout-grid", text: I18n.tr("View"), more: [big("huge", I18n.tr("Huge icons")), big("xlarge", I18n.tr("Extra large icons")), big("large", I18n.tr("Large icons")), big("medium", I18n.tr("Medium icons")), big("small", I18n.tr("Small icons")), { line: true },
                 { text: I18n.tr("Auto arrange icons"), checked: p.auto, run: () => desk.set("auto", !p.auto) },
                 { text: I18n.tr("Show desktop icons"), checked: true, run: () => Quickshell.execDetached(["latte-desktop", "off"]) }] },
             { icon: "arrows-sort", text: I18n.tr("Sort by"), more: [by("name", I18n.tr("Name")), by("size", I18n.tr("Size")), by("kind", I18n.tr("Item type")), by("date", I18n.tr("Date modified")), { line: true },
@@ -322,7 +322,7 @@ ShellRoot {
                     color: ic.picked ? Qt.rgba(Theme.gold.r, Theme.gold.g, Theme.gold.b, 0.30) : (hit.containsMouse || desk.target === ic.path || onto.containsDrag ? Qt.rgba(1, 1, 1, 0.13) : "transparent")
                     border.width: 1; border.color: ic.picked || desk.target === ic.path || onto.containsDrag ? Qt.rgba(Theme.gold.r, Theme.gold.g, Theme.gold.b, 0.7) : "transparent" }
                 Item { id: tile; width: desk.size[2]; height: desk.size[2]; anchors.horizontalCenter: parent.horizontalCenter; y: 6
-                    Image { id: shown; anchors.fill: parent; source: ic.picture; sourceSize.width: 160; sourceSize.height: 160; fillMode: Image.PreserveAspectFit; asynchronous: true; smooth: true }
+                    Image { id: shown; anchors.fill: parent; source: ic.picture; sourceSize.width: 256; sourceSize.height: 256; fillMode: Image.PreserveAspectFit; asynchronous: true; smooth: true }
                     Glyph { anchors.centerIn: parent; visible: shown.status !== Image.Ready; name: ic.glyph; font.pixelSize: parent.width * 0.7; color: "white"
                             style: Text.Outline; styleColor: Qt.rgba(0, 0, 0, 0.4) }
                     Rectangle { visible: ic.badge !== ""; anchors.right: parent.right; anchors.top: parent.top; anchors.rightMargin: -6; anchors.topMargin: -4

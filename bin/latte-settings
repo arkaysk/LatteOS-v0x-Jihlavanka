@@ -22,6 +22,10 @@
   latte-settings sizes          {"folders": [{"id", "path", "size"}], "trash", "cache"}: how much the user's own
                                 folders hold, in bytes; it reads them all, so it takes a while
   latte-settings account        {"uid", "user", "name", "picture"}: who the user is to the system
+  latte-settings icons          {"chosen", "sets": [{"id", "name", "folder", "file", "trash"}]}: the icon sets this
+                                system has, each with three of its pictures, and the one in use
+  latte-settings icons ID       makes that set the one files and apps are shown with (LatteOS's own apps, the
+                                desktop, and apps that follow the system's setting)
   latte-settings loginscreen    {"panel", "news_url", "place", "lat", "lon"}: what the login screen shows (login.conf)
   latte-settings loginscreen panel news|none     what is under the surface when nothing crashed
   latte-settings loginscreen news URL…           the feeds, RSS or Atom, one or more (empty: none)
@@ -198,6 +202,49 @@ def region():
             "locales": sorted(found, key=lambda l: (plain(l["name"]), l["place"]))}
 
 
+# The icon sets offered, the best known first; a set shows up only if the system has it.
+ICON_SETS = (("Yaru", "Yaru"), ("Papirus", "Papirus"), ("elementary", "elementary"), ("Fluent", "Fluent"), ("Mint-Y", "Mint-Y"),
+             ("breeze", "Breeze"), ("Adwaita", "Adwaita"))
+ICON_DEFAULT = "Yaru"
+
+
+def icon_file(theme, name):
+    """A big picture of that name from the set, or "". Sets lay their folders out as size/kind or kind/size."""
+    for root in ("/usr/share/icons", os.path.expanduser("~/.local/share/icons"), os.path.expanduser("~/.icons")):
+        for size in ("256x256", "128x128", "scalable", "96x96", "64x64", "48x48", "128", "96", "64", "48"):
+            for kind in ("places", "mimetypes", "mimes"):
+                for folder in (os.path.join(size, kind), os.path.join(kind, size)):
+                    for ending in (".svg", ".png"):
+                        path = os.path.join(root, theme, folder, name + ending)
+                        if os.path.exists(path):
+                            return path
+    return ""
+
+
+def chosen_icons():
+    try:
+        return open(os.path.join(CONFIG, "icons")).read().split()[0]
+    except (OSError, IndexError):
+        return ICON_DEFAULT
+
+
+def icons(a):
+    have = [(i, n) for i, n in ICON_SETS if any(os.path.isfile(os.path.join(r, i, "index.theme"))
+            for r in ("/usr/share/icons", os.path.expanduser("~/.local/share/icons"), os.path.expanduser("~/.icons")))]
+    if a:
+        if a[0] not in [i for i, _ in have]:
+            return {"ok": False}
+        os.makedirs(CONFIG, exist_ok=True)
+        with open(os.path.join(CONFIG, "icons"), "w") as f:
+            f.write(a[0] + "\n")
+        # apps that ask the system which set to use follow, and the desktop shows the new one at once
+        subprocess.run(["gsettings", "set", "org.gnome.desktop.interface", "icon-theme", a[0]], capture_output=True)
+        subprocess.run(["latte-desktop", "restart"], capture_output=True)
+        return {"ok": True}
+    return {"chosen": chosen_icons(), "sets": [{"id": i, "name": n, "folder": icon_file(i, "folder"), "file": icon_file(i, "text-x-generic"),
+                                                "trash": icon_file(i, "user-trash")} for i, n in have]}
+
+
 LOGIN_CONF = "/var/lib/latteos/login/login.conf"
 
 
@@ -347,6 +394,9 @@ def main(a):
         if a == [word]:
             print(json.dumps(what(), ensure_ascii=False))
             return 0
+    if a[:1] == ["icons"] and len(a) <= 2:
+        print(json.dumps(icons(a[1:]), ensure_ascii=False))
+        return 0
     if a[:1] == ["loginscreen"]:
         print(json.dumps(loginscreen(a[1:]), ensure_ascii=False))
         return 0

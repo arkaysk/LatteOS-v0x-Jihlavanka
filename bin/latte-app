@@ -9,6 +9,12 @@ app="${1:?latte-app NAME [WORD…]}"; shift
 case "${LATTE_TIER:-}" in software|minimal) export QT_QUICK_BACKEND=software ;; esac
 # choosing a file is the desktop's own window for it (the portal), the same one every other app opens
 export QT_QPA_PLATFORMTHEME="${QT_QPA_PLATFORMTHEME:-xdgdesktopportal}"
-# the icons of files and apps come from one set, whatever the session's own theme happens to be
-[ -n "${QS_ICON_THEME:-}" ] || { [ -d /usr/share/icons/breeze ] && export QS_ICON_THEME=breeze || export QS_ICON_THEME=Adwaita; }
+# The icons of files and apps come from one set: the user's choice (Settings › Coffee and cup › Icons), Yaru
+# without one, and a set every system has if that one is missing.
+if [ -z "${QS_ICON_THEME:-}" ]; then
+    set="$(head -n1 "${XDG_CONFIG_HOME:-$HOME/.config}/latteos/icons" 2>/dev/null)"
+    for t in "$set" Yaru breeze Adwaita; do
+        [ -n "$t" ] && [ -f "/usr/share/icons/$t/index.theme" -o -f "$HOME/.local/share/icons/$t/index.theme" ] && { export QS_ICON_THEME="$t"; break; }
+    done
+fi
 LATTE_APP_ARGS="$(printf '%s\n' "$@")" exec qs -n -p "$share/apps/$app.qml"

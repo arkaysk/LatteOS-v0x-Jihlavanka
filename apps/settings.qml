@@ -115,6 +115,7 @@ ShellRoot {
     Run { id: helpers }
     Run { id: who }
     Run { id: logon }
+    Run { id: iconsets }
     Word { id: tier; name: "tier" }
     Word { id: ai; name: "ai" }
     // what latte-boot decided for this start, and whether the next one was asked to be SAFE
@@ -202,7 +203,7 @@ ShellRoot {
     FileView { id: release; path: "/etc/os-release"; printErrors: false; property string pretty: ""
                onLoaded: pretty = (text().match(/^PRETTY_NAME="?([^"\n]*)/m) || ["", ""])[1] }
     onPageChanged: {
-        if (page === "coffee") coffees.ask(["latte-login", "coffees"])
+        if (page === "coffee") { coffees.ask(["latte-login", "coffees"]); iconsets.ask(["latte-settings", "icons"]) }
         if (page === "background") pictures.ask(["latte-settings", "wallpapers"])
         if (page === "about") machine.ask(["latte-devices", "list"])
         emptying = false
@@ -365,6 +366,13 @@ ShellRoot {
                             Rectangle { x: parent.width * 0.38; y: 12; width: parent.width * 0.5; height: 8; radius: 4; color: Theme.cups[parent.parent.parent.modelData.id].cream }
                             Rectangle { x: parent.width * 0.38; y: 28; width: parent.width * 0.36; height: 6; radius: 3; color: Theme.cups[parent.parent.parent.modelData.id].dim }
                             Rectangle { x: parent.width * 0.38; y: 46; width: 40; height: 16; radius: 8; color: Theme.cups[parent.parent.parent.modelData.id].gold } } } } }
+            Part { visible: shell.page === "coffee"; width: view.room; title: I18n.tr("Icons"); note: I18n.tr("What files, folders and apps are shown with: on the desktop, in LatteOS's apps and in apps that follow the system.")
+                Repeater { model: iconsets.data ? iconsets.data.sets : []
+                    Choice { id: set; required property var modelData; width: 200; text: modelData.name; on: iconsets.data.chosen === modelData.id
+                             onPressed: { tell.running = false; tell.command = ["latte-settings", "icons", modelData.id]; tell.running = true }
+                             Row { anchors.centerIn: parent; spacing: 6
+                                   Repeater { model: [set.modelData.folder, set.modelData.file, set.modelData.trash]
+                                              Image { required property string modelData; width: 48; height: 48; source: modelData === "" ? "" : "file://" + modelData; sourceSize.width: 96; sourceSize.height: 96; asynchronous: true } } } } } }
             Part { visible: shell.page === "coffee"; width: view.room; title: I18n.tr("Glass")
                 Switch { text: I18n.tr("Coffee in glass"); hint: I18n.tr("The drops are glass with coffee in it. With the graphics card drawing by the processor they stay plain coffee.")
                          on: goo.kept.material === "glass" || Number(goo.kept.material) > 0.5; onPressed: goo.set("material", on ? 0 : 1) }
