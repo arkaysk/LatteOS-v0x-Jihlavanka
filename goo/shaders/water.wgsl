@@ -26,12 +26,12 @@ fn fbm(p: vec2<f32>) -> f32 {
 }
 // the surface at x: its slope (x) and how it curves (y)
 fn surface(x: f32, t: f32, gale: f32) -> vec2<f32> {
-    let wl = array<f32, 7>(820.0, 430.0, 250.0, 150.0, 70.0, 96.0, 57.0);
-    let am = array<f32, 7>(7.0, 4.2, 2.6, 1.5, 1.8 * gale, 0.9, 0.5);
-    let om = array<f32, 7>(22.0, 31.0, 44.0, 63.0, 90.0, 74.0, 118.0);
-    let ph = array<f32, 7>(0.0, 70.0, 200.0, 310.0, 40.0, 150.0, 260.0);
+    let wl = array<f32, 8>(820.0, 430.0, 250.0, 150.0, 70.0, 1300.0, 96.0, 57.0);
+    let am = array<f32, 8>(7.0, 4.2, 2.6, 1.5, 1.8 * gale, 6.0 * gale, 0.9, 0.5);
+    let om = array<f32, 8>(22.0, 31.0, 44.0, 63.0, 90.0, 17.0, 74.0, 118.0);
+    let ph = array<f32, 8>(0.0, 70.0, 200.0, 310.0, 40.0, 120.0, 150.0, 260.0);
     var out = vec2<f32>(0.0, 0.0);
-    for (var j = 0; j < 7; j = j + 1) {
+    for (var j = 0; j < 8; j = j + 1) {
         let k = 6.2831853 / wl[j];
         let th = k * x - radians(om[j]) * t + radians(ph[j]);
         out = out + vec2<f32>(am[j] * k * sin(th), am[j] * k * k * cos(th));
@@ -62,7 +62,7 @@ fn shade(s: Shader) -> vec4<f32> {
     let shaft = pow(clamp((sh - 0.32) * 2.6, 0.0, 1.0), 1.6) * exp(-d / 260.0);
     // the light is strongest under its source and thins out sideways
     let reach = 0.35 + 0.65 * exp(-pow((x - s.a.y) / (s.size.x * 0.5), 2.0));
-    let light = clamp(s.a.x * reach * (0.10 * shaft + 0.26 * caustic * (0.45 + 0.55 * sh)) * smoothstep(0.0, 26.0, d), 0.0, 0.55);
+    let light = clamp(s.a.x * reach * (0.05 * shaft + 0.13 * caustic * (0.45 + 0.55 * sh)) * smoothstep(0.0, 26.0, d), 0.0, 0.3);
     // a thick liquid keeps the red longest
     let sunk = vec3<f32>(exp(-d / 520.0), exp(-d / 230.0), exp(-d / 120.0));
     let tint = mix(s.color.rgb, s.color2.rgb, s.a.w) * sunk;

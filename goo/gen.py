@@ -109,9 +109,10 @@ def picks(n):
 
 
 # The coffee's surface as the side of a few Gerstner waves: (wavelength px, amplitude, degrees per second, phase).
-# An amplitude is px or an expression: the fifth is the chop a wind raises. goo/shaders/water.wgsl bends the
+# An amplitude is px or an expression: the fifth is the chop a wind raises, the sixth the long swell it drives. goo/shaders/water.wgsl bends the
 # light with the same table (and a few ripples too small to be seen): change both.
-WAVES = ((820, "7", 22, 0), (430, "4.2", 31, 70), (250, "2.6", 44, 200), (150, "1.5", 63, 310), (70, "1.8 * gale", 90, 40))
+WAVES = ((820, "7", 22, 0), (430, "4.2", 31, 70), (250, "2.6", 44, 200), (150, "1.5", 63, 310), (70, "1.8 * gale", 90, 40),
+         (1300, "6 * gale", 17, 120))
 SPAN = 32                                   # the surface is SPAN lines, from a little left of the screen to a little right
 THICK = 30                                  # half the width of a line: how far the coffee reaches up from its centre
 RAIN = 9                                    # places on the surface where a drop can fall, each at its own pace
