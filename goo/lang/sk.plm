@@ -171,6 +171,8 @@ library Slovak {
         "Lap" = "Medzičas"
         "Reset" = "Vynulovať"
         "Pause" = "Pozastaviť"
+        "Another file…" = "Iný súbor…"
+        "Pictures and films" = "Obrázky a filmy"
         "A plain desktop that always starts, for when the full one does not. For one start." = "Jednoduchá plocha, ktorá naštartuje vždy — pre prípad, že plná nie. Na jeden štart."
         "AI in LatteOS" = "AI v LatteOS"
         "As the hardware says" = "Podľa hardvéru"

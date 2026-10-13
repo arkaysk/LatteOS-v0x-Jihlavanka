@@ -7,9 +7,20 @@ local B = {}
 
 B.plugin = (os.getenv("LATTE_PLUGINS") or "/usr/lib64/latteos") .. "/hyprbars.so"
 -- classes of windows that draw their own header
-local OWN_HEADER = "^(org\\.quickshell|org\\.mozilla\\.firefox|firefox|chromium.*|google-chrome.*|brave.*|com\\.discordapp\\.Discord|discord|steam|"
+local OWN_HEADER = "^(org\\.quickshell|xdg-desktop-portal.*|org\\.mozilla\\.firefox|firefox|chromium.*|google-chrome.*|brave.*|com\\.discordapp\\.Discord|discord|steam|"
     .. "com\\.valvesoftware\\.Steam|org\\.gnome\\..*|gnome-.*|code|Code|code-oss|electron.*|Spotify|spotify|obsidian|signal|"
     .. "org\\.signal\\.Signal|com\\.heroicgameslauncher\\.hgl|heroic|org\\.kde\\.kdenlive)$"
+
+-- The cup the windows are made of (Settings › Coffee and cup, ~/.config/latteos/cup): the bar's colour and its text's,
+-- as apps/common/Theme.qml has them for the apps of LatteOS.
+local CUPS = { espresso = { "rgb(261d17)", "rgb(f3ebdd)" }, mocha = { "rgb(3e3027)", "rgb(f6eee2)" }, porcelain = { "rgb(ebe2d2)", "rgb(2a170c)" } }
+function B.cup(name)
+    local c = CUPS[name]
+    if not c or not (hl.plugin and hl.plugin.hyprbars) then return end
+    hl.config({ plugin = { hyprbars = { bar_color = c[1] } } })
+    -- the text's colour as a rule: a title already written is written again only when a rule says its colour changed
+    hl.window_rule({ name = "latte-cup", match = { class = ".*" }, ["hyprbars:title_color"] = c[2] })
+end
 
 function B.setup(colors)
     local f = io.open(B.plugin, "r")

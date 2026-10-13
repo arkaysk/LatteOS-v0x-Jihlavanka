@@ -98,6 +98,20 @@ require("latte.tiers").apply(tier, colors)
 require("latte.windows").setup()
 require("latte.keys").setup()
 require("latte.bars").setup(colors)
+-- The cup: what the windows are made of. The title bars take its colour, and apps are told whether it is
+-- a light or a dark one, so that they come in the same. Without a name: the one the user chose before.
+local function chosen_cup()
+    local f = io.open(config .. "/cup", "r")
+    local name = f and (f:read("*l") or ""):gsub("%s", "") or "espresso"
+    if f then f:close() end
+    return name
+end
+function latte.cup(name)
+    name = name or chosen_cup()
+    require("latte.bars").cup(name)
+    hl.exec_cmd("gsettings set org.gnome.desktop.interface color-scheme " .. (name == "porcelain" and "prefer-light" or "prefer-dark"))
+end
+require("latte.bars").cup(chosen_cup())    -- here too: the configuration is read anew at times
 require("latte.glass").setup(tier)
 hl.gesture({ fingers = 3, direction = "horizontal", action = "workspace" })
 
@@ -199,6 +213,7 @@ end
 
 hl.on("hyprland.start", function()
     latte.wallpaper()
+    latte.cup()
     -- systemd and D-Bus learn where the session is; the target starts the Goo scene and the portals.
     place_shell("dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE "
         .. "HYPRLAND_INSTANCE_SIGNATURE LATTE_MODE LATTE_RENDERER LATTE_TIER LANG; systemctl --user start latte-session.target")

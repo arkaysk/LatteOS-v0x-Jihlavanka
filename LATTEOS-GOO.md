@@ -441,7 +441,8 @@ po oblastiach používateľa: **Softvér · Dáta · Hardvér · Účet · Prost
 v režime Aplikácie — pod čiarou pod aplikáciami ponúkne stránky nastavení (`bin/latte-settings find`).
 - **Káva a šálka** — Baristova otázka „Akú si dáte kávu a do akého pohára?“: káva je farba goo (voda a mlieko),
   šálka je to, z čoho sú okná (`~/.config/latteos/cup`: espresso tmavá · mocha teplá hnedá · porcelain svetlá);
-  sklenená káva robí kvapky aj okná zo skla.
+  sklenená káva robí kvapky aj okná zo skla. Šálka platí pre všetky okná: titulky okien, ktoré kreslí kompozitor,
+  berú jej farbu a aplikáciám sa povie, či je svetlá alebo tmavá (porcelán = svetlý režim aplikácií).
 - **Pozadie** — obrázky LatteOS a z priečinka Obrázky; **živé pozadia** sú filmy z priečinka Videá (mpvpaper).
 - **Okná** — páska · dlaždice · plávajúce; sklo bočných panelov (frost · smoke · clear · milk).
 - **Kvapky (Goo)** — živé správanie, prehýbanie hladiny. **O tomto počítači.**

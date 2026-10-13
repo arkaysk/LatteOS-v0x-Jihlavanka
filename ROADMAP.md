@@ -158,8 +158,13 @@ Schválené 12. 10. 2026. Pracuje sa **zhora nadol, neskáče sa**; nový nápad
              **Štart a režim SAFE** (ako dopadol tento štart; SAFE na ďalší štart cez `latte-boot force-safe`),
              **Úložisko** (disky, veľkosť priečinkov, kôš), **AI** (vypínač: `~/.config/latteos/ai`, `latte-ai`
              potom neponúkne nikoho), **Môj účet** (meno a obrázok cez AccountsService).
-             Ostatných 11 stránok je vypísaných ako „ešte nie je“ s odkazom, kde sa to robí zatiaľ. Chýba: šálka
-             v kartách Goo a v okrajoch Hyprlandu, výber vlastného súboru tapety, všetky stránky Hardvér/Účet/Systém.
+             Ostatných 11 stránok je vypísaných ako „ešte nie je“ s odkazom, kde sa to robí zatiaľ (Aplikácie,
+             Aktualizácie, Spúšťanie, Sieť → App Manager, Monitor, Správca zariadení; bez náhrady: Zálohovanie,
+             Cloud, Bluetooth, Tlačiarne, Heslo, Oznámenia, Prístupnosť).
+             Šálka platí aj mimo aplikácií LatteOS (13. 10.): titulky cudzích okien (hyprbars) berú jej farbu
+             a aplikáciám sa povie svetlý/tmavý režim (`latte.cup`, gsettings color-scheme). Vlastný súbor tapety
+             a obrázka účtu sa vyberá systémovým oknom (portál; `latte-app` nastavuje `QT_QPA_PLATFORMTHEME`).
+             Chýba: šálka v kartách Goo, zoznam klávesových skratiek, zmena hesla, Bluetooth (latte-lab ho nemá).
         - [ ] **Barista** v App Manageri (stránka je pripravená, sprievodca podľa `docs/barista/NAVRH.md` nie).
         - [x] tapeta (swaybg, `assets/wallpapers`) a okenné tlačidlá (hyprbars so záplatou `patches/hyprbars-latte.patch`;
           postup v `patches/README.md`) (12. 10.).

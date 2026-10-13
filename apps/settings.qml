@@ -6,6 +6,7 @@
 // The side is a menu that unfolds: an area, and under it its pages. A dot says how far a page is: full when it
 // works here, hollow when it is still to come. Typing in the header's field lists the pages that match.
 import QtQuick
+import QtQuick.Dialogs
 import Quickshell
 import Quickshell.Io
 import Quickshell.Widgets
@@ -95,6 +96,12 @@ ShellRoot {
     function ask() { (asks[page] || []).forEach(a => a[0].ask(a[1])); force.reload() }
     Timer { id: later; interval: 900; onTriggered: shell.ask() }       // what was asked of the compositor takes a moment to be so
 
+    // a file of the user's own, from anywhere: for the background ("wallpaper") or for the account's picture ("face")
+    FileDialog { id: chooser; property string what: ""
+                 nameFilters: what === "face" ? [I18n.tr("Pictures") + " (*.png *.jpg *.jpeg *.webp)"] : [I18n.tr("Pictures and films") + " (*.png *.jpg *.jpeg *.webp *.mp4 *.webm *.mkv *.mov)"]
+                 onAccepted: { const path = decodeURIComponent(String(selectedFile).replace(/^file:\/\//, ""))
+                               if (what === "face") shell.account("SetIconFile", path)
+                               else { wallpaper.value = path; Quickshell.execDetached(["hyprctl", "eval", "latte.wallpaper(" + JSON.stringify(path) + ")"]) } } }
     Run { id: disks }
     Run { id: held }
     Run { id: helpers }
@@ -338,7 +345,7 @@ ShellRoot {
             Part { visible: shell.page === "coffee"; width: view.room; title: I18n.tr("And in what cup?"); note: I18n.tr("The cup is what the windows are made of.")
                 Repeater { model: [{ id: "espresso", name: QT_TR_NOOP("Espresso cup"), hint: QT_TR_NOOP("dark") }, { id: "mocha", name: QT_TR_NOOP("Mocha cup"), hint: QT_TR_NOOP("warm brown") },
                                    { id: "porcelain", name: QT_TR_NOOP("Porcelain"), hint: QT_TR_NOOP("light") }]
-                    Choice { required property var modelData; width: 190; text: I18n.tr(modelData.name); hint: I18n.tr(modelData.hint); on: Theme.cup === modelData.id; onPressed: { cup.choose(modelData.id); Theme.cup = modelData.id }
+                    Choice { required property var modelData; width: 190; text: I18n.tr(modelData.name); hint: I18n.tr(modelData.hint); on: Theme.cup === modelData.id; onPressed: { cup.choose(modelData.id); Theme.cup = modelData.id; Quickshell.execDetached(["hyprctl", "eval", "latte.cup(\"" + modelData.id + "\")"]) }
                         // a small window made of that cup
                         Rectangle { anchors.fill: parent; radius: 10; color: Theme.cups[parent.parent.modelData.id].ground; border.width: 1; border.color: Theme.cups[parent.parent.modelData.id].line
                             Rectangle { width: parent.width * 0.3; height: parent.height; radius: 10; color: Theme.cups[parent.parent.parent.modelData.id].surface }
@@ -365,6 +372,8 @@ ShellRoot {
                         Label { x: 46; width: parent.width - 60; text: parent.modelData.path.split("/").pop(); anchors.verticalCenter: parent.verticalCenter }
                         MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor
                                     onClicked: { wallpaper.value = parent.modelData.path; Quickshell.execDetached(["hyprctl", "eval", "latte.wallpaper(" + JSON.stringify(parent.modelData.path) + ")"]) } } } } }
+
+            Pill { visible: shell.page === "background"; icon: "folder"; text: I18n.tr("Another file…"); onPressed: { chooser.what = "wallpaper"; chooser.open() } }
 
             // windows: how they are arranged, and the glass of the side panels
             Part { visible: shell.page === "windows"; width: view.room; title: I18n.tr("How windows are arranged")
@@ -518,6 +527,7 @@ ShellRoot {
                         border.width: 2; border.color: who.data && who.data.picture === modelData.path ? Theme.gold : "transparent"
                         Image { anchors.fill: parent; fillMode: Image.PreserveAspectCrop; sourceSize.width: 152; asynchronous: true; source: "file://" + pick.modelData.path }
                         MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: shell.account("SetIconFile", pick.modelData.path) } } } }
+            Pill { visible: shell.page === "me"; icon: "folder"; text: I18n.tr("Another file…"); onPressed: { chooser.what = "face"; chooser.open() } }
 
             // the screens
             Rectangle { visible: shell.page === "displays" && shell.screenWait > 0; width: view.room; height: 64; radius: 16; color: Theme.raised; border.width: 2; border.color: Theme.gold

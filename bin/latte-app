@@ -7,4 +7,6 @@ app="${1:?latte-app NAME [WORD…]}"; shift
 [ -f "$share/apps/$app.qml" ] || { echo "latte-app: no such app: $app" >&2; exit 1; }
 # with no graphics card Qt draws by itself: cheaper than a card made of software
 case "${LATTE_TIER:-}" in software|minimal) export QT_QUICK_BACKEND=software ;; esac
+# choosing a file is the desktop's own window for it (the portal), the same one every other app opens
+export QT_QPA_PLATFORMTHEME="${QT_QPA_PLATFORMTHEME:-xdgdesktopportal}"
 LATTE_APP_ARGS="$(printf '%s\n' "$@")" exec qs -n -p "$share/apps/$app.qml"
