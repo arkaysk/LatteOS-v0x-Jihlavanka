@@ -219,6 +219,8 @@ ostatné kvapky sú iba na hlavnom monitore.
   „+N ďalších“), **Nerušiť**, **Vymazať všetko**, Nastavenia oznámení; vpravo **mesiac** od pondelka (koliesko,
   šípky), udalosti a úlohy vybraného dňa, pole na nový záznam („10:30 Porada“, „Porada“, „! úloha“) a **Prepojené
   kalendáre** (Google, iCloud, CalDAV, ICS — účty spravuje Noctalia). Zmestí sa aj na 1024 × 768.
+  *(Fresh, 13. 10.: prepojený kalendár je adresa vo formáte iCal (.ics) — dá ju Google, iCloud aj Nextcloud;
+  `bin/latte-cal` ich číta pri štarte a každú polhodinu, udalosti sú iba na čítanie. Účty a CalDAV so zápisom nie sú.)*
 - **Karta času (pravý klik):** **Prehľad** (dátum, týždeň, najbližší budík, digitálna pohoda — čas pred obrazovkou
   a tri najpoužívanejšie aplikácie, podrobnosti v Monitore —, svetové hodiny) · **Stopky** (medzičasy) ·
   **Minútka** (dĺžka kolieskom) · **Budíky** · **Počasie** (teraz, dnes, týždeň). Minútka a budíky zvonia aj pri
@@ -473,5 +475,5 @@ nemá (AI je hľadanie, Financie a Sociálne sú podkategórie Flathubu).
 **Ešte nie je** (vráti sa po kusoch, poradie v ROADMAP):
 QueenGoo (čaká na App Manager a Správcu zariadení), ChatGoo (čaká na Beeper), Tvorca Goo (vlastné kvapky už sú: §4.7),
 okno z bubliny (14; pád minimalizovaného okna už je), prenášanie ikier medzi monitormi, režim AI v LensGoo,
-portrét účtu, prepojené kalendáre,
+portrét účtu, účty kalendárov so zápisom (CalDAV),
 živé tapety a vlastný obrázok tapety, sklo okien, prichytenie ťahaním, Nastavenia a ostatné aplikácie.

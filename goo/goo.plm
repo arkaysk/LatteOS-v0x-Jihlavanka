@@ -31,7 +31,7 @@ scene Goo {
         keyboard: exclusive while card_open or kb
     }
     permissions {
-        run: "latte-sky", "latte-login", "latte-stats", "hyprctl", "foot", "hostname", "powerprofilesctl", "date", "notify-send", "nmcli", "xdg-open", "xdg-user-dir", "fd", "latte-say", "sh"
+        run: "latte-sky", "latte-login", "latte-stats", "hyprctl", "foot", "hostname", "powerprofilesctl", "date", "notify-send", "nmcli", "xdg-open", "xdg-user-dir", "fd", "latte-say", "sh", "latte-cal"
         services: "files", "files.write", "env", "clock", "battery", "window", "apps", "apps.launch", "session.*", "auth", "notifications", "notifications.*", "sound", "audio", "audio.*", "brightness", "brightness.*", "network", "network.*", "bluetooth", "bluetooth.*", "tray", "tray.*", "polkit", "polkit.*", "clipboard.set", "media", "media.*"
     }
 

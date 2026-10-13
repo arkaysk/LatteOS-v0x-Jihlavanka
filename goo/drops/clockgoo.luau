@@ -20,12 +20,23 @@ local MONTHS = { N("January"), N("February"), N("March"), N("April"), N("May"), 
                  N("September"), N("October"), N("November"), N("December") }
 
 local notes, seen = {}, {}
-local kept = { quiet = false, events = {}, tasks = {} }
+local kept = { quiet = false, events = {}, tasks = {}, calendars = {} }
+local linked = {}                            -- the events of the calendars kept elsewhere, as latte-cal read them
 local date, sky = "", nil                    -- the date as the drop shows it; the weather, as latte-sky gave it
 local busy_face = false                      -- a timer or the stopwatch has the date's place
 local month = { y = nil, m = nil, chosen = nil, cells = {} }
 local tab = 0
-local open_notes, open_time
+local open_notes, open_time, open_calendars
+
+-- Calendars kept elsewhere (`kept.calendars`, their addresses) are read when the list changes and every half hour.
+local function read_linked(then_do)
+    if #kept.calendars == 0 then linked = {} if then_do then then_do() end return end
+    run("latte-cal", kept.calendars, function(out)
+        local ok, list = pcall(json.decode, out or "")
+        if ok and type(list) == "table" then linked = list end
+        if then_do then then_do() end
+    end)
+end
 
 local function save() pcall(sys.call, "files.write", FILE, kept) end
 local function second_line()
@@ -96,6 +107,7 @@ local function month_of(d)
     local lead = (first.wday + 5) % 7            -- Monday is 0
     local marked = {}
     for _, e in ipairs(kept.events) do if e.date then marked[e.date] = true end end
+    for _, e in ipairs(linked) do if e.date then marked[e.date] = true end end
     local days, names = {}, {}
     month.cells = {}
     for i = 0, 41 do
@@ -157,6 +169,12 @@ local function day_rows(d)
                                 end } } }
         end
     end
+    for _, e in ipairs(linked) do                -- from a calendar kept elsewhere: shown, changed there
+        if e.date == month.chosen and shown < 3 then
+            shown += 1
+            rows[#rows + 1] = { col = 2, glyph = "world", label = ((e.time or "") ~= "" and e.time or tr("All day")) .. "  " .. (e.title or ""), quiet = true }
+        end
+    end
     local tasks = 0
     for pass = 1, 2 do                           -- what is still to do first, then what is done
         for _, task in ipairs(kept.tasks) do
@@ -172,7 +190,33 @@ local function day_rows(d)
                     { label = tr("10:30 Meeting · Meeting · ! task"), glyph = "calendar-event", quiet = true, line = true } },
                   { owner = d, width = 340, field = { hint = tr("New event…"), submit = function(text) write_down(text) open_notes(d) return false end } })
     end }
+    rows[#rows + 1] = { col = 2, glyph = "world", label = tr("Linked calendars"), hint = #kept.calendars > 0 and tostring(#kept.calendars) or "", keep = true,
+                        run = function() open_calendars(d) end }
     return rows
+end
+-- the calendars kept elsewhere: their addresses, one more, one less
+open_calendars = function(d)
+    local rows = { { label = tr("Back"), glyph = "chevron-left", keep = true, run = function() open_notes(d) end },
+                   { para = true, label = tr("The address of a calendar in iCal form (.ics): Google Calendar, iCloud and others give one in the calendar's settings."), line = true } }
+    for i, address in ipairs(kept.calendars) do
+        rows[#rows + 1] = { glyph = "world", label = address:gsub("^%a+://", ""), keep = true,
+                            sub = { { danger = true, glyph = "trash", label = tr("Remove calendar"), run = function()
+                                table.remove(kept.calendars, i)
+                                save()
+                                read_linked()
+                                after(60, function() open_calendars(d) end)
+                            end } } }
+    end
+    card.open(rows, { owner = d, width = 380, field = { hint = tr("Address of a calendar…"), submit = function(text)
+        text = text:gsub("^%s+", ""):gsub("%s+$", "")
+        if text ~= "" and #kept.calendars < 6 and not table.find(kept.calendars, text) then
+            kept.calendars[#kept.calendars + 1] = text
+            save()
+            read_linked(function() if card.id() == "notes" then open_notes(d, true) end end)
+        end
+        open_notes(d)
+        return false
+    end } })
 end
 open_notes = function(d, keep)
     local rows = note_rows(d)
@@ -325,7 +369,10 @@ return {
             kept.quiet = saved.quiet == true
             kept.events = type(saved.events) == "table" and saved.events or {}
             kept.tasks = type(saved.tasks) == "table" and saved.tasks or {}
+            kept.calendars = type(saved.calendars) == "table" and saved.calendars or {}
         end
+        read_linked()
+        every(30 * 60000, function() read_linked() end)
         -- the time, as the minute turns
         sys.watch("clock", function(c)
             if type(c) ~= "table" then return end

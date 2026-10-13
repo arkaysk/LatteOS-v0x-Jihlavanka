@@ -1,0 +1,140 @@
+#!/usr/bin/env python3
+"""latte-cal ADDRESS…: the events of calendars kept elsewhere, for ClockGoo's calendar.
+
+An address is a calendar in iCalendar form: https://…, webcal://… or a file (.ics). Google Calendar, iCloud,
+Nextcloud and the rest all give such an address for a calendar ("secret address in iCal format").
+Prints [{"date": "YYYY-MM-DD", "time": "HH:MM" or "" for the whole day, "title": …}], sorted, for the days from
+a month ago to a year ahead; an event that repeats is written out day by day. A calendar that cannot be read is
+left out, with a line on stderr.
+"""
+import datetime as dt
+import json
+import re
+import sys
+import urllib.request
+from zoneinfo import ZoneInfo
+
+DAYS = {"MO": 0, "TU": 1, "WE": 2, "TH": 3, "FR": 4, "SA": 5, "SU": 6}
+MOST = 2000                 # occurrences of one event: a rule that never ends stops somewhere
+
+
+def fetch(address):
+    if re.match(r"^(https?|webcal)://", address):
+        req = urllib.request.Request(re.sub(r"^webcal://", "https://", address), headers={"User-Agent": "LatteOS"})
+        with urllib.request.urlopen(req, timeout=10) as r:
+            return r.read(4 << 20).decode("utf-8", "replace")
+    with open(address, encoding="utf-8", errors="replace") as f:
+        return f.read()
+
+
+def when(params, value):
+    """A DTSTART or the like → (a datetime in local time, whether it is a whole day)."""
+    if re.fullmatch(r"\d{8}", value):
+        return dt.datetime.strptime(value, "%Y%m%d"), True
+    t = dt.datetime.strptime(value[:15], "%Y%m%dT%H%M%S")
+    zone = re.search(r"TZID=([^;:]+)", params)
+    if value.endswith("Z"):
+        t = t.replace(tzinfo=dt.timezone.utc).astimezone().replace(tzinfo=None)
+    elif zone:
+        try:
+            t = t.replace(tzinfo=ZoneInfo(zone.group(1).strip('"'))).astimezone().replace(tzinfo=None)
+        except Exception:
+            pass                # a zone this system does not know: the time as written
+    return t, False
+
+
+def step(t, freq, n):
+    if freq == "DAILY": return t + dt.timedelta(days=n)
+    if freq == "WEEKLY": return t + dt.timedelta(weeks=n)
+    months = t.month - 1 + (n if freq == "MONTHLY" else 12 * n)
+    try:
+        return t.replace(year=t.year + months // 12, month=months % 12 + 1)
+    except ValueError:
+        return None             # the 31st of a month that has none, the 29th of February: no such day that time
+
+
+def times(start, rule, first, last):
+    """Every time an event that starts at `start` happens between `first` and `last`."""
+    if not rule:
+        return [start] if first <= start <= last else []
+    r = dict(p.split("=", 1) for p in rule.split(";") if "=" in p)
+    freq, every = r.get("FREQ", ""), max(1, int(r.get("INTERVAL", "1") or 1))
+    if freq not in ("DAILY", "WEEKLY", "MONTHLY", "YEARLY"):
+        return [start] if first <= start <= last else []
+    count = int(r["COUNT"]) if r.get("COUNT", "").isdigit() else None
+    until = when("", r["UNTIL"])[0] if r.get("UNTIL") else None
+    if until and len(r["UNTIL"]) == 8: until += dt.timedelta(days=1)
+    # ponytail: BYDAY is obeyed for weekly events only ("every Monday and Thursday"); "the second Tuesday of the
+    # month" repeats on the same date instead. Use a real iCalendar library when that matters.
+    days = sorted(DAYS[d] for d in r.get("BYDAY", "").split(",") if d in DAYS) if freq == "WEEKLY" else []
+    out, made, n = [], 0, 0
+    while made < MOST:
+        base = step(start, freq, n * every)
+        n += 1
+        if n > MOST * 4: break
+        if base is None: continue
+        group = [base + dt.timedelta(days=d - base.weekday()) for d in days] if days else [base]
+        for t in group:
+            if t < start: continue
+            if (until and t > until) or (count is not None and made >= count) or t > last: return out
+            made += 1
+            if t >= first: out.append(t)
+    return out
+
+
+def events(text, first, last):
+    text = re.sub(r"\r?\n[ \t]", "", text)                      # a long line goes on in the next, after a space
+    out = []
+    for block in re.findall(r"BEGIN:VEVENT(.*?)END:VEVENT", text, re.S):
+        got, skipped = {}, set()
+        for line in block.splitlines():
+            m = re.match(r"([A-Z-]+)((?:;[^:]*)?):(.*)", line.strip())
+            if not m: continue
+            name, params, value = m.groups()
+            if name == "EXDATE":
+                for v in value.split(","):
+                    try: skipped.add(when(params, v)[0])
+                    except ValueError: pass
+            else:
+                got.setdefault(name, (params, value))
+        if "DTSTART" not in got or got.get("STATUS", ("", ""))[1] == "CANCELLED": continue
+        try:
+            start, whole = when(*got["DTSTART"])
+            end = when(*got["DTEND"])[0] if "DTEND" in got else start
+        except ValueError:
+            continue
+        title = re.sub(r"\\([,;\\])", r"\1", got.get("SUMMARY", ("", ""))[1]).replace("\\n", " ").replace("\\N", " ").strip()
+        long = min(max((end - start).days, 1), 14) if whole else 1            # a whole-day event of several days
+        for t in times(start, got.get("RRULE", ("", ""))[1], first - dt.timedelta(days=long), last):
+            if t in skipped: continue
+            for day in range(long):
+                d = t + dt.timedelta(days=day)
+                if first <= d <= last:
+                    out.append({"date": d.strftime("%Y-%m-%d"), "time": "" if whole else d.strftime("%H:%M"), "title": title})
+    return out
+
+
+def main(addresses):
+    if not addresses or addresses[0] in ("-h", "--help"):
+        print(__doc__.strip())
+        return 0 if addresses else 2
+    today = dt.datetime.combine(dt.date.today(), dt.time())
+    first, last = today - dt.timedelta(days=31), today + dt.timedelta(days=366)
+    found = []
+    for a in addresses:
+        try:
+            found += events(fetch(a), first, last)
+        except Exception as e:
+            print(f"latte-cal: {a}: {e}", file=sys.stderr)
+    seen, out = set(), []
+    for e in sorted(found, key=lambda e: (e["date"], e["time"], e["title"])):
+        key = (e["date"], e["time"], e["title"])
+        if key not in seen:
+            seen.add(key)
+            out.append(e)
+    print(json.dumps(out, ensure_ascii=False))
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))

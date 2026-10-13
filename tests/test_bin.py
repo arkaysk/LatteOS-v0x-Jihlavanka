@@ -110,4 +110,46 @@ assert seen[-1]["type"] == "start_session" and seen[-1]["cmd"] == ["/usr/bin/lat
 code, answer, seen, remembered = try_auth("wrong")
 assert code == 1 and answer["error"] == "auth" and not remembered, answer
 assert seen[-1]["type"] == "cancel_session"             # a refused login leaves nothing half-open in greetd
+
+cal = load("latte-cal")
+dt = cal.dt
+ICS = """BEGIN:VCALENDAR\r
+BEGIN:VEVENT\r
+DTSTART:20250305T093000\r
+SUMMARY:Meeting\\, the long\r
+  one\r
+END:VEVENT\r
+BEGIN:VEVENT\r
+DTSTART;VALUE=DATE:20250310\r
+DTEND;VALUE=DATE:20250312\r
+SUMMARY:Trip\r
+END:VEVENT\r
+BEGIN:VEVENT\r
+DTSTART:20250303T180000\r
+RRULE:FREQ=WEEKLY;BYDAY=MO,TH;COUNT=4\r
+EXDATE:20250306T180000\r
+SUMMARY:Training\r
+END:VEVENT\r
+BEGIN:VEVENT\r
+DTSTART;VALUE=DATE:20240131\r
+RRULE:FREQ=MONTHLY\r
+SUMMARY:Rent\r
+END:VEVENT\r
+BEGIN:VEVENT\r
+DTSTART:20250320T100000\r
+STATUS:CANCELLED\r
+SUMMARY:Gone\r
+END:VEVENT\r
+END:VCALENDAR\r
+"""
+got = cal.events(ICS, dt.datetime(2025, 3, 1), dt.datetime(2025, 3, 31, 23, 59))
+have = sorted((e["date"], e["time"], e["title"]) for e in got)
+assert have == [("2025-03-03", "18:00", "Training"), ("2025-03-05", "09:30", "Meeting, the long one"),
+                ("2025-03-10", "", "Trip"), ("2025-03-10", "18:00", "Training"), ("2025-03-11", "", "Trip"),
+                ("2025-03-13", "18:00", "Training"), ("2025-03-31", "", "Rent")], have
+# a time in another zone is told in this one: 12:00 UTC is the same moment everywhere
+t, whole = cal.when("", "20250305T120000Z")
+assert not whole and t == dt.datetime(2025, 3, 5, 12, tzinfo=dt.timezone.utc).astimezone().replace(tzinfo=None)
+assert cal.times(dt.datetime(2025, 1, 1), "FREQ=DAILY", dt.datetime(2026, 1, 1), dt.datetime(2026, 1, 3)) == [
+    dt.datetime(2026, 1, 1), dt.datetime(2026, 1, 2), dt.datetime(2026, 1, 3)]
 print("bin: ok")
