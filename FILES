@@ -169,6 +169,9 @@ package: hyprland wireplumber libnotify swaybg hypridle              # the GOO s
 optional: mpvpaper                                                   # a film as the desktop's background
 optional: cliphist wl-clipboard                                      # the clipboard in the shore's panel: what was copied lately
 package: quickshell flatpak                                          # LatteOS's own apps are drawn by Quickshell; the App Manager's shop is Flathub
+package: qt6-qtdeclarative xdg-desktop-portal-gtk                   # choosing a file in LatteOS's apps is the desktop's own window for it
+package: nftables iproute                                            # latte-netd: cutting an app off the internet, closing its connections
+package: pulseaudio-utils                                            # Settings › Sound (pactl)
 package: fd-find xdg-utils xdg-user-dirs                             # the launcher: finding files, opening them, the home folders
 optional: brightnessctl power-profiles-daemon                        # the brightness keys; the power profiles in PowerGoo's card
 optional: steam gamescope gamescope-session gamescope-session-steam  # the Game session; without them it is not offered
@@ -176,16 +179,29 @@ optional: steam gamescope gamescope-session gamescope-session-steam  # the Game 
 optional /usr/lib64/latteos/hyprbars.so: hyprbars (github.com/hyprwm/hyprland-plugins) built for the installed Hyprland with patches/hyprbars-latte.patch
 optional /usr/lib64/latteos/hyprglass.so: hyprglass (github.com/hyprnux/hyprglass) built for the installed Hyprland: the glass windows that go with drops of glass
 
-# What an installer does once the files are in place; removal undoes each line.
+# What `./install --go` runs once the files are in place, a command a line. USER stands for every user of the
+# desktop (the line runs once for each), VERSION for every kernel installed.
 [steps]
-groupadd -f latte, and every user of the desktop joins it (usermod -aG latte USER)
+groupadd -f latte
+usermod -aG latte USER
 systemd-tmpfiles --create /usr/lib/tmpfiles.d/latteos.conf
 semanage fcontext -a -t xdm_var_run_t '/run/latteos(/.*)?'          # the login screen runs as xdm_t and may read only its own labels
 semanage fcontext -a -t xdm_var_lib_t '/var/lib/latteos/login(/.*)?'
 restorecon -R /run/latteos /var/lib/latteos/login
 fc-cache /usr/share/fonts/latteos
 plymouth-set-default-theme latteos -R                               # rebuilds the initramfs
-/etc/kernel/install.d/96-latteos-safe.install add VERSION           # for every kernel already installed
+/etc/kernel/install.d/96-latteos-safe.install add VERSION
+systemctl daemon-reload
 systemctl enable latte-boot.service greetd.service latte-netd.service
 systemctl disable NetworkManager-wait-online.service                # it held the login screen back for a minute
 systemctl set-default graphical.target
+
+# What `./install --remove` runs before the files go. Which login screen comes back is the system's own business.
+[undo]
+systemctl disable --now latte-netd.service
+systemctl disable latte-boot.service greetd.service
+systemctl enable NetworkManager-wait-online.service
+/etc/kernel/install.d/96-latteos-safe.install remove VERSION
+plymouth-set-default-theme spinner -R
+semanage fcontext -d '/run/latteos(/.*)?'
+semanage fcontext -d '/var/lib/latteos/login(/.*)?'

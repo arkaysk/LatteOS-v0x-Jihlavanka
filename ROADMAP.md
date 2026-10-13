@@ -203,9 +203,17 @@ Schválené 12. 10. 2026. Pracuje sa **zhora nadol, neskáče sa**; nový nápad
    - e. [~] **Zoznam súborov (`FILES`)** od prvého kusu (založený 12. 10., stráži ho `tests/check.sh`): každý súbor, ktorý LatteOS pridá do systému, má riadok
      „cieľ v systéme ← zdroj v repe“. Inštalátor aj odinštalovanie sa neskôr napíšu nad týmto zoznamom; dovtedy
      sa podľa neho inštaluje ručne. Čo LatteOS v systéme mení (nie pridáva — `/etc/os-release`, greetd), má vlastný oddiel.
-   - f. [ ] **Inštalátor a odinštalovanie** (neskôr): výmena na latte-lab bez preinštalovania Fedory (snímka snapper
-     pred ňou, nastavenia používateľa do zálohy) a čistá Fedora vo VM s voliteľným vzdialeným prístupom
-     (dnes `old/setup/lab/vzdialene.sh`). Až tu sa dokončia zvyšné testy bodu 1.
+   - f. [~] **Inštalátor a odinštalovanie**: `./install` (13. 10.) nad zoznamom `FILES` — bez prepínača iba vypíše, čo
+     chýba a čo by spravil; `sudo ./install --go` postaví (cargo, plugin), skopíruje súbory, nahrádzané odloží ako
+     `*.pre-latteos` a spustí kroky z oddielu `[steps]`; `--remove` ich vráti (`[undo]`) a súbory odoberie
+     (`--purge` aj to, čo vzniklo počas behu); `--root DIR` inštaluje do priečinka bez krokov (skúška, balíček);
+     `--prune` odstráni z vlastných priečinkov LatteOS to, čo ostalo po staršej verzii. `tests/check.sh` pri každej
+     kontrole nainštaluje do dočasného priečinka a zasa odoberie.
+     **Ostáva (s používateľom):** výmena na latte-lab bez preinštalovania Fedory — snímka snapper pred ňou,
+     nastavenia používateľa do zálohy, odobratie v0.3 mimo vlastných priečinkov (v0.3 odinštalátor nemá: staré
+     jednotky systemd, `/usr/libexec/latteos`, staré príkazy v `/usr/bin`, Noctalia) — a čistá Fedora vo VM
+     s voliteľným vzdialeným prístupom (dnes `old/setup/lab/vzdialene.sh`). Až tu sa dokončia zvyšné testy bodu 1.
+     Na latte-lab dnes `./install` hlási: chýba balík `NetworkManager-tui`; 552 súborov v0.3 vo vlastných priečinkoch.
    - g. [ ] Fresh → `main`, verzia 0.4.0; verejné vydanie iba na pokyn.
    - Rozloženie Fresh (schválené 12. 10.): `goo/` engine, kvapky, prihlásenie, zámok, SAFE a `lang/` s prekladmi ·
      `apps/` aplikácie QML · `bin/` príkazy · `system/` Hyprland, labwc, greetd, systemd, plymouth · `assets/` tapety,

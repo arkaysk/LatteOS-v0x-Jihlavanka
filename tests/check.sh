@@ -22,7 +22,15 @@ for f in apps/common/shaders/*.frag; do
     qsb-qt6 --glsl "100 es,120,150" -o "$built" "$f" && cmp -s "$built" "$f.qsb" || { echo "$f.qsb is not built from $f: qsb-qt6 --glsl \"100 es,120,150\" -o $f.qsb $f"; exit 1; }
 done
 rm -f "$built"
-for f in tests/pointer.py tests/fake-player.py; do python3 -c 'import sys; compile(open(sys.argv[1]).read(), sys.argv[1], "exec")' "$f"; done
+# the installer puts every file of FILES where it says, and takes every one off again
+stage="$(mktemp -d)"
+./install --go --root "$stage" > "$stage.log" 2>&1 || { cat "$stage.log"; echo "install --root failed"; exit 1; }
+grep -q "could not be found" "$stage.log" && { cat "$stage.log"; exit 1; }
+[ -x "$stage/usr/bin/latte-session" ] && [ -f "$stage/usr/share/latteos/goo/goo.plm" ] || { echo "install: the staged tree is not whole"; exit 1; }
+./install --remove --purge --root "$stage" > /dev/null
+left="$(find "$stage" -type f | head -5)"; [ -z "$left" ] || { echo "install --remove left: $left"; exit 1; }
+rm -rf "$stage" "$stage.log"
+for f in install tests/pointer.py tests/fake-player.py; do python3 -c 'import sys; compile(open(sys.argv[1]).read(), sys.argv[1], "exec")' "$f"; done
 tests/test_session.sh
 
 for f in system/hypr/*.lua system/hypr/latte/*.lua; do luac -p "$f"; done

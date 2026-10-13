@@ -243,4 +243,20 @@ asked = {1000: "\n".join([ok, "user.slice/user-1001.slice/user@1001.service/app.
 assert netd.wanted(asked, exists=lambda p: True) == {ok, "user.slice/user-1000.slice/user@1000.service/app.slice/app-x\\x2dy-1.scope"}
 assert netd.wanted(asked, exists=lambda p: False) == set()                       # an app that ended has no group to cut
 assert netd.table({ok}).count('socket cgroupv2 level 5 "%s" drop' % ok) == 2 and "drop" not in netd.table(set())
+inst = load("install", ".")
+with tempfile.TemporaryDirectory() as d:
+    open(os.path.join(d, "FILES"), "w").write("# a comment\n[files]\n/usr/bin/x   <- bin/x      # why\n/usr/share/t/   <- system:/nowhere/*.png\n/usr/bin/b <- build:b\n"
+                                              "[needs]\npackage: here gone   # why\noptional: maybe\n/usr/bin/tool: built elsewhere\noptional /usr/lib64/latteos/p.so: a plugin\n"
+                                              "[steps]\nusermod -aG latte USER\nhook add VERSION\nplain   # said why\n")
+    sec = inst.read(os.path.join(d, "FILES"))
+    assert sec["steps"] == ["usermod -aG latte USER", "hook add VERSION", "plain"] and inst.pairs(sec["files"])[0] == ("/usr/bin/x", "bin/x")
+    assert inst.copies(sec, "files") == [(os.path.join(ROOT, "bin/x"), "/usr/bin/x"), (os.path.join(ROOT, "target/release/b"), "/usr/bin/b")]     # nothing matched the pictures
+    lent = {"files": ["/t/own.png <- assets/own.png", "/t/ <- system:" + d + "/*.png"]}
+    open(os.path.join(d, "own.png"), "w").close(); open(os.path.join(d, "other.png"), "w").close()
+    assert dict((t, s) for s, t in inst.copies(lent, "files")) == {"/t/own.png": os.path.join(ROOT, "assets/own.png"), "/t/other.png": os.path.join(d, "other.png")}
+    assert inst.needs(sec, have=lambda p: p == "here", there=lambda p: False) == (["gone"], ["maybe"], ["/usr/bin/tool: built elsewhere"], ["optional /usr/lib64/latteos/p.so: a plugin"])
+    assert inst.commands(sec["steps"], ["ann", "bob"], ["6.1", "6.2"]) == ["usermod -aG latte ann", "usermod -aG latte bob", "hook add 6.1", "hook add 6.2", "plain"]
+    os.makedirs(os.path.join(d, "usr/lib64/latteos")); os.makedirs(os.path.join(d, "usr/share/latteos"))
+    for f in ("usr/lib64/latteos/p.so", "usr/share/latteos/old.qml", "usr/share/latteos/kept"): open(os.path.join(d, f), "w").close()
+    assert inst.leftovers(d, ["/usr/share/latteos/kept"], sec) == [os.path.join(d, "usr/share/latteos/old.qml")]      # the plugin FILES asks for is not a leftover
 print("bin: ok")

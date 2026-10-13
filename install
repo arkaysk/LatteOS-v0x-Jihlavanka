@@ -1,0 +1,217 @@
+#!/usr/bin/env python3
+"""install: puts LatteOS on this Fedora, or takes it off again, by the list in FILES.
+
+  ./install                  says what it would do and what is missing; nothing is changed
+  sudo ./install --go        builds what is built, copies the files, runs the steps
+  sudo ./install --remove    undoes the steps, takes the files off, puts back what LatteOS replaced; what was
+                             made while it ran ([state] in FILES) stays, unless --purge is said too
+  --root DIR                 with --go or --remove: the files go under DIR and no step is run. For looking at
+                             the result, for packaging, and for tests
+  --prune                    with --go: what is in LatteOS's own folders and not in FILES is removed too
+                             (left behind by an older LatteOS); without it, it is only listed
+
+It changes nothing it was not told about in FILES. A file LatteOS replaces is kept beside it as *.pre-latteos.
+"""
+import glob
+import os
+import pwd
+import re
+import shutil
+import subprocess
+import sys
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+OWN = ("/usr/share/latteos", "/usr/lib64/latteos", "/usr/share/plymouth/themes/latteos", "/usr/share/fonts/latteos")     # folders that are LatteOS's alone
+
+
+def read(path):
+    """FILES as {section: [line without its comment]}."""
+    sections, now = {}, None
+    with open(path, encoding="utf-8") as f:
+        for line in f:
+            line = re.sub(r"(^|\s+)#.*$", "", line.rstrip("\n")).rstrip()
+            if re.fullmatch(r"\[\w+\]", line):
+                now = sections.setdefault(line[1:-1], [])
+            elif line and now is not None:
+                now.append(line)
+    return sections
+
+
+def pairs(lines):
+    return [tuple(part.strip() for part in line.split("<-", 1)) for line in lines if "<-" in line]
+
+
+def built(source):
+    """Where a source of FILES is in this repository once it is built: [(file, name it has in the target)]."""
+    kind, _, name = source.partition(":")
+    if kind == "build":
+        return [(os.path.join(HERE, "target", "release", name), name)]
+    if kind == "plugin":
+        return [(os.path.join(HERE, "plugins", name, name + ".so"), name + ".so")]
+    if kind == "system":
+        return [(f, os.path.basename(f)) for f in sorted(glob.glob(name))]
+    return [(os.path.join(HERE, source), os.path.basename(source))]
+
+
+def copies(sections, section):
+    """[(file in the repository or the system, where it goes)] for a section of `target <- source` lines."""
+    found = {}
+    # what the system lends first: a file of LatteOS's own with the same name is the one that stays
+    for target, source in sorted(pairs(sections.get(section, [])), key=lambda p: not p[1].startswith("system:")):
+        for path, name in built(source):
+            found[target + name if target.endswith("/") else target] = path
+    return [(path, target) for target, path in found.items()]
+
+
+def needs(sections, have=None, there=os.path.exists):
+    """What the system lacks: (packages that must be there, optional ones, files that must be, optional files)."""
+    have = have or (lambda p: subprocess.run(["rpm", "-q", p], capture_output=True).returncode == 0)
+    must, may, files, may_files = [], [], [], []
+    for line in sections.get("needs", []):
+        head, _, rest = line.partition(":")
+        if head in ("package", "optional"):
+            (must if head == "package" else may).extend(p for p in rest.split() if not have(p))
+        elif head.startswith("optional /"):
+            if not there(head.split()[1]): may_files.append(line)
+        elif head.startswith("/") and not there(head):
+            files.append(line)
+    return must, may, files, may_files
+
+
+def users():
+    """Who uses the desktop: whoever asked for this with sudo, and everyone with a home of their own."""
+    names = [u.pw_name for u in pwd.getpwall() if 1000 <= u.pw_uid < 60000 and u.pw_dir.startswith("/home/") and os.path.isdir(u.pw_dir)]
+    asked = os.environ.get("SUDO_USER")
+    return sorted(set(names + ([asked] if asked and asked != "root" else [])))
+
+
+def commands(lines, people, kernels):
+    """The steps as they are run: a line with USER once for each user, one with VERSION once for each kernel."""
+    out = []
+    for line in lines:
+        for user in (people if re.search(r"\bUSER\b", line) else [None]):
+            for kernel in (kernels if re.search(r"\bVERSION\b", line) else [None]):
+                cmd = re.sub(r"\bUSER\b", user, line) if user else line
+                out.append(re.sub(r"\bVERSION\b", kernel, cmd) if kernel else cmd)
+    return out
+
+
+def leftovers(root, targets, sections):
+    """What is in LatteOS's own folders and is neither a file of this LatteOS nor one FILES says it needs there."""
+    needed = re.findall(r"^(?:optional )?(/\S+):", "\n".join(sections.get("needs", [])), re.M)
+    wanted = {os.path.normpath(root + t) for t in targets + needed}
+    return sorted(os.path.join(d, f) for own in OWN for d, _, files in os.walk(root + own) for f in files if os.path.join(d, f) not in wanted)
+
+
+def main(a):
+    flags = {f for f in a if f in ("--go", "--remove", "--purge", "--prune")}
+    rest = [x for x in a if x not in flags]
+    root = ""
+    if rest[:1] == ["--root"] and len(rest) == 2:
+        root, rest = os.path.abspath(rest[1]), []
+    if rest or ("--go" in flags and "--remove" in flags):
+        print(__doc__.strip())
+        return 2
+    sections = read(os.path.join(HERE, "FILES"))
+    act = bool(flags & {"--go", "--remove"})
+    if act and not root and os.geteuid() != 0:
+        print("install: this changes the system; run it with sudo, or with --root DIR to look at the result")
+        return 1
+    say = print
+    run = (lambda cmd: say("   $ " + cmd)) if (root or not act) else (lambda cmd: (say("   $ " + cmd), subprocess.run(cmd, shell=True))[0])
+    kernels = sorted(os.listdir("/lib/modules")) if os.path.isdir("/lib/modules") else []
+
+    if "--remove" in flags:
+        say("== the steps, undone" + (" (not run under --root)" if root else ""))
+        for cmd in commands(sections.get("undo", []), users(), kernels): run(cmd)
+        say("== the files")
+        gone = 0
+        for _, target in copies(sections, "files") + copies(sections, "replaces"):
+            path = root + target
+            if os.path.lexists(path):
+                os.remove(path); gone += 1
+            if os.path.lexists(path + ".pre-latteos"):
+                os.replace(path + ".pre-latteos", path)
+                say("   put back: " + target)
+        for own in OWN:                         # the folders that were LatteOS's alone go when they are empty
+            for d, _, _ in sorted(os.walk(root + own, topdown=False)):
+                if not os.listdir(d): os.rmdir(d)
+        say("   %d files removed" % gone)
+        if "--purge" in flags:
+            say("== what was made while it ran")
+            for line in sections.get("state", []) + [t for _, t in copies(sections, "seeds")]:
+                for home in ([pwd.getpwnam(u).pw_dir for u in users()] if line.startswith("~") else [""]):
+                    for path in glob.glob(root + (home + line[1:] if home else line)) if not line.startswith("$") else []:
+                        shutil.rmtree(path) if os.path.isdir(path) and not os.path.islink(path) else os.remove(path)
+                        say("   removed: " + path)
+        return 0
+
+    say("== what LatteOS needs")
+    must, may, files, may_files = needs(sections)
+    if must: say("   missing:  sudo dnf install " + " ".join(must))
+    for line in files: say("   missing:  " + line)
+    if may: say("   optional: sudo dnf install " + " ".join(may))
+    for line in may_files: say("   optional: " + line[9:])
+    if not (must or files or may or may_files): say("   all there")
+    if (must or files) and "--go" in flags and not root:
+        say("install: what is missing has to be there first")
+        return 1
+
+    if "--go" in flags:
+        say("== building")
+        owner = os.environ.get("SUDO_USER") if os.geteuid() == 0 else None      # cargo's and make's files stay the user's
+        as_user = ["sudo", "-u", owner] if owner and owner != "root" else []
+        crates = sorted({s[6:] for _, s in pairs(sections.get("files", [])) if s.startswith("build:")})
+        plugins = sorted({s[7:] for _, s in pairs(sections.get("files", [])) if s.startswith("plugin:")})
+        if crates and subprocess.run(as_user + ["cargo", "build", "--release"] + [x for c in crates for x in ("-p", c)], cwd=HERE).returncode:
+            return 1
+        for name in plugins:
+            if subprocess.run(as_user + ["make", "-C", os.path.join(HERE, "plugins", name)]).returncode:
+                return 1
+
+    say("== the files" + ("" if act else " (nothing is copied without --go)"))
+    done = missing = 0
+    for section in ("files", "replaces", "seeds"):
+        for source, target in copies(sections, section):
+            path = root + target
+            if not os.path.isfile(source):
+                say("   not built or not there: " + source); missing += 1
+                continue
+            if section == "seeds" and os.path.lexists(path):
+                continue                        # from the first time on it is the user's
+            if "--go" in flags:
+                os.makedirs(os.path.dirname(path), exist_ok=True)
+                if section == "replaces" and os.path.lexists(path) and not os.path.lexists(path + ".pre-latteos"):
+                    os.replace(path, path + ".pre-latteos")
+                    say("   kept the original: " + target + ".pre-latteos")
+                shutil.copyfile(source, path + ".new")
+                os.chmod(path + ".new", 0o755 if os.access(source, os.X_OK) else 0o644)
+                os.replace(path + ".new", path)
+            done += 1
+    say("   %d files%s" % (done, ", %d could not be found" % missing if missing else ""))
+    if missing and "--go" in flags:
+        return 1
+
+    targets = [t for section in ("files", "replaces", "seeds") for _, t in copies(sections, section)]
+    left = leftovers(root, targets, sections)
+    if left:
+        say("== in LatteOS's own folders, and not of this LatteOS (%d)" % len(left))
+        for path in left[:12]: say("   " + path)
+        if len(left) > 12: say("   … and %d more" % (len(left) - 12))
+        if "--go" in flags and "--prune" in flags:
+            for path in left: os.remove(path)
+            say("   removed")
+        else:
+            say("   --prune with --go removes them")
+
+    say("== the steps" + (" (not run under --root)" if root and act else ("" if act else " (not run without --go)")))
+    for cmd in commands(sections.get("steps", []), users(), kernels):
+        if "--go" in flags: run(cmd)
+        else: say("   $ " + cmd)
+    if "--go" in flags and not root:
+        say("LatteOS is in place. It starts with the next boot: the login screen is greetd's.")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))
