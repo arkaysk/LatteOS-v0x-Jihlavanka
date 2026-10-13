@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Device Manager
+Name[sk]=Správca zariadení
+Comment=What this computer is made of, and whether it all works
+Comment[sk]=Z čoho je tento počítač a či všetko funguje
+Exec=latte-app devices
+Icon=computer
+Categories=System;HardwareSettings;
+StartupWMClass=org.quickshell

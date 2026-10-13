@@ -71,7 +71,7 @@ def displays():
         mode = mode or read(path + "/modes").split("\n")[0]
         about = [mode + (" · %d Hz" % hz if hz else "")] if mode else []
         if inches: about.append('%d"' % inches)
-        found.append(device(name or port, " · ".join(about + [port])))
+        found.append(dict(device(name or port, " · ".join(about + [port])), size=[int(v) for v in re.findall(r"\d+", mode)[:2]]))
     return found
 
 
@@ -185,9 +185,9 @@ def no_firmware():
     return set(re.findall(r"kernel: (\w[\w-]*) [0-9a-f:.]+: (?:Direct )?firmware", log))
 
 
-GROUPS = [("displays", "Displays", "device-desktop"), ("graphics", "Graphics", "photo"), ("sound", "Sound", "volume"), ("network", "Network", "network"),
-          ("disks", "Disks", "disc"), ("input", "Keyboards, mice and gamepads", "device-gamepad-2"), ("cameras", "Cameras", "photo"),
-          ("bluetooth", "Bluetooth", "bluetooth"), ("printers", "Printers", "file-text"), ("usb", "USB", "package"), ("power", "Power", "battery-4"),
+GROUPS = [("displays", "Displays", "device-desktop"), ("graphics", "Graphics", "cpu-2"), ("sound", "Sound", "device-speaker"), ("network", "Network", "network"),
+          ("disks", "Disks", "disc"), ("input", "Keyboards, mice and gamepads", "keyboard"), ("cameras", "Cameras", "camera"),
+          ("bluetooth", "Bluetooth", "bluetooth"), ("printers", "Printers", "printer"), ("usb", "USB", "usb"), ("power", "Power", "battery-4"),
           ("other", "Other devices", "box")]
 
 

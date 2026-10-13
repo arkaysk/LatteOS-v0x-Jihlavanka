@@ -227,9 +227,16 @@ ostatné kvapky sú iba na hlavnom monitore.
   Sieťach). Sú to riadne okná: kráľovná ostane na mieste a **vypľuje bublinu**, ktorá sa nafúkne na okno vedľa nej
   (14); otvorené okno sa iba ukáže.
 
-- *(Fresh, 13. 10.: kvapka je — `goo/drops/queengoo.luau`: korunka, modrá guľka pri aktualizáciách, zelená pri výpadku
-  siete, ľavý klik otvorí App Manager (pri aktualizáciách na nich). Pravý klik a červená guľka prídu so Správcom
-  zariadení; okno sa zatiaľ rodí obyčajne, nie z bubliny.)*
+- *(Fresh, 13. 10.: kvapka je — `goo/drops/queengoo.luau`: korunka, červená guľka pri zariadení bez ovládača či
+  firmvéru, zelená pri výpadku siete, modrá pri aktualizáciách; ľavý klik otvorí App Manager (pri aktualizáciách
+  na nich), pravý Správcu zariadení. Okno sa zatiaľ rodí obyčajne, nie z bubliny.)*
+- **Správca zariadení** *(Fresh, 13. 10.; `apps/devices.qml`, `bin/latte-devices`)*: prehľad — meno a model počítača,
+  procesor, pamäť, jadro, veľký krúžok „Všetko funguje“ alebo počet zariadení, ktoré potrebujú pozornosť; skupiny
+  ako dlaždice (Obrazovky, Grafika, Zvuk, Sieť, Disky, Klávesnice a myši, Kamery, Bluetooth, Tlačiarne, USB,
+  Napájanie, Ostatné); v skupine každé zariadenie s ovládačom a stavom (Funguje · Chýba ovládač · Chýba firmvér);
+  „Dobre vedieť“ z `latte-boot compat`; Kopírovať správu. Nič nemení — sieť, zvuk a Bluetooth sa nastavujú
+  v paneli Pobrežia. Oproti v0.3 chýba: režimy obrazoviek, zvukové karty a profily, tlačiarne a skenery, telefóny,
+  firewall, skúšky (kamera, mikrofón, ovládač), oprava chýbajúceho ovládača cez App Manager.
 
 ### 4.5 ClockGoo — čas, upozornenia, kalendár a pohoda (voliteľná)
 - V kvapke veľký digitálny čas, dátum a teplota; bežiaca minútka alebo stopky namiesto dátumu. Guľky počtu
@@ -514,7 +521,7 @@ nemá (AI je hľadanie, Financie a Sociálne sú podkategórie Flathubu).
   hlavičky (plugin hyprbars so záplatou, ak je nainštalovaný; pravý klik na titulok = ponuka okna v karte Goo).
 
 **Ešte nie je** (vráti sa po kusoch, poradie v ROADMAP):
-Správca zariadení (pravý klik QueenGoo), ChatGoo (čaká na Beeper), Tvorca Goo (vlastné kvapky už sú: §4.7),
+ChatGoo (čaká na Beeper), Tvorca Goo (vlastné kvapky už sú: §4.7),
 okno z bubliny (14; pád minimalizovaného okna už je), prenášanie ikier medzi monitormi, ďalší poskytovatelia AI,
 portrét účtu, účty kalendárov so zápisom (CalDAV),
 živé tapety a vlastný obrázok tapety, náhľad cieľa a lišta rozložení pri ťahaní okna, Nastavenia a ostatné aplikácie.

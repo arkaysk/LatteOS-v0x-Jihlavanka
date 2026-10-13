@@ -110,9 +110,11 @@ Schválené 12. 10. 2026. Pracuje sa **zhora nadol, neskáče sa**; nový nápad
         - [x] **App Manager** (13. 10., na pokyn mimo poradia): `apps/appmanager.qml` + `bin/latte-apps` + `bin/latte-app`;
           obchod Flathub (bannery, police, kategórie, hľadanie, stránka aplikácie), moje aplikácie, aktualizácie,
           miesto pre Baristu. Inštalácia a odstránenie overené naostro. Chýba: LATTEOS-GOO.md §6.3.
-        - [~] **QueenGoo** (13. 10.): korunka, guľky aktualizácií a výpadku siete, ľavý klik = App Manager. Pravý klik
-          a červená guľka čakajú na Správcu zariadení; okno z bubliny neskôr.
-        - [ ] **Správca zariadení** (ďalší na rade).
+        - [x] **QueenGoo** (13. 10.): korunka, guľky (zariadenie, sieť, aktualizácie), ľavý klik = App Manager,
+          pravý = Správca zariadení. Okno z bubliny neskôr.
+        - [x] **Správca zariadení** (13. 10.): `apps/devices.qml` + `bin/latte-devices` — prehľad počítača, skupiny
+          zariadení, ovládač a stav každého, správa na skopírovanie. Iba číta; čo chýba oproti v0.3: LATTEOS-GOO.md §4.4.
+        - [ ] **Barista** v App Manageri (stránka je pripravená, sprievodca podľa `docs/barista/NAVRH.md` nie).
         - [x] tapeta (swaybg, `assets/wallpapers`) a okenné tlačidlá (hyprbars so záplatou `patches/hyprbars-latte.patch`;
           postup v `patches/README.md`) (12. 10.).
         - [x] LensGoo: režimy Súbory a Web, kalkulačka (12. 10.).
