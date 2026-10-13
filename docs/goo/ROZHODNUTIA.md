@@ -304,7 +304,7 @@ Nové rozhodnutie: jeden riadok sem (dátum, čo, prečo) a oprava platného zne
 | Vzhľad bežných okien aplikácií LatteOS: „ForkLift“ — zaoblené okno, vľavo sklenený panel od vrchu po spodok (viac druhov skla), hore lišta s funkciami, úplne vpravo NET a ✕ | áno (používateľ, 13. 10.; jeho nákres V2) — `apps/common/AppWindow.qml`; druh skla je slovo v `~/.config/latteos/glass` (frost, smoke, clear, milk) |
 | Obchod v App Manageri ako streamovacie menu | áno (používateľ, 13. 10.) — veľký banner, rad volieb, plagáty; prvý vzhľad sa mu nepáčil |
 | Kávová hladina v oknách: rozhranie k spodnej časti okna (iba v nesklenenej časti), inak nenápadné pohyblivé pozadie; pri pohybe okna sa zavlní | áno (používateľ, 13. 10.) — `apps/common/Surface.qml` |
-| Tlačidlá minimalizovať a maximalizovať v hlavičke okna | **návrh Clauda, čaká na používateľa:** iba v režime plávajúce, kde niečo robia; v páske a dlaždiciach iba ✕ (pravidlo „klik iba tam, kde má funkciu“) |
+| Tlačidlá minimalizovať a maximalizovať v hlavičke okna | iba v režime plávajúce (používateľ, 13. 10.); v páske a dlaždiciach iba ✕ |
 | Prechody bannerov podľa skwd-wall | nápad používateľa (13. 10.); kód skwd-wall sa nepreberá (GPL-3.0, Rust/Vulkan), prechody sa napíšu vlastné |
 | Fresh: hra pri nečinnosti a okno z bubliny | hra je (13. 10.) — hrajú sa iba hravé kvapky, teda vlastné s povahou `playful`; okno z bubliny odložené, rodia sa z nej okná QueenGoo (12. 10.) |
 | whyd (prečo počítač spadol, z žurnálu predošlého štartu) | áno — do SafeGoo ako diagnostika pádu, voliteľný samostatný program vedľa `last-crash.log` z `latte-session`; najprv skúška na latte-lab (13. 10.) |

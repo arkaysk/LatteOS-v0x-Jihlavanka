@@ -123,6 +123,14 @@ Schválené 12. 10. 2026. Pracuje sa **zhora nadol, neskáče sa**; nový nápad
         - [ ] **Prechody bannerov** v App Manageri v duchu skwd-wall (používateľ, 13. 10.). skwd-wall je Rust a Vulkan
           pod GPL-3.0, jeho shadery sa do okna v QML nedajú vložiť; podobné prechody treba napísať vlastné
           (QML `ShaderEffect`, `qsb` je v systéme). Dnes sa bannery posúvajú.
+        - **Poradie od používateľa z rána 13. 10.** (ide sa zhora, Barista zatiaľ stojí):
+          1. [ ] okná ako vo Windows: od okrajov sa mení veľkosť, kúsok za okrajom v prázdne sa okno ťahá celé,
+             a okno nesmie skončiť tam, kde naň nedočiahneš (✕ za hranou obrazovky);
+          2. [ ] **Monitor** — skontrolovať starý, nájsť návrhy vylepšení, prepísať;
+          3. [ ] Správca zariadení: rozdeliť na **zariadenia** a **sieť** (správca siete, inšpektor siete);
+          4. [ ] **Nastavenia** — hlavné, prehľadne po kategóriách ako Windows 11 + možnosti Linuxu, s hľadaním
+             funkcií; LensGoo v režime aplikácií hľadá aj v nastaveniach (pod čiarou/hladinou); tapety a živé tapety,
+             témy okien, farebnosť Goo („akú si dáte kávu a do akého pohára“ = farba goo a farba okien).
         - [ ] **Barista** v App Manageri (stránka je pripravená, sprievodca podľa `docs/barista/NAVRH.md` nie).
         - [x] tapeta (swaybg, `assets/wallpapers`) a okenné tlačidlá (hyprbars so záplatou `patches/hyprbars-latte.patch`;
           postup v `patches/README.md`) (12. 10.).
