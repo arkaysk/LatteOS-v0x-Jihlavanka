@@ -275,3 +275,4 @@ Nové rozhodnutie: jeden riadok sem (dátum, čo, prečo) a oprava platného zne
 | Fresh: starý kód | celý strom v0.3 do `old/` ako predloha; kód sa píše načisto so skillom `pleamar`, podľa starého, ale lepšie (12. 10.) |
 | Fresh: zoznam súborov `FILES` (čo LatteOS pridal do systému) | áno, od prvého kusu — aby sa dal odinštalovať; inštalátor a odinštalovanie až neskôr (12. 10.) |
 | whyd (prečo počítač spadol, z žurnálu predošlého štartu) | áno — do SafeGoo ako diagnostika pádu, voliteľný samostatný program vedľa `last-crash.log` z `latte-session`; najprv skúška na latte-lab (13. 10.) |
+| Inšpektor siete: zariadenia Matter a Thread (podľa UniFi Network 11) | áno, pasívne z mDNS, bez párovania (R3·E); párovanie ako ďalší správca a topológia Thread iba návrh (13. 10.) |

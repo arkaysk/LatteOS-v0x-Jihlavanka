@@ -389,7 +389,10 @@ hľadanie v obsahu PDF/DOCX (r. 849); Heidelberg verné docx (r. 792); Strata ak
 bezpečnostná kontrola balíkov bumblebee (r. 603); Python nástroje — čas štartu (r. 940).
 
 **R3·E — zariadenia a siete:** skúška s reálnou tlačiarňou, skenerom a telefónom (r. 515); KDE Connect `[~]` (r. 534);
-zvuk do DLNA (r. 753); Inšpektor — nové zariadenie, slabé heslo routera (r. 756); `latte-boot compat` v inštalátore (r. 765);
+zvuk do DLNA (r. 753); Inšpektor — nové zariadenie, slabé heslo routera (r. 756); Inšpektor — **zariadenia Matter a Thread pasívne** (schválené 13. 10.):
+skupina „Inteligentná domácnosť“ z ohlásení mDNS (`_matter._tcp`, `_matterc._udp`, hraničné smerovače `_meshcop._udp`),
+výrobca a typ, ak ich zariadenie ohlási, upozornenie na nové zariadenie; bez párovania. Podrobnosti cez párovací kód
+(batéria, firmvér, topológia Thread) sú iba návrh, nie úloha (inspo 13. 10., podľa UniFi Network 11); `latte-boot compat` v inštalátore (r. 765);
 Device Manager v Ruste (r. 767).
 
 **R3·F — App Manager a Barista:** úlohy na pozadí viditeľné (r. 409); obchod — zvyšok (r. 510), Bazaar a ZimaOS (r. 560);

@@ -257,6 +257,7 @@ https://www.reddit.com/r/homeassistant/s/SyR0gWPGAA
     hraničnému smerovaču (REST API OpenThread). Zariadenia Thread sám počítač bez rádia Thread nevidí.
     Párovanie je zásah do cudzieho zariadenia: iba na výslovnú voľbu používateľa, s možnosťou odobrať sa zo
     zariadenia; predvolene iba pasívny stupeň (1). Nie skôr ako po Inšpektorovi v R3·E (nové zariadenie, heslo routera).
+    Stupeň (1) prijatý do ROADMAP R3·E 13. 10.; stupeň (2) ostáva návrhom.
 
 https://github.com/vmaltarello/whyd
   - (Claude, 13. 10.) Go, GPL-3.0, mladý projekt. Zo systémového žurnálu predošlého štartu vysvetlí, prečo počítač
