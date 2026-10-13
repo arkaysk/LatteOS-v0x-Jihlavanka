@@ -244,7 +244,19 @@ https://github.com/academa-labs/manimgx
     nástrojom na predvádzacie videá a návody k LatteOS, nie súčasťou systému.
 
 https://www.reddit.com/r/homeassistant/s/SyR0gWPGAA
-  - (Claude, 13. 10.) Nedalo sa otvoriť — chýba popis, o čo ide.
+  - (Claude, 13. 10., podľa snímky autora) UniFi Network 11 (Ubiquiti, blog.ui.com) „rozumie“ Matteru: po zadaní
+    párovacieho kódu Matter zobrazí stav zariadení (batéria, firmvér, signál) a ako sú pripojené, a v jednej
+    topológii ukáže zariadenia IP aj Thread s vlastnými upozorneniami. Nápad autora: rozšírenie správy siete,
+    doplnok k Inšpektorovi siete (podľa ESET Network Inspector).
+  - **Využitie v LatteOS:** hodí sa do **Inšpektora siete**, ktorý už číta mDNS. V dvoch stupňoch:
+    (1) **pasívne, bez párovania** — zariadenia Matter cez Wi-Fi/Ethernet a hraničné smerovače Thread sa ohlasujú
+    cez mDNS (`_matter._tcp`, `_matterc._udp`, `_meshcop._udp`); Inšpektor ich môže ukázať ako vlastnú skupinu
+    „Inteligentná domácnosť“ (výrobca a typ z údajov ohlásenia, ak ich zariadenie posiela) a upozorniť na nové.
+    (2) **podrobnosti** (batéria, firmvér, signál, topológia Thread) vyžadujú, aby sa LatteOS stal ďalším správcom
+    zariadenia cez párovací kód (Matter multi-admin, napr. python-matter-server), alebo prístup k Home Assistantu či
+    hraničnému smerovaču (REST API OpenThread). Zariadenia Thread sám počítač bez rádia Thread nevidí.
+    Párovanie je zásah do cudzieho zariadenia: iba na výslovnú voľbu používateľa, s možnosťou odobrať sa zo
+    zariadenia; predvolene iba pasívny stupeň (1). Nie skôr ako po Inšpektorovi v R3·E (nové zariadenie, heslo routera).
 
 https://github.com/vmaltarello/whyd
   - (Claude, 13. 10.) Go, GPL-3.0, mladý projekt. Zo systémového žurnálu predošlého štartu vysvetlí, prečo počítač
