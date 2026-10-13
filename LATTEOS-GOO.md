@@ -61,6 +61,8 @@ bol GooPower); **kvapka** = každý samostatný tekutý prvok; **karta Goo** = o
     striebro, tepané zlato); sklenené témy majú perleťové dúhové okraje.
 13. **Okná aplikácií: sklo Hyprglass** iba v Goo a pri sklenených témach (okná 86 / 78 %, celá obrazovka a herný
     režim bez skla); vypnutie `~/.config/latteos/bez-skla`.
+    *(Fresh, 13. 10.: sklo okien ide s materiálom kvapiek — Nastavenia Goo › Sklenená káva ho zapne, Káva vypne;
+    `system/hypr/latte/glass.lua`, plugin Hyprglass, iba stupne výkonu full a standard. Samostatný vypínač nie je.)*
 14. **Okno z kvapky sa rodí z bubliny:** kvapka vypľuje bublinku, tá preletí na miesto okna a nafúkne sa naň;
     **zatvorenie = prasknutie bubliny**; **minimalizácia = okno sa zmenší do kvapky, voľným pádom spadne do BarGoo
     a hladina sa zvlní.**
@@ -484,4 +486,4 @@ nemá (AI je hľadanie, Financie a Sociálne sú podkategórie Flathubu).
 QueenGoo (čaká na App Manager a Správcu zariadení), ChatGoo (čaká na Beeper), Tvorca Goo (vlastné kvapky už sú: §4.7),
 okno z bubliny (14; pád minimalizovaného okna už je), prenášanie ikier medzi monitormi, ďalší poskytovatelia AI,
 portrét účtu, účty kalendárov so zápisom (CalDAV),
-živé tapety a vlastný obrázok tapety, sklo okien, náhľad cieľa a lišta rozložení pri ťahaní okna, Nastavenia a ostatné aplikácie.
+živé tapety a vlastný obrázok tapety, náhľad cieľa a lišta rozložení pri ťahaní okna, Nastavenia a ostatné aplikácie.

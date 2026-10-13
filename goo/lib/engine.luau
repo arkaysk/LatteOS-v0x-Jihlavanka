@@ -25,6 +25,7 @@
 -- A press it has nothing for makes the drop shiver: a button does something or says that it does not.
 local icons = require("lib/icons")
 local card = require("lib/card")
+local wm = require("lib/wm")
 local E = {}
 
 local N = fact.slots
@@ -784,6 +785,7 @@ end)
 local SETTINGS = "settings.json"
 function E.tell(...) run("latte-say", { ... }) end
 local hidden, zooms = {}, {}
+local glass_told = nil                       -- what the compositor was last told about glass windows
 local chosen_settings = {}                   -- the file as it was last read
 function E.apply_hidden()
     local changed = false
@@ -811,6 +813,7 @@ local function settings()
     end
     if changed then E.apart() publish() end
     E.tell("fact lively " .. tostring(fact.lively), "fact glassy " .. tostring(fact.glassy), "fact bends " .. tostring(fact.bends))
+    if glass_told ~= fact.glassy then glass_told = fact.glassy wm.glass(glass_told) end
 end
 
 -- what is set now, and setting one thing: it is written down and taken up at once

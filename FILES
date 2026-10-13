@@ -71,6 +71,7 @@
 /usr/share/latteos/hypr/latte/keys.lua                  <- system/hypr/latte/keys.lua
 /usr/share/latteos/hypr/latte/tiers.lua                 <- system/hypr/latte/tiers.lua
 /usr/share/latteos/hypr/latte/bars.lua                  <- system/hypr/latte/bars.lua
+/usr/share/latteos/hypr/latte/glass.lua                 <- system/hypr/latte/glass.lua
 /usr/share/latteos/hypr/hypridle.conf                   <- system/hypr/hypridle.conf
 /usr/lib64/latteos/latte-events.so                      <- plugin:latte-events
 /usr/share/latteos/labwc/rc.xml                         <- system/labwc/rc.xml
@@ -130,6 +131,7 @@ optional: brightnessctl power-profiles-daemon                        # the brigh
 optional: steam gamescope gamescope-session gamescope-session-steam  # the Game session; without them it is not offered
 /usr/bin/pleamar: pleamar v0.3.2 (github.com/k4ditano/pleamar) built with patches/pleamar-*.patch; see patches/README.md
 optional /usr/lib64/latteos/hyprbars.so: hyprbars (github.com/hyprwm/hyprland-plugins) built for the installed Hyprland with patches/hyprbars-latte.patch
+optional /usr/lib64/latteos/hyprglass.so: hyprglass (github.com/hyprnux/hyprglass) built for the installed Hyprland: the glass windows that go with drops of glass
 
 # What an installer does once the files are in place; removal undoes each line.
 [steps]

@@ -36,9 +36,9 @@ mkdir -p "$out/labwc" "$out/data" "$out/state" "$out/share" "$out/config"
 # /usr/share/latteos as it will be, from where its parts are in the repository
 ln -sfn "$repo/system/hypr" "$out/share/hypr"
 ln -sfn "$repo/assets/wallpapers" "$out/share/wallpapers"
-# the plugins: this repository's own as it was last built (make -C plugins/latte-events), the title bars from the system
+# the plugins: this repository's own as it was last built (make -C plugins/latte-events), the title bars and the glass from the system
 mkdir -p "$out/plugins"
-for p in "$repo/plugins/latte-events/latte-events.so" /usr/lib64/latteos/hyprbars.so; do [ -f "$p" ] && ln -sfn "$p" "$out/plugins/"; done
+for p in "$repo/plugins/latte-events/latte-events.so" /usr/lib64/latteos/hyprbars.so /usr/lib64/latteos/hyprglass.so; do [ -f "$p" ] && ln -sfn "$p" "$out/plugins/"; done
 rm -f "$out"/shot*.png "$out/scene.log" "$out/do.log"
 
 # What runs inside the session: the scene, the screenshots, DO.

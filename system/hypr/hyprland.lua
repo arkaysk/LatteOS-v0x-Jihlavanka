@@ -79,6 +79,7 @@ require("latte.tiers").apply(tier, colors)
 require("latte.windows").setup()
 require("latte.keys").setup()
 require("latte.bars").setup(colors)
+require("latte.glass").setup(tier)
 hl.gesture({ fingers = 3, direction = "horizontal", action = "workspace" })
 
 -- an app's request to maximise itself is not obeyed: it would cover the drops' band

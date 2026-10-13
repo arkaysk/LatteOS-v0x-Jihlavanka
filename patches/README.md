@@ -42,6 +42,9 @@ make -C hyprbars          # needs hyprland-devel; hyprbars/hyprbars.so goes to /
 
 Without the plugin the desktop works: a window is moved with Win and the mouse and closed from the window bar.
 
+The glass windows are [Hyprglass](https://github.com/hyprnux/hyprglass), built as its README says and put at
+`/usr/lib64/latteos/hyprglass.so`; LatteOS changes nothing in it.
+
 LatteOS's own plugin, `plugins/latte-events` (it tells the configuration when a window is let go, for laying it
 against an edge), is built the same way: `make -C plugins/latte-events`, the result goes to
 `/usr/lib64/latteos/latte-events.so`. Both have to be built again whenever Hyprland is updated.
