@@ -84,9 +84,70 @@ ShellRoot {
     Process { id: setProfile; onExited: profiles.running = true }
     Run { id: sound }
     Run { id: opens }
-    Process { id: tell; onExited: { if (shell.page === "sound") sound.ask(["latte-settings", "sound"]); if (shell.page === "defaults") opens.ask(["latte-settings", "defaults"]) } }
+    Run { id: region }
+    Run { id: clock }
+    Run { id: keys }
+    // what a page shows is asked for when it opens, and again after anything on it was changed
+    readonly property var asks: ({ "sound": [sound, ["latte-settings", "sound"]], "defaults": [opens, ["latte-settings", "defaults"]], "language": [region, ["latte-settings", "region"]],
+                                   "time": [clock, ["latte-settings", "time"]], "keyboard": [keys, ["latte-settings", "keyboard"]], "displays": [screens, ["hyprctl", "monitors", "-j"]] })
+    function ask() { const a = asks[page]; if (a) a[0].ask(a[1]) }
+    Timer { id: later; interval: 900; onTriggered: shell.ask() }       // what was asked of the compositor takes a moment to be so
+
+    // ── the screens: a change is tried, and stays only when the user says the picture is fine ───────────
+    Run { id: screens }
+    property string screenAt: ""
+    property var screenBefore: null
+    property int screenWait: 0
+    readonly property var screenList: (screens.data || []).slice().sort((a, b) => a.x - b.x)
+    readonly property var screenHere: screenList.find(m => m.name === screenAt) || screenList[0] || null
+    readonly property string screenMain: { const m = screenList.find(m => m.x === 0 && m.y === 0) || screenList[0]; return m ? m.name : "" }
+    function wide(m) { return Math.round((m.transform % 2 ? m.height : m.width) / m.scale) }
+    function tall(m) { return Math.round((m.transform % 2 ? m.width : m.height) / m.scale) }
+    function asIs(m) { return { name: m.name, mode: m.width + "x" + m.height + "@" + m.refreshRate.toFixed(3), position: m.x + "x" + m.y, scale: m.scale, turn: m.transform } }
+    // ponytail: side by side only, the main one at 0,0; screens above one another are for ~/.config/latteos/hyprland.lua
+    function laid(list, main) {
+        let x = 0
+        const at = list.map(m => { const here = x; x += wide(m); return here })
+        const zero = at[Math.max(0, list.findIndex(m => m.name === main))]
+        return list.map((m, i) => Object.assign(asIs(m), { position: (at[i] - zero) + "x0" }))
+    }
+    function putScreens(shapes, keep) {
+        order(["hyprctl", "eval", shapes.map(s => "latte.screen(" + [JSON.stringify(s.name), JSON.stringify(s.mode), JSON.stringify(s.position), s.scale, s.turn, keep].join(", ") + ")").join(" ")])
+        later.restart()
+    }
+    function tryScreens(list, main) {
+        if (!screenBefore) screenBefore = screenList.map(asIs)
+        putScreens(laid(list, main), false); screenWait = 15
+    }
+    function changeScreen(name, what) { tryScreens(screenList.map(m => m.name === name ? Object.assign({}, m, what) : m), screenMain) }
+    function moveScreen(name, by) {
+        const list = screenList.slice(), i = list.findIndex(m => m.name === name), j = i + by
+        if (i < 0 || j < 0 || j >= list.length) return
+        const m = list[i]; list[i] = list[j]; list[j] = m
+        tryScreens(list, screenMain)
+    }
+    function keepScreens() { putScreens(screenList.map(asIs), true); screenBefore = null; screenWait = 0 }
+    function screensBack() { if (screenBefore) putScreens(screenBefore, false); screenBefore = null; screenWait = 0 }
+    Timer { interval: 1000; repeat: true; running: shell.screenWait > 0; onTriggered: if (--shell.screenWait <= 0) shell.screensBack() }
+    function modes(m) {                    // [{w, h, rates: [Hz…]}], the largest first
+        const found = []
+        for (const said of m.availableModes) {
+            const p = /^(\d+)x(\d+)@([\d.]+)Hz$/.exec(said); if (!p) continue
+            const w = parseInt(p[1]), h = parseInt(p[2]), hz = parseFloat(p[3])
+            let size = found.find(s => s.w === w && s.h === h)
+            if (!size) { size = { w: w, h: h, rates: [] }; found.push(size) }
+            if (size.rates.indexOf(hz) < 0) size.rates.push(hz)
+        }
+        found.forEach(s => s.rates.sort((a, b) => b - a))
+        return found.sort((a, b) => b.w * b.h - a.w * a.h)
+    }
+    Process { id: tell; onExited: shell.ask() }
     function order(args) { tell.running = false; tell.command = args; tell.running = true }
-    Timer { interval: 2500; repeat: true; running: shell.page === "sound"; onTriggered: if (!tell.running) sound.ask(["latte-settings", "sound"]) }
+    Timer { interval: 2500; repeat: true; running: shell.page === "sound"; onTriggered: if (!tell.running) shell.ask() }
+    property date now: new Date()
+    Timer { interval: 1000; repeat: true; running: shell.page === "time"; triggeredOnStart: true; onTriggered: shell.now = new Date() }
+    function localeName(id) { const l = region.data ? region.data.locales.find(x => x.id === id) : null; return l ? l.name + (l.place ? " · " + l.place : "") : id }
+    function layoutName(id) { const l = keys.data ? keys.data.layouts.find(x => x.id === id) : null; return l ? l.name : id }
     readonly property var kindNames: ({ "browser": QT_TR_NOOP("Web browser"), "mail": QT_TR_NOOP("Mail"), "files": QT_TR_NOOP("Files and folders"), "images": QT_TR_NOOP("Pictures"),
                                         "video": QT_TR_NOOP("Video"), "music": QT_TR_NOOP("Music"), "text": QT_TR_NOOP("Text"), "pdf": "PDF" })
     readonly property var kindIcons: ({ "browser": "world", "mail": "file-text", "files": "folder", "images": "photo", "video": "player-play", "music": "music", "text": "file-text", "pdf": "file-text" })
@@ -101,8 +162,7 @@ ShellRoot {
         if (page === "background") pictures.ask(["latte-settings", "wallpapers"])
         if (page === "about") machine.ask(["latte-devices", "list"])
         if (page === "power") profiles.running = true
-        if (page === "sound") sound.ask(["latte-settings", "sound"])
-        if (page === "defaults") opens.ask(["latte-settings", "defaults"])
+        ask()
     }
     readonly property var coffeeNames: ({ "espresso": "Espresso", "ristretto": "Ristretto", "lungo": "Lungo", "americano": "Americano", "macchiato": "Macchiato", "cortado": "Cortado",
                                           "flatwhite": "Flat white", "cappuccino": "Cappuccino", "latte": "Latte", "white-coffee": QT_TR_NOOP("White coffee") })
@@ -343,6 +403,105 @@ ShellRoot {
                                     Image { width: 26; height: 26; source: appChip.modelData.icon.startsWith("/") ? "file://" + appChip.modelData.icon : Quickshell.iconPath(appChip.modelData.icon, true); sourceSize.width: 64; sourceSize.height: 64; anchors.verticalCenter: parent.verticalCenter; visible: status === Image.Ready }
                                     Label { text: appChip.modelData.name; font.weight: appChip.on ? 700 : 400; anchors.verticalCenter: parent.verticalCenter } }
                                 MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: shell.order(["latte-settings", "default", kindRow.modelData.kind, appChip.modelData.id]) } } } } } }
+
+            // the screens
+            Rectangle { visible: shell.page === "displays" && shell.screenWait > 0; width: view.room; height: 64; radius: 16; color: Theme.raised; border.width: 2; border.color: Theme.gold
+                Label { x: 18; text: I18n.tr("Is the picture fine? It goes back in {n} s.", { n: shell.screenWait }); font.weight: 600; anchors.verticalCenter: parent.verticalCenter }
+                Row { anchors.right: parent.right; anchors.rightMargin: 14; anchors.verticalCenter: parent.verticalCenter; spacing: 8
+                    Pill { text: I18n.tr("Put it back"); onPressed: shell.screensBack() }
+                    Pill { strong: true; icon: "check"; text: I18n.tr("Keep it"); onPressed: shell.keepScreens() } } }
+            Item { id: desk; visible: shell.page === "displays"; width: view.room; height: 190
+                readonly property real x0: shell.screenList.length ? Math.min.apply(null, shell.screenList.map(m => m.x)) : 0
+                readonly property real y0: shell.screenList.length ? Math.min.apply(null, shell.screenList.map(m => m.y)) : 0
+                readonly property real x1: shell.screenList.length ? Math.max.apply(null, shell.screenList.map(m => m.x + shell.wide(m))) : 1
+                readonly property real y1: shell.screenList.length ? Math.max.apply(null, shell.screenList.map(m => m.y + shell.tall(m))) : 1
+                readonly property real k: Math.min(width / Math.max(1, x1 - x0), height / Math.max(1, y1 - y0))
+                Repeater { model: ScriptModel { values: shell.screenList.map(m => m.name) }
+                    Rectangle { id: scr; required property string modelData
+                        readonly property var m: shell.screenList.find(x => x.name === modelData) || shell.screenList[0]
+                        readonly property bool on: shell.screenHere !== null && shell.screenHere.name === modelData
+                        x: (desk.width - (desk.x1 - desk.x0) * desk.k) / 2 + (m.x - desk.x0) * desk.k + 3; y: (m.y - desk.y0) * desk.k + 3
+                        width: shell.wide(m) * desk.k - 6; height: shell.tall(m) * desk.k - 6; radius: 14
+                        color: on ? Theme.raised : Theme.card; border.width: 2; border.color: on ? Theme.gold : Theme.line
+                        Behavior on x { NumberAnimation { duration: 220; easing.type: Easing.OutCubic } }
+                        Behavior on width { NumberAnimation { duration: 220; easing.type: Easing.OutCubic } }
+                        Behavior on height { NumberAnimation { duration: 220; easing.type: Easing.OutCubic } }
+                        Column { anchors.centerIn: parent; spacing: 3
+                            Glyph { name: shell.screenMain === scr.modelData ? "cup" : "device-desktop"; font.pixelSize: 26; color: scr.on ? Theme.gold : Theme.dim; anchors.horizontalCenter: parent.horizontalCenter }
+                            Label { text: scr.modelData; font.weight: 700; anchors.horizontalCenter: parent.horizontalCenter }
+                            Label { text: scr.m.width + " × " + scr.m.height; color: Theme.dim; font.pixelSize: 12; anchors.horizontalCenter: parent.horizontalCenter } }
+                        MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: shell.screenAt = scr.modelData } } } }
+            Label { visible: shell.page === "displays" && shell.screenHere !== null; width: view.room; color: Theme.dim; font.pixelSize: 13
+                    text: shell.screenHere ? [shell.screenHere.make, shell.screenHere.model, shell.screenHere.name].filter(s => s).join("  ·  ") + (shell.screenMain === shell.screenHere.name ? "  ·  " + I18n.tr("the main screen, where the drops are") : "") : "" }
+            Part { visible: shell.page === "displays" && shell.screenHere !== null; width: view.room; title: I18n.tr("Resolution")
+                Repeater { model: shell.screenHere && shell.page === "displays" ? shell.modes(shell.screenHere) : []
+                    Pill { required property var modelData; text: modelData.w + " × " + modelData.h; strong: shell.screenHere.width === modelData.w && shell.screenHere.height === modelData.h
+                           onPressed: shell.changeScreen(shell.screenHere.name, { width: modelData.w, height: modelData.h, refreshRate: modelData.rates[0] }) } } }
+            Part { visible: shell.page === "displays" && shell.screenHere !== null; width: view.room; title: I18n.tr("Pictures a second")
+                Repeater { model: shell.screenHere && shell.page === "displays" ? (shell.modes(shell.screenHere).find(s => s.w === shell.screenHere.width && s.h === shell.screenHere.height) || { rates: [] }).rates : []
+                    Pill { required property real modelData; text: Math.round(modelData) + " Hz"; strong: Math.abs(shell.screenHere.refreshRate - modelData) < 0.6
+                           onPressed: shell.changeScreen(shell.screenHere.name, { refreshRate: modelData }) } } }
+            Part { visible: shell.page === "displays" && shell.screenHere !== null; width: view.room; title: I18n.tr("How large things are"); note: I18n.tr("Texts, buttons and windows on this screen. A screen takes only the sizes its picture divides into.")
+                Repeater { model: [1, 1.25, 1.5, 1.75, 2]
+                    Pill { required property real modelData; text: Math.round(modelData * 100) + " %"; strong: shell.screenHere !== null && Math.abs(shell.screenHere.scale - modelData) < 0.07
+                           onPressed: shell.changeScreen(shell.screenHere.name, { scale: modelData }) } } }
+            Part { visible: shell.page === "displays" && shell.screenHere !== null; width: view.room; title: I18n.tr("Which way it is turned")
+                Repeater { model: [{ t: 0, name: QT_TR_NOOP("Upright") }, { t: 1, name: QT_TR_NOOP("On its left side") }, { t: 2, name: QT_TR_NOOP("Upside down") }, { t: 3, name: QT_TR_NOOP("On its right side") }]
+                    Pill { required property var modelData; text: I18n.tr(modelData.name); strong: shell.screenHere !== null && shell.screenHere.transform === modelData.t
+                           onPressed: shell.changeScreen(shell.screenHere.name, { transform: modelData.t }) } } }
+            Part { visible: shell.page === "displays" && shell.screenList.length > 1; width: view.room; title: I18n.tr("Where it stands"); note: I18n.tr("The screens stand side by side as in the picture above. The main one carries the drops; every other has a window bar of its own.")
+                Pill { icon: "chevron-left"; text: I18n.tr("Further left"); onPressed: shell.moveScreen(shell.screenHere.name, -1) }
+                Pill { icon: "chevron-right"; text: I18n.tr("Further right"); onPressed: shell.moveScreen(shell.screenHere.name, 1) }
+                Pill { icon: "cup"; text: I18n.tr("Make it the main screen"); visible: shell.screenHere !== null && shell.screenMain !== shell.screenHere.name; onPressed: shell.tryScreens(shell.screenList, shell.screenHere.name) } }
+
+            // language, and whose dates and numbers
+            Part { visible: shell.page === "language"; width: view.room; title: I18n.tr("Language"); note: I18n.tr("What the desktop and the apps speak. It changes when you sign in the next time.")
+                Repeater { model: shell.page === "language" && region.data ? region.data.locales : []
+                    Pill { required property var modelData; text: modelData.name + (modelData.place ? " · " + modelData.place : ""); strong: region.data.lang === modelData.id
+                           onPressed: shell.order(["latte-settings", "locale", modelData.id].concat(region.data.formats ? [region.data.formats] : [])) } } }
+            Part { visible: shell.page === "language"; width: view.room; title: I18n.tr("Dates, numbers and money"); note: I18n.tr("How a date, a number, a price and a sheet of paper are written, where that differs from the language.")
+                Pill { text: I18n.tr("As the language"); strong: region.data !== null && region.data.formats === ""; onPressed: shell.order(["latte-settings", "locale", region.data.lang]) }
+                Repeater { model: shell.page === "language" && region.data ? region.data.locales : []
+                    Pill { required property var modelData; text: modelData.name + (modelData.place ? " · " + modelData.place : ""); strong: region.data.formats === modelData.id
+                           onPressed: shell.order(["latte-settings", "locale", region.data.lang, modelData.id]) } } }
+            Pill { visible: shell.page === "language"; icon: "keyboard"; text: I18n.tr("Keyboard layouts"); onPressed: shell.go("keyboard") }
+
+            // the clock
+            Rectangle { visible: shell.page === "time"; width: view.room; height: 150; radius: 26
+                gradient: Gradient { orientation: Gradient.Horizontal; GradientStop { position: 0; color: Theme.raised } GradientStop { position: 1; color: Theme.card } }
+                Column { x: 30; anchors.verticalCenter: parent.verticalCenter; spacing: 4
+                    Label { text: shell.now.toLocaleTimeString(Qt.locale(), Locale.ShortFormat); font.pixelSize: 54; font.weight: 800 }
+                    Label { text: shell.now.toLocaleDateString(Qt.locale(), Locale.LongFormat) + (clock.data ? "  ·  " + clock.data.zone.replace(/_/g, " ") : ""); color: Theme.dim } } }
+            Switch { visible: shell.page === "time"; width: view.room; text: I18n.tr("Set the clock by itself"); hint: I18n.tr("From the internet. The administrator's password is asked for a change here."); on: clock.data !== null && clock.data.auto
+                     onPressed: shell.order(["timedatectl", "set-ntp", on ? "false" : "true"]) }
+            Part { id: zonePart; visible: shell.page === "time"; width: view.room; title: I18n.tr("Time zone"); note: I18n.tr("Type a city or a part of the world.")
+                readonly property string asked: shell.plain(zoneField.text.trim()).replace(/ /g, "_")
+                readonly property var shown: !clock.data ? [] : clock.data.zones.filter(z => asked !== "" ? shell.plain(z).indexOf(asked) >= 0 : z.split("/")[0] === clock.data.zone.split("/")[0]).slice(0, 80)
+                Field { id: zoneField; width: Math.min(420, view.room); hint: I18n.tr("Search time zones…") }
+                Item { width: view.room; height: 1 }
+                Repeater { model: zonePart.shown
+                    Pill { required property string modelData; text: modelData.replace(/_/g, " "); strong: clock.data.zone === modelData; onPressed: shell.order(["timedatectl", "set-timezone", modelData]) } } }
+
+            // the keyboard
+            Part { visible: shell.page === "keyboard"; width: view.room; title: I18n.tr("Keyboard layouts"); note: I18n.tr("The first is the one you type in. With more of them, Alt+Shift goes to the next.")
+                Repeater { model: shell.page === "keyboard" && keys.data ? keys.data.current : []
+                    Rectangle { id: lay; required property string modelData; required property int index; width: view.room; height: 56; radius: 16; color: Theme.card
+                        border.width: 2; border.color: index === 0 ? Theme.gold : "transparent"
+                        readonly property var others: keys.data.current.filter(i => i !== modelData)
+                        Glyph { x: 18; name: "keyboard"; font.pixelSize: 22; color: lay.index === 0 ? Theme.gold : Theme.dim; anchors.verticalCenter: parent.verticalCenter }
+                        Label { x: 54; text: shell.layoutName(lay.modelData); font.weight: 600; anchors.verticalCenter: parent.verticalCenter }
+                        Row { anchors.right: parent.right; anchors.rightMargin: 12; anchors.verticalCenter: parent.verticalCenter; spacing: 8
+                            Pill { visible: lay.index > 0; text: I18n.tr("Make it the first"); onPressed: shell.order(["latte-settings", "keyboard", lay.modelData].concat(lay.others)) }
+                            Pill { visible: lay.others.length > 0; icon: "x"; text: I18n.tr("Remove"); onPressed: shell.order(["latte-settings", "keyboard"].concat(lay.others)) } } } } }
+            Part { id: layPart; visible: shell.page === "keyboard" && keys.data !== null && keys.data.current.length < 4; width: view.room; title: I18n.tr("Add a layout")
+                readonly property string asked: shell.plain(layField.text.trim())
+                readonly property var shown: !keys.data || asked.length < 2 ? [] : keys.data.layouts.filter(l => keys.data.current.indexOf(l.id) < 0 && shell.plain(l.name + " " + l.id).indexOf(asked) >= 0).slice(0, 40)
+                Field { id: layField; width: Math.min(420, view.room); hint: I18n.tr("Search layouts: Slovak, US, Dvorak…") }
+                Item { width: view.room; height: 1 }
+                Repeater { model: layPart.shown
+                    Pill { required property var modelData; icon: "plus"; text: modelData.name; onPressed: { layField.text = ""; shell.order(["latte-settings", "keyboard"].concat(keys.data.current, [modelData.id])) } } } }
+            Label { visible: shell.page === "keyboard"; width: view.room; wrapMode: Text.WordWrap; color: Theme.dim; font.pixelSize: 13
+                    text: I18n.tr("The login screen keeps the layout of the whole system, so a password is typed there as it always was.") }
 
             // when it locks, when the screens go dark
             Part { visible: shell.page === "lock"; width: view.room; title: I18n.tr("Lock the session after"); note: I18n.tr("Left alone that long, the session locks; the password opens it again. A window that fills the screen keeps it awake.")

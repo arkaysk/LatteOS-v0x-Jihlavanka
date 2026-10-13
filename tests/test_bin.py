@@ -205,6 +205,17 @@ with tempfile.TemporaryDirectory() as d:
     os.environ["HOME"] = home
     assert found["zz-test-view.desktop"] == ("View", "view", {"image/png", "x-test/thing"}), found.get("zz-test-view.desktop")
     assert "zz-test-hidden.desktop" not in found and "zz-test-plain.desktop" not in found
+    settings.CONFIG, said = os.path.join(d, "config"), []
+    settings.layouts = lambda: [{"id": i, "name": i} for i in ("us", "sk", "sk:qwerty")]
+    settings.out = lambda *argv, **env: said.append(argv) or ""
+    assert settings.set_keyboard(["sk:qwerty", "us"]) == 0 and "kb_variant = \"qwerty,\"" in said[-1][-1]
+    assert settings.kept("keyboard") == {"XKB_DEFAULT_LAYOUT": "sk,us", "XKB_DEFAULT_VARIANT": "qwerty,", "XKB_DEFAULT_OPTIONS": "grp:alt_shift_toggle"}
+    assert settings.set_keyboard(["us"]) == 0 and settings.kept("keyboard")["XKB_DEFAULT_OPTIONS"] == ""       # one layout: nothing to switch to
+    assert settings.set_keyboard(["us", "us"]) == 2 and settings.set_keyboard([]) == 2 and settings.set_keyboard(['us";os.exit()--']) == 2 and len(said) == 2
+    settings.region = lambda: {"locales": [{"id": "sk_SK.UTF-8"}, {"id": "en_GB.UTF-8"}]}
+    assert settings.set_locale("xx_XX.UTF-8", "") == 2 and settings.set_locale("sk_SK.UTF-8", "$(reboot)") == 2 and not os.path.exists(os.path.join(settings.CONFIG, "locale"))
+    assert settings.set_locale("en_GB.UTF-8", "sk_SK.UTF-8") == 0 and settings.kept("locale")["LC_PAPER"] == "sk_SK.UTF-8"
+    assert settings.set_locale("sk_SK.UTF-8", "sk_SK.UTF-8") == 0 and settings.kept("locale") == {"LANG": "sk_SK.UTF-8"}
 with contextlib.redirect_stdout(io.StringIO()):
     assert settings.main(["default", "nonsense", "a.desktop"]) == 2 and settings.main(["default", "browser", "../a.desktop"]) == 2      # nothing is run for these
 print("bin: ok")

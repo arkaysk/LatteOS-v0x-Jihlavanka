@@ -23,11 +23,30 @@ local function band(edge)
     return area
 end
 hl.monitor({ output = "", mode = hardware and "highrr" or "preferred", position = "auto", scale = 1, reserved_area = band("bottom") })
+local edges = {}                           -- where each monitor's window bar is; "" is every monitor not named
+local function screen(name, mode, position, scale, turn)
+    hl.monitor({ output = name, mode = mode, position = position, scale = scale, transform = turn, reserved_area = band(edges[name] or edges[""] or "bottom") })
+end
 -- the band is where that monitor's window bar is; with no monitor named, on all of them
 function latte.band(edge, name)
+    if (name or "") == "" then edges = { [""] = edge } else edges[name] = edge end
     for _, m in ipairs(hl.get_monitors() or {}) do
-        if (name or "") == "" or m.name == name then hl.monitor({ output = m.name, mode = string.format("%dx%d@%.3f", m.width, m.height, m.refresh_rate),
-                     position = string.format("%dx%d", m.x, m.y), scale = m.scale, reserved_area = band(edge) }) end
+        if (name or "") == "" or m.name == name then
+            screen(m.name, string.format("%dx%d@%.3f", m.width, m.height, m.refresh_rate), string.format("%dx%d", m.x, m.y), m.scale, m.transform)
+        end
+    end
+end
+-- The screens as the user set them (Settings › Displays): ~/.config/latteos/monitors, a line for each,
+-- NAME MODE POSITION SCALE TURN, as in "DP-3 2560x1080@144 0x0 1 0". A line that says anything else is not read.
+local SCREEN = "^(%S+) (%d+x%d+@[%d.]+) (%-?%d+x%-?%d+) ([%d.]+) ([0-7])$"
+do
+    local f = io.open(config .. "/monitors", "r")
+    if f then
+        for line in f:lines() do
+            local name, mode, position, scale, turn = line:match(SCREEN)
+            if name then screen(name, mode, position, tonumber(scale), tonumber(turn)) end
+        end
+        f:close()
     end
 end
 
@@ -134,6 +153,26 @@ local function place_shell(first)
 end
 hl.on("monitor.added", place_shell)
 hl.on("monitor.removed", place_shell)
+-- A screen as the user wants it now; with `keep` it also comes up so the next time. Settings tries a change
+-- without keeping it and puts the old one back unless the user says the picture is fine.
+function latte.screen(name, mode, position, scale, turn, keep)
+    local line = string.format("%s %s %s %s %d", name, mode, position, scale, turn)
+    if not line:match(SCREEN) then return end
+    screen(name, mode, position, scale, turn)
+    -- once it is so: the main monitor may be another one now, and a window may be left outside the picture
+    hl.timer(function() place_shell() latte.win.gather() end, { timeout = 600, type = "oneshot" })
+    if not keep then return end
+    local lines = {}
+    local f = io.open(config .. "/monitors", "r")
+    if f then
+        for old in f:lines() do if old:match("^(%S+)") ~= name then lines[#lines + 1] = old end end
+        f:close()
+    end
+    lines[#lines + 1] = line
+    os.execute("mkdir -p '" .. config .. "'")
+    f = io.open(config .. "/monitors", "w")
+    if f then f:write(table.concat(lines, "\n") .. "\n") f:close() end
+end
 
 -- The wallpaper: the user's own choice (a path in ~/.config/latteos/wallpaper), or the one LatteOS brings.
 -- With a path it becomes the choice; the picture on the screen changes at once.

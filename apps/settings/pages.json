@@ -90,9 +90,8 @@
     "id": "displays",
     "name": "Displays",
     "icon": "device-desktop",
-    "status": "planned",
-    "words": "monitor resolution refresh scale screen",
-    "elsewhere": "devices displays"
+    "status": "ready",
+    "words": "monitor resolution refresh scale screen"
    },
    {
     "id": "sound",
@@ -226,21 +225,21 @@
     "id": "language",
     "name": "Language and region",
     "icon": "world",
-    "status": "planned",
+    "status": "ready",
     "words": "locale slovak english keyboard layout format"
    },
    {
     "id": "time",
     "name": "Date and time",
     "icon": "clock-hour-4",
-    "status": "planned",
+    "status": "ready",
     "words": "clock timezone"
    },
    {
     "id": "keyboard",
     "name": "Keyboard and shortcuts",
     "icon": "keyboard",
-    "status": "planned",
+    "status": "ready",
     "words": "keys shortcut layout win super"
    },
    {

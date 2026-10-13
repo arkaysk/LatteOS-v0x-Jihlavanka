@@ -445,6 +445,16 @@ v režime Aplikácie — pod čiarou pod aplikáciami ponúkne stránky nastaven
 - **Pozadie** — obrázky LatteOS a z priečinka Obrázky; **živé pozadia** sú filmy z priečinka Videá (mpvpaper).
 - **Okná** — páska · dlaždice · plávajúce; sklo bočných panelov (frost · smoke · clear · milk).
 - **Kvapky (Goo)** — živé správanie, prehýbanie hladiny. **O tomto počítači.**
+- **Zvuk** — výstupy a vstupy: ktorý sa používa, hlasitosť, stlmenie. **Predvolené aplikácie** — čo otvára web, poštu,
+  priečinky, obrázky, video, hudbu, text a PDF.
+- **Obrazovky** — rozlíšenie, obrázky za sekundu, mierka, otočenie; pri viacerých poradie zľava doprava a ktorá je
+  hlavná (nesie kvapky). **Zmena sa najprv skúsi**: kto do 15 s nepotvrdí „Ponechať“, tomu sa obraz vráti — čierna
+  obrazovka nikoho nezamkne. Potvrdené je v `~/.config/latteos/monitors` a platí aj pri ďalšom prihlásení.
+  Po zmene obrazoviek sa plávajúce okná vrátia celé na obrazovku (zmenšia sa, ak treba).
+- **Jazyk a región** — jazyk a zvlášť formáty dátumov, čísel a peňazí; pre používateľa (`~/.config/latteos/locale`),
+  od ďalšieho prihlásenia. **Dátum a čas** — pásmo, automatický čas (systémové, pýta heslo správcu).
+  **Klávesnica** — rozloženia používateľa (prvé je to, ktorým píše; Alt+Shift prepína), platia hneď;
+  prihlasovacia obrazovka ostáva pri rozložení systému.
 - Stránka, ktorú LatteOS ešte nemá, je v zozname tiež a povie, kde sa to robí zatiaľ (App Manager, Monitor,
   Správca zariadení).
 

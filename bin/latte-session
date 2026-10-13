@@ -21,6 +21,8 @@ echo "=== latte-session $(date -Is) $*"
 config="${XDG_CONFIG_HOME:-$HOME/.config}/latteos"
 # the user's own language and formats (LANG=…, LC_TIME=…)
 [ -r "$config/locale" ] && { set -a; . "$config/locale"; set +a; }
+# and keyboard layouts (XKB_DEFAULT_…), in place of the system's
+[ -r "$config/keyboard" ] && { set -a; . "$config/keyboard"; set +a; }
 # the tier the user chose wins over the one the hardware suggests
 if [ "$LATTE_MODE" = normal ] && [ -r "$config/tier" ]; then
     chosen="$(tr -dc 'a-z' < "$config/tier")"

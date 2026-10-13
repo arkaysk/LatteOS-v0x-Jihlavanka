@@ -98,13 +98,21 @@ local function edge_zone(m, x, y)
 end
 -- Wherever it is let go, a window stays within reach: its top on the screen, where its header and its buttons
 -- are, and enough of it to take hold of. One that was dropped further out comes back that far.
-local function within_reach(w, m)
+-- `whole`: all of it comes back, made smaller if the screen is; for when the screen changed under it.
+local function within_reach(w, m, whole)
     local scale, res = m.scale or 1, m.reserved or { top = 0, right = 0, bottom = 0, left = 0 }
     local mw, mh = m.width / scale, m.height / scale
+    if (m.transform or 0) % 2 == 1 then mw, mh = mh, mw end
     local x, y = xy(w.at)
-    local width = xy(w.size)
+    local width, height = xy(w.size)
     local nx = math.max(m.x - width + 140, math.min(x, m.x + mw - 140))
     local ny = math.max(m.y + (res.top or 0), math.min(y, m.y + mh - (res.bottom or 0) - 70))
+    if whole then
+        local fw, fh = math.min(width, mw), math.min(height, mh - (res.top or 0) - (res.bottom or 0))
+        if fw ~= width or fh ~= height then hl.dispatch(hl.dsp.window.resize({ x = math.floor(fw), y = math.floor(fh), window = sel(w) })) end
+        nx = math.max(m.x, math.min(x, m.x + mw - fw))
+        ny = math.max(m.y + (res.top or 0), math.min(y, m.y + mh - (res.bottom or 0) - fh))
+    end
     if nx ~= x or ny ~= y then hl.dispatch(hl.dsp.window.move({ x = math.floor(nx), y = math.floor(ny), window = sel(w) })) end
 end
 local function dropped(w, x, y)
@@ -289,6 +297,12 @@ function W.setup()
 
     local function with(f) return function(address, ...) local w = find(address) if w then return f(w, ...) end end end
     latte.win = {
+        -- the screens changed (Settings › Displays): no floating window is left where it cannot be reached
+        gather = function()
+            for _, w in ipairs(hl.get_windows() or {}) do
+                if w.floating and w.monitor then within_reach(w, w.monitor, true) end
+            end
+        end,
         activate = with(activate),
         minimize = with(minimize),
         -- a press on a window in the bar, as on Windows: one that is not in front comes forward, the one in front is put away

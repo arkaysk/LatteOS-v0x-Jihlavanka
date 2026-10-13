@@ -11,6 +11,15 @@
   latte-settings defaults       which app opens what: [{"kind", "current", "apps": [{"id", "name", "icon"}]}] for the
                                 kinds browser, mail, files, images, video, music, text, pdf
   latte-settings default KIND APP.desktop     makes that app the one for everything of the kind
+  latte-settings region         {"lang", "formats", "locales": [{"id", "name", "place"}]}: the languages this system
+                                has, each named in itself; formats is "" when they follow the language
+  latte-settings locale LANG [FORMATS]        the user's language, and whose dates, numbers and money (from next login)
+  latte-settings time           {"zone", "auto", "zones": […]}: the time zone, whether the clock sets itself
+  latte-settings keyboard       {"current": ["sk", "us:intl"], "layouts": [{"id", "name"}]}: a layout is LAYOUT or
+                                LAYOUT:VARIANT, named in the user's language
+  latte-settings keyboard ID…   the user's layouts, the first is the one typed in; at once and from next login
+
+The user's choices are kept in ~/.config/latteos/: `locale` and `keyboard` are read by latte-session when it starts.
 
 A page is opened with `latte-app settings PAGE`. The pages are listed in apps/settings/pages.json, the one list the
 Settings app itself is built from.
@@ -18,10 +27,36 @@ Settings app itself is built from.
 import json
 import os
 import re
+import subprocess
 import sys
 import unicodedata
 
 SHARE = os.environ.get("LATTE_SHARE") or "/usr/share/latteos"
+
+
+CONFIG = os.path.join(os.environ.get("XDG_CONFIG_HOME") or os.path.expanduser("~/.config"), "latteos")
+
+
+def out(*argv, timeout=8, **env):
+    try:
+        return subprocess.run(argv, capture_output=True, text=True, timeout=timeout, env=dict(os.environ, **env) if env else None).stdout.strip()
+    except (OSError, subprocess.TimeoutExpired):
+        return ""
+
+
+def kept(name):
+    """What a file of the user's choices says: {"KEY": "value"} of its KEY=value lines."""
+    try:
+        with open(os.path.join(CONFIG, name), encoding="utf-8") as f:
+            return dict(re.findall(r"^(\w+)=(.*)$", f.read(), re.M))
+    except OSError:
+        return {}
+
+
+def keep(name, values):
+    os.makedirs(CONFIG, exist_ok=True)
+    with open(os.path.join(CONFIG, name), "w", encoding="utf-8") as f:
+        f.write("".join("%s=%s\n" % kv for kv in values.items()))
 
 
 def plain(s):
@@ -140,7 +175,91 @@ def defaults():
     return out
 
 
+FORMATS = ("LC_TIME", "LC_NUMERIC", "LC_MONETARY", "LC_MEASUREMENT", "LC_PAPER")
+
+
+def region():
+    found = []
+    for loc in out("locale", "-a").split():
+        if re.fullmatch(r"[a-z]{2,3}_[A-Z]{2}\.utf8", loc):
+            said = dict(re.findall(r'^(\w+)="(.*)"$', out("locale", "-k", "LC_ADDRESS", LC_ALL=loc), re.M))
+            found.append({"id": loc[:-5] + ".UTF-8", "name": said.get("lang_name") or loc[:-5], "place": said.get("country_name", "")})
+    mine = kept("locale")
+    lang = mine.get("LANG") or os.environ.get("LANG") or ""
+    return {"lang": lang, "formats": mine.get("LC_TIME", "") if mine.get("LC_TIME") != lang else "",
+            "locales": sorted(found, key=lambda l: (plain(l["name"]), l["place"]))}
+
+
+def clock():
+    said = dict(line.split("=", 1) for line in out("timedatectl", "show").splitlines() if "=" in line)
+    return {"zone": said.get("Timezone", ""), "auto": said.get("NTP") == "yes", "zones": out("timedatectl", "list-timezones").split()}
+
+
+def layouts():
+    """Every keyboard layout the system knows: [{"id": "sk" or "sk:qwerty", "name"}], named in the user's language."""
+    import gettext
+    tr = gettext.translation("xkeyboard-config", fallback=True).gettext
+    found, part = [], ""
+    try:
+        with open("/usr/share/X11/xkb/rules/evdev.lst", encoding="utf-8") as f:
+            for line in f:
+                if line.startswith("!"):
+                    part = line[1:].strip()
+                elif part == "layout" and line.strip():
+                    code, name = line.split(None, 1)
+                    found.append({"id": code, "name": tr(name.strip())})
+                elif part == "variant" and ": " in line:
+                    variant, rest = line.split(None, 1)
+                    found.append({"id": rest.split(":")[0].strip() + ":" + variant, "name": tr(rest.split(": ", 1)[1].strip())})
+    except OSError:
+        pass
+    return sorted(found, key=lambda l: plain(l["name"]))
+
+
+def keyboard():
+    mine = kept("keyboard")
+    pick = lambda what: mine.get("XKB_DEFAULT_" + what, os.environ.get("XKB_DEFAULT_" + what, ""))
+    codes, variants = pick("LAYOUT").split(","), pick("VARIANT").split(",")
+    current = [c + (":" + variants[i] if i < len(variants) and variants[i] else "") for i, c in enumerate(codes) if c]
+    return {"current": current or ["us"], "layouts": layouts()}
+
+
+def set_keyboard(ids):
+    known = {l["id"] for l in layouts()}
+    if not ids or len(ids) > 4 or len(set(ids)) != len(ids) or any(i not in known for i in ids):
+        return 2
+    codes, variants = ",".join(i.split(":")[0] for i in ids), ",".join(i.partition(":")[2] for i in ids)
+    # the other options stay as they are; with more layouts than one there has to be a way from one to the next
+    options = [o for o in kept("keyboard").get("XKB_DEFAULT_OPTIONS", os.environ.get("XKB_DEFAULT_OPTIONS", "")).split(",") if o and (len(ids) > 1 or not o.startswith("grp:"))]
+    if len(ids) > 1 and not any(o.startswith("grp:") for o in options):
+        options.append("grp:alt_shift_toggle")
+    keep("keyboard", {"XKB_DEFAULT_LAYOUT": codes, "XKB_DEFAULT_VARIANT": variants, "XKB_DEFAULT_OPTIONS": ",".join(options)})
+    out("hyprctl", "eval", 'hl.config({ input = { kb_layout = "%s", kb_variant = "%s", kb_options = "%s" } })' % (codes, variants, ",".join(options)))
+    return 0
+
+
+def set_locale(lang, formats):
+    known = {l["id"] for l in region()["locales"]}
+    if lang not in known or (formats and formats not in known):
+        return 2
+    keep("locale", dict({"LANG": lang}, **({k: formats for k in FORMATS} if formats and formats != lang else {})))
+    return 0
+
+
 def main(a):
+    if a == ["region"]:
+        print(json.dumps(region(), ensure_ascii=False))
+        return 0
+    if a[:1] == ["locale"] and len(a) in (2, 3):
+        return set_locale(a[1], a[2] if len(a) == 3 else "")
+    if a == ["time"]:
+        print(json.dumps(clock(), ensure_ascii=False))
+        return 0
+    if a == ["keyboard"]:
+        print(json.dumps(keyboard(), ensure_ascii=False))
+        return 0
+    if a[:1] == ["keyboard"]:
+        return set_keyboard(a[1:])
     if a == ["sound"]:
         print(json.dumps(sound(), ensure_ascii=False))
         return 0
