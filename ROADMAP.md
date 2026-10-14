@@ -1212,3 +1212,12 @@ cestu k aktualizácii alebo návratu.
     Overené v headless: bočný panel so sekciami, Farba (zápis aj zobrazenie), ponuka Komprimovať, prehliadač fotiek,
     balenie a rozbaľovanie aj s Ctrl+Z (skript). **Neoverené:** USB, karta, DVD, ISO (polkit mimo relácie
     odmietol), sieť a cloudy (treba účet), zobrazenie pripojených jednotiek.
+    **14. 10., hladina a obľúbené (používateľ):** **pod hladinou informácie o jednej vybranej veci**
+    (`latte-files about`): priečinok — počet položiek, veľkosť (du najviac 3 s), kedy zmenený; obrázok — rozlíšenie,
+    fotoaparát, kedy fotené, clona, čas, ISO (EXIF cez exiv2), veľkosť; video — rozlíšenie a dĺžka (ffprobe). V
+    prehliadači fotiek je zobrazená fotka zároveň vybraná, takže hladina hovorí o nej. **Obľúbené priečinky** v
+    bočnom paneli (sekcia Obľúbené, „Pridať obľúbený priečinok“ pridá ten, kde som; krížik odoberie; aj v ponuke
+    priečinka Pridať do / Odobrať z obľúbených) — uložené v záložkách GTK (`~/.config/gtk-3.0/bookmarks`), takže
+    ich vidí aj okno Otvoriť/Uložiť iných aplikácií. **Opravené:** po každej operácii (obnovenie zoznamu) sa
+    prerušila väzba priečinka a zoznam potom ostal na starom mieste pri prechode inam.
+    Overené v headless: informácie o priečinku a o fotke na hladine, pridanie obľúbeného, prechod po operácii.

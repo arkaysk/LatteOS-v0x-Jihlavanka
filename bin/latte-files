@@ -7,6 +7,9 @@
 #                                     disk usb card optical image network cloud). A drive with no PATH is not mounted yet
 #   latte-files mount DEVICE          mounts it (a /dev/… or rclone:NAME), says where;  eject PATH DEVICE   lets it go
 #   latte-files iso FILE              a disc image as a DVD drive, as Daemon Tools does; says where it is
+#   latte-files pin DIR / unpin DIR   a favourite folder (GTK's bookmarks) more or less
+#   latte-files about FILE            what there is to know of it, a line each, KEY, a tab, VALUE: items and size of a
+#                                     folder; size of a picture, the camera and when it was taken; length of a video
 #   latte-files tag COLOUR FILE…      a colour on them (red orange yellow green blue purple grey, or "" for none), in
 #                                     user.xdg.tags next to the file: Dolphin sees it too;  tags DIR   FILE, a tab, COLOUR
 #   latte-files job extract|zip|7z DIR FILE…   archives, as a job: unpacked into DIR (one folder for many things),
@@ -74,6 +77,12 @@ for e in sorted(os.listdir(gvfs)) if os.path.isdir(gvfs) else []:
     f = {k: urllib.parse.unquote(v) for k, v in f.items()}
     if how == "google-drive": out("cloud", f"{gvfs}/{e}", "Google Drive · " + f.get("user", "") + "@" + f.get("host", ""), "")
     else: out("network", f"{gvfs}/{e}", (f.get("share", "") + " · " if f.get("share") else "") + f.get("server", f.get("host", e)), "")
+# the user's favourite folders: GTK's bookmarks, which every app's Open and Save see too
+marks = os.path.join(os.environ.get("XDG_CONFIG_HOME") or os.path.expanduser("~/.config"), "gtk-3.0/bookmarks")
+for l in open(marks, encoding="utf-8", errors="replace") if os.path.exists(marks) else []:
+    uri, _, label = l.strip().partition(" ")
+    if uri.startswith("file://"):
+        at = urllib.parse.unquote(uri[7:]); out("favourite", at, label or os.path.basename(at) or at, "")
 # clouds of rclone: each under ~/Cloud/NAME, mounted when first opened
 mounted = {l.split()[1].replace("\\040", " ") for l in open("/proc/mounts") if " fuse.rclone " in l}
 remotes = subprocess.run(["rclone", "listremotes"], capture_output=True, text=True).stdout.split() if os.path.exists("/usr/bin/rclone") else []
@@ -100,6 +109,27 @@ iso)    dev="$(udisksctl loop-setup -r -f "$1" --no-user-interaction | sed -n 's
         at="$(lsblk -no MOUNTPOINT -- "$dev" | head -n1)"
         [ -n "$at" ] || at="$(udisksctl mount -b "$dev" --no-user-interaction | sed -n 's/^Mounted .* at \(.*\)$/\1/p')"
         printf '%s\n' "$at" ;;
+pin|unpin)
+        marks="${XDG_CONFIG_HOME:-$HOME/.config}/gtk-3.0/bookmarks"; mkdir -p -- "$(dirname -- "$marks")"; touch -- "$marks"
+        uri="file://$(python3 -I -c 'import sys, urllib.parse; print(urllib.parse.quote(sys.argv[1]))' "$1")"
+        grep -v "^$uri\( \|\$\)" -- "$marks" > "$marks.new"; [ "$what" = pin ] && printf '%s\n' "$uri" >> "$marks.new"; mv -- "$marks.new" "$marks" ;;
+about)  f="$1"; stat --printf 'when\t%Y\n' -- "$f" 2>/dev/null; [ -d "$f" ] || stat --printf 'bytes\t%s\n' -- "$f" 2>/dev/null
+        if [ -d "$f" ]; then
+            printf 'items\t%s\n' "$(find "$f" -mindepth 1 -maxdepth 1 2>/dev/null | wc -l)"
+            # a huge folder is not waited for: its size comes when du is through, or never
+            n="$(timeout 3 du -sb -- "$f" 2>/dev/null | cut -f1)"; [ -n "$n" ] && printf 'size\t%s\n' "$n"
+        else
+            case "$(printf '%s' "${f##*.}" | tr 'A-Z' 'a-z')" in
+            jpg|jpeg|png|webp|gif|bmp|tif|tiff|heic|avif)
+                px="$(identify -ping -format '%w × %h' "$f[0]" 2>/dev/null)"; [ -n "$px" ] && printf 'pixels\t%s\n' "$px"
+                exiv2 -q -Pkt -g Exif.Image.Model -g Exif.Photo.DateTimeOriginal -g Exif.Photo.ExposureTime -g Exif.Photo.FNumber -g Exif.Photo.ISOSpeedRatings -- "$f" 2>/dev/null |
+                    awk '{ k = $1; $1 = ""; sub(/^ +/, ""); n = split(k, p, "."); print p[n] "\t" $0 }' ;;
+            mp4|mkv|webm|avi|mov|m4v|wmv|mp3|flac|ogg|opus|wav|m4a)
+                ffprobe -v quiet -show_entries format=duration:stream=width,height -of default=nw=1 -- "$f" 2>/dev/null |
+                    awk -F= '$1 == "duration" { s = int($2); printf "length\t%d:%02d:%02d\n", s / 3600, s % 3600 / 60, s % 60 }
+                             $1 == "width" && $2 != "N/A" { w = $2 } $1 == "height" && $2 != "N/A" && w { printf "pixels\t%s × %s\n", w, $2; w = "" }' ;;
+            esac
+        fi ;;
 tag)    c="$1"; shift
         for f in "$@"; do if [ -n "$c" ]; then setfattr -n user.xdg.tags -v "$c" -- "$f"; else setfattr -x user.xdg.tags -- "$f" 2>/dev/null; fi; done ;;
 tags)   getfattr -h -m '^user\.xdg\.tags$' -d --absolute-names -- "$1"/* "$1"/.[!.]* 2>/dev/null |
