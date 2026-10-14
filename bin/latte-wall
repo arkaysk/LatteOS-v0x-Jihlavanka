@@ -64,7 +64,8 @@ def ai_off():
 
 
 def sync_ai():
-    """skwd-wall's model for looking by meaning (skwd-lens) is AI: with AI off in LatteOS it does not run."""
+    """skwd-wall's model for looking by meaning (skwd-lens) is AI: with AI off in LatteOS it does not run. And its
+    wallpaper lies on the background layer: on the bottom one (its default) a new film covers the desktop's icons."""
     if not skwd():
         return
     path = os.path.join(os.environ.get("XDG_CONFIG_HOME") or HOME + "/.config", "skwd-wall-v2", "config.json")
@@ -75,11 +76,13 @@ def sync_ai():
     if not isinstance(conf, dict):
         return
     part = conf.get("semantic") if isinstance(conf.get("semantic"), dict) else {}
+    paper = conf.get("paper") if isinstance(conf.get("paper"), dict) else {}
     want = not ai_off()
-    if part.get("enabled", True) == want:
+    if part.get("enabled", True) == want and paper.get("wallpaperLayer") == "background":
         return
     part["enabled"] = want
-    conf["semantic"] = part
+    paper["wallpaperLayer"] = "background"
+    conf["semantic"], conf["paper"] = part, paper
     os.makedirs(os.path.dirname(path), exist_ok=True)
     with open(path + ".new", "w") as f:
         json.dump(conf, f, indent=1)
