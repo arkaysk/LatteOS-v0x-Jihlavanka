@@ -1,14 +1,16 @@
 // DualBrew: the files. One panel as on Windows, or two side by side as in a commander; bin/latte-files moves
 // things, this window shows them.   latte-app files [FOLDER] [sizes]   (sizes: straight to what fills that folder)
 //
-// The side: the user's folders, the Trash, the disks. The header: up, a new folder, the view (details or icons),
-// hidden files, one panel or two. The coffee at the foot says what is here and what is chosen, and with two
+// The side: the user's folders, the Trash, the disks. The header: up, a new folder, the View (Explorer's: extra large,
+// large, medium and small icons, tiles, details; a folder shows the pictures it holds), one panel or two. The coffee at the foot says what is here and what is chosen, and with two
 // panels it carries the commander's keys: F5 copy and F6 move to the other panel, F7 new folder, F8 delete.
 // The mouse first: a press chooses, Ctrl adds, Shift takes all between, twice opens, the right button is the menu
 // everywhere; the middle one opens a folder in the other panel; the mouse's back and forward buttons go back and
 // forward; twice on the bare ground goes up; files are dragged to the other panel, onto a folder, or out to any
 // app, and dropped in from anywhere (moved on the same disk, copied to another; Ctrl copies). The column heads
 // sort. Copying and moving are jobs on the coffee: how far, pause, stop; several wait their turn.
+// A box drawn from bare ground chooses; dragged with the right button, a menu asks Copy, Move or Link here; Ctrl+Z
+// takes back the last thing done (latte-files undo).
 // The panel one works in stands above the coffee; the other lies under it.
 // The keys: Enter opens, Backspace goes up, F2 renames, Delete trashes, Ctrl+C/X/V, Ctrl+A, Ctrl+H hidden
 // files, Tab the other panel. Space with one file chosen shows it in the other panel. Space with nothing chosen measures the folder: how much each thing in it holds,
@@ -29,7 +31,7 @@ ShellRoot {
     readonly property var words: (Quickshell.env("LATTE_APP_ARGS") || "").split("\n").filter(w => w !== "")
     property bool dual: false
     property int active: 0                     // which panel has the keys
-    property string view: "details"            // or "icons"
+    property string view: "details"            // or "icons" (here.iconSize big), "small", "tiles": Explorer's views
     property bool hidden: false
     property bool real: false                  // the real structure of Linux, from /; otherwise the user's world
     property bool wasDual: false               // before the sizes took the other panel
@@ -161,6 +163,7 @@ ShellRoot {
         const rows = [{ icon: "external-link", text: I18n.tr("Open"), bold: true, hint: "Enter", run: () => shell.open(path, isDir) },
             ...(apps && apps.length && !many ? [{ icon: "apps", text: I18n.tr("Open with"), more: apps.map(a => ({ text: a.name, run: () => Quickshell.execDetached(["gtk-launch", a.id, path]) })) }] : []),
             ...(isDir && !many ? [{ icon: "layout-columns", text: I18n.tr("Open in the other panel"), run: () => { shell.dual = true; shell.other.go(path) } }] : []),
+            ...(!isDir && !many ? [{ icon: "eye", text: I18n.tr("A look"), hint: I18n.tr("Space"), run: () => shell.showPeek(path) }] : []),
             { line: true },
             { icon: "cut", text: I18n.tr("Cut"), hint: "Ctrl+X", run: () => shell.act(["clip", "cut"].concat(picked)) },
             { icon: "copy", text: I18n.tr("Copy"), hint: "Ctrl+C", run: () => shell.act(["clip", "copy"].concat(picked)) },
@@ -170,15 +173,23 @@ ShellRoot {
         if (!inTrash) rows.push({ icon: "trash", text: I18n.tr("Delete"), hint: "Del", danger: true, run: () => shell.act(["trash"].concat(picked)) })
         menu.open(x, y, rows)
     }
+    // the views of Windows' Explorer, by the same names; Ctrl and the wheel go between the icon sizes
+    function views() {
+        const icons = (size, name) => ({ text: I18n.tr(name), checked: view === "icons" && here.iconSize === size, run: () => { here.iconSize = size; view = "icons" } })
+        return [icons(256, "Extra large icons"), icons(128, "Large icons"), icons(64, "Medium icons"),
+                { text: I18n.tr("Small icons"), checked: view === "small", run: () => view = "small" },
+                { line: true },
+                { text: I18n.tr("Tiles"), checked: view === "tiles", run: () => view = "tiles" },
+                { text: I18n.tr("Details"), checked: view === "details", run: () => view = "details" }]
+    }
     function groundMenu(x, y) {
         if (!here.path.startsWith("/")) return menu.open(x, y, [{ text: I18n.tr("The real structure"), checked: real, run: () => real = !real }])
         const inTrash = here.path.indexOf("/.local/share/Trash/files") >= 0
         menu.open(x, y, inTrash ? [{ icon: "trash", text: I18n.tr("Empty Recycle Bin"), danger: true, run: () => shell.act(["empty"]) }] : [
-            { icon: "layout-grid", text: I18n.tr("View"), more: [{ text: I18n.tr("Details"), checked: shell.view === "details", run: () => shell.view = "details" },
-                                                                  { text: I18n.tr("Icons"), checked: shell.view === "icons", run: () => shell.view = "icons" },
-                                                                  { line: true }, { text: I18n.tr("Hidden files"), checked: shell.hidden, hint: "Ctrl+H", run: () => shell.hidden = !shell.hidden },
-                                                                  { text: I18n.tr("The real structure"), checked: shell.real, run: () => shell.real = !shell.real }] },
+            { icon: "layout-grid", text: I18n.tr("View"), more: shell.views().concat([{ line: true }, { text: I18n.tr("Hidden files"), checked: shell.hidden, hint: "Ctrl+H", run: () => shell.hidden = !shell.hidden },
+                                                                  { text: I18n.tr("The real structure"), checked: shell.real, run: () => shell.real = !shell.real }]) },
             { icon: "refresh", text: I18n.tr("Refresh"), hint: "F5", run: () => here.again() },
+            { icon: "arrow-back-up", text: I18n.tr("Undo"), hint: "Ctrl+Z", run: () => shell.act(["undo"]) },
             { icon: "disc", text: I18n.tr("How much each folder holds"), checked: shell.sizing, hint: I18n.tr("Space"), run: () => shell.showSizes() },
             { line: true },
             { icon: "clipboard", text: I18n.tr("Paste"), hint: "Ctrl+V", run: () => shell.act(["paste", here.path]) },
@@ -200,7 +211,7 @@ ShellRoot {
         property var ahead: []                 // the way forward, after going back
         property string sortBy: "name"         // name, size, date
         property bool sortDown: false
-        property real iconSize: 52             // Ctrl and the wheel make the icons bigger or smaller
+        property real iconSize: 64             // Ctrl and the wheel make the icons bigger or smaller
         readonly property bool isActive: shell.active === index
         function go(to) { if (to === path || to === "") return; before = before.concat([path]); ahead = []; path = to; chosen = ({}); last = "" }
         function back() { if (!before.length) return; const b = before.slice(); ahead = ahead.concat([path]); path = b.pop(); before = b; chosen = ({}) }
@@ -229,6 +240,26 @@ ShellRoot {
         }
         function again() { const f = files.folder; files.folder = ""; files.folder = f }
         function picked() { return Object.keys(chosen) }
+        // a box drawn with the mouse from bare ground chooses everything it touches, as on Windows; Ctrl adds
+        property bool banding: false
+        property point bandFrom
+        property rect band
+        property var bandBase: ({})
+        function groundPressed(m, p) { shell.active = index; keys.forceActiveFocus(); if (extra(m)) return
+                                       if (m.button !== Qt.LeftButton) return
+                                       banding = true; bandFrom = p; band = Qt.rect(p.x, p.y, 0, 0)
+                                       bandBase = (m.modifiers & Qt.ControlModifier) ? Object.assign({}, chosen) : ({}); chosen = Object.assign({}, bandBase) }
+        function bandMove(p) {
+            if (!banding) return
+            const x = Math.min(p.x, bandFrom.x), y = Math.min(p.y, bandFrom.y), w = Math.abs(p.x - bandFrom.x), h = Math.abs(p.y - bandFrom.y)
+            band = Qt.rect(x, y, w, h)
+            const s = Object.assign({}, bandBase), icons = shell.view !== "details", cols = Math.max(1, Math.floor(grid.width / grid.cellWidth))
+            for (let i = 0; i < files.count; i++) {
+                const cx = icons ? (i % cols) * grid.cellWidth : 0, cy = icons ? Math.floor(i / cols) * grid.cellHeight - grid.contentY : list.y + i * 34 - list.contentY
+                if (cx < x + w && cx + (icons ? grid.cellWidth : list.width) > x && cy < y + h && cy + (icons ? grid.cellHeight : 34) > y) s[files.get(i, "filePath")] = true
+            }
+            chosen = s
+        }
         function all() { const s = {}; for (let i = 0; i < files.count; i++) s[files.get(i, "filePath")] = true; chosen = s }
         function press(filePath, at, mods) {
             shell.active = index
@@ -301,15 +332,17 @@ ShellRoot {
                     Pill { implicitHeight: 30; icon: "arrow-up"; text: I18n.tr("Up"); visible: panel.source !== null && (shell.real ? panel.source.path !== "/" : (shell.rootOf(panel.source.path) || {}).path !== panel.source.path)
                            onPressed: { const s = panel.source; s.up(); if (s.path.startsWith("/")) s.measure() } }
                     Label { text: panel.source ? I18n.tr("What fills {folder}", { folder: panel.source.path.split("/").pop() || "/" }) : ""; font.weight: 700; anchors.verticalCenter: parent.verticalCenter } } } }
-        Item { x: 12; y: 50; width: parent.width - 24; height: parent.height - 62; clip: true
+        Item { id: ground; x: 12; y: 50; width: parent.width - 24; height: parent.height - 62; clip: true
             MouseArea { anchors.fill: parent; acceptedButtons: Qt.LeftButton | Qt.RightButton | Qt.BackButton | Qt.ForwardButton
-                        onPressed: (m) => { shell.active = panel.index; keys.forceActiveFocus(); if (panel.extra(m)) return; if (m.button === Qt.LeftButton) panel.chosen = ({}) }
+                        onPressed: (m) => panel.groundPressed(m, Qt.point(m.x, m.y))
+                        onPositionChanged: (m) => panel.bandMove(Qt.point(m.x, m.y))
+                        onReleased: panel.banding = false
                         onClicked: (m) => { if (m.button === Qt.RightButton) { const q = mapToItem(overlay, m.x, m.y); shell.groundMenu(q.x, q.y) } }
                         onDoubleClicked: (m) => { if (m.button === Qt.LeftButton && !panel.source && panel.peek === "") panel.up() }
-                        onWheel: (w) => { if (w.modifiers & Qt.ControlModifier) { panel.iconSize = Math.max(32, Math.min(160, panel.iconSize + (w.angleDelta.y > 0 ? 12 : -12))); shell.view = "icons" } else w.accepted = false } }
+                        onWheel: (w) => { if (w.modifiers & Qt.ControlModifier) { panel.iconSize = Math.max(32, Math.min(256, panel.iconSize + (w.angleDelta.y > 0 ? 16 : -16))); shell.view = "icons" } else w.accepted = false } }
             // files dropped here, from the other panel or from any app: into this folder
-            DropArea { anchors.fill: parent; keys: ["text/uri-list"]; enabled: panel.path.startsWith("/") && !panel.source && panel.peek === ""
-                onDropped: (d) => shell.dropInto(d, panel.path) }
+            DropArea { id: groundDrop; anchors.fill: parent; keys: ["text/uri-list"]; enabled: panel.path.startsWith("/") && !panel.source && panel.peek === ""
+                onDropped: (d) => shell.dropInto(d, panel.path, groundDrop) }
             Label { anchors.centerIn: parent; visible: panel.path.startsWith("/") && !panel.source && files.count === 0 && files.status === FolderListModel.Ready; text: I18n.tr("This folder is empty."); color: Theme.faint }
             // This computer: the user's folders and the disks, as tiles
             Flow { visible: panel.path === "computer:" && !panel.source; anchors.fill: parent; anchors.margins: 6; spacing: 12
@@ -426,6 +459,12 @@ ShellRoot {
                                 font.pixelSize: 12; font.weight: 600; anchors.verticalCenter: parent.verticalCenter }
                         MouseArea { id: headHit; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: panel.sort(parent.modelData.by) } } } }
             ListView { id: list; visible: shell.view === "details" && panel.path.startsWith("/") && !panel.source && panel.peek === ""; y: 28; width: parent.width; height: parent.height - 28; model: files; clip: true; boundsBehavior: Flickable.StopAtBounds
+                MouseArea { z: -1; width: list.width; height: Math.max(list.height, list.contentHeight); preventStealing: true; acceptedButtons: Qt.LeftButton | Qt.RightButton | Qt.BackButton | Qt.ForwardButton
+                    onPressed: (m) => panel.groundPressed(m, mapToItem(ground, m.x, m.y))
+                    onPositionChanged: (m) => panel.bandMove(mapToItem(ground, m.x, m.y))
+                    onReleased: panel.banding = false
+                    onClicked: (m) => { if (m.button === Qt.RightButton) { const q = mapToItem(overlay, m.x, m.y); shell.groundMenu(q.x, q.y) } }
+                    onDoubleClicked: (m) => { if (m.button === Qt.LeftButton) panel.up() } }
                 delegate: Rectangle { id: row; required property string fileName
                     required property string filePath
                     required property bool fileIsDir
@@ -438,53 +477,101 @@ ShellRoot {
                     Rectangle { visible: panel.measured && panel.sizes[row.filePath] !== undefined; x: 4; y: 4; height: parent.height - 8; radius: 6; color: Theme.coffee; opacity: 0.38
                                 width: (parent.width - 8) * (panel.sizes[row.filePath] || 0) / panel.largest; Behavior on width { NumberAnimation { duration: 220 } } }
                     Image { x: 10; width: 22; height: 22; anchors.verticalCenter: parent.verticalCenter; source: FileIcons.of(row.fileName, row.filePath, row.fileIsDir); sourceSize.width: 44; sourceSize.height: 44; asynchronous: true }
-                    Label { x: 42; width: parent.width - 42 - 250; text: row.fileName; anchors.verticalCenter: parent.verticalCenter; elide: Text.ElideMiddle }
+                    Label { id: rowName; x: 42; width: parent.width - 42 - 250; text: row.fileName; anchors.verticalCenter: parent.verticalCenter; elide: Text.ElideMiddle }
                     Label { x: parent.width - 240; width: 90; horizontalAlignment: Text.AlignRight; text: panel.sizes[row.filePath] !== undefined ? shell.bytes(panel.sizes[row.filePath]) : (row.fileIsDir ? (panel.measured ? "…" : "") : shell.bytes(row.fileSize))
                             color: panel.measured ? Theme.cream : Theme.dim; font.pixelSize: 12; anchors.verticalCenter: parent.verticalCenter }
                     Label { x: parent.width - 140; width: 130; text: Qt.formatDateTime(row.fileModified, "d. M. yyyy  hh:mm"); color: Theme.dim; font.pixelSize: 12; anchors.verticalCenter: parent.verticalCenter }
                     Rectangle { anchors.fill: parent; radius: 9; color: "transparent"; border.width: 2; border.color: Theme.gold; visible: rowDrop.containsDrag }
-                    DropArea { id: rowDrop; anchors.fill: parent; keys: ["text/uri-list"]; enabled: row.fileIsDir; onDropped: (d) => shell.dropInto(d, row.filePath) }
-                    MouseArea { id: rowHit; anchors.fill: parent; hoverEnabled: true; acceptedButtons: Qt.LeftButton | Qt.RightButton | Qt.MiddleButton | Qt.BackButton | Qt.ForwardButton
+                    DropArea { id: rowDrop; anchors.fill: parent; keys: ["text/uri-list"]; enabled: row.fileIsDir; onDropped: (d) => shell.dropInto(d, row.filePath, rowDrop) }
+                    MouseArea { id: rowHit; anchors.fill: parent; hoverEnabled: true; preventStealing: true; acceptedButtons: Qt.LeftButton | Qt.RightButton | Qt.MiddleButton | Qt.BackButton | Qt.ForwardButton
                         property point from
-                        onPressed: (m) => { keys.forceActiveFocus(); shell.active = panel.index; from = Qt.point(m.x, m.y); if (panel.extra(m) || m.button === Qt.MiddleButton) return
+                        property bool bare: false
+                        onPressed: (m) => { bare = m.button === Qt.LeftButton && m.x > 42 + Math.min(rowName.width, rowName.contentWidth) + 24 && m.x < parent.width - 250
+                                            if (bare) return panel.groundPressed(m, mapToItem(ground, m.x, m.y))
+                                            keys.forceActiveFocus(); shell.active = panel.index; from = Qt.point(m.x, m.y); if (panel.extra(m) || m.button === Qt.MiddleButton) return
                                             if (m.button === Qt.LeftButton || !panel.chosen[row.filePath]) panel.press(row.filePath, row.index, m.button === Qt.LeftButton ? m.modifiers : 0) }
-                        onPositionChanged: (m) => { if ((m.buttons & Qt.LeftButton) && Math.abs(m.x - from.x) + Math.abs(m.y - from.y) > 10) shell.drag(panel.carried(row.filePath)) }
+                        onReleased: panel.banding = false
+                        onPositionChanged: (m) => { if (panel.banding) return panel.bandMove(mapToItem(ground, m.x, m.y))
+                                                    if ((m.buttons & (Qt.LeftButton | Qt.RightButton)) && Math.abs(m.x - from.x) + Math.abs(m.y - from.y) > 10) shell.drag(panel.carried(row.filePath), !!(m.buttons & Qt.RightButton)) }
                         onClicked: (m) => { if (m.button === Qt.RightButton) { const q = mapToItem(overlay, m.x, m.y); shell.itemMenu(row.filePath, row.fileIsDir, q.x, q.y) }
                                             else if (m.button === Qt.MiddleButton && row.fileIsDir) { shell.dual = true; shell.other.go(row.filePath) } }
-                        onDoubleClicked: (m) => { if (m.button === Qt.LeftButton) shell.open(row.filePath, row.fileIsDir) } } } }
-            GridView { id: grid; visible: shell.view === "icons" && panel.path.startsWith("/") && !panel.source && panel.peek === ""; anchors.fill: parent; model: files; clip: true
-                cellWidth: panel.iconSize + 60; cellHeight: panel.iconSize + 56; boundsBehavior: Flickable.StopAtBounds
+                        onDoubleClicked: (m) => { if (m.button === Qt.LeftButton && !bare) shell.open(row.filePath, row.fileIsDir) } } } }
+            GridView { id: grid; visible: shell.view !== "details" && panel.path.startsWith("/") && !panel.source && panel.peek === ""; anchors.fill: parent; model: files; clip: true
+                readonly property bool wide: shell.view === "small" || shell.view === "tiles"     // the icon left, the name beside it
+                readonly property real icon: shell.view === "small" ? 20 : (shell.view === "tiles" ? 48 : panel.iconSize)
+                cellWidth: shell.view === "small" ? 250 : (shell.view === "tiles" ? 300 : panel.iconSize + 60)
+                cellHeight: shell.view === "small" ? 32 : (shell.view === "tiles" ? 72 : panel.iconSize + 56); boundsBehavior: Flickable.StopAtBounds
+                MouseArea { z: -1; width: grid.width; height: Math.max(grid.height, grid.contentHeight); preventStealing: true; acceptedButtons: Qt.LeftButton | Qt.RightButton | Qt.BackButton | Qt.ForwardButton
+                    onPressed: (m) => panel.groundPressed(m, mapToItem(ground, m.x, m.y))
+                    onPositionChanged: (m) => panel.bandMove(mapToItem(ground, m.x, m.y))
+                    onReleased: panel.banding = false
+                    onClicked: (m) => { if (m.button === Qt.RightButton) { const q = mapToItem(overlay, m.x, m.y); shell.groundMenu(q.x, q.y) } }
+                    onDoubleClicked: (m) => { if (m.button === Qt.LeftButton) panel.up() } }
                 delegate: Item { id: cell; required property string fileName
                     required property string filePath
                     required property bool fileIsDir
+                    required property var fileSize
                     required property int index
+                    readonly property bool roomy: !grid.wide && panel.iconSize >= 96
                     width: grid.cellWidth; height: grid.cellHeight
                     Rectangle { anchors.fill: parent; anchors.margins: 3; radius: 10; border.width: cellDrop.containsDrag ? 2 : 0; border.color: Theme.gold; color: panel.chosen[cell.filePath] ? Qt.rgba(Theme.gold.r, Theme.gold.g, Theme.gold.b, 0.24) : (cellHit.containsMouse ? Theme.card : "transparent") }
-                    Image { y: 10; width: panel.iconSize; height: panel.iconSize; anchors.horizontalCenter: parent.horizontalCenter; source: FileIcons.of(cell.fileName, cell.filePath, cell.fileIsDir); sourceSize.width: 256; sourceSize.height: 256; fillMode: Image.PreserveAspectFit; asynchronous: true }
-                    Label { y: panel.iconSize + 14; width: parent.width - 12; anchors.horizontalCenter: parent.horizontalCenter; horizontalAlignment: Text.AlignHCenter; text: cell.fileName; font.pixelSize: 12; wrapMode: Text.WrapAnywhere; maximumLineCount: 2 }
-                    DropArea { id: cellDrop; anchors.fill: parent; keys: ["text/uri-list"]; enabled: cell.fileIsDir; onDropped: (d) => shell.dropInto(d, cell.filePath) }
-                    MouseArea { id: cellHit; anchors.fill: parent; hoverEnabled: true; acceptedButtons: Qt.LeftButton | Qt.RightButton | Qt.MiddleButton | Qt.BackButton | Qt.ForwardButton
+                    Image { id: cellIcon; x: grid.wide ? 10 : (parent.width - width) / 2; y: grid.wide ? (parent.height - height) / 2 : 10; width: grid.icon; height: grid.icon
+                            source: FileIcons.of(cell.fileName, cell.filePath, cell.fileIsDir); sourceSize.width: Math.max(64, grid.icon * 2); sourceSize.height: Math.max(64, grid.icon * 2); fillMode: Image.PreserveAspectFit; asynchronous: true }
+                    // a folder shows the pictures it holds, as Explorer's do, once the icons are big enough to see them
+                    FolderListModel { id: inside; folder: cell.fileIsDir && cell.roomy ? "file://" + cell.filePath : ""; showDirs: false; sortField: FolderListModel.Time
+                                      nameFilters: FileIcons.pictures.map(e => "*." + e).concat(FileIcons.pictures.map(e => "*." + e.toUpperCase())) }
+                    Repeater { model: cell.roomy ? Math.min(2, inside.count) : 0
+                        Image { required property int index; asynchronous: true; fillMode: Image.PreserveAspectCrop; sourceSize.width: 256
+                                source: "file://" + inside.get(index, "filePath"); width: cellIcon.width * 0.46; height: cellIcon.height * 0.52
+                                x: cellIcon.x + cellIcon.width * (0.18 + 0.26 * index); y: cellIcon.y + cellIcon.height * (0.30 - 0.04 * index); rotation: index ? 6 : -4
+                                Rectangle { anchors.fill: parent; color: "transparent"; border.width: 2; border.color: "#f3ebdd" } } }
+                    Column { id: cellText; x: grid.wide ? cellIcon.width + 20 : 6; y: grid.wide ? (parent.height - height) / 2 : grid.icon + 14; width: grid.wide ? parent.width - cellIcon.width - 28 : parent.width - 12; spacing: 2
+                        Label { id: cellName; width: parent.width; horizontalAlignment: grid.wide ? Text.AlignLeft : Text.AlignHCenter; text: cell.fileName; font.pixelSize: grid.wide ? 13 : 12
+                                wrapMode: grid.wide ? Text.NoWrap : Text.WrapAnywhere; elide: grid.wide ? Text.ElideMiddle : Text.ElideNone; maximumLineCount: grid.wide ? 1 : 2 }
+                        Label { visible: shell.view === "tiles"; width: parent.width; elide: Text.ElideRight; color: Theme.dim; font.pixelSize: 11
+                                text: cell.fileIsDir ? I18n.tr("File folder") : I18n.tr("{ext} file", { ext: FileIcons.ending(cell.fileName).toUpperCase() || "—" }) }
+                        Label { visible: shell.view === "tiles" && !cell.fileIsDir; width: parent.width; color: Theme.faint; font.pixelSize: 11; text: shell.bytes(cell.fileSize) } }
+                    DropArea { id: cellDrop; anchors.fill: parent; keys: ["text/uri-list"]; enabled: cell.fileIsDir; onDropped: (d) => shell.dropInto(d, cell.filePath, cellDrop) }
+                    MouseArea { id: cellHit; anchors.fill: parent; hoverEnabled: true; preventStealing: true; acceptedButtons: Qt.LeftButton | Qt.RightButton | Qt.MiddleButton | Qt.BackButton | Qt.ForwardButton
                         property point from
-                        onPressed: (m) => { keys.forceActiveFocus(); shell.active = panel.index; from = Qt.point(m.x, m.y); if (panel.extra(m) || m.button === Qt.MiddleButton) return
+                        property bool bare: false
+                        onPressed: (m) => { bare = m.button === Qt.LeftButton && (grid.wide ? m.x > cellText.x + Math.min(cellText.width, cellName.contentWidth) + 10
+                                                                                       : Math.abs(m.x - width / 2) > Math.max(grid.icon, cellName.contentWidth) / 2 + 6)
+                                            if (bare) return panel.groundPressed(m, mapToItem(ground, m.x, m.y))
+                                            keys.forceActiveFocus(); shell.active = panel.index; from = Qt.point(m.x, m.y); if (panel.extra(m) || m.button === Qt.MiddleButton) return
                                             if (m.button === Qt.LeftButton || !panel.chosen[cell.filePath]) panel.press(cell.filePath, cell.index, m.button === Qt.LeftButton ? m.modifiers : 0) }
-                        onPositionChanged: (m) => { if ((m.buttons & Qt.LeftButton) && Math.abs(m.x - from.x) + Math.abs(m.y - from.y) > 10) shell.drag(panel.carried(cell.filePath)) }
+                        onReleased: panel.banding = false
+                        onPositionChanged: (m) => { if (panel.banding) return panel.bandMove(mapToItem(ground, m.x, m.y))
+                                                    if ((m.buttons & (Qt.LeftButton | Qt.RightButton)) && Math.abs(m.x - from.x) + Math.abs(m.y - from.y) > 10) shell.drag(panel.carried(cell.filePath), !!(m.buttons & Qt.RightButton)) }
                         onClicked: (m) => { if (m.button === Qt.RightButton) { const q = mapToItem(overlay, m.x, m.y); shell.itemMenu(cell.filePath, cell.fileIsDir, q.x, q.y) }
                                             else if (m.button === Qt.MiddleButton && cell.fileIsDir) { shell.dual = true; shell.other.go(cell.filePath) } }
-                        onDoubleClicked: (m) => { if (m.button === Qt.LeftButton) shell.open(cell.filePath, cell.fileIsDir) } } } }
+                        onDoubleClicked: (m) => { if (m.button === Qt.LeftButton && !bare) shell.open(cell.filePath, cell.fileIsDir) } } } }
+            Rectangle { visible: panel.banding && panel.band.width + panel.band.height > 4; z: 5; x: panel.band.x; y: panel.band.y; width: panel.band.width; height: panel.band.height
+                        radius: 4; color: Qt.rgba(Theme.gold.r, Theme.gold.g, Theme.gold.b, 0.14); border.width: 1; border.color: Theme.gold }
             // a look at one file: a picture as it is, the beginning of a text, else what it is
             Item { id: look; visible: panel.peek !== ""; anchors.fill: parent
                 readonly property string name: panel.peek.split("/").pop()
                 readonly property string kind: FileIcons.ending(name)
                 readonly property bool picture: FileIcons.pictures.includes(kind) || ["svg", "bmp"].includes(kind)
+                readonly property bool paged: ["pdf", "mp4", "mkv", "webm", "avi", "mov", "m4v", "wmv", "flv", "mpg", "mpeg"].includes(kind)
+                readonly property string still: (Quickshell.env("XDG_RUNTIME_DIR") || "/tmp") + "/dualbrew-look-" + panel.index + ".png"
+                property int took: 0
+                // started by hand with the file named then: a bound command may still name the one before
+                Process { id: lookStill
+                          onExited: (code) => { if (code === 0) look.took++ } }
                 readonly property bool texty: ["txt", "md", "log", "json", "toml", "ini", "conf", "sh", "py", "lua", "luau", "qml", "js", "c", "h", "cpp", "rs", "csv", "xml", "html", "css", "yaml", "yml", "desktop", "plm"].includes(kind)
                 Image { visible: look.picture; anchors.fill: parent; anchors.margins: 8; anchors.bottomMargin: 70; source: look.picture ? "file://" + panel.peek : ""; fillMode: Image.PreserveAspectFit; asynchronous: true; sourceSize.width: 1600 }
                 // only its beginning: a log of gigabytes is looked at as fast as a note
                 Process { id: lookText; command: ["head", "-c", "20000", "--", panel.peek]; running: look.texty && panel.peek !== ""
                           stdout: StdioCollector { onStreamFinished: lookBody.text = this.text } }
-                onNameChanged: { lookBody.text = ""; if (look.texty) { lookText.running = false; lookText.running = true } }
+                onNameChanged: { lookBody.text = ""; if (look.texty) { lookText.running = false; lookText.running = true }
+                                 look.took = 0
+                                 if (look.paged && panel.peek !== "") { lookStill.running = false; lookStill.command = ["latte-files", "look", panel.peek, look.still]; lookStill.running = true } }
+                Image { visible: look.paged && look.took > 0; anchors.fill: parent; anchors.margins: 8; anchors.bottomMargin: 70; fillMode: Image.PreserveAspectFit; asynchronous: true; cache: false
+                        source: look.paged && look.took > 0 ? "file://" + look.still : "" }
                 Flickable { visible: look.texty; anchors.fill: parent; anchors.margins: 8; anchors.bottomMargin: 70; contentHeight: lookBody.implicitHeight; clip: true
                     Text { id: lookBody; width: parent.width; wrapMode: Text.WrapAnywhere; color: Theme.cream; font.family: "JetBrains Mono"; font.pixelSize: 12 } }
-                Column { visible: !look.picture && !look.texty; anchors.centerIn: parent; spacing: 12
+                Column { visible: !look.picture && !look.texty && !(look.paged && look.took > 0); anchors.centerIn: parent; spacing: 12
                     Image { width: 128; height: 128; anchors.horizontalCenter: parent.horizontalCenter; source: panel.peek !== "" ? FileIcons.of(look.name, panel.peek, false) : ""; sourceSize.width: 256; sourceSize.height: 256 }
                     Label { anchors.horizontalCenter: parent.horizontalCenter; text: I18n.tr("No look inside this kind of file."); color: Theme.dim } }
                 Row { anchors.bottom: parent.bottom; anchors.bottomMargin: 14; x: 8; spacing: 10
@@ -509,7 +596,8 @@ ShellRoot {
         tools: [
             Pill { implicitHeight: 34; icon: "arrow-up"; text: I18n.tr("Up"); onPressed: here.up() },
             Pill { implicitHeight: 34; icon: "folder-plus"; text: I18n.tr("New folder"); onPressed: shell.ask("folder") },
-            Pill { implicitHeight: 34; icon: shell.view === "details" ? "layout-grid" : "list"; text: shell.view === "details" ? I18n.tr("Icons") : I18n.tr("Details"); onPressed: shell.view = shell.view === "details" ? "icons" : "details" },
+            Pill { id: viewPill; implicitHeight: 34; icon: shell.view === "details" ? "list" : "layout-grid"; text: I18n.tr("View")
+                   onPressed: { const q = viewPill.mapToItem(overlay, 0, viewPill.height + 4); menu.open(q.x, Math.max(0, q.y), shell.views()) } },
             Pill { implicitHeight: 34; icon: "layout-columns"; text: I18n.tr("Two panels"); strong: shell.dual; onPressed: { shell.dual = !shell.dual; if (!shell.dual) shell.active = 0 } }
         ]
         side: [
@@ -581,6 +669,7 @@ ShellRoot {
                 else if (ev.key === Qt.Key_X && ctrl && picked.length) shell.act(["clip", "cut"].concat(picked))
                 else if (ev.key === Qt.Key_V && ctrl) shell.act(["paste", here.path])
                 else if (ev.key === Qt.Key_H && ctrl) shell.hidden = !shell.hidden
+                else if (ev.key === Qt.Key_Z && ctrl) shell.act(["undo"])
                 else if (ev.key === Qt.Key_Escape) { here.chosen = ({}); menu.close() }
                 else ev.accepted = false
             }
@@ -593,21 +682,27 @@ ShellRoot {
     }
     // ── dragging: a drag of the system, so other apps take the files too; dropped here they become a job ─────
     property bool dragging: false
-    function drag(paths) {
+    property bool rightDrag: false             // dragged with the right button: where it lands, a menu asks what to do
+    function drag(paths, right) {
         if (dragging || !paths.length) return
-        dragging = true
+        dragging = true; rightDrag = !!right
         carrier.Drag.mimeData = { "text/uri-list": paths.map(p => "file://" + encodeURI(p)).join("\r\n") + "\r\n" }
         carrier.Drag.active = true                 // a drag has to be on before it can be handed to the system
         carrier.Drag.startDrag()
         carrier.Drag.active = false
-        dragging = false
+        dragging = false; rightDrag = false
     }
-    function dropInto(d, to) {
+    function dropInto(d, to, area) {
         if (!d.hasUrls) return
         const paths = d.urls.map(u => decodeURIComponent(String(u).replace(/^file:\/\//, ""))).filter(p => p.startsWith("/") && p !== to && p.slice(0, p.lastIndexOf("/")) !== to)
         if (!paths.length) return
-        enqueue((d.modifiers & Qt.ControlModifier) ? "copy" : "auto", to, paths)
         d.accept(Qt.CopyAction)
+        if (!rightDrag) return enqueue((d.modifiers & Qt.ControlModifier) ? "copy" : "auto", to, paths)
+        const q = area.mapToItem(overlay, d.x, d.y)
+        menu.open(q.x, q.y, [{ icon: "copy", text: I18n.tr("Copy here"), run: () => shell.enqueue("copy", to, paths) },
+                             { icon: "arrow-right", text: I18n.tr("Move here"), bold: true, run: () => shell.enqueue("move", to, paths) },
+                             { icon: "link", text: I18n.tr("Create shortcuts here"), run: () => shell.act(["link", to].concat(paths)) },
+                             { line: true }, { icon: "x", text: I18n.tr("Cancel"), run: () => {} }])
     }
     // Enter on the one chosen: into it if it is a folder (a link to one counts), else it is opened
     Process { id: probe; property string path: ""; onExited: (code) => { if (code === 0) here.go(path); else shell.open(path, false) } }

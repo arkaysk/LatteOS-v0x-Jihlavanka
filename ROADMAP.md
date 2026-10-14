@@ -1184,3 +1184,16 @@ cestu k aktualizácii alebo návratu.
     zmenší a potom skryje; stĺpcové zobrazenie (Miller) ako tretí pohľad; vlastné akcie ako skripty v priečinku
     s knižnicou receptov, ktoré sa samy nespustia; označenie disku iba v DualBrew (systém sa nemení); virtuálny
     pohľad „Fotky“ na telefóne bez sprievodných súborov; hľadanie v nastaveniach.
+    **14. 10., klasický Prieskumník (používateľ: „DualBrew má vedieť pracovať ako klasický prieskumník, s rôzne
+    veľkými ikonami“):** tlačidlo a ponuka Zobraziť ako vo Windows — Veľmi veľké (256), Veľké (128), Stredné (64),
+    Malé ikony, Dlaždice (ikona, meno, druh, veľkosť), Podrobnosti; Ctrl + koliesko plynulo 32–256. Obrázky sú
+    vlastným náhľadom, priečinok pri veľkých ikonách ukáže dva obrázky, ktoré drží (ako Prieskumník). Výber
+    **obdĺžnikom** z prázdneho miesta (aj za menom v Podrobnostiach, okolo ikony), Ctrl pridáva. **Ctrl+Z** a
+    „Vrátiť späť“ v ponuke: `latte-files undo` vráti poslednú operáciu (presun, premenovanie späť; kópia, odkaz,
+    nový priečinok do Koša; z Koša späť) podľa záznamu `~/.local/state/latteos/files-undo`, spoločného pre všetky
+    okná. **Ťahanie pravým tlačidlom** → ponuka Kopírovať sem · Presunúť sem · Vytvoriť odkazy sem · Zrušiť.
+    **Náhľad** (Medzerník aj „Náhľad“ v ponuke súboru): prvá strana PDF (pdftoppm), snímka videa (ffmpegthumbnailer).
+    Overené v headless sedení: obdĺžnik (5 vybraných), ponuka Zobraziť, Veľké ikony s náhľadom priečinka, Dlaždice,
+    náhľad videa; undo v skúške presunu, Koša, priečinka, kópie a úlohy. **Neoverené:** ťahanie pravým tlačidlom
+    (headless nevie ťahať), PDF v okne (príkaz áno), Vrátiť pri vložení (Ctrl+V). **Chýba:** Redo, Kôš na inom disku,
+    zoznam (List) a Obsah z Prieskumníka, snímky videí v ikonách.

@@ -11,6 +11,11 @@
 #   latte-files clip copy|cut FILE…   onto the clipboard, as file managers keep files there
 #   latte-files paste DIR             what is on the clipboard, into that folder
 #   latte-files size FILE…            how much they hold, in bytes
+#   latte-files undo                  takes back the last thing done here: what was moved or renamed goes back, what
+#                                     was made (copied, linked, a new folder) goes to the Trash, what went to the Trash
+#                                     comes back from it. Every command that changes something writes how to undo it
+#                                     to ~/.local/state/latteos/files-undo, so the desktop and every window share it
+#   latte-files look FILE OUT         a picture of a PDF's first page or a frame of a video, into OUT (a .png)
 #   latte-files job copy|move|auto DIR FILE…   the same as copy and move, saying how far it is, a line at a time:
 #                                     "total BYTES", then "file NAME" and "done BYTES" while it goes; auto moves on the
 #                                     same disk and copies to another, as a drag does on Windows
@@ -23,6 +28,9 @@ free_name() {   # DIR NAME: that name, or the first "NAME (n)" nothing has yet
     while [ -e "$t" ]; do t="$d/$base ($i)$ext"; i=$((i + 1)); done
     printf '%s' "$t"
 }
+# how to undo what this run does: lines of ID, KIND (moved, made, trashed), WHERE IT WAS, WHERE IT IS
+log="${XDG_STATE_HOME:-$HOME/.local/state}/latteos/files-undo"; id="$(date +%s%N)"
+did() { mkdir -p "$(dirname "$log")"; printf '%s\t%s\t%s\t%s\n' "$id" "$1" "$2" "${3:-}" >> "$log"; }
 what="${1:-}"; [ $# -gt 0 ] && shift
 case "$what" in
 places)
@@ -40,21 +48,23 @@ places)
         printf 'disk\t%s\t%s\n' "$mount" "${label:-$(basename "$mount")} · $size"
     done
     printf 'disk\t/\t\n' ;;
-copy)   d="$1"; shift; for f in "$@"; do gio copy --backup -- "$f" "$d/"; done ;;
-move)   d="$1"; shift; for f in "$@"; do gio move --backup -- "$f" "$d/"; done ;;
-link)   d="$1"; shift; for f in "$@"; do ln -s -- "$f" "$(free_name "$d" "$(basename "$f")")"; done ;;
-trash)  gio trash -- "$@" ;;
+copy)   d="$1"; shift; for f in "$@"; do gio copy --backup -- "$f" "$d/" && did made "$d/$(basename -- "$f")"; done ;;
+move)   d="$1"; shift; for f in "$@"; do gio move --backup -- "$f" "$d/" && did moved "$f" "$d/$(basename -- "$f")"; done ;;
+link)   d="$1"; shift; for f in "$@"; do t="$(free_name "$d" "$(basename "$f")")"; ln -s -- "$f" "$t" && did made "$t"; done ;;
+trash)  for f in "$@"; do gio trash -- "$f" && did trashed "$f"; done ;;
 empty)  gio trash --empty ;;
-folder) mkdir -- "$(free_name "$1" "$2")" ;;
-file)   : > "$(free_name "$1" "$2")" ;;
+folder) t="$(free_name "$1" "$2")"; mkdir -- "$t" && did made "$t" ;;
+file)   t="$(free_name "$1" "$2")"; : > "$t" && did made "$t" ;;
 rename) case "$2" in */*|"") exit 2 ;; esac
-        t="$(dirname "$1")/$2"; [ -e "$t" ] && exit 1; mv -n -- "$1" "$t" ;;
+        t="$(dirname "$1")/$2"; [ -e "$t" ] && exit 1; mv -n -- "$1" "$t" && did moved "$1" "$t" ;;
 clip)   mode="$1"; shift
         { echo "$mode"; for f in "$@"; do printf 'file://%s\n' "$f"; done; } | wl-copy -t x-special/gnome-copied-files ;;
 paste)  c="$(wl-paste -t x-special/gnome-copied-files 2>/dev/null)" || c="$(wl-paste -t text/uri-list 2>/dev/null)" || exit 0
         mode="$(printf '%s\n' "$c" | head -n1)"
         printf '%s\n' "$c" | grep '^file://' | while IFS= read -r u; do
-            if [ "$mode" = cut ]; then gio move --backup -- "$u" "$1/"; else gio copy --backup -- "$u" "$1/"; fi
+            f="$(printf '%b' "$(printf '%s' "${u#file://}" | sed 's/%/\\x/g')")"
+            if [ "$mode" = cut ]; then gio move --backup -- "$u" "$1/" && did moved "$f" "$1/$(basename -- "$f")"
+            else gio copy --backup -- "$u" "$1/" && did made "$1/$(basename -- "$f")"; fi
         done ;;
 job)    how="$1"; d="$2"; shift 2
         echo "total $(du -sbc -- "$@" 2>/dev/null | tail -n1 | cut -f1)"
@@ -72,12 +82,42 @@ job)    how="$1"; d="$2"; shift 2
             while kill -0 "$pid" 2>/dev/null; do
                 now="$(du -sb -- "$d/$name" 2>/dev/null | cut -f1)"; echo "done $((before + ${now:-0}))"; sleep 0.4
             done
-            wait "$pid" || echo "failed $name"
+            if wait "$pid"; then if [ "$way" = move ]; then did moved "$f" "$d/$name"; else did made "$d/$name"; fi
+            else echo "failed $name"; fi
             before=$((before + ${size:-0})); echo "done $before"
         done ;;
 tree)   df -B1 --output=size,avail -- "$1" 2>/dev/null | tail -n1 | awk '{ printf "disk\t%s\t%s\n", $1, $2 }'
         find "$1" -xdev -mindepth 1 -maxdepth 3 -type d -printf 'dir\t%p\n' 2>/dev/null
         du -abx -d 3 -- "$1" 2>/dev/null ;;
+undo)   [ -s "$log" ] || exit 1
+        last="$(tail -n1 "$log" | cut -f1)"
+        # ponytail: only the home Trash; what went to another disk's .Trash-UID does not come back this way
+        grep "^$last	" "$log" | tac | while IFS="$(printf '\t')" read -r _ kind was is; do
+            case "$kind" in
+            moved)   [ -e "$was" ] || mv -n -- "$is" "$was" ;;
+            made)    { [ -e "$was" ] || [ -L "$was" ]; } && gio trash -- "$was" ;;
+            trashed) python3 -I - "$was" "${XDG_DATA_HOME:-$HOME/.local/share}/Trash" <<'PY'
+import glob, os, shutil, sys, urllib.parse
+want, trash = sys.argv[1], sys.argv[2]
+best = None
+for info in glob.glob(trash + "/info/*.trashinfo"):
+    path = date = ""
+    for line in open(info, encoding="utf-8", errors="replace"):
+        if line.startswith("Path="): path = urllib.parse.unquote(line[5:].strip())
+        elif line.startswith("DeletionDate="): date = line[13:].strip()
+    if path == want and (best is None or date > best[1]): best = (info, date)
+if best and not os.path.lexists(want):
+    shutil.move(os.path.join(trash, "files", os.path.basename(best[0])[:-len(".trashinfo")]), want)
+    os.remove(best[0])
+PY
+            ;;
+            esac
+        done
+        grep -v "^$last	" "$log" | tail -n 400 > "$log.new"; mv -- "$log.new" "$log" ;;
+look)   case "$(printf '%s' "${1##*.}" | tr 'A-Z' 'a-z')" in
+        pdf) pdftoppm -png -r 110 -f 1 -l 1 -singlefile -- "$1" "${2%.png}" ;;
+        *)   ffmpegthumbnailer -i "$1" -o "$2" -s 1280 -t 20% ;;
+        esac ;;
 size)   du -sbc -- "$@" 2>/dev/null | tail -n1 | cut -f1 ;;
 *)      sed -n '2,15p' "$0" | sed 's/^# \{0,1\}//' >&2; exit 2 ;;
 esac
