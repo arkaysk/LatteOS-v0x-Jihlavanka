@@ -1197,3 +1197,18 @@ cestu k aktualizácii alebo návratu.
     náhľad videa; undo v skúške presunu, Koša, priečinka, kópie a úlohy. **Neoverené:** ťahanie pravým tlačidlom
     (headless nevie ťahať), PDF v okne (príkaz áno), Vrátiť pri vložení (Ctrl+V). **Chýba:** Redo, Kôš na inom disku,
     zoznam (List) a Obsah z Prieskumníka, snímky videí v ikonách.
+    **14. 10., zariadenia, farby, archívy, fotky (používateľ):** bočný panel a Tento počítač ukazujú **všetky
+    jednotky**: disky, USB, pamäťové karty, DVD mechaniky skutočné aj z obrazu (**.iso › Pripojiť ako DVD
+    mechaniku** = Daemon Tools, `udisksctl loop-setup`), sieťové miesta (gvfs: SMB, SFTP, FTP, WebDAV; Google Drive
+    z GNOME Online Accounts) a **cloudy cez rclone** (`~/Cloud/MENO`, pripojí sa pri prvom kliknutí; Pridať cloud ›
+    Google Drive / OneDrive / Dropbox otvorí prehliadač na prihlásenie, MEGA a ďalšie cez `rclone config` v
+    termináli; sieťové miesto adresou, heslo pýta gio v termináli). Nepripojené sú bledé, klik ich pripojí, tlačidlo
+    vysunie (USB aj vypne). Zoznam sa obnovuje každé 4 s. **Farby** súborov a priečinkov (7 farieb, ponuka Farba;
+    `user.xdg.tags`, vidí aj Dolphin): podfarbený riadok a pásik, bodka pri ikone. **Archívy** ako úlohy na hladine:
+    Rozbaliť sem / do druhého panela (zip, 7z, tar…, rar cez bsdtar; jedna vec vyjde rovno, viac do priečinka),
+    Komprimovať › ZIP / 7z; Ctrl+Z vráti. **RAR sa vytvárať nedá** (formát je uzavretý, rar pre Linux je platený).
+    **Prehliadač fotiek** (Zobraziť › Prehliadač fotiek, ako ACDSee): veľký obrázok, pás náhľadov, koliesko,
+    šípky a tlačidlá myši idú ďalej/späť, rozlíšenie, veľkosť, dátum, Prezentácia, dvojklik skryje pás; nie editor.
+    Overené v headless: bočný panel so sekciami, Farba (zápis aj zobrazenie), ponuka Komprimovať, prehliadač fotiek,
+    balenie a rozbaľovanie aj s Ctrl+Z (skript). **Neoverené:** USB, karta, DVD, ISO (polkit mimo relácie
+    odmietol), sieť a cloudy (treba účet), zobrazenie pripojených jednotiek.

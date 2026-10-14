@@ -2,8 +2,16 @@
 # latte-files: what DualBrew (apps/files.qml) asks of the system. Files are moved by gio, which knows the Trash
 # and never writes over a file of the same name without keeping the old one.
 #
-#   latte-files places                the user's folders and the disks, a line each: KIND, a tab, PATH, a tab, NAME
-#                                     (KIND: home desktop documents download pictures music videos trash disk)
+#   latte-files places                the user's folders and the drives, a line each: KIND, a tab, PATH, a tab, NAME,
+#                                     a tab, DEVICE (KIND: home desktop documents download pictures music videos trash;
+#                                     disk usb card optical image network cloud). A drive with no PATH is not mounted yet
+#   latte-files mount DEVICE          mounts it (a /dev/… or rclone:NAME), says where;  eject PATH DEVICE   lets it go
+#   latte-files iso FILE              a disc image as a DVD drive, as Daemon Tools does; says where it is
+#   latte-files tag COLOUR FILE…      a colour on them (red orange yellow green blue purple grey, or "" for none), in
+#                                     user.xdg.tags next to the file: Dolphin sees it too;  tags DIR   FILE, a tab, COLOUR
+#   latte-files job extract|zip|7z DIR FILE…   archives, as a job: unpacked into DIR (one folder for many things),
+#                                     or packed into DIR/NAME.zip / .7z (NAME: the first file's, or the folder's)
+#   latte-files cloud add google|onedrive|dropbox NAME   a cloud through rclone: the browser asks for the account
 #   latte-files copy|move|link DIR FILE…    into that folder
 #   latte-files trash FILE…           to the Trash;  latte-files empty   empties it
 #   latte-files folder DIR NAME       a new folder (NAME (2) … when the name is taken);  file DIR NAME   an empty file
@@ -40,14 +48,65 @@ places)
         [ -n "$d" ] && [ "$d" != "$HOME" ] && [ -d "$d" ] && printf '%s\t%s\t\n' "$(printf '%s' "$k" | tr 'A-Z' 'a-z')" "$d"
     done
     mkdir -p "$HOME/.local/share/Trash/files"; printf 'trash\t%s\t\n' "$HOME/.local/share/Trash/files"
-    lsblk -Pno MOUNTPOINT,LABEL,SIZE 2>/dev/null | while IFS= read -r line; do
-        mount="$(printf '%s' "$line" | sed -n 's/.*MOUNTPOINT="\([^"]*\)".*/\1/p')"
-        label="$(printf '%s' "$line" | sed -n 's/.*LABEL="\([^"]*\)".*/\1/p')"
-        size="$(printf '%s' "$line" | sed -n 's/.*SIZE="\([^"]*\)".*/\1/p')"
-        case "$mount" in /|/home|/boot*|/var*|"[SWAP]"|"") continue ;; esac
-        printf 'disk\t%s\t%s\n' "$mount" "${label:-$(basename "$mount")} · $size"
-    done
-    printf 'disk\t/\t\n' ;;
+    # every drive the user can reach: disks, USB, cards, DVD drives (real and images), network places, clouds
+    python3 -I - <<'PY'
+import json, os, subprocess, urllib.parse
+def out(*a): print("\t".join(a))
+lsblk = subprocess.run(["lsblk", "-J", "-o", "NAME,PATH,TYPE,RM,HOTPLUG,TRAN,MOUNTPOINT,LABEL,SIZE,FSTYPE,MODEL"], capture_output=True, text=True).stdout
+def walk(n, up):
+    n = {**n, "tran": n.get("tran") or up.get("tran"), "hot": n.get("hotplug") or n.get("rm") or up.get("hot"), "model": n.get("model") or up.get("model")}
+    if n.get("children"):
+        for k in n["children"]: yield from walk(k, n)
+    else: yield n
+for top in json.loads(lsblk or '{"blockdevices": []}')["blockdevices"]:
+    for n in walk(top, {}):
+        kind = ("optical" if n["type"] == "rom" else "image" if n["type"] == "loop" else "card" if n["name"].startswith("mmcblk")
+                else "usb" if n["hot"] or n["tran"] == "usb" else "disk")
+        mp = n.get("mountpoint") or ""
+        if mp == "[SWAP]" or mp.startswith("/boot") or mp in ("/home", "/var") or n["type"] in ("crypt", "lvm") and not mp: continue
+        if not n.get("fstype") and kind != "optical": continue          # no file system: nothing to open
+        if kind in ("disk", "image") and not mp: continue               # the system's own, not mounted: not on the way
+        out(kind, mp, (n.get("label") or n.get("model") or os.path.basename(mp) or n["name"]) + " · " + (n.get("size") or ""), n["path"])
+# network places and Google's drive, as GNOME's gvfs mounts them
+gvfs = f"/run/user/{os.getuid()}/gvfs"
+for e in sorted(os.listdir(gvfs)) if os.path.isdir(gvfs) else []:
+    how, _, rest = e.partition(":"); f = dict(x.split("=", 1) for x in rest.split(",") if "=" in x)
+    f = {k: urllib.parse.unquote(v) for k, v in f.items()}
+    if how == "google-drive": out("cloud", f"{gvfs}/{e}", "Google Drive · " + f.get("user", "") + "@" + f.get("host", ""), "")
+    else: out("network", f"{gvfs}/{e}", (f.get("share", "") + " · " if f.get("share") else "") + f.get("server", f.get("host", e)), "")
+# clouds of rclone: each under ~/Cloud/NAME, mounted when first opened
+mounted = {l.split()[1].replace("\\040", " ") for l in open("/proc/mounts") if " fuse.rclone " in l}
+remotes = subprocess.run(["rclone", "listremotes"], capture_output=True, text=True).stdout.split() if os.path.exists("/usr/bin/rclone") else []
+for r in remotes:
+    r = r.rstrip(":"); at = os.path.expanduser(f"~/Cloud/{r}")
+    out("cloud", at if at in mounted else "", r, "rclone:" + r)
+PY
+    ;;
+mount)  case "$1" in
+        rclone:*) r="${1#rclone:}"; at="$HOME/Cloud/$r"; mkdir -p -- "$at"
+                  rclone mount "$r:" "$at" --vfs-cache-mode full --daemon && printf '%s\n' "$at" ;;
+        *)        udisksctl mount -b "$1" --no-user-interaction | sed -n 's/^Mounted .* at \(.*\)$/\1/p' ;;
+        esac ;;
+eject)  case "$2" in
+        rclone:*) fusermount3 -u -- "$1" 2>/dev/null || fusermount -u -- "$1" ;;
+        /dev/loop*) udisksctl unmount -b "$2" --no-user-interaction; udisksctl loop-delete -b "$2" --no-user-interaction ;;
+        /dev/sr*) udisksctl unmount -b "$2" --no-user-interaction 2>/dev/null; eject -- "$2" ;;
+        /dev/*)   udisksctl unmount -b "$2" --no-user-interaction &&
+                  { up="$(lsblk -no PKNAME -- "$2" | head -n1)"; udisksctl power-off -b "/dev/${up:-${2#/dev/}}" --no-user-interaction 2>/dev/null || true; } ;;
+        *)        gio mount -u -- "$1" ;;
+        esac ;;
+iso)    dev="$(udisksctl loop-setup -r -f "$1" --no-user-interaction | sed -n 's/.* as \(\/dev\/loop[0-9]*\)\.$/\1/p')"
+        [ -n "$dev" ] || exit 1; sleep 0.5
+        at="$(lsblk -no MOUNTPOINT -- "$dev" | head -n1)"
+        [ -n "$at" ] || at="$(udisksctl mount -b "$dev" --no-user-interaction | sed -n 's/^Mounted .* at \(.*\)$/\1/p')"
+        printf '%s\n' "$at" ;;
+tag)    c="$1"; shift
+        for f in "$@"; do if [ -n "$c" ]; then setfattr -n user.xdg.tags -v "$c" -- "$f"; else setfattr -x user.xdg.tags -- "$f" 2>/dev/null; fi; done ;;
+tags)   getfattr -h -m '^user\.xdg\.tags$' -d --absolute-names -- "$1"/* "$1"/.[!.]* 2>/dev/null |
+        awk '/^# file: /{ f = substr($0, 9) } /^user\.xdg\.tags=/{ v = substr($0, 16); gsub(/^"|"$/, "", v); split(v, c, ","); printf "%s\t%s\n", f, c[1] }' ;;
+cloud)  [ "$1" = add ] || exit 2
+        case "$2" in google) t=drive ;; onedrive) t=onedrive ;; dropbox) t=dropbox ;; *) exit 2 ;; esac
+        rclone config create "$3" "$t" && "$0" mount "rclone:$3" ;;
 copy)   d="$1"; shift; for f in "$@"; do gio copy --backup -- "$f" "$d/" && did made "$d/$(basename -- "$f")"; done ;;
 move)   d="$1"; shift; for f in "$@"; do gio move --backup -- "$f" "$d/" && did moved "$f" "$d/$(basename -- "$f")"; done ;;
 link)   d="$1"; shift; for f in "$@"; do t="$(free_name "$d" "$(basename "$f")")"; ln -s -- "$f" "$t" && did made "$t"; done ;;
@@ -67,6 +126,37 @@ paste)  c="$(wl-paste -t x-special/gnome-copied-files 2>/dev/null)" || c="$(wl-p
             else gio copy --backup -- "$u" "$1/" && did made "$1/$(basename -- "$f")"; fi
         done ;;
 job)    how="$1"; d="$2"; shift 2
+        case "$how" in extract|zip|7z)
+            # how far: what has arrived so far against what the archives hold (or the files weigh)
+            if [ "$how" = extract ]; then total=0
+                for f in "$@"; do n="$(7z l -slt -- "$f" 2>/dev/null | awk '/^Size = /{ s += $3 } END { print s + 0 }')"; total=$((total + n)); done
+            else total="$(du -sbc -- "$@" 2>/dev/null | tail -n1 | cut -f1)"; fi
+            echo "total $total"
+            first="$(basename -- "$1")"
+            if [ "$how" = extract ]; then
+                # one thing inside comes out as it is; many come into one folder named as the archive
+                for f in "$@"; do
+                    name="$(basename -- "$f")"; base="${name%.*}"; base="${base%.tar}"; echo "file $name"
+                    top="$(bsdtar -tf "$f" 2>/dev/null | sed 's|^\./||; s|/.*||' | sort -u | grep -c .)"
+                    to="$d"; [ "$top" = 1 ] || { to="$(free_name "$d" "$base")"; mkdir -p -- "$to"; }
+                    case "$name" in *.rar|*.RAR|*.tar*|*.tgz) bsdtar -xf "$f" -C "$to" ;; *) 7z x -y -bso0 -bsp0 -o"$to" -- "$f" ;; esac &
+                    pid=$!; trap 'kill "$pid" 2>/dev/null; exit 1' TERM
+                    while kill -0 "$pid" 2>/dev/null; do echo "done $(du -sb -- "$to" 2>/dev/null | cut -f1)"; sleep 0.4; done
+                    if wait "$pid"; then [ "$to" = "$d" ] && to="$d/$(bsdtar -tf "$f" | head -n1 | sed 's|^\./||; s|/.*||')"; did made "$to"; else echo "failed $name"; fi
+                done
+            else
+                base="${first%.*}"; [ -d "$1" ] || [ -z "$base" ] && base="$first"
+                [ $# -gt 1 ] && base="$(basename -- "$(dirname -- "$1")")"; base="${base#.}"
+                out="$(free_name "$d" "${base:-archive}.$how")"; echo "file $(basename -- "$out")"
+                cd "$(dirname -- "$1")" || exit 1
+                for f in "$@"; do set -- "$@" "$(basename -- "$f")"; shift; done     # the same names, without their folder
+                7z a -t"$how" -bso0 -bsp0 -- "$out" "$@" & pid=$!
+                trap 'kill "$pid" 2>/dev/null; rm -f -- "$out"; exit 1' TERM
+                while kill -0 "$pid" 2>/dev/null; do echo "done $(du -sb -- "$out" 2>/dev/null | cut -f1)"; sleep 0.4; done
+                if wait "$pid"; then did made "$out"; else echo "failed $(basename -- "$out")"; fi
+            fi
+            echo "done $total"; exit 0 ;;
+        esac
         echo "total $(du -sbc -- "$@" 2>/dev/null | tail -n1 | cut -f1)"
         on="$(stat -c %d -- "$d")"; before=0
         for f in "$@"; do

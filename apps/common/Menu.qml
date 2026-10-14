@@ -34,7 +34,9 @@ Item {
                     Rectangle { visible: row.modelData.line === true; x: 8; width: parent.width - 16; height: 1; color: Theme.line; anchors.verticalCenter: parent.verticalCenter }
                     Rectangle { visible: !row.modelData.line; anchors.fill: parent; radius: 7
                                 color: (hit.containsMouse && row.usable) || (sheet.lead && menu.furtherAt === row.index) ? Theme.raised : "transparent" }
-                    Glyph { visible: !row.modelData.line; x: 10; name: row.modelData.checked ? "check" : (row.modelData.icon || ""); font.pixelSize: 16
+                    // a colour to choose: the colour itself instead of an icon
+                    Rectangle { visible: !!row.modelData.tint && !row.modelData.line; x: 12; width: 14; height: 14; radius: 7; color: row.modelData.tint || "transparent"; anchors.verticalCenter: parent.verticalCenter }
+                    Glyph { visible: !row.modelData.line && !row.modelData.tint; x: 10; name: row.modelData.checked ? "check" : (row.modelData.icon || ""); font.pixelSize: 16
                             color: row.modelData.danger ? Theme.red : (row.usable ? Theme.cream : Theme.faint); anchors.verticalCenter: parent.verticalCenter }
                     Label { visible: !row.modelData.line; x: 38; width: parent.width - 38 - tail.width - 14; text: row.modelData.text || ""
                             font.weight: row.modelData.bold ? 700 : 500; color: row.modelData.danger ? Theme.red : (row.usable ? Theme.cream : Theme.faint); anchors.verticalCenter: parent.verticalCenter }

@@ -11,6 +11,10 @@
 // sort. Copying and moving are jobs on the coffee: how far, pause, stop; several wait their turn.
 // A box drawn from bare ground chooses; dragged with the right button, a menu asks Copy, Move or Link here; Ctrl+Z
 // takes back the last thing done (latte-files undo).
+// The side and This computer hold every drive: disks, USB sticks, memory cards, DVD drives and disc images (an .iso is
+// mounted as one, as Daemon Tools does), network places and clouds (Google Drive, OneDrive, Dropbox, MEGA… through
+// rclone); one not yet mounted is mounted when pressed, and ejected with its button. Files and folders carry a
+// colour (Colour in their menu); archives are unpacked and packed (zip, 7z; rar is unpacked) as jobs on the coffee.
 // The panel one works in stands above the coffee; the other lies under it.
 // The keys: Enter opens, Backspace goes up, F2 renames, Delete trashes, Ctrl+C/X/V, Ctrl+A, Ctrl+H hidden
 // files, Tab the other panel. Space with one file chosen shows it in the other panel. Space with nothing chosen measures the folder: how much each thing in it holds,
@@ -31,7 +35,7 @@ ShellRoot {
     readonly property var words: (Quickshell.env("LATTE_APP_ARGS") || "").split("\n").filter(w => w !== "")
     property bool dual: false
     property int active: 0                     // which panel has the keys
-    property string view: "details"            // or "icons" (here.iconSize big), "small", "tiles": Explorer's views
+    property string view: "details"            // or "icons" (here.iconSize big), "small", "tiles": Explorer's views; "photos", the viewer
     property bool hidden: false
     property bool real: false                  // the real structure of Linux, from /; otherwise the user's world
     property bool wasDual: false               // before the sizes took the other panel
@@ -47,10 +51,36 @@ ShellRoot {
     // the roots of the user's world: home and every disk; a path is shown from the root it is under
     function rootOf(p) {
         let best = null
-        for (const pl of places) if ((pl.kind === "home" || (pl.kind === "disk" && pl.path !== "/")) && (p === pl.path || p.startsWith(pl.path + "/")) && (!best || pl.path.length > best.path.length)) best = pl
+        for (const pl of places) if ((pl.kind === "home" || (drives.includes(pl.kind) && pl.path !== "/" && pl.path !== "")) && (p === pl.path || p.startsWith(pl.path + "/")) && (!best || pl.path.length > best.path.length)) best = pl
         return best
     }
     property var places: []
+    // every drive: the disks, USB sticks and cards, DVD drives real and of an image, network places, clouds
+    // the colours a file or a folder can carry (user.xdg.tags next to it), as Dolphin and macOS have them
+    readonly property var colours: [{ id: "red", name: QT_TR_NOOP("Red"), color: "#e5484d" }, { id: "orange", name: QT_TR_NOOP("Orange"), color: "#f08c3a" },
+        { id: "yellow", name: QT_TR_NOOP("Yellow"), color: "#f2c94c" }, { id: "green", name: QT_TR_NOOP("Green"), color: "#4cc38a" },
+        { id: "blue", name: QT_TR_NOOP("Blue"), color: "#5b8def" }, { id: "purple", name: QT_TR_NOOP("Purple"), color: "#9b7bd6" }, { id: "grey", name: QT_TR_NOOP("Grey"), color: "#8a7f76" }]
+    function colourOf(id) { const c = colours.find(x => x.id === id); return c ? c.color : "transparent" }
+    readonly property var drives: ["disk", "usb", "card", "optical", "image", "network", "cloud"]
+    function driveName(pl) { return pl.path === "/" ? I18n.tr("The whole system (/)") : (pl.name.split(" · ")[0] || pl.path) }
+    function reloadPlaces() { if (!placer.running) placer.running = true }
+    Timer { interval: 4000; repeat: true; running: true; onTriggered: shell.reloadPlaces() }   // a stick put in shows up
+    // a drive not yet mounted is mounted when it is pressed, and the panel goes there
+    Process { id: mounter; property var then: null
+              stdout: StdioCollector { onStreamFinished: { const at = this.text.trim(); shell.reloadPlaces(); if (at.startsWith("/")) shell.here.go(at) } } }
+    function reach(pl) {
+        if (pl.path !== "") return here.go(pl.path)
+        mounter.running = false; mounter.command = ["latte-files", "mount", pl.device]; mounter.running = true
+    }
+    function eject(pl) { act(["eject", pl.path, pl.device]); if (here.path.startsWith(pl.path)) here.go("computer:"); ejected.restart() }
+    Timer { id: ejected; interval: 1500; onTriggered: shell.reloadPlaces() }
+    function canEject(pl) { return pl.path !== "" && (["usb", "card", "optical", "image", "network"].includes(pl.kind) || (pl.kind === "cloud" && pl.device !== "")) }
+    function addCloud(x, y) {
+        const add = (kind, name) => ({ icon: "cloud", text: name, run: () => { mounter.running = false; mounter.command = ["latte-files", "cloud", "add", kind, name.replace(/ /g, "")]; mounter.running = true } })
+        menu.open(x, y, [add("google", "Google Drive"), add("onedrive", "OneDrive"), add("dropbox", "Dropbox"), { line: true },
+                         { icon: "terminal-2", text: I18n.tr("MEGA and others (rclone)…"), run: () => Quickshell.execDetached(["foot", "-e", "rclone", "config"]) },
+                         { icon: "network", text: I18n.tr("A network place (SMB, SFTP, FTP, WebDAV)…"), run: () => shell.ask("server") }])
+    }
     Component.onCompleted: if (words.includes("sizes")) Qt.callLater(showSizes)
     // ── jobs: copying and moving, one at a time, the rest waiting ────────────────────────────────────────────
     property var jobs: []                      // { how, to, files, title }
@@ -134,19 +164,26 @@ ShellRoot {
     readonly property var placeNames: ({ "home": QT_TR_NOOP("Home"), "desktop": QT_TR_NOOP("Desktop"), "documents": QT_TR_NOOP("Documents"), "download": QT_TR_NOOP("Downloads"),
                                          "pictures": QT_TR_NOOP("Pictures"), "music": QT_TR_NOOP("Music"), "videos": QT_TR_NOOP("Videos"), "trash": QT_TR_NOOP("Recycle Bin"), "disk": QT_TR_NOOP("This computer") })
     readonly property var placeIcons: ({ "home": "home", "desktop": "device-desktop", "documents": "file-text", "download": "download", "pictures": "photo", "music": "music",
-                                         "videos": "player-play", "trash": "trash", "disk": "disc" })
-    Process { running: true; command: ["latte-files", "places"]
-              stdout: StdioCollector { onStreamFinished: shell.places = this.text.split("\n").filter(l => l !== "").map(l => { const p = l.split("\t"); return { kind: p[0], path: p[1], name: p[2] || "" } }) } }
+                                         "videos": "player-play", "trash": "trash", "disk": "disc", "usb": "usb", "card": "device-sd-card", "optical": "disc",
+                                         "image": "disc", "network": "network", "cloud": "cloud" })
+    readonly property var driveKinds: ({ "disk": QT_TR_NOOP("Local disk"), "usb": QT_TR_NOOP("USB drive"), "card": QT_TR_NOOP("Memory card"), "optical": QT_TR_NOOP("DVD drive"),
+                                         "image": QT_TR_NOOP("Disc image"), "network": QT_TR_NOOP("Network place"), "cloud": QT_TR_NOOP("Cloud") })
+    Process { id: placer; running: true; command: ["latte-files", "places"]
+              stdout: StdioCollector { onStreamFinished: { const t = this.text; if (t === shell.placesText) return; shell.placesText = t
+                  shell.places = t.split("\n").filter(l => l !== "").map(l => { const p = l.split("\t"); return { kind: p[0], path: p[1], name: p[2] || "", device: p[3] || "" } }) } } }
+    property string placesText: ""
 
     Process { id: doer; onExited: { left.again(); right.again() } }
     function act(args) { doer.running = false; doer.command = ["latte-files"].concat(args); doer.running = true }
     function bytes(b) { const u = ["B", "KB", "MB", "GB", "TB"]; let v = b || 0, i = 0; while (v >= 1024 && i < 4) { v /= 1024; i++ } return v.toFixed(i ? 1 : 0) + " " + u[i] }
     function open(path, isDir) { if (isDir) here.go(path); else Quickshell.execDetached(path.endsWith(".desktop") ? ["gio", "launch", path] : ["gio", "open", path]) }
-    function ask(what, path) { asking = what; askingFor = path || ""; answer.text = what === "rename" ? path.split("/").pop() : (what === "folder" ? I18n.tr("New folder") : I18n.tr("New Text Document") + ".txt")
+    function ask(what, path) { asking = what; askingFor = path || ""; answer.text = what === "rename" ? path.split("/").pop() : (what === "folder" ? I18n.tr("New folder") : (what === "server" ? "smb://" : I18n.tr("New Text Document") + ".txt"))
                                Qt.callLater(() => { answer.focusIt(); }) }
     function answered(text) {
         const t = text.trim(), what = asking, target = askingFor
         asking = ""
+        // a network place: gio mounts it in a terminal, where it can ask for a name and a password
+        if (what === "server") { if (t.indexOf("://") > 0) Quickshell.execDetached(["foot", "-e", "sh", "-c", "gio mount \"$1\" && echo OK || read x", "sh", t]); return }
         if (t === "" || t.indexOf("/") >= 0) return
         if (what === "rename") act(["rename", target, t]); else act([what, here.path, t])
     }
@@ -169,6 +206,17 @@ ShellRoot {
             { icon: "copy", text: I18n.tr("Copy"), hint: "Ctrl+C", run: () => shell.act(["clip", "copy"].concat(picked)) },
             { icon: "clipboard", text: I18n.tr("Copy as path"), run: () => Quickshell.execDetached(["wl-copy", "--", picked.join("\n")]) },
             { line: true }]
+        // archives: out here, or to the other panel; anything: into a zip or a 7z
+        const packed = ["zip", "7z", "rar", "tar", "gz", "tgz", "xz", "bz2", "zst"]
+        if (picked.every(p => packed.includes(FileIcons.ending(p.split("/").pop()))))
+            rows.push({ icon: "file-zip", text: I18n.tr("Extract here"), run: () => shell.enqueue("extract", here.path, picked) },
+                      ...(dual && other.path.startsWith("/") ? [{ icon: "file-zip", text: I18n.tr("Extract to the other panel"), run: () => shell.enqueue("extract", other.path, picked) }] : []))
+        rows.push({ icon: "package", text: I18n.tr("Compress"), more: [{ text: I18n.tr("To a ZIP file"), run: () => shell.enqueue("zip", here.path, picked) },
+                                                                        { text: I18n.tr("To a 7z file"), run: () => shell.enqueue("7z", here.path, picked) }] })
+        if (!many && FileIcons.ending(path) === "iso") rows.push({ icon: "disc", text: I18n.tr("Mount as a DVD drive"), run: () => { mounter.running = false; mounter.command = ["latte-files", "iso", path]; mounter.running = true } })
+        rows.push({ icon: "tag", text: I18n.tr("Colour"), more: shell.colours.map(c => ({ tint: c.color, text: I18n.tr(c.name), run: () => { shell.act(["tag", c.id].concat(picked)) } }))
+                                                                     .concat([{ line: true }, { text: I18n.tr("No colour"), run: () => shell.act(["tag", ""].concat(picked)) }]) })
+        rows.push({ line: true })
         if (!many) rows.push({ icon: "pencil", text: I18n.tr("Rename"), hint: "F2", run: () => shell.ask("rename", path) })
         if (!inTrash) rows.push({ icon: "trash", text: I18n.tr("Delete"), hint: "Del", danger: true, run: () => shell.act(["trash"].concat(picked)) })
         menu.open(x, y, rows)
@@ -180,6 +228,7 @@ ShellRoot {
                 { text: I18n.tr("Small icons"), checked: view === "small", run: () => view = "small" },
                 { line: true },
                 { text: I18n.tr("Tiles"), checked: view === "tiles", run: () => view = "tiles" },
+                { text: I18n.tr("Photo viewer"), checked: view === "photos", run: () => view = "photos" },
                 { text: I18n.tr("Details"), checked: view === "details", run: () => view = "details" }]
     }
     function groundMenu(x, y) {
@@ -238,8 +287,13 @@ ShellRoot {
             for (const x of parts) { at += "/" + x; out.push({ name: x, path: at }) }
             return out
         }
-        function again() { const f = files.folder; files.folder = ""; files.folder = f }
+        function again() { const f = files.folder; files.folder = ""; files.folder = f; readTags() }
+        // the colours of what is here
+        property var tags: ({})
+        function readTags() { if (!path.startsWith("/")) { tags = ({}); return } tagger.running = false; tagger.command = ["latte-files", "tags", path]; tagger.running = true }
+        Process { id: tagger; stdout: StdioCollector { onStreamFinished: { const t = {}; for (const l of this.text.split("\n")) { const i = l.lastIndexOf("\t"); if (i > 0) t[l.slice(0, i)] = l.slice(i + 1) } panel.tags = t } } }
         function picked() { return Object.keys(chosen) }
+        function photoStep(d) { photos.step(d) }
         // a box drawn with the mouse from bare ground chooses everything it touches, as on Windows; Ctrl adds
         property bool banding: false
         property point bandFrom
@@ -293,7 +347,8 @@ ShellRoot {
         function measure() { if (measured) { measured = false; forget(); return }
                              forget(); measured = true; meter.command = ["latte-files", "tree", path]; meter.running = true }
         function settle() { sizes = Object.assign({}, rawSizes); inner = Object.assign({}, rawInner) }
-        onPathChanged: { measured = false; forget() }
+        onPathChanged: { measured = false; forget(); readTags() }
+        Component.onCompleted: readTags()
         // the lines come by the thousand: they are gathered quietly and shown a few times a second
         Timer { running: meter.running; interval: 300; repeat: true; onTriggered: panel.settle() }
         Process { id: meter; onExited: panel.settle()
@@ -350,9 +405,11 @@ ShellRoot {
                     Rectangle { required property var modelData; width: 220; height: 76; radius: 16; color: tileHit.containsMouse ? Theme.raised : Theme.card
                         Glyph { x: 18; name: shell.placeIcons[parent.modelData.kind]; font.pixelSize: 26; color: Theme.gold; anchors.verticalCenter: parent.verticalCenter }
                         Column { x: 58; width: parent.width - 70; anchors.verticalCenter: parent.verticalCenter; spacing: 2
-                            Label { width: parent.width; font.weight: 700; text: parent.parent.modelData.kind === "disk" ? (parent.parent.modelData.name.split(" · ")[0] || parent.parent.modelData.path) : I18n.tr(shell.placeNames[parent.parent.modelData.kind]) }
-                            Label { width: parent.width; color: Theme.dim; font.pixelSize: 12; text: parent.parent.modelData.kind === "disk" ? (parent.parent.modelData.name.split(" · ")[1] || "") : "" } }
-                        MouseArea { id: tileHit; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: { shell.active = panel.index; panel.go(parent.modelData.path) } } } } }
+                            Label { width: parent.width; font.weight: 700; elide: Text.ElideRight; text: shell.drives.includes(parent.parent.modelData.kind) ? shell.driveName(parent.parent.modelData) : I18n.tr(shell.placeNames[parent.parent.modelData.kind]) }
+                            Label { width: parent.width; color: Theme.dim; font.pixelSize: 12; elide: Text.ElideRight
+                                    text: shell.drives.includes(parent.parent.modelData.kind) ? I18n.tr(shell.driveKinds[parent.parent.modelData.kind]) + (parent.parent.modelData.name.split(" · ")[1] ? " · " + parent.parent.modelData.name.split(" · ")[1] : "")
+                                                                                                  + (parent.parent.modelData.path === "" ? " · " + I18n.tr("not connected") : "") : "" } }
+                        MouseArea { id: tileHit; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: { shell.active = panel.index; shell.reach(parent.modelData) } } } } }
             // what fills the other panel's folder, as a map: a rectangle for each thing in it, as big as what it holds,
             // and inside each folder what it is made of. A press tells what it is; twice goes inside and measures there.
             Item { id: sized; visible: panel.source !== null; anchors.fill: parent
@@ -472,10 +529,12 @@ ShellRoot {
                     required property date fileModified
                     required property int index
                     width: list.width; height: 34; radius: 9
-                    color: panel.chosen[filePath] ? Qt.rgba(Theme.gold.r, Theme.gold.g, Theme.gold.b, 0.24) : (rowHit.containsMouse ? Theme.card : "transparent")
+                    readonly property color tint: shell.colourOf(panel.tags[filePath])     // its colour, if it has one: the row takes it on
+                    color: panel.chosen[filePath] ? Qt.rgba(Theme.gold.r, Theme.gold.g, Theme.gold.b, 0.24) : (rowHit.containsMouse ? Theme.card : (panel.tags[filePath] ? Qt.rgba(tint.r, tint.g, tint.b, 0.16) : "transparent"))
                     // measured: its share of the largest thing here, as a bar behind the row
                     Rectangle { visible: panel.measured && panel.sizes[row.filePath] !== undefined; x: 4; y: 4; height: parent.height - 8; radius: 6; color: Theme.coffee; opacity: 0.38
                                 width: (parent.width - 8) * (panel.sizes[row.filePath] || 0) / panel.largest; Behavior on width { NumberAnimation { duration: 220 } } }
+                    Rectangle { visible: !!panel.tags[row.filePath]; x: 2; y: 7; width: 4; height: parent.height - 14; radius: 2; color: shell.colourOf(panel.tags[row.filePath]) }
                     Image { x: 10; width: 22; height: 22; anchors.verticalCenter: parent.verticalCenter; source: FileIcons.of(row.fileName, row.filePath, row.fileIsDir); sourceSize.width: 44; sourceSize.height: 44; asynchronous: true }
                     Label { id: rowName; x: 42; width: parent.width - 42 - 250; text: row.fileName; anchors.verticalCenter: parent.verticalCenter; elide: Text.ElideMiddle }
                     Label { x: parent.width - 240; width: 90; horizontalAlignment: Text.AlignRight; text: panel.sizes[row.filePath] !== undefined ? shell.bytes(panel.sizes[row.filePath]) : (row.fileIsDir ? (panel.measured ? "…" : "") : shell.bytes(row.fileSize))
@@ -496,7 +555,7 @@ ShellRoot {
                         onClicked: (m) => { if (m.button === Qt.RightButton) { const q = mapToItem(overlay, m.x, m.y); shell.itemMenu(row.filePath, row.fileIsDir, q.x, q.y) }
                                             else if (m.button === Qt.MiddleButton && row.fileIsDir) { shell.dual = true; shell.other.go(row.filePath) } }
                         onDoubleClicked: (m) => { if (m.button === Qt.LeftButton && !bare) shell.open(row.filePath, row.fileIsDir) } } } }
-            GridView { id: grid; visible: shell.view !== "details" && panel.path.startsWith("/") && !panel.source && panel.peek === ""; anchors.fill: parent; model: files; clip: true
+            GridView { id: grid; visible: shell.view !== "details" && shell.view !== "photos" && panel.path.startsWith("/") && !panel.source && panel.peek === ""; anchors.fill: parent; model: files; clip: true
                 readonly property bool wide: shell.view === "small" || shell.view === "tiles"     // the icon left, the name beside it
                 readonly property real icon: shell.view === "small" ? 20 : (shell.view === "tiles" ? 48 : panel.iconSize)
                 cellWidth: shell.view === "small" ? 250 : (shell.view === "tiles" ? 300 : panel.iconSize + 60)
@@ -514,9 +573,12 @@ ShellRoot {
                     required property int index
                     readonly property bool roomy: !grid.wide && panel.iconSize >= 96
                     width: grid.cellWidth; height: grid.cellHeight
-                    Rectangle { anchors.fill: parent; anchors.margins: 3; radius: 10; border.width: cellDrop.containsDrag ? 2 : 0; border.color: Theme.gold; color: panel.chosen[cell.filePath] ? Qt.rgba(Theme.gold.r, Theme.gold.g, Theme.gold.b, 0.24) : (cellHit.containsMouse ? Theme.card : "transparent") }
+                    Rectangle { anchors.fill: parent; anchors.margins: 3; radius: 10; border.width: cellDrop.containsDrag ? 2 : 0; border.color: Theme.gold; color: panel.chosen[cell.filePath] ? Qt.rgba(Theme.gold.r, Theme.gold.g, Theme.gold.b, 0.24) : (cellHit.containsMouse ? Theme.card
+                                      : (panel.tags[cell.filePath] ? Qt.rgba(Qt.color(shell.colourOf(panel.tags[cell.filePath])).r, Qt.color(shell.colourOf(panel.tags[cell.filePath])).g, Qt.color(shell.colourOf(panel.tags[cell.filePath])).b, 0.16) : "transparent")) }
                     Image { id: cellIcon; x: grid.wide ? 10 : (parent.width - width) / 2; y: grid.wide ? (parent.height - height) / 2 : 10; width: grid.icon; height: grid.icon
                             source: FileIcons.of(cell.fileName, cell.filePath, cell.fileIsDir); sourceSize.width: Math.max(64, grid.icon * 2); sourceSize.height: Math.max(64, grid.icon * 2); fillMode: Image.PreserveAspectFit; asynchronous: true }
+                    Rectangle { visible: !!panel.tags[cell.filePath]; z: 2; width: Math.max(10, grid.icon * 0.16); height: width; radius: width / 2; border.width: 2; border.color: Theme.surface
+                                x: cellIcon.x + cellIcon.width - width * 0.8; y: cellIcon.y + cellIcon.height - height * 0.9; color: shell.colourOf(panel.tags[cell.filePath]) }
                     // a folder shows the pictures it holds, as Explorer's do, once the icons are big enough to see them
                     FolderListModel { id: inside; folder: cell.fileIsDir && cell.roomy ? "file://" + cell.filePath : ""; showDirs: false; sortField: FolderListModel.Time
                                       nameFilters: FileIcons.pictures.map(e => "*." + e).concat(FileIcons.pictures.map(e => "*." + e.toUpperCase())) }
@@ -546,6 +608,46 @@ ShellRoot {
                         onClicked: (m) => { if (m.button === Qt.RightButton) { const q = mapToItem(overlay, m.x, m.y); shell.itemMenu(cell.filePath, cell.fileIsDir, q.x, q.y) }
                                             else if (m.button === Qt.MiddleButton && cell.fileIsDir) { shell.dual = true; shell.other.go(cell.filePath) } }
                         onDoubleClicked: (m) => { if (m.button === Qt.LeftButton && !bare) shell.open(cell.filePath, cell.fileIsDir) } } } }
+            // the photo viewer, as the old ACDSee had it: one picture big, the folder's pictures along the bottom; the
+            // wheel and the arrows go through them, twice on the picture hides the strip, a slideshow if one wants
+            Item { id: photos; visible: shell.view === "photos" && panel.path.startsWith("/") && !panel.source && panel.peek === ""; anchors.fill: parent
+                property int at: 0
+                property bool bare: false
+                readonly property string current: pics.count > 0 ? pics.get(Math.min(at, pics.count - 1), "filePath") : ""
+                function step(d) { if (!pics.count) return; at = (at + d + pics.count) % pics.count; strip.positionViewAtIndex(at, ListView.Contain)
+                                   const s = {}; s[current] = true; panel.chosen = s }
+                Connections { target: panel; function onPathChanged() { photos.at = 0 } }
+                FolderListModel { id: pics; folder: photos.visible ? "file://" + panel.path : ""; showDirs: false; showHidden: shell.hidden
+                                  nameFilters: FileIcons.pictures.concat(["bmp", "svg"]).map(e => "*." + e).concat(FileIcons.pictures.map(e => "*." + e.toUpperCase())) }
+                Rectangle { id: stage; width: parent.width; height: photos.bare ? parent.height : parent.height - strip.height - info.height - 16; radius: 12; color: Qt.rgba(0, 0, 0, 0.35)
+                    Image { id: big; anchors.fill: parent; anchors.margins: 6; source: photos.current !== "" ? "file://" + photos.current : ""; fillMode: Image.PreserveAspectFit
+                            asynchronous: true; autoTransform: true; smooth: true; mipmap: true }
+                    Label { anchors.centerIn: parent; visible: pics.count === 0; color: Theme.faint; text: I18n.tr("No pictures in this folder.") }
+                    MouseArea { anchors.fill: parent; acceptedButtons: Qt.LeftButton | Qt.RightButton | Qt.BackButton | Qt.ForwardButton
+                        onPressed: (m) => { shell.active = panel.index; keys.forceActiveFocus(); if (m.button === Qt.BackButton) photos.step(-1); else if (m.button === Qt.ForwardButton) photos.step(1) }
+                        onClicked: (m) => { if (m.button === Qt.RightButton && photos.current !== "") { const q = mapToItem(overlay, m.x, m.y); const s = {}; s[photos.current] = true; panel.chosen = s; shell.itemMenu(photos.current, false, q.x, q.y) } }
+                        onDoubleClicked: photos.bare = !photos.bare
+                        onWheel: (w) => photos.step(w.angleDelta.y > 0 ? -1 : 1) }
+                    // the way back and on, on the sides of the picture
+                    Repeater { model: [-1, 1]
+                        Rectangle { required property var modelData; visible: pics.count > 1; width: 44; height: 64; radius: 12; anchors.verticalCenter: parent.verticalCenter
+                                    x: modelData < 0 ? 10 : parent.width - width - 10; color: arrowHit.containsMouse ? Qt.rgba(0, 0, 0, 0.55) : Qt.rgba(0, 0, 0, 0.25)
+                            Glyph { anchors.centerIn: parent; name: parent.modelData < 0 ? "chevron-left" : "chevron-right"; font.pixelSize: 24; color: "#f3ebdd" }
+                            MouseArea { id: arrowHit; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: photos.step(parent.modelData) } } } }
+                Row { id: info; visible: !photos.bare; y: stage.height + 8; width: parent.width; height: 32; spacing: 10
+                    Pill { implicitHeight: 30; icon: slides.running ? "player-pause" : "slideshow"; text: slides.running ? I18n.tr("Pause") : I18n.tr("Slideshow"); onPressed: slides.running = !slides.running }
+                    Label { anchors.verticalCenter: parent.verticalCenter; width: parent.width - 140; elide: Text.ElideMiddle; color: Theme.dim; font.pixelSize: 12
+                            text: pics.count === 0 ? "" : (photos.at + 1) + " / " + pics.count + "   ·   " + photos.current.split("/").pop()
+                                  + (big.status === Image.Ready ? "   ·   " + big.implicitWidth + " × " + big.implicitHeight : "")
+                                  + "   ·   " + shell.bytes(pics.get(photos.at, "fileSize")) + "   ·   " + Qt.formatDateTime(pics.get(photos.at, "fileModified"), "d. M. yyyy  hh:mm") } }
+                Timer { id: slides; interval: 4000; repeat: true; running: false; onTriggered: photos.step(1) }
+                ListView { id: strip; visible: !photos.bare; anchors.bottom: parent.bottom; width: parent.width; height: 96; orientation: ListView.Horizontal; spacing: 6; clip: true
+                           model: pics; boundsBehavior: Flickable.StopAtBounds
+                    delegate: Rectangle { id: thumb; required property string filePath; required property int index
+                        width: 120; height: 92; radius: 8; color: Theme.card; border.width: photos.at === index ? 3 : 0; border.color: Theme.gold
+                        Image { anchors.fill: parent; anchors.margins: 4; source: "file://" + thumb.filePath; fillMode: Image.PreserveAspectCrop; asynchronous: true; sourceSize.width: 240; autoTransform: true }
+                        MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: { photos.at = thumb.index; photos.step(0) }
+                                    onDoubleClicked: shell.open(thumb.filePath, false) } } } }
             Rectangle { visible: panel.banding && panel.band.width + panel.band.height > 4; z: 5; x: panel.band.x; y: panel.band.y; width: panel.band.width; height: panel.band.height
                         radius: 4; color: Qt.rgba(Theme.gold.r, Theme.gold.g, Theme.gold.b, 0.14); border.width: 1; border.color: Theme.gold }
             // a look at one file: a picture as it is, the beginning of a text, else what it is
@@ -607,11 +709,19 @@ ShellRoot {
                     Label { text: "DualBrew"; font.pixelSize: 17; font.weight: 800; anchors.verticalCenter: parent.verticalCenter } }
                 Item { width: 1; height: 6 }
                 Nav { text: I18n.tr("This computer"); icon: "device-desktop"; on: here.path === "computer:"; onPressed: here.go("computer:") }
-                Repeater { model: shell.places.filter(p => p.kind !== "disk")
+                Repeater { model: shell.places.filter(p => !shell.drives.includes(p.kind))
                     Nav { required property var modelData; text: I18n.tr(shell.placeNames[modelData.kind]); icon: shell.placeIcons[modelData.kind]; on: here.path === modelData.path; onPressed: here.go(modelData.path) } }
-                Label { x: 8; height: 30; verticalAlignment: Text.AlignBottom; text: I18n.tr("DISKS"); color: Theme.faint; font.pixelSize: 11; font.weight: 700; font.letterSpacing: 0.8 }
-                Repeater { model: shell.places.filter(p => p.kind === "disk" && (p.path !== "/" || shell.real))
-                    Nav { required property var modelData; text: modelData.path === "/" ? I18n.tr("The whole system (/)") : modelData.name; icon: "disc"; on: here.path === modelData.path; onPressed: here.go(modelData.path) } }
+                Label { x: 8; height: 30; verticalAlignment: Text.AlignBottom; text: I18n.tr("DRIVES"); color: Theme.faint; font.pixelSize: 11; font.weight: 700; font.letterSpacing: 0.8 }
+                Repeater { model: shell.places.filter(p => ["disk", "usb", "card", "optical", "image"].includes(p.kind) && (p.path !== "/" || shell.real))
+                    Nav { required property var modelData; text: shell.driveName(modelData) + (modelData.name.split(" · ")[1] ? " · " + modelData.name.split(" · ")[1] : ""); icon: shell.placeIcons[modelData.kind]
+                          opacity: modelData.path === "" ? 0.6 : 1; on: modelData.path !== "" && here.path === modelData.path; onPressed: shell.reach(modelData)
+                          tail: shell.canEject(modelData) ? "player-eject" : ""; onTailPressed: shell.eject(modelData) } }
+                Label { x: 8; height: 30; verticalAlignment: Text.AlignBottom; text: I18n.tr("NETWORK AND CLOUD"); color: Theme.faint; font.pixelSize: 11; font.weight: 700; font.letterSpacing: 0.8 }
+                Repeater { model: shell.places.filter(p => p.kind === "network" || p.kind === "cloud")
+                    Nav { required property var modelData; text: shell.driveName(modelData); icon: shell.placeIcons[modelData.kind]
+                          opacity: modelData.path === "" ? 0.6 : 1; on: modelData.path !== "" && here.path === modelData.path; onPressed: shell.reach(modelData)
+                          tail: shell.canEject(modelData) ? "player-eject" : ""; onTailPressed: shell.eject(modelData) } }
+                Nav { id: cloudNav; text: I18n.tr("Add a cloud or a place…"); icon: "cloud-plus"; onPressed: { const q = cloudNav.mapToItem(overlay, 40, cloudNav.height); shell.addCloud(q.x, q.y) } }
                 Item { width: 1; height: 10 }
                 Nav { text: I18n.tr("The real structure"); icon: shell.real ? "eye" : "eye-off"; on: shell.real; onPressed: shell.real = !shell.real } }
         ]
@@ -638,7 +748,7 @@ ShellRoot {
                     Pill { required property var modelData; implicitHeight: 32; text: modelData.key + "  " + I18n.tr(modelData.name); onPressed: shell.command(modelData.what) } } },
             // a name is asked for here
             Row { x: 24; anchors.verticalCenter: parent.verticalCenter; spacing: 10; visible: shell.asking !== ""
-                Label { text: shell.asking === "rename" ? I18n.tr("New name:") : I18n.tr("Name:"); color: Theme.inkOnCoffee; anchors.verticalCenter: parent.verticalCenter }
+                Label { text: shell.asking === "rename" ? I18n.tr("New name:") : (shell.asking === "server" ? I18n.tr("Address:") : I18n.tr("Name:")); color: Theme.inkOnCoffee; anchors.verticalCenter: parent.verticalCenter }
                 Field { id: answer; width: 360; icon: "pencil"; function focusIt() { children[1].forceActiveFocus(); children[1].selectAll() }
                         onAccepted: { shell.answered(text); keys.forceActiveFocus() } }
                 Pill { implicitHeight: 34; icon: "check"; strong: true; text: I18n.tr("OK"); onPressed: { shell.answered(answer.text); keys.forceActiveFocus() } }
@@ -650,7 +760,8 @@ ShellRoot {
                 if (shell.asking !== "") { if (ev.key === Qt.Key_Escape) { shell.asking = ""; ev.accepted = true } return }
                 const ctrl = ev.modifiers & Qt.ControlModifier, picked = here.picked(), one = picked.length === 1 ? picked[0] : ""
                 ev.accepted = true
-                if (ev.key === Qt.Key_Space && shell.peeking) shell.hidePeek()
+                if (shell.view === "photos" && [Qt.Key_Right, Qt.Key_PageDown, Qt.Key_Left, Qt.Key_PageUp].includes(ev.key)) here.photoStep([Qt.Key_Right, Qt.Key_PageDown].includes(ev.key) ? 1 : -1)
+                else if (ev.key === Qt.Key_Space && shell.peeking) shell.hidePeek()
                 else if (ev.key === Qt.Key_Space && one !== "" && here.path.startsWith("/")) shell.showPeek(one)
                 else if (ev.key === Qt.Key_Space && picked.length === 0 && here.path.startsWith("/")) shell.showSizes()
                 else if (ev.key === Qt.Key_Escape && shell.peeking) shell.hidePeek()
