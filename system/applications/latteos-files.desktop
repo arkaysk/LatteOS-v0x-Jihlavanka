@@ -1,0 +1,13 @@
+[Desktop Entry]
+Type=Application
+Name=DualBrew
+Name[sk]=DualBrew
+GenericName=Files
+GenericName[sk]=Súbory
+Comment=Your files and folders, in one panel or two
+Comment[sk]=Tvoje súbory a priečinky, v jednom paneli alebo v dvoch
+Exec=latte-app files %f
+Icon=system-file-manager
+Categories=System;FileManager;
+MimeType=inode/directory;
+StartupWMClass=org.quickshell

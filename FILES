@@ -24,6 +24,7 @@
 /usr/bin/latte-settings                                 <- bin/latte-settings
 /usr/bin/latte-desktop                                  <- bin/latte-desktop
 /usr/bin/latte-wall                                     <- bin/latte-wall
+/usr/bin/latte-files                                    <- bin/latte-files
 /usr/bin/latte-barista                                  <- bin/latte-barista
 /usr/share/latteos/recipes/avp2.json                    <- recipes/avp2.json
 /usr/bin/latte-walls                                    <- bin/latte-walls
@@ -57,6 +58,7 @@
 /usr/share/latteos/apps/monitor.qml                     <- apps/monitor.qml
 /usr/share/latteos/apps/settings.qml                    <- apps/settings.qml
 /usr/share/latteos/apps/desktop.qml                     <- apps/desktop.qml
+/usr/share/latteos/apps/files.qml                       <- apps/files.qml
 /usr/share/latteos/apps/settings/pages.json             <- apps/settings/pages.json
 /usr/share/latteos/apps/common/Theme.qml                <- apps/common/Theme.qml
 /usr/share/latteos/apps/common/I18n.qml                 <- apps/common/I18n.qml
@@ -74,12 +76,14 @@
 /usr/share/latteos/apps/common/Field.qml                <- apps/common/Field.qml
 /usr/share/latteos/apps/common/Reveal.qml               <- apps/common/Reveal.qml
 /usr/share/latteos/apps/common/Menu.qml                 <- apps/common/Menu.qml
+/usr/share/latteos/apps/common/FileIcons.qml            <- apps/common/FileIcons.qml
 /usr/share/latteos/apps/common/shaders/reveal.frag.qsb  <- apps/common/shaders/reveal.frag.qsb
 /usr/share/latteos/apps/common/window-place             <- apps/common/window-place
 /usr/share/applications/latteos-appmanager.desktop      <- system/applications/latteos-appmanager.desktop
 /usr/share/applications/latteos-devices.desktop         <- system/applications/latteos-devices.desktop
 /usr/share/applications/latteos-monitor.desktop         <- system/applications/latteos-monitor.desktop
 /usr/share/applications/latteos-settings.desktop        <- system/applications/latteos-settings.desktop
+/usr/share/applications/latteos-files.desktop           <- system/applications/latteos-files.desktop
 /usr/share/latteos/goo/parts/drops.plm                  <- goo/parts/drops.plm
 /usr/share/latteos/goo/parts/picks.plm                  <- goo/parts/picks.plm
 /usr/share/latteos/goo/parts/body.plm                   <- goo/parts/body.plm

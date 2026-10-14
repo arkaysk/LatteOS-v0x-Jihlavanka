@@ -1119,3 +1119,17 @@ cestu k aktualizácii alebo návratu.
     aplikácie, zvýraznené výraznou ikonou ako Barista v App Manageri; (b) **tooltip**: rady a triky, a popis
     tlačidla, nad ktorým je kurzor. Platí pre každé okno s hladinou (`apps/common/AppWindow.qml`, `Surface.qml`).
 
+19. [~] **DualBrew, Súbory** (používateľ, 14. 10.). Prvá verzia pre 0.4, písaná načisto:
+    `apps/files.qml` + `bin/latte-files` (kopírovanie, presun, odkaz, Kôš, nový priečinok a súbor, premenovanie,
+    schránka kompatibilná s plochou a inými správcami, miesta a disky; súbory hýbe `gio`) + spoločné ikony
+    súborov `apps/common/FileIcons.qml` (aj pre plochu). Okno LatteOS: vľavo miesta (Domov, Plocha, Dokumenty…,
+    Kôš, disky), hore Vyššie · Nový priečinok · Ikony/Podrobnosti · **Dva panely**; cesta ako klikateľné omrvinky;
+    výber klikom, Ctrl, Shift; pravý klik = ponuka (Otvoriť, Otvoriť v programe, Otvoriť v druhom paneli,
+    Vystrihnúť, Kopírovať, Kopírovať ako cestu, Premenovať, Odstrániť; na prázdnom mieste Zobraziť, Obnoviť,
+    Prilepiť, Nový, Otvoriť v termináli). Na hladine dole: počet položiek a výber; pri dvoch paneloch klávesy
+    commanderu **F5 Kopírovať · F6 Presunúť · F7 Nový priečinok · F8 Odstrániť**; mená sa pýta tam.
+    `latteos-files.desktop` (otvára priečinky; predvolený správca sa volí v Nastaveniach › Predvolené aplikácie).
+    Overené naostro: zoznam, dva panely, F5 do druhého panela, F7 s menom, ponuka položky.
+    **Chýba oproti v0.3 a Total Commanderu:** karty, ťahanie myšou medzi panelmi a von, rad úloh s priebehom
+    (dnes sa kopíruje bez ukazovateľa), archívy, hľadanie, náhľad (F3) a úprava (F4), synchronizácia, sieť
+    (FTP/SFTP/SMB) a cloud, obnovenie z Koša, vlastnosti, triedenie podľa stĺpcov, strom, stĺpcové zobrazenie.

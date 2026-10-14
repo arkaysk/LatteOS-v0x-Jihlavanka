@@ -153,22 +153,6 @@ ShellRoot {
         }
         const p2 = Object.assign({}, prefs); p2.at = at; p2.auto = false; prefs = p2; keep.restart()
     }
-    // the picture of a file: itself if it is a picture, else its kind's icon from the system's set
-    readonly property var kinds: ({ "image-x-generic": ["svg", "bmp", "ico", "tiff", "xcf"], "audio-x-generic": ["mp3", "flac", "ogg", "wav", "m4a", "opus"],
-        "video-x-generic": ["mp4", "mkv", "webm", "mov", "avi"], "package-x-generic": ["zip", "gz", "xz", "tar", "7z", "rar", "bz2", "zst"],
-        "application-pdf": ["pdf"], "x-office-document": ["odt", "doc", "docx", "rtf"], "x-office-spreadsheet": ["ods", "xls", "xlsx", "csv"],
-        "x-office-presentation": ["odp", "ppt", "pptx"], "text-x-script": ["sh", "py", "lua", "js", "rs", "c", "cpp", "h", "json", "toml", "qml"],
-        "application-x-executable": ["appimage", "exe", "run", "bin"], "text-html": ["html", "htm"] })
-    readonly property var pictures: ["png", "jpg", "jpeg", "webp", "gif"]
-    function ending(name) { const i = name.lastIndexOf("."); return i > 0 ? name.slice(i + 1).toLowerCase() : "" }
-    function pictureOf(name, path, isDir) {
-        if (isDir) return Quickshell.iconPath("folder", true)
-        const e = ending(name)
-        if (pictures.includes(e)) return "file://" + path
-        for (const k in kinds) if (kinds[k].includes(e)) return Quickshell.iconPath(k, true)
-        return Quickshell.iconPath("text-x-generic", true)
-    }
-
     // ── the menus ──────────────────────────────────────────────────────────────────────────────────────────
     function desktopMenu(x, y) {
         const p = prefs
@@ -424,7 +408,7 @@ ShellRoot {
                        required property bool fileIsDir
                        readonly property var app: desk.launchers[fileName] || null
                        path: filePath; name: app && app.name ? app.name : fileName; isDir: fileIsDir; glyph: fileIsDir ? "folder" : (app ? "apps" : "file")
-                       picture: app && app.icon ? (app.icon.startsWith("/") ? "file://" + app.icon : Quickshell.iconPath(app.icon, true)) : desk.pictureOf(fileName, filePath, fileIsDir) } }
+                       picture: app && app.icon ? (app.icon.startsWith("/") ? "file://" + app.icon : Quickshell.iconPath(app.icon, true)) : FileIcons.of(fileName, filePath, fileIsDir) } }
 
             // Properties: what a file is, in a small card where the eye is
             Rectangle { visible: desk.facts !== null; z: 50; anchors.centerIn: parent; width: 420; height: about.implicitHeight + 36; radius: 16

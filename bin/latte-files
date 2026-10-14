@@ -1,0 +1,55 @@
+#!/bin/sh
+# latte-files: what DualBrew (apps/files.qml) asks of the system. Files are moved by gio, which knows the Trash
+# and never writes over a file of the same name without keeping the old one.
+#
+#   latte-files places                the user's folders and the disks, a line each: KIND, a tab, PATH, a tab, NAME
+#                                     (KIND: home desktop documents download pictures music videos trash disk)
+#   latte-files copy|move|link DIR FILE…    into that folder
+#   latte-files trash FILE…           to the Trash;  latte-files empty   empties it
+#   latte-files folder DIR NAME       a new folder (NAME (2) … when the name is taken);  file DIR NAME   an empty file
+#   latte-files rename FILE NAME      another name in the same folder
+#   latte-files clip copy|cut FILE…   onto the clipboard, as file managers keep files there
+#   latte-files paste DIR             what is on the clipboard, into that folder
+#   latte-files size FILE…            how much they hold, in bytes
+free_name() {   # DIR NAME: that name, or the first "NAME (n)" nothing has yet
+    d="$1"; n="$2"; base="${n%.*}"; ext=""; [ "$base" != "$n" ] && ext=".${n##*.}"
+    t="$d/$n"; i=2
+    while [ -e "$t" ]; do t="$d/$base ($i)$ext"; i=$((i + 1)); done
+    printf '%s' "$t"
+}
+what="${1:-}"; [ $# -gt 0 ] && shift
+case "$what" in
+places)
+    printf 'home\t%s\t\n' "$HOME"
+    for k in DESKTOP DOCUMENTS DOWNLOAD PICTURES MUSIC VIDEOS; do
+        d="$(xdg-user-dir "$k" 2>/dev/null)"
+        [ -n "$d" ] && [ "$d" != "$HOME" ] && [ -d "$d" ] && printf '%s\t%s\t\n' "$(printf '%s' "$k" | tr 'A-Z' 'a-z')" "$d"
+    done
+    mkdir -p "$HOME/.local/share/Trash/files"; printf 'trash\t%s\t\n' "$HOME/.local/share/Trash/files"
+    lsblk -Pno MOUNTPOINT,LABEL,SIZE 2>/dev/null | while IFS= read -r line; do
+        mount="$(printf '%s' "$line" | sed -n 's/.*MOUNTPOINT="\([^"]*\)".*/\1/p')"
+        label="$(printf '%s' "$line" | sed -n 's/.*LABEL="\([^"]*\)".*/\1/p')"
+        size="$(printf '%s' "$line" | sed -n 's/.*SIZE="\([^"]*\)".*/\1/p')"
+        case "$mount" in /|/home|/boot*|/var*|"[SWAP]"|"") continue ;; esac
+        printf 'disk\t%s\t%s\n' "$mount" "${label:-$(basename "$mount")} · $size"
+    done
+    printf 'disk\t/\t\n' ;;
+copy)   d="$1"; shift; for f in "$@"; do gio copy --backup -- "$f" "$d/"; done ;;
+move)   d="$1"; shift; for f in "$@"; do gio move --backup -- "$f" "$d/"; done ;;
+link)   d="$1"; shift; for f in "$@"; do ln -s -- "$f" "$(free_name "$d" "$(basename "$f")")"; done ;;
+trash)  gio trash -- "$@" ;;
+empty)  gio trash --empty ;;
+folder) mkdir -- "$(free_name "$1" "$2")" ;;
+file)   : > "$(free_name "$1" "$2")" ;;
+rename) case "$2" in */*|"") exit 2 ;; esac
+        t="$(dirname "$1")/$2"; [ -e "$t" ] && exit 1; mv -n -- "$1" "$t" ;;
+clip)   mode="$1"; shift
+        { echo "$mode"; for f in "$@"; do printf 'file://%s\n' "$f"; done; } | wl-copy -t x-special/gnome-copied-files ;;
+paste)  c="$(wl-paste -t x-special/gnome-copied-files 2>/dev/null)" || c="$(wl-paste -t text/uri-list 2>/dev/null)" || exit 0
+        mode="$(printf '%s\n' "$c" | head -n1)"
+        printf '%s\n' "$c" | grep '^file://' | while IFS= read -r u; do
+            if [ "$mode" = cut ]; then gio move --backup -- "$u" "$1/"; else gio copy --backup -- "$u" "$1/"; fi
+        done ;;
+size)   du -sbc -- "$@" 2>/dev/null | tail -n1 | cut -f1 ;;
+*)      sed -n '2,15p' "$0" | sed 's/^# \{0,1\}//' >&2; exit 2 ;;
+esac
