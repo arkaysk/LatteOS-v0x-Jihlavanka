@@ -1133,3 +1133,16 @@ cestu k aktualizácii alebo návratu.
     **Chýba oproti v0.3 a Total Commanderu:** karty, ťahanie myšou medzi panelmi a von, rad úloh s priebehom
     (dnes sa kopíruje bez ukazovateľa), archívy, hľadanie, náhľad (F3) a úprava (F4), synchronizácia, sieť
     (FTP/SFTP/SMB) a cloud, obnovenie z Koša, vlastnosti, triedenie podľa stĺpcov, strom, stĺpcové zobrazenie.
+    **Štítky a farby (používateľ, 14. 10.):** v0.3 mal Farbu v ponuke súboru a priečinka, uloženú v
+    `~/.config/latteos/tags.json` (iba pohľad Súborov, viazaný na cestu). Pre 0.4: štítok do rozšíreného atribútu
+    `user.xdg.tags` priamo pri súbore (overené na latte-lab: prežije presun aj kópiu so zachovaním atribútov) —
+    je to konvencia freedesktop, ktorú číta aj Dolphin; mimo Linuxu (Windows, FAT/exFAT, zip, cloud) sa stratí.
+    **Čo už v0.3 mal a používateľ k Súborom navrhoval** (`old/docs_zaloha/2026-10-09-roadmap-pred-ciscenim.md`
+    r. 566–591, 782–804, 982–1016): karty, hotlist, strom, plochý pohľad, rýchly náhľad, Lister F3 (text, hex,
+    obrázok, médiá), rad úloh s pauzou a overením SHA-256, hromadné premenovanie, porovnanie a synchronizácia
+    priečinkov, porovnanie súborov, archívy ako priečinky (aj s heslom), hľadanie (obsah, regex, v archívoch),
+    veľkosti priečinkov, práva a vlastník, odkazy, kontrolné súčty, rozdeliť/spojiť, riadok príkazu, vlastné
+    tlačidlá, FTP/SFTP/SMB/WebDAV/cloud (rclone, ~/Cloud), Kôš s obnovením, DiskTree (čo zapĺňa priečinok),
+    zoxide (často používané), Poslať do telefónu (KDE Connect), „Bude to fungovať?“ pri .exe. Nedokončené
+    nápady: vlastné stĺpce, úprava skratiek a ponúk, pluginy, odkladacia kvapka na súbory (ako Dropover),
+    značky a synchronizované priečinky so stavom (vzor Spacedrive, Nextcloud).
