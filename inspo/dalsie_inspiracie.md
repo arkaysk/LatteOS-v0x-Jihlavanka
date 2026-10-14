@@ -316,3 +316,34 @@ https://github.com/lgse/strata
     ikony a zoznam, približné hľadanie mien, náhľady, ovládanie hlavne klávesnicou.
   - **Využitie v LatteOS:** inšpirácia na rozšírenie DualBrew — stĺpcové zobrazenie ako ďalší režim panelu,
     približné hľadanie a skratky. Zapísané do ROADMAP R3·C.
+
+## Správcovia súborov: idey a spôsoby ovládania (14. 10. 2026, pre DualBrew)
+
+Zdroj: hľadanie na webe 14. 10. (File Pilot, yazi, Spacedrive, Directory Opus) a všeobecná znalosť ostatných
+(označené „zo znalosti“ — neoverené čerstvým zdrojom).
+
+| správca | ideológia | čo je na ňom nové alebo vlastné |
+|---|---|---|
+| Total Commander, Double Commander | dva panely = zdroj a cieľ; všetko klávesnicou | F-klávesy, rad úloh, archív ako priečinok, pluginy |
+| Directory Opus | všetko sa dá prestaviť a naskriptovať | rozloženia okna uložené pod menom, formát priečinka podľa obsahu, farebné štítky (aj viac na súbor), skripty nad výberom |
+| File Pilot (2025) | rýchlosť a klávesnica, moderný vzhľad | **paleta príkazov** (Ctrl+Shift+P: každá akcia sa dá nájsť písaním a dostať skratku), **inšpektor** (náhľad bez opustenia), ľubovoľný počet panelov, stredný klik na priečinok = otvoriť vedľa, hľadateľná kontextová ponuka s pripnutím, veľkosti priečinkov naživo |
+| yazi (terminál, Rust) | nič nesmie blokovať | všetko asynchrónne, **úlohy s priebehom, zrušením a prioritou**, náhľad všetkého (text, PDF, archív, video), skoky do často navštevovaných priečinkov (zoxide), približné hľadanie (fzf) |
+| Spacedrive | súbor nie je miesto, ale vec | jedna knižnica cez všetky zariadenia a disky; index ostáva, aj keď je disk odpojený; **štítky patria obsahu**, nie ceste (každá kópia ich má); bez servera |
+| macOS Finder (zo znalosti) | pozri, neotváraj | Quick Look medzerníkom, stĺpce (Miller), štítky farbou, inteligentné priečinky = uložené hľadanie |
+| ranger, lf, nnn (zo znalosti) | tri stĺpce: odkiaľ · kde · čo je vnútri | pohyb hjkl, náhľad vždy vpravo, záložky jedným písmenom |
+| broot (zo znalosti) | strom, ktorý sa zmestí na obrazovku | píšeš a strom sa zužuje; veľkosti priečinkov ako pruhy |
+| Dolphin (zo znalosti) | rozumné predvolené, všetko po ruke | rozdelenie jedným klikom, terminál v okne, ktorý chodí s priečinkom |
+| Strata (už v inšpiráciách) | stĺpce a klávesnica | stĺpcové zobrazenie, približné hľadanie mien |
+
+### Čo z toho stojí za to v DualBrew (návrh, nerozhodnuté)
+
+1. **Paleta príkazov** — jedno pole, do ktorého sa píše, čo chceš urobiť; nájde akciu aj priečinok. Človek z Windowsu
+   nemusí poznať F-klávesy a milovník klávesnice nemusí siahať na myš. LatteOS ju vlastne má: LensGoo.
+2. **Inšpektor na medzerník** — náhľad súboru bez otvorenia programu (obrázok, text, PDF, video, archív).
+3. **Úlohy na hladine** — kopírovanie s priebehom, pauzou a zrušením beží dole v káve a neblokuje okno.
+4. **Skok do často navštevovaných** — priečinky, kde som bol, zoradené podľa toho, ako často; píšem kúsok mena.
+5. **Štítky** — farba alebo slovo na súbore, hľadateľné; v Linuxe sa dajú uložiť do rozšírených atribútov súboru.
+6. **Uložené hľadanie ako priečinok** — „všetky PDF za posledný týždeň“ v bočnom paneli.
+7. **Archív a vzdialené miesto ako priečinok** — vojsť dovnútra, nie „rozbaliť“.
+8. **Veľkosť priečinka ako pruh** — hneď vidno, čo zaberá miesto.
+9. **Stredný klik = otvoriť v druhom paneli.**
