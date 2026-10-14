@@ -6,7 +6,12 @@
 // panels it carries the commander's keys: F5 copy and F6 move to the other panel, F7 new folder, F8 delete.
 // The mouse: a press chooses, Ctrl adds, Shift takes all between, twice opens, the right button is the menu.
 // The keys: Enter opens, Backspace goes up, F2 renames, Delete trashes, Ctrl+C/X/V, Ctrl+A, Ctrl+H hidden
-// files, Tab the other panel.
+// files, Tab the other panel. Space with nothing chosen measures the folder: how much each thing in it holds,
+// as a figure and as a bar, and in the other panel the same sorted from the largest; Esc or its Back puts it away.
+//
+// Where one can go: the user's world is their home, its folders and the disks, under "This computer"; the system's
+// own folders (/usr, /etc, …) are not on the way, so nothing there is deleted by mistake. "The real structure"
+// (the View menu, or the side) shows Linux as it is, from /, for whoever wants it.
 import QtQuick
 import Qt.labs.folderlistmodel
 import Quickshell
@@ -21,6 +26,23 @@ ShellRoot {
     property int active: 0                     // which panel has the keys
     property string view: "details"            // or "icons"
     property bool hidden: false
+    property bool real: false                  // the real structure of Linux, from /; otherwise the user's world
+    property bool wasDual: false               // before the sizes took the other panel
+    readonly property bool sizing: left.source !== null || right.source !== null
+    function showSizes() {
+        if (sizing) return hideSizes()
+        const from = here, to = other
+        wasDual = dual; dual = true
+        if (!from.measured) from.measure()
+        to.source = from
+    }
+    function hideSizes() { const to = left.source ? left : right; if (to.source) { to.source.measured = false; to.source.sizes = ({}) } to.source = null; dual = wasDual; active = to === left ? 1 : 0; if (!dual) active = 0 }
+    // the roots of the user's world: home and every disk; a path is shown from the root it is under
+    function rootOf(p) {
+        let best = null
+        for (const pl of places) if ((pl.kind === "home" || (pl.kind === "disk" && pl.path !== "/")) && (p === pl.path || p.startsWith(pl.path + "/")) && (!best || pl.path.length > best.path.length)) best = pl
+        return best
+    }
     property var places: []
     readonly property var here: active === 0 ? left : right
     readonly property var other: active === 0 ? right : left
@@ -70,12 +92,15 @@ ShellRoot {
         menu.open(x, y, rows)
     }
     function groundMenu(x, y) {
+        if (!here.path.startsWith("/")) return menu.open(x, y, [{ text: I18n.tr("The real structure"), checked: real, run: () => real = !real }])
         const inTrash = here.path.indexOf("/.local/share/Trash/files") >= 0
         menu.open(x, y, inTrash ? [{ icon: "trash", text: I18n.tr("Empty Recycle Bin"), danger: true, run: () => shell.act(["empty"]) }] : [
             { icon: "layout-grid", text: I18n.tr("View"), more: [{ text: I18n.tr("Details"), checked: shell.view === "details", run: () => shell.view = "details" },
                                                                   { text: I18n.tr("Icons"), checked: shell.view === "icons", run: () => shell.view = "icons" },
-                                                                  { line: true }, { text: I18n.tr("Hidden files"), checked: shell.hidden, hint: "Ctrl+H", run: () => shell.hidden = !shell.hidden }] },
+                                                                  { line: true }, { text: I18n.tr("Hidden files"), checked: shell.hidden, hint: "Ctrl+H", run: () => shell.hidden = !shell.hidden },
+                                                                  { text: I18n.tr("The real structure"), checked: shell.real, run: () => shell.real = !shell.real }] },
             { icon: "refresh", text: I18n.tr("Refresh"), hint: "F5", run: () => here.again() },
+            { icon: "disc", text: I18n.tr("How much each folder holds"), checked: shell.sizing, hint: I18n.tr("Space"), run: () => shell.showSizes() },
             { line: true },
             { icon: "clipboard", text: I18n.tr("Paste"), hint: "Ctrl+V", run: () => shell.act(["paste", here.path]) },
             { icon: "plus", text: I18n.tr("New"), more: [{ icon: "folder-plus", text: I18n.tr("Folder"), run: () => shell.ask("folder") }, { icon: "file-text", text: I18n.tr("Text Document"), run: () => shell.ask("file") }] },
@@ -91,10 +116,27 @@ ShellRoot {
         property var chosen: ({})
         property string last: ""               // the one pressed last, where Shift starts from
         property var before: []                // the way back
+        property var source: null              // showing how much each thing in that panel holds, instead of a folder
         readonly property bool isActive: shell.active === index
         function go(to) { if (to === path || to === "") return; before = before.concat([path]); path = to; chosen = ({}); last = "" }
         function back() { if (!before.length) return; const b = before.slice(); path = b.pop(); before = b; chosen = ({}) }
-        function up() { if (path !== "/") go(path.replace(/\/[^/]+\/?$/, "") || "/") }
+        function up() {
+            if (path === "computer:") return
+            const root = shell.real ? null : shell.rootOf(path)
+            if (root && root.path === path) return go("computer:")
+            if (path !== "/") go(path.replace(/\/[^/]+\/?$/, "") || "/")
+        }
+        // the way to here, as pieces one can press: from / in the real structure, else from This computer
+        readonly property var way: {
+            if (path === "computer:") return [{ name: I18n.tr("This computer"), path: "computer:" }]
+            const root = shell.real ? null : shell.rootOf(path)
+            const base = root ? root.path : "", parts = path.slice(base.length).split("/").filter(x => x !== ""), out = []
+            if (root) out.push({ name: I18n.tr("This computer"), path: "computer:" }, { name: root.kind === "home" ? I18n.tr("Home") : (root.name.split(" · ")[0] || root.path), path: root.path })
+            else out.push({ name: "/", path: "/" })
+            let at = base
+            for (const x of parts) { at += "/" + x; out.push({ name: x, path: at }) }
+            return out
+        }
         function again() { const f = files.folder; files.folder = ""; files.folder = f }
         function picked() { return Object.keys(chosen) }
         function all() { const s = {}; for (let i = 0; i < files.count; i++) s[files.get(i, "filePath")] = true; chosen = s }
@@ -111,24 +153,62 @@ ShellRoot {
             last = filePath
         }
         readonly property int count: files.count
-        FolderListModel { id: files; folder: "file://" + panel.path; showDirsFirst: true; showDotAndDotDot: false; showHidden: shell.hidden; sortField: FolderListModel.Name }
+        // How much each thing here holds, folders too: measured when asked (Space), a line at a time as du gets
+        // through them, so a big folder fills in while one watches.
+        property var sizes: ({})
+        property bool measured: false
+        readonly property real largest: { let m = 1; for (const k in sizes) if (sizes[k] > m) m = sizes[k]; return m }
+        readonly property real total: { let t = 0; for (const k in sizes) t += sizes[k]; return t }
+        readonly property bool measuring: meter.running
+        function measure() { if (measured) { measured = false; meter.running = false; sizes = ({}); return }
+                             sizes = ({}); measured = true; meter.running = false; meter.command = ["latte-files", "sizes", path]; meter.running = true }
+        onPathChanged: { measured = false; meter.running = false; sizes = ({}) }
+        Process { id: meter; stdout: SplitParser { onRead: line => { const at = line.indexOf("\t"); if (at < 1) return
+                                                                    const s = Object.assign({}, panel.sizes); s[line.slice(at + 1)] = parseInt(line.slice(0, at)); panel.sizes = s } } }
+        FolderListModel { id: files; folder: panel.path.startsWith("/") ? "file://" + panel.path : ""; showDirsFirst: true; showDotAndDotDot: false; showHidden: shell.hidden; sortField: FolderListModel.Name }
 
         Rectangle { anchors.fill: parent; anchors.margins: 6; radius: 14; color: Theme.surface; border.width: shell.dual ? 2 : 0; border.color: panel.isActive ? Theme.gold : "transparent" }
         // where it is: every folder on the way can be pressed
         Flickable { id: crumbs; x: 18; y: 12; width: parent.width - 36; height: 32; contentWidth: way.width; clip: true; boundsBehavior: Flickable.StopAtBounds
             onContentWidthChanged: contentX = Math.max(0, contentWidth - width)
             Row { id: way; spacing: 2
-                Repeater { model: ["/"].concat(panel.path.split("/").filter(p => p !== ""))
-                    Rectangle { required property string modelData; required property int index; height: 30; width: crumb.implicitWidth + 18; radius: 9; color: crumbHit.containsMouse ? Theme.raised : "transparent"
-                        Label { id: crumb; anchors.centerIn: parent; text: parent.index === 0 ? "/" : parent.modelData; color: Theme.dim; font.weight: 600 }
-                        MouseArea { id: crumbHit; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
-                                    onClicked: { shell.active = panel.index; panel.go("/" + panel.path.split("/").filter(p => p !== "").slice(0, parent.index).join("/")) } } } } } }
+                Repeater { model: panel.source ? [] : panel.way
+                    Row { required property var modelData; required property int index; spacing: 2
+                        Glyph { visible: parent.index > 0; name: "chevron-right"; font.pixelSize: 13; color: Theme.faint; anchors.verticalCenter: parent.verticalCenter }
+                        Rectangle { height: 30; width: crumb.implicitWidth + 18; radius: 9; color: crumbHit.containsMouse ? Theme.raised : "transparent"
+                            Label { id: crumb; anchors.centerIn: parent; text: parent.parent.modelData.name; color: Theme.dim; font.weight: 600 }
+                            MouseArea { id: crumbHit; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
+                                        onClicked: { shell.active = panel.index; panel.go(parent.parent.modelData.path) } } } } }
+                // the sizes: what is measured and the way out
+                Row { visible: panel.source !== null; spacing: 10
+                    Pill { implicitHeight: 30; icon: "chevron-left"; text: I18n.tr("Back"); onPressed: shell.hideSizes() }
+                    Label { text: panel.source ? I18n.tr("What fills {folder}", { folder: panel.source.path.split("/").pop() || "/" }) : ""; font.weight: 700; anchors.verticalCenter: parent.verticalCenter } } } }
         Item { x: 12; y: 50; width: parent.width - 24; height: parent.height - 62; clip: true
             MouseArea { anchors.fill: parent; acceptedButtons: Qt.LeftButton | Qt.RightButton
                         onPressed: (m) => { shell.active = panel.index; keys.forceActiveFocus(); if (m.button === Qt.LeftButton) panel.chosen = ({}) }
                         onClicked: (m) => { if (m.button === Qt.RightButton) { const q = mapToItem(overlay, m.x, m.y); shell.groundMenu(q.x, q.y) } } }
-            Label { anchors.centerIn: parent; visible: files.count === 0 && files.status === FolderListModel.Ready; text: I18n.tr("This folder is empty."); color: Theme.faint }
-            ListView { id: list; visible: shell.view === "details"; anchors.fill: parent; model: files; clip: true; boundsBehavior: Flickable.StopAtBounds
+            Label { anchors.centerIn: parent; visible: panel.path.startsWith("/") && !panel.source && files.count === 0 && files.status === FolderListModel.Ready; text: I18n.tr("This folder is empty."); color: Theme.faint }
+            // This computer: the user's folders and the disks, as tiles
+            Flow { visible: panel.path === "computer:" && !panel.source; anchors.fill: parent; anchors.margins: 6; spacing: 12
+                Repeater { model: shell.places.filter(p => p.kind !== "trash" && (p.path !== "/" || shell.real))
+                    Rectangle { required property var modelData; width: 220; height: 76; radius: 16; color: tileHit.containsMouse ? Theme.raised : Theme.card
+                        Glyph { x: 18; name: shell.placeIcons[parent.modelData.kind]; font.pixelSize: 26; color: Theme.gold; anchors.verticalCenter: parent.verticalCenter }
+                        Column { x: 58; width: parent.width - 70; anchors.verticalCenter: parent.verticalCenter; spacing: 2
+                            Label { width: parent.width; font.weight: 700; text: parent.parent.modelData.kind === "disk" ? (parent.parent.modelData.name.split(" · ")[0] || parent.parent.modelData.path) : I18n.tr(shell.placeNames[parent.parent.modelData.kind]) }
+                            Label { width: parent.width; color: Theme.dim; font.pixelSize: 12; text: parent.parent.modelData.kind === "disk" ? (parent.parent.modelData.name.split(" · ")[1] || "") : "" } }
+                        MouseArea { id: tileHit; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: { shell.active = panel.index; panel.go(parent.modelData.path) } } } } }
+            // how much each thing in the other panel's folder holds, the largest first
+            ListView { id: sized; visible: panel.source !== null; anchors.fill: parent; clip: true; boundsBehavior: Flickable.StopAtBounds
+                model: { if (!panel.source) return []; const s = panel.source.sizes; return Object.keys(s).sort((a, b) => s[b] - s[a]).map(k => ({ path: k, size: s[k] })) }
+                header: Label { width: sized.width; height: 30; color: Theme.dim; font.pixelSize: 12
+                                text: panel.source ? (panel.source.measuring ? I18n.tr("measuring… {size} so far", { size: shell.bytes(panel.source.total) }) : I18n.tr("{size} in all", { size: shell.bytes(panel.source.total) })) : "" }
+                delegate: Rectangle { id: big; required property var modelData; width: sized.width; height: 34; radius: 9; color: bigHit.containsMouse ? Theme.card : "transparent"
+                    Rectangle { x: 4; y: 4; height: parent.height - 8; radius: 6; color: Theme.coffee; opacity: 0.5; width: (parent.width - 8) * big.modelData.size / Math.max(1, panel.source ? panel.source.largest : 1) }
+                    Label { x: 12; width: parent.width - 120; text: big.modelData.path.split("/").pop(); anchors.verticalCenter: parent.verticalCenter; font.weight: 600 }
+                    Label { anchors.right: parent.right; anchors.rightMargin: 12; text: shell.bytes(big.modelData.size); anchors.verticalCenter: parent.verticalCenter }
+                    MouseArea { id: bigHit; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
+                                onDoubleClicked: { const src = panel.source; shell.hideSizes(); src.go(big.modelData.path) } } } }
+            ListView { id: list; visible: shell.view === "details" && panel.path.startsWith("/") && !panel.source; anchors.fill: parent; model: files; clip: true; boundsBehavior: Flickable.StopAtBounds
                 delegate: Rectangle { id: row; required property string fileName
                     required property string filePath
                     required property bool fileIsDir
@@ -137,15 +217,19 @@ ShellRoot {
                     required property int index
                     width: list.width; height: 34; radius: 9
                     color: panel.chosen[filePath] ? Qt.rgba(Theme.gold.r, Theme.gold.g, Theme.gold.b, 0.24) : (rowHit.containsMouse ? Theme.card : "transparent")
+                    // measured: its share of the largest thing here, as a bar behind the row
+                    Rectangle { visible: panel.measured && panel.sizes[row.filePath] !== undefined; x: 4; y: 4; height: parent.height - 8; radius: 6; color: Theme.coffee; opacity: 0.38
+                                width: (parent.width - 8) * (panel.sizes[row.filePath] || 0) / panel.largest; Behavior on width { NumberAnimation { duration: 220 } } }
                     Image { x: 10; width: 22; height: 22; anchors.verticalCenter: parent.verticalCenter; source: FileIcons.of(row.fileName, row.filePath, row.fileIsDir); sourceSize.width: 44; sourceSize.height: 44; asynchronous: true }
                     Label { x: 42; width: parent.width - 42 - 250; text: row.fileName; anchors.verticalCenter: parent.verticalCenter; elide: Text.ElideMiddle }
-                    Label { x: parent.width - 240; width: 90; horizontalAlignment: Text.AlignRight; text: row.fileIsDir ? "" : shell.bytes(row.fileSize); color: Theme.dim; font.pixelSize: 12; anchors.verticalCenter: parent.verticalCenter }
+                    Label { x: parent.width - 240; width: 90; horizontalAlignment: Text.AlignRight; text: panel.sizes[row.filePath] !== undefined ? shell.bytes(panel.sizes[row.filePath]) : (row.fileIsDir ? (panel.measured ? "…" : "") : shell.bytes(row.fileSize))
+                            color: panel.measured ? Theme.cream : Theme.dim; font.pixelSize: 12; anchors.verticalCenter: parent.verticalCenter }
                     Label { x: parent.width - 140; width: 130; text: Qt.formatDateTime(row.fileModified, "d. M. yyyy  hh:mm"); color: Theme.dim; font.pixelSize: 12; anchors.verticalCenter: parent.verticalCenter }
                     MouseArea { id: rowHit; anchors.fill: parent; hoverEnabled: true; acceptedButtons: Qt.LeftButton | Qt.RightButton
                         onPressed: (m) => { keys.forceActiveFocus(); if (m.button === Qt.LeftButton || !panel.chosen[row.filePath]) panel.press(row.filePath, row.index, m.button === Qt.LeftButton ? m.modifiers : 0); shell.active = panel.index }
                         onClicked: (m) => { if (m.button === Qt.RightButton) { const q = mapToItem(overlay, m.x, m.y); shell.itemMenu(row.filePath, row.fileIsDir, q.x, q.y) } }
                         onDoubleClicked: (m) => { if (m.button === Qt.LeftButton) shell.open(row.filePath, row.fileIsDir) } } } }
-            GridView { id: grid; visible: shell.view === "icons"; anchors.fill: parent; model: files; clip: true; cellWidth: 112; cellHeight: 108; boundsBehavior: Flickable.StopAtBounds
+            GridView { id: grid; visible: shell.view === "icons" && panel.path.startsWith("/") && !panel.source; anchors.fill: parent; model: files; clip: true; cellWidth: 112; cellHeight: 108; boundsBehavior: Flickable.StopAtBounds
                 delegate: Item { id: cell; required property string fileName
                     required property string filePath
                     required property bool fileIsDir
@@ -164,7 +248,7 @@ ShellRoot {
     AppWindow {
         id: win
         title: "DualBrew"
-        heading: here.path === shell.home ? I18n.tr("Home") : (here.path.split("/").pop() || "/")
+        heading: here.source ? I18n.tr("Sizes") : (here.path === "computer:" ? I18n.tr("This computer") : (here.path === shell.home ? I18n.tr("Home") : (here.path.split("/").pop() || "/")))
         implicitWidth: 1180; implicitHeight: 760
         arrows: true; canGoBack: here.before.length > 0; onBack: here.back()
         tools: [
@@ -179,16 +263,21 @@ ShellRoot {
                     Glyph { name: "folders"; color: Theme.gold; font.pixelSize: 22; anchors.verticalCenter: parent.verticalCenter }
                     Label { text: "DualBrew"; font.pixelSize: 17; font.weight: 800; anchors.verticalCenter: parent.verticalCenter } }
                 Item { width: 1; height: 6 }
+                Nav { text: I18n.tr("This computer"); icon: "device-desktop"; on: here.path === "computer:"; onPressed: here.go("computer:") }
                 Repeater { model: shell.places.filter(p => p.kind !== "disk")
                     Nav { required property var modelData; text: I18n.tr(shell.placeNames[modelData.kind]); icon: shell.placeIcons[modelData.kind]; on: here.path === modelData.path; onPressed: here.go(modelData.path) } }
                 Label { x: 8; height: 30; verticalAlignment: Text.AlignBottom; text: I18n.tr("DISKS"); color: Theme.faint; font.pixelSize: 11; font.weight: 700; font.letterSpacing: 0.8 }
-                Repeater { model: shell.places.filter(p => p.kind === "disk")
-                    Nav { required property var modelData; text: modelData.name !== "" ? modelData.name : I18n.tr("This computer"); icon: "disc"; on: here.path === modelData.path; onPressed: here.go(modelData.path) } } }
+                Repeater { model: shell.places.filter(p => p.kind === "disk" && (p.path !== "/" || shell.real))
+                    Nav { required property var modelData; text: modelData.path === "/" ? I18n.tr("The whole system (/)") : modelData.name; icon: "disc"; on: here.path === modelData.path; onPressed: here.go(modelData.path) } }
+                Item { width: 1; height: 10 }
+                Nav { text: I18n.tr("The real structure"); icon: shell.real ? "eye" : "eye-off"; on: shell.real; onPressed: shell.real = !shell.real } }
         ]
         foot: [
             // what is here and what is chosen
             Label { x: 24; anchors.verticalCenter: parent.verticalCenter; color: Theme.inkOnCoffee; visible: shell.asking === ""
-                    text: here.picked().length ? I18n.tr("{n} chosen", { n: here.picked().length }) : I18n.tr("{n} items", { n: here.count }) },
+                    text: !here.path.startsWith("/") ? I18n.tr("Your folders and the disks") : (here.picked().length ? I18n.tr("{n} chosen", { n: here.picked().length }) : I18n.tr("{n} items", { n: here.count }))
+                          + (here.measured ? "   ·   " + (here.measuring ? I18n.tr("measuring… {size} so far", { size: shell.bytes(here.total) }) : I18n.tr("{size} in all", { size: shell.bytes(here.total) }))
+                                           : (here.picked().length ? "" : "   ·   " + I18n.tr("Space: how much each folder holds")))) },
             // the commander's keys, with two panels
             Row { anchors.right: parent.right; anchors.rightMargin: 20; anchors.verticalCenter: parent.verticalCenter; spacing: 8; visible: shell.dual && shell.asking === ""
                 Repeater { model: [{ key: "F5", name: QT_TR_NOOP("Copy"), what: "copy" }, { key: "F6", name: QT_TR_NOOP("Move"), what: "move" }, { key: "F7", name: QT_TR_NOOP("New folder"), what: "folder" }, { key: "F8", name: QT_TR_NOOP("Delete"), what: "trash" }]
@@ -207,7 +296,9 @@ ShellRoot {
                 if (shell.asking !== "") { if (ev.key === Qt.Key_Escape) { shell.asking = ""; ev.accepted = true } return }
                 const ctrl = ev.modifiers & Qt.ControlModifier, picked = here.picked(), one = picked.length === 1 ? picked[0] : ""
                 ev.accepted = true
-                if (ev.key === Qt.Key_Backspace) here.up()
+                if (ev.key === Qt.Key_Space && picked.length === 0 && here.path.startsWith("/")) shell.showSizes()
+                else if (ev.key === Qt.Key_Escape && shell.sizing) shell.hideSizes()
+                else if (ev.key === Qt.Key_Backspace) here.up()
                 else if (ev.key === Qt.Key_Tab && shell.dual) shell.active = 1 - shell.active
                 else if ((ev.key === Qt.Key_Return || ev.key === Qt.Key_Enter) && one) shell.enter(one)
                 else if (ev.key === Qt.Key_F2 && one) shell.ask("rename", one)

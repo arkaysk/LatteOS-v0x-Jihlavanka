@@ -11,6 +11,7 @@
 #   latte-files clip copy|cut FILE…   onto the clipboard, as file managers keep files there
 #   latte-files paste DIR             what is on the clipboard, into that folder
 #   latte-files size FILE…            how much they hold, in bytes
+#   latte-files sizes DIR             how much each thing in that folder holds: a line each as it is known, BYTES, a tab, PATH
 free_name() {   # DIR NAME: that name, or the first "NAME (n)" nothing has yet
     d="$1"; n="$2"; base="${n%.*}"; ext=""; [ "$base" != "$n" ] && ext=".${n##*.}"
     t="$d/$n"; i=2
@@ -50,6 +51,7 @@ paste)  c="$(wl-paste -t x-special/gnome-copied-files 2>/dev/null)" || c="$(wl-p
         printf '%s\n' "$c" | grep '^file://' | while IFS= read -r u; do
             if [ "$mode" = cut ]; then gio move --backup -- "$u" "$1/"; else gio copy --backup -- "$u" "$1/"; fi
         done ;;
+sizes)  for f in "$1"/* "$1"/.[!.]*; do [ -e "$f" ] || [ -L "$f" ] || continue; du -sbx -- "$f" 2>/dev/null; done ;;
 size)   du -sbc -- "$@" 2>/dev/null | tail -n1 | cut -f1 ;;
 *)      sed -n '2,15p' "$0" | sed 's/^# \{0,1\}//' >&2; exit 2 ;;
 esac

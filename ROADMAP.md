@@ -1146,3 +1146,11 @@ cestu k aktualizácii alebo návratu.
     zoxide (často používané), Poslať do telefónu (KDE Connect), „Bude to fungovať?“ pri .exe. Nedokončené
     nápady: vlastné stĺpce, úprava skratiek a ponúk, pluginy, odkladacia kvapka na súbory (ako Dropover),
     značky a synchronizované priečinky so stavom (vzor Spacedrive, Nextcloud).
+    **14. 10. ráno (používateľ):** Medzerník bez výberu = koľko zaberá každý priečinok — v aktívnom paneli čísla
+    a pruhy, v druhom paneli „Čo zapĺňa …“ zoradené od najväčšieho (dvojklik vojde, Esc alebo Späť zavrie), aj
+    v ponuke Zobraziť › Koľko zaberá každý priečinok (`latte-files sizes`, du po jednom, plní sa priebežne).
+    **Štruktúra pre človeka:** predvolene svet používateľa — „Tento počítač“ (priečinky a disky ako dlaždice),
+    cesta od Tento počítač › Domov/disk, Vyššie z domova vedie na Tento počítač, nie do `/`; systémové priečinky
+    nie sú po ceste. **Skutočná štruktúra** (bočný panel, Zobraziť) ukáže Linux od `/` vrátane disku `/`.
+    Overené naostro: meranie (4,9 GB repozitára), panel veľkostí, Esc, Tento počítač.
+

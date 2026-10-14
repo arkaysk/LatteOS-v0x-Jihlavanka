@@ -163,6 +163,7 @@ return {
     ["list"] = "\u{EB6B}",
     ["folders"] = "\u{EAAE}",
     ["home"] = "\u{EAC1}",
+    ["eye-off"] = "\u{ECF0}",
     ["world"] = "\u{EB54}",
     ["world-off"] = "\u{F1CA}",
     ["world-www"] = "\u{F38F}",
