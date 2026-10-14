@@ -11,6 +11,9 @@
 #   latte-files clip copy|cut FILE…   onto the clipboard, as file managers keep files there
 #   latte-files paste DIR             what is on the clipboard, into that folder
 #   latte-files size FILE…            how much they hold, in bytes
+#   latte-files job copy|move|auto DIR FILE…   the same as copy and move, saying how far it is, a line at a time:
+#                                     "total BYTES", then "file NAME" and "done BYTES" while it goes; auto moves on the
+#                                     same disk and copies to another, as a drag does on Windows
 #   latte-files sizes DIR             how much each thing in that folder holds: a line each as it is known, BYTES, a tab, PATH
 free_name() {   # DIR NAME: that name, or the first "NAME (n)" nothing has yet
     d="$1"; n="$2"; base="${n%.*}"; ext=""; [ "$base" != "$n" ] && ext=".${n##*.}"
@@ -50,6 +53,25 @@ paste)  c="$(wl-paste -t x-special/gnome-copied-files 2>/dev/null)" || c="$(wl-p
         mode="$(printf '%s\n' "$c" | head -n1)"
         printf '%s\n' "$c" | grep '^file://' | while IFS= read -r u; do
             if [ "$mode" = cut ]; then gio move --backup -- "$u" "$1/"; else gio copy --backup -- "$u" "$1/"; fi
+        done ;;
+job)    how="$1"; d="$2"; shift 2
+        echo "total $(du -sbc -- "$@" 2>/dev/null | tail -n1 | cut -f1)"
+        on="$(stat -c %d -- "$d")"; before=0
+        for f in "$@"; do
+            [ -e "$f" ] || [ -L "$f" ] || continue
+            name="$(basename -- "$f")"; echo "file $name"
+            size="$(du -sb -- "$f" 2>/dev/null | cut -f1)"
+            way="$how"; [ "$how" = auto ] && { [ "$(stat -c %d -- "$f")" = "$on" ] && way=move || way=copy; }
+            # stopped half way, a copy that did not exist before is taken away again: no half files left behind
+            fresh=1; [ -e "$d/$name" ] && fresh=0
+            trap 'kill "$pid" 2>/dev/null; [ "$fresh" = 1 ] && [ "$way" = copy ] && rm -rf -- "$d/$name"; exit 1' TERM
+            gio "$way" --backup -- "$f" "$d/" & pid=$!
+            # how far: what has arrived so far; a move on the same disk is done at once
+            while kill -0 "$pid" 2>/dev/null; do
+                now="$(du -sb -- "$d/$name" 2>/dev/null | cut -f1)"; echo "done $((before + ${now:-0}))"; sleep 0.4
+            done
+            wait "$pid" || echo "failed $name"
+            before=$((before + ${size:-0})); echo "done $before"
         done ;;
 sizes)  for f in "$1"/* "$1"/.[!.]*; do [ -e "$f" ] || [ -L "$f" ] || continue; du -sbx -- "$f" 2>/dev/null; done ;;
 size)   du -sbc -- "$@" 2>/dev/null | tail -n1 | cut -f1 ;;

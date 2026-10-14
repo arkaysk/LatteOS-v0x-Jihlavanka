@@ -1154,3 +1154,15 @@ cestu k aktualizácii alebo návratu.
     nie sú po ceste. **Skutočná štruktúra** (bočný panel, Zobraziť) ukáže Linux od `/` vrátane disku `/`.
     Overené naostro: meranie (4,9 GB repozitára), panel veľkostí, Esc, Tento počítač.
 
+    **14. 10. ráno, ergonómia pre myš (používateľ: „výrazne lepšie než konkurencia“):** panel, v ktorom sa pracuje,
+    je nad kávou (zlatý rám, svetlejší), druhý pod ňou (závoj kávy tmavnúci ku dnu, línia hladiny hore).
+    Ťahanie súborov myšou: do druhého panela, na priečinok (zlatý rám), von do inej aplikácie a dnu z hocijakej
+    (na tom istom disku presun, na iný kópia, s Ctrl kópia). **Úlohy na hladine**: kopírovanie a presun s
+    priebehom v %, Pozastaviť/Pokračovať, Zastaviť (načatý súbor sa zmaže), ďalšie čakajú v rade
+    (`latte-files job`). Stredné tlačidlo na priečinku = otvoriť v druhom paneli; tlačidlá myši Späť/Dopredu;
+    dvojklik na prázdne = vyššie; klik na hlavičku stĺpca = triedenie (znova obráti); Ctrl + koliesko = veľkosť
+    ikon. **Medzerník na súbore** = náhľad v druhom paneli (obrázok, začiatok textu, inak ikona; ide za výberom,
+    Esc zavrie). Overené naostro: stredné tlačidlo, F5 s priebehom na iný disk (1,5 GB, 77 % na snímke),
+    pauza, zastavenie s upratovaním, ťahanie do druhého panela (presun), náhľad obrázka, Späť myšou.
+    Opravené aj na ploche: ťahanie von do aplikácií nikdy nefungovalo (`Drag.active` a položka mimo okna).
+    **Chýba:** výber obdĺžnikom myšou, náhľad PDF a videa, ťahanie s pravým tlačidlom (ponuka Kopírovať sem…).

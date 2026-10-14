@@ -235,7 +235,6 @@ ShellRoot {
                   desk.windows = all.filter(c => c.mapped && !c.hidden && c.workspace.id === ws.id).map(c => ({ x: c.at[0] - win.screen.x, y: c.at[1] - win.screen.y, w: c.size[0], h: c.size[1] })) }
             catch (e) { desk.windows = [] } } } }
     function overWindow(x, y) { return windows.some(r => x >= r.x && y >= r.y && x < r.x + r.w && y < r.y + r.h) }
-    Item { id: out; Drag.dragType: Drag.Automatic; Drag.supportedActions: Qt.CopyAction | Qt.MoveAction | Qt.LinkAction; Drag.keys: ["text/uri-list"] }
     function dropped(d, dir) {
         if (!d.hasUrls) return
         const l = d.urls.map(u => decodeURIComponent(String(u).replace(/^file:\/\//, ""))).filter(p => p.startsWith("/"))
@@ -368,7 +367,9 @@ ShellRoot {
                             const paths = desk.chosen[ic.path] ? desk.picked() : [ic.path]
                             ic.dragging = false; ic.dx = 0; ic.dy = 0; desk.dragged = ""; desk.dragX = 0; desk.dragY = 0; desk.target = ""; desk.windows = []; desk.wasDragged = true
                             out.Drag.mimeData = { "text/uri-list": paths.map(p => "file://" + encodeURI(p)).join("\r\n") + "\r\n" }
+                            out.Drag.active = true
                             out.Drag.startDrag()
+                            out.Drag.active = false
                             return
                         }
                         ic.dragging = true; ic.dx = ddx; ic.dy = ddy
@@ -426,6 +427,7 @@ ShellRoot {
                               Label { width: 110; text: modelData[0]; color: Theme.dim; font.pixelSize: 13 }
                               Label { width: parent.width - 120; text: modelData[1]; wrapMode: Text.WrapAnywhere; elide: Text.ElideNone; font.pixelSize: 13 } } } } }
             Menu { id: menu }
+            Item { id: out; Drag.dragType: Drag.Automatic; Drag.supportedActions: Qt.CopyAction | Qt.MoveAction | Qt.LinkAction; Drag.keys: ["text/uri-list"] }
         }
     }
 }
