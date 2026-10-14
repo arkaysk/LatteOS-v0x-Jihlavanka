@@ -1,5 +1,5 @@
 // DualBrew: the files. One panel as on Windows, or two side by side as in a commander; bin/latte-files moves
-// things, this window shows them.   latte-app files [FOLDER]
+// things, this window shows them.   latte-app files [FOLDER] [sizes]   (sizes: straight to what fills that folder)
 //
 // The side: the user's folders, the Trash, the disks. The header: up, a new folder, the view (details or icons),
 // hidden files, one panel or two. The coffee at the foot says what is here and what is chosen, and with two
@@ -12,7 +12,7 @@
 // The panel one works in stands above the coffee; the other lies under it.
 // The keys: Enter opens, Backspace goes up, F2 renames, Delete trashes, Ctrl+C/X/V, Ctrl+A, Ctrl+H hidden
 // files, Tab the other panel. Space with one file chosen shows it in the other panel. Space with nothing chosen measures the folder: how much each thing in it holds,
-// as a figure and as a bar, and in the other panel the same sorted from the largest; Esc or its Back puts it away.
+// as a figure and as a bar, and in the other panel a map of it, as DiskTree draws it; Esc or its Back puts it away.
 //
 // Where one can go: the user's world is their home, its folders and the disks, under "This computer"; the system's
 // own folders (/usr, /etc, …) are not on the way, so nothing there is deleted by mistake. "The real structure"
@@ -41,7 +41,7 @@ ShellRoot {
         if (!from.measured) from.measure()
         to.source = from
     }
-    function hideSizes() { const to = left.source ? left : right; if (to.source) { to.source.measured = false; to.source.sizes = ({}) } to.source = null; dual = wasDual; active = to === left ? 1 : 0; if (!dual) active = 0 }
+    function hideSizes() { const to = left.source ? left : right; if (to.source) { to.source.measured = false; to.source.forget() } to.source = null; dual = wasDual; active = to === left ? 1 : 0; if (!dual) active = 0 }
     // the roots of the user's world: home and every disk; a path is shown from the root it is under
     function rootOf(p) {
         let best = null
@@ -49,6 +49,7 @@ ShellRoot {
         return best
     }
     property var places: []
+    Component.onCompleted: if (words.includes("sizes")) Qt.callLater(showSizes)
     // ── jobs: copying and moving, one at a time, the rest waiting ────────────────────────────────────────────
     property var jobs: []                      // { how, to, files, title }
     property var job: null                     // the one under way: { title, total, done, name, paused }
@@ -76,6 +77,48 @@ ShellRoot {
         const j = Object.assign({}, job); j.paused = stop; job = j }
     function stopJob() { if (!jobber.running) return; const pid = String(jobber.processId); jobs = []
         Quickshell.execDetached(["sh", "-c", "pkill -CONT -P \"$1\"; pkill -P \"$1\"; kill -CONT \"$1\"; kill \"$1\"", "sh", pid]) }
+    // ── the map of what fills a folder, as DiskTree draws it: a rectangle for everything, as big as what it
+    // holds, its colour the kind of thing it is ──────────────────────────────────────────────────────────────
+    readonly property var kinds: [
+        { id: "code", name: QT_TR_NOOP("Code"), color: "#5b8def", ext: ["c", "h", "cc", "cpp", "hpp", "rs", "py", "js", "ts", "qml", "lua", "luau", "plm", "go", "java", "kt", "sh", "json", "toml", "yaml", "yml", "wgsl", "html", "css"] },
+        { id: "media", name: QT_TR_NOOP("Pictures, music, video"), color: "#c96bd0", ext: ["jpg", "jpeg", "png", "gif", "webp", "avif", "heic", "svg", "raw", "cr2", "nef", "mp4", "mkv", "webm", "avi", "mov", "mp3", "flac", "ogg", "opus", "wav", "m4a"] },
+        { id: "docs", name: QT_TR_NOOP("Documents"), color: "#4cc38a", ext: ["pdf", "doc", "docx", "odt", "rtf", "txt", "md", "xls", "xlsx", "ods", "csv", "ppt", "pptx", "odp", "epub"] },
+        { id: "archive", name: QT_TR_NOOP("Archives and disk images"), color: "#4fb3c4", ext: ["zip", "tar", "gz", "xz", "zst", "bz2", "7z", "rar", "deb", "rpm", "iso", "img", "qcow2", "appimage", "flatpak"] },
+        { id: "tools", name: QT_TR_NOOP("Programs and games"), color: "#9b7bd6", ext: ["exe", "msi", "dll", "so", "pak", "bin"],
+          names: [".cargo", ".rustup", ".var", ".steam", ".wine", ".local", ".npm-global", "go", "Games", "Hry", "Steam", "flatpak", ".mozilla", ".zen"] },
+        { id: "git", name: QT_TR_NOOP("Git"), color: "#e5484d", names: [".git"] },
+        // what can go without losing anything: it comes back by itself, or it has already been thrown away
+        { id: "cache", name: QT_TR_NOOP("Caches and leftovers"), color: "#d9a441", names: [".cache", "cache", "Cache", "node_modules", "__pycache__", "target", ".gradle", ".npm", ".pnpm-store", "Trash", ".thumbnails"] },
+        { id: "other", name: QT_TR_NOOP("Other"), color: "#8a7f76" }]
+    function kindOf(p) {
+        const n = p.split("/").pop(), dot = n.lastIndexOf("."), ext = dot > 0 ? n.slice(dot + 1).toLowerCase() : ""
+        const pl = places.find(x => x.path === p)
+        if (pl && (pl.kind === "pictures" || pl.kind === "music" || pl.kind === "videos")) return "media"
+        if (pl && pl.kind === "documents") return "docs"
+        for (const k of kinds) if ((k.names && k.names.includes(n)) || (ext && k.ext && k.ext.includes(ext))) return k.id
+        return ""
+    }
+    function kindColor(id) { const k = kinds.find(x => x.id === id); return k ? k.color : kinds[kinds.length - 1].color }
+    // squarified treemap (Bruls, Huizing, van Wijk): rows along the shorter side, each kept as square as it goes.
+    // `whole` is what the box stands for, so things too small to see leave honest empty ground, not a stretch.
+    function squarify(items, x, y, w, h, whole) {
+        const out = [], scale = w * h / Math.max(1, whole)
+        let rest = items.filter(i => i.size * scale >= 24), row = []
+        const worst = (r, side) => { let s = 0, mx = 0, mn = Infinity; for (const i of r) { const a = i.size * scale; s += a; mx = Math.max(mx, a); mn = Math.min(mn, a) }
+                                     return Math.max(side * side * mx / (s * s), s * s / (side * side * mn)) }
+        while (rest.length && w > 2 && h > 2) {
+            const side = Math.min(w, h)
+            if (!row.length || worst(row.concat([rest[0]]), side) <= worst(row, side)) { row.push(rest.shift()); if (rest.length) continue }
+            const thick = row.reduce((t, i) => t + i.size * scale, 0) / side
+            let at = 0
+            for (const i of row) { const len = i.size * scale / thick
+                out.push(w >= h ? { item: i, x: x, y: y + at, w: thick, h: len } : { item: i, x: x + at, y: y, w: len, h: thick }); at += len }
+            if (w >= h) { x += thick; w -= thick } else { y += thick; h -= thick }
+            row = []
+        }
+        return out
+    }
+
     // ── a look at one file in the other panel (Space), as the sizes are ──────────────────────────────────────
     readonly property bool peeking: left.peek !== "" || right.peek !== ""
     function showPeek(path) { if (peeking) return hidePeek(); wasDual = dual; dual = true; other.peek = path }
@@ -201,18 +244,38 @@ ShellRoot {
             if (shell.peeking && shell.other.peek !== "") shell.other.peek = filePath      // the look follows the choice
         }
         readonly property int count: files.count
-        // How much each thing here holds, folders too: measured when asked (Space), a line at a time as du gets
-        // through them, so a big folder fills in while one watches.
+        // How much each thing here holds, folders too: measured when asked (Space), three levels deep, as du gets
+        // through them, so a big folder fills in while one watches. `sizes` is what is right here, `inner` what is
+        // inside each folder below; the map in the other panel is drawn from both.
         property var sizes: ({})
+        property var inner: ({})               // folder -> [{ path, size }]
+        property var dirs: ({})                // which of them are folders
+        property real whole: 0                 // the folder itself, once du is through
+        property var disk: null                // { size, free }
         property bool measured: false
         readonly property real largest: { let m = 1; for (const k in sizes) if (sizes[k] > m) m = sizes[k]; return m }
-        readonly property real total: { let t = 0; for (const k in sizes) t += sizes[k]; return t }
+        readonly property real total: { if (whole > 0) return whole; let t = 0; for (const k in sizes) t += sizes[k]; return t }
         readonly property bool measuring: meter.running
-        function measure() { if (measured) { measured = false; meter.running = false; sizes = ({}); return }
-                             sizes = ({}); measured = true; meter.running = false; meter.command = ["latte-files", "sizes", path]; meter.running = true }
-        onPathChanged: { measured = false; meter.running = false; sizes = ({}) }
-        Process { id: meter; stdout: SplitParser { onRead: line => { const at = line.indexOf("\t"); if (at < 1) return
-                                                                    const s = Object.assign({}, panel.sizes); s[line.slice(at + 1)] = parseInt(line.slice(0, at)); panel.sizes = s } } }
+        property var rawSizes: ({})
+        property var rawInner: ({})
+        function forget() { meter.running = false; sizes = ({}); inner = ({}); dirs = ({}); rawSizes = ({}); rawInner = ({}); whole = 0; disk = null }
+        function measure() { if (measured) { measured = false; forget(); return }
+                             forget(); measured = true; meter.command = ["latte-files", "tree", path]; meter.running = true }
+        function settle() { sizes = Object.assign({}, rawSizes); inner = Object.assign({}, rawInner) }
+        onPathChanged: { measured = false; forget() }
+        // the lines come by the thousand: they are gathered quietly and shown a few times a second
+        Timer { running: meter.running; interval: 300; repeat: true; onTriggered: panel.settle() }
+        Process { id: meter; onExited: panel.settle()
+            stdout: SplitParser { onRead: line => { const p = line.split("\t")
+                if (p[0] === "disk") { panel.disk = { size: parseFloat(p[1]), free: parseFloat(p[2]) }; return }
+                if (p[0] === "dir") { panel.dirs[p.slice(1).join("\t")] = true; return }
+                if (p.length < 2) return
+                const size = parseFloat(p[0]), at = p.slice(1).join("\t"), base = panel.path === "/" ? "/" : panel.path + "/"
+                if (at === panel.path) { panel.whole = size; return }
+                if (!at.startsWith(base)) return
+                const up = at.slice(0, at.lastIndexOf("/")) || "/"
+                if (up === panel.path) { panel.rawSizes[at] = size; return }
+                (panel.rawInner[up] = panel.rawInner[up] || []).push({ path: at, size: size }) } } }
         FolderListModel { id: files; folder: panel.path.startsWith("/") ? "file://" + panel.path : ""; showDirsFirst: true; showDotAndDotDot: false; showHidden: shell.hidden
                           sortField: panel.sortBy === "size" ? FolderListModel.Size : (panel.sortBy === "date" ? FolderListModel.Time : FolderListModel.Name); sortReversed: panel.sortDown }
 
@@ -235,6 +298,8 @@ ShellRoot {
                 // the sizes: what is measured and the way out
                 Row { visible: panel.source !== null; spacing: 10
                     Pill { implicitHeight: 30; icon: "chevron-left"; text: I18n.tr("Back"); onPressed: shell.hideSizes() }
+                    Pill { implicitHeight: 30; icon: "arrow-up"; text: I18n.tr("Up"); visible: panel.source !== null && (shell.real ? panel.source.path !== "/" : (shell.rootOf(panel.source.path) || {}).path !== panel.source.path)
+                           onPressed: { const s = panel.source; s.up(); if (s.path.startsWith("/")) s.measure() } }
                     Label { text: panel.source ? I18n.tr("What fills {folder}", { folder: panel.source.path.split("/").pop() || "/" }) : ""; font.weight: 700; anchors.verticalCenter: parent.verticalCenter } } } }
         Item { x: 12; y: 50; width: parent.width - 24; height: parent.height - 62; clip: true
             MouseArea { anchors.fill: parent; acceptedButtons: Qt.LeftButton | Qt.RightButton | Qt.BackButton | Qt.ForwardButton
@@ -255,17 +320,103 @@ ShellRoot {
                             Label { width: parent.width; font.weight: 700; text: parent.parent.modelData.kind === "disk" ? (parent.parent.modelData.name.split(" · ")[0] || parent.parent.modelData.path) : I18n.tr(shell.placeNames[parent.parent.modelData.kind]) }
                             Label { width: parent.width; color: Theme.dim; font.pixelSize: 12; text: parent.parent.modelData.kind === "disk" ? (parent.parent.modelData.name.split(" · ")[1] || "") : "" } }
                         MouseArea { id: tileHit; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: { shell.active = panel.index; panel.go(parent.modelData.path) } } } } }
-            // how much each thing in the other panel's folder holds, the largest first
-            ListView { id: sized; visible: panel.source !== null; anchors.fill: parent; clip: true; boundsBehavior: Flickable.StopAtBounds
-                model: { if (!panel.source) return []; const s = panel.source.sizes; return Object.keys(s).sort((a, b) => s[b] - s[a]).map(k => ({ path: k, size: s[k] })) }
-                header: Label { width: sized.width; height: 30; color: Theme.dim; font.pixelSize: 12
-                                text: panel.source ? (panel.source.measuring ? I18n.tr("measuring… {size} so far", { size: shell.bytes(panel.source.total) }) : I18n.tr("{size} in all", { size: shell.bytes(panel.source.total) })) : "" }
-                delegate: Rectangle { id: big; required property var modelData; width: sized.width; height: 34; radius: 9; color: bigHit.containsMouse ? Theme.card : "transparent"
-                    Rectangle { x: 4; y: 4; height: parent.height - 8; radius: 6; color: Theme.coffee; opacity: 0.5; width: (parent.width - 8) * big.modelData.size / Math.max(1, panel.source ? panel.source.largest : 1) }
-                    Label { x: 12; width: parent.width - 120; text: big.modelData.path.split("/").pop(); anchors.verticalCenter: parent.verticalCenter; font.weight: 600 }
-                    Label { anchors.right: parent.right; anchors.rightMargin: 12; text: shell.bytes(big.modelData.size); anchors.verticalCenter: parent.verticalCenter }
-                    MouseArea { id: bigHit; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
-                                onDoubleClicked: { const src = panel.source; shell.hideSizes(); src.go(big.modelData.path) } } } }
+            // what fills the other panel's folder, as a map: a rectangle for each thing in it, as big as what it holds,
+            // and inside each folder what it is made of. A press tells what it is; twice goes inside and measures there.
+            Item { id: sized; visible: panel.source !== null; anchors.fill: parent
+                readonly property var src: panel.source
+                property string picked: ""
+                property string hovered: ""
+                readonly property string shown: hovered || picked
+                onSrcChanged: { picked = ""; hovered = "" }
+                function sizeOf(p) { if (!src) return 0; if (src.sizes[p] !== undefined) return src.sizes[p]; const up = p.replace(/\/[^/]+$/, "") || "/"; const f = (src.inner[up] || []).find(i => i.path === p); return f ? f.size : 0 }
+                // what the measured folder itself is, from the nearest folder above that says (flatpak under .local)
+                readonly property string rootKind: { if (!src) return "other"; let p = src.path
+                    while (p.length > 1) { const k = shell.kindOf(p); if (k) return k; p = p.replace(/\/[^/]+$/, "") || "/" } return "other" }
+                function kindIn(p) { const own = shell.kindOf(p); if (own || !src) return own
+                                     if (rootKind !== "other") return rootKind
+                                     const kids = (src.inner[p] || []).slice().sort((x, y) => y.size - x.size); return kids.length ? (shell.kindOf(kids[0].path) || "other") : "other" }
+                function zoom(p) { const s = src; s.go(p); s.measure() }
+                function gone(p) { shell.act(["trash", p]); const s = src; delete s.rawSizes[p]; const up = p.replace(/\/[^/]+$/, "")
+                                   if (s.rawInner[up]) s.rawInner[up] = s.rawInner[up].filter(i => i.path !== p); if (s.whole > 0) s.whole -= sizeOf(p); s.settle(); picked = "" }
+                // the head: how much in all, and how full the disk is
+                Label { id: sum; y: 2; width: parent.width - diskBar.width - 12; elide: Text.ElideRight; color: Theme.dim; font.pixelSize: 12
+                        text: sized.src ? (sized.src.measuring ? I18n.tr("measuring… {size} so far", { size: shell.bytes(sized.src.total) }) : I18n.tr("{size} in all", { size: shell.bytes(sized.src.total) })) : "" }
+                Item { id: diskBar; anchors.right: parent.right; width: Math.min(260, parent.width * 0.45); height: 20; visible: sized.src && sized.src.disk !== null
+                    readonly property var d: sized.src && sized.src.disk ? sized.src.disk : { size: 1, free: 0 }
+                    Rectangle { y: 6; width: parent.width; height: 8; radius: 4; color: Theme.raised
+                        Rectangle { height: parent.height; radius: 4; color: diskBar.d.free / diskBar.d.size < 0.1 ? Theme.red : Theme.coffee; width: parent.width * (1 - diskBar.d.free / diskBar.d.size) } }
+                    Label { y: 16; anchors.right: parent.right; font.pixelSize: 11; color: Theme.faint; text: I18n.tr("{free} free of {size}", { free: shell.bytes(diskBar.d.free), size: shell.bytes(diskBar.d.size) }) } }
+                // what the colours mean: only the kinds that are here
+                Flow { id: legend; y: 36; width: parent.width; spacing: 12
+                    Repeater { model: { if (!sized.src) return []; const seen = {}; for (const r of map.rects) seen[r.kind] = true; return shell.kinds.filter(k => seen[k.id]) }
+                        Row { required property var modelData; spacing: 5
+                            Rectangle { width: 10; height: 10; radius: 3; color: parent.modelData.color; anchors.verticalCenter: parent.verticalCenter }
+                            Label { text: I18n.tr(parent.modelData.name); font.pixelSize: 11; color: Theme.dim } } } }
+                Item { id: map; y: legend.y + legend.height + 8; width: parent.width; height: parent.height - y - foot.height - 8
+                    // the rectangles: what is here first, then what each folder is made of, inside it
+                    readonly property var rects: {
+                        const s = sized.src; if (!s || width < 20 || height < 20) return []
+                        const top = Object.keys(s.sizes).map(k => ({ path: k, size: s.sizes[k] })).sort((x, y) => y.size - x.size)
+                        const whole = Math.max(s.total, top.reduce((t, i) => t + i.size, 0)), out = []
+                        // a folder gets a head with its name when there is room, and inside it what it is made of
+                        const lay = (items, x, y, w, h, of, level, kindUp) => {
+                            for (const r of shell.squarify(items, x, y, w, h, of)) {
+                                const kids = (s.inner[r.item.path] || []).slice().sort((p, q) => q.size - p.size)
+                                const kind = level === 1 ? sized.kindIn(r.item.path) : (shell.kindOf(r.item.path) || (s.dirs[r.item.path] ? kindUp : "other"))
+                                const deeper = kids.length && r.w > 30 && r.h > 34, head = deeper && r.h > 44 && r.w > 60 ? 18 : 0
+                                out.push({ path: r.item.path, size: r.item.size, kind: kind, x: r.x, y: r.y, w: r.w, h: r.h, level: level, dir: !!s.dirs[r.item.path], head: head, full: !deeper })
+                                if (deeper) lay(kids, r.x + 3, r.y + 3 + head, r.w - 6, r.h - 6 - head, r.item.size, level + 1, kind)
+                            }
+                        }
+                        lay(top, 0, 0, width, height, whole, 1, sized.rootKind)
+                        return out
+                    }
+                    Label { anchors.centerIn: parent; visible: map.rects.length === 0; color: Theme.faint; text: sized.src && sized.src.measuring ? I18n.tr("Measuring…") : I18n.tr("This folder is empty.") }
+                    Repeater { model: map.rects
+                        Rectangle { id: tile; required property var modelData
+                            x: modelData.x + 1; y: modelData.y + 1; width: Math.max(1, modelData.w - 2); height: Math.max(1, modelData.h - 2); radius: modelData.level === 1 ? 7 : 4
+                            readonly property color tint: shell.kindColor(modelData.kind)
+                            color: modelData.full ? Qt.rgba(tint.r, tint.g, tint.b, tileHit.containsMouse ? 0.95 : 0.72) : Qt.rgba(tint.r, tint.g, tint.b, 0.20)
+                            border.width: sized.picked === modelData.path ? 3 : 1; border.color: sized.picked === modelData.path ? Theme.gold : Qt.rgba(0, 0, 0, 0.35)
+                            Behavior on x { NumberAnimation { duration: 180 } }
+                            Behavior on y { NumberAnimation { duration: 180 } }
+                            Behavior on width { NumberAnimation { duration: 180 } }
+                            Behavior on height { NumberAnimation { duration: 180 } }
+                            // what it is, when there is room to say it: the folder's name on its head, a thing's in its middle
+                            Label { visible: tile.width > 54 && tile.height > 16 && (tile.modelData.head > 0 || tile.modelData.full); x: 6; y: tile.modelData.head > 0 ? 2 : 4; width: tile.width - 12; elide: Text.ElideMiddle
+                                    text: tile.modelData.path.split("/").pop() + (tile.width > 140 ? "  " + shell.bytes(tile.modelData.size) : "")
+                                    font.pixelSize: tile.modelData.level === 1 ? 12 : 11; font.weight: tile.modelData.level === 1 ? 700 : 500
+                                    color: tile.modelData.full ? "#ffffff" : Theme.cream; style: Text.Raised; styleColor: Qt.rgba(0, 0, 0, 0.4) }
+                            MouseArea { id: tileHit; anchors.fill: parent; hoverEnabled: true; cursorShape: tile.modelData.dir ? Qt.PointingHandCursor : Qt.ArrowCursor
+                                        acceptedButtons: Qt.LeftButton | Qt.BackButton
+                                        onEntered: sized.hovered = tile.modelData.path
+                                        onExited: if (sized.hovered === tile.modelData.path) sized.hovered = ""
+                                        onPressed: (m) => { shell.active = panel.index; if (m.button === Qt.BackButton) { shell.hideSizes(); return } sized.picked = tile.modelData.path }
+                                        onDoubleClicked: if (tile.modelData.dir) sized.zoom(tile.modelData.path) } } } }
+                // the foot: what is pointed at or chosen, and what can be done with it; with nothing, what is worth a look
+                Rectangle { id: foot; anchors.bottom: parent.bottom; width: parent.width; height: 62; radius: 12; color: Theme.card
+                    readonly property string p: sized.shown
+                    readonly property real share: sized.src && sized.src.total > 0 ? sized.sizeOf(p) / sized.src.total : 0
+                    Row { visible: foot.p !== ""; x: 12; spacing: 10; anchors.verticalCenter: parent.verticalCenter; width: parent.width - 24
+                        Rectangle { width: 14; height: 14; radius: 4; color: shell.kindColor(sized.kindIn(foot.p)); anchors.verticalCenter: parent.verticalCenter }
+                        Column { width: parent.width - 24 - acts.width - 20; anchors.verticalCenter: parent.verticalCenter
+                            Label { width: parent.width; elide: Text.ElideMiddle; font.weight: 700; text: foot.p.split("/").pop() }
+                            Label { width: parent.width; elide: Text.ElideRight; font.pixelSize: 12; color: Theme.dim
+                                    text: shell.bytes(sized.sizeOf(foot.p)) + "  ·  " + (foot.share * 100).toFixed(1) + " %  ·  " + I18n.tr((shell.kinds.find(k => k.id === sized.kindIn(foot.p)) || shell.kinds[shell.kinds.length - 1]).name) } }
+                        Row { id: acts; spacing: 6; visible: sized.picked !== "" && foot.p === sized.picked; anchors.verticalCenter: parent.verticalCenter
+                            Pill { implicitHeight: 30; icon: "chevron-right"; text: I18n.tr("Inside"); visible: sized.src && !!sized.src.dirs[sized.picked]; onPressed: sized.zoom(sized.picked) }
+                            Pill { implicitHeight: 30; icon: "external-link"; text: I18n.tr("Open"); onPressed: { const p = sized.picked, s = sized.src
+                                                                                                                  if (s.dirs[p]) { shell.hideSizes(); s.go(p) } else shell.open(p, false) } }
+                            Pill { implicitHeight: 30; icon: "trash"; text: I18n.tr("Delete"); danger: true; onPressed: sized.gone(sized.picked) } } }
+                    Column { visible: foot.p === ""; x: 12; width: parent.width - 24; anchors.verticalCenter: parent.verticalCenter; spacing: 4
+                        readonly property var worth: { const s = sized.src; if (!s) return []; const all = []
+                            for (const k in s.sizes) all.push({ path: k, size: s.sizes[k] })
+                            for (const k in s.inner) for (const i of s.inner[k]) all.push(i)
+                            return all.filter(i => i.size > 50 * 1048576 && shell.kindOf(i.path) === "cache").sort((x, y) => y.size - x.size).slice(0, 4) }
+                        Label { font.pixelSize: 12; color: Theme.faint; text: parent.worth.length ? I18n.tr("Worth a look: these come back by themselves, or are already thrown away") : I18n.tr("Point at a rectangle to see what it is; twice on a folder goes inside.") }
+                        Row { spacing: 6
+                            Repeater { model: parent.parent.worth
+                                Pill { required property var modelData; implicitHeight: 26; text: modelData.path.split("/").pop() + "  " + shell.bytes(modelData.size); onPressed: sized.picked = modelData.path } } } } } }
             // the column heads: a press sorts by that, again the other way
             Row { id: heads; visible: list.visible; width: parent.width; height: 26
                 Repeater { model: [{ by: "name", name: QT_TR_NOOP("Name"), w: -250 }, { by: "size", name: QT_TR_NOOP("Size"), w: 100 }, { by: "date", name: QT_TR_NOOP("Date modified"), w: 150 }]

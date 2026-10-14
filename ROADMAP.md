@@ -1148,7 +1148,7 @@ cestu k aktualizácii alebo návratu.
     značky a synchronizované priečinky so stavom (vzor Spacedrive, Nextcloud).
     **14. 10. ráno (používateľ):** Medzerník bez výberu = koľko zaberá každý priečinok — v aktívnom paneli čísla
     a pruhy, v druhom paneli „Čo zapĺňa …“ zoradené od najväčšieho (dvojklik vojde, Esc alebo Späť zavrie), aj
-    v ponuke Zobraziť › Koľko zaberá každý priečinok (`latte-files sizes`, du po jednom, plní sa priebežne).
+    v ponuke Zobraziť › Koľko zaberá každý priečinok (dnes mapa, `latte-files tree`, plní sa priebežne).
     **Štruktúra pre človeka:** predvolene svet používateľa — „Tento počítač“ (priečinky a disky ako dlaždice),
     cesta od Tento počítač › Domov/disk, Vyššie z domova vedie na Tento počítač, nie do `/`; systémové priečinky
     nie sú po ceste. **Skutočná štruktúra** (bočný panel, Zobraziť) ukáže Linux od `/` vrátane disku `/`.
@@ -1166,3 +1166,21 @@ cestu k aktualizácii alebo návratu.
     pauza, zastavenie s upratovaním, ťahanie do druhého panela (presun), náhľad obrázka, Späť myšou.
     Opravené aj na ploche: ťahanie von do aplikácií nikdy nefungovalo (`Drag.active` a položka mimo okna).
     **Chýba:** výber obdĺžnikom myšou, náhľad PDF a videa, ťahanie s pravým tlačidlom (ponuka Kopírovať sem…).
+
+    **14. 10., mapa ako DiskTree (používateľ):** „Čo zapĺňa…“ už nie je zoznam, ale mapa obdĺžnikov
+    (squarified treemap, tri úrovne priečinkov, `latte-files tree` = df + zoznam priečinkov + `du -abx -d 3`,
+    plní sa počas merania). Farba = druh (Kód, Obrázky/hudba/video, Dokumenty, Archívy, Programy a hry, Git,
+    Vyrovnávacie pamäte a zvyšky, Ostatné; priečinok bez druhu dedí od predka), legenda iba s druhmi, ktoré tu sú,
+    pruh disku (voľné z celku, červený pod 10 %), dole čo je pod myšou alebo vybrané (veľkosť, podiel, druh;
+    Dovnútra · Otvoriť · Odstrániť do Koša) a bez výberu „Stojí za pohľad“ (pamäte a zvyšky nad 50 MB).
+    Dvojklik na priečinok = priblížiť (zmeria tam), Vyššie, Späť. `latte-app files PRIEČINOK sizes` otvorí
+    rovno mapu. Overené v headless sedení: celý domov 77,8 GB, klik, dvojklik do flatpak, zdedené farby.
+    Prvé meranie studeného domova trvá ~80 s (du), opakované 2 s. **Chýba oproti DiskTree:** režimy Súbory
+    (počet) a Vek (posledný zápis), hĺbka a skryté súbory ako voľba, zdanlivá veľkosť.
+    **Zo Strata (github.com/lgse/strata, GTK4, 14. 10.) do DualBrew:** Ctrl+Z / Ctrl+Shift+Z vráti poslednú
+    vratnú operáciu so súbormi; hľadanie Ctrl+K podľa mena v celom domove, výsledky hneď ako prichádzajú (najlepších
+    100, obnova po 50 ms, upozornenie, keď nie sú úplné); náhľady cudzích formátov v bubblewrap bez siete
+    (fence už máme z Baristu), text najviac 1 MiB, pri chybe ikona; v úzkom okne má prednosť zoznam, náhľad sa
+    zmenší a potom skryje; stĺpcové zobrazenie (Miller) ako tretí pohľad; vlastné akcie ako skripty v priečinku
+    s knižnicou receptov, ktoré sa samy nespustia; označenie disku iba v DualBrew (systém sa nemení); virtuálny
+    pohľad „Fotky“ na telefóne bez sprievodných súborov; hľadanie v nastaveniach.

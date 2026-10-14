@@ -347,3 +347,16 @@ Zdroj: hľadanie na webe 14. 10. (File Pilot, yazi, Spacedrive, Directory Opus) 
 7. **Archív a vzdialené miesto ako priečinok** — vojsť dovnútra, nie „rozbaliť“.
 8. **Veľkosť priečinka ako pruh** — hneď vidno, čo zaberá miesto.
 9. **Stredný klik = otvoriť v druhom paneli.**
+
+### Strata (github.com/lgse/strata, MIT, GTK4) a DiskTree — 14. 10. 2026
+
+Strata: „rýchly správca súborov pre klávesnicu“ (Arch, Omarchy). Čo sa dá naučiť:
+- **Späť a znova** pre operácie so súbormi (Ctrl+Z, Ctrl+Shift+Z) — človek z Windowsu to pozná a čaká.
+- **Hľadanie ako prúd**: Ctrl+K, podľa mena a cesty v celom domove a pripojených diskoch, výsledky hneď, len
+  najlepších 100, obnova najviac každých 50 ms, povie, keď ešte nie sú úplné. Obsah súborov nehľadá.
+- **Bezpečné náhľady**: cudzie formáty číta pomocník v bubblewrap bez siete; čo zlyhá, ukáže ikonu.
+- **Úzke okno**: zoznam má prednosť, náhľad sa zmenší, potom skryje a vráti sa, keď je miesto.
+- **Tri pohľady**: stĺpce (Miller), ikony, zoznam. Vlastné akcie ako skripty v `actions/` s knižnicou receptov.
+- **Nič nemení systém potajomky**: menovka disku platí iba v aplikácii; aktualizácia iba s potvrdením.
+DiskTree: mapa obdĺžnikov (squarified treemap) farbená podľa druhu, legenda, pruh disku, „worth a look“
+(zbytočne zaberané miesto), režimy Veľkosť / Počet súborov / Vek — v DualBrew prevzaté ako „Čo zapĺňa…“.

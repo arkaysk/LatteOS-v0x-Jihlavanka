@@ -14,7 +14,9 @@
 #   latte-files job copy|move|auto DIR FILE…   the same as copy and move, saying how far it is, a line at a time:
 #                                     "total BYTES", then "file NAME" and "done BYTES" while it goes; auto moves on the
 #                                     same disk and copies to another, as a drag does on Windows
-#   latte-files sizes DIR             how much each thing in that folder holds: a line each as it is known, BYTES, a tab, PATH
+#   latte-files tree DIR              how much everything in that folder holds, three levels deep: first "disk", a tab,
+#                                     the disk's SIZE, a tab, what is FREE; "dir", a tab, PATH for every folder; then a line
+#                                     each as du gets there, BYTES, a tab, PATH
 free_name() {   # DIR NAME: that name, or the first "NAME (n)" nothing has yet
     d="$1"; n="$2"; base="${n%.*}"; ext=""; [ "$base" != "$n" ] && ext=".${n##*.}"
     t="$d/$n"; i=2
@@ -73,7 +75,9 @@ job)    how="$1"; d="$2"; shift 2
             wait "$pid" || echo "failed $name"
             before=$((before + ${size:-0})); echo "done $before"
         done ;;
-sizes)  for f in "$1"/* "$1"/.[!.]*; do [ -e "$f" ] || [ -L "$f" ] || continue; du -sbx -- "$f" 2>/dev/null; done ;;
+tree)   df -B1 --output=size,avail -- "$1" 2>/dev/null | tail -n1 | awk '{ printf "disk\t%s\t%s\n", $1, $2 }'
+        find "$1" -xdev -mindepth 1 -maxdepth 3 -type d -printf 'dir\t%p\n' 2>/dev/null
+        du -abx -d 3 -- "$1" 2>/dev/null ;;
 size)   du -sbc -- "$@" 2>/dev/null | tail -n1 | cut -f1 ;;
 *)      sed -n '2,15p' "$0" | sed 's/^# \{0,1\}//' >&2; exit 2 ;;
 esac
