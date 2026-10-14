@@ -6,6 +6,7 @@
 #   latte-desktop restart    again
 #   latte-desktop on | off   the user's choice (~/.config/latteos/desktop-icons), applied at once
 #   latte-desktop status     prints "on" or "off"
+#   latte-desktop entries FOLDER   the launchers (.desktop) in it, a line each: file name, a tab, its name, a tab, its icon
 #   latte-desktop openers FILE   the apps that open that kind of file, a line each: ID.desktop, a tab, its name
 #
 # With icons the bare desktop is theirs, with the menu that goes with files; the Goo's own desktop menu
@@ -18,6 +19,13 @@ start() { [ "$(status)" = on ] && { running || setsid -f latte-app desktop >/dev
 tell() { pleamar --say goo "fact desk_icons $([ "$(status)" = on ] && echo true || echo false)" >/dev/null 2>&1; }
 
 case "${1:-}" in
+entries)
+    for f in "${2:?}"/*.desktop; do
+        [ -f "$f" ] || continue
+        name="$(grep -m1 "^Name\[${LANG%%_*}\]=" "$f" | cut -d= -f2-)"
+        [ -n "$name" ] || name="$(grep -m1 '^Name=' "$f" | cut -d= -f2-)"
+        printf '%s\t%s\t%s\n' "$(basename "$f")" "$name" "$(grep -m1 '^Icon=' "$f" | cut -d= -f2-)"
+    done ;;
 openers)
     kind="$(gio info -a standard::content-type -- "${2:?}" 2>/dev/null | sed -n 's/.*content-type: //p')"
     gio mime "$kind" 2>/dev/null | grep -o '[^[:space:]]*\.desktop' | awk '!seen[$0]++' | while read -r id; do

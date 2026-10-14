@@ -12,7 +12,9 @@
   latte-barista info ID             {"id", "name", "folder", "install_log", "run_log", "confirmed"} of an installed one
   latte-barista worked ID yes|no    the user's word after trying it; "no" answers with what its last run said:
                                     {"found": [{"what", "detail"}]}; what: missing-dll, direct3d, wants-disc, crashed, nothing
-  latte-barista install [--network] SOURCE…     installs it (--network: it may use the network when it runs); prints a JSON line for each step {"step", "what", "at", "of"}
+  latte-barista install [--network] SOURCE…     installs it (--network: it may use the network when it runs). Every
+                                    command it runs and what that says is printed too, as {"console": line}, and
+                                    kept as a record to read: logs/log_install_ID_DDMMYYYY.md; prints a JSON line for each step {"step", "what", "at", "of"}
                                     (step: reading, windows, unpacking, copying, writing) and at the
                                     end {"ok": true, "id"} or {"ok": false, "error"}
   latte-barista run ID              starts it, in its sandbox
@@ -164,23 +166,68 @@ def install(sources, network=False):
     steps = 2 + len(used) + len(r.get("install", []))
     at = 0
 
+    media, target = os.path.join(home, ".media"), os.path.join(home, "prefix", "drive_c", *r["folder"].split("/"))
+    os.makedirs(os.path.join(home, "logs"), exist_ok=True)
+    started = datetime.datetime.now()
+    record_path = os.path.join(home, "logs", "log_install_%s_%s.md" % (r["id"], started.strftime("%d%m%Y")))
+    record = ["# %s: installation" % r["name"], "", "- when: %s" % started.isoformat(timespec="seconds"), "- recipe: `%s`" % r["id"],
+              "- runner: %s, Windows %s" % (r.get("runner", "wine"), r.get("winver", "")), "- into: `%s`" % home, "- sources:"]
+    record += ["  - `%s`" % s for s in used]
+
     def step(name, what=""):
         nonlocal at
         at += 1
         say(step=name, what=what, at=at, of=steps)
+        record.extend(["", "## %d. %s %s" % (at, name, what)])
 
-    media, target = os.path.join(home, ".media"), os.path.join(home, "prefix", "drive_c", *r["folder"].split("/"))
-    os.makedirs(os.path.join(home, "logs"), exist_ok=True)
-    log = open(os.path.join(home, "logs", "install.log"), "a")
-    run = lambda argv, **kw: subprocess.run(argv, stdout=log, stderr=log, **kw).returncode
+    def note(line):
+        say(console=line)
+        record.append(line)
+
+    def run(argv, env=None):
+        """Runs a command; what it is and all it says goes to the console and into the record."""
+        import shlex
+        record.extend(["", "```"])
+        note("$ " + " ".join(shlex.quote(x) for x in argv))
+        t0, said = datetime.datetime.now(), 0
+        try:
+            p = subprocess.Popen(argv, env=env, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, errors="replace")
+        except OSError as e:
+            note(str(e))
+            record.append("```")
+            return 127
+        for line in p.stdout:
+            line = line.rstrip()
+            if line:
+                said += 1
+                if said <= 400:
+                    note(line)
+        code = p.wait()
+        if said > 400:
+            note("… %d more lines" % (said - 400))
+        record.extend(["```", "exit %d, %.1f s" % (code, (datetime.datetime.now() - t0).total_seconds())])
+        say(console="  → %d" % code)
+        return code
+
+    def did(what):
+        """Something done here, not by a command."""
+        say(console="# " + what)
+        record.extend(["", "- " + what])
+
+    def keep_record(result):
+        record.extend(["", "## result", "", result, "", "took %.0f s" % (datetime.datetime.now() - started).total_seconds()])
+        with open(record_path, "w") as f:
+            f.write("\n".join(record) + "\n")
+
     try:
         shutil.rmtree(media, ignore_errors=True)
         os.makedirs(media)
         for s in used:
             step("reading", os.path.basename(s))
             if os.path.isdir(s):
+                did("copy the folder %s" % s)
                 shutil.copytree(s, media, dirs_exist_ok=True)
-            elif run(["7z", "x", "-y", "-o" + media, s]) != 0:
+            elif run(["7z", "x", "-y", "-bso0", "-bsp0", "-o" + media, s]) != 0:
                 raise RuntimeError("could not read " + os.path.basename(s))
         step("windows")
         # with no screen to draw on, Wine makes the prefix without its own "please wait" window, and sooner
@@ -192,6 +239,7 @@ def install(sources, network=False):
         # the program has no business in the rest of the computer: no drive Z:
         z = os.path.join(home, "prefix", "dosdevices", "z:")
         if os.path.islink(z):
+            did("remove drive Z: from the prefix")
             os.remove(z)
         os.makedirs(target, exist_ok=True)
         for part in r.get("install", []):
@@ -201,11 +249,13 @@ def install(sources, network=False):
                 if run(["unshield", "-d", cab, "x", os.path.join(media, part["unshield"])]) != 0:
                     raise RuntimeError("could not unpack " + part["unshield"])
                 for group in part.get("take", []):
+                    did("take the group %s into C:\\%s" % (group, r["folder"].replace("/", "\\")))
                     shutil.copytree(os.path.join(cab, group), target, dirs_exist_ok=True)
                 shutil.rmtree(cab, ignore_errors=True)
             elif "copy" in part:
                 step("copying")
                 for name in part["copy"]:
+                    did("copy %s from the disc" % name)
                     shutil.copy(os.path.join(media, name), target)
         step("writing")
         icon = ""
@@ -225,12 +275,16 @@ def install(sources, network=False):
                     "sources": [{"path": s, "sha256": sha256(s) if os.path.isfile(s) else ""} for s in used],
                     "folder": r["folder"], "run": r["run"], "network": network or r.get("network", False), "menu": [entry],
                     "installed": datetime.datetime.now().isoformat(timespec="seconds")}
+        did("write %s and %s" % (os.path.join(home, "manifest.json"), entry))
         with open(os.path.join(home, "manifest.json"), "w") as f:
             json.dump(manifest, f, indent=1, ensure_ascii=False)
     except (RuntimeError, OSError) as e:
         shutil.rmtree(media, ignore_errors=True)
+        keep_record("failed: %s" % e)
         return say(ok=False, error=str(e)) or 1
     shutil.rmtree(media, ignore_errors=True)
+    record.extend(["", "started with:", "", "```", "cd C:\\%s" % r["folder"].replace("/", "\\"), "wine " + " ".join([r["run"]["exe"]] + list(r["run"].get("args", []))), "```"])
+    keep_record("installed")
     say(ok=True, id=r["id"])
     return 0
 
@@ -330,7 +384,8 @@ def main(a):
         if not m:
             return 1
         home = folder_of(a[1])
-        say(id=m["id"], name=m["name"], folder=home, install_log=os.path.join(home, "logs", "install.log"), run_log=os.path.join(home, "logs", "run.log"),
+        records = sorted(glob.glob(os.path.join(home, "logs", "log_install_*.md")), key=os.path.getmtime)
+        say(id=m["id"], name=m["name"], folder=home, install_log=records[-1] if records else "", run_log=os.path.join(home, "logs", "run.log"),
             confirmed=m.get("confirmed", ""))
     elif len(a) == 3 and a[0] == "worked" and a[2] in ("yes", "no"):
         r = worked(a[1], a[2])

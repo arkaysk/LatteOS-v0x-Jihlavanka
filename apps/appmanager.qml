@@ -53,6 +53,8 @@ ShellRoot {
     property string bError: ""
     property bool bInstalled: false
     property var bFound: null                  // what the last run's log says, after "it did not work"
+    property var bConsole: []                  // every command the installation ran and what it said
+    property bool bConsoleOut: false           // …shown when asked for
     property var bPlace: null                  // info of the installed one: folder, logs
     function bReset() { bStep = 1; bSources = []; bInfo = null; bOnline = null; bProgress = null; bError = ""; bInstalled = false; bFound = null; bPlace = null }
     function bTake(paths) { if (!paths.length) return; bSources = paths; bInfo = null; bOnline = null; bStep = 2; bAnalyze.running = false; bAnalyze.command = ["latte-barista", "analyze"].concat(paths); bAnalyze.running = true }
@@ -66,7 +68,8 @@ ShellRoot {
     Process { id: bAsk; stdout: StdioCollector { onStreamFinished: { try { shell.bOnline = JSON.parse(this.text) } catch (e) { shell.bOnline = { ok: false, lutris: [] } } } } }
     Process { id: bInstall
         stdout: SplitParser { onRead: line => { let m = null; try { m = JSON.parse(line) } catch (e) { return }
-            if (m.step) shell.bProgress = m
+            if (m.console !== undefined) { const c = shell.bConsole.slice(-400); c.push(m.console); shell.bConsole = c }
+            else if (m.step) shell.bProgress = m
             else if (m.ok) { shell.bInstalled = true; bInfoOf.running = false; bInfoOf.command = ["latte-barista", "info", m.id]; bInfoOf.running = true }
             else shell.bError = m.error || "?" } } }
     Process { id: bInfoOf; stdout: StdioCollector { onStreamFinished: { try { shell.bPlace = JSON.parse(this.text) } catch (e) {} } } }
@@ -568,7 +571,7 @@ ShellRoot {
                     Row { spacing: 10
                         Pill { icon: "chevron-left"; text: I18n.tr("Back"); onPressed: shell.bStep = 2 }
                         Pill { icon: "download"; strong: true; text: I18n.tr("Install")
-                               onPressed: { shell.bStep = 4; shell.bError = ""; shell.bProgress = null; shell.bInstalled = false; shell.bFound = null
+                               onPressed: { shell.bStep = 4; shell.bError = ""; shell.bProgress = null; shell.bInstalled = false; shell.bFound = null; shell.bConsole = []
                                             bInstall.command = ["latte-barista", "install"].concat(shell.bNetwork ? ["--network"] : []).concat(shell.bSources); bInstall.running = true } } } }
 
                 // 4 · installing; then the user tries it
@@ -579,6 +582,13 @@ ShellRoot {
                         Rectangle { x: 20; y: 46; width: parent.width - 40; height: 8; radius: 4; color: Theme.raised
                             Rectangle { height: 8; radius: 4; color: Theme.gold; width: parent.width * (shell.bProgress ? (shell.bProgress.at - 0.5) / shell.bProgress.of : 0.02); Behavior on width { NumberAnimation { duration: 300 } } } } }
                     Label { visible: shell.bError !== ""; text: shell.bError; color: Theme.red }
+                    // the console: what is being run, for whoever likes to see it
+                    Pill { icon: "terminal-2"; text: shell.bConsoleOut ? I18n.tr("Hide the console") : I18n.tr("Show the console"); strong: shell.bConsoleOut; onPressed: shell.bConsoleOut = !shell.bConsoleOut }
+                    Rectangle { visible: shell.bConsoleOut; width: parent.width; height: 300; radius: 14; color: "#0d0907"; border.color: Theme.line; clip: true
+                        ListView { id: lines; anchors.fill: parent; anchors.margins: 12; model: shell.bConsole; clip: true
+                            onCountChanged: positionViewAtEnd()
+                            delegate: Text { required property string modelData; width: lines.width; text: modelData; elide: Text.ElideRight; font.family: "JetBrains Mono"; font.pixelSize: 12
+                                             color: modelData.startsWith("$ ") ? Theme.gold : (modelData.startsWith("# ") ? "#9ed6bd" : "#cdbfae") } } }
                     Label { visible: shell.bInstalled; width: parent.width; wrapMode: Text.WordWrap; elide: Text.ElideNone; color: Theme.dim
                             text: I18n.tr("Start it and see whether it works: the menu, a moment of play, the sound. Then tell me how it went.") }
                     Row { spacing: 10; visible: shell.bInstalled && shell.bPlace !== null

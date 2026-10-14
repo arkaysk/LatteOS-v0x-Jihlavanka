@@ -106,6 +106,13 @@ ShellRoot {
         sortReversed: desk.prefs.reversed
         function again() { const f = folder; folder = ""; folder = f }
     }
+    // launchers on the desktop show their own name and picture, as the file says them
+    property var launchers: ({})
+    Process { id: entries; stdout: StdioCollector { onStreamFinished: { const out = {}
+        for (const l of this.text.split("\n")) { const p = l.split("\t"); if (p.length === 3) out[p[0]] = { name: p[1], icon: p[2] } }
+        desk.launchers = out } } }
+    function readLaunchers() { if (folder === "") return; entries.running = false; entries.command = ["latte-desktop", "entries", folder]; entries.running = true }
+    onFolderChanged: readLaunchers()
     FolderListModel { id: trashed; folder: "file://" + desk.trash; showDirs: true; showHidden: true; showDotAndDotDot: false }
     property int rows: 1
     property var places: ({})                  // path → [column, row]
@@ -121,7 +128,7 @@ ShellRoot {
         for (const p of list) if (!out[p]) { const c = free(); out[p] = c; used[c[0] + ":" + c[1]] = true }
         places = out
     }
-    Connections { target: files; function onCountChanged() { soon.restart() } }
+    Connections { target: files; function onCountChanged() { soon.restart(); desk.readLaunchers() } }
     onRowsChanged: soon.restart()
     onPrefsChanged: soon.restart()
     Timer { id: soon; interval: 30; onTriggered: desk.arrange() }
@@ -415,9 +422,9 @@ ShellRoot {
                 Icon { required property string fileName
                        required property string filePath
                        required property bool fileIsDir
-                       readonly property var app: fileName.endsWith(".desktop") ? DesktopEntries.byId(fileName.slice(0, -8)) : null
-                       path: filePath; name: app ? app.name : fileName; isDir: fileIsDir; glyph: fileIsDir ? "folder" : "file"
-                       picture: app && app.icon ? Quickshell.iconPath(app.icon, true) : desk.pictureOf(fileName, filePath, fileIsDir) } }
+                       readonly property var app: desk.launchers[fileName] || null
+                       path: filePath; name: app && app.name ? app.name : fileName; isDir: fileIsDir; glyph: fileIsDir ? "folder" : (app ? "apps" : "file")
+                       picture: app && app.icon ? (app.icon.startsWith("/") ? "file://" + app.icon : Quickshell.iconPath(app.icon, true)) : desk.pictureOf(fileName, filePath, fileIsDir) } }
 
             // Properties: what a file is, in a small card where the eye is
             Rectangle { visible: desk.facts !== null; z: 50; anchors.centerIn: parent; width: 420; height: about.implicitHeight + 36; radius: 16
