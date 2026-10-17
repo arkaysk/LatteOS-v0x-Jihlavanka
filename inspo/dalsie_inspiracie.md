@@ -340,4 +340,11 @@ https://github.com/natepayn3/Vitreus
     https://github.com/natepayn3/Vitreus otvor zdrojovy kod vitreusu a prečitaj si v kode ako robi ake efekty.
     ako vizualizuje posuvniky
 
-    https://github.com/yannmasoch/nautilus-my-computer dalši file manager. 
+    https://github.com/yannmasoch/nautilus-my-computer dalši file manager.
+
+    integrovat služby ako :
+    -https://github.com/teamnewpipe/newpipe
+    -https://github.com/Stremio/stremio-web
+    -https://github.com/kodjodevf/mangayomi
+    -https://github.com/fmhy/edit
+    
