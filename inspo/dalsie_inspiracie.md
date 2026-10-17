@@ -330,3 +330,14 @@ https://github.com/natepayn3/Vitreus
     a pružina „drip“ pre rast karty z ucha (zásada 9); efekty, ktoré bežia iba počas pohybu (v pokoji nestoja nič,
     ROADMAP „Teraz“ bod 5); vlnka po hrane karty (`cardrip`) a vlna pri zámku (`lockwave`); farby z tapety iba pre
     akcent a materiál, nie pre kávu (R3·B). Kód iba ako predloha; prevzatý shader s uvedením v `TRETIE-STRANY.md`.
+
+    skvelo vyzerajuci ocean priamo v html https://github.com/Noniv/web-ocean
+
+    goo shader https://www.shadertoy.com/view/f3tXzX
+    https://www.shadertoy.com/view/3sySRK
+    https://www.shadertoy.com/view/7XtSD7 rain
+
+    https://github.com/natepayn3/Vitreus otvor zdrojovy kod vitreusu a prečitaj si v kode ako robi ake efekty.
+    ako vizualizuje posuvniky
+
+    https://github.com/yannmasoch/nautilus-my-computer dalši file manager. 
