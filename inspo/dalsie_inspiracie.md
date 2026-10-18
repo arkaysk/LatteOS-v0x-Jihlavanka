@@ -331,20 +331,25 @@ https://github.com/natepayn3/Vitreus
     ROADMAP „Teraz“ bod 5); vlnka po hrane karty (`cardrip`) a vlna pri zámku (`lockwave`); farby z tapety iba pre
     akcent a materiál, nie pre kávu (R3·B). Kód iba ako predloha; prevzatý shader s uvedením v `TRETIE-STRANY.md`.
 
-    skvelo vyzerajuci ocean priamo v html https://github.com/Noniv/web-ocean
+skvelo vyzerajuci ocean priamo v html https://github.com/Noniv/web-ocean
 
-    goo shader https://www.shadertoy.com/view/f3tXzX
+goo shader https://www.shadertoy.com/view/f3tXzX
     https://www.shadertoy.com/view/3sySRK
     https://www.shadertoy.com/view/7XtSD7 rain
 
-    https://github.com/natepayn3/Vitreus otvor zdrojovy kod vitreusu a prečitaj si v kode ako robi ake efekty.
+ https://github.com/natepayn3/Vitreus otvor zdrojovy kod vitreusu a prečitaj si v kode ako robi ake efekty.
     ako vizualizuje posuvniky
 
-    https://github.com/yannmasoch/nautilus-my-computer dalši file manager.
+ https://github.com/yannmasoch/nautilus-my-computer dalši file manager.
 
     integrovat služby ako :
     -https://github.com/teamnewpipe/newpipe
     -https://github.com/Stremio/stremio-web
     -https://github.com/kodjodevf/mangayomi
     -https://github.com/fmhy/edit
+    -https://github.com/GyulyVGC/sniffnet
+    
+
+https://github.com/trimstray/the-book-of-secret-knowledge    
+
     
