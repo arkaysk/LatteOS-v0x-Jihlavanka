@@ -253,6 +253,8 @@ COMPONENTS = [
      lambda: quiet("systemctl", "--user", "restart", "latte-idle.service")),
     ("icons", "Icons on the desktop", icons_wanted, lambda: running(r"^qs .*apps/desktop\.qml"),
      lambda: quiet("latte-desktop", "restart")),
+    ("focus", "Screen time", lambda: unit_active("latte-session.target"), lambda: unit_active("latte-focus.service"),
+     lambda: quiet("systemctl", "--user", "restart", "latte-focus.service")),
     ("wallpaper", "The wallpaper", lambda: unit_active("latte-session.target"), wallpaper_up,
      lambda: quiet("latte-wall", "restore")),
     ("clipboard", "Clipboard history", lambda: shutil.which("cliphist") is not None and shutil.which("wl-paste") is not None,

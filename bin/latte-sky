@@ -8,6 +8,7 @@ Prints one JSON object:
   wind        km/h
   now         {"temp", "code" (WMO), "kind" 1 clear … 7 storm, "icon"} or null without a forecast
   place, hours [{time, temp, code}], days [{weekday (0 Monday), max, min, code, rain %}]
+  now also "feels" (apparent temperature) and "humidity"; sunrise, sunset ("HH:MM", local today); aqi {value, level 0…5}
 """
 import datetime, json, math, os, re, sys, time, urllib.request
 
@@ -61,9 +62,9 @@ def forecast(lat, lon):
             return json.load(open(CACHE))
     except (OSError, ValueError):
         pass
-    url = ("https://api.open-meteo.com/v1/forecast?latitude=%s&longitude=%s&current=temperature_2m,weather_code,wind_speed_10m"
-           "&hourly=temperature_2m,weather_code&daily=weather_code,temperature_2m_max,temperature_2m_min,"
-           "precipitation_probability_max&timezone=auto&forecast_days=8" % (lat, lon))
+    url = ("https://api.open-meteo.com/v1/forecast?latitude=%s&longitude=%s&current=temperature_2m,weather_code,wind_speed_10m,"
+           "apparent_temperature,relative_humidity_2m&hourly=temperature_2m,weather_code&daily=weather_code,temperature_2m_max,"
+           "temperature_2m_min,precipitation_probability_max,sunrise,sunset&timezone=auto&forecast_days=8" % (lat, lon))
     try:
         d = json.load(urllib.request.urlopen(url, timeout=8))
     except Exception:
@@ -72,8 +73,12 @@ def forecast(lat, lon):
         except (OSError, ValueError):
             return {}
     cur, hourly, daily = d.get("current") or {}, d.get("hourly") or {}, d.get("daily") or {}
-    out = {"now": {"temp": round(cur.get("temperature_2m") or 0), "code": cur.get("weather_code", 3)},
-           "wind": round(cur.get("wind_speed_10m") or 0), "hours": [], "days": []}
+    out = {"now": {"temp": round(cur.get("temperature_2m") or 0), "code": cur.get("weather_code", 3),
+                   "feels": round(cur.get("apparent_temperature") if cur.get("apparent_temperature") is not None else (cur.get("temperature_2m") or 0)),
+                   "humidity": round(cur.get("relative_humidity_2m") or 0)},
+           "wind": round(cur.get("wind_speed_10m") or 0), "hours": [], "days": [],
+           "sunrise": ((daily.get("sunrise") or [""])[0] or "")[11:16], "sunset": ((daily.get("sunset") or [""])[0] or "")[11:16]}
+    out["aqi"] = air_quality(lat, lon)
     times = hourly.get("time") or []
     start = next((i for i, t in enumerate(times) if t[:13] == (cur.get("time") or "")[:13]), 0) + 1
     for i in range(start, min(start + 24, len(times)), 3):
@@ -89,6 +94,19 @@ def forecast(lat, lon):
     except OSError:
         pass
     return out
+
+
+def air_quality(lat, lon):
+    """The European air quality index now, and its word (Open-Meteo, no key); None where it is not known."""
+    url = "https://air-quality-api.open-meteo.com/v1/air-quality?latitude=%s&longitude=%s&current=european_aqi" % (lat, lon)
+    try:
+        v = (json.load(urllib.request.urlopen(url, timeout=8)).get("current") or {}).get("european_aqi")
+    except Exception:
+        return None
+    if v is None:
+        return None
+    v = round(v)
+    return {"value": v, "level": next(i for i, top in enumerate((20, 40, 60, 80, 100, 10 ** 6)) if v <= top)}     # 0 good … 5 extremely poor
 
 
 def kind(code):
@@ -119,7 +137,7 @@ def report(c=None, f=None):
     if now:
         now = dict(now, **dict(zip(("kind", "icon"), kind(int(code)))))
     out.update(rain=rain, snow=snow, wind=f.get("wind", 0), now=now, place=c.get("place", "").split(",")[0],
-               hours=f.get("hours") or [], days=f.get("days") or [])
+               hours=f.get("hours") or [], days=f.get("days") or [], sunrise=f.get("sunrise", ""), sunset=f.get("sunset", ""), aqi=f.get("aqi"))
     return out
 
 

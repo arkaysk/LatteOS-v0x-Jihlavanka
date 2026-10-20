@@ -1,0 +1,216 @@
+// The ClockGoo card as the reference picture drew it. Everything below is laid in that picture's own pixels (the card
+// is 592 × 550 there) and the whole group is scaled by 1.2 onto the card's corner; the logic (drops/clockgoo.luau,
+// fill_clock) tells only the texts and the numbers. It is drawn where card_custom is 1; the card's own frame, glass
+// and coffee are the card's (parts/card.plm).
+part Clock {
+    fact card_custom = 0                       // 1: the card is this and not rows
+    event clk_tab ->                           // the number of the tab: 0 overview · 1 timers and alarms · 2 weather in detail
+    event clk_dnd ->
+    event clk_layout ->
+    text ic_world = ""
+    text ic_dash = ""
+    text ic_alarm = ""
+    text ic_cloud = ""
+    text ic_sun = ""
+    text ic_arrow = ""
+    text ic_drop = ""
+    text ic_leaf = ""
+    text ic_bulb = ""
+    text ic_grid = ""
+    text ic_bell = ""
+    text ic_moon = ""
+    text clk_tab0 = ""
+    text clk_tab1 = ""
+    text clk_tab2 = ""
+    text clk_zone = ""
+    text clk_hm = ""
+    text clk_s = ""
+    text clk_ampm = ""
+    text clk_date = ""
+    text clk_week = ""
+    text clk_name1 = ""
+    text clk_name2 = ""
+    text clk_place = ""
+    text clk_aqi = ""
+    text clk_sky = ""
+    text clk_temp = ""
+    text clk_minmax = ""
+    text clk_feels = ""
+    text clk_rain = ""
+    text clk_rise = ""
+    text clk_set = ""
+    text clk_light = ""
+    text clk_t1l = ""
+    text clk_t1 = ""
+    text clk_t2l = ""
+    text clk_t2 = ""
+    text clk_g_sky = ""                        // glyphs of the icon font, told by the logic
+    text clk_g_t1 = ""
+    text clk_g_t2 = ""
+    text clk_w_title = ""
+    text clk_wb_head = ""
+    text clk_wb_sub = ""
+    text clk_wb_delta = ""
+    text clk_wb_tip = ""
+    text clk_wb_goal = ""
+    text clk_wb_off = ""
+    text clk_bed = ""
+    text clk_btn_layout = ""
+    text clk_btn_dnd = ""
+    fact clk_names = 0                         // there is a name day to tell
+    fact clk_day = 0                           // how far the daylight has gone: 0 … 1
+    fact clk_aqi_lv = 0                        // 0 excellent … 5 extremely poor
+    fact clk_aqi_on = 0
+    fact clk_weather = 0
+    fact clk_wb_on = 0                         // the screen time is kept
+    fact clk_wb_delta_on = 0
+    fact clk_wb_good = 1
+    fact clk_dnd_on = 0
+    model clkw max 6 { name: text; time: text; note: text; tag: text; home: bool; night: bool }
+    model clka max 3 { name: text; time: text; pct: number }
+    measure clk_hm_m
+    measure clk_name_m
+    measure clk_s_m
+    measure clk_temp_m
+    let clk.aqi = mix(#6fd39a, #e5484d, clamp(clk_aqi_lv / 4, 0, 1))
+
+    group {
+        show: card_custom > 0
+        move: card.x0, card.y0
+        pivot: 0, 0
+        scale: 1.2
+
+        // ── the tabs ──────────────────────────────────────────────────────────────────────────────────
+        box { from: 11, 7; size: 56, 19; corner: 9.5; color: #f7c873; opacity: 28% }
+        box { from: 11, 7; size: 56, 19; corner: 9.5; stroke: 1; color: #f7c873; opacity: 55% }
+        box { from: 75, 7; size: 98, 19; corner: 9.5; color: #4a372b; opacity: 50% }
+        box { from: 181, 7; size: 105, 19; corner: 9.5; color: #4a372b; opacity: 50% }
+        text ic_dash { at: 21, 16.5; anchor: center; size: 9; color: #f7c873; family: "tabler-icons" }
+        text ic_alarm { at: 86, 16.5; anchor: center; size: 9; color: #d6a468; family: "tabler-icons" }
+        text ic_cloud { at: 192, 16.5; anchor: center; size: 9; color: #d6a468; family: "tabler-icons" }
+        text clk_tab0 { at: 46, 16.5; anchor: center; size: 9.5; weight: 700; color: #f7c873; family: "Inter" }
+        text clk_tab1 { at: 130, 16.5; anchor: center; size: 9.5; weight: 600; color: #f5e8d8; family: "Inter" }
+        text clk_tab2 { at: 240, 16.5; anchor: center; size: 9.5; weight: 600; color: #f5e8d8; family: "Inter" }
+        zone box clk_tab_hit.0 { from: 11, 7; size: 56, 19; cursor: pointer; active: card_open and card_custom > 0; label: "{clk_tab0}" }
+        zone box clk_tab_hit.1 { from: 75, 7; size: 98, 19; cursor: pointer; active: card_open and card_custom > 0; label: "{clk_tab1}" }
+        zone box clk_tab_hit.2 { from: 181, 7; size: 105, 19; cursor: pointer; active: card_open and card_custom > 0; label: "{clk_tab2}" }
+        on press clk_tab_hit.0 { emit clk_tab(0) }
+        on press clk_tab_hit.1 { emit clk_tab(1) }
+        on press clk_tab_hit.2 { emit clk_tab(2) }
+
+        // ── the time ──────────────────────────────────────────────────────────────────────────────────
+        box { from: 22, 45; size: 219, 183; corner: 14; color: #1b120d; opacity: 55% }
+        box { from: 22, 45; size: 219, 183; corner: 14; stroke: 1; color: #f5e8d8; opacity: 9% }
+        text ic_world { at: 38, 61; anchor: center; size: 10; color: #d6a468; family: "tabler-icons" }
+        text clk_zone { at: 47, 61; anchor: left center; size: 7.5; weight: 700; color: #d6a468; width: 188; lines: 1; family: "Inter" }
+        text clk_hm { at: 30, 108; anchor: left center; size: 46; weight: 700; color: #f6e2cf; measure: clk_hm_m; family: "Inter" }
+        text clk_s { at: 33 + clk_hm_m.width, 115; anchor: left center; size: 22; weight: 600; color: #a98a70; measure: clk_s_m; family: "Inter" }
+        box { from: 39 + clk_hm_m.width + clk_s_m.width, 112; size: 22, 12; corner: 4; color: #4a372b; opacity: 80% }
+        text clk_ampm { at: 50 + clk_hm_m.width + clk_s_m.width, 118; anchor: center; size: 6.5; weight: 700; color: #b8a491; family: "Inter" }
+        text clk_date { at: 30, 154; anchor: left center; size: 11.5; weight: 700; color: #f5e8d8; width: 205; lines: 1; family: "Inter" }
+        box { from: 30, 166; size: 104, 15; corner: 7.5; stroke: 1; color: #f5e8d8; opacity: 28% }
+        text clk_week { at: 82, 173.5; anchor: center; size: 8; weight: 600; color: #f5e8d8; family: "Inter" }
+        box { from: 30, 187; size: 26 + clk_name_m.width, 19; corner: 9.5; stroke: 1; color: #d6a468; opacity: 50%; show: clk_names > 0 }
+        text ic_sun { at: 41, 196.5; anchor: center; size: 10; color: #d6a468; show: clk_names > 0; family: "tabler-icons" }
+        text clk_name1 { at: 50, 196.5; anchor: left center; size: 8.5; weight: 600; color: #f5e8d8; measure: clk_name_m; show: clk_names > 0; family: "Inter" }
+        text ic_arrow { at: 36, 221; anchor: center; size: 9; color: #b8a491; show: clk_names > 0; family: "tabler-icons" }
+        text clk_name2 { at: 46, 221; anchor: left center; size: 8.5; weight: 500; color: #b8a491; width: 185; lines: 1; show: clk_names > 0; family: "Inter" }
+
+        // ── the weather ───────────────────────────────────────────────────────────────────────────────
+        box { from: 256, 45; size: 325, 183; corner: 14; color: #1b120d; opacity: 55% }
+        box { from: 256, 45; size: 325, 183; corner: 14; stroke: 1; color: #f5e8d8; opacity: 9% }
+        text ic_sun { at: 273, 65; anchor: center; size: 10; color: #d6a468; family: "tabler-icons" }
+        text clk_place { at: 283, 65; anchor: left center; size: 7.5; weight: 700; color: #d6a468; width: 124; lines: 1; family: "Inter" }
+        box { from: 411, 56; size: 92, 18; corner: 9; color: clk.aqi; opacity: 14%; show: clk_aqi_on > 0 }
+        box { from: 411, 56; size: 92, 18; corner: 9; stroke: 1; color: clk.aqi; opacity: 55%; show: clk_aqi_on > 0 }
+        text ic_leaf { at: 421, 65; anchor: center; size: 9; color: clk.aqi; show: clk_aqi_on > 0; family: "tabler-icons" }
+        text clk_aqi { at: 430, 65; anchor: left center; size: 7.5; weight: 700; color: clk.aqi; width: 70; lines: 1; show: clk_aqi_on > 0; family: "Inter" }
+        box { from: 507, 56; size: 66, 18; corner: 9; color: #6b4a33; opacity: 90% }
+        text clk_sky { at: 540, 65; anchor: center; size: 8; weight: 600; color: #f5e8d8; width: 60; lines: 1; align: center; family: "Inter" }
+        text clk_temp { at: 268, 107; anchor: left center; size: 44; weight: 700; color: #f6e2cf; measure: clk_temp_m; family: "Inter" }
+        text "°C" { at: 270 + clk_temp_m.width, 99; anchor: left center; size: 17; weight: 600; color: #d6a468; family: "Inter" }
+        box { from: 342 + clk_temp_m.width - 54, 109; size: 82, 14; corner: 7; color: #4a372b; opacity: 80% }
+        text clk_minmax { at: 383 + clk_temp_m.width - 54, 116; anchor: center; size: 7.5; weight: 600; color: #f5e8d8; family: "Inter" }
+        text clk_feels { at: 268, 136; anchor: left center; size: 8.5; weight: 500; color: #b8a491; family: "Inter" }
+        text ic_drop { at: 362, 136; anchor: center; size: 8; color: #6fb7e8; family: "tabler-icons" }
+        text clk_rain { at: 369, 136; anchor: left center; size: 8.5; weight: 600; color: #f5e8d8; family: "Inter" }
+        box { from: 538, 87; size: 36, 36; corner: 11; color: #f7c873; opacity: 18% }
+        box { from: 538, 87; size: 36, 36; corner: 11; stroke: 1; color: #f7c873; opacity: 45% }
+        text clk_g_sky { at: 556, 105; anchor: center; size: 18; color: #f7c873; family: "tabler-icons" }
+        // the daylight
+        box { from: 271, 154; size: 298, 28; corner: 8; color: #000000; opacity: 22% }
+        box { from: 271, 154; size: 298, 28; corner: 8; stroke: 1; color: #f5e8d8; opacity: 8% }
+        text clk_rise { at: 281, 163; anchor: left center; size: 7.5; weight: 600; color: #b8a491; family: "Inter" }
+        text clk_light { at: 420, 163; anchor: center; size: 7.5; weight: 700; color: #f7c873; family: "Inter" }
+        text clk_set { at: 559, 163; anchor: right center; size: 7.5; weight: 600; color: #b8a491; family: "Inter" }
+        box { from: 281, 173; size: 278, 3; corner: 1.5; color: #f5e8d8; opacity: 14% }
+        box { from: 281, 173; size: 278 * clamp(clk_day, 0, 1), 3; corner: 1.5; color: #f7c873 }
+        // tomorrow and the day after
+        box { from: 271, 190; size: 144, 30; corner: 9; color: #000000; opacity: 22% }
+        box { from: 271, 190; size: 144, 30; corner: 9; stroke: 1; color: #f5e8d8; opacity: 8% }
+        text clk_t1l { at: 280, 199; anchor: left center; size: 7; weight: 500; color: #b8a491; family: "Inter" }
+        text clk_t1 { at: 280, 211; anchor: left center; size: 9; weight: 700; color: #f5e8d8; width: 110; lines: 1; family: "Inter" }
+        text clk_g_t1 { at: 400, 205; anchor: center; size: 14; color: #b8a491; family: "tabler-icons" }
+        box { from: 423, 190; size: 146, 30; corner: 9; color: #000000; opacity: 22% }
+        box { from: 423, 190; size: 146, 30; corner: 9; stroke: 1; color: #f5e8d8; opacity: 8% }
+        text clk_t2l { at: 432, 199; anchor: left center; size: 7; weight: 500; color: #b8a491; family: "Inter" }
+        text clk_t2 { at: 432, 211; anchor: left center; size: 9; weight: 700; color: #f5e8d8; width: 112; lines: 1; family: "Inter" }
+        text clk_g_t2 { at: 553, 205; anchor: center; size: 14; color: #f7c873; family: "tabler-icons" }
+
+        // ── the world clocks ──────────────────────────────────────────────────────────────────────────
+        text ic_world { at: 22, 252; anchor: center; size: 12; color: #d6a468; family: "tabler-icons" }
+        text clk_w_title { at: 36, 252; anchor: left center; size: 12.5; weight: 700; color: #f5e8d8; family: "Inter" }
+        for w in clkw {
+            box { from: 13 + w.index * 114, 270; size: 106, 70; corner: 11; color: #1b120d; opacity: 50% }
+            box { from: 13 + w.index * 114, 270; size: 106, 70; corner: 11; stroke: if(w.home, 1.5, 1); color: if(w.home, #f7c873, #f5e8d8); opacity: if(w.home, 70%, 9%) }
+            text w.name { at: 23 + w.index * 114, 284; anchor: left center; size: 9; weight: 700; color: #f5e8d8; width: 70; lines: 1; family: "Inter" }
+            text ic_moon { at: 107 + w.index * 114, 284; anchor: center; size: 9; color: #b8a491; show: w.night; family: "tabler-icons" }
+            text ic_sun { at: 107 + w.index * 114, 284; anchor: center; size: 9; color: #f7c873; show: not w.night; family: "tabler-icons" }
+            text w.time { at: 23 + w.index * 114, 308; anchor: left center; size: 21; weight: 700; color: #f6e2cf; family: "Inter" }
+            box { from: 23 + w.index * 114, 322; size: 34, 11; corner: 4; color: #4a372b; opacity: 85%; show: w.home }
+            text w.note { at: 40 + w.index * 114, 327.5; anchor: center; size: 6.5; weight: 600; color: #b8a491; width: 34; lines: 1; align: center; show: w.home; family: "Inter" }
+            text w.note { at: 23 + w.index * 114, 327.5; anchor: left center; size: 6.5; weight: 600; color: #b8a491; width: 64; lines: 1; show: not w.home; family: "Inter" }
+            text w.tag { at: 117 + w.index * 114, 327.5; anchor: right center; size: 6.5; weight: 600; color: #f5e8d8; family: "Inter" }
+        }
+
+        // ── the digital wellbeing ─────────────────────────────────────────────────────────────────────
+        box { from: 13, 360; size: 568, 132; corner: 14; color: #1b120d; opacity: 55% }
+        box { from: 13, 360; size: 568, 132; corner: 14; stroke: 1; color: #f5e8d8; opacity: 9% }
+        text ic_bulb { at: 30, 382; anchor: center; size: 12; color: #d6a468; family: "tabler-icons" }
+        text clk_wb_head { at: 44, 382; anchor: left center; size: 12.5; weight: 700; color: #f5e8d8; family: "Inter" }
+        box { from: 395, 373; size: 172, 18; corner: 9; color: if(clk_wb_good > 0, #6fd39a, #e5a84a); opacity: 14%; show: clk_wb_delta_on > 0 }
+        box { from: 395, 373; size: 172, 18; corner: 9; stroke: 1; color: if(clk_wb_good > 0, #6fd39a, #e5a84a); opacity: 55%; show: clk_wb_delta_on > 0 }
+        text clk_wb_delta { at: 481, 382; anchor: center; size: 7.5; weight: 700; color: if(clk_wb_good > 0, #6fd39a, #e5a84a); width: 164; lines: 1; align: center; show: clk_wb_delta_on > 0; family: "Inter" }
+        text clk_wb_sub { at: 30, 403; anchor: left center; size: 8.5; weight: 500; color: #b8a491; width: 530; lines: 1; show: clk_wb_on > 0; family: "Inter" }
+        text clk_wb_off { at: 30, 430; anchor: left center; size: 9; weight: 500; color: #b8a491; width: 530; lines: 2; show: clk_wb_on < 1; family: "Inter" }
+        for a in clka {
+            box { from: 30 + a.index * 180, 416; size: 172, 32; corner: 8; color: #000000; opacity: 22%; show: clk_wb_on > 0 }
+            box { from: 30 + a.index * 180, 416; size: 172, 32; corner: 8; stroke: 1; color: #f5e8d8; opacity: 8%; show: clk_wb_on > 0 }
+            box { from: 38 + a.index * 180, 427; size: 5, 5; corner: 2.5; color: #f7c873; opacity: 100%; show: clk_wb_on > 0 }
+            text a.name { at: 48 + a.index * 180, 429.5; anchor: left center; size: 8; weight: 600; color: #f5e8d8; width: 80; lines: 1; show: clk_wb_on > 0; family: "Inter" }
+            text a.time { at: 194 + a.index * 180, 429.5; anchor: right center; size: 7.5; weight: 600; color: #b8a491; show: clk_wb_on > 0; family: "Inter" }
+            box { from: 38 + a.index * 180, 438; size: 156, 4; corner: 2; color: #f5e8d8; opacity: 12%; show: clk_wb_on > 0 }
+            box { from: 38 + a.index * 180, 438; size: 156 * clamp(a.pct, 0, 1), 4; corner: 2; color: #f7c873; show: clk_wb_on > 0 }
+        }
+        box { from: 30, 458; size: 536, 1; color: #f5e8d8; opacity: 8%; show: clk_wb_on > 0 }
+        text ic_bulb { at: 40, 474; anchor: center; size: 9; color: #d6a468; show: clk_wb_on > 0; family: "tabler-icons" }
+        text clk_wb_tip { at: 50, 474; anchor: left center; size: 7.5; weight: 500; color: #b8a491; width: 380; lines: 1; show: clk_wb_on > 0; family: "Inter" }
+        text clk_wb_goal { at: 566, 474; anchor: right center; size: 7.5; weight: 700; color: #f5e8d8; show: clk_wb_on > 0; family: "Inter" }
+
+        // ── the foot, on the coffee ───────────────────────────────────────────────────────────────────
+        box { from: 12, 529; size: 5, 5; corner: 2.5; color: #f7c873 }
+        text clk_bed { at: 23, 531.5; anchor: left center; size: 8; weight: 600; color: #f5e8d8; width: 330; lines: 1; family: "Inter" }
+        box { from: 384, 521; size: 99, 21; corner: 10.5; color: #4a372b; opacity: 60% }
+        box { from: 384, 521; size: 99, 21; corner: 10.5; stroke: 1; color: #f5e8d8; opacity: 12% }
+        text ic_grid { at: 397, 531.5; anchor: center; size: 9; color: #d6a468; family: "tabler-icons" }
+        text clk_btn_layout { at: 406, 531.5; anchor: left center; size: 8; weight: 600; color: #f5e8d8; width: 74; lines: 1; family: "Inter" }
+        box { from: 489, 521; size: 89, 21; corner: 10.5; color: if(clk_dnd_on > 0, #f7c873, #4a372b); opacity: if(clk_dnd_on > 0, 30%, 60%) }
+        box { from: 489, 521; size: 89, 21; corner: 10.5; stroke: 1; color: if(clk_dnd_on > 0, #f7c873, #f5e8d8); opacity: if(clk_dnd_on > 0, 70%, 12%) }
+        text ic_bell { at: 502, 531.5; anchor: center; size: 9; color: if(clk_dnd_on > 0, #f7c873, #d6a468); family: "tabler-icons" }
+        text clk_btn_dnd { at: 511, 531.5; anchor: left center; size: 8; weight: 600; color: #f5e8d8; width: 64; lines: 1; family: "Inter" }
+        zone box clk_layout_hit { from: 384, 521; size: 99, 21; cursor: pointer; active: card_open and card_custom > 0; label: "{clk_btn_layout}" }
+        zone box clk_dnd_hit { from: 489, 521; size: 89, 21; cursor: pointer; active: card_open and card_custom > 0; label: "{clk_btn_dnd}"; selected: clk_dnd_on > 0 }
+        on press clk_layout_hit { emit clk_layout }
+        on press clk_dnd_hit { emit clk_dnd }
+    }
+}

@@ -28,7 +28,7 @@
 -- function(text) }; `submit` returns true to keep what was typed, `secret` hides it as a password.
 -- `tiles`: the rows between two headings are laid as a tile, a card within the card (rules between them are
 -- dropped: the tile is what holds them together).
--- Options: `uniform` is for a family of cards of one size (LensGoo's modes). `menu` makes it a classic context menu (at the pointer, solid, no ear). `pane` (0…1) makes the card glass above its `wave` row and solid coffee below it. `keep` refreshes an open card in place (live figures): the rows do not come in again and the row
+-- Options: `custom` ("clock") draws a scene of its own instead of rows, `split` says where its coffee begins. `uniform` is for a family of cards of one size (LensGoo's modes). `menu` makes it a classic context menu (at the pointer, solid, no ear). `pane` (0…1) makes the card glass above its `wave` row and solid coffee below it. `keep` refreshes an open card in place (live figures): the rows do not come in again and the row
 -- chosen with the keys stays.
 local icons = require("lib/icons")
 local M = {}
@@ -238,6 +238,7 @@ function M.open(rows, opts)
 
     fact.card_pane = opts.pane or 0
     fact.card_menu = opts.menu == true
+    fact.card_custom = opts.custom == "clock" and 1 or 0       -- the card is a scene of its own (parts/clock.plm), not rows
     -- where the coffee of a `wave` row begins: the heights of the rows above it, as parts/rows.plm lays them out
     local split, waved = (#tabs > 0 and 44 or 0) + (opts.field and 46 or 0), false
     for _, r in ipairs(out) do
@@ -246,7 +247,7 @@ function M.open(rows, opts)
         if r.kind == "pills" then h = r.per <= 2 and 60 or 46 elseif r.kind == "tiles" then h = r.per <= 2 and 66 or 88 end
         split = split + (h or 0) + (r.line and 14 or 0)
     end
-    fact.card_split = waved and split + 4 or 0
+    fact.card_split = opts.split or (waved and split + 4 or 0)
     fact.card_dock, fact.card_dock_w = opts.dock ~= nil, tonumber(opts.dock) or 0
     fact.card_strip = opts.strip == true          -- its owner is stretched into a strip: the card grows out of all of it
 
@@ -287,7 +288,7 @@ function M.open(rows, opts)
     fact.card_w = math.floor((opts.width or 250) * 1.2)
     fact.card_min = opts.min_height or 0
     fact.card_field = field ~= nil
-    fact.card_open = #out > 0 or field ~= nil
+    fact.card_open = #out > 0 or field ~= nil or opts.custom ~= nil
     tell()
 end
 

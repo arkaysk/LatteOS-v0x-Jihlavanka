@@ -1,0 +1,158 @@
+#!/usr/bin/env python3
+"""latte-focus: how long the screen was in front of the user, and in which program. It is what ClockGoo's
+"Digital wellbeing" shows.
+
+  latte-focus watch      the logger (a user service): the program whose window has the focus is counted, a second at a
+                         time, while the session is not locked; kept in ~/.local/share/latteos/focus/YYYY-MM-DD.json
+  latte-focus set KEY VALUE   log on|off · goal HOURS · bedtime HH:MM (kept in ~/.config/latteos/wellbeing.json)
+  latte-focus today      {"total", "apps": {class: seconds}, "yesterday", "streak" (minutes since the last rest),
+                         "goal" (hours), "bedtime"} — what the card shows
+
+It is the user's own: nothing leaves the computer, and it can be switched off (log = false in ~/.config/latteos/wellbeing.json,
+which Settings › Digital wellbeing writes; a goal in hours and a bedtime are there too). A rest is a lock of five minutes
+or more, or the session being left alone that long.
+"""
+import datetime, json, os, socket, subprocess, sys, time
+
+DATA = os.path.join(os.environ.get("XDG_DATA_HOME") or os.path.expanduser("~/.local/share"), "latteos", "focus")
+CONF = os.path.join(os.environ.get("XDG_CONFIG_HOME") or os.path.expanduser("~/.config"), "latteos", "wellbeing.json")
+REST = 300
+
+
+def settings():
+    d = {"log": True, "goal": 6, "bedtime": "23:00"}
+    try:
+        with open(CONF) as f:
+            d.update(json.load(f))
+    except (OSError, ValueError):
+        pass
+    return d
+
+
+def day_file(day=None):
+    return os.path.join(DATA, (day or datetime.date.today()).isoformat() + ".json")
+
+
+def load(day=None):
+    try:
+        with open(day_file(day)) as f:
+            return json.load(f)
+    except (OSError, ValueError):
+        return {"total": 0, "apps": {}, "rested": time.time()}
+
+
+def save(d):
+    os.makedirs(DATA, exist_ok=True)
+    tmp = day_file() + ".new"
+    with open(tmp, "w") as f:
+        json.dump(d, f)
+    os.replace(tmp, day_file())
+
+
+def locked():
+    sid = os.environ.get("XDG_SESSION_ID", "")
+    if not sid:
+        return False
+    try:
+        out = subprocess.run(["loginctl", "show-session", sid, "-p", "LockedHint", "--value"], capture_output=True, text=True, timeout=4).stdout
+    except (OSError, subprocess.TimeoutExpired):
+        return False
+    return out.strip() == "yes"
+
+
+def hypr_events():
+    path = os.path.join(os.environ.get("XDG_RUNTIME_DIR", "/run/user/%d" % os.getuid()), "hypr", os.environ.get("HYPRLAND_INSTANCE_SIGNATURE", ""), ".socket2.sock")
+    s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+    s.settimeout(1.0)
+    s.connect(path)
+    return s
+
+
+def watch():
+    import select
+    current, last, away_since, today = "", time.time(), None, datetime.date.today()
+    try:                                                 # what has the focus now, before the first event says so
+        current = json.loads(subprocess.run(["hyprctl", "-j", "activewindow"], capture_output=True, text=True, timeout=4).stdout or "{}").get("class", "")
+    except (OSError, ValueError, subprocess.TimeoutExpired):
+        pass
+    data = load()
+    link, buf, flushed = None, b"", 0.0
+    while True:
+        if link is None:
+            try:
+                link = hypr_events()
+            except OSError:
+                time.sleep(5)
+                continue
+        try:
+            ready = select.select([link], [], [], 1.0)[0]
+            if ready:
+                chunk = link.recv(4096)
+                if not chunk:
+                    link = None
+                    continue
+                buf += chunk
+        except OSError:
+            link = None
+            continue
+        while b"\n" in buf:
+            line, _, buf = buf.partition(b"\n")
+            text = line.decode(errors="replace")
+            if text.startswith("activewindow>>"):
+                current = text.split(">>", 1)[1].split(",", 1)[0]
+        now = time.time()
+        if datetime.date.today() != today:                 # a new day starts a new file
+            save(data)
+            today, data = datetime.date.today(), load()
+        if now - last >= 1:
+            gone = locked() if int(now) % 10 == 0 else (away_since is not None)
+            if gone:
+                away_since = away_since or now
+            else:
+                if away_since is not None and now - away_since >= REST:
+                    data["rested"] = now                    # the user was away long enough: that was a rest
+                away_since = None
+                if current and settings()["log"]:
+                    data["apps"][current] = data["apps"].get(current, 0) + (now - last)
+                    data["total"] = data.get("total", 0) + (now - last)
+            last = now
+        if now - flushed > 15:
+            save(data)
+            flushed = now
+
+
+def today():
+    cfg, d = settings(), load()
+    yesterday = load(datetime.date.today() - datetime.timedelta(days=1))
+    return {"total": round(d.get("total", 0)), "apps": {k: round(v) for k, v in sorted(d.get("apps", {}).items(), key=lambda kv: -kv[1])[:6]},
+            "yesterday": round(yesterday.get("total", 0)), "streak": round((time.time() - d.get("rested", time.time())) / 60),
+            "goal": cfg["goal"], "bedtime": cfg["bedtime"], "log": cfg["log"]}
+
+
+def set_choice(key, value):
+    d = settings()
+    if key == "log" and value in ("on", "off"):
+        d["log"] = value == "on"
+    elif key == "goal" and value.isdigit() and 1 <= int(value) <= 24:
+        d["goal"] = int(value)
+    elif key == "bedtime" and len(value) == 5 and value[2] == ":" and value[:2].isdigit() and value[3:].isdigit():
+        d["bedtime"] = value
+    else:
+        return 2
+    os.makedirs(os.path.dirname(CONF), exist_ok=True)
+    with open(CONF + ".new", "w") as f:
+        json.dump(d, f)
+    os.replace(CONF + ".new", CONF)
+    return 0
+
+
+if __name__ == "__main__":
+    if sys.argv[1:2] == ["set"] and len(sys.argv) == 4:
+        sys.exit(set_choice(sys.argv[2], sys.argv[3]))
+    if sys.argv[1:] == ["watch"]:
+        watch()
+    elif sys.argv[1:] == ["today"]:
+        print(json.dumps(today()))
+    else:
+        print(__doc__.strip(), file=sys.stderr)
+        sys.exit(2)

@@ -10,6 +10,7 @@ local E = require("lib/engine")
 local card = require("lib/card")
 local open = require("lib/open")
 local timers = require("lib/timers")
+local icons = require("lib/icons")
 -- N marks a text for the translation table (tests/check.sh looks for it); tr() translates it where it is shown.
 local function N(s) return s end
 
@@ -239,74 +240,249 @@ local function sky_glyph(code)
     if (code >= 51 and code <= 67) or (code >= 80 and code <= 82) then return "cloud-rain" end
     return "cloud"
 end
--- the world clocks: the first is home. zones.json in the scene's folder may list others: [{ "zone": "Asia/Tokyo", "name": "Tokyo" }]
-local ZONES = {
-    { zone = "Europe/Bratislava", name = N("Bratislava") }, { zone = "Europe/London", name = N("London") }, { zone = "Asia/Tokyo", name = N("Tokyo") },
-    { zone = "America/New_York", name = N("New York") }, { zone = "America/Los_Angeles", name = N("Los Angeles") },
+-- ── the card, as the reference drew it: the scene (parts/clock.plm) is told the texts and the numbers ─────────────
+-- the world clocks: the first is home. zones.json in the scene's folder holds the user's own list (the card's Change layout writes it)
+local PRESETS = {
+    { zone = "Europe/Bratislava", name = N("Bratislava"), country = N("Slovakia") }, { zone = "Europe/London", name = N("London"), country = N("United Kingdom") },
+    { zone = "Asia/Tokyo", name = N("Tokyo"), country = N("Japan") }, { zone = "America/New_York", name = N("New York"), country = N("USA (East)") },
+    { zone = "America/Los_Angeles", name = N("San Francisco"), country = N("USA (West)") }, { zone = "Europe/Paris", name = N("Paris"), country = N("France") },
+    { zone = "Europe/Berlin", name = N("Berlin"), country = N("Germany") }, { zone = "Europe/Prague", name = N("Prague"), country = N("Czechia") },
+    { zone = "Europe/Kyiv", name = N("Kyiv"), country = N("Ukraine") }, { zone = "Asia/Dubai", name = N("Dubai"), country = N("United Arab Emirates") },
+    { zone = "Asia/Shanghai", name = N("Shanghai"), country = N("China") }, { zone = "Australia/Sydney", name = N("Sydney"), country = N("Australia") },
 }
+local DEFAULT_ZONES = { PRESETS[1], PRESETS[2], PRESETS[3], PRESETS[4], PRESETS[5] }
 local world, world_at = {}, 0
 local function zones()
     local ok, saved = pcall(sys.ask, "files.read", "zones.json", "json")
     if ok and type(saved) == "table" and #saved > 0 then return saved end
-    return ZONES
+    return DEFAULT_ZONES
 end
+local function write_zones(list) pcall(sys.call, "files.write", "zones.json", list) world_at = 0 end
 -- asks the system what time it is in each (date knows the zones), at most every half minute
-local function learn_world(redraw)
+local function learn_world()
     if os.clock() - world_at < 30 and #world > 0 then return end
     world_at = os.clock()
     local list, command = zones(), {}
     for i, z in ipairs(list) do
         if i > 6 then break end
-        if type(z.zone) == "string" and z.zone:match("^[%w_/%-%+]+$") then command[#command + 1] = "TZ=" .. z.zone .. " date '+%H:%M %z'" end
+        if type(z.zone) == "string" and z.zone:match("^[%w_/%-%+]+$") then command[#command + 1] = "TZ=" .. z.zone .. " date '+%H:%M %z %Z'" end
     end
     if #command == 0 then return end
     run("sh", { "-c", table.concat(command, "; ") }, function(out)
-        local lines, here = {}, tonumber(os.date("%z")) or 0
-        for time, sign, hh, mm in (out or ""):gmatch("(%d%d:%d%d) ([%+%-])(%d%d)(%d%d)") do
+        local here, lines = tonumber(os.date("%z")) or 0, {}
+        for time, sign, hh, mm, abbr in (out or ""):gmatch("(%d%d:%d%d) ([%+%-])(%d%d)(%d%d) (%S+)") do
             local diff = (tonumber(hh) + tonumber(mm) / 60) * (sign == "-" and -1 or 1) - math.floor(here / 100) - (here % 100) / 60
-            lines[#lines + 1] = { time = time, diff = diff }
+            lines[#lines + 1] = { time = time, diff = diff, abbr = abbr }
         end
         world = {}
         for i, line in ipairs(lines) do
             local z = list[i]
-            if z then world[#world + 1] = { name = z.name or z.zone, time = line.time, diff = line.diff, home = i == 1 } end
+            if z then world[#world + 1] = { name = z.name or z.zone, country = z.country or "", time = line.time, diff = line.diff, abbr = line.abbr, home = i == 1 } end
         end
-        if redraw then redraw() end
     end)
 end
-local function overview(again)
+
+local SKY_NAMES = { [0] = N("Clear sky"), N("Mostly clear"), N("Partly cloudy"), N("Overcast") }
+local function sky_name(code)
+    code = tonumber(code) or 3
+    if SKY_NAMES[code] then return tr(SKY_NAMES[code]) end
+    if code == 45 or code == 48 then return tr("Fog") end
+    if code >= 95 then return tr("Thunderstorm") end
+    if (code >= 71 and code <= 77) or code == 85 or code == 86 then return tr("Snow") end
+    if code >= 80 and code <= 82 then return tr("Showers") end
+    if code >= 61 and code <= 67 then return tr("Rain") end
+    if code >= 51 and code <= 57 then return tr("Drizzle") end
+    return tr("Overcast")
+end
+local AQI = { N("Excellent"), N("Good"), N("Moderate"), N("Poor"), N("Very poor"), N("Extremely poor") }
+local function aqi_level(v) return v <= 25 and 0 or (v <= 50 and 1 or (v <= 75 and 2 or (v <= 100 and 3 or (v <= 150 and 4 or 5)))) end
+-- the long names of the time zones a user is likely to be in (the abbreviation and the offset come from the system)
+local ZONE_NAMES = { CET = N("CENTRAL EUROPEAN TIME"), CEST = N("CENTRAL EUROPEAN SUMMER TIME"), GMT = N("GREENWICH MEAN TIME"), BST = N("BRITISH SUMMER TIME"),
+                     UTC = N("COORDINATED UNIVERSAL TIME"), EET = N("EASTERN EUROPEAN TIME"), EEST = N("EASTERN EUROPEAN SUMMER TIME"), WET = N("WESTERN EUROPEAN TIME"),
+                     EST = N("EASTERN STANDARD TIME"), EDT = N("EASTERN DAYLIGHT TIME"), PST = N("PACIFIC STANDARD TIME"), PDT = N("PACIFIC DAYLIGHT TIME") }
+
+local focus = { total = 0, apps = {}, yesterday = 0, streak = 0, goal = 6, bedtime = "23:00", log = true }
+local nameday = { today = "", tomorrow = "" }
+local here_abbr = ""
+local function learn_focus()
+    run("latte-focus", { "today" }, function(out)
+        local ok, t = pcall(json.decode, out or "")
+        if ok and type(t) == "table" then focus = t end
+    end)
+end
+local function learn_nameday()
+    run("latte-nameday", {}, function(out)
+        local ok, t = pcall(json.decode, out or "")
+        if ok and type(t) == "table" then nameday = t end
+    end)
+end
+local function learn_abbr()
+    run("date", { "+%Z" }, function(out) here_abbr = (out or ""):match("%S+") or "" end)
+end
+local function hours(sec)
+    sec = math.floor(tonumber(sec) or 0)
+    return (sec >= 3600 and (sec // 3600 .. "h ") or "") .. (sec % 3600) // 60 .. "m"
+end
+local function minutes_of(hhmm)
+    local h, m = tostring(hhmm or ""):match("^(%d+):(%d+)$")
+    return h and (tonumber(h) * 60 + tonumber(m)) or nil
+end
+-- the app's name as the launcher knows it, from the class of its window
+local function app_name(class, apps)
+    for _, a in ipairs(apps or {}) do
+        if a.wmclass and a.wmclass:lower() == tostring(class):lower() then return a.local_name or a.name or class end
+    end
+    return class
+end
+-- capitals for the letters of the languages of the desktop (string.upper knows only ASCII)
+local UP = {}
+for lower, capital in pairs({ [0xE1] = 0xC1, [0xE4] = 0xC4, [0x10D] = 0x10C, [0x10F] = 0x10E, [0xE9] = 0xC9, [0x11B] = 0x11A, [0xED] = 0xCD, [0x13A] = 0x139, [0x13E] = 0x13D,
+                              [0x148] = 0x147, [0xF3] = 0xD3, [0xF4] = 0xD4, [0xF6] = 0xD6, [0x155] = 0x154, [0x159] = 0x158, [0x161] = 0x160, [0x165] = 0x164, [0xFA] = 0xDA,
+                              [0x16F] = 0x16E, [0xFC] = 0xDC, [0xFD] = 0xDD, [0x17E] = 0x17D }) do UP[utf8.char(lower)] = utf8.char(capital) end
+local function upper(s) return (s:gsub(utf8.charpattern, function(c) return UP[c] or c:upper() end)) end
+local fill_apps = {}                          -- the apps the launcher lists (LensGoo keeps them; ClockGoo asks the same service)
+
+-- everything the scene shows, once a second while the card is open
+local function fill_clock()
     local t = os.date("*t")
-    -- the week as ISO 8601 counts it, Monday first
     local week = (t.yday - ((t.wday + 5) % 7 + 1) + 10) // 7
     if week < 1 then week = 52 end
-    local rows = {
-        { big = true, label = os.date("%H:%M:%S") },
-        { glyph = "calendar", label = tr(WEEKDAYS[t.wday]) .. "  " .. t.day .. ". " .. t.month .. ". " .. t.year, hint = tr("week") .. " " .. week, quiet = true },
-    }
-    local parts = {}
-    local alarm = timers.next_alarm()
-    if alarm then parts[#parts + 1] = tr("Alarm") .. " " .. alarm.time end
-    local running, _, left = timers.timer()
-    if running then parts[#parts + 1] = tr("Timer") .. " " .. timers.clock(left + 999) end
-    if #parts > 0 then rows[#rows + 1] = { glyph = "alarm", label = table.concat(parts, "  ·  "), quiet = true } end
-    -- the sky above the place: how it is, and how far the day has gone
-    if sky and sky.now then
-        local today = type(sky.days) == "table" and sky.days[1]
-        rows[#rows + 1] = { line = true, glyph = sky_glyph(sky.now.code), label = tostring(sky.now.temp) .. " °C" .. ((sky.place or "") ~= "" and ("  ·  " .. sky.place) or ""),
-                            hint = today and (today.max .. "° / " .. today.min .. "°") or "", quiet = true }
-        local day = type(sky.sun) == "table" and tonumber(sky.sun.t)
-        if day and day >= 0 then rows[#rows + 1] = { glyph = "sun-low", label = tr("Daylight"), bar = day, hint = math.floor(day * 100) .. " %", quiet = true } end
-    end
-    if #world > 0 then
-        rows[#rows + 1] = { head = true, label = tr("WORLD CLOCKS"), line = true }
-        for _, w in ipairs(world) do
-            local diff = w.home and tr("home") or (w.diff == 0 and "±0 h" or string.format("%+g h", w.diff))
-            rows[#rows + 1] = { glyph = w.home and "home-2" or "world", label = tr(w.name), hint = w.time .. "  ·  " .. diff, quiet = true }
+    text.clk_tab0, text.clk_tab1, text.clk_tab2 = tr("Overview"), tr("Timers and alarms"), tr("Weather in detail")
+    text.ic_world, text.ic_sun, text.ic_moon, text.ic_arrow, text.ic_drop = icons["world"], icons["sun"], icons["moon"], icons["arrow-right"], icons["droplet"]
+    text.ic_leaf, text.ic_bulb, text.ic_grid, text.ic_bell = icons["leaf"], icons["bulb"], icons["layout-grid"], icons["bell-off"]
+    text.ic_dash, text.ic_alarm, text.ic_cloud = icons["layout-dashboard"], icons["alarm"], icons["cloud"]
+    -- the time
+    local off = tonumber(os.date("%z")) or 0
+    local utc = string.format("UTC%s%d", off < 0 and "-" or "+", math.abs(off) // 100)
+    text.clk_zone = (ZONE_NAMES[here_abbr] and tr(ZONE_NAMES[here_abbr]) or here_abbr) .. " (" .. tr(here_abbr) .. " / " .. utc .. ")"
+    text.clk_hm, text.clk_s, text.clk_ampm = os.date("%H:%M"), ":" .. os.date("%S"), tr(t.hour < 12 and "AM" or "PM")
+    text.clk_date = tr(WEEKDAYS[t.wday]) .. ", " .. t.day .. ". " .. tr(MONTHS[t.month]) .. " " .. t.year
+    text.clk_week = week .. ". " .. tr("calendar week")
+    fact.clk_names = nameday.today ~= "" and 1 or 0
+    text.clk_name1 = tr("Name day today:") .. " " .. nameday.today
+    text.clk_name2 = tr("Tomorrow:") .. " " .. nameday.tomorrow
+    -- the weather
+    local now = sky and sky.now
+    fact.clk_weather = now and 1 or 0
+    if now then
+        local days = type(sky.days) == "table" and sky.days or {}
+        text.clk_place = upper((sky.place or "") ~= "" and (sky.place .. " · ") or "") .. tr("NOW")
+        text.clk_temp = tostring(now.temp)
+        text.clk_sky = sky_name(now.code)
+        text.clk_g_sky = icons[sky_glyph(now.code)] or icons["cloud"]
+        if days[1] then text.clk_minmax = tr("Min") .. " " .. days[1].min .. "° / " .. tr("Max") .. " " .. days[1].max .. "°" end
+        text.clk_feels = tr("Feels like:") .. " " .. tostring(now.feels or now.temp) .. "°C"
+        text.clk_rain = (days[1] and days[1].rain or 0) .. "% " .. tr("rain")
+        local aqi = sky.aqi
+        fact.clk_aqi_on = type(aqi) == "table" and 1 or 0
+        if type(aqi) == "table" then
+            local lv = aqi_level(tonumber(aqi.value) or 0)
+            fact.clk_aqi_lv = lv
+            text.clk_aqi = "AQI " .. aqi.value .. " · " .. tr(AQI[lv + 1])
+        end
+        local d2, d3 = days[2], days[3]
+        if d2 then text.clk_t1l, text.clk_t1, text.clk_g_t1 = tr("Tomorrow"), d2.max .. "°C · " .. sky_name(d2.code), icons[sky_glyph(d2.code)] or icons["cloud"] end
+        if d3 then text.clk_t2l, text.clk_t2, text.clk_g_t2 = tr(WEEKDAYS[((tonumber(d3.weekday) or 0) + 1) % 7 + 1]), d3.max .. "°C · " .. sky_name(d3.code), icons[sky_glyph(d3.code)] or icons["cloud"] end
+        -- the daylight: from the sunrise to the sunset
+        local rise, set = minutes_of(sky.sunrise), minutes_of(sky.sunset)
+        if rise and set then
+            local minute = t.hour * 60 + t.min
+            text.clk_rise, text.clk_set = tr("Sunrise") .. " " .. sky.sunrise, tr("Sunset") .. " " .. sky.sunset
+            fact.clk_day = math.max(0, math.min(1, (minute - rise) / math.max(1, set - rise)))
+            if minute >= rise and minute < set then
+                text.clk_light = string.format(tr("%dh %dm of light left"), (set - minute) // 60, (set - minute) % 60)
+            else
+                text.clk_light = tr("The sun is below the horizon")
+            end
         end
     end
-    learn_world(again)
-    return rows
+    -- the world
+    text.clk_w_title = tr("World clocks & Metropolises")
+    local list = {}
+    for _, w in ipairs(world) do
+        local hour = tonumber(w.time:match("^(%d+)")) or 12
+        local diff = w.home and "+0h" or string.format("%+gh", w.diff)
+        list[#list + 1] = { name = tr(w.name), time = w.time, home = w.home, night = hour < 6 or hour >= 20,
+                            note = w.home and tr("Home") or tr(w.country), tag = diff .. " " .. (w.home and tr(here_abbr) or tr(w.abbr)) }
+    end
+    model.clkw = list
+    -- the screen time
+    text.clk_wb_head = tr("Digital wellbeing")
+    fact.clk_wb_on = focus.log and 1 or 0
+    if focus.log then
+        local total = tonumber(focus.total) or 0
+        local top, shares = nil, {}
+        for name, secs in pairs(focus.apps or {}) do shares[#shares + 1] = { class = name, secs = secs } end
+        table.sort(shares, function(x, y) return x.secs > y.secs end)
+        local rows = {}
+        for i = 1, math.min(3, #shares) do
+            local x = shares[i]
+            rows[i] = { name = app_name(x.class, fill_apps), time = hours(x.secs) .. " (" .. math.floor(100 * x.secs / math.max(total, 1) + 0.5) .. "%)", pct = x.secs / math.max(total, 1) }
+        end
+        model.clka = rows
+        text.clk_wb_sub = tr("Today") .. " " .. hours(total) .. (rows[1] and (" · " .. tr("Most active time in:") .. " " .. rows[1].name) or (" · " .. tr("nothing counted yet")))
+        local yesterday = tonumber(focus.yesterday) or 0
+        fact.clk_wb_delta_on = yesterday > 0 and 1 or 0
+        if yesterday > 0 then
+            local pct = math.floor(100 * (total - yesterday) / yesterday + 0.5)
+            fact.clk_wb_good = pct <= 0 and 1 or 0
+            text.clk_wb_delta = string.format(tr("%+d%% in front of the screen against yesterday"), pct)
+        end
+        local rest = 60 - (tonumber(focus.streak) or 0)
+        text.clk_wb_tip = tr("LatteOS recommends:") .. " " .. (rest > 0 and string.format(tr("a break from the screen in %d minutes."), rest) or tr("a break from the screen now."))
+        text.clk_wb_goal = string.format(tr("Goal: under %dh a day"), tonumber(focus.goal) or 6)
+    else
+        text.clk_wb_off = tr("Screen time is not being kept. Switch it on in Change layout; it stays on this computer.")
+        fact.clk_wb_delta_on = 0
+        model.clka = {}
+    end
+    -- the foot
+    text.clk_bed = string.format(tr("Sleep mode planned for %s"), tostring(focus.bedtime or "23:00"))
+    text.clk_btn_layout, text.clk_btn_dnd = tr("Change layout"), tr("Do not disturb mode")
+    fact.clk_dnd_on = quiet() and 1 or 0
 end
+
+local customize
+local function open_clock(d, keep)
+    learn_world()
+    learn_focus()
+    learn_nameday()
+    learn_abbr()
+    -- the card's own frame, glass and coffee; the 592 × 550 of the picture, and the coffee begins where the foot does
+    card.open({}, { owner = d, id = "time", custom = "clock", width = 592, min_height = 660, split = 606, pane = 1, keep = keep })
+    fill_clock()
+end
+-- Change layout: which cities, and whether the screen time is kept and what it aims at
+customize = function(d)
+    local chosen = {}
+    for i, z in ipairs(zones()) do chosen[z.zone] = i end
+    local rows = { { label = tr("Back"), glyph = "chevron-left", keep = true, run = function() open_clock(d) end },
+                   { head = true, label = tr("CITIES"), line = true } }
+    for i, z in ipairs(PRESETS) do
+        rows[#rows + 1] = { label = tr(z.name), glyph = "world", on = chosen[z.zone] ~= nil, off = i == 1, keep = true, run = function()
+            local list = {}
+            for _, y in ipairs(zones()) do if y.zone ~= z.zone then list[#list + 1] = y end end
+            if chosen[z.zone] == nil and #list < 5 then list[#list + 1] = z end
+            write_zones(list)
+            customize(d)
+        end }
+    end
+    rows[#rows + 1] = { head = true, label = tr("DIGITAL WELLBEING"), line = true }
+    rows[#rows + 1] = { label = tr("Keep the screen time"), glyph = "device-desktop", on = focus.log == true, keep = true, run = function()
+        run("latte-focus", { "set", "log", focus.log and "off" or "on" }, function() focus.log = not focus.log customize(d) end)
+    end }
+    rows[#rows + 1] = { label = string.format(tr("Goal: under %dh a day"), tonumber(focus.goal) or 6), glyph = "clock", keep = true,
+        wheel = function(dir)
+            local g = math.max(1, math.min(16, (tonumber(focus.goal) or 6) + dir))
+            run("latte-focus", { "set", "goal", tostring(g) }, function() focus.goal = g customize(d) end)
+        end,
+        run = function()
+            local g = ((tonumber(focus.goal) or 6) % 16) + 1
+            run("latte-focus", { "set", "goal", tostring(g) }, function() focus.goal = g customize(d) end)
+        end, hint = tr("wheel") }
+    card.open(rows, { owner = d, id = "time-layout", width = 360, plain = true })
+end
+
 local function stopwatch(again)
     local w = timers.all().watch
     local rows = {
@@ -380,18 +556,25 @@ end
 local TABS = { { glyph = "layout-dashboard", name = N("Overview") }, { glyph = "stopwatch", name = N("Stopwatch") }, { glyph = "hourglass", name = N("Timer") },
                { glyph = "alarm", name = N("Alarms") }, { glyph = "cloud", name = N("Weather") } }
 local ticking
+local last_fill = 0
 open_time = function(d, keep)
     local function again() open_time(d, true) end
-    -- The stopwatch and the timer are seen running: while the card shows them it is drawn again five times a second.
+    -- The stopwatch and the timer are seen running: while the card shows them it is drawn again five times a second;
+    -- the overview is told the time once a second.
     if not ticking then
         ticking = every(200, function()
             if card.id() ~= "time" then cancel(ticking) ticking = nil return end
-            if tab == 0 or tab == 1 or tab == 2 then open_time(d, true) end
+            if tab == 0 then
+                if os.time() ~= last_fill then last_fill = os.time() fill_clock() end
+            elseif tab == 1 or tab == 2 then
+                open_time(d, true)
+            end
         end)
     end
+    if tab == 0 then return open_clock(d, keep) end
     local tabs = {}
     for i, t in ipairs(TABS) do tabs[i] = { glyph = t.glyph, label = tr(t.name), on = tab == i - 1, run = function() tab = i - 1 open_time(d, true) end } end
-    local rows = (tab == 1 and stopwatch(again)) or (tab == 2 and timer(again)) or (tab == 3 and alarms(again)) or (tab == 4 and weather()) or overview(again)
+    local rows = (tab == 1 and stopwatch(again)) or (tab == 2 and timer(again)) or (tab == 3 and alarms(again)) or weather()
     -- the same height on every tab: the card's top edge stays where it is
     card.open(rows, { owner = d, id = "time", width = 400, tabs = tabs, keep = keep, min_height = 560,
                       foot = { label = tr("Date and time settings"), glyph = "settings", more = true, run = function() open.settings("time") end } })
@@ -457,6 +640,10 @@ return {
         on("toast_press", function() open_notes(d) end)
         on("clock_notes", function() if card.id() == "notes" then card.close() else open_notes(d) end end)
         on("clock_time", function() if card.id() == "time" then card.close() else open_time(d) end end)
+        on("clk_tab", function(n) if n == 1 then tab = 2 open_time(d) elseif n == 2 then tab = 4 open_time(d) end end)
+        on("clk_dnd", function() E.set("quiet", not quiet()) show_face(d) fill_clock() end)
+        on("clk_layout", function() customize(d) end)
+        pcall(sys.watch, "apps", function(list) fill_apps = list or {} end)
         -- the weather beside the date, fresh every twenty minutes
         after(4000, function() read_sky(function() show_face(d) end) end)
         every(20 * 60000, function() read_sky(function() show_face(d) end) end)

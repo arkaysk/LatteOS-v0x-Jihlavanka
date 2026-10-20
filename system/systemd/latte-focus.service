@@ -1,0 +1,10 @@
+# What the screen was used for, kept for the user alone (bin/latte-focus): ClockGoo's "Digital wellbeing".
+[Unit]
+Description=LatteOS screen time
+PartOf=latte-session.target
+After=latte-session.target
+
+[Service]
+ExecStart=/usr/bin/latte-focus watch
+Restart=on-failure
+RestartSec=5

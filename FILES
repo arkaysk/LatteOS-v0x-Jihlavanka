@@ -19,6 +19,8 @@
 /usr/bin/latte-apps                                     <- bin/latte-apps
 /usr/bin/latte-devices                                  <- bin/latte-devices
 /usr/bin/latte-guarddog                                 <- bin/latte-guarddog
+/usr/bin/latte-focus                                    <- bin/latte-focus
+/usr/bin/latte-nameday                                  <- bin/latte-nameday
 /usr/bin/latte-monitor                                  <- bin/latte-monitor
 /usr/bin/latte-net                                      <- bin/latte-net
 /usr/bin/latte-network                                  <- bin/latte-network
@@ -102,6 +104,7 @@
 /usr/share/latteos/goo/parts/rows.plm                   <- goo/parts/rows.plm
 /usr/share/latteos/goo/parts/lock.plm                   <- goo/parts/lock.plm
 /usr/share/latteos/goo/parts/desk.plm                   <- goo/parts/desk.plm
+/usr/share/latteos/goo/parts/clock.plm                  <- goo/parts/clock.plm
 /usr/share/latteos/goo/parts/ctx.plm                    <- goo/parts/ctx.plm
 /usr/share/latteos/goo/lib/engine.luau                  <- goo/lib/engine.luau
 /usr/share/latteos/goo/lib/card.luau                    <- goo/lib/card.luau
@@ -156,6 +159,7 @@
 /usr/lib/systemd/user/latte-goo.service                 <- system/systemd/latte-goo.service
 /usr/lib/systemd/user/latte-idle.service                <- system/systemd/latte-idle.service
 /usr/lib/systemd/user/latte-guarddog.service             <- system/systemd/latte-guarddog.service
+/usr/lib/systemd/user/latte-focus.service                <- system/systemd/latte-focus.service
 /usr/lib/systemd/user/latte-goo-side@.service           <- system/systemd/latte-goo-side@.service
 /usr/lib/tmpfiles.d/latteos.conf                        <- system/systemd/latteos.tmpfiles
 /etc/latteos/boot.toml                                  <- system/boot.toml
@@ -203,6 +207,7 @@
 $XDG_RUNTIME_DIR/latteos/                               # per user: the reason for SAFE, labwc's menu, where to go next
 ~/.local/state/latteos/                                 # per user: session.log, safe.log, window-mode
 ~/.config/latteos/                                      # per user: locale, tier, coffee, wallpaper, hyprland.lua (the user's own choices)
+~/.local/share/latteos/focus/                           # per user: the screen time of each day (bin/latte-focus); nothing leaves the computer
 ~/.local/share/pleamar/goo/                             # per user: where the drops were left, the launcher's memory, settings.json, lock.json, clock.json, timers.json
 /var/lib/latteos/login/user-*.json                      # per user, for the login screen: where the power drop is, the coffee
 ~/.cache/latteos/                                       # per user: the weather and the news last fetched
