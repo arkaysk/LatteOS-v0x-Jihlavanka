@@ -22,6 +22,12 @@ No API key: the official tool of a service answers, with the account the user is
                             in or out is run in a terminal, where the tool asks what it needs
   latte-ai pick             a file chooser; the paths chosen, one a line
   latte-ai shot             a picture of the screen now; its path
+  latte-ai keys             the services one can bring a key of one's own to, as in VS Code, and the user's own
+                            servers: [{"id", "name", "style", "url", "has" (a key is kept), "server" (one of the user's)}]
+  latte-ai key ID           keeps the key read from stdin, in the system's keyring (never in a file)
+  latte-ai forget-key ID    takes it out of the keyring
+  latte-ai server add NAME URL     a server of the user's own that speaks the OpenAI API (llama-server, Ollama…)
+  latte-ai server remove ID
   latte-ai chats            the conversations, the newest first: [{"id", "title", "provider", "model", "updated", "count"}]
   latte-ai chat ID          one conversation whole: {"id", "title", "provider", "model", "messages": [{"role", "content",
                             "provider", "model", "at"}], "usage"}
@@ -181,6 +187,101 @@ def local_ask(messages, model, effort, files, room):
     return r["choices"][0]["message"]["content"].strip(), True, {"context": used, "window": LOCAL_CONTEXT, "tokens": used, "cost": 0}
 
 
+# ── a key of one's own (as VS Code's "Manage Models"): the service's API is asked directly, a conversation and nothing
+# else, no tools. The key lives in the system's keyring (Secret Service: gnome-keyring), looked up when it is needed.
+APIS = {
+    "api-anthropic": {"name": "Claude API", "style": "claude", "url": "https://api.anthropic.com/v1", "kind": "anthropic"},
+    "api-openai": {"name": "OpenAI API", "style": "chatgpt", "url": "https://api.openai.com/v1", "kind": "openai"},
+    "api-google": {"name": "Gemini API", "style": "gemini", "url": "https://generativelanguage.googleapis.com/v1beta/openai", "kind": "openai"},
+    "api-xai": {"name": "Grok API", "style": "grok", "url": "https://api.x.ai/v1", "kind": "openai"},
+    "api-mistral": {"name": "Mistral API", "style": "own", "url": "https://api.mistral.ai/v1", "kind": "openai"},
+}
+SERVERS = os.path.join(os.environ.get("XDG_CONFIG_HOME") or os.path.expanduser("~/.config"), "latteos", "ai-servers.json")
+
+
+def servers():
+    try:
+        with open(SERVERS) as f:
+            return {s["id"]: dict(s, style="own", kind="openai", server=True) for s in json.load(f)}
+    except (OSError, ValueError, KeyError, TypeError):
+        return {}
+
+
+def apis():
+    return dict(APIS, **servers())
+
+
+def secret(ident, value=None, forget=False):
+    """The key of a service in the keyring: read it, keep one, or take it out. None when there is none or no keyring."""
+    attrs = ["latteos", "ai", "service", ident]
+    try:
+        if forget:
+            return subprocess.run(["secret-tool", "clear"] + attrs, capture_output=True, timeout=20).returncode == 0
+        if value is not None:
+            return subprocess.run(["secret-tool", "store", "--label", "LatteOS AI: " + apis().get(ident, {}).get("name", ident)] + attrs,
+                                  input=value, capture_output=True, text=True, timeout=60).returncode == 0
+        out = subprocess.run(["secret-tool", "lookup"] + attrs, capture_output=True, text=True, timeout=20)
+        return out.stdout.strip() or None if out.returncode == 0 else None
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+
+
+def api_call(a, path, body=None, timeout=20):
+    import urllib.request
+    key = secret(a["id"])
+    head = {"Content-Type": "application/json"}
+    if a["kind"] == "anthropic":
+        head.update({"x-api-key": key or "", "anthropic-version": "2023-06-01"})
+    elif key:
+        head["Authorization"] = "Bearer " + key
+    req = urllib.request.Request(a["url"].rstrip("/") + path, json.dumps(body).encode() if body else None, head)
+    return json.load(urllib.request.urlopen(req, timeout=timeout))
+
+
+def api_models(ident):
+    """What the service offers, asked once a day: the list is long and the question costs a moment."""
+    cache = os.path.join(ROOM, "models-%s.json" % ident)
+    try:
+        if os.path.getmtime(cache) > datetime.datetime.now().timestamp() - 86400:
+            with open(cache) as f:
+                return json.load(f)
+    except (OSError, ValueError):
+        pass
+    a = dict(apis()[ident], id=ident)
+    try:
+        found = [m["id"] for m in api_call(a, "/models").get("data", [])]
+    except (OSError, ValueError, KeyError):
+        return []
+    found = [m.split("/")[-1] for m in found if not any(w in m for w in ("embed", "tts", "whisper", "dall-e", "moderation", "image", "audio", "realtime"))]
+    out = [{"id": m, "name": m} for m in sorted(set(found))][:40]
+    os.makedirs(ROOM, exist_ok=True)
+    with open(cache, "w") as f:
+        json.dump(out, f)
+    return out
+
+
+def api_ask(ident):
+    def ask(messages, model, effort, files, room):
+        a = dict(apis()[ident], id=ident)
+        talk = [{"role": m["role"], "content": m["content"]} for m in messages if m.get("content")][-KEEP:]
+        for f in files:
+            try:
+                with open(os.path.join(room, f), errors="replace") as fh:
+                    talk[-1]["content"] += "\n\n--- %s ---\n%s" % (f, fh.read(20000))
+            except OSError:
+                pass
+        if a["kind"] == "anthropic":
+            r = api_call(a, "/messages", {"model": model, "max_tokens": 2048, "system": SYSTEM, "messages": talk}, timeout=300)
+            u = r.get("usage") or {}
+            used = u.get("input_tokens", 0) + u.get("output_tokens", 0)
+            return "".join(b.get("text", "") for b in r.get("content", [])).strip(), True, {"context": used, "window": 200000, "tokens": used, "cost": 0}
+        r = api_call(a, "/chat/completions", {"model": model, "messages": [{"role": "system", "content": SYSTEM}] + talk}, timeout=300)
+        u = r.get("usage") or {}
+        used = u.get("prompt_tokens", 0) + u.get("completion_tokens", 0)
+        return r["choices"][0]["message"]["content"].strip(), True, {"context": used, "window": 0, "tokens": used, "cost": 0}
+    return ask
+
+
 def grok_models():
     try:
         out = subprocess.run(["grok", "models"], capture_output=True, text=True, timeout=20, env=dict(os.environ, PATH=SEARCH)).stdout
@@ -250,6 +351,11 @@ def providers(all=False):
         models = p["models"]() if callable(p["models"]) else p["models"]
         if models:
             out.append({"id": i, "name": p["name"], "local": p["local"], "style": p["style"], "models": models, "efforts": p.get("efforts", [])})
+    for i, a in apis().items():
+        if a.get("server") or secret(i):
+            models = api_models(i)
+            if models:
+                out.append({"id": i, "name": a["name"], "local": False, "style": a["style"], "models": models, "efforts": []})
     return out
 
 
@@ -318,9 +424,14 @@ def send(ident, provider, model, question, effort="", attach=()):
             files.append(os.path.basename(path))
     chat["messages"].append({"role": "user", "content": question, "provider": provider, "model": model, "at": now(), "files": files})
     keep(chat)          # the question stays even if no answer comes
-    p = PROVIDERS.get(provider)
+    p = PROVIDERS.get(provider) or ({"ask": api_ask(provider), "tool": ""} if provider in apis() else None)
     answer, ok, usage = "", False, {}
-    if not p or not (local_server() if provider == "local" else shutil.which(p["tool"], path=SEARCH)):
+    if p and provider in apis():
+        try:
+            answer, ok, usage = p["ask"](chat["messages"], model, effort, files, room)
+        except Exception as e:          # whatever the service answers with (a refused key, a model it does not have) is told, not thrown
+            answer = "latte-ai: %s" % e
+    elif not p or not (local_server() if provider == "local" else shutil.which(p["tool"], path=SEARCH)):
         answer = "latte-ai: no such provider here: " + provider
     elif "ask" in p:
         try:
@@ -388,6 +499,37 @@ def main(a):
         done = subprocess.run(["grim", path])
         print(path if done.returncode == 0 else "")
         return done.returncode
+    if a == ["keys"]:
+        print(json.dumps([{"id": i, "name": x["name"], "style": x["style"], "url": x["url"], "server": x.get("server", False),
+                           "has": secret(i) is not None} for i, x in apis().items()], ensure_ascii=False))
+        return 0
+    if len(a) == 2 and a[0] == "key" and a[1] in apis():
+        key = sys.stdin.read().strip()
+        if not key or not secret(a[1], key):
+            print("latte-ai: the keyring did not take it")
+            return 1
+        try:
+            os.remove(os.path.join(ROOM, "models-%s.json" % a[1]))
+        except OSError:
+            pass
+        return 0
+    if len(a) == 2 and a[0] == "forget-key":
+        return 0 if secret(a[1], forget=True) else 1
+    if len(a) == 4 and a[0] == "server" and a[1] == "add" and a[3].startswith(("http://", "https://")):
+        mine = [x for x in servers().values()]
+        ident = "server-" + uuid.uuid4().hex[:6]
+        mine.append({"id": ident, "name": a[2], "url": a[3].rstrip("/")})
+        os.makedirs(os.path.dirname(SERVERS), exist_ok=True)
+        with open(SERVERS, "w") as f:
+            json.dump([{"id": x["id"], "name": x["name"], "url": x["url"]} for x in mine], f, ensure_ascii=False, indent=1)
+        print(ident)
+        return 0
+    if len(a) == 3 and a[0] == "server" and a[1] == "remove":
+        mine = [x for x in servers().values() if x["id"] != a[2]]
+        with open(SERVERS, "w") as f:
+            json.dump([{"id": x["id"], "name": x["name"], "url": x["url"]} for x in mine], f, ensure_ascii=False, indent=1)
+        secret(a[2], forget=True)
+        return 0
     if a == ["stop"]:
         subprocess.run(["pkill", "-f", "llama-server.*--port %d" % LOCAL_PORT])
         return 0

@@ -22,9 +22,9 @@ ShellRoot {
     property var services: []                  // every service known (latte-ai services)
     property bool waiting: false
     // each service has its colour, so that a conversation is known by it at a glance
-    readonly property var colours: ({ "claude": "#d97757", "gemini": "#4285f4", "chatgpt": "#10a37f", "grok": "#a8a8a8", "mistral": "#fa520f", "local": Theme.gold, "ollama": Theme.gold })
+    readonly property var colours: ({ "api-anthropic": "#d97757", "api-openai": "#10a37f", "api-google": "#4285f4", "api-xai": "#a8a8a8", "api-mistral": "#fa520f", "claude": "#d97757", "gemini": "#4285f4", "chatgpt": "#10a37f", "grok": "#a8a8a8", "mistral": "#fa520f", "local": Theme.gold, "ollama": Theme.gold })
     function colour(id) { return colours[id] || Theme.gold }
-    function nameOf(id) { const p = services.find(s => s.id === id); return p ? I18n.tr(p.name) : id }
+    function nameOf(id) { const p = services.find(s => s.id === id) || providers.find(s => s.id === id) || keys.find(k => k.id === id); return p ? I18n.tr(p.name) : id }
     function modelName(pid, mid) { const p = providers.find(x => x.id === pid); const m = p ? p.models.find(x => x.id === mid) : null; return m ? m.name : mid }
     readonly property var shown: chats.filter(c => (only === "" || c.provider === only) && (find === "" || c.title.toLowerCase().includes(find.toLowerCase())))
     function when(iso) {
@@ -45,6 +45,14 @@ ShellRoot {
     Ask { id: one; onDone: shell.chat = data }
     Ask { id: who; onDone: shell.providers = data || [] }
     Ask { id: svc; onDone: shell.services = data || [] }
+    Ask { id: keyq; onDone: shell.keys = data || [] }
+    Ask { id: keyer; onDone: { keyq.ask(["keys"]); who.ask(["providers", "all"]) } }
+    property var keys: []                      // the services one can bring a key to, and the user's own servers
+    // a key goes to latte-ai on its standard input, never on its command line, where anyone could read it
+    Process { id: keeper; property string id: ""; property string key: ""; stdinEnabled: true
+              onStarted: { write(key + "\n"); key = ""; stdinEnabled = false }
+              onExited: { stdinEnabled = true; keyq.ask(["keys"]); who.ask(["providers", "all"]) } }
+    function keep(id, key) { if (key.trim() === "") return; keeper.key = key.trim(); keeper.command = ["latte-ai", "key", id]; keeper.running = true }
     Ask { id: sender; onDone: { shell.waiting = false; if (data && data.chat) shell.open = data.chat; shell.reload() } }
     Ask { id: forget; onDone: { shell.open = ""; shell.chat = null; list.ask(["chats"]) } }
     function reload() { list.ask(["chats"]); if (open !== "") one.ask(["chat", open]) }
@@ -53,7 +61,7 @@ ShellRoot {
     function inTerminal(argv) { Quickshell.execDetached(["foot", "-e", "sh", "-c", argv.map(a => "'" + a.replace(/'/g, "'\\''") + "'").join(" ") + "; echo; read -p '" + I18n.tr("Press Enter to close") + "' x"]) }
     Timer { id: later; interval: 2500; onTriggered: svc.ask(["services"]) }
     Component.onCompleted: {
-        list.ask(["chats"]); who.ask(["providers", "all"]); svc.ask(["services"])
+        list.ask(["chats"]); who.ask(["providers", "all"]); svc.ask(["services"]); keyq.ask(["keys"])
         if (words[0] === "services") page = "services"
         else if (words[0]) choose(words[0])
     }
@@ -163,8 +171,10 @@ ShellRoot {
         Scroll {
             id: svcPage
             visible: shell.page === "services"
+            Label { text: I18n.tr("ACCOUNTS"); color: Theme.faint; font.pixelSize: 11; font.weight: 700; font.letterSpacing: 0.8 }
+            Waiting { visible: shell.services.length === 0 && svc.running; text: I18n.tr("Asking the services…"); width: svcPage.room }
             Label { width: svcPage.room; wrapMode: Text.WordWrap; color: Theme.dim
-                    text: I18n.tr("The official tool of a service answers, with the account you sign in to it with. LatteOS keeps no key and no password of yours. Which of them LensGoo offers is set in Settings › Launcher.") }
+                    text: I18n.tr("With an account, the service's official tool answers, signed in once in the terminal. Which of them LensGoo offers is set in Settings › Launcher.") }
             Repeater { model: shell.services
                 Rectangle { id: card; required property var modelData; width: svcPage.room; height: 84; radius: 20; color: Theme.card
                     Rectangle { x: 18; width: 48; height: 48; radius: 14; color: shell.colour(card.modelData.id); opacity: card.modelData.installed ? 1 : 0.35; anchors.verticalCenter: parent.verticalCenter
@@ -182,6 +192,38 @@ ShellRoot {
                                onPressed: { shell.inTerminal(card.modelData.login); later.restart() } }
                         Pill { visible: card.modelData.installed && card.modelData.logout.length > 0 && card.modelData.signed === true; icon: "logout"; text: I18n.tr("Sign out")
                                onPressed: { shell.inTerminal(card.modelData.logout); later.restart() } } } } }
+
+            // a key of one's own, as in VS Code: the service's API answers directly, a conversation and no tools
+            Label { text: I18n.tr("KEYS OF YOUR OWN"); color: Theme.faint; font.pixelSize: 11; font.weight: 700; font.letterSpacing: 0.8 }
+            Label { width: svcPage.room; wrapMode: Text.WordWrap; color: Theme.dim
+                    text: I18n.tr("With a key from the service's own site, its API answers directly: you pay it for what you use. The key is kept in the system's keyring, never in a file.") }
+            Repeater { model: shell.keys.filter(k => !k.server)
+                Rectangle { id: kc; required property var modelData; width: svcPage.room; height: 64; radius: 18; color: Theme.card
+                    Rectangle { x: 16; width: 10; height: 10; radius: 5; color: shell.colour(kc.modelData.id); anchors.verticalCenter: parent.verticalCenter }
+                    Column { x: 38; width: 260; anchors.verticalCenter: parent.verticalCenter; spacing: 2
+                        Label { text: kc.modelData.name; font.weight: 700 }
+                        Label { text: kc.modelData.has ? I18n.tr("A key is kept") : I18n.tr("No key"); color: kc.modelData.has ? Theme.ok : Theme.dim; font.pixelSize: 12 } }
+                    Row { anchors.right: parent.right; anchors.rightMargin: 14; anchors.verticalCenter: parent.verticalCenter; spacing: 8
+                        Field { id: kf; visible: !kc.modelData.has; width: Math.min(360, svcPage.room - 520); icon: "key"; secret: true; hint: I18n.tr("Paste the key…")
+                                onAccepted: { shell.keep(kc.modelData.id, text); text = "" } }
+                        Pill { visible: !kc.modelData.has; icon: "check"; strong: true; text: I18n.tr("Keep"); onPressed: { shell.keep(kc.modelData.id, kf.text); kf.text = "" } }
+                        Pill { visible: kc.modelData.has; icon: "trash"; danger: true; text: I18n.tr("Remove the key"); onPressed: keyer.ask(["forget-key", kc.modelData.id]) } } } }
+
+            // servers of one's own: anything that speaks the OpenAI API — llama-server, Ollama, a computer at home
+            Label { text: I18n.tr("SERVERS OF YOUR OWN"); color: Theme.faint; font.pixelSize: 11; font.weight: 700; font.letterSpacing: 0.8 }
+            Repeater { model: shell.keys.filter(k => k.server)
+                Rectangle { id: sc; required property var modelData; width: svcPage.room; height: 58; radius: 18; color: Theme.card
+                    Glyph { x: 18; name: "server"; color: Theme.gold; anchors.verticalCenter: parent.verticalCenter }
+                    Column { x: 48; width: parent.width - 200; anchors.verticalCenter: parent.verticalCenter; spacing: 2
+                        Label { text: sc.modelData.name; font.weight: 700 }
+                        Label { text: sc.modelData.url; color: Theme.dim; font.pixelSize: 12; width: parent.width; elide: Text.ElideRight } }
+                    Pill { anchors.right: parent.right; anchors.rightMargin: 14; anchors.verticalCenter: parent.verticalCenter; icon: "trash"; danger: true; text: I18n.tr("Remove")
+                           onPressed: keyer.ask(["server", "remove", sc.modelData.id]) } } }
+            Row { spacing: 10
+                Field { id: srvName; width: 220; icon: "server"; hint: I18n.tr("Name") }
+                Field { id: srvUrl; width: Math.min(380, svcPage.room - 380); icon: "world-www"; hint: "http://192.168.1.10:8080/v1" }
+                Pill { icon: "plus"; strong: true; text: I18n.tr("Add")
+                       onPressed: if (/^https?:\/\/\S+$/.test(srvUrl.text.trim()) && srvName.text.trim() !== "") { keyer.ask(["server", "add", srvName.text.trim(), srvUrl.text.trim()]); srvName.text = ""; srvUrl.text = "" } } }
         }
     }
 }

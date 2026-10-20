@@ -880,7 +880,7 @@ ShellRoot {
             // the AI
             Switch { visible: shell.page === "ai"; width: view.room; text: I18n.tr("AI in LatteOS"); on: ai.value !== "off"; onPressed: { ai.choose(on ? "off" : "on"); aiLater.restart() }
                      hint: I18n.tr("The AI mode of LensGoo, Win+C. Turned off, nothing of LatteOS talks to an AI.") }
-            Part { visible: shell.page === "ai"; width: view.room; title: I18n.tr("Who answers"); note: I18n.tr("The official tool of a service answers, with the account you are signed in to it with. LatteOS keeps no key and no password of yours.")
+            Part { visible: shell.page === "ai"; width: view.room; title: I18n.tr("Who answers"); note: I18n.tr("The official tool of a service answers, with the account you are signed in to it with, or the service's API with a key of your own. Both are set in the Lens AI centre; a key is kept in the system's keyring, never in a file.")
                 Label { visible: helpers.data !== null && helpers.data.length === 0; text: I18n.tr("No AI tool is installed on this computer."); color: Theme.dim }
                 Repeater { model: shell.page === "ai" && helpers.data ? helpers.data : []
                     Rectangle { id: helper; required property var modelData; width: 300; height: 64; radius: 16; color: Theme.card; opacity: ai.value === "off" ? 0.5 : 1
