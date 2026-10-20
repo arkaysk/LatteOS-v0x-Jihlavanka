@@ -449,101 +449,104 @@ local function open_clock(d, keep)
     card.open({}, { owner = d, id = "time", custom = "clock", width = 592, min_height = 660, split = 606, pane = 1, keep = keep })
     fill_clock()
 end
-local function stopwatch(again)
+-- ── the timers' page and the weather in detail: the same scene, told other texts ─────────────────────────────
+local PRESETS = { 1, 5, 10, 15, 25, 45 }      -- ready lengths of the timer, in minutes
+local function fill_timers()
+    text.clk_t_watch, text.clk_t_timer, text.clk_t_alarms, text.clk_t_new = tr("STOPWATCH"), tr("TIMER"), tr("ALARMS"), tr("NEW ALARM")
+    text.ic_watch, text.ic_hourglass, text.ic_play, text.ic_flag, text.ic_reset = icons["stopwatch"], icons["hourglass"], icons["player-play"], icons["flag"], icons["refresh"]
+    text.ic_minus, text.ic_plus, text.ic_x, text.ic_trash, text.ic_alarmplus = icons["minus"], icons["plus"], icons["x"], icons["trash"], icons["alarm-plus"]
     local w = timers.all().watch
-    local rows = {
-        { big = true, label = timers.clock(timers.elapsed(), true) },
-        { keep = true, glyph = w.running and "player-pause" or "player-play", label = tr(w.running and N("Stop") or N("Start")), run = function() timers.watch_toggle() again() end },
-    }
-    if w.running then rows[#rows + 1] = { keep = true, glyph = "flag", label = tr("Lap"), run = function() timers.watch_lap() again() end } end
-    if w.running or (w.sum or 0) > 0 then rows[#rows + 1] = { keep = true, glyph = "refresh", label = tr("Reset"), run = function() timers.watch_reset() again() end } end
-    for i, lap in ipairs(w.laps) do
-        if i > 6 then break end
-        rows[#rows + 1] = { line = i == 1, label = tr("Lap") .. " " .. (#w.laps - i + 1), hint = timers.clock(lap, true), quiet = true }
+    text.clk_sw = timers.clock(timers.elapsed(), true)
+    fact.clk_sw_run = w.running and 1 or 0
+    text.clk_sw_btn, text.clk_lap_btn, text.clk_reset_btn = tr(w.running and N("Stop") or N("Start")), tr("Lap"), tr("Reset")
+    local laps = {}
+    for i, lap in ipairs(w.laps or {}) do
+        if i > 3 then break end
+        laps[i] = { name = tr("Lap") .. " " .. (#w.laps - i + 1), time = timers.clock(lap, true) }
     end
-    return rows
-end
-local function timer(again)
+    model.clklap = laps
     local running, started, left, length = timers.timer()
-    local rows = {
-        { big = true, label = timers.clock(started and (left + (running and 999 or 0)) or length), bar = started and left / math.max(length, 1) or 1 },
-        { keep = true, glyph = running and "player-pause" or "player-play", label = tr(running and N("Pause") or (started and N("Resume") or N("Start"))),
-          run = function() timers.timer_toggle() again() end },
-    }
-    if started then
-        rows[#rows + 1] = { keep = true, glyph = "x", label = tr("Cancel"), run = function() timers.timer_cancel() again() end }
-    else
-        -- the mouse first: the wheel over the row sets the length, or one of the ready lengths below does
-        rows[#rows + 1] = { keep = true, glyph = "adjustments-horizontal", label = tr("Length") .. ": " .. math.floor(length / 60000 + 0.5) .. " min", hint = tr("wheel"),
-                            wheel = function(dir) timers.timer_adjust(dir) again() end, run = function() timers.timer_adjust(1) again() end }
-        for i, minutes in ipairs({ 1, 5, 10, 15, 25, 45 }) do
-            rows[#rows + 1] = { keep = true, line = i == 1, glyph = "hourglass", label = minutes .. " min", run = function() timers.timer_start(minutes) again() end }
-        end
-    end
-    return rows
-end
-local function alarms(again)
-    local rows, off = {}, 0
+    fact.clk_tm_run, fact.clk_tm_started = running and 1 or 0, started and 1 or 0
+    text.clk_tm = timers.clock(started and (left + (running and 999 or 0)) or length)
+    fact.clk_tm_frac = started and left / math.max(length, 1) or 1
+    text.clk_tm_btn = tr(running and N("Pause") or (started and N("Resume") or N("Start")))
+    text.clk_tm_cancel = tr("Cancel")
+    text.clk_tm_len = math.floor(length / 60000 + 0.5) .. " min"
+    local pre = {}
+    for i, m in ipairs(PRESETS) do pre[i] = { label = m .. " min" } end
+    model.clkpre = pre
+    local list, off = {}, 0
     for i, a in ipairs(timers.all().alarms) do
-        if i > 7 then break end
+        if i > 6 then break end
         if not a.on then off += 1 end
-        rows[#rows + 1] = { keep = true, glyph = "alarm", on = a.on == true, label = a.time or "", hint = tr(a.on and N("on") or N("off")),
-                            run = function() timers.alarm_toggle(i) again() end }
+        list[#list + 1] = { time = a.time or "", on = a.on == true, state = tr(a.on and N("on") or N("off")) }
     end
-    if #rows == 0 then rows[1] = { glyph = "alarm", label = tr("No alarms"), off = true } end
-    -- a new alarm: the wheel sets the hour and the minute, a press goes a step on
-    rows[#rows + 1] = { keep = true, line = true, glyph = "clock", label = tr("Hour") .. ": " .. string.format("%02d", timers.hour), hint = tr("wheel"),
-                        wheel = function(dir) timers.hour = (timers.hour + dir) % 24 again() end, run = function() timers.hour = (timers.hour + 1) % 24 again() end }
-    rows[#rows + 1] = { keep = true, glyph = "clock", label = tr("Minute") .. ": " .. string.format("%02d", timers.minute), hint = tr("wheel"),
-                        wheel = function(dir) timers.minute = (timers.minute + dir * 5) % 60 again() end, run = function() timers.minute = (timers.minute + 5) % 60 again() end }
-    rows[#rows + 1] = { keep = true, glyph = "plus", label = tr("Add alarm") .. " " .. string.format("%02d:%02d", timers.hour, timers.minute), run = function() timers.alarm_add() again() end }
-    if off > 0 then rows[#rows + 1] = { keep = true, danger = true, glyph = "trash", label = tr("Remove alarms that are off"), run = function() timers.alarm_prune() again() end } end
-    return rows
+    model.clkal = list
+    fact.clk_al_count, fact.clk_al_off = #list, off
+    text.clk_al_none = tr("No alarms")
+    text.clk_al_h, text.clk_al_m = string.format("%02d", timers.hour), string.format("%02d", timers.minute)
+    text.clk_al_add, text.clk_al_prune = tr("Add alarm"), tr("Remove alarms that are off")
 end
-local function weather()
-    if not (sky and sky.now) then return { { big = true, label = "—" }, { glyph = "cloud", label = tr("No forecast yet"), off = true } } end
-    local function rain(p) return (tonumber(p) or 0) > 0 and ("  ·  " .. p .. " %") or "" end
-    local rows = { { big = true, label = tostring(sky.now.temp) .. " °C" .. ((sky.place or "") ~= "" and ("  " .. sky.place) or "") } }
+local function fill_weather()
+    text.ic_sunrise, text.ic_temp, text.ic_wind, text.ic_umbrella, text.ic_gauge, text.ic_clock = icons["sunrise"], icons["temperature"], icons["wind"], icons["umbrella"], icons["gauge"], icons["clock"]
+    text.clk_d_sun, text.clk_d_hours, text.clk_d_days = tr("THE SUN"), tr("THE NEXT HOURS"), tr("THE DAYS AHEAD")
+    text.clk_d_feelsl, text.clk_d_huml, text.clk_d_windl = tr("Feels like"), tr("Humidity"), tr("Wind")
+    text.clk_d_rainl, text.clk_d_aqil, text.clk_d_lenl = tr("Rain today"), tr("Air"), tr("Daylight")
+    local now = sky and sky.now
+    if not now then return end
     local days = type(sky.days) == "table" and sky.days or {}
-    if days[1] then
-        rows[#rows + 1] = { glyph = sky_glyph(sky.now.code), label = tr("Today"), hint = days[1].max .. "° / " .. days[1].min .. "°" .. rain(days[1].rain), quiet = true }
-    end
+    text.clk_d_head = upper((sky.place or "") ~= "" and (sky.place .. " · ") or "") .. tr("NOW")
+    text.clk_d_feels = tostring(now.feels or now.temp) .. " °C"
+    text.clk_d_hum = tostring(now.humidity or "—") .. " %"
+    text.clk_d_wind = tostring(sky.wind or 0) .. " km/h"
+    text.clk_d_rain = (days[1] and days[1].rain or 0) .. " %"
+    text.clk_d_aqi = type(sky.aqi) == "table" and (sky.aqi.value .. " · " .. tr(AQI[aqi_level(tonumber(sky.aqi.value) or 0) + 1])) or "—"
+    local rise, set = minutes_of(sky.sunrise), minutes_of(sky.sunset)
+    text.clk_d_len = (rise and set) and string.format("%dh %dm", (set - rise) // 60, (set - rise) % 60) or "—"
+    local hours = {}
     for i, h in ipairs(type(sky.hours) == "table" and sky.hours or {}) do
-        if i > 5 then break end
-        rows[#rows + 1] = { line = i == 1, glyph = sky_glyph(h.code), label = h.time or "", hint = tostring(h.temp) .. "°", quiet = true }
+        if i > 8 then break end
+        hours[i] = { time = h.time or "", temp = tostring(h.temp) .. "°", glyph = icons[sky_glyph(h.code)] or icons["cloud"] }
     end
-    for i = 2, math.min(7, #days) do
-        local x = days[i]                          -- its weekday counts from Monday, the names from Sunday
-        rows[#rows + 1] = { line = i == 2, glyph = sky_glyph(x.code), label = i == 2 and tr("Tomorrow") or tr(WEEKDAYS[((tonumber(x.weekday) or 0) + 1) % 7 + 1]),
-                            hint = x.max .. "° / " .. x.min .. "°" .. rain(x.rain), quiet = true }
+    model.clkh = hours
+    local list = {}
+    for i = 1, math.min(7, #days) do
+        local x = days[i]
+        list[i] = { day = i == 1 and tr("Today") or (i == 2 and tr("Tomorrow") or tr(SHORT[((tonumber(x.weekday) or 0) + 1) % 7 + 1])),
+                    glyph = icons[sky_glyph(x.code)] or icons["cloud"], hi = x.max .. "°", lo = x.min .. "°", rain = (tonumber(x.rain) or 0) > 0 and (x.rain .. " %") or "" }
     end
-    return rows
+    model.clkd = list
 end
-local TABS = { { glyph = "layout-dashboard", name = N("Overview") }, { glyph = "stopwatch", name = N("Stopwatch") }, { glyph = "hourglass", name = N("Timer") },
-               { glyph = "alarm", name = N("Alarms") }, { glyph = "cloud", name = N("Weather") } }
+-- the buttons of the timers' page, by their numbers in parts/clock.plm
+local function act(n)
+    if n == 1 then timers.watch_toggle() elseif n == 2 then timers.watch_lap() elseif n == 3 then timers.watch_reset()
+    elseif n == 4 then timers.timer_toggle() elseif n == 5 then timers.timer_cancel()
+    elseif n == 6 then timers.timer_adjust(1) elseif n == 7 then timers.timer_adjust(-1)
+    elseif n >= 10 and n < 10 + #PRESETS then timers.timer_start(PRESETS[n - 9])
+    elseif n >= 20 and n < 30 then timers.alarm_toggle(n - 19)
+    elseif n == 30 then timers.hour = (timers.hour + 1) % 24 elseif n == 31 then timers.hour = (timers.hour - 1) % 24
+    elseif n == 32 then timers.minute = (timers.minute + 5) % 60 elseif n == 33 then timers.minute = (timers.minute - 5) % 60
+    elseif n == 34 then timers.alarm_add() elseif n == 35 then timers.alarm_prune() end
+    fill_timers()
+end
+
 local ticking
 local last_fill = 0
 open_time = function(d, keep)
-    local function again() open_time(d, true) end
-    -- The stopwatch and the timer are seen running: while the card shows them it is drawn again five times a second;
-    -- the overview is told the time once a second.
+    -- the overview and the weather are told the time once a second, the timers' page five times (the stopwatch's tenths)
     if not ticking then
         ticking = every(200, function()
             if card.id() ~= "time" then cancel(ticking) ticking = nil return end
-            if tab == 0 then
-                if os.time() ~= last_fill then last_fill = os.time() fill_clock() end
-            elseif tab == 1 or tab == 2 then
-                open_time(d, true)
+            if tab == 1 or os.time() ~= last_fill then
+                last_fill = os.time()
+                fill_clock()
+                if tab == 1 then fill_timers() elseif tab == 2 then fill_weather() end
             end
         end)
     end
-    if tab == 0 then return open_clock(d, keep) end
-    local tabs = {}
-    for i, t in ipairs(TABS) do tabs[i] = { glyph = t.glyph, label = tr(t.name), on = tab == i - 1, run = function() tab = i - 1 open_time(d, true) end } end
-    local rows = (tab == 1 and stopwatch(again)) or (tab == 2 and timer(again)) or (tab == 3 and alarms(again)) or weather()
-    -- the same height on every tab: the card's top edge stays where it is
-    card.open(rows, { owner = d, id = "time", width = 400, tabs = tabs, keep = keep, min_height = 560,
-                      foot = { label = tr("Date and time settings"), glyph = "settings", more = true, run = function() open.settings("time") end } })
+    fact.clk_page = tab
+    open_clock(d, keep)
+    if tab == 1 then fill_timers() elseif tab == 2 then fill_weather() end
 end
 
 local function read_sky(then_do)
@@ -606,7 +609,8 @@ return {
         on("toast_press", function() open_notes(d) end)
         on("clock_notes", function() if card.id() == "notes" then card.close() else open_notes(d) end end)
         on("clock_time", function() if card.id() == "time" then card.close() else open_time(d) end end)
-        on("clk_tab", function(n) if n == 1 then tab = 2 open_time(d) elseif n == 2 then tab = 4 open_time(d) end end)
+        on("clk_tab", function(n) tab = tonumber(n) or 0 open_time(d, true) end)
+        on("clk_act", function(n) act(tonumber(n) or 0) end)
         on("clk_dnd", function() E.set("quiet", not quiet()) show_face(d) fill_clock() end)
         on("clk_layout", function() card.close() after(80, function() open.settings("clockgoo") end) end)
         pcall(sys.watch, "apps", function(list) fill_apps = list or {} end)
@@ -616,7 +620,6 @@ return {
         timers.guard(ring, function() if card.id() == "time" then open_time(d, true) end end)
         -- A running timer, or else the stopwatch, takes the date's place on the drop.
         every(1000, function()
-            if card.id() == "time" and (tab == 0 or tab == 3) then open_time(d, true) end
             local running, started, left = timers.timer()
             local w = timers.all().watch
             if started then busy_face = true d:set({ line2 = timers.clock(left + (running and 999 or 0)) })

@@ -315,6 +315,13 @@ Schválené 12. 10. 2026. Pracuje sa **zhora nadol, neskáče sa**; nový nápad
     (programy používateľa); Monitor › Procesy to ukazuje štítkom, filtrom a zoznamom strážených súčastí. Overené:
     zabité ikony sa do ~16 s vrátia. **Ostáva:** Nastavenia › Štart (vypnúť stráženie jednej súčasti), strážiť aj
     skutočné aplikácie používateľa na žiadosť, štítky v Správcovi zariadení, upozornenie pri páde mimo strážených súčastí.
+12. [~] **CamGoo — webkamery** (20. 10., na pokyn používateľa). Hotové: karta s obrázkom kamery, prepínanie, zoznam
+    v Nastaveniach › Kvapky › Webkamery. **Ďalej (nápady používateľa 20. 10.):** zobrazenia — pod sebou, dlaždice,
+    zväčšenie jednej a prepínanie, samé rolujúca páska; **domáce IP kamery** (používateľ má Tapo: RTSP
+    `rtsp://účet:heslo@IP:554/stream1`, snímka cez ffmpeg; heslo do kľúčenky, nie do súboru); **nájdenie kamier
+    v sieti** (ONVIF WS-Discovery, porty 554 a 2020; to isté vie inšpektor siete v Správcovi zariadení);
+    **návrh kamier podľa miesta** (miesto počasia → verejné kamery okolo, zdroj s API, napr. Windy Webcams — kľúč);
+    **ISS** (NASA vysiela video, nie obrázok: snímka z prúdu cez ffmpeg, alebo mapa polohy ISS ako „kamera“).
 
 ## ROADMAP2 — LatteOS od nápadu po hotový produkt
 
@@ -914,6 +921,15 @@ cestu k aktualizácii alebo návratu.
 - [ ] **Definícia LatteOS 1.0 „Arabica“:** ciele z prezentácie (E) a testy z [bughunt/STRESTEST.md](bughunt/STRESTEST.md)
   spojiť do jedného zoznamu brán (STRESTEST sa plní postupne podľa blízkosti k 1.0); prístupnosť patrí do Arabicy. Marketingové tvrdenia (Barista „čokoľvek“, AI voľba
   v inštalátore, Nervboot) sa nepíšu ako hotové, kým ich brána neoveri.
+  **Brány „pre sebe podobných“** (office hours 20. 10.; robia sa až na konci, keď funkcie existujú):
+  1. *Aktualizácia nerozbije plochu:* pleamar ako balík (dnes `/usr/bin/pleamar` nevlastní žiadny balík, preložený
+     z `~/src`), pluginy (`latte-events`, hyprbars, Hyprglass) sa preložia s každým novým Hyprlandom a až potom sa
+     zámok verzie posunie; skúška prechodu na ďalšiu Fedoru (45). **Hneď (20. 10.):** `dnf versionlock` na Hyprland
+     (latte-lab aj krok vo `FILES`).
+  2. *Inštalácia na cudzí počítač* bez repa a ručného prekladania: balíky LatteOS (vlastné COPR) alebo obraz;
+     `latteos-local` (hyprland-latte so záplatou vmwgfx) existuje iba na latte-lab. Posúva „distribúciu balíkov“ z R7 sem.
+  3. *Záloha dát používateľa* (domov, nie systém — snapper chráni iba systém): stránka Nastavenia › Zálohovanie.
+  4. *Prechod z Windowsu* pri prvom spustení: súbory, záložky a heslá prehliadača.
 - [ ] Pred vydaním uzavrieť rozsah, verziu, zmeny, licencie/tretie strany, inštalačný zdroj,
   kontrolné súčty a skúšku obnovy.
 - [~] Nový dvojjazyčný README (EN/SK) z autorovho opisu je v `setup/verejne/README.md` (9. 10.; zverejní ho `zverejnit.sh` na pokyn). Po premenovaní kvapiek (E) prepísať názvy GooBar → BarGoo, GooPower → PowerGoo; AI voľbu pri inštalácii nesľubovať ako hotovú.

@@ -68,6 +68,69 @@ part Clock {
     fact clk_wb_delta_on = 0
     fact clk_wb_good = 1
     fact clk_dnd_on = 0
+    fact clk_page = 0                          // which tab: 0 overview · 1 timers and alarms · 2 weather in detail
+    event clk_act ->                           // a button of the timers' page, by its number (drops/clockgoo.luau, ACT)
+    text clk_sw = ""
+    text clk_sw_btn = ""
+    text clk_lap_btn = ""
+    text clk_reset_btn = ""
+    text clk_tm = ""
+    text clk_tm_btn = ""
+    text clk_tm_cancel = ""
+    text clk_tm_len = ""
+    text clk_al_h = ""
+    text clk_al_m = ""
+    text clk_al_add = ""
+    text clk_al_prune = ""
+    text clk_t_watch = ""
+    text clk_t_timer = ""
+    text clk_t_alarms = ""
+    text clk_t_new = ""
+    text clk_al_none = ""
+    fact clk_sw_run = 0
+    fact clk_tm_run = 0
+    fact clk_tm_started = 0
+    fact clk_tm_frac = 0
+    fact clk_al_off = 0
+    fact clk_al_count = 0
+    model clklap max 3 { name: text; time: text }
+    model clkal max 6 { time: text; state: text; on: bool }
+    model clkpre max 6 { label: text }
+    text ic_watch = ""
+    text ic_hourglass = ""
+    text ic_clock = ""
+    text ic_play = ""
+    text ic_flag = ""
+    text ic_reset = ""
+    text ic_minus = ""
+    text ic_plus = ""
+    text ic_x = ""
+    text ic_trash = ""
+    text ic_alarmplus = ""
+    text clk_d_head = ""
+    text clk_d_feelsl = ""
+    text clk_d_feels = ""
+    text clk_d_huml = ""
+    text clk_d_hum = ""
+    text clk_d_windl = ""
+    text clk_d_wind = ""
+    text clk_d_rainl = ""
+    text clk_d_rain = ""
+    text clk_d_aqil = ""
+    text clk_d_aqi = ""
+    text clk_d_lenl = ""
+    text clk_d_len = ""
+    text clk_d_sun = ""
+    text clk_d_hours = ""
+    text clk_d_days = ""
+    text ic_sunrise = ""
+    text ic_sunset = ""
+    text ic_wind = ""
+    text ic_temp = ""
+    text ic_umbrella = ""
+    text ic_gauge = ""
+    model clkh max 8 { time: text; temp: text; glyph: text }
+    model clkd max 7 { day: text; glyph: text; hi: text; lo: text; rain: text }
     model clkw max 6 { name: text; time: text; note: text; tag: text; home: bool; night: bool }
     model clka max 3 { name: text; time: text; pct: number }
     measure clk_hm_m
@@ -87,16 +150,16 @@ part Clock {
         scale: 1.2
 
         // ── the tabs ──────────────────────────────────────────────────────────────────────────────────
-        box { from: 11, 7; size: 56, 19; corner: 9.5; color: #f7c873; opacity: 28% }
-        box { from: 11, 7; size: 56, 19; corner: 9.5; stroke: 1; color: #f7c873; opacity: 55% }
-        box { from: 75, 7; size: 98, 19; corner: 9.5; color: #4a372b; opacity: 50% }
-        box { from: 181, 7; size: 105, 19; corner: 9.5; color: #4a372b; opacity: 50% }
-        text ic_dash { at: 21, 16.5; anchor: center; size: 9; color: #f7c873; family: "tabler-icons" }
-        text ic_alarm { at: 86, 16.5; anchor: center; size: 9; color: #d6a468; family: "tabler-icons" }
-        text ic_cloud { at: 192, 16.5; anchor: center; size: 9; color: #d6a468; family: "tabler-icons" }
-        text clk_tab0 { at: 46, 16.5; anchor: center; size: 9.5; weight: 700; color: #f7c873; family: "Inter" }
-        text clk_tab1 { at: 130, 16.5; anchor: center; size: 9.5; weight: 600; color: #f5e8d8; family: "Inter" }
-        text clk_tab2 { at: 240, 16.5; anchor: center; size: 9.5; weight: 600; color: #f5e8d8; family: "Inter" }
+        box { from: 11, 7; size: 56, 19; corner: 9.5; color: if(clk_page == 0, #f7c873, #4a372b); opacity: if(clk_page == 0, 28%, 50%) }
+        box { from: 75, 7; size: 98, 19; corner: 9.5; color: if(clk_page == 1, #f7c873, #4a372b); opacity: if(clk_page == 1, 28%, 50%) }
+        box { from: 181, 7; size: 105, 19; corner: 9.5; color: if(clk_page == 2, #f7c873, #4a372b); opacity: if(clk_page == 2, 28%, 50%) }
+        box { from: pick(clk_page, 11, 75, 181), 7; size: pick(clk_page, 56, 98, 105), 19; corner: 9.5; stroke: 1; color: #f7c873; opacity: 55% }
+        text ic_dash { at: 21, 16.5; anchor: center; size: 9; color: if(clk_page == 0, #f7c873, #d6a468); family: "tabler-icons" }
+        text ic_alarm { at: 86, 16.5; anchor: center; size: 9; color: if(clk_page == 1, #f7c873, #d6a468); family: "tabler-icons" }
+        text ic_cloud { at: 192, 16.5; anchor: center; size: 9; color: if(clk_page == 2, #f7c873, #d6a468); family: "tabler-icons" }
+        text clk_tab0 { at: 46, 16.5; anchor: center; size: 9.5; weight: 700; color: if(clk_page == 0, #f7c873, #f5e8d8); family: "Inter" }
+        text clk_tab1 { at: 130, 16.5; anchor: center; size: 9.5; weight: 700; color: if(clk_page == 1, #f7c873, #f5e8d8); family: "Inter" }
+        text clk_tab2 { at: 240, 16.5; anchor: center; size: 9.5; weight: 700; color: if(clk_page == 2, #f7c873, #f5e8d8); family: "Inter" }
         zone box clk_tab_hit.0 { from: 11, 7; size: 56, 19; cursor: pointer; active: card_open and card_custom == 1; label: "{clk_tab0}" }
         zone box clk_tab_hit.1 { from: 75, 7; size: 98, 19; cursor: pointer; active: card_open and card_custom == 1; label: "{clk_tab1}" }
         zone box clk_tab_hit.2 { from: 181, 7; size: 105, 19; cursor: pointer; active: card_open and card_custom == 1; label: "{clk_tab2}" }
@@ -104,152 +167,353 @@ part Clock {
         on press clk_tab_hit.1 { emit clk_tab(1) }
         on press clk_tab_hit.2 { emit clk_tab(2) }
 
-        // ── the time ──────────────────────────────────────────────────────────────────────────────────
-        box { from: 22, 45; size: 219, 183; corner: 14; color: #1b120d; opacity: 55% }
-        box { from: 22, 45; size: 219, 183; corner: 14; stroke: 1; color: #f5e8d8; opacity: 9% }
-        text ic_world { at: 38, 61; anchor: center; size: 10; color: #d6a468; family: "tabler-icons" }
-        text clk_zone { at: 47, 61; anchor: left center; size: 7.5; weight: 700; color: #d6a468; width: 188; lines: 1; family: "Inter" }
-        text clk_hm { at: 30, 108; anchor: left center; size: 46; weight: 700; color: #f6e2cf; measure: clk_hm_m; family: "Inter" }
-        text clk_s { at: 33 + clk_hm_m.width, 115; anchor: left center; size: 22; weight: 600; color: #a98a70; measure: clk_s_m; family: "Inter" }
-        box { from: 39 + clk_hm_m.width + clk_s_m.width, 112; size: 22, 12; corner: 4; color: #4a372b; opacity: 80% }
-        text clk_ampm { at: 50 + clk_hm_m.width + clk_s_m.width, 118; anchor: center; size: 6.5; weight: 700; color: #b8a491; family: "Inter" }
-        text clk_date { at: 30, 154; anchor: left center; size: 11.5; weight: 700; color: #f5e8d8; width: 205; lines: 1; family: "Inter" }
-        box { from: 30, 166; size: 104, 15; corner: 7.5; stroke: 1; color: #f5e8d8; opacity: 28% }
-        text clk_week { at: 82, 173.5; anchor: center; size: 8; weight: 600; color: #f5e8d8; family: "Inter" }
-        box { from: 30, 187; size: 26 + clk_name_m.width, 19; corner: 9.5; stroke: 1; color: #d6a468; opacity: 50%; show: clk_names > 0 }
-        text ic_sun { at: 41, 196.5; anchor: center; size: 10; color: #d6a468; show: clk_names > 0; family: "tabler-icons" }
-        text clk_name1 { at: 50, 196.5; anchor: left center; size: 8.5; weight: 600; color: #f5e8d8; measure: clk_name_m; show: clk_names > 0; family: "Inter" }
-        text ic_arrow { at: 36, 221; anchor: center; size: 9; color: #b8a491; show: clk_names > 0; family: "tabler-icons" }
-        text clk_name2 { at: 46, 221; anchor: left center; size: 8.5; weight: 500; color: #b8a491; width: 185; lines: 1; show: clk_names > 0; family: "Inter" }
-
-        // ── the weather ───────────────────────────────────────────────────────────────────────────────
-        // Behind it, the weather itself: the sky of the hour (by day or by night), the sun or the moon, clouds that drift,
-        // rain, snow, fog, a storm's flashes. Under the panel, which only darkens it enough for the writing to read.
+        // ── the overview ───────────────────────────────────────────────────────────────────────────────
         group {
-            show: clk_weather > 0
-            clip box { from: 256, 45; size: 325, 183; corner: 14 }
-            body {
-                gradient: 256, 45 to 256, 228, clk.top, clk.bottom
-                box { from: 256, 45; size: 325, 183 }
+            show: clk_page == 0
+            // ── the time ──────────────────────────────────────────────────────────────────────────────────
+            box { from: 22, 45; size: 219, 183; corner: 14; color: #1b120d; opacity: 55% }
+            box { from: 22, 45; size: 219, 183; corner: 14; stroke: 1; color: #f5e8d8; opacity: 9% }
+            text ic_world { at: 38, 61; anchor: center; size: 10; color: #d6a468; family: "tabler-icons" }
+            text clk_zone { at: 47, 61; anchor: left center; size: 7.5; weight: 700; color: #d6a468; width: 188; lines: 1; family: "Inter" }
+            text clk_hm { at: 30, 108; anchor: left center; size: 46; weight: 700; color: #f6e2cf; measure: clk_hm_m; family: "Inter" }
+            text clk_s { at: 33 + clk_hm_m.width, 115; anchor: left center; size: 22; weight: 600; color: #a98a70; measure: clk_s_m; family: "Inter" }
+            box { from: 39 + clk_hm_m.width + clk_s_m.width, 112; size: 22, 12; corner: 4; color: #4a372b; opacity: 80% }
+            text clk_ampm { at: 50 + clk_hm_m.width + clk_s_m.width, 118; anchor: center; size: 6.5; weight: 700; color: #b8a491; family: "Inter" }
+            text clk_date { at: 30, 154; anchor: left center; size: 11.5; weight: 700; color: #f5e8d8; width: 205; lines: 1; family: "Inter" }
+            box { from: 30, 166; size: 104, 15; corner: 7.5; stroke: 1; color: #f5e8d8; opacity: 28% }
+            text clk_week { at: 82, 173.5; anchor: center; size: 8; weight: 600; color: #f5e8d8; family: "Inter" }
+            box { from: 30, 187; size: 26 + clk_name_m.width, 19; corner: 9.5; stroke: 1; color: #d6a468; opacity: 50%; show: clk_names > 0 }
+            text ic_sun { at: 41, 196.5; anchor: center; size: 10; color: #d6a468; show: clk_names > 0; family: "tabler-icons" }
+            text clk_name1 { at: 50, 196.5; anchor: left center; size: 8.5; weight: 600; color: #f5e8d8; measure: clk_name_m; show: clk_names > 0; family: "Inter" }
+            text ic_arrow { at: 36, 221; anchor: center; size: 9; color: #b8a491; show: clk_names > 0; family: "tabler-icons" }
+            text clk_name2 { at: 46, 221; anchor: left center; size: 8.5; weight: 500; color: #b8a491; width: 185; lines: 1; show: clk_names > 0; family: "Inter" }
+
+            // ── the weather ───────────────────────────────────────────────────────────────────────────────
+            // Behind it, the weather itself: the sky of the hour (by day or by night), the sun or the moon, clouds that drift,
+            // rain, snow, fog, a storm's flashes. Under the panel, which only darkens it enough for the writing to read.
+            group {
+                show: clk_weather > 0
+                clip box { from: 256, 45; size: 325, 183; corner: 14 }
+                body {
+                    gradient: 256, 45 to 256, 228, clk.top, clk.bottom
+                    box { from: 256, 45; size: 325, 183 }
+                }
+                // the sun by day, the moon and a few stars by night, where the clouds let them be seen
+                ellipse { at: 470, 96; radius: 40 + 3 * sin(time * 40); color: #ffd27a; opacity: 22%; show: clk_night < 1 and clk_kind <= 2 }
+                ellipse { at: 470, 96; radius: 16; color: #ffe2a0; opacity: 85%; show: clk_night < 1 and clk_kind <= 2 }
+                ellipse { at: 470, 92; radius: 12; color: #efe9da; opacity: 90%; show: clk_night > 0 and clk_kind <= 3 }
+                ellipse { at: 475, 88; radius: 10; color: clk.top; opacity: 95%; show: clk_night > 0 and clk_kind <= 3 }
+                ellipse { at: 300, 70; radius: 1.2; color: #ffffff; opacity: 60% + 30% * sin(time * 90); show: clk_night > 0 and clk_kind <= 2 }
+                ellipse { at: 372, 58; radius: 1; color: #ffffff; opacity: 70%; show: clk_night > 0 and clk_kind <= 2 }
+                ellipse { at: 430, 92; radius: 1.3; color: #ffffff; opacity: 50% + 40% * sin(time * 70 + 40); show: clk_night > 0 and clk_kind <= 2 }
+                ellipse { at: 470, 62; radius: 0.9; color: #ffffff; opacity: 70%; show: clk_night > 0 and clk_kind <= 2 }
+                ellipse { at: 335, 120; radius: 1; color: #ffffff; opacity: 55%; show: clk_night > 0 and clk_kind <= 2 }
+                // clouds: soft bodies that drift along, lighter on a fair day, heavy and dark before rain
+                body {
+                    color: rgb(pick(clk_kind - 1, 255, 242, 201, 185, 122, 215, 75) / 255, pick(clk_kind - 1, 255, 242, 204, 188, 130, 221, 81) / 255, pick(clk_kind - 1, 255, 242, 210, 192, 142, 228, 96) / 255)
+                    opacity: if(clk_kind >= 2, if(clk_night > 0, 28%, if(clk_kind == 2, 42%, 58%)), 0)
+                    // three clouds, each of four puffs melted together, drifting at their own pace
+                    ellipse { at: 256 + mod(time * 6, 420) - 50, 74; radius: 13; blend: 10 }
+                    ellipse { at: 256 + mod(time * 6, 420) - 36, 64; radius: 17; blend: 10 }
+                    ellipse { at: 256 + mod(time * 6, 420) - 18, 68; radius: 14; blend: 10 }
+                    ellipse { at: 256 + mod(time * 6, 420) - 34, 78; radius: 12; scale: 2.2, 0.8; blend: 10 }
+                    ellipse { at: 256 + mod(time * 4 + 230, 440) - 60, 112; radius: 15; blend: 12 }
+                    ellipse { at: 256 + mod(time * 4 + 230, 440) - 40, 100; radius: 21; blend: 12 }
+                    ellipse { at: 256 + mod(time * 4 + 230, 440) - 16, 106; radius: 16; blend: 12 }
+                    ellipse { at: 256 + mod(time * 4 + 230, 440) - 38, 118; radius: 13; scale: 2.6, 0.8; blend: 12 }
+                    ellipse { at: 256 + mod(time * 5 + 120, 430) - 40, 150; radius: 18; blend: 12; show: clk_kind >= 3 }
+                    ellipse { at: 256 + mod(time * 5 + 120, 430) - 14, 142; radius: 23; blend: 12; show: clk_kind >= 3 }
+                    ellipse { at: 256 + mod(time * 5 + 120, 430) - 26, 158; radius: 14; scale: 3, 0.8; blend: 12; show: clk_kind >= 3 }
+                }
+                // fog: long pale bands
+                ellipse { at: 256 + mod(time * 8, 450) - 60, 150; radius: 60; scale: 3, 0.25; color: #e8e8e8; opacity: 22%; show: clk_kind == 4 }
+                ellipse { at: 256 + mod(time * 5 + 200, 450) - 60, 185; radius: 60; scale: 3.4, 0.22; color: #e8e8e8; opacity: 20%; show: clk_kind == 4 }
+                // rain and snow
+                particles { at: 418, 40; area: 340, 4; count: 160; life: 0.5s .. 0.8s; speed: 360 .. 460; direction: 100deg; spread: 3deg; size: 1, 1
+                            colors: #a9c8f5, #a9c8f5; opacity: 70%, 20%; shape: spark; emit: card_open and card_custom == 1 and (clk_kind == 5 or clk_kind == 7) }
+                particles { at: 418, 40; area: 340, 4; count: 120; life: 4s .. 6s; speed: 25 .. 45; direction: 95deg; spread: 30deg; size: 3, 2.2
+                            colors: #ffffff, #ffffff; opacity: 90%, 30%; shape: dot; emit: card_open and card_custom == 1 and clk_kind == 6 }
+                // a storm's flashes, now and then
+                box { from: 256, 45; size: 325, 183; color: #e8ecff; opacity: 60% * pow(max(0, sin(time * 37)), 40); show: clk_kind == 7 }
             }
-            // the sun by day, the moon and a few stars by night, where the clouds let them be seen
-            ellipse { at: 470, 96; radius: 40 + 3 * sin(time * 40); color: #ffd27a; opacity: 22%; show: clk_night < 1 and clk_kind <= 2 }
-            ellipse { at: 470, 96; radius: 16; color: #ffe2a0; opacity: 85%; show: clk_night < 1 and clk_kind <= 2 }
-            ellipse { at: 470, 92; radius: 12; color: #efe9da; opacity: 90%; show: clk_night > 0 and clk_kind <= 3 }
-            ellipse { at: 475, 88; radius: 10; color: clk.top; opacity: 95%; show: clk_night > 0 and clk_kind <= 3 }
-            ellipse { at: 300, 70; radius: 1.2; color: #ffffff; opacity: 60% + 30% * sin(time * 90); show: clk_night > 0 and clk_kind <= 2 }
-            ellipse { at: 372, 58; radius: 1; color: #ffffff; opacity: 70%; show: clk_night > 0 and clk_kind <= 2 }
-            ellipse { at: 430, 92; radius: 1.3; color: #ffffff; opacity: 50% + 40% * sin(time * 70 + 40); show: clk_night > 0 and clk_kind <= 2 }
-            ellipse { at: 470, 62; radius: 0.9; color: #ffffff; opacity: 70%; show: clk_night > 0 and clk_kind <= 2 }
-            ellipse { at: 335, 120; radius: 1; color: #ffffff; opacity: 55%; show: clk_night > 0 and clk_kind <= 2 }
-            // clouds: soft bodies that drift along, lighter on a fair day, heavy and dark before rain
-            body {
-                color: rgb(pick(clk_kind - 1, 255, 242, 201, 185, 122, 215, 75) / 255, pick(clk_kind - 1, 255, 242, 204, 188, 130, 221, 81) / 255, pick(clk_kind - 1, 255, 242, 210, 192, 142, 228, 96) / 255)
-                opacity: if(clk_kind >= 2, if(clk_night > 0, 28%, if(clk_kind == 2, 42%, 58%)), 0)
-                // three clouds, each of four puffs melted together, drifting at their own pace
-                ellipse { at: 256 + mod(time * 6, 420) - 50, 74; radius: 13; blend: 10 }
-                ellipse { at: 256 + mod(time * 6, 420) - 36, 64; radius: 17; blend: 10 }
-                ellipse { at: 256 + mod(time * 6, 420) - 18, 68; radius: 14; blend: 10 }
-                ellipse { at: 256 + mod(time * 6, 420) - 34, 78; radius: 12; scale: 2.2, 0.8; blend: 10 }
-                ellipse { at: 256 + mod(time * 4 + 230, 440) - 60, 112; radius: 15; blend: 12 }
-                ellipse { at: 256 + mod(time * 4 + 230, 440) - 40, 100; radius: 21; blend: 12 }
-                ellipse { at: 256 + mod(time * 4 + 230, 440) - 16, 106; radius: 16; blend: 12 }
-                ellipse { at: 256 + mod(time * 4 + 230, 440) - 38, 118; radius: 13; scale: 2.6, 0.8; blend: 12 }
-                ellipse { at: 256 + mod(time * 5 + 120, 430) - 40, 150; radius: 18; blend: 12; show: clk_kind >= 3 }
-                ellipse { at: 256 + mod(time * 5 + 120, 430) - 14, 142; radius: 23; blend: 12; show: clk_kind >= 3 }
-                ellipse { at: 256 + mod(time * 5 + 120, 430) - 26, 158; radius: 14; scale: 3, 0.8; blend: 12; show: clk_kind >= 3 }
+            box { from: 256, 45; size: 325, 183; corner: 14; color: #1b120d; opacity: if(clk_weather > 0, 38%, 55%) }
+            box { from: 256, 45; size: 325, 183; corner: 14; stroke: 1; color: #f5e8d8; opacity: 9% }
+            text ic_sun { at: 273, 65; anchor: center; size: 10; color: #d6a468; family: "tabler-icons" }
+            text clk_place { at: 283, 65; anchor: left center; size: 7.5; weight: 700; color: #d6a468; width: 124; lines: 1; family: "Inter" }
+            box { from: 465 - clk_sky_m.width, 56; size: 92, 18; corner: 9; color: clk.aqi; opacity: 14%; show: clk_aqi_on > 0 }
+            box { from: 465 - clk_sky_m.width, 56; size: 92, 18; corner: 9; stroke: 1; color: clk.aqi; opacity: 55%; show: clk_aqi_on > 0 }
+            text ic_leaf { at: 475 - clk_sky_m.width, 65; anchor: center; size: 9; color: clk.aqi; show: clk_aqi_on > 0; family: "tabler-icons" }
+            text clk_aqi { at: 484 - clk_sky_m.width, 65; anchor: left center; size: 7.5; weight: 700; color: clk.aqi; width: 70; lines: 1; show: clk_aqi_on > 0; family: "Inter" }
+            box { from: 565 - clk_sky_m.width, 56; size: clk_sky_m.width + 16, 18; corner: 9; color: #6b4a33; opacity: 90% }
+            text clk_sky { at: 573, 65; anchor: right center; size: 8; weight: 600; color: #f5e8d8; measure: clk_sky_m; family: "Inter" }
+            text clk_temp { at: 268, 107; anchor: left center; size: 44; weight: 700; color: #f6e2cf; measure: clk_temp_m; family: "Inter" }
+            text "°C" { at: 270 + clk_temp_m.width, 99; anchor: left center; size: 17; weight: 600; color: #d6a468; family: "Inter" }
+            box { from: 342 + clk_temp_m.width - 54, 109; size: 82, 14; corner: 7; color: #4a372b; opacity: 80% }
+            text clk_minmax { at: 383 + clk_temp_m.width - 54, 116; anchor: center; size: 7.5; weight: 600; color: #f5e8d8; family: "Inter" }
+            text clk_feels { at: 268, 136; anchor: left center; size: 8.5; weight: 500; color: #b8a491; family: "Inter" }
+            text ic_drop { at: 362, 136; anchor: center; size: 8; color: #6fb7e8; family: "tabler-icons" }
+            text clk_rain { at: 369, 136; anchor: left center; size: 8.5; weight: 600; color: #f5e8d8; family: "Inter" }
+            box { from: 538, 87; size: 36, 36; corner: 11; color: #f7c873; opacity: 18% }
+            box { from: 538, 87; size: 36, 36; corner: 11; stroke: 1; color: #f7c873; opacity: 45% }
+            text clk_g_sky { at: 556, 105; anchor: center; size: 18; color: #f7c873; family: "tabler-icons" }
+            // the daylight
+            box { from: 271, 154; size: 298, 28; corner: 8; color: #000000; opacity: 22% }
+            box { from: 271, 154; size: 298, 28; corner: 8; stroke: 1; color: #f5e8d8; opacity: 8% }
+            text clk_rise { at: 281, 163; anchor: left center; size: 7.5; weight: 600; color: #b8a491; family: "Inter" }
+            text clk_light { at: 420, 163; anchor: center; size: 7.5; weight: 700; color: #f7c873; family: "Inter" }
+            text clk_set { at: 559, 163; anchor: right center; size: 7.5; weight: 600; color: #b8a491; family: "Inter" }
+            box { from: 281, 173; size: 278, 3; corner: 1.5; color: #f5e8d8; opacity: 14% }
+            box { from: 281, 173; size: 278 * clamp(clk_day, 0, 1), 3; corner: 1.5; color: #f7c873 }
+            // tomorrow and the day after
+            box { from: 271, 190; size: 144, 30; corner: 9; color: #000000; opacity: 22% }
+            box { from: 271, 190; size: 144, 30; corner: 9; stroke: 1; color: #f5e8d8; opacity: 8% }
+            text clk_t1l { at: 280, 199; anchor: left center; size: 7; weight: 500; color: #b8a491; family: "Inter" }
+            text clk_t1 { at: 280, 211; anchor: left center; size: 9; weight: 700; color: #f5e8d8; width: 110; lines: 1; family: "Inter" }
+            text clk_g_t1 { at: 400, 205; anchor: center; size: 14; color: #b8a491; family: "tabler-icons" }
+            box { from: 423, 190; size: 146, 30; corner: 9; color: #000000; opacity: 22% }
+            box { from: 423, 190; size: 146, 30; corner: 9; stroke: 1; color: #f5e8d8; opacity: 8% }
+            text clk_t2l { at: 432, 199; anchor: left center; size: 7; weight: 500; color: #b8a491; family: "Inter" }
+            text clk_t2 { at: 432, 211; anchor: left center; size: 9; weight: 700; color: #f5e8d8; width: 112; lines: 1; family: "Inter" }
+            text clk_g_t2 { at: 553, 205; anchor: center; size: 14; color: #f7c873; family: "tabler-icons" }
+
+            // ── the world clocks ──────────────────────────────────────────────────────────────────────────
+            text ic_world { at: 22, 252; anchor: center; size: 12; color: #d6a468; family: "tabler-icons" }
+            text clk_w_title { at: 36, 252; anchor: left center; size: 12.5; weight: 700; color: #f5e8d8; family: "Inter" }
+            for w in clkw {
+                box { from: 13 + w.index * 114, 270; size: 106, 70; corner: 11; color: #1b120d; opacity: 50% }
+                box { from: 13 + w.index * 114, 270; size: 106, 70; corner: 11; stroke: if(w.home, 1.5, 1); color: if(w.home, #f7c873, #f5e8d8); opacity: if(w.home, 70%, 9%) }
+                text w.name { at: 23 + w.index * 114, 284; anchor: left center; size: 9; weight: 700; color: #f5e8d8; width: 70; lines: 1; family: "Inter" }
+                text ic_moon { at: 107 + w.index * 114, 284; anchor: center; size: 9; color: #b8a491; show: w.night; family: "tabler-icons" }
+                text ic_sun { at: 107 + w.index * 114, 284; anchor: center; size: 9; color: #f7c873; show: not w.night; family: "tabler-icons" }
+                text w.time { at: 23 + w.index * 114, 308; anchor: left center; size: 21; weight: 700; color: #f6e2cf; family: "Inter" }
+                box { from: 23 + w.index * 114, 322; size: 34, 11; corner: 4; color: #4a372b; opacity: 85%; show: w.home }
+                text w.note { at: 40 + w.index * 114, 327.5; anchor: center; size: 6.5; weight: 600; color: #b8a491; width: 34; lines: 1; align: center; show: w.home; family: "Inter" }
+                text w.note { at: 23 + w.index * 114, 327.5; anchor: left center; size: 6.5; weight: 600; color: #b8a491; width: 64; lines: 1; show: not w.home; family: "Inter" }
+                text w.tag { at: 117 + w.index * 114, 327.5; anchor: right center; size: 6.5; weight: 600; color: #f5e8d8; family: "Inter" }
             }
-            // fog: long pale bands
-            ellipse { at: 256 + mod(time * 8, 450) - 60, 150; radius: 60; scale: 3, 0.25; color: #e8e8e8; opacity: 22%; show: clk_kind == 4 }
-            ellipse { at: 256 + mod(time * 5 + 200, 450) - 60, 185; radius: 60; scale: 3.4, 0.22; color: #e8e8e8; opacity: 20%; show: clk_kind == 4 }
-            // rain and snow
-            particles { at: 418, 40; area: 340, 4; count: 160; life: 0.5s .. 0.8s; speed: 360 .. 460; direction: 100deg; spread: 3deg; size: 1, 1
-                        colors: #a9c8f5, #a9c8f5; opacity: 70%, 20%; shape: spark; emit: card_open and card_custom == 1 and (clk_kind == 5 or clk_kind == 7) }
-            particles { at: 418, 40; area: 340, 4; count: 120; life: 4s .. 6s; speed: 25 .. 45; direction: 95deg; spread: 30deg; size: 3, 2.2
-                        colors: #ffffff, #ffffff; opacity: 90%, 30%; shape: dot; emit: card_open and card_custom == 1 and clk_kind == 6 }
-            // a storm's flashes, now and then
-            box { from: 256, 45; size: 325, 183; color: #e8ecff; opacity: 60% * pow(max(0, sin(time * 37)), 40); show: clk_kind == 7 }
-        }
-        box { from: 256, 45; size: 325, 183; corner: 14; color: #1b120d; opacity: if(clk_weather > 0, 38%, 55%) }
-        box { from: 256, 45; size: 325, 183; corner: 14; stroke: 1; color: #f5e8d8; opacity: 9% }
-        text ic_sun { at: 273, 65; anchor: center; size: 10; color: #d6a468; family: "tabler-icons" }
-        text clk_place { at: 283, 65; anchor: left center; size: 7.5; weight: 700; color: #d6a468; width: 124; lines: 1; family: "Inter" }
-        box { from: 465 - clk_sky_m.width, 56; size: 92, 18; corner: 9; color: clk.aqi; opacity: 14%; show: clk_aqi_on > 0 }
-        box { from: 465 - clk_sky_m.width, 56; size: 92, 18; corner: 9; stroke: 1; color: clk.aqi; opacity: 55%; show: clk_aqi_on > 0 }
-        text ic_leaf { at: 475 - clk_sky_m.width, 65; anchor: center; size: 9; color: clk.aqi; show: clk_aqi_on > 0; family: "tabler-icons" }
-        text clk_aqi { at: 484 - clk_sky_m.width, 65; anchor: left center; size: 7.5; weight: 700; color: clk.aqi; width: 70; lines: 1; show: clk_aqi_on > 0; family: "Inter" }
-        box { from: 565 - clk_sky_m.width, 56; size: clk_sky_m.width + 16, 18; corner: 9; color: #6b4a33; opacity: 90% }
-        text clk_sky { at: 573, 65; anchor: right center; size: 8; weight: 600; color: #f5e8d8; measure: clk_sky_m; family: "Inter" }
-        text clk_temp { at: 268, 107; anchor: left center; size: 44; weight: 700; color: #f6e2cf; measure: clk_temp_m; family: "Inter" }
-        text "°C" { at: 270 + clk_temp_m.width, 99; anchor: left center; size: 17; weight: 600; color: #d6a468; family: "Inter" }
-        box { from: 342 + clk_temp_m.width - 54, 109; size: 82, 14; corner: 7; color: #4a372b; opacity: 80% }
-        text clk_minmax { at: 383 + clk_temp_m.width - 54, 116; anchor: center; size: 7.5; weight: 600; color: #f5e8d8; family: "Inter" }
-        text clk_feels { at: 268, 136; anchor: left center; size: 8.5; weight: 500; color: #b8a491; family: "Inter" }
-        text ic_drop { at: 362, 136; anchor: center; size: 8; color: #6fb7e8; family: "tabler-icons" }
-        text clk_rain { at: 369, 136; anchor: left center; size: 8.5; weight: 600; color: #f5e8d8; family: "Inter" }
-        box { from: 538, 87; size: 36, 36; corner: 11; color: #f7c873; opacity: 18% }
-        box { from: 538, 87; size: 36, 36; corner: 11; stroke: 1; color: #f7c873; opacity: 45% }
-        text clk_g_sky { at: 556, 105; anchor: center; size: 18; color: #f7c873; family: "tabler-icons" }
-        // the daylight
-        box { from: 271, 154; size: 298, 28; corner: 8; color: #000000; opacity: 22% }
-        box { from: 271, 154; size: 298, 28; corner: 8; stroke: 1; color: #f5e8d8; opacity: 8% }
-        text clk_rise { at: 281, 163; anchor: left center; size: 7.5; weight: 600; color: #b8a491; family: "Inter" }
-        text clk_light { at: 420, 163; anchor: center; size: 7.5; weight: 700; color: #f7c873; family: "Inter" }
-        text clk_set { at: 559, 163; anchor: right center; size: 7.5; weight: 600; color: #b8a491; family: "Inter" }
-        box { from: 281, 173; size: 278, 3; corner: 1.5; color: #f5e8d8; opacity: 14% }
-        box { from: 281, 173; size: 278 * clamp(clk_day, 0, 1), 3; corner: 1.5; color: #f7c873 }
-        // tomorrow and the day after
-        box { from: 271, 190; size: 144, 30; corner: 9; color: #000000; opacity: 22% }
-        box { from: 271, 190; size: 144, 30; corner: 9; stroke: 1; color: #f5e8d8; opacity: 8% }
-        text clk_t1l { at: 280, 199; anchor: left center; size: 7; weight: 500; color: #b8a491; family: "Inter" }
-        text clk_t1 { at: 280, 211; anchor: left center; size: 9; weight: 700; color: #f5e8d8; width: 110; lines: 1; family: "Inter" }
-        text clk_g_t1 { at: 400, 205; anchor: center; size: 14; color: #b8a491; family: "tabler-icons" }
-        box { from: 423, 190; size: 146, 30; corner: 9; color: #000000; opacity: 22% }
-        box { from: 423, 190; size: 146, 30; corner: 9; stroke: 1; color: #f5e8d8; opacity: 8% }
-        text clk_t2l { at: 432, 199; anchor: left center; size: 7; weight: 500; color: #b8a491; family: "Inter" }
-        text clk_t2 { at: 432, 211; anchor: left center; size: 9; weight: 700; color: #f5e8d8; width: 112; lines: 1; family: "Inter" }
-        text clk_g_t2 { at: 553, 205; anchor: center; size: 14; color: #f7c873; family: "tabler-icons" }
 
-        // ── the world clocks ──────────────────────────────────────────────────────────────────────────
-        text ic_world { at: 22, 252; anchor: center; size: 12; color: #d6a468; family: "tabler-icons" }
-        text clk_w_title { at: 36, 252; anchor: left center; size: 12.5; weight: 700; color: #f5e8d8; family: "Inter" }
-        for w in clkw {
-            box { from: 13 + w.index * 114, 270; size: 106, 70; corner: 11; color: #1b120d; opacity: 50% }
-            box { from: 13 + w.index * 114, 270; size: 106, 70; corner: 11; stroke: if(w.home, 1.5, 1); color: if(w.home, #f7c873, #f5e8d8); opacity: if(w.home, 70%, 9%) }
-            text w.name { at: 23 + w.index * 114, 284; anchor: left center; size: 9; weight: 700; color: #f5e8d8; width: 70; lines: 1; family: "Inter" }
-            text ic_moon { at: 107 + w.index * 114, 284; anchor: center; size: 9; color: #b8a491; show: w.night; family: "tabler-icons" }
-            text ic_sun { at: 107 + w.index * 114, 284; anchor: center; size: 9; color: #f7c873; show: not w.night; family: "tabler-icons" }
-            text w.time { at: 23 + w.index * 114, 308; anchor: left center; size: 21; weight: 700; color: #f6e2cf; family: "Inter" }
-            box { from: 23 + w.index * 114, 322; size: 34, 11; corner: 4; color: #4a372b; opacity: 85%; show: w.home }
-            text w.note { at: 40 + w.index * 114, 327.5; anchor: center; size: 6.5; weight: 600; color: #b8a491; width: 34; lines: 1; align: center; show: w.home; family: "Inter" }
-            text w.note { at: 23 + w.index * 114, 327.5; anchor: left center; size: 6.5; weight: 600; color: #b8a491; width: 64; lines: 1; show: not w.home; family: "Inter" }
-            text w.tag { at: 117 + w.index * 114, 327.5; anchor: right center; size: 6.5; weight: 600; color: #f5e8d8; family: "Inter" }
+            // ── the digital wellbeing ─────────────────────────────────────────────────────────────────────
+            box { from: 13, 360; size: 568, 132; corner: 14; color: #1b120d; opacity: 55% }
+            box { from: 13, 360; size: 568, 132; corner: 14; stroke: 1; color: #f5e8d8; opacity: 9% }
+            text ic_bulb { at: 30, 382; anchor: center; size: 12; color: #d6a468; family: "tabler-icons" }
+            text clk_wb_head { at: 44, 382; anchor: left center; size: 12.5; weight: 700; color: #f5e8d8; family: "Inter" }
+            box { from: 395, 373; size: 172, 18; corner: 9; color: if(clk_wb_good > 0, #6fd39a, #e5a84a); opacity: 14%; show: clk_wb_delta_on > 0 }
+            box { from: 395, 373; size: 172, 18; corner: 9; stroke: 1; color: if(clk_wb_good > 0, #6fd39a, #e5a84a); opacity: 55%; show: clk_wb_delta_on > 0 }
+            text clk_wb_delta { at: 481, 382; anchor: center; size: 7.5; weight: 700; color: if(clk_wb_good > 0, #6fd39a, #e5a84a); width: 164; lines: 1; align: center; show: clk_wb_delta_on > 0; family: "Inter" }
+            text clk_wb_sub { at: 30, 403; anchor: left center; size: 8.5; weight: 500; color: #b8a491; width: 530; lines: 1; show: clk_wb_on > 0; family: "Inter" }
+            text clk_wb_off { at: 30, 430; anchor: left center; size: 9; weight: 500; color: #b8a491; width: 530; lines: 2; show: clk_wb_on < 1; family: "Inter" }
+            for a in clka {
+                box { from: 30 + a.index * 180, 416; size: 172, 32; corner: 8; color: #000000; opacity: 22%; show: clk_wb_on > 0 }
+                box { from: 30 + a.index * 180, 416; size: 172, 32; corner: 8; stroke: 1; color: #f5e8d8; opacity: 8%; show: clk_wb_on > 0 }
+                box { from: 38 + a.index * 180, 427; size: 5, 5; corner: 2.5; color: #f7c873; opacity: 100%; show: clk_wb_on > 0 }
+                text a.name { at: 48 + a.index * 180, 429.5; anchor: left center; size: 8; weight: 600; color: #f5e8d8; width: 80; lines: 1; show: clk_wb_on > 0; family: "Inter" }
+                text a.time { at: 194 + a.index * 180, 429.5; anchor: right center; size: 7.5; weight: 600; color: #b8a491; show: clk_wb_on > 0; family: "Inter" }
+                box { from: 38 + a.index * 180, 438; size: 156, 4; corner: 2; color: #f5e8d8; opacity: 12%; show: clk_wb_on > 0 }
+                box { from: 38 + a.index * 180, 438; size: 156 * clamp(a.pct, 0, 1), 4; corner: 2; color: #f7c873; show: clk_wb_on > 0 }
+            }
+            box { from: 30, 458; size: 536, 1; color: #f5e8d8; opacity: 8%; show: clk_wb_on > 0 }
+            text ic_bulb { at: 40, 474; anchor: center; size: 9; color: #d6a468; show: clk_wb_on > 0; family: "tabler-icons" }
+            text clk_wb_tip { at: 50, 474; anchor: left center; size: 7.5; weight: 500; color: #b8a491; width: 380; lines: 1; show: clk_wb_on > 0; family: "Inter" }
+            text clk_wb_goal { at: 566, 474; anchor: right center; size: 7.5; weight: 700; color: #f5e8d8; show: clk_wb_on > 0; family: "Inter" }
         }
 
-        // ── the digital wellbeing ─────────────────────────────────────────────────────────────────────
-        box { from: 13, 360; size: 568, 132; corner: 14; color: #1b120d; opacity: 55% }
-        box { from: 13, 360; size: 568, 132; corner: 14; stroke: 1; color: #f5e8d8; opacity: 9% }
-        text ic_bulb { at: 30, 382; anchor: center; size: 12; color: #d6a468; family: "tabler-icons" }
-        text clk_wb_head { at: 44, 382; anchor: left center; size: 12.5; weight: 700; color: #f5e8d8; family: "Inter" }
-        box { from: 395, 373; size: 172, 18; corner: 9; color: if(clk_wb_good > 0, #6fd39a, #e5a84a); opacity: 14%; show: clk_wb_delta_on > 0 }
-        box { from: 395, 373; size: 172, 18; corner: 9; stroke: 1; color: if(clk_wb_good > 0, #6fd39a, #e5a84a); opacity: 55%; show: clk_wb_delta_on > 0 }
-        text clk_wb_delta { at: 481, 382; anchor: center; size: 7.5; weight: 700; color: if(clk_wb_good > 0, #6fd39a, #e5a84a); width: 164; lines: 1; align: center; show: clk_wb_delta_on > 0; family: "Inter" }
-        text clk_wb_sub { at: 30, 403; anchor: left center; size: 8.5; weight: 500; color: #b8a491; width: 530; lines: 1; show: clk_wb_on > 0; family: "Inter" }
-        text clk_wb_off { at: 30, 430; anchor: left center; size: 9; weight: 500; color: #b8a491; width: 530; lines: 2; show: clk_wb_on < 1; family: "Inter" }
-        for a in clka {
-            box { from: 30 + a.index * 180, 416; size: 172, 32; corner: 8; color: #000000; opacity: 22%; show: clk_wb_on > 0 }
-            box { from: 30 + a.index * 180, 416; size: 172, 32; corner: 8; stroke: 1; color: #f5e8d8; opacity: 8%; show: clk_wb_on > 0 }
-            box { from: 38 + a.index * 180, 427; size: 5, 5; corner: 2.5; color: #f7c873; opacity: 100%; show: clk_wb_on > 0 }
-            text a.name { at: 48 + a.index * 180, 429.5; anchor: left center; size: 8; weight: 600; color: #f5e8d8; width: 80; lines: 1; show: clk_wb_on > 0; family: "Inter" }
-            text a.time { at: 194 + a.index * 180, 429.5; anchor: right center; size: 7.5; weight: 600; color: #b8a491; show: clk_wb_on > 0; family: "Inter" }
-            box { from: 38 + a.index * 180, 438; size: 156, 4; corner: 2; color: #f5e8d8; opacity: 12%; show: clk_wb_on > 0 }
-            box { from: 38 + a.index * 180, 438; size: 156 * clamp(a.pct, 0, 1), 4; corner: 2; color: #f7c873; show: clk_wb_on > 0 }
-        }
-        box { from: 30, 458; size: 536, 1; color: #f5e8d8; opacity: 8%; show: clk_wb_on > 0 }
-        text ic_bulb { at: 40, 474; anchor: center; size: 9; color: #d6a468; show: clk_wb_on > 0; family: "tabler-icons" }
-        text clk_wb_tip { at: 50, 474; anchor: left center; size: 7.5; weight: 500; color: #b8a491; width: 380; lines: 1; show: clk_wb_on > 0; family: "Inter" }
-        text clk_wb_goal { at: 566, 474; anchor: right center; size: 7.5; weight: 700; color: #f5e8d8; show: clk_wb_on > 0; family: "Inter" }
+        // ── timers and alarms ─────────────────────────────────────────────────────────────────────────
+        group {
+            show: clk_page == 1
+            // the stopwatch
+            box { from: 22, 45; size: 219, 183; corner: 14; color: #1b120d; opacity: 55% }
+            box { from: 22, 45; size: 219, 183; corner: 14; stroke: 1; color: #f5e8d8; opacity: 9% }
+            text ic_watch { at: 38, 61; anchor: center; size: 10; color: #d6a468; family: "tabler-icons" }
+            text clk_t_watch { at: 47, 61; anchor: left center; size: 7.5; weight: 700; color: #d6a468; family: "Inter" }
+            text clk_sw { at: 30, 100; anchor: left center; size: 34; weight: 700; color: #f6e2cf; family: "Inter" }
+            for l in clklap {
+                text l.name { at: 30, 128 + l.index * 15; anchor: left center; size: 8.5; weight: 500; color: #b8a491; family: "Inter" }
+                text l.time { at: 232, 128 + l.index * 15; anchor: right center; size: 8.5; weight: 700; color: #f5e8d8; family: "Inter" }
+            }
+            box { from: 30, 196; size: 62, 22; corner: 11; color: if(clk_sw_run > 0, #4a372b, #f7c873); opacity: if(clk_sw_run > 0, 70%, 30%) }
+            text ic_play { at: 42, 207; anchor: center; size: 9; color: #f7c873; family: "tabler-icons" }
+            text clk_sw_btn { at: 51, 207; anchor: left center; size: 8; weight: 700; color: #f5e8d8; family: "Inter" }
+            box { from: 98, 196; size: 62, 22; corner: 11; color: #4a372b; opacity: if(clk_sw_run > 0, 70%, 30%) }
+            text ic_flag { at: 110, 207; anchor: center; size: 9; color: #d6a468; opacity: if(clk_sw_run > 0, 100%, 40%); family: "tabler-icons" }
+            text clk_lap_btn { at: 119, 207; anchor: left center; size: 8; weight: 600; color: #f5e8d8; opacity: if(clk_sw_run > 0, 100%, 40%); family: "Inter" }
+            box { from: 166, 196; size: 66, 22; corner: 11; color: #4a372b; opacity: 70% }
+            text ic_reset { at: 178, 207; anchor: center; size: 9; color: #d6a468; family: "tabler-icons" }
+            text clk_reset_btn { at: 187, 207; anchor: left center; size: 8; weight: 600; color: #f5e8d8; width: 44; lines: 1; family: "Inter" }
+            zone box sw_go { from: 30, 196; size: 62, 22; cursor: pointer; active: card_open and card_custom == 1 and clk_page == 1; label: "{clk_sw_btn}" }
+            zone box sw_lap { from: 98, 196; size: 62, 22; cursor: pointer; active: card_open and card_custom == 1 and clk_page == 1 and clk_sw_run > 0; label: "{clk_lap_btn}" }
+            zone box sw_reset { from: 166, 196; size: 66, 22; cursor: pointer; active: card_open and card_custom == 1 and clk_page == 1; label: "{clk_reset_btn}" }
+            on press sw_go { emit clk_act(1) }
+            on press sw_lap { emit clk_act(2) }
+            on press sw_reset { emit clk_act(3) }
 
+            // the timer
+            box { from: 256, 45; size: 325, 183; corner: 14; color: #1b120d; opacity: 55% }
+            box { from: 256, 45; size: 325, 183; corner: 14; stroke: 1; color: #f5e8d8; opacity: 9% }
+            text ic_hourglass { at: 273, 61; anchor: center; size: 10; color: #d6a468; family: "tabler-icons" }
+            text clk_t_timer { at: 283, 61; anchor: left center; size: 7.5; weight: 700; color: #d6a468; family: "Inter" }
+            text clk_tm { at: 268, 100; anchor: left center; size: 34; weight: 700; color: #f6e2cf; family: "Inter" }
+            box { from: 271, 124; size: 298, 4; corner: 2; color: #f5e8d8; opacity: 12% }
+            box { from: 271, 124; size: 298 * clamp(clk_tm_frac, 0, 1), 4; corner: 2; color: #f7c873 }
+            // the length: minus and plus, or the wheel over it
+            box { from: 271, 136; size: 22, 20; corner: 10; color: #4a372b; opacity: if(clk_tm_started > 0, 30%, 70%) }
+            text ic_minus { at: 282, 146; anchor: center; size: 10; color: #f5e8d8; opacity: if(clk_tm_started > 0, 40%, 100%); family: "tabler-icons" }
+            text clk_tm_len { at: 330, 146; anchor: center; size: 9; weight: 700; color: #f5e8d8; family: "Inter" }
+            box { from: 367, 136; size: 22, 20; corner: 10; color: #4a372b; opacity: if(clk_tm_started > 0, 30%, 70%) }
+            text ic_plus { at: 378, 146; anchor: center; size: 10; color: #f5e8d8; opacity: if(clk_tm_started > 0, 40%, 100%); family: "tabler-icons" }
+            zone box tm_minus { from: 271, 136; size: 22, 20; cursor: pointer; active: card_open and card_custom == 1 and clk_page == 1 and clk_tm_started < 1; label: "−" }
+            zone box tm_plus { from: 367, 136; size: 22, 20; cursor: pointer; active: card_open and card_custom == 1 and clk_page == 1 and clk_tm_started < 1; label: "+" }
+            zone box tm_len { from: 296, 136; size: 68, 20; active: card_open and card_custom == 1 and clk_page == 1 and clk_tm_started < 1; label: "{clk_tm_len}" }
+            on press tm_minus { emit clk_act(7) }
+            on press tm_plus { emit clk_act(6) }
+            on scroll tm_len { emit clk_act(if(wheel > 0, 6, 7)) }
+            // ready lengths
+            for q in clkpre {
+                box { from: 271 + q.index * 50, 166; size: 44, 20; corner: 10; color: #4a372b; opacity: 60% + 30% * pre_hit.hover }
+                text q.label { at: 293 + q.index * 50, 176; anchor: center; size: 8; weight: 600; color: #f5e8d8; family: "Inter" }
+                zone box pre_hit { from: 271 + q.index * 50, 166; size: 44, 20; cursor: pointer; active: card_open and card_custom == 1 and clk_page == 1; label: "{q.label}" }
+                on press pre_hit { emit clk_act(10 + q.index) }
+            }
+            box { from: 271, 196; size: 92, 22; corner: 11; color: if(clk_tm_run > 0, #4a372b, #f7c873); opacity: if(clk_tm_run > 0, 70%, 30%) }
+            text ic_play { at: 284, 207; anchor: center; size: 9; color: #f7c873; family: "tabler-icons" }
+            text clk_tm_btn { at: 293, 207; anchor: left center; size: 8; weight: 700; color: #f5e8d8; width: 66; lines: 1; family: "Inter" }
+            box { from: 369, 196; size: 74, 22; corner: 11; color: #4a372b; opacity: 70%; show: clk_tm_started > 0 }
+            text ic_x { at: 381, 207; anchor: center; size: 9; color: #e5484d; show: clk_tm_started > 0; family: "tabler-icons" }
+            text clk_tm_cancel { at: 390, 207; anchor: left center; size: 8; weight: 600; color: #f5e8d8; show: clk_tm_started > 0; family: "Inter" }
+            zone box tm_go { from: 271, 196; size: 92, 22; cursor: pointer; active: card_open and card_custom == 1 and clk_page == 1; label: "{clk_tm_btn}" }
+            zone box tm_cancel { from: 369, 196; size: 74, 22; cursor: pointer; active: card_open and card_custom == 1 and clk_page == 1 and clk_tm_started > 0; label: "{clk_tm_cancel}" }
+            on press tm_go { emit clk_act(4) }
+            on press tm_cancel { emit clk_act(5) }
+
+            // the alarms
+            box { from: 13, 245; size: 568, 247; corner: 14; color: #1b120d; opacity: 55% }
+            box { from: 13, 245; size: 568, 247; corner: 14; stroke: 1; color: #f5e8d8; opacity: 9% }
+            text ic_alarm { at: 30, 262; anchor: center; size: 10; color: #d6a468; family: "tabler-icons" }
+            text clk_t_alarms { at: 40, 262; anchor: left center; size: 7.5; weight: 700; color: #d6a468; family: "Inter" }
+            text clk_al_none { at: 297, 340; anchor: center; size: 10; weight: 500; color: #b8a491; show: clk_al_count < 1; family: "Inter" }
+            for a in clkal {
+                box { from: 30 + mod(a.index, 3) * 184, 278 + (a.index - mod(a.index, 3)) / 3 * 72; size: 176, 64; corner: 12; color: #000000; opacity: 22% + 10% * al_hit.hover }
+                box { from: 30 + mod(a.index, 3) * 184, 278 + (a.index - mod(a.index, 3)) / 3 * 72; size: 176, 64; corner: 12; stroke: 1; color: if(a.on, #f7c873, #f5e8d8); opacity: if(a.on, 45%, 8%) }
+                text a.time { at: 44 + mod(a.index, 3) * 184, 303 + (a.index - mod(a.index, 3)) / 3 * 72; anchor: left center; size: 22; weight: 700; color: if(a.on, #f6e2cf, #8a7666); family: "Inter" }
+                text a.state { at: 44 + mod(a.index, 3) * 184, 326 + (a.index - mod(a.index, 3)) / 3 * 72; anchor: left center; size: 7.5; weight: 600; color: #b8a491; family: "Inter" }
+                box { from: 162 + mod(a.index, 3) * 184, 300 + (a.index - mod(a.index, 3)) / 3 * 72; size: 32, 18; corner: 9; color: if(a.on, #f7c873, #4a372b) }
+                ellipse { at: if(a.on, 185, 171) + mod(a.index, 3) * 184, 309 + (a.index - mod(a.index, 3)) / 3 * 72; radius: 7; color: if(a.on, #1b120d, #b8a491) }
+                zone box al_hit { from: 30 + mod(a.index, 3) * 184, 278 + (a.index - mod(a.index, 3)) / 3 * 72; size: 176, 64; cursor: pointer; active: card_open and card_custom == 1 and clk_page == 1; label: "{a.time}"; selected: a.on }
+                on press al_hit { emit clk_act(20 + a.index) }
+            }
+            // a new alarm: the hour and the minute, each with minus and plus (or the wheel), then add
+            box { from: 30, 432; size: 536, 1; color: #f5e8d8; opacity: 8% }
+            text clk_t_new { at: 30, 458; anchor: left center; size: 7.5; weight: 700; color: #d6a468; family: "Inter" }
+            box { from: 112, 447; size: 20, 20; corner: 10; color: #4a372b; opacity: 70% }
+            text ic_minus { at: 122, 457; anchor: center; size: 9; color: #f5e8d8; family: "tabler-icons" }
+            text clk_al_h { at: 150, 457; anchor: center; size: 15; weight: 700; color: #f6e2cf; family: "Inter" }
+            box { from: 168, 447; size: 20, 20; corner: 10; color: #4a372b; opacity: 70% }
+            text ic_plus { at: 178, 457; anchor: center; size: 9; color: #f5e8d8; family: "tabler-icons" }
+            text ":" { at: 197, 456; anchor: center; size: 15; weight: 700; color: #b8a491; family: "Inter" }
+            box { from: 206, 447; size: 20, 20; corner: 10; color: #4a372b; opacity: 70% }
+            text ic_minus { at: 216, 457; anchor: center; size: 9; color: #f5e8d8; family: "tabler-icons" }
+            text clk_al_m { at: 244, 457; anchor: center; size: 15; weight: 700; color: #f6e2cf; family: "Inter" }
+            box { from: 262, 447; size: 20, 20; corner: 10; color: #4a372b; opacity: 70% }
+            text ic_plus { at: 272, 457; anchor: center; size: 9; color: #f5e8d8; family: "tabler-icons" }
+            zone box h_minus { from: 112, 447; size: 20, 20; cursor: pointer; active: card_open and card_custom == 1 and clk_page == 1; label: "−" }
+            zone box h_plus { from: 168, 447; size: 20, 20; cursor: pointer; active: card_open and card_custom == 1 and clk_page == 1; label: "+" }
+            zone box h_wheel { from: 134, 447; size: 32, 20; active: card_open and card_custom == 1 and clk_page == 1; label: "{clk_al_h}" }
+            zone box m_minus { from: 206, 447; size: 20, 20; cursor: pointer; active: card_open and card_custom == 1 and clk_page == 1; label: "−" }
+            zone box m_plus { from: 262, 447; size: 20, 20; cursor: pointer; active: card_open and card_custom == 1 and clk_page == 1; label: "+" }
+            zone box m_wheel { from: 228, 447; size: 32, 20; active: card_open and card_custom == 1 and clk_page == 1; label: "{clk_al_m}" }
+            on press h_minus { emit clk_act(31) }
+            on press h_plus { emit clk_act(30) }
+            on scroll h_wheel { emit clk_act(if(wheel > 0, 30, 31)) }
+            on press m_minus { emit clk_act(33) }
+            on press m_plus { emit clk_act(32) }
+            on scroll m_wheel { emit clk_act(if(wheel > 0, 32, 33)) }
+            box { from: 296, 446; size: 92, 22; corner: 11; color: #f7c873; opacity: 30% + 20% * add_hit.hover }
+            text ic_alarmplus { at: 309, 457; anchor: center; size: 9; color: #f7c873; family: "tabler-icons" }
+            text clk_al_add { at: 318, 457; anchor: left center; size: 8; weight: 700; color: #f5e8d8; width: 66; lines: 1; family: "Inter" }
+            zone box add_hit { from: 296, 446; size: 92, 22; cursor: pointer; active: card_open and card_custom == 1 and clk_page == 1; label: "{clk_al_add}" }
+            on press add_hit { emit clk_act(34) }
+            box { from: 394, 446; size: 172, 22; corner: 11; color: #e5484d; opacity: 14% + 12% * prune_hit.hover; show: clk_al_off > 0 }
+            text ic_trash { at: 407, 457; anchor: center; size: 9; color: #e5484d; show: clk_al_off > 0; family: "tabler-icons" }
+            text clk_al_prune { at: 416, 457; anchor: left center; size: 8; weight: 600; color: #f5e8d8; width: 146; lines: 1; show: clk_al_off > 0; family: "Inter" }
+            zone box prune_hit { from: 394, 446; size: 172, 22; cursor: pointer; active: card_open and card_custom == 1 and clk_page == 1 and clk_al_off > 0; label: "{clk_al_prune}" }
+            on press prune_hit { emit clk_act(35) }
+        }
+
+        // ── the weather in detail ─────────────────────────────────────────────────────────────────────
+        group {
+            show: clk_page == 2
+            // now
+            box { from: 22, 45; size: 338, 183; corner: 14; color: #1b120d; opacity: 55% }
+            box { from: 22, 45; size: 338, 183; corner: 14; stroke: 1; color: #f5e8d8; opacity: 9% }
+            text ic_sun { at: 38, 61; anchor: center; size: 10; color: #d6a468; family: "tabler-icons" }
+            text clk_d_head { at: 47, 61; anchor: left center; size: 7.5; weight: 700; color: #d6a468; width: 240; lines: 1; family: "Inter" }
+            text clk_temp { at: 30, 102; anchor: left center; size: 44; weight: 700; color: #f6e2cf; measure: clk_temp_m; family: "Inter" }
+            text "°C" { at: 32 + clk_temp_m.width, 94; anchor: left center; size: 17; weight: 600; color: #d6a468; family: "Inter" }
+            text clk_sky { at: 30, 138; anchor: left center; size: 11; weight: 700; color: #f5e8d8; family: "Inter" }
+            text clk_g_sky { at: 318, 98; anchor: center; size: 38; color: #f7c873; family: "tabler-icons" }
+            // six small tiles: how it feels, the air, the wind, the rain, the air's quality, the day's length
+            box { from: 30, 154; size: 104, 30; corner: 8; color: #000000; opacity: 22% }
+            box { from: 140, 154; size: 104, 30; corner: 8; color: #000000; opacity: 22% }
+            box { from: 250, 154; size: 102, 30; corner: 8; color: #000000; opacity: 22% }
+            box { from: 30, 190; size: 104, 30; corner: 8; color: #000000; opacity: 22% }
+            box { from: 140, 190; size: 104, 30; corner: 8; color: #000000; opacity: 22% }
+            box { from: 250, 190; size: 102, 30; corner: 8; color: #000000; opacity: 22% }
+            text ic_temp { at: 124, 169; anchor: center; size: 10; color: #d6a468; family: "tabler-icons" }
+            text ic_drop { at: 234, 169; anchor: center; size: 10; color: #6fb7e8; family: "tabler-icons" }
+            text ic_wind { at: 342, 169; anchor: center; size: 10; color: #b8a491; family: "tabler-icons" }
+            text ic_umbrella { at: 124, 205; anchor: center; size: 10; color: #6fb7e8; family: "tabler-icons" }
+            text ic_leaf { at: 234, 205; anchor: center; size: 10; color: clk.aqi; family: "tabler-icons" }
+            text ic_gauge { at: 342, 205; anchor: center; size: 10; color: #f7c873; family: "tabler-icons" }
+            text clk_d_feelsl { at: 38, 162; anchor: left center; size: 6.5; weight: 500; color: #b8a491; family: "Inter" }
+            text clk_d_feels { at: 38, 175; anchor: left center; size: 9.5; weight: 700; color: #f5e8d8; family: "Inter" }
+            text clk_d_huml { at: 148, 162; anchor: left center; size: 6.5; weight: 500; color: #b8a491; family: "Inter" }
+            text clk_d_hum { at: 148, 175; anchor: left center; size: 9.5; weight: 700; color: #f5e8d8; family: "Inter" }
+            text clk_d_windl { at: 258, 162; anchor: left center; size: 6.5; weight: 500; color: #b8a491; family: "Inter" }
+            text clk_d_wind { at: 258, 175; anchor: left center; size: 9.5; weight: 700; color: #f5e8d8; family: "Inter" }
+            text clk_d_rainl { at: 38, 198; anchor: left center; size: 6.5; weight: 500; color: #b8a491; family: "Inter" }
+            text clk_d_rain { at: 38, 211; anchor: left center; size: 9.5; weight: 700; color: #f5e8d8; family: "Inter" }
+            text clk_d_aqil { at: 148, 198; anchor: left center; size: 6.5; weight: 500; color: #b8a491; family: "Inter" }
+            text clk_d_aqi { at: 148, 211; anchor: left center; size: 9.5; weight: 700; color: #f5e8d8; width: 76; lines: 1; family: "Inter" }
+            text clk_d_lenl { at: 258, 198; anchor: left center; size: 6.5; weight: 500; color: #b8a491; family: "Inter" }
+            text clk_d_len { at: 258, 211; anchor: left center; size: 9.5; weight: 700; color: #f5e8d8; family: "Inter" }
+
+            // the sun: its way over the sky today, and where it is now
+            box { from: 372, 45; size: 209, 183; corner: 14; color: #1b120d; opacity: 55% }
+            box { from: 372, 45; size: 209, 183; corner: 14; stroke: 1; color: #f5e8d8; opacity: 9% }
+            text ic_sunrise { at: 388, 61; anchor: center; size: 10; color: #d6a468; family: "tabler-icons" }
+            text clk_d_sun { at: 397, 61; anchor: left center; size: 7.5; weight: 700; color: #d6a468; family: "Inter" }
+            path { at: 0, 0; stroke: 1.5; color: #f7c873; opacity: 45%; move 390, 176; curve 563, 176 via 476.5, 66 }
+            box { from: 384, 176; size: 185, 1; color: #f5e8d8; opacity: 20% }
+            ellipse { at: 390 + 173 * clamp(clk_day, 0, 1), 176 - 220 * clamp(clk_day, 0, 1) * (1 - clamp(clk_day, 0, 1)); radius: 13; color: #ffd27a; opacity: 25%; show: clk_night < 1 }
+            ellipse { at: 390 + 173 * clamp(clk_day, 0, 1), 176 - 220 * clamp(clk_day, 0, 1) * (1 - clamp(clk_day, 0, 1)); radius: 6.5; color: #ffe2a0; show: clk_night < 1 }
+            text clk_rise { at: 384, 194; anchor: left center; size: 7.5; weight: 600; color: #b8a491; family: "Inter" }
+            text clk_set { at: 569, 194; anchor: right center; size: 7.5; weight: 600; color: #b8a491; family: "Inter" }
+            text clk_light { at: 476.5, 212; anchor: center; size: 8; weight: 700; color: #f7c873; family: "Inter" }
+
+            // the next hours
+            box { from: 13, 240; size: 568, 104; corner: 14; color: #1b120d; opacity: 55% }
+            box { from: 13, 240; size: 568, 104; corner: 14; stroke: 1; color: #f5e8d8; opacity: 9% }
+            text ic_clock { at: 30, 256; anchor: center; size: 10; color: #d6a468; family: "tabler-icons" }
+            text clk_d_hours { at: 40, 256; anchor: left center; size: 7.5; weight: 700; color: #d6a468; family: "Inter" }
+            for h in clkh {
+                text h.time { at: 62 + h.index * 68, 276; anchor: center; size: 8; weight: 600; color: #b8a491; family: "Inter" }
+                text h.glyph { at: 62 + h.index * 68, 300; anchor: center; size: 16; color: #f7c873; family: "tabler-icons" }
+                text h.temp { at: 62 + h.index * 68, 326; anchor: center; size: 11; weight: 700; color: #f5e8d8; family: "Inter" }
+            }
+
+            // the days
+            box { from: 13, 356; size: 568, 136; corner: 14; color: #1b120d; opacity: 55% }
+            box { from: 13, 356; size: 568, 136; corner: 14; stroke: 1; color: #f5e8d8; opacity: 9% }
+            text ic_cloud { at: 30, 372; anchor: center; size: 10; color: #d6a468; family: "tabler-icons" }
+            text clk_d_days { at: 40, 372; anchor: left center; size: 7.5; weight: 700; color: #d6a468; family: "Inter" }
+            for x in clkd {
+                box { from: 26 + x.index * 79, 384; size: 71, 100; corner: 10; color: #000000; opacity: 18% }
+                text x.day { at: 61 + x.index * 79, 396; anchor: center; size: 8.5; weight: 700; color: #f5e8d8; family: "Inter" }
+                text x.glyph { at: 61 + x.index * 79, 420; anchor: center; size: 17; color: #f7c873; family: "tabler-icons" }
+                text x.hi { at: 61 + x.index * 79, 444; anchor: center; size: 11; weight: 700; color: #f6e2cf; family: "Inter" }
+                text x.lo { at: 61 + x.index * 79, 459; anchor: center; size: 8.5; weight: 600; color: #b8a491; family: "Inter" }
+                text x.rain { at: 61 + x.index * 79, 474; anchor: center; size: 7.5; weight: 600; color: #6fb7e8; family: "Inter" }
+            }
+        }
         // ── the foot, on the coffee ───────────────────────────────────────────────────────────────────
         box { from: 12, 529; size: 5, 5; corner: 2.5; color: #f7c873 }
         text clk_bed { at: 23, 531.5; anchor: left center; size: 8; weight: 600; color: #f5e8d8; width: 330; lines: 1; family: "Inter" }

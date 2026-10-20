@@ -257,9 +257,11 @@ systemctl daemon-reload
 systemctl enable latte-boot.service greetd.service latte-netd.service
 systemctl disable NetworkManager-wait-online.service                # it held the login screen back for a minute
 systemctl set-default graphical.target
+dnf versionlock add hyprland hyprland-devel hyprland-uwsm             # the plugins are built for this exact Hyprland; an update would break them
 
 # What `./install --remove` runs before the files go. Which login screen comes back is the system's own business.
 [undo]
+dnf versionlock delete hyprland hyprland-devel hyprland-uwsm
 systemctl disable --now latte-netd.service
 systemctl disable latte-boot.service greetd.service
 systemctl enable NetworkManager-wait-online.service
