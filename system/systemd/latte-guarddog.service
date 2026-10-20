@@ -7,5 +7,7 @@ After=latte-session.target latte-goo.service
 
 [Service]
 ExecStart=/usr/bin/latte-guarddog watch
+# what the guard started again is the session's, not the guard's: it stays when the guard is stopped or restarted
+KillMode=process
 Restart=on-failure
 RestartSec=2
