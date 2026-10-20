@@ -350,6 +350,11 @@ Schválené 12. 10. 2026. Pracuje sa **zhora nadol, neskáče sa**; nový nápad
     DualBrew v bočnom paneli pri každom disku a oddiele pás zaplnenia (použité / voľné, farba pri nedostatku),
     Správca zariadení pri diskoch to isté grafom aj s nerozdeleným miestom na disku; upozornenie, keď voľné
     miesto klesne pod hranicu. latte-lab: za `/data` je ~132 GB nerozdelených.
+16. [~] **AI v LensGoo a Lens AI centrum** (používateľ, 20. 10., na pokyn mimo poradia). Hotové: karta AI s rozhovorom,
+    poľom v podobe služby, výberom modelu, spotrebou (limity Claude 5 h a týždňa) a novou reláciou; Lens AI centrum
+    (rozhovory všetkých AI pokope, služby a prihlásenie); výber AI pre LensGoo v Nastaveniach › Spúšťač; text
+    „Hľadať aplikácie alebo nastavenia…“. **Ďalej:** postupné písanie odpovede (stream), zastavenie odpovede,
+    prílohy (+), Gemini/ChatGPT/Ollama overiť naostro, vlastný server (adresa a model), Grok, keď bude mať nástroj.
 
 ## ROADMAP2 — LatteOS od nápadu po hotový produkt
 

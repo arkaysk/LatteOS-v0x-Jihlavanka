@@ -1,0 +1,167 @@
+// LensGoo's AI: a conversation in the card, under the tabs of LensGoo. On the glass the messages, which scroll
+// and stay until a new session; under them the field to write in, in the look of the service that answers
+// (Claude, Gemini, Grok, ChatGPT; LatteOS's own for a server of one's own or a model on this computer), with the
+// model chosen in it: a press opens the models to choose from. On the coffee the ways on — the Lens AI centre,
+// the Settings, a new session — and on the right what the conversation has used. The logic (lib/lens.luau) tells
+// the texts and the numbers; latte-ai keeps the conversations.
+part Ai {
+    model aimsg max 40 { who: text; body: text; mine: bool; failed: bool }
+    model aimodel max 10 { name: text; hint: text; on: bool; head: bool }
+    text ai_q = ""
+    text ai_hint = ""                          // what the empty field says, in the service's words
+    text ai_who = ""                           // who answers, at the foot of the field
+    text ai_model = ""                         // the model chosen, on the chip that opens the choice
+    text ai_empty = ""                         // what an empty conversation says
+    text ai_empty2 = ""
+    text ai_lim1 = ""                          // what is used, two lines: a name and a share each
+    text ai_lim1p = ""
+    text ai_lim2 = ""
+    text ai_lim2p = ""
+    text ai_btn_center = ""
+    text ai_btn_settings = ""
+    text ai_btn_new = ""
+    text ic_ai_center = ""
+    text ic_ai_settings = ""
+    text ic_ai_new = ""
+    text ic_ai_send = ""
+    text ic_ai_chev = ""
+    text ic_ai_spark = ""
+    text ic_ai_check = ""
+    fact ai_style: claude | gemini | grok | chatgpt | own = own
+    fact ai_l1 = -1                            // 0…1, how full each line's bar is; below 0 it has none
+    fact ai_l2 = -1
+    fact ai_wait = false                       // an answer is on its way
+    fact ai_typed = false
+    fact ai_menu = false                       // the models are out to choose from
+    fact ai_gen = 0                            // the logic counts up when the messages change: the list goes to the end
+    event ai_send ->
+    event ai_pick ->                           // a model was chosen: its place in aimodel
+    event ai_center ->
+    event ai_settings ->
+    event ai_new ->
+
+    // the services' own colours are chosen where each is used: a colour if() is not a `let`
+    let ai.k = pick(ai_style, 0, 1, 2, 3, 4)       // the style as a number: a name after it would be read as one of its values
+    let ai.on = card_open and card_custom == 3
+    let ai.w = card.w - 32                     // what the conversation and the field have
+    let ai.fy = 398                            // where the field stands, from the card's top
+    let ai.fh = 98
+    // the field as each service draws its own: ground, rim, ink, how round, and the button that sends
+    let f.round = pick(ai_style, 18, 28, 26, 28, 14)
+    let m.w = 250                              // the models' little window
+    let m.h = 12 + aimodel.count * 34
+
+    group {
+        show: card_custom == 3
+        move: card.x0, card.y0
+
+        // ── the conversation: on the glass, it scrolls; the newest at the bottom ─────────────────────────────
+        column talk {
+            at: 16, 58
+            view: ai.w, ai.fy - 70
+            step: 60
+            gap: 12
+            for m in aimsg {
+                column {
+                    gap: 5
+                    text m.who { size: 11.5; weight: 700; lines: 1; color: if(m.mine, #f7c873, #b8a491); family: "Inter" }
+                    column {
+                        fill: #1b120d 55%
+                        corner: 14
+                        padding: 12
+                        text m.body { width: ai.w - 24; lines: 80; size: 14.5; line_height: 1.4; color: if(m.failed, #e5484d, #f5e8d8); family: "Inter"; selectable: true; selection: #5a463a }
+                    }
+                }
+            }
+        }
+        on change ai_gen { talk.scroll: max(talk.content - talk.height, 0) ~280ms after 60ms }
+        // a hair of a bar beside it, when there is more than shows
+        box { from: card.w - 12, 58 + talk.scroll / max(talk.content, 1) * (ai.fy - 70); size: 3, (ai.fy - 70) * min(talk.height / max(talk.content, 1), 1); corner: 2; color: #f5e8d8; opacity: if(talk.content > talk.height + 1, 25%, 0) }
+        // an empty conversation: who answers, and that it stays
+        text ic_ai_spark { at: card.w / 2, 168; anchor: center; size: 34; color: #f7c873; opacity: 85%; show: aimsg.count == 0; family: "tabler-icons" }
+        text ai_empty { at: card.w / 2, 214; anchor: center; size: 22; weight: 700; color: #f5e8d8; width: ai.w - 40; lines: 1; align: center; show: aimsg.count == 0; family: "Inter" }
+        text ai_empty2 { at: card.w / 2, 246; anchor: center; size: 13.5; color: #b8a491; width: ai.w - 80; lines: 2; align: center; show: aimsg.count == 0; family: "Inter" }
+
+        // ── the field, in the service's look ──────────────────────────────────────────────────────────────
+        box { from: 16, ai.fy; size: ai.w, ai.fh; corner: f.round; color: if(ai.k == 0, #faf9f5, if(ai.k == 1, #f0f4f9, if(ai.k == 2, #ffffff, if(ai.k == 3, #ffffff, #3d2c22))))}
+        box { from: 16, ai.fy; size: ai.w, ai.fh; corner: f.round; stroke: 1; color: if(ai.k == 0, #ddd9ce, if(ai.k == 1, #f0f4f9, if(ai.k == 2, #e1e1e1, if(ai.k == 3, #e3e3e3, #5a463a)))) }
+        text ai_hint { at: 36, ai.fy + 26; anchor: left center; width: ai.w - 40; lines: 1; size: 15.5; color: if(ai.k == 0, #8a8578, if(ai.k == 1, #5f6368, if(ai.k == 2, #8a8a8a, if(ai.k == 3, #8f8f8f, #b8a491)))); show: not ai_typed; family: "Inter" }
+        // the press that puts the cursor in the field goes under the field itself, so the field is what is on top
+        zone box ai_field_hit { from: 16, ai.fy; size: ai.w, ai.fh - 40; cursor: text; active: ai.on; label: "{ai_hint}" }
+        on press ai_field_hit { focus ai_q }
+        input ai_q { at: 36, ai.fy + 16; width: ai.w - 40; size: 15.5; color: if(ai.k == 0, #3d3929, if(ai.k == 1, #1f1f1f, if(ai.k == 2, #0d0d0d, if(ai.k == 3, #0d0d0d, #f5e8d8)))); selection: if(ai_style == own, #5a463a, #c9d7f0); family: "Inter"; label: "{ai_hint}" }
+        // at its foot: who answers on the left; the model and the button that sends on the right
+        text ic_ai_spark { at: 38, ai.fy + ai.fh - 22; anchor: center; size: 15; color: if(ai.k == 0, #8a8578, if(ai.k == 1, #5f6368, if(ai.k == 2, #8a8a8a, if(ai.k == 3, #8f8f8f, #b8a491)))); family: "tabler-icons" }
+        text ai_who { at: 54, ai.fy + ai.fh - 22; anchor: left center; size: 13; weight: 600; color: if(ai.k == 0, #8a8578, if(ai.k == 1, #5f6368, if(ai.k == 2, #8a8a8a, if(ai.k == 3, #8f8f8f, #b8a491)))); width: 260; lines: 1; family: "Inter" }
+        box { from: card.w - 16 - 54 - 150, ai.fy + ai.fh - 37; size: 140, 30; corner: 15; color: if(ai.k == 0, #faf9f5, if(ai.k == 1, #dde3ea, if(ai.k == 2, #f2f2f2, if(ai.k == 3, #e8f0fe, #4a372b)))); opacity: 70% + 30% * chip_hit.hover }
+        text ai_model { at: card.w - 16 - 54 - 80, ai.fy + ai.fh - 22; anchor: center; size: 13; weight: 600; color: if(ai.k == 0, #6b6658, if(ai.k == 1, #1f1f1f, if(ai.k == 2, #0d0d0d, if(ai.k == 3, #1a73e8, #f5e8d8)))); width: 130; lines: 1; align: center; family: "Inter" }
+        text ic_ai_chev { at: card.w - 16 - 54 - 24, ai.fy + ai.fh - 22; anchor: center; size: 14; color: if(ai.k == 0, #6b6658, if(ai.k == 1, #1f1f1f, if(ai.k == 2, #0d0d0d, if(ai.k == 3, #1a73e8, #f5e8d8)))); family: "tabler-icons" }
+        zone box chip_hit { from: card.w - 16 - 54 - 150, ai.fy + ai.fh - 37; size: 140, 30; cursor: pointer; active: ai.on; label: "{ai_model}"; role: button }
+        on press chip_hit { toggle ai_menu }
+        ellipse { at: card.w - 16 - 30, ai.fy + ai.fh - 22; radius: 16; color: if(ai.k == 0, #c96442, if(ai.k == 1, #0b57d0, if(ai.k == 2, #0d0d0d, if(ai.k == 3, #2f7bf5, #f7c873)))); opacity: if(ai_typed or ai_wait, 100%, 35%) * if(ai_wait, 55% + 45% * sin(time * 360), 100%) }
+        text ic_ai_send { at: card.w - 16 - 30, ai.fy + ai.fh - 22; anchor: center; size: 17; color: if(ai.k == 0, #ffffff, if(ai.k == 1, #ffffff, if(ai.k == 2, #ffffff, if(ai.k == 3, #ffffff, #2a1e17)))); family: "tabler-icons" }
+        zone box send_hit { at: card.w - 16 - 30, ai.fy + ai.fh - 22; size: 36, 36; cursor: pointer; active: ai.on and ai_typed and not ai_wait; label: "Send"; role: button }
+        on press send_hit { emit ai_send }
+        on submit ai_q { emit ai_send }
+
+        // ── on the coffee: the ways on, as icons that say their name under the pointer; and what is used ─────
+        repeat k in 0..3 {
+            let b.x = 34 + k * 44
+            let b.hov = pick(k, center_hit.hover, settings_hit.hover, new_hit.hover)
+            ellipse { at: b.x, 548; radius: 17; color: #f5e8d8; opacity: 8% + 12% * b.hov }
+            text pick(k, ic_ai_center, ic_ai_settings, ic_ai_new) { at: b.x, 548; anchor: center; size: 17; color: #f7c873; family: "tabler-icons" }
+            // its name, above it while the pointer is on it
+            measure ai_tip.$k
+            box { from: b.x - ai_tip.$k.width / 2 - 10, 506; size: ai_tip.$k.width + 20, 24; corner: 12; color: #f7c873; opacity: b.hov * 95% }
+            text pick(k, ai_btn_center, ai_btn_settings, ai_btn_new) { at: b.x, 518; anchor: center; measure: ai_tip.$k; size: 12; weight: 600; color: #2a1e17; opacity: b.hov; family: "Inter" }
+        }
+        zone box center_hit { at: 34, 548; size: 38, 38; cursor: pointer; active: ai.on; label: "{ai_btn_center}"; role: button }
+        zone box settings_hit { at: 78, 548; size: 38, 38; cursor: pointer; active: ai.on; label: "{ai_btn_settings}"; role: button }
+        zone box new_hit { at: 122, 548; size: 38, 38; cursor: pointer; active: ai.on and not ai_wait; label: "{ai_btn_new}"; role: button }
+        on press center_hit { emit ai_center }
+        on press settings_hit { emit ai_settings }
+        on press new_hit { emit ai_new }
+
+        // what is used: the service's own limits where it tells them (Claude: the five hours and the week), else the
+        // window. Each a row of small squares lit from the left, green to yellow to red (inspo/grafy.png)
+        let seg.x = 340
+        let seg.n = 28
+        let seg.step = (card.w - 16 - 92 - seg.x) / seg.n
+        repeat u in 0..2 {
+            let lim.y = 536 + u * 24
+            let lim.v = pick(u, ai_l1, ai_l2)
+            let lim.lit = round(clamp(lim.v, 0, 1) * seg.n)
+            text pick(u, ai_lim1, ai_lim2) { at: 168, lim.y; anchor: left center; size: 12; weight: 700; color: if(lim.v > 0.85, #e5484d, #f7c873); width: seg.x - 176 + if(lim.v < 0, 400, 0); lines: 1; family: "Inter" }
+            repeat q in 0..28 {
+                box { from: seg.x + q * seg.step, lim.y - 4; size: seg.step - 2, 9; corner: 1.5
+                      color: if((q + 0.5) / seg.n < 0.55, mix(#7bd88f, #f7c873, (q + 0.5) / seg.n / 0.55), mix(#f7c873, #e5484d, ((q + 0.5) / seg.n - 0.55) / 0.45))
+                      opacity: if(lim.v < 0, 0, if(q < lim.lit, 100%, 12%)) }
+            }
+            text pick(u, ai_lim1p, ai_lim2p) { at: card.w - 16, lim.y; anchor: right center; size: 12; weight: 600; color: #f5e8d8; width: 88; lines: 1; align: right; family: "Inter" }
+        }
+
+        // ── the models to choose from: a little window over the chip; a press beside it puts it away ───────
+        group {
+            show: ai_menu
+            zone box ai_menu_away { from: 0, 0; size: card.w, card.h; active: ai.on and ai_menu; label: "Close" }
+            on press ai_menu_away { ai_menu = false }
+            box { from: card.w - 16 - m.w, ai.fy - 8 - m.h; size: m.w, m.h; corner: 14; color: #2a1e17}
+            box { from: card.w - 16 - m.w, ai.fy - 8 - m.h; size: m.w, m.h; corner: 14; stroke: 1; color: #f5e8d8; opacity: 10% }
+            column {
+                at: card.w - 16 - m.w + 6, ai.fy - 8 - m.h + 6
+                for o in aimodel {
+                    group {
+                        size: m.w - 12, 34
+                        box { from: 0, 2; size: m.w - 12, 30; corner: 10; color: #f5e8d8; opacity: if(o.head, 0, 10% * model_hit.hover) }
+                        text o.name { at: if(o.head, 10, 14), 17; anchor: left center; size: 13; weight: 600; color: if(o.head, #b8a491, if(o.on, #f7c873, #f5e8d8)); width: m.w - 90; lines: 1; family: "Inter" }
+                        text o.hint { at: m.w - 40, 17; anchor: right center; size: 11.5; color: #b8a491; width: 80; lines: 1; align: right; family: "Inter" }
+                        text ic_ai_check { at: m.w - 26, 17; anchor: center; size: 15; color: #f7c873; show: o.on; family: "tabler-icons" }
+                        zone box model_hit { from: 0, 2; size: m.w - 12, 30; cursor: pointer; active: ai.on and ai_menu and not o.head; label: "{o.name}"; selected: o.on; role: item }
+                        on press model_hit { ai_menu = false; emit ai_pick(o.index) }
+                    }
+                }
+            }
+        }
+    }
+    on key Escape while ai_menu { ai_menu = false }
+}

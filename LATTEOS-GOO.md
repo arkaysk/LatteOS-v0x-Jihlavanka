@@ -216,6 +216,12 @@ ostatné kvapky sú iba na hlavnom monitore.
   (`claude -p`, bez nástrojov, bez osobných nastavení používateľa, rozhovor sa neukladá). Odpoveď príde naraz
   (nie postupne), posledné štyri výmeny idú ako kontext, Kopírovať odpoveď, Nový rozhovor. Chýba: Gemini, ChatGPT,
   Ollama a domáci server (na latte-lab sa nedali vyskúšať), prihlásenie z Nastavení, postupné písanie, prílohy.)*
+  *(20. 10.: režim AI je vlastná karta `goo/parts/ai.plm` — rozhovor na skle s posúvaním, pole dole v podobe služby
+  s výberom modelu, v káve Lens AI centrum · Nastavenia · Nová relácia a spotreba; rozhovory ukladá `latte-ai`
+  do `~/.local/state/latteos/ai/chats/`, číta ich aj **Lens AI centrum** (`apps/aicenter.qml`: všetky rozhovory
+  pokope, farebne podľa služby, prihlásenie a odhlásenie služieb). Ktoré AI ponúka LensGoo: Nastavenia › Spúšťač.
+  Gemini, ChatGPT (codex) a Ollama sú zapísané podľa dokumentácie, na latte-lab neoverené; Grok nemá oficiálny
+  nástroj, má iba podobu poľa.)*
 - **Rýchly zoznam (pravý klik):** jednoduché okno s ikonami — naposledy spustené a obľúbené aplikácie ako dlaždice
   (klik spustí), pod nimi Hľadať… (otvorí spúšťač) a App Manager.
 

@@ -1,19 +1,37 @@
 #!/usr/bin/env python3
-"""latte-ai: who answers in LensGoo's AI mode. No API key: the official tool of a service answers, with the
-account the user is logged in to it with.
+"""latte-ai: who answers in LensGoo's AI mode and in the Lens AI centre, and the conversations kept with them.
+No API key: the official tool of a service answers, with the account the user is logged in to it with.
 
-  latte-ai providers [all]  what there is on this computer: [{"id", "name", "local"}]; "local" tells an answer
-                            made on this machine from one that goes to a service. None when the user turned the
-                            AI off (Settings › AI: the word "off" in ~/.config/latteos/ai), unless `all` is said
-  latte-ai ask ID JSON      the next answer in a conversation, on stdout. JSON is the conversation so far:
-                            [{"role": "user" | "assistant", "content": …}, …], the question last.
-                            What went wrong is said on stdout too, so that it shows where the answer would.
+  latte-ai providers [all]  what there is on this computer: [{"id", "name", "local", "style", "models": [{"id", "name"}]}];
+                            "local" tells an answer made on this machine from one that goes to a service, "style"
+                            whose look the field to write in takes (claude, gemini, grok, chatgpt, own). None when the
+                            user turned the AI off (Settings › AI: the word "off" in ~/.config/latteos/ai), unless `all`
+  latte-ai send CHAT PROVIDER MODEL TEXT
+                            asks the next question of a conversation and keeps both in it. CHAT "new" begins one.
+                            Prints {"chat", "answer", "ok", "usage": {"context", "window", "tokens", "cost", "limits"}}:
+                            context is what the last question filled of the model's window, tokens all the
+                            conversation has spent, limits what the service told of the account's own:
+                            {"five_hour": {"used": 0…1, "resets": unix time}, "seven_day": {…}} (Claude tells them).
+                            What went wrong is the answer, with "ok": false
+  latte-ai services         every service LatteOS knows, also those not installed, for the Lens AI centre:
+                            [{"id", "name", "local", "style", "installed", "signed" (true, false, or null where it
+                            cannot be told), "account", "login": [command], "logout": [command]}]; a command to sign
+                            in or out is run in a terminal, where the tool asks what it needs
+  latte-ai chats            the conversations, the newest first: [{"id", "title", "provider", "model", "updated", "count"}]
+  latte-ai chat ID          one conversation whole: {"id", "title", "provider", "model", "messages": [{"role", "content",
+                            "provider", "model", "at"}], "usage"}
+  latte-ai forget ID        throws one away
+
+The conversations are kept in ~/.local/state/latteos/ai/chats/ID.json, one file each.
 """
+import datetime
+import glob
 import json
 import os
 import shutil
 import subprocess
 import sys
+import uuid
 
 SYSTEM = ("You are the assistant in the launcher of the LatteOS desktop. Answer briefly and to the point, in the "
           "language of the question, in plain text: no Markdown, no headings.")
@@ -21,17 +39,74 @@ SYSTEM = ("You are the assistant in the launcher of the LatteOS desktop. Answer 
 # The desktop's services have a short PATH (no ~/.local/bin, where a user's own tools live): look there too.
 SEARCH = os.pathsep.join([os.environ.get("PATH", "/usr/local/bin:/usr/bin"), os.path.expanduser("~/.local/bin"), os.path.expanduser("~/bin")])
 ROOM = os.path.join(os.environ.get("XDG_STATE_HOME") or os.path.expanduser("~/.local/state"), "latteos", "ai")
+CHATS = os.path.join(ROOM, "chats")
+KEEP = 12                       # what a tool is reminded of: the last six turns
 
 
-def claude(prompt):
+def claude(prompt, model):
     # No tools: it answers, it does not act on the computer. The conversation is not kept among the user's own,
     # and what the user set up for their own work with the tool (hooks, instructions) stays out of the answers.
-    return ["claude", "-p", prompt, "--system-prompt", SYSTEM, "--output-format", "text", "--no-session-persistence",
-            "--setting-sources", "project", "--tools", ""]
+    return ["claude", "-p", prompt, "--system-prompt", SYSTEM, "--output-format", "stream-json", "--verbose", "--no-session-persistence",
+            "--setting-sources", "project", "--model", model, "--tools", ""]
 
 
-# ponytail: one service, the one that could be tried. Another is a line here and a function that makes its command.
-PROVIDERS = {"claude": {"name": "Claude", "local": False, "tool": "claude", "command": claude}}
+def claude_read(out):
+    """The answer, what it cost and how much of the account's limits is used, from the lines claude prints.
+    The limits come as a rate_limit_event: the share of the five hours and of the week, and when each starts again."""
+    d, limits = {}, {}
+    for line in out.splitlines():
+        try:
+            e = json.loads(line)
+        except ValueError:
+            continue
+        if e.get("type") == "result":
+            d = e
+        elif e.get("type") == "rate_limit_event":
+            for k, w in ((e.get("rate_limit_info") or {}).get("unifiedWindows") or {}).items():
+                limits[k] = {"used": w.get("utilization", 0), "resets": w.get("resetsAt", 0)}
+    if not d:
+        raise ValueError("no result")
+    used = next(iter((d.get("modelUsage") or {}).values()), {})
+    u = d.get("usage") or {}
+    context = sum(u.get(k, 0) for k in ("input_tokens", "cache_read_input_tokens", "cache_creation_input_tokens", "output_tokens"))
+    return d.get("result", ""), not d.get("is_error"), {"context": context, "window": used.get("contextWindow", 200000),
+                                                        "tokens": used.get("inputTokens", 0) + used.get("outputTokens", 0), "cost": d.get("total_cost_usd", 0),
+                                                        "limits": limits}
+
+
+# ponytail: Gemini, Codex and Ollama are written from their tools' documentation and could not be tried on latte-lab
+# (none is installed there); they show only where their tool is. Their answers come as plain text, without usage.
+def gemini(prompt, model):
+    return ["gemini", "-p", SYSTEM + "\n\n" + prompt, "-m", model]
+
+
+def codex(prompt, model):
+    return ["codex", "exec", "--skip-git-repo-check", "-m", model, SYSTEM + "\n\n" + prompt]
+
+
+def ollama(prompt, model):
+    return ["ollama", "run", model, SYSTEM + "\n\n" + prompt]
+
+
+def ollama_models():
+    try:
+        out = subprocess.run(["ollama", "list"], capture_output=True, text=True, timeout=10).stdout
+    except (OSError, subprocess.TimeoutExpired):
+        return []
+    return [{"id": l.split()[0], "name": l.split()[0]} for l in out.splitlines()[1:] if l.strip()]
+
+
+PROVIDERS = {
+    "claude": {"name": "Claude", "local": False, "style": "claude", "tool": "claude", "command": claude, "read": claude_read,
+               "status": ["claude", "auth", "status", "--json"], "login": ["claude", "auth", "login"], "logout": ["claude", "auth", "logout"],
+               "models": [{"id": "opus", "name": "Opus"}, {"id": "sonnet", "name": "Sonnet"}, {"id": "haiku", "name": "Haiku"}]},
+    "gemini": {"name": "Gemini", "local": False, "style": "gemini", "tool": "gemini", "command": gemini, "login": ["gemini"],
+               "models": [{"id": "gemini-2.5-pro", "name": "2.5 Pro"}, {"id": "gemini-2.5-flash", "name": "2.5 Flash"}]},
+    "chatgpt": {"name": "ChatGPT", "local": False, "style": "chatgpt", "tool": "codex", "command": codex,
+                "login": ["codex", "login"], "logout": ["codex", "logout"],
+                "models": [{"id": "gpt-5", "name": "GPT-5"}, {"id": "gpt-5-mini", "name": "GPT-5 mini"}]},
+    "ollama": {"name": "Ollama", "local": True, "style": "own", "tool": "ollama", "command": ollama, "models": ollama_models},
+}
 
 
 def turned_off():
@@ -45,48 +120,136 @@ def turned_off():
 def providers(all=False):
     if turned_off() and not all:
         return []
-    return [{"id": i, "name": p["name"], "local": p["local"]} for i, p in PROVIDERS.items() if shutil.which(p["tool"], path=SEARCH)]
+    out = []
+    for i, p in PROVIDERS.items():
+        if not shutil.which(p["tool"], path=SEARCH):
+            continue
+        models = p["models"]() if callable(p["models"]) else p["models"]
+        if models:
+            out.append({"id": i, "name": p["name"], "local": p["local"], "style": p["style"], "models": models})
+    return out
+
+
+def services():
+    out = []
+    for i, p in PROVIDERS.items():
+        there = shutil.which(p["tool"], path=SEARCH) is not None
+        signed, account = None, ""
+        if there and p.get("status"):
+            try:
+                st = json.loads(subprocess.run(p["status"], capture_output=True, text=True, timeout=20, env=dict(os.environ, PATH=SEARCH)).stdout)
+                signed = st.get("loggedIn") is True
+                account = " · ".join(x for x in (st.get("email", ""), st.get("subscriptionType", "")) if x)
+            except (OSError, ValueError, subprocess.TimeoutExpired):
+                pass
+        out.append({"id": i, "name": p["name"], "local": p["local"], "style": p["style"], "installed": there, "tool": p["tool"],
+                    "signed": True if p["local"] and there else signed, "account": account, "login": p.get("login", []), "logout": p.get("logout", [])})
+    return out
 
 
 def as_prompt(talk):
     """The conversation as one question: the tools are asked afresh each time."""
-    talk = [m for m in talk if isinstance(m, dict) and m.get("content")]
+    talk = [m for m in talk if m.get("content")][-KEEP:]
     if len(talk) <= 1:
         return talk[0]["content"] if talk else ""
     lines = ["%s: %s" % ("User" if m.get("role") == "user" else "Assistant", m["content"]) for m in talk[:-1]]
     return "The conversation so far:\n" + "\n".join(lines) + "\n\nNow answer this:\n" + talk[-1]["content"]
 
 
-def ask(provider, talk):
-    p = PROVIDERS.get(provider)
-    if not p or not shutil.which(p["tool"], path=SEARCH):
-        print("latte-ai: no such provider here: " + provider)
-        return 1
-    prompt = as_prompt(talk)
-    if not prompt:
-        return 1
-    os.makedirs(ROOM, exist_ok=True)
+def path_of(ident):
+    return os.path.join(CHATS, os.path.basename(ident) + ".json")
+
+
+def load(ident):
     try:
-        done = subprocess.run(p["command"](prompt), cwd=ROOM, env=dict(os.environ, PATH=SEARCH), stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
-                              stderr=subprocess.STDOUT, text=True, timeout=180)
-    except subprocess.TimeoutExpired:
-        print("latte-ai: no answer in three minutes")
-        return 1
-    print(done.stdout.strip())
-    return done.returncode
+        with open(path_of(ident)) as f:
+            return json.load(f)
+    except (OSError, ValueError):
+        return None
+
+
+def keep(chat):
+    os.makedirs(CHATS, exist_ok=True)
+    with open(path_of(chat["id"]) + ".new", "w") as f:
+        json.dump(chat, f, ensure_ascii=False, indent=1)
+    os.replace(path_of(chat["id"]) + ".new", path_of(chat["id"]))
+
+
+def now():
+    return datetime.datetime.now().isoformat(timespec="seconds")
+
+
+def send(ident, provider, model, question):
+    chat = None if ident == "new" else load(ident)
+    if chat is None:
+        chat = {"id": uuid.uuid4().hex[:12], "title": question.strip().splitlines()[0][:80], "messages": [],
+                "usage": {"context": 0, "window": 0, "tokens": 0, "cost": 0}}
+    chat["provider"], chat["model"] = provider, model
+    chat["messages"].append({"role": "user", "content": question, "provider": provider, "model": model, "at": now()})
+    keep(chat)          # the question stays even if no answer comes
+    p = PROVIDERS.get(provider)
+    answer, ok, usage = "", False, {}
+    if not p or not shutil.which(p["tool"], path=SEARCH):
+        answer = "latte-ai: no such provider here: " + provider
+    else:
+        os.makedirs(ROOM, exist_ok=True)
+        try:
+            done = subprocess.run(p["command"](as_prompt(chat["messages"]), model), cwd=ROOM, env=dict(os.environ, PATH=SEARCH), stdin=subprocess.DEVNULL,
+                                  stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, timeout=300)
+            answer, ok = done.stdout.strip(), done.returncode == 0
+            if "read" in p:
+                try:
+                    answer, ok, usage = p["read"](done.stdout)
+                except (ValueError, AttributeError):
+                    pass
+            if not answer:
+                answer = done.stderr.strip()[-600:] or "latte-ai: no answer"
+        except subprocess.TimeoutExpired:
+            answer = "latte-ai: no answer in five minutes"
+    chat["messages"].append({"role": "assistant", "content": answer, "provider": provider, "model": model, "at": now(), "ok": ok})
+    was = chat.get("usage") or {}
+    chat["usage"] = {"context": usage.get("context", was.get("context", 0)), "window": usage.get("window", was.get("window", 0)),
+                     "tokens": was.get("tokens", 0) + usage.get("tokens", 0), "cost": round(was.get("cost", 0) + usage.get("cost", 0), 6),
+                     "limits": usage.get("limits") or {}}
+    chat["updated"] = now()
+    keep(chat)
+    return {"chat": chat["id"], "answer": answer, "ok": ok, "usage": chat["usage"]}
+
+
+def chats():
+    out = []
+    for path in glob.glob(os.path.join(CHATS, "*.json")):
+        c = load(os.path.basename(path)[:-5])
+        if c:
+            out.append({"id": c["id"], "title": c.get("title", ""), "provider": c.get("provider", ""), "model": c.get("model", ""),
+                        "updated": c.get("updated", ""), "count": len(c.get("messages", []))})
+    return sorted(out, key=lambda c: c["updated"], reverse=True)
 
 
 def main(a):
     if a in (["providers"], ["providers", "all"]):
         print(json.dumps(providers(len(a) == 2)))
         return 0
-    if len(a) == 3 and a[0] == "ask":
+    if len(a) == 5 and a[0] == "send" and a[4].strip():
+        r = send(a[1], a[2], a[3], a[4])
+        print(json.dumps(r, ensure_ascii=False))
+        return 0 if r["ok"] else 1
+    if a == ["services"]:
+        print(json.dumps(services(), ensure_ascii=False))
+        return 0
+    if a == ["chats"]:
+        print(json.dumps(chats(), ensure_ascii=False))
+        return 0
+    if len(a) == 2 and a[0] == "chat":
+        c = load(a[1])
+        print(json.dumps(c, ensure_ascii=False) if c else "null")
+        return 0 if c else 1
+    if len(a) == 2 and a[0] == "forget":
         try:
-            talk = json.loads(a[2])
-        except ValueError:
-            talk = None
-        if isinstance(talk, list):
-            return ask(a[1], talk)
+            os.remove(path_of(a[1]))
+        except OSError:
+            return 1
+        return 0
     print(__doc__.strip())
     return 2
 

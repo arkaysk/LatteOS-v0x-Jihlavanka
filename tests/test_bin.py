@@ -156,15 +156,24 @@ ai = load("latte-ai")
 assert ai.as_prompt([{"role": "user", "content": "Hi"}]) == "Hi" and ai.as_prompt([]) == ""
 p = ai.as_prompt([{"role": "user", "content": "A"}, {"role": "assistant", "content": "B"}, {"role": "user", "content": "C"}])
 assert "User: A\nAssistant: B" in p and p.endswith("C"), p
-assert ai.claude("q")[:3] == ["claude", "-p", "q"] and ai.claude("q")[-2:] == ["--tools", ""]      # the question first: --tools takes all that follows
+assert ai.claude("q", "haiku")[:3] == ["claude", "-p", "q"] and ai.claude("q", "haiku")[-2:] == ["--tools", ""]      # the question first: --tools takes all that follows
 with tempfile.TemporaryDirectory() as d:
     config, os.environ["XDG_CONFIG_HOME"] = os.environ.get("XDG_CONFIG_HOME"), d
     os.makedirs(os.path.join(d, "latteos"))
-    ai.PROVIDERS = {"sh": {"name": "Shell", "local": True, "tool": "sh", "command": None}}
+    ai.PROVIDERS = {"sh": {"name": "Shell", "local": True, "style": "own", "tool": "sh", "models": [{"id": "m", "name": "M"}],
+                           "command": lambda prompt, model: ["sh", "-c", "echo answer from $0", model]}}
     assert not ai.turned_off() and len(ai.providers()) == 1
     open(os.path.join(d, "latteos", "ai"), "w").write("off\n")
     assert ai.turned_off() and ai.providers() == [] and len(ai.providers(True)) == 1            # turned off, it is still there to be turned on
     os.environ.pop("XDG_CONFIG_HOME") if config is None else os.environ.__setitem__("XDG_CONFIG_HOME", config)
+    # a conversation is kept: its question and answer, and it goes on under the same id
+    ai.CHATS, ai.ROOM = os.path.join(d, "chats"), d
+    r = ai.send("new", "sh", "m", "Hello there")
+    assert r["ok"] and r["answer"] == "answer from m", r
+    assert ai.send(r["chat"], "sh", "m", "Again")["chat"] == r["chat"]
+    c = ai.load(r["chat"])
+    assert [m["role"] for m in c["messages"]] == ["user", "assistant", "user", "assistant"] and c["title"] == "Hello there", c
+    assert [x["id"] for x in ai.chats()] == [r["chat"]] and not ai.send("new", "nobody", "m", "x")["ok"]
 apps = load("latte-apps")
 with tempfile.TemporaryDirectory() as d:
     f = os.path.join(d, "org.example.App.desktop")

@@ -112,12 +112,15 @@ ShellRoot {
     FileView {
         id: lensFile
         property var lists: []
+        property var ai: null                  // the services LensGoo's AI offers, by id; null: all there are
         path: (Quickshell.env("XDG_DATA_HOME") || (Quickshell.env("HOME") + "/.local/share")) + "/pleamar/goo/lens-lists.json"
         printErrors: false; watchChanges: true
         onFileChanged: reload()
-        onLoaded: { try { const d = JSON.parse(text()); lists = Array.isArray(d.lists) ? d.lists : [] } catch (e) { lists = [] } }
-        onLoadFailed: lists = []
-        function save(l) { lists = l; setText(JSON.stringify({ lists: l })) }
+        onLoaded: { try { const d = JSON.parse(text()); lists = Array.isArray(d.lists) ? d.lists : []; ai = Array.isArray(d.ai) ? d.ai : null } catch (e) { lists = []; ai = null } }
+        onLoadFailed: { lists = []; ai = null }
+        function write() { const d = { lists: lists }; if (ai !== null) d.ai = ai; setText(JSON.stringify(d)) }
+        function save(l) { lists = l; write() }
+        function offer(id, on) { const all = (helpers.data || []).map(h => h.id); let a = (ai || all).filter(x => x !== id); if (on) a.push(id); ai = a; write() }
     }
     readonly property var lensLists: lensFile.lists.length > 0 ? lensFile.lists : lensDefaults
     function lensEdit(i, change) { const l = JSON.parse(JSON.stringify(lensLists)); change(l[i]); lensFile.save(l) }
@@ -186,7 +189,7 @@ ShellRoot {
     // what a page shows is asked for when it opens, and again after anything on it was changed
     readonly property var asks: ({ "sound": [[sound, ["latte-settings", "sound"]]], "defaults": [[opens, ["latte-settings", "defaults"]]], "language": [[region, ["latte-settings", "region"]]],
                                    "time": [[clock, ["latte-settings", "time"]]], "keyboard": [[keys, ["latte-settings", "keyboard"]], [binds, ["hyprctl", "binds", "-j"]]], "displays": [[screens, ["hyprctl", "monitors", "-j"]]],
-                                   "guarddog": [[guardq, ["latte-guarddog", "status"]]], "clockgoo": [[clock, ["latte-settings", "time"]], [logon, ["latte-settings", "loginscreen"]], [focusq, ["latte-focus", "today"]], [weatherq, ["latte-sky", "models"]]], "storage": [[disks, ["latte-settings", "storage"]], [held, ["latte-settings", "sizes"]]], "ai": [[helpers, ["latte-ai", "providers", "all"]]],
+                                   "guarddog": [[guardq, ["latte-guarddog", "status"]]], "clockgoo": [[clock, ["latte-settings", "time"]], [logon, ["latte-settings", "loginscreen"]], [focusq, ["latte-focus", "today"]], [weatherq, ["latte-sky", "models"]]], "storage": [[disks, ["latte-settings", "storage"]], [held, ["latte-settings", "sizes"]]], "ai": [[helpers, ["latte-ai", "providers", "all"]]], "launcher": [[helpers, ["latte-ai", "providers", "all"]]],
                                    "me": [[who, ["latte-settings", "account"]], [pictures, ["latte-settings", "wallpapers"]]], "performance": [[machine, ["latte-devices", "list"]]], "loginscreen": [[logon, ["latte-settings", "loginscreen"]]] })
     function ask() { (asks[page] || []).forEach(a => a[0].ask(a[1])); force.reload(); crashed.reload(); if (page === "background") wall.ask(["latte-wall", "state"]) }
     Timer { id: later; interval: 900; onTriggered: shell.ask() }       // what was asked of the compositor takes a moment to be so
@@ -743,6 +746,16 @@ ShellRoot {
                     Pill { id: addList; text: I18n.tr("Add list"); strong: true; icon: "plus"
                            onPressed: if (newList.text.trim() !== "") { const l = JSON.parse(JSON.stringify(shell.lensLists)); l.push({ id: "own" + Date.now(), name: newList.text.trim(), on: true, apps: [] })
                                                                        lensFile.save(l); newList.text = ""; shell.lensOpen = l.length - 1 } } } }
+
+            // which AI services LensGoo's AI offers to choose from; signing in to them is the Lens AI centre's
+            Part { visible: shell.page === "launcher"; width: view.room; title: I18n.tr("AI in LensGoo")
+                   note: I18n.tr("Which services the AI tab of LensGoo offers to choose from. Signing in to them is done in the Lens AI centre.")
+                Label { visible: helpers.data !== null && helpers.data.length === 0; text: I18n.tr("No AI tool is installed on this computer."); color: Theme.dim }
+                Repeater { model: shell.page === "launcher" && helpers.data ? helpers.data : []
+                    Switch { required property var modelData; width: view.room; text: modelData.name
+                             hint: (modelData.local ? I18n.tr("answers on this computer") : I18n.tr("a service on the internet")) + " · " + modelData.models.map(m => m.name).join(", ")
+                             on: lensFile.ai === null || lensFile.ai.includes(modelData.id)
+                             onPressed: lensFile.offer(modelData.id, !on) } } }
 
             // GuardDog: what is kept running, and what the user has told it to leave alone
             Part { visible: shell.page === "guarddog"; width: view.room; title: I18n.tr("What GuardDog keeps running")

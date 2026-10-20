@@ -60,6 +60,7 @@
 /usr/share/latteos/goo/goo.luau                         <- goo/goo.luau
 /usr/share/latteos/goo/side.plm                         <- goo/side.plm
 /usr/share/latteos/goo/side.luau                        <- goo/side.luau
+/usr/share/latteos/apps/aicenter.qml                    <- apps/aicenter.qml
 /usr/share/latteos/apps/appmanager.qml                  <- apps/appmanager.qml
 /usr/share/latteos/apps/devices.qml                     <- apps/devices.qml
 /usr/share/latteos/apps/monitor.qml                     <- apps/monitor.qml
@@ -89,6 +90,7 @@
 /usr/share/latteos/apps/common/FileIcons.qml            <- apps/common/FileIcons.qml
 /usr/share/latteos/apps/common/shaders/reveal.frag.qsb  <- apps/common/shaders/reveal.frag.qsb
 /usr/share/latteos/apps/common/window-place             <- apps/common/window-place
+/usr/share/applications/latteos-aicenter.desktop        <- system/applications/latteos-aicenter.desktop
 /usr/share/applications/latteos-appmanager.desktop      <- system/applications/latteos-appmanager.desktop
 /usr/share/applications/latteos-devices.desktop         <- system/applications/latteos-devices.desktop
 /usr/share/applications/latteos-monitor.desktop         <- system/applications/latteos-monitor.desktop
@@ -112,6 +114,7 @@
 /usr/share/latteos/goo/parts/desk.plm                   <- goo/parts/desk.plm
 /usr/share/latteos/goo/parts/clock.plm                  <- goo/parts/clock.plm
 /usr/share/latteos/goo/parts/cam.plm                    <- goo/parts/cam.plm
+/usr/share/latteos/goo/parts/ai.plm                     <- goo/parts/ai.plm
 /usr/share/latteos/goo/parts/ctx.plm                    <- goo/parts/ctx.plm
 /usr/share/latteos/goo/lib/engine.luau                  <- goo/lib/engine.luau
 /usr/share/latteos/goo/lib/card.luau                    <- goo/lib/card.luau

@@ -8,6 +8,7 @@
 -- Enter takes the first row. A mode is one entry in MODES with its rows.
 -- The mode, the apps used last, the commands run and the search engine are kept in lens.json in the scene's folder.
 local card = require("lib/card")
+local icons = require("lib/icons")
 local ctx = require("lib/ctx")
 local find = require("lib/find")
 local calc = require("lib/calc")
@@ -36,7 +37,7 @@ local FOLDERS = { { key = "DOCUMENTS", name = N("Documents"), glyph = "file" }, 
 
 local apps, by_id = {}, {}
 local kept = { mode = 0, recent = {}, commands = {}, engine = "duckduckgo", counts = {}, filter = "all", fav = {},
-              layout = { most = true, fav = true, fresh = true, chips = true } }
+              layout = { most = true, fav = true, fresh = true, chips = true }, ai = {} }
 local born = {}                      -- app id → when it was installed (the birth of its .desktop file)
 -- The lists of the app overview, each a button in its row of filters. The user's own are kept by the Settings
 -- (lens-lists.json: Settings › Launcher); these are what there is before they have changed anything.
@@ -48,9 +49,12 @@ local DEFAULT_LISTS = {
 }
 local GLYPHS = { work = "star", media = "palette", dev = "code", fun = "device-gamepad-2" }
 local lists = DEFAULT_LISTS
+-- the AI's state (see its part below): load_lists reads which services the choice offers
+local ai = { providers = {}, prefer = nil, msgs = {}, usage = {}, waiting = false, choices = {} }
 local function load_lists()
     local ok, saved = pcall(sys.ask, "files.read", "lens-lists.json", "json")
     lists = ok and type(saved) == "table" and type(saved.lists) == "table" and #saved.lists > 0 and saved.lists or DEFAULT_LISTS
+    ai.prefer = ok and type(saved) == "table" and type(saved.ai) == "table" and saved.ai or nil
 end
 local function has(list, a)
     for _, id in ipairs(list.apps or {}) do if id == a.id then return true end end
@@ -64,7 +68,7 @@ end
 
 local apps, by_id = {}, {}
 local kept = { mode = 0, recent = {}, commands = {}, engine = "duckduckgo", counts = {}, filter = "all", fav = {},
-              layout = { most = true, fav = true, fresh = true, chips = true } }
+              layout = { most = true, fav = true, fresh = true, chips = true }, ai = {} }
 local born = {}                      -- app id → when it was installed (the birth of its .desktop file)
 local owner                          -- LensGoo
 local home, folders = "", {}
@@ -298,63 +302,149 @@ local function rows_command()
     return rows
 end
 
--- ── AI: a conversation in the card. Who answers is latte-ai's to know; the mode is there only if somebody does ──
-local ai = { providers = {}, at = 1, talk = {}, waiting = nil }
-local function ask(question)
-    local p = ai.providers[ai.at]
-    if not p or ai.waiting then return end
-    ai.talk[#ai.talk + 1] = { role = "user", content = question }
-    while #ai.talk > 8 do table.remove(ai.talk, 1) end           -- what it is reminded of: the last four turns
-    local lines = {}
-    ai.waiting = spawn("latte-ai", { "ask", p.id, json.encode(ai.talk) }, function(line) lines[#lines + 1] = line end, function()
-        ai.waiting = nil
-        ai.talk[#ai.talk + 1] = { role = "assistant", content = table.concat(lines, "\n") }
-        if card.id() == "lens" and kept.mode == 4 then render(true) end
-    end)
-    typed = ""
-    card.text("")
-    render(true)
+-- ── AI: a conversation in a card of its own (parts/ai.plm). latte-ai knows who answers and keeps the conversations;
+-- the one open stays until a new session, also when the card closes. Which services the choice offers is the
+-- Settings' (Launcher › AI in LensGoo: `ai` in lens-lists.json); signing in to them is the Lens AI centre's.
+local HINTS = { claude = N("How can I help you today?"), gemini = N("Ask Gemini"), grok = N("What do you want to know?"),
+                chatgpt = N("Ask ChatGPT"), own = N("Ask anything…") }
+local function offered()
+    local out = {}
+    for _, p in ipairs(ai.providers) do
+        if not ai.prefer or table.find(ai.prefer, p.id) then out[#out + 1] = p end
+    end
+    return #out > 0 and out or ai.providers
 end
--- an answer as bubbles, a few paragraphs each: a bubble holds fourteen lines
-local function bubbles(answer)
-    local out, now = {}, ""
-    for part in (answer .. "\n\n"):gmatch("(.-)\n%s*\n") do
-        part = part:gsub("^%s+", ""):gsub("%s+$", "")
-        if part ~= "" then
-            if now ~= "" and #now + #part > 600 then out[#out + 1] = now now = "" end
-            now = now == "" and part or (now .. "\n\n" .. part)
+local function provider()
+    local list = offered()
+    for _, p in ipairs(list) do if p.id == kept.ai.provider then return p end end
+    return list[1]
+end
+local function model_of(p)
+    for _, m in ipairs(p and p.models or {}) do if m.id == kept.ai.model then return m end end
+    return p and p.models[1]
+end
+-- a text with a number in it: tr() translates, the number goes where {n} stands
+local function with_n(t, n) return (tr(t):gsub("{n}", function() return tostring(n) end)) end
+local function percent(x) x = x or 0 return (x > 0 and x < 0.005) and "< 1 %" or (tostring(math.floor(x * 100 + 0.5)) .. " %") end
+local function until_(t)
+    local left = (t or 0) - os.time()
+    if left <= 0 then return "" end
+    -- when it starts again, short: it stands beside the share
+    if left < 3600 then return "  ·  " .. math.ceil(left / 60) .. " min" end
+    if left < 86400 then return "  ·  " .. math.floor(left / 3600) .. " h" end
+    return "  ·  " .. math.floor(left / 86400) .. " d"
+end
+local function fill_ai()
+    local p, m = provider(), nil
+    m = model_of(p)
+    fact.ai_style = p and p.style or "own"
+    text.ai_hint = tr(HINTS[p and p.style or "own"] or HINTS.own)
+    text.ai_model = m and m.name or ""
+    local u = ai.usage
+    local ctx = (u.window or 0) > 0 and u.context / u.window or 0
+    text.ai_who = (p and p.name or "") .. ((u.window or 0) > 0 and ("  ·  " .. with_n("context {n}", percent(ctx))) or "")
+    text.ai_empty = p and p.name or ""
+    text.ai_empty2 = tr("The conversation stays here until you start a new session.")
+    local lim = u.limits and next(u.limits) and u.limits or kept.ai.limits
+    if lim and lim.five_hour then
+        text.ai_lim1 = tr("Session (5 h)")
+        text.ai_lim1p, fact.ai_l1 = percent(lim.five_hour.used) .. until_(lim.five_hour.resets), lim.five_hour.used
+        local w = lim.seven_day or { used = 0, resets = 0 }
+        text.ai_lim2 = tr("Week (7 days)")
+        text.ai_lim2p, fact.ai_l2 = percent(w.used) .. until_(w.resets), w.used
+    else
+        text.ai_lim1, text.ai_lim1p, fact.ai_l1 = tr("Context"), percent(ctx), ctx
+        text.ai_lim2, text.ai_lim2p, fact.ai_l2 = with_n("{n} tokens in this session", tostring(u.tokens or 0)), "", -1
+    end
+    local rows = {}
+    local names = {}
+    for _, q in ipairs(ai.providers) do names[q.id] = q end
+    for _, msg in ipairs(ai.msgs) do
+        local who = tr("You")
+        if msg.role ~= "user" then
+            local q = names[msg.provider] or {}
+            local mm = nil
+            for _, x in ipairs(q.models or {}) do if x.id == msg.model then mm = x end end
+            who = (q.name or msg.provider or "") .. (mm and (" · " .. mm.name) or "")
+        end
+        rows[#rows + 1] = { who = who, body = msg.content or "", mine = msg.role == "user", failed = msg.ok == false }
+    end
+    if ai.waiting then rows[#rows + 1] = { who = p and p.name or "", body = tr("Thinking…"), mine = false, failed = false } end
+    while #rows > 40 do table.remove(rows, 1) end
+    model.aimsg = rows
+    fact.ai_wait = ai.waiting
+    fact.ai_gen = fact.ai_gen + 1
+    -- the models to choose from: each service a heading, its models under it
+    local choices, list = {}, {}
+    for _, q in ipairs(offered()) do
+        if #list >= 9 then break end
+        list[#list + 1] = { name = string.upper(q.name), hint = q["local"] and tr("on this computer") or "", on = false, head = true }
+        choices[#list] = false
+        for _, x in ipairs(q.models) do
+            if #list >= 10 then break end
+            list[#list + 1] = { name = x.name, hint = "", on = p ~= nil and q.id == p.id and m ~= nil and x.id == m.id, head = false }
+            choices[#list] = { provider = q.id, model = x.id }
         end
     end
-    if now ~= "" then out[#out + 1] = now end
-    local rows = {}
-    for i = 1, math.min(#out, 4) do rows[i] = { para = true, label = (#out[i] > 900 and (out[i]:sub(1, 900) .. " …") or out[i]) .. ((i == 4 and #out > 4) and " …" or "") } end
-    return rows
+    ai.choices = choices
+    model.aimodel = list
+    text.ai_btn_center, text.ai_btn_settings, text.ai_btn_new = tr("Lens AI centre"), tr("Settings"), tr("New session")
+    text.ic_ai_center, text.ic_ai_settings, text.ic_ai_new = icons["messages"], icons["settings"], icons["message-plus"]
+    text.ic_ai_send, text.ic_ai_chev, text.ic_ai_spark, text.ic_ai_check = icons["arrow-up"], icons["chevron-down"], icons["sparkles"], icons["check"]
 end
-local function rows_ai()
-    local p = ai.providers[ai.at]
-    if not p then
-        return { { label = tr("No AI on this computer"), glyph = "sparkles", quiet = true },
-                 { label = tr("Settings") .. " › AI", glyph = "settings", line = true, run = function() then_do(function() open.settings("ai") end) end } }
-    end
-    local rows = {}
-    if typed ~= "" and not ai.waiting then
-        local question = typed
-        rows[#rows + 1] = { label = tr("Ask") .. ": " .. question, glyph = "sparkles", keep = true, run = function() ask(question) end }
-    end
-    -- who answers, and whether the question leaves this computer; a press takes the next one there is
-    rows[#rows + 1] = { label = p.name, glyph = p["local"] and "device-desktop" or "cloud", hint = p["local"] and tr("on this computer") or tr("online service"),
-                        quiet = #ai.providers < 2, keep = true, run = function() ai.at = ai.at % #ai.providers + 1 render(true) end }
-    local question, answer
-    for _, m in ipairs(ai.talk) do if m.role == "user" then question, answer = m.content, nil else answer = m.content end end
-    if question then rows[#rows + 1] = { label = question, glyph = "user", quiet = true, line = true } end
-    if ai.waiting then
-        rows[#rows + 1] = { para = true, label = tr("Thinking…") }
-    elseif answer then
-        for _, r in ipairs(bubbles(answer)) do rows[#rows + 1] = r end
-        rows[#rows + 1] = { label = tr("Copy the answer"), glyph = "copy", keep = true, line = true, run = function() pcall(sys.call, "clipboard.set", answer) end }
-        rows[#rows + 1] = { label = tr("New conversation"), glyph = "plus", keep = true, run = function() ai.talk = {} render(true) end }
-    end
-    return rows
+local function ai_send()
+    local q = (text.ai_q or ""):gsub("^%s+", ""):gsub("%s+$", "")
+    local p = provider()
+    if q == "" or ai.waiting or not p then return end
+    local m = model_of(p)
+    text.ai_q, fact.ai_typed = "", false
+    ai.msgs[#ai.msgs + 1] = { role = "user", content = q, provider = p.id, model = m.id }
+    ai.waiting = true
+    fill_ai()
+    run("latte-ai", { "send", kept.ai.chat or "new", p.id, m.id, q }, function(out)
+        ai.waiting = false
+        local ok, r = pcall(json.decode, out or "")
+        if ok and type(r) == "table" and r.chat then
+            kept.ai.chat = r.chat
+            ai.usage = r.usage or {}
+            -- the account's limits are the account's, not the conversation's: kept for the next session too
+            if ai.usage.limits and next(ai.usage.limits) then kept.ai.limits = ai.usage.limits end
+            ai.msgs[#ai.msgs + 1] = { role = "assistant", content = r.answer or "", provider = p.id, model = m.id, ok = r.ok }
+            save()
+        else
+            ai.msgs[#ai.msgs + 1] = { role = "assistant", content = tr("No answer came."), provider = p.id, model = m.id, ok = false }
+        end
+        fill_ai()
+    end)
+end
+on("ai_send", ai_send)
+on("text:ai_q", function() fact.ai_typed = (text.ai_q or "") ~= "" end)
+on("ai_pick", function(i)
+    local c = ai.choices[(i or 0) + 1]
+    if not c then return end
+    kept.ai.provider, kept.ai.model = c.provider, c.model
+    save()
+    fill_ai()
+end)
+on("ai_new", function()
+    kept.ai.chat, ai.msgs, ai.usage = nil, {}, {}
+    save()
+    fill_ai()
+    focus("ai_q")
+end)
+on("ai_center", function() then_do(function() run("latte-app", { "aicenter" }, nil, { output = false }) end) end)
+on("ai_settings", function() then_do(function() open.settings("launcher") end) end)
+-- the conversation that was open, from latte-ai, when LensGoo starts
+local function load_chat()
+    if not kept.ai.chat then return end
+    run("latte-ai", { "chat", kept.ai.chat }, function(out)
+        local ok, c = pcall(json.decode, out or "")
+        if ok and type(c) == "table" and type(c.messages) == "table" then
+            ai.msgs, ai.usage = c.messages, c.usage or {}
+        else
+            kept.ai.chat = nil
+        end
+    end)
 end
 
 -- ── editing the apps page: which parts it has, which filters, and the favourites by hand ─────────────────────
@@ -399,7 +489,7 @@ local function learn_born()
 end
 
 local MODES = {
-    [0] = { glyph = "apps", name = N("Applications"), hint = N("Search apps…"), rows = rows_apps },
+    [0] = { glyph = "apps", name = N("Applications"), hint = N("Search apps or settings…"), rows = rows_apps },
     [1] = { glyph = "folder", name = N("Files"), hint = N("Search files…"), rows = rows_files },
     [2] = { glyph = "world", name = N("Web"), hint = N("Search the web…"), rows = rows_web },
     [3] = { glyph = "terminal-2", name = N("Command"), hint = N("Run a command…"), rows = rows_command },
@@ -426,12 +516,21 @@ local function foot()
     if m == 3 then return { label = tr("Open terminal"), glyph = "terminal-2", more = true, run = function() then_do(open.terminal) end } end
     return { label = tr("Settings") .. " › AI", glyph = "settings", more = true, run = function() then_do(function() open.settings("ai") end) end }
 end
+local function rows_ai() return {} end
 
 local shown = {}
 render = function(keep)
     local tabs = {}
     for m = 0, #MODES do
         tabs[#tabs + 1] = { label = tr(MODES[m].name), glyph = MODES[m].glyph, on = kept.mode == m, run = function() set_mode(m) end }
+    end
+    -- the AI is a card of its own: a conversation, not rows
+    if kept.mode == 4 and MODES[4] then
+        shown = {}
+        card.open({}, { owner = owner, id = "lens", width = WIDTH, keep = keep, tabs = tabs, uniform = true, custom = "ai", split = 508, pane = 1 })
+        fill_ai()
+        if not keep then after(60, function() focus("ai_q") end) end
+        return
     end
     shown = MODES[kept.mode].rows()
     -- every mode has the look of the first: glass above, a divider of coffee and a foot below it (not where an answer
@@ -510,7 +609,9 @@ function M.start(d)
         if type(saved.fav) == "table" then kept.fav = saved.fav end
         if type(saved.layout) == "table" then for k in pairs(kept.layout) do if saved.layout[k] ~= nil then kept.layout[k] = saved.layout[k] == true end end end
         kept.filter = type(saved.filter) == "string" and saved.filter or "all"
+        if type(saved.ai) == "table" then kept.ai = saved.ai end
     end
+    load_chat()
     local got, h = pcall(sys.ask, "env", "HOME")
     home = got and type(h) == "string" and h or ""
     for i, f in ipairs(FOLDERS) do
@@ -526,7 +627,7 @@ function M.start(d)
         local found_any, list = pcall(json.decode, out or "")
         if not found_any or type(list) ~= "table" or #list == 0 then return end
         ai.providers = list
-        MODES[4] = { glyph = "sparkles", name = N("AI"), hint = N("Ask anything…"), rows = rows_ai }
+        MODES[4] = { glyph = "sparkles", name = N("AI"), hint = HINTS.own, rows = rows_ai }
     end)
     sys.watch("apps", function(list)
         apps, by_id = list or {}, {}
