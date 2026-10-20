@@ -14,3 +14,5 @@ Slide Slide.qml
 Field Field.qml
 Reveal Reveal.qml
 Menu Menu.qml
+DotGraph DotGraph.qml
+DotBar DotBar.qml

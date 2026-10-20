@@ -1,4 +1,5 @@
-// The surface of the coffee at the foot of an app's window. It laps a little all the time, and when the window
+// The surface of the coffee at the foot of an app's window: two layers, a lighter one behind and the coffee in
+// front, each lapping at its own pace. The whole brown body is the coffee; the crema is only its line. It laps a little all the time, and when the window
 // is carried about it swings as coffee in a carried cup does: it piles up against the side the window came
 // from, swings back, and settles. What moves it is how fast the window changes its speed (window-place says
 // where the window is). Put it at the bottom of a window, as wide as the window; what stands in the coffee goes
@@ -14,6 +15,7 @@ Item {
     property real depth: 54                    // how deep the coffee stands at rest
     property color coffee: "#3b1d10"
     property color crema: "#a8683c"            // the line of the surface
+    property color back: "#b8862e"             // the layer behind: a yellower coffee, golden rather than faded
     property bool lively: (Quickshell.env("LATTE_TIER") || "") !== "software"
     height: depth + 40                         // room above the surface for it to swing into
     default property alias content: floor.data
@@ -71,6 +73,19 @@ Item {
         const lap = lively ? 1.6 * Math.sin(x * 0.018 - clock * 1.1) + 1.1 * Math.sin(x * 0.041 + clock * 0.7) : 0
         return Math.max(6, depth + (width / 2 - x) * tilt * (width > 0 ? Math.min(1, 900 / width) : 1) - bow * Math.cos(2 * Math.PI * x / Math.max(width, 1)) - bob + lap)
     }
+    // the layer behind: higher, slower the other way, its own length of wave; it swings with the same push
+    function levelBack(x) {
+        const lap = lively ? 2.4 * Math.sin(x * 0.011 + clock * 0.55) + 1.6 * Math.sin(x * 0.027 - clock * 0.9) : 0
+        return level(x) + 7 + lap
+    }
+    readonly property var lineBack: {
+        clock; tilt; bow; bob
+        const pts = [Qt.point(0, height)]
+        const n = Math.max(12, Math.round(width / 28))
+        for (let i = 0; i <= n; i++) { const x = width * i / n; pts.push(Qt.point(x, height - Math.min(height - 1, levelBack(x)))) }
+        pts.push(Qt.point(width, height))
+        return pts
+    }
     readonly property var line: {
         clock; tilt; bow; bob                  // drawn again whenever any of them changes
         const pts = [Qt.point(0, height)]
@@ -82,6 +97,11 @@ Item {
     Shape {
         anchors.fill: parent
         preferredRendererType: Shape.CurveRenderer
+        ShapePath {
+            strokeColor: Qt.lighter(sea.back, 1.3); strokeWidth: 1.2
+            fillColor: sea.back
+            PathPolyline { path: sea.lineBack }
+        }
         ShapePath {
             strokeColor: sea.crema; strokeWidth: 1.6
             fillGradient: LinearGradient { x1: 0; y1: sea.height - sea.depth - 20; x2: 0; y2: sea.height

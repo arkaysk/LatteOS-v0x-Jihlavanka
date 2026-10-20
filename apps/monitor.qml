@@ -64,25 +64,6 @@ ShellRoot {
         return (list || []).filter(p => f === "" || p.name.toLowerCase().includes(f)).slice().sort((a, b) => order === "cpu" ? (b.cpu - a.cpu) || (b.mem - a.mem) : b.mem - a.mem)
     }
 
-    // ── a picture of the last minute: a line with what is under it filled ─────────────────────────────────
-    component Graph: Item {
-        id: graph
-        property var values: []                // 0…1, the newest last
-        property color tint: Theme.gold
-        readonly property var line: {
-            // the minute is as wide as the picture; what has been seen of it so far stands at its right end
-            const n = 59, from = width * (60 - Math.max(1, values.length)) / n
-            const pts = [Qt.point(from, height)]
-            for (let i = 0; i < values.length; i++) pts.push(Qt.point(width * (i + 60 - values.length) / n, height - Math.min(1, Math.max(0, values[i])) * (height - 3) - 1))
-            pts.push(Qt.point(width, height))
-            return pts
-        }
-        Shape { anchors.fill: parent; preferredRendererType: Shape.CurveRenderer
-            ShapePath { strokeColor: graph.tint; strokeWidth: 1.8
-                fillGradient: LinearGradient { x1: 0; y1: 0; x2: 0; y2: graph.height
-                    GradientStop { position: 0; color: Qt.rgba(graph.tint.r, graph.tint.g, graph.tint.b, 0.38) } GradientStop { position: 1; color: Qt.rgba(graph.tint.r, graph.tint.g, graph.tint.b, 0.02) } }
-                PathPolyline { path: graph.line } } }
-    }
     // one of the overview's four pictures
     component Meter: Rectangle {
         id: meter
@@ -92,9 +73,10 @@ ShellRoot {
         property string note
         property var values: []
         property color tint: Theme.gold
+        property bool heat: true               // load goes green → red; the network is one colour
         default property alias more: extra.data
         height: 196; radius: 22; color: Theme.card; clip: true
-        Graph { anchors.bottom: parent.bottom; width: parent.width; height: 96; values: meter.values; tint: meter.tint }
+        DotGraph { anchors.bottom: parent.bottom; anchors.bottomMargin: 12; x: 14; width: parent.width - 28; height: 76; values: meter.values; heat: meter.heat; tint: meter.tint }
         Row { x: 20; y: 16; spacing: 9
             Glyph { name: meter.icon; color: meter.tint; font.pixelSize: 19; anchors.verticalCenter: parent.verticalCenter }
             Label { text: meter.title; color: Theme.dim; font.weight: 600; anchors.verticalCenter: parent.verticalCenter } }
@@ -110,7 +92,7 @@ ShellRoot {
         HoverHandler { id: lineHit }
         Label { x: 14; width: parent.width - 330; text: line.what.name + (line.what.pids.length > 1 ? "  (" + line.what.pids.length + ")" : ""); font.weight: 600; anchors.verticalCenter: parent.verticalCenter }
         Label { anchors.right: parent.right; anchors.rightMargin: 226; text: line.what.cpu.toFixed(1) + " %"; color: line.what.cpu >= 25 ? Theme.gold : Theme.dim; anchors.verticalCenter: parent.verticalCenter }
-        Rectangle { anchors.right: parent.right; anchors.rightMargin: 226; y: parent.height - 7; height: 3; radius: 2; color: Theme.gold; opacity: 0.7; width: Math.min(70, line.what.cpu * 0.7) }
+        DotBar { anchors.right: parent.right; anchors.rightMargin: 226; y: parent.height - 9; width: 70; height: 4; segments: 14; value: line.what.cpu / 100 }
         Label { anchors.right: parent.right; anchors.rightMargin: 120; text: shell.bytes(line.what.mem); color: Theme.dim; anchors.verticalCenter: parent.verticalCenter }
         Pill { visible: lineHit.hovered && line.canEnd; anchors.right: parent.right; anchors.rightMargin: 10; anchors.verticalCenter: parent.verticalCenter; implicitHeight: 30; danger: true; icon: "x"; text: I18n.tr("End")
                onPressed: shell.act(["end"].concat(line.what.pids.map(String))) }
@@ -139,8 +121,7 @@ ShellRoot {
                         Row { width: parent.width
                             Label { text: I18n.tr(modelData.n); color: Theme.dim; font.pixelSize: 12; width: parent.width - fig.implicitWidth }
                             Label { id: fig; text: modelData.t; font.pixelSize: 12; font.weight: 700 } }
-                        Rectangle { width: parent.width; height: 5; radius: 3; color: Qt.rgba(1, 1, 1, 0.12)
-                            Rectangle { height: 5; radius: 3; color: modelData.v > 0.85 ? Theme.red : Theme.gold; width: parent.width * Math.min(1, modelData.v); Behavior on width { NumberAnimation { duration: 400 } } } } } }
+                        DotBar { width: parent.width; height: 6; segments: 24; value: modelData.v } } }
             }
         ]
 
@@ -152,17 +133,18 @@ ShellRoot {
                 readonly property real each: (over.room - (columns - 1) * 16) / columns
                 Meter { width: parent.each; title: I18n.tr("Processor"); icon: "cpu"; values: shell.past.cpu
                         figure: (shell.now.cpu || 0) + " %"; note: shell.now.cpu_temp ? shell.now.cpu_temp + " °C" : ""
-                        // every core as a bar
-                        Row { anchors.right: parent.right; anchors.bottom: parent.bottom; spacing: 3; height: 54
-                            Repeater { model: shell.run ? shell.run.cores : []
-                                Rectangle { required property int modelData; width: 7; radius: 3; anchors.bottom: parent.bottom; color: Theme.gold; opacity: 0.35 + modelData / 160
-                                            height: 4 + 50 * modelData / 100; Behavior on height { NumberAnimation { duration: 500 } } } } } }
+                        // every core as a row of segments
+                        Column { anchors.right: parent.right; anchors.top: parent.top; anchors.topMargin: -6; spacing: 2
+                            Repeater { model: shell.run ? shell.run.cores.slice(0, 8) : []
+                                Row { required property int modelData; required property int index; spacing: 8; height: 7
+                                    Label { text: "c" + index; color: Theme.dim; font.pixelSize: 9; width: 18; anchors.verticalCenter: parent.verticalCenter }
+                                    DotBar { width: 92; height: 5; segments: 14; value: modelData / 100; anchors.verticalCenter: parent.verticalCenter } } } } }
                 Meter { width: parent.each; title: I18n.tr("Memory"); icon: "cpu-2"; values: shell.past.ram; tint: Theme.coffee
                         figure: shell.bytes(shell.now.ram || 0); note: I18n.tr("of {n}", { n: shell.bytes(shell.now.ram_total || 0) }) + (shell.run && shell.run.swap > 0 ? "  ·  " + I18n.tr("swap") + " " + shell.bytes(shell.run.swap) : "") }
                 Meter { width: parent.each; visible: shell.now.gpu !== undefined; title: I18n.tr("Graphics"); icon: "device-desktop"; values: shell.past.gpu; tint: "#9ed6bd"
                         figure: (shell.now.gpu || 0) + " %"
                         note: I18n.tr("Video memory") + " " + shell.bytes(shell.now.vram || 0) + " / " + shell.bytes(shell.now.vram_total || 0) + (shell.now.gpu_temp ? "  ·  " + shell.now.gpu_temp + " °C" : "") }
-                Meter { width: parent.each; title: I18n.tr("Network and disks"); icon: "network"; tint: "#8fb6e8"
+                Meter { width: parent.each; title: I18n.tr("Network and disks"); icon: "network"; tint: "#8fb6e8"; heat: false
                         values: { const top = Math.max(65536, ...shell.past.down, ...shell.past.up); return shell.past.down.map(v => v / top) }
                         figure: shell.run ? "↓ " + shell.rate(shell.run.net.down) : "—"
                         note: shell.run ? "↑ " + shell.rate(shell.run.net.up) + "  ·  " + I18n.tr("disk") + " " + shell.rate(shell.run.disk.read + shell.run.disk.write) : "" }

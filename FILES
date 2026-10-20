@@ -71,6 +71,8 @@
 /usr/share/latteos/apps/common/Waiting.qml                      <- apps/common/Waiting.qml
 /usr/share/latteos/apps/common/qmldir                           <- apps/common/qmldir
 /usr/share/latteos/apps/common/Surface.qml              <- apps/common/Surface.qml
+/usr/share/latteos/apps/common/DotGraph.qml              <- apps/common/DotGraph.qml
+/usr/share/latteos/apps/common/DotBar.qml              <- apps/common/DotBar.qml
 /usr/share/latteos/apps/common/AppWindow.qml            <- apps/common/AppWindow.qml
 /usr/share/latteos/apps/common/Slide.qml                <- apps/common/Slide.qml
 /usr/share/latteos/apps/common/Field.qml                <- apps/common/Field.qml
