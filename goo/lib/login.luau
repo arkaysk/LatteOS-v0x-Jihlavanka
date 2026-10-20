@@ -4,14 +4,25 @@
 -- LATTE_LOGIN=greetd is the real thing: bin/latte-greeter starts the scene that way, and the password goes to
 -- greetd through bin/latte-login. Anything else is a dry run that changes nothing on the system: the password
 -- is "latte", the power menu only logs, and the opening plays again after a login.
-return function()
+--
+-- With { lock = true } it is the lock screen (lockscreen.plm): the same screen for whoever is logged in, the password
+-- checked by the system (`auth.check`), no session to choose; the right one opens the session as it was left.
+return function(opts)
     local icons = require("lib/icons")
+    local LOCK = type(opts) == "table" and opts.lock == true
 
     local ok_env, env = pcall(sys.ask, "env", "LATTE_LOGIN")
-    local LIVE = ok_env and env == "greetd"
+    local LIVE = LOCK or (ok_env and env == "greetd")
+    local ME = ""
+    if LOCK then
+        local ok_user, user = pcall(sys.ask, "env", "USER")
+        ME = ok_user and type(user) == "string" and user or ""
+    end
 
     local sessions = {}          -- { file, name, cmd }, as latte-login lists them
     local known_user = ""        -- whoever the data named; typed over, it is another account
+
+    local function note(locked) pcall(sys.call, "files.write", "lock.json", { locked = locked }) end
 
     local function guard(what, f, ...)
         local ok, err = pcall(f, ...)
@@ -45,7 +56,7 @@ return function()
             local ok, d = pcall(json.decode, out or "")
             if not ok or type(d) ~= "table" then log("login · latte-login data gave nothing") return end
             -- Only the first answer names the user: what has been typed since is not written over.
-            if known_user == "" then known_user = d.user or "" text.user = known_user end
+            if known_user == "" then known_user = LOCK and ME or (d.user or "") text.user = known_user end
             local coffee = type(d.coffee) == "table" and d.coffee or {}
             fact.water, fact.milk = tonumber(coffee[1]) or 0.55, tonumber(coffee[2]) or 0
             if tonumber(d.power_x) then fact.power_x = tonumber(d.power_x) end
@@ -65,7 +76,7 @@ return function()
 
             -- The first answer picks the session used last; later ones leave the user's choice alone.
             local first = #sessions == 0
-            sessions = type(d.sessions) == "table" and d.sessions or {}
+            sessions = (not LOCK and type(d.sessions) == "table") and d.sessions or {}
             local names = {}
             for _, s in ipairs(sessions) do names[#names + 1] = { name = s.name or s.file or "?" } end
             model.sessions = names
@@ -83,6 +94,12 @@ return function()
 
     local function check(pw, done)
         if not LIVE then return done(pw == "latte") end
+        if LOCK then
+            -- The answer to a wrong password takes a couple of seconds; the renderer does not wait for the logic.
+            local ok, right = pcall(sys.ask, "auth.check", pw)
+            if not ok then log("lock · the password could not be checked: " .. tostring(right)) end
+            return done(ok and right == true)
+        end
         local s = sessions[fact.ses_sel + 1] or { file = "latteos", cmd = { "/usr/bin/latte-session" } }
         local who = (text.user or ""):gsub("^%s+", ""):gsub("%s+$", "")
         if who == "" then who = known_user end
@@ -115,7 +132,10 @@ return function()
                     fact.checking = false
                     if not good then emit("rejected") return end
                     emit("accepted")
-                    if LIVE then
+                    if LOCK then
+                        -- the drop goes to its place on the bar, the coffee drains, the desktop shows, and only then the lock goes
+                        after(2300, function() fact.locked = false note(false) end)
+                    elseif LIVE then
                         -- The session is prepared; greetd starts it when the login compositor ends, after the drop has left.
                         after(2300, function() run("latte-login", { "done" }, nil, { output = false }) end)
                     else
@@ -143,6 +163,7 @@ return function()
         local ok2, at = pcall(sys.ask, "env", "LATTE_LOGIN_LAYOUT")
         layout = tonumber(ok2 and at or 0) or 0
         if not LIVE then layouts, layout = { "us", "sk" }, 0 end
+        if LOCK then layouts = {} end            -- the session's own layout is the one typed in
     end
     local function show_layout()
         fact.kb_count = #layouts
@@ -177,11 +198,29 @@ return function()
     text.g_power, text.g_go, text.g_sleep = icons["power"], icons["arrow-right"], icons["moon"]
     text.g_restart, text.g_session = icons["refresh"], icons["device-desktop"]
     text.g_kb, text.g_lang = icons["keyboard"], icons["world"]
-    fact.keep_backdrop = LIVE
+    fact.keep_backdrop = LIVE and not LOCK      -- the lock fades to the desktop it kept
     fill()
     show_date()
     every(60000, fill)           -- the news, the battery and the sky move on
     every(30000, show_date)
+    if LOCK then
+        on("lock_now", function()
+            if fact.locked then return end
+            fact.locked = true
+            note(true)
+            text.password = ""
+            emit("again")
+            fill()
+            show_date()
+            after(60, function() emit("intro") end)
+        end)
+        -- A lock screen that died while it held the lock leaves the session locked, on purpose: the one started in
+        -- its place (GuardDog, systemd) takes the lock up again.
+        local found, kept = pcall(sys.ask, "files.read", "lock.json", "json")
+        if found and type(kept) == "table" and kept.locked == true then emit("lock_now") end
+        log("login · the lock screen")
+        return
+    end
     emit("intro")
     log("login · " .. (LIVE and "greetd" or "dry run"))
 end

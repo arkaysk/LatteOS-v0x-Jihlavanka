@@ -1,0 +1,6 @@
+#!/bin/sh
+# latte-lock: locks the session with the lock screen that is the login screen (goo/lockscreen.plm, its own scene
+# all through the session). It fails when that scene is not there, so whoever asked can lock another way: the Goo
+# scene then shows its own simple lock (goo/parts/lock.plm), and the session is locked all the same.
+s="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/pleamar/lockscreen.sock"
+[ -S "$s" ] && pleamar --say lockscreen "emit lock_now" >/dev/null 2>&1

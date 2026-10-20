@@ -15,15 +15,21 @@ local function show_date()
     run("date", { "+" .. tr("%A, %-d %B") }, function(out) text.lock_date = (out or ""):gsub("%s+$", "") end)
 end
 
-function M.lock()
+-- The lock screen is the login screen, a scene of its own (bin/latte-lock, goo/lockscreen.plm). This one locks only
+-- when that one is not there: a session is never left open because a lock screen was missing.
+local function lock_here()
     if fact.locked then return end
-    card.close()
     text.lock_password = ""
     fact.lock_wrong, fact.lock_checking = false, false
     show_date()
     fact.locked = true
     note(true)
     after(100, function() focus("lock_password") end)      -- what is typed goes to the password without a press
+end
+function M.lock()
+    if fact.locked then return end
+    card.close()
+    run("latte-lock", {}, function(_, code) if code ~= 0 then lock_here() end end)
 end
 
 on("lock_now", M.lock)
@@ -50,7 +56,7 @@ function M.start()
     text.g_lock, text.g_go = icons["lock"], icons["arrow-right"]
     every(30000, function() if fact.locked then show_date() end end)
     local found, kept = pcall(sys.ask, "files.read", FILE, "json")
-    if found and type(kept) == "table" and kept.locked == true then M.lock() end
+    if found and type(kept) == "table" and kept.locked == true then lock_here() end
 end
 
 return M

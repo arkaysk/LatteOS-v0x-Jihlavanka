@@ -249,6 +249,8 @@ def choose(ident, on):
 COMPONENTS = [
     ("goo", "The Goo scene", lambda: unit_active("latte-session.target"), lambda: unit_active("latte-goo.service"),
      lambda: quiet("systemctl", "--user", "restart", "latte-goo.service")),
+    ("lockscreen", "The lock screen", lambda: unit_active("latte-session.target"), lambda: unit_active("latte-lockscreen.service"),
+     lambda: quiet("systemctl", "--user", "restart", "latte-lockscreen.service")),
     ("idle", "Lock and screen off", lambda: unit_active("latte-session.target"), lambda: unit_active("latte-idle.service"),
      lambda: quiet("systemctl", "--user", "restart", "latte-idle.service")),
     ("icons", "Icons on the desktop", icons_wanted, lambda: running(r"^qs .*apps/desktop\.qml"),

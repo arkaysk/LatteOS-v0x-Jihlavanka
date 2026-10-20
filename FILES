@@ -22,6 +22,7 @@
 /usr/bin/latte-focus                                    <- bin/latte-focus
 /usr/bin/latte-nameday                                  <- bin/latte-nameday
 /usr/bin/latte-cam                                      <- bin/latte-cam
+/usr/bin/latte-lock                                     <- bin/latte-lock
 /usr/bin/latte-monitor                                  <- bin/latte-monitor
 /usr/bin/latte-net                                      <- bin/latte-net
 /usr/bin/latte-network                                  <- bin/latte-network
@@ -42,6 +43,8 @@
 /usr/share/latteos/session-env.sh                       <- system/session-env.sh
 /usr/share/latteos/FILES                                <- FILES
 /usr/share/latteos/goo/login.plm                        <- goo/login.plm
+/usr/share/latteos/goo/lockscreen.plm                        <- goo/lockscreen.plm
+/usr/share/latteos/goo/lockscreen.luau                        <- goo/lockscreen.luau
 /usr/share/latteos/goo/shaders/water.wgsl               <- goo/shaders/water.wgsl
 /usr/share/latteos/goo/login.luau                       <- goo/login.luau
 /usr/share/latteos/goo/login-safe.plm                   <- goo/login-safe.plm
@@ -97,6 +100,7 @@
 /usr/share/latteos/goo/parts/card.plm                   <- goo/parts/card.plm
 /usr/share/latteos/goo/parts/waves.plm                   <- goo/parts/waves.plm
 /usr/share/latteos/goo/parts/surface.plm                 <- goo/parts/surface.plm
+/usr/share/latteos/goo/parts/greet.plm                 <- goo/parts/greet.plm
 /usr/share/latteos/goo/parts/faces.plm                  <- goo/parts/faces.plm
 /usr/share/latteos/goo/parts/strip.plm                  <- goo/parts/strip.plm
 /usr/share/latteos/goo/parts/launch.plm                 <- goo/parts/launch.plm
@@ -163,6 +167,7 @@
 /usr/lib/systemd/user/latte-idle.service                <- system/systemd/latte-idle.service
 /usr/lib/systemd/user/latte-guarddog.service             <- system/systemd/latte-guarddog.service
 /usr/lib/systemd/user/latte-focus.service                <- system/systemd/latte-focus.service
+/usr/lib/systemd/user/latte-lockscreen.service           <- system/systemd/latte-lockscreen.service
 /usr/lib/systemd/user/latte-goo-side@.service           <- system/systemd/latte-goo-side@.service
 /usr/lib/tmpfiles.d/latteos.conf                        <- system/systemd/latteos.tmpfiles
 /etc/latteos/boot.toml                                  <- system/boot.toml

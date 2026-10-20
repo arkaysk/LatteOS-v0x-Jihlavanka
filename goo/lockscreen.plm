@@ -1,0 +1,35 @@
+// The lock screen is the login screen. Locking the session does not end it: the apps stay as they were, and what
+// is seen is the same coffee, sky and row as at the login, with the password of whoever is logged in. Only the
+// compositor's lock is underneath (ext-session-lock): while it lasts nothing else is seen or touched, on any
+// monitor, and only the right password opens it.
+//
+// The scene runs all through the session and costs nothing while the session is open: it has no surface then.
+// `pleamar --say lockscreen "emit lock_now"` locks (bin/latte-lock, which hypridle and the desktop call).
+language 0.3
+import "lang/sk.plm"
+
+scene Lockscreen {
+    fact locked = false
+    event lock_now ->                          // lock the session now
+    permissions {
+        run: "latte-login", "date", "systemctl"
+        services: "env", "clock", "auth", "files", "files.write"
+    }
+
+    shader water = file "shaders/water.wgsl"
+
+    surface lockview {
+        kind: lock
+        // The box is centred on each monitor; the screen is laid out as big as the largest of them (lockview.width ×
+        // lockview.height) and moved so that on that one it fills it all: a smaller one sees its middle.
+        size: 1920, 1080
+        open: locked
+        rate: 60
+        let GREET_W = lockview.width
+        let GREET_H = lockview.height
+        group {
+            move: (1920 - lockview.width) / 2, (1080 - lockview.height) / 2
+            include "parts/greet.plm"
+        }
+    }
+}

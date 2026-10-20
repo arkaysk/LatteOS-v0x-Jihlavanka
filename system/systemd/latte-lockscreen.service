@@ -1,0 +1,12 @@
+# The lock screen, which is the login screen (goo/lockscreen.plm): a scene that runs all through the session and has
+# no surface until the session is locked (bin/latte-lock). If it dies while it holds the lock, the one started in its
+# place takes the lock up again: Hyprland lets it (allow_session_lock_restore).
+[Unit]
+Description=LatteOS lock screen
+PartOf=latte-session.target
+After=latte-session.target
+
+[Service]
+ExecStart=/usr/bin/pleamar --scene /usr/share/latteos/goo/lockscreen.plm --no-hud
+Restart=always
+RestartSec=1

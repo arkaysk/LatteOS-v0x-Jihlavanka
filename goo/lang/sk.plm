@@ -321,6 +321,7 @@ library Slovak {
         "THE DAYS AHEAD, FORECAST BY:" = "NASLEDUJÚCE DNI, PREDPOVEĎ PODĽA:"
         "they differ by %d°" = "líšia sa o %d°"
         "they agree" = "zhodujú sa"
+        "The lock screen" = "Zamykacia obrazovka"
         "ADMIN" = "ADMIN"
         "Emergency mode" = "Núdzový režim"
         "Uptime" = "Doba behu"
