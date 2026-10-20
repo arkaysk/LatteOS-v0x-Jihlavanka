@@ -375,10 +375,13 @@ Schválené 12. 10. 2026. Pracuje sa **zhora nadol, neskáče sa**; nový nápad
     - e. [x] Lens AI centrum › Modely: skutočné zoznamy modelov, ktoré sa ukážu v LensGoo, predvolený model.
     - f. [x] Okno rozhovoru: postupné písanie, zastavenie, nové vygenerovanie, úprava otázky, formátovanie a kód.
     - g. [x] Porovnanie: jedna otázka viacerým AI vedľa seba.
-    - h. [~] Mikrofón v LensGoo (whisper.cpp, ak b ukáže, že stačí) a nastavenia rozhovoru (vlastné pokyny, pamäť).
+    - h. [x] Mikrofón v LensGoo (whisper.cpp, ak b ukáže, že stačí) a nastavenia rozhovoru (vlastné pokyny, pamäť).
       Mikrofón hotový 21. 10.: whisper.cpp s Vulkanom (large-v3-turbo 8 s, small 3 s na 4 s vety na RX 640),
-      `latte-ai listen`; na latte-lab chýba skutočný mikrofón (overené pripravenou nahrávkou). Ostáva: vlastné pokyny, pamäť.
+      `latte-ai listen`; na latte-lab chýba skutočný mikrofón (overené pripravenou nahrávkou). Vlastné pokyny (Lens AI
+      centrum › Pokyny) idú s každou otázkou ku každej AI.
     - i. [ ] Hľadanie podľa významu v LensGoo (e5-sk, ROADMAP bod 14) — po b.
+    - j. [ ] Mikro-agenti (inšpirácia j5onrf/dots, `inspo/ai-na-ploche.md`): pevné malé úlohy pre lokálny Qwen3.5 2B
+      v LensGoo a v ponuke pravého tlačidla — zhrnúť schránku, preložiť, vysvetliť chybu, príkaz z vety, meno súboru.
 
 ## ROADMAP2 — LatteOS od nápadu po hotový produkt
 

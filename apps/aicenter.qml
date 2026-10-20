@@ -13,7 +13,9 @@ import "common"
 ShellRoot {
     id: shell
     readonly property var words: (Quickshell.env("LATTE_APP_ARGS") || "").split("\n").filter(w => w !== "")
-    property string page: "chats"              // chats · compare · models · services
+    property string page: "chats"              // chats · compare · models · instructions · services
+    FileView { id: rules; path: (Quickshell.env("XDG_CONFIG_HOME") || (Quickshell.env("HOME") + "/.config")) + "/latteos/ai-instructions.txt"; printErrors: false
+               onLoaded: ruleText.text = text() }
     property var picks: []                     // what is compared: up to three { provider, model }
     property string asked: ""                  // the question they were all asked
     property int round: 0                      // counts up for each question compared: the columns start again
@@ -118,7 +120,7 @@ ShellRoot {
 
     AppWindow {
         title: I18n.tr("Lens AI centre")
-        heading: shell.page === "services" ? I18n.tr("Services") : shell.page === "models" ? I18n.tr("Models") : shell.page === "compare" ? I18n.tr("Compare") : (shell.chat ? shell.chat.title : I18n.tr("Conversations"))
+        heading: shell.page === "instructions" ? I18n.tr("Instructions") : shell.page === "services" ? I18n.tr("Services") : shell.page === "models" ? I18n.tr("Models") : shell.page === "compare" ? I18n.tr("Compare") : (shell.chat ? shell.chat.title : I18n.tr("Conversations"))
         implicitWidth: 1120; implicitHeight: 760
         searchHint: I18n.tr("Find a conversation…")
         onSearched: text => shell.find = text
@@ -158,6 +160,7 @@ ShellRoot {
                         text: I18n.tr("No conversation yet. LensGoo's AI tab (Win+C) keeps its conversations here too.") }
                 Item { width: 1; height: 10 }
                 Nav { text: I18n.tr("Compare"); icon: "layout-columns"; on: shell.page === "compare"; onPressed: shell.page = "compare" }
+                Nav { text: I18n.tr("Instructions"); icon: "file-text"; on: shell.page === "instructions"; onPressed: shell.page = "instructions" }
                 Nav { text: I18n.tr("Models"); icon: "sparkles"; on: shell.page === "models"; onPressed: { shell.page = "models"; modelq.ask(["models"]) } }
                 Nav { text: I18n.tr("Services"); icon: "plug-connected"; on: shell.page === "services"; onPressed: { shell.page = "services"; svc.ask(["services"]) } }
             }
@@ -275,6 +278,22 @@ ShellRoot {
                                        text: col.said; color: Theme.cream; font.family: Theme.font; font.pixelSize: 14; selectionColor: Theme.coffee } } } }
             }
             Label { visible: shell.picks.length === 0; anchors.centerIn: parent; color: Theme.dim; text: I18n.tr("Choose who to compare above.") }
+        }
+
+        // ── what every AI is told first: who the user is, how they want to be answered ─────────────────────
+        Scroll {
+            id: rulePage
+            visible: shell.page === "instructions"
+            Label { width: rulePage.room; wrapMode: Text.WordWrap; color: Theme.dim
+                    text: I18n.tr("What you write here goes with every question, to every AI, in LensGoo too: who you are, what you know, how you want to be answered. For example: “I am new to Linux, explain simply. Answer in Slovak.”") }
+            Rectangle { width: rulePage.room; height: 260; radius: 16; color: Theme.card; border.width: 1; border.color: ruleText.activeFocus ? Theme.gold : Theme.line
+                Flickable { anchors.fill: parent; anchors.margins: 14; clip: true; contentHeight: ruleText.implicitHeight; boundsBehavior: Flickable.StopAtBounds
+                    TextEdit { id: ruleText; width: parent.width; wrapMode: Text.Wrap; color: Theme.cream; font.family: Theme.font; font.pixelSize: 14; selectByMouse: true; selectionColor: Theme.coffee } } }
+            Row { spacing: 10
+                Pill { icon: "check"; strong: true; text: rulePage.saved ? I18n.tr("Kept") : I18n.tr("Keep"); onPressed: { rules.setText(ruleText.text.trim() + "\n"); rulePage.saved = true; keptAgain.restart() } }
+                Label { text: I18n.tr("{n} of 4000 characters", { n: ruleText.text.length }); color: ruleText.text.length > 4000 ? Theme.red : Theme.dim; font.pixelSize: 12; anchors.verticalCenter: parent.verticalCenter } }
+            property bool saved: false
+            Timer { id: keptAgain; interval: 1800; onTriggered: rulePage.saved = false }
         }
 
         // ── the models: which show in LensGoo, and which one answers first ───────────────────────────────────

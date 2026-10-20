@@ -46,7 +46,8 @@ No API key: the official tool of a service answers, with the account the user is
                             "provider", "model", "at"}], "usage"}
   latte-ai forget ID        throws one away
 
-The conversations are kept in ~/.local/state/latteos/ai/chats/ID.json, one file each.
+The conversations are kept in ~/.local/state/latteos/ai/chats/ID.json, one file each. What the user wants every AI
+to know or keep to (Lens AI centre › Instructions) is ~/.config/latteos/ai-instructions.txt; it goes with every question.
 The AI on this computer is llama.cpp's llama-server with a model file (.gguf), found under ~/.local/share/latteos/ai
 or /data/ai (llama/*/llama-server, models/*.gguf). It starts the first time it is asked and stays, on 127.0.0.1 only;
 `latte-ai stop` ends it.
@@ -553,7 +554,19 @@ def now():
     return datetime.datetime.now().isoformat(timespec="seconds")
 
 
+def instructions():
+    try:
+        with open(os.path.join(os.environ.get("XDG_CONFIG_HOME") or os.path.expanduser("~/.config"), "latteos", "ai-instructions.txt")) as f:
+            said = f.read().strip()[:4000]
+    except OSError:
+        return ""
+    return ("\n\nWhat the user asks of you in every conversation:\n" + said) if said else ""
+
+
 def send(ident, provider, model, question, effort="", attach=()):
+    global SYSTEM
+    if "What the user asks of you" not in SYSTEM:
+        SYSTEM += instructions()
     chat = None if ident == "new" else load(ident)
     if chat is None:
         chat = {"id": uuid.uuid4().hex[:12], "title": question.strip().splitlines()[0][:80], "messages": [],
