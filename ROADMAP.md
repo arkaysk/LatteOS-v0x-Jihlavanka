@@ -374,7 +374,7 @@ Schválené 12. 10. 2026. Pracuje sa **zhora nadol, neskáče sa**; nový nápad
       overené proti llama-serveru a oddelenej kľúčenke; skutočné kľúče služieb neoverené (žiadne nie sú).
     - e. [x] Lens AI centrum › Modely: skutočné zoznamy modelov, ktoré sa ukážu v LensGoo, predvolený model.
     - f. [x] Okno rozhovoru: postupné písanie, zastavenie, nové vygenerovanie, úprava otázky, formátovanie a kód.
-    - g. [ ] Porovnanie: jedna otázka viacerým AI vedľa seba.
+    - g. [x] Porovnanie: jedna otázka viacerým AI vedľa seba.
     - h. [ ] Mikrofón v LensGoo (whisper.cpp, ak b ukáže, že stačí) a nastavenia rozhovoru (vlastné pokyny, pamäť).
     - i. [ ] Hľadanie podľa významu v LensGoo (e5-sk, ROADMAP bod 14) — po b.
 

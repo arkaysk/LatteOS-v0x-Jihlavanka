@@ -2,6 +2,7 @@
 // which one is signed in, signing in and out. bin/latte-ai keeps the conversations (the same ones LensGoo's AI
 // tab writes) and knows the services; this window shows them.   latte-app aicenter [services | CHAT]
 //
+// latte-app aicenter compare QUESTION PROVIDER/MODEL… asks several at once.
 // The side: all conversations or one service's, newest first, each marked with its service's colour; at the
 // bottom the services. A conversation opens on the right and goes on there, with the service and model it had.
 import QtQuick
@@ -12,7 +13,10 @@ import "common"
 ShellRoot {
     id: shell
     readonly property var words: (Quickshell.env("LATTE_APP_ARGS") || "").split("\n").filter(w => w !== "")
-    property string page: "chats"              // chats · models · services
+    property string page: "chats"              // chats · compare · models · services
+    property var picks: []                     // what is compared: up to three { provider, model }
+    property string asked: ""                  // the question they were all asked
+    property int round: 0                      // counts up for each question compared: the columns start again
     property string only: ""                   // the side shows only this service's conversations; "" all
     property string open: ""                   // the conversation shown
     property string find: ""
@@ -83,8 +87,15 @@ ShellRoot {
     Component.onCompleted: {
         list.ask(["chats"]); who.ask(["providers", "all"]); svc.ask(["services"]); keyq.ask(["keys"])
         if (words[0] === "services" || words[0] === "models") page = words[0]
+        // latte-app aicenter compare QUESTION PROVIDER/MODEL…: the same question to each, side by side
+        if (words[0] === "compare" && words.length > 2) {
+            page = "compare"
+            picks = words.slice(2, 5).map(w => ({ provider: w.split("/")[0], model: w.slice(w.indexOf("/") + 1) }))
+            asked = words[1]
+            Qt.callLater(() => round += 1)
+        }
         if (page === "models") modelq.ask(["models"])
-        else if (words[0]) choose(words[0])
+        else if (words[0] && page === "chats") choose(words[0])        // a conversation by its id
     }
 
     // what the conversation goes on with: its own service and model, or the first there is for a new one
@@ -107,7 +118,7 @@ ShellRoot {
 
     AppWindow {
         title: I18n.tr("Lens AI centre")
-        heading: shell.page === "services" ? I18n.tr("Services") : shell.page === "models" ? I18n.tr("Models") : (shell.chat ? shell.chat.title : I18n.tr("Conversations"))
+        heading: shell.page === "services" ? I18n.tr("Services") : shell.page === "models" ? I18n.tr("Models") : shell.page === "compare" ? I18n.tr("Compare") : (shell.chat ? shell.chat.title : I18n.tr("Conversations"))
         implicitWidth: 1120; implicitHeight: 760
         searchHint: I18n.tr("Find a conversation…")
         onSearched: text => shell.find = text
@@ -146,6 +157,7 @@ ShellRoot {
                 Label { visible: shell.chats.length === 0; x: 14; width: 200; wrapMode: Text.WordWrap; color: Theme.dim; font.pixelSize: 12
                         text: I18n.tr("No conversation yet. LensGoo's AI tab (Win+C) keeps its conversations here too.") }
                 Item { width: 1; height: 10 }
+                Nav { text: I18n.tr("Compare"); icon: "layout-columns"; on: shell.page === "compare"; onPressed: shell.page = "compare" }
                 Nav { text: I18n.tr("Models"); icon: "sparkles"; on: shell.page === "models"; onPressed: { shell.page = "models"; modelq.ask(["models"]) } }
                 Nav { text: I18n.tr("Services"); icon: "plug-connected"; on: shell.page === "services"; onPressed: { shell.page = "services"; svc.ask(["services"]) } }
             }
@@ -211,6 +223,58 @@ ShellRoot {
                 Pill { id: send; anchors.right: parent.right; anchors.rightMargin: 10; anchors.verticalCenter: parent.verticalCenter; implicitHeight: 34
                        icon: shell.waiting ? "player-stop" : "arrow-up"; strong: true; text: shell.waiting ? I18n.tr("Stop") : (shell.editing ? I18n.tr("Change") : I18n.tr("Send"))
                        onPressed: { if (shell.waiting) shell.stop(); else { shell.send(line.text); line.text = "" } } } }
+        }
+
+        // ── one question to several AIs at once, the answers side by side ──────────────────────────────────
+        Item {
+            id: cmp
+            anchors.fill: parent
+            visible: shell.page === "compare"
+            Column { id: cmpTop; x: 28; y: 22; width: parent.width - 56; spacing: 12
+                Label { width: parent.width; wrapMode: Text.WordWrap; color: Theme.dim
+                        text: I18n.tr("Choose up to three, ask once, and read them side by side. Each answer is kept as a conversation of its own, to go on with.") }
+                Flow { width: parent.width; spacing: 8
+                    Repeater { model: { const all = []; shell.providers.forEach(p => p.models.forEach(m => all.push({ provider: p.id, model: m.id, name: I18n.tr(p.name) + " · " + m.name }))); return all }
+                        Pill { required property var modelData; implicitHeight: 32; text: modelData.name
+                               readonly property bool chosen: shell.picks.some(x => x.provider === modelData.provider && x.model === modelData.model)
+                               strong: chosen; icon: chosen ? "check" : ""
+                               onPressed: shell.picks = chosen ? shell.picks.filter(x => !(x.provider === modelData.provider && x.model === modelData.model))
+                                                               : shell.picks.concat([{ provider: modelData.provider, model: modelData.model }]).slice(-3) } } }
+                Row { spacing: 10
+                    Field { id: cmpLine; width: cmpTop.width - 140; icon: "sparkles"; hint: I18n.tr("Ask them all…")
+                            onAccepted: cmpGo.pressed() }
+                    Pill { id: cmpGo; icon: "arrow-up"; strong: true; text: I18n.tr("Ask"); implicitHeight: 40
+                           onPressed: if (cmpLine.text.trim() !== "" && shell.picks.length > 0) { shell.asked = cmpLine.text.trim(); shell.round += 1; cmpLine.text = "" } } } }
+            Row {
+                anchors.top: cmpTop.bottom; anchors.topMargin: 16; anchors.bottom: parent.bottom; anchors.bottomMargin: 22; x: 28
+                spacing: 12
+                Repeater { model: shell.picks
+                    Rectangle { id: col; required property var modelData; required property int index
+                        width: (cmp.width - 56 - 12 * (shell.picks.length - 1)) / shell.picks.length; height: parent.height; radius: 18; color: Theme.card
+                        border.width: 1; border.color: Qt.rgba(Qt.color(shell.colour(modelData.provider)).r, Qt.color(shell.colour(modelData.provider)).g, Qt.color(shell.colour(modelData.provider)).b, 0.5)
+                        property string said: ""
+                        property bool busy: false
+                        property real took: 0
+                        property double began: 0
+                        // each column asks on its own, so the quickest is read first
+                        Process { id: asker
+                            stdout: SplitParser { onRead: line => { let m = null; try { m = JSON.parse(line) } catch (e) { return }
+                                if (m.delta !== undefined) col.said += m.delta
+                                else if (m.chat) col.said = m.answer } }
+                            onExited: { col.busy = false; col.took = (Date.now() - col.began) / 1000; list.ask(["chats"]) } }
+                        Connections { target: shell
+                            function onRoundChanged() {
+                                col.said = ""; col.busy = true; col.began = Date.now()
+                                asker.command = ["latte-ai", "send", "new", col.modelData.provider, col.modelData.model, shell.asked, "--stream", "--markdown"]; asker.running = true } }
+                        Label { x: 16; y: 14; text: shell.nameOf(col.modelData.provider) + " · " + shell.modelName(col.modelData.provider, col.modelData.model)
+                                color: shell.colour(col.modelData.provider); font.weight: 700 }
+                        Label { anchors.right: parent.right; anchors.rightMargin: 16; y: 14; color: Theme.dim; font.pixelSize: 12
+                                text: col.busy ? I18n.tr("Thinking…") : (col.took > 0 ? col.took.toFixed(1) + " s" : "") }
+                        Flickable { x: 16; y: 44; width: parent.width - 32; height: parent.height - 58; clip: true; contentHeight: colText.implicitHeight; boundsBehavior: Flickable.StopAtBounds
+                            TextEdit { id: colText; width: parent.width; readOnly: true; selectByMouse: true; wrapMode: Text.Wrap; textFormat: TextEdit.MarkdownText
+                                       text: col.said; color: Theme.cream; font.family: Theme.font; font.pixelSize: 14; selectionColor: Theme.coffee } } } }
+            }
+            Label { visible: shell.picks.length === 0; anchors.centerIn: parent; color: Theme.dim; text: I18n.tr("Choose who to compare above.") }
         }
 
         // ── the models: which show in LensGoo, and which one answers first ───────────────────────────────────
