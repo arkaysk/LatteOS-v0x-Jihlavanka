@@ -141,6 +141,7 @@ library Slovak {
         "Choose apps" = "Vybrať aplikácie"
         "Name of a new list" = "Názov nového zoznamu"
         "Add list" = "Pridať zoznam"
+        "Find an app…" = "Nájsť aplikáciu…"
         "ADMIN" = "ADMIN"
         "Emergency mode" = "Núdzový režim"
         "Uptime" = "Doba behu"

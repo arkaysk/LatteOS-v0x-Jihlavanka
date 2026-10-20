@@ -74,7 +74,34 @@ def keep(name, values):
 
 
 def plain(s):
-    return "".join(c for c in unicodedata.normalize("NFD", s.lower()) if not unicodedata.combining(c))
+    # no accents, no case, and y as i (Slovak and Czech write the same sound both ways: "prostredye")
+    return "".join(c for c in unicodedata.normalize("NFD", s.lower()) if not unicodedata.combining(c)).replace("y", "i")
+
+
+def close(a, b):
+    """a and b differ by at most one letter: one more, one fewer, one other, or two swapped."""
+    if abs(len(a) - len(b)) > 1:
+        return False
+    if a == b:
+        return True
+    i = 0
+    while i < min(len(a), len(b)) and a[i] == b[i]:
+        i += 1
+    return (a[i + 1:] == b[i + 1:] or a[i:] == b[i + 1:] or a[i + 1:] == b[i:]
+            or (i + 1 < min(len(a), len(b)) and a[i] == b[i + 1] and a[i + 1] == b[i] and a[i + 2:] == b[i + 2:]))
+
+
+def near(word, hay):
+    """The word is in the text, or a word of it begins with something one slip away from it (from four letters)."""
+    if word in hay:
+        return True
+    if len(word) < 4:
+        return False
+    for token in hay.split():
+        for n in (len(word) - 1, len(word), len(word) + 1):
+            if close(word, token[:n]):
+                return True
+    return False
 
 
 def words():
@@ -98,10 +125,12 @@ def pages():
 
 def find(text):
     # a word is looked for by its beginning, so that "klavesove skratky" finds "Klavesnica a skratky": inflected
-    # endings do not matter (ponytail: a crude stem, five letters; a real stemmer when a language needs one)
+    # endings do not matter (ponytail: a crude stem, five letters; a real stemmer when a language needs one); a slip of
+    # a letter does not matter either (near)
     asked = [w[:5] for w in plain(text).split()]
-    found = [p for p in pages() if asked and all(w in p["hay"] for w in asked)]
-    found.sort(key=lambda p: (not plain(p["name"]).startswith(asked[0]) if asked else 0, p["name"]))
+    found = [p for p in pages() if asked and all(near(w, p["hay"]) for w in asked)]
+    # the page that is named for it first, then those that only have it among their words
+    found.sort(key=lambda p: (not plain(p["name"]).startswith(asked[0]) if asked else 0, not all(near(w, plain(p["name"])) for w in asked), p["name"]))
     return found
 
 

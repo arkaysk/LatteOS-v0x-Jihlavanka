@@ -34,7 +34,7 @@ local icons = require("lib/icons")
 local open = require("lib/open")
 local M = {}
 
-local CARD_W = 600                         -- every card that comes out of a drop is this wide
+local CARD_W, CARD_H = 600, 560            -- every card that comes out of a drop is this wide, and at least this tall
 local ROWS, ROWS2, ITEMS, TABS = 24, 12, 6, 6        -- what the scene's models hold
 local RISE = 74                             -- how far from the edge the owner steps to be the card's ear
 local engine                                -- set by lib/engine.luau, which owns the drops
@@ -80,6 +80,18 @@ local function item_record(it)
              on = it.on == true, off = it.off == true, danger = it.danger == true }
 end
 
+-- how tall a row of the scene is, as parts/rows.plm lays it out (a paragraph is not known: 0)
+local function height_of(it)
+    if it.pills or it.tiles then
+        local n = #(it.pills or it.tiles)
+        local per = math.clamp(it.per or (it.pills and ITEMS or 4), 1, ITEMS)
+        return math.ceil(n / per) * ((it.pills and (per <= 2 and 60 or 46)) or (per <= 2 and 66 or 88))
+    end
+    if it.head then return 30 elseif it.big then return 64 elseif it.profile then return 84 elseif it.slide then return 44
+    elseif it.wave then return 26 elseif it.gap then return it.gap end
+    return it.line2 and 54 or 44
+end
+
 function M.open(rows, opts)
     opts = opts or {}
     -- The look every card of a drop has: one width, glass above and below a divider of coffee a way to the settings
@@ -92,6 +104,7 @@ function M.open(rows, opts)
             if r.wave then waved = true end
             if r.para then free = false end
         end
+        if not opts.plain then opts.min_height = math.max(opts.min_height or 0, CARD_H) end
         if free and not waved then
             local more = {}
             for i, r in ipairs(rows) do more[i] = r end
@@ -100,6 +113,22 @@ function M.open(rows, opts)
             foot.more = foot.more == nil and true or foot.more
             more[#more + 1] = foot
             rows, opts.pane = more, opts.pane or 1
+        end
+    end
+    -- so that cards of one kind are of one height: what is short gets room above the divider of coffee, the foot stays at the bottom
+    if opts.min_height and (opts.owner or opts.strip) and not opts.menu and not opts.dock then
+        local at, natural = nil, 16 + (#(opts.tabs or {}) > 0 and 44 or 0) + (opts.field and 46 or 0)
+        for i, r in ipairs(rows) do
+            if r.wave and not at then at = i end
+            natural = natural + height_of(r) + (r.line and i > 1 and 14 or 0)
+        end
+        if at and natural < opts.min_height then
+            local more = {}
+            for i, r in ipairs(rows) do
+                if i == at then more[#more + 1] = { gap = opts.min_height - natural } end
+                more[#more + 1] = r
+            end
+            rows = more
         end
     end
     local out = {}
@@ -153,7 +182,7 @@ function M.open(rows, opts)
             end
             return
         end
-        local kind = (it.head and "head") or (it.big and "big") or (it.para and "para") or (it.profile and "profile") or (it.slide and "slide") or (it.wave and "wave") or "plain"
+        local kind = (it.gap and "gap") or (it.head and "head") or (it.big and "big") or (it.para and "para") or (it.profile and "profile") or (it.slide and "slide") or (it.wave and "wave") or "plain"
         local pressed = (kind == "plain" or kind == "profile" or kind == "slide" or (kind == "big" and it.run ~= nil)) and not it.quiet
         if kind == "slide" then it = table.clone(it) it.bar, it.keep = it.value or 0, true slides[base + #to] = it.set end
         to[#to + 1] = {
@@ -161,7 +190,7 @@ function M.open(rows, opts)
             icon = it.icon or "", has_icon = (it.icon or "") ~= "", tall = kind == "plain" and (it.line2 or "") ~= "",
             on = it.on == true, off = it.off == true, quiet = not pressed,
             danger = it.danger == true, more = it.sub ~= nil or it.more == true, line = it.line == true and #to > 0,
-            bar = type(it.bar) == "number" and it.bar or -1,
+            bar = it.gap or (type(it.bar) == "number" and it.bar or -1),
         }
         if pressed then bind((base + #to - 1) * 8, it) end
         if it.wheel then wheels[base + #to - 1] = it.wheel end
@@ -212,7 +241,7 @@ function M.open(rows, opts)
     local split, waved = (#tabs > 0 and 44 or 0) + (opts.field and 46 or 0), false
     for _, r in ipairs(out) do
         if r.kind == "wave" then waved, split = true, split + 10 break end
-        local h = ({ plain = r.tall and 54 or 44, head = 30, big = 64, para = 0, profile = 84, slide = 44 })[r.kind]
+        local h = ({ plain = r.tall and 54 or 44, head = 30, big = 64, para = 0, profile = 84, slide = 44, gap = r.bar })[r.kind]
         if r.kind == "pills" then h = r.per <= 2 and 60 or 46 elseif r.kind == "tiles" then h = r.per <= 2 and 66 or 88 end
         split = split + (h or 0) + (r.line and 14 or 0)
     end

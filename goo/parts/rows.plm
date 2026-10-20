@@ -165,7 +165,7 @@ part Rows {
         // the rows come in one after another, each a little later, sliding in from the ear's side
         let come = clamp(reveal * 3.2 - 0.1 * r.index, 0, 1)
         let shown = come * come * (3 - 2 * come)
-        let h = pick(r.kind, if(r.tall, 54, 44), 30, 64, 0, 0, 0, 84, 44, 26)
+        let h = if(r.kind == gap, max(r.bar, 0), pick(r.kind, if(r.tall, 54, 44), 30, 64, 0, 0, 0, 84, 44, 26))
 
         column parts {
             // a rule above the row
@@ -206,8 +206,8 @@ part Rows {
                 text r.label { at: 22, 28; anchor: left center; width: w - 44; lines: 1; size: 34; weight: 700; color: cream; show: r.kind == big; family: "Inter" }
 
                 // a bar under a plain row or a large figure
-                box { from: if(r.kind == big, 22, 56), if(r.kind == big, 54, 38); size: w - if(r.kind == big, 44, 74), 3; corner: 1.5; color: #5a463a; show: r.bar >= 0 and r.kind != slide }
-                box { from: if(r.kind == big, 22, 56), if(r.kind == big, 54, 38); size: (w - if(r.kind == big, 44, 74)) * clamp(r.bar, 0, 1) * shown, 3; corner: 1.5; color: gold; show: r.bar > 0 and r.kind != slide }
+                box { from: if(r.kind == big, 22, 56), if(r.kind == big, 54, 38); size: w - if(r.kind == big, 44, 74), 3; corner: 1.5; color: #5a463a; show: r.bar >= 0 and r.kind != slide and r.kind != gap }
+                box { from: if(r.kind == big, 22, 56), if(r.kind == big, 54, 38); size: (w - if(r.kind == big, 44, 74)) * clamp(r.bar, 0, 1) * shown, 3; corner: 1.5; color: gold; show: r.bar > 0 and r.kind != slide and r.kind != gap }
 
                 // a profile: the portrait cut round by a ring of the card's colour
                 image r.icon { at: 18, 12; size: 60, 60; show: r.kind == profile and r.has_icon }

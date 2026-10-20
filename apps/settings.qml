@@ -27,11 +27,26 @@ ShellRoot {
     readonly property var all: { const l = []; for (const a of areas) for (const p of a.pages) l.push(Object.assign({ area: a }, p)); return l }
     readonly property var here: all.find(p => p.id === page) || null
     function go(id) { const p = all.find(q => q.id === id); if (p) { page = id; unfolded = p.area.id; asked = "" } }
-    function plain(s) { return s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "") }
+    // no accents, no case, y as i; as in bin/latte-settings, which LensGoo asks: a slip of a letter does not matter
+    function plain(s) { return s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/y/g, "i") }
+    function close(a, b) {
+        if (Math.abs(a.length - b.length) > 1) return false
+        if (a === b) return true
+        let i = 0
+        while (i < Math.min(a.length, b.length) && a[i] === b[i]) i++
+        return a.slice(i + 1) === b.slice(i + 1) || a.slice(i) === b.slice(i + 1) || a.slice(i + 1) === b.slice(i)
+            || (i + 1 < Math.min(a.length, b.length) && a[i] === b[i + 1] && a[i + 1] === b[i] && a.slice(i + 2) === b.slice(i + 2))
+    }
+    function near(word, hay) {
+        if (hay.includes(word)) return true
+        if (word.length < 4) return false
+        for (const t of hay.split(" ")) for (const n of [word.length - 1, word.length, word.length + 1]) if (close(word, t.slice(0, n))) return true
+        return false
+    }
     readonly property var found: {
         const need = plain(asked).split(/\s+/).filter(w => w !== "").map(w => w.slice(0, 5))
         if (need.length === 0) return []
-        return all.filter(p => { const hay = plain([p.name, I18n.tr(p.name), p.area.name, I18n.tr(p.area.name), p.words || "", I18n.tr(p.words || "")].join(" ")); return need.every(w => hay.includes(w)) })
+        return all.filter(p => { const hay = plain([p.name, I18n.tr(p.name), p.area.name, I18n.tr(p.area.name), p.words || "", I18n.tr(p.words || "")].join(" ")); return need.every(w => near(w, hay)) })
     }
     function elsewhere(p) { Quickshell.execDetached(["latte-app"].concat(p.elsewhere.split(" "))) }
 
@@ -359,11 +374,15 @@ ShellRoot {
                             Column { width: parent.width; spacing: 1; clip: true
                                 height: area.open ? implicitHeight : 0; Behavior on height { NumberAnimation { duration: 180; easing.type: Easing.OutCubic } }
                                 Repeater { model: area.modelData.pages
-                                    Rectangle { id: line; required property var modelData; width: parent.width; height: 34; radius: 10
+                                    Rectangle { id: line; required property var modelData; width: parent.width; radius: 10
+                                        // a page under another (Drops › Launcher) hangs below it, a step in, while that one or its own are open
+                                        readonly property bool sub: modelData.under !== undefined
+                                        visible: !sub || shell.page === modelData.under || (shell.here !== null && shell.here.under === modelData.under)
+                                        height: sub ? 30 : 34
                                         readonly property bool on: shell.page === modelData.id && shell.asked === ""
                                         color: on ? Theme.raised : (lineHit.containsMouse ? Theme.card : "transparent")
                                         Rectangle { width: 3; height: 16; radius: 2; color: Theme.gold; visible: line.on; anchors.verticalCenter: parent.verticalCenter }
-                                        Label { x: 44; width: parent.width - 70; text: I18n.tr(line.modelData.name); font.pixelSize: 13; color: line.on ? Theme.cream : Theme.dim; anchors.verticalCenter: parent.verticalCenter }
+                                        Label { x: line.sub ? 62 : 44; width: parent.width - 70 - (line.sub ? 18 : 0); text: I18n.tr(line.modelData.name); font.pixelSize: line.sub ? 12 : 13; color: line.on ? Theme.cream : Theme.dim; anchors.verticalCenter: parent.verticalCenter }
                                         Dot { status: line.modelData.status; anchors.right: parent.right; anchors.rightMargin: 12; anchors.verticalCenter: parent.verticalCenter }
                                         MouseArea { id: lineHit; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: shell.go(line.modelData.id) } } } } } } } }
         ]
@@ -593,13 +612,19 @@ ShellRoot {
                                        onPressed: shell.lensEdit(ls.index, l => l.on = !(l.on !== false)) }
                                 Pill { text: I18n.tr("Choose apps"); icon: shell.lensOpen === ls.index ? "chevron-up" : "chevron-down"; onPressed: shell.lensOpen = shell.lensOpen === ls.index ? -1 : ls.index }
                                 Pill { visible: !ls.modelData.builtin; icon: "x"; danger: true; onPressed: { const l = shell.lensLists.filter((x, k) => k !== ls.index); lensFile.save(l); shell.lensOpen = -1 } } } }
-                        // the apps, to be ticked in and out
-                        Flow { visible: shell.lensOpen === ls.index; width: parent.width; spacing: 8
-                            Repeater { model: shell.lensOpen === ls.index ? shell.entries : []
-                                Rectangle { id: chip; required property var modelData; width: 212; height: 44; radius: 12
+                        // the apps, to be ticked in and out: a line to find one by name, and a grid that makes only the
+                        // cells that are on view (a few hundred apps are no weight)
+                        Column { visible: shell.lensOpen === ls.index; width: parent.width; spacing: 8
+                            Field { id: pick; width: 320; icon: "search"; hint: I18n.tr("Find an app…") }
+                            GridView { id: grid; width: parent.width; clip: true; boundsBehavior: Flickable.StopAtBounds; cacheBuffer: 200
+                                readonly property int cols: Math.max(1, Math.floor(width / 210))
+                                cellWidth: width / cols; cellHeight: 52
+                                height: Math.min(440, Math.ceil(count / cols) * 52)
+                                model: ScriptModel { values: shell.lensOpen === ls.index ? shell.entries.filter(e => pick.text.trim() === "" || shell.near(shell.plain(pick.text.trim()), shell.plain(e.name))) : [] }
+                                delegate: Rectangle { id: chip; required property var modelData; width: grid.cellWidth - 8; height: 44; radius: 12
                                     readonly property bool inside: shell.lensHas(ls.modelData, modelData)
                                     color: inside ? Qt.rgba(Theme.gold.r, Theme.gold.g, Theme.gold.b, 0.2) : Theme.card; border.width: 1; border.color: inside ? Theme.gold : "transparent"
-                                    Image { x: 10; width: 26; height: 26; anchors.verticalCenter: parent.verticalCenter; source: Quickshell.iconPath(chip.modelData.icon, true); sourceSize.width: 52; fillMode: Image.PreserveAspectFit }
+                                    Image { x: 10; width: 26; height: 26; anchors.verticalCenter: parent.verticalCenter; source: Quickshell.iconPath(chip.modelData.icon, true); sourceSize.width: 52; asynchronous: true; fillMode: Image.PreserveAspectFit }
                                     Label { x: 46; width: parent.width - 80; text: chip.modelData.name; elide: Text.ElideRight; font.pixelSize: 13; anchors.verticalCenter: parent.verticalCenter }
                                     Glyph { visible: chip.inside; anchors.right: parent.right; anchors.rightMargin: 10; name: "check"; font.pixelSize: 16; color: Theme.gold; anchors.verticalCenter: parent.verticalCenter }
                                     MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: shell.lensFlip(ls.index, chip.modelData) } } } } } }

@@ -192,18 +192,19 @@
     "words": "tape tiles floating layout glass side panel arrange"
    },
    {
-    "id": "launcher",
-    "name": "Launcher (LensGoo)",
-    "icon": "search",
-    "status": "ready",
-    "words": "launcher lensgoo lists filters categories apps work media develop fun favourites search"
-   },
-   {
     "id": "drops",
     "name": "Drops (Goo)",
     "icon": "droplet",
     "status": "ready",
     "words": "goo drops lively weather play bend material"
+   },
+   {
+    "id": "launcher",
+    "under": "drops",
+    "name": "Launcher (LensGoo)",
+    "icon": "search",
+    "status": "ready",
+    "words": "launcher lensgoo lists filters categories apps work media develop fun favourites search"
    },
    {
     "id": "notifications",
