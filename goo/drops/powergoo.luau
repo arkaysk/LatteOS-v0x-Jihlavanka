@@ -165,17 +165,18 @@ open_card = function(d, keep)
         } }
     end
     rows[#rows + 1] = { wave = true }
+    -- two columns: the way down on the left (shut down · restart · sleep), the way out on the right
     rows[#rows + 1] = { pills = {
         { label = ask("off", N("Shut down")), glyph = "power", danger = true, on = armed == "off", keep = true, run = leave("off", d) },
-        { label = ask("restart", N("Restart")), glyph = "refresh", on = armed == "restart", keep = true, run = leave("restart", d) },
-        { label = tr("Sleep"), glyph = "moon", run = leave("sleep", d) },
-        { label = ask("logout", N("Log out")), glyph = "logout", on = armed == "logout", keep = true, run = leave("logout", d) },
         { label = tr("Lock"), glyph = "lock", run = function() after(200, lock.lock) end },
+        { label = ask("restart", N("Restart")), glyph = "refresh", on = armed == "restart", keep = true, run = leave("restart", d) },
+        { label = ask("logout", N("Log out")), glyph = "logout", on = armed == "logout", keep = true, run = leave("logout", d) },
+        { label = tr("Sleep"), glyph = "moon", run = leave("sleep", d) },
         { label = tr("Emergency mode"), glyph = "alert-triangle", run = function() after(80, function() open.settings("startmode") end) end },
     }, per = 2 }
     rows[#rows + 1] = { label = tr("Uptime"), glyph = "clock", hint = uptime, quiet = true, line = true }
     -- With the strip out it stays where it is, and the card grows from where the press was.
-    card.open(rows, { owner = not strip.on and d or nil, strip = strip.on, id = "power", width = 330, keep = keep })
+    card.open(rows, { owner = not strip.on and d or nil, strip = strip.on, id = "power", width = 330, keep = keep, pane = 1 })
 end
 
 return {

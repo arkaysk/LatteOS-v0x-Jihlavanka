@@ -48,6 +48,7 @@ part Card {
     fact card_strip = false                    // that drop is stretched into a strip: grow out of the whole capsule
     fact card_w = 300
     fact card_w2 = 0                           // how wide the second column is; 0: there is none
+    fact card_pane = 0                         // 0…1: this card is glass above its wave divider, whatever the goo's material (a drop asks for it)
     fact card_min = 0                          // a card with tabs is at least this tall: its top edge stays put
     fact card_peak = 0                         // …and any card only grows while it is open
     fact card_field = false                    // it has a field to type into, under the tabs
@@ -110,7 +111,7 @@ part Card {
     let card.y0 = if(card_dock, H - 46 - card.h, clamp(if(card.sy > 0, card.y, card.y - card.h), 12, H - 12 - card.h))
     let card.ax = if(card.sx > 0, card.x0, card.x0 + card.w)
     let card.ay = if(card.sy > 0, card.y0, card.y0 + card.h)
-    let card.glass = if(card_dock, 0, material)                  // the shore is hard: its panel is never glass
+    let card.glass = if(card_dock, 0, max(material, card_pane * panes))                  // the shore is hard: its panel is never glass
     let card.q = clamp(card.p, 0, 1.08)
     prop card.ws = 290 ~grow
     prop card.hs = 60 ~grow

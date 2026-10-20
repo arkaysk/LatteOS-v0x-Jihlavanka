@@ -28,7 +28,7 @@
 -- function(text) }; `submit` returns true to keep what was typed, `secret` hides it as a password.
 -- `tiles`: the rows between two headings are laid as a tile, a card within the card (rules between them are
 -- dropped: the tile is what holds them together).
--- Options: `keep` refreshes an open card in place (live figures): the rows do not come in again and the row
+-- Options: `pane` (0…1) makes the card glass above its `wave` row and solid coffee below it. `keep` refreshes an open card in place (live figures): the rows do not come in again and the row
 -- chosen with the keys stays.
 local icons = require("lib/icons")
 local M = {}
@@ -184,6 +184,7 @@ function M.open(rows, opts)
         fact.card_owner = -1
     end
 
+    fact.card_pane = opts.pane or 0
     fact.card_dock, fact.card_dock_w = opts.dock ~= nil, tonumber(opts.dock) or 0
     fact.card_strip = opts.strip == true          -- its owner is stretched into a strip: the card grows out of all of it
 

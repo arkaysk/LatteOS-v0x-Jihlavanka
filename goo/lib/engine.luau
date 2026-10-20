@@ -878,6 +878,7 @@ local function settings()
     fact.lively = t.lively ~= false
     local m = t.material == "glass" and 1 or tonumber(t.material) or 0
     fact.glassy = software and 0 or math.max(0, math.min(1, m))
+    fact.panes = software and 0 or 1
     fact.bends = t.bends ~= false
     if not fact.lively then weather_off() end
     hidden = {}
