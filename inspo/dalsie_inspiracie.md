@@ -360,3 +360,40 @@ Strata: „rýchly správca súborov pre klávesnicu“ (Arch, Omarchy). Čo sa 
 - **Nič nemení systém potajomky**: menovka disku platí iba v aplikácii; aktualizácia iba s potvrdením.
 DiskTree: mapa obdĺžnikov (squarified treemap) farbená podľa druhu, legenda, pruh disku, „worth a look“
 (zbytočne zaberané miesto), režimy Veľkosť / Počet súborov / Vek — v DualBrew prevzaté ako „Čo zapĺňa…“.
+
+https://github.com/natepayn3/Vitreus
+  - (Claude, 13. 10.) Shell „z tekutého skla“ priamo pre **pleamar** (MIT, 281 commitov, aktívny, autor priznáva AI).
+    Jedna sklenená lišta, z ktorej vytekajú zásuvky (ovládanie, kalendár, prehrávač, spúšťač, nastavenia, Desk),
+    zámok obrazovky, upozornenia, polkit, vizualizér cez cava. Farby z tapety (Iris → `palette.plm`, scéna sa
+    prenačíta), stránka Sklo (priehľadnosť, svetlo hrany, hrúbka lomu, dúha, `frost` a `frost: auto`), obsidián
+    namiesto skla, vlastné shadery `.wgsl` (liquid, cardrip, wave, pixelate, lockwave, glow). Pružiny a krky zásuviek
+    sú z Marey ako u nás. Scény sú v jazyku 0.1.
+  - **Využitie v LatteOS:** shell sa nepreberá (lišta je proti kvapkám, témy UwU s tvárami a Cassette sú proti
+    zásadám 6 a 7, inštalácia `curl | sh` a balíky z AUR). Preberajú sa postupy, pri prepise GooEngine na 0.4:
+    sklo kvapiek riadené pomerom vody a mlieka (zásada 6) s dúhou na hrane (zásada 12) a `frost: auto`; zvonový krk
+    a pružina „drip“ pre rast karty z ucha (zásada 9); efekty, ktoré bežia iba počas pohybu (v pokoji nestoja nič,
+    ROADMAP „Teraz“ bod 5); vlnka po hrane karty (`cardrip`) a vlna pri zámku (`lockwave`); farby z tapety iba pre
+    akcent a materiál, nie pre kávu (R3·B). Kód iba ako predloha; prevzatý shader s uvedením v `TRETIE-STRANY.md`.
+
+skvelo vyzerajuci ocean priamo v html https://github.com/Noniv/web-ocean
+
+goo shader https://www.shadertoy.com/view/f3tXzX
+    https://www.shadertoy.com/view/3sySRK
+    https://www.shadertoy.com/view/7XtSD7 rain
+
+ https://github.com/natepayn3/Vitreus otvor zdrojovy kod vitreusu a prečitaj si v kode ako robi ake efekty.
+    ako vizualizuje posuvniky
+
+ https://github.com/yannmasoch/nautilus-my-computer dalši file manager.
+
+    integrovat služby ako :
+    -https://github.com/teamnewpipe/newpipe
+    -https://github.com/Stremio/stremio-web
+    -https://github.com/kodjodevf/mangayomi
+    -https://github.com/fmhy/edit
+    -https://github.com/GyulyVGC/sniffnet
+    
+
+https://github.com/trimstray/the-book-of-secret-knowledge    
+
+    
