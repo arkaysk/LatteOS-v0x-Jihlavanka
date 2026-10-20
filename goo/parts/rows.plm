@@ -28,7 +28,7 @@ part Rows {
         // A closed card is most of the time: nothing of it is worked out then.
         show: card.p > 0.01
         // what is written is not drawn past the frame, which is still narrow while it grows from the ear
-        clip box { at: card.ax + card.sx * card.cw / 2, card.ay + card.sy * card.ch / 2; size: card.cw, card.ch; corner: 18 }
+        clip box { at: card.ax + card.sx * card.cw / 2, card.ay + card.sy * card.ch / 2; size: card.cw, card.ch; corner: min(if(ear > 14, 26, 18) + (card.round - 18), min(card.cw, card.ch) / 2) }
         column card_col {
             at: card.x0, card.y0
             padding: 8
@@ -195,40 +195,40 @@ part Rows {
                 opacity: shown
                 path {
                     at: 0, 0; color: #b8862e; opacity: 100%
-                    move 0, 26
-                    line w * 0 / 12, 6 + 3 * sin(0 + 40 * time)
-                    line w * 1 / 12, 6 + 3 * sin(30 + 40 * time)
-                    line w * 2 / 12, 6 + 3 * sin(60 + 40 * time)
-                    line w * 3 / 12, 6 + 3 * sin(90 + 40 * time)
-                    line w * 4 / 12, 6 + 3 * sin(120 + 40 * time)
-                    line w * 5 / 12, 6 + 3 * sin(150 + 40 * time)
-                    line w * 6 / 12, 6 + 3 * sin(180 + 40 * time)
-                    line w * 7 / 12, 6 + 3 * sin(210 + 40 * time)
-                    line w * 8 / 12, 6 + 3 * sin(240 + 40 * time)
-                    line w * 9 / 12, 6 + 3 * sin(270 + 40 * time)
-                    line w * 10 / 12, 6 + 3 * sin(300 + 40 * time)
-                    line w * 11 / 12, 6 + 3 * sin(330 + 40 * time)
-                    line w * 12 / 12, 6 + 3 * sin(360 + 40 * time)
-                    line w, 26
+                    move -8, 26
+                    line (w + 16) * 0 / 12 - 8, 6 + 3 * sin(0 + 40 * time)
+                    line (w + 16) * 1 / 12 - 8, 6 + 3 * sin(30 + 40 * time)
+                    line (w + 16) * 2 / 12 - 8, 6 + 3 * sin(60 + 40 * time)
+                    line (w + 16) * 3 / 12 - 8, 6 + 3 * sin(90 + 40 * time)
+                    line (w + 16) * 4 / 12 - 8, 6 + 3 * sin(120 + 40 * time)
+                    line (w + 16) * 5 / 12 - 8, 6 + 3 * sin(150 + 40 * time)
+                    line (w + 16) * 6 / 12 - 8, 6 + 3 * sin(180 + 40 * time)
+                    line (w + 16) * 7 / 12 - 8, 6 + 3 * sin(210 + 40 * time)
+                    line (w + 16) * 8 / 12 - 8, 6 + 3 * sin(240 + 40 * time)
+                    line (w + 16) * 9 / 12 - 8, 6 + 3 * sin(270 + 40 * time)
+                    line (w + 16) * 10 / 12 - 8, 6 + 3 * sin(300 + 40 * time)
+                    line (w + 16) * 11 / 12 - 8, 6 + 3 * sin(330 + 40 * time)
+                    line (w + 16) * 12 / 12 - 8, 6 + 3 * sin(360 + 40 * time)
+                    line w + 8, 26
                     close
                 }
                 path {
                     at: 0, 0; color: paper; opacity: 100%
-                    move 0, 700
-                    line w * 0 / 12, 15 + 2.4 * sin(90 + -55 * time)
-                    line w * 1 / 12, 15 + 2.4 * sin(150 + -55 * time)
-                    line w * 2 / 12, 15 + 2.4 * sin(210 + -55 * time)
-                    line w * 3 / 12, 15 + 2.4 * sin(270 + -55 * time)
-                    line w * 4 / 12, 15 + 2.4 * sin(330 + -55 * time)
-                    line w * 5 / 12, 15 + 2.4 * sin(390 + -55 * time)
-                    line w * 6 / 12, 15 + 2.4 * sin(450 + -55 * time)
-                    line w * 7 / 12, 15 + 2.4 * sin(510 + -55 * time)
-                    line w * 8 / 12, 15 + 2.4 * sin(570 + -55 * time)
-                    line w * 9 / 12, 15 + 2.4 * sin(630 + -55 * time)
-                    line w * 10 / 12, 15 + 2.4 * sin(690 + -55 * time)
-                    line w * 11 / 12, 15 + 2.4 * sin(750 + -55 * time)
-                    line w * 12 / 12, 15 + 2.4 * sin(810 + -55 * time)
-                    line w, 700
+                    move -8, 700
+                    line (w + 16) * 0 / 12 - 8, 15 + 2.4 * sin(90 + -55 * time)
+                    line (w + 16) * 1 / 12 - 8, 15 + 2.4 * sin(150 + -55 * time)
+                    line (w + 16) * 2 / 12 - 8, 15 + 2.4 * sin(210 + -55 * time)
+                    line (w + 16) * 3 / 12 - 8, 15 + 2.4 * sin(270 + -55 * time)
+                    line (w + 16) * 4 / 12 - 8, 15 + 2.4 * sin(330 + -55 * time)
+                    line (w + 16) * 5 / 12 - 8, 15 + 2.4 * sin(390 + -55 * time)
+                    line (w + 16) * 6 / 12 - 8, 15 + 2.4 * sin(450 + -55 * time)
+                    line (w + 16) * 7 / 12 - 8, 15 + 2.4 * sin(510 + -55 * time)
+                    line (w + 16) * 8 / 12 - 8, 15 + 2.4 * sin(570 + -55 * time)
+                    line (w + 16) * 9 / 12 - 8, 15 + 2.4 * sin(630 + -55 * time)
+                    line (w + 16) * 10 / 12 - 8, 15 + 2.4 * sin(690 + -55 * time)
+                    line (w + 16) * 11 / 12 - 8, 15 + 2.4 * sin(750 + -55 * time)
+                    line (w + 16) * 12 / 12 - 8, 15 + 2.4 * sin(810 + -55 * time)
+                    line w + 8, 700
                     close
                 }
             }

@@ -185,6 +185,15 @@ function M.open(rows, opts)
     end
 
     fact.card_pane = opts.pane or 0
+    -- where the coffee of a `wave` row begins: the heights of the rows above it, as parts/rows.plm lays them out
+    local split, waved = 0, false
+    for _, r in ipairs(out) do
+        if r.kind == "wave" then waved, split = true, split + 10 break end
+        local h = ({ plain = r.tall and 54 or 44, head = 30, big = 64, para = 0, profile = 84, slide = 44 })[r.kind]
+        if r.kind == "pills" then h = r.per <= 2 and 60 or 46 elseif r.kind == "tiles" then h = r.per <= 2 and 66 or 88 end
+        split = split + (h or 0) + (r.line and 14 or 0)
+    end
+    fact.card_split = waved and split + 4 or 0
     fact.card_dock, fact.card_dock_w = opts.dock ~= nil, tonumber(opts.dock) or 0
     fact.card_strip = opts.strip == true          -- its owner is stretched into a strip: the card grows out of all of it
 

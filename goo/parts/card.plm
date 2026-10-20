@@ -49,6 +49,7 @@ part Card {
     fact card_w = 300
     fact card_w2 = 0                           // how wide the second column is; 0: there is none
     fact card_pane = 0                         // 0…1: this card is glass above its wave divider, whatever the goo's material (a drop asks for it)
+    fact card_split = 0                        // where a `wave` row's coffee begins, from the card's top: below it the card is solid, 0 for none
     fact card_min = 0                          // a card with tabs is at least this tall: its top edge stays put
     fact card_peak = 0                         // …and any card only grows while it is open
     fact card_field = false                    // it has a field to type into, under the tabs
@@ -143,6 +144,23 @@ part Card {
         box { at: card.ax + card.sx * card.cw / 2, card.ay + card.sy * card.ch / 2; size: card.cw * if(card.p > 0.02, 1, 0), card.ch; corner: min(if(ear > 14, 26, 18) + (card.round - 18), min(card.cw, card.ch) / 2) }
         ellipse { at: card.ax, card.ay; radius: (ear * clamp(card.p * 3, 0, 1) + 1) * if(card.p > 0.02, 1, 0); blend: 4 + 30 * 4 * card.t * (1 - card.t) }
         line { from: card.bx, card.by; to: card.bx + cap.tx * cap.len * strip.dir, card.by + (1 - cap.tx) * cap.len * strip.dir; width: ear * 2 * clamp(card.p * 3, 0, 1) * if(cap.len > 0 and card.p > 0.02, 1, 0); blend: 4 + 30 * 4 * card.t * (1 - card.t) }
+    }
+    // Below a `wave` row (card_split) the card is solid coffee to its edge: a second body under the rows, inset a hair
+    // so the first one's rim stays the card's outline. Its top corners are square, its bottom ones the card's.
+    let dk.ct = if(card.sy > 0, card.ay, card.ay - card.ch)
+    let dk.top = max(dk.ct, card.y0 + card_split)
+    let dk.bot = dk.ct + card.ch - 1.5
+    let dk.h = max(dk.bot - dk.top, 0)
+    let dk.cx = card.ax + card.sx * card.cw / 2
+    let dk.on = card.p > 0.02 and not card_dock and card_split > 0
+    // the ear sits in a bottom corner: the coffee keeps clear of it, and the glass wraps round it
+    let dk.e = if(card.sy < 0 and card_owner >= 0, ear * 1.15, 0)
+    let dk.lip = max(40, dk.e * 1.5)
+    body {
+        color: paper
+        opacity: if(dk.on, 1, 0)
+        box { at: dk.cx, dk.top + max(dk.h - dk.lip, 0) / 2; size: max(card.cw - 3, 0), max(dk.h - dk.lip, 0); corner: 3 }
+        box { at: dk.cx + card.sx * dk.e / 2, dk.bot - min(dk.h, dk.lip + 30) / 2; size: max(card.cw - 3 - dk.e, 0), min(dk.h, dk.lip + 30); corner: min(if(ear > 14, 26, 18) + (card.round - 18), min(card.cw, card.ch) / 2) - 1.5 }
     }
     // The shore's panel: a plate like the shore's, rising out of it and reaching past the screen's edge, so
     // the two are one piece.
