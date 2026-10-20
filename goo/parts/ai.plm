@@ -6,7 +6,7 @@
 // the texts and the numbers; latte-ai keeps the conversations.
 part Ai {
     model aimsg max 40 { who: text; body: text; mine: bool; failed: bool }
-    model aimodel max 10 { name: text; hint: text; on: bool; head: bool }
+    model aimodel max 16 { name: text; hint: text; on: bool; head: bool }
     text ai_q = ""
     text ai_hint = ""                          // what the empty field says, in the service's words
     text ai_who = ""                           // who answers, at the foot of the field
@@ -27,6 +27,15 @@ part Ai {
     text ic_ai_chev = ""
     text ic_ai_spark = ""
     text ic_ai_check = ""
+    text ic_ai_plus = ""
+    text ic_ai_clip = ""
+    text ic_ai_shot = ""
+    text ic_ai_x = ""
+    text ai_files = ""                         // what is attached to the next question, by name
+    text ai_add_file = ""
+    text ai_add_shot = ""
+    fact ai_nfiles = 0
+    fact ai_plus = false                       // the little menu of what can be attached is out
     fact ai_style: claude | gemini | grok | chatgpt | own = own
     fact ai_l1 = -1                            // 0…1, how full each line's bar is; below 0 it has none
     fact ai_l2 = -1
@@ -39,6 +48,8 @@ part Ai {
     event ai_center ->
     event ai_settings ->
     event ai_new ->
+    event ai_attach ->                         // 0 a file, 1 a picture of the screen
+    event ai_unattach ->
 
     // the services' own colours are chosen where each is used: a colour if() is not a `let`
     let ai.k = pick(ai_style, 0, 1, 2, 3, 4)       // the style as a number: a name after it would be read as one of its values
@@ -91,12 +102,24 @@ part Ai {
         on press ai_field_hit { focus ai_q }
         input ai_q { at: 36, ai.fy + 16; width: ai.w - 40; size: 15.5; color: if(ai.k == 0, #3d3929, if(ai.k == 1, #1f1f1f, if(ai.k == 2, #0d0d0d, if(ai.k == 3, #0d0d0d, #f5e8d8)))); selection: if(ai_style == own, #5a463a, #c9d7f0); family: "Inter"; label: "{ai_hint}" }
         // at its foot: who answers on the left; the model and the button that sends on the right
-        text ic_ai_spark { at: 38, ai.fy + ai.fh - 22; anchor: center; size: 15; color: if(ai.k == 0, #8a8578, if(ai.k == 1, #5f6368, if(ai.k == 2, #8a8a8a, if(ai.k == 3, #8f8f8f, #b8a491)))); family: "tabler-icons" }
-        text ai_who { at: 54, ai.fy + ai.fh - 22; anchor: left center; size: 13; weight: 600; color: if(ai.k == 0, #8a8578, if(ai.k == 1, #5f6368, if(ai.k == 2, #8a8a8a, if(ai.k == 3, #8f8f8f, #b8a491)))); width: 260; lines: 1; family: "Inter" }
-        box { from: card.w - 16 - 54 - 150, ai.fy + ai.fh - 37; size: 140, 30; corner: 15; color: if(ai.k == 0, #faf9f5, if(ai.k == 1, #dde3ea, if(ai.k == 2, #f2f2f2, if(ai.k == 3, #e8f0fe, #4a372b)))); opacity: 70% + 30% * chip_hit.hover }
-        text ai_model { at: card.w - 16 - 54 - 80, ai.fy + ai.fh - 22; anchor: center; size: 13; weight: 600; color: if(ai.k == 0, #6b6658, if(ai.k == 1, #1f1f1f, if(ai.k == 2, #0d0d0d, if(ai.k == 3, #1a73e8, #f5e8d8)))); width: 130; lines: 1; align: center; family: "Inter" }
+        // + : something to attach to the question
+        ellipse { at: 38, ai.fy + ai.fh - 22; radius: 15; color: if(ai.k == 0, #faf9f5, if(ai.k == 1, #dde3ea, if(ai.k == 2, #f2f2f2, if(ai.k == 3, #e8f0fe, #4a372b)))); opacity: 40% + 60% * plus_hit.hover }
+        text ic_ai_plus { at: 38, ai.fy + ai.fh - 22; anchor: center; size: 18; color: if(ai.k == 0, #3d3929, if(ai.k == 1, #1f1f1f, if(ai.k == 2, #0d0d0d, if(ai.k == 3, #0d0d0d, #f5e8d8)))); family: "tabler-icons" }
+        zone box plus_hit { at: 38, ai.fy + ai.fh - 22; size: 32, 32; cursor: pointer; active: ai.on and not ai_wait; label: "{ai_add_file}"; role: button }
+        on press plus_hit { toggle ai_plus }
+        // what is attached, as one chip with a cross that takes it all off again
+        box { from: 60, ai.fy + ai.fh - 35; size: 250, 26; corner: 13; color: #f7c873; opacity: if(ai_nfiles > 0, 30%, 0) }
+        text ic_ai_clip { at: 74, ai.fy + ai.fh - 22; anchor: center; size: 14; color: if(ai.k == 4, #f5e8d8, #3d3929); show: ai_nfiles > 0; family: "tabler-icons" }
+        text ai_files { at: 86, ai.fy + ai.fh - 22; anchor: left center; size: 12.5; weight: 600; color: if(ai.k == 4, #f5e8d8, #3d3929); width: 196; lines: 1; show: ai_nfiles > 0; family: "Inter" }
+        text ic_ai_x { at: 296, ai.fy + ai.fh - 22; anchor: center; size: 14; color: if(ai.k == 4, #f5e8d8, #3d3929); opacity: 60% + 40% * unattach_hit.hover; show: ai_nfiles > 0; family: "tabler-icons" }
+        zone box unattach_hit { at: 296, ai.fy + ai.fh - 22; size: 26, 26; cursor: pointer; active: ai.on and ai_nfiles > 0 and not ai_wait; label: "Remove"; role: button }
+        on press unattach_hit { emit ai_unattach }
+        text ic_ai_spark { at: if(ai_nfiles > 0, 330, 66), ai.fy + ai.fh - 22; anchor: center; size: 15; color: if(ai.k == 0, #8a8578, if(ai.k == 1, #5f6368, if(ai.k == 2, #8a8a8a, if(ai.k == 3, #8f8f8f, #b8a491)))); family: "tabler-icons" }
+        text ai_who { at: if(ai_nfiles > 0, 346, 82), ai.fy + ai.fh - 22; anchor: left center; size: 13; weight: 600; color: if(ai.k == 0, #8a8578, if(ai.k == 1, #5f6368, if(ai.k == 2, #8a8a8a, if(ai.k == 3, #8f8f8f, #b8a491)))); width: 260; lines: 1; family: "Inter" }
+        box { from: card.w - 16 - 54 - 190, ai.fy + ai.fh - 37; size: 180, 30; corner: 15; color: if(ai.k == 0, #faf9f5, if(ai.k == 1, #dde3ea, if(ai.k == 2, #f2f2f2, if(ai.k == 3, #e8f0fe, #4a372b)))); opacity: 70% + 30% * chip_hit.hover }
+        text ai_model { at: card.w - 16 - 54 - 104, ai.fy + ai.fh - 22; anchor: center; size: 13; weight: 600; color: if(ai.k == 0, #6b6658, if(ai.k == 1, #1f1f1f, if(ai.k == 2, #0d0d0d, if(ai.k == 3, #1a73e8, #f5e8d8)))); width: 150; lines: 1; align: center; family: "Inter" }
         text ic_ai_chev { at: card.w - 16 - 54 - 24, ai.fy + ai.fh - 22; anchor: center; size: 14; color: if(ai.k == 0, #6b6658, if(ai.k == 1, #1f1f1f, if(ai.k == 2, #0d0d0d, if(ai.k == 3, #1a73e8, #f5e8d8)))); family: "tabler-icons" }
-        zone box chip_hit { from: card.w - 16 - 54 - 150, ai.fy + ai.fh - 37; size: 140, 30; cursor: pointer; active: ai.on; label: "{ai_model}"; role: button }
+        zone box chip_hit { from: card.w - 16 - 54 - 190, ai.fy + ai.fh - 37; size: 180, 30; cursor: pointer; active: ai.on; label: "{ai_model}"; role: button }
         on press chip_hit { toggle ai_menu }
         ellipse { at: card.w - 16 - 30, ai.fy + ai.fh - 22; radius: 16; color: if(ai.k == 0, #c96442, if(ai.k == 1, #0b57d0, if(ai.k == 2, #0d0d0d, if(ai.k == 3, #2f7bf5, #f7c873)))); opacity: if(ai_typed or ai_wait, 100%, 35%) * if(ai_wait, 55% + 45% * sin(time * 360), 100%) }
         text ic_ai_send { at: card.w - 16 - 30, ai.fy + ai.fh - 22; anchor: center; size: 17; color: if(ai.k == 0, #ffffff, if(ai.k == 1, #ffffff, if(ai.k == 2, #ffffff, if(ai.k == 3, #ffffff, #2a1e17)))); family: "tabler-icons" }
@@ -140,6 +163,25 @@ part Ai {
             text pick(u, ai_lim1p, ai_lim2p) { at: card.w - 16, lim.y; anchor: right center; size: 12; weight: 600; color: #f5e8d8; width: 88; lines: 1; align: right; family: "Inter" }
         }
 
+        // ── what can be attached: a little window over the + ──────────────────────────────────────────────
+        group {
+            show: ai_plus
+            zone box ai_plus_away { from: 0, 0; size: card.w, card.h; active: ai.on and ai_plus; label: "Close" }
+            on press ai_plus_away { ai_plus = false }
+            box { from: 16, ai.fy - 8 - 80; size: 230, 80; corner: 14; color: #2a1e17 }
+            box { from: 16, ai.fy - 8 - 80; size: 230, 80; corner: 14; stroke: 1; color: #f5e8d8; opacity: 10% }
+            repeat a in 0..2 {
+                let row.y = ai.fy - 8 - 80 + 6 + a * 34
+                box { from: 22, row.y + 2; size: 218, 30; corner: 10; color: #f5e8d8; opacity: 10% * pick(a, add_file_hit.hover, add_shot_hit.hover) }
+                text pick(a, ic_ai_clip, ic_ai_shot) { at: 40, row.y + 17; anchor: center; size: 15; color: #f7c873; family: "tabler-icons" }
+                text pick(a, ai_add_file, ai_add_shot) { at: 58, row.y + 17; anchor: left center; size: 13; weight: 600; color: #f5e8d8; width: 176; lines: 1; family: "Inter" }
+            }
+            zone box add_file_hit { from: 22, ai.fy - 8 - 80 + 8; size: 218, 30; cursor: pointer; active: ai.on and ai_plus; label: "{ai_add_file}"; role: item }
+            zone box add_shot_hit { from: 22, ai.fy - 8 - 80 + 42; size: 218, 30; cursor: pointer; active: ai.on and ai_plus; label: "{ai_add_shot}"; role: item }
+            on press add_file_hit { ai_plus = false; emit ai_attach(0) }
+            on press add_shot_hit { ai_plus = false; emit ai_attach(1) }
+        }
+
         // ── the models to choose from: a little window over the chip; a press beside it puts it away ───────
         group {
             show: ai_menu
@@ -164,4 +206,5 @@ part Ai {
         }
     }
     on key Escape while ai_menu { ai_menu = false }
+    on key Escape while ai_plus { ai_plus = false }
 }

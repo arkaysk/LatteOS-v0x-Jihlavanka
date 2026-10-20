@@ -161,7 +161,7 @@ with tempfile.TemporaryDirectory() as d:
     config, os.environ["XDG_CONFIG_HOME"] = os.environ.get("XDG_CONFIG_HOME"), d
     os.makedirs(os.path.join(d, "latteos"))
     ai.PROVIDERS = {"sh": {"name": "Shell", "local": True, "style": "own", "tool": "sh", "models": [{"id": "m", "name": "M"}],
-                           "command": lambda prompt, model: ["sh", "-c", "echo answer from $0", model]}}
+                           "command": lambda prompt, model, effort, files: ["sh", "-c", "echo answer from $0 $1", model, effort]}}
     assert not ai.turned_off() and len(ai.providers()) == 1
     open(os.path.join(d, "latteos", "ai"), "w").write("off\n")
     assert ai.turned_off() and ai.providers() == [] and len(ai.providers(True)) == 1            # turned off, it is still there to be turned on

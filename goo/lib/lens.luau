@@ -50,7 +50,7 @@ local DEFAULT_LISTS = {
 local GLYPHS = { work = "star", media = "palette", dev = "code", fun = "device-gamepad-2" }
 local lists = DEFAULT_LISTS
 -- the AI's state (see its part below): load_lists reads which services the choice offers
-local ai = { providers = {}, prefer = nil, msgs = {}, usage = {}, waiting = false, choices = {} }
+local ai = { providers = {}, prefer = nil, msgs = {}, usage = {}, waiting = false, choices = {}, files = {} }
 local function load_lists()
     local ok, saved = pcall(sys.ask, "files.read", "lens-lists.json", "json")
     lists = ok and type(saved) == "table" and type(saved.lists) == "table" and #saved.lists > 0 and saved.lists or DEFAULT_LISTS
@@ -325,6 +325,12 @@ local function model_of(p)
 end
 -- a text with a number in it: tr() translates, the number goes where {n} stands
 local function with_n(t, n) return (tr(t):gsub("{n}", function() return tostring(n) end)) end
+-- how hard it may think, as the tools name it, in words
+local EFFORTS = { low = N("low"), medium = N("medium"), high = N("high"), xhigh = N("very high"), max = N("highest") }
+local function effort_of(p)
+    for _, e in ipairs(p and p.efforts or {}) do if e == kept.ai.effort then return e end end
+    return nil
+end
 local function percent(x) x = x or 0 return (x > 0 and x < 0.005) and "< 1 %" or (tostring(math.floor(x * 100 + 0.5)) .. " %") end
 local function until_(t)
     local left = (t or 0) - os.time()
@@ -339,7 +345,11 @@ local function fill_ai()
     m = model_of(p)
     fact.ai_style = p and p.style or "own"
     text.ai_hint = tr(HINTS[p and p.style or "own"] or HINTS.own)
-    text.ai_model = m and m.name or ""
+    local e = effort_of(p)
+    text.ai_model = (m and m.name or "") .. (e and (" · " .. tr(EFFORTS[e] or e)) or "")
+    local names = {}
+    for _, f in ipairs(ai.files) do names[#names + 1] = f:match("[^/]+$") or f end
+    text.ai_files, fact.ai_nfiles = table.concat(names, ", "), #ai.files
     local u = ai.usage
     local ctx = (u.window or 0) > 0 and u.context / u.window or 0
     text.ai_who = (p and p.name or "") .. ((u.window or 0) > 0 and ("  ·  " .. with_n("context {n}", percent(ctx))) or "")
@@ -367,7 +377,8 @@ local function fill_ai()
             for _, x in ipairs(q.models or {}) do if x.id == msg.model then mm = x end end
             who = (q.name or msg.provider or "") .. (mm and (" · " .. mm.name) or "")
         end
-        rows[#rows + 1] = { who = who, body = msg.content or "", mine = msg.role == "user", failed = msg.ok == false }
+        local attached = type(msg.files) == "table" and #msg.files > 0 and ("\n📎 " .. table.concat(msg.files, ", ")) or ""
+        rows[#rows + 1] = { who = who, body = (msg.content or "") .. attached, mine = msg.role == "user", failed = msg.ok == false }
     end
     if ai.waiting then rows[#rows + 1] = { who = p and p.name or "", body = tr("Thinking…"), mine = false, failed = false } end
     while #rows > 40 do table.remove(rows, 1) end
@@ -386,11 +397,23 @@ local function fill_ai()
             choices[#list] = { provider = q.id, model = x.id }
         end
     end
+    -- and how hard the one chosen may think, where its tool lets that be said
+    if p and #(p.efforts or {}) > 0 and #list < 15 then
+        list[#list + 1] = { name = tr("EFFORT"), hint = "", on = false, head = true }
+        choices[#list] = false
+        for _, x in ipairs(p.efforts) do
+            if #list >= 16 then break end
+            list[#list + 1] = { name = tr(EFFORTS[x] or x), hint = "", on = x == e, head = false }
+            choices[#list] = { effort = x }
+        end
+    end
     ai.choices = choices
     model.aimodel = list
     text.ai_btn_center, text.ai_btn_settings, text.ai_btn_new = tr("Lens AI centre"), tr("Settings"), tr("New session")
     text.ic_ai_center, text.ic_ai_settings, text.ic_ai_new = icons["messages"], icons["settings"], icons["message-plus"]
     text.ic_ai_send, text.ic_ai_chev, text.ic_ai_spark, text.ic_ai_check = icons["arrow-up"], icons["chevron-down"], icons["sparkles"], icons["check"]
+    text.ic_ai_plus, text.ic_ai_clip, text.ic_ai_shot, text.ic_ai_x = icons["plus"], icons["paperclip"], icons["screenshot"], icons["x"]
+    text.ai_add_file, text.ai_add_shot = tr("Attach a file…"), tr("A picture of the screen")
 end
 local function ai_send()
     local q = (text.ai_q or ""):gsub("^%s+", ""):gsub("%s+$", "")
@@ -398,10 +421,18 @@ local function ai_send()
     if q == "" or ai.waiting or not p then return end
     local m = model_of(p)
     text.ai_q, fact.ai_typed = "", false
-    ai.msgs[#ai.msgs + 1] = { role = "user", content = q, provider = p.id, model = m.id }
+    local args, names = { "send", kept.ai.chat or "new", p.id, m.id, q }, {}
+    local e = effort_of(p)
+    if e then args[#args + 1] = "--effort" args[#args + 1] = e end
+    for _, f in ipairs(ai.files) do
+        args[#args + 1] = "--attach" args[#args + 1] = f
+        names[#names + 1] = f:match("[^/]+$") or f
+    end
+    ai.files = {}
+    ai.msgs[#ai.msgs + 1] = { role = "user", content = q, provider = p.id, model = m.id, files = names }
     ai.waiting = true
     fill_ai()
-    run("latte-ai", { "send", kept.ai.chat or "new", p.id, m.id, q }, function(out)
+    run("latte-ai", args, function(out)
         ai.waiting = false
         local ok, r = pcall(json.decode, out or "")
         if ok and type(r) == "table" and r.chat then
@@ -422,7 +453,7 @@ on("text:ai_q", function() fact.ai_typed = (text.ai_q or "") ~= "" end)
 on("ai_pick", function(i)
     local c = ai.choices[(i or 0) + 1]
     if not c then return end
-    kept.ai.provider, kept.ai.model = c.provider, c.model
+    if c.effort then kept.ai.effort = c.effort else kept.ai.provider, kept.ai.model = c.provider, c.model end
     save()
     fill_ai()
 end)
@@ -432,6 +463,19 @@ on("ai_new", function()
     fill_ai()
     focus("ai_q")
 end)
+-- something to attach: the card steps aside for the file chooser, or for the picture of the screen, and comes back
+on("ai_attach", function(what)
+    card.close()
+    after(what == 1 and 450 or 120, function()
+        run("latte-ai", { what == 1 and "shot" or "pick" }, function(out)
+            for path in (out or ""):gmatch("[^\n]+") do
+                if #ai.files < 8 and not table.find(ai.files, path) then ai.files[#ai.files + 1] = path end
+            end
+            M.open(4)
+        end)
+    end)
+end)
+on("ai_unattach", function() ai.files = {} fill_ai() end)
 on("ai_center", function() then_do(function() run("latte-app", { "aicenter" }, nil, { output = false }) end) end)
 on("ai_settings", function() then_do(function() open.settings("launcher") end) end)
 -- the conversation that was open, from latte-ai, when LensGoo starts
