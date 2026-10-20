@@ -185,11 +185,14 @@ vznikol recept AVP2. Nabudúce (a u každého, komu sa recept pošle) je to vetv
 |---|---|
 | vetva A (recept): analyze, install, run v ohrade, list, remove | hotové, overené na AVP2 |
 | kroky receptu `unshield`, `copy` | hotové |
-| obrazovky sprievodcu 1–5 | nie sú; Barista je zatiaľ príkaz |
-| vetva B (bez receptu): rozpoznanie inštalátora, výber runnera | pravidlá sú vo v0.3 (`old/session/bin/latte-instalator`), do 0.4 neprenesené |
-| ďalšie typy zdrojov (archív, exe, msi, apk…) | nie |
-| skúšobné spustenie človekom, tlačidlá Priečinok a Log, návrhy podľa logu | nie |
-| povolenie ísť na internet (2.7) | nie; dnes Barista na internet nejde vôbec |
-| závislosti cez winetricks | nie |
+| obrazovky sprievodcu 1–5 (App Manager › Barista) | hotové 14. 10. |
+| vetva B (bez receptu): rozpoznanie inštalátora, rok, bitovosť a grafika z hlavičky PE, výber Wine/Proton a Windows | hotové 20. 10.; overené naostro na priečinku, zipe, Inno (Greenshot) a NSIS (Notepad++) |
+| zdroje: iso, priečinok, archív, exe (inštalátor aj program bez inštalátora), msi | hotové 20. 10.; msi a neznámy inštalátor (spustí sa, človek ho preklikne) neoverené naostro |
+| Proton cez umu-run v ohrade | hotové 20. 10.; overené `cmd /c ver`, hra nie |
+| recept z úspešnej inštalácie (`worked ID yes` → `~/.local/share/latteos/recipes/ID.json`) | hotové 20. 10. |
+| DOS a 16-bit (DOSBox), apk, rpm, flatpak, AppImage | nie; Barista povie, že to zatiaľ nevezme |
+| samorozbaľovací archív, v ktorom je ďalší inštalátor | nie; rozbalí sa a skopíruje |
+| skúšobné spustenie človekom, tlačidlá Priečinok a Log | hotové 14. 10.; návrhy podľa logu sa iba vypíšu, nevykonajú |
+| povolenie ísť na internet (2.7) | hotové 14. 10. (iba katalóg Lutris) |
+| závislosti cez winetricks (.NET, vcredist) | nie |
 | pripojenie disku pre kontrolu CD | nie |
-| recept z úspešnej inštalácie | nie (recept AVP2 je písaný ručne) |

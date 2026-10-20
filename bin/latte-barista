@@ -3,9 +3,11 @@
 
   latte-barista analyze SOURCE…     what the sources are and whether it will work, as JSON:
                                     {"sources": [{"path", "type", "sha256"}], "recipe", "name", "verdict", "reasons": […], "missing": […]}
-                                    verdict: "works" (a recipe that was tried), "may" (rules only) or "no"
+                                    verdict: "works" (a recipe that was tried), "may" (rules only) or "no", and then
+                                    "why": kind (not a source it can take yet), dos (DOS or 16-bit), tool (`tool` is missing)
                                     and, for a person to read: "publisher", "year", "size" (bytes of the sources),
-                                    "packaging" (installshield, inno, nsis, msi or ""), "skips_setup", "runner",
+                                    "packaging" (installshield, inno, nsis, sfx, msi, setup or ""), "skips_setup", "runner",
+                                    "id", "made" (no recipe: the way was put together here),
                                     "winver", "network", "free" (bytes free where it would go), "notes", "installed"
   latte-barista online NAME…        what the internet knows of it, asked only when the user said so:
                                     {"ok", "lutris": [{"name", "year", "url"}]}
@@ -15,21 +17,24 @@
   latte-barista install [--network] SOURCE…     installs it (--network: it may use the network when it runs). Every
                                     command it runs and what that says is printed too, as {"console": line}, and
                                     kept as a record to read: logs/log_install_ID_DDMMYYYY.md; prints a JSON line for each step {"step", "what", "at", "of"}
-                                    (step: reading, windows, unpacking, copying, writing) and at the
+                                    (step: reading, windows, unpacking, copying, installing, setup, finding, writing) and at the
                                     end {"ok": true, "id"} or {"ok": false, "error"}
   latte-barista run ID              starts it, in its sandbox
   latte-barista list                what is installed: [{"id", "name", "size", "installed"}]
   latte-barista remove ID           takes it away: its folder (saves too) and its entry in the menu
 
-A SOURCE is a disc image (.iso) or a folder; the other discs of a set are found beside the first one.
-Nothing of a source is changed. A program lives in ~/Games/ID: `prefix` is its Windows (drive C:, the registry,
+A SOURCE is a disc image (.iso), a folder, an archive (.zip .rar .7z), an installer or program (.exe) or a
+Windows Installer package (.msi); the other discs of a set are found beside the first one. Nothing of a source is changed.
+With no recipe for it, one is put together from what the source is (branch B of docs/barista/POSTUP.md): the
+installer it was packed with, the year, bitness and graphics in the program's header; it is kept as the user's own
+recipe once the user says it worked. A program lives in ~/Games/ID: `prefix` is its Windows (drive C:, the registry,
 its saves), `manifest.json` says what was installed from what, `logs` keeps what it said.
 It runs under bubblewrap: the system read-only, of the user's home only its own folder, and no network unless
 its recipe asks for it. That is a fence, not a virtual machine.
 How a program is installed is a recipe (/usr/share/latteos/recipes/*.json, the user's own in
 ~/.local/share/latteos/recipes): which files tell it apart, what is taken from the discs, how it is started.
 """
-import datetime, glob, hashlib, json, os, shutil, subprocess, sys
+import datetime, glob, hashlib, json, os, re, shutil, subprocess, sys
 
 HOME = os.path.expanduser("~")
 GAMES = os.environ.get("LATTE_GAMES") or os.path.join(HOME, "Games")
@@ -65,18 +70,135 @@ def recipes():
 def kind(path):
     if os.path.isdir(path):
         return "folder"
-    return "iso" if path.lower().endswith(".iso") else "unknown"
+    return {".iso": "iso", ".zip": "archive", ".rar": "archive", ".7z": "archive", ".exe": "exe", ".msi": "msi"}.get(os.path.splitext(path)[1].lower(), "unknown")
 
 
 def names(path):
-    """The files at the top of a source, lower case."""
+    """The files at the top of a source, lower case; a file that is not a disc or an archive is its own name."""
     if os.path.isdir(path):
         return {n.lower() for n in os.listdir(path)}
+    if kind(path) not in ("iso", "archive"):
+        return {os.path.basename(path).lower()}
     try:
         out = subprocess.run(["7z", "l", "-slt", path], capture_output=True, text=True, timeout=120).stdout
     except (OSError, subprocess.TimeoutExpired):
         return set()
-    return {l[7:].lower() for l in out.splitlines() if l.startswith("Path = ") and "/" not in l[7:] and "\\" not in l[7:]}
+    return {l[7:].lower() for l in out.splitlines() if l.startswith("Path = ") and "/" not in l[7:] and "\\" not in l[7:]} - {os.path.basename(path).lower()}
+
+
+def real(folder, name):
+    """A name as the folder spells it: names are compared in lower case, discs are not."""
+    return next((os.path.join(folder, n) for n in os.listdir(folder) if n.lower() == name.lower()), os.path.join(folder, name))
+
+
+def head(source, name=None, n=24 << 20):
+    """The beginning of a file at the top of a source (or of the source itself), without unpacking the rest."""
+    try:
+        if name is None:
+            return open(source, "rb").read(n)
+        if os.path.isdir(source):
+            return open(real(source, name), "rb").read(n)
+        return subprocess.run(["7z", "e", "-so", "-ssc-", source, name], capture_output=True, timeout=300).stdout[:n]
+    except (OSError, subprocess.TimeoutExpired):
+        return b""
+
+
+GRAPHICS = re.compile(rb"(?i)\b(d3d8|d3d9|d3d10(?:_1)?|d3d11|d3d12|ddraw|opengl32|glide[23]?x?|vulkan-1)\.dll")
+
+
+def program(data):
+    """What a Windows program is, by its header: pe32, pe64, ne16 (16-bit Windows) or dos; the year it was built in;
+    the graphics libraries it imports."""
+    if data[:2] != b"MZ" or len(data) < 0x40:
+        return {}
+    at = int.from_bytes(data[0x3C:0x40], "little")
+    arch, year = "dos", 0
+    if data[at:at + 2] == b"NE":
+        arch = "ne16"
+    elif data[at:at + 4] == b"PE\0\0" and len(data) >= at + 26:
+        arch = "pe64" if data[at + 24:at + 26] == b"\x0b\x02" else "pe32"
+        y = datetime.datetime.fromtimestamp(int.from_bytes(data[at + 8:at + 12], "little"), datetime.timezone.utc).year
+        year = y if 1995 <= y <= datetime.date.today().year else 0       # Borland and reproducible builds write no real date
+    return {"arch": arch, "year": year, "graphics": sorted({g.decode().lower() for g in GRAPHICS.findall(data)})}
+
+
+def runner_for(p):
+    """Wine or Proton, and which Windows (docs/barista/NAVRH.md): Wine is kinder to old programs, Proton's DXVK to new ones."""
+    year, g, arch = p.get("year", 0), set(p.get("graphics", [])), p.get("arch", "")
+    winver = "win10" if not year else "win98" if year <= 1999 else "winxp" if year <= 2008 else "win7" if year <= 2014 else "win10"
+    if arch in ("ne16", "dos"):
+        return "dosbox", winver
+    if g & {"d3d10", "d3d10_1", "d3d11", "d3d12", "vulkan-1"} or (year >= 2012 and arch == "pe64"):
+        return "proton", winver
+    if "d3d9" in g and year > 2007 and not g & {"ddraw", "d3d8", "opengl32"}:
+        return "proton", winver
+    return "wine", winver
+
+
+# what packed an installer, by what it carries inside; a zip signature is in too many programs to tell anything
+SIGNS = [("inno", b"Inno Setup"), ("nsis", b"Nullsoft"), ("installshield", b"InstallShield"), ("wise", b"WiseMain"),
+         ("sfx", b"7z\xbc\xaf\x27\x1c"), ("sfx", b"Rar!\x1a\x07")]
+
+# not the program: installers, uninstallers and helpers beside it
+HELPERS = ("unins", "setup", "install", "autorun", "serv", "update", "redist", "dxsetup", "crash", "report")
+NOT_ITS = ("windows", "internet explorer", "windows media player", "windows nt", "common files", "users", "programdata", "$pluginsdir", "directx", "redist", "_commonredist")
+
+
+def main_exe(top):
+    """The program among what was installed: the biggest .exe that is not an installer, an uninstaller or a helper."""
+    best = (0, "")
+    for root, dirs, files in os.walk(top):
+        dirs[:] = [d for d in dirs if d.lower() not in NOT_ITS]
+        for f in files:
+            if f.lower().endswith(".exe") and not any(w in f.lower() for w in HELPERS):
+                path = os.path.join(root, f)
+                best = max(best, (os.path.getsize(path), path))
+    return best[1]
+
+
+def guess(sources):
+    """No recipe: one put together from what the source is. Returns (recipe, why not) — why is kind, dos or tool."""
+    s = os.path.abspath(sources[0])
+    k = kind(s)
+    if k == "unknown":
+        return None, "kind"
+    listed = names(s)
+    title = re.sub(r"(?i)[\s_-]*(cd|dvd|disc|disk)[\s_-]*\d+$", "", os.path.splitext(os.path.basename(s.rstrip("/")))[0] if k != "folder" else os.path.basename(s.rstrip("/"))).strip() or "Program"
+    ident = re.sub(r"[^a-z0-9]+", "-", title.lower()).strip("-") or "program"
+    r = {"id": ident, "name": title, "folder": "Games/" + ident, "made": True, "packaging": "",
+         "match": sorted(listed)[:6] if k in ("folder", "iso", "archive") else [os.path.basename(s).lower()]}
+    about = {}
+    setup = os.path.basename(s).lower() if k in ("exe", "msi") else next((n for n in sorted(listed) if re.match(r"(setup|install)\w*\.(exe|msi)$", n)), "")
+    if k in ("folder", "iso", "archive") and "data1.hdr" in listed and any(n.startswith("ikernel") for n in listed):
+        r["packaging"], r["install"] = "installshield", [{"unshield": "data1.cab"}]
+    elif setup.endswith(".msi") or (not setup and any(n.endswith(".msi") for n in listed)):
+        r["packaging"], r["install"] = "msi", [{"msi": setup or min(n for n in listed if n.endswith(".msi"))}]
+    elif setup:
+        data = head(s, None if k == "exe" else setup)
+        about = program(data)
+        sign = next((name for name, mark in SIGNS if mark in data), "")
+        if sign == "inno":
+            r["packaging"], r["install"] = "inno", [{"innoextract": setup}]
+        elif sign in ("nsis", "sfx"):
+            r["packaging"], r["install"] = sign, [{"unpack": setup}]
+        elif sign or k != "exe" or re.match(r"(setup|install)", setup) or b"UninstallString" in data:
+            r["packaging"], r["install"] = "setup", [{"setup": setup}]
+        else:
+            r["install"] = [{"copy": [setup]}]              # a program that needs no installing
+    else:
+        r["install"] = [{"copy": "*"}]
+        if k == "folder" and main_exe(s):
+            about = program(head(main_exe(s)))
+    if about.get("arch") in ("ne16", "dos"):
+        return r, "dos"
+    r["runner"], r["winver"] = runner_for(about)
+    r["year"] = about.get("year", 0)
+    for tool, used in (("wine", True), ("7z", k in ("iso", "archive") or r["packaging"] in ("nsis", "sfx")), ("unshield", r["packaging"] == "installshield"),
+                       ("innoextract", r["packaging"] == "inno"), ("umu-run", r["runner"] == "proton")):
+        if used and not shutil.which(tool):
+            r["tool"] = tool
+            return r, "tool"
+    return r, ""
 
 
 def with_siblings(sources):
@@ -120,20 +242,18 @@ def packaging(listed):
 
 def analyze(sources):
     r, used, missing = find_recipe(sources)
+    if not r:
+        return analyze_made(sources)
     listed = set().union(*[names(s) for s in used]) if used else set()
     os.makedirs(GAMES, exist_ok=True)
     out = {"sources": [{"path": s, "type": kind(s), "sha256": sha256(s) if os.path.isfile(s) else ""} for s in used],
            "recipe": r["id"] if r else "", "name": r["name"] if r else "", "missing": missing, "reasons": [],
            "size": sum(os.path.getsize(s) if os.path.isfile(s) else size(s) for s in used), "packaging": packaging(listed),
            "free": shutil.disk_usage(GAMES).free}
-    if r:
-        out.update(publisher=r.get("publisher", ""), year=r.get("year", 0), runner=r.get("runner", "wine"), winver=r.get("winver", ""),
-                   network=r.get("network", False), notes=r.get("notes", ""), skips_setup=any("unshield" in p for p in r.get("install", [])),
-                   installed=manifest_of(r["id"]) is not None)
-    if not r:
-        out["verdict"] = "no"
-        out["reasons"].append("no recipe knows this program yet")
-    elif missing:
+    out.update(id=r["id"], made=False, publisher=r.get("publisher", ""), year=r.get("year", 0), runner=r.get("runner", "wine"), winver=r.get("winver", ""),
+               network=r.get("network", False), notes=r.get("notes", ""), skips_setup=any("unshield" in p for p in r.get("install", [])),
+               installed=manifest_of(r["id"]) is not None)
+    if missing:
         out["verdict"] = "no"
         out["reasons"].append("a disc is missing: nothing here has " + ", ".join(missing))
     else:
@@ -148,6 +268,27 @@ def analyze(sources):
     return out
 
 
+def analyze_made(sources):
+    """Branch B: what the source is, and the way to install it that follows from that."""
+    used = [os.path.abspath(x) for x in sources]
+    r, why = guess(used)
+    os.makedirs(GAMES, exist_ok=True)
+    out = {"sources": [{"path": x, "type": kind(x), "sha256": sha256(x) if os.path.isfile(x) else ""} for x in used], "recipe": "", "missing": [],
+           "size": sum(os.path.getsize(x) if os.path.isfile(x) else size(x) for x in used), "free": shutil.disk_usage(GAMES).free, "made": True,
+           "id": "", "name": "", "publisher": "", "year": 0, "packaging": "", "runner": "", "winver": "", "network": False, "notes": "",
+           "skips_setup": False, "installed": False, "reasons": []}
+    if r:
+        out.update(id=r["id"], name=r["name"], year=r["year"] if "year" in r else 0, packaging=r["packaging"], runner=r.get("runner", ""), winver=r.get("winver", ""),
+                   skips_setup=r["packaging"] in ("installshield", "inno", "nsis", "sfx"), installed=manifest_of(r["id"]) is not None)
+    out["verdict"] = "no" if why or out["installed"] else "may"
+    if why:
+        out["why"] = why
+        out["tool"] = r.get("tool", "") if r else ""
+    out["reasons"].append({"kind": "not a source Barista can take yet", "dos": "a DOS or 16-bit program: DOSBox is still to come",
+                           "tool": "%s is not installed" % out.get("tool")}.get(why, "it is installed already" if out["installed"] else "no recipe: the way is put together from what the source is"))
+    return out
+
+
 def folder_of(ident):
     return os.path.join(GAMES, ident)
 
@@ -158,12 +299,17 @@ def wine_env(home):
 
 def install(sources, network=False):
     r, used, missing = find_recipe(sources)
-    if not r or missing:
-        return say(ok=False, error="no recipe" if not r else "missing: " + ", ".join(missing)) or 1
+    if not r:
+        used = [os.path.abspath(x) for x in sources]
+        r, why = guess(used)
+        if not r or why:
+            return say(ok=False, error="cannot install it: " + (why or "kind")) or 1
+    if missing:
+        return say(ok=False, error="missing: " + ", ".join(missing)) or 1
     home = folder_of(r["id"])
     if os.path.exists(os.path.join(home, "manifest.json")):
         return say(ok=False, error="installed already") or 1
-    steps = 2 + len(used) + len(r.get("install", []))
+    steps = 2 + len(used) + len(r.get("install", [])) + ("run" not in r)
     at = 0
 
     media, target = os.path.join(home, ".media"), os.path.join(home, "prefix", "drive_c", *r["folder"].split("/"))
@@ -227,6 +373,9 @@ def install(sources, network=False):
             if os.path.isdir(s):
                 did("copy the folder %s" % s)
                 shutil.copytree(s, media, dirs_exist_ok=True)
+            elif kind(s) in ("exe", "msi"):
+                did("take %s as it is" % s)
+                os.symlink(s, os.path.join(media, os.path.basename(s)))
             elif run(["7z", "x", "-y", "-bso0", "-bsp0", "-o" + media, s]) != 0:
                 raise RuntimeError("could not read " + os.path.basename(s))
         step("windows")
@@ -242,21 +391,65 @@ def install(sources, network=False):
             did("remove drive Z: from the prefix")
             os.remove(z)
         os.makedirs(target, exist_ok=True)
+        drive_c = os.path.join(home, "prefix", "drive_c")
+        looked = target                                  # where the program is looked for, when the recipe does not say
         for part in r.get("install", []):
             if "unshield" in part:
                 step("unpacking", part["unshield"])
                 cab = os.path.join(media, ".cab")
-                if run(["unshield", "-d", cab, "x", os.path.join(media, part["unshield"])]) != 0:
+                if run(["unshield", "-d", cab, "x", real(media, part["unshield"])]) != 0:
                     raise RuntimeError("could not unpack " + part["unshield"])
-                for group in part.get("take", []):
+                # with no list, every group but the installer's own: its engine, its support files and DCOM95
+                groups = part.get("take") or [g for g in os.listdir(cab) if not g.startswith(("<", "[", "_")) and not re.search(r"(?i)engine|support|dcom", g)]
+                for group in groups:
                     did("take the group %s into C:\\%s" % (group, r["folder"].replace("/", "\\")))
                     shutil.copytree(os.path.join(cab, group), target, dirs_exist_ok=True)
                 shutil.rmtree(cab, ignore_errors=True)
+            elif "innoextract" in part:
+                step("unpacking", part["innoextract"])
+                out = os.path.join(media, ".inno")
+                if run(["innoextract", "-s", "-d", out, real(media, part["innoextract"])]) != 0:
+                    raise RuntimeError("could not unpack " + part["innoextract"])
+                # what goes into the program's folder is under app/; the rest is the installer's own
+                shutil.copytree(os.path.join(out, "app") if os.path.isdir(os.path.join(out, "app")) else out, target, dirs_exist_ok=True)
+                shutil.rmtree(out, ignore_errors=True)
+            elif "unpack" in part:
+                step("unpacking", part["unpack"])
+                if run(["7z", "x", "-y", "-bso0", "-bsp0", "-o" + target, "-x!$PLUGINSDIR", "-x!$TEMP", "-x!uninst*", real(media, part["unpack"])]) != 0:
+                    raise RuntimeError("could not unpack " + part["unpack"])
+            elif "msi" in part:
+                step("installing", part["msi"])
+                looked = drive_c
+                if run(["wine", "msiexec", "/i", real(media, part["msi"]), "/qn"], env=wine_env(home)) != 0:
+                    raise RuntimeError("the package did not install")
+                run(["wineserver", "-w"], env=wine_env(home))
+            elif "setup" in part:
+                # an installer nothing can read: it runs with its windows, and the user clicks through it
+                step("setup", part["setup"])
+                looked = drive_c
+                run(["wine", real(media, part["setup"])], env=wine_env(home))
+                run(["wineserver", "-w"], env=wine_env(home))
+            elif part.get("copy") == "*":
+                step("copying")
+                did("copy all of it")
+                shutil.copytree(media, target, dirs_exist_ok=True, ignore=shutil.ignore_patterns(".cab", ".inno"))
             elif "copy" in part:
                 step("copying")
                 for name in part["copy"]:
                     did("copy %s from the disc" % name)
-                    shutil.copy(os.path.join(media, name), target)
+                    shutil.copy(real(media, name), target)
+        if "run" not in r:
+            step("finding")
+            exe = main_exe(looked)
+            if not exe:
+                raise RuntimeError("no program was found in what was installed")
+            r["folder"], r["run"] = os.path.relpath(os.path.dirname(exe), drive_c), {"exe": os.path.basename(exe)}
+            # the program itself says best what it wants; the installer's header only guessed
+            r["runner"], winver = runner_for(program(head(exe)))
+            if winver != r.get("winver"):
+                r["winver"] = winver
+                run(["wine", "reg", "add", "HKCU\\Software\\Wine", "/v", "Version", "/d", winver, "/f"], env=quiet)
+            did("the program is C:\\%s\\%s, for %s on Windows %s" % (r["folder"].replace("/", "\\"), r["run"]["exe"], r["runner"], winver))
         step("writing")
         icon = ""
         if r.get("icon") and shutil.which("icotool"):
@@ -275,6 +468,8 @@ def install(sources, network=False):
                     "sources": [{"path": s, "sha256": sha256(s) if os.path.isfile(s) else ""} for s in used],
                     "folder": r["folder"], "run": r["run"], "network": network or r.get("network", False), "menu": [entry],
                     "installed": datetime.datetime.now().isoformat(timespec="seconds")}
+        if r.get("made"):
+            manifest["recipe"] = r                       # becomes the user's own recipe once it worked
         did("write %s and %s" % (os.path.join(home, "manifest.json"), entry))
         with open(os.path.join(home, "manifest.json"), "w") as f:
             json.dump(manifest, f, indent=1, ensure_ascii=False)
@@ -327,6 +522,13 @@ def worked(ident, said):
         m["confirmed"] = datetime.datetime.now().isoformat(timespec="seconds")
         with open(os.path.join(folder_of(ident), "manifest.json"), "w") as f:
             json.dump(m, f, indent=1, ensure_ascii=False)
+        if m.get("recipe"):
+            # the way that worked, written down: the next time it is branch A, here or wherever the recipe is sent
+            r = {k: v for k, v in m["recipe"].items() if k != "made"}
+            r.update(network=m.get("network", False), verified="%s, %s: put together by Barista, started by the user" % (m["confirmed"][:10], os.uname().nodename))
+            os.makedirs(os.path.join(DATA, "latteos", "recipes"), exist_ok=True)
+            with open(os.path.join(DATA, "latteos", "recipes", r["id"] + ".json"), "w") as f:
+                json.dump(r, f, indent=1, ensure_ascii=False)
         return {"ok": True}
     # what its last run said, in the fixed order Barista goes through them (docs/barista/POSTUP.md)
     try:
@@ -355,10 +557,17 @@ def run_it(ident):
     home = folder_of(ident)
     where = os.path.join(home, "prefix", "drive_c", *m["folder"].split("/"))
     argv = ["wine", m["run"]["exe"]] + list(m["run"].get("args", []))
+    env = dict(wine_env(home), WINEDEBUG="fixme-all")
+    proton = sorted(glob.glob("/opt/latteos/proton/GE-Proton*"))
+    if m.get("runner") == "proton" and proton and shutil.which("umu-run"):
+        # umu keeps the Steam runtime in the user's data; Proton takes over the prefix Wine made
+        argv[0] = "umu-run"
+        env.update(GAMEID="umu-default", PROTONPATH=proton[-1], UMU_RUNTIME_UPDATE="0")
     if shutil.which("bwrap"):
-        argv = fence(home, m.get("network", False)) + ["--chdir", where] + argv
+        umu = os.path.join(DATA, "umu")
+        argv = fence(home, m.get("network", False)) + (["--bind", umu, umu] if argv[0] == "umu-run" and os.path.isdir(umu) else []) + ["--chdir", where] + argv
     with open(os.path.join(home, "logs", "run.log"), "w") as log:
-        return subprocess.run(argv, cwd=where, env=dict(wine_env(home), WINEDEBUG="fixme-all"), stdout=log, stderr=log).returncode
+        return subprocess.run(argv, cwd=where, env=env, stdout=log, stderr=log).returncode
 
 
 def size(path):

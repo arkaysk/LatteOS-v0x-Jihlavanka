@@ -60,7 +60,11 @@ ShellRoot {
     function bTake(paths) { if (!paths.length) return; bSources = paths; bInfo = null; bOnline = null; bStep = 2; bAnalyze.running = false; bAnalyze.command = ["latte-barista", "analyze"].concat(paths); bAnalyze.running = true }
     function bBytes(n) { return n >= 1073741824 ? (n / 1073741824).toFixed(1) + " GB" : Math.round(n / 1048576) + " MB" }
     readonly property var bSteps: ({ "reading": QT_TR_NOOP("Reading {what}"), "windows": QT_TR_NOOP("Preparing a Windows of its own"), "unpacking": QT_TR_NOOP("Unpacking {what}"),
-                                     "copying": QT_TR_NOOP("Copying files"), "writing": QT_TR_NOOP("Writing it down") })
+                                     "copying": QT_TR_NOOP("Copying files"), "installing": QT_TR_NOOP("Installing {what}"), "setup": QT_TR_NOOP("{what} is running: click through its windows"),
+                                     "finding": QT_TR_NOOP("Looking for the program"), "writing": QT_TR_NOOP("Writing it down") })
+    readonly property var bPacked: ({ "installshield": QT_TR_NOOP("An InstallShield installer."), "inno": QT_TR_NOOP("An Inno Setup installer."), "nsis": QT_TR_NOOP("An NSIS installer."),
+                                      "sfx": QT_TR_NOOP("An archive that unpacks itself."), "msi": QT_TR_NOOP("A Windows Installer package. It installs itself, without questions."),
+                                      "setup": QT_TR_NOOP("An installer I cannot read. It will run, and you click through it as in Windows.") })
     readonly property var bWhy: ({ "missing-dll": QT_TR_NOOP("A library is missing: {detail}. It can be added to this program's Windows."), "direct3d": QT_TR_NOOP("The graphics failed. Another way of drawing can be tried."),
                                    "wants-disc": QT_TR_NOOP("It asks for its disc. The disc image can be put in as a drive."), "crashed": QT_TR_NOOP("The program crashed."),
                                    "nothing": QT_TR_NOOP("Its log names no cause I know.") })
@@ -519,24 +523,27 @@ ShellRoot {
                             Label { font.pixelSize: 19; font.weight: 800; text: !shell.bInfo ? "" : shell.bInfo.verdict === "works" ? I18n.tr("It will work") : shell.bInfo.verdict === "may" ? I18n.tr("It should work") : I18n.tr("It will not work") }
                             Label { width: parent.width; color: Theme.dim; font.pixelSize: 12; elide: Text.ElideRight
                                     text: !shell.bInfo ? "" : shell.bInfo.verdict === "works" ? I18n.tr("Somebody has installed and started it this way before.")
-                                        : shell.bInfo.verdict === "may" ? I18n.tr("There is a way written down, but nobody has tried it yet.")
+                                        : shell.bInfo.verdict === "may" ? (shell.bInfo.made ? I18n.tr("I do not know this program; the way follows from what it is. Nobody has tried it yet.") : I18n.tr("There is a way written down, but nobody has tried it yet."))
                                         : (shell.bInfo.missing && shell.bInfo.missing.length ? I18n.tr("A disc is missing: nothing here has {file}. Choose all the discs together.", { file: shell.bInfo.missing.join(", ") })
-                                        : (shell.bInfo.installed ? I18n.tr("It is installed already.") : I18n.tr("I do not know this program yet, and installing without a recipe is still to come."))) } } }
-                    Repeater { model: !shell.bInfo || !shell.bInfo.recipe ? [] : [
+                                        : shell.bInfo.installed ? I18n.tr("It is installed already.")
+                                        : shell.bInfo.why === "dos" ? I18n.tr("It is a DOS or 16-bit program; their player, DOSBox, is still to come.")
+                                        : shell.bInfo.why === "tool" ? I18n.tr("{tool} is missing on this computer.", { tool: shell.bInfo.tool })
+                                        : I18n.tr("I cannot take this kind of file yet.")) } } }
+                    Repeater { model: !shell.bInfo || !shell.bInfo.name ? [] : [
                             [ "disc", I18n.tr("What it is"), shell.bInfo.name + (shell.bInfo.year ? " · " + shell.bInfo.year : "") + (shell.bInfo.publisher ? " · " + shell.bInfo.publisher : "") ],
                             [ "file", I18n.tr("From what"), shell.bInfo.sources.map(x => x.path.split("/").pop()).join(" + ") + " · " + shell.bBytes(shell.bInfo.size) ],
-                            [ "package", I18n.tr("How it is packed"), (shell.bInfo.packaging === "installshield" ? I18n.tr("An InstallShield installer.") : shell.bInfo.packaging === "msi" ? I18n.tr("A Windows Installer package.") : I18n.tr("No installer I know."))
-                                + " " + (shell.bInfo.skips_setup ? I18n.tr("I will not run it: its archives are read directly, which is where old installers fail.") : "") ],
+                            [ "package", I18n.tr("How it is packed"), (shell.bPacked[shell.bInfo.packaging] ? I18n.tr(shell.bPacked[shell.bInfo.packaging]) : I18n.tr("No installer: it is ready to be copied."))
+                                + " " + (shell.bInfo.skips_setup ? I18n.tr("I will not run it: I read what it carries directly, which is where old installers fail.") : "") ],
                             [ "brand-windows", I18n.tr("What it will run in"), (shell.bInfo.runner === "proton" ? "Proton" : "Wine") + " · Windows " + ({ "winxp": "XP", "win7": "7", "win98": "98", "win10": "10" }[shell.bInfo.winver] || shell.bInfo.winver)
                                 + (shell.bInfo.year ? " · " + I18n.tr("the program is from {year}", { year: shell.bInfo.year }) : "") ],
                             [ "disc", I18n.tr("Room on the disk"), I18n.tr("{free} free; it needs about {need}", { free: shell.bBytes(shell.bInfo.free), need: shell.bBytes(shell.bInfo.size * 2.8) }) ],
-                            [ "info-circle", I18n.tr("Notes"), shell.bInfo.notes ] ]
+                            [ "info-circle", I18n.tr("Notes"), shell.bInfo.notes ] ].filter(row => row[2])
                         Rectangle { required property var modelData; width: bar.room; height: Math.max(52, said.implicitHeight + 24); radius: 16; color: Theme.card
                             Glyph { x: 18; y: 15; name: parent.modelData[0]; color: Theme.gold }
                             Label { x: 52; y: 16; width: 170; text: parent.modelData[1]; color: Theme.dim; font.pixelSize: 13 }
                             Label { id: said; x: 230; y: 14; width: parent.width - 250; text: parent.modelData[2]; wrapMode: Text.WordWrap; elide: Text.ElideNone } } }
                     // more from the internet: only when the user says so
-                    Rectangle { visible: shell.bInfo !== null && shell.bInfo.recipe !== ""; width: parent.width; height: netCol.implicitHeight + 28; radius: 16; color: Theme.card; border.color: Theme.line
+                    Rectangle { visible: shell.bInfo !== null && shell.bInfo.name !== ""; width: parent.width; height: netCol.implicitHeight + 28; radius: 16; color: Theme.card; border.color: Theme.line
                         Column { id: netCol; x: 18; y: 14; width: parent.width - 36; spacing: 8
                             Label { width: parent.width; wrapMode: Text.WordWrap; elide: Text.ElideNone
                                     text: shell.bOnline === null ? I18n.tr("May I look on the internet for more about it? Only its name is sent, to Lutris's catalogue. Without that I go on with what is on this computer.")
@@ -555,7 +562,7 @@ ShellRoot {
                     Rectangle { width: parent.width; height: 60; radius: 16; color: Theme.card
                         Glyph { x: 18; name: "folder"; color: Theme.gold; anchors.verticalCenter: parent.verticalCenter }
                         Column { x: 52; anchors.verticalCenter: parent.verticalCenter; spacing: 3
-                            Label { text: "~/Games/" + (shell.bInfo ? shell.bInfo.recipe : ""); font.weight: 600 }
+                            Label { text: "~/Games/" + (shell.bInfo ? shell.bInfo.id : ""); font.weight: 600 }
                             Label { text: I18n.tr("A folder of its own: its Windows, its saves and what it says. Removing it removes all of it."); color: Theme.dim; font.pixelSize: 12 } } }
                     Rectangle { width: parent.width; height: 60; radius: 16; color: Theme.card
                         Glyph { x: 18; name: "shield-lock"; color: Theme.gold; anchors.verticalCenter: parent.verticalCenter }

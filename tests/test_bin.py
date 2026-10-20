@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Checks of the commands in bin/ that need no system around them. Run: python3 tests/test_bin.py"""
-import contextlib, importlib.machinery, importlib.util, io, json, os, socket, struct, sys, tempfile, threading
+import contextlib, importlib.machinery, importlib.util, io, json, os, shutil, socket, struct, sys, tempfile, threading
 
 sys.dont_write_bytecode = True          # bin/ holds commands, not a place for __pycache__
 
@@ -276,6 +276,33 @@ with tempfile.TemporaryDirectory() as t:
     assert a["recipe"] == "avp2" and a["missing"] == [] and a["verdict"] in ("works", "no"), a      # "no" only where Wine is not installed
     assert barista.analyze([disc2])["recipe"] == ""
     assert "--unshare-net" in barista.fence("/x", False) and "--unshare-net" not in barista.fence("/x", True)
+
+    # Branch B, no recipe: the header tells year, bitness and graphics; the rules pick Wine or Proton and the Windows
+    def pe(year, magic=b"\x0b\x01", imports=b""):
+        stamp = int(barista.datetime.datetime(year, 6, 1, tzinfo=barista.datetime.timezone.utc).timestamp())
+        return b"MZ" + bytes(0x3A) + (0x40).to_bytes(4, "little") + b"PE\0\0" + bytes(4) + stamp.to_bytes(4, "little") + bytes(12) + magic + imports
+    old = barista.program(pe(2001, imports=b"\0d3d8.dll\0DDRAW.dll\0"))
+    assert old == {"arch": "pe32", "year": 2001, "graphics": ["d3d8", "ddraw"]}, old
+    assert barista.runner_for(old) == ("wine", "winxp")
+    assert barista.runner_for(barista.program(pe(2015, b"\x0b\x02"))) == ("proton", "win10")
+    assert barista.runner_for(barista.program(pe(2010, imports=b"\0d3d11.dll\0"))) == ("proton", "win7")
+    assert barista.program(b"MZ" + bytes(0x3A) + (0x40).to_bytes(4, "little") + b"NE")["arch"] == "ne16"
+    src = os.path.join(t, "src")
+    for name, body, packed in (("setup.exe", pe(2005) + b"Inno Setup Setup Data", "inno"), ("setup.exe", pe(2005) + b"Nullsoft Install System", "nsis"),
+                               ("setup.exe", pe(2005), "setup"), ("game.exe", pe(2005, imports=b"\0d3d9.dll\0"), "")):
+        shutil.rmtree(src, ignore_errors=True)
+        os.makedirs(os.path.join(src, "redist"))
+        open(os.path.join(src, name), "wb").write(body)
+        open(os.path.join(src, "redist", "vcredist_x86.exe"), "wb").write(pe(2005) * 99)     # bigger, but a helper
+        r, why = barista.guess([src])
+        assert (r["packaging"], why, r["id"]) == (packed, "", "src"), (name, r, why)
+    assert r["install"] == [{"copy": "*"}] and r["runner"] == "wine" and barista.main_exe(src).endswith("game.exe"), r
+    lone = os.path.join(t, "Some Game.exe")
+    open(lone, "wb").write(pe(2005))
+    assert barista.guess([lone])[0]["install"] == [{"copy": ["some game.exe"]}]          # a program that needs no installing
+    assert barista.guess([os.path.join(t, "x.apk")]) == (None, "kind")
+    a = barista.analyze([lone])
+    assert (a["made"], a["id"], a["verdict"] in ("may", "no")) == (True, "some-game", True), a
 
 # GuardDog says whose a process is: the kernel's and the system's, LatteOS's (only what the list names, with its hash), or the user's
 dog = load("latte-guarddog")

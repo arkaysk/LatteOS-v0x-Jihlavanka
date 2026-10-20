@@ -176,7 +176,12 @@ Schválené 12. 10. 2026. Pracuje sa **zhora nadol, neskáče sa**; nový nápad
              Stránka Klávesnica vypisuje skratky: popis má každá priamo v `system/hypr/latte/keys.lua`
              (`hyprctl binds -j`), takže zoznam nemôže zastarať.
              Chýba: šálka v kartách Goo, zmena hesla, Bluetooth (latte-lab ho nemá).
-        - [ ] **Barista** v App Manageri (stránka je pripravená, sprievodca podľa `docs/barista/NAVRH.md` nie).
+        - [~] **Barista** v App Manageri: sprievodca v piatich krokoch a recept AVP2 (14. 10.); **vetva B** bez receptu
+          (20. 10.): rozpozná Inno, NSIS, InstallShield, MSI, samorozbaľovací archív, zip/rar/7z, priečinok aj samotný
+          program, z hlavičky PE rok, bitovosť a grafiku, podľa toho Wine alebo Proton (umu-run v ohrade) a verziu Windows;
+          hlavný program nájde sám; po „Fungovalo to? Áno“ zapíše recept používateľa. Overené naostro na priečinku, zipe,
+          Inno a NSIS. Chýba (stav v `docs/barista/POSTUP.md` §3): DOSBox, apk, balíky Linuxu, winetricks, mechanika pre
+          kontrolu CD, vykonanie návrhov po neúspešnej skúške.
         - [x] tapeta (swaybg, `assets/wallpapers`) a okenné tlačidlá (hyprbars so záplatou `patches/hyprbars-latte.patch`;
           postup v `patches/README.md`) (12. 10.).
         - [x] LensGoo: režimy Súbory a Web, kalkulačka (12. 10.).
