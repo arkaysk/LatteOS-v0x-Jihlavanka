@@ -340,6 +340,9 @@ local function until_(t)
     if left < 86400 then return "  ·  " .. math.floor(left / 3600) .. " h" end
     return "  ·  " .. math.floor(left / 86400) .. " d"
 end
+-- the micro-agents: a small fixed task on the field's text or the clipboard, for the AI on this computer
+local AGENT_LIST = { { id = "summarize", name = N("Summarize"), glyph = "list" }, { id = "translate", name = N("Translate"), glyph = "world" },
+                     { id = "explain", name = N("Explain an error"), glyph = "alert-triangle" }, { id = "command", name = N("A command from words"), glyph = "terminal-2" } }
 local function fill_ai()
     local p, m = provider(), nil
     m = model_of(p)
@@ -415,6 +418,9 @@ local function fill_ai()
     ai.choices = choices
     model.aimodel = list
     text.ai_btn_center, text.ai_btn_settings, text.ai_btn_new = tr("Lens AI centre"), tr("Settings"), tr("New session")
+    local agents = {}
+    for k, g in ipairs(AGENT_LIST) do agents[k] = { name = tr(g.name), glyph = icons[g.glyph] or "" } end
+    model.aiagent = agents
     text.ic_ai_center, text.ic_ai_settings, text.ic_ai_new = icons["messages"], icons["settings"], icons["message-plus"]
     text.ic_ai_send, text.ic_ai_chev, text.ic_ai_spark, text.ic_ai_check = icons[ai.waiting and "player-stop" or "arrow-up"], icons["chevron-down"], icons["sparkles"], icons["check"]
     text.ic_ai_plus, text.ic_ai_clip, text.ic_ai_shot, text.ic_ai_x = icons["plus"], icons["paperclip"], icons["screenshot"], icons["x"]
@@ -423,11 +429,14 @@ local function fill_ai()
     text.ic_ai_mic = icons[fact.ai_listening == 2 and "loader-2" or "microphone"]
     text.ai_mic_word = fact.ai_listening == 1 and tr("Stop and write it down") or tr("Speak")
 end
-local function ai_send()
-    local q = (text.ai_q or ""):gsub("^%s+", ""):gsub("%s+$", "")
+-- `asked`: a question made for the user (a micro-agent), to whom it goes (`pid`, `mid`); else what is in the field
+local function ai_send(asked, pid, mid)
+    local q = asked or (text.ai_q or ""):gsub("^%s+", ""):gsub("%s+$", "")
     local p = provider()
+    for _, x in ipairs(ai.providers) do if x.id == pid then p = x end end
     if q == "" or ai.waiting or not p then return end
     local m = model_of(p)
+    for _, x in ipairs(p.models) do if x.id == mid then m = x end end
     text.ai_q, fact.ai_typed = "", false
     local args, names = { "send", kept.ai.chat or "new", p.id, m.id, q }, {}
     local e = effort_of(p)
@@ -468,7 +477,22 @@ local function ai_send()
         fill_ai()
     end)
 end
-on("ai_send", ai_send)
+on("ai_send", function() ai_send() end)
+on("ai_agent", function(i)
+    local g = AGENT_LIST[(i or 0) + 1]
+    if not g or ai.waiting then return end
+    local typed_now = (text.ai_q or ""):gsub("^%s+", ""):gsub("%s+$", "")
+    run("latte-ai", { "agent", g.id, typed_now }, function(out)
+        local ok, r = pcall(json.decode, out or "")
+        if not ok or type(r) ~= "table" or (r.question or "") == "" then
+            ai.msgs[#ai.msgs + 1] = { role = "assistant", content = tr("Nothing to work on: write something, or copy it first."), ok = false }
+            fill_ai()
+            return
+        end
+        text.ai_q, fact.ai_typed = "", false
+        ai_send(r.question, r.provider, r.model)
+    end)
+end)
 -- stopped: latte-ai keeps what had come and says so in its last line
 on("ai_stop", function() if ai.job then kill(ai.job, "term") end end)
 on("text:ai_q", function() fact.ai_typed = (text.ai_q or "") ~= "" end)

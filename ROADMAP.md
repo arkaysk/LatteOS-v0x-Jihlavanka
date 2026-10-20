@@ -380,8 +380,10 @@ Schválené 12. 10. 2026. Pracuje sa **zhora nadol, neskáče sa**; nový nápad
       `latte-ai listen`; na latte-lab chýba skutočný mikrofón (overené pripravenou nahrávkou). Vlastné pokyny (Lens AI
       centrum › Pokyny) idú s každou otázkou ku každej AI.
     - i. [ ] Hľadanie podľa významu v LensGoo (e5-sk, ROADMAP bod 14) — po b.
-    - j. [ ] Mikro-agenti (inšpirácia j5onrf/dots, `inspo/ai-na-ploche.md`): pevné malé úlohy pre lokálny Qwen3.5 2B
+    - j. [x] Mikro-agenti (inšpirácia j5onrf/dots, `inspo/ai-na-ploche.md`): pevné malé úlohy pre lokálny Qwen3.5 2B
       v LensGoo a v ponuke pravého tlačidla — zhrnúť schránku, preložiť, vysvetliť chybu, príkaz z vety, meno súboru.
+      Hotové 21. 10. v karte AI (Zhrnúť, Preložiť, Vysvetliť chybu, Príkaz z vety; pole alebo schránka, lokálny model).
+      Ponuka pravého tlačidla a meno súboru až s DualBrew.
 
 ## ROADMAP2 — LatteOS od nápadu po hotový produkt
 

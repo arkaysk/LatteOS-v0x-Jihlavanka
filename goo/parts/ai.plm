@@ -6,6 +6,7 @@
 // the texts and the numbers; latte-ai keeps the conversations.
 part Ai {
     model aimsg max 40 { who: text; body: text; mine: bool; failed: bool }
+    model aiagent max 4 { name: text; glyph: text }       // the micro-agents, offered while the conversation is empty
     model aimodel max 16 { name: text; hint: text; on: bool; head: bool }
     text ai_q = ""
     text ai_hint = ""                          // what the empty field says, in the service's words
@@ -54,6 +55,7 @@ part Ai {
     event ai_settings ->
     event ai_new ->
     event ai_mic ->                            // the microphone: start listening, or stop and write it into the field
+    event ai_agent ->                          // a micro-agent was chosen: its place in aiagent
     event ai_attach ->                         // 0 a file, 1 a picture of the screen
     event ai_unattach ->
 
@@ -98,6 +100,23 @@ part Ai {
         text ic_ai_spark { at: card.w / 2, 168; anchor: center; size: 34; color: #f7c873; opacity: 85%; show: aimsg.count == 0; family: "tabler-icons" }
         text ai_empty { at: card.w / 2, 214; anchor: center; size: 22; weight: 700; color: #f5e8d8; width: ai.w - 40; lines: 1; align: center; show: aimsg.count == 0; family: "Inter" }
         text ai_empty2 { at: card.w / 2, 246; anchor: center; size: 13.5; color: #b8a491; width: ai.w - 80; lines: 2; align: center; show: aimsg.count == 0; family: "Inter" }
+        // quick tasks for the AI on this computer, on what is written in the field or else on the clipboard
+        row {
+            at: card.w / 2 - (aiagent.count * 150 - 10) / 2, 290
+            gap: 10
+            show: aimsg.count == 0
+            for g in aiagent {
+                group {
+                    size: 140, 64
+                    box { from: 0, 0; size: 140, 64; corner: 16; color: #1b120d; opacity: 45% + 25% * agent_hit.hover }
+                    box { from: 0, 0; size: 140, 64; corner: 16; stroke: 1; color: #f7c873; opacity: 15% + 40% * agent_hit.hover }
+                    text g.glyph { at: 70, 22; anchor: center; size: 18; color: #f7c873; family: "tabler-icons" }
+                    text g.name { at: 70, 46; anchor: center; size: 12.5; weight: 600; color: #f5e8d8; width: 128; lines: 1; align: center; family: "Inter" }
+                    zone box agent_hit { from: 0, 0; size: 140, 64; cursor: pointer; active: ai.on and not ai_wait; label: "{g.name}"; role: button }
+                    on press agent_hit { emit ai_agent(g.index) }
+                }
+            }
+        }
 
         // ── the field, in the service's look ──────────────────────────────────────────────────────────────
         box { from: 16, ai.fy; size: ai.w, ai.fh; corner: f.round; color: if(ai.k == 0, #faf9f5, if(ai.k == 1, #f0f4f9, if(ai.k == 2, #ffffff, if(ai.k == 3, #ffffff, #3d2c22))))}

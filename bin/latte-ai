@@ -41,6 +41,10 @@ No API key: the official tool of a service answers, with the account the user is
   latte-ai listen start|stop    the microphone: start records, stop ends it and prints what was said, {"text"}
                             (whisper.cpp, in the language of the desktop; a build with Vulkan and the large-v3-turbo
                             model when there is one, else the small model on the processor)
+  latte-ai agent NAME [TEXT]    a small fixed task (a micro-agent) as a question for the AI: {"question", "provider",
+                            "model"}; the text is TEXT, or the clipboard when there is none. NAME: summarize, translate,
+                            explain, command. It goes to the AI on this computer when there is one: quick, and the
+                            clipboard does not leave the computer
   latte-ai chats            the conversations, the newest first: [{"id", "title", "provider", "model", "updated", "count"}]
   latte-ai chat ID          one conversation whole: {"id", "title", "provider", "model", "messages": [{"role", "content",
                             "provider", "model", "at"}], "usage"}
@@ -419,6 +423,32 @@ def listen(what):
     return {"text": " ".join(l.strip() for l in out.splitlines() if l.strip()), "ok": True}
 
 
+# Micro-agents (inspo/ai-na-ploche.md): each a fixed task with words of its own, for a small model to do quickly.
+LANGS = {"sk": "Slovak", "cs": "Czech", "en": "English", "de": "German", "hu": "Hungarian", "pl": "Polish"}
+AGENTS = {
+    "summarize": "Summarize the following in a few sentences, in {lang}:\n\n{text}",
+    "translate": "Translate the following into {lang}; if it is already {lang}, into English. Only the translation:\n\n{text}",
+    "explain": "This is an error message from a Linux computer (Fedora). Explain simply in {lang} what it means and how to fix it:\n\n{text}",
+    "command": "Write one bash command for Fedora Linux that does this, then one sentence in {lang} saying what it does. "
+               "The user's home folder is {home}; use the folder names as they are given:\n\n{text}",
+}
+
+
+def agent(name, text):
+    if not text.strip():
+        try:
+            text = subprocess.run(["wl-paste", "--no-newline"], capture_output=True, text=True, timeout=5).stdout
+        except (OSError, subprocess.TimeoutExpired):
+            text = ""
+    if not text.strip():
+        return {"question": "", "error": "nothing to work on: the field and the clipboard are empty"}
+    lang = LANGS.get((os.environ.get("LC_MESSAGES") or os.environ.get("LANG") or "en")[:2], "English")
+    local = [p for p in providers() if p["id"] == "local"]
+    pick = local[0] if local else (providers() or [None])[0]
+    return {"question": AGENTS[name].format(lang=lang, home=os.path.expanduser("~"), text=text.strip()[:12000]), "provider": pick["id"] if pick else "",
+            "model": pick["models"][0]["id"] if pick else ""}
+
+
 def grok_models():
     try:
         out = subprocess.run(["grok", "models"], capture_output=True, text=True, timeout=20, env=dict(os.environ, PATH=SEARCH)).stdout
@@ -767,6 +797,9 @@ def main(a):
         return 0
     if len(a) == 2 and a[0] == "listen" and a[1] in ("start", "stop"):
         print(json.dumps(listen(a[1]), ensure_ascii=False))
+        return 0
+    if len(a) in (2, 3) and a[0] == "agent" and a[1] in AGENTS:
+        print(json.dumps(agent(a[1], a[2] if len(a) == 3 else ""), ensure_ascii=False))
         return 0
     if a == ["stop"]:
         subprocess.run(["pkill", "-f", "llama-server.*--port %d" % LOCAL_PORT])
