@@ -346,6 +346,10 @@ Schválené 12. 10. 2026. Pracuje sa **zhora nadol, neskáče sa**; nový nápad
     pustiť znova (Nastavenia). Poradie: **QueenGoo → PowerGoo → LensGoo → BarGoo**, potom ostatné na ploche.
     Na konci jedna veta, že každú kvapku možno ťahaním presunúť inam. Texty cez preklady, ide myšou aj
     klávesnicou. Hodí sa pred prezentáciou na Reddite (prví cudzí používatelia).
+15. [ ] **Zaplnenie diskov na očiach** (používateľ, 20. 10., po zistení, že na `/` latte-lab ostalo 5,5 GB z 120 GB).
+    DualBrew v bočnom paneli pri každom disku a oddiele pás zaplnenia (použité / voľné, farba pri nedostatku),
+    Správca zariadení pri diskoch to isté grafom aj s nerozdeleným miestom na disku; upozornenie, keď voľné
+    miesto klesne pod hranicu. latte-lab: za `/data` je ~132 GB nerozdelených.
 
 ## ROADMAP2 — LatteOS od nápadu po hotový produkt
 
