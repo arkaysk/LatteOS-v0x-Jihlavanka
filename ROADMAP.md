@@ -307,6 +307,14 @@ Schválené 12. 10. 2026. Pracuje sa **zhora nadol, neskáče sa**; nový nápad
    `bin/latte-screens` podľa toho, čo naozaj beží (predtým si to pamätal Hyprland a po `hyprctl reload` to stratil).
    Overené bez obrazovky s napodobeným virtuálnym monitorom a v `tests/test_screens.sh`. **Neoverené:** na latte-lab
    so skutočným monitorom a s Moonlight. Ostáva (d), (e).
+11. [~] **GuardDog — strážca súčastí a kto komu patrí** (20. 10., na pokyn používateľa po tom, čo sa zabilo `qs` a zmizli
+    ikony aj ponuka plochy). `bin/latte-guarddog` (služba `latte-guarddog.service` v cieli relácie): každých 5 s
+    skontroluje scénu Goo, nečinnosť, ikony plochy, tapetu a históriu schránky; čo chýba dvakrát po sebe, to spustí
+    znova (najviac 5× za 5 minút, potom pokoj a jedno upozornenie). Stav je v `$XDG_RUNTIME_DIR/latteos/guarddog.json`.
+    Rovnaký program povie, komu proces patrí: `linux` (jadro a systém), `latteos` (to, z čoho je LatteOS), `user`
+    (programy používateľa); Monitor › Procesy to ukazuje štítkom, filtrom a zoznamom strážených súčastí. Overené:
+    zabité ikony sa do ~16 s vrátia. **Ostáva:** Nastavenia › Štart (vypnúť stráženie jednej súčasti), strážiť aj
+    skutočné aplikácie používateľa na žiadosť, štítky v Správcovi zariadení, upozornenie pri páde mimo strážených súčastí.
 
 ## ROADMAP2 — LatteOS od nápadu po hotový produkt
 
