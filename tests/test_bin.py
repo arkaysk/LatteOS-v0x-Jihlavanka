@@ -277,16 +277,37 @@ with tempfile.TemporaryDirectory() as t:
     assert barista.analyze([disc2])["recipe"] == ""
     assert "--unshare-net" in barista.fence("/x", False) and "--unshare-net" not in barista.fence("/x", True)
 
-# GuardDog says whose a process is: the kernel's and the system's, LatteOS's, or the user's
+# GuardDog says whose a process is: the kernel's and the system's, LatteOS's (only what the list names, with its hash), or the user's
 dog = load("latte-guarddog")
 me = os.getuid()
-asked = lambda **kw: dog.owner(kw.pop("pid", 4000), kw.pop("comm", "x"), kw.pop("ppid", 1000), kw.pop("uid", me), kw.pop("cgroup", "/user.slice/user-1000.slice/session-3.scope"), kw.pop("cmdline", ""))
-assert asked(pid=2) == "linux" and asked(ppid=2, comm="kworker") == "linux"                       # the kernel's threads
-assert asked(uid=0, cgroup="/system.slice/chronyd.service", comm="chronyd") == "linux"
-assert asked(cgroup="/user.slice/user-1000.slice/user@1000.service/session.slice/pipewire.service", comm="pipewire") == "linux"
-assert asked(comm="pleamar", cmdline="/usr/bin/pleamar --scene /usr/share/latteos/goo/goo.plm") == "latteos"
-assert asked(comm="qs", cmdline="qs -n -p /usr/share/latteos/apps/monitor.qml") == "latteos"
-assert asked(comm="python3", cmdline="python3 /usr/bin/latte-monitor watch 2") == "latteos"
-assert asked(comm="Hyprland", cmdline="Hyprland") == "latteos"
-assert asked(comm="firefox", cgroup="/user.slice/user-1000.slice/user@1000.service/app.slice/app-firefox-123.scope", cmdline="/usr/bin/firefox") == "user"
-assert asked(comm="steam") == "user"
+with tempfile.TemporaryDirectory() as d:
+    tool, script, other = (os.path.join(d, n) for n in ("latte-tool", "latte-monitor", "latteosminer"))
+    for path, body in ((tool, "binary"), (script, "script"), (other, "miner")):
+        open(path, "w").write(body)
+    files = {tool: dog.sha(tool), script: dog.sha(script)}
+    asked = lambda **kw: dog.owner(kw.pop("pid", 4000), kw.pop("comm", "x"), kw.pop("ppid", 1000), kw.pop("uid", me),
+                                   kw.pop("cgroup", "/user.slice/user-1000.slice/session-3.scope"), kw.pop("cmdline", ""), kw.pop("exe", ""), files)
+    assert asked(pid=2) == "linux" and asked(ppid=2, comm="kworker") == "linux"                   # the kernel's threads
+    assert asked(uid=0, cgroup="/system.slice/chronyd.service", comm="chronyd") == "linux"
+    assert asked(cgroup="/user.slice/user-1000.slice/user@1000.service/session.slice/pipewire.service", comm="pipewire") == "linux"
+    assert asked(comm="latte-tool", exe=tool, cmdline=tool) == "latteos"                          # on the list, and what it says
+    assert asked(comm="latte-monitor", exe="/usr/bin/python3", cmdline="python3 " + script) == "latteos"      # an interpreter carrying a listed script
+    assert asked(comm="latte-tool", exe=other, cmdline=other) == "user"                           # the name is nobody's: the list is
+    assert asked(comm="python3", exe="/usr/bin/python3", cmdline="python3 %s %s" % (other, script)) == "user"       # a listed file as an argument is not a listed script
+    assert asked(comm="python3", exe=os.path.join(d, "python3"), cmdline="python3 " + script) == "user"          # a carrier that is not the distribution's
+    open(tool, "w").write("changed")                                                              # the file is no longer what the list says
+    assert asked(comm="latte-tool", exe=tool, cmdline=tool) == "user"
+    assert asked(comm="firefox", cgroup="/user.slice/user-1000.slice/user@1000.service/app.slice/app-firefox-123.scope", exe="/usr/bin/firefox", cmdline="/usr/bin/firefox") == "user"
+    # the list itself counts only if it is the root's and nobody else can write it
+    mine_list = os.path.join(d, "guarddog.manifest")
+    open(mine_list, "w").write(json.dumps({"files": files, "components": ["goo"]}))
+    assert dog.listed(mine_list)["state"] == "invalid"
+    os.chmod(mine_list, 0o666)
+    assert dog.listed(mine_list)["state"] == "invalid"
+    assert dog.listed(os.path.join(d, "nothing"))["state"] == "missing"
+    # what the user switched off stays off
+    dog.CHOICES = os.path.join(d, "guarddog.json")
+    dog.choose("clipboard", False)
+    dog.choose("icons", False)
+    dog.choose("icons", True)
+    assert dog.switched_off() == {"clipboard"}

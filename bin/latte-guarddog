@@ -9,15 +9,24 @@ whose every process is.
                                 failed (it would not stay up) · off (it is not wanted now)
   latte-guarddog owners         {"pid": "linux" | "latteos" | "user"} for every process
   latte-guarddog owner PID…     the same for the pids given
+  latte-guarddog set ID on|off  the user's choice for a component (kept in ~/.config/latteos/guarddog.json, which the Settings write)
+  latte-guarddog manifest       (root, at every install and update) writes the list of what LatteOS is made of, with a hash of each
 
 A component that is gone is started again after two looks in a row (a restart that someone does on purpose takes a
 moment). One that is started five times in five minutes and still falls is let be for five minutes, and the user is
 told once; it is not started over and over.
 
 The three owners: "linux" is the kernel and the system the distribution brings (kernel threads, systemd, the
-services of the system and of the user's session: sound, portals, the bus), "latteos" is what LatteOS is made of
-(its commands, its scene, the compositor, the wallpaper, the apps in /usr/share/latteos), "user" is everything the
-user started: their programs.
+services of the system and of the user's session: sound, portals, the bus), "latteos" is what LatteOS is made of,
+"user" is everything the user started: their programs.
+
+What LatteOS is made of is not told by a name, which anyone can take: it is a list that every install and update writes
+(guarddog.manifest, owned by root) with the path and the hash of each file, and a process is LatteOS's only if the
+program it runs, or the script it is given, is on that list and is still what the list says. A program that is called
+latte-anything, or that sits in the user's folder, is the user's.
+
+The user's choices from the Settings (a component switched off) are kept: an update brings the new list of components,
+and what the user has switched off stays switched off.
 """
 import json, os, re, shutil, subprocess, sys, time
 
@@ -29,11 +38,14 @@ EVERY, MISSES, TRIES, WINDOW, REST = 5, 2, 5, 300, 300
 
 
 # ── whose a process is ────────────────────────────────────────────────────────────────────────────────────────
-# what LatteOS is made of, by the name of the program or where it stands
-LATTEOS = re.compile(r"(^|/)(latte-[\w.-]+|pleamar(-wm)?|Hyprland|hyprctl|labwc|greetd|swaybg|mpvpaper|skwd-[\w-]+|cliphist|hypridle)$")
-
-
+MANIFEST = os.environ.get("LATTE_GUARD_MANIFEST") or "/usr/share/latteos/guarddog.manifest"
 SYSTEM = {"systemd", "(sd-pam)", "sshd", "sshd-session", "Xwayland", "dbus-broker", "dbus-broker-lau"}
+# programs of the distribution that LatteOS runs as they are: LatteOS's when this very file (its hash) is the one running
+BASES = ["/usr/bin/pleamar", "/usr/bin/pleamar-wm", "/usr/bin/Hyprland", "/usr/bin/hyprctl", "/usr/bin/labwc", "/usr/sbin/greetd", "/usr/bin/greetd",
+         "/usr/bin/hypridle", "/usr/bin/swaybg", "/usr/bin/mpvpaper", "/usr/bin/skwd-walld", "/usr/bin/skwd-helm", "/usr/bin/skwd-wall-vk",
+         "/usr/bin/cliphist", "/usr/bin/wl-paste", "/usr/bin/qs", "/usr/bin/quickshell"]
+# those that only carry a script or a scene: LatteOS's if the file they are given is on the list
+CARRIERS = ("python3", "python", "sh", "bash", "dash", "qs", "quickshell", "pleamar", "pleamar-wm")
 
 
 def read(path):
@@ -44,7 +56,95 @@ def read(path):
         return ""
 
 
-def owner(pid, comm=None, ppid=None, uid=None, cgroup=None, cmdline=None):
+def sha(path):
+    import hashlib
+    h = hashlib.sha256()
+    try:
+        with open(path, "rb") as f:
+            for block in iter(lambda: f.read(1 << 20), b""):
+                h.update(block)
+    except OSError:
+        return ""
+    return h.hexdigest()
+
+
+_seen = {}            # (path, mtime, size) → its hash: a file is read once while it is not changed
+_listed = {"at": None, "files": {}, "components": [], "state": "missing"}
+
+
+def listed(path=None):
+    """What the list says: {"files": {path: hash}, "components": [...], "state": "ok" | "missing" | "invalid"}. Read again when it changes.
+    A list that is not the root's, or that others can write to, counts for nothing: the user must not be able to add to it."""
+    path = path or MANIFEST
+    try:
+        st = os.stat(path)
+    except OSError:
+        return {"files": {}, "components": [], "state": "missing"}
+    key = (path, st.st_mtime_ns, st.st_size)
+    if _listed["at"] == key:
+        return _listed
+    found = {"at": key, "files": {}, "components": [], "state": "ok"}
+    if (st.st_uid != 0 and st.st_uid != UID_ALLOWED) or st.st_mode & 0o022:
+        found["state"] = "invalid"
+    else:
+        try:
+            with open(path) as f:
+                d = json.load(f)
+            found["files"], found["components"] = dict(d.get("files", {})), list(d.get("components", []))
+        except (OSError, ValueError, AttributeError):
+            found["state"] = "invalid"
+    _listed.clear()
+    _listed.update(found)
+    return _listed
+
+
+UID_ALLOWED = -1      # tests may let their own user own a list
+
+
+def is_listed(path, files):
+    """The file is on the list and is what the list says."""
+    want = files.get(path)
+    if not want:
+        return False
+    try:
+        st = os.stat(path)
+    except OSError:
+        return False
+    key = (path, st.st_mtime_ns, st.st_size)
+    if key not in _seen:
+        _seen[key] = sha(path) == want
+    return _seen[key]
+
+
+def script_of(base, argv):
+    """The file a carrier is told to run (the script, the scene, the app): what it carries, not what it is."""
+    rest = argv[1:]
+    if base.startswith(("python", "sh", "bash", "dash")):
+        for a in rest:
+            if not a.startswith("-"):
+                return a
+        return None
+    for flag in ("-p", "--path", "--scene"):
+        if flag in rest and rest.index(flag) + 1 < len(rest):
+            return rest[rest.index(flag) + 1]
+    return None
+
+
+def made_by_latteos(exe, argv, files):
+    """LatteOS's, by the list: a program that is on it and still what it says, or a carrier (an interpreter, a shell, the
+    Quickshell and pleamar that run apps and scenes) that is told to run a file that is on it. Where the carrier stands
+    matters too: one in the user's folder is not the distribution's."""
+    base = os.path.basename(exe)
+    carrier = base.startswith(("python", "sh", "bash", "dash")) or base in ("qs", "quickshell", "pleamar", "pleamar-wm")
+    if carrier:
+        script = script_of(base, argv)
+        return exe.startswith(("/usr/bin/", "/usr/sbin/", "/bin/")) and script is not None and script.startswith("/") and is_listed(os.path.realpath(script), files)
+    if base == "wl-paste":
+        return is_listed(exe, files) and "cliphist" in argv
+    return is_listed(exe, files)
+
+
+def owner(pid, comm=None, ppid=None, uid=None, cgroup=None, cmdline=None, exe=None, files=None):
     """"linux", "latteos" or "user" for a process; the facts it is asked about are read from /proc if not given."""
     if comm is None:
         stat = read("/proc/%d/stat" % pid)
@@ -58,12 +158,17 @@ def owner(pid, comm=None, ppid=None, uid=None, cgroup=None, cmdline=None):
         cmdline = read("/proc/%d/cmdline" % pid).replace("\0", " ").strip()
     if cgroup is None:
         cgroup = read("/proc/%d/cgroup" % pid).strip().rsplit(":", 1)[-1]
-    unit = cgroup.rstrip("/").rsplit("/", 1)[-1]
-    argv0 = cmdline.split(" ")[0] if cmdline else comm
-    if comm in SYSTEM or unit == "init.scope":
+    if exe is None:
+        try:
+            exe = os.path.realpath("/proc/%d/exe" % pid)
+        except OSError:
+            exe = ""
+    if files is None:
+        files = listed()["files"]
+    if comm in SYSTEM or cgroup.rstrip("/").endswith("init.scope"):
         return "linux"                                   # systemd of the session, the login's helpers, the X11 layer
-    if (unit.startswith("latte") or LATTEOS.search(argv0) or LATTEOS.search(comm) or "/usr/share/latteos/" in cmdline
-            or "/usr/libexec/latte" in cmdline or "cliphist" in cmdline or re.search(r"(^|[ /])latte-[\w.-]+", cmdline)):
+    # LatteOS's: by the list, never by a name or by where in the unit tree it sits
+    if exe and made_by_latteos(exe, cmdline.split(" "), files):
         return "latteos"
     if uid is None:
         try:
@@ -76,7 +181,7 @@ def owner(pid, comm=None, ppid=None, uid=None, cgroup=None, cmdline=None):
         return "linux"
     if "/app.slice/app-" in cgroup or re.search(r"/session-\d+\.scope", cgroup):
         return "user"
-    if "/session.slice/" in cgroup or "/background.slice/" in cgroup or unit.endswith(".service"):
+    if "/session.slice/" in cgroup or "/background.slice/" in cgroup or cgroup.rstrip("/").rsplit("/", 1)[-1].endswith(".service"):
         return "linux"
     return "user"
 
@@ -118,6 +223,28 @@ def icons_wanted():
     return read(FLAG).strip() != "off"
 
 
+CHOICES = os.path.join(os.environ.get("XDG_CONFIG_HOME") or os.path.expanduser("~/.config"), "latteos", "guarddog.json")
+
+
+def switched_off():
+    """What the user has switched off in the Settings: it stays so, whatever an update brings."""
+    try:
+        with open(CHOICES) as f:
+            return set(json.load(f).get("off", []))
+    except (OSError, ValueError, AttributeError):
+        return set()
+
+
+def choose(ident, on):
+    off = switched_off()
+    (off.discard if on else off.add)(ident)
+    os.makedirs(os.path.dirname(CHOICES), exist_ok=True)
+    tmp = CHOICES + ".tmp"
+    with open(tmp, "w") as f:
+        json.dump({"off": sorted(off)}, f)
+    os.replace(tmp, CHOICES)
+
+
 # id, the name shown (in English: the shell translates), whether it is wanted now, whether it is there, how to start it again
 COMPONENTS = [
     ("goo", "The Goo scene", lambda: unit_active("latte-session.target"), lambda: unit_active("latte-goo.service"),
@@ -142,13 +269,17 @@ def tell_failed(name):
 
 def watch():
     os.makedirs(RUN, exist_ok=True)
-    mine = {c[0]: {"id": c[0], "name": c[1], "state": "up", "restarts": 0, "missed": 0, "tries": [], "rest": 0, "told": False} for c in COMPONENTS}
+    mine = {c[0]: {"id": c[0], "name": c[1], "state": "up", "restarts": 0, "off": False, "missed": 0, "tries": [], "rest": 0, "told": False} for c in COMPONENTS}
     while True:
         now = time.monotonic()
+        off, known = switched_off(), listed()["components"]
         for ident, name, wanted, alive, start in COMPONENTS:
             c = mine[ident]
+            c["off"] = ident in off
             try:
-                if not wanted():
+                # wanted by the system and by the user: a component that the update does not know is not asked for, one
+                # the user has switched off stays off
+                if ident in off or (known and ident not in known) or not wanted():
                     c["state"], c["missed"] = "off", 0
                     continue
                 if alive():
@@ -179,7 +310,7 @@ def watch():
                 c["state"], c["missed"] = "restarted", 0
             except Exception as e:                       # one component's trouble does not stop the watch over the others
                 print("guarddog: %s: %s" % (ident, e), file=sys.stderr, flush=True)
-        shown = [{k: c[k] for k in ("id", "name", "state", "restarts")} for c in mine.values()]
+        shown = [{k: c[k] for k in ("id", "name", "state", "restarts", "off")} for c in mine.values()]
         tmp = STATE + ".tmp"
         with open(tmp, "w") as f:
             json.dump(shown, f)
@@ -195,6 +326,31 @@ def status():
         return []
 
 
+def manifest():
+    """What LatteOS is made of, with a hash of each: its commands, its apps, its scenes, and the programs of the
+    distribution it runs as they are. Written at every install and update, by the root, and read by the guard."""
+    import glob
+    if os.getuid() != 0:
+        print("latte-guarddog manifest: this is the root's to write", file=sys.stderr)
+        return 1
+    mine = sorted(set(glob.glob("/usr/bin/latte-*") + glob.glob("/usr/libexec/latte*") + glob.glob("/usr/share/latteos/apps/*.qml")
+                      + glob.glob("/usr/share/latteos/goo/*.plm")))
+    files = {}
+    for path in mine + [b for b in BASES if os.path.exists(b)]:
+        real = os.path.realpath(path)
+        if os.path.isfile(real):
+            files[path] = files[real] = sha(real)
+    body = {"version": 1, "written": int(time.time()), "files": files, "components": [c[0] for c in COMPONENTS]}
+    os.makedirs(os.path.dirname(MANIFEST), exist_ok=True)
+    tmp = MANIFEST + ".tmp"
+    with open(tmp, "w") as f:
+        json.dump(body, f, indent=1, sort_keys=True)
+    os.chmod(tmp, 0o644)
+    os.replace(tmp, MANIFEST)
+    print("latte-guarddog: %d files on the list" % len(files))
+    return 0
+
+
 def main(a):
     if a[:1] == ["watch"]:
         watch()
@@ -202,6 +358,10 @@ def main(a):
         print(json.dumps(status()))
     elif a[:1] == ["owners"]:
         print(json.dumps({str(k): v for k, v in owners().items()}))
+    elif a[:1] == ["manifest"]:
+        return manifest()
+    elif a[:1] == ["set"] and len(a) == 3 and a[2] in ("on", "off"):
+        choose(a[1], a[2] == "on")
     elif a[:1] == ["owner"] and len(a) > 1:
         print(json.dumps({p: owner(int(p)) for p in a[1:]}))
     else:

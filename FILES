@@ -195,6 +195,7 @@
 [state]
 /run/latteos/
 /var/lib/latteos/
+/usr/share/latteos/guarddog.manifest                       # written by every install and update: what LatteOS is made of, with a hash of each (bin/latte-guarddog)
 /var/lib/greetd/latte-last-user
 /var/lib/greetd/latte-last-session
 /boot/loader/entries/*-lattesafe.conf
@@ -243,6 +244,7 @@ restorecon -R /run/latteos /var/lib/latteos/login
 fc-cache /usr/share/fonts/latteos
 plymouth-set-default-theme latteos -R                               # rebuilds the initramfs
 /etc/kernel/install.d/96-latteos-safe.install add VERSION
+latte-guarddog manifest                                             # what LatteOS is made of, with hashes, for GuardDog
 systemctl daemon-reload
 systemctl enable latte-boot.service greetd.service latte-netd.service
 systemctl disable NetworkManager-wait-online.service                # it held the login screen back for a minute

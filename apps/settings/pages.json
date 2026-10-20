@@ -256,6 +256,13 @@
     "words": "keys shortcut layout win super qwerty qwertz switch"
    },
    {
+    "id": "guarddog",
+    "name": "GuardDog",
+    "icon": "shield-check",
+    "status": "ready",
+    "words": "guard watch restart components running keeps alive dog"
+   },
+   {
     "id": "startmode",
     "name": "Start and safe mode",
     "icon": "shield-check",

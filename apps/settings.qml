@@ -133,7 +133,8 @@ ShellRoot {
     }
     readonly property var entries: DesktopEntries.applications.values.filter(e => !e.noDisplay).sort((a, b) => a.name.localeCompare(b.name))
     property int lensOpen: -1                  // the list whose apps are shown for choosing
-    Run { id: sound }
+    Run { id: guardq }
+    Run { id: guardset; onDataChanged: {} }
     Run { id: opens }
     Run { id: region }
     Run { id: clock }
@@ -148,7 +149,7 @@ ShellRoot {
     // what a page shows is asked for when it opens, and again after anything on it was changed
     readonly property var asks: ({ "sound": [[sound, ["latte-settings", "sound"]]], "defaults": [[opens, ["latte-settings", "defaults"]]], "language": [[region, ["latte-settings", "region"]]],
                                    "time": [[clock, ["latte-settings", "time"]]], "keyboard": [[keys, ["latte-settings", "keyboard"]], [binds, ["hyprctl", "binds", "-j"]]], "displays": [[screens, ["hyprctl", "monitors", "-j"]]],
-                                   "storage": [[disks, ["latte-settings", "storage"]], [held, ["latte-settings", "sizes"]]], "ai": [[helpers, ["latte-ai", "providers", "all"]]],
+                                   "guarddog": [[guardq, ["latte-guarddog", "status"]]], "storage": [[disks, ["latte-settings", "storage"]], [held, ["latte-settings", "sizes"]]], "ai": [[helpers, ["latte-ai", "providers", "all"]]],
                                    "me": [[who, ["latte-settings", "account"]], [pictures, ["latte-settings", "wallpapers"]]], "performance": [[machine, ["latte-devices", "list"]]], "loginscreen": [[logon, ["latte-settings", "loginscreen"]]] })
     function ask() { (asks[page] || []).forEach(a => a[0].ask(a[1])); force.reload(); crashed.reload(); if (page === "background") wall.ask(["latte-wall", "state"]) }
     Timer { id: later; interval: 900; onTriggered: shell.ask() }       // what was asked of the compositor takes a moment to be so
@@ -633,6 +634,23 @@ ShellRoot {
                     Pill { id: addList; text: I18n.tr("Add list"); strong: true; icon: "plus"
                            onPressed: if (newList.text.trim() !== "") { const l = JSON.parse(JSON.stringify(shell.lensLists)); l.push({ id: "own" + Date.now(), name: newList.text.trim(), on: true, apps: [] })
                                                                        lensFile.save(l); newList.text = ""; shell.lensOpen = l.length - 1 } } } }
+
+            // GuardDog: what is kept running, and what the user has told it to leave alone
+            Part { visible: shell.page === "guarddog"; width: view.room; title: I18n.tr("What GuardDog keeps running")
+                   note: I18n.tr("It looks every few seconds, and starts again what has stopped. What you switch off here it leaves alone, and it stays so after an update. Switching off does not stop what is running now.")
+                Repeater { model: shell.page === "guarddog" && guardq.data ? guardq.data : []
+                    Rectangle { required property var modelData; width: view.room; height: 62; radius: 16; color: Theme.card
+                        Rectangle { x: 16; width: 11; height: 11; radius: 6; anchors.verticalCenter: parent.verticalCenter
+                                    color: parent.modelData.state === "up" ? Theme.ok : (parent.modelData.state === "off" ? Theme.faint : (parent.modelData.state === "restarted" ? Theme.gold : Theme.red)) }
+                        Column { x: 42; width: parent.width - 42 - 120; anchors.verticalCenter: parent.verticalCenter; spacing: 2
+                            Label { text: I18n.tr(parent.parent.modelData.name); font.weight: 600 }
+                            Label { color: Theme.dim; font.pixelSize: 12
+                                    text: parent.parent.modelData.off ? I18n.tr("left alone, as you chose") : (parent.parent.modelData.state === "up" ? I18n.tr("running") : (parent.parent.modelData.state === "restarted" ? I18n.tr("started again {n} times", { n: parent.parent.modelData.restarts }) : (parent.parent.modelData.state === "failed" ? I18n.tr("would not stay up") : I18n.tr("not running")))) } }
+                        Rectangle { width: 46; height: 26; radius: 13; color: parent.modelData.off ? Theme.raised : Theme.gold; anchors.right: parent.right; anchors.rightMargin: 16; anchors.verticalCenter: parent.verticalCenter
+                            Behavior on color { ColorAnimation { duration: 140 } }
+                            Rectangle { width: 20; height: 20; radius: 10; y: 3; x: parent.parent.modelData.off ? 3 : 23; color: parent.parent.modelData.off ? Theme.dim : Theme.ground; Behavior on x { NumberAnimation { duration: 140 } } }
+                            MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor
+                                        onClicked: { Quickshell.execDetached(["latte-guarddog", "set", parent.parent.modelData.id, parent.parent.modelData.off ? "on" : "off"]); later.restart() } } } } } }
 
             // sound: where it goes and where it comes from
             Repeater { model: shell.page === "sound" ? [{ key: "outputs", title: QT_TR_NOOP("Where the sound goes"), cmd: "sink", icon: "device-speaker" },
