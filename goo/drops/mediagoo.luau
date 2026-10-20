@@ -35,7 +35,7 @@ local function open_card(d, keep)
                                 run = function() call("media.choose", p.chosen and "" or p.id) end }
         end
     end
-    card.open(rows, { owner = d, id = "media", width = 320, keep = keep, foot = { label = tr("Sound settings"), glyph = "volume", run = function() open.settings("sound") end } })
+    card.open(rows, { owner = d, id = "media", width = 320, keep = keep })
 end
 
 return {

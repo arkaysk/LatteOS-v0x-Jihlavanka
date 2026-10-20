@@ -28,13 +28,12 @@
 -- function(text) }; `submit` returns true to keep what was typed, `secret` hides it as a password.
 -- `tiles`: the rows between two headings are laid as a tile, a card within the card (rules between them are
 -- dropped: the tile is what holds them together).
--- Options: `menu` makes it a classic context menu (at the pointer, solid, no ear). `pane` (0…1) makes the card glass above its `wave` row and solid coffee below it. `keep` refreshes an open card in place (live figures): the rows do not come in again and the row
+-- Options: `uniform` is for a family of cards of one size (LensGoo's modes). `menu` makes it a classic context menu (at the pointer, solid, no ear). `pane` (0…1) makes the card glass above its `wave` row and solid coffee below it. `keep` refreshes an open card in place (live figures): the rows do not come in again and the row
 -- chosen with the keys stays.
 local icons = require("lib/icons")
-local open = require("lib/open")
 local M = {}
 
-local CARD_W, CARD_H = 600, 560            -- every card that comes out of a drop is this wide, and at least this tall
+local CARD_W, CARD_H = 600, 560            -- a family of cards that keep one size (`uniform`) is this wide and at least this tall
 local ROWS, ROWS2, ITEMS, TABS = 24, 12, 6, 6        -- what the scene's models hold
 local RISE = 74                             -- how far from the edge the owner steps to be the card's ear
 local engine                                -- set by lib/engine.luau, which owns the drops
@@ -94,29 +93,15 @@ end
 
 function M.open(rows, opts)
     opts = opts or {}
-    -- The look every card of a drop has: one width, glass above and below a divider of coffee a way to the settings
-    -- of what the card is about (`foot`). Not for a menu, a docked panel, or a card that wants to stay as it is
-    -- (`plain`), nor one with paragraphs or a month, whose height the rows alone do not tell.
-    if (opts.owner or opts.strip) and not opts.menu and not opts.dock then
-        if not opts.width2 then opts.width = CARD_W end
-        local waved, free = false, not opts.plain and not opts.calendar
-        for _, r in ipairs(rows) do
-            if r.wave then waved = true end
-            if r.para then free = false end
-        end
+    -- A family of cards that keep one size (`uniform`: LensGoo's, one for each of its modes): the same width, at least the
+    -- same height, and where there is a divider of coffee the foot stays at the bottom. (Other cards keep to their own.)
+    local uniform = opts.uniform == true and not opts.menu
+    if uniform then
+        opts.width = CARD_W
         if not opts.plain then opts.min_height = math.max(opts.min_height or 0, CARD_H) end
-        if free and not waved then
-            local more = {}
-            for i, r in ipairs(rows) do more[i] = r end
-            more[#more + 1] = { wave = true }
-            local foot = opts.foot or { label = tr("All settings…"), glyph = "settings", run = function() open.settings() end }
-            foot.more = foot.more == nil and true or foot.more
-            more[#more + 1] = foot
-            rows, opts.pane = more, opts.pane or 1
-        end
     end
     -- so that cards of one kind are of one height: what is short gets room above the divider of coffee, the foot stays at the bottom
-    if opts.min_height and (opts.owner or opts.strip) and not opts.menu and not opts.dock then
+    if uniform and not opts.plain and opts.min_height then
         local at, natural = nil, 16 + (#(opts.tabs or {}) > 0 and 44 or 0) + (opts.field and 46 or 0)
         for i, r in ipairs(rows) do
             if r.wave and not at then at = i end

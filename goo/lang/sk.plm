@@ -142,6 +142,7 @@ library Slovak {
         "Name of a new list" = "Názov nového zoznamu"
         "Add list" = "Pridať zoznam"
         "Find an app…" = "Nájsť aplikáciu…"
+        "Open the file manager" = "Otvoriť správcu súborov"
         "ADMIN" = "ADMIN"
         "Emergency mode" = "Núdzový režim"
         "Uptime" = "Doba behu"

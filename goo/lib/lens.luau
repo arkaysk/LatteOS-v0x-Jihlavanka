@@ -381,7 +381,7 @@ function M.customize()
     end
     if not any then rows[#rows + 1] = { label = tr("Right-click an app and choose Add to favourites"), glyph = "star", quiet = true } end
     rows[#rows + 1] = { label = tr("Settings"), glyph = "settings", line = true, run = function() then_do(function() open.settings() end) end }
-    card.open(rows, { owner = owner, id = "lens-custom", width = WIDTH, plain = true })
+    card.open(rows, { owner = owner, id = "lens-custom", uniform = true, plain = true })
 end
 
 -- when each app was installed: the birth of its .desktop file (the change, where a file system does not tell)
@@ -415,6 +415,18 @@ set_mode = function(m, keep_text)
     render(false)
 end
 
+-- the foot of a mode: one way on from there
+local function foot()
+    local m = kept.mode
+    if m == 1 then return { label = tr("Open the file manager"), glyph = "folder", more = true, run = function() then_do(function() run("latte-app", { "files" }, nil, { output = false }) end) end } end
+    if m == 2 then
+        local e = engine()
+        return { label = tr("Open") .. " " .. e.name, glyph = "world-www", more = true, run = function() then_do(function() open.url(e.url:match("^(https?://[^/]+)")) end) end }
+    end
+    if m == 3 then return { label = tr("Open terminal"), glyph = "terminal-2", more = true, run = function() then_do(open.terminal) end } end
+    return { label = tr("Settings") .. " › AI", glyph = "settings", more = true, run = function() then_do(function() open.settings("ai") end) end }
+end
+
 local shown = {}
 render = function(keep)
     local tabs = {}
@@ -422,9 +434,23 @@ render = function(keep)
         tabs[#tabs + 1] = { label = tr(MODES[m].name), glyph = MODES[m].glyph, on = kept.mode == m, run = function() set_mode(m) end }
     end
     shown = MODES[kept.mode].rows()
-    card.open(shown, {
-        owner = owner, id = "lens", width = WIDTH, keep = keep, tabs = tabs, min_height = 330,
-        pane = (kept.mode == 0 and typed == "") and 1 or 0,
+    -- every mode has the look of the first: glass above, a divider of coffee and a foot below it (not where an answer
+    -- of any length stands: its height is not known)
+    local list, glassy = shown, kept.mode == 0 and typed == ""
+    if kept.mode ~= 0 then
+        local plain = true
+        for _, r in ipairs(shown) do if r.para then plain = false end end
+        if plain then
+            list = {}
+            for i, r in ipairs(shown) do list[i] = r end
+            list[#list + 1] = { wave = true }
+            list[#list + 1] = foot()
+            glassy = true
+        end
+    end
+    card.open(list, {
+        owner = owner, id = "lens", width = WIDTH, keep = keep, tabs = tabs, uniform = true,
+        pane = glassy and 1 or 0,
         field = {
             hint = tr(MODES[kept.mode].hint), text = typed,
             change = function(t)
