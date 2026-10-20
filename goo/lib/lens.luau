@@ -326,7 +326,7 @@ end
 -- a text with a number in it: tr() translates, the number goes where {n} stands
 local function with_n(t, n) return (tr(t):gsub("{n}", function() return tostring(n) end)) end
 -- how hard it may think, as the tools name it, in words
-local EFFORTS = { low = N("low"), medium = N("medium"), high = N("high"), xhigh = N("very high"), max = N("highest") }
+local EFFORTS = { low = N("low"), medium = N("medium"), high = N("high"), xhigh = N("very high"), max = N("highest"), think = N("thinking") }
 local function effort_of(p)
     for _, e in ipairs(p and p.efforts or {}) do if e == kept.ai.effort then return e end end
     return nil
@@ -352,8 +352,8 @@ local function fill_ai()
     text.ai_files, fact.ai_nfiles = table.concat(names, ", "), #ai.files
     local u = ai.usage
     local ctx = (u.window or 0) > 0 and u.context / u.window or 0
-    text.ai_who = (p and p.name or "") .. ((u.window or 0) > 0 and ("  ·  " .. with_n("context {n}", percent(ctx))) or "")
-    text.ai_empty = p and p.name or ""
+    text.ai_who = (p and tr(p.name) or "") .. ((u.window or 0) > 0 and ("  ·  " .. with_n("context {n}", percent(ctx))) or "")
+    text.ai_empty = p and tr(p.name) or ""
     text.ai_empty2 = tr("The conversation stays here until you start a new session.")
     local lim = u.limits and next(u.limits) and u.limits or kept.ai.limits
     if lim and lim.five_hour then
@@ -375,12 +375,12 @@ local function fill_ai()
             local q = names[msg.provider] or {}
             local mm = nil
             for _, x in ipairs(q.models or {}) do if x.id == msg.model then mm = x end end
-            who = (q.name or msg.provider or "") .. (mm and (" · " .. mm.name) or "")
+            who = (q.name and tr(q.name) or msg.provider or "") .. (mm and (" · " .. mm.name) or "")
         end
         local attached = type(msg.files) == "table" and #msg.files > 0 and ("\n📎 " .. table.concat(msg.files, ", ")) or ""
         rows[#rows + 1] = { who = who, body = (msg.content or "") .. attached, mine = msg.role == "user", failed = msg.ok == false }
     end
-    if ai.waiting then rows[#rows + 1] = { who = p and p.name or "", body = tr("Thinking…"), mine = false, failed = false } end
+    if ai.waiting then rows[#rows + 1] = { who = p and tr(p.name) or "", body = tr("Thinking…"), mine = false, failed = false } end
     while #rows > 40 do table.remove(rows, 1) end
     model.aimsg = rows
     fact.ai_wait = ai.waiting
@@ -389,7 +389,7 @@ local function fill_ai()
     local choices, list = {}, {}
     for _, q in ipairs(offered()) do
         if #list >= 9 then break end
-        list[#list + 1] = { name = string.upper(q.name), hint = q["local"] and tr("on this computer") or "", on = false, head = true }
+        list[#list + 1] = { name = string.upper(tr(q.name)), hint = q["local"] and tr("on this computer") or "", on = false, head = true }
         choices[#list] = false
         for _, x in ipairs(q.models) do
             if #list >= 10 then break end

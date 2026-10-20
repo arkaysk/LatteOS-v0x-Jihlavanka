@@ -752,7 +752,7 @@ ShellRoot {
                    note: I18n.tr("Which services the AI tab of LensGoo offers to choose from. Signing in to them is done in the Lens AI centre.")
                 Label { visible: helpers.data !== null && helpers.data.length === 0; text: I18n.tr("No AI tool is installed on this computer."); color: Theme.dim }
                 Repeater { model: shell.page === "launcher" && helpers.data ? helpers.data : []
-                    Switch { required property var modelData; width: view.room; text: modelData.name
+                    Switch { required property var modelData; width: view.room; text: I18n.tr(modelData.name)
                              hint: (modelData.local ? I18n.tr("answers on this computer") : I18n.tr("a service on the internet")) + " · " + modelData.models.map(m => m.name).join(", ")
                              on: lensFile.ai === null || lensFile.ai.includes(modelData.id)
                              onPressed: lensFile.offer(modelData.id, !on) } } }

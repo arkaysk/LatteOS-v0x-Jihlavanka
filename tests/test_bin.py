@@ -174,6 +174,14 @@ with tempfile.TemporaryDirectory() as d:
     c = ai.load(r["chat"])
     assert [m["role"] for m in c["messages"]] == ["user", "assistant", "user", "assistant"] and c["title"] == "Hello there", c
     assert [x["id"] for x in ai.chats()] == [r["chat"]] and not ai.send("new", "nobody", "m", "x")["ok"]
+    # the AI on this computer: a llama-server and the model files beside it, the smallest first
+    os.makedirs(os.path.join(d, "ai", "llama", "b1")); os.makedirs(os.path.join(d, "ai", "models"))
+    open(os.path.join(d, "ai", "llama", "b1", "llama-server"), "w").close()
+    open(os.path.join(d, "ai", "models", "Big-4B-Q4_K_M.gguf"), "w").write("xx")
+    open(os.path.join(d, "ai", "models", "Small-2B-Q4_K_M.gguf"), "w").write("x")
+    open(os.path.join(d, "ai", "models", "mmproj-Small.gguf"), "w").close()
+    ai.LOCAL_DIRS = [os.path.join(d, "ai")]
+    assert [m["name"] for m in ai.local_models()] == ["Small 2B", "Big 4B"], ai.local_models()
 apps = load("latte-apps")
 with tempfile.TemporaryDirectory() as d:
     f = os.path.join(d, "org.example.App.desktop")

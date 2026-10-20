@@ -1088,6 +1088,8 @@ library Slovak {
         "high" = "vysoké"
         "very high" = "veľmi vysoké"
         "highest" = "najvyššie"
+        "thinking" = "premýšľanie"
+        "Local AI" = "Lokálna AI"
         "EFFORT" = "ÚSILIE"
         "Attach a file…" = "Priložiť súbor…"
         "A picture of the screen" = "Snímka obrazovky"

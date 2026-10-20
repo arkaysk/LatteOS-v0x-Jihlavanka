@@ -22,9 +22,9 @@ ShellRoot {
     property var services: []                  // every service known (latte-ai services)
     property bool waiting: false
     // each service has its colour, so that a conversation is known by it at a glance
-    readonly property var colours: ({ "claude": "#d97757", "gemini": "#4285f4", "chatgpt": "#10a37f", "grok": "#a8a8a8", "ollama": Theme.gold })
+    readonly property var colours: ({ "claude": "#d97757", "gemini": "#4285f4", "chatgpt": "#10a37f", "grok": "#a8a8a8", "mistral": "#fa520f", "local": Theme.gold, "ollama": Theme.gold })
     function colour(id) { return colours[id] || Theme.gold }
-    function nameOf(id) { const p = services.find(s => s.id === id); return p ? p.name : id }
+    function nameOf(id) { const p = services.find(s => s.id === id); return p ? I18n.tr(p.name) : id }
     function modelName(pid, mid) { const p = providers.find(x => x.id === pid); const m = p ? p.models.find(x => x.id === mid) : null; return m ? m.name : mid }
     readonly property var shown: chats.filter(c => (only === "" || c.provider === only) && (find === "" || c.title.toLowerCase().includes(find.toLowerCase())))
     function when(iso) {
@@ -89,7 +89,7 @@ ShellRoot {
                 Nav { text: I18n.tr("All conversations"); icon: "messages"; on: shell.page === "chats" && shell.only === ""; badge: shell.chats.length
                       onPressed: { shell.page = "chats"; shell.only = "" } }
                 Repeater { model: shell.services.filter(s => shell.chats.some(c => c.provider === s.id))
-                    Nav { required property var modelData; text: modelData.name; icon: "point-filled"; height: 34
+                    Nav { required property var modelData; text: I18n.tr(modelData.name); icon: "point-filled"; height: 34
                           on: shell.page === "chats" && shell.only === modelData.id; badge: shell.chats.filter(c => c.provider === modelData.id).length
                           onPressed: { shell.page = "chats"; shell.only = modelData.id }
                           Rectangle { x: 18; width: 10; height: 10; radius: 5; color: shell.colour(parent.modelData.id); anchors.verticalCenter: parent.verticalCenter } } }
@@ -170,7 +170,7 @@ ShellRoot {
                     Rectangle { x: 18; width: 48; height: 48; radius: 14; color: shell.colour(card.modelData.id); opacity: card.modelData.installed ? 1 : 0.35; anchors.verticalCenter: parent.verticalCenter
                         Glyph { anchors.centerIn: parent; name: card.modelData.local ? "device-desktop" : "cloud"; font.pixelSize: 22; color: "#ffffff" } }
                     Column { x: 82; width: parent.width - 82 - 300; anchors.verticalCenter: parent.verticalCenter; spacing: 4
-                        Label { text: card.modelData.name; font.pixelSize: 16; font.weight: 700 }
+                        Label { text: I18n.tr(card.modelData.name); font.pixelSize: 16; font.weight: 700 }
                         Label { width: parent.width; elide: Text.ElideRight; color: Theme.dim; font.pixelSize: 12
                                 text: !card.modelData.installed ? I18n.tr("Not installed: its tool {tool} is missing.", { tool: card.modelData.tool })
                                     : card.modelData.local ? I18n.tr("Answers on this computer; nothing leaves it.")

@@ -360,11 +360,14 @@ Schválené 12. 10. 2026. Pracuje sa **zhora nadol, neskáče sa**; nový nápad
     a Mistral; (b) Grok Build a Mistral Vibe cez účet (nainštaluje používateľ; overiť vypnutie nástrojov);
     (c) bohatšie okno rozhovoru a nastavenia centra; postupné písanie, zastavenie, mikrofón (chýba prevod reči).
     **Rozdelenie (21. 10. v noci, ide sa zhora):**
-    - a. [ ] Omarchy 4.0 a j5onrf/dots: ako zapájajú AI do plochy, čo sú „mikro-agenti“, čo z toho pre LensGoo
+    - a. [x] Omarchy 4.0 a j5onrf/dots: ako zapájajú AI do plochy, čo sú „mikro-agenti“, čo z toho pre LensGoo
       (zápis do `inspo/`; dots bez licencie = iba inšpirácia, kód sa nepreberá).
-    - b. [ ] Mikromodely na latte-lab (i7-4820K bez AVX2, 16 GB RAM, RX 640): malý jazykový model cez llama.cpp
+    - b. [x] Mikromodely na latte-lab (i7-4820K bez AVX2, 16 GB RAM, RX 640): malý jazykový model cez llama.cpp
       (procesor aj Vulkan), rýchlosť a slovenčina; e5-sk-small na hľadanie podľa významu; whisper.cpp na reč.
-    - c. [ ] Lokálny model v `latte-ai` ako služba „v tomto počítači“ (bez internetu a bez účtu).
+    - c. [x] Lokálny model v `latte-ai` ako služba „v tomto počítači“ (bez internetu a bez účtu).
+      Hotové 21. 10.: zápis a merania v `inspo/ai-na-ploche.md`; llama.cpp b11752 a modely v `/data/ai`; služba
+      „Lokálna AI“ (llama-server na 127.0.0.1:8790, spúšťa sa pri prvej otázke; Qwen3.5 2B rýchly, 4B na rozhovor).
+      **Do inštalátora:** llama.cpp a model ako voliteľná súčasť (kam: `/usr/share/latteos/ai` alebo dáta).
     - d. [ ] Lens AI centrum › Služby: vlastné kľúče API (kľúčenka systému cez `secret-tool`), priame volanie API
       (Anthropic, OpenAI, Google, xAI, Mistral) popri účtoch.
     - e. [ ] Lens AI centrum › Modely: skutočné zoznamy modelov, ktoré sa ukážu v LensGoo, predvolený model.
