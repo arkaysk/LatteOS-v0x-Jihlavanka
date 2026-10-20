@@ -56,7 +56,24 @@ ShellRoot {
               onStarted: { write(key + "\n"); key = ""; stdinEnabled = false }
               onExited: { stdinEnabled = true; keyq.ask(["keys"]); who.ask(["providers", "all"]) } }
     function keep(id, key) { if (key.trim() === "") return; keeper.key = key.trim(); keeper.command = ["latte-ai", "key", id]; keeper.running = true }
-    Ask { id: sender; onDone: { shell.waiting = false; if (data && data.chat) shell.open = data.chat; shell.reload() } }
+    // the answer comes in pieces ({"delta"}) and then whole; stopping it ends latte-ai, which keeps what came
+    property string live: ""                   // the answer as far as it has come
+    property bool editing: false               // the next send changes the last question instead of asking a new one
+    Process { id: sender
+        stdout: SplitParser { onRead: line => { let m = null; try { m = JSON.parse(line) } catch (e) { return }
+            if (m.delta !== undefined) shell.live += m.delta
+            else if (m.chat) shell.open = m.chat } }
+        onExited: { shell.waiting = false; shell.live = ""; shell.reload() } }
+    function ask(args) { live = ""; waiting = true; sender.command = ["latte-ai"].concat(args).concat(["--stream", "--markdown"]); sender.running = true }
+    function stop() { if (sender.running) sender.running = false }
+    // the last answer again, from whoever is chosen now
+    function again() {
+        if (waiting || !chat) return
+        const m = chat.messages.slice()
+        while (m.length && m[m.length - 1].role === "assistant") m.pop()
+        chat = Object.assign({}, chat, { messages: m })
+        ask(["again", open, useProvider, useModel])
+    }
     Ask { id: forget; onDone: { shell.open = ""; shell.chat = null; list.ask(["chats"]) } }
     function reload() { list.ask(["chats"]); if (open !== "") one.ask(["chat", open]) }
     function choose(id) { open = id; page = "chats"; chat = null; one.ask(["chat", id]) }
@@ -75,9 +92,17 @@ ShellRoot {
     property string useModel: chat ? chat.model : (providers.length ? providers[0].models[0].id : "")
     function send(text) {
         if (text.trim() === "" || waiting || useProvider === "") return
-        waiting = true
+        if (editing && chat) {
+            const m = chat.messages.slice()
+            while (m.length && m[m.length - 1].role === "assistant") m.pop()
+            m.pop()
+            chat = Object.assign({}, chat, { messages: m.concat([{ role: "user", content: text, provider: useProvider, model: useModel }]) })
+            editing = false
+            ask(["again", open, useProvider, useModel, "--text", text])
+            return
+        }
         if (chat) chat = Object.assign({}, chat, { messages: chat.messages.concat([{ role: "user", content: text, provider: useProvider, model: useModel }]) })
-        sender.ask(["send", open !== "" ? open : "new", useProvider, useModel, text])
+        ask(["send", open !== "" ? open : "new", useProvider, useModel, text])
     }
 
     AppWindow {
@@ -136,18 +161,33 @@ ShellRoot {
                 clip: true; spacing: 14; topMargin: 24; bottomMargin: 16
                 model: shell.chat ? shell.chat.messages : []
                 onCountChanged: Qt.callLater(positionViewAtEnd)
-                delegate: Item { id: msg; required property var modelData; width: talk.width; height: bubble.height + 22
+                delegate: Item { id: msg; required property var modelData; required property int index; width: talk.width; height: bubble.height + 22 + (acts.visible ? 30 : 0)
                     readonly property bool mine: modelData.role === "user"
+                    readonly property bool last: index === talk.count - 1 || (mine && index === talk.count - 2)
                     Label { x: msg.mine ? talk.width - 28 - width : 28; text: msg.mine ? I18n.tr("You") : shell.nameOf(msg.modelData.provider) + " · " + shell.modelName(msg.modelData.provider, msg.modelData.model)
                             color: msg.mine ? Theme.gold : shell.colour(msg.modelData.provider); font.pixelSize: 11; font.weight: 700 }
                     Rectangle { id: bubble; y: 20; x: msg.mine ? talk.width - 28 - width : 28; width: Math.min(talk.width * 0.78, said.implicitWidth + 28); height: said.implicitHeight + 22; radius: 16
                         color: msg.mine ? Qt.rgba(Theme.gold.r, Theme.gold.g, Theme.gold.b, 0.14) : Theme.card
                         border.width: msg.mine ? 0 : 1; border.color: Qt.rgba(Qt.color(shell.colour(msg.modelData.provider)).r, Qt.color(shell.colour(msg.modelData.provider)).g, Qt.color(shell.colour(msg.modelData.provider)).b, 0.45)
                         TextEdit { id: said; x: 14; y: 11; width: Math.min(talk.width * 0.78 - 28, implicitWidth); readOnly: true; selectByMouse: true; wrapMode: Text.Wrap
-                                   text: msg.modelData.content; color: msg.modelData.ok === false ? Theme.red : Theme.cream; font.family: Theme.font; font.pixelSize: 15; selectionColor: Theme.coffee
-                                   Component.onCompleted: width = Math.min(talk.width * 0.78 - 28, implicitWidth) } } }
-                footer: Item { width: talk.width; height: shell.waiting ? 40 : 0
-                    Label { x: 28; visible: shell.waiting; text: I18n.tr("Thinking…"); color: Theme.dim } }
+                                   textFormat: msg.mine ? TextEdit.PlainText : TextEdit.MarkdownText
+                                   text: msg.modelData.content + (msg.modelData.stopped ? "\n\n*" + I18n.tr("(stopped)") + "*" : ""); color: msg.modelData.ok === false ? Theme.red : Theme.cream
+                                   font.family: Theme.font; font.pixelSize: 15; selectionColor: Theme.coffee
+                                   Component.onCompleted: width = Math.min(talk.width * 0.78 - 28, implicitWidth) } }
+                    // what can be done with it: copy an answer, ask the last one again, change the last question
+                    Row { id: acts; spacing: 14; y: bubble.y + bubble.height + 8; x: msg.mine ? talk.width - 28 - width : 40
+                          visible: !shell.waiting && (!msg.mine || msg.last)
+                        component Act: Text { property string what; signal go(); text: what; color: hit.containsMouse ? Theme.gold : Theme.dim; font.family: Theme.font; font.pixelSize: 12; font.weight: 600
+                                              MouseArea { id: hit; anchors.fill: parent; anchors.margins: -4; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: parent.go() } }
+                        Act { visible: !msg.mine; what: I18n.tr("Copy"); onGo: Quickshell.clipboardText = msg.modelData.content }
+                        Act { visible: !msg.mine && msg.index === talk.count - 1; what: I18n.tr("Again"); onGo: shell.again() }
+                        Act { visible: msg.mine && msg.last; what: I18n.tr("Change"); onGo: { line.text = msg.modelData.content; shell.editing = true } } } }
+                // the answer while it comes
+                footer: Item { width: talk.width; height: shell.waiting ? liveBox.height + 30 : 0
+                    Rectangle { id: liveBox; visible: shell.waiting; x: 28; y: 6; width: Math.min(talk.width * 0.78, liveText.implicitWidth + 28); height: liveText.implicitHeight + 22; radius: 16; color: Theme.card
+                        TextEdit { id: liveText; x: 14; y: 11; width: Math.min(talk.width * 0.78 - 28, Math.max(implicitWidth, 80)); readOnly: true; wrapMode: Text.Wrap; textFormat: TextEdit.MarkdownText
+                                   text: shell.live !== "" ? shell.live : "*" + I18n.tr("Thinking…") + "*"; color: Theme.cream; font.family: Theme.font; font.pixelSize: 15
+                                   onTextChanged: Qt.callLater(talk.positionViewAtEnd) } } }
             }
             Column { visible: !shell.chat && shell.open === ""; anchors.centerIn: parent; anchors.verticalCenterOffset: -50; spacing: 10; width: 460
                 Glyph { name: "messages"; font.pixelSize: 48; color: Theme.gold; anchors.horizontalCenter: parent.horizontalCenter }
@@ -169,7 +209,8 @@ ShellRoot {
                            shell.useProvider = next[0]; shell.useModel = next[1]
                        } }
                 Pill { id: send; anchors.right: parent.right; anchors.rightMargin: 10; anchors.verticalCenter: parent.verticalCenter; implicitHeight: 34
-                       icon: "arrow-up"; strong: true; busy: shell.waiting; text: I18n.tr("Send"); onPressed: { shell.send(line.text); line.text = "" } } }
+                       icon: shell.waiting ? "player-stop" : "arrow-up"; strong: true; text: shell.waiting ? I18n.tr("Stop") : (shell.editing ? I18n.tr("Change") : I18n.tr("Send"))
+                       onPressed: { if (shell.waiting) shell.stop(); else { shell.send(line.text); line.text = "" } } } }
         }
 
         // ── the models: which show in LensGoo, and which one answers first ───────────────────────────────────

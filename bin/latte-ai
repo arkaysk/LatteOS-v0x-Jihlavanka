@@ -7,7 +7,7 @@ No API key: the official tool of a service answers, with the account the user is
                             "local" tells an answer made on this machine from one that goes to a service, "style"
                             whose look the field to write in takes (claude, gemini, grok, chatgpt, own). None when the
                             user turned the AI off (Settings › AI: the word "off" in ~/.config/latteos/ai), unless `all`
-  latte-ai send CHAT PROVIDER MODEL TEXT [--effort E] [--attach PATH]…
+  latte-ai send CHAT PROVIDER MODEL TEXT [--effort E] [--attach PATH]… [--stream] [--markdown]
                             asks the next question of a conversation and keeps both in it. CHAT "new" begins one.
                             A model "" is the tool's own choice. What is attached is copied beside the question, and
                             the tool may read only that: files and pictures, never the rest of the computer.
@@ -15,7 +15,13 @@ No API key: the official tool of a service answers, with the account the user is
                             context is what the last question filled of the model's window, tokens all the
                             conversation has spent, limits what the service told of the account's own:
                             {"five_hour": {"used": 0…1, "resets": unix time}, "seven_day": {…}} (Claude tells them).
-                            What went wrong is the answer, with "ok": false
+                            What went wrong is the answer, with "ok": false.
+                            --stream: the answer is printed as it comes too, a line {"delta": text} for each piece,
+                            before the last line. --markdown: the answer may be formatted (the Lens AI centre shows
+                            Markdown; LensGoo's card does not). Ended (SIGTERM), it keeps what had come, "stopped": true
+  latte-ai again CHAT PROVIDER MODEL [--text TEXT] [same options as send]
+                            the last answer once more, from this service and model; with --text the last question
+                            is changed first
   latte-ai services         every service LatteOS knows, also those not installed, for the Lens AI centre:
                             [{"id", "name", "local", "style", "installed", "signed" (true, false, or null where it
                             cannot be told), "account", "login": [command], "logout": [command]}]; a command to sign
@@ -53,6 +59,27 @@ import uuid
 
 SYSTEM = ("You are the assistant in the launcher of the LatteOS desktop. Answer briefly and to the point, in the "
           "language of the question, in plain text: no Markdown, no headings.")
+SYSTEM_MD = ("You are the assistant of the LatteOS desktop. Answer to the point, in the language of the question. "
+             "Markdown is shown: use it where it helps (lists, code blocks, bold), not for headings on short answers.")
+STREAM = False                  # --stream: the pieces of an answer are printed as they come
+PIECES = []                     # what has come of the answer so far, kept for a stop
+CHILD = None                    # the tool asked now, ended with us
+
+
+class Stopped(BaseException):          # not an error of the service: no except of theirs may swallow it
+    pass
+
+
+def piece(text):
+    """A piece of the answer: kept, and told at once when someone is watching."""
+    if text:
+        PIECES.append(text)
+        if STREAM:
+            say(delta=text)
+
+
+def say(**what):
+    print(json.dumps(what, ensure_ascii=False), flush=True)
 # Where a tool is run: an empty folder of its own, so that it finds no project there to read.
 # The desktop's services have a short PATH (no ~/.local/bin, where a user's own tools live): look there too.
 SEARCH = os.pathsep.join([os.environ.get("PATH", "/usr/local/bin:/usr/bin"), os.path.expanduser("~/.local/bin"), os.path.expanduser("~/bin"),
@@ -68,7 +95,7 @@ def claude(prompt, model, effort="", files=()):
     # the user set up for their own work with the tool (hooks, instructions) stays out of the answers.
     if files:
         prompt += "\n\nAttached, in this folder: " + ", ".join(files)
-    return ["claude", "-p", prompt, "--system-prompt", SYSTEM, "--output-format", "stream-json", "--verbose", "--no-session-persistence",
+    return ["claude", "-p", prompt, "--system-prompt", SYSTEM, "--output-format", "stream-json", "--verbose"] + (["--include-partial-messages"] if STREAM else []) + ["--no-session-persistence",
             "--setting-sources", "project", "--restricted", "--strict-mcp-config"] + (["--model", model] if model else []) + (["--effort", effort] if effort else []) \
         + (["--allowedTools", "Read(./**)", "--tools", "Read"] if files else ["--tools", ""])
 
@@ -173,22 +200,49 @@ def local_start(model):
     return False
 
 
+def chat_completion(url, head, body, timeout=600):
+    """An OpenAI-style answer (llama-server, the services' APIs, the user's servers): the text and the tokens used.
+    Asked for in pieces when someone is watching, and each piece is told as it comes."""
+    import urllib.request
+    if STREAM:
+        body = dict(body, stream=True, stream_options={"include_usage": True})
+    req = urllib.request.Request(url.rstrip("/") + "/chat/completions", json.dumps(body).encode(), dict(head, **{"Content-Type": "application/json"}))
+    with urllib.request.urlopen(req, timeout=timeout) as r:
+        if not STREAM:
+            d = json.load(r)
+            u = d.get("usage") or {}
+            return d["choices"][0]["message"]["content"].strip(), u.get("prompt_tokens", 0) + u.get("completion_tokens", 0)
+        text, used = [], 0
+        for raw in r:
+            line = raw.decode(errors="replace").strip()
+            if not line.startswith("data:") or line == "data: [DONE]":
+                continue
+            d = json.loads(line[5:])
+            for c in d.get("choices") or []:
+                bit = (c.get("delta") or {}).get("content") or ""
+                text.append(bit)
+                piece(bit)
+            u = d.get("usage") or {}
+            used = u.get("prompt_tokens", 0) + u.get("completion_tokens", 0) or used
+        return "".join(text).strip(), used
+
+
 def local_ask(messages, model, effort, files, room):
     """The whole conversation, as messages: the server keeps no memory between questions."""
     if not local_start(model):
         return "latte-ai: the AI on this computer did not start (see llama-server.log)", False, {}
     talk = [{"role": "system", "content": SYSTEM}] + [{"role": m["role"], "content": m["content"]} for m in messages if m.get("content")][-KEEP:]
+    if len(talk) > KEEP:
+        talk = [talk[0]] + talk[-KEEP:]
     for f in files:
         try:
             with open(os.path.join(room, f), errors="replace") as fh:
                 talk[-1]["content"] += "\n\n--- %s ---\n%s" % (f, fh.read(20000))
         except OSError:
             pass
-    r = local_call("/v1/chat/completions", {"messages": talk, "temperature": 0.5, "max_tokens": 1024,
-                                            "chat_template_kwargs": {"enable_thinking": effort == "think"}}, timeout=600)
-    u = r.get("usage") or {}
-    used = u.get("prompt_tokens", 0) + u.get("completion_tokens", 0)
-    return r["choices"][0]["message"]["content"].strip(), True, {"context": used, "window": LOCAL_CONTEXT, "tokens": used, "cost": 0}
+    text, used = chat_completion("http://127.0.0.1:%d/v1" % LOCAL_PORT, {}, {"messages": talk, "temperature": 0.5, "max_tokens": 1024,
+                                                                              "chat_template_kwargs": {"enable_thinking": effort == "think"}})
+    return text, True, {"context": used, "window": LOCAL_CONTEXT, "tokens": used, "cost": 0}
 
 
 # ── a key of one's own (as VS Code's "Manage Models"): the service's API is asked directly, a conversation and nothing
@@ -279,10 +333,10 @@ def api_ask(ident):
             u = r.get("usage") or {}
             used = u.get("input_tokens", 0) + u.get("output_tokens", 0)
             return "".join(b.get("text", "") for b in r.get("content", [])).strip(), True, {"context": used, "window": 200000, "tokens": used, "cost": 0}
-        r = api_call(a, "/chat/completions", {"model": model, "messages": [{"role": "system", "content": SYSTEM}] + talk}, timeout=300)
-        u = r.get("usage") or {}
-        used = u.get("prompt_tokens", 0) + u.get("completion_tokens", 0)
-        return r["choices"][0]["message"]["content"].strip(), True, {"context": used, "window": 0, "tokens": used, "cost": 0}
+        key = secret(ident)
+        text, used = chat_completion(a["url"], {"Authorization": "Bearer " + key} if key else {},
+                                     {"model": model, "messages": [{"role": "system", "content": SYSTEM}] + talk}, timeout=300)
+        return text, True, {"context": used, "window": 0, "tokens": used, "cost": 0}
     return ask
 
 
@@ -472,6 +526,28 @@ def send(ident, provider, model, question, effort="", attach=()):
     chat["messages"].append({"role": "user", "content": question, "provider": provider, "model": model, "at": now(), "files": files})
     keep(chat)          # the question stays even if no answer comes
     p = PROVIDERS.get(provider) or ({"ask": api_ask(provider), "tool": ""} if provider in apis() else None)
+    answer, ok, usage, stopped = "", False, {}, False
+    try:
+        answer, ok, usage = ask_one(p, provider, chat, model, effort, files, room)
+    except Stopped:
+        if CHILD and CHILD.poll() is None:
+            CHILD.terminate()
+        answer, ok, stopped = "".join(PIECES).strip(), bool(PIECES), True
+    msg = {"role": "assistant", "content": answer, "provider": provider, "model": model, "at": now(), "ok": ok}
+    if stopped:
+        msg["stopped"] = True
+    chat["messages"].append(msg)
+    was = chat.get("usage") or {}
+    chat["usage"] = {"context": usage.get("context", was.get("context", 0)), "window": usage.get("window", was.get("window", 0)),
+                     "tokens": was.get("tokens", 0) + usage.get("tokens", 0), "cost": round(was.get("cost", 0) + usage.get("cost", 0), 6),
+                     "limits": usage.get("limits") or {}}
+    chat["updated"] = now()
+    keep(chat)
+    return {"chat": chat["id"], "answer": answer, "ok": ok, "usage": chat["usage"], "stopped": stopped}
+
+
+def ask_one(p, provider, chat, model, effort, files, room):
+    """One answer from whoever it is: the API of a key or a server, the AI on this computer, or a tool."""
     answer, ok, usage = "", False, {}
     if p and provider in apis():
         try:
@@ -487,27 +563,38 @@ def send(ident, provider, model, question, effort="", attach=()):
             answer = "latte-ai: " + str(e)
     else:
         os.makedirs(room if files else ROOM, exist_ok=True)
-        try:
-            done = subprocess.run(p["command"](as_prompt(chat["messages"]), model, effort, files), cwd=room if files else ROOM, env=dict(os.environ, PATH=SEARCH), stdin=subprocess.DEVNULL,
-                                  stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, timeout=300)
-            answer, ok = done.stdout.strip(), done.returncode == 0
+        global CHILD
+        import threading
+        CHILD = subprocess.Popen(p["command"](as_prompt(chat["messages"]), model, effort, files), cwd=room if files else ROOM, env=dict(os.environ, PATH=SEARCH),
+                                 stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        late = threading.Timer(300, CHILD.kill)
+        late.start()
+        out = []
+        for line in CHILD.stdout:
+            out.append(line)
             if "read" in p:
+                # Claude's events: the pieces of text, as it writes them
                 try:
-                    answer, ok, usage = p["read"](done.stdout)
-                except (ValueError, AttributeError):
+                    e = json.loads(line)
+                    d = (e.get("event") or {}).get("delta") or {}
+                    if e.get("type") == "stream_event" and d.get("type") == "text_delta":
+                        piece(d.get("text", ""))
+                except ValueError:
                     pass
-            if not answer:
-                answer = done.stderr.strip()[-600:] or "latte-ai: no answer"
-        except subprocess.TimeoutExpired:
-            answer = "latte-ai: no answer in five minutes"
-    chat["messages"].append({"role": "assistant", "content": answer, "provider": provider, "model": model, "at": now(), "ok": ok})
-    was = chat.get("usage") or {}
-    chat["usage"] = {"context": usage.get("context", was.get("context", 0)), "window": usage.get("window", was.get("window", 0)),
-                     "tokens": was.get("tokens", 0) + usage.get("tokens", 0), "cost": round(was.get("cost", 0) + usage.get("cost", 0), 6),
-                     "limits": usage.get("limits") or {}}
-    chat["updated"] = now()
-    keep(chat)
-    return {"chat": chat["id"], "answer": answer, "ok": ok, "usage": chat["usage"]}
+            else:
+                piece(line)
+        code = CHILD.wait()
+        late.cancel()
+        err = CHILD.stderr.read()
+        answer, ok = "".join(out).strip(), code == 0
+        if "read" in p:
+            try:
+                answer, ok, usage = p["read"]("".join(out))
+            except (ValueError, AttributeError):
+                pass
+        if not answer:
+            answer = err.strip()[-600:] or ("latte-ai: no answer in five minutes" if code == -9 else "latte-ai: no answer")
+    return answer, ok, usage
 
 
 def chats():
@@ -524,15 +611,39 @@ def main(a):
     if a in (["providers"], ["providers", "all"]):
         print(json.dumps(providers(len(a) == 2)))
         return 0
-    if len(a) >= 5 and a[0] == "send" and a[4].strip():
-        effort, attach, rest = "", [], a[5:]
+    global STREAM, SYSTEM
+    if a[:1] in (["send"], ["again"]):
+        effort, attach, text, rest = "", [], None, a[5:] if a[0] == "send" else a[4:]
         while rest:
             if rest[0] == "--effort" and len(rest) > 1:
                 effort, rest = rest[1], rest[2:]
             elif rest[0] == "--attach" and len(rest) > 1:
                 attach, rest = attach + [rest[1]], rest[2:]
+            elif rest[0] == "--text" and len(rest) > 1:
+                text, rest = rest[1], rest[2:]
             else:
+                STREAM = STREAM or rest[0] == "--stream"
+                SYSTEM = SYSTEM_MD if rest[0] == "--markdown" else SYSTEM
                 rest = rest[1:]
+
+        def stop(*_):
+            raise Stopped()
+        import signal
+        signal.signal(signal.SIGTERM, stop)
+    if len(a) >= 4 and a[0] == "again":
+        c = load(a[1])
+        if not c:
+            return 1
+        while c["messages"] and c["messages"][-1]["role"] == "assistant":
+            c["messages"].pop()
+        if not c["messages"]:
+            return 1
+        last = c["messages"].pop()
+        keep(c)
+        r = send(a[1], a[2], a[3], text if text and text.strip() else last["content"], effort, attach)
+        print(json.dumps(r, ensure_ascii=False))
+        return 0 if r["ok"] else 1
+    if len(a) >= 5 and a[0] == "send" and a[4].strip():
         r = send(a[1], a[2], a[3], a[4], effort, attach)
         print(json.dumps(r, ensure_ascii=False))
         return 0 if r["ok"] else 1
