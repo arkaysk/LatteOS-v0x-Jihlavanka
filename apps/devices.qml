@@ -53,9 +53,16 @@ ShellRoot {
     readonly property var kinds: [{ id: "pc", name: QT_TR_NOOP("Computer"), icon: "device-desktop" }, { id: "phone", name: QT_TR_NOOP("Phone or tablet"), icon: "device-mobile" },
         { id: "tv", name: QT_TR_NOOP("Television"), icon: "device-tv" }, { id: "audio", name: QT_TR_NOOP("Speaker"), icon: "device-speaker" },
         { id: "printer", name: QT_TR_NOOP("Printer"), icon: "printer" }, { id: "nas", name: QT_TR_NOOP("Storage"), icon: "server" },
-        { id: "home", name: QT_TR_NOOP("Smart home"), icon: "bulb" }, { id: "router", name: QT_TR_NOOP("Router"), icon: "router" },
+        { id: "home", name: QT_TR_NOOP("Smart home"), icon: "bulb" }, { id: "camera", name: QT_TR_NOOP("Camera"), icon: "camera" }, { id: "router", name: QT_TR_NOOP("Router"), icon: "router" },
         { id: "device", name: QT_TR_NOOP("Other device"), icon: "devices" }]
     function kind(id) { return kinds.find(k => k.id === id) || kinds[kinds.length - 1] }
+    // what a device can do, as the closer look found it (latte-network inspect)
+    readonly property var caps: ({ "cast": { name: QT_TR_NOOP("Cast to it"), icon: "cast" }, "airplay": { name: QT_TR_NOOP("AirPlay"), icon: "cast" },
+        "play-to": { name: QT_TR_NOOP("Play music and video on it"), icon: "player-play" }, "media": { name: QT_TR_NOOP("Shares music and video"), icon: "movie" },
+        "camera": { name: QT_TR_NOOP("Camera picture"), icon: "camera" }, "print": { name: QT_TR_NOOP("Prints"), icon: "printer" },
+        "files": { name: QT_TR_NOOP("Shared files"), icon: "folder" }, "remote": { name: QT_TR_NOOP("Remote access"), icon: "terminal-2" },
+        "smart-home": { name: QT_TR_NOOP("Smart home"), icon: "bulb" }, "web": { name: QT_TR_NOOP("Settings page"), icon: "world-www" } })
+    readonly property var levels: ({ "high": Theme.red, "medium": Theme.gold, "low": Theme.dim, "info": Theme.dim })
     function called(d) { return d.name || d.vendor || I18n.tr(kind(d.kind).name) }
     function ago(t) {
         const s = Date.now() / 1000 - t
@@ -94,6 +101,8 @@ ShellRoot {
             Pill { id: copy; property bool done: false; implicitHeight: 34; icon: done ? "check" : "copy"; text: done ? I18n.tr("Copied") : I18n.tr("Copy a report")
                    onPressed: { Quickshell.clipboardText = shell.report(); done = true; again.restart() }
                    Timer { id: again; interval: 1800; onTriggered: copy.done = false } },
+            Pill { implicitHeight: 34; icon: "shield-check"; visible: shell.page === "inspector"; text: I18n.tr("Check closely"); busy: lan.running && lan.command[1] === "inspect"
+                   onPressed: lan.ask(["inspect"]) },
             Pill { implicitHeight: 34; icon: "refresh"; text: I18n.tr("Look again"); busy: asker.running || lan.running
                    onPressed: shell.page === "inspector" ? lan.ask(["scan"]) : (shell.page === "connection" ? link.ask(["status"]) : asker.ask()) }
         ]
@@ -253,6 +262,26 @@ ShellRoot {
                 Row { x: 28; y: 20; spacing: 10; z: 3
                     Label { anchors.verticalCenter: parent.verticalCenter; color: Theme.dim
                             text: lan.data ? I18n.tr("{n} here now", { n: radar.near.length }) + (radar.gone.length ? "  ·  " + I18n.tr("{n} seen before", { n: radar.gone.length }) : "") : "" } }
+                // how safe the network is, after a closer look: a score, and what to do, the worst first
+                Rectangle {
+                    id: safety
+                    readonly property var h: lan.data && lan.data.health ? lan.data.health : null
+                    visible: h !== null; z: 3
+                    x: 28; y: 56; width: Math.min(420, radar.width * 0.4); height: safeCol.implicitHeight + 28; radius: 20; color: Theme.card
+                    Column { id: safeCol; x: 18; y: 14; width: parent.width - 36; spacing: 8
+                        Row { spacing: 12
+                            Label { text: safety.h ? String(safety.h.score) : ""; font.pixelSize: 34; font.weight: 800
+                                    color: !safety.h ? Theme.cream : safety.h.score >= 90 ? Theme.ok : safety.h.score >= 60 ? Theme.gold : Theme.red }
+                            Column { anchors.verticalCenter: parent.verticalCenter; spacing: 2
+                                Label { text: I18n.tr("Network safety"); font.weight: 700 }
+                                Label { text: safety.h && safety.h.findings.filter(f => f.level !== "info").length === 0 ? I18n.tr("Nothing weak was found.") : I18n.tr("of 100; what to do is below"); color: Theme.dim; font.pixelSize: 12 } } }
+                        Repeater { model: safety.h ? safety.h.findings.slice(0, 5) : []
+                            Row { required property var modelData; spacing: 8; width: safeCol.width
+                                Rectangle { width: 8; height: 8; radius: 4; y: 6; color: shell.levels[parent.modelData.level] || Theme.dim }
+                                Column { width: parent.width - 16; spacing: 2
+                                    Label { width: parent.width; wrapMode: Text.WordWrap; font.pixelSize: 13; font.weight: 600; text: parent.parent.modelData.device + ": " + I18n.tr(parent.parent.modelData.what) }
+                                    Label { width: parent.width; wrapMode: Text.WordWrap; font.pixelSize: 12; color: Theme.dim; text: I18n.tr(parent.parent.modelData.fix) } } } } }
+                }
                 // the two arcs: who is here now, and who was
                 Repeater { model: [radar.r1, radar.r2]
                     Rectangle { required property real modelData; required property int index; x: radar.cx - modelData; y: radar.cy - modelData; width: modelData * 2; height: modelData * 2; radius: modelData
@@ -321,6 +350,18 @@ ShellRoot {
                                     color: shell.picked && shell.picked.kind === modelData.id ? Theme.gold : Theme.ground
                                     Glyph { anchors.centerIn: parent; name: parent.modelData.icon; font.pixelSize: 20; color: shell.picked && shell.picked.kind === parent.modelData.id ? Theme.ground : Theme.cream }
                                     MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: note.ask(["name", shell.picked.key, shell.picked.given, parent.modelData.id]) } } } }
+                        Label { visible: shell.picked !== null && shell.picked.caps.length > 0; text: I18n.tr("WHAT IT CAN DO"); color: Theme.faint; font.pixelSize: 11; font.weight: 700; font.letterSpacing: 0.8 }
+                        Flow { width: parent.width; spacing: 6; visible: shell.picked !== null && shell.picked.caps.length > 0
+                            Repeater { model: shell.picked ? shell.picked.caps : []
+                                Rectangle { required property string modelData; height: 28; width: capRow.implicitWidth + 20; radius: 14; color: Theme.ground
+                                    Row { id: capRow; x: 10; spacing: 6; anchors.verticalCenter: parent.verticalCenter
+                                        Glyph { name: (shell.caps[parent.parent.modelData] || {}).icon || "point"; font.pixelSize: 14; color: Theme.gold }
+                                        Label { text: I18n.tr((shell.caps[parent.parent.modelData] || { name: parent.parent.modelData }).name); font.pixelSize: 12 } } } } }
+                        Label { visible: shell.picked !== null && shell.picked.services.length > 0; width: parent.width; wrapMode: Text.WordWrap; color: Theme.dim; font.pixelSize: 12
+                                text: shell.picked ? I18n.tr("Answers on: {list}", { list: shell.picked.services.join(", ") }) : "" }
+                        Repeater { model: shell.picked && lan.data && lan.data.health ? lan.data.health.findings.filter(f => f.ip === shell.picked.ip) : []
+                            Label { required property var modelData; width: parent.width; wrapMode: Text.WordWrap; font.pixelSize: 12; color: shell.levels[modelData.level] || Theme.dim
+                                    text: "• " + I18n.tr(modelData.what) + " — " + I18n.tr(modelData.fix) } }
                         Item { width: 1; height: 4 }
                         Pill { icon: "trash"; danger: true; text: I18n.tr("Forget this device"); onPressed: { note.ask(["forget", shell.picked.key]); shell.chosen = "" } }
                     }

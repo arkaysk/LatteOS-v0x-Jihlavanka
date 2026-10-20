@@ -320,11 +320,26 @@ Schválené 12. 10. 2026. Pracuje sa **zhora nadol, neskáče sa**; nový nápad
     (programy používateľa); Monitor › Procesy to ukazuje štítkom, filtrom a zoznamom strážených súčastí. Overené:
     zabité ikony sa do ~16 s vrátia. **Ostáva:** Nastavenia › Štart (vypnúť stráženie jednej súčasti), strážiť aj
     skutočné aplikácie používateľa na žiadosť, štítky v Správcovi zariadení, upozornenie pri páde mimo strážených súčastí.
-12. [ ] **Pokročilý detektor siete** (20. 10., používateľ; predpoklad pre CamGoo s domácimi kamerami). Dnešný inšpektor
+12. [~] **Pokročilý detektor siete** (20. 10., používateľ; predpoklad pre CamGoo s domácimi kamerami). Dnešný inšpektor
     siete v Správcovi zariadení (inšpirácia ESET Smart Security) nájde iba počítač, s ktorým je latte-lab spojený káblom.
     Treba: ARP tabuľka a ping sweep podsiete, mDNS/Bonjour, SSDP/UPnP, NetBIOS, ONVIF WS-Discovery (kamery), výrobca
     podľa MAC (OUI), otvorené porty bežných služieb (554 RTSP, 2020 ONVIF Tapo, 80/443, 22, 445, 9100), rozpoznanie typu
     (kamera, tlačiareň, TV, telefón, router), Matter/Thread pasívne (R3·E); ako ESET „Kontrola siete“ so zoznamom a mapou.
+    **Cieľ (používateľ, 21. 10.):** celá sieť, čo je ktoré zariadenie a čo vie (prehrať naň hudbu a video, kamera, prijať
+    dáta), slabé miesta a ochrana na pár klikov — pre domáceho správcu, ktorý chce prehľad a riešenie bez príkazov.
+    - a. [x] Hĺbková kontrola `latte-network inspect` (21. 10.): otvorené porty bežných služieb, UPnP/SSDP (DLNA
+      prehrávače a servery, router s UPnP), ONVIF (kamery), NetBIOS (mená Windows), kamera bez hesla (RTSP DESCRIBE),
+      schopnosti zariadenia, slabé miesta s radou a skóre siete; Inšpektor › Skontrolovať podrobne, karta Bezpečnosť
+      siete, pri zariadení Čo vie a jeho slabé miesta. Bez nmap a iných závislostí. Overené testom a na latte-lab
+      (sieť zdieľaná z Windowsu: iba brána, multicast neprejde); skutočná domáca sieť neoverená.
+    - b. [ ] Zoznam namiesto radaru pri veľa zariadeniach; filter podľa schopnosti (kamery, prehrávače, tlačiarne).
+    - c. [ ] Akcie zo schopností: Púšťať naň (DLNA/Cast — prepojiť s MediaGoo), Otvoriť obraz (kamera → CamGoo),
+      Pridať tlačiareň (CUPS), Otvoriť stránku nastavení, Pripojiť zdieľaný priečinok (DualBrew).
+    - d. [ ] Upozornenie na nové zariadenie (QueenGoo/ClockGoo), sledovanie v pozadí raz za čas.
+    - e. [ ] Správca siete: Wi-Fi siete a heslá, VPN, DNS s ochranou súkromia, firewall (firewalld), hosťovská sieť
+      a blokovanie zariadenia — čo sa dá bez routera, a návod do routera, kde nie.
+    - f. [ ] Vzory: Sniffnet (kto s kým hovorí, pre NET), ESET Kontrola siete, UniFi (Matter), Fing.
+
 13. [~] **CamGoo — webkamery** (20. 10., na pokyn používateľa). Hotové: karta s obrázkom kamery, prepínanie, zoznam
     v Nastaveniach › Kvapky › Webkamery. **Ďalej (nápady používateľa 20. 10.):** zobrazenia — pod sebou, dlaždice,
     zväčšenie jednej a prepínanie, samé rolujúca páska; **domáce IP kamery** (používateľ má Tapo: RTSP

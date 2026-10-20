@@ -9,8 +9,18 @@
                                kind: router · pc · phone · tv · audio · printer · nas · home (a smart-home thing) · device
                                fresh: it has not been seen on this network before this scan
   latte-network last           the last scan, at once, without looking again
+  latte-network inspect        looks closer at every device that is there: which services answer, what it can do, and
+                               what makes the network weaker, as the last scan plus, for each device, {"ports": […],
+                               "caps": […], "upnp": {"name", "maker", "model", "type"}, "findings": [{"level", "what"}]},
+                               and {"health": {"score", "findings": [{"level", "what", "ip", "fix"}]}}
+                               caps: cast · airplay · play-to (DLNA renderer) · media (DLNA server) · camera · print ·
+                               files · remote · smart-home · web · scan; level: high · medium · low · info
   latte-network name KEY NAME [KIND]     what the user calls a device, and what it is; empty NAME takes it back
   latte-network forget KEY               drops a device from what is remembered
+
+`inspect` only does what any program on the network may do: it opens and closes a connection to a few well-known
+ports, asks the devices that announce themselves (UPnP, ONVIF, NetBIOS) who they are, and asks a camera for its picture's
+description without a password to tell whether it gives it to anyone. It changes nothing and logs in nowhere.
 
 Looking is harmless and needs no password: every address of the local network is sent one empty packet, which
 makes the kernel ask who has it (ARP); the neighbours it then knows are the devices. Their names come from what
@@ -260,9 +270,11 @@ def answer(mine, net_id, known, online):
     devices = [{"key": mac, "ip": d.get("ip", ""), "mac": mac, "name": d.get("given") or d.get("name", ""), "given": d.get("given", ""),
                 "vendor": d.get("vendor", ""), "kind": d.get("given_kind") or d.get("kind", "device"), "online": mac in online,
                 "first": d.get("first", 0), "last": d.get("last", 0), "fresh": bool(d.get("fresh")) and mac in online,
-                "router": d.get("kind") == "router"} for mac, d in known.items()]
+                "router": d.get("kind") == "router", "ports": d.get("ports", []), "services": [PORTS[p][0] for p in d.get("ports", []) if p in PORTS],
+                "caps": d.get("caps", []), "upnp": d.get("upnp", {})} for mac, d in known.items()]
     devices.sort(key=lambda d: (not d["router"], not d["online"], [int(p) for p in d["ip"].split(".")] if d["ip"] else [999]))
-    return {"me": {"ip": mine["ip"], "mac": mine["mac"], "name": socket.gethostname()} if mine else None,
+    health = load().get("_health", {}).get(net_id)
+    return {"health": health,"me": {"ip": mine["ip"], "mac": mine["mac"], "name": socket.gethostname()} if mine else None,
             "gateway": mine["gateway"] if mine else "", "network": net_id, "devices": devices}
 
 
@@ -272,7 +284,7 @@ def last():
     if not mine:
         return {"me": None, "gateway": "", "network": "", "devices": [], "offline": True}
     near = neighbours(mine["device"])
-    net_id = near.get(mine["gateway"], "") or next(iter(data), "")
+    net_id = near.get(mine["gateway"], "") or next((k for k in data if not k.startswith("_")), "")
     return answer(mine, net_id, data.get(net_id, {}), set())
 
 
@@ -284,11 +296,215 @@ def remember(key, change):
     save(data)
 
 
+# ── a closer look: what each device serves, what it can do, and what makes the network weaker ────────────────
+# well-known ports, what is behind them, what that lets the device do
+PORTS = {21: ("ftp", "files"), 22: ("ssh", "remote"), 23: ("telnet", "remote"), 53: ("dns", ""), 80: ("http", "web"), 139: ("netbios", "files"),
+         443: ("https", "web"), 445: ("smb", "files"), 515: ("lpd", "print"), 554: ("rtsp", "camera"), 631: ("ipp", "print"), 1400: ("sonos", "play-to"),
+         1883: ("mqtt", "smart-home"), 2020: ("onvif-tapo", "camera"), 3389: ("rdp", "remote"), 5000: ("upnp-http", "web"), 5900: ("vnc", "remote"),
+         7000: ("airplay", "airplay"), 8008: ("cast", "cast"), 8009: ("cast", "cast"), 8080: ("http-alt", "web"), 8200: ("dlna", "media"),
+         8443: ("https-alt", "web"), 9100: ("printer", "print"), 32400: ("plex", "media")}
+# what an open port says about the network's safety, and what to do about it
+WEAK = {"telnet": ("high", "Telnet is open: passwords travel unencrypted", "Turn Telnet off on the device; use SSH or its app instead."),
+        "ftp": ("medium", "FTP is open: files and passwords travel unencrypted", "Turn FTP off, or use SFTP."),
+        "rdp": ("medium", "Remote desktop (RDP) is open to the network", "Allow remote desktop only when needed, with a strong password."),
+        "vnc": ("medium", "VNC remote screen is open to the network", "Give VNC a password, or turn it off."),
+        "mqtt": ("medium", "An MQTT broker answers without encryption", "Give the broker a password and TLS, or keep it on a separate network."),
+        "netbios": ("low", "Old Windows file sharing (NetBIOS) is on", "Turn NetBIOS off where SMB alone will do.")}
+
+
+def open_ports(ip, wait=0.5):
+    def try_port(port):
+        with socket.socket() as c:
+            c.settimeout(wait)
+            return port if c.connect_ex((ip, port)) == 0 else None
+    with ThreadPoolExecutor(len(PORTS)) as pool:
+        return sorted(p for p in pool.map(try_port, PORTS) if p)
+
+
+def ssdp(wait=2.5):
+    """Who answers a UPnP search: {ip: {"name", "maker", "model", "type"}} from each device's own description."""
+    import urllib.request
+    q = ("M-SEARCH * HTTP/1.1\r\nHOST: 239.255.255.250:1900\r\nMAN: \"ssdp:discover\"\r\nMX: 2\r\nST: ssdp:all\r\n\r\n").encode()
+    where = {}
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, 2)
+        s.settimeout(0.3)
+        s.sendto(q, ("239.255.255.250", 1900))
+    except OSError:
+        return {}
+    end = time.monotonic() + wait
+    while time.monotonic() < end:
+        try:
+            data, (ip, _) = s.recvfrom(4096)
+        except socket.timeout:
+            continue
+        except OSError:
+            break
+        m = re.search(rb"(?im)^location:\s*(\S+)", data)
+        if m:
+            where.setdefault(ip, set()).add(m.group(1).decode(errors="replace"))
+    s.close()
+    found = {}
+    for ip, urls in where.items():
+        info = {"name": "", "maker": "", "model": "", "types": []}
+        for url in list(urls)[:4]:
+            try:
+                xml = urllib.request.urlopen(url, timeout=3).read(65536).decode(errors="replace")
+            except (OSError, ValueError):
+                continue
+            for key, tag in (("name", "friendlyName"), ("maker", "manufacturer"), ("model", "modelName")):
+                m = re.search(r"<%s>([^<]+)</%s>" % (tag, tag), xml)
+                if m and not info[key]:
+                    info[key] = m.group(1).strip()
+            info["types"] += re.findall(r"<deviceType>urn:[^:]+:device:([^:<]+)", xml)
+        found[ip] = info
+    return found
+
+
+def onvif(wait=2.5):
+    """Cameras that answer an ONVIF WS-Discovery probe: the set of their addresses."""
+    import uuid
+    probe = ('<?xml version="1.0" encoding="UTF-8"?><e:Envelope xmlns:e="http://www.w3.org/2003/05/soap-envelope" '
+             'xmlns:w="http://schemas.xmlsoap.org/ws/2004/08/addressing" xmlns:d="http://schemas.xmlsoap.org/ws/2005/04/discovery" '
+             'xmlns:dn="http://www.onvif.org/ver10/network/wsdl"><e:Header><w:MessageID>uuid:%s</w:MessageID>'
+             '<w:To>urn:schemas-xmlsoap-org:ws:2005:04:discovery</w:To><w:Action>http://schemas.xmlsoap.org/ws/2005/04/discovery/Probe</w:Action>'
+             '</e:Header><e:Body><d:Probe><d:Types>dn:NetworkVideoTransmitter</d:Types></d:Probe></e:Body></e:Envelope>') % uuid.uuid4()
+    found = set()
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, 2)
+        s.settimeout(0.3)
+        s.sendto(probe.encode(), ("239.255.255.250", 3702))
+    except OSError:
+        return found
+    end = time.monotonic() + wait
+    while time.monotonic() < end:
+        try:
+            data, (ip, _) = s.recvfrom(65536)
+            if b"ProbeMatch" in data:
+                found.add(ip)
+        except socket.timeout:
+            continue
+        except OSError:
+            break
+    s.close()
+    return found
+
+
+def netbios(ip):
+    """The name a Windows computer gives itself (a NetBIOS node status question), or ""."""
+    q = b"\x13\x37\x00\x00\x00\x01\x00\x00\x00\x00\x00\x00\x20" + b"CK" + b"A" * 30 + b"\x00\x00\x21\x00\x01"
+    try:
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
+            s.settimeout(1.0)
+            s.sendto(q, (ip, 137))
+            data = s.recv(2048)
+        count = data[56]
+        for i in range(count):
+            name = data[57 + i * 18:57 + i * 18 + 15].decode(errors="replace").strip()
+            kind, flags = data[57 + i * 18 + 15], data[57 + i * 18 + 16]
+            if kind == 0 and not flags & 0x80:
+                return name
+    except (OSError, IndexError):
+        pass
+    return ""
+
+
+def rtsp_open(ip, port=554):
+    """Whether a camera describes its picture to anyone, without a password (an RTSP DESCRIBE with no credentials)."""
+    try:
+        with socket.create_connection((ip, port), timeout=2) as c:
+            c.sendall(("DESCRIBE rtsp://%s:%d/ RTSP/1.0\r\nCSeq: 1\r\nAccept: application/sdp\r\n\r\n" % (ip, port)).encode())
+            first = c.recv(256).decode(errors="replace").split("\r\n")[0]
+        return " 200 " in first
+    except OSError:
+        return False
+
+
+def look_closer(d, upnp, cams):
+    """The ports, what the device can do, and what is weak about it, from what it answered."""
+    ports = open_ports(d["ip"])
+    names = [PORTS[p][0] for p in ports]
+    caps = sorted({PORTS[p][1] for p in ports if PORTS[p][1]})
+    info = upnp.get(d["ip"])
+    types = info["types"] if info else []
+    if "MediaRenderer" in types:
+        caps.append("play-to")
+    if "MediaServer" in types:
+        caps.append("media")
+    if d["ip"] in cams:
+        caps.append("camera")
+    findings = []
+    for n in names:
+        if n in WEAK:
+            level, what, fix = WEAK[n]
+            findings.append({"level": level, "what": what, "fix": fix})
+    rtsp = next((p for p in ports if PORTS[p][0] == "rtsp"), None)
+    if rtsp and rtsp_open(d["ip"], rtsp):
+        findings.append({"level": "high", "what": "The camera gives its picture to anyone on the network, without a password",
+                         "fix": "Set a password for the camera's stream in its app."})
+    if d.get("router") and "InternetGatewayDevice" in types:
+        findings.append({"level": "medium", "what": "UPnP is on in the router: any device can open a door to the internet by itself",
+                         "fix": "Turn UPnP off in the router's settings, unless a game console needs it."})
+    if "web" in caps and 80 in ports and 443 not in ports and 8443 not in ports and (d.get("router") or "camera" in caps):
+        findings.append({"level": "low", "what": "Its settings page is not encrypted (http)", "fix": "Use the device's app, or turn on https if it has it."})
+    if d.get("fresh"):
+        findings.append({"level": "info", "what": "A device not seen on this network before", "fix": "If you do not know it, name it, or block it in the router."})
+    return {"ports": ports, "services": names, "caps": sorted(set(caps)), "findings": findings,
+            "upnp": {k: info[k] for k in ("name", "maker", "model")} if info else {}, "types": types}
+
+
+KIND_BY_CAPS = (("camera", "camera"), ("print", "printer"), ("cast", "tv"), ("airplay", "tv"), ("play-to", "tv"), ("smart-home", "home"),
+                ("media", "nas"))
+
+
+def inspect():
+    found = scan()
+    if not found["devices"]:
+        return found
+    with ThreadPoolExecutor(2) as pool:
+        upnp, cams = pool.submit(ssdp), pool.submit(onvif)
+        upnp, cams = upnp.result(), cams.result()
+    live = [d for d in found["devices"] if d["online"]]
+    with ThreadPoolExecutor(8) as pool:
+        closer = dict(zip([d["key"] for d in live], pool.map(lambda d: look_closer(d, upnp, cams), live)))
+        names = dict(zip([d["key"] for d in live], pool.map(lambda d: netbios(d["ip"]), live)))
+    data = load()
+    known = data.get(found["network"], {})
+    health = []
+    for d in found["devices"]:
+        c = closer.get(d["key"])
+        if not c:
+            continue
+        d.update(c)
+        if not d["name"]:
+            d["name"] = c["upnp"].get("name") or names.get(d["key"], "")
+        if d["kind"] in ("device", "pc") and not d.get("given"):
+            d["kind"] = next((k for cap, k in KIND_BY_CAPS if cap in c["caps"]), d["kind"])
+        k = known.get(d["key"])
+        if k is not None:
+            k.update(ports=c["ports"], caps=c["caps"], upnp=c["upnp"], name=k.get("name") or d["name"], kind=k.get("kind") if k.get("kind") == "router" else d["kind"])
+        for f in c["findings"]:
+            health.append(dict(f, ip=d["ip"], device=d["name"] or d["vendor"] or d["ip"]))
+    save(data)
+    # the score: a hundred, less for every weakness by how much it weighs
+    score = max(0, 100 - sum({"high": 25, "medium": 10, "low": 3, "info": 0}[f["level"]] for f in health))
+    order = {"high": 0, "medium": 1, "low": 2, "info": 3}
+    found["health"] = {"score": score, "findings": sorted(health, key=lambda f: order[f["level"]]), "when": int(time.time())}
+    data = load()
+    data.setdefault("_health", {})[found["network"]] = found["health"]      # the last closer look stays to be shown again
+    save(data)
+    return found
+
+
 def main(a):
     if a == ["status"]:
         print(json.dumps(status(), ensure_ascii=False))
     elif a == ["scan"]:
         print(json.dumps(scan(), ensure_ascii=False))
+    elif a == ["inspect"]:
+        print(json.dumps(inspect(), ensure_ascii=False))
     elif a == ["last"]:
         print(json.dumps(last(), ensure_ascii=False))
     elif a[:1] == ["name"] and len(a) in (3, 4):

@@ -220,6 +220,30 @@ packet = b"\x00" * 12 + b"\x03foo\x05local\x00" + b"\x03bar\xc0\x0c"
 assert network.name_at(packet, 12) == ("foo.local", 23) and network.name_at(packet, 23) == ("bar.foo.local", 29)
 assert network.maker("a2:00:00:00:00:01") == ""                    # an address a phone made up names nobody
 assert network.kind_of({"printer", "pc"}, "", "") == "printer" and network.kind_of(set(), "Espressif Inc.", "") == "home" and network.kind_of(set(), "", "") == "device"
+# A closer look: an open Telnet is a weakness; a camera that describes its picture without a password is a worse one.
+def serve(answer):
+    srv = socket.socket(); srv.bind(("127.0.0.1", 0)); srv.listen(4)
+    def loop():
+        while True:
+            try:
+                c, _ = srv.accept()
+            except OSError:
+                return
+            try:
+                c.recv(512); c.sendall(answer)
+            except OSError:
+                pass
+            c.close()
+    threading.Thread(target=loop, daemon=True).start()
+    return srv
+telnet, camera = serve(b""), serve(b"RTSP/1.0 200 OK\r\nCSeq: 1\r\n\r\n")
+tp, cp = telnet.getsockname()[1], camera.getsockname()[1]
+network.PORTS = {tp: ("telnet", "remote"), cp: ("rtsp", "camera")}
+assert network.open_ports("127.0.0.1") == sorted([tp, cp])
+assert network.rtsp_open("127.0.0.1", cp) and not network.rtsp_open("127.0.0.1", tp)
+c = network.look_closer({"ip": "127.0.0.1", "router": False, "fresh": True}, {}, set())
+assert c["caps"] == ["camera", "remote"] and [f["level"] for f in c["findings"]] == ["high", "high", "info"], c
+telnet.close(), camera.close()
 settings = load("latte-settings")
 with tempfile.TemporaryDirectory() as d:
     home, os.environ["HOME"] = os.environ.get("HOME"), d
