@@ -282,10 +282,11 @@ part Rows {
 
         // wide, two to a line: a rounded square with the icon, and the name beside it; the one that does not undo in red
         box { at: w / 2, 31; size: w - 10, 54; corner: 17; color: if(it.danger, red, #4a372b); opacity: if(it.on, 100%, if(it.danger, 14% + 12% * lit, 62% + 38% * lit)) * if(it.off, 0.5, 1); show: wide }
+        box { at: w / 2, 31; size: w - 10, 54; corner: 17; stroke: 1; color: cream; opacity: if(it.danger, 0%, 13% + 14% * lit); show: wide }
         box { at: 33, 31; size: 36, 36; corner: 11; color: if(it.danger, red, if(it.on, gold, paper)); opacity: if(it.danger, 22%, if(it.on, 30%, 70%)); show: wide }
         text it.glyph { at: 33, 31; anchor: center; size: 19; color: if(it.danger, red, if(it.on, gold, cream)); opacity: if(it.off, 45%, 100%); show: wide and not it.has_icon; family: "tabler-icons" }
         image it.icon { at: 33, 31; size: 26, 26; show: wide and it.has_icon }
-        text it.label { at: 60, 31; anchor: left center; width: w - 72; lines: 2; size: 14.5; weight: 600; color: if(it.danger, red, if(it.on, gold, cream)); opacity: if(it.off, 45%, 100%); show: wide; family: "Inter" }
+        text it.label { at: 60, 31; anchor: left center; width: w - 72; lines: 1; size: 14.5; weight: 600; color: if(it.danger, red, if(it.on, gold, cream)); opacity: if(it.off, 45%, 100%); show: wide; family: "Inter" }
 
         zone box hit { from: 3, 2; size: w - 6, if(wide, if(r.kind == tiles, 60, 54), if(r.kind == tiles, 84, 42)); cursor: pointer; active: card_open and not it.off; label: "{it.label}"; selected: it.on }
         on press hit { emit card_pick((r.index + base) * 8 + it.index + 1) }

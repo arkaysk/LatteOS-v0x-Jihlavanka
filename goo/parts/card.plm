@@ -135,7 +135,7 @@ part Card {
         // With the goo of glass the card is frosted glass too: what is behind shows through it, blurred and
         // smoked so that the light writing on it reads over anything.
         glass: card.glass * 100%
-        lens: card.glass > 0.02
+        lens: material > 0.02
         shine: pointer
         frost: 100%
         smoke: 62% * card.glass
