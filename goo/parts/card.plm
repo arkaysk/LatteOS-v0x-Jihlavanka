@@ -154,13 +154,13 @@ part Card {
     let dk.cx = card.ax + card.sx * card.cw / 2
     let dk.on = card.p > 0.02 and not card_dock and card_split > 0
     // the ear sits in a bottom corner: the coffee keeps clear of it, and the glass wraps round it
-    let dk.e = if(card.sy < 0 and card_owner >= 0, ear * 1.15, 0)
-    let dk.lip = max(40, dk.e * 1.5)
+    let dk.e = if(card.sy < 0 and card_owner >= 0, ear + 4, 0)
+    let dk.lip = max(24, dk.e + 6)
     body {
         color: paper
         opacity: if(dk.on, 1, 0)
-        box { at: dk.cx, dk.top + max(dk.h - dk.lip, 0) / 2; size: max(card.cw - 3, 0), max(dk.h - dk.lip, 0); corner: 3 }
-        box { at: dk.cx + card.sx * dk.e / 2, dk.bot - min(dk.h, dk.lip + 30) / 2; size: max(card.cw - 3 - dk.e, 0), min(dk.h, dk.lip + 30); corner: min(if(ear > 14, 26, 18) + (card.round - 18), min(card.cw, card.ch) / 2) - 1.5 }
+        box { at: dk.cx, dk.top + max(dk.h - dk.lip, 0) / 2; size: max(card.cw - 3, 0), max(dk.h - dk.lip, 0); corner: 3; blend: 10 }
+        box { at: dk.cx + card.sx * dk.e / 2, dk.bot - min(dk.h, dk.lip + 30) / 2; size: max(card.cw - 3 - dk.e, 0), min(dk.h, dk.lip + 30); corner: min(if(ear > 14, 26, 18) + (card.round - 18), min(card.cw, card.ch) / 2) - 1.5; blend: 10 }
     }
     // The shore's panel: a plate like the shore's, rising out of it and reaching past the screen's edge, so
     // the two are one piece.
