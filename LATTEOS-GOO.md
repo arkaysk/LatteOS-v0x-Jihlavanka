@@ -220,8 +220,9 @@ ostatné kvapky sú iba na hlavnom monitore.
   s výberom modelu, v káve Lens AI centrum · Nastavenia · Nová relácia a spotreba; rozhovory ukladá `latte-ai`
   do `~/.local/state/latteos/ai/chats/`, číta ich aj **Lens AI centrum** (`apps/aicenter.qml`: všetky rozhovory
   pokope, farebne podľa služby, prihlásenie a odhlásenie služieb). Ktoré AI ponúka LensGoo: Nastavenia › Spúšťač.
-  Gemini, ChatGPT (codex) a Ollama sú zapísané podľa dokumentácie, na latte-lab neoverené; Grok nemá oficiálny
-  nástroj, má iba podobu poľa.)*
+  21. 10.: Claude, Gemini (Gemini CLI), ChatGPT (Codex), Grok (Grok Build) a Mistral (Mistral Vibe) odpovedajú na
+  latte-lab s účtami používateľa; každý beží v prázdnom priečinku a nesmie zapisovať ani spúšťať príkazy (Claude bez
+  nástrojov, Gemini `plan`, Codex `read-only`, Grok `plan`, Mistral agent `ask` na jeden krok). Ollama neoverená.)*
 - **Rýchly zoznam (pravý klik):** jednoduché okno s ikonami — naposledy spustené a obľúbené aplikácie ako dlaždice
   (klik spustí), pod nimi Hľadať… (otvorí spúšťač) a App Manager.
 

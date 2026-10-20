@@ -354,8 +354,8 @@ Schválené 12. 10. 2026. Pracuje sa **zhora nadol, neskáče sa**; nový nápad
     poľom v podobe služby, výberom modelu, spotrebou (limity Claude 5 h a týždňa) a novou reláciou; Lens AI centrum
     (rozhovory všetkých AI pokope, služby a prihlásenie); výber AI pre LensGoo v Nastaveniach › Spúšťač; text
     „Hľadať aplikácie alebo nastavenia…“. 21. 10.: pole s ponukou + (súbor, snímka obrazovky; nástroj číta iba
-    priložené), úsilie v čipe modelu (Claude low–max, Codex low–high), Gemini CLI a Codex nainštalované (čakajú na
-    prihlásenie). **Ďalej, podľa VS Code (Copilot: viac AI pod jednou strechou, vlastné kľúče):** (a) vlastné kľúče
+    priložené), úsilie v čipe modelu (Claude low–max, Codex low–high); Gemini, ChatGPT, Grok a Mistral odpovedajú cez
+    oficiálne nástroje s účtami používateľa (overené 21. 10., zápis zakázaný). **Ďalej, podľa VS Code (Copilot: viac AI pod jednou strechou, vlastné kľúče):** (a) vlastné kľúče
     API v Lens AI centre, uložené v kľúčenke systému (nie v súbore), priame volanie API bez agentov — aj Grok
     a Mistral; (b) Grok Build a Mistral Vibe cez účet (nainštaluje používateľ; overiť vypnutie nástrojov);
     (c) bohatšie okno rozhovoru a nastavenia centra; postupné písanie, zastavenie, mikrofón (chýba prevod reči).

@@ -42,7 +42,8 @@ SYSTEM = ("You are the assistant in the launcher of the LatteOS desktop. Answer 
           "language of the question, in plain text: no Markdown, no headings.")
 # Where a tool is run: an empty folder of its own, so that it finds no project there to read.
 # The desktop's services have a short PATH (no ~/.local/bin, where a user's own tools live): look there too.
-SEARCH = os.pathsep.join([os.environ.get("PATH", "/usr/local/bin:/usr/bin"), os.path.expanduser("~/.local/bin"), os.path.expanduser("~/bin")])
+SEARCH = os.pathsep.join([os.environ.get("PATH", "/usr/local/bin:/usr/bin"), os.path.expanduser("~/.local/bin"), os.path.expanduser("~/bin"),
+                          os.path.expanduser("~/.grok/bin")])
 ROOM = os.path.join(os.environ.get("XDG_STATE_HOME") or os.path.expanduser("~/.local/state"), "latteos", "ai")
 CHATS = os.path.join(ROOM, "chats")
 KEEP = 12                       # what a tool is reminded of: the last six turns
@@ -83,11 +84,37 @@ def claude_read(out):
                                                         "limits": limits}
 
 
-# Gemini and Codex were installed and their switches read on latte-lab (20. 10.); an answer was not tried, the user signs
-# in first. Ollama is written from its documentation. Their answers come as plain text, without usage.
+# Gemini, Codex, Grok and Mistral answered on latte-lab (21. 10.), signed in with the user's accounts; Grok and Mistral
+# were also asked to write a file and did not. Ollama is written from its documentation. Their answers come as plain
+# text, without usage.
 def gemini(prompt, model, effort="", files=()):
     # plan: it may read, never change anything; @ puts an attached file into the question
-    return ["gemini", "-p", SYSTEM + "\n\n" + prompt + "".join(" @" + f for f in files), "--approval-mode", "plan", "-o", "text"] + (["-m", model] if model else [])
+    # the folder it runs in is LatteOS's own empty one: trusted without asking, so that plan is not overridden
+    return ["gemini", "-p", SYSTEM + "\n\n" + prompt + "".join(" @" + f for f in files), "--skip-trust", "--approval-mode", "plan", "-o", "text"] \
+        + (["-m", model] if model else [])
+
+
+def grok(prompt, model, effort="", files=()):
+    # plan: a headless run cannot be asked to allow anything, so it reads and never writes or runs
+    if files:
+        prompt += "\n\nAttached, in this folder: " + ", ".join(files)
+    return ["grok", "-p", SYSTEM + "\n\n" + prompt, "--permission-mode", "plan", "--output-format", "plain"] + (["-m", model] if model else [])
+
+
+def vibe(prompt, model, effort="", files=()):
+    # ask: a tool would need a yes nobody can give; one turn: it answers and stops
+    if files:
+        prompt += "\n\nAttached, in this folder: " + ", ".join(files)
+    return ["vibe", "-p", SYSTEM + "\n\n" + prompt, "--agent", "ask", "--max-turns", "1", "--output", "text"]
+
+
+def grok_models():
+    try:
+        out = subprocess.run(["grok", "models"], capture_output=True, text=True, timeout=20, env=dict(os.environ, PATH=SEARCH)).stdout
+    except (OSError, subprocess.TimeoutExpired):
+        return []
+    found = [l.strip().lstrip("*").split()[0] for l in out.splitlines() if l.startswith("  ") and l.strip()]
+    return [{"id": m, "name": m.replace("grok-", "Grok ")} for m in found]
 
 
 def codex(prompt, model, effort="", files=()):
@@ -122,6 +149,10 @@ PROVIDERS = {
     "chatgpt": {"name": "ChatGPT", "local": False, "style": "chatgpt", "tool": "codex", "command": codex,
                 "login": ["codex", "login"], "logout": ["codex", "logout"],
                 "models": [{"id": "", "name": "Auto"}], "efforts": ["low", "medium", "high"]},
+    "grok": {"name": "Grok", "local": False, "style": "grok", "tool": "grok", "command": grok, "models": grok_models,
+             "login": ["grok", "login"], "logout": ["grok", "logout"]},
+    "mistral": {"name": "Mistral", "local": False, "style": "own", "tool": "vibe", "command": vibe, "login": ["vibe"],
+                "models": [{"id": "", "name": "Auto"}]},
     "ollama": {"name": "Ollama", "local": True, "style": "own", "tool": "ollama", "command": ollama, "models": ollama_models},
 }
 
