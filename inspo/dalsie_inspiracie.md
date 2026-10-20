@@ -376,15 +376,33 @@ https://github.com/natepayn3/Vitreus
     akcent a materiál, nie pre kávu (R3·B). Kód iba ako predloha; prevzatý shader s uvedením v `TRETIE-STRANY.md`.
 
 skvelo vyzerajuci ocean priamo v html https://github.com/Noniv/web-ocean
+  - (Claude, 20. 10.) Oceán v prehliadači (WebGL). Pre LatteOS iba postup, nie kód: vlny ako súčet niekoľkých
+    Gerstnerových vĺn s odleskom podľa uhla pohľadu. To isté robí náš `goo/shaders/water.wgsl` pod hladinou prihlásenia;
+    odtiaľto sa dá vziať jemnejšie zrkadlenie oblohy na hladine (pri zamračenej oblohe sivšia káva, pri slnku odlesk).
 
 goo shader https://www.shadertoy.com/view/f3tXzX
     https://www.shadertoy.com/view/3sySRK
     https://www.shadertoy.com/view/7XtSD7 rain
+  - (Claude, 20. 10.) Pozor na licenciu: diela na Shadertoy sú bez inej zmienky **CC BY-NC-SA 3.0** (nekomerčné), do
+    LatteOS sa preto nekopírujú. Berie sa iba myšlienka: kvapky na skle (rain) pre pozadie karty počasia v ClockGoo
+    a pre prihlásenie pri daždi; goo shader (metaballs cez signed distance) robí pleamar sám (`body` a `blend`).
 
  https://github.com/natepayn3/Vitreus otvor zdrojovy kod vitreusu a prečitaj si v kode ako robi ake efekty.
     ako vizualizuje posuvniky
+  - (Claude, 20. 10., prečítaný kód, MIT) **Posúvniky** (`vitreus.plm`, komponent `PSlider`): dráha pod kurzorom
+    zhrubne (16 → 19 px), jej obrys je ručne „kreslená“ čiara, ktorá sa pri prejdení myšou jemne chveje (prepočíta sa
+    5× za sekundu, nie každý snímok), ikona na začiatku je zároveň tlačidlo stlmenia (prečiarknutá a červená), zóna
+    kliknutia je o kus širšia ako dráha, takže sa ľahko trafí. **Prepínače** (Wi-Fi, Bluetooth, Nerušiť): po zapnutí sa
+    dlaždica „zaplaví“ farbou, ktorá vytečie z prepínača (rastúca elipsa), a po vypnutí do neho stečie späť; jazdec
+    pod prstom napučí. **Webkamera** (`webcam/`): `ffmpeg` prepisuje jeden súbor snímkou asi 15× za sekundu a scéna ho
+    načíta znova s novým číslom za `?` — presne tak sa dá ukázať živý obraz kamery v CamGoo (aj Tapo cez RTSP). **Shadery**
+    `cardrip.wgsl` (vlna po hrane karty), `liquid`, `wave`, `pixelate`, `wptrans/hexreveal.wgsl` (prechod tapety).
+    Pre LatteOS: posúvniky Pobrežia a Nastavení (hrubnutie, širšia zóna, ikona ako stlmenie), zaplavenie farbou pri
+    prepínačoch, živý obraz v CamGoo. Prevzatý kód s uvedením v `TRETIE-STRANY.md`.
 
  https://github.com/yannmasoch/nautilus-my-computer dalši file manager.
+  - (Claude, 20. 10.) Rozšírenie Nautilusu: pohľad „Tento počítač“ s diskami a pruhmi ich zaplnenia, ako vo
+    Windows. DualBrew jednotky má; odtiaľto vziať úvodnú stránku „Počítač“ (disky, zariadenia, sieť) pri otvorení.
 
     integrovat služby ako :
     -https://github.com/teamnewpipe/newpipe
@@ -392,8 +410,22 @@ goo shader https://www.shadertoy.com/view/f3tXzX
     -https://github.com/kodjodevf/mangayomi
     -https://github.com/fmhy/edit
     -https://github.com/GyulyVGC/sniffnet
+  - (Claude, 20. 10.) Čo z toho a ako:
+    - **NewPipe** je iba pre Android. Na počítači to isté robia **FreeTube** a **Pipeline** (ten používa extraktor
+      NewPipe), oba ako Flatpak: ponúknuť v App Manageri (polica „Bez reklám a sledovania“), nie zabudovať.
+    - **Stremio** (Flatpak `com.stremio.Stremio`): mediálne centrum s doplnkami. Samotné je v poriadku, doplnky tretích
+      strán (torrenty) sú právne šedé: v App Manageri áno, so žiadnymi doplnkami vopred.
+    - **Mangayomi** (Flutter, má verziu pre Linux): čítačka mangy a anime s rozšíreniami zdrojov; to isté ako
+      Stremio — aplikácia v obchode, zdroje si volí používateľ.
+    - **FMHY** je zoznam pirátskych stránok: do LatteOS sa nedáva (riziko pre distribúciu). Ako záložka je to vec
+      používateľa.
+    - **Sniffnet** (Rust, MIT/Apache-2.0): monitor siete — spojenia podľa hostiteľa a aplikácie, krajina, služba,
+      upozornenia. Najužitočnejšie z celej skupiny: vzor (a možno súčasť) pre **pokročilý detektor siete** (ROADMAP
+      „Teraz“ bod 12) a pre NET (ktorá aplikácia s kým hovorí).
     
 
 https://github.com/trimstray/the-book-of-secret-knowledge    
+  - (Claude, 20. 10.) Zbierka nástrojov a ťahákov pre správcov a bezpečnosť. Pre LatteOS zoznam, z čoho skladať
+    detektor siete (`arp-scan`, `nmap`, `avahi-browse`, `gssdp-discover`, ONVIF) a čo môže GuardDog kontrolovať.
 
     

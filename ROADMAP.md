@@ -327,6 +327,15 @@ Schválené 12. 10. 2026. Pracuje sa **zhora nadol, neskáče sa**; nový nápad
     v sieti** (ONVIF WS-Discovery, porty 554 a 2020; to isté vie inšpektor siete v Správcovi zariadení);
     **návrh kamier podľa miesta** (miesto počasia → verejné kamery okolo, zdroj s API, napr. Windy Webcams — kľúč);
     **ISS** (NASA vysiela video, nie obrázok: snímka z prúdu cez ffmpeg, alebo mapa polohy ISS ako „kamera“).
+14. [ ] **Z inšpirácií a tech radaru (20. 10.)** — po bodoch 12 a 13, nič z toho nie je naliehavé:
+    - **Linux 7.3 na latte-lab:** RX 550 (Polaris) v Supreme Commanderovi a Quake 3 proti 7.2 (MangoHud); správa VRAM
+      (`dmemcg`) ako súčasť automatického škálovania pre karty s 2–4 GB.
+    - **e5-sk embeddingy** (KInIT): hľadanie podľa významu v LensGoo — súbory, nastavenia, aplikácie („faktúra za plyn“).
+    - **Posúvniky a prepínače podľa Vitreusu** v Pobreží a Nastaveniach (hrubnutie, širšia zóna, zaplavenie farbou).
+    - **Živý obraz v CamGoo** postupom Vitreusu (ffmpeg → súbor → `cam_path?N`), aj pre Tapo cez RTSP.
+    - **Sniffnet** ako vzor pre detektor siete a NET.
+    - **App Manager:** polica s FreeTube a Pipeline, Stremio a Mangayomi bez doplnkov vopred.
+    - **Fedora 45** (30. 10.) až po prebudovaní COPR; **oo7** ako trezor hesiel (kamery, cloudy).
 13. [ ] **Prvé spustenie — kvapky sa predstavia** (používateľ, 20. 10., z /plan-ceo-review). Po prvom prihlásení
     sa kvapky postupne nadvihnú a každá krátko povie, čo je a čo robí ľavý a pravý klik; preskočiteľné, dá sa
     pustiť znova (Nastavenia). Poradie: **QueenGoo → PowerGoo → LensGoo → BarGoo**, potom ostatné na ploche.
