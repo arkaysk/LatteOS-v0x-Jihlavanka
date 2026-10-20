@@ -18,7 +18,7 @@ local M = {}
 -- N marks a text for the translation table (tests/check.sh looks for it); tr() translates it where it is shown.
 local function N(s) return s end
 
-local WIDTH = 450
+local WIDTH = 600
 local FILE = "lens.json"
 local ENGINES = {
     { id = "duckduckgo", name = "DuckDuckGo", url = "https://duckduckgo.com/?q=%s" },
@@ -34,7 +34,9 @@ local FOLDERS = { { key = "DOCUMENTS", name = N("Documents"), glyph = "file" }, 
                   { key = "VIDEOS", name = N("Videos"), glyph = "player-play" } }
 
 local apps, by_id = {}, {}
-local kept = { mode = 0, recent = {}, commands = {}, engine = "duckduckgo", counts = {}, seen = nil, filter = "all" }
+local kept = { mode = 0, recent = {}, commands = {}, engine = "duckduckgo", counts = {}, filter = "all", fav = {},
+              layout = { most = true, fav = true, fresh = true, chips = true }, off = {} }
+local born = {}                      -- app id → when it was installed (the birth of its .desktop file)
 -- the filters of the app overview: which desktop categories each takes
 local FILTERS = {
     { id = "all", name = N("All"), glyph = "apps" },
@@ -43,7 +45,6 @@ local FILTERS = {
     { id = "dev", name = N("Develop"), glyph = "code", cats = { "Development" } },
     { id = "fun", name = N("Fun"), glyph = "device-gamepad-2", cats = { "Game" } },
 }
-local NEW_DAYS = 30                  -- how long an app counts as newly installed
 local owner                          -- LensGoo
 local home, folders = "", {}
 local typed, confirm = "", nil       -- what is in the field; the dangerous command asked about
@@ -89,8 +90,15 @@ local function search_web(e, text) then_do(function() open.url(string.format(e.u
 -- the right button on an app: it can be pinned to the desktop as a drop of its own
 local function app_menu(a)
     local pinned = own.pinned(a)
+    local loved = table.find(kept.fav, a.id) ~= nil
     card.open({
-        { label = a.local_name or a.name or a.id, icon = a.icon or "", glyph = "apps", run = function() launch(a) end },
+        { label = loved and tr("Remove from favourites") or tr("Add to favourites"), glyph = "star",
+          run = function()
+              if loved then table.remove(kept.fav, table.find(kept.fav, a.id)) elseif a.id and #kept.fav < 12 then kept.fav[#kept.fav + 1] = a.id end
+              save()
+              after(60, function() render(false) end)
+          end },
+        { label = a.local_name or a.name or a.id, icon = a.icon or "", glyph = "apps", line = true, run = function() launch(a) end },
         { label = quick.has(a) and tr("Take off QuickGoo") or tr("Keep at hand in QuickGoo"), glyph = "rocket", line = true,
           run = function() if quick.has(a) then quick.remove(a) else quick.add(a) end end },
         { label = pinned and tr("Unpin the drop") or tr("Pin as a drop"), glyph = "pin",
@@ -111,55 +119,62 @@ local function rows_apps()
             for _, c in ipairs(f.cats or {}) do if (";" .. text .. ";"):find(";" .. c .. ";", 1, true) then return true end end
             return false
         end
-        local function row_of(list, per, n)
+        local function row_of(list, n)
             local tiles = {}
             for i = 1, math.min(n, #list) do tiles[i] = tile(list[i]) end
-            return { tiles = tiles, per = per }
+            return { tiles = tiles, per = 6 }
         end
         local rows, filter = {}, FILTERS[1]
-        for _, f in ipairs(FILTERS) do if f.id == kept.filter then filter = f end end
-        local chips = {}
-        for _, f in ipairs(FILTERS) do
-            chips[#chips + 1] = { label = tr(f.name), glyph = f.glyph, on = f.id == kept.filter, keep = true,
-                                  run = function() kept.filter = f.id save() render(true) end }
+        for _, f in ipairs(FILTERS) do if f.id == kept.filter and not kept.off[f.id] then filter = f end end
+        if kept.layout.chips then
+            local chips = {}
+            for _, f in ipairs(FILTERS) do
+                if f.id == "all" or not kept.off[f.id] then
+                    chips[#chips + 1] = { label = tr(f.name), glyph = f.glyph, on = f.id == filter.id, keep = true,
+                                          run = function() kept.filter = f.id save() render(true) end }
+                end
+            end
+            rows[#rows + 1] = { pills = chips, per = 6 }
         end
-        rows[#rows + 1] = { pills = chips, per = 5 }
         -- what passes the filter, the most launched first (then the order of the list)
         local pool = {}
         for _, a in ipairs(apps) do if filter.id == "all" or category(a, filter) then pool[#pool + 1] = a end end
         table.sort(pool, function(x, y) return (kept.counts[x.id or ""] or 0) > (kept.counts[y.id or ""] or 0) end)
         if filter.id == "all" then
-            local most = {}
-            for _, a in ipairs(pool) do if (kept.counts[a.id or ""] or 0) > 0 and #most < 6 then most[#most + 1] = a end end
-            if #most == 0 then
-                for _, id in ipairs(kept.recent) do if by_id[id] and #most < 6 then most[#most + 1] = by_id[id] end end
+            if kept.layout.most then
+                local most = {}
+                for _, a in ipairs(pool) do if (kept.counts[a.id or ""] or 0) > 0 and #most < 6 then most[#most + 1] = a end end
+                if #most == 0 then
+                    for _, id in ipairs(kept.recent) do if by_id[id] and #most < 6 then most[#most + 1] = by_id[id] end end
+                end
+                if #most == 0 then for i = 1, math.min(6, #pool) do most[i] = pool[i] end end
+                rows[#rows + 1] = { head = true, label = tr(N("MOST LAUNCHED")) }
+                rows[#rows + 1] = row_of(most, 6)
             end
-            if #most == 0 then for i = 1, math.min(6, #pool) do most[i] = pool[i] end end
-            rows[#rows + 1] = { head = true, label = tr(N("MOST LAUNCHED")) }
-            rows[#rows + 1] = row_of(most, 6, 6)
-            local fav = {}
-            for _, id in ipairs(quick.list()) do if by_id[id] and #fav < 6 then fav[#fav + 1] = by_id[id] end end
-            if #fav > 0 then
+            -- the favourites: the heading stays even when there are none, and says how to add one
+            if kept.layout.fav then
+                local fav = {}
+                for _, id in ipairs(kept.fav) do if by_id[id] and #fav < 6 then fav[#fav + 1] = by_id[id] end end
                 rows[#rows + 1] = { head = true, label = tr(N("FAVOURITES")) }
-                rows[#rows + 1] = row_of(fav, 3, 6)
+                if #fav > 0 then rows[#rows + 1] = row_of(fav, 6)
+                else rows[#rows + 1] = { label = tr("Right-click an app and choose Add to favourites"), glyph = "star", quiet = true } end
             end
-            local fresh, now = {}, os.time()
-            for _, a in ipairs(apps) do
-                local t = a.id and kept.seen and kept.seen[a.id]
-                if t and t > 0 and now - t < NEW_DAYS * 86400 then fresh[#fresh + 1] = a end
-            end
-            table.sort(fresh, function(x, y) return kept.seen[x.id] > kept.seen[y.id] end)
-            if #fresh > 0 then
+            if kept.layout.fresh then
+                local fresh = {}
+                for _, a in ipairs(apps) do if a.id and born[a.id] then fresh[#fresh + 1] = a end end
+                table.sort(fresh, function(x, y) return born[x.id] > born[y.id] end)
                 rows[#rows + 1] = { head = true, label = tr(N("NEWLY INSTALLED")) }
-                rows[#rows + 1] = row_of(fresh, 4, 4)
+                if #fresh > 0 then rows[#rows + 1] = row_of(fresh, 6)
+                else rows[#rows + 1] = { label = tr("Nothing installed lately"), glyph = "clock", quiet = true } end
             end
         else
             rows[#rows + 1] = { head = true, label = tr(filter.name):upper() }
-            rows[#rows + 1] = row_of(pool, 6, 18)
+            rows[#rows + 1] = row_of(pool, 18)
         end
-        -- under the glass: the coffee, with how many apps there are
+        -- under the glass: the coffee, with a way to edit this page and how many apps there are
         rows[#rows + 1] = { wave = true }
-        rows[#rows + 1] = { label = string.format(tr("%d apps"), #apps), glyph = "apps", hint = tr("Esc closes"), quiet = true }
+        rows[#rows + 1] = { label = tr("Customize this page"), glyph = "adjustments-horizontal", hint = string.format(tr("%d apps"), #apps), keep = true, more = true,
+                            run = function() M.customize() end }
         return rows
     end
     local rows = {}
@@ -300,7 +315,10 @@ local function bubbles(answer)
 end
 local function rows_ai()
     local p = ai.providers[ai.at]
-    if not p then return { { label = tr("No AI on this computer"), glyph = "sparkles", quiet = true } } end
+    if not p then
+        return { { label = tr("No AI on this computer"), glyph = "sparkles", quiet = true },
+                 { label = tr("Settings") .. " › AI", glyph = "settings", line = true, run = function() then_do(function() open.settings("ai") end) end } }
+    end
     local rows = {}
     if typed ~= "" and not ai.waiting then
         local question = typed
@@ -320,6 +338,53 @@ local function rows_ai()
         rows[#rows + 1] = { label = tr("New conversation"), glyph = "plus", keep = true, run = function() ai.talk = {} render(true) end }
     end
     return rows
+end
+
+-- ── editing the apps page: which parts it has, which filters, and the favourites by hand ─────────────────────
+local function toggle(t, key) return function() t[key] = not t[key] save() M.customize() end end
+function M.customize()
+    local rows = {
+        { label = tr("Back"), glyph = "chevron-left", keep = true, run = function() render(false) end },
+        { head = true, label = tr("PARTS OF THE PAGE"), line = true },
+        { label = tr("The row of filters"), glyph = "adjustments-horizontal", on = kept.layout.chips, keep = true, run = toggle(kept.layout, "chips") },
+        { label = tr(N("MOST LAUNCHED")), glyph = "flame", on = kept.layout.most, keep = true, run = toggle(kept.layout, "most") },
+        { label = tr(N("FAVOURITES")), glyph = "star", on = kept.layout.fav, keep = true, run = toggle(kept.layout, "fav") },
+        { label = tr(N("NEWLY INSTALLED")), glyph = "clock", on = kept.layout.fresh, keep = true, run = toggle(kept.layout, "fresh") },
+        { head = true, label = tr("FILTERS"), line = true },
+    }
+    for _, f in ipairs(FILTERS) do
+        if f.id ~= "all" then
+            rows[#rows + 1] = { label = tr(f.name), glyph = f.glyph, on = not kept.off[f.id], keep = true,
+                                run = function() kept.off[f.id] = not kept.off[f.id] or nil if kept.filter == f.id then kept.filter = "all" end save() M.customize() end }
+        end
+    end
+    rows[#rows + 1] = { head = true, label = tr(N("FAVOURITES")), line = true }
+    local any = false
+    for i, id in ipairs(kept.fav) do
+        local a = by_id[id]
+        if a then
+            any = true
+            rows[#rows + 1] = { label = a.local_name or a.name or id, icon = a.icon or "", glyph = "apps", hint = tr("remove"), keep = true,
+                                run = function() table.remove(kept.fav, i) save() M.customize() end }
+        end
+    end
+    if not any then rows[#rows + 1] = { label = tr("Right-click an app and choose Add to favourites"), glyph = "star", quiet = true } end
+    rows[#rows + 1] = { label = tr("Settings"), glyph = "settings", line = true, run = function() then_do(function() open.settings() end) end }
+    card.open(rows, { owner = owner, id = "lens-custom", width = WIDTH })
+end
+
+-- when each app was installed: the birth of its .desktop file (the change, where a file system does not tell)
+local function learn_born()
+    run("sh", { "-c", "stat -L -c '%W %Y %n' /usr/share/applications/*.desktop /var/lib/flatpak/exports/share/applications/*.desktop "
+                      .. "\"$HOME\"/.local/share/flatpak/exports/share/applications/*.desktop \"$HOME\"/.local/share/applications/*.desktop 2>/dev/null" },
+        function(out)
+            for t, m, path in (out or ""):gmatch("(%d+) (%d+) ([^\n]+)") do
+                local id = path:match("([^/]+)%.desktop$")
+                local when = tonumber(t) > 0 and tonumber(t) or tonumber(m)
+                if id and when > (born[id] or 0) then born[id] = when end
+            end
+            if card.id() == "lens" and kept.mode == 0 then render(true) end
+        end)
 end
 
 local MODES = {
@@ -404,7 +469,9 @@ function M.start(d)
         kept.commands = type(saved.commands) == "table" and saved.commands or {}
         kept.engine = type(saved.engine) == "string" and saved.engine or kept.engine
         kept.counts = type(saved.counts) == "table" and saved.counts or {}
-        kept.seen = type(saved.seen) == "table" and saved.seen or nil
+        if type(saved.fav) == "table" then kept.fav = saved.fav end
+        if type(saved.layout) == "table" then for k in pairs(kept.layout) do if saved.layout[k] ~= nil then kept.layout[k] = saved.layout[k] == true end end end
+        if type(saved.off) == "table" then kept.off = saved.off end
         kept.filter = type(saved.filter) == "string" and saved.filter or "all"
     end
     local got, h = pcall(sys.ask, "env", "HOME")
@@ -417,24 +484,16 @@ function M.start(d)
             table.sort(folders, function(a, b) return a.place < b.place end)      -- the answers come in any order
         end)
     end
+    -- the AI tab is always there; with nobody to answer it says why and where to turn it on
+    MODES[4] = { glyph = "sparkles", name = N("AI"), hint = N("Ask anything…"), rows = rows_ai }
     run("latte-ai", { "providers" }, function(out)
         local found_any, list = pcall(json.decode, out or "")
-        if not found_any or type(list) ~= "table" or #list == 0 then return end
-        ai.providers = list
-        MODES[4] = { glyph = "sparkles", name = N("AI"), hint = N("Ask anything…"), rows = rows_ai }
+        if found_any and type(list) == "table" then ai.providers = list end
     end)
     sys.watch("apps", function(list)
         apps, by_id = list or {}, {}
         for _, a in ipairs(apps) do if a.id then by_id[a.id] = a end end
-        -- when each app was first seen: those there at the very first look are old, the ones that come later are new
-        if #apps > 0 then
-            local first, changed = kept.seen == nil, false
-            kept.seen = kept.seen or {}
-            for _, a in ipairs(apps) do
-                if a.id and kept.seen[a.id] == nil then kept.seen[a.id] = first and 0 or os.time() changed = true end
-            end
-            if changed then save() end
-        end
+        learn_born()
         if card.id() == "lens" then render(true) end
     end)
     on("lens_toggle", M.toggle)

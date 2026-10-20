@@ -97,7 +97,9 @@ def pages():
 
 
 def find(text):
-    asked = plain(text).split()
+    # a word is looked for by its beginning, so that "klavesove skratky" finds "Klavesnica a skratky": inflected
+    # endings do not matter (ponytail: a crude stem, five letters; a real stemmer when a language needs one)
+    asked = [w[:5] for w in plain(text).split()]
     found = [p for p in pages() if asked and all(w in p["hay"] for w in asked)]
     found.sort(key=lambda p: (not plain(p["name"]).startswith(asked[0]) if asked else 0, p["name"]))
     return found
