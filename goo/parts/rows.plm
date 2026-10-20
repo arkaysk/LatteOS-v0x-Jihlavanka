@@ -29,6 +29,53 @@ part Rows {
         show: card.p > 0.01
         // what is written is not drawn past the frame, which is still narrow while it grows from the ear
         clip box { at: card.ax + card.sx * card.cw / 2, card.ay + card.sy * card.ch / 2; size: card.cw, card.ch; corner: min(if(ear > 14, 26, 18) + (card.round - 18), min(card.cw, card.ch) / 2) }
+        // Below a wave row the card is coffee to its very edge: a golden layer behind, the goo's own coffee in front,
+        // each lapping its own way. It is drawn here, over the whole card, because the rows have padding and cannot reach
+        // the edge; a hair is left at the edge for the card's rim. card_split is where the surface stands (lib/card.luau).
+        group {
+            show: card_split > 0
+          path {
+            at: card.x0, card.y0 + card_split; color: #b8862e
+            move 1.5, 28
+            line 1.5 + (card.w - 3) * 0 / 12, 0 + 3 * sin(0 + 40 * time)
+            line 1.5 + (card.w - 3) * 1 / 12, 0 + 3 * sin(30 + 40 * time)
+            line 1.5 + (card.w - 3) * 2 / 12, 0 + 3 * sin(60 + 40 * time)
+            line 1.5 + (card.w - 3) * 3 / 12, 0 + 3 * sin(90 + 40 * time)
+            line 1.5 + (card.w - 3) * 4 / 12, 0 + 3 * sin(120 + 40 * time)
+            line 1.5 + (card.w - 3) * 5 / 12, 0 + 3 * sin(150 + 40 * time)
+            line 1.5 + (card.w - 3) * 6 / 12, 0 + 3 * sin(180 + 40 * time)
+            line 1.5 + (card.w - 3) * 7 / 12, 0 + 3 * sin(210 + 40 * time)
+            line 1.5 + (card.w - 3) * 8 / 12, 0 + 3 * sin(240 + 40 * time)
+            line 1.5 + (card.w - 3) * 9 / 12, 0 + 3 * sin(270 + 40 * time)
+            line 1.5 + (card.w - 3) * 10 / 12, 0 + 3 * sin(300 + 40 * time)
+            line 1.5 + (card.w - 3) * 11 / 12, 0 + 3 * sin(330 + 40 * time)
+            line 1.5 + (card.w - 3) * 12 / 12, 0 + 3 * sin(360 + 40 * time)
+            line card.w - 1.5, 28
+            close
+          }
+          path {
+            at: card.x0, card.y0 + card_split; color: coffee
+            move 1.5, card.h - card_split - 1.5 - 24
+            line 1.5 + (card.w - 3) * 0 / 12, 9 + 2.4 * sin(90 + -55 * time)
+            line 1.5 + (card.w - 3) * 1 / 12, 9 + 2.4 * sin(150 + -55 * time)
+            line 1.5 + (card.w - 3) * 2 / 12, 9 + 2.4 * sin(210 + -55 * time)
+            line 1.5 + (card.w - 3) * 3 / 12, 9 + 2.4 * sin(270 + -55 * time)
+            line 1.5 + (card.w - 3) * 4 / 12, 9 + 2.4 * sin(330 + -55 * time)
+            line 1.5 + (card.w - 3) * 5 / 12, 9 + 2.4 * sin(390 + -55 * time)
+            line 1.5 + (card.w - 3) * 6 / 12, 9 + 2.4 * sin(450 + -55 * time)
+            line 1.5 + (card.w - 3) * 7 / 12, 9 + 2.4 * sin(510 + -55 * time)
+            line 1.5 + (card.w - 3) * 8 / 12, 9 + 2.4 * sin(570 + -55 * time)
+            line 1.5 + (card.w - 3) * 9 / 12, 9 + 2.4 * sin(630 + -55 * time)
+            line 1.5 + (card.w - 3) * 10 / 12, 9 + 2.4 * sin(690 + -55 * time)
+            line 1.5 + (card.w - 3) * 11 / 12, 9 + 2.4 * sin(750 + -55 * time)
+            line 1.5 + (card.w - 3) * 12 / 12, 9 + 2.4 * sin(810 + -55 * time)
+            line card.w - 1.5, card.h - card_split - 1.5 - 24
+            curve card.w - 25.5, card.h - card_split - 1.5 via card.w - 1.5, card.h - card_split - 1.5
+            line 25.5, card.h - card_split - 1.5
+            curve 1.5, card.h - card_split - 1.5 - 24 via 1.5, card.h - card_split - 1.5
+            close
+          }
+        }
         column card_col {
             at: card.x0, card.y0
             padding: 8
@@ -188,49 +235,10 @@ part Rows {
                 on scroll hit { emit card_wheel((r.index + base) * 2 + if(wheel > 0, 1, 0)) }
             }
 
-            // ── a divider of coffee: golden coffee behind, the dark one in front, each lapping its own way ─────
+            // ── a divider of coffee: only room here, the coffee itself is drawn across the whole card (above) ──
             group {
                 size: w, 26
                 show: r.kind == wave
-                opacity: shown
-                path {
-                    at: 0, 0; color: #b8862e; opacity: 100%
-                    move -8, 26
-                    line (w + 16) * 0 / 12 - 8, 6 + 3 * sin(0 + 40 * time)
-                    line (w + 16) * 1 / 12 - 8, 6 + 3 * sin(30 + 40 * time)
-                    line (w + 16) * 2 / 12 - 8, 6 + 3 * sin(60 + 40 * time)
-                    line (w + 16) * 3 / 12 - 8, 6 + 3 * sin(90 + 40 * time)
-                    line (w + 16) * 4 / 12 - 8, 6 + 3 * sin(120 + 40 * time)
-                    line (w + 16) * 5 / 12 - 8, 6 + 3 * sin(150 + 40 * time)
-                    line (w + 16) * 6 / 12 - 8, 6 + 3 * sin(180 + 40 * time)
-                    line (w + 16) * 7 / 12 - 8, 6 + 3 * sin(210 + 40 * time)
-                    line (w + 16) * 8 / 12 - 8, 6 + 3 * sin(240 + 40 * time)
-                    line (w + 16) * 9 / 12 - 8, 6 + 3 * sin(270 + 40 * time)
-                    line (w + 16) * 10 / 12 - 8, 6 + 3 * sin(300 + 40 * time)
-                    line (w + 16) * 11 / 12 - 8, 6 + 3 * sin(330 + 40 * time)
-                    line (w + 16) * 12 / 12 - 8, 6 + 3 * sin(360 + 40 * time)
-                    line w + 8, 26
-                    close
-                }
-                path {
-                    at: 0, 0; color: paper; opacity: 100%
-                    move -8, 700
-                    line (w + 16) * 0 / 12 - 8, 15 + 2.4 * sin(90 + -55 * time)
-                    line (w + 16) * 1 / 12 - 8, 15 + 2.4 * sin(150 + -55 * time)
-                    line (w + 16) * 2 / 12 - 8, 15 + 2.4 * sin(210 + -55 * time)
-                    line (w + 16) * 3 / 12 - 8, 15 + 2.4 * sin(270 + -55 * time)
-                    line (w + 16) * 4 / 12 - 8, 15 + 2.4 * sin(330 + -55 * time)
-                    line (w + 16) * 5 / 12 - 8, 15 + 2.4 * sin(390 + -55 * time)
-                    line (w + 16) * 6 / 12 - 8, 15 + 2.4 * sin(450 + -55 * time)
-                    line (w + 16) * 7 / 12 - 8, 15 + 2.4 * sin(510 + -55 * time)
-                    line (w + 16) * 8 / 12 - 8, 15 + 2.4 * sin(570 + -55 * time)
-                    line (w + 16) * 9 / 12 - 8, 15 + 2.4 * sin(630 + -55 * time)
-                    line (w + 16) * 10 / 12 - 8, 15 + 2.4 * sin(690 + -55 * time)
-                    line (w + 16) * 11 / 12 - 8, 15 + 2.4 * sin(750 + -55 * time)
-                    line (w + 16) * 12 / 12 - 8, 15 + 2.4 * sin(810 + -55 * time)
-                    line w + 8, 700
-                    close
-                }
             }
 
             // ── a paragraph: as tall as its text ────────────────────────────────────────────────────────────

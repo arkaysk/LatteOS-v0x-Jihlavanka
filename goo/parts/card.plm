@@ -145,23 +145,6 @@ part Card {
         ellipse { at: card.ax, card.ay; radius: (ear * clamp(card.p * 3, 0, 1) + 1) * if(card.p > 0.02, 1, 0); blend: 4 + 30 * 4 * card.t * (1 - card.t) }
         line { from: card.bx, card.by; to: card.bx + cap.tx * cap.len * strip.dir, card.by + (1 - cap.tx) * cap.len * strip.dir; width: ear * 2 * clamp(card.p * 3, 0, 1) * if(cap.len > 0 and card.p > 0.02, 1, 0); blend: 4 + 30 * 4 * card.t * (1 - card.t) }
     }
-    // Below a `wave` row (card_split) the card is solid coffee to its edge: a second body under the rows, inset a hair
-    // so the first one's rim stays the card's outline. Its top corners are square, its bottom ones the card's.
-    let dk.ct = if(card.sy > 0, card.ay, card.ay - card.ch)
-    let dk.top = max(dk.ct, card.y0 + card_split)
-    let dk.bot = dk.ct + card.ch - 1.5
-    let dk.h = max(dk.bot - dk.top, 0)
-    let dk.cx = card.ax + card.sx * card.cw / 2
-    let dk.on = card.p > 0.02 and not card_dock and card_split > 0
-    // the ear sits in a bottom corner: the coffee keeps clear of it, and the glass wraps round it
-    let dk.e = if(card.sy < 0 and card_owner >= 0, ear + 4, 0)
-    let dk.lip = max(24, dk.e + 6)
-    body {
-        color: paper
-        opacity: if(dk.on, 1, 0)
-        box { at: dk.cx, dk.top + max(dk.h - dk.lip, 0) / 2; size: max(card.cw - 3, 0), max(dk.h - dk.lip, 0); corner: 3; blend: 10 }
-        box { at: dk.cx + card.sx * dk.e / 2, dk.bot - min(dk.h, dk.lip + 30) / 2; size: max(card.cw - 3 - dk.e, 0), min(dk.h, dk.lip + 30); corner: min(if(ear > 14, 26, 18) + (card.round - 18), min(card.cw, card.ch) / 2) - 1.5; blend: 10 }
-    }
     // The shore's panel: a plate like the shore's, rising out of it and reaching past the screen's edge, so
     // the two are one piece.
     group {
