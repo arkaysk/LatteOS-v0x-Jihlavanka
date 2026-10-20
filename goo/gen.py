@@ -99,7 +99,7 @@ def picks(n):
     # A property that follows, not a `let`: a `let` written here does not see the places' own names.
     for by, values in (
         # the drop a card grows from
-        ("card_owner", (("own.x", "home.x.{k}"), ("own.y", "home.y.{k}"), ("own.r", "goo.{k}.r * goo.{k}.zoom"))),
+        ("card_owner", (("own.x", "home.x.{k}"), ("own.y", "home.y.{k}"), ("own.r", "goo.{k}.r * goo.{k}.zoom"), ("own.rr", "rr.{k}"), ("own.dx", "x.{k}"), ("own.dy", "y.{k}"))),
         # the drop chosen from the keyboard
         ("kb_at", (("kb.x", "x.{k}"), ("kb.y", "y.{k}"), ("kb.r", "rr.{k}"), ("kb.edge", "goo.{k}.edge"))),
         # the drop that carries the performance strip

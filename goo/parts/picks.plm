@@ -6,6 +6,12 @@ part Picks {
     follow own.y = pick(max(card_owner, 0), home.y.0, home.y.1, home.y.2, home.y.3, home.y.4, home.y.5, home.y.6, home.y.7, home.y.8, home.y.9, home.y.10, home.y.11, home.y.12, home.y.13, home.y.14, home.y.15, home.y.16, home.y.17, home.y.18, home.y.19, home.y.20, home.y.21, home.y.22, home.y.23, home.y.24, home.y.25, home.y.26, home.y.27, home.y.28, home.y.29, home.y.30, home.y.31)
     prop own.r = 0 ~0ms
     follow own.r = pick(max(card_owner, 0), goo.0.r * goo.0.zoom, goo.1.r * goo.1.zoom, goo.2.r * goo.2.zoom, goo.3.r * goo.3.zoom, goo.4.r * goo.4.zoom, goo.5.r * goo.5.zoom, goo.6.r * goo.6.zoom, goo.7.r * goo.7.zoom, goo.8.r * goo.8.zoom, goo.9.r * goo.9.zoom, goo.10.r * goo.10.zoom, goo.11.r * goo.11.zoom, goo.12.r * goo.12.zoom, goo.13.r * goo.13.zoom, goo.14.r * goo.14.zoom, goo.15.r * goo.15.zoom, goo.16.r * goo.16.zoom, goo.17.r * goo.17.zoom, goo.18.r * goo.18.zoom, goo.19.r * goo.19.zoom, goo.20.r * goo.20.zoom, goo.21.r * goo.21.zoom, goo.22.r * goo.22.zoom, goo.23.r * goo.23.zoom, goo.24.r * goo.24.zoom, goo.25.r * goo.25.zoom, goo.26.r * goo.26.zoom, goo.27.r * goo.27.zoom, goo.28.r * goo.28.zoom, goo.29.r * goo.29.zoom, goo.30.r * goo.30.zoom, goo.31.r * goo.31.zoom)
+    prop own.rr = 0 ~0ms
+    follow own.rr = pick(max(card_owner, 0), rr.0, rr.1, rr.2, rr.3, rr.4, rr.5, rr.6, rr.7, rr.8, rr.9, rr.10, rr.11, rr.12, rr.13, rr.14, rr.15, rr.16, rr.17, rr.18, rr.19, rr.20, rr.21, rr.22, rr.23, rr.24, rr.25, rr.26, rr.27, rr.28, rr.29, rr.30, rr.31)
+    prop own.dx = 0 ~0ms
+    follow own.dx = pick(max(card_owner, 0), x.0, x.1, x.2, x.3, x.4, x.5, x.6, x.7, x.8, x.9, x.10, x.11, x.12, x.13, x.14, x.15, x.16, x.17, x.18, x.19, x.20, x.21, x.22, x.23, x.24, x.25, x.26, x.27, x.28, x.29, x.30, x.31)
+    prop own.dy = 0 ~0ms
+    follow own.dy = pick(max(card_owner, 0), y.0, y.1, y.2, y.3, y.4, y.5, y.6, y.7, y.8, y.9, y.10, y.11, y.12, y.13, y.14, y.15, y.16, y.17, y.18, y.19, y.20, y.21, y.22, y.23, y.24, y.25, y.26, y.27, y.28, y.29, y.30, y.31)
     prop kb.x = 0 ~0ms
     follow kb.x = pick(max(kb_at, 0), x.0, x.1, x.2, x.3, x.4, x.5, x.6, x.7, x.8, x.9, x.10, x.11, x.12, x.13, x.14, x.15, x.16, x.17, x.18, x.19, x.20, x.21, x.22, x.23, x.24, x.25, x.26, x.27, x.28, x.29, x.30, x.31)
     prop kb.y = 0 ~0ms

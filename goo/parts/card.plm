@@ -105,6 +105,8 @@ part Card {
     let card.by = if(card_owner >= 0, own.y, if(from_strip > 0, strip.y, tap.y))
     let card.sx = if(cap.h > 0, if(strip.dir > 0, if(card.bx + card.w + 12 <= W, 1, -1), if(card.bx - card.w - 12 >= 0, -1, 1)), if(card.bx + card.w + 12 <= W, 1, -1))
     let card.sy = if(cap.v > 0, if(strip.dir > 0, if(card.by + card.h + 12 <= H, 1, -1), if(card.by - card.h - 12 >= 0, -1, 1)), if(card.by > H / 2, if(card.by - card.h - 12 >= 0, -1, 1), if(card.by + card.h + 12 <= H, 1, -1)))
+    // the ear as drawn: it swells under the pointer, and the outline round it swells with it
+    let ear.d = if(card_owner >= 0, max(own.rr, own.r), ear)
     let card.x = card.bx - cap.h * card.sx * ear                 // from the drop's far side, so the card holds all of it
     let card.y = card.by - cap.v * card.sy * ear
     // docked, it stands on the shore's plate (46 px high, parts/shore.plm), flush with the screen's right edge
@@ -142,7 +144,7 @@ part Card {
         smoke: 62% * card.glass
         refraction: 120% * card.glass
         box { at: card.ax + card.sx * card.cw / 2, card.ay + card.sy * card.ch / 2; size: card.cw * if(card.p > 0.02, 1, 0), card.ch; corner: min(if(ear > 14, 26, 18) + (card.round - 18), min(card.cw, card.ch) / 2) }
-        ellipse { at: card.ax, card.ay; radius: (ear * clamp(card.p * 3, 0, 1) + 1) * if(card.p > 0.02, 1, 0); blend: 4 + 30 * 4 * card.t * (1 - card.t) }
+        ellipse { at: card.ax + if(card_owner >= 0, own.dx - own.x, 0), card.ay + if(card_owner >= 0, own.dy - own.y, 0); radius: (ear.d * clamp(card.p * 3, 0, 1) + 1) * if(card.p > 0.02, 1, 0); blend: 4 + 30 * 4 * card.t * (1 - card.t) }
         line { from: card.bx, card.by; to: card.bx + cap.tx * cap.len * strip.dir, card.by + (1 - cap.tx) * cap.len * strip.dir; width: ear * 2 * clamp(card.p * 3, 0, 1) * if(cap.len > 0 and card.p > 0.02, 1, 0); blend: 4 + 30 * 4 * card.t * (1 - card.t) }
     }
     // The shore's panel: a plate like the shore's, rising out of it and reaching past the screen's edge, so
