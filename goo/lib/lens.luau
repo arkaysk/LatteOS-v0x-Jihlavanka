@@ -377,24 +377,29 @@ local function fill_ai()
             for _, x in ipairs(q.models or {}) do if x.id == msg.model then mm = x end end
             who = (q.name and tr(q.name) or msg.provider or "") .. (mm and (" · " .. mm.name) or "")
         end
-        local attached = type(msg.files) == "table" and #msg.files > 0 and ("\n📎 " .. table.concat(msg.files, ", ")) or ""
+        local attached = (type(msg.files) == "table" and #msg.files > 0 and ("\n📎 " .. table.concat(msg.files, ", ")) or "") .. (msg.stopped and ("\n(" .. tr("stopped") .. ")") or "")
         rows[#rows + 1] = { who = who, body = (msg.content or "") .. attached, mine = msg.role == "user", failed = msg.ok == false }
     end
-    if ai.waiting then rows[#rows + 1] = { who = p and tr(p.name) or "", body = tr("Thinking…"), mine = false, failed = false } end
+    if ai.waiting then rows[#rows + 1] = { who = p and tr(p.name) or "", body = ai.live ~= "" and ai.live or tr("Thinking…"), mine = false, failed = false } end
     while #rows > 40 do table.remove(rows, 1) end
     model.aimsg = rows
     fact.ai_wait = ai.waiting
     fact.ai_gen = fact.ai_gen + 1
-    -- the models to choose from: each service a heading, its models under it
+    -- the models to choose from: the service chosen opens into its models, every other is one line that takes it
     local choices, list = {}, {}
     for _, q in ipairs(offered()) do
-        if #list >= 9 then break end
-        list[#list + 1] = { name = string.upper(tr(q.name)), hint = q["local"] and tr("on this computer") or "", on = false, head = true }
-        choices[#list] = false
-        for _, x in ipairs(q.models) do
-            if #list >= 10 then break end
-            list[#list + 1] = { name = x.name, hint = "", on = p ~= nil and q.id == p.id and m ~= nil and x.id == m.id, head = false }
-            choices[#list] = { provider = q.id, model = x.id }
+        if #list >= 14 then break end
+        if p and q.id == p.id then
+            list[#list + 1] = { name = string.upper(tr(q.name)), hint = q["local"] and tr("on this computer") or "", on = false, head = true }
+            choices[#list] = false
+            for _, x in ipairs(q.models) do
+                if #list >= 14 then break end
+                list[#list + 1] = { name = x.name, hint = "", on = m ~= nil and x.id == m.id, head = false }
+                choices[#list] = { provider = q.id, model = x.id }
+            end
+        else
+            list[#list + 1] = { name = tr(q.name), hint = q.models[1] and q.models[1].name or "", on = false, head = false }
+            choices[#list] = { provider = q.id, model = q.models[1] and q.models[1].id or "" }
         end
     end
     -- and how hard the one chosen may think, where its tool lets that be said
@@ -411,9 +416,10 @@ local function fill_ai()
     model.aimodel = list
     text.ai_btn_center, text.ai_btn_settings, text.ai_btn_new = tr("Lens AI centre"), tr("Settings"), tr("New session")
     text.ic_ai_center, text.ic_ai_settings, text.ic_ai_new = icons["messages"], icons["settings"], icons["message-plus"]
-    text.ic_ai_send, text.ic_ai_chev, text.ic_ai_spark, text.ic_ai_check = icons["arrow-up"], icons["chevron-down"], icons["sparkles"], icons["check"]
+    text.ic_ai_send, text.ic_ai_chev, text.ic_ai_spark, text.ic_ai_check = icons[ai.waiting and "player-stop" or "arrow-up"], icons["chevron-down"], icons["sparkles"], icons["check"]
     text.ic_ai_plus, text.ic_ai_clip, text.ic_ai_shot, text.ic_ai_x = icons["plus"], icons["paperclip"], icons["screenshot"], icons["x"]
     text.ai_add_file, text.ai_add_shot = tr("Attach a file…"), tr("A picture of the screen")
+    text.ai_send_word = ai.waiting and tr("Stop") or tr("Send")
 end
 local function ai_send()
     local q = (text.ai_q or ""):gsub("^%s+", ""):gsub("%s+$", "")
@@ -430,17 +436,29 @@ local function ai_send()
     end
     ai.files = {}
     ai.msgs[#ai.msgs + 1] = { role = "user", content = q, provider = p.id, model = m.id, files = names }
-    ai.waiting = true
+    ai.waiting, ai.live = true, ""
     fill_ai()
-    run("latte-ai", args, function(out)
-        ai.waiting = false
-        local ok, r = pcall(json.decode, out or "")
+    -- the answer comes in pieces: each shows as it comes (a refresh at most every 120 ms), the last line is the whole
+    args[#args + 1] = "--stream"
+    local final, due = nil, false
+    ai.job = spawn("latte-ai", args, function(line)
+        local ok, m = pcall(json.decode, line or "")
+        if not ok or type(m) ~= "table" then return end
+        if m.delta then
+            ai.live = ai.live .. m.delta
+            if not due then due = true after(120, function() due = false if ai.waiting then fill_ai() end end) end
+        elseif m.chat then
+            final = m
+        end
+    end, function()
+        ai.waiting, ai.job = false, nil
+        local ok, r = final ~= nil, final
         if ok and type(r) == "table" and r.chat then
             kept.ai.chat = r.chat
             ai.usage = r.usage or {}
             -- the account's limits are the account's, not the conversation's: kept for the next session too
             if ai.usage.limits and next(ai.usage.limits) then kept.ai.limits = ai.usage.limits end
-            ai.msgs[#ai.msgs + 1] = { role = "assistant", content = r.answer or "", provider = p.id, model = m.id, ok = r.ok }
+            ai.msgs[#ai.msgs + 1] = { role = "assistant", content = r.answer or "", provider = p.id, model = m.id, ok = r.ok, stopped = r.stopped }
             save()
         else
             ai.msgs[#ai.msgs + 1] = { role = "assistant", content = tr("No answer came."), provider = p.id, model = m.id, ok = false }
@@ -449,6 +467,8 @@ local function ai_send()
     end)
 end
 on("ai_send", ai_send)
+-- stopped: latte-ai keeps what had come and says so in its last line
+on("ai_stop", function() if ai.job then kill(ai.job, "term") end end)
 on("text:ai_q", function() fact.ai_typed = (text.ai_q or "") ~= "" end)
 on("ai_pick", function(i)
     local c = ai.choices[(i or 0) + 1]

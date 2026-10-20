@@ -33,6 +33,7 @@ part Ai {
     text ic_ai_x = ""
     text ai_files = ""                         // what is attached to the next question, by name
     text ai_add_file = ""
+    text ai_send_word = ""                     // what the button that sends says: send, or stop while an answer comes
     text ai_add_shot = ""
     fact ai_nfiles = 0
     fact ai_plus = false                       // the little menu of what can be attached is out
@@ -44,6 +45,7 @@ part Ai {
     fact ai_menu = false                       // the models are out to choose from
     fact ai_gen = 0                            // the logic counts up when the messages change: the list goes to the end
     event ai_send ->
+    event ai_stop ->
     event ai_pick ->                           // a model was chosen: its place in aimodel
     event ai_center ->
     event ai_settings ->
@@ -123,8 +125,10 @@ part Ai {
         on press chip_hit { toggle ai_menu }
         ellipse { at: card.w - 16 - 30, ai.fy + ai.fh - 22; radius: 16; color: if(ai.k == 0, #c96442, if(ai.k == 1, #0b57d0, if(ai.k == 2, #0d0d0d, if(ai.k == 3, #2f7bf5, #f7c873)))); opacity: if(ai_typed or ai_wait, 100%, 35%) * if(ai_wait, 55% + 45% * sin(time * 360), 100%) }
         text ic_ai_send { at: card.w - 16 - 30, ai.fy + ai.fh - 22; anchor: center; size: 17; color: if(ai.k == 0, #ffffff, if(ai.k == 1, #ffffff, if(ai.k == 2, #ffffff, if(ai.k == 3, #ffffff, #2a1e17)))); family: "tabler-icons" }
-        zone box send_hit { at: card.w - 16 - 30, ai.fy + ai.fh - 22; size: 36, 36; cursor: pointer; active: ai.on and ai_typed and not ai_wait; label: "Send"; role: button }
-        on press send_hit { emit ai_send }
+        // while an answer comes, the same button stops it
+        zone box send_hit { at: card.w - 16 - 30, ai.fy + ai.fh - 22; size: 36, 36; cursor: pointer; active: ai.on and (ai_typed or ai_wait); label: "{ai_send_word}"; role: button }
+        on press send_hit while ai_wait { emit ai_stop }
+        on press send_hit while not ai_wait { emit ai_send }
         on submit ai_q { emit ai_send }
 
         // ── on the coffee: the ways on, as icons that say their name under the pointer; and what is used ─────
