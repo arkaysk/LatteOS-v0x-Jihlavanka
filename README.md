@@ -6,6 +6,9 @@
 prvky nahrádzajú **tekuté kávové kvapky** (goo): pružia, lepia sa k okraju obrazovky aj k sebe, žijú vlastným
 pohybom a reagujú na kurzor. Všetko sa ovláda myšou.
 
+<img width="1451" height="823" alt="obrázok" src="https://github.com/user-attachments/assets/1e535e9c-0dca-4e8b-913f-9e024b759f13" />
+
+
 ## Smer vývoja (rozhodnutie 5. 10. 2026)
 
 - **LatteOS GOO je jediná edícia.** Doterajšie „gamerdistro“ sa ním stáva.
