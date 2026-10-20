@@ -383,9 +383,10 @@ skvelo vyzerajuci ocean priamo v html https://github.com/Noniv/web-ocean
 goo shader https://www.shadertoy.com/view/f3tXzX
     https://www.shadertoy.com/view/3sySRK
     https://www.shadertoy.com/view/7XtSD7 rain
-  - (Claude, 20. 10.) Pozor na licenciu: diela na Shadertoy sú bez inej zmienky **CC BY-NC-SA 3.0** (nekomerčné), do
-    LatteOS sa preto nekopírujú. Berie sa iba myšlienka: kvapky na skle (rain) pre pozadie karty počasia v ClockGoo
-    a pre prihlásenie pri daždi; goo shader (metaballs cez signed distance) robí pleamar sám (`body` a `blend`).
+  - (Claude, 20. 10.; opravené podľa používateľa: LatteOS nie je na komerčné použitie) Diela na Shadertoy sú bez inej
+    zmienky **CC BY-NC-SA 3.0**. Prevziať sa smú: ako samostatný súbor shadera, ktorý si ponechá svoju licenciu
+    (zvyšok LatteOS ostáva MIT), s menom autora a odkazom v hlavičke súboru a v `TRETIE-STRANY.md`. Kvapky na skle
+    (rain) sa hodia na pozadie karty počasia v ClockGoo a na prihlásenie pri daždi; goo (metaballs) robí pleamar sám.
 
  https://github.com/natepayn3/Vitreus otvor zdrojovy kod vitreusu a prečitaj si v kode ako robi ake efekty.
     ako vizualizuje posuvniky
