@@ -368,8 +368,10 @@ Schválené 12. 10. 2026. Pracuje sa **zhora nadol, neskáče sa**; nový nápad
       Hotové 21. 10.: zápis a merania v `inspo/ai-na-ploche.md`; llama.cpp b11752 a modely v `/data/ai`; služba
       „Lokálna AI“ (llama-server na 127.0.0.1:8790, spúšťa sa pri prvej otázke; Qwen3.5 2B rýchly, 4B na rozhovor).
       **Do inštalátora:** llama.cpp a model ako voliteľná súčasť (kam: `/usr/share/latteos/ai` alebo dáta).
-    - d. [ ] Lens AI centrum › Služby: vlastné kľúče API (kľúčenka systému cez `secret-tool`), priame volanie API
+    - d. [x] Lens AI centrum › Služby: vlastné kľúče API (kľúčenka systému cez `secret-tool`), priame volanie API
       (Anthropic, OpenAI, Google, xAI, Mistral) popri účtoch.
+      Hotové 21. 10.: gnome-keyring (PAM greetd ho odomkne pri prihlásení), vlastné servery s OpenAI API;
+      overené proti llama-serveru a oddelenej kľúčenke; skutočné kľúče služieb neoverené (žiadne nie sú).
     - e. [ ] Lens AI centrum › Modely: skutočné zoznamy modelov, ktoré sa ukážu v LensGoo, predvolený model.
     - f. [ ] Okno rozhovoru: postupné písanie, zastavenie, nové vygenerovanie, úprava otázky, formátovanie a kód.
     - g. [ ] Porovnanie: jedna otázka viacerým AI vedľa seba.

@@ -244,6 +244,8 @@ optional /usr/lib64/latteos/hyprbars.so: hyprbars (github.com/hyprwm/hyprland-pl
 package: wine winetricks cabextract unshield innoextract 7zip icoutils bubblewrap    # Barista: Windows programs, each in a folder and a fence of its own
 optional: wine-dxvk wine-dxvk-d3d9 wine-dxvk-d3d8 mingw32-wine-gecko mingw64-wine-gecko wine-mono    # Direct3D 8 to 11 over Vulkan; web views and .NET inside Wine
 optional: umu-launcher protontricks lutris gamemode mangohud dosbox-staging xorriso     # Proton outside Steam (GE-Proton in /opt/latteos/proton), other runners and tools
+optional: gnome-keyring                                              # the keyring (Secret Service): keys of AI services of one's own (Lens AI centre); greetd's PAM unlocks it at login
+optional ~/.local/share/latteos/ai or /data/ai: llama.cpp (github.com/ggml-org/llama.cpp releases, llama/*/llama-server) and models/*.gguf (Qwen3.5 2B and 4B): the AI on this computer
 optional: yaru-icon-theme                                             # the icons files, folders and apps are shown with; others installed are offered in the Settings
 optional /usr/bin/skwd-wall-v2: skwd-wall (github.com/liixini/skwd-wall; Fedora: dnf copr enable piixini/skwd-wall-v2, then skwd-wall-v2): the wallpaper picker, transitions, scenes, and the colours of the theme "from the wallpaper"
 optional /usr/bin/whyd: whyd (github.com/vmaltarello/whyd, the rpm of its releases): SAFE then says why the last session ended, from the journal
