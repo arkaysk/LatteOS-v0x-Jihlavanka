@@ -28,6 +28,10 @@ No API key: the official tool of a service answers, with the account the user is
   latte-ai forget-key ID    takes it out of the keyring
   latte-ai server add NAME URL     a server of the user's own that speaks the OpenAI API (llama-server, Ollama…)
   latte-ai server remove ID
+  latte-ai models           every model of every service there is, for the Lens AI centre: [{"id", "name", "models":
+                            [{"id", "name", "hidden", "default"}]}]; `providers` leaves the hidden ones out and puts
+                            the default first
+  latte-ai model show|hide|default PROVIDER MODEL
   latte-ai chats            the conversations, the newest first: [{"id", "title", "provider", "model", "updated", "count"}]
   latte-ai chat ID          one conversation whole: {"id", "title", "provider", "model", "messages": [{"role", "content",
                             "provider", "model", "at"}], "usage"}
@@ -282,6 +286,40 @@ def api_ask(ident):
     return ask
 
 
+def codex_models():
+    """The models ChatGPT's Codex offers the account, and how hard each may think; asked once a day."""
+    cache = os.path.join(ROOM, "models-chatgpt.json")
+    try:
+        if os.path.getmtime(cache) > datetime.datetime.now().timestamp() - 86400:
+            with open(cache) as f:
+                return json.load(f)
+    except (OSError, ValueError):
+        pass
+    try:
+        d = json.loads(subprocess.run(["codex", "debug", "models"], capture_output=True, text=True, timeout=30, env=dict(os.environ, PATH=SEARCH)).stdout)
+        out = [{"id": m["slug"], "name": m.get("display_name") or m["slug"], "efforts": [e["effort"] for e in m.get("supported_reasoning_levels", [])]}
+               for m in d.get("models", []) if m.get("visibility") == "list"]
+    except (OSError, ValueError, KeyError, subprocess.TimeoutExpired):
+        return [{"id": "", "name": "Auto"}]
+    os.makedirs(ROOM, exist_ok=True)
+    with open(cache, "w") as f:
+        json.dump(out, f)
+    return out or [{"id": "", "name": "Auto"}]
+
+
+CHOICE = os.path.join(os.environ.get("XDG_CONFIG_HOME") or os.path.expanduser("~/.config"), "latteos", "ai-models.json")
+
+
+def choice():
+    """The user's word on the models: which are hidden ("provider/model") and which one is the default."""
+    try:
+        with open(CHOICE) as f:
+            c = json.load(f)
+        return {"hidden": list(c.get("hidden", [])), "default": c.get("default", "")}
+    except (OSError, ValueError, AttributeError):
+        return {"hidden": [], "default": ""}
+
+
 def grok_models():
     try:
         out = subprocess.run(["grok", "models"], capture_output=True, text=True, timeout=20, env=dict(os.environ, PATH=SEARCH)).stdout
@@ -322,7 +360,7 @@ PROVIDERS = {
                "models": [{"id": "", "name": "Auto"}]},
     "chatgpt": {"name": "ChatGPT", "local": False, "style": "chatgpt", "tool": "codex", "command": codex,
                 "login": ["codex", "login"], "logout": ["codex", "logout"],
-                "models": [{"id": "", "name": "Auto"}], "efforts": ["low", "medium", "high"]},
+                "models": codex_models, "efforts": ["low", "medium", "high", "xhigh", "max"]},
     "grok": {"name": "Grok", "local": False, "style": "grok", "tool": "grok", "command": grok, "models": grok_models,
              "login": ["grok", "login"], "logout": ["grok", "logout"]},
     "mistral": {"name": "Mistral", "local": False, "style": "own", "tool": "vibe", "command": vibe, "login": ["vibe"],
@@ -341,7 +379,8 @@ def turned_off():
         return False
 
 
-def providers(all=False):
+def providers(all=False, every=False):
+    """What can answer; `every` keeps the models the user hid, for the Lens AI centre to show them."""
     if turned_off() and not all:
         return []
     out = []
@@ -356,6 +395,14 @@ def providers(all=False):
             models = api_models(i)
             if models:
                 out.append({"id": i, "name": a["name"], "local": False, "style": a["style"], "models": models, "efforts": []})
+    if every:
+        return out
+    c = choice()
+    for p in out:
+        p["models"] = [m for m in p["models"] if "%s/%s" % (p["id"], m["id"]) not in c["hidden"]]
+        p["models"].sort(key=lambda m: "%s/%s" % (p["id"], m["id"]) != c["default"])
+    out = [p for p in out if p["models"]]
+    out.sort(key=lambda p: not c["default"].startswith(p["id"] + "/"))
     return out
 
 
@@ -529,6 +576,26 @@ def main(a):
         with open(SERVERS, "w") as f:
             json.dump([{"id": x["id"], "name": x["name"], "url": x["url"]} for x in mine], f, ensure_ascii=False, indent=1)
         secret(a[2], forget=True)
+        return 0
+    if a == ["models"]:
+        c = choice()
+        out = [{"id": p["id"], "name": p["name"], "models": [dict(m, hidden="%s/%s" % (p["id"], m["id"]) in c["hidden"],
+                                                                  default="%s/%s" % (p["id"], m["id"]) == c["default"]) for m in p["models"]]}
+               for p in providers(True, True)]
+        print(json.dumps(out, ensure_ascii=False))
+        return 0
+    if len(a) == 4 and a[0] == "model" and a[1] in ("show", "hide", "default"):
+        c, key = choice(), "%s/%s" % (a[2], a[3])
+        if a[1] == "default":
+            c["default"] = key
+            c["hidden"] = [h for h in c["hidden"] if h != key]
+        elif a[1] == "hide":
+            c["hidden"] = sorted(set(c["hidden"] + [key]))
+        else:
+            c["hidden"] = [h for h in c["hidden"] if h != key]
+        os.makedirs(os.path.dirname(CHOICE), exist_ok=True)
+        with open(CHOICE, "w") as f:
+            json.dump(c, f, ensure_ascii=False, indent=1)
         return 0
     if a == ["stop"]:
         subprocess.run(["pkill", "-f", "llama-server.*--port %d" % LOCAL_PORT])

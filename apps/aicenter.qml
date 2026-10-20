@@ -12,7 +12,7 @@ import "common"
 ShellRoot {
     id: shell
     readonly property var words: (Quickshell.env("LATTE_APP_ARGS") || "").split("\n").filter(w => w !== "")
-    property string page: "chats"              // chats · services
+    property string page: "chats"              // chats · models · services
     property string only: ""                   // the side shows only this service's conversations; "" all
     property string open: ""                   // the conversation shown
     property string find: ""
@@ -48,6 +48,9 @@ ShellRoot {
     Ask { id: keyq; onDone: shell.keys = data || [] }
     Ask { id: keyer; onDone: { keyq.ask(["keys"]); who.ask(["providers", "all"]) } }
     property var keys: []                      // the services one can bring a key to, and the user's own servers
+    Ask { id: modelq; onDone: shell.models = data || [] }
+    Ask { id: modeler; onDone: { modelq.ask(["models"]); who.ask(["providers", "all"]) } }
+    property var models: []                    // every model of every service, with the user's word on each
     // a key goes to latte-ai on its standard input, never on its command line, where anyone could read it
     Process { id: keeper; property string id: ""; property string key: ""; stdinEnabled: true
               onStarted: { write(key + "\n"); key = ""; stdinEnabled = false }
@@ -62,7 +65,8 @@ ShellRoot {
     Timer { id: later; interval: 2500; onTriggered: svc.ask(["services"]) }
     Component.onCompleted: {
         list.ask(["chats"]); who.ask(["providers", "all"]); svc.ask(["services"]); keyq.ask(["keys"])
-        if (words[0] === "services") page = "services"
+        if (words[0] === "services" || words[0] === "models") page = words[0]
+        if (page === "models") modelq.ask(["models"])
         else if (words[0]) choose(words[0])
     }
 
@@ -78,7 +82,7 @@ ShellRoot {
 
     AppWindow {
         title: I18n.tr("Lens AI centre")
-        heading: shell.page === "services" ? I18n.tr("Services") : (shell.chat ? shell.chat.title : I18n.tr("Conversations"))
+        heading: shell.page === "services" ? I18n.tr("Services") : shell.page === "models" ? I18n.tr("Models") : (shell.chat ? shell.chat.title : I18n.tr("Conversations"))
         implicitWidth: 1120; implicitHeight: 760
         searchHint: I18n.tr("Find a conversation…")
         onSearched: text => shell.find = text
@@ -117,6 +121,7 @@ ShellRoot {
                 Label { visible: shell.chats.length === 0; x: 14; width: 200; wrapMode: Text.WordWrap; color: Theme.dim; font.pixelSize: 12
                         text: I18n.tr("No conversation yet. LensGoo's AI tab (Win+C) keeps its conversations here too.") }
                 Item { width: 1; height: 10 }
+                Nav { text: I18n.tr("Models"); icon: "sparkles"; on: shell.page === "models"; onPressed: { shell.page = "models"; modelq.ask(["models"]) } }
                 Nav { text: I18n.tr("Services"); icon: "plug-connected"; on: shell.page === "services"; onPressed: { shell.page = "services"; svc.ask(["services"]) } }
             }
         ]
@@ -165,6 +170,31 @@ ShellRoot {
                        } }
                 Pill { id: send; anchors.right: parent.right; anchors.rightMargin: 10; anchors.verticalCenter: parent.verticalCenter; implicitHeight: 34
                        icon: "arrow-up"; strong: true; busy: shell.waiting; text: I18n.tr("Send"); onPressed: { shell.send(line.text); line.text = "" } } }
+        }
+
+        // ── the models: which show in LensGoo, and which one answers first ───────────────────────────────────
+        Scroll {
+            id: modelPage
+            visible: shell.page === "models"
+            Label { width: modelPage.room; wrapMode: Text.WordWrap; color: Theme.dim
+                    text: I18n.tr("Every model your services and keys offer. Those that are on show in LensGoo's choice; the star marks the one a new conversation begins with.") }
+            Waiting { visible: shell.models.length === 0 && modelq.running; text: I18n.tr("Asking the services…"); width: modelPage.room }
+            Repeater { model: shell.models
+                Column { id: mg; required property var modelData; width: modelPage.room; spacing: 6
+                    Row { spacing: 10; height: 30
+                        Rectangle { width: 10; height: 10; radius: 5; color: shell.colour(mg.modelData.id); anchors.verticalCenter: parent.verticalCenter }
+                        Label { text: I18n.tr(mg.modelData.name); font.pixelSize: 16; font.weight: 700; anchors.verticalCenter: parent.verticalCenter } }
+                    Repeater { model: mg.modelData.models
+                        Rectangle { id: mr; required property var modelData; width: modelPage.room; height: 48; radius: 14; color: Theme.card
+                            Glyph { x: 16; name: "star"; font.pixelSize: 18; color: mr.modelData.default ? Theme.gold : Theme.faint; anchors.verticalCenter: parent.verticalCenter
+                                MouseArea { anchors.fill: parent; anchors.margins: -8; cursorShape: Qt.PointingHandCursor; onClicked: modeler.ask(["model", "default", mg.modelData.id, mr.modelData.id]) } }
+                            Row { x: 48; spacing: 12; anchors.verticalCenter: parent.verticalCenter
+                                Label { text: mr.modelData.name; font.weight: 600; opacity: mr.modelData.hidden ? 0.5 : 1 }
+                                Label { visible: mr.modelData.default; text: I18n.tr("default"); color: Theme.gold; font.pixelSize: 12; anchors.verticalCenter: parent.verticalCenter } }
+                            Rectangle { width: 46; height: 26; radius: 13; color: mr.modelData.hidden ? Theme.raised : Theme.gold; anchors.right: parent.right; anchors.rightMargin: 16; anchors.verticalCenter: parent.verticalCenter
+                                Rectangle { width: 20; height: 20; radius: 10; y: 3; x: mr.modelData.hidden ? 3 : 23; color: mr.modelData.hidden ? Theme.dim : Theme.inkOnGold }
+                                MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor
+                                            onClicked: modeler.ask(["model", mr.modelData.hidden ? "show" : "hide", mg.modelData.id, mr.modelData.id]) } } } } } }
         }
 
         // ── the services: which are there, which is signed in; signing in and out ────────────────────────────
