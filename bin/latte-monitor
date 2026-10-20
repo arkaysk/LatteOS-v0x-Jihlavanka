@@ -52,6 +52,20 @@ def out(*argv, timeout=15):
         return ""
 
 
+def guard():
+    """GuardDog's reading of who owns a process (bin/latte-guarddog), or None where it is not there."""
+    try:
+        import importlib.machinery, importlib.util
+        sys.dont_write_bytecode = True                   # a command is not a module: no __pycache__ beside it
+        path = shutil.which("latte-guarddog") or os.path.join(os.path.dirname(os.path.abspath(__file__)), "latte-guarddog")
+        loader = importlib.machinery.SourceFileLoader("latte_guarddog", path)
+        module = importlib.util.module_from_spec(importlib.util.spec_from_loader(loader.name, loader))
+        loader.exec_module(module)
+        return module
+    except (OSError, ImportError, SyntaxError):
+        return None
+
+
 # ── what runs ────────────────────────────────────────────────────────────────────────────────────────────────
 def processes():
     """{pid: (name, parent, ticks of processor used, bytes of memory, uid)}"""
@@ -113,7 +127,8 @@ def grouped(now, before, elapsed, ncpu, shown):
             user = pwd.getpwuid(now[pids[0]][4]).pw_name
         except KeyError:
             user = str(now[pids[0]][4])
-        return {"name": name, "pids": pids, "cpu": round(cpu, 1), "mem": sum(now[p][3] for p in pids), "user": user}
+        return {"name": name, "pids": pids, "cpu": round(cpu, 1), "mem": sum(now[p][3] for p in pids), "user": user,
+                "owner": dog.owner(pids[0]) if dog else "user"}
 
     for pid in sorted(shown & set(now)):
         pids = []
@@ -126,6 +141,9 @@ def grouped(now, before, elapsed, ncpu, shown):
     background = [line(name, pids) for (name, _), pids in rest.items()]
     order = lambda l: sorted(l, key=lambda a: (-a["cpu"], -a["mem"]))
     return order(apps), order(background)[:120]
+
+
+dog = guard()
 
 
 def watch(seconds):
@@ -142,7 +160,7 @@ def watch(seconds):
             "swap": (int(mem.get("SwapTotal", 0)) - int(mem.get("SwapFree", 0))) * 1024, "swap_total": int(mem.get("SwapTotal", 0)) * 1024,
             "net": {"down": round((io1[0] - io0[0]) / dt), "up": round((io1[1] - io0[1]) / dt)},
             "disk": {"read": round((io1[2] - io0[2]) / dt), "write": round((io1[3] - io0[3]) / dt)},
-            "apps": apps, "background": background}), flush=True)
+            "apps": apps, "background": background, "guard": dog.status() if dog else []}), flush=True)
         before, cpu0, io0, t0 = now, cpu1, io1, t1
         time.sleep(seconds)
 

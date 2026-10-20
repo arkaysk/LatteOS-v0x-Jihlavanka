@@ -1,0 +1,11 @@
+# GuardDog: watches that what the desktop needs is running and starts again what is not (bin/latte-guarddog).
+# It belongs to the session's target and goes when the session ends.
+[Unit]
+Description=LatteOS GuardDog
+PartOf=latte-session.target
+After=latte-session.target latte-goo.service
+
+[Service]
+ExecStart=/usr/bin/latte-guarddog watch
+Restart=on-failure
+RestartSec=2

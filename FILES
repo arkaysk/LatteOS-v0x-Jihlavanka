@@ -18,6 +18,7 @@
 /usr/bin/latte-app                                      <- bin/latte-app
 /usr/bin/latte-apps                                     <- bin/latte-apps
 /usr/bin/latte-devices                                  <- bin/latte-devices
+/usr/bin/latte-guarddog                                 <- bin/latte-guarddog
 /usr/bin/latte-monitor                                  <- bin/latte-monitor
 /usr/bin/latte-net                                      <- bin/latte-net
 /usr/bin/latte-network                                  <- bin/latte-network
@@ -154,6 +155,7 @@
 /usr/lib/systemd/user/latte-session.target              <- system/systemd/latte-session.target
 /usr/lib/systemd/user/latte-goo.service                 <- system/systemd/latte-goo.service
 /usr/lib/systemd/user/latte-idle.service                <- system/systemd/latte-idle.service
+/usr/lib/systemd/user/latte-guarddog.service             <- system/systemd/latte-guarddog.service
 /usr/lib/systemd/user/latte-goo-side@.service           <- system/systemd/latte-goo-side@.service
 /usr/lib/tmpfiles.d/latteos.conf                        <- system/systemd/latteos.tmpfiles
 /etc/latteos/boot.toml                                  <- system/boot.toml

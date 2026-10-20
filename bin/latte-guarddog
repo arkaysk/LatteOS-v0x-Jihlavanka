@@ -1,0 +1,214 @@
+#!/usr/bin/env python3
+"""latte-guarddog: GuardDog. It watches that what the desktop needs is running, starts again what is not, and says
+whose every process is.
+
+  latte-guarddog watch          the guard itself (a user service of the session): every few seconds it looks at each
+                                component, starts again the one that is down, and keeps the state in
+                                $XDG_RUNTIME_DIR/latteos/guarddog.json
+  latte-guarddog status         the state: [{"id", "name", "state", "restarts"}]; state is up · restarted · down ·
+                                failed (it would not stay up) · off (it is not wanted now)
+  latte-guarddog owners         {"pid": "linux" | "latteos" | "user"} for every process
+  latte-guarddog owner PID…     the same for the pids given
+
+A component that is gone is started again after two looks in a row (a restart that someone does on purpose takes a
+moment). One that is started five times in five minutes and still falls is let be for five minutes, and the user is
+told once; it is not started over and over.
+
+The three owners: "linux" is the kernel and the system the distribution brings (kernel threads, systemd, the
+services of the system and of the user's session: sound, portals, the bus), "latteos" is what LatteOS is made of
+(its commands, its scene, the compositor, the wallpaper, the apps in /usr/share/latteos), "user" is everything the
+user started: their programs.
+"""
+import json, os, re, shutil, subprocess, sys, time
+
+UID = os.getuid()
+RUN = os.path.join(os.environ.get("XDG_RUNTIME_DIR") or "/tmp", "latteos")
+STATE = os.path.join(RUN, "guarddog.json")
+FLAG = os.path.join(os.environ.get("XDG_CONFIG_HOME") or os.path.expanduser("~/.config"), "latteos", "desktop-icons")
+EVERY, MISSES, TRIES, WINDOW, REST = 5, 2, 5, 300, 300
+
+
+# ── whose a process is ────────────────────────────────────────────────────────────────────────────────────────
+# what LatteOS is made of, by the name of the program or where it stands
+LATTEOS = re.compile(r"(^|/)(latte-[\w.-]+|pleamar(-wm)?|Hyprland|hyprctl|labwc|greetd|swaybg|mpvpaper|skwd-[\w-]+|cliphist|hypridle)$")
+
+
+SYSTEM = {"systemd", "(sd-pam)", "sshd", "sshd-session", "Xwayland", "dbus-broker", "dbus-broker-lau"}
+
+
+def read(path):
+    try:
+        with open(path, "rb") as f:
+            return f.read().decode(errors="replace")
+    except OSError:
+        return ""
+
+
+def owner(pid, comm=None, ppid=None, uid=None, cgroup=None, cmdline=None):
+    """"linux", "latteos" or "user" for a process; the facts it is asked about are read from /proc if not given."""
+    if comm is None:
+        stat = read("/proc/%d/stat" % pid)
+        if not stat:
+            return "user"
+        comm = stat[stat.find("(") + 1:stat.rfind(")")]
+        ppid = int(stat[stat.rfind(")") + 2:].split()[1])
+    if pid in (1, 2) or ppid == 2:
+        return "linux"                                   # the kernel's own threads, and systemd
+    if cmdline is None:
+        cmdline = read("/proc/%d/cmdline" % pid).replace("\0", " ").strip()
+    if cgroup is None:
+        cgroup = read("/proc/%d/cgroup" % pid).strip().rsplit(":", 1)[-1]
+    unit = cgroup.rstrip("/").rsplit("/", 1)[-1]
+    argv0 = cmdline.split(" ")[0] if cmdline else comm
+    if comm in SYSTEM or unit == "init.scope":
+        return "linux"                                   # systemd of the session, the login's helpers, the X11 layer
+    if (unit.startswith("latte") or LATTEOS.search(argv0) or LATTEOS.search(comm) or "/usr/share/latteos/" in cmdline
+            or "/usr/libexec/latte" in cmdline or "cliphist" in cmdline or re.search(r"(^|[ /])latte-[\w.-]+", cmdline)):
+        return "latteos"
+    if uid is None:
+        try:
+            uid = os.stat("/proc/%d" % pid).st_uid
+        except OSError:
+            uid = UID
+    # the system and the services of the user's session (sound, portals, the bus) are the distribution's;
+    # a program the user started sits in an app scope, or in the session itself
+    if uid != UID or cgroup.startswith(("/system.slice", "/init.scope")):
+        return "linux"
+    if "/app.slice/app-" in cgroup or re.search(r"/session-\d+\.scope", cgroup):
+        return "user"
+    if "/session.slice/" in cgroup or "/background.slice/" in cgroup or unit.endswith(".service"):
+        return "linux"
+    return "user"
+
+
+def owners(pids=None):
+    if pids is None:
+        pids = [int(p) for p in os.listdir("/proc") if p.isdigit()]
+    return {pid: owner(pid) for pid in pids}
+
+
+# ── what must run ─────────────────────────────────────────────────────────────────────────────────────────────
+def quiet(*argv):
+    try:
+        return subprocess.run(argv, capture_output=True, text=True, timeout=15).returncode == 0
+    except (OSError, subprocess.TimeoutExpired):
+        return False
+
+
+def running(pattern):
+    return quiet("pgrep", "-u", str(UID), "-f", pattern)
+
+
+def unit_active(name):
+    return quiet("systemctl", "--user", "is-active", "--quiet", name)
+
+
+def start_detached(*argv):
+    try:
+        subprocess.Popen(argv, stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)
+    except OSError:
+        pass
+
+
+def wallpaper_up():
+    return unit_active("skwd-walld.service") or running(r"^(\S*/)?(swaybg|mpvpaper)( |$)")
+
+
+def icons_wanted():
+    return read(FLAG).strip() != "off"
+
+
+# id, the name shown (in English: the shell translates), whether it is wanted now, whether it is there, how to start it again
+COMPONENTS = [
+    ("goo", "The Goo scene", lambda: unit_active("latte-session.target"), lambda: unit_active("latte-goo.service"),
+     lambda: quiet("systemctl", "--user", "restart", "latte-goo.service")),
+    ("idle", "Lock and screen off", lambda: unit_active("latte-session.target"), lambda: unit_active("latte-idle.service"),
+     lambda: quiet("systemctl", "--user", "restart", "latte-idle.service")),
+    ("icons", "Icons on the desktop", icons_wanted, lambda: running(r"^qs .*apps/desktop\.qml"),
+     lambda: quiet("latte-desktop", "restart")),
+    ("wallpaper", "The wallpaper", lambda: unit_active("latte-session.target"), wallpaper_up,
+     lambda: quiet("latte-wall", "restore")),
+    ("clipboard", "Clipboard history", lambda: shutil.which("cliphist") is not None and shutil.which("wl-paste") is not None,
+     lambda: running(r"^wl-paste --watch cliphist"), lambda: start_detached("sh", "-c", "exec wl-paste --watch cliphist store")),
+    # the root's: the guard can say it is down, not start it
+    ("net", "Cutting off the internet", lambda: os.path.exists("/usr/libexec/latte-netd"), lambda: quiet("systemctl", "is-active", "--quiet", "latte-netd.service"), None),
+]
+
+
+def tell_failed(name):
+    if shutil.which("notify-send"):
+        start_detached("notify-send", "-u", "critical", "-a", "LatteOS", "GuardDog", "%s would not stay up." % name)
+
+
+def watch():
+    os.makedirs(RUN, exist_ok=True)
+    mine = {c[0]: {"id": c[0], "name": c[1], "state": "up", "restarts": 0, "missed": 0, "tries": [], "rest": 0, "told": False} for c in COMPONENTS}
+    while True:
+        now = time.monotonic()
+        for ident, name, wanted, alive, start in COMPONENTS:
+            c = mine[ident]
+            try:
+                if not wanted():
+                    c["state"], c["missed"] = "off", 0
+                    continue
+                if alive():
+                    if c["state"] in ("down", "failed", "off"):
+                        c["state"] = "up"
+                    c["missed"], c["told"] = 0, False
+                    continue
+                c["missed"] += 1
+                if start is None:
+                    c["state"] = "down"
+                    continue
+                if c["state"] == "failed" and now < c["rest"]:
+                    continue
+                if c["missed"] < MISSES:
+                    c["state"] = "down" if c["state"] != "restarted" else c["state"]
+                    continue
+                c["tries"] = [t for t in c["tries"] if now - t < WINDOW]
+                if len(c["tries"]) >= TRIES:
+                    c["state"], c["rest"] = "failed", now + REST
+                    if not c["told"]:
+                        c["told"] = True
+                        tell_failed(name)
+                    continue
+                c["tries"].append(now)
+                print("guarddog: %s is down, starting it again" % ident, flush=True)
+                start()
+                c["restarts"] += 1
+                c["state"], c["missed"] = "restarted", 0
+            except Exception as e:                       # one component's trouble does not stop the watch over the others
+                print("guarddog: %s: %s" % (ident, e), file=sys.stderr, flush=True)
+        shown = [{k: c[k] for k in ("id", "name", "state", "restarts")} for c in mine.values()]
+        tmp = STATE + ".tmp"
+        with open(tmp, "w") as f:
+            json.dump(shown, f)
+        os.replace(tmp, STATE)
+        time.sleep(EVERY)
+
+
+def status():
+    try:
+        with open(STATE) as f:
+            return json.load(f)
+    except (OSError, ValueError):
+        return []
+
+
+def main(a):
+    if a[:1] == ["watch"]:
+        watch()
+    elif a[:1] == ["status"]:
+        print(json.dumps(status()))
+    elif a[:1] == ["owners"]:
+        print(json.dumps({str(k): v for k, v in owners().items()}))
+    elif a[:1] == ["owner"] and len(a) > 1:
+        print(json.dumps({p: owner(int(p)) for p in a[1:]}))
+    else:
+        print(__doc__)
+        return 2
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))

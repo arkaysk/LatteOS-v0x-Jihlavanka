@@ -13,8 +13,8 @@
 # (goo/parts/desk.plm) is told to step back, on the monitor the icons are on.
 flag="${XDG_CONFIG_HOME:-$HOME/.config}/latteos/desktop-icons"
 status() { [ "$(cat "$flag" 2>/dev/null)" = off ] && echo off || echo on; }
-running() { pgrep -u "$(id -u)" -f 'qs .*apps/desktop\.qml' >/dev/null; }
-stop() { pkill -u "$(id -u)" -f 'qs .*apps/desktop\.qml' 2>/dev/null; }
+running() { pgrep -u "$(id -u)" -f '^qs .*apps/desktop\.qml' >/dev/null; }
+stop() { pkill -u "$(id -u)" -f '^qs .*apps/desktop\.qml' 2>/dev/null; }
 start() { [ "$(status)" = on ] && { running || setsid -f latte-app desktop >/dev/null 2>&1; }; }
 tell() { pleamar --say goo "fact desk_icons $([ "$(status)" = on ] && echo true || echo false)" >/dev/null 2>&1; }
 

@@ -277,3 +277,16 @@ with tempfile.TemporaryDirectory() as t:
     assert barista.analyze([disc2])["recipe"] == ""
     assert "--unshare-net" in barista.fence("/x", False) and "--unshare-net" not in barista.fence("/x", True)
 
+# GuardDog says whose a process is: the kernel's and the system's, LatteOS's, or the user's
+dog = load("latte-guarddog")
+me = os.getuid()
+asked = lambda **kw: dog.owner(kw.pop("pid", 4000), kw.pop("comm", "x"), kw.pop("ppid", 1000), kw.pop("uid", me), kw.pop("cgroup", "/user.slice/user-1000.slice/session-3.scope"), kw.pop("cmdline", ""))
+assert asked(pid=2) == "linux" and asked(ppid=2, comm="kworker") == "linux"                       # the kernel's threads
+assert asked(uid=0, cgroup="/system.slice/chronyd.service", comm="chronyd") == "linux"
+assert asked(cgroup="/user.slice/user-1000.slice/user@1000.service/session.slice/pipewire.service", comm="pipewire") == "linux"
+assert asked(comm="pleamar", cmdline="/usr/bin/pleamar --scene /usr/share/latteos/goo/goo.plm") == "latteos"
+assert asked(comm="qs", cmdline="qs -n -p /usr/share/latteos/apps/monitor.qml") == "latteos"
+assert asked(comm="python3", cmdline="python3 /usr/bin/latte-monitor watch 2") == "latteos"
+assert asked(comm="Hyprland", cmdline="Hyprland") == "latteos"
+assert asked(comm="firefox", cgroup="/user.slice/user-1000.slice/user@1000.service/app.slice/app-firefox-123.scope", cmdline="/usr/bin/firefox") == "user"
+assert asked(comm="steam") == "user"

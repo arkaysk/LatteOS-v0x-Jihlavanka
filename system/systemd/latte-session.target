@@ -4,5 +4,5 @@
 [Unit]
 Description=LatteOS session
 BindsTo=graphical-session.target
-Wants=graphical-session-pre.target latte-goo.service latte-idle.service
+Wants=graphical-session-pre.target latte-goo.service latte-idle.service latte-guarddog.service
 After=graphical-session-pre.target

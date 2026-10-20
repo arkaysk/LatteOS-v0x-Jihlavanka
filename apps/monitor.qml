@@ -59,9 +59,12 @@ ShellRoot {
     function rate(n) { return bytes(n) + "/s" }
     property string find: ""                   // what the processes are searched for
     property string order: "cpu"
+    property string owner: "all"               // whose: all · latteos · linux · user (GuardDog says, bin/latte-guarddog)
+    readonly property var owners: [{ id: "all", name: QT_TR_NOOP("All") }, { id: "latteos", name: QT_TR_NOOP("LatteOS") },
+                                   { id: "linux", name: QT_TR_NOOP("Linux") }, { id: "user", name: QT_TR_NOOP("Your apps") }]
     function listed(list) {
         const f = find.toLowerCase()
-        return (list || []).filter(p => f === "" || p.name.toLowerCase().includes(f)).slice().sort((a, b) => order === "cpu" ? (b.cpu - a.cpu) || (b.mem - a.mem) : b.mem - a.mem)
+        return (list || []).filter(p => (f === "" || p.name.toLowerCase().includes(f)) && (owner === "all" || p.owner === owner)).slice().sort((a, b) => order === "cpu" ? (b.cpu - a.cpu) || (b.mem - a.mem) : b.mem - a.mem)
     }
 
     // one of the overview's four pictures
@@ -90,7 +93,13 @@ ShellRoot {
         property bool canEnd: true
         height: 46; radius: 12; color: lineHit.hovered ? Qt.alpha(Theme.card, 0.5) : "transparent"
         HoverHandler { id: lineHit }
-        Label { x: 14; width: parent.width - 330; text: line.what.name + (line.what.pids.length > 1 ? "  (" + line.what.pids.length + ")" : ""); font.weight: 600; anchors.verticalCenter: parent.verticalCenter }
+        Row { x: 14; width: parent.width - 330; spacing: 8; anchors.verticalCenter: parent.verticalCenter
+            Label { id: lname; text: line.what.name + (line.what.pids.length > 1 ? "  (" + line.what.pids.length + ")" : ""); font.weight: 600; elide: Text.ElideRight
+                    width: Math.min(implicitWidth, parent.width - opill.width - 8); anchors.verticalCenter: parent.verticalCenter }
+            Rectangle { id: opill; visible: line.what.owner !== undefined && line.what.owner !== "user"; width: otext.implicitWidth + 12; height: 18; radius: 9; anchors.verticalCenter: parent.verticalCenter
+                        color: line.what.owner === "latteos" ? Qt.rgba(Theme.gold.r, Theme.gold.g, Theme.gold.b, 0.22) : Theme.raised
+                        Label { id: otext; anchors.centerIn: parent; font.pixelSize: 10; font.weight: 700; color: line.what.owner === "latteos" ? Theme.gold : Theme.dim
+                                text: line.what.owner === "latteos" ? "LatteOS" : "Linux" } } }
         Label { anchors.right: parent.right; anchors.rightMargin: 226; text: line.what.cpu.toFixed(1) + " %"; color: line.what.cpu >= 25 ? Theme.gold : Theme.dim; anchors.verticalCenter: parent.verticalCenter }
         DotBar { anchors.right: parent.right; anchors.rightMargin: 226; y: parent.height - 9; width: 70; height: 4; segments: 14; value: line.what.cpu / 100 }
         Label { anchors.right: parent.right; anchors.rightMargin: 120; text: shell.bytes(line.what.mem); color: Theme.dim; anchors.verticalCenter: parent.verticalCenter }
@@ -160,6 +169,20 @@ ShellRoot {
         Scroll {
             id: procs
             visible: shell.page === "processes"
+            // what GuardDog watches over, and whether each stands
+            Column { width: procs.room; spacing: 6; visible: shell.run !== null && (shell.run.guard || []).length > 0
+                Label { text: I18n.tr("WATCHED BY GUARDDOG"); color: Theme.faint; font.pixelSize: 11; font.weight: 700; font.letterSpacing: 0.8 }
+                Flow { width: parent.width; spacing: 8
+                    Repeater { model: shell.run ? (shell.run.guard || []) : []
+                        Rectangle { required property var modelData; height: 30; radius: 15; width: gl.implicitWidth + 34; color: Theme.card
+                            Rectangle { x: 11; width: 9; height: 9; radius: 5; anchors.verticalCenter: parent.verticalCenter
+                                        color: parent.modelData.state === "up" ? Theme.ok : (parent.modelData.state === "off" ? Theme.faint : (parent.modelData.state === "restarted" ? Theme.gold : Theme.red)) }
+                            Label { id: gl; x: 26; anchors.verticalCenter: parent.verticalCenter; font.pixelSize: 12; color: Theme.dim
+                                    text: I18n.tr(parent.modelData.name) + (parent.modelData.restarts > 0 ? "  ↻" + parent.modelData.restarts : "") } } } } }
+            Row { spacing: 8
+                Label { text: I18n.tr("Belonging to"); color: Theme.dim; anchors.verticalCenter: parent.verticalCenter }
+                Repeater { model: shell.owners
+                    Pill { required property var modelData; text: I18n.tr(modelData.name); strong: shell.owner === modelData.id; implicitHeight: 32; onPressed: shell.owner = modelData.id } } }
             Row { spacing: 8
                 Label { text: I18n.tr("Sort by"); color: Theme.dim; anchors.verticalCenter: parent.verticalCenter }
                 Pill { text: I18n.tr("Processor"); strong: shell.order === "cpu"; implicitHeight: 32; onPressed: shell.order = "cpu" }
