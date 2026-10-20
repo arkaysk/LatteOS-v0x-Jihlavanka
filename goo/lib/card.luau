@@ -33,7 +33,7 @@
 local icons = require("lib/icons")
 local M = {}
 
-local CARD_W, CARD_H = 600, 560            -- a family of cards that keep one size (`uniform`) is this wide and at least this tall
+local CARD_W, CARD_H, WAVE_AT = 600, 580, 502            -- a family of cards that keep one size (`uniform`) is this wide and at least this tall
 local ROWS, ROWS2, ITEMS, TABS = 24, 12, 6, 6        -- what the scene's models hold
 local RISE = 74                             -- how far from the edge the owner steps to be the card's ear
 local engine                                -- set by lib/engine.luau, which owns the drops
@@ -100,17 +100,18 @@ function M.open(rows, opts)
         opts.width = CARD_W
         if not opts.plain then opts.min_height = math.max(opts.min_height or 0, CARD_H) end
     end
-    -- so that cards of one kind are of one height: what is short gets room above the divider of coffee, the foot stays at the bottom
-    if uniform and not opts.plain and opts.min_height then
-        local at, natural = nil, 16 + (#(opts.tabs or {}) > 0 and 44 or 0) + (opts.field and 46 or 0)
+    -- so that the cards of one family are alike: the divider of coffee is at the same height in all of them (WAVE_AT, where the fullest
+    -- of them has it), what is short gets room above it, and the foot stays at the bottom
+    if uniform and not opts.plain then
+        local at, above = nil, 8 + (#(opts.tabs or {}) > 0 and 44 or 0) + (opts.field and 46 or 0)
         for i, r in ipairs(rows) do
-            if r.wave and not at then at = i end
-            natural = natural + height_of(r) + (r.line and i > 1 and 14 or 0)
+            if r.wave then at = i break end
+            above = above + height_of(r) + (r.line and i > 1 and 14 or 0)
         end
-        if at and natural < opts.min_height then
+        if at and above < WAVE_AT then
             local more = {}
             for i, r in ipairs(rows) do
-                if i == at then more[#more + 1] = { gap = opts.min_height - natural } end
+                if i == at then more[#more + 1] = { gap = WAVE_AT - above } end
                 more[#more + 1] = r
             end
             rows = more

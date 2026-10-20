@@ -18,6 +18,8 @@ import sys
 SYSTEM = ("You are the assistant in the launcher of the LatteOS desktop. Answer briefly and to the point, in the "
           "language of the question, in plain text: no Markdown, no headings.")
 # Where a tool is run: an empty folder of its own, so that it finds no project there to read.
+# The desktop's services have a short PATH (no ~/.local/bin, where a user's own tools live): look there too.
+SEARCH = os.pathsep.join([os.environ.get("PATH", "/usr/local/bin:/usr/bin"), os.path.expanduser("~/.local/bin"), os.path.expanduser("~/bin")])
 ROOM = os.path.join(os.environ.get("XDG_STATE_HOME") or os.path.expanduser("~/.local/state"), "latteos", "ai")
 
 
@@ -43,7 +45,7 @@ def turned_off():
 def providers(all=False):
     if turned_off() and not all:
         return []
-    return [{"id": i, "name": p["name"], "local": p["local"]} for i, p in PROVIDERS.items() if shutil.which(p["tool"])]
+    return [{"id": i, "name": p["name"], "local": p["local"]} for i, p in PROVIDERS.items() if shutil.which(p["tool"], path=SEARCH)]
 
 
 def as_prompt(talk):
@@ -57,7 +59,7 @@ def as_prompt(talk):
 
 def ask(provider, talk):
     p = PROVIDERS.get(provider)
-    if not p or not shutil.which(p["tool"]):
+    if not p or not shutil.which(p["tool"], path=SEARCH):
         print("latte-ai: no such provider here: " + provider)
         return 1
     prompt = as_prompt(talk)
@@ -65,7 +67,7 @@ def ask(provider, talk):
         return 1
     os.makedirs(ROOM, exist_ok=True)
     try:
-        done = subprocess.run(p["command"](prompt), cwd=ROOM, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
+        done = subprocess.run(p["command"](prompt), cwd=ROOM, env=dict(os.environ, PATH=SEARCH), stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
                               stderr=subprocess.STDOUT, text=True, timeout=180)
     except subprocess.TimeoutExpired:
         print("latte-ai: no answer in three minutes")
