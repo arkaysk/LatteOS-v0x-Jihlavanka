@@ -20,6 +20,7 @@ local function N(s) return s end
 local user, host, since = "", "", os.date("%H:%M")
 local battery = nil
 local profile, profiles = nil, false          -- the power profile in use; whether this machine has any
+local admin, uptime = false, ""               -- in the group that may use sudo; how long the computer has been on
 local armed = nil                             -- the way out that was asked about, for four seconds
 local open_card
 
@@ -146,9 +147,10 @@ end
 
 open_card = function(d, keep)
     local rows = {
-        { profile = true, glyph = "user", label = user, line2 = user .. "@" .. host .. " · " .. tr("since") .. " " .. since, quiet = true },
-        { pills = { { label = tr("Lock"), glyph = "lock", run = function() after(200, lock.lock) end },
-                    { label = ask("logout", N("Log out")), glyph = "logout", on = armed == "logout", keep = true, run = leave("logout", d) } } },
+        { profile = true, glyph = "user", label = user, line2 = user .. "@" .. host .. " · " .. tr("since") .. " " .. since, quiet = true,
+          on = admin, hint = tr("ADMIN") },
+        { tiles = { { label = tr("Settings"), glyph = "settings", keep = true, run = function() settings.open(d) end },
+                    { label = tr("Monitor"), glyph = "activity", run = function() after(80, function() open.monitor() end) end } }, per = 2 },
     }
     if battery or profiles then rows[#rows + 1] = { head = true, label = tr("POWER"), line = true } end
     if battery then
@@ -162,13 +164,16 @@ open_card = function(d, keep)
             { label = tr("Performance"), glyph = "rocket", on = profile == "performance", keep = true, run = set_profile("performance", d) },
         } }
     end
-    rows[#rows + 1] = { label = tr("Settings"), glyph = "settings", line = true, keep = true, more = true, run = function() settings.open(d) end }
-    rows[#rows + 1] = { label = tr("Monitor"), glyph = "activity", hint = "Ctrl+Shift+Esc", run = function() after(80, function() open.monitor() end) end }
-    rows[#rows + 1] = { line = true, pills = {
-        { label = tr("Sleep"), glyph = "moon", run = leave("sleep", d) },
-        { label = ask("restart", N("Restart")), glyph = "refresh", on = armed == "restart", keep = true, run = leave("restart", d) },
+    rows[#rows + 1] = { wave = true }
+    rows[#rows + 1] = { pills = {
         { label = ask("off", N("Shut down")), glyph = "power", danger = true, on = armed == "off", keep = true, run = leave("off", d) },
-    } }
+        { label = ask("restart", N("Restart")), glyph = "refresh", on = armed == "restart", keep = true, run = leave("restart", d) },
+        { label = tr("Sleep"), glyph = "moon", run = leave("sleep", d) },
+        { label = ask("logout", N("Log out")), glyph = "logout", on = armed == "logout", keep = true, run = leave("logout", d) },
+        { label = tr("Lock"), glyph = "lock", run = function() after(200, lock.lock) end },
+        { label = tr("Emergency mode"), glyph = "alert-triangle", run = function() after(80, function() open.settings("startmode") end) end },
+    }, per = 2 }
+    rows[#rows + 1] = { label = tr("Uptime"), glyph = "clock", hint = uptime, quiet = true, line = true }
     -- With the strip out it stays where it is, and the card grows from where the press was.
     card.open(rows, { owner = not strip.on and d or nil, strip = strip.on, id = "power", width = 330, keep = keep })
 end
@@ -188,6 +193,7 @@ return {
         local ok, kept = pcall(sys.ask, "files.read", FILE, "json")
         if ok and type(kept) == "table" and kept.strip == true then after(1500, function() strip_on(d, true) end) end
         run("hostname", {}, function(out) host = (out or ""):match("%S+") or "" end)
+        run("id", { "-nG" }, function(out) admin = (" " .. (out or "") .. " "):find(" wheel ", 1, true) ~= nil end)
         -- The login screen lets its own power drop fall to where this one is: it is told where that is.
         local function remember()
             run("latte-login", { "remember", tostring(d.edge == 0 and E.along(d) / E.len(d) or -1) }, nil, { output = false })
@@ -207,7 +213,11 @@ return {
     click = function(d)
         if card.id() == "power" then return card.close() end
         armed = nil
-        read_profile(function() open_card(d, false) end)
+        run("cat", { "/proc/uptime" }, function(out)
+            local secs = tonumber((out or ""):match("^(%d+)")) or 0
+            uptime = string.format(tr("%d h %d min"), secs // 3600, secs % 3600 // 60)
+            read_profile(function() open_card(d, false) end)
+        end)
     end,
     right = function(d) if strip.on then strip_off(d) else strip_on(d) end end,
     -- moved to another edge, or to where the capsule has no room on that side: it is shaped again

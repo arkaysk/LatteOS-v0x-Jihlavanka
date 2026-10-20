@@ -113,6 +113,10 @@ library Slovak {
         "Performance" = "Výkon"
         "Sure?" = "Naozaj?"
         "Lock" = "Zamknúť"
+        "ADMIN" = "ADMIN"
+        "Emergency mode" = "Núdzový režim"
+        "Uptime" = "Doba behu"
+        "%d h %d min" = "%d h %d min"
         "Unlock" = "Odomknúť"
         "windows:" = "okná:"
         // ClockGoo

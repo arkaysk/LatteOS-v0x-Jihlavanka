@@ -14,7 +14,9 @@
 --   { head = true, label, hint }                    the heading of a section
 --   { big = true, label, bar }                      a large figure
 --   { para = true, label }                          a paragraph
---   { profile = true, icon, glyph, label, line2, run }
+--   { profile = true, icon, glyph, label, line2, run, on, hint }       `on` shows `hint` as a small badge (the role)
+--   { wave = true }                                  a divider: two layers of coffee, golden behind
+-- `pills` and `tiles` with `per = 2` lie wide: an icon in a square, the name beside it, two to a line.
 --   { slide = true, glyph, label, value, hint, off, run, set }     a slider: `value` 0…1, set = function(0…1) as it
 --       is pressed or dragged, `run` a press on its icon (to mute), `wheel` as on any row
 --   { pills = { { label, glyph, on, off, danger, keep, run }, … } }     buttons side by side, six at most
@@ -117,7 +119,7 @@ function M.open(rows, opts)
         local list = it.pills or it.tiles
         if list then
             -- A record holds one line of them: more tiles than fit in a line go on in the next record.
-            local per = it.pills and ITEMS or math.clamp(it.per or 4, 1, ITEMS)
+            local per = math.clamp(it.per or (it.pills and ITEMS or 4), 1, ITEMS)
             for from = 1, #list, per do
                 if #to >= room then break end
                 local items = {}
@@ -129,7 +131,7 @@ function M.open(rows, opts)
             end
             return
         end
-        local kind = (it.head and "head") or (it.big and "big") or (it.para and "para") or (it.profile and "profile") or (it.slide and "slide") or "plain"
+        local kind = (it.head and "head") or (it.big and "big") or (it.para and "para") or (it.profile and "profile") or (it.slide and "slide") or (it.wave and "wave") or "plain"
         local pressed = (kind == "plain" or kind == "profile" or kind == "slide" or (kind == "big" and it.run ~= nil)) and not it.quiet
         if kind == "slide" then it = table.clone(it) it.bar, it.keep = it.value or 0, true slides[base + #to] = it.set end
         to[#to + 1] = {

@@ -115,7 +115,7 @@ part Rows {
         // the rows come in one after another, each a little later, sliding in from the ear's side
         let come = clamp(reveal * 3.2 - 0.1 * r.index, 0, 1)
         let shown = come * come * (3 - 2 * come)
-        let h = pick(r.kind, if(r.tall, 54, 44), 30, 64, 0, 0, 0, 84, 44)
+        let h = pick(r.kind, if(r.tall, 54, 44), 30, 64, 0, 0, 0, 84, 44, 26)
 
         column parts {
             // a rule above the row
@@ -128,7 +128,7 @@ part Rows {
             // ── a plain row, a heading, a large figure, a profile ───────────────────────────────────────────
             group {
                 size: w, h
-                show: r.kind != para and r.kind != pills and r.kind != tiles
+                show: r.kind != para and r.kind != pills and r.kind != tiles and r.kind != wave
                 opacity: shown
                 move: (1 - shown) * 18 * card.sx, 0
 
@@ -165,7 +165,10 @@ part Rows {
                 ellipse { at: 48, 42; radius: 30; color: #4a372b; show: r.kind == profile and not r.has_icon }
                 text r.glyph { at: 48, 42; anchor: center; size: 28; color: cream; opacity: 90%; show: r.kind == profile and not r.has_icon; family: "tabler-icons" }
                 ellipse { at: 48, 42; radius: 30.5; stroke: 1.5; color: gold; opacity: 70%; show: r.kind == profile }
-                text r.label { at: 94, 32; anchor: left center; width: w - 128; lines: 1; size: 18; weight: 700; color: cream; show: r.kind == profile; family: "Inter" }
+                text r.label { at: 94, 32; anchor: left center; width: w - 128 - if(r.on, 62, 0); lines: 1; size: 18; weight: 700; color: cream; show: r.kind == profile; family: "Inter" }
+                // the badge (the role): shown when the row says `on`; its words are the row's hint
+                box { at: w - 50, 32; size: 56, 22; corner: 7; color: gold; opacity: 20%; show: r.kind == profile and r.on }
+                text r.hint { at: w - 50, 32; anchor: center; size: 11; weight: 700; color: gold; show: r.kind == profile; family: "Inter" }
                 text r.line2 { at: 94, 55; anchor: left center; width: w - 128; lines: 1; size: 12.5; color: dim; show: r.kind == profile; family: "Inter" }
 
                 // a slider: its icon, the track with what is filled, the knob, and the figure on the right
@@ -183,6 +186,51 @@ part Rows {
                 on press hit while r.kind != slide { emit card_pick((r.index + base) * 8) }
                 on press right hit { emit card_right((r.index + base) * 8) }
                 on scroll hit { emit card_wheel((r.index + base) * 2 + if(wheel > 0, 1, 0)) }
+            }
+
+            // ── a divider of coffee: golden coffee behind, the dark one in front, each lapping its own way ─────
+            group {
+                size: w, 26
+                show: r.kind == wave
+                opacity: shown
+                path {
+                    at: 0, 0; color: #b8862e; opacity: 100%
+                    move 0, 26
+                    line w * 0 / 12, 6 + 3 * sin(0 + 40 * time)
+                    line w * 1 / 12, 6 + 3 * sin(30 + 40 * time)
+                    line w * 2 / 12, 6 + 3 * sin(60 + 40 * time)
+                    line w * 3 / 12, 6 + 3 * sin(90 + 40 * time)
+                    line w * 4 / 12, 6 + 3 * sin(120 + 40 * time)
+                    line w * 5 / 12, 6 + 3 * sin(150 + 40 * time)
+                    line w * 6 / 12, 6 + 3 * sin(180 + 40 * time)
+                    line w * 7 / 12, 6 + 3 * sin(210 + 40 * time)
+                    line w * 8 / 12, 6 + 3 * sin(240 + 40 * time)
+                    line w * 9 / 12, 6 + 3 * sin(270 + 40 * time)
+                    line w * 10 / 12, 6 + 3 * sin(300 + 40 * time)
+                    line w * 11 / 12, 6 + 3 * sin(330 + 40 * time)
+                    line w * 12 / 12, 6 + 3 * sin(360 + 40 * time)
+                    line w, 26
+                    close
+                }
+                path {
+                    at: 0, 0; color: paper; opacity: 100%
+                    move 0, 26
+                    line w * 0 / 12, 15 + 2.4 * sin(90 + -55 * time)
+                    line w * 1 / 12, 15 + 2.4 * sin(150 + -55 * time)
+                    line w * 2 / 12, 15 + 2.4 * sin(210 + -55 * time)
+                    line w * 3 / 12, 15 + 2.4 * sin(270 + -55 * time)
+                    line w * 4 / 12, 15 + 2.4 * sin(330 + -55 * time)
+                    line w * 5 / 12, 15 + 2.4 * sin(390 + -55 * time)
+                    line w * 6 / 12, 15 + 2.4 * sin(450 + -55 * time)
+                    line w * 7 / 12, 15 + 2.4 * sin(510 + -55 * time)
+                    line w * 8 / 12, 15 + 2.4 * sin(570 + -55 * time)
+                    line w * 9 / 12, 15 + 2.4 * sin(630 + -55 * time)
+                    line w * 10 / 12, 15 + 2.4 * sin(690 + -55 * time)
+                    line w * 11 / 12, 15 + 2.4 * sin(750 + -55 * time)
+                    line w * 12 / 12, 15 + 2.4 * sin(810 + -55 * time)
+                    line w, 26
+                    close
+                }
             }
 
             // ── a paragraph: as tall as its text ────────────────────────────────────────────────────────────
@@ -209,29 +257,37 @@ part Rows {
     }
 
     component CardItem(r: record, it: record, base: number, cw: number) {
-        size: cw / if(r.kind == tiles, r.per, max(r.items.count, 1)), if(r.kind == tiles, 88, 46)
+        size: cw / if(r.kind == tiles, r.per, max(r.items.count, 1)), if(r.kind == tiles, if(r.per <= 2, 66, 88), if(r.per <= 2, 60, 46))
+        let wide = r.per <= 2
         let w = cw / if(r.kind == tiles, r.per, max(r.items.count, 1))
         let lit = max(hit.hover, if(card_sel == (r.index + base) * 8 + it.index + 1, 1, 0))
 
         // a button: the chosen one gold, one that does not undo red
-        box { at: w / 2, 23; size: w - 10, 40; corner: 20; color: if(it.on, gold, if(it.danger, red, #4a372b)); opacity: if(it.on, 26%, if(it.danger, 16% + 12% * lit, 62% + 38% * lit)) * if(it.off, 0.5, 1); show: r.kind == pills }
+        box { at: w / 2, 23; size: w - 10, 40; corner: 20; color: if(it.on, gold, if(it.danger, red, #4a372b)); opacity: if(it.on, 26%, if(it.danger, 16% + 12% * lit, 62% + 38% * lit)) * if(it.off, 0.5, 1); show: r.kind == pills and not wide }
         row {
             at: w / 2, 23
             anchor: center middle
             gap: 7
             align: center
-            show: r.kind == pills
+            show: r.kind == pills and not wide
             opacity: if(it.off, 45%, 100%)
             text it.glyph { size: 17; color: if(it.on, gold, if(it.danger, red, cream)); family: "tabler-icons" }
             text it.label { size: 14; weight: 600; lines: 1; color: if(it.on, gold, if(it.danger, red, cream)); family: "Inter" }
         }
         // a tile: the app's icon over its name
-        box { at: w / 2, 44; size: w - 6, 84; corner: 16; color: #4a372b; opacity: lit; show: r.kind == tiles }
-        image it.icon { at: w / 2 - 20, 12; size: 40, 40; show: r.kind == tiles and it.has_icon }
-        text it.glyph { at: w / 2, 32; anchor: center; size: 28; color: cream; opacity: 90%; show: r.kind == tiles and not it.has_icon; family: "tabler-icons" }
-        text it.label { at: w / 2, 68; anchor: center; width: w - 14; lines: 1; size: 12.5; weight: 500; color: cream; align: center; show: r.kind == tiles; family: "Inter" }
+        box { at: w / 2, 44; size: w - 6, 84; corner: 16; color: #4a372b; opacity: lit; show: r.kind == tiles and not wide }
+        image it.icon { at: w / 2 - 20, 12; size: 40, 40; show: r.kind == tiles and it.has_icon and not wide }
+        text it.glyph { at: w / 2, 32; anchor: center; size: 28; color: cream; opacity: 90%; show: r.kind == tiles and not it.has_icon and not wide; family: "tabler-icons" }
+        text it.label { at: w / 2, 68; anchor: center; width: w - 14; lines: 1; size: 12.5; weight: 500; color: cream; align: center; show: r.kind == tiles and not wide; family: "Inter" }
 
-        zone box hit { from: 3, 2; size: w - 6, if(r.kind == tiles, 84, 42); cursor: pointer; active: card_open and not it.off; label: "{it.label}"; selected: it.on }
+        // wide, two to a line: a rounded square with the icon, and the name beside it; the one that does not undo in red
+        box { at: w / 2, 31; size: w - 10, 54; corner: 17; color: if(it.danger, red, #4a372b); opacity: if(it.on, 100%, if(it.danger, 14% + 12% * lit, 62% + 38% * lit)) * if(it.off, 0.5, 1); show: wide }
+        box { at: 33, 31; size: 36, 36; corner: 11; color: if(it.danger, red, if(it.on, gold, paper)); opacity: if(it.danger, 22%, if(it.on, 30%, 70%)); show: wide }
+        text it.glyph { at: 33, 31; anchor: center; size: 19; color: if(it.danger, red, if(it.on, gold, cream)); opacity: if(it.off, 45%, 100%); show: wide and not it.has_icon; family: "tabler-icons" }
+        image it.icon { at: 33, 31; size: 26, 26; show: wide and it.has_icon }
+        text it.label { at: 60, 31; anchor: left center; width: w - 72; lines: 2; size: 14.5; weight: 600; color: if(it.danger, red, if(it.on, gold, cream)); opacity: if(it.off, 45%, 100%); show: wide; family: "Inter" }
+
+        zone box hit { from: 3, 2; size: w - 6, if(wide, if(r.kind == tiles, 60, 54), if(r.kind == tiles, 84, 42)); cursor: pointer; active: card_open and not it.off; label: "{it.label}"; selected: it.on }
         on press hit { emit card_pick((r.index + base) * 8 + it.index + 1) }
         on press right hit { emit card_right((r.index + base) * 8 + it.index + 1) }
     }
