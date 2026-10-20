@@ -56,3 +56,16 @@ Skúška úloh (`llama-server`, pokyn „Concise and direct. No preamble.“, be
 - **Qwen3.5-2B:** slovenčina použiteľná (drobné chyby), angličtina dobrá, príkaz presne, zhrnutie áno; 2–5 s.
   **Predvolený lokálny model** pre mikro-agentov.
 - **Qwen3.5-4B:** najlepšia slovenčina a zhrnutie; 5–15 s. Voľba „presnejší“.
+
+## Prevod reči na text na latte-lab (krok h)
+
+whisper.cpp v1.9.5 zostavený zo zdroja (`/data/ai/whisper-src`, Fedora má iba knižnicu bez programu). Skúška vetou
+z espeak-ng (robotický hlas, ťažký aj pre človeka; skutočný hlas dopadne lepšie), 4 s:
+
+| model | procesor | karta (Vulkan, zahriata) |
+|---|---|---|
+| base | 2,3 s, zle | 4,6 s |
+| small | 8,1 s | **3,2 s** |
+| large-v3-turbo q5 | 44,5 s | **8,0 s**, najlepšie |
+
+Na karte je turbo použiteľné na diktovanie; LatteOS berie turbo s Vulkanom, inak small na procesore.

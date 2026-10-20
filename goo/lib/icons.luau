@@ -106,6 +106,7 @@ return {
     ["leaf"] = "\u{ED4F}",
     ["link"] = "\u{EADE}",
     ["list"] = "\u{EB6B}",
+    ["loader-2"] = "\u{F226}",
     ["lock"] = "\u{EAE2}",
     ["lock-open"] = "\u{EAE1}",
     ["login"] = "\u{EBA7}",

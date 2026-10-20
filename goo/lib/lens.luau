@@ -420,6 +420,8 @@ local function fill_ai()
     text.ic_ai_plus, text.ic_ai_clip, text.ic_ai_shot, text.ic_ai_x = icons["plus"], icons["paperclip"], icons["screenshot"], icons["x"]
     text.ai_add_file, text.ai_add_shot = tr("Attach a file…"), tr("A picture of the screen")
     text.ai_send_word = ai.waiting and tr("Stop") or tr("Send")
+    text.ic_ai_mic = icons[fact.ai_listening == 2 and "loader-2" or "microphone"]
+    text.ai_mic_word = fact.ai_listening == 1 and tr("Stop and write it down") or tr("Speak")
 end
 local function ai_send()
     local q = (text.ai_q or ""):gsub("^%s+", ""):gsub("%s+$", "")
@@ -496,6 +498,27 @@ on("ai_attach", function(what)
     end)
 end)
 on("ai_unattach", function() ai.files = {} fill_ai() end)
+-- the microphone: what is said goes into the field, to be read and changed before it is sent
+on("ai_mic", function()
+    if fact.ai_listening == 0 then
+        fact.ai_listening = 1
+        run("latte-ai", { "listen", "start" }, nil)
+    else
+        fact.ai_listening = 2
+        run("latte-ai", { "listen", "stop" }, function(out)
+            fact.ai_listening = 0
+            local ok, r = pcall(json.decode, out or "")
+            local said = ok and type(r) == "table" and r.text or ""
+            if said ~= "" then
+                text.ai_q = ((text.ai_q or "") ~= "" and (text.ai_q .. " ") or "") .. said
+                fact.ai_typed = true
+            end
+            fill_ai()
+            focus("ai_q")
+        end)
+    end
+    fill_ai()
+end)
 on("ai_center", function() then_do(function() run("latte-app", { "aicenter" }, nil, { output = false }) end) end)
 on("ai_settings", function() then_do(function() open.settings("launcher") end) end)
 -- the conversation that was open, from latte-ai, when LensGoo starts

@@ -33,7 +33,10 @@ part Ai {
     text ic_ai_x = ""
     text ai_files = ""                         // what is attached to the next question, by name
     text ai_add_file = ""
-    text ai_send_word = ""                     // what the button that sends says: send, or stop while an answer comes
+    text ai_send_word = ""
+    text ic_ai_mic = ""
+    text ai_mic_word = ""                      // what the microphone does now: listen, or stop and write it down
+    fact ai_listening = 0                      // 0 quiet · 1 listening · 2 writing down what was said                     // what the button that sends says: send, or stop while an answer comes
     text ai_add_shot = ""
     fact ai_nfiles = 0
     fact ai_plus = false                       // the little menu of what can be attached is out
@@ -50,6 +53,7 @@ part Ai {
     event ai_center ->
     event ai_settings ->
     event ai_new ->
+    event ai_mic ->                            // the microphone: start listening, or stop and write it into the field
     event ai_attach ->                         // 0 a file, 1 a picture of the screen
     event ai_unattach ->
 
@@ -118,6 +122,11 @@ part Ai {
         on press unattach_hit { emit ai_unattach }
         text ic_ai_spark { at: if(ai_nfiles > 0, 330, 66), ai.fy + ai.fh - 22; anchor: center; size: 15; color: if(ai.k == 0, #8a8578, if(ai.k == 1, #5f6368, if(ai.k == 2, #8a8a8a, if(ai.k == 3, #8f8f8f, #b8a491)))); family: "tabler-icons" }
         text ai_who { at: if(ai_nfiles > 0, 346, 82), ai.fy + ai.fh - 22; anchor: left center; size: 13; weight: 600; color: if(ai.k == 0, #8a8578, if(ai.k == 1, #5f6368, if(ai.k == 2, #8a8a8a, if(ai.k == 3, #8f8f8f, #b8a491)))); width: 260; lines: 1; family: "Inter" }
+        // the microphone, left of the model: red while it listens, blinking while what was said is written down
+        ellipse { at: card.w - 16 - 54 - 214, ai.fy + ai.fh - 22; radius: 15; color: if(ai_listening == 1, #e5484d, #f7c873); opacity: if(ai_listening == 1, 70% + 30% * sin(time * 300), 15% + 25% * mic_hit.hover) }
+        text ic_ai_mic { at: card.w - 16 - 54 - 214, ai.fy + ai.fh - 22; anchor: center; size: 17; color: if(ai_listening == 1, #ffffff, if(ai.k == 4, #f5e8d8, #3d3929)); opacity: if(ai_listening == 2, 50% + 50% * sin(time * 360), 100%); family: "tabler-icons" }
+        zone box mic_hit { at: card.w - 16 - 54 - 214, ai.fy + ai.fh - 22; size: 32, 32; cursor: pointer; active: ai.on and ai_listening < 2 and not ai_wait; label: "{ai_mic_word}"; role: button }
+        on press mic_hit { emit ai_mic }
         box { from: card.w - 16 - 54 - 190, ai.fy + ai.fh - 37; size: 180, 30; corner: 15; color: if(ai.k == 0, #faf9f5, if(ai.k == 1, #dde3ea, if(ai.k == 2, #f2f2f2, if(ai.k == 3, #e8f0fe, #4a372b)))); opacity: 70% + 30% * chip_hit.hover }
         text ai_model { at: card.w - 16 - 54 - 104, ai.fy + ai.fh - 22; anchor: center; size: 13; weight: 600; color: if(ai.k == 0, #6b6658, if(ai.k == 1, #1f1f1f, if(ai.k == 2, #0d0d0d, if(ai.k == 3, #1a73e8, #f5e8d8)))); width: 150; lines: 1; align: center; family: "Inter" }
         text ic_ai_chev { at: card.w - 16 - 54 - 24, ai.fy + ai.fh - 22; anchor: center; size: 14; color: if(ai.k == 0, #6b6658, if(ai.k == 1, #1f1f1f, if(ai.k == 2, #0d0d0d, if(ai.k == 3, #1a73e8, #f5e8d8)))); family: "tabler-icons" }

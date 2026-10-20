@@ -1120,6 +1120,8 @@ library Slovak {
         "With an account, the service's official tool answers, signed in once in the terminal. Which of them LensGoo offers is set in Settings › Launcher." = "S účtom odpovedá oficiálny nástroj služby, do ktorého sa raz prihlásiš v termináli. Ktoré z nich ponúka LensGoo, sa nastavuje v Nastaveniach › Spúšťač."
         "ACCOUNTS" = "ÚČTY"
         "(stopped)" = "(zastavené)"
+        "Speak" = "Hovoriť"
+        "Stop and write it down" = "Zastaviť a zapísať"
         "Compare" = "Porovnať"
         "Choose up to three, ask once, and read them side by side. Each answer is kept as a conversation of its own, to go on with." = "Vyber až tri, opýtaj sa raz a čítaj ich vedľa seba. Každá odpoveď sa uloží ako samostatný rozhovor, v ktorom môžeš pokračovať."
         "Ask them all…" = "Opýtaj sa všetkých…"
