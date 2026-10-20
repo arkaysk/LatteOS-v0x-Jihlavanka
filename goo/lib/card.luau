@@ -93,6 +93,20 @@ end
 
 function M.open(rows, opts)
     opts = opts or {}
+    -- A card that has a `foot` (a row: a way on to what the card is about) gets the look of coffee below a divider, with the
+    -- foot at the bottom of the card: glass above. Not with paragraphs or a month, whose height the rows alone do not tell.
+    local footed = false
+    if opts.foot and not opts.menu and not opts.dock and not opts.calendar then
+        local free = true
+        for _, r in ipairs(rows) do if r.wave or r.para then free = false end end
+        if free then
+            local more = {}
+            for i, r in ipairs(rows) do more[i] = r end
+            more[#more + 1] = { wave = true }
+            more[#more + 1] = opts.foot
+            rows, opts.pane, footed = more, opts.pane or 1, true
+        end
+    end
     -- A family of cards that keep one size (`uniform`: LensGoo's, one for each of its modes): the same width, at least the
     -- same height, and where there is a divider of coffee the foot stays at the bottom. (Other cards keep to their own.)
     local uniform = opts.uniform == true and not opts.menu
@@ -102,16 +116,17 @@ function M.open(rows, opts)
     end
     -- so that the cards of one family are alike: the divider of coffee is at the same height in all of them (WAVE_AT, where the fullest
     -- of them has it), what is short gets room above it, and the foot stays at the bottom
-    if uniform and not opts.plain then
+    if (uniform and not opts.plain) or (footed and opts.min_height) then
+        local want = uniform and WAVE_AT or opts.min_height - 78
         local at, above = nil, 8 + (#(opts.tabs or {}) > 0 and 44 or 0) + (opts.field and 46 or 0)
         for i, r in ipairs(rows) do
             if r.wave then at = i break end
             above = above + height_of(r) + (r.line and i > 1 and 14 or 0)
         end
-        if at and above < WAVE_AT then
+        if at and above < want then
             local more = {}
             for i, r in ipairs(rows) do
-                if i == at then more[#more + 1] = { gap = WAVE_AT - above } end
+                if i == at then more[#more + 1] = { gap = want - above } end
                 more[#more + 1] = r
             end
             rows = more

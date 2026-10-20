@@ -228,13 +228,59 @@ open_notes = function(d, keep)
 end
 
 -- ── the time card (the right button) ─────────────────────────────────────────────────────────────────────────
-local function overview()
+-- an icon for a weather code of the WMO
+local function sky_glyph(code)
+    code = tonumber(code) or 3
+    if code == 0 then return "sun" end
+    if code <= 2 then return "sun-low" end
+    if code == 45 or code == 48 then return "cloud-fog" end
+    if code >= 95 then return "cloud-storm" end
+    if (code >= 71 and code <= 77) or code == 85 or code == 86 then return "cloud-snow" end
+    if (code >= 51 and code <= 67) or (code >= 80 and code <= 82) then return "cloud-rain" end
+    return "cloud"
+end
+-- the world clocks: the first is home. zones.json in the scene's folder may list others: [{ "zone": "Asia/Tokyo", "name": "Tokyo" }]
+local ZONES = {
+    { zone = "Europe/Bratislava", name = N("Bratislava") }, { zone = "Europe/London", name = N("London") }, { zone = "Asia/Tokyo", name = N("Tokyo") },
+    { zone = "America/New_York", name = N("New York") }, { zone = "America/Los_Angeles", name = N("Los Angeles") },
+}
+local world, world_at = {}, 0
+local function zones()
+    local ok, saved = pcall(sys.ask, "files.read", "zones.json", "json")
+    if ok and type(saved) == "table" and #saved > 0 then return saved end
+    return ZONES
+end
+-- asks the system what time it is in each (date knows the zones), at most every half minute
+local function learn_world(redraw)
+    if os.clock() - world_at < 30 and #world > 0 then return end
+    world_at = os.clock()
+    local list, command = zones(), {}
+    for i, z in ipairs(list) do
+        if i > 6 then break end
+        if type(z.zone) == "string" and z.zone:match("^[%w_/%-%+]+$") then command[#command + 1] = "TZ=" .. z.zone .. " date '+%H:%M %z'" end
+    end
+    if #command == 0 then return end
+    run("sh", { "-c", table.concat(command, "; ") }, function(out)
+        local lines, here = {}, tonumber(os.date("%z")) or 0
+        for time, sign, hh, mm in (out or ""):gmatch("(%d%d:%d%d) ([%+%-])(%d%d)(%d%d)") do
+            local diff = (tonumber(hh) + tonumber(mm) / 60) * (sign == "-" and -1 or 1) - math.floor(here / 100) - (here % 100) / 60
+            lines[#lines + 1] = { time = time, diff = diff }
+        end
+        world = {}
+        for i, line in ipairs(lines) do
+            local z = list[i]
+            if z then world[#world + 1] = { name = z.name or z.zone, time = line.time, diff = line.diff, home = i == 1 } end
+        end
+        if redraw then redraw() end
+    end)
+end
+local function overview(again)
     local t = os.date("*t")
     -- the week as ISO 8601 counts it, Monday first
     local week = (t.yday - ((t.wday + 5) % 7 + 1) + 10) // 7
     if week < 1 then week = 52 end
     local rows = {
-        { big = true, label = os.date("%H:%M") },
+        { big = true, label = os.date("%H:%M:%S") },
         { glyph = "calendar", label = tr(WEEKDAYS[t.wday]) .. "  " .. t.day .. ". " .. t.month .. ". " .. t.year, hint = tr("week") .. " " .. week, quiet = true },
     }
     local parts = {}
@@ -243,6 +289,22 @@ local function overview()
     local running, _, left = timers.timer()
     if running then parts[#parts + 1] = tr("Timer") .. " " .. timers.clock(left + 999) end
     if #parts > 0 then rows[#rows + 1] = { glyph = "alarm", label = table.concat(parts, "  ·  "), quiet = true } end
+    -- the sky above the place: how it is, and how far the day has gone
+    if sky and sky.now then
+        local today = type(sky.days) == "table" and sky.days[1]
+        rows[#rows + 1] = { line = true, glyph = sky_glyph(sky.now.code), label = tostring(sky.now.temp) .. " °C" .. ((sky.place or "") ~= "" and ("  ·  " .. sky.place) or ""),
+                            hint = today and (today.max .. "° / " .. today.min .. "°") or "", quiet = true }
+        local day = type(sky.sun) == "table" and tonumber(sky.sun.t)
+        if day and day >= 0 then rows[#rows + 1] = { glyph = "sun-low", label = tr("Daylight"), bar = day, hint = math.floor(day * 100) .. " %", quiet = true } end
+    end
+    if #world > 0 then
+        rows[#rows + 1] = { head = true, label = tr("WORLD CLOCKS"), line = true }
+        for _, w in ipairs(world) do
+            local diff = w.home and tr("home") or (w.diff == 0 and "±0 h" or string.format("%+g h", w.diff))
+            rows[#rows + 1] = { glyph = w.home and "home-2" or "world", label = tr(w.name), hint = w.time .. "  ·  " .. diff, quiet = true }
+        end
+    end
+    learn_world(again)
     return rows
 end
 local function stopwatch(again)
@@ -296,17 +358,6 @@ local function alarms(again)
     if off > 0 then rows[#rows + 1] = { keep = true, danger = true, glyph = "trash", label = tr("Remove alarms that are off"), run = function() timers.alarm_prune() again() end } end
     return rows
 end
--- an icon for a weather code of the WMO
-local function sky_glyph(code)
-    code = tonumber(code) or 3
-    if code == 0 then return "sun" end
-    if code <= 2 then return "sun-low" end
-    if code == 45 or code == 48 then return "cloud-fog" end
-    if code >= 95 then return "cloud-storm" end
-    if (code >= 71 and code <= 77) or code == 85 or code == 86 then return "cloud-snow" end
-    if (code >= 51 and code <= 67) or (code >= 80 and code <= 82) then return "cloud-rain" end
-    return "cloud"
-end
 local function weather()
     if not (sky and sky.now) then return { { big = true, label = "—" }, { glyph = "cloud", label = tr("No forecast yet"), off = true } } end
     local function rain(p) return (tonumber(p) or 0) > 0 and ("  ·  " .. p .. " %") or "" end
@@ -335,14 +386,15 @@ open_time = function(d, keep)
     if not ticking then
         ticking = every(200, function()
             if card.id() ~= "time" then cancel(ticking) ticking = nil return end
-            if tab == 1 or tab == 2 then open_time(d, true) end
+            if tab == 0 or tab == 1 or tab == 2 then open_time(d, true) end
         end)
     end
     local tabs = {}
     for i, t in ipairs(TABS) do tabs[i] = { glyph = t.glyph, label = tr(t.name), on = tab == i - 1, run = function() tab = i - 1 open_time(d, true) end } end
-    local rows = (tab == 1 and stopwatch(again)) or (tab == 2 and timer(again)) or (tab == 3 and alarms(again)) or (tab == 4 and weather()) or overview()
+    local rows = (tab == 1 and stopwatch(again)) or (tab == 2 and timer(again)) or (tab == 3 and alarms(again)) or (tab == 4 and weather()) or overview(again)
     -- the same height on every tab: the card's top edge stays where it is
-    card.open(rows, { owner = d, id = "time", width = 400, tabs = tabs, keep = keep, min_height = 500 })
+    card.open(rows, { owner = d, id = "time", width = 400, tabs = tabs, keep = keep, min_height = 560,
+                      foot = { label = tr("Date and time settings"), glyph = "settings", more = true, run = function() open.settings("time") end } })
 end
 
 local function read_sky(then_do)
