@@ -88,7 +88,7 @@ ShellRoot {
         id: line
         property var what
         property bool canEnd: true
-        height: 46; radius: 12; color: lineHit.hovered ? Theme.card : "transparent"
+        height: 46; radius: 12; color: lineHit.hovered ? Qt.alpha(Theme.card, 0.5) : "transparent"
         HoverHandler { id: lineHit }
         Label { x: 14; width: parent.width - 330; text: line.what.name + (line.what.pids.length > 1 ? "  (" + line.what.pids.length + ")" : ""); font.weight: 600; anchors.verticalCenter: parent.verticalCenter }
         Label { anchors.right: parent.right; anchors.rightMargin: 226; text: line.what.cpu.toFixed(1) + " %"; color: line.what.cpu >= 25 ? Theme.gold : Theme.dim; anchors.verticalCenter: parent.verticalCenter }
