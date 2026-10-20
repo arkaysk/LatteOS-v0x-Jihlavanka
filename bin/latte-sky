@@ -57,10 +57,11 @@ def sky(lat, lon, t=None):
 
 def forecast(lat, lon):
     """Open-Meteo, no key needed. Asked at most every 20 minutes; with no network, the last one known."""
-    try:
-        if time.time() - os.path.getmtime(CACHE) < 20 * 60:
-            return json.load(open(CACHE))
-    except (OSError, ValueError):
+    try:                                                 # the last one, if it is fresh and for the same place
+        kept = json.load(open(CACHE))
+        if time.time() - os.path.getmtime(CACHE) < 20 * 60 and kept.get("at") == [lat, lon]:
+            return kept
+    except (OSError, ValueError, AttributeError):
         pass
     url = ("https://api.open-meteo.com/v1/forecast?latitude=%s&longitude=%s&current=temperature_2m,weather_code,wind_speed_10m,"
            "apparent_temperature,relative_humidity_2m&hourly=temperature_2m,weather_code&daily=weather_code,temperature_2m_max,"
@@ -79,6 +80,7 @@ def forecast(lat, lon):
            "wind": round(cur.get("wind_speed_10m") or 0), "hours": [], "days": [],
            "sunrise": ((daily.get("sunrise") or [""])[0] or "")[11:16], "sunset": ((daily.get("sunset") or [""])[0] or "")[11:16]}
     out["aqi"] = air_quality(lat, lon)
+    out["at"] = [lat, lon]
     times = hourly.get("time") or []
     start = next((i for i, t in enumerate(times) if t[:13] == (cur.get("time") or "")[:13]), 0) + 1
     for i in range(start, min(start + 24, len(times)), 3):

@@ -199,6 +199,22 @@
     "words": "goo drops lively weather play bend material"
    },
    {
+    "id": "clockgoo",
+    "under": "drops",
+    "name": "Clock and weather (ClockGoo)",
+    "icon": "clock",
+    "status": "ready",
+    "words": "clock weather place city town world clocks time zones screen time wellbeing bedtime goal clockgoo"
+   },
+   {
+    "id": "camgoo",
+    "under": "drops",
+    "name": "Webcams (CamGoo)",
+    "icon": "camera",
+    "status": "ready",
+    "words": "webcam camera cam live picture view camgoo"
+   },
+   {
     "id": "launcher",
     "under": "drops",
     "name": "Launcher (LensGoo)",

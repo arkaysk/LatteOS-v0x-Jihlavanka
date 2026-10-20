@@ -242,22 +242,18 @@ local function sky_glyph(code)
 end
 -- ── the card, as the reference drew it: the scene (parts/clock.plm) is told the texts and the numbers ─────────────
 -- the world clocks: the first is home. zones.json in the scene's folder holds the user's own list (the card's Change layout writes it)
-local PRESETS = {
+-- until the user chooses (Settings › Drops › Clock and weather), these; the names are translated where they are shown
+local DEFAULT_ZONES = {
     { zone = "Europe/Bratislava", name = N("Bratislava"), country = N("Slovakia") }, { zone = "Europe/London", name = N("London"), country = N("United Kingdom") },
     { zone = "Asia/Tokyo", name = N("Tokyo"), country = N("Japan") }, { zone = "America/New_York", name = N("New York"), country = N("USA (East)") },
-    { zone = "America/Los_Angeles", name = N("San Francisco"), country = N("USA (West)") }, { zone = "Europe/Paris", name = N("Paris"), country = N("France") },
-    { zone = "Europe/Berlin", name = N("Berlin"), country = N("Germany") }, { zone = "Europe/Prague", name = N("Prague"), country = N("Czechia") },
-    { zone = "Europe/Kyiv", name = N("Kyiv"), country = N("Ukraine") }, { zone = "Asia/Dubai", name = N("Dubai"), country = N("United Arab Emirates") },
-    { zone = "Asia/Shanghai", name = N("Shanghai"), country = N("China") }, { zone = "Australia/Sydney", name = N("Sydney"), country = N("Australia") },
+    { zone = "America/Los_Angeles", name = N("San Francisco"), country = N("USA (West)") },
 }
-local DEFAULT_ZONES = { PRESETS[1], PRESETS[2], PRESETS[3], PRESETS[4], PRESETS[5] }
 local world, world_at = {}, 0
 local function zones()
     local ok, saved = pcall(sys.ask, "files.read", "zones.json", "json")
     if ok and type(saved) == "table" and #saved > 0 then return saved end
     return DEFAULT_ZONES
 end
-local function write_zones(list) pcall(sys.call, "files.write", "zones.json", list) world_at = 0 end
 -- asks the system what time it is in each (date knows the zones), at most every half minute
 local function learn_world()
     if os.clock() - world_at < 30 and #world > 0 then return end
@@ -368,6 +364,8 @@ local function fill_clock()
         local days = type(sky.days) == "table" and sky.days or {}
         text.clk_place = upper((sky.place or "") ~= "" and (sky.place .. " · ") or "") .. tr("NOW")
         text.clk_temp = tostring(now.temp)
+        fact.clk_kind = tonumber(now.kind) or 3
+        fact.clk_night = (type(sky.sun) == "table" and (tonumber(sky.sun.t) or 0) < 0) and 1 or 0
         text.clk_sky = sky_name(now.code)
         text.clk_g_sky = icons[sky_glyph(now.code)] or icons["cloud"]
         if days[1] then text.clk_minmax = tr("Min") .. " " .. days[1].min .. "° / " .. tr("Max") .. " " .. days[1].max .. "°" end
@@ -442,7 +440,6 @@ local function fill_clock()
     fact.clk_dnd_on = quiet() and 1 or 0
 end
 
-local customize
 local function open_clock(d, keep)
     learn_world()
     learn_focus()
@@ -452,37 +449,6 @@ local function open_clock(d, keep)
     card.open({}, { owner = d, id = "time", custom = "clock", width = 592, min_height = 660, split = 606, pane = 1, keep = keep })
     fill_clock()
 end
--- Change layout: which cities, and whether the screen time is kept and what it aims at
-customize = function(d)
-    local chosen = {}
-    for i, z in ipairs(zones()) do chosen[z.zone] = i end
-    local rows = { { label = tr("Back"), glyph = "chevron-left", keep = true, run = function() open_clock(d) end },
-                   { head = true, label = tr("CITIES"), line = true } }
-    for i, z in ipairs(PRESETS) do
-        rows[#rows + 1] = { label = tr(z.name), glyph = "world", on = chosen[z.zone] ~= nil, off = i == 1, keep = true, run = function()
-            local list = {}
-            for _, y in ipairs(zones()) do if y.zone ~= z.zone then list[#list + 1] = y end end
-            if chosen[z.zone] == nil and #list < 5 then list[#list + 1] = z end
-            write_zones(list)
-            customize(d)
-        end }
-    end
-    rows[#rows + 1] = { head = true, label = tr("DIGITAL WELLBEING"), line = true }
-    rows[#rows + 1] = { label = tr("Keep the screen time"), glyph = "device-desktop", on = focus.log == true, keep = true, run = function()
-        run("latte-focus", { "set", "log", focus.log and "off" or "on" }, function() focus.log = not focus.log customize(d) end)
-    end }
-    rows[#rows + 1] = { label = string.format(tr("Goal: under %dh a day"), tonumber(focus.goal) or 6), glyph = "clock", keep = true,
-        wheel = function(dir)
-            local g = math.max(1, math.min(16, (tonumber(focus.goal) or 6) + dir))
-            run("latte-focus", { "set", "goal", tostring(g) }, function() focus.goal = g customize(d) end)
-        end,
-        run = function()
-            local g = ((tonumber(focus.goal) or 6) % 16) + 1
-            run("latte-focus", { "set", "goal", tostring(g) }, function() focus.goal = g customize(d) end)
-        end, hint = tr("wheel") }
-    card.open(rows, { owner = d, id = "time-layout", width = 360, plain = true })
-end
-
 local function stopwatch(again)
     local w = timers.all().watch
     local rows = {
@@ -642,7 +608,7 @@ return {
         on("clock_time", function() if card.id() == "time" then card.close() else open_time(d) end end)
         on("clk_tab", function(n) if n == 1 then tab = 2 open_time(d) elseif n == 2 then tab = 4 open_time(d) end end)
         on("clk_dnd", function() E.set("quiet", not quiet()) show_face(d) fill_clock() end)
-        on("clk_layout", function() customize(d) end)
+        on("clk_layout", function() card.close() after(80, function() open.settings("clockgoo") end) end)
         pcall(sys.watch, "apps", function(list) fill_apps = list or {} end)
         -- the weather beside the date, fresh every twenty minutes
         after(4000, function() read_sky(function() show_face(d) end) end)

@@ -81,6 +81,7 @@ part Rows {
         }
         // the card of ClockGoo is a scene of its own, drawn over the whole card (clock.plm)
         include "clock.plm"
+        include "cam.plm"
         column card_col {
             at: card.x0, card.y0
             padding: 8

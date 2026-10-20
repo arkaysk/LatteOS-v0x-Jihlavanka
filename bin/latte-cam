@@ -1,0 +1,53 @@
+#!/usr/bin/env python3
+"""latte-cam: a webcam's picture of now, for CamGoo.
+
+  latte-cam fetch URL      fetches the picture (a JPEG or PNG the camera publishes at that address), keeps it in
+                           ~/.cache/latteos/cams/ under a name of its own and prints where; the two newest of a camera
+                           are kept, older ones go. A new name each time, so the scene sees a new picture.
+
+Only http and https, at most 8 MB, and only what says it is an image.
+"""
+import hashlib, os, re, sys, time, urllib.request
+
+CACHE = os.path.join(os.environ.get("XDG_CACHE_HOME") or os.path.expanduser("~/.cache"), "latteos", "cams")
+MOST = 8 * 1024 * 1024
+
+
+def fetch(url):
+    if not re.fullmatch(r"https?://\S+", url):
+        print("latte-cam: not an address", file=sys.stderr)
+        return 2
+    key = hashlib.sha1(url.encode()).hexdigest()[:12]
+    try:
+        with urllib.request.urlopen(urllib.request.Request(url, headers={"User-Agent": "LatteOS"}), timeout=12) as r:
+            kind = r.headers.get_content_type()
+            if not kind.startswith("image/"):
+                print("latte-cam: not a picture: " + kind, file=sys.stderr)
+                return 1
+            data = r.read(MOST + 1)
+    except Exception as e:
+        print("latte-cam: %s" % e, file=sys.stderr)
+        return 1
+    if len(data) > MOST:
+        print("latte-cam: too big", file=sys.stderr)
+        return 1
+    os.makedirs(CACHE, exist_ok=True)
+    path = os.path.join(CACHE, "%s-%d%s" % (key, int(time.time() * 1000), ".png" if kind == "image/png" else ".jpg"))
+    with open(path + ".new", "wb") as f:
+        f.write(data)
+    os.replace(path + ".new", path)
+    mine = sorted((p for p in os.listdir(CACHE) if p.startswith(key + "-")), reverse=True)
+    for old in mine[2:]:
+        try:
+            os.remove(os.path.join(CACHE, old))
+        except OSError:
+            pass
+    print(path)
+    return 0
+
+
+if __name__ == "__main__":
+    if len(sys.argv) == 3 and sys.argv[1] == "fetch":
+        sys.exit(fetch(sys.argv[2]))
+    print(__doc__.strip(), file=sys.stderr)
+    sys.exit(2)

@@ -21,6 +21,7 @@
 /usr/bin/latte-guarddog                                 <- bin/latte-guarddog
 /usr/bin/latte-focus                                    <- bin/latte-focus
 /usr/bin/latte-nameday                                  <- bin/latte-nameday
+/usr/bin/latte-cam                                      <- bin/latte-cam
 /usr/bin/latte-monitor                                  <- bin/latte-monitor
 /usr/bin/latte-net                                      <- bin/latte-net
 /usr/bin/latte-network                                  <- bin/latte-network
@@ -105,6 +106,7 @@
 /usr/share/latteos/goo/parts/lock.plm                   <- goo/parts/lock.plm
 /usr/share/latteos/goo/parts/desk.plm                   <- goo/parts/desk.plm
 /usr/share/latteos/goo/parts/clock.plm                  <- goo/parts/clock.plm
+/usr/share/latteos/goo/parts/cam.plm                    <- goo/parts/cam.plm
 /usr/share/latteos/goo/parts/ctx.plm                    <- goo/parts/ctx.plm
 /usr/share/latteos/goo/lib/engine.luau                  <- goo/lib/engine.luau
 /usr/share/latteos/goo/lib/card.luau                    <- goo/lib/card.luau
@@ -129,6 +131,7 @@
 /usr/share/latteos/goo/drops/quickgoo.luau              <- goo/drops/quickgoo.luau
 /usr/share/latteos/goo/drops/queengoo.luau              <- goo/drops/queengoo.luau
 /usr/share/latteos/goo/drops/mediagoo.luau              <- goo/drops/mediagoo.luau
+/usr/share/latteos/goo/drops/camgoo.luau              <- goo/drops/camgoo.luau
 /usr/share/latteos/greeter/labwc/rc.xml                 <- system/greeter/labwc/rc.xml
 /usr/share/latteos/hypr/hyprland.lua                    <- system/hypr/hyprland.lua
 /usr/share/latteos/hypr/latte/windows.lua               <- system/hypr/latte/windows.lua
@@ -210,7 +213,7 @@ $XDG_RUNTIME_DIR/latteos/                               # per user: the reason f
 ~/.local/share/latteos/focus/                           # per user: the screen time of each day (bin/latte-focus); nothing leaves the computer
 ~/.local/share/pleamar/goo/                             # per user: where the drops were left, the launcher's memory, settings.json, lock.json, clock.json, timers.json
 /var/lib/latteos/login/user-*.json                      # per user, for the login screen: where the power drop is, the coffee
-~/.cache/latteos/                                       # per user: the weather and the news last fetched
+~/.cache/latteos/                                       # per user: the weather, the news, the name days and the webcams' pictures last fetched
 
 # Not in this repository's power to ship: Fedora packages, and programs built from someone else's source.
 [needs]

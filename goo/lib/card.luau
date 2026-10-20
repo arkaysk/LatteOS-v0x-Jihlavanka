@@ -238,7 +238,7 @@ function M.open(rows, opts)
 
     fact.card_pane = opts.pane or 0
     fact.card_menu = opts.menu == true
-    fact.card_custom = opts.custom == "clock" and 1 or 0       -- the card is a scene of its own (parts/clock.plm), not rows
+    fact.card_custom = (opts.custom == "clock" and 1) or (opts.custom == "cam" and 2) or 0       -- the card is a scene of its own (parts/clock.plm), not rows
     -- where the coffee of a `wave` row begins: the heights of the rows above it, as parts/rows.plm lays them out
     local split, waved = (#tabs > 0 and 44 or 0) + (opts.field and 46 or 0), false
     for _, r in ipairs(out) do

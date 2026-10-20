@@ -133,6 +133,42 @@ ShellRoot {
     }
     readonly property var entries: DesktopEntries.applications.values.filter(e => !e.noDisplay).sort((a, b) => a.name.localeCompare(b.name))
     property int lensOpen: -1                  // the list whose apps are shown for choosing
+    // ── ClockGoo's world clocks: the scene reads the same file (goo/drops/clockgoo.luau); the first is home ─────
+    readonly property var clockDefaults: [
+        { zone: "Europe/Bratislava", name: "Bratislava", country: "Slovakia" }, { zone: "Europe/London", name: "London", country: "United Kingdom" },
+        { zone: "Asia/Tokyo", name: "Tokyo", country: "Japan" }, { zone: "America/New_York", name: "New York", country: "USA (East)" },
+        { zone: "America/Los_Angeles", name: "San Francisco", country: "USA (West)" }]
+    FileView {
+        id: zonesFile
+        property var list: []
+        path: (Quickshell.env("XDG_DATA_HOME") || (Quickshell.env("HOME") + "/.local/share")) + "/pleamar/goo/zones.json"
+        printErrors: false; watchChanges: true
+        onFileChanged: reload()
+        onLoaded: { try { const d = JSON.parse(text()); list = Array.isArray(d) ? d : [] } catch (e) { list = [] } }
+        onLoadFailed: list = []
+        function save(l) { list = l; setText(JSON.stringify(l)) }
+    }
+    readonly property var worldClocks: zonesFile.list.length > 0 ? zonesFile.list : clockDefaults
+    function clocksEdit(change) { const l = JSON.parse(JSON.stringify(worldClocks)); change(l); zonesFile.save(l) }
+    Run { id: focusq }
+    // ── CamGoo's webcams: the scene reads the same file (goo/drops/camgoo.luau) ───────────────────────────
+    readonly property var camDefaults: [
+        { name: "Innsbruck", url: "https://www.foto-webcam.eu/webcam/innsbruck/current/1200.jpg" },
+        { name: "Zugspitze", url: "https://www.foto-webcam.eu/webcam/zugspitze/current/1200.jpg" },
+        { name: "Salzburg", url: "https://www.foto-webcam.eu/webcam/salzburg/current/1200.jpg" },
+        { name: "Vienna", url: "https://www.foto-webcam.eu/webcam/wien/current/1200.jpg" }]
+    FileView {
+        id: camsFile
+        property var list: []
+        path: (Quickshell.env("XDG_DATA_HOME") || (Quickshell.env("HOME") + "/.local/share")) + "/pleamar/goo/cams.json"
+        printErrors: false; watchChanges: true
+        onFileChanged: reload()
+        onLoaded: { try { const d = JSON.parse(text()); list = Array.isArray(d) ? d : [] } catch (e) { list = [] } }
+        onLoadFailed: list = []
+        function save(l) { list = l; setText(JSON.stringify(l)) }
+    }
+    readonly property var webcams: camsFile.list.length > 0 ? camsFile.list : camDefaults
+    function camsEdit(change) { const l = JSON.parse(JSON.stringify(webcams)); change(l); camsFile.save(l) }
     Run { id: guardq }
     Run { id: guardset; onDataChanged: {} }
     Run { id: opens }
@@ -149,7 +185,7 @@ ShellRoot {
     // what a page shows is asked for when it opens, and again after anything on it was changed
     readonly property var asks: ({ "sound": [[sound, ["latte-settings", "sound"]]], "defaults": [[opens, ["latte-settings", "defaults"]]], "language": [[region, ["latte-settings", "region"]]],
                                    "time": [[clock, ["latte-settings", "time"]]], "keyboard": [[keys, ["latte-settings", "keyboard"]], [binds, ["hyprctl", "binds", "-j"]]], "displays": [[screens, ["hyprctl", "monitors", "-j"]]],
-                                   "guarddog": [[guardq, ["latte-guarddog", "status"]]], "storage": [[disks, ["latte-settings", "storage"]], [held, ["latte-settings", "sizes"]]], "ai": [[helpers, ["latte-ai", "providers", "all"]]],
+                                   "guarddog": [[guardq, ["latte-guarddog", "status"]]], "clockgoo": [[clock, ["latte-settings", "time"]], [logon, ["latte-settings", "loginscreen"]], [focusq, ["latte-focus", "today"]]], "storage": [[disks, ["latte-settings", "storage"]], [held, ["latte-settings", "sizes"]]], "ai": [[helpers, ["latte-ai", "providers", "all"]]],
                                    "me": [[who, ["latte-settings", "account"]], [pictures, ["latte-settings", "wallpapers"]]], "performance": [[machine, ["latte-devices", "list"]]], "loginscreen": [[logon, ["latte-settings", "loginscreen"]]] })
     function ask() { (asks[page] || []).forEach(a => a[0].ask(a[1])); force.reload(); crashed.reload(); if (page === "background") wall.ask(["latte-wall", "state"]) }
     Timer { id: later; interval: 900; onTriggered: shell.ask() }       // what was asked of the compositor takes a moment to be so
@@ -593,6 +629,62 @@ ShellRoot {
                 Switch { text: I18n.tr("The surface bends"); hint: I18n.tr("Ripples lift the drops and the edge gives under them."); on: goo.kept.bends !== false; onPressed: goo.set("bends", !on) } }
             Label { visible: shell.page === "drops"; width: view.room; wrapMode: Text.WordWrap; color: Theme.dim; font.pixelSize: 13
                     text: I18n.tr("Which drops are on the desktop, and putting them back in their places, is in PowerGoo › Settings on the desktop itself. The coffee they are made of is under Coffee and cup.") }
+
+            // ClockGoo: where the weather is, the world clocks, the screen time
+            Part { visible: shell.page === "clockgoo"; width: view.room; title: I18n.tr("Where the weather is")
+                   note: I18n.tr("A town or a village; the weather, the sunrise and the sunset are for it. The login screen shows its sky too.")
+                Label { width: view.room; text: logon.data && logon.data.place ? logon.data.place : I18n.tr("No place yet"); font.weight: 700; font.pixelSize: 15 }
+                Field { id: placeField; width: Math.min(420, view.room); icon: "map-pin"; hint: I18n.tr("Type a town and press Enter…")
+                        onAccepted: if (text.trim() !== "") { shell.order(["latte-settings", "loginscreen", "place", text.trim()]); text = "" } } }
+            Part { id: worldPart; visible: shell.page === "clockgoo"; width: view.room; title: I18n.tr("World clocks")
+                   note: I18n.tr("Up to five; the first is home. Find any city or part of the world below, and name it as you like.")
+                Repeater { model: shell.page === "clockgoo" ? shell.worldClocks : []
+                    Rectangle { id: wc; required property var modelData; required property int index; width: view.room; height: 56; radius: 16; color: Theme.card
+                        border.width: index === 0 ? 1 : 0; border.color: Theme.gold
+                        Glyph { x: 18; name: wc.index === 0 ? "home-2" : "world"; font.pixelSize: 18; color: wc.index === 0 ? Theme.gold : Theme.dim; anchors.verticalCenter: parent.verticalCenter }
+                        Column { x: 50; width: parent.width - 50 - 260; anchors.verticalCenter: parent.verticalCenter; spacing: 1
+                            TextInput { width: parent.width; text: I18n.tr(wc.modelData.name); color: Theme.cream; font.family: Theme.font; font.pixelSize: 14; font.weight: 700; selectByMouse: true; clip: true
+                                        onEditingFinished: if (text.trim() !== "" && text.trim() !== I18n.tr(wc.modelData.name)) shell.clocksEdit(l => l[wc.index].name = text.trim()) }
+                            Label { text: wc.modelData.zone.replace(/_/g, " "); color: Theme.dim; font.pixelSize: 12 } }
+                        Row { anchors.right: parent.right; anchors.rightMargin: 12; anchors.verticalCenter: parent.verticalCenter; spacing: 8
+                            Pill { visible: wc.index > 0; text: I18n.tr("Make home"); icon: "home-2"; onPressed: shell.clocksEdit(l => l.unshift(l.splice(wc.index, 1)[0])) }
+                            Pill { visible: shell.worldClocks.length > 1; icon: "x"; danger: true; onPressed: shell.clocksEdit(l => l.splice(wc.index, 1)) } } } }
+                Field { id: cityField; width: Math.min(420, view.room); hint: I18n.tr("Find a city or a part of the world…") }
+                Item { width: view.room; height: 1 }
+                Repeater { model: shell.page === "clockgoo" && clock.data && cityField.text.trim().length > 1
+                                  ? clock.data.zones.filter(z => shell.near(shell.plain(cityField.text.trim()).replace(/ /g, "_"), shell.plain(z).replace(/\//g, " "))).slice(0, 24) : []
+                    Pill { required property string modelData; icon: "plus"; text: modelData.replace(/_/g, " ")
+                           onPressed: if (shell.worldClocks.length < 5) { shell.clocksEdit(l => l.push({ zone: modelData, name: modelData.split("/").pop().replace(/_/g, " "), country: modelData.split("/")[0] })); cityField.text = "" } } } }
+            Part { visible: shell.page === "clockgoo"; width: view.room; title: I18n.tr("Digital wellbeing")
+                   note: I18n.tr("How long the screen was in front of you today, and in which apps. It is counted on this computer and never leaves it.")
+                Switch { width: view.room; text: I18n.tr("Keep the screen time"); on: focusq.data !== null && focusq.data.log !== false
+                         onPressed: { shell.order(["latte-focus", "set", "log", on ? "off" : "on"]) } }
+                Label { text: I18n.tr("A goal for a day"); color: Theme.dim; width: view.room }
+                Repeater { model: [2, 3, 4, 5, 6, 8, 10]
+                    Pill { required property int modelData; text: modelData + " h"; strong: focusq.data !== null && focusq.data.goal === modelData; onPressed: shell.order(["latte-focus", "set", "goal", String(modelData)]) } }
+                Item { width: view.room; height: 1 }
+                Label { text: I18n.tr("Bedtime"); color: Theme.dim; width: view.room }
+                Repeater { model: ["21:30", "22:00", "22:30", "23:00", "23:30", "00:00"]
+                    Pill { required property string modelData; text: modelData; strong: focusq.data !== null && focusq.data.bedtime === modelData; onPressed: shell.order(["latte-focus", "set", "bedtime", modelData]) } } }
+
+            // CamGoo: the webcams
+            Part { visible: shell.page === "camgoo"; width: view.room; title: I18n.tr("Webcams")
+                   note: I18n.tr("A camera that publishes its picture of now at a fixed address (a .jpg or .png). CamGoo fetches it every minute while its card is open. Up to six are shown.")
+                Repeater { model: shell.page === "camgoo" ? shell.webcams : []
+                    Rectangle { id: cm; required property var modelData; required property int index; width: view.room; height: 56; radius: 16; color: Theme.card
+                        Glyph { x: 18; name: "camera"; font.pixelSize: 18; color: Theme.gold; anchors.verticalCenter: parent.verticalCenter }
+                        Column { x: 50; width: parent.width - 50 - 160; anchors.verticalCenter: parent.verticalCenter; spacing: 1
+                            TextInput { width: parent.width; text: I18n.tr(cm.modelData.name); color: Theme.cream; font.family: Theme.font; font.pixelSize: 14; font.weight: 700; selectByMouse: true; clip: true
+                                        onEditingFinished: if (text.trim() !== "" && text.trim() !== I18n.tr(cm.modelData.name)) shell.camsEdit(l => l[cm.index].name = text.trim()) }
+                            Label { text: cm.modelData.url; color: Theme.dim; font.pixelSize: 11; width: parent.width; elide: Text.ElideMiddle } }
+                        Row { anchors.right: parent.right; anchors.rightMargin: 12; anchors.verticalCenter: parent.verticalCenter; spacing: 8
+                            Pill { visible: cm.index > 0; icon: "chevron-up"; onPressed: shell.camsEdit(l => l.splice(cm.index - 1, 0, l.splice(cm.index, 1)[0])) }
+                            Pill { icon: "x"; danger: true; onPressed: shell.camsEdit(l => l.splice(cm.index, 1)) } } } }
+                Row { spacing: 10
+                    Field { id: camName; width: 200; icon: "camera"; hint: I18n.tr("Name") }
+                    Field { id: camUrl; width: Math.min(420, view.room - 340); icon: "world-www"; hint: I18n.tr("https://…/picture.jpg"); onAccepted: camAdd.pressed() }
+                    Pill { id: camAdd; text: I18n.tr("Add"); strong: true; icon: "plus"
+                           onPressed: if (/^https?:\/\/\S+$/.test(camUrl.text.trim()) && camName.text.trim() !== "") { shell.camsEdit(l => l.push({ name: camName.text.trim(), url: camUrl.text.trim() })); camName.text = ""; camUrl.text = "" } } } }
 
             // the launcher's lists
             Part { visible: shell.page === "launcher"; width: view.room; title: I18n.tr("Lists of the launcher")

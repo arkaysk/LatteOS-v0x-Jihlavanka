@@ -1,0 +1,65 @@
+// CamGoo's card: the picture of a webcam now, which camera it is and when it was taken, the cameras to choose
+// from, and on the coffee the way to the list in the Settings. The logic (drops/camgoo.luau) fetches the picture
+// (bin/latte-cam) and tells the path; the card's frame, glass and coffee are the card's (parts/card.plm).
+part Cam {
+    text cam_path = ""
+    text cam_name = ""
+    text cam_time = ""
+    text cam_note = ""                         // while it loads, or why it did not
+    text cam_foot = ""
+    text ic_cam = ""
+    text ic_left = ""
+    text ic_right = ""
+    text ic_cog = ""
+    fact cam_has = 0                           // there is a picture to show
+    model camlist max 6 { name: text; on: bool }
+    event cam_pick ->
+    event cam_step ->                          // 1 the next camera, 0 the one before
+    event cam_settings ->
+    image cam_img = from cam_path, 640, 360
+
+    group {
+        show: card_custom == 2
+        move: card.x0, card.y0
+        text ic_cam { at: 30, 28; anchor: center; size: 18; color: #d6a468; family: "tabler-icons" }
+        text cam_name { at: 46, 28; anchor: left center; size: 17; weight: 700; color: #f5e8d8; width: 440; lines: 1; family: "Inter" }
+        text cam_time { at: 656, 28; anchor: right center; size: 12; weight: 600; color: #b8a491; family: "Inter" }
+        // the picture, its corners round
+        group {
+            clip box { from: 16, 52; size: 640, 360; corner: 14 }
+            box { from: 16, 52; size: 640, 360; color: #120c09; opacity: 80% }
+            image cam_img { at: 16, 52; size: 640, 360; show: cam_has > 0 }
+            text cam_note { at: 336, 232; anchor: center; size: 14; weight: 600; color: #b8a491; show: cam_has < 1; family: "Inter" }
+        }
+        box { from: 16, 52; size: 640, 360; corner: 14; stroke: 1; color: #f5e8d8; opacity: 10% }
+        // the one before and the next: the two sides of the picture
+        ellipse { at: 44, 232; radius: 18; color: #1b120d; opacity: 55% * max(left_hit.hover, 0.4) }
+        text ic_left { at: 44, 232; anchor: center; size: 18; color: #f5e8d8; family: "tabler-icons" }
+        ellipse { at: 628, 232; radius: 18; color: #1b120d; opacity: 55% * max(right_hit.hover, 0.4) }
+        text ic_right { at: 628, 232; anchor: center; size: 18; color: #f5e8d8; family: "tabler-icons" }
+        zone box left_hit { from: 16, 52; size: 120, 360; cursor: pointer; active: card_open and card_custom == 2; label: "Previous camera" }
+        zone box right_hit { from: 536, 52; size: 120, 360; cursor: pointer; active: card_open and card_custom == 2; label: "Next camera" }
+        on press left_hit { emit cam_step(0) }
+        on press right_hit { emit cam_step(1) }
+        // the cameras
+        row {
+            at: 16, 424
+            gap: 8
+            for c in camlist {
+                group {
+                    size: 100, 30
+                    box { from: 0, 0; size: 100, 30; corner: 15; color: if(c.on, #f7c873, #4a372b); opacity: if(c.on, 28%, 55% + 30% * pick_hit.hover) }
+                    box { from: 0, 0; size: 100, 30; corner: 15; stroke: 1; color: if(c.on, #f7c873, #f5e8d8); opacity: if(c.on, 60%, 10%) }
+                    text c.name { at: 50, 15; anchor: center; size: 12; weight: 600; color: if(c.on, #f7c873, #f5e8d8); width: 88; lines: 1; align: center; family: "Inter" }
+                    zone box pick_hit { from: 0, 0; size: 100, 30; cursor: pointer; active: card_open and card_custom == 2; label: "{c.name}"; selected: c.on }
+                    on press pick_hit { emit cam_pick(c.index) }
+                }
+            }
+        }
+        // the foot, on the coffee
+        text ic_cog { at: 30, 506; anchor: center; size: 15; color: #d6a468; family: "tabler-icons" }
+        text cam_foot { at: 46, 506; anchor: left center; size: 13; weight: 600; color: #f5e8d8; family: "Inter" }
+        zone box foot_hit { from: 16, 490; size: 400, 32; cursor: pointer; active: card_open and card_custom == 2; label: "{cam_foot}" }
+        on press foot_hit { emit cam_settings }
+    }
+}
