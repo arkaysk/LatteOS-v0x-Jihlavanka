@@ -67,6 +67,7 @@
 /usr/share/latteos/apps/desktop.qml                     <- apps/desktop.qml
 /usr/share/latteos/apps/files.qml                       <- apps/files.qml
 /usr/share/latteos/apps/settings/pages.json             <- apps/settings/pages.json
+/usr/share/latteos/weather-services.txt                 <- system/weather-services.txt
 /usr/share/latteos/apps/common/Theme.qml                <- apps/common/Theme.qml
 /usr/share/latteos/apps/common/I18n.qml                 <- apps/common/I18n.qml
 /usr/share/latteos/apps/common/Icons.qml                <- apps/common/Icons.qml

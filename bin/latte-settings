@@ -351,7 +351,7 @@ def loginscreen(a):
     if a[:1] == ["place"]:
         name = " ".join(a[1:]).strip()
         if not name:
-            return {"ok": set_login_conf(lat="", lon="", place="")}
+            return {"ok": set_login_conf(lat="", lon="", place="", country="")}
         import urllib.parse, urllib.request
         try:
             url = "https://geocoding-api.open-meteo.com/v1/search?count=1&name=" + urllib.parse.quote(name)
@@ -361,7 +361,7 @@ def loginscreen(a):
         if not hit:
             return {"ok": False, "error": "not found"}
         place = ", ".join(x for x in (hit.get("name"), hit.get("admin1"), hit.get("country")) if x)
-        return {"ok": set_login_conf(lat=str(hit["latitude"]), lon=str(hit["longitude"]), place=place), "place": place}
+        return {"ok": set_login_conf(lat=str(hit["latitude"]), lon=str(hit["longitude"]), place=place, country=(hit.get("country_code") or "").lower()), "place": place}
     return {"panel": c.get("panel", "news"), "news_url": c.get("news_url", ""), "place": c.get("place", ""),
             "lat": c.get("lat", ""), "lon": c.get("lon", "")}
 

@@ -151,6 +151,7 @@ ShellRoot {
     readonly property var worldClocks: zonesFile.list.length > 0 ? zonesFile.list : clockDefaults
     function clocksEdit(change) { const l = JSON.parse(JSON.stringify(worldClocks)); change(l); zonesFile.save(l) }
     Run { id: focusq }
+    Run { id: weatherq }
     // ── CamGoo's webcams: the scene reads the same file (goo/drops/camgoo.luau) ───────────────────────────
     readonly property var camDefaults: [
         { name: "Innsbruck", url: "https://www.foto-webcam.eu/webcam/innsbruck/current/1200.jpg" },
@@ -185,7 +186,7 @@ ShellRoot {
     // what a page shows is asked for when it opens, and again after anything on it was changed
     readonly property var asks: ({ "sound": [[sound, ["latte-settings", "sound"]]], "defaults": [[opens, ["latte-settings", "defaults"]]], "language": [[region, ["latte-settings", "region"]]],
                                    "time": [[clock, ["latte-settings", "time"]]], "keyboard": [[keys, ["latte-settings", "keyboard"]], [binds, ["hyprctl", "binds", "-j"]]], "displays": [[screens, ["hyprctl", "monitors", "-j"]]],
-                                   "guarddog": [[guardq, ["latte-guarddog", "status"]]], "clockgoo": [[clock, ["latte-settings", "time"]], [logon, ["latte-settings", "loginscreen"]], [focusq, ["latte-focus", "today"]]], "storage": [[disks, ["latte-settings", "storage"]], [held, ["latte-settings", "sizes"]]], "ai": [[helpers, ["latte-ai", "providers", "all"]]],
+                                   "guarddog": [[guardq, ["latte-guarddog", "status"]]], "clockgoo": [[clock, ["latte-settings", "time"]], [logon, ["latte-settings", "loginscreen"]], [focusq, ["latte-focus", "today"]], [weatherq, ["latte-sky", "models"]]], "storage": [[disks, ["latte-settings", "storage"]], [held, ["latte-settings", "sizes"]]], "ai": [[helpers, ["latte-ai", "providers", "all"]]],
                                    "me": [[who, ["latte-settings", "account"]], [pictures, ["latte-settings", "wallpapers"]]], "performance": [[machine, ["latte-devices", "list"]]], "loginscreen": [[logon, ["latte-settings", "loginscreen"]]] })
     function ask() { (asks[page] || []).forEach(a => a[0].ask(a[1])); force.reload(); crashed.reload(); if (page === "background") wall.ask(["latte-wall", "state"]) }
     Timer { id: later; interval: 900; onTriggered: shell.ask() }       // what was asked of the compositor takes a moment to be so
@@ -636,6 +637,22 @@ ShellRoot {
                 Label { width: view.room; text: logon.data && logon.data.place ? logon.data.place : I18n.tr("No place yet"); font.weight: 700; font.pixelSize: 15 }
                 Field { id: weatherPlace; width: Math.min(420, view.room); icon: "map-pin"; hint: I18n.tr("Type a town and press Enter…")
                         onAccepted: if (text.trim() !== "") { shell.order(["latte-settings", "loginscreen", "place", text.trim()]); text = "" } } }
+            Part { visible: shell.page === "clockgoo"; width: view.room; title: I18n.tr("Forecast by")
+                   note: I18n.tr("The weather services whose forecasts ClockGoo shows side by side, up to five. They often differ: together they tell what may come.")
+                Repeater { model: shell.page === "clockgoo" && weatherq.data ? weatherq.data.models : []
+                    Pill { required property var modelData
+                           readonly property bool on: weatherq.data.chosen.indexOf(modelData.id) >= 0
+                           text: modelData.name + " · " + modelData.by; icon: on ? "check" : ""; strong: on
+                           onPressed: shell.order(["latte-sky", "choose", modelData.id, on ? "off" : "on"]) } } }
+            Part { visible: shell.page === "clockgoo" && weatherq.data !== null && weatherq.data.links.length > 0; width: view.room; title: I18n.tr("More forecasts for your region")
+                   note: I18n.tr("The services of the country of the place above, and some for anywhere. ClockGoo offers them under the days ahead.")
+                Repeater { model: shell.page === "clockgoo" && weatherq.data ? weatherq.data.links : []
+                    Rectangle { required property var modelData; width: view.room; height: 48; radius: 14; color: Theme.card
+                        Glyph { x: 16; name: modelData.here ? "map-pin" : "world"; font.pixelSize: 16; color: Theme.gold; anchors.verticalCenter: parent.verticalCenter }
+                        Label { x: 44; text: modelData.name; font.weight: 700; anchors.verticalCenter: parent.verticalCenter }
+                        Label { x: 190; width: parent.width - 330; text: I18n.tr(modelData.what); color: Theme.dim; font.pixelSize: 12; elide: Text.ElideRight; anchors.verticalCenter: parent.verticalCenter }
+                        Pill { anchors.right: parent.right; anchors.rightMargin: 10; anchors.verticalCenter: parent.verticalCenter; text: I18n.tr("Open"); icon: "world-www"
+                               onPressed: Qt.openUrlExternally(modelData.url) } } } }
             Part { id: worldPart; visible: shell.page === "clockgoo"; width: view.room; title: I18n.tr("World clocks")
                    note: I18n.tr("Up to five; the first is home. Find any city or part of the world below, and name it as you like.")
                 Repeater { model: shell.page === "clockgoo" ? shell.worldClocks : []

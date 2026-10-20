@@ -1,0 +1,19 @@
+# Weather services for each country, which ClockGoo offers beside its own forecast (bin/latte-sky links). A line each:
+#   COUNTRY | name | what it is | address
+# COUNTRY is the two letters of the place's country, * for any place. In the address {lat}, {lon} and {place} are
+# filled in with the place of the weather (Settings › Drops › Clock and weather).
+sk | SHMÚ | Slovenský hydrometeorologický ústav: predpovede, výstrahy | https://www.shmu.sk/sk/?page=1&id=meteo_apocasie_sk
+sk | HZS | Horská záchranná služba: počasie na horách, lavíny | https://www.hzs.sk/
+sk | iMeteo | predpovede pre obce Slovenska | https://www.imeteo.sk/
+sk | SME Počasie | predpovede a radar | https://pocasie.sme.sk/
+cz | ČHMÚ | Český hydrometeorologický ústav | https://www.chmi.cz/
+cz | In-počasí | předpovědi pro obce | https://www.in-pocasi.cz/
+at | GeoSphere Austria | ZAMG | https://www.zamg.ac.at/
+de | DWD | Deutscher Wetterdienst | https://www.dwd.de/
+hu | HungaroMet | Országos Meteorológiai Szolgálat | https://www.met.hu/
+pl | IMGW | Instytut Meteorologii i Gospodarki Wodnej | https://meteo.imgw.pl/
+gb | Met Office | UK weather service | https://www.metoffice.gov.uk/
+* | Yr | MET Norway | https://www.yr.no/en/search?q={place}
+* | Windy | models side by side, radar, wind | https://www.windy.com/{lat}/{lon}?{lat},{lon},9
+* | Ventusky | maps of the weather | https://www.ventusky.com/?p={lat};{lon};8
+* | meteoblue | meteograms | https://www.meteoblue.com/en/weather/week/{lat}N{lon}E

@@ -123,6 +123,8 @@ part Clock {
     text clk_d_sun = ""
     text clk_d_hours = ""
     text clk_d_days = ""
+    text clk_d_more = ""
+    event clk_more ->                          // the other weather services of the region: a menu of them
     text ic_sunrise = ""
     text ic_sunset = ""
     text ic_wind = ""
@@ -469,6 +471,9 @@ part Clock {
             box { from: 13, 342; size: 568, 150; corner: 14; stroke: 1; color: #f5e8d8; opacity: 9% }
             text ic_cloud { at: 30, 357; anchor: center; size: 10; color: #d6a468; family: "tabler-icons" }
             text clk_d_days { at: 40, 357; anchor: left center; size: 7.5; weight: 700; color: #d6a468; family: "Inter" }
+            text clk_d_more { at: 566, 357; anchor: right center; size: 7.5; weight: 700; color: #f7c873; opacity: 70% + 30% * more_hit.hover; family: "Inter" }
+            zone box more_hit { from: 440, 349; size: 130, 16; cursor: pointer; active: card_open and card_custom == 1 and clk_page == 2; label: "{clk_d_more}" }
+            on press more_hit { tap.x = cursor.x; tap.y = cursor.y; emit clk_more }
             for c in clksrc {
                 text c.name { at: 150 + c.index * 88, 370; anchor: center; size: 8; weight: 700; color: #f5e8d8; width: 84; lines: 1; align: center; family: "Inter" }
                 text c.by { at: 150 + c.index * 88, 380; anchor: center; size: 6.5; weight: 600; color: #b8a491; family: "Inter" }

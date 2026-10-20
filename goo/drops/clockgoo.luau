@@ -11,6 +11,7 @@ local card = require("lib/card")
 local open = require("lib/open")
 local timers = require("lib/timers")
 local icons = require("lib/icons")
+local ctx = require("lib/ctx")
 -- N marks a text for the translation table (tests/check.sh looks for it); tr() translates it where it is shown.
 local function N(s) return s end
 
@@ -337,6 +338,7 @@ for lower, capital in pairs({ [0xE1] = 0xC1, [0xE4] = 0xC4, [0x10D] = 0x10C, [0x
                               [0x16F] = 0x16E, [0xFC] = 0xDC, [0xFD] = 0xDD, [0x17E] = 0x17D }) do UP[utf8.char(lower)] = utf8.char(capital) end
 local function upper(s) return (s:gsub(utf8.charpattern, function(c) return UP[c] or c:upper() end)) end
 local fill_apps = {}
+local links = nil                            -- the region's own weather services, and some for anywhere
 local forecasts = nil                       -- the days ahead from several weather services (latte-sky sources)                          -- the apps the launcher lists (LensGoo keeps them; ClockGoo asks the same service)
 
 -- everything the scene shows, once a second while the card is open
@@ -512,6 +514,7 @@ local function fill_weather()
     model.clkh = hours
     -- the days ahead, as each weather service sees them
     text.clk_d_days = tr("THE DAYS AHEAD, FORECAST BY:")
+    text.clk_d_more = tr("More forecasts") .. " ›"
     local list = type(forecasts) == "table" and forecasts or {}
     local heads = {}
     for j, f in ipairs(list) do if j <= 5 then heads[j] = { name = f.name or "", by = f.by or "" } end end
@@ -567,7 +570,7 @@ open_time = function(d, keep)
     if tab == 2 then
         run("latte-sky", { "sources" }, function(out)
             local ok, t = pcall(json.decode, out or "")
-            if ok and type(t) == "table" then forecasts = t.sources fill_weather() end
+            if ok and type(t) == "table" then forecasts, links = t.sources, t.links fill_weather() end
         end)
     end
     open_clock(d, keep)
@@ -636,6 +639,16 @@ return {
         on("clock_time", function() if card.id() == "time" then card.close() else open_time(d) end end)
         on("clk_tab", function(n) tab = tonumber(n) or 0 open_time(d, true) end)
         on("clk_act", function(n) act(tonumber(n) or 0) end)
+        on("clk_more", function()
+            local rows = {}
+            for i, x in ipairs(links or {}) do
+                if i > 12 then break end
+                rows[#rows + 1] = { label = x.name, glyph = x.here and "map-pin" or "world", line = i > 1 and not x.here and (links[i - 1] or {}).here,
+                                    run = function() card.close() open.url(x.url) end }
+            end
+            rows[#rows + 1] = { label = tr("Choose the services…"), glyph = "settings", line = true, run = function() card.close() after(80, function() open.settings("clockgoo") end) end }
+            ctx.open(rows, { width = 240 })
+        end)
         on("clk_dnd", function() E.set("quiet", not quiet()) show_face(d) fill_clock() end)
         on("clk_layout", function() card.close() after(80, function() open.settings("clockgoo") end) end)
         pcall(sys.watch, "apps", function(list) fill_apps = list or {} end)
