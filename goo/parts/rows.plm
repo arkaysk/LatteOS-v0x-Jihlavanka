@@ -22,13 +22,16 @@ part Rows {
     let card.iw = card.tw - card_w2            // …the rows of the first column
     let card.sw = max(card_w2 - 8, 0)          // …and those of the second
     let tab.wide = max(card.tw - (tab.count - 1) * 50, 44)
+    // where all of them fit with their names, they are all shown with them, side by side
+    let tab.full = tab.count > 0 and tab.count * 118 + (tab.count - 1) * 6 <= card.tw
+    let tab.eq = (card.tw - (tab.count - 1) * 6) / max(tab.count, 1)
 
     group {
         opacity: clamp(card.p * 2 - 1, 0, 1)
         // A closed card is most of the time: nothing of it is worked out then.
         show: card.p > 0.01
         // what is written is not drawn past the frame, which is still narrow while it grows from the ear
-        clip box { at: card.ax + card.sx * card.cw / 2, card.ay + card.sy * card.ch / 2; size: card.cw, card.ch; corner: min(if(ear > 14, 26, 18) + (card.round - 18), min(card.cw, card.ch) / 2) }
+        clip box { at: card.ax + card.sx * card.cw / 2, card.ay + card.sy * card.ch / 2; size: card.cw, card.ch; corner: if(card_menu, 12, min(if(ear > 14, 26, 18) + (card.round - 18), min(card.cw, card.ch) / 2)) }
         // Below a wave row the card is coffee to its very edge: a golden layer behind, the goo's own coffee in front,
         // each lapping its own way. It is drawn here, over the whole card, because the rows have padding and cannot reach
         // the edge; a hair is left at the edge for the card's rim. card_split is where the surface stands (lib/card.luau).
@@ -86,11 +89,11 @@ part Rows {
                 show: tab.count > 0
                 for t in tab {
                     group {
-                        size: if(t.on, tab.wide, 44), 44
-                        box { from: 0, 3; size: if(t.on, tab.wide, 44), 38; corner: 19; color: if(t.on, gold, #4a372b); opacity: if(t.on, 24%, 45% + 55% * tab_hit.hover) }
-                        text t.glyph { at: if(t.on, 24, 22), 22; anchor: center; size: 16; color: if(t.on, gold, cream); opacity: 90%; family: "tabler-icons" }
-                        text t.label { at: 44, 22; anchor: left center; width: tab.wide - 56; lines: 1; size: 14; weight: 600; color: gold; show: t.on; family: "Inter" }
-                        zone box tab_hit { from: 0, 2; size: if(t.on, tab.wide, 44), 40; cursor: pointer; role: tab; selected: t.on; label: "{t.label}" }
+                        size: if(tab.full, tab.eq, if(t.on, tab.wide, 44)), 44
+                        box { from: 0, 3; size: if(tab.full, tab.eq, if(t.on, tab.wide, 44)), 38; corner: 19; color: if(t.on, gold, #4a372b); opacity: if(t.on, 24%, 45% + 55% * tab_hit.hover) }
+                        text t.glyph { at: if(t.on or tab.full, 24, 22), 22; anchor: center; size: 16; color: if(t.on, gold, cream); opacity: 90%; family: "tabler-icons" }
+                        text t.label { at: 44, 22; anchor: left center; width: if(tab.full, tab.eq, tab.wide) - 56; lines: 1; size: 14; weight: 600; color: if(t.on, gold, cream); show: t.on or tab.full; family: "Inter" }
+                        zone box tab_hit { from: 0, 2; size: if(tab.full, tab.eq, if(t.on, tab.wide, 44)), 40; cursor: pointer; role: tab; selected: t.on; label: "{t.label}" }
                         on press tab_hit { emit card_tab(t.index) }
                     }
                 }
@@ -231,7 +234,7 @@ part Rows {
                 on press hit while r.kind == slide { emit card_slide((r.index + base) * 1024 + round(clamp((local.x - 56) / (w - 130), 0, 1) * 1000)) }
                 on drag hit while r.kind == slide { emit card_slide((r.index + base) * 1024 + round(clamp((local.x - 56) / (w - 130), 0, 1) * 1000)) }
                 on press hit while r.kind != slide { emit card_pick((r.index + base) * 8) }
-                on press right hit { emit card_right((r.index + base) * 8) }
+                on press right hit { tap.x = cursor.x; tap.y = cursor.y; emit card_right((r.index + base) * 8) }
                 on scroll hit { emit card_wheel((r.index + base) * 2 + if(wheel > 0, 1, 0)) }
             }
 
@@ -298,7 +301,7 @@ part Rows {
 
         zone box hit { from: 3, 2; size: w - 6, if(wide, if(r.kind == tiles, 60, 54), if(r.kind == tiles, 84, 42)); cursor: pointer; active: card_open and not it.off; label: "{it.label}"; selected: it.on }
         on press hit { emit card_pick((r.index + base) * 8 + it.index + 1) }
-        on press right hit { emit card_right((r.index + base) * 8 + it.index + 1) }
+        on press right hit { tap.x = cursor.x; tap.y = cursor.y; emit card_right((r.index + base) * 8 + it.index + 1) }
     }
 
     // ── the tooltip: a drop's name and what it does. What the drop shows does not change under the pointer.

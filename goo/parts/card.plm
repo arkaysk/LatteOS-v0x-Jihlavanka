@@ -48,6 +48,7 @@ part Card {
     fact card_strip = false                    // that drop is stretched into a strip: grow out of the whole capsule
     fact card_w = 300
     fact card_w2 = 0                           // how wide the second column is; 0: there is none
+    fact card_menu = false                     // a classic context menu: at the pointer, square-ish, solid, no ear and no neck
     fact card_pane = 0                         // 0…1: this card is glass above its wave divider, whatever the goo's material (a drop asks for it)
     fact card_split = 0                        // where a `wave` row's coffee begins, from the card's top: below it the card is solid, 0 for none
     fact card_min = 0                          // a card with tabs is at least this tall: its top edge stays put
@@ -114,7 +115,7 @@ part Card {
     let card.y0 = if(card_dock, H - 46 - card.h, clamp(if(card.sy > 0, card.y, card.y - card.h), 12, H - 12 - card.h))
     let card.ax = if(card.sx > 0, card.x0, card.x0 + card.w)
     let card.ay = if(card.sy > 0, card.y0, card.y0 + card.h)
-    let card.glass = if(card_dock, 0, max(material, card_pane * panes))                  // the shore is hard: its panel is never glass
+    let card.glass = if(card_dock or card_menu, 0, max(material, card_pane * panes))                  // the shore is hard: its panel is never glass
     let card.q = clamp(card.p, 0, 1.08)
     prop card.ws = 290 ~grow
     prop card.hs = 60 ~grow
@@ -129,7 +130,7 @@ part Card {
     let card.over = max(0, card.p - 1)
     let card.cw = if(card_dock, card.ws, 0) + if(card_dock, 0, 1) * max((ear * 1.8 + cap.h * cap.len) * (1 - card.t) + card.ws * (card.t * card.t * card.t + card.over * 0.6), 14)
     let card.ch = max(cap.v * (cap.len + ear * 2) * (1 - card.t) + card.hs * card.q, 14)
-    let card.round = 18 + 40 * (1 - card.t) * (1 - card.t)
+    let card.round = if(card_menu, 12, 18 + 40 * (1 - card.t) * (1 - card.t))
     body {
         gradient: card.ax, card.ay to card.ax + card.sx * card.w, card.ay + card.sy * card.h, coffee, mix(paper, coffee, 0.4), paper, paper
         rim: 16%
@@ -143,8 +144,8 @@ part Card {
         frost: 100%
         smoke: 62% * card.glass
         refraction: 120% * card.glass
-        box { at: card.ax + card.sx * card.cw / 2, card.ay + card.sy * card.ch / 2; size: card.cw * if(card.p > 0.02, 1, 0), card.ch; corner: min(if(ear > 14, 26, 18) + (card.round - 18), min(card.cw, card.ch) / 2) }
-        ellipse { at: card.ax + if(card_owner >= 0, own.dx - own.x, 0), card.ay + if(card_owner >= 0, own.dy - own.y, 0); radius: (ear.d * clamp(card.p * 3, 0, 1) + 1) * if(card.p > 0.02, 1, 0); blend: 4 + 30 * 4 * card.t * (1 - card.t) }
+        box { at: card.ax + card.sx * card.cw / 2, card.ay + card.sy * card.ch / 2; size: card.cw * if(card.p > 0.02, 1, 0), card.ch; corner: if(card_menu, 12, min(if(ear > 14, 26, 18) + (card.round - 18), min(card.cw, card.ch) / 2)) }
+        ellipse { at: card.ax + if(card_owner >= 0, own.dx - own.x, 0), card.ay + if(card_owner >= 0, own.dy - own.y, 0); radius: (ear.d * clamp(card.p * 3, 0, 1) + 1) * if(card.p > 0.02 and not card_menu, 1, 0); blend: 4 + 30 * 4 * card.t * (1 - card.t) }
         line { from: card.bx, card.by; to: card.bx + cap.tx * cap.len * strip.dir, card.by + (1 - cap.tx) * cap.len * strip.dir; width: ear * 2 * clamp(card.p * 3, 0, 1) * if(cap.len > 0 and card.p > 0.02, 1, 0); blend: 4 + 30 * 4 * card.t * (1 - card.t) }
     }
     // The shore's panel: a plate like the shore's, rising out of it and reaching past the screen's edge, so

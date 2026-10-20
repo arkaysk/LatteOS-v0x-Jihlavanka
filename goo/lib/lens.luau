@@ -8,6 +8,7 @@
 -- Enter takes the first row. A mode is one entry in MODES with its rows.
 -- The mode, the apps used last, the commands run and the search engine are kept in lens.json in the scene's folder.
 local card = require("lib/card")
+local ctx = require("lib/ctx")
 local find = require("lib/find")
 local calc = require("lib/calc")
 local dangerous = require("lib/dangerous")
@@ -91,19 +92,19 @@ local function search_web(e, text) then_do(function() open.url(string.format(e.u
 local function app_menu(a)
     local pinned = own.pinned(a)
     local loved = table.find(kept.fav, a.id) ~= nil
-    card.open({
+    ctx.open({
         { label = loved and tr("Remove from favourites") or tr("Add to favourites"), glyph = "star",
           run = function()
               if loved then table.remove(kept.fav, table.find(kept.fav, a.id)) elseif a.id and #kept.fav < 12 then kept.fav[#kept.fav + 1] = a.id end
               save()
-              after(60, function() render(false) end)
+              render(true)
           end },
         { label = a.local_name or a.name or a.id, icon = a.icon or "", glyph = "apps", line = true, run = function() launch(a) end },
         { label = quick.has(a) and tr("Take off QuickGoo") or tr("Keep at hand in QuickGoo"), glyph = "rocket", line = true,
           run = function() if quick.has(a) then quick.remove(a) else quick.add(a) end end },
         { label = pinned and tr("Unpin the drop") or tr("Pin as a drop"), glyph = "pin",
           run = function() if pinned then own.remove(a.id) else own.pin(a) end end },
-    }, { owner = owner, id = "lens-app", width = 280 })
+    }, { width = 280 })
 end
 local function tile(a) return { label = a.local_name or a.name or a.id, icon = a.icon or "", glyph = "apps", run = function() launch(a) end, right = function() app_menu(a) end } end
 local function number(v)
@@ -370,7 +371,7 @@ function M.customize()
     end
     if not any then rows[#rows + 1] = { label = tr("Right-click an app and choose Add to favourites"), glyph = "star", quiet = true } end
     rows[#rows + 1] = { label = tr("Settings"), glyph = "settings", line = true, run = function() then_do(function() open.settings() end) end }
-    card.open(rows, { owner = owner, id = "lens-custom", width = WIDTH })
+    card.open(rows, { owner = owner, id = "lens-custom", width = WIDTH, plain = true })
 end
 
 -- when each app was installed: the birth of its .desktop file (the change, where a file system does not tell)
@@ -484,11 +485,12 @@ function M.start(d)
             table.sort(folders, function(a, b) return a.place < b.place end)      -- the answers come in any order
         end)
     end
-    -- the AI tab is always there; with nobody to answer it says why and where to turn it on
-    MODES[4] = { glyph = "sparkles", name = N("AI"), hint = N("Ask anything…"), rows = rows_ai }
+    -- the AI tab is there while the AI is on and somebody can answer: latte-ai lists nobody when it is turned off
     run("latte-ai", { "providers" }, function(out)
         local found_any, list = pcall(json.decode, out or "")
-        if found_any and type(list) == "table" then ai.providers = list end
+        if not found_any or type(list) ~= "table" or #list == 0 then return end
+        ai.providers = list
+        MODES[4] = { glyph = "sparkles", name = N("AI"), hint = N("Ask anything…"), rows = rows_ai }
     end)
     sys.watch("apps", function(list)
         apps, by_id = list or {}, {}

@@ -33,4 +33,5 @@ scene GooSide {
     include "parts/keys.plm"
     include "parts/rows.plm"
     include "parts/desk.plm"
+    include "parts/ctx.plm"
 }

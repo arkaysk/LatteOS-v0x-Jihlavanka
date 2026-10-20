@@ -16,6 +16,7 @@
 local E = require("lib/engine")
 local wm = require("lib/wm")
 local card = require("lib/card")
+local ctx = require("lib/ctx")
 local M = {}
 -- N marks a text for the translation table (tests/check.sh looks for it); tr() translates it where it is shown.
 local function N(s) return s end
@@ -119,7 +120,7 @@ local function menu(w, net)
         table.insert(rows, #rows, { label = tr("Cut off the internet"), glyph = "world-off", on = net == "off", line = true,
                                     run = function() run("latte-net", { "toggle", w.address }, function() end) end })
     end
-    card.open(rows, { width = 280 })
+    ctx.open(rows, { width = 280 })
 end
 -- the menu, once it is known whether the app has the internet
 local function ask_menu(w)

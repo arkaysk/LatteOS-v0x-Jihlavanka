@@ -32,7 +32,7 @@ local function open_coffee(d)
             end)
         end }
     end
-    card.open(rows, { owner = d, id = "settings", width = 300, keep = card.id() == "settings" })
+    card.open(rows, { owner = d, id = "settings", width = 300, keep = card.id() == "settings", plain = true })
 end
 local function open_wallpaper(d)
     local tiles = {}
@@ -40,7 +40,7 @@ local function open_wallpaper(d)
         local path = SHARE .. "/wallpapers/latteos-" .. i .. ".jpg"
         tiles[i] = { label = tostring(i), icon = path, glyph = "photo", run = function() wm.wallpaper(path) end }
     end
-    card.open({ back(d), { head = true, label = tr("WALLPAPER"), line = true }, { tiles = tiles, per = 4 } }, { owner = d, id = "settings", width = 300 })
+    card.open({ back(d), { head = true, label = tr("WALLPAPER"), line = true }, { tiles = tiles, per = 4 } }, { owner = d, id = "settings", width = 300, plain = true })
 end
 
 open_main = function(d, keep)
@@ -71,7 +71,7 @@ open_main = function(d, keep)
     for m = 0, 3 do modes[#modes + 1] = { label = tr(MODES[m]), on = bar.mode() == m, keep = true, run = function() wm.set_mode(m) after(300, function() if card.id() == "settings" then open_main(d, true) end end) end } end
     rows[#rows + 1] = { pills = modes }
     rows[#rows + 1] = { label = tr("All settings…"), glyph = "settings", hint = "Win+I", line = true, run = function() after(80, function() open.settings() end) end }
-    card.open(rows, { owner = d, id = "settings", width = 360, keep = keep })
+    card.open(rows, { owner = d, id = "settings", width = 360, keep = keep, plain = true })
 end
 
 function M.open(d)

@@ -59,4 +59,5 @@ scene Goo {
     include "parts/rows.plm"
     include "parts/lock.plm"
     include "parts/desk.plm"
+    include "parts/ctx.plm"
 }

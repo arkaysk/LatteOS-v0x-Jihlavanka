@@ -1,6 +1,7 @@
 -- The desktop's own menu: what the right button on the bare desktop offers (parts/desk.plm). A card like any
 -- other, grown from where the press was. What each row opens is lib/open.luau's to know.
 local card = require("lib/card")
+local ctx = require("lib/ctx")
 local open = require("lib/open")
 
 local M = {}
@@ -20,7 +21,7 @@ function M.start(main)
             { label = tr("Monitor"), glyph = "activity", line = true, hint = "Ctrl+Shift+Esc", run = function() open.monitor() end },
             { label = tr("All settings…"), glyph = "settings", hint = "Win+I", run = function() open.settings() end },
         }
-        card.open(rows, { id = "desk", width = 290 })
+        ctx.open(rows, { width = 290 })
     end)
 end
 

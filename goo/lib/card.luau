@@ -28,11 +28,13 @@
 -- function(text) }; `submit` returns true to keep what was typed, `secret` hides it as a password.
 -- `tiles`: the rows between two headings are laid as a tile, a card within the card (rules between them are
 -- dropped: the tile is what holds them together).
--- Options: `pane` (0…1) makes the card glass above its `wave` row and solid coffee below it. `keep` refreshes an open card in place (live figures): the rows do not come in again and the row
+-- Options: `menu` makes it a classic context menu (at the pointer, solid, no ear). `pane` (0…1) makes the card glass above its `wave` row and solid coffee below it. `keep` refreshes an open card in place (live figures): the rows do not come in again and the row
 -- chosen with the keys stays.
 local icons = require("lib/icons")
+local open = require("lib/open")
 local M = {}
 
+local CARD_W = 600                         -- every card that comes out of a drop is this wide
 local ROWS, ROWS2, ITEMS, TABS = 24, 12, 6, 6        -- what the scene's models hold
 local RISE = 74                             -- how far from the edge the owner steps to be the card's ear
 local engine                                -- set by lib/engine.luau, which owns the drops
@@ -80,6 +82,26 @@ end
 
 function M.open(rows, opts)
     opts = opts or {}
+    -- The look every card of a drop has: one width, glass above and below a divider of coffee a way to the settings
+    -- of what the card is about (`foot`). Not for a menu, a docked panel, or a card that wants to stay as it is
+    -- (`plain`), nor one with paragraphs or a month, whose height the rows alone do not tell.
+    if (opts.owner or opts.strip) and not opts.menu and not opts.dock then
+        if not opts.width2 then opts.width = CARD_W end
+        local waved, free = false, not opts.plain and not opts.calendar
+        for _, r in ipairs(rows) do
+            if r.wave then waved = true end
+            if r.para then free = false end
+        end
+        if free and not waved then
+            local more = {}
+            for i, r in ipairs(rows) do more[i] = r end
+            more[#more + 1] = { wave = true }
+            local foot = opts.foot or { label = tr("All settings…"), glyph = "settings", run = function() open.settings() end }
+            foot.more = foot.more == nil and true or foot.more
+            more[#more + 1] = foot
+            rows, opts.pane = more, opts.pane or 1
+        end
+    end
     local out = {}
     actions, rights, wheels, slides, tab_runs = {}, {}, {}, {}, {}
     choosable = {}
@@ -185,6 +207,7 @@ function M.open(rows, opts)
     end
 
     fact.card_pane = opts.pane or 0
+    fact.card_menu = opts.menu == true
     -- where the coffee of a `wave` row begins: the heights of the rows above it, as parts/rows.plm lays them out
     local split, waved = (#tabs > 0 and 44 or 0) + (opts.field and 46 or 0), false
     for _, r in ipairs(out) do

@@ -101,6 +101,7 @@
 /usr/share/latteos/goo/parts/rows.plm                   <- goo/parts/rows.plm
 /usr/share/latteos/goo/parts/lock.plm                   <- goo/parts/lock.plm
 /usr/share/latteos/goo/parts/desk.plm                   <- goo/parts/desk.plm
+/usr/share/latteos/goo/parts/ctx.plm                    <- goo/parts/ctx.plm
 /usr/share/latteos/goo/lib/engine.luau                  <- goo/lib/engine.luau
 /usr/share/latteos/goo/lib/card.luau                    <- goo/lib/card.luau
 /usr/share/latteos/goo/lib/bar.luau                     <- goo/lib/bar.luau
@@ -114,6 +115,7 @@
 /usr/share/latteos/goo/lib/own.luau                     <- goo/lib/own.luau
 /usr/share/latteos/goo/lib/shore.luau                   <- goo/lib/shore.luau
 /usr/share/latteos/goo/lib/desk.luau                    <- goo/lib/desk.luau
+/usr/share/latteos/goo/lib/ctx.luau                     <- goo/lib/ctx.luau
 /usr/share/latteos/goo/lib/find.luau                    <- goo/lib/find.luau
 /usr/share/latteos/goo/lib/calc.luau                    <- goo/lib/calc.luau
 /usr/share/latteos/goo/drops/bargoo.luau                <- goo/drops/bargoo.luau

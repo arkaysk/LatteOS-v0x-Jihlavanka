@@ -130,6 +130,8 @@ library Slovak {
         "The row of filters" = "Riadok filtrov"
         "FILTERS" = "FILTRE"
         "remove" = "odstrániť"
+        "Sound settings" = "Nastavenia zvuku"
+        "Date and time settings" = "Nastavenia dátumu a času"
         "ADMIN" = "ADMIN"
         "Emergency mode" = "Núdzový režim"
         "Uptime" = "Doba behu"

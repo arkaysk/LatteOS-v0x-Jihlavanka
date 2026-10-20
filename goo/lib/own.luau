@@ -9,6 +9,7 @@
 -- The right button is the same on all of them: back to its place, or remove it.
 local E = require("lib/engine")
 local card = require("lib/card")
+local ctx = require("lib/ctx")
 local open = require("lib/open")
 local M = {}
 
@@ -21,10 +22,10 @@ local function shell(command) run("sh", { "-c", command }, nil, { output = false
 local function save() pcall(sys.call, "files.write", FILE, list) end
 
 local function menu(d, entry)
-    card.open({
+    ctx.open({
         { label = tr("Back to its place"), glyph = "home-2", run = function() d:go_home() end },
         { label = tr("Remove the drop"), glyph = "x", danger = true, line = true, run = function() M.remove(entry.id) end },
-    }, { owner = d, id = "own", width = 260 })
+    }, { width = 260 })
 end
 
 local function define(entry, i)

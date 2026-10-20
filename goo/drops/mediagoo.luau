@@ -2,6 +2,7 @@
 -- A press opens its card (the cover, the title, back · play · next, the volume, and with several players which
 -- one); the right button plays and pauses, the wheel is the volume.
 local card = require("lib/card")
+local open = require("lib/open")
 
 local media, audio = {}, {}
 local function call(what, ...) local ok, err = pcall(sys.call, what, ...) if not ok then log("mediagoo · " .. what .. ": " .. tostring(err)) end end
@@ -34,7 +35,7 @@ local function open_card(d, keep)
                                 run = function() call("media.choose", p.chosen and "" or p.id) end }
         end
     end
-    card.open(rows, { owner = d, id = "media", width = 320, keep = keep })
+    card.open(rows, { owner = d, id = "media", width = 320, keep = keep, foot = { label = tr("Sound settings"), glyph = "volume", run = function() open.settings("sound") end } })
 end
 
 return {

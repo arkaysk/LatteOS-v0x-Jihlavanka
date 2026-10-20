@@ -1,0 +1,55 @@
+// The context menu: what the right button opens on a thing (an app in the launcher, a window in the bar, the
+// bare desktop). A classic menu — a small solid list at the pointer that goes on top of whatever is open and
+// closes with a press anywhere else — not a card of the goo. Its rows come from lib/ctx.luau.
+part Ctx {
+    model ctx max 14 {
+        label: text; glyph: text; icon: image 44, 44; has_icon: bool; danger: bool; on: bool; line: bool; more: bool
+    }
+    fact ctx_open = false
+    fact ctx_w = 250                           // its size, worked out by the logic from the rows
+    fact ctx_h = 0
+    event ctx_pick ->
+    event ctx_closed ->
+    spring snap = 900, 60
+    prop ctx.p = 0 ~snap
+    follow ctx.p = if(ctx_open, 1, 0)
+    // where it stands: at the pointer, to the right and down, or the other way where there is no room
+    let ctx.x = clamp(tap.x, 8, W - ctx_w - 8)
+    let ctx.y = if(tap.y + ctx_h + 8 <= H, tap.y, max(8, tap.y - ctx_h))
+
+    // a press anywhere else closes it; this ground is declared before the rows so that they take their own presses
+    zone box ctx_away { at: W / 2, H / 2; size: W, H; active: ctx_open; label: "Close"; role: button }
+    on press ctx_away { ctx_open = false; emit ctx_closed }
+    on press right ctx_away { ctx_open = false; emit ctx_closed }
+    on key Escape while ctx_open { ctx_open = false; emit ctx_closed }
+
+    group {
+        show: ctx.p > 0.01
+        opacity: clamp(ctx.p, 0, 1)
+        move: 0, (1 - clamp(ctx.p, 0, 1)) * -6
+        body {
+            color: #2c2019
+            rim: 20%
+            shadow: 0, 8, 22, 40%
+            box { from: ctx.x, ctx.y; size: ctx_w, ctx_h; corner: 12 }
+        }
+        column ctx_col {
+            at: ctx.x, ctx.y
+            padding: 6
+            for r in ctx { CtxRow(r) }
+        }
+    }
+
+    component CtxRow(r: record) {
+        size: ctx_w - 12, if(r.line, 45, 36)
+        box { from: 0, if(r.line, 9, 0) + 0; size: ctx_w - 12, 1; color: #5a463a; show: r.line }
+        box { from: 0, if(r.line, 10, 0); size: ctx_w - 12, 36; corner: 8; color: if(r.danger, #e5484d, #4a372b); opacity: hit.hover * if(r.danger, 22%, 100%) }
+        image r.icon { at: 8, if(r.line, 14, 4); size: 24, 24; show: r.has_icon }
+        text r.glyph { at: 20, if(r.line, 28, 18); anchor: center; size: 16; color: if(r.danger, #e5484d, #f3ebdd); opacity: 90%; show: not r.has_icon; family: "tabler-icons" }
+        text r.label { at: 40, if(r.line, 28, 18); anchor: left center; width: ctx_w - 90; lines: 1; size: 14; weight: 500; color: if(r.danger, #e5484d, #f3ebdd); family: "Inter" }
+        text g_check { at: ctx_w - 30, if(r.line, 28, 18); anchor: center; size: 15; color: #f7c873; show: r.on; family: "tabler-icons" }
+        text g_more { at: ctx_w - 30, if(r.line, 28, 18); anchor: center; size: 15; color: #b8a491; show: r.more; family: "tabler-icons" }
+        zone box hit { from: 0, if(r.line, 10, 0); size: ctx_w - 12, 36; cursor: pointer; active: ctx_open; label: "{r.label}" }
+        on press hit { emit ctx_pick(r.index) }
+    }
+}

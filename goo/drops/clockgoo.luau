@@ -8,6 +8,7 @@
 -- on the drop. pleamar itself receives the notifications: it is the session's notification server.
 local E = require("lib/engine")
 local card = require("lib/card")
+local open = require("lib/open")
 local timers = require("lib/timers")
 -- N marks a text for the translation table (tests/check.sh looks for it); tr() translates it where it is shown.
 local function N(s) return s end
@@ -341,7 +342,7 @@ open_time = function(d, keep)
     for i, t in ipairs(TABS) do tabs[i] = { glyph = t.glyph, label = tr(t.name), on = tab == i - 1, run = function() tab = i - 1 open_time(d, true) end } end
     local rows = (tab == 1 and stopwatch(again)) or (tab == 2 and timer(again)) or (tab == 3 and alarms(again)) or (tab == 4 and weather()) or overview()
     -- the same height on every tab: the card's top edge stays where it is
-    card.open(rows, { owner = d, id = "time", width = 400, tabs = tabs, keep = keep, min_height = 500 })
+    card.open(rows, { owner = d, id = "time", width = 400, tabs = tabs, keep = keep, min_height = 500, foot = { label = tr("Date and time settings"), glyph = "settings", run = function() open.settings("time") end } })
 end
 
 local function read_sky(then_do)
