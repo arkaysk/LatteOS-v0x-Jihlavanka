@@ -359,6 +359,19 @@ Schválené 12. 10. 2026. Pracuje sa **zhora nadol, neskáče sa**; nový nápad
     API v Lens AI centre, uložené v kľúčenke systému (nie v súbore), priame volanie API bez agentov — aj Grok
     a Mistral; (b) Grok Build a Mistral Vibe cez účet (nainštaluje používateľ; overiť vypnutie nástrojov);
     (c) bohatšie okno rozhovoru a nastavenia centra; postupné písanie, zastavenie, mikrofón (chýba prevod reči).
+    **Rozdelenie (21. 10. v noci, ide sa zhora):**
+    - a. [ ] Omarchy 4.0 a j5onrf/dots: ako zapájajú AI do plochy, čo sú „mikro-agenti“, čo z toho pre LensGoo
+      (zápis do `inspo/`; dots bez licencie = iba inšpirácia, kód sa nepreberá).
+    - b. [ ] Mikromodely na latte-lab (i7-4820K bez AVX2, 16 GB RAM, RX 640): malý jazykový model cez llama.cpp
+      (procesor aj Vulkan), rýchlosť a slovenčina; e5-sk-small na hľadanie podľa významu; whisper.cpp na reč.
+    - c. [ ] Lokálny model v `latte-ai` ako služba „v tomto počítači“ (bez internetu a bez účtu).
+    - d. [ ] Lens AI centrum › Služby: vlastné kľúče API (kľúčenka systému cez `secret-tool`), priame volanie API
+      (Anthropic, OpenAI, Google, xAI, Mistral) popri účtoch.
+    - e. [ ] Lens AI centrum › Modely: skutočné zoznamy modelov, ktoré sa ukážu v LensGoo, predvolený model.
+    - f. [ ] Okno rozhovoru: postupné písanie, zastavenie, nové vygenerovanie, úprava otázky, formátovanie a kód.
+    - g. [ ] Porovnanie: jedna otázka viacerým AI vedľa seba.
+    - h. [ ] Mikrofón v LensGoo (whisper.cpp, ak b ukáže, že stačí) a nastavenia rozhovoru (vlastné pokyny, pamäť).
+    - i. [ ] Hľadanie podľa významu v LensGoo (e5-sk, ROADMAP bod 14) — po b.
 
 ## ROADMAP2 — LatteOS od nápadu po hotový produkt
 

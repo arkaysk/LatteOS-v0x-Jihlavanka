@@ -34,6 +34,7 @@ Prijať = používať hneď, Skúšať = overiť v latte-lab, Sledovať = počka
 | Správa VRAM (dmemcg) | Sledovať | nové | Menej sekania na kartách s malou pamäťou |
 | Qwen3.8-27B | Sledovať | nové | Silnejšia AI len pre výkonné PC |
 | oo7 (správca hesiel) | Sledovať | nové | Kandidát na trezor profilu a kľúčov |
+| AnyPS5 | Sledovať | nové | Hry z PS5 ako Proton, nie emulácia; zatiaľ jedna hra, nepribaliť |
 
 ## Základ systému
 
@@ -125,6 +126,71 @@ Väčšina GUI je rozhodnutá, otvorené ostávajú názvy, tlačidlo plochy a d
 - Polkit v Quickshelli 0.3 umožní pýtať heslo správcu v dizajne LatteOS, nie v cudzom okne. To sedí na bezpečnostný model s manifestom aplikácií.
 - Služba oo7 vo Fedore 45 je kandidát na lokálny trezor kľúčov, z ktorého môže čerpať platená služba so šifrovaným profilom. Treba ju vyskúšať, až bude lab na Fedore 45.
 
+## Malí hráči
+
+Najcennejší nález od nadšencov je plugin, ktorý do Hyprlandu prináša prehľad okien ako v niri. To je presne prehľad pásky LatteOS a nemusí sa písať od nuly.
+
+| Projekt | Čo robí | Čo prevziať | Licencia |
+| --- | --- | --- | --- |
+| [hyprland-scroll-overview](https://github.com/yayuuu/hyprland-scroll-overview) (yayuuu) | Prehľad okien ako v niri, vodorovne aj zvislo, gestá, ťahanie okien medzi monitormi; 489 hviezdičiek | Základ pre prehľad pásky (Super+Tab) | BSD-3 |
+| [Fork MainstreamOS](https://github.com/MainstreamOS/hyprland-scroll-overview) | Ten istý plugin s nastaveniami v Lua konfigurácii; tapeta sa mení súbežne | Lua verzia, ktorú LatteOS potrebuje | BSD-3 |
+| [ekremx25/quickshell](https://github.com/ekremx25/quickshell) | Quickshell shell pre Hyprland, niri aj MangoWC; spoločná vrstva pre kompozitory, 10-pásmový ekvalizér, správa HDR a VRR, rozloženia à la Windows 11 či macOS | Vzor oddelenia shellu od kompozitora a nastavenia monitorov | MIT |
+| [doannc2212/quickshell-config](https://github.com/doannc2212/quickshell-config) | Modulárny Quickshell: každý diel funguje samostatne, prepínač 206 tém v jednom súbore | Model tém: všetky farby v jednom QML súbore, modul s náhradnou témou | neuvedená |
+| [j5onrf/dots](https://github.com/j5onrf/dots) | Omarchy + Quickshell s lokálnou AI (Qwen3.6-35B-A3B) a „mikro-agentmi“ | Inšpirácia, ako AI zapojiť do plochy | neuvedená |
+| [fursman/Assistant](https://github.com/fursman/Assistant) | Hlasový asistent pre Hyprland: rozpoznávanie reči a hlas lokálne na CPU, model Qwen3.8-27B cez llama.cpp alebo Claude | Hlasový režim AI panelu, prepínanie modelov klávesou | MIT |
+| [ProtonShift](https://github.com/I4cTime/protonshift) | Natívna Qt aplikácia: hry zo Steamu, Heroicu a Lutrisu v jednom zozname, editor gamescope a MangoHud, zálohy uložení | Vzor pre herný režim App Managera | AGPL-3.0 |
+| [ProtonPlus 0.6](https://www.gamingonlinux.com/2026/08/protonplus-v0-6-0-adds-support-for-faugus-launcher-improved-controller-navigation-and-more/) | Správca verzií Protonu: ovládanie gamepadom, editor MangoHud, téma SteamOS; od augusta aj v slovenčine | Pribaliť do LatteOS hotový | otvorená |
+
+**Varovanie: Noctalia odchádza z Quickshellu.** Jeden z najznámejších shellov prepisuje verziu 5 do vlastného C++ priamo na Wayland a OpenGL ES, bez Qt ([tux.fan](https://tux.fan/2026/07/14/noctalia-wayland-desktop-shell-2026/)). V júli bola v5 v ranej alfe a prechod z v4 neexistuje. Pre LatteOS to neznamená zmenu: Quickshell je stále aktívny a Omarchy naň práve prešiel. Je to však signál sledovať, ako rýchlo Quickshell drží krok s Qt.
+
+**Ako brať projekty nadšencov:**
+
+- **Kód len s licenciou.** MIT a BSD sa dajú použiť voľne, AGPL by zaviazala aj LatteOS. Bez licencie sa kód preberá len ako nápad.
+- **Malé čísla sú bežné.** Veľa projektov má menej ako 20 hviezdičiek a jedného autora, často s pomocou AI. Nápad môže byť výborný, ale kód treba pred prevzatím prečítať a otestovať v latte-lab.
+- **Forky prezradia, čo je živé.** Plugin scroll-overview má desínky kópií, čo znamená, že ho ľudia reálne používajú a upravujú.
+
+## Aplikácie z iných platforiem
+
+Dnes LatteOS zvládne naplno Windows a Android, staršie konzoly a často aj PS4; macOS a iOS len čiastočne a Harmony zatiaľ vôbec. Veľký posun tohto roka je pri PS5, pri Harmony a iOS sa žiadny neblysí.
+
+| Platforma | Nástroj | Stav dnes | V LatteOS |
+| --- | --- | --- | --- |
+| Windows | Proton 11 a Wine 11 | Väčšina hier a programov beží; nefungujú hry s anti-cheatom v jadre | Pribaliť, základ herného režimu |
+| Android | [Waydroid](https://github.com/waydroid/waydroid/releases) | Skutočný Android v kontajneri, rýchly a vo Waylande; verzia 1.6.3 začala podporovať Android 16. Bankové aplikácie a Google Play bývajú problém | Pribaliť ako voľiteľný modul |
+| PS4 | [shadPS4](https://www.androidheadlines.com/2026/03/the-shadps4-emulator-now-lists-109-games-as-playable.html) | Verzia 0.15 v marci: 109 hrateľných hier, napríklad Bloodborne a Dark Souls Remastered | Používateľ si nainštaluje sám |
+| PS5 | [AnyPS5](https://www.techspot.com/news/114177-ps5-pc-project-wants-proton-playstation-passed-milestone.html) | Preklad ako Proton, nie emulácia; jedna hra beží, verejná verzia zatiaľ nie je | Sledovať |
+| Staršie konzoly | RetroArch, PCSX2, Dolphin, RPCS3 | Zrelé emulátory | Používateľ si nainštaluje sám |
+| macOS | [Darling](https://en.valley4techs.com/2026/08/run-macos-apps-linux.html) | Nástroje pre príkazový riadok bežia, väčšina grafických aplikácií nie; aplikácie len pre Apple Silicon nespustí | Sledovať |
+| iOS | [touchHLE](https://github.com/touchHLE/touchHLE) | Len staré 32-bitové hry pre iPhone OS 2 a 3; na Linuxe si ho treba skompilovať | Sledovať |
+| Harmony | žiadny | Aplikácie v ArkTS a Cangjie pre mikrojadro HongMeng, bez vrstvy pre iné systémy ([Wikipedia](https://en.wikipedia.org/wiki/HarmonyOS_NEXT)) | Nie je čo použiť |
+
+**Harmony je najvzdialenejší cieľ.** Nikto zatiaľ nepostavil prekladovú vrstvu pre aplikácie HarmonyOS NEXT. Jediná cesta by viedla cez otvorený OpenHarmony a jeho runtime, čo je projekt rozsahu Wine. Huawei ide opačným smerom: Harmony PC spustí Linux cez ľahkú virtualizáciu od apríla 2026 ([Huawei Central](https://www.huaweicentral.com/huawei-harmonyos-pc-can-now-run-linux-based-tools/)).
+
+**iOS a macOS bráni najmä Apple.** Moderné aplikácie z App Store sú šifrované a len pre ARM. Darling navyše nemá obdobu Rosetty, ktorá by prekladála inštrukcie procesora.
+
+**Ako to spojiť v LatteOS:** jedno miesto pre všetko. App Manager rozpozná súbor (.exe, .apk, obraz hry) a ponúkne správny prekladač. To sedí na bezpečnostný model, kde každá aplikácia dostane vlastný prekladač a manifest.
+
+**Pravidlá:**
+
+- LatteOS pribalí len legálne otvorené nástroje: Proton, Waydroid a Darling.
+- Emulátory konzol si používateľ nainštaluje sám, žiadny BIOS, firmvér ani kľúče.
+- Hry sú vždy z vlastného zariadenia používateľa. Nintendo proti emulátorom Switchu úspšne súdne postupuje, preto LatteOS žiadny Switch emulátor neponúka.
+
+### Barista a emulátory
+
+LatteOS žiadny emulátor nepribalí, ale keď sa používateľ rozhodne, Barista ho prevedie celým nastavením. Príklad: staré CD s Crash Bandicootom pre PS1.
+
+1. **Výber:** používateľ v Barista zvolí „Retro hry – PS1“. Barista vysvetlí, čo bude treba, a nainštaluje emulátor z Flathubu až na výslovný súhlas.
+2. **Emulátor:** pre PS1 RetroArch s jadrom PCSX ReARMed (GPLv2). Funguje aj bez BIOSu cez vstavanú náhradu, len s nižšou kompatibilitou ([Libretro Docs](https://docs-test-retroa.readthedocs.io/en/latest/library/pcsx_rearmed/)). DuckStation má licenciu, ktorá zakazuje baliť ho bez povolenia ([Linuxiac](https://linuxiac.com/duckstation-ps1-emulator-dev-may-drop-linux-support-after-aur-frustrations/)), preto naň Barista len odkáže.
+3. **BIOS:** Barista ponukne vložiť vlastný súbor z vlastnej konzoly pre lepšiu kompatibilitu. Nikdy ho nesťahuje.
+4. **Disky:** po vložení CD do mechaniky Barista vytvorí obraz hry do priečinka Hry. PC bez mechaniky potrebuje USB mechaniku.
+5. **Ovládač:** Device Manager namapuje gamepad raz pre všetky emulátory.
+6. **Knižnica:** hra sa zobrazí v App Manageri vedľa hier zo Steamu, s obalom a jedným tlačidlom Hrať.
+7. **Uloženia:** uložené pozície idú do zálohy profilu.
+8. **Bezpečnosť:** emulátor dostane manifest s prístupom len k priečinku Hry a bez siete. Sieť sa zapne len pre hru po sieti, ak o ňu používateľ požiada.
+
+Rovnaký postup platí pre PS2 (PCSX2), GameCube a Wii (Dolphin), PS3 (RPCS3) a PS4 (shadPS4). Barista nikdy nesťahuje hry, BIOS, firmvér ani kľúče.
+
 ## Ďalšie kroky
 
 Najbližšie kroky sa týkajú latte-lab a prvého ostrova lišty.
@@ -136,6 +202,8 @@ Najbližšie kroky sa týkajú latte-lab a prvého ostrova lišty.
 - [ ] Vyskúšať e5-sk-small ako hľadanie v Text Bare.
 - [ ] Po 30. 10. sledovať Fedoru 45 a prebudovanie COPR sdegler/hyprland.
 - [ ] Prečítať sk-bench a podľa neho overiť Qwen3-14B-sk.
+- [ ] Vyskúšať plugin hyprland-scroll-overview (fork MainstreamOS s Lua) ako základ prehľadu pásky.
+- [ ] Pribaliť ProtonPlus do herného režimu a pozrieť ProtonShift ako vzor.
 
 ## Zdroje
 
@@ -151,3 +219,22 @@ Najbližšie kroky sa týkajú latte-lab a prvého ostrova lišty.
 - [NVIDIA 595.104.02 – GamingOnLinux](https://www.gamingonlinux.com/2026/09/nvidia-recommended-stable-driver-595-104-02-released-for-linux/)
 - [Slovenské modely e5-sk – KInIT](https://kinit.sk/slovak-language-now-has-open-ai-models-that-run-locally-and-match-the-quality-of-commercial-apis/)
 - [Qwen3.8 – The Decoder](https://the-decoder.com/alibabas-qwen-team-releases-qwen-3-8-models-with-open-weights-under-the-apache-2-0-license/)
+- [hyprland-scroll-overview – GitHub](https://github.com/yayuuu/hyprland-scroll-overview)
+- [MainstreamOS fork – GitHub](https://github.com/MainstreamOS/hyprland-scroll-overview)
+- [ekremx25/quickshell – GitHub](https://github.com/ekremx25/quickshell)
+- [doannc2212/quickshell-config – GitHub](https://github.com/doannc2212/quickshell-config)
+- [j5onrf/dots – GitHub](https://github.com/j5onrf/dots)
+- [fursman/Assistant – GitHub](https://github.com/fursman/Assistant)
+- [ProtonShift – GitHub](https://github.com/I4cTime/protonshift)
+- [ProtonPlus 0.6 – GamingOnLinux](https://www.gamingonlinux.com/2026/08/protonplus-v0-6-0-adds-support-for-faugus-launcher-improved-controller-navigation-and-more/)
+- [Noctalia v5 – tux.fan](https://tux.fan/2026/07/14/noctalia-wayland-desktop-shell-2026/)
+- [AnyPS5 – Tom's Hardware](https://www.tomshardware.com/video-games/playstation/open-source-anyps5-dumps-emulation-to-run-playstation-5-console-games-natively-on-pc-amd-zen-2-architecture-enables-proton-like-binary-translation-for-windows-and-linux)
+- [AnyPS5 milestone – TechSpot](https://www.techspot.com/news/114177-ps5-pc-project-wants-proton-playstation-passed-milestone.html)
+- [shadPS4 0.15 – Android Headlines](https://www.androidheadlines.com/2026/03/the-shadps4-emulator-now-lists-109-games-as-playable.html)
+- [Waydroid releases – GitHub](https://github.com/waydroid/waydroid/releases)
+- [Darling v roku 2026 – Valley4Techs](https://en.valley4techs.com/2026/08/run-macos-apps-linux.html)
+- [touchHLE – GitHub](https://github.com/touchHLE/touchHLE)
+- [HarmonyOS NEXT – Wikipedia](https://en.wikipedia.org/wiki/HarmonyOS_NEXT)
+- [Harmony PC spúšťa Linux – Huawei Central](https://www.huaweicentral.com/huawei-harmonyos-pc-can-now-run-linux-based-tools/)
+- [PCSX ReARMed – Libretro Docs](https://docs-test-retroa.readthedocs.io/en/latest/library/pcsx_rearmed/)
+- [DuckStation a balenie pre Linux – Linuxiac](https://linuxiac.com/duckstation-ps1-emulator-dev-may-drop-linux-support-after-aur-frustrations/)
