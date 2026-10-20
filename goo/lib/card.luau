@@ -186,7 +186,7 @@ function M.open(rows, opts)
 
     fact.card_pane = opts.pane or 0
     -- where the coffee of a `wave` row begins: the heights of the rows above it, as parts/rows.plm lays them out
-    local split, waved = 0, false
+    local split, waved = (#tabs > 0 and 44 or 0) + (opts.field and 46 or 0), false
     for _, r in ipairs(out) do
         if r.kind == "wave" then waved, split = true, split + 10 break end
         local h = ({ plain = r.tall and 54 or 44, head = 30, big = 64, para = 0, profile = 84, slide = 44 })[r.kind]

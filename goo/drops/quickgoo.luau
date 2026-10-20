@@ -48,6 +48,8 @@ local function bring_out()
     drop:squash()
 end
 
+-- the ids of the apps the user keeps here, in order
+function M.list() return kept end
 function M.has(a) return a ~= nil and table.find(kept, a.id) ~= nil end
 function M.add(a)
     if not a or not a.id or M.has(a) or #kept >= MOST then return end

@@ -1,5 +1,6 @@
 -- The launcher: the card LensGoo opens. What is typed is searched for in the mode the tabs choose:
---   Applications   with nothing typed the apps used last, as tiles; typing finds apps, works out a line of
+--   Applications   with nothing typed: the most launched, the favourites (QuickGoo's) and the newly installed, under
+--                  a row of filters, in glass above a divider of coffee with the count below it; typing finds apps, works out a line of
 --                  arithmetic, and offers to take the text to the files or to the web
 --   Files          with nothing typed the home folders; typing finds files and folders by name (fd)
 --   Web            an address opens; anything else goes to a search engine, the user's own first
@@ -33,7 +34,16 @@ local FOLDERS = { { key = "DOCUMENTS", name = N("Documents"), glyph = "file" }, 
                   { key = "VIDEOS", name = N("Videos"), glyph = "player-play" } }
 
 local apps, by_id = {}, {}
-local kept = { mode = 0, recent = {}, commands = {}, engine = "duckduckgo" }
+local kept = { mode = 0, recent = {}, commands = {}, engine = "duckduckgo", counts = {}, seen = nil, filter = "all" }
+-- the filters of the app overview: which desktop categories each takes
+local FILTERS = {
+    { id = "all", name = N("All"), glyph = "apps" },
+    { id = "work", name = N("Work"), glyph = "star", cats = { "Office", "Utility", "Network", "Education" } },
+    { id = "media", name = N("Media"), glyph = "palette", cats = { "AudioVideo", "Audio", "Video", "Graphics" } },
+    { id = "dev", name = N("Develop"), glyph = "code", cats = { "Development" } },
+    { id = "fun", name = N("Fun"), glyph = "device-gamepad-2", cats = { "Game" } },
+}
+local NEW_DAYS = 30                  -- how long an app counts as newly installed
 local owner                          -- LensGoo
 local home, folders = "", {}
 local typed, confirm = "", nil       -- what is in the field; the dangerous command asked about
@@ -58,6 +68,7 @@ local function launch(a)
     local recent = { a.id }
     for _, id in ipairs(kept.recent) do if id ~= a.id and #recent < 18 then recent[#recent + 1] = id end end
     kept.recent = recent
+    kept.counts[a.id] = (kept.counts[a.id] or 0) + 1
     save()
 end
 local function run_command(cmd)
@@ -95,18 +106,61 @@ end
 -- ── what each mode shows ─────────────────────────────────────────────────────────────────────────────────────
 local function rows_apps()
     if typed == "" then
-        -- nothing typed: the apps used last, and failing that the first ones there are
-        local tiles, seen = {}, {}
-        for _, id in ipairs(kept.recent) do
-            local a = by_id[id]
-            if a and not seen[id] and #tiles < 18 then seen[id] = true tiles[#tiles + 1] = tile(a) end
+        local function category(a, f)
+            local text = type(a.categories) == "table" and table.concat(a.categories, ";") or tostring(a.categories or "")
+            for _, c in ipairs(f.cats or {}) do if (";" .. text .. ";"):find(";" .. c .. ";", 1, true) then return true end end
+            return false
         end
-        local head = N("RECENTLY USED")
-        if #tiles == 0 then
-            head = N("APPLICATIONS")
-            for i = 1, math.min(18, #apps) do tiles[i] = tile(apps[i]) end
+        local function row_of(list, per, n)
+            local tiles = {}
+            for i = 1, math.min(n, #list) do tiles[i] = tile(list[i]) end
+            return { tiles = tiles, per = per }
         end
-        return { { head = true, label = tr(head) }, { tiles = tiles, per = 6 } }
+        local rows, filter = {}, FILTERS[1]
+        for _, f in ipairs(FILTERS) do if f.id == kept.filter then filter = f end end
+        local chips = {}
+        for _, f in ipairs(FILTERS) do
+            chips[#chips + 1] = { label = tr(f.name), glyph = f.glyph, on = f.id == kept.filter, keep = true,
+                                  run = function() kept.filter = f.id save() render(true) end }
+        end
+        rows[#rows + 1] = { pills = chips, per = 5 }
+        -- what passes the filter, the most launched first (then the order of the list)
+        local pool = {}
+        for _, a in ipairs(apps) do if filter.id == "all" or category(a, filter) then pool[#pool + 1] = a end end
+        table.sort(pool, function(x, y) return (kept.counts[x.id or ""] or 0) > (kept.counts[y.id or ""] or 0) end)
+        if filter.id == "all" then
+            local most = {}
+            for _, a in ipairs(pool) do if (kept.counts[a.id or ""] or 0) > 0 and #most < 6 then most[#most + 1] = a end end
+            if #most == 0 then
+                for _, id in ipairs(kept.recent) do if by_id[id] and #most < 6 then most[#most + 1] = by_id[id] end end
+            end
+            if #most == 0 then for i = 1, math.min(6, #pool) do most[i] = pool[i] end end
+            rows[#rows + 1] = { head = true, label = tr(N("MOST LAUNCHED")) }
+            rows[#rows + 1] = row_of(most, 6, 6)
+            local fav = {}
+            for _, id in ipairs(quick.list()) do if by_id[id] and #fav < 6 then fav[#fav + 1] = by_id[id] end end
+            if #fav > 0 then
+                rows[#rows + 1] = { head = true, label = tr(N("FAVOURITES")) }
+                rows[#rows + 1] = row_of(fav, 3, 6)
+            end
+            local fresh, now = {}, os.time()
+            for _, a in ipairs(apps) do
+                local t = a.id and kept.seen and kept.seen[a.id]
+                if t and t > 0 and now - t < NEW_DAYS * 86400 then fresh[#fresh + 1] = a end
+            end
+            table.sort(fresh, function(x, y) return kept.seen[x.id] > kept.seen[y.id] end)
+            if #fresh > 0 then
+                rows[#rows + 1] = { head = true, label = tr(N("NEWLY INSTALLED")) }
+                rows[#rows + 1] = row_of(fresh, 4, 4)
+            end
+        else
+            rows[#rows + 1] = { head = true, label = tr(filter.name):upper() }
+            rows[#rows + 1] = row_of(pool, 6, 18)
+        end
+        -- under the glass: the coffee, with how many apps there are
+        rows[#rows + 1] = { wave = true }
+        rows[#rows + 1] = { label = string.format(tr("%d apps"), #apps), glyph = "apps", hint = tr("Esc closes"), quiet = true }
+        return rows
     end
     local rows = {}
     local result = calc(typed)
@@ -294,6 +348,7 @@ render = function(keep)
     shown = MODES[kept.mode].rows()
     card.open(shown, {
         owner = owner, id = "lens", width = WIDTH, keep = keep, tabs = tabs, min_height = 330,
+        pane = (kept.mode == 0 and typed == "") and 1 or 0,
         field = {
             hint = tr(MODES[kept.mode].hint), text = typed,
             change = function(t)
@@ -348,6 +403,9 @@ function M.start(d)
         kept.recent = type(saved.recent) == "table" and saved.recent or {}
         kept.commands = type(saved.commands) == "table" and saved.commands or {}
         kept.engine = type(saved.engine) == "string" and saved.engine or kept.engine
+        kept.counts = type(saved.counts) == "table" and saved.counts or {}
+        kept.seen = type(saved.seen) == "table" and saved.seen or nil
+        kept.filter = type(saved.filter) == "string" and saved.filter or "all"
     end
     local got, h = pcall(sys.ask, "env", "HOME")
     home = got and type(h) == "string" and h or ""
@@ -368,6 +426,15 @@ function M.start(d)
     sys.watch("apps", function(list)
         apps, by_id = list or {}, {}
         for _, a in ipairs(apps) do if a.id then by_id[a.id] = a end end
+        -- when each app was first seen: those there at the very first look are old, the ones that come later are new
+        if #apps > 0 then
+            local first, changed = kept.seen == nil, false
+            kept.seen = kept.seen or {}
+            for _, a in ipairs(apps) do
+                if a.id and kept.seen[a.id] == nil then kept.seen[a.id] = first and 0 or os.time() changed = true end
+            end
+            if changed then save() end
+        end
         if card.id() == "lens" then render(true) end
     end)
     on("lens_toggle", M.toggle)
