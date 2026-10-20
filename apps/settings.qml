@@ -29,7 +29,7 @@ ShellRoot {
     function go(id) { const p = all.find(q => q.id === id); if (p) { page = id; unfolded = p.area.id; asked = "" } }
     function plain(s) { return s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "") }
     readonly property var found: {
-        const need = plain(asked).split(/\s+/).filter(w => w !== "")
+        const need = plain(asked).split(/\s+/).filter(w => w !== "").map(w => w.slice(0, 5))
         if (need.length === 0) return []
         return all.filter(p => { const hay = plain([p.name, I18n.tr(p.name), p.area.name, I18n.tr(p.area.name), p.words || "", I18n.tr(p.words || "")].join(" ")); return need.every(w => hay.includes(w)) })
     }
@@ -86,6 +86,38 @@ ShellRoot {
     property string profile: ""
     Process { id: profiles; command: ["powerprofilesctl", "get"]; stdout: StdioCollector { onStreamFinished: shell.profile = this.text.trim() } }
     Process { id: setProfile; onExited: profiles.running = true }
+    // ── the lists of the launcher (LensGoo): each is a button in its row of filters ─────────────────────
+    // goo/lib/lens.luau reads the same file. A list takes in the apps of some desktop categories (the first four do),
+    // minus those the user took out, plus those the user chose by hand.
+    readonly property var lensDefaults: [
+        { id: "work", name: "Work", builtin: true, on: true, cats: ["Office", "Utility", "Network", "Education"] },
+        { id: "media", name: "Media", builtin: true, on: true, cats: ["AudioVideo", "Audio", "Video", "Graphics"] },
+        { id: "dev", name: "Develop", builtin: true, on: true, cats: ["Development"] },
+        { id: "fun", name: "Fun", builtin: true, on: true, cats: ["Game"] }]
+    FileView {
+        id: lensFile
+        property var lists: []
+        path: (Quickshell.env("XDG_DATA_HOME") || (Quickshell.env("HOME") + "/.local/share")) + "/pleamar/goo/lens-lists.json"
+        printErrors: false; watchChanges: true
+        onFileChanged: reload()
+        onLoaded: { try { const d = JSON.parse(text()); lists = Array.isArray(d.lists) ? d.lists : [] } catch (e) { lists = [] } }
+        onLoadFailed: lists = []
+        function save(l) { lists = l; setText(JSON.stringify({ lists: l })) }
+    }
+    readonly property var lensLists: lensFile.lists.length > 0 ? lensFile.lists : lensDefaults
+    function lensEdit(i, change) { const l = JSON.parse(JSON.stringify(lensLists)); change(l[i]); lensFile.save(l) }
+    function lensAuto(l, e) { return (l.cats || []).some(c => e.categories.includes(c)) }
+    function lensHas(l, e) { return (l.apps || []).includes(e.id) || (lensAuto(l, e) && !(l.off || []).includes(e.id)) }
+    function lensFlip(i, e) {
+        lensEdit(i, l => {
+            const has = lensHas(l, e), auto = lensAuto(l, e)
+            l.apps = (l.apps || []).filter(x => x !== e.id); l.off = (l.off || []).filter(x => x !== e.id)
+            if (has && auto) l.off.push(e.id)
+            else if (!has && !auto) l.apps.push(e.id)
+        })
+    }
+    readonly property var entries: DesktopEntries.applications.values.filter(e => !e.noDisplay).sort((a, b) => a.name.localeCompare(b.name))
+    property int lensOpen: -1                  // the list whose apps are shown for choosing
     Run { id: sound }
     Run { id: opens }
     Run { id: region }
@@ -541,6 +573,41 @@ ShellRoot {
                 Switch { text: I18n.tr("The surface bends"); hint: I18n.tr("Ripples lift the drops and the edge gives under them."); on: goo.kept.bends !== false; onPressed: goo.set("bends", !on) } }
             Label { visible: shell.page === "drops"; width: view.room; wrapMode: Text.WordWrap; color: Theme.dim; font.pixelSize: 13
                     text: I18n.tr("Which drops are on the desktop, and putting them back in their places, is in PowerGoo › Settings on the desktop itself. The coffee they are made of is under Coffee and cup.") }
+
+            // the launcher's lists
+            Part { visible: shell.page === "launcher"; width: view.room; title: I18n.tr("Lists of the launcher")
+                   note: I18n.tr("Each list is a button in the row under the search of LensGoo. Choose which of your apps belong to it, or make a list of your own.")
+                Repeater { model: shell.page === "launcher" ? shell.lensLists : []
+                    Column { id: ls; required property var modelData; required property int index; width: view.room; spacing: 8
+                        readonly property var members: shell.entries.filter(e => shell.lensHas(ls.modelData, e))
+                        Rectangle { width: parent.width; height: 64; radius: 16; color: Theme.card
+                            Rectangle { x: 14; width: 40; height: 40; radius: 13; color: Theme.ground; anchors.verticalCenter: parent.verticalCenter
+                                Glyph { anchors.centerIn: parent; name: ls.modelData.builtin ? "star" : "list"; font.pixelSize: 20; color: Theme.gold } }
+                            Column { x: 68; width: parent.width - 68 - 360; anchors.verticalCenter: parent.verticalCenter; spacing: 2
+                                TextInput { id: lname; width: parent.width; color: Theme.cream; font.family: Theme.font; font.pixelSize: 15; font.weight: 700; clip: true; selectByMouse: true
+                                            text: ls.modelData.builtin ? I18n.tr(ls.modelData.name) : ls.modelData.name; readOnly: ls.modelData.builtin
+                                            onEditingFinished: if (!ls.modelData.builtin && text.trim() !== "") shell.lensEdit(ls.index, l => l.name = text.trim()) }
+                                Label { text: I18n.tr("{n} apps", { n: ls.members.length }); color: Theme.dim; font.pixelSize: 12 } }
+                            Row { anchors.right: parent.right; anchors.rightMargin: 14; anchors.verticalCenter: parent.verticalCenter; spacing: 8
+                                Pill { text: I18n.tr("Shown"); icon: ls.modelData.on !== false ? "check" : ""; strong: ls.modelData.on !== false
+                                       onPressed: shell.lensEdit(ls.index, l => l.on = !(l.on !== false)) }
+                                Pill { text: I18n.tr("Choose apps"); icon: shell.lensOpen === ls.index ? "chevron-up" : "chevron-down"; onPressed: shell.lensOpen = shell.lensOpen === ls.index ? -1 : ls.index }
+                                Pill { visible: !ls.modelData.builtin; icon: "x"; danger: true; onPressed: { const l = shell.lensLists.filter((x, k) => k !== ls.index); lensFile.save(l); shell.lensOpen = -1 } } } }
+                        // the apps, to be ticked in and out
+                        Flow { visible: shell.lensOpen === ls.index; width: parent.width; spacing: 8
+                            Repeater { model: shell.lensOpen === ls.index ? shell.entries : []
+                                Rectangle { id: chip; required property var modelData; width: 212; height: 44; radius: 12
+                                    readonly property bool inside: shell.lensHas(ls.modelData, modelData)
+                                    color: inside ? Qt.rgba(Theme.gold.r, Theme.gold.g, Theme.gold.b, 0.2) : Theme.card; border.width: 1; border.color: inside ? Theme.gold : "transparent"
+                                    Image { x: 10; width: 26; height: 26; anchors.verticalCenter: parent.verticalCenter; source: Quickshell.iconPath(chip.modelData.icon, true); sourceSize.width: 52; fillMode: Image.PreserveAspectFit }
+                                    Label { x: 46; width: parent.width - 80; text: chip.modelData.name; elide: Text.ElideRight; font.pixelSize: 13; anchors.verticalCenter: parent.verticalCenter }
+                                    Glyph { visible: chip.inside; anchors.right: parent.right; anchors.rightMargin: 10; name: "check"; font.pixelSize: 16; color: Theme.gold; anchors.verticalCenter: parent.verticalCenter }
+                                    MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: shell.lensFlip(ls.index, chip.modelData) } } } } } }
+                Row { spacing: 10
+                    Field { id: newList; width: 300; icon: "plus"; hint: I18n.tr("Name of a new list"); onAccepted: addList.pressed() }
+                    Pill { id: addList; text: I18n.tr("Add list"); strong: true; icon: "plus"
+                           onPressed: if (newList.text.trim() !== "") { const l = JSON.parse(JSON.stringify(shell.lensLists)); l.push({ id: "own" + Date.now(), name: newList.text.trim(), on: true, apps: [] })
+                                                                       lensFile.save(l); newList.text = ""; shell.lensOpen = l.length - 1 } } } }
 
             // sound: where it goes and where it comes from
             Repeater { model: shell.page === "sound" ? [{ key: "outputs", title: QT_TR_NOOP("Where the sound goes"), cmd: "sink", icon: "device-speaker" },

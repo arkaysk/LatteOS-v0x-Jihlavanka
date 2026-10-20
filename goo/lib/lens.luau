@@ -36,16 +36,36 @@ local FOLDERS = { { key = "DOCUMENTS", name = N("Documents"), glyph = "file" }, 
 
 local apps, by_id = {}, {}
 local kept = { mode = 0, recent = {}, commands = {}, engine = "duckduckgo", counts = {}, filter = "all", fav = {},
-              layout = { most = true, fav = true, fresh = true, chips = true }, off = {} }
+              layout = { most = true, fav = true, fresh = true, chips = true } }
 local born = {}                      -- app id → when it was installed (the birth of its .desktop file)
--- the filters of the app overview: which desktop categories each takes
-local FILTERS = {
-    { id = "all", name = N("All"), glyph = "apps" },
-    { id = "work", name = N("Work"), glyph = "star", cats = { "Office", "Utility", "Network", "Education" } },
-    { id = "media", name = N("Media"), glyph = "palette", cats = { "AudioVideo", "Audio", "Video", "Graphics" } },
-    { id = "dev", name = N("Develop"), glyph = "code", cats = { "Development" } },
-    { id = "fun", name = N("Fun"), glyph = "device-gamepad-2", cats = { "Game" } },
+-- The lists of the app overview, each a button in its row of filters. The user's own are kept by the Settings
+-- (lens-lists.json: Settings › Launcher); these are what there is before they have changed anything.
+local DEFAULT_LISTS = {
+    { id = "work", name = N("Work"), builtin = true, on = true, cats = { "Office", "Utility", "Network", "Education" } },
+    { id = "media", name = N("Media"), builtin = true, on = true, cats = { "AudioVideo", "Audio", "Video", "Graphics" } },
+    { id = "dev", name = N("Develop"), builtin = true, on = true, cats = { "Development" } },
+    { id = "fun", name = N("Fun"), builtin = true, on = true, cats = { "Game" } },
 }
+local GLYPHS = { work = "star", media = "palette", dev = "code", fun = "device-gamepad-2" }
+local lists = DEFAULT_LISTS
+local function load_lists()
+    local ok, saved = pcall(sys.ask, "files.read", "lens-lists.json", "json")
+    lists = ok and type(saved) == "table" and type(saved.lists) == "table" and #saved.lists > 0 and saved.lists or DEFAULT_LISTS
+end
+local function has(list, a)
+    for _, id in ipairs(list.apps or {}) do if id == a.id then return true end end
+    local text = type(a.categories) == "table" and table.concat(a.categories, ";") or tostring(a.categories or "")
+    local auto = false
+    for _, c in ipairs(list.cats or {}) do if (";" .. text .. ";"):find(";" .. c .. ";", 1, true) then auto = true end end
+    if not auto then return false end
+    for _, id in ipairs(list.off or {}) do if id == a.id then return false end end
+    return true
+end
+
+local apps, by_id = {}, {}
+local kept = { mode = 0, recent = {}, commands = {}, engine = "duckduckgo", counts = {}, filter = "all", fav = {},
+              layout = { most = true, fav = true, fresh = true, chips = true } }
+local born = {}                      -- app id → when it was installed (the birth of its .desktop file)
 local owner                          -- LensGoo
 local home, folders = "", {}
 local typed, confirm = "", nil       -- what is in the field; the dangerous command asked about
@@ -115,31 +135,27 @@ end
 -- ── what each mode shows ─────────────────────────────────────────────────────────────────────────────────────
 local function rows_apps()
     if typed == "" then
-        local function category(a, f)
-            local text = type(a.categories) == "table" and table.concat(a.categories, ";") or tostring(a.categories or "")
-            for _, c in ipairs(f.cats or {}) do if (";" .. text .. ";"):find(";" .. c .. ";", 1, true) then return true end end
-            return false
-        end
         local function row_of(list, n)
             local tiles = {}
             for i = 1, math.min(n, #list) do tiles[i] = tile(list[i]) end
             return { tiles = tiles, per = 6 }
         end
-        local rows, filter = {}, FILTERS[1]
-        for _, f in ipairs(FILTERS) do if f.id == kept.filter and not kept.off[f.id] then filter = f end end
+        local rows, filter = {}, { id = "all" }
+        local shown_lists = {}
+        for _, l in ipairs(lists) do if l.on ~= false and #shown_lists < 5 then shown_lists[#shown_lists + 1] = l end end
+        for _, l in ipairs(shown_lists) do if l.id == kept.filter then filter = l end end
+        local function name_of(l) return l.builtin and tr(l.name) or l.name end
         if kept.layout.chips then
-            local chips = {}
-            for _, f in ipairs(FILTERS) do
-                if f.id == "all" or not kept.off[f.id] then
-                    chips[#chips + 1] = { label = tr(f.name), glyph = f.glyph, on = f.id == filter.id, keep = true,
-                                          run = function() kept.filter = f.id save() render(true) end }
-                end
+            local chips = { { label = tr("All"), glyph = "apps", on = filter.id == "all", keep = true, run = function() kept.filter = "all" save() render(true) end } }
+            for _, l in ipairs(shown_lists) do
+                chips[#chips + 1] = { label = name_of(l), glyph = GLYPHS[l.id] or "list", on = l.id == filter.id, keep = true,
+                                      run = function() kept.filter = l.id save() render(true) end }
             end
             rows[#rows + 1] = { pills = chips, per = 6 }
         end
         -- what passes the filter, the most launched first (then the order of the list)
         local pool = {}
-        for _, a in ipairs(apps) do if filter.id == "all" or category(a, filter) then pool[#pool + 1] = a end end
+        for _, a in ipairs(apps) do if filter.id == "all" or has(filter, a) then pool[#pool + 1] = a end end
         table.sort(pool, function(x, y) return (kept.counts[x.id or ""] or 0) > (kept.counts[y.id or ""] or 0) end)
         if filter.id == "all" then
             if kept.layout.most then
@@ -169,7 +185,7 @@ local function rows_apps()
                 else rows[#rows + 1] = { label = tr("Nothing installed lately"), glyph = "clock", quiet = true } end
             end
         else
-            rows[#rows + 1] = { head = true, label = tr(filter.name):upper() }
+            rows[#rows + 1] = { head = true, label = name_of(filter):upper() }
             rows[#rows + 1] = row_of(pool, 18)
         end
         -- under the glass: the coffee, with a way to edit this page and how many apps there are
@@ -351,14 +367,8 @@ function M.customize()
         { label = tr(N("MOST LAUNCHED")), glyph = "flame", on = kept.layout.most, keep = true, run = toggle(kept.layout, "most") },
         { label = tr(N("FAVOURITES")), glyph = "star", on = kept.layout.fav, keep = true, run = toggle(kept.layout, "fav") },
         { label = tr(N("NEWLY INSTALLED")), glyph = "clock", on = kept.layout.fresh, keep = true, run = toggle(kept.layout, "fresh") },
-        { head = true, label = tr("FILTERS"), line = true },
+        { label = tr("Lists and filters…"), glyph = "list", line = true, run = function() then_do(function() open.settings("launcher") end) end },
     }
-    for _, f in ipairs(FILTERS) do
-        if f.id ~= "all" then
-            rows[#rows + 1] = { label = tr(f.name), glyph = f.glyph, on = not kept.off[f.id], keep = true,
-                                run = function() kept.off[f.id] = not kept.off[f.id] or nil if kept.filter == f.id then kept.filter = "all" end save() M.customize() end }
-        end
-    end
     rows[#rows + 1] = { head = true, label = tr(N("FAVOURITES")), line = true }
     local any = false
     for i, id in ipairs(kept.fav) do
@@ -437,6 +447,7 @@ render = function(keep)
 end
 
 function M.open(m)
+    load_lists()
     if m and MODES[m] then kept.mode = m end
     typed, confirm, found = "", nil, nil
     render(false)
@@ -472,7 +483,6 @@ function M.start(d)
         kept.counts = type(saved.counts) == "table" and saved.counts or {}
         if type(saved.fav) == "table" then kept.fav = saved.fav end
         if type(saved.layout) == "table" then for k in pairs(kept.layout) do if saved.layout[k] ~= nil then kept.layout[k] = saved.layout[k] == true end end end
-        if type(saved.off) == "table" then kept.off = saved.off end
         kept.filter = type(saved.filter) == "string" and saved.filter or "all"
     end
     local got, h = pcall(sys.ask, "env", "HOME")

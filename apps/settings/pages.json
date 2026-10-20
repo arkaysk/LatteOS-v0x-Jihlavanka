@@ -192,6 +192,13 @@
     "words": "tape tiles floating layout glass side panel arrange"
    },
    {
+    "id": "launcher",
+    "name": "Launcher (LensGoo)",
+    "icon": "search",
+    "status": "ready",
+    "words": "launcher lensgoo lists filters categories apps work media develop fun favourites search"
+   },
+   {
     "id": "drops",
     "name": "Drops (Goo)",
     "icon": "droplet",
