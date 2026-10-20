@@ -362,6 +362,10 @@ ShellRoot {
                         Repeater { model: shell.picked && lan.data && lan.data.health ? lan.data.health.findings.filter(f => f.ip === shell.picked.ip) : []
                             Label { required property var modelData; width: parent.width; wrapMode: Text.WordWrap; font.pixelSize: 12; color: shell.levels[modelData.level] || Theme.dim
                                     text: "• " + I18n.tr(modelData.what) + " — " + I18n.tr(modelData.fix) } }
+                        // what can be done with what it can do
+                        Pill { visible: shell.picked !== null && shell.picked.caps.indexOf("web") >= 0 && shell.picked.online; icon: "world-www"; text: I18n.tr("Open its settings page")
+                               onPressed: { const p = shell.picked.ports; const https = p.indexOf(443) >= 0 ? "" : (p.indexOf(8443) >= 0 ? ":8443" : null)
+                                            Quickshell.execDetached(["xdg-open", https !== null ? "https://" + shell.picked.ip + https : "http://" + shell.picked.ip + (p.indexOf(80) >= 0 ? "" : ":8080")]) } }
                         Item { width: 1; height: 4 }
                         Pill { icon: "trash"; danger: true; text: I18n.tr("Forget this device"); onPressed: { note.ask(["forget", shell.picked.key]); shell.chosen = "" } }
                     }

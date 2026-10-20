@@ -1120,6 +1120,7 @@ library Slovak {
         "With an account, the service's official tool answers, signed in once in the terminal. Which of them LensGoo offers is set in Settings › Launcher." = "S účtom odpovedá oficiálny nástroj služby, do ktorého sa raz prihlásiš v termináli. Ktoré z nich ponúka LensGoo, sa nastavuje v Nastaveniach › Spúšťač."
         "ACCOUNTS" = "ÚČTY"
         "(stopped)" = "(zastavené)"
+        "Open its settings page" = "Otvoriť jeho stránku nastavení"
         "AirPlay" = "AirPlay"
         "Answers on: {list}" = "Odpovedá na: {list}"
         "Camera" = "Kamera"
