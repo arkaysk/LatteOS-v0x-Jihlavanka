@@ -131,6 +131,12 @@ part Clock {
     text ic_gauge = ""
     model clkh max 8 { time: text; temp: text; glyph: text }
     model clkd max 7 { day: text; glyph: text; hi: text; lo: text; rain: text }
+    // the days ahead as several weather services see them: a row a day, a column a service
+    model clksrc max 5 { name: text; by: text }
+    model clkdd max 7 { day: text; spread: text; g1: text; t1: text; r1: text; g2: text; t2: text; r2: text; g3: text; t3: text; r3: text; g4: text; t4: text; r4: text; g5: text; t5: text; r5: text }
+    fact clk_ds = 0                            // how many days the list is scrolled down
+    prop clk.ds = 0 ~calm
+    follow clk.ds = clk_ds * 32
     model clkw max 6 { name: text; time: text; note: text; tag: text; home: bool; night: bool }
     model clka max 3 { name: text; time: text; pct: number }
     measure clk_hm_m
@@ -191,51 +197,7 @@ part Clock {
             // ── the weather ───────────────────────────────────────────────────────────────────────────────
             // Behind it, the weather itself: the sky of the hour (by day or by night), the sun or the moon, clouds that drift,
             // rain, snow, fog, a storm's flashes. Under the panel, which only darkens it enough for the writing to read.
-            group {
-                show: clk_weather > 0
-                clip box { from: 256, 45; size: 325, 183; corner: 14 }
-                body {
-                    gradient: 256, 45 to 256, 228, clk.top, clk.bottom
-                    box { from: 256, 45; size: 325, 183 }
-                }
-                // the sun by day, the moon and a few stars by night, where the clouds let them be seen
-                ellipse { at: 470, 96; radius: 40 + 3 * sin(time * 40); color: #ffd27a; opacity: 22%; show: clk_night < 1 and clk_kind <= 2 }
-                ellipse { at: 470, 96; radius: 16; color: #ffe2a0; opacity: 85%; show: clk_night < 1 and clk_kind <= 2 }
-                ellipse { at: 470, 92; radius: 12; color: #efe9da; opacity: 90%; show: clk_night > 0 and clk_kind <= 3 }
-                ellipse { at: 475, 88; radius: 10; color: clk.top; opacity: 95%; show: clk_night > 0 and clk_kind <= 3 }
-                ellipse { at: 300, 70; radius: 1.2; color: #ffffff; opacity: 60% + 30% * sin(time * 90); show: clk_night > 0 and clk_kind <= 2 }
-                ellipse { at: 372, 58; radius: 1; color: #ffffff; opacity: 70%; show: clk_night > 0 and clk_kind <= 2 }
-                ellipse { at: 430, 92; radius: 1.3; color: #ffffff; opacity: 50% + 40% * sin(time * 70 + 40); show: clk_night > 0 and clk_kind <= 2 }
-                ellipse { at: 470, 62; radius: 0.9; color: #ffffff; opacity: 70%; show: clk_night > 0 and clk_kind <= 2 }
-                ellipse { at: 335, 120; radius: 1; color: #ffffff; opacity: 55%; show: clk_night > 0 and clk_kind <= 2 }
-                // clouds: soft bodies that drift along, lighter on a fair day, heavy and dark before rain
-                body {
-                    color: rgb(pick(clk_kind - 1, 255, 242, 201, 185, 122, 215, 75) / 255, pick(clk_kind - 1, 255, 242, 204, 188, 130, 221, 81) / 255, pick(clk_kind - 1, 255, 242, 210, 192, 142, 228, 96) / 255)
-                    opacity: if(clk_kind >= 2, if(clk_night > 0, 28%, if(clk_kind == 2, 42%, 58%)), 0)
-                    // three clouds, each of four puffs melted together, drifting at their own pace
-                    ellipse { at: 256 + mod(time * 6, 420) - 50, 74; radius: 13; blend: 10 }
-                    ellipse { at: 256 + mod(time * 6, 420) - 36, 64; radius: 17; blend: 10 }
-                    ellipse { at: 256 + mod(time * 6, 420) - 18, 68; radius: 14; blend: 10 }
-                    ellipse { at: 256 + mod(time * 6, 420) - 34, 78; radius: 12; scale: 2.2, 0.8; blend: 10 }
-                    ellipse { at: 256 + mod(time * 4 + 230, 440) - 60, 112; radius: 15; blend: 12 }
-                    ellipse { at: 256 + mod(time * 4 + 230, 440) - 40, 100; radius: 21; blend: 12 }
-                    ellipse { at: 256 + mod(time * 4 + 230, 440) - 16, 106; radius: 16; blend: 12 }
-                    ellipse { at: 256 + mod(time * 4 + 230, 440) - 38, 118; radius: 13; scale: 2.6, 0.8; blend: 12 }
-                    ellipse { at: 256 + mod(time * 5 + 120, 430) - 40, 150; radius: 18; blend: 12; show: clk_kind >= 3 }
-                    ellipse { at: 256 + mod(time * 5 + 120, 430) - 14, 142; radius: 23; blend: 12; show: clk_kind >= 3 }
-                    ellipse { at: 256 + mod(time * 5 + 120, 430) - 26, 158; radius: 14; scale: 3, 0.8; blend: 12; show: clk_kind >= 3 }
-                }
-                // fog: long pale bands
-                ellipse { at: 256 + mod(time * 8, 450) - 60, 150; radius: 60; scale: 3, 0.25; color: #e8e8e8; opacity: 22%; show: clk_kind == 4 }
-                ellipse { at: 256 + mod(time * 5 + 200, 450) - 60, 185; radius: 60; scale: 3.4, 0.22; color: #e8e8e8; opacity: 20%; show: clk_kind == 4 }
-                // rain and snow
-                particles { at: 418, 40; area: 340, 4; count: 160; life: 0.5s .. 0.8s; speed: 360 .. 460; direction: 100deg; spread: 3deg; size: 1, 1
-                            colors: #a9c8f5, #a9c8f5; opacity: 70%, 20%; shape: spark; emit: card_open and card_custom == 1 and (clk_kind == 5 or clk_kind == 7) }
-                particles { at: 418, 40; area: 340, 4; count: 120; life: 4s .. 6s; speed: 25 .. 45; direction: 95deg; spread: 30deg; size: 3, 2.2
-                            colors: #ffffff, #ffffff; opacity: 90%, 30%; shape: dot; emit: card_open and card_custom == 1 and clk_kind == 6 }
-                // a storm's flashes, now and then
-                box { from: 256, 45; size: 325, 183; color: #e8ecff; opacity: 60% * pow(max(0, sin(time * 37)), 40); show: clk_kind == 7 }
-            }
+            column { at: 0, 0; Sky(256, 45, 325, 183) }
             box { from: 256, 45; size: 325, 183; corner: 14; color: #1b120d; opacity: if(clk_weather > 0, 38%, 55%) }
             box { from: 256, 45; size: 325, 183; corner: 14; stroke: 1; color: #f5e8d8; opacity: 9% }
             text ic_sun { at: 273, 65; anchor: center; size: 10; color: #d6a468; family: "tabler-icons" }
@@ -441,8 +403,9 @@ part Clock {
         // ── the weather in detail ─────────────────────────────────────────────────────────────────────
         group {
             show: clk_page == 2
-            // now
-            box { from: 22, 45; size: 338, 183; corner: 14; color: #1b120d; opacity: 55% }
+            // now, with the weather behind it
+            column { at: 0, 0; Sky(22, 45, 338, 183) }
+            box { from: 22, 45; size: 338, 183; corner: 14; color: #1b120d; opacity: if(clk_weather > 0, 38%, 55%) }
             box { from: 22, 45; size: 338, 183; corner: 14; stroke: 1; color: #f5e8d8; opacity: 9% }
             text ic_sun { at: 38, 61; anchor: center; size: 10; color: #d6a468; family: "tabler-icons" }
             text clk_d_head { at: 47, 61; anchor: left center; size: 7.5; weight: 700; color: #d6a468; width: 240; lines: 1; family: "Inter" }
@@ -490,29 +453,54 @@ part Clock {
             text clk_light { at: 476.5, 212; anchor: center; size: 8; weight: 700; color: #f7c873; family: "Inter" }
 
             // the next hours
-            box { from: 13, 240; size: 568, 104; corner: 14; color: #1b120d; opacity: 55% }
-            box { from: 13, 240; size: 568, 104; corner: 14; stroke: 1; color: #f5e8d8; opacity: 9% }
-            text ic_clock { at: 30, 256; anchor: center; size: 10; color: #d6a468; family: "tabler-icons" }
-            text clk_d_hours { at: 40, 256; anchor: left center; size: 7.5; weight: 700; color: #d6a468; family: "Inter" }
+            box { from: 13, 240; size: 568, 92; corner: 14; color: #1b120d; opacity: 55% }
+            box { from: 13, 240; size: 568, 92; corner: 14; stroke: 1; color: #f5e8d8; opacity: 9% }
+            text ic_clock { at: 30, 255; anchor: center; size: 10; color: #d6a468; family: "tabler-icons" }
+            text clk_d_hours { at: 40, 255; anchor: left center; size: 7.5; weight: 700; color: #d6a468; family: "Inter" }
             for h in clkh {
-                text h.time { at: 62 + h.index * 68, 276; anchor: center; size: 8; weight: 600; color: #b8a491; family: "Inter" }
-                text h.glyph { at: 62 + h.index * 68, 300; anchor: center; size: 16; color: #f7c873; family: "tabler-icons" }
-                text h.temp { at: 62 + h.index * 68, 326; anchor: center; size: 11; weight: 700; color: #f5e8d8; family: "Inter" }
+                text h.time { at: 62 + h.index * 68, 270; anchor: center; size: 8; weight: 600; color: #b8a491; family: "Inter" }
+                text h.glyph { at: 62 + h.index * 68, 291; anchor: center; size: 15; color: #f7c873; family: "tabler-icons" }
+                text h.temp { at: 62 + h.index * 68, 314; anchor: center; size: 11; weight: 700; color: #f5e8d8; family: "Inter" }
             }
 
-            // the days
-            box { from: 13, 356; size: 568, 136; corner: 14; color: #1b120d; opacity: 55% }
-            box { from: 13, 356; size: 568, 136; corner: 14; stroke: 1; color: #f5e8d8; opacity: 9% }
-            text ic_cloud { at: 30, 372; anchor: center; size: 10; color: #d6a468; family: "tabler-icons" }
-            text clk_d_days { at: 40, 372; anchor: left center; size: 7.5; weight: 700; color: #d6a468; family: "Inter" }
-            for x in clkd {
-                box { from: 26 + x.index * 79, 384; size: 71, 100; corner: 10; color: #000000; opacity: 18% }
-                text x.day { at: 61 + x.index * 79, 396; anchor: center; size: 8.5; weight: 700; color: #f5e8d8; family: "Inter" }
-                text x.glyph { at: 61 + x.index * 79, 420; anchor: center; size: 17; color: #f7c873; family: "tabler-icons" }
-                text x.hi { at: 61 + x.index * 79, 444; anchor: center; size: 11; weight: 700; color: #f6e2cf; family: "Inter" }
-                text x.lo { at: 61 + x.index * 79, 459; anchor: center; size: 8.5; weight: 600; color: #b8a491; family: "Inter" }
-                text x.rain { at: 61 + x.index * 79, 474; anchor: center; size: 7.5; weight: 600; color: #6fb7e8; family: "Inter" }
+            // the days ahead, from several weather services side by side: they often differ, and together they tell
+            // what may come. The list scrolls with the wheel.
+            box { from: 13, 342; size: 568, 150; corner: 14; color: #1b120d; opacity: 55% }
+            box { from: 13, 342; size: 568, 150; corner: 14; stroke: 1; color: #f5e8d8; opacity: 9% }
+            text ic_cloud { at: 30, 357; anchor: center; size: 10; color: #d6a468; family: "tabler-icons" }
+            text clk_d_days { at: 40, 357; anchor: left center; size: 7.5; weight: 700; color: #d6a468; family: "Inter" }
+            for c in clksrc {
+                text c.name { at: 150 + c.index * 88, 370; anchor: center; size: 8; weight: 700; color: #f5e8d8; width: 84; lines: 1; align: center; family: "Inter" }
+                text c.by { at: 150 + c.index * 88, 380; anchor: center; size: 6.5; weight: 600; color: #b8a491; family: "Inter" }
             }
+            box { from: 26, 387; size: 542, 1; color: #f5e8d8; opacity: 8% }
+            group {
+                clip box { from: 13, 389; size: 568, 99 }
+                for x in clkdd {
+                    box { from: 26, 393 + x.index * 32 - clk.ds; size: 542, 28; corner: 8; color: #000000; opacity: if(mod(x.index, 2) == 0, 18%, 8%) }
+                    text x.day { at: 34, 401 + x.index * 32 - clk.ds; anchor: left center; size: 8.5; weight: 700; color: #f5e8d8; width: 70; lines: 1; family: "Inter" }
+                    text x.spread { at: 34, 412 + x.index * 32 - clk.ds; anchor: left center; size: 6.5; weight: 600; color: #b8a491; family: "Inter" }
+                    text x.g1 { at: 124, 405 + x.index * 32 - clk.ds; anchor: center; size: 12; color: #f7c873; family: "tabler-icons" }
+                    text x.t1 { at: 136, 401 + x.index * 32 - clk.ds; anchor: left center; size: 8.5; weight: 700; color: #f5e8d8; family: "Inter" }
+                    text x.r1 { at: 136, 412 + x.index * 32 - clk.ds; anchor: left center; size: 6.5; weight: 600; color: #6fb7e8; family: "Inter" }
+                    text x.g2 { at: 212, 405 + x.index * 32 - clk.ds; anchor: center; size: 12; color: #f7c873; family: "tabler-icons" }
+                    text x.t2 { at: 224, 401 + x.index * 32 - clk.ds; anchor: left center; size: 8.5; weight: 700; color: #f5e8d8; family: "Inter" }
+                    text x.r2 { at: 224, 412 + x.index * 32 - clk.ds; anchor: left center; size: 6.5; weight: 600; color: #6fb7e8; family: "Inter" }
+                    text x.g3 { at: 300, 405 + x.index * 32 - clk.ds; anchor: center; size: 12; color: #f7c873; family: "tabler-icons" }
+                    text x.t3 { at: 312, 401 + x.index * 32 - clk.ds; anchor: left center; size: 8.5; weight: 700; color: #f5e8d8; family: "Inter" }
+                    text x.r3 { at: 312, 412 + x.index * 32 - clk.ds; anchor: left center; size: 6.5; weight: 600; color: #6fb7e8; family: "Inter" }
+                    text x.g4 { at: 388, 405 + x.index * 32 - clk.ds; anchor: center; size: 12; color: #f7c873; family: "tabler-icons" }
+                    text x.t4 { at: 400, 401 + x.index * 32 - clk.ds; anchor: left center; size: 8.5; weight: 700; color: #f5e8d8; family: "Inter" }
+                    text x.r4 { at: 400, 412 + x.index * 32 - clk.ds; anchor: left center; size: 6.5; weight: 600; color: #6fb7e8; family: "Inter" }
+                    text x.g5 { at: 476, 405 + x.index * 32 - clk.ds; anchor: center; size: 12; color: #f7c873; family: "tabler-icons" }
+                    text x.t5 { at: 488, 401 + x.index * 32 - clk.ds; anchor: left center; size: 8.5; weight: 700; color: #f5e8d8; family: "Inter" }
+                    text x.r5 { at: 488, 412 + x.index * 32 - clk.ds; anchor: left center; size: 6.5; weight: 600; color: #6fb7e8; family: "Inter" }
+                }
+            }
+            // where it is in the list
+            box { from: 572, 391 + 95 * clk.ds / max(32, clkdd.count * 32); size: 3, 95 * min(1, 3.4 / max(1, clkdd.count)); corner: 1.5; color: #f5e8d8; opacity: 25% }
+            zone box days_hit { from: 13, 389; size: 568, 99; active: card_open and card_custom == 1 and clk_page == 2; label: "{clk_d_days}" }
+            on scroll days_hit { clk_ds = clamp(clk_ds - if(wheel > 0, 1, -1), 0, max(0, clkdd.count - 3)) }
         }
         // ── the foot, on the coffee ───────────────────────────────────────────────────────────────────
         box { from: 12, 529; size: 5, 5; corner: 2.5; color: #f7c873 }

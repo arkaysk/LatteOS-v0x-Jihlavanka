@@ -336,7 +336,8 @@ for lower, capital in pairs({ [0xE1] = 0xC1, [0xE4] = 0xC4, [0x10D] = 0x10C, [0x
                               [0x148] = 0x147, [0xF3] = 0xD3, [0xF4] = 0xD4, [0xF6] = 0xD6, [0x155] = 0x154, [0x159] = 0x158, [0x161] = 0x160, [0x165] = 0x164, [0xFA] = 0xDA,
                               [0x16F] = 0x16E, [0xFC] = 0xDC, [0xFD] = 0xDD, [0x17E] = 0x17D }) do UP[utf8.char(lower)] = utf8.char(capital) end
 local function upper(s) return (s:gsub(utf8.charpattern, function(c) return UP[c] or c:upper() end)) end
-local fill_apps = {}                          -- the apps the launcher lists (LensGoo keeps them; ClockGoo asks the same service)
+local fill_apps = {}
+local forecasts = nil                       -- the days ahead from several weather services (latte-sky sources)                          -- the apps the launcher lists (LensGoo keeps them; ClockGoo asks the same service)
 
 -- everything the scene shows, once a second while the card is open
 local function fill_clock()
@@ -509,13 +510,31 @@ local function fill_weather()
         hours[i] = { time = h.time or "", temp = tostring(h.temp) .. "°", glyph = icons[sky_glyph(h.code)] or icons["cloud"] }
     end
     model.clkh = hours
-    local list = {}
-    for i = 1, math.min(7, #days) do
-        local x = days[i]
-        list[i] = { day = i == 1 and tr("Today") or (i == 2 and tr("Tomorrow") or tr(SHORT[((tonumber(x.weekday) or 0) + 1) % 7 + 1])),
-                    glyph = icons[sky_glyph(x.code)] or icons["cloud"], hi = x.max .. "°", lo = x.min .. "°", rain = (tonumber(x.rain) or 0) > 0 and (x.rain .. " %") or "" }
+    -- the days ahead, as each weather service sees them
+    text.clk_d_days = tr("THE DAYS AHEAD, FORECAST BY:")
+    local list = type(forecasts) == "table" and forecasts or {}
+    local heads = {}
+    for j, f in ipairs(list) do if j <= 5 then heads[j] = { name = f.name or "", by = f.by or "" } end end
+    model.clksrc = heads
+    local rows = {}
+    local first = list[1] and list[1].days or {}
+    for i = 1, math.min(7, #first) do
+        local x = first[i]
+        local row = { day = i == 1 and tr("Today") or (i == 2 and tr("Tomorrow") or tr(WEEKDAYS[((tonumber(x.weekday) or 0) + 1) % 7 + 1])) }
+        local hi, lo = -999, 999
+        for j = 1, math.min(5, #list) do
+            local y = list[j].days and list[j].days[i]
+            if y then
+                row["g" .. j], row["t" .. j] = icons[sky_glyph(y.code)] or icons["cloud"], y.max .. "° / " .. y.min .. "°"
+                row["r" .. j] = (tonumber(y.rain) or 0) > 0 and (tostring(y.rain) .. " mm") or ""
+                hi, lo = math.max(hi, y.max), math.min(lo, y.max)
+            end
+        end
+        -- how far apart they are: where they differ much, the forecast is unsure
+        row.spread = hi - lo >= 2 and string.format(tr("they differ by %d°"), hi - lo) or tr("they agree")
+        rows[i] = row
     end
-    model.clkd = list
+    model.clkdd = rows
 end
 -- the buttons of the timers' page, by their numbers in parts/clock.plm
 local function act(n)
@@ -545,6 +564,12 @@ open_time = function(d, keep)
         end)
     end
     fact.clk_page = tab
+    if tab == 2 then
+        run("latte-sky", { "sources" }, function(out)
+            local ok, t = pcall(json.decode, out or "")
+            if ok and type(t) == "table" then forecasts = t.sources fill_weather() end
+        end)
+    end
     open_clock(d, keep)
     if tab == 1 then fill_timers() elseif tab == 2 then fill_weather() end
 end

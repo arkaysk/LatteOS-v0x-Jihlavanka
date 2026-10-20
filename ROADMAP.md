@@ -315,13 +315,23 @@ Schválené 12. 10. 2026. Pracuje sa **zhora nadol, neskáče sa**; nový nápad
     (programy používateľa); Monitor › Procesy to ukazuje štítkom, filtrom a zoznamom strážených súčastí. Overené:
     zabité ikony sa do ~16 s vrátia. **Ostáva:** Nastavenia › Štart (vypnúť stráženie jednej súčasti), strážiť aj
     skutočné aplikácie používateľa na žiadosť, štítky v Správcovi zariadení, upozornenie pri páde mimo strážených súčastí.
-12. [~] **CamGoo — webkamery** (20. 10., na pokyn používateľa). Hotové: karta s obrázkom kamery, prepínanie, zoznam
+12. [ ] **Pokročilý detektor siete** (20. 10., používateľ; predpoklad pre CamGoo s domácimi kamerami). Dnešný inšpektor
+    siete v Správcovi zariadení (inšpirácia ESET Smart Security) nájde iba počítač, s ktorým je latte-lab spojený káblom.
+    Treba: ARP tabuľka a ping sweep podsiete, mDNS/Bonjour, SSDP/UPnP, NetBIOS, ONVIF WS-Discovery (kamery), výrobca
+    podľa MAC (OUI), otvorené porty bežných služieb (554 RTSP, 2020 ONVIF Tapo, 80/443, 22, 445, 9100), rozpoznanie typu
+    (kamera, tlačiareň, TV, telefón, router), Matter/Thread pasívne (R3·E); ako ESET „Kontrola siete“ so zoznamom a mapou.
+13. [~] **CamGoo — webkamery** (20. 10., na pokyn používateľa). Hotové: karta s obrázkom kamery, prepínanie, zoznam
     v Nastaveniach › Kvapky › Webkamery. **Ďalej (nápady používateľa 20. 10.):** zobrazenia — pod sebou, dlaždice,
     zväčšenie jednej a prepínanie, samé rolujúca páska; **domáce IP kamery** (používateľ má Tapo: RTSP
     `rtsp://účet:heslo@IP:554/stream1`, snímka cez ffmpeg; heslo do kľúčenky, nie do súboru); **nájdenie kamier
     v sieti** (ONVIF WS-Discovery, porty 554 a 2020; to isté vie inšpektor siete v Správcovi zariadení);
     **návrh kamier podľa miesta** (miesto počasia → verejné kamery okolo, zdroj s API, napr. Windy Webcams — kľúč);
     **ISS** (NASA vysiela video, nie obrázok: snímka z prúdu cez ffmpeg, alebo mapa polohy ISS ako „kamera“).
+13. [ ] **Prvé spustenie — kvapky sa predstavia** (používateľ, 20. 10., z /plan-ceo-review). Po prvom prihlásení
+    sa kvapky postupne nadvihnú a každá krátko povie, čo je a čo robí ľavý a pravý klik; preskočiteľné, dá sa
+    pustiť znova (Nastavenia). Poradie: **QueenGoo → PowerGoo → LensGoo → BarGoo**, potom ostatné na ploche.
+    Na konci jedna veta, že každú kvapku možno ťahaním presunúť inam. Texty cez preklady, ide myšou aj
+    klávesnicou. Hodí sa pred prezentáciou na Reddite (prví cudzí používatelia).
 
 ## ROADMAP2 — LatteOS od nápadu po hotový produkt
 

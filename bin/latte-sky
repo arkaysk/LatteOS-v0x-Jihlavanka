@@ -8,6 +8,7 @@ Prints one JSON object:
   wind        km/h
   now         {"temp", "code" (WMO), "kind" 1 clear … 7 storm, "icon"} or null without a forecast
   place, hours [{time, temp, code}], days [{weekday (0 Monday), max, min, code, rain %}]
+  latte-sky sources: the next days as several weather services see them (see sources())
   now also "feels" (apparent temperature) and "humidity"; sunrise, sunset ("HH:MM", local today); aqi {value, level 0…5}
 """
 import datetime, json, math, os, re, sys, time, urllib.request
@@ -111,6 +112,51 @@ def air_quality(lat, lon):
     return {"value": v, "level": next(i for i, top in enumerate((20, 40, 60, 80, 100, 10 ** 6)) if v <= top)}     # 0 good … 5 extremely poor
 
 
+# the forecasts of several weather services for the same place: they often differ, and side by side one sees what may come
+SOURCES = [("ecmwf_ifs025", "ECMWF", "EU"), ("icon_seamless", "ICON", "DWD"), ("gfs_seamless", "GFS", "NOAA"),
+           ("meteofrance_seamless", "Meteo-France", "FR"), ("ukmo_seamless", "Met Office", "UK")]
+SOURCES_CACHE = os.path.join(os.path.dirname(CACHE), "weather-sources.json")
+
+
+def sources(c=None):
+    """{"sources": [{"name", "by", "days": [{"weekday", "max", "min", "code", "rain" (mm)}]}]} — through Open-Meteo, no key;
+    asked at most every hour, with no network the last one known."""
+    c = conf() if c is None else c
+    try:
+        lat, lon = float(c.get("lat", "")), float(c.get("lon", ""))
+    except ValueError:
+        return {"sources": []}
+    try:
+        kept = json.load(open(SOURCES_CACHE))
+        if time.time() - os.path.getmtime(SOURCES_CACHE) < 60 * 60 and kept.get("at") == [lat, lon]:
+            return kept
+    except (OSError, ValueError, AttributeError):
+        kept = None
+    url = ("https://api.open-meteo.com/v1/forecast?latitude=%s&longitude=%s&daily=temperature_2m_max,temperature_2m_min,weather_code,"
+           "precipitation_sum&timezone=auto&forecast_days=7&models=%s" % (lat, lon, ",".join(m for m, _, _ in SOURCES)))
+    try:
+        daily = json.load(urllib.request.urlopen(url, timeout=10)).get("daily") or {}
+    except Exception:
+        return kept or {"sources": []}
+    out = {"at": [lat, lon], "sources": []}
+    for model, name, by in SOURCES:
+        days = []
+        for i, day in enumerate(daily.get("time") or []):
+            hi, lo = (daily.get("temperature_2m_max_" + model) or [None] * 9)[i], (daily.get("temperature_2m_min_" + model) or [None] * 9)[i]
+            if hi is None or lo is None:
+                continue
+            days.append({"weekday": datetime.date.fromisoformat(day).weekday(), "max": round(hi), "min": round(lo),
+                         "code": (daily.get("weather_code_" + model) or [3] * 9)[i] or 0, "rain": round((daily.get("precipitation_sum_" + model) or [0] * 9)[i] or 0, 1)})
+        if days:
+            out["sources"].append({"name": name, "by": by, "days": days})
+    try:
+        json.dump(out, open(SOURCES_CACHE + ".new", "w"))
+        os.replace(SOURCES_CACHE + ".new", SOURCES_CACHE)
+    except OSError:
+        pass
+    return out
+
+
 def kind(code):
     """A WMO weather code as (kind, icon): the seven the scenes tell apart."""
     return ((1, "sun") if code == 0 else (2, "sun-low") if code in (1, 2) else (4, "cloud-fog") if code in (45, 48)
@@ -144,6 +190,9 @@ def report(c=None, f=None):
 
 
 if __name__ == "__main__":
+    if sys.argv[1:] == ["sources"]:
+        print(json.dumps(sources(), ensure_ascii=False))
+        sys.exit(0)
     if len(sys.argv) > 1:
         print(__doc__.strip(), file=sys.stderr)
         sys.exit(2)

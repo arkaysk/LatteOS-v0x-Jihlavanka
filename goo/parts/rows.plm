@@ -270,6 +270,52 @@ part Rows {
         }
     }
 
+    // ClockGoo's (clock.plm): the weather itself, behind a panel: the sky of the hour (by day or by night), the sun or the moon, clouds that
+    // drift, rain, snow, fog, a storm's flashes; in the box at x, y of w × h, its corners round.
+    component Sky(x: number, y: number, w: number, h: number) {
+        size: w, h
+        group {
+            show: clk_weather > 0
+            clip box { from: x, y; size: w, h; corner: 14 }
+            body {
+                gradient: x, y to x, y + h, clk.top, clk.bottom
+                box { from: x, y; size: w, h }
+            }
+            ellipse { at: x + w * 0.66, y + 51; radius: 40 + 3 * sin(time * 40); color: #ffd27a; opacity: 22%; show: clk_night < 1 and clk_kind <= 2 }
+            ellipse { at: x + w * 0.66, y + 51; radius: 16; color: #ffe2a0; opacity: 85%; show: clk_night < 1 and clk_kind <= 2 }
+            ellipse { at: x + w * 0.66, y + 47; radius: 12; color: #efe9da; opacity: 90%; show: clk_night > 0 and clk_kind <= 3 }
+            ellipse { at: x + w * 0.66 + 5, y + 43; radius: 10; color: clk.top; opacity: 95%; show: clk_night > 0 and clk_kind <= 3 }
+            ellipse { at: x + w * 0.14, y + 25; radius: 1.2; color: #ffffff; opacity: 60% + 30% * sin(time * 90); show: clk_night > 0 and clk_kind <= 2 }
+            ellipse { at: x + w * 0.36, y + 13; radius: 1; color: #ffffff; opacity: 70%; show: clk_night > 0 and clk_kind <= 2 }
+            ellipse { at: x + w * 0.53, y + 47; radius: 1.3; color: #ffffff; opacity: 50% + 40% * sin(time * 70 + 40); show: clk_night > 0 and clk_kind <= 2 }
+            ellipse { at: x + w * 0.85, y + 17; radius: 0.9; color: #ffffff; opacity: 70%; show: clk_night > 0 and clk_kind <= 2 }
+            ellipse { at: x + w * 0.24, y + 75; radius: 1; color: #ffffff; opacity: 55%; show: clk_night > 0 and clk_kind <= 2 }
+            body {
+                color: rgb(pick(clk_kind - 1, 255, 242, 201, 185, 122, 215, 75) / 255, pick(clk_kind - 1, 255, 242, 204, 188, 130, 221, 81) / 255, pick(clk_kind - 1, 255, 242, 210, 192, 142, 228, 96) / 255)
+                opacity: if(clk_kind >= 2, if(clk_night > 0, 28%, if(clk_kind == 2, 42%, 58%)), 0)
+                // three clouds, each of four puffs melted together, drifting at their own pace
+                ellipse { at: x + mod(time * 6, w + 95) - 50, y + 29; radius: 13; blend: 10 }
+                ellipse { at: x + mod(time * 6, w + 95) - 36, y + 19; radius: 17; blend: 10 }
+                ellipse { at: x + mod(time * 6, w + 95) - 18, y + 23; radius: 14; blend: 10 }
+                ellipse { at: x + mod(time * 6, w + 95) - 34, y + 33; radius: 12; scale: 2.2, 0.8; blend: 10 }
+                ellipse { at: x + mod(time * 4 + 230, w + 115) - 60, y + 67; radius: 15; blend: 12 }
+                ellipse { at: x + mod(time * 4 + 230, w + 115) - 40, y + 55; radius: 21; blend: 12 }
+                ellipse { at: x + mod(time * 4 + 230, w + 115) - 16, y + 61; radius: 16; blend: 12 }
+                ellipse { at: x + mod(time * 4 + 230, w + 115) - 38, y + 73; radius: 13; scale: 2.6, 0.8; blend: 12 }
+                ellipse { at: x + mod(time * 5 + 120, w + 105) - 40, y + 105; radius: 18; blend: 12; show: clk_kind >= 3 }
+                ellipse { at: x + mod(time * 5 + 120, w + 105) - 14, y + 97; radius: 23; blend: 12; show: clk_kind >= 3 }
+                ellipse { at: x + mod(time * 5 + 120, w + 105) - 26, y + 113; radius: 14; scale: 3, 0.8; blend: 12; show: clk_kind >= 3 }
+            }
+            ellipse { at: x + mod(time * 8, w + 125) - 60, y + 105; radius: 60; scale: 3, 0.25; color: #e8e8e8; opacity: 22%; show: clk_kind == 4 }
+            ellipse { at: x + mod(time * 5 + 200, w + 125) - 60, y + 140; radius: 60; scale: 3.4, 0.22; color: #e8e8e8; opacity: 20%; show: clk_kind == 4 }
+            particles { at: x + w / 2, y - 5; area: w + 15, 4; count: 160; life: 0.5s .. 0.8s; speed: 360 .. 460; direction: 100deg; spread: 3deg; size: 1, 1
+                        colors: #a9c8f5, #a9c8f5; opacity: 70%, 20%; shape: spark; emit: card_open and card_custom == 1 and (clk_kind == 5 or clk_kind == 7) }
+            particles { at: x + w / 2, y - 5; area: w + 15, 4; count: 120; life: 4s .. 6s; speed: 25 .. 45; direction: 95deg; spread: 30deg; size: 3, 2.2
+                        colors: #ffffff, #ffffff; opacity: 90%, 30%; shape: dot; emit: card_open and card_custom == 1 and clk_kind == 6 }
+            box { from: x, y; size: w, h; color: #e8ecff; opacity: 60% * pow(max(0, sin(time * 37)), 40); show: clk_kind == 7 }
+        }
+    }
+
     component CardItem(r: record, it: record, base: number, cw: number) {
         size: cw / if(r.kind == tiles, r.per, max(r.items.count, 1)), if(r.kind == tiles, if(r.per <= 2, 66, 88), if(r.per <= 2, 60, 46))
         let wide = r.per <= 2
