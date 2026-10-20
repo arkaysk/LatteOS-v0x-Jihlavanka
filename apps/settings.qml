@@ -170,7 +170,7 @@ ShellRoot {
     readonly property var webcams: camsFile.list.length > 0 ? camsFile.list : camDefaults
     function camsEdit(change) { const l = JSON.parse(JSON.stringify(webcams)); change(l); camsFile.save(l) }
     Run { id: guardq }
-    Run { id: guardset; onDataChanged: {} }
+    Run { id: sound }
     Run { id: opens }
     Run { id: region }
     Run { id: clock }
@@ -634,7 +634,7 @@ ShellRoot {
             Part { visible: shell.page === "clockgoo"; width: view.room; title: I18n.tr("Where the weather is")
                    note: I18n.tr("A town or a village; the weather, the sunrise and the sunset are for it. The login screen shows its sky too.")
                 Label { width: view.room; text: logon.data && logon.data.place ? logon.data.place : I18n.tr("No place yet"); font.weight: 700; font.pixelSize: 15 }
-                Field { id: placeField; width: Math.min(420, view.room); icon: "map-pin"; hint: I18n.tr("Type a town and press Enter…")
+                Field { id: weatherPlace; width: Math.min(420, view.room); icon: "map-pin"; hint: I18n.tr("Type a town and press Enter…")
                         onAccepted: if (text.trim() !== "") { shell.order(["latte-settings", "loginscreen", "place", text.trim()]); text = "" } } }
             Part { id: worldPart; visible: shell.page === "clockgoo"; width: view.room; title: I18n.tr("World clocks")
                    note: I18n.tr("Up to five; the first is home. Find any city or part of the world below, and name it as you like.")
