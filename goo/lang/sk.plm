@@ -1511,5 +1511,8 @@ library Slovak {
         "Edit" = "Upraviť"
         "Quit" = "Ukončiť"
         "QUICK FILTER OF TYPES" = "RÝCHLY FILTER TYPOV"
+        "File name" = "Názov súboru"
+        "Attributes" = "Atribúty"
+        "Used: {n}" = "Použité: {n}"
     }
 }

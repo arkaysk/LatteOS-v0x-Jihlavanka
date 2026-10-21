@@ -504,6 +504,9 @@ Schválené 12. 10. 2026. Pracuje sa **zhora nadol, neskáče sa**; nový nápad
     - e. [~] **ClockGoo** (`ClockGoo popup time frosted glass.png`; časť pravého kliku hotová podľa používateľa 21. 10., zvyšok nie): záložky Prehľad · Časovače a budíky · Počasie,
       veľký čas so sekundami, dátum, týždeň, meniny, počasie s východom a západom slnka, svetové hodiny,
       digitálna pohoda (čas pri obrazovke podľa aplikácií), päta Režim spánku · Nerušiť.
+    - f. [ ] **Témy Keramika, Hliník, Onyx, Steam** (používateľ, 21. 10.): v `Theme.cups` sú zatiaľ Espresso, Mocha,
+      Porcelán a Z tapety; doplniť ich (aj materiál okien podľa PRAVIDLÁ bod 12). Aplikácie berú farby iba z témy
+      (DualBrew, LensAI, Nastavenia…), takže sa prefarbia samy — overiť snímkou každú tému.
 18. [ ] **Vývoj LatteOS v Nastavenia › Systém › O tomto počítači** (používateľ, 21. 10.): štvorčekový graf aktivity
     (ako na GitHube: týždne v stĺpcoch, dni v riadkoch, sýtosť podľa počtu commitov) — ako pokračuje vývoj projektu;
     pod ním posledné commity, každý rozbaliteľný: dátum, autor, správa celá a čitateľne, zmenené súbory. Zdroj:

@@ -135,6 +135,14 @@ ShellRoot {
         // what can go without losing anything: it comes back by itself, or it has already been thrown away
         { id: "cache", name: QT_TR_NOOP("Caches and leftovers"), color: "#d9a441", names: [".cache", "cache", "Cache", "node_modules", "__pycache__", "target", ".gradle", ".npm", ".pnpm-store", "Trash", ".thumbnails"] },
         { id: "other", name: QT_TR_NOOP("Other"), color: "#8a7f76" }]
+    // the details view draws its files as the sketch does: an outline icon of the kind, in the theme's colours
+    readonly property var typeGlyphs: ({ pictures: "photo", documents: "file-text", music: "music", video: "movie", archives: "file-zip", code: "code" })
+    function glyphOf(name, isDir) {
+        if (isDir) return "folder"
+        const n = name.toLowerCase()
+        for (const t in types) if (types[t].globs.some(g => n.endsWith(g.slice(1)))) return typeGlyphs[t]
+        return "file"
+    }
     function kindOf(p) {
         const n = p.split("/").pop(), dot = n.lastIndexOf("."), ext = dot > 0 ? n.slice(dot + 1).toLowerCase() : ""
         const pl = places.find(x => x.path === p)
@@ -339,7 +347,11 @@ ShellRoot {
         function again() { fresh = false; fresh = true; readTags() }
         // the colours of what is here
         property var tags: ({})
-        function readTags() { if (!path.startsWith("/")) { tags = ({}); return } tagger.running = false; tagger.command = ["latte-files", "tags", path]; tagger.running = true }
+        function readTags() { if (!path.startsWith("/")) { tags = ({}); modes = ({}); return } tagger.running = false; tagger.command = ["latte-files", "tags", path]; tagger.running = true
+                              moder.running = false; moder.command = ["find", path, "-mindepth", "1", "-maxdepth", "1", "-printf", "%M\t%p\n"]; moder.running = true }
+        // what each may be done with, as `ls -l` writes it: the commander's Attributes column, read once for the folder
+        property var modes: ({})
+        Process { id: moder; stdout: StdioCollector { onStreamFinished: { const m = {}; for (const l of this.text.split("\n")) { const i = l.indexOf("\t"); if (i > 0) m[l.slice(i + 1)] = l.slice(0, i) } panel.modes = m } } }
         Process { id: tagger; stdout: StdioCollector { onStreamFinished: { const t = {}; for (const l of this.text.split("\n")) { const i = l.lastIndexOf("\t"); if (i > 0) t[l.slice(0, i)] = l.slice(i + 1) } panel.tags = t } } }
         function picked() { return Object.keys(chosen) }
         function photoStep(d) { photos.step(d) }
@@ -415,25 +427,25 @@ ShellRoot {
                           nameFilters: shell.typeFilter !== "" ? shell.types[shell.typeFilter].globs : ["*"]
                           sortField: panel.sortBy === "size" ? FolderListModel.Size : (panel.sortBy === "date" ? FolderListModel.Time : FolderListModel.Name); sortReversed: panel.sortDown }
 
-        Rectangle { anchors.fill: parent; anchors.margins: 6; radius: 14; color: panel.isActive || !shell.dual ? Theme.surface : Theme.ground
-                    border.width: shell.dual ? 2 : 0; border.color: panel.isActive ? Theme.gold : "transparent" }
+        Rectangle { anchors.fill: parent; anchors.margins: 6; radius: 18; color: Qt.darker(Theme.card, 1.18)
+                    border.width: 1; border.color: shell.dual && panel.isActive ? Qt.rgba(Theme.gold.r, Theme.gold.g, Theme.gold.b, 0.7) : Theme.line }
         // the drives, as the commander's row of them above each panel: the one this panel is on lit; what is free on it
         readonly property var root: shell.rootOf(panel.path)
         Flickable { id: driveRow; x: 18; y: 12; width: parent.width - 36 - freeText.implicitWidth - 12; height: 30; contentWidth: driveChips.width; clip: true; boundsBehavior: Flickable.StopAtBounds
             Row { id: driveChips; spacing: 6
-                Label { text: I18n.tr("Drive:"); color: Theme.faint; font.pixelSize: 12; font.weight: 700; anchors.verticalCenter: parent.verticalCenter }
+                Label { text: I18n.tr("Drive:"); color: Theme.faint; font.family: Theme.mono; font.pixelSize: 12; font.weight: 700; anchors.verticalCenter: parent.verticalCenter }
                 Repeater { model: shell.places.filter(p => ["home", "disk", "usb", "card", "optical", "image", "network", "cloud"].includes(p.kind) && p.path !== "" && (p.path !== "/" || shell.real))
                     Rectangle { id: chip; required property var modelData; height: 26; radius: 13; width: chipText.implicitWidth + 30
                         readonly property bool on: !!panel.root && panel.root.path === modelData.path
                         color: on ? Theme.gold : (chipHit.containsMouse ? Theme.raised : Theme.card); border.width: 1; border.color: on ? Theme.gold : Theme.line
                         Row { anchors.centerIn: parent; spacing: 5
                             Glyph { name: shell.placeIcons[chip.modelData.kind] || "disc"; font.pixelSize: 12; color: chip.on ? Theme.inkOnGold : Theme.dim; anchors.verticalCenter: parent.verticalCenter }
-                            Label { id: chipText; text: chip.modelData.kind === "home" ? I18n.tr("Home") : shell.driveName(chip.modelData); color: chip.on ? Theme.inkOnGold : Theme.cream; font.pixelSize: 12; font.weight: 700 } }
+                            Label { id: chipText; text: chip.modelData.kind === "home" ? I18n.tr("Home") : shell.driveName(chip.modelData); color: chip.on ? Theme.inkOnGold : Theme.cream; font.family: Theme.mono; font.pixelSize: 12; font.weight: 700 } }
                         MouseArea { id: chipHit; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: { shell.active = panel.index; panel.go(chip.modelData.path) } } } } } }
-        Label { id: freeText; anchors.right: parent.right; anchors.rightMargin: 18; y: 18; color: Theme.dim; font.pixelSize: 12
+        Label { id: freeText; anchors.right: parent.right; anchors.rightMargin: 18; y: 18; color: Theme.dim; font.family: Theme.mono; font.pixelSize: 12
                 text: panel.root && panel.root.total > 0 ? I18n.tr("{n} free", { n: shell.bytes(panel.root.total - panel.root.used) }) : "" }
         // what is here and what is chosen, at the panel's own foot
-        Label { x: 18; y: parent.height - 26; width: parent.width - 36; elide: Text.ElideRight; color: Theme.dim; font.pixelSize: 12; visible: panel.path.startsWith("/")
+        Label { x: 18; y: parent.height - 28; width: parent.width - 36; elide: Text.ElideRight; color: Theme.dim; font.family: Theme.mono; font.pixelSize: 11; visible: panel.path.startsWith("/")
                 text: (panel.picked().length ? I18n.tr("{n} chosen", { n: panel.picked().length }) + "  ·  " : "") + I18n.tr("{n} items", { n: panel.count })
                       + (shell.typeFilter !== "" ? "  ·  " + I18n.tr("only {n}", { n: I18n.tr(shell.types[shell.typeFilter].name) }) : "")
                       + (panel.root && panel.root.total > 0 ? "  ·  " + I18n.tr("{n} free", { n: shell.bytes(panel.root.total - panel.root.used) }) : "") }
@@ -444,8 +456,10 @@ ShellRoot {
                 Repeater { model: panel.source || panel.peek !== "" ? [] : panel.way
                     Row { required property var modelData; required property int index; spacing: 2
                         Glyph { visible: parent.index > 0; name: "chevron-right"; font.pixelSize: 13; color: Theme.faint; anchors.verticalCenter: parent.verticalCenter }
-                        Rectangle { height: 30; width: crumb.implicitWidth + 18; radius: 9; color: crumbHit.containsMouse ? Theme.raised : "transparent"
-                            Label { id: crumb; anchors.centerIn: parent; text: parent.parent.modelData.name; color: Theme.dim; font.weight: 600 }
+                        Rectangle { readonly property bool last: parent.index === panel.way.length - 1
+                            height: 28; width: crumb.implicitWidth + 18; radius: 9; anchors.verticalCenter: parent.verticalCenter
+                            color: last ? Qt.rgba(Theme.gold.r, Theme.gold.g, Theme.gold.b, 0.16) : (crumbHit.containsMouse ? Theme.raised : "transparent"); border.width: last ? 1 : 0; border.color: Qt.rgba(Theme.gold.r, Theme.gold.g, Theme.gold.b, 0.4)
+                            Label { id: crumb; anchors.centerIn: parent; text: parent.parent.modelData.name; color: parent.last ? Theme.gold : Theme.dim; font.family: Theme.mono; font.pixelSize: 13; font.weight: parent.last ? 700 : 500 }
                             MouseArea { id: crumbHit; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
                                         onClicked: { shell.active = panel.index; panel.go(parent.parent.modelData.path) } } } } }
                 Row { visible: panel.peek !== ""; spacing: 10
@@ -629,12 +643,13 @@ ShellRoot {
                                 Pill { required property var modelData; implicitHeight: 26; text: modelData.path.split("/").pop() + "  " + shell.bytes(modelData.size); onPressed: sized.picked = modelData.path } } } } } }
             // the column heads: a press sorts by that, again the other way
             Row { id: heads; visible: list.visible; width: parent.width; height: 26
-                Repeater { model: [{ by: "name", name: QT_TR_NOOP("Name"), w: -250 }, { by: "size", name: QT_TR_NOOP("Size"), w: 100 }, { by: "date", name: QT_TR_NOOP("Date modified"), w: 150 }]
+                Repeater { model: [{ by: "name", name: QT_TR_NOOP("File name"), w: -360 }, { by: "size", name: QT_TR_NOOP("Size"), w: 100 }, { by: "date", name: QT_TR_NOOP("Modified"), w: 140 }, { by: "", name: QT_TR_NOOP("Attributes"), w: 120 }]
                     Rectangle { required property var modelData; width: modelData.w < 0 ? heads.width + modelData.w : modelData.w; height: 26; radius: 7; color: headHit.containsMouse ? Theme.card : "transparent"
-                        Label { x: parent.modelData.by === "name" ? 42 : 0; width: parent.width - (parent.modelData.by === "name" ? 42 : 10); horizontalAlignment: parent.modelData.by === "size" ? Text.AlignRight : Text.AlignLeft
-                                text: I18n.tr(parent.modelData.name) + (panel.sortBy === parent.modelData.by ? (panel.sortDown ? "  ↓" : "  ↑") : ""); color: panel.sortBy === parent.modelData.by ? Theme.gold : Theme.faint
-                                font.pixelSize: 12; font.weight: 600; anchors.verticalCenter: parent.verticalCenter }
-                        MouseArea { id: headHit; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: panel.sort(parent.modelData.by) } } } }
+                        Label { x: parent.modelData.by === "name" ? 42 : 0; width: parent.width - (parent.modelData.by === "name" ? 42 : 8); horizontalAlignment: parent.modelData.by === "name" ? Text.AlignLeft : Text.AlignRight
+                                text: I18n.tr(parent.modelData.name).toUpperCase() + (panel.sortBy === parent.modelData.by ? (panel.sortDown ? " ↓" : " ↑") : ""); color: panel.sortBy === parent.modelData.by ? Theme.gold : Theme.faint
+                                font.family: Theme.mono; font.pixelSize: 11; font.weight: 700; font.letterSpacing: 0.8; anchors.verticalCenter: parent.verticalCenter }
+                        MouseArea { id: headHit; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; enabled: parent.modelData.by !== ""; onClicked: panel.sort(parent.modelData.by) } } }
+                Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 1; color: Theme.line } }
             ListView { id: list; visible: shell.view === "details" && panel.path.startsWith("/") && !panel.source && panel.peek === ""; y: 28; width: parent.width; height: parent.height - 28; model: files; clip: true; boundsBehavior: Flickable.StopAtBounds
                 MouseArea { z: -1; width: list.width; height: Math.max(list.height, list.contentHeight); preventStealing: true; acceptedButtons: Qt.LeftButton | Qt.RightButton | Qt.BackButton | Qt.ForwardButton
                     onPressed: (m) => panel.groundPressed(m, mapToItem(ground, m.x, m.y))
@@ -648,24 +663,38 @@ ShellRoot {
                     required property var fileSize
                     required property date fileModified
                     required property int index
-                    width: list.width; height: 34; radius: 9
+                    width: list.width; height: 38; radius: 0
                     readonly property color tint: shell.colourOf(panel.tags[filePath])     // its colour, if it has one: the row takes it on
-                    color: panel.chosen[filePath] ? Qt.rgba(Theme.gold.r, Theme.gold.g, Theme.gold.b, 0.24) : (rowHit.containsMouse ? Theme.card : (panel.tags[filePath] ? Qt.rgba(tint.r, tint.g, tint.b, 0.16) : "transparent"))
+                    readonly property bool picked: !!panel.chosen[filePath]
+                    // chosen: the commander's lit row, coffee towards gold, a gold line above and below
+                    gradient: picked ? lit : null
+                    Gradient { id: lit; orientation: Gradient.Horizontal; GradientStop { position: 0; color: Qt.rgba(Theme.coffee.r, Theme.coffee.g, Theme.coffee.b, 0.55) } GradientStop { position: 1; color: Qt.rgba(Theme.coffee.r, Theme.coffee.g, Theme.coffee.b, 0.22) } }
+                    color: rowHit.containsMouse ? Qt.rgba(Theme.cream.r, Theme.cream.g, Theme.cream.b, 0.05) : (panel.tags[filePath] ? Qt.rgba(tint.r, tint.g, tint.b, 0.16) : "transparent")
+                    Rectangle { visible: row.picked; width: parent.width; height: 1; color: Theme.gold; opacity: 0.8 }
+                    Rectangle { visible: row.picked; y: parent.height - 1; width: parent.width; height: 1; color: Theme.gold; opacity: 0.8 }
+                    Rectangle { visible: !row.picked; y: parent.height - 1; x: 8; width: parent.width - 16; height: 1; color: Theme.line; opacity: 0.45 }
                     // measured: its share of the largest thing here, as a bar behind the row
                     Rectangle { visible: panel.measured && panel.sizes[row.filePath] !== undefined; x: 4; y: 4; height: parent.height - 8; radius: 6; color: Theme.coffee; opacity: 0.38
                                 width: (parent.width - 8) * (panel.sizes[row.filePath] || 0) / panel.largest; Behavior on width { NumberAnimation { duration: 220 } } }
                     Rectangle { visible: !!panel.tags[row.filePath]; x: 2; y: 7; width: 4; height: parent.height - 14; radius: 2; color: shell.colourOf(panel.tags[row.filePath]) }
-                    Image { x: 10; width: 22; height: 22; anchors.verticalCenter: parent.verticalCenter; source: FileIcons.of(row.fileName, row.filePath, row.fileIsDir); sourceSize.width: 44; sourceSize.height: 44; asynchronous: true }
-                    Label { id: rowName; x: 42; width: parent.width - 42 - 250; text: row.fileName; anchors.verticalCenter: parent.verticalCenter; elide: Text.ElideMiddle }
-                    Label { x: parent.width - 240; width: 90; horizontalAlignment: Text.AlignRight; text: panel.sizes[row.filePath] !== undefined ? shell.bytes(panel.sizes[row.filePath]) : (row.fileIsDir ? (panel.measured ? "…" : "") : shell.bytes(row.fileSize))
-                            color: panel.measured ? Theme.cream : Theme.dim; font.pixelSize: 12; anchors.verticalCenter: parent.verticalCenter }
-                    Label { x: parent.width - 140; width: 130; text: Qt.formatDateTime(row.fileModified, "d. M. yyyy  hh:mm"); color: Theme.dim; font.pixelSize: 12; anchors.verticalCenter: parent.verticalCenter }
+                    Glyph { x: 12; width: 20; anchors.verticalCenter: parent.verticalCenter; name: shell.glyphOf(row.fileName, row.fileIsDir); font.pixelSize: 18
+                            color: row.picked ? Theme.gold : (row.fileIsDir ? Qt.lighter(Theme.coffee, 1.35) : Theme.gold); opacity: row.fileIsDir || row.picked ? 1 : 0.8 }
+                    // a folder ends in /, in the colour of coffee, as the sketch has it; the figures are monospace, aligned
+                    Label { id: rowName; x: 42; width: parent.width - 42 - 370; text: row.fileName + (row.fileIsDir ? "/" : ""); anchors.verticalCenter: parent.verticalCenter; elide: Text.ElideMiddle
+                            font.family: Theme.mono; font.pixelSize: 13; font.weight: row.picked ? 700 : 500; color: row.picked ? Theme.gold : (row.fileIsDir ? Qt.lighter(Theme.coffee, 1.35) : Theme.cream) }
+                    Label { x: parent.width - 360; width: 92; horizontalAlignment: Text.AlignRight; font.family: Theme.mono; anchors.verticalCenter: parent.verticalCenter
+                            text: panel.sizes[row.filePath] !== undefined ? shell.bytes(panel.sizes[row.filePath]) : (row.fileIsDir ? (panel.measured ? "…" : "<DIR>") : shell.bytes(row.fileSize))
+                            color: row.picked ? Theme.gold : (panel.measured ? Theme.cream : Theme.dim); font.pixelSize: 12; font.weight: row.picked ? 700 : 400 }
+                    Label { x: parent.width - 250; width: 130; horizontalAlignment: Text.AlignRight; font.family: Theme.mono; font.pixelSize: 12; anchors.verticalCenter: parent.verticalCenter; color: row.picked ? Theme.cream : Theme.dim
+                            text: new Date(row.fileModified).toDateString() === new Date().toDateString() ? I18n.tr("Today") + " " + Qt.formatTime(row.fileModified, "hh:mm") : Qt.formatDateTime(row.fileModified, "dd.MM. hh:mm") }
+                    Label { x: parent.width - 112; width: 104; horizontalAlignment: Text.AlignRight; font.family: Theme.mono; font.pixelSize: 11; anchors.verticalCenter: parent.verticalCenter
+                            text: panel.modes[row.filePath] || ""; color: row.picked ? Theme.cream : Theme.faint }
                     Rectangle { anchors.fill: parent; radius: 9; color: "transparent"; border.width: 2; border.color: Theme.gold; visible: rowDrop.containsDrag }
                     DropArea { id: rowDrop; anchors.fill: parent; keys: ["text/uri-list"]; enabled: row.fileIsDir; onDropped: (d) => shell.dropInto(d, row.filePath, rowDrop) }
                     MouseArea { id: rowHit; anchors.fill: parent; hoverEnabled: true; preventStealing: true; acceptedButtons: Qt.LeftButton | Qt.RightButton | Qt.MiddleButton | Qt.BackButton | Qt.ForwardButton
                         property point from
                         property bool bare: false
-                        onPressed: (m) => { bare = m.button === Qt.LeftButton && m.x > 42 + Math.min(rowName.width, rowName.contentWidth) + 24 && m.x < parent.width - 250
+                        onPressed: (m) => { bare = m.button === Qt.LeftButton && m.x > 42 + Math.min(rowName.width, rowName.contentWidth) + 24 && m.x < parent.width - 370
                                             if (bare) return panel.groundPressed(m, mapToItem(ground, m.x, m.y))
                                             keys.forceActiveFocus(); shell.active = panel.index; from = Qt.point(m.x, m.y); if (panel.extra(m) || m.button === Qt.MiddleButton) return
                                             if (m.button === Qt.LeftButton || !panel.chosen[row.filePath]) panel.press(row.filePath, row.index, m.button === Qt.LeftButton ? m.modifiers : 0) }
@@ -845,17 +874,25 @@ ShellRoot {
                     Label { x: 8; anchors.bottom: parent.bottom; anchors.bottomMargin: 4; text: I18n.tr("DRIVES"); color: here.path === "disks:" ? Theme.gold : (drivesHit.containsMouse ? Theme.cream : Theme.faint); font.pixelSize: 11; font.weight: 700; font.letterSpacing: 0.8 }
                     Glyph { anchors.right: parent.right; anchors.rightMargin: 8; anchors.bottom: parent.bottom; anchors.bottomMargin: 3; name: "chart-pie"; font.pixelSize: 14; color: drivesHit.containsMouse || here.path === "disks:" ? Theme.gold : Theme.faint }
                     MouseArea { id: drivesHit; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: here.go("disks:") } }
+                // each drive as a card of its own (inspo/latteOS dualbrew.png): its name, its size, how full, what is used
                 Repeater { model: shell.places.filter(p => ["disk", "usb", "card", "optical", "image"].includes(p.kind) && (p.path !== "/" || shell.real))
-                    Column { id: drv; required property var modelData; spacing: 0
-                        Nav { text: shell.driveName(parent.modelData) + (parent.modelData.name.split(" · ")[1] ? " · " + parent.modelData.name.split(" · ")[1] : ""); icon: shell.placeIcons[parent.modelData.kind]
-                              opacity: parent.modelData.path === "" ? 0.6 : 1; on: parent.modelData.path !== "" && here.path === parent.modelData.path; onPressed: shell.reach(parent.modelData)
-                              tail: shell.canEject(parent.modelData) ? "player-eject" : ""; onTailPressed: shell.eject(parent.modelData) }
-                        // how full it is: a line under its name, and what is left
-                        Item { visible: drv.modelData.total > 0; width: 222; height: 18
-                            readonly property real f: drv.modelData.total > 0 ? drv.modelData.used / drv.modelData.total : 0
-                            Rectangle { x: 44; y: 2; width: 80; height: 5; radius: 3; color: Theme.line
-                                Rectangle { width: parent.width * parent.parent.f; height: 5; radius: 3; color: shell.fullness(parent.parent.f) } }
-                            Label { x: 130; y: -3; width: 90; elide: Text.ElideRight; text: I18n.tr("{n} free", { n: shell.bytes(drv.modelData.total - drv.modelData.used) }); color: Theme.faint; font.pixelSize: 10 } } } }
+                    Rectangle { id: drv; required property var modelData; width: 222; radius: 12; height: drv.modelData.total > 0 ? 62 : 40
+                        readonly property bool on: modelData.path !== "" && here.path === modelData.path
+                        readonly property real f: modelData.total > 0 ? modelData.used / modelData.total : 0
+                        color: on ? Theme.raised : (drvHit.containsMouse ? Theme.card : "transparent"); border.width: on ? 1 : 0; border.color: Theme.line
+                        opacity: modelData.path === "" ? 0.6 : 1
+                        Glyph { x: 10; y: 11; name: shell.placeIcons[drv.modelData.kind]; font.pixelSize: 16; color: drv.on ? Theme.gold : Theme.dim }
+                        Label { x: 34; y: 9; width: parent.width - 34 - sizeText.implicitWidth - (ejectHit.visible ? 30 : 12); elide: Text.ElideRight; font.weight: 700; font.pixelSize: 13
+                                text: shell.driveName(drv.modelData); color: drv.on ? Theme.gold : Theme.cream }
+                        Label { id: sizeText; anchors.right: parent.right; anchors.rightMargin: ejectHit.visible ? 30 : 10; y: 11; font.family: Theme.mono; font.pixelSize: 11; font.weight: 700; color: Theme.dim
+                                text: drv.modelData.total > 0 ? shell.bytes(drv.modelData.total) : "" }
+                        Rectangle { visible: drv.modelData.total > 0; x: 10; y: 32; width: parent.width - 20; height: 5; radius: 3; color: Theme.line
+                            Rectangle { width: parent.width * drv.f; height: 5; radius: 3; color: shell.fullness(drv.f) } }
+                        Label { visible: drv.modelData.total > 0; x: 10; y: 42; font.family: Theme.mono; font.pixelSize: 10; color: Theme.faint; text: I18n.tr("Used: {n}", { n: shell.bytes(drv.modelData.used) }) }
+                        Label { visible: drv.modelData.total > 0; anchors.right: parent.right; anchors.rightMargin: 10; y: 42; font.family: Theme.mono; font.pixelSize: 10; color: Theme.faint; text: Math.round(drv.f * 100) + " %" }
+                        MouseArea { id: drvHit; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: shell.reach(drv.modelData) }
+                        Glyph { id: ejectHit; visible: shell.canEject(drv.modelData); anchors.right: parent.right; anchors.rightMargin: 8; y: 10; name: "player-eject"; font.pixelSize: 15; color: Theme.dim
+                            MouseArea { anchors.fill: parent; anchors.margins: -4; cursorShape: Qt.PointingHandCursor; onClicked: shell.eject(drv.modelData) } } } }
                 Label { x: 8; height: 30; verticalAlignment: Text.AlignBottom; text: I18n.tr("NETWORK AND CLOUD"); color: Theme.faint; font.pixelSize: 11; font.weight: 700; font.letterSpacing: 0.8 }
                 Repeater { model: shell.places.filter(p => p.kind === "network" || p.kind === "cloud")
                     Nav { required property var modelData; text: shell.driveName(modelData); icon: shell.placeIcons[modelData.kind]
@@ -900,7 +937,11 @@ ShellRoot {
             // the commander's keys, with two panels
             Row { anchors.right: parent.right; anchors.rightMargin: 20; anchors.verticalCenter: parent.verticalCenter; spacing: 8; visible: shell.dual && shell.asking === "" && shell.job === null
                 Repeater { model: [{ key: "F3", name: QT_TR_NOOP("View"), what: "view" }, { key: "F4", name: QT_TR_NOOP("Edit"), what: "edit" }, { key: "F5", name: QT_TR_NOOP("Copy"), what: "copy" }, { key: "F6", name: QT_TR_NOOP("Move"), what: "move" }, { key: "F7", name: QT_TR_NOOP("New folder"), what: "folder" }, { key: "F8", name: QT_TR_NOOP("Delete"), what: "trash" }, { key: "F10", name: QT_TR_NOOP("Quit"), what: "quit" }]
-                    Pill { required property var modelData; implicitHeight: 32; text: modelData.key + "  " + I18n.tr(modelData.name); onPressed: shell.command(modelData.what) } } },
+                    Rectangle { required property var modelData; height: 30; radius: 8; width: fRow.implicitWidth + 18; color: fHit.containsMouse ? Qt.rgba(0, 0, 0, 0.45) : Qt.rgba(0, 0, 0, 0.3); border.width: 1; border.color: Qt.rgba(1, 1, 1, 0.06)
+                        Row { id: fRow; anchors.centerIn: parent; spacing: 6
+                            Label { text: parent.parent.modelData.key; color: Theme.gold; font.family: Theme.mono; font.pixelSize: 12; font.weight: 800 }
+                            Label { text: I18n.tr(parent.parent.modelData.name); color: Theme.inkOnCoffee; font.family: Theme.mono; font.pixelSize: 12; font.weight: 600 } }
+                        MouseArea { id: fHit; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: shell.command(parent.modelData.what) } } } },
             // a name is asked for here
             Row { x: 24; anchors.verticalCenter: parent.verticalCenter; spacing: 10; visible: shell.asking !== ""
                 Label { text: shell.asking === "rename" ? I18n.tr("New name:") : (shell.asking === "server" ? I18n.tr("Address:") : I18n.tr("Name:")); color: Theme.inkOnCoffee; anchors.verticalCenter: parent.verticalCenter }
@@ -946,27 +987,28 @@ ShellRoot {
             Panel { id: left; index: 0; width: shell.dual ? (parent.width - 52) / 2 : parent.width; height: parent.height - (shell.dual ? 48 : 0); path: shell.words[0] && (shell.words[0].startsWith("/") || shell.words[0] === "disks:" || shell.words[0] === "computer:") ? shell.words[0] : shell.home }
             Panel { id: right; index: 1; visible: shell.dual; x: (parent.width + 52) / 2; width: (parent.width - 52) / 2; height: parent.height - 48 }
             // between the panels, as a commander has them: to the other panel, there too, the same folder there, again
-            Column { visible: shell.dual; x: (parent.width - 40) / 2; y: (parent.height - 48 - height) / 2; spacing: 8
+            Rectangle { visible: shell.dual; x: (parent.width - 48) / 2; y: (parent.height - 48 - height) / 2; width: 48; height: midCol.height + 20; radius: 24; color: Qt.darker(Theme.card, 1.18); border.width: 1; border.color: Theme.line }
+            Column { id: midCol; visible: shell.dual; x: (parent.width - 40) / 2; y: (parent.height - 48 - height) / 2; spacing: 8
                 Repeater { model: [{ icon: shell.active === 0 ? "arrow-right" : "arrow-left", what: "copy", tip: QT_TR_NOOP("Copy to the other panel (F5)") },
                                    { icon: "arrows-exchange", what: "move", tip: QT_TR_NOOP("Move to the other panel (F6)") },
                                    { icon: "copy", what: "same", tip: QT_TR_NOOP("The same folder in the other panel") },
                                    { icon: "refresh", what: "again", tip: QT_TR_NOOP("Read both panels again") }]
-                    Rectangle { required property var modelData; width: 40; height: 40; radius: 20; color: midHit.containsMouse ? Theme.raised : Theme.card; border.width: 1; border.color: Theme.line
+                    Rectangle { required property var modelData; width: 40; height: 40; radius: 20; color: midHit.containsMouse ? Theme.raised : "transparent"
                         Glyph { anchors.centerIn: parent; name: parent.modelData.icon; font.pixelSize: 18; color: Theme.gold }
                         MouseArea { id: midHit; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
                                     onClicked: { const w = parent.modelData.what; if (w === "same") shell.other.go(here.path); else if (w === "again") { left.again(); right.again() } else shell.command(w) } } } } }
             // the terminal's line, under both panels: a command run in a terminal, in the folder this panel shows (Alt+F1)
-            Rectangle { visible: shell.dual; x: 6; y: parent.height - 44; width: parent.width - 12; height: 38; radius: 12; color: Theme.card; border.width: 1; border.color: termLine.activeFocus ? Theme.gold : Theme.line
-                Label { x: 14; anchors.verticalCenter: parent.verticalCenter; text: "$"; color: Theme.gold; font.family: "monospace"; font.weight: 800 }
-                TextInput { id: termLine; x: 34; width: parent.width - 140; anchors.verticalCenter: parent.verticalCenter; color: Theme.cream; font.family: "monospace"; font.pixelSize: 14; clip: true; selectByMouse: true
+            Rectangle { visible: shell.dual; x: 6; y: parent.height - 44; width: parent.width - 12; height: 38; radius: 19; color: Qt.darker(Theme.card, 1.18); border.width: 1; border.color: termLine.activeFocus ? Theme.gold : Theme.line
+                Label { x: 16; anchors.verticalCenter: parent.verticalCenter; text: "$"; color: Theme.gold; font.family: Theme.mono; font.pixelSize: 17; font.weight: 800 }
+                TextInput { id: termLine; x: 38; width: parent.width - 140; anchors.verticalCenter: parent.verticalCenter; color: Theme.cream; font.family: Theme.mono; font.pixelSize: 13; clip: true; selectByMouse: true
                             Keys.onEscapePressed: keys.forceActiveFocus()
                             onAccepted: { if (text.trim() === "" || !here.path.startsWith("/")) return
                                           Quickshell.execDetached(["foot", "--working-directory", here.path, "--", "sh", "-c", 'eval "$1"; echo; printf "%s" "$2"; read x', "sh", text, I18n.tr("Press Enter to close")])
                                           text = ""; keys.forceActiveFocus() } }
-                Label { x: 34; anchors.verticalCenter: parent.verticalCenter; visible: termLine.text === "" && !termLine.activeFocus; color: Theme.faint; font.family: "monospace"
+                Label { x: 38; anchors.verticalCenter: parent.verticalCenter; visible: termLine.text === "" && !termLine.activeFocus; color: Theme.faint; font.family: Theme.mono; font.pixelSize: 13
                         text: I18n.tr("A command, run in {n}…", { n: here.path.startsWith("/") ? here.path.replace(shell.home, "~") : "~" }) }
-                Rectangle { anchors.right: parent.right; anchors.rightMargin: 8; anchors.verticalCenter: parent.verticalCenter; height: 24; radius: 8; width: altText.implicitWidth + 14; color: Qt.rgba(Theme.gold.r, Theme.gold.g, Theme.gold.b, 0.18)
-                    Label { id: altText; anchors.centerIn: parent; text: "Alt+F1"; color: Theme.gold; font.pixelSize: 11; font.weight: 800 } } }
+                Rectangle { anchors.right: parent.right; anchors.rightMargin: 7; anchors.verticalCenter: parent.verticalCenter; height: 26; radius: 13; width: altText.implicitWidth + 18; color: Theme.gold
+                    Label { id: altText; anchors.centerIn: parent; text: "Alt+F1"; color: Theme.inkOnGold; font.family: Theme.mono; font.pixelSize: 11; font.weight: 800 } } }
             Item { id: overlay; anchors.fill: parent; Menu { id: menu } }
             // what a drag of files is, in the window's own scene: the system takes it from there
             Item { id: carrier; Drag.dragType: Drag.Automatic; Drag.supportedActions: Qt.CopyAction | Qt.MoveAction | Qt.LinkAction; Drag.keys: ["text/uri-list"] }

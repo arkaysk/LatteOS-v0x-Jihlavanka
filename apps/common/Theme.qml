@@ -54,6 +54,7 @@ Singleton {
     readonly property color paneGlass: glasses[glass] || glasses.frost
     readonly property color pane: blurred && glassLevel > 0 ? Qt.rgba(paneGlass.r, paneGlass.g, paneGlass.b, Math.min(0.95, Math.max(0.2, paneGlass.a + [0, 0.15, 0, -0.15][glassLevel]))) : surface
     readonly property string font: "Inter Variable"
+    readonly property string mono: "JetBrains Mono"          // figures, paths, keys: what is read as data
     readonly property string icons: Icons.family
 
     FileView {
