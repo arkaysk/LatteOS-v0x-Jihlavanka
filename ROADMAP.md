@@ -501,7 +501,7 @@ Schválené 12. 10. 2026. Pracuje sa **zhora nadol, neskáče sa**; nový nápad
     - d. [x] **LensGoo – aplikácie a AI** (`LensGoo popup appsearch.png` a `… frosted glass.png`; hotové podľa používateľa 21. 10.): záložky režimov hore,
       pole s mikrofónom, filtre kategórií, Najčastejšie spustené, Obľúbené s klávesovými skratkami, Najnovšie
       nainštalované, päta (počet aplikácií, miesto, klávesy) a Prispôsobiť · Zmeniť rozloženie · Možnosti filtrovania.
-    - e. [~] **ClockGoo** (`ClockGoo popup time frosted glass.png`; časť pravého kliku hotová podľa používateľa 21. 10., zvyšok nie): záložky Prehľad · Časovače a budíky · Počasie,
+    - e. [x] **ClockGoo** (`ClockGoo popup time frosted glass.png`; hotové, potvrdil používateľ 21. 10.: karta počasia sa zámerne mení podľa dňa a noci, v noci je tmavá — nie je to rozdiel od návrhu; nemeniť): záložky Prehľad · Časovače a budíky · Počasie,
       veľký čas so sekundami, dátum, týždeň, meniny, počasie s východom a západom slnka, svetové hodiny,
       digitálna pohoda (čas pri obrazovke podľa aplikácií), päta Režim spánku · Nerušiť.
     - f. [ ] **Témy Keramika, Hliník, Onyx, Steam** (používateľ, 21. 10.): v `Theme.cups` sú zatiaľ Espresso, Mocha,
