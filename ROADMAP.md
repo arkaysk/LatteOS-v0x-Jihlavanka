@@ -293,7 +293,13 @@ Schválené 12. 10. 2026. Pracuje sa **zhora nadol, neskáče sa**; nový nápad
 9. [ ] **Inštalátor so sprievodcom (provizórny, rozhodnuté 13. 10.)** — grafické UI s Baristom, kroky ako pri inštalácii
    Fedory: jazyk a klávesnica, disk (automaticky a pár predvolieb; /boot, /, /data, formát, veľkosti), účet, AI áno/nie
    (bez nej sa prvky AI nezobrazia; s ňou model podľa GPU a RAM sa sťahuje počas inštalácie), káva a šálka (odtieň kvapiek
-   a okien), výber súčastí od autorov. **Provizórny:** kroky Fedory sú vypísané, ale neaktívne (Fedora Server na latte-lab
+   a okien), výber súčastí od autorov.
+   **Úložisko (používateľ, 21. 10.):** inštalátor neurobí iba `/boot`, `/` a `/data`, ale ponúkne aj **domovské
+   priečinky** — kde budú (na `/data`, vlastný oddiel `/home`, alebo priečinky Dokumenty, Obrázky, Hry… presmerované
+   na `/data`) a koľko miesta ktorý oddiel dostane. To isté musí vedieť aj **Nastavenia › Úložisko** neskôr, lebo
+   používateľ sa často preráta: zväčšiť oddiel do nerozdeleného miesta, presmerovať domovské priečinky (xdg-user-dirs),
+   ukázať, čo kde zaberá. Prečo `/data` zvlášť: systém (`/`) sa dá preinštalovať alebo sformátovať bez straty
+   dát; snímky systému (snapper) nedržia osobné súbory; dáta môžu mať iné nastavenia (bez snímok, iný formát). **Provizórny:** kroky Fedory sú vypísané, ale neaktívne (Fedora Server na latte-lab
    už je); aktívne je to, čo je LatteOS. Beží priamo na latte-lab (cez ssh, nie vo VM), nad `./install` a `FILES`;
    starý v0.3 sa z latte-lab odoberie a nainštaluje sa 0.4 Fresh. Live USB: režim GOO alebo SAFE rozhoduje už dnešné
    `latte-boot` (predštartová identifikácia), obraz ju musí niesť; ostáva ju posilniť a skúsiť. Základ Fedora/Atomic: zatiaľ jedno.
