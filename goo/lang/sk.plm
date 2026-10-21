@@ -1387,5 +1387,14 @@ library Slovak {
         "More" = "Viac"
         "The most" = "Najviac"
         "How much of LatteOS is glass: the side panels, the windows and the AI's pages. None: everything is solid." = "Koľko z LatteOS je zo skla: bočné panely, okná a stránky AI. Žiadne: všetko je plné."
+        "Agents" = "Agenti"
+        "{n} tokens this week" = "{n} tokenov tento týždeň"
+        "{n} tokens today" = "{n} tokenov dnes"
+        "Most used: {n}" = "Najpoužívanejší: {n}"
+        "Busiest day: {n}" = "Najrušnejší deň: {n}"
+        "{n} questions today" = "{n} otázok dnes"
+        "Counted from Claude Code's own records on this computer, LensAI's questions included." = "Spočítané zo záznamov Claude Code v tomto počítači, vrátane otázok z LensAI."
+        "Sign-in required" = "Treba sa prihlásiť"
+        "No AI service is installed: see Services." = "Nie je nainštalovaná žiadna služba AI: pozri Služby."
     }
 }

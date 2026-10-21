@@ -417,11 +417,14 @@ Schválené 12. 10. 2026. Pracuje sa **zhora nadol, neskáče sa**; nový nápad
       iba rýchly klient toho API. Poradie:
       1. [x] premenovať na LensAI (21. 10.); polia na písanie presne podľa snímok používateľa (21. 10.); ponuky + a čipu podľa snímok — dáva ich `latte-ai providers` (plus, menu, web), LensGoo aj okno LensAI ich iba kreslia; čo LatteOS nevie, otvorí web služby fialovým textom (21. 10.); DeepSeek cez web čaká na `docs/manual-inst.md` (Claude, Gemini, ChatGPT, Grok,
          Mistral, Copilot, DeepSeek); DeepSeek cez kľúč API;
-      2. [~] spotreba ako v Omarchy (`omarchy-agent-usage-*`): hotové 21. 10. Claude (OAuth usage), Grok (billing),
-         Copilot (GitHub), vlastné počítadlo otázok; ostáva Codex, Kimi,
-         Fireworks; obnova každých 15 min (pri 80 %+ každé 3 min), vyrovnávacia pamäť; LensGoo aj LensAI ju berú z API;
-      3. [ ] **panel agentov v okne LensAI** (podľa `shell/plugins/agents` z Omarchy): predplatné, pásy limitov, tokeny,
-         najpoužívanejší model, „Urob niečo“ (úlohy pre agenta);
+      2. [x] spotreba ako v Omarchy (`omarchy-agent-usage-*`), hotové 21. 10.: Claude (OAuth usage), Grok (billing),
+         Copilot (GitHub), ChatGPT (Codex app-server; neoverené, Codex odhlásený — `docs/manual-inst.md`), vlastné
+         počítadlo otázok; odpoveď platí 15 min, pri 80 %+ 3 min; LensGoo aj LensAI ju berú z API. Kimi a Fireworks
+         vynechané (používateľ ich nepoužíva);
+      3. [x] **panel agentov v okne LensAI** (podľa `shell/plugins/agents` z Omarchy), hotové 21. 10.: stránka Agenti
+         (`latte-ai agents`) — úvod s otáčajúcim sa riadkom (tokeny týždeň/dnes, najpoužívanejší model, najrušnejší deň,
+         otázky dnes; zo záznamov Claude Code), služba po službe s plánom, pásmi limitov a časom obnovenia,
+         „Treba sa prihlásiť“; „Urob niečo“ prejde do bodu 5 (potrebuje skill z bodu 4);
       4. [ ] **skill LatteOS** (podľa `default/agents/skills/omarchy`): ako je LatteOS postavený, čo sa smie meniť,
          príkazy `latte-*`, pkexec, snímka pred diskom, najprv plán; prepojený do `~/.claude/skills`, `~/.codex/skills`,
          `~/.agents/skills`…; **upraviteľný v LensAI**;
@@ -466,12 +469,12 @@ Schválené 12. 10. 2026. Pracuje sa **zhora nadol, neskáče sa**; nový nápad
       čipy nad panelom, stĺpce Názov · Veľkosť · Zmenené · Atribúty, tlačidlá medzi panelmi (kopírovať, presunúť,
       porovnať, zrkadliť), rad F3–F10 dole a riadok terminálu (Alt+F1); bočný panel s diskami a pásmi zaplnenia
       (čiastočne hotové 20. 10.), obľúbené priečinky a rýchly filter typov.
-    - c. [ ] **PowerGoo** (`PowerGoo popup.png`): karta účtu (meno, rola, e-mail, šifrovanie), Nastavenia OS a Monitor
+    - c. [x] **PowerGoo** (`PowerGoo popup.png`; hotové podľa používateľa 21. 10.): karta účtu (meno, rola, e-mail, šifrovanie), Nastavenia OS a Monitor
       prostriedkov, štyri dlaždice Vypnúť · Reštartovať · Odhlásiť · Zamknúť, Núdzový režim (SAFE) a čas behu.
-    - d. [ ] **LensGoo – aplikácie** (`LensGoo popup appsearch.png` a `… frosted glass.png`): záložky režimov hore,
+    - d. [x] **LensGoo – aplikácie a AI** (`LensGoo popup appsearch.png` a `… frosted glass.png`; hotové podľa používateľa 21. 10.): záložky režimov hore,
       pole s mikrofónom, filtre kategórií, Najčastejšie spustené, Obľúbené s klávesovými skratkami, Najnovšie
       nainštalované, päta (počet aplikácií, miesto, klávesy) a Prispôsobiť · Zmeniť rozloženie · Možnosti filtrovania.
-    - e. [ ] **ClockGoo** (`ClockGoo popup time frosted glass.png`): záložky Prehľad · Časovače a budíky · Počasie,
+    - e. [~] **ClockGoo** (`ClockGoo popup time frosted glass.png`; časť pravého kliku hotová podľa používateľa 21. 10., zvyšok nie): záložky Prehľad · Časovače a budíky · Počasie,
       veľký čas so sekundami, dátum, týždeň, meniny, počasie s východom a západom slnka, svetové hodiny,
       digitálna pohoda (čas pri obrazovke podľa aplikácií), päta Režim spánku · Nerušiť.
 

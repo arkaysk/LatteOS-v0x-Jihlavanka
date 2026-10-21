@@ -165,6 +165,7 @@ return {
     ["radar-2"] = "\u{F016}",
     ["rectangle"] = "\u{ED37}",
     ["refresh"] = "\u{EB13}",
+    ["robot"] = "\u{F00B}",
     ["rocket"] = "\u{EC45}",
     ["rosette-discount-check"] = "\u{F1F8}",
     ["router"] = "\u{EB18}",
