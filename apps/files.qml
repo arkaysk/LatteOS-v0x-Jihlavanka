@@ -483,7 +483,13 @@ ShellRoot {
                                             text: I18n.tr("{used} of {all}", { used: shell.bytes(pr.modelData.used), all: shell.bytes(pr.modelData.total) }) } } } } }
                     Label { visible: shell.disks.length === 0; text: I18n.tr("Looking…"); color: Theme.dim }
                     Label { width: diskCol.width; wrapMode: Text.WordWrap; color: Theme.dim; font.pixelSize: 12
-                            text: I18n.tr("Unused room is part of a disk no partition takes: nothing can be kept there until it gets one.") } } }
+                            text: I18n.tr("Unused room is part of a disk no partition takes: nothing can be kept there until it gets one.") }
+                    // partitions are changed by a tool made for it; these two are the ones we suggest
+                    Label { width: diskCol.width; wrapMode: Text.WordWrap; color: Theme.dim; font.pixelSize: 12
+                            text: I18n.tr("To make, grow or move partitions we suggest KDE Partition Manager or GParted. They need the administrator's password and are installed as packages of the system, not from Flathub.") }
+                    Row { spacing: 10
+                        Pill { icon: "world-www"; text: "KDE Partition Manager"; onPressed: Quickshell.execDetached(["xdg-open", "https://apps.kde.org/sk/partitionmanager/"]) }
+                        Pill { icon: "world-www"; text: "GParted"; onPressed: Quickshell.execDetached(["xdg-open", "https://gparted.org/"]) } } } }
             // This computer: the user's folders and the disks, as tiles
             Flow { visible: panel.path === "computer:" && !panel.source; anchors.fill: parent; anchors.margins: 6; spacing: 12
                 Repeater { model: shell.places.filter(p => p.kind !== "trash" && p.kind !== "favourite" && (p.path !== "/" || shell.real))

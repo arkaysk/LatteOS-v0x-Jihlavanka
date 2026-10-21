@@ -349,18 +349,26 @@ local function fill_ai()
     fact.ai_style = p and p.style or "own"
     text.ai_hint = tr(HINTS[p and p.style or "own"] or HINTS.own)
     local e = effort_of(p)
-    text.ai_model = (m and m.name or "") .. (e and (" · " .. tr(EFFORTS[e] or e)) or "")
+    -- the switch at the foot says who answers and with what; the field's own chip says how hard it may think
+    text.ai_model = (p and tr(p.name) or "") .. (m and m.name ~= "" and (" · " .. m.name) or "")
+    text.ai_effort_word = e and tr(EFFORTS[e] or e) or tr("Effort")
     local names = {}
     for _, f in ipairs(ai.files) do names[#names + 1] = f:match("[^/]+$") or f end
     text.ai_files, fact.ai_nfiles = table.concat(names, ", "), #ai.files
     local u = ai.usage
     local ctx = (u.window or 0) > 0 and u.context / u.window or 0
+    -- figures of the conversation count only when its last answer came from this service: a switch starts afresh
+    local last = nil
+    for _, msg in ipairs(ai.msgs) do if msg.role ~= "user" then last = msg.provider end end
+    if last ~= (p and p.id) then u, ctx = {}, 0 end
     text.ai_who = (p and tr(p.name) or "") .. ((u.window or 0) > 0 and ("  ·  " .. with_n("context {n}", percent(ctx))) or "")
     text.ai_empty = p and tr(p.name) or ""
     text.ai_empty2 = tr("The conversation stays here until you start a new session.")
     -- Claude tells its limits with each answer only: what is shown is from the last one, and says when that was.
     -- A window that has started again since then is empty again, whatever the old figure said.
-    local lim = u.limits and next(u.limits) and u.limits or kept.ai.limits
+    -- the block under the coffee is the service's own: what it tells of itself. Figures of the conversation count
+    -- only when its last answer came from this service; a switch starts the block afresh.
+    local lim = p and p.id == "claude" and (u.limits and next(u.limits) and u.limits or kept.ai.limits) or nil
     if lim and lim.five_hour then
         local function share(w) return (w.resets or 0) > os.time() and (w.used or 0) or 0 end
         local at = kept.ai.limits_at and (os.time() - kept.ai.limits_at > 600) and ("  ·  " .. with_n("as of {n}", os.date("%H:%M", kept.ai.limits_at))) or ""
@@ -369,9 +377,19 @@ local function fill_ai()
         local w = lim.seven_day or { used = 0, resets = 0 }
         text.ai_lim2 = tr("Week (7 days)")
         text.ai_lim2p, fact.ai_l2 = percent(share(w)) .. until_(w.resets), share(w)
-    else
+    elseif p and p.id == "claude" then
+        -- Claude tells its limits with an answer: until the first one, the lines are there without figures
+        text.ai_lim1, text.ai_lim1p, fact.ai_l1 = tr("Session (5 h)"), "—", 0
+        text.ai_lim2, text.ai_lim2p, fact.ai_l2 = tr("Week (7 days)"), "—", 0
+    elseif p and (p["local"] or (u.window or 0) > 0) then
+        -- a model on this computer, or a key's API: how full its window is, and what the conversation has used
         text.ai_lim1, text.ai_lim1p, fact.ai_l1 = tr("Context"), percent(ctx), ctx
-        text.ai_lim2, text.ai_lim2p, fact.ai_l2 = with_n("{n} tokens in this session", tostring(u.tokens or 0)), "", -1
+        text.ai_lim2 = with_n("{n} tokens in this session", tostring(u.tokens or 0)) .. (p["local"] and ("  ·  " .. tr("on this computer")) or "")
+        text.ai_lim2p, fact.ai_l2 = "", -1
+    else
+        -- a service through its own tool and the user's account: it tells no figures here, so none are made up
+        text.ai_lim1, text.ai_lim1p, fact.ai_l1 = tr("Through your account"), "", -1
+        text.ai_lim2, text.ai_lim2p, fact.ai_l2 = tr("Its limits are shown on the service's own page."), "", -1
     end
     local rows = {}
     local names = {}
