@@ -157,6 +157,7 @@ return {
     ["search"] = "\u{EB1C}",
     ["server"] = "\u{EB1F}",
     ["settings"] = "\u{EB20}",
+    ["shield"] = "\u{EB24}",
     ["shield-check"] = "\u{EB22}",
     ["shield-lock"] = "\u{ED58}",
     ["slideshow"] = "\u{EBC9}",

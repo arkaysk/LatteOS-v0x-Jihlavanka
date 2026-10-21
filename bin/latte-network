@@ -15,6 +15,10 @@
                                and {"health": {"score", "findings": [{"level", "what", "ip", "fix"}]}}
                                caps: cast · airplay · play-to (DLNA renderer) · media (DLNA server) · camera · print ·
                                files · remote · smart-home · web · scan; level: high · medium · low · info
+  latte-network dns            which name servers the active connections use: {"mode": auto|cloudflare|quad9|adguard|google|own,
+                               "servers": […]}
+  latte-network dns MODE [--dry-run]     every active connection asks those servers instead (auto: the router's
+                               again); NetworkManager brings the connections up again, a moment without the network
   latte-network name KEY NAME [KIND]     what the user calls a device, and what it is; empty NAME takes it back
   latte-network forget KEY               drops a device from what is remembered
 
@@ -106,6 +110,42 @@ def status():
             active.append(dict(by_device[dev], name=name, type="wifi" if "wireless" in kind else ("wired" if "ethernet" in kind else kind), dns=dns))
     saved = [l.rsplit(":", 1)[0] for l in out("nmcli", "-t", "-f", "NAME,TYPE", "connection", "show").splitlines() if not l.endswith(":loopback")]
     return {"connections": active, "saved": saved}
+
+
+# ── which name servers: one choice that protects the whole computer ──────────────────────────────────────────
+# Quad9 blocks addresses known to spread malware, AdGuard also ads and trackers; Cloudflare is quick and keeps no logs.
+DNS = {"cloudflare": ["1.1.1.1", "1.0.0.1"], "quad9": ["9.9.9.9", "149.112.112.112"], "adguard": ["94.140.14.14", "94.140.15.15"],
+       "google": ["8.8.8.8", "8.8.4.4"]}
+
+
+def active_connections():
+    return [l.rsplit(":", 1)[0] for l in out("nmcli", "-t", "-f", "NAME,TYPE", "connection", "show", "--active").splitlines()
+            if not l.endswith((":loopback", ":bridge", ":tun"))]
+
+
+def dns():
+    names = active_connections()
+    servers = []
+    for n in names:
+        servers += [x for x in out("nmcli", "-g", "ipv4.dns", "connection", "show", n).strip().replace(" ", ",").split(",") if x]
+    mode = "auto" if not servers else next((k for k, v in DNS.items() if servers[:len(v)] == v), "own")
+    return {"mode": mode, "servers": servers, "connections": names}
+
+
+def set_dns(mode, dry=False):
+    """The commands that put every active connection on these name servers, run unless it is a dry run."""
+    plan = []
+    for n in active_connections():
+        if mode == "auto":
+            plan.append(["nmcli", "connection", "modify", n, "ipv4.dns", "", "ipv4.ignore-auto-dns", "no"])
+        else:
+            plan.append(["nmcli", "connection", "modify", n, "ipv4.dns", " ".join(DNS[mode]), "ipv4.ignore-auto-dns", "yes"])
+        plan.append(["nmcli", "connection", "up", n])
+    if not dry:
+        for argv in plan:
+            if subprocess.run(argv, capture_output=True, timeout=60).returncode != 0:
+                return {"ok": False, "plan": plan}
+    return {"ok": True, "plan": plan}
 
 
 # ── who else is there ────────────────────────────────────────────────────────────────────────────────────────
@@ -503,6 +543,10 @@ def main(a):
         print(json.dumps(status(), ensure_ascii=False))
     elif a == ["scan"]:
         print(json.dumps(scan(), ensure_ascii=False))
+    elif a == ["dns"]:
+        print(json.dumps(dns(), ensure_ascii=False))
+    elif a[:1] == ["dns"] and len(a) in (2, 3) and (a[1] == "auto" or a[1] in DNS):
+        print(json.dumps(set_dns(a[1], a[2:] == ["--dry-run"]), ensure_ascii=False))
     elif a == ["inspect"]:
         print(json.dumps(inspect(), ensure_ascii=False))
     elif a == ["last"]:

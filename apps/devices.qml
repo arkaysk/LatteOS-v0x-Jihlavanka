@@ -41,12 +41,19 @@ ShellRoot {
         onExited: { try { data = JSON.parse(buf) } catch (e) {} }
     }
     Net { id: link }
+    Net { id: dnsq }                           // which name servers the connections use
+    Net { id: dnsSet; onExited: { dnsq.ask(["dns"]); link.ask(["status"]) } }
+    readonly property var dnsModes: [{ id: "auto", name: QT_TR_NOOP("From the router"), note: QT_TR_NOOP("As it came; nothing is filtered.") },
+        { id: "cloudflare", name: "Cloudflare", note: QT_TR_NOOP("Quick, and keeps no record of what you look up.") },
+        { id: "quad9", name: "Quad9", note: QT_TR_NOOP("Blocks addresses known to spread malware.") },
+        { id: "adguard", name: "AdGuard", note: QT_TR_NOOP("Blocks ads and trackers too, for every app at once.") },
+        { id: "google", name: "Google", note: QT_TR_NOOP("Quick; Google sees what you look up.") }]
     Net { id: lan }                            // the last look, then a new one
     Net { id: note; onExited: lan.ask(["last"]) }
     property string chosen: ""                 // the device picked on the radar, by its key
     readonly property var picked: lan.data ? (lan.data.devices.find(d => d.key === chosen) || null) : null
     onPageChanged: {
-        if (page === "connection") link.ask(["status"])
+        if (page === "connection") { link.ask(["status"]); dnsq.ask(["dns"]) }
         if (page === "inspector") { if (!lan.data) lan.ask(["last"]); look.restart() }
     }
     Timer { id: look; interval: 400; onTriggered: lan.ask(["scan"]) }
@@ -243,6 +250,22 @@ ShellRoot {
                     Label { text: I18n.tr("REMEMBERED CONNECTIONS"); color: Theme.faint; font.pixelSize: 11; font.weight: 700; font.letterSpacing: 0.8 }
                     Flow { width: parent.width; spacing: 8
                         Repeater { model: link.data ? link.data.saved : []; Chip { required property string modelData; icon: "network"; text: modelData } } } }
+                // who answers the computer's questions for addresses: one choice that protects every app at once
+                Column { visible: link.data !== null && link.data.connections.length > 0; width: conn.room; spacing: 8
+                    Label { text: I18n.tr("PROTECTION (NAME SERVERS)"); color: Theme.faint; font.pixelSize: 11; font.weight: 700; font.letterSpacing: 0.8 }
+                    Flow { width: parent.width; spacing: 10
+                        Repeater { model: shell.dnsModes
+                            Rectangle { id: dm; required property var modelData; width: (conn.room - 40) / 5; height: 116; radius: 18
+                                readonly property bool on: dnsq.data && dnsq.data.mode === modelData.id
+                                color: on ? Qt.rgba(Theme.gold.r, Theme.gold.g, Theme.gold.b, 0.18) : Theme.card; border.width: on ? 1 : 0; border.color: Theme.gold
+                                Column { x: 14; y: 12; width: parent.width - 28; spacing: 4
+                                    Row { spacing: 6
+                                        Glyph { name: dm.on ? "circle-check" : "shield"; font.pixelSize: 16; color: dm.on ? Theme.gold : Theme.dim }
+                                        Label { text: I18n.tr(dm.modelData.name); font.weight: 700 } }
+                                    Label { width: parent.width; wrapMode: Text.WordWrap; color: Theme.dim; font.pixelSize: 12; text: I18n.tr(dm.modelData.note) } }
+                                MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; enabled: !dm.on && !dnsSet.running; onClicked: dnsSet.ask(["dns", dm.modelData.id]) } } } }
+                    Label { width: conn.room; wrapMode: Text.WordWrap; color: Theme.dim; font.pixelSize: 12
+                            text: dnsSet.running ? I18n.tr("Changing… the network is away for a moment.") : I18n.tr("It applies to this computer only; for every device at home, the same can be set in the router.") } }
                 Label { text: I18n.tr("Wi-Fi, Bluetooth and the networks in range are in the panel of the screen's corner (Win+A)."); color: Theme.dim; font.pixelSize: 12; width: conn.room; wrapMode: Text.WordWrap }
             }
 

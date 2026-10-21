@@ -336,7 +336,8 @@ Schválené 12. 10. 2026. Pracuje sa **zhora nadol, neskáče sa**; nový nápad
     - c. [ ] Akcie zo schopností: Púšťať naň (DLNA/Cast — prepojiť s MediaGoo), Otvoriť obraz (kamera → CamGoo),
       Pridať tlačiareň (CUPS), Otvoriť stránku nastavení, Pripojiť zdieľaný priečinok (DualBrew).
     - d. [ ] Upozornenie na nové zariadenie (QueenGoo/ClockGoo), sledovanie v pozadí raz za čas.
-    - e. [ ] Správca siete: Wi-Fi siete a heslá, VPN, DNS s ochranou súkromia, firewall (firewalld), hosťovská sieť
+    - e. [~] Správca siete (21. 10.: Pripojenie › Ochrana (DNS): od routera, Cloudflare, Quad9, AdGuard, Google;
+      `latte-network dns`; naostro neprepínané, len suchý beh): Wi-Fi siete a heslá, VPN, DNS s ochranou súkromia, firewall (firewalld), hosťovská sieť
       a blokovanie zariadenia — čo sa dá bez routera, a návod do routera, kde nie.
     - f. [ ] Vzory: Sniffnet (kto s kým hovorí, pre NET), ESET Kontrola siete, UniFi (Matter), Fing.
 
