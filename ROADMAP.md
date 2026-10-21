@@ -477,6 +477,11 @@ Schválené 12. 10. 2026. Pracuje sa **zhora nadol, neskáče sa**; nový nápad
     - e. [~] **ClockGoo** (`ClockGoo popup time frosted glass.png`; časť pravého kliku hotová podľa používateľa 21. 10., zvyšok nie): záložky Prehľad · Časovače a budíky · Počasie,
       veľký čas so sekundami, dátum, týždeň, meniny, počasie s východom a západom slnka, svetové hodiny,
       digitálna pohoda (čas pri obrazovke podľa aplikácií), päta Režim spánku · Nerušiť.
+18. [ ] **Vývoj LatteOS v Nastavenia › Systém › O tomto počítači** (používateľ, 21. 10.): štvorčekový graf aktivity
+    (ako na GitHube: týždne v stĺpcoch, dni v riadkoch, sýtosť podľa počtu commitov) — ako pokračuje vývoj projektu;
+    pod ním posledné commity, každý rozbaliteľný: dátum, autor, správa celá a čitateľne, zmenené súbory. Zdroj:
+    verejné repo LatteOS cez GitHub API (`/stats/commit_activity`, `/commits`), bez siete posledné uložené; na
+    vývojárskom stroji aj `git log` miestneho repa. Graf ako `DotGraph` (bodky v štvorcoch), farby z témy.
 
 ## ROADMAP2 — LatteOS od nápadu po hotový produkt
 
