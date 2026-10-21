@@ -411,6 +411,15 @@ Schválené 12. 10. 2026. Pracuje sa **zhora nadol, neskáče sa**; nový nápad
       `latte-ai listen`; na latte-lab chýba skutočný mikrofón (overené pripravenou nahrávkou). Vlastné pokyny (Lens AI
       centrum › Pokyny) idú s každou otázkou ku každej AI.
     - i. [ ] Hľadanie podľa významu v LensGoo (e5-sk, ROADMAP bod 14) — po b.
+    - l. [ ] **Podľa Omarchy** (preskúmané 21. 10., `inspo/ai-na-ploche.md`), návrhy na výber používateľa:
+      (1) **skill LatteOS** pre agentov (`~/.claude/skills`, `~/.codex/skills`, `~/.agents/skills`): ako je LatteOS
+      postavený, čo sa smie meniť (`~/.config/latteos`, nie `/usr/share/latteos`), ktoré `latte-*` príkazy použiť,
+      pkexec, snímka pred diskom, plánovací režim — základ barličky (k); (2) **„Urob to za mňa“** v LensGoo: úloha pre
+      predvoleného agenta v okne terminálu, najprv plán, potom potvrdenie (nie automatické schvaľovanie ako Omarchy);
+      (3) **limity bez otázky** ako Omarchy (Claude OAuth usage, Grok billing) — číta token prihlásenia CLI, iba
+      so súhlasom; (4) **pád → AI**: GuardDog/whyd ponúkne „Opýtať sa AI“ so zisteniami z core dumpu; (5) **App Manager
+      › AI**: Claude desktop, ChatGPT, LM Studio, Ollama; (6) **diktovanie do akejkoľvek aplikácie** (Voxtype, Win+H
+      ako vo Windows) popri mikrofóne v LensGoo; (7) viac účtov jedného poskytovateľa a prepnutie pri limite.
     - k. [ ] **AI ako barlička v systéme** (používateľ, 21. 10.: ako v Omarchy; veľa ľudí je v Linuxe stratených):
       po oficiálnom spustení LatteOS bude AI integrovaná do OS a na požiadanie použije systémové nástroje —
       „preformátuj mi `/`, hlási, že je plný, a pridaj mu z rezervy“. Návrh: AI nesiaha na systém sama; navrhne

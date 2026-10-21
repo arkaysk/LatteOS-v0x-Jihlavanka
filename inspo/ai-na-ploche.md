@@ -2,11 +2,39 @@
 
 Preskúmané pre ROADMAP bod 16 (krok a). Čo z toho LatteOS berie a čo nie.
 
-## Omarchy 4.0
+## Omarchy 4.0–4.5 (podrobne, 21. 10.)
 
-Sám AI nemá. Prestaval shell na jeden dlho bežiaci proces Quickshellu s jednou témou, ovládaný skriptami cez IPC
-([Phoronix](https://www.phoronix.com/news/Omarchy-4.0-Released)). LatteOS to robí podobne (Goo je jedna scéna,
-`latte-say`, `pleamar --say`), nie je čo meniť.
+Prvý zápis („sám AI nemá“) bol omyl: článok Phoronix o AI nepísal, ale Omarchy je postavené okolo AI agentov.
+Zdroje: manuál `manual/sk/17-ai.md`, poznámky k vydaniam 4.0.0–4.5.0-rc1, skripty v `omacom/omarchy` (vetva quattro).
+
+- **Agenti, nie chat.** 14 CLI kódovacích agentov (claude, codex, opencode, agy/Gemini, copilot, crush, grok, kimi, pi,
+  omp, ori, hermes, muse, cursor-agent) je vopred pripravených ako lenivé spúšťače mise v `~/.local/bin` (stiahnu sa
+  pri prvom použití). Predvolený agent v Setup › Defaults › Agent; Super+Shift+Ctrl+A ho otvorí v termináli;
+  `omarchy agent prompt "…"` mu dá úlohu bez dozoru (v režime automatického schvaľovania, od 4.0.1 „auto-review“);
+  skratky `a`, `c`, `cx`, `cy`; z domova sa začína v `~/Work`. Vlastné okno chatu nemajú — chat je cez desktopové
+  aplikácie (ChatGPT, Claude desktop beta, Grok Bot, Perplexity, Hermes, OpenClaw) v Install › AI.
+- **Panel agentov v lište:** každé predplatné s plánom, pásy limitov 5 h a týždňa s časom obnovenia (alebo zostatok
+  kreditu), rotujúci riadok (tokeny za týždeň, najpoužívanejší model), „Make something“ (úvodné úlohy pre tému,
+  plugin, aplikáciu). Zbiera `omarchy agent usage-update` každých 15 min (pri 80 %+ každé 3 min), zlučuje aj iné
+  počítače cez synchronizovaný priečinok. **Limity bez otázky:** Claude z `https://api.anthropic.com/api/oauth/usage`
+  s tokenom prihlásenia CLI (`~/.claude/.credentials.json`, hlavička `anthropic-beta: oauth-2025-04-20`, vlastná
+  vyrovnávacia pamäť, endpoint rýchlo obmedzuje); Grok z `cli-chat-proxy.grok.com/v1/billing?format=credits` a z
+  `grok usage`; tokeny z lokálnych prepisov rozhovorov. Pokryté: Claude, Codex, Grok, Fireworks, Kimi.
+- **Viac predplatných** jedného poskytovateľa, prepínanie a automatické prepnutie pri 95 % limitu; kopírovanie
+  prihlásení cez SSH.
+- **Diagnostika pádov:** sleduje systemd-coredump; upozornenie „Process crashed“ → klik odovzdá pád predvolenému
+  agentovi so skillom diagnose-crash (zistí fakty z core dumpu, rozhodne o nahlásení upstream); stlmenie po programoch.
+- **Skill Omarchy** (`default/agents/skills/omarchy/SKILL.md`, experimentálny): pre úpravy používateľa (Hyprland,
+  lišta, témy, hooky, snímky). Pravidlá: `/usr/share/omarchy` nikdy neupravovať (čítať áno), meniť iba `~/.config`;
+  `sudo` v termináli, `pkexec`, keď terminál nie je; najprv plánovací režim; návrat `omarchy reinstall configs`.
+  Prepojený symbolickými odkazmi do `~/.claude/skills`, `~/.codex/skills`, `~/.agents/skills`, Pi, Antigravity,
+  Hermes. Druhý skill `omarchy-app` na stavbu aplikácií (C++, Qt Quick).
+- **Lokálne modely:** LM Studio (odporúčané pre začiatočníkov) a Ollama z Install › AI.
+- **Diktovanie** (4.5-rc1): Voxtype a Superwhisper, `omarchy dictation start|stop|toggle`.
+- **Téma** sa prenáša do agentov (Claude Code, Pi, OpenCode, Hermes).
+
+Omarchy je jeden proces Quickshellu s jednou témou a IPC ([Phoronix](https://www.phoronix.com/news/Omarchy-4.0-Released));
+LatteOS to robí podobne (Goo je jedna scéna, `latte-say`, `pleamar --say`).
 
 ## j5onrf/dots — „mikro-agenti“
 
