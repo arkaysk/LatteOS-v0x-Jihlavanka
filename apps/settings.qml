@@ -747,9 +747,9 @@ ShellRoot {
                            onPressed: if (newList.text.trim() !== "") { const l = JSON.parse(JSON.stringify(shell.lensLists)); l.push({ id: "own" + Date.now(), name: newList.text.trim(), on: true, apps: [] })
                                                                        lensFile.save(l); newList.text = ""; shell.lensOpen = l.length - 1 } } } }
 
-            // which AI services LensGoo's AI offers to choose from; signing in to them is the Lens AI centre's
+            // which AI services LensGoo's AI offers to choose from; signing in to them is LensAI's
             Part { visible: shell.page === "launcher"; width: view.room; title: I18n.tr("AI in LensGoo")
-                   note: I18n.tr("Which services the AI tab of LensGoo offers to choose from. Signing in to them is done in the Lens AI centre.")
+                   note: I18n.tr("Which services the AI tab of LensGoo offers to choose from. Signing in to them is done in LensAI.")
                 Label { visible: helpers.data !== null && helpers.data.length === 0; text: I18n.tr("No AI tool is installed on this computer."); color: Theme.dim }
                 Repeater { model: shell.page === "launcher" && helpers.data ? helpers.data : []
                     Switch { required property var modelData; width: view.room; text: I18n.tr(modelData.name)
@@ -880,7 +880,7 @@ ShellRoot {
             // the AI
             Switch { visible: shell.page === "ai"; width: view.room; text: I18n.tr("AI in LatteOS"); on: ai.value !== "off"; onPressed: { ai.choose(on ? "off" : "on"); aiLater.restart() }
                      hint: I18n.tr("The AI mode of LensGoo, Win+C. Turned off, nothing of LatteOS talks to an AI.") }
-            Part { visible: shell.page === "ai"; width: view.room; title: I18n.tr("Who answers"); note: I18n.tr("The official tool of a service answers, with the account you are signed in to it with, or the service's API with a key of your own. Both are set in the Lens AI centre; a key is kept in the system's keyring, never in a file.")
+            Part { visible: shell.page === "ai"; width: view.room; title: I18n.tr("Who answers"); note: I18n.tr("The official tool of a service answers, with the account you are signed in to it with, or the service's API with a key of your own. Both are set in LensAI; a key is kept in the system's keyring, never in a file.")
                 Label { visible: helpers.data !== null && helpers.data.length === 0; text: I18n.tr("No AI tool is installed on this computer."); color: Theme.dim }
                 Repeater { model: shell.page === "ai" && helpers.data ? helpers.data : []
                     Rectangle { id: helper; required property var modelData; width: 300; height: 64; radius: 16; color: Theme.card; opacity: ai.value === "off" ? 0.5 : 1

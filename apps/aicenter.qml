@@ -1,4 +1,4 @@
-// Lens AI centre: every conversation with every AI in one list, and the services themselves — which are there,
+// LensAI: every conversation with every AI in one list, and the services themselves — which are there,
 // which one is signed in, signing in and out. bin/latte-ai keeps the conversations (the same ones LensGoo's AI
 // tab writes) and knows the services; this window shows them.   latte-app aicenter [services | CHAT]
 //
@@ -78,7 +78,7 @@ ShellRoot {
         const m = chat.messages.slice()
         while (m.length && m[m.length - 1].role === "assistant") m.pop()
         chat = Object.assign({}, chat, { messages: m })
-        ask(["again", open, useProvider, useModel])
+        ask(["again", open, useProvider, useModel].concat(effort ? ["--effort", effort] : []))
     }
     Ask { id: forget; onDone: { shell.open = ""; shell.chat = null; list.ask(["chats"]) } }
     function reload() { list.ask(["chats"]); if (open !== "") one.ask(["chat", open]) }
@@ -103,6 +103,76 @@ ShellRoot {
     // what the conversation goes on with: its own service and model, or the first there is for a new one
     property string useProvider: chat ? chat.provider : (providers.length ? providers[0].id : "")
     property string useModel: chat ? chat.model : (providers.length ? providers[0].models[0].id : "")
+    property string useEffort: ""              // how hard it may think, where its tool lets that be said
+    property var files: []                     // attached to the next question
+    readonly property var useP: providers.find(p => p.id === useProvider) || null
+    readonly property var useM: useP ? (useP.models.find(m => m.id === useModel) || useP.models[0]) : null
+    readonly property string effort: useP && (useP.efforts || []).indexOf(useEffort) >= 0 ? useEffort : ""
+    // the field and the page in the look of the service that answers, as in LensGoo (goo/parts/ai.plm): a copy of
+    // each service's own, so one knows at a glance whose it is (the user's pictures, 21. 10.)
+    readonly property string style: useP ? useP.style : "own"
+    readonly property var look: ({
+        "claude": { page: "#faf9f5", bg: "#ffffff", rim: "#d9d6cf", ink: "#3d3929", text: "#1f1e1d", dim: "#8b8778", ubg: "#f0eee6", round: 18, send: "#c96442", sendEmpty: "transparent", sendInk: "#ffffff", sendInkEmpty: "#3d3929", tick: "#2c84db" },
+        "gemini": { page: "#f8fafd", bg: "#ffffff", rim: "#e8eaed", ink: "#1f1f1f", text: "#1f1f1f", dim: "#5f6368", ubg: "#e9eef6", round: 32, send: "transparent", sendEmpty: "transparent", sendInk: "#1f1f1f", sendInkEmpty: "transparent", tick: "#1f1f1f" },
+        "grok": { page: "#fafaf9", bg: "#ffffff", rim: "#e5e5e5", ink: "#0d0d0d", text: "#0d0d0d", dim: "#8a8a8a", ubg: "#f1f1f1", round: 24, send: "#1d9bf0", sendEmpty: "#1d9bf0", sendInk: "#ffffff", sendInkEmpty: "#ffffff", tick: "#0d0d0d", chipBg: "#ececec" },
+        "chatgpt": { page: "#ffffff", bg: "#ffffff", rim: "#e6e6e6", ink: "#0d0d0d", text: "#0d0d0d", dim: "#8f8f8f", ubg: "#f4f4f4", round: 30, send: "#0d0d0d", sendEmpty: "#3b82f6", sendInk: "#ffffff", sendInkEmpty: "#ffffff", tick: "#0d0d0d" },
+        "copilot": { page: "#ffffff", bg: "#ffffff", rim: "#0969da", ink: "#1f2328", text: "#1f2328", dim: "#8c959f", ubg: "#f6f8fa", round: 12, send: "transparent", sendEmpty: "transparent", sendInk: "#59636e", sendInkEmpty: "#59636e", tick: "#1f2328" },
+        "mistral": { page: "#fafaf7", bg: "#ffffff", rim: "#ececec", ink: "#1a1a1a", text: "#1a1a1a", dim: "#9a9a9a", ubg: "#f2f2f2", round: 14, send: "#1a1a1a", sendEmpty: "#1a1a1a", sendInk: "#ffffff", sendInkEmpty: "#ffffff", tick: "#fa500f" },
+        "deepseek": { page: "#ffffff", bg: "#ffffff", rim: "#e5e7eb", ink: "#262626", text: "#262626", dim: "#a3a3a3", ubg: "#eff6ff", round: 24, send: "#4d6bfe", sendEmpty: "#b5c8fb", sendInk: "#ffffff", sendInkEmpty: "#ffffff", tick: "#4d6bfe" },
+        "own": { page: "transparent", bg: "#3d2c22", rim: "#5a463a", ink: "#f5e8d8", text: "#f5e8d8", dim: "#b8a491", ubg: Qt.rgba(0.97, 0.78, 0.45, 0.14), round: 14, send: Theme.gold, sendEmpty: Theme.gold, sendInk: "#2a1e17", sendInkEmpty: "#2a1e17", tick: Theme.gold, chipBg: "#4a372b" } })[style] || ({})
+    readonly property var look_own: ({ menu: "#2a1e17", ink: "#f5e8d8", dim: "#b8a491" })
+    readonly property color webInk: style === "own" ? "#c3b1ff" : "#6b4fd8"   // what opens the service's page, the same for all
+    readonly property var effortWords: ({ low: QT_TR_NOOP("low"), medium: QT_TR_NOOP("medium"), high: QT_TR_NOOP("high"), xhigh: QT_TR_NOOP("very high"), max: QT_TR_NOOP("highest"), think: QT_TR_NOOP("thinking") })
+    function effortWord(e) { return e ? I18n.tr(effortWords[e] || e) : "" }
+    readonly property bool deep: style === "deepseek" && !!useM && useM.id.indexOf("reasoner") >= 0
+    // the field's own chip, as each service has it: how hard it may think where it has that, else its model
+    readonly property string chipWord: !useM ? "" : style === "claude" ? useM.name + (effort ? "  " + effortWord(effort) : "")
+        : style === "chatgpt" ? (effort ? effortWord(effort) : I18n.tr("Thinking")) : style === "deepseek" ? I18n.tr("Deep thinking")
+        : style === "grok" ? "Auto" : style === "gemini" ? "Gemini " + useM.name : (effort ? effortWord(effort) : useM.name)
+    readonly property string me: { const u = Quickshell.env("USER") || ""; return u ? u.charAt(0).toUpperCase() + u.slice(1) : "" }
+    readonly property string greeting: {
+        const h = new Date().getHours()
+        return ({ claude: I18n.tr("Welcome, {n}", { n: me }), gemini: I18n.tr("Where shall we start?"), chatgpt: I18n.tr("We can start whenever you like."),
+                  mistral: I18n.tr(h < 12 ? "Morning, what are we building?" : h < 18 ? "Afternoon, what are we building?" : "Evening, what are we building?"),
+                  deepseek: I18n.tr("Hi, what can I do for you?"), copilot: I18n.tr("Copilot uses AI. Check for mistakes.") })[style] || ""
+    }
+    readonly property var hints: ({ claude: QT_TR_NOOP("How can I help you today?"), gemini: QT_TR_NOOP("Ask Gemini"), grok: QT_TR_NOOP("What do you want to know?"),
+                                    chatgpt: QT_TR_NOOP("Ask ChatGPT"), copilot: QT_TR_NOOP("Ask Copilot"), mistral: QT_TR_NOOP("What do you want to build?"),
+                                    deepseek: QT_TR_NOOP("Message DeepSeek"), own: QT_TR_NOOP("Ask anything…") })
+    // a row of a menu, as latte-ai gives it: what is chosen is ticked, "@effort" says the effort
+    function isOn(r) { const d = r["do"] || {}; return !!r.on || (d.model !== undefined && !!useM && d.model === useM.id && !d.provider) || (d.provider !== undefined && d.provider === useProvider) || (d.effort !== undefined && d.effort === effort) || (!!d.think && effort !== "") }
+    function keyOf(r) { return r.key === "@effort" ? effortWord(effort) : (r.key ? I18n.tr(r.key) : "") }
+    // a row pressed: what LatteOS can do it does; one with more opens a menu beside it; one of the service's page opens that
+    property string menuAt: ""                 // "" none · "who" the services · "chip" · "plus"
+    property var subRows: []
+    property real subY: 0
+    function act(r, y, sub) {
+        const d = r["do"]
+        if (r.note || (d && d.reset && line.text === "")) return
+        if (d && d.sub && !sub) { subRows = d.sub; subY = y; return }
+        menuAt = ""; subRows = []
+        if (!d || d.sub) { if (useP && useP.web) Qt.openUrlExternally(useP.web); return }
+        if (d.provider !== undefined) { useProvider = d.provider; useModel = d.model }
+        else if (d.model !== undefined) useModel = d.model
+        else if (d.effort !== undefined) useEffort = d.effort
+        else if (d.think) useEffort = effort ? "" : "high"
+        else if (d.reset) line.text = ""
+        else if (d.attach !== undefined) { picker.command = ["latte-ai", d.attach === 1 ? "shot" : "pick"]; picker.running = true }
+    }
+    function openMenu(at) { subRows = []; menuAt = menuAt === at ? "" : at }
+    Process { id: picker
+        stdout: SplitParser { onRead: path => { if (path !== "" && shell.files.length < 8 && shell.files.indexOf(path) < 0) shell.files = shell.files.concat([path]) } } }
+    // the microphone: what is said goes into the field, to be read and changed before it is sent
+    property int listening: 0                  // 0 quiet · 1 listening · 2 writing down what was said
+    Process { id: ear; property string said: ""
+        stdout: StdioCollector { onStreamFinished: { try { ear.said = JSON.parse(this.text).text || "" } catch (e) { ear.said = "" } } }
+        onExited: { if (shell.listening === 2) { if (ear.said !== "") line.text = (line.text !== "" ? line.text + " " : "") + ear.said; shell.listening = 0 } } }
+    function listen() {
+        if (listening === 2) return
+        listening = listening === 0 ? 1 : 2
+        ear.said = ""; ear.command = ["latte-ai", "listen", listening === 1 ? "start" : "stop"]; ear.running = true
+    }
+    function extra() { return (effort ? ["--effort", effort] : []).concat(files.reduce((a, f) => a.concat(["--attach", f]), [])) }
     function send(text) {
         if (text.trim() === "" || waiting || useProvider === "") return
         if (editing && chat) {
@@ -111,15 +181,17 @@ ShellRoot {
             m.pop()
             chat = Object.assign({}, chat, { messages: m.concat([{ role: "user", content: text, provider: useProvider, model: useModel }]) })
             editing = false
-            ask(["again", open, useProvider, useModel, "--text", text])
+            ask(["again", open, useProvider, useModel, "--text", text].concat(extra()))
+            files = []
             return
         }
         if (chat) chat = Object.assign({}, chat, { messages: chat.messages.concat([{ role: "user", content: text, provider: useProvider, model: useModel }]) })
-        ask(["send", open !== "" ? open : "new", useProvider, useModel, text])
+        ask(["send", open !== "" ? open : "new", useProvider, useModel, text].concat(extra()))
+        files = []
     }
 
     AppWindow {
-        title: I18n.tr("Lens AI centre")
+        title: I18n.tr("LensAI")
         heading: shell.page === "instructions" ? I18n.tr("Instructions") : shell.page === "services" ? I18n.tr("Services") : shell.page === "models" ? I18n.tr("Models") : shell.page === "compare" ? I18n.tr("Compare") : (shell.chat ? shell.chat.title : I18n.tr("Conversations"))
         implicitWidth: 1120; implicitHeight: 760
         searchHint: I18n.tr("Find a conversation…")
@@ -134,7 +206,7 @@ ShellRoot {
             Column { x: 14; y: 14; spacing: 4; width: 222
                 Row { x: 6; spacing: 10; height: 40
                     Glyph { name: "sparkles"; font.pixelSize: 24; color: Theme.gold; anchors.verticalCenter: parent.verticalCenter }
-                    Label { text: I18n.tr("Lens AI centre"); font.pixelSize: 17; font.weight: 700; anchors.verticalCenter: parent.verticalCenter } }
+                    Label { text: I18n.tr("LensAI"); font.pixelSize: 17; font.weight: 700; anchors.verticalCenter: parent.verticalCenter } }
                 Item { width: 1; height: 6 }
                 Nav { text: I18n.tr("All conversations"); icon: "messages"; on: shell.page === "chats" && shell.only === ""; badge: shell.chats.length
                       onPressed: { shell.page = "chats"; shell.only = "" } }
@@ -168,8 +240,10 @@ ShellRoot {
 
         // ── a conversation: its messages, and the line to go on with it ─────────────────────────────────────
         Item {
+            id: chatPane
             anchors.fill: parent
             visible: shell.page === "chats"
+            Rectangle { anchors.fill: parent; anchors.margins: 8; radius: 16; color: shell.look.page }
             ListView {
                 id: talk
                 anchors.fill: parent; anchors.bottomMargin: 130
@@ -180,14 +254,14 @@ ShellRoot {
                     readonly property bool mine: modelData.role === "user"
                     readonly property bool last: index === talk.count - 1 || (mine && index === talk.count - 2)
                     Label { x: msg.mine ? talk.width - 28 - width : 28; text: msg.mine ? I18n.tr("You") : shell.nameOf(msg.modelData.provider) + " · " + shell.modelName(msg.modelData.provider, msg.modelData.model)
-                            color: msg.mine ? Theme.gold : shell.colour(msg.modelData.provider); font.pixelSize: 11; font.weight: 700 }
+                            color: shell.style === "own" ? (msg.mine ? Theme.gold : shell.colour(msg.modelData.provider)) : shell.look.dim; font.pixelSize: 11; font.weight: 700 }
                     Rectangle { id: bubble; y: 20; x: msg.mine ? talk.width - 28 - width : 28; width: Math.min(talk.width * 0.78, said.implicitWidth + 28); height: said.implicitHeight + 22; radius: 16
-                        color: msg.mine ? Qt.rgba(Theme.gold.r, Theme.gold.g, Theme.gold.b, 0.14) : Theme.card
-                        border.width: msg.mine ? 0 : 1; border.color: Qt.rgba(Qt.color(shell.colour(msg.modelData.provider)).r, Qt.color(shell.colour(msg.modelData.provider)).g, Qt.color(shell.colour(msg.modelData.provider)).b, 0.45)
+                        color: msg.mine ? shell.look.ubg : (shell.style === "own" ? Theme.card : "transparent")
+                        border.width: msg.mine || shell.style !== "own" ? 0 : 1; border.color: Qt.rgba(Qt.color(shell.colour(msg.modelData.provider)).r, Qt.color(shell.colour(msg.modelData.provider)).g, Qt.color(shell.colour(msg.modelData.provider)).b, 0.45)
                         TextEdit { id: said; x: 14; y: 11; width: Math.min(talk.width * 0.78 - 28, implicitWidth); readOnly: true; selectByMouse: true; wrapMode: Text.Wrap
                                    textFormat: msg.mine ? TextEdit.PlainText : TextEdit.MarkdownText
-                                   text: msg.modelData.content + (msg.modelData.stopped ? "\n\n*" + I18n.tr("(stopped)") + "*" : ""); color: msg.modelData.ok === false ? Theme.red : Theme.cream
-                                   font.family: Theme.font; font.pixelSize: 15; selectionColor: Theme.coffee
+                                   text: msg.modelData.content + (msg.modelData.stopped ? "\n\n*" + I18n.tr("(stopped)") + "*" : ""); color: msg.modelData.ok === false ? Theme.red : shell.look.text
+                                   font.family: Theme.font; font.pixelSize: 15; selectionColor: shell.style === "own" ? Theme.coffee : "#c9d7f0"
                                    Component.onCompleted: width = Math.min(talk.width * 0.78 - 28, implicitWidth) } }
                     // what can be done with it: copy an answer, ask the last one again, change the last question
                     Row { id: acts; spacing: 14; y: bubble.y + bubble.height + 8; x: msg.mine ? talk.width - 28 - width : 40
@@ -199,58 +273,178 @@ ShellRoot {
                         Act { visible: msg.mine && msg.last; what: I18n.tr("Change"); onGo: { line.text = msg.modelData.content; shell.editing = true } } } }
                 // the answer while it comes
                 footer: Item { width: talk.width; height: shell.waiting ? liveBox.height + 30 : 0
-                    Rectangle { id: liveBox; visible: shell.waiting; x: 28; y: 6; width: Math.min(talk.width * 0.78, liveText.implicitWidth + 28); height: liveText.implicitHeight + 22; radius: 16; color: Theme.card
+                    Rectangle { id: liveBox; visible: shell.waiting; x: 28; y: 6; width: Math.min(talk.width * 0.78, liveText.implicitWidth + 28); height: liveText.implicitHeight + 22; radius: 16; color: shell.style === "own" ? Theme.card : "transparent"
                         TextEdit { id: liveText; x: 14; y: 11; width: Math.min(talk.width * 0.78 - 28, Math.max(implicitWidth, 80)); readOnly: true; wrapMode: Text.Wrap; textFormat: TextEdit.MarkdownText
-                                   text: shell.live !== "" ? shell.live : "*" + I18n.tr("Thinking…") + "*"; color: Theme.cream; font.family: Theme.font; font.pixelSize: 15
+                                   text: shell.live !== "" ? shell.live : "*" + I18n.tr("Thinking…") + "*"; color: shell.look.text; font.family: Theme.font; font.pixelSize: 15
                                    onTextChanged: Qt.callLater(talk.positionViewAtEnd) } } }
             }
-            Column { visible: !shell.chat && shell.open === ""; anchors.centerIn: parent; anchors.verticalCenterOffset: -50; spacing: 10; width: 460
-                Glyph { name: "messages"; font.pixelSize: 48; color: Theme.gold; anchors.horizontalCenter: parent.horizontalCenter }
-                Label { text: I18n.tr("A new conversation"); font.pixelSize: 24; font.weight: 800; anchors.horizontalCenter: parent.horizontalCenter }
-                Label { width: parent.width; horizontalAlignment: Text.AlignHCenter; wrapMode: Text.WordWrap; color: Theme.dim
-                        text: shell.providers.length ? I18n.tr("Write below. Choose who answers with the button beside the line.") : I18n.tr("No AI is ready on this computer: see Services.") } }
-            // the field to write in, in the look of the service that answers (as in LensGoo's AI): Claude's, Gemini's,
-            // Grok's, ChatGPT's, or LatteOS's own for a model on this computer or a server of one's own
+            // an empty conversation: the service greets as on its own page; LatteOS's own says who answers
+            Item { id: hello; visible: !shell.chat && shell.open === ""; anchors.left: parent.left; anchors.right: parent.right; y: Math.max(40, box.y - 210); height: 120
+                readonly property string logo: ({ claude: "claude", grok: "grok", mistral: "mistral", deepseek: "deepseek", copilot: "githubcopilot" })[shell.style] || ""
+                Row { anchors.horizontalCenter: shell.style === "mistral" ? undefined : parent.horizontalCenter; x: shell.style === "mistral" ? box.x : 0; spacing: 12
+                      visible: shell.style !== "own" && shell.style !== "mistral" && shell.style !== "copilot"
+                    Image { visible: hello.logo !== ""; source: hello.logo ? "file://" + I18n.share + "/goo/ai/" + hello.logo + ".svg" : ""; sourceSize: Qt.size(shell.style === "grok" ? 64 : 40, shell.style === "grok" ? 64 : 40); anchors.verticalCenter: parent.verticalCenter }
+                    Text { visible: text !== ""; text: shell.greeting; color: shell.look.text; anchors.verticalCenter: parent.verticalCenter
+                           font.family: shell.style === "claude" ? "Lora" : shell.style === "gemini" ? "Google Sans Flex" : Theme.font
+                           font.pixelSize: shell.style === "claude" ? 36 : shell.style === "gemini" ? 32 : 26; font.weight: shell.style === "deepseek" ? 700 : (shell.style === "chatgpt" ? 500 : 400) } }
+                // Mistral: its mark above a bold line, at the left; Copilot: its mark above a quiet line
+                Column { visible: shell.style === "mistral"; x: box.x; spacing: 18
+                    Image { source: "file://" + I18n.share + "/goo/ai/mistral.svg"; sourceSize: Qt.size(44, 44) }
+                    Text { text: shell.greeting; color: shell.look.text; font.family: Theme.font; font.pixelSize: 30; font.weight: 600 } }
+                Column { visible: shell.style === "copilot"; anchors.horizontalCenter: parent.horizontalCenter; spacing: 14
+                    Image { anchors.horizontalCenter: parent.horizontalCenter; source: "file://" + I18n.share + "/goo/ai/githubcopilot.svg"; sourceSize: Qt.size(48, 48) }
+                    Text { text: shell.greeting; color: shell.look.dim; font.family: Theme.font; font.pixelSize: 13 } }
+                Column { visible: shell.style === "own"; anchors.horizontalCenter: parent.horizontalCenter; spacing: 10; width: 460
+                    Glyph { name: "messages"; font.pixelSize: 48; color: Theme.gold; anchors.horizontalCenter: parent.horizontalCenter }
+                    Label { text: I18n.tr("A new conversation"); font.pixelSize: 24; font.weight: 800; anchors.horizontalCenter: parent.horizontalCenter }
+                    Label { width: parent.width; horizontalAlignment: Text.AlignHCenter; wrapMode: Text.WordWrap; color: Theme.dim
+                            text: shell.providers.length ? I18n.tr("Write below. Choose who answers with the button above the line.") : I18n.tr("No AI is ready on this computer: see Services.") } } }
+
+            // who answers: LatteOS's own switch, the one part that is the same for every service (LensGoo has it at its foot)
+            Rectangle { id: whoPill; x: box.x; y: box.y - 42; height: 32; radius: 16; width: whoRow.implicitWidth + 28; visible: shell.providers.length > 0
+                color: Qt.rgba(0.97, 0.78, 0.45, whoHit.containsMouse || shell.menuAt === "who" ? 0.3 : 0.18)
+                Row { id: whoRow; x: 14; spacing: 8; anchors.verticalCenter: parent.verticalCenter
+                    Text { text: shell.nameOf(shell.useProvider) + " · " + (shell.useM ? shell.useM.name : ""); color: shell.style === "own" ? Theme.gold : "#8a5a14"; font.family: Theme.font; font.pixelSize: 13; font.weight: Font.Bold }
+                    Glyph { name: "chevron-down"; font.pixelSize: 14; color: shell.style === "own" ? Theme.gold : "#8a5a14"; anchors.verticalCenter: parent.verticalCenter } }
+                MouseArea { id: whoHit; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: shell.openMenu("who") } }
+
+            // ── the field, a copy of the service's own: its colours, its shape, and what sits in it where it sits ──
+            // + at the left (not Copilot, not DeepSeek: its paperclip is at the right); its chip at the right, or at the
+            // left for Copilot and DeepSeek; the microphone (Mistral's is its black button); and the button that sends
             Rectangle {
                 id: box
-                readonly property string style: (shell.providers.find(p => p.id === shell.useProvider) || { style: "own" }).style
-                readonly property var look: ({
-                    "claude": { bg: "#faf9f5", rim: "#ddd9ce", ink: "#3d3929", dim: "#8a8578", round: 18, send: "#c96442", sendInk: "#ffffff", hint: QT_TR_NOOP("How can I help you today?") },
-                    "gemini": { bg: "#f0f4f9", rim: "#f0f4f9", ink: "#1f1f1f", dim: "#5f6368", round: 28, send: "#0b57d0", sendInk: "#ffffff", hint: QT_TR_NOOP("Ask Gemini") },
-                    "grok": { bg: "#ffffff", rim: "#e1e1e1", ink: "#0d0d0d", dim: "#8a8a8a", round: 26, send: "#0d0d0d", sendInk: "#ffffff", hint: QT_TR_NOOP("What do you want to know?") },
-                    "chatgpt": { bg: "#ffffff", rim: "#e3e3e3", ink: "#0d0d0d", dim: "#8f8f8f", round: 28, send: "#2f7bf5", sendInk: "#ffffff", hint: QT_TR_NOOP("Ask ChatGPT") },
-                    "copilot": { bg: "#ffffff", rim: "#d0d7de", ink: "#1f2328", dim: "#656d76", round: 8, send: "#0969da", sendInk: "#ffffff", hint: QT_TR_NOOP("Ask Copilot") },
-                    "mistral": { bg: "#ffffff", rim: "#e5e5e5", ink: "#1a1a1a", dim: "#8a8a8a", round: 18, send: "#fa520f", sendInk: "#ffffff", hint: QT_TR_NOOP("Ask Le Chat") },
-                    "own": { bg: "#3d2c22", rim: "#5a463a", ink: "#f5e8d8", dim: "#b8a491", round: 14, send: Theme.gold, sendInk: "#2a1e17", hint: QT_TR_NOOP("Ask anything…") } })[style] || ({})
-                // Gemini, Grok and ChatGPT write in one line, a pill; the others in a box of two rows
-                readonly property bool oneLine: ["gemini", "grok", "chatgpt"].indexOf(style) >= 0
-                anchors.left: parent.left; anchors.right: parent.right; anchors.bottom: parent.bottom; anchors.margins: 22; height: oneLine ? 60 : 96
-                radius: oneLine ? 30 : look.round; color: look.bg; border.width: 1; border.color: look.rim
-                TextInput { id: line; x: 20; y: box.oneLine ? (box.height - height) / 2 : 16; width: box.oneLine ? parent.width - whoPill.width - 90 : parent.width - 40; color: box.look.ink; font.family: Theme.font; font.pixelSize: 15; clip: true; selectByMouse: true
-                            selectionColor: box.style === "own" ? Theme.coffee : "#c9d7f0"
+                readonly property bool oneLine: ["gemini", "chatgpt"].indexOf(shell.style) >= 0
+                readonly property bool hasPlus: shell.style !== "copilot" && shell.style !== "deepseek"
+                readonly property bool chipLeft: shell.style === "copilot" || shell.style === "deepseek"
+                readonly property bool hasMic: ["claude", "gemini", "grok", "chatgpt", "own"].indexOf(shell.style) >= 0
+                readonly property real cy: oneLine ? height / 2 : height - 26
+                readonly property bool typed: line.text !== ""
+                width: Math.min(parent.width - 44, 820); anchors.horizontalCenter: parent.horizontalCenter; anchors.bottom: parent.bottom; anchors.bottomMargin: 22
+                height: oneLine ? 64 : (shell.style === "copilot" ? 112 : 100)
+                radius: shell.look.round; color: shell.look.bg; border.width: shell.style === "copilot" ? 2 : 1; border.color: shell.look.rim
+                // what is attached, one chip with a cross, over the field
+                Rectangle { visible: shell.files.length > 0; y: -36 - (whoPill.visible ? 40 : 0); x: 0; height: 28; radius: 14; width: Math.min(filesText.implicitWidth + 50, 360); color: Qt.rgba(0.97, 0.78, 0.45, 0.3)
+                    Text { id: filesText; x: 14; width: parent.width - 44; elide: Text.ElideMiddle; anchors.verticalCenter: parent.verticalCenter; text: shell.files.map(f => f.split("/").pop()).join(", "); color: shell.style === "own" ? Theme.cream : "#3d3929"; font.family: Theme.font; font.pixelSize: 13; font.weight: Font.DemiBold }
+                    Glyph { x: parent.width - 24; anchors.verticalCenter: parent.verticalCenter; name: "x"; font.pixelSize: 14; color: filesText.color
+                        MouseArea { anchors.fill: parent; anchors.margins: -6; cursorShape: Qt.PointingHandCursor; onClicked: shell.files = [] } } }
+                TextInput { id: line; x: box.oneLine ? 58 : 20; y: box.oneLine ? (box.height - height) / 2 : 18; width: box.oneLine ? chip.x - x - 12 : box.width - 40
+                            color: shell.look.ink; font.family: Theme.font; font.pixelSize: 16; clip: true; selectByMouse: true
+                            selectionColor: shell.style === "own" ? Theme.coffee : "#c9d7f0"
                             onAccepted: { shell.send(text); text = "" } }
-                Text { x: 20; y: box.oneLine ? (box.height - height) / 2 : 16; visible: line.text === ""; text: I18n.tr(box.look.hint || ""); color: box.look.dim; font.family: Theme.font; font.pixelSize: 15 }
-                MouseArea { anchors.fill: parent; anchors.bottomMargin: box.oneLine ? 0 : 44; anchors.rightMargin: box.oneLine ? whoPill.width + 70 : 0; cursorShape: Qt.IBeamCursor; onClicked: line.forceActiveFocus() }
-                // who answers: the one part that is the same for every service; a press goes round them and their models
-                Rectangle { id: whoPill; x: box.oneLine ? box.width - width - 58 : 12; anchors.bottom: parent.bottom; anchors.bottomMargin: box.oneLine ? 15 : 10; height: 30; radius: 15; width: whoRow.implicitWidth + 24
-                    visible: shell.providers.length > 0; color: box.style === "own" ? "#4a372b" : Qt.darker(box.look.bg, 1.05); border.width: 1; border.color: box.look.rim
-                    Row { id: whoRow; x: 12; spacing: 6; anchors.verticalCenter: parent.verticalCenter
-                        Text { text: shell.nameOf(shell.useProvider) + " · " + shell.modelName(shell.useProvider, shell.useModel); color: box.look.ink; font.family: Theme.font; font.pixelSize: 13; font.weight: Font.DemiBold }
-                        Glyph { name: "chevron-down"; font.pixelSize: 14; color: box.look.dim; anchors.verticalCenter: parent.verticalCenter } }
-                    MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor
+                Text { x: line.x; y: line.y; visible: !box.typed; text: I18n.tr(shell.hints[shell.style] || shell.hints.own); color: shell.look.dim; font.family: Theme.font; font.pixelSize: 16 }
+                MouseArea { anchors.fill: parent; anchors.bottomMargin: box.oneLine ? 0 : 46; anchors.leftMargin: box.oneLine ? 52 : 0; anchors.rightMargin: box.oneLine ? box.width - chip.x : 0; cursorShape: Qt.IBeamCursor; onClicked: line.forceActiveFocus() }
+                // + : something to attach (where the service has no menu for it, it attaches at once)
+                Item { id: plus; visible: box.hasPlus; x: 22; y: box.cy - 16; width: 32; height: 32
+                    Rectangle { anchors.fill: parent; radius: 16; color: shell.look.ink; opacity: plusHit.containsMouse || shell.menuAt === "plus" ? 0.08 : 0 }
+                    Glyph { anchors.centerIn: parent; name: "plus"; font.pixelSize: 19; color: shell.look.ink }
+                    MouseArea { id: plusHit; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
+                                onClicked: { if (shell.useP && shell.useP.plus.length) shell.openMenu("plus"); else shell.act({ "do": { attach: 0 } }, 0) } } }
+                // the service's own chip: a model or a way of thinking; DeepSeek's is a switch, lit while on
+                Rectangle { id: chip; visible: !!shell.useP
+                    readonly property bool lit: shell.style === "deepseek" ? shell.deep : false
+                    readonly property bool hasIcon: ["chatgpt", "copilot", "mistral", "deepseek"].indexOf(shell.style) >= 0
+                    readonly property bool hasChev: ["gemini", "grok", "copilot", "own"].indexOf(shell.style) >= 0
+                    x: box.chipLeft ? 12 : (mic.visible ? mic.x : send.x) - width - 8; y: box.cy - 16; height: 32; radius: 16
+                    width: chipRow.implicitWidth + 28
+                    readonly property color inkC: Qt.color(shell.look.ink || "#000000")
+                    color: shell.style === "deepseek" ? (lit ? "#edf3fe" : "#ffffff") : (shell.look.chipBg || Qt.rgba(inkC.r, inkC.g, inkC.b, chipHit.containsMouse || shell.menuAt === "chip" ? 0.06 : 0))
+                    border.width: shell.style === "deepseek" ? 1 : 0; border.color: lit ? "#c9dbfb" : "#e5e7eb"
+                    Row { id: chipRow; x: 14; spacing: 7; anchors.verticalCenter: parent.verticalCenter
+                        Glyph { visible: chip.hasIcon; name: ({ chatgpt: "bulb", copilot: "git-fork", mistral: "cube", deepseek: "atom" })[shell.style] || "sparkles"; font.pixelSize: 15; color: chipText.color; anchors.verticalCenter: parent.verticalCenter }
+                        Text { id: chipText; text: shell.chipWord; color: shell.style === "deepseek" ? (chip.lit ? "#4d6bfe" : "#262626") : (shell.style === "chatgpt" ? "#5d5d5d" : shell.look.ink); font.family: Theme.font; font.pixelSize: 14; font.weight: Font.DemiBold }
+                        Glyph { visible: chip.hasChev; name: "chevron-down"; font.pixelSize: 14; color: chipText.color; anchors.verticalCenter: parent.verticalCenter } }
+                    MouseArea { id: chipHit; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
                         onClicked: {
-                            const all = []
-                            shell.providers.forEach(p => p.models.forEach(m => all.push([p.id, m.id])))
-                            const at = all.findIndex(x => x[0] === shell.useProvider && x[1] === shell.useModel)
-                            const next = all[(at + 1) % all.length]
-                            shell.useProvider = next[0]; shell.useModel = next[1]
+                            if (shell.style !== "deepseek") { shell.openMenu("chip"); return }
+                            const other = shell.useP.models.find(m => (m.id.indexOf("reasoner") >= 0) !== shell.deep)
+                            if (other) shell.useModel = other.id
                         } } }
-                // send, or stop while an answer comes; with an edited question it changes it
-                Rectangle { id: send; anchors.right: parent.right; anchors.rightMargin: 12; anchors.bottom: parent.bottom; anchors.bottomMargin: box.oneLine ? 13 : 8; width: 34; height: 34; radius: 17
-                    color: box.look.send; opacity: line.text !== "" || shell.waiting ? 1 : 0.4
-                    Glyph { anchors.centerIn: parent; name: shell.waiting ? "player-stop" : (shell.editing ? "check" : "arrow-up"); font.pixelSize: 18; color: box.look.sendInk }
+                // DeepSeek's second chip, smart search: its page's, so in the colour of what opens a page
+                Rectangle { visible: shell.style === "deepseek"; x: chip.x + chip.width + 10; y: chip.y; height: 32; radius: 16; width: searchRow.implicitWidth + 28
+                    color: searchHit.containsMouse ? "#f4f1ff" : "#ffffff"; border.width: 1; border.color: "#e5e7eb"
+                    Row { id: searchRow; x: 14; spacing: 7; anchors.verticalCenter: parent.verticalCenter
+                        Glyph { name: "world"; font.pixelSize: 15; color: shell.webInk; anchors.verticalCenter: parent.verticalCenter }
+                        Text { text: I18n.tr("Smart search"); color: shell.webInk; font.family: Theme.font; font.pixelSize: 14; font.weight: Font.DemiBold } }
+                    MouseArea { id: searchHit; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: if (shell.useP && shell.useP.web) Qt.openUrlExternally(shell.useP.web) } }
+                // DeepSeek's paperclip, where the others have the microphone
+                Item { visible: shell.style === "deepseek"; x: send.x - 44; y: box.cy - 16; width: 32; height: 32
+                    Glyph { anchors.centerIn: parent; name: "paperclip"; font.pixelSize: 18; color: shell.look.ink }
+                    MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: shell.act({ "do": { attach: 0 } }, 0) } }
+                // the microphone: red while it listens, blinking while it writes
+                Item { id: mic; visible: box.hasMic; x: send.x - 42; y: box.cy - 16; width: 32; height: 32
+                    Rectangle { anchors.fill: parent; radius: 16; color: shell.listening === 1 ? "#e5484d" : shell.look.ink; opacity: shell.listening === 1 ? 0.85 : (micHit.containsMouse ? 0.08 : 0) }
+                    Glyph { anchors.centerIn: parent; name: shell.listening === 2 ? "loader-2" : "microphone"; font.pixelSize: 18; color: shell.listening === 1 ? "#ffffff" : shell.look.ink }
+                    MouseArea { id: micHit; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: shell.listen() } }
+                // send, as each of them draws it; while an answer comes, the same button stops it. Empty, Claude and ChatGPT
+                // show the voice wave, Mistral its microphone (its button listens), Copilot a plane
+                Rectangle { id: send; x: box.width - 16 - 34; y: box.cy - 17; width: 34; height: 34; radius: shell.style === "claude" || shell.style === "mistral" ? 9 : 17
+                    readonly property bool full: box.typed || shell.waiting
+                    color: full ? shell.look.send : shell.look.sendEmpty
+                    visible: !(shell.style === "gemini" && !full)
+                    Glyph { anchors.centerIn: parent; font.pixelSize: 17; color: send.full ? shell.look.sendInk : shell.look.sendInkEmpty
+                            name: shell.waiting ? "player-stop" : shell.editing ? "check" : shell.style === "copilot" ? "send"
+                                  : box.typed ? "arrow-up" : shell.style === "mistral" ? (shell.listening === 2 ? "loader-2" : "microphone") : (shell.style === "claude" || shell.style === "chatgpt") ? "wave-sine" : "arrow-up" }
                     MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor
-                                onClicked: { if (shell.waiting) shell.stop(); else { shell.send(line.text); line.text = "" } } } } }
+                                onClicked: { if (shell.waiting) shell.stop(); else if (!box.typed && shell.style === "mistral") shell.listen(); else { shell.send(line.text); line.text = "" } } } } }
+
+            // ── the menus: over the switch the services (LatteOS's own); over the field the service's + or chip, as the
+            // service draws it (its ground, ink, ticks; what opens its page in one colour for all); a row with more opens
+            // another beside it. A press beside them puts them away
+            MouseArea { anchors.fill: parent; visible: shell.menuAt !== ""; onPressed: { shell.menuAt = ""; shell.subRows = [] } }
+            component Sheet: Rectangle {
+                id: sheet
+                property var rows: []
+                property bool own: false               // LatteOS's own look (the services)
+                property bool sub: false
+                readonly property var lk: own ? shell.look_own : shell.look
+                readonly property int rowH: ({ claude: 30, gemini: 34, chatgpt: 30, mistral: 36 })[own ? "own" : shell.style] || 32
+                readonly property bool tickLeft: !own && shell.style === "gemini" && shell.menuAt === "chip"
+                readonly property bool radio: !own && shell.style === "mistral" && shell.menuAt === "chip"
+                property real hintX: 0
+                height: col.implicitHeight + 12
+                radius: own ? 14 : ({ claude: 12, gemini: 20, chatgpt: 16, grok: 16 })[shell.style] || 12
+                color: lk.menu || "#ffffff"; border.width: 1; border.color: Qt.rgba(Qt.color(lk.ink).r, Qt.color(lk.ink).g, Qt.color(lk.ink).b, 0.1)
+                Rectangle { anchors.fill: parent; anchors.margins: -1; radius: parent.radius + 1; z: -1; color: "transparent"; border.width: 6; border.color: Qt.rgba(0, 0, 0, sheet.own ? 0 : 0.06) }
+                MouseArea { anchors.fill: parent }
+                Column { id: col; x: 6; y: 6; width: parent.width - 12
+                    Repeater { model: sheet.rows
+                        Item { id: r; required property var modelData
+                            readonly property var d: modelData["do"] || null
+                            readonly property bool web: !d && !modelData.note
+                            readonly property bool on: shell.isOn(modelData)
+                            readonly property bool off: !!modelData.note || (!!d && !!d.reset && line.text === "")
+                            readonly property real gap: modelData.sep ? 9 : 0
+                            readonly property real mid: gap + (modelData.desc ? 17 : sheet.rowH / 2)
+                            readonly property real nx: modelData.glyph || sheet.tickLeft ? 44 : 14
+                            readonly property color ink: off ? sheet.lk.dim : (web ? shell.webInk : (on && sheet.own ? Theme.gold : sheet.lk.ink))
+                            width: col.width; height: gap + (modelData.note ? 40 : sheet.rowH + (modelData.desc ? 17 : 0))
+                            Rectangle { visible: !!r.modelData.sep; x: 8; y: 4; width: parent.width - 16; height: 1; color: sheet.lk.ink; opacity: 0.1 }
+                            Rectangle { x: 0; y: r.gap + 1; width: parent.width; height: parent.height - r.gap - 2; radius: 8; color: sheet.lk.ink; opacity: !r.off && rowHit.containsMouse ? 0.06 : 0 }
+                            Glyph { visible: !!r.modelData.glyph; x: 22 - width / 2; y: r.mid - height / 2; name: r.modelData.glyph || ""; font.pixelSize: 16; color: r.web ? shell.webInk : sheet.lk.ink }
+                            Glyph { visible: r.on && sheet.tickLeft; x: 22 - width / 2; y: r.mid - height / 2; name: "check"; font.pixelSize: 15; color: shell.look.tick }
+                            Text { visible: !r.modelData.note; x: r.nx; y: r.mid - height / 2; width: (sheet.hintX > 0 ? sheet.hintX : r.width - 34 - (keyText.text ? keyText.implicitWidth + 8 : 0)) - r.nx - 8; elide: Text.ElideRight
+                                   text: I18n.tr(r.modelData.name); color: r.ink; font.family: Theme.font; font.pixelSize: 14; font.weight: Font.Medium }
+                            Text { visible: !!r.modelData.desc; x: r.nx; y: r.gap + 35 - height / 2; width: r.width - r.nx - 40; elide: Text.ElideRight; text: r.modelData.desc ? I18n.tr(r.modelData.desc) : ""; color: sheet.lk.dim; font.family: Theme.font; font.pixelSize: 12 }
+                            Text { visible: !!r.modelData.note; x: 14; y: r.gap + 6; width: r.width - 28; wrapMode: Text.WordWrap; maximumLineCount: 2; text: I18n.tr(r.modelData.name); color: sheet.lk.dim; font.family: Theme.font; font.pixelSize: 12 }
+                            Text { visible: sheet.hintX > 0 && !!r.modelData.hint; x: sheet.hintX; y: r.mid - height / 2; width: r.width - sheet.hintX - 30; elide: Text.ElideRight; text: r.modelData.hint ? I18n.tr(r.modelData.hint) : ""; color: sheet.lk.dim; font.family: Theme.font; font.pixelSize: 12 }
+                            Text { id: keyText; anchors.right: parent.right; anchors.rightMargin: r.modelData.more || r.on || r.web ? 34 : 14; y: r.mid - height / 2; text: shell.keyOf(r.modelData); color: r.web ? shell.webInk : sheet.lk.dim; font.family: Theme.font; font.pixelSize: 12 }
+                            Glyph { x: r.width - 18 - width / 2; y: r.mid - height / 2; visible: !!r.modelData.more; name: "chevron-right"; font.pixelSize: 14; color: r.web ? shell.webInk : sheet.lk.dim }
+                            Glyph { x: r.width - 18 - width / 2; y: r.mid - height / 2; visible: r.web && !r.modelData.more; name: "external-link"; font.pixelSize: 12; color: shell.webInk }
+                            Glyph { x: r.width - 18 - width / 2; y: r.mid - height / 2; visible: r.on && !sheet.tickLeft && !sheet.radio; name: "check"; font.pixelSize: 15; color: sheet.own ? Theme.gold : shell.look.tick }
+                            Rectangle { visible: sheet.radio && !r.web; x: r.width - 25; y: r.mid - 7; width: 14; height: 14; radius: 7; color: "transparent"; border.width: r.on ? 4 : 1; border.color: r.on ? "#fa500f" : "#c8c8c8" }
+                            MouseArea { id: rowHit; anchors.fill: parent; anchors.topMargin: r.gap; hoverEnabled: true; enabled: !r.off; cursorShape: Qt.PointingHandCursor
+                                        onClicked: shell.act(r.modelData, r.y, sheet.sub) } } } } }
+            Sheet { id: menu; visible: shell.menuAt !== ""; own: shell.menuAt === "who"
+                rows: shell.menuAt === "who" ? shell.providers.map(p => ({ name: p.name, key: p.id === shell.useProvider && shell.useM ? shell.useM.name : p.models[0].name, "do": { provider: p.id, model: p.id === shell.useProvider && shell.useM ? shell.useM.id : p.models[0].id } }))
+                      : shell.useP ? (shell.menuAt === "plus" ? shell.useP.plus : shell.useP.menu) : []
+                width: shell.menuAt === "who" ? 300 : shell.menuAt === "plus" ? (({ claude: 260, gemini: 280, chatgpt: 470, grok: 250, mistral: 280 })[shell.style] || 250) : (({ claude: 380, gemini: 230, chatgpt: 300, grok: 320, mistral: 270 })[shell.style] || 300)
+                hintX: shell.menuAt === "plus" && shell.style === "chatgpt" ? 196 : 0
+                x: shell.menuAt === "who" ? whoPill.x : shell.menuAt === "plus" ? box.x + 8 : Math.max(box.x, Math.min(box.x + chip.x + chip.width - width, box.x + box.width - width))
+                y: (shell.menuAt === "who" ? whoPill.y : box.y) - height - 6 }
+            Sheet { visible: menu.visible && shell.subRows.length > 0; sub: true; own: menu.own; rows: shell.subRows
+                width: shell.style === "gemini" ? 280 : shell.style === "claude" ? 190 : 220
+                x: menu.x + menu.width + 4 + width <= parent.width - 8 ? menu.x + menu.width + 4 : Math.max(8, menu.x - width - 4)
+                y: Math.min(menu.y + shell.subY, box.y - height - 6) }
         }
 
         // ── one question to several AIs at once, the answers side by side ──────────────────────────────────

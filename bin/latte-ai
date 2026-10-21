@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""latte-ai: who answers in LensGoo's AI mode and in the Lens AI centre, and the conversations kept with them.
+"""latte-ai: who answers in LensGoo's AI mode and in LensAI, and the conversations kept with them.
 No API key: the official tool of a service answers, with the account the user is logged in to it with.
 
   latte-ai providers [all]  what there is on this computer: [{"id", "name", "local", "style", "models": [{"id", "name"}],
@@ -18,12 +18,12 @@ No API key: the official tool of a service answers, with the account the user is
                             {"five_hour": {"used": 0…1, "resets": unix time}, "seven_day": {…}} (Claude tells them).
                             What went wrong is the answer, with "ok": false.
                             --stream: the answer is printed as it comes too, a line {"delta": text} for each piece,
-                            before the last line. --markdown: the answer may be formatted (the Lens AI centre shows
+                            before the last line. --markdown: the answer may be formatted (LensAI shows
                             Markdown; LensGoo's card does not). Ended (SIGTERM), it keeps what had come, "stopped": true
   latte-ai again CHAT PROVIDER MODEL [--text TEXT] [same options as send]
                             the last answer once more, from this service and model; with --text the last question
                             is changed first
-  latte-ai services         every service LatteOS knows, also those not installed, for the Lens AI centre:
+  latte-ai services         every service LatteOS knows, also those not installed, for LensAI:
                             [{"id", "name", "local", "style", "installed", "signed" (true, false, or null where it
                             cannot be told), "account", "login": [command], "logout": [command]}]; a command to sign
                             in or out is run in a terminal, where the tool asks what it needs
@@ -35,7 +35,7 @@ No API key: the official tool of a service answers, with the account the user is
   latte-ai forget-key ID    takes it out of the keyring
   latte-ai server add NAME URL     a server of the user's own that speaks the OpenAI API (llama-server, Ollama…)
   latte-ai server remove ID
-  latte-ai models           every model of every service there is, for the Lens AI centre: [{"id", "name", "models":
+  latte-ai models           every model of every service there is, for LensAI: [{"id", "name", "models":
                             [{"id", "name", "hidden", "default"}]}]; `providers` leaves the hidden ones out and puts
                             the default first
   latte-ai model show|hide|default PROVIDER MODEL
@@ -55,7 +55,7 @@ No API key: the official tool of a service answers, with the account the user is
   latte-ai forget ID        throws one away
 
 The conversations are kept in ~/.local/state/latteos/ai/chats/ID.json, one file each. What the user wants every AI
-to know or keep to (Lens AI centre › Instructions) is ~/.config/latteos/ai-instructions.txt; it goes with every question.
+to know or keep to (LensAI › Instructions) is ~/.config/latteos/ai-instructions.txt; it goes with every question.
 The AI on this computer is llama.cpp's llama-server with a model file (.gguf), found under ~/.local/share/latteos/ai
 or /data/ai (llama/*/llama-server, models/*.gguf). It starts the first time it is asked and stays, on 127.0.0.1 only;
 `latte-ai stop` ends it.
@@ -626,7 +626,7 @@ def N(s):
 
 
 # ── the field's menus, each a copy of the service's own (the user's pictures, 21. 10.): + and its chip ───────────────
-# LensGoo and the Lens AI centre draw them from here. A row: name, glyph (Tabler), "do" — what LatteOS does with it:
+# LensGoo and LensAI draw them from here. A row: name, glyph (Tabler), "do" — what LatteOS does with it:
 # {"attach": 0 file | 1 picture of the screen}, {"model": id}, {"effort": e}, {"think": true} (effort on or off),
 # {"reset": true} (the field emptied), {"sub": [rows]} (a menu beside it); a row without "do" opens the service's page
 # ("web"), drawn in one colour shared by all. desc under the name, hint after it, key at the right ("@effort": the
@@ -715,7 +715,7 @@ def menus(p):
 
 
 def providers(all=False, every=False):
-    """What can answer; `every` keeps the models the user hid, for the Lens AI centre to show them."""
+    """What can answer; `every` keeps the models the user hid, for LensAI to show them."""
     if turned_off() and not all:
         return []
     out = []

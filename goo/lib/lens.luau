@@ -304,7 +304,7 @@ end
 
 -- ── AI: a conversation in a card of its own (parts/ai.plm). latte-ai knows who answers and keeps the conversations;
 -- the one open stays until a new session, also when the card closes. Which services the choice offers is the
--- Settings' (Launcher › AI in LensGoo: `ai` in lens-lists.json); signing in to them is the Lens AI centre's.
+-- Settings' (Launcher › AI in LensGoo: `ai` in lens-lists.json); signing in to them is LensAI's.
 local HINTS = { claude = N("How can I help you today?"), gemini = N("Ask Gemini"), grok = N("What do you want to know?"),
                 chatgpt = N("Ask ChatGPT"), copilot = N("Ask Copilot"), mistral = N("What do you want to build?"),
                 deepseek = N("Message DeepSeek"), own = N("Ask anything…") }
@@ -347,7 +347,7 @@ local AGENT_LIST = { { id = "summarize", name = N("Summarize"), glyph = "list" }
 -- what a service tells of the account (Copilot), and how many questions went to it through Lens: asked now and then
 ai.told, ai.told_at = {}, {}
 -- ── the field's menus, each a copy of the service's own: latte-ai gives their rows (`plus`, `menu`: see PLUS in
--- bin/latte-ai), the same the Lens AI centre draws. What LatteOS can do from here it does here; a row without `do`
+-- bin/latte-ai), the same LensAI draws. What LatteOS can do from here it does here; a row without `do`
 -- opens the service's page, drawn in one colour shared by all of them (the user, 21. 10.)
 -- how tall a row is and how wide the window, as each service draws them
 local ROW_H = { claude = 30, gemini = 34, chatgpt = 30, grok = 32, mistral = 36, copilot = 32, deepseek = 32, own = 32 }
@@ -509,7 +509,7 @@ fill_ai = function()
     fact.ai_pop_w = (ai.menu_at or 0) == 0 and 300 or ai.menu_at == 2 and (PLUS_W[style] or 250) or (CHIP_W[style] or 300)
     fact.ai_pop_hx = (ai.menu_at == 2 and style == "chatgpt") and 196 or 0
     text.ic_ai_more, text.ic_ai_web = icons["chevron-right"], icons["external-link"]
-    text.ai_btn_center, text.ai_btn_settings, text.ai_btn_new = tr("Lens AI centre"), tr("Settings"), tr("New session")
+    text.ai_btn_center, text.ai_btn_settings, text.ai_btn_new = tr("LensAI"), tr("Settings"), tr("New session")
     local agents = {}
     for k, g in ipairs(AGENT_LIST) do agents[k] = { name = tr(g.name), glyph = icons[g.glyph] or "" } end
     model.aiagent = agents

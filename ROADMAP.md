@@ -415,7 +415,7 @@ Schválené 12. 10. 2026. Pracuje sa **zhora nadol, neskáče sa**; nový nápad
       prepísať do LatteOS, autor v `TRETIE-STRANY.md`). LensAI (nové meno Lens AI centra) je jedno API pre všetko AI
       v systéme (`latte-ai`: služby, účty, modely, rozhovory, spotreba, úlohy, skill) a okno nad ním; chat v LensGoo je
       iba rýchly klient toho API. Poradie:
-      1. [~] premenovať na LensAI; polia na písanie presne podľa snímok používateľa (polia hotové 21. 10.; ponuky + a čipu v LensGoo podľa snímok 21. 10. — čo LatteOS nevie, otvorí web služby fialovým textom; ostáva pole a ponuky v okne LensAI) (Claude, Gemini, ChatGPT, Grok,
+      1. [x] premenovať na LensAI (21. 10.); polia na písanie presne podľa snímok používateľa (21. 10.); ponuky + a čipu podľa snímok — dáva ich `latte-ai providers` (plus, menu, web), LensGoo aj okno LensAI ich iba kreslia; čo LatteOS nevie, otvorí web služby fialovým textom (21. 10.); DeepSeek cez web čaká na `docs/manual-inst.md` (Claude, Gemini, ChatGPT, Grok,
          Mistral, Copilot, DeepSeek); DeepSeek cez kľúč API;
       2. [~] spotreba ako v Omarchy (`omarchy-agent-usage-*`): hotové 21. 10. Claude (OAuth usage), Grok (billing),
          Copilot (GitHub), vlastné počítadlo otázok; ostáva Codex, Kimi,

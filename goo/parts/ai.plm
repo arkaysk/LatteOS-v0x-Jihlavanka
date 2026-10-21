@@ -1,7 +1,7 @@
 // LensGoo's AI: a conversation in the card, under the tabs of LensGoo. On the glass the messages, which scroll
 // and stay until a new session; under them the field to write in, in the look of the service that answers
 // (Claude, Gemini, Grok, ChatGPT; LatteOS's own for a server of one's own or a model on this computer), with the
-// model chosen in it: a press opens the models to choose from. On the coffee the ways on — the Lens AI centre,
+// model chosen in it: a press opens the models to choose from. On the coffee the ways on — LensAI,
 // the Settings, a new session — and on the right what the conversation has used. The logic (lib/lens.luau) tells
 // the texts and the numbers; latte-ai keeps the conversations.
 part Ai {

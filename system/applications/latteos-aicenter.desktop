@@ -1,7 +1,7 @@
 [Desktop Entry]
 Type=Application
-Name=Lens AI centre
-Name[sk]=Lens AI centrum
+Name=LensAI
+Name[sk]=LensAI
 Comment=Every conversation with every AI in one place, and signing in to the services
 Comment[sk]=Všetky rozhovory so všetkými AI na jednom mieste a prihlásenie do služieb
 Exec=latte-app aicenter
