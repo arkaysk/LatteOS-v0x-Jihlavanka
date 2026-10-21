@@ -43,7 +43,7 @@ part Ai {
     text ai_add_shot = ""
     fact ai_nfiles = 0
     fact ai_plus = false                       // the little menu of what can be attached is out
-    fact ai_style: claude | gemini | grok | chatgpt | own = own
+    fact ai_style: claude | gemini | grok | chatgpt | own | copilot | mistral = own
     fact ai_l1 = -1                            // 0…1, how full each line's bar is; below 0 it has none
     fact ai_l2 = -1
     fact ai_wait = false                       // an answer is on its way
@@ -63,13 +63,19 @@ part Ai {
     event ai_unattach ->
 
     // the services' own colours are chosen where each is used: a colour if() is not a `let`
-    let ai.k = pick(ai_style, 0, 1, 2, 3, 4)       // the style as a number: a name after it would be read as one of its values
+    let ai.k = pick(ai_style, 0, 1, 2, 3, 4, 5, 6)       // the style as a number: a name after it would be read as one of its values
     let ai.on = card_open and card_custom == 3
     let ai.w = card.w - 32                     // what the conversation and the field have
     let ai.fy = 398                            // where the field stands, from the card's top
     let ai.fh = 98
     // the field as each service draws its own: ground, rim, ink, how round, and the button that sends
-    let f.round = pick(ai_style, 18, 28, 26, 28, 14)
+    let f.round = pick(ai_style, 20, 32, 30, 30, 14, 8, 18)
+    // Gemini, Grok and ChatGPT write in one line, a pill with everything in it; Claude, Copilot and Mistral in a box
+    // of two rows, the words above and what goes with them under
+    let ai.row = pick(ai_style, 0, 1, 1, 1, 0, 0, 0)
+    let f.top = ai.fy + ai.row * 34
+    let f.h = ai.fh - ai.row * 34
+    let f.cy = if(ai.row > 0, ai.fy + 34 + 32, ai.fy + ai.fh - 22)
     let m.w = 360                              // the models' little window
     let m.h = 12 + aimodel.count * 32 + if(aieffort.count > 0, 40, 0)
 
@@ -133,44 +139,41 @@ part Ai {
             }
         }
 
-        // ── the field, in the service's look ──────────────────────────────────────────────────────────────
-        box { from: 16, ai.fy; size: ai.w, ai.fh; corner: f.round; color: if(ai.k == 0, #faf9f5, if(ai.k == 1, #f0f4f9, if(ai.k == 2, #ffffff, if(ai.k == 3, #ffffff, #3d2c22))))}
-        box { from: 16, ai.fy; size: ai.w, ai.fh; corner: f.round; stroke: 1; color: if(ai.k == 0, #ddd9ce, if(ai.k == 1, #f0f4f9, if(ai.k == 2, #e1e1e1, if(ai.k == 3, #e3e3e3, #5a463a)))) }
-        text ai_hint { at: 36, ai.fy + 26; anchor: left center; width: ai.w - 40; lines: 1; size: 15.5; color: if(ai.k == 0, #8a8578, if(ai.k == 1, #5f6368, if(ai.k == 2, #8a8a8a, if(ai.k == 3, #8f8f8f, #b8a491)))); show: not ai_typed; family: "Inter" }
+        // ── the field, a copy of the service's own: its colours, its shape, and what sits in it where it sits ──
+        box { from: 16, f.top; size: ai.w, f.h; corner: f.round; color: if(ai.k == 0, #ffffff, if(ai.k == 1, #ffffff, if(ai.k == 2, #ffffff, if(ai.k == 3, #ffffff, if(ai.k == 5, #ffffff, if(ai.k == 6, #ffffff, #3d2c22)))))) }
+        box { from: 16, f.top; size: ai.w, f.h; corner: f.round; stroke: 1; color: if(ai.k == 0, #e3dfd5, if(ai.k == 1, #dfe3e8, if(ai.k == 2, #e2e2e2, if(ai.k == 3, #e3e3e3, if(ai.k == 5, #d0d7de, if(ai.k == 6, #e5e5e5, #5a463a)))))) }
+        text ai_hint { at: if(ai.row > 0, 62, 36), if(ai.row > 0, f.cy, ai.fy + 26); anchor: left center; width: if(ai.row > 0, ai.w - 360, ai.w - 40); lines: 1; size: 15.5; color: if(ai.k == 0, #8a8578, if(ai.k == 1, #5f6368, if(ai.k == 2, #8a8a8a, if(ai.k == 3, #8f8f8f, if(ai.k == 5, #656d76, if(ai.k == 6, #8a8a8a, #b8a491)))))); show: not ai_typed; family: "Inter" }
         // the press that puts the cursor in the field goes under the field itself, so the field is what is on top
-        zone box ai_field_hit { from: 16, ai.fy; size: ai.w, ai.fh - 40; cursor: text; active: ai.on; label: "{ai_hint}" }
+        zone box ai_field_hit { from: if(ai.row > 0, 56, 16), f.top; size: if(ai.row > 0, ai.w - 340, ai.w), if(ai.row > 0, f.h, f.h - 40); cursor: text; active: ai.on; label: "{ai_hint}" }
         on press ai_field_hit { focus ai_q }
-        input ai_q { at: 36, ai.fy + 16; width: ai.w - 40; size: 15.5; color: if(ai.k == 0, #3d3929, if(ai.k == 1, #1f1f1f, if(ai.k == 2, #0d0d0d, if(ai.k == 3, #0d0d0d, #f5e8d8)))); selection: if(ai_style == own, #5a463a, #c9d7f0); family: "Inter"; label: "{ai_hint}" }
-        // at its foot: who answers on the left; the model and the button that sends on the right
-        // + : something to attach to the question
-        ellipse { at: 38, ai.fy + ai.fh - 22; radius: 15; color: if(ai.k == 0, #faf9f5, if(ai.k == 1, #dde3ea, if(ai.k == 2, #f2f2f2, if(ai.k == 3, #e8f0fe, #4a372b)))); opacity: 40% + 60% * plus_hit.hover }
-        text ic_ai_plus { at: 38, ai.fy + ai.fh - 22; anchor: center; size: 18; color: if(ai.k == 0, #3d3929, if(ai.k == 1, #1f1f1f, if(ai.k == 2, #0d0d0d, if(ai.k == 3, #0d0d0d, #f5e8d8)))); family: "tabler-icons" }
-        zone box plus_hit { at: 38, ai.fy + ai.fh - 22; size: 32, 32; cursor: pointer; active: ai.on and not ai_wait; label: "{ai_add_file}"; role: button }
+        input ai_q { at: if(ai.row > 0, 62, 36), if(ai.row > 0, f.cy - 10, ai.fy + 16); width: if(ai.row > 0, ai.w - 360, ai.w - 40); size: 15.5; color: if(ai.k == 0, #3d3929, if(ai.k == 1, #1f1f1f, if(ai.k == 2, #0d0d0d, if(ai.k == 3, #0d0d0d, if(ai.k == 5, #1f2328, if(ai.k == 6, #1a1a1a, #f5e8d8)))))); selection: if(ai.k == 4, #5a463a, #c9d7f0); family: "Inter"; label: "{ai_hint}" }
+        // + : something to attach to the question, where every one of them has it, at the left
+        ellipse { at: 38, f.cy; radius: 15; color: if(ai.k == 0, #f4f2ec, if(ai.k == 1, #eef1f6, if(ai.k == 2, #f1f1f1, if(ai.k == 3, #f1f1f1, if(ai.k == 5, #f6f8fa, if(ai.k == 6, #f4f4f4, #4a372b)))))); opacity: 50% + 50% * plus_hit.hover }
+        text ic_ai_plus { at: 38, f.cy; anchor: center; size: 18; color: if(ai.k == 0, #3d3929, if(ai.k == 1, #1f1f1f, if(ai.k == 2, #0d0d0d, if(ai.k == 3, #0d0d0d, if(ai.k == 5, #1f2328, if(ai.k == 6, #1a1a1a, #f5e8d8)))))); family: "tabler-icons" }
+        zone box plus_hit { at: 38, f.cy; size: 32, 32; cursor: pointer; active: ai.on and not ai_wait; label: "{ai_add_file}"; role: button }
         on press plus_hit { toggle ai_plus }
-        // what is attached, as one chip with a cross that takes it all off again
-        box { from: 60, ai.fy + ai.fh - 35; size: 250, 26; corner: 13; color: #f7c873; opacity: if(ai_nfiles > 0, 30%, 0) }
-        text ic_ai_clip { at: 74, ai.fy + ai.fh - 22; anchor: center; size: 14; color: if(ai.k == 4, #f5e8d8, #3d3929); show: ai_nfiles > 0; family: "tabler-icons" }
-        text ai_files { at: 86, ai.fy + ai.fh - 22; anchor: left center; size: 12.5; weight: 600; color: if(ai.k == 4, #f5e8d8, #3d3929); width: 196; lines: 1; show: ai_nfiles > 0; family: "Inter" }
-        text ic_ai_x { at: 296, ai.fy + ai.fh - 22; anchor: center; size: 14; color: if(ai.k == 4, #f5e8d8, #3d3929); opacity: 60% + 40% * unattach_hit.hover; show: ai_nfiles > 0; family: "tabler-icons" }
-        zone box unattach_hit { at: 296, ai.fy + ai.fh - 22; size: 26, 26; cursor: pointer; active: ai.on and ai_nfiles > 0 and not ai_wait; label: "Remove"; role: button }
+        // what is attached, one chip with a cross: in the box's lower row, or above a one-line field
+        box { from: if(ai.row > 0, 16, 60), if(ai.row > 0, ai.fy + 2, f.cy - 13); size: 250, 26; corner: 13; color: #f7c873; opacity: if(ai_nfiles > 0, 30%, 0) }
+        text ic_ai_clip { at: if(ai.row > 0, 30, 74), if(ai.row > 0, ai.fy + 15, f.cy); anchor: center; size: 14; color: if(ai.k == 4 or ai.row > 0, #f5e8d8, #3d3929); show: ai_nfiles > 0; family: "tabler-icons" }
+        text ai_files { at: if(ai.row > 0, 42, 86), if(ai.row > 0, ai.fy + 15, f.cy); anchor: left center; size: 12.5; weight: 600; color: if(ai.k == 4 or ai.row > 0, #f5e8d8, #3d3929); width: 196; lines: 1; show: ai_nfiles > 0; family: "Inter" }
+        text ic_ai_x { at: if(ai.row > 0, 252, 296), if(ai.row > 0, ai.fy + 15, f.cy); anchor: center; size: 14; color: if(ai.k == 4 or ai.row > 0, #f5e8d8, #3d3929); opacity: 60% + 40% * unattach_hit.hover; show: ai_nfiles > 0; family: "tabler-icons" }
+        zone box unattach_hit { at: if(ai.row > 0, 252, 296), if(ai.row > 0, ai.fy + 15, f.cy); size: 26, 26; cursor: pointer; active: ai.on and ai_nfiles > 0 and not ai_wait; label: "Remove"; role: button }
         on press unattach_hit { emit ai_unattach }
-        text ic_ai_spark { at: if(ai_nfiles > 0, 330, 66), ai.fy + ai.fh - 22; anchor: center; size: 15; color: if(ai.k == 0, #8a8578, if(ai.k == 1, #5f6368, if(ai.k == 2, #8a8a8a, if(ai.k == 3, #8f8f8f, #b8a491)))); family: "tabler-icons" }
-        text ai_who { at: if(ai_nfiles > 0, 346, 82), ai.fy + ai.fh - 22; anchor: left center; size: 13; weight: 600; color: if(ai.k == 0, #8a8578, if(ai.k == 1, #5f6368, if(ai.k == 2, #8a8a8a, if(ai.k == 3, #8f8f8f, #b8a491)))); width: 260; lines: 1; family: "Inter" }
-        // the microphone, left of the model: red while it listens, blinking while what was said is written down
-        ellipse { at: card.w - 16 - 54 - 174, ai.fy + ai.fh - 22; radius: 15; color: if(ai_listening == 1, #e5484d, #f7c873); opacity: if(ai_listening == 1, 70% + 30% * sin(time * 300), 15% + 25% * mic_hit.hover) }
-        text ic_ai_mic { at: card.w - 16 - 54 - 174, ai.fy + ai.fh - 22; anchor: center; size: 17; color: if(ai_listening == 1, #ffffff, if(ai.k == 4, #f5e8d8, #3d3929)); opacity: if(ai_listening == 2, 50% + 50% * sin(time * 360), 100%); family: "tabler-icons" }
-        zone box mic_hit { at: card.w - 16 - 54 - 174, ai.fy + ai.fh - 22; size: 32, 32; cursor: pointer; active: ai.on and ai_listening < 2 and not ai_wait; label: "{ai_mic_word}"; role: button }
-        on press mic_hit { emit ai_mic }
-        // how hard it may think: the service's own chip in its own field, where its tool lets that be said
-        box { from: card.w - 16 - 54 - 150, ai.fy + ai.fh - 37; size: 140, 30; corner: 15; color: if(ai.k == 0, #faf9f5, if(ai.k == 1, #dde3ea, if(ai.k == 2, #f2f2f2, if(ai.k == 3, #e8f0fe, #4a372b)))); opacity: if(aieffort.count > 0, 70% + 30% * effort_chip.hover, 0) }
-        text ai_effort_word { at: card.w - 16 - 54 - 88, ai.fy + ai.fh - 22; anchor: center; size: 13; weight: 600; color: if(ai.k == 0, #6b6658, if(ai.k == 1, #1f1f1f, if(ai.k == 2, #0d0d0d, if(ai.k == 3, #1a73e8, #f5e8d8)))); width: 110; lines: 1; align: center; show: aieffort.count > 0; family: "Inter" }
-        text ic_ai_chev { at: card.w - 16 - 54 - 24, ai.fy + ai.fh - 22; anchor: center; size: 14; color: if(ai.k == 0, #6b6658, if(ai.k == 1, #1f1f1f, if(ai.k == 2, #0d0d0d, if(ai.k == 3, #1a73e8, #f5e8d8)))); show: aieffort.count > 0; family: "tabler-icons" }
-        zone box effort_chip { from: card.w - 16 - 54 - 150, ai.fy + ai.fh - 37; size: 140, 30; cursor: pointer; active: ai.on and aieffort.count > 0; label: "{ai_effort_word}"; role: button }
+        // the service's own chip: how hard it may think where it has that, else its model ("Gemini Auto", "Grok 4.7")
+        box { from: card.w - 16 - 96 - 150, f.cy - 16; size: 150, 32; corner: 16; color: if(ai.k == 0, #ffffff, if(ai.k == 1, #eef1f6, if(ai.k == 2, #f1f1f1, if(ai.k == 3, #e8f0fe, if(ai.k == 5, #f6f8fa, if(ai.k == 6, #fff3ec, #4a372b)))))); opacity: 80% + 20% * effort_chip.hover }
+        text ai_effort_word { at: card.w - 16 - 96 - 82, f.cy; anchor: center; size: 13.5; weight: 600; color: if(ai.k == 0, #6b6658, if(ai.k == 1, #1f1f1f, if(ai.k == 2, #0d0d0d, if(ai.k == 3, #1a73e8, if(ai.k == 5, #1f2328, if(ai.k == 6, #fa520f, #f5e8d8)))))); width: 118; lines: 1; align: center; family: "Inter" }
+        text ic_ai_chev { at: card.w - 16 - 96 - 16, f.cy; anchor: center; size: 14; color: if(ai.k == 0, #6b6658, if(ai.k == 1, #1f1f1f, if(ai.k == 2, #0d0d0d, if(ai.k == 3, #1a73e8, if(ai.k == 5, #1f2328, if(ai.k == 6, #fa520f, #f5e8d8)))))); family: "tabler-icons" }
+        zone box effort_chip { from: card.w - 16 - 96 - 150, f.cy - 16; size: 150, 32; cursor: pointer; active: ai.on; label: "{ai_effort_word}"; role: button }
         on press effort_chip { toggle ai_menu }
-        ellipse { at: card.w - 16 - 30, ai.fy + ai.fh - 22; radius: 16; color: if(ai.k == 0, #c96442, if(ai.k == 1, #0b57d0, if(ai.k == 2, #0d0d0d, if(ai.k == 3, #2f7bf5, #f7c873)))); opacity: if(ai_typed or ai_wait, 100%, 35%) * if(ai_wait, 55% + 45% * sin(time * 360), 100%) }
-        text ic_ai_send { at: card.w - 16 - 30, ai.fy + ai.fh - 22; anchor: center; size: 17; color: if(ai.k == 0, #ffffff, if(ai.k == 1, #ffffff, if(ai.k == 2, #ffffff, if(ai.k == 3, #ffffff, #2a1e17)))); family: "tabler-icons" }
-        // while an answer comes, the same button stops it
-        zone box send_hit { at: card.w - 16 - 30, ai.fy + ai.fh - 22; size: 36, 36; cursor: pointer; active: ai.on and (ai_typed or ai_wait); label: "{ai_send_word}"; role: button }
+        // the microphone, as each of them has it beside the button: red while it listens, blinking while it writes
+        ellipse { at: card.w - 16 - 72, f.cy; radius: 16; color: if(ai_listening == 1, #e5484d, if(ai.k == 0, #f4f2ec, if(ai.k == 1, #eef1f6, if(ai.k == 2, #f1f1f1, if(ai.k == 3, #f1f1f1, if(ai.k == 5, #f6f8fa, if(ai.k == 6, #f4f4f4, #4a372b))))))); opacity: if(ai_listening == 1, 70% + 30% * sin(time * 300), 0% + 100% * mic_hit.hover) }
+        text ic_ai_mic { at: card.w - 16 - 72, f.cy; anchor: center; size: 18; color: if(ai_listening == 1, #ffffff, if(ai.k == 0, #3d3929, if(ai.k == 1, #1f1f1f, if(ai.k == 2, #0d0d0d, if(ai.k == 3, #0d0d0d, if(ai.k == 5, #1f2328, if(ai.k == 6, #1a1a1a, #f5e8d8))))))); opacity: if(ai_listening == 2, 50% + 50% * sin(time * 360), 100%); family: "tabler-icons" }
+        zone box mic_hit { at: card.w - 16 - 72, f.cy; size: 32, 32; cursor: pointer; active: ai.on and ai_listening < 2 and not ai_wait; label: "{ai_mic_word}"; role: button }
+        on press mic_hit { emit ai_mic }
+        // send; while an answer comes, the same button stops it
+        ellipse { at: card.w - 16 - 30, f.cy; radius: 17; color: if(ai.k == 0, #c96442, if(ai.k == 1, #0b57d0, if(ai.k == 2, #0d0d0d, if(ai.k == 3, #0d0d0d, if(ai.k == 5, #0969da, if(ai.k == 6, #fa520f, #f7c873)))))); opacity: if(ai_typed or ai_wait, 100%, 30%) * if(ai_wait, 55% + 45% * sin(time * 360), 100%) }
+        text ic_ai_send { at: card.w - 16 - 30, f.cy; anchor: center; size: 17; color: if(ai.k == 0, #ffffff, if(ai.k == 1, #ffffff, if(ai.k == 2, #ffffff, if(ai.k == 3, #ffffff, if(ai.k == 5, #ffffff, if(ai.k == 6, #ffffff, #2a1e17)))))); family: "tabler-icons" }
+        zone box send_hit { at: card.w - 16 - 30, f.cy; size: 36, 36; cursor: pointer; active: ai.on and (ai_typed or ai_wait); label: "{ai_send_word}"; role: button }
         on press send_hit while ai_wait { emit ai_stop }
         on press send_hit while not ai_wait { emit ai_send }
         on submit ai_q { emit ai_send }

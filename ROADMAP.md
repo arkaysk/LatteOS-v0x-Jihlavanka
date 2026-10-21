@@ -411,6 +411,12 @@ Schválené 12. 10. 2026. Pracuje sa **zhora nadol, neskáče sa**; nový nápad
       `latte-ai listen`; na latte-lab chýba skutočný mikrofón (overené pripravenou nahrávkou). Vlastné pokyny (Lens AI
       centrum › Pokyny) idú s každou otázkou ku každej AI.
     - i. [ ] Hľadanie podľa významu v LensGoo (e5-sk, ROADMAP bod 14) — po b.
+    - k. [ ] **AI ako barlička v systéme** (používateľ, 21. 10.: ako v Omarchy; veľa ľudí je v Linuxe stratených):
+      po oficiálnom spustení LatteOS bude AI integrovaná do OS a na požiadanie použije systémové nástroje —
+      „preformátuj mi `/`, hlási, že je plný, a pridaj mu z rezervy“. Návrh: AI nesiaha na systém sama; navrhne
+      plán krokov ako nástroje LatteOS (`latte-files disks`, `latte-network`, Nastavenia…), človek každý zásah
+      potvrdí, oprávnenie správcu cez polkit, pred zásahom na disk snímka; čo sa stalo, sa dá prečítať a vrátiť.
+      Nástroje teda musia mať aj „robiacu“ časť (zväčšiť oddiel, presmerovať priečinky…), nie iba prehľad.
     - j. [x] Mikro-agenti (inšpirácia j5onrf/dots, `inspo/ai-na-ploche.md`): pevné malé úlohy pre lokálny Qwen3.5 2B
       v LensGoo a v ponuke pravého tlačidla — zhrnúť schránku, preložiť, vysvetliť chybu, príkaz z vety, meno súboru.
       Hotové 21. 10. v karte AI (Zhrnúť, Preložiť, Vysvetliť chybu, Príkaz z vety; pole alebo schránka, lokálny model).

@@ -219,16 +219,20 @@ ShellRoot {
                     "gemini": { bg: "#f0f4f9", rim: "#f0f4f9", ink: "#1f1f1f", dim: "#5f6368", round: 28, send: "#0b57d0", sendInk: "#ffffff", hint: QT_TR_NOOP("Ask Gemini") },
                     "grok": { bg: "#ffffff", rim: "#e1e1e1", ink: "#0d0d0d", dim: "#8a8a8a", round: 26, send: "#0d0d0d", sendInk: "#ffffff", hint: QT_TR_NOOP("What do you want to know?") },
                     "chatgpt": { bg: "#ffffff", rim: "#e3e3e3", ink: "#0d0d0d", dim: "#8f8f8f", round: 28, send: "#2f7bf5", sendInk: "#ffffff", hint: QT_TR_NOOP("Ask ChatGPT") },
+                    "copilot": { bg: "#ffffff", rim: "#d0d7de", ink: "#1f2328", dim: "#656d76", round: 8, send: "#0969da", sendInk: "#ffffff", hint: QT_TR_NOOP("Ask Copilot") },
+                    "mistral": { bg: "#ffffff", rim: "#e5e5e5", ink: "#1a1a1a", dim: "#8a8a8a", round: 18, send: "#fa520f", sendInk: "#ffffff", hint: QT_TR_NOOP("Ask Le Chat") },
                     "own": { bg: "#3d2c22", rim: "#5a463a", ink: "#f5e8d8", dim: "#b8a491", round: 14, send: Theme.gold, sendInk: "#2a1e17", hint: QT_TR_NOOP("Ask anything…") } })[style] || ({})
-                anchors.left: parent.left; anchors.right: parent.right; anchors.bottom: parent.bottom; anchors.margins: 22; height: 96
-                radius: look.round; color: look.bg; border.width: 1; border.color: look.rim
-                TextInput { id: line; x: 20; y: 16; width: parent.width - 40; color: box.look.ink; font.family: Theme.font; font.pixelSize: 15; clip: true; selectByMouse: true
+                // Gemini, Grok and ChatGPT write in one line, a pill; the others in a box of two rows
+                readonly property bool oneLine: ["gemini", "grok", "chatgpt"].indexOf(style) >= 0
+                anchors.left: parent.left; anchors.right: parent.right; anchors.bottom: parent.bottom; anchors.margins: 22; height: oneLine ? 60 : 96
+                radius: oneLine ? 30 : look.round; color: look.bg; border.width: 1; border.color: look.rim
+                TextInput { id: line; x: 20; y: box.oneLine ? (box.height - height) / 2 : 16; width: box.oneLine ? parent.width - whoPill.width - 90 : parent.width - 40; color: box.look.ink; font.family: Theme.font; font.pixelSize: 15; clip: true; selectByMouse: true
                             selectionColor: box.style === "own" ? Theme.coffee : "#c9d7f0"
                             onAccepted: { shell.send(text); text = "" } }
-                Text { x: 20; y: 16; visible: line.text === ""; text: I18n.tr(box.look.hint || ""); color: box.look.dim; font.family: Theme.font; font.pixelSize: 15 }
-                MouseArea { anchors.fill: parent; anchors.bottomMargin: 44; cursorShape: Qt.IBeamCursor; onClicked: line.forceActiveFocus() }
+                Text { x: 20; y: box.oneLine ? (box.height - height) / 2 : 16; visible: line.text === ""; text: I18n.tr(box.look.hint || ""); color: box.look.dim; font.family: Theme.font; font.pixelSize: 15 }
+                MouseArea { anchors.fill: parent; anchors.bottomMargin: box.oneLine ? 0 : 44; anchors.rightMargin: box.oneLine ? whoPill.width + 70 : 0; cursorShape: Qt.IBeamCursor; onClicked: line.forceActiveFocus() }
                 // who answers: the one part that is the same for every service; a press goes round them and their models
-                Rectangle { id: whoPill; x: 12; anchors.bottom: parent.bottom; anchors.bottomMargin: 10; height: 30; radius: 15; width: whoRow.implicitWidth + 24
+                Rectangle { id: whoPill; x: box.oneLine ? box.width - width - 58 : 12; anchors.bottom: parent.bottom; anchors.bottomMargin: box.oneLine ? 15 : 10; height: 30; radius: 15; width: whoRow.implicitWidth + 24
                     visible: shell.providers.length > 0; color: box.style === "own" ? "#4a372b" : Qt.darker(box.look.bg, 1.05); border.width: 1; border.color: box.look.rim
                     Row { id: whoRow; x: 12; spacing: 6; anchors.verticalCenter: parent.verticalCenter
                         Text { text: shell.nameOf(shell.useProvider) + " · " + shell.modelName(shell.useProvider, shell.useModel); color: box.look.ink; font.family: Theme.font; font.pixelSize: 13; font.weight: Font.DemiBold }
@@ -242,7 +246,7 @@ ShellRoot {
                             shell.useProvider = next[0]; shell.useModel = next[1]
                         } } }
                 // send, or stop while an answer comes; with an edited question it changes it
-                Rectangle { id: send; anchors.right: parent.right; anchors.rightMargin: 12; anchors.bottom: parent.bottom; anchors.bottomMargin: 8; width: 34; height: 34; radius: 17
+                Rectangle { id: send; anchors.right: parent.right; anchors.rightMargin: 12; anchors.bottom: parent.bottom; anchors.bottomMargin: box.oneLine ? 13 : 8; width: 34; height: 34; radius: 17
                     color: box.look.send; opacity: line.text !== "" || shell.waiting ? 1 : 0.4
                     Glyph { anchors.centerIn: parent; name: shell.waiting ? "player-stop" : (shell.editing ? "check" : "arrow-up"); font.pixelSize: 18; color: box.look.sendInk }
                     MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor

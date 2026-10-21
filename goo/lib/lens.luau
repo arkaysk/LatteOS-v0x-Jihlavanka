@@ -306,7 +306,7 @@ end
 -- the one open stays until a new session, also when the card closes. Which services the choice offers is the
 -- Settings' (Launcher › AI in LensGoo: `ai` in lens-lists.json); signing in to them is the Lens AI centre's.
 local HINTS = { claude = N("How can I help you today?"), gemini = N("Ask Gemini"), grok = N("What do you want to know?"),
-                chatgpt = N("Ask ChatGPT"), own = N("Ask anything…") }
+                chatgpt = N("Ask ChatGPT"), copilot = N("Ask Copilot"), mistral = N("Ask Le Chat"), own = N("Ask anything…") }
 local function offered()
     local out = {}
     for _, p in ipairs(ai.providers) do
@@ -343,15 +343,30 @@ end
 -- the micro-agents: a small fixed task on the field's text or the clipboard, for the AI on this computer
 local AGENT_LIST = { { id = "summarize", name = N("Summarize"), glyph = "list" }, { id = "translate", name = N("Translate"), glyph = "world" },
                      { id = "explain", name = N("Explain an error"), glyph = "alert-triangle" }, { id = "command", name = N("A command from words"), glyph = "terminal-2" } }
-local function fill_ai()
+-- what a service tells of the account (Copilot), and how many questions went to it through Lens: asked now and then
+ai.told, ai.told_at = {}, {}
+local fill_ai
+local function ask_told(pid)
+    if not pid or (ai.told_at[pid] or 0) > os.time() - 300 then return end
+    ai.told_at[pid] = os.time()
+    run("latte-ai", { "usage", pid }, function(out)
+        local ok, r = pcall(json.decode, out or "")
+        if ok and type(r) == "table" then ai.told[pid] = r end
+        if card.id() == "lens" and kept.mode == 4 then fill_ai() end
+    end)
+end
+fill_ai = function()
     local p, m = provider(), nil
+    if p then ask_told(p.id) end
     m = model_of(p)
     fact.ai_style = p and p.style or "own"
     text.ai_hint = tr(HINTS[p and p.style or "own"] or HINTS.own)
     local e = effort_of(p)
     -- the switch at the foot says who answers and with what; the field's own chip says how hard it may think
     text.ai_model = (p and tr(p.name) or "") .. (m and m.name ~= "" and (" · " .. m.name) or "")
-    text.ai_effort_word = e and tr(EFFORTS[e] or e) or tr("Effort")
+    -- the field's own chip, as each service has it: how hard it may think where it has that, else its model
+    text.ai_effort_word = e and tr(EFFORTS[e] or e) or (p and #(p.efforts or {}) > 0 and tr("Effort"))
+        or (p and p.style == "gemini" and ("Gemini " .. (m and m.name or ""))) or (m and m.name or "")
     local names = {}
     for _, f in ipairs(ai.files) do names[#names + 1] = f:match("[^/]+$") or f end
     text.ai_files, fact.ai_nfiles = table.concat(names, ", "), #ai.files
@@ -377,6 +392,14 @@ local function fill_ai()
         local w = lim.seven_day or { used = 0, resets = 0 }
         text.ai_lim2 = tr("Week (7 days)")
         text.ai_lim2p, fact.ai_l2 = percent(share(w)) .. until_(w.resets), share(w)
+    elseif p and p.id == "copilot" and ai.told[p.id] and next(ai.told[p.id].limits or {}) then
+        -- Copilot's own figures, as GitHub tells them (what VS Code shows): the month's credits and the editor's suggestions
+        local l = ai.told[p.id].limits
+        local function line(q) return q and q.used or 0 end
+        text.ai_lim1 = tr("Credits (month)")
+        text.ai_lim1p, fact.ai_l1 = percent(line(l.chat)) .. until_(l.chat and l.chat.resets or 0), line(l.chat)
+        text.ai_lim2 = tr("Suggestions in the editor")
+        text.ai_lim2p, fact.ai_l2 = percent(line(l.completions)), line(l.completions)
     elseif p and p.id == "claude" then
         -- Claude tells its limits with an answer: until the first one, the lines are there without figures
         text.ai_lim1, text.ai_lim1p, fact.ai_l1 = tr("Session (5 h)"), "—", 0
@@ -387,9 +410,11 @@ local function fill_ai()
         text.ai_lim2 = with_n("{n} tokens in this session", tostring(u.tokens or 0)) .. (p["local"] and ("  ·  " .. tr("on this computer")) or "")
         text.ai_lim2p, fact.ai_l2 = "", -1
     else
-        -- a service through its own tool and the user's account: it tells no figures here, so none are made up
-        text.ai_lim1, text.ai_lim1p, fact.ai_l1 = tr("Through your account"), "", -1
-        text.ai_lim2, text.ai_lim2p, fact.ai_l2 = tr("Its limits are shown on the service's own page."), "", -1
+        -- a service through its own tool and the user's account: it tells no figures here, so none are made up;
+        -- what LatteOS counts itself is said as that, and the account's own share as unknown
+        local n = ai.told[p and p.id or ""] and ai.told[p.id].asked or 0
+        text.ai_lim1, text.ai_lim1p, fact.ai_l1 = with_n("{n} questions through Lens this month", tostring(n)), "", -1
+        text.ai_lim2, text.ai_lim2p, fact.ai_l2 = tr("The account's quota is not told here; the service's own page shows it."), "", -1
     end
     local rows = {}
     local names = {}

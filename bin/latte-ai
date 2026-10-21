@@ -45,6 +45,9 @@ No API key: the official tool of a service answers, with the account the user is
                             "model"}; the text is TEXT, or the clipboard when there is none. NAME: summarize, translate,
                             explain, command. It goes to the AI on this computer when there is one: quick, and the
                             clipboard does not leave the computer
+  latte-ai usage PROVIDER   {"limits", "asked"}: what the service tells of the account's own limits without being asked
+                            anything, as "limits" of send (Copilot: {"chat", "completions"}; {} when it tells nothing), and
+                            how many questions went to it through Lens this month — LatteOS's own count, not the account's
   latte-ai chats            the conversations, the newest first: [{"id", "title", "provider", "model", "updated", "count"}]
   latte-ai chat ID          one conversation whole: {"id", "title", "provider", "model", "messages": [{"role", "content",
                             "provider", "model", "at"}], "usage"}
@@ -449,6 +452,40 @@ def agent(name, text):
             "model": pick["models"][0]["id"] if pick else ""}
 
 
+def copilot(prompt, model, effort="", files=()):
+    # prompt mode asks for no permission, so a tool that would change something is refused; no MCP servers of the user's
+    if files:
+        prompt += "\n\nAttached, in this folder: " + ", ".join(files)
+    return ["copilot", "-p", SYSTEM + "\n\n" + prompt, "-s", "--disable-builtin-mcps", "--model", model or "auto"]
+
+
+def copilot_usage():
+    """What GitHub tells of the account's Copilot (what VS Code shows): {"chat": {"used", "resets"}, "completions": …}."""
+    try:
+        d = json.loads(subprocess.run(["gh", "api", "/copilot_internal/user"], capture_output=True, text=True, timeout=15).stdout)
+    except (OSError, ValueError, subprocess.TimeoutExpired):
+        return {}
+    resets = 0
+    try:
+        resets = int(datetime.datetime.fromisoformat(d.get("quota_reset_date", "") + "T00:00:00").timestamp())
+    except ValueError:
+        pass
+    out = {}
+    for k, q in (d.get("quota_snapshots") or {}).items():
+        if k in ("chat", "completions") and not q.get("unlimited"):
+            out[k] = {"used": round(1 - (q.get("percent_remaining", 100) / 100), 4), "resets": resets}
+    return out
+
+
+def asked_this_month(provider):
+    month = datetime.datetime.now().strftime("%Y-%m")
+    n = 0
+    for path in glob.glob(os.path.join(CHATS, "*.json")):
+        c = load(os.path.basename(path)[:-5]) or {}
+        n += sum(1 for m in c.get("messages", []) if m.get("role") == "user" and m.get("provider") == provider and m.get("at", "").startswith(month))
+    return n
+
+
 def grok_models():
     try:
         out = subprocess.run(["grok", "models"], capture_output=True, text=True, timeout=20, env=dict(os.environ, PATH=SEARCH)).stdout
@@ -492,10 +529,12 @@ PROVIDERS = {
                 "models": codex_models, "efforts": ["low", "medium", "high", "xhigh", "max"]},
     "grok": {"name": "Grok", "local": False, "style": "grok", "tool": "grok", "command": grok, "models": grok_models,
              "login": ["grok", "login"], "logout": ["grok", "logout"]},
-    "mistral": {"name": "Mistral", "local": False, "style": "own", "tool": "vibe", "command": vibe, "login": ["vibe"],
+    "mistral": {"name": "Mistral", "local": False, "style": "mistral", "tool": "vibe", "command": vibe, "login": ["vibe"],
                 "models": [{"id": "", "name": "Auto"}]},
     "local": {"name": "Local AI", "local": True, "style": "own", "tool": "llama-server", "ask": local_ask, "models": local_models,
               "efforts": ["think"]},
+    "copilot": {"name": "Copilot", "local": False, "style": "copilot", "tool": "copilot", "command": copilot, "login": ["copilot", "login"],
+                "models": [{"id": "auto", "name": "Auto"}]},
     "ollama": {"name": "Ollama", "local": True, "style": "own", "tool": "ollama", "command": ollama, "models": ollama_models},
 }
 
@@ -654,7 +693,12 @@ def ask_one(p, provider, chat, model, effort, files, room):
         os.makedirs(room if files else ROOM, exist_ok=True)
         global CHILD
         import threading
-        CHILD = subprocess.Popen(p["command"](as_prompt(chat["messages"]), model, effort, files), cwd=room if files else ROOM, env=dict(os.environ, PATH=SEARCH),
+        env = dict(os.environ, PATH=SEARCH)
+        if provider == "copilot" and "GH_TOKEN" not in env:
+            token = subprocess.run(["gh", "auth", "token"], capture_output=True, text=True).stdout.strip()   # the account gh is signed in with
+            if token:
+                env["GH_TOKEN"] = token
+        CHILD = subprocess.Popen(p["command"](as_prompt(chat["messages"]), model, effort, files), cwd=room if files else ROOM, env=env,
                                  stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
         late = threading.Timer(300, CHILD.kill)
         late.start()
@@ -802,6 +846,9 @@ def main(a):
         return 0
     if len(a) in (2, 3) and a[0] == "agent" and a[1] in AGENTS:
         print(json.dumps(agent(a[1], a[2] if len(a) == 3 else ""), ensure_ascii=False))
+        return 0
+    if len(a) == 2 and a[0] == "usage":
+        print(json.dumps({"limits": copilot_usage() if a[1] == "copilot" else {}, "asked": asked_this_month(a[1])}))
         return 0
     if a == ["stop"]:
         subprocess.run(["pkill", "-f", "llama-server.*--port %d" % LOCAL_PORT])

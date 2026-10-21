@@ -223,6 +223,7 @@ ostatné kvapky sú iba na hlavnom monitore.
   21. 10.: Claude, Gemini (Gemini CLI), ChatGPT (Codex), Grok (Grok Build) a Mistral (Mistral Vibe) odpovedajú na
   latte-lab s účtami používateľa; každý beží v prázdnom priečinku a nesmie zapisovať ani spúšťať príkazy (Claude bez
   nástrojov, Gemini `plan`, Codex `read-only`, Grok `plan`, Mistral agent `ask` na jeden krok). Ollama neoverená.)*
+  *(21. 10.: aj Copilot (Copilot CLI cez účet z `gh`, kredity a návrhy z `gh api /copilot_internal/user`).)*
 - **Rýchly zoznam (pravý klik):** jednoduché okno s ikonami — naposledy spustené a obľúbené aplikácie ako dlaždice
   (klik spustí), pod nimi Hľadať… (otvorí spúšťač) a App Manager.
 
