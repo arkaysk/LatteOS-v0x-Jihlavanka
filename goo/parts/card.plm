@@ -51,6 +51,7 @@ part Card {
     fact card_menu = false                     // a classic context menu: at the pointer, square-ish, solid, no ear and no neck
     fact card_pane = 0                         // 0…1: this card is glass above its wave divider, whatever the goo's material (a drop asks for it)
     fact card_split = 0                        // where a `wave` row's coffee begins, from the card's top: below it the card is solid, 0 for none
+    fact card_grow = false                     // a card with a scene of its own (the clock, the calendar) grows with the screen: card.z
     fact card_min = 0                          // a card with tabs is at least this tall: its top edge stays put
     fact card_peak = 0                         // …and any card only grows while it is open
     fact card_field = false                    // it has a field to type into, under the tabs
@@ -91,9 +92,6 @@ part Card {
     on change card_gen { reveal: 0 ~0ms; reveal: 1 ~460ms after 16ms }
 
     // Where it stands: its corner at the ear, opening towards the middle of the screen and kept inside it.
-    let card.w = min(card_w + card_w2, W - 24)
-    let card.h = min(max(card_col.height, max(card_min, card_peak)), H - 24)
-    on change card_col.height { card_peak = max(card_peak, card_col.height) }
     let from_strip = if(card_strip and strip_on and card_owner < 0, 1, 0)
     let ear = if(card_owner >= 0, own.r, if(from_strip > 0, strip.r, 10))
     // A drop stretched into a strip is one thing with it: the card grows out of the whole capsule, along the
@@ -104,6 +102,12 @@ part Card {
     let cap.v = if(cap.len > 0, 1 - cap.tx, 0)                   // or along y
     let card.bx = if(card_owner >= 0, own.x, if(from_strip > 0, strip.x, tap.x))
     let card.by = if(card_owner >= 0, own.y, if(from_strip > 0, strip.y, tap.y))
+    // how much bigger than its 1.2 such a card is drawn: as much as the room beside its drop holds, from 1024 × 768 up
+    let card.room = max(card.by - ear, H - card.by - ear) - 24
+    let card.z = if(card_grow, clamp(min((W - 24) / max(card_w + card_w2, 1), card.room / max(card_min, 1)), 0.85, 1.5), 1)
+    let card.w = min((card_w + card_w2) * card.z, W - 24)
+    let card.h = min(max(card_col.height, max(card_min * card.z, card_peak)), H - 24)
+    on change card_col.height { card_peak = max(card_peak, card_col.height) }
     let card.sx = if(cap.h > 0, if(strip.dir > 0, if(card.bx + card.w + 12 <= W, 1, -1), if(card.bx - card.w - 12 >= 0, -1, 1)), if(card.bx + card.w + 12 <= W, 1, -1))
     let card.sy = if(cap.v > 0, if(strip.dir > 0, if(card.by + card.h + 12 <= H, 1, -1), if(card.by - card.h - 12 >= 0, -1, 1)), if(card.by > H / 2, if(card.by - card.h - 12 >= 0, -1, 1), if(card.by + card.h + 12 <= H, 1, -1)))
     // the ear as drawn: it swells under the pointer, and the outline round it swells with it

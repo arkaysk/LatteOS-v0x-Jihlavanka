@@ -155,7 +155,7 @@ part Clock {
         show: card_custom == 1
         move: card.x0, card.y0
         pivot: 0, 0
-        scale: 1.2
+        scale: 1.2 * card.z
 
         // ── the tabs ──────────────────────────────────────────────────────────────────────────────────
         box { from: 11, 7; size: 56, 19; corner: 9.5; color: if(clk_page == 0, #f7c873, #4a372b); opacity: if(clk_page == 0, 28%, 50%) }

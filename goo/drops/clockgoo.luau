@@ -450,7 +450,7 @@ local function open_clock(d, keep)
     learn_nameday()
     learn_abbr()
     -- the card's own frame, glass and coffee; the 592 × 550 of the picture, and the coffee begins where the foot does
-    card.open({}, { owner = d, id = "time", custom = "clock", width = 592, min_height = 660, split = 606, pane = 1, keep = keep })
+    card.open({}, { owner = d, id = "time", custom = "clock", width = 592, min_height = 660, split = 606, pane = 1, grow = true, keep = keep })
     fill_clock()
 end
 -- ── the timers' page and the weather in detail: the same scene, told other texts ─────────────────────────────
@@ -673,9 +673,11 @@ fill_calendar = function()
     text.cal_today, text.cal_new = tr("Today"), tr("Event")
     text.cal_notes = #notes > 0 and (#notes .. " " .. tr("notifications")) or tr("Notifications")
     fact.cal_nnotes = #notes
-    -- the ISO week of the month's middle (Luau's os.date has no %V): the year-day of that week's Thursday
-    local mid = os.date("*t", os.time({ year = month.y, month = month.m, day = 15, hour = 12 }))
-    local thu = os.date("*t", os.time({ year = month.y, month = month.m, day = 15 + 3 - (mid.wday + 5) % 7, hour = 12 }))
+    -- the ISO week of the chosen day, or of the month's middle (Luau's os.date has no %V): the year-day of that week's Thursday
+    local cy, cm, cd = month.chosen:match("^(%d+)-(%d+)-(%d+)$")
+    local wd = (tonumber(cy) == month.y and tonumber(cm) == month.m) and tonumber(cd) or 15
+    local mid = os.date("*t", os.time({ year = month.y, month = month.m, day = wd, hour = 12 }))
+    local thu = os.date("*t", os.time({ year = month.y, month = month.m, day = wd + 3 - (mid.wday + 5) % 7, hour = 12 }))
     text.cal_week = tr("week") .. " " .. ((thu.yday - 1) // 7 + 1)
     -- whose name day (the place's country) and the next holiday
     text.cal_names = (nameday.today or "") ~= "" and (tr("Name day today:") .. " " .. nameday.today .. ((nameday.tomorrow or "") ~= "" and (" · " .. tr("tomorrow") .. " " .. nameday.tomorrow) or "")) or ""
@@ -766,7 +768,7 @@ open_calendar = function(d, keep)
     learn_nameday()
     cal.side = keep and cal.side or 0
     -- the 760 × 520 of the design, scaled by 1.2; the coffee begins under the month, where the sentence is written
-    card.open({}, { owner = d, id = "notes", custom = "calendar", width = 760, min_height = 700, split = 624, pane = 1, keep = keep })
+    card.open({}, { owner = d, id = "notes", custom = "calendar", width = 760, min_height = 700, split = 624, pane = 1, grow = true, keep = keep })
     fill_calendar()
     if os.time() - cal.asked > 60 then cal.asked = os.time() read_events(function() if card.id() == "notes" then fill_calendar() end end) end
 end

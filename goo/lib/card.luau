@@ -28,7 +28,7 @@
 -- function(text) }; `submit` returns true to keep what was typed, `secret` hides it as a password.
 -- `tiles`: the rows between two headings are laid as a tile, a card within the card (rules between them are
 -- dropped: the tile is what holds them together).
--- Options: `custom` ("clock") draws a scene of its own instead of rows, `split` says where its coffee begins. `uniform` is for a family of cards of one size (LensGoo's modes). `menu` makes it a classic context menu (at the pointer, solid, no ear). `pane` (0…1) makes the card glass above its `wave` row and solid coffee below it. `keep` refreshes an open card in place (live figures): the rows do not come in again and the row
+-- Options: `custom` ("clock") draws a scene of its own instead of rows, `split` says where its coffee begins, `grow` lets it grow with the screen (card.z in parts/card.plm). `uniform` is for a family of cards of one size (LensGoo's modes). `menu` makes it a classic context menu (at the pointer, solid, no ear). `pane` (0…1) makes the card glass above its `wave` row and solid coffee below it. `keep` refreshes an open card in place (live figures): the rows do not come in again and the row
 -- chosen with the keys stays.
 local icons = require("lib/icons")
 local M = {}
@@ -287,6 +287,7 @@ function M.open(rows, opts)
     fact.card_w2 = opts.width2 and math.floor(opts.width2 * 1.2) or 0
     fact.card_w = math.floor((opts.width or 250) * 1.2)
     fact.card_min = opts.min_height or 0
+    fact.card_grow = opts.grow == true
     fact.card_field = field ~= nil
     fact.card_open = #out > 0 or field ~= nil or opts.custom ~= nil
     tell()

@@ -34,11 +34,11 @@ part Rows {
         clip box { at: card.ax + card.sx * card.cw / 2, card.ay + card.sy * card.ch / 2; size: card.cw, card.ch; corner: if(card_menu, 12, min(if(ear > 14, 26, 18) + (card.round - 18), min(card.cw, card.ch) / 2)) }
         // Below a wave row the card is coffee to its very edge: a golden layer behind, the goo's own coffee in front,
         // each lapping its own way. It is drawn here, over the whole card, because the rows have padding and cannot reach
-        // the edge; a hair is left at the edge for the card's rim. card_split is where the surface stands (lib/card.luau).
+        // the edge; a hair is left at the edge for the card's rim. card_split (times card.z) is where the surface stands (lib/card.luau).
         group {
             show: card_split > 0
           path {
-            at: card.x0, card.y0 + card_split; color: #b8862e
+            at: card.x0, card.y0 + card_split * card.z; color: #b8862e
             move 1.5, 28
             line 1.5 + (card.w - 3) * 0 / 12, 0 + 3 * sin(0 + 40 * time)
             line 1.5 + (card.w - 3) * 1 / 12, 0 + 3 * sin(30 + 40 * time)
@@ -57,8 +57,8 @@ part Rows {
             close
           }
           path {
-            at: card.x0, card.y0 + card_split; color: coffee
-            move 1.5, card.h - card_split - 1.5 - 24
+            at: card.x0, card.y0 + card_split * card.z; color: coffee
+            move 1.5, card.h - card_split * card.z - 1.5 - 24
             line 1.5 + (card.w - 3) * 0 / 12, 9 + 2.4 * sin(90 + -55 * time)
             line 1.5 + (card.w - 3) * 1 / 12, 9 + 2.4 * sin(150 + -55 * time)
             line 1.5 + (card.w - 3) * 2 / 12, 9 + 2.4 * sin(210 + -55 * time)
@@ -72,10 +72,10 @@ part Rows {
             line 1.5 + (card.w - 3) * 10 / 12, 9 + 2.4 * sin(690 + -55 * time)
             line 1.5 + (card.w - 3) * 11 / 12, 9 + 2.4 * sin(750 + -55 * time)
             line 1.5 + (card.w - 3) * 12 / 12, 9 + 2.4 * sin(810 + -55 * time)
-            line card.w - 1.5, card.h - card_split - 1.5 - 24
-            curve card.w - 25.5, card.h - card_split - 1.5 via card.w - 1.5, card.h - card_split - 1.5
-            line 25.5, card.h - card_split - 1.5
-            curve 1.5, card.h - card_split - 1.5 - 24 via 1.5, card.h - card_split - 1.5
+            line card.w - 1.5, card.h - card_split * card.z - 1.5 - 24
+            curve card.w - 25.5, card.h - card_split * card.z - 1.5 via card.w - 1.5, card.h - card_split * card.z - 1.5
+            line 25.5, card.h - card_split * card.z - 1.5
+            curve 1.5, card.h - card_split * card.z - 1.5 - 24 via 1.5, card.h - card_split * card.z - 1.5
             close
           }
         }
