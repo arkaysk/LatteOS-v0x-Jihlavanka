@@ -25,8 +25,8 @@ No API key: the official tool of a service answers, with the account the user is
                             is changed first
   latte-ai services         every service LatteOS knows, also those not installed, for LensAI:
                             [{"id", "name", "local", "style", "installed", "signed" (true, false, or null where it
-                            cannot be told), "account", "login": [command], "logout": [command]}]; a command to sign
-                            in or out is run in a terminal, where the tool asks what it needs
+                            cannot be told), "account", "login": [command], "logout": [command], "install": shell}]; a
+                            command to sign in or out, or to install the tool, is run in a terminal, where it asks what it needs
   latte-ai pick             a file chooser; the paths chosen, one a line
   latte-ai shot             a picture of the screen now; its path
   latte-ai keys             the services one can bring a key of one's own to, as in VS Code, and the user's own
@@ -851,6 +851,19 @@ def ollama_models():
     return [{"id": l.split()[0], "name": l.split()[0]} for l in out.splitlines()[1:] if l.strip()]
 
 
+# how each service's official tool is put on the computer, for this user (no password; npm or uv come from Fedora,
+# asked for in the terminal, when they are missing)
+NPM = 'command -v npm >/dev/null || sudo dnf install -y nodejs-npm; npm install -g --prefix "$HOME/.local" '
+INSTALL = {
+    "claude": "curl -fsSL https://claude.ai/install.sh | bash",
+    "gemini": NPM + "@google/gemini-cli",
+    "chatgpt": NPM + "@openai/codex",
+    "grok": "curl -fsSL https://x.ai/cli/install.sh | bash",
+    "mistral": "command -v uv >/dev/null || sudo dnf install -y uv; uv tool install mistral-vibe",
+    "copilot": NPM + "@github/copilot",
+    "ollama": "sudo dnf install -y ollama",
+}
+
 PROVIDERS = {
     "claude": {"name": "Claude", "local": False, "style": "claude", "tool": "claude", "command": claude, "read": claude_read,
                "status": ["claude", "auth", "status", "--json"], "login": ["claude", "auth", "login"], "logout": ["claude", "auth", "logout"],
@@ -1019,7 +1032,8 @@ def services():
         # the whole path of the tool: the terminal the centre opens has the desktop's short PATH, without ~/.local/bin
         whole = lambda argv: ([shutil.which(argv[0], path=SEARCH) or argv[0]] + argv[1:]) if argv else []
         out.append({"id": i, "name": p["name"], "local": p["local"], "style": p["style"], "installed": there, "tool": p["tool"],
-                    "signed": True if p["local"] and there else signed, "account": account, "login": whole(p.get("login", [])), "logout": whole(p.get("logout", []))})
+                    "signed": True if p["local"] and there else signed, "account": account, "login": whole(p.get("login", [])), "logout": whole(p.get("logout", [])),
+                    "install": INSTALL.get(i, "")})
     return out
 
 

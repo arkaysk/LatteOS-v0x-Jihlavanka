@@ -443,8 +443,13 @@ Schválené 12. 10. 2026. Pracuje sa **zhora nadol, neskáče sa**; nový nápad
          pravého tlačidla. **Okno GuardDog** (`latte-app guarddog`, na pokyn používateľa): Čo drží v chode, Pády
          (Opýtať sa AI, Stlmiť), Denník ako konzola (`latte-guarddog log`). Overené: pád `sleep` zachytený, upozornenie
          po slovensky; agent pri páde na ploche neoverený;
-      7. [ ] diktovanie do akejkoľvek aplikácie; App Manager › AI. (Viac účtov jednej služby s prepnutím pri limite —
-         **neskôr**, používateľ 21. 10.: platí iba jednu službu.)
+      7. [~] **inštalácia AI v okne LensAI** (používateľ 21. 10.: nie v App Manageri), hotové 21. 10.: LensAI › Služby
+         má pri nenainštalovanej službe „Nainštalovať“ — oficiálny nástroj v termináli, pre používateľa bez hesla
+         (Claude Code a Grok vlastným inštalátorom, Codex, Gemini, Copilot cez npm do `~/.local`, Mistral Vibe cez uv,
+         Ollama z Fedory; chýbajúci npm/uv z Fedory); stránka sa obnovuje každých 10 s. Neoverené naostro (všetko je
+         na latte-lab nainštalované). Ostáva: lokálna AI (llama.cpp + model podľa počítača), aplikácie služieb
+         z Flathubu, DeepSeek po `docs/manual-inst.md`; diktovanie do akejkoľvek aplikácie. (Viac účtov jednej služby
+         s prepnutím pri limite — **neskôr**, používateľ 21. 10.: platí iba jednu službu.)
       8. [ ] **rozhovory aj mimo LensAI** (používateľ, 21. 10.: na PC v LensAI, na mobile v aplikácii Claude):
          (a) **import** exportu dát služby (Claude: Nastavenia › Súkromie › Export, ChatGPT: Export údajov, Gemini:
          Google Takeout) do histórie LensAI, iba na čítanie a pokračovanie; (b) **Remote Control** Claude Code

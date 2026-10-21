@@ -1428,5 +1428,6 @@ library Slovak {
         "Mute" = "Stlmiť"
         "Nothing yet: the guard writes here what it does." = "Zatiaľ nič: strážca sem píše, čo robí."
         "Open GuardDog: crashes and its log" = "Otvoriť GuardDog: pády a jeho denník"
+        "Not installed yet: Install puts its official tool {tool} on this computer." = "Zatiaľ nie je nainštalovaná: Nainštalovať dá do počítača jej oficiálny nástroj {tool}."
     }
 }

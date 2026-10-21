@@ -105,6 +105,8 @@ ShellRoot {
     // a command to sign in or out runs in a terminal: the tool asks there what it needs
     function inTerminal(argv) { Quickshell.execDetached(["foot", "-e", "sh", "-c", argv.map(a => "'" + a.replace(/'/g, "'\\''") + "'").join(" ") + "; echo; read -p '" + I18n.tr("Press Enter to close") + "' x"]) }
     Timer { id: later; interval: 2500; onTriggered: svc.ask(["services"]) }
+    // an install in its terminal takes a while: the services are asked again while their page is open
+    Timer { interval: 10000; repeat: true; running: shell.page === "services"; onTriggered: if (!svc.running) svc.ask(["services"]) }
     Component.onCompleted: {
         list.ask(["chats"]); who.ask(["providers", "all"]); svc.ask(["services"]); keyq.ask(["keys"])
         if (["services", "models", "agents", "instructions"].indexOf(words[0]) >= 0) page = words[0]
@@ -662,12 +664,15 @@ ShellRoot {
                     Column { x: 82; width: parent.width - 82 - 300; anchors.verticalCenter: parent.verticalCenter; spacing: 4
                         Label { text: I18n.tr(card.modelData.name); font.pixelSize: 16; font.weight: 700 }
                         Label { width: parent.width; elide: Text.ElideRight; color: Theme.dim; font.pixelSize: 12
-                                text: !card.modelData.installed ? I18n.tr("Not installed: its tool {tool} is missing.", { tool: card.modelData.tool })
+                                text: !card.modelData.installed ? I18n.tr("Not installed yet: Install puts its official tool {tool} on this computer.", { tool: card.modelData.tool })
                                     : card.modelData.local ? I18n.tr("Answers on this computer; nothing leaves it.")
                                     : card.modelData.signed === true ? I18n.tr("Signed in") + (card.modelData.account ? " · " + card.modelData.account : "")
                                     : card.modelData.signed === false ? I18n.tr("Not signed in") : I18n.tr("Installed; sign in once in the terminal.") } }
                     Row { anchors.right: parent.right; anchors.rightMargin: 18; anchors.verticalCenter: parent.verticalCenter; spacing: 8
                         Rectangle { visible: card.modelData.installed && card.modelData.signed === true; width: 10; height: 10; radius: 5; color: Theme.ok; anchors.verticalCenter: parent.verticalCenter }
+                        // the service's official tool, installed for this user in a terminal (latte-ai services › install)
+                        Pill { visible: !card.modelData.installed && (card.modelData.install || "") !== ""; icon: "download"; strong: true; text: I18n.tr("Install")
+                               onPressed: { shell.inTerminal(["sh", "-c", card.modelData.install]); later.restart() } }
                         Pill { visible: card.modelData.installed && card.modelData.login.length > 0 && card.modelData.signed !== true; icon: "login"; strong: true; text: I18n.tr("Sign in")
                                onPressed: { shell.inTerminal(card.modelData.login); later.restart() } }
                         Pill { visible: card.modelData.installed && card.modelData.logout.length > 0 && card.modelData.signed === true; icon: "logout"; text: I18n.tr("Sign out")
