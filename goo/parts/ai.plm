@@ -71,7 +71,7 @@ part Ai {
     fact ai_sub_h = 0
     fact ai_sub_y = 0                          // where its row stands in the menu
     fact ai_think = false                      // DeepSeek's deep thinking is on
-    fact ai_glass = 1                          // how much of the page is glass: 0 none (white) … 3 the most
+    fact ai_glass = 1                          // how much of the page is glass, as much as LatteOS is (lib/engine.luau): 0 white … 3
     text ai_search_word = ""
     text ic_ai_world = ""
     text ic_ai_more = ""

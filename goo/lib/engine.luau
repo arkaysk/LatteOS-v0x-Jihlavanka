@@ -852,9 +852,11 @@ on("goo_idle", function(stage)
 end)
 
 -- ── settings: settings.json in the scene's own folder, taken up as soon as it changes ────────────────────────
---   { "lively": true, "material": 0…1, "windows": "glass", "bends": true, "hidden": ["clockgoo"], "zoom": { "lensgoo": 1.2 } }
+--   { "lively": true, "material": 0…1, "windows": "glass", "glass": 0…3, "bends": true, "hidden": ["clockgoo"], "zoom": { "lensgoo": 1.2 } }
 -- material: the ratio of water to milk of the goo, one number — 0 plain coffee, 1 clear glass ("coffee" and "glass"
 -- of older files read as 0 and 1). windows: the windows are glass too; it is the windows' own choice, not the goo's.
+-- glass: how much of LatteOS is glass, one choice for all of it (Settings › Windows, also ~/.config/latteos/glass-level
+-- for the apps): 0 none, the windows solid whatever `windows` says; the AI's pages of a service follow it.
 -- The scenes on the other monitors (side.plm) keep no settings: the main one tells them what it has, when it
 -- changes and when one of them starts (`side_hello`). E.tell says something to every Goo scene, this one too.
 local SETTINGS = "settings.json"
@@ -890,8 +892,10 @@ local function settings()
         if d and z and zooms[id] ~= z then zooms[id] = z d:resize(z) end
     end
     if changed then E.apart() publish() end
-    E.tell("fact lively " .. tostring(fact.lively), "fact glassy " .. tostring(fact.glassy), "fact bends " .. tostring(fact.bends))
-    local windows = t.windows == "glass"
+    local level = math.max(0, math.min(3, math.floor(tonumber(t.glass) or 1)))
+    E.tell("fact lively " .. tostring(fact.lively), "fact glassy " .. tostring(fact.glassy), "fact bends " .. tostring(fact.bends),
+           "fact ai_glass " .. tostring(software and 0 or level))
+    local windows = t.windows == "glass" and level > 0
     if glass_told ~= windows then glass_told = windows wm.glass(windows) end
 end
 

@@ -47,8 +47,12 @@ Singleton {
         ? ({ "frost": Qt.rgba(0.96, 0.93, 0.87, 0.62), "smoke": Qt.rgba(0.90, 0.86, 0.79, 0.82), "clear": Qt.rgba(0.96, 0.93, 0.87, 0.36), "milk": Qt.rgba(1, 1, 1, 0.55) })
         : ({ "frost": Qt.rgba(0.13, 0.09, 0.07, 0.62), "smoke": Qt.rgba(0.07, 0.05, 0.04, 0.80), "clear": Qt.rgba(0.13, 0.09, 0.07, 0.36), "milk": Qt.rgba(0.36, 0.29, 0.24, 0.50) })
     property string glass: "frost"
+    // how much of LatteOS is glass, one choice for all of it (~/.config/latteos/glass-level): 0 none, everything solid;
+    // 1 a little, 2 more, 3 the most. The side panels, the windows and the AI's pages of a service follow it
+    property int glassLevel: 1
     readonly property bool blurred: ["full", "standard"].includes(Quickshell.env("LATTE_TIER") || "")
-    readonly property color pane: blurred ? (glasses[glass] || glasses.frost) : surface
+    readonly property color paneGlass: glasses[glass] || glasses.frost
+    readonly property color pane: blurred && glassLevel > 0 ? Qt.rgba(paneGlass.r, paneGlass.g, paneGlass.b, Math.min(0.95, Math.max(0.2, paneGlass.a + [0, 0.15, 0, -0.15][glassLevel]))) : surface
     readonly property string font: "Inter Variable"
     readonly property string icons: Icons.family
 
@@ -60,6 +64,13 @@ Singleton {
         onLoaded: { const word = text().trim(); if (glasses[word]) glass = word }
     }
     FileView {
+        id: levelWord
+        path: (Quickshell.env("XDG_CONFIG_HOME") || (Quickshell.env("HOME") + "/.config")) + "/latteos/glass-level"
+        printErrors: false; watchChanges: true
+        onFileChanged: reload()
+        onLoaded: { const n = parseInt(text().trim()); if (n >= 0 && n <= 3) glassLevel = n }
+    }
+    FileView {
         id: cupWord
         path: (Quickshell.env("XDG_CONFIG_HOME") || (Quickshell.env("HOME") + "/.config")) + "/latteos/cup"
         printErrors: false; watchChanges: true
@@ -68,5 +79,5 @@ Singleton {
     }
     // A choice that has never been made has no file yet, and a file that is not there cannot be watched: it is
     // looked for now and then, so that every open window takes the choice up when it is first made.
-    Timer { interval: 2500; repeat: true; running: true; onTriggered: { if (!cupWord.loaded) cupWord.reload(); if (!glassWord.loaded) glassWord.reload() } }
+    Timer { interval: 2500; repeat: true; running: true; onTriggered: { if (!cupWord.loaded) cupWord.reload(); if (!glassWord.loaded) glassWord.reload(); if (!levelWord.loaded) levelWord.reload() } }
 }
