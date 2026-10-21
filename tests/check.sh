@@ -95,7 +95,7 @@ for f in filter(None, code):
 
 # what the commands and the scenes' logic say goes through the same table as the scenes' texts
 table = open("goo/lang/sk.plm", encoding="utf-8").read()
-said = {"bin/latte-safe": r'\bt "([^"$]+)"'}
+said = {"bin/latte-safe": r'\bt "([^"$]+)"', "bin/latte-ai": r'\bN\("((?:[^"\\]|\\.)+)"\)'}
 for f in filter(None, code):
     if f.endswith(".luau"): said[f] = r'\b(?:tr|N)\("((?:[^"\\]|\\.)+)"\)'      # N marks a text that tr() is given later
     if f.endswith(".qml"): said[f] = r'\b(?:tr|QT_TR_NOOP)\("((?:[^"\\]|\\.)+)"'     # QT_TR_NOOP marks one, in a list

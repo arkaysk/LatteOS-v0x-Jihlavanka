@@ -5,7 +5,8 @@ No API key: the official tool of a service answers, with the account the user is
   latte-ai providers [all]  what there is on this computer: [{"id", "name", "local", "style", "models": [{"id", "name"}],
                             "efforts": [how hard it may think, from least to most; empty when it cannot be told]}];
                             "local" tells an answer made on this machine from one that goes to a service, "style"
-                            whose look the field to write in takes (claude, gemini, grok, chatgpt, own). None when the
+                            whose look the field to write in takes (claude, gemini, grok, chatgpt, own); "web" the
+                            service's page, "plus" and "menu" the rows of the field's + and chip (see PLUS). None when the
                             user turned the AI off (Settings › AI: the word "off" in ~/.config/latteos/ai), unless `all`
   latte-ai send CHAT PROVIDER MODEL TEXT [--effort E] [--attach PATH]… [--stream] [--markdown]
                             asks the next question of a conversation and keeps both in it. CHAT "new" begins one.
@@ -619,6 +620,100 @@ def turned_off():
         return False
 
 
+def N(s):
+    """A text the apps show translated (goo/lang): marked, so that tests/check.sh asks for its translation."""
+    return s
+
+
+# ── the field's menus, each a copy of the service's own (the user's pictures, 21. 10.): + and its chip ───────────────
+# LensGoo and the Lens AI centre draw them from here. A row: name, glyph (Tabler), "do" — what LatteOS does with it:
+# {"attach": 0 file | 1 picture of the screen}, {"model": id}, {"effort": e}, {"think": true} (effort on or off),
+# {"reset": true} (the field emptied), {"sub": [rows]} (a menu beside it); a row without "do" opens the service's page
+# ("web"), drawn in one colour shared by all. desc under the name, hint after it, key at the right ("@effort": the
+# effort chosen), sep a line before it, more a chevron, note a small text, on ticked whatever is chosen
+WEB = {"claude": "https://claude.ai/new", "gemini": "https://gemini.google.com/app", "chatgpt": "https://chatgpt.com/",
+       "grok": "https://grok.com/", "mistral": "https://chat.mistral.ai/chat", "copilot": "https://github.com/copilot",
+       "deepseek": "https://chat.deepseek.com/"}
+
+
+def _row(name, glyph=None, do=None, **o):
+    r = dict(o, name=name)
+    if glyph:
+        r["glyph"] = glyph
+    if do is not None:
+        r["do"] = do
+    return r
+
+
+ATTACH, SHOT = {"attach": 0}, {"attach": 1}
+PLUS = {
+    "claude": [_row(N("Upload or add files"), "paperclip", ATTACH, key="Ctrl+U"), _row(N("Add folder"), "folder-plus"),
+               _row(N("Record a skill"), "video"), _row(N("Skills"), "template", sep=True, more=True),
+               _row(N("Connectors"), "category-plus", more=True), _row(N("Design system"), "palette", more=True),
+               _row(N("Plugins"), "plug", more=True), _row(N("Research"), "chart-dots-3", sep=True), _row(N("Memory"), "history", on=True)],
+    "gemini": [_row(N("Upload files"), "paperclip", ATTACH), _row(N("Add from Drive"), "brand-google-drive"),
+               _row(N("More upload options"), "dots", more=True), _row(N("Create an image"), "photo", sep=True),
+               _row(N("Create music"), "music"), _row("Canvas", "layout-board"), _row("Deep Research", "telescope"),
+               _row(N("Guided learning"), "book-2")],
+    "chatgpt": [_row(N("Add photos and files"), "paperclip", ATTACH, hint=N("Upload from the computer")),
+                _row(N("Add from the library"), "books", hint=N("Browse and search your files")),
+                _row(N("Create an image"), "photo", hint=N("Imagine anything")),
+                _row(N("Search the web"), "world", hint=N("Get news and information in real time")),
+                _row(N("Work in a project"), "folder", hint=N("Start a chat in a project")),
+                _row(N("Deep research"), "telescope", hint=N("Get a detailed report")),
+                _row(N("Draw"), "brush", hint=N("Draw and attach a picture")),
+                _row(N("Thinking"), "bulb", {"think": True}, hint=N("For more detailed answers")),
+                _row("GitHub", "brand-github", hint=N("Triage PRs, issues, CI, and publish flows")),
+                _row("OpenAI Platform", "brand-openai", hint=N("Manage OpenAI API keys and view organization billing and API usage."))],
+    "grok": [_row(N("Upload a file"), "file-upload", ATTACH), _row(N("Add to a project"), "folder", more=True),
+             _row(N("Recent files"), "file", more=True), _row(N("Skills"), "apps", sep=True, more=True), _row(N("Add a connector"), "category-plus")],
+    "mistral": [_row(N("Upload Files"), "upload", ATTACH), _row(N("Skills"), "flask", more=True),
+                _row(N("Connectors"), "plug", more=True), _row(N("Reset input"), "refresh", {"reset": True}, sep=True)],
+    "own": [_row(N("Attach a file…"), "paperclip", ATTACH), _row(N("A picture of the screen"), "screenshot", SHOT)],
+}
+EFFORT_WORDS = {"low": N("low"), "medium": N("medium"), "high": N("high"), "xhigh": N("very high"), "max": N("highest"), "think": N("thinking")}
+CLAUDE_DESC = {"opus": N("For complex work and everyday tasks"), "sonnet": N("Most efficient for simpler tasks"), "haiku": N("Fastest for quick answers")}
+GEMINI_LEVELS = [_row(N("Low"), desc=N("Fast and efficient reasoning")), _row(N("Medium"), desc=N("Balanced reasoning")),
+                 _row(N("High"), desc=N("Thorough reasoning"))]
+GROK_MODES = [("Fast", "bolt"), ("Build", "hammer"), ("Auto", "rocket"), ("Expert", "bulb"), ("Heavy", "category-plus")]
+
+
+def chip_menu(p):
+    """The menu of the field's chip: the service's own where its own tool answers, else the models a key offers."""
+    style, models = p["style"], p["models"][:9]
+    rows = []
+    efforts = [_row(EFFORT_WORDS.get(e, e), do={"effort": e}) for e in p.get("efforts", [])]
+    effort = _row(N("Effort"), do={"sub": efforts}, sep=True, more=True, key="@effort") if efforts else None
+    own_tool = p["id"] == style
+    if own_tool and style == "claude":
+        rows.append(_row("Fable 5.1", desc=N("For your toughest challenges"), key=N("Buy credits")))
+        rows += [_row(m["name"], do={"model": m["id"]}, desc=CLAUDE_DESC.get(m["id"], "")) for m in models]
+        rows += [effort] if effort else []
+        rows += [_row(N("More models"), sep=True, more=True),
+                 _row(N("Fable 5.1 is included in Max plans, or available with usage credits on Pro."), sep=True, note=True)]
+    elif own_tool and style == "gemini":
+        rows += [_row(m["name"], do={"model": m["id"]}, desc=N("Gemini 3 models") if m["id"] == "" else "") for m in models]
+        rows += [_row("3.1 Pro", "lock", desc=N("Advanced reasoning")), _row("4 Argon", "lock", desc=N("Complex tasks")),
+                 _row(N("Thinking level"), do={"sub": GEMINI_LEVELS}, sep=True, more=True)]
+    elif own_tool and style == "grok":
+        # the Grok CLI has one model: Auto is it; the other modes are grok.com's
+        rows += [_row(name, glyph, {"model": models[0]["id"]} if name == "Auto" and models else None) for name, glyph in GROK_MODES]
+        rows.append(_row("Premium", desc=N("Unlock advanced options"), key=N("Upgrade"), sep=True))
+    elif own_tool and style == "mistral":
+        rows += [_row(m["name"], "cube", {"model": m["id"]}) for m in models]
+        rows.append(_row("GLM-5.3 (Mistral Hosted)", "cube"))
+    else:
+        rows += [_row(m["name"], do={"model": m["id"]}) for m in models]
+        rows += [effort] if effort else []
+    return rows
+
+
+def menus(p):
+    """Copilot has no + menu (its + attaches at once), nor DeepSeek (its paperclip); DeepSeek's chip is a switch."""
+    return {"web": WEB.get(p["style"], ""), "plus": PLUS.get(p["style"], []) if p["style"] not in ("copilot", "deepseek") else [],
+            "menu": chip_menu(p)}
+
+
 def providers(all=False, every=False):
     """What can answer; `every` keeps the models the user hid, for the Lens AI centre to show them."""
     if turned_off() and not all:
@@ -643,6 +738,8 @@ def providers(all=False, every=False):
         p["models"].sort(key=lambda m: "%s/%s" % (p["id"], m["id"]) != c["default"])
     out = [p for p in out if p["models"]]
     out.sort(key=lambda p: not c["default"].startswith(p["id"] + "/"))
+    for p in out:
+        p.update(menus(p))
     return out
 
 
