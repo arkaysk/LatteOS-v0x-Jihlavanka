@@ -83,6 +83,7 @@ part Rows {
         include "clock.plm"
         include "cam.plm"
         include "ai.plm"
+        include "calendar.plm"
         column card_col {
             at: card.x0, card.y0
             padding: 8

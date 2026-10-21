@@ -1,0 +1,231 @@
+// ClockGoo's calendar, the left button (the design approved 21. 10.: claude.ai/artifact/JZr5fi8uL3b6FavXCKUcbU): the
+// month with each day's events in the colours of their calendars, the weather of the week and the holidays; on the
+// right what comes next (with Join for a meeting) and the chosen day as a line of time with its free hours, or the
+// notifications; in the coffee at the foot a new event written as a sentence. Laid in 760 units and scaled by 1.2 as
+// clock.plm is; the logic (drops/clockgoo.luau, fill_calendar) tells the texts and the numbers, latte-cal the events.
+part Calendar {
+    // the 42 days of the month shown, Monday first; each carries up to two events (their colour as numbers) and a holiday
+    model calcell max 42 { n: text; dim: bool; today: bool; chosen: bool; weekend: bool; temp: text; has1: bool; t1: text; r1: number; g1: number; b1: number; has2: bool; t2: text; r2: number; g2: number; b2: number; more: text; hol: bool }
+    model calwd max 7 { name: text }
+    // the chosen day: kind 0 an event, 1 free time, 2 now
+    model calrow max 8 { time: text; title: text; sub: text; r: number; g: number; b: number; kind: number }
+    model calnote max 6 { title: text; body: text; critical: bool }
+    text cal_month = ""
+    text cal_today = ""
+    text cal_new = ""
+    text cal_notes = ""
+    text cal_names = ""                        // whose name day it is, today and tomorrow (the place's country)
+    text cal_hol = ""                          // the next holiday of the place's country
+    text cal_week = ""
+    text cal_next_head = ""                    // "NEXT IN 38 MIN"
+    text cal_next_time = ""
+    text cal_next_title = ""
+    text cal_next_sub = ""
+    text cal_join = ""
+    text cal_snooze = ""
+    text cal_day_head = ""
+    text cal_day_sum = ""
+    text cal_empty = ""
+    text cal_q = ""
+    text cal_q_hint = ""
+    text cal_q_note = ""
+    text cal_p1 = ""                           // what the sentence was read as: the day, the time, the place, the calendar
+    text cal_p2 = ""
+    text cal_p3 = ""
+    text cal_p4 = ""
+    text cal_add = ""
+    text cal_accounts = ""
+    text ic_cal_prev = ""
+    text ic_cal_next = ""
+    text ic_cal_plus = ""
+    text ic_cal_bell = ""
+    text ic_cal_spark = ""
+    text ic_cal_video = ""
+    text ic_cal_drop = ""
+    text ic_cal_cloud = ""
+    text ic_cal_link = ""
+    fact cal_side = 0                          // the right column: 0 the chosen day, 1 the notifications
+    fact cal_nnotes = 0
+    fact cal_next_on = false
+    fact cal_link_on = false                   // the next one is a meeting with an address: Join
+    fact cal_p_on = false                      // a sentence was understood: what it became, to add
+    fact cal_typed = false
+    fact cal_hol_on = false
+    fact cal_names_on = false
+    event cal_go ->                            // -1 the month before, 1 the next, 0 back to today
+    event cal_pick ->                          // a day pressed: its place among the 42
+    event cal_show ->                          // the right column: 0 the day, 1 the notifications
+    event cal_join_it ->
+    event cal_snooze_it ->
+    event cal_put ->                           // add what the sentence became
+    event cal_linked ->                        // the window where the accounts are signed in
+    event cal_note ->                          // a notification pressed: its place
+
+    measure cal_month_m
+    let cal.cw = (460 - 6 * 4) / 7             // a day's cell
+    let cal.ch = 66
+
+    group {
+        show: card_custom == 4
+        move: card.x0, card.y0
+        pivot: 0, 0
+        scale: 1.2
+
+        // ── the head: the month, back and forth, today; the notifications and a new event ───────────────────
+        ellipse { at: 29, 30; radius: 13; color: #f5e8d8; opacity: 6% + 10% * cal_prev_hit.hover }
+        text ic_cal_prev { at: 29, 30; anchor: center; size: 11; color: #f5e8d8; family: "tabler-icons" }
+        zone box cal_prev_hit { at: 29, 30; size: 28, 28; cursor: pointer; active: card_open and card_custom == 4; label: "Previous month" }
+        on press cal_prev_hit { emit cal_go(-1) }
+        text cal_month { at: 50, 30; anchor: left center; size: 17; weight: 800; color: #f5e8d8; measure: cal_month_m; family: "Inter" }
+        ellipse { at: 66 + cal_month_m.width, 30; radius: 13; color: #f5e8d8; opacity: 6% + 10% * cal_next_hit.hover }
+        text ic_cal_next { at: 66 + cal_month_m.width, 30; anchor: center; size: 11; color: #f5e8d8; family: "tabler-icons" }
+        zone box cal_next_hit { at: 66 + cal_month_m.width, 30; size: 28, 28; cursor: pointer; active: card_open and card_custom == 4; label: "Next month" }
+        on press cal_next_hit { emit cal_go(1) }
+        box { from: 86 + cal_month_m.width, 20; size: 50, 20; corner: 10; stroke: 1; color: #f7c873; opacity: 45% + 40% * cal_today_hit.hover }
+        text cal_today { at: 111 + cal_month_m.width, 30; anchor: center; size: 8.5; weight: 700; color: #f7c873; family: "Inter" }
+        zone box cal_today_hit { from: 86 + cal_month_m.width, 20; size: 50, 20; cursor: pointer; active: card_open and card_custom == 4; label: "{cal_today}" }
+        on press cal_today_hit { emit cal_go(0) }
+
+        // the notifications: a pill with their number, lit while they are what the right column shows
+        box { from: 560, 18; size: 92, 24; corner: 12; color: if(cal_side == 1, #f7c873, #2a1e17); opacity: if(cal_side == 1, 28%, 100%) }
+        box { from: 560, 18; size: 92, 24; corner: 12; stroke: 1; color: #4a372b }
+        text ic_cal_bell { at: 575, 30; anchor: center; size: 10; color: if(cal_nnotes > 0, #f7c873, #b8a491); family: "tabler-icons" }
+        text cal_notes { at: 586, 30; anchor: left center; size: 8.5; weight: 700; color: #f5e8d8; width: 62; lines: 1; family: "Inter" }
+        zone box cal_notes_hit { from: 560, 18; size: 92, 24; cursor: pointer; active: card_open and card_custom == 4; label: "{cal_notes}" }
+        on press cal_notes_hit { emit cal_show(if(cal_side == 1, 0, 1)) }
+        box { from: 660, 18; size: 84, 24; corner: 12; color: #f7c873; opacity: 88% + 12% * cal_new_hit.hover }
+        text ic_cal_plus { at: 674, 30; anchor: center; size: 10; color: #17110d; family: "tabler-icons" }
+        text cal_new { at: 684, 30; anchor: left center; size: 9; weight: 800; color: #17110d; family: "Inter" }
+        zone box cal_new_hit { from: 660, 18; size: 84, 24; cursor: pointer; active: card_open and card_custom == 4; label: "{cal_new}" }
+        on press cal_new_hit { focus cal_q }
+
+        // ── the month ─────────────────────────────────────────────────────────────────────────────────────
+        for w in calwd {
+            text w.name { at: 22 + w.index * (cal.cw + 4), 60; anchor: left center; size: 7.5; weight: 700; color: #b8a491; family: "JetBrains Mono" }
+        }
+        for c in calcell {
+            let d.x = 16 + mod(c.index, 7) * (cal.cw + 4)
+            let d.y = 70 + floor(c.index / 7) * (cal.ch + 4)
+            box { from: d.x, d.y; size: cal.cw, cal.ch; corner: 9; color: if(c.today, #f7c873, #21170f); opacity: if(c.today, 12%, if(c.dim, 0, 100%)) }
+            box { from: d.x, d.y; size: cal.cw, cal.ch; corner: 9; stroke: if(c.today or c.chosen, 1.4, 1); color: if(c.today or c.chosen, #f7c873, #33251b); opacity: if(c.today, 100%, if(c.chosen, 70%, if(c.dim, 0, 100%))) }
+            box { from: d.x, d.y; size: cal.cw, cal.ch; corner: 9; color: #f5e8d8; opacity: 4% * day_hit.hover }
+            // the number: a gold pill today
+            box { from: d.x + 4, d.y + 4; size: 18, 13; corner: 6.5; color: #f7c873; show: c.today }
+            text c.n { at: d.x + 13, d.y + 10.5; anchor: center; size: 8; weight: 700; color: if(c.today, #17110d, if(c.dim, #8a7666, if(c.weekend, #b8a491, #f5e8d8))); family: "JetBrains Mono" }
+            // the weather of the coming days
+            text c.temp { at: d.x + cal.cw - 4, d.y + 10.5; anchor: right center; size: 6.5; color: #b8a491; family: "JetBrains Mono" }
+            // a holiday: a red dot in the corner
+            ellipse { at: d.x + cal.cw - 6, d.y + cal.ch - 6; radius: 2.5; color: #ff6b6b; show: c.hol }
+            // two events in their calendars' colours, and how many more
+            box { from: d.x + 3, d.y + 21; size: cal.cw - 6, 13; corner: 3.5; color: rgb(c.r1, c.g1, c.b1); opacity: if(c.has1, 16%, 0) }
+            ellipse { at: d.x + 8, d.y + 27.5; radius: 2; color: rgb(c.r1, c.g1, c.b1); opacity: if(c.has1, 100%, 0) }
+            text c.t1 { at: d.x + 12, d.y + 27.5; anchor: left center; size: 6.5; weight: 600; color: #f5e8d8; width: cal.cw - 16; lines: 1; family: "Inter" }
+            box { from: d.x + 3, d.y + 36; size: cal.cw - 6, 13; corner: 3.5; color: rgb(c.r2, c.g2, c.b2); opacity: if(c.has2, 16%, 0) }
+            ellipse { at: d.x + 8, d.y + 42.5; radius: 2; color: rgb(c.r2, c.g2, c.b2); opacity: if(c.has2, 100%, 0) }
+            text c.t2 { at: d.x + 12, d.y + 42.5; anchor: left center; size: 6.5; weight: 600; color: #f5e8d8; width: cal.cw - 16; lines: 1; family: "Inter" }
+            text c.more { at: d.x + 6, d.y + 57; anchor: left center; size: 6; color: #b8a491; family: "JetBrains Mono" }
+            zone box day_hit { from: d.x, d.y; size: cal.cw, cal.ch; cursor: pointer; active: card_open and card_custom == 4; label: "{c.n}"; selected: c.chosen; role: button }
+            on press day_hit { emit cal_pick(c.index) }
+        }
+        // under the month: whose name day, the next holiday, the week
+        text ic_cal_drop { at: 22, 506; anchor: center; size: 8; color: #f7c873; show: cal_names_on; family: "tabler-icons" }
+        text cal_names { at: 30, 506; anchor: left center; size: 7.5; color: #b8a491; width: 200; lines: 1; family: "Inter" }
+        ellipse { at: 244, 506; radius: 2.5; color: #ff6b6b; show: cal_hol_on }
+        text cal_hol { at: 251, 506; anchor: left center; size: 7.5; color: #b8a491; width: 170; lines: 1; family: "Inter" }
+        text cal_week { at: 476, 506; anchor: right center; size: 7; color: #b8a491; family: "JetBrains Mono" }
+
+        // ── on the right: what comes next ─────────────────────────────────────────────────────────────────
+        group {
+            show: cal_side == 0
+            box { from: 492, 56; size: 252, 112; corner: 14; color: #f7c873; opacity: if(cal_next_on, 14%, 5%) }
+            box { from: 492, 56; size: 252, 112; corner: 14; stroke: 1; color: #f7c873; opacity: if(cal_next_on, 35%, 12%) }
+            text cal_next_head { at: 504, 72; anchor: left center; size: 7.5; weight: 800; color: #f7c873; family: "JetBrains Mono" }
+            text cal_next_time { at: 732, 72; anchor: right center; size: 7.5; color: #b8a491; family: "JetBrains Mono" }
+            text cal_next_title { at: 504, 92; anchor: left center; size: 13; weight: 800; color: #f5e8d8; width: 228; lines: 1; family: "Inter" }
+            text cal_next_sub { at: 504, 110; anchor: left center; size: 8; color: #b8a491; width: 228; lines: 1; family: "Inter" }
+            // Join, where the meeting has an address; Remind later
+            box { from: 504, 128; size: 112, 26; corner: 13; color: #f7c873; opacity: if(cal_link_on, 90% + 10% * join_hit.hover, 0) }
+            text ic_cal_video { at: 518, 141; anchor: center; size: 10; color: #17110d; show: cal_link_on; family: "tabler-icons" }
+            text cal_join { at: 528, 141; anchor: left center; size: 8.5; weight: 800; color: #17110d; show: cal_link_on; width: 84; lines: 1; family: "Inter" }
+            zone box join_hit { from: 504, 128; size: 112, 26; cursor: pointer; active: card_open and card_custom == 4 and cal_link_on; label: "{cal_join}"; role: button }
+            on press join_hit { emit cal_join_it }
+            box { from: if(cal_link_on, 622, 504), 128; size: 104, 26; corner: 13; stroke: 1; color: #4a372b; opacity: if(cal_next_on, 100%, 0) }
+            text cal_snooze { at: if(cal_link_on, 674, 556), 141; anchor: center; size: 8.5; color: #f5e8d8; show: cal_next_on; family: "Inter" }
+            zone box snooze_hit { from: if(cal_link_on, 622, 504), 128; size: 104, 26; cursor: pointer; active: card_open and card_custom == 4 and cal_next_on; label: "{cal_snooze}"; role: button }
+            on press snooze_hit { emit cal_snooze_it }
+
+            // the chosen day, as a line of time
+            box { from: 492, 178; size: 252, 320; corner: 14; color: #1f1611 }
+            box { from: 492, 178; size: 252, 320; corner: 14; stroke: 1; color: #3a2a20 }
+            text cal_day_head { at: 504, 194; anchor: left center; size: 10; weight: 800; color: #f5e8d8; width: 140; lines: 1; family: "Inter" }
+            text cal_day_sum { at: 732, 194; anchor: right center; size: 7; color: #b8a491; width: 96; lines: 1; align: right; family: "JetBrains Mono" }
+            text cal_empty { at: 618, 330; anchor: center; size: 9; color: #8a7666; width: 220; lines: 2; align: center; show: calrow.count == 0; family: "Inter" }
+            for r in calrow {
+                let row.y = 210 + r.index * 35
+                text r.time { at: 532, row.y + 14; anchor: right center; size: 7.5; color: if(r.kind == 2, #ff6b6b, #b8a491); family: "JetBrains Mono" }
+                // now: a red line across
+                box { from: 538, row.y + 13; size: 196, 1.5; corner: 1; color: #ff6b6b; show: r.kind == 2 }
+                // an event: its calendar's colour on the left; free time: a dashed green outline
+                box { from: 538, row.y; size: 196, 31; corner: 8; color: rgb(r.r, r.g, r.b); opacity: if(r.kind == 0, 18%, 0) }
+                box { from: 538, row.y; size: 2.5, 31; corner: 1; color: rgb(r.r, r.g, r.b); opacity: if(r.kind == 0, 100%, 0) }
+                box { from: 538, row.y; size: 196, 31; corner: 8; stroke: 1; color: #4cc38a; opacity: if(r.kind == 1, 60%, 0) }
+                text r.title { at: 546, row.y + 10; anchor: left center; size: 8.5; weight: 700; color: if(r.kind == 1, #6fdca6, #f5e8d8); width: 182; lines: 1; show: r.kind != 2; family: "Inter" }
+                text r.sub { at: 546, row.y + 22; anchor: left center; size: 7; color: #b8a491; width: 182; lines: 1; show: r.kind != 2; family: "Inter" }
+            }
+        }
+        // ── or the notifications ──────────────────────────────────────────────────────────────────────────
+        group {
+            show: cal_side == 1
+            box { from: 492, 56; size: 252, 442; corner: 14; color: #1f1611 }
+            box { from: 492, 56; size: 252, 442; corner: 14; stroke: 1; color: #3a2a20 }
+            text cal_empty { at: 618, 270; anchor: center; size: 9; color: #8a7666; width: 220; lines: 2; align: center; show: calnote.count == 0; family: "Inter" }
+            for n in calnote {
+                let note.y = 68 + n.index * 70
+                box { from: 500, note.y; size: 236, 62; corner: 10; color: if(n.critical, #e5484d, #2a1e17); opacity: if(n.critical, 18%, 100%) }
+                box { from: 500, note.y; size: 236, 62; corner: 10; color: #f5e8d8; opacity: 5% * note_hit.hover }
+                text n.title { at: 510, note.y + 14; anchor: left center; size: 8.5; weight: 700; color: #f5e8d8; width: 216; lines: 1; family: "Inter" }
+                text n.body { at: 510, note.y + 26; anchor: left top; size: 7.5; color: #b8a491; width: 216; lines: 2; family: "Inter" }
+                zone box note_hit { from: 500, note.y; size: 236, 62; cursor: pointer; active: card_open and card_custom == 4 and cal_side == 1; label: "{n.title}"; role: button }
+                on press note_hit { emit cal_note(n.index) }
+            }
+        }
+
+        // ── in the coffee at the foot: a new event, written as a sentence ─────────────────────────────────
+        box { from: 16, 528; size: 728, 54; corner: 14; color: #1b120d; opacity: 85% }
+        box { from: 16, 528; size: 728, 54; corner: 14; stroke: 1; color: #4a372b }
+        text ic_cal_spark { at: 32, 543; anchor: center; size: 11; color: #f7c873; family: "tabler-icons" }
+        text cal_q_hint { at: 44, 543; anchor: left center; size: 9.5; color: #b8a491; show: not cal_typed; width: 440; lines: 1; family: "Inter" }
+        input cal_q { at: 44, 536; width: 470; size: 9.5; color: #f5e8d8; selection: #5a463a; family: "Inter"; label: "{cal_q_hint}" }
+        on submit cal_q { emit cal_put }
+        text cal_q_note { at: 732, 543; anchor: right center; size: 6.5; color: #b8a491; family: "JetBrains Mono" }
+        // what the sentence became, before it is added
+        group {
+            show: cal_p_on
+            repeat p in 0..4 {
+                measure cal_p.$p
+            }
+            row {
+                at: 28, 559
+                gap: 5
+                repeat p in 0..4 {
+                    group {
+                        size: cal_p.$p.width + 14, 15
+                        box { from: 0, 0; size: cal_p.$p.width + 14, 15; corner: 7.5; color: #6aa6ff; opacity: 16% }
+                        text pick(p, cal_p1, cal_p2, cal_p3, cal_p4) { at: 7, 7.5; anchor: left center; size: 7.5; weight: 600; color: #9cc3ff; measure: cal_p.$p; family: "Inter" }
+                    }
+                }
+            }
+            box { from: 664, 556; size: 72, 20; corner: 10; color: #f7c873; opacity: 90% + 10% * put_hit.hover }
+            text cal_add { at: 700, 566; anchor: center; size: 8; weight: 800; color: #17110d; family: "Inter" }
+            zone box put_hit { from: 664, 556; size: 72, 20; cursor: pointer; active: card_open and card_custom == 4 and cal_p_on; label: "{cal_add}"; role: button }
+            on press put_hit { emit cal_put }
+        }
+        group {
+            show: not cal_p_on
+            text ic_cal_link { at: 32, 566; anchor: center; size: 9; color: #b8a491; family: "tabler-icons" }
+            text cal_accounts { at: 42, 566; anchor: left center; size: 7.5; color: #b8a491; width: 600; lines: 1; family: "Inter" }
+            zone box accounts_hit { from: 24, 558; size: 400, 18; cursor: pointer; active: card_open and card_custom == 4 and not cal_p_on; label: "{cal_accounts}" }
+            on press accounts_hit { emit cal_linked }
+        }
+    }
+}

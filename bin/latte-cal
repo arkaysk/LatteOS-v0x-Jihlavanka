@@ -12,6 +12,8 @@
   latte-cal add UID TITLE START END [LOCATION]   a new event in the calendar UID; START and END as YYYY-MM-DDTHH:MM,
         or YYYY-MM-DD for a whole day (END the day after the last); prints {"ok", "uid"}
   latte-cal remove UID EVENT                     takes an event out
+  latte-cal parse TEXT       a new event written as a sentence ("Obed s Petrom zajtra o 12 v Jihlavanke"): {"ok", "title",
+        "start", "end" (as `add` takes them), "allday", "place", "calendar", "calendar_name", "when"}; Slovak words
   latte-cal holidays [YEAR]  the holidays of the place's country, in the user's language where it is known
   latte-cal accounts         the window where accounts are signed in (gnome-online-accounts-gtk)
   latte-cal ADDRESS…         as before: the events of the addresses only, [{"date", "time", "title"}]
@@ -292,6 +294,97 @@ def remove(cal_uid, event_uid):
     return {"ok": True}
 
 
+# ── a new event written as a sentence ─────────────────────────────────────────────────────────────────────────────
+# The words are the language's (goo/lang/<code>-dates.json): today/tomorrow, weekdays, dates, "at 12", "from 14 to 15",
+# "for 2 hours", the place after its preposition. ponytail: a sentence the words do not cover is the local AI's to read
+# (ROADMAP 17g), not yet.
+def words(lang=None):
+    lang = lang or (os.environ.get("LC_ALL") or os.environ.get("LANG") or "sk").split("_")[0].split(".")[0]
+    for d in (os.path.join(os.environ.get("LATTE_SHARE") or "/usr/share/latteos", "goo", "lang"),
+              os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "goo", "lang")):
+        for code in (lang, "sk"):
+            try:
+                with open(os.path.join(d, code + "-dates.json"), encoding="utf-8") as f:
+                    return json.load(f)
+            except OSError:
+                pass
+    return None
+
+
+def alt(xs):
+    return "|".join(re.escape(x) for x in sorted(xs, key=len, reverse=True))
+
+
+def parse(text, today=None, w=None):
+    today, w = today or dt.date.today(), w or words()
+    if not w:
+        return {"ok": False}
+    rest, day, start, end, long = " " + text.strip() + " ", None, None, None, None
+
+    def cut(m):
+        nonlocal rest
+        rest = rest[:m.start()] + " " + rest[m.end():]
+    low = lambda: rest.lower()
+    for word, n in w["relative"].items():
+        m = re.search(r"\s" + re.escape(word) + r"\b", low())
+        if m:
+            day = today + dt.timedelta(days=n)
+            cut(m)
+            break
+    m = re.search(r"\s(?:(?:" + alt(w["before_weekday"]) + r")\s)*(" + alt(w["weekdays"]) + r")\b", low())
+    if not day and m:
+        day = today + dt.timedelta(days=(w["weekdays"][m.group(1)] - today.weekday()) % 7 or 7)
+        cut(m)
+    m = re.search(r"\s(\d{1,2})\.\s?(\d{1,2})\.(?:\s?(\d{4}))?", rest)
+    if not day and m:
+        try:
+            day = dt.date(int(m.group(3) or today.year), int(m.group(2)), int(m.group(1)))
+            day = day if m.group(3) or day >= today else day.replace(year=day.year + 1)
+            cut(m)
+        except ValueError:
+            pass
+    m = re.search(r"\s(\d{1,2})\.\s?(" + alt(w["months"]) + r")\b", low())
+    if not day and m:
+        day = dt.date(today.year, w["months"][m.group(2)], int(m.group(1)))
+        day = day if day >= today else day.replace(year=day.year + 1)
+        cut(m)
+    hm = r"(\d{1,2})(?:[:.](\d{2}))?"
+    m = re.search(r"\s(?:(?:" + alt(w["at"]) + r")\s)?" + hm + r"\s?(?:-|–|(?:" + alt(w["until"]) + r")\s)\s?" + hm + r"\b", low())
+    if m:
+        start, end = dt.time(int(m.group(1)) % 24, int(m.group(2) or 0)), dt.time(int(m.group(3)) % 24, int(m.group(4) or 0))
+        cut(m)
+    else:
+        m = re.search(r"\s(?:" + alt(w["at"]) + r")\s" + hm + r"(?:\s?h\.?)?\b", low()) or re.search(r"\s(\d{1,2}):(\d{2})\b", low())
+        if m:
+            start = dt.time(int(m.group(1)) % 24, int(m.group(2) or 0))
+            cut(m)
+    m = re.search(r"\s(?:" + alt(w["for"]) + r")\s(\d+|" + alt(w["one_hour"] + w["half_hour"]) + r")\s?(" + alt(w["hours"] + w["minutes"]) + r")?\b", low())
+    if m and start:
+        n = 0.5 if m.group(1) in w["half_hour"] else (1 if m.group(1) in w["one_hour"] else int(m.group(1)))
+        long = dt.timedelta(minutes=n) if m.group(2) in w["minutes"] else dt.timedelta(hours=n)
+        cut(m)
+    # the place: a word with a capital after its preposition, to the end
+    place = ""
+    m = re.search(r"\s(?:" + alt(w["place"]) + r")\s(\S[^,]*?)\s*$", rest)
+    if m and m.group(1)[0].isupper():
+        place = m.group(1).strip()
+        cut(m)
+    title = re.sub(r"\s+", " ", rest).strip(" ,.-")
+    if not title:
+        return {"ok": False}
+    day = day or today
+    allday = start is None
+    if allday:
+        s_, e_ = day.isoformat(), (day + dt.timedelta(days=1)).isoformat()
+    else:
+        a = dt.datetime.combine(day, start)
+        b = dt.datetime.combine(day, end) if end else a + (long or dt.timedelta(hours=1))
+        if b <= a:
+            b += dt.timedelta(days=1)
+        s_, e_ = a.strftime("%Y-%m-%dT%H:%M"), b.strftime("%Y-%m-%dT%H:%M")
+    return {"ok": True, "title": title[0].upper() + title[1:], "start": s_, "end": e_, "allday": allday, "place": place}
+
+
 def command(a):
     today = dt.datetime.combine(dt.date.today(), dt.time())
     if a[0] == "events":
@@ -306,6 +399,14 @@ def command(a):
         print(json.dumps(calendars(), ensure_ascii=False))
     elif a[0] == "add" and len(a) in (5, 6):
         print(json.dumps(add(*a[1:])))
+    elif a[0] == "parse" and len(a) == 2:
+        r = parse(a[1])
+        if r["ok"]:
+            # where it goes: the first calendar of an account that may be written to, else this computer's own
+            cals = [c for c in calendars() if c["writable"] and c["enabled"]]
+            pick = next((c for c in cals if c["backend"] != "local"), cals[0] if cals else None)
+            r["calendar"], r["calendar_name"] = (pick["uid"], (pick["account"] + " · " if pick["account"] and pick["backend"] != "local" else "") + pick["name"]) if pick else ("", "")
+        print(json.dumps(r, ensure_ascii=False))
     elif a[0] == "remove" and len(a) == 3:
         print(json.dumps(remove(a[1], a[2])))
     elif a[0] == "holidays":
@@ -319,7 +420,7 @@ def command(a):
 
 
 def main(addresses):
-    if addresses and addresses[0] in ("events", "calendars", "add", "remove", "holidays", "accounts"):
+    if addresses and addresses[0] in ("events", "calendars", "add", "remove", "holidays", "accounts", "parse"):
         return command(addresses)
     if not addresses or addresses[0] in ("-h", "--help"):
         print(__doc__.strip())

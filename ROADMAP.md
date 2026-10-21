@@ -514,7 +514,14 @@ Schválené 12. 10. 2026. Pracuje sa **zhora nadol, neskáče sa**; nový nápad
       stretnutí, kalendár ako nástroj LensAI). Základ prebratý: **Evolution Data Server + GNOME Online Accounts**
       (+ `evolution-ews`, `gnome-online-accounts-gtk`, všetko vo Fedore) — Google, Microsoft 365/Outlook, Exchange,
       Nextcloud cez OAuth; iCloud, Fastmail, Zoho, Yahoo cez CalDAV; Proton, Tuta, EduPage a odbery cez .ics; Thunderbird
-      a miestne cez EDS. `latte-cal` dnes vie iba odbery .ics na čítanie.
+      a miestne cez EDS.
+      - [x] **Karta ClockGoo, ľavý klik** (21. 10., `goo/parts/calendar.plm`): mesiac s udalosťami vo farbách kalendárov,
+        počasím na 7 dní, meninami (tie isté ako pravý klik) a sviatkami krajiny miesta počasia (`latte-sky country`,
+        `python3-holidays`); „Ďalej o…“ s Pripojiť sa (Teams/Meet/Zoom) a odložením; deň ako časová os s voľnom 8–20 h;
+        upozornenia; nová udalosť vetou (`latte-cal parse`, slová v `goo/lang/sk-dates.json`). `latte-cal` číta a
+        zapisuje cez EDS.
+      - [ ] Veta, ktorej slová nerozumejú → lokálna AI; aplikácia Kalendár (týždeň s ťahaním, rok ako teplotná mapa);
+        Nerušiť počas stretnutí; kalendár ako nástroj LensAI.
 18. [x] **Vývoj LatteOS v Nastavenia › Systém › O tomto počítači** (hotové 21. 10.: `bin/latte-activity` zapíše históriu repa do `build/activity.json` pri `./install --go`, inštaluje sa ako `/usr/share/latteos/activity.json`; graf 53 týždňov so štvorčekmi v farbách témy a nápovedou pri myši, 30 posledných commitov rozbaliteľných — autor, dátum, celá správa, zmenené súbory s +/−. **Rozhodnutie pre vydania:** verejné `arkaysk/latteos` má iba snímky vydaní, preto graf nesie súbor z repa, nie GitHub API; či vydanie smie niesť správy commitov, je na `zverejnit.sh`). (používateľ, 21. 10.): štvorčekový graf aktivity
     (ako na GitHube: týždne v stĺpcoch, dni v riadkoch, sýtosť podľa počtu commitov) — ako pokračuje vývoj projektu;
     pod ním posledné commity, každý rozbaliteľný: dátum, autor, správa celá a čitateľne, zmenené súbory. Zdroj:

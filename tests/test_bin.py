@@ -113,6 +113,17 @@ assert seen[-1]["type"] == "cancel_session"             # a refused login leaves
 
 cal = load("latte-cal")
 dt = cal.dt
+# a new event written as a sentence (Slovak): the day, the time, how long, the place, what is left is the title
+d0 = dt.date(2026, 10, 21)                                # a Wednesday
+p = cal.parse("Obed s Petrom zajtra o 12 v Jihlavanke", d0)
+assert (p["title"], p["start"], p["end"], p["place"], p["allday"]) == ("Obed s Petrom", "2026-10-22T12:00", "2026-10-22T13:00", "Jihlavanke", False), p
+p = cal.parse("porada v piatok od 14 do 15:30", d0)
+assert (p["title"], p["start"], p["end"]) == ("Porada", "2026-10-23T14:00", "2026-10-23T15:30"), p
+p = cal.parse("beh 25. 10. o 17:00 na 2 hodiny", d0)
+assert (p["start"], p["end"]) == ("2026-10-25T17:00", "2026-10-25T19:00"), p
+p = cal.parse("Narodeniny mamy 3. novembra", d0)
+assert (p["title"], p["start"], p["end"], p["allday"]) == ("Narodeniny mamy", "2026-11-03", "2026-11-04", True), p
+assert cal.parse("zajtra o 9", d0)["ok"] is False                 # nothing left to call it
 ICS = """BEGIN:VCALENDAR\r
 BEGIN:VEVENT\r
 DTSTART:20250305T093000\r

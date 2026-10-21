@@ -57,6 +57,7 @@
 /usr/share/latteos/goo/lib/fold.luau                    <- goo/lib/fold.luau
 /usr/share/latteos/goo/lib/dangerous.luau               <- goo/lib/dangerous.luau
 /usr/share/latteos/goo/lang/sk.plm                      <- goo/lang/sk.plm
+/usr/share/latteos/goo/lang/sk-dates.json               <- goo/lang/sk-dates.json
 /usr/share/latteos/goo/goo.plm                          <- goo/goo.plm
 /usr/share/latteos/goo/goo.luau                         <- goo/goo.luau
 /usr/share/latteos/goo/side.plm                         <- goo/side.plm
@@ -113,6 +114,7 @@
 /usr/share/latteos/goo/parts/shore.plm                  <- goo/parts/shore.plm
 /usr/share/latteos/goo/parts/keys.plm                   <- goo/parts/keys.plm
 /usr/share/latteos/goo/parts/rows.plm                   <- goo/parts/rows.plm
+/usr/share/latteos/goo/parts/calendar.plm               <- goo/parts/calendar.plm
 /usr/share/latteos/goo/parts/lock.plm                   <- goo/parts/lock.plm
 /usr/share/latteos/goo/parts/desk.plm                   <- goo/parts/desk.plm
 /usr/share/latteos/goo/parts/clock.plm                  <- goo/parts/clock.plm

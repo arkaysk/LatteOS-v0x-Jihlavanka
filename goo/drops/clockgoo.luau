@@ -30,6 +30,7 @@ local busy_face = false                      -- a timer or the stopwatch has the
 local month = { y = nil, m = nil, chosen = nil, cells = {} }
 local tab = 0
 local open_notes, open_time, open_calendars
+local open_calendar, read_events, fill_calendar     -- the calendar, the left button (below)
 
 -- Calendars kept elsewhere (`kept.calendars`, their addresses) are read when the list changes and every half hour.
 local function read_linked(then_do)
@@ -200,7 +201,7 @@ local function day_rows(d)
 end
 -- the calendars kept elsewhere: their addresses, one more, one less
 open_calendars = function(d)
-    local rows = { { label = tr("Back"), glyph = "chevron-left", keep = true, run = function() open_notes(d) end },
+    local rows = { { label = tr("Back"), glyph = "chevron-left", keep = true, run = function() open_calendar(d) end },
                    { para = true, label = tr("The address of a calendar in iCal form (.ics): Google Calendar, iCloud and others give one in the calendar's settings."), line = true } }
     for i, address in ipairs(kept.calendars) do
         rows[#rows + 1] = { glyph = "world", label = address:gsub("^%a+://", ""), keep = true,
@@ -216,7 +217,7 @@ open_calendars = function(d)
         if text ~= "" and #kept.calendars < 6 and not table.find(kept.calendars, text) then
             kept.calendars[#kept.calendars + 1] = text
             save()
-            read_linked(function() if card.id() == "notes" then open_notes(d, true) end end)
+            read_events(function() if card.id() == "notes" then fill_calendar() end end)
         end
         open_notes(d)
         return false
@@ -590,6 +591,186 @@ local function ring(title, text)
     for i = 0, 2 do after(i * 420, function() pcall(sound.tone, { wave = "sine", freq = 880, to = 660, ms = 260, release = 180, volume = 0.6 }) end) end
 end
 
+-- ── the calendar, the left button (parts/calendar.plm; the design approved 21. 10.) ────────────────────────────
+-- Every account's events come from latte-cal (Evolution Data Server keeps them: Google, Microsoft 365, iCloud…), with the
+-- addresses kept here and the holidays of the weather's place; the name days are the place's too (latte-nameday).
+local cal = { events = {}, side = 0, parsed = nil, snoozed = {}, asked = 0 }
+local function rgb_of(hex)
+    local r, g, b = tostring(hex or ""):match("^#(%x%x)(%x%x)(%x%x)")
+    if not r then return 0.97, 0.78, 0.45 end
+    return tonumber(r, 16) / 255, tonumber(g, 16) / 255, tonumber(b, 16) / 255
+end
+read_events = function(then_do)
+    local args = { "events" }
+    for _, a in ipairs(kept.calendars) do args[#args + 1] = a end
+    run("latte-cal", args, function(out)
+        local ok, list = pcall(json.decode, out or "")
+        if ok and type(list) == "table" then cal.events = list end
+        if then_do then then_do() end
+    end)
+end
+-- what a day holds: the events of the accounts and the ones written here before (kept.events), the time ones in order
+local function events_on(key)
+    local out = {}
+    for _, e in ipairs(cal.events) do if e.date == key then out[#out + 1] = e end end
+    for _, e in ipairs(kept.events) do
+        if e.date == key then out[#out + 1] = { date = e.date, time = e.time or "", end_ = "", title = e.title, color = "#f7c873", kind = "event", calendar = "LatteOS" } end
+    end
+    table.sort(out, function(a, b) return ((a.kind == "holiday" and "0" or "1") .. (a.time or "")) < ((b.kind == "holiday" and "0" or "1") .. (b.time or "")) end)
+    return out
+end
+local function mins(hhmm) local h, m = tostring(hhmm or ""):match("^(%d+):(%d+)$") return h and tonumber(h) * 60 + tonumber(m) or nil end
+local function hhmm(n) return string.format("%02d:%02d", n // 60, n % 60) end
+-- the next thing today or tomorrow, not yet begun and not put off
+local function next_event()
+    local now = os.date("*t")
+    local today, minute = iso(now), now.hour * 60 + now.min
+    local tomorrow = iso(os.date("*t", os.time() + 86400))
+    for _, key in ipairs({ today, tomorrow }) do
+        for _, e in ipairs(events_on(key)) do
+            local m = mins(e.time)
+            local id = key .. (e.time or "") .. (e.title or "")
+            if e.kind ~= "holiday" and m and (key ~= today or m >= minute) and not (cal.snoozed[id] and cal.snoozed[id] > os.time()) then
+                return e, (key == today and m - minute or 24 * 60 - minute + m), id
+            end
+        end
+    end
+end
+fill_calendar = function()
+    local now = os.date("*t")
+    month.y, month.m, month.chosen = month.y or now.year, month.m or now.month, month.chosen or iso(now)
+    local today = iso(now)
+    local first = os.date("*t", os.time({ year = month.y, month = month.m, day = 1, hour = 12 }))
+    local lead = (first.wday + 5) % 7
+    -- the weather of the coming days, by date (latte-sky's days start today)
+    local temps = {}
+    for i, w in ipairs(type(sky) == "table" and type(sky.days) == "table" and sky.days or {}) do
+        temps[iso(os.date("*t", os.time() + (i - 1) * 86400))] = tostring(math.floor((tonumber(w.max) or 0) + 0.5)) .. "°"
+    end
+    local cells, names = {}, {}
+    month.cells = {}
+    for i = 0, 41 do
+        local t = os.date("*t", os.time({ year = month.y, month = month.m, day = 1 - lead + i, hour = 12 }))
+        local key = iso(t)
+        month.cells[i + 1] = key
+        local list, shown = events_on(key), {}
+        local hol = false
+        for _, e in ipairs(list) do if e.kind == "holiday" then hol = true end shown[#shown + 1] = e end
+        local c = { n = tostring(t.day), dim = t.month ~= month.m, today = key == today, chosen = key == month.chosen and key ~= today,
+                    weekend = i % 7 >= 5, temp = temps[key] or "", hol = hol, has1 = false, has2 = false, t1 = "", t2 = "", more = "",
+                    r1 = 0, g1 = 0, b1 = 0, r2 = 0, g2 = 0, b2 = 0 }
+        for k = 1, math.min(2, #shown) do
+            local e = shown[k]
+            c["has" .. k], c["t" .. k] = true, ((e.time or "") ~= "" and (e.time .. " ") or "") .. (e.title or "")
+            c["r" .. k], c["g" .. k], c["b" .. k] = rgb_of(e.color)
+        end
+        if #shown > 2 then c.more = "+" .. (#shown - 2) .. " " .. tr("more") end
+        cells[i + 1] = c
+    end
+    for i = 1, 7 do names[i] = { name = upper(tr(SHORT[i % 7 + 1])) } end
+    model.calcell, model.calwd = cells, names
+    text.cal_month = tr(MONTHS[month.m]) .. " " .. month.y
+    text.cal_today, text.cal_new = tr("Today"), tr("Event")
+    text.cal_notes = #notes > 0 and (#notes .. " " .. tr("notifications")) or tr("Notifications")
+    fact.cal_nnotes = #notes
+    -- the ISO week of the month's middle (Luau's os.date has no %V): the year-day of that week's Thursday
+    local mid = os.date("*t", os.time({ year = month.y, month = month.m, day = 15, hour = 12 }))
+    local thu = os.date("*t", os.time({ year = month.y, month = month.m, day = 15 + 3 - (mid.wday + 5) % 7, hour = 12 }))
+    text.cal_week = tr("week") .. " " .. ((thu.yday - 1) // 7 + 1)
+    -- whose name day (the place's country) and the next holiday
+    text.cal_names = (nameday.today or "") ~= "" and (tr("Name day today:") .. " " .. nameday.today .. ((nameday.tomorrow or "") ~= "" and (" · " .. tr("tomorrow") .. " " .. nameday.tomorrow) or "")) or ""
+    local hol = nil
+    for _, e in ipairs(cal.events) do if e.kind == "holiday" and e.date >= today then hol = e break end end
+    text.cal_hol = hol and (tonumber(hol.date:sub(9, 10)) .. ". " .. tonumber(hol.date:sub(6, 7)) .. ". " .. hol.title) or ""
+    fact.cal_hol_on = hol ~= nil
+    fact.cal_names_on = text.cal_names ~= ""
+    -- what comes next
+    local e, left, id = next_event()
+    fact.cal_next_on = e ~= nil
+    cal.next, cal.next_id = e, id
+    if e then
+        text.cal_next_head = left < 60 and string.format(tr("NEXT IN %d MIN"), left) or (left < 24 * 60 and string.format(tr("NEXT IN %d H %d MIN"), left // 60, left % 60) or tr("TOMORROW"))
+        text.cal_next_time = (e.time or "") .. (((e["end"] or "") ~= "") and (" – " .. e["end"]) or "")
+        text.cal_next_title = e.title or ""
+        text.cal_next_sub = (e.calendar or "") .. (((e.location or "") ~= "") and (" · " .. e.location) or "")
+        fact.cal_link_on = (e.link or "") ~= ""
+        text.cal_join = (e.link or ""):find("teams") and tr("Join (Teams)") or ((e.link or ""):find("meet.google") and tr("Join (Meet)") or ((e.link or ""):find("zoom") and tr("Join (Zoom)") or tr("Join")))
+        text.cal_snooze = tr("Remind in 5 min")
+    else
+        text.cal_next_head, text.cal_next_time = tr("NOTHING MORE TODAY"), ""
+        text.cal_next_title, text.cal_next_sub = tr("A free day"), tr("Nothing is planned for today or tomorrow.")
+        fact.cal_link_on = false
+    end
+    -- the chosen day as a line of time: now, the events, the free hours between eight and eight
+    local y, m, day = month.chosen:match("(%d+)-(%d+)-(%d+)")
+    local t = os.date("*t", os.time({ year = tonumber(y), month = tonumber(m), day = tonumber(day), hour = 12 }))
+    text.cal_day_head = (month.chosen == today and (tr("Today") .. ", ") or "") .. tr(WEEKDAYS[t.wday]):lower() .. " " .. tonumber(day) .. ". " .. tonumber(m) .. "."
+    local rows, list, busy, free = {}, events_on(month.chosen), 0, 0
+    local minute = now.hour * 60 + now.min
+    local cursor = 8 * 60
+    if month.chosen == today then cursor = math.max(cursor, minute) end
+    local placed_now = month.chosen ~= today
+    local function add(r) if #rows < 8 then rows[#rows + 1] = r end end
+    for _, e in ipairs(list) do
+        local s, en = mins(e.time), mins(e["end"])
+        if not s then
+            local r, g, b = rgb_of(e.color)
+            add({ time = tr("all day"), title = e.title or "", sub = e.kind == "holiday" and tr("Holiday") or (e.calendar or ""), r = r, g = g, b = b, kind = 0 })
+        else
+            if not placed_now and s >= minute then placed_now = true add({ time = hhmm(minute), title = "", sub = "", r = 0, g = 0, b = 0, kind = 2 }) end
+            if s - cursor >= 60 and s <= 20 * 60 then
+                free += s - cursor
+                add({ time = hhmm(cursor), title = string.format(tr("Free %d h %02d min"), (s - cursor) // 60, (s - cursor) % 60), sub = tr("Room for deep work"), r = 0, g = 0, b = 0, kind = 1 })
+            end
+            busy += 1
+            local r, g, b = rgb_of(e.color)
+            add({ time = e.time, title = e.title or "", sub = (e.calendar or "") .. (((e.location or "") ~= "") and (" · " .. e.location) or ""), r = r, g = g, b = b, kind = 0 })
+            cursor = math.max(cursor, en or (s + 60))
+        end
+    end
+    if not placed_now then add({ time = hhmm(minute), title = "", sub = "", r = 0, g = 0, b = 0, kind = 2 }) end
+    if 20 * 60 - cursor >= 60 then
+        free += 20 * 60 - cursor
+        add({ time = hhmm(cursor), title = string.format(tr("Free %d h %02d min"), (20 * 60 - cursor) // 60, (20 * 60 - cursor) % 60), sub = tr("Until eight in the evening"), r = 0, g = 0, b = 0, kind = 1 })
+    end
+    model.calrow = rows
+    text.cal_day_sum = string.format(tr("%d events · %d h free"), busy, free // 60)
+    text.cal_empty = cal.side == 1 and tr("No notifications") or tr("Nothing on this day")
+    -- the notifications, when they are what the right column shows
+    local ns = {}
+    for i, n in ipairs(notes) do
+        if i > 6 then break end
+        ns[i] = { title = (n.title or "") ~= "" and n.title or (n.app or ""), body = tostring(n.body or ""):gsub("%s+", " "), critical = (n.urgency or 1) >= 2 }
+    end
+    model.calnote = ns
+    fact.cal_side = cal.side
+    -- the sentence, and what it became
+    text.cal_q_hint = tr("A new event in a sentence: Lunch with Peter tomorrow at 12 in Jihlavanka")
+    text.cal_q_note = tr("read on this computer")
+    text.cal_add = tr("Add")
+    text.cal_accounts = tr("Linked calendars: Google, Microsoft 365, iCloud, Nextcloud and others · a subscription (.ics)")
+    local p = cal.parsed
+    fact.cal_p_on = p ~= nil and p.ok == true
+    if fact.cal_p_on then
+        local d0 = p.start:sub(1, 10)
+        local dt0 = os.date("*t", os.time({ year = tonumber(d0:sub(1, 4)), month = tonumber(d0:sub(6, 7)), day = tonumber(d0:sub(9, 10)), hour = 12 }))
+        text.cal_p1 = tr(SHORT[dt0.wday]) .. " " .. dt0.day .. ". " .. dt0.month .. "."
+        text.cal_p2 = p.allday and tr("all day") or (p.start:sub(12, 16) .. " – " .. p["end"]:sub(12, 16))
+        text.cal_p3 = (p.place or "") ~= "" and p.place or p.title
+        text.cal_p4 = (p.calendar_name or "") ~= "" and p.calendar_name or tr("no calendar to write to")
+    end
+    text.ic_cal_prev, text.ic_cal_next, text.ic_cal_plus, text.ic_cal_bell = icons["chevron-left"], icons["chevron-right"], icons["plus"], icons[#notes > 0 and "bell" or "bell-off"]
+    text.ic_cal_spark, text.ic_cal_video, text.ic_cal_drop, text.ic_cal_link = icons["sparkles"], icons["video"], icons["droplet"], icons["link"]
+end
+open_calendar = function(d, keep)
+    learn_nameday()
+    cal.side = keep and cal.side or 0
+    -- the 760 × 520 of the design, scaled by 1.2; the coffee begins under the month, where the sentence is written
+    card.open({}, { owner = d, id = "notes", custom = "calendar", width = 760, min_height = 700, split = 624, pane = 1, keep = keep })
+    fill_calendar()
+    if os.time() - cal.asked > 60 then cal.asked = os.time() read_events(function() if card.id() == "notes" then fill_calendar() end end) end
+end
+
 return {
     id = "clockgoo", name = "ClockGoo", kind = "clock", nature = "calm", size = 33, swell = 0.09, seat = 22,
     home = { edge = 0, at = 0.79 }, pull = 0.25, reach = 130,
@@ -607,6 +788,9 @@ return {
         end
         read_linked()
         every(30 * 60000, function() read_linked() end)
+        -- the accounts' events, fresh every ten minutes (Evolution Data Server syncs them on its own)
+        after(6000, function() read_events() end)
+        every(10 * 60000, function() read_events(function() if card.id() == "notes" then fill_calendar() end end) end)
         -- the time, as the minute turns
         sys.watch("clock", function(c)
             if type(c) ~= "table" then return end
@@ -631,11 +815,11 @@ return {
                 if set.notify_sound ~= false then pcall(sound.tone, { wave = "sine", freq = 740, to = 990, ms = 160, release = 220, volume = 0.35 }) end
             end
             show_beads(d)
-            if card.id() == "notes" then open_notes(d, true) end
+            if card.id() == "notes" then fill_calendar() end
         end)
         if served then pcall(sys.call, "notifications.keep", true) end
         on("toast_press", function() open_notes(d) end)
-        on("clock_notes", function() if card.id() == "notes" then card.close() else open_notes(d) end end)
+        on("clock_notes", function() if card.id() == "notes" then card.close() else open_calendar(d) end end)
         on("clock_time", function() if card.id() == "time" then card.close() else open_time(d) end end)
         on("clk_tab", function(n) tab = tonumber(n) or 0 open_time(d, true) end)
         on("clk_act", function(n) act(tonumber(n) or 0) end)
@@ -648,6 +832,57 @@ return {
             end
             rows[#rows + 1] = { label = tr("Choose the services…"), glyph = "settings", line = true, run = function() card.close() after(80, function() open.settings("clockgoo") end) end }
             ctx.open(rows, { width = 240 })
+        end)
+        -- the calendar's own buttons
+        on("cal_go", function(dir)
+            dir = tonumber(dir) or 0
+            if dir == 0 then local now = os.date("*t") month.y, month.m, month.chosen = now.year, now.month, iso(now)
+            else
+                month.m += dir
+                if month.m < 1 then month.m, month.y = 12, month.y - 1 elseif month.m > 12 then month.m, month.y = 1, month.y + 1 end
+            end
+            fill_calendar()
+        end)
+        on("cal_pick", function(place)
+            local key = month.cells[(tonumber(place) or 0) + 1]
+            if key then month.chosen = key cal.side = 0 fill_calendar() end
+        end)
+        on("cal_show", function(k) cal.side = tonumber(k) or 0 fill_calendar() end)
+        on("cal_join_it", function() if cal.next and (cal.next.link or "") ~= "" then card.close() open.url(cal.next.link) end end)
+        on("cal_snooze_it", function() if cal.next_id then cal.snoozed[cal.next_id] = os.time() + 300 fill_calendar() end end)
+        on("cal_note", function(i)
+            local n = notes[(tonumber(i) or 0) + 1]
+            if n then pcall(sys.call, "notifications.invoke", n.id, "default") pcall(sys.call, "notifications.dismiss", n.id) end
+        end)
+        on("cal_linked", function()
+            ctx.open({ { label = tr("Accounts: Google, Microsoft 365, Exchange, Nextcloud…"), glyph = "users", run = function() card.close() run("latte-cal", { "accounts" }, nil, { output = false }) end },
+                       { label = tr("A calendar from an address (.ics)…"), glyph = "link", run = function() open_calendars(d) end } }, { width = 330 })
+        end)
+        -- a sentence typed: what it would become, a moment after the typing stops
+        local typing = 0
+        on("text:cal_q", function()
+            fact.cal_typed = (text.cal_q or "") ~= ""
+            typing += 1
+            local mine = typing
+            if not fact.cal_typed then cal.parsed = nil fill_calendar() return end
+            after(450, function()
+                if mine ~= typing then return end
+                run("latte-cal", { "parse", text.cal_q }, function(out)
+                    local ok, p = pcall(json.decode, out or "")
+                    cal.parsed = ok and type(p) == "table" and p or nil
+                    if card.id() == "notes" then fill_calendar() end
+                end)
+            end)
+        end)
+        on("cal_put", function()
+            local p = cal.parsed
+            if not (p and p.ok and (p.calendar or "") ~= "") then return end
+            local args = { "add", p.calendar, p.title, p.start, p["end"] }
+            if (p.place or "") ~= "" then args[#args + 1] = p.place end
+            run("latte-cal", args, function()
+                text.cal_q, fact.cal_typed, cal.parsed = "", false, nil
+                read_events(function() if card.id() == "notes" then fill_calendar() end end)
+            end)
         end)
         on("clk_dnd", function() E.set("quiet", not quiet()) show_face(d) fill_clock() end)
         on("clk_layout", function() card.close() after(80, function() open.settings("clockgoo") end) end)
@@ -665,6 +900,6 @@ return {
             elseif busy_face then busy_face = false show_face(d) end
         end)
     end,
-    click = function(d) if card.id() == "notes" then card.close() else open_notes(d) end end,
+    click = function(d) if card.id() == "notes" then card.close() else open_calendar(d) end end,
     right = function(d) if card.id() == "time" then card.close() else open_time(d) end end,
 }

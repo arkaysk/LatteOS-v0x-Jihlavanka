@@ -1,0 +1,15 @@
+{
+ "about": "The words latte-cal parse reads a new event's sentence by (bin/latte-cal): Slovak. Another language is another file, <code>-dates.json.",
+ "relative": {"pozajtra": 2, "zajtra": 1, "dnes": 0},
+ "weekdays": {"pondelok": 0, "utorok": 1, "stredu": 2, "streda": 2, "štvrtok": 3, "piatok": 4, "sobotu": 5, "sobota": 5, "nedeľu": 6, "nedeľa": 6},
+ "before_weekday": ["v", "vo", "na", "budúci", "budúcu"],
+ "months": {"januára": 1, "februára": 2, "marca": 3, "apríla": 4, "mája": 5, "júna": 6, "júla": 7, "augusta": 8, "septembra": 9, "októbra": 10, "novembra": 11, "decembra": 12},
+ "at": ["o", "od"],
+ "until": ["do"],
+ "for": ["na"],
+ "hours": ["hodiny", "hodín", "hodinu", "h"],
+ "minutes": ["minút", "minúty", "min"],
+ "one_hour": ["hodinu"],
+ "half_hour": ["pol hodiny"],
+ "place": ["v", "vo", "na"]
+}
