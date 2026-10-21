@@ -15,7 +15,7 @@ whose every process is.
                                 down · restart · failed · crash · back
   latte-guarddog crashes        the programs that crashed in the last week, newest first: [{"pid", "exe", "name", "sig",
                                 "at", "owner", "quiet"}] (systemd-coredump)
-  latte-guarddog quiet NAME on|off   no notice when this program crashes (the crash is still in the log)
+  latte-guarddog quiet NAME on|off   no notice when this program crashes (the crash is still in the log); alone, those
 
 Crashes: the guard watches systemd-coredump too. A program of the user's session that crashed gets a notice with
 "Ask the AI", which hands the facts to an agent (latte-ai crash PID): it explains, and changes nothing.
@@ -375,7 +375,9 @@ def watch():
                     continue
                 seen.add(c["pid"])
                 note("crash", c["name"], "%s (pid %s, signal %s, %s)" % (c["exe"], c["pid"], c["sig"], c["owner"]))
-                if not c["quiet"]:
+                # the offer, unless the user said not about that one or turned it off (latte-ai toggle crash-capture),
+                # or there is no agent to hand it to — as Omarchy's crash-watch; the log keeps it either way
+                if not c["quiet"] and quiet("latte-ai", "offer-crash"):
                     tell_crash(c)
         off, known = switched_off(), listed()["components"]
         for ident, name, wanted, alive, start in COMPONENTS:
@@ -477,6 +479,8 @@ def main(a):
         print("[" + ",".join(l for l in read(LOG).splitlines()[-n:] if l.strip()) + "]")
     elif a[:1] == ["crashes"]:
         print(json.dumps(crashes()))
+    elif a == ["quiet"]:
+        print(json.dumps(sorted(choices().get("quiet", []))))
     elif a[:1] == ["quiet"] and len(a) == 3 and a[2] in ("on", "off"):
         hush(a[1], a[2] == "on")
     elif a[:1] == ["owner"] and len(a) > 1:

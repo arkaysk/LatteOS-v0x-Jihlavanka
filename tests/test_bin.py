@@ -197,6 +197,13 @@ with tempfile.TemporaryDirectory() as d:
     open(os.path.join(d, "ai", "models", "mmproj-Small.gguf"), "w").close()
     ai.LOCAL_DIRS = [os.path.join(d, "ai")]
     assert [m["name"] for m in ai.local_models()] == ["Small 2B", "Big 4B"], ai.local_models()
+    # the helpers (Omarchy's toggles): a flag named for the off state; who reads a sentence, this computer by default
+    ai.TOGGLES, ai.HELPER_WORD = os.path.join(d, "toggles"), os.path.join(d, "helper")
+    assert ai.switched_on("calendar-ai") and ai.helper_who() == "local"
+    ai.switch("calendar-ai", "toggle")
+    assert not ai.switched_on("calendar-ai") and os.path.isfile(os.path.join(d, "toggles", "calendar-ai-off"))
+    ai.switch("calendar-ai", "on")
+    assert ai.switched_on("calendar-ai")
 apps = load("latte-apps")
 with tempfile.TemporaryDirectory() as d:
     f = os.path.join(d, "org.example.App.desktop")

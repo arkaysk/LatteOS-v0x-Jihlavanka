@@ -61,6 +61,7 @@ The user's own, safe to edit (most are written by the Settings app; prefer it):
 | Weather, place | `~/.config/latteos/weather.json` |
 | GuardDog's choices | `~/.config/latteos/guarddog.json` |
 | AI: on or off, the user's instructions to every AI | `~/.config/latteos/ai`, `~/.config/latteos/ai-instructions.txt` |
+| AI helpers: the agent, who reads a sentence, what is off | `~/.config/latteos/agent`, `~/.config/latteos/helper`, `~/.local/state/latteos/toggles/<name>-off` — change them with `latte-ai doer`, `latte-ai helper`, `latte-ai toggle` (LensAI › Helpers) |
 | The drops (Goo): lively, coffee in glass, hidden drops, zoom | `~/.local/share/pleamar/goo/settings.json` (taken up as soon as it is written) |
 
 ## Commands

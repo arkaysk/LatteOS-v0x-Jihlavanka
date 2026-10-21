@@ -455,7 +455,7 @@ JSON:"""
 def ai_read(text, today=None):
     today = today or dt.date.today()
     try:
-        out = subprocess.run(["latte-ai", "quick", ASK.format(today=today.isoformat(), weekday=today.strftime("%A"), text=text.replace('"', "'"),
+        out = subprocess.run(["latte-ai", "quick", "--for", "calendar-ai", ASK.format(today=today.isoformat(), weekday=today.strftime("%A"), text=text.replace('"', "'"),
                                                      friday=(today + dt.timedelta(days=(4 - today.weekday()) % 7 or 7)).isoformat(),
                                                      days=", ".join((today + dt.timedelta(days=i)).strftime("%a %Y-%m-%d") for i in range(42)))],
                              capture_output=True, text=True, timeout=180).stdout

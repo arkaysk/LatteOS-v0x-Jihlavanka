@@ -42,7 +42,14 @@ No API key: the official tool of a service answers, with the account the user is
                             ~/.config/latteos/skills/latteos, linked into each agent's skills; reset brings back LatteOS's own
   latte-ai do TASK [AGENT]  "Do it for me": the agent (claude, chatgpt = Codex, gemini; else the chosen one) on the task in
                             a terminal, planning first with LatteOS's skill and changing nothing until the user says yes
-  latte-ai doer AGENT       the agent "Do it for me" uses (~/.config/latteos/agent)
+  latte-ai doer AGENT       the agent "Do it for me" and crashes go to (~/.config/latteos/agent); none is picked for the user
+  latte-ai helpers          LensAI's Helpers page: the agent, who reads a sentence, the toggles, the programs muted
+  latte-ai toggle NAME [on|off|toggle]   a helper (crash-capture, calendar-ai), as Omarchy's toggles: a flag named for the
+                            off state in ~/.local/state/latteos/toggles; alone, the exit code says whether it is on
+  latte-ai helper local|haiku   who reads a sentence: this computer (nothing leaves it) or Claude Haiku (~/.config/latteos/helper)
+  latte-ai quick --for NAME PROMPT   one question for a helper, the answer alone; exit 1 when it is off or fails
+  latte-ai offer-crash      exit 0 when GuardDog offers "Ask the AI" for a crash: the toggle on and an agent chosen
+  latte-ai invite           once: a notice asking the user to choose their agent (latte-session, a minute in)
   latte-ai local hardware | recommend | models | search TEXT [best|downloads|updated|likes] | files REPO | readme REPO |
                  get REPO FILE | runtime get | gpu on|off | remove PATH
                             the AI on this computer: what it can carry, LatteOS's recommended models (with "fit": gpu ·
@@ -88,6 +95,18 @@ import uuid
 def N(s):
     """A text the apps show translated (goo/lang): marked, so that tests/check.sh asks for its translation."""
     return s
+
+
+def T(text):
+    """The user's language, for what latte-ai itself shows (a notice): the table of goo/lang/<language>.plm, as GuardDog."""
+    lang = re.split(r"[_.@]", os.environ.get("LC_ALL") or os.environ.get("LC_MESSAGES") or os.environ.get("LANG") or "en")[0]
+    try:
+        with open(os.path.join(os.environ.get("LATTE_SHARE") or "/usr/share/latteos", "goo", "lang", lang + ".plm"), encoding="utf-8") as f:
+            table = f.read()
+    except OSError:
+        return text
+    m = re.search(r'^\s*"%s"\s*=\s*"((?:[^"\\]|\\.)*)"\s*$' % re.escape(text), table, re.M)
+    return m.group(1) if m else text
 
 SYSTEM = ("You are the assistant in the launcher of the LatteOS desktop. Answer briefly and to the point, in the "
           "language of the question, in plain text: no Markdown, no headings.")
@@ -1074,7 +1093,8 @@ def agents():
              "model": max(by_model, key=by_model.get) if by_model else "", "busiest": max(by_day, key=by_day.get) if by_day else "",
              "prompts": prompts, "sessions": sessions}
     can = doers()
-    return {"services": out, "stats": stats, "doers": [{"id": i, "name": DOERS[i]["name"]} for i in can], "ideas": IDEAS}
+    return {"services": out, "stats": stats, "doers": [{"id": i, "name": DOERS[i]["name"], "chosen": i == chosen(AGENT_WORD)} for i in can],
+            "ideas": IDEAS}
 
 
 def asked_this_month(provider):
@@ -1453,6 +1473,107 @@ def chats():
     return sorted(out, key=lambda c: c["updated"], reverse=True)
 
 
+# ── the helpers, as Omarchy keeps them (MIT; manual 13 and 17): what helps the system is a toggle that can be turned off —
+# a flag named for the off state in ~/.local/state/latteos/toggles (Omarchy's ~/.local/state/omarchy/toggles), which
+# stops the offer and never the thing itself (latte-ai crash PID works by hand) — and who does the work is a default
+# the user picks (Omarchy's Setup › Defaults): the agent (AGENT_WORD, none picked for them: once, an invitation), and
+# who reads a sentence (HELPER_WORD): this computer (nothing leaves it) unless they choose Claude Haiku.
+TOGGLES = os.path.join(os.environ.get("XDG_STATE_HOME") or os.path.expanduser("~/.local/state"), "latteos", "toggles")
+HELPER_WORD = os.path.join(os.environ.get("XDG_CONFIG_HOME") or os.path.expanduser("~/.config"), "latteos", "helper")
+SWITCHES = {
+    "crash-capture": {"name": N("Ask the AI about a crash"), "glyph": "bug",
+                      "desc": N("A program of yours that crashed gets a notice with “Ask the AI”: your agent explains what happened and changes nothing.")},
+    "calendar-ai": {"name": N("The calendar reads a sentence with the AI"), "glyph": "calendar-plus",
+                    "desc": N("What the words do not read (“the dentist the week after next, after lunch”) goes to the helper below; what it read is shown before it is added.")},
+}
+
+
+def switched_on(name):
+    return not turned_off() and not os.path.isfile(os.path.join(TOGGLES, name + "-off"))
+
+
+def switch(name, action):
+    flag = os.path.join(TOGGLES, name + "-off")
+    off = action == "off" or (action == "toggle" and not os.path.isfile(flag))
+    if off:
+        os.makedirs(TOGGLES, exist_ok=True)
+        open(flag, "w").close()
+    elif os.path.isfile(flag):
+        os.remove(flag)
+
+
+def chosen(path):
+    try:
+        with open(path) as f:
+            return f.read().strip()
+    except OSError:
+        return ""
+
+
+def helper_who():
+    return chosen(HELPER_WORD) or "local"
+
+
+def haiku_ways():
+    return [w for w, there in (("key", secret("api-anthropic") is not None), ("claude", shutil.which("claude", path=SEARCH) is not None)) if there]
+
+
+def quick_model():
+    """The smallest model over 2 GB: a 2B one (Qwen3.5) left the day out of the sentences, a 4B one read them (21. 10.)."""
+    ms = [m for m in local_models_all() if m["size"] > 2e9] or local_models_all()[-1:]
+    return ms[0] if ms and local_server() else None
+
+
+def helpers():
+    """LensAI's Helpers page: the defaults, the toggles, and the programs whose crashes are not told (GuardDog's)."""
+    try:
+        muted = json.loads(subprocess.run(["latte-guarddog", "quiet"], capture_output=True, text=True, timeout=10).stdout or "[]")
+    except (OSError, ValueError, subprocess.SubprocessError):
+        muted = []
+    m = quick_model()
+    return {"ai": not turned_off(), "agent": chosen(AGENT_WORD),
+            "agents": [{"id": i, "name": d["name"], "installed": shutil.which(d["tool"], path=SEARCH) is not None} for i, d in DOERS.items()],
+            "helper": helper_who(), "local": m["name"] if m else "", "haiku": haiku_ways(),
+            "switches": [dict(v, id=k, on=switched_on(k)) for k, v in SWITCHES.items()], "muted": muted}
+
+
+def invite():
+    """Once, as Omarchy's first run does: no agent is picked for the user, so they are asked to pick one."""
+    done = os.path.join(TOGGLES, "..", "done", "agent-invitation")
+    if turned_off() or chosen(AGENT_WORD) or os.path.exists(done) or not doers() or not shutil.which("notify-send"):
+        return
+    os.makedirs(os.path.dirname(done), exist_ok=True)
+    open(done, "w").close()
+    a = subprocess.run(["notify-send", "-a", "LatteOS", "--wait", "--action=pick=" + T("Choose"), T("Choose your agent"),
+                        T("Let your favourite agent help with LatteOS: crashes, tasks, questions about this computer.")],
+                       capture_output=True, text=True).stdout.strip()
+    if a == "pick":
+        subprocess.Popen(["latte-app", "aicenter", "helpers"], start_new_session=True)
+
+
+def quick(prompt, who):
+    """One question, the answer alone, or None: on this computer (quick_model), or Claude Haiku — by its API with a key of
+    one's own (a second or two), else Claude Code signed in (some ten seconds, most of it starting). Like Omarchy's
+    dictation clean-up (voxtype post_process): whoever asks keeps what it had when this fails."""
+    if who == "haiku":
+        ways = haiku_ways()
+        if "key" in ways:
+            r = api_call(dict(APIS["api-anthropic"], id="api-anthropic"), "/messages",
+                         {"model": "claude-haiku-5-5", "max_tokens": 256, "messages": [{"role": "user", "content": prompt}]}, timeout=60)
+            return "".join(b.get("text", "") for b in r.get("content", [])).strip()
+        if "claude" in ways:
+            done = subprocess.run([shutil.which("claude", path=SEARCH), "-p", prompt, "--model", "haiku", "--no-session-persistence",
+                                   "--setting-sources", "project", "--strict-mcp-config", "--tools", ""],
+                                  capture_output=True, text=True, timeout=120, cwd=os.path.expanduser("~"))
+            return done.stdout.strip() if done.returncode == 0 else None
+        return None
+    m = quick_model()
+    if not m or not local_start(m["id"]):
+        return None
+    return chat_completion("http://127.0.0.1:%d/v1" % LOCAL_PORT, {}, {"messages": [{"role": "user", "content": prompt}], "temperature": 0,
+                                                                        "max_tokens": 256, "chat_template_kwargs": {"enable_thinking": False}})[0]
+
+
 def main(a):
     if a in (["providers"], ["providers", "all"]):
         print(json.dumps(providers(len(a) == 2)))
@@ -1493,14 +1614,33 @@ def main(a):
         r = send(a[1], a[2], a[3], a[4], effort, attach)
         print(json.dumps(r, ensure_ascii=False))
         return 0 if r["ok"] else 1
-    # one question to a small model on this computer, the answer alone (latte-cal reads a sentence with it). The smallest
-    # over 2 GB: a 2B model (Qwen3.5) left the day out of the sentences, a 4B one read them right (21. 10., inspo/ai-na-ploche.md)
-    if len(a) == 2 and a[0] == "quick":
-        ms = [m for m in local_models_all() if m["size"] > 2e9] or local_models_all()[-1:]
-        if not ms or not local_server() or not local_start(ms[0]["id"]):
+    # a helper's question: latte-cal reads a sentence with it; nothing when its toggle is off
+    if len(a) == 4 and a[0] == "quick" and a[1] == "--for" and a[2] in SWITCHES:
+        out = quick(a[3], helper_who()) if switched_on(a[2]) else None
+        if not out:
             return 1
-        print(chat_completion("http://127.0.0.1:%d/v1" % LOCAL_PORT, {}, {"messages": [{"role": "user", "content": a[1]}], "temperature": 0,
-                                                                            "max_tokens": 256, "chat_template_kwargs": {"enable_thinking": False}})[0])
+        print(out)
+        return 0
+    if a == ["helpers"]:
+        print(json.dumps(helpers(), ensure_ascii=False))
+        return 0
+    # omarchy toggle NAME: the flag; with no action, whether it is on (the exit code, as omarchy-toggle-enabled)
+    if len(a) in (2, 3) and a[0] == "toggle" and a[1] in SWITCHES and a[2:] in ([], ["on"], ["off"], ["toggle"]):
+        if len(a) == 2:
+            return 0 if switched_on(a[1]) else 1
+        switch(a[1], a[2])
+        return 0
+    # whether GuardDog offers "Ask the AI" for a crash: the toggle, and the agent the user chose (Omarchy's crash-watch:
+    # with none chosen the notice has nothing to offer)
+    if a == ["offer-crash"]:
+        return 0 if switched_on("crash-capture") and chosen(AGENT_WORD) in doers() else 1
+    if len(a) == 2 and a[0] == "helper" and a[1] in ("local", "haiku"):
+        os.makedirs(os.path.dirname(HELPER_WORD), exist_ok=True)
+        with open(HELPER_WORD, "w") as f:
+            f.write(a[1] + "\n")
+        return 0
+    if a == ["invite"]:
+        invite()
         return 0
     if a == ["pick"]:
         done = subprocess.run(["zenity", "--file-selection", "--multiple", "--separator=\n"], capture_output=True, text=True)
@@ -1623,6 +1763,11 @@ def main(a):
         print(json.dumps(r))
         return 0 if r["ok"] else 1
     if len(a) in (2, 3) and a[0] == "do":
+        # no agent chosen and none named: the choice first, as Omarchy brings up its picker
+        if len(a) == 2 and chosen(AGENT_WORD) not in doers():
+            subprocess.Popen(["latte-app", "aicenter", "helpers"], start_new_session=True)
+            print(json.dumps({"ok": False, "choose": True}))
+            return 1
         r = do(a[1], a[2] if len(a) == 3 else "")
         print(json.dumps(r))
         return 0 if r["ok"] else 1

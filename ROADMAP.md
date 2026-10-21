@@ -547,6 +547,10 @@ Schválené 12. 10. 2026. Pracuje sa **zhora nadol, neskáče sa**; nový nápad
     - **Fotky:** hľadanie fotky podľa opisu (obraz → význam, miestny model; súvisí s hľadaním podľa významu, bod 16 i).
     - Ďalšie polia postupne (Nastavenia, App Manager, LensGoo). Merané 21. 10.: model 4B ~12 s na procesore a
       pri dátumoch sa mýli — čo vedia pravidlá, robia pravidlá; AI iba na zvyšok a vždy s potvrdením.
+    - [x] **Pomocníci ako v Omarchy** (21. 10., LensAI › Pomocníci, ROZHODNUTIA): tvoj agent (nikto nevyberá za teba,
+      jednorazová pozvánka), drobné úlohy na tomto počítači alebo cez Claude Haiku (kľúč ~1–2 s, Claude Code ~10–20 s),
+      prepínače `crash-capture` a `calendar-ai` so stlmením pádov po programoch. Každé nové pole z tohto bodu = nový
+      prepínač v `SWITCHES` (`bin/latte-ai`) a otázka cez `latte-ai quick --for MENO`.
 
 ## ROADMAP2 — LatteOS od nápadu po hotový produkt
 
