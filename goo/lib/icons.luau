@@ -196,6 +196,7 @@ return {
     ["telescope"] = "\u{F07D}",
     ["temperature"] = "\u{EB38}",
     ["template"] = "\u{EB39}",
+    ["terminal"] = "\u{EBDC}",
     ["terminal-2"] = "\u{EBEF}",
     ["tool"] = "\u{EB40}",
     ["trash"] = "\u{EB41}",

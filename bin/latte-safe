@@ -55,6 +55,7 @@ menu-xml)
     item "$(t "Rescue menu")" Execute "foot -T 'LatteOS SAFE' -e latte-safe"
     item "$(t "Terminal")" Execute foot
     item "$(t "Try the full desktop again")" Execute "latte-safe try-normal"
+    command -v latte-ai >/dev/null && item "$(t "Ask the AI why it ended")" Execute "latte-ai why"
     echo '    <separator/>'
     item "$(t "Log out")" Exit
     item "$(t "Restart")" Execute "systemctl reboot"
@@ -83,6 +84,7 @@ while true; do
     printf '\n  LatteOS SAFE\n\n  %s%s\n\n' "$reason" "${detail:+ ($detail)}"
     printf '  w) %s\n' "$(t "Why the last session ended")"
     printf '  c) %s\n' "$(t "Copy that as a report")"
+    command -v latte-ai >/dev/null && printf '  a) %s\n' "$(t "Ask the AI why it ended")"
     printf '  1) %s\n' "$(t "Diagnostics: the last log of the session and of the desktop")"
     printf '  2) %s\n' "$(t "Try the full desktop again")"
     printf '  3) %s\n' "$(t "Terminal")"
@@ -99,6 +101,7 @@ while true; do
              tail -n 60 "$(ls -t "$XDG_RUNTIME_DIR"/hypr/*/hyprland.log 2>/dev/null | head -1)" 2>/dev/null; } | less -R ;;
         w|W) "$0" why | less -R ;;
         c|C) "$0" why copy; read -r -p "Enter…" ;;
+        a|A) latte-ai why >/dev/null ;;
         2) exec "$0" try-normal ;;
         3) foot & ;;
         4) nmtui ;;

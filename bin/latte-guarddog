@@ -11,6 +11,14 @@ whose every process is.
   latte-guarddog owner PID…     the same for the pids given
   latte-guarddog set ID on|off  the user's choice for a component (kept in ~/.config/latteos/guarddog.json, which the Settings write)
   latte-guarddog manifest       (root, at every install and update) writes the list of what LatteOS is made of, with a hash of each
+  latte-guarddog log [N]        what the guard did, the last N lines (200): [{"at", "what", "id", "text"}]; what = start ·
+                                down · restart · failed · crash · back
+  latte-guarddog crashes        the programs that crashed in the last week, newest first: [{"pid", "exe", "name", "sig",
+                                "at", "owner", "quiet"}] (systemd-coredump)
+  latte-guarddog quiet NAME on|off   no notice when this program crashes (the crash is still in the log)
+
+Crashes: the guard watches systemd-coredump too. A program of the user's session that crashed gets a notice with
+"Ask the AI", which hands the facts to an agent (latte-ai crash PID): it explains, and changes nothing.
 
 A component that is gone is started again after two looks in a row (a restart that someone does on purpose takes a
 moment). One that is started five times in five minutes and still falls is let be for five minutes, and the user is
@@ -35,6 +43,30 @@ RUN = os.path.join(os.environ.get("XDG_RUNTIME_DIR") or "/tmp", "latteos")
 STATE = os.path.join(RUN, "guarddog.json")
 FLAG = os.path.join(os.environ.get("XDG_CONFIG_HOME") or os.path.expanduser("~/.config"), "latteos", "desktop-icons")
 EVERY, MISSES, TRIES, WINDOW, REST = 5, 2, 5, 300, 300
+LOG = os.path.join(RUN, "guarddog.log")
+LOG_KEEP = 500
+
+
+def T(text):
+    """The user's language, from the table the scenes and the apps translate with (goo/lang/<language>.plm)."""
+    lang = re.split(r"[_.@]", os.environ.get("LC_ALL") or os.environ.get("LC_MESSAGES") or os.environ.get("LANG") or "en")[0]
+    table = read(os.path.join(os.environ.get("LATTE_SHARE") or "/usr/share/latteos", "goo", "lang", lang + ".plm"))
+    m = re.search(r'^\s*"%s"\s*=\s*"((?:[^"\\]|\\.)*)"\s*$' % re.escape(text), table, re.M) if table else None
+    return m.group(1) if m else text
+
+
+def note(what, ident, text):
+    """A line of what the guard did, for its window's console: the file keeps the last LOG_KEEP."""
+    line = json.dumps({"at": int(time.time()), "what": what, "id": ident, "text": text})
+    print("guarddog: %s %s: %s" % (what, ident, text), flush=True)
+    try:
+        lines = read(LOG).splitlines()[-(LOG_KEEP - 1):] + [line]
+        os.makedirs(RUN, exist_ok=True)
+        with open(LOG + ".tmp", "w") as f:
+            f.write("\n".join(lines) + "\n")
+        os.replace(LOG + ".tmp", LOG)
+    except OSError:
+        pass
 
 
 # ── whose a process is ────────────────────────────────────────────────────────────────────────────────────────
@@ -235,14 +267,26 @@ def switched_off():
         return set()
 
 
+def choices():
+    try:
+        with open(CHOICES) as f:
+            d = json.load(f)
+        return d if isinstance(d, dict) else {}
+    except (OSError, ValueError):
+        return {}
+
+
+def keep_choices(d):
+    os.makedirs(os.path.dirname(CHOICES), exist_ok=True)
+    with open(CHOICES + ".tmp", "w") as f:
+        json.dump(d, f)
+    os.replace(CHOICES + ".tmp", CHOICES)
+
+
 def choose(ident, on):
     off = switched_off()
     (off.discard if on else off.add)(ident)
-    os.makedirs(os.path.dirname(CHOICES), exist_ok=True)
-    tmp = CHOICES + ".tmp"
-    with open(tmp, "w") as f:
-        json.dump({"off": sorted(off)}, f)
-    os.replace(tmp, CHOICES)
+    keep_choices(dict(choices(), off=sorted(off)))
 
 
 # id, the name shown (in English: the shell translates), whether it is wanted now, whether it is there, how to start it again
@@ -268,14 +312,71 @@ COMPONENTS = [
 
 def tell_failed(name):
     if shutil.which("notify-send"):
-        start_detached("notify-send", "-u", "critical", "-a", "LatteOS", "GuardDog", "%s would not stay up." % name)
+        start_detached("notify-send", "-u", "critical", "-a", "LatteOS", "GuardDog", T("{n} would not stay up.").replace("{n}", T(name)))
+
+
+# ── crashes: what systemd-coredump caught, as Omarchy's crash notices do (MIT), with LatteOS's owners ──────────────
+def crashes(days=7):
+    try:
+        out = subprocess.run(["coredumpctl", "list", "--json=short", "--no-pager", "--since=-%dd" % days],
+                             capture_output=True, text=True, timeout=20).stdout
+        found = json.loads(out) if out.strip() else []
+    except (OSError, ValueError, subprocess.TimeoutExpired):
+        return []
+    muted, files = quiet_ones(), listed()["files"]
+    out = []
+    for c in reversed(found):
+        if c.get("uid") != UID:
+            continue
+        name = os.path.basename(c.get("exe", "")) or "?"
+        out.append({"pid": c.get("pid"), "exe": c.get("exe", ""), "name": name, "sig": c.get("sig", 0),
+                    "at": int((c.get("time") or 0) / 1e6), "owner": owner_of_path(c.get("exe", ""), files), "quiet": name in muted})
+    return out
+
+
+def owner_of_path(exe, files):
+    """Whose a program that is gone was: LatteOS's when it is on the list, the distribution's under /usr, else the user's."""
+    return "latteos" if exe in files else ("linux" if exe.startswith(("/usr/", "/bin/", "/sbin/")) else "user")
+
+
+def quiet_ones():
+    return set(choices().get("quiet", []))
+
+
+def hush(name, on):
+    q = quiet_ones()
+    (q.add if on else q.discard)(name)
+    keep_choices(dict(choices(), quiet=sorted(q)))
+
+
+def tell_crash(c):
+    """A notice with "Ask the AI": pressed, the facts go to an agent (latte-ai crash), which explains and changes nothing."""
+    if not shutil.which("notify-send"):
+        return
+    body = T("{n} crashed. Ask the AI what happened?").replace("{n}", c["name"])
+    script = 'a=$(notify-send -a LatteOS -u normal --wait --action=ask="$3" --action=mute="$4" "$1" "$2"); ' \
+             'case "$a" in ask) exec latte-ai crash "$5" ;; mute) exec latte-guarddog quiet "$6" on ;; esac'
+    start_detached("sh", "-c", script, "sh", "GuardDog", body, T("Ask the AI"), T("Not about this program"), str(c["pid"]), c["name"])
 
 
 def watch():
     os.makedirs(RUN, exist_ok=True)
     mine = {c[0]: {"id": c[0], "name": c[1], "state": "up", "restarts": 0, "off": False, "missed": 0, "tries": [], "rest": 0, "told": False} for c in COMPONENTS}
+    note("start", "guarddog", "watching")
+    seen = {c["pid"] for c in crashes(1)}
+    looked = 0
     while True:
         now = time.monotonic()
+        # new crashes, a look every half minute: in the log, and a notice unless the user said not about that one
+        if now - looked > 30:
+            looked = now
+            for c in crashes(1):
+                if c["pid"] in seen:
+                    continue
+                seen.add(c["pid"])
+                note("crash", c["name"], "%s (pid %s, signal %s, %s)" % (c["exe"], c["pid"], c["sig"], c["owner"]))
+                if not c["quiet"]:
+                    tell_crash(c)
         off, known = switched_off(), listed()["components"]
         for ident, name, wanted, alive, start in COMPONENTS:
             c = mine[ident]
@@ -287,11 +388,15 @@ def watch():
                     c["state"], c["missed"] = "off", 0
                     continue
                 if alive():
+                    if c["state"] in ("down", "failed"):
+                        note("back", ident, "up again")
                     if c["state"] in ("down", "failed", "off"):
                         c["state"] = "up"
                     c["missed"], c["told"] = 0, False
                     continue
                 c["missed"] += 1
+                if c["missed"] == 1:
+                    note("down", ident, "not running")
                 if start is None:
                     c["state"] = "down"
                     continue
@@ -303,12 +408,13 @@ def watch():
                 c["tries"] = [t for t in c["tries"] if now - t < WINDOW]
                 if len(c["tries"]) >= TRIES:
                     c["state"], c["rest"] = "failed", now + REST
+                    note("failed", ident, "fell %d times in %d minutes; left alone for %d minutes" % (TRIES, WINDOW // 60, REST // 60))
                     if not c["told"]:
                         c["told"] = True
                         tell_failed(name)
                     continue
                 c["tries"].append(now)
-                print("guarddog: %s is down, starting it again" % ident, flush=True)
+                note("restart", ident, "starting it again")
                 start()
                 c["restarts"] += 1
                 c["state"], c["missed"] = "restarted", 0
@@ -366,6 +472,13 @@ def main(a):
         return manifest()
     elif a[:1] == ["set"] and len(a) == 3 and a[2] in ("on", "off"):
         choose(a[1], a[2] == "on")
+    elif a[:1] == ["log"]:
+        n = int(a[1]) if len(a) > 1 and a[1].isdigit() else 200
+        print("[" + ",".join(l for l in read(LOG).splitlines()[-n:] if l.strip()) + "]")
+    elif a[:1] == ["crashes"]:
+        print(json.dumps(crashes()))
+    elif a[:1] == ["quiet"] and len(a) == 3 and a[2] in ("on", "off"):
+        hush(a[1], a[2] == "on")
     elif a[:1] == ["owner"] and len(a) > 1:
         print(json.dumps({p: owner(int(p)) for p in a[1:]}))
     else:

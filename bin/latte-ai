@@ -43,6 +43,8 @@ No API key: the official tool of a service answers, with the account the user is
   latte-ai do TASK [AGENT]  "Do it for me": the agent (claude, chatgpt = Codex, gemini; else the chosen one) on the task in
                             a terminal, planning first with LatteOS's skill and changing nothing until the user says yes
   latte-ai doer AGENT       the agent "Do it for me" uses (~/.config/latteos/agent)
+  latte-ai crash PID        a program that crashed (systemd-coredump): the agent finds out what happened and explains it
+  latte-ai why              in SAFE: the agent finds out why the last session ended and explains it
   latte-ai models           every model of every service there is, for LensAI: [{"id", "name", "models":
                             [{"id", "name", "hidden", "default"}]}]; `providers` leaves the hidden ones out and puts
                             the default first
@@ -702,8 +704,14 @@ DOERS = {
     "chatgpt": {"name": "Codex", "tool": "codex", "argv": lambda task: ["codex", "-s", "read-only", "-a", "on-request", task]},
     "gemini": {"name": "Gemini", "tool": "gemini", "argv": lambda task: ["gemini", "--approval-mode", "default", "-i", task]},
 }
+LANGUAGES = {"sk": "Slovak", "cs": "Czech", "en": "English", "de": "German", "hu": "Hungarian", "pl": "Polish", "uk": "Ukrainian"}
 DO_FIRST = ("Use the latteos skill. Look first, then make a plan and ask me before you change anything. "
-            "Answer in the language I write in. The task: ")
+            "Answer in %s. The task: ")
+
+
+def first_words():
+    code = (os.environ.get("LC_ALL") or os.environ.get("LC_MESSAGES") or os.environ.get("LANG") or "en").split("_")[0].split(".")[0]
+    return DO_FIRST % LANGUAGES.get(code, "the language of the locale " + code)
 IDEAS = [N("Make room on my disk: what fills it, and what can go?"), N("Why is my computer slow right now?"),
          N("Set up my second monitor"), N("Set up my printer"), N("Change the wallpaper with the time of day"),
          N("Explain what started with my computer today, and what I can turn off")]
@@ -727,12 +735,39 @@ def do(task, who=""):
     who = who if who in can else (can[0] if can else "")
     if not who:
         return {"ok": False, "agent": ""}
-    argv = DOERS[who]["argv"](DO_FIRST + task) if task.strip() else DOERS[who]["argv"]("")[:-1]
+    argv = DOERS[who]["argv"](first_words() + task) if task.strip() else DOERS[who]["argv"]("")[:-1]
     argv[0] = shutil.which(argv[0], path=SEARCH) or argv[0]
     subprocess.Popen(["foot", "--title", DOERS[who]["name"], "--working-directory", os.path.expanduser("~"), "--"] + argv,
                      start_new_session=True, stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
                      env=dict(os.environ, PATH=SEARCH))
     return {"ok": True, "agent": who}
+
+
+# ── a crash, and why the session ended: the facts to an agent, which explains and changes nothing (Omarchy's
+# diagnose-crash, MIT; GuardDog's notice and LatteOS SAFE ask for it)
+def crash(pid):
+    try:
+        found = json.loads(subprocess.run(["coredumpctl", "list", "--json=short", "--no-pager", str(pid)],
+                                          capture_output=True, text=True, timeout=20).stdout or "[]")
+    except (OSError, ValueError, subprocess.TimeoutExpired):
+        found = []
+    c = found[-1] if found else {"exe": "?", "pid": pid, "sig": "?", "time": 0}
+    at = datetime.datetime.fromtimestamp((c.get("time") or 0) / 1e6)
+    task = ("The program %s (pid %s) crashed on %s with signal %s; systemd-coredump caught it. Find out what happened: "
+            "`coredumpctl info %s`, the journal around that moment (`journalctl --since '%s' --until '%s'`), and whose it is "
+            "(LatteOS's, Fedora's or an app's: `latte-guarddog crashes`). Tell me in plain words what happened, whether it is "
+            "worth reporting and to whom, and what I can do. Do not change anything."
+            % (c.get("exe"), c.get("pid"), at.strftime("%Y-%m-%d %H:%M:%S"), c.get("sig"), c.get("pid"),
+               (at - datetime.timedelta(minutes=2)).strftime("%Y-%m-%d %H:%M:%S"), (at + datetime.timedelta(seconds=30)).strftime("%Y-%m-%d %H:%M:%S")))
+    return do(task)
+
+
+def why():
+    task = ("My LatteOS desktop session ended and I am in the SAFE session. Find out why: `latte-safe why` (LatteOS's own "
+            "note, and whyd's reading of the journal when it is installed), `journalctl -b -1 -p warning`, "
+            "`coredumpctl list --since=-1d`. Tell me in plain words what happened and what I can do; change nothing "
+            "without asking me first.")
+    return do(task)
 
 
 def agents():
@@ -1253,6 +1288,14 @@ def main(a):
             print(e, file=sys.stderr)
             return 1
         return 0
+    if len(a) == 2 and a[0] == "crash" and a[1].isdigit():
+        r = crash(int(a[1]))
+        print(json.dumps(r))
+        return 0 if r["ok"] else 1
+    if a == ["why"]:
+        r = why()
+        print(json.dumps(r))
+        return 0 if r["ok"] else 1
     if len(a) in (2, 3) and a[0] == "do":
         r = do(a[1], a[2] if len(a) == 3 else "")
         print(json.dumps(r))

@@ -764,6 +764,7 @@ ShellRoot {
                              onPressed: lensFile.offer(modelData.id, !on) } } }
 
             // GuardDog: what is kept running, and what the user has told it to leave alone
+            Pill { visible: shell.page === "guarddog"; icon: "shield-check"; text: I18n.tr("Open GuardDog: crashes and its log"); onPressed: Quickshell.execDetached(["latte-app", "guarddog"]) }
             Part { visible: shell.page === "guarddog"; width: view.room; title: I18n.tr("What GuardDog keeps running")
                    note: I18n.tr("It looks every few seconds, and starts again what has stopped. What you switch off here it leaves alone, and it stays so after an update. Switching off does not stop what is running now.")
                 Repeater { model: shell.page === "guarddog" && guardq.data ? guardq.data : []

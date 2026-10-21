@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=GuardDog
+Name[sk]=GuardDog
+Comment=What keeps the desktop running, the programs that crashed, and what the guard did
+Comment[sk]=Čo drží plochu v chode, programy, ktoré spadli, a čo strážca urobil
+Exec=latte-app guarddog
+Icon=security-high
+Categories=System;Monitor;
+StartupWMClass=org.quickshell

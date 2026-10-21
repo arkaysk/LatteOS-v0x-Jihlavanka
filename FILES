@@ -61,6 +61,7 @@
 /usr/share/latteos/goo/side.plm                         <- goo/side.plm
 /usr/share/latteos/goo/side.luau                        <- goo/side.luau
 /usr/share/latteos/apps/aicenter.qml                    <- apps/aicenter.qml
+/usr/share/latteos/apps/guarddog.qml                    <- apps/guarddog.qml
 /usr/share/latteos/apps/appmanager.qml                  <- apps/appmanager.qml
 /usr/share/latteos/apps/devices.qml                     <- apps/devices.qml
 /usr/share/latteos/apps/monitor.qml                     <- apps/monitor.qml
@@ -91,6 +92,7 @@
 /usr/share/latteos/apps/common/shaders/reveal.frag.qsb  <- apps/common/shaders/reveal.frag.qsb
 /usr/share/latteos/apps/common/window-place             <- apps/common/window-place
 /usr/share/applications/latteos-aicenter.desktop        <- system/applications/latteos-aicenter.desktop
+/usr/share/applications/latteos-guarddog.desktop        <- system/applications/latteos-guarddog.desktop
 /usr/share/applications/latteos-appmanager.desktop      <- system/applications/latteos-appmanager.desktop
 /usr/share/applications/latteos-devices.desktop         <- system/applications/latteos-devices.desktop
 /usr/share/applications/latteos-monitor.desktop         <- system/applications/latteos-monitor.desktop

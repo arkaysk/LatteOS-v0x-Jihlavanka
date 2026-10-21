@@ -436,8 +436,13 @@ Schválené 12. 10. 2026. Pracuje sa **zhora nadol, neskáče sa**; nový nápad
          nič sa neschvaľuje samo. LensGoo: 4. ikona v päte karty AI (úloha z poľa; prázdne pole → LensAI › Agenti).
          LensAI › Agenti: pole, voľba agenta (`latte-ai doer`, `~/.config/latteos/agent`), 6 pripravených úloh
          („Urob niečo“ z Omarchy). Overené: terminál s Claude Code sa otvorí; plán na skutočnej ploche neoverený;
-      6. [ ] **pád → AI** s GuardDogom a **LatteOS SAFE** (podľa skillu `diagnose-crash`): upozornenie o páde,
-         v SAFE „Prečo sa skončila relácia“ s ponukou „Opýtať sa AI“;
+      6. [x] **pád → AI** s GuardDogom a **LatteOS SAFE** (podľa `diagnose-crash` z Omarchy), hotové 21. 10.: GuardDog
+         sleduje systemd-coredump (každých 30 s), pád zapíše do denníka a ukáže upozornenie „Opýtať sa AI“ · „O tomto
+         programe nie“ (stlmenie v `guarddog.json`); `latte-ai crash PID` dá agentovi fakty (coredumpctl, denník okolo,
+         čí program), vysvetlí, nič nemení; v SAFE položka „Opýtať sa AI, prečo sa skončila“ (`latte-ai why`), aj v ponuke
+         pravého tlačidla. **Okno GuardDog** (`latte-app guarddog`, na pokyn používateľa): Čo drží v chode, Pády
+         (Opýtať sa AI, Stlmiť), Denník ako konzola (`latte-guarddog log`). Overené: pád `sleep` zachytený, upozornenie
+         po slovensky; agent pri páde na ploche neoverený;
       7. [ ] viac účtov jedného poskytovateľa, prepnutie pri limite; diktovanie do akejkoľvek aplikácie; App Manager › AI.
       8. [ ] **rozhovory aj mimo LensAI** (používateľ, 21. 10.: na PC v LensAI, na mobile v aplikácii Claude):
          (a) **import** exportu dát služby (Claude: Nastavenia › Súkromie › Export, ChatGPT: Export údajov, Gemini:
