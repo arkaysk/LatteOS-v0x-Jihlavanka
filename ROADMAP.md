@@ -509,6 +509,11 @@ Schválené 12. 10. 2026. Pracuje sa **zhora nadol, neskáče sa**; nový nápad
     pod ním posledné commity, každý rozbaliteľný: dátum, autor, správa celá a čitateľne, zmenené súbory. Zdroj:
     verejné repo LatteOS cez GitHub API (`/stats/commit_activity`, `/commits`), bez siete posledné uložené; na
     vývojárskom stroji aj `git log` miestneho repa. Graf ako `DotGraph` (bodky v štvorcoch), farby z témy.
+19. [ ] **hyprtrizone pre ultrawide monitory** (používateľ, 21. 10.; [github.com/nyrda/hyprtrizone](https://github.com/nyrda/hyprtrizone),
+    MIT, doplnok Hyprlandu): tri zóny — hlavné okno v strede, po stranách samostatné posúvateľné stĺpce, párovanie
+    okien, ťahanie myšou, lišty nad bočnými stĺpcami. Ako ďalší režim v Nastavenia › Okná („Tri zóny“), ponúknutý
+    pri monitore 21:9 a širšom (latte-lab DP-3 2560 × 1080). Zostaviť pre nainštalovaný Hyprland ako hyprbars
+    (`optional /usr/lib64/latteos/…` vo FILES), autor v TRETIE-STRANY.md.
 
 ## ROADMAP2 — LatteOS od nápadu po hotový produkt
 
