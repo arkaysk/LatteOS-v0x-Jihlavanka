@@ -263,7 +263,8 @@ APIS = {
     "api-openai": {"name": "OpenAI API", "style": "chatgpt", "url": "https://api.openai.com/v1", "kind": "openai"},
     "api-google": {"name": "Gemini API", "style": "gemini", "url": "https://generativelanguage.googleapis.com/v1beta/openai", "kind": "openai"},
     "api-xai": {"name": "Grok API", "style": "grok", "url": "https://api.x.ai/v1", "kind": "openai"},
-    "api-mistral": {"name": "Mistral API", "style": "own", "url": "https://api.mistral.ai/v1", "kind": "openai"},
+    "api-mistral": {"name": "Mistral API", "style": "mistral", "url": "https://api.mistral.ai/v1", "kind": "openai"},
+    "api-deepseek": {"name": "DeepSeek", "style": "deepseek", "url": "https://api.deepseek.com", "kind": "openai"},
 }
 SERVERS = os.path.join(os.environ.get("XDG_CONFIG_HOME") or os.path.expanduser("~/.config"), "latteos", "ai-servers.json")
 

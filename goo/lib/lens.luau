@@ -306,7 +306,8 @@ end
 -- the one open stays until a new session, also when the card closes. Which services the choice offers is the
 -- Settings' (Launcher › AI in LensGoo: `ai` in lens-lists.json); signing in to them is the Lens AI centre's.
 local HINTS = { claude = N("How can I help you today?"), gemini = N("Ask Gemini"), grok = N("What do you want to know?"),
-                chatgpt = N("Ask ChatGPT"), copilot = N("Ask Copilot"), mistral = N("Ask Le Chat"), own = N("Ask anything…") }
+                chatgpt = N("Ask ChatGPT"), copilot = N("Ask Copilot"), mistral = N("What do you want to build?"),
+                deepseek = N("Message DeepSeek"), own = N("Ask anything…") }
 local function offered()
     local out = {}
     for _, p in ipairs(ai.providers) do
@@ -365,8 +366,12 @@ fill_ai = function()
     -- the switch at the foot says who answers and with what; the field's own chip says how hard it may think
     text.ai_model = (p and tr(p.name) or "") .. (m and m.name ~= "" and (" · " .. m.name) or "")
     -- the field's own chip, as each service has it: how hard it may think where it has that, else its model
-    text.ai_effort_word = e and tr(EFFORTS[e] or e) or (p and #(p.efforts or {}) > 0 and tr("Effort"))
-        or (p and p.style == "gemini" and ("Gemini " .. (m and m.name or ""))) or (m and m.name or "")
+    local style = p and p.style or "own"
+    text.ai_effort_word = (style == "chatgpt" and (e and tr(EFFORTS[e] or e) or tr("Thinking")))
+        or (style == "deepseek" and tr("Deep thinking"))
+        or (e and tr(EFFORTS[e] or e)) or (p and #(p.efforts or {}) > 0 and tr("Effort"))
+        or (style == "gemini" and ("Gemini " .. (m and m.name or ""))) or (m and m.name or "")
+    text.ic_ai_chipicon = icons[({ chatgpt = "bulb", mistral = "cube", copilot = "git-fork", deepseek = "atom" })[style] or "sparkles"]
     local names = {}
     for _, f in ipairs(ai.files) do names[#names + 1] = f:match("[^/]+$") or f end
     text.ai_files, fact.ai_nfiles = table.concat(names, ", "), #ai.files
@@ -467,7 +472,8 @@ fill_ai = function()
     for k, g in ipairs(AGENT_LIST) do agents[k] = { name = tr(g.name), glyph = icons[g.glyph] or "" } end
     model.aiagent = agents
     text.ic_ai_center, text.ic_ai_settings, text.ic_ai_new = icons["messages"], icons["settings"], icons["message-plus"]
-    text.ic_ai_send, text.ic_ai_chev, text.ic_ai_spark, text.ic_ai_check = icons[ai.waiting and "player-stop" or "arrow-up"], icons["chevron-down"], icons["sparkles"], icons["check"]
+    text.ic_ai_send, text.ic_ai_chev, text.ic_ai_spark, text.ic_ai_check = icons["arrow-up"], icons["chevron-down"], icons["sparkles"], icons["check"]
+    text.ic_ai_wave, text.ic_ai_plane, text.ic_ai_stop = icons["wave-sine"], icons["send"], icons["player-stop"]
     text.ic_ai_plus, text.ic_ai_clip, text.ic_ai_shot, text.ic_ai_x = icons["plus"], icons["paperclip"], icons["screenshot"], icons["x"]
     text.ai_add_file, text.ai_add_shot = tr("Attach a file…"), tr("A picture of the screen")
     text.ai_send_word = ai.waiting and tr("Stop") or tr("Send")

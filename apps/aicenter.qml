@@ -28,7 +28,7 @@ ShellRoot {
     property var services: []                  // every service known (latte-ai services)
     property bool waiting: false
     // each service has its colour, so that a conversation is known by it at a glance
-    readonly property var colours: ({ "api-anthropic": "#d97757", "api-openai": "#10a37f", "api-google": "#4285f4", "api-xai": "#a8a8a8", "api-mistral": "#fa520f", "claude": "#d97757", "gemini": "#4285f4", "chatgpt": "#10a37f", "grok": "#a8a8a8", "mistral": "#fa520f", "local": Theme.gold, "ollama": Theme.gold })
+    readonly property var colours: ({ "api-deepseek": "#4d6bfe", "api-anthropic": "#d97757", "api-openai": "#10a37f", "api-google": "#4285f4", "api-xai": "#a8a8a8", "api-mistral": "#fa520f", "claude": "#d97757", "gemini": "#4285f4", "chatgpt": "#10a37f", "grok": "#a8a8a8", "mistral": "#fa520f", "local": Theme.gold, "ollama": Theme.gold })
     function colour(id) { return colours[id] || Theme.gold }
     function nameOf(id) { const p = services.find(s => s.id === id) || providers.find(s => s.id === id) || keys.find(k => k.id === id); return p ? I18n.tr(p.name) : id }
     function modelName(pid, mid) { const p = providers.find(x => x.id === pid); const m = p ? p.models.find(x => x.id === mid) : null; return m ? m.name : mid }
