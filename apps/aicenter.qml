@@ -172,7 +172,7 @@ ShellRoot {
             visible: shell.page === "chats"
             ListView {
                 id: talk
-                anchors.fill: parent; anchors.bottomMargin: 92
+                anchors.fill: parent; anchors.bottomMargin: 130
                 clip: true; spacing: 14; topMargin: 24; bottomMargin: 16
                 model: shell.chat ? shell.chat.messages : []
                 onCountChanged: Qt.callLater(positionViewAtEnd)
@@ -209,23 +209,44 @@ ShellRoot {
                 Label { text: I18n.tr("A new conversation"); font.pixelSize: 24; font.weight: 800; anchors.horizontalCenter: parent.horizontalCenter }
                 Label { width: parent.width; horizontalAlignment: Text.AlignHCenter; wrapMode: Text.WordWrap; color: Theme.dim
                         text: shell.providers.length ? I18n.tr("Write below. Choose who answers with the button beside the line.") : I18n.tr("No AI is ready on this computer: see Services.") } }
-            // the line to write in, with who answers on a button that goes round the services and their models
-            Rectangle { anchors.left: parent.left; anchors.right: parent.right; anchors.bottom: parent.bottom; anchors.margins: 22; height: 54; radius: 18; color: Theme.card
-                border.width: 1; border.color: Qt.rgba(Qt.color(shell.colour(shell.useProvider)).r, Qt.color(shell.colour(shell.useProvider)).g, Qt.color(shell.colour(shell.useProvider)).b, 0.5)
-                Field { id: line; x: 8; width: parent.width - 230; anchors.verticalCenter: parent.verticalCenter; icon: "sparkles"; hint: I18n.tr("Write a message…")
-                        onAccepted: { shell.send(text); text = "" } }
-                Pill { id: whoPill; anchors.right: send.left; anchors.rightMargin: 8; anchors.verticalCenter: parent.verticalCenter; implicitHeight: 34
-                       visible: shell.providers.length > 0; icon: "chevron-down"; text: shell.nameOf(shell.useProvider) + " · " + shell.modelName(shell.useProvider, shell.useModel)
-                       onPressed: {
-                           const all = []
-                           shell.providers.forEach(p => p.models.forEach(m => all.push([p.id, m.id])))
-                           const at = all.findIndex(x => x[0] === shell.useProvider && x[1] === shell.useModel)
-                           const next = all[(at + 1) % all.length]
-                           shell.useProvider = next[0]; shell.useModel = next[1]
-                       } }
-                Pill { id: send; anchors.right: parent.right; anchors.rightMargin: 10; anchors.verticalCenter: parent.verticalCenter; implicitHeight: 34
-                       icon: shell.waiting ? "player-stop" : "arrow-up"; strong: true; text: shell.waiting ? I18n.tr("Stop") : (shell.editing ? I18n.tr("Change") : I18n.tr("Send"))
-                       onPressed: { if (shell.waiting) shell.stop(); else { shell.send(line.text); line.text = "" } } } }
+            // the field to write in, in the look of the service that answers (as in LensGoo's AI): Claude's, Gemini's,
+            // Grok's, ChatGPT's, or LatteOS's own for a model on this computer or a server of one's own
+            Rectangle {
+                id: box
+                readonly property string style: (shell.providers.find(p => p.id === shell.useProvider) || { style: "own" }).style
+                readonly property var look: ({
+                    "claude": { bg: "#faf9f5", rim: "#ddd9ce", ink: "#3d3929", dim: "#8a8578", round: 18, send: "#c96442", sendInk: "#ffffff", hint: QT_TR_NOOP("How can I help you today?") },
+                    "gemini": { bg: "#f0f4f9", rim: "#f0f4f9", ink: "#1f1f1f", dim: "#5f6368", round: 28, send: "#0b57d0", sendInk: "#ffffff", hint: QT_TR_NOOP("Ask Gemini") },
+                    "grok": { bg: "#ffffff", rim: "#e1e1e1", ink: "#0d0d0d", dim: "#8a8a8a", round: 26, send: "#0d0d0d", sendInk: "#ffffff", hint: QT_TR_NOOP("What do you want to know?") },
+                    "chatgpt": { bg: "#ffffff", rim: "#e3e3e3", ink: "#0d0d0d", dim: "#8f8f8f", round: 28, send: "#2f7bf5", sendInk: "#ffffff", hint: QT_TR_NOOP("Ask ChatGPT") },
+                    "own": { bg: "#3d2c22", rim: "#5a463a", ink: "#f5e8d8", dim: "#b8a491", round: 14, send: Theme.gold, sendInk: "#2a1e17", hint: QT_TR_NOOP("Ask anything…") } })[style] || ({})
+                anchors.left: parent.left; anchors.right: parent.right; anchors.bottom: parent.bottom; anchors.margins: 22; height: 96
+                radius: look.round; color: look.bg; border.width: 1; border.color: look.rim
+                TextInput { id: line; x: 20; y: 16; width: parent.width - 40; color: box.look.ink; font.family: Theme.font; font.pixelSize: 15; clip: true; selectByMouse: true
+                            selectionColor: box.style === "own" ? Theme.coffee : "#c9d7f0"
+                            onAccepted: { shell.send(text); text = "" } }
+                Text { x: 20; y: 16; visible: line.text === ""; text: I18n.tr(box.look.hint || ""); color: box.look.dim; font.family: Theme.font; font.pixelSize: 15 }
+                MouseArea { anchors.fill: parent; anchors.bottomMargin: 44; cursorShape: Qt.IBeamCursor; onClicked: line.forceActiveFocus() }
+                // who answers: the one part that is the same for every service; a press goes round them and their models
+                Rectangle { id: whoPill; x: 12; anchors.bottom: parent.bottom; anchors.bottomMargin: 10; height: 30; radius: 15; width: whoRow.implicitWidth + 24
+                    visible: shell.providers.length > 0; color: box.style === "own" ? "#4a372b" : Qt.darker(box.look.bg, 1.05); border.width: 1; border.color: box.look.rim
+                    Row { id: whoRow; x: 12; spacing: 6; anchors.verticalCenter: parent.verticalCenter
+                        Text { text: shell.nameOf(shell.useProvider) + " · " + shell.modelName(shell.useProvider, shell.useModel); color: box.look.ink; font.family: Theme.font; font.pixelSize: 13; font.weight: Font.DemiBold }
+                        Glyph { name: "chevron-down"; font.pixelSize: 14; color: box.look.dim; anchors.verticalCenter: parent.verticalCenter } }
+                    MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor
+                        onClicked: {
+                            const all = []
+                            shell.providers.forEach(p => p.models.forEach(m => all.push([p.id, m.id])))
+                            const at = all.findIndex(x => x[0] === shell.useProvider && x[1] === shell.useModel)
+                            const next = all[(at + 1) % all.length]
+                            shell.useProvider = next[0]; shell.useModel = next[1]
+                        } } }
+                // send, or stop while an answer comes; with an edited question it changes it
+                Rectangle { id: send; anchors.right: parent.right; anchors.rightMargin: 12; anchors.bottom: parent.bottom; anchors.bottomMargin: 8; width: 34; height: 34; radius: 17
+                    color: box.look.send; opacity: line.text !== "" || shell.waiting ? 1 : 0.4
+                    Glyph { anchors.centerIn: parent; name: shell.waiting ? "player-stop" : (shell.editing ? "check" : "arrow-up"); font.pixelSize: 18; color: box.look.sendInk }
+                    MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor
+                                onClicked: { if (shell.waiting) shell.stop(); else { shell.send(line.text); line.text = "" } } } } }
         }
 
         // ── one question to several AIs at once, the answers side by side ──────────────────────────────────
