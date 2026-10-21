@@ -244,6 +244,11 @@ assert network.rtsp_open("127.0.0.1", cp) and not network.rtsp_open("127.0.0.1",
 c = network.look_closer({"ip": "127.0.0.1", "router": False, "fresh": True}, {}, set())
 assert c["caps"] == ["camera", "remote"] and [f["level"] for f in c["findings"]] == ["high", "high", "info"], c
 telnet.close(), camera.close()
+# One choice of name servers for every active connection; "auto" gives the router's back
+network.active_connections = lambda: ["Home: wired"]
+plan = network.set_dns("quad9", dry=True)["plan"]
+assert plan[0][3:] == ["Home: wired", "ipv4.dns", "9.9.9.9 149.112.112.112", "ipv4.ignore-auto-dns", "yes"] and plan[1][-1] == "Home: wired", plan
+assert network.set_dns("auto", dry=True)["plan"][0][-3:] == ["", "ipv4.ignore-auto-dns", "no"]
 settings = load("latte-settings")
 with tempfile.TemporaryDirectory() as d:
     home, os.environ["HOME"] = os.environ.get("HOME"), d
