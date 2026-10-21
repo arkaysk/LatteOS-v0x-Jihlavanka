@@ -19,6 +19,9 @@
                                "servers": […]}
   latte-network dns MODE [--dry-run]     every active connection asks those servers instead (auto: the router's
                                again); NetworkManager brings the connections up again, a moment without the network
+  latte-network firewall       {"on", "zone", "services": […], "edited"}: whether firewalld guards this computer, in which zone,
+                               and what that zone lets in as it comes (a zone the system changed cannot be read without root:
+                               "edited" says so)
   latte-network watch          a scan, and a notification for each device never seen on this network before
                                (latte-netwatch.timer, every half hour in the session)
   latte-network name KEY NAME [KIND]     what the user calls a device, and what it is; empty NAME takes it back
@@ -339,6 +342,29 @@ def remember(key, change):
     save(data)
 
 
+def firewall():
+    on = out("systemctl", "is-active", "firewalld").strip() == "active"
+    zone = ""
+    for line in out("firewall-cmd", "--get-active-zones").splitlines():
+        if line and not line.startswith(" "):
+            zone = line.split()[0]
+            break
+    services, edited = [], os.path.exists("/etc/firewalld/zones/%s.xml" % zone) if zone else False
+    try:
+        with open("/usr/lib/firewalld/zones/%s.xml" % zone) as f:
+            services = re.findall(r'<service name="([^"]+)"', f.read())
+    except OSError:
+        pass
+    if not edited and zone:
+        try:
+            os.listdir("/etc/firewalld/zones")
+        except PermissionError:
+            edited = None                     # cannot be told without root
+        except OSError:
+            pass
+    return {"on": on, "zone": zone, "services": [x for x in services if x != "dhcpv6-client"], "edited": edited}
+
+
 def tr(text):
     """What the screen says, in the desktop's language: the same table as the scenes' (goo/lang/LANG.plm)."""
     lang = (os.environ.get("LC_MESSAGES") or os.environ.get("LANG") or "en")[:2]
@@ -566,6 +592,8 @@ def main(a):
         print(json.dumps(status(), ensure_ascii=False))
     elif a == ["scan"]:
         print(json.dumps(scan(), ensure_ascii=False))
+    elif a == ["firewall"]:
+        print(json.dumps(firewall(), ensure_ascii=False))
     elif a == ["watch"]:
         watch()
     elif a == ["dns"]:

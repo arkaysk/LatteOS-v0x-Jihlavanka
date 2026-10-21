@@ -338,7 +338,8 @@ Schválené 12. 10. 2026. Pracuje sa **zhora nadol, neskáče sa**; nový nápad
     - d. [x] Upozornenie na nové zariadenie (21. 10.): `latte-network watch` každých 30 min v relácii
       (`latte-netwatch.timer`), preložené upozornenie; neoverené v skutočnej relácii.
     - e. [~] Správca siete (21. 10.: Pripojenie › Ochrana (DNS): od routera, Cloudflare, Quad9, AdGuard, Google;
-      `latte-network dns`; naostro neprepínané, len suchý beh): Wi-Fi siete a heslá, VPN, DNS s ochranou súkromia, firewall (firewalld), hosťovská sieť
+      `latte-network dns`; naostro neprepínané, len suchý beh; firewall: zapnutý, zóna a čo sa smie dnu, `latte-network firewall`):
+      Wi-Fi siete a heslá, VPN, DNS s ochranou súkromia, firewall (firewalld), hosťovská sieť
       a blokovanie zariadenia — čo sa dá bez routera, a návod do routera, kde nie.
     - f. [ ] Vzory: Sniffnet (kto s kým hovorí, pre NET), ESET Kontrola siete, UniFi (Matter), Fing.
 

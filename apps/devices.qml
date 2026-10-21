@@ -42,6 +42,7 @@ ShellRoot {
     }
     Net { id: link }
     Net { id: dnsq }                           // which name servers the connections use
+    Net { id: fw }                             // whether the firewall guards this computer
     Net { id: dnsSet; onExited: { dnsq.ask(["dns"]); link.ask(["status"]) } }
     readonly property var dnsModes: [{ id: "auto", name: QT_TR_NOOP("From the router"), note: QT_TR_NOOP("As it came; nothing is filtered.") },
         { id: "cloudflare", name: "Cloudflare", note: QT_TR_NOOP("Quick, and keeps no record of what you look up.") },
@@ -55,7 +56,7 @@ ShellRoot {
     property string capFilter: ""              // the list shows only what can do this; "" all
     readonly property var picked: lan.data ? (lan.data.devices.find(d => d.key === chosen) || null) : null
     onPageChanged: {
-        if (page === "connection") { link.ask(["status"]); dnsq.ask(["dns"]) }
+        if (page === "connection") { link.ask(["status"]); dnsq.ask(["dns"]); fw.ask(["firewall"]) }
         if (page === "inspector") { if (!lan.data) lan.ask(["last"]); look.restart() }
     }
     Timer { id: look; interval: 400; onTriggered: lan.ask(["scan"]) }
@@ -252,6 +253,14 @@ ShellRoot {
                     Label { text: I18n.tr("REMEMBERED CONNECTIONS"); color: Theme.faint; font.pixelSize: 11; font.weight: 700; font.letterSpacing: 0.8 }
                     Flow { width: parent.width; spacing: 8
                         Repeater { model: link.data ? link.data.saved : []; Chip { required property string modelData; icon: "network"; text: modelData } } } }
+                // the firewall: on or off, and what other devices may reach on this computer
+                Rectangle { visible: fw.data !== null; width: conn.room; height: 72; radius: 18; color: Theme.card
+                    Glyph { x: 20; name: fw.data && fw.data.on ? "shield-check" : "shield"; font.pixelSize: 28; color: fw.data && fw.data.on ? Theme.ok : Theme.red; anchors.verticalCenter: parent.verticalCenter }
+                    Column { x: 62; width: parent.width - 80; anchors.verticalCenter: parent.verticalCenter; spacing: 3
+                        Label { font.weight: 700; text: fw.data && fw.data.on ? I18n.tr("The firewall guards this computer ({zone})", { zone: fw.data.zone }) : I18n.tr("The firewall is off") }
+                        Label { width: parent.width; elide: Text.ElideRight; color: Theme.dim; font.pixelSize: 12
+                                text: !fw.data || !fw.data.on ? I18n.tr("Other devices can reach whatever runs here. Turn it on: sudo systemctl enable --now firewalld")
+                                    : I18n.tr("Other devices may reach: {list}", { list: fw.data.services.join(", ") || "—" }) + (fw.data.edited !== false ? "  ·  " + I18n.tr("as the zone comes; changes made to it are not shown") : "") } } }
                 // who answers the computer's questions for addresses: one choice that protects every app at once
                 Column { visible: link.data !== null && link.data.connections.length > 0; width: conn.room; spacing: 8
                     Label { text: I18n.tr("PROTECTION (NAME SERVERS)"); color: Theme.faint; font.pixelSize: 11; font.weight: 700; font.letterSpacing: 0.8 }
