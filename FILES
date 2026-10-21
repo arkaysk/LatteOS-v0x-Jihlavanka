@@ -171,6 +171,8 @@
 /usr/lib/systemd/user/latte-idle.service                <- system/systemd/latte-idle.service
 /usr/lib/systemd/user/latte-guarddog.service             <- system/systemd/latte-guarddog.service
 /usr/lib/systemd/user/latte-focus.service                <- system/systemd/latte-focus.service
+/usr/lib/systemd/user/latte-netwatch.service             <- system/systemd/latte-netwatch.service
+/usr/lib/systemd/user/latte-netwatch.timer               <- system/systemd/latte-netwatch.timer
 /usr/lib/systemd/user/latte-lockscreen.service           <- system/systemd/latte-lockscreen.service
 /usr/lib/systemd/user/latte-goo-side@.service           <- system/systemd/latte-goo-side@.service
 /usr/lib/tmpfiles.d/latteos.conf                        <- system/systemd/latteos.tmpfiles

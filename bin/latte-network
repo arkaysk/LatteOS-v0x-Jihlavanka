@@ -19,6 +19,8 @@
                                "servers": […]}
   latte-network dns MODE [--dry-run]     every active connection asks those servers instead (auto: the router's
                                again); NetworkManager brings the connections up again, a moment without the network
+  latte-network watch          a scan, and a notification for each device never seen on this network before
+                               (latte-netwatch.timer, every half hour in the session)
   latte-network name KEY NAME [KIND]     what the user calls a device, and what it is; empty NAME takes it back
   latte-network forget KEY               drops a device from what is remembered
 
@@ -34,6 +36,7 @@ is paired with and nothing is asked of them. What was seen is remembered per net
 ~/.local/state/latteos/network.json, so a device that is new can be told from one that is back.
 """
 import ipaddress
+import shutil
 import json
 import os
 import re
@@ -336,6 +339,26 @@ def remember(key, change):
     save(data)
 
 
+def tr(text):
+    """What the screen says, in the desktop's language: the same table as the scenes' (goo/lang/LANG.plm)."""
+    lang = (os.environ.get("LC_MESSAGES") or os.environ.get("LANG") or "en")[:2]
+    try:
+        with open(os.path.join(os.environ.get("LATTE_SHARE") or "/usr/share/latteos", "goo", "lang", lang + ".plm"), encoding="utf-8") as f:
+            m = re.search(r'^\s*"%s"\s*=\s*"((?:[^"\\]|\\.)*)"' % re.escape(text), f.read(), re.M)
+            return m.group(1) if m else text
+    except OSError:
+        return text
+
+
+def watch():
+    found = scan()
+    for d in found["devices"]:
+        if d["fresh"] and shutil.which("notify-send"):
+            subprocess.run(["notify-send", "-a", "LatteOS", "-i", "network-wired", tr("A new device on the network"),
+                            "%s  ·  %s" % (d["name"] or d["vendor"] or tr("Unknown device"), d["ip"])], timeout=10)
+    return found
+
+
 # ── a closer look: what each device serves, what it can do, and what makes the network weaker ────────────────
 # well-known ports, what is behind them, what that lets the device do
 PORTS = {21: ("ftp", "files"), 22: ("ssh", "remote"), 23: ("telnet", "remote"), 53: ("dns", ""), 80: ("http", "web"), 139: ("netbios", "files"),
@@ -543,6 +566,8 @@ def main(a):
         print(json.dumps(status(), ensure_ascii=False))
     elif a == ["scan"]:
         print(json.dumps(scan(), ensure_ascii=False))
+    elif a == ["watch"]:
+        watch()
     elif a == ["dns"]:
         print(json.dumps(dns(), ensure_ascii=False))
     elif a[:1] == ["dns"] and len(a) in (2, 3) and (a[1] == "auto" or a[1] in DNS):

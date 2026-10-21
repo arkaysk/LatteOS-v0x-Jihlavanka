@@ -1,0 +1,11 @@
+# Every half hour while the session runs, the first time ten minutes after it begins.
+[Unit]
+Description=LatteOS network watch, now and then
+PartOf=latte-session.target
+
+[Timer]
+OnActiveSec=10min
+OnUnitActiveSec=30min
+
+[Install]
+WantedBy=latte-session.target

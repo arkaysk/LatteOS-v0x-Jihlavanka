@@ -335,7 +335,8 @@ Schválené 12. 10. 2026. Pracuje sa **zhora nadol, neskáče sa**; nový nápad
     - b. [x] Zoznam popri radare, filter podľa schopnosti, počet vecí na opravu (21. 10.; `latte-app devices inspector list`).
     - c. [ ] Akcie zo schopností: Púšťať naň (DLNA/Cast — prepojiť s MediaGoo), Otvoriť obraz (kamera → CamGoo),
       Pridať tlačiareň (CUPS), Otvoriť stránku nastavení, Pripojiť zdieľaný priečinok (DualBrew).
-    - d. [ ] Upozornenie na nové zariadenie (QueenGoo/ClockGoo), sledovanie v pozadí raz za čas.
+    - d. [x] Upozornenie na nové zariadenie (21. 10.): `latte-network watch` každých 30 min v relácii
+      (`latte-netwatch.timer`), preložené upozornenie; neoverené v skutočnej relácii.
     - e. [~] Správca siete (21. 10.: Pripojenie › Ochrana (DNS): od routera, Cloudflare, Quad9, AdGuard, Google;
       `latte-network dns`; naostro neprepínané, len suchý beh): Wi-Fi siete a heslá, VPN, DNS s ochranou súkromia, firewall (firewalld), hosťovská sieť
       a blokovanie zariadenia — čo sa dá bez routera, a návod do routera, kde nie.

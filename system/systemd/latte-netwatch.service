@@ -1,0 +1,8 @@
+# A look at the home network now and then: a device that was never there before is told (bin/latte-network watch).
+[Unit]
+Description=LatteOS network watch
+PartOf=latte-session.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/latte-network watch

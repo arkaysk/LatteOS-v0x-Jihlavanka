@@ -1120,6 +1120,8 @@ library Slovak {
         "With an account, the service's official tool answers, signed in once in the terminal. Which of them LensGoo offers is set in Settings › Launcher." = "S účtom odpovedá oficiálny nástroj služby, do ktorého sa raz prihlásiš v termináli. Ktoré z nich ponúka LensGoo, sa nastavuje v Nastaveniach › Spúšťač."
         "ACCOUNTS" = "ÚČTY"
         "(stopped)" = "(zastavené)"
+        "A new device on the network" = "Nové zariadenie v sieti"
+        "Unknown device" = "Neznáme zariadenie"
         "Radar" = "Radar"
         "List" = "Zoznam"
         "{n} to fix" = "{n} na opravu"
