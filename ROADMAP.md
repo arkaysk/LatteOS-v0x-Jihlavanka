@@ -454,6 +454,26 @@ Schválené 12. 10. 2026. Pracuje sa **zhora nadol, neskáče sa**; nový nápad
       v LensGoo a v ponuke pravého tlačidla — zhrnúť schránku, preložiť, vysvetliť chybu, príkaz z vety, meno súboru.
       Hotové 21. 10. v karte AI (Zhrnúť, Preložiť, Vysvetliť chybu, Príkaz z vety; pole alebo schránka, lokálny model).
       Ponuka pravého tlačidla a meno súboru až s DualBrew.
+17. [ ] **Dokončiť vizuálne podoby podľa návrhov v `inspo/`** (používateľ, 21. 10.; nákresy z 20. 10.). Hotové z nich:
+    bodkové grafy (`grafy.png` → `DotGraph`), dvojvrstvová kávová hladina (`latteOS settings priklad.png` → `Surface`).
+    Farby z témy, nie natvrdo; texty cez preklady; sklo podľa jedného stupňa LatteOS (Nastavenia › Okná › Sklo).
+    - a. [ ] **Nastavenia** (`latteOS settings priklad.png`): hlavička s hľadaním, karta „Systém a prehľad zariadenia“
+      (počítač, profil, procesor, pamäť, verzia LatteOS), režim rozhrania ako tri karty s náhľadom (tmavý, svetlý,
+      podľa slnka), intenzita skla ako posuvník s percentami (dnes štyri stupne), kávová hladina, displej (rozlíšenie,
+      obnovovanie, teplota farieb), úložisko s pásom podľa druhu dát a tlačidlom Správa oddielov, účet dole, päta
+      so stavom systému a prepnutím na expertný režim.
+    - b. [ ] **DualBrew** (`latteOS dualbrew.png`): dvojpanel ako Total Commander (Dvojpanel / 1-panel), jednotky ako
+      čipy nad panelom, stĺpce Názov · Veľkosť · Zmenené · Atribúty, tlačidlá medzi panelmi (kopírovať, presunúť,
+      porovnať, zrkadliť), rad F3–F10 dole a riadok terminálu (Alt+F1); bočný panel s diskami a pásmi zaplnenia
+      (čiastočne hotové 20. 10.), obľúbené priečinky a rýchly filter typov.
+    - c. [ ] **PowerGoo** (`PowerGoo popup.png`): karta účtu (meno, rola, e-mail, šifrovanie), Nastavenia OS a Monitor
+      prostriedkov, štyri dlaždice Vypnúť · Reštartovať · Odhlásiť · Zamknúť, Núdzový režim (SAFE) a čas behu.
+    - d. [ ] **LensGoo – aplikácie** (`LensGoo popup appsearch.png` a `… frosted glass.png`): záložky režimov hore,
+      pole s mikrofónom, filtre kategórií, Najčastejšie spustené, Obľúbené s klávesovými skratkami, Najnovšie
+      nainštalované, päta (počet aplikácií, miesto, klávesy) a Prispôsobiť · Zmeniť rozloženie · Možnosti filtrovania.
+    - e. [ ] **ClockGoo** (`ClockGoo popup time frosted glass.png`): záložky Prehľad · Časovače a budíky · Počasie,
+      veľký čas so sekundami, dátum, týždeň, meniny, počasie s východom a západom slnka, svetové hodiny,
+      digitálna pohoda (čas pri obrazovke podľa aplikácií), päta Režim spánku · Nerušiť.
 
 ## ROADMAP2 — LatteOS od nápadu po hotový produkt
 

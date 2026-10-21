@@ -373,7 +373,7 @@ local function show_rows(rows, style, m, e)
 end
 local fill_ai
 local function ask_told(pid)
-    if not pid or (ai.told_at[pid] or 0) > os.time() - 300 then return end
+    if not pid or (ai.told_at[pid] or 0) > os.time() - 180 then return end   -- latte-ai keeps an answer 15 min, 3 near a limit
     ai.told_at[pid] = os.time()
     run("latte-ai", { "usage", pid }, function(out)
         local ok, r = pcall(json.decode, out or "")
@@ -426,6 +426,8 @@ fill_ai = function()
     -- Claude's limits as Anthropic tells them now (latte-ai usage), else as the last answer told them
     local told = p and ai.told[p.id] and ai.told[p.id].limits or {}
     local lim = p and p.id == "claude" and (told.five_hour and told or (u.limits and next(u.limits) and u.limits or kept.ai.limits)) or nil
+    -- ChatGPT's plan has the same two windows, as Codex tells them (latte-ai usage chatgpt)
+    if p and p.id == "chatgpt" and told.five_hour then lim = told end
     if lim == told then kept.ai.limits_at = nil end
     if lim and lim.five_hour then
         local function share(w) return (w.resets or 0) > os.time() and (w.used or 0) or 0 end

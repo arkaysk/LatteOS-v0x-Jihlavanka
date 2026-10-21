@@ -4,6 +4,14 @@ Kroky, ktoré musí spustiť používateľ priamo pri latte-lab (vo VS Code, v t
 buď ich zastaví kontrola oprávnení Claude Code, alebo treba prihlásenie človekom. Najnovšie hore. Po dokončení
 kroku ho označ `[x]` a napíš Claudovi, nech pokračuje.
 
+## 21. 10. 2026 — ChatGPT: prihlásiť Codex účtom ChatGPT
+
+Codex (nástroj, cez ktorý odpovedá ChatGPT v LensGoo a LensAI) je na latte-lab odhlásený (`codex login status` →
+„Not logged in“). Bez prihlásenia ChatGPT neodpovie a LensGoo/LensAI neukážu jeho limity (5 hodín a týždeň).
+
+- [ ] V termináli `codex login` → otvorí prehliadač → prihlásiť sa účtom ChatGPT. Overenie: `latte-ai usage chatgpt`
+  vypíše `"five_hour"` a `"seven_day"`. (Alebo v LensAI › Služby › ChatGPT › Prihlásiť.)
+
 ## 21. 10. 2026 — DeepSeek cez webové prihlásenie (bez kľúča API)
 
 DeepSeek v LensGoo a LensAI cez účet na chat.deepseek.com, rovnako ako Claude, Gemini či Grok cez svoje nástroje.
