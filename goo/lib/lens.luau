@@ -512,6 +512,7 @@ fill_ai = function()
     fact.ai_pop_hx = (ai.menu_at == 2 and style == "chatgpt") and 196 or 0
     text.ic_ai_more, text.ic_ai_web = icons["chevron-right"], icons["external-link"]
     text.ai_btn_center, text.ai_btn_settings, text.ai_btn_new = tr("LensAI"), tr("Settings"), tr("New session")
+    text.ai_btn_do, text.ic_ai_do = tr("Do it for me"), icons["robot"]
     local agents = {}
     for k, g in ipairs(AGENT_LIST) do agents[k] = { name = tr(g.name), glyph = icons[g.glyph] or "" } end
     model.aiagent = agents
@@ -693,6 +694,14 @@ on("ai_mic", function()
         end)
     end
     fill_ai()
+end)
+-- "Do it for me": what is in the field goes to an agent in a terminal (latte-ai do), which plans first and asks;
+-- with nothing written, LensAI's agents page, where the tasks to start from are
+on("ai_do", function()
+    local task = (text.ai_q or ""):gsub("^%s+", ""):gsub("%s+$", "")
+    if task == "" then then_do(function() run("latte-app", { "aicenter", "agents" }, nil, { output = false }) end) return end
+    text.ai_q, fact.ai_typed = "", false
+    then_do(function() run("latte-ai", { "do", task }, nil, { output = false }) end)
 end)
 on("ai_center", function() then_do(function() run("latte-app", { "aicenter" }, nil, { output = false }) end) end)
 on("ai_settings", function() then_do(function() open.settings("launcher") end) end)

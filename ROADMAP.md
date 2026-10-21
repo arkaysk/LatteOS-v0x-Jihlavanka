@@ -431,7 +431,11 @@ Schválené 12. 10. 2026. Pracuje sa **zhora nadol, neskáče sa**; nový nápad
          a v SAFE); `latte-ai skill install|reset|path` — kópia používateľa v `~/.config/latteos/skills/latteos`,
          odkazy v `~/.claude/skills`, `~/.codex/skills`, `~/.agents/skills` (pri štarte relácie); **upraviteľný
          v LensAI › Pokyny** s „Obnoviť pôvodný“; overené: Claude Code skill vidí;
-      5. [ ] „Urob to za mňa“: úloha pre predvoleného agenta, najprv plán, potvrdenie (nie automatické schvaľovanie);
+      5. [x] „Urob to za mňa“, hotové 21. 10.: `latte-ai do TASK [AGENT]` otvorí agenta v termináli (foot) so skillom
+         LatteOS — Claude Code v plánovacom režime, Codex `-s read-only -a on-request`, Gemini `--approval-mode default`;
+         nič sa neschvaľuje samo. LensGoo: 4. ikona v päte karty AI (úloha z poľa; prázdne pole → LensAI › Agenti).
+         LensAI › Agenti: pole, voľba agenta (`latte-ai doer`, `~/.config/latteos/agent`), 6 pripravených úloh
+         („Urob niečo“ z Omarchy). Overené: terminál s Claude Code sa otvorí; plán na skutočnej ploche neoverený;
       6. [ ] **pád → AI** s GuardDogom a **LatteOS SAFE** (podľa skillu `diagnose-crash`): upozornenie o páde,
          v SAFE „Prečo sa skončila relácia“ s ponukou „Opýtať sa AI“;
       7. [ ] viac účtov jedného poskytovateľa, prepnutie pri limite; diktovanie do akejkoľvek aplikácie; App Manager › AI.

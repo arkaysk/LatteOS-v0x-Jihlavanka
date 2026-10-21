@@ -40,6 +40,9 @@ No API key: the official tool of a service answers, with the account the user is
                             "asked"}], "stats": {"week", "today", "model", "busiest", "prompts", "sessions"}}
   latte-ai skill install|reset|path   LatteOS's skill for the agents (Claude Code, Codex, Gemini): the user's copy in
                             ~/.config/latteos/skills/latteos, linked into each agent's skills; reset brings back LatteOS's own
+  latte-ai do TASK [AGENT]  "Do it for me": the agent (claude, chatgpt = Codex, gemini; else the chosen one) on the task in
+                            a terminal, planning first with LatteOS's skill and changing nothing until the user says yes
+  latte-ai doer AGENT       the agent "Do it for me" uses (~/.config/latteos/agent)
   latte-ai models           every model of every service there is, for LensAI: [{"id", "name", "models":
                             [{"id", "name", "hidden", "default"}]}]; `providers` leaves the hidden ones out and puts
                             the default first
@@ -73,6 +76,11 @@ import shutil
 import subprocess
 import sys
 import uuid
+
+
+def N(s):
+    """A text the apps show translated (goo/lang): marked, so that tests/check.sh asks for its translation."""
+    return s
 
 SYSTEM = ("You are the assistant in the launcher of the LatteOS desktop. Answer briefly and to the point, in the "
           "language of the question, in plain text: no Markdown, no headings.")
@@ -687,6 +695,46 @@ def skill(what):
     return mine
 
 
+# ── "Do it for me": a task for an agent, in a terminal the user sees (Omarchy's `omarchy agent prompt`, MIT, but never
+# approving by itself): the agent plans first with LatteOS's skill and changes nothing until the user says yes there.
+DOERS = {
+    "claude": {"name": "Claude Code", "tool": "claude", "argv": lambda task: ["claude", "--permission-mode", "plan", task]},
+    "chatgpt": {"name": "Codex", "tool": "codex", "argv": lambda task: ["codex", "-s", "read-only", "-a", "on-request", task]},
+    "gemini": {"name": "Gemini", "tool": "gemini", "argv": lambda task: ["gemini", "--approval-mode", "default", "-i", task]},
+}
+DO_FIRST = ("Use the latteos skill. Look first, then make a plan and ask me before you change anything. "
+            "Answer in the language I write in. The task: ")
+IDEAS = [N("Make room on my disk: what fills it, and what can go?"), N("Why is my computer slow right now?"),
+         N("Set up my second monitor"), N("Set up my printer"), N("Change the wallpaper with the time of day"),
+         N("Explain what started with my computer today, and what I can turn off")]
+AGENT_WORD = os.path.join(os.environ.get("XDG_CONFIG_HOME") or os.path.expanduser("~/.config"), "latteos", "agent")
+
+
+def doers():
+    """The agents that can do a task here, the user's chosen one first (~/.config/latteos/agent)."""
+    try:
+        with open(AGENT_WORD) as f:
+            chosen = f.read().strip()
+    except OSError:
+        chosen = ""
+    there = [i for i, d in DOERS.items() if shutil.which(d["tool"], path=SEARCH)]
+    return sorted(there, key=lambda i: i != chosen)
+
+
+def do(task, who=""):
+    """Starts the agent on the task in a terminal; who: one of DOERS, else the chosen one."""
+    can = doers()
+    who = who if who in can else (can[0] if can else "")
+    if not who:
+        return {"ok": False, "agent": ""}
+    argv = DOERS[who]["argv"](DO_FIRST + task) if task.strip() else DOERS[who]["argv"]("")[:-1]
+    argv[0] = shutil.which(argv[0], path=SEARCH) or argv[0]
+    subprocess.Popen(["foot", "--title", DOERS[who]["name"], "--working-directory", os.path.expanduser("~"), "--"] + argv,
+                     start_new_session=True, stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                     env=dict(os.environ, PATH=SEARCH))
+    return {"ok": True, "agent": who}
+
+
 def agents():
     """What the services tell of the accounts and what was used, for LensAI's agents panel (Omarchy's, MIT):
     {"services": [{"id", "name", "style", "plan", "signed", "login", "limits": [{"label", "used", "resets"}], "asked"}],
@@ -724,7 +772,8 @@ def agents():
     stats = {"week": sum(by_day.values()), "today": by_day.get(str(today), 0),
              "model": max(by_model, key=by_model.get) if by_model else "", "busiest": max(by_day, key=by_day.get) if by_day else "",
              "prompts": prompts, "sessions": sessions}
-    return {"services": out, "stats": stats}
+    can = doers()
+    return {"services": out, "stats": stats, "doers": [{"id": i, "name": DOERS[i]["name"]} for i in can], "ideas": IDEAS}
 
 
 def asked_this_month(provider):
@@ -795,11 +844,6 @@ def turned_off():
             return f.read().strip() == "off"
     except OSError:
         return False
-
-
-def N(s):
-    """A text the apps show translated (goo/lang): marked, so that tests/check.sh asks for its translation."""
-    return s
 
 
 # ── the field's menus, each a copy of the service's own (the user's pictures, 21. 10.): + and its chip ───────────────
@@ -1208,6 +1252,15 @@ def main(a):
         except OSError as e:
             print(e, file=sys.stderr)
             return 1
+        return 0
+    if len(a) in (2, 3) and a[0] == "do":
+        r = do(a[1], a[2] if len(a) == 3 else "")
+        print(json.dumps(r))
+        return 0 if r["ok"] else 1
+    if len(a) == 2 and a[0] == "doer" and a[1] in DOERS:
+        os.makedirs(os.path.dirname(AGENT_WORD), exist_ok=True)
+        with open(AGENT_WORD, "w") as f:
+            f.write(a[1] + "\n")
         return 0
     if a == ["agents"]:
         print(json.dumps(agents(), ensure_ascii=False))

@@ -55,7 +55,11 @@ ShellRoot {
     Ask { id: list; onDone: shell.chats = data || [] }
     // the agents panel (Omarchy's, MIT): what each service tells of the account, and what was used
     Ask { id: agentsq; onDone: shell.agents = data || ({ services: [], stats: {} }) }
-    property var agents: ({ services: [], stats: {} })
+    property var agents: ({ services: [], stats: {}, doers: [], ideas: [] })
+    // "Do it for me": the task goes to an agent in a terminal, which plans first and changes nothing before a yes
+    Process { id: doer }
+    function doIt(task, who) { doer.command = ["latte-ai", "do", task].concat(who ? [who] : []); doer.running = true }
+    Process { id: chooser; onExited: agentsq.ask(["agents"]) }
     Timer { interval: 180000; repeat: true; running: shell.page === "agents"; onTriggered: agentsq.ask(["agents"]) }
     function tokens(n) { return n >= 1e6 ? (n / 1e6).toFixed(1) + " M" : n >= 1e3 ? Math.round(n / 1e3) + " k" : String(n || 0) }
     function modelWord(id) { const m = /claude-(\w+)-(\d+)-(\d+)/.exec(id || ""); return m ? m[1].charAt(0).toUpperCase() + m[1].slice(1) + " " + m[2] + "." + m[3] : (id || "") }
@@ -488,6 +492,27 @@ ShellRoot {
                         Label { text: I18n.tr("Counted from Claude Code's own records on this computer, LensAI's questions included."); color: Theme.dim; font.pixelSize: 12; width: parent.width; wrapMode: Text.WordWrap } }
                     Pill { anchors.right: parent.right; anchors.rightMargin: 16; anchors.verticalCenter: parent.verticalCenter; implicitHeight: 34; icon: "refresh"; text: ""
                            busy: agentsq.running; onPressed: agentsq.ask(["agents"]) } }
+                // "Do it for me": what the agent should do, which agent, and tasks to start from
+                Rectangle { width: parent.width; height: doCol.implicitHeight + 32; radius: 16; color: Theme.card; border.width: 1; border.color: Theme.line
+                    visible: (shell.agents.doers || []).length > 0
+                    Column { id: doCol; x: 18; y: 16; width: parent.width - 36; spacing: 12
+                        Label { text: I18n.tr("Do it for me"); font.pixelSize: 16; font.weight: 800 }
+                        Label { width: parent.width; wrapMode: Text.WordWrap; color: Theme.dim; font.pixelSize: 13
+                                text: I18n.tr("The agent opens in a terminal, looks around, makes a plan and asks you before it changes anything. It knows LatteOS from its skill (Instructions).") }
+                        Row { spacing: 10; width: parent.width
+                            Rectangle { width: parent.width - doGo.width - 10; height: 40; radius: 12; color: Theme.raised; border.width: 1; border.color: doTask.activeFocus ? Theme.gold : Theme.line
+                                TextInput { id: doTask; x: 14; width: parent.width - 28; anchors.verticalCenter: parent.verticalCenter; color: Theme.cream; font.family: Theme.font; font.pixelSize: 14; clip: true; selectByMouse: true
+                                            onAccepted: { if (text.trim() !== "") { shell.doIt(text, ""); text = "" } } }
+                                Label { x: 14; anchors.verticalCenter: parent.verticalCenter; visible: doTask.text === ""; color: Theme.faint; text: I18n.tr("What should it do? For example: my disk is full, make room") } }
+                            Pill { id: doGo; implicitHeight: 40; icon: "robot"; strong: true; text: I18n.tr("Do it"); onPressed: { if (doTask.text.trim() !== "") { shell.doIt(doTask.text, ""); doTask.text = "" } } } }
+                        // which agent: the chosen one first (latte-ai doer)
+                        Flow { width: parent.width; spacing: 8
+                            Repeater { model: shell.agents.doers || []
+                                Pill { required property var modelData; required property int index; implicitHeight: 30; text: modelData.name; strong: index === 0; icon: index === 0 ? "check" : ""
+                                       onPressed: { chooser.command = ["latte-ai", "doer", modelData.id]; chooser.running = true } } } }
+                        Flow { width: parent.width; spacing: 8
+                            Repeater { model: shell.agents.ideas || []
+                                Pill { required property var modelData; implicitHeight: 30; icon: "sparkles"; text: I18n.tr(modelData); onPressed: shell.doIt(I18n.tr(modelData), "") } } } } }
                 // one section per service: its mark, name and plan, then a line per limit window
                 Repeater { model: shell.agents.services || []
                     Rectangle { id: sec; required property var modelData; width: agentCol.width; height: secCol.implicitHeight + 32; radius: 16; color: Theme.card; border.width: 1; border.color: Theme.line

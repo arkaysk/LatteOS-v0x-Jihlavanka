@@ -1399,5 +1399,15 @@ library Slovak {
         "LatteOS skill for the agents" = "Skill LatteOS pre agentov"
         "What Claude Code, Codex and Gemini know about LatteOS when you ask them for help with this computer: how it is built, what may be changed and how, and that they plan first and ask. Add your own rules at the end." = "Čo vedia Claude Code, Codex a Gemini o LatteOS, keď ich požiadaš o pomoc s týmto počítačom: ako je postavený, čo sa smie meniť a ako, a že najprv navrhnú plán a opýtajú sa. Na koniec môžeš dopísať vlastné pravidlá."
         "Restore LatteOS's own" = "Obnoviť pôvodný od LatteOS"
+        "Do it for me" = "Urob to za mňa"
+        "The agent opens in a terminal, looks around, makes a plan and asks you before it changes anything. It knows LatteOS from its skill (Instructions)." = "Agent sa otvorí v termináli, porozhliadne sa, navrhne plán a pred každou zmenou sa ťa opýta. LatteOS pozná zo svojho skillu (Pokyny)."
+        "What should it do? For example: my disk is full, make room" = "Čo má urobiť? Napríklad: disk je plný, urob miesto"
+        "Do it" = "Urob to"
+        "Make room on my disk: what fills it, and what can go?" = "Urob miesto na disku: čo ho zapĺňa a čo môže ísť preč?"
+        "Why is my computer slow right now?" = "Prečo je počítač práve teraz pomalý?"
+        "Set up my second monitor" = "Nastav môj druhý monitor"
+        "Set up my printer" = "Nastav moju tlačiareň"
+        "Change the wallpaper with the time of day" = "Meň tapetu podľa dennej doby"
+        "Explain what started with my computer today, and what I can turn off" = "Vysvetli, čo sa dnes spustilo s počítačom a čo môžem vypnúť"
     }
 }

@@ -34,6 +34,8 @@ part Ai {
     text ai_btn_center = ""
     text ai_btn_settings = ""
     text ai_btn_new = ""
+    text ai_btn_do = ""
+    text ic_ai_do = ""
     text ic_ai_center = ""
     text ic_ai_settings = ""
     text ic_ai_new = ""
@@ -86,6 +88,7 @@ part Ai {
     event ai_center ->
     event ai_settings ->
     event ai_new ->
+    event ai_do ->                             // "Do it for me": the field's words to an agent in a terminal (none: LensAI's agents)
     event ai_mic ->                            // the microphone: start listening, or stop and write it into the field
     event ai_agent ->                          // a micro-agent was chosen: its place in aiagent
     event ai_attach ->                         // 0 a file, 1 a picture of the screen
@@ -265,21 +268,21 @@ part Ai {
         on submit ai_q { emit ai_send }
 
         // ── on the coffee: the ways on, as icons that say their name under the pointer; and what is used ─────
-        repeat k in 0..3 {
+        repeat k in 0..4 {
             let b.x = 34 + k * 44
-            let b.hov = pick(k, center_hit.hover, settings_hit.hover, new_hit.hover)
+            let b.hov = pick(k, center_hit.hover, settings_hit.hover, new_hit.hover, do_hit.hover)
             ellipse { at: b.x, 548; radius: 17; color: #f5e8d8; opacity: 8% + 12% * b.hov }
-            text pick(k, ic_ai_center, ic_ai_settings, ic_ai_new) { at: b.x, 548; anchor: center; size: 17; color: #f7c873; family: "tabler-icons" }
+            text pick(k, ic_ai_center, ic_ai_settings, ic_ai_new, ic_ai_do) { at: b.x, 548; anchor: center; size: 17; color: #f7c873; family: "tabler-icons" }
             // its name, above it while the pointer is on it
             measure ai_tip.$k
             box { from: b.x - ai_tip.$k.width / 2 - 10, 506; size: ai_tip.$k.width + 20, 24; corner: 12; color: #f7c873; opacity: b.hov * 95% }
-            text pick(k, ai_btn_center, ai_btn_settings, ai_btn_new) { at: b.x, 518; anchor: center; measure: ai_tip.$k; size: 12; weight: 600; color: #2a1e17; opacity: b.hov; family: "Inter" }
+            text pick(k, ai_btn_center, ai_btn_settings, ai_btn_new, ai_btn_do) { at: b.x, 518; anchor: center; measure: ai_tip.$k; size: 12; weight: 600; color: #2a1e17; opacity: b.hov; family: "Inter" }
         }
         // who answers, and the model: the one part of the foot that stays when the AI is switched
-        box { from: 148, 532; size: 214, 32; corner: 16; color: #f7c873; opacity: 16% + 14% * switch_hit.hover + 20% * if(ai_menu, 1, 0) }
-        text ai_model { at: 162, 548; anchor: left center; size: 13; weight: 700; color: #f7c873; width: 170; lines: 1; family: "Inter" }
+        box { from: 192, 532; size: 170, 32; corner: 16; color: #f7c873; opacity: 16% + 14% * switch_hit.hover + 20% * if(ai_menu, 1, 0) }
+        text ai_model { at: 206, 548; anchor: left center; size: 13; weight: 700; color: #f7c873; width: 126; lines: 1; family: "Inter" }
         text ic_ai_chev { at: 348, 548; anchor: center; size: 14; color: #f7c873; family: "tabler-icons" }
-        zone box switch_hit { from: 148, 532; size: 214, 32; cursor: pointer; active: ai.on; label: "{ai_model}"; role: button }
+        zone box switch_hit { from: 192, 532; size: 170, 32; cursor: pointer; active: ai.on; label: "{ai_model}"; role: button }
         on press switch_hit { emit ai_open(0) }
         zone box center_hit { at: 34, 548; size: 38, 38; cursor: pointer; active: ai.on; label: "{ai_btn_center}"; role: button }
         zone box settings_hit { at: 78, 548; size: 38, 38; cursor: pointer; active: ai.on; label: "{ai_btn_settings}"; role: button }
@@ -287,6 +290,8 @@ part Ai {
         on press center_hit { emit ai_center }
         on press settings_hit { emit ai_settings }
         on press new_hit { emit ai_new }
+        zone box do_hit { at: 166, 548; size: 38, 38; cursor: pointer; active: ai.on; label: "{ai_btn_do}"; role: button }
+        on press do_hit { emit ai_do }
 
         // what is used: the service's own limits where it tells them (Claude: the five hours and the week), else the
         // window. Each a row of small squares lit from the left, green to yellow to red (inspo/grafy.png)
@@ -311,7 +316,7 @@ part Ai {
         // opens another beside it. A press beside them puts them away
         group {
             show: ai_menu
-            let m.x = if(ai_menu_at == 0, 148, if(ai_menu_at == 2, 16, clamp(fx.cx + fx.cw - m.w, 16, card.w - 16 - m.w)))
+            let m.x = if(ai_menu_at == 0, 192, if(ai_menu_at == 2, 16, clamp(fx.cx + fx.cw - m.w, 16, card.w - 16 - m.w)))
             let m.bot = if(ai_menu_at == 0, 524, f.top - 6)
             let m.top = m.bot - m.h
             zone box ai_menu_away { from: 0, 0; size: card.w, card.h; active: ai.on and ai_menu; label: "Close" }
