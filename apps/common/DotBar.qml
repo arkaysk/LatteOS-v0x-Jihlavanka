@@ -19,7 +19,7 @@ Canvas {
         for (let i = 0; i < segments; i++) {
             const t = (i + 0.5) / segments
             g.globalAlpha = i < on ? 1 : 0.1
-            g.fillStyle = i < on ? (t < 0.55 ? Theme.mix(Theme.ok, Theme.gold, t / 0.55) : Theme.mix(Theme.gold, Theme.red, (t - 0.55) / 0.45)) : Theme.cream
+            g.fillStyle = i < on ? Theme.heat(t) : Theme.cream
             g.beginPath(); g.roundedRect ? g.roundedRect(i * step, 0, step - 1.5, height, 1.5, 1.5) : g.rect(i * step, 0, step - 1.5, height); g.fill()
         }
     }

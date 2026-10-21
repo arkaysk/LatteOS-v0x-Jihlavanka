@@ -325,16 +325,24 @@ ShellRoot {
     Run { id: pictures }
     Run { id: machine }
     Process { id: pour; onExited: { Quickshell.execDetached(["latte-say", "emit coffee_changed"]); coffees.ask(["latte-login", "coffees"]) } }
-    // how LatteOS is developed: the history of its repository, written at the install (bin/latte-activity)
-    FileView { id: activity; path: shell.share + "/activity.json"; printErrors: false; property var data: ({ days: {}, commits: [], total: 0 })
-               onLoaded: { try { activity.data = JSON.parse(text()) } catch (e) {} } }
+    // how LatteOS is developed: from GitHub (the repository is public), else what the install wrote (bin/latte-activity)
+    Process { id: activity; property var data: ({ days: {}, commits: [], total: 0 }); command: ["latte-activity", "show"]
+              stdout: StdioCollector { onStreamFinished: { try { const d = JSON.parse(this.text); if (d.commits) activity.data = d } catch (e) {} } } }
+    Process { id: activityFetch; command: ["latte-activity", "fetch"]; onExited: { activity.running = false; activity.running = true } }
     property string openCommit: ""
+    property var commitFiles: ({})             // a commit's files, asked for when it is opened (GitHub's list has none)
+    Process { id: filesq; property string hash: ""
+              stdout: StdioCollector { onStreamFinished: { try { const f = Object.assign({}, shell.commitFiles); f[filesq.hash] = JSON.parse(this.text); shell.commitFiles = f } catch (e) {} } } }
+    function openOne(c) {
+        openCommit = openCommit === c.hash ? "" : c.hash
+        if (openCommit !== "" && !c.files && !commitFiles[c.hash]) { filesq.hash = c.hash; filesq.command = ["latte-activity", "files", c.hash]; filesq.running = true }
+    }
     FileView { id: release; path: "/etc/os-release"; printErrors: false; property string pretty: ""
                onLoaded: pretty = (text().match(/^PRETTY_NAME="?([^"\n]*)/m) || ["", ""])[1] }
     onPageChanged: {
         if (page === "coffee") { coffees.ask(["latte-login", "coffees"]); iconsets.ask(["latte-settings", "icons"]) }
         if (page === "background") { pictures.ask(["latte-settings", "wallpapers"]); wall.ask(["latte-wall", "state"]) }
-        if (page === "about") machine.ask(["latte-devices", "list"])
+        if (page === "about") { machine.ask(["latte-devices", "list"]); activity.running = true; activityFetch.running = true }
         emptying = false
         if (page === "power") profiles.running = true
         ask()
@@ -1271,10 +1279,11 @@ ShellRoot {
                    readonly property int lastYear: Object.values(days).reduce((a, b) => a + b, 0)
                    property string hint: ""
                    function level(n) { return n <= 0 ? 0 : Math.ceil(4 * n / peak) }
-                   function tone(l) { return l === 0 ? Qt.rgba(Theme.cream.r, Theme.cream.g, Theme.cream.b, 0.07) : shell.mixed(Theme.coffee, Theme.gold, l / 4) }
+                   function tone(l) { return l === 0 ? Theme.unlit : Theme.heat((l - 0.5) / 4) }      // the Monitor's colours, LatteOS's standard
                 Rectangle { width: view.room; height: dev.cell * 7 + 6 * 3 + 96; radius: 18; color: Theme.card; border.width: 1; border.color: Theme.line
                     Label { x: 22; y: 16; font.pixelSize: 13; color: Theme.dim
-                            text: dev.hint !== "" ? dev.hint : I18n.tr("{n} changes in all, {m} of them in the last year", { n: activity.data.total, m: dev.lastYear }) }
+                            text: dev.hint !== "" ? dev.hint : I18n.tr("{n} changes in all, {m} of them in the last year", { n: activity.data.total, m: dev.lastYear })
+                                  + "  ·  " + (activity.data.from === "github" ? "GitHub · " + activity.data.branch : I18n.tr("as installed")) }
                     Item { x: 22; y: 44; width: parent.width - 44; height: dev.cell * 7 + 6 * 3 + 22
                         Repeater { model: dev.grid.marks
                             Label { required property var modelData; x: modelData.w * (dev.cell + 3); text: modelData.name; color: Theme.faint; font.pixelSize: 10; font.family: Theme.mono } }
@@ -1306,14 +1315,14 @@ ShellRoot {
                                 TextEdit { width: parent.width; readOnly: true; selectByMouse: true; wrapMode: Text.Wrap; color: Theme.cream; font.family: Theme.font; font.pixelSize: 13; selectionColor: Theme.coffee
                                            text: cm.modelData.subject + (cm.modelData.body ? "\n\n" + cm.modelData.body : "") }
                                 Rectangle { width: parent.width; height: 1; color: Theme.line }
-                                Repeater { model: cm.modelData.files
+                                Repeater { model: cm.modelData.files || shell.commitFiles[cm.modelData.hash] || []
                                     Row { required property var modelData; width: cmCol.width; spacing: 10
                                         Label { width: parent.width - 120; text: parent.modelData.path; elide: Text.ElideMiddle; color: Theme.dim; font.family: Theme.mono; font.pixelSize: 12 }
                                         Label { width: 52; horizontalAlignment: Text.AlignRight; text: "+" + parent.modelData.added; color: Theme.ok; font.family: Theme.mono; font.pixelSize: 12 }
                                         Label { width: 52; horizontalAlignment: Text.AlignRight; text: "−" + parent.modelData.removed; color: Theme.red; font.family: Theme.mono; font.pixelSize: 12 } } }
                                 Label { visible: cm.modelData.more > 0; text: I18n.tr("… and {n} more files", { n: cm.modelData.more }); color: Theme.faint; font.pixelSize: 12 } } }
                         MouseArea { id: cmHit; anchors.left: parent.left; anchors.right: parent.right; height: 46; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
-                                    onClicked: shell.openCommit = cm.open ? "" : cm.modelData.hash } } } }
+                                    onClicked: shell.openOne(cm.modelData) } } } }
 
             // a page that is still to come
             Column { visible: shell.here !== null && shell.here.status !== "ready"; width: view.room; spacing: 14; topPadding: 40

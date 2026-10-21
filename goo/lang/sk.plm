@@ -1521,5 +1521,6 @@ library Slovak {
         "Latest changes" = "Posledné zmeny"
         "Press one to read it whole: what was changed and in which files." = "Stlač jednu, prečítaš si ju celú: čo sa zmenilo a v ktorých súboroch."
         "… and {n} more files" = "… a ďalších súborov: {n}"
+        "as installed" = "podľa inštalácie"
     }
 }

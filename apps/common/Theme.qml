@@ -17,6 +17,10 @@ Singleton {
     readonly property var made: (cup === "wallpaper" && fromWallpaper) || cups[cup] || cups.espresso
     readonly property bool light: cup === "porcelain"
     function mix(a, b, t) { const x = Qt.color(a), y = Qt.color(b); return Qt.rgba(x.r + (y.r - x.r) * t, x.g + (y.g - x.g) * t, x.b + (y.b - x.b) * t, 1).toString() }
+    // LatteOS's one colour of a level in every graph (the Monitor's, DotGraph and DotBar, the development graph):
+    // green low, the theme's gold in the middle, red high; what is not lit is the cream at a tenth
+    function heat(t) { return t < 0.55 ? mix(ok, gold, t / 0.55) : mix(gold, red, (t - 0.55) / 0.45) }
+    readonly property color unlit: Qt.rgba(cream.r, cream.g, cream.b, 0.1)
     FileView {
         id: palette
         path: (Quickshell.env("XDG_CACHE_HOME") || (Quickshell.env("HOME") + "/.cache")) + "/skwd-wall-v2/colors.json"

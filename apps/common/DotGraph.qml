@@ -18,7 +18,7 @@ Canvas {
 
     function lit(t) {                          // the colour of a dot at height t (0 bottom … 1 top)
         if (!heat) return tint
-        return t < 0.55 ? Theme.mix(Theme.ok, Theme.gold, t / 0.55) : Theme.mix(Theme.gold, Theme.red, (t - 0.55) / 0.45)
+        return Theme.heat(t)
     }
     onPaint: {
         const g = getContext("2d")
