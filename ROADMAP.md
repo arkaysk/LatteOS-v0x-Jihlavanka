@@ -411,6 +411,23 @@ Schválené 12. 10. 2026. Pracuje sa **zhora nadol, neskáče sa**; nový nápad
       `latte-ai listen`; na latte-lab chýba skutočný mikrofón (overené pripravenou nahrávkou). Vlastné pokyny (Lens AI
       centrum › Pokyny) idú s každou otázkou ku každej AI.
     - i. [ ] Hľadanie podľa významu v LensGoo (e5-sk, ROADMAP bod 14) — po b.
+    - m. [ ] **LensAI = spoločné API + grafická nadstavba** (používateľ, 21. 10.; Omarchy je MIT → prevziať maximum,
+      prepísať do LatteOS, autor v `TRETIE-STRANY.md`). LensAI (nové meno Lens AI centra) je jedno API pre všetko AI
+      v systéme (`latte-ai`: služby, účty, modely, rozhovory, spotreba, úlohy, skill) a okno nad ním; chat v LensGoo je
+      iba rýchly klient toho API. Poradie:
+      1. [ ] premenovať na LensAI; polia na písanie presne podľa snímok používateľa (Claude, Gemini, ChatGPT, Grok,
+         Mistral, Copilot, DeepSeek); DeepSeek cez kľúč API;
+      2. [ ] spotreba ako v Omarchy (`omarchy-agent-usage-*`): Claude (OAuth usage), Codex, Grok (billing), Kimi,
+         Fireworks; obnova každých 15 min (pri 80 %+ každé 3 min), vyrovnávacia pamäť; LensGoo aj LensAI ju berú z API;
+      3. [ ] **panel agentov v okne LensAI** (podľa `shell/plugins/agents` z Omarchy): predplatné, pásy limitov, tokeny,
+         najpoužívanejší model, „Urob niečo“ (úlohy pre agenta);
+      4. [ ] **skill LatteOS** (podľa `default/agents/skills/omarchy`): ako je LatteOS postavený, čo sa smie meniť,
+         príkazy `latte-*`, pkexec, snímka pred diskom, najprv plán; prepojený do `~/.claude/skills`, `~/.codex/skills`,
+         `~/.agents/skills`…; **upraviteľný v LensAI**;
+      5. [ ] „Urob to za mňa“: úloha pre predvoleného agenta, najprv plán, potvrdenie (nie automatické schvaľovanie);
+      6. [ ] **pád → AI** s GuardDogom a **LatteOS SAFE** (podľa skillu `diagnose-crash`): upozornenie o páde,
+         v SAFE „Prečo sa skončila relácia“ s ponukou „Opýtať sa AI“;
+      7. [ ] viac účtov jedného poskytovateľa, prepnutie pri limite; diktovanie do akejkoľvek aplikácie; App Manager › AI.
     - l. [ ] **Podľa Omarchy** (preskúmané 21. 10., `inspo/ai-na-ploche.md`), návrhy na výber používateľa:
       (1) **skill LatteOS** pre agentov (`~/.claude/skills`, `~/.codex/skills`, `~/.agents/skills`): ako je LatteOS
       postavený, čo sa smie meniť (`~/.config/latteos`, nie `/usr/share/latteos`), ktoré `latte-*` príkazy použiť,
