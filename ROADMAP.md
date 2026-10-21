@@ -535,6 +535,15 @@ Schválené 12. 10. 2026. Pracuje sa **zhora nadol, neskáče sa**; nový nápad
     okien, ťahanie myšou, lišty nad bočnými stĺpcami. Ako ďalší režim v Nastavenia › Okná („Tri zóny“), ponúknutý
     pri monitore 21:9 a širšom (latte-lab DP-3 2560 × 1080). Zostaviť pre nainštalovaný Hyprland ako hyprbars
     (`optional /usr/lib64/latteos/…` vo FILES), autor v TRETIE-STRANY.md.
+20. [ ] **Asistent v každom textovom poli** (používateľ, 21. 10.; vzor: veta v kalendári ClockGoo — pravidlá hneď, čo
+    nevedia, prečíta lokálna AI a výsledok sa ukáže na potvrdenie, nič sa nevykoná samo). Jedno spoločné API (`latte-ai`,
+    LensAI), pole len povie, čo vie urobiť:
+    - **DualBrew, riadok terminálu / hľadania:** veta → príkaz Linuxu alebo hľadanie; hromadné premenovanie a
+      usporiadanie súborov („fotky z dovolenky podľa dátumu do priečinkov“) — najprv náhľad zmien, potom vykonať.
+    - **Prehrávač hudby:** dohľadanie skladby podľa opisu („tá pomalá s klavírom od…“).
+    - **Fotky:** hľadanie fotky podľa opisu (obraz → význam, miestny model; súvisí s hľadaním podľa významu, bod 16 i).
+    - Ďalšie polia postupne (Nastavenia, App Manager, LensGoo). Merané 21. 10.: model 4B ~12 s na procesore a
+      pri dátumoch sa mýli — čo vedia pravidlá, robia pravidlá; AI iba na zvyšok a vždy s potvrdením.
 
 ## ROADMAP2 — LatteOS od nápadu po hotový produkt
 
