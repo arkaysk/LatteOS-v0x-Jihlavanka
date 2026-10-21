@@ -53,6 +53,9 @@ ShellRoot {
     Net { id: note; onExited: lan.ask(["last"]) }
     property string chosen: ""                 // the device picked on the radar, by its key
     property bool asList: false                // the devices as a list, which holds many better than the radar
+    // the closer look knocks on ports: a security program on another computer may report it, so it is said first, once
+    property bool warning: false
+    property bool warned: false
     property bool asMap: false                 // …or as a map: the internet, the routers on the way, and the devices under them
     property string capFilter: ""              // the list shows only what can do this; "" all
     readonly property var picked: lan.data ? (lan.data.devices.find(d => d.key === chosen) || null) : null
@@ -113,7 +116,7 @@ ShellRoot {
                    onPressed: { Quickshell.clipboardText = shell.report(); done = true; again.restart() }
                    Timer { id: again; interval: 1800; onTriggered: copy.done = false } },
             Pill { implicitHeight: 34; icon: "shield-check"; visible: shell.page === "inspector"; text: I18n.tr("Check closely"); busy: lan.running && lan.command[1] === "inspect"
-                   onPressed: lan.ask(["inspect"]) },
+                   onPressed: shell.warned ? lan.ask(["inspect"]) : shell.warning = true },
             Pill { implicitHeight: 34; icon: "refresh"; text: I18n.tr("Look again"); busy: asker.running || lan.running
                    onPressed: shell.page === "inspector" ? lan.ask(["scan"]) : (shell.page === "connection" ? link.ask(["status"]) : asker.ask()) }
         ]
@@ -300,6 +303,19 @@ ShellRoot {
                     Pill { implicitHeight: 30; icon: "radar-2"; text: I18n.tr("Radar"); strong: !shell.asList && !shell.asMap; onPressed: { shell.asList = false; shell.asMap = false } }
                     Pill { implicitHeight: 30; icon: "list"; text: I18n.tr("List"); strong: shell.asList; onPressed: { shell.asList = true; shell.asMap = false } }
                     Pill { implicitHeight: 30; icon: "sitemap"; text: I18n.tr("Map"); strong: shell.asMap; onPressed: { shell.asMap = true; shell.asList = false } } }
+                // what the closer look does, said before the first one: it knocks on the ports of every device here
+                Rectangle { visible: shell.warning; z: 4; x: 28; y: 56; width: Math.min(560, radar.width - 56); height: warnCol.implicitHeight + 32; radius: 20; color: Theme.card; border.width: 1; border.color: Theme.gold
+                    Column { id: warnCol; x: 20; y: 16; width: parent.width - 40; spacing: 10
+                        Row { spacing: 10
+                            Glyph { name: "alert-triangle"; font.pixelSize: 22; color: Theme.gold }
+                            Label { text: I18n.tr("Before the closer look"); font.weight: 700; font.pixelSize: 15 } }
+                        Label { width: parent.width; wrapMode: Text.WordWrap; color: Theme.cream
+                                text: I18n.tr("It knocks on the well-known ports of every device on the network, gently, to find which services answer and what is weak. It changes nothing and logs in nowhere.") }
+                        Label { width: parent.width; wrapMode: Text.WordWrap; color: Theme.dim; font.pixelSize: 12
+                                text: I18n.tr("A security program on another computer (ESET, Norton, Windows Defender…) may report it as a port scan: that is this look. Check only your own network.") }
+                        Row { spacing: 10
+                            Pill { icon: "shield-check"; strong: true; text: I18n.tr("Check closely"); onPressed: { shell.warning = false; shell.warned = true; lan.ask(["inspect"]) } }
+                            Pill { text: I18n.tr("Not now"); onPressed: shell.warning = false } } } }
                 // how safe the network is, after a closer look: a score, and what to do, the worst first
                 Rectangle {
                     id: safety

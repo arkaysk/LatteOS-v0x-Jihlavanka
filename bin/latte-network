@@ -417,12 +417,15 @@ WEAK = {"telnet": ("high", "Telnet is open: passwords travel unencrypted", "Turn
         "netbios": ("low", "Old Windows file sharing (NetBIOS) is on", "Turn NetBIOS off where SMB alone will do.")}
 
 
-def open_ports(ip, wait=0.5):
+def open_ports(ip, wait=0.5, gap=0.04):
+    """Which of the well-known ports answer. Gently: four at a time, a little apart — many at once is what a security
+    program takes for an attack (ESET calls it a port scan); it may still notice, and that is this look."""
     def try_port(port):
+        time.sleep(gap * (list(PORTS).index(port) % 4))
         with socket.socket() as c:
             c.settimeout(wait)
             return port if c.connect_ex((ip, port)) == 0 else None
-    with ThreadPoolExecutor(len(PORTS)) as pool:
+    with ThreadPoolExecutor(4) as pool:
         return sorted(p for p in pool.map(try_port, PORTS) if p)
 
 
@@ -592,7 +595,7 @@ def inspect():
         upnp, cams = pool.submit(ssdp), pool.submit(onvif)
         upnp, cams = upnp.result(), cams.result()
     live = [d for d in found["devices"] if d["online"]]
-    with ThreadPoolExecutor(8) as pool:
+    with ThreadPoolExecutor(2) as pool:          # two devices at a time, so that no one of them sees a flood
         closer = dict(zip([d["key"] for d in live], pool.map(lambda d: look_closer(d, upnp, cams), live)))
         names = dict(zip([d["key"] for d in live], pool.map(lambda d: netbios(d["ip"]), live)))
     data = load()
