@@ -478,6 +478,77 @@ def copilot_usage():
     return out
 
 
+# ── what the services tell of the account, asked without a question (the way Omarchy's agents panel does; MIT) ──
+USAGE_REUSE = 900                     # Anthropic refuses usage checks readily: an answer is good for a quarter of an hour
+
+
+def _remembered(name, fetch):
+    """A service's answer, kept for USAGE_REUSE seconds and given again when a new one cannot be had."""
+    cache = os.path.join(ROOM, "usage-%s.json" % name)
+    try:
+        with open(cache) as f:
+            kept = json.load(f)
+    except (OSError, ValueError):
+        kept = {}
+    if kept.get("at", 0) > datetime.datetime.now().timestamp() - USAGE_REUSE and kept.get("limits"):
+        return kept["limits"]
+    try:
+        fresh = fetch()
+    except Exception:                 # the service did not answer, or answered with something else: the last answer stays
+        fresh = None
+    if not fresh:
+        return kept.get("limits") or {}
+    os.makedirs(ROOM, exist_ok=True)
+    with open(cache, "w") as f:
+        json.dump({"at": datetime.datetime.now().timestamp(), "limits": fresh}, f)
+    return fresh
+
+
+def _when(iso):
+    try:
+        return int(datetime.datetime.fromisoformat(str(iso).replace("Z", "+00:00")).timestamp())
+    except ValueError:
+        return 0
+
+
+def claude_usage():
+    """The five hours and the week, from Anthropic's usage endpoint, with the sign-in Claude Code keeps. The token is
+    read, used in the one request and nowhere written; when it has run out, Claude Code renews it the next time it runs."""
+    def fetch():
+        import urllib.request
+        home = os.environ.get("CLAUDE_CONFIG_DIR") or os.path.expanduser("~/.claude")
+        with open(os.path.join(home, ".credentials.json")) as f:
+            login = json.load(f).get("claudeAiOauth") or {}
+        if (login.get("expiresAt") or 0) / 1000 < datetime.datetime.now().timestamp():
+            return None
+        req = urllib.request.Request("https://api.anthropic.com/api/oauth/usage", headers={
+            "Authorization": "Bearer " + login.get("accessToken", ""), "anthropic-beta": "oauth-2025-04-20", "Accept": "application/json"})
+        d = json.load(urllib.request.urlopen(req, timeout=10))
+        out = {}
+        for key, name in (("five_hour", "five_hour"), ("seven_day_oauth_apps", "seven_day"), ("seven_day", "seven_day")):
+            b = d.get(key)
+            if isinstance(b, dict) and b.get("utilization") is not None and name not in out:
+                u = float(b["utilization"])
+                out[name] = {"used": round(u / 100 if u > 1 else u, 4), "resets": _when(b.get("resets_at"))}
+        return out
+    return _remembered("claude", fetch)
+
+
+def grok_usage():
+    """The period's credits, from xAI's billing, with the sign-in Grok Build keeps."""
+    def fetch():
+        import urllib.request
+        with open(os.path.join(os.environ.get("GROK_HOME") or os.path.expanduser("~/.grok"), "auth.json")) as f:
+            login = next((v for v in json.load(f).values() if isinstance(v, dict)), {})
+        req = urllib.request.Request("https://cli-chat-proxy.grok.com/v1/billing?format=credits",
+                                     headers={"Authorization": "Bearer " + str(login.get("key", "")), "Accept": "application/json"})
+        config = json.load(urllib.request.urlopen(req, timeout=10))["config"]
+        period = config["currentPeriod"]
+        return {"credits": {"used": round(float(config.get("creditUsagePercent") or 0) / 100, 4), "resets": _when(period.get("end")),
+                            "week": "WEEK" in str(period.get("type"))}}
+    return _remembered("grok", fetch)
+
+
 def asked_this_month(provider):
     month = datetime.datetime.now().strftime("%Y-%m")
     n = 0
@@ -849,7 +920,8 @@ def main(a):
         print(json.dumps(agent(a[1], a[2] if len(a) == 3 else ""), ensure_ascii=False))
         return 0
     if len(a) == 2 and a[0] == "usage":
-        print(json.dumps({"limits": copilot_usage() if a[1] == "copilot" else {}, "asked": asked_this_month(a[1])}))
+        told = {"copilot": copilot_usage, "claude": claude_usage, "grok": grok_usage}.get(a[1], dict)()
+        print(json.dumps({"limits": told, "asked": asked_this_month(a[1])}))
         return 0
     if a == ["stop"]:
         subprocess.run(["pkill", "-f", "llama-server.*--port %d" % LOCAL_PORT])

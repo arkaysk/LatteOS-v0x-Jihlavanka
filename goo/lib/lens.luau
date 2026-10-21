@@ -388,7 +388,10 @@ fill_ai = function()
     -- A window that has started again since then is empty again, whatever the old figure said.
     -- the block under the coffee is the service's own: what it tells of itself. Figures of the conversation count
     -- only when its last answer came from this service; a switch starts the block afresh.
-    local lim = p and p.id == "claude" and (u.limits and next(u.limits) and u.limits or kept.ai.limits) or nil
+    -- Claude's limits as Anthropic tells them now (latte-ai usage), else as the last answer told them
+    local told = p and ai.told[p.id] and ai.told[p.id].limits or {}
+    local lim = p and p.id == "claude" and (told.five_hour and told or (u.limits and next(u.limits) and u.limits or kept.ai.limits)) or nil
+    if lim == told then kept.ai.limits_at = nil end
     if lim and lim.five_hour then
         local function share(w) return (w.resets or 0) > os.time() and (w.used or 0) or 0 end
         local at = kept.ai.limits_at and (os.time() - kept.ai.limits_at > 600) and ("  ·  " .. with_n("as of {n}", os.date("%H:%M", kept.ai.limits_at))) or ""
@@ -397,6 +400,12 @@ fill_ai = function()
         local w = lim.seven_day or { used = 0, resets = 0 }
         text.ai_lim2 = tr("Week (7 days)")
         text.ai_lim2p, fact.ai_l2 = percent(share(w)) .. until_(w.resets), share(w)
+    elseif p and p.id == "grok" and told.credits then
+        -- Grok's credits for the period, as xAI's billing tells them
+        text.ai_lim1 = told.credits.week and tr("Credits (week)") or tr("Credits (month)")
+        text.ai_lim1p, fact.ai_l1 = percent(told.credits.used) .. until_(told.credits.resets), told.credits.used
+        text.ai_lim2 = with_n("{n} questions through Lens this month", tostring(ai.told[p.id].asked or 0))
+        text.ai_lim2p, fact.ai_l2 = "", -1
     elseif p and p.id == "copilot" and ai.told[p.id] and next(ai.told[p.id].limits or {}) then
         -- Copilot's own figures, as GitHub tells them (what VS Code shows): the month's credits and the editor's suggestions
         local l = ai.told[p.id].limits
