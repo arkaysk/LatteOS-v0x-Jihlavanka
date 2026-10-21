@@ -176,7 +176,7 @@ ShellRoot {
         "own": { page: "transparent", bg: "#3d2c22", rim: "#5a463a", ink: "#f5e8d8", text: "#f5e8d8", dim: "#b8a491", ubg: Qt.rgba(0.97, 0.78, 0.45, 0.14), round: 14, send: Theme.gold, sendEmpty: Theme.gold, sendInk: "#2a1e17", sendInkEmpty: "#2a1e17", tick: Theme.gold, chipBg: "#4a372b" } })[style] || ({})
     readonly property var look_own: ({ menu: "#2a1e17", ink: "#f5e8d8", dim: "#b8a491" })
     // the service's page as glass, the wallpaper blurred behind it and lifted towards white so its dark words read,
-    // as much as LatteOS is glass (Theme.glassLevel: 0 white as on the service's own page … 3); solid where nothing blurs
+    // as much as LatteOS is glass (Theme.glassLevel: 0 white as on the service's own page … 4); solid where nothing blurs
     readonly property bool glassy: page === "chats" && style !== "own" && Theme.glassLevel > 0 && Theme.blurred
     readonly property color webInk: style === "own" ? "#c3b1ff" : "#6b4fd8"   // what opens the service's page, the same for all
     readonly property var effortWords: ({ low: QT_TR_NOOP("low"), medium: QT_TR_NOOP("medium"), high: QT_TR_NOOP("high"), xhigh: QT_TR_NOOP("very high"), max: QT_TR_NOOP("highest"), think: QT_TR_NOOP("thinking") })
@@ -304,7 +304,7 @@ ShellRoot {
             id: chatPane
             anchors.fill: parent
             visible: shell.page === "chats"
-            Rectangle { anchors.fill: parent; anchors.margins: 8; radius: 16; color: shell.look.page; opacity: shell.glassy ? [1, 0.9, 0.8, 0.68][Theme.glassLevel] : 1 }
+            Rectangle { anchors.fill: parent; anchors.margins: 8; radius: 16; color: shell.look.page; opacity: shell.glassy ? [1, 0.9, 0.8, 0.68, 0.55][Theme.glassLevel] : 1 }
             ListView {
                 id: talk
                 anchors.fill: parent; anchors.bottomMargin: 130

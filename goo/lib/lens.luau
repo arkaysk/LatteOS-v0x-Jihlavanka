@@ -51,10 +51,15 @@ local GLYPHS = { work = "star", media = "palette", dev = "code", fun = "device-g
 local lists = DEFAULT_LISTS
 -- the AI's state (see its part below): load_lists reads which services the choice offers
 local ai = { providers = {}, prefer = nil, msgs = {}, usage = {}, waiting = false, choices = {}, files = {} }
+local modes_off = {}                 -- the modes the user hid (Settings › Launcher): files 1, web 2, command 3; apps never
 local function load_lists()
     local ok, saved = pcall(sys.ask, "files.read", "lens-lists.json", "json")
     lists = ok and type(saved) == "table" and type(saved.lists) == "table" and #saved.lists > 0 and saved.lists or DEFAULT_LISTS
     ai.prefer = ok and type(saved) == "table" and type(saved.ai) == "table" and saved.ai or nil
+    modes_off = {}
+    for _, m in ipairs(ok and type(saved) == "table" and type(saved.modes_off) == "table" and saved.modes_off or {}) do
+        if tonumber(m) and tonumber(m) > 0 then modes_off[tonumber(m)] = true end
+    end
 end
 local function has(list, a)
     for _, id in ipairs(list.apps or {}) do if id == a.id then return true end end
@@ -792,8 +797,11 @@ local function rows_ai() return {} end
 local shown = {}
 render = function(keep)
     local tabs = {}
+    if modes_off[kept.mode] then kept.mode = 0 end
     for m = 0, #MODES do
-        tabs[#tabs + 1] = { label = tr(MODES[m].name), glyph = MODES[m].glyph, on = kept.mode == m, run = function() set_mode(m) end }
+        if not modes_off[m] then
+            tabs[#tabs + 1] = { label = tr(MODES[m].name), glyph = MODES[m].glyph, on = kept.mode == m, run = function() set_mode(m) end }
+        end
     end
     -- the AI is a card of its own: a conversation, not rows
     if kept.mode == 4 and MODES[4] then
@@ -846,7 +854,7 @@ function M.open(m)
     -- the AI asked for before latte-ai has said who can answer: it opens as soon as it has
     if m == 4 and not MODES[4] then ai.pending = true end
     load_lists()
-    if m and MODES[m] then kept.mode = m end
+    if m and MODES[m] and not modes_off[m] then kept.mode = m end
     typed, confirm, found = "", nil, nil
     render(false)
 end

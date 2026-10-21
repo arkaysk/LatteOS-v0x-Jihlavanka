@@ -119,7 +119,7 @@ part Card {
     let card.y0 = if(card_dock, H - 46 - card.h, clamp(if(card.sy > 0, card.y, card.y - card.h), 12, H - 12 - card.h))
     let card.ax = if(card.sx > 0, card.x0, card.x0 + card.w)
     let card.ay = if(card.sy > 0, card.y0, card.y0 + card.h)
-    let card.glass = if(card_dock or card_menu, 0, max(material, card_pane * panes))                  // the shore is hard: its panel is never glass
+    let card.glass = if(card_dock or card_menu, 0, if(true_glass, 1, max(material, card_pane * panes)))                  // the shore is hard: its panel is never glass
     let card.q = clamp(card.p, 0, 1.08)
     prop card.ws = 290 ~grow
     prop card.hs = 60 ~grow
@@ -145,9 +145,10 @@ part Card {
         glass: card.glass * 100%
         lens: material > 0.02
         shine: pointer
-        frost: 100%
+        // True Glass: clearer and bending more; the smoke stays, it is what keeps the writing readable
+        frost: if(true_glass, 45%, 100%)
         smoke: 62% * card.glass
-        refraction: 120% * card.glass
+        refraction: if(true_glass, 200%, 120%) * card.glass
         box { at: card.ax + card.sx * card.cw / 2, card.ay + card.sy * card.ch / 2; size: card.cw * if(card.p > 0.02, 1, 0), card.ch; corner: if(card_menu, 12, min(if(ear > 14, 26, 18) + (card.round - 18), min(card.cw, card.ch) / 2)) }
         ellipse { at: card.ax + if(card_owner >= 0, own.dx - own.x, 0), card.ay + if(card_owner >= 0, own.dy - own.y, 0); radius: (ear.d * clamp(card.p * 3, 0, 1) + 1) * if(card.p > 0.02 and not card_menu, 1, 0); blend: 4 + 30 * 4 * card.t * (1 - card.t) }
         line { from: card.bx, card.by; to: card.bx + cap.tx * cap.len * strip.dir, card.by + (1 - cap.tx) * cap.len * strip.dir; width: ear * 2 * clamp(card.p * 3, 0, 1) * if(cap.len > 0 and card.p > 0.02, 1, 0); blend: 4 + 30 * 4 * card.t * (1 - card.t) }

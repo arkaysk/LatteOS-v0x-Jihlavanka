@@ -107,6 +107,7 @@ part Drops {
     fact lively = true                         // drops fall asleep, watch the weather and play when left alone
     fact glassy = 0                            // the material, one number: 0 plain coffee … 1 clear glass
     fact panes = 1                             // 0 where nothing is blurred (software drawing): a card that wants a pane of glass stays plain
+    fact true_glass = false                    // True Glass (Settings › Windows › Glass, the last step): every card clear glass
     prop material = 0 ~calm                    // …which the goo only slowly turns into: water and milk mix
     follow material = glassy
     fact bends = true                          // …and whether that glass bends what is behind it

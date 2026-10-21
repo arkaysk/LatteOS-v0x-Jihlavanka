@@ -30,10 +30,13 @@ Singleton {
             fromWallpaper = { ground: c.background, surface: c.surface, card: c.surfaceVariant, raised: c.surfaceContainer, line: mix(c.surfaceContainer, c.outline, 0.35),
                               cream: c.surfaceText, dim: mix(c.surfaceText, c.outline, 0.6), faint: c.outline, gold: c.primary, coffee: c.tertiary } } catch (e) {} }
     }
-    readonly property color ground: made.ground          // what a window stands on
-    readonly property color surface: made.surface
-    readonly property color card: made.card
-    readonly property color raised: made.raised
+    // True Glass: the window itself is clear glass that the compositor blurs and bends; what is written keeps a plate
+    // under it (cards, fields, rows), so only the ground and the panels let the world through
+    function see(c, a) { return trueGlass ? Qt.rgba(c.r, c.g, c.b, a) : c }
+    readonly property color ground: see(made.ground, 0.30)          // what a window stands on
+    readonly property color surface: see(made.surface, 0.42)
+    readonly property color card: see(made.card, 0.66)
+    readonly property color raised: see(made.raised, 0.74)
     readonly property color line: made.line
     readonly property color cream: made.cream            // writing
     readonly property color dim: made.dim
@@ -52,11 +55,12 @@ Singleton {
         : ({ "frost": Qt.rgba(0.13, 0.09, 0.07, 0.62), "smoke": Qt.rgba(0.07, 0.05, 0.04, 0.80), "clear": Qt.rgba(0.13, 0.09, 0.07, 0.36), "milk": Qt.rgba(0.36, 0.29, 0.24, 0.50) })
     property string glass: "frost"
     // how much of LatteOS is glass, one choice for all of it (~/.config/latteos/glass-level): 0 none, everything solid;
-    // 1 a little, 2 more, 3 the most. The side panels, the windows and the AI's pages of a service follow it
+    // 1 a little, 2 more, 3 the most, 4 True Glass (trueGlass). The side panels, the windows and the AI's pages follow it
     property int glassLevel: 1
+    readonly property bool trueGlass: glassLevel === 4 && blurred
     readonly property bool blurred: ["full", "standard"].includes(Quickshell.env("LATTE_TIER") || "")
     readonly property color paneGlass: glasses[glass] || glasses.frost
-    readonly property color pane: blurred && glassLevel > 0 ? Qt.rgba(paneGlass.r, paneGlass.g, paneGlass.b, Math.min(0.95, Math.max(0.2, paneGlass.a + [0, 0.15, 0, -0.15][glassLevel]))) : surface
+    readonly property color pane: blurred && glassLevel > 0 ? Qt.rgba(paneGlass.r, paneGlass.g, paneGlass.b, Math.min(0.95, Math.max(0.2, paneGlass.a + [0, 0.15, 0, -0.15, -0.4][glassLevel]))) : surface
     readonly property string font: "Inter Variable"
     readonly property string mono: "JetBrains Mono"          // figures, paths, keys: what is read as data
     readonly property string icons: Icons.family
@@ -73,7 +77,7 @@ Singleton {
         path: (Quickshell.env("XDG_CONFIG_HOME") || (Quickshell.env("HOME") + "/.config")) + "/latteos/glass-level"
         printErrors: false; watchChanges: true
         onFileChanged: reload()
-        onLoaded: { const n = parseInt(text().trim()); if (n >= 0 && n <= 3) glassLevel = n }
+        onLoaded: { const n = parseInt(text().trim()); if (n >= 0 && n <= 4) glassLevel = n }
     }
     FileView {
         id: cupWord

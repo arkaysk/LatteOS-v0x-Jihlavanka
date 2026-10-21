@@ -127,11 +127,12 @@ ShellRoot {
         path: (Quickshell.env("XDG_DATA_HOME") || (Quickshell.env("HOME") + "/.local/share")) + "/pleamar/goo/lens-lists.json"
         printErrors: false; watchChanges: true
         onFileChanged: reload()
-        onLoaded: { try { const d = JSON.parse(text()); lists = Array.isArray(d.lists) ? d.lists : []; ai = Array.isArray(d.ai) ? d.ai : null } catch (e) { lists = []; ai = null } }
-        onLoadFailed: { lists = []; ai = null }
-        function write() { const d = { lists: lists }; if (ai !== null) d.ai = ai; setText(JSON.stringify(d)) }
+        property var modesOff: []              // LensGoo's modes the user hid: 1 files, 2 web, 3 command (lib/lens.luau)
+        onLoaded: { try { const d = JSON.parse(text()); lists = Array.isArray(d.lists) ? d.lists : []; ai = Array.isArray(d.ai) ? d.ai : null; modesOff = Array.isArray(d.modes_off) ? d.modes_off : [] } catch (e) { lists = []; ai = null; modesOff = [] } }
+        onLoadFailed: { lists = []; ai = null; modesOff = [] }
+        function write() { const d = { lists: lists, modes_off: modesOff }; if (ai !== null) d.ai = ai; setText(JSON.stringify(d)) }
+        function mode(n, on) { modesOff = modesOff.filter(m => m !== n).concat(on ? [] : [n]); write() }
         function save(l) { lists = l; write() }
-        function offer(id, on) { const all = (helpers.data || []).map(h => h.id); let a = (ai || all).filter(x => x !== id); if (on) a.push(id); ai = a; write() }
     }
     readonly property var lensLists: lensFile.lists.length > 0 ? lensFile.lists : lensDefaults
     function lensEdit(i, change) { const l = JSON.parse(JSON.stringify(lensLists)); change(l[i]); lensFile.save(l) }
@@ -201,7 +202,7 @@ ShellRoot {
     readonly property var asks: ({ "": [[machine, ["latte-devices", "list"]], [screens, ["hyprctl", "monitors", "-j"]], [disks, ["latte-settings", "storage"]], [who, ["latte-settings", "account"]]],
                                    "sound": [[sound, ["latte-settings", "sound"]]], "defaults": [[opens, ["latte-settings", "defaults"]]], "language": [[region, ["latte-settings", "region"]]],
                                    "time": [[clock, ["latte-settings", "time"]]], "keyboard": [[keys, ["latte-settings", "keyboard"]], [binds, ["hyprctl", "binds", "-j"]]], "displays": [[screens, ["hyprctl", "monitors", "-j"]]],
-                                   "guarddog": [[guardq, ["latte-guarddog", "status"]]], "clockgoo": [[clock, ["latte-settings", "time"]], [logon, ["latte-settings", "loginscreen"]], [focusq, ["latte-focus", "today"]], [weatherq, ["latte-sky", "models"]]], "storage": [[disks, ["latte-settings", "storage"]], [held, ["latte-settings", "sizes"]]], "ai": [[helpers, ["latte-ai", "providers", "all"]]], "launcher": [[helpers, ["latte-ai", "providers", "all"]]],
+                                   "guarddog": [[guardq, ["latte-guarddog", "status"]]], "clockgoo": [[clock, ["latte-settings", "time"]], [logon, ["latte-settings", "loginscreen"]], [focusq, ["latte-focus", "today"]], [weatherq, ["latte-sky", "models"]]], "storage": [[disks, ["latte-settings", "storage"]], [held, ["latte-settings", "sizes"]]], "ai": [[helpers, ["latte-ai", "modules"]]],
                                    "me": [[who, ["latte-settings", "account"]], [pictures, ["latte-settings", "wallpapers"]]], "performance": [[machine, ["latte-devices", "list"]]], "loginscreen": [[logon, ["latte-settings", "loginscreen"]]] })
     function ask() { (asks[page] || []).forEach(a => a[0].ask(a[1])); force.reload(); crashed.reload(); if (page === "background") wall.ask(["latte-wall", "state"]) }
     Timer { id: later; interval: 900; onTriggered: shell.ask() }       // what was asked of the compositor takes a moment to be so
@@ -554,23 +555,23 @@ ShellRoot {
                                     Label { x: 12; y: 84; text: I18n.tr(mode.modelData.hint); color: Theme.dim; font.pixelSize: 11 }
                                     MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor
                                                 onClicked: { cup.choose(mode.modelData.id); Theme.cup = mode.modelData.id; Quickshell.execDetached(["hyprctl", "eval", "latte.cup(\"" + mode.modelData.id + "\")"]) } } } } } }
-                    // how much is glass: one choice for all of LatteOS, as a slider of its four steps
+                    // how much is glass: one choice for all of LatteOS, as a slider of its five steps, True Glass the last
                     Card { title: I18n.tr("Glass"); note: I18n.tr("How much of LatteOS is glass: the side panels, the windows and the AI's pages."); icon: "droplet"
                         Item { width: parent.width; height: 44
                             Glyph { x: 0; anchors.verticalCenter: parent.verticalCenter; name: "circle"; color: Theme.dim; font.pixelSize: 16 }
                             Item { id: track; x: 30; width: parent.width - 130; height: 44
                                 Rectangle { y: 19; width: parent.width; height: 6; radius: 3; color: Theme.raised }
-                                Rectangle { y: 19; width: parent.width * Theme.glassLevel / 3; height: 6; radius: 3; color: Theme.gold }
-                                Repeater { model: 4
-                                    Rectangle { required property int index; x: track.width * index / 3 - width / 2; y: index === Theme.glassLevel ? 12 : 17; width: index === Theme.glassLevel ? 20 : 10; height: width; radius: width / 2
+                                Rectangle { y: 19; width: parent.width * Theme.glassLevel / 4; height: 6; radius: 3; color: Theme.gold }
+                                Repeater { model: 5
+                                    Rectangle { required property int index; x: track.width * index / 4 - width / 2; y: index === Theme.glassLevel ? 12 : 17; width: index === Theme.glassLevel ? 20 : 10; height: width; radius: width / 2
                                                 color: index <= Theme.glassLevel ? Theme.gold : Theme.raised; border.width: index === Theme.glassLevel ? 3 : 0; border.color: Theme.ground } }
                                 MouseArea { anchors.fill: parent; anchors.margins: -10; cursorShape: Qt.PointingHandCursor
-                                    function put(x) { const n = Math.max(0, Math.min(3, Math.round(3 * x / track.width))); if (n !== Theme.glassLevel) { glassLevel.choose(String(n)); Theme.glassLevel = n; goo.set("glass", n) } }
+                                    function put(x) { const n = Math.max(0, Math.min(4, Math.round(4 * x / track.width))); if (n !== Theme.glassLevel) { glassLevel.choose(String(n)); Theme.glassLevel = n; goo.set("glass", n) } }
                                     onPressed: m => put(m.x - 10); onPositionChanged: m => { if (pressed) put(m.x - 10) } } }
                             Glyph { x: parent.width - 92; anchors.verticalCenter: parent.verticalCenter; name: "droplet"; color: Theme.gold; font.pixelSize: 16 }
                             Rectangle { anchors.right: parent.right; anchors.verticalCenter: parent.verticalCenter; height: 26; radius: 13; width: 64; color: Qt.rgba(Theme.gold.r, Theme.gold.g, Theme.gold.b, 0.16)
-                                Label { anchors.centerIn: parent; text: Math.round(Theme.glassLevel * 100 / 3) + " %"; color: Theme.gold; font.weight: 800; font.pixelSize: 12 } } }
-                        Label { text: I18n.tr([QT_TR_NOOP("None: everything is solid."), QT_TR_NOOP("A little"), QT_TR_NOOP("More"), QT_TR_NOOP("The most")][Theme.glassLevel]); color: Theme.dim; font.pixelSize: 12 } }
+                                Label { anchors.centerIn: parent; text: Theme.glassLevel === 4 ? "True" : Math.round(Theme.glassLevel * 100 / 3) + " %"; color: Theme.gold; font.weight: 800; font.pixelSize: 12 } } }
+                        Label { text: I18n.tr([QT_TR_NOOP("None: everything is solid."), QT_TR_NOOP("A little"), QT_TR_NOOP("More"), QT_TR_NOOP("The most"), QT_TR_NOOP("True Glass: the windows are clear glass that bends the light; what is written keeps a plate under it.")][Theme.glassLevel]); color: Theme.dim; font.pixelSize: 12; width: parent.width; wrapMode: Text.WordWrap } }
                 }
                 Column { width: front.col; spacing: 18
                     // the coffee on the edge of the screen: lively, and of glass
@@ -780,7 +781,7 @@ ShellRoot {
                              Glyph { anchors.centerIn: parent; name: parent.parent.modelData.icon; font.pixelSize: 54; color: parent.parent.on ? Theme.gold : Theme.dim } } } }
             // how much of LatteOS is glass: one choice for all of it; 0 makes everything solid (Theme.glassLevel)
             Part { visible: shell.page === "windows"; width: view.room; title: I18n.tr("Glass"); note: I18n.tr("How much of LatteOS is glass: the side panels, the windows and the AI's pages. None: everything is solid.")
-                Repeater { model: [{ n: 0, name: QT_TR_NOOP("None") }, { n: 1, name: QT_TR_NOOP("A little") }, { n: 2, name: QT_TR_NOOP("More") }, { n: 3, name: QT_TR_NOOP("The most") }]
+                Repeater { model: [{ n: 0, name: QT_TR_NOOP("None") }, { n: 1, name: QT_TR_NOOP("A little") }, { n: 2, name: QT_TR_NOOP("More") }, { n: 3, name: QT_TR_NOOP("The most") }, { n: 4, name: "True Glass" }]
                     Choice { required property var modelData; width: 150; text: I18n.tr(modelData.name); on: Theme.glassLevel === modelData.n
                              onPressed: { glassLevel.choose(String(modelData.n)); Theme.glassLevel = modelData.n; goo.set("glass", modelData.n) } } } }
             Part { visible: shell.page === "windows" && Theme.glassLevel > 0 && shell.expert; expertOnly: true; width: view.room; title: I18n.tr("The glass of the side panels"); note: I18n.tr("What is behind a window shows through its side panel, blurred. Where the graphics card cannot blur, the panel is solid.")
@@ -910,15 +911,22 @@ ShellRoot {
                            onPressed: if (newList.text.trim() !== "") { const l = JSON.parse(JSON.stringify(shell.lensLists)); l.push({ id: "own" + Date.now(), name: newList.text.trim(), on: true, apps: [] })
                                                                        lensFile.save(l); newList.text = ""; shell.lensOpen = l.length - 1 } } } }
 
-            // which AI services LensGoo's AI offers to choose from; signing in to them is LensAI's
-            Part { visible: shell.page === "launcher"; width: view.room; title: I18n.tr("AI in LensGoo")
-                   note: I18n.tr("Which services the AI tab of LensGoo offers to choose from. Signing in to them is done in LensAI.")
-                Label { visible: helpers.data !== null && helpers.data.length === 0; text: I18n.tr("No AI tool is installed on this computer."); color: Theme.dim }
-                Repeater { model: shell.page === "launcher" && helpers.data ? helpers.data : []
-                    Switch { required property var modelData; width: view.room; text: I18n.tr(modelData.name)
-                             hint: (modelData.local ? I18n.tr("answers on this computer") : I18n.tr("a service on the internet")) + " · " + modelData.models.map(m => m.name).join(", ")
-                             on: lensFile.ai === null || lensFile.ai.includes(modelData.id)
-                             onPressed: lensFile.offer(modelData.id, !on) } } }
+            // what LensGoo searches: a tab each, the apps always there; the AI tab is LensAI's (services, models, on and off)
+            Part { visible: shell.page === "launcher"; width: view.room; title: I18n.tr("What LensGoo searches")
+                   note: I18n.tr("Each one is a tab at the top of LensGoo. What you turn off here is not shown there.")
+                Repeater { model: [{ n: 0, name: QT_TR_NOOP("Apps and settings"), hint: QT_TR_NOOP("Apps, the pages of Settings and what is inside them"), icon: "apps" },
+                                   { n: 1, name: QT_TR_NOOP("Files and folders"), hint: QT_TR_NOOP("Your files by name, the folders of your home first"), icon: "folder" },
+                                   { n: 2, name: QT_TR_NOOP("Web search"), hint: QT_TR_NOOP("What you type goes to your search engine in the browser"), icon: "world" },
+                                   { n: 3, name: QT_TR_NOOP("Command"), hint: QT_TR_NOOP("A command of Linux, run in the background; a dangerous one asks first"), icon: "terminal-2" }]
+                    Switch { required property var modelData; width: view.room; text: I18n.tr(modelData.name); hint: modelData.n === 0 ? I18n.tr(modelData.hint) + " · " + I18n.tr("always there") : I18n.tr(modelData.hint)
+                             on: !lensFile.modesOff.includes(modelData.n); onPressed: if (modelData.n > 0) lensFile.mode(modelData.n, !on) } }
+                Rectangle { width: view.room; height: 64; radius: 16; color: Theme.card
+                    Glyph { x: 18; name: "sparkles"; font.pixelSize: 22; color: Theme.gold; anchors.verticalCenter: parent.verticalCenter }
+                    Column { x: 56; width: parent.width - 56 - 200; anchors.verticalCenter: parent.verticalCenter; spacing: 3
+                        Label { text: I18n.tr("AI"); font.weight: 700 }
+                        Label { width: parent.width; text: I18n.tr("The AI tab of LensGoo belongs to LensAI: its services, models and turning it on."); color: Theme.dim; font.pixelSize: 12; elide: Text.ElideRight } }
+                    Pill { anchors.right: parent.right; anchors.rightMargin: 14; anchors.verticalCenter: parent.verticalCenter; icon: "external-link"; text: I18n.tr("Open LensAI")
+                           onPressed: Quickshell.execDetached(["latte-app", "aicenter"]) } } }
 
             // GuardDog: what is kept running, and what the user has told it to leave alone
             Pill { visible: shell.page === "guarddog"; icon: "shield-check"; text: I18n.tr("Open GuardDog: crashes and its log"); onPressed: Quickshell.execDetached(["latte-app", "guarddog"]) }
@@ -1041,19 +1049,41 @@ ShellRoot {
                     text: held.data ? I18n.tr("What apps keep to be quicker takes {size}; they fill it again by themselves.", { size: shell.bytes(held.data.cache) }) : "" }
             Pill { visible: shell.page === "storage"; icon: "disc"; text: I18n.tr("Disks in the Device Manager"); onPressed: Quickshell.execDetached(["latte-app", "devices", "disks"]) }
 
-            // the AI
-            Switch { visible: shell.page === "ai"; width: view.room; text: I18n.tr("AI in LatteOS"); on: ai.value !== "off"; onPressed: { ai.choose(on ? "off" : "on"); aiLater.restart() }
-                     hint: I18n.tr("The AI mode of LensGoo, Win+C. Turned off, nothing of LatteOS talks to an AI.") }
-            Part { visible: shell.page === "ai"; width: view.room; title: I18n.tr("Who answers"); note: I18n.tr("The official tool of a service answers, with the account you are signed in to it with, or the service's API with a key of your own. Both are set in LensAI; a key is kept in the system's keyring, never in a file.")
-                Label { visible: helpers.data !== null && helpers.data.length === 0; text: I18n.tr("No AI tool is installed on this computer."); color: Theme.dim }
-                Repeater { model: shell.page === "ai" && helpers.data ? helpers.data : []
-                    Rectangle { id: helper; required property var modelData; width: 300; height: 64; radius: 16; color: Theme.card; opacity: ai.value === "off" ? 0.5 : 1
-                        Glyph { x: 18; name: "sparkles"; font.pixelSize: 24; color: Theme.gold; anchors.verticalCenter: parent.verticalCenter }
-                        Column { x: 56; anchors.verticalCenter: parent.verticalCenter; spacing: 3
-                            Label { text: helper.modelData.name; font.weight: 700 }
-                            Label { text: helper.modelData.local ? I18n.tr("answers on this computer") : I18n.tr("a service on the internet"); color: Theme.dim; font.pixelSize: 12 } } } } }
-            Label { visible: shell.page === "ai"; width: view.room; wrapMode: Text.WordWrap; color: Theme.dim; font.pixelSize: 13
-                    text: I18n.tr("LensGoo takes a change here up when you sign in the next time.") }
+            // the AI: one big switch for all of it, and whether LensAI's add-ons are downloaded — LensAI itself is part of
+            // LatteOS, everything about the AI is set there
+            Rectangle { visible: shell.page === "ai"; width: view.room; height: 132; radius: 24; color: Theme.card; border.width: 1; border.color: ai.value !== "off" ? Theme.gold : Theme.line
+                Rectangle { x: 24; width: 72; height: 72; radius: 22; anchors.verticalCenter: parent.verticalCenter; color: Qt.rgba(Theme.gold.r, Theme.gold.g, Theme.gold.b, ai.value !== "off" ? 0.18 : 0.06)
+                    Glyph { anchors.centerIn: parent; name: "sparkles"; font.pixelSize: 38; color: ai.value !== "off" ? Theme.gold : Theme.faint } }
+                Column { x: 116; width: parent.width - 116 - 150; anchors.verticalCenter: parent.verticalCenter; spacing: 6
+                    Label { text: I18n.tr("AI in LatteOS"); font.pixelSize: 22; font.weight: 800 }
+                    Label { width: parent.width; wrapMode: Text.WordWrap; color: Theme.dim; font.pixelSize: 13
+                            text: ai.value !== "off" ? I18n.tr("LensAI, the AI tab of LensGoo and the helpers are on. What they may do is set in LensAI.")
+                                                     : I18n.tr("Turned off, nothing of LatteOS talks to an AI.") } }
+                Rectangle { anchors.right: parent.right; anchors.rightMargin: 28; anchors.verticalCenter: parent.verticalCenter; width: 92; height: 50; radius: 25
+                            color: ai.value !== "off" ? Theme.gold : Theme.raised
+                    Rectangle { width: 40; height: 40; radius: 20; y: 5; x: ai.value !== "off" ? 47 : 5; color: ai.value !== "off" ? Theme.inkOnGold : Theme.dim
+                                Behavior on x { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } } }
+                    MouseArea { anchors.fill: parent; anchors.margins: -8; cursorShape: Qt.PointingHandCursor
+                                onClicked: { ai.choose(ai.value !== "off" ? "off" : "on"); aiLater.restart(); helpers.ask(["latte-ai", "modules"]) } } } }
+            Part { visible: shell.page === "ai"; width: view.room; title: I18n.tr("LensAI and its add-ons")
+                   note: I18n.tr("LensAI is part of LatteOS. What it can download is installed in LensAI, each when you want it.")
+                Repeater { model: shell.page === "ai" && helpers.data && helpers.data.services ? [
+                        { icon: "sparkles", name: QT_TR_NOOP("LensAI"), there: true, what: I18n.tr("part of LatteOS"), page: "" },
+                        { icon: "cloud", name: QT_TR_NOOP("The services' tools"), there: helpers.data.services.some(x => x.installed), page: "services",
+                          what: helpers.data.services.some(x => x.installed) ? helpers.data.services.filter(x => x.installed).map(x => x.name).join(", ") : I18n.tr("none installed yet") },
+                        { icon: "cpu", name: QT_TR_NOOP("The AI on this computer"), there: helpers.data.local.runtime && helpers.data.local.models > 0, page: "local",
+                          what: !helpers.data.local.runtime ? I18n.tr("not installed") : I18n.tr("{n} models", { n: helpers.data.local.models }) },
+                        { icon: "microphone", name: QT_TR_NOOP("Speech into text"), there: helpers.data.voice, page: "local", what: helpers.data.voice ? I18n.tr("installed") : I18n.tr("not installed") } ] : []
+                    Rectangle { id: mod; required property var modelData; width: view.room; height: 62; radius: 16; color: Theme.card; opacity: ai.value === "off" ? 0.55 : 1
+                        Glyph { x: 18; name: mod.modelData.icon; font.pixelSize: 22; color: Theme.gold; anchors.verticalCenter: parent.verticalCenter }
+                        Column { x: 56; width: parent.width - 56 - 220; anchors.verticalCenter: parent.verticalCenter; spacing: 3
+                            Label { text: I18n.tr(mod.modelData.name); font.weight: 700 }
+                            Label { width: parent.width; text: mod.modelData.what; color: Theme.dim; font.pixelSize: 12; elide: Text.ElideRight } }
+                        Row { anchors.right: parent.right; anchors.rightMargin: 14; anchors.verticalCenter: parent.verticalCenter; spacing: 8
+                            Glyph { visible: mod.modelData.there; name: "circle-check"; font.pixelSize: 20; color: Theme.ok; anchors.verticalCenter: parent.verticalCenter }
+                            Pill { visible: !mod.modelData.there; icon: "download"; strong: true; text: I18n.tr("Install in LensAI")
+                                   onPressed: Quickshell.execDetached(["latte-app", "aicenter", mod.modelData.page]) } } } } }
+            Pill { visible: shell.page === "ai"; implicitHeight: 48; icon: "external-link"; strong: true; text: I18n.tr("Open LensAI"); onPressed: Quickshell.execDetached(["latte-app", "aicenter"]) }
 
             // who the user is
             Rectangle { visible: shell.page === "me"; width: view.room; height: 150; radius: 26
@@ -1177,7 +1207,7 @@ ShellRoot {
                 Field { id: layField; width: Math.min(420, view.room); hint: I18n.tr("Search layouts: Slovak, US, Dvorak…") }
                 Item { width: view.room; height: 1 }
                 Repeater { model: layPart.shown
-                    Pill { required property var modelData; icon: "plus"; text: modelData.name; onPressed: { layField.text = ""; shell.order(["latte-settings", "keyboard"].concat(keys.data.current, [modelData.id])) } } } }
+                    Pill { required property var modelData; icon: "plus"; text: modelData.name; onPressed: { const id = modelData.id; shell.order(["latte-settings", "keyboard"].concat(keys.data.current, [id])); layField.text = "" } } } }
             Part { visible: shell.page === "keyboard" && shell.expert; expertOnly: true; width: view.room; title: I18n.tr("Shortcuts"); note: I18n.tr("The mouse comes first in LatteOS: each of these is also a drop or a row of a card. Win is the Windows key.")
                 Repeater { model: shell.page === "keyboard" && binds.data ? binds.data.filter(b => b.has_description) : []
                     Rectangle { id: bound; required property var modelData; width: Math.floor((view.room - 14) / 2); height: 44; radius: 12; color: Theme.card

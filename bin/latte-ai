@@ -43,6 +43,8 @@ No API key: the official tool of a service answers, with the account the user is
   latte-ai do TASK [AGENT]  "Do it for me": the agent (claude, chatgpt = Codex, gemini; else the chosen one) on the task in
                             a terminal, planning first with LatteOS's skill and changing nothing until the user says yes
   latte-ai doer AGENT       the agent "Do it for me" and crashes go to (~/.config/latteos/agent); none is picked for the user
+  latte-ai modules          what of LensAI is downloaded, for Settings › AI: {"ai", "services": [{"id", "name",
+                            "installed"}], "local": {"runtime", "models"}, "voice"}
   latte-ai helpers          LensAI's Helpers page: the agent, who reads a sentence, the toggles, the programs muted
   latte-ai toggle NAME [on|off|toggle]   a helper (crash-capture, calendar-ai), as Omarchy's toggles: a flag named for the
                             off state in ~/.local/state/latteos/toggles; alone, the exit code says whether it is on
@@ -1551,6 +1553,16 @@ def invite():
         subprocess.Popen(["latte-app", "aicenter", "helpers"], start_new_session=True)
 
 
+def modules():
+    """What of LensAI is downloaded (Settings › AI): LensAI itself is part of LatteOS, its add-ons are not — the official
+    tools of the services, the AI on this computer (llama.cpp and its models) and turning speech into text (whisper)."""
+    return {"ai": not turned_off(),
+            "services": [{"id": i, "name": p["name"], "installed": shutil.which(p["tool"], path=SEARCH) is not None}
+                         for i, p in PROVIDERS.items() if not p["local"]],
+            "local": {"runtime": local_server() is not None, "models": len(local_models_all())},
+            "voice": whisper()[0] is not None}
+
+
 def quick(prompt, who):
     """One question, the answer alone, or None: on this computer (quick_model), or Claude Haiku — by its API with a key of
     one's own (a second or two), else Claude Code signed in (some ten seconds, most of it starting). Like Omarchy's
@@ -1623,6 +1635,9 @@ def main(a):
         return 0
     if a == ["helpers"]:
         print(json.dumps(helpers(), ensure_ascii=False))
+        return 0
+    if a == ["modules"]:
+        print(json.dumps(modules(), ensure_ascii=False))
         return 0
     # omarchy toggle NAME: the flag; with no action, whether it is on (the exit code, as omarchy-toggle-enabled)
     if len(a) in (2, 3) and a[0] == "toggle" and a[1] in SWITCHES and a[2:] in ([], ["on"], ["off"], ["toggle"]):

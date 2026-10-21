@@ -649,9 +649,18 @@ fill_calendar = function()
     end
     local cells, names = {}, {}
     month.cells = {}
-    for i = 0, 41 do
+    -- only the weeks of this month, and in them only its own days: the days of the months beside it are left empty
+    local length = os.date("*t", os.time({ year = month.y, month = month.m + 1, day = 0, hour = 12 })).day
+    local rows = math.ceil((lead + length) / 7)
+    fact.cal_rows = rows
+    for i = 0, rows * 7 - 1 do
         local t = os.date("*t", os.time({ year = month.y, month = month.m, day = 1 - lead + i, hour = 12 }))
         local key = iso(t)
+        if t.month ~= month.m then
+            cells[i + 1] = { n = "", dim = true, today = false, chosen = false, weekend = false, temp = "", hol = false, has1 = false, has2 = false,
+                             t1 = "", t2 = "", more = "", r1 = 0, g1 = 0, b1 = 0, r2 = 0, g2 = 0, b2 = 0 }
+            continue
+        end
         month.cells[i + 1] = key
         local list, shown = events_on(key), {}
         local hol = false
