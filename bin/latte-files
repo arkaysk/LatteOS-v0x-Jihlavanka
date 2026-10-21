@@ -4,7 +4,13 @@
 #
 #   latte-files places                the user's folders and the drives, a line each: KIND, a tab, PATH, a tab, NAME,
 #                                     a tab, DEVICE (KIND: home desktop documents download pictures music videos trash;
-#                                     disk usb card optical image network cloud). A drive with no PATH is not mounted yet
+#                                     disk usb card optical image network cloud), and for a mounted drive a tab, USED,
+#                                     a tab, TOTAL (bytes). A drive with no PATH is not mounted yet
+#   latte-files disks                 every disk as KDE's Partition Manager shows it, as JSON: [{"name", "path", "model",
+#                                     "size", "tran", "removable", "table", "parts": [{"name", "path", "fstype", "label",
+#                                     "mount", "start", "size", "used", "total", "locked"}], "free": [{"start", "size"}]}]
+#                                     (bytes; "used" of the file system inside, also through an encryption; "free": room
+#                                     no partition takes)
 #   latte-files mount DEVICE          mounts it (a /dev/… or rclone:NAME), says where;  eject PATH DEVICE   lets it go
 #   latte-files iso FILE              a disc image as a DVD drive, as Daemon Tools does; says where it is
 #   latte-files pin DIR / unpin DIR   a favourite folder (GTK's bookmarks) more or less
@@ -69,7 +75,14 @@ for top in json.loads(lsblk or '{"blockdevices": []}')["blockdevices"]:
         if mp == "[SWAP]" or mp.startswith("/boot") or mp in ("/home", "/var") or n["type"] in ("crypt", "lvm") and not mp: continue
         if not n.get("fstype") and kind != "optical": continue          # no file system: nothing to open
         if kind in ("disk", "image") and not mp: continue               # the system's own, not mounted: not on the way
-        out(kind, mp, (n.get("label") or n.get("model") or os.path.basename(mp) or n["name"]) + " · " + (n.get("size") or ""), n["path"])
+        used = total = ""
+        if mp:
+            try:
+                st = os.statvfs(mp)
+                total, used = str(st.f_blocks * st.f_frsize), str((st.f_blocks - st.f_bfree) * st.f_frsize)
+            except OSError:
+                pass
+        out(kind, mp, (n.get("label") or n.get("model") or os.path.basename(mp) or n["name"]) + " · " + (n.get("size") or ""), n["path"], used, total)
 # network places and Google's drive, as GNOME's gvfs mounts them
 gvfs = f"/run/user/{os.getuid()}/gvfs"
 for e in sorted(os.listdir(gvfs)) if os.path.isdir(gvfs) else []:
@@ -89,6 +102,48 @@ remotes = subprocess.run(["rclone", "listremotes"], capture_output=True, text=Tr
 for r in remotes:
     r = r.rstrip(":"); at = os.path.expanduser(f"~/Cloud/{r}")
     out("cloud", at if at in mounted else "", r, "rclone:" + r)
+PY
+    ;;
+disks)
+    python3 -I - <<'PY'
+import json, subprocess
+cols = "NAME,PATH,TYPE,SIZE,START,FSTYPE,MOUNTPOINT,LABEL,MODEL,TRAN,RM,FSUSED,FSSIZE,PARTLABEL,PTTYPE"
+tree = json.loads(subprocess.run(["lsblk", "-J", "-b", "-o", cols], capture_output=True, text=True).stdout or '{"blockdevices": []}')
+def inside(n):
+    """The file system of a partition: its own, or the one behind its encryption."""
+    for k in [n] + (n.get("children") or []):
+        if k.get("fssize"):
+            return k
+    return n
+disks = []
+for d in tree["blockdevices"]:
+    if d["type"] != "disk" or d["name"].startswith(("zram", "loop")):
+        continue
+    parts = []
+    for p in d.get("children") or []:
+        if p["type"] != "part":
+            continue
+        fs = inside(p)
+        crypt = any(k.get("type") == "crypt" for k in p.get("children") or [])
+        parts.append({"name": p["name"], "path": p["path"], "fstype": (fs.get("fstype") or p.get("fstype") or "") + (" (encrypted)" if crypt else ""),
+                      "label": p.get("label") or p.get("partlabel") or fs.get("label") or "", "mount": fs.get("mountpoint") or "",
+                      "start": (p.get("start") or 0) * 512, "size": p["size"], "used": fs.get("fsused") or 0, "total": fs.get("fssize") or 0,
+                      "locked": crypt and not fs.get("fssize")})
+    parts.sort(key=lambda x: x["start"])
+    free, at = [], 1 << 20                      # the first MiB is the partition table's own
+    for p in parts:
+        if p["start"] - at > 16 << 20:
+            free.append({"start": at, "size": p["start"] - at})
+        at = max(at, p["start"] + p["size"])
+    if d["size"] - at > 16 << 20:
+        free.append({"start": at, "size": d["size"] - at})
+    if not parts and d.get("fstype"):          # a disk that is one file system, no partitions
+        parts.append({"name": d["name"], "path": d["path"], "fstype": d["fstype"], "label": d.get("label") or "", "mount": d.get("mountpoint") or "",
+                      "start": 0, "size": d["size"], "used": d.get("fsused") or 0, "total": d.get("fssize") or 0, "locked": False})
+        free = []
+    disks.append({"name": d["name"], "path": d["path"], "model": (d.get("model") or "").strip(), "size": d["size"], "tran": d.get("tran") or "",
+                  "removable": bool(d.get("rm")), "table": d.get("pttype") or "", "parts": parts, "free": free})
+print(json.dumps(disks))
 PY
     ;;
 mount)  case "$1" in

@@ -364,7 +364,7 @@ Schválené 12. 10. 2026. Pracuje sa **zhora nadol, neskáče sa**; nový nápad
     pustiť znova (Nastavenia). Poradie: **QueenGoo → PowerGoo → LensGoo → BarGoo**, potom ostatné na ploche.
     Na konci jedna veta, že každú kvapku možno ťahaním presunúť inam. Texty cez preklady, ide myšou aj
     klávesnicou. Hodí sa pred prezentáciou na Reddite (prví cudzí používatelia).
-15. [ ] **Zaplnenie diskov na očiach** (používateľ, 20. 10., po zistení, že na `/` latte-lab ostalo 5,5 GB z 120 GB).
+15. [~] **Zaplnenie diskov na očiach** (používateľ, 20. 10., po zistení, že na `/` latte-lab ostalo 5,5 GB z 120 GB).
     DualBrew v bočnom paneli pri každom disku a oddiele pás zaplnenia (použité / voľné, farba pri nedostatku),
     Správca zariadení pri diskoch to isté grafom aj s nerozdeleným miestom na disku; upozornenie, keď voľné
     miesto klesne pod hranicu. latte-lab: za `/data` je ~132 GB nerozdelených.
@@ -1224,6 +1224,10 @@ cestu k aktualizácii alebo návratu.
     tlačidla, nad ktorým je kurzor. Platí pre každé okno s hladinou (`apps/common/AppWindow.qml`, `Surface.qml`).
 
 19. [~] **DualBrew, Súbory** (používateľ, 14. 10.). Prvá verzia pre 0.4, písaná načisto:
+    **Disky a zariadenia** (používateľ, 21. 10.; hotové v ten deň): pri každom disku v bočnom paneli pás zaplnenia
+    a koľko ostáva; nadpis Disky a zariadenia otvorí prehľad (`disks:`) ako KDE Partition Manager — disky, pás oddielov
+    podľa veľkosti, nerozdelené miesto, skutočné zaplnenie každého súborového systému (`latte-files disks`).
+    Ďalej: vytvoriť a zväčšiť oddiel do nerozdeleného miesta (s heslom správcu), upozornenie pri plnom disku (bod 15).
     `apps/files.qml` + `bin/latte-files` (kopírovanie, presun, odkaz, Kôš, nový priečinok a súbor, premenovanie,
     schránka kompatibilná s plochou a inými správcami, miesta a disky; súbory hýbe `gio`) + spoločné ikony
     súborov `apps/common/FileIcons.qml` (aj pre plochu). Okno LatteOS: vľavo miesta (Domov, Plocha, Dokumenty…,

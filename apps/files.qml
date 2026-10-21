@@ -15,6 +15,9 @@
 // mounted as one, as Daemon Tools does), network places and clouds (Google Drive, OneDrive, Dropbox, MEGA… through
 // rclone); one not yet mounted is mounted when pressed, and ejected with its button. Files and folders carry a
 // colour (Colour in their menu); archives are unpacked and packed (zip, 7z; rar is unpacked) as jobs on the coffee.
+// Each drive in the side carries a line of how full it is and what is left. The heading Disks and devices opens their
+// overview in the panel (disks:), as KDE's Partition Manager shows them: every disk as a band of its partitions as wide
+// as each is, how full each really is, and room no partition takes; below, a line for each partition.
 // The panel one works in stands above the coffee; the other lies under it.
 // The keys: Enter opens, Backspace goes up, F2 renames, Delete trashes, Ctrl+C/X/V, Ctrl+A, Ctrl+H hidden
 // files, Tab the other panel. Space with one file chosen shows it in the other panel. Space with nothing chosen measures the folder: how much each thing in it holds,
@@ -194,7 +197,14 @@ ShellRoot {
                                          "image": QT_TR_NOOP("Disc image"), "network": QT_TR_NOOP("Network place"), "cloud": QT_TR_NOOP("Cloud") })
     Process { id: placer; running: true; command: ["latte-files", "places"]
               stdout: StdioCollector { onStreamFinished: { const t = this.text; if (t === shell.placesText) return; shell.placesText = t
-                  shell.places = t.split("\n").filter(l => l !== "").map(l => { const p = l.split("\t"); return { kind: p[0], path: p[1], name: p[2] || "", device: p[3] || "" } }) } } }
+                  shell.places = t.split("\n").filter(l => l !== "").map(l => { const p = l.split("\t"); return { kind: p[0], path: p[1], name: p[2] || "", device: p[3] || "", used: Number(p[4] || 0), total: Number(p[5] || 0) } }) } } }
+    // every disk with its partitions and how full each is, for the overview of Disks and devices (disks:)
+    property var disks: []
+    Process { id: disker; command: ["latte-files", "disks"]
+              stdout: StdioCollector { onStreamFinished: { try { shell.disks = JSON.parse(this.text) } catch (e) { shell.disks = [] } } } }
+    // how full a drive is, as a colour: calm, then gold, then red when little is left
+    function fullness(f) { return f > 0.9 ? Theme.red : (f > 0.75 ? Theme.gold : Theme.ok) }
+    readonly property var fsColours: ({ "vfat": "#c9a227", "ext4": "#5f9fb8", "btrfs": "#7d9be0", "xfs": "#6fb39a", "ntfs": "#a58be0", "exfat": "#d6895f", "swap": "#c4677a" })
     property string placesText: ""
 
     Process { id: doer; onExited: { left.again(); right.again() } }
@@ -299,6 +309,7 @@ ShellRoot {
         function extra(m) { if (m.button === Qt.BackButton) { back(); return true } if (m.button === Qt.ForwardButton) { forward(); return true } return false }
         function up() {
             if (path === "computer:") return
+            if (path === "disks:") return go("computer:")
             const root = shell.real ? null : shell.rootOf(path)
             if (root && root.path === path) return go("computer:")
             if (path !== "/") go(path.replace(/\/[^/]+\/?$/, "") || "/")
@@ -306,6 +317,7 @@ ShellRoot {
         // the way to here, as pieces one can press: from / in the real structure, else from This computer
         readonly property var way: {
             if (path === "computer:") return [{ name: I18n.tr("This computer"), path: "computer:" }]
+            if (path === "disks:") return [{ name: I18n.tr("This computer"), path: "computer:" }, { name: I18n.tr("Disks and devices"), path: "disks:" }]
             const root = shell.real ? null : shell.rootOf(path)
             const base = root ? root.path : "", parts = path.slice(base.length).split("/").filter(x => x !== ""), out = []
             if (root) out.push({ name: I18n.tr("This computer"), path: "computer:" }, { name: root.kind === "home" ? I18n.tr("Home") : (root.name.split(" · ")[0] || root.path), path: root.path })
@@ -428,6 +440,50 @@ ShellRoot {
             DropArea { id: groundDrop; anchors.fill: parent; keys: ["text/uri-list"]; enabled: panel.path.startsWith("/") && !panel.source && panel.peek === ""
                 onDropped: (d) => shell.dropInto(d, panel.path, groundDrop) }
             Label { anchors.centerIn: parent; visible: panel.path.startsWith("/") && !panel.source && files.count === 0 && files.status === FolderListModel.Ready; text: I18n.tr("This folder is empty."); color: Theme.faint }
+            // Disks and devices: every disk as KDE's Partition Manager shows it — a band of its partitions as wide as each
+            // is, room no partition takes, and below a line for each with how full its file system really is
+            Flickable { visible: panel.path === "disks:" && !panel.source; anchors.fill: parent; anchors.margins: 10; clip: true
+                        contentHeight: diskCol.height + 20; boundsBehavior: Flickable.StopAtBounds
+                onVisibleChanged: if (visible) disker.running = true
+                Component.onCompleted: if (visible) disker.running = true
+                Column { id: diskCol; width: parent.width; spacing: 22
+                    Repeater { model: shell.disks
+                        Column { id: dk; required property var modelData; width: diskCol.width; spacing: 10
+                            readonly property var bands: modelData.parts.map(p => ({ part: p, start: p.start, size: p.size })).concat(modelData.free.map(f => ({ part: null, start: f.start, size: f.size }))).sort((a, b) => a.start - b.start)
+                            Row { spacing: 12
+                                Glyph { name: dk.modelData.removable || dk.modelData.tran === "usb" ? "usb" : "disc"; font.pixelSize: 26; color: Theme.gold; anchors.verticalCenter: parent.verticalCenter }
+                                Column { spacing: 2
+                                    Label { text: (dk.modelData.model || dk.modelData.name) + "  ·  " + shell.bytes(dk.modelData.size); font.pixelSize: 16; font.weight: 700 }
+                                    Label { text: dk.modelData.path + (dk.modelData.tran ? "  ·  " + dk.modelData.tran.toUpperCase() : "") + (dk.modelData.table ? "  ·  " + dk.modelData.table.toUpperCase() : ""); color: Theme.dim; font.pixelSize: 12 } } }
+                            // the band: each partition as wide as it is, how full it is darker inside; empty room hatched
+                            Row { width: dk.width; height: 46; spacing: 3
+                                Repeater { model: dk.bands
+                                    Rectangle { required property var modelData; height: 46; radius: 8; clip: true
+                                        width: Math.max(10, (dk.width - 3 * (dk.bands.length - 1)) * modelData.size / dk.modelData.size)
+                                        color: modelData.part ? Qt.darker(shell.fsColours[modelData.part.fstype.split(" ")[0]] || Theme.dim, 1.6) : "transparent"
+                                        border.width: modelData.part ? 0 : 1; border.color: Theme.line
+                                        Rectangle { visible: modelData.part !== null && modelData.part.total > 0; height: parent.height; color: shell.fsColours[modelData.part ? modelData.part.fstype.split(" ")[0] : ""] || Theme.dim
+                                                    width: modelData.part && modelData.part.total > 0 ? parent.width * modelData.part.used / modelData.part.total : 0 }
+                                        Label { anchors.centerIn: parent; width: parent.width - 8; horizontalAlignment: Text.AlignHCenter; elide: Text.ElideRight; font.pixelSize: 11; font.weight: 600
+                                                text: modelData.part ? (modelData.part.mount || modelData.part.name) : I18n.tr("unused") + " " + shell.bytes(modelData.size)
+                                                color: modelData.part ? "#ffffff" : Theme.dim } } } }
+                            // a line for each: name, file system, where it is, label, size, and how much of it is used
+                            Repeater { model: dk.modelData.parts.concat(dk.modelData.free.map(f => ({ name: "", path: "", fstype: "", label: "", mount: "", start: f.start, size: f.size, used: 0, total: 0, unused: true })))
+                                Rectangle { id: pr; required property var modelData; width: dk.width; height: 40; radius: 10; color: Theme.card
+                                    readonly property real f: modelData.total > 0 ? modelData.used / modelData.total : 0
+                                    Rectangle { x: 12; width: 10; height: 10; radius: 3; anchors.verticalCenter: parent.verticalCenter; color: pr.modelData.unused ? "transparent" : (shell.fsColours[pr.modelData.fstype.split(" ")[0]] || Theme.dim); border.width: pr.modelData.unused ? 1 : 0; border.color: Theme.dim }
+                                    Label { x: 32; width: 110; anchors.verticalCenter: parent.verticalCenter; elide: Text.ElideRight; text: pr.modelData.unused ? I18n.tr("Unused room") : pr.modelData.path; font.weight: 600; font.pixelSize: 13 }
+                                    Label { x: 148; width: 110; anchors.verticalCenter: parent.verticalCenter; elide: Text.ElideRight; color: Theme.dim; font.pixelSize: 12; text: pr.modelData.fstype }
+                                    Label { x: 264; width: 110; anchors.verticalCenter: parent.verticalCenter; elide: Text.ElideRight; font.pixelSize: 12; text: pr.modelData.mount || (pr.modelData.locked ? I18n.tr("locked") : "") }
+                                    Label { x: 380; width: 120; anchors.verticalCenter: parent.verticalCenter; elide: Text.ElideRight; color: Theme.dim; font.pixelSize: 12; text: pr.modelData.label }
+                                    Label { x: 506; width: 70; anchors.verticalCenter: parent.verticalCenter; font.pixelSize: 12; text: shell.bytes(pr.modelData.size) }
+                                    Rectangle { visible: pr.modelData.total > 0; x: 580; width: Math.max(60, parent.width - 580 - 130); height: 6; radius: 3; anchors.verticalCenter: parent.verticalCenter; color: Theme.line
+                                        Rectangle { width: parent.width * pr.f; height: 6; radius: 3; color: shell.fullness(pr.f) } }
+                                    Label { visible: pr.modelData.total > 0; anchors.right: parent.right; anchors.rightMargin: 12; anchors.verticalCenter: parent.verticalCenter; font.pixelSize: 12
+                                            text: I18n.tr("{used} of {all}", { used: shell.bytes(pr.modelData.used), all: shell.bytes(pr.modelData.total) }) } } } } }
+                    Label { visible: shell.disks.length === 0; text: I18n.tr("Looking…"); color: Theme.dim }
+                    Label { width: diskCol.width; wrapMode: Text.WordWrap; color: Theme.dim; font.pixelSize: 12
+                            text: I18n.tr("Unused room is part of a disk no partition takes: nothing can be kept there until it gets one.") } } }
             // This computer: the user's folders and the disks, as tiles
             Flow { visible: panel.path === "computer:" && !panel.source; anchors.fill: parent; anchors.margins: 6; spacing: 12
                 Repeater { model: shell.places.filter(p => p.kind !== "trash" && p.kind !== "favourite" && (p.path !== "/" || shell.real))
@@ -722,7 +778,7 @@ ShellRoot {
     AppWindow {
         id: win
         title: "DualBrew"
-        heading: here.source ? I18n.tr("Sizes") : (here.path === "computer:" ? I18n.tr("This computer") : (here.path === shell.home ? I18n.tr("Home") : (here.path.split("/").pop() || "/")))
+        heading: here.source ? I18n.tr("Sizes") : here.path === "disks:" ? I18n.tr("Disks and devices") : (here.path === "computer:" ? I18n.tr("This computer") : (here.path === shell.home ? I18n.tr("Home") : (here.path.split("/").pop() || "/")))
         implicitWidth: 1180; implicitHeight: 760
         arrows: true; canGoBack: here.before.length > 0; onBack: here.back(); canGoForward: here.ahead.length > 0; onForward: here.forward()
         tools: [
@@ -747,11 +803,22 @@ ShellRoot {
                           tail: "x"; onTailPressed: shell.pin(modelData.path, false) } }
                 Nav { text: I18n.tr("Add a favourite folder"); icon: "star"; opacity: 0.75; visible: here.path.startsWith("/") && !shell.places.some(p => p.kind === "favourite" && p.path === here.path)
                       onPressed: shell.pin(here.path, true) }
-                Label { x: 8; height: 30; verticalAlignment: Text.AlignBottom; text: I18n.tr("DRIVES"); color: Theme.faint; font.pixelSize: 11; font.weight: 700; font.letterSpacing: 0.8 }
+                // the heading opens the overview of every disk, its partitions and how full each is
+                Rectangle { width: 222; height: 30; radius: 8; color: drivesHit.containsMouse || here.path === "disks:" ? Theme.card : "transparent"
+                    Label { x: 8; anchors.bottom: parent.bottom; anchors.bottomMargin: 4; text: I18n.tr("DRIVES"); color: here.path === "disks:" ? Theme.gold : (drivesHit.containsMouse ? Theme.cream : Theme.faint); font.pixelSize: 11; font.weight: 700; font.letterSpacing: 0.8 }
+                    Glyph { anchors.right: parent.right; anchors.rightMargin: 8; anchors.bottom: parent.bottom; anchors.bottomMargin: 3; name: "chart-pie"; font.pixelSize: 14; color: drivesHit.containsMouse || here.path === "disks:" ? Theme.gold : Theme.faint }
+                    MouseArea { id: drivesHit; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: here.go("disks:") } }
                 Repeater { model: shell.places.filter(p => ["disk", "usb", "card", "optical", "image"].includes(p.kind) && (p.path !== "/" || shell.real))
-                    Nav { required property var modelData; text: shell.driveName(modelData) + (modelData.name.split(" · ")[1] ? " · " + modelData.name.split(" · ")[1] : ""); icon: shell.placeIcons[modelData.kind]
-                          opacity: modelData.path === "" ? 0.6 : 1; on: modelData.path !== "" && here.path === modelData.path; onPressed: shell.reach(modelData)
-                          tail: shell.canEject(modelData) ? "player-eject" : ""; onTailPressed: shell.eject(modelData) } }
+                    Column { id: drv; required property var modelData; spacing: 0
+                        Nav { text: shell.driveName(parent.modelData) + (parent.modelData.name.split(" · ")[1] ? " · " + parent.modelData.name.split(" · ")[1] : ""); icon: shell.placeIcons[parent.modelData.kind]
+                              opacity: parent.modelData.path === "" ? 0.6 : 1; on: parent.modelData.path !== "" && here.path === parent.modelData.path; onPressed: shell.reach(parent.modelData)
+                              tail: shell.canEject(parent.modelData) ? "player-eject" : ""; onTailPressed: shell.eject(parent.modelData) }
+                        // how full it is: a line under its name, and what is left
+                        Item { visible: drv.modelData.total > 0; width: 222; height: 18
+                            readonly property real f: drv.modelData.total > 0 ? drv.modelData.used / drv.modelData.total : 0
+                            Rectangle { x: 44; y: 2; width: 80; height: 5; radius: 3; color: Theme.line
+                                Rectangle { width: parent.width * parent.parent.f; height: 5; radius: 3; color: shell.fullness(parent.parent.f) } }
+                            Label { x: 130; y: -3; width: 90; elide: Text.ElideRight; text: I18n.tr("{n} free", { n: shell.bytes(drv.modelData.total - drv.modelData.used) }); color: Theme.faint; font.pixelSize: 10 } } } }
                 Label { x: 8; height: 30; verticalAlignment: Text.AlignBottom; text: I18n.tr("NETWORK AND CLOUD"); color: Theme.faint; font.pixelSize: 11; font.weight: 700; font.letterSpacing: 0.8 }
                 Repeater { model: shell.places.filter(p => p.kind === "network" || p.kind === "cloud")
                     Nav { required property var modelData; text: shell.driveName(modelData); icon: shell.placeIcons[modelData.kind]
@@ -826,7 +893,7 @@ ShellRoot {
                 else if (ev.key === Qt.Key_Escape) { here.chosen = ({}); menu.close() }
                 else ev.accepted = false
             }
-            Panel { id: left; index: 0; width: shell.dual ? parent.width / 2 : parent.width; height: parent.height; path: shell.words[0] && shell.words[0].startsWith("/") ? shell.words[0] : shell.home }
+            Panel { id: left; index: 0; width: shell.dual ? parent.width / 2 : parent.width; height: parent.height; path: shell.words[0] && (shell.words[0].startsWith("/") || shell.words[0] === "disks:" || shell.words[0] === "computer:") ? shell.words[0] : shell.home }
             Panel { id: right; index: 1; visible: shell.dual; x: parent.width / 2; width: parent.width / 2; height: parent.height }
             Item { id: overlay; anchors.fill: parent; Menu { id: menu } }
             // what a drag of files is, in the window's own scene: the system takes it from there

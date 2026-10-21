@@ -36,6 +36,7 @@ return {
     ["calendar-event"] = "\u{EA52}",
     ["camera"] = "\u{EA54}",
     ["cast"] = "\u{EA56}",
+    ["chart-pie"] = "\u{EA5D}",
     ["check"] = "\u{EA5E}",
     ["checkbox"] = "\u{EBA6}",
     ["chevron-down"] = "\u{EA5F}",
