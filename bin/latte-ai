@@ -602,7 +602,7 @@ PROVIDERS = {
     "grok": {"name": "Grok", "local": False, "style": "grok", "tool": "grok", "command": grok, "models": grok_models,
              "login": ["grok", "login"], "logout": ["grok", "logout"]},
     "mistral": {"name": "Mistral", "local": False, "style": "mistral", "tool": "vibe", "command": vibe, "login": ["vibe"],
-                "models": [{"id": "", "name": "Auto"}]},
+                "models": [{"id": "", "name": "Mistral Medium 3.5"}]},     # Vibe's own default model (vibe_schema.py)
     "local": {"name": "Local AI", "local": True, "style": "own", "tool": "llama-server", "ask": local_ask, "models": local_models,
               "efforts": ["think"]},
     "copilot": {"name": "Copilot", "local": False, "style": "copilot", "tool": "copilot", "command": copilot, "login": ["copilot", "login"],

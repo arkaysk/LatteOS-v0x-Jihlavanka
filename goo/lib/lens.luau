@@ -346,6 +346,104 @@ local AGENT_LIST = { { id = "summarize", name = N("Summarize"), glyph = "list" }
                      { id = "explain", name = N("Explain an error"), glyph = "alert-triangle" }, { id = "command", name = N("A command from words"), glyph = "terminal-2" } }
 -- what a service tells of the account (Copilot), and how many questions went to it through Lens: asked now and then
 ai.told, ai.told_at = {}, {}
+-- ── the field's menus, each a copy of the service's own (the user's pictures, 21. 10.): + and the chip ───────────────
+-- What LatteOS can do from here it does here; what only the service's own page has opens that page, and is drawn in
+-- one colour shared by all of them (the user, 21. 10.). A row: its name, icon, what it does (`act`; none: the page)
+local WEB = { claude = "https://claude.ai/new", gemini = "https://gemini.google.com/app", chatgpt = "https://chatgpt.com/",
+              grok = "https://grok.com/", mistral = "https://chat.mistral.ai/chat", copilot = "https://github.com/copilot",
+              deepseek = "https://chat.deepseek.com/" }
+local function row(name, glyph, act, o) o = o or {} o.name, o.glyph, o.act = name, glyph, act return o end
+local ATTACH, SHOT = { k = "attach", what = 0 }, { k = "attach", what = 1 }
+local PLUS = {
+    claude = { row(N("Upload or add files"), "paperclip", ATTACH, { key = "Ctrl+U" }), row(N("Add folder"), "folder-plus"),
+               row(N("Record a skill"), "video"), row(N("Skills"), "template", nil, { sep = true, more = true }),
+               row(N("Connectors"), "category-plus", nil, { more = true }), row(N("Design system"), "palette", nil, { more = true }),
+               row(N("Plugins"), "plug", nil, { more = true }), row(N("Research"), "chart-dots-3", nil, { sep = true }),
+               row(N("Memory"), "history", nil, { on = true }) },
+    gemini = { row(N("Upload files"), "paperclip", ATTACH), row(N("Add from Drive"), "brand-google-drive"),
+               row(N("More upload options"), "dots", nil, { more = true }), row(N("Create an image"), "photo", nil, { sep = true }),
+               row(N("Create music"), "music"), row("Canvas", "layout-board"), row("Deep Research", "telescope"),
+               row(N("Guided learning"), "book-2") },
+    chatgpt = { row(N("Add photos and files"), "paperclip", ATTACH, { hint = N("Upload from the computer") }),
+                row(N("Add from the library"), "books", nil, { hint = N("Browse and search your files") }),
+                row(N("Create an image"), "photo", nil, { hint = N("Imagine anything") }),
+                row(N("Search the web"), "world", nil, { hint = N("Get news and information in real time") }),
+                row(N("Work in a project"), "folder", nil, { hint = N("Start a chat in a project") }),
+                row(N("Deep research"), "telescope", nil, { hint = N("Get a detailed report") }),
+                row(N("Draw"), "brush", nil, { hint = N("Draw and attach a picture") }),
+                row(N("Thinking"), "bulb", { k = "think" }, { hint = N("For more detailed answers") }),
+                row("GitHub", "brand-github", nil, { hint = N("Triage PRs, issues, CI, and publish flows") }),
+                row("OpenAI Platform", "brand-openai", nil, { hint = N("Manage OpenAI API keys and view organization billing and API usage.") }) },
+    grok = { row(N("Upload a file"), "file-upload", ATTACH), row(N("Add to a project"), "folder", nil, { more = true }),
+             row(N("Recent files"), "file", nil, { more = true }), row(N("Skills"), "apps", nil, { sep = true, more = true }),
+             row(N("Add a connector"), "category-plus") },
+    mistral = { row(N("Upload Files"), "upload", ATTACH), row(N("Skills"), "flask", nil, { more = true }),
+                row(N("Connectors"), "plug", nil, { more = true }), row(N("Reset input"), "refresh", { k = "reset" }, { sep = true }) },
+    own = { row(N("Attach a file…"), "paperclip", ATTACH), row(N("A picture of the screen"), "screenshot", SHOT) },
+}
+local CLAUDE_DESC = { opus = N("For complex work and everyday tasks"), sonnet = N("Most efficient for simpler tasks"),
+                      haiku = N("Fastest for quick answers") }
+local GEMINI_LEVELS = { row(N("Low"), nil, nil, { desc = N("Fast and efficient reasoning") }),
+                        row(N("Medium"), nil, nil, { desc = N("Balanced reasoning") }),
+                        row(N("High"), nil, nil, { desc = N("Thorough reasoning") }) }
+local GROK_MODES = { { "Fast", "bolt" }, { "Build", "hammer" }, { "Auto", "rocket" }, { "Expert", "bulb" }, { "Heavy", "category-plus" } }
+-- how tall a row is and how wide the window, as each service draws them
+local ROW_H = { claude = 30, gemini = 34, chatgpt = 30, grok = 32, mistral = 36, copilot = 32, deepseek = 32, own = 32 }
+local PLUS_W = { claude = 260, gemini = 280, chatgpt = 470, grok = 250, mistral = 280, own = 250 }
+local CHIP_W = { claude = 380, gemini = 230, chatgpt = 300, grok = 320, mistral = 270 }
+local function show_rows(rows, style)
+    local out, h = {}, 0
+    for k, r in ipairs(rows) do
+        local rh = (r.note and 40) or ((ROW_H[style] or 32) + ((r.desc and r.desc ~= "") and 17 or 0))
+        rh = rh + (r.sep and 9 or 0)
+        r.y = h
+        out[k] = { name = tr(r.name), desc = r.desc and tr(r.desc) or "", hint = r.hint and tr(r.hint) or "", key = r.key and tr(r.key) or "",
+                   glyph = r.glyph and icons[r.glyph] or "", g = r.glyph ~= nil, d = (r.desc or "") ~= "", on = r.on == true, sep = r.sep == true,
+                   web = r.act == nil and not r.note, more = r.more == true, off = r.note == true or r.off == true, note = r.note == true, h = rh }
+        h = h + rh
+    end
+    return out, h
+end
+local function models_menu(p, m, e)
+    local rows, style = {}, p.style
+    local function add_models(desc, glyph)
+        for _, x in ipairs(p.models) do
+            if #rows >= 9 then break end
+            rows[#rows + 1] = row(x.name, glyph, { k = "model", p = p.id, m = x.id }, { on = m ~= nil and x.id == m.id, desc = desc and desc[x.id] })
+        end
+    end
+    local efforts = {}
+    for _, x in ipairs(p.efforts or {}) do efforts[#efforts + 1] = row(EFFORTS[x] or x, nil, { k = "effort", e = x }, { on = x == e }) end
+    local effort = #efforts > 0 and row(N("Effort"), nil, { k = "sub", rows = efforts }, { sep = true, more = true, key = e and (EFFORTS[e] or e) or "" })
+    -- the service's own tool has the service's own menu; a key to its API lists what the API offers
+    local own_tool = p.id == style
+    if own_tool and style == "claude" then
+        rows[1] = row("Fable 5.1", nil, nil, { desc = N("For your toughest challenges"), key = N("Buy credits") })
+        add_models(CLAUDE_DESC)
+        if effort then rows[#rows + 1] = effort end
+        rows[#rows + 1] = row(N("More models"), nil, nil, { sep = true, more = true })
+        rows[#rows + 1] = row(N("Fable 5.1 is included in Max plans, or available with usage credits on Pro."), nil, nil, { sep = true, note = true })
+    elseif own_tool and style == "gemini" then
+        add_models({ [""] = N("Gemini 3 models") })
+        rows[#rows + 1] = row("3.1 Pro", "lock", nil, { desc = N("Advanced reasoning") })
+        rows[#rows + 1] = row("4 Argon", "lock", nil, { desc = N("Complex tasks") })
+        rows[#rows + 1] = row(N("Thinking level"), nil, { k = "sub", rows = GEMINI_LEVELS }, { sep = true, more = true })
+    elseif own_tool and style == "grok" then
+        -- the Grok CLI has one model: Auto is it; the other modes are grok.com's
+        for _, g in ipairs(GROK_MODES) do
+            local auto = g[1] == "Auto" and p.models[1]
+            rows[#rows + 1] = row(g[1], g[2], auto and { k = "model", p = p.id, m = auto.id } or nil, { on = auto and true or false })
+        end
+        rows[#rows + 1] = row("Premium", nil, nil, { sep = true, desc = N("Unlock advanced options"), key = N("Upgrade") })
+    elseif own_tool and style == "mistral" then
+        add_models(nil, "cube")
+        rows[#rows + 1] = row("GLM-5.3 (Mistral Hosted)", "cube", nil)
+    else
+        add_models(nil)
+        if effort then rows[#rows + 1] = effort end
+    end
+    return rows
+end
 local fill_ai
 local function ask_told(pid)
     if not pid or (ai.told_at[pid] or 0) > os.time() - 300 then return end
@@ -367,10 +465,14 @@ fill_ai = function()
     text.ai_model = (p and tr(p.name) or "") .. (m and m.name ~= "" and (" · " .. m.name) or "")
     -- the field's own chip, as each service has it: how hard it may think where it has that, else its model
     local style = p and p.style or "own"
-    text.ai_effort_word = (style == "chatgpt" and (e and tr(EFFORTS[e] or e) or tr("Thinking")))
-        or (style == "deepseek" and tr("Deep thinking"))
+    text.ai_effort_word = (style == "claude" and m and (m.name .. (e and ("  " .. tr(EFFORTS[e] or e)) or "")))
+        or (style == "chatgpt" and (e and tr(EFFORTS[e] or e) or tr("Thinking")))
+        or (style == "deepseek" and tr("Deep thinking")) or (style == "grok" and "Auto")
         or (e and tr(EFFORTS[e] or e)) or (p and #(p.efforts or {}) > 0 and tr("Effort"))
         or (style == "gemini" and ("Gemini " .. (m and m.name or ""))) or (m and m.name or "")
+    -- DeepSeek's two chips: deep thinking (its reasoner) lit when on; smart search is its page's
+    fact.ai_think = style == "deepseek" and m ~= nil and m.id:find("reasoner") ~= nil
+    text.ai_search_word, text.ic_ai_world = tr("Smart search"), icons["world"]
     text.ic_ai_chipicon = icons[({ chatgpt = "bulb", mistral = "cube", copilot = "git-fork", deepseek = "atom" })[style] or "sparkles"]
     local names = {}
     for _, f in ipairs(ai.files) do names[#names + 1] = f:match("[^/]+$") or f end
@@ -458,29 +560,33 @@ fill_ai = function()
     model.aimsg = rows
     fact.ai_wait = ai.waiting
     fact.ai_gen = fact.ai_gen + 1
-    -- the menu: over the switch, the services, one line each (the one in use marked); over the field's chip, the
-    -- models of the service in use — as each service has its own model menu in its own field
-    local choices, list = {}, {}
+    -- the menu that is out: the services over the switch (LatteOS's own, one line each), the service's + or its chip
+    local rows, style = {}, p and p.style or "own"
     if (ai.menu_at or 0) == 0 then
         for _, q in ipairs(offered()) do
-            if #list >= 10 then break end
-            list[#list + 1] = { name = tr(q.name), hint = q.models[1] and (p and q.id == p.id and m and m.name or q.models[1].name) or "", on = p ~= nil and q.id == p.id, head = false }
-            choices[#list] = { provider = q.id, model = p and q.id == p.id and m and m.id or (q.models[1] and q.models[1].id or "") }
+            if #rows >= 10 then break end
+            local here = p ~= nil and q.id == p.id
+            local mid = here and m and m.id or (q.models[1] and q.models[1].id or "")
+            local mname = here and m and m.name or (q.models[1] and q.models[1].name or "")
+            rows[#rows + 1] = row(q.name, nil, { k = "model", p = q.id, m = mid }, { on = here, key = mname })
+        end
+        style = "own"
+    elseif ai.menu_at == 2 then
+        rows = PLUS[style] or PLUS.own
+        for _, r in ipairs(rows) do
+            if r.act and r.act.k == "think" then r.on = e ~= nil end
+            if r.act and r.act.k == "reset" then r.off = not fact.ai_typed end
         end
     elseif p then
-        for _, x in ipairs(p.models) do
-            if #list >= 10 then break end
-            list[#list + 1] = { name = x.name, hint = "", on = m ~= nil and x.id == m.id, head = false }
-            choices[#list] = { provider = p.id, model = x.id }
-        end
+        rows = models_menu(p, m, e)
     end
-    -- and how hard the one chosen may think, where its tool lets that be said: one line of small buttons
-    local efforts = {}
-    ai.efforts = (ai.menu_at or 0) == 1 and p and p.efforts or {}
-    for k, x in ipairs(ai.efforts) do efforts[k] = { name = tr(EFFORTS[x] or x), on = x == e } end
-    model.aieffort = efforts
-    ai.choices = choices
-    model.aimodel = list
+    ai.pop, ai.pop_style = rows, p and p.style or "own"
+    local shown, h = show_rows(rows, style)
+    model.aipop = shown
+    fact.ai_pop_h = h
+    fact.ai_pop_w = (ai.menu_at or 0) == 0 and 300 or ai.menu_at == 2 and (PLUS_W[style] or 250) or (CHIP_W[style] or 300)
+    fact.ai_pop_hx = (ai.menu_at == 2 and style == "chatgpt") and 196 or 0
+    text.ic_ai_more, text.ic_ai_web = icons["chevron-right"], icons["external-link"]
     text.ai_btn_center, text.ai_btn_settings, text.ai_btn_new = tr("Lens AI centre"), tr("Settings"), tr("New session")
     local agents = {}
     for k, g in ipairs(AGENT_LIST) do agents[k] = { name = tr(g.name), glyph = icons[g.glyph] or "" } end
@@ -561,26 +667,64 @@ end)
 -- stopped: latte-ai keeps what had come and says so in its last line
 on("ai_stop", function() if ai.job then kill(ai.job, "term") end end)
 on("text:ai_q", function() fact.ai_typed = (text.ai_q or "") ~= "" end)
-on("ai_effort", function(i)
-    local x = (ai.efforts or {})[(i or 0) + 1]
-    if not x then return end
-    kept.ai.effort = x
+-- a row pressed: what LatteOS can do it does; a row with more opens beside it; a row of the service's page opens that
+local attach
+local function act(r, sub)
+    if not r or r.off then return end
+    local a = r.act
+    if a and a.k == "sub" and not sub then
+        local shown, h = show_rows(a.rows, ai.pop_style)
+        ai.sub = a.rows
+        model.aisub = shown
+        fact.ai_sub_y, fact.ai_sub_h = r.y, h
+        fact.ai_sub_w = ai.pop_style == "gemini" and 280 or ai.pop_style == "claude" and 170 or 220
+        fact.ai_sub = true
+        return
+    end
+    fact.ai_menu, fact.ai_sub = false, false
+    if not a or a.k == "sub" then
+        local url = WEB[ai.pop_style] or WEB.claude
+        then_do(function() open.url(url) end)
+    elseif a.k == "model" then
+        kept.ai.provider, kept.ai.model = a.p, a.m
+    elseif a.k == "effort" then
+        kept.ai.effort = a.e
+    elseif a.k == "think" then
+        kept.ai.effort = (kept.ai.effort == nil) and "high" or nil
+    elseif a.k == "attach" then
+        attach(a.what)
+        return
+    elseif a.k == "reset" then
+        text.ai_q, fact.ai_typed = "", false
+    end
     save()
     fill_ai()
-end)
+end
+on("ai_pop", function(i) act(ai.pop and ai.pop[(i or 0) + 1]) end)
+on("ai_subpick", function(i) act(ai.sub and ai.sub[(i or 0) + 1], true) end)
+-- 0 the services (the switch), 1 the chip, 2 the +, 3 a chip of the service's page. DeepSeek's chip is a switch of its own (deep thinking: its
+-- reasoner); where a service has no + menu (Copilot, DeepSeek's paperclip) the + attaches at once
 on("ai_open", function(where)
-    if fact.ai_menu and (ai.menu_at or 0) == (where or 0) then fact.ai_menu = false return end
-    ai.menu_at = where or 0
-    fact.ai_menu_at = ai.menu_at
+    where = where or 0
+    fact.ai_sub = false
+    if fact.ai_menu and (ai.menu_at or 0) == where then fact.ai_menu = false return end
+    local p = provider()
+    local style = p and p.style or "own"
+    if where == 2 and not PLUS[style] then attach(0) return end
+    if where == 3 then then_do(function() open.url(WEB[style] or WEB.deepseek) end) return end
+    if where == 1 and style == "deepseek" and p then
+        local m = model_of(p)
+        for _, x in ipairs(p.models) do
+            if (x.id:find("reasoner") ~= nil) ~= (m and m.id:find("reasoner") ~= nil) then kept.ai.model = x.id break end
+        end
+        save()
+        fill_ai()
+        return
+    end
+    ai.menu_at = where
+    fact.ai_menu_at = where
     fill_ai()
     fact.ai_menu = true
-end)
-on("ai_pick", function(i)
-    local c = ai.choices[(i or 0) + 1]
-    if not c then return end
-    if c.effort then kept.ai.effort = c.effort else kept.ai.provider, kept.ai.model = c.provider, c.model end
-    save()
-    fill_ai()
 end)
 on("ai_new", function()
     kept.ai.chat, ai.msgs, ai.usage = nil, {}, {}
@@ -589,7 +733,7 @@ on("ai_new", function()
     focus("ai_q")
 end)
 -- something to attach: the card steps aside for the file chooser, or for the picture of the screen, and comes back
-on("ai_attach", function(what)
+attach = function(what)
     card.close()
     after(what == 1 and 450 or 120, function()
         run("latte-ai", { what == 1 and "shot" or "pick" }, function(out)
@@ -599,7 +743,8 @@ on("ai_attach", function(what)
             M.open(4)
         end)
     end)
-end)
+end
+on("ai_attach", function(what) attach(what) end)
 on("ai_unattach", function() ai.files = {} fill_ai() end)
 -- the microphone: what is said goes into the field, to be read and changed before it is sent
 on("ai_mic", function()
