@@ -332,7 +332,7 @@ Schválené 12. 10. 2026. Pracuje sa **zhora nadol, neskáče sa**; nový nápad
       schopnosti zariadenia, slabé miesta s radou a skóre siete; Inšpektor › Skontrolovať podrobne, karta Bezpečnosť
       siete, pri zariadení Čo vie a jeho slabé miesta. Bez nmap a iných závislostí. Overené testom a na latte-lab
       (sieť zdieľaná z Windowsu: iba brána, multicast neprejde); skutočná domáca sieť neoverená.
-    - b. [ ] Zoznam namiesto radaru pri veľa zariadeniach; filter podľa schopnosti (kamery, prehrávače, tlačiarne).
+    - b. [x] Zoznam popri radare, filter podľa schopnosti, počet vecí na opravu (21. 10.; `latte-app devices inspector list`).
     - c. [ ] Akcie zo schopností: Púšťať naň (DLNA/Cast — prepojiť s MediaGoo), Otvoriť obraz (kamera → CamGoo),
       Pridať tlačiareň (CUPS), Otvoriť stránku nastavení, Pripojiť zdieľaný priečinok (DualBrew).
     - d. [ ] Upozornenie na nové zariadenie (QueenGoo/ClockGoo), sledovanie v pozadí raz za čas.

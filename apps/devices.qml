@@ -29,7 +29,7 @@ ShellRoot {
         stdout: StdioCollector { onStreamFinished: asker.buf = this.text }
         onExited: { try { shell.all = JSON.parse(buf) } catch (e) { shell.all = null } }
     }
-    Component.onCompleted: { asker.ask(); if (words[0]) page = words[0] }
+    Component.onCompleted: { asker.ask(); if (words[0]) page = words[0]; asList = words[1] === "list" }       // latte-app devices inspector list
 
     // ── the network: how this computer is connected, and who else is on its network ───────────────────────
     component Net: Process {
@@ -51,6 +51,8 @@ ShellRoot {
     Net { id: lan }                            // the last look, then a new one
     Net { id: note; onExited: lan.ask(["last"]) }
     property string chosen: ""                 // the device picked on the radar, by its key
+    property bool asList: false                // the devices as a list, which holds many better than the radar
+    property string capFilter: ""              // the list shows only what can do this; "" all
     readonly property var picked: lan.data ? (lan.data.devices.find(d => d.key === chosen) || null) : null
     onPageChanged: {
         if (page === "connection") { link.ask(["status"]); dnsq.ask(["dns"]) }
@@ -284,7 +286,9 @@ ShellRoot {
                 Behavior on cx { NumberAnimation { duration: 260; easing.type: Easing.OutCubic } }
                 Row { x: 28; y: 20; spacing: 10; z: 3
                     Label { anchors.verticalCenter: parent.verticalCenter; color: Theme.dim
-                            text: lan.data ? I18n.tr("{n} here now", { n: radar.near.length }) + (radar.gone.length ? "  ·  " + I18n.tr("{n} seen before", { n: radar.gone.length }) : "") : "" } }
+                            text: lan.data ? I18n.tr("{n} here now", { n: radar.near.length }) + (radar.gone.length ? "  ·  " + I18n.tr("{n} seen before", { n: radar.gone.length }) : "") : "" }
+                    Pill { implicitHeight: 30; icon: "radar-2"; text: I18n.tr("Radar"); strong: !shell.asList; onPressed: shell.asList = false }
+                    Pill { implicitHeight: 30; icon: "list"; text: I18n.tr("List"); strong: shell.asList; onPressed: shell.asList = true } }
                 // how safe the network is, after a closer look: a score, and what to do, the worst first
                 Rectangle {
                     id: safety
@@ -307,7 +311,7 @@ ShellRoot {
                 }
                 // the two arcs: who is here now, and who was
                 Repeater { model: [radar.r1, radar.r2]
-                    Rectangle { required property real modelData; required property int index; x: radar.cx - modelData; y: radar.cy - modelData; width: modelData * 2; height: modelData * 2; radius: modelData
+                    Rectangle { required property real modelData; required property int index; visible: !shell.asList; x: radar.cx - modelData; y: radar.cy - modelData; width: modelData * 2; height: modelData * 2; radius: modelData
                                 color: "transparent"; border.width: 1; border.color: index === 0 ? Theme.coffee : Theme.line; opacity: index === 0 ? 0.7 : 0.6 } }
                 // the sweep, while it looks
                 Rectangle { visible: lan.running && lan.command[1] === "scan"; x: radar.cx; y: radar.cy - 1; width: radar.r2; height: 2; transformOrigin: Item.Left
@@ -349,6 +353,36 @@ ShellRoot {
                                 icon: shell.kind(modelData.kind).icon; text: shell.called(modelData); under: modelData.ip
                                 faded: ring.index === 1; fresh: modelData.fresh; on: shell.chosen === modelData.key
                                 onPressed: shell.chosen = shell.chosen === modelData.key ? "" : modelData.key } } } }
+                // ── the same devices as a list, with what each can do, to be narrowed to one ability ──────────
+                Rectangle {
+                    visible: shell.asList; z: 2
+                    x: 0; y: safety.visible ? safety.y + safety.height + 14 : 56
+                    width: radar.width - (shell.picked ? 310 : 0); height: radar.height - y; color: Theme.ground
+                    readonly property var everyone: lan.data ? lan.data.devices : []
+                    readonly property var abilities: Object.keys(shell.caps).filter(c => everyone.some(d => (d.caps || []).indexOf(c) >= 0))
+                    Flow { id: capRow2; x: 28; y: 0; width: parent.width - 56; spacing: 8
+                        Pill { implicitHeight: 30; text: I18n.tr("All"); strong: shell.capFilter === ""; onPressed: shell.capFilter = "" }
+                        Repeater { model: parent.parent.abilities
+                            Pill { required property string modelData; implicitHeight: 30; icon: shell.caps[modelData].icon; text: I18n.tr(shell.caps[modelData].name)
+                                   strong: shell.capFilter === modelData; onPressed: shell.capFilter = shell.capFilter === modelData ? "" : modelData } } }
+                    ListView {
+                        x: 28; y: capRow2.height + 12; width: parent.width - 56; height: parent.height - y - 16; clip: true; spacing: 6
+                        model: parent.everyone.filter(d => shell.capFilter === "" || (d.caps || []).indexOf(shell.capFilter) >= 0)
+                        delegate: Rectangle { id: row; required property var modelData; width: ListView.view.width; height: 58; radius: 14
+                            color: shell.chosen === modelData.key ? Theme.raised : (rowHit.containsMouse ? Theme.card : "transparent")
+                            readonly property int weak: lan.data && lan.data.health ? lan.data.health.findings.filter(f => f.ip === modelData.ip && f.level !== "info").length : 0
+                            Glyph { x: 14; name: shell.kind(row.modelData.kind).icon; font.pixelSize: 24; color: row.modelData.fresh ? Theme.gold : Theme.cream; opacity: row.modelData.online ? 1 : 0.5; anchors.verticalCenter: parent.verticalCenter }
+                            Column { x: 52; width: 260; anchors.verticalCenter: parent.verticalCenter; spacing: 2
+                                Label { text: shell.called(row.modelData); font.weight: 600; width: parent.width; elide: Text.ElideRight; opacity: row.modelData.online ? 1 : 0.6 }
+                                Label { text: row.modelData.ip + (row.modelData.vendor ? "  ·  " + row.modelData.vendor : ""); color: Theme.dim; font.pixelSize: 12; width: parent.width; elide: Text.ElideRight } }
+                            Row { x: 330; spacing: 6; anchors.verticalCenter: parent.verticalCenter
+                                Repeater { model: (row.modelData.caps || []).slice(0, 5)
+                                    Glyph { required property string modelData; name: (shell.caps[modelData] || {}).icon || "point"; font.pixelSize: 16; color: Theme.gold } } }
+                            Label { visible: row.weak > 0; anchors.right: parent.right; anchors.rightMargin: 16; anchors.verticalCenter: parent.verticalCenter; color: Theme.red; font.pixelSize: 12; font.weight: 700
+                                    text: I18n.tr("{n} to fix", { n: row.weak }) }
+                            MouseArea { id: rowHit; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
+                                        onClicked: shell.chosen = shell.chosen === row.modelData.key ? "" : row.modelData.key } } }
+                }
                 Label { visible: lan.data && lan.data.offline === true; anchors.centerIn: parent; text: I18n.tr("This computer is not connected to any network."); color: Theme.dim }
                 // the device that was picked: what is known of it, and what the user calls it
                 Rectangle {
