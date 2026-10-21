@@ -5,8 +5,9 @@
 // the Settings, a new session — and on the right what the conversation has used. The logic (lib/lens.luau) tells
 // the texts and the numbers; latte-ai keeps the conversations.
 part Ai {
-    model aimsg max 40 { who: text; body: text; mine: bool; failed: bool }
+    model aimsg max 40 { who: text; body: text; mine: bool; failed: bool; w: number = 300 }     // w: how wide its bubble is (the logic guesses it from the text)
     model aiagent max 4 { name: text; glyph: text }       // the micro-agents, offered while the conversation is empty
+    model aieffort max 6 { name: text; on: bool }        // how hard the model may think, a line at the foot of the models' window
     model aimodel max 16 { name: text; hint: text; on: bool; head: bool }
     text ai_q = ""
     text ai_hint = ""                          // what the empty field says, in the service's words
@@ -51,6 +52,7 @@ part Ai {
     event ai_send ->
     event ai_stop ->
     event ai_pick ->                           // a model was chosen: its place in aimodel
+    event ai_effort ->                         // how hard it may think: its place in aieffort
     event ai_center ->
     event ai_settings ->
     event ai_new ->
@@ -67,8 +69,8 @@ part Ai {
     let ai.fh = 98
     // the field as each service draws its own: ground, rim, ink, how round, and the button that sends
     let f.round = pick(ai_style, 18, 28, 26, 28, 14)
-    let m.w = 250                              // the models' little window
-    let m.h = 12 + aimodel.count * 34
+    let m.w = 360                              // the models' little window
+    let m.h = 12 + aimodel.count * 32 + if(aieffort.count > 0, 40, 0)
 
     group {
         show: card_custom == 3
@@ -80,15 +82,27 @@ part Ai {
             view: ai.w, ai.fy - 70
             step: 60
             gap: 12
+            // as in a messenger: what the user asked on the right, in gold; what the AI said on the left, in coffee, under its name
             for m in aimsg {
-                column {
-                    gap: 5
-                    text m.who { size: 11.5; weight: 700; lines: 1; color: if(m.mine, #f7c873, #b8a491); family: "Inter" }
+                row {
+                    group { size: if(m.mine, ai.w - min(m.w, ai.w * 0.8), 0), 1 }
                     column {
-                        fill: #1b120d 55%
-                        corner: 14
-                        padding: 12
-                        text m.body { width: ai.w - 24; lines: 80; size: 14.5; line_height: 1.4; color: if(m.failed, #e5484d, #f5e8d8); family: "Inter"; selectable: true; selection: #5a463a }
+                        gap: 5
+                        text m.who { size: 11.5; weight: 700; lines: 1; color: #b8a491; show: not m.mine; family: "Inter" }
+                        column {
+                            show: m.mine
+                            fill: #f7c873 26%
+                            corner: 16
+                            padding: 11
+                            text m.body { width: min(m.w, ai.w * 0.8) - 22; lines: 80; size: 14.5; line_height: 1.4; color: #fff4e0; family: "Inter"; selectable: true; selection: #5a463a }
+                        }
+                        column {
+                            show: not m.mine
+                            fill: #1b120d 60%
+                            corner: 16
+                            padding: 11
+                            text m.body { width: min(m.w, ai.w * 0.8) - 22; lines: 80; size: 14.5; line_height: 1.4; color: if(m.failed, #e5484d, #f5e8d8); family: "Inter"; selectable: true; selection: #5a463a }
+                        }
                     }
                 }
             }
@@ -225,13 +239,29 @@ part Ai {
                 at: card.w - 16 - m.w + 6, ai.fy - 8 - m.h + 6
                 for o in aimodel {
                     group {
-                        size: m.w - 12, 34
-                        box { from: 0, 2; size: m.w - 12, 30; corner: 10; color: #f5e8d8; opacity: if(o.head, 0, 10% * model_hit.hover) }
-                        text o.name { at: if(o.head, 10, 14), 17; anchor: left center; size: 13; weight: 600; color: if(o.head, #b8a491, if(o.on, #f7c873, #f5e8d8)); width: m.w - 90; lines: 1; family: "Inter" }
-                        text o.hint { at: m.w - 40, 17; anchor: right center; size: 11.5; color: #b8a491; width: 80; lines: 1; align: right; family: "Inter" }
-                        text ic_ai_check { at: m.w - 26, 17; anchor: center; size: 15; color: #f7c873; show: o.on; family: "tabler-icons" }
-                        zone box model_hit { from: 0, 2; size: m.w - 12, 30; cursor: pointer; active: ai.on and ai_menu and not o.head; label: "{o.name}"; selected: o.on; role: item }
+                        size: m.w - 12, 32
+                        box { from: 0, 1; size: m.w - 12, 30; corner: 10; color: #f5e8d8; opacity: if(o.head, 0, 10% * model_hit.hover) }
+                        text o.name { at: if(o.head, 10, 14), 16; anchor: left center; size: 13; weight: 600; color: if(o.head, #b8a491, if(o.on, #f7c873, #f5e8d8)); width: m.w - 90; lines: 1; family: "Inter" }
+                        text o.hint { at: m.w - 40, 16; anchor: right center; size: 11.5; color: #b8a491; width: 80; lines: 1; align: right; family: "Inter" }
+                        text ic_ai_check { at: m.w - 26, 16; anchor: center; size: 15; color: #f7c873; show: o.on; family: "tabler-icons" }
+                        zone box model_hit { from: 0, 1; size: m.w - 12, 30; cursor: pointer; active: ai.on and ai_menu and not o.head; label: "{o.name}"; selected: o.on; role: item }
                         on press model_hit { ai_menu = false; emit ai_pick(o.index) }
+                    }
+                }
+            }
+            // how hard it may think: small buttons side by side at the foot, the window stays open to see the choice
+            box { from: card.w - 16 - m.w + 10, ai.fy - 8 - 41; size: m.w - 20, 1; color: #f5e8d8; opacity: if(aieffort.count > 0, 10%, 0) }
+            row {
+                at: card.w - 16 - m.w + 8, ai.fy - 8 - 34
+                gap: 4
+                show: aieffort.count > 0
+                for e in aieffort {
+                    group {
+                        size: (m.w - 16 - 4 * (aieffort.count - 1)) / max(aieffort.count, 1), 26
+                        box { from: 0, 0; size: (m.w - 16 - 4 * (aieffort.count - 1)) / max(aieffort.count, 1), 26; corner: 9; color: if(e.on, #f7c873, #f5e8d8); opacity: if(e.on, 30%, 6% + 10% * effort_hit.hover) }
+                        text e.name { at: (m.w - 16 - 4 * (aieffort.count - 1)) / max(aieffort.count, 1) / 2, 13; anchor: center; size: 10.5; weight: 600; color: if(e.on, #f7c873, #f5e8d8); lines: 1; family: "Inter" }
+                        zone box effort_hit { from: 0, 0; size: (m.w - 16 - 4 * (aieffort.count - 1)) / max(aieffort.count, 1), 26; cursor: pointer; active: ai.on and ai_menu; label: "{e.name}"; selected: e.on; role: item }
+                        on press effort_hit { emit ai_effort(e.index) }
                     }
                 }
             }

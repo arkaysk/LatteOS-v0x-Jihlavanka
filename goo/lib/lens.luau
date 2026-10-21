@@ -358,13 +358,17 @@ local function fill_ai()
     text.ai_who = (p and tr(p.name) or "") .. ((u.window or 0) > 0 and ("  ·  " .. with_n("context {n}", percent(ctx))) or "")
     text.ai_empty = p and tr(p.name) or ""
     text.ai_empty2 = tr("The conversation stays here until you start a new session.")
+    -- Claude tells its limits with each answer only: what is shown is from the last one, and says when that was.
+    -- A window that has started again since then is empty again, whatever the old figure said.
     local lim = u.limits and next(u.limits) and u.limits or kept.ai.limits
     if lim and lim.five_hour then
-        text.ai_lim1 = tr("Session (5 h)")
-        text.ai_lim1p, fact.ai_l1 = percent(lim.five_hour.used) .. until_(lim.five_hour.resets), lim.five_hour.used
+        local function share(w) return (w.resets or 0) > os.time() and (w.used or 0) or 0 end
+        local at = kept.ai.limits_at and (os.time() - kept.ai.limits_at > 600) and ("  ·  " .. with_n("as of {n}", os.date("%H:%M", kept.ai.limits_at))) or ""
+        text.ai_lim1 = tr("Session (5 h)") .. at
+        text.ai_lim1p, fact.ai_l1 = percent(share(lim.five_hour)) .. until_(lim.five_hour.resets), share(lim.five_hour)
         local w = lim.seven_day or { used = 0, resets = 0 }
         text.ai_lim2 = tr("Week (7 days)")
-        text.ai_lim2p, fact.ai_l2 = percent(w.used) .. until_(w.resets), w.used
+        text.ai_lim2p, fact.ai_l2 = percent(share(w)) .. until_(w.resets), share(w)
     else
         text.ai_lim1, text.ai_lim1p, fact.ai_l1 = tr("Context"), percent(ctx), ctx
         text.ai_lim2, text.ai_lim2p, fact.ai_l2 = with_n("{n} tokens in this session", tostring(u.tokens or 0)), "", -1
@@ -381,40 +385,38 @@ local function fill_ai()
             who = (q.name and tr(q.name) or msg.provider or "") .. (mm and (" · " .. mm.name) or "")
         end
         local attached = (type(msg.files) == "table" and #msg.files > 0 and ("\n📎 " .. table.concat(msg.files, ", ")) or "") .. (msg.stopped and ("\n(" .. tr("stopped") .. ")") or "")
-        rows[#rows + 1] = { who = who, body = (msg.content or "") .. attached, mine = msg.role == "user", failed = msg.ok == false }
+        local body = (msg.content or "") .. attached
+        local longest = 0
+        for line in (body .. "\n"):gmatch("(.-)\n") do longest = math.max(longest, utf8.len(line) or #line) end
+        rows[#rows + 1] = { who = who, body = body, mine = msg.role == "user", failed = msg.ok == false, w = math.clamp(longest * 7.6 + 30, 60, 560) }
     end
-    if ai.waiting then rows[#rows + 1] = { who = p and tr(p.name) or "", body = ai.live ~= "" and ai.live or tr("Thinking…"), mine = false, failed = false } end
+    if ai.waiting then rows[#rows + 1] = { who = p and tr(p.name) or "", body = ai.live ~= "" and ai.live or tr("Thinking…"), mine = false, failed = false, w = 560 } end
     while #rows > 40 do table.remove(rows, 1) end
     model.aimsg = rows
     fact.ai_wait = ai.waiting
     fact.ai_gen = fact.ai_gen + 1
-    -- the models to choose from: the service chosen opens into its models, every other is one line that takes it
-    local choices, list = {}, {}
-    for _, q in ipairs(offered()) do
-        if #list >= 14 then break end
+    -- the models to choose from: the service chosen opens into its models (its name beside the first), every other is one
+    -- line that takes it; eight lines at most, which is what fits above the field without covering the tabs
+    local choices, list, order = {}, {}, {}
+    if p then order[1] = p end                         -- the one chosen first, so that it is always there
+    for _, q in ipairs(offered()) do if not p or q.id ~= p.id then order[#order + 1] = q end end
+    for _, q in ipairs(order) do
         if p and q.id == p.id then
-            list[#list + 1] = { name = string.upper(tr(q.name)), hint = q["local"] and tr("on this computer") or "", on = false, head = true }
-            choices[#list] = false
-            for _, x in ipairs(q.models) do
-                if #list >= 14 then break end
-                list[#list + 1] = { name = x.name, hint = "", on = m ~= nil and x.id == m.id, head = false }
+            for k, x in ipairs(q.models) do
+                if #list >= 8 then break end
+                list[#list + 1] = { name = x.name, hint = k == 1 and tr(q.name) or "", on = m ~= nil and x.id == m.id, head = false }
                 choices[#list] = { provider = q.id, model = x.id }
             end
-        else
+        elseif #list < 8 then
             list[#list + 1] = { name = tr(q.name), hint = q.models[1] and q.models[1].name or "", on = false, head = false }
             choices[#list] = { provider = q.id, model = q.models[1] and q.models[1].id or "" }
         end
     end
-    -- and how hard the one chosen may think, where its tool lets that be said
-    if p and #(p.efforts or {}) > 0 and #list < 15 then
-        list[#list + 1] = { name = tr("EFFORT"), hint = "", on = false, head = true }
-        choices[#list] = false
-        for _, x in ipairs(p.efforts) do
-            if #list >= 16 then break end
-            list[#list + 1] = { name = tr(EFFORTS[x] or x), hint = "", on = x == e, head = false }
-            choices[#list] = { effort = x }
-        end
-    end
+    -- and how hard the one chosen may think, where its tool lets that be said: one line of small buttons
+    local efforts = {}
+    ai.efforts = p and p.efforts or {}
+    for k, x in ipairs(ai.efforts) do efforts[k] = { name = tr(EFFORTS[x] or x), on = x == e } end
+    model.aieffort = efforts
     ai.choices = choices
     model.aimodel = list
     text.ai_btn_center, text.ai_btn_settings, text.ai_btn_new = tr("Lens AI centre"), tr("Settings"), tr("New session")
@@ -468,7 +470,7 @@ local function ai_send(asked, pid, mid)
             kept.ai.chat = r.chat
             ai.usage = r.usage or {}
             -- the account's limits are the account's, not the conversation's: kept for the next session too
-            if ai.usage.limits and next(ai.usage.limits) then kept.ai.limits = ai.usage.limits end
+            if ai.usage.limits and next(ai.usage.limits) then kept.ai.limits, kept.ai.limits_at = ai.usage.limits, os.time() end
             ai.msgs[#ai.msgs + 1] = { role = "assistant", content = r.answer or "", provider = p.id, model = m.id, ok = r.ok, stopped = r.stopped }
             save()
         else
@@ -496,6 +498,13 @@ end)
 -- stopped: latte-ai keeps what had come and says so in its last line
 on("ai_stop", function() if ai.job then kill(ai.job, "term") end end)
 on("text:ai_q", function() fact.ai_typed = (text.ai_q or "") ~= "" end)
+on("ai_effort", function(i)
+    local x = (ai.efforts or {})[(i or 0) + 1]
+    if not x then return end
+    kept.ai.effort = x
+    save()
+    fill_ai()
+end)
 on("ai_pick", function(i)
     local c = ai.choices[(i or 0) + 1]
     if not c then return end
@@ -683,6 +692,8 @@ render = function(keep)
 end
 
 function M.open(m)
+    -- the AI asked for before latte-ai has said who can answer: it opens as soon as it has
+    if m == 4 and not MODES[4] then ai.pending = true end
     load_lists()
     if m and MODES[m] then kept.mode = m end
     typed, confirm, found = "", nil, nil
@@ -739,6 +750,7 @@ function M.start(d)
         if not found_any or type(list) ~= "table" or #list == 0 then return end
         ai.providers = list
         MODES[4] = { glyph = "sparkles", name = N("AI"), hint = HINTS.own, rows = rows_ai }
+        if ai.pending then ai.pending = false M.open(4) end
     end)
     sys.watch("apps", function(list)
         apps, by_id = list or {}, {}

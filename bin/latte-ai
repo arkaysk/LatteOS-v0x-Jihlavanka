@@ -547,8 +547,10 @@ def services():
                 account = " · ".join(x for x in (st.get("email", ""), st.get("subscriptionType", "")) if x)
             except (OSError, ValueError, subprocess.TimeoutExpired):
                 pass
+        # the whole path of the tool: the terminal the centre opens has the desktop's short PATH, without ~/.local/bin
+        whole = lambda argv: ([shutil.which(argv[0], path=SEARCH) or argv[0]] + argv[1:]) if argv else []
         out.append({"id": i, "name": p["name"], "local": p["local"], "style": p["style"], "installed": there, "tool": p["tool"],
-                    "signed": True if p["local"] and there else signed, "account": account, "login": p.get("login", []), "logout": p.get("logout", [])})
+                    "signed": True if p["local"] and there else signed, "account": account, "login": whole(p.get("login", [])), "logout": whole(p.get("logout", []))})
     return out
 
 

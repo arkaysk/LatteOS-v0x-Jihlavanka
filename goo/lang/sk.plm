@@ -1120,6 +1120,7 @@ library Slovak {
         "With an account, the service's official tool answers, signed in once in the terminal. Which of them LensGoo offers is set in Settings › Launcher." = "S účtom odpovedá oficiálny nástroj služby, do ktorého sa raz prihlásiš v termináli. Ktoré z nich ponúka LensGoo, sa nastavuje v Nastaveniach › Spúšťač."
         "ACCOUNTS" = "ÚČTY"
         "(stopped)" = "(zastavené)"
+        "as of {n}" = "údaj z {n}"
         "The firewall guards this computer ({zone})" = "Firewall chráni tento počítač ({zone})"
         "The firewall is off" = "Firewall je vypnutý"
         "Other devices can reach whatever runs here. Turn it on: sudo systemctl enable --now firewalld" = "Iné zariadenia sa dostanú ku všetkému, čo tu beží. Zapni ho: sudo systemctl enable --now firewalld"
