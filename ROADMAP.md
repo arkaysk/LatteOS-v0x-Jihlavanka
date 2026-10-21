@@ -523,7 +523,10 @@ Schválené 12. 10. 2026. Pracuje sa **zhora nadol, neskáče sa**; nový nápad
       - [x] **Veta, ktorej slová nerozumejú → lokálna AI** (21. 10.): pri Pridať, keď pravidlá nenašli deň ani čas alebo
         v názve ostalo slovo času, `latte-cal parse --ai` → `latte-ai quick` (najmenší model nad 2 GB: Qwen3.5 2B vynechával
         dátum, 4B čítal správne, ~12 s na procesore); výsledok sa ukáže v čipoch, pridá sa až ďalším stlačením.
-        ponytail: „pol siedmej večer“ čítala 4B ako 19:30 (má byť 18:30) — používateľ to vidí pred pridaním.
+        Používateľ 21. 10.: „zubár koncom mesiaca ráno o deviatej“ dala AI na stredu 28. 10. (správne piatok 30. 10.) →
+        dátumy počítajú pravidlá (koniec/začiatok/polovica mesiaca na pracovný deň, posledný piatok v mesiaci, o N dní
+        či týždňov, hodiny slovom „o deviatej“, „pol siedmej“, ráno/večer); AI dostane zoznam dní na 6 týždňov. 4B sa
+        aj tak mýli (posledný piatok → 20. 11.), premýšľanie trvá minúty — AI ostáva iba na zvyšok, s potvrdením.
       - [ ] Aplikácia Kalendár (týždeň s ťahaním, rok ako teplotná mapa); Nerušiť počas stretnutí; kalendár ako nástroj LensAI.
 18. [x] **Vývoj LatteOS v Nastavenia › Systém › O tomto počítači** (hotové 21. 10.: `bin/latte-activity` zapíše históriu repa do `build/activity.json` pri `./install --go`, inštaluje sa ako `/usr/share/latteos/activity.json`; graf 53 týždňov so štvorčekmi v farbách témy a nápovedou pri myši, 30 posledných commitov rozbaliteľných — autor, dátum, celá správa, zmenené súbory s +/−. **Rozhodnutie pre vydania:** verejné `arkaysk/latteos` má iba snímky vydaní, preto graf nesie súbor z repa, nie GitHub API; či vydanie smie niesť správy commitov, je na `zverejnit.sh`). (používateľ, 21. 10.): štvorčekový graf aktivity
     (ako na GitHube: týždne v stĺpcoch, dni v riadkoch, sýtosť podľa počtu commitov) — ako pokračuje vývoj projektu;

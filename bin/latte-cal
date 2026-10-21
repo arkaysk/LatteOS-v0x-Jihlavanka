@@ -315,6 +315,21 @@ def alt(xs):
     return "|".join(re.escape(x) for x in sorted(xs, key=len, reverse=True))
 
 
+def month_part(part, today):
+    """end, start or middle of the month, or of the next one ("_next"), on a working day; one already past is the next month's."""
+    def at(y, mo):
+        if part.startswith("end"):
+            d = dt.date(y + mo // 12, mo % 12 + 1, 1) - dt.timedelta(days=1)
+            return d - dt.timedelta(days=max(0, d.weekday() - 4))
+        d = dt.date(y, mo, 15 if part.startswith("middle") else 1)
+        return d + dt.timedelta(days=(7 - d.weekday()) % 7 if d.weekday() > 4 else 0)
+    y, mo = today.year, today.month
+    if part.endswith("_next"):
+        y, mo = (y + 1, 1) if mo == 12 else (y, mo + 1)
+    d = at(y, mo)
+    return d if d >= today else at(*((y + 1, 1) if mo == 12 else (y, mo + 1)))
+
+
 def parse(text, today=None, w=None):
     today, w = today or dt.date.today(), w or words()
     if not w:
@@ -331,7 +346,27 @@ def parse(text, today=None, w=None):
             day = today + dt.timedelta(days=n)
             cut(m)
             break
-    m = re.search(r"\s(?:(?:" + alt(w["before_weekday"]) + r")\s)*(" + alt(w["weekdays"]) + r")\b", low())
+    wd = r"(?:(?:" + alt(w["before_weekday"]) + r")\s)*(" + alt(w["weekdays"]) + r")"
+    # in two weeks (on Tuesday): that week's day, else the same day of the week
+    num = r"(\d+|" + alt(w["numbers"]) + r")"
+    m = re.search(r"\s(?:" + alt(w["at"]) + r")\s(?:" + num + r"\s)?(" + alt(w["days"] + w["weeks"]) + r")\b(?:\s" + wd + r"\b)?", low())
+    if not day and m:
+        n = int(w["numbers"].get(m.group(1), m.group(1) or 1))
+        day = today + dt.timedelta(days=n * (7 if m.group(2) in w["weeks"] else 1))
+        if m.group(3):
+            day += dt.timedelta(days=w["weekdays"][m.group(3)] - day.weekday())
+        cut(m)
+    # the last Friday of the month
+    m = re.search(r"\s(?:" + alt(w["last"]) + r")\s(" + alt(w["weekdays"]) + r")\s(?:" + alt(w["of_month"]) + r")\b", low())
+    if not day and m:
+        k = w["weekdays"][m.group(1)]
+        for y, mo in ((today.year, today.month), (today.year + today.month // 12, today.month % 12 + 1)):
+            d = dt.date(y + mo // 12, mo % 12 + 1, 1) - dt.timedelta(days=1)
+            day = d - dt.timedelta(days=(d.weekday() - k) % 7)
+            if day >= today:
+                break
+        cut(m)
+    m = re.search(r"\s" + wd + r"\b", low())
     if not day and m:
         day = today + dt.timedelta(days=(w["weekdays"][m.group(1)] - today.weekday()) % 7 or 7)
         cut(m)
@@ -348,6 +383,11 @@ def parse(text, today=None, w=None):
         day = dt.date(today.year, w["months"][m.group(2)], int(m.group(1)))
         day = day if day >= today else day.replace(year=day.year + 1)
         cut(m)
+    # a part of a month: its end is its last working day, its beginning the first one (of the next month, once it is past)
+    m = re.search(r"\s(" + alt(w["month_parts"]) + r")\b", low())
+    if not day and m:
+        day = month_part(w["month_parts"][m.group(1)], today)
+        cut(m)
     hm = r"(\d{1,2})(?:[:.](\d{2}))?"
     m = re.search(r"\s(?:(?:" + alt(w["at"]) + r")\s)?" + hm + r"\s?(?:-|–|(?:" + alt(w["until"]) + r")\s)\s?" + hm + r"\b", low())
     if m:
@@ -358,6 +398,20 @@ def parse(text, today=None, w=None):
         if m:
             start = dt.time(int(m.group(1)) % 24, int(m.group(2) or 0))
             cut(m)
+    # the hour in words: "o deviatej", "pol siedmej" (half to seven: 6:30)
+    m, said = re.search(r"\s(?:(?:" + alt(w["at"]) + r")\s)?(?:(" + alt(w["half"]) + r")\s)?(" + alt(w["hour_words"]) + r")\b", low()), None
+    if start is None and m:
+        said = w["hour_words"][m.group(2)]
+        start = dt.time((said - 1 or 12) if m.group(1) else said, 30 if m.group(1) else 0)
+        cut(m)
+    # the part of the day: in the evening 7 is 19:00; an hour said in words from 1 to 6, with none, is in the afternoon
+    pm = re.search(r"\s(" + alt(w["pm"]) + r")\b", low())
+    am = re.search(r"\s(" + alt(w["am"]) + r")\b", low())
+    if start is not None and start.hour < 12 and (pm or (said is not None and said <= 6 and not am)):
+        start = start.replace(hour=start.hour + 12)
+    for x in (pm, am):
+        if x and start is not None:
+            cut(re.search(r"\s" + re.escape(x.group(1)) + r"\b", low()))
     m = re.search(r"\s(?:" + alt(w["for"]) + r")\s(\d+|" + alt(w["one_hour"] + w["half_hour"]) + r")\s?(" + alt(w["hours"] + w["minutes"]) + r")?\b", low())
     if m and start:
         n = 0.5 if m.group(1) in w["half_hour"] else (1 if m.group(1) in w["one_hour"] else int(m.group(1)))
@@ -391,6 +445,8 @@ def parse(text, today=None, w=None):
 # when the event is to be added, and what it read is shown before it is.
 ASK = """Today is {weekday} {today}. Turn the calendar event below into JSON with exactly these keys:
 title (the event in the sentence's own language, without when and where), date (YYYY-MM-DD), start (HH:MM, or "" if no time), end (HH:MM or ""), place ("" if none).
+The next six weeks, to take the date from (do not count it): {days}
+The end of a month is its last working day, its beginning the first one.
 Example: "Obed s Petrom v piatok o 12 v Jihlavanke" -> {{"title": "Obed s Petrom", "date": "{friday}", "start": "12:00", "end": "", "place": "Jihlavanka"}}
 Event: "{text}"
 JSON:"""
@@ -400,7 +456,8 @@ def ai_read(text, today=None):
     today = today or dt.date.today()
     try:
         out = subprocess.run(["latte-ai", "quick", ASK.format(today=today.isoformat(), weekday=today.strftime("%A"), text=text.replace('"', "'"),
-                                                     friday=(today + dt.timedelta(days=(4 - today.weekday()) % 7 or 7)).isoformat())],
+                                                     friday=(today + dt.timedelta(days=(4 - today.weekday()) % 7 or 7)).isoformat(),
+                                                     days=", ".join((today + dt.timedelta(days=i)).strftime("%a %Y-%m-%d") for i in range(42)))],
                              capture_output=True, text=True, timeout=180).stdout
         j = json.loads(out[out.index("{"):out.rindex("}") + 1])
         day = dt.date.fromisoformat(j["date"])

@@ -115,6 +115,9 @@ cal = load("latte-cal")
 dt = cal.dt
 # a new event written as a sentence (Slovak): the day, the time, how long, the place, what is left is the title
 d0 = dt.date(2026, 10, 21)                                # a Wednesday
+p = cal.parse("Zubar koncom mesiaca o 9", d0)                  # the month's last working day: Friday 30. 10.
+assert p["start"] == "2026-10-30T09:00" and p["sure"], p
+assert cal.parse("porada o 2 dni", d0)["start"] == "2026-10-23"
 assert not cal.parse("beh zajtra poobede", d0)["sure"]  # a word of time left over: for the AI
 p = cal.parse("Obed s Petrom zajtra o 12 v Jihlavanke", d0)
 assert (p["title"], p["start"], p["end"], p["place"], p["allday"]) == ("Obed s Petrom", "2026-10-22T12:00", "2026-10-22T13:00", "Jihlavanke", False), p
