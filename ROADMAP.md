@@ -443,7 +443,8 @@ Schválené 12. 10. 2026. Pracuje sa **zhora nadol, neskáče sa**; nový nápad
          pravého tlačidla. **Okno GuardDog** (`latte-app guarddog`, na pokyn používateľa): Čo drží v chode, Pády
          (Opýtať sa AI, Stlmiť), Denník ako konzola (`latte-guarddog log`). Overené: pád `sleep` zachytený, upozornenie
          po slovensky; agent pri páde na ploche neoverený;
-      7. [ ] viac účtov jedného poskytovateľa, prepnutie pri limite; diktovanie do akejkoľvek aplikácie; App Manager › AI.
+      7. [ ] diktovanie do akejkoľvek aplikácie; App Manager › AI. (Viac účtov jednej služby s prepnutím pri limite —
+         **neskôr**, používateľ 21. 10.: platí iba jednu službu.)
       8. [ ] **rozhovory aj mimo LensAI** (používateľ, 21. 10.: na PC v LensAI, na mobile v aplikácii Claude):
          (a) **import** exportu dát služby (Claude: Nastavenia › Súkromie › Export, ChatGPT: Export údajov, Gemini:
          Google Takeout) do histórie LensAI, iba na čítanie a pokračovanie; (b) **Remote Control** Claude Code
