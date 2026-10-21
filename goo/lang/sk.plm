@@ -1396,5 +1396,8 @@ library Slovak {
         "Counted from Claude Code's own records on this computer, LensAI's questions included." = "Spočítané zo záznamov Claude Code v tomto počítači, vrátane otázok z LensAI."
         "Sign-in required" = "Treba sa prihlásiť"
         "No AI service is installed: see Services." = "Nie je nainštalovaná žiadna služba AI: pozri Služby."
+        "LatteOS skill for the agents" = "Skill LatteOS pre agentov"
+        "What Claude Code, Codex and Gemini know about LatteOS when you ask them for help with this computer: how it is built, what may be changed and how, and that they plan first and ask. Add your own rules at the end." = "Čo vedia Claude Code, Codex a Gemini o LatteOS, keď ich požiadaš o pomoc s týmto počítačom: ako je postavený, čo sa smie meniť a ako, a že najprv navrhnú plán a opýtajú sa. Na koniec môžeš dopísať vlastné pravidlá."
+        "Restore LatteOS's own" = "Obnoviť pôvodný od LatteOS"
     }
 }

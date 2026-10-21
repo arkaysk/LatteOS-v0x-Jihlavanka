@@ -173,6 +173,7 @@
 /usr/share/latteos/goo/ai/mistral.svg                   <- goo/ai/mistral.svg
 /usr/share/latteos/goo/ai/openai.svg                    <- goo/ai/openai.svg
 /usr/share/licenses/latteos/LICENSE-lobe-icons.txt      <- goo/ai/LICENSE-lobe-icons.txt
+/usr/share/latteos/agents/skills/latteos/SKILL.md       <- system/agents/skills/latteos/SKILL.md
 /usr/share/plymouth/themes/latteos/latteos.plymouth     <- system/plymouth/latteos.plymouth
 /usr/share/plymouth/themes/latteos/watermark.png        <- system/plymouth/watermark.png
 /usr/share/plymouth/themes/latteos/                     <- system:/usr/share/plymouth/themes/spinner/*.png

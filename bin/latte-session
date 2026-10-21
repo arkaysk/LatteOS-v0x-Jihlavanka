@@ -31,6 +31,8 @@ fi
 # The list of apps only watches folders that exist when it starts: without this one, the first Flatpak
 # installed would not show up until the next login.
 mkdir -p "$HOME/.local/share/flatpak/exports/share/applications" 2>/dev/null
+# LatteOS's skill where the user's agents look for skills (their own copy, made once; latte-ai skill)
+latte-ai skill install >/dev/null 2>&1 &
 
 export XDG_SESSION_TYPE=wayland XDG_SESSION_DESKTOP=latteos
 export LIBSEAT_BACKEND="${LIBSEAT_BACKEND:-logind}"

@@ -14,6 +14,11 @@ ShellRoot {
     id: shell
     readonly property var words: (Quickshell.env("LATTE_APP_ARGS") || "").split("\n").filter(w => w !== "")
     property string page: "chats"              // chats · agents · compare · models · instructions · services
+    // LatteOS's skill: the user's copy, made when it is first needed (latte-ai skill)
+    FileView { id: skillFile; path: (Quickshell.env("XDG_CONFIG_HOME") || (Quickshell.env("HOME") + "/.config")) + "/latteos/skills/latteos/SKILL.md"; printErrors: false
+               onLoaded: skillText.text = text(); onLoadFailed: skillMake.running = true }
+    Process { id: skillMake; command: ["latte-ai", "skill", "install"]; onExited: skillFile.reload() }
+    Process { id: skillReset; command: ["latte-ai", "skill", "reset"]; onExited: skillFile.reload() }
     FileView { id: rules; path: (Quickshell.env("XDG_CONFIG_HOME") || (Quickshell.env("HOME") + "/.config")) + "/latteos/ai-instructions.txt"; printErrors: false
                onLoaded: ruleText.text = text() }
     property var picks: []                     // what is compared: up to three { provider, model }
@@ -98,7 +103,7 @@ ShellRoot {
     Timer { id: later; interval: 2500; onTriggered: svc.ask(["services"]) }
     Component.onCompleted: {
         list.ask(["chats"]); who.ask(["providers", "all"]); svc.ask(["services"]); keyq.ask(["keys"])
-        if (words[0] === "services" || words[0] === "models" || words[0] === "agents") page = words[0]
+        if (["services", "models", "agents", "instructions"].indexOf(words[0]) >= 0) page = words[0]
         if (page === "agents") agentsq.ask(["agents"])
         // latte-app aicenter compare QUESTION PROVIDER/MODEL…: the same question to each, side by side
         if (words[0] === "compare" && words.length > 2) {
@@ -575,6 +580,21 @@ ShellRoot {
                 Label { text: I18n.tr("{n} of 4000 characters", { n: ruleText.text.length }); color: ruleText.text.length > 4000 ? Theme.red : Theme.dim; font.pixelSize: 12; anchors.verticalCenter: parent.verticalCenter } }
             property bool saved: false
             Timer { id: keptAgain; interval: 1800; onTriggered: rulePage.saved = false }
+
+            // LatteOS's skill for the agents (as Omarchy's): the user's own copy, which their agents read; Restore
+            // brings back LatteOS's own (the user's kept beside it)
+            Item { width: 1; height: 12 }
+            Label { text: I18n.tr("LatteOS skill for the agents"); font.pixelSize: 17; font.weight: 800 }
+            Label { width: rulePage.room; wrapMode: Text.WordWrap; color: Theme.dim
+                    text: I18n.tr("What Claude Code, Codex and Gemini know about LatteOS when you ask them for help with this computer: how it is built, what may be changed and how, and that they plan first and ask. Add your own rules at the end.") }
+            Rectangle { width: rulePage.room; height: 360; radius: 16; color: Theme.card; border.width: 1; border.color: skillText.activeFocus ? Theme.gold : Theme.line
+                Flickable { id: skillView; anchors.fill: parent; anchors.margins: 14; clip: true; contentHeight: skillText.implicitHeight; boundsBehavior: Flickable.StopAtBounds
+                    TextEdit { id: skillText; width: parent.width; wrapMode: Text.Wrap; color: Theme.cream; font.family: "monospace"; font.pixelSize: 13; selectByMouse: true; selectionColor: Theme.coffee } } }
+            Row { spacing: 10
+                Pill { icon: "check"; strong: true; text: rulePage.skillSaved ? I18n.tr("Kept") : I18n.tr("Keep"); onPressed: { skillFile.setText(skillText.text); rulePage.skillSaved = true; skillKept.restart() } }
+                Pill { icon: "arrow-back-up"; text: I18n.tr("Restore LatteOS's own"); onPressed: skillReset.running = true } }
+            property bool skillSaved: false
+            Timer { id: skillKept; interval: 1800; onTriggered: rulePage.skillSaved = false }
         }
 
         // ── the models: which show in LensGoo, and which one answers first ───────────────────────────────────

@@ -425,9 +425,12 @@ Schválené 12. 10. 2026. Pracuje sa **zhora nadol, neskáče sa**; nový nápad
          (`latte-ai agents`) — úvod s otáčajúcim sa riadkom (tokeny týždeň/dnes, najpoužívanejší model, najrušnejší deň,
          otázky dnes; zo záznamov Claude Code), služba po službe s plánom, pásmi limitov a časom obnovenia,
          „Treba sa prihlásiť“; „Urob niečo“ prejde do bodu 5 (potrebuje skill z bodu 4);
-      4. [ ] **skill LatteOS** (podľa `default/agents/skills/omarchy`): ako je LatteOS postavený, čo sa smie meniť,
-         príkazy `latte-*`, pkexec, snímka pred diskom, najprv plán; prepojený do `~/.claude/skills`, `~/.codex/skills`,
-         `~/.agents/skills`…; **upraviteľný v LensAI**;
+      4. [x] **skill LatteOS** (podľa `default/agents/skills/omarchy`), hotové 21. 10.: `system/agents/skills/latteos/SKILL.md`
+         (ako je LatteOS postavený, `/usr/share/latteos` iba čítať, `~/.config/latteos`, príkazy `latte-*`, stránky
+         Nastavení, sudo/pkexec, snímka pred diskom, `dnf remove --noautoremove`, najprv plán a súhlas, pomoc pri páde
+         a v SAFE); `latte-ai skill install|reset|path` — kópia používateľa v `~/.config/latteos/skills/latteos`,
+         odkazy v `~/.claude/skills`, `~/.codex/skills`, `~/.agents/skills` (pri štarte relácie); **upraviteľný
+         v LensAI › Pokyny** s „Obnoviť pôvodný“; overené: Claude Code skill vidí;
       5. [ ] „Urob to za mňa“: úloha pre predvoleného agenta, najprv plán, potvrdenie (nie automatické schvaľovanie);
       6. [ ] **pád → AI** s GuardDogom a **LatteOS SAFE** (podľa skillu `diagnose-crash`): upozornenie o páde,
          v SAFE „Prečo sa skončila relácia“ s ponukou „Opýtať sa AI“;
