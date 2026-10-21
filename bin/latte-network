@@ -12,7 +12,9 @@
   latte-network inspect        looks closer at every device that is there: which services answer, what it can do, and
                                what makes the network weaker, as the last scan plus, for each device, {"ports": […],
                                "caps": […], "upnp": {"name", "maker", "model", "type"}, "findings": [{"level", "what"}]},
-                               and {"health": {"score", "findings": [{"level", "what", "ip", "fix"}]}}
+                               and {"health": {"score", "findings": [{"level", "what", "ip", "fix"}]}}, and the way out,
+                               {"path": [{"ip", "name", "private"}…]}: every router between this computer and the
+                               internet, up to the provider's first (an ip of "" did not answer)
                                caps: cast · airplay · play-to (DLNA renderer) · media (DLNA server) · camera · print ·
                                files · remote · smart-home · web · scan; level: high · medium · low · info
   latte-network dns            which name servers the active connections use: {"mode": auto|cloudflare|quad9|adguard|google|own,
@@ -154,6 +156,28 @@ def set_dns(mode, dry=False):
     return {"ok": True, "plan": plan}
 
 
+def name_of(ips, wait=2.0):
+    """The names the resolver gives these addresses, {ip: name}; whatever it has not said within `wait` seconds is
+    left out. The questions run in threads that do not hold the program at its end: a resolver that does not answer
+    would otherwise keep it waiting for minutes."""
+    import threading
+    names = {}
+    def ask(ip):
+        try:
+            name = socket.gethostbyaddr(ip)[0]
+        except OSError:
+            return
+        if not name.startswith("_"):            # "_gateway" is the resolver's own word, not the router's
+            names[ip] = name
+    threads = [threading.Thread(target=ask, args=(ip,), daemon=True) for ip in ips]
+    for t in threads:
+        t.start()
+    end = time.monotonic() + wait
+    for t in threads:
+        t.join(max(0, end - time.monotonic()))
+    return dict(names)
+
+
 # ── who else is there ────────────────────────────────────────────────────────────────────────────────────────
 def knock(network, me):
     """One empty packet to every address: nothing answers it, but the kernel has to find out who has the address."""
@@ -285,16 +309,7 @@ def scan():
         time.sleep(1.2)
         near = neighbours(mine["device"])
         said = said.result()
-    names = {}
-    def lookup(ip):
-        try:
-            name = socket.gethostbyaddr(ip)[0].split(".")[0]
-            return ip, "" if name.startswith("_") else name      # "_gateway" is the resolver's own word, not the router's
-        except OSError:
-            return ip, ""
-    socket.setdefaulttimeout(1.5)
-    with ThreadPoolExecutor(16) as pool:
-        names = dict(pool.map(lookup, near))
+    names = {ip: n.split(".")[0] for ip, n in name_of(near).items()}
     gateway_mac = near.get(mine["gateway"], "")
     net_id = gateway_mac or str(network)
     data = load()
@@ -319,8 +334,9 @@ def answer(mine, net_id, known, online):
                 "router": d.get("kind") == "router", "ports": d.get("ports", []), "services": [PORTS[p][0] for p in d.get("ports", []) if p in PORTS],
                 "caps": d.get("caps", []), "upnp": d.get("upnp", {})} for mac, d in known.items()]
     devices.sort(key=lambda d: (not d["router"], not d["online"], [int(p) for p in d["ip"].split(".")] if d["ip"] else [999]))
-    health = load().get("_health", {}).get(net_id)
-    return {"health": health,"me": {"ip": mine["ip"], "mac": mine["mac"], "name": socket.gethostname()} if mine else None,
+    kept = load()
+    health = kept.get("_health", {}).get(net_id)
+    return {"health": health, "path": kept.get("_path", {}).get(net_id, []),"me": {"ip": mine["ip"], "mac": mine["mac"], "name": socket.gethostname()} if mine else None,
             "gateway": mine["gateway"] if mine else "", "network": net_id, "devices": devices}
 
 
@@ -548,8 +564,28 @@ KIND_BY_CAPS = (("camera", "camera"), ("print", "printer"), ("cast", "tv"), ("ai
                 ("media", "nas"))
 
 
+def way_out():
+    """The routers between this computer and the internet, as traceroute finds them, up to the first public one:
+    a router behind a router (a provider's box in front of one's own, a computer sharing its connection) shows."""
+    hops = []
+    for line in out("traceroute", "-n", "-q", "1", "-w", "1", "-m", "8", "1.1.1.1", timeout=20).splitlines()[1:]:
+        parts = line.split()
+        if len(parts) < 2:
+            continue
+        ip = "" if parts[1] == "*" else parts[1]
+        private = ipaddress.ip_address(ip).is_private if ip else True
+        hops.append({"ip": ip, "name": "", "private": private})
+        if ip and not private:
+            break
+    names = name_of([h["ip"] for h in hops if h["ip"]])
+    for h in hops:
+        h["name"] = names.get(h["ip"], "")
+    return hops
+
+
 def inspect():
     found = scan()
+    found["path"] = way_out()
     if not found["devices"]:
         return found
     with ThreadPoolExecutor(2) as pool:
@@ -583,6 +619,7 @@ def inspect():
     found["health"] = {"score": score, "findings": sorted(health, key=lambda f: order[f["level"]]), "when": int(time.time())}
     data = load()
     data.setdefault("_health", {})[found["network"]] = found["health"]      # the last closer look stays to be shown again
+    data.setdefault("_path", {})[found["network"]] = found["path"]
     save(data)
     return found
 

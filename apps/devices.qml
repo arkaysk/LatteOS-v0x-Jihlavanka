@@ -29,7 +29,7 @@ ShellRoot {
         stdout: StdioCollector { onStreamFinished: asker.buf = this.text }
         onExited: { try { shell.all = JSON.parse(buf) } catch (e) { shell.all = null } }
     }
-    Component.onCompleted: { asker.ask(); if (words[0]) page = words[0]; asList = words[1] === "list" }       // latte-app devices inspector list
+    Component.onCompleted: { asker.ask(); if (words[0]) page = words[0]; asList = words[1] === "list"; asMap = words[1] === "map" }       // latte-app devices inspector list
 
     // ── the network: how this computer is connected, and who else is on its network ───────────────────────
     component Net: Process {
@@ -53,6 +53,7 @@ ShellRoot {
     Net { id: note; onExited: lan.ask(["last"]) }
     property string chosen: ""                 // the device picked on the radar, by its key
     property bool asList: false                // the devices as a list, which holds many better than the radar
+    property bool asMap: false                 // …or as a map: the internet, the routers on the way, and the devices under them
     property string capFilter: ""              // the list shows only what can do this; "" all
     readonly property var picked: lan.data ? (lan.data.devices.find(d => d.key === chosen) || null) : null
     onPageChanged: {
@@ -296,8 +297,9 @@ ShellRoot {
                 Row { x: 28; y: 20; spacing: 10; z: 3
                     Label { anchors.verticalCenter: parent.verticalCenter; color: Theme.dim
                             text: lan.data ? I18n.tr("{n} here now", { n: radar.near.length }) + (radar.gone.length ? "  ·  " + I18n.tr("{n} seen before", { n: radar.gone.length }) : "") : "" }
-                    Pill { implicitHeight: 30; icon: "radar-2"; text: I18n.tr("Radar"); strong: !shell.asList; onPressed: shell.asList = false }
-                    Pill { implicitHeight: 30; icon: "list"; text: I18n.tr("List"); strong: shell.asList; onPressed: shell.asList = true } }
+                    Pill { implicitHeight: 30; icon: "radar-2"; text: I18n.tr("Radar"); strong: !shell.asList && !shell.asMap; onPressed: { shell.asList = false; shell.asMap = false } }
+                    Pill { implicitHeight: 30; icon: "list"; text: I18n.tr("List"); strong: shell.asList; onPressed: { shell.asList = true; shell.asMap = false } }
+                    Pill { implicitHeight: 30; icon: "sitemap"; text: I18n.tr("Map"); strong: shell.asMap; onPressed: { shell.asMap = true; shell.asList = false } } }
                 // how safe the network is, after a closer look: a score, and what to do, the worst first
                 Rectangle {
                     id: safety
@@ -320,7 +322,7 @@ ShellRoot {
                 }
                 // the two arcs: who is here now, and who was
                 Repeater { model: [radar.r1, radar.r2]
-                    Rectangle { required property real modelData; required property int index; visible: !shell.asList; x: radar.cx - modelData; y: radar.cy - modelData; width: modelData * 2; height: modelData * 2; radius: modelData
+                    Rectangle { required property real modelData; required property int index; visible: !shell.asList && !shell.asMap; x: radar.cx - modelData; y: radar.cy - modelData; width: modelData * 2; height: modelData * 2; radius: modelData
                                 color: "transparent"; border.width: 1; border.color: index === 0 ? Theme.coffee : Theme.line; opacity: index === 0 ? 0.7 : 0.6 } }
                 // the sweep, while it looks
                 Rectangle { visible: lan.running && lan.command[1] === "scan"; x: radar.cx; y: radar.cy - 1; width: radar.r2; height: 2; transformOrigin: Item.Left
@@ -362,6 +364,48 @@ ShellRoot {
                                 icon: shell.kind(modelData.kind).icon; text: shell.called(modelData); under: modelData.ip
                                 faded: ring.index === 1; fresh: modelData.fresh; on: shell.chosen === modelData.key
                                 onPressed: shell.chosen = shell.chosen === modelData.key ? "" : modelData.key } } } }
+                // ── the map: from the internet down, every router on the way (one behind another shows), then this
+                // network's router and the devices under it. What did not answer on the way is drawn as a gap.
+                Rectangle {
+                    id: map
+                    visible: shell.asMap; z: 2
+                    x: 0; y: safety.visible ? safety.y + safety.height + 14 : 56; width: radar.width - (shell.picked ? 310 : 0); height: radar.height - y; color: Theme.ground
+                    readonly property var way: lan.data && lan.data.path ? lan.data.path.slice().reverse() : []
+                    readonly property var under: lan.data ? lan.data.devices.filter(d => !d.router) : []
+                    component Node: Rectangle {
+                        property string icon; property string title; property string under; property bool dim: false; property bool on: false
+                        signal pressed()
+                        width: 210; height: 52; radius: 14; color: on ? Theme.raised : Theme.card; opacity: dim ? 0.6 : 1; border.width: on ? 1 : 0; border.color: Theme.gold
+                        Glyph { x: 14; name: parent.icon; font.pixelSize: 22; color: Theme.gold; anchors.verticalCenter: parent.verticalCenter }
+                        Column { x: 46; width: parent.width - 56; anchors.verticalCenter: parent.verticalCenter; spacing: 1
+                            Label { width: parent.width; text: parent.parent.title; font.weight: 600; font.pixelSize: 13; elide: Text.ElideRight }
+                            Label { width: parent.width; text: parent.parent.under; color: Theme.dim; font.pixelSize: 11; elide: Text.ElideRight; visible: text !== "" } }
+                        MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: parent.pressed() }
+                    }
+                    Flickable { anchors.fill: parent; anchors.margins: 12; clip: true; contentHeight: mapCol.height + 20; boundsBehavior: Flickable.StopAtBounds
+                        Column { id: mapCol; width: parent.width; spacing: 0
+                            Node { anchors.horizontalCenter: parent.horizontalCenter; icon: "world"; title: I18n.tr("Internet") }
+                            Repeater { model: map.way
+                                Column { required property var modelData; required property int index; anchors.horizontalCenter: parent.horizontalCenter; spacing: 0
+                                    Rectangle { width: 2; height: 18; color: Theme.line; anchors.horizontalCenter: parent.horizontalCenter }
+                                    Node { anchors.horizontalCenter: parent.horizontalCenter; dim: parent.modelData.ip === ""
+                                           icon: parent.modelData.ip === "" ? "question-mark" : (parent.modelData.private ? "router" : "building-broadcast-tower")
+                                           title: parent.modelData.ip === "" ? I18n.tr("A router that does not answer")
+                                                  : (!parent.modelData.private ? I18n.tr("Your provider") : (parent.index === map.way.length - 1 ? I18n.tr("This network's router") : I18n.tr("A router on the way")))
+                                           under: parent.modelData.ip === "" ? "" : parent.modelData.ip + (parent.modelData.name ? "  ·  " + parent.modelData.name : "") } } }
+                            // this network, under its router: every device here, the computer itself among them
+                            Rectangle { width: 2; height: 18; color: Theme.line; anchors.horizontalCenter: parent.horizontalCenter }
+                            Rectangle { width: Math.min(mapCol.width, (map.under.length + 1) * 222); height: 2; color: Theme.line; anchors.horizontalCenter: parent.horizontalCenter }
+                            Flow { width: Math.min(mapCol.width, (map.under.length + 1) * 222); anchors.horizontalCenter: parent.horizontalCenter; spacing: 12; topPadding: 12
+                                Node { icon: "device-desktop"; title: lan.data && lan.data.me ? lan.data.me.name : ""; under: (lan.data && lan.data.me ? lan.data.me.ip : "") + "  ·  " + I18n.tr("this computer") }
+                                Repeater { model: map.under
+                                    Node { required property var modelData; icon: shell.kind(modelData.kind).icon; title: shell.called(modelData); under: modelData.ip + (modelData.vendor ? "  ·  " + modelData.vendor : "")
+                                           dim: !modelData.online; on: shell.chosen === modelData.key; onPressed: shell.chosen = shell.chosen === modelData.key ? "" : modelData.key } } }
+                            Label { visible: map.way.length === 0; width: mapCol.width; wrapMode: Text.WordWrap; color: Theme.dim; topPadding: 16; horizontalAlignment: Text.AlignHCenter
+                                    text: I18n.tr("Check closely to find the way out: every router between this computer and the internet.") }
+                            Label { width: mapCol.width; wrapMode: Text.WordWrap; color: Theme.faint; font.pixelSize: 12; topPadding: 16; horizontalAlignment: Text.AlignHCenter
+                                    text: I18n.tr("Ordinary switches pass everything through and cannot be seen; managed ones will show once they are asked (SNMP, LLDP).") } } }
+                }
                 // ── the same devices as a list, with what each can do, to be narrowed to one ability ──────────
                 Rectangle {
                     visible: shell.asList; z: 2
