@@ -348,6 +348,9 @@ Schválené 12. 10. 2026. Pracuje sa **zhora nadol, neskáče sa**; nový nápad
       Wi-Fi siete a heslá, VPN, DNS s ochranou súkromia, firewall (firewalld), hosťovská sieť
       a blokovanie zariadenia — čo sa dá bez routera, a návod do routera, kde nie.
     - f. [ ] Vzory: Sniffnet (kto s kým hovorí, pre NET), ESET Kontrola siete, UniFi (Matter), Fing.
+      Správca siete je nástroj **pre správcu domácej siete** (používateľ, 21. 10.: bude ním spravovať svoju sieť):
+      Zeek a Suricata nie sú „priťažké“, ale voliteľné nástroje správcu — skôr pôvodné programy so správou
+      z LatteOS (nainštalovať, zapnúť, ukázať upozornenia) než vlastná náhrada.
     - g. [~] Mapa siete (používateľ, 21. 10.: ako nástroje z čias Windows XP — switch za switchom). Hotové: pohľad Mapa
       s cestou do internetu (traceroute: router za routerom, poskytovateľ) a zariadeniami tejto siete; spätné DNS
       s limitom 2 s. Ďalej: spravovateľné switche cez SNMP (tabuľka MAC → port, BRIDGE-MIB) a LLDP (lldpd), zariadenia
