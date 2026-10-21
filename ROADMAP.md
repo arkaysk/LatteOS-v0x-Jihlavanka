@@ -429,6 +429,12 @@ Schválené 12. 10. 2026. Pracuje sa **zhora nadol, neskáče sa**; nový nápad
       6. [ ] **pád → AI** s GuardDogom a **LatteOS SAFE** (podľa skillu `diagnose-crash`): upozornenie o páde,
          v SAFE „Prečo sa skončila relácia“ s ponukou „Opýtať sa AI“;
       7. [ ] viac účtov jedného poskytovateľa, prepnutie pri limite; diktovanie do akejkoľvek aplikácie; App Manager › AI.
+      8. [ ] **rozhovory aj mimo LensAI** (používateľ, 21. 10.: na PC v LensAI, na mobile v aplikácii Claude):
+         (a) **import** exportu dát služby (Claude: Nastavenia › Súkromie › Export, ChatGPT: Export údajov, Gemini:
+         Google Takeout) do histórie LensAI, iba na čítanie a pokračovanie; (b) **Remote Control** Claude Code
+         (oficiálne, výskumná ukážka): rozhovor LensAI ako interaktívna relácia Claude Code, ktorú otvorí aplikácia
+         Claude na mobile (Code). Obojsmerná synchronizácia bežných četov a projektov claude.ai **nie**: nemá verejné
+         API a podmienky zakazujú automatický prístup mimo kľúča API alebo výslovného povolenia.
     - l. [ ] **Podľa Omarchy** (preskúmané 21. 10., `inspo/ai-na-ploche.md`), návrhy na výber používateľa:
       (1) **skill LatteOS** pre agentov (`~/.claude/skills`, `~/.codex/skills`, `~/.agents/skills`): ako je LatteOS
       postavený, čo sa smie meniť (`~/.config/latteos`, nie `/usr/share/latteos`), ktoré `latte-*` príkazy použiť,
