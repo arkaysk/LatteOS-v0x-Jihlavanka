@@ -188,12 +188,14 @@ ShellRoot {
         return [b.modmask & 64 ? "Win" : "", b.modmask & 4 ? "Ctrl" : "", b.modmask & 8 ? "Alt" : "", b.modmask & 1 ? "Shift" : "", key].filter(k => k !== "").join(" + ")
     }
     // what a page shows is asked for when it opens, and again after anything on it was changed
-    readonly property var asks: ({ "sound": [[sound, ["latte-settings", "sound"]]], "defaults": [[opens, ["latte-settings", "defaults"]]], "language": [[region, ["latte-settings", "region"]]],
+    readonly property var asks: ({ "": [[machine, ["latte-devices", "list"]], [screens, ["hyprctl", "monitors", "-j"]], [disks, ["latte-settings", "storage"]], [who, ["latte-settings", "account"]]],
+                                   "sound": [[sound, ["latte-settings", "sound"]]], "defaults": [[opens, ["latte-settings", "defaults"]]], "language": [[region, ["latte-settings", "region"]]],
                                    "time": [[clock, ["latte-settings", "time"]]], "keyboard": [[keys, ["latte-settings", "keyboard"]], [binds, ["hyprctl", "binds", "-j"]]], "displays": [[screens, ["hyprctl", "monitors", "-j"]]],
                                    "guarddog": [[guardq, ["latte-guarddog", "status"]]], "clockgoo": [[clock, ["latte-settings", "time"]], [logon, ["latte-settings", "loginscreen"]], [focusq, ["latte-focus", "today"]], [weatherq, ["latte-sky", "models"]]], "storage": [[disks, ["latte-settings", "storage"]], [held, ["latte-settings", "sizes"]]], "ai": [[helpers, ["latte-ai", "providers", "all"]]], "launcher": [[helpers, ["latte-ai", "providers", "all"]]],
                                    "me": [[who, ["latte-settings", "account"]], [pictures, ["latte-settings", "wallpapers"]]], "performance": [[machine, ["latte-devices", "list"]]], "loginscreen": [[logon, ["latte-settings", "loginscreen"]]] })
     function ask() { (asks[page] || []).forEach(a => a[0].ask(a[1])); force.reload(); crashed.reload(); if (page === "background") wall.ask(["latte-wall", "state"]) }
     Timer { id: later; interval: 900; onTriggered: shell.ask() }       // what was asked of the compositor takes a moment to be so
+    Component.onCompleted: ask()               // the front page is open from the start: no change of page asks for it
 
     // a file of the user's own, from anywhere: for the background ("wallpaper") or for the account's picture ("face")
     FileDialog { id: chooser; property string what: ""
@@ -397,7 +399,17 @@ ShellRoot {
 
         // ── the side: areas that unfold into their pages ──────────────────────────────────────────────────
         side: [
-            Flickable { anchors.fill: parent; contentHeight: menu.height + 28; clip: true; boundsBehavior: Flickable.StopAtBounds
+            // the account, at the foot of the side as the overview's sketch has it (inspo/latteOS settings priklad.png)
+            Rectangle { anchors.left: parent.left; anchors.right: parent.right; anchors.bottom: parent.bottom; anchors.margins: 14; height: 58; radius: 14
+                color: meHit.containsMouse ? Theme.raised : Theme.card; border.width: 1; border.color: Theme.line
+                ClippingRectangle { x: 10; width: 38; height: 38; radius: 19; anchors.verticalCenter: parent.verticalCenter; color: Theme.gold
+                    Label { anchors.centerIn: parent; text: who.data ? (who.data.name || who.data.user || "?").charAt(0).toUpperCase() : ""; color: Theme.inkOnGold; font.weight: 800; font.pixelSize: 16 }
+                    Image { anchors.fill: parent; fillMode: Image.PreserveAspectCrop; sourceSize.width: 76; cache: false; source: who.data && who.data.picture ? "file://" + who.data.picture : ""; visible: status === Image.Ready } }
+                Column { x: 58; anchors.verticalCenter: parent.verticalCenter; width: parent.width - 70; spacing: 1
+                    Label { text: who.data ? (who.data.name || who.data.user) : ""; font.weight: 700; width: parent.width; elide: Text.ElideRight }
+                    Label { text: who.data ? who.data.user + "@" + (machine.data ? machine.data.computer.host : "") : ""; color: Theme.dim; font.pixelSize: 11; width: parent.width; elide: Text.ElideRight } }
+                MouseArea { id: meHit; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: shell.go("me") } },
+            Flickable { anchors.fill: parent; anchors.bottomMargin: 80; contentHeight: menu.height + 28; clip: true; boundsBehavior: Flickable.StopAtBounds
                 Column { id: menu; x: 14; y: 14; spacing: 4; width: parent.width - 28
                     Row { x: 6; spacing: 10; height: 40
                         Glyph { name: "settings"; font.pixelSize: 24; color: Theme.gold; anchors.verticalCenter: parent.verticalCenter }
@@ -438,25 +450,130 @@ ShellRoot {
                 Repeater { model: shell.found; PageLine { required property var modelData; what: modelData } } }
         }
 
-        // ── the front page ────────────────────────────────────────────────────────────────────────────────
+        // ── the front page: the system at a glance and what is set most (inspo/latteOS settings priklad.png, 20. 10.;
+        // the sketch is narrow, the window is not: two columns where there is room) ─────────────────────────────
         Scroll {
             id: front
             visible: shell.asked === "" && shell.page === ""
+            readonly property bool two: room >= 900
+            readonly property real col: two ? (room - 18) / 2 : room
+            readonly property var pc: machine.data ? machine.data.computer : ({})
+            readonly property var main: shell.screenList.find(m => m.name === shell.screenMain) || shell.screenList[0] || null
+            readonly property var root: disks.data ? (disks.data.disks.find(d => d.mount === "/") || disks.data.disks[0]) : null
+            component Card: Rectangle {
+                property string title; property string note; property string icon
+                default property alias content: cardBody.data
+                width: front.col; height: cardBody.y + cardBody.implicitHeight + 20; radius: 20; color: Theme.card; border.width: 1; border.color: Theme.line
+                Rectangle { x: 18; y: 18; width: 40; height: 40; radius: 12; color: Qt.rgba(Theme.gold.r, Theme.gold.g, Theme.gold.b, 0.14)
+                    Glyph { anchors.centerIn: parent; name: parent.parent.icon; font.pixelSize: 21; color: Theme.gold } }
+                Label { x: 70; y: 18; text: parent.title; font.pixelSize: 17; font.weight: 800; width: parent.width - 88; elide: Text.ElideRight }
+                Label { x: 70; y: 42; text: parent.note; color: Theme.dim; font.pixelSize: 12; width: parent.width - 88; wrapMode: Text.WordWrap; visible: text !== "" }
+                Column { id: cardBody; x: 18; y: 76 + (parent.note.length > 70 ? 14 : 0); width: parent.width - 36; spacing: 10 }
+            }
+            component Stat: Rectangle { property string head; property string big; property string small; width: (front.col - 36 - 20) / 3; height: 84; radius: 14; color: Theme.raised
+                Column { x: 12; y: 10; width: parent.width - 24; spacing: 3
+                    Label { text: parent.parent.head.toUpperCase(); color: Theme.faint; font.pixelSize: 10; font.weight: 700; font.letterSpacing: 0.6 }
+                    Label { text: parent.parent.big; font.pixelSize: 17; font.weight: 800; width: parent.width; elide: Text.ElideRight }
+                    Label { text: parent.parent.small; color: Theme.gold; font.pixelSize: 11; font.weight: 600; width: parent.width; elide: Text.ElideRight } } }
+
+            // the head: where one is, and the system's own name for this page
+            Item { width: front.room; height: 64
+                Column { spacing: 2
+                    Label { text: I18n.tr("Settings") + "  ›  " + I18n.tr("Overview"); color: Theme.gold; font.pixelSize: 12; font.weight: 700 }
+                    Label { text: I18n.tr("System and overview"); font.pixelSize: 30; font.weight: 800 } }
+                Pill { anchors.right: parent.right; anchors.verticalCenter: parent.verticalCenter; implicitHeight: 38; icon: "refresh"; text: I18n.tr("Check for updates"); onPressed: shell.go("updates") } }
+
+            Flow { width: front.room; spacing: 18
+                Column { width: front.col; spacing: 18
+                    // this computer: a card of its own, as the sketch's
+                    Rectangle { width: front.col; height: 200; radius: 22; border.width: 1; border.color: Theme.line
+                        gradient: Gradient { orientation: Gradient.Horizontal; GradientStop { position: 0; color: Theme.raised } GradientStop { position: 1; color: Theme.card } }
+                        Rectangle { x: 22; y: 24; width: 64; height: 64; radius: 16; color: Theme.ground; Glyph { anchors.centerIn: parent; name: "device-desktop"; font.pixelSize: 32; color: Theme.gold } }
+                        Column { x: 104; y: 22; width: parent.width - 124; spacing: 6
+                            Label { text: front.pc.model || front.pc.host || "LatteOS"; font.pixelSize: 22; font.weight: 800; width: parent.width; wrapMode: Text.WordWrap; maximumLineCount: 2 }
+                            Rectangle { height: 22; radius: 11; width: profText.implicitWidth + 18; color: Qt.rgba(Theme.gold.r, Theme.gold.g, Theme.gold.b, 0.18)
+                                Label { id: profText; anchors.centerIn: parent; text: "● " + I18n.tr("LatteOS GOO") + "  ·  " + (Quickshell.env("LATTE_TIER") || "standard"); color: Theme.gold; font.pixelSize: 11; font.weight: 800 } }
+                            Label { width: parent.width; color: Theme.dim; font.pixelSize: 13; wrapMode: Text.WordWrap
+                                    text: [front.pc.cpu ? front.pc.cpu + (front.pc.threads ? " (" + I18n.tr("{n} threads", { n: front.pc.threads }) + ")" : "") : "", front.pc.ram_gb ? front.pc.ram_gb + " GB RAM" : "",
+                                           release.pretty, front.pc.kernel ? "Linux " + front.pc.kernel : ""].filter(x => x).join("  ·  ") } }
+                        Pill { anchors.right: parent.right; anchors.bottom: parent.bottom; anchors.margins: 14; implicitHeight: 30; icon: "cpu"; text: I18n.tr("About this computer"); onPressed: shell.go("about") } }
+                    // the look: dark, light, or from the wallpaper, each as a little window of itself
+                    Card { title: I18n.tr("Interface mode"); note: I18n.tr("The colours of the windows and of the desktop."); icon: "moon"
+                        Row { spacing: 10
+                            Repeater { model: [{ id: "espresso", name: QT_TR_NOOP("Espresso"), hint: QT_TR_NOOP("dark"), ground: "#17110d", pill: "#2a1e17", dot: "#f7c873" },
+                                               { id: "porcelain", name: QT_TR_NOOP("Porcelain"), hint: QT_TR_NOOP("light"), ground: "#f5eee2", pill: "#fffaf1", dot: "#b5651d" },
+                                               { id: "wallpaper", name: QT_TR_NOOP("From the wallpaper"), hint: QT_TR_NOOP("its colours"), ground: "#3a2a20", pill: "#c98a55", dot: "#f3ebdd" }]
+                                Rectangle { id: mode; required property var modelData; width: (front.col - 36 - 20) / 3; height: 118; radius: 14
+                                    readonly property bool on: Theme.cup === modelData.id
+                                    color: on ? Theme.raised : "transparent"; border.width: on ? 2 : 1; border.color: on ? Theme.gold : Theme.line
+                                    Label { x: 12; y: 10; text: I18n.tr(mode.modelData.name); font.weight: 700; font.pixelSize: 13 }
+                                    Glyph { visible: mode.on; anchors.right: parent.right; anchors.rightMargin: 10; y: 10; name: "circle-check"; font.pixelSize: 16; color: Theme.gold }
+                                    Rectangle { x: 12; y: 38; width: parent.width - 24; height: 34; radius: 17; color: mode.modelData.ground; border.width: 1; border.color: Theme.line
+                                        Rectangle { x: 6; width: parent.width * 0.5; height: 22; radius: 11; anchors.verticalCenter: parent.verticalCenter; color: mode.modelData.pill
+                                            Rectangle { x: 6; width: 10; height: 10; radius: 5; anchors.verticalCenter: parent.verticalCenter; color: mode.modelData.dot } } }
+                                    Label { x: 12; y: 84; text: I18n.tr(mode.modelData.hint); color: Theme.dim; font.pixelSize: 11 }
+                                    MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor
+                                                onClicked: { cup.choose(mode.modelData.id); Theme.cup = mode.modelData.id; Quickshell.execDetached(["hyprctl", "eval", "latte.cup(\"" + mode.modelData.id + "\")"]) } } } } } }
+                    // how much is glass: one choice for all of LatteOS, as a slider of its four steps
+                    Card { title: I18n.tr("Glass"); note: I18n.tr("How much of LatteOS is glass: the side panels, the windows and the AI's pages."); icon: "droplet"
+                        Item { width: parent.width; height: 44
+                            Glyph { x: 0; anchors.verticalCenter: parent.verticalCenter; name: "circle"; color: Theme.dim; font.pixelSize: 16 }
+                            Item { id: track; x: 30; width: parent.width - 130; height: 44
+                                Rectangle { y: 19; width: parent.width; height: 6; radius: 3; color: Theme.raised }
+                                Rectangle { y: 19; width: parent.width * Theme.glassLevel / 3; height: 6; radius: 3; color: Theme.gold }
+                                Repeater { model: 4
+                                    Rectangle { required property int index; x: track.width * index / 3 - width / 2; y: index === Theme.glassLevel ? 12 : 17; width: index === Theme.glassLevel ? 20 : 10; height: width; radius: width / 2
+                                                color: index <= Theme.glassLevel ? Theme.gold : Theme.raised; border.width: index === Theme.glassLevel ? 3 : 0; border.color: Theme.ground } }
+                                MouseArea { anchors.fill: parent; anchors.margins: -10; cursorShape: Qt.PointingHandCursor
+                                    function put(x) { const n = Math.max(0, Math.min(3, Math.round(3 * x / track.width))); if (n !== Theme.glassLevel) { glassLevel.choose(String(n)); Theme.glassLevel = n; goo.set("glass", n) } }
+                                    onPressed: m => put(m.x - 10); onPositionChanged: m => { if (pressed) put(m.x - 10) } } }
+                            Glyph { x: parent.width - 92; anchors.verticalCenter: parent.verticalCenter; name: "droplet"; color: Theme.gold; font.pixelSize: 16 }
+                            Rectangle { anchors.right: parent.right; anchors.verticalCenter: parent.verticalCenter; height: 26; radius: 13; width: 64; color: Qt.rgba(Theme.gold.r, Theme.gold.g, Theme.gold.b, 0.16)
+                                Label { anchors.centerIn: parent; text: Math.round(Theme.glassLevel * 100 / 3) + " %"; color: Theme.gold; font.weight: 800; font.pixelSize: 12 } } }
+                        Label { text: I18n.tr([QT_TR_NOOP("None: everything is solid."), QT_TR_NOOP("A little"), QT_TR_NOOP("More"), QT_TR_NOOP("The most")][Theme.glassLevel]); color: Theme.dim; font.pixelSize: 12 } }
+                }
+                Column { width: front.col; spacing: 18
+                    // the coffee on the edge of the screen: lively, and of glass
+                    Card { title: I18n.tr("The coffee and how it moves"); note: I18n.tr("The drops on the edge of the screen: what they are made of and whether they live."); icon: "coffee"
+                        Switch { text: I18n.tr("Lively"); hint: I18n.tr("Left alone they fall asleep, the weather outside shows on the surface, playful ones play."); on: goo.kept.lively !== false; onPressed: goo.set("lively", !on) }
+                        Switch { text: I18n.tr("Coffee in glass"); hint: I18n.tr("The drops are glass with coffee in it. With the graphics card drawing by the processor they stay plain coffee.")
+                                 on: goo.kept.material === "glass" || Number(goo.kept.material) > 0.5; onPressed: goo.set("material", on ? 0 : 1) } }
+                    // the screens: the main one's picture, how often it is drawn, how big things are
+                    Card { title: I18n.tr("Displays"); note: front.main ? front.main.name + (front.main.description ? "  ·  " + front.main.description : "") : ""; icon: "device-desktop"
+                        Row { spacing: 10
+                            Stat { head: I18n.tr("Resolution"); big: front.main ? front.main.width + " × " + front.main.height : "—"; small: front.main ? (front.main.width / front.main.height >= 2.3 ? "21:9" : front.main.width / front.main.height >= 1.7 ? "16:9" : "") : "" }
+                            Stat { head: I18n.tr("Refresh rate"); big: front.main ? Math.round(front.main.refreshRate) + " Hz" : "—"; small: front.main && front.main.vrr ? "VRR" : "" }
+                            Stat { head: I18n.tr("Scale"); big: front.main ? Math.round(front.main.scale * 100) + " %" : "—"; small: I18n.tr("{n} screens", { n: shell.screenList.length }) } }
+                        Pill { implicitHeight: 30; icon: "adjustments-horizontal"; text: I18n.tr("Displays"); onPressed: shell.go("displays") } }
+                    // the disks: how full, and where to make room
+                    Card { title: I18n.tr("Storage"); note: front.root ? I18n.tr("{free} free of {size}", { free: shell.bytes(front.root.size - front.root.used), size: shell.bytes(front.root.size) }) : ""; icon: "disc"
+                        Repeater { model: disks.data ? disks.data.disks : []
+                            Column { required property var modelData; width: parent.width; spacing: 5
+                                readonly property real full: modelData.size > 0 ? modelData.used / modelData.size : 0
+                                Row { width: parent.width
+                                    Label { text: parent.parent.modelData.mount === "/" ? I18n.tr("This computer") : parent.parent.modelData.mount; font.weight: 700; font.pixelSize: 13; width: parent.width - pct.implicitWidth }
+                                    Label { id: pct; text: Math.round(parent.parent.full * 100) + " %"; color: parent.parent.full > 0.9 ? Theme.red : Theme.dim; font.pixelSize: 12; font.weight: 700 } }
+                                Rectangle { width: parent.width; height: 10; radius: 5; color: Theme.raised
+                                    Rectangle { width: parent.width * parent.parent.full; height: 10; radius: 5; color: parent.parent.full > 0.9 ? Theme.red : Theme.gold } } } }
+                        Row { spacing: 8
+                            Pill { implicitHeight: 30; icon: "folder"; text: I18n.tr("Storage"); onPressed: shell.go("storage") }
+                            Pill { implicitHeight: 30; icon: "disc"; text: I18n.tr("Manage partitions"); onPressed: Quickshell.execDetached(["latte-app", "files", "disks"]) } } }
+                }
+            }
+            // every part of the settings, as before: a tile each
+            Label { text: I18n.tr("ALL SETTINGS"); color: Theme.faint; font.pixelSize: 11; font.weight: 700; font.letterSpacing: 0.8 }
             Flow { width: front.room; spacing: 14
                 Repeater { model: shell.areas
                     Rectangle { id: tile; required property var modelData
                         readonly property int each: Math.max(1, Math.floor(front.room / 260))
-                        width: Math.floor((front.room - 14 * (each - 1)) / each); height: 124; radius: 20; color: tileHit.containsMouse ? Theme.raised : Theme.card
+                        width: Math.floor((front.room - 14 * (each - 1)) / each); height: 110; radius: 20; color: tileHit.containsMouse ? Theme.raised : Theme.card
                         Behavior on color { ColorAnimation { duration: 140 } }
                         Rectangle { x: 18; y: 18; width: 44; height: 44; radius: 14; color: Theme.ground; Glyph { anchors.centerIn: parent; name: tile.modelData.icon; font.pixelSize: 24; color: Theme.gold } }
                         Label { x: 76; y: 18; text: I18n.tr(tile.modelData.name); font.pixelSize: 17; font.weight: 700 }
-                        Label { x: 76; y: 42; width: parent.width - 92; color: Theme.dim; font.pixelSize: 12; wrapMode: Text.WordWrap; maximumLineCount: 4
+                        Label { x: 76; y: 42; width: parent.width - 92; color: Theme.dim; font.pixelSize: 12; wrapMode: Text.WordWrap; maximumLineCount: 3
                                 text: tile.modelData.pages.map(p => I18n.tr(p.name)).join(" · ") }
                         MouseArea { id: tileHit; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
                                     onClicked: { shell.unfolded = tile.modelData.id; shell.go((tile.modelData.pages.find(p => p.status === "ready") || tile.modelData.pages[0]).id) } } } } }
-            Column { width: front.room; spacing: 8
-                Label { text: I18n.tr("WHAT CAN BE SET HERE NOW"); color: Theme.faint; font.pixelSize: 11; font.weight: 700; font.letterSpacing: 0.8 }
-                Repeater { model: shell.all.filter(p => p.status === "ready"); PageLine { required property var modelData; what: modelData } } }
         }
 
         // ── a page ────────────────────────────────────────────────────────────────────────────────────────

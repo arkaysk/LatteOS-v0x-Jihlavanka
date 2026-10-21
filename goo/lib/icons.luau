@@ -67,6 +67,7 @@ return {
     ["cloud-snow"] = "\u{EA73}",
     ["cloud-storm"] = "\u{EA74}",
     ["code"] = "\u{EA77}",
+    ["coffee"] = "\u{EF0E}",
     ["compass"] = "\u{EA79}",
     ["copy"] = "\u{EA7A}",
     ["cpu"] = "\u{EF8E}",

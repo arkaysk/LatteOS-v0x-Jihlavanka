@@ -487,7 +487,7 @@ Schválené 12. 10. 2026. Pracuje sa **zhora nadol, neskáče sa**; nový nápad
 17. [ ] **Dokončiť vizuálne podoby podľa návrhov v `inspo/`** (používateľ, 21. 10.; nákresy z 20. 10.). Hotové z nich:
     bodkové grafy (`grafy.png` → `DotGraph`), dvojvrstvová kávová hladina (`latteOS settings priklad.png` → `Surface`).
     Farby z témy, nie natvrdo; texty cez preklady; sklo podľa jedného stupňa LatteOS (Nastavenia › Okná › Sklo).
-    - a. [ ] **Nastavenia** (`latteOS settings priklad.png`): hlavička s hľadaním, karta „Systém a prehľad zariadenia“
+    - a. [~] **Nastavenia** (`latteOS settings priklad.png`; 21. 10. hotová domovská stránka ako „Systém a prehľad“ v dvoch stĺpcoch — nákres je úzky, okno nie: karta počítača, režim rozhrania s náhľadmi, sklo ako posuvník so 4 stupňami, káva, obrazovky, úložisko so „Správa oddielov“, karta účtu na boku; ostáva päta so stavom systému a expertný režim, ktorý LatteOS zatiaľ nemá): hlavička s hľadaním, karta „Systém a prehľad zariadenia“
       (počítač, profil, procesor, pamäť, verzia LatteOS), režim rozhrania ako tri karty s náhľadom (tmavý, svetlý,
       podľa slnka), intenzita skla ako posuvník s percentami (dnes štyri stupne), kávová hladina, displej (rozlíšenie,
       obnovovanie, teplota farieb), úložisko s pásom podľa druhu dát a tlačidlom Správa oddielov, účet dole, päta
