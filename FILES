@@ -176,6 +176,8 @@
 /usr/share/latteos/goo/ai/openai.svg                    <- goo/ai/openai.svg
 /usr/share/licenses/latteos/LICENSE-lobe-icons.txt      <- goo/ai/LICENSE-lobe-icons.txt
 /usr/share/latteos/agents/skills/latteos/SKILL.md       <- system/agents/skills/latteos/SKILL.md
+/etc/mise/conf.d/latteos-tools.toml                     <- system/mise/latteos-tools.toml
+/etc/mise/conf.d/latteos.toml                           <- system/mise/latteos.toml
 /usr/share/plymouth/themes/latteos/latteos.plymouth     <- system/plymouth/latteos.plymouth
 /usr/share/plymouth/themes/latteos/watermark.png        <- system/plymouth/watermark.png
 /usr/share/plymouth/themes/latteos/                     <- system:/usr/share/plymouth/themes/spinner/*.png
@@ -262,6 +264,7 @@ package: wine winetricks cabextract unshield innoextract 7zip icoutils bubblewra
 optional: wine-dxvk wine-dxvk-d3d9 wine-dxvk-d3d8 mingw32-wine-gecko mingw64-wine-gecko wine-mono    # Direct3D 8 to 11 over Vulkan; web views and .NET inside Wine
 optional: umu-launcher protontricks lutris gamemode mangohud dosbox-staging xorriso     # Proton outside Steam (GE-Proton in /opt/latteos/proton), other runners and tools
 optional: gnome-keyring                                              # the keyring (Secret Service): keys of AI services of one's own (Lens AI centre); greetd's PAM unlocks it at login
+optional: mise                                                       # the AI services' tools (Claude Code, Codex, Gemini, Grok, Copilot, Vibe, DeepSeek Harness), fetched when first run and kept up to date (mise's own rpm repo: dnf config-manager addrepo --from-repofile=https://mise.jdx.dev/rpm/mise.repo)
 optional: pipewire-utils                                             # pw-record: the microphone of LensGoo's AI field
 optional ~/.local/share/latteos/ai or /data/ai: whisper.cpp (built from github.com/ggml-org/whisper.cpp v1.9.5 into whisper-src/build-vk with Vulkan, or build) and whisper/ggml-large-v3-turbo-q5_0.bin or ggml-small.bin: speech to text for the microphone
 optional ~/.local/share/latteos/ai or /data/ai: llama.cpp (github.com/ggml-org/llama.cpp releases, llama/*/llama-server) and models/*.gguf (Qwen3.5 2B and 4B): the AI on this computer

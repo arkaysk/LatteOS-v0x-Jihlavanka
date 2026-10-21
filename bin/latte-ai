@@ -110,7 +110,7 @@ def say(**what):
 # Where a tool is run: an empty folder of its own, so that it finds no project there to read.
 # The desktop's services have a short PATH (no ~/.local/bin, where a user's own tools live): look there too.
 SEARCH = os.pathsep.join([os.environ.get("PATH", "/usr/local/bin:/usr/bin"), os.path.expanduser("~/.local/bin"), os.path.expanduser("~/bin"),
-                          os.path.expanduser("~/.grok/bin")])
+                          os.path.expanduser("~/.grok/bin"), os.path.expanduser("~/.local/share/mise/shims")])
 ROOM = os.path.join(os.environ.get("XDG_STATE_HOME") or os.path.expanduser("~/.local/state"), "latteos", "ai")
 CHATS = os.path.join(ROOM, "chats")
 KEEP = 12                       # what a tool is reminded of: the last six turns
@@ -851,8 +851,11 @@ def ollama_models():
     return [{"id": l.split()[0], "name": l.split()[0]} for l in out.splitlines()[1:] if l.strip()]
 
 
-# how each service's official tool is put on the computer, for this user (no password; npm or uv come from Fedora,
-# asked for in the terminal, when they are missing)
+# how each service's official tool is put on the computer, for this user: by mise where LatteOS's AI layer has it
+# (/etc/mise/conf.d/latteos-tools.toml, as Omarchy does), else by the tool's own installer (no password; npm or uv
+# come from Fedora, asked for in the terminal, when they are missing)
+MISE_TOOLS = {"claude": "claude", "gemini": "gemini-cli", "chatgpt": "codex", "grok": "grok", "copilot": "copilot",
+              "mistral": "pipx:mistral-vibe"}
 NPM = 'command -v npm >/dev/null || sudo dnf install -y nodejs-npm; npm install -g --prefix "$HOME/.local" '
 INSTALL = {
     "claude": "curl -fsSL https://claude.ai/install.sh | bash",
@@ -1033,7 +1036,7 @@ def services():
         whole = lambda argv: ([shutil.which(argv[0], path=SEARCH) or argv[0]] + argv[1:]) if argv else []
         out.append({"id": i, "name": p["name"], "local": p["local"], "style": p["style"], "installed": there, "tool": p["tool"],
                     "signed": True if p["local"] and there else signed, "account": account, "login": whole(p.get("login", [])), "logout": whole(p.get("logout", [])),
-                    "install": INSTALL.get(i, "")})
+                    "install": ("mise install " + MISE_TOOLS[i]) if i in MISE_TOOLS and shutil.which("mise") else INSTALL.get(i, "")})
     return out
 
 

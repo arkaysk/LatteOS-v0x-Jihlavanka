@@ -13,3 +13,7 @@ case "$XKB_DEFAULT_LAYOUT" in *,*) : "${XKB_DEFAULT_OPTIONS:=grp:alt_shift_toggl
 LATTE_MODE=safe LATTE_RENDERER=pixman LATTE_TIER=safe
 [ -r "${LATTE_RUN_DIR:-/run/latteos}/session.env" ] && { set -a; . "${LATTE_RUN_DIR:-/run/latteos}/session.env"; set +a; }
 export LATTE_MODE LATTE_RENDERER LATTE_TIER
+
+# the AI services' tools as mise keeps them (/etc/mise/conf.d/latteos-tools.toml): after the user's own ~/.local/bin,
+# so a tool installed by hand stays the one that runs
+case ":$PATH:" in *":$HOME/.local/share/mise/shims:"*) ;; *) PATH="$HOME/.local/bin:$PATH:$HOME/.local/share/mise/shims"; export PATH ;; esac

@@ -1,0 +1,3 @@
+# An upgrade must not delete the version a running agent is executing from (as Omarchy's etc/mise/conf.d/omarchy.toml).
+[settings]
+upgrade.auto_prune = false

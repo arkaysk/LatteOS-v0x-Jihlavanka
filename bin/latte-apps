@@ -13,7 +13,7 @@
   latte-apps install ID           from Flathub, for this user, no password
   latte-apps remove ID            a Flatpak
   latte-apps update [ID]          one Flatpak, or all of them
-  latte-apps update-system        Fedora's packages (asks for the administrator's password)
+  latte-apps update-system        Fedora's packages (asks for the administrator's password), and the AI services' tools mise keeps
                                   These four print what the tool underneath says, line by line, and end with its code.
 
 The shop is Flathub (its API v2). What it answered is kept for six hours in ~/.cache/latteos/flathub, and shown
@@ -266,6 +266,9 @@ def main(a):
         return work("flatpak", "update", "--noninteractive", "-y", *a[1:])
     elif a == ["update-system"]:
         code = work("pkexec", "dnf", "-y", "upgrade", "--refresh")
+        # and the AI services' tools mise keeps: updating is asking for the current ones now (Omarchy's omarchy-update-mise)
+        if shutil.which("mise"):
+            work("env", "MISE_MINIMUM_RELEASE_AGE=0", "mise", "up")
         if code == 0 and shutil.which("dnf"):
             try:
                 os.remove(os.path.join(CACHE, "..", "system-updates"))

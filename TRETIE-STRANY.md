@@ -38,4 +38,6 @@ Prekladová vrstva aplikácií (`session/apps/common/I18n.qml`) je napísaná po
 Zo [Omarchy](https://github.com/omacom/omarchy) (MIT, © David Heinemeier Hansson) LatteOS preberá a prepisuje časti
 vrstvy AI: zisťovanie limitov služieb bez otázky (`bin/latte-ai` › `claude_usage`, `grok_usage`, podľa
 `bin/omarchy-agent-usage-claude` a `bin/omarchy-agent-usage-grok`) a ďalej panel agentov, skill pre agentov a pomoc
-AI pri pádoch (ROADMAP 16m).
+AI pri pádoch (ROADMAP 16m), panel agentov (stránka Agenti), skill pre agentov (`system/agents/skills/latteos`)
+a inštaláciu a aktualizáciu nástrojov služieb AI cez mise (`system/mise/latteos-tools.toml` podľa
+`etc/mise/conf.d/omarchy-tools.toml`).

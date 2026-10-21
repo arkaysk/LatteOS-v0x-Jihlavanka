@@ -1,0 +1,19 @@
+# The AI services' official tools, as LatteOS offers them (LensAI, "Do it for me"), managed by mise the way Omarchy
+# does it (etc/mise/conf.d/omarchy-tools.toml, MIT): each is fetched the first time it is run (lazy) and brings
+# itself up to date before it runs, at most once every four hours. Override one in ~/.config/mise/config.toml.
+
+[settings]
+locked_scopes = ["project", "global"]
+system_installs_dir = "~/.local/share/mise/installs"
+system_shims_dir = "~/.local/share/mise/shims"
+
+[tools]
+claude = { version = "latest", lazy = true, auto_update = "4h", minimum_release_age = "0s" }
+codex = { version = "latest", lazy = true, auto_update = "4h", minimum_release_age = "0s" }
+gemini-cli = { version = "latest", lazy = true, auto_update = "4h", lazy_bins = ["gemini"], minimum_release_age = "0s" }
+grok = { version = "latest", lazy = true, auto_update = "4h", minimum_release_age = "0s" }
+copilot = { version = "latest", lazy = true, auto_update = "4h", minimum_release_age = "0s" }
+"pipx:mistral-vibe" = { version = "latest", lazy = true, auto_update = "4h", lazy_bins = ["vibe"], minimum_release_age = "0s" }
+"npm:@deepseek-ai/dsh" = { version = "latest", lazy = true, auto_update = "4h", lazy_bins = ["dsh"], minimum_release_age = "0s" }
+node = { version = "latest", lazy = true, minimum_release_age = "0s" }
+uv = { version = "latest", lazy = true, minimum_release_age = "0s" }

@@ -33,6 +33,9 @@ fi
 mkdir -p "$HOME/.local/share/flatpak/exports/share/applications" 2>/dev/null
 # LatteOS's skill where the user's agents look for skills (their own copy, made once; latte-ai skill)
 latte-ai skill install >/dev/null 2>&1 &
+# the shims of the AI services' tools mise keeps, as Omarchy's install/user/mise.sh makes them: each tool is fetched the
+# first time it is run
+command -v mise >/dev/null && { mise reshim --system; mise reshim; } >/dev/null 2>&1 &
 
 export XDG_SESSION_TYPE=wayland XDG_SESSION_DESKTOP=latteos
 export LIBSEAT_BACKEND="${LIBSEAT_BACKEND:-logind}"
