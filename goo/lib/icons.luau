@@ -12,6 +12,7 @@ return {
     ["arrow-left"] = "\u{EA19}",
     ["arrow-right"] = "\u{EA1F}",
     ["arrow-up"] = "\u{EA25}",
+    ["arrows-exchange"] = "\u{F1F4}",
     ["arrows-maximize"] = "\u{EA28}",
     ["arrows-minimize"] = "\u{EA29}",
     ["arrows-sort"] = "\u{EB5A}",

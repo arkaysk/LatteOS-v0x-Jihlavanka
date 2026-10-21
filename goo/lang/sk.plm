@@ -1499,5 +1499,17 @@ library Slovak {
         "Expert" = "Expert"
         "Expert mode is on" = "Expertný režim je zapnutý"
         "Switch to the expert mode" = "Prepnúť na expertný režim"
+        "Archives" = "Archívy"
+        "Drive:" = "Jednotka:"
+        "only {n}" = "iba {n}"
+        "One panel" = "Jeden panel"
+        "Copy to the other panel (F5)" = "Kopírovať do druhého panela (F5)"
+        "Move to the other panel (F6)" = "Presunúť do druhého panela (F6)"
+        "The same folder in the other panel" = "Ten istý priečinok v druhom paneli"
+        "Read both panels again" = "Znova načítať oba panely"
+        "A command, run in {n}…" = "Príkaz, spustí sa v {n}…"
+        "Edit" = "Upraviť"
+        "Quit" = "Ukončiť"
+        "QUICK FILTER OF TYPES" = "RÝCHLY FILTER TYPOV"
     }
 }

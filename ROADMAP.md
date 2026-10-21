@@ -492,7 +492,7 @@ Schválené 12. 10. 2026. Pracuje sa **zhora nadol, neskáče sa**; nový nápad
       podľa slnka), intenzita skla ako posuvník s percentami (dnes štyri stupne), kávová hladina, displej (rozlíšenie,
       obnovovanie, teplota farieb), úložisko s pásom podľa druhu dát a tlačidlom Správa oddielov, účet dole, päta
       so stavom systému a prepnutím na expertný režim.
-    - b. [ ] **DualBrew** (`latteOS dualbrew.png`): dvojpanel ako Total Commander (Dvojpanel / 1-panel), jednotky ako
+    - b. [~] **DualBrew** (`latteOS dualbrew.png`; 21. 10. hotové: Dva panely | Jeden panel, čipy jednotiek nad panelom s voľným miestom, súhrn pod panelom, pás tlačidiel medzi panelmi, rad F3–F10, riadok terminálu (Alt+F1), rýchly filter typov; ostáva stĺpec Atribúty (práva), filtre priečinkov nad zoznamom): dvojpanel ako Total Commander (Dvojpanel / 1-panel), jednotky ako
       čipy nad panelom, stĺpce Názov · Veľkosť · Zmenené · Atribúty, tlačidlá medzi panelmi (kopírovať, presunúť,
       porovnať, zrkadliť), rad F3–F10 dole a riadok terminálu (Alt+F1); bočný panel s diskami a pásmi zaplnenia
       (čiastočne hotové 20. 10.), obľúbené priečinky a rýchly filter typov.

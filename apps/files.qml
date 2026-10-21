@@ -37,6 +37,14 @@ ShellRoot {
     readonly property string home: Quickshell.env("HOME") || "/"
     readonly property var words: (Quickshell.env("LATTE_APP_ARGS") || "").split("\n").filter(w => w !== "")
     property bool dual: false
+    // the side's quick filter of types (inspo/latteOS dualbrew.png): only files of these kinds show, folders always
+    property string typeFilter: ""
+    readonly property var types: ({ pictures: { name: QT_TR_NOOP("Pictures"), globs: ["*.png", "*.jpg", "*.jpeg", "*.webp", "*.gif", "*.svg", "*.heic"] },
+                                    documents: { name: QT_TR_NOOP("Documents"), globs: ["*.pdf", "*.odt", "*.doc", "*.docx", "*.txt", "*.md", "*.ods", "*.xls", "*.xlsx"] },
+                                    music: { name: QT_TR_NOOP("Music"), globs: ["*.mp3", "*.flac", "*.ogg", "*.opus", "*.wav", "*.m4a"] },
+                                    video: { name: QT_TR_NOOP("Video"), globs: ["*.mp4", "*.mkv", "*.webm", "*.mov", "*.avi"] },
+                                    archives: { name: QT_TR_NOOP("Archives"), globs: ["*.zip", "*.7z", "*.rar", "*.tar", "*.gz", "*.xz", "*.zst", "*.iso"] },
+                                    code: { name: QT_TR_NOOP("Code"), globs: ["*.py", "*.js", "*.ts", "*.qml", "*.rs", "*.c", "*.h", "*.cpp", "*.sh", "*.json", "*.toml", "*.yaml", "*.yml", "*.lua", "*.luau", "*.plm"] } })
     property int active: 0                     // which panel has the keys
     property string view: "details"            // or "icons" (here.iconSize big), "small", "tiles": Explorer's views; "photos", the viewer
     property bool hidden: false
@@ -404,12 +412,33 @@ ShellRoot {
                 if (up === panel.path) { panel.rawSizes[at] = size; return }
                 (panel.rawInner[up] = panel.rawInner[up] || []).push({ path: at, size: size }) } } }
         FolderListModel { id: files; folder: panel.fresh && panel.path.startsWith("/") ? "file://" + panel.path : ""; showDirsFirst: true; showDotAndDotDot: false; showHidden: shell.hidden
+                          nameFilters: shell.typeFilter !== "" ? shell.types[shell.typeFilter].globs : ["*"]
                           sortField: panel.sortBy === "size" ? FolderListModel.Size : (panel.sortBy === "date" ? FolderListModel.Time : FolderListModel.Name); sortReversed: panel.sortDown }
 
         Rectangle { anchors.fill: parent; anchors.margins: 6; radius: 14; color: panel.isActive || !shell.dual ? Theme.surface : Theme.ground
                     border.width: shell.dual ? 2 : 0; border.color: panel.isActive ? Theme.gold : "transparent" }
+        // the drives, as the commander's row of them above each panel: the one this panel is on lit; what is free on it
+        readonly property var root: shell.rootOf(panel.path)
+        Flickable { id: driveRow; x: 18; y: 12; width: parent.width - 36 - freeText.implicitWidth - 12; height: 30; contentWidth: driveChips.width; clip: true; boundsBehavior: Flickable.StopAtBounds
+            Row { id: driveChips; spacing: 6
+                Label { text: I18n.tr("Drive:"); color: Theme.faint; font.pixelSize: 12; font.weight: 700; anchors.verticalCenter: parent.verticalCenter }
+                Repeater { model: shell.places.filter(p => ["home", "disk", "usb", "card", "optical", "image", "network", "cloud"].includes(p.kind) && p.path !== "" && (p.path !== "/" || shell.real))
+                    Rectangle { id: chip; required property var modelData; height: 26; radius: 13; width: chipText.implicitWidth + 30
+                        readonly property bool on: !!panel.root && panel.root.path === modelData.path
+                        color: on ? Theme.gold : (chipHit.containsMouse ? Theme.raised : Theme.card); border.width: 1; border.color: on ? Theme.gold : Theme.line
+                        Row { anchors.centerIn: parent; spacing: 5
+                            Glyph { name: shell.placeIcons[chip.modelData.kind] || "disc"; font.pixelSize: 12; color: chip.on ? Theme.inkOnGold : Theme.dim; anchors.verticalCenter: parent.verticalCenter }
+                            Label { id: chipText; text: chip.modelData.kind === "home" ? I18n.tr("Home") : shell.driveName(chip.modelData); color: chip.on ? Theme.inkOnGold : Theme.cream; font.pixelSize: 12; font.weight: 700 } }
+                        MouseArea { id: chipHit; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: { shell.active = panel.index; panel.go(chip.modelData.path) } } } } } }
+        Label { id: freeText; anchors.right: parent.right; anchors.rightMargin: 18; y: 18; color: Theme.dim; font.pixelSize: 12
+                text: panel.root && panel.root.total > 0 ? I18n.tr("{n} free", { n: shell.bytes(panel.root.total - panel.root.used) }) : "" }
+        // what is here and what is chosen, at the panel's own foot
+        Label { x: 18; y: parent.height - 26; width: parent.width - 36; elide: Text.ElideRight; color: Theme.dim; font.pixelSize: 12; visible: panel.path.startsWith("/")
+                text: (panel.picked().length ? I18n.tr("{n} chosen", { n: panel.picked().length }) + "  ·  " : "") + I18n.tr("{n} items", { n: panel.count })
+                      + (shell.typeFilter !== "" ? "  ·  " + I18n.tr("only {n}", { n: I18n.tr(shell.types[shell.typeFilter].name) }) : "")
+                      + (panel.root && panel.root.total > 0 ? "  ·  " + I18n.tr("{n} free", { n: shell.bytes(panel.root.total - panel.root.used) }) : "") }
         // where it is: every folder on the way can be pressed
-        Flickable { id: crumbs; x: 18; y: 12; width: parent.width - 36; height: 32; contentWidth: way.width; clip: true; boundsBehavior: Flickable.StopAtBounds
+        Flickable { id: crumbs; x: 18; y: 46; width: parent.width - 36; height: 32; contentWidth: way.width; clip: true; boundsBehavior: Flickable.StopAtBounds
             onContentWidthChanged: contentX = Math.max(0, contentWidth - width)
             Row { id: way; spacing: 2
                 Repeater { model: panel.source || panel.peek !== "" ? [] : panel.way
@@ -428,7 +457,7 @@ ShellRoot {
                     Pill { implicitHeight: 30; icon: "arrow-up"; text: I18n.tr("Up"); visible: panel.source !== null && (shell.real ? panel.source.path !== "/" : (shell.rootOf(panel.source.path) || {}).path !== panel.source.path)
                            onPressed: { const s = panel.source; s.up(); if (s.path.startsWith("/")) s.measure() } }
                     Label { text: panel.source ? I18n.tr("What fills {folder}", { folder: panel.source.path.split("/").pop() || "/" }) : ""; font.weight: 700; anchors.verticalCenter: parent.verticalCenter } } } }
-        Item { id: ground; x: 12; y: 50; width: parent.width - 24; height: parent.height - 62; clip: true
+        Item { id: ground; x: 12; y: 84; width: parent.width - 24; height: parent.height - 84 - 32; clip: true
             MouseArea { anchors.fill: parent; acceptedButtons: Qt.LeftButton | Qt.RightButton | Qt.BackButton | Qt.ForwardButton
                         onPressed: (m) => panel.groundPressed(m, Qt.point(m.x, m.y))
                         onPositionChanged: (m) => panel.bandMove(Qt.point(m.x, m.y))
@@ -792,7 +821,9 @@ ShellRoot {
             Pill { implicitHeight: 34; icon: "folder-plus"; text: I18n.tr("New folder"); onPressed: shell.ask("folder") },
             Pill { id: viewPill; implicitHeight: 34; icon: shell.view === "details" ? "list" : "layout-grid"; text: I18n.tr("View")
                    onPressed: { const q = viewPill.mapToItem(overlay, 0, viewPill.height + 4); menu.open(q.x, Math.max(0, q.y), shell.views()) } },
-            Pill { implicitHeight: 34; icon: "layout-columns"; text: I18n.tr("Two panels"); strong: shell.dual; onPressed: { shell.dual = !shell.dual; if (!shell.dual) shell.active = 0 } }
+            // one panel as Explorer, or two as a commander: side by side, as the sketch's switch
+            Pill { implicitHeight: 34; icon: "layout-columns"; text: I18n.tr("Two panels"); strong: shell.dual; onPressed: shell.dual = true },
+            Pill { implicitHeight: 34; icon: "square-rounded"; text: I18n.tr("One panel"); strong: !shell.dual; onPressed: { shell.dual = false; shell.active = 0 } }
         ]
         side: [
             Column { x: 14; y: 14; spacing: 4
@@ -831,6 +862,15 @@ ShellRoot {
                           opacity: modelData.path === "" ? 0.6 : 1; on: modelData.path !== "" && here.path === modelData.path; onPressed: shell.reach(modelData)
                           tail: shell.canEject(modelData) ? "player-eject" : ""; onTailPressed: shell.eject(modelData) } }
                 Nav { id: cloudNav; text: I18n.tr("Add a cloud or a place…"); icon: "cloud-plus"; onPressed: { const q = cloudNav.mapToItem(overlay, 40, cloudNav.height); shell.addCloud(q.x, q.y) } }
+                // the quick filter of types: only such files show in the panels, folders always (inspo/latteOS dualbrew.png)
+                Label { x: 8; height: 30; verticalAlignment: Text.AlignBottom; text: I18n.tr("QUICK FILTER OF TYPES"); color: Theme.faint; font.pixelSize: 11; font.weight: 700; font.letterSpacing: 0.8 }
+                Flow { x: 8; width: 210; spacing: 6
+                    Repeater { model: ["pictures", "documents", "music", "video", "archives", "code"]
+                        Rectangle { required property string modelData; height: 24; radius: 8; width: typeText.implicitWidth + 16
+                            readonly property bool on: shell.typeFilter === modelData
+                            color: on ? Theme.gold : (typeHit.containsMouse ? Theme.raised : Theme.card)
+                            Label { id: typeText; anchors.centerIn: parent; text: I18n.tr(shell.types[parent.modelData].name); color: parent.on ? Theme.inkOnGold : Theme.dim; font.pixelSize: 11; font.weight: 700 }
+                            MouseArea { id: typeHit; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: shell.typeFilter = parent.on ? "" : parent.modelData } } } }
                 Item { width: 1; height: 10 }
                 Nav { text: I18n.tr("The real structure"); icon: shell.real ? "eye" : "eye-off"; on: shell.real; onPressed: shell.real = !shell.real } }
         ]
@@ -859,7 +899,7 @@ ShellRoot {
                 Pill { implicitHeight: 32; icon: "x"; danger: true; text: I18n.tr("Stop"); onPressed: shell.stopJob() } },
             // the commander's keys, with two panels
             Row { anchors.right: parent.right; anchors.rightMargin: 20; anchors.verticalCenter: parent.verticalCenter; spacing: 8; visible: shell.dual && shell.asking === "" && shell.job === null
-                Repeater { model: [{ key: "F5", name: QT_TR_NOOP("Copy"), what: "copy" }, { key: "F6", name: QT_TR_NOOP("Move"), what: "move" }, { key: "F7", name: QT_TR_NOOP("New folder"), what: "folder" }, { key: "F8", name: QT_TR_NOOP("Delete"), what: "trash" }]
+                Repeater { model: [{ key: "F3", name: QT_TR_NOOP("View"), what: "view" }, { key: "F4", name: QT_TR_NOOP("Edit"), what: "edit" }, { key: "F5", name: QT_TR_NOOP("Copy"), what: "copy" }, { key: "F6", name: QT_TR_NOOP("Move"), what: "move" }, { key: "F7", name: QT_TR_NOOP("New folder"), what: "folder" }, { key: "F8", name: QT_TR_NOOP("Delete"), what: "trash" }, { key: "F10", name: QT_TR_NOOP("Quit"), what: "quit" }]
                     Pill { required property var modelData; implicitHeight: 32; text: modelData.key + "  " + I18n.tr(modelData.name); onPressed: shell.command(modelData.what) } } },
             // a name is asked for here
             Row { x: 24; anchors.verticalCenter: parent.verticalCenter; spacing: 10; visible: shell.asking !== ""
@@ -890,6 +930,10 @@ ShellRoot {
                 else if (ev.key === Qt.Key_F5) here.again()
                 else if (ev.key === Qt.Key_F6 && shell.dual) shell.command("move")
                 else if (ev.key === Qt.Key_F7) shell.ask("folder")
+                else if (ev.key === Qt.Key_F3) shell.command("view")
+                else if (ev.key === Qt.Key_F4) shell.command("edit")
+                else if (ev.key === Qt.Key_F10) shell.command("quit")
+                else if (ev.key === Qt.Key_F1 && (ev.modifiers & Qt.AltModifier) && shell.dual) termLine.forceActiveFocus()
                 else if (ev.key === Qt.Key_A && ctrl) here.all()
                 else if (ev.key === Qt.Key_C && ctrl && picked.length) shell.act(["clip", "copy"].concat(picked))
                 else if (ev.key === Qt.Key_X && ctrl && picked.length) shell.act(["clip", "cut"].concat(picked))
@@ -899,8 +943,30 @@ ShellRoot {
                 else if (ev.key === Qt.Key_Escape) { here.chosen = ({}); menu.close() }
                 else ev.accepted = false
             }
-            Panel { id: left; index: 0; width: shell.dual ? parent.width / 2 : parent.width; height: parent.height; path: shell.words[0] && (shell.words[0].startsWith("/") || shell.words[0] === "disks:" || shell.words[0] === "computer:") ? shell.words[0] : shell.home }
-            Panel { id: right; index: 1; visible: shell.dual; x: parent.width / 2; width: parent.width / 2; height: parent.height }
+            Panel { id: left; index: 0; width: shell.dual ? (parent.width - 52) / 2 : parent.width; height: parent.height - (shell.dual ? 48 : 0); path: shell.words[0] && (shell.words[0].startsWith("/") || shell.words[0] === "disks:" || shell.words[0] === "computer:") ? shell.words[0] : shell.home }
+            Panel { id: right; index: 1; visible: shell.dual; x: (parent.width + 52) / 2; width: (parent.width - 52) / 2; height: parent.height - 48 }
+            // between the panels, as a commander has them: to the other panel, there too, the same folder there, again
+            Column { visible: shell.dual; x: (parent.width - 40) / 2; y: (parent.height - 48 - height) / 2; spacing: 8
+                Repeater { model: [{ icon: shell.active === 0 ? "arrow-right" : "arrow-left", what: "copy", tip: QT_TR_NOOP("Copy to the other panel (F5)") },
+                                   { icon: "arrows-exchange", what: "move", tip: QT_TR_NOOP("Move to the other panel (F6)") },
+                                   { icon: "copy", what: "same", tip: QT_TR_NOOP("The same folder in the other panel") },
+                                   { icon: "refresh", what: "again", tip: QT_TR_NOOP("Read both panels again") }]
+                    Rectangle { required property var modelData; width: 40; height: 40; radius: 20; color: midHit.containsMouse ? Theme.raised : Theme.card; border.width: 1; border.color: Theme.line
+                        Glyph { anchors.centerIn: parent; name: parent.modelData.icon; font.pixelSize: 18; color: Theme.gold }
+                        MouseArea { id: midHit; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
+                                    onClicked: { const w = parent.modelData.what; if (w === "same") shell.other.go(here.path); else if (w === "again") { left.again(); right.again() } else shell.command(w) } } } } }
+            // the terminal's line, under both panels: a command run in a terminal, in the folder this panel shows (Alt+F1)
+            Rectangle { visible: shell.dual; x: 6; y: parent.height - 44; width: parent.width - 12; height: 38; radius: 12; color: Theme.card; border.width: 1; border.color: termLine.activeFocus ? Theme.gold : Theme.line
+                Label { x: 14; anchors.verticalCenter: parent.verticalCenter; text: "$"; color: Theme.gold; font.family: "monospace"; font.weight: 800 }
+                TextInput { id: termLine; x: 34; width: parent.width - 140; anchors.verticalCenter: parent.verticalCenter; color: Theme.cream; font.family: "monospace"; font.pixelSize: 14; clip: true; selectByMouse: true
+                            Keys.onEscapePressed: keys.forceActiveFocus()
+                            onAccepted: { if (text.trim() === "" || !here.path.startsWith("/")) return
+                                          Quickshell.execDetached(["foot", "--working-directory", here.path, "--", "sh", "-c", 'eval "$1"; echo; printf "%s" "$2"; read x', "sh", text, I18n.tr("Press Enter to close")])
+                                          text = ""; keys.forceActiveFocus() } }
+                Label { x: 34; anchors.verticalCenter: parent.verticalCenter; visible: termLine.text === "" && !termLine.activeFocus; color: Theme.faint; font.family: "monospace"
+                        text: I18n.tr("A command, run in {n}…", { n: here.path.startsWith("/") ? here.path.replace(shell.home, "~") : "~" }) }
+                Rectangle { anchors.right: parent.right; anchors.rightMargin: 8; anchors.verticalCenter: parent.verticalCenter; height: 24; radius: 8; width: altText.implicitWidth + 14; color: Qt.rgba(Theme.gold.r, Theme.gold.g, Theme.gold.b, 0.18)
+                    Label { id: altText; anchors.centerIn: parent; text: "Alt+F1"; color: Theme.gold; font.pixelSize: 11; font.weight: 800 } } }
             Item { id: overlay; anchors.fill: parent; Menu { id: menu } }
             // what a drag of files is, in the window's own scene: the system takes it from there
             Item { id: carrier; Drag.dragType: Drag.Automatic; Drag.supportedActions: Qt.CopyAction | Qt.MoveAction | Qt.LinkAction; Drag.keys: ["text/uri-list"] }
@@ -937,6 +1003,10 @@ ShellRoot {
     function command(what) {
         const picked = here.picked()
         if (what === "folder") return ask("folder")
+        if (what === "quit") return Qt.quit()
+        // F3 shows a file as its app does; F4 opens it in the text editor the user has, in a terminal
+        if (what === "view") { if (picked.length === 1) open(picked[0], false); return }
+        if (what === "edit") { if (picked.length === 1) Quickshell.execDetached(["foot", "--", "sh", "-c", 'exec ${EDITOR:-nano} "$1"', "sh", picked[0]]); return }
         if (!picked.length) return
         if (what === "trash") act(["trash"].concat(picked))
         else if (dual && other.path !== here.path) enqueue(what, other.path, picked)
