@@ -383,6 +383,12 @@ fill_ai = function()
     if last ~= (p and p.id) then u, ctx = {}, 0 end
     text.ai_who = (p and tr(p.name) or "") .. ((u.window or 0) > 0 and ("  ·  " .. with_n("context {n}", percent(ctx))) or "")
     text.ai_empty = p and tr(p.name) or ""
+    -- what the service says over its field on its own page, in its words (translated)
+    local hour = tonumber(os.date("%H"))
+    local part = hour < 12 and N("Morning, what are we building?") or (hour < 18 and N("Afternoon, what are we building?") or N("Evening, what are we building?"))
+    local greet = { claude = with_n("Welcome, {n}", ai.me or ""), gemini = tr("Where shall we start?"), chatgpt = tr("We can start whenever you like."),
+                    mistral = tr(part), deepseek = tr("Hi, what can I do for you?"), copilot = tr("Copilot uses AI. Check for mistakes."), grok = "" }
+    text.ai_greet = greet[p and p.style or ""] or ""
     text.ai_empty2 = tr("The conversation stays here until you start a new session.")
     -- Claude tells its limits with each answer only: what is shown is from the last one, and says when that was.
     -- A window that has started again since then is empty again, whatever the old figure said.
@@ -452,26 +458,25 @@ fill_ai = function()
     model.aimsg = rows
     fact.ai_wait = ai.waiting
     fact.ai_gen = fact.ai_gen + 1
-    -- the models to choose from: the service chosen opens into its models (its name beside the first), every other is one
-    -- line that takes it; eight lines at most, which is what fits above the field without covering the tabs
-    local choices, list, order = {}, {}, {}
-    if p then order[1] = p end                         -- the one chosen first, so that it is always there
-    for _, q in ipairs(offered()) do if not p or q.id ~= p.id then order[#order + 1] = q end end
-    for _, q in ipairs(order) do
-        if p and q.id == p.id then
-            for k, x in ipairs(q.models) do
-                if #list >= 8 then break end
-                list[#list + 1] = { name = x.name, hint = k == 1 and tr(q.name) or "", on = m ~= nil and x.id == m.id, head = false }
-                choices[#list] = { provider = q.id, model = x.id }
-            end
-        elseif #list < 8 then
-            list[#list + 1] = { name = tr(q.name), hint = q.models[1] and q.models[1].name or "", on = false, head = false }
-            choices[#list] = { provider = q.id, model = q.models[1] and q.models[1].id or "" }
+    -- the menu: over the switch, the services, one line each (the one in use marked); over the field's chip, the
+    -- models of the service in use — as each service has its own model menu in its own field
+    local choices, list = {}, {}
+    if (ai.menu_at or 0) == 0 then
+        for _, q in ipairs(offered()) do
+            if #list >= 10 then break end
+            list[#list + 1] = { name = tr(q.name), hint = q.models[1] and (p and q.id == p.id and m and m.name or q.models[1].name) or "", on = p ~= nil and q.id == p.id, head = false }
+            choices[#list] = { provider = q.id, model = p and q.id == p.id and m and m.id or (q.models[1] and q.models[1].id or "") }
+        end
+    elseif p then
+        for _, x in ipairs(p.models) do
+            if #list >= 10 then break end
+            list[#list + 1] = { name = x.name, hint = "", on = m ~= nil and x.id == m.id, head = false }
+            choices[#list] = { provider = p.id, model = x.id }
         end
     end
     -- and how hard the one chosen may think, where its tool lets that be said: one line of small buttons
     local efforts = {}
-    ai.efforts = p and p.efforts or {}
+    ai.efforts = (ai.menu_at or 0) == 1 and p and p.efforts or {}
     for k, x in ipairs(ai.efforts) do efforts[k] = { name = tr(EFFORTS[x] or x), on = x == e } end
     model.aieffort = efforts
     ai.choices = choices
@@ -562,6 +567,13 @@ on("ai_effort", function(i)
     kept.ai.effort = x
     save()
     fill_ai()
+end)
+on("ai_open", function(where)
+    if fact.ai_menu and (ai.menu_at or 0) == (where or 0) then fact.ai_menu = false return end
+    ai.menu_at = where or 0
+    fact.ai_menu_at = ai.menu_at
+    fill_ai()
+    fact.ai_menu = true
 end)
 on("ai_pick", function(i)
     local c = ai.choices[(i or 0) + 1]
@@ -778,6 +790,9 @@ end
 
 function M.start(d)
     owner = d
+    local okh, user = pcall(sys.ask, "env", "USER")
+    user = okh and type(user) == "string" and user or ""
+    ai.me = user ~= "" and (user:sub(1, 1):upper() .. user:sub(2)) or ""
     quick.lately(function() return kept.recent end)
     local ok, saved = pcall(sys.ask, "files.read", FILE, "json")
     if ok and type(saved) == "table" then

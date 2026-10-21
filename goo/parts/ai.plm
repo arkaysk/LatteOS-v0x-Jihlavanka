@@ -15,6 +15,14 @@ part Ai {
     text ai_model = ""                         // who answers and with which model, on the switch at the foot
     text ai_effort_word = ""                   // how hard it may think, on the field's own chip ("" where it cannot be said)
     text ai_empty = ""                         // what an empty conversation says
+    text ai_greet = ""                         // …in the service's own words, over its field, as on its own page
+    image logo_claude = file "../ai/claude.svg", 96, 96
+    image logo_gemini = file "../ai/gemini.svg", 96, 96
+    image logo_openai = file "../ai/openai.svg", 96, 96
+    image logo_grok = file "../ai/grok.svg", 96, 96
+    image logo_mistral = file "../ai/mistral.svg", 96, 96
+    image logo_copilot = file "../ai/githubcopilot.svg", 96, 96
+    image logo_deepseek = file "../ai/deepseek.svg", 96, 96
     text ai_empty2 = ""
     text ai_lim1 = ""                          // what is used, two lines: a name and a share each
     text ai_lim1p = ""
@@ -57,7 +65,9 @@ part Ai {
     event ai_send ->
     event ai_stop ->
     event ai_pick ->                           // a model was chosen: its place in aimodel
-    event ai_effort ->                         // how hard it may think: its place in aieffort
+    event ai_effort ->
+    event ai_open ->                           // a menu asked for: 0 the services (the switch), 1 the service's models (its chip)
+    fact ai_menu_at = 0                        // where the menu stands: 0 over the switch, 1 over the field's chip                         // how hard it may think: its place in aieffort
     event ai_center ->
     event ai_settings ->
     event ai_new ->
@@ -87,6 +97,8 @@ part Ai {
         show: card_custom == 3
         move: card.x0, card.y0
 
+        // ── the service's own page under the conversation and the field: one knows at a glance whose it is ────
+        box { from: 8, 56; size: card.w - 16, ai.fy + ai.fh + 8 - 56; corner: 16; color: if(ai.k == 0, #faf9f5, if(ai.k == 1, #f8fafd, if(ai.k == 2, #fafaf9, if(ai.k == 3, #ffffff, if(ai.k == 5, #ffffff, if(ai.k == 6, #fafaf7, if(ai.k == 7, #ffffff, #000000))))))); opacity: if(ai.k == 4, 0, 100%) }
         // ── the conversation: on the glass, it scrolls; the newest at the bottom ─────────────────────────────
         column talk {
             at: 16, 58
@@ -99,20 +111,20 @@ part Ai {
                     group { size: if(m.mine, ai.w - min(m.w, ai.w * 0.8), 0), 1 }
                     column {
                         gap: 5
-                        text m.who { size: 11.5; weight: 700; lines: 1; color: #b8a491; show: not m.mine; family: "Inter" }
+                        text m.who { size: 11.5; weight: 700; lines: 1; color: if(ai.k == 0, #8b8778, if(ai.k == 1, #5f6368, if(ai.k == 2, #8a8a8a, if(ai.k == 3, #8f8f8f, if(ai.k == 5, #656d76, if(ai.k == 6, #9a9a9a, if(ai.k == 7, #a3a3a3, #b8a491))))))); show: not m.mine; family: "Inter" }
                         column {
                             show: m.mine
-                            fill: #f7c873 26%
+                            fill: if(ai.k == 0, #f0eee6, if(ai.k == 1, #e9eef6, if(ai.k == 2, #f1f1f1, if(ai.k == 3, #f4f4f4, if(ai.k == 5, #f6f8fa, if(ai.k == 6, #f2f2f2, if(ai.k == 7, #eff6ff, #f7c873))))))) if(ai.k == 4, 26%, 100%)
                             corner: 16
                             padding: 11
-                            text m.body { width: min(m.w, ai.w * 0.8) - 22; lines: 80; size: 14.5; line_height: 1.4; color: #fff4e0; family: "Inter"; selectable: true; selection: #5a463a }
+                            text m.body { width: min(m.w, ai.w * 0.8) - 22; lines: 80; size: 14.5; line_height: 1.4; color: if(ai.k == 0, #1f1e1d, if(ai.k == 1, #1f1f1f, if(ai.k == 2, #0d0d0d, if(ai.k == 3, #0d0d0d, if(ai.k == 5, #1f2328, if(ai.k == 6, #1a1a1a, if(ai.k == 7, #262626, #fff4e0))))))); family: "Inter"; selectable: true; selection: #5a463a }
                         }
                         column {
                             show: not m.mine
-                            fill: #1b120d 60%
+                            fill: #1b120d if(ai.k == 4, 60%, 0%)
                             corner: 16
                             padding: 11
-                            text m.body { width: min(m.w, ai.w * 0.8) - 22; lines: 80; size: 14.5; line_height: 1.4; color: if(m.failed, #e5484d, #f5e8d8); family: "Inter"; selectable: true; selection: #5a463a }
+                            text m.body { width: min(m.w, ai.w * 0.8) - 22; lines: 80; size: 14.5; line_height: 1.4; color: if(m.failed, #e5484d, if(ai.k == 0, #1f1e1d, if(ai.k == 1, #1f1f1f, if(ai.k == 2, #0d0d0d, if(ai.k == 3, #0d0d0d, if(ai.k == 5, #1f2328, if(ai.k == 6, #1a1a1a, if(ai.k == 7, #262626, #f5e8d8)))))))); family: "Inter"; selectable: true; selection: #5a463a }
                         }
                     }
                 }
@@ -122,14 +134,33 @@ part Ai {
         // a hair of a bar beside it, when there is more than shows
         box { from: card.w - 12, 58 + talk.scroll / max(talk.content, 1) * (ai.fy - 70); size: 3, (ai.fy - 70) * min(talk.height / max(talk.content, 1), 1); corner: 2; color: #f5e8d8; opacity: if(talk.content > talk.height + 1, 25%, 0) }
         // an empty conversation: who answers, and that it stays
-        text ic_ai_spark { at: card.w / 2, 168; anchor: center; size: 34; color: #f7c873; opacity: 85%; show: aimsg.count == 0; family: "tabler-icons" }
-        text ai_empty { at: card.w / 2, 214; anchor: center; size: 22; weight: 700; color: #f5e8d8; width: ai.w - 40; lines: 1; align: center; show: aimsg.count == 0; family: "Inter" }
-        text ai_empty2 { at: card.w / 2, 246; anchor: center; size: 13.5; color: #b8a491; width: ai.w - 80; lines: 2; align: center; show: aimsg.count == 0; family: "Inter" }
+        text ic_ai_spark { at: card.w / 2, 168; anchor: center; size: 34; color: #f7c873; opacity: 85%; show: aimsg.count == 0 and ai.k == 4; family: "tabler-icons" }
+        text ai_empty { at: card.w / 2, 214; anchor: center; size: 22; weight: 700; color: #f5e8d8; width: ai.w - 40; lines: 1; align: center; show: aimsg.count == 0 and ai.k == 4; family: "Inter" }
+        text ai_empty2 { at: card.w / 2, 246; anchor: center; size: 13.5; color: #b8a491; width: ai.w - 80; lines: 2; align: center; show: aimsg.count == 0 and ai.k == 4; family: "Inter" }
+        measure greet_m
+        // Claude: its mark beside a serif line
+        image logo_claude { at: card.w / 2 - (greet_m.width + 52) / 2, 184; size: 40, 40; show: aimsg.count == 0 and ai.k == 0 }
+        text ai_greet { at: card.w / 2 - (greet_m.width + 52) / 2 + 52, 204; anchor: left center; measure: greet_m; size: 36; color: if(ai.k == 0, #1f1e1d, if(ai.k == 1, #1f1f1f, if(ai.k == 2, #0d0d0d, if(ai.k == 3, #0d0d0d, if(ai.k == 5, #59636e, if(ai.k == 6, #1a1a1a, if(ai.k == 7, #262626, #f5e8d8))))))); show: aimsg.count == 0 and ai.k == 0; family: "Lora" }
+        // Gemini and ChatGPT: a line in the middle
+        text ai_greet { at: card.w / 2, 210; anchor: center; size: 32; color: if(ai.k == 0, #1f1e1d, if(ai.k == 1, #1f1f1f, if(ai.k == 2, #0d0d0d, if(ai.k == 3, #0d0d0d, if(ai.k == 5, #59636e, if(ai.k == 6, #1a1a1a, if(ai.k == 7, #262626, #f5e8d8))))))); show: aimsg.count == 0 and ai.k == 1; family: "Google Sans Flex" }
+        text ai_greet { at: card.w / 2, 210; anchor: center; size: 24; weight: 500; color: if(ai.k == 0, #1f1e1d, if(ai.k == 1, #1f1f1f, if(ai.k == 2, #0d0d0d, if(ai.k == 3, #0d0d0d, if(ai.k == 5, #59636e, if(ai.k == 6, #1a1a1a, if(ai.k == 7, #262626, #f5e8d8))))))); show: aimsg.count == 0 and ai.k == 3; family: "Inter" }
+        // Grok: its mark alone
+        image logo_grok { at: card.w / 2 - 32, 170; size: 64, 64; show: aimsg.count == 0 and ai.k == 2 }
+        // Mistral: its mark above a bold line, at the left
+        image logo_mistral { at: 40, 120; size: 44, 44; show: aimsg.count == 0 and ai.k == 6 }
+        text ai_greet { at: 40, 210; anchor: left center; size: 30; weight: 600; color: if(ai.k == 0, #1f1e1d, if(ai.k == 1, #1f1f1f, if(ai.k == 2, #0d0d0d, if(ai.k == 3, #0d0d0d, if(ai.k == 5, #59636e, if(ai.k == 6, #1a1a1a, if(ai.k == 7, #262626, #f5e8d8))))))); width: ai.w - 60; lines: 1; show: aimsg.count == 0 and ai.k == 6; family: "Inter" }
+        // DeepSeek: its whale beside a bold line
+        measure greet_d
+        image logo_deepseek { at: card.w / 2 - (greet_d.width + 44) / 2, 192; size: 34, 34; show: aimsg.count == 0 and ai.k == 7 }
+        text ai_greet { at: card.w / 2 - (greet_d.width + 44) / 2 + 44, 209; anchor: left center; measure: greet_d; size: 24; weight: 700; color: if(ai.k == 0, #1f1e1d, if(ai.k == 1, #1f1f1f, if(ai.k == 2, #0d0d0d, if(ai.k == 3, #0d0d0d, if(ai.k == 5, #59636e, if(ai.k == 6, #1a1a1a, if(ai.k == 7, #262626, #f5e8d8))))))); show: aimsg.count == 0 and ai.k == 7; family: "Inter" }
+        // Copilot: its mark and a quiet note
+        image logo_copilot { at: card.w / 2 - 26, 150; size: 52, 52; show: aimsg.count == 0 and ai.k == 5 }
+        text ai_greet { at: card.w / 2, 226; anchor: center; size: 13; color: if(ai.k == 0, #1f1e1d, if(ai.k == 1, #1f1f1f, if(ai.k == 2, #0d0d0d, if(ai.k == 3, #0d0d0d, if(ai.k == 5, #59636e, if(ai.k == 6, #1a1a1a, if(ai.k == 7, #262626, #f5e8d8))))))); show: aimsg.count == 0 and ai.k == 5; family: "Inter" }
         // quick tasks for the AI on this computer, on what is written in the field or else on the clipboard
         row {
             at: card.w / 2 - (aiagent.count * 150 - 10) / 2, 290
             gap: 10
-            show: aimsg.count == 0
+            show: aimsg.count == 0 and ai.k == 4          // LatteOS's own: the services' pages stay as they are
             for g in aiagent {
                 group {
                     size: 140, 64
@@ -188,7 +219,7 @@ part Ai {
         text ai_effort_word { at: fx.cx + if(fx.icon > 0, 32, 14), f.cy; anchor: left center; size: 13.5; weight: 600; color: if(ai.k == 0, #3d3929, if(ai.k == 1, #1f1f1f, if(ai.k == 2, #0d0d0d, if(ai.k == 3, #5d5d5d, if(ai.k == 5, #1f2328, if(ai.k == 6, #1a1a1a, if(ai.k == 7, #4d6bfe, #f5e8d8))))))); width: fx.cw - 46; lines: 1; show: fx.chip > 0; family: "Inter" }
         text ic_ai_chev { at: fx.cx + fx.cw - 16, f.cy; anchor: center; size: 14; color: if(ai.k == 0, #3d3929, if(ai.k == 1, #1f1f1f, if(ai.k == 2, #0d0d0d, if(ai.k == 3, #5d5d5d, if(ai.k == 5, #1f2328, if(ai.k == 6, #1a1a1a, if(ai.k == 7, #4d6bfe, #f5e8d8))))))); show: fx.chip > 0 and fx.chev > 0; family: "tabler-icons" }
         zone box effort_chip { from: fx.cx, f.cy - 16; size: fx.cw, 32; cursor: pointer; active: ai.on and fx.chip > 0; label: "{ai_effort_word}"; role: button }
-        on press effort_chip { toggle ai_menu }
+        on press effort_chip { emit ai_open(1) }
         // the microphone: red while it listens, blinking while it writes (Mistral's is its black button, at the right)
         ellipse { at: if(ai.k == 6, card.w - 16 - 30, card.w - 16 - 72), f.cy; radius: 16; color: if(ai_listening == 1, #e5484d, if(ai.k == 0, #3d3929, if(ai.k == 1, #1f1f1f, if(ai.k == 2, #0d0d0d, if(ai.k == 3, #0d0d0d, if(ai.k == 5, #1f2328, if(ai.k == 6, #1a1a1a, if(ai.k == 7, #262626, #f5e8d8)))))))); opacity: if(ai_listening == 1, 70% + 30% * sin(time * 300), 8% * mic_hit.hover) * if(fx.mic > 0 or ai.k == 6, 1, 0) }
         text ic_ai_mic { at: card.w - 16 - 72, f.cy; anchor: center; size: 18; color: if(ai_listening == 1, #ffffff, if(ai.k == 0, #3d3929, if(ai.k == 1, #1f1f1f, if(ai.k == 2, #0d0d0d, if(ai.k == 3, #0d0d0d, if(ai.k == 5, #59636e, if(ai.k == 6, #1a1a1a, if(ai.k == 7, #262626, #f5e8d8)))))))); opacity: if(ai_listening == 2, 50% + 50% * sin(time * 360), 100%); show: fx.mic > 0; family: "tabler-icons" }
@@ -219,7 +250,7 @@ part Ai {
         text ai_model { at: 162, 548; anchor: left center; size: 13; weight: 700; color: #f7c873; width: 170; lines: 1; family: "Inter" }
         text ic_ai_chev { at: 348, 548; anchor: center; size: 14; color: #f7c873; family: "tabler-icons" }
         zone box switch_hit { from: 148, 532; size: 214, 32; cursor: pointer; active: ai.on; label: "{ai_model}"; role: button }
-        on press switch_hit { toggle ai_menu }
+        on press switch_hit { emit ai_open(0) }
         zone box center_hit { at: 34, 548; size: 38, 38; cursor: pointer; active: ai.on; label: "{ai_btn_center}"; role: button }
         zone box settings_hit { at: 78, 548; size: 38, 38; cursor: pointer; active: ai.on; label: "{ai_btn_settings}"; role: button }
         zone box new_hit { at: 122, 548; size: 38, 38; cursor: pointer; active: ai.on and not ai_wait; label: "{ai_btn_new}"; role: button }
@@ -267,12 +298,14 @@ part Ai {
         // ── the models to choose from: a little window over the chip; a press beside it puts it away ───────
         group {
             show: ai_menu
+            let m.x = if(ai_menu_at > 0, min(fx.cx, card.w - 16 - m.w), 148)
+            let m.bot = if(ai_menu_at > 0, f.top - 8, 524)
             zone box ai_menu_away { from: 0, 0; size: card.w, card.h; active: ai.on and ai_menu; label: "Close" }
             on press ai_menu_away { ai_menu = false }
-            box { from: 148, 524 - m.h; size: m.w, m.h; corner: 14; color: #2a1e17}
-            box { from: 148, 524 - m.h; size: m.w, m.h; corner: 14; stroke: 1; color: #f5e8d8; opacity: 10% }
+            box { from: m.x, m.bot - m.h; size: m.w, m.h; corner: 14; color: #2a1e17}
+            box { from: m.x, m.bot - m.h; size: m.w, m.h; corner: 14; stroke: 1; color: #f5e8d8; opacity: 10% }
             column {
-                at: 154, 524 - m.h + 6
+                at: m.x + 6, m.bot - m.h + 6
                 for o in aimodel {
                     group {
                         size: m.w - 12, 32
@@ -286,9 +319,9 @@ part Ai {
                 }
             }
             // how hard it may think: small buttons side by side at the foot, the window stays open to see the choice
-            box { from: 158, 524 - 41; size: m.w - 20, 1; color: #f5e8d8; opacity: if(aieffort.count > 0, 10%, 0) }
+            box { from: m.x + 10, m.bot - 41; size: m.w - 20, 1; color: #f5e8d8; opacity: if(aieffort.count > 0, 10%, 0) }
             row {
-                at: 156, 524 - 34
+                at: m.x + 8, m.bot - 34
                 gap: 4
                 show: aieffort.count > 0
                 for e in aieffort {

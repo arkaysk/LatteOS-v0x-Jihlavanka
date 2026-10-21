@@ -16,12 +16,18 @@ a inštalátor ich prekladá alebo inštaluje z balíkov. V repozitári sú iba 
 | [Quickshell](https://github.com/quickshell-mirror/quickshell) | beh aplikácií LatteOS (QML) | LGPL-3.0 |
 | [labwc](https://github.com/labwc/labwc) | režim SAFE a prihlasovacia obrazovka | GPL-2.0 |
 | [Tabler Icons](https://github.com/tabler/tabler-icons) | ikony (písmo z Noctalie) | MIT |
+| [Lobe Icons](https://github.com/lobehub/lobe-icons) | logá služieb AI v LensGoo a LensAI | MIT |
+| [Google Sans Flex](https://fonts.google.com/specimen/Google+Sans+Flex) | písmo pozdravu Gemini | OFL 1.1 |
+| [Lora](https://fonts.google.com/specimen/Lora) | písmo pozdravu Claude | OFL 1.1 |
 
 Priložené súbory s vlastnou licenciou:
 
 | Súbor | Pôvod | Licencia |
 |---|---|---|
 | `assets/fonts/tabler-icons.ttf` | Tabler Icons, písmo ikon 3.34.1 (vetva `v0.4-fresh`) | MIT (`assets/fonts/LICENSE-tabler-icons.txt`) |
+| `goo/ai/*.svg` | Lobe Icons, logá služieb AI (vetva `v0.4-fresh`) | MIT (`goo/ai/LICENSE-lobe-icons.txt`) |
+| `assets/fonts/GoogleSansFlex.ttf` | Google Sans Flex (vetva `v0.4-fresh`) | OFL 1.1 (`assets/fonts/OFL-GoogleSansFlex.txt`) |
+| `assets/fonts/Lora.ttf` | Lora (vetva `v0.4-fresh`) | OFL 1.1 (`assets/fonts/OFL-Lora.txt`) |
 | `session/fonts/Manrope[wght].ttf` | Manrope | SIL OFL 1.1 (`session/fonts/OFL-Manrope.txt`) |
 | `session/fonts/Fraunces[…].ttf` | Fraunces | SIL OFL 1.1 (`session/fonts/OFL-Fraunces.txt`) |
 | `session/kvapky/textury/hlinik_*.webp`, `striebro_*.webp` | ambientCG Metal009, Metal010 | CC0 1.0 (`session/kvapky/textury/LICENCIA.txt`) |
