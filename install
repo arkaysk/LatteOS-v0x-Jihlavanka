@@ -168,6 +168,10 @@ def main(a):
         for name in plugins:
             if subprocess.run(as_user + ["make", "-C", os.path.join(HERE, "plugins", name)]).returncode:
                 return 1
+        # how LatteOS was developed, for the Settings' About page: from this repository's history, as the user (git
+        # refuses a repository that is not its asker's); no history (a copy without .git) leaves the old file as it is
+        if os.path.isdir(os.path.join(HERE, ".git")):
+            subprocess.run(as_user + [sys.executable, os.path.join(HERE, "bin", "latte-activity"), "write", os.path.join(HERE, "build", "activity.json")])
 
     say("== the files" + ("" if act else " (nothing is copied without --go)"))
     done = missing = 0

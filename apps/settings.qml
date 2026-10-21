@@ -325,6 +325,10 @@ ShellRoot {
     Run { id: pictures }
     Run { id: machine }
     Process { id: pour; onExited: { Quickshell.execDetached(["latte-say", "emit coffee_changed"]); coffees.ask(["latte-login", "coffees"]) } }
+    // how LatteOS is developed: the history of its repository, written at the install (bin/latte-activity)
+    FileView { id: activity; path: shell.share + "/activity.json"; printErrors: false; property var data: ({ days: {}, commits: [], total: 0 })
+               onLoaded: { try { activity.data = JSON.parse(text()) } catch (e) {} } }
+    property string openCommit: ""
     FileView { id: release; path: "/etc/os-release"; printErrors: false; property string pretty: ""
                onLoaded: pretty = (text().match(/^PRETTY_NAME="?([^"\n]*)/m) || ["", ""])[1] }
     onPageChanged: {
@@ -1240,6 +1244,76 @@ ShellRoot {
                     Label { color: Theme.dim; font.pixelSize: 13; width: parent.width
                             text: [parent.parent.os, parent.parent.c.kernel ? "Linux " + parent.parent.c.kernel : "", parent.parent.c.cpu || "", parent.parent.c.ram_gb ? parent.parent.c.ram_gb + " GB" : ""].filter(s => s !== "").join("  ·  ") } } }
             Pill { visible: shell.page === "about"; icon: "cpu"; text: I18n.tr("Open the Device Manager"); onPressed: Quickshell.execDetached(["latte-app", "devices"]) }
+
+            // how LatteOS is developed: a square for each day of the last year, as GitHub draws it, and what was changed lately
+            Part { id: dev; visible: shell.page === "about" && activity.data.total > 0; width: view.room; title: I18n.tr("How LatteOS is developed")
+                   readonly property var days: activity.data.days || ({})
+                   readonly property int peak: Math.max(1, ...Object.values(days))
+                   readonly property real cell: Math.max(8, Math.min(26, Math.floor((view.room - 96) / 53) - 3))
+                   // the last 53 weeks, Monday first, from the week of today back: [{ w, d, key, n }] and where a month begins
+                   readonly property var grid: {
+                       const out = [], marks = [], today = new Date(); today.setHours(12, 0, 0, 0)
+                       const monday = new Date(today); monday.setDate(today.getDate() - ((today.getDay() + 6) % 7))
+                       const start = new Date(monday); start.setDate(monday.getDate() - 52 * 7)
+                       let month = -1
+                       for (let w = 0; w < 53; w++) {
+                           const first = new Date(start); first.setDate(start.getDate() + w * 7)
+                           if (first.getMonth() !== month) { month = first.getMonth(); marks.push({ w: w, name: Qt.formatDate(first, "MMM") }) }
+                           for (let d = 0; d < 7; d++) {
+                               const dt = new Date(start); dt.setDate(start.getDate() + w * 7 + d)
+                               if (dt > today) continue
+                               const key = Qt.formatDate(dt, "yyyy-MM-dd")
+                               out.push({ w: w, d: d, key: key, n: days[key] || 0, at: dt })
+                           }
+                       }
+                       return { cells: out, marks: marks }
+                   }
+                   readonly property int lastYear: Object.values(days).reduce((a, b) => a + b, 0)
+                   property string hint: ""
+                   function level(n) { return n <= 0 ? 0 : Math.ceil(4 * n / peak) }
+                   function tone(l) { return l === 0 ? Qt.rgba(Theme.cream.r, Theme.cream.g, Theme.cream.b, 0.07) : shell.mixed(Theme.coffee, Theme.gold, l / 4) }
+                Rectangle { width: view.room; height: dev.cell * 7 + 6 * 3 + 96; radius: 18; color: Theme.card; border.width: 1; border.color: Theme.line
+                    Label { x: 22; y: 16; font.pixelSize: 13; color: Theme.dim
+                            text: dev.hint !== "" ? dev.hint : I18n.tr("{n} changes in all, {m} of them in the last year", { n: activity.data.total, m: dev.lastYear }) }
+                    Item { x: 22; y: 44; width: parent.width - 44; height: dev.cell * 7 + 6 * 3 + 22
+                        Repeater { model: dev.grid.marks
+                            Label { required property var modelData; x: modelData.w * (dev.cell + 3); text: modelData.name; color: Theme.faint; font.pixelSize: 10; font.family: Theme.mono } }
+                        Repeater { model: dev.grid.cells
+                            Rectangle { id: sq; required property var modelData; x: modelData.w * (dev.cell + 3); y: 18 + modelData.d * (dev.cell + 3); width: dev.cell; height: dev.cell; radius: 3
+                                color: dev.tone(dev.level(modelData.n)); border.width: sqHit.containsMouse ? 1 : 0; border.color: Theme.gold
+                                MouseArea { id: sqHit; anchors.fill: parent; hoverEnabled: true
+                                            onContainsMouseChanged: dev.hint = containsMouse ? I18n.tr("{n} changes", { n: sq.modelData.n }) + "  ·  " + Qt.formatDate(sq.modelData.at, "d. M. yyyy") : "" } } } }
+                    Row { anchors.right: parent.right; anchors.rightMargin: 22; anchors.bottom: parent.bottom; anchors.bottomMargin: 14; spacing: 5
+                        Label { text: I18n.tr("Less"); color: Theme.faint; font.pixelSize: 10; anchors.verticalCenter: parent.verticalCenter }
+                        Repeater { model: 5; Rectangle { required property int index; width: 11; height: 11; radius: 3; color: dev.tone(index) } }
+                        Label { text: I18n.tr("More"); color: Theme.faint; font.pixelSize: 10; anchors.verticalCenter: parent.verticalCenter } } } }
+
+            Part { visible: shell.page === "about" && (activity.data.commits || []).length > 0; width: view.room; title: I18n.tr("Latest changes")
+                   note: I18n.tr("Press one to read it whole: what was changed and in which files.")
+                Repeater { model: activity.data.commits || []
+                    Rectangle { id: cm; required property var modelData; width: view.room; radius: 14; color: cmHit.containsMouse ? Theme.raised : Theme.card; clip: true
+                        readonly property bool open: shell.openCommit === modelData.hash
+                        height: cmCol.implicitHeight + 24; Behavior on height { NumberAnimation { duration: 170; easing.type: Easing.OutCubic } }
+                        Column { id: cmCol; x: 16; y: 12; width: parent.width - 32; spacing: 10
+                            Row { width: parent.width; spacing: 12; height: 22
+                                Glyph { name: cm.open ? "chevron-down" : "chevron-right"; font.pixelSize: 14; color: Theme.dim; anchors.verticalCenter: parent.verticalCenter }
+                                Label { text: cm.modelData.hash; color: Theme.gold; font.family: Theme.mono; font.pixelSize: 12; font.weight: 700; anchors.verticalCenter: parent.verticalCenter }
+                                Label { width: parent.width - 220; text: cm.modelData.subject; font.weight: 600; elide: Text.ElideRight; anchors.verticalCenter: parent.verticalCenter }
+                                Label { text: Qt.formatDateTime(new Date(cm.modelData.at), "d. M. hh:mm"); color: Theme.faint; font.family: Theme.mono; font.pixelSize: 12; anchors.verticalCenter: parent.verticalCenter } }
+                            Column { visible: cm.open; width: parent.width; spacing: 10
+                                Label { text: cm.modelData.author + "  ·  " + Qt.formatDateTime(new Date(cm.modelData.at), "d. M. yyyy hh:mm"); color: Theme.dim; font.pixelSize: 12 }
+                                // what its author wrote, whole
+                                TextEdit { width: parent.width; readOnly: true; selectByMouse: true; wrapMode: Text.Wrap; color: Theme.cream; font.family: Theme.font; font.pixelSize: 13; selectionColor: Theme.coffee
+                                           text: cm.modelData.subject + (cm.modelData.body ? "\n\n" + cm.modelData.body : "") }
+                                Rectangle { width: parent.width; height: 1; color: Theme.line }
+                                Repeater { model: cm.modelData.files
+                                    Row { required property var modelData; width: cmCol.width; spacing: 10
+                                        Label { width: parent.width - 120; text: parent.modelData.path; elide: Text.ElideMiddle; color: Theme.dim; font.family: Theme.mono; font.pixelSize: 12 }
+                                        Label { width: 52; horizontalAlignment: Text.AlignRight; text: "+" + parent.modelData.added; color: Theme.ok; font.family: Theme.mono; font.pixelSize: 12 }
+                                        Label { width: 52; horizontalAlignment: Text.AlignRight; text: "−" + parent.modelData.removed; color: Theme.red; font.family: Theme.mono; font.pixelSize: 12 } } }
+                                Label { visible: cm.modelData.more > 0; text: I18n.tr("… and {n} more files", { n: cm.modelData.more }); color: Theme.faint; font.pixelSize: 12 } } }
+                        MouseArea { id: cmHit; anchors.left: parent.left; anchors.right: parent.right; height: 46; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
+                                    onClicked: shell.openCommit = cm.open ? "" : cm.modelData.hash } } } }
 
             // a page that is still to come
             Column { visible: shell.here !== null && shell.here.status !== "ready"; width: view.room; spacing: 14; topPadding: 40

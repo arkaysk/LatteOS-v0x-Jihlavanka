@@ -1514,5 +1514,12 @@ library Slovak {
         "File name" = "Názov súboru"
         "Attributes" = "Atribúty"
         "Used: {n}" = "Použité: {n}"
+        "How LatteOS is developed" = "Ako sa vyvíja LatteOS"
+        "{n} changes in all, {m} of them in the last year" = "{n} zmien spolu, {m} z nich za posledný rok"
+        "{n} changes" = "zmien: {n}"
+        "Less" = "Menej"
+        "Latest changes" = "Posledné zmeny"
+        "Press one to read it whole: what was changed and in which files." = "Stlač jednu, prečítaš si ju celú: čo sa zmenilo a v ktorých súboroch."
+        "… and {n} more files" = "… a ďalších súborov: {n}"
     }
 }

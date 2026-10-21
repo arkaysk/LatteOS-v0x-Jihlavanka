@@ -507,7 +507,7 @@ Schválené 12. 10. 2026. Pracuje sa **zhora nadol, neskáče sa**; nový nápad
     - f. [ ] **Témy Keramika, Hliník, Onyx, Steam** (používateľ, 21. 10.): v `Theme.cups` sú zatiaľ Espresso, Mocha,
       Porcelán a Z tapety; doplniť ich (aj materiál okien podľa PRAVIDLÁ bod 12). Aplikácie berú farby iba z témy
       (DualBrew, LensAI, Nastavenia…), takže sa prefarbia samy — overiť snímkou každú tému.
-18. [ ] **Vývoj LatteOS v Nastavenia › Systém › O tomto počítači** (používateľ, 21. 10.): štvorčekový graf aktivity
+18. [x] **Vývoj LatteOS v Nastavenia › Systém › O tomto počítači** (hotové 21. 10.: `bin/latte-activity` zapíše históriu repa do `build/activity.json` pri `./install --go`, inštaluje sa ako `/usr/share/latteos/activity.json`; graf 53 týždňov so štvorčekmi v farbách témy a nápovedou pri myši, 30 posledných commitov rozbaliteľných — autor, dátum, celá správa, zmenené súbory s +/−. **Rozhodnutie pre vydania:** verejné `arkaysk/latteos` má iba snímky vydaní, preto graf nesie súbor z repa, nie GitHub API; či vydanie smie niesť správy commitov, je na `zverejnit.sh`). (používateľ, 21. 10.): štvorčekový graf aktivity
     (ako na GitHube: týždne v stĺpcoch, dni v riadkoch, sýtosť podľa počtu commitov) — ako pokračuje vývoj projektu;
     pod ním posledné commity, každý rozbaliteľný: dátum, autor, správa celá a čitateľne, zmenené súbory. Zdroj:
     verejné repo LatteOS cez GitHub API (`/stats/commit_activity`, `/commits`), bez siete posledné uložené; na

@@ -1,0 +1,74 @@
+#!/usr/bin/env python3
+"""latte-activity: how LatteOS has been developed, from the repository's own history, for the Settings' "About this
+computer": a square graph of the days (as GitHub draws a profile's) and the latest commits, each readable in full.
+
+  latte-activity write FILE   the history of the repository this is run in, as JSON, into FILE (./install does it,
+                              into build/activity.json, which is installed as /usr/share/latteos/activity.json)
+  latte-activity show [FILE]  what a file says, or the installed one: {"written", "days": {"YYYY-MM-DD": n}, "total",
+                              "commits": [{"hash", "at", "author", "subject", "body", "files": [{"path", "added",
+                              "removed"}], "more"}]}
+
+The days are the last 53 weeks; the commits the latest 30, with up to 40 files each. A message is what its author wrote:
+publishing a release publishes these lines, so it is the release script's to decide whether it ships the file.
+"""
+import datetime
+import json
+import os
+import subprocess
+import sys
+
+SHIPPED = os.path.join(os.environ.get("LATTE_SHARE") or "/usr/share/latteos", "activity.json")
+COMMITS, FILES, WEEKS = 30, 40, 53
+
+
+def git(*args):
+    return subprocess.run(["git"] + list(args), capture_output=True, text=True, check=True).stdout
+
+
+def history():
+    since = (datetime.date.today() - datetime.timedelta(weeks=WEEKS)).isoformat()
+    days = {}
+    for line in git("log", "--since=" + since, "--format=%ad", "--date=short").splitlines():
+        days[line] = days.get(line, 0) + 1
+    out = []
+    # a record separator and a unit separator: a message may hold any text, but not these
+    for rec in git("log", "-n", str(COMMITS), "--format=%h%x1f%aI%x1f%an%x1f%s%x1f%b%x1e").split("\x1e"):
+        if not rec.strip():
+            continue
+        h, at, author, subject, body = (rec.strip("\n").split("\x1f") + [""] * 5)[:5]
+        files = []
+        for l in git("show", "--numstat", "--format=", h).splitlines():
+            p = l.split("\t")
+            if len(p) == 3:
+                files.append({"path": p[2], "added": int(p[0]) if p[0].isdigit() else 0, "removed": int(p[1]) if p[1].isdigit() else 0})
+        out.append({"hash": h, "at": at, "author": author, "subject": subject, "body": body.strip(),
+                    "files": files[:FILES], "more": max(0, len(files) - FILES)})
+    return {"written": datetime.datetime.now().isoformat(timespec="seconds"), "days": days,
+            "total": int(git("rev-list", "--count", "HEAD").strip()), "commits": out}
+
+
+def main(a):
+    if len(a) == 2 and a[0] == "write":
+        try:
+            data = history()
+        except (OSError, subprocess.CalledProcessError) as e:
+            print("latte-activity: no history here (%s)" % e, file=sys.stderr)
+            return 1
+        os.makedirs(os.path.dirname(os.path.abspath(a[1])), exist_ok=True)
+        with open(a[1], "w") as f:
+            json.dump(data, f, ensure_ascii=False)
+        print("latte-activity: %d commits, %d days" % (len(data["commits"]), len(data["days"])))
+        return 0
+    if a[:1] == ["show"]:
+        try:
+            with open(a[1] if len(a) > 1 else SHIPPED) as f:
+                print(f.read())
+        except OSError:
+            print("{}")
+        return 0
+    print(__doc__)
+    return 2
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))

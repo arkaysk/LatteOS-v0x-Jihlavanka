@@ -38,6 +38,8 @@ ln -sfn "$repo/system/hypr" "$out/share/hypr"
 ln -sfn "$repo/assets/wallpapers" "$out/share/wallpapers"
 ln -sfn "$repo/goo" "$out/share/goo"
 ln -sfn "$repo/apps" "$out/share/apps"
+ln -sfn "$repo/system/ai" "$out/share/ai"; ln -sfn "$repo/system/agents" "$out/share/agents"
+[ -f "$repo/build/activity.json" ] && ln -sfn "$repo/build/activity.json" "$out/share/activity.json"      # bin/latte-activity write build/activity.json
 mkdir -p "$out/fonts"; ln -sfn "$repo/assets/fonts" "$out/fonts/latteos"      # /usr/share/fonts/latteos, beside /usr/share/latteos
 # the plugins: this repository's own as it was last built (make -C plugins/latte-events), the title bars and the glass from the system
 mkdir -p "$out/plugins"

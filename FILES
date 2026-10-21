@@ -15,6 +15,7 @@
 /usr/bin/latte-say                                      <- bin/latte-say
 /usr/bin/latte-cal                                      <- bin/latte-cal
 /usr/bin/latte-ai                                       <- bin/latte-ai
+/usr/bin/latte-activity                                 <- bin/latte-activity
 /usr/bin/latte-app                                      <- bin/latte-app
 /usr/bin/latte-apps                                     <- bin/latte-apps
 /usr/bin/latte-devices                                  <- bin/latte-devices
@@ -176,6 +177,7 @@
 /usr/share/latteos/goo/ai/openai.svg                    <- goo/ai/openai.svg
 /usr/share/licenses/latteos/LICENSE-lobe-icons.txt      <- goo/ai/LICENSE-lobe-icons.txt
 /usr/share/latteos/agents/skills/latteos/SKILL.md       <- system/agents/skills/latteos/SKILL.md
+/usr/share/latteos/activity.json                        <- build/activity.json
 /etc/mise/conf.d/latteos-tools.toml                     <- system/mise/latteos-tools.toml
 /etc/mise/conf.d/latteos.toml                           <- system/mise/latteos.toml
 /usr/share/latteos/ai/local-models.json                 <- system/ai/local-models.json
