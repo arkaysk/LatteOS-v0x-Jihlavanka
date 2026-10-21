@@ -507,6 +507,14 @@ Schválené 12. 10. 2026. Pracuje sa **zhora nadol, neskáče sa**; nový nápad
     - f. [ ] **Témy Keramika, Hliník, Onyx, Steam** (používateľ, 21. 10.): v `Theme.cups` sú zatiaľ Espresso, Mocha,
       Porcelán a Z tapety; doplniť ich (aj materiál okien podľa PRAVIDLÁ bod 12). Aplikácie berú farby iba z témy
       (DualBrew, LensAI, Nastavenia…), takže sa prefarbia samy — overiť snímkou každú tému.
+    - g. [ ] **Kalendár ClockGoo (ľavý klik) a aplikácia Kalendár** (používateľ, 21. 10.: „kalendár, ktorý bude každý OS
+      závidieť“, prepojený s ≥10 kalendárovými službami). Návrh na schválenie: https://claude.ai/artifact/JZr5fi8uL3b6FavXCKUcbU
+      (mesiac s počasím, meninami a sviatkami, „Ďalej o…“ s Pripojiť sa, deň ako časová os s voľnými oknami, pridanie
+      vetou cez lokálnu AI, týždeň s ťahaním myšou, rok ako teplotná mapa v štandardných farbách, Nerušiť počas
+      stretnutí, kalendár ako nástroj LensAI). Základ prebratý: **Evolution Data Server + GNOME Online Accounts**
+      (+ `evolution-ews`, `gnome-online-accounts-gtk`, všetko vo Fedore) — Google, Microsoft 365/Outlook, Exchange,
+      Nextcloud cez OAuth; iCloud, Fastmail, Zoho, Yahoo cez CalDAV; Proton, Tuta, EduPage a odbery cez .ics; Thunderbird
+      a miestne cez EDS. `latte-cal` dnes vie iba odbery .ics na čítanie.
 18. [x] **Vývoj LatteOS v Nastavenia › Systém › O tomto počítači** (hotové 21. 10.: `bin/latte-activity` zapíše históriu repa do `build/activity.json` pri `./install --go`, inštaluje sa ako `/usr/share/latteos/activity.json`; graf 53 týždňov so štvorčekmi v farbách témy a nápovedou pri myši, 30 posledných commitov rozbaliteľných — autor, dátum, celá správa, zmenené súbory s +/−. **Rozhodnutie pre vydania:** verejné `arkaysk/latteos` má iba snímky vydaní, preto graf nesie súbor z repa, nie GitHub API; či vydanie smie niesť správy commitov, je na `zverejnit.sh`). (používateľ, 21. 10.): štvorčekový graf aktivity
     (ako na GitHube: týždne v stĺpcoch, dni v riadkoch, sýtosť podľa počtu commitov) — ako pokračuje vývoj projektu;
     pod ním posledné commity, každý rozbaliteľný: dátum, autor, správa celá a čitateľne, zmenené súbory. Zdroj:
