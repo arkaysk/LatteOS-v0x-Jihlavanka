@@ -43,6 +43,11 @@ No API key: the official tool of a service answers, with the account the user is
   latte-ai do TASK [AGENT]  "Do it for me": the agent (claude, chatgpt = Codex, gemini; else the chosen one) on the task in
                             a terminal, planning first with LatteOS's skill and changing nothing until the user says yes
   latte-ai doer AGENT       the agent "Do it for me" uses (~/.config/latteos/agent)
+  latte-ai local hardware | recommend | models | search TEXT [best|downloads|updated|likes] | files REPO | readme REPO |
+                 get REPO FILE | runtime get | gpu on|off | remove PATH
+                            the AI on this computer: what it can carry, LatteOS's recommended models (with "fit": gpu ·
+                            partial · cpu · too-big, and the "best"), Hugging Face's GGUF models as LM Studio lists them,
+                            a download ({"got", "total"} lines, then {"done"}), llama.cpp's Vulkan build
   latte-ai crash PID        a program that crashed (systemd-coredump): the agent finds out what happened and explains it
   latte-ai why              in SAFE: the agent finds out why the last session ended and explains it
   latte-ai models           every model of every service there is, for LensAI: [{"id", "name", "models":
@@ -180,12 +185,272 @@ LOCAL_CONTEXT = 8192
 LOCAL_DIRS = [os.path.join(os.environ.get("XDG_DATA_HOME") or os.path.expanduser("~/.local/share"), "latteos", "ai"), "/data/ai"]
 
 
+# ── the AI on this computer: what the hardware can carry, LatteOS's recommended models, and any other found on Hugging
+# Face as LM Studio finds them (GGUF files, how each would fit), downloaded into LOCAL_DIRS ──────────────────────────
+RECOMMENDED = os.path.join(os.environ.get("LATTE_SHARE") or "/usr/share/latteos", "ai", "local-models.json")
+HF = "https://huggingface.co"
+LOCAL_SETTINGS = os.path.join(os.environ.get("XDG_CONFIG_HOME") or os.path.expanduser("~/.config"), "latteos", "local-ai.json")
+
+
+def hardware():
+    """The processor (and whether it has AVX2: without it, only small models answer at a reading pace), the memory, the
+    graphics cards with their own memory, and the room where models go."""
+    cpu, flags = "", ""
+    for line in open("/proc/cpuinfo", errors="replace"):
+        if line.startswith("model name") and not cpu:
+            cpu = line.split(":", 1)[1].strip()
+        elif line.startswith("flags") and not flags:
+            flags = line
+    ram = 0
+    for line in open("/proc/meminfo"):
+        if line.startswith("MemTotal:"):
+            ram = int(line.split()[1]) * 1024
+    gpus = []
+    for dev in sorted(glob.glob("/sys/class/drm/card[0-9]/device")):
+        vendor = open(os.path.join(dev, "vendor")).read().strip() if os.path.exists(os.path.join(dev, "vendor")) else ""
+        vram = 0
+        try:
+            vram = int(open(os.path.join(dev, "mem_info_vram_total")).read())          # AMD
+        except (OSError, ValueError):
+            pass
+        name = {"0x1002": "AMD", "0x10de": "NVIDIA", "0x8086": "Intel"}.get(vendor, vendor)
+        try:
+            slot = os.path.basename(os.path.realpath(dev))
+            name = subprocess.run(["lspci", "-s", slot], capture_output=True, text=True, timeout=5).stdout.split(": ", 1)[-1].strip() or name
+        except (OSError, subprocess.TimeoutExpired):
+            pass
+        if vendor == "0x10de" and shutil.which("nvidia-smi"):
+            try:
+                vram = int(subprocess.run(["nvidia-smi", "--query-gpu=memory.total", "--format=csv,noheader,nounits"],
+                                          capture_output=True, text=True, timeout=10).stdout.split()[0]) * 1048576
+            except (OSError, ValueError, IndexError, subprocess.TimeoutExpired):
+                pass
+        gpus.append({"name": name, "vendor": {"0x1002": "amd", "0x10de": "nvidia", "0x8086": "intel"}.get(vendor, ""), "vram": vram})
+    where = models_dir()
+    free = shutil.disk_usage(where if os.path.exists(where) else os.path.expanduser("~")).free
+    return {"cpu": cpu, "cores": os.cpu_count() or 1, "avx2": " avx2" in flags, "ram": ram, "gpus": gpus, "dir": where, "free": free}
+
+
+def models_dir():
+    """Where a downloaded model goes: the first of LOCAL_DIRS that already has models, else the user's own."""
+    for d in LOCAL_DIRS:
+        if os.path.isdir(os.path.join(d, "models")) and os.access(os.path.join(d, "models"), os.W_OK):
+            return os.path.join(d, "models")
+    return os.path.join(LOCAL_DIRS[0], "models")
+
+
+def fit(size, hw):
+    """How a file of this size would run here, in LM Studio's words: on the graphics card whole, partly, on the processor
+    alone, or too large. Memory is left for the system and the rest of the desktop."""
+    vram = max([g["vram"] for g in hw["gpus"]] or [0])
+    need = size * 1.15                                  # the file and the context beside it
+    if vram and need <= vram * 0.9:
+        return "gpu"
+    ram = hw["ram"] * 0.6
+    if vram and need <= vram * 0.9 + ram:
+        return "partial"
+    return "cpu" if need <= ram else "too-big"
+
+
+def recommend():
+    """LatteOS's list with how each would fit, and the one offered: the best that fits; without AVX2 a dense model over
+    5 GB that leans on the processor answers too slowly to count (latte-lab, inspo/ai-na-ploche.md)."""
+    try:
+        with open(RECOMMENDED) as f:
+            listed = json.load(f)
+    except (OSError, ValueError):
+        listed = {"models": [], "updated": ""}
+    hw = hardware()
+    have = {os.path.basename(m["id"]) for m in local_models_all()}
+    best = ""
+    for m in listed["models"]:
+        m["fit"] = fit(m["size"], hw)
+        m["have"] = m["file"] in have
+        slow = m["fit"] in ("cpu", "partial") and not hw["avx2"] and not m.get("moe") and m["size"] > 5e9
+        if not best and m["fit"] != "too-big" and not slow:
+            best = m["id"]
+    small = listed["models"][-1]["id"] if listed["models"] else ""
+    return {"hardware": hw, "updated": listed.get("updated", ""), "models": listed["models"], "best": best, "fast": small,
+            "gpu": local_settings().get("gpu", False), "runtime": local_server() or ""}
+
+
+def local_settings():
+    try:
+        with open(LOCAL_SETTINGS) as f:
+            return json.load(f)
+    except (OSError, ValueError):
+        return {}
+
+
+def hf(path):
+    import urllib.request
+    return json.load(urllib.request.urlopen(urllib.request.Request(HF + path, headers={"Accept": "application/json"}), timeout=20))
+
+
+SORTS = {"best": "trendingScore", "downloads": "downloads", "updated": "lastModified", "likes": "likes"}
+
+
+def hf_search(text, sort="best"):
+    """Models on Hugging Face with GGUF files, as LM Studio's search lists them: sorted by best match (trending),
+    downloads, the latest or likes; each with what can be told without opening it (size class, base, licence, vision)."""
+    import re
+    import urllib.parse
+    found = hf("/api/models?" + urllib.parse.urlencode({"search": text, "filter": "gguf", "sort": SORTS.get(sort, "trendingScore"),
+                                                          "direction": "-1", "limit": "40", "full": "true"}))
+    out = []
+    for m in found:
+        tags = m.get("tags") or []
+        name = m["id"].split("/", 1)[1]
+        params = re.search(r"(\d+(?:\.\d+)?)[Bb](?![a-z])", name)
+        out.append({"repo": m["id"], "author": m["id"].split("/")[0], "name": re.sub(r"[-_]GGUF$", "", name, flags=re.I),
+                    "downloads": m.get("downloads", 0), "likes": m.get("likes", 0),
+                    "updated": (m.get("lastModified") or m.get("createdAt") or "")[:10], "params": (params.group(1) + "B") if params else "",
+                    "base": next((t.split(":", 1)[1] for t in tags if t.startswith("base_model:") and t.count(":") == 1), ""),
+                    "license": next((t.split(":", 1)[1] for t in tags if t.startswith("license:")), ""),
+                    "vision": m.get("pipeline_tag") == "image-text-to-text"})
+    return out
+
+
+def hf_readme(repo):
+    """A model's card, its README, without the front matter: what its page says of it."""
+    import urllib.request
+    try:
+        text = urllib.request.urlopen("%s/%s/raw/main/README.md" % (HF, repo), timeout=20).read().decode(errors="replace")
+    except OSError:
+        return ""
+    if text.startswith("---"):
+        end = text.find("\n---", 3)
+        text = text[end + 4:] if end > 0 else text
+    return text.strip()[:20000]
+
+
+def hf_files(repo):
+    """The GGUF files of a model on Hugging Face: each quantization with its size and how it would fit here, in LM Studio's
+    four estimations (lmstudio-js ModelSearch.ts, MIT: fullGPUOffload · partialGPUOffload · fitWithoutGPU · willNotFit,
+    here gpu · partial · cpu · too-big), and the one recommended."""
+    import re
+    hw = hardware()
+    have = {os.path.basename(m["id"]) for m in local_models_all()}
+    out, parts = [], {}
+    for f in hf("/api/models/%s/tree/main?recursive=true" % repo):
+        p = f.get("path", "")
+        base = os.path.basename(p).lower()
+        # not the model itself: its picture reader, and the small drafts that only speed a big one up (EAGLE, speculators)
+        if not p.endswith(".gguf") or "mmproj" in base or base.startswith("eagle") or "draft" in base or "speculator" in base:
+            continue
+        size = (f.get("lfs") or {}).get("size") or f.get("size") or 0
+        split = re.search(r"-(\d{5})-of-(\d{5})\.gguf$", p)
+        if split:                                   # a model in parts is one option: the first part, all of them counted
+            key = p[:split.start()]
+            parts.setdefault(key, []).append((p, size))
+            continue
+        q = re.search(r"(I?Q\d[\w]*|F16|BF16|F32|MXFP4\w*)", os.path.basename(p), re.I)
+        out.append({"file": p, "quant": q.group(1).upper() if q else "", "size": size, "fit": fit(size, hw), "have": os.path.basename(p) in have})
+    for key, files in parts.items():
+        files.sort()
+        size = sum(n for _, n in files)
+        q = re.search(r"(I?Q\d[\w]*|F16|BF16|F32|MXFP4\w*)", os.path.basename(key), re.I)
+        out.append({"file": files[0][0], "quant": q.group(1).upper() if q else "", "size": size, "fit": fit(size, hw),
+                    "have": os.path.basename(files[0][0]) in have, "parts": len(files)})
+    out.sort(key=lambda x: x["size"])
+    # the variant chosen when nothing is chosen, as LM Studio's `recommended`: Q4_K_M where it fits, else the largest that fits
+    fits = [f for f in out if f["fit"] != "too-big"]
+    pick = next((f for f in fits if f["quant"] == "Q4_K_M"), fits[-1] if fits else None)
+    for f in out:
+        f["recommended"] = f is pick
+    return out
+
+
+def hf_get(repo, file):
+    """Downloads a model file into models_dir(), resuming a broken one; a line {"got", "total"} as it comes. A model in
+    parts (-00001-of-0000N) comes whole: llama.cpp is given the first and finds the others beside it."""
+    import re
+    if ".." in repo or ".." in file or not file.endswith(".gguf"):
+        print(json.dumps({"error": "not a model file"}))
+        return 1
+    split = re.search(r"-00001-of-(\d{5})\.gguf$", file)
+    if split:
+        for n in range(int(split.group(1)), 0, -1):         # the first last: it is what says the model is here
+            code = hf_get_one(repo, file[:split.start()] + "-%05d-of-%s.gguf" % (n, split.group(1)))
+            if code:
+                return code
+        return 0
+    return hf_get_one(repo, file)
+
+
+def hf_get_one(repo, file):
+    import urllib.request
+    where = models_dir()
+    os.makedirs(where, exist_ok=True)
+    dest = os.path.join(where, os.path.basename(file))
+    part = dest + ".part"
+    got = os.path.getsize(part) if os.path.exists(part) else 0
+    req = urllib.request.Request("%s/%s/resolve/main/%s" % (HF, repo, file), headers={"Range": "bytes=%d-" % got} if got else {})
+    with urllib.request.urlopen(req, timeout=30) as r, open(part, "ab" if got else "wb") as out:
+        total = got + int(r.headers.get("Content-Length") or 0)
+        told = 0
+        while True:
+            chunk = r.read(1 << 20)
+            if not chunk:
+                break
+            out.write(chunk)
+            got += len(chunk)
+            if got - told >= 8 << 20 or got == total:
+                told = got
+                print(json.dumps({"got": got, "total": total}), flush=True)
+    os.replace(part, dest)
+    print(json.dumps({"done": dest}), flush=True)
+    return 0
+
+
+def runtime_get():
+    """llama.cpp's latest release built for Vulkan (any graphics card, and the processor), into LOCAL_DIRS[0]/llama."""
+    import urllib.request, zipfile
+    rel = json.load(urllib.request.urlopen("https://api.github.com/repos/ggml-org/llama.cpp/releases/latest", timeout=20))
+    asset = next((a for a in rel["assets"] if a["name"].endswith("-bin-ubuntu-vulkan-x64.zip")), None)
+    if not asset:
+        print(json.dumps({"error": "no Vulkan build in " + rel.get("tag_name", "")}))
+        return 1
+    home = os.path.join(LOCAL_DIRS[0], "llama", rel["tag_name"])
+    os.makedirs(home, exist_ok=True)
+    zpath = home + ".zip"
+    with urllib.request.urlopen(asset["browser_download_url"], timeout=30) as r, open(zpath, "wb") as out:
+        total, got = asset["size"], 0
+        while True:
+            chunk = r.read(1 << 20)
+            if not chunk:
+                break
+            out.write(chunk)
+            got += len(chunk)
+            print(json.dumps({"got": got, "total": total}), flush=True)
+    with zipfile.ZipFile(zpath) as z:
+        z.extractall(home)
+    os.remove(zpath)
+    # the archive keeps its programs in build/bin: llama-server is looked for one folder down
+    for f in glob.glob(os.path.join(home, "**", "*"), recursive=True):
+        if os.path.isfile(f) and os.path.dirname(f) != home:
+            os.replace(f, os.path.join(home, os.path.basename(f)))
+    for f in glob.glob(os.path.join(home, "*")):
+        if os.path.isfile(f) and not f.endswith((".so", ".txt", ".md")) and "." not in os.path.basename(f):
+            os.chmod(f, 0o755)
+    print(json.dumps({"done": os.path.join(home, "llama-server")}), flush=True)
+    return 0
+
+
 def local_server():
     for d in LOCAL_DIRS:
         found = sorted(glob.glob(os.path.join(d, "llama", "*", "llama-server")))
         if found:
             return found[-1]
     return shutil.which("llama-server", path=SEARCH)
+
+
+def local_models_all():
+    found = []
+    for d in LOCAL_DIRS:
+        found += glob.glob(os.path.join(d, "models", "*.gguf"))
+    return [{"id": f, "name": os.path.basename(f)[:-5], "size": os.path.getsize(f)} for f in sorted(found, key=os.path.getsize)
+            if "mmproj" not in os.path.basename(f).lower()]
 
 
 def local_models():
@@ -214,7 +479,8 @@ def local_start(model):
     subprocess.run(["pkill", "-f", "llama-server.*--port %d" % LOCAL_PORT])
     os.makedirs(ROOM, exist_ok=True)
     # the processor: on graphics cards like latte-lab's the small models run faster there (inspo/ai-na-ploche.md)
-    subprocess.Popen([local_server(), "-m", model, "-c", str(LOCAL_CONTEXT), "-t", str(max(2, (os.cpu_count() or 4) // 2)), "-ngl", "0",
+    gpu = "99" if local_settings().get("gpu") else "0"        # the user's choice in LensAI › This computer
+    subprocess.Popen([local_server(), "-m", model, "-c", str(LOCAL_CONTEXT), "-t", str(max(2, (os.cpu_count() or 4) // 2)), "-ngl", gpu,
                       "--host", "127.0.0.1", "--port", str(LOCAL_PORT), "--jinja"],
                      stdout=open(os.path.join(ROOM, "llama-server.log"), "w"), stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL, start_new_session=True)
     for _ in range(240):
@@ -1303,6 +1569,40 @@ def main(a):
             print(skill(a[1]))
         except OSError as e:
             print(e, file=sys.stderr)
+            return 1
+        return 0
+    if a[:1] == ["local"] and len(a) >= 2:
+        try:
+            if a[1] == "hardware":
+                print(json.dumps(hardware()))
+            elif a[1] == "recommend":
+                print(json.dumps(recommend(), ensure_ascii=False))
+            elif a[1] == "models":
+                print(json.dumps(local_models_all()))
+            elif a[1] == "search" and len(a) in (3, 4):
+                print(json.dumps(hf_search(a[2], a[3] if len(a) == 4 else "best")))
+            elif a[1] == "readme" and len(a) == 3:
+                print(json.dumps({"text": hf_readme(a[2])}))
+            elif a[1] == "files" and len(a) == 3:
+                print(json.dumps(hf_files(a[2])))
+            elif a[1] == "get" and len(a) == 4:
+                return hf_get(a[2], a[3])
+            elif a[1] == "runtime" and a[2:] == ["get"]:
+                return runtime_get()
+            elif a[1] == "gpu" and a[2:] in (["on"], ["off"]):
+                os.makedirs(os.path.dirname(LOCAL_SETTINGS), exist_ok=True)
+                with open(LOCAL_SETTINGS, "w") as f:
+                    json.dump(dict(local_settings(), gpu=a[2] == "on"), f)
+                subprocess.run(["pkill", "-f", "llama-server.*--port %d" % LOCAL_PORT])
+            elif a[1] == "remove" and len(a) == 3:
+                path = os.path.realpath(a[2])
+                if not any(path.startswith(os.path.realpath(os.path.join(d, "models")) + os.sep) for d in LOCAL_DIRS) or not path.endswith(".gguf"):
+                    return 1
+                os.remove(path)
+            else:
+                return 2
+        except OSError as e:
+            print(json.dumps({"error": str(e)}))
             return 1
         return 0
     if len(a) == 2 and a[0] == "crash" and a[1].isdigit():

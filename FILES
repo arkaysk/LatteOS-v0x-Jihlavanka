@@ -178,6 +178,7 @@
 /usr/share/latteos/agents/skills/latteos/SKILL.md       <- system/agents/skills/latteos/SKILL.md
 /etc/mise/conf.d/latteos-tools.toml                     <- system/mise/latteos-tools.toml
 /etc/mise/conf.d/latteos.toml                           <- system/mise/latteos.toml
+/usr/share/latteos/ai/local-models.json                 <- system/ai/local-models.json
 /usr/share/plymouth/themes/latteos/latteos.plymouth     <- system/plymouth/latteos.plymouth
 /usr/share/plymouth/themes/latteos/watermark.png        <- system/plymouth/watermark.png
 /usr/share/plymouth/themes/latteos/                     <- system:/usr/share/plymouth/themes/spinner/*.png

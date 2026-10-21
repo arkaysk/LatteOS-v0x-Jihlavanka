@@ -1,0 +1,18 @@
+{
+ "updated": "2026-10-21",
+ "about": "The local models LatteOS recommends, best first: the first one that fits a computer is offered to it. Kept up to date in the project about once a month or two (ROADMAP 16n); any other model can be found and downloaded in LensAI › This computer, as in LM Studio. Sizes are the files', in bytes.",
+ "models": [
+  {"id": "qwen3.6-35b-a3b", "name": "Qwen3.6 35B A3B", "repo": "unsloth/Qwen3.6-35B-A3B-GGUF", "file": "Qwen3.6-35B-A3B-UD-Q4_K_M.gguf", "size": 22130000000, "moe": true,
+   "good": "The best answers and writing in Slovak of these; a mixture of experts (3B active), so quick on a processor with enough memory."},
+  {"id": "gpt-oss-20b", "name": "gpt-oss 20B", "repo": "ggml-org/gpt-oss-20b-GGUF", "file": "gpt-oss-20b-MXFP4.gguf", "size": 12110000000, "moe": true,
+   "good": "OpenAI's open model: reasoning, commands and code; a mixture of experts, quick for its size."},
+  {"id": "gemma-4-12b", "name": "Gemma 4 12B", "repo": "unsloth/gemma-4-12b-it-GGUF", "file": "gemma-4-12b-it-Q4_K_M.gguf", "size": 7120000000, "moe": false,
+   "good": "Google's: good languages and summaries; wants a graphics card with 10 GB."},
+  {"id": "qwen3.5-9b", "name": "Qwen3.5 9B", "repo": "lmstudio-community/Qwen3.5-9B-GGUF", "file": "Qwen3.5-9B-Q4_K_M.gguf", "size": 5630000000, "moe": false,
+   "good": "A good everyday helper; on a graphics card with 8 GB, or a fast processor."},
+  {"id": "qwen3.5-4b", "name": "Qwen3.5 4B", "repo": "lmstudio-community/Qwen3.5-4B-GGUF", "file": "Qwen3.5-4B-Q4_K_M.gguf", "size": 2710000000, "moe": false,
+   "good": "The best Slovak of the small ones; summaries and short answers (measured on latte-lab: 5–15 s)."},
+  {"id": "qwen3.5-2b", "name": "Qwen3.5 2B", "repo": "lmstudio-community/Qwen3.5-2B-GGUF", "file": "Qwen3.5-2B-Q4_K_M.gguf", "size": 1270000000, "moe": false,
+   "good": "Small and quick on any processor: the micro-agents, a command from a sentence, translating (latte-lab: 2–5 s)."}
+ ]
+}

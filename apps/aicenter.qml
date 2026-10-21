@@ -13,7 +13,7 @@ import "common"
 ShellRoot {
     id: shell
     readonly property var words: (Quickshell.env("LATTE_APP_ARGS") || "").split("\n").filter(w => w !== "")
-    property string page: "chats"              // chats · agents · compare · models · instructions · services
+    property string page: "chats"              // chats · agents · local · compare · models · instructions · services
     // LatteOS's skill: the user's copy, made when it is first needed (latte-ai skill)
     FileView { id: skillFile; path: (Quickshell.env("XDG_CONFIG_HOME") || (Quickshell.env("HOME") + "/.config")) + "/latteos/skills/latteos/SKILL.md"; printErrors: false
                onLoaded: skillText.text = text(); onLoadFailed: skillMake.running = true }
@@ -56,6 +56,31 @@ ShellRoot {
     // the agents panel (Omarchy's, MIT): what each service tells of the account, and what was used
     Ask { id: agentsq; onDone: shell.agents = data || ({ services: [], stats: {} }) }
     property var agents: ({ services: [], stats: {}, doers: [], ideas: [] })
+    // the AI on this computer, as LM Studio offers it: what it can carry, LatteOS's recommended models, any other found
+    // on Hugging Face with how each file would fit, the downloads (latte-ai local)
+    component LocalAsk: Process {
+        id: lq
+        property var data: null
+        property string buf: ""
+        function ask(args) { running = false; command = ["latte-ai", "local"].concat(args); running = true }
+        stdout: StdioCollector { onStreamFinished: lq.buf = this.text }
+        onExited: { try { lq.data = JSON.parse(lq.buf) } catch (e) { lq.data = null } }
+    }
+    LocalAsk { id: localq }
+    LocalAsk { id: localModels }
+    LocalAsk { id: hfFound }
+    LocalAsk { id: hfFiles }
+    property string hfRepo: ""                 // the model on Hugging Face whose files are open
+    property var getting: null                 // the download now: { file, got, total }
+    Process { id: getter
+        stdout: SplitParser { onRead: line => { let m = null; try { m = JSON.parse(line) } catch (e) { return }
+            if (m.total) shell.getting = Object.assign({}, shell.getting, { got: m.got, total: m.total }) } }
+        onExited: { shell.getting = null; localq.ask(["recommend"]); localModels.ask(["models"]); if (shell.hfRepo) hfFiles.ask(["files", shell.hfRepo]); who.ask(["providers", "all"]) } }
+    function fetch(args, file) { if (getter.running) return; getting = { file: file, got: 0, total: 0 }; getter.command = ["latte-ai", "local"].concat(args); getter.running = true }
+    Process { id: localSet; onExited: localq.ask(["recommend"]) }
+    function gb(n) { return (n / 1e9).toFixed(n >= 1e10 ? 0 : 1) + " GB" }
+    readonly property var fits: ({ gpu: { word: QT_TR_NOOP("Full GPU offload"), color: "#4cc38a" }, partial: { word: QT_TR_NOOP("Partial GPU offload"), color: "#f7c873" },
+                                   cpu: { word: QT_TR_NOOP("On the processor"), color: "#7aa7ff" }, "too-big": { word: QT_TR_NOOP("Likely too large for this computer"), color: "#e5484d" } })
     // "Do it for me": the task goes to an agent in a terminal, which plans first and changes nothing before a yes
     Process { id: doer }
     function doIt(task, who) { doer.command = ["latte-ai", "do", task].concat(who ? [who] : []); doer.running = true }
@@ -109,8 +134,9 @@ ShellRoot {
     Timer { interval: 10000; repeat: true; running: shell.page === "services"; onTriggered: if (!svc.running) svc.ask(["services"]) }
     Component.onCompleted: {
         list.ask(["chats"]); who.ask(["providers", "all"]); svc.ask(["services"]); keyq.ask(["keys"])
-        if (["services", "models", "agents", "instructions"].indexOf(words[0]) >= 0) page = words[0]
+        if (["services", "models", "agents", "instructions", "local"].indexOf(words[0]) >= 0) page = words[0]
         if (page === "agents") agentsq.ask(["agents"])
+        if (page === "local") { localq.ask(["recommend"]); localModels.ask(["models"]) }
         // latte-app aicenter compare QUESTION PROVIDER/MODEL…: the same question to each, side by side
         if (words[0] === "compare" && words.length > 2) {
             page = "compare"
@@ -217,7 +243,7 @@ ShellRoot {
 
     AppWindow {
         title: I18n.tr("LensAI")
-        heading: shell.page === "agents" ? I18n.tr("Agents") : shell.page === "instructions" ? I18n.tr("Instructions") : shell.page === "services" ? I18n.tr("Services") : shell.page === "models" ? I18n.tr("Models") : shell.page === "compare" ? I18n.tr("Compare") : (shell.chat ? shell.chat.title : I18n.tr("Conversations"))
+        heading: shell.page === "agents" ? I18n.tr("Agents") : shell.page === "local" ? I18n.tr("This computer") : shell.page === "instructions" ? I18n.tr("Instructions") : shell.page === "services" ? I18n.tr("Services") : shell.page === "models" ? I18n.tr("Models") : shell.page === "compare" ? I18n.tr("Compare") : (shell.chat ? shell.chat.title : I18n.tr("Conversations"))
         implicitWidth: 1120; implicitHeight: 760
         ground: shell.glassy ? "transparent" : Theme.ground
         searchHint: I18n.tr("Find a conversation…")
@@ -258,6 +284,7 @@ ShellRoot {
                         text: I18n.tr("No conversation yet. LensGoo's AI tab (Win+C) keeps its conversations here too.") }
                 Item { width: 1; height: 10 }
                 Nav { text: I18n.tr("Agents"); icon: "robot"; on: shell.page === "agents"; onPressed: { shell.page = "agents"; agentsq.ask(["agents"]) } }
+                Nav { text: I18n.tr("This computer"); icon: "cpu"; on: shell.page === "local"; onPressed: { shell.page = "local"; localq.ask(["recommend"]); localModels.ask(["models"]) } }
                 Nav { text: I18n.tr("Compare"); icon: "layout-columns"; on: shell.page === "compare"; onPressed: shell.page = "compare" }
                 Nav { text: I18n.tr("Instructions"); icon: "file-text"; on: shell.page === "instructions"; onPressed: shell.page = "instructions" }
                 Nav { text: I18n.tr("Models"); icon: "sparkles"; on: shell.page === "models"; onPressed: { shell.page = "models"; modelq.ask(["models"]) } }
@@ -540,6 +567,164 @@ ShellRoot {
                                     text: I18n.tr("{n} questions through Lens this month", { n: sec.modelData.asked }) + "  ·  " + I18n.tr("The account's quota is not told here; the service's own page shows it.") } } } }
                 Label { visible: (shell.agents.services || []).length === 0 && !agentsq.running; width: parent.width; wrapMode: Text.WordWrap; color: Theme.dim
                         text: I18n.tr("No AI service is installed: see Services.") } } }
+
+        // ── the AI on this computer, as LM Studio has it: Discover (a search, its results on the left and the chosen
+        // model on the right with its download options and its card), My Models, Runtime; downloads at the foot ─────
+        Item {
+            id: localPage
+            anchors.fill: parent
+            visible: shell.page === "local"
+            property string tab: "discover"            // discover · mine · runtime
+            property string sort: "best"
+            property string query: ""
+            property var picked: null                  // the model open on the right
+            property string variant: ""                // its file chosen to download
+            readonly property var rec: localq.data || ({ hardware: { gpus: [] }, models: [] })
+            readonly property var picks: (rec.models || []).map(m => ({ repo: m.repo, name: m.name, author: m.repo.split("/")[0], params: (/(\d+(?:\.\d+)?)B/.exec(m.name) || ["", ""])[1] ? (/(\d+(?:\.\d+)?)B/.exec(m.name)[1] + "B") : "",
+                                                        good: m.good, pick: true, best: m.id === rec.best, fast: m.id === rec.fast }))
+            readonly property var listed: query === "" ? picks : (hfFound.data || []).map(m => Object.assign({ pick: picks.some(p => p.repo === m.repo) }, m))
+            function open(m) { picked = m; variant = ""; hfFiles.data = null; hfFiles.ask(["files", m.repo]); readmeq.ask(["readme", m.repo]) }
+            function search() { query = searchField.text.trim(); picked = null; if (query !== "") hfFound.ask(["search", query, sort]) }
+            readonly property var chosen: (hfFiles.data || []).find(f => f.file === variant) || (hfFiles.data || []).find(f => f.recommended) || null
+            function ago(d) { if (!d) return ""; const days = Math.floor((Date.now() - new Date(d)) / 86400000); return days < 1 ? I18n.tr("today") : days < 31 ? I18n.tr("{n} days ago", { n: days }) : days < 365 ? I18n.tr("{n} months ago", { n: Math.floor(days / 30) }) : I18n.tr("{n} years ago", { n: Math.floor(days / 365) }) }
+            function count(n) { return n >= 1e6 ? (n / 1e6).toFixed(1) + "M" : n >= 1e3 ? Math.round(n / 1e3) + "k" : String(n || 0) }
+            LocalAsk { id: readmeq }
+
+            component FitChip: Rectangle { property string fit; height: 22; radius: 11; width: fitRow.implicitWidth + 16
+                readonly property var f: shell.fits[fit] || shell.fits.cpu
+                color: Qt.rgba(Qt.color(f.color).r, Qt.color(f.color).g, Qt.color(f.color).b, 0.14)
+                Row { id: fitRow; anchors.centerIn: parent; spacing: 5
+                    Glyph { name: parent.parent.fit === "gpu" ? "rocket" : parent.parent.fit === "too-big" ? "alert-triangle" : parent.parent.fit === "partial" ? "bolt" : "cpu"; font.pixelSize: 12; color: parent.parent.f.color; anchors.verticalCenter: parent.verticalCenter }
+                    Label { text: I18n.tr(parent.parent.f.word); color: parent.parent.f.color; font.pixelSize: 11; font.weight: 700 } } }
+            component Tag: Rectangle { property string word; property color tint: Theme.dim; visible: word !== ""; height: 20; radius: 6; width: tagText.implicitWidth + 12; color: Qt.rgba(Qt.color(tint).r, Qt.color(tint).g, Qt.color(tint).b, 0.14)
+                Label { id: tagText; anchors.centerIn: parent; text: parent.word; color: parent.tint; font.pixelSize: 11; font.weight: 700 } }
+
+            // the tabs, as LM Studio's left rail has them
+            Row { id: localTabs; x: 22; y: 16; spacing: 8
+                Repeater { model: [{ id: "discover", name: QT_TR_NOOP("Discover"), icon: "search" }, { id: "mine", name: QT_TR_NOOP("My Models"), icon: "folder" }, { id: "runtime", name: QT_TR_NOOP("Runtime"), icon: "cpu" }]
+                    Pill { required property var modelData; implicitHeight: 34; icon: modelData.icon; text: I18n.tr(modelData.name); strong: localPage.tab === modelData.id; onPressed: localPage.tab = modelData.id } } }
+
+            // ── Discover ──
+            Item {
+                visible: localPage.tab === "discover"
+                anchors.fill: parent; anchors.topMargin: 62; anchors.bottomMargin: shell.getting ? 56 : 0
+                Row { x: 22; spacing: 10
+                    Field { id: searchField; width: Math.min(460, localPage.width * 0.42); icon: "search"; hint: I18n.tr("Search models on Hugging Face…"); onAccepted: localPage.search() }
+                    Repeater { model: [{ id: "best", name: QT_TR_NOOP("Best match") }, { id: "downloads", name: QT_TR_NOOP("Most downloads") }, { id: "updated", name: QT_TR_NOOP("Recently updated") }, { id: "likes", name: QT_TR_NOOP("Most liked") }]
+                        Pill { required property var modelData; implicitHeight: 32; text: I18n.tr(modelData.name); strong: localPage.sort === modelData.id; anchors.verticalCenter: parent.verticalCenter
+                               onPressed: { localPage.sort = modelData.id; if (localPage.query !== "") hfFound.ask(["search", localPage.query, modelData.id]) } } } }
+                // the list: LatteOS's picks while nothing is searched (LM Studio's Staff Picks), else what was found
+                Label { id: listHead; x: 22; y: 50; text: localPage.query === "" ? I18n.tr("LatteOS picks for this computer") : I18n.tr("{n} models", { n: localPage.listed.length }); color: Theme.dim; font.pixelSize: 12; font.weight: 700 }
+                ListView {
+                    id: found
+                    x: 16; y: 72; width: Math.min(440, parent.width * 0.42); height: parent.height - 80; clip: true; spacing: 6
+                    model: localPage.listed
+                    boundsBehavior: Flickable.StopAtBounds
+                    delegate: Rectangle { id: card; required property var modelData; width: found.width; height: 74; radius: 12
+                        readonly property bool on: !!localPage.picked && localPage.picked.repo === modelData.repo
+                        color: on ? Theme.raised : (cardHit.containsMouse ? Theme.card : "transparent"); border.width: on ? 1 : 0; border.color: Theme.gold
+                        Rectangle { x: 12; y: 12; width: 34; height: 34; radius: 17; color: Qt.hsla((card.modelData.author.charCodeAt(0) * 37 % 360) / 360, 0.45, 0.45, 1)
+                            Label { anchors.centerIn: parent; text: card.modelData.author.charAt(0).toUpperCase(); font.weight: 800; color: "#ffffff" } }
+                        Column { x: 56; y: 11; width: parent.width - 68; spacing: 4
+                            Row { spacing: 6; width: parent.width
+                                Label { text: card.modelData.name; font.weight: 800; font.pixelSize: 14; elide: Text.ElideRight; width: Math.min(implicitWidth, parent.width - 150) }
+                                Tag { word: card.modelData.params || ""; tint: Theme.cream }
+                                Tag { word: card.modelData.pick ? "LatteOS" : ""; tint: Theme.gold }
+                                Glyph { visible: !!card.modelData.vision; name: "eye"; font.pixelSize: 13; color: Theme.dim; anchors.verticalCenter: parent.verticalCenter } }
+                            Label { width: parent.width; elide: Text.ElideRight; color: Theme.dim; font.pixelSize: 12
+                                    text: card.modelData.good ? I18n.tr(card.modelData.good) : (card.modelData.author + "  ·  ↓ " + localPage.count(card.modelData.downloads) + "  ·  ♥ " + localPage.count(card.modelData.likes) + "  ·  " + localPage.ago(card.modelData.updated)) } }
+                        MouseArea { id: cardHit; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: localPage.open(card.modelData) } }
+                    Waiting { anchors.centerIn: parent; visible: hfFound.running; text: I18n.tr("Searching…") }
+                }
+                // the chosen model: its head, its download options, its card
+                Rectangle { x: found.x + found.width + 14; y: 50; width: parent.width - x - 22; height: parent.height - 58; radius: 16; color: Theme.card; border.width: 1; border.color: Theme.line
+                    Label { visible: !localPage.picked; anchors.centerIn: parent; color: Theme.faint; text: I18n.tr("Choose a model on the left") }
+                    Flickable { visible: !!localPage.picked; anchors.fill: parent; anchors.margins: 20; clip: true; contentHeight: detail.implicitHeight; boundsBehavior: Flickable.StopAtBounds
+                        Column { id: detail; width: parent.width; spacing: 12
+                            Row { spacing: 12
+                                Rectangle { width: 46; height: 46; radius: 23; color: localPage.picked ? Qt.hsla((localPage.picked.author.charCodeAt(0) * 37 % 360) / 360, 0.45, 0.45, 1) : "transparent"
+                                    Label { anchors.centerIn: parent; text: localPage.picked ? localPage.picked.author.charAt(0).toUpperCase() : ""; font.weight: 800; font.pixelSize: 20; color: "#ffffff" } }
+                                Column { spacing: 3; anchors.verticalCenter: parent.verticalCenter
+                                    Label { text: localPage.picked ? localPage.picked.name : ""; font.pixelSize: 22; font.weight: 800 }
+                                    Label { color: Theme.dim; font.pixelSize: 12; text: localPage.picked ? localPage.picked.repo + (localPage.picked.downloads !== undefined ? "  ·  ↓ " + localPage.count(localPage.picked.downloads) + "  ·  ♥ " + localPage.count(localPage.picked.likes) + "  ·  " + localPage.ago(localPage.picked.updated) : "") : "" } } }
+                            Flow { width: parent.width; spacing: 6
+                                Tag { word: localPage.picked && localPage.picked.params ? localPage.picked.params : ""; tint: Theme.cream }
+                                Tag { word: localPage.picked && localPage.picked.base ? I18n.tr("based on {n}", { n: localPage.picked.base }) : ""; tint: Theme.dim }
+                                Tag { word: localPage.picked && localPage.picked.license ? localPage.picked.license : ""; tint: Theme.dim }
+                                Tag { word: localPage.picked && localPage.picked.vision ? I18n.tr("sees pictures") : ""; tint: "#7aa7ff" }
+                                Tag { word: localPage.picked && localPage.picked.best ? I18n.tr("Best for you") : ""; tint: Theme.gold }
+                                Text { text: I18n.tr("Open on Hugging Face"); color: Theme.gold; font.family: Theme.font; font.pixelSize: 12; font.underline: true
+                                    MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: Qt.openUrlExternally("https://huggingface.co/" + localPage.picked.repo) } } }
+                            Label { visible: !!(localPage.picked && localPage.picked.good); width: parent.width; wrapMode: Text.WordWrap; color: Theme.cream; text: localPage.picked && localPage.picked.good ? I18n.tr(localPage.picked.good) : "" }
+                            // the download options, as LM Studio lists them: one chosen (the recommended one at first)
+                            Label { text: I18n.tr("Download options"); font.pixelSize: 15; font.weight: 800 }
+                            Waiting { visible: hfFiles.running; text: I18n.tr("Asking Hugging Face…"); width: parent.width }
+                            Repeater { model: hfFiles.data || []
+                                Rectangle { id: opt; required property var modelData; width: detail.width; height: 44; radius: 10
+                                    readonly property bool sel: !!localPage.chosen && localPage.chosen.file === modelData.file
+                                    color: sel ? Theme.raised : (optHit.containsMouse ? Qt.alpha(Theme.raised, 0.5) : "transparent"); border.width: sel ? 1 : 0; border.color: Theme.gold
+                                    Rectangle { x: 12; width: 16; height: 16; radius: 8; anchors.verticalCenter: parent.verticalCenter; color: "transparent"; border.width: opt.sel ? 5 : 1; border.color: opt.sel ? Theme.gold : Theme.dim }
+                                    Row { x: 40; anchors.verticalCenter: parent.verticalCenter; spacing: 12
+                                        Label { width: 86; text: opt.modelData.quant || "—"; font.weight: 800; anchors.verticalCenter: parent.verticalCenter }
+                                        Label { width: 70; text: shell.gb(opt.modelData.size); color: Theme.dim; anchors.verticalCenter: parent.verticalCenter }
+                                        FitChip { fit: opt.modelData.fit; anchors.verticalCenter: parent.verticalCenter }
+                                        Label { visible: !!opt.modelData.recommended; text: "★ " + I18n.tr("Recommended"); color: Theme.gold; font.pixelSize: 12; font.weight: 700; anchors.verticalCenter: parent.verticalCenter }
+                                        Label { visible: !!opt.modelData.have; text: "✓ " + I18n.tr("Downloaded"); color: Theme.ok; font.pixelSize: 12; font.weight: 700; anchors.verticalCenter: parent.verticalCenter } }
+                                    MouseArea { id: optHit; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: localPage.variant = opt.modelData.file } } }
+                            Pill { visible: !!localPage.chosen; implicitHeight: 40; strong: !(localPage.chosen && localPage.chosen.have); icon: localPage.chosen && localPage.chosen.have ? "check" : "download"
+                                   busy: !!shell.getting && !!localPage.chosen && shell.getting.file === localPage.chosen.file
+                                   text: !localPage.chosen ? "" : localPage.chosen.have ? I18n.tr("Downloaded") : I18n.tr("Download {n}", { n: (localPage.chosen.quant || "") + " · " + shell.gb(localPage.chosen.size) })
+                                   onPressed: if (localPage.chosen && !localPage.chosen.have) shell.fetch(["get", localPage.picked.repo, localPage.chosen.file], localPage.chosen.file) }
+                            // the model's card
+                            Rectangle { width: parent.width; height: 1; color: Theme.line }
+                            TextEdit { width: parent.width; readOnly: true; selectByMouse: true; wrapMode: Text.Wrap; textFormat: TextEdit.MarkdownText; color: Theme.cream; font.family: Theme.font; font.pixelSize: 13
+                                       text: readmeq.data && readmeq.data.text ? readmeq.data.text : "" } } } }
+            }
+
+            // ── My Models: what is on this computer ──
+            Scroll {
+                id: minePage
+                visible: localPage.tab === "mine"
+                anchors.topMargin: 62
+                Label { text: I18n.tr("{n} models on this computer", { n: (localModels.data || []).length }) + "  ·  " + (localPage.rec.hardware.dir || ""); color: Theme.dim; font.pixelSize: 12 }
+                Repeater { model: localModels.data || []
+                    Rectangle { id: lm; required property var modelData; width: minePage.room; height: 50; radius: 10; color: Theme.card
+                        Glyph { x: 14; anchors.verticalCenter: parent.verticalCenter; name: "cube"; color: Theme.gold }
+                        Label { x: 44; anchors.verticalCenter: parent.verticalCenter; text: lm.modelData.name; font.weight: 600; width: parent.width - 280; elide: Text.ElideRight }
+                        Label { anchors.right: delBtn.left; anchors.rightMargin: 12; anchors.verticalCenter: parent.verticalCenter; text: shell.gb(lm.modelData.size); color: Theme.dim }
+                        Pill { id: delBtn; anchors.right: parent.right; anchors.rightMargin: 8; anchors.verticalCenter: parent.verticalCenter; implicitHeight: 30; icon: "trash"; danger: true; text: I18n.tr("Delete")
+                               onPressed: { localSet.command = ["latte-ai", "local", "remove", lm.modelData.id]; localSet.running = true; localModels.ask(["models"]) } } } }
+            }
+
+            // ── Runtime: the computer, llama.cpp, the graphics card ──
+            Scroll {
+                id: runPage
+                visible: localPage.tab === "runtime"
+                anchors.topMargin: 62
+                Rectangle { width: runPage.room; height: hwCol.implicitHeight + 32; radius: 16; color: Theme.card; border.width: 1; border.color: Theme.line
+                    Column { id: hwCol; x: 18; y: 16; width: parent.width - 36; spacing: 8
+                        Label { text: I18n.tr("Your computer"); font.pixelSize: 16; font.weight: 800 }
+                        Label { width: parent.width; wrapMode: Text.WordWrap; color: Theme.dim; font.pixelSize: 13
+                                text: (localPage.rec.hardware.cpu || "…") + "  ·  " + I18n.tr("{n} cores", { n: localPage.rec.hardware.cores || 0 }) + (localPage.rec.hardware.avx2 === false ? "  ·  " + I18n.tr("without AVX2: small models are quicker") : "")
+                                      + "\n" + I18n.tr("Memory {n}", { n: shell.gb(localPage.rec.hardware.ram || 0) }) + "  ·  " + (localPage.rec.hardware.gpus || []).map(g => g.name + (g.vram ? " (" + shell.gb(g.vram) + ")" : "")).join(", ")
+                                      + "\n" + I18n.tr("Models go to {n}, {m} free", { n: localPage.rec.hardware.dir || "", m: shell.gb(localPage.rec.hardware.free || 0) }) } } }
+                Row { spacing: 10
+                    Label { anchors.verticalCenter: parent.verticalCenter; color: localPage.rec.runtime ? Theme.ok : Theme.gold; font.pixelSize: 13
+                            text: localPage.rec.runtime ? I18n.tr("llama.cpp is ready") : I18n.tr("llama.cpp, which runs the models, is not here yet") }
+                    Pill { implicitHeight: 32; icon: "download"; text: localPage.rec.runtime ? I18n.tr("Update llama.cpp") : I18n.tr("Download llama.cpp")
+                           busy: !!shell.getting && shell.getting.file === "llama.cpp"; onPressed: shell.fetch(["runtime", "get"], "llama.cpp") } }
+                Pill { implicitHeight: 32; icon: localPage.rec.gpu === true ? "check" : "cpu"; strong: localPage.rec.gpu === true; text: I18n.tr("Use the graphics card")
+                       onPressed: { localSet.command = ["latte-ai", "local", "gpu", localPage.rec.gpu === true ? "off" : "on"]; localSet.running = true } }
+            }
+
+            // the download now, at the foot, as LM Studio's downloads bar
+            Rectangle { visible: !!shell.getting; anchors.left: parent.left; anchors.right: parent.right; anchors.bottom: parent.bottom; height: 50; color: Theme.card; border.width: 1; border.color: Theme.line
+                Glyph { x: 18; anchors.verticalCenter: parent.verticalCenter; name: "download"; color: Theme.gold }
+                Label { x: 46; anchors.verticalCenter: parent.verticalCenter; width: 300; elide: Text.ElideMiddle; text: shell.getting ? shell.getting.file : "" }
+                DotBar { x: 360; anchors.verticalCenter: parent.verticalCenter; width: parent.width - 360 - 150; height: 8; segments: 40; value: shell.getting && shell.getting.total ? shell.getting.got / shell.getting.total : 0 }
+                Label { anchors.right: parent.right; anchors.rightMargin: 18; anchors.verticalCenter: parent.verticalCenter; font.weight: 700
+                        text: shell.getting && shell.getting.total ? shell.gb(shell.getting.got) + " / " + shell.gb(shell.getting.total) : I18n.tr("Starting…") } }
+        }
 
         // ── one question to several AIs at once, the answers side by side ──────────────────────────────────
         Item {
