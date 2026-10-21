@@ -19,14 +19,24 @@ ShellRoot {
     readonly property var words: (Quickshell.env("LATTE_APP_ARGS") || "").split("\n").filter(w => w !== "")
 
     // ── the areas and the pages ───────────────────────────────────────────────────────────────────────────
-    property var areas: []
-    FileView { path: shell.share + "/apps/settings/pages.json"; onLoaded: { try { shell.areas = JSON.parse(text()) } catch (e) {} if (shell.words[0]) shell.go(shell.words[0]) } }
+    property var areasAll: []
+    FileView { path: shell.share + "/apps/settings/pages.json"; onLoaded: { try { shell.areasAll = JSON.parse(text()) } catch (e) {} if (shell.words[0]) shell.go(shell.words[0]) } }
+    // basic, or everything beyond it: details and changes at the system's level (pages marked "expert" in pages.json, and
+    // parts of pages); the choice is kept (~/.config/latteos/settings-mode) and switched at the window's foot
+    Word { id: modeWord; name: "settings-mode" }
+    readonly property bool expert: modeWord.value === "expert"
+    function setExpert(on) { modeWord.choose(on ? "expert" : "basic"); if (!on && here && here.expert) { page = ""; asked = "" } }
+    readonly property var areas: areasAll.map(a => Object.assign({}, a, { pages: a.pages.filter(p => expert || !p.expert) })).filter(a => a.pages.length > 0)
     property string page: ""                   // "" is the front page
     property string unfolded: "look"           // the area whose pages show in the side
     property string asked: ""                  // what is searched for
     readonly property var all: { const l = []; for (const a of areas) for (const p of a.pages) l.push(Object.assign({ area: a }, p)); return l }
     readonly property var here: all.find(p => p.id === page) || null
-    function go(id) { const p = all.find(q => q.id === id); if (p) { page = id; unfolded = p.area.id; asked = "" } }
+    function go(id) {
+        // a page of the expert mode asked for by name (LensGoo, a link): the mode comes on with it
+        if (!all.find(q => q.id === id) && areasAll.some(a => a.pages.some(q => q.id === id && q.expert))) { setExpert(true); Qt.callLater(() => go(id)); return }
+        const p = all.find(q => q.id === id); if (p) { page = id; unfolded = p.area.id; asked = "" }
+    }
     // no accents, no case, y as i; as in bin/latte-settings, which LensGoo asks: a slip of a letter does not matter
     function plain(s) { return s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/y/g, "i") }
     function close(a, b) {
@@ -335,9 +345,13 @@ ShellRoot {
     component Part: Column {                   // a part of a page: a heading, a word about it, and what is set
         property string title
         property string note
+        property bool expertOnly: false        // shown in the expert mode only: marked so
         default property alias content: inside.data
         spacing: 10
-        Label { text: title; font.pixelSize: 18; font.weight: 700 }
+        Row { spacing: 8
+            Label { text: title; font.pixelSize: 18; font.weight: 700 }
+            Rectangle { visible: expertOnly; height: 20; radius: 6; width: expTag.implicitWidth + 12; anchors.verticalCenter: parent.verticalCenter; color: Qt.rgba(Theme.gold.r, Theme.gold.g, Theme.gold.b, 0.18)
+                Label { id: expTag; anchors.centerIn: parent; text: I18n.tr("Expert"); color: Theme.gold; font.pixelSize: 11; font.weight: 800 } } }
         Label { text: note; visible: text !== ""; color: Theme.dim; font.pixelSize: 13; width: parent.width; wrapMode: Text.WordWrap }
         Item { width: 1; height: 2 }
         Flow { id: inside; width: parent.width; spacing: 14 }
@@ -398,6 +412,19 @@ ShellRoot {
         onSearchTextChanged: shell.asked = searchText.trim()
 
         // ── the side: areas that unfold into their pages ──────────────────────────────────────────────────
+        // the foot, as the sketch has it: what the system is, and the switch between the basic and the expert mode
+        foot: [
+            Label { x: 24; anchors.verticalCenter: parent.verticalCenter; color: "#e0c9b1"; font.pixelSize: 12; width: parent.width - 330; elide: Text.ElideRight
+                    text: [release.pretty, "LatteOS GOO", Quickshell.env("LATTE_TIER") || ""].filter(x => x).join("  ·  ") },
+            Rectangle { anchors.right: parent.right; anchors.rightMargin: 20; anchors.verticalCenter: parent.verticalCenter; height: 36; radius: 18; width: expRow.implicitWidth + 28
+                color: shell.expert ? Theme.gold : Qt.rgba(0, 0, 0, 0.25); border.width: 1; border.color: Theme.gold
+                Row { id: expRow; anchors.centerIn: parent; spacing: 10
+                    Glyph { name: "tools"; font.pixelSize: 16; color: shell.expert ? Theme.inkOnGold : Theme.gold; anchors.verticalCenter: parent.verticalCenter }
+                    Label { text: shell.expert ? I18n.tr("Expert mode is on") : I18n.tr("Switch to the expert mode"); color: shell.expert ? Theme.inkOnGold : Theme.inkOnCoffee; font.weight: 700; font.pixelSize: 13; anchors.verticalCenter: parent.verticalCenter }
+                    Rectangle { width: 36; height: 20; radius: 10; color: shell.expert ? Theme.inkOnGold : Qt.rgba(1, 1, 1, 0.2); anchors.verticalCenter: parent.verticalCenter
+                        Rectangle { width: 14; height: 14; radius: 7; y: 3; x: shell.expert ? 19 : 3; color: shell.expert ? Theme.gold : "#ffffff"; Behavior on x { NumberAnimation { duration: 140 } } } } }
+                MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: shell.setExpert(!shell.expert) } }
+        ]
         side: [
             // the account, at the foot of the side as the overview's sketch has it (inspo/latteOS settings priklad.png)
             Rectangle { anchors.left: parent.left; anchors.right: parent.right; anchors.bottom: parent.bottom; anchors.margins: 14; height: 58; radius: 14
@@ -438,6 +465,7 @@ ShellRoot {
                                         Rectangle { width: 3; height: 16; radius: 2; color: Theme.gold; visible: line.on; anchors.verticalCenter: parent.verticalCenter }
                                         Label { x: line.sub ? 62 : 44; width: parent.width - 70 - (line.sub ? 18 : 0); text: I18n.tr(line.modelData.name); font.pixelSize: line.sub ? 12 : 13; color: line.on ? Theme.cream : Theme.dim; anchors.verticalCenter: parent.verticalCenter }
                                         Dot { status: line.modelData.status; anchors.right: parent.right; anchors.rightMargin: 12; anchors.verticalCenter: parent.verticalCenter }
+                                        Glyph { visible: !!line.modelData.expert; name: "tools"; font.pixelSize: 12; color: Theme.gold; anchors.right: parent.right; anchors.rightMargin: 28; anchors.verticalCenter: parent.verticalCenter }
                                         MouseArea { id: lineHit; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: shell.go(line.modelData.id) } } } } } } } }
         ]
 
@@ -743,7 +771,7 @@ ShellRoot {
                 Repeater { model: [{ n: 0, name: QT_TR_NOOP("None") }, { n: 1, name: QT_TR_NOOP("A little") }, { n: 2, name: QT_TR_NOOP("More") }, { n: 3, name: QT_TR_NOOP("The most") }]
                     Choice { required property var modelData; width: 150; text: I18n.tr(modelData.name); on: Theme.glassLevel === modelData.n
                              onPressed: { glassLevel.choose(String(modelData.n)); Theme.glassLevel = modelData.n; goo.set("glass", modelData.n) } } } }
-            Part { visible: shell.page === "windows" && Theme.glassLevel > 0; width: view.room; title: I18n.tr("The glass of the side panels"); note: I18n.tr("What is behind a window shows through its side panel, blurred. Where the graphics card cannot blur, the panel is solid.")
+            Part { visible: shell.page === "windows" && Theme.glassLevel > 0 && shell.expert; expertOnly: true; width: view.room; title: I18n.tr("The glass of the side panels"); note: I18n.tr("What is behind a window shows through its side panel, blurred. Where the graphics card cannot blur, the panel is solid.")
                 Repeater { model: [{ id: "frost", name: QT_TR_NOOP("Frosted") }, { id: "smoke", name: QT_TR_NOOP("Smoked") }, { id: "clear", name: QT_TR_NOOP("Clear") }, { id: "milk", name: QT_TR_NOOP("Milky") }]
                     Choice { id: pane; required property var modelData; width: 150; height: 130; text: I18n.tr(modelData.name); on: Theme.glass === modelData.id; onPressed: { glass.choose(modelData.id); Theme.glass = modelData.id }
                         ClippingRectangle { anchors.fill: parent; radius: 10; color: "transparent"
@@ -763,7 +791,7 @@ ShellRoot {
                 Label { width: view.room; text: logon.data && logon.data.place ? logon.data.place : I18n.tr("No place yet"); font.weight: 700; font.pixelSize: 15 }
                 Field { id: weatherPlace; width: Math.min(420, view.room); icon: "map-pin"; hint: I18n.tr("Type a town and press Enter…")
                         onAccepted: if (text.trim() !== "") { shell.order(["latte-settings", "loginscreen", "place", text.trim()]); text = "" } } }
-            Part { visible: shell.page === "clockgoo"; width: view.room; title: I18n.tr("Forecast by")
+            Part { visible: shell.page === "clockgoo" && shell.expert; expertOnly: true; width: view.room; title: I18n.tr("Forecast by")
                    note: I18n.tr("The weather services whose forecasts ClockGoo shows side by side, up to five. They often differ: together they tell what may come.")
                 Repeater { model: shell.page === "clockgoo" && weatherq.data ? weatherq.data.models : []
                     Pill { required property var modelData
@@ -1138,7 +1166,7 @@ ShellRoot {
                 Item { width: view.room; height: 1 }
                 Repeater { model: layPart.shown
                     Pill { required property var modelData; icon: "plus"; text: modelData.name; onPressed: { layField.text = ""; shell.order(["latte-settings", "keyboard"].concat(keys.data.current, [modelData.id])) } } } }
-            Part { visible: shell.page === "keyboard"; width: view.room; title: I18n.tr("Shortcuts"); note: I18n.tr("The mouse comes first in LatteOS: each of these is also a drop or a row of a card. Win is the Windows key.")
+            Part { visible: shell.page === "keyboard" && shell.expert; expertOnly: true; width: view.room; title: I18n.tr("Shortcuts"); note: I18n.tr("The mouse comes first in LatteOS: each of these is also a drop or a row of a card. Win is the Windows key.")
                 Repeater { model: shell.page === "keyboard" && binds.data ? binds.data.filter(b => b.has_description) : []
                     Rectangle { id: bound; required property var modelData; width: Math.floor((view.room - 14) / 2); height: 44; radius: 12; color: Theme.card
                         Label { x: 16; width: parent.width - keyed.width - 40; text: I18n.tr(bound.modelData.description); anchors.verticalCenter: parent.verticalCenter }

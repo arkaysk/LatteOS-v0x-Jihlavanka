@@ -1496,5 +1496,8 @@ library Slovak {
         "ALL SETTINGS" = "VŠETKY NASTAVENIA"
         "LatteOS GOO" = "LatteOS GOO"
         "How much of LatteOS is glass: the side panels, the windows and the AI's pages." = "Koľko z LatteOS je zo skla: bočné panely, okná a stránky AI."
+        "Expert" = "Expert"
+        "Expert mode is on" = "Expertný režim je zapnutý"
+        "Switch to the expert mode" = "Prepnúť na expertný režim"
     }
 }

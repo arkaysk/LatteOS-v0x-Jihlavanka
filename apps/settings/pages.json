@@ -26,7 +26,8 @@
     "icon": "player-play",
     "status": "planned",
     "words": "autostart services boot login tasks",
-    "elsewhere": "monitor startup"
+    "elsewhere": "monitor startup",
+    "expert": true
    },
    {
     "id": "defaults",
@@ -82,7 +83,8 @@
     "name": "Performance and graphics",
     "icon": "activity",
     "status": "ready",
-    "words": "tier gpu fps speed graphics card blur shadows animations effects"
+    "words": "tier gpu fps speed graphics card blur shadows animations effects",
+    "expert": true
    },
    {
     "id": "displays",
@@ -276,14 +278,16 @@
     "name": "GuardDog",
     "icon": "shield-check",
     "status": "ready",
-    "words": "guard watch restart components running keeps alive dog"
+    "words": "guard watch restart components running keeps alive dog",
+    "expert": true
    },
    {
     "id": "startmode",
     "name": "Start and safe mode",
     "icon": "shield-check",
     "status": "ready",
-    "words": "boot safe mode crash rescue start"
+    "words": "boot safe mode crash rescue start",
+    "expert": true
    }
   ]
  }

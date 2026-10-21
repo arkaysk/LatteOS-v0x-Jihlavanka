@@ -200,6 +200,7 @@ return {
     ["terminal"] = "\u{EBDC}",
     ["terminal-2"] = "\u{EBEF}",
     ["tool"] = "\u{EB40}",
+    ["tools"] = "\u{EBCA}",
     ["trash"] = "\u{EB41}",
     ["umbrella"] = "\u{EBF1}",
     ["upload"] = "\u{EB47}",
