@@ -71,6 +71,7 @@ part Ai {
     fact ai_sub_h = 0
     fact ai_sub_y = 0                          // where its row stands in the menu
     fact ai_think = false                      // DeepSeek's deep thinking is on
+    fact ai_glass = 1                          // how much of the page is glass: 0 none (white) … 3 the most
     text ai_search_word = ""
     text ic_ai_world = ""
     text ic_ai_more = ""
@@ -117,7 +118,7 @@ part Ai {
         move: card.x0, card.y0
 
         // ── the service's own page under the conversation and the field: one knows at a glance whose it is ────
-        box { from: 8, 56; size: card.w - 16, ai.fy + ai.fh + 8 - 56; corner: 16; color: if(ai.k == 0, #faf9f5, if(ai.k == 1, #f8fafd, if(ai.k == 2, #fafaf9, if(ai.k == 3, #ffffff, if(ai.k == 5, #ffffff, if(ai.k == 6, #fafaf7, if(ai.k == 7, #ffffff, #000000))))))); opacity: if(ai.k == 4, 0, 100%) }
+        box { from: 8, 56; size: card.w - 16, ai.fy + ai.fh + 8 - 56; corner: 16; color: if(ai.k == 0, #faf9f5, if(ai.k == 1, #f8fafd, if(ai.k == 2, #fafaf9, if(ai.k == 3, #ffffff, if(ai.k == 5, #ffffff, if(ai.k == 6, #fafaf7, if(ai.k == 7, #ffffff, #000000))))))); opacity: if(ai.k == 4, 0, 100%); glass: if(ai_glass == 0, 0, 100%); frost: 100%; milk: pick(ai_glass, 0%, 95%, 85%, 72%) }
         // ── the conversation: on the glass, it scrolls; the newest at the bottom ─────────────────────────────
         column talk {
             at: 16, 58

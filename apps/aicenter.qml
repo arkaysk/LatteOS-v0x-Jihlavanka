@@ -121,6 +121,10 @@ ShellRoot {
         "deepseek": { page: "#ffffff", bg: "#ffffff", rim: "#e5e7eb", ink: "#262626", text: "#262626", dim: "#a3a3a3", ubg: "#eff6ff", round: 24, send: "#4d6bfe", sendEmpty: "#b5c8fb", sendInk: "#ffffff", sendInkEmpty: "#ffffff", tick: "#4d6bfe" },
         "own": { page: "transparent", bg: "#3d2c22", rim: "#5a463a", ink: "#f5e8d8", text: "#f5e8d8", dim: "#b8a491", ubg: Qt.rgba(0.97, 0.78, 0.45, 0.14), round: 14, send: Theme.gold, sendEmpty: Theme.gold, sendInk: "#2a1e17", sendInkEmpty: "#2a1e17", tick: Theme.gold, chipBg: "#4a372b" } })[style] || ({})
     readonly property var look_own: ({ menu: "#2a1e17", ink: "#f5e8d8", dim: "#b8a491" })
+    // the service's page as glass, the wallpaper blurred behind it and lifted towards white so its dark words read:
+    // 0 white as on the service's own page … 3 the most glass (as LensGoo's ai_glass); solid where nothing blurs
+    property int glassLevel: 1
+    readonly property bool glassy: page === "chats" && style !== "own" && glassLevel > 0 && Theme.blurred
     readonly property color webInk: style === "own" ? "#c3b1ff" : "#6b4fd8"   // what opens the service's page, the same for all
     readonly property var effortWords: ({ low: QT_TR_NOOP("low"), medium: QT_TR_NOOP("medium"), high: QT_TR_NOOP("high"), xhigh: QT_TR_NOOP("very high"), max: QT_TR_NOOP("highest"), think: QT_TR_NOOP("thinking") })
     function effortWord(e) { return e ? I18n.tr(effortWords[e] || e) : "" }
@@ -194,6 +198,7 @@ ShellRoot {
         title: I18n.tr("LensAI")
         heading: shell.page === "instructions" ? I18n.tr("Instructions") : shell.page === "services" ? I18n.tr("Services") : shell.page === "models" ? I18n.tr("Models") : shell.page === "compare" ? I18n.tr("Compare") : (shell.chat ? shell.chat.title : I18n.tr("Conversations"))
         implicitWidth: 1120; implicitHeight: 760
+        ground: shell.glassy ? "transparent" : Theme.ground
         searchHint: I18n.tr("Find a conversation…")
         onSearched: text => shell.find = text
         tools: [
@@ -243,7 +248,7 @@ ShellRoot {
             id: chatPane
             anchors.fill: parent
             visible: shell.page === "chats"
-            Rectangle { anchors.fill: parent; anchors.margins: 8; radius: 16; color: shell.look.page }
+            Rectangle { anchors.fill: parent; anchors.margins: 8; radius: 16; color: shell.look.page; opacity: shell.glassy ? [1, 0.9, 0.8, 0.68][shell.glassLevel] : 1 }
             ListView {
                 id: talk
                 anchors.fill: parent; anchors.bottomMargin: 130

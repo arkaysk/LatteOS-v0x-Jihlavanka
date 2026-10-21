@@ -29,6 +29,7 @@ FloatingWindow {
     property alias foot: sea.content
     default property alias content: body.data
     property real footDepth: 58
+    property color ground: Theme.ground        // what the app stands on; "transparent" lets a glass page of its own through
     readonly property bool hasFoot: sea.content.length > 0
 
     property bool arrows: false                // the app has pages one goes back from
@@ -85,7 +86,7 @@ FloatingWindow {
     Rectangle {
         id: solid
         anchors.left: glass.right; anchors.right: parent.right; height: parent.height
-        color: Theme.ground
+        color: win.ground
 
         // the coffee: behind everything when the app has no lower part, the line above it when it has
         Surface {
