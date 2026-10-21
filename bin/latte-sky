@@ -10,9 +10,11 @@ Prints one JSON object:
   place, hours [{time, temp, code}], days [{weekday (0 Monday), max, min, code, rain %}]
   latte-sky sources: the next days as the chosen weather services see them, and the links to the place's own services
   latte-sky models · latte-sky choose MODEL on|off: which services, for the Settings
+  latte-sky country: the country of the place (two letters, "sk"): what name days and holidays follow. login.conf
+  keeps it when the Settings set the place; a place set before that is looked up once by its name, else LANG
   now also "feels" (apparent temperature) and "humidity"; sunrise, sunset ("HH:MM", local today); aqi {value, level 0…5}
 """
-import datetime, json, math, os, re, sys, time, urllib.request
+import datetime, json, math, os, re, sys, time, urllib.parse, urllib.request
 
 CONF = "/var/lib/latteos/login/login.conf"
 CACHE = os.path.join(os.environ.get("XDG_CACHE_HOME") or os.path.expanduser("~/.cache"), "latteos", "weather.json")
@@ -25,6 +27,39 @@ def conf():
         return dict(re.findall(r'^\s*(\w+)\s*=\s*"?(.*?)"?\s*$', open(CONF, encoding="utf-8").read(), re.M))
     except OSError:
         return {}
+
+
+def country():
+    """The place's country: as login.conf keeps it, else found once from the place's name (open-meteo's geocoding,
+    kept beside the weather), else the one in LANG."""
+    c = conf()
+    if c.get("country"):
+        return c["country"].lower()
+    place = c.get("place", "")
+    if place:
+        kept = os.path.join(os.path.dirname(CACHE), "country.json")
+        try:
+            with open(kept) as f:
+                k = json.load(f)
+            if k.get("place") == place:
+                return k["country"]
+        except (OSError, ValueError, KeyError):
+            pass
+        try:
+            url = "https://geocoding-api.open-meteo.com/v1/search?count=5&name=" + urllib.parse.quote(place.split(",")[0])
+            hits = json.load(urllib.request.urlopen(url, timeout=8)).get("results") or []
+            # the hit nearest the place's own coordinates: a name is often in more than one country
+            lat, lon = float(c.get("lat") or 0), float(c.get("lon") or 0)
+            hit = min(hits, key=lambda h: abs(h["latitude"] - lat) + abs(h["longitude"] - lon)) if hits else None
+            if hit and hit.get("country_code"):
+                os.makedirs(os.path.dirname(kept), exist_ok=True)
+                with open(kept, "w") as f:
+                    json.dump({"place": place, "country": hit["country_code"].lower()}, f)
+                return hit["country_code"].lower()
+        except (OSError, ValueError):
+            pass
+    lang = os.environ.get("LC_ALL") or os.environ.get("LANG") or "sk_SK"
+    return (lang[3:5] if len(lang) >= 5 and lang[2] == "_" else "sk").lower()
 
 
 def sky(lat, lon, t=None):
@@ -146,14 +181,14 @@ def links(c=None):
     """The weather services of the place's country and those of anywhere, from weather-services.txt, their addresses filled in."""
     c = conf() if c is None else c
     import urllib.parse
-    country, out = (c.get("country") or os.environ.get("LANG", "sk_SK")[3:5] or "sk").lower(), []
+    country_, out = country(), []
     try:
         lines = open(SERVICES, encoding="utf-8").read().splitlines()
     except OSError:
         return out
     for line in lines:
         parts = [p.strip() for p in line.split("|")]
-        if len(parts) != 4 or line.lstrip().startswith("#") or parts[0] not in (country, "*"):
+        if len(parts) != 4 or line.lstrip().startswith("#") or parts[0] not in (country_, "*"):
             continue
         url = parts[3].replace("{lat}", c.get("lat", "")).replace("{lon}", c.get("lon", "")).replace("{place}", urllib.parse.quote(c.get("place", "").split(",")[0]))
         out.append({"name": parts[1], "what": parts[2], "url": url, "here": parts[0] != "*"})
@@ -238,6 +273,9 @@ def report(c=None, f=None):
 
 
 if __name__ == "__main__":
+    if sys.argv[1:] == ["country"]:
+        print(country())
+        sys.exit(0)
     if sys.argv[1:] == ["sources"]:
         print(json.dumps(sources(), ensure_ascii=False))
         sys.exit(0)

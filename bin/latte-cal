@@ -1,5 +1,22 @@
 #!/usr/bin/env python3
-"""latte-cal ADDRESS…: the events of calendars kept elsewhere, for ClockGoo's calendar.
+"""latte-cal: the calendars, for ClockGoo and the Calendar app.
+
+  latte-cal events [--from YYYY-MM-DD] [--to YYYY-MM-DD] [ADDRESS…]
+        every event: the user's accounts (Google, Microsoft 365, Exchange, Nextcloud, iCloud and other CalDAV,
+        Thunderbird's and this computer's own — Evolution Data Server keeps them, GNOME Online Accounts signs in),
+        the addresses given (iCalendar, below) and the holidays of the place's country (latte-sky country). Prints
+        [{"date", "time" ("" for a whole day), "end", "title", "location", "link" (a Teams, Meet or Zoom address found
+        in it), "calendar", "color", "kind": "event"|"holiday", "uid", "source"}], sorted; a month ago to a year ahead
+        unless said otherwise. A repeated event comes once for each time (Evolution Data Server writes them out).
+  latte-cal calendars        the calendars: [{"uid", "name", "account", "color", "backend", "writable", "enabled"}]
+  latte-cal add UID TITLE START END [LOCATION]   a new event in the calendar UID; START and END as YYYY-MM-DDTHH:MM,
+        or YYYY-MM-DD for a whole day (END the day after the last); prints {"ok", "uid"}
+  latte-cal remove UID EVENT                     takes an event out
+  latte-cal holidays [YEAR]  the holidays of the place's country, in the user's language where it is known
+  latte-cal accounts         the window where accounts are signed in (gnome-online-accounts-gtk)
+  latte-cal ADDRESS…         as before: the events of the addresses only, [{"date", "time", "title"}]
+
+An address
 
 An address is a calendar in iCalendar form: https://…, webcal://… or a file (.ics). Google Calendar, iCloud,
 Nextcloud and the rest all give such an address for a calendar ("secret address in iCal format").
@@ -9,9 +26,12 @@ left out, with a line on stderr.
 """
 import datetime as dt
 import json
+import os
 import re
+import subprocess
 import sys
 import urllib.request
+import uuid
 from zoneinfo import ZoneInfo
 
 DAYS = {"MO": 0, "TU": 1, "WE": 2, "TH": 3, "FR": 4, "SA": 5, "SU": 6}
@@ -114,7 +134,193 @@ def events(text, first, last):
     return out
 
 
+# ── the user's accounts, through Evolution Data Server ───────────────────────────────────────────────────────────────
+LINKS = re.compile(r"https://(?:teams\.microsoft\.com/l/meetup-join|teams\.live\.com/meet|meet\.google\.com|[\w.-]*zoom\.us/j|[\w.-]*webex\.com)/[^\s<>\"']+")
+
+
+def eds():
+    import gi
+    gi.require_version("EDataServer", "1.2"); gi.require_version("ECal", "2.0"); gi.require_version("ICalGLib", "3.0")
+    from gi.repository import EDataServer, ECal, ICalGLib
+    return EDataServer, ECal, ICalGLib
+
+
+def calendars():
+    try:
+        EDataServer, ECal, _ = eds()
+        reg = EDataServer.SourceRegistry.new_sync(None)
+    except Exception as e:                      # no Evolution Data Server here: no accounts, the addresses still work
+        print(f"latte-cal: {e}", file=sys.stderr)
+        return []
+    out = []
+    for src in reg.list_sources(EDataServer.SOURCE_EXTENSION_CALENDAR):
+        ext = src.get_extension(EDataServer.SOURCE_EXTENSION_CALENDAR)
+        parent = reg.ref_source(src.get_parent()) if src.get_parent() else None
+        out.append({"uid": src.get_uid(), "name": src.get_display_name(), "account": parent.get_display_name() if parent else "",
+                    "color": ext.get_color() or "#f7c873", "backend": ext.get_backend_name(), "enabled": src.get_enabled(),
+                    "writable": ext.get_backend_name() not in ("contacts", "weather", "webcal") and src.get_writable()})
+    return out
+
+
+def account_events(first, last):
+    try:
+        EDataServer, ECal, _ = eds()
+        reg = EDataServer.SourceRegistry.new_sync(None)
+    except Exception:
+        return []
+    out = []
+    for cal in calendars():
+        if not cal["enabled"]:
+            continue
+        try:
+            client = ECal.Client.connect_sync(reg.ref_source(cal["uid"]), ECal.ClientSourceType.EVENTS, 15, None)
+        except Exception as e:
+            print(f"latte-cal: {cal['name']}: {e}", file=sys.stderr)
+            continue
+
+        def each(icomp, start, end, *rest):
+            whole = start.is_date()
+            s = dt.datetime.fromtimestamp(start.as_timet_with_zone(start.get_timezone()) if start.get_timezone() else start.as_timet())
+            e = dt.datetime.fromtimestamp(end.as_timet_with_zone(end.get_timezone()) if end.get_timezone() else end.as_timet())
+            if whole:
+                s, e = dt.datetime.combine(start_date(start), dt.time()), dt.datetime.combine(start_date(end), dt.time())
+            where = icomp.get_location() or ""
+            text = " ".join(x for x in (where, icomp.get_description() or "") if x)
+            link = LINKS.search(text)
+            # a whole day of several days shows on each of them
+            days = max(1, (e - s).days) if whole else 1
+            for n in range(min(days, 31)):
+                d = s + dt.timedelta(days=n)
+                if first <= d <= last:
+                    out.append({"date": d.strftime("%Y-%m-%d"), "time": "" if whole else s.strftime("%H:%M"),
+                                "end": "" if whole else e.strftime("%H:%M"), "title": (icomp.get_summary() or "").strip(),
+                                "location": where if not where.startswith("http") else "", "link": link.group(0) if link else "",
+                                "calendar": cal["name"], "color": cal["color"], "kind": "event", "uid": icomp.get_uid() or "",
+                                "source": cal["uid"]})
+            return True
+        try:
+            client.generate_instances_sync(int(first.timestamp()), int(last.timestamp()), None, each)
+        except Exception as e:
+            print(f"latte-cal: {cal['name']}: {e}", file=sys.stderr)
+    return out
+
+
+def start_date(t):
+    return dt.date(t.get_year(), t.get_month(), t.get_day())
+
+
+def place_country():
+    try:
+        c = subprocess.run(["latte-sky", "country"], capture_output=True, text=True, timeout=12).stdout.strip()
+        if re.fullmatch(r"[a-z]{2}", c):
+            return c
+    except (OSError, subprocess.TimeoutExpired):
+        pass
+    return (os.environ.get("LANG", "sk_SK")[3:5] or "sk").lower()
+
+
+def holidays_of(years):
+    """The public holidays of the place's country (python-holidays), named in the user's language where it can."""
+    try:
+        import holidays
+    except ImportError:
+        return {}
+    country = place_country().upper()
+    lang = (os.environ.get("LC_ALL") or os.environ.get("LANG") or "en").split("_")[0].split(".")[0]
+    try:
+        return holidays.country_holidays(country, years=years, language=lang)
+    except (NotImplementedError, KeyError):
+        return {}
+    except Exception:
+        return holidays.country_holidays(country, years=years)
+
+
+def all_events(first, last, addresses):
+    found = account_events(first, last)
+    for a in addresses:
+        try:
+            for e in events(fetch(a), first, last):
+                found.append(dict(e, end="", location="", link="", calendar=a.split("/")[2] if "//" in a else os.path.basename(a),
+                                  color="#f7c873", kind="event", uid="", source=a))
+        except Exception as e:
+            print(f"latte-cal: {a}: {e}", file=sys.stderr)
+    for d, name in sorted(holidays_of(range(first.year, last.year + 1)).items()):
+        day = dt.datetime.combine(d, dt.time())
+        if first <= day <= last:
+            found.append({"date": d.isoformat(), "time": "", "end": "", "title": name, "location": "", "link": "",
+                          "calendar": "", "color": "#e5484d", "kind": "holiday", "uid": "", "source": "holidays"})
+    seen, out = set(), []
+    for e in sorted(found, key=lambda e: (e["date"], e["kind"] != "holiday", e["time"], e["title"])):
+        key = (e["date"], e["time"], e["title"], e["source"])
+        if key not in seen:
+            seen.add(key)
+            out.append(e)
+    return out
+
+
+def add(cal_uid, title, start, end, location=""):
+    EDataServer, ECal, ICalGLib = eds()
+    reg = EDataServer.SourceRegistry.new_sync(None)
+    client = ECal.Client.connect_sync(reg.ref_source(cal_uid), ECal.ClientSourceType.EVENTS, 15, None)
+    zone_name = os.path.realpath("/etc/localtime").split("zoneinfo/")[-1]
+    zone = ICalGLib.Timezone.get_builtin_timezone(zone_name)
+    comp = ECal.Component.new()
+    comp.set_new_vtype(ECal.ComponentVType.EVENT)
+    comp.set_uid(str(uuid.uuid4()))
+
+    def at(text):
+        whole = "T" not in text
+        t = ICalGLib.Time.new_from_string(text.replace("-", "").replace(":", "") + ("" if whole else "00"))
+        if not whole:
+            t.set_timezone(zone)
+        return ECal.ComponentDateTime.new(t, None if whole else zone_name)
+    comp.set_dtstart(at(start))
+    comp.set_dtend(at(end))
+    comp.set_summary(ECal.ComponentText.new(title, None))
+    if location:
+        comp.set_location(location)
+    comp.commit_sequence()
+    ok, uid = client.create_object_sync(comp.get_icalcomponent(), ECal.OperationFlags.NONE, None)
+    return {"ok": bool(ok), "uid": uid or ""}
+
+
+def remove(cal_uid, event_uid):
+    EDataServer, ECal, _ = eds()
+    reg = EDataServer.SourceRegistry.new_sync(None)
+    client = ECal.Client.connect_sync(reg.ref_source(cal_uid), ECal.ClientSourceType.EVENTS, 15, None)
+    client.remove_object_sync(event_uid, None, ECal.ObjModType.ALL, ECal.OperationFlags.NONE, None)
+    return {"ok": True}
+
+
+def command(a):
+    today = dt.datetime.combine(dt.date.today(), dt.time())
+    if a[0] == "events":
+        first, last, rest = today - dt.timedelta(days=31), today + dt.timedelta(days=366), a[1:]
+        while rest[:1] in (["--from"], ["--to"]) and len(rest) > 1:
+            d = dt.datetime.strptime(rest[1], "%Y-%m-%d")
+            if rest[0] == "--from": first = d
+            else: last = d + dt.timedelta(days=1)
+            rest = rest[2:]
+        print(json.dumps(all_events(first, last, rest), ensure_ascii=False))
+    elif a == ["calendars"]:
+        print(json.dumps(calendars(), ensure_ascii=False))
+    elif a[0] == "add" and len(a) in (5, 6):
+        print(json.dumps(add(*a[1:])))
+    elif a[0] == "remove" and len(a) == 3:
+        print(json.dumps(remove(a[1], a[2])))
+    elif a[0] == "holidays":
+        year = int(a[1]) if len(a) > 1 else today.year
+        print(json.dumps([{"date": d.isoformat(), "name": n} for d, n in sorted(holidays_of([year]).items())], ensure_ascii=False))
+    elif a == ["accounts"]:
+        subprocess.Popen(["gnome-online-accounts-gtk"], start_new_session=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    else:
+        return 2
+    return 0
+
+
 def main(addresses):
+    if addresses and addresses[0] in ("events", "calendars", "add", "remove", "holidays", "accounts"):
+        return command(addresses)
     if not addresses or addresses[0] in ("-h", "--help"):
         print(__doc__.strip())
         return 0 if addresses else 2

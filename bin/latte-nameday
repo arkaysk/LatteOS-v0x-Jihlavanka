@@ -1,17 +1,24 @@
 #!/usr/bin/env python3
-"""latte-nameday: whose name day it is today and tomorrow, for the country of the user's language.
+"""latte-nameday: whose name day it is today and tomorrow, for the country of the place the weather is for.
 
   latte-nameday        {"today": "Kvetoslava", "tomorrow": "Aurel"}  (an empty text where it is not known)
 
 The source is nameday.abalin.net (no key needed). Each date is asked once and kept in ~/.cache/latteos/nameday.json;
-with no network what was kept is told, and nothing otherwise. The country is the one in LANG (sk_SK: sk), "sk" if there is none.
+with no network what was kept is told, and nothing otherwise. The country is the place's (latte-sky country: the weather's
+place, as in the Settings), so a Slovak in Vienna sees Austrian name days; LANG's when that cannot be told.
 """
-import datetime, json, os, sys, urllib.request
+import datetime, json, os, re, subprocess, sys, urllib.request
 
 CACHE = os.path.join(os.environ.get("XDG_CACHE_HOME") or os.path.expanduser("~/.cache"), "latteos", "nameday.json")
 
 
 def country():
+    try:
+        c = subprocess.run(["latte-sky", "country"], capture_output=True, text=True, timeout=12).stdout.strip()
+        if re.fullmatch(r"[a-z]{2}", c):
+            return c
+    except (OSError, subprocess.TimeoutExpired):
+        pass
     lang = (os.environ.get("LC_ALL") or os.environ.get("LC_MESSAGES") or os.environ.get("LANG") or "").split(".")[0]
     return (lang.split("_")[1] if "_" in lang else "sk").lower()
 
