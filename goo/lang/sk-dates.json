@@ -11,5 +11,6 @@
  "minutes": ["minút", "minúty", "min"],
  "one_hour": ["hodinu"],
  "half_hour": ["pol hodiny"],
- "place": ["v", "vo", "na"]
+ "place": ["v", "vo", "na"],
+ "time_words": ["ráno", "dopoludnia", "doobeda", "napoludnie", "poobede", "popoludní", "večer", "v noci", "koncom", "začiatkom", "polovici", "víkend", "týždeň", "mesiaca", "pol", "štvrť", "hodine", "deviatej", "desiatej", "jedenástej", "dvanástej", "siedmej", "ôsmej"]
 }

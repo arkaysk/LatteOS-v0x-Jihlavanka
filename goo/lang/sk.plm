@@ -1548,5 +1548,7 @@ library Slovak {
         "no calendar to write to" = "žiadny kalendár na zápis"
         "read on this computer" = "rozpoznané na tomto počítači"
         "tomorrow" = "zajtra"
+            "The AI on this computer is reading it…" = "Číta to AI na tomto počítači…"
+        "read by the AI on this computer" = "prečítala AI na tomto počítači"
     }
 }

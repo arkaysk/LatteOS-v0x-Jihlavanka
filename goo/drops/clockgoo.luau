@@ -748,7 +748,8 @@ fill_calendar = function()
     fact.cal_side = cal.side
     -- the sentence, and what it became
     text.cal_q_hint = tr("A new event in a sentence: Lunch with Peter tomorrow at 12 in Jihlavanka")
-    text.cal_q_note = tr("read on this computer")
+    text.cal_q_note = cal.reading and tr("The AI on this computer is reading it…")
+        or ((cal.parsed and cal.parsed.ai) and tr("read by the AI on this computer") or tr("read on this computer"))
     text.cal_add = tr("Add")
     text.cal_accounts = tr("Linked calendars: Google, Microsoft 365, iCloud, Nextcloud and others · a subscription (.ics)")
     local p = cal.parsed
@@ -879,6 +880,18 @@ return {
         on("cal_put", function()
             local p = cal.parsed
             if not (p and p.ok and (p.calendar or "") ~= "") then return end
+            -- the words found no day or no time in it: the AI on this computer reads it first, and what it read is shown
+            if not p.sure and not p.ai and not p.ai_failed then
+                if cal.reading then return end
+                cal.reading, typing = true, typing + 1
+                fill_calendar()
+                run("latte-cal", { "parse", "--ai", text.cal_q }, function(out)
+                    local ok, q = pcall(json.decode, out or "")
+                    cal.reading, cal.parsed = false, ok and type(q) == "table" and q.ok and q or p
+                    if card.id() == "notes" then fill_calendar() end
+                end)
+                return
+            end
             local args = { "add", p.calendar, p.title, p.start, p["end"] }
             if (p.place or "") ~= "" then args[#args + 1] = p.place end
             run("latte-cal", args, function()

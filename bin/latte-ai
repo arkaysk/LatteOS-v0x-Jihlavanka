@@ -1493,6 +1493,15 @@ def main(a):
         r = send(a[1], a[2], a[3], a[4], effort, attach)
         print(json.dumps(r, ensure_ascii=False))
         return 0 if r["ok"] else 1
+    # one question to a small model on this computer, the answer alone (latte-cal reads a sentence with it). The smallest
+    # over 2 GB: a 2B model (Qwen3.5) left the day out of the sentences, a 4B one read them right (21. 10., inspo/ai-na-ploche.md)
+    if len(a) == 2 and a[0] == "quick":
+        ms = [m for m in local_models_all() if m["size"] > 2e9] or local_models_all()[-1:]
+        if not ms or not local_server() or not local_start(ms[0]["id"]):
+            return 1
+        print(chat_completion("http://127.0.0.1:%d/v1" % LOCAL_PORT, {}, {"messages": [{"role": "user", "content": a[1]}], "temperature": 0,
+                                                                            "max_tokens": 256, "chat_template_kwargs": {"enable_thinking": False}})[0])
+        return 0
     if a == ["pick"]:
         done = subprocess.run(["zenity", "--file-selection", "--multiple", "--separator=\n"], capture_output=True, text=True)
         print(done.stdout.strip())

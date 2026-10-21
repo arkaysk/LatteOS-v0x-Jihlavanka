@@ -300,8 +300,8 @@ def remove(cal_uid, event_uid):
 # (ROADMAP 17g), not yet.
 def words(lang=None):
     lang = lang or (os.environ.get("LC_ALL") or os.environ.get("LANG") or "sk").split("_")[0].split(".")[0]
-    for d in (os.path.join(os.environ.get("LATTE_SHARE") or "/usr/share/latteos", "goo", "lang"),
-              os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "goo", "lang")):
+    for d in (os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "goo", "lang"),
+              os.path.join(os.environ.get("LATTE_SHARE") or "/usr/share/latteos", "goo", "lang")):
         for code in (lang, "sk"):
             try:
                 with open(os.path.join(d, code + "-dates.json"), encoding="utf-8") as f:
@@ -372,6 +372,8 @@ def parse(text, today=None, w=None):
     title = re.sub(r"\s+", " ", rest).strip(" ,.-")
     if not title:
         return {"ok": False}
+    # sure: a day or a time was read, and no word of time is left in the title (evening, half past, the end of the month…)
+    sure = (day is not None or start is not None) and not re.search(r"(?:^|\s)(?:" + alt(w["time_words"]) + r")\b", title.lower())
     day = day or today
     allday = start is None
     if allday:
@@ -382,7 +384,42 @@ def parse(text, today=None, w=None):
         if b <= a:
             b += dt.timedelta(days=1)
         s_, e_ = a.strftime("%Y-%m-%dT%H:%M"), b.strftime("%Y-%m-%dT%H:%M")
-    return {"ok": True, "title": title[0].upper() + title[1:], "start": s_, "end": e_, "allday": allday, "place": place}
+    return {"ok": True, "title": title[0].upper() + title[1:], "start": s_, "end": e_, "allday": allday, "place": place, "sure": sure}
+
+
+# A sentence the words did not find a day or a time in goes to the AI on this computer (latte-ai quick): asked only
+# when the event is to be added, and what it read is shown before it is.
+ASK = """Today is {weekday} {today}. Turn the calendar event below into JSON with exactly these keys:
+title (the event in the sentence's own language, without when and where), date (YYYY-MM-DD), start (HH:MM, or "" if no time), end (HH:MM or ""), place ("" if none).
+Example: "Obed s Petrom v piatok o 12 v Jihlavanke" -> {{"title": "Obed s Petrom", "date": "{friday}", "start": "12:00", "end": "", "place": "Jihlavanka"}}
+Event: "{text}"
+JSON:"""
+
+
+def ai_read(text, today=None):
+    today = today or dt.date.today()
+    try:
+        out = subprocess.run(["latte-ai", "quick", ASK.format(today=today.isoformat(), weekday=today.strftime("%A"), text=text.replace('"', "'"),
+                                                     friday=(today + dt.timedelta(days=(4 - today.weekday()) % 7 or 7)).isoformat())],
+                             capture_output=True, text=True, timeout=180).stdout
+        j = json.loads(out[out.index("{"):out.rindex("}") + 1])
+        day = dt.date.fromisoformat(j["date"])
+        title = str(j.get("title") or "").strip()
+    except (OSError, ValueError, KeyError, TypeError, subprocess.SubprocessError):
+        return None
+    if not title:
+        return None
+    hm = lambda v: dt.time.fromisoformat(v) if re.fullmatch(r"\d{1,2}:\d{2}", str(v or "")) else None
+    start, end = hm(j.get("start")), hm(j.get("end"))
+    if start is None:
+        s_, e_ = day.isoformat(), (day + dt.timedelta(days=1)).isoformat()
+    else:
+        a = dt.datetime.combine(day, start)
+        b = dt.datetime.combine(day, end) if end else a + dt.timedelta(hours=1)
+        b = b if b > a else b + dt.timedelta(days=1)
+        s_, e_ = a.strftime("%Y-%m-%dT%H:%M"), b.strftime("%Y-%m-%dT%H:%M")
+    return {"ok": True, "title": title[0].upper() + title[1:], "start": s_, "end": e_, "allday": start is None, "place": str(j.get("place") or "").strip(),
+            "sure": True, "ai": True}
 
 
 def command(a):
@@ -399,8 +436,10 @@ def command(a):
         print(json.dumps(calendars(), ensure_ascii=False))
     elif a[0] == "add" and len(a) in (5, 6):
         print(json.dumps(add(*a[1:])))
-    elif a[0] == "parse" and len(a) == 2:
-        r = parse(a[1])
+    elif a[0] == "parse" and len(a) in (2, 3) and a[1:-1] in ([], ["--ai"]):
+        r = parse(a[-1])
+        if a[1] == "--ai" and not r.get("sure"):
+            r = ai_read(a[-1]) or dict(r, ai_failed=True)
         if r["ok"]:
             # where it goes: the first calendar of an account that may be written to, else this computer's own
             cals = [c for c in calendars() if c["writable"] and c["enabled"]]
