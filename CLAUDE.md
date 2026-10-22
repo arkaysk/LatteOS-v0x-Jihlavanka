@@ -1,12 +1,14 @@
 # Pre Clauda — LatteOS (súkromné repo jihlavanka001)
 
 Odpovedať po slovensky. Pred prácou na Goo čítať `LATTEOS-GOO.md`, rozhodnutia zapisovať do `docs/goo/ROZHODNUTIA.md`,
-plán je v `ROADMAP.md`:
-čítať iba jeho sekciu **„Teraz — poradie práce“** (ide sa zhora, neskáče sa), zvyšok hľadať cez grep podľa prúdu — celý súbor
-má ~25 tis. tokenov. Tento súbor sa nezverejňuje (`old/setup/verejne/vynechat.txt`).
+plán je v `ROADMAP.md` (jeden súbor, kategórie 1–20 podľa `roadmapx.md`: 6F CamGoo, 10F GuardDog…, úlohy majú ID ako `6F.03`).
+**Celý súbor sa nečíta** (~45 tis. tokenov). Používateľ zvyčajne vyznačí jeden riadok s ID (alebo kategóriu) — pracuje sa z výberu;
+kontext kategórie: `grep -n '^##* 6F\. ' ROADMAP.md` a prečítať iba jej hlavičku (opis, Zdroje). Poradie práce je krátky zoznam hore
+(„Poradie práce“); ide sa zhora, neskáče sa; 17 Optimalizácia a nakoniec 18 STRESTEST sú až po všetkých kategóriách.
+Nový nápad = nové ID na koniec kategórie; hotové veci sa zapisujú ako jeden riadok. Tento súbor sa nezverejňuje (`old/setup/verejne/vynechat.txt`).
 
 Vetva `v0.4-fresh` (od 12. 10. 2026): celý strom v0.3 je v `old/` — predloha, nemení sa a nekopíruje sa z nej. Nový kód sa
-píše načisto podľa pravidiel v `ROADMAP.md` („Teraz“, bod 2) a so skillom `pleamar`; každý súbor, ktorý LatteOS pridá
+píše načisto podľa pravidiel v `ROADMAP.md` (kategória 14 Build a vydania, položka „Fresh — úvod“) a so skillom `pleamar`; každý súbor, ktorý LatteOS pridá
 do systému, sa zapíše do `FILES`. Pred commitom spustiť `tests/check.sh` (Rust, príkazy, scény, FILES, angličtina v kóde).
 
 ## latte-lab = testovací počítač

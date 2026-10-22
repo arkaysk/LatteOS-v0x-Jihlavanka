@@ -3,7 +3,7 @@
 Spoločný dokument pre používateľa (autora LatteOS) a Clauda: **čo LatteOS GOO je, ako sa má správať a z čoho sa
 skladá — tak, ako to platí teraz.** Pred prácou na Goo ho treba prečítať. Keď sa niečo rozhodne, opraví sa tu
 platné znenie a rozhodnutie sa s dátumom zapíše do denníka [docs/goo/ROZHODNUTIA.md](docs/goo/ROZHODNUTIA.md)
-(aj čo bolo zamietnuté). Plán a otvorené úlohy: [ROADMAP.md](ROADMAP.md) (sekcia „Teraz“). Ako sa píše kvapka:
+(aj čo bolo zamietnuté). Plán a otvorené úlohy: [ROADMAP.md](ROADMAP.md) (kategórie 1–20). Ako sa píše kvapka:
 hlavička [goo/lib/engine.luau](goo/lib/engine.luau).
 
 > **Smer:** LatteOS GOO je **jediná edícia** LatteOS (Classic je zrušený, 5. 10. 2026). Od 12. 10. 2026 sa píše
@@ -168,7 +168,7 @@ ostatné kvapky sú iba na hlavnom monitore.
   ukáže **počet okien**; keď na hlave postojí myš,
   ikry sa dočasne vysunú (aj kvôli oknám na iných plochách) a zasunú sa, keď myš od nich odíde. Či sú vonku,
   určuje jedno miesto v logike (`berries_out()` v `goo/lib/bar.luau`); kreslenie ikier nesmie predpokladať, že sú
-  viditeľné — rovnaký prepínač neskôr poslúži režimu Glance (ROADMAP „Teraz“, koniec).
+  viditeľné — rovnaký prepínač neskôr poslúži režimu Glance (ROADMAP, celok Okná › Glance).
 - **Zvuk a žiadosť o pozornosť sú vidieť na samotnom okne** (rozhodnuté 13. 10.): jeho **okraj pulzuje** — bledo
   a pomaly, kým okno hrá zvuk (nie na okne, v ktorom sa práve pracuje), červeno a rýchlo, kým chce pozornosť (až kým
   nie je vpredu). Robí to Hyprland (`system/hypr/latte/windows.lua`); ktoré okná hrajú, mu hovorí scéna. Hlava
@@ -310,7 +310,7 @@ ostatné kvapky sú iba na hlavnom monitore.
   okrajom v prázdne (do 36 px) sa okno chytí celé a ťahá; pustené okno sa vráti tak, aby jeho vrch ostal na obrazovke
   a aspoň 140 px z neho bolo vidieť — ✕ sa už nedá stratiť za hranou. Chytenie za okraj robí plugin `latte-events`.
 - Režimy **páska** (nekonečná, ako niri), **dlaždice**, **plávajúce** (ako Windows). Štvrtý, **Glance** pre široké
-  monitory (Main · Stash · Parking), je rozhodnutý a čaká v poradí: ROADMAP „Teraz“, bod 7. Okná neprekrývajú pás kvapiek
+  monitory (Main · Stash · Parking), je rozhodnutý a čaká v poradí: ROADMAP, celok Okná › Glance. Okná neprekrývajú pás kvapiek
   pri okraji (ani maximalizované); celú obrazovku kreslí Hyprland nad vrstvou Goo.
 
 ### 4.10 Nastavenia › Kvapky (Goo)

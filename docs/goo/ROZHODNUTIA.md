@@ -15,7 +15,7 @@ Nové rozhodnutie: jeden riadok sem (dátum, čo, prečo) a oprava platného zne
 - **Živý náhľad okna:** keď je kurzor nad ikrou bežiacej aplikácie, ukáže sa náhľad ako vo Windows 11. V GOO ešte
   nefunguje — dorobiť.
 - **Kapsa sa zahodí.** Správca schránky sa nepreberie, vytvorí sa inak.
-- **Poradie práce** je v ROADMAP.md, sekcia „Teraz — poradie práce“; číta sa iba ona.
+- **Poradie práce** je v ROADMAP.md, sekcia „Poradie práce“ (od 22. 10. kategórie 1–20 podľa `roadmapx.md`; STRESTEST je posledný, pred ním Optimalizácia: zrýchlenie načítania, zmenšenie na úložisku, nižšia náročnosť na hardvér, bez obmedzenia výsledku); číta sa iba vyznačený blok.
 - **Modely pre farmu:** cieľ sú Gemma 4 a Qwen3 pod 10 GB (rýchlosť a miesto na kontext), porovnávajú sa s Edge0.
 
 ## 7. 10. 2026

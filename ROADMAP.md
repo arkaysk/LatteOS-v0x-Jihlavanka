@@ -1,299 +1,141 @@
-Podklady: 
+vytvorene 22.10.2026
+naposledy upravene 22.10.2026
+# LatteOS:0.4 Jihlavanka Build
 
- docs/NAVRH-STARTU.md: rámec, režimy a štart systému (r. 14–164), doslovne.
+Idea LatteOS je neziskový linux ktory nevyžaduje po uživatelovy znalost klavesovych skratiek, nevyžaduje po uživatelovy použivanie konzoly, a umožnuje mu fungovat s návikmy z Windows, MacOS ale aj linux. Je to OS ktory umožnuje totalne deaktivovat Ai služby vnutry, ale aj ich naopak, intenzivne využivat na urovni pomocnika OS. 
+Idea pre tvorbu:
+-Ked už inečo existuje, prezentovat to a ak je to dobré a schvalene, použit to. 
+-Realizaciu dotahovat do konca. nespokojit sa s funkčnostou len naoko.
+-Novinky. inšpirovat sa novinkamy. intenzivne patrat po nových trendoch.
+-Moderne krasne pritažlive prostredie. 3E. Esteticke, Efektivne, Ergonomické
+-Lepši a bezpečnejši než Win11. Lepší a praktickejši než Linux. 
+-Pre hračov a použivatelov nezvyklych na linux.
 
- docs/OPTIMALIZACIA.md: pravidlá a merania zo sekcie O (r. 912–945), doslovne.
-
- docs/ARCHITECTURE.md: v časti „Ďalej“ sú odkazy na NAVRH-STARTU a OPTIMALIZACIA.
-
- inspo/LatteOS – technologický radar 2026.md : zdroj odkial čerpat a kam zapisovat najnovšie vyhladane zaujimavosti použitelne pre LatteOS.
-
- inspo/dalsie_inspiracie.md : ručne editovany subor kam vkladam ked najdem niečo zaujimave.
+Nasleduju kategorie. a ich opis. Jednotlive doplnkove napady sa budu doplnat ako bod pod kategorie (napr 1.01. [x] doplnkova idea k Kernel). Podkategorie budu zase čislene (1A) [x]` `[~]` `[ ] značky na hotovo, čiastočne, nezačate. 
+Samotne latteOS sa značkuje:
+LatteOS:0.x Jihlavanka
+LatteOS:1.x Arabica
+LatteOS:2.x xxx
 
 
-## Teraz — poradie práce
+---
 
-Schválené 12. 10. 2026. Pracuje sa **zhora nadol, neskáče sa**; nový nápad ide na koniec tohto zoznamu. Pri práci sa
-číta iba táto sekcia, zvyšok roadmapy sa hľadá podľa prúdu (R2, R3·A…). Stav testov: `python3 bughunt/stav.py`.
+# Ako s týmto súborom pracovať
 
-1. [~] **Štart (R2).** Opravené a overené reštartom 12. 10.: čakanie na sieť (prihlasovanie 99 s → 36 s, celý štart
-   3 min 37 s → 1 min 12 s), rohová lišta po prihlásení (+8 s, sama), žiadna zlyhaná služba. Test grafiky pri
-   studenom štarte vyprší zámerne (pomalý disk, rozhodne ovládač) a prihlasovanie nezdržuje — nie je chyba; zvyšných
-   ~25 s je disk a `gssproxy`. Pád Hyprlandu pri konci relácie `latte-session` rozpozná; pri reštarte 12. 10. nenastal.
-   Overené pádmi 12. 10.: engine sa po páde sám obnoví (doplnené), Hyprland sa po páde spustí znova, druhý pád
-   do 60 s prepne do SAFE, SAFE zvolený aj automatický funguje a čisto končí.
-   **Ostáva:** klik na Reštartovať · Vypnúť v PowerGoo (test 036), zlé heslo a jazyk na prihlásení (541), prečo
-   núdzové rozhranie po páde berie ~2 jadrá (010), okná sa po páde kompozitora nevrátia (006), testy 003–005, 007–008.
-   *Hotovo, keď:* testy 001–012, 036, 541, 550 majú stav. Po každom štarte: `old/setup/test/start.sh` (predošlý: `-1`).
-2. [~] **v0.4 Fresh — čistý strom** (schválené 12. 10.; vetva `v0.4-fresh`, predloha pod značkou `v0.3-archive`).
-   Nahrádza body „Upratanie Classicu“, „Premenovanie kvapiek“ a „Čistá inštalácia verejného stromu“. Cieľ: čistá
-   Fedora → prihlasovanie Goo + dve relácie, **LatteOS SAFE** (samostatné GUI) a **LatteOS GOO** (engine Goo so všetkými
-   kvapkami), k nim zatiaľ ostáva herná relácia **LatteOS Game** (Steam + gamescope; rozhodnuté 12. 10.), bez Noctalie a bez zrušených vecí. Pravidlá pre každý kus, ktorý do Fresh vstúpi: kód, mená príkazov,
-   súborov a komentáre po anglicky (komentár iba „prečo“, bez odkazov na staré verzie); text na obrazovke iba cez
-   preklady (scény: vstavané `translations` pleamaru 0.3 s faktom `locale`, prepnutie za behu, logika `tr()`; aplikácie
-   QML `i18n.tr()`); žiadny kus nemenuje inú aplikáciu priamo (kto čo otvára, vie jedno miesto); scény podľa skillu
-   `pleamar` (logika nekreslí a nepozná súradnice), po každej úprave `pleamar --check`. Strata funkcie je prípustná,
-   obnoví sa testovaním; zmazané sa vytiahne cez `git show v0.3-archive:cesta`.
-   - a. [x] značka `v0.3-archive`, vetva `v0.4-fresh` (12. 10.).
-   - b. [x] **Starý kód do `old/`** (12. 10.): celý strom v0.3 (`session`, `setup`, `crates`, `resources`, `Cargo.*`,
-     `docs_zaloha`) je v `old/` bez zmeny obsahu a dá sa z neho ďalej inštalovať (`old/setup/f1/install-session.sh`) —
-     na latte-lab ostáva starý LatteOS na porovnanie. Pôvodný `old/` (Classic v GTK) je zmazaný, ostáva pod značkou.
-     V koreni ostáva: `docs`, `bughunt`, `inspo`, `ROADMAP.md`, `LATTEOS-GOO.md`, `README.md`, `ZMENY.md`,
-     `TRETIE-STRANY.md`, `LICENSE`, `CLAUDE.md`. `old/` je predloha: nemení sa a do Fresh sa z neho nekopíruje, píše sa
-     podľa neho nanovo.
-   - c. [x] **pleamar 0.3.2** (12. 10.): záplaty prenesené a uložené v `patches/` (päť súborov podľa témy, každý sedí
-     na čistý `v0.3.2` samostatne; popis v `patches/README.md`). Farby 8 bitov má už autor sám, tá časť odpadla.
-     Preložené v `~/src/pleamar-0.3.2`, nainštalované ako `/usr/bin/pleamar` (jazyk 0.4); pôvodný je
-     `/usr/bin/pleamar-0.2.29`. Overené: nové aj staré scény prejdú `--check`, nové prihlásenie aj starý engine sa
-     na neviditeľnej obrazovke kreslia rovnako ako na 0.2.29 (rozdiel do 9 z 255). **Neoverené:** starý engine
-     v skutočnej relácii Hyprlandu na novom pleamare (záťaž, sklo, zoznam okien).
-   - d. [~] **Písať načisto, po kusoch** — so skillom `pleamar`, podľa `old/`, ale lepšie. Poradie (používateľ 12. 10.):
-     1. [x] **štart po prihlásenie** (12. 10.): `crates/latte-hw`, `crates/latte-boot`, `system/` (služba, greetd, labwc
-        prihlasovača, položky SAFE v GRUB-e, Plymouth), `bin/latte-greeter`, `bin/latte-login`, `bin/latte-sky`,
-        `goo/login.plm` + `login.luau`, preklady `goo/lang/sk.plm`, vlastné písmo ikon. Oproti starému: úvod riadi
-        scéna (logika iba povie „začni“), heslo ide na vstup príkazu (nie cez súbor), čas zo služby `clock`, rozloženie
-        klávesnice zo systému, bez Noctalie. Odpadlo: prihlasovač v QML a Noctalie (bez grafickej karty je zatiaľ
-        textové prihlásenie `tuigreet`), `vm-3d`, zápis `hyprland.conf`. Overené: `tests/check.sh`, scéna na
-        neviditeľnej obrazovke (snímky, záznam priebehu, zlé a dobré heslo naskúšku). **Neoverené:** skutočné
-        prihlásenie cez greetd — až po nasadení na latte-lab.
-     2. [x] **SAFE a relácie** (12. 10.): `goo/safe.plm` + `safe.luau` (lišta: záťaž, ponuka napájania, terminál, riadok
-        na písanie s režimami aplikácie a príkaz, okná, sieť, batéria; pozadie s časom), `bin/latte-safe` (záchranná
-        ponuka; texty z toho istého `goo/lang/sk.plm`), `bin/latte-session` (GOO · SAFE · Game, strážca pádov),
-        `bin/latte-game`, `crates/latte-stats`, labwc pre SAFE, tri položky relácií, statické prihlásenie
-        `goo/login-safe.plm` pre softvérové kreslenie (VM, SAFE) so spoločnou logikou `goo/lib/login.luau`.
-        Overené: `tests/check.sh` (aj strážca relácie s napodobenými programami), snímky na neviditeľnej obrazovke.
-        **Zatiaľ chýba** (vráti sa s príslušným programom): zámok obrazovky, hľadanie súborov a AI v riadku, tlačidlá
-        App Manager a Správca zariadení, profily prostredí (`latte-profil`), profil účtu (`latte-gooconfig`).
-        Voľba GOO pri prihlásení skončí v SAFE s dôvodom „plná plocha nie je nainštalovaná“, kým nie je bod 3.
-     3. [~] **GooEngine** — engine a jadro kvapiek, potom náhrada Noctalie (rohová lišta: tray, sieť, hlasitosť,
-        ovládacie centrum; Nerušiť, akcie relácie, prehľad okien, účty kalendára — služby pleamaru `tray`, `network`,
-        `audio`, `bluetooth`, `brightness`, `session`, `polkit` a stránky z Marey, BSD-3), aplikácie a príkazy, iba tie,
-        ktoré GOO a SAFE potrebujú. Platí z 12. 10.: znak NET do GOO, náhľad okna nad ikrou, Kapsa a maskoti sa
-        neprenášajú; kvapky sa premenovali (GooBar → BarGoo, GooPower → PowerGoo).
-        - [x] **engine** (12. 10.): `goo/goo.plm` + `goo/parts/`, `goo/gen.py` (tvary tela — jazyk 0.4 cyklus v tele
-          stále nevie), `goo/lib/engine.luau`, karta `goo/lib/card.luau`. Oproti starému: karta sa skladá rozložením
-          scény, signály idú cez záznam kvapky, stav a nastavenia sú v priečinku scény, jedna scéna s 32 miestami.
-        - [x] **Hyprland pre GOO** (12. 10.): `system/hypr/` (režimy okien, minimalizovanie, rozloženia, plochy, skratky
-          ako vo Windows, stupne výkonu), `system/systemd/latte-goo.service`.
-        - [x] **jadro kvapiek, prvá časť** (12. 10.): BarGoo (hlava, ikry okien, ponuka okna), LensGoo (Aplikácie,
-          Príkaz, rýchly zoznam), PowerGoo (karta: účet, odhlásenie, batéria, profil napájania, uspať · reštartovať ·
-          vypnúť). Čo je a čo chýba: LATTEOS-GOO.md §8.
-        - [x] pás výkonu PowerGoo (12. 10.; `latte-stats` hlási aj teplotu procesora a karty).
-        - [x] zámok obrazovky (12. 10.): Win+L a PowerGoo › Zamknúť; overené zlé aj dobré heslo a zamknutie po páde
-          scény. Pri nečinnosti (13. 10., hypridle, `system/hypr/hypridle.conf`): zamknutie po 10 min, zhasnutie
-          obrazoviek po 15 min, zamknutie pred uspaním; okno na celú obrazovku tomu bráni. Samo sa
-          neuspáva. Časy sa menia v Nastaveniach › Uzamknutie a nečinnosť (`~/.config/latteos/idle`).
-        - [x] ovládanie Goo z klávesnice (12. 10., Win+T).
-        - [x] pád minimalizovaného okna do lišty, kvapka uhne titulku okna (12. 10.).
-        - [x] viac monitorov, prvá časť (12. 10.): scéna je iba na hlavnom monitore (Hyprland jej povie ktorý,
-          pri zmene monitorov ju presunie), okná z iných monitorov sú v lište, ale neuhýba sa im.
-        - [x] BarGoo na ďalších monitoroch (13. 10.): vlastná scéna `goo/side.plm` na každom ďalšom monitore
-          (`latte-goo-side@.service`), lišta ukazuje iba okná svojho monitora, pás pri okraji má každý monitor
-          svoj; `latte-say` povie niečo všetkým scénam Goo. Overené s dvoma a troma monitormi bez obrazovky.
-          Chýba prenášanie ikier medzi monitormi; každá ďalšia scéna stojí toľko čo hlavná (bod 5).
-        - [ ] **jadro kvapiek, zvyšok:** okno z bubliny príde s QueenGoo (rodia sa z nej riadne okná).
-        - [x] ClockGoo (12. 10.): upozornenia (pleamar je server upozornení) a kalendár, karta času so stopkami,
-          minútkou, budíkmi a počasím; karta vie dva stĺpce a mesiac.
-        - [x] náhrada rohovej lišty (13. 10.): **Pobrežie** — tvrdý roh vpravo dole s programami na pozadí, sieťou,
-          hlasitosťou a batériou; šípka vysunie panel po horný okraj (rýchle nastavenia, schránka cez `cliphist`);
-          kvapky sa k nemu nelepia a odrazia sa. Okno s heslom pre polkit (12. 10.).
-        - [x] **QuickGoo** = rýchle spúšťanie (13. 10.): páska s ikonami aplikácií poruke.
-        - [x] vlastné kvapky (13. 10.): `goo/lib/own.luau`, zoznam `drops.json` v priečinku scény — aplikácia
-          alebo ikona s príkazmi a textom z príkazu; LensGoo › pravý klik na aplikáciu › Pripnúť ako kvapku, pravý
-          klik na kvapku › Odstrániť. Tvorca Goo (formulár v Nastaveniach) príde s aplikáciou Nastavenia.
-        - [x] hra pri nečinnosti (13. 10.): po 6 min sa hravé kvapky (`"nature": "playful"`) hrajú — výskok,
-          plíženie, veľký oblúk, naháňačka; skok je hod s gravitáciou scény, po prebudení je všetko na mieste.
-        - [x] MediaGoo (13. 10.): čo hrá, predošlá · pauza · ďalšia, hlasitosť; je na ploche, iba kým beží prehrávač.
-        - [x] prepojené kalendáre (13. 10.): adresy .ics v karte ClockGoo, číta `bin/latte-cal` (opakované udalosti,
-          časové pásma); iba na čítanie, bez účtov. **ChatGoo** čaká na Beeper
-          (na latte-lab nie je nainštalovaný, nedá sa overiť).
-        - [x] **App Manager** (13. 10., na pokyn mimo poradia): `apps/appmanager.qml` + `bin/latte-apps` + `bin/latte-app`;
-          obchod Flathub (bannery, police, kategórie, hľadanie, stránka aplikácie), moje aplikácie, aktualizácie,
-          miesto pre Baristu. Inštalácia a odstránenie overené naostro. Chýba: LATTEOS-GOO.md §6.3.
-        - [x] **QueenGoo** (13. 10.): korunka, guľky (zariadenie, sieť, aktualizácie), ľavý klik = App Manager,
-          pravý = Správca zariadení. Okno z bubliny neskôr.
-        - [x] **Správca zariadení** (13. 10.): `apps/devices.qml` + `bin/latte-devices` — prehľad počítača, skupiny
-          zariadení, ovládač a stav každého, správa na skopírovanie. Iba číta; čo chýba oproti v0.3: LATTEOS-GOO.md §4.4.
-        - [x] **Okno aplikácií LatteOS** (rozhodnuté 13. 10. podľa používateľovho V2 a ForkLiftu): `apps/common/AppWindow.qml`
-          — bočný panel zo skla od vrchu po spodok, hore lišta s funkciami (šípky, názov, nástroje aplikácie, hľadanie),
-          úplne vpravo okenné tlačidlá; kávová hladina je rozhraním k spodnej časti okna, alebo iba tichým pozadím.
-          App Manager je v ňom ako streamovacie menu (banner s ďalším nakúkajúcim, rad volieb, plagáty).
-        - [x] **NET — odstaviť aplikáciu od internetu hneď** (13. 10.): `bin/latte-net` (používateľ, bez hesla) presunie
-          bežiacu aplikáciu do vlastnej cgroup a zapíše ju do `$XDG_RUNTIME_DIR/latteos/net-off`; služba
-          `latte-netd` (root, `system/libexec/latte-netd`) jej v tabuľke nftables `inet latteos_net` zahodí
-          prevádzku a zavrie otvorené spojenia. Ovláda sa z ponuky okna (pravý klik na titulok alebo ikru:
-          „Odstaviť od internetu“) a z hlavičky aplikácií LatteOS (glóbus). Odstavené okno má oceľovosivý okraj.
-          Overené naostro so službou spustenou ručne (spojenie padne do sekundy, po zapnutí ide znova).
-          Platí pre aplikáciu, kým beží; trvalý zákaz je oprávnenie aplikácie a príde s Baristom.
-          Neoverené: jednotka systemd (zapnutá až inštalátorom), tlačidlo na titulkoch hyprbars nie je.
-        - [x] **Prechody bannerov** v App Manageri v duchu skwd-wall (používateľ, 13. 10.; urobené 13. 10.): vlastný
-          shader `apps/common/shaders/reveal.frag` (`Reveal.qml`) — obrázok ustupuje ďalšiemu pozdĺž živej hrany
-          s linkou cremy: stúpa zdola, rozlieva sa z kvapky pri tlačidle, alebo ho zmetie sprava; druhy sa
-          striedajú. Bannery sa už neposúvajú, menia sa na mieste (predný aj vykúkajúci). Bez grafickej karty
-          (Qt kreslí softvérom) sa prelínajú. `tests/check.sh` stráži, že `.qsb` je postavený zo zdroja.
-          skwd-wall sám (Rust, Vulkan, GPL-3.0) sa do okna v QML vložiť nedá.
-        - **Poradie od používateľa z rána 13. 10.** (ide sa zhora, Barista zatiaľ stojí):
-          1. [x] okná ako vo Windows (13. 10.): od okrajov sa mení veľkosť (Hyprland), kúsok za okrajom v prázdne
-             (do 36 px) sa okno ťahá celé (plugin `latte-events`), a pustené okno sa vráti tak, aby jeho vrch
-             s hlavičkou ostal na obrazovke a dalo sa chytiť. Platí pre plávajúce okná.
-          2. [x] **Monitor** (13. 10.): `apps/monitor.qml` + `bin/latte-monitor` (a `latte-stats`). Prehľad (procesor
-             s jadrami, pamäť, grafika, sieť a disky — živé obrázky poslednej minúty, najnáročnejšie programy),
-             Procesy (aplikácie s oknom, potom pozadie; hľadanie, zoradenie, Ukončiť), Po štarte (čo sa spúšťa samo:
-             čo to je, odkiaľ je, koľko pridalo k štartu; vlastné veci sa dajú vypnúť a zasa zapnúť — návrh podľa
-             BetterWindowsServices), Senzory. PowerGoo › Monitor, Ctrl+Shift+Esc. Oproti v0.3 chýba: všetky služby
-             so štartom a zastavením, detail procesu (priorita, pauza, súbory, spojenia), hardvér ako CPU-Z, test
-             výkonu, Digitálna pohoda, strom disku, dlhodobá telemetria („kto žerie“ po dňoch).
-          3. [x] Správca zariadení má dve časti (13. 10.): **Zariadenia** a **Sieť** — Pripojenie (adresa, router,
-             DNS, rýchlosť, zapamätané pripojenia) a **Inšpektor siete** (`bin/latte-network`): polkruhový radar,
-             dole tento počítač nad routerom, na vnútornom oblúku zariadenia pripojené teraz, na vonkajšom videné
-             predtým; nové zariadenie zlato; zariadeniu sa dá dať meno a druh, alebo ho zabudnúť. Inteligentná
-             domácnosť sa pozná pasívne z ohlásení Matter a Thread. Chýba: zoznam namiesto radaru, „Moja sieť“
-             a upozornenie na nové zariadenie, pripájanie a VPN (to prvé je v paneli Pobrežia), AirPlay.
-          4. [~] **Nastavenia** (13. 10.): `apps/settings.qml`, zoznam stránok `apps/settings/pages.json`, Win+I.
-             Rozkladací bočný panel po oblastiach (Softvér · Dáta · Hardvér · Účet · Prostredie · Systém, 29 stránok)
-             s bodkou stavu; hľadanie v hlavičke; **LensGoo hľadá aj v nastaveniach** (pod čiarou, `bin/latte-settings`).
-             Hotové stránky: **Káva a šálka** (druh kávy = farba goo; šálka = z čoho sú okná: espresso, mokka,
-             porcelán — svetlá; sklenená káva), **Pozadie** (obrázky LatteOS a z priečinka Obrázky; živé pozadia
-             = filmy z priečinka Videá cez mpvpaper), **Okná** (režim; sklo bočných panelov), **Kvapky**, **O počítači**,
-             **Uzamknutie a nečinnosť** (kedy sa zamkne a kedy zhasnú obrazovky), **Napájanie** (profil),
-             **Zvuk** (výstupy a vstupy: ktorý sa používa, hlasitosť, stlmenie; cez `pactl`), **Predvolené aplikácie**
-             (prehliadač, pošta, súbory, obrázky, video, hudba, text, PDF; cez `xdg-mime`),
-             **Obrazovky** (rozlíšenie, obnovovanie, mierka, otočenie, poradie a hlavná obrazovka; zmena sa skúsi
-             a bez potvrdenia sa do 15 s vráti; uložené v `~/.config/latteos/monitors`, číta `hyprland.lua`;
-             plávajúce okná sa po zmene vrátia celé na obrazovku), **Jazyk a región** (`~/.config/latteos/locale`,
-             od ďalšieho prihlásenia), **Dátum a čas** (pásmo a automatický čas cez `timedatectl`), **Klávesnica**
-             (rozloženia hneď aj nabudúce, `~/.config/latteos/keyboard`; zoznam skratiek chýba),
-             **Výkon a grafika** (stupeň vzhľadu: podľa hardvéru alebo vlastný, `~/.config/latteos/tier`),
-             **Štart a režim SAFE** (ako dopadol tento štart; SAFE na ďalší štart cez `latte-boot force-safe`),
-             **Úložisko** (disky, veľkosť priečinkov, kôš), **AI** (vypínač: `~/.config/latteos/ai`, `latte-ai`
-             potom neponúkne nikoho), **Môj účet** (meno a obrázok cez AccountsService).
-             Ostatných 11 stránok je vypísaných ako „ešte nie je“ s odkazom, kde sa to robí zatiaľ (Aplikácie,
-             Aktualizácie, Spúšťanie, Sieť → App Manager, Monitor, Správca zariadení; bez náhrady: Zálohovanie,
-             Cloud, Bluetooth, Tlačiarne, Heslo, Oznámenia, Prístupnosť).
-             Šálka platí aj mimo aplikácií LatteOS (13. 10.): titulky cudzích okien (hyprbars) berú jej farbu
-             a aplikáciám sa povie svetlý/tmavý režim (`latte.cup`, gsettings color-scheme). Vlastný súbor tapety
-             a obrázka účtu sa vyberá systémovým oknom (portál; `latte-app` nastavuje `QT_QPA_PLATFORMTHEME`).
-             Stránka Klávesnica vypisuje skratky: popis má každá priamo v `system/hypr/latte/keys.lua`
-             (`hyprctl binds -j`), takže zoznam nemôže zastarať.
-             Chýba: šálka v kartách Goo, zmena hesla, Bluetooth (latte-lab ho nemá).
-        - [~] **Barista** v App Manageri: sprievodca v piatich krokoch a recept AVP2 (14. 10.); **vetva B** bez receptu
-          (20. 10.): rozpozná Inno, NSIS, InstallShield, MSI, samorozbaľovací archív, zip/rar/7z, priečinok aj samotný
-          program, z hlavičky PE rok, bitovosť a grafiku, podľa toho Wine alebo Proton (umu-run v ohrade) a verziu Windows;
-          hlavný program nájde sám; po „Fungovalo to? Áno“ zapíše recept používateľa. Overené naostro na priečinku, zipe,
-          Inno a NSIS. Chýba (stav v `docs/barista/POSTUP.md` §3): DOSBox, apk, balíky Linuxu, winetricks, mechanika pre
-          kontrolu CD, vykonanie návrhov po neúspešnej skúške.
-        - [x] tapeta (swaybg, `assets/wallpapers`) a okenné tlačidlá (hyprbars so záplatou `patches/hyprbars-latte.patch`;
-          postup v `patches/README.md`) (12. 10.).
-        - [x] LensGoo: režimy Súbory a Web, kalkulačka (12. 10.).
-        - [x] nastavenia Goo ako karta (12. 10.): kvapky, materiál, živé správanie, káva, tapeta, režim okien.
-        - [x] režim AI v LensGoo (13. 10.): `bin/latte-ai` (zatiaľ iba Claude cez `claude -p`), rozhovor v karte, Win+C.
-        - [x] prichytenie ťahaním (13. 10.): plugin `plugins/latte-events` (udalosť „okno pustené“) a zóny
-          v `system/hypr/latte/windows.lua`; skúša sa myšou kompozitora `tests/pointer.py`.
-        - [x] BarGoo: ikry iba v režime plávajúce (rozhodnuté a urobené 13. 10.) — v páske a dlaždiciach počet okien
-          na hlave, ikry po postáti myši na hlave. Zvuk a žiadosť o pozornosť ukazuje okno samo pulzujúcim
-          okrajom; hlava sa vlní iba za okno, ktoré nie je na očiach.
-        - [x] sklo okien (13. 10.): plugin Hyprglass, zapína sa s materiálom Sklenená káva (`system/hypr/latte/glass.lua`).
-        Overené 12. 10. v `tests/screen.sh` (Hyprland bez obrazovky na RX 640, snímky, falošná myš): štart, pokoj
-        a nadnesenie, ťahanie k okraju a pád, karty všetkých troch kvapiek, spustenie aplikácie, príkaz s varovaním,
-        prepnutie režimu okien, minimalizovanie klikom na ikru, ponuka okna, odhlásenie s otázkou, lišta pri ľavom
-        okraji s pásom, sklenená káva a zmena nastavení za behu. Záťaž v pokoji: scéna 17 % jadra, Hyprland 4 %.
-        Overené 13. 10. tým istým spôsobom: nečinnosť (skrátené časy), dva a tri monitory, vlastné kvapky a ich hra,
-        MediaGoo s napodobeným prehrávačom, kalendár zo súboru .ics, odpoveď AI od Clauda, prichytenie ťahaním
-        (myš kompozitora `tests/pointer.py`), sklo okien. **Neoverené z 13. 10.:** jednotky systemd
-        (`latte-idle`, `latte-goo-side@`) v skutočnej relácii, zamknutie pred uspaním, skutočný prehrávač, kalendár
-        z internetu, ťahanie okna za titulok skutočnou myšou.
-        **Neoverené:** skutočné prihlásenie (greetd → `latte-session` → Hyprland na obrazovke) — až po nasadení na
-        latte-lab (bod f); batéria (latte-lab ju nemá); viac monitorov; uspanie, reštart a vypnutie (v skúške sa
-        nestláčali naostro).
-   - e. [~] **Zoznam súborov (`FILES`)** od prvého kusu (založený 12. 10., stráži ho `tests/check.sh`): každý súbor, ktorý LatteOS pridá do systému, má riadok
-     „cieľ v systéme ← zdroj v repe“. Inštalátor aj odinštalovanie sa neskôr napíšu nad týmto zoznamom; dovtedy
-     sa podľa neho inštaluje ručne. Čo LatteOS v systéme mení (nie pridáva — `/etc/os-release`, greetd), má vlastný oddiel.
-   - f. [~] **Inštalátor a odinštalovanie**: `./install` (13. 10.) nad zoznamom `FILES` — bez prepínača iba vypíše, čo
-     chýba a čo by spravil; `sudo ./install --go` postaví (cargo, plugin), skopíruje súbory, nahrádzané odloží ako
-     `*.pre-latteos` a spustí kroky z oddielu `[steps]`; `--remove` ich vráti (`[undo]`) a súbory odoberie
-     (`--purge` aj to, čo vzniklo počas behu); `--root DIR` inštaluje do priečinka bez krokov (skúška, balíček);
-     `--prune` odstráni z vlastných priečinkov LatteOS to, čo ostalo po staršej verzii. `tests/check.sh` pri každej
-     kontrole nainštaluje do dočasného priečinka a zasa odoberie.
-     **Urobené 13. 10.:** výmena na latte-lab jedným príkazom `sudo ./fresh-install` (snímka snapper, záloha nastavení
-     do `/var/backups`, `./install --go --prune`, potom `./migrate-v03 --go` — 80 zvyškov v0.3 mimo vlastných
-     priečinkov a balíky Noctalie); ochrana pred nedostatkom pamäte (`system/oom/`) prenesená do Fresh. Po reštarte
-     beží 0.4: greetd → `latte-session` → Hyprland → Goo; Sunshine, EDID a repozitáre ostali.
-     **Pôvodne ostávalo (s používateľom):** výmena na latte-lab bez preinštalovania Fedory — snímka snapper pred ňou,
-     nastavenia používateľa do zálohy, odobratie v0.3 mimo vlastných priečinkov (v0.3 odinštalátor nemá: staré
-     jednotky systemd, `/usr/libexec/latteos`, staré príkazy v `/usr/bin`, Noctalia) — a čistá Fedora vo VM
-     s voliteľným vzdialeným prístupom (dnes `old/setup/lab/vzdialene.sh`). Až tu sa dokončia zvyšné testy bodu 1.
-     Na latte-lab dnes `./install` hlási: chýba balík `NetworkManager-tui`; 552 súborov v0.3 vo vlastných priečinkoch.
-   - g. [ ] Fresh → `main`, verzia 0.4.0; verejné vydanie iba na pokyn.
-   - Rozloženie Fresh (schválené 12. 10.): `goo/` engine, kvapky, prihlásenie, zámok, SAFE a `lang/` s prekladmi ·
-     `apps/` aplikácie QML · `bin/` príkazy · `system/` Hyprland, labwc, greetd, systemd, plymouth · `assets/` tapety,
-     písma, textúry · `crates/` Rust · `patches/` záplaty pleamaru · `tests/` kontroly (`tests/check.sh` pred každým commitom) · `FILES`.
-3. [ ] **STRESTEST P1 — Boot a GOO** (001–045, 541–554). Strojovo overiteľné robí Claude, klikanie autor.
-   **Odložené (používateľ, 13. 10.): testuje sa, až keď sú dokončené všetky prvky systému** — najprv body 4–12,
-   potom sa sem vrátiť. Dovtedy sa test robí iba vtedy, keď overuje práve dokončený kus. Stav z 13. 10.: 27 z 219
-   testov P1 má výsledok (zapísané v `bughunt/STRESTEST.md`); z nich na opravu: 031 (hlava BarGoo čnie ~9 px cez
-   spodný okraj maximalizovaného okna), 541 (overiť prepínač jazyka a klávesnice na skutočnom prihlásení).
-   *Hotovo, keď:* každý z týchto testov má stav a zlyhané majú úlohu.
-4. [ ] **SafeGoo** — dokončiť podľa toho, čo ukáže bod 1 (ovládanie okien na labwc, diagnostika pádu).
-   - **Diagnostika pádu podľa whyd** (schválené 13. 10.; [whyd](https://github.com/vmaltarello/whyd), Go, GPL-3.0,
-     samostatný program): dnešný `last-crash.log` z `latte-session` zachytí iba pád Hyprlandu v tej istej relácii.
-     whyd z žurnálu predošlého štartu rozpozná aj zamrznutie s tvrdým vypnutím, OOM, chyby GPU, zlyhané služby
-     a prehriatie (pravidlá v TOML, správa so skrytými údajmi). Postup: (a) vyskúšať ručne na latte-lab
-     (`whyd` po štartoch z bodu 1); (b) vlastné pravidlá pre `latte-session`, Hyprland, engine Goo a prepnutie do SAFE;
-     (c) v SAFE položka „Prečo sa skončila minulá relácia“ — súhrn z `last-crash.log` a z whyd, správa na skopírovanie;
-     (d) whyd ako voliteľná závislosť (balík rpm z vydaní, riadok vo `FILES` a v `TRETIE-STRANY.md`), bez neho ostane
-     dnešný výpis. *Overiť:* či whyd vie aj aktuálny štart od času pádu (pád relácie bez reštartu), inak to ostáva na
-     `latte-session`.
-   **Urobené 13. 10.:** (a) whyd 0.1.1 vyskúšaný na latte-lab z balíka vydania (bez inštalácie): číta tento
-   štart (`-b 0`) aj predošlé, takže pád relácie bez reštartu vidí tiež; (b) vlastné pravidlá
-   `system/whyd/latteos.toml` (prechod do SAFE a prečo, pád a nový štart Hyprlandu, pád enginu Goo, rozhodnutie
-   `latte-boot`) — `whyd rules test` prejde; `latte-session` píše to, čo ukončilo reláciu, aj do žurnálu
-   (predtým iba do `session.log`, ktorý whyd nevidí); (c) `latte-safe why` a v ponuke SAFE položky **w** (prečo
-   sa skončila minulá relácia: zápis LatteOS + whyd pre tento a predošlý štart) a **c** (to isté ako správa do
-   schránky); to isté tlačidlo v Nastaveniach › Štart a režim SAFE; (d) whyd je voliteľný (`FILES`,
-   `TRETIE-STRANY.md`), bez neho ostane zápis LatteOS. **Neoverené:** pravidlá SAFE a pádu na skutočnom páde
-   (iba ich príklady); položky v ponuke SAFE naostro. whyd ukazuje začiatok relácie o 2 h posunutý (jeho chyba
-   s časovým pásmom, nahlásiť autorovi). **Ostáva z bodu 4:** ovládanie okien na labwc — čo presne, ukáže bod 1.
-5. [ ] **GooEngine:** záťaž v pokoji (12. 10.: 44 % jadra, 6. 10.: 17 %), hĺbková kontrola LensGoo, monitor
-   pripojený za behu, 1024 × 768.
-   Fresh, merané 12. 10. v `tests/screen.sh` (RX 640, 60 snímok/s, `PLEAMAR_TIMING=1`): scéna s 32 miestami 24 % jadra
-   (pravidlá a pružiny 1,5 ms, skladanie 1,2 ms, kreslenie 0,7 ms na snímku), so 16 miestami 17 %; každých 16 miest
-   stojí ~7 %, aj prázdnych. Zatvorená karta a prázdne miesta sa už nekreslia (27 → 24 %). Čo by pomohlo najviac:
-   `rate:` podľa podmienky (záplata pleamaru — 30 snímok/s, kým kurzor nie je pri kvapkách; `rate` je dnes iba číslo),
-   prípadne menej miest.
-   **Z Vitreusu, ešte neurobené (13. 10.):** efekty iba počas pohybu — prechodové efekty zapínať podľa vzdialenosti
-   pružiny od cieľa, v pokoji nulová cena (materiál a rast karty z Vitreusu sú hotové, ostáva merať; sklo pri
-   pokoji dnes nestojí nič, lebo `lens` číta obraz iba pri pohybe).
-6. [ ] **Aplikácie podľa Priority UX** — prvý Barista s AVP2 (`docs/barista/NAVRH.md`).
-7. [~] **Režim okien Glance** — **urobené 13. 10. večer (prvá verzia, na pokyn „pre rôzne rozlíšenia“):** štvrtý režim
-   `glance` v `system/hypr/latte/windows.lua`, na každom monitore, nie iba širokom. Okno, v ktorom sa pracuje,
-   vyplní stred; ostatné majú veľkosť stredu a vykúkajú zo strán pásom, ktorý obrazovka nechá (titulok hore, viac
-   okien na strane si delí výšku). Stred je široký podľa výšky (1,45 ×), najmenej pol obrazovky a najviac toľko,
-   aby po stranách ostalo aspoň 96 px: 2560 × 1080 → stred 1415 a po 560 px, 1920 × 1080 → po 240 px,
-   1024 × 768 → po 106 px. Klik na okno zboku ho prinesie do stredu; Win+←/→ pošle okno nabok, Win+↓ ho
-   odstaví (ikra BarGoo = Parking), Win+↑ na celú plochu; pustenie ťahaného okna v páse ho tam nechá. BarGoo,
-   karta nastavení Goo aj Nastavenia › Okná režim ponúkajú. Overené bez obrazovky na troch rozlíšeniach
-   (poradie, strany, odstavenie, zavretie). **Chýba oproti predlohe:** zmenšené živé okná (Hyprland okno
-   nezmenší), náhľady v Parkingu (dnes ikony), útržky textu (clips), Meta+dvojklik, mapa pri Alt+Tab.
-   Pôvodný zápis: **Režim okien Glance** (rozhodnuté 13. 10., podľa [Glance](https://github.com/scottjenson/Glance) Scotta
-   Jensona, MIT) — štvrtý režim vedľa pásky, dlaždíc a plávajúcich, ponúka sa **iba na širokom monitore**. V strede
-   **Main** a vedľa neho **Stash**: skutočné okná v skutočnej veľkosti. Pri okraji **Parking**: náhľady odstavených
-   okien, kreslí ich engine Goo, klik okno vráti. Minimalizácia v Glance = odstavenie do Parkingu.
-   *Pripravené:* či a ako BarGoo okná ukazuje, určuje jedno miesto (`berries_out()` v `goo/lib/bar.luau`) — Parking
-   bude ďalšia podoba toho istého zoznamu okien. *Na premyslenie pred prácou:* náhľady okien v engine (pleamar má
-   službu `thumbnails`; miesto kvapky dnes nesie ikonu 30 × 30, náhľad potrebuje väčší obrázok a obdĺžnikový tvar),
-   odkiaľ je monitor „široký“, čo robí Stash v Hyprlande (pravidlá okien alebo vlastné rozloženie). Náhľady sa
-   dovtedy nerobia.
-8. [ ] **Fyzikálne prostredie kvapiek** (rozhodnuté 13. 10.: neskôr, **až po zmeraní a otestovaní Fresh na hardvéri
-   latte-lab**). Dnes majú kvapky jedny pravidlá a spoločné prostredie (gravitácia, hladina, vietor, pružiny), ale
-   nepôsobia na seba silami: neprekrývanie počíta logika, gravitácia platí iba pri páde a skoku, okná nie sú súčasťou
-   prostredia. Cieľ: hmotnosť, zotrvačnosť, vzájomné odpudzovanie a zrážky ako pravidlá scény, rovnaké pre každú
-   kvapku (vzor fwm, R3·A). Znamená prepísať pohybovú časť `goo/parts/drops.plm` a presunúť neprekrývanie z
-   `goo/lib/engine.luau` do scény; najprv zmerať cenu na snímku (dnešné pružiny: 24 % jadra pri 32 miestach).
+- Adresa úlohy je jej ID (napr. 6F.03, 10A.01). Úloha je riadok s ID a všetko pod ním po ďalšie ID. Vyznač jeden riadok s textom pod ním
+  (alebo celú kategóriu) a daj ho novému oknu. Claude pracuje z výberu a celý súbor nečíta; kontext kategórie nájde cez
+  `grep -n '^##* 6F\. ' ROADMAP.md` (hlavička s opisom a zdrojmi).
+- Hotové veci sú zhrnuté v jednom riadku. Plné znenie pôvodnej roadmapy: `git show b375aa2:ROADMAP.md` (r. N–M pri položke sú riadky tam).
+  Rozpracované a otvorené veci, aj všetko neoverené, sú tu doslovne.
+- Nový nápad: nové ID na koniec príslušnej kategórie. Značky: [x] hotové · [~] rozpracované · [ ] otvorené · (pozn.) poznámka.
+- Poradie vývoja: kategórie 1–15, potom 17 Optimalizácia, nakoniec 18 STRESTEST.
+- Stav testov: `python3 bughunt/stav.py`. Pravidlá plochy: `LATTEOS-GOO.md`. Denník rozhodnutí: `docs/goo/ROZHODNUTIA.md`.
 
-9. [ ] **Inštalátor so sprievodcom (provizórny, rozhodnuté 13. 10.)** — grafické UI s Baristom, kroky ako pri inštalácii
+---
+
+# Poradie práce
+
+Určené 22. 10. 2026 (nahrádza bývalé „Teraz“ z 12. 10.). Ide sa zhora, neskáče sa; nový nápad na koniec svojej kategórie, nie sem.
+Poradie drží tri pravidlá: **čo blokuje overovanie ostatného ide prvé** (štart, SAFE, obrazovky), **plocha pred aplikáciami**,
+**aplikácie podľa Priority UX** (zvyky z Windowsu, softvér zo zoznamu záujmov), a nakoniec Optimalizácia a STRESTEST.
+Číslo v zátvorke je ID kategórie; podrobnosti sú pri nej.
+
+**Fáza 1 — Základ, bez ktorého sa nedá overovať**
+  1. [~] GuardDog: nezabiteľnosť (Restart=always, watchdog), skúška zabitím, vypnutie stráženia, štítky — (10F)
+  2. [~] Greeter: zvyšné overenie na skutočnom prihlásení (zlé heslo, jazyk a klávesnica, test 541) — (4)
+  3. [ ] Obrazovky: monitor pripojený za behu, Duplikovať v Nastaveniach, overiť so Sunshine — (8B)
+
+**Fáza 2 — Plocha Goo**
+  4. [ ] GooEngine, jadro: okno z bubliny (s QueenGoo), 1024 × 768, jedna logika pre NORMAL/SAFE — (6)
+  5. [~] Dokončenie kvapiek: BarGoo, LensGoo (vzhľad), PowerGoo, ClockGoo, QueenGoo, QuickGoo, Pobrežie — (6A–6E, 6G, 6H)
+  6. [~] Režimy okien: Glance (náhľady v Parkingu), hyprtrizone pre ultrawide — (8A)
+  7. [~] Plocha: ponuka plochy (Späť, „Tento počítač“), tapety a skwd-wall, hladina na spodku okna — (7A, 7B, 8D)
+
+**Fáza 3 — Vzhľad a Nastavenia**
+  8. [~] Vzhľad a témy: Keramika, Hliník, Onyx, Steam, dlaždicové rozloženie podľa Vitreusu — (9A)
+  9. [~] Nastavenia: 11 chýbajúcich stránok (Zálohovanie, Cloud, Bluetooth, Tlačiarne, Heslo, Oznámenia…) — (9)
+
+**Fáza 4 — Aplikácie (Priorita UX)**
+ 10. [~] Barista s AVP2 a sprievodca — (10I)
+ 11. [~] AppManager: úlohy a história — (10H)
+ 12. [~] DualBrew — (10A)
+ 13. [~] LatteMonitor — (10D)
+ 14. [~] DeviceManager — (10E)
+ 15. [~] NetManager: pokročilý detektor siete — (10G); hneď po ňom CamGoo (domáce kamery) — (6F)
+ 16. [~] **Kalendár: všetky funkcie Google Kalendára, dizajn ostáva** — (10J)
+ 17. [~] LensAI: lokálne modely, asistent v textových poliach, hľadanie podľa významu — (10B)
+ 18. [ ] Heidelberg — (10C)
+ 19. [ ] Hry — (10K)
+ 20. [~] Bezpečnosť a Úložisko: záloha dát, zaplnenie diskov, oddiely — (11, 2C)
+
+**Fáza 5 — Núdzová relácia, inštalácia a vydanie**
+ 21. [ ] SafeGoo a Relácie: ovládanie okien na labwc, diagnostika pádu, okná po páde kompozitora — (5, 5A); vyvíja sa až tu, tesne pred inštalátorom
+ 22. [ ] Boot ako súčasť inštalátora: GRUB/SAFE položky, `latte-boot`, Plymouth — (3)
+ 23. [ ] Inštalátor, voľba AI, prvé spustenie (kvapky sa predstavia) — (2, 2A, 2B)
+ 24. [~] Build a vydania: Fresh → `main` 0.4.0, README, brány Arabica — (14)
+ 25. [ ] Preklady: záverečná kontrola úplnosti — (12)
+ 26. [ ] Fyzikálne prostredie kvapiek — až po zmeraní Fresh na hardvéri — (6)
+
+**Fáza 6 — Záver**
+ 27. [ ] **Optimalizácia** — zrýchlenie načítania, zmenšenie na úložisku, nižšia náročnosť na hardvér, bez obmedzenia výsledku — (17)
+ 28. [ ] **STRESTEST** — úplne posledný — (18)
+
+**Čaká a nie je v poradí:** ChatGoo — Beeper nie je na latte-lab, nedá sa overiť (6I) · Návrhy kvapiek, kým ich autor neprijme (6L) ·
+Prístupnosť až v Arabice 1+ (13) · Atomic/bootc, Nervboot, LatteApp (1C, 3, 19).
+
+---
+
+# Kategórie
+
+---
+
+## 1. [~] kernel a zakladny jazyk
+aktualne linux fedora 44 server. hyprland a pleamar.
+po dokončeny latteOS gui bude na rovnakom zaklade vytvoreny atomic ako Bazzite. Možnost neskorej. Vytvorit api rozhranie, ktore ponukne funkčnost LatteOS nad akýmkolvek kernelom.
+
+### 1A. [x] Hyprland
+Kompozitor Hyprland 0.56 s Lua vrstvou: okná, režimy, skratky, stupne výkonu, herný režim.
+
+**1A.01** [x] (Okná) Hyprland pre GOO · r. 76–77
+
+### 1B. [x] Pleamar
+Jazyk a engine pleamar, naše záplaty (`patches/`), skill `pleamar`, `pleamar --check`.
+Zdroje: `patches/`, skill `pleamar`
+
+**1B.01** [x] (Pleamar) Fresh c) pleamar 0.3.2 · r. 44–49
+
+**1B.02** [x] **pleamar 0.3.2** (12. 10.): záplaty prenesené a uložené v `patches/` (päť súborov podľa témy, každý sedí
+  na čistý `v0.3.2` samostatne; popis v `patches/README.md`). Farby 8 bitov má už autor sám, tá časť odpadla.
+  Preložené v `~/src/pleamar-0.3.2`, nainštalované ako `/usr/bin/pleamar` (jazyk 0.4); pôvodný je
+  `/usr/bin/pleamar-0.2.29`. Overené: nové aj staré scény prejdú `--check`, nové prihlásenie aj starý engine sa
+  na neviditeľnej obrazovke kreslia rovnako ako na 0.2.29 (rozdiel do 9 z 255). **Neoverené:** starý engine
+  v skutočnej relácii Hyprlandu na novom pleamare (záťaž, sklo, zoznam okien).
+
+### 1C. [ ] Atomic / bootc
+Neskôr: obraz ako Bazzite, rollback.
+
+**1C.01** [ ] (Neskôr) R7 — Atomic/bootc a rollback · r. 1181–1182
+
+**1C.02**  [ ] Fedora Atomic/bootc a systémový rollback zaradiť až po splnení požiadaviek pôvodnej fázy A:
+  stabilné pracovné prúdy, reálny HW, inštalácia, aktualizácia, obnova a testovací proces.
+
+---
+
+## 2. [~] Instalator OS
+Zdroje: `fresh-install`, `install`, `migrate-v03`, `docs/NAVRH-STARTU.md`
+ak bude možnost. latteOS bude dostupne ako LiveUSB system, pripadne presne ako https://github.com/omacom/try-omarchy-windows . čiže try-latteos-windows
+instalator samotny bude barista(easy instalation) ktory prevedie uživatelma krokmy, pre pohodlnu inštalaciu bez nutnosti poznat linuxove terminy, diskove struktury. samozrejme pre pokročilych uživatelov su možnost zadat udaje ručne(advanced instalation). 
+Barista instalator OS je prva prezentacia baristu ktory bude mat v hotovom systeme vlastnu ulohu (viď sekciu nativne app)  
+
+**2.01** [ ] je nutnost ponuknut aj možnost instalacie ako dualboot. 
+
+**2.02** [ ] preverit možnost instalacie na obsadeny disk (ntfs) bez straty povodnych dat.
+
+**2.03** [ ] (Inštalátor a prvé spustenie) Inštalátor so sprievodcom · r. 293–307
+[ ] **Inštalátor so sprievodcom (provizórny, rozhodnuté 13. 10.)** — grafické UI s Baristom, kroky ako pri inštalácii
    Fedory: jazyk a klávesnica, disk (automaticky a pár predvolieb; /boot, /, /data, formát, veľkosti), účet, AI áno/nie
    (bez nej sa prvky AI nezobrazia; s ňou model podľa GPU a RAM sa sťahuje počas inštalácie), káva a šálka (odtieň kvapiek
-   a okien), výber súčastí od autorov.
+   a okien), výber súčastí od autorov.   
    **Úložisko (používateľ, 21. 10.):** inštalátor neurobí iba `/boot`, `/` a `/data`, ale ponúkne aj **domovské
    priečinky** — kde budú (na `/data`, vlastný oddiel `/home`, alebo priečinky Dokumenty, Obrázky, Hry… presmerované
    na `/data`) a koľko miesta ktorý oddiel dostane. To isté musí vedieť aj **Nastavenia › Úložisko** neskôr, lebo
@@ -305,887 +147,112 @@ Schválené 12. 10. 2026. Pracuje sa **zhora nadol, neskáče sa**; nový nápad
    `latte-boot` (predštartová identifikácia), obraz ju musí niesť; ostáva ju posilniť a skúsiť. Základ Fedora/Atomic: zatiaľ jedno.
    *Pred odobratím v0.3:* snímka snapper, záloha nastavení používateľa, kroky sa zapíšu a overia suchým `./install`.
 
-10. [ ] **Rozpoznanie pripojených obrazoviek** (13. 10., z prvého behu Fresh na latte-lab). latte-lab beží väčšinou iba
-   cez Moonlight na virtuálnej DP-1 (EDID LATTE-VIRT); skutočný monitor DP-3 býva pripojený len občas. Prvý štart Fresh
-   so skutočným monitorom dal hlavnú scénu Goo na virtuálnu obrazovku, ktorú nikto nevidí, lebo `main_monitor()`
-   v `system/hypr/hyprland.lua` hľadal monitor presne na 0,0 a pri `position = "auto"` tam žiadny nebol. Treba:
-   (a) hlavný monitor = skutočný (nie LATTE-VIRT), ináč ten najviac vľavo; (b) virtuálny sa pri skutočnom zrkadlí
-   na hlavný (Hyprland `mirror`; overené 13. 10., zrkadlo aj škáluje), bez neho je hlavný on; (c) zmena pri
-   pripojení a odpojení za behu (scéna Goo sa presunie, dnes ju presúva `place_shell`); (d) voľba „Duplikovať“
-   v Nastaveniach › Obrazovky; (e) inštalátor to pri viacerých obrazovkách nastaví sám. Overiť so Sunshine (KMS).
-   **Urobené 13. 10.: (a), (b), (c)** — `main_monitor()` berie skutočný monitor pred virtuálnym a z nich ten najviac
-   vľavo; virtuálny sa pri skutočnom zrkadlí a po jeho odchode je zasa sám sebou; ktoré scény bežia, rieši
-   `bin/latte-screens` podľa toho, čo naozaj beží (predtým si to pamätal Hyprland a po `hyprctl reload` to stratil).
-   Overené bez obrazovky s napodobeným virtuálnym monitorom a v `tests/test_screens.sh`. **Neoverené:** na latte-lab
-   so skutočným monitorom a s Moonlight. Ostáva (d), (e).
-11. [~] **GuardDog — strážca súčastí a kto komu patrí** (20. 10., na pokyn používateľa po tom, čo sa zabilo `qs` a zmizli
-    ikony aj ponuka plochy). `bin/latte-guarddog` (služba `latte-guarddog.service` v cieli relácie): každých 5 s
-    skontroluje scénu Goo, nečinnosť, ikony plochy, tapetu a históriu schránky; čo chýba dvakrát po sebe, to spustí
-    znova (najviac 5× za 5 minút, potom pokoj a jedno upozornenie). Stav je v `$XDG_RUNTIME_DIR/latteos/guarddog.json`.
-    Rovnaký program povie, komu proces patrí: `linux` (jadro a systém), `latteos` (to, z čoho je LatteOS), `user`
-    (programy používateľa); Monitor › Procesy to ukazuje štítkom, filtrom a zoznamom strážených súčastí. Overené:
-    zabité ikony sa do ~16 s vrátia. **Ostáva:** Nastavenia › Štart (vypnúť stráženie jednej súčasti), strážiť aj
-    skutočné aplikácie používateľa na žiadosť, štítky v Správcovi zariadení, upozornenie pri páde mimo strážených súčastí.
-12. [~] **Pokročilý detektor siete** (20. 10., používateľ; predpoklad pre CamGoo s domácimi kamerami). Dnešný inšpektor
-    siete v Správcovi zariadení (inšpirácia ESET Smart Security) nájde iba počítač, s ktorým je latte-lab spojený káblom.
-    Treba: ARP tabuľka a ping sweep podsiete, mDNS/Bonjour, SSDP/UPnP, NetBIOS, ONVIF WS-Discovery (kamery), výrobca
-    podľa MAC (OUI), otvorené porty bežných služieb (554 RTSP, 2020 ONVIF Tapo, 80/443, 22, 445, 9100), rozpoznanie typu
-    (kamera, tlačiareň, TV, telefón, router), Matter/Thread pasívne (R3·E); ako ESET „Kontrola siete“ so zoznamom a mapou.
-    **Cieľ (používateľ, 21. 10.):** celá sieť, čo je ktoré zariadenie a čo vie (prehrať naň hudbu a video, kamera, prijať
-    dáta), slabé miesta a ochrana na pár klikov — pre domáceho správcu, ktorý chce prehľad a riešenie bez príkazov.
-    - a. [x] Hĺbková kontrola `latte-network inspect` (21. 10.): otvorené porty bežných služieb, UPnP/SSDP (DLNA
-      prehrávače a servery, router s UPnP), ONVIF (kamery), NetBIOS (mená Windows), kamera bez hesla (RTSP DESCRIBE),
-      schopnosti zariadenia, slabé miesta s radou a skóre siete; Inšpektor › Skontrolovať podrobne, karta Bezpečnosť
-      siete, pri zariadení Čo vie a jeho slabé miesta. Bez nmap a iných závislostí. Overené testom a na latte-lab
-      (sieť zdieľaná z Windowsu: iba brána, multicast neprejde); skutočná domáca sieť neoverená.
-    - b. [x] Zoznam popri radare, filter podľa schopnosti, počet vecí na opravu (21. 10.; `latte-app devices inspector list`).
-    - c. [ ] Akcie zo schopností: Púšťať naň (DLNA/Cast — prepojiť s MediaGoo), Otvoriť obraz (kamera → CamGoo),
-      Pridať tlačiareň (CUPS), Otvoriť stránku nastavení, Pripojiť zdieľaný priečinok (DualBrew).
-    - d. [x] Upozornenie na nové zariadenie (21. 10.): `latte-network watch` každých 30 min v relácii
-      (`latte-netwatch.timer`), preložené upozornenie; neoverené v skutočnej relácii.
-    - e. [~] Správca siete (21. 10.: Pripojenie › Ochrana (DNS): od routera, Cloudflare, Quad9, AdGuard, Google;
-      `latte-network dns`; naostro neprepínané, len suchý beh; firewall: zapnutý, zóna a čo sa smie dnu, `latte-network firewall`):
-      Wi-Fi siete a heslá, VPN, DNS s ochranou súkromia, firewall (firewalld), hosťovská sieť
-      a blokovanie zariadenia — čo sa dá bez routera, a návod do routera, kde nie.
-    - f. [ ] Vzory: Sniffnet (kto s kým hovorí, pre NET), ESET Kontrola siete, UniFi (Matter), Fing.
-      Správca siete je nástroj **pre správcu domácej siete** (používateľ, 21. 10.: bude ním spravovať svoju sieť):
-      Zeek a Suricata nie sú „priťažké“, ale voliteľné nástroje správcu — skôr pôvodné programy so správou
-      z LatteOS (nainštalovať, zapnúť, ukázať upozornenia) než vlastná náhrada.
-    - g. [~] Mapa siete (používateľ, 21. 10.: ako nástroje z čias Windows XP — switch za switchom). Hotové: pohľad Mapa
-      s cestou do internetu (traceroute: router za routerom, poskytovateľ) a zariadeniami tejto siete; spätné DNS
-      s limitom 2 s. Ďalej: spravovateľné switche cez SNMP (tabuľka MAC → port, BRIDGE-MIB) a LLDP (lldpd), zariadenia
-      pod nimi; bežné switche sa vidieť nedajú.
+**2.04** [ ] (Inštalátor a prvé spustenie) R2 — inštalátor a prihlasovanie · r. 927–930
 
-13. [~] **CamGoo — webkamery** (20. 10., na pokyn používateľa). Hotové: karta s obrázkom kamery, prepínanie, zoznam
-    v Nastaveniach › Kvapky › Webkamery. **Ďalej (nápady používateľa 20. 10.):** zobrazenia — pod sebou, dlaždice,
-    zväčšenie jednej a prepínanie, samé rolujúca páska; **domáce IP kamery** (používateľ má Tapo: RTSP
-    `rtsp://účet:heslo@IP:554/stream1`, snímka cez ffmpeg; heslo do kľúčenky, nie do súboru); **nájdenie kamier
-    v sieti** (ONVIF WS-Discovery, porty 554 a 2020; to isté vie inšpektor siete v Správcovi zariadení);
-    **návrh kamier podľa miesta** (miesto počasia → verejné kamery okolo, zdroj s API, napr. Windy Webcams — kľúč);
-    **ISS** (NASA vysiela video, nie obrázok: snímka z prúdu cez ffmpeg, alebo mapa polohy ISS ako „kamera“).
-14. [ ] **Z inšpirácií a tech radaru (20. 10.)** — po bodoch 12 a 13, nič z toho nie je naliehavé:
-    - **Linux 7.3 na latte-lab:** RX 550 (Polaris) v Supreme Commanderovi a Quake 3 proti 7.2 (MangoHud); správa VRAM
-      (`dmemcg`) ako súčasť automatického škálovania pre karty s 2–4 GB.
-    - **e5-sk embeddingy** (KInIT): hľadanie podľa významu v LensGoo — súbory, nastavenia, aplikácie („faktúra za plyn“).
-    - **Posúvniky a prepínače podľa Vitreusu** v Pobreží a Nastaveniach (hrubnutie, širšia zóna, zaplavenie farbou).
-    - **Živý obraz v CamGoo** postupom Vitreusu (ffmpeg → súbor → `cam_path?N`), aj pre Tapo cez RTSP.
-    - **Sniffnet** ako vzor pre detektor siete a NET.
-    - **App Manager:** polica s FreeTube a Pipeline, Stremio a Mangayomi bez doplnkov vopred.
-    - **Fedora 45** (30. 10.) až po prebudovaní COPR; **oo7** ako trezor hesiel (kamery, cloudy).
-13. [ ] **Prvé spustenie — kvapky sa predstavia** (používateľ, 20. 10., z /plan-ceo-review). Po prvom prihlásení
+**2.05** - [ ] Inštalátor: úvodná obrazovka s voľbou AI zapnúť / vypnúť (R3·G). Prihlasovanie: prepnutie do SAFE alebo
+  iného nainštalovaného shellu (KDE, GNOME, čistá Noctalia…); SAFE nesie sadu nástrojov na zistenie, čo sa pokazilo.
+
+### 2A. [ ] Prvé spustenie
+Po prvom prihlásení sa kvapky predstavia.
+
+**2A.01** [ ] (Inštalátor a prvé spustenie) Prvé spustenie — kvapky sa predstavia · r. 375–379
+[ ] **Prvé spustenie — kvapky sa predstavia** (používateľ, 20. 10., z /plan-ceo-review). Po prvom prihlásení
     sa kvapky postupne nadvihnú a každá krátko povie, čo je a čo robí ľavý a pravý klik; preskočiteľné, dá sa
     pustiť znova (Nastavenia). Poradie: **QueenGoo → PowerGoo → LensGoo → BarGoo**, potom ostatné na ploche.
     Na konci jedna veta, že každú kvapku možno ťahaním presunúť inam. Texty cez preklady, ide myšou aj
     klávesnicou. Hodí sa pred prezentáciou na Reddite (prví cudzí používatelia).
-15. [~] **Zaplnenie diskov na očiach** (používateľ, 20. 10., po zistení, že na `/` latte-lab ostalo 5,5 GB z 120 GB).
-    DualBrew v bočnom paneli pri každom disku a oddiele pás zaplnenia (použité / voľné, farba pri nedostatku),
-    Správca zariadení pri diskoch to isté grafom aj s nerozdeleným miestom na disku; upozornenie, keď voľné
-    miesto klesne pod hranicu. latte-lab: za `/data` je ~132 GB nerozdelených.
-16. [~] **AI v LensGoo a Lens AI centrum** (používateľ, 20. 10., na pokyn mimo poradia). Hotové: karta AI s rozhovorom,
-    poľom v podobe služby, výberom modelu, spotrebou (limity Claude 5 h a týždňa) a novou reláciou; Lens AI centrum
-    (rozhovory všetkých AI pokope, služby a prihlásenie); výber AI pre LensGoo v Nastaveniach › Spúšťač; text
-    „Hľadať aplikácie alebo nastavenia…“. 21. 10.: pole s ponukou + (súbor, snímka obrazovky; nástroj číta iba
-    priložené), úsilie v čipe modelu (Claude low–max, Codex low–high); Gemini, ChatGPT, Grok a Mistral odpovedajú cez
-    oficiálne nástroje s účtami používateľa (overené 21. 10., zápis zakázaný). **Ďalej, podľa VS Code (Copilot: viac AI pod jednou strechou, vlastné kľúče):** (a) vlastné kľúče
-    API v Lens AI centre, uložené v kľúčenke systému (nie v súbore), priame volanie API bez agentov — aj Grok
-    a Mistral; (b) Grok Build a Mistral Vibe cez účet (nainštaluje používateľ; overiť vypnutie nástrojov);
-    (c) bohatšie okno rozhovoru a nastavenia centra; postupné písanie, zastavenie, mikrofón (chýba prevod reči).
-    **Rozdelenie (21. 10. v noci, ide sa zhora):**
-    - a. [x] Omarchy 4.0 a j5onrf/dots: ako zapájajú AI do plochy, čo sú „mikro-agenti“, čo z toho pre LensGoo
-      (zápis do `inspo/`; dots bez licencie = iba inšpirácia, kód sa nepreberá).
-    - b. [x] Mikromodely na latte-lab (i7-4820K bez AVX2, 16 GB RAM, RX 640): malý jazykový model cez llama.cpp
-      (procesor aj Vulkan), rýchlosť a slovenčina; e5-sk-small na hľadanie podľa významu; whisper.cpp na reč.
-    - c. [x] Lokálny model v `latte-ai` ako služba „v tomto počítači“ (bez internetu a bez účtu).
-      Hotové 21. 10.: zápis a merania v `inspo/ai-na-ploche.md`; llama.cpp b11752 a modely v `/data/ai`; služba
-      „Lokálna AI“ (llama-server na 127.0.0.1:8790, spúšťa sa pri prvej otázke; Qwen3.5 2B rýchly, 4B na rozhovor).
-      **Do inštalátora:** llama.cpp a model ako voliteľná súčasť (kam: `/usr/share/latteos/ai` alebo dáta).
-    - d. [x] Lens AI centrum › Služby: vlastné kľúče API (kľúčenka systému cez `secret-tool`), priame volanie API
-      (Anthropic, OpenAI, Google, xAI, Mistral) popri účtoch.
-      Hotové 21. 10.: gnome-keyring (PAM greetd ho odomkne pri prihlásení), vlastné servery s OpenAI API;
-      overené proti llama-serveru a oddelenej kľúčenke; skutočné kľúče služieb neoverené (žiadne nie sú).
-    - e. [x] Lens AI centrum › Modely: skutočné zoznamy modelov, ktoré sa ukážu v LensGoo, predvolený model.
-    - f. [x] Okno rozhovoru: postupné písanie, zastavenie, nové vygenerovanie, úprava otázky, formátovanie a kód.
-    - g. [x] Porovnanie: jedna otázka viacerým AI vedľa seba.
-    - h. [x] Mikrofón v LensGoo (whisper.cpp, ak b ukáže, že stačí) a nastavenia rozhovoru (vlastné pokyny, pamäť).
-      Mikrofón hotový 21. 10.: whisper.cpp s Vulkanom (large-v3-turbo 8 s, small 3 s na 4 s vety na RX 640),
-      `latte-ai listen`; na latte-lab chýba skutočný mikrofón (overené pripravenou nahrávkou). Vlastné pokyny (Lens AI
-      centrum › Pokyny) idú s každou otázkou ku každej AI.
-    - i. [ ] Hľadanie podľa významu v LensGoo (e5-sk, ROADMAP bod 14) — po b.
-    - m. [ ] **LensAI = spoločné API + grafická nadstavba** (používateľ, 21. 10.; Omarchy je MIT → prevziať maximum,
-      prepísať do LatteOS, autor v `TRETIE-STRANY.md`). LensAI (nové meno Lens AI centra) je jedno API pre všetko AI
-      v systéme (`latte-ai`: služby, účty, modely, rozhovory, spotreba, úlohy, skill) a okno nad ním; chat v LensGoo je
-      iba rýchly klient toho API. Poradie:
-      1. [x] premenovať na LensAI (21. 10.); polia na písanie presne podľa snímok používateľa (21. 10.); ponuky + a čipu podľa snímok — dáva ich `latte-ai providers` (plus, menu, web), LensGoo aj okno LensAI ich iba kreslia; čo LatteOS nevie, otvorí web služby fialovým textom (21. 10.); DeepSeek cez web čaká na `docs/manual-inst.md` (Claude, Gemini, ChatGPT, Grok,
-         Mistral, Copilot, DeepSeek); DeepSeek cez kľúč API;
-      2. [x] spotreba ako v Omarchy (`omarchy-agent-usage-*`), hotové 21. 10.: Claude (OAuth usage), Grok (billing),
-         Copilot (GitHub), ChatGPT (Codex app-server; neoverené, Codex odhlásený — `docs/manual-inst.md`), vlastné
-         počítadlo otázok; odpoveď platí 15 min, pri 80 %+ 3 min; LensGoo aj LensAI ju berú z API. Kimi a Fireworks
-         vynechané (používateľ ich nepoužíva);
-      3. [x] **panel agentov v okne LensAI** (podľa `shell/plugins/agents` z Omarchy), hotové 21. 10.: stránka Agenti
-         (`latte-ai agents`) — úvod s otáčajúcim sa riadkom (tokeny týždeň/dnes, najpoužívanejší model, najrušnejší deň,
-         otázky dnes; zo záznamov Claude Code), služba po službe s plánom, pásmi limitov a časom obnovenia,
-         „Treba sa prihlásiť“; „Urob niečo“ prejde do bodu 5 (potrebuje skill z bodu 4);
-      4. [x] **skill LatteOS** (podľa `default/agents/skills/omarchy`), hotové 21. 10.: `system/agents/skills/latteos/SKILL.md`
-         (ako je LatteOS postavený, `/usr/share/latteos` iba čítať, `~/.config/latteos`, príkazy `latte-*`, stránky
-         Nastavení, sudo/pkexec, snímka pred diskom, `dnf remove --noautoremove`, najprv plán a súhlas, pomoc pri páde
-         a v SAFE); `latte-ai skill install|reset|path` — kópia používateľa v `~/.config/latteos/skills/latteos`,
-         odkazy v `~/.claude/skills`, `~/.codex/skills`, `~/.agents/skills` (pri štarte relácie); **upraviteľný
-         v LensAI › Pokyny** s „Obnoviť pôvodný“; overené: Claude Code skill vidí;
-      5. [x] „Urob to za mňa“, hotové 21. 10.: `latte-ai do TASK [AGENT]` otvorí agenta v termináli (foot) so skillom
-         LatteOS — Claude Code v plánovacom režime, Codex `-s read-only -a on-request`, Gemini `--approval-mode default`;
-         nič sa neschvaľuje samo. LensGoo: 4. ikona v päte karty AI (úloha z poľa; prázdne pole → LensAI › Agenti).
-         LensAI › Agenti: pole, voľba agenta (`latte-ai doer`, `~/.config/latteos/agent`), 6 pripravených úloh
-         („Urob niečo“ z Omarchy). Overené: terminál s Claude Code sa otvorí; plán na skutočnej ploche neoverený;
-      6. [x] **pád → AI** s GuardDogom a **LatteOS SAFE** (podľa `diagnose-crash` z Omarchy), hotové 21. 10.: GuardDog
-         sleduje systemd-coredump (každých 30 s), pád zapíše do denníka a ukáže upozornenie „Opýtať sa AI“ · „O tomto
-         programe nie“ (stlmenie v `guarddog.json`); `latte-ai crash PID` dá agentovi fakty (coredumpctl, denník okolo,
-         čí program), vysvetlí, nič nemení; v SAFE položka „Opýtať sa AI, prečo sa skončila“ (`latte-ai why`), aj v ponuke
-         pravého tlačidla. **Okno GuardDog** (`latte-app guarddog`, na pokyn používateľa): Čo drží v chode, Pády
-         (Opýtať sa AI, Stlmiť), Denník ako konzola (`latte-guarddog log`). Overené: pád `sleep` zachytený, upozornenie
-         po slovensky; agent pri páde na ploche neoverený;
-      7. [~] **inštalácia AI v okne LensAI** (používateľ 21. 10.: nie v App Manageri), hotové 21. 10.: LensAI › Služby
-         má pri nenainštalovanej službe „Nainštalovať“ — oficiálny nástroj v termináli, pre používateľa bez hesla
-         (Claude Code a Grok vlastným inštalátorom, Codex, Gemini, Copilot cez npm do `~/.local`, Mistral Vibe cez uv,
-         Ollama z Fedory; chýbajúci npm/uv z Fedory); stránka sa obnovuje každých 10 s. Neoverené naostro (všetko je
-         na latte-lab nainštalované). **Nástroje cez mise ako v Omarchy** (21. 10., pravidlo: najprv Omarchy):
-         `/etc/mise/conf.d/latteos-tools.toml` — lenivá inštalácia, `auto_update = "4h"`, `mise up` pri aktualizácii.
-         **Lokálna AI** (21. 10.): LensAI › Na tomto počítači ako LM Studio — Objavovať (výber LatteOS ako ich Staff
-         Picks, hľadanie na Hugging Face s triedením, detail s možnosťami stiahnutia, odhadom gpu/partial/cpu/too-big
-         ako lmstudio-js a predvybraným variantom, README), Moje modely, Spúšťanie (hardvér, llama.cpp Vulkan,
-         grafická karta); `latte-ai local …`. Neoverené: skutočné stiahnutie modelu a llama.cpp z LensAI.
-         Ostáva: aplikácie služieb z Flathubu, DeepSeek po `docs/manual-inst.md`. Diktovanie — **neskôr**. (Viac účtov
-         jednej služby s prepnutím pri limite — **neskôr**, používateľ 21. 10.: platí iba jednu službu.)
-    - n. [ ] **Odporúčané lokálne modely** (používateľ, 21. 10.): `system/ai/local-models.json` prejsť a obnoviť **raz za
-      mesiac či dva** (nové modely z `lmstudio-community`, veľkosti, popisy; dátum `updated`), príde s aktualizáciou.
-      **Vrstva AI s inštaláciou LatteOS** (ak ju používateľ povolí): mise a jeho zoznam nástrojov, llama.cpp, a model
-      navrhnutý podľa hardvéru (`latte-ai local recommend`) — krok inštalátora v bode 9.
-      8. [ ] **rozhovory aj mimo LensAI** (používateľ, 21. 10.: na PC v LensAI, na mobile v aplikácii Claude):
-         (a) **import** exportu dát služby (Claude: Nastavenia › Súkromie › Export, ChatGPT: Export údajov, Gemini:
-         Google Takeout) do histórie LensAI, iba na čítanie a pokračovanie; (b) **Remote Control** Claude Code
-         (oficiálne, výskumná ukážka): rozhovor LensAI ako interaktívna relácia Claude Code, ktorú otvorí aplikácia
-         Claude na mobile (Code). Obojsmerná synchronizácia bežných četov a projektov claude.ai **nie**: nemá verejné
-         API a podmienky zakazujú automatický prístup mimo kľúča API alebo výslovného povolenia.
-    - l. [ ] **Podľa Omarchy** (preskúmané 21. 10., `inspo/ai-na-ploche.md`), návrhy na výber používateľa:
-      (1) **skill LatteOS** pre agentov (`~/.claude/skills`, `~/.codex/skills`, `~/.agents/skills`): ako je LatteOS
-      postavený, čo sa smie meniť (`~/.config/latteos`, nie `/usr/share/latteos`), ktoré `latte-*` príkazy použiť,
-      pkexec, snímka pred diskom, plánovací režim — základ barličky (k); (2) **„Urob to za mňa“** v LensGoo: úloha pre
-      predvoleného agenta v okne terminálu, najprv plán, potom potvrdenie (nie automatické schvaľovanie ako Omarchy);
-      (3) **limity bez otázky** ako Omarchy (Claude OAuth usage, Grok billing) — číta token prihlásenia CLI, iba
-      so súhlasom; (4) **pád → AI**: GuardDog/whyd ponúkne „Opýtať sa AI“ so zisteniami z core dumpu; (5) **App Manager
-      › AI**: Claude desktop, ChatGPT, LM Studio, Ollama; (6) **diktovanie do akejkoľvek aplikácie** (Voxtype, Win+H
-      ako vo Windows) popri mikrofóne v LensGoo; (7) viac účtov jedného poskytovateľa a prepnutie pri limite.
-    - k. [ ] **AI ako barlička v systéme** (používateľ, 21. 10.: ako v Omarchy; veľa ľudí je v Linuxe stratených):
-      po oficiálnom spustení LatteOS bude AI integrovaná do OS a na požiadanie použije systémové nástroje —
-      „preformátuj mi `/`, hlási, že je plný, a pridaj mu z rezervy“. Návrh: AI nesiaha na systém sama; navrhne
-      plán krokov ako nástroje LatteOS (`latte-files disks`, `latte-network`, Nastavenia…), človek každý zásah
-      potvrdí, oprávnenie správcu cez polkit, pred zásahom na disk snímka; čo sa stalo, sa dá prečítať a vrátiť.
-      Nástroje teda musia mať aj „robiacu“ časť (zväčšiť oddiel, presmerovať priečinky…), nie iba prehľad.
-    - j. [x] Mikro-agenti (inšpirácia j5onrf/dots, `inspo/ai-na-ploche.md`): pevné malé úlohy pre lokálny Qwen3.5 2B
-      v LensGoo a v ponuke pravého tlačidla — zhrnúť schránku, preložiť, vysvetliť chybu, príkaz z vety, meno súboru.
-      Hotové 21. 10. v karte AI (Zhrnúť, Preložiť, Vysvetliť chybu, Príkaz z vety; pole alebo schránka, lokálny model).
-      Ponuka pravého tlačidla a meno súboru až s DualBrew.
-17. [ ] **Dokončiť vizuálne podoby podľa návrhov v `inspo/`** (používateľ, 21. 10.; nákresy z 20. 10.). Hotové z nich:
-    bodkové grafy (`grafy.png` → `DotGraph`), dvojvrstvová kávová hladina (`latteOS settings priklad.png` → `Surface`).
-    Farby z témy, nie natvrdo; texty cez preklady; sklo podľa jedného stupňa LatteOS (Nastavenia › Okná › Sklo).
-    - a. [~] **Nastavenia** (`latteOS settings priklad.png`; 21. 10. hotová domovská stránka ako „Systém a prehľad“ v dvoch stĺpcoch — nákres je úzky, okno nie: karta počítača, režim rozhrania s náhľadmi, sklo ako posuvník so 4 stupňami, káva, obrazovky, úložisko so „Správa oddielov“, karta účtu na boku; päta so stavom systému a **expertný režim** (21. 10.: základné nastavenia a všetko nad ne, prepínač v päte; ROZHODNUTIA)): hlavička s hľadaním, karta „Systém a prehľad zariadenia“
-      (počítač, profil, procesor, pamäť, verzia LatteOS), režim rozhrania ako tri karty s náhľadom (tmavý, svetlý,
-      podľa slnka), intenzita skla ako posuvník s percentami (dnes štyri stupne), kávová hladina, displej (rozlíšenie,
-      obnovovanie, teplota farieb), úložisko s pásom podľa druhu dát a tlačidlom Správa oddielov, účet dole, päta
-      so stavom systému a prepnutím na expertný režim.
-    - b. [~] **DualBrew** (`latteOS dualbrew.png`; 21. 10. hotové: Dva panely | Jeden panel, čipy jednotiek nad panelom s voľným miestom, súhrn pod panelom, pás tlačidiel medzi panelmi, rad F3–F10, riadok terminálu (Alt+F1), rýchly filter typov; ostáva stĺpec Atribúty (práva), filtre priečinkov nad zoznamom): dvojpanel ako Total Commander (Dvojpanel / 1-panel), jednotky ako
-      čipy nad panelom, stĺpce Názov · Veľkosť · Zmenené · Atribúty, tlačidlá medzi panelmi (kopírovať, presunúť,
-      porovnať, zrkadliť), rad F3–F10 dole a riadok terminálu (Alt+F1); bočný panel s diskami a pásmi zaplnenia
-      (čiastočne hotové 20. 10.), obľúbené priečinky a rýchly filter typov.
-    - c. [x] **PowerGoo** (`PowerGoo popup.png`; hotové podľa používateľa 21. 10.): karta účtu (meno, rola, e-mail, šifrovanie), Nastavenia OS a Monitor
-      prostriedkov, štyri dlaždice Vypnúť · Reštartovať · Odhlásiť · Zamknúť, Núdzový režim (SAFE) a čas behu.
-    - d. [x] **LensGoo – aplikácie a AI** (`LensGoo popup appsearch.png` a `… frosted glass.png`; hotové podľa používateľa 21. 10.): záložky režimov hore,
-      pole s mikrofónom, filtre kategórií, Najčastejšie spustené, Obľúbené s klávesovými skratkami, Najnovšie
-      nainštalované, päta (počet aplikácií, miesto, klávesy) a Prispôsobiť · Zmeniť rozloženie · Možnosti filtrovania.
-    - e. [x] **ClockGoo** (`ClockGoo popup time frosted glass.png`; hotové, potvrdil používateľ 21. 10.: karta počasia sa zámerne mení podľa dňa a noci, v noci je tmavá — nie je to rozdiel od návrhu; nemeniť): záložky Prehľad · Časovače a budíky · Počasie,
-      veľký čas so sekundami, dátum, týždeň, meniny, počasie s východom a západom slnka, svetové hodiny,
-      digitálna pohoda (čas pri obrazovke podľa aplikácií), päta Režim spánku · Nerušiť.
-    - f. [ ] **Témy Keramika, Hliník, Onyx, Steam** (používateľ, 21. 10.): v `Theme.cups` sú zatiaľ Espresso, Mocha,
-      Porcelán a Z tapety; doplniť ich (aj materiál okien podľa PRAVIDLÁ bod 12). Aplikácie berú farby iba z témy
-      (DualBrew, LensAI, Nastavenia…), takže sa prefarbia samy — overiť snímkou každú tému.
-    - g. [ ] **Kalendár ClockGoo (ľavý klik) a aplikácia Kalendár** (používateľ, 21. 10.: „kalendár, ktorý bude každý OS
-      závidieť“, prepojený s ≥10 kalendárovými službami). Návrh na schválenie: https://claude.ai/artifact/JZr5fi8uL3b6FavXCKUcbU
-      (mesiac s počasím, meninami a sviatkami, „Ďalej o…“ s Pripojiť sa, deň ako časová os s voľnými oknami, pridanie
-      vetou cez lokálnu AI, týždeň s ťahaním myšou, rok ako teplotná mapa v štandardných farbách, Nerušiť počas
-      stretnutí, kalendár ako nástroj LensAI). Základ prebratý: **Evolution Data Server + GNOME Online Accounts**
-      (+ `evolution-ews`, `gnome-online-accounts-gtk`, všetko vo Fedore) — Google, Microsoft 365/Outlook, Exchange,
-      Nextcloud cez OAuth; iCloud, Fastmail, Zoho, Yahoo cez CalDAV; Proton, Tuta, EduPage a odbery cez .ics; Thunderbird
-      a miestne cez EDS.
-      - [x] **Karta ClockGoo, ľavý klik** (21. 10., `goo/parts/calendar.plm`): mesiac s udalosťami vo farbách kalendárov,
-        počasím na 7 dní, meninami (tie isté ako pravý klik) a sviatkami krajiny miesta počasia (`latte-sky country`,
-        `python3-holidays`); „Ďalej o…“ s Pripojiť sa (Teams/Meet/Zoom) a odložením; deň ako časová os s voľnom 8–20 h;
-        upozornenia; nová udalosť vetou (`latte-cal parse`, slová v `goo/lang/sk-dates.json`). `latte-cal` číta a
-        zapisuje cez EDS.
-      - [x] **Veta, ktorej slová nerozumejú → lokálna AI** (21. 10.): pri Pridať, keď pravidlá nenašli deň ani čas alebo
-        v názve ostalo slovo času, `latte-cal parse --ai` → `latte-ai quick` (najmenší model nad 2 GB: Qwen3.5 2B vynechával
-        dátum, 4B čítal správne, ~12 s na procesore); výsledok sa ukáže v čipoch, pridá sa až ďalším stlačením.
-        Používateľ 21. 10.: „zubár koncom mesiaca ráno o deviatej“ dala AI na stredu 28. 10. (správne piatok 30. 10.) →
-        dátumy počítajú pravidlá (koniec/začiatok/polovica mesiaca na pracovný deň, posledný piatok v mesiaci, o N dní
-        či týždňov, hodiny slovom „o deviatej“, „pol siedmej“, ráno/večer); AI dostane zoznam dní na 6 týždňov. 4B sa
-        aj tak mýli (posledný piatok → 20. 11.), premýšľanie trvá minúty — AI ostáva iba na zvyšok, s potvrdením.
-      - [x] **Aplikácia Kalendár** (22. 10., `apps/calendar.qml`, `latte-app calendar`, podľa návrhu „Týždeň“): deň, týždeň a
-        mesiac; malý mesiac, moje kalendáre (skryť/ukázať), vyťaženie pol roka v štandardných farbách; v týždni počasie,
-        čiara teraz, ťahaním myšou nová udalosť, presun aj predĺženie; vpravo otvorená udalosť a úprava (názov, čas,
-        miesto, poznámka, **vlastná farba** = COLOR z iCalendar, ako Evolution) — `latte-cal update`. Karta ClockGoo:
-        „V okne“ a klik na udalosť dňa ju otvorí v aplikácii; mesiac ukazuje iba svoje dni. `latte-cal` nečaká 15 s na
-        miestny kalendár (0,5 s namiesto 15,5 s).
-      - [ ] Rok ako samostatný pohľad a Agenda; mapa a čas cesty pri udalosti; Nerušiť počas stretnutí; kalendár ako
-        nástroj LensAI.
-18. [x] **Vývoj LatteOS v Nastavenia › Systém › O tomto počítači** (hotové 21. 10.: `bin/latte-activity` zapíše históriu repa do `build/activity.json` pri `./install --go`, inštaluje sa ako `/usr/share/latteos/activity.json`; graf 53 týždňov so štvorčekmi v farbách témy a nápovedou pri myši, 30 posledných commitov rozbaliteľných — autor, dátum, celá správa, zmenené súbory s +/−. **Rozhodnutie pre vydania:** verejné `arkaysk/latteos` má iba snímky vydaní, preto graf nesie súbor z repa, nie GitHub API; či vydanie smie niesť správy commitov, je na `zverejnit.sh`). (používateľ, 21. 10.): štvorčekový graf aktivity
-    (ako na GitHube: týždne v stĺpcoch, dni v riadkoch, sýtosť podľa počtu commitov) — ako pokračuje vývoj projektu;
-    pod ním posledné commity, každý rozbaliteľný: dátum, autor, správa celá a čitateľne, zmenené súbory. Zdroj:
-    verejné repo LatteOS cez GitHub API (`/stats/commit_activity`, `/commits`), bez siete posledné uložené; na
-    vývojárskom stroji aj `git log` miestneho repa. Graf ako `DotGraph` (bodky v štvorcoch), farby z témy.
-19. [ ] **hyprtrizone pre ultrawide monitory** (používateľ, 21. 10.; [github.com/nyrda/hyprtrizone](https://github.com/nyrda/hyprtrizone),
-    MIT, doplnok Hyprlandu): tri zóny — hlavné okno v strede, po stranách samostatné posúvateľné stĺpce, párovanie
-    okien, ťahanie myšou, lišty nad bočnými stĺpcami. Ako ďalší režim v Nastavenia › Okná („Tri zóny“), ponúknutý
-    pri monitore 21:9 a širšom (latte-lab DP-3 2560 × 1080). Zostaviť pre nainštalovaný Hyprland ako hyprbars
-    (`optional /usr/lib64/latteos/…` vo FILES), autor v TRETIE-STRANY.md.
-20. [ ] **Asistent v každom textovom poli** (používateľ, 21. 10.; vzor: veta v kalendári ClockGoo — pravidlá hneď, čo
-    nevedia, prečíta lokálna AI a výsledok sa ukáže na potvrdenie, nič sa nevykoná samo). Jedno spoločné API (`latte-ai`,
-    LensAI), pole len povie, čo vie urobiť:
-    - **DualBrew, riadok terminálu / hľadania:** veta → príkaz Linuxu alebo hľadanie; hromadné premenovanie a
-      usporiadanie súborov („fotky z dovolenky podľa dátumu do priečinkov“) — najprv náhľad zmien, potom vykonať.
-    - **Prehrávač hudby:** dohľadanie skladby podľa opisu („tá pomalá s klavírom od…“).
-    - **Fotky:** hľadanie fotky podľa opisu (obraz → význam, miestny model; súvisí s hľadaním podľa významu, bod 16 i).
-    - Ďalšie polia postupne (Nastavenia, App Manager, LensGoo). Merané 21. 10.: model 4B ~12 s na procesore a
-      pri dátumoch sa mýli — čo vedia pravidlá, robia pravidlá; AI iba na zvyšok a vždy s potvrdením.
-    - [x] **Pomocníci ako v Omarchy** (21. 10., LensAI › Pomocníci, ROZHODNUTIA): tvoj agent (nikto nevyberá za teba,
-      jednorazová pozvánka), drobné úlohy na tomto počítači alebo cez Claude Haiku (kľúč ~1–2 s, Claude Code ~10–20 s),
-      prepínače `crash-capture` a `calendar-ai` so stlmením pádov po programoch. Každé nové pole z tohto bodu = nový
-      prepínač v `SWITCHES` (`bin/latte-ai`) a otázka cez `latte-ai quick --for MENO`.
 
-## ROADMAP2 — LatteOS od nápadu po hotový produkt
+### 2B. [~] Voľba AI
+Úvod inštalácie ponúkne výslovne AI zapnúť alebo vypnúť (sľub, nie iba nastavenie).
 
-**Pridané 9. 10. 2026.** Pôvodná roadmapa je od 9. 10. v snímke
-[docs_zaloha/2026-10-09-roadmap-pred-ciscenim.md](docs_zaloha/2026-10-09-roadmap-pred-ciscenim.md) („vyššie“ a
-„pôvodné fázy“ v ďalšom texte znamenajú ju) a zachováva doterajší plán aj záznam práce. Táto časť pridáva produktovú postupnosť: LatteOS nie je iba grafické rozhranie Goo,
-ale integrovaný systém nad Linuxom — od štartu a relácie cez kompozitor, shell, aplikácie a služby
-po hardvérovú podporu, inštaláciu, obnovu a vydanie.
-
-ROADMAP2 zároveň zachytáva **stav a pôvod práce pri prechode z Classicu na GOO** a skladá ho do
-postupnosti až po hotový produkt. Je to pracovný podklad na porovnanie so starou roadmapou; nejde
-zatiaľ o rozhodnutie, že sa staré položky majú vymazať alebo presunúť. Podrobné pôvodné znenie,
-merania a históriu naďalej uchováva roadmapa vyššie; ROADMAP2 ich zhŕňa podľa súčasného produktu.
-
-### Pravidlá práce s ROADMAP2
-
-- Vývojový postup je **po etapách produktu**, ale pracovné prúdy v implementačnej etape môžu napredovať
-  paralelne, ak nemajú vzájomnú závislosť.
-- Každá nová funkcia prejde primerane veľkým cyklom: **nápad a používateľský problém → rozhodnutie →
-  technický návrh a riziká → prototyp → implementácia → integrácia → overenie → vydanie a údržba**.
-  Pri malej zmene sa kroky môžu spojiť; pri zmene štartu, bezpečnosti alebo formátu dát sa nevynecháva
-  návrh, obnova ani test.
-- Nápad v `inspo/` nie je automaticky schválená úloha. Do aktívnej práce sa dostane po pomenovaní
-  prínosu pre LatteOS, porovnaní s tým, čo už existuje, a rozhodnutí o prijatí.
-- **Rozlíšiť pôvod aj platnosť.** Úlohy zo zrušenej Classic vetvy sú história alebo kandidáti na
-  opätovné použitie, nie automaticky úlohy LatteOS GOO. Práca na spoločnej linuxovej platforme a
-  aplikáciách sa prenáša, ak je stále súčasťou produktu. Funkcie vytvorené po prechode sa označia
-  ako GOO.
-- **Detail ostáva pri svojom technickom zdroji, stav patrí aj sem.** ROADMAP2 uvádza, čo je
-  dokončené, rozhodnuté a otvorené, ale podrobné kroky, merania a históriu necháva vo fázach
-  vyššie alebo v dokumentácii. Tak sa pri porovnaní v pondelok **12. 10. 2026** dá určiť, čo premiestniť, zlúčiť,
-  ponechať ako históriu alebo zrušiť.
-- Značky `[x]`, `[~]`, `[ ]` zachovávajú význam používaný v pôvodnej časti roadmapy: hotové, čiastočné /
-  rozpracované, otvorené. **Otvorená otázka alebo nápad bez rozhodnutia nie je schválená implementačná
-  úloha.**
-- Pri každom významnom míľniku sa uvedie výsledok, závislosti a dôkaz overenia (test, meranie, skúška
-  na zariadení alebo používateľský scenár). Funkcia je hotová až vtedy, keď je súčasťou použiteľného
-  systému, nie iba prototypu alebo samostatného programu.
-- Záväzné pravidlá plochy sú v [LATTEOS-GOO.md](LATTEOS-GOO.md), záznam používateľských rozhodnutí
-  v [docs/goo/ROZHODNUTIA.md](docs/goo/ROZHODNUTIA.md), technické detaily v dokumentácii príslušného
-  subsystému.
-
-### Stav vývoja pri prechode na GOO
-
-Toto je orientačný súpis k 9. 10. 2026 podľa stavu a dátumov v pôvodnej roadmap. Značky hovoria
-o **pôvode a platnosti**, nie o technickom stave:
-
-- **HISTÓRIA / CLASSIC** — vzniklo pre zrušený Classic; už sa to nevyvíja ako samostatná plocha.
-- **ZÁKLAD** — vzniklo pred GOO alebo popri ňom, ale stále slúži celej LatteOS a prenáša sa.
-- **GOO** — rozhodnutie alebo práca po prechode na jedinú edíciu LatteOS GOO.
-- Stav práce je zvlášť označený `[x]` hotové, `[~]` čiastočne/rozpracované, `[ ]` otvorené.
-
-#### A. Pôvodná vetva LatteOS Classic — história, nie cieľová edícia
-
-- [x] Classic bol 5. 10. 2026 zrušený; samostatná klasická plocha, jej lišta, panely a spúšťač
-  už nie sú cieľom ďalšieho vývoja.
-- [x] V tejto vetve vznikli alebo sa rozpracovali rozhrania a aplikácie LatteOS (Noctalia/Quickshell,
-  Nastavenia, Súbory, Monitor, App Manager, Barista, Heidelberg, AI/Text Bar, témy a živá tapeta).
-  Ich jednotlivé funkcie majú v pôvodných fázach rôzny stav — dokončené, prototypové aj otvorené;
-  tento súhrn ich **neoznačuje hromadne za hotové**.
-- [ ] Pri porovnaní v pondelok 12. 10. rozdeliť položky tejto vetvy na: (1) iba Classic — archivovať,
-  (2) spoločný backend alebo aplikácia — ponechať ako základ, (3) GUI/funkcia stále potrebná v GOO —
-  preniesť do správneho pracovného prúdu, (4) zastarané alebo duplicitné — uzavrieť.
-- [~] (súpis 12. 10. je v „Teraz“, bod 2) Ako Classic-only preveriť najmä pôvodnú klasickú lištu/panely/spúšťač a starú plochu
-  `session/kvapky`; GOO používa engine `session/goo`, nie pôvodnú scénu Kvapky.
-
-#### B. Prenesený základ systému — platný aj pre GOO
-
-- [x] **F0–F2 / ZÁKLAD:** Fedora VM a balíkový základ; softvérové vykresľovanie; NORMAL/SAFE,
-  `latte-boot`, počítanie pádov a návrat do SAFE; Hyprland Lua vrstva, režimy okien, skratky,
-  viacstupňový výkon a herný režim. Tieto práce vznikli pred plným prechodom na GOO, no sú
-  základom súčasného produktu.
-- [x] **ZÁKLAD / systémové rozhrania:** greetd a prihlasovanie, systemd relácia, profily
-  prostredí, portály, PipeWire, D-Bus a pomocné služby sú zavedené v rozsahu opísanom vo F1–F4.
-- [x] **ZÁKLAD / bezpečnosť:** oddelené profily dôvery, D-Bus filter, NET pre Flatpak aj natívne
-  aplikácie a Setup Plan sú implementované podľa F6.
-- [~] **ZÁKLAD / aplikácie:** Súbory, Monitor, Správca zariadení, App Manager, Barista, záloha,
-  cloud a synchronizácia majú použiteľné časti; nejde však automaticky o finálnu integráciu
-  ani úplné pokrytie. Otvorené pokračovania sú rozdelené podľa produktu v časti D; zoznam zložiek je v časti E.
-- [~] **ZÁKLAD / AI:** `latte-ai` už pripája lokálne, domáce a cloudové modely aj vybrané
-  poskytovateľské CLI. Používateľské AI v LensGoo má samostatne známu kvalitatívnu medzeru.
-- [ ] Reálny hardvér NVIDIA, širšia kompatibilita zariadení, testy čistej inštalácie a dlhodobá
-  stabilita ešte nie sú uzavreté brány produktu.
-
-#### C. Aktuálna produktová vetva LatteOS GOO — od 5. 10. 2026
-
-- [x] **Rozhodnutie:** jediná edícia je LatteOS GOO; nasadzuje sa engine Goo (`session/goo`),
-  pôvodná plocha Kvapky sa nenasadzuje. Pravidlá produktu sú v
-  [LATTEOS-GOO.md](LATTEOS-GOO.md).
-- [x] **Rozhodnutia o správaní GOO:** myš je prvá, klávesnica doplnok; cieľom sú návyky Windows 11;
-  kvapky sú káva, Goo má vlastný vzhľad a karty vyrastajú z kvapiek. Podrobné záväzné pravidlá sú
-  v [LATTEOS-GOO.md](LATTEOS-GOO.md), nie v historických Classic návrhoch.
-- [x] **Rozhodnutie o SAFE:** plné SDF Goo je pri softvérovom kreslení príliš pomalé; SAFE preto
-  používa jednoduché statické kvapky. Ide o stanovený smer, nie dôvod pokúšať sa nasadiť plný
-  dynamický engine v pixman režime.
-- [x] **Rozhodnutie o poradí práce:** najprv dokončiť použiteľné GOO a systémový zážitok; nápady
-  z inšpirácie alebo nové externé projekty sa nepridávajú automaticky ako závislosti.
-- [~] **GOO / engine a plocha:** jadro pravidiel kvapiek, BarGoo a správa okien, LensGoo, PowerGoo,
-  QueenGoo, ClockGoo, karty, upozornenia, sklo a používateľské kvapky sú implementované v rôznom
-  rozsahu a priebežne overované. Samotný engine ešte nie je hotový produkt; SafeGoo a ďalšie
-  otvorené overenia sú uvedené nižšie. Detailný stav ostáva v F3·G.
-- [x] **GOO / integrácia:** GOO je predvolená relácia; Noctalia poskytuje rohovú lištu a systémové
-  funkcie. BarGoo pre viac monitorov, profil používateľa, nastavenia kvapiek, Tvorca Goo, skratky,
-  obnovenie relácie, webové aplikácie, Zoxide a DiskTree majú implementované časti opísané vo F3·G.
-- [x] **GOO / verejné vydanie:** príprava a vydanie 0.3.0 „Jihlavanka“ sú zaznamenané ako hotové.
-  [ ] Čistú inštaláciu vydaného verejného stromu treba ešte overiť.
-- [~] **GOO / SAFE:** existuje skúšobný SafeGoo so statickými kvapkami a nízkou spotrebou v
-  softvérovom režime. Chýba dokončenie ovládania okien a potrebných kvapiek/diagnostiky a jeho
-  zapojenie ako predvoleného SAFE shellu.
-- [~] **GOO / LensGoo a AI:** základ spúšťača, hľadania a AI existuje; hĺbková kontrola podľa
-  používateľa má zamerať predovšetkým kvalitu AI rozhovoru, odpovedí, výberov a chybových stavov.
-- [~] **GOO / aplikácie a integrácia:** viacero funkcií je hotových, ale ostávajú reálne testy
-  telefónu/tlačiarne/skenera, verejnej inštalácie, skutočného Beepera, výkonnostné a prekladové
-  medzery a dokončenie App Managera/Baristu. Podrobnosti sú v F3·G a F4–F8.
-- [ ] **GOO / ďalšie rozhodnutia:** nové návrhy z `inspo/` (napr. reakcia kvapiek na hudbu,
-  vizuálne prechody, ďalšie cloudové či bezpečnostné nástroje) sú prieskum, kým sa výslovne
-  neprijmú; existujúce návrhy a verdikty sú v [inspo/dalsie_inspiracie.md](inspo/dalsie_inspiracie.md).
-
-#### D. Otvorené pokračovania podľa pracovného prúdu
-
-Toto sú hlavné zostávajúce celky, nie úplný výpis každého nezaškrtnutého políčka. Presný rozsah sa
-pri porovnaní v pondelok 12. 10. potvrdí oproti pôvodnej roadmap.
-
-- [ ] **LatteOS štart a relácia:** dokončiť tok čistej inštalácie → boot → prihlásenie → GOO/SAFE →
-  obnova po zlyhaní; odlíšiť hotový F1 boot základ od nedokončeného SafeGoo a koncových testov.
-- [ ] **GooEngine:** uzavrieť zdieľanie jednej logiky a dvoch vzhľadov NORMAL/SAFE; doplniť chýbajúce
-  ovládanie okien v labwc, SafeGoo, beh monitorov pripojených za chodu, pokoj pri nečinnosti a
-  meranie výkonu po rozšírení funkcií.
-- [ ] **Goo kvapky:** dokončiť konkrétne otvorené úlohy BarGoou, LensGoo, PowerGoo, ClockGoo,
-  QueenGoo a ChatGoo. Ďalšie kvapky a vizuálne efekty posudzovať samostatne podľa prínosu a výkonu.
-- [ ] **Súbory:** nadviazať na hotové dvojpanely, prenosy, archívy, vyhľadávanie, sieť a cloud;
-  uzavrieť otvorené rozšírenia/UX, odolnosť pri chybách a potrebné overenie hardvéru.
-- [ ] **Monitor:** nadviazať na existujúce procesy, služby, autoruns a senzory; dokončiť stálu
-  telemetriu a pohľad na spotrebu podľa aplikácie v čase, bez nepresných alebo skrytých zberov.
-- [ ] **Správca zariadení a HW:** dokončiť overenie kompatibility a reálneho HW, ovládačov,
-  tlače/skenerov/telefónov a bezpečnej obnovy po zmene.
-- [ ] **App Manager a Barista:** dokončiť stav úloh, históriu a používateľský tok inštalácie;
-  Barista pokračuje podľa fáz v `docs/barista/NAVRH.md`, prvý plný prípad je AVP2.
-- [ ] **AI:** zlepšiť AI v LensGoo; poskytovateľov, limity, súkromie a systémové nástroje dopĺňať
-  explicitne a iba s potvrdením používateľa.
-- [ ] **Integrácia, kvalita a vydanie:** dotiahnuť jednotné GUI, preklady a prístupnosť po ustálení
-  funkcií; testovať VM aj reálny AMD/NVIDIA HW, čistú inštaláciu, aktualizáciu, obnovu, výkon a
-  regresie pred ďalším vydaním.
-- [ ] **Neskôr:** Fedora Atomic/bootc, rollback, prenos účtu a ďalšie veľké rozšírenia až po
-  uzavretí požadovanej stability a hardvérovej matice.
-
-### E. Zložky LatteOS — mapa produktu
-
-Doplnené 9. 10. 2026 z autorovej prezentácie `LatteOS.pdf` — **ako má vyzerať hotová LatteOS 1.0 „Arabica“**
-(ciele a marketing, nie opis dnešného stavu), skontrolovanej proti
-[LATTEOS-GOO.md](LATTEOS-GOO.md) a pôvodnej roadmape. Je to **jediný zoznam „čo LatteOS obsahuje“**:
-každá zložka má prúd R3 (kde sa vyvíja) a zdroj podrobností (kde je detail a história). Stav `[x]` `[~]` `[ ]`
-ako inde; „návrh“ = nápad bez rozhodnutia, nie úloha.
-
-| Zložka | Čo je | Stav | Prúd | Zdroj podrobností |
-|---|---|---|---|---|
-| **Základ systému** | Fedora Server 44 (dnf); neskôr obraz Atomic/bootc „ako Bazzite“ | [x] / návrh | R2, R7 | úvod, F0, A (riadok 949) |
-| **Hyprland 0.56 (Lua)** | okná, režimy (páska, dlaždice, plávajúce), sklo, herný režim | [x] | R3·B | F2 |
-| **Noctalia 5** | v GOO iba rohová lišta (widgety, doplnky), ovládacie centrum, OSD, zámok | [~] | R3·B | F3·G, LATTEOS-GOO §4.8 |
-| **GooEngine** | plocha z kvapiek kávy na pleamar (`session/goo`) | [~] | R3·A | F3·G, session/goo/README.md |
-| ├ **BarGoo** | lišta okien: hlava = režim okien (ľavý klik), pravý = ukázať plochu; ikry = okná | [~] | R3·A | LATTEOS-GOO §4.1 |
-| ├ **LensGoo** | spúšťač: aplikácie, súbory, web, terminál, AI | [~] | R3·A, R3·G | §4.3 |
-| ├ **QueenGoo** | ľavý klik App Manager, pravý Správca zariadení (voliteľná) | [~] | R3·A | §4.4 |
-| ├ **PowerGoo** | ľavý: účet, napájanie, Nastavenia, Monitor; pravý: pás CPU/RAM/GPU/VRAM | [~] | R3·A | §4.2 |
-| ├ **ClockGoo** | čas, upozornenia, kalendár, pohoda (voliteľná) | [~] | R3·A | §4.5 |
-| ├ **ChatGoo** | doplnok pre Beeper (voliteľná) | [~] | R3·A | §4.6 |
-| └ **Vlastné kvapky, Tvorca Goo** | kvapka bez programovania; návrhy ClipGoo, MediaGoo, PassGoo, CastGoo | [~] / návrh | R3·A | §4.7, §4.11 |
-| └ **LaunchGoo** | rýchly spúšťač skupín ikon (hry, práca), voliteľne odkazy na ploche | návrh | R3·A | Tvorca Goo (§4.7) |
-| **Prihlasovanie (LoginGoo)** | šálka → LoginGoo (riadok na hladine), po prihlásení odovzdaná na miesto PowerGoo; výber relácie (GOO, Marea, Noctalia, Serpantinum) | [~] scéna je, ostáva overenie | R2 | §6.2, F1 |
-| **SafeGoo (SAFE)** | minimálna záchranná relácia bez GPU s diagnostikou pádu | [~] | R2, R3·A | F3·G (SafeGoo) |
-| **Nervboot** | vlastná ponuka štartu pred systemd-boot s dualbootom | návrh | R7 | riadok 714 |
-| **Nastavenia** | kategórie, Kvapky, Vzhľad, výkon, jazyk, tapety (skwd-wall integrovaný v našej podobe) | [~] | R3·J | F3, F3·G |
-| **Súbory = DualBrew** (názov vybraný 9. 10.) | vlastný dvojpanelový správca obohatený o funkcie iných autorov, siete, cloud, archívy | [~] | R3·C | F4 |
-| **Heidelberg** | editor dokumentov (Markdown, docx, odt, PDF) | [~] | R3·C | F4 (riadky 789–792) |
-| **Monitor** | Správca úloh + Autoruns + HWiNFO/CPU-Z; (návrh: BetterWindowsServices) | [~] | R3·D | F4 (Monitor 1–7) |
-| **Správca zariadení** | HW, ovládače, tlačiarne, skenery, telefóny, kompatibilita | [~] | R3·E | F4, H |
-| ├ **Netmanager / Sieť** | siete, vzdialené pripojenia (NetworkManager) | [~] | R3·E | F4, LATTEOS-GOO §5 |
-| └ **Inšpektor siete** | radar okolitých sieťových spojení (ARP, mDNS, SSDP) | [x] základ | R3·E, R3·D | F4 (riadok 750) |
-| **App Manager** | obchod, inštalácia (Flatpak, RPM), aktualizácie, firmvér; komunitné obchody | [~] | R3·F | F4, §6.3 |
-| └ **Barista** | sprievodca inštaláciou nelinuxových aplikácií a hier (Wine/Proton, DOS, obrazy diskov) | [~] fázy F1–F5 | R3·F, R3·I | docs/barista/NAVRH.md |
-| **Bezpečnosť** | Flatpak/bubblewrap, tlačidlo NET, D-Bus filter, záloha | [x] základ | R3·H | F6 |
-| **AI (`latte-ai`)** | lokálne, domáce a cloudové modely, voliteľná; tokeny a limity | [~] | R3·G | F7 |
-| **Hry** | Steam/Proton/umu, herná relácia | [~] | R3·I | F8, H |
-
-#### Rozdiely medzi cieľom Arabica (prezentácia) a dnešným stavom
-
-Prezentácia je cieľ, nie stav: čo z nej ešte neplatí, je zámer Arabicy a treba to v README oddeliť od toho, čo
-systém robí dnes. Otvorené body (rozhodnuté sú `[x]`):
-
-- [x] **Názvoslovie kvapiek (rozhodnuté 9. 10.):** predpona/prípona **„Goo“ je pripona a nesú ju iba kvapky v
-  GooEngine**: BarGoo (dnes v kóde GooBar), PowerGoo (dnes GooPower), LensGoo, QueenGoo, ClockGoo, ChatGoo,
-  LaunchGoo, LoginGoo. Neplatí pre samotný engine a plochu (GooEngine, LatteOS GOO) ani pre relácie (SafeGoo).
-  V tejto roadmape ROADMAP2 sa už používajú nové názvy; **kód, dokumentácia a nastavenia sa zatiaľ nemenia**.
-  Úloha na neskôr: premenovať v ~60 súboroch naraz s kontrolou `kvapky.json` používateľov (staré názvy čítať ešte
-  jedno obdobie), potom prepísať README.
-- [ ] **LaunchGoo (nápad autora, návrh):** rýchly spúšťač — do kvapky sa vložia ikony, napr. obľúbených hier, a
-  neprekážajú na ploche; ďalšia kvapka môže niesť pracovné aplikácie, plocha ostane voľná. Odkazy môžu byť aj priamo
-  na ploche („možnosti sú také aj onaké“). Základy už sú: Tvorca Goo (rýchle spúšťanie = skupina aplikácií, klik
-  ukáže kartu s dlaždicami) a rýchly zoznam LensGoo. Treba rozhodnúť: viac skupín ako samostatné kvapky, ikony na
-  ploche, PlayGoo (správca hier, alebo prehrávač hudby) je len nápad — ignorovať.
-
-- [x] **Noctalia (rozhodnuté 9. 10.):** zostáva. Slúži ako **úložisko widgetov Noctalie** a minimalistické prostredie
-  pre veci, ktoré v Goo nechceme. Zatiaľ sa nevyraďuje; autor iba zvažuje, či je potrebná v takom rozsahu a či ju
-  nenahradiť optimalizovanejším riešením. Úloha v R3·B: **porovnanie** (čo z nej systém naozaj používa, jej cena v
-  pamäti a CPU, kandidáti na náhradu) — bez rozhodnutia o odstránení.
-- [x] **Barista (rozhodnuté 9. 10.; cieľ Arabicy):** zámer je „od malých vecí po veľké“. Dnes **Windows a Android**; výhľad
-  ďalšie platformy a emulácie (konzoly, retro, neskôr aj nové) podľa toho, čo bude technicky a právne možné —
-  autor sleduje vývoj v komunite (tvrdenia z diskusií, napr. o spätnom inžinierstve PlayStation, sú zatiaľ
-  neoverené). Každá nová platforma = samostatný rozhodovací bod (R3·I). README opíše rozsah „dnes + výhľad“.
+**2B.01** [x] (Inštalátor a prvé spustenie) E. AI — voľba na začiatku · r. 770–773
 - [x] **AI — voľba na začiatku (rozhodnuté 9. 10.):** používatelia sa delia na priaznivcov a odporcov AI, preto
   **úvod inštalácie LatteOS ponúkne výslovnú voľbu AI zapnúť / vypnúť** (ide o sľub, nie iba nastavenie).
   Kedykoľvek ju možno zmeniť v Nastaveniach. Pri vypnutí AI sa neinštalujú a nespúšťajú AI nástroje, LensGoo nemá
   AI režim a nič neodchádza na AI služby. Úlohy sú v R2 a R3·G.
-- [x] **skwd-wall (rozhodnuté 9. 10.):** využijeme a integrujeme **v našej podobe** — výber tapiet, živé tapety a
-  prechody (aj ako prechody pri prepínaní okien, programov a priečinkov) v Nastaveniach, so spoločnými
-  pravidlami GooEngine a obmedzením pre stupeň Softvér a SAFE. Nejde o doslovné prevzatie; licenciu a čo sa preberá
-  určí R1 (R3·J).
-- [ ] **Pás PowerGoo:** „veličiny sa menia v Nastaveniach“ — dokumentované sú pevné bunky CPU · RAM · GPU · VRAM;
-  výber veličín overiť, inak z opisu vypustiť.
-- [ ] **LensGoo:** prepínanie funkcií kolieskom — dokumentované sú Tab / Shift+Tab (kolieskom sa mení veľkosť
-  kvapky); overiť, či koliesko ide aj v karte.
-- [ ] **Nastavenia › Vzhľad:** nastavenia jednotlivých Goo sú dnes v Nastaveniach › **Kvapky**, nie vo Vzhľade.
-- [ ] **Prihlasovanie:** výber relácie (SAFE, iné shelly) je v scéne iba „vývojárska verzia“; v README
-  opísať ako dostupný iba po overení.
-- [ ] Pravopis v opise: Flatpak, bubblewrap, „softvér“; „sf“ = softvér; „blue“ = Fedora Atomic / Universal Blue.
 
-#### Kandidáti na vyčistenie (nič sa zatiaľ nemaže)
+**2B.02** [ ] (Inštalátor a prvé spustenie) R3·G — voľba AI na začiatku inštalácie · r. 1074–1076
+- [ ] **Voľba AI na začiatku inštalácie (rozhodnuté 9. 10.):** úvod inštalátora ponúkne výslovné zapnutie alebo
+  vypnutie AI; vypnutie znamená, že sa AI nástroje neinštalujú ani nespúšťajú a LensGoo nemá AI režim.
+  Kedykoľvek zmeniteľné v Nastaveniach; text voľby je preložiteľný a bez nátlaku na jednu stranu.
 
-Tvrdenia, ktoré už neplatia a ostávajú len ako história, na posúdenie pri porovnaní v pondelok 12. 10.:
+### 2C. [~] Úložisko a oddiely
+`/`, `/boot`, `/data`, domovské priečinky, zaplnenie diskov, zväčšenie oddielu.
 
-- [ ] [LATTEOS-GOO.md](LATTEOS-GOO.md) (úvod): „verejná kópia je zastaraná, po dokončení sa zverejní 0.2“ — vydané je
-  0.3.0 (6. 10.); „predvolené prihlásenie bude engine Goo, ešte sa prerobí“ — podľa §6.2 je hotové.
-- [ ] Pôvodná roadmapa: položky o Classic lište a spúšťači (F3, F3·G — napr. riadky 323–336, 378), „SAFE používa Noctaliu
-  s dizajnom Classic“ (riadok 336; nahradené rozhodnutím o SafeGoo, riadok 384), plocha Kvapky (`session/kvapky`).
-- [ ] Číslovanie §6.2 v LATTEOS-GOO.md (8, 10, 11, 9) a hlavička „Zmena smeru“ v ROADMAP.md po zmazaní starých dát.
-- [ ] Značky `[x]` pri funkciách iba pre Classic označiť `[-]` (zrušené), nie `[x]`.
+**2C.01** [~] (Úložisko) Zaplnenie diskov na očiach · r. 380–383
+[~] **Zaplnenie diskov na očiach** (používateľ, 20. 10., po zistení, že na `/` latte-lab ostalo 5,5 GB z 120 GB).
+    DualBrew v bočnom paneli pri každom disku a oddiele pás zaplnenia (použité / voľné, farba pri nedostatku),
+    Správca zariadení pri diskoch to isté grafom aj s nerozdeleným miestom na disku; upozornenie, keď voľné
+    miesto klesne pod hranicu. latte-lab: za `/data` je ~132 GB nerozdelených.
 
-#### Trvalé priority a pravidlá, ktoré nepatria jednému prúdu
+---
 
-- [ ] **Priorita UX (od 7. 10. 2026):** najprv softvér zo zoznamu záujmov a zvyky z Windowsu; prístupnosť až v Arabice.
-- [ ] **STRESTEST + optimalizácia + stabilita (O, F5) = jedna dráha k 1.0:** [bughunt/STRESTEST.md](bughunt/STRESTEST.md) je
-  dôležitý súbor, ktorý sa **realizuje postupne, ako sa vývoj blíži k 1.0**, spolu s optimalizáciou (najprv merať,
-  potom meniť, potom znova merať) a stabilitou. Výsledky meraní a prejdené testy patria do R5.
+## 3. [~] Boot
+Rozhodnuté 22. 10.: Boot sa vyvíja ako súčasť inštalátora (poradie krok 22), nie samostatne.
+Zdroje: `crates/latte-boot`, `crates/latte-hw`, `system/` (boot.toml, plymouth, kernel-install), `docs/NAVRH-STARTU.md`
+https://codeberg.org/GuillotineMelody/nervboot Bootloader UEFI v Ruste so štylizovanou ponukou štartu (MAGI z Evangelionu); nenahrádza
+    systemd-boot, iba pred neho predradí vlastnú ponuku a jadro nechá naň (počítanie štartov, TPM ostávajú), inšpirácia na vlastnú ponuku štartu v štýle LatteOS pre dualboot do windows. 
 
-### F. Prenos zo starej roadmapy pred jej zmazaním
+**3.01** [~] (Boot a štart) Štart · r. 19–27
+[~] **Štart (R2).** Opravené a overené reštartom 12. 10.: čakanie na sieť (prihlasovanie 99 s → 36 s, celý štart
+   3 min 37 s → 1 min 12 s), rohová lišta po prihlásení (+8 s, sama), žiadna zlyhaná služba. Test grafiky pri
+   studenom štarte vyprší zámerne (pomalý disk, rozhodne ovládač) a prihlasovanie nezdržuje — nie je chyba; zvyšných
+   ~25 s je disk a `gssproxy`. Pád Hyprlandu pri konci relácie `latte-session` rozpozná; pri reštarte 12. 10. nenastal.
+   Overené pádmi 12. 10.: engine sa po páde sám obnoví (doplnené), Hyprland sa po páde spustí znova, druhý pád
+   do 60 s prepne do SAFE, SAFE zvolený aj automatický funguje a čisto končí.
+   **Ostáva:** klik na Reštartovať · Vypnúť v PowerGoo (test 036), zlé heslo a jazyk na prihlásení (541), prečo
+   núdzové rozhranie po páde berie ~2 jadrá (010), okná sa po páde kompozitora nevrátia (006), testy 003–005, 007–008.
+   *Hotovo, keď:* testy 001–012, 036, 541, 550 majú stav. Po každom štarte: `old/setup/test/start.sh` (predošlý: `-1`).
 
-Súpis z 9. 10. 2026: stará časť má 112 otvorených (`[ ]`, `[~]`) položiek. Prúdy R3 ich pokrývajú **všeobecne**;
-tu sú konkrétne položky, ktoré by sa po zmazaní stratili (číslo = riadok v starej časti, platí do jej zmazania).
-Položka je **úloha**, kým nie je označená „návrh“.
+**3.02** [x] (Boot a štart) Fresh d1) štart po prihlásenie · r. 51–58
+[x] **štart po prihlásenie** (12. 10.): `crates/latte-hw`, `crates/latte-boot`, `system/` (služba, greetd, labwc
+   prihlasovača, položky SAFE v GRUB-e, Plymouth), `bin/latte-greeter`, `bin/latte-login`, `bin/latte-sky`,
+   `goo/login.plm` + `login.luau`, preklady `goo/lang/sk.plm`, vlastné písmo ikon. Oproti starému: úvod riadi
+   scéna (logika iba povie „začni“), heslo ide na vstup príkazu (nie cez súbor), čas zo služby `clock`, rozloženie
+   klávesnice zo systému, bez Noctalie. Odpadlo: prihlasovač v QML a Noctalie (bez grafickej karty je zatiaľ
+   textové prihlásenie `tuigreet`), `vm-3d`, zápis `hyprland.conf`. Overené: `tests/check.sh`, scéna na
+   neviditeľnej obrazovke (snímky, záznam priebehu, zlé a dobré heslo naskúšku). **Neoverené:** skutočné
+   prihlásenie cez greetd — až po nasadení na latte-lab.
 
-**Hotové pred zmazaním (9. 10.):** snímka starej časti je v
-[docs_zaloha/2026-10-09-roadmap-pred-ciscenim.md](docs_zaloha/2026-10-09-roadmap-pred-ciscenim.md); rámec, režimy a štart
-(r. 14–164) sú v [docs/NAVRH-STARTU.md](docs/NAVRH-STARTU.md); sekcia O s meraniami (r. 912–945) v
-[docs/OPTIMALIZACIA.md](docs/OPTIMALIZACIA.md); obe sú odkázané z [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md). Hotové
-fázy F0–F2 a merania VM sú v [docs_zaloha/](docs_zaloha/README.md), ostatné `[x]` sú história. Otvorené otázky a „Zadanie 24. 9.“
-(r. 955–1015): DMS/Caelestia a COPR sú vyriešené, zvyšok je prenesený nižšie. **Starú časť maže autor sám, keď bude s ROADMAP2 spokojný.** Zmazaná 9. 10.; overené 12. 10.: číslo „r. N“ v tejto roadmape = riadok **N + 3** v snímke.
+**3.03** [x] (Boot a štart) B. F0–F2 základ · r. 629–632
 
+**3.04** [ ] (Boot a štart) D. štart a relácia · r. 684–685
+- [ ] **LatteOS štart a relácia:** dokončiť tok čistej inštalácie → boot → prihlásenie → GOO/SAFE →
+  obnova po zlyhaní; odlíšiť hotový F1 boot základ od nedokončeného SafeGoo a koncových testov.
+
+**3.05** [~] (Boot a štart) F. R2 — základ a štart · r. 818–821
 **R2 — základ a štart:** distribúcia balíkov, COPR (r. 201); grafická SAFE s `nomodeset`, systemd user relácia (r. 202);
 Sunshine pred prihlásením, virtuálny monitor `[~]` (r. 318); prihlásenie — čierna sekunda, voľba prihlasovača v
 Nastaveniach (r. 468); greenboot + Automatic Boot Assessment (r. 952); test „zaplniť RAM vo VM“ (r. 807).
 
-**R3·A — GooEngine a kvapky:** overiť skrytie voliteľnej kvapky (r. 432); živé bytosti — obmedzenie snímok pri nečinnosti (r. 433);
-profil — programy čítajú dokument priamo (r. 466); overiť Odhlásiť a ClockGoo na 1024 × 768 (r. 470); pokrývky hlavy QueenGoo (r. 471);
-BarGoo `reversed` a monitor pripojený za behu (r. 480); CPU enginu — meranie 6. 10. (r. 482); formulár vlastných kvapiek (r. 493);
-kalendár ClockGoo — synchronizácia, názov budíka (r. 494), **prepracovanie podľa regiónu** (r. 618), indikátor Nerušiť (r. 623);
-LensGoo — zvyšok (r. 498), **hĺbková kontrola** (r. 626), indexovanie častých priečinkov (r. 554); ChatGoo — Beeper, vtečenie okna, odznak (r. 645);
-goo telo pod rohovou lištou (r. 501); deň a noc na hladine (r. 610), nočné svetlo `[~]` (r. 608); sady ikon (r. 669);
-prístupnosť — zvyšok (r. 506).
-
-**R3·A — návrhy kvapiek a efektov (nie úlohy, kým ich autor neprijme):** hovor cez podržanie LensGoo, whisper.cpp (r. 529);
-nepoužívaná kvapka sa zmenšuje (r. 531); odkladacia kvapka na súbory (r. 532); zvuková identita Goo (r. 533);
-tekuté zóny okien (r. 548); nájdi kurzor zatrasením (r. 552); stavy hladiny (r. 555); AirDrop kvapky cez LocalSend (r. 557);
-ikra hrajúca zvuk vibruje (r. 572); ekvalizér Goo (r. 716); bublina odchádzajúceho spojenia v modeli NET (r. 616);
-režim sústredenia (r. 541); gamepad (r. 545); prechod z Windowsu — import profilov, prehľad skratiek (r. 540);
-komunitné doplnky Noctalie ako kvapky (r. 647); ClipGoo, MediaGoo, PassGoo, CastGoo (r. 520); PlayGoo (správca hier alebo prehrávač hudby).
-Z `inspo/` 13. 10.: plocha bez klasickej lišty — zóny Main, Stash a Parking na širokom monitore (Glance, prednáška
-Scotta Jensona pre KDE, 2026) — **rozhodnuté 13. 10. ako štvrtý režim okien, „Teraz“ bod 7**; pevné pravidlá fyziky kvapiek a okien — hmotnosť, zotrvačnosť, vzájomné odpudzovanie,
-kvapalina tečúca okolo okien (fwm); vzhľad prehrávača a zámku obrazovky (widgety Chaldea, 0BSD).
-
-**R3·B — shell a vzhľad:** téma Latte a Úsporná, farby z tapety (r. 274); prvky stupňa Plný, varianty bez shaderov (r. 275–276, 290);
-materiál na oknách pri kovových témach (r. 521); Noctalia prekreslí celý povrch pri zmene widgetu (r. 939); animácie panelov na GPU (r. 968);
-ovládacie centrum Noctalie — overiť (r. 630); dialóg Otvoriť/Uložiť cez portál v jednotnom vzhľade (r. 590);
-vlastné `app_id` a preložiteľné spúšťače (r. 654); slovenský preklad Noctalie a záplaty pleamaru autorom (r. 656, 658); preklady odložené nakoniec (r. 725);
-živá tapeta a shaderové prechody (r. 1013–1014; skwd-wall rozhodnutý, R3·J).
-
-**R3·C — Súbory (DualBrew) a Heidelberg:** prostredie nad pôvodným súborovým systémom (r. 565); **plná funkčnosť Total Commandera** (r. 979:
-vlastné stĺpce r. 985, skratky a menu r. 1008, pluginy r. 1012); Data Manager v Ruste (r. 782); Flea ako možný základ — odložené (r. 614);
-hľadanie v obsahu PDF/DOCX (r. 849); Heidelberg verné docx (r. 792); Strata ako vzor — stĺpcové zobrazenie (Miller), ovládanie klávesnicou, približné hľadanie mien (inspo 13. 10.).
-
-**R3·D — Monitor:** „kto žerie“ energiu, dáta, RAM, disk po aplikáciách (r. 574); `latte-sysmond`, eBPF (r. 775, 778);
-bezpečnostná kontrola balíkov bumblebee (r. 603); Python nástroje — čas štartu (r. 940).
-
-**R3·E — zariadenia a siete:** skúška s reálnou tlačiarňou, skenerom a telefónom (r. 515); KDE Connect `[~]` (r. 534);
-zvuk do DLNA (r. 753); Inšpektor — nové zariadenie, slabé heslo routera (r. 756); Inšpektor — **zariadenia Matter a Thread pasívne** (schválené 13. 10.):
-skupina „Inteligentná domácnosť“ z ohlásení mDNS (`_matter._tcp`, `_matterc._udp`, hraničné smerovače `_meshcop._udp`),
-výrobca a typ, ak ich zariadenie ohlási, upozornenie na nové zariadenie; bez párovania. Podrobnosti cez párovací kód
-(batéria, firmvér, topológia Thread) sú iba návrh, nie úloha (inspo 13. 10., podľa UniFi Network 11); `latte-boot compat` v inštalátore (r. 765);
-Device Manager v Ruste (r. 767).
-
-**R3·F — App Manager a Barista:** úlohy na pozadí viditeľné (r. 409); obchod — zvyšok (r. 510), Bazaar a ZimaOS (r. 560);
-Barista ako pomocník z kontextovej ponuky okna (r. 596); ProtonDB, Waydroid, OARS detské účty, história úloh (r. 787, 868);
-„Vrátiť včerajší systém“ (r. 951).
-
-**R3·G — AI:** `latte-mcp` a zručnosť pre AI (r. 546, 559, 595); limity predplatných v LensGoo (r. 598); Newelle ako jadro (r. 599);
-streamovanie odpovede (r. 872); viac poskytovateľov a prihlásenie výberom (r. 873); Ollama na CPU (r. 879); Qwen3-14B-sk (r. 906).
-
-**R3·H — bezpečnosť:** profily pre Windows aplikácie (r. 812); NET pre jednotlivé hry v Steame a skripty (r. 818).
-
-**R3·I — hry:** Steam, umu, Proton 11 (r. 883); NVIDIA akmod (r. 892); gamescope, MangoHud, HDR/VRR — čaká na skúšku (r. 898);
-Lepton, F-Droid 2 (r. 906–907); SAFE pri zlom ovládači NVIDIA (r. 910).
-
-**R5 — optimalizácia:** pamäť — zlúčenie démonov, zatiaľ nie (r. 920); sledovanie poškodenia v kompozitore (r. 935); štart `systemd-analyze` (r. 942).
-
-**R7 — neskôr:** obraz bootc/rpm-ostree (r. 950), Nervboot (r. 714), prenosná relácia a LatteApp (r. 947), distribúcia balíkov (r. 201).
-
-**Na archiváciu (Classic alebo zrušené):** tvar L panela s lištou (r. 964); Pet Circus a maskoti (r. 974 — mazlíci sú zrušení, r. 471).
-
-### Etapy produktu a brány pripravenosti
-
-Nasledujúce etapy opisujú postup od zámeru po vydanie. Sú to brány a výsledky pre celý produkt;
-aktuálne hotové, rozhodnuté a otvorené pracovné celky sú zhrnuté v častiach A–D vyššie a ich
-technický rozpis ostáva v pôvodných fázach.
-
-#### R0 — Zámer, používatelia a rozsah
-
-**Výsledok:** je jasné, pre koho LatteOS je, aký problém rieši, čo je jeho jediná edícia a čo do
-produktu nepatrí. Zaznamenajú sa používateľské scenáre, obmedzenia VM a podporovaného hardvéru,
-zásady ovládania a priority.
-
-- [x] Smer LatteOS GOO, zrušenie Classicu, zásady Goo a základný cieľ používateľského zážitku sú
-  zachytené v existujúcich dokumentoch.
-- [ ] Pri nových väčších funkciách doplniť konkrétny scenár a dôvod: čo chce používateľ dosiahnuť,
-  ako to dnes urobí a ako spozná, že LatteOS to vyriešil lepšie.
-- [ ] Udržiavať jednu aktuálnu hranicu produktu: čo je súčasť systému, čo voliteľná aplikácia /
-  integrácia a čo iba externý alebo vývojársky nástroj.
-
-#### R1 — Prieskum, rozhodnutie a technický návrh
-
-**Výsledok:** pred implementáciou je známe, či sa riešenie preberá, integruje alebo píše; sú určené
-rozhrania s ostatnými časťami systému, licencia, oprávnenia, náklady, riziká a cesta bez GPU.
-
-- [ ] Každý prijatý nápad z inšpiračných zoznamov porovnať s existujúcimi funkciami a plánom; zamietnuté
-  alebo odložené návrhy označiť ako také, nie ako otvorenú prácu.
-- [ ] Pri systémových častiach určiť vlastníctvo dát a API, používateľa procesu, životnosť služby,
-  spôsob aktivácie, zlyhanie a obnovu.
-- [ ] Pri GUI určiť prístup cez myš aj klávesnicu, správanie pri malom rozlíšení a slabom výkone,
-  preklady a súlad s vizuálnymi pravidlami GOO.
-- [ ] Pri sieťových/cloudových/AI integráciách určiť, aké údaje odchádzajú, komu, s akým súhlasom
-  a či existuje lokálna alebo odpojená cesta.
-
-#### R2 — Základ platformy LatteOS
-
+**3.06** (pozn.) (Boot a štart) R2 — základ platformy · r. 913–915
 **Výsledok:** čistá Fedora inštalácia vie bezpečne naštartovať do použiteľnej relácie a má spoľahlivý
 základ, na ktorý sa dajú integrovať ostatné pracovné prúdy.
 
-- [x] F0–F2: základ VM, grafický stack, režimy NORMAL/SAFE a základ Lua vrstvy Hyprlandu sú
-  hotové. Boot NORMAL/SAFE bol overený; starý SAFE používa Noctaliu, preto jeho náhrada SafeGoo
-  patrí medzi otvorené práce nižšie.
+**3.07** [x] (Boot a štart) R2 — F0–F2 · r. 916–918
+
+**3.08** [ ] (Boot a štart) R2 — overiť tok po prechode na GOO · r. 919–921
 - [ ] Overiť celý aktuálny tok po prechode na GOO: čistá inštalácia → boot → GOO prihlasovanie →
   predvolená Goo relácia → SAFE po zlyhaní → návrat do NORMAL; osobitne potvrdiť, že verejný
   vydaný strom obsahuje a spúšťa správne relácie.
-- [ ] Dokončiť SafeGoo ako použiteľnú záchrannú reláciu s potrebnými základnými ovládacími prvkami,
-  diagnostikou a funkčným ovládaním okien na labwc; zachovať pixman/bez-GPU obmedzenia.
+
+**3.09** [ ] (Boot a štart) R2 — čistá inštalácia a obnova · r. 924–924
 - [ ] Overiť čistú inštaláciu, prvé spustenie, aktualizáciu a obnovu po neúspešnom štarte.
-- [ ] Zabezpečiť, aby systémové služby štartovali až vtedy, keď sú potrebné, a aby ich pád nezhodil
-  celú používateľskú reláciu.
-- [ ] Inštalátor: úvodná obrazovka s voľbou AI zapnúť / vypnúť (R3·G). Prihlasovanie: prepnutie do SAFE alebo
-  iného nainštalovaného shellu (KDE, GNOME, čistá Noctalia…); SAFE nesie sadu nástrojov na zistenie, čo sa pokazilo.
 
-#### R3 — Vývoj pracovných prúdov systému
+---
 
-Pracovné prúdy nižšie môžu ísť súbežne, ale každá väčšia funkcia v nich postupuje cez R0/R1, prototyp,
-implementáciu, integráciu a overenie. Podnadpisy sú súčasťou jednej produktovej roadmapy, nie oddelené
-projekty bez spoločného cieľa.
+## 4. [~] Greeter a prihlásenie (LoginGoo)
+Zdroje: `goo/login.plm`, `goo/login.luau`, `goo/login-safe.plm`, `goo/lockscreen.*`, `bin/latte-greeter`, `bin/latte-login`, `bin/latte-lock`, `system/greetd`, `system/greeter`, `goo/shaders/water.wgsl`; LATTEOS-GOO §6.2
+zavedenie systemu a prihlasovacia obrazovka dizajnovo takmer finalna verzia. 
 
-##### R3·A — Plocha a GooEngine
+**4.01** [x] (Greeter a prihlásenie (LoginGoo)) zámok obrazovky · r. 82–85
 
-**Cieľ:** dokončiť predvolenú plochu LatteOS GOO ako súdržný engine a používateľský shell. Platné
-pravidlá sú v [LATTEOS-GOO.md](LATTEOS-GOO.md), API a stav enginu v
-[session/goo/README.md](session/goo/README.md), používateľské rozhodnutia v
-[docs/goo/ROZHODNUTIA.md](docs/goo/ROZHODNUTIA.md).
+**4.02** [ ] (Greeter a prihlásenie (LoginGoo)) E. prihlasovanie · r. 783–784
+- [ ] **Prihlasovanie:** výber relácie (SAFE, iné shelly) je v scéne iba „vývojárska verzia“; v README
+  opísať ako dostupný iba po overení.
 
-- [ ] **Jadro GooEngine:** jedna spoločná logika a API kvapiek, jasné hranice medzi enginom,
-  scénou, pomocníkmi, kompozitorom a vzhľadom NORMAL/SAFE; zachovať kompatibilitu existujúcich
-  kvapiek a nastavení.
-- [ ] **BarGoo a okná:** dokončiť chýbajúce správanie lišty, ovládanie okien v NORMAL aj SAFE,
-  pripájanie monitorov za behu a nastavenia viacerých obrazoviek.
-- [ ] **LensGoo:** samostatne overiť vyhľadávanie a spúšťanie aplikácií/súborov a kvalitu AI
-  rozhovoru; dotiahnuť poskytovateľov, vstupy a chybové stavy bez duplikovania všeobecnej práce
-  na `latte-ai`.
-- [ ] **PowerGoo a SafeGoo:** systémové akcie a indikátory v bežnej ploche; v SAFE zobrazenie
-  príčiny, logov, diagnostiky a bezpečných možností obnovy.
-- [ ] **Názvoslovie kvapiek:** rozhodnúť a jednotne premenovať (pozri E, rozdiely).
-- [ ] **PowerGoo — pás výkonu:** výber zobrazených veličín (CPU, GPU, RAM…) v nastaveniach tohto Goo (z opisu autora;
-  dnes pevné bunky CPU · RAM · GPU · VRAM). **QueenGoo:** pokrývka hlavy je voliteľná, preferovane korunka.
-- [ ] **ClockGoo, QueenGoo a ChatGoo:** dotiahnuť nedokončené karty, upozornenia, kalendár,
-  zariadenia a overenie so skutočnými aplikáciami/službami, ktoré kvapky zastupujú.
-- [ ] **Vlastné a ďalšie kvapky:** overiť a doplniť napojenie existujúceho Tvorcu Goo na engine;
-  návrhy ClipGoo, MediaGoo, PassGoo a CastGoo prijímať po jednom podľa používateľského prínosu.
-  Každá kvapka používa spoločné pravidlá enginu, nastavení a ovládania.
-- [ ] **Pohyb, zvuk a vizuálne efekty:** zmerať cenu fyziky, skla, dažďa a reakcie na hudbu; efekty
-  musia byť vypnuteľné a nesmú zhoršiť čitateľnosť, SAFE ani stupeň Softvér.
-- [ ] **Brána dokončenia Goo:** všetky základné úkony idú myšou; rozlíšenie najmenej 1024 × 768;
-  funkčné okná/relácie na podporovaných monitoroch; overený výkon a bezchybný návrat po páde enginu.
-
-##### R3·B — Kompozitor, Noctalia a používateľské rozhranie
-
-**Cieľ:** Hyprland, Lua integrácia, Noctalia a Goo spolu tvoria jednu plochu bez konkurenčných
-nastavení, duplicitných panelov alebo nekonzistentného správania.
-
-- [x] Základná integrácia Hyprlandu (okná, režimy, skratky, herný režim) a Noctalie (rohová lišta,
-  systémové funkcie) s GOO existuje; pozri F2 a F3·G.
-- [ ] Overiť zostávajúce okraje integrácie: ovládacie centrum Noctalie, SAFE bez GPU, dynamicky
-  pripojené monitory a čisté nastavenia medzi GOO a ostatnými reláciami.
-- [ ] Dokončiť konkrétne otvorené GUI a interakcie pri malom rozlíšení, vrátane stavov
-  načítania/chyby a návratu rizikovej zmeny; hotové základy tém a nastavení neopakovať.
-- [ ] Preklady a prístupnosť dokončiť podľa schváleného rozsahu po ustálení funkcií; pripraviť
-  testy pre čitateľnosť, kontrast, obmedzenie pohybu a klávesnicové ovládanie.
-- [ ] Tapety, materiály, dážď, sklo a animované prechody zavádzať ako voliteľnú vrstvu vzhľadu,
-  nie ako požiadavku pre funkčnosť desktopu.
-- [ ] **Noctalia (úložisko widgetov a minimálne prostredie):** porovnať jej skutočné použitie a cenu s
-  optimalizovanejšou náhradou; zatiaľ sa neodstraňuje (E).
-
-##### R3·C — Súbory (File Manager) a používateľské dáta
-
-**Cieľ:** Súbory bezpečne a zrozumiteľne spravujú pôvodný Linuxový súborový systém, pripojené
-zariadenia, sieťové miesta a cloud bez uzamknutia dát do LatteOS.
-
-- [x] Základ správcu súborov zahŕňa dva panely, karty, operácie F5/F6 s radom úloh, archívy,
-  hľadanie, synchronizáciu, sieťové umiestnenia a cloud; presný rozsah je v F4.
-- [ ] **Názov správcu súborov (rozhodnúť):** ak ostane vlastný a obohatený o nápady iných autorov, potrebuje meno.
-  Kandidáti autora: Espresso Commander, Tamper, DualBrew. **Vybraný DualBrew (9. 10.)**; pred zavedením skontrolovať kolízie
-  s existujúcimi projektmi.
-- [ ] **Heidelberg:** verné formátovanie docx (tabuľky, štýly, hlavičky) a ďalšie otvorené položky z F4 (riadok 792).
-- [ ] Doriešiť otvorené rozšírenia (vlastné stĺpce/pluginy, klávesové skratky a menu) a ergonomické
-  medzery podľa používateľských scenárov.
-- [ ] Dokončiť integráciu úložiska, USB, SMB/GVFS, telefónov a cloudových miest; pri odpájaní,
-  prerušení siete a nedostatku miesta jasne oznámiť stav a zachovať dáta.
-- [ ] Overiť bezpečné správanie pri prerušení kopírovania/synchronizácie, chybe zariadenia a
-  obnove; zachovať už implementované plány synchronizácie, priebeh a zrušenie operácií.
-- [ ] Overiť veľké súbory, archívy, oprávnenia, symlinky, odpojené disky, obmedzený priestor a
-  bezpečné správanie pri chybe; zachovať prístup k súborom aj bez LatteOS UI.
-Nové cloudové služby sa najprv posudzujú ako návrhy; cloud nesmie byť podmienkou lokálnej práce.
-
-##### R3·D — Monitor, systémové služby a diagnostika
-
-**Cieľ:** používateľ vie zistiť, čo sa deje so systémom a aplikáciami, a bezpečne konať bez
-nepriehľadných privilegovaných služieb.
-
-- [x] Základ Monitora už zahŕňa procesy, služby, autoruns, senzory, zariadenia a používateľské
-  položky po štarte.
-- [ ] Dokončiť stály zber telemetrie (`latte-sysmond`) a dlhodobý pohľad na CPU, RAM, GPU, energiu,
-  sieť a disk; odlíšiť živý stav od historického odhadu a primerane uchovávať údaje s možnosťou
-  vypnutia zberu.
-- [ ] Nové akcie pre služby musia zachovať vysvetlenie pôvodu, oprávnení a vratnosť.
-- [ ] Monitor spája Správcu úloh Windows 11, Autoruns, HWiNFO a CPU-Z; BetterWindowsServices je inšpirácia na
-  prieskum (správa služieb), nie prijatá úloha.
-- [ ] Rozhodnúť, ktoré inventárne alebo bezpečnostné schopnosti poskytne existujúci `latte-hw`,
-  Monitor, Inšpektor siete a Barista. Nástroje typu osquery, Velociraptor, Zeek či Suricata
-  nepridávať ako základné služby bez preukázanej potreby a výslovného modelu súhlasu.
-- [ ] Zjednotiť diagnostické záznamy a export podpory tak, aby používateľ vedel skontrolovať,
-  čo export obsahuje; citlivé údaje neodosielať automaticky.
-
-##### R3·E — Správca zariadení a hardvér
-
-**Cieľ:** LatteOS sa nainštaluje a funguje na jasne opísanom rozsahu PC, vrátane GPU, zvuku, siete,
-obrazoviek, napájania, periférií a obnovy pri probléme s ovládačom.
-
-- [x] Základ detekcie kompatibility HW (`latte-hw`, `latte-boot compat`) a stránka informácií
-  o hardvéri v Správcovi zariadení existujú.
-- [ ] Doplniť kompatibilitu do inštalátora a overiť hranice odporúčaní na rôznych CPU/GPU,
-  Secure Boot, notebookoch a starších PC.
-- [ ] Overiť na fyzickom hardvéri AMD aj NVIDIA grafický stack, Hyprland, Goo, hry, SAFE režim,
-  aktualizáciu ovládača a návrat po zlyhaní.
-- [ ] Doriešiť ovládače/zariadenia cez štandardné linuxové služby (udisks2, NetworkManager,
-  PipeWire, fwupd a pod.) a zrozumiteľne oddeliť informáciu, odporúčanie a akciu vyžadujúcu
-  oprávnenie.
-- [ ] Telefóny: overiť KDE Connect a USB; scrcpy prípadne ponúknuť ako vedomý voliteľný nástroj,
-  nie ako náhradu párovania, prenosu súborov alebo Waydroidu.
-- [ ] Rozsah Správcu zariadení z opisu: identifikovať a rozbehnúť všetok pripojený HW (aj ovládače od Steamu);
-  Netmanager spolu s ním spravuje všetky siete, sieťové zariadenia a vzdialené pripojenia — TV, sieťové rádio,
-  telefóny cez Bluetooth, Wi-Fi, USB alebo na diaľku. Inšpektor siete (hotový základ, podľa ESET Network Inspector).
-- [ ] Všetky rizikové zmeny ovládačov, obrazovky a napájania musia mať potvrdenie, časový limit
-  alebo obnovovaciu cestu.
-
-##### R3·F — App Manager, Barista a inštalácia softvéru
-
-**Cieľ:** inštalácia, aktualizácia a odstránenie aplikácií je jednotná, kontrolovateľná a
-obnoviteľná naprieč Fedora/RPM, Flatpak, webovými aplikáciami, hrami a podporovanými cudzími balíkmi.
-
-- [x] App Manager má základ obchodov/zdrojov, komunitné obchody, oprávnenia a NET, hodnotenia,
-  aktualizácie a viditeľné úlohy pre jeho vlastné operácie.
-- [ ] Doplniť spoločný prehľad úloh aj pre systémové príkazy (dnf, Flatpak, cargo, Waydroid,
-  umu), vrátane stavu, logu a výsledku po reštarte.
-- [~] Barista: analýza a plán bez AI sú hotové; pokračovať inštaláciou a skúškou aplikácie,
-  registrom, odinštalovaním a zálohou podľa fáz v `docs/barista/NAVRH.md`.
-- [ ] Overiť, že úlohy možno bezpečne prerušiť, logy sú dostupné používateľovi a stav po reštarte
-  nezostane falošne „úspešný“.
-- [ ] App Manager je obchod, bazár a inštalátor Linuxových aplikácií (Flatpak) a aktualizátor všetkého softvéru
-  aj ovládačov HW; Barista je jeho súčasť. Barista po zacielení na súbor alebo priečinok rozpozná typ (jeden či
-  viac obrazov CD/DVD, delené archívy, portable priečinok, rozbalený inštalátor, XAPK, DOS) podľa internej
-  databázy, ktorú treba vybudovať; spolupracuje s Protonom, experimentmi v tejto oblasti, F-Droid 2 a Lepton.
-  Zámer: od malých vecí po veľké — dnes Windows a Android (E).
-- [ ] Predvolené katalógy a recepty musia mať overiteľný zdroj, licenciu a kontrolu integrity;
-  katalógy, ktoré spúšťajú skripty, sa nesmú považovať za dôveryhodné iba podľa vzhľadu.
-
-##### R3·G — AI a vývojové nástroje
-
-**Cieľ:** AI je voliteľná schopnosť systému s jasne oddeleným lokálnym/cloudovým spracovaním a
-bez nečakaného prístupu k systémovým akciám.
-
-- [ ] Dokončiť `latte-ai` a UX v LensGoo/Nastaveniach: poskytovatelia, prihlasovanie, modely,
-  streamovanie, prílohy, hlas, spotreba a limity podľa toho, čo daná služba skutočne poskytuje.
-- [ ] **Voľba AI na začiatku inštalácie (rozhodnuté 9. 10.):** úvod inštalátora ponúkne výslovné zapnutie alebo
-  vypnutie AI; vypnutie znamená, že sa AI nástroje neinštalujú ani nespúšťajú a LensGoo nemá AI režim.
-  Kedykoľvek zmeniteľné v Nastaveniach; text voľby je preložiteľný a bez nátlaku na jednu stranu.
-- [ ] LensGoo: podpora všetkých spôsobov pripojenia AI — oficiálne nástroje účtov, integrovaný Instruct model a
-  lokálny server (napr. LM Studio); prehľad spotrebovaných a zostávajúcich tokenov.
-- [ ] Zviditeľniť, kam odchádza požiadavka, čo sa posiela a či je odpoveď lokálna alebo cloudová;
-  pri cloudových poskytovateľoch rešpektovať súhlas a podmienky služby.
-- [ ] Ak AI dostane nástroje na správu LatteOS, použiť obmedzené rozhranie, náhľad plánovanej
-  zmeny, výslovné potvrdenie a auditovateľný výsledok; online webový chat nedostáva systémové
-  oprávnenia.
-- [ ] Vývojová AI farma a MCP sú vývojárske nástroje, nie predvolená súčasť používateľskej plochy;
-  ich úlohy, tajomstvá a prístup k repozitáru držať oddelene od runtime AI LatteOS.
-
-##### R3·H — Bezpečnosť, súkromie a obnova dát
-
-**Cieľ:** bezpečnosť je vlastnosťou každej etapy a každej oblasti, nie samostatný doplnok na konci.
-
-- [x] Profily dôvery, D-Bus filter, NET pre Flatpak/natívne aplikácie a odpojenie existujúcich
-  spojení sú implementované podľa F6.
-- [ ] Doplniť sieťové profily pre Wine/Proton scenáre a podporované skripty; overiť izoláciu
-  každej novej cesty spúšťania.
-- [ ] Pri integráciách kontrolovať licenciu, pôvod, oprávnenia, aktualizácie, sieťový prístup a
-  spôsob uloženia tajomstiev pred ich prijatím do systému.
-- [x] Záloha domovského priečinka a vrátenie späť pri zmene nastavení sú implementované.
-- [ ] Overiť obnovu používateľských dát a profilov v ďalších scenároch; pred ničivou akciou
-  ukázať rozsah a cieľ.
-- [ ] Voliteľné skeny či bezpečnostné nástroje nesmú sľubovať úplnú ochranu; zobrazovať limity,
-  možné falošné poplachy a vyžadovať súhlas so zberom/analýzou dát.
-
-##### R3·I — Hry a externé prostredia
-
-**Cieľ:** herná relácia a cudzie aplikácie sú integrované bez oslabenia bežného desktopu alebo SAFE.
-
-- [ ] Dokončiť Steam/Proton/umu a Barista herné scenáre na podporovanom skutočnom GPU; vo VM
-  zachovať iba primerané smoke testy.
-- [ ] Overiť prechod Desktop ↔ Hra, návrat profilu výkonu, zvuku, okien a nastavení po skončení hry.
-- [ ] Lepton/Android hry, gvisor, scrcpy a ďalšie externé technológie zostávajú samostatnými
-  rozhodovacími bodmi; do produktu prejdú iba po teste prínosu, kompatibility, bezpečnosti a údržby.
-
-##### R3·J — Nastavenia, vzhľad a tapety
-
-**Cieľ:** jedno miesto pre nastavenia LatteOS (Goo, výkon, jazyk, účty, AI, tapety) bez konkurenčných
-nastavení Noctalie a ostatných prostredí.
-
-- [x] Základ Nastavení LatteOS, stránka Kvapky (Goo), profil používateľa a nastavenia podľa prostredia existujú; pozri F3 a F3·G.
-- [ ] Selektívne zlúčiť vybrané nastavenia Noctalie (návrh v LATTEOS-GOO §4.10) a tapety na jedno miesto.
-- [ ] Integrovať skwd-wall v našej podobe (rozhodnuté 9. 10.): výber tapiet, živé tapety, prechody; voliteľná vrstva, v SAFE vypnuté (R3·B).
-- [ ] Jazyky a preklady, efekty a výkon: dokončiť podľa R3·B; AI a limity podľa R3·G.
-
-#### R4 — Integrácia do jednej LatteOS
-
-**Výsledok:** pracovné prúdy spolu fungujú ako jeden systém, nie iba ako samostatné aplikácie.
-
-- [ ] Overiť celý tok: inštalácia → boot → SAFE/NORMAL → prihlásenie → načítanie profilu →
-  Goo/Noctalia/Hyprland → aplikácie a zariadenia → odhlásenie → ďalší štart.
-- [ ] Zjednotiť prenos stavov medzi shellom, systémovými službami a aplikáciami: úlohy, oznámenia,
-  nastavenia, témy, profily, povolenia a diagnostika majú jedno miesto pravdy.
-- [ ] Otestovať pády komponentov jednotlivo: engine, shell, kompozitor, služba, aplikácia, úložisko,
-  sieť a aktualizácia. Zlyhanie jednej časti nesmie bezdôvodne znefunkčniť celý systém.
-- [ ] Doplniť medzery medzi UI a backendom: každá akcia má viditeľný priebeh, výsledok alebo chybu;
-  žiadne tiché zlyhanie ani úspech bez vykonanej operácie.
-
-#### R5 — Overenie a pripravenosť produktu
-
-**Výsledok:** LatteOS je opakovateľne inštalovateľný a použiteľný v deklarovanom rozsahu.
-
-- [ ] Udržiavať testovaciu maticu: VM bez GPU (NORMAL aj SAFE), fyzický AMD, fyzický NVIDIA,
-  viac monitorov, malé rozlíšenie, pomalší/starší hardvér, Secure Boot, odpojená sieť a slabé
-  úložisko.
-- [ ] Každý pracovný prúd má funkčné testy svojho backendu a používateľské scenáre; integrované
-  scenáre kontrolujú spoluprácu medzi systémom, shellom a aplikáciami.
-- [ ] Opakovať merania CPU/RAM, štartu, odozvy a grafických efektov po zmenách; stanoviť limity
-  pre NORMAL a SAFE a regresné porovnanie.
-- [ ] Vykonať bughunt a ergonomickú skúšku s myšou aj klávesnicou; skontrolovať preklady, kontrast,
-  stavové hlásenia, poškodenie/obnovu dát a aktualizáciu.
-- [ ] Overiť čistú inštaláciu z presne toho stromu/obrazu, ktorý sa bude vydávať; vývojová VM
-  sama osebe nie je dôkazom pripravenosti vydania.
-
-#### R6 — Vydanie, podpora a údržba
-
-**Výsledok:** vydaná verzia má reprodukovateľný obsah, známe obmedzenia, dokumentáciu a bezpečnú
-cestu k aktualizácii alebo návratu.
-
-- [ ] **Definícia LatteOS 1.0 „Arabica“:** ciele z prezentácie (E) a testy z [bughunt/STRESTEST.md](bughunt/STRESTEST.md)
-  spojiť do jedného zoznamu brán (STRESTEST sa plní postupne podľa blízkosti k 1.0); prístupnosť patrí do Arabicy. Marketingové tvrdenia (Barista „čokoľvek“, AI voľba
-  v inštalátore, Nervboot) sa nepíšu ako hotové, kým ich brána neoveri.
-  **Brány „pre sebe podobných“** (office hours 20. 10.; robia sa až na konci, keď funkcie existujú):
-  1. *Aktualizácia nerozbije plochu:* pleamar ako balík (dnes `/usr/bin/pleamar` nevlastní žiadny balík, preložený
-     z `~/src`), pluginy (`latte-events`, hyprbars, Hyprglass) sa preložia s každým novým Hyprlandom a až potom sa
-     zámok verzie posunie; skúška prechodu na ďalšiu Fedoru (45). **Hneď (20. 10.):** `dnf versionlock` na Hyprland
-     (latte-lab aj krok vo `FILES`).
-  2. *Inštalácia na cudzí počítač* bez repa a ručného prekladania: balíky LatteOS (vlastné COPR) alebo obraz;
-     `latteos-local` (hyprland-latte so záplatou vmwgfx) existuje iba na latte-lab. Posúva „distribúciu balíkov“ z R7 sem.
-  3. *Záloha dát používateľa* (domov, nie systém — snapper chráni iba systém): stránka Nastavenia › Zálohovanie.
-  4. *Prechod z Windowsu* pri prvom spustení: súbory, záložky a heslá prehliadača.
-- [ ] Pred vydaním uzavrieť rozsah, verziu, zmeny, licencie/tretie strany, inštalačný zdroj,
-  kontrolné súčty a skúšku obnovy.
-- [~] Nový dvojjazyčný README (EN/SK) z autorovho opisu je v `setup/verejne/README.md` (9. 10.; zverejní ho `zverejnit.sh` na pokyn). Po premenovaní kvapiek (E) prepísať názvy GooBar → BarGoo, GooPower → PowerGoo; AI voľbu pri inštalácii nesľubovať ako hotovú.
-- [ ] Zaznamenať podporovaný hardvér, známe problémy a postup diagnostiky bez zverejnenia
-  súkromných údajov alebo tajomstiev.
-- [ ] Po vydaní triediť hlásenia podľa závažnosti, reprodukovať ich, opraviť a overiť regresiu;
-  bezpečnostné aktualizácie a obnova majú prednosť pred novými efektmi.
-- [ ] Prenos účtu/relácie a cloudová služba sa rozvíjajú až po stabilnom lokálnom produkte;
-  používateľ musí vedieť fungovať bez nich.
-
-#### R7 — Neskorší systémový smer
-
-- [ ] Fedora Atomic/bootc a systémový rollback zaradiť až po splnení požiadaviek pôvodnej fázy A:
-  stabilné pracovné prúdy, reálny HW, inštalácia, aktualizácia, obnova a testovací proces.
-- [ ] Vlastný bootloader podľa nervboot, mobilná LatteApp, pokročilá bezpečnostná analytika a
-  ďalšie veľké rozšírenia zostávajú návrhmi, kým neprejdú R0–R1 a nedostanú miesto v etape.
-- [ ] Každé neskoršie rozšírenie zachová základné pravidlo: LatteOS musí zostať použiteľný vo VM
-  bez GPU; akcelerácia pridáva efekty, nie nevyhnutnú funkčnosť.
-
-11. [ ] **Prihlasovacia obrazovka podľa predstavy používateľa** (13. 10., `bughunt/najdene-chyby.md`; test 541 ukázal,
+**4.03** [~] (Greeter a prihlásenie (LoginGoo)) Prihlasovacia obrazovka podľa predstavy · r. 1188–1225
+[ ] **Prihlasovacia obrazovka podľa predstavy používateľa** (13. 10., `bughunt/najdene-chyby.md`; test 541 ukázal,
     že voľba jazyka a klávesnice na prihlásení **nie je**: rozloženie sa prepína iba naslepo Alt+Shift, jazyk vôbec).
     (a) [~] **Jazyk a rozloženie klávesnice klikom** na prihlásení (aj v SAFE), s ukazovateľom aktuálneho rozloženia
     — urobené 13. 10.: dve chipy vľavo od vypínacej kvapky (jazyk sa prepína za behu faktom `locale`; rozloženie
@@ -1223,46 +290,386 @@ cestu k aktualizácii alebo návratu.
     Merané na RX 640: skladanie 1,0 ms, kreslenie 0,7 ms, 60 snímok/s. Výška vĺn je zámerne obmedzená, aby
     víchrica nezaliala riadok s heslom. (Neskôr 13. 10. na pokyn zrušené: vo víchrici sa vlna cez riadok preleje
     a odtečie; svetlo o polovicu slabšie.)
-    **Vlnenie hladiny na ploche (13. 10.):** v engine je hladina tesne pod spodným okrajom; kým ju niečo rozvíri
-    (dopad kvapky, dážď a poryvy pri nečinnosti — všetko cez `E.ripple`), zdvihne `swell` osem hrebeňov, ktoré
-    bežia popri okraji, a potom zasa zapadnú. Súčet Gerstnerových vĺn z prihlásenia sa neprevzal: stál 0,5 ms
-    na snímku aj v pokoji (skladanie 1,4 → 1,9 ms); hrebene ako ploché elipsy nestoja nič merateľné (1,4 ms).
-    Svetlo a sedlina na ploche nie sú — nie je tam hĺbka.
-12. [x] **PowerGoo s lištou údajov** (13. 10.: karta rastie z celej kapsuly — `card_strip`, `cap.len` v `goo/parts/card.plm`; začína širokou ako lišta, otvára sa smerom, ktorým lišta leží, a drží ju v sebe; overené snímkou pri spodnom okraji, pri bočnom nie)**:** kartu vysunúť z celého celku Goo + lišta, aby tvorili vizuálne jeden kus
+
+---
+
+## 5. [~] SAFE latteOS
+Rozhodnuté 22. 10.: núdzová varianta; vyvíja sa až tesne pred inštalátorom (poradie krok 21).
+Zdroje: `goo/safe.plm`, `goo/safe.luau`, `bin/latte-safe`, `system/labwc`
+je nudzovy system nenaročny, umožnujuci udržbu systemu. teoreticky použitelny ako primarny režim na velmi stary hardware. 
+
+**5.01** [x] (SafeGoo) Fresh d2) SAFE a relácie · r. 59–67
+[x] **SAFE a relácie** (12. 10.): `goo/safe.plm` + `safe.luau` (lišta: záťaž, ponuka napájania, terminál, riadok
+   na písanie s režimami aplikácie a príkaz, okná, sieť, batéria; pozadie s časom), `bin/latte-safe` (záchranná
+   ponuka; texty z toho istého `goo/lang/sk.plm`), `bin/latte-session` (GOO · SAFE · Game, strážca pádov),
+   `bin/latte-game`, `crates/latte-stats`, labwc pre SAFE, tri položky relácií, statické prihlásenie
+   `goo/login-safe.plm` pre softvérové kreslenie (VM, SAFE) so spoločnou logikou `goo/lib/login.luau`.
+   Overené: `tests/check.sh` (aj strážca relácie s napodobenými programami), snímky na neviditeľnej obrazovke.
+   **Zatiaľ chýba** (vráti sa s príslušným programom): zámok obrazovky, hľadanie súborov a AI v riadku, tlačidlá
+   App Manager a Správca zariadení, profily prostredí (`latte-profil`), profil účtu (`latte-gooconfig`).
+   Voľba GOO pri prihlásení skončí v SAFE s dôvodom „plná plocha nie je nainštalovaná“, kým nie je bod 3.
+
+**5.02** [ ] (SafeGoo) SafeGoo · r. 236–255
+[ ] **SafeGoo** — dokončiť podľa toho, čo ukáže bod 1 (ovládanie okien na labwc, diagnostika pádu).
+   - **Diagnostika pádu podľa whyd** (schválené 13. 10.; [whyd](https://github.com/vmaltarello/whyd), Go, GPL-3.0,
+     samostatný program): dnešný `last-crash.log` z `latte-session` zachytí iba pád Hyprlandu v tej istej relácii.
+     whyd z žurnálu predošlého štartu rozpozná aj zamrznutie s tvrdým vypnutím, OOM, chyby GPU, zlyhané služby
+     a prehriatie (pravidlá v TOML, správa so skrytými údajmi). Postup: (a) vyskúšať ručne na latte-lab
+     (`whyd` po štartoch z bodu 1); (b) vlastné pravidlá pre `latte-session`, Hyprland, engine Goo a prepnutie do SAFE;
+     (c) v SAFE položka „Prečo sa skončila minulá relácia“ — súhrn z `last-crash.log` a z whyd, správa na skopírovanie;
+     (d) whyd ako voliteľná závislosť (balík rpm z vydaní, riadok vo `FILES` a v `TRETIE-STRANY.md`), bez neho ostane
+     dnešný výpis. *Overiť:* či whyd vie aj aktuálny štart od času pádu (pád relácie bez reštartu), inak to ostáva na
+     `latte-session`.
+   **Urobené 13. 10.:** (a) whyd 0.1.1 vyskúšaný na latte-lab z balíka vydania (bez inštalácie): číta tento
+   štart (`-b 0`) aj predošlé, takže pád relácie bez reštartu vidí tiež; (b) vlastné pravidlá
+   `system/whyd/latteos.toml` (prechod do SAFE a prečo, pád a nový štart Hyprlandu, pád enginu Goo, rozhodnutie
+   `latte-boot`) — `whyd rules test` prejde; `latte-session` píše to, čo ukončilo reláciu, aj do žurnálu
+   (predtým iba do `session.log`, ktorý whyd nevidí); (c) `latte-safe why` a v ponuke SAFE položky **w** (prečo
+   sa skončila minulá relácia: zápis LatteOS + whyd pre tento a predošlý štart) a **c** (to isté ako správa do
+   schránky); to isté tlačidlo v Nastaveniach › Štart a režim SAFE; (d) whyd je voliteľný (`FILES`,
+   `TRETIE-STRANY.md`), bez neho ostane zápis LatteOS. **Neoverené:** pravidlá SAFE a pádu na skutočnom páde
+   (iba ich príklady); položky v ponuke SAFE naostro. whyd ukazuje začiatok relácie o 2 h posunutý (jeho chyba
+   s časovým pásmom, nahlásiť autorovi). **Ostáva z bodu 4:** ovládanie okien na labwc — čo presne, ukáže bod 1.
+
+**5.03** [x] (SafeGoo) C. rozhodnutie o SAFE · r. 653–655
+- [x] **Rozhodnutie o SAFE:** plné SDF Goo je pri softvérovom kreslení príliš pomalé; SAFE preto
+  používa jednoduché statické kvapky. Ide o stanovený smer, nie dôvod pokúšať sa nasadiť plný
+  dynamický engine v pixman režime.
+
+**5.04** [~] (SafeGoo) C. GOO / SAFE · r. 667–669
+- [~] **GOO / SAFE:** existuje skúšobný SafeGoo so statickými kvapkami a nízkou spotrebou v
+  softvérovom režime. Chýba dokončenie ovládania okien a potrebných kvapiek/diagnostiky a jeho
+  zapojenie ako predvoleného SAFE shellu.
+
+**5.05** [ ] (SafeGoo) R2 — dokončiť SafeGoo · r. 922–923
+- [ ] Dokončiť SafeGoo ako použiteľnú záchrannú reláciu s potrebnými základnými ovládacími prvkami,
+  diagnostikou a funkčným ovládaním okien na labwc; zachovať pixman/bez-GPU obmedzenia.
+
+**5.06** [ ] (SafeGoo) R3·A — PowerGoo a SafeGoo · r. 951–952
+- [ ] **PowerGoo a SafeGoo:** systémové akcie a indikátory v bežnej ploche; v SAFE zobrazenie
+  príčiny, logov, diagnostiky a bezpečných možností obnovy.
+
+### 5A. [~] Relácie
+Relácia = to, čo sa spustí po prihlásení: GOO (plocha), SAFE (núdzová), Game (Steam + gamescope). Spúšťa ich `latte-session`, ten po páde obnoví reláciu alebo prepne do SAFE.
+Zdroje: `bin/latte-session`, `bin/latte-guarddog`, `apps/guarddog.qml`, `system/systemd`, `system/whyd`, `system/oom`, `system/sessions`
+
+**5A.01** [x] (Relácie a GuardDog) B. systémové rozhrania · r. 633–634
+
+**5A.02** [ ] (Relácie a GuardDog) R2 — služby a pád relácie · r. 925–926
+- [ ] Zabezpečiť, aby systémové služby štartovali až vtedy, keď sú potrebné, a aby ich pád nezhodil
+  celú používateľskú reláciu.
+
+---
+
+## 6. [~] GooEngine
+Zdroje: `goo/goo.plm`, `goo/parts/`, `goo/lib/`, `goo/gen.py`; LATTEOS-GOO §3–4, `docs/goo/`
+je primarne HW vykreslovatelny engine simulujuci pravidla pre GooProstredie. gravitaciu, pohyb, efekty...zakladne univerzalne efektove prostredie nad ktorym cele GooProstredie funguje. 
+
+**6.01.** [ ] overit použitelnost pri čisto SW vykreslovanie GooEngine a ake score vykonu pc je nutne na chod pre sw, hw, alebo len safe latteOS. score počitania vykonu-zistit bežne metody. 
+
+**6.02** [~] (GooEngine) Fresh d3) GooEngine — úvod · r. 68–72
+[~] **GooEngine** — engine a jadro kvapiek, potom náhrada Noctalie (rohová lišta: tray, sieť, hlasitosť,
+   ovládacie centrum; Nerušiť, akcie relácie, prehľad okien, účty kalendára — služby pleamaru `tray`, `network`,
+   `audio`, `bluetooth`, `brightness`, `session`, `polkit` a stránky z Marey, BSD-3), aplikácie a príkazy, iba tie,
+   ktoré GOO a SAFE potrebujú. Platí z 12. 10.: znak NET do GOO, náhľad okna nad ikrou, Kapsa a maskoti sa
+   neprenášajú; kvapky sa premenovali (GooBar → BarGoo, GooPower → PowerGoo).
+
+**6.03** [x] (GooEngine) engine · r. 73–75
+
+**6.04** [x] (GooEngine) jadro kvapiek, prvá časť · r. 78–80
+- [x] **jadro kvapiek, prvá časť** (12. 10.): BarGoo (hlava, ikry okien, ponuka okna), LensGoo (Aplikácie,
+  Príkaz, rýchly zoznam), PowerGoo (karta: účet, odhlásenie, batéria, profil napájania, uspať · reštartovať ·
+  vypnúť). Čo je a čo chýba: LATTEOS-GOO.md §8.
+
+**6.05** [x] (GooEngine) ovládanie z klávesnice · r. 86–86
+
+**6.06** [ ] (GooEngine) jadro kvapiek, zvyšok · r. 94–94
+- [ ] **jadro kvapiek, zvyšok:** okno z bubliny príde s QueenGoo (rodia sa z nej riadne okná).
+
+**6.07** [x] (GooEngine) hra pri nečinnosti · r. 104–105
+
+**6.08** (pozn.) (GooEngine) overenia 12.–13. 10. · r. 196–207
+Overené 12. 10. v `tests/screen.sh` (Hyprland bez obrazovky na RX 640, snímky, falošná myš): štart, pokoj
+a nadnesenie, ťahanie k okraju a pád, karty všetkých troch kvapiek, spustenie aplikácie, príkaz s varovaním,
+prepnutie režimu okien, minimalizovanie klikom na ikru, ponuka okna, odhlásenie s otázkou, lišta pri ľavom
+okraji s pásom, sklenená káva a zmena nastavení za behu. Záťaž v pokoji: scéna 17 % jadra, Hyprland 4 %.
+Overené 13. 10. tým istým spôsobom: nečinnosť (skrátené časy), dva a tri monitory, vlastné kvapky a ich hra,
+MediaGoo s napodobeným prehrávačom, kalendár zo súboru .ics, odpoveď AI od Clauda, prichytenie ťahaním
+(myš kompozitora `tests/pointer.py`), sklo okien. **Neoverené z 13. 10.:** jednotky systemd
+(`latte-idle`, `latte-goo-side@`) v skutočnej relácii, zamknutie pred uspaním, skutočný prehrávač, kalendár
+z internetu, ťahanie okna za titulok skutočnou myšou.
+**Neoverené:** skutočné prihlásenie (greetd → `latte-session` → Hyprland na obrazovke) — až po nasadení na
+latte-lab (bod f); batéria (latte-lab ju nemá); viac monitorov; uspanie, reštart a vypnutie (v skúške sa
+nestláčali naostro).
+
+**6.09** [ ] (GooEngine) Fyzikálne prostredie kvapiek · r. 286–292
+[ ] **Fyzikálne prostredie kvapiek** (rozhodnuté 13. 10.: neskôr, **až po zmeraní a otestovaní Fresh na hardvéri
+   latte-lab**). Dnes majú kvapky jedny pravidlá a spoločné prostredie (gravitácia, hladina, vietor, pružiny), ale
+   nepôsobia na seba silami: neprekrývanie počíta logika, gravitácia platí iba pri páde a skoku, okná nie sú súčasťou
+   prostredia. Cieľ: hmotnosť, zotrvačnosť, vzájomné odpudzovanie a zrážky ako pravidlá scény, rovnaké pre každú
+   kvapku (vzor fwm, R3·A). Znamená prepísať pohybovú časť `goo/parts/drops.plm` a presunúť neprekrývanie z
+   `goo/lib/engine.luau` do scény; najprv zmerať cenu na snímku (dnešné pružiny: 24 % jadra pri 32 miestach).
+
+**6.10** [x] (GooEngine) C. rozhodnutie o edícii · r. 647–649
+- [x] **Rozhodnutie:** jediná edícia je LatteOS GOO; nasadzuje sa engine Goo (`session/goo`),
+  pôvodná plocha Kvapky sa nenasadzuje. Pravidlá produktu sú v
+  [LATTEOS-GOO.md](LATTEOS-GOO.md).
+
+**6.11** [x] (GooEngine) C. rozhodnutia o správaní · r. 650–652
+- [x] **Rozhodnutia o správaní GOO:** myš je prvá, klávesnica doplnok; cieľom sú návyky Windows 11;
+  kvapky sú káva, Goo má vlastný vzhľad a karty vyrastajú z kvapiek. Podrobné záväzné pravidlá sú
+  v [LATTEOS-GOO.md](LATTEOS-GOO.md), nie v historických Classic návrhoch.
+
+**6.12** [~] (GooEngine) C. GOO / engine a plocha · r. 658–661
+- [~] **GOO / engine a plocha:** jadro pravidiel kvapiek, BarGoo a správa okien, LensGoo, PowerGoo,
+  QueenGoo, ClockGoo, karty, upozornenia, sklo a používateľské kvapky sú implementované v rôznom
+  rozsahu a priebežne overované. Samotný engine ešte nie je hotový produkt; SafeGoo a ďalšie
+  otvorené overenia sú uvedené nižšie. Detailný stav ostáva v F3·G.
+
+**6.13** [x] (GooEngine) C. GOO / integrácia · r. 662–664
+
+**6.14** [ ] (GooEngine) D. GooEngine · r. 686–688
+- [ ] **GooEngine:** uzavrieť zdieľanie jednej logiky a dvoch vzhľadov NORMAL/SAFE; doplniť chýbajúce
+  ovládanie okien v labwc, SafeGoo, beh monitorov pripojených za chodu, pokoj pri nečinnosti a
+  meranie výkonu po rozšírení funkcií.
+
+**6.15** [ ] (GooEngine) D. Goo kvapky · r. 689–690
+- [ ] **Goo kvapky:** dokončiť konkrétne otvorené úlohy BarGoou, LensGoo, PowerGoo, ClockGoo,
+  QueenGoo a ChatGoo. Ďalšie kvapky a vizuálne efekty posudzovať samostatne podľa prínosu a výkonu.
+
+**6.16** [x] (GooEngine) E. názvoslovie kvapiek · r. 750–755
+- [x] **Názvoslovie kvapiek (rozhodnuté 9. 10.):** predpona/prípona **„Goo“ je pripona a nesú ju iba kvapky v
+  GooEngine**: BarGoo (dnes v kóde GooBar), PowerGoo (dnes GooPower), LensGoo, QueenGoo, ClockGoo, ChatGoo,
+  LaunchGoo, LoginGoo. Neplatí pre samotný engine a plochu (GooEngine, LatteOS GOO) ani pre relácie (SafeGoo).
+  V tejto roadmape ROADMAP2 sa už používajú nové názvy; **kód, dokumentácia a nastavenia sa zatiaľ nemenia**.
+  Úloha na neskôr: premenovať v ~60 súboroch naraz s kontrolou `kvapky.json` používateľov (staré názvy čítať ešte
+  jedno obdobie), potom prepísať README.
+
+**6.17** [~] (GooEngine) F. R3·A — GooEngine a kvapky · r. 822–829
+**R3·A — GooEngine a kvapky:** overiť skrytie voliteľnej kvapky (r. 432); živé bytosti — obmedzenie snímok pri nečinnosti (r. 433);
+profil — programy čítajú dokument priamo (r. 466); overiť Odhlásiť a ClockGoo na 1024 × 768 (r. 470); pokrývky hlavy QueenGoo (r. 471);
+BarGoo `reversed` a monitor pripojený za behu (r. 480); CPU enginu — meranie 6. 10. (r. 482); formulár vlastných kvapiek (r. 493);
+kalendár ClockGoo — synchronizácia, názov budíka (r. 494), **prepracovanie podľa regiónu** (r. 618), indikátor Nerušiť (r. 623);
+LensGoo — zvyšok (r. 498), **hĺbková kontrola** (r. 626), indexovanie častých priečinkov (r. 554); ChatGoo — Beeper, vtečenie okna, odznak (r. 645);
+goo telo pod rohovou lištou (r. 501); deň a noc na hladine (r. 610), nočné svetlo `[~]` (r. 608); sady ikon (r. 669);
+prístupnosť — zvyšok (r. 506).
+
+**6.18** (pozn.) (GooEngine) R3·A — cieľ · r. 937–942
+**Cieľ:** dokončiť predvolenú plochu LatteOS GOO ako súdržný engine a používateľský shell. Platné
+pravidlá sú v [LATTEOS-GOO.md](LATTEOS-GOO.md), API a stav enginu v
+[session/goo/README.md](session/goo/README.md), používateľské rozhodnutia v
+[docs/goo/ROZHODNUTIA.md](docs/goo/ROZHODNUTIA.md).
+
+**6.19** [ ] (GooEngine) R3·A — jadro GooEngine · r. 943–945
+- [ ] **Jadro GooEngine:** jedna spoločná logika a API kvapiek, jasné hranice medzi enginom,
+  scénou, pomocníkmi, kompozitorom a vzhľadom NORMAL/SAFE; zachovať kompatibilitu existujúcich
+  kvapiek a nastavení.
+
+**6.20** [ ] (GooEngine) R3·A — názvoslovie kvapiek · r. 953–953
+- [ ] **Názvoslovie kvapiek:** rozhodnúť a jednotne premenovať (pozri E, rozdiely).
+
+**6.21** [ ] (GooEngine) R3·A — pohyb, zvuk a efekty · r. 961–962
+- [ ] **Pohyb, zvuk a vizuálne efekty:** zmerať cenu fyziky, skla, dažďa a reakcie na hudbu; efekty
+  musia byť vypnuteľné a nesmú zhoršiť čitateľnosť, SAFE ani stupeň Softvér.
+
+**6.22** [ ] (GooEngine) R3·A — brána dokončenia Goo · r. 963–966
+- [ ] **Brána dokončenia Goo:** všetky základné úkony idú myšou; rozlíšenie najmenej 1024 × 768;
+  funkčné okná/relácie na podporovaných monitoroch; overený výkon a bezchybný návrat po páde enginu.
+
+**6.23** (pozn.) (GooEngine) vlnenie hladiny na ploche · r. 1226–1230
+**Vlnenie hladiny na ploche (13. 10.):** v engine je hladina tesne pod spodným okrajom; kým ju niečo rozvíri
+(dopad kvapky, dážď a poryvy pri nečinnosti — všetko cez `E.ripple`), zdvihne `swell` osem hrebeňov, ktoré
+bežia popri okraji, a potom zasa zapadnú. Súčet Gerstnerových vĺn z prihlásenia sa neprevzal: stál 0,5 ms
+na snímku aj v pokoji (skladanie 1,4 → 1,9 ms); hrebene ako ploché elipsy nestoja nič merateľné (1,4 ms).
+Svetlo a sedlina na ploche nie sú — nie je tam hĺbka.
+
+### 6A. [~] BarGoo
+Zdroje: `goo/lib/bar.luau`, `goo/side.plm`; LATTEOS-GOO §4.1
+
+**6A.01** [x] (BarGoo) pád minimalizovaného okna · r. 87–87
+
+**6A.02** [x] (BarGoo) BarGoo na ďalších monitoroch · r. 90–93
+- [x] BarGoo na ďalších monitoroch (13. 10.): vlastná scéna `goo/side.plm` na každom ďalšom monitore
+  (`latte-goo-side@.service`), lišta ukazuje iba okná svojho monitora, pás pri okraji má každý monitor
+  svoj; `latte-say` povie niečo všetkým scénam Goo. Overené s dvoma a troma monitormi bez obrazovky.
+  Chýba prenášanie ikier medzi monitormi; každá ďalšia scéna stojí toľko čo hlavná (bod 5).
+
+**6A.03** [x] (BarGoo) BarGoo: ikry iba v plávajúcom režime · r. 192–194
+- [x] BarGoo: ikry iba v režime plávajúce (rozhodnuté a urobené 13. 10.) — v páske a dlaždiciach počet okien
+  na hlave, ikry po postáti myši na hlave. Zvuk a žiadosť o pozornosť ukazuje okno samo pulzujúcim
+  okrajom; hlava sa vlní iba za okno, ktoré nie je na očiach.
+
+**6A.04** [ ] (BarGoo) R3·A — BarGoo a okná · r. 946–947
+- [ ] **BarGoo a okná:** dokončiť chýbajúce správanie lišty, ovládanie okien v NORMAL aj SAFE,
+  pripájanie monitorov za behu a nastavenia viacerých obrazoviek.
+
+### 6B. [~] LensGoo
+Zdroje: LATTEOS-GOO §4.3
+
+**6B.01** [x] (LensGoo) LensGoo: Súbory, Web, kalkulačka · r. 187–187
+
+**6B.02** [x] (LensGoo) LensGoo · r. 501–503
+
+**6B.03** [ ] (LensGoo) E. LensGoo — koliesko · r. 780–781
+- [ ] **LensGoo:** prepínanie funkcií kolieskom — dokumentované sú Tab / Shift+Tab (kolieskom sa mení veľkosť
+  kvapky); overiť, či koliesko ide aj v karte.
+
+**6B.04** [ ] (LensGoo) R3·A — LensGoo · r. 948–950
+- [ ] **LensGoo:** samostatne overiť vyhľadávanie a spúšťanie aplikácií/súborov a kvalitu AI
+  rozhovoru; dotiahnuť poskytovateľov, vstupy a chybové stavy bez duplikovania všeobecnej práce
+  na `latte-ai`.
+
+### 6C. [~] PowerGoo
+Zdroje: LATTEOS-GOO §4.2, `crates/latte-stats`
+
+**6C.01** [x] (PowerGoo) pás výkonu · r. 81–81
+
+**6C.02** [x] (PowerGoo) PowerGoo · r. 499–500
+
+**6C.03** [ ] (PowerGoo) E. pás PowerGoo · r. 778–779
+- [ ] **Pás PowerGoo:** „veličiny sa menia v Nastaveniach“ — dokumentované sú pevné bunky CPU · RAM · GPU · VRAM;
+  výber veličín overiť, inak z opisu vypustiť.
+
+**6C.04** [ ] (PowerGoo) R3·A — pás výkonu a QueenGoo · r. 954–955
+- [ ] **PowerGoo — pás výkonu:** výber zobrazených veličín (CPU, GPU, RAM…) v nastaveniach tohto Goo (z opisu autora;
+  dnes pevné bunky CPU · RAM · GPU · VRAM). **QueenGoo:** pokrývka hlavy je voliteľná, preferovane korunka.
+
+**6C.05** [x] (PowerGoo) PowerGoo s lištou údajov · r. 1231–1232
+[x] **PowerGoo s lištou údajov** (13. 10.: karta rastie z celej kapsuly — `card_strip`, `cap.len` v `goo/parts/card.plm`; začína širokou ako lišta, otvára sa smerom, ktorým lišta leží, a drží ju v sebe; overené snímkou pri spodnom okraji, pri bočnom nie)**:** kartu vysunúť z celého celku Goo + lišta, aby tvorili vizuálne jeden kus
     (dnes je ucho karty pri ľavom kliku malé a lišta ostáva vedľa). Režimy okien (4.) sú bod 7 (Glance).
-13. [~] **Ponuka plochy na pravý klik** (13. 10., `bughunt/najdene-chyby.md`: „ako vo Windows 11, v 0.3 to bolo“).
-    Urobené 13. 10.: vrstva `desk` pod oknami (`goo/parts/desk.plm`) počúva pravý klik na holú plochu a
-    `goo/lib/desk.luau` otvorí kartu tam, kde sa kliklo: Súbory, Otvoriť v termináli · Nastavenia obrazovky,
-    Tapeta, Prispôsobiť, Kvapky · Monitor, Všetky nastavenia. Aj na ďalších monitoroch (`side.plm`). Nasadené
-    a overené na latte-lab v bežiacej relácii. **Chýba oproti v0.3:** ikony na ploche (Kôš, súbory z ~/Plocha)
-    a s nimi Zobraziť, Zoradiť podľa, Nový, Prilepiť — plocha s ikonami bola v0.3 samostatná aplikácia
-    (`old/session/apps/plocha.qml`); či sa vráti, rozhodne používateľ.
-    **Rozhodnuté a urobené 13. 10. večer: ikony kreslí hotový program, `pcmanfm-qt --desktop` (LXQt, Fedora 2.4.1)** —
-    `bin/latte-desktop` ho spúšťa ako vlastný profil `latteos` s priehľadnou plochou (tapeta ostáva naša: obrázok
-    aj film cez mpvpaper), s písmom a ponukami vo farbách zvolenej šálky (paleta cez qt6ct z `Theme.qml`; štýl
-    cez `-stylesheet` pcmanfm-qt zhodí) a s ikonami breeze. Vypínač: Nastavenia › Pozadie › Ikony na ploche
-    (`~/.config/latteos/desktop-icons`). S ikonami patrí holá plocha im aj s ich ponukou (Vytvoriť nový, Prilepiť,
-    Zoradiť…), vrstva `desk` enginu sa vtedy zavrie; bez nich ostáva kávová ponuka. Overené naostro po
-    prihlásení cez greetd: Kôš, domov a priečinok z ~/Plocha, ponuka pri kurzore. (Bez obrazovky v skúške
-    vyskočí ponuka v rohu — vec neviditeľného monitora, nie programu.) **Chýba:** položky LatteOS v ponuke
-    pcmanfm-qt (Nastavenia obrazovky, Tapeta, Prispôsobiť) — dajú sa pridať ako „vlastné akcie“ libfm-qt;
-    jeho vlastné „Nastavenia pracovnej plochy“ vedia nastaviť tapetu, ktorá by prekryla našu (pri ďalšom štarte
-    sa vráti priehľadná); skúška so živou tapetou. pcmanfm-qt by mohol byť aj **Súbory** pre 0.4 (v kávových
-    farbách vyzerá dobre) — na rozhodnutie.
-    **Zmenené 13. 10. v noci (používateľ: „išlo mi len o ikonky a ponuku pravého kliku“, cieľ sú ľudia z Windowsu):**
-    pcmanfm-qt odobratý aj s tým, čo priniesol (terminál, lxqt-sudo, vlastné nastavenia tapety). Plocha je vlastná:
-    `apps/desktop.qml` (+ spoločná ponuka `apps/common/Menu.qml`), spúšťa ju `bin/latte-desktop`. Ponuky podľa
-    Windows 11 — na ploche Zobraziť › (veľké · stredné · malé ikony, automaticky usporiadať, zobraziť ikony),
-    Zoradiť podľa ›, Obnoviť, Prilepiť, Nový › (priečinok, textový dokument), Nastavenia obrazovky, Prispôsobiť,
-    Otvoriť v termináli; na ikone Otvoriť, Vystrihnúť, Kopírovať, Kopírovať ako cestu, Premenovať, Odstrániť,
-    Vlastnosti; Kôš: Otvoriť, Vysypať. Ťahanie ako vo Windows (na priečinok, do Koša, pravým s otázkou, von do
-    aplikácie), výber obdĺžnikom, F2 · Del · Ctrl+C/X/V · F5. Súbory hýbe `gio` (Kôš, kolízie mien), obrázky sú
-    samy sebe náhľadom, ostatné berú ikonu zo sady ikon systému (`QS_ICON_THEME` v `latte-app`). Farby sú témy
-    (`Theme.qml`). Overené naostro v relácii: ikony, výber, obe ponuky s podponukou. **Neoverené:** ťahanie,
-    premenovanie, Prilepiť, Vlastnosti, viac monitorov (ikony sú na hlavnom). **Chýba:** Otvoriť v programe…,
-    Späť (Ctrl+Z), „Tento počítač“. **Čaká na používateľa:** ktorá sada ikon (poslaný prehľad: breeze, Papirus,
-    elementary, Yaru, Mint-Y, Fluent).
-14. [~] **skwd-wall — urobené 13. 10. v noci:** nainštalovaný z COPR `piixini/skwd-wall-v2` (1.0.0 beta 24) a zapojený
+
+### 6D. [~] ClockGoo
+Zdroje: `goo/parts/calendar.plm`, `bin/latte-cal`, `bin/latte-sky`; LATTEOS-GOO §4.5
+
+**6D.01** [x] (ClockGoo) ClockGoo · r. 95–96
+
+**6D.02** [x] (ClockGoo) prepojené kalendáre · r. 107–109
+- [x] prepojené kalendáre (13. 10.): adresy .ics v karte ClockGoo, číta `bin/latte-cal` (opakované udalosti,
+  časové pásma); iba na čítanie, bez účtov. **ChatGoo** čaká na Beeper
+  (na latte-lab nie je nainštalovaný, nedá sa overiť).
+
+**6D.03** [x] (ClockGoo) ClockGoo · r. 504–506
+- e. [x] **ClockGoo** (`ClockGoo popup time frosted glass.png`; hotové, potvrdil používateľ 21. 10.: karta počasia sa zámerne mení podľa dňa a noci, v noci je tmavá — nie je to rozdiel od návrhu; nemeniť): záložky Prehľad · Časovače a budíky · Počasie,
+  veľký čas so sekundami, dátum, týždeň, meniny, počasie s východom a západom slnka, svetové hodiny,
+  digitálna pohoda (čas pri obrazovke podľa aplikácií), päta Režim spánku · Nerušiť.
+
+**6D.04** [ ] (ClockGoo) R3·A — ClockGoo, QueenGoo, ChatGoo · r. 956–957
+- [ ] **ClockGoo, QueenGoo a ChatGoo:** dotiahnuť nedokončené karty, upozornenia, kalendár,
+  zariadenia a overenie so skutočnými aplikáciami/službami, ktoré kvapky zastupujú.
+
+**6D.05** (pozn.) (ClockGoo) upozornenia · r. 1338–1340
+- **Upozornenia:** nové upozornenie sa ukáže ako lístok vpravo dole nad Pobrežím (6,5 s, klik otvorí ClockGoo,
+  neberie klávesnicu) a zaznie tón; Nastavenia › Oznámenia: Nerušiť · Ukázať v rohu · Prehrať zvuk · Vyskúšať.
+  Nerušiť sa presunulo z `clock.json` do nastavení Goo (`settings.json`, kľúč `quiet`).
+
+**6D.06** [ ] (ClockGoo) Karta ClockGoo (ľavý klik) ostáva rýchly prehľad dňa; plná správa udalostí je v aplikácii Kalendár (10J), kam karta odkazuje tlačidlom „V okne“.
+
+### 6E. [x] QueenGoo
+Zdroje: LATTEOS-GOO §4.4
+
+**6E.01** [x] (QueenGoo) QueenGoo · r. 113–114
+
+### 6F. [~] CamGoo
+Zdroje: `bin/latte-cam`; Nastavenia › Kvapky › Webkamery
+
+**6F.01** [~] (CamGoo) CamGoo · r. 359–365
+[~] **CamGoo — webkamery** (20. 10., na pokyn používateľa). Hotové: karta s obrázkom kamery, prepínanie, zoznam
+    v Nastaveniach › Kvapky › Webkamery. **Ďalej (nápady používateľa 20. 10.):** zobrazenia — pod sebou, dlaždice,
+    zväčšenie jednej a prepínanie, samé rolujúca páska; **domáce IP kamery** (používateľ má Tapo: RTSP
+    `rtsp://účet:heslo@IP:554/stream1`, snímka cez ffmpeg; heslo do kľúčenky, nie do súboru); **nájdenie kamier
+    v sieti** (ONVIF WS-Discovery, porty 554 a 2020; to isté vie inšpektor siete v Správcovi zariadení);
+    **návrh kamier podľa miesta** (miesto počasia → verejné kamery okolo, zdroj s API, napr. Windy Webcams — kľúč);
+    **ISS** (NASA vysiela video, nie obrázok: snímka z prúdu cez ffmpeg, alebo mapa polohy ISS ako „kamera“).
+
+**6F.02** (pozn.) (CamGoo) živý obraz v CamGoo · r. 371–371
+- **Živý obraz v CamGoo** postupom Vitreusu (ffmpeg → súbor → `cam_path?N`), aj pre Tapo cez RTSP.
+
+### 6G. [x] QuickGoo
+
+**6G.01** [x] (Vlastné kvapky a návrhy kvapiek) QuickGoo · r. 100–100
+
+### 6H. [~] Pobrežie (Shore)
+Výnimka: patrí medzi Goo a stojí na rovnakom mieste, interaguje s Goo, ale nie je to Goo — nedá sa s ním manipulovať, správa sa inak a má iné pravidlá. Názov: Shore alebo ShoreGoo (nerozhodnuté).
+Zdroje: `apps/desktop.qml`, `bin/latte-desktop`, `goo/lib/desk.luau`; LATTEOS-GOO §4.8
+
+**6H.01** [x] (Plocha a Pobrežie) náhrada rohovej lišty (Pobrežie) · r. 97–99
+
+**6H.02** [x] (Plocha a Pobrežie) E. Noctalia · r. 762–765
+- [x] **Noctalia (rozhodnuté 9. 10.):** zostáva. Slúži ako **úložisko widgetov Noctalie** a minimalistické prostredie
+  pre veci, ktoré v Goo nechceme. Zatiaľ sa nevyraďuje; autor iba zvažuje, či je potrebná v takom rozsahu a či ju
+  nenahradiť optimalizovanejším riešením. Úloha v R3·B: **porovnanie** (čo z nej systém naozaj používa, jej cena v
+  pamäti a CPU, kandidáti na náhradu) — bez rozhodnutia o odstránení.
+
+**6H.03** [ ] (Plocha a Pobrežie) R3·B — okraje integrácie · r. 973–974
+- [ ] Overiť zostávajúce okraje integrácie: ovládacie centrum Noctalie, SAFE bez GPU, dynamicky
+  pripojené monitory a čisté nastavenia medzi GOO a ostatnými reláciami.
+
+**6H.04** [ ] (Plocha a Pobrežie) R3·B — Noctalia · r. 981–984
+- [ ] **Noctalia (úložisko widgetov a minimálne prostredie):** porovnať jej skutočné použitie a cenu s
+  optimalizovanejšou náhradou; zatiaľ sa neodstraňuje (E).
+
+### 6I. ChatGoo
+Doplnok pre Beeper (voliteľná kvapka).
+Zdroje: LATTEOS-GOO §4.6
+
+### 6J. [x] MediaGoo
+Čo hrá, ovládanie prehrávača; je na ploche iba kým beží prehrávač.
+
+**6J.01** [x] (Vlastné kvapky a návrhy kvapiek) MediaGoo · r. 106–106
+
+### 6K. [~] Vlastné kvapky (Tvorca Goo)
+Kvapka bez programovania: aplikácia alebo ikona s príkazmi a textom.
+
+**6K.01** [x] (Vlastné kvapky a návrhy kvapiek) vlastné kvapky · r. 101–103
+
+**6K.02** [ ] (Vlastné kvapky a návrhy kvapiek) R3·A — vlastné a ďalšie kvapky · r. 958–960
+- [ ] **Vlastné a ďalšie kvapky:** overiť a doplniť napojenie existujúceho Tvorcu Goo na engine;
+  návrhy ClipGoo, MediaGoo, PassGoo a CastGoo prijímať po jednom podľa používateľského prínosu.
+  Každá kvapka používa spoločné pravidlá enginu, nastavení a ovládania.
+
+### 6L. [ ] Návrhy kvapiek
+Nápady bez rozhodnutia: LaunchGoo, ClipGoo, PassGoo, CastGoo a ďalšie.
+Zdroje: `goo/lib/own.luau`, `drops.json`; LATTEOS-GOO §4.7, §4.11
+
+**6L.01** [ ] (Vlastné kvapky a návrhy kvapiek) E. LaunchGoo · r. 756–761
+- [ ] **LaunchGoo (nápad autora, návrh):** rýchly spúšťač — do kvapky sa vložia ikony, napr. obľúbených hier, a
+  neprekážajú na ploche; ďalšia kvapka môže niesť pracovné aplikácie, plocha ostane voľná. Odkazy môžu byť aj priamo
+  na ploche („možnosti sú také aj onaké“). Základy už sú: Tvorca Goo (rýchle spúšťanie = skupina aplikácií, klik
+  ukáže kartu s dlaždicami) a rýchly zoznam LensGoo. Treba rozhodnúť: viac skupín ako samostatné kvapky, ikony na
+  ploche, PlayGoo (správca hier, alebo prehrávač hudby) je len nápad — ignorovať.
+
+**6L.02** (pozn.) (Vlastné kvapky a návrhy kvapiek) F. R3·A — návrhy kvapiek a efektov · r. 830–839
+**R3·A — návrhy kvapiek a efektov (nie úlohy, kým ich autor neprijme):** hovor cez podržanie LensGoo, whisper.cpp (r. 529);
+nepoužívaná kvapka sa zmenšuje (r. 531); odkladacia kvapka na súbory (r. 532); zvuková identita Goo (r. 533);
+tekuté zóny okien (r. 548); nájdi kurzor zatrasením (r. 552); stavy hladiny (r. 555); AirDrop kvapky cez LocalSend (r. 557);
+ikra hrajúca zvuk vibruje (r. 572); ekvalizér Goo (r. 716); bublina odchádzajúceho spojenia v modeli NET (r. 616);
+režim sústredenia (r. 541); gamepad (r. 545); prechod z Windowsu — import profilov, prehľad skratiek (r. 540);
+komunitné doplnky Noctalie ako kvapky (r. 647); ClipGoo, MediaGoo, PassGoo, CastGoo (r. 520); PlayGoo (správca hier alebo prehrávač hudby).
+Z `inspo/` 13. 10.: plocha bez klasickej lišty — zóny Main, Stash a Parking na širokom monitore (Glance, prednáška
+Scotta Jensona pre KDE, 2026) — **rozhodnuté 13. 10. ako štvrtý režim okien, „Teraz“ bod 7**; pevné pravidlá fyziky kvapiek a okien — hmotnosť, zotrvačnosť, vzájomné odpudzovanie,
+kvapalina tečúca okolo okien (fwm); vzhľad prehrávača a zámku obrazovky (widgety Chaldea, 0BSD).
+
+---
+
+## 7. [~] Desktop
+ikonky na ploche pred wallpaperom a kontextove menu pravym klikom ako v win11
+
+### 7A. [~] Tapety
+Obrázky, živé tapety, skwd-wall, prezentácia, tapety z internetu.
+
+**7A.01** [x] (Vzhľad, témy a tapety) tapeta a okenné tlačidlá · r. 185–186
+
+**7A.02** [x] (Vzhľad, témy a tapety) E. skwd-wall · r. 774–777
+- [x] **skwd-wall (rozhodnuté 9. 10.):** využijeme a integrujeme **v našej podobe** — výber tapiet, živé tapety a
+  prechody (aj ako prechody pri prepínaní okien, programov a priečinkov) v Nastaveniach, so spoločnými
+  pravidlami GooEngine a obmedzením pre stupeň Softvér a SAFE. Nejde o doslovné prevzatie; licenciu a čo sa preberá
+  určí R1 (R3·J).
+
+**7A.03** [ ] (Vzhľad, témy a tapety) R3·J — skwd-wall · r. 1120–1120
+- [ ] Integrovať skwd-wall v našej podobe (rozhodnuté 9. 10.): výber tapiet, živé tapety, prechody; voliteľná vrstva, v SAFE vypnuté (R3·B).
+
+**7A.04** [~] (Vzhľad, témy a tapety) skwd-wall · r. 1265–1302
+[~] **skwd-wall — urobené 13. 10. v noci:** nainštalovaný z COPR `piixini/skwd-wall-v2` (1.0.0 beta 24) a zapojený
     cez `bin/latte-wall`: kde je, kreslí tapetu on (`skwd-walld` + `skwd-paper`: obrázky, filmy, scény Wallpaper
     Engine, prechody), `latte-wall pick` otvorí jeho výber (Nastavenia › Pozadie › Výber tapety; ponuka plochy ›
     Zmeniť tapetu), jeho udalosti (`skwd-helm watch`) zapíšu voľbu do `~/.config/latteos/wallpaper`. Bez neho
@@ -1300,7 +707,252 @@ cestu k aktualizácii alebo návratu.
     samostatný program: zistiť, čo presne z neho (výber s prechodmi, alebo aj kreslenie tapety), a ako voliteľnú
     závislosť ho zapojiť vedľa mpvpaper.
 
-15. [ ] **Vzhľad: téma namiesto „kávy“** (používateľ, 13. 10. v noci). Vzhľad je vec zvolenej témy a nemusí to byť
+**7A.05** (pozn.) (Vzhľad, témy a tapety) AI vypínač a skwd-lens · r. 1332–1334
+- **AI vypínač a skwd-lens:** `latte-wall ai` zapíše `semantic.enabled` do nastavení skwd-wall a reštartuje
+  jeho službu; volá ho vypínač v Nastaveniach › AI aj štart relácie. Overené: pri vypnutej AI sa nový obrázok
+  neindexuje.
+
+### 7B. [~] Ponuka plochy
+Pravý klik na plochu a ikony na ploche ako vo Windows 11.
+
+**7B.01** [~] (Plocha a Pobrežie) Ponuka plochy na pravý klik · r. 1233–1264
+[~] **Ponuka plochy na pravý klik** (13. 10., `bughunt/najdene-chyby.md`: „ako vo Windows 11, v 0.3 to bolo“).
+    Urobené 13. 10.: vrstva `desk` pod oknami (`goo/parts/desk.plm`) počúva pravý klik na holú plochu a
+    `goo/lib/desk.luau` otvorí kartu tam, kde sa kliklo: Súbory, Otvoriť v termináli · Nastavenia obrazovky,
+    Tapeta, Prispôsobiť, Kvapky · Monitor, Všetky nastavenia. Aj na ďalších monitoroch (`side.plm`). Nasadené
+    a overené na latte-lab v bežiacej relácii. **Chýba oproti v0.3:** ikony na ploche (Kôš, súbory z ~/Plocha)
+    a s nimi Zobraziť, Zoradiť podľa, Nový, Prilepiť — plocha s ikonami bola v0.3 samostatná aplikácia
+    (`old/session/apps/plocha.qml`); či sa vráti, rozhodne používateľ.
+    **Rozhodnuté a urobené 13. 10. večer: ikony kreslí hotový program, `pcmanfm-qt --desktop` (LXQt, Fedora 2.4.1)** —
+    `bin/latte-desktop` ho spúšťa ako vlastný profil `latteos` s priehľadnou plochou (tapeta ostáva naša: obrázok
+    aj film cez mpvpaper), s písmom a ponukami vo farbách zvolenej šálky (paleta cez qt6ct z `Theme.qml`; štýl
+    cez `-stylesheet` pcmanfm-qt zhodí) a s ikonami breeze. Vypínač: Nastavenia › Pozadie › Ikony na ploche
+    (`~/.config/latteos/desktop-icons`). S ikonami patrí holá plocha im aj s ich ponukou (Vytvoriť nový, Prilepiť,
+    Zoradiť…), vrstva `desk` enginu sa vtedy zavrie; bez nich ostáva kávová ponuka. Overené naostro po
+    prihlásení cez greetd: Kôš, domov a priečinok z ~/Plocha, ponuka pri kurzore. (Bez obrazovky v skúške
+    vyskočí ponuka v rohu — vec neviditeľného monitora, nie programu.) **Chýba:** položky LatteOS v ponuke
+    pcmanfm-qt (Nastavenia obrazovky, Tapeta, Prispôsobiť) — dajú sa pridať ako „vlastné akcie“ libfm-qt;
+    jeho vlastné „Nastavenia pracovnej plochy“ vedia nastaviť tapetu, ktorá by prekryla našu (pri ďalšom štarte
+    sa vráti priehľadná); skúška so živou tapetou. pcmanfm-qt by mohol byť aj **Súbory** pre 0.4 (v kávových
+    farbách vyzerá dobre) — na rozhodnutie.
+    **Zmenené 13. 10. v noci (používateľ: „išlo mi len o ikonky a ponuku pravého kliku“, cieľ sú ľudia z Windowsu):**
+    pcmanfm-qt odobratý aj s tým, čo priniesol (terminál, lxqt-sudo, vlastné nastavenia tapety). Plocha je vlastná:
+    `apps/desktop.qml` (+ spoločná ponuka `apps/common/Menu.qml`), spúšťa ju `bin/latte-desktop`. Ponuky podľa
+    Windows 11 — na ploche Zobraziť › (veľké · stredné · malé ikony, automaticky usporiadať, zobraziť ikony),
+    Zoradiť podľa ›, Obnoviť, Prilepiť, Nový › (priečinok, textový dokument), Nastavenia obrazovky, Prispôsobiť,
+    Otvoriť v termináli; na ikone Otvoriť, Vystrihnúť, Kopírovať, Kopírovať ako cestu, Premenovať, Odstrániť,
+    Vlastnosti; Kôš: Otvoriť, Vysypať. Ťahanie ako vo Windows (na priečinok, do Koša, pravým s otázkou, von do
+    aplikácie), výber obdĺžnikom, F2 · Del · Ctrl+C/X/V · F5. Súbory hýbe `gio` (Kôš, kolízie mien), obrázky sú
+    samy sebe náhľadom, ostatné berú ikonu zo sady ikon systému (`QS_ICON_THEME` v `latte-app`). Farby sú témy
+    (`Theme.qml`). Overené naostro v relácii: ikony, výber, obe ponuky s podponukou. **Neoverené:** ťahanie,
+    premenovanie, Prilepiť, Vlastnosti, viac monitorov (ikony sú na hlavnom). **Chýba:** Otvoriť v programe…,
+    Späť (Ctrl+Z), „Tento počítač“. **Čaká na používateľa:** ktorá sada ikon (poslaný prehľad: breeze, Papirus,
+    elementary, Yaru, Mint-Y, Fluent).
+
+**7B.02** (pozn.) (Plocha a Pobrežie) Plocha: Otvoriť v programe · r. 1344–1344
+- **Plocha: Otvoriť v programe** (`latte-desktop openers`, spúšťa `gtk-launch`).
+
+---
+
+## 8. [~] Okna
+okná a ich vzhlad. zakladny dizajn okien je navrhnuty v inspo/forklift-vzhlad.png
+priehladnost až glass režim bočneho panelu. 
+ikonky vypnutia okna , minimalizacie a NET tlačidla, schopnosti a vzhlad.
+
+**8.01** [x] (Bezpečnosť, súkromie a záloha) NET — odstaviť aplikáciu od internetu · r. 121–128
+- [x] **NET — odstaviť aplikáciu od internetu hneď** (13. 10.): `bin/latte-net` (používateľ, bez hesla) presunie
+  bežiacu aplikáciu do vlastnej cgroup a zapíše ju do `$XDG_RUNTIME_DIR/latteos/net-off`; služba
+  `latte-netd` (root, `system/libexec/latte-netd`) jej v tabuľke nftables `inet latteos_net` zahodí
+  prevádzku a zavrie otvorené spojenia. Ovláda sa z ponuky okna (pravý klik na titulok alebo ikru:
+  „Odstaviť od internetu“) a z hlavičky aplikácií LatteOS (glóbus). Odstavené okno má oceľovosivý okraj.
+  Overené naostro so službou spustenou ručne (spojenie padne do sekundy, po zapnutí ide znova).
+  Platí pre aplikáciu, kým beží; trvalý zákaz je oprávnenie aplikácie a príde s Baristom.
+  Neoverené: jednotka systemd (zapnutá až inštalátorom), tlačidlo na titulkoch hyprbars nie je.
+
+### 8A. [~] Režimy okien
+Páska, dlaždice, plávajúce, Glance, hyprtrizone; prichytenie ťahaním.
+Zdroje: `system/hypr/`, `plugins/latte-events`, `patches/`; LATTEOS-GOO §4.9
+
+**8A.01** [x] (Okná) okná ako vo Windows · r. 135–138
+
+**8A.02** [x] (Okná) prichytenie ťahaním · r. 190–191
+
+**8A.03** [~] (Okná) Režim okien Glance · r. 267–285
+[~] **Režim okien Glance** — **urobené 13. 10. večer (prvá verzia, na pokyn „pre rôzne rozlíšenia“):** štvrtý režim
+   `glance` v `system/hypr/latte/windows.lua`, na každom monitore, nie iba širokom. Okno, v ktorom sa pracuje,
+   vyplní stred; ostatné majú veľkosť stredu a vykúkajú zo strán pásom, ktorý obrazovka nechá (titulok hore, viac
+   okien na strane si delí výšku). Stred je široký podľa výšky (1,45 ×), najmenej pol obrazovky a najviac toľko,
+   aby po stranách ostalo aspoň 96 px: 2560 × 1080 → stred 1415 a po 560 px, 1920 × 1080 → po 240 px,
+   1024 × 768 → po 106 px. Klik na okno zboku ho prinesie do stredu; Win+←/→ pošle okno nabok, Win+↓ ho
+   odstaví (ikra BarGoo = Parking), Win+↑ na celú plochu; pustenie ťahaného okna v páse ho tam nechá. BarGoo,
+   karta nastavení Goo aj Nastavenia › Okná režim ponúkajú. Overené bez obrazovky na troch rozlíšeniach
+   (poradie, strany, odstavenie, zavretie). **Chýba oproti predlohe:** zmenšené živé okná (Hyprland okno
+   nezmenší), náhľady v Parkingu (dnes ikony), útržky textu (clips), Meta+dvojklik, mapa pri Alt+Tab.
+   Pôvodný zápis: **Režim okien Glance** (rozhodnuté 13. 10., podľa [Glance](https://github.com/scottjenson/Glance) Scotta
+   Jensona, MIT) — štvrtý režim vedľa pásky, dlaždíc a plávajúcich, ponúka sa **iba na širokom monitore**. V strede
+   **Main** a vedľa neho **Stash**: skutočné okná v skutočnej veľkosti. Pri okraji **Parking**: náhľady odstavených
+   okien, kreslí ich engine Goo, klik okno vráti. Minimalizácia v Glance = odstavenie do Parkingu.
+   *Pripravené:* či a ako BarGoo okná ukazuje, určuje jedno miesto (`berries_out()` v `goo/lib/bar.luau`) — Parking
+   bude ďalšia podoba toho istého zoznamu okien. *Na premyslenie pred prácou:* náhľady okien v engine (pleamar má
+   službu `thumbnails`; miesto kvapky dnes nesie ikonu 30 × 30, náhľad potrebuje väčší obrázok a obdĺžnikový tvar),
+   odkiaľ je monitor „široký“, čo robí Stash v Hyprlande (pravidlá okien alebo vlastné rozloženie). Náhľady sa
+   dovtedy nerobia.
+
+**8A.04** [ ] (Okná) hyprtrizone · r. 543–547
+[ ] **hyprtrizone pre ultrawide monitory** (používateľ, 21. 10.; [github.com/nyrda/hyprtrizone](https://github.com/nyrda/hyprtrizone),
+    MIT, doplnok Hyprlandu): tri zóny — hlavné okno v strede, po stranách samostatné posúvateľné stĺpce, párovanie
+    okien, ťahanie myšou, lišty nad bočnými stĺpcami. Ako ďalší režim v Nastavenia › Okná („Tri zóny“), ponúknutý
+    pri monitore 21:9 a širšom (latte-lab DP-3 2560 × 1080). Zostaviť pre nainštalovaný Hyprland ako hyprbars
+    (`optional /usr/lib64/latteos/…` vo FILES), autor v TRETIE-STRANY.md.
+
+**8A.05** [x] (Okná) R3·B — základná integrácia · r. 971–972
+
+### 8B. [~] Obrazovky
+Rozpoznanie a rozloženie monitorov, virtuálny monitor, rozšíriť/duplikovať.
+Zdroje: `bin/latte-screens`, `system/hypr/hyprland.lua`, Nastavenia › Obrazovky
+
+**8B.01** [x] (Obrazovky) viac monitorov, prvá časť · r. 88–89
+
+**8B.02** [ ] (Obrazovky) Rozpoznanie obrazoviek · r. 308–320
+[ ] **Rozpoznanie pripojených obrazoviek** (13. 10., z prvého behu Fresh na latte-lab). latte-lab beží väčšinou iba
+   cez Moonlight na virtuálnej DP-1 (EDID LATTE-VIRT); skutočný monitor DP-3 býva pripojený len občas. Prvý štart Fresh
+   so skutočným monitorom dal hlavnú scénu Goo na virtuálnu obrazovku, ktorú nikto nevidí, lebo `main_monitor()`
+   v `system/hypr/hyprland.lua` hľadal monitor presne na 0,0 a pri `position = "auto"` tam žiadny nebol. Treba:
+   (a) hlavný monitor = skutočný (nie LATTE-VIRT), ináč ten najviac vľavo; (b) virtuálny sa pri skutočnom zrkadlí
+   na hlavný (Hyprland `mirror`; overené 13. 10., zrkadlo aj škáluje), bez neho je hlavný on; (c) zmena pri
+   pripojení a odpojení za behu (scéna Goo sa presunie, dnes ju presúva `place_shell`); (d) voľba „Duplikovať“
+   v Nastaveniach › Obrazovky; (e) inštalátor to pri viacerých obrazovkách nastaví sám. Overiť so Sunshine (KMS).
+   **Urobené 13. 10.: (a), (b), (c)** — `main_monitor()` berie skutočný monitor pred virtuálnym a z nich ten najviac
+   vľavo; virtuálny sa pri skutočnom zrkadlí a po jeho odchode je zasa sám sebou; ktoré scény bežia, rieši
+   `bin/latte-screens` podľa toho, čo naozaj beží (predtým si to pamätal Hyprland a po `hyprctl reload` to stratil).
+   Overené bez obrazovky s napodobeným virtuálnym monitorom a v `tests/test_screens.sh`. **Neoverené:** na latte-lab
+   so skutočným monitorom a s Moonlight. Ostáva (d), (e).
+
+**8B.03** (pozn.) (Obrazovky) Rozšíriť / Duplikovať · r. 1341–1343
+- **Obrazovky: Rozšíriť / Duplikovať** (`latte.duplicate`, `~/.config/latteos/screens`); overené bez
+  obrazovky s dvoma monitormi oboma smermi. Opravené pritom: návrat zo zrkadlenia musí `mirror` zrušiť výslovne
+  (týkalo sa aj virtuálneho monitora po odpojení skutočného).
+
+### 8C. [x] Sklo a materiály
+Sklo okien (Hyprglass), materiály šálky.
+
+**8C.01** [x] (Vzhľad, témy a tapety) sklo okien · r. 195–195
+
+### 8D. [~] Okno aplikácií LatteOS
+Spoločné okno aplikácií: bočný panel zo skla, hladina dole (`apps/common/AppWindow.qml`).
+Zdroje: `apps/common/` (AppWindow, Surface, Menu); LATTEOS-GOO §6.3·0
+
+**8D.01** [x] (Okno aplikácií LatteOS (spoločné)) Okno aplikácií LatteOS · r. 117–120
+- [x] **Okno aplikácií LatteOS** (rozhodnuté 13. 10. podľa používateľovho V2 a ForkLiftu): `apps/common/AppWindow.qml`
+  — bočný panel zo skla od vrchu po spodok, hore lišta s funkciami (šípky, názov, nástroje aplikácie, hľadanie),
+  úplne vpravo okenné tlačidlá; kávová hladina je rozhraním k spodnej časti okna, alebo iba tichým pozadím.
+  App Manager je v ňom ako streamovacie menu (banner s ďalším nakúkajúcim, rad volieb, plagáty).
+
+**8D.02** [ ] (Okno aplikácií LatteOS (spoločné)) R3·B — GUI pri malom rozlíšení · r. 975–976
+- [ ] Dokončiť konkrétne otvorené GUI a interakcie pri malom rozlíšení, vrátane stavov
+  načítania/chyby a návratu rizikovej zmeny; hotové základy tém a nastavení neopakovať.
+
+**8D.03** [ ] (Okno aplikácií LatteOS (spoločné)) hladina na spodku okna · r. 1378–1381
+[ ] **Hladina na spodku okna aplikácie ako miesto pre dve veci** (používateľ, 14. 10.): (a) **zaujímavé funkcie**
+    aplikácie, zvýraznené výraznou ikonou ako Barista v App Manageri; (b) **tooltip**: rady a triky, a popis
+    tlačidla, nad ktorým je kurzor. Platí pre každé okno s hladinou (`apps/common/AppWindow.qml`, `Surface.qml`).
+
+---
+
+## 9. [~] centralne nastavenia
+Zdroje: `apps/settings.qml`, `apps/settings/`, `bin/latte-settings`; LATTEOS-GOO §6.2·2
+
+**9.01** [~] (Nastavenia) Nastavenia · r. 152–178
+[~] **Nastavenia** (13. 10.): `apps/settings.qml`, zoznam stránok `apps/settings/pages.json`, Win+I.
+   Rozkladací bočný panel po oblastiach (Softvér · Dáta · Hardvér · Účet · Prostredie · Systém, 29 stránok)
+   s bodkou stavu; hľadanie v hlavičke; **LensGoo hľadá aj v nastaveniach** (pod čiarou, `bin/latte-settings`).
+   Hotové stránky: **Káva a šálka** (druh kávy = farba goo; šálka = z čoho sú okná: espresso, mokka,
+   porcelán — svetlá; sklenená káva), **Pozadie** (obrázky LatteOS a z priečinka Obrázky; živé pozadia
+   = filmy z priečinka Videá cez mpvpaper), **Okná** (režim; sklo bočných panelov), **Kvapky**, **O počítači**,
+   **Uzamknutie a nečinnosť** (kedy sa zamkne a kedy zhasnú obrazovky), **Napájanie** (profil),
+   **Zvuk** (výstupy a vstupy: ktorý sa používa, hlasitosť, stlmenie; cez `pactl`), **Predvolené aplikácie**
+   (prehliadač, pošta, súbory, obrázky, video, hudba, text, PDF; cez `xdg-mime`),
+   **Obrazovky** (rozlíšenie, obnovovanie, mierka, otočenie, poradie a hlavná obrazovka; zmena sa skúsi
+   a bez potvrdenia sa do 15 s vráti; uložené v `~/.config/latteos/monitors`, číta `hyprland.lua`;
+   plávajúce okná sa po zmene vrátia celé na obrazovku), **Jazyk a región** (`~/.config/latteos/locale`,
+   od ďalšieho prihlásenia), **Dátum a čas** (pásmo a automatický čas cez `timedatectl`), **Klávesnica**
+   (rozloženia hneď aj nabudúce, `~/.config/latteos/keyboard`; zoznam skratiek chýba),
+   **Výkon a grafika** (stupeň vzhľadu: podľa hardvéru alebo vlastný, `~/.config/latteos/tier`),
+   **Štart a režim SAFE** (ako dopadol tento štart; SAFE na ďalší štart cez `latte-boot force-safe`),
+   **Úložisko** (disky, veľkosť priečinkov, kôš), **AI** (vypínač: `~/.config/latteos/ai`, `latte-ai`
+   potom neponúkne nikoho), **Môj účet** (meno a obrázok cez AccountsService).
+   Ostatných 11 stránok je vypísaných ako „ešte nie je“ s odkazom, kde sa to robí zatiaľ (Aplikácie,
+   Aktualizácie, Spúšťanie, Sieť → App Manager, Monitor, Správca zariadení; bez náhrady: Zálohovanie,
+   Cloud, Bluetooth, Tlačiarne, Heslo, Oznámenia, Prístupnosť).
+   Šálka platí aj mimo aplikácií LatteOS (13. 10.): titulky cudzích okien (hyprbars) berú jej farbu
+   a aplikáciám sa povie svetlý/tmavý režim (`latte.cup`, gsettings color-scheme). Vlastný súbor tapety
+   a obrázka účtu sa vyberá systémovým oknom (portál; `latte-app` nastavuje `QT_QPA_PLATFORMTHEME`).
+   Stránka Klávesnica vypisuje skratky: popis má každá priamo v `system/hypr/latte/keys.lua`
+   (`hyprctl binds -j`), takže zoznam nemôže zastarať.
+   Chýba: šálka v kartách Goo, zmena hesla, Bluetooth (latte-lab ho nemá).
+
+**9.02** [x] (Nastavenia) nastavenia Goo ako karta · r. 188–188
+
+**9.03** [~] (Nastavenia) Nastavenia · r. 490–494
+- a. [~] **Nastavenia** (`latteOS settings priklad.png`; 21. 10. hotová domovská stránka ako „Systém a prehľad“ v dvoch stĺpcoch — nákres je úzky, okno nie: karta počítača, režim rozhrania s náhľadmi, sklo ako posuvník so 4 stupňami, káva, obrazovky, úložisko so „Správa oddielov“, karta účtu na boku; päta so stavom systému a **expertný režim** (21. 10.: základné nastavenia a všetko nad ne, prepínač v päte; ROZHODNUTIA)): hlavička s hľadaním, karta „Systém a prehľad zariadenia“
+  (počítač, profil, procesor, pamäť, verzia LatteOS), režim rozhrania ako tri karty s náhľadom (tmavý, svetlý,
+  podľa slnka), intenzita skla ako posuvník s percentami (dnes štyri stupne), kávová hladina, displej (rozlíšenie,
+  obnovovanie, teplota farieb), úložisko s pásom podľa druhu dát a tlačidlom Správa oddielov, účet dole, päta
+  so stavom systému a prepnutím na expertný režim.
+
+**9.04** [ ] (Nastavenia) E. Nastavenia › Vzhľad · r. 782–782
+- [ ] **Nastavenia › Vzhľad:** nastavenia jednotlivých Goo sú dnes v Nastaveniach › **Kvapky**, nie vo Vzhľade.
+
+**9.05** (pozn.) (Nastavenia) R3·J — cieľ · r. 1114–1117
+**Cieľ:** jedno miesto pre nastavenia LatteOS (Goo, výkon, jazyk, účty, AI, tapety) bez konkurenčných
+nastavení Noctalie a ostatných prostredí.
+
+**9.06** [x] (Nastavenia) R3·J — základ Nastavení · r. 1118–1118
+
+**9.07** [ ] (Nastavenia) R3·J — zlúčiť nastavenia Noctalie · r. 1119–1119
+- [ ] Selektívne zlúčiť vybrané nastavenia Noctalie (návrh v LATTEOS-GOO §4.10) a tapety na jedno miesto.
+
+**9.08** [ ] (Nastavenia) R3·J — jazyky, efekty, výkon · r. 1121–1123
+- [ ] Jazyky a preklady, efekty a výkon: dokončiť podľa R3·B; AI a limity podľa R3·G.
+
+**9.09** (pozn.) (Nastavenia) zmena hesla · r. 1336–1337
+- **Zmena hesla** (Nastavenia › Heslo a zabezpečenie; AccountsService `SetPassword`, terajšie heslo si pýta
+  polkit). Neoverené naostro (okno na heslo je pri obrazovke).
+
+### 9A. [~] Vzhľad a témy
+Téma (šálka, farby z tapety), Keramika/Hliník/Onyx/Steam, ikony, vizuálne podoby podľa `inspo/`.
+Zdroje: `apps/common/Theme.qml`, `bin/latte-wall`, `bin/latte-walls`, `inspo/`, `docs/goo/PRAVIDLA.md`
+
+**9A.01** (pozn.) (Vzhľad, témy a tapety) posúvniky a prepínače podľa Vitreusu · r. 370–370
+- **Posúvniky a prepínače podľa Vitreusu** v Pobreží a Nastaveniach (hrubnutie, širšia zóna, zaplavenie farbou).
+
+**9A.02** [ ] (Vzhľad, témy a tapety) Vizuálne podoby podľa inspo/ · r. 487–489
+[ ] **Dokončiť vizuálne podoby podľa návrhov v `inspo/`** (používateľ, 21. 10.; nákresy z 20. 10.). Hotové z nich:
+    bodkové grafy (`grafy.png` → `DotGraph`), dvojvrstvová kávová hladina (`latteOS settings priklad.png` → `Surface`).
+    Farby z témy, nie natvrdo; texty cez preklady; sklo podľa jedného stupňa LatteOS (Nastavenia › Okná › Sklo).
+
+**9A.03** [ ] (Vzhľad, témy a tapety) Témy Keramika, Hliník, Onyx, Steam · r. 507–509
+- f. [ ] **Témy Keramika, Hliník, Onyx, Steam** (používateľ, 21. 10.): v `Theme.cups` sú zatiaľ Espresso, Mocha,
+  Porcelán a Z tapety; doplniť ich (aj materiál okien podľa PRAVIDLÁ bod 12). Aplikácie berú farby iba z témy
+  (DualBrew, LensAI, Nastavenia…), takže sa prefarbia samy — overiť snímkou každú tému.
+
+**9A.04** (pozn.) (Vzhľad, témy a tapety) F. R3·B — shell a vzhľad · r. 840–845
+**R3·B — shell a vzhľad:** téma Latte a Úsporná, farby z tapety (r. 274); prvky stupňa Plný, varianty bez shaderov (r. 275–276, 290);
+materiál na oknách pri kovových témach (r. 521); Noctalia prekreslí celý povrch pri zmene widgetu (r. 939); animácie panelov na GPU (r. 968);
+ovládacie centrum Noctalie — overiť (r. 630); dialóg Otvoriť/Uložiť cez portál v jednotnom vzhľade (r. 590);
+vlastné `app_id` a preložiteľné spúšťače (r. 654); slovenský preklad Noctalie a záplaty pleamaru autorom (r. 656, 658); preklady odložené nakoniec (r. 725);
+živá tapeta a shaderové prechody (r. 1013–1014; skwd-wall rozhodnutý, R3·J).
+
+**9A.05** (pozn.) (Vzhľad, témy a tapety) R3·B — cieľ · r. 967–970
+**Cieľ:** Hyprland, Lua integrácia, Noctalia a Goo spolu tvoria jednu plochu bez konkurenčných
+nastavení, duplicitných panelov alebo nekonzistentného správania.
+
+**9A.06** [ ] (Vzhľad, témy a tapety) R3·B — tapety, materiály, sklo · r. 979–980
+- [ ] Tapety, materiály, dážď, sklo a animované prechody zavádzať ako voliteľnú vrstvu vzhľadu,
+  nie ako požiadavku pre funkčnosť desktopu.
+
+**9A.07** [ ] (Vzhľad, témy a tapety) Vzhľad: téma namiesto kávy · r. 1303–1329
+[ ] **Vzhľad: téma namiesto „kávy“** (používateľ, 13. 10. v noci). Vzhľad je vec zvolenej témy a nemusí to byť
     káva; okná sú „šálka“ a tá môže byť širšie spektrum; moderné je brať farby témy **automaticky z tapety**.
     Smer vzhľadu: **prevziať veľa z Vitreusu** (github.com/natepayn3/Vitreus, MIT, postavený na pleamare:
     tekuté sklo, panely vytekajúce z lišty, výber tapiet, kalendár s počasím, ponuka programu v skle shellu).
@@ -1327,26 +979,657 @@ cestu k aktualizácii alebo návratu.
     ako dlaždice v jednom skle; (2) dlaždicové rozloženie a malé hlavičky do kariet Goo a do `AppWindow`;
     (3) akcent a tón skla z tapety (bod b); (4) prechod tapety a plást na jej výber (bod 14 namiesto skwd-wall
     alebo vedľa neho).
-16. [~] **Dokončenie prvkov prostredia** (používateľ, 13.–14. 10.: najprv prvky prostredia, meranie a STRESTEST potom;
+
+**9A.08** [~] (Vzhľad, témy a tapety) Dokončenie prvkov prostredia — úvod · r. 1330–1331
+[~] **Dokončenie prvkov prostredia** (používateľ, 13.–14. 10.: najprv prvky prostredia, meranie a STRESTEST potom;
     **Prístupnosť sa nerobí teraz, až v Arabice 1+**). Urobené 14. 10. v noci:
-    - **AI vypínač a skwd-lens:** `latte-wall ai` zapíše `semantic.enabled` do nastavení skwd-wall a reštartuje
-      jeho službu; volá ho vypínač v Nastaveniach › AI aj štart relácie. Overené: pri vypnutej AI sa nový obrázok
-      neindexuje.
-    - **Okraj okien podľa témy** „Podľa tapety“ (`latte/bars.lua` `B.border`).
-    - **Zmena hesla** (Nastavenia › Heslo a zabezpečenie; AccountsService `SetPassword`, terajšie heslo si pýta
-      polkit). Neoverené naostro (okno na heslo je pri obrazovke).
-    - **Upozornenia:** nové upozornenie sa ukáže ako lístok vpravo dole nad Pobrežím (6,5 s, klik otvorí ClockGoo,
-      neberie klávesnicu) a zaznie tón; Nastavenia › Oznámenia: Nerušiť · Ukázať v rohu · Prehrať zvuk · Vyskúšať.
-      Nerušiť sa presunulo z `clock.json` do nastavení Goo (`settings.json`, kľúč `quiet`).
-    - **Obrazovky: Rozšíriť / Duplikovať** (`latte.duplicate`, `~/.config/latteos/screens`); overené bez
-      obrazovky s dvoma monitormi oboma smermi. Opravené pritom: návrat zo zrkadlenia musí `mirror` zrušiť výslovne
-      (týkalo sa aj virtuálneho monitora po odpojení skutočného).
-    - **Plocha: Otvoriť v programe** (`latte-desktop openers`, spúšťa `gtk-launch`).
-    **Ostáva z prostredia:** dlaždicové rozloženie a malé hlavičky podľa Vitreusu (karty Goo, `AppWindow`),
-    náhľady v Parkingu režimu Glance, Súbory (dnes Nautilus), plocha: Späť a „Tento počítač“, skratka na výber
-    tapety, stránky Nastavení Tlačiarne · Zálohovanie · Cloud, jazyk z prihlásenia do relácie, Barista,
-    inštalátor so sprievodcom, ChatGoo (Beeper), okno z bubliny QueenGoo.
-17. [~] **Barista — Windows programy** (používateľ, 14. 10.: pripraviť knižnice a pustiť sa do Baristu, prvý prípad AVP2).
+
+**9A.09** (pozn.) (Vzhľad, témy a tapety) okraj okien podľa témy · r. 1335–1335
+- **Okraj okien podľa témy** „Podľa tapety“ (`latte/bars.lua` `B.border`).
+
+**9A.10** (pozn.) (Vzhľad, témy a tapety) ostáva z prostredia · r. 1345–1348
+**Ostáva z prostredia:** dlaždicové rozloženie a malé hlavičky podľa Vitreusu (karty Goo, `AppWindow`),
+náhľady v Parkingu režimu Glance, Súbory (dnes Nautilus), plocha: Späť a „Tento počítač“, skratka na výber
+tapety, stránky Nastavení Tlačiarne · Zálohovanie · Cloud, jazyk z prihlásenia do relácie, Barista,
+inštalátor so sprievodcom, ChatGoo (Beeper), okno z bubliny QueenGoo.
+
+### 9B. [x] O tomto počítači
+Stránka Nastavenia › Systém › O tomto počítači, vrátane grafu vývoja LatteOS.
+
+**9B.01** [x] (Nastavenia) Vývoj LatteOS v O tomto počítači · r. 538–542
+[x] **Vývoj LatteOS v Nastavenia › Systém › O tomto počítači** (hotové 21. 10.: `bin/latte-activity` zapíše históriu repa do `build/activity.json` pri `./install --go`, inštaluje sa ako `/usr/share/latteos/activity.json`; graf 53 týždňov so štvorčekmi v farbách témy a nápovedou pri myši, 30 posledných commitov rozbaliteľných — autor, dátum, celá správa, zmenené súbory s +/−. **Rozhodnutie pre vydania:** verejné `arkaysk/latteos` má iba snímky vydaní, preto graf nesie súbor z repa, nie GitHub API; či vydanie smie niesť správy commitov, je na `zverejnit.sh`). (používateľ, 21. 10.): štvorčekový graf aktivity
+    (ako na GitHube: týždne v stĺpcoch, dni v riadkoch, sýtosť podľa počtu commitov) — ako pokračuje vývoj projektu;
+    pod ním posledné commity, každý rozbaliteľný: dátum, autor, správa celá a čitateľne, zmenené súbory. Zdroj:
+    verejné repo LatteOS cez GitHub API (`/stats/commit_activity`, `/commits`), bez siete posledné uložené; na
+    vývojárskom stroji aj `git log` miestneho repa. Graf ako `DotGraph` (bodky v štvorcoch), farby z témy.
+
+---
+
+## 10. [~] Nativne aplikacie
+su tie dodavane priamo s LatteOS od vydavatelov latteOS
+
+### 10A. [~] DualBrew
+Zdroje: `apps/files.qml`, `bin/latte-files`, `apps/common/FileIcons.qml`
+suborovy manager na vzor Total Comander
+**10A.01.** [ ] najdena chyba-ked je aktivna priehladnot a ked sa klikne na položku/složku. ta sa samozrejme označi, ale pri kliknuti inam, sa zmeni jej priehladnot a je vydiet tapetu za aj ked predtým nebola. nevrati sa to na predchodzi vzhlad až do refresh.
+
+**10A.02** [~] (DualBrew (Súbory)) DualBrew · r. 495–498
+- b. [~] **DualBrew** (`latteOS dualbrew.png`; 21. 10. hotové: Dva panely | Jeden panel, čipy jednotiek nad panelom s voľným miestom, súhrn pod panelom, pás tlačidiel medzi panelmi, rad F3–F10, riadok terminálu (Alt+F1), rýchly filter typov; ostáva stĺpec Atribúty (práva), filtre priečinkov nad zoznamom): dvojpanel ako Total Commander (Dvojpanel / 1-panel), jednotky ako
+  čipy nad panelom, stĺpce Názov · Veľkosť · Zmenené · Atribúty, tlačidlá medzi panelmi (kopírovať, presunúť,
+  porovnať, zrkadliť), rad F3–F10 dole a riadok terminálu (Alt+F1); bočný panel s diskami a pásmi zaplnenia
+  (čiastočne hotové 20. 10.), obľúbené priečinky a rýchly filter typov.
+
+**10A.03** [ ] (DualBrew (Súbory)) D. Súbory · r. 691–692
+- [ ] **Súbory:** nadviazať na hotové dvojpanely, prenosy, archívy, vyhľadávanie, sieť a cloud;
+  uzavrieť otvorené rozšírenia/UX, odolnosť pri chybách a potrebné overenie hardvéru.
+
+**10A.04** (pozn.) (DualBrew (Súbory)) F. R3·C — Súbory a Heidelberg · r. 846–849
+**R3·C — Súbory (DualBrew) a Heidelberg:** prostredie nad pôvodným súborovým systémom (r. 565); **plná funkčnosť Total Commandera** (r. 979:
+vlastné stĺpce r. 985, skratky a menu r. 1008, pluginy r. 1012); Data Manager v Ruste (r. 782); Flea ako možný základ — odložené (r. 614);
+hľadanie v obsahu PDF/DOCX (r. 849); Heidelberg verné docx (r. 792); Strata ako vzor — stĺpcové zobrazenie (Miller), ovládanie klávesnicou, približné hľadanie mien (inspo 13. 10.).
+
+**10A.05** (pozn.) (DualBrew (Súbory)) R3·C — cieľ · r. 985–988
+**Cieľ:** Súbory bezpečne a zrozumiteľne spravujú pôvodný Linuxový súborový systém, pripojené
+zariadenia, sieťové miesta a cloud bez uzamknutia dát do LatteOS.
+
+**10A.06** [x] (DualBrew (Súbory)) R3·C — základ správcu súborov · r. 989–990
+
+**10A.07** [ ] (DualBrew (Súbory)) R3·C — názov DualBrew · r. 991–993
+- [ ] **Názov správcu súborov (rozhodnúť):** ak ostane vlastný a obohatený o nápady iných autorov, potrebuje meno.
+  Kandidáti autora: Espresso Commander, Tamper, DualBrew. **Vybraný DualBrew (9. 10.)**; pred zavedením skontrolovať kolízie
+  s existujúcimi projektmi.
+
+**10A.08** [ ] (DualBrew (Súbory)) R3·C — rozšírenia a ergonómia · r. 995–996
+- [ ] Doriešiť otvorené rozšírenia (vlastné stĺpce/pluginy, klávesové skratky a menu) a ergonomické
+  medzery podľa používateľských scenárov.
+
+**10A.09** [ ] (DualBrew (Súbory)) R3·C — úložisko, USB, SMB, cloud · r. 997–998
+- [ ] Dokončiť integráciu úložiska, USB, SMB/GVFS, telefónov a cloudových miest; pri odpájaní,
+  prerušení siete a nedostatku miesta jasne oznámiť stav a zachovať dáta.
+
+**10A.10** [ ] (DualBrew (Súbory)) R3·C — prerušené operácie · r. 999–1000
+- [ ] Overiť bezpečné správanie pri prerušení kopírovania/synchronizácie, chybe zariadenia a
+  obnove; zachovať už implementované plány synchronizácie, priebeh a zrušenie operácií.
+
+**10A.11** [ ] (DualBrew (Súbory)) R3·C — veľké súbory a chyby · r. 1001–1002
+- [ ] Overiť veľké súbory, archívy, oprávnenia, symlinky, odpojené disky, obmedzený priestor a
+  bezpečné správanie pri chybe; zachovať prístup k súborom aj bez LatteOS UI.
+
+**10A.12** (pozn.) (DualBrew (Súbory)) R3·C — cloud ako návrh · r. 1003–1005
+Nové cloudové služby sa najprv posudzujú ako návrhy; cloud nesmie byť podmienkou lokálnej práce.
+
+**10A.13** [~] (DualBrew (Súbory)) DualBrew — prvá verzia a disky · r. 1382–1399
+[~] **DualBrew, Súbory** (používateľ, 14. 10.). Prvá verzia pre 0.4, písaná načisto:
+    **Disky a zariadenia** (používateľ, 21. 10.; hotové v ten deň): pri každom disku v bočnom paneli pás zaplnenia
+    a koľko ostáva; nadpis Disky a zariadenia otvorí prehľad (`disks:`) ako KDE Partition Manager — disky, pás oddielov
+    podľa veľkosti, nerozdelené miesto, skutočné zaplnenie každého súborového systému (`latte-files disks`).
+    Ďalej: vytvoriť a zväčšiť oddiel do nerozdeleného miesta (s heslom správcu), upozornenie pri plnom disku (bod 15).
+    `apps/files.qml` + `bin/latte-files` (kopírovanie, presun, odkaz, Kôš, nový priečinok a súbor, premenovanie,
+    schránka kompatibilná s plochou a inými správcami, miesta a disky; súbory hýbe `gio`) + spoločné ikony
+    súborov `apps/common/FileIcons.qml` (aj pre plochu). Okno LatteOS: vľavo miesta (Domov, Plocha, Dokumenty…,
+    Kôš, disky), hore Vyššie · Nový priečinok · Ikony/Podrobnosti · **Dva panely**; cesta ako klikateľné omrvinky;
+    výber klikom, Ctrl, Shift; pravý klik = ponuka (Otvoriť, Otvoriť v programe, Otvoriť v druhom paneli,
+    Vystrihnúť, Kopírovať, Kopírovať ako cestu, Premenovať, Odstrániť; na prázdnom mieste Zobraziť, Obnoviť,
+    Prilepiť, Nový, Otvoriť v termináli). Na hladine dole: počet položiek a výber; pri dvoch paneloch klávesy
+    commanderu **F5 Kopírovať · F6 Presunúť · F7 Nový priečinok · F8 Odstrániť**; mená sa pýta tam.
+    `latteos-files.desktop` (otvára priečinky; predvolený správca sa volí v Nastaveniach › Predvolené aplikácie).
+    Overené naostro: zoznam, dva panely, F5 do druhého panela, F7 s menom, ponuka položky.
+    **Chýba oproti v0.3 a Total Commanderu:** karty, ťahanie myšou medzi panelmi a von, rad úloh s priebehom
+    (dnes sa kopíruje bez ukazovateľa), archívy, hľadanie, náhľad (F3) a úprava (F4), synchronizácia, sieť
+    (FTP/SFTP/SMB) a cloud, obnovenie z Koša, vlastnosti, triedenie podľa stĺpcov, strom, stĺpcové zobrazenie.
+
+**10A.14** (pozn.) (DualBrew (Súbory)) DualBrew · štítky a farby · r. 1400–1403
+**Štítky a farby (používateľ, 14. 10.):** v0.3 mal Farbu v ponuke súboru a priečinka, uloženú v
+`~/.config/latteos/tags.json` (iba pohľad Súborov, viazaný na cestu). Pre 0.4: štítok do rozšíreného atribútu
+`user.xdg.tags` priamo pri súbore (overené na latte-lab: prežije presun aj kópiu so zachovaním atribútov) —
+je to konvencia freedesktop, ktorú číta aj Dolphin; mimo Linuxu (Windows, FAT/exFAT, zip, cloud) sa stratí.
+
+**10A.15** (pozn.) (DualBrew (Súbory)) DualBrew · čo mal v0.3 a návrhy · r. 1404–1412
+**Čo už v0.3 mal a používateľ k Súborom navrhoval** (`old/docs_zaloha/2026-10-09-roadmap-pred-ciscenim.md`
+r. 566–591, 782–804, 982–1016): karty, hotlist, strom, plochý pohľad, rýchly náhľad, Lister F3 (text, hex,
+obrázok, médiá), rad úloh s pauzou a overením SHA-256, hromadné premenovanie, porovnanie a synchronizácia
+priečinkov, porovnanie súborov, archívy ako priečinky (aj s heslom), hľadanie (obsah, regex, v archívoch),
+veľkosti priečinkov, práva a vlastník, odkazy, kontrolné súčty, rozdeliť/spojiť, riadok príkazu, vlastné
+tlačidlá, FTP/SFTP/SMB/WebDAV/cloud (rclone, ~/Cloud), Kôš s obnovením, DiskTree (čo zapĺňa priečinok),
+zoxide (často používané), Poslať do telefónu (KDE Connect), „Bude to fungovať?“ pri .exe. Nedokončené
+nápady: vlastné stĺpce, úprava skratiek a ponúk, pluginy, odkladacia kvapka na súbory (ako Dropover),
+značky a synchronizované priečinky so stavom (vzor Spacedrive, Nextcloud).
+
+**10A.16** (pozn.) (DualBrew (Súbory)) DualBrew · medzerník a štruktúra pre človeka · r. 1413–1420
+**14. 10. ráno (používateľ):** Medzerník bez výberu = koľko zaberá každý priečinok — v aktívnom paneli čísla
+a pruhy, v druhom paneli „Čo zapĺňa …“ zoradené od najväčšieho (dvojklik vojde, Esc alebo Späť zavrie), aj
+v ponuke Zobraziť › Koľko zaberá každý priečinok (dnes mapa, `latte-files tree`, plní sa priebežne).
+**Štruktúra pre človeka:** predvolene svet používateľa — „Tento počítač“ (priečinky a disky ako dlaždice),
+cesta od Tento počítač › Domov/disk, Vyššie z domova vedie na Tento počítač, nie do `/`; systémové priečinky
+nie sú po ceste. **Skutočná štruktúra** (bočný panel, Zobraziť) ukáže Linux od `/` vrátane disku `/`.
+Overené naostro: meranie (4,9 GB repozitára), panel veľkostí, Esc, Tento počítač.
+
+**10A.17** (pozn.) (DualBrew (Súbory)) DualBrew · ergonómia pre myš · r. 1421–1433
+**14. 10. ráno, ergonómia pre myš (používateľ: „výrazne lepšie než konkurencia“):** panel, v ktorom sa pracuje,
+je nad kávou (zlatý rám, svetlejší), druhý pod ňou (závoj kávy tmavnúci ku dnu, línia hladiny hore).
+Ťahanie súborov myšou: do druhého panela, na priečinok (zlatý rám), von do inej aplikácie a dnu z hocijakej
+(na tom istom disku presun, na iný kópia, s Ctrl kópia). **Úlohy na hladine**: kopírovanie a presun s
+priebehom v %, Pozastaviť/Pokračovať, Zastaviť (načatý súbor sa zmaže), ďalšie čakajú v rade
+(`latte-files job`). Stredné tlačidlo na priečinku = otvoriť v druhom paneli; tlačidlá myši Späť/Dopredu;
+dvojklik na prázdne = vyššie; klik na hlavičku stĺpca = triedenie (znova obráti); Ctrl + koliesko = veľkosť
+ikon. **Medzerník na súbore** = náhľad v druhom paneli (obrázok, začiatok textu, inak ikona; ide za výberom,
+Esc zavrie). Overené naostro: stredné tlačidlo, F5 s priebehom na iný disk (1,5 GB, 77 % na snímke),
+pauza, zastavenie s upratovaním, ťahanie do druhého panela (presun), náhľad obrázka, Späť myšou.
+Opravené aj na ploche: ťahanie von do aplikácií nikdy nefungovalo (`Drag.active` a položka mimo okna).
+**Chýba:** výber obdĺžnikom myšou, náhľad PDF a videa, ťahanie s pravým tlačidlom (ponuka Kopírovať sem…).
+
+**10A.18** (pozn.) (DualBrew (Súbory)) DualBrew · mapa ako DiskTree · r. 1434–1443
+**14. 10., mapa ako DiskTree (používateľ):** „Čo zapĺňa…“ už nie je zoznam, ale mapa obdĺžnikov
+(squarified treemap, tri úrovne priečinkov, `latte-files tree` = df + zoznam priečinkov + `du -abx -d 3`,
+plní sa počas merania). Farba = druh (Kód, Obrázky/hudba/video, Dokumenty, Archívy, Programy a hry, Git,
+Vyrovnávacie pamäte a zvyšky, Ostatné; priečinok bez druhu dedí od predka), legenda iba s druhmi, ktoré tu sú,
+pruh disku (voľné z celku, červený pod 10 %), dole čo je pod myšou alebo vybrané (veľkosť, podiel, druh;
+Dovnútra · Otvoriť · Odstrániť do Koša) a bez výberu „Stojí za pohľad“ (pamäte a zvyšky nad 50 MB).
+Dvojklik na priečinok = priblížiť (zmeria tam), Vyššie, Späť. `latte-app files PRIEČINOK sizes` otvorí
+rovno mapu. Overené v headless sedení: celý domov 77,8 GB, klik, dvojklik do flatpak, zdedené farby.
+Prvé meranie studeného domova trvá ~80 s (du), opakované 2 s. **Chýba oproti DiskTree:** režimy Súbory
+(počet) a Vek (posledný zápis), hĺbka a skryté súbory ako voľba, zdanlivá veľkosť.
+
+**10A.19** (pozn.) (DualBrew (Súbory)) DualBrew · zo Strata · r. 1444–1450
+**Zo Strata (github.com/lgse/strata, GTK4, 14. 10.) do DualBrew:** Ctrl+Z / Ctrl+Shift+Z vráti poslednú
+vratnú operáciu so súbormi; hľadanie Ctrl+K podľa mena v celom domove, výsledky hneď ako prichádzajú (najlepších
+100, obnova po 50 ms, upozornenie, keď nie sú úplné); náhľady cudzích formátov v bubblewrap bez siete
+(fence už máme z Baristu), text najviac 1 MiB, pri chybe ikona; v úzkom okne má prednosť zoznam, náhľad sa
+zmenší a potom skryje; stĺpcové zobrazenie (Miller) ako tretí pohľad; vlastné akcie ako skripty v priečinku
+s knižnicou receptov, ktoré sa samy nespustia; označenie disku iba v DualBrew (systém sa nemení); virtuálny
+pohľad „Fotky“ na telefóne bez sprievodných súborov; hľadanie v nastaveniach.
+
+**10A.20** (pozn.) (DualBrew (Súbory)) DualBrew · klasický Prieskumník · r. 1451–1463
+**14. 10., klasický Prieskumník (používateľ: „DualBrew má vedieť pracovať ako klasický prieskumník, s rôzne
+veľkými ikonami“):** tlačidlo a ponuka Zobraziť ako vo Windows — Veľmi veľké (256), Veľké (128), Stredné (64),
+Malé ikony, Dlaždice (ikona, meno, druh, veľkosť), Podrobnosti; Ctrl + koliesko plynulo 32–256. Obrázky sú
+vlastným náhľadom, priečinok pri veľkých ikonách ukáže dva obrázky, ktoré drží (ako Prieskumník). Výber
+**obdĺžnikom** z prázdneho miesta (aj za menom v Podrobnostiach, okolo ikony), Ctrl pridáva. **Ctrl+Z** a
+„Vrátiť späť“ v ponuke: `latte-files undo` vráti poslednú operáciu (presun, premenovanie späť; kópia, odkaz,
+nový priečinok do Koša; z Koša späť) podľa záznamu `~/.local/state/latteos/files-undo`, spoločného pre všetky
+okná. **Ťahanie pravým tlačidlom** → ponuka Kopírovať sem · Presunúť sem · Vytvoriť odkazy sem · Zrušiť.
+**Náhľad** (Medzerník aj „Náhľad“ v ponuke súboru): prvá strana PDF (pdftoppm), snímka videa (ffmpegthumbnailer).
+Overené v headless sedení: obdĺžnik (5 vybraných), ponuka Zobraziť, Veľké ikony s náhľadom priečinka, Dlaždice,
+náhľad videa; undo v skúške presunu, Koša, priečinka, kópie a úlohy. **Neoverené:** ťahanie pravým tlačidlom
+(headless nevie ťahať), PDF v okne (príkaz áno), Vrátiť pri vložení (Ctrl+V). **Chýba:** Redo, Kôš na inom disku,
+zoznam (List) a Obsah z Prieskumníka, snímky videí v ikonách.
+
+**10A.21** (pozn.) (DualBrew (Súbory)) DualBrew · zariadenia, farby, archívy, fotky · r. 1464–1478
+**14. 10., zariadenia, farby, archívy, fotky (používateľ):** bočný panel a Tento počítač ukazujú **všetky
+jednotky**: disky, USB, pamäťové karty, DVD mechaniky skutočné aj z obrazu (**.iso › Pripojiť ako DVD
+mechaniku** = Daemon Tools, `udisksctl loop-setup`), sieťové miesta (gvfs: SMB, SFTP, FTP, WebDAV; Google Drive
+z GNOME Online Accounts) a **cloudy cez rclone** (`~/Cloud/MENO`, pripojí sa pri prvom kliknutí; Pridať cloud ›
+Google Drive / OneDrive / Dropbox otvorí prehliadač na prihlásenie, MEGA a ďalšie cez `rclone config` v
+termináli; sieťové miesto adresou, heslo pýta gio v termináli). Nepripojené sú bledé, klik ich pripojí, tlačidlo
+vysunie (USB aj vypne). Zoznam sa obnovuje každé 4 s. **Farby** súborov a priečinkov (7 farieb, ponuka Farba;
+`user.xdg.tags`, vidí aj Dolphin): podfarbený riadok a pásik, bodka pri ikone. **Archívy** ako úlohy na hladine:
+Rozbaliť sem / do druhého panela (zip, 7z, tar…, rar cez bsdtar; jedna vec vyjde rovno, viac do priečinka),
+Komprimovať › ZIP / 7z; Ctrl+Z vráti. **RAR sa vytvárať nedá** (formát je uzavretý, rar pre Linux je platený).
+**Prehliadač fotiek** (Zobraziť › Prehliadač fotiek, ako ACDSee): veľký obrázok, pás náhľadov, koliesko,
+šípky a tlačidlá myši idú ďalej/späť, rozlíšenie, veľkosť, dátum, Prezentácia, dvojklik skryje pás; nie editor.
+Overené v headless: bočný panel so sekciami, Farba (zápis aj zobrazenie), ponuka Komprimovať, prehliadač fotiek,
+balenie a rozbaľovanie aj s Ctrl+Z (skript). **Neoverené:** USB, karta, DVD, ISO (polkit mimo relácie
+odmietol), sieť a cloudy (treba účet), zobrazenie pripojených jednotiek.
+
+**10A.22** (pozn.) (DualBrew (Súbory)) DualBrew · hladina a obľúbené · r. 1479–1487
+**14. 10., hladina a obľúbené (používateľ):** **pod hladinou informácie o jednej vybranej veci**
+(`latte-files about`): priečinok — počet položiek, veľkosť (du najviac 3 s), kedy zmenený; obrázok — rozlíšenie,
+fotoaparát, kedy fotené, clona, čas, ISO (EXIF cez exiv2), veľkosť; video — rozlíšenie a dĺžka (ffprobe). V
+prehliadači fotiek je zobrazená fotka zároveň vybraná, takže hladina hovorí o nej. **Obľúbené priečinky** v
+bočnom paneli (sekcia Obľúbené, „Pridať obľúbený priečinok“ pridá ten, kde som; krížik odoberie; aj v ponuke
+priečinka Pridať do / Odobrať z obľúbených) — uložené v záložkách GTK (`~/.config/gtk-3.0/bookmarks`), takže
+ich vidí aj okno Otvoriť/Uložiť iných aplikácií. **Opravené:** po každej operácii (obnovenie zoznamu) sa
+prerušila väzba priečinka a zoznam potom ostal na starom mieste pri prechode inam.
+Overené v headless: informácie o priečinku a o fotke na hladine, pridanie obľúbeného, prechod po operácii.
+
+### 10B. [~] LensAI
+Zdroje: `bin/latte-ai`, `apps/aicenter.qml`, `system/ai/`, `system/agents/`, `inspo/ai-na-ploche.md`
+je centralne zastrešenie všetkych použitelnych AI. Je totalna kopia Omarchy Ai využitia, len s tým že sa použiva namiesto konzoloveho, graficke rozhranie. LensGoo ma jednu z položiek komunikačne okno s Ai. 
+**10B.01** [ ] dizajn okna. biela plocha okna je sice identicka s originalom ale navrhujem čiastočnu priehladnost. ta biela na tmavom je priliš ostrá.
+
+**10B.02** [x] (LensAI) režim AI v LensGoo · r. 189–189
+
+**10B.03** (pozn.) (LensAI) e5-sk embeddingy · r. 369–369
+- **e5-sk embeddingy** (KInIT): hľadanie podľa významu v LensGoo — súbory, nastavenia, aplikácie („faktúra za plyn“).
+
+**10B.04** [~] (LensAI) AI v LensGoo — úvod · r. 384–393
+[~] **AI v LensGoo a Lens AI centrum** (používateľ, 20. 10., na pokyn mimo poradia). Hotové: karta AI s rozhovorom,
+    poľom v podobe služby, výberom modelu, spotrebou (limity Claude 5 h a týždňa) a novou reláciou; Lens AI centrum
+    (rozhovory všetkých AI pokope, služby a prihlásenie); výber AI pre LensGoo v Nastaveniach › Spúšťač; text
+    „Hľadať aplikácie alebo nastavenia…“. 21. 10.: pole s ponukou + (súbor, snímka obrazovky; nástroj číta iba
+    priložené), úsilie v čipe modelu (Claude low–max, Codex low–high); Gemini, ChatGPT, Grok a Mistral odpovedajú cez
+    oficiálne nástroje s účtami používateľa (overené 21. 10., zápis zakázaný). **Ďalej, podľa VS Code (Copilot: viac AI pod jednou strechou, vlastné kľúče):** (a) vlastné kľúče
+    API v Lens AI centre, uložené v kľúčenke systému (nie v súbore), priame volanie API bez agentov — aj Grok
+    a Mistral; (b) Grok Build a Mistral Vibe cez účet (nainštaluje používateľ; overiť vypnutie nástrojov);
+    (c) bohatšie okno rozhovoru a nastavenia centra; postupné písanie, zastavenie, mikrofón (chýba prevod reči).
+    **Rozdelenie (21. 10. v noci, ide sa zhora):**
+
+**10B.05** [x] (LensAI) Omarchy a dots · r. 394–395
+
+**10B.06** [x] (LensAI) mikromodely · r. 396–397
+
+**10B.07** [x] (LensAI) lokálny model · r. 398–401
+
+**10B.08** [x] (LensAI) vlastné kľúče API · r. 402–405
+- d. [x] Lens AI centrum › Služby: vlastné kľúče API (kľúčenka systému cez `secret-tool`), priame volanie API
+  (Anthropic, OpenAI, Google, xAI, Mistral) popri účtoch.
+  Hotové 21. 10.: gnome-keyring (PAM greetd ho odomkne pri prihlásení), vlastné servery s OpenAI API;
+  overené proti llama-serveru a oddelenej kľúčenke; skutočné kľúče služieb neoverené (žiadne nie sú).
+
+**10B.09** [x] (LensAI) modely · r. 406–406
+
+**10B.10** [x] (LensAI) okno rozhovoru · r. 407–407
+
+**10B.11** [x] (LensAI) porovnanie · r. 408–408
+
+**10B.12** [x] (LensAI) mikrofón a pokyny · r. 409–412
+- h. [x] Mikrofón v LensGoo (whisper.cpp, ak b ukáže, že stačí) a nastavenia rozhovoru (vlastné pokyny, pamäť).
+  Mikrofón hotový 21. 10.: whisper.cpp s Vulkanom (large-v3-turbo 8 s, small 3 s na 4 s vety na RX 640),
+  `latte-ai listen`; na latte-lab chýba skutočný mikrofón (overené pripravenou nahrávkou). Vlastné pokyny (Lens AI
+  centrum › Pokyny) idú s každou otázkou ku každej AI.
+
+**10B.13** [ ] (LensAI) hľadanie podľa významu · r. 413–413
+- i. [ ] Hľadanie podľa významu v LensGoo (e5-sk, ROADMAP bod 14) — po b.
+
+**10B.14** [~] (LensAI) LensAI = spoločné API · r. 414–457
+- m. [ ] **LensAI = spoločné API + grafická nadstavba** (používateľ, 21. 10.; Omarchy je MIT → prevziať maximum,
+  prepísať do LatteOS, autor v `TRETIE-STRANY.md`). LensAI (nové meno Lens AI centra) je jedno API pre všetko AI
+  v systéme (`latte-ai`: služby, účty, modely, rozhovory, spotreba, úlohy, skill) a okno nad ním; chat v LensGoo je
+  iba rýchly klient toho API. Poradie:
+  1. [x] premenovať na LensAI (21. 10.); polia na písanie presne podľa snímok používateľa (21. 10.); ponuky + a čipu podľa snímok — dáva ich `latte-ai providers` (plus, menu, web), LensGoo aj okno LensAI ich iba kreslia; čo LatteOS nevie, otvorí web služby fialovým textom (21. 10.); DeepSeek cez web čaká na `docs/manual-inst.md` (Claude, Gemini, ChatGPT, Grok,
+     Mistral, Copilot, DeepSeek); DeepSeek cez kľúč API;
+  2. [x] spotreba ako v Omarchy (`omarchy-agent-usage-*`), hotové 21. 10.: Claude (OAuth usage), Grok (billing),
+     Copilot (GitHub), ChatGPT (Codex app-server; neoverené, Codex odhlásený — `docs/manual-inst.md`), vlastné
+     počítadlo otázok; odpoveď platí 15 min, pri 80 %+ 3 min; LensGoo aj LensAI ju berú z API. Kimi a Fireworks
+     vynechané (používateľ ich nepoužíva);
+  3. [x] **panel agentov v okne LensAI** (podľa `shell/plugins/agents` z Omarchy), hotové 21. 10.: stránka Agenti
+     (`latte-ai agents`) — úvod s otáčajúcim sa riadkom (tokeny týždeň/dnes, najpoužívanejší model, najrušnejší deň,
+     otázky dnes; zo záznamov Claude Code), služba po službe s plánom, pásmi limitov a časom obnovenia,
+     „Treba sa prihlásiť“; „Urob niečo“ prejde do bodu 5 (potrebuje skill z bodu 4);
+  4. [x] **skill LatteOS** (podľa `default/agents/skills/omarchy`), hotové 21. 10.: `system/agents/skills/latteos/SKILL.md`
+     (ako je LatteOS postavený, `/usr/share/latteos` iba čítať, `~/.config/latteos`, príkazy `latte-*`, stránky
+     Nastavení, sudo/pkexec, snímka pred diskom, `dnf remove --noautoremove`, najprv plán a súhlas, pomoc pri páde
+     a v SAFE); `latte-ai skill install|reset|path` — kópia používateľa v `~/.config/latteos/skills/latteos`,
+     odkazy v `~/.claude/skills`, `~/.codex/skills`, `~/.agents/skills` (pri štarte relácie); **upraviteľný
+     v LensAI › Pokyny** s „Obnoviť pôvodný“; overené: Claude Code skill vidí;
+  5. [x] „Urob to za mňa“, hotové 21. 10.: `latte-ai do TASK [AGENT]` otvorí agenta v termináli (foot) so skillom
+     LatteOS — Claude Code v plánovacom režime, Codex `-s read-only -a on-request`, Gemini `--approval-mode default`;
+     nič sa neschvaľuje samo. LensGoo: 4. ikona v päte karty AI (úloha z poľa; prázdne pole → LensAI › Agenti).
+     LensAI › Agenti: pole, voľba agenta (`latte-ai doer`, `~/.config/latteos/agent`), 6 pripravených úloh
+     („Urob niečo“ z Omarchy). Overené: terminál s Claude Code sa otvorí; plán na skutočnej ploche neoverený;
+  6. [x] **pád → AI** s GuardDogom a **LatteOS SAFE** (podľa `diagnose-crash` z Omarchy), hotové 21. 10.: GuardDog
+     sleduje systemd-coredump (každých 30 s), pád zapíše do denníka a ukáže upozornenie „Opýtať sa AI“ · „O tomto
+     programe nie“ (stlmenie v `guarddog.json`); `latte-ai crash PID` dá agentovi fakty (coredumpctl, denník okolo,
+     čí program), vysvetlí, nič nemení; v SAFE položka „Opýtať sa AI, prečo sa skončila“ (`latte-ai why`), aj v ponuke
+     pravého tlačidla. **Okno GuardDog** (`latte-app guarddog`, na pokyn používateľa): Čo drží v chode, Pády
+     (Opýtať sa AI, Stlmiť), Denník ako konzola (`latte-guarddog log`). Overené: pád `sleep` zachytený, upozornenie
+     po slovensky; agent pri páde na ploche neoverený;
+  7. [~] **inštalácia AI v okne LensAI** (používateľ 21. 10.: nie v App Manageri), hotové 21. 10.: LensAI › Služby
+     má pri nenainštalovanej službe „Nainštalovať“ — oficiálny nástroj v termináli, pre používateľa bez hesla
+     (Claude Code a Grok vlastným inštalátorom, Codex, Gemini, Copilot cez npm do `~/.local`, Mistral Vibe cez uv,
+     Ollama z Fedory; chýbajúci npm/uv z Fedory); stránka sa obnovuje každých 10 s. Neoverené naostro (všetko je
+     na latte-lab nainštalované). **Nástroje cez mise ako v Omarchy** (21. 10., pravidlo: najprv Omarchy):
+     `/etc/mise/conf.d/latteos-tools.toml` — lenivá inštalácia, `auto_update = "4h"`, `mise up` pri aktualizácii.
+     **Lokálna AI** (21. 10.): LensAI › Na tomto počítači ako LM Studio — Objavovať (výber LatteOS ako ich Staff
+     Picks, hľadanie na Hugging Face s triedením, detail s možnosťami stiahnutia, odhadom gpu/partial/cpu/too-big
+     ako lmstudio-js a predvybraným variantom, README), Moje modely, Spúšťanie (hardvér, llama.cpp Vulkan,
+     grafická karta); `latte-ai local …`. Neoverené: skutočné stiahnutie modelu a llama.cpp z LensAI.
+     Ostáva: aplikácie služieb z Flathubu, DeepSeek po `docs/manual-inst.md`. Diktovanie — **neskôr**. (Viac účtov
+     jednej služby s prepnutím pri limite — **neskôr**, používateľ 21. 10.: platí iba jednu službu.)
+
+**10B.15** [ ] (LensAI) odporúčané lokálne modely · r. 458–461
+- n. [ ] **Odporúčané lokálne modely** (používateľ, 21. 10.): `system/ai/local-models.json` prejsť a obnoviť **raz za
+  mesiac či dva** (nové modely z `lmstudio-community`, veľkosti, popisy; dátum `updated`), príde s aktualizáciou.
+  **Vrstva AI s inštaláciou LatteOS** (ak ju používateľ povolí): mise a jeho zoznam nástrojov, llama.cpp, a model
+  navrhnutý podľa hardvéru (`latte-ai local recommend`) — krok inštalátora v bode 9.
+
+**10B.16** [ ] (LensAI) rozhovory aj mimo LensAI · r. 462–467
+[ ] **rozhovory aj mimo LensAI** (používateľ, 21. 10.: na PC v LensAI, na mobile v aplikácii Claude):
+   (a) **import** exportu dát služby (Claude: Nastavenia › Súkromie › Export, ChatGPT: Export údajov, Gemini:
+   Google Takeout) do histórie LensAI, iba na čítanie a pokračovanie; (b) **Remote Control** Claude Code
+   (oficiálne, výskumná ukážka): rozhovor LensAI ako interaktívna relácia Claude Code, ktorú otvorí aplikácia
+   Claude na mobile (Code). Obojsmerná synchronizácia bežných četov a projektov claude.ai **nie**: nemá verejné
+   API a podmienky zakazujú automatický prístup mimo kľúča API alebo výslovného povolenia.
+
+**10B.17** [ ] (LensAI) podľa Omarchy · r. 468–476
+- l. [ ] **Podľa Omarchy** (preskúmané 21. 10., `inspo/ai-na-ploche.md`), návrhy na výber používateľa:
+  (1) **skill LatteOS** pre agentov (`~/.claude/skills`, `~/.codex/skills`, `~/.agents/skills`): ako je LatteOS
+  postavený, čo sa smie meniť (`~/.config/latteos`, nie `/usr/share/latteos`), ktoré `latte-*` príkazy použiť,
+  pkexec, snímka pred diskom, plánovací režim — základ barličky (k); (2) **„Urob to za mňa“** v LensGoo: úloha pre
+  predvoleného agenta v okne terminálu, najprv plán, potom potvrdenie (nie automatické schvaľovanie ako Omarchy);
+  (3) **limity bez otázky** ako Omarchy (Claude OAuth usage, Grok billing) — číta token prihlásenia CLI, iba
+  so súhlasom; (4) **pád → AI**: GuardDog/whyd ponúkne „Opýtať sa AI“ so zisteniami z core dumpu; (5) **App Manager
+  › AI**: Claude desktop, ChatGPT, LM Studio, Ollama; (6) **diktovanie do akejkoľvek aplikácie** (Voxtype, Win+H
+  ako vo Windows) popri mikrofóne v LensGoo; (7) viac účtov jedného poskytovateľa a prepnutie pri limite.
+
+**10B.18** [ ] (LensAI) AI ako barlička · r. 477–482
+- k. [ ] **AI ako barlička v systéme** (používateľ, 21. 10.: ako v Omarchy; veľa ľudí je v Linuxe stratených):
+  po oficiálnom spustení LatteOS bude AI integrovaná do OS a na požiadanie použije systémové nástroje —
+  „preformátuj mi `/`, hlási, že je plný, a pridaj mu z rezervy“. Návrh: AI nesiaha na systém sama; navrhne
+  plán krokov ako nástroje LatteOS (`latte-files disks`, `latte-network`, Nastavenia…), človek každý zásah
+  potvrdí, oprávnenie správcu cez polkit, pred zásahom na disk snímka; čo sa stalo, sa dá prečítať a vrátiť.
+  Nástroje teda musia mať aj „robiacu“ časť (zväčšiť oddiel, presmerovať priečinky…), nie iba prehľad.
+
+**10B.19** [x] (LensAI) mikro-agenti · r. 483–486
+
+**10B.20** [ ] (LensAI) Asistent v každom textovom poli · r. 548–556
+[ ] **Asistent v každom textovom poli** (používateľ, 21. 10.; vzor: veta v kalendári ClockGoo — pravidlá hneď, čo
+    nevedia, prečíta lokálna AI a výsledok sa ukáže na potvrdenie, nič sa nevykoná samo). Jedno spoločné API (`latte-ai`,
+    LensAI), pole len povie, čo vie urobiť:
+    - **DualBrew, riadok terminálu / hľadania:** veta → príkaz Linuxu alebo hľadanie; hromadné premenovanie a
+      usporiadanie súborov („fotky z dovolenky podľa dátumu do priečinkov“) — najprv náhľad zmien, potom vykonať.
+    - **Prehrávač hudby:** dohľadanie skladby podľa opisu („tá pomalá s klavírom od…“).
+    - **Fotky:** hľadanie fotky podľa opisu (obraz → význam, miestny model; súvisí s hľadaním podľa významu, bod 16 i).
+    - Ďalšie polia postupne (Nastavenia, App Manager, LensGoo). Merané 21. 10.: model 4B ~12 s na procesore a
+      pri dátumoch sa mýli — čo vedia pravidlá, robia pravidlá; AI iba na zvyšok a vždy s potvrdením.
+
+**10B.21** [x] (LensAI) Pomocníci ako v Omarchy · r. 557–562
+
+**10B.22** [~] (LensAI) B. AI · r. 640–641
+- [~] **ZÁKLAD / AI:** `latte-ai` už pripája lokálne, domáce a cloudové modely aj vybrané
+  poskytovateľské CLI. Používateľské AI v LensGoo má samostatne známu kvalitatívnu medzeru.
+
+**10B.23** [~] (LensAI) C. GOO / LensGoo a AI · r. 670–671
+- [~] **GOO / LensGoo a AI:** základ spúšťača, hľadania a AI existuje; hĺbková kontrola podľa
+  používateľa má zamerať predovšetkým kvalitu AI rozhovoru, odpovedí, výberov a chybových stavov.
+
+**10B.24** [ ] (LensAI) D. AI · r. 699–700
+- [ ] **AI:** zlepšiť AI v LensGoo; poskytovateľov, limity, súkromie a systémové nástroje dopĺňať
+  explicitne a iba s potvrdením používateľa.
+
+**10B.25** (pozn.) (LensAI) F. R3·G — AI · r. 864–866
+**R3·G — AI:** `latte-mcp` a zručnosť pre AI (r. 546, 559, 595); limity predplatných v LensGoo (r. 598); Newelle ako jadro (r. 599);
+streamovanie odpovede (r. 872); viac poskytovateľov a prihlásenie výberom (r. 873); Ollama na CPU (r. 879); Qwen3-14B-sk (r. 906).
+
+**10B.26** (pozn.) (LensAI) R3·G — cieľ · r. 1068–1071
+**Cieľ:** AI je voliteľná schopnosť systému s jasne oddeleným lokálnym/cloudovým spracovaním a
+bez nečakaného prístupu k systémovým akciám.
+
+**10B.27** [ ] (LensAI) R3·G — latte-ai a UX · r. 1072–1073
+- [ ] Dokončiť `latte-ai` a UX v LensGoo/Nastaveniach: poskytovatelia, prihlasovanie, modely,
+  streamovanie, prílohy, hlas, spotreba a limity podľa toho, čo daná služba skutočne poskytuje.
+
+**10B.28** [ ] (LensAI) R3·G — spôsoby pripojenia AI · r. 1077–1078
+- [ ] LensGoo: podpora všetkých spôsobov pripojenia AI — oficiálne nástroje účtov, integrovaný Instruct model a
+  lokálny server (napr. LM Studio); prehľad spotrebovaných a zostávajúcich tokenov.
+
+**10B.29** [ ] (LensAI) R3·G — kam odchádza požiadavka · r. 1079–1080
+- [ ] Zviditeľniť, kam odchádza požiadavka, čo sa posiela a či je odpoveď lokálna alebo cloudová;
+  pri cloudových poskytovateľoch rešpektovať súhlas a podmienky služby.
+
+**10B.30** [ ] (LensAI) R3·G — AI s nástrojmi na správu · r. 1081–1083
+- [ ] Ak AI dostane nástroje na správu LatteOS, použiť obmedzené rozhranie, náhľad plánovanej
+  zmeny, výslovné potvrdenie a auditovateľný výsledok; online webový chat nedostáva systémové
+  oprávnenia.
+
+**10B.31** [ ] (LensAI) R3·G — vývojová AI farma a MCP · r. 1084–1087
+- [ ] Vývojová AI farma a MCP sú vývojárske nástroje, nie predvolená súčasť používateľskej plochy;
+  ich úlohy, tajomstvá a prístup k repozitáru držať oddelene od runtime AI LatteOS.
+
+### 10C. [ ] Heidelberg
+je zakladny textovy editor, s neobvyklo širokou ponukou formatou ktore prečíta a upraví
+
+**10C.01** [ ] (Heidelberg) R3·C — Heidelberg · r. 994–994
+- [ ] **Heidelberg:** verné formátovanie docx (tabuľky, štýly, hlavičky) a ďalšie otvorené položky z F4 (riadok 792).
+
+### 10D. [~] LatteMonitor
+Zdroje: `apps/monitor.qml`, `bin/latte-monitor`, `crates/latte-stats`; LATTEOS-GOO §6.2·1
+je monitor prostriedkov presne ako ctrl+alt+del z windows 11(jeho kopia) ale zaroven ponuka presne skopirovanu funkčnost z CpuZ a z HWinfo. Prebera informacie z GuardDog aj Dev a Net manager. spravuje aj výstup pre aplikacie-napr externy dashboard čitajuci vytaženie CPU, RAM, farebnost led na zaklade zvuku, atd.
+**10D.01.** [ ] zrealizovat funkčnost
+
+**10D.02** [x] (Monitor) Monitor · r. 139–145
+[x] **Monitor** (13. 10.): `apps/monitor.qml` + `bin/latte-monitor` (a `latte-stats`). Prehľad (procesor
+   s jadrami, pamäť, grafika, sieť a disky — živé obrázky poslednej minúty, najnáročnejšie programy),
+   Procesy (aplikácie s oknom, potom pozadie; hľadanie, zoradenie, Ukončiť), Po štarte (čo sa spúšťa samo:
+   čo to je, odkiaľ je, koľko pridalo k štartu; vlastné veci sa dajú vypnúť a zasa zapnúť — návrh podľa
+   BetterWindowsServices), Senzory. PowerGoo › Monitor, Ctrl+Shift+Esc. Oproti v0.3 chýba: všetky služby
+   so štartom a zastavením, detail procesu (priorita, pauza, súbory, spojenia), hardvér ako CPU-Z, test
+   výkonu, Digitálna pohoda, strom disku, dlhodobá telemetria („kto žerie“ po dňoch).
+
+**10D.03** [ ] (Monitor) D. Monitor · r. 693–694
+- [ ] **Monitor:** nadviazať na existujúce procesy, služby, autoruns a senzory; dokončiť stálu
+  telemetriu a pohľad na spotrebu podľa aplikácie v čase, bez nepresných alebo skrytých zberov.
+
+**10D.04** (pozn.) (Monitor) F. R3·D — Monitor · r. 850–852
+**R3·D — Monitor:** „kto žerie“ energiu, dáta, RAM, disk po aplikáciách (r. 574); `latte-sysmond`, eBPF (r. 775, 778);
+bezpečnostná kontrola balíkov bumblebee (r. 603); Python nástroje — čas štartu (r. 940).
+
+**10D.05** (pozn.) (Monitor) R3·D — cieľ · r. 1006–1009
+**Cieľ:** používateľ vie zistiť, čo sa deje so systémom a aplikáciami, a bezpečne konať bez
+nepriehľadných privilegovaných služieb.
+
+**10D.06** [x] (Monitor) R3·D — základ Monitora · r. 1010–1011
+
+**10D.07** [ ] (Monitor) R3·D — telemetria · r. 1012–1014
+- [ ] Dokončiť stály zber telemetrie (`latte-sysmond`) a dlhodobý pohľad na CPU, RAM, GPU, energiu,
+  sieť a disk; odlíšiť živý stav od historického odhadu a primerane uchovávať údaje s možnosťou
+  vypnutia zberu.
+
+**10D.08** [ ] (Monitor) R3·D — akcie pre služby · r. 1015–1015
+- [ ] Nové akcie pre služby musia zachovať vysvetlenie pôvodu, oprávnení a vratnosť.
+
+**10D.09** [ ] (Monitor) R3·D — Správca úloh, Autoruns, HWiNFO · r. 1016–1017
+- [ ] Monitor spája Správcu úloh Windows 11, Autoruns, HWiNFO a CPU-Z; BetterWindowsServices je inšpirácia na
+  prieskum (správa služieb), nie prijatá úloha.
+
+**10D.10** [ ] (Monitor) R3·D — inventár a bezpečnostné nástroje · r. 1018–1020
+- [ ] Rozhodnúť, ktoré inventárne alebo bezpečnostné schopnosti poskytne existujúci `latte-hw`,
+  Monitor, Inšpektor siete a Barista. Nástroje typu osquery, Velociraptor, Zeek či Suricata
+  nepridávať ako základné služby bez preukázanej potreby a výslovného modelu súhlasu.
+
+**10D.11** [ ] (Monitor) R3·D — diagnostické záznamy · r. 1021–1024
+- [ ] Zjednotiť diagnostické záznamy a export podpory tak, aby používateľ vedel skontrolovať,
+  čo export obsahuje; citlivé údaje neodosielať automaticky.
+
+### 10E. [~] DeviceManager
+Zdroje: `apps/devices.qml`, `bin/latte-devices`
+
+**10E.01** [x] (Správca zariadení) Správca zariadení · r. 115–116
+- [x] **Správca zariadení** (13. 10.): `apps/devices.qml` + `bin/latte-devices` — prehľad počítača, skupiny
+  zariadení, ovládač a stav každého, správa na skopírovanie. Iba číta; čo chýba oproti v0.3: LATTEOS-GOO.md §4.4.
+
+**10E.02** [ ] (Správca zariadení) D. Správca zariadení a HW · r. 695–696
+- [ ] **Správca zariadení a HW:** dokončiť overenie kompatibility a reálneho HW, ovládačov,
+  tlače/skenerov/telefónov a bezpečnej obnovy po zmene.
+
+**10E.03** [~] (Správca zariadení) F. R3·E — zariadenia a siete · r. 853–859
+**R3·E — zariadenia a siete:** skúška s reálnou tlačiarňou, skenerom a telefónom (r. 515); KDE Connect `[~]` (r. 534);
+zvuk do DLNA (r. 753); Inšpektor — nové zariadenie, slabé heslo routera (r. 756); Inšpektor — **zariadenia Matter a Thread pasívne** (schválené 13. 10.):
+skupina „Inteligentná domácnosť“ z ohlásení mDNS (`_matter._tcp`, `_matterc._udp`, hraničné smerovače `_meshcop._udp`),
+výrobca a typ, ak ich zariadenie ohlási, upozornenie na nové zariadenie; bez párovania. Podrobnosti cez párovací kód
+(batéria, firmvér, topológia Thread) sú iba návrh, nie úloha (inspo 13. 10., podľa UniFi Network 11); `latte-boot compat` v inštalátore (r. 765);
+Device Manager v Ruste (r. 767).
+
+**10E.04** (pozn.) (Správca zariadení) R3·E — cieľ · r. 1025–1028
+**Cieľ:** LatteOS sa nainštaluje a funguje na jasne opísanom rozsahu PC, vrátane GPU, zvuku, siete,
+obrazoviek, napájania, periférií a obnovy pri probléme s ovládačom.
+
+**10E.05** [x] (Správca zariadení) R3·E — základ detekcie · r. 1029–1030
+
+**10E.06** [ ] (Správca zariadení) R3·E — kompatibilita v inštalátore · r. 1031–1032
+- [ ] Doplniť kompatibilitu do inštalátora a overiť hranice odporúčaní na rôznych CPU/GPU,
+  Secure Boot, notebookoch a starších PC.
+
+**10E.07** [ ] (Správca zariadení) R3·E — AMD a NVIDIA na fyzickom HW · r. 1033–1034
+- [ ] Overiť na fyzickom hardvéri AMD aj NVIDIA grafický stack, Hyprland, Goo, hry, SAFE režim,
+  aktualizáciu ovládača a návrat po zlyhaní.
+
+**10E.08** [ ] (Správca zariadení) R3·E — ovládače cez štandardné služby · r. 1035–1037
+- [ ] Doriešiť ovládače/zariadenia cez štandardné linuxové služby (udisks2, NetworkManager,
+  PipeWire, fwupd a pod.) a zrozumiteľne oddeliť informáciu, odporúčanie a akciu vyžadujúcu
+  oprávnenie.
+
+**10E.09** [ ] (Správca zariadení) R3·E — telefóny · r. 1038–1039
+- [ ] Telefóny: overiť KDE Connect a USB; scrcpy prípadne ponúknuť ako vedomý voliteľný nástroj,
+  nie ako náhradu párovania, prenosu súborov alebo Waydroidu.
+
+**10E.10** [ ] (Správca zariadení) R3·E — rozsah Správcu zariadení · r. 1040–1042
+- [ ] Rozsah Správcu zariadení z opisu: identifikovať a rozbehnúť všetok pripojený HW (aj ovládače od Steamu);
+  Netmanager spolu s ním spravuje všetky siete, sieťové zariadenia a vzdialené pripojenia — TV, sieťové rádio,
+  telefóny cez Bluetooth, Wi-Fi, USB alebo na diaľku. Inšpektor siete (hotový základ, podľa ESET Network Inspector).
+
+**10E.11** [ ] (Správca zariadení) R3·E — rizikové zmeny · r. 1043–1046
+- [ ] Všetky rizikové zmeny ovládačov, obrazovky a napájania musia mať potvrdenie, časový limit
+  alebo obnovovaciu cestu.
+
+### 10F. [~] GuardDog
+Zdroje: `bin/latte-session`, `bin/latte-guarddog`, `apps/guarddog.qml`, `system/systemd`, `system/whyd`, `system/oom`, `system/sessions`
+
+**10F.01** [~] (Relácie a GuardDog) GuardDog · r. 321–328
+[~] **GuardDog — strážca súčastí a kto komu patrí** (20. 10., na pokyn používateľa po tom, čo sa zabilo `qs` a zmizli
+    ikony aj ponuka plochy). `bin/latte-guarddog` (služba `latte-guarddog.service` v cieli relácie): každých 5 s
+    skontroluje scénu Goo, nečinnosť, ikony plochy, tapetu a históriu schránky; čo chýba dvakrát po sebe, to spustí
+    znova (najviac 5× za 5 minút, potom pokoj a jedno upozornenie). Stav je v `$XDG_RUNTIME_DIR/latteos/guarddog.json`.
+    Rovnaký program povie, komu proces patrí: `linux` (jadro a systém), `latteos` (to, z čoho je LatteOS), `user`
+    (programy používateľa); Monitor › Procesy to ukazuje štítkom, filtrom a zoznamom strážených súčastí. Overené:
+    zabité ikony sa do ~16 s vrátia. **Ostáva:** Nastavenia › Štart (vypnúť stráženie jednej súčasti), strážiť aj
+    skutočné aplikácie používateľa na žiadosť, štítky v Správcovi zariadení, upozornenie pri páde mimo strážených súčastí.
+
+**10F.02** [ ] (GuardDog) **Nezabiteľnosť — overené 22. 10.:** `pkill` posiela SIGTERM a `Restart=on-failure` v `system/systemd/latte-guarddog.service` pri SIGTERM službu **neobnoví** (systemd to berie ako čistý koniec; obnoví až SIGKILL). Skúška na latte-lab: on-failure → po SIGTERM mŕtva, `Restart=always` → po 1 s žije. Treba: `Restart=always`, `RestartSec=1`, `StartLimitIntervalSec=0` (nikdy sa nevzdať); to isté pre `latte-goo.service`, `latte-idle`, `latte-focus`, `latte-goo-side@`, `latte-netd` (dnes všetky on-failure; `latte-lockscreen` už always).
+
+**10F.03** [ ] (GuardDog) **Zamrznutie, nie len zabitie:** `kill -STOP` proces nezabije, ale zastaví; reštart ho nezachytí. `WatchdogSec=` + `sd_notify("WATCHDOG=1")` v `latte-guarddog watch` aj v službe Goo — keď prestane hlásiť, systemd ho zabije a obnoví.
+
+**10F.04** [ ] (GuardDog) **Kto stráži stráž:** obnovu vlastnej služby robí systemd (PID 1), nie ďalší náš program (pravidlo „preberať, nevymýšľať“). GuardDog sám ostane pozorovateľ: zistí, čo nebeží, komu proces patrí, ukáže upozornenie a pád dá AI. Čo rieši už systemd, má mať v jednotke `Restart=always`, nie vlastnú slučku v GuardDogovi.
+
+**10F.05** [ ] (GuardDog) **Vyšší stupeň ochrany:** proces toho istého používateľa vie zabiť čokoľvek iné, čo beží pod ním (aj `systemctl --user stop`, `kill -9` na `systemd --user`). Úplná odolnosť = malá systémová služba pod iným uid/root (`latte-guardd`), ktorú používateľ nezabije, a ktorá obnoví používateľskú reláciu. Rozhodnúť, či to treba (komplexita proti zisku); najprv hotový bod 1 a 2.
+
+**10F.06** [ ] (GuardDog) **Skúška:** skript v `tests/`, ktorý zabije (TERM, KILL, STOP) GuardDog, scénu Goo, lockscreen, idle, focus a overí, že všetko do ~5 s žije; zaradiť do `tests/check.sh` (aspoň napodobené jednotky).
+
+**10F.07** [ ] (GuardDog) **Používateľ 22. 10.: „GuardDog je extrémne nehotový“.** Ďalšie chýbajúce veci z pôvodného zápisu: vypnúť stráženie jednej súčasti (Nastavenia › Štart), strážiť aj skutočné aplikácie používateľa na žiadosť, štítky `linux/latteos/user` v Správcovi zariadení, upozornenie pri páde mimo strážených súčastí. Doplniť zoznam strážených súčastí, ktoré dnes chýbajú (Pobrežie, desktop, hyprbars…).
+
+### 10G. [~] NetManager
+Zdroje: `bin/latte-network`, `bin/latte-net`, `bin/latte-network`
+
+**10G.01** [x] (Sieť) Správca zariadení: Sieť a Inšpektor · r. 146–151
+[x] Správca zariadení má dve časti (13. 10.): **Zariadenia** a **Sieť** — Pripojenie (adresa, router,
+   DNS, rýchlosť, zapamätané pripojenia) a **Inšpektor siete** (`bin/latte-network`): polkruhový radar,
+   dole tento počítač nad routerom, na vnútornom oblúku zariadenia pripojené teraz, na vonkajšom videné
+   predtým; nové zariadenie zlato; zariadeniu sa dá dať meno a druh, alebo ho zabudnúť. Inteligentná
+   domácnosť sa pozná pasívne z ohlásení Matter a Thread. Chýba: zoznam namiesto radaru, „Moja sieť“
+   a upozornenie na nové zariadenie, pripájanie a VPN (to prvé je v paneli Pobrežia), AirPlay.
+
+**10G.02** [~] (Sieť) Detektor siete — úvod · r. 329–335
+[~] **Pokročilý detektor siete** (20. 10., používateľ; predpoklad pre CamGoo s domácimi kamerami). Dnešný inšpektor
+    siete v Správcovi zariadení (inšpirácia ESET Smart Security) nájde iba počítač, s ktorým je latte-lab spojený káblom.
+    Treba: ARP tabuľka a ping sweep podsiete, mDNS/Bonjour, SSDP/UPnP, NetBIOS, ONVIF WS-Discovery (kamery), výrobca
+    podľa MAC (OUI), otvorené porty bežných služieb (554 RTSP, 2020 ONVIF Tapo, 80/443, 22, 445, 9100), rozpoznanie typu
+    (kamera, tlačiareň, TV, telefón, router), Matter/Thread pasívne (R3·E); ako ESET „Kontrola siete“ so zoznamom a mapou.
+    **Cieľ (používateľ, 21. 10.):** celá sieť, čo je ktoré zariadenie a čo vie (prehrať naň hudbu a video, kamera, prijať
+    dáta), slabé miesta a ochrana na pár klikov — pre domáceho správcu, ktorý chce prehľad a riešenie bez príkazov.
+
+**10G.03** [x] (Sieť) Detektor a) hĺbková kontrola · r. 336–340
+
+**10G.04** [x] (Sieť) Detektor b) zoznam popri radare · r. 341–341
+
+**10G.05** [ ] (Sieť) Detektor c) akcie zo schopností · r. 342–343
+- c. [ ] Akcie zo schopností: Púšťať naň (DLNA/Cast — prepojiť s MediaGoo), Otvoriť obraz (kamera → CamGoo),
+  Pridať tlačiareň (CUPS), Otvoriť stránku nastavení, Pripojiť zdieľaný priečinok (DualBrew).
+
+**10G.06** [x] (Sieť) Detektor d) upozornenie na nové zariadenie · r. 344–345
+- d. [x] Upozornenie na nové zariadenie (21. 10.): `latte-network watch` každých 30 min v relácii
+  (`latte-netwatch.timer`), preložené upozornenie; neoverené v skutočnej relácii.
+
+**10G.07** [~] (Sieť) Detektor e) správca siete · r. 346–349
+- e. [~] Správca siete (21. 10.: Pripojenie › Ochrana (DNS): od routera, Cloudflare, Quad9, AdGuard, Google;
+  `latte-network dns`; naostro neprepínané, len suchý beh; firewall: zapnutý, zóna a čo sa smie dnu, `latte-network firewall`):
+  Wi-Fi siete a heslá, VPN, DNS s ochranou súkromia, firewall (firewalld), hosťovská sieť
+  a blokovanie zariadenia — čo sa dá bez routera, a návod do routera, kde nie.
+
+**10G.08** [ ] (Sieť) Detektor f) vzory · r. 350–353
+- f. [ ] Vzory: Sniffnet (kto s kým hovorí, pre NET), ESET Kontrola siete, UniFi (Matter), Fing.
+  Správca siete je nástroj **pre správcu domácej siete** (používateľ, 21. 10.: bude ním spravovať svoju sieť):
+  Zeek a Suricata nie sú „priťažké“, ale voliteľné nástroje správcu — skôr pôvodné programy so správou
+  z LatteOS (nainštalovať, zapnúť, ukázať upozornenia) než vlastná náhrada.
+
+**10G.09** [~] (Sieť) Detektor g) mapa siete · r. 354–358
+- g. [~] Mapa siete (používateľ, 21. 10.: ako nástroje z čias Windows XP — switch za switchom). Hotové: pohľad Mapa
+  s cestou do internetu (traceroute: router za routerom, poskytovateľ) a zariadeniami tejto siete; spätné DNS
+  s limitom 2 s. Ďalej: spravovateľné switche cez SNMP (tabuľka MAC → port, BRIDGE-MIB) a LLDP (lldpd), zariadenia
+  pod nimi; bežné switche sa vidieť nedajú.
+
+**10G.10** (pozn.) (Sieť) Sniffnet · r. 372–372
+- **Sniffnet** ako vzor pre detektor siete a NET.
+
+### 10H. [~] AppManager
+Zdroje: `apps/appmanager.qml`, `bin/latte-apps`, `bin/latte-app`; LATTEOS-GOO §6.3
+Spravuje všetky aplikacie, prevažne ako flatback, bubblewrap. Ponuka ako Bazzar 
+
+**10H.01** [x] (App Manager) App Manager · r. 110–112
+- [x] **App Manager** (13. 10., na pokyn mimo poradia): `apps/appmanager.qml` + `bin/latte-apps` + `bin/latte-app`;
+  obchod Flathub (bannery, police, kategórie, hľadanie, stránka aplikácie), moje aplikácie, aktualizácie,
+  miesto pre Baristu. Inštalácia a odstránenie overené naostro. Chýba: LATTEOS-GOO.md §6.3.
+
+**10H.02** [x] (App Manager) prechody bannerov · r. 129–134
+
+**10H.03** (pozn.) (App Manager) polica s FreeTube a Pipeline · r. 373–373
+- **App Manager:** polica s FreeTube a Pipeline, Stremio a Mangayomi bez doplnkov vopred.
+
+**10H.04** [~] (App Manager) C. GOO / aplikácie a integrácia · r. 672–674
+- [~] **GOO / aplikácie a integrácia:** viacero funkcií je hotových, ale ostávajú reálne testy
+  telefónu/tlačiarne/skenera, verejnej inštalácie, skutočného Beepera, výkonnostné a prekladové
+  medzery a dokončenie App Managera/Baristu. Podrobnosti sú v F3·G a F4–F8.
+
+**10H.05** [ ] (App Manager) D. App Manager a Barista · r. 697–698
+- [ ] **App Manager a Barista:** dokončiť stav úloh, históriu a používateľský tok inštalácie;
+  Barista pokračuje podľa fáz v `docs/barista/NAVRH.md`, prvý plný prípad je AVP2.
+
+**10H.06** (pozn.) (App Manager) F. R3·F — App Manager a Barista · r. 860–863
+**R3·F — App Manager a Barista:** úlohy na pozadí viditeľné (r. 409); obchod — zvyšok (r. 510), Bazaar a ZimaOS (r. 560);
+Barista ako pomocník z kontextovej ponuky okna (r. 596); ProtonDB, Waydroid, OARS detské účty, história úloh (r. 787, 868);
+„Vrátiť včerajší systém“ (r. 951).
+
+**10H.07** (pozn.) (App Manager) R3·F — cieľ · r. 1047–1050
+**Cieľ:** inštalácia, aktualizácia a odstránenie aplikácií je jednotná, kontrolovateľná a
+obnoviteľná naprieč Fedora/RPM, Flatpak, webovými aplikáciami, hrami a podporovanými cudzími balíkmi.
+
+**10H.08** [x] (App Manager) R3·F — základ App Managera · r. 1051–1052
+
+**10H.09** [ ] (App Manager) R3·F — úlohy pre systémové príkazy · r. 1053–1054
+- [ ] Doplniť spoločný prehľad úloh aj pre systémové príkazy (dnf, Flatpak, cargo, Waydroid,
+  umu), vrátane stavu, logu a výsledku po reštarte.
+
+**10H.10** [ ] (App Manager) R3·F — prerušenie a logy úloh · r. 1057–1058
+- [ ] Overiť, že úlohy možno bezpečne prerušiť, logy sú dostupné používateľovi a stav po reštarte
+  nezostane falošne „úspešný“.
+
+**10H.11** [ ] (App Manager) R3·F — obchod, bazár a Barista · r. 1059–1063
+- [ ] App Manager je obchod, bazár a inštalátor Linuxových aplikácií (Flatpak) a aktualizátor všetkého softvéru
+  aj ovládačov HW; Barista je jeho súčasť. Barista po zacielení na súbor alebo priečinok rozpozná typ (jeden či
+  viac obrazov CD/DVD, delené archívy, portable priečinok, rozbalený inštalátor, XAPK, DOS) podľa internej
+  databázy, ktorú treba vybudovať; spolupracuje s Protonom, experimentmi v tejto oblasti, F-Droid 2 a Lepton.
+  Zámer: od malých vecí po veľké — dnes Windows a Android (E).
+
+**10H.12** [ ] (App Manager) R3·F — katalógy a recepty · r. 1064–1067
+- [ ] Predvolené katalógy a recepty musia mať overiteľný zdroj, licenciu a kontrolu integrity;
+  katalógy, ktoré spúšťajú skripty, sa nesmú považovať za dôveryhodné iba podľa vzhľadu.
+
+### 10I. [~] Barista
+Zdroje: `bin/latte-barista`, `recipes/`, `docs/barista/`
+Je sučastou Appmanageru. inštalator a ten kdo sa postara o beh programov z inej platformy.
+
+**10I.01** [~] (Barista) Barista v App Manageri · r. 179–184
+- [~] **Barista** v App Manageri: sprievodca v piatich krokoch a recept AVP2 (14. 10.); **vetva B** bez receptu
+  (20. 10.): rozpozná Inno, NSIS, InstallShield, MSI, samorozbaľovací archív, zip/rar/7z, priečinok aj samotný
+  program, z hlavičky PE rok, bitovosť a grafiku, podľa toho Wine alebo Proton (umu-run v ohrade) a verziu Windows;
+  hlavný program nájde sám; po „Fungovalo to? Áno“ zapíše recept používateľa. Overené naostro na priečinku, zipe,
+  Inno a NSIS. Chýba (stav v `docs/barista/POSTUP.md` §3): DOSBox, apk, balíky Linuxu, winetricks, mechanika pre
+  kontrolu CD, vykonanie návrhov po neúspešnej skúške.
+
+**10I.02** [ ] (Barista) Aplikácie podľa Priority UX · r. 266–266
+[ ] **Aplikácie podľa Priority UX** — prvý Barista s AVP2 (`docs/barista/NAVRH.md`).
+
+**10I.03** [x] (Barista) E. Barista · r. 766–769
+- [x] **Barista (rozhodnuté 9. 10.; cieľ Arabicy):** zámer je „od malých vecí po veľké“. Dnes **Windows a Android**; výhľad
+  ďalšie platformy a emulácie (konzoly, retro, neskôr aj nové) podľa toho, čo bude technicky a právne možné —
+  autor sleduje vývoj v komunite (tvrdenia z diskusií, napr. o spätnom inžinierstve PlayStation, sú zatiaľ
+  neoverené). Každá nová platforma = samostatný rozhodovací bod (R3·I). README opíše rozsah „dnes + výhľad“.
+
+**10I.04** [~] (Barista) R3·F — Barista · r. 1055–1056
+- [~] Barista: analýza a plán bez AI sú hotové; pokračovať inštaláciou a skúškou aplikácie,
+  registrom, odinštalovaním a zálohou podľa fáz v `docs/barista/NAVRH.md`.
+
+**10I.05** [~] (Barista) Barista — Windows programy · r. 1349–1377
+[~] **Barista — Windows programy** (používateľ, 14. 10.: pripraviť knižnice a pustiť sa do Baristu, prvý prípad AVP2).
     **Zázemie na latte-lab (14. 10.):** už bolo Wine 11.0 (Staging), wine-mono, wine-gecko, wine-dxvk, winetricks,
     cabextract, innoextract, 7zip, icoutils, bubblewrap, dosbox-staging, umu-launcher + runtime (662 MB),
     GE-Proton11-7 v `/opt/latteos/proton`, Steam, gamescope, gamemode, MangoHud, 32-bit Vulkan a Mesa, Bottles
@@ -1375,113 +1658,568 @@ cestu k aktualizácii alebo návratu.
     načítalo znova). Wine už pri inštalácii neukazuje vlastné okno (prefix sa robí bez obrazovky, 55 s namiesto
     97 s) a verzia Windows sa naozaj nastaví (predtým `winecfg -v` potichu nič nespravil). Poznámky receptu sú
     po anglicky (recept nemá preklady).
-18. [ ] **Hladina na spodku okna aplikácie ako miesto pre dve veci** (používateľ, 14. 10.): (a) **zaujímavé funkcie**
-    aplikácie, zvýraznené výraznou ikonou ako Barista v App Manageri; (b) **tooltip**: rady a triky, a popis
-    tlačidla, nad ktorým je kurzor. Platí pre každé okno s hladinou (`apps/common/AppWindow.qml`, `Surface.qml`).
 
-19. [~] **DualBrew, Súbory** (používateľ, 14. 10.). Prvá verzia pre 0.4, písaná načisto:
-    **Disky a zariadenia** (používateľ, 21. 10.; hotové v ten deň): pri každom disku v bočnom paneli pás zaplnenia
-    a koľko ostáva; nadpis Disky a zariadenia otvorí prehľad (`disks:`) ako KDE Partition Manager — disky, pás oddielov
-    podľa veľkosti, nerozdelené miesto, skutočné zaplnenie každého súborového systému (`latte-files disks`).
-    Ďalej: vytvoriť a zväčšiť oddiel do nerozdeleného miesta (s heslom správcu), upozornenie pri plnom disku (bod 15).
-    `apps/files.qml` + `bin/latte-files` (kopírovanie, presun, odkaz, Kôš, nový priečinok a súbor, premenovanie,
-    schránka kompatibilná s plochou a inými správcami, miesta a disky; súbory hýbe `gio`) + spoločné ikony
-    súborov `apps/common/FileIcons.qml` (aj pre plochu). Okno LatteOS: vľavo miesta (Domov, Plocha, Dokumenty…,
-    Kôš, disky), hore Vyššie · Nový priečinok · Ikony/Podrobnosti · **Dva panely**; cesta ako klikateľné omrvinky;
-    výber klikom, Ctrl, Shift; pravý klik = ponuka (Otvoriť, Otvoriť v programe, Otvoriť v druhom paneli,
-    Vystrihnúť, Kopírovať, Kopírovať ako cestu, Premenovať, Odstrániť; na prázdnom mieste Zobraziť, Obnoviť,
-    Prilepiť, Nový, Otvoriť v termináli). Na hladine dole: počet položiek a výber; pri dvoch paneloch klávesy
-    commanderu **F5 Kopírovať · F6 Presunúť · F7 Nový priečinok · F8 Odstrániť**; mená sa pýta tam.
-    `latteos-files.desktop` (otvára priečinky; predvolený správca sa volí v Nastaveniach › Predvolené aplikácie).
-    Overené naostro: zoznam, dva panely, F5 do druhého panela, F7 s menom, ponuka položky.
-    **Chýba oproti v0.3 a Total Commanderu:** karty, ťahanie myšou medzi panelmi a von, rad úloh s priebehom
-    (dnes sa kopíruje bez ukazovateľa), archívy, hľadanie, náhľad (F3) a úprava (F4), synchronizácia, sieť
-    (FTP/SFTP/SMB) a cloud, obnovenie z Koša, vlastnosti, triedenie podľa stĺpcov, strom, stĺpcové zobrazenie.
-    **Štítky a farby (používateľ, 14. 10.):** v0.3 mal Farbu v ponuke súboru a priečinka, uloženú v
-    `~/.config/latteos/tags.json` (iba pohľad Súborov, viazaný na cestu). Pre 0.4: štítok do rozšíreného atribútu
-    `user.xdg.tags` priamo pri súbore (overené na latte-lab: prežije presun aj kópiu so zachovaním atribútov) —
-    je to konvencia freedesktop, ktorú číta aj Dolphin; mimo Linuxu (Windows, FAT/exFAT, zip, cloud) sa stratí.
-    **Čo už v0.3 mal a používateľ k Súborom navrhoval** (`old/docs_zaloha/2026-10-09-roadmap-pred-ciscenim.md`
-    r. 566–591, 782–804, 982–1016): karty, hotlist, strom, plochý pohľad, rýchly náhľad, Lister F3 (text, hex,
-    obrázok, médiá), rad úloh s pauzou a overením SHA-256, hromadné premenovanie, porovnanie a synchronizácia
-    priečinkov, porovnanie súborov, archívy ako priečinky (aj s heslom), hľadanie (obsah, regex, v archívoch),
-    veľkosti priečinkov, práva a vlastník, odkazy, kontrolné súčty, rozdeliť/spojiť, riadok príkazu, vlastné
-    tlačidlá, FTP/SFTP/SMB/WebDAV/cloud (rclone, ~/Cloud), Kôš s obnovením, DiskTree (čo zapĺňa priečinok),
-    zoxide (často používané), Poslať do telefónu (KDE Connect), „Bude to fungovať?“ pri .exe. Nedokončené
-    nápady: vlastné stĺpce, úprava skratiek a ponúk, pluginy, odkladacia kvapka na súbory (ako Dropover),
-    značky a synchronizované priečinky so stavom (vzor Spacedrive, Nextcloud).
-    **14. 10. ráno (používateľ):** Medzerník bez výberu = koľko zaberá každý priečinok — v aktívnom paneli čísla
-    a pruhy, v druhom paneli „Čo zapĺňa …“ zoradené od najväčšieho (dvojklik vojde, Esc alebo Späť zavrie), aj
-    v ponuke Zobraziť › Koľko zaberá každý priečinok (dnes mapa, `latte-files tree`, plní sa priebežne).
-    **Štruktúra pre človeka:** predvolene svet používateľa — „Tento počítač“ (priečinky a disky ako dlaždice),
-    cesta od Tento počítač › Domov/disk, Vyššie z domova vedie na Tento počítač, nie do `/`; systémové priečinky
-    nie sú po ceste. **Skutočná štruktúra** (bočný panel, Zobraziť) ukáže Linux od `/` vrátane disku `/`.
-    Overené naostro: meranie (4,9 GB repozitára), panel veľkostí, Esc, Tento počítač.
+### 10J. [~] Kalendár
+Aplikácia Kalendár a karta ClockGoo (ľavý klik): EDS, udalosti vetou, týždeň.
+Zdroje: `apps/calendar.qml`, `bin/latte-cal`, `goo/lang/sk-dates.json`
 
-    **14. 10. ráno, ergonómia pre myš (používateľ: „výrazne lepšie než konkurencia“):** panel, v ktorom sa pracuje,
-    je nad kávou (zlatý rám, svetlejší), druhý pod ňou (závoj kávy tmavnúci ku dnu, línia hladiny hore).
-    Ťahanie súborov myšou: do druhého panela, na priečinok (zlatý rám), von do inej aplikácie a dnu z hocijakej
-    (na tom istom disku presun, na iný kópia, s Ctrl kópia). **Úlohy na hladine**: kopírovanie a presun s
-    priebehom v %, Pozastaviť/Pokračovať, Zastaviť (načatý súbor sa zmaže), ďalšie čakajú v rade
-    (`latte-files job`). Stredné tlačidlo na priečinku = otvoriť v druhom paneli; tlačidlá myši Späť/Dopredu;
-    dvojklik na prázdne = vyššie; klik na hlavičku stĺpca = triedenie (znova obráti); Ctrl + koliesko = veľkosť
-    ikon. **Medzerník na súbore** = náhľad v druhom paneli (obrázok, začiatok textu, inak ikona; ide za výberom,
-    Esc zavrie). Overené naostro: stredné tlačidlo, F5 s priebehom na iný disk (1,5 GB, 77 % na snímke),
-    pauza, zastavenie s upratovaním, ťahanie do druhého panela (presun), náhľad obrázka, Späť myšou.
-    Opravené aj na ploche: ťahanie von do aplikácií nikdy nefungovalo (`Drag.active` a položka mimo okna).
-    **Chýba:** výber obdĺžnikom myšou, náhľad PDF a videa, ťahanie s pravým tlačidlom (ponuka Kopírovať sem…).
+**10J.01** [ ] (Kalendár) Kalendár — úvod · r. 510–517
+- g. [ ] **Kalendár ClockGoo (ľavý klik) a aplikácia Kalendár** (používateľ, 21. 10.: „kalendár, ktorý bude každý OS
+  závidieť“, prepojený s ≥10 kalendárovými službami). Návrh na schválenie: https://claude.ai/artifact/JZr5fi8uL3b6FavXCKUcbU
+  (mesiac s počasím, meninami a sviatkami, „Ďalej o…“ s Pripojiť sa, deň ako časová os s voľnými oknami, pridanie
+  vetou cez lokálnu AI, týždeň s ťahaním myšou, rok ako teplotná mapa v štandardných farbách, Nerušiť počas
+  stretnutí, kalendár ako nástroj LensAI). Základ prebratý: **Evolution Data Server + GNOME Online Accounts**
+  (+ `evolution-ews`, `gnome-online-accounts-gtk`, všetko vo Fedore) — Google, Microsoft 365/Outlook, Exchange,
+  Nextcloud cez OAuth; iCloud, Fastmail, Zoho, Yahoo cez CalDAV; Proton, Tuta, EduPage a odbery cez .ics; Thunderbird
+  a miestne cez EDS.
 
-    **14. 10., mapa ako DiskTree (používateľ):** „Čo zapĺňa…“ už nie je zoznam, ale mapa obdĺžnikov
-    (squarified treemap, tri úrovne priečinkov, `latte-files tree` = df + zoznam priečinkov + `du -abx -d 3`,
-    plní sa počas merania). Farba = druh (Kód, Obrázky/hudba/video, Dokumenty, Archívy, Programy a hry, Git,
-    Vyrovnávacie pamäte a zvyšky, Ostatné; priečinok bez druhu dedí od predka), legenda iba s druhmi, ktoré tu sú,
-    pruh disku (voľné z celku, červený pod 10 %), dole čo je pod myšou alebo vybrané (veľkosť, podiel, druh;
-    Dovnútra · Otvoriť · Odstrániť do Koša) a bez výberu „Stojí za pohľad“ (pamäte a zvyšky nad 50 MB).
-    Dvojklik na priečinok = priblížiť (zmeria tam), Vyššie, Späť. `latte-app files PRIEČINOK sizes` otvorí
-    rovno mapu. Overené v headless sedení: celý domov 77,8 GB, klik, dvojklik do flatpak, zdedené farby.
-    Prvé meranie studeného domova trvá ~80 s (du), opakované 2 s. **Chýba oproti DiskTree:** režimy Súbory
-    (počet) a Vek (posledný zápis), hĺbka a skryté súbory ako voľba, zdanlivá veľkosť.
-    **Zo Strata (github.com/lgse/strata, GTK4, 14. 10.) do DualBrew:** Ctrl+Z / Ctrl+Shift+Z vráti poslednú
-    vratnú operáciu so súbormi; hľadanie Ctrl+K podľa mena v celom domove, výsledky hneď ako prichádzajú (najlepších
-    100, obnova po 50 ms, upozornenie, keď nie sú úplné); náhľady cudzích formátov v bubblewrap bez siete
-    (fence už máme z Baristu), text najviac 1 MiB, pri chybe ikona; v úzkom okne má prednosť zoznam, náhľad sa
-    zmenší a potom skryje; stĺpcové zobrazenie (Miller) ako tretí pohľad; vlastné akcie ako skripty v priečinku
-    s knižnicou receptov, ktoré sa samy nespustia; označenie disku iba v DualBrew (systém sa nemení); virtuálny
-    pohľad „Fotky“ na telefóne bez sprievodných súborov; hľadanie v nastaveniach.
-    **14. 10., klasický Prieskumník (používateľ: „DualBrew má vedieť pracovať ako klasický prieskumník, s rôzne
-    veľkými ikonami“):** tlačidlo a ponuka Zobraziť ako vo Windows — Veľmi veľké (256), Veľké (128), Stredné (64),
-    Malé ikony, Dlaždice (ikona, meno, druh, veľkosť), Podrobnosti; Ctrl + koliesko plynulo 32–256. Obrázky sú
-    vlastným náhľadom, priečinok pri veľkých ikonách ukáže dva obrázky, ktoré drží (ako Prieskumník). Výber
-    **obdĺžnikom** z prázdneho miesta (aj za menom v Podrobnostiach, okolo ikony), Ctrl pridáva. **Ctrl+Z** a
-    „Vrátiť späť“ v ponuke: `latte-files undo` vráti poslednú operáciu (presun, premenovanie späť; kópia, odkaz,
-    nový priečinok do Koša; z Koša späť) podľa záznamu `~/.local/state/latteos/files-undo`, spoločného pre všetky
-    okná. **Ťahanie pravým tlačidlom** → ponuka Kopírovať sem · Presunúť sem · Vytvoriť odkazy sem · Zrušiť.
-    **Náhľad** (Medzerník aj „Náhľad“ v ponuke súboru): prvá strana PDF (pdftoppm), snímka videa (ffmpegthumbnailer).
-    Overené v headless sedení: obdĺžnik (5 vybraných), ponuka Zobraziť, Veľké ikony s náhľadom priečinka, Dlaždice,
-    náhľad videa; undo v skúške presunu, Koša, priečinka, kópie a úlohy. **Neoverené:** ťahanie pravým tlačidlom
-    (headless nevie ťahať), PDF v okne (príkaz áno), Vrátiť pri vložení (Ctrl+V). **Chýba:** Redo, Kôš na inom disku,
-    zoznam (List) a Obsah z Prieskumníka, snímky videí v ikonách.
-    **14. 10., zariadenia, farby, archívy, fotky (používateľ):** bočný panel a Tento počítač ukazujú **všetky
-    jednotky**: disky, USB, pamäťové karty, DVD mechaniky skutočné aj z obrazu (**.iso › Pripojiť ako DVD
-    mechaniku** = Daemon Tools, `udisksctl loop-setup`), sieťové miesta (gvfs: SMB, SFTP, FTP, WebDAV; Google Drive
-    z GNOME Online Accounts) a **cloudy cez rclone** (`~/Cloud/MENO`, pripojí sa pri prvom kliknutí; Pridať cloud ›
-    Google Drive / OneDrive / Dropbox otvorí prehliadač na prihlásenie, MEGA a ďalšie cez `rclone config` v
-    termináli; sieťové miesto adresou, heslo pýta gio v termináli). Nepripojené sú bledé, klik ich pripojí, tlačidlo
-    vysunie (USB aj vypne). Zoznam sa obnovuje každé 4 s. **Farby** súborov a priečinkov (7 farieb, ponuka Farba;
-    `user.xdg.tags`, vidí aj Dolphin): podfarbený riadok a pásik, bodka pri ikone. **Archívy** ako úlohy na hladine:
-    Rozbaliť sem / do druhého panela (zip, 7z, tar…, rar cez bsdtar; jedna vec vyjde rovno, viac do priečinka),
-    Komprimovať › ZIP / 7z; Ctrl+Z vráti. **RAR sa vytvárať nedá** (formát je uzavretý, rar pre Linux je platený).
-    **Prehliadač fotiek** (Zobraziť › Prehliadač fotiek, ako ACDSee): veľký obrázok, pás náhľadov, koliesko,
-    šípky a tlačidlá myši idú ďalej/späť, rozlíšenie, veľkosť, dátum, Prezentácia, dvojklik skryje pás; nie editor.
-    Overené v headless: bočný panel so sekciami, Farba (zápis aj zobrazenie), ponuka Komprimovať, prehliadač fotiek,
-    balenie a rozbaľovanie aj s Ctrl+Z (skript). **Neoverené:** USB, karta, DVD, ISO (polkit mimo relácie
-    odmietol), sieť a cloudy (treba účet), zobrazenie pripojených jednotiek.
-    **14. 10., hladina a obľúbené (používateľ):** **pod hladinou informácie o jednej vybranej veci**
-    (`latte-files about`): priečinok — počet položiek, veľkosť (du najviac 3 s), kedy zmenený; obrázok — rozlíšenie,
-    fotoaparát, kedy fotené, clona, čas, ISO (EXIF cez exiv2), veľkosť; video — rozlíšenie a dĺžka (ffprobe). V
-    prehliadači fotiek je zobrazená fotka zároveň vybraná, takže hladina hovorí o nej. **Obľúbené priečinky** v
-    bočnom paneli (sekcia Obľúbené, „Pridať obľúbený priečinok“ pridá ten, kde som; krížik odoberie; aj v ponuke
-    priečinka Pridať do / Odobrať z obľúbených) — uložené v záložkách GTK (`~/.config/gtk-3.0/bookmarks`), takže
-    ich vidí aj okno Otvoriť/Uložiť iných aplikácií. **Opravené:** po každej operácii (obnovenie zoznamu) sa
-    prerušila väzba priečinka a zoznam potom ostal na starom mieste pri prechode inam.
-    Overené v headless: informácie o priečinku a o fotke na hladine, pridanie obľúbeného, prechod po operácii.
+**10J.02** [x] (Kalendár) Kalendár: karta ClockGoo · r. 518–522
+
+**10J.03** [x] (Kalendár) Kalendár: veta a lokálna AI · r. 523–529
+- [x] **Veta, ktorej slová nerozumejú → lokálna AI** (21. 10.): pri Pridať, keď pravidlá nenašli deň ani čas alebo
+  v názve ostalo slovo času, `latte-cal parse --ai` → `latte-ai quick` (najmenší model nad 2 GB: Qwen3.5 2B vynechával
+  dátum, 4B čítal správne, ~12 s na procesore); výsledok sa ukáže v čipoch, pridá sa až ďalším stlačením.
+  Používateľ 21. 10.: „zubár koncom mesiaca ráno o deviatej“ dala AI na stredu 28. 10. (správne piatok 30. 10.) →
+  dátumy počítajú pravidlá (koniec/začiatok/polovica mesiaca na pracovný deň, posledný piatok v mesiaci, o N dní
+  či týždňov, hodiny slovom „o deviatej“, „pol siedmej“, ráno/večer); AI dostane zoznam dní na 6 týždňov. 4B sa
+  aj tak mýli (posledný piatok → 20. 11.), premýšľanie trvá minúty — AI ostáva iba na zvyšok, s potvrdením.
+
+**10J.04** [x] (Kalendár) Kalendár: aplikácia · r. 530–535
+- [x] **Aplikácia Kalendár** (22. 10., `apps/calendar.qml`, `latte-app calendar`, podľa návrhu „Týždeň“): deň, týždeň a
+  mesiac; malý mesiac, moje kalendáre (skryť/ukázať), vyťaženie pol roka v štandardných farbách; v týždni počasie,
+  čiara teraz, ťahaním myšou nová udalosť, presun aj predĺženie; vpravo otvorená udalosť a úprava (názov, čas,
+  miesto, poznámka, **vlastná farba** = COLOR z iCalendar, ako Evolution) — `latte-cal update`. Karta ClockGoo:
+  „V okne“ a klik na udalosť dňa ju otvorí v aplikácii; mesiac ukazuje iba svoje dni. `latte-cal` nečaká 15 s na
+  miestny kalendár (0,5 s namiesto 15,5 s).
+
+**10J.05** [ ] (Kalendár) Kalendár: otvorené · r. 536–537
+- [ ] Rok ako samostatný pohľad a Agenda; mapa a čas cesty pri udalosti; Nerušiť počas stretnutí; kalendár ako
+  nástroj LensAI.
+
+**10J.06** [ ] (Kalendár) **Cieľ (používateľ 22. 10.): funkčnosť aspoň ako Google Kalendár na Androide.** Dizajn ostáva (je dobrý, nemeniť); dopĺňajú sa funkcie. Test 22. 10.: úprava udalosti je len povrchná, s Google Kalendárom sa zatiaľ nedá porovnať. Pri každej funkcii si pozrieť, čo vie Evolution Data Server (`libecal`/iTIP/VALARM/RRULE), aby sa nevymýšľalo.
+
+**10J.07** [ ] (Kalendár) **Udalosti — úprava a tvorba:** celodenné a viacdňové; začiatok/koniec s časovým pásmom (aj dve pásma); názov, miesto (s mapou/čas cesty), popis (formátovaný), prílohy, odkaz na videohovor (Meet/Teams/Zoom), farba udalosti aj kalendára, súkromná/verejná, „zaneprázdnený/voľný“; duplikovať, presunúť do iného kalendára, odstrániť, **Späť** po zmazaní.
+
+**10J.08** [ ] (Kalendár) **Opakovanie (RRULE):** denne, týždenne (vybrané dni), mesačne (deň v mesiaci / n-tý deň v týždni), ročne, vlastné; koniec (dátum / po N opakovaniach); pri úprave **táto / táto a ďalšie / všetky**; výnimky.
+
+**10J.09** [ ] (Kalendár) **Pripomienky:** viac pripomienok na udalosť (minúty/hodiny/dni pred), predvolené pre kalendár, upozornenie cez LatteOS notifikácie aj pri zatvorenej aplikácii, odloženie.
+
+**10J.10** [ ] (Kalendár) **Hostia a pozvánky:** pridať hostí (e-mail), stav odpovede ÁNO/NIE/MOŽNO, práva hostí (upraviť/pozvať ďalších/vidieť zoznam), odpovedať na pozvánku, ukázať voľno/obsadené hostí a **navrhnúť čas** (v EDS cez iTIP/free-busy; podľa účtu — Google, Exchange, CalDAV).
+
+**10J.11** [ ] (Kalendár) **Pohľady:** deň, 3/4 dni, týždeň, mesiac (hotové), **rok**, **Agenda/Plán** (zoznam), prechod klávesnicou aj myšou, „Dnes“, číslo týždňa, vyhľadávanie udalostí (názov, miesto, hostia), tlač.
+
+**10J.12** [ ] (Kalendár) **Kalendáre a účty:** pridať/odobrať účet (Google, Microsoft 365, iCloud, Nextcloud, CalDAV, .ics odber), viac kalendárov, skryť/ukázať (hotové), nový kalendár, zdieľanie, import a export `.ics`, kalendár sviatkov, narodeniny z kontaktov, meniny (hotové).
+
+**10J.13** [ ] (Kalendár) **Čas a plánovanie ako Google:** pracovný čas a miesto práce, **Mimo kancelárie**, **Sústredenie** (Nerušiť), predvolená dĺžka udalosti, týždeň od pondelka/nedele, druhé časové pásmo, **Termíny/Úlohy** (Google Tasks / VTODO), pripomienky ako samostatné veci, „Naplánovať stretnutie“ s voľnými oknami.
+
+**10J.14** [ ] (Kalendár) **Ovládanie myšou ako Google:** ťahanie na vytvorenie (hotové), presun a zmena dĺžky ťahaním (hotové), dvojklik = úprava, pravý klik = ponuka (farba, duplikovať, odstrániť), rýchle pridanie vetou (hotové), klávesové skratky ako doplnok.
+
+**10J.15** [ ] (Kalendár) **Postup:** najprv úprava udalosti (komplet polia) + opakovanie + pripomienky, potom hostia a pozvánky, potom rok/Agenda, nakoniec Úlohy a plánovanie. Každý krok: porovnať s Google Kalendárom na Androide a zapísať, čo ešte chýba.
+
+### 10K. [ ] Hry
+Herná relácia: Steam, Proton, umu, gamescope, MangoHud, NVIDIA.
+Zdroje: `bin/latte-game`
+
+**10K.01** (pozn.) (Hry) F. R3·I — hry · r. 869–871
+**R3·I — hry:** Steam, umu, Proton 11 (r. 883); NVIDIA akmod (r. 892); gamescope, MangoHud, HDR/VRR — čaká na skúšku (r. 898);
+Lepton, F-Droid 2 (r. 906–907); SAFE pri zlom ovládači NVIDIA (r. 910).
+
+**10K.02** (pozn.) (Hry) R3·I — cieľ · r. 1104–1106
+**Cieľ:** herná relácia a cudzie aplikácie sú integrované bez oslabenia bežného desktopu alebo SAFE.
+
+**10K.03** [ ] (Hry) R3·I — Steam, Proton, umu · r. 1107–1108
+- [ ] Dokončiť Steam/Proton/umu a Barista herné scenáre na podporovanom skutočnom GPU; vo VM
+  zachovať iba primerané smoke testy.
+
+**10K.04** [ ] (Hry) R3·I — prechod Desktop ↔ Hra · r. 1109–1109
+- [ ] Overiť prechod Desktop ↔ Hra, návrat profilu výkonu, zvuku, okien a nastavení po skončení hry.
+
+**10K.05** [ ] (Hry) R3·I — externé technológie · r. 1110–1113
+- [ ] Lepton/Android hry, gvisor, scrcpy a ďalšie externé technológie zostávajú samostatnými
+  rozhodovacími bodmi; do produktu prejdú iba po teste prínosu, kompatibility, bezpečnosti a údržby.
+
+---
+
+## 11. [~] Bezpečnosť, súkromie a záloha
+Zdroje: `bin/latte-net`, `system/libexec/latte-netd`
+
+**11.01** [x] (Bezpečnosť, súkromie a záloha) B. bezpečnosť · r. 635–636
+
+**11.02** (pozn.) (Bezpečnosť, súkromie a záloha) F. R3·H — bezpečnosť · r. 867–868
+**R3·H — bezpečnosť:** profily pre Windows aplikácie (r. 812); NET pre jednotlivé hry v Steame a skripty (r. 818).
+
+**11.03** (pozn.) (Bezpečnosť, súkromie a záloha) R3·H — cieľ · r. 1088–1090
+**Cieľ:** bezpečnosť je vlastnosťou každej etapy a každej oblasti, nie samostatný doplnok na konci.
+
+**11.04** [x] (Bezpečnosť, súkromie a záloha) R3·H — základ · r. 1091–1092
+
+**11.05** [ ] (Bezpečnosť, súkromie a záloha) R3·H — sieťové profily pre Wine/Proton · r. 1093–1094
+- [ ] Doplniť sieťové profily pre Wine/Proton scenáre a podporované skripty; overiť izoláciu
+  každej novej cesty spúšťania.
+
+**11.06** [ ] (Bezpečnosť, súkromie a záloha) R3·H — kontrola integrácií · r. 1095–1096
+- [ ] Pri integráciách kontrolovať licenciu, pôvod, oprávnenia, aktualizácie, sieťový prístup a
+  spôsob uloženia tajomstiev pred ich prijatím do systému.
+
+**11.07** [x] (Bezpečnosť, súkromie a záloha) R3·H — záloha domova · r. 1097–1097
+
+**11.08** [ ] (Bezpečnosť, súkromie a záloha) R3·H — obnova dát · r. 1098–1099
+- [ ] Overiť obnovu používateľských dát a profilov v ďalších scenároch; pred ničivou akciou
+  ukázať rozsah a cieľ.
+
+**11.09** [ ] (Bezpečnosť, súkromie a záloha) R3·H — bezpečnostné nástroje · r. 1100–1103
+- [ ] Voliteľné skeny či bezpečnostné nástroje nesmú sľubovať úplnú ochranu; zobrazovať limity,
+  možné falošné poplachy a vyžadovať súhlas so zberom/analýzou dát.
+
+### 11A. NET a sieťové profily
+Odstavenie aplikácie od internetu (tlačidlo NET je v 8.01), profily pre Wine/Proton.
+
+---
+
+## 12. [ ] Preklady a jazyk
+Všetok text na obrazovke ide cez preklady (pleamar `translations`, QML `i18n.tr()`); prepínanie podľa `LANG`, žiadna slovenčina natvrdo.
+Zdroje: `goo/lang/`
+
+**12.01** [ ] (Preklady a jazyk) R3·B — preklady a prístupnosť · r. 977–978
+- [ ] Preklady a prístupnosť dokončiť podľa schváleného rozsahu po ustálení funkcií; pripraviť
+  testy pre čitateľnosť, kontrast, obmedzenie pohybu a klávesnicové ovládanie.
+
+---
+
+## 13. Prístupnosť
+Až v Arabice 1+ (rozhodnuté 13. 10.). Ovládanie Goo z klávesnice (Win+T) už je.
+Zdroje: LATTEOS-GOO §6.1
+
+Optimalizácia 
+STRESTEST 
+
+---
+
+## 14. [~] Build a vydania
+Čistý strom v0.4 Fresh, `FILES`, `./install`, `tests/check.sh`, verejné repo, README, licencie, brány 1.0 Arabica.
+Zdroje: `FILES`, `install`, `tests/`, `TRETIE-STRANY.md`, `ZMENY.md`
+
+**14.01** [~] (Build a vydania) Fresh — úvod · r. 28–36
+[~] **v0.4 Fresh — čistý strom** (schválené 12. 10.; vetva `v0.4-fresh`, predloha pod značkou `v0.3-archive`).
+   Nahrádza body „Upratanie Classicu“, „Premenovanie kvapiek“ a „Čistá inštalácia verejného stromu“. Cieľ: čistá
+   Fedora → prihlasovanie Goo + dve relácie, **LatteOS SAFE** (samostatné GUI) a **LatteOS GOO** (engine Goo so všetkými
+   kvapkami), k nim zatiaľ ostáva herná relácia **LatteOS Game** (Steam + gamescope; rozhodnuté 12. 10.), bez Noctalie a bez zrušených vecí. Pravidlá pre každý kus, ktorý do Fresh vstúpi: kód, mená príkazov,
+   súborov a komentáre po anglicky (komentár iba „prečo“, bez odkazov na staré verzie); text na obrazovke iba cez
+   preklady (scény: vstavané `translations` pleamaru 0.3 s faktom `locale`, prepnutie za behu, logika `tr()`; aplikácie
+   QML `i18n.tr()`); žiadny kus nemenuje inú aplikáciu priamo (kto čo otvára, vie jedno miesto); scény podľa skillu
+   `pleamar` (logika nekreslí a nepozná súradnice), po každej úprave `pleamar --check`. Strata funkcie je prípustná,
+   obnoví sa testovaním; zmazané sa vytiahne cez `git show v0.3-archive:cesta`.
+
+**14.02** [x] (Build a vydania) Fresh a) · r. 37–37
+
+**14.03** [x] (Build a vydania) Fresh b) Starý kód do old/ · r. 38–43
+- b. [x] **Starý kód do `old/`** (12. 10.): celý strom v0.3 (`session`, `setup`, `crates`, `resources`, `Cargo.*`,
+  `docs_zaloha`) je v `old/` bez zmeny obsahu a dá sa z neho ďalej inštalovať (`old/setup/f1/install-session.sh`) —
+  na latte-lab ostáva starý LatteOS na porovnanie. Pôvodný `old/` (Classic v GTK) je zmazaný, ostáva pod značkou.
+  V koreni ostáva: `docs`, `bughunt`, `inspo`, `ROADMAP.md`, `LATTEOS-GOO.md`, `README.md`, `ZMENY.md`,
+  `TRETIE-STRANY.md`, `LICENSE`, `CLAUDE.md`. `old/` je predloha: nemení sa a do Fresh sa z neho nekopíruje, píše sa
+  podľa neho nanovo.
+
+**14.04** [~] (Build a vydania) Fresh d) Písať načisto — poradie · r. 50–50
+- d. [~] **Písať načisto, po kusoch** — so skillom `pleamar`, podľa `old/`, ale lepšie. Poradie (používateľ 12. 10.):
+
+**14.05** [~] (Build a vydania) FILES · r. 208–210
+- e. [~] **Zoznam súborov (`FILES`)** od prvého kusu (založený 12. 10., stráži ho `tests/check.sh`): každý súbor, ktorý LatteOS pridá do systému, má riadok
+  „cieľ v systéme ← zdroj v repe“. Inštalátor aj odinštalovanie sa neskôr napíšu nad týmto zoznamom; dovtedy
+  sa podľa neho inštaluje ručne. Čo LatteOS v systéme mení (nie pridáva — `/etc/os-release`, greetd), má vlastný oddiel.
+
+**14.06** [~] (Build a vydania) Inštalátor a odinštalovanie · r. 211–225
+- f. [~] **Inštalátor a odinštalovanie**: `./install` (13. 10.) nad zoznamom `FILES` — bez prepínača iba vypíše, čo
+  chýba a čo by spravil; `sudo ./install --go` postaví (cargo, plugin), skopíruje súbory, nahrádzané odloží ako
+  `*.pre-latteos` a spustí kroky z oddielu `[steps]`; `--remove` ich vráti (`[undo]`) a súbory odoberie
+  (`--purge` aj to, čo vzniklo počas behu); `--root DIR` inštaluje do priečinka bez krokov (skúška, balíček);
+  `--prune` odstráni z vlastných priečinkov LatteOS to, čo ostalo po staršej verzii. `tests/check.sh` pri každej
+  kontrole nainštaluje do dočasného priečinka a zasa odoberie.
+  **Urobené 13. 10.:** výmena na latte-lab jedným príkazom `sudo ./fresh-install` (snímka snapper, záloha nastavení
+  do `/var/backups`, `./install --go --prune`, potom `./migrate-v03 --go` — 80 zvyškov v0.3 mimo vlastných
+  priečinkov a balíky Noctalie); ochrana pred nedostatkom pamäte (`system/oom/`) prenesená do Fresh. Po reštarte
+  beží 0.4: greetd → `latte-session` → Hyprland → Goo; Sunshine, EDID a repozitáre ostali.
+  **Pôvodne ostávalo (s používateľom):** výmena na latte-lab bez preinštalovania Fedory — snímka snapper pred ňou,
+  nastavenia používateľa do zálohy, odobratie v0.3 mimo vlastných priečinkov (v0.3 odinštalátor nemá: staré
+  jednotky systemd, `/usr/libexec/latteos`, staré príkazy v `/usr/bin`, Noctalia) — a čistá Fedora vo VM
+  s voliteľným vzdialeným prístupom (dnes `old/setup/lab/vzdialene.sh`). Až tu sa dokončia zvyšné testy bodu 1.
+  Na latte-lab dnes `./install` hlási: chýba balík `NetworkManager-tui`; 552 súborov v0.3 vo vlastných priečinkoch.
+
+**14.07** [ ] (Build a vydania) Fresh → main · r. 226–226
+- g. [ ] Fresh → `main`, verzia 0.4.0; verejné vydanie iba na pokyn.
+
+**14.08** (pozn.) (Build a vydania) Rozloženie Fresh · r. 227–229
+- Rozloženie Fresh (schválené 12. 10.): `goo/` engine, kvapky, prihlásenie, zámok, SAFE a `lang/` s prekladmi ·
+  `apps/` aplikácie QML · `bin/` príkazy · `system/` Hyprland, labwc, greetd, systemd, plymouth · `assets/` tapety,
+  písma, textúry · `crates/` Rust · `patches/` záplaty pleamaru · `tests/` kontroly (`tests/check.sh` pred každým commitom) · `FILES`.
+
+**14.09** (pozn.) (Build a vydania) Fedora 45 a oo7 · r. 374–374
+- **Fedora 45** (30. 10.) až po prebudovaní COPR; **oo7** ako trezor hesiel (kamery, cloudy).
+
+**14.10** [~] (Build a vydania) C. GOO / verejné vydanie · r. 665–666
+- [x] **GOO / verejné vydanie:** príprava a vydanie 0.3.0 „Jihlavanka“ sú zaznamenané ako hotové.
+  [ ] Čistú inštaláciu vydaného verejného stromu treba ešte overiť.
+
+**14.11** [ ] (Build a vydania) D. integrácia, kvalita a vydanie · r. 701–703
+- [ ] **Integrácia, kvalita a vydanie:** dotiahnuť jednotné GUI, preklady a prístupnosť po ustálení
+  funkcií; testovať VM aj reálny AMD/NVIDIA HW, čistú inštaláciu, aktualizáciu, obnovu, výkon a
+  regresie pred ďalším vydaním.
+
+**14.12** [ ] (Build a vydania) E. pravopis v opise · r. 785–787
+- [ ] Pravopis v opise: Flatpak, bubblewrap, „softvér“; „sf“ = softvér; „blue“ = Fedora Atomic / Universal Blue.
+
+**14.13** (pozn.) (Build a vydania) R6 — cieľ · r. 1153–1156
+**Výsledok:** vydaná verzia má reprodukovateľný obsah, známe obmedzenia, dokumentáciu a bezpečnú
+cestu k aktualizácii alebo návratu.
+
+**14.14** [ ] (Build a vydania) R6 — definícia LatteOS 1.0 „Arabica“ · r. 1157–1168
+- [ ] **Definícia LatteOS 1.0 „Arabica“:** ciele z prezentácie (E) a testy z [bughunt/STRESTEST.md](bughunt/STRESTEST.md)
+  spojiť do jedného zoznamu brán (STRESTEST sa plní postupne podľa blízkosti k 1.0); prístupnosť patrí do Arabicy. Marketingové tvrdenia (Barista „čokoľvek“, AI voľba
+  v inštalátore, Nervboot) sa nepíšu ako hotové, kým ich brána neoveri.
+  **Brány „pre sebe podobných“** (office hours 20. 10.; robia sa až na konci, keď funkcie existujú):
+  1. *Aktualizácia nerozbije plochu:* pleamar ako balík (dnes `/usr/bin/pleamar` nevlastní žiadny balík, preložený
+     z `~/src`), pluginy (`latte-events`, hyprbars, Hyprglass) sa preložia s každým novým Hyprlandom a až potom sa
+     zámok verzie posunie; skúška prechodu na ďalšiu Fedoru (45). **Hneď (20. 10.):** `dnf versionlock` na Hyprland
+     (latte-lab aj krok vo `FILES`).
+  2. *Inštalácia na cudzí počítač* bez repa a ručného prekladania: balíky LatteOS (vlastné COPR) alebo obraz;
+     `latteos-local` (hyprland-latte so záplatou vmwgfx) existuje iba na latte-lab. Posúva „distribúciu balíkov“ z R7 sem.
+  3. *Záloha dát používateľa* (domov, nie systém — snapper chráni iba systém): stránka Nastavenia › Zálohovanie.
+  4. *Prechod z Windowsu* pri prvom spustení: súbory, záložky a heslá prehliadača.
+
+**14.15** [ ] (Build a vydania) R6 — pred vydaním · r. 1169–1170
+- [ ] Pred vydaním uzavrieť rozsah, verziu, zmeny, licencie/tretie strany, inštalačný zdroj,
+  kontrolné súčty a skúšku obnovy.
+
+**14.16** [~] (Build a vydania) R6 — README · r. 1171–1171
+- [~] Nový dvojjazyčný README (EN/SK) z autorovho opisu je v `setup/verejne/README.md` (9. 10.; zverejní ho `zverejnit.sh` na pokyn). Po premenovaní kvapiek (E) prepísať názvy GooBar → BarGoo, GooPower → PowerGoo; AI voľbu pri inštalácii nesľubovať ako hotovú.
+
+**14.17** [ ] (Build a vydania) R6 — podporovaný hardvér · r. 1172–1173
+- [ ] Zaznamenať podporovaný hardvér, známe problémy a postup diagnostiky bez zverejnenia
+  súkromných údajov alebo tajomstiev.
+
+**14.18** [ ] (Build a vydania) R6 — po vydaní · r. 1174–1175
+- [ ] Po vydaní triediť hlásenia podľa závažnosti, reprodukovať ich, opraviť a overiť regresiu;
+  bezpečnostné aktualizácie a obnova majú prednosť pred novými efektmi.
+
+---
+
+## 15. [ ] Inšpirácie a tech radar
+Nápady bez rozhodnutia; samostatné úlohy z nich sú pri svojej kategórii. `inspo/`.
+Zdroje: `inspo/dalsie_inspiracie.md`, `inspo/LatteOS – technologický radar 2026.md`
+
+**15.01** [ ] (Inšpirácie a tech radar) Z inšpirácií a tech radaru — úvod · r. 366–366
+[ ] **Z inšpirácií a tech radaru (20. 10.)** — po bodoch 12 a 13, nič z toho nie je naliehavé:
+
+**15.02** [ ] (Inšpirácie a tech radar) C. GOO / ďalšie rozhodnutia · r. 675–679
+- [ ] **GOO / ďalšie rozhodnutia:** nové návrhy z `inspo/` (napr. reakcia kvapiek na hudbu,
+  vizuálne prechody, ďalšie cloudové či bezpečnostné nástroje) sú prieskum, kým sa výslovne
+  neprijmú; existujúce návrhy a verdikty sú v [inspo/dalsie_inspiracie.md](inspo/dalsie_inspiracie.md).
+
+---
+
+## 16. [~] Pravidlá postupu a brány
+Ako sa prechádza od nápadu po vydanie (R0, R1, R4), trvalé priority.
+Zdroje: `docs/ARCHITECTURE.md`
+
+**16.01** [~] (Pravidlá postupu a brány) ROADMAP2 — pravidlá práce · r. 575–603
+- Vývojový postup je **po etapách produktu**, ale pracovné prúdy v implementačnej etape môžu napredovať
+  paralelne, ak nemajú vzájomnú závislosť.
+- Každá nová funkcia prejde primerane veľkým cyklom: **nápad a používateľský problém → rozhodnutie →
+  technický návrh a riziká → prototyp → implementácia → integrácia → overenie → vydanie a údržba**.
+  Pri malej zmene sa kroky môžu spojiť; pri zmene štartu, bezpečnosti alebo formátu dát sa nevynecháva
+  návrh, obnova ani test.
+- Nápad v `inspo/` nie je automaticky schválená úloha. Do aktívnej práce sa dostane po pomenovaní
+  prínosu pre LatteOS, porovnaní s tým, čo už existuje, a rozhodnutí o prijatí.
+- **Rozlíšiť pôvod aj platnosť.** Úlohy zo zrušenej Classic vetvy sú história alebo kandidáti na
+  opätovné použitie, nie automaticky úlohy LatteOS GOO. Práca na spoločnej linuxovej platforme a
+  aplikáciách sa prenáša, ak je stále súčasťou produktu. Funkcie vytvorené po prechode sa označia
+  ako GOO.
+- **Detail ostáva pri svojom technickom zdroji, stav patrí aj sem.** ROADMAP2 uvádza, čo je
+  dokončené, rozhodnuté a otvorené, ale podrobné kroky, merania a históriu necháva vo fázach
+  vyššie alebo v dokumentácii. Tak sa pri porovnaní v pondelok **12. 10. 2026** dá určiť, čo premiestniť, zlúčiť,
+  ponechať ako históriu alebo zrušiť.
+- Značky `[x]`, `[~]`, `[ ]` zachovávajú význam používaný v pôvodnej časti roadmapy: hotové, čiastočné /
+  rozpracované, otvorené. **Otvorená otázka alebo nápad bez rozhodnutia nie je schválená implementačná
+  úloha.**
+- Pri každom významnom míľniku sa uvedie výsledok, závislosti a dôkaz overenia (test, meranie, skúška
+  na zariadení alebo používateľský scenár). Funkcia je hotová až vtedy, keď je súčasťou použiteľného
+  systému, nie iba prototypu alebo samostatného programu.
+- Záväzné pravidlá plochy sú v [LATTEOS-GOO.md](LATTEOS-GOO.md), záznam používateľských rozhodnutí
+  v [docs/goo/ROZHODNUTIA.md](docs/goo/ROZHODNUTIA.md), technické detaily v dokumentácii príslušného
+  subsystému.
+
+**16.02** [x] (Pravidlá postupu a brány) C. rozhodnutie o poradí práce · r. 656–657
+- [x] **Rozhodnutie o poradí práce:** najprv dokončiť použiteľné GOO a systémový zážitok; nápady
+  z inšpirácie alebo nové externé projekty sa nepridávajú automaticky ako závislosti.
+
+**16.03** [ ] (Pravidlá postupu a brány) Trvalé priority — Priorita UX · r. 800–800
+- [ ] **Priorita UX (od 7. 10. 2026):** najprv softvér zo zoznamu záujmov a zvyky z Windowsu; prístupnosť až v Arabice.
+
+**16.04** (pozn.) (Pravidlá postupu a brány) Etapy produktu — úvod · r. 879–884
+Nasledujúce etapy opisujú postup od zámeru po vydanie. Sú to brány a výsledky pre celý produkt;
+aktuálne hotové, rozhodnuté a otvorené pracovné celky sú zhrnuté v častiach A–D vyššie a ich
+technický rozpis ostáva v pôvodných fázach.
+
+**16.05** [~] (Pravidlá postupu a brány) R0 — zámer, používatelia a rozsah · r. 885–897
+**Výsledok:** je jasné, pre koho LatteOS je, aký problém rieši, čo je jeho jediná edícia a čo do
+produktu nepatrí. Zaznamenajú sa používateľské scenáre, obmedzenia VM a podporovaného hardvéru,
+zásady ovládania a priority.
+
+- [x] Smer LatteOS GOO, zrušenie Classicu, zásady Goo a základný cieľ používateľského zážitku sú
+  zachytené v existujúcich dokumentoch.
+- [ ] Pri nových väčších funkciách doplniť konkrétny scenár a dôvod: čo chce používateľ dosiahnuť,
+  ako to dnes urobí a ako spozná, že LatteOS to vyriešil lepšie.
+- [ ] Udržiavať jednu aktuálnu hranicu produktu: čo je súčasť systému, čo voliteľná aplikácia /
+  integrácia a čo iba externý alebo vývojársky nástroj.
+
+**16.06** [ ] (Pravidlá postupu a brány) R1 — prieskum a technický návrh · r. 898–912
+**Výsledok:** pred implementáciou je známe, či sa riešenie preberá, integruje alebo píše; sú určené
+rozhrania s ostatnými časťami systému, licencia, oprávnenia, náklady, riziká a cesta bez GPU.
+
+- [ ] Každý prijatý nápad z inšpiračných zoznamov porovnať s existujúcimi funkciami a plánom; zamietnuté
+  alebo odložené návrhy označiť ako také, nie ako otvorenú prácu.
+- [ ] Pri systémových častiach určiť vlastníctvo dát a API, používateľa procesu, životnosť služby,
+  spôsob aktivácie, zlyhanie a obnovu.
+- [ ] Pri GUI určiť prístup cez myš aj klávesnicu, správanie pri malom rozlíšení a slabom výkone,
+  preklady a súlad s vizuálnymi pravidlami GOO.
+- [ ] Pri sieťových/cloudových/AI integráciách určiť, aké údaje odchádzajú, komu, s akým súhlasom
+  a či existuje lokálna alebo odpojená cesta.
+
+**16.07** (pozn.) (Pravidlá postupu a brány) R3 — úvod · r. 931–936
+Pracovné prúdy nižšie môžu ísť súbežne, ale každá väčšia funkcia v nich postupuje cez R0/R1, prototyp,
+implementáciu, integráciu a overenie. Podnadpisy sú súčasťou jednej produktovej roadmapy, nie oddelené
+projekty bez spoločného cieľa.
+
+**16.08** (pozn.) (Pravidlá postupu a brány) R4 — cieľ · r. 1124–1126
+**Výsledok:** pracovné prúdy spolu fungujú ako jeden systém, nie iba ako samostatné aplikácie.
+
+**16.09** [ ] (Pravidlá postupu a brány) R4 — celý tok · r. 1127–1128
+- [ ] Overiť celý tok: inštalácia → boot → SAFE/NORMAL → prihlásenie → načítanie profilu →
+  Goo/Noctalia/Hyprland → aplikácie a zariadenia → odhlásenie → ďalší štart.
+
+**16.10** [ ] (Pravidlá postupu a brány) R4 — jedno miesto pravdy · r. 1129–1130
+- [ ] Zjednotiť prenos stavov medzi shellom, systémovými službami a aplikáciami: úlohy, oznámenia,
+  nastavenia, témy, profily, povolenia a diagnostika majú jedno miesto pravdy.
+
+**16.11** [ ] (Pravidlá postupu a brány) R4 — pády komponentov · r. 1131–1132
+- [ ] Otestovať pády komponentov jednotlivo: engine, shell, kompozitor, služba, aplikácia, úložisko,
+  sieť a aktualizácia. Zlyhanie jednej časti nesmie bezdôvodne znefunkčniť celý systém.
+
+**16.12** [ ] (Pravidlá postupu a brány) R4 — UI a backend · r. 1133–1136
+- [ ] Doplniť medzery medzi UI a backendom: každá akcia má viditeľný priebeh, výsledok alebo chybu;
+  žiadne tiché zlyhanie ani úspech bez vykonanej operácie.
+
+---
+
+## 17. [ ] Optimalizácia
+Po dokončení všetkých súčastí, pred STRESTESTOM. Ciele: **zrýchlenie načítania**, **zmenšenie veľkosti na úložisku**, **nižšia náročnosť na hardvér** — vždy **bez obmedzenia výsledku** (vzhľad a funkcie ostávajú). Najprv merať, potom meniť, potom znova merať.
+Zdroje: `docs/OPTIMALIZACIA.md`, `tests/screen.sh` (`PLEAMAR_TIMING=1`)
+
+**17.01** [ ] (Optimalizácia) záťaž GooEngine v pokoji · r. 256–265
+[ ] **GooEngine:** záťaž v pokoji (12. 10.: 44 % jadra, 6. 10.: 17 %), hĺbková kontrola LensGoo, monitor
+   pripojený za behu, 1024 × 768.
+   Fresh, merané 12. 10. v `tests/screen.sh` (RX 640, 60 snímok/s, `PLEAMAR_TIMING=1`): scéna s 32 miestami 24 % jadra
+   (pravidlá a pružiny 1,5 ms, skladanie 1,2 ms, kreslenie 0,7 ms na snímku), so 16 miestami 17 %; každých 16 miest
+   stojí ~7 %, aj prázdnych. Zatvorená karta a prázdne miesta sa už nekreslia (27 → 24 %). Čo by pomohlo najviac:
+   `rate:` podľa podmienky (záplata pleamaru — 30 snímok/s, kým kurzor nie je pri kvapkách; `rate` je dnes iba číslo),
+   prípadne menej miest.
+   **Z Vitreusu, ešte neurobené (13. 10.):** efekty iba počas pohybu — prechodové efekty zapínať podľa vzdialenosti
+   pružiny od cieľa, v pokoji nulová cena (materiál a rast karty z Vitreusu sú hotové, ostáva merať; sklo pri
+   pokoji dnes nestojí nič, lebo `lens` číta obraz iba pri pohybe).
+
+**17.02** (pozn.) (Optimalizácia) Linux 7.3 a správa VRAM · r. 367–368
+- **Linux 7.3 na latte-lab:** RX 550 (Polaris) v Supreme Commanderovi a Quake 3 proti 7.2 (MangoHud); správa VRAM
+  (`dmemcg`) ako súčasť automatického škálovania pre karty s 2–4 GB.
+
+**17.03** (pozn.) (Optimalizácia) F. R5 — optimalizácia · r. 872–873
+**R5 — optimalizácia:** pamäť — zlúčenie démonov, zatiaľ nie (r. 920); sledovanie poškodenia v kompozitore (r. 935); štart `systemd-analyze` (r. 942).
+
+**17.04** [ ] (Optimalizácia) R5 — opakované merania · r. 1145–1146
+- [ ] Opakovať merania CPU/RAM, štartu, odozvy a grafických efektov po zmenách; stanoviť limity
+  pre NORMAL a SAFE a regresné porovnanie.
+
+---
+
+## 18. [ ] STRESTEST
+Úplne posledný krok: až keď sú všetky súčasti vyvinuté a optimalizované (rozhodnuté 13. 10., potvrdené 22. 10.). Dovtedy sa testuje len práve dokončený kus. `bughunt/STRESTEST.md`, `python3 bughunt/stav.py`.
+Zdroje: `bughunt/STRESTEST.md`, `bughunt/stav.py`, `bughunt/najdene-chyby.md`
+
+**18.01** [ ] (STRESTEST) STRESTEST P1 · r. 230–235
+[ ] **STRESTEST P1 — Boot a GOO** (001–045, 541–554). Strojovo overiteľné robí Claude, klikanie autor.
+   **Odložené (používateľ, 13. 10.): testuje sa, až keď sú dokončené všetky prvky systému** — najprv body 4–12,
+   potom sa sem vrátiť. Dovtedy sa test robí iba vtedy, keď overuje práve dokončený kus. Stav z 13. 10.: 27 z 219
+   testov P1 má výsledok (zapísané v `bughunt/STRESTEST.md`); z nich na opravu: 031 (hlava BarGoo čnie ~9 px cez
+   spodný okraj maximalizovaného okna), 541 (overiť prepínač jazyka a klávesnice na skutočnom prihlásení).
+   *Hotovo, keď:* každý z týchto testov má stav a zlyhané majú úlohu.
+
+**18.02** [ ] (STRESTEST) B. NVIDIA a kompatibilita · r. 642–646
+- [ ] Reálny hardvér NVIDIA, širšia kompatibilita zariadení, testy čistej inštalácie a dlhodobá
+  stabilita ešte nie sú uzavreté brány produktu.
+
+**18.03** [ ] (STRESTEST) Trvalé priority — STRESTEST a optimalizácia · r. 801–806
+- [ ] **STRESTEST + optimalizácia + stabilita (O, F5) = jedna dráha k 1.0:** [bughunt/STRESTEST.md](bughunt/STRESTEST.md) je
+  dôležitý súbor, ktorý sa **realizuje postupne, ako sa vývoj blíži k 1.0**, spolu s optimalizáciou (najprv merať,
+  potom meniť, potom znova merať) a stabilitou. Výsledky meraní a prejdené testy patria do R5.
+
+**18.04** (pozn.) (STRESTEST) R5 — cieľ · r. 1137–1139
+**Výsledok:** LatteOS je opakovateľne inštalovateľný a použiteľný v deklarovanom rozsahu.
+
+**18.05** [ ] (STRESTEST) R5 — testovacia matica · r. 1140–1142
+- [ ] Udržiavať testovaciu maticu: VM bez GPU (NORMAL aj SAFE), fyzický AMD, fyzický NVIDIA,
+  viac monitorov, malé rozlíšenie, pomalší/starší hardvér, Secure Boot, odpojená sieť a slabé
+  úložisko.
+
+**18.06** [ ] (STRESTEST) R5 — funkčné testy prúdov · r. 1143–1144
+- [ ] Každý pracovný prúd má funkčné testy svojho backendu a používateľské scenáre; integrované
+  scenáre kontrolujú spoluprácu medzi systémom, shellom a aplikáciami.
+
+**18.07** [ ] (STRESTEST) R5 — bughunt a ergonómia · r. 1147–1148
+- [ ] Vykonať bughunt a ergonomickú skúšku s myšou aj klávesnicou; skontrolovať preklady, kontrast,
+  stavové hlásenia, poškodenie/obnovu dát a aktualizáciu.
+
+**18.08** [ ] (STRESTEST) R5 — čistá inštalácia z vydávaného stromu · r. 1149–1152
+- [ ] Overiť čistú inštaláciu z presne toho stromu/obrazu, ktorý sa bude vydávať; vývojová VM
+  sama osebe nie je dôkazom pripravenosti vydania.
+
+---
+
+## 19. [ ] Neskôr
+Veľké smery po stabilnom produkte: mobilná LatteApp, prenos účtu a cloud, pokročilá bezpečnostná analytika.
+
+**19.01** [ ] (Neskôr) D. neskôr · r. 704–707
+- [ ] **Neskôr:** Fedora Atomic/bootc, rollback, prenos účtu a ďalšie veľké rozšírenia až po
+  uzavretí požadovanej stability a hardvérovej matice.
+
+**19.02** (pozn.) (Neskôr) F. R7 — neskôr · r. 874–875
+**R7 — neskôr:** obraz bootc/rpm-ostree (r. 950), Nervboot (r. 714), prenosná relácia a LatteApp (r. 947), distribúcia balíkov (r. 201).
+
+**19.03** [ ] (Neskôr) R6 — prenos účtu a cloud · r. 1176–1180
+- [ ] Prenos účtu/relácie a cloudová služba sa rozvíjajú až po stabilnom lokálnom produkte;
+  používateľ musí vedieť fungovať bez nich.
+
+**19.04** [ ] (Neskôr) R7 — nervboot, LatteApp · r. 1183–1184
+- [ ] Vlastný bootloader podľa nervboot, mobilná LatteApp, pokročilá bezpečnostná analytika a
+  ďalšie veľké rozšírenia zostávajú návrhmi, kým neprejdú R0–R1 a nedostanú miesto v etape.
+
+**19.05** [ ] (Neskôr) R7 — pravidlo bez GPU · r. 1185–1187
+- [ ] Každé neskoršie rozšírenie zachová základné pravidlo: LatteOS musí zostať použiteľný vo VM
+  bez GPU; akcelerácia pridáva efekty, nie nevyhnutnú funkčnosť.
+
+---
+
+## 20. [~] Archív a história
+Zrušený Classic, prechod na GOO, tabuľka zložiek Arabica, kandidáti na vyčistenie, prenos zo starej roadmapy. Nie sú to úlohy.
+Zdroje: `LatteOS.pdf` (prezentácia)
+
+**20.01** (pozn.) (História a zastarané zápisy) Úvod sekcie „Teraz“ · r. 16–18
+Schválené 12. 10. 2026. Pracuje sa **zhora nadol, neskáče sa**; nový nápad ide na koniec tohto zoznamu. Pri práci sa
+číta iba táto sekcia, zvyšok roadmapy sa hľadá podľa prúdu (R2, R3·A…). Stav testov: `python3 bughunt/stav.py`.
+
+**20.02** (pozn.) (História a zastarané zápisy) ROADMAP2 — úvod · r. 563–574
+**Pridané 9. 10. 2026.** Pôvodná roadmapa je od 9. 10. v snímke
+[docs_zaloha/2026-10-09-roadmap-pred-ciscenim.md](docs_zaloha/2026-10-09-roadmap-pred-ciscenim.md) („vyššie“ a
+„pôvodné fázy“ v ďalšom texte znamenajú ju) a zachováva doterajší plán aj záznam práce. Táto časť pridáva produktovú postupnosť: LatteOS nie je iba grafické rozhranie Goo,
+ale integrovaný systém nad Linuxom — od štartu a relácie cez kompozitor, shell, aplikácie a služby
+po hardvérovú podporu, inštaláciu, obnovu a vydanie.
+
+ROADMAP2 zároveň zachytáva **stav a pôvod práce pri prechode z Classicu na GOO** a skladá ho do
+postupnosti až po hotový produkt. Je to pracovný podklad na porovnanie so starou roadmapou; nejde
+zatiaľ o rozhodnutie, že sa staré položky majú vymazať alebo presunúť. Podrobné pôvodné znenie,
+merania a históriu naďalej uchováva roadmapa vyššie; ROADMAP2 ich zhŕňa podľa súčasného produktu.
+
+**20.03** [~] (História a zastarané zápisy) ROADMAP2 — značky pôvodu · r. 604–614
+Toto je orientačný súpis k 9. 10. 2026 podľa stavu a dátumov v pôvodnej roadmap. Značky hovoria
+o **pôvode a platnosti**, nie o technickom stave:
+
+- **HISTÓRIA / CLASSIC** — vzniklo pre zrušený Classic; už sa to nevyvíja ako samostatná plocha.
+- **ZÁKLAD** — vzniklo pred GOO alebo popri ňom, ale stále slúži celej LatteOS a prenáša sa.
+- **GOO** — rozhodnutie alebo práca po prechode na jedinú edíciu LatteOS GOO.
+- Stav práce je zvlášť označený `[x]` hotové, `[~]` čiastočne/rozpracované, `[ ]` otvorené.
+
+**20.04** [~] (História a zastarané zápisy) A. Classic · r. 615–628
+- [x] Classic bol 5. 10. 2026 zrušený; samostatná klasická plocha, jej lišta, panely a spúšťač
+  už nie sú cieľom ďalšieho vývoja.
+- [x] V tejto vetve vznikli alebo sa rozpracovali rozhrania a aplikácie LatteOS (Noctalia/Quickshell,
+  Nastavenia, Súbory, Monitor, App Manager, Barista, Heidelberg, AI/Text Bar, témy a živá tapeta).
+  Ich jednotlivé funkcie majú v pôvodných fázach rôzny stav — dokončené, prototypové aj otvorené;
+  tento súhrn ich **neoznačuje hromadne za hotové**.
+- [ ] Pri porovnaní v pondelok 12. 10. rozdeliť položky tejto vetvy na: (1) iba Classic — archivovať,
+  (2) spoločný backend alebo aplikácia — ponechať ako základ, (3) GUI/funkcia stále potrebná v GOO —
+  preniesť do správneho pracovného prúdu, (4) zastarané alebo duplicitné — uzavrieť.
+- [~] (súpis 12. 10. je v „Teraz“, bod 2) Ako Classic-only preveriť najmä pôvodnú klasickú lištu/panely/spúšťač a starú plochu
+  `session/kvapky`; GOO používa engine `session/goo`, nie pôvodnú scénu Kvapky.
+
+**20.05** [~] (História a zastarané zápisy) B. aplikácie (súhrn) · r. 637–639
+- [~] **ZÁKLAD / aplikácie:** Súbory, Monitor, Správca zariadení, App Manager, Barista, záloha,
+  cloud a synchronizácia majú použiteľné časti; nejde však automaticky o finálnu integráciu
+  ani úplné pokrytie. Otvorené pokračovania sú rozdelené podľa produktu v časti D; zoznam zložiek je v časti E.
+
+**20.06** (pozn.) (História a zastarané zápisy) D. úvod · r. 680–683
+Toto sú hlavné zostávajúce celky, nie úplný výpis každého nezaškrtnutého políčka. Presný rozsah sa
+pri porovnaní v pondelok 12. 10. potvrdí oproti pôvodnej roadmap.
+
+**20.07** [~] (Mapa produktu (tabuľka zložiek)) E. Zložky LatteOS — tabuľka · r. 708–749
+Doplnené 9. 10. 2026 z autorovej prezentácie `LatteOS.pdf` — **ako má vyzerať hotová LatteOS 1.0 „Arabica“**
+(ciele a marketing, nie opis dnešného stavu), skontrolovanej proti
+[LATTEOS-GOO.md](LATTEOS-GOO.md) a pôvodnej roadmape. Je to **jediný zoznam „čo LatteOS obsahuje“**:
+každá zložka má prúd R3 (kde sa vyvíja) a zdroj podrobností (kde je detail a história). Stav `[x]` `[~]` `[ ]`
+ako inde; „návrh“ = nápad bez rozhodnutia, nie úloha.
+
+| Zložka | Čo je | Stav | Prúd | Zdroj podrobností |
+|---|---|---|---|---|
+| **Základ systému** | Fedora Server 44 (dnf); neskôr obraz Atomic/bootc „ako Bazzite“ | [x] / návrh | R2, R7 | úvod, F0, A (riadok 949) |
+| **Hyprland 0.56 (Lua)** | okná, režimy (páska, dlaždice, plávajúce), sklo, herný režim | [x] | R3·B | F2 |
+| **Noctalia 5** | v GOO iba rohová lišta (widgety, doplnky), ovládacie centrum, OSD, zámok | [~] | R3·B | F3·G, LATTEOS-GOO §4.8 |
+| **GooEngine** | plocha z kvapiek kávy na pleamar (`session/goo`) | [~] | R3·A | F3·G, session/goo/README.md |
+| ├ **BarGoo** | lišta okien: hlava = režim okien (ľavý klik), pravý = ukázať plochu; ikry = okná | [~] | R3·A | LATTEOS-GOO §4.1 |
+| ├ **LensGoo** | spúšťač: aplikácie, súbory, web, terminál, AI | [~] | R3·A, R3·G | §4.3 |
+| ├ **QueenGoo** | ľavý klik App Manager, pravý Správca zariadení (voliteľná) | [~] | R3·A | §4.4 |
+| ├ **PowerGoo** | ľavý: účet, napájanie, Nastavenia, Monitor; pravý: pás CPU/RAM/GPU/VRAM | [~] | R3·A | §4.2 |
+| ├ **ClockGoo** | čas, upozornenia, kalendár, pohoda (voliteľná) | [~] | R3·A | §4.5 |
+| ├ **ChatGoo** | doplnok pre Beeper (voliteľná) | [~] | R3·A | §4.6 |
+| └ **Vlastné kvapky, Tvorca Goo** | kvapka bez programovania; návrhy ClipGoo, MediaGoo, PassGoo, CastGoo | [~] / návrh | R3·A | §4.7, §4.11 |
+| └ **LaunchGoo** | rýchly spúšťač skupín ikon (hry, práca), voliteľne odkazy na ploche | návrh | R3·A | Tvorca Goo (§4.7) |
+| **Prihlasovanie (LoginGoo)** | šálka → LoginGoo (riadok na hladine), po prihlásení odovzdaná na miesto PowerGoo; výber relácie (GOO, Marea, Noctalia, Serpantinum) | [~] scéna je, ostáva overenie | R2 | §6.2, F1 |
+| **SafeGoo (SAFE)** | minimálna záchranná relácia bez GPU s diagnostikou pádu | [~] | R2, R3·A | F3·G (SafeGoo) |
+| **Nervboot** | vlastná ponuka štartu pred systemd-boot s dualbootom | návrh | R7 | riadok 714 |
+| **Nastavenia** | kategórie, Kvapky, Vzhľad, výkon, jazyk, tapety (skwd-wall integrovaný v našej podobe) | [~] | R3·J | F3, F3·G |
+| **Súbory = DualBrew** (názov vybraný 9. 10.) | vlastný dvojpanelový správca obohatený o funkcie iných autorov, siete, cloud, archívy | [~] | R3·C | F4 |
+| **Heidelberg** | editor dokumentov (Markdown, docx, odt, PDF) | [~] | R3·C | F4 (riadky 789–792) |
+| **Monitor** | Správca úloh + Autoruns + HWiNFO/CPU-Z; (návrh: BetterWindowsServices) | [~] | R3·D | F4 (Monitor 1–7) |
+| **Správca zariadení** | HW, ovládače, tlačiarne, skenery, telefóny, kompatibilita | [~] | R3·E | F4, H |
+| ├ **Netmanager / Sieť** | siete, vzdialené pripojenia (NetworkManager) | [~] | R3·E | F4, LATTEOS-GOO §5 |
+| └ **Inšpektor siete** | radar okolitých sieťových spojení (ARP, mDNS, SSDP) | [x] základ | R3·E, R3·D | F4 (riadok 750) |
+| **App Manager** | obchod, inštalácia (Flatpak, RPM), aktualizácie, firmvér; komunitné obchody | [~] | R3·F | F4, §6.3 |
+| └ **Barista** | sprievodca inštaláciou nelinuxových aplikácií a hier (Wine/Proton, DOS, obrazy diskov) | [~] fázy F1–F5 | R3·F, R3·I | docs/barista/NAVRH.md |
+| **Bezpečnosť** | Flatpak/bubblewrap, tlačidlo NET, D-Bus filter, záloha | [x] základ | R3·H | F6 |
+| **AI (`latte-ai`)** | lokálne, domáce a cloudové modely, voliteľná; tokeny a limity | [~] | R3·G | F7 |
+| **Hry** | Steam/Proton/umu, herná relácia | [~] | R3·I | F8, H |
+
+
+Prezentácia je cieľ, nie stav: čo z nej ešte neplatí, je zámer Arabicy a treba to v README oddeliť od toho, čo
+systém robí dnes. Otvorené body (rozhodnuté sú `[x]`):
+
+**20.08** [~] (História a zastarané zápisy) Kandidáti na vyčistenie · r. 788–799
+Tvrdenia, ktoré už neplatia a ostávajú len ako história, na posúdenie pri porovnaní v pondelok 12. 10.:
+
+- [ ] [LATTEOS-GOO.md](LATTEOS-GOO.md) (úvod): „verejná kópia je zastaraná, po dokončení sa zverejní 0.2“ — vydané je
+  0.3.0 (6. 10.); „predvolené prihlásenie bude engine Goo, ešte sa prerobí“ — podľa §6.2 je hotové.
+- [ ] Pôvodná roadmapa: položky o Classic lište a spúšťači (F3, F3·G — napr. riadky 323–336, 378), „SAFE používa Noctaliu
+  s dizajnom Classic“ (riadok 336; nahradené rozhodnutím o SafeGoo, riadok 384), plocha Kvapky (`session/kvapky`).
+- [ ] Číslovanie §6.2 v LATTEOS-GOO.md (8, 10, 11, 9) a hlavička „Zmena smeru“ v ROADMAP.md po zmazaní starých dát.
+- [ ] Značky `[x]` pri funkciách iba pre Classic označiť `[-]` (zrušené), nie `[x]`.
+
+**20.09** [~] (História a zastarané zápisy) F. prenos zo starej roadmapy — úvod · r. 807–817
+Súpis z 9. 10. 2026: stará časť má 112 otvorených (`[ ]`, `[~]`) položiek. Prúdy R3 ich pokrývajú **všeobecne**;
+tu sú konkrétne položky, ktoré by sa po zmazaní stratili (číslo = riadok v starej časti, platí do jej zmazania).
+Položka je **úloha**, kým nie je označená „návrh“.
+
+**Hotové pred zmazaním (9. 10.):** snímka starej časti je v
+[docs_zaloha/2026-10-09-roadmap-pred-ciscenim.md](docs_zaloha/2026-10-09-roadmap-pred-ciscenim.md); rámec, režimy a štart
+(r. 14–164) sú v [docs/NAVRH-STARTU.md](docs/NAVRH-STARTU.md); sekcia O s meraniami (r. 912–945) v
+[docs/OPTIMALIZACIA.md](docs/OPTIMALIZACIA.md); obe sú odkázané z [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md). Hotové
+fázy F0–F2 a merania VM sú v [docs_zaloha/](docs_zaloha/README.md), ostatné `[x]` sú história. Otvorené otázky a „Zadanie 24. 9.“
+(r. 955–1015): DMS/Caelestia a COPR sú vyriešené, zvyšok je prenesený nižšie. **Starú časť maže autor sám, keď bude s ROADMAP2 spokojný.** Zmazaná 9. 10.; overené 12. 10.: číslo „r. N“ v tejto roadmape = riadok **N + 3** v snímke.
+
+**20.10** (pozn.) (História a zastarané zápisy) F. na archiváciu · r. 876–878
+**Na archiváciu (Classic alebo zrušené):** tvar L panela s lištou (r. 964); Pet Circus a maskoti (r. 974 — mazlíci sú zrušení, r. 471).
