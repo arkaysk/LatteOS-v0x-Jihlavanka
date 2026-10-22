@@ -429,4 +429,5 @@ https://github.com/trimstray/the-book-of-secret-knowledge
   - (Claude, 20. 10.) Zbierka nástrojov a ťahákov pre správcov a bezpečnosť. Pre LatteOS zoznam, z čoho skladať
     detektor siete (`arp-scan`, `nmap`, `avahi-browse`, `gssdp-discover`, ONVIF) a čo môže GuardDog kontrolovať.
 
-    
+
+github microlit rosemary  skontrolovat postup macos emulacie
