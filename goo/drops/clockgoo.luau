@@ -679,7 +679,7 @@ fill_calendar = function()
     for i = 1, 7 do names[i] = { name = upper(tr(SHORT[i % 7 + 1])) } end
     model.calcell, model.calwd = cells, names
     text.cal_month = tr(MONTHS[month.m]) .. " " .. month.y
-    text.cal_today, text.cal_new = tr("Today"), tr("Event")
+    text.cal_today, text.cal_new, text.cal_win = tr("Today"), tr("Event"), tr("In a window")
     text.cal_notes = #notes > 0 and (#notes .. " " .. tr("notifications")) or tr("Notifications")
     fact.cal_nnotes = #notes
     -- the ISO week of the chosen day, or of the month's middle (Luau's os.date has no %V): the year-day of that week's Thursday
@@ -721,12 +721,13 @@ fill_calendar = function()
     local cursor = 8 * 60
     if month.chosen == today then cursor = math.max(cursor, minute) end
     local placed_now = month.chosen ~= today
-    local function add(r) if #rows < 8 then rows[#rows + 1] = r end end
+    cal.row_events = {}                      -- what each line is, for a press: the event, or false for free time and now
+    local function add(r, e) if #rows < 8 then rows[#rows + 1] = r cal.row_events[#rows] = e or false end end
     for _, e in ipairs(list) do
         local s, en = mins(e.time), mins(e["end"])
         if not s then
             local r, g, b = rgb_of(e.color)
-            add({ time = tr("all day"), title = e.title or "", sub = e.kind == "holiday" and tr("Holiday") or (e.calendar or ""), r = r, g = g, b = b, kind = 0 })
+            add({ time = tr("all day"), title = e.title or "", sub = e.kind == "holiday" and tr("Holiday") or (e.calendar or ""), r = r, g = g, b = b, kind = 0 }, e)
         else
             if not placed_now and s >= minute then placed_now = true add({ time = hhmm(minute), title = "", sub = "", r = 0, g = 0, b = 0, kind = 2 }) end
             if s - cursor >= 60 and s <= 20 * 60 then
@@ -735,7 +736,7 @@ fill_calendar = function()
             end
             busy += 1
             local r, g, b = rgb_of(e.color)
-            add({ time = e.time, title = e.title or "", sub = (e.calendar or "") .. (((e.location or "") ~= "") and (" · " .. e.location) or ""), r = r, g = g, b = b, kind = 0 })
+            add({ time = e.time, title = e.title or "", sub = (e.calendar or "") .. (((e.location or "") ~= "") and (" · " .. e.location) or ""), r = r, g = g, b = b, kind = 0 }, e)
             cursor = math.max(cursor, en or (s + 60))
         end
     end
@@ -772,6 +773,7 @@ fill_calendar = function()
         text.cal_p4 = (p.calendar_name or "") ~= "" and p.calendar_name or tr("no calendar to write to")
     end
     text.ic_cal_prev, text.ic_cal_next, text.ic_cal_plus, text.ic_cal_bell = icons["chevron-left"], icons["chevron-right"], icons["plus"], icons[#notes > 0 and "bell" or "bell-off"]
+    text.ic_cal_win = icons["external-link"]
     text.ic_cal_spark, text.ic_cal_video, text.ic_cal_drop, text.ic_cal_link = icons["sparkles"], icons["video"], icons["droplet"], icons["link"]
 end
 open_calendar = function(d, keep)
@@ -860,6 +862,16 @@ return {
             if key then month.chosen = key cal.side = 0 fill_calendar() end
         end)
         on("cal_show", function(k) cal.side = tonumber(k) or 0 fill_calendar() end)
+        -- the calendar as a window of its own (apps/calendar.qml), at the chosen day; a line of the day opens its event there
+        on("cal_window", function()
+            card.close()
+            run("latte-app", { "calendar", month.chosen or "" }, nil, { output = false })
+        end)
+        on("cal_open", function(i)
+            local e = cal.row_events and cal.row_events[(tonumber(i) or 0) + 1]
+            card.close()
+            run("latte-app", (e and e.kind == "event") and { "calendar", e.date, e.source or "", e.uid or "" } or { "calendar", month.chosen or "" }, nil, { output = false })
+        end)
         on("cal_join_it", function() if cal.next and (cal.next.link or "") ~= "" then card.close() open.url(cal.next.link) end end)
         on("cal_snooze_it", function() if cal.next_id then cal.snoozed[cal.next_id] = os.time() + 300 fill_calendar() end end)
         on("cal_note", function(i)

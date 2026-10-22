@@ -46,6 +46,9 @@ scene Goo {
     event clock_notes ->                       // Win+N: notifications and the calendar
     event clock_time ->                        // Win+Alt+D: the time card
     event quick_toggle ->                      // Win+A: the shore's panel, the quick settings
+    // the logic says it is up, last thing when it starts: a scene drawn without it (cut off while the computer was slow
+    // to start, 22. 10.) shows no drops, and GuardDog asks for this to know it (`pleamar --say goo "get goo_alive"`)
+    fact goo_alive = false
 
     include "parts/drops.plm"
     include "parts/picks.plm"

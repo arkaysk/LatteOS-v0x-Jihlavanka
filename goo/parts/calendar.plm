@@ -14,6 +14,8 @@ part Calendar {
     text cal_month = ""
     text cal_today = ""
     text cal_new = ""
+    text cal_win = ""
+    text ic_cal_win = ""
     text cal_notes = ""
     text cal_names = ""                        // whose name day it is, today and tomorrow (the place's country)
     text cal_hol = ""                          // the next holiday of the place's country
@@ -62,6 +64,8 @@ part Calendar {
     event cal_put ->                           // add what the sentence became
     event cal_linked ->                        // the window where the accounts are signed in
     event cal_note ->                          // a notification pressed: its place
+    event cal_window ->                        // the calendar as a window of its own (apps/calendar.qml)
+    event cal_open ->                          // a line of the day pressed: its place; an event opens in that window
 
     measure cal_month_m
     let cal.cw = (460 - 6 * 4) / 7             // a day's cell
@@ -87,6 +91,15 @@ part Calendar {
         text cal_today { at: 111 + cal_month_m.width, 30; anchor: center; size: 8.5; weight: 700; color: #f7c873; family: "Inter" }
         zone box cal_today_hit { from: 86 + cal_month_m.width, 20; size: 50, 20; cursor: pointer; active: card_open and card_custom == 4; label: "{cal_today}" }
         on press cal_today_hit { emit cal_go(0) }
+
+        // the calendar as a window of its own: the card closes and the app opens at the chosen day
+        box { from: 460, 18; size: 92, 24; corner: 12; color: #2a1e17; opacity: 100% }
+        box { from: 460, 18; size: 92, 24; corner: 12; stroke: 1; color: #4a372b; opacity: 100% }
+        box { from: 460, 18; size: 92, 24; corner: 12; color: #f5e8d8; opacity: 8% * cal_win_hit.hover }
+        text ic_cal_win { at: 475, 30; anchor: center; size: 10; color: #f7c873; family: "tabler-icons" }
+        text cal_win { at: 486, 30; anchor: left center; size: 8.5; weight: 700; color: #f5e8d8; width: 62; lines: 1; family: "Inter" }
+        zone box cal_win_hit { from: 460, 18; size: 92, 24; cursor: pointer; active: card_open and card_custom == 4; label: "{cal_win}"; role: button }
+        on press cal_win_hit { emit cal_window }
 
         // the notifications: a pill with their number, lit while they are what the right column shows
         box { from: 560, 18; size: 92, 24; corner: 12; color: if(cal_side == 1, #f7c873, #2a1e17); opacity: if(cal_side == 1, 28%, 100%) }
@@ -173,6 +186,10 @@ part Calendar {
                 box { from: 538, row.y; size: 196, 31; corner: 8; stroke: 1; color: #4cc38a; opacity: if(r.kind == 1, 60%, 0) }
                 text r.title { at: 546, row.y + 10; anchor: left center; size: 8.5; weight: 700; color: if(r.kind == 1, #6fdca6, #f5e8d8); width: 182; lines: 1; show: r.kind != 2; family: "Inter" }
                 text r.sub { at: 546, row.y + 22; anchor: left center; size: 7; color: #b8a491; width: 182; lines: 1; show: r.kind != 2; family: "Inter" }
+                // a press opens it in the calendar's window, to be changed there
+                box { from: 538, row.y; size: 196, 31; corner: 8; color: #f5e8d8; opacity: if(r.kind != 2, 6% * row_hit.hover, 0) }
+                zone box row_hit { from: 538, row.y; size: 196, 31; cursor: pointer; active: card_open and card_custom == 4 and cal_side == 0 and r.kind != 2; label: "{r.title}"; role: button }
+                on press row_hit { emit cal_open(r.index) }
             }
         }
         // ── or the notifications ──────────────────────────────────────────────────────────────────────────

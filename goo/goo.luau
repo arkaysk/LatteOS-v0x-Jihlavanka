@@ -7,3 +7,5 @@ require("lib/shore").start()
 require("lib/desk").start(true)
 require("lib/lock").start()
 require("lib/polkit").start()
+-- last: the logic is up (GuardDog asks for it; a scene whose logic was cut off while starting stays without drops)
+fact.goo_alive = true

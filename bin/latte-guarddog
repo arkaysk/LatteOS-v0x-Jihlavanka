@@ -240,6 +240,23 @@ def unit_active(name):
     return quiet("systemctl", "--user", "is-active", "--quiet", name)
 
 
+def goo_alive():
+    """The Goo scene runs and its logic is up. pleamar cuts off a logic that takes more than 2 s to start (22. 10.: a
+    slow start of the computer): the scene is drawn, without a drop, and the service looks fine. Its first seconds it
+    is given; then the scene must say it is alive (the logic's last word in goo.luau)."""
+    if not unit_active("latte-goo.service"):
+        return False
+    try:
+        since = int(subprocess.run(["systemctl", "--user", "show", "-p", "ActiveEnterTimestampMonotonic", "--value", "latte-goo.service"],
+                                   capture_output=True, text=True, timeout=10).stdout.strip() or 0) / 1e6
+        if time.monotonic() - since < 25:
+            return True
+        said = subprocess.run(["pleamar", "--say", "goo", "get goo_alive"], capture_output=True, text=True, timeout=8).stdout
+    except (OSError, ValueError, subprocess.TimeoutExpired):
+        return True                         # not known: not a reason to start the desktop again
+    return "true" in said
+
+
 def start_detached(*argv):
     try:
         subprocess.Popen(argv, stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)
@@ -291,7 +308,7 @@ def choose(ident, on):
 
 # id, the name shown (in English: the shell translates), whether it is wanted now, whether it is there, how to start it again
 COMPONENTS = [
-    ("goo", "The Goo scene", lambda: unit_active("latte-session.target"), lambda: unit_active("latte-goo.service"),
+    ("goo", "The Goo scene", lambda: unit_active("latte-session.target"), goo_alive,
      lambda: quiet("systemctl", "--user", "restart", "latte-goo.service")),
     ("lockscreen", "The lock screen", lambda: unit_active("latte-session.target"), lambda: unit_active("latte-lockscreen.service"),
      lambda: quiet("systemctl", "--user", "restart", "latte-lockscreen.service")),

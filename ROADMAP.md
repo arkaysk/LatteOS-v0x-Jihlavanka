@@ -527,7 +527,14 @@ Schválené 12. 10. 2026. Pracuje sa **zhora nadol, neskáče sa**; nový nápad
         dátumy počítajú pravidlá (koniec/začiatok/polovica mesiaca na pracovný deň, posledný piatok v mesiaci, o N dní
         či týždňov, hodiny slovom „o deviatej“, „pol siedmej“, ráno/večer); AI dostane zoznam dní na 6 týždňov. 4B sa
         aj tak mýli (posledný piatok → 20. 11.), premýšľanie trvá minúty — AI ostáva iba na zvyšok, s potvrdením.
-      - [ ] Aplikácia Kalendár (týždeň s ťahaním, rok ako teplotná mapa); Nerušiť počas stretnutí; kalendár ako nástroj LensAI.
+      - [x] **Aplikácia Kalendár** (22. 10., `apps/calendar.qml`, `latte-app calendar`, podľa návrhu „Týždeň“): deň, týždeň a
+        mesiac; malý mesiac, moje kalendáre (skryť/ukázať), vyťaženie pol roka v štandardných farbách; v týždni počasie,
+        čiara teraz, ťahaním myšou nová udalosť, presun aj predĺženie; vpravo otvorená udalosť a úprava (názov, čas,
+        miesto, poznámka, **vlastná farba** = COLOR z iCalendar, ako Evolution) — `latte-cal update`. Karta ClockGoo:
+        „V okne“ a klik na udalosť dňa ju otvorí v aplikácii; mesiac ukazuje iba svoje dni. `latte-cal` nečaká 15 s na
+        miestny kalendár (0,5 s namiesto 15,5 s).
+      - [ ] Rok ako samostatný pohľad a Agenda; mapa a čas cesty pri udalosti; Nerušiť počas stretnutí; kalendár ako
+        nástroj LensAI.
 18. [x] **Vývoj LatteOS v Nastavenia › Systém › O tomto počítači** (hotové 21. 10.: `bin/latte-activity` zapíše históriu repa do `build/activity.json` pri `./install --go`, inštaluje sa ako `/usr/share/latteos/activity.json`; graf 53 týždňov so štvorčekmi v farbách témy a nápovedou pri myši, 30 posledných commitov rozbaliteľných — autor, dátum, celá správa, zmenené súbory s +/−. **Rozhodnutie pre vydania:** verejné `arkaysk/latteos` má iba snímky vydaní, preto graf nesie súbor z repa, nie GitHub API; či vydanie smie niesť správy commitov, je na `zverejnit.sh`). (používateľ, 21. 10.): štvorčekový graf aktivity
     (ako na GitHube: týždne v stĺpcoch, dni v riadkoch, sýtosť podľa počtu commitov) — ako pokračuje vývoj projektu;
     pod ním posledné commity, každý rozbaliteľný: dátum, autor, správa celá a čitateľne, zmenené súbory. Zdroj:

@@ -11,6 +11,7 @@
   latte-cal calendars        the calendars: [{"uid", "name", "account", "color", "backend", "writable", "enabled"}]
   latte-cal add UID TITLE START END [LOCATION]   a new event in the calendar UID; START and END as YYYY-MM-DDTHH:MM,
         or YYYY-MM-DD for a whole day (END the day after the last); prints {"ok", "uid"}
+  latte-cal update UID EVENT JSON                changes an event: any of title, start, end, location, notes, color
   latte-cal remove UID EVENT                     takes an event out
   latte-cal parse TEXT       a new event written as a sentence ("Obed s Petrom zajtra o 12 v Jihlavanke"): {"ok", "title",
         "start", "end" (as `add` takes them), "allday", "place", "calendar", "calendar_name", "when"}; Slovak words
@@ -147,6 +148,15 @@ def eds():
     return EDataServer, ECal, ICalGLib
 
 
+def connect(ECal, reg, uid):
+    """A calendar's client. Waiting for its backend to be online: a calendar of this computer never says it is (it took
+    the whole 15 s each time, 22. 10.), one of an account is read from its copy kept here when it is not there soon."""
+    src = reg.ref_source(uid)
+    local = src.get_extension("Calendar").get_backend_name() in ("local", "contacts")
+    # (guint32)-1 does not wait at all; 0 would wait for ever
+    return ECal.Client.connect_sync(src, ECal.ClientSourceType.EVENTS, 0xFFFFFFFF if local else 3, None)
+
+
 def calendars():
     try:
         EDataServer, ECal, _ = eds()
@@ -166,7 +176,7 @@ def calendars():
 
 def account_events(first, last):
     try:
-        EDataServer, ECal, _ = eds()
+        EDataServer, ECal, ICalGLib = eds()
         reg = EDataServer.SourceRegistry.new_sync(None)
     except Exception:
         return []
@@ -175,7 +185,7 @@ def account_events(first, last):
         if not cal["enabled"]:
             continue
         try:
-            client = ECal.Client.connect_sync(reg.ref_source(cal["uid"]), ECal.ClientSourceType.EVENTS, 15, None)
+            client = connect(ECal, reg, cal["uid"])
         except Exception as e:
             print(f"latte-cal: {cal['name']}: {e}", file=sys.stderr)
             continue
@@ -189,6 +199,9 @@ def account_events(first, last):
             where = icomp.get_location() or ""
             text = " ".join(x for x in (where, icomp.get_description() or "") if x)
             link = LINKS.search(text)
+            # the event's own colour (iCalendar's COLOR, as Evolution keeps it), else its calendar's
+            p = icomp.get_first_property(ICalGLib.PropertyKind.COLOR_PROPERTY)
+            own = p.get_color() if p else ""
             # a whole day of several days shows on each of them
             days = max(1, (e - s).days) if whole else 1
             for n in range(min(days, 31)):
@@ -197,8 +210,10 @@ def account_events(first, last):
                     out.append({"date": d.strftime("%Y-%m-%d"), "time": "" if whole else s.strftime("%H:%M"),
                                 "end": "" if whole else e.strftime("%H:%M"), "title": (icomp.get_summary() or "").strip(),
                                 "location": where if not where.startswith("http") else "", "link": link.group(0) if link else "",
-                                "calendar": cal["name"], "color": cal["color"], "kind": "event", "uid": icomp.get_uid() or "",
-                                "source": cal["uid"]})
+                                "calendar": cal["name"], "color": own or cal["color"], "own_color": own, "kind": "event",
+                                "uid": icomp.get_uid() or "", "source": cal["uid"], "writable": cal["writable"],
+                                "notes": (icomp.get_description() or "").strip(), "start": s.strftime("%Y-%m-%d" if whole else "%Y-%m-%dT%H:%M"),
+                                "finish": e.strftime("%Y-%m-%d" if whole else "%Y-%m-%dT%H:%M"), "allday": whole})
             return True
         try:
             client.generate_instances_sync(int(first.timestamp()), int(last.timestamp()), None, each)
@@ -263,7 +278,7 @@ def all_events(first, last, addresses):
 def add(cal_uid, title, start, end, location=""):
     EDataServer, ECal, ICalGLib = eds()
     reg = EDataServer.SourceRegistry.new_sync(None)
-    client = ECal.Client.connect_sync(reg.ref_source(cal_uid), ECal.ClientSourceType.EVENTS, 15, None)
+    client = connect(ECal, reg, cal_uid)
     zone_name = os.path.realpath("/etc/localtime").split("zoneinfo/")[-1]
     zone = ICalGLib.Timezone.get_builtin_timezone(zone_name)
     comp = ECal.Component.new()
@@ -286,10 +301,48 @@ def add(cal_uid, title, start, end, location=""):
     return {"ok": bool(ok), "uid": uid or ""}
 
 
+def update(cal_uid, event_uid, change):
+    """An event changed: any of title, start, end (as add takes them), location, notes, color ("" takes it off)."""
+    EDataServer, ECal, ICalGLib = eds()
+    reg = EDataServer.SourceRegistry.new_sync(None)
+    client = connect(ECal, reg, cal_uid)
+    ok, icomp = client.get_object_sync(event_uid, None, None)
+    comp = ECal.Component.new_from_icalcomponent(icomp)
+    zone_name = os.path.realpath("/etc/localtime").split("zoneinfo/")[-1]
+    zone = ICalGLib.Timezone.get_builtin_timezone(zone_name)
+
+    def at(text):
+        whole = "T" not in text
+        t = ICalGLib.Time.new_from_string(text.replace("-", "").replace(":", "") + ("" if whole else "00"))
+        if not whole:
+            t.set_timezone(zone)
+        return ECal.ComponentDateTime.new(t, None if whole else zone_name)
+    if "title" in change:
+        comp.set_summary(ECal.ComponentText.new(change["title"], None))
+    if "start" in change:
+        comp.set_dtstart(at(change["start"]))
+    if "end" in change:
+        comp.set_dtend(at(change["end"]))
+    if "location" in change:
+        comp.set_location(change["location"] or None)
+    if "notes" in change:
+        comp.set_descriptions([ECal.ComponentText.new(change["notes"], None)] if change["notes"] else [])
+    comp.commit_sequence()
+    icomp = comp.get_icalcomponent()
+    if "color" in change:
+        # iCalendar's COLOR on the event itself (RFC 7986), as Evolution writes it; "" takes it off
+        while icomp.get_first_property(ICalGLib.PropertyKind.COLOR_PROPERTY):
+            icomp.remove_property(icomp.get_first_property(ICalGLib.PropertyKind.COLOR_PROPERTY))
+        if change["color"]:
+            icomp.add_property(ICalGLib.Property.new_color(change["color"]))
+    client.modify_object_sync(icomp, ECal.ObjModType.ALL, ECal.OperationFlags.NONE, None)
+    return {"ok": True}
+
+
 def remove(cal_uid, event_uid):
     EDataServer, ECal, _ = eds()
     reg = EDataServer.SourceRegistry.new_sync(None)
-    client = ECal.Client.connect_sync(reg.ref_source(cal_uid), ECal.ClientSourceType.EVENTS, 15, None)
+    client = connect(ECal, reg, cal_uid)
     client.remove_object_sync(event_uid, None, ECal.ObjModType.ALL, ECal.OperationFlags.NONE, None)
     return {"ok": True}
 
@@ -503,6 +556,11 @@ def command(a):
             pick = next((c for c in cals if c["backend"] != "local"), cals[0] if cals else None)
             r["calendar"], r["calendar_name"] = (pick["uid"], (pick["account"] + " · " if pick["account"] and pick["backend"] != "local" else "") + pick["name"]) if pick else ("", "")
         print(json.dumps(r, ensure_ascii=False))
+    elif a[0] == "update" and len(a) == 4:
+        change = json.loads(a[3])
+        if not isinstance(change, dict) or set(change) - {"title", "start", "end", "location", "notes", "color"}:
+            return 2
+        print(json.dumps(update(a[1], a[2], change)))
     elif a[0] == "remove" and len(a) == 3:
         print(json.dumps(remove(a[1], a[2])))
     elif a[0] == "holidays":
@@ -516,7 +574,7 @@ def command(a):
 
 
 def main(addresses):
-    if addresses and addresses[0] in ("events", "calendars", "add", "remove", "holidays", "accounts", "parse"):
+    if addresses and addresses[0] in ("events", "calendars", "add", "update", "remove", "holidays", "accounts", "parse"):
         return command(addresses)
     if not addresses or addresses[0] in ("-h", "--help"):
         print(__doc__.strip())

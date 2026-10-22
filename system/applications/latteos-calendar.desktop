@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Calendar
+Name[sk]=Kalendár
+Comment=Every calendar of your accounts in one window: the day, the week, the month
+Comment[sk]=Všetky kalendáre tvojich účtov v jednom okne: deň, týždeň, mesiac
+Exec=latte-app calendar
+Icon=office-calendar
+Categories=Office;Calendar;
+StartupWMClass=org.quickshell
