@@ -519,6 +519,14 @@ Zdroje: LATTEOS-GOO §4.3
   rozhovoru; dotiahnuť poskytovateľov, vstupy a chybové stavy bez duplikovania všeobecnej práce
   na `latte-ai`.
 
+**6B.06** [ ] pisanie do riadku na vyhladavanie v forme výpočtu, zobrazi vysledok s možnostou ho skopirovat do schranky. 
+tiež je sučastou aj prevodnik jednotiek a mien pričom nemosi byt použiti presny formatat a dokaže s apracovat s vágnym zadaním.
+
+**6B.07** [ ] bola najdena chyba. ked sa skrolujekolieskom, na ai založke sa skrolovanie zastavy a už nejde ani spatky. 
+
+**6B.08** [ ] pridat kontexctove menu v ploche ai vnutri popupu LensGoo. mosi byt možnost skopirovat spravu, a tiež kd sa klikne do tej plochy, musi tam byt nastavenie priehladnosti. 
+ta biela plocha je prisilna a potrebuje mat volitelnu hodnotu priehladnosti.
+
 ### 6C. [~] PowerGoo
 Zdroje: LATTEOS-GOO §4.2, `crates/latte-stats`
 
@@ -557,12 +565,16 @@ Zdroje: `goo/parts/calendar.plm`, `bin/latte-cal`, `bin/latte-sky`; LATTEOS-GOO 
 - [ ] **ClockGoo, QueenGoo a ChatGoo:** dotiahnuť nedokončené karty, upozornenia, kalendár,
   zariadenia a overenie so skutočnými aplikáciami/službami, ktoré kvapky zastupujú.
 
-**6D.05** (pozn.) (ClockGoo) upozornenia · r. 1338–1340
+**6D.05** [ ] (ClockGoo) Presunut upozornenia z clockGoo do ShoreGoo· r. 1338–1340
 - **Upozornenia:** nové upozornenie sa ukáže ako lístok vpravo dole nad Pobrežím (6,5 s, klik otvorí ClockGoo,
   neberie klávesnicu) a zaznie tón; Nastavenia › Oznámenia: Nerušiť · Ukázať v rohu · Prehrať zvuk · Vyskúšať.
   Nerušiť sa presunulo z `clock.json` do nastavení Goo (`settings.json`, kľúč `quiet`).
 
 **6D.06** [ ] (ClockGoo) Karta ClockGoo (ľavý klik) ostáva rýchly prehľad dňa; plná správa udalostí je v aplikácii Kalendár (10J), kam karta odkazuje tlačidlom „V okne“.
+
+**6D.07** [ ] Kalendar-kliknutie na poličko dna zvyrazni ten den a nasledny zapis do riadku bude mat pred sebou predvyplneny ten datum. zapis sa týka evidentne toho dna
+
+**6D.08** [ ] kalendar-jeho funkčnost musi byt minimalne identicka s funkčnostou google Kalendaru!
 
 ### 6E. [x] QueenGoo
 Zdroje: LATTEOS-GOO §4.4
@@ -581,32 +593,21 @@ Zdroje: `bin/latte-cam`; Nastavenia › Kvapky › Webkamery
     **návrh kamier podľa miesta** (miesto počasia → verejné kamery okolo, zdroj s API, napr. Windy Webcams — kľúč);
     **ISS** (NASA vysiela video, nie obrázok: snímka z prúdu cez ffmpeg, alebo mapa polohy ISS ako „kamera“).
 
-**6F.02** (pozn.) (CamGoo) živý obraz v CamGoo · r. 371–371
+**6F.02** [ ] (CamGoo) živý obraz v CamGoo · r. 371–371
 - **Živý obraz v CamGoo** postupom Vitreusu (ffmpeg → súbor → `cam_path?N`), aj pre Tapo cez RTSP.
 
 ### 6G. [x] QuickGoo
 
 **6G.01** [x] (Vlastné kvapky a návrhy kvapiek) QuickGoo · r. 100–100
 
-### 6H. [~] Pobrežie (Shore)
+### 6H. [~] Pobrežie (Shore/ShoreGoo)
 Výnimka: patrí medzi Goo a stojí na rovnakom mieste, interaguje s Goo, ale nie je to Goo — nedá sa s ním manipulovať, správa sa inak a má iné pravidlá. Názov: Shore alebo ShoreGoo (nerozhodnuté).
 Zdroje: `apps/desktop.qml`, `bin/latte-desktop`, `goo/lib/desk.luau`; LATTEOS-GOO §4.8
 
 **6H.01** [x] (Plocha a Pobrežie) náhrada rohovej lišty (Pobrežie) · r. 97–99
 
-**6H.02** [x] (Plocha a Pobrežie) E. Noctalia · r. 762–765
-- [x] **Noctalia (rozhodnuté 9. 10.):** zostáva. Slúži ako **úložisko widgetov Noctalie** a minimalistické prostredie
-  pre veci, ktoré v Goo nechceme. Zatiaľ sa nevyraďuje; autor iba zvažuje, či je potrebná v takom rozsahu a či ju
-  nenahradiť optimalizovanejším riešením. Úloha v R3·B: **porovnanie** (čo z nej systém naozaj používa, jej cena v
-  pamäti a CPU, kandidáti na náhradu) — bez rozhodnutia o odstránení.
+**6H.01** [ ] Upozornenia ako sučast popupmenu shore
 
-**6H.03** [ ] (Plocha a Pobrežie) R3·B — okraje integrácie · r. 973–974
-- [ ] Overiť zostávajúce okraje integrácie: ovládacie centrum Noctalie, SAFE bez GPU, dynamicky
-  pripojené monitory a čisté nastavenia medzi GOO a ostatnými reláciami.
-
-**6H.04** [ ] (Plocha a Pobrežie) R3·B — Noctalia · r. 981–984
-- [ ] **Noctalia (úložisko widgetov a minimálne prostredie):** porovnať jej skutočné použitie a cenu s
-  optimalizovanejšou náhradou; zatiaľ sa neodstraňuje (E).
 
 ### 6I. ChatGoo
 Doplnok pre Beeper (voliteľná kvapka).
@@ -711,6 +712,10 @@ Obrázky, živé tapety, skwd-wall, prezentácia, tapety z internetu.
 - **AI vypínač a skwd-lens:** `latte-wall ai` zapíše `semantic.enabled` do nastavení skwd-wall a reštartuje
   jeho službu; volá ho vypínač v Nastaveniach › AI aj štart relácie. Overené: pri vypnutej AI sa nový obrázok
   neindexuje.
+
+**7A.06** [ ] (Vzhľad, témy a tapety) skwd-wall . samotne menu aplikacie skwd sa odoberie. nebudeme použivat kompletnu aplikaciu v tomto pripade.
+zachovat nutne je prechodove efekty, a sustredit prepinanie wallpaperov dovnutra centralnych nastaveni.
+Je nutne urobit nanovo prehladne kategorie, pre všetky druhy tapiet, vratane odkazu na externe zdroje.
 
 ### 7B. [~] Ponuka plochy
 Pravý klik na plochu a ikony na ploche ako vo Windows 11.
