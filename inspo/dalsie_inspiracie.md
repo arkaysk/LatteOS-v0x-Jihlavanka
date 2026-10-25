@@ -434,3 +434,5 @@ github microlit rosemary  skontrolovat postup macos emulacie
 
 https://github.com/mirkobrombin/raven
 
+finder commander screenshot. inspiracia.
+
