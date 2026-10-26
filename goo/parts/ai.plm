@@ -73,7 +73,9 @@ part Ai {
     fact ai_sub_h = 0
     fact ai_sub_y = 0                          // where its row stands in the menu
     fact ai_think = false                      // DeepSeek's deep thinking is on
-    fact ai_glass = 1                          // how much of the page is glass, as much as LatteOS is (lib/engine.luau): 0 white … 3
+    fact ai_glass = 1                          // how much of the page is glass (lib/engine.luau): 0 white … 4; as LatteOS unless chosen
+    fact ai_soft = false                       // drawn by the processor: no glass, the page is only see-through
+    event ai_menu ->                           // the right button in the conversation: on message n, or −1 between them (6B.08)
     text ai_search_word = ""
     text ic_ai_world = ""
     text ic_ai_more = ""
@@ -122,7 +124,7 @@ part Ai {
         move: card.x0, card.y0
 
         // ── the service's own page under the conversation and the field: one knows at a glance whose it is ────
-        box { from: 8, 56; size: card.w - 16, ai.fy + ai.fh + 8 - 56; corner: 16; color: if(ai.k == 0, #faf9f5, if(ai.k == 1, #f8fafd, if(ai.k == 2, #fafaf9, if(ai.k == 3, #ffffff, if(ai.k == 5, #ffffff, if(ai.k == 6, #fafaf7, if(ai.k == 7, #ffffff, #000000))))))); opacity: if(ai.k == 4, 0, 100%); glass: if(ai_glass == 0, 0, 100%); frost: 100%; milk: pick(ai_glass, 0%, 95%, 85%, 72%) }
+        box { from: 8, 56; size: card.w - 16, ai.fy + ai.fh + 8 - 56; corner: 16; color: if(ai.k == 0, #faf9f5, if(ai.k == 1, #f8fafd, if(ai.k == 2, #fafaf9, if(ai.k == 3, #ffffff, if(ai.k == 5, #ffffff, if(ai.k == 6, #fafaf7, if(ai.k == 7, #ffffff, #000000))))))); opacity: if(ai.k == 4, 0, if(ai_soft, pick(ai_glass, 100%, 92%, 82%, 70%, 55%), 100%)); glass: if(ai_glass == 0 or ai_soft, 0, 100%); frost: 100%; milk: pick(ai_glass, 0%, 95%, 85%, 72%, 55%) }
         // ── the conversation: on the glass, it scrolls; the newest at the bottom ─────────────────────────────
         column talk {
             at: 16, 58
@@ -133,8 +135,9 @@ part Ai {
             for m in aimsg {
                 row {
                     group { size: if(m.mine, ai.w - min(m.w, ai.w * 0.8), 0), 1 }
-                    column {
+                    column said {
                         gap: 5
+                        on press right said { tap.x = cursor.x; tap.y = cursor.y; emit ai_menu(m.index) }
                         text m.who { size: 11.5; weight: 700; lines: 1; color: if(ai.k == 0, #8b8778, if(ai.k == 1, #5f6368, if(ai.k == 2, #8a8a8a, if(ai.k == 3, #8f8f8f, if(ai.k == 5, #656d76, if(ai.k == 6, #9a9a9a, if(ai.k == 7, #a3a3a3, #b8a491))))))); show: not m.mine; family: "Inter" }
                         column {
                             show: m.mine
@@ -154,6 +157,7 @@ part Ai {
                 }
             }
         }
+        on press right talk { tap.x = cursor.x; tap.y = cursor.y; emit ai_menu(-1) }
         // a new message: to the end; a reply growing: followed only by one who is at the end, not by one reading above
         on change ai_new { talk.scroll: max(talk.content - talk.height, 0) ~280ms after 60ms }
         on change ai_gen while talk.scroll >= talk.content - talk.height - 60 { talk.scroll: max(talk.content - talk.height, 0) ~280ms after 60ms }

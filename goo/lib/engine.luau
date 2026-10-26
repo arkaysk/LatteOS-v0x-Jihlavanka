@@ -896,8 +896,10 @@ local function settings()
     local level = math.max(0, math.min(4, math.floor(tonumber(t.glass) or 1)))
     -- 4 is True Glass: the cards and the windows clear glass that bends the light (card.plm, system/hypr/latte/glass.lua)
     local clear = level == 4 and not software
+    -- the AI's page: as much glass as LatteOS, or what the user chose for it (LensGoo, the right button in the conversation)
+    local ai_glass = tonumber(t.ai_glass) and math.max(0, math.min(4, math.floor(t.ai_glass))) or (software and 0 or math.min(level, 3))
     E.tell("fact lively " .. tostring(fact.lively), "fact glassy " .. tostring(fact.glassy), "fact bends " .. tostring(fact.bends),
-           "fact ai_glass " .. tostring(software and 0 or math.min(level, 3)), "fact true_glass " .. tostring(clear))
+           "fact ai_glass " .. tostring(ai_glass), "fact ai_soft " .. tostring(software), "fact true_glass " .. tostring(clear))
     local windows = clear and 2 or ((t.windows == "glass" and level > 0) and 1 or 0)
     if glass_told ~= windows then glass_told = windows wm.glass(windows) end
 end

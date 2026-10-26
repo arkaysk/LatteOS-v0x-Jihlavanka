@@ -16,6 +16,7 @@ local dangerous = require("lib/dangerous")
 local open = require("lib/open")
 local own = require("lib/own")
 local quick = require("drops/quickgoo")
+local engine = require("lib/engine")
 local M = {}
 -- N marks a text for the translation table (tests/check.sh looks for it); tr() translates it where it is shown.
 local function N(s) return s end
@@ -379,7 +380,7 @@ local function show_rows(rows, style, m, e)
     return out, h
 end
 local fill_ai
-local ai_rows, ai_said = -1, ""           -- what the conversation held when it was last shown (fill_ai)
+local ai_rows, ai_said, ai_shown = -1, "", {}   -- what the conversation held when it was last shown (fill_ai)
 local function ask_told(pid)
     if not pid or (ai.told_at[pid] or 0) > os.time() - 180 then return end   -- latte-ai keeps an answer 15 min, 3 near a limit
     ai.told_at[pid] = os.time()
@@ -495,6 +496,7 @@ fill_ai = function()
     if ai.waiting then rows[#rows + 1] = { who = p and tr(p.name) or "", body = ai.live ~= "" and ai.live or tr("Thinking…"), mine = false, failed = false, w = 560 } end
     while #rows > 40 do table.remove(rows, 1) end
     model.aimsg = rows
+    ai_shown = rows
     fact.ai_wait = ai.waiting
     -- The list goes to the end for a new message, and follows a reply being written only if it is already there:
     -- counted up on every refresh, it pulled the wheel back down while one read further up (6B.07).
@@ -539,6 +541,25 @@ fill_ai = function()
     text.ai_mic_word = fact.ai_listening == 1 and tr("Stop and write it down") or tr("Speak")
 end
 -- `asked`: a question made for the user (a micro-agent), to whom it goes (`pid`, `mid`); else what is in the field
+-- The right button in the conversation (6B.08): copy a message or all of it, and how see-through the page is.
+local AI_GLASS = { N("Solid"), N("A little see-through"), N("More see-through"), N("Most see-through"), N("Glass") }
+on("ai_menu", function(i)
+    local rows, said = {}, ai_shown[(i or -1) + 1]
+    if said then rows[#rows + 1] = { label = tr("Copy the message"), glyph = "copy", run = function() pcall(sys.call, "clipboard.set", said.body) end } end
+    if #ai_shown > 0 then
+        rows[#rows + 1] = { label = tr("Copy the conversation"), glyph = "clipboard", run = function()
+            local all = {}
+            for _, r in ipairs(ai_shown) do all[#all + 1] = r.who .. ":\n" .. r.body end
+            pcall(sys.call, "clipboard.set", table.concat(all, "\n\n"))
+        end }
+    end
+    local now = tonumber(engine.settings().ai_glass)
+    local sub = { { label = tr("As LatteOS"), on = now == nil, run = function() engine.set("ai_glass", nil) end } }
+    for k, name in ipairs(AI_GLASS) do sub[#sub + 1] = { label = tr(name), on = now == k - 1, run = function() engine.set("ai_glass", k - 1) end } end
+    rows[#rows + 1] = { label = tr("See-through page"), glyph = "droplet", line = #rows > 0, sub = sub }
+    ctx.open(rows, { width = 290 })
+end)
+
 local function ai_send(asked, pid, mid)
     local q = asked or (text.ai_q or ""):gsub("^%s+", ""):gsub("%s+$", "")
     local p = provider()

@@ -535,8 +535,13 @@ tiež je sučastou aj prevodnik jednotiek a mien pričom nemosi byt použiti pre
 
 **6B.07** [x] bola najdena chyba. ked sa skrolujekolieskom, na ai založke sa skrolovanie zastavy a už nejde ani spatky. — **Opravené 26. 10.:** karta pri každom obnovení (každý kúsok písanej odpovede, limity, ponuka) stiahla rozhovor na koniec a prebila koliesko. Teraz ide na koniec iba nová správa; písanú odpoveď rozhovor nasleduje, len keď je človek dole (`ai_new`, `ai_gen` v `goo/parts/ai.plm`). Overené s lokálnou AI: počas 143 obnovení ostal rozhovor hore, kde sa čítalo; dole nasledoval odpoveď.
 
-**6B.08** [ ] pridat kontexctove menu v ploche ai vnutri popupu LensGoo. mosi byt možnost skopirovat spravu, a tiež kd sa klikne do tej plochy, musi tam byt nastavenie priehladnosti. 
+**6B.08** [~] pridat kontexctove menu v ploche ai vnutri popupu LensGoo. mosi byt možnost skopirovat spravu, a tiež kd sa klikne do tej plochy, musi tam byt nastavenie priehladnosti. 
 ta biela plocha je prisilna a potrebuje mat volitelnu hodnotu priehladnosti.
+   **26. 10. urobené, neoverené klikom** (obrazovka sa počas skúšky zamkla): pravý klik na správu → Kopírovať správu,
+   Kopírovať celý rozhovor, Priehľadnosť plochy (Ako LatteOS · Nepriehľadná · Trochu · Priehľadnejšia · Najpriehľadnejšia ·
+   Sklo); pravý klik vedľa správ → to isté bez prvej položky. Voľba v `settings.json` (`ai_glass`), pri softvérovom kreslení
+   sa plocha iba spriehľadní. Overiť: že zóny správ odrolovaných mimo pohľad nechytajú kliky (popis scény hlási „covered by
+   said#m9“ nad hlavou BarGoo).
 
 ### 6C. [~] PowerGoo
 Zdroje: LATTEOS-GOO §4.2, `crates/latte-stats`
