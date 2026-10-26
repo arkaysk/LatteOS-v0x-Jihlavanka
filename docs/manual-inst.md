@@ -4,6 +4,17 @@ Kroky, ktoré musí spustiť používateľ priamo pri latte-lab (vo VS Code, v t
 buď ich zastaví kontrola oprávnení Claude Code, alebo treba prihlásenie človekom. Najnovšie hore. Po dokončení
 kroku ho označ `[x]` a napíš Claudovi, nech pokračuje.
 
+## 26. 10. 2026 — Prihlásenie a skutočný monitor (Poradie práce, body 2 a 3)
+
+Toto sa nedá urobiť bez človeka pri latte-lab: písanie na skutočnej klávesnici a zapojenie kábla.
+
+- [ ] **Heslo v druhom rozložení (test 541):** odhlásiť sa; na prihlásení kliknúť na čip klávesnice (prepne na
+  druhé rozloženie, napr. `us`), napísať heslo **rukou** a prihlásiť sa. Potom raz schválne zlé heslo: má prísť
+  pekné odmietnutie, nie pád. Napísať Claudovi, či prihlásenie prešlo a či ukazovateľ rozloženia sedel.
+- [ ] **Skutočný monitor za behu:** počas pripojenia cez Moonlight zapojiť DP-3. Plocha (kvapky) sa má presunúť
+  na DP-3 a Moonlight má ukazovať to isté (virtuálny DP-1 zrkadlí DP-3). Potom DP-3 odpojiť: v Moonlight sa má
+  plocha vrátiť do 1–2 s. Napísať Claudovi, čo bolo vidno.
+
 ## 21. 10. 2026 — ChatGPT: prihlásiť Codex účtom ChatGPT
 
 Codex (nástroj, cez ktorý odpovedá ChatGPT v LensGoo a LensAI) je na latte-lab odhlásený (`codex login status` →

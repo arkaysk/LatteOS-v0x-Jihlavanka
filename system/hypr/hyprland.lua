@@ -150,29 +150,32 @@ local function duplicating()
     if f then f:close() end
     return word:match("%a+") == "duplicate"
 end
+-- Says whether a monitor was let go of: it is listed again only a moment later, and no event says so.
 local function mirror()
-    local main, all = main_monitor(), duplicating()
+    local main, all, freed = main_monitor(), duplicating(), false
     for name, why in pairs(mirrored) do
         if not main or (why == "chosen" and not all) or (why == "virtual" and virtual(main)) then
             hl.monitor({ output = name, mode = "preferred", position = "auto", scale = 1, mirror = "", reserved_area = band(edges[name] or edges[""] or "bottom") })
             mirrored[name] = nil
+            freed = true
         end
     end
-    if not main then return end
+    if not main then return freed end
     for _, m in ipairs(hl.get_monitors() or {}) do
         local why = (m.name ~= main.name and virtual(m) and not virtual(main) and "virtual") or (m.name ~= main.name and all and "chosen") or nil
-        if why and not mirrored[m.name] then
+        if why then    -- a listed monitor shows nothing else: Hyprland lets a mirror go when its main one goes
             hl.monitor({ output = m.name, mode = string.format("%dx%d@%.3f", m.width, m.height, m.refresh_rate), position = "auto", scale = 1, mirror = main.name })
             mirrored[m.name] = why
         end
     end
+    return freed
 end
 -- Every other monitor has a window bar of its own, a scene for each (latte-goo-side@NAME.service). Which scenes
 -- run is latte-screens's business: it looks at what runs, so nothing is remembered here that a reload would lose.
 -- `before`: what the session's start says first.
 local function place_shell(before)
     if type(before) ~= "string" then before = nil end
-    mirror()
+    if mirror() then hl.timer(function() place_shell() end, { timeout = 600, type = "oneshot" }) end
     local main = main_monitor()
     if not main then return end
     local names = { main.name }
@@ -181,8 +184,10 @@ local function place_shell(before)
     end
     hl.exec_cmd("sh -c '" .. (before and (before .. "; latte-screens --start ") or "latte-screens ") .. table.concat(names, " ") .. "'")
 end
-hl.on("monitor.added", place_shell)
-hl.on("monitor.removed", place_shell)
+-- once the monitors are laid out: one that has just come is at x = -1, the leftmost of all
+local function settled() hl.timer(function() place_shell() end, { timeout = 600, type = "oneshot" }) end
+hl.on("monitor.added", settled)
+hl.on("monitor.removed", settled)
 hl.on("config.reloaded", place_shell)
 -- Every screen the same picture, or each its own desktop: kept, and done at once.
 function latte.duplicate(on)

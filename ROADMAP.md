@@ -44,9 +44,9 @@ Poradie drží tri pravidlá: **čo blokuje overovanie ostatného ide prvé** (�
 Číslo v zátvorke je ID kategórie; podrobnosti sú pri nej.
 
 **Fáza 1 — Základ, bez ktorého sa nedá overovať**
-  1. [~] GuardDog: nezabiteľnosť (Restart=always, watchdog), skúška zabitím, vypnutie stráženia, štítky — (10F)
-  2. [~] Greeter: zvyšné overenie na skutočnom prihlásení (zlé heslo, jazyk a klávesnica, test 541) — (4)
-  3. [ ] Obrazovky: monitor pripojený za behu, Duplikovať v Nastaveniach, overiť so Sunshine — (8B)
+  1. [x] GuardDog: nezabiteľnosť (Restart=always, watchdog), skúška zabitím, vypnutie stráženia, štítky — (10F)
+  2. [~] Greeter: zvyšné overenie na skutočnom prihlásení (zlé heslo, jazyk a klávesnica, test 541) — (4); ostáva iba heslo v druhom rozložení rukou (`docs/manual-inst.md`, 26. 10.)
+  3. [~] Obrazovky: monitor pripojený za behu, Duplikovať v Nastaveniach, overiť so Sunshine — (8B)
 
 **Fáza 2 — Plocha Goo**
   4. [ ] GooEngine, jadro: okno z bubliny (s QueenGoo), 1024 × 768, jedna logika pre NORMAL/SAFE — (6)
@@ -852,6 +852,15 @@ Zdroje: `bin/latte-screens`, `system/hypr/hyprland.lua`, Nastavenia › Obrazovk
    `bin/latte-screens` podľa toho, čo naozaj beží (predtým si to pamätal Hyprland a po `hyprctl reload` to stratil).
    Overené bez obrazovky s napodobeným virtuálnym monitorom a v `tests/test_screens.sh`. **Neoverené:** na latte-lab
    so skutočným monitorom a s Moonlight. Ostáva (d), (e).
+   **26. 10.:** (c) a (d) overené na živej relácii latte-lab s hlavičkovými výstupmi Hyprlandu (`hyprctl output
+   create headless`) popri virtuálnom DP-1: pripojenie, odpojenie, Duplikovať, Rozšíriť, odpojenie hlavného pri
+   duplikovaní. Opravené tri chyby v `system/hypr/hyprland.lua`: (1) nový monitor má pri `monitor.added` ešte
+   x = −1, takže dostal hlavnú scénu, hoci bol vpravo (teraz sa čaká 600 ms, kým Hyprland monitory rozmiestni);
+   (2) po Rozšíriť chýbala lišta okien na monitore, ktorý predtým zrkadlil, lebo `hl.get_monitors()` zrkadlené
+   monitory nevracia a vrátený monitor nijaká udalosť neohlási (ak sa zrkadlenie zruší, `place_shell` sa po 600 ms
+   spustí znova); (3) keď odíde monitor, ktorý iný zrkadlí, Hyprland zrkadlenie zruší a virtuálny ostal samostatný
+   bez lišty (monitor v zozname sa zrkadlí znova). Skutočný DP-3 a Sunshine sú v `docs/manual-inst.md`. (e) patrí
+   k inštalátoru (2).
 
 **8B.03** (pozn.) (Obrazovky) Rozšíriť / Duplikovať · r. 1341–1343
 - **Obrazovky: Rozšíriť / Duplikovať** (`latte.duplicate`, `~/.config/latteos/screens`); overené bez
@@ -1620,7 +1629,7 @@ obrazoviek, napájania, periférií a obnovy pri probléme s ovládačom.
 - [ ] Všetky rizikové zmeny ovládačov, obrazovky a napájania musia mať potvrdenie, časový limit
   alebo obnovovaciu cestu.
 
-### 10F. [~] GuardDog
+### 10F. [x] GuardDog
 Zdroje: `bin/latte-session`, `bin/latte-guarddog`, `apps/guarddog.qml`, `system/systemd`, `system/whyd`, `system/oom`, `system/sessions`
 
 **10F.01** [x] (Relácie a GuardDog) GuardDog · r. 321–328
