@@ -891,6 +891,16 @@ nedá); **štyri okraje hlavnej obrazovky** ako červené čiary predĺžené v 
 najviac vľavo a „Urobiť hlavnou“ pre pravú nefungovalo). Overené naživo s dvoma hlavičkovými výstupmi: ťahanie, návrat po 15 s,
 odmietnutie prekrytia, čiary na 3000 × 2000 vyššie vedľa hlavnej (horná a spodná) a na obrazovke pod ňou (zvislá). Skutočný DP-3: `docs/manual-inst.md`.
 
+**8B.05** [x] (Obrazovky) Ako Windows › Obrazovka (používateľ 26. 10., podľa snímok Windows 11): **rozlíšenia** — k tým, čo monitor
+hlási, bežné rozlíšenia až po jeho najväčšie (najmenej 1024 × 768), najväčšie „(odporúča sa)“; virtuálny monitor ich berie
+ako vlastný režim (overené: DP-1 prešiel na 1366 × 768 a po 15 s späť); **Identifikovať** — veľké číslo a meno na každej
+obrazovke na 3 s, to isté číslo na pegboarde; **Nočné osvetlenie** — prepínač a sila (Slabé 5500 K, Teplé 4500 K, Silné
+3500 K) cez `hyprsunset` a nový `bin/latte-nightlight` (voľba v `~/.config/latteos/nightlight`, obnoví sa pri štarte relácie).
+
+**8B.06** [ ] (Obrazovky) Zvyšok stránky Obrazovka z Windows 11: Nočné osvetlenie **podľa času** (od západu do východu slnka —
+`latte-sky` ich pozná) a dlaždica v paneli Pobrežia; **HDR** a **profil farieb** (Hyprland 0.56: `cm`, `bitdepth`; zistiť, či
+monitor HDR vie); **Rozšírené nastavenia** (údaje o monitore, VRR); **Grafika** (ktorá karta pre ktorú aplikáciu, pri dvoch GPU).
+
 ### 8C. [x] Sklo a materiály
 Sklo okien (Hyprglass), materiály šálky.
 

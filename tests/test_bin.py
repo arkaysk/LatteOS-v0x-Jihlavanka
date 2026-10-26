@@ -692,3 +692,22 @@ with tempfile.TemporaryDirectory() as d:
     house.RUN_USER = os.path.join(d, "%d")
     assert house.made_later(1000, "2814") == {"HYPRLAND_INSTANCE_SIGNATURE": "abc_1", "WAYLAND_DISPLAY": "wayland-1"}
     assert house.made_later(1000, "99") == {}
+
+# Night light: the word kept, and hyprsunset started with it (pkill and hyprsunset are stand-ins that note their calls)
+with tempfile.TemporaryDirectory() as d:
+    stub = os.path.join(d, "bin")
+    os.makedirs(stub)
+    for name in ("pkill", "hyprsunset"):
+        open(os.path.join(stub, name), "w").write('#!/bin/sh\necho "%s $*" >> "%s/calls"\n' % (name, d))
+        os.chmod(os.path.join(stub, name), 0o755)
+    env = dict(os.environ, XDG_CONFIG_HOME=d, PATH=stub + ":" + os.environ["PATH"])
+    night = lambda *a: subprocess.run([os.path.join(ROOT, "bin", "latte-nightlight"), *a], env=env, capture_output=True).returncode
+    word = lambda: open(os.path.join(d, "latteos", "nightlight")).read().strip()
+    calls = lambda: open(os.path.join(d, "calls")).read().split("\n")[-2]
+    assert night("on") == 0 and word() == "4500"
+    time.sleep(0.2)                                         # hyprsunset is started in the background
+    assert calls() == "hyprsunset -t 4500", calls()
+    assert night("3500") == 0 and word() == "3500"
+    assert night("off") == 0 and word() == "off"
+    assert night("on") == 0 and word() == "4500"            # on after off: the warmth it gives the first time
+    assert night("200") == 2 and night("warm") == 2 and word() == "4500"

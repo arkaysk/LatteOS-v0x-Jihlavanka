@@ -78,6 +78,7 @@ ShellRoot {
     Word { id: wallpaper; name: "wallpaper" }
     Word { id: icons; name: "desktop-icons" }
     Word { id: screensWord; name: "screens" }
+    Word { id: nightWord; name: "nightlight" }
     // what the Goo scene keeps for itself: it takes a change up as soon as its file is written
     FileView {
         id: goo
@@ -341,8 +342,36 @@ ShellRoot {
             if (size.rates.indexOf(hz) < 0) size.rates.push(hz)
         }
         found.forEach(s => s.rates.sort((a, b) => b - a))
+        found.sort((a, b) => b.w * b.h - a.w * a.h)
+        // the largest it names is the one it is made for; below it the usual sizes, down to LatteOS's least, as a
+        // mode of its own where the screen does not name them (a virtual one names only one)
+        const top = found[0]
+        if (top) {
+            top.best = true
+            for (const [w, h] of usualSizes)
+                if (w <= top.w && h <= top.h && !found.some(s => s.w === w && s.h === h)) found.push({ w: w, h: h, rates: [60] })
+        }
         return found.sort((a, b) => b.w * b.h - a.w * a.h)
     }
+    readonly property var usualSizes: [[3840, 2160], [3440, 1440], [2560, 1440], [2560, 1080], [1920, 1200], [1920, 1080], [1680, 1050],
+                                       [1600, 900], [1440, 900], [1366, 768], [1280, 1024], [1280, 800], [1280, 720], [1024, 768]]
+    function screenNumber(name) { return screenList.findIndex(m => m.name === name) + 1 }
+    // Identify, as on Windows: each screen's number, large on the screen itself, for a few seconds
+    property bool identifying: false
+    Timer { running: shell.identifying; interval: 3000; onTriggered: shell.identifying = false }
+    Variants { model: shell.identifying ? Quickshell.screens : []
+        PanelWindow { id: ident; required property var modelData
+            screen: modelData
+            anchors { bottom: true; left: true }
+            margins { left: 48; bottom: 120 }
+            implicitWidth: 220; implicitHeight: 220; color: "transparent"
+            exclusionMode: ExclusionMode.Ignore
+            WlrLayershell.layer: WlrLayer.Overlay
+            WlrLayershell.namespace: "latte-identify"
+            mask: Region {}
+            Rectangle { anchors.fill: parent; radius: 28; color: Theme.raised; border.width: 2; border.color: Theme.gold
+                Label { anchors.centerIn: parent; anchors.verticalCenterOffset: -14; text: shell.screenNumber(ident.modelData.name) || "–"; font.pixelSize: 120; font.weight: 700 }
+                Label { anchors.horizontalCenter: parent.horizontalCenter; anchors.bottom: parent.bottom; anchors.bottomMargin: 18; text: ident.modelData.name; color: Theme.dim; font.pixelSize: 14 } } } }
     Process { id: tell; onExited: shell.ask() }
     function order(args) { tell.running = false; tell.command = args; tell.running = true }
     Timer { interval: 2500; repeat: true; running: shell.page === "sound"; onTriggered: if (!tell.running) shell.ask() }
@@ -1208,7 +1237,7 @@ ShellRoot {
                         Behavior on height { NumberAnimation { duration: 220; easing.type: Easing.OutCubic } }
                         Column { anchors.centerIn: parent; spacing: 3
                             Glyph { name: shell.screenMain === scr.modelData ? "cup" : "device-desktop"; font.pixelSize: 26; color: scr.on ? Theme.gold : Theme.dim; anchors.horizontalCenter: parent.horizontalCenter }
-                            Label { text: scr.modelData; font.weight: 700; anchors.horizontalCenter: parent.horizontalCenter }
+                            Label { text: shell.screenNumber(scr.modelData) + "  ·  " + scr.modelData; font.weight: 700; anchors.horizontalCenter: parent.horizontalCenter }
                             Label { text: scr.m.width + " × " + scr.m.height; color: Theme.dim; font.pixelSize: 12; anchors.horizontalCenter: parent.horizontalCenter } }
                         MouseArea { anchors.fill: parent; cursorShape: pressed ? Qt.ClosedHandCursor : Qt.OpenHandCursor
                             property point from
@@ -1238,7 +1267,7 @@ ShellRoot {
                     text: shell.screenHere ? [shell.screenHere.make, shell.screenHere.model, shell.screenHere.name].filter(s => s).join("  ·  ") + (shell.screenMain === shell.screenHere.name ? "  ·  " + I18n.tr("the main screen, where the drops are") : "") : "" }
             Part { visible: shell.page === "displays" && shell.screenHere !== null; width: view.room; title: I18n.tr("Resolution")
                 Repeater { model: shell.screenHere && shell.page === "displays" ? shell.modes(shell.screenHere) : []
-                    Pill { required property var modelData; text: modelData.w + " × " + modelData.h; strong: shell.screenHere.width === modelData.w && shell.screenHere.height === modelData.h
+                    Pill { required property var modelData; text: modelData.w + " × " + modelData.h + (modelData.best ? "  " + I18n.tr("(recommended)") : ""); strong: shell.screenHere.width === modelData.w && shell.screenHere.height === modelData.h
                            onPressed: shell.changeScreen(shell.screenHere.name, { width: modelData.w, height: modelData.h, refreshRate: modelData.rates[0] }) } } }
             Part { visible: shell.page === "displays" && shell.screenHere !== null; width: view.room; title: I18n.tr("Pictures a second")
                 Repeater { model: shell.screenHere && shell.page === "displays" ? (shell.modes(shell.screenHere).find(s => s.w === shell.screenHere.width && s.h === shell.screenHere.height) || { rates: [] }).rates : []
@@ -1259,8 +1288,17 @@ ShellRoot {
                 Pill { icon: "copy"; text: I18n.tr("Duplicate"); strong: screensWord.value === "duplicate"
                        onPressed: { screensWord.value = "duplicate"; shell.order(["hyprctl", "eval", "latte.duplicate(true)"]) } } }
             Part { visible: shell.page === "displays"; width: view.room; title: I18n.tr("Where it stands"); note: I18n.tr("Drag the screens in the picture above to where they stand on your desk; the pointer goes over where their edges touch. Scroll over it to zoom in for a finer move. The red lines are the main screen's edges: show them on the other screens and move a screen until they run on from the main one's edges. The main one carries the drops; every other has a window bar of its own.")
+                Pill { icon: "device-desktop"; text: I18n.tr("Identify"); strong: shell.identifying; onPressed: shell.identifying = true }
                 Pill { icon: shell.guideShown ? "eye-off" : "eye"; text: I18n.tr("Show the lines on the screens"); strong: shell.guideShown; onPressed: shell.guideShown = !shell.guideShown }
                 Pill { icon: "cup"; text: I18n.tr("Make it the main screen"); visible: shell.screenHere !== null && shell.screenMain !== shell.screenHere.name; onPressed: shell.tryScreens(shell.placed(shell.screenList, shell.screenHere.name)) } }
+            // night light: hyprsunset, through bin/latte-nightlight, which keeps the word
+            Part { visible: shell.page === "displays"; width: view.room; title: I18n.tr("Night light")
+                   note: I18n.tr("Warmer colours that keep the blue light down, easier on the eyes in the evening.")
+                Switch { text: I18n.tr("Night light"); hint: nightWord.value === "" || nightWord.value === "off" ? I18n.tr("Off") : nightWord.value + " K"
+                         on: /^\d+$/.test(nightWord.value); onPressed: shell.order(["latte-nightlight", on ? "off" : "on"]) }
+                Repeater { model: [{ k: "5500", name: QT_TR_NOOP("Slight") }, { k: "4500", name: QT_TR_NOOP("Warm") }, { k: "3500", name: QT_TR_NOOP("Strong") }]
+                    Pill { required property var modelData; icon: "moon"; text: I18n.tr(modelData.name); strong: nightWord.value === modelData.k
+                           onPressed: shell.order(["latte-nightlight", modelData.k]) } } }
 
             // language, and whose dates and numbers
             Part { visible: shell.page === "language"; width: view.room; title: I18n.tr("Language"); note: I18n.tr("What the desktop and the apps speak. It changes when you sign in the next time.")

@@ -36,6 +36,7 @@
 /usr/bin/latte-walls                                    <- bin/latte-walls
 /usr/bin/latte-session                                  <- bin/latte-session
 /usr/bin/latte-screens                                  <- bin/latte-screens
+/usr/bin/latte-nightlight                               <- bin/latte-nightlight
 /usr/bin/latte-safe                                     <- bin/latte-safe
 /usr/bin/latte-game                                     <- bin/latte-game
 /usr/libexec/os-session-select                          <- system/libexec/os-session-select

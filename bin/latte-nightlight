@@ -1,0 +1,21 @@
+#!/bin/sh
+# latte-nightlight [on | off | KELVIN]: Night light (Settings › Displays), warmer colours that keep the blue light
+# down, as on Windows. hyprsunset does it. The choice is one word in ~/.config/latteos/nightlight: the temperature
+# while it is on, "off" otherwise. Without an argument what was chosen is put back (the session's start does that).
+f="${XDG_CONFIG_HOME:-$HOME/.config}/latteos/nightlight"
+WARM=4500                                   # what "on" gives the first time
+
+keep() { mkdir -p "${f%/*}" && printf '%s\n' "$1" > "$f"; }
+case "${1:-}" in
+    "") ;;
+    on) case "$(cat "$f" 2>/dev/null)" in [0-9]*) ;; *) keep $WARM ;; esac ;;
+    off) keep off ;;
+    *[!0-9]*) echo "latte-nightlight: on, off or a temperature in K (1000 to 6500)" >&2; exit 2 ;;
+    *) [ "$1" -ge 1000 ] && [ "$1" -le 6500 ] || { echo "latte-nightlight: 1000 to 6500 K" >&2; exit 2; }
+       keep "$1" ;;
+esac
+
+pkill -x hyprsunset
+t="$(cat "$f" 2>/dev/null)"
+case "$t" in [0-9]*) setsid hyprsunset -t "$t" >/dev/null 2>&1 & ;; esac
+exit 0
