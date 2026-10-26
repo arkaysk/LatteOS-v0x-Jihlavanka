@@ -8,10 +8,10 @@ kroku ho označ `[x]` a napíš Claudovi, nech pokračuje.
 
 Toto sa nedá urobiť bez človeka pri latte-lab: písanie na skutočnej klávesnici a zapojenie kábla.
 
-- [ ] **Heslo v druhom rozložení (test 541):** odhlásiť sa; na prihlásení kliknúť na čip klávesnice (prepne na
+- [x] **Heslo v druhom rozložení (test 541):** odhlásiť sa; na prihlásení kliknúť na čip klávesnice (prepne na
   druhé rozloženie, napr. `us`), napísať heslo **rukou** a prihlásiť sa. Potom raz schválne zlé heslo: má prísť
   pekné odmietnutie, nie pád. Napísať Claudovi, či prihlásenie prešlo a či ukazovateľ rozloženia sedel.
-- [ ] **Skutočný monitor za behu:** počas pripojenia cez Moonlight zapojiť DP-3. Plocha (kvapky) sa má presunúť
+- [x] *(presunuté do záverečných testov, STRESTEST 017)* **Skutočný monitor za behu:** počas pripojenia cez Moonlight zapojiť DP-3. Plocha (kvapky) sa má presunúť
   na DP-3 a Moonlight má ukazovať to isté (virtuálny DP-1 zrkadlí DP-3). Potom DP-3 odpojiť: v Moonlight sa má
   plocha vrátiť do 1–2 s. Napísať Claudovi, čo bolo vidno.
 

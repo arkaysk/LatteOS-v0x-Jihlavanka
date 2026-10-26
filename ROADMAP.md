@@ -45,11 +45,11 @@ Poradie drží tri pravidlá: **čo blokuje overovanie ostatného ide prvé** (�
 
 **Fáza 1 — Základ, bez ktorého sa nedá overovať**
   1. [x] GuardDog: nezabiteľnosť (Restart=always, watchdog), skúška zabitím, vypnutie stráženia, štítky — (10F)
-  2. [~] Greeter: zvyšné overenie na skutočnom prihlásení (zlé heslo, jazyk a klávesnica, test 541) — (4); ostáva iba heslo v druhom rozložení rukou (`docs/manual-inst.md`, 26. 10.)
-  3. [~] Obrazovky: monitor pripojený za behu, Duplikovať v Nastaveniach, overiť so Sunshine — (8B)
+  2. [x] Greeter: zvyšné overenie na skutočnom prihlásení (zlé heslo, jazyk a klávesnica, test 541) — (4); overil používateľ 26. 10.
+  3. [x] Obrazovky: monitor pripojený za behu, Duplikovať v Nastaveniach, pegboard — (8B); skúška so skutočným DP-3 a Sunshine patrí do záverečných testov (18, STRESTEST 017)
 
 **Fáza 2 — Plocha Goo**
-  4. [ ] GooEngine, jadro: okno z bubliny (s QueenGoo), 1024 × 768, jedna logika pre NORMAL/SAFE — (6)
+  4. [x] GooEngine, jadro: okno z bubliny (s QueenGoo) — (6, 6.06); 1024 × 768 a NORMAL/SAFE ostávajú v bráne 6.22 a v 6.14
   5. [~] Dokončenie kvapiek: BarGoo, LensGoo (vzhľad), PowerGoo, ClockGoo, QueenGoo, QuickGoo, Pobrežie — (6A–6E, 6G, 6H)
   6. [~] Režimy okien: Glance (náhľady v Parkingu), hyprtrizone pre ultrawide — (8A)
   7. [~] Plocha: ponuka plochy (Späť, „Tento počítač“), tapety a skwd-wall, hladina na spodku okna — (7A, 7B, 8D)
@@ -254,7 +254,7 @@ zavedenie systemu a prihlasovacia obrazovka dizajnovo takmer finalna verzia.
 - [ ] **Prihlasovanie:** výber relácie (SAFE, iné shelly) je v scéne iba „vývojárska verzia“; v README
   opísať ako dostupný iba po overení.
 
-**4.03** [~] (Greeter a prihlásenie (LoginGoo)) Prihlasovacia obrazovka podľa predstavy · r. 1188–1225
+**4.03** [x] (Greeter a prihlásenie (LoginGoo)) Prihlasovacia obrazovka podľa predstavy (skutočné prihlásenie, zlé heslo, jazyk a klávesnica overil používateľ 26. 10.) · r. 1188–1225
 [ ] **Prihlasovacia obrazovka podľa predstavy používateľa** (13. 10., `bughunt/najdene-chyby.md`; test 541 ukázal,
     že voľba jazyka a klávesnice na prihlásení **nie je**: rozloženie sa prepína iba naslepo Alt+Shift, jazyk vôbec).
     (a) [~] **Jazyk a rozloženie klávesnice klikom** na prihlásení (aj v SAFE), s ukazovateľom aktuálneho rozloženia
@@ -874,7 +874,7 @@ Zdroje: `bin/latte-screens`, `system/hypr/hyprland.lua`, Nastavenia › Obrazovk
    (2) po Rozšíriť chýbala lišta okien na monitore, ktorý predtým zrkadlil, lebo `hl.get_monitors()` zrkadlené
    monitory nevracia a vrátený monitor nijaká udalosť neohlási (ak sa zrkadlenie zruší, `place_shell` sa po 600 ms
    spustí znova); (3) keď odíde monitor, ktorý iný zrkadlí, Hyprland zrkadlenie zruší a virtuálny ostal samostatný
-   bez lišty (monitor v zozname sa zrkadlí znova). Skutočný DP-3 a Sunshine sú v `docs/manual-inst.md`. (e) patrí
+   bez lišty (monitor v zozname sa zrkadlí znova). Skutočný DP-3 a Sunshine: záverečné testy (STRESTEST 017). (e) patrí
    k inštalátoru (2).
 
 **8B.03** (pozn.) (Obrazovky) Rozšíriť / Duplikovať · r. 1341–1343
@@ -1901,6 +1901,12 @@ rozhodovací bod podľa 10I.03, zatiaľ iba sledovať:
   (Microlift), knižnice hostiteľa sa premosťujú. Rust 1.99+, SDL 3.4. Pokrytie aplikácií neúplné, tabuľka
   kompatibility zatiaľ nie je; okolo neho vznikajú spúšťače macOS Robloxu (nutmeg, Roseline).
 Pre Baristu: rozpoznať `.app`/`.dmg` a povedať človeku, či sa dá skúsiť.
+
+**10I.07** [ ] (Barista) Preskúmať **Eagle** z Bottles (používateľ 26. 10.; Bottles je GPL-3.0). Eagle spozná `.exe`
+podľa offline dát z ProtonDB a winetricks a navrhne nastavenia, ktoré pomohli iným — rovnaký nápad ako krok
+Analýza v Baristovi. Zistiť: (a) či nastavenia aj sám použije (vyzerá tak), nielen radí; (b) formát a zdroj
+offline databázy, podľa čoho spozná program, ako často sa obnovuje; (c) čo z toho prevziať do receptov Baristu.
+Možný výsledok: Eagle ako **spustiteľná možnosť popri Baristovi** (druhý názor alebo náhradná cesta).
 
 ### 10J. [~] Kalendár
 Aplikácia Kalendár a karta ClockGoo (ľavý klik): EDS, udalosti vetou, týždeň.
