@@ -101,6 +101,10 @@ part Ai {
 
     // the services' own colours are chosen where each is used: a colour if() is not a `let`
     let ai.k = pick(ai_style, 0, 1, 2, 3, 4, 5, 6, 7)       // the style as a number: a name after it would be read as one of its values
+    // The service's white page is made see-through by showing less of it (lib/engine.luau: ai_glass 0 … 4), not by
+    // frosting it, which only made it grey. On the clearest two the conversation and the field take LatteOS's own
+    // colours (style 4): dark letters on what is now mostly the card's coffee would not be read.
+    let ai.kc = if(ai_glass >= 3, 4, ai.k)
     let ai.on = card_open and card_custom == 3
     let ai.w = card.w - 32                     // what the conversation and the field have
     let ai.fy = 398                            // where the field stands, from the card's top
@@ -126,7 +130,7 @@ part Ai {
         move: card.x0, card.y0
 
         // ── the service's own page under the conversation and the field: one knows at a glance whose it is ────
-        box { from: 8, 56; size: card.w - 16, ai.fy + ai.fh + 8 - 56; corner: 16; color: if(ai.k == 0, #faf9f5, if(ai.k == 1, #f8fafd, if(ai.k == 2, #fafaf9, if(ai.k == 3, #ffffff, if(ai.k == 5, #ffffff, if(ai.k == 6, #fafaf7, if(ai.k == 7, #ffffff, #000000))))))); opacity: if(ai.k == 4, 0, if(ai_soft, pick(ai_glass, 100%, 88%, 76%, 64%, 52%), 100%)); glass: if(ai_glass == 0 or ai_soft, 0, 100%); frost: 100%; milk: pick(ai_glass, 0%, 85%, 70%, 55%, 40%) }
+        box { from: 8, 56; size: card.w - 16, ai.fy + ai.fh + 8 - 56; corner: 16; color: if(ai.k == 0, #faf9f5, if(ai.k == 1, #f8fafd, if(ai.k == 2, #fafaf9, if(ai.k == 3, #ffffff, if(ai.k == 5, #ffffff, if(ai.k == 6, #fafaf7, if(ai.k == 7, #ffffff, #000000))))))); opacity: if(ai.k == 4, 0, pick(ai_glass, 100%, 88%, 72%, 35%, 18%)) }
         // ── the conversation: on the glass, it scrolls; the newest at the bottom ─────────────────────────────
         column talk {
             at: 16, 58
@@ -142,33 +146,33 @@ part Ai {
                     group {
                         size: 30, 30
                         show: m.mine
-                        text ic_ai_copy { at: 15, 15; anchor: center; size: 15; color: if(ai.k == 4, #f3ebdd, #3d3929); opacity: 50% + 50% * cp_a.hover; family: "tabler-icons" }
+                        text ic_ai_copy { at: 15, 15; anchor: center; size: 15; color: if(ai.kc == 4, #f3ebdd, #3d3929); opacity: 50% + 50% * cp_a.hover; family: "tabler-icons" }
                         zone box cp_a { from: 0, 0; size: 30, 30; cursor: pointer; label: "Copy"; role: button }
                         on press cp_a { emit ai_copy(m.index) }
                     }
                     column said {
                         gap: 5
                         on press right said { tap.x = cursor.x; tap.y = cursor.y; emit ai_menu(m.index) }
-                        text m.who { size: 11.5; weight: 700; lines: 1; color: if(ai.k == 0, #8b8778, if(ai.k == 1, #5f6368, if(ai.k == 2, #8a8a8a, if(ai.k == 3, #8f8f8f, if(ai.k == 5, #656d76, if(ai.k == 6, #9a9a9a, if(ai.k == 7, #a3a3a3, #b8a491))))))); show: not m.mine; family: "Inter" }
+                        text m.who { size: 11.5; weight: 700; lines: 1; color: if(ai.kc == 0, #8b8778, if(ai.kc == 1, #5f6368, if(ai.kc == 2, #8a8a8a, if(ai.kc == 3, #8f8f8f, if(ai.kc == 5, #656d76, if(ai.kc == 6, #9a9a9a, if(ai.kc == 7, #a3a3a3, #b8a491))))))); show: not m.mine; family: "Inter" }
                         column {
                             show: m.mine
-                            fill: if(ai.k == 0, #f0eee6, if(ai.k == 1, #e9eef6, if(ai.k == 2, #f1f1f1, if(ai.k == 3, #f4f4f4, if(ai.k == 5, #f6f8fa, if(ai.k == 6, #f2f2f2, if(ai.k == 7, #eff6ff, #f7c873))))))) if(ai.k == 4, 26%, 100%)
+                            fill: if(ai.kc == 0, #f0eee6, if(ai.kc == 1, #e9eef6, if(ai.kc == 2, #f1f1f1, if(ai.kc == 3, #f4f4f4, if(ai.kc == 5, #f6f8fa, if(ai.kc == 6, #f2f2f2, if(ai.kc == 7, #eff6ff, #f7c873))))))) if(ai.kc == 4, 26%, 100%)
                             corner: 16
                             padding: 11
-                            text m.body { width: min(m.w, ai.w * 0.8) - 22; lines: 80; size: 14.5; line_height: 1.4; color: if(ai.k == 0, #1f1e1d, if(ai.k == 1, #1f1f1f, if(ai.k == 2, #0d0d0d, if(ai.k == 3, #0d0d0d, if(ai.k == 5, #1f2328, if(ai.k == 6, #1a1a1a, if(ai.k == 7, #262626, #fff4e0))))))); family: "Inter"; selectable: true; selection: #5a463a }
+                            text m.body { width: min(m.w, ai.w * 0.8) - 22; lines: 80; size: 14.5; line_height: 1.4; color: if(ai.kc == 0, #1f1e1d, if(ai.kc == 1, #1f1f1f, if(ai.kc == 2, #0d0d0d, if(ai.kc == 3, #0d0d0d, if(ai.kc == 5, #1f2328, if(ai.kc == 6, #1a1a1a, if(ai.kc == 7, #262626, #fff4e0))))))); family: "Inter"; selectable: true; selection: #5a463a }
                         }
                         column {
                             show: not m.mine
-                            fill: #1b120d if(ai.k == 4, 60%, 0%)
+                            fill: #1b120d if(ai.kc == 4, 60%, 0%)
                             corner: 16
                             padding: 11
-                            text m.body { width: min(m.w, ai.w * 0.8) - 22; lines: 80; size: 14.5; line_height: 1.4; color: if(m.failed, #e5484d, if(ai.k == 0, #1f1e1d, if(ai.k == 1, #1f1f1f, if(ai.k == 2, #0d0d0d, if(ai.k == 3, #0d0d0d, if(ai.k == 5, #1f2328, if(ai.k == 6, #1a1a1a, if(ai.k == 7, #262626, #f5e8d8)))))))); family: "Inter"; selectable: true; selection: #5a463a }
+                            text m.body { width: min(m.w, ai.w * 0.8) - 22; lines: 80; size: 14.5; line_height: 1.4; color: if(m.failed, #e5484d, if(ai.kc == 0, #1f1e1d, if(ai.kc == 1, #1f1f1f, if(ai.kc == 2, #0d0d0d, if(ai.kc == 3, #0d0d0d, if(ai.kc == 5, #1f2328, if(ai.kc == 6, #1a1a1a, if(ai.kc == 7, #262626, #f5e8d8)))))))); family: "Inter"; selectable: true; selection: #5a463a }
                         }
                     }
                     group {
                         size: 30, 30
                         show: not m.mine
-                        text ic_ai_copy { at: 15, 15; anchor: center; size: 15; color: if(ai.k == 4, #f3ebdd, #3d3929); opacity: 50% + 50% * cp_b.hover; family: "tabler-icons" }
+                        text ic_ai_copy { at: 15, 15; anchor: center; size: 15; color: if(ai.kc == 4, #f3ebdd, #3d3929); opacity: 50% + 50% * cp_b.hover; family: "tabler-icons" }
                         zone box cp_b { from: 0, 0; size: 30, 30; cursor: pointer; label: "Copy"; role: button }
                         on press cp_b { emit ai_copy(m.index) }
                     }
@@ -240,15 +244,15 @@ part Ai {
         let fx.glyph = if(ai_wait, 4, if(ai.k == 5, 3, if(ai_typed, 0, pick(ai_style, 1, 0, 0, 1, 0, 3, 2, 0))))
         let fx.cw = pick(ai_style, 170, 150, 150, 150, 150, 150, 190, 150)
         let fx.cx = if(fx.left > 0, 30, card.w - 16 - 72 - 22 - fx.cw + if(fx.mic > 0, 0, 40))
-        // the field as see-through as the page, a little less, so that what is written stays easy to read
-        box { from: 16, f.top; size: ai.w, f.h; corner: f.round; color: if(ai.k == 0, #ffffff, if(ai.k == 1, #ffffff, if(ai.k == 2, #ffffff, if(ai.k == 3, #ffffff, if(ai.k == 5, #ffffff, if(ai.k == 6, #ffffff, if(ai.k == 7, #ffffff, #3d2c22))))))); opacity: if(ai.k == 4, 100%, pick(ai_glass, 100%, 94%, 86%, 78%, 70%)) }
-        box { from: 16, f.top; size: ai.w, f.h; corner: f.round; stroke: if(ai.k == 5, 2, 1); color: if(ai.k == 0, #d9d6cf, if(ai.k == 1, #e8eaed, if(ai.k == 2, #e5e5e5, if(ai.k == 3, #e6e6e6, if(ai.k == 5, #0969da, if(ai.k == 6, #ececec, if(ai.k == 7, #e5e7eb, #5a463a))))))) }
-        text ai_hint { at: if(ai.row > 0, 62, 36), if(ai.row > 0, f.cy, ai.fy + 26); anchor: left center; width: if(ai.row > 0, ai.w - 360, ai.w - 40); lines: 1; size: 15.5; color: if(ai.k == 0, #8b8778, if(ai.k == 1, #5f6368, if(ai.k == 2, #8a8a8a, if(ai.k == 3, #8f8f8f, if(ai.k == 5, #8c959f, if(ai.k == 6, #9a9a9a, if(ai.k == 7, #a3a3a3, #b8a491))))))); show: not ai_typed; family: "Inter" }
+        // the field a little see-through with the page; on the clearest two it takes LatteOS's own colours, as the text does
+        box { from: 16, f.top; size: ai.w, f.h; corner: f.round; color: if(ai.kc == 0, #ffffff, if(ai.kc == 1, #ffffff, if(ai.kc == 2, #ffffff, if(ai.kc == 3, #ffffff, if(ai.kc == 5, #ffffff, if(ai.kc == 6, #ffffff, if(ai.kc == 7, #ffffff, #3d2c22))))))); opacity: if(ai.kc == 4, 100%, pick(ai_glass, 100%, 94%, 86%, 86%, 86%)) }
+        box { from: 16, f.top; size: ai.w, f.h; corner: f.round; stroke: if(ai.kc == 5, 2, 1); color: if(ai.kc == 0, #d9d6cf, if(ai.kc == 1, #e8eaed, if(ai.kc == 2, #e5e5e5, if(ai.kc == 3, #e6e6e6, if(ai.kc == 5, #0969da, if(ai.kc == 6, #ececec, if(ai.kc == 7, #e5e7eb, #5a463a))))))) }
+        text ai_hint { at: if(ai.row > 0, 62, 36), if(ai.row > 0, f.cy, ai.fy + 26); anchor: left center; width: if(ai.row > 0, ai.w - 360, ai.w - 40); lines: 1; size: 15.5; color: if(ai.kc == 0, #8b8778, if(ai.kc == 1, #5f6368, if(ai.kc == 2, #8a8a8a, if(ai.kc == 3, #8f8f8f, if(ai.kc == 5, #8c959f, if(ai.kc == 6, #9a9a9a, if(ai.kc == 7, #a3a3a3, #b8a491))))))); show: not ai_typed; family: "Inter" }
         // the press that puts the cursor in the field goes under the field itself, so the field is what is on top
         zone box ai_field_hit { from: if(ai.row > 0, 56, 16), f.top; size: if(ai.row > 0, ai.w - 340, ai.w), if(ai.row > 0, f.h, f.h - 40); cursor: text; active: ai.on; label: "{ai_hint}" }
         on press ai_field_hit { focus ai_q }
         on press right ai_field_hit { tap.x = cursor.x; tap.y = cursor.y; emit ai_menu(-2) }
-        input ai_q { at: if(ai.row > 0, 62, 36), if(ai.row > 0, f.cy - 10, ai.fy + 16); width: if(ai.row > 0, ai.w - 360, ai.w - 40); size: 15.5; color: if(ai.k == 0, #3d3929, if(ai.k == 1, #1f1f1f, if(ai.k == 2, #0d0d0d, if(ai.k == 3, #0d0d0d, if(ai.k == 5, #1f2328, if(ai.k == 6, #1a1a1a, if(ai.k == 7, #262626, #f5e8d8))))))); selection: if(ai.k == 4, #5a463a, #c9d7f0); family: "Inter"; label: "{ai_hint}" }
+        input ai_q { at: if(ai.row > 0, 62, 36), if(ai.row > 0, f.cy - 10, ai.fy + 16); width: if(ai.row > 0, ai.w - 360, ai.w - 40); size: 15.5; color: if(ai.kc == 0, #3d3929, if(ai.kc == 1, #1f1f1f, if(ai.kc == 2, #0d0d0d, if(ai.kc == 3, #0d0d0d, if(ai.kc == 5, #1f2328, if(ai.kc == 6, #1a1a1a, if(ai.kc == 7, #262626, #f5e8d8))))))); selection: if(ai.kc == 4, #5a463a, #c9d7f0); family: "Inter"; label: "{ai_hint}" }
         on press right ai_q { tap.x = cursor.x; tap.y = cursor.y; emit ai_menu(-2) }
         // + : something to attach
         ellipse { at: 38, f.cy; radius: 15; color: if(ai.k == 0, #3d3929, if(ai.k == 1, #1f1f1f, if(ai.k == 2, #0d0d0d, if(ai.k == 3, #0d0d0d, if(ai.k == 5, #1f2328, if(ai.k == 6, #1a1a1a, if(ai.k == 7, #262626, #f5e8d8))))))); opacity: 8% * plus_hit.hover * fx.plus }

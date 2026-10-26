@@ -897,7 +897,7 @@ local function settings()
     -- 4 is True Glass: the cards and the windows clear glass that bends the light (card.plm, system/hypr/latte/glass.lua)
     local clear = level == 4 and not software
     -- the AI's page: as much glass as LatteOS, or what the user chose for it (LensGoo, the right button in the conversation)
-    local ai_glass = tonumber(t.ai_glass) and math.max(0, math.min(4, math.floor(t.ai_glass))) or (software and 0 or math.min(level, 3))
+    local ai_glass = tonumber(t.ai_glass) and math.max(0, math.min(4, math.floor(t.ai_glass))) or (software and 0 or math.min(level, 2))   -- 3 and 4 make the page dark: only when chosen
     E.tell("fact lively " .. tostring(fact.lively), "fact glassy " .. tostring(fact.glassy), "fact bends " .. tostring(fact.bends),
            "fact ai_glass " .. tostring(ai_glass), "fact ai_soft " .. tostring(software), "fact true_glass " .. tostring(clear))
     local windows = clear and 2 or ((t.windows == "glass" and level > 0) and 1 or 0)

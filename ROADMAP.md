@@ -539,8 +539,9 @@ tiež je sučastou aj prevodnik jednotiek a mien pričom nemosi byt použiti pre
 ta biela plocha je prisilna a potrebuje mat volitelnu hodnotu priehladnosti.
    **Urobené a overené 26. 10.:** pravý klik na správu → Kopírovať (Ctrl+C), Kopírovať celý rozhovor; vedľa správ → celý
    rozhovor; pri službách s vlastnou stránkou (Claude, Gemini…) aj **Priehľadnosť plochy** (Ako LatteOS · Nepriehľadná ·
-   Trochu · Priehľadnejšia · Najpriehľadnejšia · Sklo, mlieko 85 → 40 %, aj pole na písanie; voľba `ai_glass` v
-   `settings.json`). V poli otázky Vystrihnúť · Kopírovať · Prilepiť so skratkami vpravo, ako ponuka vo Windowse (ponuka Goo
+   Trochu · Priehľadnejšia · Najpriehľadnejšia · Sklo: biela plocha ubúda 100 → 18 %, nie zahmlievaním (to ju iba
+   zošedilo, výhrada používateľa); pri dvoch najpriehľadnejších sa text, bubliny a pole prepnú na farby LatteOS; voľba
+   `ai_glass` v `settings.json`, „Ako LatteOS“ najviac stupeň 2). V poli otázky Vystrihnúť · Kopírovať · Prilepiť so skratkami vpravo, ako ponuka vo Windowse (ponuka Goo
    vie odteraz ukázať skratku: `keys`). Pri každej správe ikona **Kopírovať** jedným klikom (nápad používateľa). Ctrl+C
    na vyznačenom texte a Ctrl+V v poli fungovali už predtým.
 
