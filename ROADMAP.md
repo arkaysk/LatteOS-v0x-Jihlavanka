@@ -43,13 +43,9 @@ Poradie drží tri pravidlá: **čo blokuje overovanie ostatného ide prvé** (�
 **aplikácie podľa Priority UX** (zvyky z Windowsu, softvér zo zoznamu záujmov), a nakoniec Optimalizácia a STRESTEST.
 Číslo v zátvorke je ID kategórie; podrobnosti sú pri nej.
 
-**Fáza 1 — Základ, bez ktorého sa nedá overovať**
-  1. [x] GuardDog: nezabiteľnosť (Restart=always, watchdog), skúška zabitím, vypnutie stráženia, štítky — (10F)
-  2. [x] Greeter: zvyšné overenie na skutočnom prihlásení (zlé heslo, jazyk a klávesnica, test 541) — (4); overil používateľ 26. 10.
-  3. [x] Obrazovky: monitor pripojený za behu, Duplikovať v Nastaveniach, pegboard — (8B); skúška so skutočným DP-3 a Sunshine patrí do záverečných testov (18, STRESTEST 017)
+Hotové body sa z poradia vyškrtávajú (ostávajú zapísané pri svojej kategórii); čísla ostatných sa nemenia, odkazuje sa na ne.
 
 **Fáza 2 — Plocha Goo**
-  4. [x] GooEngine, jadro: okno z bubliny (s QueenGoo) — (6, 6.06); 1024 × 768 a NORMAL/SAFE ostávajú v bráne 6.22 a v 6.14
   5. [~] Dokončenie kvapiek: BarGoo, LensGoo (vzhľad), PowerGoo, ClockGoo, QueenGoo, QuickGoo, Pobrežie — (6A–6E, 6G, 6H)
   6. [~] Režimy okien: Glance (náhľady v Parkingu), hyprtrizone pre ultrawide — (8A)
   7. [~] Plocha: ponuka plochy (Späť, „Tento počítač“), tapety a skwd-wall, hladina na spodku okna — (7A, 7B, 8D)
@@ -876,8 +872,8 @@ Zdroje: `bin/latte-screens`, `system/hypr/hyprland.lua`, Nastavenia › Obrazovk
 
 **8B.01** [x] (Obrazovky) viac monitorov, prvá časť · r. 88–89
 
-**8B.02** [ ] (Obrazovky) Rozpoznanie obrazoviek · r. 308–320
-[ ] **Rozpoznanie pripojených obrazoviek** (13. 10., z prvého behu Fresh na latte-lab). latte-lab beží väčšinou iba
+**8B.02** [x] (Obrazovky) Rozpoznanie obrazoviek · r. 308–320 — (a)–(d) hotové 13. a 26. 10.; (e) patrí k inštalátoru (2), skúška so skutočným monitorom do STRESTEST 017
+[x] **Rozpoznanie pripojených obrazoviek** (13. 10., z prvého behu Fresh na latte-lab). latte-lab beží väčšinou iba
    cez Moonlight na virtuálnej DP-1 (EDID LATTE-VIRT); skutočný monitor DP-3 býva pripojený len občas. Prvý štart Fresh
    so skutočným monitorom dal hlavnú scénu Goo na virtuálnu obrazovku, ktorú nikto nevidí, lebo `main_monitor()`
    v `system/hypr/hyprland.lua` hľadal monitor presne na 0,0 a pri `position = "auto"` tam žiadny nebol. Treba:
