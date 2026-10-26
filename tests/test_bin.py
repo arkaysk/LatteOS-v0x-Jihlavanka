@@ -711,3 +711,17 @@ with tempfile.TemporaryDirectory() as d:
     assert night("off") == 0 and word() == "off"
     assert night("on") == 0 and word() == "4500"            # on after off: the warmth it gives the first time
     assert night("200") == 2 and night("warm") == 2 and word() == "4500"
+
+# LensGoo's amounts: a loose line, in Slovak too, put the way qalc reads it (goo/lib/amount.luau, plain Lua as well)
+if shutil.which("lua"):
+    probe = 'package.path = arg[1] .. "/goo/lib/?.luau;" .. package.path\nprint(require("amount")(arg[2]) or "-")\n'
+    script = os.path.join(tempfile.gettempdir(), "latte-amount-probe.lua")
+    open(script, "w").write(probe)
+    put = lambda line: subprocess.run(["lua", script, ROOT, line], capture_output=True, text=True).stdout.strip()
+    assert put("100 eur na doláre") == "100 EUR to USD", put("100 eur na doláre")
+    assert put("Koľko je 100 € v korunách?") == "100 € to CZK"
+    assert put("5 km v míľach") == "5 km to mi"
+    assert put("20 stupňov celzia na fahrenheit") == "20 °C to °F"
+    assert put("15 % z 80") == "15% * 80" and put("15% of 80") == "15% * 80"
+    assert put("2048 game") == "-" and put("Spotify") == "-"            # an app's name is not worked out
+    os.remove(script)

@@ -330,7 +330,7 @@ local function step_tab(dir)
     if f then f() end
 end
 on("card_tab", function(i) local f = tab_runs[(i or 0) + 1] if f then f() end end)
-on("card_next", function(v) step_tab(v == 1 and 1 or -1) end)
+on("card_next", function(v) wheel_at = os.clock() step_tab(v == 1 and 1 or -1) end)   -- the wheel over the tabs: not the card's turn too
 -- The wheel anywhere on the card turns the tabs. The scene tells both the row and the card of the same notch,
 -- so the card waits a moment to see whether a row took it.
 on("card_spin", function(v)

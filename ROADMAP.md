@@ -530,10 +530,14 @@ Zdroje: LATTEOS-GOO §4.3
   dostala „abcd“ napísané po kliknutí do DualBrew, nová ich nechá DualBrew; prechod myšou nad plochou už nič nevezme;
   písmená po kliknutí na plochu idú ploche. Podobné hlásenie: ashell #1010 (vrstva Bottom, follow_mouse = 2).
 
-**6B.06** [ ] pisanie do riadku na vyhladavanie v forme výpočtu, zobrazi vysledok s možnostou ho skopirovat do schranky. 
+**6B.06** [x] pisanie do riadku na vyhladavanie v forme výpočtu, zobrazi vysledok s možnostou ho skopirovat do schranky. 
 tiež je sučastou aj prevodnik jednotiek a mien pričom nemosi byt použiti presny formatat a dokaže s apracovat s vágnym zadaním.
+   **Urobené 26. 10.:** výpočty ako doteraz (`lib/calc.luau`); jednotky a meny počíta **Qalculate** (`qalc`, balík
+   `qalculate`, kurzy ECB raz denne), voľný zápis aj po slovensky preloží `goo/lib/amount.luau`: „100 eur na doláre“ →
+   111,88 $, „5 km v míľach“, „20 stupňov celzia na fahrenheit“, „1000 korún na eurá“ → 41,04 € (meny na centy), „15 % z 80“.
+   Výsledok klikom do schránky. Názov aplikácie s číslom („2048 game“) sa nepočíta. Test v `tests/test_bin.py`.
 
-**6B.07** [x] bola najdena chyba. ked sa skrolujekolieskom, na ai založke sa skrolovanie zastavy a už nejde ani spatky. — **Opravené 26. 10.:** karta pri každom obnovení (každý kúsok písanej odpovede, limity, ponuka) stiahla rozhovor na koniec a prebila koliesko. Teraz ide na koniec iba nová správa; písanú odpoveď rozhovor nasleduje, len keď je človek dole (`ai_new`, `ai_gen` v `goo/parts/ai.plm`). Overené s lokálnou AI: počas 143 obnovení ostal rozhovor hore, kde sa čítalo; dole nasledoval odpoveď.
+**6B.07** [x] bola najdena chyba. ked sa skrolujekolieskom, na ai založke sa skrolovanie zastavy a už nejde ani spatky. — **Opravené 26. 10.:** karta pri každom obnovení (každý kúsok písanej odpovede, limity, ponuka) stiahla rozhovor na koniec a prebila koliesko. Teraz ide na koniec iba nová správa; písanú odpoveď rozhovor nasleduje, len keď je človek dole (`ai_new`, `ai_gen` v `goo/parts/ai.plm`). Overené s lokálnou AI: počas 143 obnovení ostal rozhovor hore, kde sa čítalo; dole nasledoval odpoveď. **Aj 26. 10.:** koliesko nad pásom záložiek (Aplikácie … AI) ich prepína na každej záložke, aj na AI, kde sa predtým zastavilo; koliesko robí to, nad čím je kurzor (záložky, rozhovor, riadky).
 
 **6B.08** [x] pridat kontexctove menu v ploche ai vnutri popupu LensGoo. mosi byt možnost skopirovat spravu, a tiež kd sa klikne do tej plochy, musi tam byt nastavenie priehladnosti. 
 ta biela plocha je prisilna a potrebuje mat volitelnu hodnotu priehladnosti.
@@ -545,6 +549,8 @@ ta biela plocha je prisilna a potrebuje mat volitelnu hodnotu priehladnosti.
    vie odteraz ukázať skratku: `keys`). Pri každej správe ikona **Kopírovať** jedným klikom (nápad používateľa). Ctrl+C
    na vyznačenom texte a Ctrl+V v poli fungovali už predtým.
 
+
+**6B.10** [x] Záložka Aplikácie sa vždy otvorí na filtri **Všetky** (používateľ 26. 10.); iný filter platí, kým je LensGoo otvorený.
 
 **6B.09** [ ] **Ikona Kopírovať pri každom texte LatteOS, ktorý sa dá kopírovať** (používateľ 26. 10.): ako pri správach AI
 (6B.08) — príkazy, chybové hlásenia, správy na skopírovanie (Posledný pád), adresy, výsledok kalkulačky; v Goo aj

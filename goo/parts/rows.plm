@@ -100,6 +100,7 @@ part Rows {
                         text t.label { at: 44, 22; anchor: left center; width: if(tab.full, tab.eq, tab.wide) - 56; lines: 1; size: 14; weight: 600; color: if(t.on, gold, cream); show: t.on or tab.full; family: "Inter" }
                         zone box tab_hit { from: 0, 2; size: if(tab.full, tab.eq, if(t.on, tab.wide, 44)), 40; cursor: pointer; role: tab; selected: t.on; label: "{t.label}" }
                         on press tab_hit { emit card_tab(t.index) }
+                        on scroll tab_hit { emit card_next(if(wheel > 0, 0, 1)) }   // the wheel over the tabs turns them, on every tab (AI too)
                     }
                 }
             }

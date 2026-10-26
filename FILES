@@ -61,6 +61,7 @@
 /usr/share/latteos/goo/lib/fold.luau                    <- goo/lib/fold.luau
 /usr/share/latteos/goo/lib/dangerous.luau               <- goo/lib/dangerous.luau
 /usr/share/latteos/goo/lib/born.luau                    <- goo/lib/born.luau
+/usr/share/latteos/goo/lib/amount.luau                  <- goo/lib/amount.luau
 /usr/share/latteos/goo/lang/sk.plm                      <- goo/lang/sk.plm
 /usr/share/latteos/goo/lang/sk-dates.json               <- goo/lang/sk-dates.json
 /usr/share/latteos/goo/goo.plm                          <- goo/goo.plm
@@ -271,6 +272,8 @@ package: foot less NetworkManager-tui                                # the SAFE 
 package: hyprland wireplumber libnotify swaybg hypridle              # the GOO session; wpctl for the volume keys; notify-send when a timer rings; the wallpaper; the lock when idle
 optional: mpvpaper                                                   # a film as the desktop's background
 optional: cliphist wl-clipboard                                      # the clipboard in the shore's panel: what was copied lately
+optional: qalculate                                                  # the launcher: amounts in units and money, written loosely (qalc; rates from the ECB)
+optional: hyprsunset                                                 # Settings › Displays › Night light
 package: quickshell flatpak                                          # LatteOS's own apps are drawn by Quickshell; the App Manager's shop is Flathub
 package: qt6-qtdeclarative xdg-desktop-portal-gtk                   # choosing a file in LatteOS's apps is the desktop's own window for it
 package: nftables iproute                                            # latte-netd: cutting an app off the internet, closing its connections

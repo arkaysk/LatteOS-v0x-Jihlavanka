@@ -12,6 +12,7 @@ local icons = require("lib/icons")
 local ctx = require("lib/ctx")
 local find = require("lib/find")
 local calc = require("lib/calc")
+local amount = require("lib/amount")
 local dangerous = require("lib/dangerous")
 local open = require("lib/open")
 local own = require("lib/own")
@@ -81,6 +82,7 @@ local home, folders = "", {}
 local typed, confirm = "", nil       -- what is in the field; the dangerous command asked about
 local found, asked = nil, 0          -- the files found for what is typed; which question the answer is to
 local pages, pages_for = {}, ""      -- the pages of the Settings that match what is typed; what that was
+local worked, worked_for = nil, ""   -- an amount in units or money worked out by qalc for what is typed; what that was
 local render, set_mode
 
 local function save() pcall(sys.call, "files.write", FILE, kept) end
@@ -211,6 +213,9 @@ local function rows_apps()
     if result then
         local shown = number(result)
         rows[#rows + 1] = { label = shown, glyph = "calculator", hint = tr("click copies"), run = function() pcall(sys.call, "clipboard.set", shown) end }
+    elseif worked and worked_for == typed then
+        local shown = worked
+        rows[#rows + 1] = { label = shown, glyph = "calculator", hint = tr("click copies"), run = function() pcall(sys.call, "clipboard.set", shown) end }
     end
     for _, a in ipairs(find(apps, typed, 7)) do
         rows[#rows + 1] = { label = a.local_name or a.name or a.id, icon = a.icon or "", glyph = "apps", hint = tr("App"), run = function() launch(a) end, right = function() app_menu(a) end }
@@ -237,6 +242,26 @@ local function look_for_settings()
         local ok, list = pcall(json.decode, out or "")
         pages, pages_for = ok and type(list) == "table" and list or {}, text
         if card.id() == "lens" and kept.mode == 0 and #pages > 0 then render(true) end
+    end)
+end
+
+-- An amount in units or money, written loosely ("100 eur na doláre", "5 km v míľach", "15 % z 80"): Qalculate works
+-- it out, with the exchange rates of the European Central Bank fetched once a day (6B.06). Without qalc, nothing.
+local function look_for_amount()
+    local text = typed
+    local asked_for = amount(text)
+    if not asked_for or calc(text) then worked, worked_for = nil, text return end
+    local to = asked_for:match(" to (.+)$") or ""
+    local money = to:find("^%u%u%u$") or to == "€" or to == "$" or to == "£" or to == "Kč"      -- money to the cent
+    run("qalc", { "-set", "conv 0", "-set", "max decimals " .. (money and 2 or 4), "-set", "upxrates 1", "-t", asked_for }, function(out)
+        if text ~= typed then return end                  -- something else has been typed since
+        local got = ((out or ""):match("^[^\n]*") or ""):gsub("%s+$", "")
+        got = (got .. " "):gsub("(%d+,%d-)0+(%s)", "%1%2"):gsub(",(%s)", "%1"):gsub("%s+$", "")     -- 111,8800 $ → 111,88 $
+        local from = asked_for:match("^(.-) to ")
+        -- what it could not turn into anything comes back as it went in: no answer, not a wrong one
+        if got == "" or got:find("[Ee]rror") or got:find("[Ww]arning") or (from and got:gsub(",0+", "") == from:gsub(",0+", "")) then return end
+        worked, worked_for = got, text
+        if card.id() == "lens" and kept.mode == 0 then render(true) end
     end)
 end
 
@@ -888,7 +913,7 @@ render = function(keep)
                 if t == typed then return end
                 typed, confirm = t, nil
                 if kept.mode == 1 then look_for_files() end
-                if kept.mode == 0 then look_for_settings() end
+                if kept.mode == 0 then look_for_settings() look_for_amount() end
                 render(true)
             end,
             -- Enter: the first row that does something; what was typed stays if nothing did
@@ -907,6 +932,7 @@ function M.open(m)
     if m == 4 and not MODES[4] then ai.pending = true end
     load_lists()
     if m and MODES[m] and not modes_off[m] then kept.mode = m end
+    kept.filter = "all"                  -- the apps always open on All (the user, 26. 10.); a list chosen holds while it is open
     typed, confirm, found = "", nil, nil
     render(false)
 end
