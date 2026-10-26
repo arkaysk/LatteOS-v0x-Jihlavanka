@@ -883,7 +883,7 @@ Zdroje: `bin/latte-screens`, `system/hypr/hyprland.lua`, Nastavenia › Obrazovk
   obrazovky s dvoma monitormi oboma smermi. Opravené pritom: návrat zo zrkadlenia musí `mirror` zrušiť výslovne
   (týkalo sa aj virtuálneho monitora po odpojení skutočného).
 
-**8B.04** [x] (Obrazovky) Hlavná obrazovka a rozloženie myšou — **pegboard** (je tam vždy, aj pri jednej obrazovke) (používateľ 26. 10.: „kde má plynulo prejsť kurzor
+**8B.04** [x] (Obrazovky) Hlavná obrazovka a rozloženie myšou — **pegboard** (je tam vždy, aj pri jednej obrazovke; ohraničený, spodným okrajom sa ťahá vyšší, aby sa obrazovka dala dať nad či pod hlavnú — obrazovky pri tom ostávajú rovnako veľké) (používateľ 26. 10.: „kde má plynulo prejsť kurzor
 z jednej obrazovky na druhú“, okno cez dve obrazovky v rovnakej výške): v Nastaveniach › Obrazovky sa obrazovky v obrázku
 ťahajú myšou (skutočný pomer a rozlíšenie, aj medzery; okraj blízko suseda sa k nemu prichytí, na inú obrazovku sa pustiť
 nedá); **štyri okraje hlavnej obrazovky** ako červené čiary predĺžené v obrázku aj **na ostatných skutočných obrazovkách**

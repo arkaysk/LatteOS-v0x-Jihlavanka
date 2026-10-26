@@ -1156,13 +1156,23 @@ ShellRoot {
                     Pill { strong: true; icon: "check"; text: I18n.tr("Keep it"); onPressed: shell.keepScreens() } } }
             // the pegboard: the screens as they stand, in their true sizes and gaps (the pointer crosses where two
             // edges touch); there with one screen too, as the wallpapers will have it
-            Item { id: desk; visible: shell.page === "displays"; width: view.room; height: 260
+            // Its bottom edge is dragged to make it taller: room to put a screen above or below the main one.
+            Item { id: desk; visible: shell.page === "displays"; width: view.room; height: 260; clip: true
+                Rectangle { anchors.fill: parent; radius: 16; color: "transparent"; border.width: 2; border.color: Theme.line; z: 4 }
+                Rectangle { z: 4; width: 48; height: 4; radius: 2; color: grow.containsMouse || grow.pressed ? Theme.gold : Theme.line
+                    anchors.horizontalCenter: parent.horizontalCenter; anchors.bottom: parent.bottom; anchors.bottomMargin: 5 }
+                MouseArea { id: grow; z: 5; anchors.left: parent.left; anchors.right: parent.right; anchors.bottom: parent.bottom; height: 14
+                    hoverEnabled: true; preventStealing: true; cursorShape: Qt.SizeVerCursor
+                    property real from: 0
+                    onPressed: e => from = mapToItem(desk.parent, 0, e.y).y - desk.height
+                    onPositionChanged: e => { if (pressed) desk.height = Math.max(190, Math.min(900, mapToItem(desk.parent, 0, e.y).y - from)) } }
                 readonly property real x0: shell.screenList.length ? Math.min.apply(null, shell.screenList.map(m => m.x)) : 0
                 readonly property real y0: shell.screenList.length ? Math.min.apply(null, shell.screenList.map(m => m.y)) : 0
                 readonly property real x1: shell.screenList.length ? Math.max.apply(null, shell.screenList.map(m => m.x + shell.wide(m))) : 1
                 readonly property real y1: shell.screenList.length ? Math.max.apply(null, shell.screenList.map(m => m.y + shell.tall(m))) : 1
                 readonly property real room: 1.6          // space around, to drag a screen into
-                readonly property real k: Math.min(width / Math.max(1, (x1 - x0) * room), height / Math.max(1, (y1 - y0) * room))
+                // the scale of its first 260 px: made taller, it gains room, the screens stay as large
+                readonly property real k: Math.min(width / Math.max(1, (x1 - x0) * room), 260 / Math.max(1, (y1 - y0) * room))
                 readonly property real ox: (width - (x1 - x0) * k) / 2
                 readonly property real oy: (height - (y1 - y0) * k) / 2
                 readonly property var main: shell.screenList.find(m => m.name === shell.screenMain) || null
