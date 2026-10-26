@@ -873,11 +873,11 @@ Zdroje: `bin/latte-screens`, `system/hypr/hyprland.lua`, Nastavenia › Obrazovk
 **8B.04** [x] (Obrazovky) Hlavná obrazovka a rozloženie myšou (používateľ 26. 10.: „kde má plynulo prejsť kurzor
 z jednej obrazovky na druhú“, okno cez dve obrazovky v rovnakej výške): v Nastaveniach › Obrazovky sa obrazovky v obrázku
 ťahajú myšou (skutočný pomer a rozlíšenie, aj medzery; okraj blízko suseda sa k nemu prichytí, na inú obrazovku sa pustiť
-nedá), červená vodiaca čiara (predvolene spodný okraj, ktorý má hlavná spolu so susedmi; dá sa ťahať) sa dá
-**ukázať na skutočných obrazovkách** (vrstva cez všetko, myš ňou prejde) a obrazovka sa posúva po 4 px „Trochu vyššie/nižšie“,
-kým čiara nejde rovno. Hlavná = tá na 0,0 (Nastavenia aj `main_monitor()` teraz rovnako; predtým Hyprland bral tú
+nedá); **štyri okraje hlavnej obrazovky** ako červené čiary predĺžené v obrázku aj **na ostatných skutočných obrazovkách**
+(na hlavnej nie; vodorovné horný a spodný, zvislé ľavý a pravý pre obrazovku nad či pod hlavnou; vrstva cez všetko, myš
+ňou prejde — návrh používateľa) a obrazovka sa posúva po 4 px „Trochu vyššie/nižšie“, kým čiary nenadväzujú na okraje hlavnej. Hlavná = tá na 0,0 (Nastavenia aj `main_monitor()` teraz rovnako; predtým Hyprland bral tú
 najviac vľavo a „Urobiť hlavnou“ pre pravú nefungovalo). Overené naživo s dvoma hlavičkovými výstupmi: ťahanie, návrat po 15 s,
-odmietnutie prekrytia, čiara na oboch (aj pri obrazovke o 200 px vyššie). Skutočný DP-3: `docs/manual-inst.md`.
+odmietnutie prekrytia, čiary na 3000 × 2000 vyššie vedľa hlavnej (horná a spodná) a na obrazovke pod ňou (zvislá). Skutočný DP-3: `docs/manual-inst.md`.
 
 ### 8C. [x] Sklo a materiály
 Sklo okien (Hyprglass), materiály šálky.

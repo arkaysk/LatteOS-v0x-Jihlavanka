@@ -288,25 +288,31 @@ ShellRoot {
         const z = list.find(m => m.name === main) || list[0]
         return list.map(m => Object.assign(asIs(m), { position: (m.x - z.x) + "x" + (m.y - z.y) }))
     }
-    // The guide line: one height across all the screens, by default just above the bottom edge the main one and
-    // those beside it share (the highest of their bottoms), so that it is on each of them. Shown on the screens
-    // themselves, it says whether a window that spans two will be at the same height on both.
-    property real guideY: NaN
+    // The guide lines: the main screen's four edges drawn on, across every other screen, wherever they fall on it.
+    // A screen moved until the main one's top and bottom (or, above or below it, its left and right) meet its own
+    // picture where they meet on the desk: a window that spans the two is then at one height on both.
     property bool guideShown: false
     readonly property var screenMainOne: screenList.find(m => m.name === screenMain) || null
-    readonly property real guide: !isNaN(guideY) ? guideY : !screenMainOne ? 0
-        : Math.min.apply(null, screenList.filter(m => m.y < screenMainOne.y + tall(screenMainOne) && m.y + tall(m) > screenMainOne.y).map(m => m.y + tall(m))) - 3
-    Variants { model: shell.guideShown && shell.page === "displays" ? Quickshell.screens : []
-        PanelWindow { required property var modelData
+    readonly property var guides: screenMainOne ? { "top": screenMainOne.y, "bottom": screenMainOne.y + tall(screenMainOne),
+                                                    "left": screenMainOne.x, "right": screenMainOne.x + wide(screenMainOne) } : null
+    Variants { model: shell.guideShown && shell.page === "displays" && shell.guides ? Quickshell.screens.filter(s => s.name !== shell.screenMain) : []
+        PanelWindow { id: lines; required property var modelData
             screen: modelData
-            visible: shell.guide >= modelData.y && shell.guide < modelData.y + modelData.height
-            anchors { top: true; left: true; right: true }
-            margins.top: Math.max(0, Math.round(shell.guide - modelData.y))
-            implicitHeight: 3; color: Theme.red
+            anchors { top: true; bottom: true; left: true; right: true }
+            color: "transparent"
             exclusionMode: ExclusionMode.Ignore
             WlrLayershell.layer: WlrLayer.Overlay
             WlrLayershell.namespace: "latte-guide"
-            mask: Region {} } }                   // the pointer goes through it
+            mask: Region {}                       // the pointer goes through it
+            // each line on the main screen's side of its edge: the top is its first row, the bottom its last
+            Rectangle { readonly property real at: shell.guides.top - lines.modelData.y
+                visible: at >= 0 && at < parent.height; y: at; width: parent.width; height: 3; color: Theme.red }
+            Rectangle { readonly property real at: shell.guides.bottom - lines.modelData.y
+                visible: at > 0 && at <= parent.height; y: at - 3; width: parent.width; height: 3; color: Theme.red }
+            Rectangle { readonly property real at: shell.guides.left - lines.modelData.x
+                visible: at >= 0 && at < parent.width; x: at; width: 3; height: parent.height; color: Theme.red }
+            Rectangle { readonly property real at: shell.guides.right - lines.modelData.x
+                visible: at > 0 && at <= parent.width; x: at - 3; width: 3; height: parent.height; color: Theme.red } } }
     function overlap(a, b) { return a.x < b.x + wide(b) && a.x + wide(a) > b.x && a.y < b.y + tall(b) && a.y + tall(a) > b.y }
     function crowded(list) { return list.some((a, i) => list.some((b, j) => j > i && overlap(a, b))) }
     function putScreens(shapes, keep) {
@@ -1210,12 +1216,14 @@ ShellRoot {
                                 scr.landed = moved; scr.held = false
                                 if (moved) shell.tryScreens(shell.placed(shell.screenList.map(o => o.name === scr.modelData ? Object.assign({}, o, { x: scr.g.x, y: scr.g.y }) : o), shell.screenMain))
                             } } } }
-                // the guide line, dragged up and down to a height every screen has
-                Item { visible: desk.many && desk.main !== null; z: 3; x: 0; width: desk.width; height: 14
-                    y: desk.oy + (shell.guide - desk.y0) * desk.k - 7
-                    Rectangle { anchors.verticalCenter: parent.verticalCenter; width: parent.width; height: 2; color: Theme.red; opacity: 0.8 }
-                    MouseArea { anchors.fill: parent; cursorShape: Qt.SizeVerCursor
-                        onPositionChanged: e => { if (pressed) shell.guideY = Math.round(desk.y0 + (mapToItem(desk, 0, e.y).y - desk.oy) / desk.k) } } } }
+                // the main screen's edges drawn on, as on the screens themselves
+                Repeater { model: desk.many && shell.guides ? ["top", "bottom", "left", "right"] : []
+                    Rectangle { required property string modelData
+                        readonly property bool across: modelData === "top" || modelData === "bottom"
+                        readonly property real at: across ? desk.oy + (shell.guides[modelData] - desk.y0) * desk.k : desk.ox + (shell.guides[modelData] - desk.x0) * desk.k
+                        z: 1; color: Theme.red; opacity: 0.7
+                        x: across ? 0 : at - 1; y: across ? at - 1 : 0
+                        width: across ? desk.width : 2; height: across ? 2 : desk.height } } }
             Label { visible: shell.page === "displays" && shell.screenHere !== null; width: view.room; color: Theme.dim; font.pixelSize: 13
                     text: shell.screenHere ? [shell.screenHere.make, shell.screenHere.model, shell.screenHere.name].filter(s => s).join("  ·  ") + (shell.screenMain === shell.screenHere.name ? "  ·  " + I18n.tr("the main screen, where the drops are") : "") : "" }
             Part { visible: shell.page === "displays" && shell.screenHere !== null; width: view.room; title: I18n.tr("Resolution")
@@ -1240,12 +1248,12 @@ ShellRoot {
                        onPressed: { screensWord.value = "extend"; shell.order(["hyprctl", "eval", "latte.duplicate(false)"]) } }
                 Pill { icon: "copy"; text: I18n.tr("Duplicate"); strong: screensWord.value === "duplicate"
                        onPressed: { screensWord.value = "duplicate"; shell.order(["hyprctl", "eval", "latte.duplicate(true)"]) } } }
-            Part { visible: shell.page === "displays" && shell.screenList.length > 1; width: view.room; title: I18n.tr("Where it stands"); note: I18n.tr("Drag the screens in the picture above to where they stand on your desk; the pointer goes over where their edges touch. The red line is one height on every screen: show it on the screens and move a screen a little higher or lower until the line runs straight across them. The main one carries the drops; every other has a window bar of its own.")
+            Part { visible: shell.page === "displays" && shell.screenList.length > 1; width: view.room; title: I18n.tr("Where it stands"); note: I18n.tr("Drag the screens in the picture above to where they stand on your desk; the pointer goes over where their edges touch. The red lines are the main screen's edges: show them on the other screens and move a screen a little higher or lower until they run on from the main one's edges. The main one carries the drops; every other has a window bar of its own.")
                 Pill { icon: "chevron-left"; text: I18n.tr("Further left"); onPressed: shell.moveScreen(shell.screenHere.name, -1) }
                 Pill { icon: "chevron-right"; text: I18n.tr("Further right"); onPressed: shell.moveScreen(shell.screenHere.name, 1) }
                 Pill { icon: "chevron-up"; text: I18n.tr("A little higher"); onPressed: shell.nudgeScreen(shell.screenHere.name, -4) }
                 Pill { icon: "chevron-down"; text: I18n.tr("A little lower"); onPressed: shell.nudgeScreen(shell.screenHere.name, 4) }
-                Pill { icon: shell.guideShown ? "eye-off" : "eye"; text: I18n.tr("Show the line on the screens"); strong: shell.guideShown; onPressed: shell.guideShown = !shell.guideShown }
+                Pill { icon: shell.guideShown ? "eye-off" : "eye"; text: I18n.tr("Show the lines on the screens"); strong: shell.guideShown; onPressed: shell.guideShown = !shell.guideShown }
                 Pill { icon: "cup"; text: I18n.tr("Make it the main screen"); visible: shell.screenHere !== null && shell.screenMain !== shell.screenHere.name; onPressed: shell.tryScreens(shell.placed(shell.screenList, shell.screenHere.name)) } }
 
             // language, and whose dates and numbers
