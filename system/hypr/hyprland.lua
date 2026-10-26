@@ -129,13 +129,16 @@ end)
 
 -- ── the start ─────────────────────────────────────────────────────────────────────────────────────────────
 -- The Goo scene belongs on the main monitor: a real one before the virtual one a machine without a screen is
--- reached through (its EDID says LATTE-VIRT), and of those the leftmost. It is told its name, or it would come
--- up on whichever monitor the pointer happens to be over.
+-- reached through (its EDID says LATTE-VIRT), and of those the one at 0,0 (Settings › Displays puts the main
+-- one there), else the leftmost. It is told its name, or it would come up on whichever monitor the pointer
+-- happens to be over.
 local function virtual(m) return (m.description or ""):find("LATTE-VIRT", 1, true) ~= nil or m.name == os.getenv("LATTE_VIRT") end
+local function origin(m) return m.x == 0 and m.y == 0 end
 local function main_monitor()
     local best
     for _, m in ipairs(hl.get_monitors() or {}) do
-        if not best or (virtual(best) and not virtual(m)) or (virtual(best) == virtual(m) and m.x < best.x) then best = m end
+        if not best or (virtual(best) and not virtual(m))
+            or (virtual(best) == virtual(m) and (origin(m) ~= origin(best) and origin(m) or (origin(m) == origin(best) and m.x < best.x))) then best = m end
     end
     return best
 end

@@ -9,6 +9,7 @@ import QtQuick
 import QtQuick.Dialogs
 import Quickshell
 import Quickshell.Io
+import Quickshell.Wayland
 import Quickshell.Widgets
 import "common"
 
@@ -275,27 +276,62 @@ ShellRoot {
     function wide(m) { return Math.round((m.transform % 2 ? m.height : m.width) / m.scale) }
     function tall(m) { return Math.round((m.transform % 2 ? m.width : m.height) / m.scale) }
     function asIs(m) { return { name: m.name, mode: m.width + "x" + m.height + "@" + m.refreshRate.toFixed(3), position: m.x + "x" + m.y, scale: m.scale, turn: m.transform } }
-    // ponytail: side by side only, the main one at 0,0; screens above one another are for ~/.config/latteos/hyprland.lua
+    // side by side in this order, the main one at 0,0
     function laid(list, main) {
         let x = 0
         const at = list.map(m => { const here = x; x += wide(m); return here })
         const zero = at[Math.max(0, list.findIndex(m => m.name === main))]
         return list.map((m, i) => Object.assign(asIs(m), { position: (at[i] - zero) + "x0" }))
     }
+    // where they stand now, moved so that the main one is at 0,0
+    function placed(list, main) {
+        const z = list.find(m => m.name === main) || list[0]
+        return list.map(m => Object.assign(asIs(m), { position: (m.x - z.x) + "x" + (m.y - z.y) }))
+    }
+    // The guide line: one height across all the screens, by default just above the bottom edge the main one and
+    // those beside it share (the highest of their bottoms), so that it is on each of them. Shown on the screens
+    // themselves, it says whether a window that spans two will be at the same height on both.
+    property real guideY: NaN
+    property bool guideShown: false
+    readonly property var screenMainOne: screenList.find(m => m.name === screenMain) || null
+    readonly property real guide: !isNaN(guideY) ? guideY : !screenMainOne ? 0
+        : Math.min.apply(null, screenList.filter(m => m.y < screenMainOne.y + tall(screenMainOne) && m.y + tall(m) > screenMainOne.y).map(m => m.y + tall(m))) - 3
+    Variants { model: shell.guideShown && shell.page === "displays" ? Quickshell.screens : []
+        PanelWindow { required property var modelData
+            screen: modelData
+            visible: shell.guide >= modelData.y && shell.guide < modelData.y + modelData.height
+            anchors { top: true; left: true; right: true }
+            margins.top: Math.max(0, Math.round(shell.guide - modelData.y))
+            implicitHeight: 3; color: Theme.red
+            exclusionMode: ExclusionMode.Ignore
+            WlrLayershell.layer: WlrLayer.Overlay
+            WlrLayershell.namespace: "latte-guide"
+            mask: Region {} } }                   // the pointer goes through it
+    function overlap(a, b) { return a.x < b.x + wide(b) && a.x + wide(a) > b.x && a.y < b.y + tall(b) && a.y + tall(a) > b.y }
+    function crowded(list) { return list.some((a, i) => list.some((b, j) => j > i && overlap(a, b))) }
     function putScreens(shapes, keep) {
         order(["hyprctl", "eval", shapes.map(s => "latte.screen(" + [JSON.stringify(s.name), JSON.stringify(s.mode), JSON.stringify(s.position), s.scale, s.turn, keep].join(", ") + ")").join(" ")])
         later.restart()
     }
-    function tryScreens(list, main) {
+    function tryScreens(shapes) {
         if (!screenBefore) screenBefore = screenList.map(asIs)
-        putScreens(laid(list, main), false); screenWait = 15
+        putScreens(shapes, false); screenWait = 15
     }
-    function changeScreen(name, what) { tryScreens(screenList.map(m => m.name === name ? Object.assign({}, m, what) : m), screenMain) }
+    // a screen that grew into its neighbour puts them all side by side again
+    function changeScreen(name, what) {
+        const list = screenList.map(m => m.name === name ? Object.assign({}, m, what) : m)
+        tryScreens(crowded(list) ? laid(list, screenMain) : placed(list, screenMain))
+    }
     function moveScreen(name, by) {
         const list = screenList.slice(), i = list.findIndex(m => m.name === name), j = i + by
         if (i < 0 || j < 0 || j >= list.length) return
         const m = list[i]; list[i] = list[j]; list[j] = m
-        tryScreens(list, screenMain)
+        tryScreens(laid(list, screenMain))
+    }
+    // a few pixels up or down: two screens of different sizes are lined up by eye against the guide line
+    function nudgeScreen(name, by) {
+        const list = screenList.map(m => m.name === name ? Object.assign({}, m, { y: m.y + by }) : m)
+        if (!crowded(list)) tryScreens(placed(list, screenMain))
     }
     function keepScreens() { putScreens(screenList.map(asIs), true); screenBefore = null; screenWait = 0 }
     function screensBack() { if (screenBefore) putScreens(screenBefore, false); screenBefore = null; screenWait = 0 }
@@ -1112,27 +1148,74 @@ ShellRoot {
                 Row { anchors.right: parent.right; anchors.rightMargin: 14; anchors.verticalCenter: parent.verticalCenter; spacing: 8
                     Pill { text: I18n.tr("Put it back"); onPressed: shell.screensBack() }
                     Pill { strong: true; icon: "check"; text: I18n.tr("Keep it"); onPressed: shell.keepScreens() } } }
-            Item { id: desk; visible: shell.page === "displays"; width: view.room; height: 190
+            // the screens as they stand, in their true sizes and gaps: the pointer crosses where two edges touch
+            Item { id: desk; visible: shell.page === "displays"; width: view.room; height: many ? 260 : 190
+                readonly property bool many: shell.screenList.length > 1
                 readonly property real x0: shell.screenList.length ? Math.min.apply(null, shell.screenList.map(m => m.x)) : 0
                 readonly property real y0: shell.screenList.length ? Math.min.apply(null, shell.screenList.map(m => m.y)) : 0
                 readonly property real x1: shell.screenList.length ? Math.max.apply(null, shell.screenList.map(m => m.x + shell.wide(m))) : 1
                 readonly property real y1: shell.screenList.length ? Math.max.apply(null, shell.screenList.map(m => m.y + shell.tall(m))) : 1
-                readonly property real k: Math.min(width / Math.max(1, x1 - x0), height / Math.max(1, y1 - y0))
+                readonly property real room: many ? 1.6 : 1           // space around, to drag a screen into
+                readonly property real k: Math.min(width / Math.max(1, (x1 - x0) * room), height / Math.max(1, (y1 - y0) * room))
+                readonly property real ox: (width - (x1 - x0) * k) / 2
+                readonly property real oy: (height - (y1 - y0) * k) / 2
+                readonly property var main: shell.screenList.find(m => m.name === shell.screenMain) || null
+                // where a screen dragged to nx,ny lands: kept inside the picture, an edge near a neighbour's sticks to it
+                function snap(m, nx, ny) {
+                    nx = Math.max(x0 - ox / k, Math.min(nx, x0 + (width - ox) / k - shell.wide(m)))
+                    ny = Math.max(y0 - oy / k, Math.min(ny, y0 + (height - oy) / k - shell.tall(m)))
+                    let bx = nx, by = ny, dx = 14 / k, dy = 14 / k
+                    for (const o of shell.screenList) {
+                        if (o.name === m.name) continue
+                        for (const c of [o.x - shell.wide(m), o.x + shell.wide(o), o.x, o.x + shell.wide(o) - shell.wide(m)])
+                            if (Math.abs(c - nx) < dx) { dx = Math.abs(c - nx); bx = c }
+                        for (const c of [o.y - shell.tall(m), o.y + shell.tall(o), o.y, o.y + shell.tall(o) - shell.tall(m)])
+                            if (Math.abs(c - ny) < dy) { dy = Math.abs(c - ny); by = c }
+                    }
+                    return Qt.point(Math.round(bx), Math.round(by))
+                }
                 Repeater { model: ScriptModel { values: shell.screenList.map(m => m.name) }
                     Rectangle { id: scr; required property string modelData
                         readonly property var m: shell.screenList.find(x => x.name === modelData) || shell.screenList[0]
                         readonly property bool on: shell.screenHere !== null && shell.screenHere.name === modelData
-                        x: (desk.width - (desk.x1 - desk.x0) * desk.k) / 2 + (m.x - desk.x0) * desk.k + 3; y: (m.y - desk.y0) * desk.k + 3
+                        property bool held: false
+                        property bool landed: false                    // dropped: stays put until the compositor says where it is
+                        property point g: Qt.point(0, 0)
+                        readonly property bool free: !shell.screenList.some(o => o.name !== modelData && shell.overlap({ x: g.x, y: g.y, width: m.width, height: m.height, scale: m.scale, transform: m.transform }, o))
+                        onMChanged: landed = false
+                        x: desk.ox + ((held || landed ? g.x : m.x) - desk.x0) * desk.k + 3; y: desk.oy + ((held || landed ? g.y : m.y) - desk.y0) * desk.k + 3
+                        z: held ? 2 : 0
                         width: shell.wide(m) * desk.k - 6; height: shell.tall(m) * desk.k - 6; radius: 14
-                        color: on ? Theme.raised : Theme.card; border.width: 2; border.color: on ? Theme.gold : Theme.line
-                        Behavior on x { NumberAnimation { duration: 220; easing.type: Easing.OutCubic } }
+                        color: on ? Theme.raised : Theme.card; border.width: 2; border.color: held && !free ? Theme.red : on ? Theme.gold : Theme.line
+                        Behavior on x { enabled: !scr.held; NumberAnimation { duration: 220; easing.type: Easing.OutCubic } }
+                        Behavior on y { enabled: !scr.held; NumberAnimation { duration: 220; easing.type: Easing.OutCubic } }
                         Behavior on width { NumberAnimation { duration: 220; easing.type: Easing.OutCubic } }
                         Behavior on height { NumberAnimation { duration: 220; easing.type: Easing.OutCubic } }
                         Column { anchors.centerIn: parent; spacing: 3
                             Glyph { name: shell.screenMain === scr.modelData ? "cup" : "device-desktop"; font.pixelSize: 26; color: scr.on ? Theme.gold : Theme.dim; anchors.horizontalCenter: parent.horizontalCenter }
                             Label { text: scr.modelData; font.weight: 700; anchors.horizontalCenter: parent.horizontalCenter }
                             Label { text: scr.m.width + " × " + scr.m.height; color: Theme.dim; font.pixelSize: 12; anchors.horizontalCenter: parent.horizontalCenter } }
-                        MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: shell.screenAt = scr.modelData } } } }
+                        MouseArea { anchors.fill: parent; cursorShape: desk.many ? (pressed ? Qt.ClosedHandCursor : Qt.OpenHandCursor) : Qt.PointingHandCursor
+                            property point from
+                            onPressed: e => { shell.screenAt = scr.modelData; from = mapToItem(desk, e.x, e.y) }
+                            onPositionChanged: e => {
+                                const p = mapToItem(desk, e.x, e.y)
+                                if (!desk.many || (!scr.held && Math.abs(p.x - from.x) + Math.abs(p.y - from.y) < 6)) return
+                                scr.held = true
+                                scr.g = desk.snap(scr.m, scr.m.x + (p.x - from.x) / desk.k, scr.m.y + (p.y - from.y) / desk.k)
+                            }
+                            onReleased: {
+                                if (!scr.held) return
+                                const moved = scr.free && (scr.g.x !== scr.m.x || scr.g.y !== scr.m.y)
+                                scr.landed = moved; scr.held = false
+                                if (moved) shell.tryScreens(shell.placed(shell.screenList.map(o => o.name === scr.modelData ? Object.assign({}, o, { x: scr.g.x, y: scr.g.y }) : o), shell.screenMain))
+                            } } } }
+                // the guide line, dragged up and down to a height every screen has
+                Item { visible: desk.many && desk.main !== null; z: 3; x: 0; width: desk.width; height: 14
+                    y: desk.oy + (shell.guide - desk.y0) * desk.k - 7
+                    Rectangle { anchors.verticalCenter: parent.verticalCenter; width: parent.width; height: 2; color: Theme.red; opacity: 0.8 }
+                    MouseArea { anchors.fill: parent; cursorShape: Qt.SizeVerCursor
+                        onPositionChanged: e => { if (pressed) shell.guideY = Math.round(desk.y0 + (mapToItem(desk, 0, e.y).y - desk.oy) / desk.k) } } } }
             Label { visible: shell.page === "displays" && shell.screenHere !== null; width: view.room; color: Theme.dim; font.pixelSize: 13
                     text: shell.screenHere ? [shell.screenHere.make, shell.screenHere.model, shell.screenHere.name].filter(s => s).join("  ·  ") + (shell.screenMain === shell.screenHere.name ? "  ·  " + I18n.tr("the main screen, where the drops are") : "") : "" }
             Part { visible: shell.page === "displays" && shell.screenHere !== null; width: view.room; title: I18n.tr("Resolution")
@@ -1157,10 +1240,13 @@ ShellRoot {
                        onPressed: { screensWord.value = "extend"; shell.order(["hyprctl", "eval", "latte.duplicate(false)"]) } }
                 Pill { icon: "copy"; text: I18n.tr("Duplicate"); strong: screensWord.value === "duplicate"
                        onPressed: { screensWord.value = "duplicate"; shell.order(["hyprctl", "eval", "latte.duplicate(true)"]) } } }
-            Part { visible: shell.page === "displays" && shell.screenList.length > 1; width: view.room; title: I18n.tr("Where it stands"); note: I18n.tr("The screens stand side by side as in the picture above. The main one carries the drops; every other has a window bar of its own.")
+            Part { visible: shell.page === "displays" && shell.screenList.length > 1; width: view.room; title: I18n.tr("Where it stands"); note: I18n.tr("Drag the screens in the picture above to where they stand on your desk; the pointer goes over where their edges touch. The red line is one height on every screen: show it on the screens and move a screen a little higher or lower until the line runs straight across them. The main one carries the drops; every other has a window bar of its own.")
                 Pill { icon: "chevron-left"; text: I18n.tr("Further left"); onPressed: shell.moveScreen(shell.screenHere.name, -1) }
                 Pill { icon: "chevron-right"; text: I18n.tr("Further right"); onPressed: shell.moveScreen(shell.screenHere.name, 1) }
-                Pill { icon: "cup"; text: I18n.tr("Make it the main screen"); visible: shell.screenHere !== null && shell.screenMain !== shell.screenHere.name; onPressed: shell.tryScreens(shell.screenList, shell.screenHere.name) } }
+                Pill { icon: "chevron-up"; text: I18n.tr("A little higher"); onPressed: shell.nudgeScreen(shell.screenHere.name, -4) }
+                Pill { icon: "chevron-down"; text: I18n.tr("A little lower"); onPressed: shell.nudgeScreen(shell.screenHere.name, 4) }
+                Pill { icon: shell.guideShown ? "eye-off" : "eye"; text: I18n.tr("Show the line on the screens"); strong: shell.guideShown; onPressed: shell.guideShown = !shell.guideShown }
+                Pill { icon: "cup"; text: I18n.tr("Make it the main screen"); visible: shell.screenHere !== null && shell.screenMain !== shell.screenHere.name; onPressed: shell.tryScreens(shell.placed(shell.screenList, shell.screenHere.name)) } }
 
             // language, and whose dates and numbers
             Part { visible: shell.page === "language"; width: view.room; title: I18n.tr("Language"); note: I18n.tr("What the desktop and the apps speak. It changes when you sign in the next time.")
