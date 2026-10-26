@@ -74,6 +74,7 @@ part Card {
     event card_wheel ->                        // the wheel over a row: row × 2, + 1 upwards
     event card_spin ->                         // the wheel over the card, where no list scrolls: 0 up, 1 down
     event card_tab ->                          // a tab was pressed
+    event card_field_menu ->                   // the right button on the field: cut, copy, paste
     event card_next ->                         // Tab and Shift+Tab: 1 the next tab, 0 the one before
     event card_key ->                          // the arrow keys: 1 down, 0 up
     event card_enter ->                        // Enter: the chosen row, or what is typed

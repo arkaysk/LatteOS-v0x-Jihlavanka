@@ -1,0 +1,15 @@
+{
+ "about": "The words LensGoo reads an amount in units or money by (goo/lib/amount.luau): Slovak. Another language is another file, <code>-amount.json.",
+ "connect": ["na", "v", "vo", "do", "ako"],
+ "of": ["z"],
+ "asking": ["koľko je", "kolko je", "koľko", "kolko", "prepočítaj", "prepocitaj", "preveď", "prevod"],
+ "names": [
+  ["eur", "EUR"], ["dolár", "USD"], ["dolar", "USD"], ["korún", "CZK"], ["korun", "CZK"], ["kč", "CZK"],
+  ["libier", "GBP"], ["libra", "GBP"], ["libry", "GBP"], ["zlot", "PLN"], ["forint", "HUF"], ["frank", "CHF"], ["bitcoin", "BTC"],
+  ["kilometr", "km"], ["centimetr", "cm"], ["milimetr", "mm"], ["metr", "m"], ["míľ", "mi"], ["míl", "mi"],
+  ["palc", "in"], ["palec", "in"], ["stôp", "ft"], ["stopa", "ft"], ["stopy", "ft"],
+  ["kilogram", "kg"], ["kil", "kg"], ["kíl", "kg"], ["gram", "g"], ["litr", "L"],
+  ["celzi", "°C"], ["fahrenheit", "°F"], ["stupň", ""], ["stupn", ""],
+  ["hodín", "h"], ["hodin", "h"], ["minút", "min"], ["minut", "min"], ["sekúnd", "s"], ["sekund", "s"]
+ ]
+}

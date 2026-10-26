@@ -32,6 +32,7 @@
 -- chosen with the keys stays.
 local icons = require("lib/icons")
 local born = require("lib/born")
+local ctx = require("lib/ctx")
 local M = {}
 
 local CARD_W, CARD_H, WAVE_AT = 600, 580, 502            -- a family of cards that keep one size (`uniform`) is this wide and at least this tall
@@ -376,6 +377,22 @@ local function typed()
     end)
 end
 on("text:card_q", typed)
+-- The right button on the field, as on any field: cut, copy, paste (Ctrl+X, C, V work by themselves). What is written
+-- here is not typed, so the field is told of it as if it were.
+on("card_field_menu", function()
+    local now = text.card_q or ""
+    local function put(t) text.card_q = t typed() end
+    local rows = {}
+    if now ~= "" then
+        rows[#rows + 1] = { label = tr("Cut"), glyph = "cut", keys = "Ctrl+X", run = function() pcall(sys.call, "clipboard.set", now) put("") end }
+        rows[#rows + 1] = { label = tr("Copy"), glyph = "copy", keys = "Ctrl+C", run = function() pcall(sys.call, "clipboard.set", now) end }
+    end
+    rows[#rows + 1] = { label = tr("Paste"), glyph = "clipboard", keys = "Ctrl+V", run = function()
+        local ok, got = pcall(sys.ask, "clipboard")
+        if ok and type(got) == "string" and got ~= "" then put(now .. got) end
+    end }
+    ctx.open(rows, { width = 260 })
+end)
 on("text:card_pw", typed)
 
 return M

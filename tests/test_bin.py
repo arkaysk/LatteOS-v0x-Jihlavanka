@@ -712,16 +712,20 @@ with tempfile.TemporaryDirectory() as d:
     assert night("on") == 0 and word() == "4500"            # on after off: the warmth it gives the first time
     assert night("200") == 2 and night("warm") == 2 and word() == "4500"
 
-# LensGoo's amounts: a loose line, in Slovak too, put the way qalc reads it (goo/lib/amount.luau, plain Lua as well)
+# LensGoo's amounts: a loose line, in Slovak too (goo/lang/sk-amount.json), put the way qalc reads it
+# (goo/lib/amount.luau, plain Lua as well); the Slovak lines are spelt with escapes, code is written in English
 if shutil.which("lua"):
-    probe = 'package.path = arg[1] .. "/goo/lib/?.luau;" .. package.path\nprint(require("amount")(arg[2]) or "-")\n'
+    words = json.load(open(os.path.join(ROOT, "goo", "lang", "sk-amount.json"), encoding="utf-8"))
+    lua = lambda v: ("{" + ", ".join(lua(x) for x in v) + "}") if isinstance(v, list) else json.dumps(v, ensure_ascii=False)
+    table = "{" + ", ".join("%s = %s" % (k, lua(words[k])) for k in ("connect", "of", "asking", "names")) + "}"
     script = os.path.join(tempfile.gettempdir(), "latte-amount-probe.lua")
-    open(script, "w").write(probe)
+    open(script, "w", encoding="utf-8").write('package.path = arg[1] .. "/goo/lib/?.luau;" .. package.path\n'
+                                              'print(require("amount")(arg[2], %s) or "-")\n' % table)
     put = lambda line: subprocess.run(["lua", script, ROOT, line], capture_output=True, text=True).stdout.strip()
-    assert put("100 eur na doláre") == "100 EUR to USD", put("100 eur na doláre")
-    assert put("Koľko je 100 € v korunách?") == "100 € to CZK"
-    assert put("5 km v míľach") == "5 km to mi"
-    assert put("20 stupňov celzia na fahrenheit") == "20 °C to °F"
+    assert put("100 eur na dol\u00e1re") == "100 EUR to USD", put("100 eur na dol\u00e1re")
+    assert put("Ko\u013eko je 100 \u20ac v korun\u00e1ch?") == "100 \u20ac to CZK"
+    assert put("5 km v m\u00ed\u013each") == "5 km to mi"
+    assert put("20 stup\u0148ov celzia na fahrenheit") == "20 \u00b0C to \u00b0F"
     assert put("15 % z 80") == "15% * 80" and put("15% of 80") == "15% * 80"
     assert put("2048 game") == "-" and put("Spotify") == "-"            # an app's name is not worked out
     os.remove(script)

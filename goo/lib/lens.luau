@@ -245,14 +245,16 @@ local function look_for_settings()
     end)
 end
 
--- An amount in units or money, written loosely ("100 eur na doláre", "5 km v míľach", "15 % z 80"): Qalculate works
--- it out, with the exchange rates of the European Central Bank fetched once a day (6B.06). Without qalc, nothing.
+-- An amount in units or money, written loosely and in the user's language ("100 eur to dollars", "15 % of 80"; the words:
+-- goo/lang/<code>-amount.json): Qalculate works it out, with the exchange rates of the European Central Bank fetched
+-- once a day (6B.06). Without qalc, nothing.
+local amount_words = {}
 local function look_for_amount()
     local text = typed
-    local asked_for = amount(text)
+    local asked_for = amount(text, amount_words)
     if not asked_for or calc(text) then worked, worked_for = nil, text return end
     local to = asked_for:match(" to (.+)$") or ""
-    local money = to:find("^%u%u%u$") or to == "€" or to == "$" or to == "£" or to == "Kč"      -- money to the cent
+    local money = to:find("^%u%u%u$") or to == "€" or to == "$" or to == "£" or to == "K\u{10D}"      -- money to the cent
     run("qalc", { "-set", "conv 0", "-set", "max decimals " .. (money and 2 or 4), "-set", "upxrates 1", "-t", asked_for }, function(out)
         if text ~= typed then return end                  -- something else has been typed since
         local got = ((out or ""):match("^[^\n]*") or ""):gsub("%s+$", "")
@@ -957,6 +959,15 @@ end
 
 function M.start(d)
     owner = d
+    -- the words an amount is written in, in the user's language (lib/amount.luau)
+    local okl, lang = pcall(sys.ask, "env", "LANG")
+    local code = (okl and type(lang) == "string" and lang:match("^(%a%a)")) or "en"
+    local okd, share = pcall(sys.ask, "env", "LATTE_SHARE")
+    share = okd and type(share) == "string" and share ~= "" and share or "/usr/share/latteos"
+    run("cat", { share .. "/goo/lang/" .. code .. "-amount.json" }, function(out)
+        local ok, w = pcall(json.decode, out or "")
+        if ok and type(w) == "table" then amount_words = w end
+    end)
     local okh, user = pcall(sys.ask, "env", "USER")
     user = okh and type(user) == "string" and user or ""
     ai.me = user ~= "" and (user:sub(1, 1):upper() .. user:sub(2)) or ""

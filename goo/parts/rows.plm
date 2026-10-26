@@ -113,11 +113,13 @@ part Rows {
                 text pick(card_secret, g_search, g_key) { at: 22, 22; anchor: center; size: 17; color: dim; family: "tabler-icons" }
                 text card_hint { at: 44, 22; anchor: left center; width: card.tw - 60; lines: 1; size: 15; color: dim; show: not card_typed; family: "Inter" }
                 input card_q { at: 44, 12; width: card.tw - 60; size: 15; color: cream; selection: #5a463a; show: not card_secret; family: "Inter" }
+                on press right card_q { tap.x = cursor.x; tap.y = cursor.y; emit card_field_menu }
                 // a password is typed into a field of its own, which shows dots
                 input card_pw { at: 44, if(card_secret, 12, -4000); width: card.tw - 60; size: 15; color: cream; selection: #5a463a; secret: true; show: card_secret; family: "Inter"; agent: no }
                 zone box field_hit { from: 0, 2; size: card.tw, 40; cursor: text }
                 on press field_hit while not card_secret { focus card_q }
                 on press field_hit while card_secret { focus card_pw }
+                on press right field_hit while not card_secret { tap.x = cursor.x; tap.y = cursor.y; emit card_field_menu }   // cut, copy, paste
             }
 
             row {

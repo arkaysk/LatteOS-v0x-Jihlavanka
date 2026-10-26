@@ -64,6 +64,7 @@
 /usr/share/latteos/goo/lib/amount.luau                  <- goo/lib/amount.luau
 /usr/share/latteos/goo/lang/sk.plm                      <- goo/lang/sk.plm
 /usr/share/latteos/goo/lang/sk-dates.json               <- goo/lang/sk-dates.json
+/usr/share/latteos/goo/lang/sk-amount.json              <- goo/lang/sk-amount.json
 /usr/share/latteos/goo/goo.plm                          <- goo/goo.plm
 /usr/share/latteos/goo/goo.luau                         <- goo/goo.luau
 /usr/share/latteos/goo/polkit.plm                      <- goo/polkit.plm

@@ -533,7 +533,8 @@ Zdroje: LATTEOS-GOO §4.3
 **6B.06** [x] pisanie do riadku na vyhladavanie v forme výpočtu, zobrazi vysledok s možnostou ho skopirovat do schranky. 
 tiež je sučastou aj prevodnik jednotiek a mien pričom nemosi byt použiti presny formatat a dokaže s apracovat s vágnym zadaním.
    **Urobené 26. 10.:** výpočty ako doteraz (`lib/calc.luau`); jednotky a meny počíta **Qalculate** (`qalc`, balík
-   `qalculate`, kurzy ECB raz denne), voľný zápis aj po slovensky preloží `goo/lib/amount.luau`: „100 eur na doláre“ →
+   `qalculate`, kurzy ECB raz denne), voľný zápis v jazyku používateľa preloží `goo/lib/amount.luau` so slovami
+   z `goo/lang/sk-amount.json` (ďalší jazyk = ďalší súbor): „100 eur na doláre“ →
    111,88 $, „5 km v míľach“, „20 stupňov celzia na fahrenheit“, „1000 korún na eurá“ → 41,04 € (meny na centy), „15 % z 80“.
    Výsledok klikom do schránky. Názov aplikácie s číslom („2048 game“) sa nepočíta. Test v `tests/test_bin.py`.
 
@@ -551,6 +552,11 @@ ta biela plocha je prisilna a potrebuje mat volitelnu hodnotu priehladnosti.
 
 
 **6B.10** [x] Záložka Aplikácie sa vždy otvorí na filtri **Všetky** (používateľ 26. 10.); iný filter platí, kým je LensGoo otvorený.
+
+**6B.11** [~] **Každé pole na písanie: Ctrl+C, Ctrl+V a pravý klik Vystrihnúť · Kopírovať · Prilepiť** (používateľ 26. 10.:
+„samozrejmosťou“). Hotové v Goo: pole karty (riadok hľadania LensGoo a každá karta s poľom; `card_field_menu` v
+`lib/card.luau`) a pole otázky AI; ponuka Goo ukazuje skratky. Ostáva: polia v aplikáciách LatteOS (Quickshell), overiť
+a doplniť rovnakú ponuku.
 
 **6B.09** [ ] **Ikona Kopírovať pri každom texte LatteOS, ktorý sa dá kopírovať** (používateľ 26. 10.): ako pri správach AI
 (6B.08) — príkazy, chybové hlásenia, správy na skopírovanie (Posledný pád), adresy, výsledok kalkulačky; v Goo aj

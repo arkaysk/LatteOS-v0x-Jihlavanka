@@ -16,7 +16,7 @@ scene GooSide {
     }
     permissions {
         run: "latte-sky", "latte-login", "hyprctl", "latte-say", "latte-net", "latte-desktop", "foot", "xdg-open", "latte-app"
-        services: "files", "env", "window", "apps", "audio"
+        services: "files", "env", "window", "apps", "audio", "clipboard", "clipboard.set"
     }
 
     event window_mode ->                       // as in goo.plm: Hyprland says how windows are arranged
