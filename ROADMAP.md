@@ -738,8 +738,21 @@ zachovat nutne je prechodove efekty, a sustredit prepinanie wallpaperov dovnutra
 Je nutne urobit nanovo prehladne kategorie, pre všetky druhy tapiet, vratane odkazu na externe zdroje.
 
 
-**7A.07** [ ] (Tapety) Výber obrazoviek pri tapete (používateľ 26. 10.): kópia obrázku obrazoviek z Nastavení › Obrazovky
-(8B.04) aj v tapetách — klikom zvoliť, na ktoré obrazovky ide obrázok, alebo jeden na všetky (`latte-wall set NAME|*`).
+**7A.07** [ ] (Tapety) **Pegboard v tapetách** (používateľ 26. 10.): ten istý pegboard obrazoviek ako v Nastaveniach ›
+Obrazovky (8B.04) — obrazovky v skutočnom pomere, rozlíšení a rozostupoch, nezávisle od toho, či je obrazovka jedna
+alebo dvadsať (pri jednej nemá ťahanie zmysel, ale pegboard tam je). Zdieľaný kus kódu pre obe miesta, nie kópia.
+
+**7A.08** [ ] (Tapety) **Schémy tapiet ťahané na pegboard** (používateľ 26. 10.; nadväzuje na 7A.07). Predstava:
+- Obrázok alebo videotapetu (napr. „galaxy eyes“) potiahnem **na pegboard, nie na monitor**. Na pegboarde jej nastavím
+  veľkosť a polohu (úchyty ako pri zmene veľkosti obrázka v Skicári či Photoshope) a tým, čo prekrýva, určím, pod ktorými
+  monitormi je. Presne tak sa potom skutočne ukáže: jeden obraz roztiahnutý cez tie 3 monitory, so skutočnými
+  rozostupmi medzi nimi.
+- Monitor 4 stojí ďalej od ostatných a má mať prezentáciu: tlačidlo **Prezentácia** → zvoliť priečinok (Prehľadávať…),
+  interval zmeny a poradie obrázkov → **Vytvoriť schému**. Schém môže byť viac; sú v ponuke pod pegboardom.
+- Schému z ponuky potiahnem nad monitor 4 a pustím: monitor ju prevezme. Schémy sa teda pripravujú vopred a na pegboard
+  sa z nich presúvajú časti (obraz cez viac monitorov, prezentácia na jednom, video…).
+- Vykonáva `latte-wall` (dnes `set NAME|* picture|video PATH`): pribudne obraz cez viac monitorov (výrez podľa polohy
+  monitora v rozložení) a prezentácia na monitore. Schémy uložené v `~/.config/latteos/`.
 ### 7B. [~] Ponuka plochy
 Pravý klik na plochu a ikony na ploche ako vo Windows 11.
 
@@ -870,7 +883,7 @@ Zdroje: `bin/latte-screens`, `system/hypr/hyprland.lua`, Nastavenia › Obrazovk
   obrazovky s dvoma monitormi oboma smermi. Opravené pritom: návrat zo zrkadlenia musí `mirror` zrušiť výslovne
   (týkalo sa aj virtuálneho monitora po odpojení skutočného).
 
-**8B.04** [x] (Obrazovky) Hlavná obrazovka a rozloženie myšou (používateľ 26. 10.: „kde má plynulo prejsť kurzor
+**8B.04** [x] (Obrazovky) Hlavná obrazovka a rozloženie myšou — **pegboard** (je tam vždy, aj pri jednej obrazovke) (používateľ 26. 10.: „kde má plynulo prejsť kurzor
 z jednej obrazovky na druhú“, okno cez dve obrazovky v rovnakej výške): v Nastaveniach › Obrazovky sa obrazovky v obrázku
 ťahajú myšou (skutočný pomer a rozlíšenie, aj medzery; okraj blízko suseda sa k nemu prichytí, na inú obrazovku sa pustiť
 nedá); **štyri okraje hlavnej obrazovky** ako červené čiary predĺžené v obrázku aj **na ostatných skutočných obrazovkách**

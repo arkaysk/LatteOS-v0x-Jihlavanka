@@ -1154,14 +1154,14 @@ ShellRoot {
                 Row { anchors.right: parent.right; anchors.rightMargin: 14; anchors.verticalCenter: parent.verticalCenter; spacing: 8
                     Pill { text: I18n.tr("Put it back"); onPressed: shell.screensBack() }
                     Pill { strong: true; icon: "check"; text: I18n.tr("Keep it"); onPressed: shell.keepScreens() } } }
-            // the screens as they stand, in their true sizes and gaps: the pointer crosses where two edges touch
-            Item { id: desk; visible: shell.page === "displays"; width: view.room; height: many ? 260 : 190
-                readonly property bool many: shell.screenList.length > 1
+            // the pegboard: the screens as they stand, in their true sizes and gaps (the pointer crosses where two
+            // edges touch); there with one screen too, as the wallpapers will have it
+            Item { id: desk; visible: shell.page === "displays"; width: view.room; height: 260
                 readonly property real x0: shell.screenList.length ? Math.min.apply(null, shell.screenList.map(m => m.x)) : 0
                 readonly property real y0: shell.screenList.length ? Math.min.apply(null, shell.screenList.map(m => m.y)) : 0
                 readonly property real x1: shell.screenList.length ? Math.max.apply(null, shell.screenList.map(m => m.x + shell.wide(m))) : 1
                 readonly property real y1: shell.screenList.length ? Math.max.apply(null, shell.screenList.map(m => m.y + shell.tall(m))) : 1
-                readonly property real room: many ? 1.6 : 1           // space around, to drag a screen into
+                readonly property real room: 1.6          // space around, to drag a screen into
                 readonly property real k: Math.min(width / Math.max(1, (x1 - x0) * room), height / Math.max(1, (y1 - y0) * room))
                 readonly property real ox: (width - (x1 - x0) * k) / 2
                 readonly property real oy: (height - (y1 - y0) * k) / 2
@@ -1201,23 +1201,24 @@ ShellRoot {
                             Glyph { name: shell.screenMain === scr.modelData ? "cup" : "device-desktop"; font.pixelSize: 26; color: scr.on ? Theme.gold : Theme.dim; anchors.horizontalCenter: parent.horizontalCenter }
                             Label { text: scr.modelData; font.weight: 700; anchors.horizontalCenter: parent.horizontalCenter }
                             Label { text: scr.m.width + " × " + scr.m.height; color: Theme.dim; font.pixelSize: 12; anchors.horizontalCenter: parent.horizontalCenter } }
-                        MouseArea { anchors.fill: parent; cursorShape: desk.many ? (pressed ? Qt.ClosedHandCursor : Qt.OpenHandCursor) : Qt.PointingHandCursor
+                        MouseArea { anchors.fill: parent; cursorShape: pressed ? Qt.ClosedHandCursor : Qt.OpenHandCursor
                             property point from
                             onPressed: e => { shell.screenAt = scr.modelData; from = mapToItem(desk, e.x, e.y) }
                             onPositionChanged: e => {
                                 const p = mapToItem(desk, e.x, e.y)
-                                if (!desk.many || (!scr.held && Math.abs(p.x - from.x) + Math.abs(p.y - from.y) < 6)) return
+                                if (!scr.held && Math.abs(p.x - from.x) + Math.abs(p.y - from.y) < 6) return
                                 scr.held = true
                                 scr.g = desk.snap(scr.m, scr.m.x + (p.x - from.x) / desk.k, scr.m.y + (p.y - from.y) / desk.k)
                             }
                             onReleased: {
                                 if (!scr.held) return
-                                const moved = scr.free && (scr.g.x !== scr.m.x || scr.g.y !== scr.m.y)
+                                // a screen alone stands where it stands: it goes back
+                                const moved = scr.free && shell.screenList.length > 1 && (scr.g.x !== scr.m.x || scr.g.y !== scr.m.y)
                                 scr.landed = moved; scr.held = false
                                 if (moved) shell.tryScreens(shell.placed(shell.screenList.map(o => o.name === scr.modelData ? Object.assign({}, o, { x: scr.g.x, y: scr.g.y }) : o), shell.screenMain))
                             } } } }
                 // the main screen's edges drawn on, as on the screens themselves
-                Repeater { model: desk.many && shell.guides ? ["top", "bottom", "left", "right"] : []
+                Repeater { model: shell.guides ? ["top", "bottom", "left", "right"] : []
                     Rectangle { required property string modelData
                         readonly property bool across: modelData === "top" || modelData === "bottom"
                         readonly property real at: across ? desk.oy + (shell.guides[modelData] - desk.y0) * desk.k : desk.ox + (shell.guides[modelData] - desk.x0) * desk.k
@@ -1248,7 +1249,7 @@ ShellRoot {
                        onPressed: { screensWord.value = "extend"; shell.order(["hyprctl", "eval", "latte.duplicate(false)"]) } }
                 Pill { icon: "copy"; text: I18n.tr("Duplicate"); strong: screensWord.value === "duplicate"
                        onPressed: { screensWord.value = "duplicate"; shell.order(["hyprctl", "eval", "latte.duplicate(true)"]) } } }
-            Part { visible: shell.page === "displays" && shell.screenList.length > 1; width: view.room; title: I18n.tr("Where it stands"); note: I18n.tr("Drag the screens in the picture above to where they stand on your desk; the pointer goes over where their edges touch. The red lines are the main screen's edges: show them on the other screens and move a screen a little higher or lower until they run on from the main one's edges. The main one carries the drops; every other has a window bar of its own.")
+            Part { visible: shell.page === "displays"; width: view.room; title: I18n.tr("Where it stands"); note: I18n.tr("Drag the screens in the picture above to where they stand on your desk; the pointer goes over where their edges touch. The red lines are the main screen's edges: show them on the other screens and move a screen a little higher or lower until they run on from the main one's edges. The main one carries the drops; every other has a window bar of its own.")
                 Pill { icon: "chevron-left"; text: I18n.tr("Further left"); onPressed: shell.moveScreen(shell.screenHere.name, -1) }
                 Pill { icon: "chevron-right"; text: I18n.tr("Further right"); onPressed: shell.moveScreen(shell.screenHere.name, 1) }
                 Pill { icon: "chevron-up"; text: I18n.tr("A little higher"); onPressed: shell.nudgeScreen(shell.screenHere.name, -4) }
