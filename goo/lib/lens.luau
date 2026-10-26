@@ -379,6 +379,7 @@ local function show_rows(rows, style, m, e)
     return out, h
 end
 local fill_ai
+local ai_rows, ai_said = -1, ""           -- what the conversation held when it was last shown (fill_ai)
 local function ask_told(pid)
     if not pid or (ai.told_at[pid] or 0) > os.time() - 180 then return end   -- latte-ai keeps an answer 15 min, 3 near a limit
     ai.told_at[pid] = os.time()
@@ -495,7 +496,12 @@ fill_ai = function()
     while #rows > 40 do table.remove(rows, 1) end
     model.aimsg = rows
     fact.ai_wait = ai.waiting
-    fact.ai_gen = fact.ai_gen + 1
+    -- The list goes to the end for a new message, and follows a reply being written only if it is already there:
+    -- counted up on every refresh, it pulled the wheel back down while one read further up (6B.07).
+    local last = rows[#rows]
+    local said = #rows .. ":" .. (last and #last.body or 0)
+    if #rows ~= ai_rows then ai_rows = #rows fact.ai_new = fact.ai_new + 1 end
+    if said ~= ai_said then ai_said = said fact.ai_gen = fact.ai_gen + 1 end
     -- the menu that is out: the services over the switch (LatteOS's own, one line each), the service's + or its chip
     local rows, style = {}, p and p.style or "own"
     if (ai.menu_at or 0) == 0 then

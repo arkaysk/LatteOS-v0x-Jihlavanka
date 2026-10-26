@@ -78,7 +78,8 @@ part Ai {
     text ic_ai_world = ""
     text ic_ai_more = ""
     text ic_ai_web = ""
-    fact ai_gen = 0                            // the logic counts up when the messages change: the list goes to the end
+    fact ai_gen = 0                            // the logic counts up when what the messages say changes (a reply being written)
+    fact ai_new = 0                            // …and when there is a message more: the list goes to the end
     event ai_send ->
     event ai_stop ->
     event ai_pop ->                            // a row of the menu pressed: its place in aipop
@@ -153,7 +154,9 @@ part Ai {
                 }
             }
         }
-        on change ai_gen { talk.scroll: max(talk.content - talk.height, 0) ~280ms after 60ms }
+        // a new message: to the end; a reply growing: followed only by one who is at the end, not by one reading above
+        on change ai_new { talk.scroll: max(talk.content - talk.height, 0) ~280ms after 60ms }
+        on change ai_gen while talk.scroll >= talk.content - talk.height - 60 { talk.scroll: max(talk.content - talk.height, 0) ~280ms after 60ms }
         // a hair of a bar beside it, when there is more than shows
         box { from: card.w - 12, 58 + talk.scroll / max(talk.content, 1) * (ai.fy - 70); size: 3, (ai.fy - 70) * min(talk.height / max(talk.content, 1), 1); corner: 2; color: #f5e8d8; opacity: if(talk.content > talk.height + 1, 25%, 0) }
         // an empty conversation: who answers, and that it stays
