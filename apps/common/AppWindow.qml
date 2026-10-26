@@ -124,4 +124,35 @@ FloatingWindow {
         }
         Item { id: body; y: head.height; width: parent.width; height: parent.height - head.height - (win.hasFoot ? win.footDepth : 0); clip: true }
     }
+
+    // The keyboard goes where the mouse presses, as everywhere: a text field pressed takes it. Qt alone misses it on
+    // the press that also brings the window up (from the desktop, from another window): the field stayed without
+    // the cursor until a second press. Above everything, it only watches the press and lets it through.
+    Item {
+        id: catcher
+        anchors.fill: parent; z: 10000
+        PointHandler {
+            acceptedButtons: Qt.LeftButton
+            onActiveChanged: if (active) {
+                const f = win.fieldAt(win.contentItem, point.position.x, point.position.y)
+                if (f) { f.forceActiveFocus(); win.pressedField = f; refocus.restart() }
+            }
+        }
+    }
+    // the text field the press lands on: the topmost visible thing there, and inside it the same, down to the end
+    function fieldAt(item, x, y) {
+        const kids = item.children
+        for (let i = kids.length - 1; i >= 0; i--) {
+            const c = kids[i]
+            if (c === catcher || !c.visible || !c.enabled) continue
+            const at = c.mapFromItem(item, x, y)
+            if (at.x < 0 || at.y < 0 || at.x > c.width || at.y > c.height) continue
+            if (c.cursorPosition !== undefined && c.readOnly === false) return c
+            const deeper = fieldAt(c, at.x, at.y)
+            if (deeper) return deeper
+        }
+        return null
+    }
+    property Item pressedField: null
+    Timer { id: refocus; interval: 150; onTriggered: if (win.pressedField) { win.pressedField.forceActiveFocus(); win.pressedField = null } }
 }

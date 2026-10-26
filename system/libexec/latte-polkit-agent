@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+runtime=${XDG_RUNTIME_DIR:-}
+display=${WAYLAND_DISPLAY:-}
+share=${LATTE_SHARE:-/usr/share/latteos}
+if [ -z "$runtime" ] || [ -z "$display" ]; then
+    echo "latte-polkit-agent: graphical session environment is missing" >&2
+    exit 1
+fi
+
+case "$display" in
+    /*) socket=$display ;;
+    *) socket=$runtime/$display ;;
+esac
+
+mkdir -p "$runtime/latteos"
+exec 9>"$runtime/latteos/polkit-agent.lock"
+if ! flock -n 9; then exit 0; fi
+
+while [ -S "$socket" ]; do
+    status=0
+    /usr/bin/pleamar --scene "$share/goo/polkit.plm" --no-hud || status=$?
+    [ -S "$socket" ] || exit 0
+    printf 'latte-polkit-agent: Pleamar exited with status %s; restarting\n' "$status" >&2
+    sleep 1
+done

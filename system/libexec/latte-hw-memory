@@ -1,0 +1,98 @@
+#!/usr/bin/env python3
+"""Read SMBIOS memory-device details for latte-devices; intentionally no arguments."""
+import glob
+import json
+import os
+import sys
+
+
+MEMORY_TYPES = {
+    0x03: "DRAM", 0x0f: "SDRAM", 0x10: "SGRAM", 0x11: "RDRAM",
+    0x12: "DDR", 0x13: "DDR2", 0x18: "DDR3", 0x1a: "DDR4",
+    0x1b: "LPDDR", 0x1c: "LPDDR2", 0x1d: "LPDDR3", 0x1e: "LPDDR4",
+    0x20: "HBM", 0x21: "HBM2", 0x22: "DDR5", 0x23: "LPDDR5",
+    0x24: "HBM3", 0x25: "LPDDR5X", 0x26: "DDR5X",
+}
+FORM_FACTORS = {3: "SIMM", 5: "Chip", 9: "DIMM", 12: "RIMM", 13: "SO-DIMM", 15: "FB-DIMM"}
+
+
+def _word(data, offset):
+    return int.from_bytes(data[offset:offset + 2], "little")
+
+
+def _string(strings, index):
+    if not index or index > len(strings):
+        return ""
+    return " ".join(strings[index - 1].decode("utf-8", "replace").split())
+
+
+def parse_entry(raw, entry_id):
+    if len(raw) < 4 or raw[0] != 17 or raw[1] < 19 or raw[1] > len(raw):
+        raise ValueError("invalid SMBIOS memory-device structure")
+    length = raw[1]
+    fields = raw[:length]
+    tail = raw[length:]
+    strings = []
+    if tail:
+        end = tail.find(b"\0\0")
+        if end < 0:
+            raise ValueError("unterminated SMBIOS string table")
+        if end:
+            strings = tail[:end].split(b"\0")
+
+    size = _word(fields, 12)
+    if size == 0:
+        return None
+    capacity = None
+    if size == 0x7fff and length >= 32:
+        extended = int.from_bytes(fields[28:32], "little")
+        amount = extended & 0x7fffffff
+        if amount:
+            capacity = amount * (1024 if extended & 0x80000000 else 1024 * 1024)
+    elif size not in (0, 0xffff):
+        capacity = (size & 0x7fff) * (1024 if size & 0x8000 else 1024 * 1024)
+    if capacity == 0:
+        capacity = None
+
+    type_code = fields[18]
+    form_code = fields[14] if length > 14 else 0
+    locator = _string(strings, fields[16]) if length > 16 else ""
+    bank = _string(strings, fields[17]) if length > 17 else ""
+    speed = _word(fields, 21) if length >= 23 else 0xffff
+    configured_speed = _word(fields, 32) if length >= 34 else 0xffff
+    return {
+        "id": "memory:module:smbios:" + entry_id,
+        "name": locator or "Memory module " + entry_id,
+        "bank": bank,
+        "capacity_bytes": capacity,
+        "memory_type": MEMORY_TYPES.get(type_code, "SMBIOS type 0x%02x" % type_code),
+        "form_factor": FORM_FACTORS.get(form_code, ""),
+        "speed_mt_s": speed if speed not in (0, 0xffff) else None,
+        "configured_speed_mt_s": configured_speed if configured_speed not in (0, 0xffff) else None,
+    }
+
+
+def inventory(root="/sys/firmware/dmi/entries"):
+    modules = []
+    for filename in sorted(glob.glob(os.path.join(root, "17-*", "raw"))):
+        with open(filename, "rb") as stream:
+            module = parse_entry(stream.read(), os.path.basename(os.path.dirname(filename)))
+        if module is not None:
+            modules.append(module)
+    return {"schema": 1, "modules": modules}
+
+
+def main(args):
+    if args or os.geteuid() != 0:
+        print("latte-hw-memory: must be run by pkexec with no arguments", file=sys.stderr)
+        return 2
+    try:
+        print(json.dumps(inventory(), ensure_ascii=False))
+    except (OSError, ValueError) as error:
+        print("latte-hw-memory: " + str(error), file=sys.stderr)
+        return 1
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))

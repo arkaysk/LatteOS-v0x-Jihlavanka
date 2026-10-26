@@ -229,6 +229,190 @@ assert devices.device("  A   B ", "x")["name"] == "A B"
 monitor = load("latte-monitor")
 assert monitor.cores("cpu  1 2 3 4 5 6 7 8\ncpu0 10 0 10 70 10 0 0 0 0 0\ncpu1 5 0 5 80 10 0 0 0\nintr 1") == [(100, 80), (100, 90)]
 assert monitor.origin(monitor.HOME + "/.config/systemd/user/x.service") == "yours" and monitor.origin("/usr/lib/systemd/user/latte-goo.service") == "LatteOS"
+hw_memory = load("latte-hw-memory", "system/libexec")
+with tempfile.TemporaryDirectory() as d:
+    raw = bytearray(34)
+    raw[0:2] = bytes((17, len(raw)))
+    struct.pack_into("<H", raw, 12, 8192)
+    raw[14], raw[16], raw[17], raw[18] = 9, 1, 2, 0x1a
+    struct.pack_into("<H", raw, 21, 3200)
+    struct.pack_into("<H", raw, 32, 2933)
+    raw.extend(b"DIMM_A1\0BANK 0\0Maker\0SERIAL-MUST-NOT-LEAK\0ASSET\0PART\0\0")
+    entry = os.path.join(d, "17-0", "raw")
+    os.makedirs(os.path.dirname(entry))
+    with open(entry, "wb") as stream:
+        stream.write(raw)
+    protected = hw_memory.inventory(d)
+    assert protected == {"schema": 1, "modules": [{
+        "id": "memory:module:smbios:17-0", "name": "DIMM_A1", "bank": "BANK 0",
+        "capacity_bytes": 8192 * 1024 * 1024, "memory_type": "DDR4", "form_factor": "DIMM",
+        "speed_mt_s": 3200, "configured_speed_mt_s": 2933}]}
+    assert "SERIAL-MUST-NOT-LEAK" not in json.dumps(protected)
+    empty = bytearray(raw[:34])
+    struct.pack_into("<H", empty, 12, 0)
+    empty.extend(raw[34:])
+    with open(entry, "wb") as stream:
+        stream.write(empty)
+    assert hw_memory.inventory(d)["modules"] == []
+    unknown = bytearray(raw[:34])
+    struct.pack_into("<H", unknown, 12, 0xffff)
+    unknown.extend(b"DIMM_B1\0BANK 1\0Maker\0\0")
+    unknown_entry = os.path.join(d, "17-1", "raw")
+    os.makedirs(os.path.dirname(unknown_entry), exist_ok=True)
+    with open(unknown_entry, "wb") as stream:
+        stream.write(unknown)
+    extended = bytearray(raw[:34])
+    struct.pack_into("<H", extended, 12, 0x7fff)
+    struct.pack_into("<I", extended, 28, 65536)
+    extended.extend(raw[34:])
+    extended_entry = os.path.join(d, "17-2", "raw")
+    os.makedirs(os.path.dirname(extended_entry), exist_ok=True)
+    with open(extended_entry, "wb") as stream:
+        stream.write(extended)
+    result = hw_memory.inventory(d)
+    assert [(m["name"], m["capacity_bytes"]) for m in result["modules"]] == [
+        ("DIMM_B1", None), ("DIMM_A1", 65536 * 1024 * 1024)]
+devices = load("latte-devices")
+old_run = devices.subprocess.run
+protected_output = io.StringIO()
+def fake_pkexec(argv, **kwargs):
+    assert argv == ["/usr/bin/pkexec", "/usr/libexec/latte-hw-memory"]
+    return type("Result", (), {"returncode": 0, "stdout": '{"schema": 1, "modules": []}', "stderr": ""})()
+devices.subprocess.run = fake_pkexec
+try:
+    with contextlib.redirect_stdout(protected_output):
+        assert devices.protected_memory() == 0
+finally:
+    devices.subprocess.run = old_run
+assert json.loads(protected_output.getvalue()) == {"schema": 1, "modules": []}
+devices.subprocess.run = lambda *args, **kwargs: type(
+    "Result", (), {"returncode": 126, "stdout": "", "stderr": ""})()
+protected_error = io.StringIO()
+try:
+    with contextlib.redirect_stderr(protected_error):
+        assert devices.protected_memory() == 126
+finally:
+    devices.subprocess.run = old_run
+assert "not authorized" in protected_error.getvalue()
+with tempfile.TemporaryDirectory() as d:
+    root = os.path.join(d, "hwmon")
+    for index, pci in enumerate(("0000:03:00.0", "0000:0a:00.0")):
+        chip = os.path.join(root, "hwmon" + str(index))
+        device = os.path.join(d, "devices", pci)
+        os.makedirs(chip)
+        os.makedirs(device)
+        os.symlink(device, os.path.join(chip, "device"))
+        open(os.path.join(chip, "name"), "w").write("amdgpu\n")
+        open(os.path.join(chip, "temp1_input"), "w").write(str(57000 + index * 1000) + "\n")
+        open(os.path.join(chip, "temp1_label"), "w").write("edge\n")
+    readings = monitor.sensors(root)
+    assert [s["id"] for s in readings] == [
+        "hwmon:amdgpu:0000:03:00.0:temp1", "hwmon:amdgpu:0000:0a:00.0:temp1"]
+    assert [(s["name"], s["value"], s["unit"], s["source"]) for s in readings] == [
+        ("edge", 57, "°C", "hwmon"), ("edge", 58, "°C", "hwmon")]
+with tempfile.TemporaryDirectory() as d:
+    def put(relative, text):
+        path = os.path.join(d, relative.lstrip("/"))
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        open(path, "w").write(text)
+        return path
+
+    put("/proc/cpuinfo", "processor : 0\nmodel name : Test CPU\nvendor_id : TestVendor\ncpu family : 6\nmodel : 42\nstepping : 3\nmicrocode : 0xabc\n\nprocessor : 1\n")
+    put("/proc/meminfo", "MemTotal: 16384000 kB\n")
+    put("/sys/devices/system/cpu/online", "0-1\n")
+    cache = "/sys/devices/system/cpu/cpu0/cache/index0/"
+    put(cache + "level", "1\n")
+    put(cache + "type", "Data\n")
+    put(cache + "size", "32K\n")
+    put(cache + "shared_cpu_list", "0-1\n")
+    put(cache + "coherency_line_size", "64\n")
+    put(cache + "physical_line_partition", "1\n")
+    put(cache + "number_of_sets", "64\n")
+    put(cache + "ways_of_associativity", "8\n")
+    policy = "/sys/devices/system/cpu/cpufreq/policy0/"
+    put(policy + "scaling_cur_freq", "2400000\n")
+    put(policy + "cpuinfo_min_freq", "800000\n")
+    put(policy + "cpuinfo_max_freq", "4200000\n")
+    put(policy + "scaling_governor", "schedutil\n")
+    for key, text in (("sys_vendor", "System manufacturer"), ("product_name", "System Product Name"),
+                      ("board_vendor", "Board maker"), ("board_name", "Board model"),
+                      ("board_version", "1.2"), ("bios_vendor", "Firmware maker"),
+                      ("bios_version", "9.8"), ("bios_date", "10/23/2026")):
+        put("/sys/class/dmi/id/" + key, text + "\n")
+    dimm = "/sys/devices/system/edac/mc/mc0/dimm0/"
+    put(dimm + "size", "8192\n")
+    put(dimm + "dimm_label", "DIMM A1\n")
+    put(dimm + "dimm_mem_type", "DDR5\n")
+    gpu = os.path.join(d, "devices", "0000:03:00.0")
+    os.makedirs(gpu, exist_ok=True)
+    for key, text in (("vendor", "0x1002\n"), ("device", "0x67ff\n"), ("revision", "c1\n"),
+                      ("subsystem_vendor", "0x1028\n"), ("subsystem_device", "0x1713\n"),
+                      ("gpu_busy_percent", "37\n"),
+                      ("mem_info_vram_used", "1048576\n"), ("mem_info_vram_total", "4294967296\n"),
+                      ("mem_info_gtt_used", "2097152\n"), ("mem_info_gtt_total", "8589934592\n"),
+                      ("current_link_speed", "8.0 GT/s PCIe\n"), ("current_link_width", "8\n"),
+                      ("max_link_speed", "8.0 GT/s PCIe\n"), ("max_link_width", "8\n"),
+                      ("pp_dpm_sclk", "0: 300Mhz\n1: 1200Mhz *\n")):
+        open(os.path.join(gpu, key), "w").write(text)
+    driver = os.path.join(d, "drivers", "amdgpu")
+    os.makedirs(driver)
+    drm = os.path.join(d, "sys/class/drm")
+    card = os.path.join(drm, "card0")
+    os.makedirs(card)
+    os.symlink(gpu, os.path.join(card, "device"))
+    os.makedirs(os.path.join(drm, "card0-DP-1"))
+    os.symlink(driver, os.path.join(gpu, "driver"))
+    old_out = monitor.out
+    def inventory_out(*args, **kwargs):
+        if args[:1] == ("lscpu",):
+            return json.dumps({"lscpu": [
+                {"field": "Architecture:", "data": "x86_64"},
+                {"field": "Thread(s) per core:", "data": "2"},
+                {"field": "L3 cache:", "data": "10 MiB (1 instance)"},
+                {"field": "Flags:", "data": "sse avx"}]})
+        if args[:1] == ("lspci",) and "-s" in args:
+            return ("Slot:\t0000:03:00.0\nClass:\tVGA compatible controller\n"
+                    "Vendor:\tAdvanced Micro Devices [AMD/ATI]\nDevice:\tTest GPU\n"
+                    "SVendor:\tTest OEM\nSDevice:\tTest board\nRev:\tc1\nProgIf:\t00\n")
+        if args[:1] == ("lspci",):
+            return ("Slot:\t0000:00:00.0\nClass:\tHost bridge\n"
+                    "Vendor:\tTest chipset maker\nDevice:\tTest chipset\n\n")
+        return old_out(*args, **kwargs)
+    monitor.out = inventory_out
+    inv = monitor.hardware(d)
+    monitor.out = old_out
+    groups = {group["id"]: group for group in inv["groups"]}
+    items = {group_id: {item["id"]: item for item in group["items"]} for group_id, group in groups.items()}
+    assert inv["schema"] == 1
+    assert items["processor"]["cpu:model"]["value"] == "Test CPU"
+    assert items["processor"]["cpu:architecture"]["value"] == "x86_64"
+    assert items["processor"]["cpu:instruction_flags"]["value"] == "sse avx"
+    assert items["processor"]["cpu:threads"]["value"] == 2
+    assert items["processor"]["cpu:cache:l1:data:0-1"]["value"] == 32768
+    assert items["processor"]["cpu:cache:l1:data:0-1:line_size"]["value"] == 64
+    assert items["processor"]["cpu:cache:l1:data:0-1:line_partitions"]["value"] == 1
+    assert items["processor"]["cpu:cache:l1:data:0-1:sets"]["value"] == 64
+    assert items["processor"]["cpu:cache:l1:data:0-1:associativity"]["value"] == 8
+    assert items["processor"]["cpu:policy0:scaling_cur_freq"]["value"] == 2400
+    assert items["processor"]["cpu:policy0:cpuinfo_max_freq"]["value"] == 4200
+    assert items["memory"]["memory:total"]["value"] == 16384000 * 1024
+    assert items["memory"]["memory:module:dimm0"]["unit"] == "MiB · DDR5"
+    assert items["board"]["board:bios_version"]["value"] == "9.8"
+    assert items["board"]["board:system_vendor"]["available"] is False
+    assert items["board"]["board:system_model"]["available"] is False
+    assert items["board"]["board:chipset:0000:00:00.0"]["value"] == "Test chipset maker Test chipset"
+    assert items["graphics"]["gpu:0000:03:00.0:vendor"]["value"] == "0x1002"
+    assert items["graphics"]["gpu:0000:03:00.0:driver"]["value"] == "amdgpu"
+    assert items["graphics"]["gpu:0000:03:00.0:model"]["value"] == "Advanced Micro Devices [AMD/ATI] Test GPU"
+    assert items["graphics"]["gpu:0000:03:00.0:gpu_busy_percent"]["value"] == 37
+    assert items["graphics"]["gpu:0000:03:00.0:subsystem_vendor"]["value"] == "Test OEM"
+    assert items["graphics"]["gpu:0000:03:00.0:mem_info_gtt_total"]["value"] == 8589934592
+    assert items["graphics"]["gpu:0000:03:00.0:pp_dpm_sclk"]["value"] == "0: 300Mhz\n1: 1200Mhz *"
+    assert items["graphics"]["gpu:0000:03:00.0:pcie_current_link_speed"]["value"] == "8.0 GT/s PCIe"
+    assert items["graphics"]["gpu:0000:03:00.0:pcie_current_link_width"]["value"] == 8
+    assert items["graphics"]["gpu:0000:03:00.0:pcie_max_link_width"]["unit"] == "lanes"
+    assert all(item["available"] == (item["value"] is not None)
+               for group in inv["groups"] for item in group["items"])
 with tempfile.TemporaryDirectory() as d:
     mine, theirs = os.path.join(d, "mine"), os.path.join(d, "theirs")
     os.makedirs(theirs)

@@ -13,6 +13,12 @@
                                      took: milliseconds it added to the last start, where the system says
   latte-monitor startup-set ID on|off    switches one of the user's own (kind "app" or "user")
   latte-monitor sensors              [{"chip", "name", "value", "unit"}]: temperatures, fans, voltages, power
+                                     each reading also has a stable "id" and a "source"
+  latte-monitor hardware             {"schema": 1, "groups": [{"id", "name", "items": [… ]}, …]}:
+                                     readable CPU, memory, board/BIOS and graphics inventory
+  latte-monitor watch [SECONDS]      versioned JSONL: {"schema": 1, "timestamp": epoch milliseconds,
+                                     "sensors": [{"id", "source", "name", "chip", "value", "unit"}, …], …}
+                                     for local dashboards and external displays
   latte-monitor end PID…             asks those processes to end (TERM)
   latte-monitor kill PID…            ends them at once (KILL)
 
@@ -156,11 +162,14 @@ def watch(seconds):
         mem = dict(re.findall(r"(\w+):\s+(\d+)", read("/proc/meminfo")))
         apps, background = grouped(now, before, dt, ncpu, windows())
         print(json.dumps({
+            "schema": 1,
+            "timestamp": time.time_ns() // 1_000_000,
             "cores": [round(100 * (1 - (b[1] - a[1]) / max(1, b[0] - a[0]))) for a, b in zip(cpu0, cpu1)],
             "swap": (int(mem.get("SwapTotal", 0)) - int(mem.get("SwapFree", 0))) * 1024, "swap_total": int(mem.get("SwapTotal", 0)) * 1024,
             "net": {"down": round((io1[0] - io0[0]) / dt), "up": round((io1[1] - io0[1]) / dt)},
             "disk": {"read": round((io1[2] - io0[2]) / dt), "write": round((io1[3] - io0[3]) / dt)},
-            "apps": apps, "background": background, "guard": dog.status() if dog else []}), flush=True)
+            "apps": apps, "background": background, "guard": dog.status() if dog else [],
+            "sensors": sensors()}), flush=True)
         before, cpu0, io0, t0 = now, cpu1, io1, t1
         time.sleep(seconds)
 
@@ -254,11 +263,12 @@ def startup_set(ident, on):
 
 
 # ── what the sensors say ─────────────────────────────────────────────────────────────────────────────────────
-def sensors():
+def sensors(root="/sys/class/hwmon"):
     kinds = {"temp": ("°C", 1000), "fan": ("RPM", 1), "in": ("V", 1000), "power": ("W", 1000000), "curr": ("A", 1000)}
     found = []
-    for chip in sorted(glob.glob("/sys/class/hwmon/hwmon*")):
+    for chip in sorted(glob.glob(os.path.join(root, "hwmon*"))):
         name = read(chip + "/name").strip()
+        device = os.path.basename(os.path.realpath(chip + "/device")) or "unknown"
         for path in sorted(glob.glob(chip + "/*_input")):
             m = re.match(r"(temp|fan|in|power|curr)(\d+)_input", os.path.basename(path))
             try:
@@ -267,9 +277,269 @@ def sensors():
                 continue
             if m:
                 unit, by = kinds[m.group(1)]
-                label = read(path[:-6] + "_label").strip() or (m.group(1) + m.group(2))
-                found.append({"chip": name, "name": label, "value": round(value / by, 2 if by > 1 and unit != "°C" else 0), "unit": unit})
+                channel = m.group(1) + m.group(2)
+                label = read(path[:-6] + "_label").strip() or channel
+                sensor_id = ":".join(("hwmon", name.lower(), device.lower(), channel))
+                found.append({"id": sensor_id, "source": "hwmon", "chip": name, "name": label,
+                              "value": round(value / by, 2 if by > 1 and unit != "°C" else 0), "unit": unit})
     return found
+
+
+def hardware(root="/"):
+    """A read-only hardware inventory. Missing kernel/DMI fields are explicit, never inferred."""
+    def path(name):
+        return os.path.join(root, name.lstrip("/"))
+
+    def value(group, ident, name, filename, source, unit="", scale=1):
+        raw = read(path(filename)).strip()
+        if raw.lower() in {"to be filled by o.e.m.", "system manufacturer", "system product name",
+                           "default string", "unknown", "not specified"}:
+            raw = ""
+        if raw:
+            try:
+                number = int(raw, 10)
+                val = number // scale if scale > 1 else number
+            except ValueError:
+                val = " ".join(raw.split())
+            available = True
+        else:
+            val, available = None, False
+        group["items"].append({"id": ident, "name": name, "value": val, "unit": unit,
+                               "source": source, "available": available})
+
+    groups = [{"id": ident, "name": name, "items": []} for ident, name in (
+        ("processor", "Processor"), ("memory", "Memory"), ("board", "Motherboard and BIOS"), ("graphics", "Graphics"))]
+    cpu, memory, board, graphics = groups
+    cpuinfo = read(path("/proc/cpuinfo"))
+    first_cpu = cpuinfo.split("\n\n", 1)[0]
+    fields = dict((key.strip(), val.strip()) for line in first_cpu.splitlines()
+                  if ":" in line for key, val in [line.split(":", 1)])
+    for ident, label, key in (("model", "Model", "model name"), ("vendor", "Vendor", "vendor_id"),
+                              ("family", "Family", "cpu family"), ("model_id", "Model ID", "model"),
+                              ("stepping", "Stepping", "stepping"), ("microcode", "Microcode", "microcode"),
+                              ("cores", "Cores", "cpu cores")):
+        val = fields.get(key)
+        cpu["items"].append({"id": "cpu:" + ident, "name": label, "value": val, "unit": "",
+                             "source": "procfs:/proc/cpuinfo", "available": bool(val)})
+    specs = {}
+    try:
+        rows = json.loads(out("lscpu", "--json", timeout=3) or "{}").get("lscpu", [])
+        specs = {row["field"].rstrip(":"): row.get("data") for row in rows if row.get("field")}
+    except (KeyError, TypeError, ValueError):
+        pass
+    for ident, label, field in (
+        ("architecture", "Architecture", "Architecture"),
+        ("operation_modes", "CPU operation modes", "CPU op-mode(s)"),
+        ("byte_order", "Byte order", "Byte Order"),
+        ("threads_per_core", "Threads per core", "Thread(s) per core"),
+        ("cores_per_socket", "Cores per socket", "Core(s) per socket"),
+        ("sockets", "Sockets", "Socket(s)"),
+        ("cpu_min_mhz", "Minimum frequency", "CPU min MHz"),
+        ("cpu_max_mhz", "Maximum frequency", "CPU max MHz"),
+        ("frequency_scaling", "Frequency scaling", "CPU(s) scaling MHz"),
+        ("virtualization", "Virtualization", "Virtualization"),
+        ("instruction_flags", "Instruction flags", "Flags"),
+    ):
+        val = specs.get(field)
+        cpu["items"].append({"id": "cpu:" + ident, "name": label, "value": val, "unit": "",
+                             "source": "lscpu", "available": bool(val)})
+    threads = len(re.findall(r"(?m)^processor\s*:", cpuinfo))
+    cpu["items"].append({"id": "cpu:threads", "name": "Threads", "value": threads or None, "unit": "",
+                         "source": "procfs:/proc/cpuinfo", "available": threads > 0})
+    for ident, label, filename, unit in (
+        ("online", "Online processors", "/sys/devices/system/cpu/online", ""),
+    ):
+        value(cpu, "cpu:" + ident, label, filename, "sysfs:" + filename, unit)
+
+    policies = sorted(glob.glob(path("/sys/devices/system/cpu/cpufreq/policy[0-9]*")))
+    for policy in policies:
+        name = os.path.basename(policy)
+        for key, label in (("scaling_cur_freq", "Current"), ("cpuinfo_min_freq", "Minimum"),
+                           ("cpuinfo_max_freq", "Maximum")):
+            filename = os.path.join(policy, key)
+            raw = read(filename).strip()
+            try:
+                mhz = int(raw) // 1000
+                available = True
+            except ValueError:
+                mhz, available = None, False
+            cpu["items"].append({"id": "cpu:" + name + ":" + key, "name": label, "device": name,
+                                 "value": mhz, "unit": "MHz", "source": "sysfs:" + filename.lstrip("/"),
+                                 "available": available})
+        filename = os.path.join(policy, "scaling_governor")
+        governor = read(filename).strip()
+        cpu["items"].append({"id": "cpu:" + name + ":governor", "name": "Governor", "device": name,
+                             "value": governor or None, "unit": "", "source": "sysfs:" + filename.lstrip("/"),
+                             "available": bool(governor)})
+
+    seen_caches = set()
+    for cache in sorted(glob.glob(path("/sys/devices/system/cpu/cpu[0-9]*/cache/index[0-9]*"))):
+        level = read(os.path.join(cache, "level")).strip()
+        kind = read(os.path.join(cache, "type")).strip()
+        size = read(os.path.join(cache, "size")).strip()
+        shared = read(os.path.join(cache, "shared_cpu_list")).strip()
+        match = re.fullmatch(r"(\d+)([KMG]?)", size, re.I)
+        if not (level.isdigit() and kind and match):
+            continue
+        amount, prefix = int(match.group(1)), match.group(2).upper()
+        size_bytes = amount * {"": 1, "K": 1024, "M": 1048576, "G": 1073741824}[prefix]
+        cache_name = "L" + level + " " + kind.lower() + " cache"
+        cache_id = "cpu:cache:l" + level + ":" + kind.lower() + ":" + shared
+        if cache_id in seen_caches:
+            continue
+        seen_caches.add(cache_id)
+        cache_source = "sysfs:" + os.path.join(cache.removeprefix(root), "size").lstrip("/")
+        cpu["items"].append({"id": cache_id, "name": cache_name,
+                         "device": "CPUs " + shared if shared else "", "value": size_bytes, "unit": "bytes",
+                         "source": cache_source,
+                         "available": True})
+        for key, suffix, label, unit in (
+            ("coherency_line_size", "line_size", "Cache line size", "bytes"),
+            ("physical_line_partition", "line_partitions", "Physical line partitions", ""),
+            ("number_of_sets", "sets", "Number of sets", ""),
+            ("ways_of_associativity", "associativity", "Associativity", "ways"),
+        ):
+            raw = read(os.path.join(cache, key)).strip()
+            number = int(raw) if raw.isdigit() else None
+            cpu["items"].append({"id": cache_id + ":" + suffix, "name": label,
+                                 "device": "CPUs " + shared if shared else "", "value": number, "unit": unit,
+                                 "source": "sysfs:" + os.path.join(cache.removeprefix(root), key).lstrip("/"),
+                                 "available": number is not None})
+
+    meminfo = dict(re.findall(r"(?m)^(\w+):\s+(\d+)", read(path("/proc/meminfo"))))
+    total = int(meminfo.get("MemTotal", "0")) * 1024
+    memory["items"].append({"id": "memory:total", "name": "Usable memory", "value": total or None,
+                            "unit": "bytes", "source": "procfs:/proc/meminfo", "available": total > 0})
+    modules = []
+    for dimm in sorted(glob.glob(path("/sys/devices/system/edac/mc/mc*/dimm*"))):
+        size = read(os.path.join(dimm, "size")).strip()
+        if not size.isdigit() or int(size) == 0:
+            continue
+        label = read(os.path.join(dimm, "dimm_label")).strip() or os.path.basename(dimm)
+        kind = read(os.path.join(dimm, "dimm_mem_type")).strip()
+        modules.append((dimm, label, size, kind))
+    if modules:
+        for dimm, label, size, kind in modules:
+            memory["items"].append({"id": "memory:module:" + os.path.basename(dimm), "name": label,
+                                    "value": int(size), "unit": "MiB" + ((" · " + kind) if kind else ""),
+                                    "source": "sysfs:" + dimm.removeprefix(root).lstrip("/"), "available": True})
+    else:
+        memory["items"].append({"id": "memory:modules", "name": "Memory modules", "value": None, "unit": "",
+                                "source": "sysfs:/sys/devices/system/edac", "available": False})
+
+    for ident, label, filename in (
+        ("system_vendor", "System manufacturer", "/sys/class/dmi/id/sys_vendor"),
+        ("system_model", "System model", "/sys/class/dmi/id/product_name"),
+        ("board_vendor", "Board manufacturer", "/sys/class/dmi/id/board_vendor"),
+        ("board_name", "Board model", "/sys/class/dmi/id/board_name"),
+        ("board_version", "Board version", "/sys/class/dmi/id/board_version"),
+        ("bios_vendor", "BIOS manufacturer", "/sys/class/dmi/id/bios_vendor"),
+        ("bios_version", "BIOS version", "/sys/class/dmi/id/bios_version"),
+        ("bios_date", "BIOS date", "/sys/class/dmi/id/bios_date"),
+    ):
+        value(board, "board:" + ident, label, filename, "sysfs:" + filename)
+    pci_listing = out("lspci", "-vmm", timeout=3)
+    for block in pci_listing.strip().split("\n\n"):
+        f = dict(line.split(":\t", 1) for line in block.splitlines() if ":\t" in line)
+        category = f.get("Class", "").lower()
+        if not any(bridge in category for bridge in ("host bridge", "smbus")):
+            continue
+        slot = f.get("Slot", "")
+        vendor, model = f.get("Vendor", ""), f.get("Device", "")
+        if not slot or not (vendor or model):
+            continue
+        board["items"].append({"id": "board:chipset:" + slot, "name": "Chipset",
+                               "device": slot, "value": " ".join(v for v in (vendor, model) if v),
+                               "unit": "", "source": "lspci", "available": True})
+
+    cards = sorted(p for p in glob.glob(path("/sys/class/drm/card[0-9]*"))
+                   if re.fullmatch(r"card\d+", os.path.basename(p)))
+    for card in cards:
+        cardname = os.path.basename(card)
+        dev = os.path.realpath(os.path.join(card, "device"))
+        pci = os.path.basename(dev)
+        driverpath = os.path.join(dev, "driver")
+        driver = os.path.basename(os.path.realpath(driverpath)) if os.path.islink(driverpath) else ""
+        model = read(os.path.join(dev, "product_name")).strip()
+        model_source = "sysfs:" + os.path.join("/sys/class/drm", cardname, "device", "product_name")
+        pci_info = {}
+        if not model and pci:
+            listing = out("lspci", "-s", pci, "-vmm", timeout=3)
+            pci_info = dict(line.split(":\t", 1) for line in listing.splitlines() if ":\t" in line)
+            vendor_name, device_name = pci_info.get("Vendor", ""), pci_info.get("Device", "")
+            if vendor_name or device_name:
+                model = " ".join(v for v in (vendor_name, device_name) if v)
+                model_source = "lspci"
+        graphics["items"].append({"id": "gpu:" + pci + ":model", "name": "GPU model", "device": cardname,
+                                  "value": model or None, "unit": "", "source": model_source,
+                                  "available": bool(model)})
+        for suffix, label, raw, unit in (
+            ("vendor", "Vendor ID", read(os.path.join(dev, "vendor")).strip(), ""),
+            ("device", "Device ID", read(os.path.join(dev, "device")).strip(), ""),
+            ("driver", "Driver", driver, ""),
+        ):
+            graphics["items"].append({"id": "gpu:" + pci + ":" + suffix, "name": label, "device": cardname, "value": raw or None,
+                                      "unit": unit, "source": "sysfs:/sys/class/drm/" + cardname + "/device",
+                                      "available": bool(raw)})
+        for key, suffix, label, sysfs_key in (("Rev", "revision", "PCI revision", "revision"),
+                                              ("SVendor", "subsystem_vendor", "Subsystem vendor", "subsystem_vendor"),
+                                              ("SDevice", "subsystem_device", "Subsystem device", "subsystem_device"),
+                                              ("Class", "class", "PCI class", "class"),
+                                              ("ProgIf", "prog_if", "Programming interface", "prog_if")):
+            raw = pci_info.get(key, "")
+            source = "lspci"
+            if not raw:
+                raw = read(os.path.join(dev, sysfs_key)).strip()
+                source = "sysfs:/sys/class/drm/" + cardname + "/device/" + sysfs_key
+            graphics["items"].append({"id": "gpu:" + pci + ":" + suffix, "name": label, "device": cardname,
+                                      "value": raw or None, "unit": "", "source": source, "available": bool(raw)})
+        for key, label in (("gpu_busy_percent", "GPU usage"), ("mem_info_vram_used", "Video memory used"),
+                           ("mem_info_vram_total", "Video memory total"), ("mem_info_gtt_used", "Graphics shared memory used"),
+                           ("mem_info_gtt_total", "Graphics shared memory total")):
+            raw = read(os.path.join(dev, key)).strip()
+            try:
+                val = int(raw)
+                unit = "%" if key == "gpu_busy_percent" else "bytes"
+                available = True
+            except ValueError:
+                val, unit, available = None, "%" if key == "gpu_busy_percent" else "bytes", False
+            graphics["items"].append({"id": "gpu:" + pci + ":" + key, "name": label, "device": cardname,
+                                      "value": val, "unit": unit, "source": "sysfs:" + os.path.join(
+                                          "/sys/class/drm", cardname, "device", key), "available": available})
+        for key in ("gt_cur_freq_mhz", "gt_min_freq_mhz", "gt_max_freq_mhz"):
+            raw = read(os.path.join(dev, key)).strip()
+            if raw.isdigit():
+                label = {"gt_cur_freq_mhz": "Current frequency", "gt_min_freq_mhz": "Minimum frequency",
+                         "gt_max_freq_mhz": "Maximum frequency"}[key]
+                graphics["items"].append({"id": "gpu:" + pci + ":" + key, "name": label, "device": cardname,
+                                          "value": int(raw), "unit": "MHz", "source": "sysfs:" + os.path.join(
+                                              "/sys/class/drm", cardname, "device", key), "available": True})
+        for key, label in (("pp_dpm_sclk", "Core clock states"), ("pp_dpm_mclk", "Memory clock states"),
+                           ("pp_dpm_pcie", "PCI Express link states")):
+            filename = os.path.join(dev, key)
+            states = read(filename).strip()
+            graphics["items"].append({"id": "gpu:" + pci + ":" + key, "name": label, "device": cardname,
+                                      "value": states or None, "unit": "", "source": "sysfs:" + os.path.join(
+                                              "/sys/class/drm", cardname, "device", key), "available": bool(states)})
+        for key, suffix, label, unit in (
+            ("current_link_speed", "pcie_current_link_speed", "Current PCIe link speed", ""),
+            ("current_link_width", "pcie_current_link_width", "Current PCIe link width", "lanes"),
+            ("max_link_speed", "pcie_max_link_speed", "Maximum PCIe link speed", ""),
+            ("max_link_width", "pcie_max_link_width", "Maximum PCIe link width", "lanes"),
+        ):
+            raw = read(os.path.join(dev, key)).strip()
+            if key.endswith("width"):
+                val = int(raw) if raw.isdigit() else None
+            else:
+                val = raw if raw and raw.lower() != "unknown" else None
+            graphics["items"].append({"id": "gpu:" + pci + ":" + suffix, "name": label, "device": cardname,
+                                      "value": val, "unit": unit, "source": "sysfs:" + os.path.join(
+                                          "/sys/class/drm", cardname, "device", key),
+                                      "available": val is not None})
+    if not cards:
+        graphics["items"].append({"id": "gpu:none", "name": "Graphics devices", "value": None, "unit": "",
+                                  "source": "sysfs:/sys/class/drm", "available": False})
+    return {"schema": 1, "groups": groups}
 
 
 def main(a):
@@ -284,6 +554,8 @@ def main(a):
         return startup_set(a[1], a[2] == "on")
     elif a == ["sensors"]:
         print(json.dumps(sensors(), ensure_ascii=False))
+    elif a == ["hardware"]:
+        print(json.dumps(hardware(), ensure_ascii=False))
     elif a[:1] in (["end"], ["kill"]) and len(a) > 1 and all(p.isdigit() for p in a[1:]):
         for pid in a[1:]:
             try:

@@ -14,9 +14,17 @@ ShellRoot {
     readonly property var words: (Quickshell.env("LATTE_APP_ARGS") || "").split("\n").filter(w => w !== "")
     property string page: ""                   // a group's id; "" is the overview
     property var all: null                     // what latte-devices said
+    property var memoryModules: null
+    property string memoryState: "idle"
+    property bool memoryPending: false
+    property int memoryPollAttempts: 0
+    property string memoryRequestId: ""
     readonly property var groups: all ? all.groups : []
     readonly property var here: groups.find(g => g.id === page) || null
     function faults(group) { return group.devices.filter(d => d.state !== "ok").length }
+    function memoryCapacity(bytes) {
+        return typeof bytes === "number" ? (bytes / 1073741824).toFixed(1) + " GB" : I18n.tr("Capacity unavailable")
+    }
     // the three ways a device can be, as words and a colour
     readonly property var states: ({ "ok": { text: QT_TR_NOOP("Works"), color: Theme.ok, icon: "circle-check" },
                                      "no-driver": { text: QT_TR_NOOP("No driver"), color: Theme.red, icon: "circle-x" },
@@ -28,6 +36,95 @@ ShellRoot {
         function ask() { running = false; command = ["latte-devices", "list"]; running = true }
         stdout: StdioCollector { onStreamFinished: asker.buf = this.text }
         onExited: { try { shell.all = JSON.parse(buf) } catch (e) { shell.all = null } }
+    }
+    Process {
+        id: memoryBridge
+        property string buf: ""
+        property string operation: ""
+        function start(op, args) {
+            if (running) return
+            operation = op
+            buf = ""
+            command = ["pleamar", "--say", "polkit", args.join(" ")]
+            running = true
+        }
+        function ask() {
+            if (shell.memoryPending || running) return
+            shell.memoryModules = null
+            shell.memoryState = "loading"
+            shell.memoryPending = true
+            shell.memoryPollAttempts = 0
+            shell.memoryRequestId = String(Math.floor(Math.random() * 16777215) + 1)
+            start("request", ["emit", "memory_request", shell.memoryRequestId])
+        }
+        function poll() { start("poll", ["get", "memory_status"]) }
+        function readResult() { start("result", ["get", "memory_result"]) }
+        stdout: StdioCollector { onStreamFinished: memoryBridge.buf = this.text }
+        onExited: code => {
+            const finished = operation
+            operation = ""
+            if (!shell.memoryPending) return
+            if (code !== 0) {
+                memoryPoll.stop()
+                memoryTimeout.stop()
+                shell.memoryPending = false
+                shell.memoryState = "error"
+                return
+            }
+            if (finished === "request") {
+                memoryTimeout.start()
+                memoryPoll.start()
+                poll()
+                return
+            }
+            if (finished === "poll") {
+                const status = buf.trim().split(":")
+                if (status.length !== 2 || status[0] !== shell.memoryRequestId) {
+                    if (++shell.memoryPollAttempts < 30) return
+                    memoryPoll.stop()
+                    memoryTimeout.stop()
+                    shell.memoryPending = false
+                    shell.memoryState = "error"
+                    return
+                }
+                if (status[1] === "loading") return
+                memoryPoll.stop()
+                memoryTimeout.stop()
+                if (status[1] === "ready") {
+                    readResult()
+                } else {
+                    shell.memoryPending = false
+                    shell.memoryState = "error"
+                }
+                return
+            }
+            if (finished === "result") {
+                try {
+                    const result = JSON.parse(buf)
+                    if (result.schema !== 1 || !Array.isArray(result.modules) ||
+                        result.modules.some(m => typeof m.name !== "string" ||
+                            (m.capacity_bytes !== null && typeof m.capacity_bytes !== "number"))) {
+                        shell.memoryState = "invalid"
+                    } else {
+                        shell.memoryModules = result.modules
+                        shell.memoryState = result.modules.length ? "ready" : "empty"
+                    }
+                } catch (e) {
+                    shell.memoryState = "invalid"
+                }
+                shell.memoryPending = false
+            }
+        }
+    }
+    Timer { id: memoryPoll; interval: 250; repeat: true; onTriggered: memoryBridge.poll() }
+    Timer {
+        id: memoryTimeout
+        interval: 40000
+        onTriggered: {
+            memoryPoll.stop()
+            shell.memoryPending = false
+            shell.memoryState = "error"
+        }
     }
     Component.onCompleted: { asker.ask(); if (words[0]) page = words[0]; asList = words[1] === "list"; asMap = words[1] === "map" }       // latte-app devices inspector list
 
@@ -173,6 +270,50 @@ ShellRoot {
                         Label { anchors.centerIn: parent; visible: hero.wrong > 0; text: hero.wrong; font.pixelSize: 46; font.weight: 800; color: Theme.red } }
                     Label { anchors.right: parent.right; anchors.rightMargin: 24; anchors.bottom: parent.bottom; anchors.bottomMargin: 8; width: 160; horizontalAlignment: Text.AlignHCenter; font.pixelSize: 12
                             color: Theme.dim; text: hero.wrong > 0 ? I18n.tr("need attention") : I18n.tr("Everything works") }
+                }
+                Rectangle {
+                    visible: shell.all !== null
+                    width: over.room; height: memoryColumn.implicitHeight + 32; radius: 20; color: Theme.card
+                    Column { id: memoryColumn; x: 20; y: 16; width: parent.width - 40; spacing: 10
+                        Row { width: parent.width; spacing: 12
+                            Glyph { name: "cpu-2"; font.pixelSize: 20; color: Theme.gold; anchors.verticalCenter: parent.verticalCenter }
+                            Label { text: I18n.tr("Installed memory modules"); font.pixelSize: 16; font.weight: 700
+                                    anchors.verticalCenter: parent.verticalCenter; width: parent.width - readMemory.implicitWidth - 48 }
+                            Pill { id: readMemory; implicitHeight: 34; icon: "shield"; text: I18n.tr("Read memory details")
+                                   busy: shell.memoryPending; onPressed: memoryBridge.ask() } }
+                        Label {
+                            width: parent.width; wrapMode: Text.WordWrap; color: shell.memoryState === "error" || shell.memoryState === "invalid" ? Theme.red : Theme.dim
+                            text: shell.memoryState === "idle" ? I18n.tr("Administrator approval is required. Serial numbers are not read.")
+                                : shell.memoryState === "loading" ? I18n.tr("Reading memory details…")
+                                : shell.memoryState === "ready" ? I18n.tr("Memory details loaded")
+                                : shell.memoryState === "empty" ? I18n.tr("No populated memory slots were reported.")
+                                : shell.memoryState === "error" ? I18n.tr("Memory details were not loaded because authorization was not completed.")
+                                : shell.memoryState === "invalid" ? I18n.tr("Could not read memory details: invalid response.")
+                                : I18n.tr("Could not read memory details.") }
+                        Repeater { model: shell.memoryModules || []
+                            Rectangle { id: memoryRow; required property var modelData; width: memoryColumn.width; height: 62; radius: 14; color: Theme.ground
+                                Column { x: 14; anchors.verticalCenter: parent.verticalCenter; width: parent.width - 28; spacing: 4
+                                    Row { width: parent.width; spacing: 10
+                                        Label { text: memoryRow.modelData.name; font.weight: 700; width: parent.width * 0.4 }
+                                        Label { text: shell.memoryCapacity(memoryRow.modelData.capacity_bytes)
+                                                font.weight: 700; color: Theme.cream }
+                                        Label { text: memoryRow.modelData.memory_type +
+                                                (memoryRow.modelData.form_factor ? " · " + memoryRow.modelData.form_factor : "")
+                                                color: Theme.dim } }
+                                    Label {
+                                        width: parent.width; color: Theme.dim; font.pixelSize: 12
+                                        text: {
+                                            const m = memoryRow.modelData
+                                            const rates = []
+                                            if (m.speed_mt_s) rates.push(m.speed_mt_s + " MT/s")
+                                            if (m.configured_speed_mt_s) rates.push(I18n.tr("Configured {rate} MT/s", { rate: m.configured_speed_mt_s }))
+                                            return [m.bank, rates.join(" · ")].filter(v => v).join("  ·  ")
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
                 // every group as a tile
                 Flow { width: over.room; spacing: 14

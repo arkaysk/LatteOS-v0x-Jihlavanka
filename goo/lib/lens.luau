@@ -90,8 +90,10 @@ local function engine()
     return ENGINES[1]
 end
 -- The card lets go of the keyboard first and the thing starts a moment later: a window that opens while the
--- shell still holds the keyboard does not get it when the shell lets go.
-local function then_do(f) card.close() after(80, f) end
+-- shell still holds the keyboard does not get it when the shell lets go. The finder's field keeps the keyboard
+-- lent 300 ms after the card closes (pleamar's grace for a card that follows), so the start waits it out.
+local LET_GO = 350
+local function then_do(f) card.close() after(LET_GO, f) end
 
 local function launch(a)
     then_do(function() open.app(a) end)
@@ -299,7 +301,7 @@ local function rows_command()
         rows[#rows + 1] = { label = tr("Run in terminal"), line2 = cmd, glyph = "terminal-2", keep = true, run = function() if confirmed(cmd) then run_command(cmd) end end }
         return rows
     end
-    rows[1] = { label = tr("Open terminal"), glyph = "terminal-2", run = function() after(80, open.terminal) end }
+    rows[1] = { label = tr("Open terminal"), glyph = "terminal-2", run = function() after(LET_GO, open.terminal) end }
     for i, c in ipairs(kept.commands) do
         if i == 1 then rows[#rows + 1] = { head = true, label = tr("RECENTLY USED"), line = true } end
         rows[#rows + 1] = { label = c, glyph = "history", keep = true, run = function() if confirmed(c) then run_command(c) end end }

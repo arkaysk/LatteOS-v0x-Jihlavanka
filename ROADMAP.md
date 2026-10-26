@@ -116,7 +116,7 @@ Neskôr: obraz ako Bazzite, rollback.
 
 **1C.01** [ ] (Neskôr) R7 — Atomic/bootc a rollback · r. 1181–1182
 
-**1C.02**  [ ] Fedora Atomic/bootc a systémový rollback zaradiť až po splnení požiadaviek pôvodnej fázy A:
+**1C.02** [ ] Fedora Atomic/bootc a systémový rollback zaradiť až po splnení požiadaviek pôvodnej fázy A:
   stabilné pracovné prúdy, reálny HW, inštalácia, aktualizácia, obnova a testovací proces.
 
 ---
@@ -149,7 +149,7 @@ Barista instalator OS je prva prezentacia baristu ktory bude mat v hotovom syste
 
 **2.04** [ ] (Inštalátor a prvé spustenie) R2 — inštalátor a prihlasovanie · r. 927–930
 
-**2.05** - [ ] Inštalátor: úvodná obrazovka s voľbou AI zapnúť / vypnúť (R3·G). Prihlasovanie: prepnutie do SAFE alebo
+**2.05** [ ] Inštalátor: úvodná obrazovka s voľbou AI zapnúť / vypnúť (R3·G). Prihlasovanie: prepnutie do SAFE alebo
   iného nainštalovaného shellu (KDE, GNOME, čistá Noctalia…); SAFE nesie sadu nástrojov na zistenie, čo sa pokazilo.
 
 ### 2A. [ ] Prvé spustenie
@@ -365,7 +365,7 @@ Zdroje: `bin/latte-session`, `bin/latte-guarddog`, `apps/guarddog.qml`, `system/
 Zdroje: `goo/goo.plm`, `goo/parts/`, `goo/lib/`, `goo/gen.py`; LATTEOS-GOO §3–4, `docs/goo/`
 je primarne HW vykreslovatelny engine simulujuci pravidla pre GooProstredie. gravitaciu, pohyb, efekty...zakladne univerzalne efektove prostredie nad ktorym cele GooProstredie funguje. 
 
-**6.01.** [ ] overit použitelnost pri čisto SW vykreslovanie GooEngine a ake score vykonu pc je nutne na chod pre sw, hw, alebo len safe latteOS. score počitania vykonu-zistit bežne metody. 
+**6.01** [ ] overit použitelnost pri čisto SW vykreslovanie GooEngine a ake score vykonu pc je nutne na chod pre sw, hw, alebo len safe latteOS. score počitania vykonu-zistit bežne metody. 
 
 **6.02** [~] (GooEngine) Fresh d3) GooEngine — úvod · r. 68–72
 [~] **GooEngine** — engine a jadro kvapiek, potom náhrada Noctalie (rohová lišta: tray, sieť, hlasitosť,
@@ -518,6 +518,15 @@ Zdroje: LATTEOS-GOO §4.3
 - [ ] **LensGoo:** samostatne overiť vyhľadávanie a spúšťanie aplikácií/súborov a kvalitu AI
   rozhovoru; dotiahnuť poskytovateľov, vstupy a chybové stavy bez duplikovania všeobecnej práce
   na `latte-ai`.
+
+**6B.05** [x] (23. 10. potvrdené používateľom) Klávesnica po spustení z LensGoo (používateľ 23. 10.: DualBrew spustený cez LensGoo nedostal klávesnicu, „klávesnica má byť vždy tam, kam klikne kurzor“). Príčina podľa kódu: pole hľadača drží klávesnicu ešte 300 ms po zatvorení karty (grace v pleamare), aplikácia sa spúšťala po 80 ms — okno sa otvorilo, kým klávesnica patrila Goo. Opravené: `LET_GO = 350` v `goo/lib/lens.luau`. Druhá časť (používateľ 23. 10.: klik na plochu, potom do poľa DualBrew — písať nejde, až po kliknutí inam v okne a znova do poľa): `AppWindow` pri každom stlačení ľavým tlačidlom dá klávesnicu textovému poľu pod kurzorom (aj o 150 ms neskôr, keď sa okno práve aktivuje) — platí pre všetky aplikácie LatteOS. V bezobrazovkovom sedení sa ani jedna časť nedala spoľahlivo vyvolať (falošná myš a klávesnica strácajú prvú udalosť) — čaká na potvrdenie na skutočnej obrazovke.
+  **23. 10. príčina nájdená a opravená** (zdroj Hyprlandu 0.56, `InputManager.cpp`): vrstva ikon na ploche (`latte-desktop`)
+  chcela klávesnicu „on demand“ stále. Hyprland takej vrstve dá klávesnicu už pri prechode myšou (`rawSurfaceFocus`), a
+  kliknutie do okna ju vráti len vtedy, keď sa mení okno (`focusState()->window() != w`) — po prechode cez plochu a kliknutí
+  späť do toho istého okna išli klávesy ploche. Teraz plocha chce klávesy iba po kliknutí na ňu (na chvíľu výlučne, potom
+  on demand) a kým je nad ňou myš; myš odíde → None → klávesy späť oknu. Overené v sedení bez obrazovky: stará plocha
+  dostala „abcd“ napísané po kliknutí do DualBrew, nová ich nechá DualBrew; prechod myšou nad plochou už nič nevezme;
+  písmená po kliknutí na plochu idú ploche. Podobné hlásenie: ashell #1010 (vrstva Bottom, follow_mouse = 2).
 
 **6B.06** [ ] pisanie do riadku na vyhladavanie v forme výpočtu, zobrazi vysledok s možnostou ho skopirovat do schranky. 
 tiež je sučastou aj prevodnik jednotiek a mien pričom nemosi byt použiti presny formatat a dokaže s apracovat s vágnym zadaním.
@@ -1016,7 +1025,8 @@ su tie dodavane priamo s LatteOS od vydavatelov latteOS
 ### 10A. [~] DualBrew
 Zdroje: `apps/files.qml`, `bin/latte-files`, `apps/common/FileIcons.qml`
 suborovy manager na vzor Total Comander
-**10A.01.** [ ] najdena chyba-ked je aktivna priehladnot a ked sa klikne na položku/složku. ta sa samozrejme označi, ale pri kliknuti inam, sa zmeni jej priehladnot a je vydiet tapetu za aj ked predtým nebola. nevrati sa to na predchodzi vzhlad až do refresh.
+
+**10A.01** [~] (23. 10. opravené: zvýraznenie výberu ako samostatný obdĺžnik, hover cez HoverHandler; čaká na potvrdenie) najdena chyba-ked je aktivna priehladnot a ked sa klikne na položku/složku. ta sa samozrejme označi, ale pri kliknuti inam, sa zmeni jej priehladnot a je vydiet tapetu za aj ked predtým nebola. nevrati sa to na predchodzi vzhlad až do refresh.
 
 **10A.02** [~] (DualBrew (Súbory)) DualBrew · r. 495–498
 - b. [~] **DualBrew** (`latteOS dualbrew.png`; 21. 10. hotové: Dva panely | Jeden panel, čipy jednotiek nad panelom s voľným miestom, súhrn pod panelom, pás tlačidiel medzi panelmi, rad F3–F10, riadok terminálu (Alt+F1), rýchly filter typov; ostáva stĺpec Atribúty (práva), filtre priečinkov nad zoznamom): dvojpanel ako Total Commander (Dvojpanel / 1-panel), jednotky ako
@@ -1039,7 +1049,7 @@ zariadenia, sieťové miesta a cloud bez uzamknutia dát do LatteOS.
 
 **10A.06** [x] (DualBrew (Súbory)) R3·C — základ správcu súborov · r. 989–990
 
-**10A.07** [ ] (DualBrew (Súbory)) R3·C — názov DualBrew · r. 991–993
+**10A.07** [x] (23. 10. overené na webe: žiadny softvér ani projekt na GitHube sa nevolá DualBrew; najbližšie je kávovar BUNN „Dual BrewWISE“ — iný odbor, iné meno. Meno ostáva) (DualBrew (Súbory)) R3·C — názov DualBrew · r. 991–993
 - [ ] **Názov správcu súborov (rozhodnúť):** ak ostane vlastný a obohatený o nápady iných autorov, potrebuje meno.
   Kandidáti autora: Espresso Commander, Tamper, DualBrew. **Vybraný DualBrew (9. 10.)**; pred zavedením skontrolovať kolízie
   s existujúcimi projektmi.
@@ -1048,7 +1058,7 @@ zariadenia, sieťové miesta a cloud bez uzamknutia dát do LatteOS.
 - [ ] Doriešiť otvorené rozšírenia (vlastné stĺpce/pluginy, klávesové skratky a menu) a ergonomické
   medzery podľa používateľských scenárov.
 
-**10A.09** [ ] (DualBrew (Súbory)) R3·C — úložisko, USB, SMB, cloud · r. 997–998
+**10A.09** [~] (23. 10.: telefóny a fotoaparáty cez kábel (gvfs mtp, gphoto2, afc) ako druh Telefón medzi diskami, s vysunutím. Ostáva overiť so skutočným telefónom, SMB a odpojením počas kopírovania) (DualBrew (Súbory)) R3·C — úložisko, USB, SMB, cloud · r. 997–998
 - [ ] Dokončiť integráciu úložiska, USB, SMB/GVFS, telefónov a cloudových miest; pri odpájaní,
   prerušení siete a nedostatku miesta jasne oznámiť stav a zachovať dáta.
 
@@ -1187,9 +1197,84 @@ ich vidí aj okno Otvoriť/Uložiť iných aplikácií. **Opravené:** po každe
 prerušila väzba priečinka a zoznam potom ostal na starom mieste pri prechode inam.
 Overené v headless: informácie o priečinku a o fotke na hladine, pridanie obľúbeného, prechod po operácii.
 
+**10A.23** [x] Tento počítač ako v Nautiluse (yannmasoch/nautilus-my-computer): skupiny Obľúbené priečinky · Systém · V tomto počítači · Sieť s tichým nadpisom, pás zaplnenia na dlaždici disku, aj nepripojené oddiely (klik pripojí). 23. 10.
+
+**10A.24** [x] (23. 10.: v okne užšom ako 1060 px ostanú tlačidlám iba ikony; overené iba v kóde, nie v úzkom okne) Horná lišta sa prispôsobí šírke: v úzkom okne sa tlačidlá zmenšia na samé ikony (s tipom), nič sa nestratí za okrajom.
+
+**10A.25** [x] (23. 10.: tlačidlo jednotky na začiatku cesty s ponukou Tento počítač, jednotky s voľným miestom, / ako skutočná štruktúra; rad čipov zrušený) Jednotky v adrese: namiesto radu čipov „Jednotka: Domov · Celý systém · fedora_data“ jedno tlačidlo na začiatku cesty (ako C:/D: v Prieskumníkovi) — ukazuje jednotku, kde som, a otvorí ponuku všetkých jednotiek s voľným miestom. Uvoľní jeden riadok.
+
+**10A.26** [x] (23. 10.: Jeden/Dva panely je jeden prepínač (zlatý pri dvoch), Nový priečinok z lišty preč, pribudlo ozubené koliesko Nastavení) Horná lišta úspornejšia: Jeden panel / Dva panely ako jedno prepínacie tlačidlo; Nový priečinok preč (je v ponuke pravého tlačidla a F7); Zobraziť ostáva.
+
+**10A.27** [~] (23. 10. hotové: riadok v oboch režimoch, prepínače Príkaz/Hľadať/AI s vlastnou farbou; Hľadať filtruje súbory aj priečinky pri písaní (Ctrl+F), Enter = `latte-files find` (mená, potom obsah; bez skrytých priečinkov), výsledky v paneli, klik ide k súboru; AI = `latte-ai do ÚLOHA --in PRIEČINOK` s vybranými súbormi. Ostáva: náhľad zmien od AI priamo v DualBrew) Riadok dole v oboch režimoch (aj v jednom paneli) s tromi prepínačmi na začiatku, každý mení farbu riadku: **$ Príkaz** (tmavý, ako dnes), **Hľadať** (iná farba; filter v priečinku hneď pri písaní, Enter hľadá aj v podpriečinkoch podľa mena a obsahu — Dolphin Ctrl+F a Ctrl+I), **AI** (svetlejší; úloha pre agenta v tomto priečinku, napr. „premenuj hromadne fotky podľa dátumu“ — cez vrstvu Pomocníkov ako v Omarchy, `latte-ai`, s náhľadom zmien pred vykonaním).
+
+**10A.28** [x] (23. 10. hotové: ponuka pod kolieskom — čo je v bočnom paneli, pohľad, skryté súbory, skutočná štruktúra, klávesy F aj v jednom paneli; pamätá si pohľad, veľkosť ikon, jeden/dva panely (`~/.config/latteos/dualbrew.json`). aj ako celá stránka (koliesko › Všetky nastavenia…): bočný panel, pohľad, stĺpce, správanie — skryté súbory, panel informácií, skutočná štruktúra, overovanie kópií, tlačidlá akcií, klávesy F, dvojklik vyššie) Nastavenia DualBrew (vlastná ponuka, vzor Total Commander): čo je v bočnom paneli (miesta, obľúbené, disky, sieť, filter typov — zapnúť/vypnúť, poradie), predvolený pohľad a triedenie, skryté súbory, skutočná štruktúra, jeden/dva panely pri štarte, stĺpce, potvrdzovanie mazania, správanie dvojkliku, klávesy F. Uložené v `~/.config/latteos/`, každé prostredie svoje.
+
+**10A.29** [x] (23. 10.: Ctrl+L alebo klik na voľné miesto vedľa cesty; ~, relatívna cesta, súbor otvorí priečinok a vyberie ho, smb:// a iné cez gio mount) Písateľná adresa (Ctrl+L alebo klik na voľné miesto v ceste): vložiť `/data/hry`, `~/…` aj `smb://…`, `sftp://…`, Enter ide tam.
+
+**10A.30** [x] (23. 10.: PDF a video v ikonách a dlaždiciach od 48 px, `latte-files thumb` (pdftoppm, ffmpegthumbnailer) do ~/.cache/latteos/thumbs; dokumenty Office ostávajú ikonou) Náhľady v ikonách a dlaždiciach aj pre video, PDF a dokumenty (snímka z videa, prvá strana), nielen obrázky.
+
+**10A.31** [x] (23. 10. hotové: Vlastnosti v ponuke pravého tlačidla a Alt+Enter — kde, veľkosť, položky, časy, vlastník, 9 prepínačov oprávnení (chmod, iba vlastník), Otvára sa v (xdg-mime default), SHA-256 na požiadanie; aj pre viac vybraných — počet, spolu veľkosť, oprávnenia pre všetky (chmod u+x…)) Okno Vlastnosti: veľkosť, dátumy, práva a vlastník so zmenou, „Otvárať vždy v…“, kontrolný súčet (SHA-256).
+
+**10A.32** [x] (23. 10.: F11 alebo koliesko › Panel informácií; vpravo náhľad (obrázok, prvá strana PDF, záber videa, ikona spúšťača) a údaje z `latte-files about`; bez výberu priečinok; zapamätá sa) Panel informácií (ako Dolphin F11): väčší náhľad a údaje o vybranom pri boku panela, zapínateľný.
+
+**10A.33** [x] (23. 10.: koliesko › V bočnom paneli › Strom priečinkov; šípka otvorí, meno ide tam, od Domova alebo od / v skutočnej štruktúre; bočný panel sa posúva) Strom priečinkov v bočnom paneli (Dolphin F7), zapínateľný v Nastaveniach.
+
+**10A.34** [x] (23. 10.: F2 na viacerých alebo Premenovať všetky…; vzor [N] meno, [C] číslo, [D] [T] dátum a čas (EXIF, inak zmena), [E] prípona, nájsť a nahradiť, čísla od; náhľad všetkých mien, chybné červené; `latte-files renames` — jedno Ctrl+Z vráti všetky) Hromadné premenovanie (F2 na viacerých): vzor s číslom, nájsť a nahradiť, dátum z EXIF, náhľad pred vykonaním.
+
+**10A.35** [x] (23. 10.: Num + / Num − vzor (*.jpg; IMG_* — viac cez ;), Num * obráti, aj v ponuke pravého tlačidla › Vybrať) Výber podľa vzoru (`*.jpg`, Num+ / Num−) a obrátenie výberu.
+
+**10A.36** [x] (23. 10.: Nedávne v bočnom paneli (`latte-files recent` z recently-used.xbel), najnovšie hore, čas, klik ide k súboru) Nedávne súbory a priečinky v bočnom paneli (aj „Dnes“, „Včera“) — z `recently-used.xbel`.
+
+**10A.37** [x] (23. 10.: mimo domova v ponuke Upraviť ako správca… (sudoedit v termináli s varovaním) a pri priečinku Terminál tu ako správca…; celé okno nikdy ako správca) Otvoriť ako správca pri systémových súboroch (polkit/pkexec), s jasným varovaním.
+
+**10A.38** [x] (23. 10.: `latte-files git`; v Podrobnostiach „zmenený“/„nový“ za menom, v ikonách bodka, ignorované stlmené) Stav Gitu pri súboroch v repozitári (zmenený, nový, ignorovaný) ako značka pri ikone.
+
+**10A.39** [x] (23. 10.: pravé tlačidlo › Akcie; skripty v ~/.config/latteos/dualbrew/actions s riadkami „# name:“ a „# for:“; recepty LatteOS (zmenšiť obrázky, obrázky do PDF, poslať do telefónu) sa pridajú jedným klikom a samy nič nespustia) Vlastné akcie v ponuke pravého tlačidla (servisné ponuky Dolphinu): skripty v priečinku, napr. Zmenšiť obrázok, Previesť na PDF, Poslať do telefónu (KDE Connect).
+
+**10A.40** [~] (23. 10. hotové: koliesko › Stĺpce v Podrobnostiach — Typ, Veľkosť, Zmenené, Atribúty zapnúť/vypnúť (zapamätá sa). Ostáva: rozmery obrázka, dĺžka videa, interpret, zoskupovanie) Vlastné stĺpce v Podrobnostiach (typ, rozmery obrázka, dĺžka videa, interpret) a zoskupovanie podľa typu alebo dátumu.
+
+**10A.41** [~] (23. 10. hotové: tlačidlo Porovnať medzi panelmi a Shift+F2 — v každom paneli sa vyberie, čo druhá strana nemá alebo má staršie (`latte-files compare`), F5 to skopíruje; jeden vybraný súbor v každom paneli = rozdiel riadok po riadku (diff v termináli). Ostáva: synchronizácia aj podpriečinkov naraz) Porovnanie a synchronizácia priečinkov medzi panelmi, porovnanie dvoch súborov (Total Commander).
+
+**10A.42** [x] (23. 10.: pred kopírovaním a presunom `latte-files clashes`; okno Nechať oboje / Nahradiť (staré do Koša, Ctrl+Z vráti) / Nahradiť staršie / Tieto preskočiť / Zrušiť (LATTE_CONFLICT pre úlohu). Opravené pritom: priečinky sa nedali kopírovať (gio copy nekopíruje rekurzívne) — teraz cp -a / mv -n, aj pri vkladaní) Okno pri zhode mien (Total Commander): Prepísať / Preskočiť / Premenovať / Porovnať / Prepísať staršie, „pre všetky“ — pred kopírovaním a presunom, nie ticho.
+
+**10A.43** [x] (23. 10.: písmená v zozname skočia na prvé meno, ktoré tak začína (aj meno spúšťača); po sekunde sa začína odznova) Rýchle hľadanie písaním v zozname: písmená skočia na prvú zhodu mena (ako Prieskumník a TC).
+
+**10A.44** [~] (23. 10. hotové: dvojklik na zip, 7z, rar, tar… doň vojde ako do priečinka — `latte-files archive` cez archivemount, len na čítanie, cesta ukazuje meno archívu, Vyššie z neho von, kopírovať von ide; s heslom alebo nečitateľný ho otvorí jeho aplikácia; Otestovať archív (7z t). Ostáva: zapisovať do archívu, heslo priamo v DualBrew) Archívy ako priečinky: vojsť do ZIP/7z/tar, kopírovať z neho a do neho, aj s heslom; Test archívu.
+
+**10A.45** [~] (23. 10. hotové: F3 číta súbor priamo v okne — Text (2 MB), Hex (xxd), obrázok; hľadanie v texte (Ctrl+F, Enter ďalší); Esc/F3 zavrie. Ostáva: video a zvuk v Listeri) Lister (F3): vlastný prehliadač textu, hex/binárky, obrázkov a médií v okne, s hľadaním v texte.
+
+**10A.46** [~] (23. 10. hotové: koliesko › Overiť každú kópiu — po skopírovaní sa porovná s originálom (diff -rq); čo sa nepodarilo, povie hladina po úlohe. Ostáva: obmedzenie rýchlosti) Overenie po kopírovaní (SHA-256) a obmedzenie rýchlosti kopírovania ako voľba úlohy.
+
+**10A.47** [~] (23. 10. hotové: v riadku Hľadať tlačidlo s voľbami — väčšie ako 10 MB/100 MB/1 GB, zmenené dnes/týždeň/mesiac/rok, meno ako regulárny výraz; Nájsť rovnaké súbory tu (`latte-files dups`, rovnaký SHA-256, skupiny); výsledky v paneli. Ostáva: atribúty, hľadanie v archívoch, uložené hľadania) Rozšírené hľadanie (k 10A.27): dátum, veľkosť, atribúty, regex, v archívoch, duplikáty, výsledky do panela, uložené hľadania.
+
+**10A.48** [x] (23. 10.: Ctrl+B alebo pravé tlačidlo › Všetky súbory nižšie v jednom zozname (`latte-files flat`, 3000 najviac), Ctrl+B znova zavrie) Plochý pohľad (TC Ctrl+B): všetky súbory zo všetkých podpriečinkov v jednom zozname.
+
+**10A.49** [x] (23. 10.: ↑/↓ v riadku Príkaz idú históriou (50, zapamätá sa), Ctrl+Enter vloží mená vybraných, Ctrl+P celé cesty, správne v úvodzovkách) Príkazový riadok naplno: história (šípka hore), Ctrl+Enter vloží meno vybraného, Ctrl+P cestu.
+
+**10A.50** [x] (23. 10.: Ctrl+U vymení panely, Alt+↓ ukáže, kde bol panel (aj v ponuke pravého tlačidla)) Vymeniť panely (Ctrl+U) a história priečinkov (Alt+↓, ponuka na šípke Späť).
+
+**10A.51** [x] (23. 10.: pravé tlačidlo › Vytvoriť súbor kontrolných súčtov (SHA-256) — NAME.sha256 vedľa súborov (`latte-files sums`); na .sha256/.sha512/.sha1/.md5 › Overiť kontrolné súčty v termináli) Kontrolné súčty pre výber: vytvoriť `.sha256` a overiť existujúci (stiahnuté ISO).
+
+**10A.52** [x] (23. 10.: pravé tlačidlo › Rozdeliť na časti… (MB, predvolene 4000 pre FAT32) a na .000 › Spojiť časti; ako úlohy s priebehom na hladine, Ctrl+Z vráti) Rozdeliť / spojiť súbor na kúsky (napr. na FAT32 kľúč).
+
+**10A.53** [x] (23. 10.: vo Vlastnostiach (aj pre viac vybraných) Zmeniť dátum — vlastný čas alebo Teraz (`latte-files touch`); atribúty pre všetky už v 10A.31) Zmena dátumu (touch) a atribútov pre celý výber.
+
+**10A.54** [x] (23. 10.: stĺpec Typ, klik na hlavičku triedi podľa prípony) Triedenie podľa prípony (stĺpec Typ).
+
+**10A.55** [x] (23. 10.: koliesko › Tlačidlá mojich akcií nad panelmi — každá akcia z 10A.39 ako tlačidlo pre vybrané (stlmené, keď nesedí)) Vlastný panel tlačidiel s vlastnými príkazmi (spustí skript s vybranými súbormi).
+
+**10A.56** [x] (23. 10.: pravé tlačidlo › Vybrať › Zapamätať tento výber / Obnoviť zapamätaný výber (podľa mien, aj v inom priečinku); Kopírovať mená pri viacerých) Uložiť a načítať výber, kopírovať zoznam mien do schránky alebo súboru.
+
+**10A.57** [ ] Pluginy (ako WCX/WLX/WFX/WDX v TC) — neskôr, väčšinu pokryjú vlastné akcie (10A.39).
+
+**10A.58** [x] Spúšťače (.desktop) v priečinku ukazujú svoje meno a obrázok ako na ploche (`latte-desktop entries`), napr. „Aliens versus Predator 2“ namiesto latteos-avp2.desktop. 23. 10.
+
+(Karty ako v Dolphine sa nerobia — používateľ 23. 10.: dva panely stačia.)
+
 ### 10B. [~] LensAI
 Zdroje: `bin/latte-ai`, `apps/aicenter.qml`, `system/ai/`, `system/agents/`, `inspo/ai-na-ploche.md`
 je centralne zastrešenie všetkych použitelnych AI. Je totalna kopia Omarchy Ai využitia, len s tým že sa použiva namiesto konzoloveho, graficke rozhranie. LensGoo ma jednu z položiek komunikačne okno s Ai. 
+
 **10B.01** [ ] dizajn okna. biela plocha okna je sice identicka s originalom ale navrhujem čiastočnu priehladnost. ta biela na tmavom je priliš ostrá.
 
 **10B.02** [x] (LensAI) režim AI v LensGoo · r. 189–189
@@ -1380,7 +1465,8 @@ je zakladny textovy editor, s neobvyklo širokou ponukou formatou ktore prečít
 ### 10D. [~] LatteMonitor
 Zdroje: `apps/monitor.qml`, `bin/latte-monitor`, `crates/latte-stats`; LATTEOS-GOO §6.2·1
 je monitor prostriedkov presne ako ctrl+alt+del z windows 11(jeho kopia) ale zaroven ponuka presne skopirovanu funkčnost z CpuZ a z HWinfo. Prebera informacie z GuardDog aj Dev a Net manager. spravuje aj výstup pre aplikacie-napr externy dashboard čitajuci vytaženie CPU, RAM, farebnost led na zaklade zvuku, atd.
-**10D.01.** [ ] zrealizovat funkčnost
+
+**10D.01** [ ] zrealizovat funkčnost
 
 **10D.02** [x] (Monitor) Monitor · r. 139–145
 [x] **Monitor** (13. 10.): `apps/monitor.qml` + `bin/latte-monitor` (a `latte-stats`). Prehľad (procesor
@@ -1414,17 +1500,63 @@ nepriehľadných privilegovaných služieb.
 - [ ] Nové akcie pre služby musia zachovať vysvetlenie pôvodu, oprávnení a vratnosť.
 
 **10D.09** [ ] (Monitor) R3·D — Správca úloh, Autoruns, HWiNFO · r. 1016–1017
-- [ ] Monitor spája Správcu úloh Windows 11, Autoruns, HWiNFO a CPU-Z; BetterWindowsServices je inšpirácia na
-  prieskum (správa služieb), nie prijatá úloha.
+- [ ] Monitor spája Správcu úloh Windows 11 a Autoruns s obsahovo porovnateľnými údajmi CPU-Z/HWiNFO:
+  podrobnosti CPU, dosky, pamäte, grafiky a senzorov v čitateľnej podobe, použiteľné aj pre externé
+  displeje a nástroje. BetterWindowsServices je inšpirácia na prieskum (správa služieb), nie prijatá úloha.
 
 **10D.10** [ ] (Monitor) R3·D — inventár a bezpečnostné nástroje · r. 1018–1020
 - [ ] Rozhodnúť, ktoré inventárne alebo bezpečnostné schopnosti poskytne existujúci `latte-hw`,
   Monitor, Inšpektor siete a Barista. Nástroje typu osquery, Velociraptor, Zeek či Suricata
   nepridávať ako základné služby bez preukázanej potreby a výslovného modelu súhlasu.
+- [~] 23. 10.: hardvérový inventár môže na root-only polia použiť Device Manager spustený na
+  požiadanie a autorizovaný polkitom; samotný Monitor ostáva bez root práv. Živá telemetria
+  senzorov nevyžaduje privilegovaný démon. Zvyšné schopnosti sa rozhodnú osobitne.
 
 **10D.11** [ ] (Monitor) R3·D — diagnostické záznamy · r. 1021–1024
 - [ ] Zjednotiť diagnostické záznamy a export podpory tak, aby používateľ vedel skontrolovať,
   čo export obsahuje; citlivé údaje neodosielať automaticky.
+
+**10D.12** [x] (Monitor) Živý výstup senzorov pre Stream Deck
+- [x] 23. 10.: `latte-monitor watch` poskytuje verziovaný JSONL (`schema: 1`, čas vzorky, stabilné
+  ID senzorov, názvy, hodnoty, jednotky a zdroje) pre lokálne dashboardy a Stream Deck. Bez siete
+  a privilegovaného démona; senzor, ktorý systém nehlási, sa nevymýšľa.
+
+**10D.13** [~] (Monitor) Hardvér ako v CPU-Z/HWiNFO
+- [~] 23. 10.: prvý inventár v `latte-monitor hardware` — CPU a frekvenčné politiky, RAM a moduly,
+  ak ich EDAC hlási, doska/BIOS z DMI, GPU a dostupné ovládače, využitie, VRAM a frekvencie.
+  Každý údaj nesie zdroj a stav dostupnosti; čítanie bez oprávnení, bez sériových čísel.
+- [~] 23. 10.: doplnené architektúra a režimy CPU, topológia, cache vrátane geometrie, inštrukčné
+  príznaky a frekvenčné údaje z `lscpu`/sysfs; chipsety z PCI, GPU model a PCI revízia/subsystém,
+  PCIe rýchlosť/šírka linky, zdieľaná pamäť a stavy jadrových/pamäťových hodín. Chybné generické
+  DMI mená sa označia ako nedostupné.
+- [x] 23. 10.: dohodnutá hranica oprávnení — bežný Monitor ostane bez root práv; root-only polia,
+  napríklad SMBIOS DIMM, môže na požiadanie poskytnúť Device Manager cez polkit. Bez stáleho
+  privilegovaného démona a bez sériových čísel.
+- [x] 23. 10.: `latte-devices protected-memory` spúšťa cez `pkexec` samostatný read-only helper
+  pre SMBIOS Type 17; vráti slot, kapacitu, typ a takty, nikdy sériové číslo. Helper nepodporuje
+  argumenty ani iné čítanie. CLI aj voliteľná karta v Správcovi zariadení ho spúšťajú až po kliknutí;
+  odmietnutie polkitom sa zobrazí ako stav.
+- [~] 23. 10.: požiadavka sa viaže na SSH reláciu, preto karta sama nestačí. Správca zariadení ju
+  odovzdá Pleamar agentovi spustenému compositorom v grafickej relácii; ten spustí iba pevne daný
+  read-only príkaz a vráti výstup cez Pleamar IPC. Zdroj upravený, čaká na živé overenie po nasadení.
+- [ ] Overiť a rozšíriť pokrytie ďalších CPU/GPU vlastností a napojiť root-only inventár na
+  Monitor bez toho, aby sa celý Monitor spúšťal ako root. Na latte-lab EDAC nevystavuje DIMM moduly
+  a SMBIOS záznamy DIMM sú čitateľné iba ako root.
+- [ ] Až potom dokončiť GUI. Má spĺňať 3E — estetické, efektívne a ergonomické: prehľadné skupiny,
+  dôležité údaje na prvý pohľad, detaily bez zahltenia a jasný pôvod/dostupnosť každej hodnoty.
+  GUI sa zatiaľ nemení; po dokončení zberu overiť, že stránka funguje v okne Monitora.
+
+**10D.14** [ ] (Monitor) Vysvetlenie záťaže a bezpečné kroky
+- [ ] Pri vysokej spotrebe vysvetliť, ktorá aplikácia alebo súčasť ju spôsobuje, z akých údajov to
+  vyplýva a čo možno bezpečne urobiť; uvádzať neistotu a pôvod merania, neponúkať iba „Ukončiť“.
+
+**10D.15** [ ] (Monitor) História spotreby podľa aplikácie
+- [ ] Voliteľná dlhodobá telemetria CPU, RAM, GPU, energie, siete a disku podľa aplikácie; jasný
+  súhlas, nastaviteľné uchovávanie a vymazanie, oddelenie meraných údajov od odhadov.
+
+**10D.16** [ ] (Monitor) Výstupy pre dashboardy a zvukové LED
+- [ ] Rozšíriť lokálny výstup na výber údajov a bezpečné použitie ďalšími aplikáciami; zvuková
+  reaktivita a ovládanie LED sú samostatne zapínateľné, bez automatického odosielania dát.
 
 ### 10E. [~] DeviceManager
 Zdroje: `apps/devices.qml`, `bin/latte-devices`

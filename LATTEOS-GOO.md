@@ -441,6 +441,27 @@ výšky obrazovky (rovina „klesne“ zo stredu), pod ňou tretina obrazovky k�
   s tým, čo to je, odkiaľ to je a koľko pridalo k štartu. Vypnúť a zasa zapnúť sa dá iba to, čo je používateľovo
   vlastné; systémové sa iba ukazuje.
 - **Senzory:** teploty, ventilátory, napätia a príkon po čipoch.
+- **Hardvér:** podrobnosti v rozsahu CPU-Z/HWiNFO — CPU, doska a BIOS, pamäťové moduly, GPU,
+  ovládače, frekvencie a dostupné senzory; údaje majú čitateľné názvy, jednotky a pôvod. Zber
+  hardvérových údajov sa najprv doplní a overí; až potom sa dokončí GUI podľa 3E: estetické,
+  efektívne a ergonomické, s prehľadom aj detailmi bez zahltenia. Prvý inventár číta DMI, `/proc`
+  a sysfs bez oprávnení; pamäťové moduly ukáže, ak ich jadro sprístupní cez EDAC, a nepodporované
+  údaje označí ako nedostupné. Inventár už zahŕňa topológiu a geometriu cache CPU, príznaky
+  inštrukcií, chipset a podrobnejšie PCI/GPU údaje vrátane PCIe linky. Ak sú ďalšie polia dostupné
+  iba ako root (napríklad SMBIOS DIMM), môže ich na požiadanie sprístupniť Device Manager cez polkit;
+  `latte-devices protected-memory` už poskytuje úzky read-only CLI most pre slot, kapacitu, typ
+  a takty pamäťových modulov, bez sériových čísel. Správca zariadení žiadosť odovzdá Pleamar
+  agentovi spustenému compositorom v grafickej relácii; ten spustí pevne daný read-only príkaz,
+  aby sa aj požiadavka `pkexec` priradila k viditeľnej relácii. Výsledok sa vráti cez Pleamar IPC,
+  nie cez root oprávnenia v aplikácii. LatteOS karta ukáže požadovanú akciu, heslo a povolenie/
+  zrušenie; okno Monitora ostáva bez root práv. SMBIOS DIMM
+  na latte-lab nie je čitateľný bez root oprávnení.
+- **Výstup pre aplikácie:** živé hodnoty v stabilnom, verziovanom JSONL formáte pre Stream Deck a
+  dashboardy; iba lokálne čítanie, bez privilegovaného démona či sieťového odosielania.
+- **Vysvetlenie a história:** Monitor ukáže, ktorá aplikácia zaťažuje systém a prečo; dlhodobá
+  história podľa aplikácie je voliteľná, s jasným súhlasom a možnosťou nastaviť uchovávanie a zmazať ju.
+- **Zvukové LED:** samostatná voliteľná funkcia, ktorá poskytne ďalším aplikáciám údaje na reakciu
+  LED na zvuk.
 
 ### 6.2·2 Nastavenia (Fresh, 13. 10.)
 `apps/settings.qml`, Win+I, PowerGoo › Nastavenia › Všetky nastavenia. Jedno miesto na všetko, čo sa dá nastaviť,
@@ -577,7 +598,7 @@ nemá (AI je hľadanie, Financie a Sociálne sú podkategórie Flathubu).
   Šípka (aj Win+A) vysunie **panel až po horný okraj**: Wi-Fi a Bluetooth, hlasitosť a jas, siete, zariadenia,
   výstupy zvuku a **schránka** — čo sa naposledy skopírovalo (uchováva `cliphist`), klik to skopíruje znova.
   Hodiny v ňom nie sú, ostávajú v ClockGoo. Na ďalších monitoroch Pobrežie nie je.
-- **Okno s heslom** (polkit): keď program žiada práva správcu, scéna je agentom relácie a pýta heslo kartou.
+- **Okno s heslom** (polkit): samostatná scéna spustená compositorom je agentom grafickej relácie. Citlivú požiadavku môže spustiť iba po prijatí úzkeho requestu cez Pleamar IPC; jej výsledok sa vráti volajúcej aplikácii. Goo karta ukáže dôvod, vybranú akciu, heslo a povolenie/zrušenie; kliknutie mimo nej ju nezruší, zavrieť ju možno tlačidlom Zrušiť alebo klávesom Escape.
 - **Nastavenia Goo** (PowerGoo › Nastavenia): karta — ktoré kvapky sú na ploche, vrátiť kvapky na miesto, materiál
   (káva / sklenená káva), živé správanie, druh kávy, tapeta, režim okien. Zmena platí hneď. Veľké Nastavenia LatteOS
   (aplikácia) ešte nie sú.

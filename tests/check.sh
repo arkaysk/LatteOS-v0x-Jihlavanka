@@ -26,7 +26,9 @@ rm -f "$built"
 stage="$(mktemp -d)"
 ./install --go --root "$stage" > "$stage.log" 2>&1 || { cat "$stage.log"; echo "install --root failed"; exit 1; }
 grep -q "could not be found" "$stage.log" && { cat "$stage.log"; exit 1; }
-[ -x "$stage/usr/bin/latte-session" ] && [ -f "$stage/usr/share/latteos/goo/goo.plm" ] || { echo "install: the staged tree is not whole"; exit 1; }
+[ -x "$stage/usr/bin/latte-session" ] && [ -x "$stage/usr/libexec/latte-hw-memory" ] &&
+    [ -x "$stage/usr/libexec/latte-polkit-agent" ] &&
+    [ -f "$stage/usr/share/latteos/goo/goo.plm" ] || { echo "install: the staged tree is not whole"; exit 1; }
 ./install --remove --purge --root "$stage" > /dev/null
 left="$(find "$stage" -type f | head -5)"; [ -z "$left" ] || { echo "install --remove left: $left"; exit 1; }
 rm -rf "$stage" "$stage.log"

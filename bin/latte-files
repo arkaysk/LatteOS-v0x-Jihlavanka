@@ -1,10 +1,10 @@
 #!/bin/sh
-# latte-files: what DualBrew (apps/files.qml) asks of the system. Files are moved by gio, which knows the Trash
-# and never writes over a file of the same name without keeping the old one.
+# latte-files: what DualBrew (apps/files.qml) asks of the system. Files are copied and moved whole, folders too;
+# nothing is ever written over: a name already taken gets a free one beside it, or the old one goes to the Trash.
 #
 #   latte-files places                the user's folders and the drives, a line each: KIND, a tab, PATH, a tab, NAME,
 #                                     a tab, DEVICE (KIND: home desktop documents download pictures music videos trash;
-#                                     disk usb card optical image network cloud), and for a mounted drive a tab, USED,
+#                                     disk usb card optical image phone network cloud), and for a mounted drive a tab, USED,
 #                                     a tab, TOTAL (bytes). A drive with no PATH is not mounted yet
 #   latte-files disks                 every disk as KDE's Partition Manager shows it, as JSON: [{"name", "path", "model",
 #                                     "size", "tran", "removable", "table", "parts": [{"name", "path", "fstype", "label",
@@ -16,15 +16,38 @@
 #   latte-files pin DIR / unpin DIR   a favourite folder (GTK's bookmarks) more or less
 #   latte-files about FILE            what there is to know of it, a line each, KEY, a tab, VALUE: items and size of a
 #                                     folder; size of a picture, the camera and when it was taken; length of a video
+#   latte-files props FILE            what about says, and for Properties: mode (octal), owner, group, read and born (unix
+#                                     time, 0 when not known), mime, opener (the app that opens it), mine (1 when it is the user's)
+#   latte-files touch WHEN FILE…      when they were changed, set by hand (WHEN as `date -d` reads it: now, 2026-10-23 14:30)
+#   latte-files chmod MODE FILE…      what may be done with them;  default APP.desktop MIME   the app that opens that kind
+#   latte-files sum FILE              its SHA-256;  sums FILE…   a NAME.sha256 beside them that `sha256sum -c` checks
 #   latte-files tag COLOUR FILE…      a colour on them (red orange yellow green blue purple grey, or "" for none), in
 #                                     user.xdg.tags next to the file: Dolphin sees it too;  tags DIR   FILE, a tab, COLOUR
 #   latte-files job extract|zip|7z DIR FILE…   archives, as a job: unpacked into DIR (one folder for many things),
 #                                     or packed into DIR/NAME.zip / .7z (NAME: the first file's, or the folder's)
 #   latte-files cloud add google|onedrive|dropbox NAME   a cloud through rclone: the browser asks for the account
-#   latte-files copy|move|link DIR FILE…    into that folder
+#   latte-files copy|move|link DIR FILE…    into that folder (folders too, whole); a name already there is decided by
+#                                     LATTE_CONFLICT (both: a free name beside it, the default; replace; older; skip)
+#   latte-files clashes DIR FILE…     which of the names are already in DIR
 #   latte-files trash FILE…           to the Trash;  latte-files empty   empties it
 #   latte-files folder DIR NAME       a new folder (NAME (2) … when the name is taken);  file DIR NAME   an empty file
 #   latte-files rename FILE NAME      another name in the same folder
+#   latte-files renames FILE NAME…    many at once, each in its own folder (one Ctrl+Z takes all back); a name already
+#                                     there is left alone
+#   latte-files recent                what was opened lately (recently-used.xbel, as every app keeps it), the newest first,
+#                                     what is still there: PATH, a tab, when (unix time); 200 at most
+#   latte-files git DIR               in a Git repository, how each thing right in DIR stands: NAME, a tab, changed | new |
+#                                     ignored (a folder: the most of what is inside); nothing outside a repository
+#   latte-files actions               the user's own actions for a file's menu (~/.config/latteos/dualbrew/actions): PATH,
+#                                     a tab, NAME, a tab, the patterns it is FOR (from its "# name:" and "# for:" lines);
+#                                     recipes   the same for LatteOS's recipes, which do nothing until added
+#   latte-files action-add RECIPE     a recipe made the user's own action (a copy, theirs to change)
+#   latte-files compare DIR DIR       the two folders side by side, as the commander's Compare: "left" or "right", a tab,
+#                                     PATH for what that side has and the other lacks or has older (2 s of slack, as FAT
+#                                     keeps time); "same", a tab, how many are the same
+#   latte-files archive FILE          an archive (zip, 7z, rar, tar…) as a folder, only to read: mounted with archivemount
+#                                     where the session keeps its own (gone at logout), once; says where
+#   latte-files dates FILE…           when each was taken (EXIF) or else last changed: PATH, a tab, YYYY-MM-DD, a tab, HH-MM-SS
 #   latte-files clip copy|cut FILE…   onto the clipboard, as file managers keep files there
 #   latte-files paste DIR             what is on the clipboard, into that folder
 #   latte-files size FILE…            how much they hold, in bytes
@@ -32,10 +55,20 @@
 #                                     was made (copied, linked, a new folder) goes to the Trash, what went to the Trash
 #                                     comes back from it. Every command that changes something writes how to undo it
 #                                     to ~/.local/state/latteos/files-undo, so the desktop and every window share it
+#   latte-files thumb FILE            a small picture of a PDF's first page or of a video (256 px), kept in
+#                                     ~/.cache/latteos/thumbs while the file is unchanged; says where it is
 #   latte-files look FILE OUT         a picture of a PDF's first page or a frame of a video, into OUT (a .png)
 #   latte-files job copy|move|auto DIR FILE…   the same as copy and move, saying how far it is, a line at a time:
 #                                     "total BYTES", then "file NAME" and "done BYTES" while it goes; auto moves on the
-#                                     same disk and copies to another, as a drag does on Windows
+#                                     same disk and copies to another, as a drag does on Windows; "failed NAME" for what did not
+#                                     arrive. LATTE_VERIFY=1: each copy is read back and compared with what it came from
+#   latte-files job split MB FILE     FILE in pieces of MB megabytes beside it (FILE.000, FILE.001…);  job join - FILE.000
+#                                     the pieces into one file again
+#   latte-files find DIR TEXT [--bigger MB] [--days N] [--regex]   everything below DIR whose name holds TEXT ("name", a tab, PATH; 500 at most), then
+#                                     the files that hold it as text ("text", a tab, PATH; 300 at most, none over 20 MB);
+#                                     case is not minded, hidden folders are left out
+#   latte-files flat DIR              every file below DIR: "flat", a tab, PATH (hidden folders left out; 3000 at most)
+#   latte-files dups DIR              the same files below DIR (same SHA-256): "dup", a tab, GROUP, a tab, PATH
 #   latte-files tree DIR              how much everything in that folder holds, three levels deep: first "disk", a tab,
 #                                     the disk's SIZE, a tab, what is FREE; "dir", a tab, PATH for every folder; then a line
 #                                     each as du gets there, BYTES, a tab, PATH
@@ -48,6 +81,20 @@ free_name() {   # DIR NAME: that name, or the first "NAME (n)" nothing has yet
 # how to undo what this run does: lines of ID, KIND (moved, made, trashed), WHERE IT WAS, WHERE IT IS
 log="${XDG_STATE_HOME:-$HOME/.local/state}/latteos/files-undo"; id="$(date +%s%N)"
 did() { mkdir -p "$(dirname "$log")"; printf '%s\t%s\t%s\t%s\n' "$id" "$1" "$2" "${3:-}" >> "$log"; }
+# SRC DIR: where SRC goes in DIR. When the name is taken there, by $LATTE_CONFLICT: both (a free name beside it, the
+# default: nothing is lost), replace (the one there goes to the Trash), older (replaced only when it is older), skip.
+# Nothing printed: skipped.
+aim() {
+    t="$2/$(basename -- "$1")"
+    { [ -e "$t" ] || [ -L "$t" ]; } || { printf '%s' "$t"; return; }
+    [ "$t" -ef "$1" ] && { free_name "$2" "$(basename -- "$1")"; return; }        # onto itself: a copy beside it
+    case "${LATTE_CONFLICT:-both}" in
+    skip)    return ;;
+    older)   [ "$1" -nt "$t" ] || return; gio trash -- "$t" && did trashed "$t" && printf '%s' "$t" ;;
+    replace) gio trash -- "$t" && did trashed "$t" && printf '%s' "$t" ;;
+    *)       free_name "$2" "$(basename -- "$1")" ;;
+    esac
+}
 what="${1:-}"; [ $# -gt 0 ] && shift
 case "$what" in
 places)
@@ -74,7 +121,7 @@ for top in json.loads(lsblk or '{"blockdevices": []}')["blockdevices"]:
         mp = n.get("mountpoint") or ""
         if mp == "[SWAP]" or mp.startswith("/boot") or mp in ("/home", "/var") or n["type"] in ("crypt", "lvm") and not mp: continue
         if not n.get("fstype") and kind != "optical": continue          # no file system: nothing to open
-        if kind in ("disk", "image") and not mp: continue               # the system's own, not mounted: not on the way
+        if not mp and (kind == "image" or n["fstype"] in ("swap", "crypto_LUKS", "LVM2_member", "linux_raid_member")): continue   # not a place to open; other disks, not mounted, stay: the tile mounts them
         used = total = ""
         if mp:
             try:
@@ -89,6 +136,7 @@ for e in sorted(os.listdir(gvfs)) if os.path.isdir(gvfs) else []:
     how, _, rest = e.partition(":"); f = dict(x.split("=", 1) for x in rest.split(",") if "=" in x)
     f = {k: urllib.parse.unquote(v) for k, v in f.items()}
     if how == "google-drive": out("cloud", f"{gvfs}/{e}", "Google Drive · " + f.get("user", "") + "@" + f.get("host", ""), "")
+    elif how in ("mtp", "gphoto2", "afc"): out("phone", f"{gvfs}/{e}", f.get("host", e).replace("_", " "), "")     # a phone or a camera by its cable
     else: out("network", f"{gvfs}/{e}", (f.get("share", "") + " · " if f.get("share") else "") + f.get("server", f.get("host", e)), "")
 # the user's favourite folders: GTK's bookmarks, which every app's Open and Save see too
 marks = os.path.join(os.environ.get("XDG_CONFIG_HOME") or os.path.expanduser("~/.config"), "gtk-3.0/bookmarks")
@@ -185,6 +233,18 @@ about)  f="$1"; stat --printf 'when\t%Y\n' -- "$f" 2>/dev/null; [ -d "$f" ] || s
                              $1 == "width" && $2 != "N/A" { w = $2 } $1 == "height" && $2 != "N/A" && w { printf "pixels\t%s × %s\n", w, $2; w = "" }' ;;
             esac
         fi ;;
+props)  f="$1"; "$0" about "$f"
+        stat --printf 'mode\t%a\nowner\t%U\ngroup\t%G\nread\t%X\nborn\t%W\n' -- "$f" 2>/dev/null
+        m="$(file --mime-type -b -- "$f" 2>/dev/null)"; printf 'mime\t%s\n' "$m"
+        [ -d "$f" ] || printf 'opener\t%s\n' "$(xdg-mime query default "$m" 2>/dev/null)"
+        if [ -O "$f" ]; then printf 'mine\t1\n'; else printf 'mine\t0\n'; fi ;;
+chmod)  m="$1"; shift; chmod -- "$m" "$@" ;;
+touch)  w="$1"; shift; touch -d "$w" -- "$@" ;;
+default) xdg-mime default "$1" "$2" ;;
+sum)    sha256sum -- "$1" | cut -d' ' -f1 ;;
+sums)   d="$(dirname -- "$1")"; n="$(basename -- "$1")"; [ $# -gt 1 ] && n="$(basename -- "$d")"
+        t="$(free_name "$d" "$n.sha256")"
+        ( cd "$d" && for f in "$@"; do [ -f "$f" ] && sha256sum -- "$(basename -- "$f")"; done ) > "$t" && did made "$t" ;;
 tag)    c="$1"; shift
         for f in "$@"; do if [ -n "$c" ]; then setfattr -n user.xdg.tags -v "$c" -- "$f"; else setfattr -x user.xdg.tags -- "$f" 2>/dev/null; fi; done ;;
 tags)   getfattr -h -m '^user\.xdg\.tags$' -d --absolute-names -- "$1"/* "$1"/.[!.]* 2>/dev/null |
@@ -192,8 +252,9 @@ tags)   getfattr -h -m '^user\.xdg\.tags$' -d --absolute-names -- "$1"/* "$1"/.[
 cloud)  [ "$1" = add ] || exit 2
         case "$2" in google) t=drive ;; onedrive) t=onedrive ;; dropbox) t=dropbox ;; *) exit 2 ;; esac
         rclone config create "$3" "$t" && "$0" mount "rclone:$3" ;;
-copy)   d="$1"; shift; for f in "$@"; do gio copy --backup -- "$f" "$d/" && did made "$d/$(basename -- "$f")"; done ;;
-move)   d="$1"; shift; for f in "$@"; do gio move --backup -- "$f" "$d/" && did moved "$f" "$d/$(basename -- "$f")"; done ;;
+copy)   d="$1"; shift; for f in "$@"; do t="$(aim "$f" "$d")"; [ -n "$t" ] && cp -a -- "$f" "$t" && did made "$t"; done ;;
+move)   d="$1"; shift; for f in "$@"; do t="$(aim "$f" "$d")"; [ -n "$t" ] && mv -n -- "$f" "$t" && did moved "$f" "$t"; done ;;
+clashes) d="$1"; shift; for f in "$@"; do n="$(basename -- "$f")"; { [ -e "$d/$n" ] || [ -L "$d/$n" ]; } && ! [ "$d/$n" -ef "$f" ] && printf '%s\n' "$n"; done ;;
 link)   d="$1"; shift; for f in "$@"; do t="$(free_name "$d" "$(basename "$f")")"; ln -s -- "$f" "$t" && did made "$t"; done ;;
 trash)  for f in "$@"; do gio trash -- "$f" && did trashed "$f"; done ;;
 empty)  gio trash --empty ;;
@@ -201,17 +262,120 @@ folder) t="$(free_name "$1" "$2")"; mkdir -- "$t" && did made "$t" ;;
 file)   t="$(free_name "$1" "$2")"; : > "$t" && did made "$t" ;;
 rename) case "$2" in */*|"") exit 2 ;; esac
         t="$(dirname "$1")/$2"; [ -e "$t" ] && exit 1; mv -n -- "$1" "$t" && did moved "$1" "$t" ;;
+renames) while [ $# -ge 2 ]; do
+            case "$2" in */*|"") ;; *) t="$(dirname "$1")/$2"; [ -e "$t" ] || { mv -n -- "$1" "$t" && did moved "$1" "$t"; } ;; esac
+            shift 2
+        done ;;
+recent) python3 -I - "${XDG_DATA_HOME:-$HOME/.local/share}/recently-used.xbel" <<'PY'
+import datetime, os, sys, urllib.parse, xml.etree.ElementTree as ET
+try:
+    marks = ET.parse(sys.argv[1]).getroot().iter("bookmark")
+except (OSError, ET.ParseError):
+    marks = []
+seen = []
+for b in marks:
+    href = b.get("href", "")
+    if not href.startswith("file://"):
+        continue
+    path = urllib.parse.unquote(href[7:])
+    when = max(b.get(k, "") for k in ("added", "modified", "visited"))
+    try:
+        t = datetime.datetime.fromisoformat(when.replace("Z", "+00:00")).timestamp()
+    except ValueError:
+        t = 0
+    if os.path.exists(path):
+        seen.append((t, path))
+for t, path in sorted(seen, reverse=True)[:200]:
+    print(f"{path}\t{int(t)}")
+PY
+        ;;
+git)    git -C "$1" rev-parse --is-inside-work-tree >/dev/null 2>&1 || exit 0
+        # the paths come from the top of the repository: what is above DIR is cut off
+        git -C "$1" status --porcelain=v1 -z --ignored=matching --untracked-files=all -- . 2>/dev/null | python3 -I -c '
+import sys
+rank = {"ignored": 0, "new": 1, "changed": 2}
+out = {}
+for e in sys.stdin.buffer.read().decode(errors="replace").split("\0"):
+    if len(e) < 4:
+        continue
+    code, path = e[:2], e[3:]
+    if not path.startswith(sys.argv[1]):
+        continue
+    path = path[len(sys.argv[1]):]
+    state = "ignored" if code == "!!" else "new" if code == "??" else "changed"
+    name = path.split("/")[0]
+    if rank[state] >= rank.get(out.get(name, "ignored"), 0) or name not in out:
+        out[name] = state
+for n, st in out.items():
+    print(n.rstrip("/") + "\t" + st)
+' "$(git -C "$1" rev-parse --show-prefix)" ;;
+actions|recipes)
+        if [ "$what" = actions ]; then d="${XDG_CONFIG_HOME:-$HOME/.config}/latteos/dualbrew/actions"; else d="${LATTE_SHARE:-/usr/share/latteos}/dualbrew/recipes"; fi
+        for f in "$d"/*; do
+            [ -f "$f" ] || continue
+            printf '%s\t%s\t%s\n' "$f" "$(sed -n 's/^# name: *//p' "$f" | head -n1)" "$(sed -n 's/^# for: *//p' "$f" | head -n1)"
+        done ;;
+action-add)
+        d="${XDG_CONFIG_HOME:-$HOME/.config}/latteos/dualbrew/actions"; mkdir -p "$d"
+        [ -e "$d/$(basename "$1")" ] || cp -- "$1" "$d/" ;;
+compare) python3 -I - "$1" "$2" <<'PY'
+import os, sys
+def look(d):
+    out = {}
+    with os.scandir(d) as it:
+        for e in it:
+            try:
+                st = e.stat()
+                out[e.name] = (e.is_dir(), st.st_mtime, st.st_size)
+            except OSError:
+                pass
+    return out
+a, b = look(sys.argv[1]), look(sys.argv[2])
+same = 0
+for side, mine, theirs, root in (("left", a, b, sys.argv[1]), ("right", b, a, sys.argv[2])):
+    for name, (isdir, t, size) in mine.items():
+        o = theirs.get(name)
+        if o is None or (not isdir and not o[0] and t > o[1] + 2):
+            print(f"{side}\t{os.path.join(root, name)}")
+        elif side == "left" and (isdir or (abs(t - o[1]) <= 2 and size == o[2])):
+            same += 1
+print(f"same\t{same}")
+PY
+        ;;
+archive) d="${XDG_RUNTIME_DIR:-/tmp}/latteos/archives/$(printf '%s' "$1" | md5sum | cut -c1-16)"
+        mountpoint -q "$d" || { mkdir -p "$d" && archivemount -o readonly "$1" "$d" >/dev/null 2>&1; }      # no --: archivemount takes it for an option; the path is absolute || exit 1
+        echo "$d" ;;
+dates)  for f in "$@"; do
+            d="$(exiv2 -q -Pv -g Exif.Photo.DateTimeOriginal -- "$f" 2>/dev/null | head -n1)"
+            [ -n "$d" ] || d="$(date -r "$f" '+%Y:%m:%d %H:%M:%S' 2>/dev/null)"
+            printf '%s\t%s\t%s\n' "$f" "$(printf '%s' "$d" | cut -c1-10 | tr : -)" "$(printf '%s' "$d" | cut -c12-19 | tr : -)"
+        done ;;
 clip)   mode="$1"; shift
         { echo "$mode"; for f in "$@"; do printf 'file://%s\n' "$f"; done; } | wl-copy -t x-special/gnome-copied-files ;;
 paste)  c="$(wl-paste -t x-special/gnome-copied-files 2>/dev/null)" || c="$(wl-paste -t text/uri-list 2>/dev/null)" || exit 0
         mode="$(printf '%s\n' "$c" | head -n1)"
         printf '%s\n' "$c" | grep '^file://' | while IFS= read -r u; do
             f="$(printf '%b' "$(printf '%s' "${u#file://}" | sed 's/%/\\x/g')")"
-            if [ "$mode" = cut ]; then gio move --backup -- "$u" "$1/" && did moved "$f" "$1/$(basename -- "$f")"
-            else gio copy --backup -- "$u" "$1/" && did made "$1/$(basename -- "$f")"; fi
+            t="$(aim "$f" "$1")"; [ -n "$t" ] || continue
+            if [ "$mode" = cut ]; then mv -n -- "$f" "$t" && did moved "$f" "$t"
+            else cp -a -- "$f" "$t" && did made "$t"; fi
         done ;;
 job)    how="$1"; d="$2"; shift 2
-        case "$how" in extract|zip|7z)
+        case "$how" in split|join)
+            # split: FILE into pieces of DIR megabytes beside it (FILE.000, .001…); join: FILE.000 and its next ones into one
+            f="$1"; base="${f%.000}"
+            if [ "$how" = split ]; then total="$(stat -c %s -- "$f")"; out="$f."; split -b "${d}M" -d -a 3 -- "$f" "$out" & pid=$!
+            else total="$(cat -- "$base".[0-9][0-9][0-9] | wc -c)"; out="$(free_name "$(dirname -- "$base")" "$(basename -- "$base")")"
+                 cat -- "$base".[0-9][0-9][0-9] > "$out" & pid=$!; fi
+            echo "total $total"; echo "file $(basename -- "$f")"
+            trap 'kill "$pid" 2>/dev/null; exit 1' TERM
+            while kill -0 "$pid" 2>/dev/null; do
+                if [ "$how" = split ]; then echo "done $(cat -- "$out"[0-9][0-9][0-9] 2>/dev/null | wc -c)"; else echo "done $(stat -c %s -- "$out" 2>/dev/null)"; fi; sleep 0.4
+            done
+            if wait "$pid"; then if [ "$how" = split ]; then for p in "$out"[0-9][0-9][0-9]; do did made "$p"; done; else did made "$out"; fi
+            else echo "failed $(basename -- "$f")"; fi
+            echo "done $total"; exit 0 ;;
+        extract|zip|7z)
             # how far: what has arrived so far against what the archives hold (or the files weigh)
             if [ "$how" = extract ]; then total=0
                 for f in "$@"; do n="$(7z l -slt -- "$f" 2>/dev/null | awk '/^Size = /{ s += $3 } END { print s + 0 }')"; total=$((total + n)); done
@@ -249,15 +413,18 @@ job)    how="$1"; d="$2"; shift 2
             name="$(basename -- "$f")"; echo "file $name"
             size="$(du -sb -- "$f" 2>/dev/null | cut -f1)"
             way="$how"; [ "$how" = auto ] && { [ "$(stat -c %d -- "$f")" = "$on" ] && way=move || way=copy; }
-            # stopped half way, a copy that did not exist before is taken away again: no half files left behind
-            fresh=1; [ -e "$d/$name" ] && fresh=0
-            trap 'kill "$pid" 2>/dev/null; [ "$fresh" = 1 ] && [ "$way" = copy ] && rm -rf -- "$d/$name"; exit 1' TERM
-            gio "$way" --backup -- "$f" "$d/" & pid=$!
+            t="$(aim "$f" "$d")"
+            if [ -z "$t" ]; then before=$((before + ${size:-0})); echo "done $before"; continue; fi
+            # the target is always new (a taken name was moved aside or left): stopped half way, a half copy is taken away
+            trap 'kill "$pid" 2>/dev/null; [ "$way" = copy ] && rm -rf -- "$t"; exit 1' TERM
+            if [ "$way" = move ]; then mv -n -- "$f" "$t" & pid=$!; else cp -a -- "$f" "$t" & pid=$!; fi
             # how far: what has arrived so far; a move on the same disk is done at once
             while kill -0 "$pid" 2>/dev/null; do
-                now="$(du -sb -- "$d/$name" 2>/dev/null | cut -f1)"; echo "done $((before + ${now:-0}))"; sleep 0.4
+                now="$(du -sb -- "$t" 2>/dev/null | cut -f1)"; echo "done $((before + ${now:-0}))"; sleep 0.4
             done
-            if wait "$pid"; then if [ "$way" = move ]; then did moved "$f" "$d/$name"; else did made "$d/$name"; fi
+            if wait "$pid"; then if [ "$way" = move ]; then did moved "$f" "$t"; else did made "$t"; fi
+                # LATTE_VERIFY=1: a copy is read back and compared with what it came from, byte by byte
+                if [ "${LATTE_VERIFY:-}" = 1 ] && [ "$way" = copy ]; then diff -rq -- "$f" "$t" >/dev/null 2>&1 || echo "failed $name"; fi
             else echo "failed $name"; fi
             before=$((before + ${size:-0})); echo "done $before"
         done ;;
@@ -289,10 +456,59 @@ PY
             esac
         done
         grep -v "^$last	" "$log" | tail -n 400 > "$log.new"; mv -- "$log.new" "$log" ;;
+thumb)  f="$1"; m="$(stat -c %Y -- "$f" 2>/dev/null)" || exit 1
+        d="${XDG_CACHE_HOME:-$HOME/.cache}/latteos/thumbs"; mkdir -p "$d"
+        t="$d/$(printf '%s\t%s' "$f" "$m" | md5sum | cut -c1-32).png"
+        [ -s "$t" ] || case "$(printf '%s' "${f##*.}" | tr 'A-Z' 'a-z')" in
+            pdf) pdftoppm -png -scale-to 256 -f 1 -l 1 -singlefile -- "$f" "${t%.png}" 2>/dev/null ;;
+            *)   ffmpegthumbnailer -i "$f" -o "$t" -s 256 -t 20% 2>/dev/null ;;
+        esac
+        [ -s "$t" ] && echo "$t" ;;
 look)   case "$(printf '%s' "${1##*.}" | tr 'A-Z' 'a-z')" in
         pdf) pdftoppm -png -r 110 -f 1 -l 1 -singlefile -- "$1" "${2%.png}" ;;
         *)   ffmpegthumbnailer -i "$1" -o "$2" -s 1280 -t 20% ;;
         esac ;;
+find)   # hidden folders (.cache, .local, .git…) and node_modules are left out: what one looks for is not there.
+        # After DIR and TEXT, narrowing: --bigger MB, --days N (changed within the last N days), --regex (TEXT is one,
+        # for names; then the files' text is not looked through)
+        dir="$1"; text="$2"; shift 2; bigger=""; days=""; regex=""
+        while [ $# -gt 0 ]; do case "$1" in --bigger) bigger="$2"; shift ;; --days) days="$2"; shift ;; --regex) regex=1 ;; esac; shift; done
+        if [ -n "$regex" ]; then match="-iregex"; pat=".*/$text"; else match="-iname"; pat="*$text*"; fi
+        find "$dir" -mindepth 1 -xdev \( -name '.*' -o -name node_modules \) -prune -o $match "$pat" \
+            ${bigger:+-size +${bigger}M} ${days:+-mtime -$days} -print 2>/dev/null | head -n 500 | sed -u 's/^/name\t/'
+        [ -n "$regex" ] || [ -z "$text" ] && exit 0
+        find "$dir" -mindepth 1 -xdev \( -name '.*' -o -name node_modules \) -prune -o -type f -size -20M ${days:+-mtime -$days} -print0 2>/dev/null |
+            xargs -0 -r grep -IlsiF --line-buffered -- "$text" 2>/dev/null | head -n 300 | sed -u 's/^/text\t/' ;;
+flat)   # every file below DIR in one list, as the commander's Ctrl+B (hidden folders left out); 3000 at most
+        find "$1" -mindepth 1 -xdev \( -name '.*' -o -name node_modules \) -prune -o -type f -print 2>/dev/null | head -n 3000 | sed -u 's/^/flat\t/' ;;
+dups)   # the same files under DIR: of the same size first, then the same SHA-256; "dup", a tab, GROUP, a tab, PATH
+        find "$1" -mindepth 1 -xdev \( -name '.*' -o -name node_modules \) -prune -o -type f -size +0 -printf '%s\t%p\n' 2>/dev/null |
+            python3 -I -c '
+import collections, hashlib, sys
+by = collections.defaultdict(list)
+for l in sys.stdin:
+    size, path = l.rstrip("\n").split("\t", 1)
+    by[size].append(path)
+group = 0
+for size, paths in sorted(by.items(), key=lambda kv: -int(kv[0])):
+    if len(paths) < 2:
+        continue
+    sums = collections.defaultdict(list)
+    for p in paths:
+        h = hashlib.sha256()
+        try:
+            with open(p, "rb") as f:
+                for chunk in iter(lambda: f.read(1 << 20), b""):
+                    h.update(chunk)
+        except OSError:
+            continue
+        sums[h.hexdigest()].append(p)
+    for same in sums.values():
+        if len(same) > 1:
+            group += 1
+            for p in same:
+                print(f"dup\t{group}\t{p}", flush=True)
+' ;;
 size)   du -sbc -- "$@" 2>/dev/null | tail -n1 | cut -f1 ;;
 *)      sed -n '2,15p' "$0" | sed 's/^# \{0,1\}//' >&2; exit 2 ;;
 esac

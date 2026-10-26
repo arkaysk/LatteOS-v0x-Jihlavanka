@@ -1,0 +1,78 @@
+language 0.4
+import "lang/sk.plm"
+
+scene Polkit {
+    surface {
+        size: full, full
+        anchor: top
+        margin: 0
+        level: overlay
+        reserve: -1
+        rate: 30
+        keyboard: exclusive while pending
+        captures: hidden
+    }
+    permissions {
+        run: "latte-devices"
+        services: "polkit", "polkit.*"
+    }
+
+    let W = screen.width
+    let H = screen.height
+    fact pending = false
+    fact asking = false
+    fact wrong = false
+    fact details = false
+    fact has_user = false
+    fact has_info = false
+    event authorize ->
+    event dismiss ->
+    event details ->
+    event memory_request ->
+    text message = ""
+    text action = ""
+    text user = ""
+    text prompt = ""
+    text info = ""
+    text password = ""
+    text details_label = "Show details"
+    text memory_status = ""
+    text memory_result = ""
+
+    on key Escape while pending { emit dismiss }
+    on submit password { emit authorize }
+    on change asking while asking { focus password }
+
+    box { from: 0, 0; size: W, H; color: #000000; opacity: 35%; show: pending }
+    zone box backdrop_guard { from: 0, 0; size: W, H; active: pending; agent: hidden }
+
+    box { at: W / 2, H / 2; size: 560, 400; corner: 22; color: #2c2019; show: pending }
+    box { at: W / 2, H / 2 - 170; size: 560, 60; corner: 22; color: #a96f3d; show: pending }
+    text "Administrator approval needed" { at: W / 2 - 248, H / 2 - 170; anchor: left center; width: 496; size: 19; weight: 700; color: #fff4e6; show: pending }
+    text "{message}" { at: W / 2 - 248, H / 2 - 112; anchor: left top; width: 496; size: 15; lines: 3; color: #f3ebdd; show: pending }
+    text "{user}" { at: W / 2 - 248, H / 2 - 52; anchor: left center; width: 496; size: 13; color: #c9a47a; show: pending and has_user }
+
+    text "{prompt}" { at: W / 2 - 248, H / 2 - 16; anchor: left center; width: 496; size: 13; color: #b8a491; show: pending and asking }
+    box { at: W / 2, H / 2 + 28; size: 504, 44; corner: 10; color: #1c120d; show: pending and asking }
+    zone box password_hit { at: W / 2, H / 2 + 28; size: 504, 44; active: pending and asking; label: "Administrator password"; role: button; agent: no }
+    on press password_hit { focus password }
+    input password { at: W / 2 - 232, H / 2 + 28; width: 464; size: 16; color: #f3ebdd; selection: #694b37; placeholder: "Administrator password"; secret: true; show: pending and asking }
+
+    text "Wrong password" { at: W / 2 - 248, H / 2 + 70; anchor: left center; width: 496; size: 13; color: #ff8a80; show: pending and wrong }
+    text "{info}" { at: W / 2 - 248, H / 2 + 70; anchor: left center; width: 496; size: 13; color: #c9a47a; show: pending and not wrong and has_info }
+    text "{action}" { at: W / 2 - 248, H / 2 + 110; anchor: left center; width: 496; size: 12; color: #b8a491; show: pending and details }
+
+    zone box details_hit { at: W / 2 - 180, H / 2 + 150; size: 140, 32; active: pending; cursor: pointer; label: "Show details"; role: button }
+    on press details_hit { emit details }
+    text "{details_label}" { at: W / 2 - 248, H / 2 + 150; anchor: left center; size: 12; color: #c9a47a; show: pending }
+
+    box { at: W / 2 + 128, H / 2 + 150; size: 168, 40; corner: 10; color: #68452c; show: pending }
+    zone box cancel_hit { at: W / 2 + 128, H / 2 + 150; size: 168, 40; active: pending; cursor: pointer; label: "Cancel"; role: button }
+    on press cancel_hit { emit dismiss }
+    text "Cancel" { at: W / 2 + 128, H / 2 + 150; anchor: center; size: 14; weight: 600; color: #f3ebdd; show: pending }
+
+    box { at: W / 2 - 72, H / 2 + 150; size: 168, 40; corner: 10; color: #c98a55; opacity: if(asking, 1, 0.45); show: pending }
+    zone box authorize_hit { at: W / 2 - 72, H / 2 + 150; size: 168, 40; active: pending and asking; cursor: pointer; label: "Authorize"; role: button; agent: no }
+    on press authorize_hit { emit authorize }
+    text "Authorize" { at: W / 2 - 72, H / 2 + 150; anchor: center; size: 14; weight: 700; color: #25170f; show: pending }
+}

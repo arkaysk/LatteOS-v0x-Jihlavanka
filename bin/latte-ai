@@ -40,8 +40,9 @@ No API key: the official tool of a service answers, with the account the user is
                             "asked"}], "stats": {"week", "today", "model", "busiest", "prompts", "sessions"}}
   latte-ai skill install|reset|path   LatteOS's skill for the agents (Claude Code, Codex, Gemini): the user's copy in
                             ~/.config/latteos/skills/latteos, linked into each agent's skills; reset brings back LatteOS's own
-  latte-ai do TASK [AGENT]  "Do it for me": the agent (claude, chatgpt = Codex, gemini; else the chosen one) on the task in
-                            a terminal, planning first with LatteOS's skill and changing nothing until the user says yes
+  latte-ai do TASK [AGENT] [--in DIR]  "Do it for me": the agent (claude, chatgpt = Codex, gemini; else the chosen one) on
+                            the task in a terminal (in DIR, else home), planning first with LatteOS's skill and changing
+                            nothing until the user says yes
   latte-ai doer AGENT       the agent "Do it for me" and crashes go to (~/.config/latteos/agent); none is picked for the user
   latte-ai modules          what of LensAI is downloaded, for Settings › AI: {"ai", "services": [{"id", "name",
                             "installed"}], "local": {"runtime", "models"}, "voice"}
@@ -1016,7 +1017,7 @@ def doers():
     return sorted(there, key=lambda i: i != chosen)
 
 
-def do(task, who=""):
+def do(task, who="", where=""):
     """Starts the agent on the task in a terminal; who: one of DOERS, else the chosen one."""
     can = doers()
     who = who if who in can else (can[0] if can else "")
@@ -1024,7 +1025,7 @@ def do(task, who=""):
         return {"ok": False, "agent": ""}
     argv = DOERS[who]["argv"](first_words() + task) if task.strip() else DOERS[who]["argv"]("")[:-1]
     argv[0] = shutil.which(argv[0], path=SEARCH) or argv[0]
-    subprocess.Popen(["foot", "--title", DOERS[who]["name"], "--working-directory", os.path.expanduser("~"), "--"] + argv,
+    subprocess.Popen(["foot", "--title", DOERS[who]["name"], "--working-directory", where if os.path.isdir(where) else os.path.expanduser("~"), "--"] + argv,
                      start_new_session=True, stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
                      env=dict(os.environ, PATH=SEARCH))
     return {"ok": True, "agent": who}
@@ -1777,13 +1778,16 @@ def main(a):
         r = why()
         print(json.dumps(r))
         return 0 if r["ok"] else 1
+    where = ""
+    if a and a[0] == "do" and len(a) >= 4 and a[-2] == "--in":
+        where, a = a[-1], a[:-2]
     if len(a) in (2, 3) and a[0] == "do":
         # no agent chosen and none named: the choice first, as Omarchy brings up its picker
         if len(a) == 2 and chosen(AGENT_WORD) not in doers():
             subprocess.Popen(["latte-app", "aicenter", "helpers"], start_new_session=True)
             print(json.dumps({"ok": False, "choose": True}))
             return 1
-        r = do(a[1], a[2] if len(a) == 3 else "")
+        r = do(a[1], a[2] if len(a) == 3 else "", where)
         print(json.dumps(r))
         return 0 if r["ok"] else 1
     if len(a) == 2 and a[0] == "doer" and a[1] in DOERS:

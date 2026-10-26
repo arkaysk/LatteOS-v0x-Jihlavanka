@@ -4,12 +4,14 @@
   latte-devices list      {"computer": {…}, "groups": [{"id", "name", "icon", "devices": [{"name", "detail", "driver",
                           "state", "note"}]}], "findings": [{"level", "text", "fix"}], "faults": N}
   latte-devices faults    N alone: how many devices need attention
+  latte-devices protected-memory  SMBIOS memory modules, after administrator authentication
 
 A device is in one group, by what it does: a USB keyboard is an input device, a USB disk a disk. `state` is "ok",
 "no-driver" (the system has nothing that drives it) or "firmware" (its driver asked for a file that is missing);
 `faults` counts those two. A device that is in no other group and has no driver is listed under "other": nothing
 is left out because it is unknown. `findings` is what latte-boot says about this computer as a whole.
-Everything is read from the system as the user: nothing here asks for a password or changes anything.
+The regular inventory is read as the user. `protected-memory` asks polkit to run a fixed, read-only helper;
+it returns memory capacity, slot, type and speed only, never SMBIOS serial numbers.
 """
 import glob
 import json
@@ -179,6 +181,29 @@ def findings():
     return [{"level": f.get("level", "info"), "text": f.get("text", ""), "fix": f.get("fix", "")} for f in told.get("platform", {}).get("finding", [])]
 
 
+def protected_memory():
+    try:
+        result = subprocess.run(["/usr/bin/pkexec", "/usr/libexec/latte-hw-memory"], capture_output=True,
+                                text=True, timeout=30)
+    except (OSError, subprocess.TimeoutExpired) as error:
+        print("latte-devices: protected memory inventory failed: " + str(error), file=sys.stderr)
+        return 1
+    if result.returncode:
+        print(result.stderr.strip() or "latte-devices: protected memory inventory was not authorized",
+              file=sys.stderr)
+        return result.returncode
+    try:
+        data = json.loads(result.stdout)
+    except json.JSONDecodeError as error:
+        print("latte-devices: invalid protected inventory output: " + str(error), file=sys.stderr)
+        return 1
+    if not isinstance(data, dict) or data.get("schema") != 1 or not isinstance(data.get("modules"), list):
+        print("latte-devices: invalid protected inventory schema", file=sys.stderr)
+        return 1
+    print(json.dumps(data, ensure_ascii=False))
+    return 0
+
+
 def no_firmware():
     """The drivers that asked for a firmware file this boot and did not get it, as the kernel's log has it."""
     log = out("journalctl", "-k", "-b", "--no-pager", "-q", "-g", "firmware.*(failed|error)", timeout=8)
@@ -224,6 +249,8 @@ def main(a):
         print(json.dumps(everything(), ensure_ascii=False))
     elif a == ["faults"]:
         print(everything()["faults"])
+    elif a == ["protected-memory"]:
+        return protected_memory()
     else:
         print(__doc__.strip())
         return 2

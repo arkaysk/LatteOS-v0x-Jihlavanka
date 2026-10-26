@@ -252,7 +252,16 @@ ShellRoot {
         exclusionMode: ExclusionMode.Normal        // the bar's band stays the bar's: no icon under it
         WlrLayershell.layer: WlrLayer.Bottom
         WlrLayershell.namespace: "latte-desktop"
-        WlrLayershell.keyboardFocus: WlrKeyboardFocus.OnDemand     // the keys only once the desktop was pressed
+        // The keys only once the desktop was pressed, and only while the pointer stays on it. Hyprland gives an
+        // "on demand" layer the keyboard as soon as the pointer passes over it, and a press on the window that had it
+        // before does not take it back (the window did not change): asked for all the time, the desktop took every
+        // window's keys when the mouse crossed the wallpaper. Let go, Hyprland gives them back to that window.
+        // A press asks for them at once (exclusive: Hyprland gives an "on demand" layer the keys only on the next
+        // move of the pointer), then a moment later only on demand, so a press on a window takes them again.
+        WlrLayershell.keyboardFocus: desk.renaming !== "" || (win.pressed && deskHover.hovered) ? (grabbing.running ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.OnDemand) : WlrKeyboardFocus.None
+        property bool pressed: false
+        onPressedChanged: if (pressed) grabbing.restart()
+        Timer { id: grabbing; interval: 150 }
         color: "transparent"
         onHeightChanged: desk.rows = Math.max(1, Math.floor((height - 24) / desk.cellH))
         Connections { target: desk; function onCellHChanged() { desk.rows = Math.max(1, Math.floor((win.height - 24) / desk.cellH)) } }
@@ -261,6 +270,10 @@ ShellRoot {
             id: root
             anchors.fill: parent
             focus: true
+            HoverHandler { id: deskHover; onHoveredChanged: if (!hovered) win.pressed = false }
+            // any press on the desktop, an icon's too, asks for the keys (above): watched from above everything, let through
+            Item { anchors.fill: parent; z: 10000
+                PointHandler { onActiveChanged: if (active) { win.pressed = true; grabbing.restart() } } }
             Keys.onPressed: (ev) => {
                 if (desk.renaming !== "") return
                 const ctrl = ev.modifiers & Qt.ControlModifier, one = desk.picked().length === 1 ? desk.picked()[0] : ""

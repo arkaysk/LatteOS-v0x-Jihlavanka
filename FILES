@@ -41,6 +41,8 @@
 /usr/libexec/os-session-select                          <- system/libexec/os-session-select
 /usr/libexec/latte-idle                                 <- system/libexec/latte-idle
 /usr/libexec/latte-netd                                 <- system/libexec/latte-netd
+/usr/libexec/latte-hw-memory                            <- system/libexec/latte-hw-memory
+/usr/libexec/latte-polkit-agent                         <- system/libexec/latte-polkit-agent
 /usr/share/latteos/session-env.sh                       <- system/session-env.sh
 /usr/share/latteos/FILES                                <- FILES
 /usr/share/latteos/goo/login.plm                        <- goo/login.plm
@@ -60,9 +62,14 @@
 /usr/share/latteos/goo/lang/sk-dates.json               <- goo/lang/sk-dates.json
 /usr/share/latteos/goo/goo.plm                          <- goo/goo.plm
 /usr/share/latteos/goo/goo.luau                         <- goo/goo.luau
+/usr/share/latteos/goo/polkit.plm                      <- goo/polkit.plm
+/usr/share/latteos/goo/polkit.luau                     <- goo/polkit.luau
 /usr/share/latteos/goo/side.plm                         <- goo/side.plm
 /usr/share/latteos/goo/side.luau                        <- goo/side.luau
 /usr/share/latteos/apps/aicenter.qml                    <- apps/aicenter.qml
+/usr/share/latteos/dualbrew/recipes/smaller-picture.sh  <- system/dualbrew/recipes/smaller-picture.sh
+/usr/share/latteos/dualbrew/recipes/pictures-to-pdf.sh  <- system/dualbrew/recipes/pictures-to-pdf.sh
+/usr/share/latteos/dualbrew/recipes/send-to-phone.sh    <- system/dualbrew/recipes/send-to-phone.sh
 /usr/share/latteos/apps/guarddog.qml                    <- apps/guarddog.qml
 /usr/share/latteos/apps/calendar.qml                    <- apps/calendar.qml
 /usr/share/latteos/apps/appmanager.qml                  <- apps/appmanager.qml
@@ -276,6 +283,7 @@ optional: mise                                                       # the AI se
 optional: pipewire-utils                                             # pw-record: the microphone of LensGoo's AI field
 optional ~/.local/share/latteos/ai or /data/ai: whisper.cpp (built from github.com/ggml-org/whisper.cpp v1.9.5 into whisper-src/build-vk with Vulkan, or build) and whisper/ggml-large-v3-turbo-q5_0.bin or ggml-small.bin: speech to text for the microphone
 optional ~/.local/share/latteos/ai or /data/ai: llama.cpp (github.com/ggml-org/llama.cpp releases, llama/*/llama-server) and models/*.gguf (Qwen3.5 2B and 4B): the AI on this computer
+optional: archivemount ffmpegthumbnailer poppler-utils exiv2 ImageMagick bsdtar 7zip   # DualBrew: archives opened as folders, pictures of videos and PDFs, when a photo was taken, the recipes
 optional: yaru-icon-theme                                             # the icons files, folders and apps are shown with; others installed are offered in the Settings
 optional /usr/bin/skwd-wall-v2: skwd-wall (github.com/liixini/skwd-wall; Fedora: dnf copr enable piixini/skwd-wall-v2, then skwd-wall-v2): the wallpaper picker, transitions, scenes, and the colours of the theme "from the wallpaper"
 optional /usr/bin/whyd: whyd (github.com/vmaltarello/whyd, the rpm of its releases): SAFE then says why the last session ended, from the journal
