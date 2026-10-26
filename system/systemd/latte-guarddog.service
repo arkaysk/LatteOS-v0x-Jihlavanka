@@ -5,9 +5,16 @@ Description=LatteOS GuardDog
 PartOf=latte-session.target
 After=latte-session.target latte-goo.service
 
+# a stop or a crash brings it back at once, and it is never given up on (a deliberate stop of the unit still stops it)
+StartLimitIntervalSec=0
+
 [Service]
 ExecStart=/usr/bin/latte-guarddog watch
 # what the guard started again is the session's, not the guard's: it stays when the guard is stopped or restarted
 KillMode=process
-Restart=on-failure
-RestartSec=2
+Restart=always
+RestartSec=1
+# a guard that is stopped (kill -STOP), frozen or stuck stops saying it is alive: systemd kills it and it starts again
+WatchdogSec=30
+WatchdogSignal=SIGKILL
+NotifyAccess=main

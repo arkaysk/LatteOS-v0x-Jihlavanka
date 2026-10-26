@@ -1,0 +1,12 @@
+# DogHouse: the root's watch over GuardDog, which a program of the user's could stop (system/libexec/latte-doghouse).
+# latte-doghouse.timer starts it once a minute; it asks the user's systemd to put GuardDog back, and changes nothing else.
+[Unit]
+Description=LatteOS DogHouse
+
+[Service]
+Type=oneshot
+ExecStart=/usr/libexec/latte-doghouse
+ProtectSystem=strict
+ReadWritePaths=/var/lib/latteos
+PrivateTmp=true
+NoNewPrivileges=true

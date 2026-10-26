@@ -5,9 +5,12 @@ Description=LatteOS Goo on %i
 PartOf=latte-session.target
 After=latte-goo.service
 
+# a stop or a crash brings it back at once, and it is never given up on (a deliberate stop of the unit still stops it)
+StartLimitIntervalSec=0
+
 [Service]
 Environment=PLEAMAR_GENERIC=window
 Environment=LATTE_GOO_SCREEN=%i
 ExecStart=/usr/bin/pleamar --scene /usr/share/latteos/goo/side.plm --no-hud --screen %i
-Restart=on-failure
+Restart=always
 RestartSec=1

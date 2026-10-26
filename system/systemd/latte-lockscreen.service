@@ -6,6 +6,9 @@ Description=LatteOS lock screen
 PartOf=latte-session.target
 After=latte-session.target
 
+# a stop or a crash brings it back at once, and it is never given up on (a deliberate stop of the unit still stops it)
+StartLimitIntervalSec=0
+
 [Service]
 ExecStart=/usr/bin/pleamar --scene /usr/share/latteos/goo/lockscreen.plm --no-hud
 Restart=always

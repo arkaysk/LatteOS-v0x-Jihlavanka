@@ -204,7 +204,7 @@ return function(opts)
     every(60000, fill)           -- the news, the battery and the sky move on
     every(30000, show_date)
     if LOCK then
-        on("lock_now", function()
+        local function lock_now()
             if fact.locked then return end
             fact.locked = true
             note(true)
@@ -213,11 +213,13 @@ return function(opts)
             fill()
             show_date()
             after(60, function() emit("intro") end)
-        end)
+        end
+        on("lock_now", lock_now)
         -- A lock screen that died while it held the lock leaves the session locked, on purpose: the one started in
-        -- its place (GuardDog, systemd) takes the lock up again.
+        -- its place (GuardDog, systemd) takes the lock up again. Called, not emitted: the logic's own emit goes to the scene,
+        -- not to its own handlers, so the lock was never taken up (found 26. 10. by killing the user's systemd).
         local found, kept = pcall(sys.ask, "files.read", "lock.json", "json")
-        if found and type(kept) == "table" and kept.locked == true then emit("lock_now") end
+        if found and type(kept) == "table" and kept.locked == true then lock_now() end
         log("login · the lock screen")
         return
     end

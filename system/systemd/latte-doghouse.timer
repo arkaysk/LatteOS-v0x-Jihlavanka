@@ -1,0 +1,11 @@
+# Once a minute, from two minutes after the start: DogHouse looks that GuardDog is there (latte-doghouse.service).
+[Unit]
+Description=LatteOS DogHouse, once a minute
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=1min
+AccuracySec=5s
+
+[Install]
+WantedBy=timers.target

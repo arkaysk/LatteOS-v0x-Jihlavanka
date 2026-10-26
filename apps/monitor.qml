@@ -51,6 +51,22 @@ ShellRoot {
     Ask { id: sense }
     Process { id: doer; onExited: starts.ask(["startup"]) }
     function act(args) { doer.running = false; doer.command = ["latte-monitor"].concat(args); doer.running = true }
+    // the user's programs GuardDog keeps running (bin/latte-guarddog keep): asked for while the processes are shown
+    property var kept: []
+    Process { id: keptq; command: ["latte-guarddog", "keep"]
+              stdout: StdioCollector { onStreamFinished: { try { shell.kept = JSON.parse(this.text).map(k => k.name) } catch (e) {} } } }
+    Timer { interval: 5000; repeat: true; running: shell.page === "processes"; triggeredOnStart: true; onTriggered: keptq.running = true }
+    Process { id: keeper; onExited: keptq.running = true }
+    // the right button on a program, as the Task Manager has it
+    function lineMenu(what, canEnd, x, y) {
+        const keep = shell.kept.includes(what.name)
+        const rows = []
+        if (what.owner === "user")
+            rows.push({ icon: "shield-check", text: I18n.tr("Keep running (GuardDog)"), checked: keep,
+                        run: () => { keeper.command = ["latte-guarddog", "keep"].concat(keep ? [what.name, "off"] : [String(what.pids[0])]); keeper.running = true } })
+        if (canEnd) rows.push({ icon: "x", text: I18n.tr("End"), danger: true, run: () => shell.act(["end"].concat(what.pids.map(String))) })
+        if (rows.length) menu.open(x, y, rows)
+    }
     Timer { interval: 3000; repeat: true; running: shell.page === "sensors"; triggeredOnStart: true; onTriggered: sense.ask(["sensors"]) }
     onPageChanged: if (page === "startup" && !starts.data) starts.ask(["startup"])
     Component.onCompleted: if (pages.some(p => p.id === words[0])) page = words[0]
@@ -93,7 +109,10 @@ ShellRoot {
         property bool canEnd: true
         height: 46; radius: 12; color: lineHit.hovered ? Qt.alpha(Theme.card, 0.5) : "transparent"
         HoverHandler { id: lineHit }
+        MouseArea { anchors.fill: parent; acceptedButtons: Qt.RightButton
+                    onClicked: (m) => { const q = mapToItem(overlay, m.x, m.y); shell.lineMenu(line.what, line.canEnd, q.x, q.y) } }
         Row { x: 14; width: parent.width - 330; spacing: 8; anchors.verticalCenter: parent.verticalCenter
+            Glyph { visible: shell.kept.includes(line.what.name) && line.what.owner === "user"; name: "shield-check"; color: Theme.gold; font.pixelSize: 15; anchors.verticalCenter: parent.verticalCenter }
             Label { id: lname; text: line.what.name + (line.what.pids.length > 1 ? "  (" + line.what.pids.length + ")" : ""); font.weight: 600; elide: Text.ElideRight
                     width: Math.min(implicitWidth, parent.width - opill.width - 8); anchors.verticalCenter: parent.verticalCenter }
             Rectangle { id: opill; visible: line.what.owner !== undefined && line.what.owner !== "user"; width: otext.implicitWidth + 12; height: 18; radius: 9; anchors.verticalCenter: parent.verticalCenter
@@ -245,5 +264,6 @@ ShellRoot {
                                 Label { x: 14; y: 12; width: parent.width - 28; text: parent.modelData.name; color: Theme.dim; font.pixelSize: 12 }
                                 Label { x: 14; y: 32; text: parent.modelData.value + " " + parent.modelData.unit; font.pixelSize: 24; font.weight: 800; color: parent.hot ? Theme.red : Theme.cream } } } } } }
         }
+        Item { id: overlay; anchors.fill: parent; Menu { id: menu } }
     }
 }

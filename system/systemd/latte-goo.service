@@ -5,11 +5,14 @@ Description=LatteOS Goo
 PartOf=latte-session.target
 After=latte-session.target
 
+# a stop or a crash brings it back at once, and it is never given up on (a deliberate stop of the unit still stops it)
+StartLimitIntervalSec=0
+
 [Service]
 # With this the list of windows comes from the generic protocols and everything else from Hyprland
 # (patches/pleamar-windows-and-icons.patch): Hyprland's own socket only reports the window in front.
 Environment=PLEAMAR_GENERIC=window
 # On the monitor Hyprland named as the main one (system/hypr/hyprland.lua); without a name, wherever it lands.
 ExecStart=/bin/sh -c 'exec /usr/bin/pleamar --scene /usr/share/latteos/goo/goo.plm --no-hud $${LATTE_GOO_SCREEN:+--screen "$$LATTE_GOO_SCREEN"}'
-Restart=on-failure
+Restart=always
 RestartSec=1

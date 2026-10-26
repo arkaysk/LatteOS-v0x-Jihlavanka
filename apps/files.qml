@@ -704,6 +704,10 @@ ShellRoot {
                                       for (let i = 0; i < files.count; i++) if (t === "" || !files.get(i, "fileIsDir") || files.get(i, "fileName").toLowerCase().indexOf(t) >= 0) out.push(files.get(i, "filePath"))
                                       return out }
         readonly property int count: rows.length
+        // the same as `rows` counted apart: "3 folders, 12 files" says more than "15 items"
+        readonly property string summary: { fresh; shell.findText; let d = 0; const t = shell.findText.toLowerCase()
+                                            for (let i = 0; i < files.count; i++) if (files.get(i, "fileIsDir") && (t === "" || files.get(i, "fileName").toLowerCase().indexOf(t) >= 0)) d++
+                                            return I18n.tr("{d} folders, {f} files", { d: d, f: rows.length - d }) }
         // How much each thing here holds, folders too: measured when asked (Space), three levels deep, as du gets
         // through them, so a big folder fills in while one watches. `sizes` is what is right here, `inner` what is
         // inside each folder below; the map in the other panel is drawn from both.
@@ -755,7 +759,7 @@ ShellRoot {
                 text: panel.root && panel.root.total > 0 ? I18n.tr("{n} free", { n: shell.bytes(panel.root.total - panel.root.used) }) : "" }
         // what is here and what is chosen, at the panel's own foot
         Label { x: 18; y: parent.height - 28; width: parent.width - 36; elide: Text.ElideRight; color: Theme.dim; font.family: Theme.mono; font.pixelSize: 11; visible: panel.path.startsWith("/")
-                text: (panel.picked().length ? I18n.tr("{n} chosen", { n: panel.picked().length }) + "  ·  " : "") + I18n.tr("{n} items", { n: panel.count })
+                text: (panel.picked().length ? I18n.tr("{n} chosen", { n: panel.picked().length }) + "  ·  " : "") + panel.summary
                       + (shell.typeFilter !== "" ? "  ·  " + I18n.tr("only {n}", { n: I18n.tr(shell.types[shell.typeFilter].name) }) : "")
                       + (shell.findText !== "" ? "  ·  " + I18n.tr("names with “{t}”", { t: shell.findText }) : "")
                       + (panel.root && panel.root.total > 0 ? "  ·  " + I18n.tr("{n} free", { n: shell.bytes(panel.root.total - panel.root.used) }) : "") }
@@ -1351,7 +1355,7 @@ ShellRoot {
             // what is here and what is chosen
             Label { x: 24; anchors.verticalCenter: parent.verticalCenter; color: Theme.inkOnCoffee; visible: shell.asking === "" && (shell.said !== "" || !(shell.aboutFor !== "" && here.picked().length === 1))
                     text: shell.said !== "" ? shell.said : !here.path.startsWith("/") ? I18n.tr("Your folders and the disks")
-                          : (here.picked().length ? I18n.tr("{n} chosen", { n: here.picked().length }) : I18n.tr("{n} items", { n: here.count }))
+                          : (here.picked().length ? I18n.tr("{n} chosen", { n: here.picked().length }) : here.summary)
                             + (here.measured ? "   ·   " + (here.measuring ? I18n.tr("measuring… {size} so far", { size: shell.bytes(here.total) }) : I18n.tr("{size} in all", { size: shell.bytes(here.total) }))
                                              : (here.picked().length ? "" : "   ·   " + I18n.tr("Space: how much each folder holds"))) },
             // the one chosen: what it is (a picture's size and camera, a folder's items and size)

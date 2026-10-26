@@ -9,16 +9,22 @@ whose every process is.
                                 failed (it would not stay up) · off (it is not wanted now)
   latte-guarddog owners         {"pid": "linux" | "latteos" | "user"} for every process
   latte-guarddog owner PID…     the same for the pids given
+  latte-guarddog keep PID       keep the user's program that runs as PID running: the guard starts it again when it stops
+  latte-guarddog keep NAME off  not any more;   latte-guarddog keep: those kept, [{"name", "run", "flatpak"}]
   latte-guarddog set ID on|off  the user's choice for a component (kept in ~/.config/latteos/guarddog.json, which the Settings write)
   latte-guarddog manifest       (root, at every install and update) writes the list of what LatteOS is made of, with a hash of each
   latte-guarddog log [N]        what the guard did, the last N lines (200): [{"at", "what", "id", "text"}]; what = start ·
-                                down · restart · failed · crash · back
+                                down · restart · failed · crash · back · thaw · fell (systemd brought it back) ·
+                                impostor (a program of a kept one's name that is not it) · changed · doghouse (DogHouse put
+                                GuardDog back)
+  latte-guarddog summary        the overview: {"watching", "up", "down": [names], "last", "since", "days": [30 counts,
+                                oldest first; -1 before the history], "top": [{"id", "name", "count", "last", "what"}]}
   latte-guarddog crashes        the programs that crashed in the last week, newest first: [{"pid", "exe", "name", "sig",
                                 "at", "owner", "quiet"}] (systemd-coredump)
   latte-guarddog quiet NAME on|off   no notice when this program crashes (the crash is still in the log); alone, those
 
-Crashes: the guard watches systemd-coredump too. A program of the user's session that crashed gets a notice with
-"Ask the AI", which hands the facts to an agent (latte-ai crash PID): it explains, and changes nothing.
+Crashes: the guard watches systemd-coredump too. A program of the user's session that crashed gets a notice, with
+"Ask the AI" when the AI helper is on: it hands the facts to an agent (latte-ai crash PID), which explains and changes nothing.
 
 A component that is gone is started again after two looks in a row (a restart that someone does on purpose takes a
 moment). One that is started five times in five minutes and still falls is let be for five minutes, and the user is
@@ -36,15 +42,17 @@ latte-anything, or that sits in the user's folder, is the user's.
 The user's choices from the Settings (a component switched off) are kept: an update brings the new list of components,
 and what the user has switched off stays switched off.
 """
-import json, os, re, shutil, subprocess, sys, time
+import json, os, re, shlex, shutil, subprocess, sys, time
 
 UID = os.getuid()
 RUN = os.path.join(os.environ.get("XDG_RUNTIME_DIR") or "/tmp", "latteos")
 STATE = os.path.join(RUN, "guarddog.json")
 FLAG = os.path.join(os.environ.get("XDG_CONFIG_HOME") or os.path.expanduser("~/.config"), "latteos", "desktop-icons")
 EVERY, MISSES, TRIES, WINDOW, REST = 5, 2, 5, 300, 300
-LOG = os.path.join(RUN, "guarddog.log")
-LOG_KEEP = 500
+# the history outlives a restart of the computer: the overview counts the days since the last problem
+LOG = os.path.join(os.environ.get("XDG_STATE_HOME") or os.path.expanduser("~/.local/state"), "latteos", "guarddog.log")
+LOG_KEEP = 5000
+PROBLEMS = ("crash", "down", "thaw", "fell", "impostor", "changed", "doghouse")
 
 
 def T(text):
@@ -61,7 +69,7 @@ def note(what, ident, text):
     print("guarddog: %s %s: %s" % (what, ident, text), flush=True)
     try:
         lines = read(LOG).splitlines()[-(LOG_KEEP - 1):] + [line]
-        os.makedirs(RUN, exist_ok=True)
+        os.makedirs(os.path.dirname(LOG), exist_ok=True)
         with open(LOG + ".tmp", "w") as f:
             f.write("\n".join(lines) + "\n")
         os.replace(LOG + ".tmp", LOG)
@@ -275,15 +283,6 @@ def icons_wanted():
 CHOICES = os.path.join(os.environ.get("XDG_CONFIG_HOME") or os.path.expanduser("~/.config"), "latteos", "guarddog.json")
 
 
-def switched_off():
-    """What the user has switched off in the Settings: it stays so, whatever an update brings."""
-    try:
-        with open(CHOICES) as f:
-            return set(json.load(f).get("off", []))
-    except (OSError, ValueError, AttributeError):
-        return set()
-
-
 def choices():
     try:
         with open(CHOICES) as f:
@@ -293,11 +292,89 @@ def choices():
         return {}
 
 
+def names_in(key):
+    """A list of names the user's choices keep: whatever else the file holds there (anyone can write it) is not one."""
+    v = choices().get(key)
+    return {n for n in v if isinstance(n, str)} if isinstance(v, list) else set()
+
+
+def switched_off():
+    """What the user has switched off in the Settings: it stays so, whatever an update brings."""
+    return names_in("off")
+
+
 def keep_choices(d):
     os.makedirs(os.path.dirname(CHOICES), exist_ok=True)
     with open(CHOICES + ".tmp", "w") as f:
         json.dump(d, f)
     os.replace(CHOICES + ".tmp", CHOICES)
+
+
+def kept():
+    v = choices().get("keep")
+    return [k for k in (v if isinstance(v, list) else []) if isinstance(k, dict) and isinstance(k.get("name"), str) and k["name"]
+            and isinstance(k.get("run"), list) and k["run"] and all(isinstance(a, str) for a in k["run"])]
+
+
+def keep(pid):
+    """What it takes to start the program again (its Flatpak, or the command it runs) and what it is: the program file it
+    runs and that file's hash. A process is this program only if it runs that very file, never by its name alone."""
+    stat = read("/proc/%d/stat" % pid)
+    if not stat or os.stat("/proc/%d" % pid).st_uid != UID:
+        return False
+    name = stat[stat.find("(") + 1:stat.rfind(")")]
+    app = re.search(r"^name=(.+)$", read("/proc/%d/root/.flatpak-info" % pid), re.M)
+    run = ["flatpak", "run", app.group(1)] if app else [a for a in read("/proc/%d/cmdline" % pid).split("\0") if a]
+    try:
+        exe = os.readlink("/proc/%d/exe" % pid)
+    except OSError:
+        return False
+    keep_choices(dict(choices(), keep=[k for k in kept() if k["name"] != name] +
+                      [{"name": name, "run": run, "flatpak": app.group(1) if app else "", "exe": exe, "sha": sha("/proc/%d/exe" % pid)}]))
+    return True
+
+
+_told = set()       # (name, pid) of a look-alike or a changed program already in the log
+
+
+def is_kept(k, pid):
+    """The process runs the kept program's file: the same path, and the same content (its hash), or a path only the root
+    can change (a system program that an update replaced). Anything else of that name is a look-alike."""
+    try:
+        exe, st = os.readlink("/proc/%d/exe" % pid), os.stat("/proc/%d/exe" % pid)
+    except OSError:
+        return False
+    if exe == k.get("exe") and ((st.st_uid == 0 and not st.st_mode & 0o022) or is_listed("/proc/%d/exe" % pid, {"/proc/%d/exe" % pid: k.get("sha")})):
+        return True
+    same = exe == k.get("exe")
+    if (k["name"], pid) not in _told:
+        _told.add((k["name"], pid))
+        note("impostor" if not same else "changed", "app:" + k["name"], ("runs %s, not %s" % (exe, k.get("exe"))) if not same else
+             "%s is not what it was when it was kept (an update, or someone changed it)" % exe)
+        if shutil.which("notify-send"):
+            start_detached("notify-send", "-u", "critical", "-a", "LatteOS", "GuardDog",
+                           T("A program pretends to be {n}." if not same else "{n} has changed since it was kept running.").replace("{n}", k["name"]))
+    return same           # a changed program is let be, not started a second time; a look-alike does not count
+
+
+def kept_alive(k):
+    try:
+        pids = subprocess.run(["pgrep", "-u", str(UID), "-x", k["name"]], capture_output=True, text=True, timeout=10).stdout.split()
+    except (OSError, subprocess.TimeoutExpired):
+        return True                         # not known: not a reason to start a second one
+    return any([is_kept(k, int(p)) for p in pids])          # every one looked at: each look-alike is told
+
+
+def unkeep(name):
+    keep_choices(dict(choices(), keep=[k for k in kept() if k["name"] != name]))
+
+
+def kept_components():
+    """The user's programs kept running, as components: there while the very program runs (is_kept), started again inside the
+    session (Hyprland starts it, so it has the session's screen, sound and bus)."""
+    return [("app:" + k["name"], k["name"], lambda: True, lambda k=k: kept_alive(k),
+             lambda r=k["run"]: quiet("hyprctl", "eval", "hl.exec_cmd(%s)" % json.dumps(" ".join(shlex.quote(a) for a in r), ensure_ascii=False)))
+            for k in kept()]
 
 
 def choose(ident, on):
@@ -314,6 +391,9 @@ COMPONENTS = [
      lambda: quiet("systemctl", "--user", "restart", "latte-lockscreen.service")),
     ("idle", "Lock and screen off", lambda: unit_active("latte-session.target"), lambda: unit_active("latte-idle.service"),
      lambda: quiet("systemctl", "--user", "restart", "latte-idle.service")),
+    # polkit takes the agent only from inside the login session, so Hyprland starts it, not systemd
+    ("polkit", "Asking for the password", lambda: unit_active("latte-session.target"), lambda: running(r"^/usr/bin/pleamar --scene \S*/goo/polkit\.plm"),
+     lambda: quiet("hyprctl", "eval", 'hl.exec_cmd("/usr/libexec/latte-polkit-agent")')),
     ("icons", "Icons on the desktop", icons_wanted, lambda: running(r"^qs .*apps/desktop\.qml"),
      lambda: quiet("latte-desktop", "restart")),
     ("focus", "Screen time", lambda: unit_active("latte-session.target"), lambda: unit_active("latte-focus.service"),
@@ -325,6 +405,60 @@ COMPONENTS = [
     # the root's: the guard can say it is down, not start it
     ("net", "Cutting off the internet", lambda: os.path.exists("/usr/libexec/latte-netd"), lambda: quiet("systemctl", "is-active", "--quiet", "latte-netd.service"), None),
 ]
+
+
+def alive_to_systemd():
+    """The watchdog of the guard's own unit (WatchdogSec): while this keeps coming, the guard is not stopped or stuck."""
+    path = os.environ.get("NOTIFY_SOCKET", "")
+    if not path:
+        return
+    import socket
+    try:
+        with socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM) as s:
+            s.sendto(b"WATCHDOG=1", "\0" + path[1:] if path.startswith("@") else path)
+    except OSError:
+        pass
+
+
+UNIT_OF = {"goo": "latte-goo.service", "lockscreen": "latte-lockscreen.service", "idle": "latte-idle.service", "focus": "latte-focus.service"}
+ID_OF = {u: i for i, u in UNIT_OF.items()}
+UNITS = "/sys/fs/cgroup/user.slice/user-%d.slice/user@%d.service/*/latte-*.service" % (UID, UID)
+
+
+def thaw():
+    """A unit of LatteOS that was frozen (systemctl freeze) or a process of it that was stopped (kill -STOP) looks alive
+    and does nothing; systemd's restart does not see it. It is let go on, and the log says so."""
+    import glob, signal
+    for cg in glob.glob(UNITS):
+        unit = os.path.basename(cg)
+        if "frozen 1" in read(os.path.join(cg, "cgroup.events")):
+            note("thaw", ID_OF.get(unit, unit), "frozen; let go on")
+            quiet("systemctl", "--user", "thaw", unit)
+        for pid in read(os.path.join(cg, "cgroup.procs")).split():
+            stat = read("/proc/%s/stat" % pid)
+            if stat[stat.rfind(")") + 2:][:1] == "T":
+                note("thaw", ID_OF.get(unit, unit), "process %s stopped; let go on" % pid)
+                try:
+                    os.kill(int(pid), signal.SIGCONT)
+                except OSError:
+                    pass
+
+
+
+
+def restarts():
+    """{unit: how many times systemd has started it again}: a fall that systemd mended before the guard looked."""
+    try:
+        out = subprocess.run(["systemctl", "--user", "show", "-p", "Id", "-p", "NRestarts", "latte-*.service"],
+                             capture_output=True, text=True, timeout=10).stdout
+    except (OSError, subprocess.TimeoutExpired):
+        return {}
+    found = {}
+    for block in out.split("\n\n"):
+        d = dict(l.split("=", 1) for l in block.splitlines() if "=" in l)
+        if d.get("Id") and d.get("NRestarts", "").isdigit():
+            found[d["Id"]] = int(d["NRestarts"])
+    return found
 
 
 def tell_failed(name):
@@ -357,7 +491,7 @@ def owner_of_path(exe, files):
 
 
 def quiet_ones():
-    return set(choices().get("quiet", []))
+    return names_in("quiet")
 
 
 def hush(name, on):
@@ -366,23 +500,35 @@ def hush(name, on):
     keep_choices(dict(choices(), quiet=sorted(q)))
 
 
-def tell_crash(c):
-    """A notice with "Ask the AI": pressed, the facts go to an agent (latte-ai crash), which explains and changes nothing."""
+def tell_crash(c, ask):
+    """A notice that a program crashed; with "Ask the AI" when there is an agent to hand the facts to (latte-ai crash),
+    which explains and changes nothing. "Not about this program" mutes it."""
     if not shutil.which("notify-send"):
         return
-    body = T("{n} crashed. Ask the AI what happened?").replace("{n}", c["name"])
-    script = 'a=$(notify-send -a LatteOS -u normal --wait --action=ask="$3" --action=mute="$4" "$1" "$2"); ' \
+    body = T("{n} crashed. Ask the AI what happened?" if ask else "{n} crashed.").replace("{n}", c["name"])
+    script = 'a=$(notify-send -a LatteOS -u normal --wait ${3:+--action=ask="$3"} --action=mute="$4" "$1" "$2"); ' \
              'case "$a" in ask) exec latte-ai crash "$5" ;; mute) exec latte-guarddog quiet "$6" on ;; esac'
-    start_detached("sh", "-c", script, "sh", "GuardDog", body, T("Ask the AI"), T("Not about this program"), str(c["pid"]), c["name"])
+    start_detached("sh", "-c", script, "sh", "GuardDog", body, T("Ask the AI") if ask else "", T("Not about this program"), str(c["pid"]), c["name"])
 
 
 def watch():
     os.makedirs(RUN, exist_ok=True)
-    mine = {c[0]: {"id": c[0], "name": c[1], "state": "up", "restarts": 0, "off": False, "missed": 0, "tries": [], "rest": 0, "told": False} for c in COMPONENTS}
+    fresh = lambda c: {"id": c[0], "name": c[1], "state": "up", "restarts": 0, "off": False, "missed": 0, "tries": [], "rest": 0, "told": False}
+    mine = {c[0]: fresh(c) for c in COMPONENTS}
     note("start", "guarddog", "watching")
     seen = {c["pid"] for c in crashes(1)}
     looked = 0
-    while True:
+    mended = restarts()
+
+    def look():
+        nonlocal looked, mended
+        alive_to_systemd()
+        thaw()
+        now_mended = restarts()
+        for unit, n in now_mended.items():
+            if n > mended.get(unit, n) and unit != "latte-guarddog.service":
+                note("fell", ID_OF.get(unit, unit), "stopped; systemd brought it back")
+        mended = now_mended
         now = time.monotonic()
         # new crashes, a look every half minute: in the log, and a notice unless the user said not about that one
         if now - looked > 30:
@@ -392,13 +538,18 @@ def watch():
                     continue
                 seen.add(c["pid"])
                 note("crash", c["name"], "%s (pid %s, signal %s, %s)" % (c["exe"], c["pid"], c["sig"], c["owner"]))
-                # the offer, unless the user said not about that one or turned it off (latte-ai toggle crash-capture),
-                # or there is no agent to hand it to — as Omarchy's crash-watch; the log keeps it either way
-                if not c["quiet"] and quiet("latte-ai", "offer-crash"):
-                    tell_crash(c)
+                # a notice unless the user said not about that one; the AI is offered as Omarchy's crash-watch does, only
+                # when it is turned on (latte-ai toggle crash-capture) and there is an agent to hand it to
+                if not c["quiet"]:
+                    tell_crash(c, quiet("latte-ai", "offer-crash"))
         off, known = switched_off(), listed()["components"]
-        for ident, name, wanted, alive, start in COMPONENTS:
-            c = mine[ident]
+        apps = kept_components()
+        for gone in [i for i in mine if i.startswith("app:") and i not in {a[0] for a in apps}]:
+            del mine[gone]
+        known = known and known + [a[0] for a in apps]
+        for ident, name, wanted, alive, start in COMPONENTS + apps:
+            alive_to_systemd()
+            c = mine.setdefault(ident, fresh((ident, name)))
             c["off"] = ident in off
             try:
                 # wanted by the system and by the user: a component that the update does not know is not asked for, one
@@ -444,6 +595,13 @@ def watch():
         with open(tmp, "w") as f:
             json.dump(shown, f)
         os.replace(tmp, STATE)
+
+    while True:
+        try:
+            look()
+        except Exception as e:      # a guard that falls over its own data guards nothing: this round is lost, not the guard
+            print("guarddog: %s: %s" % (type(e).__name__, e), file=sys.stderr, flush=True)
+            alive_to_systemd()
         time.sleep(EVERY)
 
 
@@ -453,6 +611,48 @@ def status():
             return json.load(f)
     except (OSError, ValueError):
         return []
+
+
+DOGHOUSE = os.environ.get("LATTE_DOGHOUSE_LOG") or "/var/lib/latteos/doghouse.log"
+
+
+def history():
+    """What the guard did, and what DogHouse (the root's, system/libexec/latte-doghouse) did for this user: oldest first."""
+    events = []
+    for path, mine in ((LOG, lambda e: True), (DOGHOUSE, lambda e: e.get("uid") == UID)):
+        for l in read(path).splitlines():
+            try:
+                e = json.loads(l)
+            except ValueError:
+                continue
+            if isinstance(e, dict) and isinstance(e.get("at"), int) and mine(e):
+                events.append(e)
+    return sorted(events, key=lambda e: e["at"])
+
+
+def summary(now=None):
+    """The overview of the GuardDog window: how things stand, the days since the last problem and what goes wrong most."""
+    now = now or time.time()
+    events = history()
+    names = dict({c[0]: c[1] for c in COMPONENTS}, guarddog="GuardDog")
+    shown = [c for c in status() if not c.get("off") and c.get("state") != "off"]
+    problems = [e for e in events if e.get("what") in PROBLEMS]
+    midnight = time.mktime(time.localtime(now)[:3] + (0, 0, 0, 0, 0, -1))
+    start = events[0]["at"] if events else now
+    days = [0 if midnight - (29 - i) * 86400 + 86400 > start else -1 for i in range(30)]      # -1: before the history begins
+    top = {}
+    for e in problems:
+        ago = 0 if e["at"] >= midnight else int((midnight - e["at"]) // 86400) + 1      # 0 today, 1 yesterday…
+        if ago < 30:
+            days[29 - ago] += 1
+            t = top.setdefault(e["id"], {"id": e["id"], "name": names.get(e["id"], e["id"].removeprefix("app:")), "count": 0, "last": 0, "what": e["what"]})
+            t["count"] += 1
+            if e["at"] >= t["last"]:
+                t["last"], t["what"] = e["at"], e["what"]
+    return {"watching": len(shown), "up": sum(1 for c in shown if c.get("state") in ("up", "restarted")),
+            "down": [c["name"] for c in shown if c.get("state") in ("down", "failed")],
+            "last": problems[-1]["at"] if problems else None, "since": events[0]["at"] if events else None, "days": days,
+            "top": sorted(top.values(), key=lambda t: (-t["count"], -t["last"]))[:5]}
 
 
 def manifest():
@@ -483,17 +683,25 @@ def manifest():
 def main(a):
     if a[:1] == ["watch"]:
         watch()
+    elif a[:1] == ["summary"]:
+        print(json.dumps(summary()))
     elif a[:1] == ["status"]:
         print(json.dumps(status()))
     elif a[:1] == ["owners"]:
         print(json.dumps({str(k): v for k, v in owners().items()}))
     elif a[:1] == ["manifest"]:
         return manifest()
+    elif a == ["keep"]:
+        print(json.dumps(kept()))
+    elif a[:1] == ["keep"] and len(a) == 2 and a[1].isdigit():
+        return 0 if keep(int(a[1])) else 1
+    elif a[:1] == ["keep"] and len(a) == 3 and a[2] == "off":
+        unkeep(a[1])
     elif a[:1] == ["set"] and len(a) == 3 and a[2] in ("on", "off"):
         choose(a[1], a[2] == "on")
     elif a[:1] == ["log"]:
         n = int(a[1]) if len(a) > 1 and a[1].isdigit() else 200
-        print("[" + ",".join(l for l in read(LOG).splitlines()[-n:] if l.strip()) + "]")
+        print(json.dumps(history()[-n:]))
     elif a[:1] == ["crashes"]:
         print(json.dumps(crashes()))
     elif a == ["quiet"]:

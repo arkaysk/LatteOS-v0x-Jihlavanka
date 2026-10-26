@@ -5,6 +5,9 @@ naposledy upravene 22.10.2026
 Idea LatteOS je neziskový linux ktory nevyžaduje po uživatelovy znalost klavesovych skratiek, nevyžaduje po uživatelovy použivanie konzoly, a umožnuje mu fungovat s návikmy z Windows, MacOS ale aj linux. Je to OS ktory umožnuje totalne deaktivovat Ai služby vnutry, ale aj ich naopak, intenzivne využivat na urovni pomocnika OS. 
 Idea pre tvorbu:
 -Ked už inečo existuje, prezentovat to a ak je to dobré a schvalene, použit to. 
+ Ked niečo už existuje, je funkčné, obľúbené a správne (napr. klon Total Commandera s úplnou kópiou schopností pod otvorenou
+ licenciou), netreba písať tisíce riadkov kódu: aplikáciu prevziať, prispôsobiť, rozšíriť a autora uviesť v credits
+ (`TRETIE-STRANY.md`). Podmienka: licencia to dovoľuje.
 -Realizaciu dotahovat do konca. nespokojit sa s funkčnostou len naoko.
 -Novinky. inšpirovat sa novinkamy. intenzivne patrat po nových trendoch.
 -Moderne krasne pritažlive prostredie. 3E. Esteticke, Efektivne, Ergonomické
@@ -615,7 +618,15 @@ Zdroje: `apps/desktop.qml`, `bin/latte-desktop`, `goo/lib/desk.luau`; LATTEOS-GO
 
 **6H.01** [x] (Plocha a Pobrežie) náhrada rohovej lišty (Pobrežie) · r. 97–99
 
-**6H.01** [ ] Upozornenia ako sučast popupmenu shore
+**6H.02** [ ] Upozornenia ako sučast popupmenu shore
+
+**6H.03** [ ] **Rozbalené Pobrežie** (používateľ 26. 10.): lišta dole sa rozbalí až po vrch obrazovky — hornú časť zaberajú
+upozornenia (6H.02), spodnú dashboard (rýchle prepínače a stav, ako Rýchle nastavenia vo Windows 11 a GNOME).
+
+**6H.04** [ ] **Kofeín** (používateľ 26. 10.): prepínač v dashboarde rozbaleného Pobrežia (6H.03), ktorý zabráni
+zamknutiu, zhasnutiu obrazovky a uspaniu, kým je zapnutý (ako Caffeine v GNOME a PowerToys Awake vo Windows). Najprv
+preveriť hotové: hypridle rešpektuje zámky `systemd-inhibit --what=idle` a D-Bus ScreenSaver; voľba na čas (1 h, do
+vypnutia). Zapnutý kofeín musí byť vidieť (ikona na lište), inak naň človek zabudne.
 
 
 ### 6I. ChatGoo
@@ -1612,7 +1623,7 @@ obrazoviek, napájania, periférií a obnovy pri probléme s ovládačom.
 ### 10F. [~] GuardDog
 Zdroje: `bin/latte-session`, `bin/latte-guarddog`, `apps/guarddog.qml`, `system/systemd`, `system/whyd`, `system/oom`, `system/sessions`
 
-**10F.01** [~] (Relácie a GuardDog) GuardDog · r. 321–328
+**10F.01** [x] (Relácie a GuardDog) GuardDog · r. 321–328
 [~] **GuardDog — strážca súčastí a kto komu patrí** (20. 10., na pokyn používateľa po tom, čo sa zabilo `qs` a zmizli
     ikony aj ponuka plochy). `bin/latte-guarddog` (služba `latte-guarddog.service` v cieli relácie): každých 5 s
     skontroluje scénu Goo, nečinnosť, ikony plochy, tapetu a históriu schránky; čo chýba dvakrát po sebe, to spustí
@@ -1622,17 +1633,65 @@ Zdroje: `bin/latte-session`, `bin/latte-guarddog`, `apps/guarddog.qml`, `system/
     zabité ikony sa do ~16 s vrátia. **Ostáva:** Nastavenia › Štart (vypnúť stráženie jednej súčasti), strážiť aj
     skutočné aplikácie používateľa na žiadosť, štítky v Správcovi zariadení, upozornenie pri páde mimo strážených súčastí.
 
-**10F.02** [ ] (GuardDog) **Nezabiteľnosť — overené 22. 10.:** `pkill` posiela SIGTERM a `Restart=on-failure` v `system/systemd/latte-guarddog.service` pri SIGTERM službu **neobnoví** (systemd to berie ako čistý koniec; obnoví až SIGKILL). Skúška na latte-lab: on-failure → po SIGTERM mŕtva, `Restart=always` → po 1 s žije. Treba: `Restart=always`, `RestartSec=1`, `StartLimitIntervalSec=0` (nikdy sa nevzdať); to isté pre `latte-goo.service`, `latte-idle`, `latte-focus`, `latte-goo-side@`, `latte-netd` (dnes všetky on-failure; `latte-lockscreen` už always).
+**10F.02** [x] (GuardDog) Nezabiteľnosť (26. 10.): všetky jednotky LatteOS `Restart=always`, `RestartSec=1`, `StartLimitIntervalSec=0`; overené TERM a KILL na GuardDog, Goo, lockscreen, idle, focus — späť do 1–2 s.
 
-**10F.03** [ ] (GuardDog) **Zamrznutie, nie len zabitie:** `kill -STOP` proces nezabije, ale zastaví; reštart ho nezachytí. `WatchdogSec=` + `sd_notify("WATCHDOG=1")` v `latte-guarddog watch` aj v službe Goo — keď prestane hlásiť, systemd ho zabije a obnoví.
+**10F.03** [x] (GuardDog) Zamrznutie (26. 10.): GuardDog má `WatchdogSec=30` (STOP → systemd ho zabije a spustí za ~30 s); zastavené a zmrazené jednotky `latte-*` GuardDog rozmrazí do 5 s (`thaw`, v konzole „rozmrazil“). Goo vlastný watchdog nemá (pleamar nehlási systemd) — rozmrazenie stačí na STOP, zaseknutá logika ide cez `goo_alive`.
 
-**10F.04** [ ] (GuardDog) **Kto stráži stráž:** obnovu vlastnej služby robí systemd (PID 1), nie ďalší náš program (pravidlo „preberať, nevymýšľať“). GuardDog sám ostane pozorovateľ: zistí, čo nebeží, komu proces patrí, ukáže upozornenie a pád dá AI. Čo rieši už systemd, má mať v jednotke `Restart=always`, nie vlastnú slučku v GuardDogovi.
+**10F.04** [x] (GuardDog) Kto stráži stráž: systemd; GuardDog pozorovateľ — zapísané v `docs/goo/ROZHODNUTIA.md` (26. 10.).
 
-**10F.05** [ ] (GuardDog) **Vyšší stupeň ochrany:** proces toho istého používateľa vie zabiť čokoľvek iné, čo beží pod ním (aj `systemctl --user stop`, `kill -9` na `systemd --user`). Úplná odolnosť = malá systémová služba pod iným uid/root (`latte-guardd`), ktorú používateľ nezabije, a ktorá obnoví používateľskú reláciu. Rozhodnúť, či to treba (komplexita proti zisku); najprv hotový bod 1 a 2.
+**10F.05** [x] (GuardDog) **Vyšší stupeň ochrany:** proces toho istého používateľa vie zabiť čokoľvek iné, čo beží pod ním (aj `systemctl --user stop`, `kill -9` na `systemd --user`). Úplná odolnosť = malá systémová služba pod iným uid/root (`latte-guardd`), ktorú používateľ nezabije, a ktorá obnoví používateľskú reláciu. Rozhodnúť, či to treba (komplexita proti zisku); najprv hotový bod 1 a 2.
+  **26. 10. hotové — DogHouse** (`system/libexec/latte-doghouse`, `latte-doghouse.timer` raz za minútu, pod rootom): pre každú
+  plochu LatteOS (Hyprland s `LATTE_MODE`) skontroluje GuardDog — zablokovaný, podvrhnutý (vlastný unit alebo drop-in
+  používateľa) → `systemctl --user revert` a reštart; zastavený → spustí; mŕtvy celý `systemd --user` → spustí `user@UID`,
+  dá mu prostredie relácie (z prostredia Hyprlandu a z `hyprland.lock`) a cieľ relácie. So systemd používateľa hovorí ako
+  používateľ (`setpriv`; `systemctl -M user@` zo služby nejde), súbory používateľa nečíta ani nepíše. Čo urobil, je v
+  `/var/lib/latteos/doghouse.log` a GuardDog to ukazuje v Denníku aj na Prehľade.
 
-**10F.06** [ ] (GuardDog) **Skúška:** skript v `tests/`, ktorý zabije (TERM, KILL, STOP) GuardDog, scénu Goo, lockscreen, idle, focus a overí, že všetko do ~5 s žije; zaradiť do `tests/check.sh` (aspoň napodobené jednotky).
+**10F.06** [x] (GuardDog) Skúška (26. 10.): `tests/test_guarddog.sh` na živej relácii (TERM, KILL, STOP, freeze; 15/15), napodobené rozmrazenie a watchdog v `tests/test_bin.py` (v `check.sh`).
 
-**10F.07** [ ] (GuardDog) **Používateľ 22. 10.: „GuardDog je extrémne nehotový“.** Ďalšie chýbajúce veci z pôvodného zápisu: vypnúť stráženie jednej súčasti (Nastavenia › Štart), strážiť aj skutočné aplikácie používateľa na žiadosť, štítky `linux/latteos/user` v Správcovi zariadení, upozornenie pri páde mimo strážených súčastí. Doplniť zoznam strážených súčastí, ktoré dnes chýbajú (Pobrežie, desktop, hyprbars…).
+**10F.07** [x] (GuardDog) **Používateľ 22. 10.: „GuardDog je extrémne nehotový“.** Ďalšie chýbajúce veci z pôvodného zápisu: vypnúť stráženie jednej súčasti (Nastavenia › Štart), strážiť aj skutočné aplikácie používateľa na žiadosť, štítky `linux/latteos/user` v Správcovi zariadení, upozornenie pri páde mimo strážených súčastí. Doplniť zoznam strážených súčastí, ktoré dnes chýbajú (Pobrežie, desktop, hyprbars…).
+  **26. 10.:** vypnutie stráženia jednej súčasti už je (Nastavenia › GuardDog a okno GuardDogu, `latte-guarddog set`).
+  Pobrežie je časť scény Goo a ikony plochy sú súčasť „icons“ — strážené; hyprbars je doplnok Hyprlandu, nie proces.
+  Pribudlo **okno s heslom (polkit)**: polkit agenta prijme iba z prihlasovacej relácie (overené: z jednotky systemd
+  „Passed session and the session the caller is in differs“), preto ho spúšťa Hyprland a GuardDog ho po zabití vráti
+  cez `hyprctl eval` (~10 s). Upozornenie pri páde chodí teraz vždy (aj bez AI), AI sa ponúkne iba so zapnutým
+  pomocníkom. Štítky `linux/latteos/user` boli myslené pre **Monitor** (Ctrl+Shift+Esc a od 26. 10. aj Ctrl+Alt+Del):
+  štítok, filter a zoznam strážených už sú, overené naživo (16 LatteOS, 287 Linux, 21 používateľa).
+  **Tvoje programy na žiadosť (26. 10.):** Monitor › Procesy, pravé tlačidlo na programe → „Držať v chode (GuardDog)“
+  (`latte-guarddog keep PID` / `keep MENO off`); GuardDog si zapamätá spustenie (pri Flatpaku `flatpak run ID`) a čo
+  program je: cestu k súboru a jeho SHA-256. Za strážený program berie iba proces, ktorý ten súbor naozaj spúšťa (pri
+  systémovom súbore, ktorý mení iba root, stačí cesta — aktualizácia ho nerozbije); rovnako pomenovaný **dvojník** sa
+  nezapočíta, zapíše sa do denníka a ohlási upozornením; zmenený súbor („zmenený“) sa nechá bežať, ale ohlási sa.
+  Spúšťa cez Hyprland (v prihlasovacej relácii). Strážený program má v Monitore štít a je medzi
+  strážením v GuardDogu aj s prepínačom. Overené naživo s foot: zabitý sa vrátil za 9 s, po vypnutí ostal zatvorený; dvojník `foot` (kópia iného programu) ohlásený a skutočný foot sa aj tak vrátil.
+
+**10F.08** [x] (GuardDog) **Dashboard pre používateľa** (používateľ 26. 10.; 3E: Estetické, Efektívne, Ergonomické). Úvodná
+stránka GuardDogu: funkčnosť systému (čo beží, čo stráži, celkový stav jednou vetou), **dni od posledného problému**,
+**najčastejšie problémy** (čo padalo, koľkokrát, kedy naposledy). Potrebuje históriu udalostí, nielen dnešný `guarddog.json`.
+  **26. 10. hotové:** stránka **Prehľad** (prvá v okne GuardDogu): stav jednou vetou, veľké číslo dní bez problému, pás
+  posledných 30 dní vo farbách Monitora (dni pred začiatkom histórie sivé), 5 najčastejších problémov (klik → Pády alebo
+  Denník). História je trvalá v `~/.local/state/latteos/guarddog.log` (5000 riadkov); pády, ktoré vyrieši systemd skôr, než
+  ich GuardDog uvidí, zapisuje podľa `NRestarts` („spadol, vrátil sa“). `latte-guarddog summary`, skúška v `tests/test_bin.py`.
+
+**10F.09** [x] (GuardDog) **Útok na GuardDog** (používateľ 26. 10.): keď bude GuardDog hotový (10F.02–10F.08), skúšať všetky
+spôsoby, ako ho zabiť alebo umlčať (signály, `systemctl --user stop/mask`, zabitie `systemd --user`, zaplnenie disku,
+zmazanie stavu, zamrznutie), každý nájdený spôsob opraviť a pridať do skúšky 10F.06.
+  **26. 10., prvé kolo:** ustál TERM, KILL, STOP, zmrazenie (`tests/test_guarddog.sh`), zmazanú a pokazenú históriu.
+  **Našlo a opravené:** poškodené `~/.config/latteos/guarddog.json` (`"off": 5`, zoznam namiesto objektu, zlý `keep`)
+  a nezapisovateľný `$XDG_RUNTIME_DIR/latteos` ho zhodili a padal dokola — nastavenia sa teraz čítajú s kontrolou typov
+  (`names_in`, `kept`), každé kolo stráženia prežije vlastnú chybu (zapíše ju a pokračuje); skúška v `tests/test_bin.py`.
+  Strážený program sa už nepozná podľa mena, ale podľa súboru a SHA-256 (dvojník sa ohlási).
+  **Prešlo a bez roota sa opraviť nedá:** `systemctl --user stop latte-guarddog`, `mask` + zabitie, vlastný drop-in
+  v `~/.config/systemd/user/latte-guarddog.service.d/` (podvrhnutý `ExecStart`, vypnutý watchdog), zabitie `systemd --user`
+  (to vezme aj Goo a všetky jednotky; neskúšané naostro, odpojilo by reláciu). Všetko robí proces toho istého
+  používateľa bez hesla → rieši 10F.05 (malý strážca pod rootom).
+  **26. 10., druhé kolo (s DogHouse):** stop, mask (runtime aj trvalý), drop-in, podvrhnutý unit — všetko vrátené pri
+  najbližšej kontrole; samotný časovač vrátil zastavený GuardDog za 58 s. **Zabitie `systemd --user`:** Goo, zámok,
+  nečinnosť, čas pri obrazovke aj GuardDog späť za 48 s. Ten útok našiel dve skryté chyby, obe opravené: (1) zamknutá
+  obrazovka po páde zámku ostala na núdzovej obrazovke Hyprlandu — scéna zámku si pamätala zamknutie, ale `emit` z vlastnej
+  logiky nespustí vlastný handler, takže zámok nikdy neprevzala (`goo/lib/login.luau`, teraz priame volanie; overené
+  zabitím zámku pri zamknutej obrazovke); (2) obrazovka zhasnutá starým hypridle po jeho reštarte ostala tmavá navždy
+  (aj Moonlight sa nepripojil) — `latte-idle` ju pri štarte rozsvieti.
 
 ### 10G. [~] NetManager
 Zdroje: `bin/latte-network`, `bin/latte-net`, `bin/latte-network`
@@ -1795,6 +1854,20 @@ Je sučastou Appmanageru. inštalator a ten kdo sa postara o beh programov z ine
     načítalo znova). Wine už pri inštalácii neukazuje vlastné okno (prefix sa robí bez obrazovky, 55 s namiesto
     97 s) a verzia Windows sa naozaj nastaví (predtým `winecfg -v` potichu nič nespravil). Poznámky receptu sú
     po anglicky (recept nemá preklady).
+
+**10I.06** [ ] (Barista) Sledovať nové vrstvy pre cudzie programy (používateľ 26. 10., `inspo/dalsie_inspiracie.md`).
+Popri Wine/Protone (Windows) a Leptone (Android) ďalšie dve, obe GPL-3.0 a experimentálne; každá je samostatný
+rozhodovací bod podľa 10I.03, zatiaľ iba sledovať:
+- **Raven** (github.com/mirkobrombin/raven) — Windows programy bez Wine a bez VM: kód beží na CPU v ohrade,
+  systémové volania, súbory, register a okná rieši Raven sám; grafika cez Wayland a Vulkan (DXVK, vkd3d-proton,
+  D3D 8–12). Inštalátory NSIS, Inno, MSI; VC++ 2005–2022, .NET 3.5/4.8. Vlastný prefix (C: a register) so
+  snímkou pred každým inštalátorom (`--restore-prefix`) — rovnaký nápad ako záloha v Baristovi. Iba príkazový
+  riadok, zatiaľ sa len kompiluje zo zdroja.
+- **Rosemary** (github.com/microlift/rosemary, aktívne vyvíjaný) — macOS programy na Linuxe: načíta Mach-O,
+  Darwin a Apple knižnice (Foundation, AppKit, CoreAudio…) prepísané v Ruste, x86-64 kód prekladá JIT
+  (Microlift), knižnice hostiteľa sa premosťujú. Rust 1.99+, SDL 3.4. Pokrytie aplikácií neúplné, tabuľka
+  kompatibility zatiaľ nie je; okolo neho vznikajú spúšťače macOS Robloxu (nutmeg, Roseline).
+Pre Baristu: rozpoznať `.app`/`.dmg` a povedať človeku, či sa dá skúsiť.
 
 ### 10J. [~] Kalendár
 Aplikácia Kalendár a karta ClockGoo (ľavý klik): EDS, udalosti vetou, týždeň.

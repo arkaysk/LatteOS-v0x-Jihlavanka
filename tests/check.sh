@@ -13,7 +13,7 @@ for f in bin/*; do
     case "$(head -1 "$f")" in *python*) python3 -c 'import sys; compile(open(sys.argv[1]).read(), sys.argv[1], "exec")' "$f" ;; *) bash -n "$f" ;; esac
 done
 
-for f in system/session-env.sh system/libexec/* system/kernel-install/* tests/screen.sh tests/press tests/test_screens.sh; do
+for f in system/session-env.sh system/libexec/* system/kernel-install/* tests/screen.sh tests/press tests/test_screens.sh tests/test_guarddog.sh; do
     case "$(head -1 "$f")" in *python*) python3 -c 'import sys; compile(open(sys.argv[1]).read(), sys.argv[1], "exec")' "$f" ;; *) bash -n "$f" ;; esac
 done
 # a shader is loaded as built: the built file must be the one its source gives

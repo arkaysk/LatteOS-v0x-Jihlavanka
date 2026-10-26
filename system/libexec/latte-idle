@@ -15,4 +15,7 @@ mkdir -p "$out"
 sed -e "s/^\\( *timeout = \\)[0-9]*\\( *# lock\\)$/\\1$(seconds lock 600)\\2/" \
     -e "s/^\\( *timeout = \\)[0-9]*\\( *# screen\\)$/\\1$(seconds screen 900)\\2/" "$share/hypr/hypridle.conf" > "$out/hypridle.conf"
 [ "${1:-}" = "--print" ] && exec cat "$out/hypridle.conf"
+# a hypridle that went (a crash, a restart) may have left the screens dark: the new one never saw them go, so it would
+# never light them again
+hyprctl dispatch 'hl.dsp.dpms({ action = "on" })' >/dev/null 2>&1
 exec hypridle -q -c "$out/hypridle.conf"

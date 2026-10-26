@@ -1,0 +1,139 @@
+#!/usr/bin/env python3
+"""latte-doghouse: DogHouse, the root's watch over GuardDog (latte-doghouse.timer starts it once a minute).
+
+GuardDog runs as the user, so any program of the user's can stop it, mask it, put its own command in its place (a
+drop-in in ~/.config/systemd/user) or kill the user's systemd with all it runs. DogHouse is the one thing a program of
+the user's cannot stop. For every LatteOS desktop (a Hyprland of the session with LATTE_MODE) it looks once:
+
+  the user's systemd is gone        it is started again, given the session's screen (from Hyprland's environment) and
+                                    the session's target, which starts the Goo scene and GuardDog
+  GuardDog is masked or overridden  systemctl revert: the user's changes to the unit go, LatteOS's own stays
+  GuardDog does not run             it is started
+
+It reads and writes no file of the user's: what is to change, the user's systemd is asked to change, as the user. What it did is in
+/var/lib/latteos/doghouse.log, a JSON line each {"at", "uid", "what", "id", "text"}, for GuardDog's window.
+"""
+import json, os, pwd, subprocess, sys, time
+
+LOG = os.environ.get("LATTE_DOGHOUSE_LOG") or "/var/lib/latteos/doghouse.log"
+KEEP = 1000
+UNIT, VENDOR = "latte-guarddog.service", "/usr/lib/systemd/user/latte-guarddog.service"
+# what Hyprland tells systemd of the session (system/hypr/hyprland.lua, place_shell): the same, for a systemd started anew
+SESSION_ENV = ("WAYLAND_DISPLAY", "XDG_CURRENT_DESKTOP", "XDG_SESSION_TYPE", "HYPRLAND_INSTANCE_SIGNATURE", "LATTE_MODE",
+               "LATTE_RENDERER", "LATTE_TIER", "LANG")
+RUN_USER = "/run/user/%d"
+SETTLE = 90         # a desktop younger than this is still starting: nothing is missing yet
+
+
+def note(uid, what, text):
+    line = json.dumps({"at": int(time.time()), "uid": uid, "what": what, "id": "guarddog", "text": text})
+    print("doghouse: %d %s: %s" % (uid, what, text), flush=True)
+    try:
+        with open(LOG) as f:
+            lines = f.read().splitlines()[-(KEEP - 1):]
+    except OSError:
+        lines = []
+    try:
+        os.makedirs(os.path.dirname(LOG), exist_ok=True)
+        with open(LOG + ".tmp", "w") as f:
+            f.write("\n".join(lines + [line]) + "\n")
+        os.chmod(LOG + ".tmp", 0o644)
+        os.replace(LOG + ".tmp", LOG)
+    except OSError:
+        pass
+
+
+def run(*argv):
+    try:
+        p = subprocess.run(argv, capture_output=True, text=True, timeout=30)
+        return p.returncode, p.stdout
+    except (OSError, subprocess.TimeoutExpired):
+        return 1, ""
+
+
+def desktops():
+    """{uid: (Hyprland's environment, its age in seconds)} for every LatteOS desktop running now."""
+    found = {}
+    uptime = float(open("/proc/uptime").read().split()[0])
+    tick = os.sysconf("SC_CLK_TCK")
+    for pid in filter(str.isdigit, os.listdir("/proc")):
+        try:
+            stat = open("/proc/%s/stat" % pid).read()
+            if stat[stat.find("(") + 1:stat.rfind(")")] != "Hyprland":
+                continue
+            uid = os.stat("/proc/" + pid).st_uid
+            env = dict(v.split("=", 1) for v in open("/proc/%s/environ" % pid).read().split("\0") if "=" in v)
+        except OSError:
+            continue
+        if uid and "LATTE_MODE" in env:
+            env.update(made_later(uid, pid))
+            found[uid] = (env, uptime - int(stat[stat.rfind(")") + 2:].split()[19]) / tick)
+    return found
+
+
+def made_later(uid, pid):
+    """What Hyprland sets only once it runs, so its first environment has not got it: its signature and its Wayland
+    socket, from the lock it keeps (/run/user/UID/hypr/SIGNATURE/hyprland.lock: its pid, then the socket)."""
+    root = os.path.join(RUN_USER % uid, "hypr")
+    try:
+        for sig in os.listdir(root):
+            lines = open(os.path.join(root, sig, "hyprland.lock")).read().split()
+            if lines[:1] == [pid] and len(lines) > 1:
+                return {"HYPRLAND_INSTANCE_SIGNATURE": sig, "WAYLAND_DISPLAY": lines[1]}
+    except (OSError, IndexError):
+        pass
+    return {}
+
+
+def tampered(props):
+    """Why the unit is not LatteOS's own, or "": masked, another file in its place, or a drop-in of the user's."""
+    if props.get("LoadState") == "masked":
+        return "masked"
+    if props.get("FragmentPath", "") not in (VENDOR, ""):
+        return "replaced by " + props["FragmentPath"]
+    mine = [p for p in props.get("DropInPaths", "").split() if not p.startswith("/usr/lib/")]
+    return "changed by " + " ".join(mine) if mine else ""
+
+
+def look(uid, env, age):
+    gid = pwd.getpwuid(uid).pw_gid
+    # the user's systemd, asked as the user (`systemctl -M user@` cannot be used from a service: its helper unit is refused)
+    ctl = ("setpriv", "--reuid=%d" % uid, "--regid=%d" % gid, "--init-groups", "--reset-env",
+           "env", "XDG_RUNTIME_DIR=/run/user/%d" % uid, "systemctl", "--user")
+    if run("systemctl", "is-active", "--quiet", "user@%d.service" % uid)[0]:
+        if age < SETTLE:
+            return
+        note(uid, "doghouse", "the user's systemd was gone; started again with the session")
+        run("systemctl", "start", "user@%d.service" % uid)
+        run(*ctl, "set-environment", *("%s=%s" % (k, env[k]) for k in SESSION_ENV if k in env))
+        run(*ctl, "start", "latte-session.target")
+        return
+    code, out = run(*ctl, "show", "-p", "LoadState", "-p", "FragmentPath", "-p", "DropInPaths", "-p", "ActiveState", UNIT)
+    props = dict(l.split("=", 1) for l in out.splitlines() if "=" in l)
+    if "LoadState" not in props:
+        return                                       # the user's systemd did not answer: nothing known, nothing done
+    why = tampered(props)
+    if why:
+        note(uid, "doghouse", "GuardDog was %s; put back as LatteOS has it" % why)
+        run(*ctl, "revert", UNIT)
+        run(*ctl, "daemon-reload")
+    if why or (props.get("ActiveState") not in ("active", "activating", "reloading") and age >= SETTLE):
+        if not why:
+            note(uid, "doghouse", "GuardDog was stopped; started again")
+        run(*ctl, "restart" if why else "start", UNIT)          # what ran in its place goes too
+
+
+def main():
+    if os.getuid() != 0:
+        print("latte-doghouse: this is the root's", file=sys.stderr)
+        return 1
+    for uid, (env, age) in desktops().items():
+        try:
+            look(uid, env, age)
+        except Exception as e:                       # one user's trouble does not keep the others unwatched
+            print("doghouse: %d: %s" % (uid, e), file=sys.stderr)
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
