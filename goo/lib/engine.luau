@@ -26,6 +26,7 @@
 local icons = require("lib/icons")
 local card = require("lib/card")
 local wm = require("lib/wm")
+local born = require("lib/born")
 local E = {}
 
 local N = fact.slots
@@ -547,17 +548,17 @@ on("goo_up", function(k)
     down = nil
     local d = slots[k]
     if not d or was ~= k then return end
-    if not call(d, "click") then d:shiver() end
+    if call(d, "click") then born.touch(k) else d:shiver() end
 end)
 on("goo_right", function(k)
     down = nil
     local d = slots[k]
-    if d and not call(d, "right") then d:shiver() end
+    if d then if call(d, "right") then born.touch(k) else d:shiver() end end
 end)
 on("goo_middle", function(k)
     down = nil
     local d = slots[k]
-    if d and not call(d, "middle") then d:shiver() end
+    if d then if call(d, "middle") then born.touch(k) else d:shiver() end end
 end)
 on("goo_hold", function(k)
     if down ~= k then return end

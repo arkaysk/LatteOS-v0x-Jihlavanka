@@ -10,6 +10,7 @@
 //   picks    (written by gen.py) the one drop a card grows from
 //   shore    the hard corner at the bottom right: background programs, the network, the volume
 //   body     the goo: every drop and the edge as one body; shapes.plm in it is written by gen.py
+//   bubble   a window born of a drop comes in a bubble; a window closed bursts
 //   card     the card's state and its frame
 //   faces    what each drop shows on itself
 //   strip    the performance strip in PowerGoo's capsule
@@ -54,6 +55,7 @@ scene Goo {
     include "parts/picks.plm"
     include "parts/shore.plm"
     include "parts/body.plm"
+    include "parts/bubble.plm"
     include "parts/card.plm"
     include "parts/faces.plm"
     include "parts/strip.plm"

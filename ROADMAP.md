@@ -386,8 +386,7 @@ je primarne HW vykreslovatelny engine simulujuci pravidla pre GooProstredie. gra
 
 **6.05** [x] (GooEngine) ovládanie z klávesnice · r. 86–86
 
-**6.06** [ ] (GooEngine) jadro kvapiek, zvyšok · r. 94–94
-- [ ] **jadro kvapiek, zvyšok:** okno z bubliny príde s QueenGoo (rodia sa z nej riadne okná).
+**6.06** [x] (GooEngine) Okno z bubliny (26. 10.): okno otvorené do 5 s po kliku na kvapku či riadok jej karty vyletí z nej ako bublina, nafúkne sa naň a praskne; zatvorené okno praskne (`goo/parts/bubble.plm`, `goo/lib/born.luau`, `latte/windows.lua` — pravidlo `latte-born` ho dovtedy drží neviditeľné). Overené snímkami na latte-lab (QueenGoo › App Manager).
 
 **6.07** [x] (GooEngine) hra pri nečinnosti · r. 104–105
 

@@ -250,6 +250,55 @@ local function minimize(w)
     if W.current == "glance" and W.glance_next then W.glance_next(w) end      -- the middle does not stay empty
 end
 
+-- ── a window born of a drop comes in a bubble; closed, it bursts (LATTEOS-GOO rule 14) ──────────────────────
+-- The scene says a drop was pressed (`latte.win.expect`); the next window within a few seconds is kept clear
+-- while the bubble flies from the drop to it and blows up to its size. Both ways the scene is told where the
+-- window is, as for a window put away.
+local expected, BLOWS = 0, 600             -- os.time() until which a window is expected; ms the bubble takes
+local born_rule                            -- keeps the expected window clear from its first frame (W.setup)
+local function tell_where(w, event)
+    local x, y = xy(w.at)
+    local width, height = xy(w.size)
+    local m = w.monitor
+    hl.exec_cmd(string.format('latte-say "fact win.x %d" "fact win.y %d" "fact win.w %d" "fact win.h %d" "fact win.on %d" "emit %s"',
+                              x - (m and m.x or 0), y - (m and m.y or 0), width, height, m and m.id or 0, event))
+end
+-- Clear is no picture, no blur behind it, no shadow and no animation. The window's opacity multiplies the configured one (the
+-- glass's): 1 gives that back; "unset" is refused.
+-- ponytail: no_anim, no_blur and no_shadow go back to 0, not to what a window rule may have set; a rule for them needs keeping
+local function clear(address, on)
+    local function set(prop, value) hl.dispatch(hl.dsp.window.set_prop({ prop = prop, value = value, window = "address:" .. address })) end
+    set("no_anim", on and "1" or "0")          -- first: else the window fades out, a ghost, and back in without fading
+    set("opacity", on and "0" or "1")
+    set("no_blur", on and "1" or "0")
+    set("no_shadow", on and "1" or "0")
+end
+local hiding = false                       -- born_rule is on
+local function hide(on) hiding = on if born_rule then born_rule:set_enabled(on) end end
+local function expect()
+    expected = os.time() + 5
+    hide(true)
+    -- no window came: the rule must not hide one that comes later
+    hl.timer(function() if os.time() > expected then hide(false) end end, { timeout = 5500, type = "oneshot" })
+end
+hl.on("window.open", function(w)
+    if not w then return end
+    local was = hiding
+    if was then hide(false) end
+    if os.time() > expected then if was then clear(w.address, false) end return end   -- late: what the rule did is undone
+    expected = 0
+    local address = w.address
+    clear(address, true)
+    -- the glass plugin takes no_blur in only when it is set again once the window is up
+    hl.timer(function() if find(address) then clear(address, true) end end, { timeout = 1, type = "oneshot" })
+    -- where it ends up is known once the layout has placed it; its rules, applied meanwhile, gave back the blur
+    hl.timer(function() local v = find(address) if v then clear(address, true) tell_where(v, "win_born") end end, { timeout = 60, type = "oneshot" })
+    hl.timer(function() if find(address) then clear(address, false) end end, { timeout = BLOWS, type = "oneshot" })
+end)
+hl.on("window.close", function(w)
+    if w and not put_away(w) and w.fullscreen ~= 2 then tell_where(w, "win_pop") end
+end)
+
 -- ── glance: the window one works in fills the middle; the others look out from the sides ──────────────────
 -- After Scott Jenson's Glance (github.com/scottjenson/Glance, MIT), with what Hyprland has: a window cannot be
 -- drawn smaller than it is, so one at the side keeps the size of the middle and shows the strip of it that the
@@ -369,6 +418,8 @@ function W.setup()
         dwindle = { preserve_split = true },
     })
     float_rule = hl.window_rule({ name = "latte-floating", match = { class = ".*" }, float = true })
+    born_rule = hl.window_rule({ name = "latte-born", match = { class = ".*" }, no_anim = true, opacity = "0", no_blur = true, no_shadow = true })
+    born_rule:set_enabled(false)
     -- read anew, the configuration has forgotten which windows were pulsing: none keeps a lit border
     for _, w in ipairs(hl.get_windows() or {}) do border(w.address) end
     local plugin = io.open(W.plugin, "r")
@@ -403,6 +454,7 @@ function W.setup()
         end,
         activate = with(activate),
         minimize = with(minimize),
+        expect = expect,
         -- a press on a window in the bar, as on Windows: one that is not in front comes forward, the one in front is put away
         toggle = with(function(w)
             local active = hl.get_active_window()

@@ -59,6 +59,7 @@
 /usr/share/latteos/goo/lib/icons.luau                   <- goo/lib/icons.luau
 /usr/share/latteos/goo/lib/fold.luau                    <- goo/lib/fold.luau
 /usr/share/latteos/goo/lib/dangerous.luau               <- goo/lib/dangerous.luau
+/usr/share/latteos/goo/lib/born.luau                    <- goo/lib/born.luau
 /usr/share/latteos/goo/lang/sk.plm                      <- goo/lang/sk.plm
 /usr/share/latteos/goo/lang/sk-dates.json               <- goo/lang/sk-dates.json
 /usr/share/latteos/goo/goo.plm                          <- goo/goo.plm
@@ -111,6 +112,7 @@
 /usr/share/applications/latteos-settings.desktop        <- system/applications/latteos-settings.desktop
 /usr/share/applications/latteos-files.desktop           <- system/applications/latteos-files.desktop
 /usr/share/latteos/goo/parts/drops.plm                  <- goo/parts/drops.plm
+/usr/share/latteos/goo/parts/bubble.plm                 <- goo/parts/bubble.plm
 /usr/share/latteos/goo/parts/picks.plm                  <- goo/parts/picks.plm
 /usr/share/latteos/goo/parts/body.plm                   <- goo/parts/body.plm
 /usr/share/latteos/goo/parts/shapes.plm                 <- goo/parts/shapes.plm

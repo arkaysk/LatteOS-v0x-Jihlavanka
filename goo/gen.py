@@ -105,6 +105,8 @@ def picks(n):
         # the drop that carries the performance strip
         ("strip_owner", (("strip.x", "x.{k}"), ("strip.y", "y.{k}"), ("strip.r", "rr.{k}"), ("strip.cap", "cap.{k}"),
                          ("strip.edge", "goo.{k}.edge"), ("strip.dir", "goo.{k}.cap_dir"))),
+        # the drop a window is born of: its bubble leaves from there
+        ("born_owner", (("born.x", "x.{k}"), ("born.y", "y.{k}"), ("born.r", "rr.{k}"))),
         # the drop that carries the quick-launch strip
         ("launch_owner", (("launch.x", "x.{k}"), ("launch.y", "y.{k}"), ("launch.r", "rr.{k}"), ("launch.cap", "cap.{k}"),
                           ("launch.edge", "goo.{k}.edge"), ("launch.dir", "goo.{k}.cap_dir"))),

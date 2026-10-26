@@ -5,6 +5,14 @@ tu je, **kedy a prečo** sa čo rozhodlo, a čo bolo zamietnuté. Podrobné pôv
 z vtedy) je v [docs_zaloha/2026-10-06-latteos-goo-pred-rozdelenim.md](../../docs_zaloha/2026-10-06-latteos-goo-pred-rozdelenim.md).
 Nové rozhodnutie: jeden riadok sem (dátum, čo, prečo) a oprava platného znenia v LATTEOS-GOO.md.
 
+## 26. 10. 2026
+
+- **Okno z bubliny (pravidlo 14), technické riešenie (Claude, na overenie používateľom):** okno patrí kvapke, na ktorú (alebo na riadok jej karty) sa klikol najviac 5 s
+  pred jeho otvorením — podľa času, nie podľa toho, čo ktorá kvapka spúšťa, aby to platilo pre všetky kvapky bez úprav
+  každého spúšťania. Hyprland drží nové okno neviditeľné (pravidlo `latte-born`: bez obrazu, rozmazania, tieňa a animácie),
+  kým bublina doletí a nafúkne sa (0,6 s); zatvorenie okna praskne v scéne vždy. Prečo: kreslenie bubliny nad už
+  ukázaným oknom vyzeralo ako dve veci naraz.
+
 ## 23. 10. 2026
 
 - **Polkit pre údaje SMBIOS DIMM:** zachovať vlastnú kartu LatteOS/Goo, nie systémový dialóg. Požiadavku zo Správcu zariadení odovzdať agentovi spustenému compositorom v grafickej logind relácii; až tento agent spustí pevne daný read-only príkaz `latte-devices protected-memory` a výsledok vráti cez Pleamar IPC. Nepresúvať GUI ani user-systemd do inej relácie, nespúšťať trvalý root démon.

@@ -1,0 +1,65 @@
+// A window born of a drop comes in a bubble, and a window closed bursts as one (LATTEOS-GOO rule 14).
+// The compositor keeps the new window clear and says where it is (`win.*`, then `win_born`); the logic names the
+// drop it is born of (`born_owner`, −1: none, it rises from the middle of the surface) and counts up `blow_n`.
+// The bubble leaves the drop, flies in an arc to the window's middle, blows up to the window's size and bursts
+// as the window shows: system/hypr/latte/windows.lua keeps it clear as long (BLOWS there, FLY + GROW here).
+// A window closed (`win_pop`, then `pop_n`): a film its size flashes and bursts into spray.
+part Bubble {
+    event win_born ->
+    event win_pop ->
+    event blow_burst                           // the logic: the bubble is as big as the window
+    event pop_burst                            // the logic: a window closed on this screen
+    fact born_owner = -1
+    fact blow.x = 0                            // the window's middle and size, on this screen
+    fact blow.y = 0
+    fact blow.w = 0
+    fact blow.h = 0
+    fact blow_n = 0
+    fact blow.at = -100
+    fact pop.x = 0
+    fact pop.y = 0
+    fact pop.w = 0
+    fact pop.h = 0
+    fact pop_n = 0
+    fact pop.at = -100
+    let FLY = 0.32
+    let GROW = 0.26
+    let film = mix(coffee, cream, 0.35)
+
+    // where it leaves from, taken when it leaves: the drop goes on moving
+    prop blow.sx = 0 ~0ms
+    prop blow.sy = 0 ~0ms
+    prop blow.sr = 0 ~0ms
+    on change blow_n {
+        blow.at = time
+        blow.sx: if(born_owner >= 0, born.x, W / 2) ~0ms
+        blow.sy: if(born_owner >= 0, born.y, H - 20) ~0ms
+        blow.sr: if(born_owner >= 0, born.r * 0.6, 14) ~0ms
+    }
+    let bt = time - blow.at
+    let bf = clamp(bt / FLY, 0, 1)
+    let be = 1 - (1 - bf) * (1 - bf)
+    let bg = clamp((bt - FLY) / GROW, 0, 1)
+    let bs = bg * bg * (3 - 2 * bg)
+    let br = blow.sr + (34 - blow.sr) * be                              // it swells a little on the way
+    let bx = blow.sx + (blow.x - blow.sx) * be
+    let by = blow.sy + (blow.y - blow.sy) * be - 90 * sin(bf * 3.1416)
+    let bw = 2 * br * (1 + 0.06 * sin(bt * 40) * (1 - bg)) + (blow.w - 2 * br) * bs
+    let bh = 2 * br * (1 - 0.06 * sin(bt * 40) * (1 - bg)) + (blow.h - 2 * br) * bs
+    let bc = br + (14 - br) * bs
+    group {
+        show: bt < FLY + GROW and blow.w > 0
+        opacity: 1 - 0.35 * bs
+        box { at: bx, by; size: bw, bh; corner: bc; color: film; opacity: 16% }
+        box { at: bx, by; size: bw, bh; corner: bc; stroke: 2; color: cream; opacity: 55% }
+        ellipse { at: bx - bw * 0.28, by - bh * 0.3; radius: min(bw, bh) * 0.09; scale: 1.8, 0.8; color: #ffffff; opacity: 45% }
+    }
+    particles { at: blow.x, blow.y; area: blow.w, blow.h; count: 240; life: 0.35s .. 0.7s; speed: 30 .. 150; gravity: 0, 700; drag: 1.2
+                size: 5, 2; colors: cream, film; opacity: 70%, 0%; shape: dot; burst: blow_burst }
+
+    on change pop_n { pop.at = time }
+    let pk = clamp((time - pop.at) / 0.18, 0, 1)
+    box { at: pop.x, pop.y; size: pop.w * (1 + 0.04 * pk), pop.h * (1 + 0.04 * pk); corner: 14; stroke: 2; color: cream; opacity: 50% * (1 - pk); show: pk < 1 and pop.w > 0 }
+    particles { at: pop.x, pop.y; area: pop.w, pop.h; count: 240; life: 0.35s .. 0.7s; speed: 30 .. 150; gravity: 0, 700; drag: 1.2
+                size: 5, 2; colors: cream, film; opacity: 70%, 0%; shape: dot; burst: pop_burst }
+}

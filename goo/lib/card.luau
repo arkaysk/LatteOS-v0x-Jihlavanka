@@ -31,6 +31,7 @@
 -- Options: `custom` ("clock") draws a scene of its own instead of rows, `split` says where its coffee begins, `grow` lets it grow with the screen (card.z in parts/card.plm). `uniform` is for a family of cards of one size (LensGoo's modes). `menu` makes it a classic context menu (at the pointer, solid, no ear). `pane` (0…1) makes the card glass above its `wave` row and solid coffee below it. `keep` refreshes an open card in place (live figures): the rows do not come in again and the row
 -- chosen with the keys stays.
 local icons = require("lib/icons")
+local born = require("lib/born")
 local M = {}
 
 local CARD_W, CARD_H, WAVE_AT = 600, 580, 502            -- a family of cards that keep one size (`uniform`) is this wide and at least this tall
@@ -157,7 +158,8 @@ function M.open(rows, opts)
         elseif it.keep then
             return function() if it.run then it.run() end end
         end
-        return function() M.close() if it.run then it.run() end end
+        -- what the card starts, a window that may come of it, is born of the drop the card grows from
+        return function() local k = fact.card_owner M.close() if it.run then born.touch(k) it.run() end end
     end
     local function bind(id, it)
         actions[id] = action(it)

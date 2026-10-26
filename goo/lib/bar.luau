@@ -15,6 +15,7 @@
 -- A press on a berry is a press on a taskbar: the window comes forward, the one in front is put away.
 local E = require("lib/engine")
 local wm = require("lib/wm")
+local born = require("lib/born")
 local card = require("lib/card")
 local ctx = require("lib/ctx")
 local M = {}
@@ -378,6 +379,28 @@ on("win_min", function()
     fact.gone_n += 1
     after((takes + 0.2) * 1000, function() E.ripple(to / sw, 7, "stone") end)
     after(250, M.refresh)                    -- its berry dims at once
+end)
+
+-- A window born of a drop: its bubble flies from the drop and blows up to it, then bursts (parts/bubble.plm);
+-- a window closed bursts where it was. Only the scene on the window's monitor draws it.
+local function on_this(w, h)
+    return not (wm.monitor() and fact["win.on"] ~= wm.monitor()) and w > 0 and h > 0 and (tonumber(fact.sw) or 0) > 0
+end
+on("win_born", function()
+    local k = born.take()
+    local x, y, w, h = fact["win.x"], fact["win.y"], fact["win.w"], fact["win.h"]
+    if not on_this(w, h) then return end
+    fact.born_owner = k
+    fact["blow.x"], fact["blow.y"], fact["blow.w"], fact["blow.h"] = x + w / 2, y + h / 2, w, h
+    fact.blow_n += 1
+    after(580, function() emit("blow_burst") end)
+end)
+on("win_pop", function()
+    local x, y, w, h = fact["win.x"], fact["win.y"], fact["win.w"], fact["win.h"]
+    if not on_this(w, h) then return end
+    fact["pop.x"], fact["pop.y"], fact["pop.w"], fact["pop.h"] = x + w / 2, y + h / 2, w, h
+    fact.pop_n += 1
+    emit("pop_burst")
 end)
 
 -- ── keeping up with the windows ──────────────────────────────────────────────────────────────────────────────

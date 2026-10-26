@@ -26,6 +26,7 @@ scene GooSide {
     include "parts/drops.plm"
     include "parts/picks.plm"
     include "parts/body.plm"
+    include "parts/bubble.plm"
     include "parts/card.plm"
     include "parts/faces.plm"
     include "parts/strip.plm"

@@ -237,7 +237,7 @@ ostatné kvapky sú iba na hlavnom monitore.
 
 - *(Fresh, 13. 10.: kvapka je — `goo/drops/queengoo.luau`: korunka, červená guľka pri zariadení bez ovládača či
   firmvéru, zelená pri výpadku siete, modrá pri aktualizáciách; ľavý klik otvorí App Manager (pri aktualizáciách
-  na nich), pravý Správcu zariadení. Okno sa zatiaľ rodí obyčajne, nie z bubliny.)*
+  na nich), pravý Správcu zariadení. Okno sa rodí z bubliny: 26. 10., pozri §8.)*
 - **Správca zariadení** *(Fresh, 13. 10.; `apps/devices.qml`, `bin/latte-devices`)*: prehľad — meno a model počítača,
   procesor, pamäť, jadro, veľký krúžok „Všetko funguje“ alebo počet zariadení, ktoré potrebujú pozornosť; skupiny
   ako dlaždice (Obrazovky, Grafika, Zvuk, Sieť, Disky, Klávesnice a myši, Kamery, Bluetooth, Tlačiarne, USB,
@@ -606,6 +606,10 @@ nemá (AI je hľadanie, Financie a Sociálne sú podkategórie Flathubu).
   (`ext-session-lock`), heslo overí systém; vyzerá ako prihlásenie v pokoji. Keby scéna pri zamknutí spadla, nová
   zamkne znova. Pri nečinnosti (hypridle, `latte-idle.service`) zamkne po 10 min, po 15 min zhasne obrazovky (časy: Nastavenia › Uzamknutie a nečinnosť),
   zamkne aj pred uspaním; film, hra či hovor (inhibítor) a okno na celú obrazovku tomu bránia. Samo sa neuspáva.
+- **Okno z bubliny** (pravidlo 14, 26. 10.; `goo/parts/bubble.plm`, `goo/lib/born.luau`, `system/hypr/latte/windows.lua`):
+  okno otvorené do 5 s po kliku na kvapku (alebo na riadok jej karty) vyletí z nej ako bublina, oblúkom preletí na
+  miesto okna, nafúkne sa naň a praskne do spŕšky, keď sa okno ukáže; dovtedy ho Hyprland drží neviditeľné.
+  Zatvorené okno praskne ako bublina tam, kde bolo. Bublinu kreslí scéna monitora, na ktorom okno je.
 - **Goo z klávesnice** (§6.1, Win+T): šípky po kvapkách dokola po obvode, Enter a medzerník ľavý klik, Menu a Shift+F10
   pravý, + a − koliesko, Esc von; vybraná kvapka sa zdvihne, pulzuje a ukáže bublinu; skončí sám po voľbe okna,
   po voľbe v karte a po minúte.
@@ -615,6 +619,6 @@ nemá (AI je hľadanie, Financie a Sociálne sú podkategórie Flathubu).
 
 **Ešte nie je** (vráti sa po kusoch, poradie v ROADMAP):
 ChatGoo (čaká na Beeper), Tvorca Goo (vlastné kvapky už sú: §4.7),
-okno z bubliny (14; pád minimalizovaného okna už je), prenášanie ikier medzi monitormi, ďalší poskytovatelia AI,
+prenášanie ikier medzi monitormi, ďalší poskytovatelia AI,
 portrét účtu, účty kalendárov so zápisom (CalDAV),
 živé tapety a vlastný obrázok tapety, náhľad cieľa a lišta rozložení pri ťahaní okna, Nastavenia a ostatné aplikácie.
