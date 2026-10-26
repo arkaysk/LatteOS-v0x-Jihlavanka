@@ -328,17 +328,6 @@ ShellRoot {
         const list = screenList.map(m => m.name === name ? Object.assign({}, m, what) : m)
         tryScreens(crowded(list) ? laid(list, screenMain) : placed(list, screenMain))
     }
-    function moveScreen(name, by) {
-        const list = screenList.slice(), i = list.findIndex(m => m.name === name), j = i + by
-        if (i < 0 || j < 0 || j >= list.length) return
-        const m = list[i]; list[i] = list[j]; list[j] = m
-        tryScreens(laid(list, screenMain))
-    }
-    // a few pixels up or down: two screens of different sizes are lined up by eye against the guide line
-    function nudgeScreen(name, by) {
-        const list = screenList.map(m => m.name === name ? Object.assign({}, m, { y: m.y + by }) : m)
-        if (!crowded(list)) tryScreens(placed(list, screenMain))
-    }
     function keepScreens() { putScreens(screenList.map(asIs), true); screenBefore = null; screenWait = 0 }
     function screensBack() { if (screenBefore) putScreens(screenBefore, false); screenBefore = null; screenWait = 0 }
     Timer { interval: 1000; repeat: true; running: shell.screenWait > 0; onTriggered: if (--shell.screenWait <= 0) shell.screensBack() }
@@ -1172,14 +1161,21 @@ ShellRoot {
                 readonly property real y1: shell.screenList.length ? Math.max.apply(null, shell.screenList.map(m => m.y + shell.tall(m))) : 1
                 readonly property real room: 1.6          // space around, to drag a screen into
                 // the scale of its first 260 px: made taller, it gains room, the screens stay as large
-                readonly property real k: Math.min(width / Math.max(1, (x1 - x0) * room), 260 / Math.max(1, (y1 - y0) * room))
+                property real zoom: 1                            // the wheel over it: closer for a finer move
+                readonly property real k: zoom * Math.min(width / Math.max(1, (x1 - x0) * room), 260 / Math.max(1, (y1 - y0) * room))
+                // over all of it, the wheel only: a press goes through to the screens below
+                MouseArea { anchors.fill: parent; z: 6; acceptedButtons: Qt.NoButton
+                    onWheel: e => desk.zoom = Math.max(0.25, Math.min(12, desk.zoom * (e.angleDelta.y > 0 ? 1.2 : 1 / 1.2))) }
+                // the main screen's edges, where it is being dragged to while it is
+                property bool mainAway: false
+                property point mainG
+                readonly property var edges: !shell.guides || !main ? shell.guides : !mainAway ? shell.guides
+                    : { "top": mainG.y, "bottom": mainG.y + shell.tall(main), "left": mainG.x, "right": mainG.x + shell.wide(main) }
                 readonly property real ox: (width - (x1 - x0) * k) / 2
                 readonly property real oy: (height - (y1 - y0) * k) / 2
                 readonly property var main: shell.screenList.find(m => m.name === shell.screenMain) || null
-                // where a screen dragged to nx,ny lands: kept inside the picture, an edge near a neighbour's sticks to it
+                // where a screen dragged to nx,ny lands: an edge near a neighbour's sticks to it
                 function snap(m, nx, ny) {
-                    nx = Math.max(x0 - ox / k, Math.min(nx, x0 + (width - ox) / k - shell.wide(m)))
-                    ny = Math.max(y0 - oy / k, Math.min(ny, y0 + (height - oy) / k - shell.tall(m)))
                     let bx = nx, by = ny, dx = 14 / k, dy = 14 / k
                     for (const o of shell.screenList) {
                         if (o.name === m.name) continue
@@ -1199,6 +1195,9 @@ ShellRoot {
                         property point g: Qt.point(0, 0)
                         readonly property bool free: !shell.screenList.some(o => o.name !== modelData && shell.overlap({ x: g.x, y: g.y, width: m.width, height: m.height, scale: m.scale, transform: m.transform }, o))
                         onMChanged: landed = false
+                        readonly property bool away: held || landed
+                        onAwayChanged: if (modelData === shell.screenMain) desk.mainAway = away
+                        onGChanged: if (modelData === shell.screenMain) desk.mainG = g
                         x: desk.ox + ((held || landed ? g.x : m.x) - desk.x0) * desk.k + 3; y: desk.oy + ((held || landed ? g.y : m.y) - desk.y0) * desk.k + 3
                         z: held ? 2 : 0
                         width: shell.wide(m) * desk.k - 6; height: shell.tall(m) * desk.k - 6; radius: 14
@@ -1228,10 +1227,10 @@ ShellRoot {
                                 if (moved) shell.tryScreens(shell.placed(shell.screenList.map(o => o.name === scr.modelData ? Object.assign({}, o, { x: scr.g.x, y: scr.g.y }) : o), shell.screenMain))
                             } } } }
                 // the main screen's edges drawn on, as on the screens themselves
-                Repeater { model: shell.guides ? ["top", "bottom", "left", "right"] : []
+                Repeater { model: desk.edges ? ["top", "bottom", "left", "right"] : []
                     Rectangle { required property string modelData
                         readonly property bool across: modelData === "top" || modelData === "bottom"
-                        readonly property real at: across ? desk.oy + (shell.guides[modelData] - desk.y0) * desk.k : desk.ox + (shell.guides[modelData] - desk.x0) * desk.k
+                        readonly property real at: across ? desk.oy + (desk.edges[modelData] - desk.y0) * desk.k : desk.ox + (desk.edges[modelData] - desk.x0) * desk.k
                         z: 1; color: Theme.red; opacity: 0.7
                         x: across ? 0 : at - 1; y: across ? at - 1 : 0
                         width: across ? desk.width : 2; height: across ? 2 : desk.height } } }
@@ -1259,11 +1258,7 @@ ShellRoot {
                        onPressed: { screensWord.value = "extend"; shell.order(["hyprctl", "eval", "latte.duplicate(false)"]) } }
                 Pill { icon: "copy"; text: I18n.tr("Duplicate"); strong: screensWord.value === "duplicate"
                        onPressed: { screensWord.value = "duplicate"; shell.order(["hyprctl", "eval", "latte.duplicate(true)"]) } } }
-            Part { visible: shell.page === "displays"; width: view.room; title: I18n.tr("Where it stands"); note: I18n.tr("Drag the screens in the picture above to where they stand on your desk; the pointer goes over where their edges touch. The red lines are the main screen's edges: show them on the other screens and move a screen a little higher or lower until they run on from the main one's edges. The main one carries the drops; every other has a window bar of its own.")
-                Pill { icon: "chevron-left"; text: I18n.tr("Further left"); onPressed: shell.moveScreen(shell.screenHere.name, -1) }
-                Pill { icon: "chevron-right"; text: I18n.tr("Further right"); onPressed: shell.moveScreen(shell.screenHere.name, 1) }
-                Pill { icon: "chevron-up"; text: I18n.tr("A little higher"); onPressed: shell.nudgeScreen(shell.screenHere.name, -4) }
-                Pill { icon: "chevron-down"; text: I18n.tr("A little lower"); onPressed: shell.nudgeScreen(shell.screenHere.name, 4) }
+            Part { visible: shell.page === "displays"; width: view.room; title: I18n.tr("Where it stands"); note: I18n.tr("Drag the screens in the picture above to where they stand on your desk; the pointer goes over where their edges touch. Scroll over it to zoom in for a finer move. The red lines are the main screen's edges: show them on the other screens and move a screen until they run on from the main one's edges. The main one carries the drops; every other has a window bar of its own.")
                 Pill { icon: shell.guideShown ? "eye-off" : "eye"; text: I18n.tr("Show the lines on the screens"); strong: shell.guideShown; onPressed: shell.guideShown = !shell.guideShown }
                 Pill { icon: "cup"; text: I18n.tr("Make it the main screen"); visible: shell.screenHere !== null && shell.screenMain !== shell.screenHere.name; onPressed: shell.tryScreens(shell.placed(shell.screenList, shell.screenHere.name)) } }
 

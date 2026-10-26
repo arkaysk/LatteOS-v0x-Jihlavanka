@@ -6,6 +6,7 @@ drag it and let it go. Steps, in order:
   X,Y      go there (pixels of a screen WIDTH × HEIGHT), in small moves, as a hand does
   down     press the left button          up     let it go          rdown, rup   the right one
   mdown, mup   the middle one         bdown, bup   the mouse's back button
+  wheelup, wheeldown   one notch of the wheel
   0.5      wait that many seconds
 For the DO of tests/screen.sh:   pointer.py 1920x1080 400,300 down 2,300 0.3 up
 
@@ -92,6 +93,10 @@ def main(a):
         if step in ("down", "up", "rdown", "rup", "mdown", "mup", "bdown", "bup"):
             button = BTN_LEFT + {"r": 1, "m": 2, "b": 3}.get(step[0], 0)        # left, right, middle, side (back)
             w.send(pointer, 2, struct.pack("<III", now(), button, 1 if step.endswith("down") else 0))
+            w.send(pointer, 4)
+        elif step in ("wheelup", "wheeldown"):
+            w.send(pointer, 5, struct.pack("<I", 0))                                    # axis_source: wheel
+            w.send(pointer, 3, struct.pack("<IIi", now(), 0, (-15 if step == "wheelup" else 15) * 256))  # axis: vertical
             w.send(pointer, 4)
         elif "," in step:
             x, y = (float(v) for v in step.split(","))
