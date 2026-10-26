@@ -535,14 +535,19 @@ tiež je sučastou aj prevodnik jednotiek a mien pričom nemosi byt použiti pre
 
 **6B.07** [x] bola najdena chyba. ked sa skrolujekolieskom, na ai založke sa skrolovanie zastavy a už nejde ani spatky. — **Opravené 26. 10.:** karta pri každom obnovení (každý kúsok písanej odpovede, limity, ponuka) stiahla rozhovor na koniec a prebila koliesko. Teraz ide na koniec iba nová správa; písanú odpoveď rozhovor nasleduje, len keď je človek dole (`ai_new`, `ai_gen` v `goo/parts/ai.plm`). Overené s lokálnou AI: počas 143 obnovení ostal rozhovor hore, kde sa čítalo; dole nasledoval odpoveď.
 
-**6B.08** [~] pridat kontexctove menu v ploche ai vnutri popupu LensGoo. mosi byt možnost skopirovat spravu, a tiež kd sa klikne do tej plochy, musi tam byt nastavenie priehladnosti. 
+**6B.08** [x] pridat kontexctove menu v ploche ai vnutri popupu LensGoo. mosi byt možnost skopirovat spravu, a tiež kd sa klikne do tej plochy, musi tam byt nastavenie priehladnosti. 
 ta biela plocha je prisilna a potrebuje mat volitelnu hodnotu priehladnosti.
-   **26. 10. urobené, neoverené klikom** (obrazovka sa počas skúšky zamkla): pravý klik na správu → Kopírovať správu,
-   Kopírovať celý rozhovor, Priehľadnosť plochy (Ako LatteOS · Nepriehľadná · Trochu · Priehľadnejšia · Najpriehľadnejšia ·
-   Sklo); pravý klik vedľa správ → to isté bez prvej položky. Voľba v `settings.json` (`ai_glass`), pri softvérovom kreslení
-   sa plocha iba spriehľadní. Overiť: že zóny správ odrolovaných mimo pohľad nechytajú kliky (popis scény hlási „covered by
-   said#m9“ nad hlavou BarGoo).
+   **Urobené a overené 26. 10.:** pravý klik na správu → Kopírovať (Ctrl+C), Kopírovať celý rozhovor; vedľa správ → celý
+   rozhovor; pri službách s vlastnou stránkou (Claude, Gemini…) aj **Priehľadnosť plochy** (Ako LatteOS · Nepriehľadná ·
+   Trochu · Priehľadnejšia · Najpriehľadnejšia · Sklo, mlieko 85 → 40 %, aj pole na písanie; voľba `ai_glass` v
+   `settings.json`). V poli otázky Vystrihnúť · Kopírovať · Prilepiť so skratkami vpravo, ako ponuka vo Windowse (ponuka Goo
+   vie odteraz ukázať skratku: `keys`). Pri každej správe ikona **Kopírovať** jedným klikom (nápad používateľa). Ctrl+C
+   na vyznačenom texte a Ctrl+V v poli fungovali už predtým.
 
+
+**6B.09** [ ] **Ikona Kopírovať pri každom texte LatteOS, ktorý sa dá kopírovať** (používateľ 26. 10.): ako pri správach AI
+(6B.08) — príkazy, chybové hlásenia, správy na skopírovanie (Posledný pád), adresy, výsledok kalkulačky; v Goo aj
+v aplikáciách LatteOS. Tlmená pri texte, rozsvieti sa pod kurzorom, klik skopíruje celý text.
 ### 6C. [~] PowerGoo
 Zdroje: LATTEOS-GOO §4.2, `crates/latte-stats`
 
@@ -906,11 +911,15 @@ obrazovke na 3 s, to isté číslo na pegboarde; **Nočné osvetlenie** — prep
 `latte-sky` ich pozná) a dlaždica v paneli Pobrežia; **HDR** a **profil farieb** (Hyprland 0.56: `cm`, `bitdepth`; zistiť, či
 monitor HDR vie); **Rozšírené nastavenia** (údaje o monitore, VRR); **Grafika** (ktorá karta pre ktorú aplikáciu, pri dvoch GPU).
 
-### 8C. [x] Sklo a materiály
+### 8C. [~] Sklo a materiály
 Sklo okien (Hyprglass), materiály šálky.
 
 **8C.01** [x] (Vzhľad, témy a tapety) sklo okien · r. 195–195
 
+
+**8C.02** [ ] **Posledné dva stupne skla sa správajú inak** (používateľ 26. 10.): pri predposlednom (Najviac) a poslednom
+(True Glass) stupni platia pre priehľadnosť iné pravidlá než pri ostatných (True Glass robí okná priehľadné samy
+aplikácie LatteOS, iné nie; karty a okná sa líšia). Zjednotiť, aby stupne išli plynulo za sebou; riešiť neskôr s témami (9A).
 ### 8D. [~] Okno aplikácií LatteOS
 Spoločné okno aplikácií: bočný panel zo skla, hladina dole (`apps/common/AppWindow.qml`).
 Zdroje: `apps/common/` (AppWindow, Surface, Menu); LATTEOS-GOO §6.3·0

@@ -3,7 +3,7 @@
 // closes with a press anywhere else — not a card of the goo. Its rows come from lib/ctx.luau.
 part Ctx {
     model ctx max 14 {
-        label: text; glyph: text; icon: image 44, 44; has_icon: bool; danger: bool; on: bool; line: bool; more: bool
+        label: text; glyph: text; icon: image 44, 44; has_icon: bool; danger: bool; on: bool; line: bool; more: bool; keys: text; keys_w: number
     }
     fact ctx_open = false
     fact ctx_w = 250                           // its size, worked out by the logic from the rows
@@ -46,7 +46,9 @@ part Ctx {
         box { from: 0, if(r.line, 10, 0); size: ctx_w - 12, 36; corner: 8; color: if(r.danger, #e5484d, #4a372b); opacity: hit.hover * if(r.danger, 22%, 100%) }
         image r.icon { at: 8, if(r.line, 14, 4); size: 24, 24; show: r.has_icon }
         text r.glyph { at: 20, if(r.line, 28, 18); anchor: center; size: 16; color: if(r.danger, #e5484d, #f3ebdd); opacity: 90%; show: not r.has_icon; family: "tabler-icons" }
-        text r.label { at: 40, if(r.line, 28, 18); anchor: left center; width: ctx_w - 90; lines: 1; size: 14; weight: 500; color: if(r.danger, #e5484d, #f3ebdd); family: "Inter" }
+        text r.label { at: 40, if(r.line, 28, 18); anchor: left center; width: ctx_w - 90 - r.keys_w; lines: 1; size: 14; weight: 500; color: if(r.danger, #e5484d, #f3ebdd); family: "Inter" }
+        // the keys that do the same, as a classic menu says them: Ctrl+C
+        text r.keys { at: ctx_w - 24, if(r.line, 28, 18); anchor: right center; size: 12.5; color: #b8a491; family: "Inter" }
         text g_check { at: ctx_w - 30, if(r.line, 28, 18); anchor: center; size: 15; color: #f7c873; show: r.on; family: "tabler-icons" }
         text g_more { at: ctx_w - 30, if(r.line, 28, 18); anchor: center; size: 15; color: #b8a491; show: r.more; family: "tabler-icons" }
         zone box hit { from: 0, if(r.line, 10, 0); size: ctx_w - 12, 36; cursor: pointer; active: ctx_open; label: "{r.label}" }

@@ -16,7 +16,7 @@ local dangerous = require("lib/dangerous")
 local open = require("lib/open")
 local own = require("lib/own")
 local quick = require("drops/quickgoo")
-local engine = require("lib/engine")
+local drops = require("lib/engine")      -- not `engine`: that is the web search engine below
 local M = {}
 -- N marks a text for the translation table (tests/check.sh looks for it); tr() translates it where it is shown.
 local function N(s) return s end
@@ -533,6 +533,7 @@ fill_ai = function()
     model.aiagent = agents
     text.ic_ai_center, text.ic_ai_settings, text.ic_ai_new = icons["messages"], icons["settings"], icons["message-plus"]
     text.ic_ai_send, text.ic_ai_chev, text.ic_ai_spark, text.ic_ai_check = icons["arrow-up"], icons["chevron-down"], icons["sparkles"], icons["check"]
+    text.ic_ai_copy = icons["copy"]
     text.ic_ai_wave, text.ic_ai_plane, text.ic_ai_stop = icons["wave-sine"], icons["send"], icons["player-stop"]
     text.ic_ai_plus, text.ic_ai_clip, text.ic_ai_shot, text.ic_ai_x = icons["plus"], icons["paperclip"], icons["screenshot"], icons["x"]
     text.ai_add_file, text.ai_add_shot = tr("Attach a file…"), tr("A picture of the screen")
@@ -541,22 +542,44 @@ fill_ai = function()
     text.ai_mic_word = fact.ai_listening == 1 and tr("Stop and write it down") or tr("Speak")
 end
 -- `asked`: a question made for the user (a micro-agent), to whom it goes (`pid`, `mid`); else what is in the field
--- The right button in the conversation (6B.08): copy a message or all of it, and how see-through the page is.
+-- The right button in the conversation (6B.08): copy a message or all of it, and how see-through the page is;
+-- in the field, cut, copy and paste. (Ctrl+C on selected letters and Ctrl+V in the field work by themselves.)
 local AI_GLASS = { N("Solid"), N("A little see-through"), N("More see-through"), N("Most see-through"), N("Glass") }
+on("ai_copy", function(i)
+    local said = ai_shown[(i or -1) + 1]
+    if said then pcall(sys.call, "clipboard.set", said.body) end
+end)
 on("ai_menu", function(i)
     local rows, said = {}, ai_shown[(i or -1) + 1]
-    if said then rows[#rows + 1] = { label = tr("Copy the message"), glyph = "copy", run = function() pcall(sys.call, "clipboard.set", said.body) end } end
-    if #ai_shown > 0 then
-        rows[#rows + 1] = { label = tr("Copy the conversation"), glyph = "clipboard", run = function()
-            local all = {}
-            for _, r in ipairs(ai_shown) do all[#all + 1] = r.who .. ":\n" .. r.body end
-            pcall(sys.call, "clipboard.set", table.concat(all, "\n\n"))
+    local function copy(t) pcall(sys.call, "clipboard.set", t) end
+    if i == -2 then
+        -- the question being written: as any field's menu
+        local typed = text.ai_q or ""
+        if typed ~= "" then
+            rows[#rows + 1] = { label = tr("Cut"), glyph = "cut", keys = "Ctrl+X", run = function() copy(typed) text.ai_q, fact.ai_typed = "", false end }
+            rows[#rows + 1] = { label = tr("Copy"), glyph = "copy", keys = "Ctrl+C", run = function() copy(typed) end }
+        end
+        rows[#rows + 1] = { label = tr("Paste"), glyph = "clipboard", keys = "Ctrl+V", run = function()
+            local ok, got = pcall(sys.ask, "clipboard")
+            if ok and type(got) == "string" and got ~= "" then text.ai_q, fact.ai_typed = (text.ai_q or "") .. got, true end   -- a text the logic writes is not one typed: the hint is told
         end }
+    else
+        if said then rows[#rows + 1] = { label = tr("Copy"), glyph = "copy", keys = "Ctrl+C", run = function() copy(said.body) end } end
+        if #ai_shown > 0 then
+            rows[#rows + 1] = { label = tr("Copy the conversation"), glyph = "clipboard", run = function()
+                local all = {}
+                for _, r in ipairs(ai_shown) do all[#all + 1] = r.who .. ":\n" .. r.body end
+                copy(table.concat(all, "\n\n"))
+            end }
+        end
+        -- a service on a page of its own (Claude, Gemini…): how much of the white shows; LatteOS's own has none
+        if fact.ai_style ~= "own" then
+            local now = tonumber(drops.settings().ai_glass)
+            local sub = { { label = tr("As LatteOS"), on = now == nil, run = function() drops.set("ai_glass", nil) end } }
+            for k, name in ipairs(AI_GLASS) do sub[#sub + 1] = { label = tr(name), on = now == k - 1, run = function() drops.set("ai_glass", k - 1) end } end
+            rows[#rows + 1] = { label = tr("See-through page"), glyph = "droplet", line = #rows > 0, sub = sub }
+        end
     end
-    local now = tonumber(engine.settings().ai_glass)
-    local sub = { { label = tr("As LatteOS"), on = now == nil, run = function() engine.set("ai_glass", nil) end } }
-    for k, name in ipairs(AI_GLASS) do sub[#sub + 1] = { label = tr(name), on = now == k - 1, run = function() engine.set("ai_glass", k - 1) end } end
-    rows[#rows + 1] = { label = tr("See-through page"), glyph = "droplet", line = #rows > 0, sub = sub }
     ctx.open(rows, { width = 290 })
 end)
 

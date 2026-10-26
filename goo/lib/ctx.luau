@@ -1,5 +1,6 @@
 -- The context menu (parts/ctx.plm): a classic menu at the pointer, on top of whatever is open. Rows are those of
--- a card, as far as a menu needs them:  { label, glyph, icon, danger, on, line, run, sub }
+-- a card, as far as a menu needs them:  { label, glyph, icon, danger, on, line, run, sub, keys }
+--   keys  the keys that do the same, said on the right as a classic menu does ("Ctrl+C")
 --   sub   rows of a submenu, which replaces this one in the same place and gets a row to go back
 local icons = require("lib/icons")
 local M = {}
@@ -23,7 +24,8 @@ function M.open(rows, opts)
         if i > MAX then break end
         local rule = r.line == true and i > 1
         out[i] = { label = r.label or "", glyph = glyph(r.glyph), icon = r.icon or "", has_icon = (r.icon or "") ~= "",
-                   danger = r.danger == true, on = r.on == true, line = rule, more = r.sub ~= nil }
+                   danger = r.danger == true, on = r.on == true, line = rule, more = r.sub ~= nil,
+                   keys = r.keys or "", keys_w = r.keys and (#r.keys * 7.5 + 12) or 0 }
         height = height + ROW + (rule and RULE or 0)
         actions[i - 1] = r
     end
