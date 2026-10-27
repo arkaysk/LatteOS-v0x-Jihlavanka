@@ -2552,6 +2552,13 @@ Zdroje: `docs/OPTIMALIZACIA.md`, `tests/screen.sh` (`PLEAMAR_TIMING=1`)
 - [ ] Opakovať merania CPU/RAM, štartu, odozvy a grafických efektov po zmenách; stanoviť limity
   pre NORMAL a SAFE a regresné porovnanie.
 
+**17.05** [ ] **Konečná podoba: aplikácie LatteOS a pomocné programy v Ruste nad pleamarom** (používateľ 27. 10.) — namiesto
+Quickshell/QML (`apps/`) a shell/Python skriptov (`bin/latte-*`): plochu aj okná aplikácií kreslí jeden engine v Ruste
+(pleamar, `kind: window`), logika v Ruste (`crates/`). Cieľ: menej procesov a pamäte, rýchlejší štart, jeden balík bez
+Qt a interpretov. Predtým skúška na jednej malej aplikácii (GuardDog): pamäť, rýchlosť, čo pleamaru chýba (prijímanie
+súborov ťahaním zvonku, čítačka obrazovky). Dovtedy sa QML neprepisuje; nové pomocné programy, kde to dáva zmysel, rovno
+v Ruste do `crates/`.
+
 ---
 
 ## 18. [ ] STRESTEST
