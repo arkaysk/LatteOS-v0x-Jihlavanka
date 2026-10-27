@@ -191,7 +191,7 @@
     "name": "Windows",
     "icon": "app-window",
     "status": "ready",
-    "words": "tape tiles floating layout glass side panel arrange"
+    "words": "tape tiles floating layout glass side panel arrange bargoo taskbar bar fixed"
    },
    {
     "id": "drops",
