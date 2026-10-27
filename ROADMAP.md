@@ -598,6 +598,13 @@ v spúšťači (text aj obrázky, vloženie späť do predošlej aplikácie), ú
 akcie okien (34), poznámky v Markdowne, záloha a import nastavení. Spúšťa **rozšírenia Raycastu** — preveriť Linuxový
 spúšťač kompatibilný s Raycastom (Vicinae) ako zdroj rozšírení. Výstup: zoznam „prevziať / nie“ na schválenie.
 
+**6B.14** [ ] **Koliesko iba v prísnych zónach** (používateľ 27. 10.; pravidlo 25): dnes koliesko kdekoľvek na karte,
+kde sa nič neposúva, prepína záložky (`card_spin` v `goo/lib/card.luau`, 30 ms čakanie na riadok) — kurzor kúsok vedľa
+zoznamu tak prepne záložku omylom. Zmena: zrušiť `card_spin` (záložky iba nad pásom záložiek), **prilepenie
+posúvania** (~300 ms patrí koliesko zoznamu, ktorý sa začal posúvať, aj keď kurzor vyjde von) a **bez prelievania**
+(zoznam na konci sa zastaví, otáčanie neprejde na kartu ani záložky). Nároky na hardvér: skôr menšie (ubudne
+časovač). Platí pre všetky karty Goo aj aplikácie LatteOS.
+
 ### 6C. [~] PowerGoo
 Zdroje: LATTEOS-GOO §4.2, `crates/latte-stats`
 

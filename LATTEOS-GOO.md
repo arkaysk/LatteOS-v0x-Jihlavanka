@@ -93,6 +93,9 @@ bol GooPower); **kvapka** = každý samostatný tekutý prvok; **karta Goo** = o
     Monitor). **Normál potichu, výnimka nahlas** — čo je v poriadku, nesvieti. Každá nová funkcia povie, do ktorej
     vrstvy patrí; ak chce do vrstvy 0 alebo 1, niečo iné ide o vrstvu nižšie. Hustotu volí používateľ
     v Nastaveniach (Kompaktné · Normálne · Vzdušné).
+25. **Koliesko pôsobí iba na to, čo je priamo pod kurzorom** (27. 10.). Prázdne miesto nerobí nič (najviac zavibruje,
+    pravidlo 8); záložky sa kolieskom prepínajú iba nad pásom záložiek. Zoznam, ktorý sa začal posúvať, si koliesko
+    podrží ~300 ms aj keď kurzor vyjde von; na konci sa zastaví a otáčanie sa neprelieva na rodiča (kartu, okno).
 
 ---
 

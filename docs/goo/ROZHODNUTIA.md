@@ -23,6 +23,9 @@ Nové rozhodnutie: jeden riadok sem (dátum, čo, prečo) a oprava platného zne
   takže sľub neklame. ROADMAP 2B, 10B.32.
 - **Hustota informácií v troch vrstvách** (pravidlo 24) a voľba hustoty v Nastaveniach. Prečo: priveľa informácií
   zahlcuje, primálo núti klikať; „normál potichu, výnimka nahlas“. ROADMAP 9.11, 6.25.
+- **Koliesko v prísnych zónach** (pravidlo 25): zrušené prepínanie záložiek kolieskom kdekoľvek na karte; prilepenie
+  posúvania a bez prelievania. Prečo: kurzor kúsok vedľa zoznamu omylom prepínal záložky; predvídateľnosť ako vo
+  Windowse, hardvér sa nezaťaží viac. ROADMAP 6B.14.
 
 ## 26. 10. 2026
 
