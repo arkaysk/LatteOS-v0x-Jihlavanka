@@ -8,6 +8,7 @@ a inštalátor ich prekladá alebo inštaluje z balíkov. V repozitári sú iba 
 | Projekt | Na čo ho LatteOS používa | Licencia |
 |---|---|---|
 | [pleamar](https://github.com/k4ditano/pleamar) (k4ditano) | kreslenie kvapiek a kariet Goo, jazyk scén `.plm`, logika v Luau | BSD-3-Clause |
+| [K4](https://github.com/k4ditano/k4) (k4ditano) | ostrov LensShore: tvar ostrova (`apps/lensshore/SiluetaIsla.qml`, prevzatý a zúžený na horný a dolný okraj), jeho rozbaľovanie a podoba spúšťača (`apps/lensshore.qml`) | MIT |
 | [Hyprland](https://github.com/hyprwm/Hyprland) a [hyprland-plugins](https://github.com/hyprwm/hyprland-plugins) (hyprbars) | kompozitor okien, tlačidlá okien | BSD-3-Clause |
 | [Hyprglass](https://github.com/hyprnux/hyprglass) | sklo okien | BSD-3-Clause |
 | [skwd-wall](https://github.com/liixini/skwd-wall) | voliteľný samostatný program: výber a kreslenie tapety, prechody, paleta z tapety; LatteOS ho iba volá (`bin/latte-wall`) | GPL-3.0 |

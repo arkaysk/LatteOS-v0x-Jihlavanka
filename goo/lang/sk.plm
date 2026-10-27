@@ -804,6 +804,7 @@ library Slovak {
         "Copy" = "Kopírovať"
         "Select all" = "Vybrať všetko"
         "Search or ask…" = "Hľadať alebo sa opýtať…"
+        "Search for “{what}” on {engine}" = "Vyhľadať „{what}“ na {engine}"
         "FILES AND FOLDERS" = "SÚBORY A PRIEČINKY"
         "SETTINGS" = "NASTAVENIA"
         "WEB" = "WEB"

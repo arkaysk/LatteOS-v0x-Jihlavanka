@@ -643,7 +643,7 @@ Spúšťač (LensGoo)** ako prvá veľká voľba „Režim: LensGoo / LensShore�
   Rozhodnuté 27. 10.: LensShore je **prilepený k hornému alebo dolnému okraju** obrazovky (iba tie dve polohy); **všetky
   Shore (LensShore, TrayShore) majú farbu Goo** namiesto tvrdej dosky z materiálu šálky. Prvá verzia (riadok na doske
   Pobrežia) sa nahradí.
-- [x] 27. 10. druhá verzia (prvá zrušená): kvapka `drops/lensshore.luau` natiahnutá do kapsuly Goo (720 px) pri dolnom alebo
+- [x] 27. 10. druhá verzia (zrušená, nahradená ostrovom K4): kvapka `drops/lensshore.luau` natiahnutá do kapsuly Goo (720 px) pri dolnom alebo
   hornom okraji, na nej pole, lupa a tlačidlo Odoslať (`parts/lensline.plm`); ostatné kvapky ju odtláčajú ako pás výkonu.
   Klik ju otvorí: karta vyrastie z riadku smerom od okraja a rastie s obsahom. Písanie hľadá naraz: Aplikácie, Súbory
   a priečinky (zhoda od začiatku mena prvá), Nastavenia, Web, každá s **Ďalšie…**, kalkulačka navrchu; Enter a Odoslať
@@ -651,8 +651,16 @@ Spúšťač (LensGoo)** ako prvá veľká voľba „Režim: LensGoo / LensShore�
   Vystrihnúť · Kopírovať · Prilepiť; odomknutý sa ťahá k hornému alebo dolnému okraju (`lens_top`). Pobrežie a jeho panel
   sú vo farbe Goo (`shore.goo`, pri mliečnej káve stmavené kvôli čitateľnosti). Overené bez obrazovky: otvorenie, sekcie
   („guar“), Enter do AI, poloha hore, presun ťahaním.
-- [ ] Rozhovor AI má ešte vlastné pole (písať by sa malo iba do riadku); vodorovne presne na stred (dnes domov 0,33);
-  plynulejšie zväčšenie samotnej kapsuly pri otvorení.
+- [x] 27. 10. tretia verzia, **ostrov K4** (používateľ: „referencia je K4, výslovne integruj“; prvé dve zrušené):
+  `apps/lensshore.qml` v Quickshelli, tvar ostrova z K4 (`apps/lensshore/SiluetaIsla.qml`, MIT, TRETIE-STRANY.md),
+  rozbaľovanie s `OutBack` ako v K4. V pokoji kúsok Goo pri hornom (predvolene) alebo dolnom okraji s lupou, riadkom
+  na písanie a tlačidlom Odoslať; písaním sa rozbalí od okraja, riadok ostane: najbližšie Aplikácie (ikony v rade, Viac),
+  potom Súbory a priečinky (zhoda od začiatku mena prvá, Viac), potom Internet (vyhľadávač z LensGoo). Enter/Odoslať →
+  `latte-ai send … --stream`, odpoveď v ostrove, Nová konverzácia. Pravý klik: Odomknúť/Uzamknúť polohu, Vystrihnúť ·
+  Kopírovať · Prilepiť; odomknutý sa ťahá k druhému okraju. Farba Goo podľa kávy. Spúšťa ho Goo (`lens.luau`), kláves
+  Win cez `qs ipc … call lens toggle`, sám skončí, keď ho Nastavenia vypnú. Overené: spustí sa raz, v pokoji kreslí ostrov.
+- [ ] Neoverené: písanie, rozbalenie a odpoveď AI naživo (test bez obrazovky nedoručí aplikácii klávesnicu; latte-lab bol
+  zamknutý). Pri polohe dole ostrov prekrýva stred pásu kvapiek.
 
 **6B.13** [ ] **Výskum: Tinycast ako zoznam funkcií** (používateľ 27. 10.: „vyzerá ako naše LensGoo“) —
 https://github.com/abue-ammar/tinycast (macOS, Swift, AGPL-3.0 → kód nepreberať, iba nápady). Čo LensGoo/LensShore
