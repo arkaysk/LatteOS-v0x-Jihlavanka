@@ -1554,6 +1554,10 @@ myši. Preveriť pre režim Jeden panel (10A.59) a pre chýbajúce veci z 10A.13
 Nautilu, Dolphinu, Thunaru a späť, aj na plochu a do iných aplikácií (prehliadač, editor); presun aj kópia
 (`text/uri-list`, XDS). Súvisí s 8.02 (ťahanie zo zadného okna).
 
+**10A.63** [ ] **„Otvoriť v novom okne“ v ponuke priečinka** (používateľ 27. 10.): pravý klik na priečinok v DualBrew má ako
+prvú položku hore „Otvoriť priečinok v novom okne“ — otvorí ho v druhej kópii DualBrew (`latte-app files PRIEČINOK`).
+Potrebuje 10A.61 (viac okien naraz).
+
 ### 10B. [~] LensAI
 Zdroje: `bin/latte-ai`, `apps/aicenter.qml`, `system/ai/`, `system/agents/`, `inspo/ai-na-ploche.md`
 je centralne zastrešenie všetkych použitelnych AI. Je totalna kopia Omarchy Ai využitia, len s tým že sa použiva namiesto konzoloveho, graficke rozhranie. LensGoo ma jednu z položiek komunikačne okno s Ai. 
