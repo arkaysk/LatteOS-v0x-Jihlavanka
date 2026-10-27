@@ -102,7 +102,7 @@ ShellRoot {
     FileView {
         id: dropList
         property var list: []
-        path: (Quickshell.env("XDG_DATA_HOME") || (Quickshell.env("HOME") + "/.local/share")) + "/pleamar/goo/drops.json"
+        path: (Quickshell.env("XDG_DATA_HOME") || (Quickshell.env("HOME") + "/.local/share")) + "/pleamar/goo/switchable.json"
         printErrors: false; watchChanges: true
         onFileChanged: reload()
         onLoaded: { try { list = JSON.parse(text()) } catch (e) { list = [] } }

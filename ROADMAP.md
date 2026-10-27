@@ -1189,7 +1189,7 @@ TrayShore a aplikácie LatteOS, a čo z vrstvy 1 sa presunie do vrstvy 2 (alebo 
 mať vlastnú predvolenú hustotu. Platí pre Goo aj aplikácie (Quickshell) rovnako.
 
 **9.12** [x] **Nastavenia › Kvapky (Goo) › Kvapky na ploche** (používateľ 27. 10.): prepínač pre každú kvapku, ktorá sa dá skryť
-(zoznam zapíše scéna Goo pri štarte do `drops.json`, vrátane vlastných); PowerGoo a LensGoo sú vždy. Overené naživo.
+(zoznam zapíše scéna Goo pri štarte do `switchable.json`, vrátane vlastných); PowerGoo a LensGoo sú vždy. Overené naživo.
 
 ### 9A. [~] Vzhľad a témy
 Téma (šálka, farby z tapety), Keramika/Hliník/Onyx/Steam, ikony, vizuálne podoby podľa `inspo/`.
