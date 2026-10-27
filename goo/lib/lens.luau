@@ -241,7 +241,7 @@ local function look_for_settings()
         if text ~= typed then return end                  -- something else has been typed since
         local ok, list = pcall(json.decode, out or "")
         pages, pages_for = ok and type(list) == "table" and list or {}, text
-        if card.id() == "lens" and kept.mode == 0 and #pages > 0 then render(true) end
+        if card.id() == "lens" and (kept.mode == 0 or fact.lens_shore) and #pages > 0 then render(true) end
     end)
 end
 
@@ -263,7 +263,7 @@ local function look_for_amount()
         -- what it could not turn into anything comes back as it went in: no answer, not a wrong one
         if got == "" or got:find("[Ee]rror") or got:find("[Ww]arning") or (from and got:gsub(",0+", "") == from:gsub(",0+", "")) then return end
         worked, worked_for = got, text
-        if card.id() == "lens" and kept.mode == 0 then render(true) end
+        if card.id() == "lens" and (kept.mode == 0 or fact.lens_shore) then render(true) end
     end)
 end
 
@@ -276,7 +276,7 @@ local function look_for_files()
         if mine ~= asked then return end                 -- something else has been typed since
         found = {}
         for path in (out or ""):gmatch("[^\n]+") do found[#found + 1] = path end
-        if card.id() == "lens" and kept.mode == 1 then render(true) end
+        if card.id() == "lens" and (kept.mode == 1 or fact.lens_shore) then render(true) end
     end)
 end
 local function rows_files()
@@ -843,7 +843,7 @@ local function learn_born()
                 local when = tonumber(t) > 0 and tonumber(t) or tonumber(m)
                 if id and when > (born[id] or 0) then born[id] = when end
             end
-            if card.id() == "lens" and kept.mode == 0 then render(true) end
+            if card.id() == "lens" and (kept.mode == 0 or fact.lens_shore) then render(true) end
         end)
 end
 
