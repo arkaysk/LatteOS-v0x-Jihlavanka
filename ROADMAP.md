@@ -513,20 +513,20 @@ Zdroje: `goo/lib/bar.luau`, `goo/side.plm`; LATTEOS-GOO §4.1
   na hlave, ikry po postáti myši na hlave. Zvuk a žiadosť o pozornosť ukazuje okno samo pulzujúcim
   okrajom; hlava sa vlní iba za okno, ktoré nie je na očiach.
 
-**6A.04** [~] (BarGoo) R3·A — BarGoo a okná · r. 946–947
+**6A.04** [ ] (BarGoo) R3·A — BarGoo a okná · r. 946–947 — **čaká, kým bude na latte-lab pripojených viac skutočných monitorov**
 - [ ] **BarGoo a okná:** dokončiť chýbajúce správanie lišty, ovládanie okien v NORMAL aj SAFE,
-  pripájanie monitorov za behu a nastavenia viacerých obrazoviek.
-- [x] Pripájanie monitorov za behu (`monitor.added/removed` → `latte-screens`) a Nastavenia › Obrazovky › Rozšíriť /
-  Duplikovať už boli. **Presun okna na inú obrazovku** (27. 10.): ponuka okna (pravý klik na ikru aj na titulok) ›
-  Presunúť na obrazovku › Obrazovka 1, 2… (zľava doprava, iba pri viac ako jednej); `latte.win.to_screen`,
-  plávajúce okno ostane na dosah. Overené v `tests/screen.sh` s dvoma monitormi (páska aj plávajúce, myšou cez ponuku).
-- [ ] Prenášanie ikry ťahaním na BarGoo iného monitora (scény sú oddelené procesy — treba odovzdanie cez `latte-say`).
-- (pozn.) Ovládanie okien v SAFE patrí do bodu 21 (SafeGoo, 5A).
+  pripájanie monitorov za behu a nastavenia viacerých obrazoviek. Pripájanie za behu (`monitor.added/removed` →
+  `latte-screens`) a Nastavenia › Obrazovky › Rozšíriť / Duplikovať už sú; overiť na skutočných monitoroch.
+  Ovládanie okien v SAFE patrí do bodu 21 (5A). Samostatné kusy: 6A.06, 6A.07.
 
 **6A.05** [ ] **BarGoo voliteľný, druhy plochy** (používateľ 27. 10.): BarGoo nemusí byť stále zapnutý. Používateľ
 si vyberie jeden z hotových druhov plochy (napr. Goo — všetky kvapky, Minimal — iba spodný okraj s LensShore
 a TrayShore, Focus) a BarGoo môže vypnúť. Podmienka: bez BarGoo nesmie zmiznúť prepínanie okien — LensShore nájde
 aj otvorené okná, ostáva Glance a Alt+Tab. Druh plochy určí aj to, či beží LensGoo alebo LensShore (6B.12).
+
+**6A.06** [x] (BarGoo) presun okna na inú obrazovku (27. 10.): ponuka okna › Presunúť na obrazovku › Obrazovka 1, 2… (zľava doprava, iba pri viacerých); `latte.win.to_screen`, plávajúce ostane na dosah; overené bez obrazovky s dvoma monitormi
+
+**6A.07** [ ] (BarGoo) prenášanie ikry ťahaním na BarGoo iného monitora — scény sú oddelené procesy, odovzdanie cez `latte-say`; po 6A.04 (skutočné monitory)
 
 ### 6B. [~] LensGoo
 Zdroje: LATTEOS-GOO §4.3
