@@ -62,6 +62,7 @@ part Calendar {
     event cal_join_it ->
     event cal_snooze_it ->
     event cal_put ->                           // add what the sentence became
+    event cal_field_menu ->                    // the right button on the sentence
     event cal_linked ->                        // the window where the accounts are signed in
     event cal_note ->                          // a notification pressed: its place
     event cal_window ->                        // the calendar as a window of its own (apps/calendar.qml)
@@ -216,6 +217,7 @@ part Calendar {
         text cal_q_hint { at: 44, 543; anchor: left center; size: 9.5; color: #b8a491; show: not cal_typed; width: 440; lines: 1; family: "Inter" }
         input cal_q { at: 44, 536; width: 470; size: 9.5; color: #f5e8d8; selection: #5a463a; family: "Inter"; label: "{cal_q_hint}" }
         on submit cal_q { emit cal_put }
+        on press right cal_q { tap.x = cursor.x; tap.y = cursor.y; emit cal_field_menu }   // cut, copy, paste
         text cal_q_note { at: 732, 543; anchor: right center; size: 6.5; color: #b8a491; family: "JetBrains Mono" }
         // what the sentence became, before it is added
         group {

@@ -884,7 +884,7 @@ return {
         end)
         -- a sentence typed: what it would become, a moment after the typing stops
         local typing = 0
-        on("text:cal_q", function()
+        local function cal_changed()
             fact.cal_typed = (text.cal_q or "") ~= ""
             typing += 1
             local mine = typing
@@ -897,7 +897,9 @@ return {
                     if card.id() == "notes" then fill_calendar() end
                 end)
             end)
-        end)
+        end
+        on("text:cal_q", cal_changed)
+        on("cal_field_menu", function() card.field_menu("cal_q", cal_changed) end)   -- cut, copy, paste, as on any field
         on("cal_put", function()
             local p = cal.parsed
             if not (p and p.ok and (p.calendar or "") ~= "") then return end

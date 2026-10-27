@@ -90,7 +90,6 @@
 /usr/share/latteos/apps/common/Icons.qml                <- apps/common/Icons.qml
 /usr/share/latteos/apps/common/CopyButton.qml           <- apps/common/CopyButton.qml
 /usr/share/latteos/apps/lensshore.qml                   <- apps/lensshore.qml
-/usr/share/latteos/apps/lensshore/SiluetaIsla.qml       <- apps/lensshore/SiluetaIsla.qml
 /usr/share/latteos/apps/common/Glyph.qml                        <- apps/common/Glyph.qml
 /usr/share/latteos/apps/common/Label.qml                        <- apps/common/Label.qml
 /usr/share/latteos/apps/common/Pill.qml                         <- apps/common/Pill.qml
@@ -157,6 +156,7 @@
 /usr/share/latteos/goo/drops/bargoo.luau                <- goo/drops/bargoo.luau
 /usr/share/latteos/goo/drops/clockgoo.luau              <- goo/drops/clockgoo.luau
 /usr/share/latteos/goo/drops/lensgoo.luau               <- goo/drops/lensgoo.luau
+/usr/share/latteos/goo/drops/lensbase.luau              <- goo/drops/lensbase.luau
 /usr/share/latteos/goo/drops/powergoo.luau              <- goo/drops/powergoo.luau
 /usr/share/latteos/goo/drops/quickgoo.luau              <- goo/drops/quickgoo.luau
 /usr/share/latteos/goo/drops/queengoo.luau              <- goo/drops/queengoo.luau

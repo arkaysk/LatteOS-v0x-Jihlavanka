@@ -659,8 +659,31 @@ Spúšťač (LensGoo)** ako prvá veľká voľba „Režim: LensGoo / LensShore�
   `latte-ai send … --stream`, odpoveď v ostrove, Nová konverzácia. Pravý klik: Odomknúť/Uzamknúť polohu, Vystrihnúť ·
   Kopírovať · Prilepiť; odomknutý sa ťahá k druhému okraju. Farba Goo podľa kávy. Spúšťa ho Goo (`lens.luau`), kláves
   Win cez `qs ipc … call lens toggle`, sám skončí, keď ho Nastavenia vypnú. Overené: spustí sa raz, v pokoji kreslí ostrov.
-- [ ] Neoverené: písanie, rozbalenie a odpoveď AI naživo (test bez obrazovky nedoručí aplikácii klávesnicu; latte-lab bol
-  zamknutý). Pri polohe dole ostrov prekrýva stred pásu kvapiek.
+- [x] 27. 10. (používateľ: „spája všetky goo prvky do jedného“): v pokoji je LensShore **kapsula Goo** (`drops/lensbase.luau`),
+  ktorú kreslí scéna Goo, spojená so susedmi bez čiary a ponorená v hladine; engine pozná **zakázaný úsek okraja**
+  (`E.block`) — kapsula sa nikdy nepohne (`fixed`), kvapky z úseku odíde k bližšiemu koncu (aj naviazané). Ostrov
+  (Quickshell) kreslí na nej riadok a pri písaní z nej s pružením **vyrastie** v rovnakej šírke (620 px), spodná hrana
+  nikdy neopustí okraj; zbaľuje sa späť dole. Ťahanie za myšou po odomknutí, prilepenie k bližšiemu okraju na mieste pustenia.
+  Pravý klik iba v zvýraznenom poli (Vystrihnúť · Kopírovať · Prilepiť · Odomknúť polohu); vľavo tlačidlo **rozhovorov**
+  (rozrobený rozhovor, história z `latte-ai chats`, pokračovanie v ňom, Otvoriť v LensAI).
+
+**6B.18** [x] **LensShore: kontext ako čipy** (návrh 27. 10., schválený): Označený text, Schránka, Okno vpredu — do AI ide iba
+zapnutý čip; súbor pustený na ostrov je príloha (`--attach`). Neoverené naživo.
+
+**6B.19** [x] **LensShore: urobiť hneď bez AI** (návrh 27. 10.): „jas 50“, „hlasitosť 30“, „zapni/vypni wifi“, „minútka 10“,
+„nerušiť“, výpočty a prevody (qalc); slová z prekladovej tabuľky. Neoverené naživo.
+
+**6B.20** [x] **LensShore: odpoveď AI ako akcie** (návrh 27. 10.): príkazy v odpovedi → „Spustiť v termináli“ s druhým klikom
+na potvrdenie, odkazy → „Otvoriť odkaz“, kopírovanie odpovede. Neoverené naživo.
+
+**6B.21** [~] **LensShore: ostrov hlási stav** (návrh 27. 10.): pulz tlačidla rozhovorov, kým AI pracuje pri zbalenom ostrove,
+bodka pri hotovej odpovedi. Chýba: agent (Claude Code, Codex) čaká na vstup, sťahovanie/aktualizácia.
+
+**6B.22** [x] **LensShore: kam text pôjde** (návrh 27. 10.): ikona domček (tento počítač) / oblak (služba) pri riadku, klik
+vyberie, kto odpovedá (`lens_ai` v nastaveniach Goo). Neoverené naživo.
+
+**6B.23** [x] **LensShore: hlas** (návrh 27. 10.): mikrofón v riadku, `latte-ai listen start|stop`, prepis sa vpíše do riadku.
+Neoverené naživo.
 
 **6B.13** [ ] **Výskum: Tinycast ako zoznam funkcií** (používateľ 27. 10.: „vyzerá ako naše LensGoo“) —
 https://github.com/abue-ammar/tinycast (macOS, Swift, AGPL-3.0 → kód nepreberať, iba nápady). Čo LensGoo/LensShore
@@ -749,6 +772,9 @@ z tých istých widgetov ako TrayShore (6H.05), človek si vyberie, čo v ňom c
 
 **6D.11** [ ] **Chyba: guľa ClockGoo orezaná pri otvorenej karte** (používateľ 27. 10.): vpravo dole je pri otvorenej karte
 guľa orezaná a namiesto „18:23“ v nej vidno „ı8:23“ (aj na druhej snímke používateľa).
+
+**6D.12** [x] **Pravý klik do poľa novej udalosti v kalendári** (používateľ 27. 10.): Vystrihnúť · Kopírovať · Prilepiť ako
+v každom poli (`card.field_menu` je teraz spoločná pre polia Goo).
 
 ### 6E. [x] QueenGoo
 Zdroje: LATTEOS-GOO §4.4

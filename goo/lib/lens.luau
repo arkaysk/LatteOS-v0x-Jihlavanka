@@ -964,15 +964,34 @@ function M.quick()
     card.open(out, { owner = owner, id = "quick-apps", width = 300 })
 end
 
+-- the goo under the island (drops/lensbase.luau): a capsule from a to b along its edge
+local base
+local BASE_R = 23
+function M.base_place()
+    if not base then return end
+    local e, a, b = tonumber(fact.lens_edge) or -1, tonumber(fact.lens_a) or 0, tonumber(fact.lens_b) or 0
+    local on = fact.lens_shore == true and (e == 0 or e == 2) and b > a
+    base:present(on)
+    if not on then base:shrink() return end
+    base.edge, base.shift, base.moved = e, 0, true
+    base.at = (a + BASE_R) / (tonumber(fact.sw) or 1920)
+    base:stretch((b - a) / 2 - BASE_R, BASE_R, 1)
+    base.rise = BASE_R                   -- down in the goo's surface, one with it: no rim between the capsule and the edge
+end
+function M.base_start(d)
+    base = d
+    M.base_place()
+end
 function M.start(d)
     owner = d
     -- with LensShore the drop is not there, and the island runs (it ends itself when the Settings turn it off)
     local started = false                -- told twice at the start (the scene, the settings): started once
-    -- the island tells where it lies; the drops keep off that stretch of the edge
+    -- the island tells where it lies; the drops keep off that stretch of the edge, and the goo under it lies there
     local function island()
         local e = tonumber(fact.lens_edge) or -1
         if fact.lens_shore and (e == 0 or e == 2) then drops.block("lensshore", e, tonumber(fact.lens_a) or 0, tonumber(fact.lens_b) or 0)
         else drops.block("lensshore", nil) end
+        M.base_place()
     end
     for _, f in ipairs({ "fact:lens_edge", "fact:lens_a", "fact:lens_b" }) do on(f, island) end
     local function which()

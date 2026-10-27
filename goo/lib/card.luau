@@ -383,9 +383,10 @@ end
 on("text:card_q", typed)
 -- The right button on the field, as on any field: cut, copy, paste (Ctrl+X, C, V work by themselves). What is written
 -- here is not typed, so the field is told of it as if it were.
-on("card_field_menu", function()
-    local now = text.card_q or ""
-    local function put(t) text.card_q = t typed() end
+-- Any field of the Goo can have it: `name` the field's text, `changed` what typing would have done.
+function M.field_menu(name, changed)
+    local now = text[name] or ""
+    local function put(t) text[name] = t changed() end
     local rows = {}
     if now ~= "" then
         rows[#rows + 1] = { label = tr("Cut"), glyph = "cut", keys = "Ctrl+X", run = function() pcall(sys.call, "clipboard.set", now) put("") end }
@@ -396,7 +397,8 @@ on("card_field_menu", function()
         if ok and type(got) == "string" and got ~= "" then put(now .. got) end
     end }
     ctx.open(rows, { width = 260 })
-end)
+end
+on("card_field_menu", function() M.field_menu("card_q", typed) end)
 on("text:card_pw", typed)
 
 return M

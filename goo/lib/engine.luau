@@ -139,7 +139,7 @@ end
 local save
 local apart_wanted, apart_keep = false, nil
 local function movable(d, other)
-    if d.live or d.dragging then return false end
+    if d.live or d.dragging or d.def.fixed then return false end
     if not d.def.beside then return true end
     -- A drop beside another does yield to a capsule that grew over it and is not itself tied to it.
     return other ~= nil and num(other.v.cap_dir, 0) ~= 0 and (other.moved == true or other.def.beside ~= d.def.id)
@@ -158,7 +158,7 @@ local function apart()
         -- off the blocked stretches, to the nearer end, or the other one where the edge ends
         for _, d in ipairs(list) do
             -- even one that stays beside another: moved off, it stops following it (`moved`)
-            if docked(d) and not d.dragging and not d.live and d.v.team ~= 1 then
+            if docked(d) and not d.dragging and not d.live and not d.def.fixed and d.v.team ~= 1 then
                 for _, b in pairs(blocks) do
                     local l, c, r = len(d), along(d) + cap_shift(d), span(d) + 10
                     if b.edge == d.edge and c + r > b.a and c - r < b.b then
@@ -216,7 +216,7 @@ local function apart()
     apart_keep = nil
 end
 function E.apart(keep) apart_wanted, apart_keep = true, keep or apart_keep end
--- `edge` nil takes the stretch away
+-- `edge` nil takes the stretch away; a drop that is the block itself is `fixed` (drops/lensbase.luau)
 function E.block(id, edge, a, b)
     local was = blocks[id]
     if edge == nil then blocks[id] = nil
@@ -359,7 +359,7 @@ end
 -- Stretched along its edge into a capsule, `cap` px to one side and of radius `r`: the drop comes up whole and
 -- stops sinking and leaning, for what it shows has to stay readable; it grows to the side that has room and
 -- the others step aside. Drawn back in, everything is as it was, except what somebody has dragged since.
-function Drop:stretch(cap, r)
+function Drop:stretch(cap, r, towards)                         -- `towards` ±1: to that side, whatever room there is
     if not self.stretched then
         local before = {}
         E.each(function(o)
@@ -369,7 +369,7 @@ function Drop:stretch(cap, r)
         self.rise = math.max(self.rise, (r + 4) * self.zoom)
         self:set({ size = r, seat = r + 4, lift = 0, pull = 0, swell = 0.04, still = true })
     end
-    local dir = (along(self) - (2 * cap + r * self.zoom + 8) > 0.02 * len(self)) and -1 or 1
+    local dir = towards or ((along(self) - (2 * cap + r * self.zoom + 8) > 0.02 * len(self)) and -1 or 1)
     self:set({ cap = cap, cap_dir = dir })
     E.apart(self)
     publish()
