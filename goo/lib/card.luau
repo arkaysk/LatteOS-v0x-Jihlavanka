@@ -247,18 +247,31 @@ function M.open(rows, opts)
     fact.card_menu = opts.menu == true
     fact.card_custom = (opts.custom == "clock" and 1) or (opts.custom == "cam" and 2) or (opts.custom == "ai" and 3) or (opts.custom == "calendar" and 4) or 0       -- the card is a scene of its own (parts/clock.plm), not rows
     -- where the coffee of a `wave` row begins: the heights of the rows above it, as parts/rows.plm lays them out
+    local function row_h(r)
+        local h = ({ plain = r.tall and 54 or 44, head = 30, big = 64, para = 0, profile = 84, slide = 44, gap = r.bar, wave = 26 })[r.kind]
+        if r.kind == "pills" then h = r.per <= 2 and 60 or 46 elseif r.kind == "tiles" then h = r.per <= 2 and 66 or 88 end
+        return (h or 0) + (r.line and 14 or 0)
+    end
     local split, waved = (#tabs > 0 and 44 or 0) + (opts.field and 46 or 0), false
     for _, r in ipairs(out) do
         if r.kind == "wave" then waved, split = true, split + 10 break end
-        local h = ({ plain = r.tall and 54 or 44, head = 30, big = 64, para = 0, profile = 84, slide = 44, gap = r.bar })[r.kind]
-        if r.kind == "pills" then h = r.per <= 2 and 60 or 46 elseif r.kind == "tiles" then h = r.per <= 2 and 66 or 88 end
-        split = split + (h or 0) + (r.line and 14 or 0)
+        split = split + row_h(r)
     end
     fact.card_split = opts.split or (waved and split + 4 or 0)
+    -- LensShore's coffee is measured from its plate, the side whose rows are known: what is above (an answer) may not be
+    fact.card_tail = 0
+    if opts.lens and waved then
+        local at, n = 0, #out
+        for i, r in ipairs(out) do if r.kind == "wave" then at = i end end
+        local tail = 0
+        if opts.lens == "top" then for i = 1, at - 1 do tail += row_h(out[i]) end tail += 14
+        else for i = at + 1, n do tail += row_h(out[i]) end tail += 12 end
+        fact.card_tail, fact.card_split = tail, 0
+    end
     fact.card_dock, fact.card_dock_w = opts.dock ~= nil, tonumber(opts.dock) or 0
     -- grown out of a whole capsule: PowerGoo's strip, or the drop given (LensShore's)
     fact.card_from = (opts.strip and tonumber(fact.strip_owner)) or (opts.capsule and opts.capsule.k) or -1
-    fact.card_lens = opts.lens == true        -- LensShore's panel: it slides out of its plate
+    fact.card_lens = opts.lens ~= nil         -- LensShore's panel ("top" or "bottom"): it slides out of its plate
 
     local fresh = not opts.keep or not fact.card_open
     if fresh then

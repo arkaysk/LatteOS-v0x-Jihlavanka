@@ -54,6 +54,7 @@ part Card {
     fact card_menu = false                     // a classic context menu: at the pointer, square-ish, solid, no ear and no neck
     fact card_pane = 0                         // 0…1: this card is glass above its wave divider, whatever the goo's material (a drop asks for it)
     fact card_split = 0                        // where a `wave` row's coffee begins, from the card's top: below it the card is solid, 0 for none
+    fact card_tail = 0                         // …or how far from the card's bottom (its top, hanging from the top edge) it begins, when the rows above are not known
     fact card_grow = false                     // a card with a scene of its own (the clock, the calendar) grows with the screen: card.z
     fact card_min = 0                          // a card with tabs is at least this tall: its top edge stays put
     fact card_peak = 0                         // …and any card only grows while it is open

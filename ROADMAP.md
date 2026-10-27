@@ -682,6 +682,9 @@ Spúšťač (LensGoo)** ako prvá veľká voľba „Režim: LensGoo / LensShore�
   nie je kvapka — **sklenená doska** (`parts/lensline.plm`) vo vlastnom úseku okraja, kvapky ju obchádzajú (párové
   odtláčanie už nevtlačí kvapku do úseku); panel sa z dosky **vysúva** (`card_lens` v `parts/card.plm`), doska je počas
   toho súčasťou tela panelu a panel siaha 40 px do dosky → jeden tvar s rovnými bokmi, bez ucha a výčnelkov.
+- [x] 27. 10. (používateľ: „zatvorený zo skla je odlišný od Goo“): doska v pokoji je **káva** ako Goo; v paneli stojí
+  **pohyblivá kávová hladina** (zlatá a kávová vlna ako v PowerGoo) do polovice medzi riadkom a najbližším výsledkom a
+  pokračuje do dosky bez švu. Hladina sa meria od dosky (`card_tail`), pri doske hore zrkadlovo.
 
 **6B.18** [x] **LensShore: kontext ako čipy** (návrh 27. 10., schválený): Označený text, Schránka, Okno vpredu — do AI ide iba
 zapnutý čip; súbor pustený na ostrov je príloha (`--attach`). Neoverené naživo.

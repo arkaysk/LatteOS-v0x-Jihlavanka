@@ -27,19 +27,16 @@ part LensLine {
     let ln.fx = ln.left + 46                   // the field, between the conversations and the three on the right
     let ln.fw = ln.right - ln.left - 46 - 118
 
-    // at rest the plate is a body of its own, of the panel's glass; with the panel out the panel's body holds it
+    // At rest the plate is coffee, as the goo is: the same coffee that stands below the panel's surface when it is out.
+    // With the panel out the panel's body holds the plate, and the coffee runs on into it from the surface down.
     body {
-        gradient: ln.left, if(lens_edge == 2, 0, H) to ln.left, if(lens_edge == 2, 46, H - 46), coffee, mix(paper, coffee, 0.55)
+        color: coffee
         rim: 16%
         shadow: 0, 6, 18, 30%
         opacity: if(lens_shore and lens_b > lens_a and not (card_lens and card.p > 0.02), 1, 0)
-        glass: if(true_glass, 1, panes) * 100%
-        lens: material > 0.02
-        frost: if(true_glass, 45%, 100%)
-        smoke: 62% * if(true_glass, 1, panes)
-        refraction: if(true_glass, 200%, 120%) * if(true_glass, 1, panes)
         box { from: ln.left, if(lens_edge == 2, -40, H - 46); size: ln.right - ln.left, 86; corner: 18 }
     }
+    box { from: ln.left + 1.5, if(lens_edge == 2, 0, H - 47); size: ln.right - ln.left - 3, 47; color: coffee; show: lens_shore and card_lens and card.p > 0.02 }
     group {
         show: lens_shore and lens_b > lens_a
         // the conversations: a pulse while the AI answers, a dot when an answer came meanwhile

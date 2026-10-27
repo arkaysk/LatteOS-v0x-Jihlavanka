@@ -1184,12 +1184,13 @@ local function shore_rows()
         local s = sections[top and i or (#sections + 1 - i)]
         for j, r in ipairs(s) do if j == 1 and #out > 0 then r.line = true end out[#out + 1] = r end
     end
-    if top then table.insert(out, 1, { gap = 34 }) else out[#out + 1] = { gap = 34 } end
+    -- between the line and the nearest row the coffee stands, halfway (a wave row: glass above it, coffee below)
+    if top then table.insert(out, 1, { wave = true }) table.insert(out, 1, { gap = 8 }) else out[#out + 1] = { wave = true } out[#out + 1] = { gap = 8 } end
     return out
 end
 shore_render = function(keep)
     shown = shore_rows()
-    card.open(shown, { lens = true, id = "lens", width = WIDE / 1.2, keep = keep, first = shore_top() and true or "last",
+    card.open(shown, { lens = shore_top() and "top" or "bottom", id = "lens", width = WIDE / 1.2, keep = keep, first = shore_top() and true or "last",
                        again = shore.view == "find", fit = true, pane = 1 })
 end
 function M.shore_open()
