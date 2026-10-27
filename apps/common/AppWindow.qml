@@ -105,7 +105,10 @@ FloatingWindow {
             id: head
             width: parent.width; height: 56
             MouseArea { anchors.fill: parent; acceptedButtons: Qt.LeftButton | Qt.RightButton
-                        onPressed: mouse => { if (mouse.button === Qt.RightButton) win.menu(); else win.startSystemMove() }
+                        onPressed: mouse => {
+                            if (mouse.button !== Qt.RightButton) return win.startSystemMove()
+                            const at = mapToItem(win.contentItem, mouse.x, mouse.y)          // on the search field its own menu instead
+                            if (!win.fieldAt(win.contentItem, at.x, at.y)) win.menu() }
                         onDoubleClicked: mouse => { if (mouse.button === Qt.LeftButton && win.mode === "floating") win.ask("maximize_active") } }
             Row { id: left; x: 12; spacing: 2; anchors.verticalCenter: parent.verticalCenter; visible: win.arrows
                 HeadButton { icon: "chevron-left"; off: !win.canGoBack; onPressed: win.back() }
@@ -145,7 +148,26 @@ FloatingWindow {
                 if (f) { f.forceActiveFocus(); win.pressedField = f; refocus.restart() }
             }
         }
+        // the right button on any text field: cut, copy, paste, as on every field (6B.11); Ctrl+X, C, V work by themselves
+        PointHandler {
+            acceptedButtons: Qt.RightButton
+            onActiveChanged: if (active) {
+                const x = point.position.x, y = point.position.y
+                const f = win.fieldAt(win.contentItem, x, y)
+                if (!f) return
+                f.forceActiveFocus()
+                const hidden = f.echoMode !== undefined && f.echoMode !== TextInput.Normal     // a password is never copied out
+                const some = f.selectedText !== ""
+                editMenu.open(x, y, [
+                    { icon: "cut", text: I18n.tr("Cut"), hint: "Ctrl+X", enabled: some && !hidden, run: () => f.cut() },
+                    { icon: "copy", text: I18n.tr("Copy"), hint: "Ctrl+C", enabled: some && !hidden, run: () => f.copy() },
+                    { icon: "clipboard", text: I18n.tr("Paste"), hint: "Ctrl+V", enabled: f.canPaste, run: () => f.paste() },
+                    { line: true },
+                    { icon: "select-all", text: I18n.tr("Select all"), hint: "Ctrl+A", enabled: f.text !== "", run: () => f.selectAll() }])
+            }
+        }
     }
+    Menu { id: editMenu; z: 10001 }
     // the text field the press lands on: the topmost visible thing there, and inside it the same, down to the end
     function fieldAt(item, x, y) {
         const kids = item.children

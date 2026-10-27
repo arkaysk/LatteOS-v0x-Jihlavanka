@@ -802,6 +802,7 @@ library Slovak {
         "Empty Recycle Bin" = "Vysypať Kôš"
         "Cut" = "Vystrihnúť"
         "Copy" = "Kopírovať"
+        "Select all" = "Vybrať všetko"
         "Copy as path" = "Kopírovať ako cestu"
         "Rename" = "Premenovať"
         "Delete" = "Odstrániť"

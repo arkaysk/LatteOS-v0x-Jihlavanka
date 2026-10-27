@@ -599,6 +599,12 @@ ta biela plocha je prisilna a potrebuje mat volitelnu hodnotu priehladnosti.
 „samozrejmosťou“). Hotové v Goo: pole karty (riadok hľadania LensGoo a každá karta s poľom; `card_field_menu` v
 `lib/card.luau`) a pole otázky AI; ponuka Goo ukazuje skratky. Ostáva: polia v aplikáciách LatteOS (Quickshell), overiť
 a doplniť rovnakú ponuku.
+- [x] 27. 10.: aplikácie LatteOS — `AppWindow` pri pravom kliku nájde pole pod kurzorom (`fieldAt`) a ukáže Vystrihnúť ·
+  Kopírovať · Prilepiť · Vybrať všetko so skratkami (heslo sa nekopíruje, bez výberu sú Vystrihnúť a Kopírovať stlmené);
+  platí naraz pre všetky polia všetkých aplikácií. Pole v hlavičke okna má svoju ponuku namiesto ponuky okna. Overené naživo
+  (Nastavenia: ponuka, Prilepiť).
+- [ ] Mimo `AppWindow`: premenovanie ikony na ploche (`apps/desktop.qml`); text iba na čítanie (odpovede AI v LensAI)
+  — Kopírovať vybraný text.
 
 **6B.09** [~] **Ikona Kopírovať pri každom texte LatteOS, ktorý sa dá kopírovať** (používateľ 26. 10.): ako pri správach AI
 (6B.08) — príkazy, chybové hlásenia, správy na skopírovanie (Posledný pád), adresy, výsledok kalkulačky; v Goo aj

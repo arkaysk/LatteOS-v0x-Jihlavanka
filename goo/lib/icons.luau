@@ -81,6 +81,7 @@ return {
     ["cube"] = "\u{FA97}",
     ["cup"] = "\u{EF28}",
     ["cut"] = "\u{EA86}",
+    ["select-all"] = "\u{F9F7}",
     ["device-desktop"] = "\u{EA89}",
     ["device-gamepad-2"] = "\u{F1D2}",
     ["device-mobile"] = "\u{EA8A}",
