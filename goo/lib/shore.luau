@@ -43,6 +43,7 @@ end
 
 -- ── what stands on the shore ─────────────────────────────────────────────────────────────────────────────────
 local HEIGHT = 46                            -- the plate's, as the scene draws it
+local LENS = 720                             -- with LensShore's line the plate is as long as the launcher's card at least (600 × 1.2, lib/card.luau)
 local shown_bg = {}                          -- the background programs on it, in the order they are drawn
 local has_battery, battery = false, {}
 local function battery_glyph()
@@ -52,6 +53,7 @@ local function battery_glyph()
 end
 local function show_signs()
     text.shore_net, text.shore_vol = icons[net_glyph()] or "", icons[volume_glyph()] or ""
+    text.shore_ask = tr("Search or ask…")
     text.shore_bat = has_battery and (icons[battery_glyph()] or "") or ""
     text.shore_arrow = icons[fact.shore_open and "chevron-down" or "chevron-up"] or ""
 end
@@ -67,7 +69,9 @@ local function lay_out()
     model.bg = list
     local signs = has_battery and 3 or 2
     fact.shore_signs = signs
-    fact.shore_w = 65 + 30 * #list + 34 * signs
+    local rest = 65 + 30 * #list + 34 * signs
+    fact.shore_lens = fact.lens_shore and math.max(260, LENS - rest) or 0
+    fact.shore_w = fact.shore_lens + rest
     E.shore(fact.shore_w, HEIGHT)
     show_signs()
 end
@@ -326,6 +330,7 @@ function M.start()
         first = false
     end)
     on("shore_more", M.toggle)
+    on("fact:lens_shore", lay_out)
     on("quick_toggle", M.toggle)
     on("shore_sign", function(s)
         if s == 0 then read_clips(function() open_networks() end) else M.toggle() end

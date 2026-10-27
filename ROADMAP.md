@@ -616,7 +616,7 @@ v aplikáciách LatteOS. Tlmená pri texte, rozsvieti sa pod kurzorom, klik skop
 - [ ] Ďalšie miesta, ako pribudnú: chybové hlásenia aplikácií, výstup príkazu v LensGoo, Inšpektor siete (adresy
   zariadení), Monitor.
 
-**6B.12** [ ] **LensShore — AI-centrická náhrada LensGoo** (používateľ 27. 10.): LensGoo ostáva ako klasická voľba;
+**6B.12** [~] **LensShore — AI-centrická náhrada LensGoo** (používateľ 27. 10.): LensGoo ostáva ako klasická voľba;
 **LensShore** je plnohodnotná náhrada postavená okolo AI. Je to riadok **stále otvorený na spodnom okraji** (vedľa
 TrayShore), nie kvapka. Pri písaní sa **od spodného okraja vysunie ostrovček ako v Marei** a rastie s obsahom:
 čipy so zámerom → výsledky → rozhovor s AI (strop ~60 % výšky, potom posúvanie; leží nad oknami, nič neodtláča).
@@ -628,6 +628,13 @@ Písaný text **neodchádza** na web ani online AI, kým to človek nezvolí. **
 hľadaním, iba bez čipu AI. Jedno jadro s LensGoo (`goo/lib/lens.luau`), líšia sa iba vzhľadom.
 **Rozhodnuté 27. 10.:** vždy beží **iba jedno** — LensGoo alebo LensShore; prepínač je v **Nastavenia › Prostredie › Kvapky ›
 Spúšťač (LensGoo)** ako prvá veľká voľba „Režim: LensGoo / LensShore“ (používateľ 27. 10.).
+- [x] 27. 10. prvá verzia: Nastavenia › Kvapky › Spúšťač má hore voľbu **LensGoo / LensShore** (`lens` v nastaveniach Goo,
+  `fact lens_shore`). V LensShore kvapka LensGoo zmizne (`present(false)` platí aj pre kvapku jadra) a doska Pobrežia
+  sa vľavo predĺži o riadok „Hľadať alebo sa opýtať…“ (aspoň na šírku karty, 720 px); klik naň aj kláves Win vysunie
+  nad doskou kartu s tým istým jadrom (`placed()` v `lens.luau`, ukotvenie `dock` ako panel Pobrežia). Overené bez obrazovky
+  (prepnutie oboma smermi, hľadanie, snímky).
+- [ ] Písať rovno do riadku na doske (dnes klik otvorí kartu s poľom); čipy zámeru a odhad zámeru podľa textu; ostrovček
+  rastúci s obsahom do ~60 % výšky; rozhovor ostane pri ponorení; LensShore na začiatku rovno s AI (bez kariet režimov).
 
 **6B.13** [ ] **Výskum: Tinycast ako zoznam funkcií** (používateľ 27. 10.: „vyzerá ako naše LensGoo“) —
 https://github.com/abue-ammar/tinycast (macOS, Swift, AGPL-3.0 → kód nepreberať, iba nápady). Čo LensGoo/LensShore

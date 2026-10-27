@@ -869,7 +869,7 @@ local chosen_settings = {}                   -- the file as it was last read
 function E.apply_hidden()
     local changed = false
     for id, d in pairs(by_id) do
-        local h = (hidden[id] == true or d.absent == true) and not d.def.core and not d.live
+        local h = ((hidden[id] == true and not d.def.core) or d.absent == true) and not d.live
         if h ~= (d.hidden == true) then d.hidden = h changed = true end
     end
     return changed
@@ -900,7 +900,8 @@ local function settings()
     local ai_glass = tonumber(t.ai_glass) and math.max(0, math.min(4, math.floor(t.ai_glass))) or (software and 0 or math.min(level, 2))   -- 3 and 4 make the page dark: only when chosen
     E.tell("fact lively " .. tostring(fact.lively), "fact glassy " .. tostring(fact.glassy), "fact bends " .. tostring(fact.bends),
            "fact ai_glass " .. tostring(ai_glass), "fact ai_soft " .. tostring(software), "fact true_glass " .. tostring(clear),
-           "fact bar_off " .. tostring(hidden.bargoo == true), "fact bar_fixed " .. tostring(t.bar_fixed == true))
+           "fact bar_off " .. tostring(hidden.bargoo == true), "fact bar_fixed " .. tostring(t.bar_fixed == true),
+           "fact lens_shore " .. tostring(t.lens == "shore"))
     local windows = clear and 2 or ((t.windows == "glass" and level > 0) and 1 or 0)
     if glass_told ~= windows then glass_told = windows wm.glass(windows) end
 end

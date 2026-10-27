@@ -82,6 +82,17 @@ local worked, worked_for = nil, ""   -- an amount in units or money worked out b
 local render, set_mode
 
 local function save() pcall(sys.call, "files.write", FILE, kept) end
+-- Where the launcher's cards stand: out of the drop LensGoo, or with LensShore (6B.12) on the shore, above its line.
+local function placed(opts)
+    if fact.lens_shore then
+        local w, h = tonumber(fact.sw) or 1920, tonumber(fact.sh) or 1080
+        fact["tap.x"], fact["tap.y"] = w - 6, h - 50
+        opts.owner, opts.dock = nil, tonumber(fact.shore_w) or 0
+    else
+        opts.owner = owner
+    end
+    return opts
+end
 local function short(path) return home ~= "" and path:sub(1, #home) == home and ("~" .. path:sub(#home + 1)) or path end
 local function urlencode(s) return (s:gsub("[^%w%-%._~]", function(c) return string.format("%%%02X", string.byte(c)) end)) end
 local function engine()
@@ -830,7 +841,7 @@ function M.customize()
     end
     if not any then rows[#rows + 1] = { label = tr("Right-click an app and choose Add to favourites"), glyph = "star", quiet = true } end
     rows[#rows + 1] = { label = tr("Settings"), glyph = "settings", line = true, run = function() then_do(function() open.settings() end) end }
-    card.open(rows, { owner = owner, id = "lens-custom", uniform = true, plain = true })
+    card.open(rows, placed({ id = "lens-custom", uniform = true, plain = true }))
 end
 
 -- when each app was installed: the birth of its .desktop file (the change, where a file system does not tell)
@@ -889,7 +900,7 @@ render = function(keep)
     -- the AI is a card of its own: a conversation, not rows
     if kept.mode == 4 and MODES[4] then
         shown = {}
-        card.open({}, { owner = owner, id = "lens", width = WIDTH, keep = keep, tabs = tabs, uniform = true, custom = "ai", split = 508, pane = 1 })
+        card.open({}, placed({ id = "lens", width = WIDTH, keep = keep, tabs = tabs, uniform = true, custom = "ai", split = 508, pane = 1 }))
         fill_ai()
         if not keep then after(60, function() focus("ai_q") end) end
         return
@@ -909,8 +920,8 @@ render = function(keep)
             glassy = true
         end
     end
-    card.open(list, {
-        owner = owner, id = "lens", width = WIDTH, keep = keep, tabs = tabs, uniform = true,
+    card.open(list, placed({
+        id = "lens", width = WIDTH, keep = keep, tabs = tabs, uniform = true,
         pane = glassy and 1 or 0,
         field = {
             hint = tr(MODES[kept.mode].hint), text = typed,
@@ -930,7 +941,7 @@ render = function(keep)
                 return true
             end,
         },
-    })
+    }))
 end
 
 function M.open(m)
@@ -958,11 +969,15 @@ function M.quick()
         out[#out + 1] = { tiles = tiles, per = 4 }
     end
     out[#out + 1] = { label = tr("Search…"), glyph = "search", line = #tiles > 0, run = function() after(60, M.open) end }
-    card.open(out, { owner = owner, id = "quick-apps", width = 300 })
+    card.open(out, placed({ id = "quick-apps", width = 300 }))
 end
 
 function M.start(d)
     owner = d
+    -- with LensShore the drop is not there: the line on the shore is the launcher
+    local function which() d:present(not fact.lens_shore) if card.id() == "lens" then card.close() end end
+    on("fact:lens_shore", which)
+    which()
     -- the words an amount is written in, in the user's language (lib/amount.luau)
     local okl, lang = pcall(sys.ask, "env", "LANG")
     local code = (okl and type(lang) == "string" and lang:match("^(%a%a)")) or "en"

@@ -114,6 +114,7 @@ part Drops {
     fact bends = true                          // …and whether that glass bends what is behind it
     fact bar_off = false                       // BarGoo switched off (Settings › Windows); the main scene tells the others
     fact bar_fixed = false                     // the arrangement fixed there: a press on BarGoo no longer changes it
+    fact lens_shore = false                    // the launcher is LensShore, a line on the shore, instead of the drop LensGoo (6B.12)
     fact idle = 0                              // 0 awake, 1 after a minute, 2 after three, 3 after six
     fact day = 1                               // 0 night … 1 the sun is up
     fact golden = 0                            // 0…1 the sun is low: dawn and dusk

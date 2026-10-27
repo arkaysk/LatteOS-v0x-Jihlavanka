@@ -27,7 +27,7 @@ ShellRoot {
     Word { id: modeWord; name: "settings-mode" }
     readonly property bool expert: modeWord.value === "expert"
     // the pages of Drops (Goo): which drop each is about, and what that drop is, said on its page
-    readonly property var dropOf: ({ bargoo: "bargoo", powergoo: "powergoo", launcher: "lensgoo", quickgoo: "quickgoo",
+    readonly property var dropOf: ({ bargoo: "bargoo", powergoo: "powergoo", quickgoo: "quickgoo",
                                      clockgoo: "clockgoo", queengoo: "queengoo", camgoo: "camgoo", mediagoo: "mediagoo" })
     readonly property var dropAbout: ({
         bargoo: QT_TR_NOOP("The windows: its head shows how they are arranged, and where windows float they hang beside it as berries. Left: the arrangement, right: the desktop, the wheel: the next window."),
@@ -884,6 +884,15 @@ ShellRoot {
             Part { visible: shell.page === "drops"; width: view.room; title: I18n.tr("Places")
                    note: I18n.tr("PowerGoo and LensGoo are always there. The coffee the drops are made of is under Coffee and cup.")
                 Pill { icon: "arrow-back-up"; text: I18n.tr("Put every drop back in its place"); onPressed: Quickshell.execDetached(["latte-say", "emit reset_places"]) } }
+
+            // the launcher: the drop LensGoo or LensShore's line on the shore, one at a time (ROADMAP 6B.12)
+            Part { visible: shell.page === "launcher"; width: view.room; title: I18n.tr("The launcher")
+                   note: I18n.tr("One of them is there at a time. The Windows key opens whichever it is.")
+                Repeater { model: [{ id: "goo", name: "LensGoo", hint: QT_TR_NOOP("a drop: a press opens it"), icon: "search" },
+                                   { id: "shore", name: "LensShore", hint: QT_TR_NOOP("a line on the shore, built around the AI"), icon: "sparkles" }]
+                    Choice { required property var modelData; width: 260; text: modelData.name; hint: I18n.tr(modelData.hint)
+                             on: (goo.kept.lens === "shore") === (modelData.id === "shore"); onPressed: goo.set("lens", modelData.id)
+                             Glyph { anchors.centerIn: parent; name: parent.parent.modelData.icon; font.pixelSize: 54; color: parent.parent.on ? Theme.gold : Theme.dim } } } }
 
             // every drop's own page begins with whether it is on the desktop; what it is, for those that have nothing more to set
             Part { id: dropPart; readonly property string drop: shell.dropOf[shell.page] || ""
