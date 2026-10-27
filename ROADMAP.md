@@ -484,6 +484,14 @@ bežia popri okraji, a potom zasa zapadnú. Súčet Gerstnerových vĺn z prihl�
 na snímku aj v pokoji (skladanie 1,4 → 1,9 ms); hrebene ako ploché elipsy nestoja nič merateľné (1,4 ms).
 Svetlo a sedlina na ploche nie sú — nie je tam hĺbka.
 
+**6.24** [ ] **Výskum: knižnica efektov `shaders`** (používateľ 27. 10.) — https://github.com/shader-effects-inc/shaders
+(MIT engine aj komponenty; editor a predvoľby na shaders.com majú vlastné podmienky). 200+ efektov: prechody farieb,
+šum, sklo, kov, svetlo, deformácie, prechody, rozmazanie, efekty za kurzorom. Je to **WebGPU a WGSL** — rovnaký jazyk,
+v akom už píšeme `goo/shaders/water.wgsl` pre pleamar, takže efekty sa dajú preniesť bez prekladu do GLSL (pre
+Qt/QML a Hyprland cez `naga`). Kandidáti: sklo a kov pre témy (9A Keramika, Hliník, Onyx), prechody pri prepnutí
+plochy, svetlo na hladine. Mladý projekt (41 hviezd, 10 commitov). Každý efekt zmerať na snímku a mať variant bez
+shadera pre nižšie stupne výkonu. Pri prevzatí zápis do `TRETIE-STRANY.md`.
+
 ### 6A. [~] BarGoo
 Zdroje: `goo/lib/bar.luau`, `goo/side.plm`; LATTEOS-GOO §4.1
 
@@ -1636,6 +1644,13 @@ Preveriť: beta na Fedore (balík RPM nie je), čítanie textu zo snímok (na ma
 chýba), nároky modelu podľa stupňov výkonu, veľkosť indexu, ktoré priečinky sa indexujú a vylúčenie súkromných.
 **Rozhodnuté 27. 10. (používateľ):** hľadanie podľa obsahu **nie je generatívne**, a preto nespadá pod vypínač AI (2B).
 Výstupom DigUp sú iba nájdené súbory, nie odpovede — rovnako ako triedenie fotiek neurónovou sieťou v Google Fotkách.
+
+**10B.33** [ ] **Sledovať: hlasový rozhovor full-duplex (Dessa od Blocku)** (používateľ 27. 10., Reddit r/OpenAI) —
+model reč-na-reč, ktorý počúva a hovorí naraz (skáče do reči, prikyvuje „aha“). Ohlásený 23. 10. 2026 ako výskumná
+ukážka: **váhy ani licencia nie sú zverejnené**, iba čakací zoznam; beží miestne na MacBooku Pro M4 Max; veľkosť
+modelu, jazyky (slovenčina?) ani latencia nie sú uvedené. Dnes sa teda nedá použiť. Pre LatteOS: hlasový režim
+LensShore / LensAI („hovor cez podržanie“, 6L.02). Preveriť otvorené alternatívy (Kyutai Moshi) a či niektorá vie
+po slovensky. Je to **generatívna AI** → spadá pod vypínač AI (2B).
 
 ### 10C. [ ] Heidelberg
 je zakladny textovy editor, s neobvyklo širokou ponukou formatou ktore prečíta a upraví
