@@ -651,8 +651,9 @@ posúvania** (~300 ms patrí koliesko zoznamu, ktorý sa začal posúvať, aj ke
 „kalkulačka“ → ktorákoľvek kalkulačka. `.desktop` to má (`Keywords=`, `GenericName=`), služba `apps` pleamaru to nedáva —
 doplniť do pleamaru (záplata v `patches/`) alebo čítať v LatteOS.
 
-**6B.17** [ ] **Duplicity v prehľade LensGoo** (používateľ 27. 10.): GuardDog bol v Najčastejších aj v Najnovších, Steam
-v Najčastejších aj v Obľúbených. Aplikácia ukázaná v skoršej sekcii sa z ďalších vyradí.
+**6B.17** [x] **Duplicity v prehľade LensGoo** (používateľ 27. 10.): GuardDog bol v Najčastejších aj v Najnovších, Steam
+v Najčastejších aj v Obľúbených. Aplikácia ukázaná v skoršej sekcii sa z ďalších vyradí. — Opravené 27. 10.: každá aplikácia iba raz;
+obľúbené (vlastná voľba) majú prednosť pred najčastejšími, najnovšie vynechajú obe. Overené naživo.
 
 **6B.15** [ ] **AI v LensGoo: kvalita rozhovoru a chybové stavy** (z 6B.04, 27. 10.) — odpovede s lokálnym modelom aj
 cloudom; čo LensGoo povie, keď nejde sieť, chýba kľúč, model nebeží alebo sa minul limit (nesmie ostať ticho ani

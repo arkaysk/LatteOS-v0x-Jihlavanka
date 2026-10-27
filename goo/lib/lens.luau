@@ -168,27 +168,31 @@ local function rows_apps()
         for _, a in ipairs(apps) do if filter.id == "all" or has(filter, a) then pool[#pool + 1] = a end end
         table.sort(pool, function(x, y) return (kept.counts[x.id or ""] or 0) > (kept.counts[y.id or ""] or 0) end)
         if filter.id == "all" then
+            -- an app is shown once (6B.17): the favourites are the user's own choice, so they keep theirs and the
+            -- most launched do without them; the newly installed do without both
+            local seen, fav = {}, {}
+            if kept.layout.fav then
+                for _, id in ipairs(kept.fav) do if by_id[id] and #fav < 6 then fav[#fav + 1] = by_id[id] seen[id] = true end end
+            end
             if kept.layout.most then
                 local most = {}
-                for _, a in ipairs(pool) do if (kept.counts[a.id or ""] or 0) > 0 and #most < 6 then most[#most + 1] = a end end
-                if #most == 0 then
-                    for _, id in ipairs(kept.recent) do if by_id[id] and #most < 6 then most[#most + 1] = by_id[id] end end
-                end
-                if #most == 0 then for i = 1, math.min(6, #pool) do most[i] = pool[i] end end
+                local function take(a) if a and not seen[a.id or ""] and #most < 6 then most[#most + 1] = a end end
+                for _, a in ipairs(pool) do if (kept.counts[a.id or ""] or 0) > 0 then take(a) end end
+                if #most == 0 then for _, id in ipairs(kept.recent) do take(by_id[id]) end end
+                if #most == 0 then for _, a in ipairs(pool) do take(a) end end
+                for _, a in ipairs(most) do seen[a.id or ""] = true end
                 rows[#rows + 1] = { head = true, label = tr(N("MOST LAUNCHED")) }
                 rows[#rows + 1] = row_of(most, 6)
             end
             -- the favourites: the heading stays even when there are none, and says how to add one
             if kept.layout.fav then
-                local fav = {}
-                for _, id in ipairs(kept.fav) do if by_id[id] and #fav < 6 then fav[#fav + 1] = by_id[id] end end
                 rows[#rows + 1] = { head = true, label = tr(N("FAVOURITES")) }
                 if #fav > 0 then rows[#rows + 1] = row_of(fav, 6)
                 else rows[#rows + 1] = { label = tr("Right-click an app and choose Add to favourites"), glyph = "star", quiet = true } end
             end
             if kept.layout.fresh then
                 local fresh = {}
-                for _, a in ipairs(apps) do if a.id and born[a.id] then fresh[#fresh + 1] = a end end
+                for _, a in ipairs(apps) do if a.id and born[a.id] and not seen[a.id] then fresh[#fresh + 1] = a end end
                 table.sort(fresh, function(x, y) return born[x.id] > born[y.id] end)
                 rows[#rows + 1] = { head = true, label = tr(N("NEWLY INSTALLED")) }
                 if #fresh > 0 then rows[#rows + 1] = row_of(fresh, 6)
