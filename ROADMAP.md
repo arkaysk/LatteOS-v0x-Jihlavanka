@@ -990,7 +990,8 @@ Nastavenia) to vysvetlí.
 
 **8A.10** [ ] **Kreslenie okna v mierke** — spoločný kus pre prehľad Pásky, Glance aj Canvas, robí sa pred nimi. Predlohy
 (Hyprland pluginy, BSD-3): [hyprland-scroll-overview](https://github.com/yayuuu/hyprland-scroll-overview) (prehľad ako
-niri), [Phantomat](https://github.com/kaolti/phantomat) (z neho vychádza). Overiť, či kreslia okná živé.
+niri), [Phantomat](https://github.com/kaolti/phantomat) (z neho vychádza). Phantomat kreslí okná živé a zmenšené (skúška 8A.12) —
+preskúmať, či jeho kreslenie poslúži aj Glance a prehľadu úloh (6A.08).
 
 **8A.11** [ ] **Glance: živé zmenšené náhľady v Parkingu** (video v prehliadači či VLC, na pohľad vidieť, či Claude Code
 pracuje alebo čaká); keď to technicky nepôjde, obnovované miniatúry (služba `thumbnails` pleamaru). Podľa 8A.10.
@@ -1001,6 +1002,12 @@ desiatky rozložených okien, klikom priblížiť. Prevziať [Phantomat](https:/
 [hypr-canvas](https://github.com/aaronsb/hypr-canvas) (MIT, „super alpha“). Samostatné kompozitory (driftwm, Infinidesk,
 mary) nie — LatteOS ostáva na Hyprlande. Overiť: Phantomat ruší plochy (workspaces) — dá sa zapnúť iba pre jeden monitor
 a vypnúť pri inom režime bez reštartu?
+- [~] Skúška 27. 10. (Hyprland bez obrazovky, `tests/screen.sh`): zostavený z a1e8a08 proti Hyprlandu 0.56.2 (GCC 16, `make`,
+  33 MB .so), `hyprctl plugin load` + `canvas.desktop_mode` za behu; `hyprctl dispatch 'hl.plugin.spatialoverview.overview("toggle all")'`
+  (cez `eval` nejde) oddiali, `canvas("arrange")` rozloží, okná sú **živé a zmenšené**, vpravo dole mapa. Späť
+  `desktop_mode=false` + `latte.mode.set("tape")` vráti okná do pásky bez reštartu. Treba: vypnúť zakrivenú šošovku
+  (`distortion.enabled`), vrstva Goo sa v oddialení kreslí skreslená spolu s oknami (má ostať navrchu, rovná), farby
+  z témy (`navigator.accent`), väzby myšou namiesto SUPER+CTRL+G, vlastné balenie ako hyprbars (FILES, TRETIE-STRANY.md).
 
 **8A.13** [ ] **Režim pre každý monitor** (používateľ 27. 10.): v Nastavenia › Okná rovnaká mapa monitorov ako v Nastavenia ›
 Obrazovky a pri snímke obrazovky; tu sa monitormi nehýbe, klik na monitor mu prepne režim. Hyprland vie rozloženie podľa
