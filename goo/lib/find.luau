@@ -1,6 +1,6 @@
 -- The apps whose name matches what was typed, best first: a match at the start of the name, then at the start
 -- of a word, then anywhere, then in its id, then a word of the name with one letter wrong. Both names count, the
--- one in the user's language and the one the app has everywhere ("Files" finds Súbory). Accents and case do not matter.
+-- one in the user's language and the one the app has everywhere ("files" finds it by its English name). Accents and case do not matter.
 local fold = require("lib/fold")
 
 -- whether two words are at most one letter apart: one changed, left out or put in
