@@ -555,9 +555,13 @@ Zdroje: LATTEOS-GOO §4.3
 
 **6B.03** [x] (LensGoo) koliesko prepína funkcie nad pásom záložiek, Tab / Shift+Tab všade (od 26. 10., 6B.07; overené 27. 10.)
 
-**6B.04** [ ] (LensGoo) R3·A — overiť hľadanie a spúšťanie · r. 948–950 (rozdelené 27. 10.: AI je 6B.15, poskytovatelia
+**6B.04** [x] (LensGoo) R3·A — overiť hľadanie a spúšťanie · r. 948–950 (rozdelené 27. 10.: AI je 6B.15, poskytovatelia
 a vstupy patria do 10B) — aplikácie podľa slovenského aj anglického názvu, preklepu a kategórie; súbory (`fd`) a ich
 otvorenie; web, príkaz, kalkulačka; chyby opraviť, nič nové nepridávať.
+- [x] 27. 10. overené v `tests/screen.sh`: aplikácie, súbory (`roadmapx` → roadmapx.md), kalkulačka (42,5), prevod
+  (10 eur → 242,88 Kč), spustenie Nastavení. Opravené: hľadalo sa iba podľa slovenského názvu — teraz aj podľa
+  anglického („files“ → Súbory, „settings“ → Nastavenia) a s jedným preklepom od 4 písmen („firfox“, „nastavenai“)
+  v `goo/lib/find.luau`; zdvojené deklarácie v `lens.luau` odstránené.
 
 **6B.05** [x] (23. 10. potvrdené používateľom) Klávesnica po spustení z LensGoo (používateľ 23. 10.: DualBrew spustený cez LensGoo nedostal klávesnicu, „klávesnica má byť vždy tam, kam klikne kurzor“). Príčina podľa kódu: pole hľadača drží klávesnicu ešte 300 ms po zatvorení karty (grace v pleamare), aplikácia sa spúšťala po 80 ms — okno sa otvorilo, kým klávesnica patrila Goo. Opravené: `LET_GO = 350` v `goo/lib/lens.luau`. Druhá časť (používateľ 23. 10.: klik na plochu, potom do poľa DualBrew — písať nejde, až po kliknutí inam v okne a znova do poľa): `AppWindow` pri každom stlačení ľavým tlačidlom dá klávesnicu textovému poľu pod kurzorom (aj o 150 ms neskôr, keď sa okno práve aktivuje) — platí pre všetky aplikácie LatteOS. V bezobrazovkovom sedení sa ani jedna časť nedala spoľahlivo vyvolať (falošná myš a klávesnica strácajú prvú udalosť) — čaká na potvrdenie na skutočnej obrazovke.
   **23. 10. príčina nájdená a opravená** (zdroj Hyprlandu 0.56, `InputManager.cpp`): vrstva ikon na ploche (`latte-desktop`)
@@ -629,6 +633,10 @@ posúvania** (~300 ms patrí koliesko zoznamu, ktorý sa začal posúvať, aj ke
   prepne; prázdne miesto karty už nemá obsluhu kolieska).
 - [ ] Prilepenie posúvania a bez prelievania v kartách Goo — vec enginu pleamaru (posúvanie zoznamu); v aplikáciách
   LatteOS vnorené `Flickable` (Qt na konci posiela koliesko rodičovi).
+
+**6B.16** [ ] **Hľadanie aplikácií podľa kľúčových slov** (z 6B.04, 27. 10.): „prehliadač“ / „browser“ → Firefox,
+„kalkulačka“ → ktorákoľvek kalkulačka. `.desktop` to má (`Keywords=`, `GenericName=`), služba `apps` pleamaru to nedáva —
+doplniť do pleamaru (záplata v `patches/`) alebo čítať v LatteOS.
 
 **6B.15** [ ] **AI v LensGoo: kvalita rozhovoru a chybové stavy** (z 6B.04, 27. 10.) — odpovede s lokálnym modelom aj
 cloudom; čo LensGoo povie, keď nejde sieť, chýba kľúč, model nebeží alebo sa minul limit (nesmie ostať ticho ani

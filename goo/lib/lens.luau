@@ -37,10 +37,6 @@ local FOLDERS = { { key = "DOCUMENTS", name = N("Documents"), glyph = "file" }, 
                   { key = "PICTURES", name = N("Pictures"), glyph = "sun" }, { key = "MUSIC", name = N("Music"), glyph = "volume" },
                   { key = "VIDEOS", name = N("Videos"), glyph = "player-play" } }
 
-local apps, by_id = {}, {}
-local kept = { mode = 0, recent = {}, commands = {}, engine = "duckduckgo", counts = {}, filter = "all", fav = {},
-              layout = { most = true, fav = true, fresh = true, chips = true }, ai = {} }
-local born = {}                      -- app id → when it was installed (the birth of its .desktop file)
 -- The lists of the app overview, each a button in its row of filters. The user's own are kept by the Settings
 -- (lens-lists.json: Settings › Launcher); these are what there is before they have changed anything.
 local DEFAULT_LISTS = {
