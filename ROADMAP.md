@@ -633,8 +633,14 @@ Spúšťač (LensGoo)** ako prvá veľká voľba „Režim: LensGoo / LensShore�
   sa vľavo predĺži o riadok „Hľadať alebo sa opýtať…“ (aspoň na šírku karty, 720 px); klik naň aj kláves Win vysunie
   nad doskou kartu s tým istým jadrom (`placed()` v `lens.luau`, ukotvenie `dock` ako panel Pobrežia). Overené bez obrazovky
   (prepnutie oboma smermi, hľadanie, snímky).
-- [ ] Písať rovno do riadku na doske (dnes klik otvorí kartu s poľom); čipy zámeru a odhad zámeru podľa textu; ostrovček
-  rastúci s obsahom do ~60 % výšky; rozhovor ostane pri ponorení; LensShore na začiatku rovno s AI (bez kariet režimov).
+- [ ] **Podoba podľa používateľa (27. 10.)** — nahrádza čipy zámeru: LensShore je **zaoblený obdĺžnik z materiálu Goo**,
+  umiestniteľný ako Goo; **pravý klik** (aj do poľa) dá ponuku s **Odomknúť / Uzamknúť polohu** a odomknutý sa presúva
+  ťahaním, iba hore alebo dole. **Klik** ho plynulo zväčší: riadok ostane, kde bol, a hore alebo dole (podľa polohy)
+  vyrastie plocha s obsahom. **Jedno hľadanie** v sekciách nad sebou (Aplikácie, Súbory a priečinky — zhoda od začiatku
+  mena prvá —, Nastavenia, Web), v každej pár výsledkov a **Viac** (hľadanie len v tej oblasti, web do prehliadača);
+  výsledok sa spúšťa **klikom**. **Enter alebo tlačidlo Odoslať na konci riadku pošle text predvolenej AI** — LensShore je
+  AI-centrický (rozhodnuté: Enter vždy AI, nie najlepšia zhoda). Pri vypnutej AI (2B) ostáva iba hľadanie.
+  Otvorené: výška ľubovoľná alebo prichytenie hore/dole; vodorovná poloha; či aj TrayShore prejde na materiál Goo.
 
 **6B.13** [ ] **Výskum: Tinycast ako zoznam funkcií** (používateľ 27. 10.: „vyzerá ako naše LensGoo“) —
 https://github.com/abue-ammar/tinycast (macOS, Swift, AGPL-3.0 → kód nepreberať, iba nápady). Čo LensGoo/LensShore
