@@ -685,6 +685,8 @@ Spúšťač (LensGoo)** ako prvá veľká voľba „Režim: LensGoo / LensShore�
 - [x] 27. 10. (používateľ: „zatvorený zo skla je odlišný od Goo“): doska v pokoji je **káva** ako Goo; v paneli stojí
   **pohyblivá kávová hladina** (zlatá a kávová vlna ako v PowerGoo) do polovice medzi riadkom a najbližším výsledkom a
   pokračuje do dosky bez švu. Hladina sa meria od dosky (`card_tail`), pri doske hore zrkadlovo.
+  Zlatá a kávová vrstva ostávajú (používateľ 27. 10.: odstrániť iba čiaru navyše, ktorú robila zlatá vrstva pod koncom kávy pri doske).
+  Raycast AI Chat = LensAI: staršie a dlhé rozhovory sa otvoria tam (Otvoriť v LensAI), v LensShore iba krátke.
 
 **6B.18** [x] **LensShore: kontext ako čipy** (návrh 27. 10., schválený): Označený text, Schránka, Okno vpredu — do AI ide iba
 zapnutý čip; súbor pustený na ostrov je príloha (`--attach`). Neoverené naživo.
