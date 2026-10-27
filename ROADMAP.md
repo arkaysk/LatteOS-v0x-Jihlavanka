@@ -945,6 +945,11 @@ ikonky vypnutia okna , minimalizacie a NET tlačidla, schopnosti a vzhlad.
   Platí pre aplikáciu, kým beží; trvalý zákaz je oprávnenie aplikácie a príde s Baristom.
   Neoverené: jednotka systemd (zapnutá až inštalátorom), tlačidlo na titulkoch hyprbars nie je.
 
+**8.02** [ ] **Ťahanie zo zadného okna bez vynesenia dopredu** (používateľ 27. 10.; Scott Jenson, „The problem with desktop
+UX“, Akademy 2026, ~3:15): ako na Macu — súbor sa dá chytiť v okne, ktoré nie je vpredu, a pustiť do okna vpredu; zadné
+okno pri stlačení nevyskočí dopredu, dopredu príde až po kliku bez ťahania. Preveriť v Hyprlande (fokus a vynesenie pri
+stlačení, `focus_on_activate`, pravidlá okien, prípadne `latte-events`) a v aplikáciách LatteOS (DualBrew).
+
 ### 8A. [~] Režimy okien
 Páska, dlaždice, plávajúce, Glance, hyprtrizone; prichytenie ťahaním.
 Zdroje: `system/hypr/`, `plugins/latte-events`, `patches/`; LATTEOS-GOO §4.9
@@ -1539,6 +1544,13 @@ chýba: archívy (zip aj s heslom, 7z, tar.gz/xz/zst/bz2, cpio), viackrokové Sp
 presun, odstránenie), Kôš s obnovením a vysypaním, pri ťahaní ponuka Kopírovať / Presunúť / Prepojiť sem, „Tento
 počítač“ so štatistikou diskov a pripojením/odpojením, palety farieb z tapety, pružinové animácie, bočné tlačidlá
 myši. Preveriť pre režim Jeden panel (10A.59) a pre chýbajúce veci z 10A.13. Pri prevzatí kódu zápis do `TRETIE-STRANY.md`.
+
+**10A.61** [ ] **Viac okien DualBrew naraz** (používateľ 27. 10.): DualBrew sa dá spustiť viackrát, každé okno samostatne
+(dnes sa druhé spustenie nepovolí / vráti prvé okno).
+
+**10A.62** [ ] **Overiť ťahanie súborov medzi DualBrew a inými správcami súborov** (používateľ 27. 10.): z DualBrew do
+Nautilu, Dolphinu, Thunaru a späť, aj na plochu a do iných aplikácií (prehliadač, editor); presun aj kópia
+(`text/uri-list`, XDS). Súvisí s 8.02 (ťahanie zo zadného okna).
 
 ### 10B. [~] LensAI
 Zdroje: `bin/latte-ai`, `apps/aicenter.qml`, `system/ai/`, `system/agents/`, `inspo/ai-na-ploche.md`
