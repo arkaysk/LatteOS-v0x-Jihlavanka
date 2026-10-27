@@ -29,6 +29,7 @@
 -- function(text) }; `submit` returns true to keep what was typed, `secret` hides it as a password.
 -- `tiles`: the rows between two headings are laid as a tile, a card within the card (rules between them are
 -- dropped: the tile is what holds them together).
+-- `capsule` (a drop stretched into one) makes the card grow out of all of it; `first` chooses its first row for Enter.
 -- Options: `custom` ("clock") draws a scene of its own instead of rows, `split` says where its coffee begins, `grow` lets it grow with the screen (card.z in parts/card.plm). `uniform` is for a family of cards of one size (LensGoo's modes). `menu` makes it a classic context menu (at the pointer, solid, no ear). `pane` (0…1) makes the card glass above its `wave` row and solid coffee below it. `keep` refreshes an open card in place (live figures): the rows do not come in again and the row
 -- chosen with the keys stays.
 local icons = require("lib/icons")
@@ -254,7 +255,8 @@ function M.open(rows, opts)
     end
     fact.card_split = opts.split or (waved and split + 4 or 0)
     fact.card_dock, fact.card_dock_w = opts.dock ~= nil, tonumber(opts.dock) or 0
-    fact.card_strip = opts.strip == true          -- its owner is stretched into a strip: the card grows out of all of it
+    -- grown out of a whole capsule: PowerGoo's strip, or the drop given (LensShore's)
+    fact.card_from = (opts.strip and tonumber(fact.strip_owner)) or (opts.capsule and opts.capsule.k) or -1
 
     local fresh = not opts.keep or not fact.card_open
     if fresh then
@@ -265,6 +267,14 @@ function M.open(rows, opts)
     elseif chosen and not actions[chosen] then
         chosen = nil
         fact.card_sel = -1
+    end
+    -- `first`: the first row that does something is chosen from the start, so Enter does it (LensShore: ask the AI)
+    -- `again`: the rows changed under the arrows (what is typed changed), the first is chosen anew; `fit`: the card
+    -- shrinks to what it holds, not only grows
+    if opts.fit then fact.card_peak = 0 end
+    if opts.first and (opts.again or not chosen) and choosable[1] then
+        chosen = opts.first == "last" and choosable[#choosable] or choosable[1]      -- "last": nearest a line below the card
+        fact.card_sel = chosen
     end
     local had = field ~= nil and fact.card_open
     field = opts.field
@@ -353,7 +363,12 @@ on("card_key", function(v)
     fact.card_sel = chosen
 end)
 
-on("card_enter", function()
+-- Enter: the row chosen with the arrows, or what is typed. Once: a field outside the card (LensShore's line) and the
+-- card itself may both hear the same key.
+local entered = 0
+function M.enter()
+    if os.clock() - entered < 0.15 then return end
+    entered = os.clock()
     -- a row chosen with the arrows comes before what is typed
     if chosen and actions[chosen] then
         local f = actions[chosen]
@@ -367,7 +382,8 @@ on("card_enter", function()
     if not field.secret then v = v:gsub("^%s+", ""):gsub("%s+$", "") end
     local keep = field.submit and v ~= "" and field.submit(v) == true
     if not keep then M.text("") end
-end)
+end
+on("card_enter", M.enter)
 
 -- Typing is reported after a short pause, not for every letter.
 local typing = nil

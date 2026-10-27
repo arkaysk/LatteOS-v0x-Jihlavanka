@@ -1,0 +1,80 @@
+// LensShore's line (goo/drops/lensbase.luau, goo/lib/lens.luau): on the capsule of goo at the top or the bottom edge,
+// the conversations on the left, the line to type into, and on the right who answers (this computer or a service), the
+// microphone and send. The card that grows out of the capsule is the Goo's own (parts/card.plm, `capsule`), so the two
+// are one body; this is drawn over it, in the goo's own ink.
+part LensLine {
+    fact lens_owner = -1                       // the place of the capsule's drop, −1 while LensGoo is the launcher
+    fact lens_typed = false
+    fact lens_busy = false                     // the AI is still answering: the conversations pulse
+    fact lens_fresh = false                    // an answer came while the card was shut: a dot
+    fact lens_listening = false                // the microphone is on
+    text lens_q = ""
+    text lens_hint = ""
+    text g_ln_talk = ""                        // glyphs, from the logic
+    text g_ln_who = ""
+    text g_ln_mic = ""
+    text g_send = ""
+    event lens_press ->                        // the line was pressed: the card grows
+    event lens_enter ->                        // Enter in the line: what is chosen in the card (at first: ask the AI)
+    event lens_send ->                         // the send button: to the AI
+    event lens_right ->                        // the right button on the line
+    event lens_talk ->                         // the conversations
+    event lens_who ->                          // who answers
+    event lens_mic ->                          // the microphone, on or off
+    prop ln.x = 0 ~0ms
+    follow ln.x = pick(max(lens_owner, 0), x.0, x.1, x.2, x.3, x.4, x.5, x.6, x.7, x.8, x.9, x.10, x.11, x.12, x.13, x.14, x.15, x.16, x.17, x.18, x.19, x.20, x.21, x.22, x.23, x.24, x.25, x.26, x.27, x.28, x.29, x.30, x.31)
+    prop ln.y = 0 ~0ms
+    follow ln.y = pick(max(lens_owner, 0), y.0, y.1, y.2, y.3, y.4, y.5, y.6, y.7, y.8, y.9, y.10, y.11, y.12, y.13, y.14, y.15, y.16, y.17, y.18, y.19, y.20, y.21, y.22, y.23, y.24, y.25, y.26, y.27, y.28, y.29, y.30, y.31)
+    prop ln.r = 0 ~0ms
+    follow ln.r = pick(max(lens_owner, 0), rr.0, rr.1, rr.2, rr.3, rr.4, rr.5, rr.6, rr.7, rr.8, rr.9, rr.10, rr.11, rr.12, rr.13, rr.14, rr.15, rr.16, rr.17, rr.18, rr.19, rr.20, rr.21, rr.22, rr.23, rr.24, rr.25, rr.26, rr.27, rr.28, rr.29, rr.30, rr.31)
+    prop ln.cap = 0 ~0ms
+    follow ln.cap = pick(max(lens_owner, 0), cap.0, cap.1, cap.2, cap.3, cap.4, cap.5, cap.6, cap.7, cap.8, cap.9, cap.10, cap.11, cap.12, cap.13, cap.14, cap.15, cap.16, cap.17, cap.18, cap.19, cap.20, cap.21, cap.22, cap.23, cap.24, cap.25, cap.26, cap.27, cap.28, cap.29, cap.30, cap.31)
+    prop ln.dir = 0 ~0ms
+    follow ln.dir = pick(max(lens_owner, 0), goo.0.cap_dir, goo.1.cap_dir, goo.2.cap_dir, goo.3.cap_dir, goo.4.cap_dir, goo.5.cap_dir, goo.6.cap_dir, goo.7.cap_dir, goo.8.cap_dir, goo.9.cap_dir, goo.10.cap_dir, goo.11.cap_dir, goo.12.cap_dir, goo.13.cap_dir, goo.14.cap_dir, goo.15.cap_dir, goo.16.cap_dir, goo.17.cap_dir, goo.18.cap_dir, goo.19.cap_dir, goo.20.cap_dir, goo.21.cap_dir, goo.22.cap_dir, goo.23.cap_dir, goo.24.cap_dir, goo.25.cap_dir, goo.26.cap_dir, goo.27.cap_dir, goo.28.cap_dir, goo.29.cap_dir, goo.30.cap_dir, goo.31.cap_dir)
+    prop ln.edge = 0 ~0ms
+    follow ln.edge = pick(max(lens_owner, 0), goo.0.edge, goo.1.edge, goo.2.edge, goo.3.edge, goo.4.edge, goo.5.edge, goo.6.edge, goo.7.edge, goo.8.edge, goo.9.edge, goo.10.edge, goo.11.edge, goo.12.edge, goo.13.edge, goo.14.edge, goo.15.edge, goo.16.edge, goo.17.edge, goo.18.edge, goo.19.edge, goo.20.edge, goo.21.edge, goo.22.edge, goo.23.edge, goo.24.edge, goo.25.edge, goo.26.edge, goo.27.edge, goo.28.edge, goo.29.edge, goo.30.edge, goo.31.edge)
+
+    let ln.len = ln.cap * 2
+    let ln.left = ln.x - ln.r + min(0, ln.dir * ln.len)
+    let ln.right = ln.x + ln.r + max(0, ln.dir * ln.len)
+    let ln.cy = ln.y
+    let ln.fx = ln.left + 46                   // the field, between the conversations and the three on the right
+    let ln.fw = ln.right - ln.left - 46 - 118
+
+    group {
+        show: lens_owner >= 0 and lens_shore and ln.cap > 60
+        opacity: clamp((ln.cap - 60) / 120, 0, 1)
+        // the conversations: a pulse while the AI answers, a dot when an answer came meanwhile
+        ellipse { at: ln.left + 24, ln.cy; radius: 16; color: ink; opacity: 10% * ln_talk.hover }
+        text g_ln_talk { at: ln.left + 24, ln.cy; anchor: center; size: 18; color: ink; opacity: if(lens_busy, 55% + 40% * sin(time * 300), 85%); family: "tabler-icons" }
+        ellipse { at: ln.left + 33, ln.cy - 9; radius: 4; color: gold; show: lens_fresh }
+        zone box ln_talk { at: ln.left + 24, ln.cy; size: 36, ln.r * 2; cursor: pointer; label: "Conversations"; role: button }
+        on press ln_talk { emit lens_talk }
+
+        // the field
+        box { from: ln.fx, ln.cy - 16; size: ln.fw, 32; corner: 16; color: ink; opacity: 7% + 5% * lens_field.hover }
+        text g_search { at: ln.fx + 16, ln.cy; anchor: center; size: 15; color: ink; opacity: 60%; family: "tabler-icons" }
+        text lens_hint { at: ln.fx + 32, ln.cy; anchor: left center; width: ln.fw - 44; lines: 1; size: 15; color: ink; opacity: 55%; show: not lens_typed; family: "Inter" }
+        input lens_q { at: ln.fx + 32, ln.cy - 10; width: ln.fw - 44; size: 15; color: ink; selection: #5a463a; family: "Inter"; label: "{lens_hint}" }
+        zone box lens_field { from: ln.fx, ln.cy - 16; size: ln.fw, 32; cursor: text; label: "LensShore" }
+        on press lens_field { focus lens_q; emit lens_press }
+        on press right lens_field { tap.x = cursor.x; tap.y = cursor.y; emit lens_right }
+        on submit lens_q { emit lens_enter }
+
+        // who answers: a house for this computer, a cloud for a service
+        ellipse { at: ln.right - 96, ln.cy; radius: 15; color: ink; opacity: 10% * ln_who.hover }
+        text g_ln_who { at: ln.right - 96, ln.cy; anchor: center; size: 16; color: ink; opacity: 60%; family: "tabler-icons" }
+        zone box ln_who { at: ln.right - 96, ln.cy; size: 32, ln.r * 2; cursor: pointer; label: "Who answers"; role: button }
+        on press ln_who { tap.x = cursor.x; tap.y = cursor.y; emit lens_who }
+        // the microphone: red while it listens
+        ellipse { at: ln.right - 60, ln.cy; radius: 15; color: if(lens_listening, #e5484d, ink); opacity: if(lens_listening, 100%, 10% * ln_mic.hover) }
+        text g_ln_mic { at: ln.right - 60, ln.cy; anchor: center; size: 16; color: if(lens_listening, #ffffff, ink); opacity: if(lens_listening, 100%, 60%); family: "tabler-icons" }
+        zone box ln_mic { at: ln.right - 60, ln.cy; size: 32, ln.r * 2; cursor: pointer; label: "Microphone"; role: button }
+        on press ln_mic { emit lens_mic }
+        // send: lit when there is something to send
+        ellipse { at: ln.right - 24, ln.cy; radius: 15; color: if(lens_typed, gold, ink); opacity: if(lens_typed, 100%, 10% * ln_go.hover) }
+        text g_send { at: ln.right - 24, ln.cy; anchor: center; size: 16; color: if(lens_typed, #2a170c, ink); opacity: if(lens_typed, 100%, 60%); family: "tabler-icons" }
+        zone box ln_go { at: ln.right - 24, ln.cy; size: 32, ln.r * 2; cursor: pointer; label: "Send"; role: button }
+        on press ln_go { emit lens_send }
+    }
+}

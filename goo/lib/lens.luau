@@ -878,7 +878,9 @@ end
 local function rows_ai() return {} end
 
 local shown = {}
+local shore_render
 render = function(keep)
+    if fact.lens_shore then return shore_render(keep) end    -- LensShore: its own card out of its capsule
     local tabs = {}
     if modes_off[kept.mode] then kept.mode = 0 end
     for m = 0, #MODES do
@@ -942,10 +944,8 @@ function M.open(m)
     typed, confirm, found = "", nil, nil
     render(false)
 end
--- LensShore (apps/lensshore.qml, the island of K4) is the launcher instead, when the Settings say so: the Windows key goes to it
-local shore_app = "/usr/share/latteos/apps/lensshore.qml"   -- under LATTE_SHARE, once M.start has read it
 function M.toggle()
-    if fact.lens_shore then run("qs", { "ipc", "-p", shore_app, "call", "lens", "toggle" }, function() end) return end
+    if fact.lens_shore then return M.shore_toggle() end
     if card.id() == "lens" then card.close() else M.open() end
 end
 -- the right button: the apps used last, to start one with a single press
@@ -964,51 +964,347 @@ function M.quick()
     card.open(out, { owner = owner, id = "quick-apps", width = 300 })
 end
 
--- the goo under the island (drops/lensbase.luau): a capsule from a to b along its edge
-local base
-local BASE_R = 23
-function M.base_place()
+-- ── LensShore (6B.12): a capsule of goo at the top or the bottom edge with a line on it (parts/lensline.plm), and a card
+-- grown out of the whole capsule, one body with it. The card is laid out as Raycast's list: a chosen row (at first "Ask
+-- the AI", so Enter asks it), sections with a few rows each, the kind of each on the right; the arrows choose another.
+local base                                   -- the capsule's drop (drops/lensbase.luau)
+local BASE_R, WIDE = 23, 620                 -- its radius, and its length, which is the card's width too
+local shore = { view = "find", talk = {}, chat = "new", live = "", ctx = {}, use = {}, sure = {}, chats = {} }
+local function shore_top() return drops.settings().lens_top ~= false end
+-- where it lies, from the Settings: the drops keep off that stretch, the capsule lies on it
+local function shore_place()
+    local on = fact.lens_shore == true
+    if not on then drops.block("lensshore", nil) if base then base:present(false) base:shrink() end return end
+    local w = tonumber(fact.sw) or 1920
+    local x = tonumber(drops.settings().lens_x) or 0.5
+    local a = math.floor(math.max(12, math.min(w - WIDE - 12, x * w - WIDE / 2)))
+    local e = shore_top() and 2 or 0
+    fact.lens_edge, fact.lens_a, fact.lens_b = e, a, a + WIDE
+    drops.block("lensshore", e, a, a + WIDE)
     if not base then return end
-    local e, a, b = tonumber(fact.lens_edge) or -1, tonumber(fact.lens_a) or 0, tonumber(fact.lens_b) or 0
-    local on = fact.lens_shore == true and (e == 0 or e == 2) and b > a
-    base:present(on)
-    if not on then base:shrink() return end
+    base:present(true)
     base.edge, base.shift, base.moved = e, 0, true
-    base.at = (a + BASE_R) / (tonumber(fact.sw) or 1920)
-    base:stretch((b - a) / 2 - BASE_R, BASE_R, 1)
-    base.rise = BASE_R                   -- down in the goo's surface, one with it: no rim between the capsule and the edge
+    base.at = (a + BASE_R) / w
+    base:stretch(WIDE / 2 - BASE_R, BASE_R, 1)
+    base.rise = BASE_R                       -- down in the goo's surface, one with it: no rim between the capsule and the edge
 end
 function M.base_start(d)
     base = d
-    M.base_place()
+    fact.lens_owner = d.k
+    shore_place()
+end
+
+-- the words of what can be done at once are the English ones and the user's own (the translation table)
+local function said(en, s) return s == en or s == tr(en):lower() end
+local function word_then_number(en, s)
+    for _, w in ipairs({ en, tr(en):lower() }) do
+        local n = s:match("^" .. w:gsub("%p", "%%%0") .. "%s+(%d+)%s*%%?$")
+        if n then return tonumber(n) end
+    end
+end
+local function quick_rows(s)
+    s = s:lower()
+    local out, n = {}, nil
+    n = word_then_number("brightness", s)
+    if n then out[#out + 1] = { label = (tr("Set the brightness to {n} %"):gsub("{n}", n)), glyph = "sun", hint = tr("Do it now"), run = function() run("brightnessctl", { "set", n .. "%" }, function() end) end } end
+    n = word_then_number("volume", s)
+    if n then out[#out + 1] = { label = (tr("Set the volume to {n} %"):gsub("{n}", n)), glyph = "volume", hint = tr("Do it now"), run = function() run("wpctl", { "set-volume", "@DEFAULT_AUDIO_SINK@", tostring(n / 100) }, function() end) end } end
+    if said("turn on wifi", s) then out[#out + 1] = { label = tr("Turn the Wi-Fi on"), glyph = "wifi", hint = tr("Do it now"), run = function() run("nmcli", { "radio", "wifi", "on" }, function() end) end } end
+    if said("turn off wifi", s) then out[#out + 1] = { label = tr("Turn the Wi-Fi off"), glyph = "wifi-off", hint = tr("Do it now"), run = function() run("nmcli", { "radio", "wifi", "off" }, function() end) end } end
+    n = word_then_number("timer", s)
+    if n then out[#out + 1] = { label = (tr("A timer for {n} min"):gsub("{n}", n)), glyph = "clock", hint = tr("Do it now"), run = function()
+        after(n * 60000, function() run("notify-send", { "-a", "LatteOS", tr("Timer"), (tr("{n} min are up"):gsub("{n}", n)) }, function() end) end)
+    end } end
+    if said("do not disturb", s) then out[#out + 1] = { label = tr("Do not disturb"), glyph = "bell-off", hint = tr("Do it now"), run = function() drops.set("quiet", not drops.settings().quiet) end } end
+    return out
+end
+
+-- what the AI may see, shown as buttons the user switches on: the selected text, the clipboard, the window in front
+local function read_context()
+    shore.ctx = {}
+    run("wl-paste", { "--primary", "--no-newline" }, function(out) shore.ctx.picked = (out or ""):sub(1, 4000) if card.id() == "lens" then render(true) end end)
+    local ok, clip = pcall(sys.ask, "clipboard")
+    shore.ctx.clip = ok and type(clip) == "string" and clip:sub(1, 4000) or ""
+    run("hyprctl", { "-j", "activewindow" }, function(out)
+        local okw, w = pcall(json.decode, out or "")
+        shore.ctx.front = okw and type(w) == "table" and (w.title or "") ~= "" and (w.title .. " (" .. (w.class or "") .. ")") or ""
+        if card.id() == "lens" then render(true) end
+    end)
+end
+local function context_text()
+    local parts = {}
+    if shore.use.picked and (shore.ctx.picked or "") ~= "" then parts[#parts + 1] = tr("Selected text") .. ":\n" .. shore.ctx.picked end
+    if shore.use.clip and (shore.ctx.clip or "") ~= "" then parts[#parts + 1] = tr("Clipboard") .. ":\n" .. shore.ctx.clip end
+    if shore.use.front and (shore.ctx.front or "") ~= "" then parts[#parts + 1] = tr("The window in front") .. ": " .. shore.ctx.front end
+    return #parts > 0 and (table.concat(parts, "\n\n") .. "\n\n") or ""
+end
+local function context_row()
+    local pills = {}
+    local function pill(key, label, glyph)
+        pills[#pills + 1] = { label = label, glyph = glyph, on = shore.use[key] == true, keep = true, run = function() shore.use[key] = not shore.use[key] render(true) end }
+    end
+    if (shore.ctx.picked or "") ~= "" then pill("picked", tr("Selected text"), "cursor-text") end
+    if (shore.ctx.clip or "") ~= "" and shore.ctx.clip ~= shore.ctx.picked then pill("clip", tr("Clipboard"), "clipboard") end
+    if (shore.ctx.front or "") ~= "" then pill("front", (shore.ctx.front:match("^(.-) %(") or shore.ctx.front):sub(1, 28), "app-window") end
+    return #pills > 0 and { pills = pills, per = #pills } or nil
+end
+
+-- the AI, asked from the line: the answer comes in pieces, into the card
+local function ask(q)
+    local p = provider()
+    if not p then return end
+    local m = model_of(p)
+    shore.talk[#shore.talk + 1] = { mine = true, text = q }
+    shore.live, shore.view, fact.lens_busy = "", "talk", true
+    local final = nil
+    local args = { "send", shore.chat, p.id, m and m.id or "", context_text() .. q, "--stream" }
+    shore.use = {}
+    render(card.id() == "lens")
+    local due = false
+    shore.job = spawn("latte-ai", args, function(line)
+        local ok, r = pcall(json.decode, line or "")
+        if not ok or type(r) ~= "table" then return end
+        if r.delta then
+            shore.live = shore.live .. r.delta
+            if not due then due = true after(150, function() due = false if card.id() == "lens" and shore.view == "talk" then render(true) end end) end
+        elseif r.chat then final = r end
+    end, function()
+        fact.lens_busy, shore.job = false, nil
+        if final then shore.chat = final.chat shore.talk[#shore.talk + 1] = { mine = false, text = final.answer or "" }
+        elseif shore.live ~= "" then shore.talk[#shore.talk + 1] = { mine = false, text = shore.live } end
+        shore.live = ""
+        if card.id() == "lens" then render(true) else fact.lens_fresh = true end
+    end)
+end
+-- what an answer suggests doing: the commands in it, the addresses in it
+local function suggested(answer)
+    local out = {}
+    for body in answer:gmatch("```[%w]*\n(.-)```") do if #out < 3 then out[#out + 1] = { cmd = body:gsub("%s+$", "") } end end
+    for url in answer:gmatch("https?://[^%s%)%]>]+") do if #out < 5 then out[#out + 1] = { url = url } end end
+    return out
+end
+local function ago(stamp)
+    local y, mo, d, h, mi = (stamp or ""):match("^(%d+)-(%d+)-(%d+)T(%d+):(%d+)")
+    if not y then return "" end
+    local t = os.time({ year = tonumber(y), month = tonumber(mo), day = tonumber(d), hour = tonumber(h), min = tonumber(mi) })
+    local s = os.time() - t
+    if s < 3600 then return (tr("{n} min ago"):gsub("{n}", math.max(1, s // 60))) end
+    if s < 86400 then return (tr("{n} h ago"):gsub("{n}", s // 3600)) end
+    if s < 172800 then return tr("yesterday") end
+    return string.format("%d. %d.", tonumber(d), tonumber(mo))
+end
+
+-- the rows, nearest the line first: at the top edge read downwards, at the bottom upwards (`first = "last"`)
+local function shore_rows()
+    local sections = {}
+    local function section(rows) if #rows > 0 then sections[#sections + 1] = rows end end
+    if shore.view == "chats" then
+        local rows = { { head = true, label = tr(N("CONVERSATIONS")) } }
+        for i, c in ipairs(shore.chats) do
+            if i > 8 then break end
+            rows[#rows + 1] = { label = c.title ~= "" and c.title or "…", glyph = "messages", hint = ago(c.updated), keep = true, run = function()
+                run("cat", { (shore.chats_dir or "") .. "/" .. c.id .. ".json" }, function(out)
+                    local ok, chat = pcall(json.decode, out or "")
+                    if not ok or type(chat) ~= "table" then return end
+                    shore.chat, shore.talk, shore.view = chat.id, {}, "talk"
+                    for _, m in ipairs(chat.messages or {}) do shore.talk[#shore.talk + 1] = { mine = m.role == "user", text = m.content or "" } end
+                    render(true)
+                end)
+            end }
+        end
+        if #shore.chats == 0 then rows[#rows + 1] = { label = tr("No conversation yet"), glyph = "messages", quiet = true } end
+        section(rows)
+        section({ { label = tr("New conversation"), glyph = "plus", keep = true, run = function() shore.chat, shore.talk, shore.view = "new", {}, "find" render(true) focus("lens_q") end } })
+    elseif shore.view == "talk" then
+        local rows = {}
+        for i = math.max(1, #shore.talk - 5), #shore.talk do
+            local m = shore.talk[i]
+            if m.mine then rows[#rows + 1] = { label = m.text, glyph = "user", quiet = true, line = #rows > 0 }
+            else
+                rows[#rows + 1] = { para = true, label = m.text }
+                for j, s in ipairs(suggested(m.text)) do
+                    local key = i .. ":" .. j
+                    if s.cmd then rows[#rows + 1] = { label = shore.sure[key] and tr("Really run it?") or tr("Run in a terminal"), line2 = s.cmd:sub(1, 60), glyph = "terminal-2", danger = shore.sure[key] == true, keep = not shore.sure[key],
+                                                      run = function() if shore.sure[key] then then_do(function() open.shell(s.cmd) end) else shore.sure[key] = true render(true) end end }
+                    else rows[#rows + 1] = { label = tr("Open the link"), line2 = s.url, glyph = "world", run = function() then_do(function() open.url(s.url) end) end } end
+                end
+                rows[#rows + 1] = { label = tr("Copy"), glyph = "copy", copy = m.text, keep = true, run = function() pcall(sys.call, "clipboard.set", m.text) end }
+            end
+        end
+        if fact.lens_busy then rows[#rows + 1] = { para = true, label = shore.live ~= "" and shore.live or tr("Thinking…") } end
+        section(rows)
+        section({ { pills = {
+            { label = tr("New conversation"), glyph = "plus", keep = true, run = function() shore.chat, shore.talk, shore.view = "new", {}, "find" render(true) focus("lens_q") end },
+            { label = tr("Conversations"), glyph = "history", keep = true, run = function() M.shore_chats() end },
+            { label = tr("Open in LensAI"), glyph = "external-link", off = shore.chat == "new", run = function() then_do(function() run("latte-app", { "aicenter", shore.chat }, function() end) end) end },
+        }, per = 3 } })
+    elseif typed == "" then
+        local tiles = {}
+        for _, id in ipairs(kept.recent) do if by_id[id] and #tiles < 6 then tiles[#tiles + 1] = tile(by_id[id]) end end
+        if #tiles > 0 then section({ { head = true, label = tr("RECENTLY USED") }, { tiles = tiles, per = 6 } }) end
+        section({ { label = MODES[4] and tr("Type to search; Enter asks the AI") or tr("Type to search"), glyph = MODES[4] and "sparkles" or "search", quiet = true } })
+    else
+        local q = typed
+        -- first, chosen: the AI (Enter); with it off, the best of what was found is first instead
+        if MODES[4] then
+            local p = provider()
+            local first = { { label = tr("Ask the AI") .. ": " .. q, glyph = "sparkles", hint = p and p.name or "", run = function() ask(q) text.lens_q, fact.lens_typed, typed = "", false, "" end } }
+            local c = context_row()
+            if c then first[#first + 1] = c end
+            section(first)
+        end
+        section(quick_rows(q))
+        local result = calc(q)
+        local shown_amount = result and number(result) or (worked and worked_for == q and worked)
+        if shown_amount then section({ { label = shown_amount, glyph = "calculator", hint = tr("Calculator"), copy = shown_amount, run = function() pcall(sys.call, "clipboard.set", shown_amount) end } }) end
+        local hits, rows = find(apps, q, 5), {}
+        for i, a in ipairs(hits) do
+            if i > 4 then break end
+            rows[#rows + 1] = { label = a.local_name or a.name or a.id, icon = a.icon or "", glyph = "apps", hint = tr("App"), run = function() launch(a) end, right = function() app_menu(a) end }
+        end
+        if #rows > 0 then table.insert(rows, 1, { head = true, label = tr(N("APPLICATIONS")) }) section(rows) end
+        rows = { { head = true, label = tr(N("FILES AND FOLDERS")) } }
+        local want = q:lower()
+        local files, later = {}, {}
+        for _, path in ipairs(found or {}) do
+            local name = (path:gsub("/$", ""):match("([^/]+)$") or ""):lower()
+            if name:sub(1, #want) == want then files[#files + 1] = path else later[#later + 1] = path end
+        end
+        for _, p in ipairs(later) do files[#files + 1] = p end
+        for i, path in ipairs(files) do
+            if i > 4 then break end
+            local folder = path:sub(-1) == "/"
+            local clean = folder and path:sub(1, -2) or path
+            local parent = clean:match("^(.*)/[^/]*$") or "/"
+            rows[#rows + 1] = { label = clean:match("([^/]+)$") or clean, glyph = folder and "folder" or "file", hint = short(parent),
+                                run = function() then_do(function() open.path(clean) end) end, right = function() then_do(function() open.path(parent) end) end }
+        end
+        if found == nil then rows[#rows + 1] = { label = tr("Searching…"), glyph = "search", quiet = true } end
+        if #rows > 1 or found == nil then section(rows) end
+        if pages_for == q and #pages > 0 then
+            rows = { { head = true, label = tr(N("SETTINGS")) } }
+            for i, pg in ipairs(pages) do if i <= 3 then rows[#rows + 1] = { label = pg.name, glyph = pg.icon, hint = pg.area_name, run = function() then_do(function() open.settings(pg.page) end) end } end end
+            section(rows)
+        end
+        section({ { head = true, label = tr(N("WEB")) }, { label = (tr("Search for “{what}” on {engine}"):gsub("{what}", function() return q end):gsub("{engine}", function() return engine().name end)), glyph = "world", hint = tr("Web"), run = function() search_web(engine(), q) end } })
+    end
+    -- at the bottom edge the list reads upwards: nearest the line what comes first; room under it for the line itself
+    local out = {}
+    local top = shore_top()
+    for i = 1, #sections do
+        local s = sections[top and i or (#sections + 1 - i)]
+        for j, r in ipairs(s) do if j == 1 and #out > 0 then r.line = true end out[#out + 1] = r end
+    end
+    if top then table.insert(out, 1, { gap = 34 }) else out[#out + 1] = { gap = 34 } end
+    return out
+end
+shore_render = function(keep)
+    shown = shore_rows()
+    card.open(shown, { capsule = base, id = "lens", width = WIDE / 1.2, keep = keep, first = shore_top() and true or "last",
+                       again = shore.view == "find", fit = true, pane = 1 })
+end
+function M.shore_open()
+    if not base then return end
+    if card.id() ~= "lens" then
+        load_lists()
+        read_context()
+        fact.lens_fresh = false
+        shore_render(false)
+    end
+    after(60, function() focus("lens_q") end)
+end
+function M.shore_toggle()
+    if card.id() == "lens" then card.close() else M.shore_open() end
+end
+function M.shore_chats()
+    run("latte-ai", { "chats" }, function(out)
+        local ok, list = pcall(json.decode, out or "")
+        shore.chats = ok and type(list) == "table" and list or {}
+        shore.view = "chats"
+        if card.id() == "lens" then render(true) else M.shore_open() end
+    end)
+end
+local function shore_start()
+    local okst, st = pcall(sys.ask, "env", "XDG_STATE_HOME")
+    local okh, h = pcall(sys.ask, "env", "HOME")
+    shore.chats_dir = ((okst and type(st) == "string" and st ~= "") and st or ((okh and h or "") .. "/.local/state")) .. "/latteos/ai/chats"
+    text.lens_hint, text.g_send = tr("Search or ask…"), icons["arrow-up"]
+    text.g_ln_talk, text.g_ln_mic = icons["messages"], icons["microphone"]
+    local function who() local p = provider() text.g_ln_who = icons[(p and p["local"]) and "home" or "cloud"] or "" end
+    who()
+    local pause
+    on("text:lens_q", function()
+        fact.lens_typed = (text.lens_q or "") ~= ""
+        if pause then cancel(pause) end
+        pause = after(140, function()
+            pause = nil
+            local t = (text.lens_q or ""):gsub("^%s+", ""):gsub("%s+$", "")
+            if t == typed then return end
+            typed, confirm, found = t, nil, nil
+            if t ~= "" then shore.view = "find" look_for_files() look_for_settings() look_for_amount() end
+            if card.id() == "lens" then render(true) elseif t ~= "" then M.shore_open() end
+        end)
+    end)
+    on("lens_press", M.shore_open)
+    on("lens_enter", function() if card.id() == "lens" then card.enter() end end)
+    on("lens_send", function()
+        local q = (text.lens_q or ""):gsub("^%s+", ""):gsub("%s+$", "")
+        if q == "" or not MODES[4] then return end
+        text.lens_q, fact.lens_typed, typed = "", false, ""
+        if card.id() ~= "lens" then M.shore_open() end
+        ask(q)
+    end)
+    on("lens_talk", function()
+        if card.id() == "lens" and shore.view ~= "find" then return card.close() end
+        fact.lens_fresh = false
+        if #shore.talk > 0 then shore.view = "talk" if card.id() == "lens" then render(true) else M.shore_open() end
+        else M.shore_chats() end
+    end)
+    on("lens_who", function()
+        local rows = {}
+        for _, p in ipairs(ai.providers) do
+            rows[#rows + 1] = { label = p.name, glyph = p["local"] and "home" or "cloud", on = provider() == p, hint = p["local"] and tr("this computer") or "",
+                                run = function() kept.ai.provider = p.id save() who() end }
+        end
+        if #rows > 0 then ctx.open(rows, { width = 260 }) end
+    end)
+    on("lens_mic", function()
+        local on = not fact.lens_listening
+        fact.lens_listening = on
+        run("latte-ai", { "listen", on and "start" or "stop" }, function(out)
+            if on then return end
+            local ok, r = pcall(json.decode, out or "")
+            if ok and type(r) == "table" and (r.text or "") ~= "" then
+                text.lens_q = ((text.lens_q or "") ~= "" and (text.lens_q .. " ") or "") .. r.text
+                fact.lens_typed = true
+                focus("lens_q")
+            end
+        end)
+    end)
+    on("lens_right", function()
+        local now = text.lens_q or ""
+        local function changed() fact.lens_typed = (text.lens_q or "") ~= "" end
+        card.field_menu("lens_q", changed)
+    end)
+    on("fact:sw", shore_place)
+    pcall(sys.watch, "files:settings.json", function() shore_place() who() end)
 end
 function M.start(d)
     owner = d
-    -- with LensShore the drop is not there, and the island runs (it ends itself when the Settings turn it off)
-    local started = false                -- told twice at the start (the scene, the settings): started once
-    -- the island tells where it lies; the drops keep off that stretch of the edge, and the goo under it lies there
-    local function island()
-        local e = tonumber(fact.lens_edge) or -1
-        if fact.lens_shore and (e == 0 or e == 2) then drops.block("lensshore", e, tonumber(fact.lens_a) or 0, tonumber(fact.lens_b) or 0)
-        else drops.block("lensshore", nil) end
-        M.base_place()
-    end
-    for _, f in ipairs({ "fact:lens_edge", "fact:lens_a", "fact:lens_b" }) do on(f, island) end
+    -- with LensShore the drop is not there: the capsule and its line are the launcher
     local function which()
         d:present(not fact.lens_shore)
-        island()
-        if fact.lens_shore and not started then started = true run("latte-app", { "lensshore" }, function() end) end
-        if not fact.lens_shore then started = false end
+        shore_place()
         if card.id() == "lens" then card.close() end
     end
     on("fact:lens_shore", which)
+    shore_start()
     which()
     -- the words an amount is written in, in the user's language (lib/amount.luau)
     local okl, lang = pcall(sys.ask, "env", "LANG")
     local code = (okl and type(lang) == "string" and lang:match("^(%a%a)")) or "en"
     local okd, share = pcall(sys.ask, "env", "LATTE_SHARE")
     share = okd and type(share) == "string" and share ~= "" and share or "/usr/share/latteos"
-    shore_app = share .. "/apps/lensshore.qml"
     run("cat", { share .. "/goo/lang/" .. code .. "-amount.json" }, function(out)
         local ok, w = pcall(json.decode, out or "")
         if ok and type(w) == "table" then amount_words = w end

@@ -667,6 +667,18 @@ Spúšťač (LensGoo)** ako prvá veľká voľba „Režim: LensGoo / LensShore�
   Pravý klik iba v zvýraznenom poli (Vystrihnúť · Kopírovať · Prilepiť · Odomknúť polohu); vľavo tlačidlo **rozhovorov**
   (rozrobený rozhovor, história z `latte-ai chats`, pokračovanie v ňom, Otvoriť v LensAI).
 
+- [ ] **Štvrtá podoba (používateľ 27. 10.)**: celý ostrov kreslí **jeden engine — pleamar** (K4 bol iba vzorom vzhľadu); kapsula
+  aj karta sú jedno telo Goo ako karty ClockGoo a PowerGoo (sklo, káva prechádzajúca do papiera), žiadna hustá hnedá
+  plocha. Obsah **imituje Raycast**: zoznam s predvybraným riadkom, sekcie, pravé doplnky, lišta akcií; prvý riadok
+  „Opýtať sa AI: …“, takže Enter ide do AI, šípky vyberú iný výsledok a Enter ho otvorí. Štyri ikony v riadku ostávajú.
+  Quickshell verzia sa ruší.
+- [x] 27. 10. postavené: `parts/lensline.plm` (riadok a štyri ikony na kapsule), `drops/lensbase.luau`, LensShore v
+  `lib/lens.luau`; karta Goo rastie z ľubovoľnej kapsuly (`capsule`, `card_from` namiesto pásu PowerGoo), `first`/`again`
+  predvyberie riadok, `fit` ju zmenšuje. Overené bez obrazovky: jedno sklenené telo, „guar“ → Opýtať sa AI (predvybrané
+  pri riadku) · Aplikácie · Súbory a priečinky · Nastavenia · Web, zoznam rozhovorov sa zmenší. Prílohy pustením súboru
+  v tejto podobe ešte nie sú. Neoverené naživo: písanie, AI, hlas, výber AI, presun (ťahanie ešte nie je — poloha sa mení
+  v nastaveniach; doplniť).
+
 **6B.18** [x] **LensShore: kontext ako čipy** (návrh 27. 10., schválený): Označený text, Schránka, Okno vpredu — do AI ide iba
 zapnutý čip; súbor pustený na ostrov je príloha (`--attach`). Neoverené naživo.
 

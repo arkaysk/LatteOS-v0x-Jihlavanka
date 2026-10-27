@@ -47,7 +47,7 @@ part Card {
     fact card_owner = -1                       // the place of the drop it grows from; −1: from the last press
     fact card_dock_w = 0                       // …and how long that plate is, to join the two without a seam
     fact card_dock = false                     // it is the shore's panel: no goo, a plate that stands on the shore's own, one piece with it
-    fact card_strip = false                    // that drop is stretched into a strip: grow out of the whole capsule
+    fact card_from = -1                        // the drop stretched into a capsule the card grows out of, all of it (PowerGoo's strip, LensShore)
     fact card_w = 300
     fact card_w2 = 0                           // how wide the second column is; 0: there is none
     fact card_menu = false                     // a classic context menu: at the pointer, square-ish, solid, no ear and no neck
@@ -97,24 +97,36 @@ part Card {
     on change card_gen { reveal: 0 ~0ms; reveal: 1 ~460ms after 16ms }
 
     // Where it stands: its corner at the ear, opening towards the middle of the screen and kept inside it.
-    let from_strip = if(card_strip and strip_on and card_owner < 0, 1, 0)
-    let ear = if(card_owner >= 0, own.r, if(from_strip > 0, strip.r, 10))
+    prop from.x = 0 ~0ms
+    follow from.x = pick(max(card_from, 0), x.0, x.1, x.2, x.3, x.4, x.5, x.6, x.7, x.8, x.9, x.10, x.11, x.12, x.13, x.14, x.15, x.16, x.17, x.18, x.19, x.20, x.21, x.22, x.23, x.24, x.25, x.26, x.27, x.28, x.29, x.30, x.31)
+    prop from.y = 0 ~0ms
+    follow from.y = pick(max(card_from, 0), y.0, y.1, y.2, y.3, y.4, y.5, y.6, y.7, y.8, y.9, y.10, y.11, y.12, y.13, y.14, y.15, y.16, y.17, y.18, y.19, y.20, y.21, y.22, y.23, y.24, y.25, y.26, y.27, y.28, y.29, y.30, y.31)
+    prop from.r = 0 ~0ms
+    follow from.r = pick(max(card_from, 0), goo.0.r * goo.0.zoom, goo.1.r * goo.1.zoom, goo.2.r * goo.2.zoom, goo.3.r * goo.3.zoom, goo.4.r * goo.4.zoom, goo.5.r * goo.5.zoom, goo.6.r * goo.6.zoom, goo.7.r * goo.7.zoom, goo.8.r * goo.8.zoom, goo.9.r * goo.9.zoom, goo.10.r * goo.10.zoom, goo.11.r * goo.11.zoom, goo.12.r * goo.12.zoom, goo.13.r * goo.13.zoom, goo.14.r * goo.14.zoom, goo.15.r * goo.15.zoom, goo.16.r * goo.16.zoom, goo.17.r * goo.17.zoom, goo.18.r * goo.18.zoom, goo.19.r * goo.19.zoom, goo.20.r * goo.20.zoom, goo.21.r * goo.21.zoom, goo.22.r * goo.22.zoom, goo.23.r * goo.23.zoom, goo.24.r * goo.24.zoom, goo.25.r * goo.25.zoom, goo.26.r * goo.26.zoom, goo.27.r * goo.27.zoom, goo.28.r * goo.28.zoom, goo.29.r * goo.29.zoom, goo.30.r * goo.30.zoom, goo.31.r * goo.31.zoom)
+    prop from.cap = 0 ~0ms
+    follow from.cap = pick(max(card_from, 0), cap.0, cap.1, cap.2, cap.3, cap.4, cap.5, cap.6, cap.7, cap.8, cap.9, cap.10, cap.11, cap.12, cap.13, cap.14, cap.15, cap.16, cap.17, cap.18, cap.19, cap.20, cap.21, cap.22, cap.23, cap.24, cap.25, cap.26, cap.27, cap.28, cap.29, cap.30, cap.31)
+    prop from.edge = 0 ~0ms
+    follow from.edge = pick(max(card_from, 0), goo.0.edge, goo.1.edge, goo.2.edge, goo.3.edge, goo.4.edge, goo.5.edge, goo.6.edge, goo.7.edge, goo.8.edge, goo.9.edge, goo.10.edge, goo.11.edge, goo.12.edge, goo.13.edge, goo.14.edge, goo.15.edge, goo.16.edge, goo.17.edge, goo.18.edge, goo.19.edge, goo.20.edge, goo.21.edge, goo.22.edge, goo.23.edge, goo.24.edge, goo.25.edge, goo.26.edge, goo.27.edge, goo.28.edge, goo.29.edge, goo.30.edge, goo.31.edge)
+    prop from.dir = 0 ~0ms
+    follow from.dir = pick(max(card_from, 0), goo.0.cap_dir, goo.1.cap_dir, goo.2.cap_dir, goo.3.cap_dir, goo.4.cap_dir, goo.5.cap_dir, goo.6.cap_dir, goo.7.cap_dir, goo.8.cap_dir, goo.9.cap_dir, goo.10.cap_dir, goo.11.cap_dir, goo.12.cap_dir, goo.13.cap_dir, goo.14.cap_dir, goo.15.cap_dir, goo.16.cap_dir, goo.17.cap_dir, goo.18.cap_dir, goo.19.cap_dir, goo.20.cap_dir, goo.21.cap_dir, goo.22.cap_dir, goo.23.cap_dir, goo.24.cap_dir, goo.25.cap_dir, goo.26.cap_dir, goo.27.cap_dir, goo.28.cap_dir, goo.29.cap_dir, goo.30.cap_dir, goo.31.cap_dir)
+    let from_strip = if(card_from >= 0 and card_owner < 0, 1, 0)
+    let ear = if(card_owner >= 0, own.r, if(from_strip > 0, from.r, 10))
     // A drop stretched into a strip is one thing with it: the card grows out of the whole capsule, along the
     // way the capsule lies, not out of the drop at its end.
-    let cap.len = from_strip * strip.cap * 2
-    let cap.tx = if(strip.edge == 1 or strip.edge == 3, 0, 1)    // along the edge the strip is on
+    let cap.len = from_strip * from.cap * 2
+    let cap.tx = if(from.edge == 1 or from.edge == 3, 0, 1)    // along the edge the strip is on
     let cap.h = if(cap.len > 0, cap.tx, 0)                       // the capsule lies along x
     let cap.v = if(cap.len > 0, 1 - cap.tx, 0)                   // or along y
-    let card.bx = if(card_owner >= 0, own.x, if(from_strip > 0, strip.x, tap.x))
-    let card.by = if(card_owner >= 0, own.y, if(from_strip > 0, strip.y, tap.y))
+    let card.bx = if(card_owner >= 0, own.x, if(from_strip > 0, from.x, tap.x))
+    let card.by = if(card_owner >= 0, own.y, if(from_strip > 0, from.y, tap.y))
     // how much bigger than its 1.2 such a card is drawn: as much as the room beside its drop holds, from 1024 × 768 up
     let card.room = max(card.by - ear, H - card.by - ear) - 24
     let card.z = if(card_grow, clamp(min((W - 24) / max(card_w + card_w2, 1), card.room / max(card_min, 1)), 0.85, 1.5), 1)
     let card.w = min((card_w + card_w2) * card.z, W - 24)
     let card.h = min(max(card_col.height, max(card_min * card.z, card_peak)), H - 24)
     on change card_col.height { card_peak = max(card_peak, card_col.height) }
-    let card.sx = if(cap.h > 0, if(strip.dir > 0, if(card.bx + card.w + 12 <= W, 1, -1), if(card.bx - card.w - 12 >= 0, -1, 1)), if(card.bx + card.w + 12 <= W, 1, -1))
-    let card.sy = if(cap.v > 0, if(strip.dir > 0, if(card.by + card.h + 12 <= H, 1, -1), if(card.by - card.h - 12 >= 0, -1, 1)), if(card.by > H / 2, if(card.by - card.h - 12 >= 0, -1, 1), if(card.by + card.h + 12 <= H, 1, -1)))
+    let card.sx = if(cap.h > 0, if(from.dir > 0, if(card.bx + card.w + 12 <= W, 1, -1), if(card.bx - card.w - 12 >= 0, -1, 1)), if(card.bx + card.w + 12 <= W, 1, -1))
+    let card.sy = if(cap.v > 0, if(from.dir > 0, if(card.by + card.h + 12 <= H, 1, -1), if(card.by - card.h - 12 >= 0, -1, 1)), if(card.by > H / 2, if(card.by - card.h - 12 >= 0, -1, 1), if(card.by + card.h + 12 <= H, 1, -1)))
     // the ear as drawn: it swells under the pointer, and the outline round it swells with it
     let ear.d = if(card_owner >= 0, max(own.rr, own.r), ear)
     let card.x = card.bx - cap.h * card.sx * ear                 // from the drop's far side, so the card holds all of it
@@ -156,7 +168,7 @@ part Card {
         refraction: if(true_glass, 200%, 120%) * card.glass
         box { at: card.ax + card.sx * card.cw / 2, card.ay + card.sy * card.ch / 2; size: card.cw * if(card.p > 0.02, 1, 0), card.ch; corner: if(card_menu, 12, min(if(ear > 14, 26, 18) + (card.round - 18), min(card.cw, card.ch) / 2)) }
         ellipse { at: card.ax + if(card_owner >= 0, own.dx - own.x, 0), card.ay + if(card_owner >= 0, own.dy - own.y, 0); radius: (ear.d * clamp(card.p * 3, 0, 1) + 1) * if(card.p > 0.02 and not card_menu, 1, 0); blend: 4 + 30 * 4 * card.t * (1 - card.t) }
-        line { from: card.bx, card.by; to: card.bx + cap.tx * cap.len * strip.dir, card.by + (1 - cap.tx) * cap.len * strip.dir; width: ear * 2 * clamp(card.p * 3, 0, 1) * if(cap.len > 0 and card.p > 0.02, 1, 0); blend: 4 + 30 * 4 * card.t * (1 - card.t) }
+        line { from: card.bx, card.by; to: card.bx + cap.tx * cap.len * from.dir, card.by + (1 - cap.tx) * cap.len * from.dir; width: ear * 2 * clamp(card.p * 3, 0, 1) * if(cap.len > 0 and card.p > 0.02, 1, 0); blend: 4 + 30 * 4 * card.t * (1 - card.t) }
     }
     // The shore's panel: a plate like the shore's, rising out of it and reaching past the screen's edge, so
     // the two are one piece.
