@@ -481,6 +481,14 @@ function W.setup()
         snap = with(snap),
         sounding = set_sounding,
         to_desk = with(function(w, n) hl.dispatch(hl.dsp.window.move({ workspace = n == 0 and "empty" or tostring(n), follow = false, window = sel(w) })) end),
+        -- to another screen (its name), onto the desktop shown there; a floating window stays within reach
+        to_screen = with(function(w, name)
+            hl.dispatch(hl.dsp.window.move({ monitor = name, window = sel(w) }))
+            local moved = find(w.address)
+            for _, m in ipairs(hl.get_monitors() or {}) do
+                if m.name == name and moved and moved.floating then within_reach(moved, m, true) end
+            end
+        end),
         -- for the buttons of a title bar: the window that was pressed has the keyboard by then
         minimize_active = function() local w = hl.get_active_window() if w then minimize(w) end end,
         maximize_active = function() hl.dispatch(hl.dsp.window.fullscreen({ mode = "maximized", action = "toggle" })) end,

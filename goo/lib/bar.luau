@@ -104,6 +104,10 @@ local function menu(w, net)
     local desks = {}
     for n = 1, 4 do desks[n] = { label = tr("Desktop") .. " " .. n, on = w.desk == n, run = act("to_desk", n) } end
     desks[#desks + 1] = { label = tr("New desktop"), glyph = "plus", run = act("to_desk", 0) }
+    local screens = {}
+    for n, m in ipairs(wm.screens()) do
+        screens[n] = { label = tr("Screen") .. " " .. n, hint = m.model, on = w.screen == m.id, run = act("to_screen", m.name) }
+    end
     local rows = {
         { label = tr("Restore"), glyph = "arrows-minimize", run = act(w.away and "activate" or "restore") },
         { label = tr("Minimize"), glyph = "minus", off = w.away or mode == 0, run = act("minimize") },
@@ -117,6 +121,9 @@ local function menu(w, net)
         { label = tr("Move to desktop"), glyph = "stack-2", sub = desks },
         { label = tr("Close"), glyph = "x", hint = "Alt+F4", danger = true, line = true, run = act("close") },
     }
+    if #screens > 1 then
+        table.insert(rows, #rows, { label = tr("Move to screen"), glyph = "device-desktop", sub = screens })
+    end
     if net then
         table.insert(rows, #rows, { label = tr("Cut off the internet"), glyph = "world-off", on = net == "off", line = true,
                                     run = function() run("latte-net", { "toggle", w.address }, function() end) end })

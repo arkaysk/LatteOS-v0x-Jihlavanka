@@ -85,6 +85,8 @@ library Slovak {
         "Move to desktop" = "Presunúť na plochu"
         "Desktop" = "Plocha"
         "New desktop" = "Nová plocha"
+        "Move to screen" = "Presunúť na obrazovku"
+        "Screen" = "Obrazovka"
         "left: search and apps · right: recent apps" = "ľavý: hľadanie a aplikácie · pravý: naposledy spustené"
         "Applications" = "Aplikácie"
         "Command" = "Príkaz"

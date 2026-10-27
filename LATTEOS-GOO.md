@@ -197,7 +197,7 @@ ostatné kvapky sú iba na hlavnom monitore.
 - **Viac monitorov:** každá obrazovka má vlastný BarGoo, okná a ikry sa dajú prenášať. *(Fresh, 13. 10.: na každom ďalšom
   monitore beží vlastná scéna `goo/side.plm` s BarGoo a oknami toho monitora — `latte-goo-side@MONITOR.service`,
   spúšťa a zastavuje ju Hyprland; materiál, živé správanie a kávu jej hovorí hlavná scéna cez `latte-say`.
-  Prenášanie ikier medzi monitormi ešte nie je.)*
+  Okno sa presunie na inú obrazovku z jeho ponuky › Presunúť na obrazovku (27. 10.); prenášanie ikier ťahaním ešte nie je.)*
 
 ### 4.2 PowerGoo — účet, napájanie a výkon
 - **Karta (ľavý klik):** **profil účtu** — portrét v kruhu (`~/.face`, obrázok prihlasovania LatteOS alebo
@@ -639,6 +639,6 @@ nemá (AI je hľadanie, Financie a Sociálne sú podkategórie Flathubu).
 
 **Ešte nie je** (vráti sa po kusoch, poradie v ROADMAP):
 ChatGoo (čaká na Beeper), Tvorca Goo (vlastné kvapky už sú: §4.7),
-prenášanie ikier medzi monitormi, ďalší poskytovatelia AI,
+prenášanie ikier ťahaním medzi monitormi, ďalší poskytovatelia AI,
 portrét účtu, účty kalendárov so zápisom (CalDAV),
 živé tapety a vlastný obrázok tapety, náhľad cieľa a lišta rozložení pri ťahaní okna, Nastavenia a ostatné aplikácie.

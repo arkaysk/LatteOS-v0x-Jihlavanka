@@ -16,6 +16,8 @@ end
 -- the scene's monitor, as everything in the scene is.
 local SCREEN = (function() local ok, v = pcall(sys.ask, "env", "LATTE_GOO_SCREEN") return ok and type(v) == "string" and v or "" end)()
 local own = { id = nil, x = 0, y = 0 }       -- the scene's monitor, as the compositor knows it
+local screens = {}                           -- every monitor with a picture of its own, left to right: { id, name, model }
+function M.screens() return screens end
 function M.monitor() return own.id end
 function M.origin() return own.x, own.y end  -- its corner among the monitors
 function M.windows(answer)
@@ -31,6 +33,12 @@ function M.windows(answer)
             if m.name == SCREEN or (SCREEN == "" and m.focused and not mine) then mine = m end
         end
         if mine then own = { id = tonumber(mine.id), x = tonumber(mine.x) or 0, y = tonumber(mine.y) or 0 } end
+        local all = {}
+        for _, m in ipairs(decode(third) or {}) do
+            if (m.mirrorOf or "none") == "none" then all[#all + 1] = { id = tonumber(m.id), name = m.name, model = m.model or "", x = tonumber(m.x) or 0 } end
+        end
+        table.sort(all, function(a, b) return a.x < b.x end)
+        screens = all
         local wins = {}
         for _, c in ipairs(list) do
             if c.mapped ~= false and (c.class or "") .. (c.title or "") ~= "" then
@@ -39,7 +47,7 @@ function M.windows(answer)
                 local away = tostring(ws.name or ""):find("^special:minimized") ~= nil
                 wins[#wins + 1] = {
                     address = c.address, class = c.class or "", title = c.title or "", pid = c.pid,
-                    here = own.id == nil or tonumber(c.monitor) == own.id,
+                    here = own.id == nil or tonumber(c.monitor) == own.id, screen = tonumber(c.monitor),
                     desk = tonumber(ws.id) or 0, visible = c.visible == true and not away, away = away, front = c.address == front and not away,
                     maximized = c.fullscreen == 1, fullscreen = (tonumber(c.fullscreen) or 0) >= 2, floating = c.floating == true,
                     pinned = c.pinned == true, x = (tonumber(at[1]) or 0) - own.x, y = (tonumber(at[2]) or 0) - own.y,
@@ -51,7 +59,7 @@ function M.windows(answer)
     end)
 end
 
--- what: activate · toggle · minimize · restore · maximize · close · pin · snap (arg: the zone) · to_desk (arg: its number)
+-- what: activate · toggle · minimize · restore · maximize · close · pin · snap (arg: the zone) · to_desk (arg: its number) · to_screen (arg: its name)
 function M.win(what, address, arg)
     if not address then return end
     eval(string.format("latte.win.%s(%q%s)", what, address, arg ~= nil and (", " .. (type(arg) == "string" and string.format("%q", arg) or tostring(arg))) or ""))
