@@ -293,6 +293,11 @@ zavedenie systemu a prihlasovacia obrazovka dizajnovo takmer finalna verzia.
     víchrica nezaliala riadok s heslom. (Neskôr 13. 10. na pokyn zrušené: vo víchrici sa vlna cez riadok preleje
     a odtečie; svetlo o polovicu slabšie.)
 
+
+**4.04** [ ] **Dvojitá zlato-kávová hladina v prihlasovaní** (používateľ 27. 10.): ako v kartách PowerGoo a v LensShore —
+zlatá vrstva vzadu, káva vpredu, každá sa vlní po svojom (`goo/parts/rows.plm`, `card.sp`); na prihlasovacej obrazovke
+(LoginGoo, `goo/login.plm`) a v zámku obrazovky, bez čiary navyše tam, kde sa káva stretne s iným prvkom.
+
 ---
 
 ## 5. [~] SAFE latteOS
@@ -705,6 +710,12 @@ vyberie, kto odpovedá (`lens_ai` v nastaveniach Goo). Neoverené naživo.
 
 **6B.23** [x] **LensShore: hlas** (návrh 27. 10.): mikrofón v riadku, `latte-ai listen start|stop`, prepis sa vpíše do riadku.
 Neoverené naživo.
+
+**6B.24** [ ] **LensShore: lišta akcií a Ctrl+K** (používateľ 27. 10., podľa Raycastu — Action Panel, na Macu ⌘K): pri poli
+stála lišta „hlavná akcia ↵ · Akcie Ctrl+K“; Ctrl+K nad vybraným riadkom otvorí zoznam všetkých jeho akcií, v ktorom sa
+dá písať a každá má skratku — aplikácia: Otvoriť, Pripnúť do QuickGoo, Pridať do obľúbených, Ukázať v DualBrew,
+Odinštalovať (AppManager); súbor: Otvoriť v…, Ukázať v priečinku, Kopírovať cestu, Presunúť do koša; odpoveď AI:
+Kopírovať, Spustiť príkaz, Pokračovať v LensAI. Pravý klik na riadok ukáže to isté.
 
 **6B.13** [ ] **Výskum: Tinycast ako zoznam funkcií** (používateľ 27. 10.: „vyzerá ako naše LensGoo“) —
 https://github.com/abue-ammar/tinycast (macOS, Swift, AGPL-3.0 → kód nepreberať, iba nápady). Čo LensGoo/LensShore
