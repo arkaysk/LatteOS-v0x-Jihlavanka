@@ -82,12 +82,19 @@ local worked, worked_for = nil, ""   -- an amount in units or money worked out b
 local render, set_mode
 
 local function save() pcall(sys.call, "files.write", FILE, kept) end
--- Where the launcher's cards stand: out of the drop LensGoo, or with LensShore (6B.12) on the shore, above its line.
+-- LensShore (6B.12): the drop stretched into a capsule as long as the launcher's card (600 × 1.2, lib/card.luau)
+local shore                          -- the drop, while it is the launcher
+local CAP, CAP_R = 338, 22
+local shore_focus = nil              -- "More" chose one kind of what was found: its mode; nil, all of them in sections
+-- Where the launcher's cards stand: out of the drop LensGoo, or out of LensShore's capsule, away from its edge,
+-- the line staying where it is.
 local function placed(opts)
-    if fact.lens_shore then
-        local w, h = tonumber(fact.sw) or 1920, tonumber(fact.sh) or 1080
-        fact["tap.x"], fact["tap.y"] = w - 6, h - 50
-        opts.owner, opts.dock = nil, tonumber(fact.shore_w) or 0
+    if fact.lens_shore and shore then
+        local h = tonumber(fact.sh) or 1080
+        local x, dir = drops.along(shore), tonumber(shore.v.cap_dir) or 1
+        fact["tap.x"] = x - CAP_R + math.min(0, dir * 2 * CAP)
+        fact["tap.y"] = shore.edge == 2 and 52 or h - 52
+        opts.owner = nil
     else
         opts.owner = owner
     end
@@ -252,7 +259,7 @@ local function look_for_settings()
         if text ~= typed then return end                  -- something else has been typed since
         local ok, list = pcall(json.decode, out or "")
         pages, pages_for = ok and type(list) == "table" and list or {}, text
-        if card.id() == "lens" and kept.mode == 0 and #pages > 0 then render(true) end
+        if card.id() == "lens" and (kept.mode == 0 or (fact.lens_shore and not shore_focus)) and #pages > 0 then render(true) end
     end)
 end
 
@@ -274,7 +281,7 @@ local function look_for_amount()
         -- what it could not turn into anything comes back as it went in: no answer, not a wrong one
         if got == "" or got:find("[Ee]rror") or got:find("[Ww]arning") or (from and got:gsub(",0+", "") == from:gsub(",0+", "")) then return end
         worked, worked_for = got, text
-        if card.id() == "lens" and kept.mode == 0 then render(true) end
+        if card.id() == "lens" and (kept.mode == 0 or (fact.lens_shore and not shore_focus)) then render(true) end
     end)
 end
 
@@ -287,7 +294,7 @@ local function look_for_files()
         if mine ~= asked then return end                 -- something else has been typed since
         found = {}
         for path in (out or ""):gmatch("[^\n]+") do found[#found + 1] = path end
-        if card.id() == "lens" and kept.mode == 1 then render(true) end
+        if card.id() == "lens" and (kept.mode == 1 or (fact.lens_shore and not shore_focus)) then render(true) end
     end)
 end
 local function rows_files()
@@ -854,7 +861,7 @@ local function learn_born()
                 local when = tonumber(t) > 0 and tonumber(t) or tonumber(m)
                 if id and when > (born[id] or 0) then born[id] = when end
             end
-            if card.id() == "lens" and kept.mode == 0 then render(true) end
+            if card.id() == "lens" and (kept.mode == 0 or (fact.lens_shore and not shore_focus)) then render(true) end
         end)
 end
 
@@ -889,7 +896,9 @@ end
 local function rows_ai() return {} end
 
 local shown = {}
+local render_shore
 render = function(keep)
+    if fact.lens_shore and kept.mode ~= 4 then return render_shore(keep) end
     local tabs = {}
     if modes_off[kept.mode] then kept.mode = 0 end
     for m = 0, #MODES do
@@ -897,6 +906,7 @@ render = function(keep)
             tabs[#tabs + 1] = { label = tr(MODES[m].name), glyph = MODES[m].glyph, on = kept.mode == m, run = function() set_mode(m) end }
         end
     end
+    if fact.lens_shore then tabs = {} end    -- LensShore has its sections, not tabs
     -- the AI is a card of its own: a conversation, not rows
     if kept.mode == 4 and MODES[4] then
         shown = {}
@@ -944,6 +954,158 @@ render = function(keep)
     }))
 end
 
+-- ── LensShore: one search, in sections; Enter asks the AI ─────────────────────────────────────────────────────
+-- the files found, those whose name begins with what is typed first
+local function files_first()
+    local want, a, b = typed:lower(), {}, {}
+    for _, path in ipairs(found or {}) do
+        local name = (path:gsub("/$", ""):match("([^/]+)$") or ""):lower()
+        if name:sub(1, #want) == want then a[#a + 1] = path else b[#b + 1] = path end
+    end
+    for _, p in ipairs(b) do a[#a + 1] = p end
+    return a
+end
+local function more(label, m)
+    return { label = label, glyph = "dots", more = true, keep = true, run = function() shore_focus = m kept.mode = m render(false) end }
+end
+local function rows_shore()
+    if shore_focus then
+        local rows = { { label = tr("Back"), glyph = "chevron-left", keep = true, run = function() shore_focus = nil kept.mode = 0 render(false) end } }
+        for i, r in ipairs(MODES[shore_focus].rows()) do rows[#rows + 1] = r if i == 1 then r.line = true end end
+        return rows
+    end
+    if typed == "" then
+        local rows, tiles = {}, {}
+        for _, id in ipairs(kept.recent) do if by_id[id] and #tiles < 6 then tiles[#tiles + 1] = tile(by_id[id]) end end
+        if #tiles > 0 then rows[#rows + 1] = { head = true, label = tr("RECENTLY USED") } rows[#rows + 1] = { tiles = tiles, per = 6 } end
+        rows[#rows + 1] = { label = MODES[4] and tr("Type to search; Enter asks the AI") or tr("Type to search"), glyph = MODES[4] and "sparkles" or "search", quiet = true, line = #rows > 0 }
+        return rows
+    end
+    local rows = {}
+    local result = calc(typed)
+    local amount_shown = result and number(result) or (worked and worked_for == typed and worked)
+    if amount_shown then rows[#rows + 1] = { label = amount_shown, glyph = "calculator", copy = amount_shown, run = function() pcall(sys.call, "clipboard.set", amount_shown) end } end
+    local hits = find(apps, typed, 5)
+    if #hits > 0 then
+        rows[#rows + 1] = { head = true, label = tr(N("APPLICATIONS")) }
+        for i, a in ipairs(hits) do
+            if i > 4 then break end
+            rows[#rows + 1] = { label = a.local_name or a.name or a.id, icon = a.icon or "", glyph = "apps", run = function() launch(a) end, right = function() app_menu(a) end }
+        end
+        if #hits > 4 then rows[#rows + 1] = more(tr("More apps"), 0) end
+    end
+    local files = files_first()
+    rows[#rows + 1] = { head = true, label = tr(N("FILES AND FOLDERS")) }
+    if found == nil then rows[#rows + 1] = { label = tr("Searching…"), glyph = "search", quiet = true }
+    elseif #files == 0 then rows[#rows + 1] = { label = tr("Nothing found"), glyph = "search", quiet = true } end
+    for i, path in ipairs(files) do
+        if i > 4 then break end
+        local folder = path:sub(-1) == "/"
+        local clean = folder and path:sub(1, -2) or path
+        local parent = clean:match("^(.*)/[^/]*$") or "/"
+        rows[#rows + 1] = { label = clean:match("([^/]+)$") or clean, glyph = folder and "folder" or "file", hint = short(parent),
+                            run = function() then_do(function() open.path(clean) end) end, right = function() then_do(function() open.path(parent) end) end }
+    end
+    if #files > 4 then rows[#rows + 1] = more(tr("More files"), 1) end
+    if pages_for == typed and #pages > 0 then
+        rows[#rows + 1] = { head = true, label = tr(N("SETTINGS")) }
+        for i, pg in ipairs(pages) do
+            if i > 3 then break end
+            rows[#rows + 1] = { label = pg.name, glyph = pg.icon, hint = pg.area_name, run = function() then_do(function() open.settings(pg.page) end) end }
+        end
+    end
+    local text = typed
+    rows[#rows + 1] = { head = true, label = tr(N("WEB")) }
+    rows[#rows + 1] = { label = engine().name .. ": " .. text, glyph = "world", run = function() search_web(engine(), text) end }
+    rows[#rows + 1] = more(tr("Other search engines"), 2)
+    return rows
+end
+render_shore = function(keep)
+    shown = rows_shore()
+    card.open(shown, placed({ id = "lens", width = WIDTH, keep = keep }))          -- not uniform: it grows with what it holds
+end
+-- what is typed in the line: looked for everywhere at once, after a short pause
+local pause
+local function shore_typed()
+    local t = (text.lens_q or ""):gsub("^%s+", ""):gsub("%s+$", "")
+    fact.lens_typed = (text.lens_q or "") ~= ""
+    if pause then cancel(pause) end
+    pause = after(140, function()
+        pause = nil
+        if t == typed then return end
+        typed, confirm, shore_focus = t, nil, nil
+        kept.mode = 0
+        look_for_files() look_for_settings() look_for_amount()
+        render(card.id() == "lens")
+    end)
+end
+-- Enter or the send button: the AI is asked, in its conversation grown out of the line (6B.12: always the AI, not
+-- the best match). With the AI off, the first thing found is opened instead.
+local function shore_send()
+    local q = (text.lens_q or ""):gsub("^%s+", ""):gsub("%s+$", "")
+    if q == "" then return end
+    if not MODES[4] then
+        for _, r in ipairs(shown) do if r.run and not r.quiet and not r.keep then return r.run() end end
+        return
+    end
+    text.lens_q, fact.lens_typed, typed, shore_focus = "", false, "", nil
+    kept.mode = 4
+    render(false)
+    ai_send(q)
+end
+function M.shore_open()
+    if card.id() == "lens" then return end
+    if kept.mode ~= 4 then kept.mode = 0 end
+    load_lists()
+    render(false)
+    after(60, function() focus("lens_q") end)
+end
+function M.shore_menu()
+    local now = text.lens_q or ""
+    local function copy(t) pcall(sys.call, "clipboard.set", t) end
+    ctx.open({
+        { label = fact.lens_locked and tr("Unlock position") or tr("Lock position"), glyph = fact.lens_locked and "lock-open" or "lock",
+          run = function() fact.lens_locked = not fact.lens_locked end },
+        { label = tr("Cut"), glyph = "cut", keys = "Ctrl+X", line = true, off = now == "", run = function() copy(now) text.lens_q = "" shore_typed() end },
+        { label = tr("Copy"), glyph = "copy", keys = "Ctrl+C", off = now == "", run = function() copy(now) end },
+        { label = tr("Paste"), glyph = "clipboard", keys = "Ctrl+V", run = function()
+            local ok, clip = pcall(sys.ask, "clipboard")
+            if ok and type(clip) == "string" then text.lens_q = now .. clip shore_typed() end
+        end },
+    }, { width = 260 })
+end
+-- at its edge, the top or the bottom one as the Settings keep it, stretched into the capsule
+local function shore_home(d)
+    local top = drops.settings().lens_top == true
+    d.home = { edge = top and 2 or 0, at = d.home.at, rise = d.home.rise, shift = d.home.shift }
+    d:shrink()
+    d:go_home()
+    after(120, function() if fact.lens_shore then d:stretch(CAP, CAP_R) end end)
+end
+-- let go after a drag: locked, it goes back; unlocked, it sticks to the top or the bottom edge, whichever is nearer
+function M.shore_letgo(d, _, y)
+    if fact.lens_locked then return false end
+    local top = y < (tonumber(fact.sh) or 1080) / 2
+    if top ~= (drops.settings().lens_top == true) then drops.set("lens_top", top) end
+    after(30, function() shore_home(d) end)
+    return false
+end
+function M.shore_start(d)
+    shore = d
+    fact.lens_owner = d.k
+    text.lens_hint, text.g_send = tr("Search or ask…"), icons["arrow-up"]
+    local function which()
+        d:present(fact.lens_shore == true)
+        if fact.lens_shore then shore_home(d) else d:shrink() end
+    end
+    on("fact:lens_shore", which)
+    on("text:lens_q", shore_typed)
+    on("lens_press", M.shore_open)
+    on("lens_send", shore_send)
+    on("lens_right", M.shore_menu)
+    which()
+end
+
 function M.open(m)
     -- the AI asked for before latte-ai has said who can answer: it opens as soon as it has
     if m == 4 and not MODES[4] then ai.pending = true end
@@ -954,7 +1116,9 @@ function M.open(m)
     render(false)
 end
 function M.toggle()
-    if card.id() == "lens" then card.close() else M.open() end
+    if card.id() == "lens" then card.close()
+    elseif fact.lens_shore then M.shore_open()
+    else M.open() end
 end
 -- the right button: the apps used last, to start one with a single press
 function M.quick()

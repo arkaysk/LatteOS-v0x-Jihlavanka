@@ -126,6 +126,7 @@
 /usr/share/latteos/goo/parts/greet.plm                 <- goo/parts/greet.plm
 /usr/share/latteos/goo/parts/faces.plm                  <- goo/parts/faces.plm
 /usr/share/latteos/goo/parts/strip.plm                  <- goo/parts/strip.plm
+/usr/share/latteos/goo/parts/lensline.plm               <- goo/parts/lensline.plm
 /usr/share/latteos/goo/parts/launch.plm                 <- goo/parts/launch.plm
 /usr/share/latteos/goo/parts/shore.plm                  <- goo/parts/shore.plm
 /usr/share/latteos/goo/parts/keys.plm                   <- goo/parts/keys.plm
@@ -155,6 +156,7 @@
 /usr/share/latteos/goo/drops/bargoo.luau                <- goo/drops/bargoo.luau
 /usr/share/latteos/goo/drops/clockgoo.luau              <- goo/drops/clockgoo.luau
 /usr/share/latteos/goo/drops/lensgoo.luau               <- goo/drops/lensgoo.luau
+/usr/share/latteos/goo/drops/lensshore.luau             <- goo/drops/lensshore.luau
 /usr/share/latteos/goo/drops/powergoo.luau              <- goo/drops/powergoo.luau
 /usr/share/latteos/goo/drops/quickgoo.luau              <- goo/drops/quickgoo.luau
 /usr/share/latteos/goo/drops/queengoo.luau              <- goo/drops/queengoo.luau

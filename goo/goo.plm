@@ -59,6 +59,7 @@ scene Goo {
     include "parts/card.plm"
     include "parts/faces.plm"
     include "parts/strip.plm"
+    include "parts/lensline.plm"
     include "parts/launch.plm"
     include "parts/keys.plm"
     include "parts/rows.plm"

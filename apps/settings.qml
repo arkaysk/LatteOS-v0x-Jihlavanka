@@ -889,7 +889,7 @@ ShellRoot {
             Part { visible: shell.page === "launcher"; width: view.room; title: I18n.tr("The launcher")
                    note: I18n.tr("One of them is there at a time. The Windows key opens whichever it is.")
                 Repeater { model: [{ id: "goo", name: "LensGoo", hint: QT_TR_NOOP("a drop: a press opens it"), icon: "search" },
-                                   { id: "shore", name: "LensShore", hint: QT_TR_NOOP("a line on the shore, built around the AI"), icon: "sparkles" }]
+                                   { id: "shore", name: "LensShore", hint: QT_TR_NOOP("a line of goo at the top or the bottom, built around the AI"), icon: "sparkles" }]
                     Choice { required property var modelData; width: 260; text: modelData.name; hint: I18n.tr(modelData.hint)
                              on: (goo.kept.lens === "shore") === (modelData.id === "shore"); onPressed: goo.set("lens", modelData.id)
                              Glyph { anchors.centerIn: parent; name: parent.parent.modelData.icon; font.pixelSize: 54; color: parent.parent.on ? Theme.gold : Theme.dim } } } }

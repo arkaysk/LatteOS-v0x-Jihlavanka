@@ -162,10 +162,10 @@ part Card {
     // the two are one piece.
     group {
         show: card_dock and card.p > 0.02
-        box { from: card.x0 - 1, card.ay - card.ch - 1; size: card.w + 41, card.ch + 2; corner: 19; color: #6b5444 }
-        box { from: card.x0, card.ay - card.ch; size: card.w + 40, card.ch; corner: 18; color: #261d17 }
+        box { from: card.x0 - 1, card.ay - card.ch - 1; size: card.w + 41, card.ch + 2; corner: 19; color: shore.rim }
+        box { from: card.x0, card.ay - card.ch; size: card.w + 40, card.ch; corner: 18; color: shore.goo }
         // over the shore the panel's foot is square and covers the plate's upper rim: no line between the two
-        box { from: W - card_dock_w + 17, card.ay - min(20, card.ch); size: card_dock_w + 23, min(20, card.ch) + 2; color: #261d17 }
+        box { from: W - card_dock_w + 17, card.ay - min(20, card.ch); size: card_dock_w + 23, min(20, card.ch) + 2; color: shore.goo }
         box { from: card.x0 + 16, card.ay - card.ch + 1; size: card.w, 1; color: cream; opacity: 7% }
     }
 }

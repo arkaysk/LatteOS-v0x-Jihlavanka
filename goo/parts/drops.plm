@@ -19,6 +19,9 @@ part Drops {
     let coffee = mix(mix(#1c0f09, #4a2410, wet), #c9a47a, pow(white, 2))
     let cream = #f3ebdd
     let ink = mix(#f3ebdd, #2a170c, smooth(0.62, 0.78, white))      // dark writing on a milky coffee
+    // the shores (TrayShore, LensShore) are of the goo's colour; a milky coffee is kept dark enough under their cream writing
+    let shore.goo = mix(coffee, #2a1a12, smooth(0.45, 0.8, white) * 0.85)
+    let shore.rim = mix(shore.goo, cream, 0.14)
     let gold = #f7c873
     let W = screen.width
     let H = screen.height

@@ -628,7 +628,7 @@ Písaný text **neodchádza** na web ani online AI, kým to človek nezvolí. **
 hľadaním, iba bez čipu AI. Jedno jadro s LensGoo (`goo/lib/lens.luau`), líšia sa iba vzhľadom.
 **Rozhodnuté 27. 10.:** vždy beží **iba jedno** — LensGoo alebo LensShore; prepínač je v **Nastavenia › Prostredie › Kvapky ›
 Spúšťač (LensGoo)** ako prvá veľká voľba „Režim: LensGoo / LensShore“ (používateľ 27. 10.).
-- [x] 27. 10. prvá verzia: Nastavenia › Kvapky › Spúšťač má hore voľbu **LensGoo / LensShore** (`lens` v nastaveniach Goo,
+- [x] 27. 10. prvá verzia (nahradená druhou): Nastavenia › Kvapky › Spúšťač má hore voľbu **LensGoo / LensShore** (`lens` v nastaveniach Goo,
   `fact lens_shore`). V LensShore kvapka LensGoo zmizne (`present(false)` platí aj pre kvapku jadra) a doska Pobrežia
   sa vľavo predĺži o riadok „Hľadať alebo sa opýtať…“ (aspoň na šírku karty, 720 px); klik naň aj kláves Win vysunie
   nad doskou kartu s tým istým jadrom (`placed()` v `lens.luau`, ukotvenie `dock` ako panel Pobrežia). Overené bez obrazovky
@@ -640,7 +640,19 @@ Spúšťač (LensGoo)** ako prvá veľká voľba „Režim: LensGoo / LensShore�
   mena prvá —, Nastavenia, Web), v každej pár výsledkov a **Viac** (hľadanie len v tej oblasti, web do prehliadača);
   výsledok sa spúšťa **klikom**. **Enter alebo tlačidlo Odoslať na konci riadku pošle text predvolenej AI** — LensShore je
   AI-centrický (rozhodnuté: Enter vždy AI, nie najlepšia zhoda). Pri vypnutej AI (2B) ostáva iba hľadanie.
-  Otvorené: výška ľubovoľná alebo prichytenie hore/dole; vodorovná poloha; či aj TrayShore prejde na materiál Goo.
+  Rozhodnuté 27. 10.: LensShore je **prilepený k hornému alebo dolnému okraju** obrazovky (iba tie dve polohy); **všetky
+  Shore (LensShore, TrayShore) majú farbu Goo** namiesto tvrdej dosky z materiálu šálky. Prvá verzia (riadok na doske
+  Pobrežia) sa nahradí.
+- [x] 27. 10. druhá verzia (prvá zrušená): kvapka `drops/lensshore.luau` natiahnutá do kapsuly Goo (720 px) pri dolnom alebo
+  hornom okraji, na nej pole, lupa a tlačidlo Odoslať (`parts/lensline.plm`); ostatné kvapky ju odtláčajú ako pás výkonu.
+  Klik ju otvorí: karta vyrastie z riadku smerom od okraja a rastie s obsahom. Písanie hľadá naraz: Aplikácie, Súbory
+  a priečinky (zhoda od začiatku mena prvá), Nastavenia, Web, každá s **Ďalšie…**, kalkulačka navrchu; Enter a Odoslať
+  idú do predvolenej AI (rozhovor vyrastie z riadku, pri ďalšom otvorení je tam). Pravý klik: Odomknúť / Uzamknúť polohu,
+  Vystrihnúť · Kopírovať · Prilepiť; odomknutý sa ťahá k hornému alebo dolnému okraju (`lens_top`). Pobrežie a jeho panel
+  sú vo farbe Goo (`shore.goo`, pri mliečnej káve stmavené kvôli čitateľnosti). Overené bez obrazovky: otvorenie, sekcie
+  („guar“), Enter do AI, poloha hore, presun ťahaním.
+- [ ] Rozhovor AI má ešte vlastné pole (písať by sa malo iba do riadku); vodorovne presne na stred (dnes domov 0,33);
+  plynulejšie zväčšenie samotnej kapsuly pri otvorení.
 
 **6B.13** [ ] **Výskum: Tinycast ako zoznam funkcií** (používateľ 27. 10.: „vyzerá ako naše LensGoo“) —
 https://github.com/abue-ammar/tinycast (macOS, Swift, AGPL-3.0 → kód nepreberať, iba nápady). Čo LensGoo/LensShore

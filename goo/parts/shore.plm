@@ -7,14 +7,12 @@
 part Shore {
     model bg max 10 { icon: image 22, 22; has_icon: bool; glyph: text; title: text }
     fact shore_w = 0
-    fact shore_lens = 0                        // LensShore's line at its start (6B.12), 0 when LensGoo is the launcher
     fact shore_open = false                    // the panel is out: the arrow points down
     fact shore_signs = 2                       // how many signs stand at its end: the network, the volume, the battery
     text shore_arrow = ""                      // glyphs of the icon font, from the logic
     text shore_net = ""
     text shore_vol = ""
     text shore_bat = ""
-    text shore_ask = ""                        // what LensShore's line says before anything is typed
     fact shore_level = 0                       // the volume, 0…1, shown as a ring for a moment when it changes
     fact shore_rang = 0                        // …counted up each time it does
     event shore_more ->                        // the arrow was pressed
@@ -27,40 +25,29 @@ part Shore {
 
     let SHORE_H = 46
     let shore.x0 = W - shore_w
-    let shore.xa = shore.x0 + shore_lens       // where the arrow and the rest begin, after LensShore's line
     let shore.cy = H - SHORE_H / 2 + 1
-    let shore.plate = #261d17
+    let shore.plate = shore.goo
     prop ring = 0 ~grow
     on change shore_rang { ring: 1 ~0ms; ring: 0 ~500ms after 1400ms }
 
     group {
         show: shore_w > 0
         // the plate reaches past the screen's corner, so only its corner towards the desktop is round
-        box { from: shore.x0 - 1, H - SHORE_H - 1; size: shore_w + 40, SHORE_H + 40; corner: 17; color: #6b5444 }
+        box { from: shore.x0 - 1, H - SHORE_H - 1; size: shore_w + 40, SHORE_H + 40; corner: 17; color: shore.rim }
         box { from: shore.x0, H - SHORE_H; size: shore_w + 40, SHORE_H + 40; corner: 16; color: shore.plate }
         box { from: shore.x0 + 14, H - SHORE_H + 1; size: shore_w, 1; color: cream; opacity: 7% }
 
-        // LensShore: a line to search or ask in, always there; a press brings the launcher out above the shore
-        group {
-            show: shore_lens > 0
-            box { from: shore.x0 + 10, shore.cy - 15; size: shore_lens - 14, 30; corner: 15; color: mix(#3d2c22, gold, 0.18 * lens_line.hover) }
-            text g_search { at: shore.x0 + 30, shore.cy; anchor: center; size: 16; color: cream; opacity: 75%; family: "tabler-icons" }
-            text shore_ask { at: shore.x0 + 46, shore.cy; anchor: left center; width: shore_lens - 64; lines: 1; size: 13.5; color: cream; opacity: 55%; family: "Inter" }
-            zone box lens_line { from: shore.x0 + 6, H - SHORE_H; size: shore_lens - 6, SHORE_H; cursor: text; role: button; label: "LensShore"; active: shore_lens > 0 }
-            on press lens_line { tip.p: 0; emit lens_toggle }
-        }
-
         // the arrow, in a round button
-        ellipse { at: shore.xa + 26, shore.cy; radius: 14; color: mix(#3d2c22, gold, 0.25 * arrow_hit.hover + if(shore_open, 0.2, 0)) }
-        text shore_arrow { at: shore.xa + 26, shore.cy; anchor: center; size: 17; color: cream; family: "tabler-icons" }
-        zone box arrow_hit { at: shore.xa + 26, shore.cy; size: 36, SHORE_H; cursor: pointer; role: button; label: "Panel"; active: shore_w > 0 }
+        ellipse { at: shore.x0 + 26, shore.cy; radius: 14; color: mix(#3d2c22, gold, 0.25 * arrow_hit.hover + if(shore_open, 0.2, 0)) }
+        text shore_arrow { at: shore.x0 + 26, shore.cy; anchor: center; size: 17; color: cream; family: "tabler-icons" }
+        zone box arrow_hit { at: shore.x0 + 26, shore.cy; size: 36, SHORE_H; cursor: pointer; role: button; label: "Panel"; active: shore_w > 0 }
         on press arrow_hit { tip.p: 0; emit shore_more }
-        on hover arrow_hit for 450ms { tip_k = 300; tip.x = shore.xa + 26; tip.y = H - SHORE_H - 14; tip.p: 1; emit shore_hover(0) }
+        on hover arrow_hit for 450ms { tip_k = 300; tip.x = shore.x0 + 26; tip.y = H - SHORE_H - 14; tip.p: 1; emit shore_hover(0) }
         on away arrow_hit for 200ms while tip_k == 300 { tip.p: 0 }
 
         // the programs that run in the background
         repeat j in 0..10 {
-            let bx.$j = shore.xa + 48 + 30 * j + 15
+            let bx.$j = shore.x0 + 48 + 30 * j + 15
             box { at: bx.$j, shore.cy; size: 28, 30; corner: 9; color: cream; opacity: 10% * bg_hit.$j.hover; show: j < bg.count }
             image bg.$j.icon { at: bx.$j - 11, shore.cy - 11; size: 22, 22; show: j < bg.count and bg.$j.has_icon }
             text bg.$j.glyph { at: bx.$j, shore.cy; anchor: center; size: 18; color: cream; opacity: 85%; show: j < bg.count and not bg.$j.has_icon; family: "tabler-icons" }
