@@ -11,7 +11,7 @@ Nové rozhodnutie: jeden riadok sem (dátum, čo, prečo) a oprava platného zne
   ako v Androide. Prečo: „TaskShore“ by miatol, úlohy (okná) sú vec BarGoo. ROADMAP 6H.05–6H.08.
 - **LensShore:** AI-centrická náhrada LensGoo, riadok stále otvorený dole, ostrovček vysúvaný od spodného okraja ako
   v Marei (horná kvapka ako Marea ostáva zamietnutá — všetko dole). LensGoo nezaniká. Prečo: zachovať staré a ponúknuť
-  efektívnejšie. ROADMAP 6B.12.
+  efektívnejšie. Beží vždy iba jedno z nich, prepínač v Nastaveniach › Goo (aby nesúperili o skratku). ROADMAP 6B.12.
 - **BarGoo voliteľný** podľa druhu plochy; **Continuity** v QueenGoo (uložené pracovné stavy jedným klikom).
   ROADMAP 6A.05, 6E.02.
 - **Vlny:** príboj o TrayShore ako návrh na stavy hladiny (kľud / príboj / búrka); dvojfarebné vlny z okien vyskúšať

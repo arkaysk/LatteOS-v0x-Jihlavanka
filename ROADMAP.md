@@ -573,8 +573,7 @@ ikona prvá („photoshop“); „ako…“, „návod“ → web; dlhá veta al
 terminál; výraz → Qalculate (6B.06); názov otvoreného okna → prepnúť naň. Enter = najlepší odhad, Tab prepína čipy.
 Písaný text **neodchádza** na web ani online AI, kým to človek nezvolí. **Pri vypnutej AI** (2B) ostáva plnohodnotným
 hľadaním, iba bez čipu AI. Jedno jadro s LensGoo (`goo/lib/lens.luau`), líšia sa iba vzhľadom.
-Otvorené: bežia LensShore a LensGoo naraz, alebo vždy iba jedno (podľa druhu plochy, 6A.05)? Návrh Clauda: iba
-jedno, aby nesúperili o tú istú skratku.
+**Rozhodnuté 27. 10.:** vždy beží **iba jedno** — LensGoo alebo LensShore; prepínač je v **Nastaveniach › Goo**.
 ### 6C. [~] PowerGoo
 Zdroje: LATTEOS-GOO §4.2, `crates/latte-stats`
 
