@@ -626,7 +626,8 @@ ikona prvá („photoshop“); „ako…“, „návod“ → web; dlhá veta al
 terminál; výraz → Qalculate (6B.06); názov otvoreného okna → prepnúť naň. Enter = najlepší odhad, Tab prepína čipy.
 Písaný text **neodchádza** na web ani online AI, kým to človek nezvolí. **Pri vypnutej AI** (2B) ostáva plnohodnotným
 hľadaním, iba bez čipu AI. Jedno jadro s LensGoo (`goo/lib/lens.luau`), líšia sa iba vzhľadom.
-**Rozhodnuté 27. 10.:** vždy beží **iba jedno** — LensGoo alebo LensShore; prepínač je v **Nastaveniach › Goo**.
+**Rozhodnuté 27. 10.:** vždy beží **iba jedno** — LensGoo alebo LensShore; prepínač je v **Nastavenia › Prostredie › Kvapky ›
+Spúšťač (LensGoo)** ako prvá veľká voľba „Režim: LensGoo / LensShore“ (používateľ 27. 10.).
 
 **6B.13** [ ] **Výskum: Tinycast ako zoznam funkcií** (používateľ 27. 10.: „vyzerá ako naše LensGoo“) —
 https://github.com/abue-ammar/tinycast (macOS, Swift, AGPL-3.0 → kód nepreberať, iba nápady). Čo LensGoo/LensShore
@@ -649,6 +650,9 @@ posúvania** (~300 ms patrí koliesko zoznamu, ktorý sa začal posúvať, aj ke
 **6B.16** [ ] **Hľadanie aplikácií podľa kľúčových slov** (z 6B.04, 27. 10.): „prehliadač“ / „browser“ → Firefox,
 „kalkulačka“ → ktorákoľvek kalkulačka. `.desktop` to má (`Keywords=`, `GenericName=`), služba `apps` pleamaru to nedáva —
 doplniť do pleamaru (záplata v `patches/`) alebo čítať v LatteOS.
+
+**6B.17** [ ] **Duplicity v prehľade LensGoo** (používateľ 27. 10.): GuardDog bol v Najčastejších aj v Najnovších, Steam
+v Najčastejších aj v Obľúbených. Aplikácia ukázaná v skoršej sekcii sa z ďalších vyradí.
 
 **6B.15** [ ] **AI v LensGoo: kvalita rozhovoru a chybové stavy** (z 6B.04, 27. 10.) — odpovede s lokálnym modelom aj
 cloudom; čo LensGoo povie, keď nejde sieť, chýba kľúč, model nebeží alebo sa minul limit (nesmie ostať ticho ani
@@ -702,6 +706,15 @@ Zdroje: `goo/parts/calendar.plm`, `bin/latte-cal`, `bin/latte-sky`; LATTEOS-GOO 
 **6D.07** [ ] Kalendar-kliknutie na poličko dna zvyrazni ten den a nasledny zapis do riadku bude mat pred sebou predvyplneny ten datum. zapis sa týka evidentne toho dna
 
 **6D.08** [ ] kalendar-jeho funkčnost musi byt minimalne identicka s funkčnostou google Kalendaru!
+
+**6D.09** [ ] **Svetové hodiny ako widget, predvolene skryté** (používateľ 27. 10., hustota informácií — pravidlo 24): pre
+väčšinu ľudí sú vrstva 2; v karte času ich nebude, kým si ich človek nepridá ako widget.
+
+**6D.10** [ ] **Prehľad karty času z widgetov** (používateľ 27. 10.): tlačidlo „Zmeniť rozloženie“ už je; Prehľad poskladať
+z tých istých widgetov ako TrayShore (6H.05), človek si vyberie, čo v ňom chce.
+
+**6D.11** [ ] **Chyba: guľa ClockGoo orezaná pri otvorenej karte** (používateľ 27. 10.): vpravo dole je pri otvorenej karte
+guľa orezaná a namiesto „18:23“ v nej vidno „ı8:23“ (aj na druhej snímke používateľa).
 
 ### 6E. [x] QueenGoo
 Zdroje: LATTEOS-GOO §4.4
@@ -1935,6 +1948,12 @@ obrazoviek, napájania, periférií a obnovy pri probléme s ovládačom.
 **10E.11** [ ] (Správca zariadení) R3·E — rizikové zmeny · r. 1043–1046
 - [ ] Všetky rizikové zmeny ovládačov, obrazovky a napájania musia mať potvrdenie, časový limit
   alebo obnovovaciu cestu.
+
+**10E.12** [ ] **Chyba: kontrast v Správcovi zariadení** (používateľ 27. 10.): názov „latte-lab“ a „ASUSTeK…“ sú hnedé na
+hnedom, skoro nečitateľné; položky bočného panela pôsobia ako vypnuté.
+
+**10E.13** [ ] **Chyba: angličtina v Správcovi zariadení** (používateľ 27. 10.): „a processor without AVX2… the eco tier“
+porušuje pravidlo 4 (texty cez preklad).
 
 ### 10F. [x] GuardDog
 Zdroje: `bin/latte-session`, `bin/latte-guarddog`, `apps/guarddog.qml`, `system/systemd`, `system/whyd`, `system/oom`, `system/sessions`
