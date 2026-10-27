@@ -557,6 +557,7 @@ fill_ai = function()
     text.ic_ai_center, text.ic_ai_settings, text.ic_ai_new = icons["messages"], icons["settings"], icons["message-plus"]
     text.ic_ai_send, text.ic_ai_chev, text.ic_ai_spark, text.ic_ai_check = icons["arrow-up"], icons["chevron-down"], icons["sparkles"], icons["check"]
     text.ic_ai_copy = icons["copy"]
+    text.ic_ai_copied = icons["check"]
     text.ic_ai_wave, text.ic_ai_plane, text.ic_ai_stop = icons["wave-sine"], icons["send"], icons["player-stop"]
     text.ic_ai_plus, text.ic_ai_clip, text.ic_ai_shot, text.ic_ai_x = icons["plus"], icons["paperclip"], icons["screenshot"], icons["x"]
     text.ai_add_file, text.ai_add_shot = tr("Attach a file…"), tr("A picture of the screen")
@@ -570,7 +571,10 @@ end
 local AI_GLASS = { N("Solid"), N("A little see-through"), N("More see-through"), N("Most see-through"), N("Glass") }
 on("ai_copy", function(i)
     local said = ai_shown[(i or -1) + 1]
-    if said then pcall(sys.call, "clipboard.set", said.body) end
+    if not said then return end
+    pcall(sys.call, "clipboard.set", said.body)
+    fact.ai_copied = i
+    after(1200, function() if fact.ai_copied == i then fact.ai_copied = -1 end end)
 end)
 on("ai_menu", function(i)
     local rows, said = {}, ai_shown[(i or -1) + 1]

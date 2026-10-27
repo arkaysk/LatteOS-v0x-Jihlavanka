@@ -42,6 +42,8 @@ part Ai {
     text ic_ai_send = ""
     text ic_ai_copy = ""
     event ai_copy ->                           // the copy button beside message n: the whole message to the clipboard
+    text ic_ai_copied = ""
+    fact ai_copied = -1                        // …and which message was copied just now: its button shows a tick for a moment
     text ic_ai_chev = ""
     text ic_ai_spark = ""
     text ic_ai_check = ""
@@ -146,7 +148,8 @@ part Ai {
                     group {
                         size: 30, 30
                         show: m.mine
-                        text ic_ai_copy { at: 15, 15; anchor: center; size: 15; color: if(ai.kc == 4, #f3ebdd, #3d3929); opacity: 50% + 50% * cp_a.hover; family: "tabler-icons" }
+                        text ic_ai_copy { at: 15, 15; anchor: center; size: 15; color: if(ai.kc == 4, #f3ebdd, #3d3929); opacity: 50% + 50% * cp_a.hover; show: ai_copied != m.index; family: "tabler-icons" }
+                        text ic_ai_copied { at: 15, 15; anchor: center; size: 16; weight: 700; color: if(ai.kc == 4, #f3ebdd, #3d3929); show: ai_copied == m.index; family: "tabler-icons" }
                         zone box cp_a { from: 0, 0; size: 30, 30; cursor: pointer; label: "Copy"; role: button }
                         on press cp_a { emit ai_copy(m.index) }
                     }
@@ -172,7 +175,8 @@ part Ai {
                     group {
                         size: 30, 30
                         show: not m.mine
-                        text ic_ai_copy { at: 15, 15; anchor: center; size: 15; color: if(ai.kc == 4, #f3ebdd, #3d3929); opacity: 50% + 50% * cp_b.hover; family: "tabler-icons" }
+                        text ic_ai_copy { at: 15, 15; anchor: center; size: 15; color: if(ai.kc == 4, #f3ebdd, #3d3929); opacity: 50% + 50% * cp_b.hover; show: ai_copied != m.index; family: "tabler-icons" }
+                        text ic_ai_copied { at: 15, 15; anchor: center; size: 16; weight: 700; color: if(ai.kc == 4, #f3ebdd, #3d3929); show: ai_copied == m.index; family: "tabler-icons" }
                         zone box cp_b { from: 0, 0; size: 30, 30; cursor: pointer; label: "Copy"; role: button }
                         on press cp_b { emit ai_copy(m.index) }
                     }
