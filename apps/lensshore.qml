@@ -43,6 +43,16 @@ ShellRoot {
     readonly property color ink: Theme.inkOnCoffee
     readonly property color soft: Qt.rgba(ink.r, ink.g, ink.b, 0.55)
     readonly property color lit: Qt.rgba(ink.r, ink.g, ink.b, 0.1)
+    readonly property color rim: mix(goo, Qt.color("#f3ebdd"), 0.14)    // the outline the drops have (goo/parts/drops.plm: shore.rim)
+
+    // The Goo is told where the island lies, so the drops keep off that stretch of the edge (goo/lib/engine.luau, blocks)
+    function tell() {
+        const a = Math.round(island.restX)
+        Quickshell.execDetached(["latte-say", "fact lens_edge " + (top ? 2 : 0), "fact lens_a " + a, "fact lens_b " + (a + wide)])
+    }
+    Timer { id: telling; interval: 300; onTriggered: shell.tell() }
+    onTopChanged: telling.restart()
+    onAlongChanged: telling.restart()
 
     // ── what is typed, and what was found for it ───────────────────────────────────────────────────────────
     property string q: ""
@@ -136,8 +146,7 @@ ShellRoot {
 
     // ── the island ─────────────────────────────────────────────────────────────────────────────────────────
     readonly property int lineH: 46
-    readonly property int restW: 520
-    readonly property int openW: 720
+    readonly property int wide: 620            // folded or grown, the island is always this wide and stays where it is
 
     PanelWindow {
         id: win
@@ -160,13 +169,15 @@ ShellRoot {
         Item {
             id: island
             readonly property real contentH: shell.open ? Math.min(body.implicitHeight + 20, win.height - shell.lineH - 40) : 0
-            width: shell.open ? shell.openW : shell.restW
+            width: shell.wide
             height: shell.lineH + contentH
             // dragged, it follows the pointer; let go, it sticks to the nearer edge where it was let go
             property bool dragging: false
             property real dragX: 0
             property real dragY: 0
-            x: dragging ? dragX : Math.max(12, Math.min(parent.width - width - 12, shell.along * parent.width - width / 2))
+            readonly property real restX: Math.max(12, Math.min(parent.width - width - 12, shell.along * parent.width - width / 2))
+            onRestXChanged: telling.restart()
+            x: dragging ? dragX : restX
             y: dragging ? dragY : (shell.top ? 0 : parent.height - height)
             Behavior on x { enabled: !island.dragging; NumberAnimation { duration: 420; easing.type: Easing.OutBack; easing.overshoot: 0.6 } }
             Behavior on y { enabled: !island.dragging; NumberAnimation { duration: 420; easing.type: Easing.OutBack; easing.overshoot: 0.6 } }
@@ -174,7 +185,7 @@ ShellRoot {
             Behavior on height { NumberAnimation { duration: 420; easing.type: Easing.OutBack; easing.overshoot: 0.32 } }
             Keys.onEscapePressed: shell.close(false)
 
-            SiluetaIsla { x: -16; width: parent.width + 32; height: parent.height; relleno: shell.goo; reflejada: !shell.top }
+            SiluetaIsla { x: -16; width: parent.width + 32; height: parent.height; relleno: shell.goo; obrys: shell.rim; reflejada: !shell.top }
 
             // ── the line, at the edge side ──
             Item {

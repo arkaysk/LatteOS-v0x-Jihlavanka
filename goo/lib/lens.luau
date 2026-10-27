@@ -968,8 +968,16 @@ function M.start(d)
     owner = d
     -- with LensShore the drop is not there, and the island runs (it ends itself when the Settings turn it off)
     local started = false                -- told twice at the start (the scene, the settings): started once
+    -- the island tells where it lies; the drops keep off that stretch of the edge
+    local function island()
+        local e = tonumber(fact.lens_edge) or -1
+        if fact.lens_shore and (e == 0 or e == 2) then drops.block("lensshore", e, tonumber(fact.lens_a) or 0, tonumber(fact.lens_b) or 0)
+        else drops.block("lensshore", nil) end
+    end
+    for _, f in ipairs({ "fact:lens_edge", "fact:lens_a", "fact:lens_b" }) do on(f, island) end
     local function which()
         d:present(not fact.lens_shore)
+        island()
         if fact.lens_shore and not started then started = true run("latte-app", { "lensshore" }, function() end) end
         if not fact.lens_shore then started = false end
         if card.id() == "lens" then card.close() end

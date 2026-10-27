@@ -12,6 +12,7 @@ Shape {
     property real ala: 16                      // how far each inverted corner bites inwards
     property real cuerpoRadio: 22              // the roundness of the two corners away from the edge
     property color relleno: "black"
+    property color obrys: "transparent"        // the outline the drops of the goo have (LatteOS)
     property bool reflejada: false             // on the bottom edge: drawn upside down
 
     // CurveRenderer is smoother but drops the inverted corners, so MSAA it is
@@ -23,8 +24,8 @@ Shape {
     ShapePath {
         id: path
         fillColor: shape.relleno
-        strokeWidth: 0
-        strokeColor: "transparent"
+        strokeWidth: shape.obrys.a > 0 ? 1.5 : 0
+        strokeColor: shape.obrys
 
         readonly property real w: shape.width
         readonly property real h: shape.height

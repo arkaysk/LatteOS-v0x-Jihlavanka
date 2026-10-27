@@ -117,6 +117,9 @@ part Drops {
     fact bends = true                          // …and whether that glass bends what is behind it
     fact bar_off = false                       // BarGoo switched off (Settings › Windows); the main scene tells the others
     fact bar_fixed = false                     // the arrangement fixed there: a press on BarGoo no longer changes it
+    fact lens_edge = -1                        // LensShore's island (apps/lensshore.qml) tells where it lies: its edge (0 bottom, 2 top)…
+    fact lens_a = 0                            // …and from where to where along it, px; the drops keep off
+    fact lens_b = 0
     fact lens_shore = false                    // the launcher is LensShore, a line on the shore, instead of the drop LensGoo (6B.12)
     fact idle = 0                              // 0 awake, 1 after a minute, 2 after three, 3 after six
     fact day = 1                               // 0 night … 1 the sun is up

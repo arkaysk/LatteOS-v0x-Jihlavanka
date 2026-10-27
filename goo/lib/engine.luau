@@ -81,6 +81,9 @@ local function limit(d)                                      -- how far along it
     local taken = (d.edge == 0 and shore.w) or (d.edge == 3 and shore.h) or 0
     return math.min(0.98 * l, taken > 0 and l - taken - radius(d) - 8 or l)
 end
+-- Stretches of an edge no drop may sit on, as LensShore's island (apps/lensshore.qml) holds one: id → { edge, a, b }
+-- in px along it. Heavier than the drops: it never gives way, the drops it would cover slide off to its nearer end.
+local blocks = {}
 -- a capsule reaches further along the edge than a drop, and its middle is off the drop's centre
 local function cap_shift(d) return num(d.v.cap, 0) * num(d.v.cap_dir, 0) end
 local function span(d) return radius(d) + num(d.v.cap, 0) end
@@ -152,6 +155,25 @@ local function apart()
     end
     for _ = 1, 10 do
         local any = false
+        -- off the blocked stretches, to the nearer end, or the other one where the edge ends
+        for _, d in ipairs(list) do
+            -- even one that stays beside another: moved off, it stops following it (`moved`)
+            if docked(d) and not d.dragging and not d.live and d.v.team ~= 1 then
+                for _, b in pairs(blocks) do
+                    local l, c, r = len(d), along(d) + cap_shift(d), span(d) + 10
+                    if b.edge == d.edge and c + r > b.a and c - r < b.b then
+                        local lo, hi = 0.02 * l, limit(d)
+                        local left, right = b.a - r, b.b + r
+                        local to = (c - b.a < b.b - c) and left or right
+                        if to < lo or to > hi then to = (to == left) and right or left end
+                        if to >= lo and to <= hi then
+                            d.at = (to - cap_shift(d) - d.shift) / l
+                            d.moved, moved[d], any = true, true, true
+                        end
+                    end
+                end
+            end
+        end
         for i = 1, #list do
             for j = i + 1, #list do
                 local a, b = list[i], list[j]
@@ -194,6 +216,14 @@ local function apart()
     apart_keep = nil
 end
 function E.apart(keep) apart_wanted, apart_keep = true, keep or apart_keep end
+-- `edge` nil takes the stretch away
+function E.block(id, edge, a, b)
+    local was = blocks[id]
+    if edge == nil then blocks[id] = nil
+    elseif was and was.edge == edge and was.a == a and was.b == b then return
+    else blocks[id] = { edge = edge, a = a, b = b } end
+    E.apart() E.publish()
+end
 function E.shore(w, h)
     if shore.w == w and shore.h == h then return end
     shore.w, shore.h = w, h
