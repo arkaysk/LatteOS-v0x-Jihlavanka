@@ -16,3 +16,4 @@ Reveal Reveal.qml
 Menu Menu.qml
 DotGraph DotGraph.qml
 DotBar DotBar.qml
+CopyButton CopyButton.qml

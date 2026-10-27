@@ -200,9 +200,9 @@ part Rows {
                 image r.icon { at: 15, if(r.tall, 13, 9); size: 26, 26; show: r.kind == plain and r.has_icon }
                 text r.glyph { at: 28, if(r.tall, 26, 22); anchor: center; size: 18; color: if(r.danger, red, cream); opacity: if(r.off, 40%, 90%); show: r.kind == plain and not r.has_icon and not r.on; family: "tabler-icons" }
                 text g_check { at: 28, 22; anchor: center; size: 17; color: gold; show: r.kind == plain and r.on; family: "tabler-icons" }
-                text r.label { at: 56, if(r.tall, 17, 22); anchor: left center; width: w - if(r.more, 96, 82); lines: 1; size: 15; weight: 500; color: if(r.danger, red, cream); opacity: if(r.off, 45%, 100%); show: r.kind == plain; family: "Inter" }
+                text r.label { at: 56, if(r.tall, 17, 22); anchor: left center; width: w - if(r.more, 96, 82) - if(r.copy, 34, 0); lines: 1; size: 15; weight: 500; color: if(r.danger, red, cream); opacity: if(r.off, 45%, 100%); show: r.kind == plain; family: "Inter" }
                 text r.line2 { at: 56, 36; anchor: left center; width: w - 82; lines: 1; size: 12.5; color: dim; show: r.kind == plain and r.tall; family: "Inter" }
-                text r.hint { at: w - 18, if(r.tall, 17, 22); anchor: right center; size: 13; color: dim; show: r.kind == plain and not r.more; family: "Inter" }
+                text r.hint { at: w - if(r.copy, 52, 18), if(r.tall, 17, 22); anchor: right center; size: 13; color: dim; show: r.kind == plain and not r.more; family: "Inter" }
                 text g_more { at: w - 22, h / 2; anchor: center; size: 16; color: dim; show: (r.kind == plain and r.more) or (r.kind == profile and not r.quiet); family: "tabler-icons" }
 
                 // a heading
@@ -210,7 +210,7 @@ part Rows {
                 text r.hint { at: w - 18, 15; anchor: right center; size: 13; color: dim; show: r.kind == head; family: "Inter" }
 
                 // a large figure
-                text r.label { at: 22, 28; anchor: left center; width: w - 44; lines: 1; size: 34; weight: 700; color: cream; show: r.kind == big; family: "Inter" }
+                text r.label { at: 22, 28; anchor: left center; width: w - 44 - if(r.copy, 34, 0); lines: 1; size: 34; weight: 700; color: cream; show: r.kind == big; family: "Inter" }
 
                 // a bar under a plain row or a large figure
                 box { from: if(r.kind == big, 22, 56), if(r.kind == big, 54, 38); size: w - if(r.kind == big, 44, 74), 3; corner: 1.5; color: #5a463a; show: r.bar >= 0 and r.kind != slide and r.kind != gap }
@@ -243,6 +243,12 @@ part Rows {
                 on press hit while r.kind != slide { emit card_pick((r.index + base) * 8) }
                 on press right hit { tap.x = cursor.x; tap.y = cursor.y; emit card_right((r.index + base) * 8) }
                 on scroll hit { emit card_wheel((r.index + base) * 2 + if(wheel > 0, 1, 0)) }
+
+                // copy, as beside the AI's messages: quiet at the row's end, lit under the pointer, a tick once done
+                text g_copy { at: w - 26, if(r.kind == big, 28, h / 2); anchor: center; size: 16; color: cream; opacity: 45% + 55% * copy_hit.hover; show: r.copy and card_copied != r.index + base; family: "tabler-icons" }
+                text g_check { at: w - 26, if(r.kind == big, 28, h / 2); anchor: center; size: 16; color: gold; show: r.copy and card_copied == r.index + base; family: "tabler-icons" }
+                zone box copy_hit { from: w - 44, if(r.kind == big, 10, h / 2 - 18); size: 36, 36; cursor: pointer; active: card_open and r.copy; label: "Copy"; role: button }
+                on press copy_hit { emit card_copy(r.index + base) }
             }
 
             // ── a divider of coffee: only room here, the coffee itself is drawn across the whole card (above) ──

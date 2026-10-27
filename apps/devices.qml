@@ -195,12 +195,14 @@ ShellRoot {
     component Chip: Rectangle {
         property string icon
         property string text
+        property string copy                   // a value worth copying (an address): a copy button at the end
         property color tint: Theme.gold
         visible: text !== ""
         height: 32; width: chipRow.implicitWidth + 24; radius: 16; color: Theme.card
         Row { id: chipRow; anchors.centerIn: parent; spacing: 7
             Glyph { name: icon; font.pixelSize: 15; color: tint; anchors.verticalCenter: parent.verticalCenter }
-            Label { text: parent.parent.text; font.pixelSize: 13; color: Theme.dim; anchors.verticalCenter: parent.verticalCenter } }
+            Label { text: parent.parent.text; font.pixelSize: 13; color: Theme.dim; anchors.verticalCenter: parent.verticalCenter }
+            CopyButton { visible: copy !== ""; copy: parent.parent.copy; font.pixelSize: 13; anchors.verticalCenter: parent.verticalCenter } }
     }
 
     AppWindow {
@@ -390,10 +392,10 @@ ShellRoot {
                         Label { x: 98; y: 26; text: c.modelData.name; font.pixelSize: 24; font.weight: 800; width: parent.width - 130 }
                         Label { x: 98; y: 58; color: Theme.dim; text: (c.modelData.type === "wifi" ? "Wi-Fi" : I18n.tr("Wired network")) + (c.modelData.speed > 0 ? "  ·  " + c.modelData.speed + " Mb/s" : "") + "  ·  " + c.modelData.device }
                         Flow { x: 26; y: 110; width: parent.width - 52; spacing: 10
-                            Chip { icon: "device-desktop"; text: I18n.tr("Address") + "  " + c.modelData.ip + "/" + c.modelData.prefix; color: Theme.ground }
-                            Chip { icon: "router"; text: I18n.tr("Router") + "  " + c.modelData.gateway; color: Theme.ground }
-                            Chip { icon: "world"; text: c.modelData.dns.length ? "DNS  " + c.modelData.dns.join(", ") : ""; color: Theme.ground }
-                            Chip { icon: "cpu"; text: c.modelData.mac; color: Theme.ground } } } }
+                            Chip { icon: "device-desktop"; text: I18n.tr("Address") + "  " + c.modelData.ip + "/" + c.modelData.prefix; copy: c.modelData.ip; color: Theme.ground }
+                            Chip { icon: "router"; text: I18n.tr("Router") + "  " + c.modelData.gateway; copy: c.modelData.gateway; color: Theme.ground }
+                            Chip { icon: "world"; text: c.modelData.dns.length ? "DNS  " + c.modelData.dns.join(", ") : ""; copy: c.modelData.dns.join(", "); color: Theme.ground }
+                            Chip { icon: "cpu"; text: c.modelData.mac; copy: c.modelData.mac; color: Theme.ground } } } }
                 Column { visible: link.data && link.data.saved.length > 0; width: conn.room; spacing: 8
                     Label { text: I18n.tr("REMEMBERED CONNECTIONS"); color: Theme.faint; font.pixelSize: 11; font.weight: 700; font.letterSpacing: 0.8 }
                     Flow { width: parent.width; spacing: 8

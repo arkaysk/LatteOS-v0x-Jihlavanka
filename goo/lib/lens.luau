@@ -208,10 +208,10 @@ local function rows_apps()
     local result = calc(typed)
     if result then
         local shown = number(result)
-        rows[#rows + 1] = { label = shown, glyph = "calculator", hint = tr("click copies"), run = function() pcall(sys.call, "clipboard.set", shown) end }
+        rows[#rows + 1] = { label = shown, glyph = "calculator", copy = shown, run = function() pcall(sys.call, "clipboard.set", shown) end }
     elseif worked and worked_for == typed then
         local shown = worked
-        rows[#rows + 1] = { label = shown, glyph = "calculator", hint = tr("click copies"), run = function() pcall(sys.call, "clipboard.set", shown) end }
+        rows[#rows + 1] = { label = shown, glyph = "calculator", copy = shown, run = function() pcall(sys.call, "clipboard.set", shown) end }
     end
     for _, a in ipairs(find(apps, typed, 7)) do
         rows[#rows + 1] = { label = a.local_name or a.name or a.id, icon = a.icon or "", glyph = "apps", hint = tr("App"), run = function() launch(a) end, right = function() app_menu(a) end }

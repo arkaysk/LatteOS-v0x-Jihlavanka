@@ -600,9 +600,15 @@ ta biela plocha je prisilna a potrebuje mat volitelnu hodnotu priehladnosti.
 `lib/card.luau`) a pole otázky AI; ponuka Goo ukazuje skratky. Ostáva: polia v aplikáciách LatteOS (Quickshell), overiť
 a doplniť rovnakú ponuku.
 
-**6B.09** [ ] **Ikona Kopírovať pri každom texte LatteOS, ktorý sa dá kopírovať** (používateľ 26. 10.): ako pri správach AI
+**6B.09** [~] **Ikona Kopírovať pri každom texte LatteOS, ktorý sa dá kopírovať** (používateľ 26. 10.): ako pri správach AI
 (6B.08) — príkazy, chybové hlásenia, správy na skopírovanie (Posledný pád), adresy, výsledok kalkulačky; v Goo aj
 v aplikáciách LatteOS. Tlmená pri texte, rozsvieti sa pod kurzorom, klik skopíruje celý text.
+- [x] 27. 10.: v Goo riadok karty s `copy = "text"` (obyčajný riadok aj veľké číslo) má na konci ikonu Kopírovať, po kliku na
+  chvíľu fajku (`card_copy`, `card_copied`); LensGoo ju má pri výsledku kalkulačky a prevodu. V aplikáciách
+  `apps/common/CopyButton.qml`: Správca zariadení › Pripojenie (adresa, router, DNS, MAC), Nastavenia › O tomto počítači
+  (súhrn systému). Overené: schránka po kliku („42,5“), snímky oboch aplikácií.
+- [ ] Ďalšie miesta, ako pribudnú: chybové hlásenia aplikácií, výstup príkazu v LensGoo, Inšpektor siete (adresy
+  zariadení), Monitor.
 
 **6B.12** [ ] **LensShore — AI-centrická náhrada LensGoo** (používateľ 27. 10.): LensGoo ostáva ako klasická voľba;
 **LensShore** je plnohodnotná náhrada postavená okolo AI. Je to riadok **stále otvorený na spodnom okraji** (vedľa

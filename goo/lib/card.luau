@@ -9,6 +9,7 @@
 --       on      ticked · off: not available · quiet: to be read, not pressed · danger: it does not undo
 --       line    a rule above it · bar: a bar filled this far (0…1) · line2: a second line under the label
 --       run     what a press does; the card closes unless `keep` · right: the right button
+--       copy    a text: a copy button at the row's end puts it on the clipboard (plain rows and large figures)
 --       wheel   function(direction ±1) · sub: rows of a submenu, which gets a row to go back · more: the arrow
 --               of a submenu on a row that opens another card itself
 --   { head = true, label, hint }                    the heading of a section
@@ -41,13 +42,14 @@ local RISE = 74                             -- how far from the edge the owner s
 local engine                                -- set by lib/engine.luau, which owns the drops
 
 local shown = { rows = {}, opts = {} }      -- the card as it was last opened
-local actions, rights, wheels, slides, tab_runs = {}, {}, {}, {}, {}
+local actions, rights, wheels, slides, tab_runs, copies = {}, {}, {}, {}, {}, {}   -- copies: row → the text its copy button gives
 local choosable, chosen = {}, nil            -- what the arrow keys walk through, and where they are
 local field = nil
 local calendar = nil                         -- the month shown, if any: who hears a day pressed
 local ear = nil                              -- the drop that stepped out for the open card
 
 text.g_check, text.g_more, text.g_back, text.g_search, text.g_key = icons["check"], icons["chevron-right"], icons["chevron-left"], icons["search"], icons["key"]
+text.g_copy = icons["copy"]
 
 local function glyph(name) return name and (icons[name] or (name:byte(1) or 0) >= 128 and name) or "" end
 
@@ -70,7 +72,7 @@ local function tell() for _, f in ipairs(watchers) do f(M.id()) end end
 
 function M.close()
     if fact.card_open then fact.card_open = false end
-    actions, rights, wheels, slides, tab_runs = {}, {}, {}, {}, {}
+    actions, rights, wheels, slides, tab_runs, copies = {}, {}, {}, {}, {}, {}
     release()
     tell()
 end
@@ -134,7 +136,7 @@ function M.open(rows, opts)
         end
     end
     local out = {}
-    actions, rights, wheels, slides, tab_runs = {}, {}, {}, {}, {}
+    actions, rights, wheels, slides, tab_runs, copies = {}, {}, {}, {}, {}, {}
     choosable = {}
 
     -- what choosing a row does
@@ -193,8 +195,9 @@ function M.open(rows, opts)
             icon = it.icon or "", has_icon = (it.icon or "") ~= "", tall = kind == "plain" and (it.line2 or "") ~= "",
             on = it.on == true, off = it.off == true, quiet = not pressed,
             danger = it.danger == true, more = it.sub ~= nil or it.more == true, line = it.line == true and #to > 0,
-            bar = it.gap or (type(it.bar) == "number" and it.bar or -1),
+            bar = it.gap or (type(it.bar) == "number" and it.bar or -1), copy = type(it.copy) == "string" and it.copy ~= "",
         }
+        if to[#to].copy then copies[base + #to - 1] = it.copy end
         if pressed then bind((base + #to - 1) * 8, it) end
         if it.wheel then wheels[base + #to - 1] = it.wheel end
     end
@@ -305,6 +308,14 @@ end
 on("card_pick", function(id)
     local f = actions[id or 0]
     if f then f() end
+end)
+-- the copy button of a row: its text to the clipboard, and a tick on the button for a moment
+on("card_copy", function(i)
+    local t = copies[i or -1]
+    if not t then return end
+    pcall(sys.call, "clipboard.set", t)
+    fact.card_copied = i
+    after(1200, function() if fact.card_copied == i then fact.card_copied = -1 end end)
 end)
 on("card_right", function(id)
     local f = rights[id or 0]

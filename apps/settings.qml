@@ -1460,7 +1460,10 @@ ShellRoot {
                     Label { text: "LatteOS GOO"; font.pixelSize: 30; font.weight: 800 }
                     Label { text: (parent.parent.c.host || "") + (parent.parent.c.model ? "  ·  " + parent.parent.c.model : ""); color: Theme.dim; width: parent.width }
                     Label { color: Theme.dim; font.pixelSize: 13; width: parent.width
-                            text: [parent.parent.os, parent.parent.c.kernel ? "Linux " + parent.parent.c.kernel : "", parent.parent.c.cpu || "", parent.parent.c.ram_gb ? parent.parent.c.ram_gb + " GB" : ""].filter(s => s !== "").join("  ·  ") } } }
+                            text: [parent.parent.os, parent.parent.c.kernel ? "Linux " + parent.parent.c.kernel : "", parent.parent.c.cpu || "", parent.parent.c.ram_gb ? parent.parent.c.ram_gb + " GB" : ""].filter(s => s !== "").join("  ·  ") } }
+                // the whole of it, for whoever helps
+                CopyButton { anchors.right: parent.right; anchors.top: parent.top; anchors.margins: 20; font.pixelSize: 17
+                             copy: ["LatteOS GOO", parent.c.host || "", parent.c.model || "", parent.os, parent.c.kernel ? "Linux " + parent.c.kernel : "", parent.c.cpu || "", parent.c.ram_gb ? parent.c.ram_gb + " GB" : ""].filter(s => s !== "").join("\n") } }
             Pill { visible: shell.page === "about"; icon: "cpu"; text: I18n.tr("Open the Device Manager"); onPressed: Quickshell.execDetached(["latte-app", "devices"]) }
 
             // how LatteOS is developed: a square for each day of the last year, as GitHub draws it, and what was changed lately
