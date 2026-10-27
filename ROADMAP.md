@@ -574,6 +574,14 @@ terminál; výraz → Qalculate (6B.06); názov otvoreného okna → prepnúť n
 Písaný text **neodchádza** na web ani online AI, kým to človek nezvolí. **Pri vypnutej AI** (2B) ostáva plnohodnotným
 hľadaním, iba bez čipu AI. Jedno jadro s LensGoo (`goo/lib/lens.luau`), líšia sa iba vzhľadom.
 **Rozhodnuté 27. 10.:** vždy beží **iba jedno** — LensGoo alebo LensShore; prepínač je v **Nastaveniach › Goo**.
+
+**6B.13** [ ] **Výskum: Tinycast ako zoznam funkcií** (používateľ 27. 10.: „vyzerá ako naše LensGoo“) —
+https://github.com/abue-ammar/tinycast (macOS, Swift, AGPL-3.0 → kód nepreberať, iba nápady). Čo LensGoo/LensShore
+nemá: bežiace aplikácie s Ukončiť (jednu/všetky), skratka na konkrétnu aplikáciu (prepnúť/skryť), história schránky
+v spúšťači (text aj obrázky, vloženie späť do predošlej aplikácie), úryvky a rýchle odkazy, slovník, výber emoji,
+akcie okien (34), poznámky v Markdowne, záloha a import nastavení. Spúšťa **rozšírenia Raycastu** — preveriť Linuxový
+spúšťač kompatibilný s Raycastom (Vicinae) ako zdroj rozšírení. Výstup: zoznam „prevziať / nie“ na schválenie.
+
 ### 6C. [~] PowerGoo
 Zdroje: LATTEOS-GOO §4.2, `crates/latte-stats`
 
@@ -1072,6 +1080,16 @@ nastavení Noctalie a ostatných prostredí.
 - **Zmena hesla** (Nastavenia › Heslo a zabezpečenie; AccountsService `SetPassword`, terajšie heslo si pýta
   polkit). Neoverené naostro (okno na heslo je pri obrazovke).
 
+**9.10** [ ] **Výskum: hľadanie v Nastaveniach so skutočnými ovládacími prvkami** (používateľ 27. 10.; inšpirácia
+https://github.com/thesysdev/open-intelligent-ui — MIT, Next.js/React, model posiela opis rozhrania v OpenUI Lang
+a aplikácia ho vykreslí; kód sa neprenesie, preberá sa princíp). Výsledok hľadania obsahuje živé prepínače,
+posúvniky a odkazy na stránky. Príklad: „prečo sa mi po reštarte neobnovia okná?“ → diagram príčin, odkazy na
+súvisiace nastavenia (Continuity 6E.02) a prepínače, ktorými to človek vyrieši priamo. **Pravidlo (návrh Clauda):**
+AI nevymýšľa ovládacie prvky — smie iba odkázať na skutočné nastavenie podľa ID a vykreslí sa pravý prvok
+z Nastavení, ktorý mení skutočnú hodnotu; voľne generuje iba vysvetlenie a diagram. **Bez AI** (2B) hľadanie podľa
+kľúčových slov ukazuje tie isté skutočné prepínače, len bez diagramu. Platí aj pre LensShore (6B.12).
+Potrebné: register nastavení s ID, názvom, kľúčovými slovami a prekladmi.
+
 ### 9A. [~] Vzhľad a témy
 Téma (šálka, farby z tapety), Keramika/Hliník/Onyx/Steam, ikony, vizuálne podoby podľa `inspo/`.
 Zdroje: `apps/common/Theme.qml`, `bin/latte-wall`, `bin/latte-walls`, `inspo/`, `docs/goo/PRAVIDLA.md`
@@ -1410,6 +1428,17 @@ Overené v headless: informácie o priečinku a o fotke na hladine, pridanie ob�
 
 (Karty ako v Dolphine sa nerobia — používateľ 23. 10.: dva panely stačia.)
 
+**10A.59** [ ] **Režim Jeden panel — iný druh práce než commander** (používateľ 27. 10.): režim Dva panely je Total
+Commander; režim Jeden panel slúži na inú prácu (prehliadanie, fotky, dokumenty) a môže byť celý inšpirovaný
+**Loafom, Nautilom alebo klasickým Prieskumníkom Windows** — vlastný vzhľad aj ovládanie, nie iba jeden z dvoch panelov.
+
+**10A.60** [ ] **Výskum: Loaf** (používateľ 27. 10.) — https://github.com/m-uvex/loaf-fm (MIT, Rust + Qt6/QML cez cxx-qt
+— rovnaký smer ako LatteOS; alfa, 20 hviezd, 3 commity → nie ako základ, ale zdroj kódu a nápadov). Má, čo DualBrew
+chýba: archívy (zip aj s heslom, 7z, tar.gz/xz/zst/bz2, cpio), viackrokové Späť / Znova (premenovanie, vytvorenie,
+presun, odstránenie), Kôš s obnovením a vysypaním, pri ťahaní ponuka Kopírovať / Presunúť / Prepojiť sem, „Tento
+počítač“ so štatistikou diskov a pripojením/odpojením, palety farieb z tapety, pružinové animácie, bočné tlačidlá
+myši. Preveriť pre režim Jeden panel (10A.59) a pre chýbajúce veci z 10A.13. Pri prevzatí kódu zápis do `TRETIE-STRANY.md`.
+
 ### 10B. [~] LensAI
 Zdroje: `bin/latte-ai`, `apps/aicenter.qml`, `system/ai/`, `system/agents/`, `inspo/ai-na-ploche.md`
 je centralne zastrešenie všetkych použitelnych AI. Je totalna kopia Omarchy Ai využitia, len s tým že sa použiva namiesto konzoloveho, graficke rozhranie. LensGoo ma jednu z položiek komunikačne okno s Ai. 
@@ -1594,6 +1623,16 @@ bez nečakaného prístupu k systémovým akciám.
 **10B.31** [ ] (LensAI) R3·G — vývojová AI farma a MCP · r. 1084–1087
 - [ ] Vývojová AI farma a MCP sú vývojárske nástroje, nie predvolená súčasť používateľskej plochy;
   ich úlohy, tajomstvá a prístup k repozitáru držať oddelene od runtime AI LatteOS.
+
+**10B.32** [ ] **Výskum: DigUp ako motor hľadania podľa významu** (používateľ 27. 10.) — https://github.com/ARahim3/DigUp
+(MIT; ~5 300 hviezd, 16.–22. 10. ~1 500 za týždeň). Hľadá v obsahu fotiek a snímok obrazovky, PDF aj skenovaných,
+dokumentov (txt, md, rtf, docx, odt, html), nahrávok, videí a kódu; lokálne cez EmbeddingGemma 2 v llama.cpp, jeden
+spoločný priestor pre text, obraz, zvuk a video; index v SQLite; Linux beta (.deb, AppImage; Tauri) a príkaz `digup`
+(indexovanie, hľadanie). Využitie: LensShore/LensGoo (6B.12), DualBrew (hľadanie v obsahu, 10A.04), Nastavenia (9.10).
+Preveriť: beta na Fedore (balík RPM nie je), čítanie textu zo snímok (na macOS cez Apple Vision — na Linuxe zrejme
+chýba), nároky modelu podľa stupňov výkonu, veľkosť indexu, ktoré priečinky sa indexujú a vylúčenie súkromných.
+**Rozhodnúť:** počíta sa miestny embedding model ako AI? Návrh Clauda: áno — pri vypnutej AI (2B) sa neinštaluje ani
+nespúšťa, aby sľub ostal absolútny.
 
 ### 10C. [ ] Heidelberg
 je zakladny textovy editor, s neobvyklo širokou ponukou formatou ktore prečíta a upraví
