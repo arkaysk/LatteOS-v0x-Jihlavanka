@@ -87,6 +87,12 @@ bol GooPower); **kvapka** = každý samostatný tekutý prvok; **karta Goo** = o
     Každá položka sa dá vyvolať aj inak, kvôli stále širšiemu spektru dotykových plôch: **dlhé stlačenie** na dotyku
     (~500 ms), **ťuknutie dvoma prstami** na touchpade, kláves **Menu / Shift+F10**, tlačidlo **ovládača**.
     Pravidlo 8 platí ďalej: kde funkcia nie je, pravý klik iba zavibruje.
+24. **Hustota informácií v troch vrstvách** (27. 10.). **Vrstva 0** (pohľad, bez kliku): iba to, čo mení rozhodnutie
+    hneď — čas a výnimky (upozornenie, slabá batéria, výpadok siete, plný disk). **Vrstva 1** (jeden klik/hover): stav
+    a 3–5 najčastejších úkonov (karta kvapky, TrayShore). **Vrstva 2** (druhý klik): úplný detail (okno, Nastavenia,
+    Monitor). **Normál potichu, výnimka nahlas** — čo je v poriadku, nesvieti. Každá nová funkcia povie, do ktorej
+    vrstvy patrí; ak chce do vrstvy 0 alebo 1, niečo iné ide o vrstvu nižšie. Hustotu volí používateľ
+    v Nastaveniach (Kompaktné · Normálne · Vzdušné).
 
 ---
 

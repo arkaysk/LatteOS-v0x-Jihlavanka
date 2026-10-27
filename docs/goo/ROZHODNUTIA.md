@@ -21,6 +21,8 @@ Nové rozhodnutie: jeden riadok sem (dátum, čo, prečo) a oprava platného zne
 - **Vypínač AI = generatívna AI.** Hľadanie podľa obsahu (DigUp) a podobné negeneratívne rozpoznávanie pod neho
   nespadá. Prečo: protest časti ľudí smeruje proti generatívnej AI; hľadanie vracia iba vlastné súbory, nič nevytvára,
   takže sľub neklame. ROADMAP 2B, 10B.32.
+- **Hustota informácií v troch vrstvách** (pravidlo 24) a voľba hustoty v Nastaveniach. Prečo: priveľa informácií
+  zahlcuje, primálo núti klikať; „normál potichu, výnimka nahlas“. ROADMAP 9.11, 6.25.
 
 ## 26. 10. 2026
 

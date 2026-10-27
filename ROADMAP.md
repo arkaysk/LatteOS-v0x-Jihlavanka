@@ -492,6 +492,11 @@ Qt/QML a Hyprland cez `naga`). Kandidáti: sklo a kov pre témy (9A Keramika, Hl
 plochy, svetlo na hladine. Mladý projekt (41 hviezd, 10 commitov). Každý efekt zmerať na snímku a mať variant bez
 shadera pre nižšie stupne výkonu. Pri prevzatí zápis do `TRETIE-STRANY.md`.
 
+**6.25** [ ] **Audit hustoty informácií** (používateľ 27. 10.; pravidlo 24): spísať 20 najčastejších úkonov (stlmiť
+zvuk, nájsť súbor, prepnúť okno, pripojiť USB, Wi-Fi, vypnúť, …), pri každom spočítať kliky a čas. Časté a dlhšie ako
+dva kliky → o vrstvu vyššie; zriedkavé vo vrstve 0 → nižšie. Zaradiť každý prvok kariet kvapiek (najmä LensGoo,
+ktorá hustne) do vrstvy 0/1/2. Päťsekundový test s človekom, ktorý LatteOS nepozná. Výstup: tabuľka na schválenie.
+
 ### 6A. [~] BarGoo
 Zdroje: `goo/lib/bar.luau`, `goo/side.plm`; LATTEOS-GOO §4.1
 
@@ -1100,6 +1105,11 @@ AI nevymýšľa ovládacie prvky — smie iba odkázať na skutočné nastavenie
 z Nastavení, ktorý mení skutočnú hodnotu; voľne generuje iba vysvetlenie a diagram. **Bez AI** (2B) hľadanie podľa
 kľúčových slov ukazuje tie isté skutočné prepínače, len bez diagramu. Platí aj pre LensShore (6B.12).
 Potrebné: register nastavení s ID, názvom, kľúčovými slovami a prekladmi.
+
+**9.11** [ ] **Nastavenie hustoty informácií** (používateľ 27. 10.; pravidlo 24): Kompaktné · Normálne · Vzdušné, ako
+v Gmaile alebo Prieskumníku Windows. Mení rozostupy a výšku riadkov, koľko riadkov a podrobností ukáže karta kvapky,
+TrayShore a aplikácie LatteOS, a čo z vrstvy 1 sa presunie do vrstvy 2 (alebo naopak). Druhy plochy (6A.05) môžu
+mať vlastnú predvolenú hustotu. Platí pre Goo aj aplikácie (Quickshell) rovnako.
 
 ### 9A. [~] Vzhľad a témy
 Téma (šálka, farby z tapety), Keramika/Hliník/Onyx/Steam, ikony, vizuálne podoby podľa `inspo/`.
