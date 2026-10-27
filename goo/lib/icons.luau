@@ -122,6 +122,8 @@ return {
     ["key"] = "\u{EAC7}",
     ["keyboard"] = "\u{EBD6}",
     ["layout-board"] = "\u{EF95}",
+    ["columns-3"] = "\u{F6D6}",
+    ["zoom-out-area"] = "\u{F1DD}",
     ["layout-columns"] = "\u{EAD4}",
     ["layout-dashboard"] = "\u{F02C}",
     ["layout-distribute-vertical"] = "\u{EAD6}",

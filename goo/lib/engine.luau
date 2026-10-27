@@ -932,6 +932,7 @@ local function coffee()
     end)
 end
 on("coffee_changed", coffee)
+on("reset_places", function() E.reset_places() end)
 
 -- ── the start ────────────────────────────────────────────────────────────────────────────────────────────────
 -- opts.drops: the names of the modules in drops/, in the order they are defined (one beside another after it)

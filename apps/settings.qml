@@ -26,6 +26,15 @@ ShellRoot {
     // parts of pages); the choice is kept (~/.config/latteos/settings-mode) and switched at the window's foot
     Word { id: modeWord; name: "settings-mode" }
     readonly property bool expert: modeWord.value === "expert"
+    // the pages of Drops (Goo): which drop each is about, and what that drop is, said on its page
+    readonly property var dropOf: ({ bargoo: "bargoo", powergoo: "powergoo", launcher: "lensgoo", quickgoo: "quickgoo",
+                                     clockgoo: "clockgoo", queengoo: "queengoo", camgoo: "camgoo", mediagoo: "mediagoo" })
+    readonly property var dropAbout: ({
+        bargoo: QT_TR_NOOP("The windows: its head shows how they are arranged, and where windows float they hang beside it as berries. Left: the arrangement, right: the desktop, the wheel: the next window."),
+        powergoo: QT_TR_NOOP("The account and the power: sign out, sleep, restart, shut down, the battery and Settings. Right: the performance band."),
+        quickgoo: QT_TR_NOOP("The apps you keep at hand, up to eight, on a strip that slides out of it. You add them in LensGoo with the right button."),
+        queengoo: QT_TR_NOOP("The App Manager on the left button, the Device Manager on the right."),
+        mediagoo: QT_TR_NOOP("On the desktop only while something plays: the cover, play and pause, the next one, the volume on the wheel.") })
     function setExpert(on) { modeWord.choose(on ? "expert" : "basic"); if (!on && here && here.expert) { page = ""; asked = "" } }
     readonly property var areas: areasAll.map(a => Object.assign({}, a, { pages: a.pages.filter(p => expert || !p.expert) })).filter(a => a.pages.length > 0)
     property string page: ""                   // "" is the front page
@@ -841,20 +850,17 @@ ShellRoot {
 
             // windows: how they are arranged, and the glass of the side panels
             Part { visible: shell.page === "windows"; width: view.room; title: I18n.tr("How windows are arranged")
+                // in the order of ROADMAP 8A.06; `soon`: decided, not made yet
                 Repeater { model: [{ id: "tape", name: QT_TR_NOOP("Tape"), hint: QT_TR_NOOP("an endless strip, nothing is put away"), icon: "layout-columns" },
-                                   { id: "tiles", name: QT_TR_NOOP("Tiles"), hint: QT_TR_NOOP("windows share the screen"), icon: "layout-grid" },
                                    { id: "floating", name: QT_TR_NOOP("Floating windows"), hint: QT_TR_NOOP("as on Windows"), icon: "app-window" },
-                                   { id: "glance", name: QT_TR_NOOP("Glance"), hint: QT_TR_NOOP("one in the middle, the others at the sides"), icon: "layout-distribute-vertical" }]
-                    Choice { required property var modelData; width: 200; text: I18n.tr(modelData.name); hint: I18n.tr(modelData.hint); on: win.mode === modelData.id
-                             onPressed: Quickshell.execDetached(["hyprctl", "eval", "latte.mode.set(\"" + modelData.id + "\")"])
+                                   { id: "tiles", name: QT_TR_NOOP("Tiles"), hint: QT_TR_NOOP("windows share the screen"), icon: "layout-grid" },
+                                   { id: "glance", name: QT_TR_NOOP("Glance"), hint: QT_TR_NOOP("one in the middle, the others at the sides"), icon: "layout-distribute-vertical" },
+                                   { id: "canvas", name: QT_TR_NOOP("Canvas"), hint: QT_TR_NOOP("free windows on a desk you zoom out of"), icon: "zoom-out-area", soon: true },
+                                   { id: "trizone", name: QT_TR_NOOP("Three zones"), hint: QT_TR_NOOP("for wide screens: a middle and two columns"), icon: "columns-3", soon: true }]
+                    Choice { required property var modelData; width: 200; text: I18n.tr(modelData.name); on: win.mode === modelData.id
+                             hint: modelData.soon ? I18n.tr("coming") : I18n.tr(modelData.hint); opacity: modelData.soon ? 0.5 : 1
+                             onPressed: if (!modelData.soon) Quickshell.execDetached(["hyprctl", "eval", "latte.mode.set(\"" + modelData.id + "\")"])
                              Glyph { anchors.centerIn: parent; name: parent.parent.modelData.icon; font.pixelSize: 54; color: parent.parent.on ? Theme.gold : Theme.dim } } } }
-            // BarGoo: whether it is there, and whether a press on it changes the arrangement (6A.05)
-            Part { visible: shell.page === "windows"; width: view.room; title: "BarGoo"
-                Switch { text: I18n.tr("BarGoo on the desktop"); hint: I18n.tr("The bar with the windows. Without it Alt+Tab still goes from window to window.")
-                         on: (goo.kept.hidden || []).indexOf("bargoo") < 0
-                         onPressed: { const h = (goo.kept.hidden || []).filter(id => id !== "bargoo"); if (on) h.push("bargoo"); goo.set("hidden", h) } }
-                Switch { text: I18n.tr("A press on BarGoo changes the arrangement"); hint: I18n.tr("Off: the arrangement chosen above stays, and a press on BarGoo only shows the windows.")
-                         on: goo.kept.bar_fixed !== true; onPressed: goo.set("bar_fixed", on) } }
             // how much of LatteOS is glass: one choice for all of it; 0 makes everything solid (Theme.glassLevel)
             Part { visible: shell.page === "windows"; width: view.room; title: I18n.tr("Glass"); note: I18n.tr("How much of LatteOS is glass: the side panels, the windows and the AI's pages. None: everything is solid.")
                 Repeater { model: [{ n: 0, name: QT_TR_NOOP("None") }, { n: 1, name: QT_TR_NOOP("A little") }, { n: 2, name: QT_TR_NOOP("More") }, { n: 3, name: QT_TR_NOOP("The most") }, { n: 4, name: "True Glass" }]
@@ -875,8 +881,24 @@ ShellRoot {
                 Repeater { model: dropList.list
                     Switch { required property var modelData; text: modelData.name; on: (goo.kept.hidden || []).indexOf(modelData.id) < 0
                              onPressed: { const h = (goo.kept.hidden || []).filter(id => id !== modelData.id); if (on) h.push(modelData.id); goo.set("hidden", h) } } } }
-            Label { visible: shell.page === "drops"; width: view.room; wrapMode: Text.WordWrap; color: Theme.dim; font.pixelSize: 13
-                    text: I18n.tr("PowerGoo and LensGoo are always there. Putting the drops back in their places is in PowerGoo › Settings on the desktop itself; the coffee they are made of is under Coffee and cup.") }
+            Part { visible: shell.page === "drops"; width: view.room; title: I18n.tr("Places")
+                   note: I18n.tr("PowerGoo and LensGoo are always there. The coffee the drops are made of is under Coffee and cup.")
+                Pill { icon: "arrow-back-up"; text: I18n.tr("Put every drop back in its place"); onPressed: Quickshell.execDetached(["latte-say", "emit reset_places"]) } }
+
+            // every drop's own page begins with whether it is on the desktop; what it is, for those that have nothing more to set
+            Part { id: dropPart; readonly property string drop: shell.dropOf[shell.page] || ""
+                   readonly property bool optional: dropList.list.some(d => d.id === drop)
+                   visible: drop !== ""; width: view.room; title: I18n.tr("On the desktop")
+                   note: shell.dropAbout[shell.page] ? I18n.tr(shell.dropAbout[shell.page]) : ""
+                Switch { visible: dropPart.optional; text: I18n.tr("Show it on the desktop")
+                         on: (goo.kept.hidden || []).indexOf(dropPart.drop) < 0
+                         onPressed: { const id = dropPart.drop; const h = (goo.kept.hidden || []).filter(x => x !== id); if (on) h.push(id); goo.set("hidden", h) } }
+                Label { visible: !dropPart.optional; width: view.room; color: Theme.dim; font.pixelSize: 13; wrapMode: Text.WordWrap
+                        text: I18n.tr("Always there: it belongs to the desktop itself.") } }
+            // BarGoo: whether a press on it changes the arrangement (6A.05)
+            Part { visible: shell.page === "bargoo"; width: view.room; title: I18n.tr("A press on BarGoo")
+                Switch { text: I18n.tr("A press on BarGoo changes the arrangement"); hint: I18n.tr("Off: the arrangement chosen in Windows stays, and a press on BarGoo only shows the windows.")
+                         on: goo.kept.bar_fixed !== true; onPressed: goo.set("bar_fixed", on) } }
 
             // ClockGoo: where the weather is, the world clocks, the screen time
             Part { visible: shell.page === "clockgoo"; width: view.room; title: I18n.tr("Where the weather is")

@@ -13,7 +13,6 @@ local E = require("lib/engine")
 local wm = require("lib/wm")
 local bar = require("lib/bar")
 local lock = require("lib/lock")
-local settings = require("lib/settings")
 -- N marks a text for the translation table (tests/check.sh looks for it); tr() translates it where it is shown.
 local function N(s) return s end
 
@@ -149,7 +148,7 @@ open_card = function(d, keep)
     local rows = {
         { profile = true, glyph = "user", label = user, line2 = user .. "@" .. host .. " · " .. tr("since") .. " " .. since, quiet = true,
           on = admin, hint = tr("ADMIN") },
-        { tiles = { { label = tr("Settings"), glyph = "settings", keep = true, run = function() settings.open(d) end },
+        { tiles = { { label = tr("Settings"), glyph = "settings", run = function() after(80, function() open.settings() end) end },
                     { label = tr("Monitor"), glyph = "activity", run = function() after(80, function() open.monitor() end) end } }, per = 2 },
     }
     if battery or profiles then rows[#rows + 1] = { head = true, label = tr("POWER"), line = true } end

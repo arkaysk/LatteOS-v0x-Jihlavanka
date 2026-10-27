@@ -1088,6 +1088,10 @@ Sklo okien (Hyprglass), materiály šálky.
 **8C.02** [ ] **Posledné dva stupne skla sa správajú inak** (používateľ 26. 10.): pri predposlednom (Najviac) a poslednom
 (True Glass) stupni platia pre priehľadnosť iné pravidlá než pri ostatných (True Glass robí okná priehľadné samy
 aplikácie LatteOS, iné nie; karty a okná sa líšia). Zjednotiť, aby stupne išli plynulo za sebou; riešiť neskôr s témami (9A).
+
+**8C.03** [ ] **Sklo bočného panelu a sklo hlavného okna oddelene** (používateľ 27. 10.): v Nastavenia › Okná dve samostatné
+voľby — sklo bočného panelu a sklo hlavnej plochy okna. Chyba dnes: Trochu · Viac · Najviac menia správne iba bočný panel,
+True Glass zmení sklo všetkého naraz. Súvisí s 8C.02.
 ### 8D. [~] Okno aplikácií LatteOS
 Spoločné okno aplikácií: bočný panel zo skla, hladina dole (`apps/common/AppWindow.qml`).
 Zdroje: `apps/common/` (AppWindow, Surface, Menu); LATTEOS-GOO §6.3·0

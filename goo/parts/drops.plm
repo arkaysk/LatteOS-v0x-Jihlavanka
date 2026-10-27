@@ -104,6 +104,7 @@ part Drops {
 
     // ── settings and the sky ────────────────────────────────────────────────────────────────────────────────
     event coffee_changed ->                    // whoever changes the user's coffee says so
+    event reset_places ->                      // Settings › Drops: every drop back where it belongs
     fact lively = true                         // drops fall asleep, watch the weather and play when left alone
     fact glassy = 0                            // the material, one number: 0 plain coffee … 1 clear glass
     fact panes = 1                             // 0 where nothing is blurred (software drawing): a card that wants a pane of glass stays plain

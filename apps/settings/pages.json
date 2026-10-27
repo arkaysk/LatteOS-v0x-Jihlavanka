@@ -191,7 +191,7 @@
     "name": "Windows",
     "icon": "app-window",
     "status": "ready",
-    "words": "tape tiles floating layout glass side panel arrange bargoo taskbar bar fixed"
+    "words": "tape tiles floating layout glass side panel arrange glance canvas zones"
    },
    {
     "id": "drops",
@@ -199,6 +199,46 @@
     "icon": "droplet",
     "status": "ready",
     "words": "goo drops lively weather play bend material"
+   },
+   {
+    "id": "bargoo",
+    "under": "drops",
+    "name": "Window bar (BarGoo)",
+    "icon": "layout-columns",
+    "status": "ready",
+    "words": "bargoo taskbar bar windows berries arrangement fixed"
+   },
+   {
+    "id": "powergoo",
+    "under": "drops",
+    "name": "Account and power (PowerGoo)",
+    "icon": "power",
+    "status": "ready",
+    "words": "powergoo account power sleep restart shut down battery performance band"
+   },
+   {
+    "id": "quickgoo",
+    "under": "drops",
+    "name": "Quick launch (QuickGoo)",
+    "icon": "rocket",
+    "status": "ready",
+    "words": "quickgoo quick launch apps at hand favourites strip"
+   },
+   {
+    "id": "queengoo",
+    "under": "drops",
+    "name": "Apps and devices (QueenGoo)",
+    "icon": "package",
+    "status": "ready",
+    "words": "queengoo app manager device manager"
+   },
+   {
+    "id": "mediagoo",
+    "under": "drops",
+    "name": "Music and video (MediaGoo)",
+    "icon": "music",
+    "status": "ready",
+    "words": "mediagoo music video player play pause volume"
    },
    {
     "id": "clockgoo",

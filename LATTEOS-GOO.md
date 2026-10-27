@@ -619,9 +619,9 @@ nemá (AI je hľadanie, Financie a Sociálne sú podkategórie Flathubu).
   výstupy zvuku a **schránka** — čo sa naposledy skopírovalo (uchováva `cliphist`), klik to skopíruje znova.
   Hodiny v ňom nie sú, ostávajú v ClockGoo. Na ďalších monitoroch Pobrežie nie je.
 - **Okno s heslom** (polkit): samostatná scéna spustená compositorom je agentom grafickej relácie. Citlivú požiadavku môže spustiť iba po prijatí úzkeho requestu cez Pleamar IPC; jej výsledok sa vráti volajúcej aplikácii. Goo karta ukáže dôvod, vybranú akciu, heslo a povolenie/zrušenie; kliknutie mimo nej ju nezruší, zavrieť ju možno tlačidlom Zrušiť alebo klávesom Escape.
-- **Nastavenia Goo** (PowerGoo › Nastavenia): karta — ktoré kvapky sú na ploche, vrátiť kvapky na miesto, materiál
-  (káva / sklenená káva), živé správanie, druh kávy, tapeta, režim okien. Zmena platí hneď. Veľké Nastavenia LatteOS
-  (aplikácia) ešte nie sú.
+- **Nastavenia Goo** (27. 10.): PowerGoo › Nastavenia otvorí rovno aplikáciu Nastavenia (karta Goo zrušená). Prostredie ›
+  Kvapky (Goo): správanie, kvapky na ploche, vrátiť kvapky na miesto (`latte-say "emit reset_places"`) a stránka každej
+  kvapky (na ploche áno/nie, čo robí, jej nastavenia). Zmena platí hneď.
 - **Zámok obrazovky** (Win+L, PowerGoo › Zamknúť; `goo/parts/lock.plm`, `goo/lib/lock.luau`): zamyká kompozitor
   (`ext-session-lock`), heslo overí systém; vyzerá ako prihlásenie v pokoji. Keby scéna pri zamknutí spadla, nová
   zamkne znova. Pri nečinnosti (hypridle, `latte-idle.service`) zamkne po 10 min, po 15 min zhasne obrazovky (časy: Nastavenia › Uzamknutie a nečinnosť),
