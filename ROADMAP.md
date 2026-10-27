@@ -528,6 +528,10 @@ aj otvorené okná, ostáva Glance a Alt+Tab. Druh plochy určí aj to, či bež
 
 **6A.07** [ ] (BarGoo) prenášanie ikry ťahaním na BarGoo iného monitora — scény sú oddelené procesy, odovzdanie cez `latte-say`; po 6A.04 (skutočné monitory)
 
+**6A.08** [ ] **Karta BarGoo** (používateľ 27. 10.): ľavý klik na hlavu otvorí kartu veľkú ako karta PowerGoo, s hladinou.
+Nad hladinou tlačidlá režimov okien (8A.06) s popisom; pod hladinou — **otvorené** (návrh: prehľad úloh ako Win+Tab, plochy
+a okná tohto monitora). Pravý klik ostáva: ukázať plochu.
+
 ### 6B. [~] LensGoo
 Zdroje: LATTEOS-GOO §4.3
 
@@ -964,6 +968,41 @@ Zdroje: `system/hypr/`, `plugins/latte-events`, `patches/`; LATTEOS-GOO §4.9
     (`optional /usr/lib64/latteos/…` vo FILES), autor v TRETIE-STRANY.md.
 
 **8A.05** [x] (Okná) R3·B — základná integrácia · r. 971–972
+
+**8A.06** [ ] **Režimy okien 1–9** (používateľ 27. 10.): 1 Páska · 2 Plávajúce · 3 Dlaždice · 4 Glance · 5 Canvas · 6 Tri zóny
+(hyprtrizone, 8A.04); 7–9 voľné na neskôr. Každý monitor má **svoj režim** (8A.13). Režim sa volí v karte BarGoo (6A.08)
+alebo napevno v Nastavenia › Okná › Ako sú okná usporiadané; s pevným režimom sa dá BarGoo aj vypnúť (6A.05).
+
+**8A.07** [ ] **Páska presne ako niri**: prečítať kód niri (`src/layout/scrolling.rs`, GPL-3.0) a správanie preniesť na
+Hyprland `scrolling` — vie už `explicit_column_widths` + `colresize ±conf` (1/3 · 1/2 · 2/3 · celá), `consume`/`expel`
+(okná pod sebou v stĺpci), `swapcol`, `fit`, `focus_fit_method` 0 = stred. Chýba: nové okno vpravo od aktívneho, stĺpec
+ako záložky, plávajúca vrstva nad páskou (okno ostáva súčasťou pásky), posúvanie ťahaním za prázdno a gestom, prehľad
+(8A.10). Všetko myšou (ponuka okna, titulok). Kód z niri sa prepisuje iba do samostatného súboru pod GPL-3.0 (repo je MIT).
+
+**8A.08** [ ] **Plávajúce ako Windows 11**: jediný režim s ikrami; náhľad cieľa pri prichytení, Snap Layouts (ponuka
+rozložení po podržaní nad □), skupiny prichytených okien, vlastné rozloženia zón (ako FancyZones / dlaždice Plasmy).
+
+**8A.09** [ ] **Dlaždice: dwindle s hlavným oknom** (používateľ 27. 10.): pravý klik na titulok › „Nastaviť ako hlavné“
+urobí z okna master a plochu prepne z `dwindle` na `master`; „Zrušiť hlavné“ vráti `dwindle`. Popis režimu (karta BarGoo,
+Nastavenia) to vysvetlí.
+
+**8A.10** [ ] **Kreslenie okna v mierke** — spoločný kus pre prehľad Pásky, Glance aj Canvas, robí sa pred nimi. Predlohy
+(Hyprland pluginy, BSD-3): [hyprland-scroll-overview](https://github.com/yayuuu/hyprland-scroll-overview) (prehľad ako
+niri), [Phantomat](https://github.com/kaolti/phantomat) (z neho vychádza). Overiť, či kreslia okná živé.
+
+**8A.11** [ ] **Glance: živé zmenšené náhľady v Parkingu** (video v prehliadači či VLC, na pohľad vidieť, či Claude Code
+pracuje alebo čaká); keď to technicky nepôjde, obnovované miniatúry (služba `thumbnails` pleamaru). Podľa 8A.10.
+
+**8A.12** [ ] **Canvas** (používateľ 27. 10.): voľné okná na nekonečnej ploche ako plátno v ComfyUI — odzoomovať a vidieť
+desiatky rozložených okien, klikom priblížiť. Prevziať [Phantomat](https://github.com/kaolti/phantomat) (BSD-3, Hyprland
+0.56 s Lua, aktívny; zoom cez Ctrl+koliesko, ťahanie plochy, hľadanie okna, mapa); náhrada
+[hypr-canvas](https://github.com/aaronsb/hypr-canvas) (MIT, „super alpha“). Samostatné kompozitory (driftwm, Infinidesk,
+mary) nie — LatteOS ostáva na Hyprlande. Overiť: Phantomat ruší plochy (workspaces) — dá sa zapnúť iba pre jeden monitor
+a vypnúť pri inom režime bez reštartu?
+
+**8A.13** [ ] **Režim pre každý monitor** (používateľ 27. 10.): v Nastavenia › Okná rovnaká mapa monitorov ako v Nastavenia ›
+Obrazovky a pri snímke obrazovky; tu sa monitormi nehýbe, klik na monitor mu prepne režim. Hyprland vie rozloženie podľa
+plochy (pravidlá plôch).
 
 ### 8B. [~] Obrazovky
 Rozpoznanie a rozloženie monitorov, virtuálny monitor, rozšíriť/duplikovať.
