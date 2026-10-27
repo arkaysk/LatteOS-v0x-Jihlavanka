@@ -428,7 +428,13 @@ function W.setup()
         -- its event is there only once the plugin has really been loaded
         if pcall(hl.plugin.load, W.plugin) then
             for _, p in ipairs(hl.get_loaded_plugins() or {}) do
-                if p.name == "latte-events" then hl.on("latte.drag_end", dropped) end
+                if p.name == "latte-events" then
+                    hl.on("latte.drag_end", dropped)
+                    -- the right button on a window's own header: the menu its berry has, a card of the Goo scene
+                    hl.on("latte.window_menu", function(w, x, y)
+                        if w then hl.exec_cmd(string.format('latte-say "fact tap.x %d" "fact tap.y %d" "text win_asked %s" "emit win_menu"', math.floor(x), math.floor(y), w.address)) end
+                    end)
+                end
             end
         end
     end

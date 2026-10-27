@@ -57,6 +57,11 @@ FloatingWindow {
         onLoaded: win.mode = text().trim() || "tape"
     }
     function ask(what) { Quickshell.execDetached(["hyprctl", "eval", "latte.win." + what + "()"]) }
+    // the window's menu in a Goo card, where the pointer is, as the right button on any title bar gives it (system/hypr/latte/bars.lua)
+    function menu() {
+        Quickshell.execDetached(["sh", "-c", "a=$(hyprctl -j activewindow | sed -n 's/.*\"address\": *\"\\(0x[0-9a-f]*\\)\".*/\\1/p'); set -- $(hyprctl cursorpos | tr -d ,); "
+                                 + "latte-say \"fact tap.x $1\" \"fact tap.y $2\" \"text win_asked $a\" \"emit win_menu\""])
+    }
 
     component HeadButton: Rectangle {
         property string icon
@@ -99,7 +104,9 @@ FloatingWindow {
         Item {
             id: head
             width: parent.width; height: 56
-            MouseArea { anchors.fill: parent; onPressed: win.startSystemMove(); onDoubleClicked: if (win.mode === "floating") win.ask("maximize_active") }
+            MouseArea { anchors.fill: parent; acceptedButtons: Qt.LeftButton | Qt.RightButton
+                        onPressed: mouse => { if (mouse.button === Qt.RightButton) win.menu(); else win.startSystemMove() }
+                        onDoubleClicked: mouse => { if (mouse.button === Qt.LeftButton && win.mode === "floating") win.ask("maximize_active") } }
             Row { id: left; x: 12; spacing: 2; anchors.verticalCenter: parent.verticalCenter; visible: win.arrows
                 HeadButton { icon: "chevron-left"; off: !win.canGoBack; onPressed: win.back() }
                 HeadButton { icon: "chevron-right"; off: !win.canGoForward; onPressed: win.forward() } }

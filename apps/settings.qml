@@ -89,6 +89,15 @@ ShellRoot {
         onLoaded: { try { kept = JSON.parse(text()) } catch (e) { kept = {} } }
         function set(key, value) { const k = Object.assign({}, kept); k[key] = value; kept = k; setText(JSON.stringify(k)) }
     }
+    // the drops that can be switched off, as the Goo scene wrote them down when it started
+    FileView {
+        id: dropList
+        property var list: []
+        path: (Quickshell.env("XDG_DATA_HOME") || (Quickshell.env("HOME") + "/.local/share")) + "/pleamar/goo/drops.json"
+        printErrors: false; watchChanges: true
+        onFileChanged: reload()
+        onLoaded: { try { list = JSON.parse(text()) } catch (e) { list = [] } }
+    }
     component Run: Process {
         id: r
         property var data: null
@@ -862,8 +871,12 @@ ShellRoot {
             Part { visible: shell.page === "drops"; width: view.room; title: I18n.tr("How the drops behave")
                 Switch { text: I18n.tr("Lively"); hint: I18n.tr("Left alone they fall asleep, the weather outside shows on the surface, playful ones play."); on: goo.kept.lively !== false; onPressed: goo.set("lively", !on) }
                 Switch { text: I18n.tr("The surface bends"); hint: I18n.tr("Ripples lift the drops and the edge gives under them."); on: goo.kept.bends !== false; onPressed: goo.set("bends", !on) } }
+            Part { visible: shell.page === "drops" && dropList.list.length > 0; width: view.room; title: I18n.tr("Drops on the desktop")
+                Repeater { model: dropList.list
+                    Switch { required property var modelData; text: modelData.name; on: (goo.kept.hidden || []).indexOf(modelData.id) < 0
+                             onPressed: { const h = (goo.kept.hidden || []).filter(id => id !== modelData.id); if (on) h.push(modelData.id); goo.set("hidden", h) } } } }
             Label { visible: shell.page === "drops"; width: view.room; wrapMode: Text.WordWrap; color: Theme.dim; font.pixelSize: 13
-                    text: I18n.tr("Which drops are on the desktop, and putting them back in their places, is in PowerGoo › Settings on the desktop itself. The coffee they are made of is under Coffee and cup.") }
+                    text: I18n.tr("PowerGoo and LensGoo are always there. Putting the drops back in their places is in PowerGoo › Settings on the desktop itself; the coffee they are made of is under Coffee and cup.") }
 
             // ClockGoo: where the weather is, the world clocks, the screen time
             Part { visible: shell.page === "clockgoo"; width: view.room; title: I18n.tr("Where the weather is")

@@ -538,6 +538,14 @@ aj otvorené okná, ostáva Glance a Alt+Tab. Druh plochy určí aj to, či bež
 klik prepne režim tomu monitoru (tým je splnená aj 8A.13 mimo Nastavení). Klik na náhľad okno prinesie. Náhľady podľa
 8A.10. Pravý klik ostáva: ukázať plochu.
 
+**6A.09** [x] **Ponuka okna z hlavičky každého okna** (používateľ 27. 10., ako Windows 11 pri pravom kliku na titulok VS Code):
+pravý klik na vlastnú hlavičku aplikácie (GTK/libadwaita, Chromium, Electron) otvorí tú istú ponuku Goo ako ikra — plugin
+`latte-events` 1.2 oknu ohlási schopnosť `window_menu` (Hyprland ju neohlasuje, preto aplikácie o ponuku nežiadali)
+a jej požiadavku pošle udalosťou `latte.window_menu`; vlastné okná LatteOS (AppWindow) to robia samy. Overené na latte-lab
+naživo (Nautilus, Nastavenia). V `tests/screen.sh` sa to overiť nedá: aplikácie tam nedostanú polohu falošnej myši.
+
+**6A.10** [x] Ikry iba v plávajúcom režime aj v Glance (používateľ 27. 10.): `berries_out()` = plávajúce alebo myš na hlave.
+
 ### 6B. [~] LensGoo
 Zdroje: LATTEOS-GOO §4.3
 
@@ -1175,6 +1183,9 @@ Potrebné: register nastavení s ID, názvom, kľúčovými slovami a prekladmi.
 v Gmaile alebo Prieskumníku Windows. Mení rozostupy a výšku riadkov, koľko riadkov a podrobností ukáže karta kvapky,
 TrayShore a aplikácie LatteOS, a čo z vrstvy 1 sa presunie do vrstvy 2 (alebo naopak). Druhy plochy (6A.05) môžu
 mať vlastnú predvolenú hustotu. Platí pre Goo aj aplikácie (Quickshell) rovnako.
+
+**9.12** [x] **Nastavenia › Kvapky (Goo) › Kvapky na ploche** (používateľ 27. 10.): prepínač pre každú kvapku, ktorá sa dá skryť
+(zoznam zapíše scéna Goo pri štarte do `drops.json`, vrátane vlastných); PowerGoo a LensGoo sú vždy. Overené naživo.
 
 ### 9A. [~] Vzhľad a témy
 Téma (šálka, farby z tapety), Keramika/Hliník/Onyx/Steam, ikony, vizuálne podoby podľa `inspo/`.

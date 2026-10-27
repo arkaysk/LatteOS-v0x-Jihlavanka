@@ -10,6 +10,11 @@
 // And one thing Hyprland does not do: a press on the empty desktop just outside a floating window, beyond the
 // strip where its edge is taken to resize it, carries the whole window. So a window can always be taken hold
 // of, whatever part of it is in reach.
+//
+//   hl.on("latte.window_menu", function(window, x, y) … end)
+//       a window asked for its menu (xdg_toplevel.show_window_menu: the right button on its own header, in GTK,
+//       Chromium and Electron apps such as VS Code), the pointer at x, y. Hyprland leaves the request unanswered;
+//       LatteOS shows the same menu as on the window's berry.
 // SPDX-License-Identifier: MIT
 #define WLR_USE_UNSTABLE
 
@@ -25,13 +30,18 @@
 #include <hyprland/src/desktop/Workspace.hpp>
 #include <hyprland/src/desktop/view/Window.hpp>
 #include <hyprland/src/Compositor.hpp>
+// the request is set on the toplevel's wire object, which XDGShell keeps private
+#define private public
+#include <hyprland/src/protocols/XDGShell.hpp>
+#undef private
 
 using CCustomEvent = Event::CEventBus::CCustomEvent;
 
 static const char*         DRAG_END = "latte.drag_end";
+static const char*         WINDOW_MENU = "latte.window_menu";
 static HANDLE              g_handle = nullptr;
-static SP<CCustomEvent>    g_dragEnd;
-static CHyprSignalListener g_onMove, g_onButton, g_onReload;
+static SP<CCustomEvent>    g_dragEnd, g_windowMenu;
+static CHyprSignalListener g_onMove, g_onButton, g_onReload, g_onOpen;
 static PHLWINDOWREF        g_moved;            // the floating window the mouse is moving, if any
 static bool                g_carrying = false; // …and it is this plugin that began the move, from beside the window
 static const double        REACH    = 36;      // px outside a window where a press still takes hold of it
@@ -66,11 +76,44 @@ static PHLWINDOW besideWindow(const Vector2D& at) {
     return found;
 }
 
+// A window that asks for its menu is answered with the event, where the pointer is. Hyprland tells a window
+// only that it can be maximised and made fullscreen, and an app asks for no menu it is not told of: the window
+// is told again, with the menu, and a configure makes it take that up.
+static void hearMenu(PHLWINDOW window) {
+    const auto xdg      = window ? window->m_xdgSurface.lock() : nullptr;
+    const auto toplevel = xdg ? xdg->m_toplevel.lock() : nullptr;
+    if (!toplevel || !toplevel->m_resource)
+        return;
+    if (toplevel->m_resource->version() >= 5) {
+        wl_array caps;
+        wl_array_init(&caps);
+        for (uint32_t c : {XDG_TOPLEVEL_WM_CAPABILITIES_WINDOW_MENU, XDG_TOPLEVEL_WM_CAPABILITIES_MAXIMIZE, XDG_TOPLEVEL_WM_CAPABILITIES_FULLSCREEN})
+            *(uint32_t*)wl_array_add(&caps, sizeof(uint32_t)) = c;
+        toplevel->m_resource->sendWmCapabilities(&caps);
+        wl_array_release(&caps);
+        const auto box = window->getWindowMainSurfaceBox();
+        if (box.w > 0 && box.h > 0)                     // a size of nothing would let the app choose its own
+            toplevel->setSize(box.size());
+    }
+    toplevel->m_resource->setShowWindowMenu([ref = PHLWINDOWREF{window}](CXdgToplevel*, wl_resource*, uint32_t, int32_t, int32_t) {
+        const auto w = ref.lock();
+        if (!w)
+            return;
+        const auto at = g_pInputManager->getMouseCoordsInternal();
+        (void)g_windowMenu->emit({PHLWINDOWREF{w}, at.x, at.y});
+    });
+}
+
 APICALL EXPORT PLUGIN_DESCRIPTION_INFO PLUGIN_INIT(HANDLE handle) {
     g_handle = handle;
     using T  = CCustomEvent::eType;
     g_dragEnd = makeShared<CCustomEvent>(DRAG_END, std::vector<T>{T::TYPE_WINDOW, T::TYPE_DOUBLE, T::TYPE_DOUBLE});
     HyprlandAPI::addEvent(handle, g_dragEnd);
+    g_windowMenu = makeShared<CCustomEvent>(WINDOW_MENU, std::vector<T>{T::TYPE_WINDOW, T::TYPE_DOUBLE, T::TYPE_DOUBLE});
+    HyprlandAPI::addEvent(handle, g_windowMenu);
+    for (const auto& w : Desktop::windowState()->windows())
+        hearMenu(w);
+    g_onOpen = Event::bus()->m_events.window.open.listen([](PHLWINDOW w) { hearMenu(w); });
 
     // Nothing says that a move has begun or ended; the drag controller says whether one is going on, and it is
     // asked whenever the mouse moves. The end is the button let go, or, when a key binding took that
@@ -110,13 +153,24 @@ APICALL EXPORT PLUGIN_DESCRIPTION_INFO PLUGIN_INIT(HANDLE handle) {
     // Each time the configuration is read again its Lua starts anew, and with it who listens to what: Hyprland
     // 0.56 then still knows a plugin's event by name but no longer delivers it. Announced again, it does. (The
     // configuration is read again right after a plugin is loaded, so this is every session, not a rare case.)
-    g_onReload = Event::bus()->m_events.config.reloaded.listen([] { Event::bus()->m_events.pluginEventAdded.emit(g_dragEnd); });
-    return {"latte-events", "LatteOS: a window let go after a move; a window carried from beside it", "LatteOS", "1.1"};
+    g_onReload = Event::bus()->m_events.config.reloaded.listen([] {
+        Event::bus()->m_events.pluginEventAdded.emit(g_dragEnd);
+        Event::bus()->m_events.pluginEventAdded.emit(g_windowMenu);
+    });
+    return {"latte-events", "LatteOS: a window let go after a move; a window carried from beside it; a window's menu", "LatteOS", "1.2"};
 }
 
 APICALL EXPORT void PLUGIN_EXIT() {
     g_onMove.reset();
     g_onButton.reset();
     g_onReload.reset();
+    g_onOpen.reset();
+    for (const auto& w : Desktop::windowState()->windows()) {
+        const auto xdg      = w ? w->m_xdgSurface.lock() : nullptr;
+        const auto toplevel = xdg ? xdg->m_toplevel.lock() : nullptr;
+        if (toplevel && toplevel->m_resource)
+            toplevel->m_resource->setShowWindowMenu(nullptr);  // nothing of the plugin may stay behind it
+    }
     HyprlandAPI::removeEvent(g_handle, DRAG_END);
+    HyprlandAPI::removeEvent(g_handle, WINDOW_MENU);
 }

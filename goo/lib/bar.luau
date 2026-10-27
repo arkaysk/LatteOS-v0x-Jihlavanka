@@ -53,7 +53,7 @@ local urgent = {}                    -- address → true: the windows that want 
 local audio = {}                     -- what is playing, as the service tells it
 
 -- The one place that says how the windows are shown beside the head.
-local function berries_out() return mode >= 2 or peeking end      -- floating and glance: a window put away is a berry
+local function berries_out() return mode == 2 or peeking end      -- floating alone: a window put away is a berry
 M.berries_out = berries_out
 
 -- ── a window's app ───────────────────────────────────────────────────────────────────────────────────────────

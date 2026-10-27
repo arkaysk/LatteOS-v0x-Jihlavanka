@@ -953,6 +953,10 @@ function E.start(opts)
     else
         settings()
         pcall(sys.watch, "files:" .. SETTINGS, settings)
+        -- which drops can be switched off, for Settings › Drops (it reads what is hidden from settings.json)
+        local can = {}
+        for _, d in ipairs(E.optional()) do can[#can + 1] = { id = d.id, name = d.name } end
+        pcall(sys.call, "files.write", "drops.json", can)
         on("side_hello", settings)
         -- the tier latte-boot chose for the hardware: with drawing by the processor the material stays coffee
         run("sh", { "-c", "echo $LATTE_TIER" }, function(out)
