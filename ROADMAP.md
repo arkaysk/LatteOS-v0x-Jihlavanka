@@ -528,9 +528,11 @@ aj otvorené okná, ostáva Glance a Alt+Tab. Druh plochy určí aj to, či bež
 
 **6A.07** [ ] (BarGoo) prenášanie ikry ťahaním na BarGoo iného monitora — scény sú oddelené procesy, odovzdanie cez `latte-say`; po 6A.04 (skutočné monitory)
 
-**6A.08** [ ] **Karta BarGoo** (používateľ 27. 10.): ľavý klik na hlavu otvorí kartu veľkú ako karta PowerGoo, s hladinou.
-Nad hladinou tlačidlá režimov okien (8A.06) s popisom; pod hladinou — **otvorené** (návrh: prehľad úloh ako Win+Tab, plochy
-a okná tohto monitora). Pravý klik ostáva: ukázať plochu.
+**6A.08** [ ] **Prehľad úloh z BarGoo** (používateľ 27. 10.): ľavý klik na hlavu urobí to, čo Win+Tab vo Windows 11
+(predloha: snímka používateľa — okná ako náhľady s ikonou a titulkom nad rozmazanou plochou, vybrané orámované), a to
+**cez všetky obrazovky naraz**: každý monitor ukáže svoje okná, pekne rozložené, a pri ňom tlačidlá režimu (8A.06) —
+klik prepne režim tomu monitoru (tým je splnená aj 8A.13 mimo Nastavení). Klik na náhľad okno prinesie. Náhľady podľa
+8A.10. Pravý klik ostáva: ukázať plochu.
 
 ### 6B. [~] LensGoo
 Zdroje: LATTEOS-GOO §4.3
@@ -977,7 +979,7 @@ alebo napevno v Nastavenia › Okná › Ako sú okná usporiadané; s pevným r
 Hyprland `scrolling` — vie už `explicit_column_widths` + `colresize ±conf` (1/3 · 1/2 · 2/3 · celá), `consume`/`expel`
 (okná pod sebou v stĺpci), `swapcol`, `fit`, `focus_fit_method` 0 = stred. Chýba: nové okno vpravo od aktívneho, stĺpec
 ako záložky, plávajúca vrstva nad páskou (okno ostáva súčasťou pásky), posúvanie ťahaním za prázdno a gestom, prehľad
-(8A.10). Všetko myšou (ponuka okna, titulok). Kód z niri sa prepisuje iba do samostatného súboru pod GPL-3.0 (repo je MIT).
+(8A.10). Všetko myšou (ponuka okna, titulok). Kód z niri smie byť prevzatý; potom LatteOS prejde z MIT na GPL-3.0 (používateľ 27. 10.).
 
 **8A.08** [ ] **Plávajúce ako Windows 11**: jediný režim s ikrami; náhľad cieľa pri prichytení, Snap Layouts (ponuka
 rozložení po podržaní nad □), skupiny prichytených okien, vlastné rozloženia zón (ako FancyZones / dlaždice Plasmy).
@@ -993,7 +995,7 @@ niri), [Phantomat](https://github.com/kaolti/phantomat) (z neho vychádza). Over
 **8A.11** [ ] **Glance: živé zmenšené náhľady v Parkingu** (video v prehliadači či VLC, na pohľad vidieť, či Claude Code
 pracuje alebo čaká); keď to technicky nepôjde, obnovované miniatúry (služba `thumbnails` pleamaru). Podľa 8A.10.
 
-**8A.12** [ ] **Canvas** (používateľ 27. 10.): voľné okná na nekonečnej ploche ako plátno v ComfyUI — odzoomovať a vidieť
+**8A.12** [ ] **Canvas** — Phantomat skúsiť (používateľ 27. 10.) (používateľ 27. 10.): voľné okná na nekonečnej ploche ako plátno v ComfyUI — odzoomovať a vidieť
 desiatky rozložených okien, klikom priblížiť. Prevziať [Phantomat](https://github.com/kaolti/phantomat) (BSD-3, Hyprland
 0.56 s Lua, aktívny; zoom cez Ctrl+koliesko, ťahanie plochy, hľadanie okna, mapa); náhrada
 [hypr-canvas](https://github.com/aaronsb/hypr-canvas) (MIT, „super alpha“). Samostatné kompozitory (driftwm, Infinidesk,
