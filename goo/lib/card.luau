@@ -46,7 +46,6 @@ local choosable, chosen = {}, nil            -- what the arrow keys walk through
 local field = nil
 local calendar = nil                         -- the month shown, if any: who hears a day pressed
 local ear = nil                              -- the drop that stepped out for the open card
-local wheel_at = 0                           -- when a row last used the wheel itself
 
 text.g_check, text.g_more, text.g_back, text.g_search, text.g_key = icons["check"], icons["chevron-right"], icons["chevron-left"], icons["search"], icons["key"]
 
@@ -313,7 +312,7 @@ on("card_right", function(id)
 end)
 on("card_wheel", function(v)
     local f = wheels[(v or 0) // 2]
-    if f then wheel_at = os.clock() f((v or 0) % 2 == 1 and 1 or -1) end
+    if f then f((v or 0) % 2 == 1 and 1 or -1) end
 end)
 on("card_slide", function(v)
     local set = slides[(v or 0) // 1024]
@@ -331,14 +330,8 @@ local function step_tab(dir)
     if f then f() end
 end
 on("card_tab", function(i) local f = tab_runs[(i or 0) + 1] if f then f() end end)
-on("card_next", function(v) wheel_at = os.clock() step_tab(v == 1 and 1 or -1) end)   -- the wheel over the tabs: not the card's turn too
--- The wheel anywhere on the card turns the tabs. The scene tells both the row and the card of the same notch,
--- so the card waits a moment to see whether a row took it.
-on("card_spin", function(v)
-    after(30, function()
-        if os.clock() - wheel_at > 0.12 and fact.card_open then step_tab(v == 1 and 1 or -1) end
-    end)
-end)
+-- the wheel over the tabs, and Tab: the tabs turn only there (rule 25), never from elsewhere on the card
+on("card_next", function(v) step_tab(v == 1 and 1 or -1) end)
 
 on("card_key", function(v)
     if #choosable == 0 then return end

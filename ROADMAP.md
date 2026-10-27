@@ -553,9 +553,7 @@ Zdroje: LATTEOS-GOO §4.3
 
 **6B.02** [x] (LensGoo) LensGoo · r. 501–503
 
-**6B.03** [ ] (LensGoo) E. LensGoo — koliesko · r. 780–781
-- [ ] **LensGoo:** prepínanie funkcií kolieskom — dokumentované sú Tab / Shift+Tab (kolieskom sa mení veľkosť
-  kvapky); overiť, či koliesko ide aj v karte.
+**6B.03** [x] (LensGoo) koliesko prepína funkcie nad pásom záložiek, Tab / Shift+Tab všade (od 26. 10., 6B.07; overené 27. 10.)
 
 **6B.04** [ ] (LensGoo) R3·A — LensGoo · r. 948–950
 - [ ] **LensGoo:** samostatne overiť vyhľadávanie a spúšťanie aplikácií/súborov a kvalitu AI
@@ -622,12 +620,16 @@ v spúšťači (text aj obrázky, vloženie späť do predošlej aplikácie), ú
 akcie okien (34), poznámky v Markdowne, záloha a import nastavení. Spúšťa **rozšírenia Raycastu** — preveriť Linuxový
 spúšťač kompatibilný s Raycastom (Vicinae) ako zdroj rozšírení. Výstup: zoznam „prevziať / nie“ na schválenie.
 
-**6B.14** [ ] **Koliesko iba v prísnych zónach** (používateľ 27. 10.; pravidlo 25): dnes koliesko kdekoľvek na karte,
+**6B.14** [~] **Koliesko iba v prísnych zónach** (používateľ 27. 10.; pravidlo 25): dnes koliesko kdekoľvek na karte,
 kde sa nič neposúva, prepína záložky (`card_spin` v `goo/lib/card.luau`, 30 ms čakanie na riadok) — kurzor kúsok vedľa
 zoznamu tak prepne záložku omylom. Zmena: zrušiť `card_spin` (záložky iba nad pásom záložiek), **prilepenie
 posúvania** (~300 ms patrí koliesko zoznamu, ktorý sa začal posúvať, aj keď kurzor vyjde von) a **bez prelievania**
 (zoznam na konci sa zastaví, otáčanie neprejde na kartu ani záložky). Nároky na hardvér: skôr menšie (ubudne
 časovač). Platí pre všetky karty Goo aj aplikácie LatteOS.
+- [x] 27. 10.: `card_spin` zrušený — záložky karty Goo prepína koliesko iba nad pásom záložiek (overené: nad pásom
+  prepne; prázdne miesto karty už nemá obsluhu kolieska).
+- [ ] Prilepenie posúvania a bez prelievania v kartách Goo — vec enginu pleamaru (posúvanie zoznamu); v aplikáciách
+  LatteOS vnorené `Flickable` (Qt na konci posiela koliesko rodičovi).
 
 ### 6C. [~] PowerGoo
 Zdroje: LATTEOS-GOO §4.2, `crates/latte-stats`

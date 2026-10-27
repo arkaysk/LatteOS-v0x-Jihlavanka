@@ -7,7 +7,6 @@ part Rows {
     on press card_away { card_open = false; emit card_closed }
     on press right card_away { card_open = false; emit card_closed }
     zone box card_ground { from: card.x0, card.y0; size: card.w, card.h; active: card_open; agent: hidden }
-    on scroll card_ground while list.content <= list.height + 1 and card_custom != 3 { emit card_spin(if(wheel > 0, 0, 1)) }   // the AI's conversation scrolls itself
 
     on key Escape while card_open { card_open = false; emit card_closed }
     on key Tab while card_open { emit card_next(1) }
