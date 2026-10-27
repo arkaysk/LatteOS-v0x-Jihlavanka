@@ -18,6 +18,9 @@ Nové rozhodnutie: jeden riadok sem (dátum, čo, prečo) a oprava platného zne
   na prihlásení a ploche. ROADMAP 6H.06, 6H.07.
 - **Pravý klik je prvotriedny** (pravidlo 23). Prečo: myš je prvá (pravidlo 1) a kontextová ponuka sa nemá
   prehliadať; každá položka však musí ísť aj dotykom, touchpadom, klávesnicou a ovládačom.
+- **Vypínač AI = generatívna AI.** Hľadanie podľa obsahu (DigUp) a podobné negeneratívne rozpoznávanie pod neho
+  nespadá. Prečo: protest časti ľudí smeruje proti generatívnej AI; hľadanie vracia iba vlastné súbory, nič nevytvára,
+  takže sľub neklame. ROADMAP 2B, 10B.32.
 
 ## 26. 10. 2026
 

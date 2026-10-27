@@ -163,6 +163,9 @@ Po prvom prihlásení sa kvapky predstavia.
 
 ### 2B. [~] Voľba AI
 Úvod inštalácie ponúkne výslovne AI zapnúť alebo vypnúť (sľub, nie iba nastavenie).
+**Spresnené 27. 10.:** vypínač sa týka **generatívnej AI** (odpovede, texty, obrázky, rozhovor, konanie za používateľa),
+proti ktorej časť ľudí protestuje. Negeneratívne miestne rozpoznávanie (hľadanie podľa obsahu — DigUp 10B.32,
+triedenie fotiek, čítanie textu zo snímok) pod neho nespadá; text voľby preto hovorí o generatívnej AI.
 
 **2B.01** [x] (Inštalátor a prvé spustenie) E. AI — voľba na začiatku · r. 770–773
 - [x] **AI — voľba na začiatku (rozhodnuté 9. 10.):** používatelia sa delia na priaznivcov a odporcov AI, preto
@@ -1631,8 +1634,8 @@ spoločný priestor pre text, obraz, zvuk a video; index v SQLite; Linux beta (.
 (indexovanie, hľadanie). Využitie: LensShore/LensGoo (6B.12), DualBrew (hľadanie v obsahu, 10A.04), Nastavenia (9.10).
 Preveriť: beta na Fedore (balík RPM nie je), čítanie textu zo snímok (na macOS cez Apple Vision — na Linuxe zrejme
 chýba), nároky modelu podľa stupňov výkonu, veľkosť indexu, ktoré priečinky sa indexujú a vylúčenie súkromných.
-**Rozhodnúť:** počíta sa miestny embedding model ako AI? Návrh Clauda: áno — pri vypnutej AI (2B) sa neinštaluje ani
-nespúšťa, aby sľub ostal absolútny.
+**Rozhodnuté 27. 10. (používateľ):** hľadanie podľa obsahu **nie je generatívne**, a preto nespadá pod vypínač AI (2B).
+Výstupom DigUp sú iba nájdené súbory, nie odpovede — rovnako ako triedenie fotiek neurónovou sieťou v Google Fotkách.
 
 ### 10C. [ ] Heidelberg
 je zakladny textovy editor, s neobvyklo širokou ponukou formatou ktore prečíta a upraví
