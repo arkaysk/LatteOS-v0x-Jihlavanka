@@ -1546,7 +1546,7 @@ počítač“ so štatistikou diskov a pripojením/odpojením, palety farieb z t
 myši. Preveriť pre režim Jeden panel (10A.59) a pre chýbajúce veci z 10A.13. Pri prevzatí kódu zápis do `TRETIE-STRANY.md`.
 
 **10A.61** [ ] **Viac okien DualBrew naraz** (používateľ 27. 10.): DualBrew sa dá spustiť viackrát, každé okno samostatne
-(dnes sa druhé spustenie nepovolí / vráti prvé okno).
+(dnes druhé spustenie nič neotvorí: `latte-app` spúšťa `qs -n`, ktorý nedovolí druhú kópiu tej istej aplikácie; pre DualBrew ho vynechať).
 
 **10A.62** [ ] **Overiť ťahanie súborov medzi DualBrew a inými správcami súborov** (používateľ 27. 10.): z DualBrew do
 Nautilu, Dolphinu, Thunaru a späť, aj na plochu a do iných aplikácií (prehliadač, editor); presun aj kópia
