@@ -153,6 +153,11 @@ end
 local function layout()
     local head = E.get(HEAD)
     if not head then return end
+    if head.hidden then                      -- the bar is switched off: no berry hangs on nothing
+        for id in pairs(shown) do E.remove(id) end
+        shown = {}
+        return
+    end
     local out = berries_out()
     local count = (not out and #wins > 0) and tostring(#wins) or ""
     head:set({ label = count, still = count ~= "" })         -- with a number on it the head does not sink: it has to stay whole
@@ -257,6 +262,8 @@ function M.leave()
     -- brought out by the pointer, they go back in once it has left them and the head alone
     after(900, function() if mine == hot_n and peeking then peeking = false layout() end end)
 end
+-- a press on the head when the arrangement is fixed: the berries out, or in again
+function M.peek() peeking = not peeking layout() end
 -- the pointer on the head, or off it: resting there brings the berries out
 function M.rest(on)
     if not on then return M.leave() end
@@ -469,6 +476,7 @@ function M.start()
         if hidden(asking) then wave(5) elseif hidden(sounding(wins)) then wave(2.5) end
     end)
     on("fact:sw", function() signature = "" M.refresh() end)
+    on("fact:bar_off", function() signature = "" M.refresh() end)
     wm.tell_mode()
     M.band()
     M.refresh()

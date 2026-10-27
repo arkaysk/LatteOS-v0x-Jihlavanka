@@ -154,8 +154,8 @@ bol GooPower); **kvapka** = každý samostatný tekutý prvok; **karta Goo** = o
 
 ## 4. Kvapky (Nová architektúra)
 
-**Jadro** (nedá sa skryť, iba zmeniť veľkosť): **BarGoo, PowerGoo, LensGoo.** **Voliteľné** (Nastavenia › Kvapky):
-**QueenGoo, ClockGoo, ChatGoo.** Predvolene dole: PowerGoo – LensGoo – hlava BarGoo s ikrami, vpravo ClockGoo
+**Jadro** (nedá sa skryť, iba zmeniť veľkosť): **PowerGoo, LensGoo.** **Voliteľné** (Nastavenia › Kvapky):
+**BarGoo** (od 27. 10.; aj Nastavenia › Okná, Alt+Tab ostáva), **QueenGoo, ClockGoo, ChatGoo.** Predvolene dole: PowerGoo – LensGoo – hlava BarGoo s ikrami, vpravo ClockGoo
 a v rohu tvrdé Pobrežie (vo Fresh; do v0.3 rohová lišta Noctalie); QuickGoo (rýchle spúšťanie) vľavo od PowerGoo.
 
 | Goo | Ľavý klik | Pravý klik | Koliesko |

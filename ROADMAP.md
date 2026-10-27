@@ -519,10 +519,14 @@ Zdroje: `goo/lib/bar.luau`, `goo/side.plm`; LATTEOS-GOO §4.1
   `latte-screens`) a Nastavenia › Obrazovky › Rozšíriť / Duplikovať už sú; overiť na skutočných monitoroch.
   Ovládanie okien v SAFE patrí do bodu 21 (5A). Samostatné kusy: 6A.06, 6A.07.
 
-**6A.05** [ ] **BarGoo voliteľný, druhy plochy** (používateľ 27. 10.): BarGoo nemusí byť stále zapnutý. Používateľ
+**6A.05** [~] **BarGoo voliteľný, druhy plochy** (používateľ 27. 10.): BarGoo nemusí byť stále zapnutý. Používateľ
 si vyberie jeden z hotových druhov plochy (napr. Goo — všetky kvapky, Minimal — iba spodný okraj s LensShore
 a TrayShore, Focus) a BarGoo môže vypnúť. Podmienka: bez BarGoo nesmie zmiznúť prepínanie okien — LensShore nájde
 aj otvorené okná, ostáva Glance a Alt+Tab. Druh plochy určí aj to, či beží LensGoo alebo LensShore (6B.12).
+- [x] 27. 10.: BarGoo už nie je jadro — skryť ju dá Nastavenia › Okná › BarGoo na ploche aj karta Nastavení Goo (na všetkých
+  monitoroch, `fact bar_off`); „Klik na BarGoo mení usporiadanie“ vypnuté = režim napevno, klik iba ukáže ikry
+  (`bar_fixed` v nastaveniach Goo). Overené v `tests/screen.sh` (skrytie s ikrami, pevný a voľný klik). Bočné scény bez skúšky (18.09).
+- [ ] Druhy plochy (Goo · Minimal · Focus) — po LensShore (6B.12).
 
 **6A.06** [x] (BarGoo) presun okna na inú obrazovku (27. 10.): ponuka okna › Presunúť na obrazovku › Obrazovka 1, 2… (zľava doprava, iba pri viacerých); `latte.win.to_screen`, plávajúce ostane na dosah; overené bez obrazovky s dvoma monitormi
 

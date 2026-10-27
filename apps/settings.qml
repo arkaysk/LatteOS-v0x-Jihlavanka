@@ -839,6 +839,13 @@ ShellRoot {
                     Choice { required property var modelData; width: 200; text: I18n.tr(modelData.name); hint: I18n.tr(modelData.hint); on: win.mode === modelData.id
                              onPressed: Quickshell.execDetached(["hyprctl", "eval", "latte.mode.set(\"" + modelData.id + "\")"])
                              Glyph { anchors.centerIn: parent; name: parent.parent.modelData.icon; font.pixelSize: 54; color: parent.parent.on ? Theme.gold : Theme.dim } } } }
+            // BarGoo: whether it is there, and whether a press on it changes the arrangement (6A.05)
+            Part { visible: shell.page === "windows"; width: view.room; title: "BarGoo"
+                Switch { text: I18n.tr("BarGoo on the desktop"); hint: I18n.tr("The bar with the windows. Without it Alt+Tab still goes from window to window.")
+                         on: (goo.kept.hidden || []).indexOf("bargoo") < 0
+                         onPressed: { const h = (goo.kept.hidden || []).filter(id => id !== "bargoo"); if (on) h.push("bargoo"); goo.set("hidden", h) } }
+                Switch { text: I18n.tr("A press on BarGoo changes the arrangement"); hint: I18n.tr("Off: the arrangement chosen above stays, and a press on BarGoo only shows the windows.")
+                         on: goo.kept.bar_fixed !== true; onPressed: goo.set("bar_fixed", on) } }
             // how much of LatteOS is glass: one choice for all of it; 0 makes everything solid (Theme.glassLevel)
             Part { visible: shell.page === "windows"; width: view.room; title: I18n.tr("Glass"); note: I18n.tr("How much of LatteOS is glass: the side panels, the windows and the AI's pages. None: everything is solid.")
                 Repeater { model: [{ n: 0, name: QT_TR_NOOP("None") }, { n: 1, name: QT_TR_NOOP("A little") }, { n: 2, name: QT_TR_NOOP("More") }, { n: 3, name: QT_TR_NOOP("The most") }, { n: 4, name: "True Glass" }]

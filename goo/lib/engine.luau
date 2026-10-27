@@ -899,7 +899,8 @@ local function settings()
     -- the AI's page: as much glass as LatteOS, or what the user chose for it (LensGoo, the right button in the conversation)
     local ai_glass = tonumber(t.ai_glass) and math.max(0, math.min(4, math.floor(t.ai_glass))) or (software and 0 or math.min(level, 2))   -- 3 and 4 make the page dark: only when chosen
     E.tell("fact lively " .. tostring(fact.lively), "fact glassy " .. tostring(fact.glassy), "fact bends " .. tostring(fact.bends),
-           "fact ai_glass " .. tostring(ai_glass), "fact ai_soft " .. tostring(software), "fact true_glass " .. tostring(clear))
+           "fact ai_glass " .. tostring(ai_glass), "fact ai_soft " .. tostring(software), "fact true_glass " .. tostring(clear),
+           "fact bar_off " .. tostring(hidden.bargoo == true), "fact bar_fixed " .. tostring(t.bar_fixed == true))
     local windows = clear and 2 or ((t.windows == "glass" and level > 0) and 1 or 0)
     if glass_told ~= windows then glass_told = windows wm.glass(windows) end
 end
@@ -946,6 +947,8 @@ function E.start(opts)
         else log("goo: drops/" .. name .. ": " .. tostring(def)) end
     end
     if opts.side then
+        -- the bar is all such a scene has: switched off, it is off on every monitor
+        on("fact:bar_off", function() hidden.bargoo = fact.bar_off or nil if E.apply_hidden() then E.apart() publish() end end)
         E.tell("emit side_hello")
     else
         settings()
