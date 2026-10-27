@@ -5,6 +5,20 @@ tu je, **kedy a prečo** sa čo rozhodlo, a čo bolo zamietnuté. Podrobné pôv
 z vtedy) je v [docs_zaloha/2026-10-06-latteos-goo-pred-rozdelenim.md](../../docs_zaloha/2026-10-06-latteos-goo-pred-rozdelenim.md).
 Nové rozhodnutie: jeden riadok sem (dátum, čo, prečo) a oprava platného znenia v LATTEOS-GOO.md.
 
+## 27. 10. 2026
+
+- **TrayShore:** Pobrežie sa volá TrayShore — oznamovacia oblasť (system tray), upozornenia a dashboard s widgetmi
+  ako v Androide. Prečo: „TaskShore“ by miatol, úlohy (okná) sú vec BarGoo. ROADMAP 6H.05–6H.08.
+- **LensShore:** AI-centrická náhrada LensGoo, riadok stále otvorený dole, ostrovček vysúvaný od spodného okraja ako
+  v Marei (horná kvapka ako Marea ostáva zamietnutá — všetko dole). LensGoo nezaniká. Prečo: zachovať staré a ponúknuť
+  efektívnejšie. ROADMAP 6B.12.
+- **BarGoo voliteľný** podľa druhu plochy; **Continuity** v QueenGoo (uložené pracovné stavy jedným klikom).
+  ROADMAP 6A.05, 6E.02.
+- **Vlny:** príboj o TrayShore ako návrh na stavy hladiny (kľud / príboj / búrka); dvojfarebné vlny z okien vyskúšať
+  na prihlásení a ploche. ROADMAP 6H.06, 6H.07.
+- **Pravý klik je prvotriedny** (pravidlo 23). Prečo: myš je prvá (pravidlo 1) a kontextová ponuka sa nemá
+  prehliadať; každá položka však musí ísť aj dotykom, touchpadom, klávesnicou a ovládačom.
+
 ## 26. 10. 2026
 
 - **Okno z bubliny (pravidlo 14), technické riešenie (Claude, na overenie používateľom):** okno patrí kvapke, na ktorú (alebo na riadok jej karty) sa klikol najviac 5 s

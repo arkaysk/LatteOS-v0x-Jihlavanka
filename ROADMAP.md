@@ -1,5 +1,5 @@
 vytvorene 22.10.2026
-naposledy upravene 22.10.2026
+naposledy upravene 27.10.2026
 # LatteOS:0.4 Jihlavanka Build
 
 Idea LatteOS je neziskový linux ktory nevyžaduje po uživatelovy znalost klavesovych skratiek, nevyžaduje po uživatelovy použivanie konzoly, a umožnuje mu fungovat s návikmy z Windows, MacOS ale aj linux. Je to OS ktory umožnuje totalne deaktivovat Ai služby vnutry, ale aj ich naopak, intenzivne využivat na urovni pomocnika OS. 
@@ -46,7 +46,7 @@ Poradie drží tri pravidlá: **čo blokuje overovanie ostatného ide prvé** (�
 Hotové body sa z poradia vyškrtávajú (ostávajú zapísané pri svojej kategórii); čísla ostatných sa nemenia, odkazuje sa na ne.
 
 **Fáza 2 — Plocha Goo**
-  5. [~] Dokončenie kvapiek: BarGoo, LensGoo (vzhľad), PowerGoo, ClockGoo, QueenGoo, QuickGoo, Pobrežie — (6A–6E, 6G, 6H)
+  5. [~] Dokončenie kvapiek: BarGoo, LensGoo (vzhľad), PowerGoo, ClockGoo, QueenGoo, QuickGoo, TrayShore (Pobrežie), LensShore — (6A–6E, 6G, 6H)
   6. [~] Režimy okien: Glance (náhľady v Parkingu), hyprtrizone pre ultrawide — (8A)
   7. [~] Plocha: ponuka plochy (Späť, „Tento počítač“), tapety a skwd-wall, hladina na spodku okna — (7A, 7B, 8D)
 
@@ -501,6 +501,11 @@ Zdroje: `goo/lib/bar.luau`, `goo/side.plm`; LATTEOS-GOO §4.1
 - [ ] **BarGoo a okná:** dokončiť chýbajúce správanie lišty, ovládanie okien v NORMAL aj SAFE,
   pripájanie monitorov za behu a nastavenia viacerých obrazoviek.
 
+**6A.05** [ ] **BarGoo voliteľný, druhy plochy** (používateľ 27. 10.): BarGoo nemusí byť stále zapnutý. Používateľ
+si vyberie jeden z hotových druhov plochy (napr. Goo — všetky kvapky, Minimal — iba spodný okraj s LensShore
+a TrayShore, Focus) a BarGoo môže vypnúť. Podmienka: bez BarGoo nesmie zmiznúť prepínanie okien — LensShore nájde
+aj otvorené okná, ostáva Glance a Alt+Tab. Druh plochy určí aj to, či beží LensGoo alebo LensShore (6B.12).
+
 ### 6B. [~] LensGoo
 Zdroje: LATTEOS-GOO §4.3
 
@@ -557,6 +562,19 @@ a doplniť rovnakú ponuku.
 **6B.09** [ ] **Ikona Kopírovať pri každom texte LatteOS, ktorý sa dá kopírovať** (používateľ 26. 10.): ako pri správach AI
 (6B.08) — príkazy, chybové hlásenia, správy na skopírovanie (Posledný pád), adresy, výsledok kalkulačky; v Goo aj
 v aplikáciách LatteOS. Tlmená pri texte, rozsvieti sa pod kurzorom, klik skopíruje celý text.
+
+**6B.12** [ ] **LensShore — AI-centrická náhrada LensGoo** (používateľ 27. 10.): LensGoo ostáva ako klasická voľba;
+**LensShore** je plnohodnotná náhrada postavená okolo AI. Je to riadok **stále otvorený na spodnom okraji** (vedľa
+TrayShore), nie kvapka. Pri písaní sa **od spodného okraja vysunie ostrovček ako v Marei** a rastie s obsahom:
+čipy so zámerom → výsledky → rozhovor s AI (strop ~60 % výšky, potom posúvanie; leží nad oknami, nič neodtláča).
+Esc alebo klik mimo ho ponorí, rozhovor ostane a pri ďalšom kliku sa vynorí, kde sa skončilo.
+**Kontextový odhad zámeru** z písaného textu, najprv rýchlymi miestnymi pravidlami, nie AI: zhoda s aplikáciou → jej
+ikona prvá („photoshop“); „ako…“, „návod“ → web; dlhá veta alebo otázka → AI prompt; cesta → súbor; príkaz →
+terminál; výraz → Qalculate (6B.06); názov otvoreného okna → prepnúť naň. Enter = najlepší odhad, Tab prepína čipy.
+Písaný text **neodchádza** na web ani online AI, kým to človek nezvolí. **Pri vypnutej AI** (2B) ostáva plnohodnotným
+hľadaním, iba bez čipu AI. Jedno jadro s LensGoo (`goo/lib/lens.luau`), líšia sa iba vzhľadom.
+Otvorené: bežia LensShore a LensGoo naraz, alebo vždy iba jedno (podľa druhu plochy, 6A.05)? Návrh Clauda: iba
+jedno, aby nesúperili o tú istú skratku.
 ### 6C. [~] PowerGoo
 Zdroje: LATTEOS-GOO §4.2, `crates/latte-stats`
 
@@ -611,6 +629,22 @@ Zdroje: LATTEOS-GOO §4.4
 
 **6E.01** [x] (QueenGoo) QueenGoo · r. 113–114
 
+**6E.02** [ ] **Continuity** (používateľ 27. 10.; nadväzuje na „obnovenie relácie: áno“ z ROZHODNUTÍ 6. 10.): po postáti
+myši nad QueenGoo sa okolo nej ukážu farebné ikonky uložených pracovných stavov a **+**. **+** vytvorí nový model
+Continuity z aktuálnej relácie; klik na ikonku ju obnoví jedným klikom na naposledy uložených pozíciách. Uloženie
+a vypnutie modelu uloží jeho stav znova.
+Príklady používateľa: *práca* — SAP so 4 oknami GUI (každé iná funkcia), firemný program, prehliadač s tromi
+firemnými webapp, tabuľka v Exceli; *písanie* — editor s kurzorom na poslednej strane, referenčné dokumenty
+a priečinky, monitory v teplej farbe ako predtým, predtým nastavená relaxačná hudba.
+**Princíp:** Continuity si ukladá *kde čo bolo*, nie dáta — otvorí tie isté súbory a adresy, takže údaje sú vždy
+aktuálne. Heslá neukladá nikdy (prihlásenia ostávajú v prehliadači a kľúčenke). Tri vrstvy:
+(1) **okná** — aplikácie, súbory, URL, pozície, monitory, plochy, režim okien (Hyprland: `hyprctl clients`, pravidlá
+pri obnove); (2) **stav systému** — nočné svetlo (`latte-nightlight`), hlasitosť a výstup, hudba aj so skladbou
+a pozíciou (MPRIS), Kofeín, tichý režim; (3) **vnútro aplikácií** cez adaptéry: LibreOffice si posledné miesto pamätá,
+prehliadač karty, SAP GUI má súbory skratiek s transakciou; kde adaptér nie je (napr. Word cez Wine), Continuity to
+pri ikone poctivo označí. Neskôr prenos modelu na iný LatteOS (Session Manager, LatteApp).
+Preveriť hotové: obnova relácie v KDE a GNOME, hyprland-session a podobné nástroje, MPRIS.
+
 ### 6F. [~] CamGoo
 Zdroje: `bin/latte-cam`; Nastavenia › Kvapky › Webkamery
 
@@ -630,8 +664,12 @@ Zdroje: `bin/latte-cam`; Nastavenia › Kvapky › Webkamery
 
 **6G.01** [x] (Vlastné kvapky a návrhy kvapiek) QuickGoo · r. 100–100
 
-### 6H. [~] Pobrežie (Shore/ShoreGoo)
-Výnimka: patrí medzi Goo a stojí na rovnakom mieste, interaguje s Goo, ale nie je to Goo — nedá sa s ním manipulovať, správa sa inak a má iné pravidlá. Názov: Shore alebo ShoreGoo (nerozhodnuté).
+### 6H. [~] TrayShore (Pobrežie)
+Výnimka: patrí medzi Goo a stojí na rovnakom mieste, interaguje s Goo, ale nie je to Goo — nedá sa s ním manipulovať, správa sa inak a má iné pravidlá.
+**Názov rozhodnutý 27. 10.: TrayShore** (doterajšie Pobrežie/Shore; ShoreGoo zamietnuté). Je to oznamovacia oblasť
+(vo Windowse „notification area“, ľudovo system tray): hlasitosť, sieť, aplikácie na pozadí — a k tomu upozornenia
+a dashboard. Vedľa neho na spodnom okraji žije **LensShore** (6B.12). V kóde a textoch premenovať pri najbližšej práci
+na kategórii (6H.08).
 Zdroje: `apps/desktop.qml`, `bin/latte-desktop`, `goo/lib/desk.luau`; LATTEOS-GOO §4.8
 
 **6H.01** [x] (Plocha a Pobrežie) náhrada rohovej lišty (Pobrežie) · r. 97–99
@@ -645,6 +683,26 @@ upozornenia (6H.02), spodnú dashboard (rýchle prepínače a stav, ako Rýchle 
 zamknutiu, zhasnutiu obrazovky a uspaniu, kým je zapnutý (ako Caffeine v GNOME a PowerToys Awake vo Windows). Najprv
 preveriť hotové: hypridle rešpektuje zámky `systemd-inhibit --what=idle` a D-Bus ScreenSaver; voľba na čas (1 h, do
 vypnutia). Zapnutý kofeín musí byť vidieť (ikona na lište), inak naň človek zabudne.
+
+**6H.05** [ ] **TrayShore = upozornenia + dashboard s widgetmi ako v Androide** (používateľ 27. 10.): rozbalený TrayShore
+(6H.03) je zóna upozornení a dashboard pre multimédiá a ďalšie. Dashboard sa skladá z **widgetov, ktoré sa pridávajú,
+odoberajú, presúvajú a menia veľkosť ako na ploche Androidu** (mriežka, dlaždice 1×1, 2×1, 2×2…, podržať/ťahať,
+„+ Pridať widget“ so zoznamom). Prvé widgety: prehrávač (MPRIS), hlasitosť a výstup zvuku, rýchle prepínače
+(sieť, Bluetooth, Kofeín 6H.04, nočné svetlo), počasie, kalendár. Preveriť hotové: widgety a komunitné doplnky
+Noctalie (§4.8), ako Android rieši mriežku a veľkosti. Ovládanie myšou aj dotykom (pravidlo 23).
+
+**6H.06** [ ] **Príboj o TrayShore** (používateľ 27. 10.): vlny hladiny Goo sa o TrayShore rozbíjajú ako o skaliská.
+Naviazať na nerozhodnuté stavy hladiny (ROZHODNUTIA 6. 10.): **kľud** = pri nečinnosti nič, nestojí výkon;
+**príboj** = udalosť (upozornenie, dokončené sťahovanie, pripojené zariadenie) a vlna sa rozbije o ikonu, ktorej sa
+týka; **búrka** = iba kritické systémové varovanie, nikdy záťaž CPU (pri záťaži sa efekty nepridávajú). Vietor
+z `latte-sky` už vlny dvíha (6.23). Zmerať cenu na snímku.
+
+**6H.07** [ ] **Dvojfarebné vlny aj na prihlásení a ploche** (používateľ 27. 10.): okná majú dvojfarebnú kávovú hladinu
+(`apps/common/Surface.qml`), prihlásenie a plocha nie (`goo/parts/waves.plm`, `surface.plm`). Skúsiť na latte-lab ako
+prepínač A/B, poslať snímky; sledovať kontrast kvapiek nad hladinou a cenu na snímku (scéna v pokoji 17 % jadra).
+Ak sa osvedčí: jeden vzhľad hladiny pre prihlásenie, plochu aj okná.
+
+**6H.08** [ ] Premenovať Pobrežie → TrayShore v kóde, prekladoch, Nastaveniach a dokumentoch (LATTEOS-GOO §4.8, §8).
 
 
 ### 6I. ChatGoo
@@ -810,6 +868,11 @@ Pravý klik na plochu a ikony na ploche ako vo Windows 11.
 
 **7B.02** (pozn.) (Plocha a Pobrežie) Plocha: Otvoriť v programe · r. 1344–1344
 - **Plocha: Otvoriť v programe** (`latte-desktop openers`, spúšťa `gtk-launch`).
+
+**7B.03** [ ] **Pravý klik všade podľa pravidla 23** (používateľ 27. 10.): prejsť plochu, kvapky, TrayShore, LensShore,
+okná a aplikácie LatteOS — každý objekt má kontextovú ponuku s pevným poradím; rad ikon najčastejších úkonov hore;
+každá položka ide aj dlhým stlačením na dotyku, dvoma prstami na touchpade, klávesom Menu / Shift+F10 a tlačidlom
+ovládača. Kde chýba, doplniť.
 
 ---
 
@@ -1864,6 +1927,11 @@ obnoviteľná naprieč Fedora/RPM, Flatpak, webovými aplikáciami, hrami a podp
 **10H.12** [ ] (App Manager) R3·F — katalógy a recepty · r. 1064–1067
 - [ ] Predvolené katalógy a recepty musia mať overiteľný zdroj, licenciu a kontrolu integrity;
   katalógy, ktoré spúšťajú skripty, sa nesmú považovať za dôveryhodné iba podľa vzhľadu.
+
+**10H.13** [ ] **Heslo pri obnovení metadát** (snímka používateľa 27. 10.): App Manager pýta heslo už pri obnovení
+metadát, a to anglickou hláškou polkitu („Authentication is required to update metadata“). Obnovenie katalógu nemá
+pýtať heslo (pravidlo polkitu pre PackageKit refresh pre prihláseného používateľa); ostatné požiadavky na heslo
+s preloženým textom (pravidlo 4). Pozri aj rozhodnutie o vlastnej karte polkitu (ROZHODNUTIA 23. 10.).
 
 ### 10I. [~] Barista
 Zdroje: `bin/latte-barista`, `recipes/`, `docs/barista/`

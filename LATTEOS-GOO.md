@@ -80,6 +80,13 @@ bol GooPower); **kvapka** = každý samostatný tekutý prvok; **karta Goo** = o
 22. **Kvapky sa nikdy úplne neprekryjú** — ani keď je kurzor ďaleko, ani pri hre; iba sa dotýkajú a zlievajú
     (stredy aspoň 0,95 súčtu polomerov, pri ikrách okien 1,2). Pustená na inú: jedna sa odsunie. **Zvýraznený okraj
     zliatych kvapiek je spoločný** (bez deliacej čiary).
+23. **Pravý klik je prvotriedny, nie doplnok** (27. 10.). Kontextová ponuka sa pri návrhu nikdy neprehliada; keď je
+    myš hlavný ovládač, dostáva viac funkcií. Každý objekt (plocha, kvapka, TrayShore, LensShore, okno, položka
+    v aplikácii) ju má. Hore **rad ikon** najčastejších úkonov (Vystrihnúť · Kopírovať · Prilepiť…), pod ním položky
+    podľa kontextu, dlhé zoznamy v podponuke. **Poradie je pevné** (nemení sa podľa častosti — svalová pamäť).
+    Každá položka sa dá vyvolať aj inak, kvôli stále širšiemu spektru dotykových plôch: **dlhé stlačenie** na dotyku
+    (~500 ms), **ťuknutie dvoma prstami** na touchpade, kláves **Menu / Shift+F10**, tlačidlo **ovládača**.
+    Pravidlo 8 platí ďalej: kde funkcia nie je, pravý klik iba zavibruje.
 
 ---
 
@@ -200,6 +207,8 @@ ostatné kvapky sú iba na hlavnom monitore.
   červené jadro, pri nabíjaní kvapka dýcha. Na stolnom PC nič.
 
 ### 4.3 LensGoo — spúšťač a lupa
+*(27. 10.: LensGoo ostáva ako klasická voľba. AI-centrická náhrada **LensShore** — riadok stále otvorený na spodnom
+okraji, pri písaní sa vysunie ostrovček od spodného okraja ako v Marei, kontextový odhad zámeru — je v ROADMAP 6B.12.)*
 - Kvapka s lupou na mieste Štartu. **Ľavý klik alebo kláves Windows** = karta spúšťača; dá sa ovládať aj celá bez
   myši (Tab / Shift+Tab režimy, šípky riadok, Enter, Esc). Režim sa pamätá (`spustac.json`).
 - **Režimy:** **Aplikácie** (bez textu **mriežka** obľúbených a naposledy spustených, 6 dlaždíc v rade; s textom
@@ -296,6 +305,8 @@ ostatné kvapky sú iba na hlavnom monitore.
 
 ### 4.8 Rohová lišta Noctalie — vpravo dole
 *(Fresh, 13. 10.: namiesto nej je vlastné **Pobrežie** — tvrdý roh, popis v §8. Nasledujúce platilo do v0.3.)*
+*(27. 10.: Pobrežie sa premenúva na **TrayShore** — oznamovacia oblasť, upozornenia a dashboard s widgetmi ako
+v Androide; príboj vĺn o TrayShore. ROADMAP 6H.05–6H.08.)*
 - Iba **pravá časť** lišty Noctalie, **natvrdo prilepená** do rohu, šírka podľa počtu widgetov. Obsahuje ikony
   programov na pozadí, sieť, hlasitosť, ovládacie centrum; **ďalšie widgety a komunitné doplnky** Noctalie sa
   pridávajú v jej nastaveniach a bežia natívne. Kliky podľa Noctalie, panely sa otvárajú pri lište.
