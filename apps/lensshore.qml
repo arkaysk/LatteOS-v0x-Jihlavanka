@@ -21,6 +21,7 @@ ShellRoot {
     // ── what the Goo keeps: on or off, and the edge ────────────────────────────────────────────────────────
     property var kept: ({})
     readonly property bool top: kept.lens_top !== false          // the top unless the user dragged it down
+    readonly property real along: typeof kept.lens_x === "number" ? kept.lens_x : 0.5   // where along the edge its middle is, 0…1
     FileView {
         path: shell.data + "/settings.json"
         printErrors: false; watchChanges: true
@@ -143,8 +144,10 @@ ShellRoot {
         WlrLayershell.namespace: "latte-lensshore"
         WlrLayershell.layer: WlrLayer.Top
         WlrLayershell.keyboardFocus: shell.open ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.OnDemand
-        anchors { left: true; right: true; top: shell.top; bottom: !shell.top }
-        implicitHeight: 700
+        // The whole screen, at the top edge, whichever edge the island is at: a surface cannot change its edge while it
+        // lives, the island moves inside it. Only the island (and the catcher while open) takes the pointer: `mask`.
+        anchors { left: true; right: true; top: true }
+        implicitHeight: screen ? screen.height : 1080
         exclusiveZone: shell.top ? shell.lineH : 0     // at the top windows leave it its strip; at the bottom the goo has its own
         color: "transparent"
         mask: Region { item: island
@@ -159,8 +162,14 @@ ShellRoot {
             readonly property real contentH: shell.open ? Math.min(body.implicitHeight + 20, win.height - shell.lineH - 40) : 0
             width: shell.open ? shell.openW : shell.restW
             height: shell.lineH + contentH
-            x: (parent.width - width) / 2
-            y: shell.top ? 0 : parent.height - height
+            // dragged, it follows the pointer; let go, it sticks to the nearer edge where it was let go
+            property bool dragging: false
+            property real dragX: 0
+            property real dragY: 0
+            x: dragging ? dragX : Math.max(12, Math.min(parent.width - width - 12, shell.along * parent.width - width / 2))
+            y: dragging ? dragY : (shell.top ? 0 : parent.height - height)
+            Behavior on x { enabled: !island.dragging; NumberAnimation { duration: 420; easing.type: Easing.OutBack; easing.overshoot: 0.6 } }
+            Behavior on y { enabled: !island.dragging; NumberAnimation { duration: 420; easing.type: Easing.OutBack; easing.overshoot: 0.6 } }
             Behavior on width { NumberAnimation { duration: 380; easing.type: Easing.OutBack; easing.overshoot: 0.42 } }
             Behavior on height { NumberAnimation { duration: 420; easing.type: Easing.OutBack; easing.overshoot: 0.32 } }
             Keys.onEscapePressed: shell.close(false)
@@ -196,14 +205,23 @@ ShellRoot {
                     property real fromY: 0
                     onPressed: mouse => { const at = mapToItem(menu, mouse.x, mouse.y); menu.popupAt(at.x, shell.top ? at.y : at.y - 190) }
                 }
-                // unlocked, it is dragged to the other edge
+                // unlocked, it is dragged anywhere and sticks to the nearer of the top and the bottom edge, where it was let go
                 MouseArea {
-                    anchors.fill: parent; enabled: !shell.locked; cursorShape: Qt.SizeVerCursor
-                    property real fromY: 0
-                    onPressed: mouse => fromY = mapToGlobal(mouse.x, mouse.y).y
+                    anchors.fill: parent; enabled: !shell.locked; cursorShape: island.dragging ? Qt.ClosedHandCursor : Qt.OpenHandCursor
+                    property point grab
+                    onPressed: mouse => { grab = Qt.point(mouse.x, mouse.y + line.y); island.dragX = island.x; island.dragY = island.y; island.dragging = true }
+                    onPositionChanged: mouse => {
+                        if (!island.dragging) return
+                        const at = mapToItem(win.contentItem, mouse.x, mouse.y)
+                        island.dragX = at.x - grab.x; island.dragY = at.y - grab.y
+                    }
                     onReleased: mouse => {
-                        const moved = mapToGlobal(mouse.x, mouse.y).y - fromY
-                        if ((shell.top && moved > 120) || (!shell.top && moved < -120)) settings.put("lens_top", !shell.top)
+                        const at = mapToItem(win.contentItem, mouse.x, mouse.y), w = win.contentItem.width, h = win.contentItem.height
+                        const k = Object.assign({}, shell.kept)
+                        k.lens_top = at.y < h / 2
+                        k.lens_x = Math.max(0, Math.min(1, (island.dragX + island.width / 2) / w))
+                        shell.kept = k; settings.setText(JSON.stringify(k))
+                        island.dragging = false
                     }
                 }
             }
