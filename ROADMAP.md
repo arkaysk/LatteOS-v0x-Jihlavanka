@@ -1888,7 +1888,7 @@ modelu, jazyky (slovenčina?) ani latencia nie sú uvedené. Dnes sa teda nedá 
 LensShore / LensAI („hovor cez podržanie“, 6L.02). Preveriť otvorené alternatívy (Kyutai Moshi) a či niektorá vie
 po slovensky. Je to **generatívna AI** → spadá pod vypínač AI (2B).
 
-**10B.34** [ ] **Výskum a vývoj: AI pri kurzore** (používateľ 27. 10.; predloha `inspo/kurzor.png`: „AI Pointer“ — AI pracuje
+**10B.34** [ ] **Výskum a vývoj: AI pri kurzore** (používateľ 27. 10.; predloha `inspo/kurzor vyvoj.png`: „AI Pointer“ — AI pracuje
 priamo na mieste kurzora nad vybraným textom v ľubovoľnom okne, napr. „nahraď slovo… emoji“; „GoogleBook — Shake your
 cursor: Select anything to ask Gemini“ — zatrasenie kurzorom vyvolá AI nad čímkoľvek na obrazovke). Preskúmať, ako
 v LatteOS vyvolať AI gestom myši (zatrasenie, podržanie) nad označeným textom alebo oblasťou obrazovky a odpovedať pri
