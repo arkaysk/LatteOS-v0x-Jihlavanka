@@ -156,7 +156,6 @@
 /usr/share/latteos/goo/drops/bargoo.luau                <- goo/drops/bargoo.luau
 /usr/share/latteos/goo/drops/clockgoo.luau              <- goo/drops/clockgoo.luau
 /usr/share/latteos/goo/drops/lensgoo.luau               <- goo/drops/lensgoo.luau
-/usr/share/latteos/goo/drops/lensbase.luau              <- goo/drops/lensbase.luau
 /usr/share/latteos/goo/drops/powergoo.luau              <- goo/drops/powergoo.luau
 /usr/share/latteos/goo/drops/quickgoo.luau              <- goo/drops/quickgoo.luau
 /usr/share/latteos/goo/drops/queengoo.luau              <- goo/drops/queengoo.luau

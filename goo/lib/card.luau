@@ -29,7 +29,8 @@
 -- function(text) }; `submit` returns true to keep what was typed, `secret` hides it as a password.
 -- `tiles`: the rows between two headings are laid as a tile, a card within the card (rules between them are
 -- dropped: the tile is what holds them together).
--- `capsule` (a drop stretched into one) makes the card grow out of all of it; `first` chooses its first row for Enter.
+-- `capsule` (a drop stretched into one) makes the card grow out of all of it; `lens` slides it out of LensShore's plate;
+-- `first` chooses its first row for Enter.
 -- Options: `custom` ("clock") draws a scene of its own instead of rows, `split` says where its coffee begins, `grow` lets it grow with the screen (card.z in parts/card.plm). `uniform` is for a family of cards of one size (LensGoo's modes). `menu` makes it a classic context menu (at the pointer, solid, no ear). `pane` (0…1) makes the card glass above its `wave` row and solid coffee below it. `keep` refreshes an open card in place (live figures): the rows do not come in again and the row
 -- chosen with the keys stays.
 local icons = require("lib/icons")
@@ -257,6 +258,7 @@ function M.open(rows, opts)
     fact.card_dock, fact.card_dock_w = opts.dock ~= nil, tonumber(opts.dock) or 0
     -- grown out of a whole capsule: PowerGoo's strip, or the drop given (LensShore's)
     fact.card_from = (opts.strip and tonumber(fact.strip_owner)) or (opts.capsule and opts.capsule.k) or -1
+    fact.card_lens = opts.lens == true        -- LensShore's panel: it slides out of its plate
 
     local fresh = not opts.keep or not fact.card_open
     if fresh then

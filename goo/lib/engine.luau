@@ -144,6 +144,12 @@ local function movable(d, other)
     -- A drop beside another does yield to a capsule that grew over it and is not itself tied to it.
     return other ~= nil and num(other.v.cap_dir, 0) ~= 0 and (other.moved == true or other.def.beside ~= d.def.id)
 end
+-- whether a drop at `c` along its edge would lie on a blocked stretch
+local function blocked(d, c)
+    local r = span(d) + 10
+    for _, b in pairs(blocks) do if b.edge == d.edge and c + r > b.a and c - r < b.b then return true end end
+    return false
+end
 local function apart()
     local list, moved = {}, {}
     for k = 0, N - 1 do if slots[k] and not slots[k].hidden then list[#list + 1] = slots[k] end end
@@ -199,8 +205,8 @@ local function apart()
                             local hi = limit(mv) / l
                             mv.at = clamp((ox + vx / l2 * push - cap_shift(mv) - mv.shift) / l, 0.02, hi)
                             mv.rise = math.max(0, mv.rise + vy / l2 * push)
-                            -- at the end of the edge there is nowhere to go: to the other side
-                            if (mv.at <= 0.02 or mv.at >= hi - 0.0005) and docked(mv) then
+                            -- at the end of the edge, or onto a blocked stretch, there is nowhere to go: to the other side
+                            if ((mv.at <= 0.02 or mv.at >= hi - 0.0005) or blocked(mv, mv.at * l + mv.shift + cap_shift(mv))) and docked(mv) then
                                 mv.at = clamp((px - vx / l2 * need - cap_shift(mv) - mv.shift) / l, 0.02, 0.98)
                             end
                             mv.moved, moved[mv], any = true, true, true

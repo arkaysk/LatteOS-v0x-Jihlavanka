@@ -964,34 +964,23 @@ function M.quick()
     card.open(out, { owner = owner, id = "quick-apps", width = 300 })
 end
 
--- ── LensShore (6B.12): a capsule of goo at the top or the bottom edge with a line on it (parts/lensline.plm), and a card
--- grown out of the whole capsule, one body with it. The card is laid out as Raycast's list: a chosen row (at first "Ask
--- the AI", so Enter asks it), sections with a few rows each, the kind of each on the right; the arrows choose another.
-local base                                   -- the capsule's drop (drops/lensbase.luau)
-local BASE_R, WIDE = 23, 620                 -- its radius, and its length, which is the card's width too
+-- ── LensShore (6B.12): a plate of glass at the top or the bottom edge with a line on it (parts/lensline.plm); its panel
+-- slides out of it, one body with it (parts/card.plm, `lens`). The panel is laid out as Raycast's list: a chosen row (at
+-- first "Ask the AI", so Enter asks it), sections with a few rows each, the kind of each on the right; the arrows choose
+-- another. Not a drop: the drops keep off its stretch of the edge.
+local WIDE = 620                             -- the plate's length, which is the panel's width too
 local shore = { view = "find", talk = {}, chat = "new", live = "", ctx = {}, use = {}, sure = {}, chats = {} }
 local function shore_top() return drops.settings().lens_top ~= false end
 -- where it lies, from the Settings: the drops keep off that stretch, the capsule lies on it
 local function shore_place()
     local on = fact.lens_shore == true
-    if not on then drops.block("lensshore", nil) if base then base:present(false) base:shrink() end return end
+    if not on then drops.block("lensshore", nil) fact.lens_b = fact.lens_a return end
     local w = tonumber(fact.sw) or 1920
     local x = tonumber(drops.settings().lens_x) or 0.5
     local a = math.floor(math.max(12, math.min(w - WIDE - 12, x * w - WIDE / 2)))
     local e = shore_top() and 2 or 0
     fact.lens_edge, fact.lens_a, fact.lens_b = e, a, a + WIDE
     drops.block("lensshore", e, a, a + WIDE)
-    if not base then return end
-    base:present(true)
-    base.edge, base.shift, base.moved = e, 0, true
-    base.at = (a + BASE_R) / w
-    base:stretch(WIDE / 2 - BASE_R, BASE_R, 1)
-    base.rise = BASE_R                       -- down in the goo's surface, one with it: no rim between the capsule and the edge
-end
-function M.base_start(d)
-    base = d
-    fact.lens_owner = d.k
-    shore_place()
 end
 
 -- the words of what can be done at once are the English ones and the user's own (the translation table)
@@ -1200,11 +1189,11 @@ local function shore_rows()
 end
 shore_render = function(keep)
     shown = shore_rows()
-    card.open(shown, { capsule = base, id = "lens", width = WIDE / 1.2, keep = keep, first = shore_top() and true or "last",
+    card.open(shown, { lens = true, id = "lens", width = WIDE / 1.2, keep = keep, first = shore_top() and true or "last",
                        again = shore.view == "find", fit = true, pane = 1 })
 end
 function M.shore_open()
-    if not base then return end
+    if not fact.lens_shore then return end
     if card.id() ~= "lens" then
         load_lists()
         read_context()

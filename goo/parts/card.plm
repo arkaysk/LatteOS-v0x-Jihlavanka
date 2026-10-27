@@ -47,6 +47,7 @@ part Card {
     fact card_owner = -1                       // the place of the drop it grows from; −1: from the last press
     fact card_dock_w = 0                       // …and how long that plate is, to join the two without a seam
     fact card_dock = false                     // it is the shore's panel: no goo, a plate that stands on the shore's own, one piece with it
+    fact card_lens = false                     // it is LensShore's panel: it slides out of LensShore's plate (lens_a…lens_b on lens_edge), one body with it
     fact card_from = -1                        // the drop stretched into a capsule the card grows out of, all of it (PowerGoo's strip, LensShore)
     fact card_w = 300
     fact card_w2 = 0                           // how wide the second column is; 0: there is none
@@ -125,15 +126,15 @@ part Card {
     let card.w = min((card_w + card_w2) * card.z, W - 24)
     let card.h = min(max(card_col.height, max(card_min * card.z, card_peak)), H - 24)
     on change card_col.height { card_peak = max(card_peak, card_col.height) }
-    let card.sx = if(cap.h > 0, if(from.dir > 0, if(card.bx + card.w + 12 <= W, 1, -1), if(card.bx - card.w - 12 >= 0, -1, 1)), if(card.bx + card.w + 12 <= W, 1, -1))
-    let card.sy = if(cap.v > 0, if(from.dir > 0, if(card.by + card.h + 12 <= H, 1, -1), if(card.by - card.h - 12 >= 0, -1, 1)), if(card.by > H / 2, if(card.by - card.h - 12 >= 0, -1, 1), if(card.by + card.h + 12 <= H, 1, -1)))
+    let card.sx = if(card_lens, 1, 0) + if(card_lens, 0, 1) * if(cap.h > 0, if(from.dir > 0, if(card.bx + card.w + 12 <= W, 1, -1), if(card.bx - card.w - 12 >= 0, -1, 1)), if(card.bx + card.w + 12 <= W, 1, -1))
+    let card.sy = if(card_lens, if(lens_edge == 2, 1, -1), 0) + if(card_lens, 0, 1) * if(cap.v > 0, if(from.dir > 0, if(card.by + card.h + 12 <= H, 1, -1), if(card.by - card.h - 12 >= 0, -1, 1)), if(card.by > H / 2, if(card.by - card.h - 12 >= 0, -1, 1), if(card.by + card.h + 12 <= H, 1, -1)))
     // the ear as drawn: it swells under the pointer, and the outline round it swells with it
     let ear.d = if(card_owner >= 0, max(own.rr, own.r), ear)
     let card.x = card.bx - cap.h * card.sx * ear                 // from the drop's far side, so the card holds all of it
     let card.y = card.by - cap.v * card.sy * ear
     // docked, it stands on the shore's plate (46 px high, parts/shore.plm), flush with the screen's right edge
-    let card.x0 = if(card_dock, W - card.w, clamp(if(card.sx > 0, card.x, card.x - card.w), 12, W - 12 - card.w))
-    let card.y0 = if(card_dock, H - 46 - card.h, clamp(if(card.sy > 0, card.y, card.y - card.h), 12, H - 12 - card.h))
+    let card.x0 = if(card_lens, lens_a, 0) + if(card_lens, 0, 1) * if(card_dock, W - card.w, clamp(if(card.sx > 0, card.x, card.x - card.w), 12, W - 12 - card.w))
+    let card.y0 = if(card_lens, if(lens_edge == 2, 46, H - 46 - card.h), 0) + if(card_lens, 0, 1) * if(card_dock, H - 46 - card.h, clamp(if(card.sy > 0, card.y, card.y - card.h), 12, H - 12 - card.h))
     let card.ax = if(card.sx > 0, card.x0, card.x0 + card.w)
     let card.ay = if(card.sy > 0, card.y0, card.y0 + card.h)
     let card.glass = if(card_dock or card_menu, 0, if(true_glass, 1, max(material, card_pane * panes)))                  // the shore is hard: its panel is never glass
@@ -149,9 +150,9 @@ part Card {
     // (4·t·(1−t)). On the overshoot of the spring it swells wider too, not only taller.
     let card.t = clamp(card.p, 0, 1)
     let card.over = max(0, card.p - 1)
-    let card.cw = if(card_dock, card.ws, 0) + if(card_dock, 0, 1) * max((ear * 1.8 + cap.h * cap.len) * (1 - card.t) + card.ws * (card.t * card.t * card.t + card.over * 0.6), 14)
+    let card.cw = if(card_dock or card_lens, card.ws, 0) + if(card_dock or card_lens, 0, 1) * max((ear * 1.8 + cap.h * cap.len) * (1 - card.t) + card.ws * (card.t * card.t * card.t + card.over * 0.6), 14)
     let card.ch = max(cap.v * (cap.len + ear * 2) * (1 - card.t) + card.hs * card.q, 14)
-    let card.round = if(card_menu, 12, 18 + 40 * (1 - card.t) * (1 - card.t))
+    let card.round = if(card_menu, 12, if(card_lens, 18, 18 + 40 * (1 - card.t) * (1 - card.t)))
     body {
         gradient: card.ax, card.ay to card.ax + card.sx * card.w, card.ay + card.sy * card.h, coffee, mix(paper, coffee, 0.4), paper, paper
         rim: 16%
@@ -166,8 +167,11 @@ part Card {
         frost: if(true_glass, 45%, 100%)
         smoke: 62% * card.glass
         refraction: if(true_glass, 200%, 120%) * card.glass
-        box { at: card.ax + card.sx * card.cw / 2, card.ay + card.sy * card.ch / 2; size: card.cw * if(card.p > 0.02, 1, 0), card.ch; corner: if(card_menu, 12, min(if(ear > 14, 26, 18) + (card.round - 18), min(card.cw, card.ch) / 2)) }
-        ellipse { at: card.ax + if(card_owner >= 0, own.dx - own.x, 0), card.ay + if(card_owner >= 0, own.dy - own.y, 0); radius: (ear.d * clamp(card.p * 3, 0, 1) + 1) * if(card.p > 0.02 and not card_menu, 1, 0); blend: 4 + 30 * 4 * card.t * (1 - card.t) }
+        // LensShore's panel reaches 40 px into its plate: the two overlap and their sides run straight on, no waist
+        box { at: card.ax + card.sx * card.cw / 2, card.ay + card.sy * (card.ch - if(card_lens, 40, 0)) / 2; size: card.cw * if(card.p > 0.02, 1, 0), card.ch + if(card_lens, 40, 0); corner: if(card_menu, 12, min(if(ear > 14, 26, 18) + (card.round - 18), min(card.cw, card.ch) / 2)) }
+        ellipse { at: card.ax + if(card_owner >= 0, own.dx - own.x, 0), card.ay + if(card_owner >= 0, own.dy - own.y, 0); radius: (ear.d * clamp(card.p * 3, 0, 1) + 1) * if(card.p > 0.02 and not card_menu and not card_lens, 1, 0); blend: 4 + 30 * 4 * card.t * (1 - card.t) }
+        // LensShore: its plate is part of this body while the panel is out, so the two are one, joined by a fillet
+        box { from: lens_a, if(lens_edge == 2, -40, H - 46); size: (lens_b - lens_a) * if(card_lens and card.p > 0.02, 1, 0), 86; corner: 18 }
         line { from: card.bx, card.by; to: card.bx + cap.tx * cap.len * from.dir, card.by + (1 - cap.tx) * cap.len * from.dir; width: ear * 2 * clamp(card.p * 3, 0, 1) * if(cap.len > 0 and card.p > 0.02, 1, 0); blend: 4 + 30 * 4 * card.t * (1 - card.t) }
     }
     // The shore's panel: a plate like the shore's, rising out of it and reaching past the screen's edge, so

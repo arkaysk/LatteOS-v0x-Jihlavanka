@@ -678,6 +678,10 @@ Spúšťač (LensGoo)** ako prvá veľká voľba „Režim: LensGoo / LensShore�
   pri riadku) · Aplikácie · Súbory a priečinky · Nastavenia · Web, zoznam rozhovorov sa zmenší. Prílohy pustením súboru
   v tejto podobe ešte nie sú. Neoverené naživo: písanie, AI, hlas, výber AI, presun (ťahanie ešte nie je — poloha sa mení
   v nastaveniach; doplniť).
+- [x] 27. 10. (používateľ: „nie je to Goo, prečo výčnelok kvapky; vysunie sa zospodu hore a zasunie; jedno telo“): LensShore
+  nie je kvapka — **sklenená doska** (`parts/lensline.plm`) vo vlastnom úseku okraja, kvapky ju obchádzajú (párové
+  odtláčanie už nevtlačí kvapku do úseku); panel sa z dosky **vysúva** (`card_lens` v `parts/card.plm`), doska je počas
+  toho súčasťou tela panelu a panel siaha 40 px do dosky → jeden tvar s rovnými bokmi, bez ucha a výčnelkov.
 
 **6B.18** [x] **LensShore: kontext ako čipy** (návrh 27. 10., schválený): Označený text, Schránka, Okno vpredu — do AI ide iba
 zapnutý čip; súbor pustený na ostrov je príloha (`--attach`). Neoverené naživo.
