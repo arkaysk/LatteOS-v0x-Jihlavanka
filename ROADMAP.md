@@ -2558,6 +2558,11 @@ Zdroje: `bughunt/STRESTEST.md`, `bughunt/stav.py`, `bughunt/najdene-chyby.md`
 - [ ] Overiť čistú inštaláciu z presne toho stromu/obrazu, ktorý sa bude vydávať; vývojová VM
   sama osebe nie je dôkazom pripravenosti vydania.
 
+**18.09** [ ] (STRESTEST) **Dva skutočné monitory** (používateľ 27. 10.: až keď bude systém nainštalovaný na dvoch monitoroch):
+pripojenie a odpojenie za behu (6A.04), BarGoo na druhom monitore, presun okna na inú obrazovku (6A.06) a ťahaním ikry
+(6A.07), Rozšíriť / Duplikovať, režim pre každý monitor (8A.13), prehľad úloh cez obe obrazovky (6A.08), Canvas
+(Phantomat) iba na jednom monitore pri inom režime na druhom (8A.12).
+
 ---
 
 ## 19. [ ] Neskôr
