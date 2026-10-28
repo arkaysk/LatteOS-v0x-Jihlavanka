@@ -2389,6 +2389,19 @@ metadát, a to anglickou hláškou polkitu („Authentication is required to upd
 pýtať heslo (pravidlo polkitu pre PackageKit refresh pre prihláseného používateľa); ostatné požiadavky na heslo
 s preloženým textom (pravidlo 4). Pozri aj rozhodnutie o vlastnej karte polkitu (ROZHODNUTIA 23. 10.).
 
+**10H.14** [ ] **Aktualizácie › Nová verzia Fedory** (používateľ 28. 10.): App Manager drží prehľad o systéme pod LatteOS —
+na akej verzii Fedory je, či vyšla nová (Beta, odklad „NO-GO“, vydaná, dátum; `fedoraproject.org/releases.json`), a či je
+**LatteOS na ňu pripravený**: repozitáre, z ktorých berie (copr Hyprland, skwd-wall, lizardbyte, RPM Fusion, Terra, mise),
+ju majú; každý balík z `FILES` v nej existuje (`dnf repoquery --releasever=N`); Hyprland zamknutej verzie je dostupný.
+Až potom ponúkne prechod (`dnf system-upgrade`) a po ňom kroky LatteOS: uvoľniť zámok Hyprlandu, prestavať pluginy
+(latte-events, hyprbars, hyprglass) a pleamar, `tests/check.sh`. Odporúčanie: prechod týždeň–dva po vydaní.
+- [x] 28. 10. ručná kontrola pre 44 → 45: Fedora 45 nevyšla (dva NO-GO, cieľ 3. 11., rozhodnutie 29. 10.). Všetky
+  repozitáre copr, RPM Fusion (free aj nonfree) a Terra už 45 majú; zo 78 balíkov `FILES` je 73 priamo vo Fedore 45 a
+  RPM Fusion free, zvyšok zo Steam (RPM Fusion nonfree), gamescope-session (Terra), mise (vlastný repozitár, nezávislý od
+  verzie). **Pozor:** umu-launcher je nainštalovaný z rpm ručne (`@commandline`, fc44) a lokálny repozitár
+  `/var/lib/latteos/repo` (hyprland-latte s vmwgfx) treba pre 45 zostaviť znova alebo zrušiť.
+- [ ] Začiatkom novembra (po vydaní, ideálne do dvoch týždňov): latte-lab 44 → 45 podľa krokov vyššie.
+
 ### 10I. [~] Barista
 Zdroje: `bin/latte-barista`, `recipes/`, `docs/barista/`
 Je sučastou Appmanageru. inštalator a ten kdo sa postara o beh programov z inej platformy.
