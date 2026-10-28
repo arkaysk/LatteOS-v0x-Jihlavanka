@@ -176,6 +176,26 @@ function M.row(id, a, again)
              end }
 end
 
+-- what LensShore's home offers at once (6B.27): the other way of what each switch is now, as buttons; only what this
+-- computer has, and nothing that can lose work
+function M.suggestions(again)
+    local wanted = {
+        now.wifi ~= nil and { "wifi", { on = not now.wifi } } or nil,
+        { "quiet", { on = drops.settings().quiet ~= true } },
+        now.night ~= nil and { "nightlight", { on = not now.night } } or nil,
+        now.muted ~= nil and { "mute", { on = not now.muted } } or nil,
+        now.bt ~= nil and { "bluetooth", { on = not now.bt } } or nil,
+        now.profile ~= nil and { "power", { profile = now.profile == "power-saver" and "balanced" or "power-saver" } } or nil,
+    }
+    local out = {}
+    for i = 1, 6 do
+        local w = wanted[i]
+        local r = w and M.row(w[1], w[2], again)
+        if r then out[#out + 1] = { label = r.label, glyph = r.glyph, run = r.run } end
+    end
+    return out
+end
+
 -- what the AI is told: the skills this computer has, and the names it may use for devices
 function M.prompt()
     local lines = { "LatteOS can change these things on this computer for the user. When the user asks for one of them, "

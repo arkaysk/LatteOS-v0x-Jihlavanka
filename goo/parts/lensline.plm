@@ -13,9 +13,11 @@ part LensLine {
     text g_ln_who = ""
     text g_ln_mic = ""
     text g_send = ""
+    text g_ln_home = ""                        // the arrow towards the panel: LensShore's home out, and back
     event lens_press ->                        // the line was pressed: the card grows
     event lens_enter ->                        // Enter in the line: what is chosen in the card (at first: ask the AI)
     event lens_send ->                         // the send button: to the AI
+    event lens_home ->                         // the same button with nothing typed: the home out, or back in (6B.27)
     event lens_right ->                        // the right button on the line
     event lens_talk ->                         // the conversations
     event lens_who ->                          // who answers
@@ -85,10 +87,17 @@ part LensLine {
         text g_ln_mic { at: ln.right - 60, ln.cy; anchor: center; size: 16; color: if(lens_listening, #ffffff, ink); opacity: if(lens_listening, 100%, 60%); family: "tabler-icons" }
         zone box ln_mic { at: ln.right - 60, ln.cy; size: 32, 46; cursor: pointer; label: "Microphone"; role: button }
         on press ln_mic { emit lens_mic }
-        // send: lit when there is something to send
+        // send, lit, when there is something to send; with nothing typed the arrow that brings the home out and back
         ellipse { at: ln.right - 24, ln.cy; radius: 15; color: if(lens_typed, gold, ink); opacity: if(lens_typed, 100%, 10% * ln_go.hover) }
-        text g_send { at: ln.right - 24, ln.cy; anchor: center; size: 16; color: if(lens_typed, #2a170c, ink); opacity: if(lens_typed, 100%, 60%); family: "tabler-icons" }
-        zone box ln_go { at: ln.right - 24, ln.cy; size: 32, 46; cursor: pointer; label: "Send"; role: button }
-        on press ln_go { emit lens_send }
+        text g_send { at: ln.right - 24, ln.cy; anchor: center; size: 16; color: #2a170c; show: lens_typed; family: "tabler-icons" }
+        group {
+            show: not lens_typed
+            pivot: ln.right - 24, ln.cy
+            rotate: if(lens_edge == 2, 180deg, 0deg) + if(card_lens and card_open, 180deg, 0deg)
+            text g_ln_home { at: ln.right - 24, ln.cy; anchor: center; size: 16; color: ink; opacity: 60%; family: "tabler-icons" }
+        }
+        zone box ln_go { at: ln.right - 24, ln.cy; size: 32, 46; cursor: pointer; label: pick(if(lens_typed, 1, 0), "More", "Send"); role: button }
+        on press ln_go while lens_typed { emit lens_send }
+        on press ln_go while not lens_typed { emit lens_home }
     }
 }

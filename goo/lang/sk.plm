@@ -852,6 +852,7 @@ library Slovak {
         "Move to the Trash" = "Presunúť do koša"
         "Continue in LensAI" = "Pokračovať v LensAI"
         "Uninstall…" = "Odinštalovať…"
+        "AT ONCE" = "HNEĎ"
         "Open the link" = "Otvoriť odkaz"
         "Really run it?" = "Naozaj spustiť?"
         "Run in a terminal" = "Spustiť v termináli"

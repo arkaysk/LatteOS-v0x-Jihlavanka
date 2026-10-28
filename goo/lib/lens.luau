@@ -149,6 +149,25 @@ local function file_menu(path, parent)
           run = function() then_do(function() run("latte-files", { "trash", path }, nil) end) end },
     }, { width = 260 })
 end
+-- the favourites (the user's own choice) and the most launched, an app once (6B.17): LensGoo's overview and LensShore's
+-- home; `seen` holds what they show, so the newly installed can do without them
+local function picks(n, with_most)
+    local pool = {}
+    for _, a in ipairs(apps) do pool[#pool + 1] = a end
+    table.sort(pool, function(x, y) return (kept.counts[x.id or ""] or 0) > (kept.counts[y.id or ""] or 0) end)
+    local seen, fav, most = {}, {}, {}
+    if kept.layout.fav then
+        for _, id in ipairs(kept.fav) do if by_id[id] and #fav < n then fav[#fav + 1] = by_id[id] seen[id] = true end end
+    end
+    if with_most then
+        local function take(a) if a and not seen[a.id or ""] and #most < n then most[#most + 1] = a end end
+        for _, a in ipairs(pool) do if (kept.counts[a.id or ""] or 0) > 0 then take(a) end end
+        if #most == 0 then for _, id in ipairs(kept.recent) do take(by_id[id]) end end
+        if #most == 0 then for _, a in ipairs(pool) do take(a) end end
+        for _, a in ipairs(most) do seen[a.id or ""] = true end
+    end
+    return fav, most, seen
+end
 local function tile(a) return { label = a.local_name or a.name or a.id, icon = a.icon or "", glyph = "apps", run = function() launch(a) end, right = function() app_menu(a) end } end
 local function number(v)
     local s = string.format("%.10g", v)
@@ -183,17 +202,8 @@ local function rows_apps()
         if filter.id == "all" then
             -- an app is shown once (6B.17): the favourites are the user's own choice, so they keep theirs and the
             -- most launched do without them; the newly installed do without both
-            local seen, fav = {}, {}
-            if kept.layout.fav then
-                for _, id in ipairs(kept.fav) do if by_id[id] and #fav < 6 then fav[#fav + 1] = by_id[id] seen[id] = true end end
-            end
+            local fav, most, seen = picks(6, kept.layout.most)
             if kept.layout.most then
-                local most = {}
-                local function take(a) if a and not seen[a.id or ""] and #most < 6 then most[#most + 1] = a end end
-                for _, a in ipairs(pool) do if (kept.counts[a.id or ""] or 0) > 0 then take(a) end end
-                if #most == 0 then for _, id in ipairs(kept.recent) do take(by_id[id]) end end
-                if #most == 0 then for _, a in ipairs(pool) do take(a) end end
-                for _, a in ipairs(most) do seen[a.id or ""] = true end
                 rows[#rows + 1] = { head = true, label = tr(N("MOST LAUNCHED")) }
                 rows[#rows + 1] = row_of(most, 6)
             end
@@ -1101,6 +1111,27 @@ local function ago(stamp)
     return string.format("%d. %d.", tonumber(d), tonumber(mo))
 end
 
+-- a conversation kept by latte-ai: pressed, it comes back into the card
+local function chat_row(c)
+    return { label = c.title ~= "" and c.title or "…", glyph = "messages", hint = ago(c.updated), keep = true, run = function()
+        run("cat", { (shore.chats_dir or "") .. "/" .. c.id .. ".json" }, function(out)
+            local ok, chat = pcall(json.decode, out or "")
+            if not ok or type(chat) ~= "table" then return end
+            shore.chat, shore.talk, shore.view = chat.id, {}, "talk"
+            for _, m in ipairs(chat.messages or {}) do shore.talk[#shore.talk + 1] = { mine = m.role == "user", text = m.content or "" } end
+            render(true)
+        end)
+    end }
+end
+-- the conversations latte-ai keeps, newest first
+local function read_chats(done)
+    run("latte-ai", { "chats" }, function(out)
+        local ok, list = pcall(json.decode, out or "")
+        shore.chats = ok and type(list) == "table" and list or {}
+        if done then done() end
+    end)
+end
+
 -- the rows, nearest the line first: at the top edge read downwards, at the bottom upwards (`first = "last"`)
 local function shore_rows()
     local sections = {}
@@ -1109,15 +1140,7 @@ local function shore_rows()
         local rows = { { head = true, label = tr(N("CONVERSATIONS")) } }
         for i, c in ipairs(shore.chats) do
             if i > 8 then break end
-            rows[#rows + 1] = { label = c.title ~= "" and c.title or "…", glyph = "messages", hint = ago(c.updated), keep = true, run = function()
-                run("cat", { (shore.chats_dir or "") .. "/" .. c.id .. ".json" }, function(out)
-                    local ok, chat = pcall(json.decode, out or "")
-                    if not ok or type(chat) ~= "table" then return end
-                    shore.chat, shore.talk, shore.view = chat.id, {}, "talk"
-                    for _, m in ipairs(chat.messages or {}) do shore.talk[#shore.talk + 1] = { mine = m.role == "user", text = m.content or "" } end
-                    render(true)
-                end)
-            end }
+            rows[#rows + 1] = chat_row(c)
         end
         if #shore.chats == 0 then rows[#rows + 1] = { label = tr("No conversation yet"), glyph = "messages", quiet = true } end
         section(rows)
@@ -1155,10 +1178,19 @@ local function shore_rows()
             { label = tr("Open in LensAI"), glyph = "external-link", off = shore.chat == "new", run = function() then_do(function() run("latte-app", { "aicenter", shore.chat }, function() end) end) end },
         }, per = 3 } })
     elseif typed == "" then
-        local tiles = {}
-        for _, id in ipairs(kept.recent) do if by_id[id] and #tiles < 6 then tiles[#tiles + 1] = tile(by_id[id]) end end
-        if #tiles > 0 then section({ { head = true, label = tr("RECENTLY USED") }, { tiles = tiles, per = 6 } }) end
-        section({ { label = MODES[4] and tr("Type to search; Enter asks the AI") or tr("Type to search"), glyph = MODES[4] and "sparkles" or "search", quiet = true } })
+        -- with nothing typed, LensShore's home (6B.27): what can be done at once (the skills, by how things are now),
+        -- the apps one keeps coming back to, the last conversations with the AI
+        local chips = skills.suggestions(function() render(true) end)
+        if #chips > 0 then section({ { head = true, label = tr(N("AT ONCE")) }, { pills = chips, per = 3 } }) end
+        local fav, most = picks(6, true)
+        local function tiles_of(list) local t = {} for i, a in ipairs(list) do t[i] = tile(a) end return { tiles = t, per = 6 } end
+        if #most > 0 then section({ { head = true, label = tr(N("MOST LAUNCHED")) }, tiles_of(most) }) end
+        if #fav > 0 then section({ { head = true, label = tr(N("FAVOURITES")) }, tiles_of(fav) }) end
+        if MODES[4] and #shore.chats > 0 then
+            local rows = { { head = true, label = tr(N("CONVERSATIONS")) } }
+            for i, c in ipairs(shore.chats) do if i <= 3 then rows[#rows + 1] = chat_row(c) end end
+            section(rows)
+        end
     else
         local q = typed
         -- first, chosen: the AI (Enter); with it off, the best of what was found is first instead
@@ -1225,7 +1257,10 @@ function M.shore_open()
     if card.id() ~= "lens" then
         load_lists()
         read_context()
-        skills.refresh()
+        -- the home's suggestions and conversations come a moment later: the card is drawn anew then
+        local function again() if card.id() == "lens" and typed == "" and shore.view == "find" then render(true) end end
+        skills.refresh(again)
+        if MODES[4] then read_chats(again) end
         fact.lens_fresh = false
         shore_render(false)
     end
@@ -1235,9 +1270,7 @@ function M.shore_toggle()
     if card.id() == "lens" then card.close() else M.shore_open() end
 end
 function M.shore_chats()
-    run("latte-ai", { "chats" }, function(out)
-        local ok, list = pcall(json.decode, out or "")
-        shore.chats = ok and type(list) == "table" and list or {}
+    read_chats(function()
         shore.view = "chats"
         if card.id() == "lens" then render(true) else M.shore_open() end
     end)
@@ -1247,6 +1280,7 @@ local function shore_start()
     local okh, h = pcall(sys.ask, "env", "HOME")
     shore.chats_dir = ((okst and type(st) == "string" and st ~= "") and st or ((okh and h or "") .. "/.local/state")) .. "/latteos/ai/chats"
     text.lens_hint, text.g_send = tr("Search or ask…"), icons["arrow-up"]
+    text.g_ln_home = icons["chevron-up"]          -- turned by the scene: towards the panel, and back once it is out
     text.g_ln_talk, text.g_ln_mic = icons["messages"], icons["microphone"]
     local function who() local p = provider() text.g_ln_who = icons[(p and p["local"]) and "home" or "cloud"] or "" end
     who()
@@ -1265,6 +1299,9 @@ local function shore_start()
     end)
     on("lens_press", M.shore_open)
     on("lens_enter", function() if card.id() == "lens" then card.enter() end end)
+    on("lens_home", function()
+        if card.id() == "lens" then card.close() else shore.view = "find" M.shore_open() end
+    end)
     on("lens_send", function()
         local q = (text.lens_q or ""):gsub("^%s+", ""):gsub("%s+$", "")
         if q == "" or not MODES[4] then return end

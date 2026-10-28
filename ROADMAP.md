@@ -782,6 +782,16 @@ Pauza, „Najprv sa opýtaj“, fronta; stav úloh ukazuje kvapka (6.26). Prepí
 odinštalovanie, zmena nastavení, odoslanie za človeka) vyžadujú **dvojité potvrdenie** a **podrobný popis, čo sa zmení**
 (ktoré súbory, nastavenia, z čoho na čo). Tým sa z LensShore stáva aj **osobný AI asistent** (používateľ 28. 10.).
 
+**6B.27** [~] **Domov LensShore** (používateľ 28. 10.: „klikne sa do riadku a nič sa nedeje“; namiesto Enteru vysunutie
+zoznamu — aktívnejšia plocha): s prázdnym poľom ukáže LensShore zoznam a pravé tlačidlo ho vysúva a zasúva (šípka), s textom
+odosiela ako doteraz. Zoznam, od riadku: **HNEĎ** — zručnosti 6B.25 podľa toho, ako veci sú (Vypnúť Wi-Fi, Nerušiť, Zapnúť
+nočné osvetlenie, Zapnúť zvuk, Režim napájania…), jedným klikom; **najčastejšie spúšťané** a **obľúbené** (spoločné
+s LensGoo, `picks()`); **posledné rozhovory** s AI.
+- [x] 28. 10. postavené a overené bez obrazovky (`lens.luau`, `skills.suggestions`, `lensline.plm`).
+- [ ] **Agenti:** čo AI práve robí za človeka — úlohy „Urob za mňa“ (`latte-ai do`), bežiace agenty (Claude Code, Codex…),
+  ich stav a otázky, na ktoré čakajú; klik na agenta ho ukáže. Súvisí s 6B.21 (stav na ostrove), 6B.26 (úroveň 2).
+- [ ] Návrhy AI podľa kontextu (označený text, okno vpredu): „Zhrnúť“, „Preložiť“, „Vysvetliť“ ako čipy (6B.18).
+
 **6B.13** [ ] **Výskum: Tinycast ako zoznam funkcií** (používateľ 27. 10.: „vyzerá ako naše LensGoo“) —
 https://github.com/abue-ammar/tinycast (macOS, Swift, AGPL-3.0 → kód nepreberať, iba nápady). Čo LensGoo/LensShore
 nemá: bežiace aplikácie s Ukončiť (jednu/všetky), skratka na konkrétnu aplikáciu (prepnúť/skryť), história schránky
