@@ -748,8 +748,11 @@ zapíše (10B.30). Predloha openKylin 3.0 (KylinBot: systémové zručnosti cez 
   záznam ide do journalu (`journalctl -t latte-lensshore`). Písané „hlasitosť 30“, „vypni wifi“, „nerušiť“ idú cez tie isté
   zručnosti. Overené bez obrazovky: Claude Haiku aj miestny Qwen 3.5 4B odpovedajú podľa zmluvy, na bežnú otázku bez bloku;
   tri zmeny z jednej vety; stlačenie Nerušiť zmení nastavenie a zapíše sa. Nasadené do `/usr`.
-- [ ] Ďalšie zručnosti: obrazovky (`latte-screens`), pripojiť sa k Wi-Fi sieti, aplikácie (spustiť, zavrieť), kvapky a
-  vzhľad, nočné svetlo (`latte-nightlight`), profil výkonu. Bluetooth overiť na stroji s adaptérom (latte-lab ho nemá).
+- [x] 28. 10. druhá dávka: nočné osvetlenie, režim napájania, pripojiť sa k uloženej sieti Wi-Fi, otvoriť aplikáciu,
+  **zavrieť aplikáciu — prvá ničiaca: dvakrát stlačiť**, druhý riadok červený „Naozaj? Stlačte ešte raz · Neuložená práca
+  v … sa stratí“ (pripravené pre úroveň 2, 6B.26). AI dostane aj uložené siete a bežiace aplikácie. Opravené: vypínanie
+  („vypni wifi“) nedávalo riadok. Overené bez obrazovky: tri zmeny z jednej vety, zavretie foot až na druhé stlačenie.
+- [ ] Ďalšie zručnosti: obrazovky (`latte-screens`), kvapky a vzhľad. Bluetooth overiť na stroji s adaptérom (latte-lab ho nemá).
 
 **6B.26** [ ] **LensShore úroveň 2 — plné ovládanie** (používateľ 28. 10.: „väčšina ľudí po čase prepne na 2“): čip
 z LensShore sa **pustí na okno** a AI s ním pracuje — číta ho cez strom prístupnosti, okolo okna prstenec, klikať smie
