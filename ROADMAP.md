@@ -853,8 +853,11 @@ väčšinu ľudí sú vrstva 2; v karte času ich nebude, kým si ich človek ne
 **6D.10** [ ] **Prehľad karty času z widgetov** (používateľ 27. 10.): tlačidlo „Zmeniť rozloženie“ už je; Prehľad poskladať
 z tých istých widgetov ako TrayShore (6H.05), človek si vyberie, čo v ňom chce.
 
-**6D.11** [ ] **Chyba: guľa ClockGoo orezaná pri otvorenej karte** (používateľ 27. 10.): vpravo dole je pri otvorenej karte
+**6D.11** [x] **Chyba: guľa ClockGoo orezaná pri otvorenej karte** (používateľ 27. 10.): vpravo dole je pri otvorenej karte
 guľa orezaná a namiesto „18:23“ v nej vidno „ı8:23“ (aj na druhej snímke používateľa).
+**Opravené 28. 10.:** kvapka sedí v rohu karty ako ucho a káva pod vlnou (`parts/rows.plm`, kreslená po tvárach kvapiek)
+ju prekrývala; v spodnom rohu s uchom sa teraz káva ohne dovnútra okolo kvapky (platí pre každú kartu, aj PowerGoo),
+riadok novej udalosti v kalendári uhne kvapke (`parts/calendar.plm`). Overené snímkou bez obrazovky.
 
 **6D.12** [x] **Pravý klik do poľa novej udalosti v kalendári** (používateľ 27. 10.): Vystrihnúť · Kopírovať · Prilepiť ako
 v každom poli (`card.field_menu` je teraz spoločná pre polia Goo).
