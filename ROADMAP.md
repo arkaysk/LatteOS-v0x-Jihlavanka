@@ -516,6 +516,13 @@ zvuk, nájsť súbor, prepnúť okno, pripojiť USB, Wi-Fi, vypnúť, …), pri 
 dva kliky → o vrstvu vyššie; zriedkavé vo vrstve 0 → nižšie. Zaradiť každý prvok kariet kvapiek (najmä LensGoo,
 ktorá hustne) do vrstvy 0/1/2. Päťsekundový test s človekom, ktorý LatteOS nepozná. Výstup: tabuľka na schválenie.
 
+**6.26** [ ] **Stav na kvapke bez otvorenia** (používateľ 28. 10.): čo človek **potrebuje** vedieť, ukáže samotná kvapka,
+bez otvorenia karty — bežiaca minútka, nabíjanie a slabá batéria, kopírovanie na USB, aktualizácie, AI pracuje
+(6B.21), hrá hudba, pripojené slúchadlá. Jeden slovník efektov pre všetky Goo z tých, čo sme už skúšali: **pulzovanie**,
+**zmena farebnosti** (farebné jadro, LATTEOS-GOO bod 17), **rolovanie informácií** na kvapke (striedanie obsahu), guľky.
+Treba určiť poradie dôležitosti (čo prebije čo, napr. končiaca minútka nad dátumom) a kedy sa stav vráti. Čo a koľko
+sa ukáže, určuje téma a **hustota informácií** (pravidlo 24, 6.25, 9.11): Kompaktné ukáže viac, Vzdušné iba nutné.
+
 ### 6A. [~] BarGoo
 Zdroje: `goo/lib/bar.luau`, `goo/side.plm`; LATTEOS-GOO §4.1
 
@@ -731,6 +738,17 @@ dá písať a každá má skratku — aplikácia: Otvoriť, Pripnúť do QuickGo
 Odinštalovať (AppManager); súbor: Otvoriť v…, Ukázať v priečinku, Kopírovať cestu, Presunúť do koša; odpoveď AI:
 Kopírovať, Spustiť príkaz, Pokračovať v LensAI. Pravý klik na riadok ukáže to isté.
 
+**6B.25** [ ] **LensShore úroveň 1 — AI vykoná, bezpečne** (používateľ 28. 10., predvolená): „pripoj slúchadlá“, „druhý
+monitor vpravo“, „vypni animácie“ → AI použije **vymedzenú zručnosť** nad príkazmi `latte-*` (sieť, Bluetooth, obrazovky,
+zvuk, napájanie, kvapky, aplikácie), nie terminál ani klikanie. Pred zmenou ukáže, čo zmení, čaká na potvrdenie a výsledok
+zapíše (10B.30). Predloha openKylin 3.0 (KylinBot: systémové zručnosti cez MCP, nie simulované kliky). Stavia na 6B.19.
+
+**6B.26** [ ] **LensShore úroveň 2 — plné ovládanie** (používateľ 28. 10.: „väčšina ľudí po čase prepne na 2“): čip
+z LensShore sa **pustí na okno** a AI s ním pracuje — číta ho cez strom prístupnosti, okolo okna prstenec, klikať smie
+**vlastným kurzorom**, myš a klávesnica človeka ostávajú jeho (pleamar-wm agent, Marea „Children“). Viac úloh naraz,
+Pauza, „Najprv sa opýtaj“, fronta; stav úloh ukazuje kvapka (6.26). Prepínač úrovne 1/2 v Nastaveniach. Rozhodnúť:
+smie úroveň 2 aj online AI, alebo iba miestna (10B.30: online chat nedostáva systémové oprávnenia)?
+
 **6B.13** [ ] **Výskum: Tinycast ako zoznam funkcií** (používateľ 27. 10.: „vyzerá ako naše LensGoo“) —
 https://github.com/abue-ammar/tinycast (macOS, Swift, AGPL-3.0 → kód nepreberať, iba nápady). Čo LensGoo/LensShore
 nemá: bežiace aplikácie s Ukončiť (jednu/všetky), skratka na konkrétnu aplikáciu (prepnúť/skryť), história schránky
@@ -821,6 +839,11 @@ guľa orezaná a namiesto „18:23“ v nej vidno „ı8:23“ (aj na druhej sn�
 
 **6D.12** [x] **Pravý klik do poľa novej udalosti v kalendári** (používateľ 27. 10.): Vystrihnúť · Kopírovať · Prilepiť ako
 v každom poli (`card.field_menu` je teraz spoločná pre polia Goo).
+
+**6D.13** [ ] **ClockGoo mení podobu podľa toho, čo beží** (používateľ 28. 10.; prvý prípad 6.26): počas **minútky alebo
+stopiek** sa mení vzhľad aj obsah kvapky — namiesto času zostávajúci čas, farba jadra a pulz ku koncu. **Určité
+udalosti** (stretnutie o 5 minút, budík, koniec minútky, pripomienka) sa ukážu **namiesto aktuálneho času**, kým
+ich človek nevidí alebo kým neuplynú; pri viacerých sa obsah roluje. Minútka už je v ClockGoo, tu ide o kvapku samotnú.
 
 ### 6E. [x] QueenGoo
 Zdroje: LATTEOS-GOO §4.4
