@@ -4,6 +4,7 @@
 --   sub   rows of a submenu, which replaces this one in the same place and gets a row to go back
 local icons = require("lib/icons")
 local M = {}
+M.keyed = false                              -- set while a key opens a menu (Ctrl+K in a card)
 
 local MAX, ROW, RULE, PAD = 14, 36, 9, 12
 local actions = {}
@@ -31,6 +32,7 @@ function M.open(rows, opts)
     end
     model.ctx = out
     fact.ctx_w = opts.width or 250
+    fact.ctx_sel = (opts.keys or M.keyed) and 0 or -1     -- opened with the keys: its first row is chosen at once
     fact.ctx_h = height
     fact.ctx_open = #out > 0
     actions.back = opts.back

@@ -135,7 +135,19 @@ local function app_menu(a)
           run = function() if quick.has(a) then quick.remove(a) else quick.add(a) end end },
         { label = pinned and tr("Unpin the drop") or tr("Pin as a drop"), glyph = "pin",
           run = function() if pinned then own.remove(a.id) else own.pin(a) end end },
+        { label = tr("Uninstall…"), glyph = "trash", line = true,
+          run = function() then_do(function() run("latte-app", { "appmanager", "app", ((a.id or ""):gsub("%.desktop$", "")) }, nil) end) end },
     }, { width = 280 })
+end
+-- the right button on a file or folder found, and Ctrl+K on it (6B.24): what Raycast offers on one
+local function file_menu(path, parent)
+    ctx.open({
+        { label = tr("Open"), glyph = "external-link", keys = "↵", run = function() then_do(function() open.path(path) end) end },
+        { label = tr("Show in the folder"), glyph = "folder", run = function() then_do(function() open.path(parent) end) end },
+        { label = tr("Copy the path"), glyph = "copy", line = true, run = function() pcall(sys.call, "clipboard.set", path) end },
+        { label = tr("Move to the Trash"), glyph = "trash", danger = true, line = true,
+          run = function() then_do(function() run("latte-files", { "trash", path }, nil) end) end },
+    }, { width = 260 })
 end
 local function tile(a) return { label = a.local_name or a.name or a.id, icon = a.icon or "", glyph = "apps", run = function() launch(a) end, right = function() app_menu(a) end } end
 local function number(v)
@@ -295,7 +307,7 @@ local function rows_files()
         local parent = clean:match("^(.*)/[^/]*$") or "/"
         rows[#rows + 1] = { label = clean:match("([^/]+)$") or clean, glyph = folder and "folder" or "file", hint = short(parent),
                             run = function() then_do(function() open.path(clean) end) end,
-                            right = function() then_do(function() open.path(parent) end) end }
+                            right = function() file_menu(clean, parent) end }
     end
     if #rows == 0 then rows[1] = { label = found and tr("Nothing found") or tr("Searching…"), glyph = "search", quiet = true } end
     return rows
@@ -1124,7 +1136,15 @@ local function shore_rows()
                                                       run = function() if shore.sure[key] then then_do(function() open.shell(s.cmd) end) else shore.sure[key] = true render(true) end end }
                     else rows[#rows + 1] = { label = tr("Open the link"), line2 = s.url, glyph = "world", run = function() then_do(function() open.url(s.url) end) end } end
                 end
-                rows[#rows + 1] = { label = tr("Copy"), glyph = "copy", copy = m.text, keep = true, run = function() pcall(sys.call, "clipboard.set", m.text) end }
+                -- the answer's actions (6B.24): on its Copy row, which the arrows reach
+                rows[#rows + 1] = { label = tr("Copy"), glyph = "copy", copy = m.text, keep = true, run = function() pcall(sys.call, "clipboard.set", m.text) end,
+                                    right = function() ctx.open({
+                                        { label = tr("Copy the answer"), glyph = "copy", run = function() pcall(sys.call, "clipboard.set", m.text) end },
+                                        { label = tr("Continue in LensAI"), glyph = "external-link",
+                                          run = function() then_do(function() run("latte-app", { "aicenter", shore.chat }, function() end) end) end },
+                                        { label = tr("New conversation"), glyph = "plus", line = true,
+                                          run = function() shore.chat, shore.talk, shore.view = "new", {}, "find" render(true) focus("lens_q") end },
+                                    }, { width = 260 }) end }
             end
         end
         if fact.lens_busy then rows[#rows + 1] = { para = true, label = shore.live ~= "" and shore.live or tr("Thinking…") } end
@@ -1173,7 +1193,7 @@ local function shore_rows()
             local clean = folder and path:sub(1, -2) or path
             local parent = clean:match("^(.*)/[^/]*$") or "/"
             rows[#rows + 1] = { label = clean:match("([^/]+)$") or clean, glyph = folder and "folder" or "file", hint = short(parent),
-                                run = function() then_do(function() open.path(clean) end) end, right = function() then_do(function() open.path(parent) end) end }
+                                run = function() then_do(function() open.path(clean) end) end, right = function() file_menu(clean, parent) end }
         end
         if found == nil then rows[#rows + 1] = { label = tr("Searching…"), glyph = "search", quiet = true } end
         if #rows > 1 or found == nil then section(rows) end

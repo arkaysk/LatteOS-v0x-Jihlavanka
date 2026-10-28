@@ -46,6 +46,15 @@ local engine                                -- set by lib/engine.luau, which own
 local shown = { rows = {}, opts = {} }      -- the card as it was last opened
 local actions, rights, wheels, slides, tab_runs, copies = {}, {}, {}, {}, {}, {}   -- copies: row → the text its copy button gives
 local choosable, chosen = {}, nil            -- what the arrow keys walk through, and where they are
+local names = {}                             -- what each row says: the one chosen is told beside LensShore's line
+-- the row chosen with the arrows (nil: none): what Enter does is told as `card_main`, and whether Ctrl+K has more
+local function choose(id)
+    chosen = id
+    fact.card_sel = id or -1
+    text.card_main = id and names[id] or ""
+    fact.card_main_on = id ~= nil and (names[id] or "") ~= ""
+    fact.card_more = id ~= nil and rights[id] ~= nil
+end
 local field = nil
 local calendar = nil                         -- the month shown, if any: who hears a day pressed
 local ear = nil                              -- the drop that stepped out for the open card
@@ -139,7 +148,7 @@ function M.open(rows, opts)
     end
     local out = {}
     actions, rights, wheels, slides, tab_runs, copies = {}, {}, {}, {}, {}, {}
-    choosable = {}
+    choosable, names = {}, {}
 
     -- what choosing a row does
     local function action(it)
@@ -168,6 +177,7 @@ function M.open(rows, opts)
     local function bind(id, it)
         actions[id] = action(it)
         rights[id] = it.right
+        names[id] = it.label
         if not it.off and not it.quiet then choosable[#choosable + 1] = id end
     end
 
@@ -275,21 +285,20 @@ function M.open(rows, opts)
 
     local fresh = not opts.keep or not fact.card_open
     if fresh then
-        chosen = nil
-        fact.card_sel = -1
+        choose(nil)
         fact.card_gen = fact.card_gen + 1
         if not fact.card_open then fact.card_peak = 0 end
     elseif chosen and not actions[chosen] then
-        chosen = nil
-        fact.card_sel = -1
+        choose(nil)
     end
     -- `first`: the first row that does something is chosen from the start, so Enter does it (LensShore: ask the AI)
     -- `again`: the rows changed under the arrows (what is typed changed), the first is chosen anew; `fit`: the card
     -- shrinks to what it holds, not only grows
     if opts.fit then fact.card_peak = 0 end
     if opts.first and (opts.again or not chosen) and choosable[1] then
-        chosen = opts.first == "last" and choosable[#choosable] or choosable[1]      -- "last": nearest a line below the card
-        fact.card_sel = chosen
+        choose(opts.first == "last" and choosable[#choosable] or choosable[1])      -- "last": nearest a line below the card
+    elseif chosen then
+        choose(chosen)                       -- the same row, perhaps saying something else now
     end
     local had = field ~= nil and fact.card_open
     field = opts.field
@@ -374,21 +383,28 @@ on("card_key", function(v)
     local at = 0
     for i, id in ipairs(choosable) do if id == chosen then at = i end end
     at = v == 1 and (at % #choosable + 1) or ((at - 2) % #choosable + 1)
-    chosen = choosable[at]
-    fact.card_sel = chosen
+    choose(choosable[at])
+end)
+-- Ctrl+K: what the right button on the chosen row offers (6B.24, Raycast's Action Panel), at the card's foot
+on("card_actions", function()
+    local f = chosen and rights[chosen]
+    if not f then return end
+    ctx.keyed = true
+    f()
+    ctx.keyed = false
 end)
 
 -- Enter: the row chosen with the arrows, or what is typed. Once: a field outside the card (LensShore's line) and the
 -- card itself may both hear the same key.
 local entered = 0
 function M.enter()
+    if ctx.is_open() then return end         -- Enter is the menu's then (parts/ctx.plm)
     if os.clock() - entered < 0.15 then return end
     entered = os.clock()
     -- a row chosen with the arrows comes before what is typed
     if chosen and actions[chosen] then
         local f = actions[chosen]
-        chosen = nil
-        fact.card_sel = -1
+        choose(nil)
         f()
         return
     end

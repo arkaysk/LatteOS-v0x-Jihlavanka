@@ -8,12 +8,15 @@ part Rows {
     on press right card_away { card_open = false; emit card_closed }
     zone box card_ground { from: card.x0, card.y0; size: card.w, card.h; active: card_open; agent: hidden }
 
-    on key Escape while card_open { card_open = false; emit card_closed }
-    on key Tab while card_open { emit card_next(1) }
-    on key Shift+Tab while card_open { emit card_next(0) }
-    on key Down while card_open { emit card_key(1) }
-    on key Up while card_open { emit card_key(0) }
-    on key Return while card_open and not card_field { emit card_enter }
+    // while a menu is open over the card (parts/ctx.plm) the keys are the menu's
+    on key Escape while card_open and not ctx_open { card_open = false; emit card_closed }
+    on key Tab while card_open and not ctx_open { emit card_next(1) }
+    on key Shift+Tab while card_open and not ctx_open { emit card_next(0) }
+    on key Down while card_open and not ctx_open { emit card_key(1) }
+    on key Up while card_open and not ctx_open { emit card_key(0) }
+    on key Return while card_open and not card_field and not ctx_open { emit card_enter }
+    // Ctrl+K: the chosen row's actions (6B.24), at the card's foot on the right, as Raycast's Action Panel
+    on key Ctrl+k while card_open and card_more and not ctx_open { tap.x = card.x0 + card.w - ctx_w - 8; tap.y = card.y0 + card.h - 8; emit card_actions }
     on submit card_q { emit card_enter }
     on submit card_pw { emit card_enter }
 

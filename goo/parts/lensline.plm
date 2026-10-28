@@ -26,6 +26,14 @@ part LensLine {
     let ln.cy = if(lens_edge == 2, 23, H - 23)
     let ln.fx = ln.left + 46                   // the field, between the conversations and the three on the right
     let ln.fw = ln.right - ln.left - 46 - 118
+    // On the right of the field, as Raycast's bar: what Enter does (the row chosen in the panel) and, when that row has
+    // more, Ctrl+K for its actions (6B.24). The field gives way to them.
+    measure ln_act_m
+    measure ln_main_m
+    let ln.keys = card_lens and card_open and lens_typed and card_main_on
+    let ln.kx = ln.fx + ln.fw - 12
+    let ln.mx = if(card_more, ln.kx - ln_act_m.width - 62, ln.kx)
+    let ln.kw = if(ln.keys, ln.kx - ln.mx + ln_main_m.width + 22, 0)
 
     // At rest the plate is coffee, as the goo is: the same coffee that stands below the panel's surface when it is out.
     // With the panel out the panel's body holds the plate, and the coffee runs on into it from the surface down.
@@ -50,8 +58,19 @@ part LensLine {
         box { from: ln.fx, ln.cy - 16; size: ln.fw, 32; corner: 16; color: ink; opacity: 7% + 5% * lens_field.hover }
         text g_search { at: ln.fx + 16, ln.cy; anchor: center; size: 15; color: ink; opacity: 60%; family: "tabler-icons" }
         text lens_hint { at: ln.fx + 32, ln.cy; anchor: left center; width: ln.fw - 44; lines: 1; size: 15; color: ink; opacity: 55%; show: not lens_typed; family: "Inter" }
-        input lens_q { at: ln.fx + 32, ln.cy - 10; width: ln.fw - 44; size: 15; color: ink; selection: #5a463a; family: "Inter"; label: "{lens_hint}" }
+        input lens_q { at: ln.fx + 32, ln.cy - 10; width: ln.fw - 44 - ln.kw; size: 15; color: ink; selection: #5a463a; family: "Inter"; label: "{lens_hint}" }
         zone box lens_field { from: ln.fx, ln.cy - 16; size: ln.fw, 32; cursor: text; label: "LensShore" }
+        group {
+            show: ln.keys
+            text card_main { at: ln.mx, ln.cy; anchor: right center; width: 150; lines: 1; size: 12; color: ink; opacity: 60%; measure: ln_main_m; family: "Inter" }
+            text "↵" { at: ln.mx - ln_main_m.width - 6, ln.cy; anchor: right center; size: 13; color: ink; opacity: 60%; family: "Inter" }
+            group {
+                show: card_more
+                text "Actions" { at: ln.kx, ln.cy; anchor: right center; size: 12; color: ink; opacity: 60%; measure: ln_act_m; family: "Inter" }
+                box { from: ln.kx - ln_act_m.width - 50, ln.cy - 9; size: 44, 18; corner: 5; stroke: 1; color: ink; opacity: 35% }
+                text "Ctrl+K" { at: ln.kx - ln_act_m.width - 28, ln.cy; anchor: center; size: 10; color: ink; opacity: 70%; family: "Inter" }
+            }
+        }
         on press lens_field { focus lens_q; emit lens_press }
         on press right lens_field { tap.x = cursor.x; tap.y = cursor.y; emit lens_right }
         on submit lens_q { emit lens_enter }

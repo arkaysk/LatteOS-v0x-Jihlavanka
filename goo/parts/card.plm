@@ -62,6 +62,9 @@ part Card {
     fact card_typed = false                    // …and something is typed in it
     fact card_secret = false                   // …that must not be read over the shoulder: a password
     fact card_sel = -1                         // the row chosen with the arrow keys: row × 8, + 1 + item
+    text card_main = ""                        // what the chosen row says: Enter does it (told beside LensShore's line)
+    fact card_main_on = false
+    fact card_more = false                     // the chosen row has more to it: Ctrl+K, or the right button
     fact card_gen = 0                          // the logic counts up for new content: the rows come in again
     text card_q = ""
     text card_pw = ""
@@ -83,6 +86,7 @@ part Card {
     event card_field_menu ->                   // the right button on the field: cut, copy, paste
     event card_next ->                         // Tab and Shift+Tab: 1 the next tab, 0 the one before
     event card_key ->                          // the arrow keys: 1 down, 0 up
+    event card_actions ->                      // Ctrl+K: the chosen row's actions, as its right button
     event card_enter ->                        // Enter: the chosen row, or what is typed
     event card_closed ->
 

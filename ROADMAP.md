@@ -745,11 +745,18 @@ vyberie, kto odpovedá (`lens_ai` v nastaveniach Goo). Neoverené naživo.
 **6B.23** [x] **LensShore: hlas** (návrh 27. 10.): mikrofón v riadku, `latte-ai listen start|stop`, prepis sa vpíše do riadku.
 Neoverené naživo.
 
-**6B.24** [ ] **LensShore: lišta akcií a Ctrl+K** (používateľ 27. 10., podľa Raycastu — Action Panel, na Macu ⌘K): pri poli
+**6B.24** [x] **LensShore: lišta akcií a Ctrl+K** (používateľ 27. 10., podľa Raycastu — Action Panel, na Macu ⌘K): pri poli
 stála lišta „hlavná akcia ↵ · Akcie Ctrl+K“; Ctrl+K nad vybraným riadkom otvorí zoznam všetkých jeho akcií, v ktorom sa
 dá písať a každá má skratku — aplikácia: Otvoriť, Pripnúť do QuickGoo, Pridať do obľúbených, Ukázať v DualBrew,
 Odinštalovať (AppManager); súbor: Otvoriť v…, Ukázať v priečinku, Kopírovať cestu, Presunúť do koša; odpoveď AI:
 Kopírovať, Spustiť príkaz, Pokračovať v LensAI. Pravý klik na riadok ukáže to isté.
+- [x] 28. 10.: v poli vpravo „↵ (čo urobí Enter)“ a pri riadku s akciami „Ctrl+K Akcie“, pole sa im uhne (`lensline.plm`).
+  Ctrl+K v ktorejkoľvek karte otvorí ponuku pravého kliku vybraného riadku pri päte karty, s vybraným prvým riadkom;
+  ponuka (`ctx`) má teraz šípky a Enter, kým je otvorená, karta pod ňou na ne nereaguje a Escape zavrie iba ponuku.
+  Aplikácia: + Odinštalovať… (App Manager na jej stránke); súbor: Otvoriť, Ukázať v priečinku, Kopírovať cestu, Presunúť
+  do koša (`latte-files trash`); odpoveď AI (na jej riadku Kopírovať): Kopírovať odpoveď, Pokračovať v LensAI, Nový
+  rozhovor. Spustenie príkazu ostáva pod odpoveďou s dvojitým potvrdením. Overené bez obrazovky. Hľadanie v ponuke
+  písaním (Raycast) zatiaľ nie.
 
 **6B.25** [~] **LensShore úroveň 1 — AI vykoná, bezpečne** (používateľ 28. 10., predvolená): „pripoj slúchadlá“, „druhý
 monitor vpravo“, „vypni animácie“ → AI použije **vymedzenú zručnosť** nad príkazmi `latte-*` (sieť, Bluetooth, obrazovky,

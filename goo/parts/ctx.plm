@@ -8,6 +8,7 @@ part Ctx {
     fact ctx_open = false
     fact ctx_w = 250                           // its size, worked out by the logic from the rows
     fact ctx_h = 0
+    fact ctx_sel = -1                          // the row chosen with the arrow keys (the logic sets −1 when it opens)
     event ctx_pick ->
     event ctx_closed ->
     spring snap = 900, 60
@@ -22,6 +23,10 @@ part Ctx {
     on press ctx_away { ctx_open = false; emit ctx_closed }
     on press right ctx_away { ctx_open = false; emit ctx_closed }
     on key Escape while ctx_open { ctx_open = false; emit ctx_closed }
+    // the keys, for a menu opened with them (Ctrl+K in a card) as much as with the mouse
+    on key Down while ctx_open { ctx_sel = min(ctx_sel + 1, ctx.count - 1) }
+    on key Up while ctx_open { ctx_sel = max(ctx_sel - 1, 0) }
+    on key Return while ctx_open and ctx_sel >= 0 { emit ctx_pick(ctx_sel) }
 
     group {
         show: ctx.p > 0.01
@@ -43,7 +48,7 @@ part Ctx {
     component CtxRow(r: record) {
         size: ctx_w - 12, if(r.line, 45, 36)
         box { from: 0, if(r.line, 9, 0) + 0; size: ctx_w - 12, 1; color: #5a463a; show: r.line }
-        box { from: 0, if(r.line, 10, 0); size: ctx_w - 12, 36; corner: 8; color: if(r.danger, #e5484d, #4a372b); opacity: hit.hover * if(r.danger, 22%, 100%) }
+        box { from: 0, if(r.line, 10, 0); size: ctx_w - 12, 36; corner: 8; color: if(r.danger, #e5484d, #4a372b); opacity: max(hit.hover, if(ctx_sel == r.index, 1, 0)) * if(r.danger, 22%, 100%) }
         image r.icon { at: 8, if(r.line, 14, 4); size: 24, 24; show: r.has_icon }
         text r.glyph { at: 20, if(r.line, 28, 18); anchor: center; size: 16; color: if(r.danger, #e5484d, #f3ebdd); opacity: 90%; show: not r.has_icon; family: "tabler-icons" }
         text r.label { at: 40, if(r.line, 28, 18); anchor: left center; width: ctx_w - 90 - r.keys_w; lines: 1; size: 14; weight: 500; color: if(r.danger, #e5484d, #f3ebdd); family: "Inter" }
