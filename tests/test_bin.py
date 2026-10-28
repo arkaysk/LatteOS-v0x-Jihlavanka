@@ -511,6 +511,47 @@ with tempfile.TemporaryDirectory() as d:
     os.makedirs(os.path.join(d, "usr/lib64/latteos")); os.makedirs(os.path.join(d, "usr/share/latteos"))
     for f in ("usr/lib64/latteos/p.so", "usr/share/latteos/old.qml", "usr/share/latteos/kept"): open(os.path.join(d, f), "w").close()
     assert inst.leftovers(d, ["/usr/share/latteos/kept"], sec) == [os.path.join(d, "usr/share/latteos/old.qml")]      # the plugin FILES asks for is not a leftover
+
+# latte-wall: the layers on the pegboard, and what each screen makes of them (the cache in a folder of its own)
+with tempfile.TemporaryDirectory() as d:
+    kept = os.environ.get("XDG_CACHE_HOME")
+    os.environ["XDG_CACHE_HOME"] = d
+    wall = load("latte-wall")
+    if kept is None: del os.environ["XDG_CACHE_HOME"]
+    else: os.environ["XDG_CACHE_HOME"] = kept
+    A = {"name": "A", "x": 0, "y": 0, "w": 1920, "h": 1080, "pw": 1920, "ph": 1080}
+    B = {"name": "B", "x": 1920, "y": 0, "w": 2560, "h": 1080, "pw": 2560, "ph": 1080}
+    tall = {"name": "C", "x": 7200, "y": -420, "w": 1080, "h": 1920, "pw": 1080, "ph": 1920}
+    bg = wall.clean({"kind": "color", "color": "#112233", "x": -100, "y": -500, "w": 9000, "h": 3000})
+    assert wall.clean({"kind": "color", "color": "#zz2233", "x": 0, "y": 0, "w": 9, "h": 9}) is None
+    assert wall.clean({"kind": "color", "color": "#112233", "x": "nan", "y": 0, "w": 9, "h": 9}) is None
+    assert wall.clean({"kind": "picture", "path": d + "/none.png", "x": 0, "y": 0, "w": 9, "h": 9}) is None
+    assert wall.plan_screen([], A, []) == {"kind": "color", "color": "#000000"}
+    assert wall.plan_screen([bg], tall, []) == {"kind": "color", "color": "#112233"}
+    try:
+        from PIL import Image
+    except ImportError:
+        Image = None
+    if Image:
+        Image.new("RGB", (6400, 1080), (200, 50, 50)).save(d + "/wide.png")
+        span = wall.clean({"kind": "picture", "path": d + "/wide.png", "x": 0, "y": 0, "w": 6400, "h": 1080})
+        assert span["res"] == [6400, 1080]
+        e = wall.plan_screen([bg, span], A, [])       # the part of the wide picture that is on A, put together
+        assert e["kind"] == "picture" and e["path"].startswith(d) and Image.open(e["path"]).size == (1920, 1080)
+        assert wall.plan_screen([span, bg], tall, []) == {"kind": "color", "color": "#112233"}
+        one = wall.clean(dict(wall.fitted([6400, 1080], A), kind="picture", path=d + "/wide.png"))
+        assert wall.plan_screen([bg, one], A, []) == {"kind": "picture", "path": d + "/wide.png"}    # laid on alone: the file itself
+        # a film on a corner of A over a picture: one film made for A, the picture its ground; till then a still picture
+        open(d + "/corner.mp4", "w").close()
+        corner = {"kind": "film", "path": d + "/corner.mp4", "res": [1920, 1080], "x": -960, "y": -540, "w": 1920, "h": 1080}
+        jobs = []
+        e = wall.plan_screen([one, corner], A, jobs)
+        assert e["path"].endswith(".jpg") and (not jobs or "overlay=0:0:shortest=1" in jobs[0]["args"][-3] and "crop=960:540:960:540" in jobs[0]["args"][-3]), jobs
+    # a film across screens: its part for B, in its own pixels, and the filter that cuts it as large as B
+    film = {"kind": "film", "path": "f.mp4", "res": [1920, 1080], "x": -100, "y": -1316, "w": 6600, "h": 3712.5}
+    rx, ry, rw, rh = wall.region(film, B)
+    assert abs(rx - 587.6) < 0.1 and abs(ry - 382.8) < 0.1 and abs(rw / rh - 2560 / 1080) < 0.01
+    assert wall.cut_filter(film, B).startswith("crop=746:316:587:382,") and wall.cut_filter(film, B).endswith("scale=2560:1080:flags=bicubic,setsar=1")
 print("bin: ok")
 
 # Barista: a recipe is found by the files that tell a program apart, and a missing disc is said, not guessed at.

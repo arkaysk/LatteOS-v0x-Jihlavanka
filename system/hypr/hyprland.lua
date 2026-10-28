@@ -190,7 +190,7 @@ local function place_shell(before)
     hl.exec_cmd("sh -c '" .. (before and (before .. "; latte-screens --start ") or "latte-screens ") .. table.concat(names, " ") .. "'")
 end
 -- once the monitors are laid out: one that has just come is at x = -1, the leftmost of all
-local function settled() hl.timer(function() place_shell() end, { timeout = 600, type = "oneshot" }) end
+local function settled() hl.timer(function() place_shell() hl.exec_cmd("latte-wall screens") end, { timeout = 600, type = "oneshot" }) end
 hl.on("monitor.added", settled)
 hl.on("monitor.removed", settled)
 hl.on("config.reloaded", place_shell)

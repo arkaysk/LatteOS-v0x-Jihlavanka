@@ -12,6 +12,7 @@ import Quickshell.Io
 import Quickshell.Wayland
 import Quickshell.Widgets
 import "common"
+import "settings"
 
 ShellRoot {
     id: shell
@@ -221,38 +222,83 @@ ShellRoot {
     // what a page shows is asked for when it opens, and again after anything on it was changed
     readonly property var asks: ({ "": [[machine, ["latte-devices", "list"]], [screens, ["hyprctl", "monitors", "-j"]], [disks, ["latte-settings", "storage"]], [who, ["latte-settings", "account"]]],
                                    "sound": [[sound, ["latte-settings", "sound"]]], "defaults": [[opens, ["latte-settings", "defaults"]]], "language": [[region, ["latte-settings", "region"]]],
-                                   "time": [[clock, ["latte-settings", "time"]]], "keyboard": [[keys, ["latte-settings", "keyboard"]], [binds, ["hyprctl", "binds", "-j"]]], "displays": [[screens, ["hyprctl", "monitors", "-j"]]],
+                                   "time": [[clock, ["latte-settings", "time"]]], "keyboard": [[keys, ["latte-settings", "keyboard"]], [binds, ["hyprctl", "binds", "-j"]]], "windows": [[screens, ["hyprctl", "monitors", "-j"]]], "transitions": [[trans, ["latte-wall", "transitions"]]], "displays": [[screens, ["hyprctl", "monitors", "-j"]]],
                                    "guarddog": [[guardq, ["latte-guarddog", "status"]]], "clockgoo": [[clock, ["latte-settings", "time"]], [logon, ["latte-settings", "loginscreen"]], [focusq, ["latte-focus", "today"]], [weatherq, ["latte-sky", "models"]]], "storage": [[disks, ["latte-settings", "storage"]], [held, ["latte-settings", "sizes"]]], "ai": [[helpers, ["latte-ai", "modules"]]],
                                    "me": [[who, ["latte-settings", "account"]], [pictures, ["latte-settings", "wallpapers"]]], "performance": [[machine, ["latte-devices", "list"]]], "loginscreen": [[logon, ["latte-settings", "loginscreen"]]] })
-    function ask() { (asks[page] || []).forEach(a => a[0].ask(a[1])); force.reload(); crashed.reload(); if (page === "background") wall.ask(["latte-wall", "state"]) }
+    function ask() { (asks[page] || []).forEach(a => a[0].ask(a[1])); force.reload(); crashed.reload() }
     Timer { id: later; interval: 900; onTriggered: shell.ask() }       // what was asked of the compositor takes a moment to be so
     Component.onCompleted: ask()               // the front page is open from the start: no change of page asks for it
 
-    // a file of the user's own, from anywhere: for the background ("wallpaper") or for the account's picture ("face")
-    FileDialog { id: chooser; property string what: ""
-                 nameFilters: what === "face" ? [I18n.tr("Pictures") + " (*.png *.jpg *.jpeg *.webp)"] : [I18n.tr("Pictures and films") + " (*.png *.jpg *.jpeg *.webp *.mp4 *.webm *.mkv *.mov)"]
-                 onAccepted: { const path = decodeURIComponent(String(selectedFile).replace(/^file:\/\//, ""))
-                               if (what === "face") shell.account("SetIconFile", path)
-                               else shell.bgSet(["picture", path]) } }
+    // the window modes, in the order of ROADMAP 8A.06; `soon`: decided, not made yet
+    readonly property var windowModes: [{ id: "tape", name: QT_TR_NOOP("Tape"), hint: QT_TR_NOOP("an endless strip, nothing is put away"), icon: "layout-columns" },
+                                        { id: "floating", name: QT_TR_NOOP("Floating windows"), hint: QT_TR_NOOP("as on Windows"), icon: "app-window" },
+                                        { id: "tiles", name: QT_TR_NOOP("Tiles"), hint: QT_TR_NOOP("windows share the screen"), icon: "layout-grid" },
+                                        { id: "glance", name: QT_TR_NOOP("Glance"), hint: QT_TR_NOOP("one in the middle, the others at the sides"), icon: "layout-distribute-vertical" },
+                                        { id: "canvas", name: QT_TR_NOOP("Canvas"), hint: QT_TR_NOOP("free windows on a desk you zoom out of"), icon: "zoom-out-area", soon: true },
+                                        { id: "trizone", name: QT_TR_NOOP("Three zones"), hint: QT_TR_NOOP("for wide screens: a middle and two columns"), icon: "columns-3", soon: true }]
+    // what system/hypr/latte/windows.lua keeps: the mode of every screen, then a screen's own on each line ("DP-1 tiles")
+    FileView { id: modes; path: (Quickshell.env("XDG_STATE_HOME") || (Quickshell.env("HOME") + "/.local/state")) + "/latteos/window-mode"
+               printErrors: false; watchChanges: true; onFileChanged: reload()
+               property string all: "tape"
+               property var own: ({})
+               onLoaded: { const lines = text().split("\n"), o = {}; all = (lines[0] || "").trim() || "tape"
+                           for (const l of lines.slice(1)) { const w = l.trim().split(/\s+/); if (w.length === 2) o[w[0]] = w[1] } own = o } }
+    function modeOn(name) { return modes.own[name] || modes.all }
+    function setMode(mode, name) { Quickshell.execDetached(["hyprctl", "eval", name ? "latte.mode.set(\"" + mode + "\", \"" + name + "\")" : "latte.mode.set(\"" + mode + "\")"]) }
+    // the transitions of skwd-wall (bin/latte-wall transitions): which change the wallpaper, and how fast
+    Run { id: trans }
+    readonly property string transUse: trans.data ? trans.data.use : "all"
+    readonly property var transPicked: trans.data ? trans.data.picked : []
+    readonly property int transMs: trans.data ? trans.data.ms : 1200
+    function keepTrans(change) { trans.ask(["latte-wall", "transitions", JSON.stringify(Object.assign({ use: transUse, picked: transPicked, ms: transMs }, change))]) }
+    readonly property var transitions: [
+                                          { id: "chromatic-bloom", name: QT_TR_NOOP("Chromatic bloom") },
+                                          { id: "circle-crop", name: QT_TR_NOOP("Circle") },
+                                          { id: "colour-distance", name: QT_TR_NOOP("By colour") },
+                                          { id: "crossfade", name: QT_TR_NOOP("Crossfade") },
+                                          { id: "crosswarp", name: QT_TR_NOOP("Crosswarp") },
+                                          { id: "crosshatch", name: QT_TR_NOOP("Crosshatch") },
+                                          { id: "directional", name: QT_TR_NOOP("Slide") },
+                                          { id: "directional-scaled", name: QT_TR_NOOP("Slide and scale") },
+                                          { id: "fadecolor", name: QT_TR_NOOP("Through a colour") },
+                                          { id: "glitch", name: QT_TR_NOOP("Glitch") },
+                                          { id: "glitch-displace", name: QT_TR_NOOP("Shifted glitch") },
+                                          { id: "heat-melt", name: QT_TR_NOOP("Heat melt") },
+                                          { id: "ink-splash", name: QT_TR_NOOP("Ink splash") },
+                                          { id: "inkwell-drop", name: QT_TR_NOOP("Ink drop") },
+                                          { id: "morph", name: QT_TR_NOOP("Morph") },
+                                          { id: "mosaic-tumble", name: QT_TR_NOOP("Mosaic") },
+                                          { id: "parametric-glitch", name: QT_TR_NOOP("Wavy glitch") },
+                                          { id: "perlin", name: QT_TR_NOOP("Clouds") },
+                                          { id: "pixelfade-wave", name: QT_TR_NOOP("Pixel wave") },
+                                          { id: "plasma-flow", name: QT_TR_NOOP("Plasma") },
+                                          { id: "polka-dots-curtain", name: QT_TR_NOOP("Dot curtain") },
+                                          { id: "puzzle-right", name: QT_TR_NOOP("Puzzle") },
+                                          { id: "randomsquares", name: QT_TR_NOOP("Squares") },
+                                          { id: "sand-bloom", name: QT_TR_NOOP("Sand: bloom") },
+                                          { id: "sand-donut", name: QT_TR_NOOP("Sand: ring") },
+                                          { id: "sand-galaxy", name: QT_TR_NOOP("Sand: galaxy") },
+                                          { id: "sand-globe", name: QT_TR_NOOP("Sand: globe") },
+                                          { id: "sand-helix", name: QT_TR_NOOP("Sand: helix") },
+                                          { id: "sand-maelstrom", name: QT_TR_NOOP("Sand: maelstrom") },
+                                          { id: "sand-mobius", name: QT_TR_NOOP("Sand: Mobius strip") },
+                                          { id: "sand-tornado", name: QT_TR_NOOP("Sand: tornado") },
+                                          { id: "smoke", name: QT_TR_NOOP("Smoke") },
+                                          { id: "soft-warp-fade", name: QT_TR_NOOP("Soft warp") },
+                                          { id: "voronoi-shatter", name: QT_TR_NOOP("Shatter") },
+                                          { id: "zoom-blur-pull", name: QT_TR_NOOP("Zoom") }]
+    property string modePick: ""               // the mode pressed, for the button that gives it to every desktop
+    property string modeHover: ""              // the screen a mode carried with the mouse is over
+    // a picture of the user's own, from anywhere, for the account
+    FileDialog { id: chooser; property string what: "face"
+                 nameFilters: [I18n.tr("Pictures") + " (*.png *.jpg *.jpeg *.webp)"]
+                 onAccepted: shell.account("SetIconFile", decodeURIComponent(String(selectedFile).replace(/^file:\/\//, ""))) }
     Run { id: disks }
     Run { id: held }
     Run { id: helpers }
     Run { id: who }
     Run { id: logon }
     Run { id: iconsets }
-    Run { id: online }
-    Run { id: wall }                           // what latte-wall says: the screens and what is on each
-    readonly property var bg: wall.data
-    property string bgTarget: "*"              // the screen a choice goes to, or * for every screen
-    property string bgSource: "picture"
-    property string showFolder: ""
-    property int showMinutes: 10
-    property bool showShuffle: false
-    function bgSet(what) { order(["latte-wall", "set", bgTarget].concat(what)) }
-    FolderDialog { id: folders; onAccepted: shell.showFolder = decodeURIComponent(String(selectedFolder).replace(/^file:\/\//, "")) }
-    property string fetching: ""               // the one being fetched
-    Process { id: fetcher; stdout: StdioCollector { onStreamFinished: { const path = this.text.trim(); shell.fetching = ""
-        if (path !== "") { shell.bgSet(["picture", path]); pictures.ask(["latte-settings", "wallpapers"]) } } } }
     Word { id: tier; name: "tier" }
     // the password: the new one goes to latte-settings on its input, the present one is asked for by the system
     property string passSaid: ""
@@ -420,7 +466,6 @@ ShellRoot {
                onLoaded: pretty = (text().match(/^PRETTY_NAME="?([^"\n]*)/m) || ["", ""])[1] }
     onPageChanged: {
         if (page === "coffee") { coffees.ask(["latte-login", "coffees"]); iconsets.ask(["latte-settings", "icons"]) }
-        if (page === "background") { pictures.ask(["latte-settings", "wallpapers"]); wall.ask(["latte-wall", "state"]) }
         if (page === "about") { machine.ask(["latte-devices", "list"]); activity.running = true; activityFetch.running = true }
         emptying = false
         if (page === "power") profiles.running = true
@@ -733,134 +778,88 @@ ShellRoot {
                 Switch { text: I18n.tr("Windows of glass"); hint: I18n.tr("The windows are glass too, where the graphics card can: that is the cup's own look, apart from the drops.")
                          on: goo.kept.windows === "glass"; onPressed: goo.set("windows", on ? "solid" : "glass") } }
 
-            // The background, as Windows lays it out and a little further: the screens on top (press one to choose
-            // for it alone), then where the picture comes from, then the choice itself. bin/latte-wall does it.
-            Item { visible: shell.page === "background"; width: view.room; height: 250
-                readonly property var list: shell.bg ? shell.bg.screens : []
-                readonly property real x0: list.length ? Math.min(...list.map(m => m.x)) : 0
-                readonly property real y0: list.length ? Math.min(...list.map(m => m.y)) : 0
-                readonly property real wide: list.length ? Math.max(...list.map(m => m.x + m.w)) - x0 : 1920
-                readonly property real high: list.length ? Math.max(...list.map(m => m.y + m.h)) - y0 : 1080
-                readonly property real k: Math.min(Math.min(view.room, 900) / wide, 230 / high)
-                id: stage
-                Repeater { model: stage.list
-                    ClippingRectangle { id: scr; required property var modelData
-                        readonly property string file: shell.bg ? (shell.bg.shown[modelData.name] || shell.bg.shown["*"] || "") : ""
-                        readonly property bool film: /\.(mp4|webm|mkv|mov)$/i.test(file)
-                        x: (modelData.x - stage.x0) * stage.k; y: (modelData.y - stage.y0) * stage.k; width: modelData.w * stage.k - 8; height: modelData.h * stage.k - 8
-                        radius: 14; color: Theme.card; border.width: 3
-                        border.color: shell.bgTarget === "*" || shell.bgTarget === modelData.name ? Theme.gold : Theme.line
-                        Image { anchors.fill: parent; anchors.margins: 3; visible: !scr.film; source: scr.film || scr.file === "" ? "" : "file://" + scr.file; fillMode: Image.PreserveAspectCrop; asynchronous: true; sourceSize.width: 960; cache: false }
-                        Glyph { anchors.centerIn: parent; visible: scr.film; name: "player-play"; font.pixelSize: 44; color: Theme.gold }
-                        Rectangle { x: 10; y: 10; width: tag.implicitWidth + 16; height: 24; radius: 12; color: Qt.rgba(0, 0, 0, 0.55)
-                                    Label { id: tag; anchors.centerIn: parent; text: scr.modelData.name; color: "white"; font.pixelSize: 12; font.weight: 700 } }
-                        MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: shell.bgTarget = scr.modelData.name } } } }
-            Row { visible: shell.page === "background"; spacing: 10
-                Pill { icon: "copy"; text: I18n.tr("The same on every screen"); strong: shell.bgTarget === "*"; onPressed: shell.bgTarget = "*" }
-                Repeater { model: shell.bg && shell.bg.screens.length > 1 ? shell.bg.screens : []
-                    Pill { required property var modelData; icon: "device-desktop"; text: I18n.tr("Only {screen}", { screen: modelData.name }); strong: shell.bgTarget === modelData.name; onPressed: shell.bgTarget = modelData.name } } }
-            Part { visible: shell.page === "background"; width: view.room; title: I18n.tr("Background")
-                   note: shell.bgTarget === "*" ? I18n.tr("What you choose goes on every screen.") : I18n.tr("What you choose goes on {screen} only; the others keep theirs.", { screen: shell.bgTarget })
-                Repeater { model: [{ id: "picture", name: QT_TR_NOOP("Picture"), icon: "photo" }, { id: "color", name: QT_TR_NOOP("Solid colour"), icon: "palette" },
-                                   { id: "slideshow", name: QT_TR_NOOP("Slideshow"), icon: "folder" }, { id: "motionbgs", name: "MotionBGS", icon: "player-play" },
-                                   { id: "wallhaven", name: "Wallhaven", icon: "world" }, { id: "bing", name: "Bing", icon: "world" },
-                                   { id: "skwd", name: "skwd-wall", icon: "sparkles" }, { id: "lens", name: QT_TR_NOOP("Describe it"), icon: "search" }]
-                    Pill { required property var modelData; icon: modelData.icon; text: I18n.tr(modelData.name); strong: shell.bgSource === modelData.id
-                           onPressed: { shell.bgSource = modelData.id
-                                        if (["motionbgs", "wallhaven", "bing"].includes(modelData.id)) { online.data = null; online.ask(["latte-walls", modelData.id]) } } } } }
-
-            // a picture or a film of the user's own
-            Part { visible: shell.page === "background" && shell.bgSource === "picture"; width: view.room; title: I18n.tr("Choose a picture"); note: I18n.tr("LatteOS's own, and what is in your Pictures and Videos folders. A film moves behind the desktop, silently.")
-                Repeater { model: pictures.data ? pictures.data : []
-                    ClippingRectangle { id: pic; required property var modelData; width: 200; height: 114; radius: 14; color: Theme.card
-                        border.width: 3; border.color: shell.bg && shell.bg.shown[shell.bgTarget] === modelData.path ? Theme.gold : "transparent"
-                        Image { anchors.fill: parent; anchors.margins: 3; visible: !pic.modelData.live; source: pic.modelData.live ? "" : "file://" + pic.modelData.path; fillMode: Image.PreserveAspectCrop; asynchronous: true; sourceSize.width: 420 }
-                        Glyph { anchors.centerIn: parent; visible: pic.modelData.live; name: "player-play"; font.pixelSize: 30; color: Theme.gold }
-                        Rectangle { visible: pic.modelData.live; anchors.bottom: parent.bottom; width: parent.width; height: 26; color: Qt.rgba(0, 0, 0, 0.5)
-                                    Label { x: 10; width: parent.width - 20; text: pic.modelData.path.split("/").pop(); color: "white"; font.pixelSize: 11; anchors.verticalCenter: parent.verticalCenter } }
-                        MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: shell.bgSet(["picture", pic.modelData.path]) } } }
-                Item { width: view.room; height: 1 }
-                Pill { icon: "folder"; text: I18n.tr("Browse…"); onPressed: { chooser.what = "wallpaper"; chooser.open() } } }
-            Part { visible: shell.page === "background" && ["picture", "slideshow"].includes(shell.bgSource) && shell.bg !== null && shell.bg.engine === "plain"; width: view.room; title: I18n.tr("Choose a fit")
-                Repeater { model: [{ id: "fill", name: QT_TR_NOOP("Fill") }, { id: "fit", name: QT_TR_NOOP("Fit") }, { id: "stretch", name: QT_TR_NOOP("Stretch") }, { id: "center", name: QT_TR_NOOP("Centre") }, { id: "tile", name: QT_TR_NOOP("Tile") }]
-                    Pill { required property var modelData; text: I18n.tr(modelData.name); strong: shell.bg !== null && shell.bg.fit === modelData.id; onPressed: shell.order(["latte-wall", "fit", modelData.id]) } } }
-
-            // one colour
-            Part { visible: shell.page === "background" && shell.bgSource === "color"; width: view.room; title: I18n.tr("Choose a colour")
-                Repeater { model: ["#1a1410", "#2a1f19", "#3b1d10", "#0f1b2d", "#12343b", "#1f3a2a", "#3a1f2b", "#2d2a4a", "#4a4a4a", "#8a5a3a", "#c98a55", "#f3ebdd"]
-                    Rectangle { required property string modelData; width: 54; height: 54; radius: 14; color: modelData
-                                border.width: 3; border.color: shell.bg && (shell.bg.screens_own[shell.bgTarget] || shell.bg.all).color === modelData ? Theme.gold : Theme.line
-                                MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: shell.bgSet(["color", parent.modelData]) } } }
-                Item { width: view.room; height: 1 }
-                Field { id: hexField; width: 180; icon: "palette"; hint: "#RRGGBB"; onAccepted: if (/^#?[0-9a-fA-F]{6}$/.test(text.trim())) shell.bgSet(["color", text.trim()]) }
-                Pill { icon: "check"; text: I18n.tr("Use this colour"); onPressed: if (/^#?[0-9a-fA-F]{6}$/.test(hexField.text.trim())) shell.bgSet(["color", hexField.text.trim()]) } }
-
-            // the pictures of a folder, one after another
-            Part { visible: shell.page === "background" && shell.bgSource === "slideshow"; width: view.room; title: I18n.tr("Choose a folder for the slideshow")
-                   note: shell.showFolder === "" ? I18n.tr("Every picture and film in it takes its turn.") : shell.showFolder
-                Pill { icon: "folder"; text: I18n.tr("Browse…"); onPressed: folders.open() }
-                Item { width: view.room; height: 1 }
-                Label { text: I18n.tr("Change picture every"); color: Theme.dim; height: 36; verticalAlignment: Text.AlignVCenter }
-                Repeater { model: [{ m: 1, name: QT_TR_NOOP("1 minute") }, { m: 10, name: QT_TR_NOOP("10 minutes") }, { m: 30, name: QT_TR_NOOP("30 minutes") }, { m: 60, name: QT_TR_NOOP("1 hour") }, { m: 360, name: QT_TR_NOOP("6 hours") }, { m: 1440, name: QT_TR_NOOP("1 day") }]
-                    Pill { required property var modelData; text: I18n.tr(modelData.name); strong: shell.showMinutes === modelData.m; onPressed: shell.showMinutes = modelData.m } }
-                Item { width: view.room; height: 1 }
-                Pill { icon: "arrows-sort"; text: I18n.tr("Shuffle"); strong: shell.showShuffle; onPressed: shell.showShuffle = !shell.showShuffle }
-                Pill { icon: "player-play"; strong: true; text: I18n.tr("Start the slideshow"); visible: shell.showFolder !== ""
-                       onPressed: shell.bgSet(["slideshow", shell.showFolder, String(shell.showMinutes)].concat(shell.showShuffle ? ["shuffle"] : [])) }
-                Pill { icon: "chevron-left"; text: I18n.tr("Previous"); onPressed: shell.order(["latte-wall", "prev"]) }
-                Pill { icon: "chevron-right"; text: I18n.tr("Next"); onPressed: shell.order(["latte-wall", "next"]) } }
-
-            // from the internet: a press fetches one into the library and puts it on
-            Part { visible: shell.page === "background" && ["motionbgs", "wallhaven", "bing"].includes(shell.bgSource); width: view.room
-                   title: shell.bgSource === "bing" ? I18n.tr("Bing's pictures of the last days") : (shell.bgSource === "wallhaven" ? I18n.tr("Pictures from Wallhaven") : I18n.tr("Live wallpapers from MotionBGS"))
-                   note: I18n.tr("A press fetches one into your Pictures and puts it behind the desktop.")
-                Field { id: netField; visible: shell.bgSource !== "bing"; width: 320; hint: I18n.tr("Search…")
-                        onAccepted: { online.data = null; online.ask(["latte-walls", shell.bgSource].concat(netField.text.trim().split(/\s+/).filter(w => w !== ""))) } }
-                Item { width: view.room; height: 1 }
-                Waiting { visible: online.data === null }
-                Repeater { model: online.data ? online.data.slice(0, 30) : []
-                    ClippingRectangle { id: net; required property var modelData; width: 200; height: 114; radius: 14; color: Theme.card
-                        border.width: 3; border.color: shell.fetching === modelData.id ? Theme.gold : "transparent"
-                        Image { anchors.fill: parent; anchors.margins: 3; source: net.modelData.thumb; fillMode: Image.PreserveAspectCrop; asynchronous: true; sourceSize.width: 420 }
-                        Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: 26; color: Qt.rgba(0, 0, 0, 0.55)
-                            Glyph { x: 8; visible: net.modelData.film; name: "player-play"; font.pixelSize: 12; color: "white"; anchors.verticalCenter: parent.verticalCenter }
-                            Label { x: net.modelData.film ? 26 : 10; width: parent.width - x - 10; text: net.modelData.title; color: "white"; font.pixelSize: 11; anchors.verticalCenter: parent.verticalCenter } }
-                        Waiting { anchors.centerIn: parent; visible: shell.fetching === net.modelData.id }
-                        MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; enabled: shell.fetching === ""
-                                    onClicked: { shell.fetching = net.modelData.id; fetcher.running = false; fetcher.command = ["latte-walls", "get", net.modelData.url, net.modelData.title]; fetcher.running = true } } } } }
-
-            // skwd-wall's own picker, and looking for a wallpaper by what it shows
-            Part { visible: shell.page === "background" && shell.bgSource === "skwd"; width: view.room; title: "skwd-wall"
-                   note: shell.bg !== null && shell.bg.engine === "skwd" ? I18n.tr("Its own picker over the desktop: your library with transitions, scenes of Wallpaper Engine, its downloads and playlists. What you choose there is kept here too.")
-                                                                         : I18n.tr("skwd-wall is not installed. With it wallpapers change with a transition and scenes can be shown.")
-                Pill { visible: shell.bg !== null && shell.bg.engine === "skwd"; icon: "sparkles"; strong: true; text: I18n.tr("Open skwd-wall"); onPressed: Quickshell.execDetached(["latte-wall", "pick"]) }
-                Pill { visible: shell.bg !== null && shell.bg.engine === "skwd"; icon: "player-pause"; text: I18n.tr("Pause"); onPressed: Quickshell.execDetached(["latte-wall", "pause"]) }
-                Pill { visible: shell.bg !== null && shell.bg.engine === "skwd"; icon: "player-play"; text: I18n.tr("Play"); onPressed: Quickshell.execDetached(["latte-wall", "resume"]) } }
-            Part { visible: shell.page === "background" && shell.bgSource === "lens"; width: view.room; title: I18n.tr("Describe the wallpaper you want")
-                   note: shell.bg !== null && shell.bg.lens ? I18n.tr("A model on this computer looks through your library for pictures that show what you describe. Nothing leaves the computer.")
-                                                            : I18n.tr("This needs skwd-wall with its search model, and AI turned on in the Settings.")
-                Field { id: lensField; visible: shell.bg !== null && shell.bg.lens; width: 420; hint: I18n.tr("a foggy forest in the morning…")
-                        onAccepted: Quickshell.execDetached(["latte-wall", "pick"].concat(lensField.text.trim().split(/\s+/).filter(w => w !== ""))) }
-                Pill { visible: shell.bg !== null && shell.bg.lens; icon: "search"; strong: true; text: I18n.tr("Look for it")
-                       onPressed: Quickshell.execDetached(["latte-wall", "pick"].concat(lensField.text.trim().split(/\s+/).filter(w => w !== ""))) } }
+            // the background: layers on the pegboard (settings/Wallpapers.qml)
+            Wallpapers { visible: shell.page === "background"; open: visible; width: view.room; overlay: overlay; menu: popup }
 
             Switch { visible: shell.page === "background"; width: view.room; text: I18n.tr("Icons on the desktop"); on: icons.value !== "off"
                      hint: I18n.tr("The Recycle Bin and what is in your Desktop folder, over the background.")
                      onPressed: { const next = on ? "off" : "on"; icons.value = next; Quickshell.execDetached(["latte-desktop", next]) } }
 
-            // windows: how they are arranged, and the glass of the side panels
+            // windows: how they are arranged, on each screen its own (ROADMAP 8A.13), and the glass of the side panels
             Part { visible: shell.page === "windows"; width: view.room; title: I18n.tr("How windows are arranged")
-                // in the order of ROADMAP 8A.06; `soon`: decided, not made yet
-                Repeater { model: [{ id: "tape", name: QT_TR_NOOP("Tape"), hint: QT_TR_NOOP("an endless strip, nothing is put away"), icon: "layout-columns" },
-                                   { id: "floating", name: QT_TR_NOOP("Floating windows"), hint: QT_TR_NOOP("as on Windows"), icon: "app-window" },
-                                   { id: "tiles", name: QT_TR_NOOP("Tiles"), hint: QT_TR_NOOP("windows share the screen"), icon: "layout-grid" },
-                                   { id: "glance", name: QT_TR_NOOP("Glance"), hint: QT_TR_NOOP("one in the middle, the others at the sides"), icon: "layout-distribute-vertical" },
-                                   { id: "canvas", name: QT_TR_NOOP("Canvas"), hint: QT_TR_NOOP("free windows on a desk you zoom out of"), icon: "zoom-out-area", soon: true },
-                                   { id: "trizone", name: QT_TR_NOOP("Three zones"), hint: QT_TR_NOOP("for wide screens: a middle and two columns"), icon: "columns-3", soon: true }]
-                    Choice { required property var modelData; width: 200; text: I18n.tr(modelData.name); on: win.mode === modelData.id
-                             hint: modelData.soon ? I18n.tr("coming") : I18n.tr(modelData.hint); opacity: modelData.soon ? 0.5 : 1
-                             onPressed: if (!modelData.soon) Quickshell.execDetached(["hyprctl", "eval", "latte.mode.set(\"" + modelData.id + "\")"])
-                             Glyph { anchors.centerIn: parent; name: parent.parent.modelData.icon; font.pixelSize: 54; color: parent.parent.on ? Theme.gold : Theme.dim } } } }
+                   note: I18n.tr("Each screen can have its own: press a screen and choose, or drag a mode onto it. The button gives the mode you pressed to every desktop.")
+                // the pegboard (common/Pegboard.qml): here the screens stand, each showing its mode
+                Pegboard { id: modeBoard; width: view.room; height: 220; screens: shell.screenList.map(m => ({ x: m.x, y: m.y, w: shell.wide(m), h: shell.tall(m), name: m.name }))
+                    Repeater { model: modeBoard.screens
+                        Rectangle { id: ms; required property var modelData; required property int index
+                            readonly property var mode: shell.windowModes.find(o => o.id === shell.modeOn(modelData.name)) || shell.windowModes[0]
+                            x: modeBoard.px(modelData.x) + 3; y: modeBoard.py(modelData.y) + 3; width: modelData.w * modeBoard.k - 6; height: modelData.h * modeBoard.k - 6; radius: 14
+                            color: msHit.containsMouse ? Theme.raised : Theme.card; border.width: 2; border.color: shell.modeHover === modelData.name ? Theme.gold : Theme.line
+                            Column { anchors.centerIn: parent; spacing: 3
+                                Glyph { name: ms.mode.icon; font.pixelSize: 30; color: Theme.gold; anchors.horizontalCenter: parent.horizontalCenter }
+                                Label { text: I18n.tr(ms.mode.name); font.weight: 700; anchors.horizontalCenter: parent.horizontalCenter }
+                                Label { text: (ms.index + 1) + "  ·  " + ms.modelData.name; color: Theme.dim; font.pixelSize: 11; anchors.horizontalCenter: parent.horizontalCenter } }
+                            MouseArea { id: msHit; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
+                                onClicked: e => { const p = msHit.mapToItem(overlay, e.x, e.y)
+                                                  popup.open(p.x, p.y, shell.windowModes.filter(o => !o.soon).map(o => ({ text: I18n.tr(o.name), icon: o.icon, checked: o.id === ms.mode.id, run: () => shell.setMode(o.id, ms.modelData.name) }))) } } } } }
+                Row { width: view.room; spacing: 12
+                    Pill { strong: shell.modePick !== ""; enabled: shell.modePick !== ""; opacity: enabled ? 1 : 0.5; icon: "copy"
+                           text: shell.modePick !== "" ? I18n.tr("Use {mode} on every desktop", { mode: I18n.tr(shell.windowModes.find(o => o.id === shell.modePick).name) }) : I18n.tr("Use on every desktop")
+                           onPressed: shell.setMode(shell.modePick, "") }
+                    Label { visible: shell.modePick === ""; text: I18n.tr("Press a mode first."); color: Theme.faint; height: 36; verticalAlignment: Text.AlignVCenter } }
+                // the modes: a press picks one for the button, a drag puts it on a screen
+                Repeater { model: shell.windowModes
+                    Item { id: mc; required property var modelData; width: 200; height: 150; opacity: modelData.soon ? 0.5 : 1
+                        Choice { anchors.fill: parent; text: I18n.tr(mc.modelData.name); on: shell.modePick === mc.modelData.id
+                                 hint: mc.modelData.soon ? I18n.tr("coming") : I18n.tr(mc.modelData.hint)
+                                 Glyph { anchors.centerIn: parent; name: mc.modelData.icon; font.pixelSize: 54; color: shell.modePick === mc.modelData.id ? Theme.gold : Theme.dim } }
+                        MouseArea { anchors.fill: parent; enabled: !mc.modelData.soon; preventStealing: true; cursorShape: carrying ? Qt.ClosedHandCursor : Qt.PointingHandCursor
+                            property point from
+                            property bool carrying: false
+                            onPressed: e => { carrying = false; from = Qt.point(e.x, e.y) }
+                            onPositionChanged: e => {
+                                if (!carrying && Math.abs(e.x - from.x) + Math.abs(e.y - from.y) < 6) return
+                                carrying = true
+                                const p = mapToItem(overlay, e.x, e.y); modeGhost.icon = mc.modelData.icon; modeGhost.x = p.x - 32; modeGhost.y = p.y - 32; modeGhost.visible = true
+                                const m = modeBoard.inside(this, e.x, e.y) ? modeBoard.screenAt(modeBoard.at(this, e.x, e.y)) : null
+                                shell.modeHover = m ? m.name : "" }
+                            onReleased: e => {
+                                modeGhost.visible = false
+                                const m = carrying && modeBoard.inside(this, e.x, e.y) ? modeBoard.screenAt(modeBoard.at(this, e.x, e.y)) : null
+                                if (m) shell.setMode(mc.modelData.id, m.name)
+                                else if (!carrying) shell.modePick = shell.modePick === mc.modelData.id ? "" : mc.modelData.id
+                                shell.modeHover = ""; carrying = false } } } } }
+            // the transitions: skwd-wall's, for the wallpaper and its slideshows (ROADMAP 7A.12); what windows and
+            // desktops do comes with a plugin of LatteOS's own for Hyprland
+            Part { visible: shell.page === "transitions"; width: view.room; title: I18n.tr("Wallpaper and slideshows")
+                   note: trans.data && trans.data.engine === "skwd" ? I18n.tr("Each change of the wallpaper, a slideshow's too, goes with a transition of skwd-wall: one of all at random, one of those you chose, or none. The button on a transition shows it on the desktop: the wallpaper goes away and comes back.")
+                                                                    : I18n.tr("This needs skwd-wall: without it the wallpaper changes at once.")
+                Repeater { model: [{ id: "all", name: QT_TR_NOOP("All at random") }, { id: "some", name: QT_TR_NOOP("Only the chosen ones") }, { id: "none", name: QT_TR_NOOP("None") }]
+                    Pill { required property var modelData; text: I18n.tr(modelData.name); strong: shell.transUse === modelData.id; onPressed: shell.keepTrans({ use: modelData.id }) } }
+                Item { width: view.room; height: 1 }
+                Label { text: I18n.tr("Speed"); color: Theme.dim; height: 36; verticalAlignment: Text.AlignVCenter }
+                Repeater { model: [{ ms: 2400, name: QT_TR_NOOP("Slow") }, { ms: 1200, name: QT_TR_NOOP("Normal") }, { ms: 600, name: QT_TR_NOOP("Fast") }]
+                    Pill { required property var modelData; text: I18n.tr(modelData.name); strong: shell.transMs === modelData.ms; onPressed: shell.keepTrans({ ms: modelData.ms }) } }
+                Item { width: view.room; height: 1 }
+                // a press chooses a transition (or leaves it out); with all of them in use it starts the choice with that one
+                Repeater { model: shell.transitions
+                    Rectangle { id: tc; required property var modelData
+                        readonly property bool used: shell.transUse === "all" || (shell.transUse === "some" && shell.transPicked.includes(modelData.id))
+                        width: 206; height: 56; radius: 14; color: tcHit.containsMouse ? Theme.raised : Theme.card
+                        border.width: 2; border.color: used ? Theme.gold : "transparent"; opacity: shell.transUse === "none" ? 0.5 : 1
+                        Rectangle { x: 12; width: 20; height: 20; radius: 6; anchors.verticalCenter: parent.verticalCenter; color: tc.used ? Theme.gold : "transparent"; border.width: 1.5; border.color: tc.used ? Theme.gold : Theme.faint
+                            Glyph { anchors.centerIn: parent; visible: tc.used; name: "check"; font.pixelSize: 13; color: Theme.inkOnGold } }
+                        Label { x: 42; width: parent.width - 90; text: I18n.tr(tc.modelData.name); font.weight: 600; font.pixelSize: 13; elide: Text.ElideRight; anchors.verticalCenter: parent.verticalCenter }
+                        MouseArea { id: tcHit; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
+                            onClicked: { const id = tc.modelData.id
+                                         if (shell.transUse !== "some") shell.keepTrans({ use: "some", picked: [id] })
+                                         else shell.keepTrans({ picked: shell.transPicked.includes(id) ? shell.transPicked.filter(x => x !== id) : shell.transPicked.concat([id]) }) } }
+                        Pill { implicitHeight: 32; icon: "player-play"; anchors.right: parent.right; anchors.rightMargin: 10; anchors.verticalCenter: parent.verticalCenter
+                               visible: trans.data !== null && trans.data.engine === "skwd"; onPressed: Quickshell.execDetached(["latte-wall", "try", tc.modelData.id]) } } } }
+            Part { visible: shell.page === "transitions"; width: view.room; title: I18n.tr("Windows and desktops")
+                   note: I18n.tr("Closing a window, switching desktops, changing the theme, logging in: these transitions come with LatteOS's own plugin for Hyprland.")
+                Repeater { model: [QT_TR_NOOP("Closing a window"), QT_TR_NOOP("Switching desktops"), QT_TR_NOOP("Changing the theme"), QT_TR_NOOP("Logging in"), QT_TR_NOOP("Folders in Files")]
+                    Pill { required property string modelData; text: I18n.tr(modelData) + "  ·  " + I18n.tr("coming"); opacity: 0.5 } } }
             // how much of LatteOS is glass: one choice for all of it; 0 makes everything solid (Theme.glassLevel)
             Part { visible: shell.page === "windows"; width: view.room; title: I18n.tr("Glass"); note: I18n.tr("How much of LatteOS is glass: the side panels, the windows and the AI's pages. None: everything is solid.")
                 Repeater { model: [{ n: 0, name: QT_TR_NOOP("None") }, { n: 1, name: QT_TR_NOOP("A little") }, { n: 2, name: QT_TR_NOOP("More") }, { n: 3, name: QT_TR_NOOP("The most") }, { n: 4, name: "True Glass" }]
@@ -1223,36 +1222,15 @@ ShellRoot {
                 Row { anchors.right: parent.right; anchors.rightMargin: 14; anchors.verticalCenter: parent.verticalCenter; spacing: 8
                     Pill { text: I18n.tr("Put it back"); onPressed: shell.screensBack() }
                     Pill { strong: true; icon: "check"; text: I18n.tr("Keep it"); onPressed: shell.keepScreens() } } }
-            // the pegboard: the screens as they stand, in their true sizes and gaps (the pointer crosses where two
-            // edges touch); there with one screen too, as the wallpapers will have it
-            // Its bottom edge is dragged to make it taller: room to put a screen above or below the main one.
-            Item { id: desk; visible: shell.page === "displays"; width: view.room; height: 260; clip: true
-                Rectangle { anchors.fill: parent; radius: 16; color: "transparent"; border.width: 2; border.color: Theme.line; z: 4 }
-                Rectangle { z: 4; width: 48; height: 4; radius: 2; color: grow.containsMouse || grow.pressed ? Theme.gold : Theme.line
-                    anchors.horizontalCenter: parent.horizontalCenter; anchors.bottom: parent.bottom; anchors.bottomMargin: 5 }
-                MouseArea { id: grow; z: 5; anchors.left: parent.left; anchors.right: parent.right; anchors.bottom: parent.bottom; height: 14
-                    hoverEnabled: true; preventStealing: true; cursorShape: Qt.SizeVerCursor
-                    property real from: 0
-                    onPressed: e => from = mapToItem(desk.parent, 0, e.y).y - desk.height
-                    onPositionChanged: e => { if (pressed) desk.height = Math.max(190, Math.min(900, mapToItem(desk.parent, 0, e.y).y - from)) } }
-                readonly property real x0: shell.screenList.length ? Math.min.apply(null, shell.screenList.map(m => m.x)) : 0
-                readonly property real y0: shell.screenList.length ? Math.min.apply(null, shell.screenList.map(m => m.y)) : 0
-                readonly property real x1: shell.screenList.length ? Math.max.apply(null, shell.screenList.map(m => m.x + shell.wide(m))) : 1
-                readonly property real y1: shell.screenList.length ? Math.max.apply(null, shell.screenList.map(m => m.y + shell.tall(m))) : 1
-                readonly property real room: 1.6          // space around, to drag a screen into
-                // the scale of its first 260 px: made taller, it gains room, the screens stay as large
-                property real zoom: 1                            // the wheel over it: closer for a finer move
-                readonly property real k: zoom * Math.min(width / Math.max(1, (x1 - x0) * room), 260 / Math.max(1, (y1 - y0) * room))
-                // over all of it, the wheel only: a press goes through to the screens below
-                MouseArea { anchors.fill: parent; z: 6; acceptedButtons: Qt.NoButton
-                    onWheel: e => desk.zoom = Math.max(0.25, Math.min(12, desk.zoom * (e.angleDelta.y > 0 ? 1.2 : 1 / 1.2))) }
+            // the pegboard (common/Pegboard.qml): here the screens are dragged to where they stand (the pointer
+            // crosses where two edges touch)
+            Pegboard { id: desk; visible: shell.page === "displays"; width: view.room; height: 260
+                screens: shell.screenList.map(m => ({ x: m.x, y: m.y, w: shell.wide(m), h: shell.tall(m) }))
                 // the main screen's edges, where it is being dragged to while it is
                 property bool mainAway: false
                 property point mainG
                 readonly property var edges: !shell.guides || !main ? shell.guides : !mainAway ? shell.guides
                     : { "top": mainG.y, "bottom": mainG.y + shell.tall(main), "left": mainG.x, "right": mainG.x + shell.wide(main) }
-                readonly property real ox: (width - (x1 - x0) * k) / 2
-                readonly property real oy: (height - (y1 - y0) * k) / 2
                 readonly property var main: shell.screenList.find(m => m.name === shell.screenMain) || null
                 // where a screen dragged to nx,ny lands: an edge near a neighbour's sticks to it
                 function snap(m, nx, ny) {
@@ -1553,5 +1531,11 @@ ShellRoot {
                 Label { visible: shell.here !== null && shell.here.elsewhere !== undefined; text: I18n.tr("Meanwhile it is done here:"); color: Theme.dim }
                 Pill { visible: shell.here !== null && shell.here.elsewhere !== undefined; strong: true; icon: "external-link"; text: I18n.tr("Open"); onPressed: shell.elsewhere(shell.here) } }
         }
+        // over the whole page: menus at the pointer, and what is carried with the mouse
+        Item { id: overlay; anchors.fill: parent; z: 1000
+            Rectangle { id: modeGhost; visible: false; width: 64; height: 64; radius: 16; color: Theme.raised; border.width: 2; border.color: Theme.gold; opacity: 0.92
+                property string icon: ""
+                Glyph { anchors.centerIn: parent; name: modeGhost.icon; font.pixelSize: 32; color: Theme.gold } }
+            Menu { id: popup } }
     }
 }

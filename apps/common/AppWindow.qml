@@ -50,11 +50,18 @@ FloatingWindow {
     property string net: ""
     Process { id: net; command: ["latte-net", "status", String(Quickshell.processId)]; running: true
               stdout: StdioCollector { onStreamFinished: { const said = this.text.trim(); win.net = said === "on" || said === "off" ? said : "" } } }
+    // the mode of every screen on the first line, a screen's own after it ("DP-1 tiles"): this window's screen's
     FileView {
+        id: modeFile
         path: (Quickshell.env("XDG_STATE_HOME") || (Quickshell.env("HOME") + "/.local/state")) + "/latteos/window-mode"
         printErrors: false; watchChanges: true
         onFileChanged: reload()
-        onLoaded: win.mode = text().trim() || "tape"
+        onLoaded: win.readMode()
+    }
+    onScreenChanged: readMode()
+    function readMode() {
+        const lines = modeFile.text().split("\n"), own = lines.slice(1).map(l => l.trim().split(/\s+/)).find(w => w.length === 2 && win.screen && w[0] === win.screen.name)
+        win.mode = own ? own[1] : ((lines[0] || "").trim() || "tape")
     }
     function ask(what) { Quickshell.execDetached(["hyprctl", "eval", "latte.win." + what + "()"]) }
     // the window's menu in a Goo card, where the pointer is, as the right button on any title bar gives it (system/hypr/latte/bars.lua)

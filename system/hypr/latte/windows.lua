@@ -5,7 +5,10 @@
 --   tiles     tiles (dwindle)
 --   floating  every window floats, as on Windows
 --   glance    one window in the middle, the others looking out from the sides (after Scott Jenson's Glance)
--- The choice is kept in ~/.local/state/latteos/window-mode and told to the Goo scene (its event `window_mode`).
+-- A screen can have a mode of its own (Settings › Windows, ROADMAP 8A.13): its desktops get their layout by a
+-- workspace rule, its windows float by a window rule, and a window moved onto it takes its way.
+-- The choice is kept in ~/.local/state/latteos/window-mode, the mode of every screen on the first line and one of a
+-- screen's own on each line after ("DP-1 tiles"), and the main screen's is told to the Goo scene (`window_mode`).
 --
 -- A window put away sits on the hidden workspace special:minimized. The scene knows windows by the address
 -- `hyprctl clients` gives them and calls the functions in `latte.win` with it (goo/lib/wm.luau).
@@ -15,27 +18,42 @@ W.order = { "tape", "tiles", "floating", "glance" }
 local MINIMIZED = "special:minimized"
 local GAP = 10
 local state = (os.getenv("XDG_STATE_HOME") or ((os.getenv("HOME") or "") .. "/.local/state")) .. "/latteos/window-mode"
-local float_rule
+local float_rule                             -- every window floats: where the mode of every screen floats them
+local layout_rules, float_rules = {}, {}    -- a screen's name → { layout =, rule = }; → { floats =, rule = }
+W.own = {}                                    -- a screen's name → its own mode
 
 local function valid(mode) for _, m in ipairs(W.order) do if m == mode then return true end end return false end
 local function load_mode()
     local f = io.open(state, "r")
     if not f then return "tape" end
     local m = (f:read("*l") or ""):match("%a+")
+    W.own = {}
+    for line in f:lines() do
+        local name, own = line:match("^(%S+)%s+(%a+)$")
+        if name and valid(own) then W.own[name] = own end
+    end
     f:close()
     return valid(m) and m or "tape"
 end
 local function save_mode(m)
     os.execute("mkdir -p \"$(dirname '" .. state .. "')\"")
     local f = io.open(state, "w")
-    if f then f:write(m .. "\n") f:close() end
+    if not f then return end
+    f:write(m .. "\n")
+    for name, own in pairs(W.own) do f:write(name .. " " .. own .. "\n") end
+    f:close()
 end
+-- the mode on a screen (a monitor, or its name), of a window, of the screen one works on
+local function mode_on(m) local name = type(m) == "string" and m or (m and m.name) return (name and W.own[name]) or W.current end
+local function mode_of(w) return mode_on(w and w.monitor) end
+local function here() return mode_on(hl.get_active_monitor()) end
+local function floats(mode) return mode == "floating" or mode == "glance" end
 
 local function sel(w) return "address:" .. w.address end
 local function find(address) return address and hl.get_window("address:" .. address) end
 local function put_away(w) return w.workspace ~= nil and tostring(w.workspace.name or ""):find("^special:minimized") ~= nil end
 local function xy(v) if type(v) == "table" then return v.x or v[1] or 0, v.y or v[2] or 0 end return 0, 0 end
-local function tape() return W.current == "tape" end
+local function tape() return here() == "tape" end
 
 -- ── parts of the screen a window can be laid in, as shares of what the monitor has free: x, y, w, h ───────
 local zones = {
@@ -118,9 +136,9 @@ local function within_reach(w, m, whole)
 end
 local glance_dropped                 -- what glance does with a window let go; set further down
 local function dropped(w, x, y)
-    if w and W.current == "glance" then return glance_dropped(w, x, y) end
-    if not w or W.current ~= "floating" then return end
-    local m = hl.get_monitor_at(x, y) or w.monitor
+    local m = w and (hl.get_monitor_at(x, y) or w.monitor)
+    if w and mode_on(m) == "glance" then return glance_dropped(w, x, y) end
+    if not w or mode_on(m) ~= "floating" then return end
     local zone = m and edge_zone(m, x, y)
     if zone == "full" then
         hl.dispatch(hl.dsp.window.fullscreen({ mode = "maximized", action = "set", window = sel(w) }))
@@ -235,7 +253,7 @@ local function cycle(dir)
 end
 -- On the tape nothing is put away, as in niri: the window only leaves the view.
 local function minimize(w)
-    if tape() then
+    if mode_of(w) == "tape" then
         local active = hl.get_active_window()
         if active and active.address == w.address then cycle(1) end
         return
@@ -247,7 +265,7 @@ local function minimize(w)
     hl.exec_cmd(string.format('latte-say "fact win.x %d" "fact win.y %d" "fact win.w %d" "fact win.h %d" "fact win.on %d" "emit win_min"',
                               x - (m and m.x or 0), y - (m and m.y or 0), width, height, m and m.id or 0))
     hl.dispatch(hl.dsp.window.move({ workspace = MINIMIZED, follow = false, window = sel(w) }))
-    if W.current == "glance" and W.glance_next then W.glance_next(w) end      -- the middle does not stay empty
+    if mode_of(w) == "glance" and W.glance_next then W.glance_next(w) end      -- the middle does not stay empty
 end
 
 -- ── a window born of a drop comes in a bubble; closed, it bursts (LATTEOS-GOO rule 14) ──────────────────────
@@ -322,7 +340,7 @@ local function glance_room(m)
     return ax, ay, aw, ah, main, math.floor(ax + (aw - main) / 2)
 end
 local function glance()
-    if W.current ~= "glance" then return end
+    if here() ~= "glance" then return end
     local ws, active = hl.get_active_workspace(), hl.get_active_window()
     if not ws then return end
     local list = windows_on(ws.id)
@@ -381,36 +399,90 @@ glance_dropped = function(w, x, y)
     else hl.dispatch(hl.dsp.focus({ window = sel(w) })) glance() end
 end
 hl.on("window.active", function() glance() end)
-hl.on("window.open", function() if W.current == "glance" then hl.timer(function() glance() end, { timeout = 120, type = "oneshot" }) end end)
+hl.on("window.open", function() if here() == "glance" then hl.timer(function() glance() end, { timeout = 120, type = "oneshot" }) end end)
 hl.on("window.close", function(w)
     if w then glance_side[w.address], glance_seen[w.address] = nil, nil end
-    if W.current == "glance" then hl.timer(function() glance() end, { timeout = 120, type = "oneshot" }) end
+    if here() == "glance" then hl.timer(function() glance() end, { timeout = 120, type = "oneshot" }) end
 end)
 
--- the scene learns the mode by its place in `order`, from 0
+-- the scene learns the mode of the main screen (the one at 0,0, which carries the drops) by its place in `order`, from 0
+-- ponytail: the window bars of the other screens are not told theirs; their heads show the main one's
 local function tell()
+    local main
+    for _, m in ipairs(hl.get_monitors() or {}) do if m.x == 0 and m.y == 0 then main = m end end
     for i, m in ipairs(W.order) do
-        if m == W.current then hl.exec_cmd('latte-say "emit window_mode ' .. (i - 1) .. '"') end
+        if m == mode_on(main) then hl.exec_cmd('latte-say "emit window_mode ' .. (i - 1) .. '"') end
     end
 end
 
--- Switches the mode and fits the windows that are there to it.
-function W.apply(mode)
-    W.current = mode
-    local floating = mode == "floating" or mode == "glance"
-    hl.config({ general = { layout = mode == "tape" and "scrolling" or "dwindle" } })
-    if float_rule then float_rule:set_enabled(floating) end
+-- Each screen's desktops laid out by its mode, and its new windows floating where it floats them: a workspace rule
+-- of each screen's own, and a window rule of its own only where it differs from the mode of every screen (that one is
+-- by the window's class, so it holds from a window's first frame; one by the screen comes too late for a window that
+-- names itself after it opens, and it would float at the size of the whole screen). A rule changed is a new rule: of
+-- two, the newer wins even when it is switched off, so an older one cannot simply be switched on again.
+local function rules()
+    hl.config({ general = { layout = W.current == "tape" and "scrolling" or "dwindle" } })
+    if float_rule then float_rule:set_enabled(floats(W.current)) end
+    for _, m in ipairs(hl.get_monitors() or {}) do
+        local mode, on = mode_on(m), "m[" .. m.name .. "]"
+        local want = mode == "tape" and "scrolling" or "dwindle"
+        local r = layout_rules[m.name]
+        if not r or r.layout ~= want then
+            if r then r.rule:set_enabled(false) end
+            layout_rules[m.name] = { layout = want, rule = hl.workspace_rule({ workspace = on, layout = want }) }
+        end
+        local f, own = float_rules[m.name], floats(mode) ~= floats(W.current) and floats(mode) or nil
+        if (f and f.floats) ~= own then
+            if f then f.rule:set_enabled(false) end
+            float_rules[m.name] = own ~= nil and { floats = own, rule = hl.window_rule({ name = "latte-floating-" .. m.name .. "-" .. tostring(own), match = { workspace = on }, float = own }) } or nil
+        end
+    end
+end
+
+-- Switches the mode, of every screen or of one (its name), and fits the windows that are there to it. `keep`: the
+-- screens keep their own (as the session starts).
+function W.apply(mode, name, keep)
+    if name then W.own[name] = mode else W.current = mode if not keep then W.own = {} end end
+    rules()
     local ws = hl.get_active_workspace()
     for _, w in ipairs(hl.get_windows() or {}) do
-        -- on the tape nothing is hidden: what was put away comes back
-        if mode == "tape" and ws and put_away(w) then hl.dispatch(hl.dsp.window.move({ workspace = tostring(ws.id), follow = false, window = sel(w) })) end
-        if w.floating ~= floating then hl.dispatch(hl.dsp.window.float({ action = floating and "enable" or "disable", window = sel(w) })) end
+        local on = mode_of(w)
+        if not name or (w.monitor and w.monitor.name == name) then
+            -- on the tape nothing is hidden: what was put away comes back
+            if on == "tape" and ws and put_away(w) then hl.dispatch(hl.dsp.window.move({ workspace = tostring(ws.id), follow = false, window = sel(w) })) end
+            if not put_away(w) and w.floating ~= floats(on) then hl.dispatch(hl.dsp.window.float({ action = floats(on) and "enable" or "disable", window = sel(w) })) end
+        end
     end
     if mode == "tape" then hide_special() end
-    save_mode(mode)
+    save_mode(W.current)
     tell()
     glance()
 end
+-- A window moved onto a screen of another mode takes that one's way: it floats there, or is laid in.
+local where = {}                              -- address → the name of the screen it was last on
+hl.on("window.move_to_workspace", function(w)
+    if not w then return end
+    hl.timer(function()
+        local now = find(w.address)
+        if not now or put_away(now) or not now.monitor then return end
+        local was = where[now.address]
+        where[now.address] = now.monitor.name
+        if was and was ~= now.monitor.name and floats(mode_on(was)) ~= floats(mode_on(now.monitor)) and now.floating ~= floats(mode_of(now)) then
+            hl.dispatch(hl.dsp.window.float({ action = floats(mode_of(now)) and "enable" or "disable", window = sel(now) }))
+        end
+    end, { timeout = 80, type = "oneshot" })
+end)
+hl.on("window.open", function(w)
+    if not (w and w.monitor) then return end
+    where[w.address] = w.monitor.name
+    -- a floating window larger than the screen leaves room for: within it, its title bar always to be reached
+    hl.timer(function()
+        local now = find(w.address)
+        if now and now.floating and now.monitor and not put_away(now) then within_reach(now, now.monitor, true) end
+    end, { timeout = 200, type = "oneshot" })
+end)
+hl.on("window.close", function(w) if w then where[w.address] = nil end end)
+hl.on("monitor.added", function() hl.timer(function() rules() end, { timeout = 300, type = "oneshot" }) end)
 
 function W.setup()
     hl.config({
@@ -418,6 +490,7 @@ function W.setup()
         dwindle = { preserve_split = true },
     })
     float_rule = hl.window_rule({ name = "latte-floating", match = { class = ".*" }, float = true })
+    layout_rules, float_rules = {}, {}       -- the configuration was read anew: the rules made before are gone
     born_rule = hl.window_rule({ name = "latte-born", match = { class = ".*" }, no_anim = true, opacity = "0", no_blur = true, no_shadow = true })
     born_rule:set_enabled(false)
     -- read anew, the configuration has forgotten which windows were pulsing: none keeps a lit border
@@ -441,11 +514,13 @@ function W.setup()
 
     latte.mode = {
         tell = tell,
-        set = function(mode) if valid(mode) then W.apply(mode) end end,
+        -- with a screen's name, for that screen alone; without, for every screen
+        set = function(mode, name) if valid(mode) then W.apply(mode, name) end end,
+        -- the next mode: of every screen while they share one, else of the screen one works on
         next = function()
-            local at = 1
-            for i, m in ipairs(W.order) do if m == W.current then at = i end end
-            W.apply(W.order[at % #W.order + 1])
+            local m, at = hl.get_active_monitor(), 1
+            for i, mode in ipairs(W.order) do if mode == here() then at = i end end
+            W.apply(W.order[at % #W.order + 1], next(W.own) ~= nil and m and m.name or nil)
         end,
     }
 
@@ -522,14 +597,14 @@ function W.setup()
         -- the arrow keys with the Windows key: in floating mode as on Windows, otherwise they move the focus
         arrow = function(dir)
             local w = hl.get_active_window()
-            if W.current == "glance" and w then
+            if mode_of(w) == "glance" and w then
                 -- left and right: to that side; down: parked in the bar; up: the whole screen and back
                 if dir == "left" or dir == "right" then return glance_aside(w, dir == "left" and "l" or "r") end
                 if dir == "down" then return minimize(w) end
                 hl.dispatch(hl.dsp.window.fullscreen({ mode = "maximized", action = "toggle" }))
                 return glance()
             end
-            if W.current ~= "floating" or not w then return hl.dispatch(hl.dsp.focus({ direction = dir })) end
+            if mode_of(w) ~= "floating" or not w then return hl.dispatch(hl.dsp.focus({ direction = dir })) end
             if dir == "up" then
                 if w.fullscreen ~= 1 then hl.dispatch(hl.dsp.window.fullscreen({ mode = "maximized", action = "toggle" })) end
             elseif dir == "down" then
@@ -581,7 +656,7 @@ function W.setup()
         end,
     }
 
-    W.apply(load_mode())
+    W.apply(load_mode(), nil, true)
 end
 
 return W

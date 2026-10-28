@@ -1088,17 +1088,27 @@ preberáme: `inspo/tapety-programy.md` (overené 28. 10.).
   jeho službu; volá ho vypínač v Nastaveniach › AI aj štart relácie. Overené: pri vypnutej AI sa nový obrázok
   neindexuje.
 
-**7A.06** [ ] (Vzhľad, témy a tapety) skwd-wall . samotne menu aplikacie skwd sa odoberie. nebudeme použivat kompletnu aplikaciu v tomto pripade.
+**7A.06** [~] (Vzhľad, témy a tapety) skwd-wall . samotne menu aplikacie skwd sa odoberie. nebudeme použivat kompletnu aplikaciu v tomto pripade.
 zachovat nutne je prechodove efekty, a sustredit prepinanie wallpaperov dovnutra centralnych nastaveni.
 Je nutne urobit nanovo prehladne kategorie, pre všetky druhy tapiet, vratane odkazu na externe zdroje.
+- [~] **Potvrdené 28. 10.:** „skwd-wall je oddelený program, jeho rozhranie je drasticky odlišné — vziať z neho, čo
+  môžeme, a obísť sa bez jeho rozhrania. Nemením tapety každú chvíľu; páčia sa mi jeho prechody a jeho ponuka tapiet.“
+  Urobené: `latte-wall pick` (aj „Zmeniť tapetu“ v ponuke plochy) otvára Nastavenia › Pozadie, karta skwd-wall z knižnice
+  preč, prechody v Nastavenia › Prechody (7A.12). Ostáva: jeho ponuka v našej knižnici — `skwd-helm list --json` dáva
+  knižnicu s náhľadmi a animovanými ukážkami videí (`preview` .webp), farbou, dĺžkou; scény Wallpaper Engine a Steam
+  Workshop; hľadanie podľa opisu (skwd-lens) nemá cestu mimo jeho okna (7A.09).
+  Používateľ 28. 10.: „páči sa mi jeho katalóg, čo už má“ → preniesť do našej knižnice (náhľady, animované ukážky videí,
+  scény, Workshop). „Jeho efekt — šikmý posun skosených okien (výber Slices) je tiež veľmi efektný, ale neviem, kam ho
+  do LatteOS zaviesť.“ Kandidáti: prepínač okien (Alt+Tab / prehľad okien ako šikmé pásy), knižnica tapiet v Nastaveniach,
+  boky režimu Pohľad; rozhodne používateľ.
 
 
-**7A.07** [ ] (Tapety) **Pegboard v tapetách** (používateľ 26. 10.; tretie miesto je 8A.13): ten istý pegboard obrazoviek ako v Nastaveniach ›
+**7A.07** [x] (Tapety) **Pegboard v tapetách** (používateľ 26. 10.; tretie miesto je 8A.13): ten istý pegboard obrazoviek ako v Nastaveniach ›
 Obrazovky (8B.04) — obrazovky v skutočnom pomere, rozlíšení a rozostupoch, nezávisle od toho, či je obrazovka jedna
 alebo dvadsať (pri jednej nemá ťahanie zmysel, ale pegboard tam je). Zdieľaný kus kódu pre obe miesta, nie kópia.
 Náčrt: claude.ai/artifact/KZCxND84ngaY5sLxu5UE1j — verzia 2 (vrstvy, knižnica ako Windows, schémy) schválená 28. 10.: „funkčne je to presne ako som chcel“; podľa nej sa stavia.
 
-**7A.08** [ ] (Tapety) **Vrstvy na pegboarde, knižnica a schémy** (používateľ 26. a 28. 10.; nadväzuje na 7A.07). Predstava:
+**7A.08** [~] (Tapety) **Vrstvy na pegboarde, knižnica a schémy** (používateľ 26. a 28. 10.; nadväzuje na 7A.07). Predstava:
 - **Vrstvy ako v Photoshope.** Obrázok, video, prezentáciu alebo farbu potiahnem **na pegboard, nie na monitor**; vznikne
   vrstva. Úchytmi (ako v Skicári či Photoshope) jej nastavím veľkosť a polohu; čo prekrýva, to ukážu monitory — jeden obraz
   cez 3 monitory so skutočnými rozostupmi. Vrstiev môže byť viac nad sebou; každý monitor ukáže, čo je na jeho mieste
@@ -1114,6 +1124,17 @@ Náčrt: claude.ai/artifact/KZCxND84ngaY5sLxu5UE1j — verzia 2 (vrstvy, knižni
   Kopírovať (vložiť sa dá inde, napr. do Skicára).
 - Vykonáva `latte-wall` (dnes `set NAME|* picture|video PATH`): vrstvy a výrez pre každý monitor podľa jeho polohy
   a mierky; schémy a nedávne prezentácie v `~/.config/latteos/background.json`.
+- [x] **Urobené 28. 10.:** `apps/common/Pegboard.qml` (spoločný; Obrazovky naň prepojené), `apps/settings/Wallpapers.qml`
+  (vrstvy s úchytmi a prichytávaním k okrajom, zoznam Vrstvy, pravý klik dopredu/dozadu/odstrániť aj Delete a Ctrl+]/[,
+  knižnica ako Windows s dialógmi, schémy s malým pegboardom, pravý klik na položky, panel vrstvy so zrnitosťou),
+  `latte-wall layers|schemes|forget|duplicate|copy|copy-scheme|screens` (obrázky a farby na obrazovke zložené cez PIL,
+  nová obrazovka dostane to, čo hlavná). Overené: `tests/test_bin.py`, logika stránky proti `latte-wall` v `tests/screen.sh`,
+  snímky. Myšou na ploche overil používateľ 28. 10. (kávová tapeta + video potiahnuté a zväčšené cez roh obrazovky);
+  pravý klik na vrstvu, položky a schémy ešte nevyskúšaný (`tests/pointer.py` do okien Quickshellu neklikne).
+  Video vedľa obrázkov na jednej obrazovke: ffmpeg zloží jedno video obrazovky (spodné vrstvy podklad, horné navrch;
+  overené na latte-lab 28. 10., kávová tapeta + Dream Chaser v rohu). Ostáva: prezentácia vedľa obrázka (ukáže sa len tá
+  v strede obrazovky — 7A.10 krok 2), dve videá na jednej obrazovke (hýbe sa horné),
+  záložka „Zbierky z GitHubu“, „Vytvoriť novú“ v Opísať (7A.09).
 
 **7A.09** [ ] (Tapety) **Tapeta z opisu — generatívna AI na tomto počítači** (používateľ 28. 10.; **teraz nie je priorita** —
 generovanie obrázkov ani iného obsahu sa nerobí, kým naň nepríde rad; merania a motor v `/data/ai/sd` ostávajú): „potrebujem tapetu“ →
@@ -1153,11 +1174,13 @@ a nastaví; farby témy z tapety idú samy. Vstupy: LensShore („vytvor tapetu�
 - [ ] Inštalácia motora a modelov podľa hardvéru do FILES (optional), licencie modelov do TRETIE-STRANY.md.
 - V knižnici tapiet (7A.08) je to záložka **Opísať**: „Nájsť v mojich“ (skwd-lens) a „Vytvoriť novú“ (prompt).
 
-**7A.10** [ ] (Tapety) **Video cez viac obrazoviek** (používateľ 28. 10.; nadväzuje na 7A.08). Galaxy Eyes na latte-lab je MP4
+**7A.10** [~] (Tapety) **Video cez viac obrazoviek** (používateľ 28. 10.; nadväzuje na 7A.08). Galaxy Eyes na latte-lab je MP4
 1920×1080, 30 fps, slučka 16,1 s; skwd-wall ho dnes púšťa na každú obrazovku celé. Video sa nedá orezať raz ako obrázok:
 - **Krok 1:** `latte-wall` dá ffmpegu vyrobiť raz z videa jeden súbor pre každú obrazovku (výrez podľa vrstvy, do
   `~/.cache/latteos/`) a každý pustí skwd-wall na jeho obrazovke; všetky rovnako dlhé, spustené naraz. Dekóduje sa toľko ako
   jedno video. Výrezy môžu mierne rozbehnúť — overiť na slučke Galaxy Eyes, či je šev vidieť.
+  [x] Urobené 28. 10. (`latte-wall _cut`, libx264 alebo openh264, bez zvuku); filter overený na Galaxy Eyes (2560×1080).
+  Šev na skutočných obrazovkách ešte nevidený.
 - **Krok 2 (správne):** jeden dekodér, každá obrazovka si z neho kreslí svoju časť. skwd-paper už zdieľa dekodér medzi
   obrazovkami pri tom istom videu, chýba mu iba výrez pre výstup — požiadať upstream (iba na pokyn), inak vlastné. Scény
   Wallpaper Engine idú iba takto, vopred sa orezať nedajú.
@@ -1168,7 +1191,7 @@ zväčšenie ESRGAN (stable-diffusion.cpp z 7A.09 ho vie, alebo realesrgan-ncnn-
 každá snímka (Galaxy Eyes 483 snímok), teda dlho a iba podľa hardvéru; pod vypínačom AI. Wallhaven sa pri vrstve cez viac
 obrazoviek pýta rovno na dosť veľký obrázok (`atleast`).
 
-**7A.12** [ ] (Tapety) **Prechody skwd-wall aj mimo tapiet** (používateľ 28. 10.; rozhodnuté už 9. 10. v 7A.02, tu ako úloha).
+**7A.12** [~] (Tapety) **Prechody skwd-wall aj mimo tapiet** (používateľ 28. 10.; rozhodnuté už 9. 10. v 7A.02, tu ako úloha).
 V prezentácii (7A.08) sa použijú priamo. Inde by išli cez plugin Hyprlandu: vezme snímku okna alebo plochy a pustí na ňu
 ten istý shader. Hyprland má vlastné animácie iba ako posun, zväčšenie a prelínanie. Kde áno, od najlepšieho:
 - **zatvorenie okna** (napr. Piesok — okno sa rozsype), **prepnutie plochy** (celá obrazovka A → B, presne ako tapeta),
@@ -1179,6 +1202,12 @@ ten istý shader. Hyprland má vlastné animácie iba ako posun, zväčšenie a 
   mriežka všetkých prechodov, každý s **živou ukážkou** (prejdenie myšou ho prehrá na dvoch obrázkoch). Pre každé miesto
   (zatvorenie okna, prepnutie plochy, prezentácia…) voľba **Všetky náhodne / Iba vybrané / Žiadne**; pri „Iba vybrané“ sa
   prechody v mriežke zaškrtnú (jeden = vždy ten istý, viac = náhodne spomedzi nich). Rýchlosť posuvníkom.
+- [x] **Urobené 28. 10. (tapeta a prezentácie):** Nastavenia › Prostredie › Prechody — 35 prechodov skwd-wall so
+  slovenskými menami, Všetky náhodne / Iba vybrané / Žiadne, rýchlosť; `latte-wall transitions` (voľba v
+  `~/.config/latteos/transitions.json`) a pred každou zmenou tapety zapíše skwd-wall `transition.shader` (pri „vybraných“
+  náhodne jeden z nich; skwd-walld sleduje svoje nastavenia). Ukážka: `latte-wall try NAME` — tapeta odíde na obrázok
+  LatteOS a vráti sa. Ostáva: živá ukážka priamo v mriežke, plugin pre okná a plochy (miesta sú na stránke ako
+  „pripravuje sa“).
 - Krátke (do ~250 ms okrem zatvorenia), iba stupne full a standard, v SAFE nie.
   Licencia každého shadera zvlášť (skwd-wall MIT, gl-transitions MIT) do TRETIE-STRANY.md.
 ### 7B. [~] Ponuka plochy
@@ -1327,18 +1356,34 @@ a vypnúť pri inom režime bez reštartu?
   (`distortion.enabled`), vrstva Goo sa v oddialení kreslí skreslená spolu s oknami (má ostať navrchu, rovná), farby
   z témy (`navigator.accent`), väzby myšou namiesto SUPER+CTRL+G, vlastné balenie ako hyprbars (FILES, TRETIE-STRANY.md).
 
-**8A.13** [ ] **Režim pre každý monitor** (používateľ 27. a 28. 10.): v Nastavenia › Prostredie › Okná ten istý pegboard
+**8A.13** [x] **Režim pre každý monitor** (používateľ 27. a 28. 10.): v Nastavenia › Prostredie › Okná ten istý pegboard
 obrazoviek ako v Nastavenia › Obrazovky (8B.04) a v tapetách (7A.07) — spoločný kód, nie kópia; každé nastavenie ostáva
 vo svojej kategórii. Tu sa monitormi nehýbe. Pod pegboardom ikony režimov (Plávajúce, Páska, Dlaždice…). Tri spôsoby:
 (a) klik na monitor → vybrať režim; (b) ikonu režimu potiahnuť a pustiť nad štvorec obrazovky na pegboarde;
 (c) klik na ikonu režimu a tlačidlo **Použiť pre všetky plochy** medzi pegboardom a ikonami. Hyprland vie rozloženie
 podľa plochy (pravidlá plôch).
+- [x] **Urobené 28. 10.:** `windows.lua` — predvolený režim a vlastný režim obrazovky (`latte.mode.set(režim, obrazovka)`);
+  rozloženie cez pravidlo plochy `m[OBRAZOVKA]` (zmena = nové pravidlo, staré vypnuté — novšie vyhrá aj vypnuté),
+  plávanie cez pravidlo okna pre plochy obrazovky a pri presune okna na obrazovku iného režimu; `window-mode` má
+  v prvom riadku režim všetkých, potom „OBRAZOVKA režim“ (AppWindow číta režim svojej obrazovky). Nastavenia › Okná:
+  pegboard, klik na obrazovku = ponuka režimov, ťahanie ikony na obrazovku, „Použiť … pre všetky plochy“. Overené
+  v `tests/screen.sh` (rozloženie, plávanie, presun, súbor, snímka). Ostáva: hlavy líšt na ďalších obrazovkách ukazujú
+  režim hlavnej; ťahanie myšou vyskúšať na ploche.
+  Oprava 28. 10.: plávanie predvoleného režimu ostáva pravidlom podľa triedy okna (pravidlo podľa plochy zachytilo okno,
+  ktoré si meno dá až po otvorení, neskoro — Nastavenia plávali 1920×1080 s lištou nad obrazovkou); vlastné pravidlo má
+  len obrazovka, ktorej režim sa líši. Poistka: plávajúce okno väčšie než voľná plocha sa pri otvorení zmenší do nej.
 
 **8A.14** [ ] **Režim Kôpka kariet** (používateľ 28. 10.; github.com/kvrtco/hyprland-stacked, Lua rozloženie ~150 riadkov):
 okná ako kôpka kariet mierne posunutých za sebou, Super+←/→ listuje. Bez záplaty Hyprlandu nepoužiteľné: klik ide do
 okna, ktoré Hyprland nájde prvé, nie do toho navrchu (kvrtco/Hyprland-overlap-hit-patch: 2 riadky v `ViewHitTester.cpp`,
 `WINDOWS | std::views::reverse`). Cesta bez vlastného Hyprlandu: háčik na `CViewHitTester::windowAt` v latte-events,
 alebo počkať, kým to autor pošle do Hyprlandu. Licencia rozloženia zatiaľ neuvedená.
+
+**8A.15** [ ] **Ponuka rozloženia pri hornom okraji ako vo Windows 11** (používateľ 28. 10.): okno sa dá ťahať čiastočne za ľavý,
+pravý aj dolný okraj, ale **horná lišta nikdy neprekročí horný okraj** (platí: `within_reach` po pustení, záhlavie hyprbars je
+súčasťou okna). Ťahanie k hornému okraju dnes okno maximalizuje (`edge_zone` „full“); má ukázať ponuku rozložení (Snap
+layouts): niekoľko malých schém (polovice, tretiny, štvrtiny), okno pustené na políčko sa tam uloží (`snap`, zóny v
+`windows.lua`).
 
 ### 8B. [~] Obrazovky
 Rozpoznanie a rozloženie monitorov, virtuálny monitor, rozšíriť/duplikovať.

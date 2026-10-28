@@ -194,6 +194,13 @@
     "words": "tape tiles floating layout glass side panel arrange glance canvas zones"
    },
    {
+    "id": "transitions",
+    "name": "Transitions",
+    "icon": "sparkles",
+    "status": "ready",
+    "words": "transition effect animation wallpaper slideshow sand fade skwd"
+   },
+   {
     "id": "drops",
     "name": "Drops (Goo)",
     "icon": "droplet",

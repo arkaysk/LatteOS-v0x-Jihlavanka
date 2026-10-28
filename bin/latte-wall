@@ -2,21 +2,40 @@
 """latte-wall: what is behind the desktop, on every screen, whoever draws it.
 
   latte-wall state                         JSON for the Settings: {"engine", "lens", "fit", "screens": [{"name", "x", "y",
-                                           "w", "h"}], "all": ENTRY, "screens_own": {NAME: ENTRY}}
+                                           "w", "h"}], "all": ENTRY, "screens_own": {NAME: ENTRY}, "layers", "schemes",
+                                           "albums", "hidden", "thumbs", "cutting"}
+  latte-wall layers JSON                   the layers on the pegboard, bottom first: [LAYER…]; every screen shows what
+                                           lies on its place on top
+  latte-wall schemes JSON                  the saved layouts: [{"name", "layers": [LAYER…]}]
+  latte-wall forget PATH                   a picture or a film out of the Settings' list, or a slideshow's folder
+  latte-wall duplicate PATH                a copy of the file beside it; prints where
+  latte-wall copy PATH | copy-scheme N     onto the clipboard: a picture as a picture, else the file; a scheme as a
+                                           picture of what each screen shows
   latte-wall set TARGET picture PATH       a picture or a film; TARGET is a screen's name, or * for every screen
   latte-wall set TARGET color #RRGGBB      one plain colour
   latte-wall set TARGET slideshow FOLDER MINUTES [shuffle]     the pictures of a folder, one after another
   latte-wall fit fill|fit|stretch|center|tile    how a picture is laid on a screen it does not match
   latte-wall restore                       puts everything back as it was chosen: at the start of the session
+  latte-wall screens                       a screen came or went: the screens whose picture is new are shown (a new
+                                           one with nothing on it gets what the main one shows)
   latte-wall show PATH                     the same as `set * picture PATH`
   latte-wall next | prev                   the next or the one before: of the slideshow, else of the library
   latte-wall pause | resume                a film or a scene stands still, and moves again
-  latte-wall pick [WORDS…]                 opens skwd-wall's picker (with words: looking for what they describe)
+  latte-wall pick                          opens Settings › Background (skwd-wall's own window is not used)
   latte-wall engine                        prints "skwd" or "plain": who draws
   latte-wall ai                            tells skwd-wall whether its search model may run: only with AI on in LatteOS
+  latte-wall transitions [JSON]            the transitions of skwd-wall and which are used ({"names", "use": "all" |
+                                           "some" | "none", "picked": [NAME…], "ms"}); with JSON, the choice is kept
+  latte-wall try NAME                      shows that transition on the desktop: away to another picture and back
 
 An ENTRY is {"kind": "picture" | "color" | "slideshow", "path", "color", "folder", "minutes", "shuffle"}.
 Setting * makes every screen the same and forgets what single screens had; a screen set by itself keeps its own.
+
+A LAYER is an ENTRY ("film" too) with its place on the pegboard: "x", "y", "w", "h" in the screens' own points, as
+Hyprland lays them out; with "lay": true a picture or a film just put down fills that place in its own proportions,
+as it would a screen of its own. Out of the layers each screen gets one ENTRY of its own ("screens"): the pictures and colours
+on it put together into one picture (cache), a film cut to the part on it and laid among the pictures around it
+(ffmpeg, in the background; until it is made the film is shown whole, or standing still), a slideshow as it is.
 
 With skwd-wall installed (github.com/liixini/skwd-wall, its own package) it draws: pictures, films and scenes,
 with a transition from one to the next, and it works a palette out of each one, which is the theme "from the
@@ -24,7 +43,7 @@ wallpaper" (apps/common/Theme.qml, system/hypr/latte/bars.lua). What is chosen i
 too. Without it a picture is swaybg's and a film mpvpaper's.
 The choices are kept in ~/.config/latteos/background.json.
 """
-import glob, json, os, random, shutil, signal, struct, subprocess, sys, time, zlib
+import glob, hashlib, json, math, os, random, shutil, signal, struct, subprocess, sys, time, zlib
 
 HOME = os.path.expanduser("~")
 CONFIG = os.path.join(os.environ.get("XDG_CONFIG_HOME") or HOME + "/.config", "latteos")
@@ -35,6 +54,16 @@ STATE = os.path.join(CONFIG, "background.json")
 FILMS = (".mp4", ".webm", ".mkv", ".mov")
 STILLS = (".jpg", ".jpeg", ".png", ".webp")
 FITS = ("fill", "fit", "stretch", "center", "tile")
+KINDS = ("picture", "film", "slideshow", "color")
+WALLS = os.path.join(CACHE, "walls")           # what each screen shows, put together or cut out of the layers
+CHOSEN = os.path.join(CONFIG, "transitions.json")      # Settings › Transitions: which of them change the wallpaper
+# skwd-wall's own transitions, as its settings name them
+TRANSITIONS = ("chromatic-bloom", "circle-crop", "colour-distance", "crossfade", "crosswarp", "crosshatch", "directional",
+               "directional-scaled", "fadecolor", "glitch", "glitch-displace", "heat-melt", "ink-splash", "inkwell-drop", "morph",
+               "mosaic-tumble", "parametric-glitch", "perlin", "pixelfade-wave", "plasma-flow", "polka-dots-curtain", "puzzle-right",
+               "randomsquares", "sand-bloom", "sand-donut", "sand-galaxy", "sand-globe", "sand-helix", "sand-maelstrom", "sand-mobius",
+               "sand-tornado", "smoke", "soft-warp-fade", "voronoi-shatter", "zoom-blur-pull")
+TRYING = None                                  # `latte-wall try`: the transition shown, whatever is chosen
 
 
 def quiet(*argv, **kw):
@@ -96,6 +125,8 @@ def load():
         if isinstance(s, dict) and isinstance(s.get("all"), dict):
             s.setdefault("screens", {})
             s.setdefault("fit", "fill")
+            for key in ("schemes", "albums", "hidden"):
+                s.setdefault(key, [])
             return s
     except (OSError, ValueError):
         pass
@@ -107,7 +138,7 @@ def load():
             picture = kept
     except OSError:
         pass
-    return {"all": {"kind": "picture", "path": picture}, "screens": {}, "fit": "fill"}
+    return {"all": {"kind": "picture", "path": picture}, "screens": {}, "fit": "fill", "schemes": [], "albums": [], "hidden": []}
 
 
 def save(s):
@@ -153,6 +184,344 @@ def showing(s, target):
     return e.get("path") or ""
 
 
+# ── layers: what lies on the pegboard, and what each screen makes of it ─────────────────────────────────────────
+def size_of(path):
+    """A picture's or a film's own pixels, [width, height]; 1920×1080 when it cannot be told."""
+    try:
+        if path.lower().endswith(FILMS):
+            r = quiet("ffprobe", "-v", "error", "-select_streams", "v:0", "-show_entries", "stream=width,height", "-of", "csv=p=0", path)
+            w, h = (int(v) for v in r.stdout.strip().split(",")[:2])
+        else:
+            from PIL import Image
+            with Image.open(path) as im:
+                w, h = im.size
+        if w > 0 and h > 0:
+            return [w, h]
+    except (AttributeError, ValueError, OSError, ImportError):
+        pass
+    return [1920, 1080]
+
+
+def clean(l):
+    """A layer as the Settings sent it, checked; None if it is not one."""
+    if not isinstance(l, dict) or l.get("kind") not in KINDS:
+        return None
+    try:
+        out = {k: float(l[k]) for k in ("x", "y", "w", "h")}
+    except (KeyError, TypeError, ValueError):
+        return None
+    if not all(math.isfinite(v) and abs(v) < 1e6 for v in out.values()) or out["w"] < 1 or out["h"] < 1:
+        return None
+    kind = l["kind"]
+    if kind in ("picture", "film"):
+        path = l.get("path")
+        if not isinstance(path, str) or not os.path.isfile(path):
+            return None
+        kind = "film" if path.lower().endswith(FILMS) else "picture"
+        res = l.get("res")
+        out.update(path=path, res=res if isinstance(res, list) and len(res) == 2 and all(isinstance(v, int) and v > 0 for v in res) else size_of(path))
+        if l.get("lay") is True:           # just put down: it fills the place it was put on, in its own proportions
+            out.update(fitted(out["res"], out))
+    elif kind == "slideshow":
+        folder = l.get("folder")
+        if not isinstance(folder, str) or not os.path.isdir(folder):
+            return None
+        out.update(folder=folder, minutes=max(1, min(10080, int(l.get("minutes") or 10))), shuffle=bool(l.get("shuffle")))
+    else:
+        colour = str(l.get("color") or "").lstrip("#").lower()
+        if len(colour) != 6 or any(c not in "0123456789abcdef" for c in colour):
+            return None
+        out["color"] = "#" + colour
+    out["kind"] = kind
+    if isinstance(l.get("name"), str):
+        out["name"] = l["name"][:80]
+    return out
+
+
+def over(l, m):
+    """How much of screen m the layer lies on, 0…1."""
+    w = min(l["x"] + l["w"], m["x"] + m["w"]) - max(l["x"], m["x"])
+    h = min(l["y"] + l["h"], m["y"] + m["h"]) - max(l["y"], m["y"])
+    return max(0, w) * max(0, h) / (m["w"] * m["h"])
+
+
+def covers(l, m):
+    return l["x"] <= m["x"] + 0.5 and l["y"] <= m["y"] + 0.5 and l["x"] + l["w"] >= m["x"] + m["w"] - 0.5 and l["y"] + l["h"] >= m["y"] + m["h"] - 0.5
+
+
+def fitted(res, m):
+    """Where a picture of that size lies to fill screen m, as on a screen of its own: centred, nothing left bare."""
+    a = res[0] / res[1]
+    w = max(m["w"], m["h"] * a)
+    return {"x": m["x"] + (m["w"] - w) / 2, "y": m["y"] + (m["h"] - w / a) / 2, "w": w, "h": w / a}
+
+
+def alone(l, m):
+    """The layer is the picture laid on screen m by itself: the engine can be given the file as it is."""
+    f = fitted(l["res"], m)
+    return all(abs(l[k] - f[k]) <= 0.01 * max(f["w"], f["h"]) for k in ("x", "y", "w", "h"))
+
+
+def layer_for(e, m):
+    """An ENTRY on one screen, as a layer lying on it."""
+    kind = e.get("kind")
+    if kind == "picture" and os.path.isfile(e.get("path") or ""):
+        res = size_of(e["path"])
+        return clean(dict(fitted(res, m), kind="picture", path=e["path"], res=res))
+    if kind in ("slideshow", "color"):
+        return clean(dict(e, x=m["x"], y=m["y"], w=m["w"], h=m["h"]))
+    return None
+
+
+def sole(key):
+    return os.path.join(WALLS, hashlib.sha1(json.dumps(key, sort_keys=True).encode()).hexdigest()[:20])
+
+
+def still(l):
+    """What a layer looks like standing still: a film by a picture of it, a slideshow by its first picture."""
+    if l["kind"] == "film":
+        return thumb(l["path"])
+    if l["kind"] == "slideshow":
+        files = [p for p in pictures_in(l["folder"]) if p.lower().endswith(STILLS)]
+        return files[0] if files else ""
+    return l.get("path") or ""
+
+
+def paint(layers, m, pw, ph, stills=False, clear=False):
+    """The layers, bottom first, as screen m shows them, pw × ph pixels (PIL); clear: what they leave is see-through."""
+    from PIL import Image, ImageOps
+    k = pw / m["w"]
+    canvas = Image.new("RGBA", (pw, ph), (0, 0, 0, 0)) if clear else Image.new("RGB", (pw, ph), (0, 0, 0))
+    for l in layers:
+        x0, y0 = max(l["x"], m["x"]), max(l["y"], m["y"])
+        x1, y1 = min(l["x"] + l["w"], m["x"] + m["w"]), min(l["y"] + l["h"], m["y"] + m["h"])
+        box = (round((x0 - m["x"]) * k), round((y0 - m["y"]) * (ph / m["h"])), round((x1 - m["x"]) * k), round((y1 - m["y"]) * (ph / m["h"])))
+        if box[2] - box[0] < 1 or box[3] - box[1] < 1:
+            continue
+        if l["kind"] == "color":
+            canvas.paste(tuple(int(l["color"][i:i + 2], 16) for i in (1, 3, 5)) + ((255,) if clear else ()), box)
+            continue
+        path = still(l) if stills else l["path"]
+        try:
+            with Image.open(path) as src:
+                im = ImageOps.exif_transpose(src).convert("RGB")
+        except (OSError, ValueError):
+            continue
+        sx, sy = im.width / l["w"], im.height / l["h"]
+        part = im.resize((box[2] - box[0], box[3] - box[1]), Image.LANCZOS, box=((x0 - l["x"]) * sx, (y0 - l["y"]) * sy, (x1 - l["x"]) * sx, (y1 - l["y"]) * sy))
+        canvas.paste(part, box[:2])
+    return canvas
+
+
+def compose(layers, m, stills=False, clear=False):
+    """One picture of the layers on screen m, kept in the cache: a film or a slideshow by a picture of it (stills),
+    see-through where nothing lies (clear, a PNG)."""
+    key = [m["w"], m["h"], m["pw"], m["ph"], m["x"], m["y"], stills, clear] + [[l, os.path.getmtime(l["path"]) if l.get("path") else 0] for l in layers]
+    ext = ".png" if clear else ".jpg"
+    out = sole(key) + ext
+    if not os.path.exists(out):
+        os.makedirs(WALLS, exist_ok=True)
+        paint(layers, m, m["pw"], m["ph"], stills, clear).save(out + ".part" + ext, **({} if clear else {"quality": 93}))
+        os.replace(out + ".part" + ext, out)
+    return out
+
+
+def region(l, m):
+    """The part of a film that falls on screen m, in the film's pixels: x, y, w, h (it may reach past the film)."""
+    sx, sy = l["res"][0] / l["w"], l["res"][1] / l["h"]
+    return ((m["x"] - l["x"]) * sx, (m["y"] - l["y"]) * sy, m["w"] * sx, m["h"] * sy)
+
+
+def cut_filter(l, m):
+    """ffmpeg's filter for that part, black where it reaches past the film, as large as the screen."""
+    even = lambda v: max(2, int(math.ceil(v / 2)) * 2)
+    rx, ry, rw, rh = region(l, m)
+    vw, vh = l["res"]
+    ix0, iy0 = min(vw - 2, max(0, math.floor(rx))), min(vh - 2, max(0, math.floor(ry)))
+    ix1, iy1 = min(vw, math.ceil(rx + rw)), min(vh, math.ceil(ry + rh))
+    cw, ch = max(2, ix1 - ix0), max(2, iy1 - iy0)
+    px, py = max(0, round(ix0 - rx)), max(0, round(iy0 - ry))
+    W, H = even(max(rw, px + cw)), even(max(rh, py + ch))
+    return "crop=%d:%d:%d:%d,pad=%d:%d:%d:%d:black,scale=%d:%d:flags=bicubic,setsar=1" % (cw, ch, ix0, iy0, W, H, px, py, even(m["pw"]), even(m["ph"]))
+
+
+def cut(l, m, jobs):
+    """The film's part on screen m: the cut file once it is made, the whole film until then (the job is noted)."""
+    if alone(l, m):
+        return l["path"]
+    out = sole([l["path"], os.path.getmtime(l["path"]), region(l, m), m["pw"], m["ph"]]) + ".mp4"
+    if os.path.exists(out):
+        return out
+    if shutil.which("ffmpeg"):
+        jobs.append({"out": out, "args": ["-i", l["path"], "-vf", cut_filter(l, m)]})
+    return l["path"]
+
+
+def mix(f, below, above, m, jobs):
+    """A film lying on part of screen m among other layers: one film made for the screen, what lies under the film as
+    its ground, what lies over it on top. Until it is made, a picture of all of it with the film standing still."""
+    kx, ky = m["pw"] / m["w"], m["ph"] / m["h"]
+    x0, y0 = max(f["x"], m["x"]), max(f["y"], m["y"])
+    x1, y1 = min(f["x"] + f["w"], m["x"] + m["w"]), min(f["y"] + f["h"], m["y"] + m["h"])
+    sx, sy = f["res"][0] / f["w"], f["res"][1] / f["h"]
+    cx, cy = min(f["res"][0] - 2, max(0, round((x0 - f["x"]) * sx))), min(f["res"][1] - 2, max(0, round((y0 - f["y"]) * sy)))
+    cw, ch = max(2, min(f["res"][0] - cx, round((x1 - x0) * sx))), max(2, min(f["res"][1] - cy, round((y1 - y0) * sy)))
+    dx, dy, dw, dh = round((x0 - m["x"]) * kx), round((y0 - m["y"]) * ky), max(2, round((x1 - x0) * kx)), max(2, round((y1 - y0) * ky))
+    under = compose(below, m, stills=True)
+    top = compose(above, m, stills=True, clear=True) if above else None
+    out = sole([f["path"], os.path.getmtime(f["path"]), cx, cy, cw, ch, dx, dy, dw, dh, under, top]) + ".mp4"
+    if os.path.exists(out):
+        return out
+    if shutil.which("ffmpeg"):
+        r = quiet("ffprobe", "-v", "error", "-select_streams", "v:0", "-show_entries", "stream=r_frame_rate", "-of", "csv=p=0", f["path"])
+        fps = (r.stdout.strip() if r else "") or "30"
+        graph = "[1:v]crop=%d:%d:%d:%d,scale=%d:%d:flags=bicubic,setsar=1[f];[0:v][f]overlay=%d:%d:shortest=1" % (cw, ch, cx, cy, dw, dh, dx, dy)
+        graph += ("[v];[v][2:v]overlay=0:0:shortest=1" if top else "") + ",scale=trunc(iw/2)*2:trunc(ih/2)*2,format=yuv420p[out]"
+        args = ["-framerate", fps, "-loop", "1", "-i", under, "-i", f["path"]] + (["-framerate", fps, "-loop", "1", "-i", top] if top else [])
+        jobs.append({"out": out, "args": args + ["-filter_complex", graph, "-map", "[out]"]})
+    return compose(below + [f] + above, m, stills=True)
+
+
+def plan_screen(layers, m, jobs):
+    """What screen m shows of the layers: one ENTRY."""
+    seen = []
+    for l in reversed(layers):                 # from the top down to the first that covers the screen whole
+        if over(l, m) > 0:
+            seen.append(l)
+            if covers(l, m):
+                break
+    if not seen:
+        return {"kind": "color", "color": "#000000"}
+    if all(l["kind"] in ("picture", "color") for l in seen):
+        if len(seen) == 1 and seen[0]["kind"] == "color":
+            return {"kind": "color", "color": seen[0]["color"]}
+        if len(seen) == 1 and alone(seen[0], m):
+            return {"kind": "picture", "path": seen[0]["path"]}
+        return {"kind": "picture", "path": compose(seen[::-1], m)}
+    if not any(l["kind"] == "slideshow" for l in seen):
+        # ponytail: one film moves on a screen, the top one; another film beside it stands still (a picture of it)
+        f = next(l for l in seen if l["kind"] == "film")
+        i = seen.index(f)
+        above, below = seen[:i][::-1], seen[i + 1:][::-1]
+        if not above and not below and covers(f, m):
+            return {"kind": "picture", "path": cut(f, m, jobs)}
+        return {"kind": "picture", "path": mix(f, below, above, m, jobs)}
+    # ponytail: a slideshow is not mixed with what lies beside it on one screen: the one on the screen's middle is
+    # shown alone. Mixing them needs one renderer for the layers (ROADMAP 7A.10, step 2).
+    mx, my = m["x"] + m["w"] / 2, m["y"] + m["h"] / 2
+    moving = [l for l in seen if l["kind"] in ("film", "slideshow")]
+    top = next((l for l in moving if l["x"] <= mx <= l["x"] + l["w"] and l["y"] <= my <= l["y"] + l["h"]), moving[0])
+    if top["kind"] == "slideshow":
+        return {"kind": "slideshow", "folder": top["folder"], "minutes": top["minutes"], "shuffle": top["shuffle"], "at": 0}
+    return {"kind": "picture", "path": cut(top, m, jobs)}
+
+
+def replan(s, scr, jobs):
+    """Each screen's ENTRY anew out of the layers; True if there are layers and screens to make it of."""
+    if "layers" not in s or not scr:
+        return False
+    before = s.get("screens") or {}
+    s["screens"] = {}
+    for m in scr:
+        e = plan_screen(s["layers"], m, jobs)
+        b = before.get(m["name"]) or {}
+        if e["kind"] == "slideshow" and b.get("kind") == "slideshow" and b.get("folder") == e["folder"]:
+            e["at"] = b.get("at") or 0        # a slideshow goes on where it was
+        s["screens"][m["name"]] = e
+    main = next((m for m in scr if m["x"] == 0 and m["y"] == 0), scr[0])
+    s["all"] = s["screens"][main["name"]]
+    return True
+
+
+def layered(s, scr):
+    """The choice of before the layers, as layers: each screen's own, or the one of all, lying on it."""
+    if "layers" not in s and scr:
+        s["layers"] = [l for l in (layer_for(s["screens"].get(m["name"]) or s["all"], m) for m in scr) if l]
+    return s
+
+
+def tidy(s, jobs):
+    """Out of the cache what no screen shows and no job makes."""
+    keep = {e.get("path") for e in s["screens"].values()} | {j["out"] for j in jobs} | {a for j in jobs for a in j["args"]}
+    for f in glob.glob(os.path.join(WALLS, "*")):
+        if f not in keep and not f.endswith(".part.mp4") and time.time() - os.path.getmtime(f) > 60:
+            try:
+                os.remove(f)
+            except OSError:
+                pass
+
+
+def thumb(film):
+    """A picture of a film, kept in the cache; "" without ffmpeg."""
+    try:
+        out = os.path.join(CACHE, "thumbs", hashlib.sha1(("%s:%s" % (film, os.path.getmtime(film))).encode()).hexdigest()[:20] + ".jpg")
+    except OSError:
+        return ""
+    if not os.path.exists(out) and shutil.which("ffmpeg"):
+        os.makedirs(os.path.dirname(out), exist_ok=True)
+        quiet("ffmpeg", "-v", "error", "-y", "-ss", "1", "-i", film, "-frames:v", "1", "-vf", "scale=640:-2", out, timeout=30)
+    return out if os.path.exists(out) else ""
+
+
+def layout_png(layers, scr):
+    """A picture of a layout: what each screen shows, standing where it stands, at most 1600 pixels wide."""
+    from PIL import Image
+    import io
+    x0, y0 = min(m["x"] for m in scr), min(m["y"] for m in scr)
+    k = min(1, 1600 / (max(m["x"] + m["w"] for m in scr) - x0))
+    canvas = Image.new("RGB", (round((max(m["x"] + m["w"] for m in scr) - x0) * k), round((max(m["y"] + m["h"] for m in scr) - y0) * k)), (40, 30, 23))
+    for m in scr:
+        canvas.paste(paint(layers, m, max(1, round(m["w"] * k)), max(1, round(m["h"] * k)), stills=True), (round((m["x"] - x0) * k), round((m["y"] - y0) * k)))
+    buf = io.BytesIO()
+    canvas.save(buf, "PNG")
+    return buf.getvalue()
+
+
+def start_cuts(jobs):
+    if not jobs:
+        return
+    os.makedirs(RUN, exist_ok=True)
+    with open(os.path.join(RUN, "cuts.json"), "w") as f:
+        json.dump(jobs, f)
+    try:                                       # the cutter there already reads the new list
+        os.kill(int(open(os.path.join(RUN, "cutter.pid")).read()), 0)
+        return
+    except (OSError, ValueError):
+        pass
+    p = subprocess.Popen([sys.argv[0], "_cut"], stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)
+    with open(os.path.join(RUN, "cutter.pid"), "w") as f:
+        f.write(str(p.pid))
+
+
+def cut_all():
+    """The cutter: each film's part for its screen, one after another; then every screen is shown anew at once,
+    so the parts of one film start together."""
+    r = quiet("ffmpeg", "-hide_banner", "-encoders")
+    codec = ["-c:v", "libx264", "-preset", "veryfast", "-crf", "21"] if r and "libx264" in r.stdout else ["-c:v", "libopenh264", "-b:v", "12M"]
+    done = set()
+    while True:
+        try:
+            jobs = [j for j in json.load(open(os.path.join(RUN, "cuts.json"))) if j["out"] not in done and not os.path.exists(j["out"])]
+        except (OSError, ValueError):
+            jobs = []
+        if not jobs:
+            break
+        j = jobs[0]
+        done.add(j["out"])
+        os.makedirs(WALLS, exist_ok=True)
+        part = j["out"][:-4] + ".part.mp4"
+        # ponytail: the cut parts are silent; a film's sound stays with the film played whole
+        quiet("ffmpeg", "-v", "error", "-y", *j["args"], "-an", "-pix_fmt", "yuv420p", *codec, "-movflags", "+faststart", part, timeout=3600)
+        if os.path.exists(part):
+            os.replace(part, j["out"])
+    for f in ("cuts.json", "cutter.pid"):
+        try:
+            os.remove(os.path.join(RUN, f))
+        except OSError:
+            pass
+    main(["_again"])
+
+
 # ── drawing ──────────────────────────────────────────────────────────────────────────────────────────────────
 def own_plain(target=None):
     """This session's swaybg and mpvpaper (another compositor of the same user has its own); for one screen or all."""
@@ -173,11 +542,48 @@ def own_plain(target=None):
     return out
 
 
+def chosen():
+    """Which transitions change the wallpaper: {"use", "picked", "ms"}."""
+    try:
+        c = json.load(open(CHOSEN))
+    except (OSError, ValueError):
+        c = {}
+    c = c if isinstance(c, dict) else {}
+    picked = [n for n in c.get("picked") or [] if n in TRANSITIONS]
+    ms = c.get("ms") if isinstance(c.get("ms"), int) and 100 <= c.get("ms") <= 10000 else 1200
+    return {"use": c.get("use") if c.get("use") in ("all", "some", "none") else "all", "picked": picked, "ms": ms}
+
+
+def transition():
+    """skwd-wall told the transition of the next change, as chosen: one of all, one of the chosen, or none. It
+    watches its settings, so they are only written when they change."""
+    c = chosen()
+    want = {"enabled": c["use"] != "none" or TRYING is not None, "durationMs": c["ms"],
+            "shader": TRYING or ("random" if c["use"] == "all" or not c["picked"] else random.choice(c["picked"]))}
+    path = os.path.join(os.environ.get("XDG_CONFIG_HOME") or HOME + "/.config", "skwd-wall-v2", "config.json")
+    try:
+        conf = json.load(open(path))
+    except (OSError, ValueError):
+        conf = {}
+    if not isinstance(conf, dict):
+        return
+    now = conf.get("transition") if isinstance(conf.get("transition"), dict) else {}
+    if all(now.get(k) == v for k, v in want.items()):
+        return
+    now.update(want)
+    conf["transition"] = now
+    with open(path + ".new", "w") as f:
+        json.dump(conf, f, indent=1)
+    os.replace(path + ".new", path)
+    time.sleep(0.4)                            # for it to read them anew before the change
+
+
 def draw(target, path, fit):
     if not path or not os.path.exists(path):
         return
     if skwd():
         quiet("systemctl", "--user", "start", "skwd-walld.service")
+        transition()
         r = quiet("pgrep", "-u", str(os.getuid()), "-f", "latte-wall follow")
         if not (r and r.stdout.strip()):
             subprocess.Popen([sys.argv[0], "follow"], stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)
@@ -244,11 +650,44 @@ def apply(s, target):
         slideshow_start(target)
 
 
-def restore(s):
+def restore(s, changed_only=False):
+    """Every screen shown as it was chosen; with layers, only the screens whose picture is new, if so asked."""
+    scr, jobs, before = screens(), [], dict(s.get("screens") or {})
+    if "layers" in layered(s, scr) and before:
+        adopt(s, scr, before)
+    if replan(s, scr, jobs):
+        save(s)
+        tidy(s, jobs)
+        start_cuts(jobs)
+        for name, e in s["screens"].items():
+            if not (changed_only and before.get(name) == e):
+                apply(s, name)
+        return
     slideshow_stop(None)
     apply(s, "*")
     for name in s["screens"]:
         apply(s, name)
+
+
+def adopt(s, scr, before):
+    """A screen that has just come, with nothing lying on it, gets what the main one shows, as on Windows."""
+    main = next((m for m in scr if m["x"] == 0 and m["y"] == 0), scr[0])
+    top = next((l for l in reversed(s["layers"]) if over(l, main) > 0), None)
+    for m in scr:
+        if top and m["name"] not in before and m is not main and not any(over(l, m) > 0 for l in s["layers"]):
+            s["layers"].append(dict(top, **(fitted(top["res"], m) if top["kind"] in ("picture", "film") else {k: m[k] for k in ("x", "y", "w", "h")})))
+
+
+def put(s, scr, target, entry):
+    """An ENTRY set the way of before, onto the layers: on every screen, or on one over what lay on it alone."""
+    if target == "*":
+        s["layers"] = [l for l in (layer_for(entry, m) for m in scr) if l]
+        return
+    m = next((m for m in scr if m["name"] == target), None)
+    l = m and layer_for(entry, m)
+    if l:
+        inside = lambda o: o["x"] >= m["x"] - 0.5 and o["y"] >= m["y"] - 0.5 and o["x"] + o["w"] <= m["x"] + m["w"] + 0.5 and o["y"] + o["h"] <= m["y"] + m["h"] + 0.5
+        s["layers"] = [o for o in s["layers"] if not inside(o)] + [l]
 
 
 # ── what skwd-wall says: a wallpaper chosen in its own picker is the user's choice like any other ───────────────
@@ -262,9 +701,19 @@ def follow():
         data = ev.get("data") or {}
         if ev.get("event") == "skwd.wall.applied" and data.get("path"):
             s, target = load(), data.get("output") or "*"
-            if showing(s, target) != data["path"]:
+            if showing(s, target) != data["path"] and not os.path.exists(os.path.join(RUN, "trying")):
                 entry = {"kind": "picture", "path": data["path"]}
-                if target == "*":
+                scr = screens()
+                if "layers" in layered(s, scr):
+                    # what the layers are made of, or made into, is no new choice: skwd-wall says so of its own as well
+                    ours = data["path"].startswith(WALLS + "/") or any(l.get("path") == data["path"] for l in s["layers"])
+                    # ponytail: a scene of Wallpaper Engine is no file to lie on the pegboard; it shows until the next change
+                    if os.path.isfile(data["path"]) and not ours:
+                        slideshow_stop(None if target == "*" else target)
+                        put(s, scr, target, entry)
+                        replan(s, scr, [])
+                        save(s)
+                elif target == "*":
                     slideshow_stop(None)
                     s["all"], s["screens"] = entry, {}
                 else:
@@ -288,8 +737,14 @@ def library():
 def screens():
     r = quiet("hyprctl", "monitors", "-j")
     try:
-        return [{"name": m["name"], "x": m["x"], "y": m["y"], "w": int(m["width"] / (m.get("scale") or 1)), "h": int(m["height"] / (m.get("scale") or 1))}
-                for m in json.loads(r.stdout) if not m.get("mirrorOf") or m.get("mirrorOf") == "none"]
+        # pw × ph are its pixels as it stands (a screen turned on its side is taller than wide), w × h its points
+        out = []
+        for m in json.loads(r.stdout):
+            if m.get("mirrorOf") and m.get("mirrorOf") != "none":
+                continue
+            pw, ph = (m["height"], m["width"]) if (m.get("transform") or 0) % 2 else (m["width"], m["height"])
+            out.append({"name": m["name"], "x": m["x"], "y": m["y"], "w": round(pw / (m.get("scale") or 1)), "h": round(ph / (m.get("scale") or 1)), "pw": pw, "ph": ph})
+        return out
     except (AttributeError, ValueError, KeyError, TypeError):
         return []
 
@@ -302,8 +757,71 @@ def main(a):
         shown = {"*": showing(s, "*")}
         for name in s["screens"]:
             shown[name] = showing(s, name)
-        print(json.dumps({"engine": "skwd" if skwd() else "plain", "lens": lens(), "fit": s["fit"], "screens": screens(), "all": s["all"],
-                          "screens_own": s["screens"], "shown": shown, "library": library()}, ensure_ascii=False))
+        scr = screens()
+        layered(s, scr)
+        films = {l["path"] for ls in [s.get("layers") or []] + [c["layers"] for c in s["schemes"]] for l in ls if l["kind"] == "film"}
+        albums = []
+        for folder in s["albums"]:
+            files = pictures_in(folder)
+            albums.append({"folder": folder, "name": os.path.basename(folder.rstrip("/")) or folder, "count": len(files),
+                           "pictures": [p for p in files if p.lower().endswith(STILLS)][:3]})
+        print(json.dumps({"engine": "skwd" if skwd() else "plain", "lens": lens(), "fit": s["fit"], "screens": scr, "all": s["all"],
+                          "screens_own": s["screens"], "shown": shown, "library": library(), "layers": s.get("layers") or [],
+                          "schemes": s["schemes"], "albums": albums, "hidden": s["hidden"], "thumbs": {f: thumb(f) for f in films},
+                          "cutting": os.path.exists(os.path.join(RUN, "cuts.json"))}, ensure_ascii=False))
+    elif len(a) == 2 and a[0] == "layers":
+        got = json.loads(a[1])
+        layers = [clean(l) for l in got] if isinstance(got, list) and len(got) <= 64 else [None]
+        if None in layers:
+            return 2
+        s["layers"] = layers
+        for l in reversed(layers):           # a slideshow put on is among the recent ones
+            if l["kind"] == "slideshow":
+                s["albums"] = [l["folder"]] + [f for f in s["albums"] if f != l["folder"]][:11]
+        restore(s, True)
+    elif len(a) == 2 and a[0] == "schemes":
+        got = json.loads(a[1])
+        if not isinstance(got, list) or len(got) > 50:
+            return 2
+        schemes = []
+        for c in got:
+            layers = [clean(l) for l in c.get("layers", [])] if isinstance(c, dict) and isinstance(c.get("layers"), list) else [None]
+            if None in layers or not isinstance(c.get("name"), str):
+                return 2
+            schemes.append({"name": c["name"][:80], "layers": layers})
+        s["schemes"] = schemes
+        save(s)
+    elif len(a) == 2 and a[0] == "forget":
+        if a[1] in s["albums"]:
+            s["albums"].remove(a[1])
+        elif a[1] not in s["hidden"]:
+            s["hidden"] = (s["hidden"] + [a[1]])[-1000:]
+        save(s)
+    elif len(a) == 2 and a[0] == "duplicate" and os.path.isfile(a[1]):
+        stem, ext = os.path.splitext(a[1])
+        n = 2
+        while os.path.exists("%s (%d)%s" % (stem, n, ext)):
+            n += 1
+        shutil.copy2(a[1], "%s (%d)%s" % (stem, n, ext))
+        print("%s (%d)%s" % (stem, n, ext))
+    elif len(a) == 2 and a[0] in ("copy", "copy-scheme"):
+        if a[0] == "copy" and a[1].lower().endswith(STILLS) and os.path.isfile(a[1]):
+            from PIL import Image
+            import io
+            buf = io.BytesIO()
+            with Image.open(a[1]) as im:
+                im.save(buf, "PNG")
+            data, kind = buf.getvalue(), "image/png"
+        elif a[0] == "copy" and os.path.exists(a[1]):
+            data, kind = ("file://" + a[1] + "\r\n").encode(), "text/uri-list"
+        elif a[0] == "copy-scheme" and a[1].isdigit() and int(a[1]) < len(s["schemes"]):
+            data, kind = layout_png(s["schemes"][int(a[1])]["layers"], screens()), "image/png"
+        else:
+            return 2
+        try:
+            return subprocess.run(["wl-copy", "-t", kind], input=data, timeout=10).returncode
+        except (OSError, subprocess.TimeoutExpired):
+            return 1
     elif a == ["restore"]:
         sync_ai()
         restore(s)
@@ -322,6 +840,11 @@ def main(a):
             entry = {"kind": "slideshow", "folder": a[3], "minutes": max(1, int(float(a[4]))), "shuffle": a[5:] == ["shuffle"], "at": 0}
         else:
             return 2
+        scr = screens()
+        if "layers" in layered(s, scr):
+            put(s, scr, target, entry)
+            restore(s, True)
+            return 0
         if target == "*":
             slideshow_stop(None)
             s["all"], s["screens"] = entry, {}
@@ -335,7 +858,7 @@ def main(a):
         restore(s)
     elif a in (["next"], ["prev"]):
         by = 1 if a == ["next"] else -1
-        shows = [t for t in ["*"] + list(s["screens"]) if (s["screens"].get(t) or s["all"]).get("kind") == "slideshow" and (t == "*" or t in s["screens"])]
+        shows = [t for t in ([] if "layers" in s else ["*"]) + list(s["screens"]) if (s["screens"].get(t) or s["all"]).get("kind") == "slideshow" and (t == "*" or t in s["screens"])]
         if shows:
             for t in shows:
                 step(s, t, by)
@@ -353,24 +876,48 @@ def main(a):
             for pid in own_plain():
                 os.kill(pid, signal.SIGSTOP if a == ["pause"] else signal.SIGCONT)
     elif a[:1] == ["pick"]:
-        if skwd() and shutil.which("skwd-wall-v2"):
-            # Its library is the folder Wallpapers in the user's Pictures: LatteOS's own are put there to choose
-            # from. As copies: its scanner reads nothing a link points to outside that folder.
-            lib = library()
-            os.makedirs(lib, exist_ok=True)
-            for f in glob.glob(os.path.join(SHARE, "wallpapers", "*")):
-                if os.path.isfile(f) and not os.path.exists(os.path.join(lib, os.path.basename(f))):
-                    shutil.copy(f, lib)
-            r = quiet("skwd-helm", "ui", "show")
-            if not (r and r.returncode == 0):
-                subprocess.Popen(["skwd-wall-v2"], stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)
-                time.sleep(2.5)
-            if a[1:]:
-                quiet("skwd-helm", "ui", "filter", " ".join(a[1:]))
-        else:
-            subprocess.Popen(["latte-app", "settings", "background"], stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)
+        # skwd-wall's own window is not LatteOS's: its transitions and its wallpapers are, through the Settings
+        subprocess.Popen(["latte-app", "settings", "background"], stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)
     elif a == ["follow"]:
         follow()
+    elif a == ["_cut"]:
+        cut_all()
+    elif a[:1] == ["transitions"] and len(a) <= 2:
+        if len(a) == 2:
+            got = json.loads(a[1])
+            if not isinstance(got, dict):
+                return 2
+            os.makedirs(CONFIG, exist_ok=True)
+            with open(CHOSEN + ".new", "w") as f:
+                json.dump({"use": got.get("use"), "picked": got.get("picked"), "ms": got.get("ms")}, f)
+            os.replace(CHOSEN + ".new", CHOSEN)
+        print(json.dumps(dict(chosen(), names=TRANSITIONS, engine="skwd" if skwd() else "plain")))
+    elif len(a) == 2 and a[0] == "try" and a[1] in TRANSITIONS:
+        # away to a picture of LatteOS's own and back, both ways with that transition; what skwd-wall says
+        # meanwhile is no choice of the user's (follow)
+        global TRYING
+        if not skwd():
+            return 1
+        TRYING = a[1]
+        os.makedirs(RUN, exist_ok=True)
+        open(os.path.join(RUN, "trying"), "w").close()
+        try:
+            away = [p for p in sorted(glob.glob(os.path.join(SHARE, "wallpapers", "*"))) if p.lower().endswith(STILLS) and p != showing(s, "*")]
+            if away:
+                draw("*", away[0], s["fit"])
+                time.sleep(chosen()["ms"] / 1000 + 1.5)
+            if "layers" in s:
+                for name in s["screens"]:
+                    draw(name, showing(s, name), s["fit"])
+            else:
+                restore(s)
+            time.sleep(chosen()["ms"] / 1000 + 0.5)
+        finally:
+            TRYING = None
+            os.remove(os.path.join(RUN, "trying"))
+        transition()
+    elif a in (["_again"], ["screens"]):     # the films are cut, or a screen came or went: what is new is shown
+        restore(s, True)
     elif len(a) == 2 and a[0] == "_slideshow":
         while True:
             e = load()["screens"].get(a[1]) or load()["all"]
