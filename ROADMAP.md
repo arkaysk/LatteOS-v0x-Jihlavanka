@@ -746,8 +746,10 @@ zapíše (10B.30). Predloha openKylin 3.0 (KylinBot: systémové zručnosti cez 
 **6B.26** [ ] **LensShore úroveň 2 — plné ovládanie** (používateľ 28. 10.: „väčšina ľudí po čase prepne na 2“): čip
 z LensShore sa **pustí na okno** a AI s ním pracuje — číta ho cez strom prístupnosti, okolo okna prstenec, klikať smie
 **vlastným kurzorom**, myš a klávesnica človeka ostávajú jeho (pleamar-wm agent, Marea „Children“). Viac úloh naraz,
-Pauza, „Najprv sa opýtaj“, fronta; stav úloh ukazuje kvapka (6.26). Prepínač úrovne 1/2 v Nastaveniach. Rozhodnúť:
-smie úroveň 2 aj online AI, alebo iba miestna (10B.30: online chat nedostáva systémové oprávnenia)?
+Pauza, „Najprv sa opýtaj“, fronta; stav úloh ukazuje kvapka (6.26). Prepínač úrovne 1/2 v Nastaveniach.
+**Rozhodnuté 28. 10.:** úroveň 2 smie aj online AI. **Ničiace a upravujúce akcie** (mazanie, prepisovanie, presun,
+odinštalovanie, zmena nastavení, odoslanie za človeka) vyžadujú **dvojité potvrdenie** a **podrobný popis, čo sa zmení**
+(ktoré súbory, nastavenia, z čoho na čo). Tým sa z LensShore stáva aj **osobný AI asistent** (používateľ 28. 10.).
 
 **6B.13** [ ] **Výskum: Tinycast ako zoznam funkcií** (používateľ 27. 10.: „vyzerá ako naše LensGoo“) —
 https://github.com/abue-ammar/tinycast (macOS, Swift, AGPL-3.0 → kód nepreberať, iba nápady). Čo LensGoo/LensShore
@@ -1932,6 +1934,8 @@ bez nečakaného prístupu k systémovým akciám.
 - [ ] Ak AI dostane nástroje na správu LatteOS, použiť obmedzené rozhranie, náhľad plánovanej
   zmeny, výslovné potvrdenie a auditovateľný výsledok; online webový chat nedostáva systémové
   oprávnenia.
+- [ ] Výnimka 28. 10.: úroveň 2 LensShore (6B.26) smie aj online AI — ničiace a upravujúce akcie iba po dvojitom
+  potvrdení s podrobným popisom zmeny.
 
 **10B.31** [ ] (LensAI) R3·G — vývojová AI farma a MCP · r. 1084–1087
 - [ ] Vývojová AI farma a MCP sú vývojárske nástroje, nie predvolená súčasť používateľskej plochy;

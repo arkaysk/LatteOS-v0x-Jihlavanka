@@ -383,3 +383,4 @@ Nové rozhodnutie: jeden riadok sem (dátum, čo, prečo) a oprava platného zne
 | LensShore nie je dashboard: zadávanie a robenie (hľadanie, AI, ktorá vykoná); živý stav, police a prehľady pri okraji patria TrayShore | áno (používateľ, 28. 10.) — návrhy „živé činnosti“ a „polica“ z prieskumu ostrovčekov idú do 6H, nie do 6B.12 |
 | LensShore má dve úrovne AI: 1 vykoná vymedzenou zručnosťou s náhľadom a potvrdením (predvolená, bezpečná), 2 plné ovládanie — AI pustená na okno s vlastným kurzorom | áno (používateľ, 28. 10.) — ROADMAP 6B.25, 6B.26 |
 | Čo človek potrebuje vedieť, ukáže kvapka bez otvorenia (pulz, farba jadra, rolovanie), podľa témy a hustoty informácií | áno (používateľ, 28. 10.) — ROADMAP 6.26, 6D.13 |
+| Úroveň 2 LensShore smie aj online AI; ničiace a upravujúce akcie vyžadujú dvojité potvrdenie a podrobný popis, čo sa zmení; LensShore je tým aj osobný AI asistent | áno (používateľ, 28. 10.) — mení 10B.30 pre úroveň 2; ROADMAP 6B.26 |
