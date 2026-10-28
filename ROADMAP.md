@@ -1060,7 +1060,7 @@ Je nutne urobit nanovo prehladne kategorie, pre všetky druhy tapiet, vratane od
 **7A.07** [ ] (Tapety) **Pegboard v tapetách** (používateľ 26. 10.; tretie miesto je 8A.13): ten istý pegboard obrazoviek ako v Nastaveniach ›
 Obrazovky (8B.04) — obrazovky v skutočnom pomere, rozlíšení a rozostupoch, nezávisle od toho, či je obrazovka jedna
 alebo dvadsať (pri jednej nemá ťahanie zmysel, ale pegboard tam je). Zdieľaný kus kódu pre obe miesta, nie kópia.
-Náčrt: claude.ai/artifact/KZCxND84ngaY5sLxu5UE1j (28. 10.).
+Náčrt: claude.ai/artifact/KZCxND84ngaY5sLxu5UE1j — verzia 2 (vrstvy, knižnica ako Windows, schémy) schválená 28. 10.: „funkčne je to presne ako som chcel“; podľa nej sa stavia.
 
 **7A.08** [ ] (Tapety) **Vrstvy na pegboarde, knižnica a schémy** (používateľ 26. a 28. 10.; nadväzuje na 7A.07). Predstava:
 - **Vrstvy ako v Photoshope.** Obrázok, video, prezentáciu alebo farbu potiahnem **na pegboard, nie na monitor**; vznikne
@@ -1105,6 +1105,11 @@ a nastaví; farby témy z tapety idú samy. Vstupy: LensShore („vytvor tapetu�
   512² 90–108 s, 1024×432 4 kroky 128 s, kompozícia na šírku **dobrá**; VRAM najviac 3,3 GB zo 4. Všetky šesť prešli.
   Z toho: náhľady SD-Turbo 512², výsledok SDXL-Turbo na pomer monitora + zväčšenie. Čas SDXL je hlavne
   jednorazový (1 krok 64 s, 4 kroky 77 s) → zmerať so `sd-server`, ktorý drží model načítaný, a s TAESD (rýchle dekódovanie).
+- [x] **Meranie so `sd-server` 28. 10.** (`zmeraj-server.sh`, `meranie-server.log`; model ostáva v pamäti, dekódovanie TAESD
+  0,5–1 s namiesto 8–25 s, obraz takmer rovnaký): SD-Turbo načítaný za 26 s, potom **10 s na náhľad** 512² (prvý 17 s);
+  SDXL-Turbo prvý obrázok 104 s (načítanie a shadery), potom **30 s na tapetu 1024×432** a 21 s na 512². Na RX 640 je
+  teda použiteľný postup: server beží, kým je okno tvorby otvorené; štyri náhľady SD-Turbo ~40 s, tapeta SDXL-Turbo ~30 s
+  + zväčšenie. Ďalej: `latte-imagine` (jedno rozhranie, motor podľa hardvéru), zväčšenie na rozmer monitora, zručnosť v LensShore.
 - V knižnici tapiet (7A.08) je to záložka **Opísať**: „Nájsť v mojich“ (skwd-lens) a „Vytvoriť novú“ (prompt).
 
 **7A.10** [ ] (Tapety) **Video cez viac obrazoviek** (používateľ 28. 10.; nadväzuje na 7A.08). Galaxy Eyes na latte-lab je MP4
@@ -1129,7 +1134,11 @@ ten istý shader. Hyprland má vlastné animácie iba ako posun, zväčšenie a 
   **zmena témy** (svetlá ↔ tmavá, vlna od miesta kliknutia), prihlásenie a odomknutie, prechod priečinkov v Súboroch;
 - **spustenie aplikácie** krátko; **prepnutie aplikácie** (Alt+Tab, klik na lištu) iba jemne alebo vôbec — robí sa stokrát
   za deň a dlhý efekt otravuje.
-- Krátke (do ~250 ms okrem zatvorenia), voľba v Nastavenia › Prostredie › Okná, iba stupne full a standard, v SAFE nie.
+- **Nastavenia › Prostredie › Prechody** (vlastná stránka, spoločná pre tapety, okná, plochy, tému a prihlásenie):
+  mriežka všetkých prechodov, každý s **živou ukážkou** (prejdenie myšou ho prehrá na dvoch obrázkoch). Pre každé miesto
+  (zatvorenie okna, prepnutie plochy, prezentácia…) voľba **Všetky náhodne / Iba vybrané / Žiadne**; pri „Iba vybrané“ sa
+  prechody v mriežke zaškrtnú (jeden = vždy ten istý, viac = náhodne spomedzi nich). Rýchlosť posuvníkom.
+- Krátke (do ~250 ms okrem zatvorenia), iba stupne full a standard, v SAFE nie.
   Licencia každého shadera zvlášť (skwd-wall MIT, gl-transitions MIT) do TRETIE-STRANY.md.
 ### 7B. [~] Ponuka plochy
 Pravý klik na plochu a ikony na ploche ako vo Windows 11.
