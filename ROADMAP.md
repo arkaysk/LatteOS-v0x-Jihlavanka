@@ -1087,6 +1087,12 @@ a nastaví; farby témy z tapety idú samy. Vstupy: LensShore („vytvor tapetu�
   zapísať do TRETIE-STRANY.md).
 - Spadá pod vypínač generatívnej AI (2B). Prvý krok: zmerať stable-diffusion.cpp s Vulkanom na RX 640 (SD-Turbo 512×512,
   SDXL-Turbo) — čas na obrázok a VRAM; podľa toho rozhodnúť, či je to na slabom stroji použiteľné.
+- **Jedno rozhranie, viac motorov** (používateľ 28. 10.: LatteOS pobeží aj na RTX 3060 s 80 GB RAM, riešenie má slúžiť
+  latte-labu, jeho PC aj iným): LatteOS hovorí s motorom cez HTTP a motor volí podľa hardvéru, ako `latte-ai` pri texte —
+  **ComfyUI** (PyTorch, CUDA; ROCm na novších AMD) na NVIDIA od 8 GB: najviac modelov a nástrojov (LoRA, ControlNet,
+  dopĺňanie častí, video), rýchlejšie jadrá; **stable-diffusion.cpp** (Vulkan) na starších AMD, Intel a malej VRAM;
+  ten istý na procesore bez karty; **online** s vlastným kľúčom. Človek vidí iba „Vytvoriť obrázok“; motor a model sa
+  dajú zmeniť v Nastavenia › AI (výber ako LM Studio). Inštalácia a aktualizácie ako pri ostatnej AI (najprv Omarchy).
 ### 7B. [~] Ponuka plochy
 Pravý klik na plochu a ikony na ploche ako vo Windows 11.
 
