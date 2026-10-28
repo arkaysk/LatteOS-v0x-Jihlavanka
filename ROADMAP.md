@@ -523,6 +523,12 @@ bez otvorenia karty — bežiaca minútka, nabíjanie a slabá batéria, kopíro
 Treba určiť poradie dôležitosti (čo prebije čo, napr. končiaca minútka nad dátumom) a kedy sa stav vráti. Čo a koľko
 sa ukáže, určuje téma a **hustota informácií** (pravidlo 24, 6.25, 9.11): Kompaktné ukáže viac, Vzdušné iba nutné.
 
+**6.27** [ ] **Vlny na spodku hladiny, kvapky a Shore spolu** (používateľ 28. 10.): vlny hladiny pri spodnom okraji
+reagujú na všetko, čo na nej leží — **kvapky Goo** (vlna ich nadvihne, kvapka pri dopade alebo náraze vlnu pošle ďalej) aj
+**akékoľvek Shore** (LensShore, TrayShore a ďalšie dosky): vlna sa o dosku rozbije, odrazí alebo ju obteká, doska pri
+vynorení či ponorení rozvlní hladinu okolo seba. Jedno pravidlo v engine pre všetky, nie zvlášť pre každú dosku.
+Zovšeobecňuje 6H.06 (príboj o TrayShore); súvisí s 6.23 (vlnenie hladiny na ploche) a LATTEOS-GOO bod 18 (kameň do vody).
+
 ### 6A. [~] BarGoo
 Zdroje: `goo/lib/bar.luau`, `goo/side.plm`; LATTEOS-GOO §4.1
 
