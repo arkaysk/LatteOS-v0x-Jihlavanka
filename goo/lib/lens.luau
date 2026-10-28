@@ -17,6 +17,7 @@ local dangerous = require("lib/dangerous")
 local open = require("lib/open")
 local own = require("lib/own")
 local quick = require("drops/quickgoo")
+local skills = require("lib/skills")
 local drops = require("lib/engine")      -- not `engine`: that is the web search engine below
 local M = {}
 -- N marks a text for the translation table (tests/check.sh looks for it); tr() translates it where it is shown.
@@ -994,17 +995,18 @@ end
 local function quick_rows(s)
     s = s:lower()
     local out, n = {}, nil
+    local function add(id, a) out[#out + 1] = skills.row(id, a) end
     n = word_then_number("brightness", s)
-    if n then out[#out + 1] = { label = (tr("Set the brightness to {n} %"):gsub("{n}", n)), glyph = "sun", hint = tr("Do it now"), run = function() run("brightnessctl", { "set", n .. "%" }, function() end) end } end
+    if n then add("brightness", { level = n }) end
     n = word_then_number("volume", s)
-    if n then out[#out + 1] = { label = (tr("Set the volume to {n} %"):gsub("{n}", n)), glyph = "volume", hint = tr("Do it now"), run = function() run("wpctl", { "set-volume", "@DEFAULT_AUDIO_SINK@", tostring(n / 100) }, function() end) end } end
-    if said("turn on wifi", s) then out[#out + 1] = { label = tr("Turn the Wi-Fi on"), glyph = "wifi", hint = tr("Do it now"), run = function() run("nmcli", { "radio", "wifi", "on" }, function() end) end } end
-    if said("turn off wifi", s) then out[#out + 1] = { label = tr("Turn the Wi-Fi off"), glyph = "wifi-off", hint = tr("Do it now"), run = function() run("nmcli", { "radio", "wifi", "off" }, function() end) end } end
+    if n then add("volume", { level = n }) end
+    if said("turn on wifi", s) then add("wifi", { on = true }) end
+    if said("turn off wifi", s) then add("wifi", { on = false }) end
     n = word_then_number("timer", s)
     if n then out[#out + 1] = { label = (tr("A timer for {n} min"):gsub("{n}", n)), glyph = "clock", hint = tr("Do it now"), run = function()
         after(n * 60000, function() run("notify-send", { "-a", "LatteOS", tr("Timer"), (tr("{n} min are up"):gsub("{n}", n)) }, function() end) end)
     end } end
-    if said("do not disturb", s) then out[#out + 1] = { label = tr("Do not disturb"), glyph = "bell-off", hint = tr("Do it now"), run = function() drops.set("quiet", not drops.settings().quiet) end } end
+    if said("do not disturb", s) then add("quiet", { on = not drops.settings().quiet }) end
     return out
 end
 
@@ -1046,29 +1048,33 @@ local function ask(q)
     shore.talk[#shore.talk + 1] = { mine = true, text = q }
     shore.live, shore.view, fact.lens_busy = "", "talk", true
     local final = nil
-    local args = { "send", shore.chat, p.id, m and m.id or "", context_text() .. q, "--stream" }
+    local said = context_text() .. q
     shore.use = {}
     render(card.id() == "lens")
     local due = false
-    shore.job = spawn("latte-ai", args, function(line)
-        local ok, r = pcall(json.decode, line or "")
-        if not ok or type(r) ~= "table" then return end
-        if r.delta then
-            shore.live = shore.live .. r.delta
-            if not due then due = true after(150, function() due = false if card.id() == "lens" and shore.view == "talk" then render(true) end end) end
-        elseif r.chat then final = r end
-    end, function()
-        fact.lens_busy, shore.job = false, nil
-        if final then shore.chat = final.chat shore.talk[#shore.talk + 1] = { mine = false, text = final.answer or "" }
-        elseif shore.live ~= "" then shore.talk[#shore.talk + 1] = { mine = false, text = shore.live } end
-        shore.live = ""
-        if card.id() == "lens" then render(true) else fact.lens_fresh = true end
+    -- the AI is told the skills as they are now: which devices there are, what is on
+    skills.refresh(function()
+        shore.job = spawn("latte-ai", { "send", shore.chat, p.id, m and m.id or "", said, "--stream", "--skills", skills.prompt() }, function(line)
+            local ok, r = pcall(json.decode, line or "")
+            if not ok or type(r) ~= "table" then return end
+            if r.delta then
+                shore.live = shore.live .. r.delta
+                if not due then due = true after(150, function() due = false if card.id() == "lens" and shore.view == "talk" then render(true) end end) end
+            elseif r.chat then final = r end
+        end, function()
+            fact.lens_busy, shore.job = false, nil
+            if final then shore.chat = final.chat shore.talk[#shore.talk + 1] = { mine = false, text = final.answer or "" }
+            elseif shore.live ~= "" then shore.talk[#shore.talk + 1] = { mine = false, text = shore.live } end
+            shore.live = ""
+            if card.id() == "lens" then render(true) else fact.lens_fresh = true end
+        end)
     end)
 end
 -- what an answer suggests doing: the commands in it, the addresses in it
 local function suggested(answer)
     local out = {}
-    for body in answer:gmatch("```[%w]*\n(.-)```") do if #out < 3 then out[#out + 1] = { cmd = body:gsub("%s+$", "") } end end
+    for _, a in ipairs(skills.asked(answer)) do out[#out + 1] = { skill = a } end
+    for lang, body in answer:gmatch("```([%w]*)\n(.-)```") do if lang ~= "latte" and #out < 3 then out[#out + 1] = { cmd = body:gsub("%s+$", "") } end end
     for url in answer:gmatch("https?://[^%s%)%]>]+") do if #out < 5 then out[#out + 1] = { url = url } end end
     return out
 end
@@ -1110,10 +1116,11 @@ local function shore_rows()
             local m = shore.talk[i]
             if m.mine then rows[#rows + 1] = { label = m.text, glyph = "user", quiet = true, line = #rows > 0 }
             else
-                rows[#rows + 1] = { para = true, label = m.text }
+                rows[#rows + 1] = { para = true, label = (m.text:gsub("```latte%s*\n.-```", ""):gsub("%s+$", "")) }
                 for j, s in ipairs(suggested(m.text)) do
                     local key = i .. ":" .. j
-                    if s.cmd then rows[#rows + 1] = { label = shore.sure[key] and tr("Really run it?") or tr("Run in a terminal"), line2 = s.cmd:sub(1, 60), glyph = "terminal-2", danger = shore.sure[key] == true, keep = not shore.sure[key],
+                    if s.skill then rows[#rows + 1] = skills.row(s.skill.skill, s.skill) or { label = tr("This cannot be done here"), line2 = tostring(s.skill.skill), glyph = "alert-triangle", quiet = true }
+                    elseif s.cmd then rows[#rows + 1] = { label = shore.sure[key] and tr("Really run it?") or tr("Run in a terminal"), line2 = s.cmd:sub(1, 60), glyph = "terminal-2", danger = shore.sure[key] == true, keep = not shore.sure[key],
                                                       run = function() if shore.sure[key] then then_do(function() open.shell(s.cmd) end) else shore.sure[key] = true render(true) end end }
                     else rows[#rows + 1] = { label = tr("Open the link"), line2 = s.url, glyph = "world", run = function() then_do(function() open.url(s.url) end) end } end
                 end
@@ -1198,6 +1205,7 @@ function M.shore_open()
     if card.id() ~= "lens" then
         load_lists()
         read_context()
+        skills.refresh()
         fact.lens_fresh = false
         shore_render(false)
     end

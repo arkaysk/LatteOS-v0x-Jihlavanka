@@ -738,10 +738,18 @@ dá písať a každá má skratku — aplikácia: Otvoriť, Pripnúť do QuickGo
 Odinštalovať (AppManager); súbor: Otvoriť v…, Ukázať v priečinku, Kopírovať cestu, Presunúť do koša; odpoveď AI:
 Kopírovať, Spustiť príkaz, Pokračovať v LensAI. Pravý klik na riadok ukáže to isté.
 
-**6B.25** [ ] **LensShore úroveň 1 — AI vykoná, bezpečne** (používateľ 28. 10., predvolená): „pripoj slúchadlá“, „druhý
+**6B.25** [~] **LensShore úroveň 1 — AI vykoná, bezpečne** (používateľ 28. 10., predvolená): „pripoj slúchadlá“, „druhý
 monitor vpravo“, „vypni animácie“ → AI použije **vymedzenú zručnosť** nad príkazmi `latte-*` (sieť, Bluetooth, obrazovky,
 zvuk, napájanie, kvapky, aplikácie), nie terminál ani klikanie. Pred zmenou ukáže, čo zmení, čaká na potvrdenie a výsledok
 zapíše (10B.30). Predloha openKylin 3.0 (KylinBot: systémové zručnosti cez MCP, nie simulované kliky). Stavia na 6B.19.
+- [x] 28. 10. prvé zručnosti (`goo/lib/skills.luau`): Wi-Fi, Bluetooth, pripojiť spárované zariadenie, hlasitosť, stlmiť,
+  výstup zvuku, jas, Nerušiť. AI dostane zoznam tých, ktoré tento počítač má, aj mená zariadení (`latte-ai send --skills`),
+  a odpovie blokom ```` ```latte ```` (JSON na riadok); riadok ukáže „Hlasitosť: 100 % → 40 %“ a vykoná sa až klikom,
+  záznam ide do journalu (`journalctl -t latte-lensshore`). Písané „hlasitosť 30“, „vypni wifi“, „nerušiť“ idú cez tie isté
+  zručnosti. Overené bez obrazovky: Claude Haiku aj miestny Qwen 3.5 4B odpovedajú podľa zmluvy, na bežnú otázku bez bloku;
+  tri zmeny z jednej vety; stlačenie Nerušiť zmení nastavenie a zapíše sa. Nasadené do `/usr`.
+- [ ] Ďalšie zručnosti: obrazovky (`latte-screens`), pripojiť sa k Wi-Fi sieti, aplikácie (spustiť, zavrieť), kvapky a
+  vzhľad, nočné svetlo (`latte-nightlight`), profil výkonu. Bluetooth overiť na stroji s adaptérom (latte-lab ho nemá).
 
 **6B.26** [ ] **LensShore úroveň 2 — plné ovládanie** (používateľ 28. 10.: „väčšina ľudí po čase prepne na 2“): čip
 z LensShore sa **pustí na okno** a AI s ním pracuje — číta ho cez strom prístupnosti, okolo okna prstenec, klikať smie
@@ -986,7 +994,8 @@ Zdroje (používateľ 28. 10.; predlohy pre naše spoločné rozhranie tapiet, n
 wiki.hypr.land/useful-utilities/wallpapers (prehľad, hyprpaper) · github.com/GhostNaN/mpvpaper (video ako tapeta) ·
 github.com/danyspin97/wpaperd (prezentácia podľa monitora) · codeberg.org/LGFae/awww (prechody) ·
 github.com/anufrievroman/waypaper (výber tapiet, viac monitorov) · github.com/5hubham5ingh/WallRizz (farby z tapety) ·
-skwd-wall (7A.02–7A.04) · živé tapety MotionBGS · wallhaven.cc (tapety z internetu).
+skwd-wall (7A.02–7A.04) · živé tapety MotionBGS · wallhaven.cc (tapety z internetu). Čo ktorý vie a čo z neho
+preberáme: `inspo/tapety-programy.md` (overené 28. 10.).
 
 **7A.01** [x] (Vzhľad, témy a tapety) tapeta a okenné tlačidlá · r. 185–186
 

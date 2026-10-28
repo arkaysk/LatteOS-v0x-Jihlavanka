@@ -19,7 +19,9 @@ No API key: the official tool of a service answers, with the account the user is
                             What went wrong is the answer, with "ok": false.
                             --stream: the answer is printed as it comes too, a line {"delta": text} for each piece,
                             before the last line. --markdown: the answer may be formatted (LensAI shows
-                            Markdown; LensGoo's card does not). Ended (SIGTERM), it keeps what had come, "stopped": true
+                            Markdown; LensGoo's card does not). Ended (SIGTERM), it keeps what had come, "stopped": true.
+                            --skills TEXT: what LatteOS can change for the user, added to what the AI is told
+                            (LensShore: goo/lib/skills.luau)
   latte-ai again CHAT PROVIDER MODEL [--text TEXT] [same options as send]
                             the last answer once more, from this service and model; with --text the last question
                             is changed first
@@ -1593,7 +1595,7 @@ def main(a):
         return 0
     global STREAM, SYSTEM
     if a[:1] in (["send"], ["again"]):
-        effort, attach, text, rest = "", [], None, a[5:] if a[0] == "send" else a[4:]
+        effort, attach, text, skills, rest = "", [], None, "", a[5:] if a[0] == "send" else a[4:]
         while rest:
             if rest[0] == "--effort" and len(rest) > 1:
                 effort, rest = rest[1], rest[2:]
@@ -1601,10 +1603,14 @@ def main(a):
                 attach, rest = attach + [rest[1]], rest[2:]
             elif rest[0] == "--text" and len(rest) > 1:
                 text, rest = rest[1], rest[2:]
+            elif rest[0] == "--skills" and len(rest) > 1:
+                skills, rest = rest[1], rest[2:]
             else:
                 STREAM = STREAM or rest[0] == "--stream"
                 SYSTEM = SYSTEM_MD if rest[0] == "--markdown" else SYSTEM
                 rest = rest[1:]
+        if skills:
+            SYSTEM += "\n\n" + skills
 
         def stop(*_):
             raise Stopped()
