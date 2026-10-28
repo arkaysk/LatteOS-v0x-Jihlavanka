@@ -91,6 +91,8 @@ hl.config({
     },
     -- The pointer never moves by itself: switching windows from the bar would otherwise pull it away from the bar.
     cursor = { no_warps = true, no_hardware_cursors = not hardware },
+    -- A window dragged out of its tile keeps its title under the hand, as on Windows (0.57 centres it on the pointer).
+    binds = { drag_center_window = false },
 })
 require("latte.tiers").apply(tier, colors)
 

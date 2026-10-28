@@ -1,8 +1,8 @@
 diff --git a/src/gpu.rs b/src/gpu.rs
-index ea587ce..73ea6e5 100644
+index a4d5cf7..3448e2f 100644
 --- a/src/gpu.rs
 +++ b/src/gpu.rs
-@@ -348,6 +348,8 @@ struct OpenBody {
+@@ -391,6 +391,8 @@ struct OpenBody {
      /// Its shapes as they are, to know on the CPU where its edge goes: the
      /// glass needs it, since it asks the compositor to blur exactly there.
      flats: Vec<crate::shapes::FlatShape>,
@@ -11,7 +11,7 @@ index ea587ce..73ea6e5 100644
  }
  
  /// What a text says right now. Without copying anything when it does not have to: a
-@@ -602,6 +604,52 @@ impl DrawList {
+@@ -701,6 +703,52 @@ impl DrawList {
          })
      }
  
@@ -64,7 +64,7 @@ index ea587ce..73ea6e5 100644
      fn push_shape(&mut self, p: crate::shapes::FlatShape, blend: f32) -> usize {
          let k = self.shapes.len() / PER_SHAPE;
          self.shapes.resize(self.shapes.len() + PER_SHAPE, 0.0);
-@@ -1208,15 +1256,27 @@ impl DrawList {
+@@ -1324,15 +1372,27 @@ impl DrawList {
                  }
                  _ if hidden => {}
                  Instr::Group { shadow } => {
@@ -93,7 +93,7 @@ index ea587ce..73ea6e5 100644
                          g.n += 1;
                          g.slack = g.slack.max(k * 0.5);
                          if let Some(b) = bounds {
-@@ -1254,10 +1314,15 @@ impl DrawList {
+@@ -1370,10 +1430,15 @@ impl DrawList {
                              self.glass_marks.push(self.element_count() as u32);
                          }
                      }
@@ -111,7 +111,7 @@ index ea587ce..73ea6e5 100644
                          e[3] = a;
                          match paint {
                              Paint::Color(col) => e[8..11].copy_from_slice(&color(col)),
-@@ -1298,6 +1363,7 @@ impl DrawList {
+@@ -1414,6 +1479,7 @@ impl DrawList {
                              }
                          }
                      });

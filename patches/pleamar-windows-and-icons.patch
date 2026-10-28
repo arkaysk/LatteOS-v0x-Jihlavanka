@@ -1,8 +1,8 @@
 diff --git a/src/platform/compositor.rs b/src/platform/compositor.rs
-index ec269dc..f1c6797 100644
+index 16c84f5..e31956f 100644
 --- a/src/platform/compositor.rs
 +++ b/src/platform/compositor.rs
-@@ -67,8 +67,10 @@ struct State {
+@@ -71,8 +71,10 @@ struct State {
      group_monitor: HashMap<u32, String>,
      workspace_group: HashMap<u32, u32>,
      output_name: HashMap<u32, String>,
@@ -15,7 +15,7 @@ index ec269dc..f1c6797 100644
      last_window: String,
      last_workspaces: String,
      next: i64,
-@@ -79,7 +81,7 @@ impl State {
+@@ -83,7 +85,7 @@ impl State {
      /// all of them in the order they came —each with its `id`, for
      /// `window.restore(id)`—.
      fn report_window(&mut self) {
@@ -24,7 +24,7 @@ index ec269dc..f1c6797 100644
          let active = self.toplevels.values().filter(|v| v.active).max_by_key(|v| v.activated_at).cloned().unwrap_or_default();
          let mut ids: Vec<&u32> = self.toplevels.keys().collect();
          ids.sort();
-@@ -106,7 +108,7 @@ impl State {
+@@ -114,7 +116,7 @@ impl State {
          let fingerprint = format!("{v:?}");
          if fingerprint != self.last_window {
              self.last_window = fingerprint;
@@ -33,7 +33,7 @@ index ec269dc..f1c6797 100644
          }
      }
  
-@@ -114,7 +116,7 @@ impl State {
+@@ -122,7 +124,7 @@ impl State {
      /// compositor reported them, so that `workspaces.focus(3)` means the same here
      /// as in Hyprland, which numbers them.
      fn report_workspaces(&mut self) {
@@ -42,7 +42,7 @@ index ec269dc..f1c6797 100644
          let mut list: Vec<&Workspace> = self.workspaces.values().collect();
          list.sort_by_key(|e| e.number);
          let active = list.iter().find(|e| e.active).map_or(0, |e| e.number);
-@@ -133,7 +135,7 @@ impl State {
+@@ -141,7 +143,7 @@ impl State {
          let fingerprint = format!("{v:?}");
          if fingerprint != self.last_workspaces {
              self.last_workspaces = fingerprint;
@@ -51,7 +51,7 @@ index ec269dc..f1c6797 100644
          }
      }
  }
-@@ -333,7 +335,7 @@ pub fn service(name: &str, dispatch: Box<dyn Fn(SysValue) + Send>) -> bool {
+@@ -348,7 +350,7 @@ pub fn service(name: &str, dispatch: Box<dyn Fn(SysValue) + Send>) -> bool {
      let mut e = state.lock().unwrap();
      match name {
          "window" => {
@@ -60,7 +60,7 @@ index ec269dc..f1c6797 100644
              e.last_window.clear();
              e.report_window();
          }
-@@ -341,7 +343,7 @@ pub fn service(name: &str, dispatch: Box<dyn Fn(SysValue) + Send>) -> bool {
+@@ -356,7 +358,7 @@ pub fn service(name: &str, dispatch: Box<dyn Fn(SysValue) + Send>) -> bool {
              if e.manager.is_none() {
                  return false;
              }
@@ -70,10 +70,10 @@ index ec269dc..f1c6797 100644
              e.report_workspaces();
          }
 diff --git a/src/platform/mod.rs b/src/platform/mod.rs
-index 6bc48f2..7c0a21e 100644
+index 35ee464..44303f3 100644
 --- a/src/platform/mod.rs
 +++ b/src/platform/mod.rs
-@@ -136,7 +136,7 @@ fn start_service(from: &str, name: &str, notify: Box<dyn Fn(SysValue) + Send>) -
+@@ -139,7 +139,7 @@ fn start_service(from: &str, name: &str, notify: Box<dyn Fn(SysValue) + Send>) -
      // `PLEAMAR_GENERIC=1` skips the Hyprland path: it's how to test here what
      // the other compositors will see.
      #[cfg(target_os = "linux")]
@@ -82,7 +82,7 @@ index 6bc48f2..7c0a21e 100644
          return hyprland::service(name, notify);
      }
      // Any other Wayland: the protocols everyone understands.
-@@ -202,7 +202,7 @@ pub fn command(from: &str, name: &str, args: &[SysValue]) -> Result<(), String>
+@@ -220,7 +220,7 @@ pub fn command(from: &str, name: &str, args: &[SysValue]) -> Result<(), String>
          return thumbnails::command(name, args);
      }
      #[cfg(target_os = "linux")]
@@ -91,7 +91,7 @@ index 6bc48f2..7c0a21e 100644
          return hyprland::command(name, args);
      }
      #[cfg(target_os = "linux")]
-@@ -779,7 +779,7 @@ pub static CURSOR_WANTED: std::sync::atomic::AtomicBool = std::sync::atomic::Ato
+@@ -1076,7 +1076,7 @@ pub static CURSOR_WANTED: std::sync::atomic::AtomicBool = std::sync::atomic::Ato
  /// arrives, and `cursor.x` is only known over the scene, like `pointer.x`.
  pub fn watch_cursor(to_render: std::sync::mpsc::Sender<crate::scene::ToRender>) {
      #[cfg(target_os = "linux")]
@@ -100,9 +100,9 @@ index 6bc48f2..7c0a21e 100644
          hyprland::watch_cursor(to_render);
      } else if let Some(dir) = std::env::var("PLEAMAR_SOCKETS").ok().filter(|d| std::path::Path::new(&format!("{d}/cursor.sock")).exists()) {
          session_cursor(dir, to_render);
-@@ -984,3 +984,18 @@ pub use wayland::icon;
- pub fn icon(_: &str) -> Option<std::path::PathBuf> {
-     None
+@@ -1430,3 +1430,18 @@ pub(crate) mod tests {
+         let _ = std::fs::remove_dir_all(&dir);
+     }
  }
 +
 +/// Whether `what` (a service, a command's family, or "cursor") goes through
@@ -119,44 +119,3 @@ index 6bc48f2..7c0a21e 100644
 +            Ok(v) => !v.split(',').map(str::trim).any(|p| p == "1" || p == what),
 +        }
 +}
-diff --git a/src/platform/wayland.rs b/src/platform/wayland.rs
-index c9af8df..da0adb9 100644
---- a/src/platform/wayland.rs
-+++ b/src/platform/wayland.rs
-@@ -1857,12 +1857,31 @@ smithay_client_toolkit::delegate_dispatch2!(State);
- /// small. Good enough for application icons.
- pub fn icon(name: &str) -> Option<std::path::PathBuf> {
-     let home = std::env::var("HOME").unwrap_or_default();
--    let bases = [format!("{home}/.local/share/icons"), format!("{home}/.icons"), "/usr/share/icons".into()];
--    let themes = ["hicolor", "Papirus", "Papirus-Dark", "Adwaita", "breeze", "breeze-dark"];
--    let sizes = ["scalable", "512x512", "256x256", "128x128", "96x96", "64x64", "48x48", "32x32", "symbolic"];
--    let contexts = ["apps", "devices", "places", "status", "actions", "categories", "mimetypes"];
-+    // Every icons directory of XDG_DATA_DIRS too: Flatpak apps put theirs under …/flatpak/exports/share/icons.
-+    let mut bases = vec![format!("{home}/.local/share/icons"), format!("{home}/.icons")];
-+    let data_dirs = std::env::var("XDG_DATA_DIRS").unwrap_or_else(|_| "/usr/local/share:/usr/share".into());
-+    for d in data_dirs.split(':').filter(|d| !d.is_empty()) {
-+        let b = format!("{}/icons", d.trim_end_matches('/'));
-+        if !bases.contains(&b) {
-+            bases.push(b);
-+        }
-+    }
-+    if !bases.iter().any(|b| b == "/usr/share/icons") {
-+        bases.push("/usr/share/icons".into());
-+    }
-+    // The theme the user asked for first (PLEAMAR_ICON_THEME, or the one Quickshell apps use), then the usual ones.
-+    let wanted = std::env::var("PLEAMAR_ICON_THEME").or_else(|_| std::env::var("QS_ICON_THEME")).unwrap_or_default();
-+    let mut themes: Vec<&str> = Vec::new();
-+    if !wanted.is_empty() {
-+        themes.push(&wanted);
-+    }
-+    themes.extend(["hicolor", "Papirus", "Papirus-Dark", "Adwaita", "AdwaitaLegacy", "breeze", "breeze-dark"]);
-+    // Both spellings of the size: hicolor and Adwaita say 48x48, breeze says 48.
-+    let sizes = ["scalable", "512x512", "256x256", "128x128", "96x96", "64x64", "48x48", "32x32", "24x24", "symbolic",
-+                 "64", "48", "32", "24", "22"];
-+    let contexts = ["apps", "devices", "places", "status", "actions", "categories", "mimetypes", "legacy"];
-     for base in &bases {
--        for theme in themes {
-+        for theme in &themes {
-             for size in sizes {
-                 for context in contexts {
-                     for ext in ["svg", "png"] {

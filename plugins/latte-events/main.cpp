@@ -27,12 +27,13 @@
 #include <hyprland/src/managers/SeatManager.hpp>
 #include <hyprland/src/desktop/state/FocusState.hpp>
 #include <hyprland/src/desktop/state/WindowState.hpp>
-#include <hyprland/src/desktop/Workspace.hpp>
-#include <hyprland/src/desktop/view/Window.hpp>
+#include <hyprland/src/desktop/view/window/Window.hpp>
 #include <hyprland/src/Compositor.hpp>
-// the request is set on the toplevel's wire object, which XDGShell keeps private
+// the request is set on the toplevel's wire object, which XDGShell keeps private; a window's xdg surface is private
+// to its Wayland backend
 #define private public
 #include <hyprland/src/protocols/XDGShell.hpp>
+#include <hyprland/src/desktop/view/window/WaylandBackend.hpp>
 #undef private
 
 using CCustomEvent = Event::CEventBus::CCustomEvent;
@@ -62,12 +63,20 @@ static void letGo() {
 
 // The floating window whose outside the pointer is just beside, if there is one and nothing else is under the
 // pointer: no window, no panel that takes the mouse there.
+// The xdg toplevel of a window, none for an X11 one.
+static SP<CXDGToplevelResource> toplevelOf(const PHLWINDOW& w) {
+    if (!w || w->backend().type() != Desktop::View::eBackendType::WINDOW_BACKEND_WAYLAND)
+        return nullptr;
+    const auto xdg = static_cast<Desktop::View::CWaylandBackend&>(w->backend()).m_resource.lock();
+    return xdg ? xdg->m_toplevel.lock() : nullptr;
+}
+
 static PHLWINDOW besideWindow(const Vector2D& at) {
     if (g_pSeatManager->m_state.pointerFocus.lock())
         return nullptr;
     PHLWINDOW found = nullptr;
     for (const auto& w : Desktop::windowState()->windows()) {
-        if (!w || !w->m_isMapped || !w->m_isFloating || w->isHidden() || !w->m_workspace || !w->m_workspace->isVisible())
+        if (!w || !w->mapped() || !w->isFloating() || w->isHidden() || !w->m_workspace || !w->m_workspace->visible())
             continue;
         const auto box = w->getWindowMainSurfaceBox();
         if (at.x >= box.x - REACH && at.x <= box.x + box.w + REACH && at.y >= box.y - REACH && at.y <= box.y + box.h + REACH)
@@ -80,8 +89,7 @@ static PHLWINDOW besideWindow(const Vector2D& at) {
 // only that it can be maximised and made fullscreen, and an app asks for no menu it is not told of: the window
 // is told again, with the menu, and a configure makes it take that up.
 static void hearMenu(PHLWINDOW window) {
-    const auto xdg      = window ? window->m_xdgSurface.lock() : nullptr;
-    const auto toplevel = xdg ? xdg->m_toplevel.lock() : nullptr;
+    const auto toplevel = toplevelOf(window);
     if (!toplevel || !toplevel->m_resource)
         return;
     if (toplevel->m_resource->version() >= 5) {
@@ -122,7 +130,7 @@ APICALL EXPORT PLUGIN_DESCRIPTION_INFO PLUGIN_INIT(HANDLE handle) {
         const auto& drag   = g_layoutManager->dragController();
         const auto  target = drag && drag->mode() == MBIND_MOVE ? drag->target() : nullptr;
         const auto  window = target ? target->window() : nullptr;
-        if (window && window->m_isFloating)
+        if (window && window->isFloating())
             g_moved = window;
         else
             letGo();
@@ -166,8 +174,7 @@ APICALL EXPORT void PLUGIN_EXIT() {
     g_onReload.reset();
     g_onOpen.reset();
     for (const auto& w : Desktop::windowState()->windows()) {
-        const auto xdg      = w ? w->m_xdgSurface.lock() : nullptr;
-        const auto toplevel = xdg ? xdg->m_toplevel.lock() : nullptr;
+        const auto toplevel = toplevelOf(w);
         if (toplevel && toplevel->m_resource)
             toplevel->m_resource->setShowWindowMenu(nullptr);  // nothing of the plugin may stay behind it
     }

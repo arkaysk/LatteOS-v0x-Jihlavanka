@@ -1,8 +1,8 @@
 diff --git a/src/logic_luau.rs b/src/logic_luau.rs
-index 5952cfc..7494e3a 100644
+index 4a2178e..24eed32 100644
 --- a/src/logic_luau.rs
 +++ b/src/logic_luau.rs
-@@ -1187,10 +1187,15 @@ impl LuauScript {
+@@ -1257,10 +1257,15 @@ impl LuauScript {
              let first = {
                  let mut c = c.lock().unwrap();
                  let v = c.watchers.entry(name.clone()).or_default();

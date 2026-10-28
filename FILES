@@ -283,7 +283,7 @@ package: pulseaudio-utils                                            # Settings 
 package: fd-find xdg-utils xdg-user-dirs                             # the launcher: finding files, opening them, the home folders
 optional: brightnessctl power-profiles-daemon                        # the brightness keys; the power profiles in PowerGoo's card
 optional: steam gamescope gamescope-session gamescope-session-steam  # the Game session; without them it is not offered
-/usr/bin/pleamar: pleamar v0.3.2 (github.com/k4ditano/pleamar) built with patches/pleamar-*.patch; see patches/README.md
+/usr/bin/pleamar: pleamar v0.4.31 (github.com/k4ditano/pleamar) built with patches/pleamar-*.patch; see patches/README.md
 optional /usr/lib64/latteos/hyprbars.so: hyprbars (github.com/hyprwm/hyprland-plugins) built for the installed Hyprland with patches/hyprbars-latte.patch
 package: wine winetricks cabextract unshield innoextract 7zip icoutils bubblewrap    # Barista: Windows programs, each in a folder and a fence of its own
 optional: wine-dxvk wine-dxvk-d3d9 wine-dxvk-d3d8 mingw32-wine-gecko mingw64-wine-gecko wine-mono    # Direct3D 8 to 11 over Vulkan; web views and .NET inside Wine

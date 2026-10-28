@@ -21,8 +21,8 @@ obrazovky aj k sebe, naťahujú sa a praskajú, žijú vlastným pohybom a reagu
 
 | vrstva | čo robí | kde |
 |---|---|---|
-| **Hyprland 0.56** (Lua) | okná, režimy okien (páska, dlaždice, plávajúce), animácie | `system/hypr/` |
-| **pleamar 0.3.2** (k4ditano, BSD-3; Rust, SDF, jazyk 0.4, naše záplaty v `patches/`) | kreslí kvapky a karty Goo, logika v Luau | `goo/` (engine Goo) |
+| **Hyprland 0.57** (Lua) | okná, režimy okien (páska, dlaždice, plávajúce), animácie | `system/hypr/` |
+| **pleamar 0.4.31** (k4ditano, BSD-3; Rust, SDF, jazyk 0.4, naše záplaty v `patches/`) | kreslí kvapky a karty Goo, logika v Luau | `goo/` (engine Goo) |
 | **pomocníci LatteOS** | štart, prihlásenie, relácia, údaje pre kvapky | `bin/`, `crates/` |
 
 Rohovú lištu, ovládacie centrum, upozornenia a zámok robila do v0.3 Noctalia 5; vo Fresh ich nahradia služby
@@ -324,7 +324,7 @@ v Androide; príboj vĺn o TrayShore. ROADMAP 6H.05–6H.08.)*
 ### 4.9 Okná (Hyprland)
 - **Prichytenie ťahaním** (Fresh, 13. 10.; plávajúce okná): okno pustené s kurzorom pri hornom okraji sa
   maximalizuje, pri bočnom zaberie polovicu, pri rohu štvrtinu; odtiahnuté z miesta dostane späť svoju veľkosť.
-  Kedy bolo okno pustené, hovorí plugin `plugins/latte-events` (Hyprland 0.56 na to udalosť nemá); bez neho sa
+  Kedy bolo okno pustené, hovorí plugin `plugins/latte-events` (Hyprland na to udalosť nemá); bez neho sa
   neprichytáva. Pri Win + ťahaní sa prichytí až s prvým pohybom myši po pustení. Náhľad cieľa ešte nie je.
 - **Okno vždy na dosah** (používateľ, 13. 10.; plávajúce okná): od okraja sa mení veľkosť v tom smere; kúsok za
   okrajom v prázdne (do 36 px) sa okno chytí celé a ťahá; pustené okno sa vráti tak, aby jeho vrch ostal na obrazovke

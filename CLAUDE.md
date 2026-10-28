@@ -18,4 +18,4 @@ do systému, sa zapíše do `FILES`. Pred commitom spustiť `tests/check.sh` (Ru
   programovať, ja mám iba idey.“ Na latte-lab sa smie voľne inštalovať, reštartovať engine, odhlasovať a prihlasovať,
   skúšať. Pozor ostáva na veci mimo neho (GitHub, verejné repo — iba na pokyn) a na nevratné zásahy do dát.
 - **Heslo pre sudo** je v `.claude-local/latte-lab.md` (súbor ignorovaný gitom — nikdy ho necommitovať ani nevypisovať).
-- Grafika: Hyprland 0.56 (Lua), monitory DP-3 (hlavný, 2560 × 1080) a DP-1 (virtuálny LATTE-VIRT); prihlasovanie greetd.
+- Grafika: Hyprland 0.57 (Lua), monitory DP-3 (hlavný, 2560 × 1080) a DP-1 (virtuálny LATTE-VIRT); prihlasovanie greetd.

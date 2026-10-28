@@ -1,5 +1,5 @@
 diff --git a/hyprbars/barDeco.cpp b/hyprbars/barDeco.cpp
-index c27653d..b834a16 100644
+index e57f77b..011a12f 100644
 --- a/hyprbars/barDeco.cpp
 +++ b/hyprbars/barDeco.cpp
 @@ -1,3 +1,4 @@
@@ -7,15 +7,15 @@ index c27653d..b834a16 100644
  #include "barDeco.hpp"
  
  #include <hyprland/src/Compositor.hpp>
-@@ -10,6 +11,7 @@
- #include <hyprland/src/helpers/MiscFunctions.hpp>
+@@ -12,6 +13,7 @@
+ #include <hyprland/src/keybinds/Manager.hpp>
  #include <hyprland/src/managers/SeatManager.hpp>
  #include <hyprland/src/managers/input/InputManager.hpp>
 +#include <hyprland/src/managers/eventLoop/EventLoopManager.hpp>
  #include <hyprland/src/render/Renderer.hpp>
  #include <hyprland/src/config/ConfigManager.hpp>
  #include <hyprland/src/config/shared/animation/AnimationTree.hpp>
-@@ -55,6 +57,10 @@ CHyprBar::CHyprBar(PHLWINDOW pWindow) : IHyprWindowDecoration(pWindow) {
+@@ -57,6 +59,10 @@ CHyprBar::CHyprBar(PHLWINDOW pWindow) : IHyprWindowDecoration(pWindow) {
  }
  
  CHyprBar::~CHyprBar() {
@@ -26,7 +26,7 @@ index c27653d..b834a16 100644
      std::erase(g_pGlobalState->bars, m_self);
  }
  
-@@ -126,6 +132,32 @@ void CHyprBar::onMouseButton(Event::SCallbackInfo& info, IPointer::SButtonEvent
+@@ -128,6 +134,32 @@ void CHyprBar::onMouseButton(Event::SCallbackInfo& info, IPointer::SButtonEvent
      if (!inputIsValid())
          return;
  
@@ -59,16 +59,16 @@ index c27653d..b834a16 100644
      if (e.state != WL_POINTER_BUTTON_STATE_PRESSED) {
          handleUpEvent(info);
          return;
-@@ -154,6 +186,8 @@ void CHyprBar::onMouseMove(Vector2D coords) {
-     if (g_pGlobalState->config.iconOnHover->value())
-         damageOnButtonHover();
+@@ -168,6 +200,8 @@ void CHyprBar::onMouseMove(Vector2D coords) {
+         }
+     }
  
 +    updateButtonHoverTimer();
 +
      if (!m_bDragPending || m_bTouchEv || !validMapped(m_pWindow) || m_touchId != 0)
          return;
  
-@@ -664,6 +698,57 @@ void CHyprBar::updateRules() {
+@@ -702,6 +736,57 @@ void CHyprBar::updateRules() {
          m_bTitleColorChanged = true;
  }
  
@@ -127,7 +127,7 @@ index c27653d..b834a16 100644
      const auto BARPADDING       = g_pGlobalState->config.barPadding->value();
      const auto BARBUTTONPADDING = g_pGlobalState->config.barButtonPadding->value();
 diff --git a/hyprbars/barDeco.hpp b/hyprbars/barDeco.hpp
-index a3b4e2d..093531c 100644
+index d0d54d5..f71b973 100644
 --- a/hyprbars/barDeco.hpp
 +++ b/hyprbars/barDeco.hpp
 @@ -12,6 +12,7 @@
@@ -138,10 +138,10 @@ index a3b4e2d..093531c 100644
  
  #define private public
  #include <hyprland/src/managers/input/InputManager.hpp>
-@@ -66,6 +67,10 @@ class CHyprBar : public IHyprWindowDecoration {
-     bool                       m_hidden             = false;
+@@ -68,6 +69,10 @@ class CHyprBar : public IHyprWindowDecoration {
      bool                       m_bTitleColorChanged = false;
      bool                       m_bButtonHovered     = false;
+     bool                       m_bBarHovered        = false;
 +    // LatteOS: the pointer resting on a button (on_button_hover: the layouts over the maximise button of Windows 11)
 +    SP<CEventLoopTimer>        m_hoverTimer;
 +    int                        m_hoverIdx = -1;
@@ -150,25 +150,25 @@ index a3b4e2d..093531c 100644
      bool                       m_bWindowHasFocus    = false;
      std::optional<CHyprColor>  m_bForcedBarColor;
 diff --git a/hyprbars/globals.hpp b/hyprbars/globals.hpp
-index 0ef19ae..8eaccb3 100644
+index 2911644..7087712 100644
 --- a/hyprbars/globals.hpp
 +++ b/hyprbars/globals.hpp
-@@ -37,7 +37,7 @@ struct SGlobalState {
+@@ -40,7 +40,7 @@ struct SGlobalState {
          SP<Config::Values::CIntValue>        barPadding;
          SP<Config::Values::CIntValue>        barButtonPadding;
-         SP<Config::Values::CBoolValue>       barBlur, barTitleEnabled, barPartOfWindow, barPrecedenceOverBorder, enabled, iconOnHover;
+         SP<Config::Values::CBoolValue>       barBlur, barTitleEnabled, barPartOfWindow, barPrecedenceOverBorder, enabled, iconOnHover, buttonsOnHover;
 -        SP<Config::Values::CStringValue>     barTextFont, barTextAlign, barButtonsAlignment, onDoubleClick;
 +        SP<Config::Values::CStringValue>     barTextFont, barTextAlign, barButtonsAlignment, onDoubleClick, onRightClick, onButtonHover;
      } config;
  };
  
 diff --git a/hyprbars/main.cpp b/hyprbars/main.cpp
-index ae9c90b..6143279 100644
+index 3d88b57..a82f4ef 100644
 --- a/hyprbars/main.cpp
 +++ b/hyprbars/main.cpp
-@@ -232,6 +232,10 @@ APICALL EXPORT PLUGIN_DESCRIPTION_INFO PLUGIN_INIT(HANDLE handle) {
-     g_pGlobalState->config.enabled             = makeShared<Config::Values::CBoolValue>("plugin:hyprbars:enabled", "Whether bars are enabled", true);
-     g_pGlobalState->config.iconOnHover         = makeShared<Config::Values::CBoolValue>("plugin:hyprbars:icon_on_hover", "Whether to use an icon on hover of the buttons", false);
+@@ -196,6 +196,10 @@ APICALL EXPORT PLUGIN_DESCRIPTION_INFO PLUGIN_INIT(HANDLE handle) {
+     g_pGlobalState->config.buttonsOnHover      = makeShared<Config::Values::CBoolValue>(
+         "plugin:hyprbars:buttons_on_hover", "Whether the buttons are only drawn while the cursor is over the bar", false);
      g_pGlobalState->config.onDoubleClick       = makeShared<Config::Values::CStringValue>("plugin:hyprbars:on_double_click", "Action to execute on double click of the bar", "");
 +    g_pGlobalState->config.onRightClick        = makeShared<Config::Values::CStringValue>("plugin:hyprbars:on_right_click",
 +                                                                                          "Action to execute on right click of the bar ({x} {y} = cursor, {address} = window)", "");
@@ -177,12 +177,12 @@ index ae9c90b..6143279 100644
  
      HyprlandAPI::addConfigValueV2(PHANDLE, g_pGlobalState->config.barColor);
      HyprlandAPI::addConfigValueV2(PHANDLE, g_pGlobalState->config.textColor);
-@@ -251,6 +255,8 @@ APICALL EXPORT PLUGIN_DESCRIPTION_INFO PLUGIN_INIT(HANDLE handle) {
-     HyprlandAPI::addConfigValueV2(PHANDLE, g_pGlobalState->config.enabled);
+@@ -216,6 +220,8 @@ APICALL EXPORT PLUGIN_DESCRIPTION_INFO PLUGIN_INIT(HANDLE handle) {
      HyprlandAPI::addConfigValueV2(PHANDLE, g_pGlobalState->config.iconOnHover);
+     HyprlandAPI::addConfigValueV2(PHANDLE, g_pGlobalState->config.buttonsOnHover);
      HyprlandAPI::addConfigValueV2(PHANDLE, g_pGlobalState->config.onDoubleClick);
 +    HyprlandAPI::addConfigValueV2(PHANDLE, g_pGlobalState->config.onRightClick);
 +    HyprlandAPI::addConfigValueV2(PHANDLE, g_pGlobalState->config.onButtonHover);
  
-     if (Config::mgr()->type() == Config::CONFIG_LEGACY)
-         HyprlandAPI::addConfigKeyword(PHANDLE, "plugin:hyprbars:hyprbars-button", onNewButton, Hyprlang::SHandlerOptions{});
+     HyprlandAPI::addLuaFunction(PHANDLE, "hyprbars", "add_button", ::newLuaButton);
+     HyprlandAPI::addLuaFunction(PHANDLE, "hyprbars", "set_title", ::setLuaTitle);

@@ -93,9 +93,16 @@ aktualne linux fedora 44 server. hyprland a pleamar.
 po dokončeny latteOS gui bude na rovnakom zaklade vytvoreny atomic ako Bazzite. Možnost neskorej. Vytvorit api rozhranie, ktore ponukne funkčnost LatteOS nad akýmkolvek kernelom.
 
 ### 1A. [x] Hyprland
-Kompozitor Hyprland 0.56 s Lua vrstvou: okná, režimy, skratky, stupne výkonu, herný režim.
+Kompozitor Hyprland 0.57 s Lua vrstvou: okná, režimy, skratky, stupne výkonu, herný režim.
 
 **1A.01** [x] (Okná) Hyprland pre GOO · r. 76–77
+
+**1A.02** [x] **Hyprland 0.57.0** (28. 10.): z copr lionheartp (rpm priamo z výsledku zostavenia, repozitár ho ešte nemal);
+  `dnf versionlock` presunutý na 0.57. latte-events prenesený na nové API (okno → `backend()`, `mapped()`, `isFloating()`,
+  workspace `visible()`), hyprbars z `main` (d2427d4) so záplatou znova uloženou, hyprglass z `main` (7c574b4). Wobble
+  zapnutý pre stupne full a standard (`tiers.lua`), `damping` namiesto `dampening`, `binds.drag_center_window = false`
+  (záhlavie ostáva pod rukou ako vo Windows). Overené `tests/screen.sh`: bez chýb konfigurácie, všetky tri pluginy
+  načítané, okno sa pri ťahaní ohýba. **Neoverené:** blur (ani obyčajný) v skúške bez obrazovky nekreslí — až v relácii.
 
 ### 1B. [x] Pleamar
 Jazyk a engine pleamar, naše záplaty (`patches/`), skill `pleamar`, `pleamar --check`.
@@ -109,6 +116,13 @@ Zdroje: `patches/`, skill `pleamar`
   `/usr/bin/pleamar-0.2.29`. Overené: nové aj staré scény prejdú `--check`, nové prihlásenie aj starý engine sa
   na neviditeľnej obrazovke kreslia rovnako ako na 0.2.29 (rozdiel do 9 z 255). **Neoverené:** starý engine
   v skutočnej relácii Hyprlandu na novom pleamare (záťaž, sklo, zoznam okien).
+
+**1B.03** [x] **pleamar 0.4.31** (28. 10.): záplaty prenesené na `v0.4.31` (`~/src/pleamar-0.4.31`), každá sedí samostatne.
+  Autor medzitým: ikony podľa freedesktop (náš kus o ikonách zahodený), kontrola zlého záberu skla (`wrong`, väzby 5–8 —
+  naše dva staršie snímky skla sú teraz na 9 a 10), `coverage(d)` sa posunulo. Starý je `/usr/bin/pleamar-0.3.2`.
+  Overené: všetky scény `--check`; Goo v Hyprlande 0.57 bez obrazovky kreslí rovnako (0,09 % pixelov iné), pamäť 352 → 150 MB,
+  pri vypnutí už nepadá. Záťaž v pokoji 54 % jadra oproti 50 % — v skúške bez obrazovky ide cez swapchain, nie cez nové
+  dmabuf snímky (0.4.0); zmerať v relácii.
 
 ### 1C. [ ] Atomic / bootc
 Neskôr: obraz ako Bazzite, rollback.
@@ -930,6 +944,12 @@ Z `inspo/` 13. 10.: plocha bez klasickej lišty — zóny Main, Stash a Parking 
 Scotta Jensona pre KDE, 2026) — **rozhodnuté 13. 10. ako štvrtý režim okien, „Teraz“ bod 7**; pevné pravidlá fyziky kvapiek a okien — hmotnosť, zotrvačnosť, vzájomné odpudzovanie,
 kvapalina tečúca okolo okien (fwm); vzhľad prehrávača a zámku obrazovky (widgety Chaldea, 0BSD).
 
+**6L.03** [ ] **ShiftGoo — pracovný čas** (používateľ 28. 10.; github.com/hbollon/shift, MIT): príchod/odchod jedným
+klikom, denný cieľ zo zmluvy, nadčasy, sviatky, otázka po návrate z uzamknutia. Je to plugin Noctalie 5.4 (Luau); jadro
+`shift/lib/*` je čistý Luau s testami a na Noctaliu siaha iba `lib/host.luau` — kvapka Goo by vzala jadro a napísala
+vlastný `host` a kartu. Overené 28. 10. v Noctalii 5.4 (`noctalia msg plugins source add shift git …`, potrebuje swayidle):
+na lište počíta, bublina ukáže stav, dnes, týždeň a návrh „Check in?“.
+
 ---
 
 ## 7. [~] Desktop
@@ -1160,6 +1180,12 @@ a vypnúť pri inom režime bez reštartu?
 Obrazovky a pri snímke obrazovky; tu sa monitormi nehýbe, klik na monitor mu prepne režim. Hyprland vie rozloženie podľa
 plochy (pravidlá plôch).
 
+**8A.14** [ ] **Režim Kôpka kariet** (používateľ 28. 10.; github.com/kvrtco/hyprland-stacked, Lua rozloženie ~150 riadkov):
+okná ako kôpka kariet mierne posunutých za sebou, Super+←/→ listuje. Bez záplaty Hyprlandu nepoužiteľné: klik ide do
+okna, ktoré Hyprland nájde prvé, nie do toho navrchu (kvrtco/Hyprland-overlap-hit-patch: 2 riadky v `ViewHitTester.cpp`,
+`WINDOWS | std::views::reverse`). Cesta bez vlastného Hyprlandu: háčik na `CViewHitTester::windowAt` v latte-events,
+alebo počkať, kým to autor pošle do Hyprlandu. Licencia rozloženia zatiaľ neuvedená.
+
 ### 8B. [~] Obrazovky
 Rozpoznanie a rozloženie monitorov, virtuálny monitor, rozšíriť/duplikovať.
 Zdroje: `bin/latte-screens`, `system/hypr/hyprland.lua`, Nastavenia › Obrazovky
@@ -1227,6 +1253,12 @@ aplikácie LatteOS, iné nie; karty a okná sa líšia). Zjednotiť, aby stupne 
 **8C.03** [ ] **Sklo bočného panelu a sklo hlavného okna oddelene** (používateľ 27. 10.): v Nastavenia › Okná dve samostatné
 voľby — sklo bočného panelu a sklo hlavnej plochy okna. Chyba dnes: Trochu · Viac · Najviac menia správne iba bočný panel,
 True Glass zmení sklo všetkého naraz. Súvisí s 8C.02.
+
+**8C.04** [ ] **Materiál skla: dážď na skle a ďalšie** (používateľ 28. 10.): Hyprland 0.57 má `decoration:blur:variant` —
+`drops` (kvapky na skle, `blur:drops:speed` ich rozpohybuje), `frost`, `water` (vlny za myšou), `ripple` (kruhy po kliku),
+`aurora`, `haze`, `acrylic`, `prism`, `heat_shimmer`, `fluid_jar`. Voľba v Nastavenia › Okná; overiť v relácii, ako sa
+znesie s Hyprglass a koľko berie na RX 640. Dážď priamo na obsahu okna (kvapky ohýbajú, čo okno ukazuje, stekajú) má
+pleamar-wm v `examples/shaders/rain.wgsl` — iba v jeho relácii, predloha na neskôr.
 ### 8D. [~] Okno aplikácií LatteOS
 Spoločné okno aplikácií: bočný panel zo skla, hladina dole (`apps/common/AppWindow.qml`).
 Zdroje: `apps/common/` (AppWindow, Surface, Menu); LATTEOS-GOO §6.3·0
@@ -2834,7 +2866,7 @@ ako inde; „návrh“ = nápad bez rozhodnutia, nie úloha.
 | Zložka | Čo je | Stav | Prúd | Zdroj podrobností |
 |---|---|---|---|---|
 | **Základ systému** | Fedora Server 44 (dnf); neskôr obraz Atomic/bootc „ako Bazzite“ | [x] / návrh | R2, R7 | úvod, F0, A (riadok 949) |
-| **Hyprland 0.56 (Lua)** | okná, režimy (páska, dlaždice, plávajúce), sklo, herný režim | [x] | R3·B | F2 |
+| **Hyprland 0.57 (Lua)** | okná, režimy (páska, dlaždice, plávajúce), sklo, herný režim | [x] | R3·B | F2 |
 | **Noctalia 5** | v GOO iba rohová lišta (widgety, doplnky), ovládacie centrum, OSD, zámok | [~] | R3·B | F3·G, LATTEOS-GOO §4.8 |
 | **GooEngine** | plocha z kvapiek kávy na pleamar (`session/goo`) | [~] | R3·A | F3·G, session/goo/README.md |
 | ├ **BarGoo** | lišta okien: hlava = režim okien (ľavý klik), pravý = ukázať plochu; ikry = okná | [~] | R3·A | LATTEOS-GOO §4.1 |
