@@ -2389,12 +2389,15 @@ metadát, a to anglickou hláškou polkitu („Authentication is required to upd
 pýtať heslo (pravidlo polkitu pre PackageKit refresh pre prihláseného používateľa); ostatné požiadavky na heslo
 s preloženým textom (pravidlo 4). Pozri aj rozhodnutie o vlastnej karte polkitu (ROZHODNUTIA 23. 10.).
 
-**10H.14** [ ] **Aktualizácie › Nová verzia Fedory** (používateľ 28. 10.): App Manager drží prehľad o systéme pod LatteOS —
-na akej verzii Fedory je, či vyšla nová (Beta, odklad „NO-GO“, vydaná, dátum; `fedoraproject.org/releases.json`), a či je
-**LatteOS na ňu pripravený**: repozitáre, z ktorých berie (copr Hyprland, skwd-wall, lizardbyte, RPM Fusion, Terra, mise),
-ju majú; každý balík z `FILES` v nej existuje (`dnf repoquery --releasever=N`); Hyprland zamknutej verzie je dostupný.
-Až potom ponúkne prechod (`dnf system-upgrade`) a po ňom kroky LatteOS: uvoľniť zámok Hyprlandu, prestavať pluginy
-(latte-events, hyprbars, hyprglass) a pleamar, `tests/check.sh`. Odporúčanie: prechod týždeň–dva po vydaní.
+**10H.14** [ ] **Aktualizácie › Nová verzia LatteOS** (používateľ 28. 10.): **používateľa nezaujíma Fedora, ale LatteOS.**
+Nová Fedora sa k nemu dostane iba ako **nová verzia LatteOS**, ktorú vývojár vydá, keď je na tú Fedoru pripravená; jedna
+aktualizácia v App Manageri potom nainštaluje naraz základ (Fedora N), Hyprland, pluginy, pleamar a súbory LatteOS. Kým
+vydanie nie je, App Manager novú Fedoru neponúka (ani `dnf system-upgrade` sám od seba). Súvisí s 14 (vydania) a 1C (bootc:
+obraz systému po verziách je presne tento model).
+**Pre vývojára** (pred vydaním verzie pre Fedoru N): či vyšla (Beta, odklad „NO-GO“, vydaná; `fedoraproject.org/releases.json`);
+či ju majú repozitáre, z ktorých LatteOS berie (copr Hyprland, skwd-wall, lizardbyte, RPM Fusion, Terra, mise); či každý balík
+z `FILES` v nej existuje (`dnf repoquery --releasever=N`); Hyprland zamknutej verzie; potom prestavať pluginy
+(latte-events, hyprbars, hyprglass) a pleamar, `tests/check.sh`, skúška na latte-lab. Vydanie týždeň–dva po Fedore.
 - [x] 28. 10. ručná kontrola pre 44 → 45: Fedora 45 nevyšla (dva NO-GO, cieľ 3. 11., rozhodnutie 29. 10.). Všetky
   repozitáre copr, RPM Fusion (free aj nonfree) a Terra už 45 majú; zo 78 balíkov `FILES` je 73 priamo vo Fedore 45 a
   RPM Fusion free, zvyšok zo Steam (RPM Fusion nonfree), gamescope-session (Terra), mise (vlastný repozitár, nezávislý od
