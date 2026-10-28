@@ -1072,6 +1072,21 @@ alebo dvadsať (pri jednej nemá ťahanie zmysel, ale pegboard tam je). Zdieľan
   sa z nich presúvajú časti (obraz cez viac monitorov, prezentácia na jednom, video…).
 - Vykonáva `latte-wall` (dnes `set NAME|* picture|video PATH`): pribudne obraz cez viac monitorov (výrez podľa polohy
   monitora v rozložení) a prezentácia na monitore. Schémy uložené v `~/.config/latteos/`.
+
+**7A.09** [ ] (Tapety) **Tapeta z opisu — generatívna AI na tomto počítači** (používateľ 28. 10.): „potrebujem tapetu“ →
+opíšem ju → zvolím štýl (fotografia, akvarel, olej, anime, pixel art, minimalizmus, káva LatteOS…) → miestny jazykový model
+(Qwen) z opisu urobí anglický prompt aj zoznam toho, čo na obraze nemá byť, a ukáže ich na úpravu (ako rozšírenie promptu vo
+Fooocuse) → štyri malé náhľady → vybraný sa dorobí na rozmer monitora (aj cez viac monitorov, 7A.08) → uloží do Obrázkov
+a nastaví; farby témy z tapety idú samy. Vstupy: LensShore („vytvor tapetu…“, zručnosť 6B.25), Nastavenia › Tapety.
+- **Motor: stable-diffusion.cpp** (leejet, MIT, ggml — tá istá rodina ako llama.cpp a whisper.cpp, ktoré už bežia
+  s Vulkanom v `/data/ai`; vydania majú hotovú verziu pre Linux s Vulkanom; vie aj zväčšenie ESRGAN). **Nie ComfyUI**: stojí
+  na PyTorchi, ktorý na Polarise (RX 640) nemá ROCm a na procesore bez AVX2 sa vlečie; ostáva voľbou pre silné karty neskôr.
+- **Model podľa hardvéru** (ako LM Studio, `latte-hw`): 4 GB VRAM → SD-Turbo / SDXL-Turbo v Q4, malý obraz a zväčšenie;
+  8 GB → FLUX.2 klein alebo Z-Image kvantované; viac → Qwen Image a úpravy obrázka (Kontext, Qwen Image Edit); bez karty
+  na procesore (minúty). Online s vlastným kľúčom ako voľba. Licencie modelov sú rôzne (SDXL-Turbo nekomerčná — smie,
+  zapísať do TRETIE-STRANY.md).
+- Spadá pod vypínač generatívnej AI (2B). Prvý krok: zmerať stable-diffusion.cpp s Vulkanom na RX 640 (SD-Turbo 512×512,
+  SDXL-Turbo) — čas na obrázok a VRAM; podľa toho rozhodnúť, či je to na slabom stroji použiteľné.
 ### 7B. [~] Ponuka plochy
 Pravý klik na plochu a ikony na ploche ako vo Windows 11.
 
