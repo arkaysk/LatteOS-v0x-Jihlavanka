@@ -1079,7 +1079,8 @@ Náčrt: claude.ai/artifact/KZCxND84ngaY5sLxu5UE1j — verzia 2 (vrstvy, knižni
 - Vykonáva `latte-wall` (dnes `set NAME|* picture|video PATH`): vrstvy a výrez pre každý monitor podľa jeho polohy
   a mierky; schémy a nedávne prezentácie v `~/.config/latteos/background.json`.
 
-**7A.09** [ ] (Tapety) **Tapeta z opisu — generatívna AI na tomto počítači** (používateľ 28. 10.): „potrebujem tapetu“ →
+**7A.09** [ ] (Tapety) **Tapeta z opisu — generatívna AI na tomto počítači** (používateľ 28. 10.; **teraz nie je priorita** —
+generovanie obrázkov ani iného obsahu sa nerobí, kým naň nepríde rad; merania a motor v `/data/ai/sd` ostávajú): „potrebujem tapetu“ →
 opíšem ju → zvolím štýl (fotografia, akvarel, olej, anime, pixel art, minimalizmus, káva LatteOS…) → miestny jazykový model
 (Qwen) z opisu urobí anglický prompt aj zoznam toho, čo na obraze nemá byť, a ukáže ich na úpravu (ako rozšírenie promptu vo
 Fooocuse) → štyri malé náhľady → vybraný sa dorobí na rozmer monitora (aj cez viac monitorov, 7A.08) → uloží do Obrázkov
@@ -1109,7 +1110,11 @@ a nastaví; farby témy z tapety idú samy. Vstupy: LensShore („vytvor tapetu�
   0,5–1 s namiesto 8–25 s, obraz takmer rovnaký): SD-Turbo načítaný za 26 s, potom **10 s na náhľad** 512² (prvý 17 s);
   SDXL-Turbo prvý obrázok 104 s (načítanie a shadery), potom **30 s na tapetu 1024×432** a 21 s na 512². Na RX 640 je
   teda použiteľný postup: server beží, kým je okno tvorby otvorené; štyri náhľady SD-Turbo ~40 s, tapeta SDXL-Turbo ~30 s
-  + zväčšenie. Ďalej: `latte-imagine` (jedno rozhranie, motor podľa hardvéru), zväčšenie na rozmer monitora, zručnosť v LensShore.
+  + zväčšenie.
+- [ ] `latte-imagine`: jedno rozhranie, motor podľa hardvéru (sd.cpp Vulkan teraz, ComfyUI na NVIDIA), server beží iba pri
+  otvorenom okne tvorby; zväčšenie na rozmer monitora (ESRGAN, `/sdcpp/v1/upscale`) a tapeta cez viac monitorov (7A.08).
+- [ ] Okno tvorby: opis → štýl → prompt z miestneho modelu na úpravu → štyri náhľady → tapeta; zručnosť „vytvor tapetu“ v LensShore (6B.25).
+- [ ] Inštalácia motora a modelov podľa hardvéru do FILES (optional), licencie modelov do TRETIE-STRANY.md.
 - V knižnici tapiet (7A.08) je to záložka **Opísať**: „Nájsť v mojich“ (skwd-lens) a „Vytvoriť novú“ (prompt).
 
 **7A.10** [ ] (Tapety) **Video cez viac obrazoviek** (používateľ 28. 10.; nadväzuje na 7A.08). Galaxy Eyes na latte-lab je MP4
