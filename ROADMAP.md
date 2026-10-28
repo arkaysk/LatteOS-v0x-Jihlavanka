@@ -855,9 +855,9 @@ z tých istých widgetov ako TrayShore (6H.05), človek si vyberie, čo v ňom c
 
 **6D.11** [x] **Chyba: guľa ClockGoo orezaná pri otvorenej karte** (používateľ 27. 10.): vpravo dole je pri otvorenej karte
 guľa orezaná a namiesto „18:23“ v nej vidno „ı8:23“ (aj na druhej snímke používateľa).
-**Opravené 28. 10.:** kvapka sedí v rohu karty ako ucho a káva pod vlnou (`parts/rows.plm`, kreslená po tvárach kvapiek)
-ju prekrývala; v spodnom rohu s uchom sa teraz káva ohne dovnútra okolo kvapky (platí pre každú kartu, aj PowerGoo),
-riadok novej udalosti v kalendári uhne kvapke (`parts/calendar.plm`). Overené snímkou bez obrazovky.
+**Opravené 28. 10. podľa používateľa:** obsah karty (káva, mesiac kalendára) sa kreslí po tvárach kvapiek a prekrýval
+čas ucha; text kvapky, z ktorej karta rastie, sa teraz kreslí ešte raz nad kartou (`parts/rows.plm`). Prvá oprava (káva
+vyhnutá okolo ucha) urobila grafickú chybu medzi uchom a kartou a bola vrátená. Overené snímkou bez obrazovky.
 
 **6D.12** [x] **Pravý klik do poľa novej udalosti v kalendári** (používateľ 27. 10.): Vystrihnúť · Kopírovať · Prilepiť ako
 v každom poli (`card.field_menu` je teraz spoločná pre polia Goo).

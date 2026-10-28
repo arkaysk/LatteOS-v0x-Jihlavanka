@@ -43,11 +43,6 @@ part Rows {
         let card.sp = if(card_tail > 0, if(card_lens and lens_edge == 2, card_tail * card.z, card.h - card_tail * card.z), card_split * card.z)
         let card.cr = if(card_lens, 0, 24)
         let card.bi = if(card_lens, -3, 1.5)      // LensShore: the coffee runs on past the panel's foot into the plate
-        // the drop the card grows from sits in a bottom corner as its ear: there the coffee bends inwards round it instead of
-        // rounding off, or it would lie over the drop's face (ClockGoo's time, 6D.11); with no ear there it is the round corner
-        let card.nr = if(card_owner >= 0 and card.sy < 0 and not card_lens, ear.d + 4, 0)
-        let card.nR = if(card.sx < 0, card.nr, 0)
-        let card.nL = if(card.sx > 0, card.nr, 0)
         group {
             show: (card_split > 0 or card_tail > 0) and not (card_lens and lens_edge == 2)
           path {
@@ -85,10 +80,10 @@ part Rows {
             line 1.5 + (card.w - 3) * 10 / 12, 9 + 2.4 * sin(690 + -55 * time)
             line 1.5 + (card.w - 3) * 11 / 12, 9 + 2.4 * sin(750 + -55 * time)
             line 1.5 + (card.w - 3) * 12 / 12, 9 + 2.4 * sin(810 + -55 * time)
-            line card.w - 1.5, card.h - card.sp - card.bi - max(card.cr, card.nR)
-            curve card.w - 1.5 - max(card.cr, card.nR), card.h - card.sp - card.bi via card.w - 1.5 - card.nR, card.h - card.sp - card.bi - card.nR
-            line 1.5 + max(card.cr, card.nL), card.h - card.sp - card.bi
-            curve 1.5, card.h - card.sp - card.bi - max(card.cr, card.nL) via 1.5 + card.nL, card.h - card.sp - card.bi - card.nL
+            line card.w - 1.5, card.h - card.sp - card.bi - card.cr
+            curve card.w - 1.5 - card.cr, card.h - card.sp - card.bi via card.w - 1.5, card.h - card.sp - card.bi
+            line 1.5 + card.cr, card.h - card.sp - card.bi
+            curve 1.5, card.h - card.sp - card.bi - card.cr via 1.5, card.h - card.sp - card.bi
             close
           }
         }
@@ -217,6 +212,33 @@ part Rows {
                     }
                     for r in card2 { CardRow(r, 24, card.sw) }
                 }
+            }
+        }
+    }
+
+    // ── the ear's words over the card: the drop the card grows from sits in its corner, and what the card holds
+    // (its coffee, ClockGoo's month) is painted after the drops' faces; its time or name is painted once more on top
+    // (6D.11). Only the words: the drop itself stays under the card as it was.
+    repeat k in 0..32 {
+        // as parts/faces.plm works them out
+        let ef.$k = max(face.$k / 2.4, 0.01)
+        let eo.$k = if(goo.$k.cap_dir < 0, 0, cap.$k * (goo.$k.cap_dir - 1))
+        let ex.$k = if(goo.$k.edge == 1 or goo.$k.edge == 3, 0, eo.$k)
+        let ey.$k = if(goo.$k.edge == 1 or goo.$k.edge == 3, eo.$k, 0)
+        let et.$k = ef.$k * if(goo.$k.zoom < 0.8, 1.25, 1)
+        group {
+            show: card_owner == k and card.p > 0.01 and goo.$k.on
+            group {
+                pivot: x.$k, y.$k
+                scale: ef.$k
+                text goo.$k.glyph { at: x.$k + ex.$k / ef.$k, y.$k + (ey.$k - if(goo.$k.kind == 1 or goo.$k.cap > 0, 0, rr.$k * 0.08)) / ef.$k; anchor: center; size: 48; color: ink; opacity: if(goo.$k.kind != 2 and not goo.$k.has_icon, 0.92, 0) * (1 - 0.55 * goo.$k.dim); family: "tabler-icons" }
+                text goo.$k.label { at: x.$k, y.$k + rr.$k * 0.42 / ef.$k; anchor: center; size: 21.6; weight: 700; color: ink; opacity: if(goo.$k.kind != 2 and goo.$k.cap == 0, 0.9, 0); family: "Inter" }
+                text goo.$k.line2 { at: x.$k, y.$k + rr.$k * 0.36 / ef.$k; anchor: center; size: 19.2; color: ink; opacity: if(goo.$k.kind == 2 and goo.$k.zoom >= 0.8, 0.75, 0); family: "Inter" }
+            }
+            group {
+                pivot: x.$k, y.$k
+                scale: et.$k
+                text goo.$k.label { at: x.$k, y.$k - rr.$k * if(goo.$k.zoom < 0.8, 0, 0.12) / et.$k; anchor: center; size: 33.6; weight: 700; color: ink; opacity: if(goo.$k.kind == 2, 1, 0); family: "Inter" }
             }
         }
     }
