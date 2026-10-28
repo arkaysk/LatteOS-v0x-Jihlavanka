@@ -957,6 +957,11 @@ ikonky na ploche pred wallpaperom a kontextove menu pravym klikom ako v win11
 
 ### 7A. [~] Tapety
 Obrázky, živé tapety, skwd-wall, prezentácia, tapety z internetu.
+Zdroje (používateľ 28. 10.; predlohy pre naše spoločné rozhranie tapiet, nie samostatné programy vedľa seba):
+wiki.hypr.land/useful-utilities/wallpapers (prehľad, hyprpaper) · github.com/GhostNaN/mpvpaper (video ako tapeta) ·
+github.com/danyspin97/wpaperd (prezentácia podľa monitora) · codeberg.org/LGFae/awww (prechody) ·
+github.com/anufrievroman/waypaper (výber tapiet, viac monitorov) · github.com/5hubham5ingh/WallRizz (farby z tapety) ·
+skwd-wall (7A.02–7A.04) · živé tapety MotionBGS · wallhaven.cc (tapety z internetu).
 
 **7A.01** [x] (Vzhľad, témy a tapety) tapeta a okenné tlačidlá · r. 185–186
 
@@ -1018,7 +1023,7 @@ zachovat nutne je prechodove efekty, a sustredit prepinanie wallpaperov dovnutra
 Je nutne urobit nanovo prehladne kategorie, pre všetky druhy tapiet, vratane odkazu na externe zdroje.
 
 
-**7A.07** [ ] (Tapety) **Pegboard v tapetách** (používateľ 26. 10.): ten istý pegboard obrazoviek ako v Nastaveniach ›
+**7A.07** [ ] (Tapety) **Pegboard v tapetách** (používateľ 26. 10.; tretie miesto je 8A.13): ten istý pegboard obrazoviek ako v Nastaveniach ›
 Obrazovky (8B.04) — obrazovky v skutočnom pomere, rozlíšení a rozostupoch, nezávisle od toho, či je obrazovka jedna
 alebo dvadsať (pri jednej nemá ťahanie zmysel, ale pegboard tam je). Zdieľaný kus kódu pre obe miesta, nie kópia.
 
@@ -1169,6 +1174,9 @@ desiatky rozložených okien, klikom priblížiť. Prevziať [Phantomat](https:/
 [hypr-canvas](https://github.com/aaronsb/hypr-canvas) (MIT, „super alpha“). Samostatné kompozitory (driftwm, Infinidesk,
 mary) nie — LatteOS ostáva na Hyprlande. Overiť: Phantomat ruší plochy (workspaces) — dá sa zapnúť iba pre jeden monitor
 a vypnúť pri inom režime bez reštartu?
+- [ ] 28. 10.: s Hyprlandom 0.57 sa nepreloží (a1e8a08 je pre 0.56: chýbajú hlavičky `desktop/Workspace.hpp`,
+  `managers/KeybindManager.hpp`, prestavané vykresľovanie — `m_renderPass`; najviac `OverviewPassElement`, `OverviewGesture`).
+  Zdroj v `~/src/phantomat`. Počkať na verziu autorov (jeden z nich je Vaxry), prenos 18 tis. riadkov nerobiť.
 - [~] Skúška 27. 10. (Hyprland bez obrazovky, `tests/screen.sh`): zostavený z a1e8a08 proti Hyprlandu 0.56.2 (GCC 16, `make`,
   33 MB .so), `hyprctl plugin load` + `canvas.desktop_mode` za behu; `hyprctl dispatch 'hl.plugin.spatialoverview.overview("toggle all")'`
   (cez `eval` nejde) oddiali, `canvas("arrange")` rozloží, okná sú **živé a zmenšené**, vpravo dole mapa. Späť
@@ -1176,9 +1184,12 @@ a vypnúť pri inom režime bez reštartu?
   (`distortion.enabled`), vrstva Goo sa v oddialení kreslí skreslená spolu s oknami (má ostať navrchu, rovná), farby
   z témy (`navigator.accent`), väzby myšou namiesto SUPER+CTRL+G, vlastné balenie ako hyprbars (FILES, TRETIE-STRANY.md).
 
-**8A.13** [ ] **Režim pre každý monitor** (používateľ 27. 10.): v Nastavenia › Okná rovnaká mapa monitorov ako v Nastavenia ›
-Obrazovky a pri snímke obrazovky; tu sa monitormi nehýbe, klik na monitor mu prepne režim. Hyprland vie rozloženie podľa
-plochy (pravidlá plôch).
+**8A.13** [ ] **Režim pre každý monitor** (používateľ 27. a 28. 10.): v Nastavenia › Prostredie › Okná ten istý pegboard
+obrazoviek ako v Nastavenia › Obrazovky (8B.04) a v tapetách (7A.07) — spoločný kód, nie kópia; každé nastavenie ostáva
+vo svojej kategórii. Tu sa monitormi nehýbe. Pod pegboardom ikony režimov (Plávajúce, Páska, Dlaždice…). Tri spôsoby:
+(a) klik na monitor → vybrať režim; (b) ikonu režimu potiahnuť a pustiť nad štvorec obrazovky na pegboarde;
+(c) klik na ikonu režimu a tlačidlo **Použiť pre všetky plochy** medzi pegboardom a ikonami. Hyprland vie rozloženie
+podľa plochy (pravidlá plôch).
 
 **8A.14** [ ] **Režim Kôpka kariet** (používateľ 28. 10.; github.com/kvrtco/hyprland-stacked, Lua rozloženie ~150 riadkov):
 okná ako kôpka kariet mierne posunutých za sebou, Super+←/→ listuje. Bez záplaty Hyprlandu nepoužiteľné: klik ide do
