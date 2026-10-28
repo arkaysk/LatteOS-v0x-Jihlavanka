@@ -529,6 +529,13 @@ reagujú na všetko, čo na nej leží — **kvapky Goo** (vlna ich nadvihne, kv
 vynorení či ponorení rozvlní hladinu okolo seba. Jedno pravidlo v engine pre všetky, nie zvlášť pre každú dosku.
 Zovšeobecňuje 6H.06 (príboj o TrayShore); súvisí s 6.23 (vlnenie hladiny na ploche) a LATTEOS-GOO bod 18 (kameň do vody).
 
+**6.28** [ ] **Ucho a karta jedno telo** (používateľ 28. 10., snímky pri ClockGoo): kvapka, z ktorej karta rastie, a karta
+majú byť **jeden kus** — aspoň na pohľad: jedna farba, žiadny obrys gule ani výrazná medzera v rohu, kde sa stretávajú
+(dnes tam guľa ukazuje svoj okraj a tmavý šev proti karte). Platí aj v pohybe: ucho **žije** (kolíše sa) a **koliesko
+nad kvapkou ju zväčšuje** — spoj s kartou musí ostať zliaty pri každej veľkosti a polohe, nie iba v pokoji. Stav 28. 10.
+používateľ berie na teraz („zatiaľ to stačí“): text ucha sa kreslí nad kartou (6D.11). Pri riešení meniť spoj v engine
+(`parts/card.plm`: ear, neck, `blend`), nie tvar karty ani kávy (pozri ROZHODNUTIA / pamäť o grafických opravách).
+
 ### 6A. [~] BarGoo
 Zdroje: `goo/lib/bar.luau`, `goo/side.plm`; LATTEOS-GOO §4.1
 
