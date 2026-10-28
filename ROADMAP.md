@@ -1060,18 +1060,24 @@ Je nutne urobit nanovo prehladne kategorie, pre všetky druhy tapiet, vratane od
 **7A.07** [ ] (Tapety) **Pegboard v tapetách** (používateľ 26. 10.; tretie miesto je 8A.13): ten istý pegboard obrazoviek ako v Nastaveniach ›
 Obrazovky (8B.04) — obrazovky v skutočnom pomere, rozlíšení a rozostupoch, nezávisle od toho, či je obrazovka jedna
 alebo dvadsať (pri jednej nemá ťahanie zmysel, ale pegboard tam je). Zdieľaný kus kódu pre obe miesta, nie kópia.
+Náčrt: claude.ai/artifact/KZCxND84ngaY5sLxu5UE1j (28. 10.).
 
-**7A.08** [ ] (Tapety) **Schémy tapiet ťahané na pegboard** (používateľ 26. 10.; nadväzuje na 7A.07). Predstava:
-- Obrázok alebo videotapetu (napr. „galaxy eyes“) potiahnem **na pegboard, nie na monitor**. Na pegboarde jej nastavím
-  veľkosť a polohu (úchyty ako pri zmene veľkosti obrázka v Skicári či Photoshope) a tým, čo prekrýva, určím, pod ktorými
-  monitormi je. Presne tak sa potom skutočne ukáže: jeden obraz roztiahnutý cez tie 3 monitory, so skutočnými
-  rozostupmi medzi nimi.
-- Monitor 4 stojí ďalej od ostatných a má mať prezentáciu: tlačidlo **Prezentácia** → zvoliť priečinok (Prehľadávať…),
-  interval zmeny a poradie obrázkov → **Vytvoriť schému**. Schém môže byť viac; sú v ponuke pod pegboardom.
-- Schému z ponuky potiahnem nad monitor 4 a pustím: monitor ju prevezme. Schémy sa teda pripravujú vopred a na pegboard
-  sa z nich presúvajú časti (obraz cez viac monitorov, prezentácia na jednom, video…).
-- Vykonáva `latte-wall` (dnes `set NAME|* picture|video PATH`): pribudne obraz cez viac monitorov (výrez podľa polohy
-  monitora v rozložení) a prezentácia na monitore. Schémy uložené v `~/.config/latteos/`.
+**7A.08** [ ] (Tapety) **Vrstvy na pegboarde, knižnica a schémy** (používateľ 26. a 28. 10.; nadväzuje na 7A.07). Predstava:
+- **Vrstvy ako v Photoshope.** Obrázok, video, prezentáciu alebo farbu potiahnem **na pegboard, nie na monitor**; vznikne
+  vrstva. Úchytmi (ako v Skicári či Photoshope) jej nastavím veľkosť a polohu; čo prekrýva, to ukážu monitory — jeden obraz
+  cez 3 monitory so skutočnými rozostupmi. Vrstiev môže byť viac nad sebou; každý monitor ukáže, čo je na jeho mieste
+  navrchu. Pravý klik na vrstvu: **Odstrániť z pegboardu, Posunúť dopredu, Posunúť dozadu**.
+- **Knižnica ako vo Windows** (Prispôsobenie › Pozadie): Moje obrázky = nedávne obrázky + „Výber fotografie —
+  Prehľadávať fotografie“; Farba = mriežka + „Vlastné farby — Zobraziť farby“. **Prezentácia je položka knižnice**:
+  „Vyberte album obrázkov na prezentáciu — Prehľadávať“ vytvorí prezentáciu, posledné sú v ponuke ako obrázky
+  z Wallhavenu; interval, náhodné poradie a prispôsobenie sa nastavia na vrstve. Priečinok sa vždy vyberá dialógom,
+  **nikdy riadkom na písanie cesty**; riadok na adresu iba pri webe (Wallhaven, MotionBGS).
+- **Schéma = uložené rozloženie celého pegboardu.** Nastavím vrstvy na obrazovky, ako chcem, a **Uložiť schému** ich
+  uloží pod menom do ponuky schém; klik na schému rozloženie vráti.
+- Pravý klik na každú položku knižnice a ponuky schém: Odobrať z ponuky, Duplikovať, Otvoriť umiestnenie súboru,
+  Kopírovať (vložiť sa dá inde, napr. do Skicára).
+- Vykonáva `latte-wall` (dnes `set NAME|* picture|video PATH`): vrstvy a výrez pre každý monitor podľa jeho polohy
+  a mierky; schémy a nedávne prezentácie v `~/.config/latteos/background.json`.
 
 **7A.09** [ ] (Tapety) **Tapeta z opisu — generatívna AI na tomto počítači** (používateľ 28. 10.): „potrebujem tapetu“ →
 opíšem ju → zvolím štýl (fotografia, akvarel, olej, anime, pixel art, minimalizmus, káva LatteOS…) → miestny jazykový model
@@ -1093,6 +1099,38 @@ a nastaví; farby témy z tapety idú samy. Vstupy: LensShore („vytvor tapetu�
   dopĺňanie častí, video), rýchlejšie jadrá; **stable-diffusion.cpp** (Vulkan) na starších AMD, Intel a malej VRAM;
   ten istý na procesore bez karty; **online** s vlastným kľúčom. Človek vidí iba „Vytvoriť obrázok“; motor a model sa
   dajú zmeniť v Nastavenia › AI (výber ako LM Studio). Inštalácia a aktualizácie ako pri ostatnej AI (najprv Omarchy).
+- [x] **Meranie 28. 10. na RX 640** (stable-diffusion.cpp master-1024 Vulkan, `/data/ai/sd`, `zmeraj.sh`, `meranie.log`):
+  SD-Turbo Q8 512² 4 kroky **21 s** (vzorkovanie 9,8 s, dekódovanie 8,5 s), 1 krok 3 s + 8 s; prvé spustenie +30 s
+  na preklad shaderov. 1024×432: 52 s, ale **zdvojí predmet** (SD 1.x mimo svojho rozmeru). SDXL-Turbo Q8 (text na procesore)
+  512² 90–108 s, 1024×432 4 kroky 128 s, kompozícia na šírku **dobrá**; VRAM najviac 3,3 GB zo 4. Všetky šesť prešli.
+  Z toho: náhľady SD-Turbo 512², výsledok SDXL-Turbo na pomer monitora + zväčšenie. Čas SDXL je hlavne
+  jednorazový (1 krok 64 s, 4 kroky 77 s) → zmerať so `sd-server`, ktorý drží model načítaný, a s TAESD (rýchle dekódovanie).
+- V knižnici tapiet (7A.08) je to záložka **Opísať**: „Nájsť v mojich“ (skwd-lens) a „Vytvoriť novú“ (prompt).
+
+**7A.10** [ ] (Tapety) **Video cez viac obrazoviek** (používateľ 28. 10.; nadväzuje na 7A.08). Galaxy Eyes na latte-lab je MP4
+1920×1080, 30 fps, slučka 16,1 s; skwd-wall ho dnes púšťa na každú obrazovku celé. Video sa nedá orezať raz ako obrázok:
+- **Krok 1:** `latte-wall` dá ffmpegu vyrobiť raz z videa jeden súbor pre každú obrazovku (výrez podľa vrstvy, do
+  `~/.cache/latteos/`) a každý pustí skwd-wall na jeho obrazovke; všetky rovnako dlhé, spustené naraz. Dekóduje sa toľko ako
+  jedno video. Výrezy môžu mierne rozbehnúť — overiť na slučke Galaxy Eyes, či je šev vidieť.
+- **Krok 2 (správne):** jeden dekodér, každá obrazovka si z neho kreslí svoju časť. skwd-paper už zdieľa dekodér medzi
+  obrazovkami pri tom istom videu, chýba mu iba výrez pre výstup — požiadať upstream (iba na pokyn), inak vlastné. Scény
+  Wallpaper Engine idú iba takto, vopred sa orezať nedajú.
+
+**7A.11** [ ] (Tapety) **Zostriť zrnitú tapetu** (používateľ 28. 10.): kontrola porovná pixely zdroja s plochou, ktorú vrstva
+prekrýva (Galaxy Eyes cez 3 obrazovky = 1920 px na 6400 px, 3,3×); nad ~1,5× ponúkne „Zostriť na tomto počítači“ —
+zväčšenie ESRGAN (stable-diffusion.cpp z 7A.09 ho vie, alebo realesrgan-ncnn-vulkan), výsledok vedľa originálu. Pri videu
+každá snímka (Galaxy Eyes 483 snímok), teda dlho a iba podľa hardvéru; pod vypínačom AI. Wallhaven sa pri vrstve cez viac
+obrazoviek pýta rovno na dosť veľký obrázok (`atleast`).
+
+**7A.12** [ ] (Tapety) **Prechody skwd-wall aj mimo tapiet** (používateľ 28. 10.; rozhodnuté už 9. 10. v 7A.02, tu ako úloha).
+V prezentácii (7A.08) sa použijú priamo. Inde by išli cez plugin Hyprlandu: vezme snímku okna alebo plochy a pustí na ňu
+ten istý shader. Hyprland má vlastné animácie iba ako posun, zväčšenie a prelínanie. Kde áno, od najlepšieho:
+- **zatvorenie okna** (napr. Piesok — okno sa rozsype), **prepnutie plochy** (celá obrazovka A → B, presne ako tapeta),
+  **zmena témy** (svetlá ↔ tmavá, vlna od miesta kliknutia), prihlásenie a odomknutie, prechod priečinkov v Súboroch;
+- **spustenie aplikácie** krátko; **prepnutie aplikácie** (Alt+Tab, klik na lištu) iba jemne alebo vôbec — robí sa stokrát
+  za deň a dlhý efekt otravuje.
+- Krátke (do ~250 ms okrem zatvorenia), voľba v Nastavenia › Prostredie › Okná, iba stupne full a standard, v SAFE nie.
+  Licencia každého shadera zvlášť (skwd-wall MIT, gl-transitions MIT) do TRETIE-STRANY.md.
 ### 7B. [~] Ponuka plochy
 Pravý klik na plochu a ikony na ploche ako vo Windows 11.
 
