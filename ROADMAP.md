@@ -2152,16 +2152,18 @@ a ostatné ostávajú domáca záležitosť LensAI (10B.07, 10B.08). Pravidlá a
   originálne ikony služieb. Ďalšie návrhy: chytrý prsteň (prepne na 5 h, keď je tesnejší), predpoveď minutia limitu,
   dve záložky vedľa seba, pretiahnutie súboru na prsteň (skopíruje a otvorí záložku), Suno ako ďalšia záložka.
 
-**10B.36** [ ] **Plantáž — AI farma pre každodennú a tvorivú prácu** (používateľ 29. 10.) — hravá, pútavá časť LensAI
-(a LensShore): front dlhých úloh, ktoré robia „zberači“ (lokálne modely, ComfyUI, cloud cez API iba s povolením).
-Projekt ide ako na páse cez **stanice**; každá scéna/časť je kartička; medzi stanicami **brány**, kde používateľ schváli,
-opraví alebo vráti — nič sa nerobí naslepo. Pred spustením odhad času GPU a limitu cloudu; predvolene lokálne, keď je PC
+**10B.36** [ ] **Kaviareň (Caffè) — AI farma pre každodennú a tvorivú prácu** (používateľ 29. 10.) — hravá, pútavá časť LensAI
+(a LensShore): front dlhých úloh, ktoré robia **čašníčky = agenti** (lokálne modely, ComfyUI, cloud cez API iba
+s povolením). **Premenované z „Plantáž“ (používateľ 29. 10.):** objednávka (úloha zo skillu) → čašníčka ju spracuje
+**pri presse** (stanice: scenár, prompty, obrázky, video…) → výsledok odovzdá **pri pulte**, kde ho používateľ schváli,
+opraví alebo vráti (brány) — nič sa nerobí naslepo. Každá scéna/časť je objednávka na tácke. **Vzhľad čašníčok si
+používateľ mení** (skiny / avatary; očakávaný obľúbený prvok — zvážiť spoločný štýl s maskotmi desktopového tamagoči). Pred spustením odhad času GPU a limitu cloudu; predvolene lokálne, keď je PC
 nečinné; pauza jedným klikom z pásu LensAI. Technický základ: clodfarm (`inspo/dev-ai-prostredie.md`) rozšírený o stanice
 pre ComfyUI a médiá; vývojová farma (10B.31) ostáva oddelená.
 - **Rozhodnuté (používateľ): úlohy farmy sú skilly** — rovnaký formát `SKILL.md` ako skill LatteOS (10B.14 bod 4), takže
-  Plantáž načíta aj akékoľvek hotové skilly z iných zdrojov. Skill pre Plantáž môže navyše mať `stanice.json` (poradie
+  Kaviareň načíta aj akékoľvek hotové skilly z iných zdrojov. Skill pre Kaviareň môže navyše mať `stanice.json` (poradie
   staníc a brány — iba pre kreslenie pása), `skripty/` (pevné kroky: rytmus, ffmpeg, export Kdenlive) a `comfy/`
-  (workflow ComfyUI). Mimo Plantáže sa správa ako bežný skill. Pozor: cudzie skilly písané pre Clauda môžu na lokálnom
+  (workflow ComfyUI). Mimo Kaviarne sa správa ako bežný skill. Pozor: cudzie skilly písané pre Clauda môžu na lokálnom
   modeli fungovať horšie — ukázať, pre akú AI je skill určený.
 - Skilly na dorobenie (návrhy používateľa):
   1. [ ] **Komiks** — scenár → scény → prompt pre každú scénu → séria referenčných obrázkov (ComfyUI); listy postáv
@@ -2171,13 +2173,13 @@ pre ComfyUI a médiá; vývojová farma (10B.31) ostáva oddelená.
   3. [ ] **Kniha** — osnova, kapitoly, kontrola konzistencie (mená, časová os, kto čo vie) proti poznámkam projektu.
   4. [ ] **Tabuľky** — analýza pracovných Excel súborov, grafy, súhrn; lokálne, dáta neopustia PC.
   5. [ ] **Kontrola konzistencie textu** a **výskum** (zadanie → hľadanie → zhrnutie so zdrojmi do poznámky).
-- Dizajn: obrazovka Plantáže s pásom staníc dokresliť do plátna LensAI.
+- Dizajn: obrazovka Kaviarne (pult, presso, čašníčky) dokresliť do plátna LensAI.
 
 **10B.37** [ ] **Obsidian ako projektový manažér a lokálny kontext** (používateľ 29. 10.) — externý Obsidian (nie je
 open source → LatteOS ho nebalí, iba ponúkne inštaláciu); trezor je priečinok Markdownu, pripojí sa ako konektor MCP
-(10B.35), takže ho vidí Lens, Plantáž aj oficiálne CLI. Používateľ v ňom vedie aj **súkromné projekty**; zároveň je to
-miesto, kde sa **zadávajú projekty Plantáži**: hlavná poznámka projektu (cieľ, štýl, postavy, pravidlá) je zadanie,
-výsledky (scény, prompty, obrázky) farma zapíše späť ako poznámky. Návrh: Plantáž vidí iba projekty označené pre ňu
+(10B.35), takže ho vidí Lens, Kaviareň aj oficiálne CLI. Používateľ v ňom vedie aj **súkromné projekty**; zároveň je to
+miesto, kde sa **zadávajú projekty Kaviarni**: hlavná poznámka projektu (cieľ, štýl, postavy, pravidlá) je zadanie,
+výsledky (scény, prompty, obrázky) farma zapíše späť ako poznámky. Návrh: Kaviareň vidí iba projekty označené pre ňu
 (priečinok alebo značka v poznámke), súkromné nie. Funguje nad samotným priečinkom → aj s Logseqom či obyčajnými súbormi.
 
 ### 10C. [ ] Heidelberg
