@@ -12,6 +12,7 @@
 --       copy    a text: a copy button at the row's end puts it on the clipboard (plain rows and large figures)
 --       wheel   function(direction ±1) · sub: rows of a submenu, which gets a row to go back · more: the arrow
 --               of a submenu on a row that opens another card itself
+--       main    what Enter does with it, told beside LensShore's line (else its label) · skip: the arrows pass it by
 --   { head = true, label, hint }                    the heading of a section
 --   { big = true, label, bar }                      a large figure
 --   { para = true, label }                          a paragraph
@@ -20,7 +21,7 @@
 -- `pills` and `tiles` with `per = 2` lie wide: an icon in a square, the name beside it, two to a line.
 --   { slide = true, glyph, label, value, hint, off, run, set }     a slider: `value` 0…1, set = function(0…1) as it
 --       is pressed or dragged, `run` a press on its icon (to mute), `wheel` as on any row
---   { pills = { { label, glyph, on, off, danger, keep, run }, … } }     buttons side by side, six at most
+--   { pills = { { label, glyph, on, off, danger, keep, run }, … } }     buttons side by side, six at most; `wheel` as on any row
 --   { tiles = { { label, icon, glyph, run, right }, … }, per = 4 }     apps as tiles, `per` in a line
 -- A card may have a second column: `width2` in the options, and the rows that go there say `col = 2`. At its
 -- top it can show a month: `calendar = { title, weekdays = { 7 names }, days = { 42 × { n, dim, today, chosen,
@@ -30,7 +31,8 @@
 -- `tiles`: the rows between two headings are laid as a tile, a card within the card (rules between them are
 -- dropped: the tile is what holds them together).
 -- `capsule` (a drop stretched into one) makes the card grow out of all of it; `lens` slides it out of LensShore's plate;
--- `first` chooses its first row for Enter.
+-- `first` chooses its first row for Enter. `step` = function(±1) is what Tab does on a card without tabs; `dir` (±1) brings
+-- the rows in from that side, as a tape turned (LensShore's modes).
 -- Options: `custom` ("clock") draws a scene of its own instead of rows, `split` says where its coffee begins, `grow` lets it grow with the screen (card.z in parts/card.plm). `uniform` is for a family of cards of one size (LensGoo's modes). `menu` makes it a classic context menu (at the pointer, solid, no ear). `pane` (0…1) makes the card glass above its `wave` row and solid coffee below it. `keep` refreshes an open card in place (live figures): the rows do not come in again and the row
 -- chosen with the keys stays.
 local icons = require("lib/icons")
@@ -177,8 +179,8 @@ function M.open(rows, opts)
     local function bind(id, it)
         actions[id] = action(it)
         rights[id] = it.right
-        names[id] = it.label
-        if not it.off and not it.quiet then choosable[#choosable + 1] = id end
+        names[id] = it.main or it.label
+        if not it.off and not it.quiet and not it.skip then choosable[#choosable + 1] = id end
     end
 
     -- `to`: the column's records; `base`: where the scene starts counting its rows; `room`: how many it holds
@@ -196,6 +198,7 @@ function M.open(rows, opts)
                     bind((base + #to) * 8 + #items, list[j])
                 end
                 to[#to + 1] = { kind = it.pills and "pills" or "tiles", per = per, items = items, line = it.line == true and from == 1 }
+                if it.wheel then wheels[base + #to - 1] = it.wheel end
             end
             return
         end
@@ -282,6 +285,7 @@ function M.open(rows, opts)
     -- grown out of a whole capsule: PowerGoo's strip, or the drop given (LensShore's)
     fact.card_from = (opts.strip and tonumber(fact.strip_owner)) or (opts.capsule and opts.capsule.k) or -1
     fact.card_lens = opts.lens ~= nil         -- LensShore's panel ("top" or "bottom"): it slides out of its plate
+    fact.card_dir = opts.dir or 0
 
     local fresh = not opts.keep or not fact.card_open
     if fresh then
@@ -369,7 +373,7 @@ on("cal_step", function(v) if calendar and calendar.step and fact.card_open then
 
 local function step_tab(dir)
     local n, at = #tab_runs, 0
-    if n == 0 then return end
+    if n == 0 then if shown.opts.step then shown.opts.step(dir) end return end
     for i, t in ipairs(model.tab or {}) do if t.on then at = i end end
     local f = tab_runs[(at - 1 + dir) % n + 1]
     if f then f() end

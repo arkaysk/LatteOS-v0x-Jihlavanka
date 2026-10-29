@@ -892,6 +892,9 @@ ShellRoot {
                     Choice { required property var modelData; width: 260; text: modelData.name; hint: I18n.tr(modelData.hint)
                              on: (goo.kept.lens === "shore") === (modelData.id === "shore"); onPressed: goo.set("lens", modelData.id)
                              Glyph { anchors.centerIn: parent; name: parent.parent.modelData.icon; font.pixelSize: 54; color: parent.parent.on ? Theme.gold : Theme.dim } } } }
+            Part { visible: shell.page === "launcher" && goo.kept.lens === "shore"; width: view.room; title: "LensShore"
+                Switch { text: I18n.tr("At the top of the screen"); hint: I18n.tr("As a dock at the top: the panel opens downwards.")
+                         on: goo.kept.lens_top === true; onPressed: goo.set("lens_top", !on) } }
 
             // every drop's own page begins with whether it is on the desktop; what it is, for those that have nothing more to set
             Part { id: dropPart; readonly property string drop: shell.dropOf[shell.page] || ""

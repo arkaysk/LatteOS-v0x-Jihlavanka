@@ -11,6 +11,7 @@
 local E = require("lib/engine")
 local card = require("lib/card")
 local icons = require("lib/icons")
+local clipboard = require("lib/clips")
 -- N marks a text for the translation table (tests/check.sh looks for it); tr() translates it where it is shown.
 local function N(s) return s end
 
@@ -81,19 +82,7 @@ local function panel(rows, opts)
     card.open(rows, opts)
     if not fact.shore_open then fact.shore_open = true show_signs() end
 end
--- cliphist lists what it kept, the newest first: "id<TAB>the text, on one line"
-local function read_clips(then_do)
-    run("cliphist", { "list" }, function(out, code)
-        clips = {}
-        for id, what in (code == 0 and out or ""):gmatch("(%d+)\t([^\n]*)") do
-            if #clips >= 8 then break end
-            what = what:gsub("%s+", " ")
-            local ok, cut = pcall(utf8.offset, what, 61)         -- sixty letters, not sixty bytes
-            clips[#clips + 1] = { id = id, text = (ok and cut) and (what:sub(1, cut - 1) .. "…") or what }
-        end
-        then_do()
-    end)
-end
+local function read_clips(then_do) clipboard.read(8, 60, function(list) clips = list then_do() end) end
 local function refresh()
     if card.id() ~= "shore" then return end
     if showing == "networks" then open_networks(true) elseif showing == "devices" then open_devices(true)
@@ -265,11 +254,11 @@ open_main = function(keep)
     if #clips == 0 then right[#right + 1] = { label = tr("Nothing was copied yet"), glyph = "clipboard", quiet = true } end
     for i, c in ipairs(clips) do
         if i > 6 then break end
-        right[#right + 1] = { label = c.text, glyph = "clipboard", run = function() run("sh", { "-c", "cliphist decode " .. c.id .. " | wl-copy" }, nil, { output = false }) end }
+        right[#right + 1] = { label = c.text, glyph = "clipboard", run = function() clipboard.copy(c.id) end }
     end
     if #clips > 0 then
         right[#right + 1] = { label = tr("Forget what was copied"), glyph = "trash", danger = true, keep = true,
-                              run = function() run("cliphist", { "wipe" }, function() clips = {} open_main(true) end) end }
+                              run = function() clipboard.wipe(function() clips = {} open_main(true) end) end }
     end
     for _, r in ipairs(right) do r.col = 2 rows[#rows + 1] = r end
     panel(rows, { width = 340, width2 = 340, keep = keep, tiles = true })

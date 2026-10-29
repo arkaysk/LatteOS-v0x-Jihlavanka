@@ -19,6 +19,8 @@ local own = require("lib/own")
 local quick = require("drops/quickgoo")
 local skills = require("lib/skills")
 local drops = require("lib/engine")      -- not `engine`: that is the web search engine below
+local wm = require("lib/wm")
+local clips = require("lib/clips")
 local M = {}
 -- N marks a text for the translation table (tests/check.sh looks for it); tr() translates it where it is shown.
 local function N(s) return s end
@@ -993,7 +995,7 @@ end
 -- another. Not a drop: the drops keep off its stretch of the edge.
 local WIDE = 620                             -- the plate's length, which is the panel's width too
 local shore = { view = "find", talk = {}, chat = "new", live = "", ctx = {}, use = {}, sure = {}, chats = {} }
-local function shore_top() return drops.settings().lens_top ~= false end
+local function shore_top() return drops.settings().lens_top == true end      -- the bottom unless chosen (6B.28)
 -- where it lies, from the Settings: the drops keep off that stretch, the capsule lies on it
 local function shore_place()
     local on = fact.lens_shore == true
@@ -1132,6 +1134,106 @@ local function read_chats(done)
     end)
 end
 
+-- ── LensShore's modes, a tape (6B.28): one field, the panel shows one mode, the strip by the line turns them (a press,
+-- the wheel over it, Tab). The AI's mode holds the conversation and the list of them; Search is the middle.
+local function shore_modes()
+    local out = {}
+    if MODES[4] then out[#out + 1] = { id = "ai", label = N("AI chat"), glyph = "sparkles" } end
+    out[#out + 1] = { id = "find", label = N("Search"), glyph = "search" }
+    out[#out + 1] = { id = "windows", label = N("Windows"), glyph = "app-window" }
+    out[#out + 1] = { id = "clips", label = N("Clipboard"), glyph = "clipboard" }
+    return out
+end
+local function mode_of(view) return (view == "talk" or view == "chats") and "ai" or view end
+local go_mode                                -- below: it needs shore_render
+local function step_mode(d)
+    local list, at = shore_modes(), 1
+    for i, m in ipairs(list) do if m.id == mode_of(shore.view) then at = i end end
+    local m = list[math.clamp(at + d, 1, #list)]
+    if m then go_mode(m.id) end
+end
+local function strip()
+    local chips, now = {}, mode_of(shore.view)
+    for _, m in ipairs(shore_modes()) do
+        chips[#chips + 1] = { label = tr(m.label), glyph = m.glyph, on = m.id == now, keep = true, skip = true, run = function() go_mode(m.id) end }
+    end
+    return { pills = chips, per = #chips, line = true, wheel = function(d) step_mode(-d) end }
+end
+
+-- the list nearest the line first: at the bottom edge it reads upwards, so its rows under the heading turn round
+local function near_line(rows)
+    if shore_top() then return rows end
+    local out = { rows[1] }
+    for i = #rows, 2, -1 do out[#out + 1] = rows[i] end
+    return out
+end
+-- the window's app, by the class its windows declare, else by its id or the id's last part (a Flatpak's)
+local function app_for(class)
+    local c = (class or ""):lower()
+    for _, a in ipairs(apps) do
+        local id = (a.id or ""):lower()
+        if (a.wmclass or ""):lower() == c or id == c or id:match("([^%.]+)$") == c then return a end
+    end
+end
+-- the windows, the one used last first and the one in front at the end: Enter takes the one before it, as Alt+Tab
+local function window_rows(q)
+    local want, list = q:lower(), {}
+    for _, w in ipairs(shore.wins or {}) do
+        local a = app_for(w.class)
+        local name = a and (a.local_name or a.name) or w.class
+        if want == "" or (w.title .. " " .. name):lower():find(want, 1, true) then list[#list + 1] = { w = w, a = a, name = name } end
+    end
+    table.sort(list, function(x, y) return (x.w.front and 1000 or x.w.recent) < (y.w.front and 1000 or y.w.recent) end)
+    local rows = { { head = true, label = tr(N("OPEN WINDOWS")) } }
+    for i, it in ipairs(list) do
+        if i > 8 then break end
+        local w = it.w
+        local function switch() wm.win("activate", w.address) end
+        rows[#rows + 1] = { label = w.title ~= "" and w.title or it.name, line2 = it.name, icon = it.a and it.a.icon or "", glyph = "app-window",
+                            hint = w.front and tr("Now") or w.away and tr("Put away") or with_n(N("Desktop {n}"), w.desk), main = tr("Switch"),
+                            run = function() after(LET_GO, switch) end,
+                            right = function() ctx.open({
+                                { label = tr("Switch"), glyph = "app-window", run = function() card.close() after(LET_GO, switch) end },
+                                { label = tr("Close the window"), glyph = "x", danger = true, line = true, run = function() wm.win("close", w.address) end },
+                            }, { width = 240 }) end }
+    end
+    if #list == 0 then rows[#rows + 1] = { label = tr(shore.wins and N("No window is open") or N("Searching…")), glyph = "app-window", quiet = true } end
+    return near_line(rows)
+end
+
+-- the clipboard: Enter pastes into the window that had the keyboard before the panel took it; a terminal pastes
+-- with Shift too
+local TERMINALS = { foot = true, kitty = true, alacritty = true, konsole = true, ["org.wezfurlong.wezterm"] = true,
+                    ["com.mitchellh.ghostty"] = true, ["org.gnome.terminal"] = true, ["org.gnome.ptyxis"] = true }
+local function front_window()
+    for _, w in ipairs(shore.wins or {}) do if w.front then return w end end
+end
+local function paste(c)
+    local w = front_window()
+    clips.copy(c.id, function() after(LET_GO, function() wm.paste(w.address, TERMINALS[w.class:lower()] == true) end) end)
+end
+local function clip_rows(q)
+    local want, w, rows = q:lower(), front_window(), { { head = true, label = tr(N("CLIPBOARD")) } }
+    local into = w and (function() local a = app_for(w.class) return a and (a.local_name or a.name) or w.class end)()
+    local main = into and (tr("Paste into {app}"):gsub("{app}", function() return into end)) or tr("Copy")
+    for _, c in ipairs(shore.clips or {}) do
+        local label = c.picture and (tr("Picture") .. " · " .. c.picture) or c.text
+        if want == "" or label:lower():find(want, 1, true) then
+            if #rows > 8 then break end
+            rows[#rows + 1] = { label = label, glyph = c.picture and "photo" or (c.text:match("^https?://") and "link" or "clipboard"), main = main,
+                                run = function() if w then paste(c) else clips.copy(c.id) end end,
+                                right = function() ctx.open({
+                                    { label = main, glyph = "clipboard", run = function() card.close() if w then paste(c) else clips.copy(c.id) end end },
+                                    { label = tr("Copy"), glyph = "copy", run = function() card.close() clips.copy(c.id) end },
+                                    { label = tr("Forget what was copied"), glyph = "trash", danger = true, line = true,
+                                      run = function() clips.wipe(function() shore.clips = {} render(true) end) end },
+                                }, { width = 260 }) end }
+        end
+    end
+    if #rows == 1 then rows[#rows + 1] = { label = tr(shore.clips and N("Nothing was copied yet") or N("Searching…")), glyph = "clipboard", quiet = true } end
+    return near_line(rows)
+end
+
 -- the rows, nearest the line first: at the top edge read downwards, at the bottom upwards (`first = "last"`)
 local function shore_rows()
     local sections = {}
@@ -1177,6 +1279,10 @@ local function shore_rows()
             { label = tr("Conversations"), glyph = "history", keep = true, run = function() M.shore_chats() end },
             { label = tr("Open in LensAI"), glyph = "external-link", off = shore.chat == "new", run = function() then_do(function() run("latte-app", { "aicenter", shore.chat }, function() end) end) end },
         }, per = 3 } })
+    elseif shore.view == "windows" then
+        section(window_rows(typed))
+    elseif shore.view == "clips" then
+        section(clip_rows(typed))
     elseif typed == "" then
         -- with nothing typed, LensShore's home (6B.27): what can be done at once (the skills, by how things are now),
         -- the apps one keeps coming back to, the last conversations with the AI
@@ -1243,14 +1349,38 @@ local function shore_rows()
         local s = sections[top and i or (#sections + 1 - i)]
         for j, r in ipairs(s) do if j == 1 and #out > 0 then r.line = true end out[#out + 1] = r end
     end
-    -- between the line and the nearest row the coffee stands, halfway (a wave row: glass above it, coffee below)
-    if top then table.insert(out, 1, { wave = true }) table.insert(out, 1, { gap = 8 }) else out[#out + 1] = { wave = true } out[#out + 1] = { gap = 8 } end
+    -- by the line the strip of modes, and between it and the line the coffee stands (a wave row: glass above it, coffee below)
+    if top then table.insert(out, 1, strip()) table.insert(out, 1, { wave = true }) table.insert(out, 1, { gap = 8 })
+    else out[#out + 1] = strip() out[#out + 1] = { wave = true } out[#out + 1] = { gap = 8 } end
     return out
 end
-shore_render = function(keep)
+shore_render = function(keep, dir)
     shown = shore_rows()
     card.open(shown, { lens = shore_top() and "top" or "bottom", id = "lens", width = WIDE / 1.2, keep = keep, first = shore_top() and true or "last",
-                       again = shore.view == "find", fit = true, pane = 1 })
+                       again = shore.view ~= "talk" and shore.view ~= "chats", fit = true, pane = 1, step = step_mode, dir = dir })
+end
+-- to a mode: the rows come in from its side; the windows and the clipboard are read anew each time
+go_mode = function(id)
+    local list, from, to = shore_modes(), 0, 0
+    for i, m in ipairs(list) do
+        if m.id == mode_of(shore.view) then from = i end
+        if m.id == id then to = i end
+    end
+    if to == 0 or to == from then return end
+    local function again() if card.id() == "lens" and mode_of(shore.view) == id then render(true) end end
+    if id == "ai" then
+        shore.view = #shore.talk > 0 and "talk" or "chats"
+        if shore.view == "chats" then read_chats(again) end
+    else
+        shore.view = id
+        if id == "windows" or id == "clips" then
+            shore.wins = nil
+            wm.windows(function(list) shore.wins = list or {} again() end)
+        end
+        if id == "clips" then shore.clips = nil clips.read(40, 90, function(list) shore.clips = list again() end) end
+    end
+    shore_render(false, to > from and 1 or -1)
+    focus("lens_q")
 end
 function M.shore_open()
     if not fact.lens_shore then return end
@@ -1293,12 +1423,25 @@ local function shore_start()
             local t = (text.lens_q or ""):gsub("^%s+", ""):gsub("%s+$", "")
             if t == typed then return end
             typed, confirm, found = t, nil, nil
-            if t ~= "" then shore.view = "find" look_for_files() look_for_settings() look_for_amount() end
+            if t ~= "" and shore.view == "find" then look_for_files() look_for_settings() look_for_amount() end
             if card.id() == "lens" then render(true) elseif t ~= "" then M.shore_open() end
         end)
     end)
-    on("lens_press", M.shore_open)
-    on("lens_enter", function() if card.id() == "lens" then card.enter() end end)
+    -- it opens in Search; a conversation stays where it was (6B.12)
+    on("lens_press", function()
+        if card.id() ~= "lens" and (shore.view == "windows" or shore.view == "clips") then shore.view = "find" end
+        M.shore_open()
+    end)
+    -- Enter in the AI's mode asks it; elsewhere it does the chosen row
+    on("lens_enter", function()
+        if card.id() ~= "lens" then return end
+        if mode_of(shore.view) == "ai" and typed ~= "" and MODES[4] then
+            local q = typed
+            text.lens_q, fact.lens_typed, typed = "", false, ""
+            return ask(q)
+        end
+        card.enter()
+    end)
     on("lens_home", function()
         if card.id() == "lens" then card.close() else shore.view = "find" M.shore_open() end
     end)

@@ -822,7 +822,7 @@ obľúbené (vlastná voľba) majú prednosť pred najčastejšími, najnovšie 
 cloudom; čo LensGoo povie, keď nejde sieť, chýba kľúč, model nebeží alebo sa minul limit (nesmie ostať ticho ani
 zamrznúť). Pripájanie poskytovateľov a vstupy (hlas, obrázok, súbor) robí LensAI (10B), tu iba to, čo vidí používateľ.
 
-**6B.28** [ ] **LensShore: páska módov** (používateľ 29. 10., schválené; predlohy rofi a Spotlight v macOS 26) — vnútri
+**6B.28** [~] **LensShore: páska módov** (používateľ 29. 10., schválené; predlohy rofi a Spotlight v macOS 26) — vnútri
 panelu je vodorovná páska módov nad jedným spoločným poľom; písanie filtruje aktuálny mód. Návrh: plátno „LensShore —
 páska módov“ (https://claude.ai/artifact/H11X1MF81jbM4sc1P3rREa).
 - **Poloha** predvolene dole, v nastaveniach aj hore (horný dok); pri hornej sa zoznam číta od dosky smerom dole.
@@ -839,6 +839,17 @@ páska módov“ (https://claude.ai/artifact/H11X1MF81jbM4sc1P3rREa).
   Hľadania, Esc ho zavrie — Raycastové „ďalšie obrazovky“ v podobe pásky.
 - Zbalená doska: koliesko nad poľom = história zadaní.
 - Agenti z 6B.27 sú jedným z módov.
+- [x] 29. 10. prvá verzia: pásik **AI rozhovor · Hľadať · Okná · Schránka** pri línii (rad tlačidiel karty, čiara nad ním),
+  prepína ho klik, koliesko nad ním a Tab / Shift+Tab (aj Ctrl+Tab); riadky vchádzajú zo strany, kam sa páska točí
+  (`dir` karty). **Okná**: naposledy použité pri línii predvybrané, okno vpredu s „Teraz“, písanie filtruje, Enter
+  prepne, pravý klik Zavrieť. **Schránka** (`lib/clips.luau`, spoločná s TrayShore): najnovšie pri línii, obrázky
+  s rozmerom, Enter = „Vložiť do: aplikácia“ (Ctrl+V, v termináli Ctrl+Shift+V, cez `send_shortcut` Hyprlandu). Písanie
+  v AI móde ostáva v rozhovore a Enter sa pýta AI. Predvolene **dole**, Nastavenia › Spúšťač › LensShore › Hore na
+  obrazovke. Overené bez obrazovky (labwc + Hyprland): obe polohy, Tab, koliesko, filter, „↵ Prepnúť“.
+  **Neoverené: samotné vloženie** — bez obrazovky Hyprland nemá klávesnicu a živá relácia bola zamknutá; overiť naživo.
+- [ ] Ďalej: Agenti, Emoji a GIF, „+“ (pásik má miesto na 6 tlačidiel; 7 → zvýšiť `items max` v `card.plm`), vodorovné
+  koliesko a dva prsty do strán (pleamar dnes dáva iba zvislé `wheel` — záplata enginu), vykúkanie susedného módu,
+  Ctrl+1–9.
 
 **6B.29** [ ] **LensShore: plná funkčnosť Raycastu a Tinycastu na Linuxe** (používateľ 29. 10.: „imituj plnú funkčnosť
 Raycastu a Tinycastu, rozšírenú o naše veci“) — nahrádza výstup 6B.13. Zdroje: README Tinycastu, manuál Raycastu

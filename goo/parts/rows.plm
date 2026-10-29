@@ -12,6 +12,8 @@ part Rows {
     on key Escape while card_open and not ctx_open { card_open = false; emit card_closed }
     on key Tab while card_open and not ctx_open { emit card_next(1) }
     on key Shift+Tab while card_open and not ctx_open { emit card_next(0) }
+    on key Ctrl+Tab while card_open and not ctx_open { emit card_next(1) }
+    on key Ctrl+Shift+Tab while card_open and not ctx_open { emit card_next(0) }
     on key Down while card_open and not ctx_open { emit card_key(1) }
     on key Up while card_open and not ctx_open { emit card_key(0) }
     on key Return while card_open and not card_field and not ctx_open { emit card_enter }
@@ -267,7 +269,7 @@ part Rows {
                 size: w, h
                 show: r.kind != para and r.kind != pills and r.kind != tiles and r.kind != wave
                 opacity: shown
-                move: (1 - shown) * 18 * card.sx, 0
+                move: (1 - shown) * if(card_dir != 0, 64 * card_dir, 18 * card.sx), 0
 
                 // Of glass, a tile is a lighter pane in the card's glass: a veil of colour over it would be taken
                 // for what is behind the card and come back through the glass a frame later.
@@ -441,6 +443,7 @@ part Rows {
         zone box hit { from: 3, 2; size: w - 6, if(wide, if(r.kind == tiles, 60, 54), if(r.kind == tiles, 84, 42)); cursor: pointer; active: card_open and not it.off; label: "{it.label}"; selected: it.on }
         on press hit { emit card_pick((r.index + base) * 8 + it.index + 1) }
         on press right hit { tap.x = cursor.x; tap.y = cursor.y; emit card_right((r.index + base) * 8 + it.index + 1) }
+        on scroll hit { emit card_wheel((r.index + base) * 2 + if(wheel > 0, 1, 0)) }
     }
 
     // ── the tooltip: a drop's name and what it does. What the drop shows does not change under the pointer.

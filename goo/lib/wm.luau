@@ -12,7 +12,7 @@ end
 
 -- Every window there is: answer(list), each { address, class, title, pid, desk, here (it is on the scene's own
 -- monitor), visible (on a desktop that is shown), away (put away), front (it has the keyboard), maximized,
--- fullscreen, floating, pinned, x, y, w, h }; nil without a compositor. x and y are counted from the corner of
+-- fullscreen, floating, pinned, recent (0 the one used last), x, y, w, h }; nil without a compositor. x and y are counted from the corner of
 -- the scene's monitor, as everything in the scene is.
 local SCREEN = (function() local ok, v = pcall(sys.ask, "env", "LATTE_GOO_SCREEN") return ok and type(v) == "string" and v or "" end)()
 local own = { id = nil, x = 0, y = 0 }       -- the scene's monitor, as the compositor knows it
@@ -50,7 +50,7 @@ function M.windows(answer)
                     here = own.id == nil or tonumber(c.monitor) == own.id, screen = tonumber(c.monitor),
                     desk = tonumber(ws.id) or 0, visible = c.visible == true and not away, away = away, front = c.address == front and not away,
                     maximized = c.fullscreen == 1, fullscreen = (tonumber(c.fullscreen) or 0) >= 2, floating = c.floating == true,
-                    pinned = c.pinned == true, x = (tonumber(at[1]) or 0) - own.x, y = (tonumber(at[2]) or 0) - own.y,
+                    pinned = c.pinned == true, recent = tonumber(c.focusHistoryID) or 99, x = (tonumber(at[1]) or 0) - own.x, y = (tonumber(at[2]) or 0) - own.y,
                     w = tonumber(size[1]) or 0, h = tonumber(size[2]) or 0,
                 }
             end
@@ -69,6 +69,11 @@ function M.sounding(addresses)
     local quoted = {}
     for i, a in ipairs(addresses) do quoted[i] = string.format("%q", a) end
     eval("latte.win.sounding({" .. table.concat(quoted, ", ") .. "})")
+end
+-- Ctrl+V to a window as the compositor sends it (a terminal: Ctrl+Shift+V), so what is on the clipboard is pasted
+-- there. Not wtype: Hyprland reads a virtual keyboard's keys through the real keymap, and its V came out as Escape.
+function M.paste(address, terminal)
+    eval(string.format("hl.dispatch(hl.dsp.send_shortcut({ mods = %q, key = 'v', window = %q }))", terminal and "CTRL SHIFT" or "CTRL", "address:" .. address))
 end
 function M.cycle(dir) eval("latte.win.cycle(" .. dir .. ")") end          -- the next window, or the one before
 function M.scroll(dir) eval("latte.win.scroll(" .. dir .. ")") end        -- the tape, by a quarter of the screen
