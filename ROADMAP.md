@@ -2157,7 +2157,7 @@ a ostatné ostávajú domáca záležitosť LensAI (10B.07, 10B.08). Pravidlá a
 s povolením). **Premenované z „Plantáž“ (používateľ 29. 10.):** objednávka (úloha zo skillu) → čašníčka ju spracuje
 **pri presse** (stanice: scenár, prompty, obrázky, video…) → výsledok odovzdá **pri pulte**, kde ho používateľ schváli,
 opraví alebo vráti (brány) — nič sa nerobí naslepo. Každá scéna/časť je objednávka na tácke. **Vzhľad čašníčok si
-používateľ mení** (skiny / avatary; očakávaný obľúbený prvok — zvážiť spoločný štýl s maskotmi desktopového tamagoči). Pred spustením odhad času GPU a limitu cloudu; predvolene lokálne, keď je PC
+používateľ mení** (skiny / avatary; očakávaný obľúbený prvok). Pred spustením odhad času GPU a limitu cloudu; predvolene lokálne, keď je PC
 nečinné; pauza jedným klikom z pásu LensAI. Technický základ: clodfarm (`inspo/dev-ai-prostredie.md`) rozšírený o stanice
 pre ComfyUI a médiá; vývojová farma (10B.31) ostáva oddelená.
 - **Rozhodnuté (používateľ): úlohy farmy sú skilly** — rovnaký formát `SKILL.md` ako skill LatteOS (10B.14 bod 4), takže
