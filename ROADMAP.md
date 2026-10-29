@@ -925,6 +925,17 @@ Kontrola 29. 10. (Raycast manual, Tinycast `docs/features/`):
   pri otázke, [ ] pokračovať v rozhovore viac kolami priamo v LensShore (dnes krátke), [ ] Tab na doplňujúcu otázku.
 - **Pravý klik (6B.31)**: zodpovedá ponuke Raycastu pre aplikácie (Otvoriť, Obľúbené, Ukázať v priečinku…);
   chýba [ ] Skryť aplikáciu z výsledkov, [ ] Priradiť alias a klávesovú skratku, [ ] Zobraziť informácie.
+- **Emoji a GIF** (6B.28): chýba [ ] Ctrl+0 pôvodná veľkosť mriežky (pleamar nepovolí číslicu v klávese — buď záplata
+  pleamaru, alebo položka v ponuke), [ ] výsledky AI podľa významu, keď sa nič nenájde, [ ] `:` v textových poliach
+  (automatické dopĺňanie emoji), [ ] kaomoji ako obrázky (písmo Inter niektoré znaky nahrádza), [ ] GIF so skutočným
+  kľúčom neoverené, [ ] vlastný zdroj GIF (adresa API).
+- **Páska** (6B.28): chýba [ ] skutočné vykúkanie obsahu susedného módu (dnes iba meno pri okraji), [ ] Ctrl+1–9 (tiež
+  číslica v klávese), [ ] mód „+“ (Jedálny lístok, 10B.38), [ ] pulz ostrova, keď agent čaká (6B.21), [ ] záplata
+  `pleamar-wheel-x` už LensShore nepotrebuje (bežné koliesko obsahuje aj pohyb do strán) — ponechať pre iné scény alebo
+  odstrániť.
+- **Goo na virtuálnom monitore** (zistené 29. 10.): od 20:00 živé Goo na DP-1 (LATTE-VIRT) kreslí raz za sekundu
+  („slow frame 1017 ms“) a `pleamar --say goo` odpovedá pomaly — asi Hyprland nepýta snímky pre výstup, na ktorý nikto
+  nepozerá. [ ] Preveriť, či to nevadí, keď sa naň pozrie (vzdialená plocha), a či Goo nemá bežať na hlavnom DP-3.
 
 **6B.31** [x] **Pravý klik na aplikáciu, súbor a priečinok: plocha, QuickGoo, kvapka** (používateľ 29. 10.) — v LensShore
 aj LensGoo: „Pridať ikonu na plochu“ (`latte-desktop add`: aplikáciu skopíruje, súbor/priečinok prepojí do priečinka
@@ -2636,6 +2647,11 @@ zmazanie stavu, zamrznutie), každý nájdený spôsob opraviť a pridať do sk�
   logiky nespustí vlastný handler, takže zámok nikdy neprevzala (`goo/lib/login.luau`, teraz priame volanie; overené
   zabitím zámku pri zamknutej obrazovke); (2) obrazovka zhasnutá starým hypridle po jeho reštarte ostala tmavá navždy
   (aj Moonlight sa nepripojil) — `latte-idle` ju pri štarte rozsvieti.
+
+**10F.10** [ ] (GuardDog) **Skúšky bez obrazovky nie sú pád** (zistené 29. 10.): `tests/screen.sh` na konci zabije svoj
+vnorený Hyprland a GuardDog to hlási ako „Hyprland spadol“ (pri jednom sedení 11 upozornení `notify-send --wait`, ktoré
+visia, kým sa nezatvoria). `tests/screen.sh` má GuardDogu povedať, že ide o skúšku (premenná prostredia alebo
+vlastný `XDG_RUNTIME_DIR` mimo stráženia), alebo GuardDog nemá strážiť Hyprland, ktorý nie je reláciou používateľa.
 
 ### 10G. [~] NetManager
 Zdroje: `bin/latte-network`, `bin/latte-net`, `bin/latte-network`
