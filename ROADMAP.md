@@ -2147,6 +2147,38 @@ a ostatné ostávajú domáca záležitosť LensAI (10B.07, 10B.08). Pravidlá a
   klienti tretích strán).
 - **Rozhodnuté 29. 10. (používateľ): LensAI = MCP host.** Konektory beží LensAI raz a dáva ich všetkým: modelom cez API,
   lokálnej AI a oficiálnym CLI (LensAI zapíše tie isté servery do ich nastavení). Webové záložky MCP nedostávajú.
+- Návrh UI (29. 10.): plátno „LensAI — návrh UI“ (záložka služby, Lens, Konektory). Pás vľavo s „prsteňmi“ služieb —
+  prsteň = zostávajúci limit; **Claude ukazuje týždeň, 5 h až po kliknutí** (používateľ); namiesto skratiek pôjdu
+  originálne ikony služieb. Ďalšie návrhy: chytrý prsteň (prepne na 5 h, keď je tesnejší), predpoveď minutia limitu,
+  dve záložky vedľa seba, pretiahnutie súboru na prsteň (skopíruje a otvorí záložku), Suno ako ďalšia záložka.
+
+**10B.36** [ ] **Plantáž — AI farma pre každodennú a tvorivú prácu** (používateľ 29. 10.) — hravá, pútavá časť LensAI
+(a LensShore): front dlhých úloh, ktoré robia „zberači“ (lokálne modely, ComfyUI, cloud cez API iba s povolením).
+Projekt ide ako na páse cez **stanice**; každá scéna/časť je kartička; medzi stanicami **brány**, kde používateľ schváli,
+opraví alebo vráti — nič sa nerobí naslepo. Pred spustením odhad času GPU a limitu cloudu; predvolene lokálne, keď je PC
+nečinné; pauza jedným klikom z pásu LensAI. Technický základ: clodfarm (`inspo/dev-ai-prostredie.md`) rozšírený o stanice
+pre ComfyUI a médiá; vývojová farma (10B.31) ostáva oddelená.
+- **Rozhodnuté (používateľ): úlohy farmy sú skilly** — rovnaký formát `SKILL.md` ako skill LatteOS (10B.14 bod 4), takže
+  Plantáž načíta aj akékoľvek hotové skilly z iných zdrojov. Skill pre Plantáž môže navyše mať `stanice.json` (poradie
+  staníc a brány — iba pre kreslenie pása), `skripty/` (pevné kroky: rytmus, ffmpeg, export Kdenlive) a `comfy/`
+  (workflow ComfyUI). Mimo Plantáže sa správa ako bežný skill. Pozor: cudzie skilly písané pre Clauda môžu na lokálnom
+  modeli fungovať horšie — ukázať, pre akú AI je skill určený.
+- Skilly na dorobenie (návrhy používateľa):
+  1. [ ] **Komiks** — scenár → scény → prompt pre každú scénu → séria referenčných obrázkov (ComfyUI); listy postáv
+     v Obsidiane, aby postavy vyzerali rovnako.
+  2. [ ] **Videoklip** — hudba zo Suno (stiahnutý súbor; verejné API Suno overiť) → rytmus → scenár podľa textu a nálady
+     → ukážkové obrázky → image2video (lokálne napr. Wan v ComfyUI) → strih do rytmu; výsledok projekt pre Kdenlive.
+  3. [ ] **Kniha** — osnova, kapitoly, kontrola konzistencie (mená, časová os, kto čo vie) proti poznámkam projektu.
+  4. [ ] **Tabuľky** — analýza pracovných Excel súborov, grafy, súhrn; lokálne, dáta neopustia PC.
+  5. [ ] **Kontrola konzistencie textu** a **výskum** (zadanie → hľadanie → zhrnutie so zdrojmi do poznámky).
+- Dizajn: obrazovka Plantáže s pásom staníc dokresliť do plátna LensAI.
+
+**10B.37** [ ] **Obsidian ako projektový manažér a lokálny kontext** (používateľ 29. 10.) — externý Obsidian (nie je
+open source → LatteOS ho nebalí, iba ponúkne inštaláciu); trezor je priečinok Markdownu, pripojí sa ako konektor MCP
+(10B.35), takže ho vidí Lens, Plantáž aj oficiálne CLI. Používateľ v ňom vedie aj **súkromné projekty**; zároveň je to
+miesto, kde sa **zadávajú projekty Plantáži**: hlavná poznámka projektu (cieľ, štýl, postavy, pravidlá) je zadanie,
+výsledky (scény, prompty, obrázky) farma zapíše späť ako poznámky. Návrh: Plantáž vidí iba projekty označené pre ňu
+(priečinok alebo značka v poznámke), súkromné nie. Funguje nad samotným priečinkom → aj s Logseqom či obyčajnými súbormi.
 
 ### 10C. [ ] Heidelberg
 je zakladny textovy editor, s neobvyklo širokou ponukou formatou ktore prečíta a upraví
