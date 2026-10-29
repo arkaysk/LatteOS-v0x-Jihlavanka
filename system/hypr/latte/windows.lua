@@ -60,6 +60,13 @@ local zones = {
     left = { 0, 0, 1 / 2, 1 },      right = { 1 / 2, 0, 1 / 2, 1 },   top = { 0, 0, 1, 1 / 2 },      bottom = { 0, 1 / 2, 1, 1 / 2 },
     tl = { 0, 0, 1 / 2, 1 / 2 },    tr = { 1 / 2, 0, 1 / 2, 1 / 2 },  bl = { 0, 1 / 2, 1 / 2, 1 / 2 }, br = { 1 / 2, 1 / 2, 1 / 2, 1 / 2 },
     center = { 0.15, 0.1, 0.7, 0.8 }, full = { 0, 0, 1, 1 },
+    -- as Raycast's Window Management has them (LensShore's Windows, ROADMAP 6B.32)
+    third1 = { 0, 0, 1 / 3, 1 }, third2 = { 1 / 3, 0, 1 / 3, 1 }, third3 = { 2 / 3, 0, 1 / 3, 1 },
+    two1 = { 0, 0, 2 / 3, 1 }, two2 = { 1 / 3, 0, 2 / 3, 1 },
+    fourth1 = { 0, 0, 1 / 4, 1 }, fourth2 = { 1 / 4, 0, 1 / 4, 1 }, fourth3 = { 1 / 2, 0, 1 / 4, 1 }, fourth4 = { 3 / 4, 0, 1 / 4, 1 },
+    sixth1 = { 0, 0, 1 / 3, 1 / 2 }, sixth2 = { 1 / 3, 0, 1 / 3, 1 / 2 }, sixth3 = { 2 / 3, 0, 1 / 3, 1 / 2 },
+    sixth4 = { 0, 1 / 2, 1 / 3, 1 / 2 }, sixth5 = { 1 / 3, 1 / 2, 1 / 3, 1 / 2 }, sixth6 = { 2 / 3, 1 / 2, 1 / 3, 1 / 2 },
+    reasonable = { 0.2, 0.2, 0.6, 0.6 },
 }
 local before = {}            -- address → where the window was before it was laid in a zone
 local function place(w, r)
@@ -69,10 +76,16 @@ local function place(w, r)
 end
 local function snap(w, zone, on)
     local z, m = zones[zone], on or w.monitor or hl.get_active_monitor()
-    if not z or not m then return end
+    if not m or not (z or zone == "tall" or zone == "wide") then return end
     local scale, res = m.scale or 1, m.reserved or { top = 0, right = 0, bottom = 0, left = 0 }
     local ax, ay = m.x + res.left + GAP, m.y + res.top + GAP
     local aw, ah = m.width / scale - res.left - res.right - 2 * GAP, m.height / scale - res.top - res.bottom - 2 * GAP
+    -- the whole height (or width) where the window stands, as wide (or high) as it is
+    if not z then
+        local x, y = xy(w.at)
+        local ww, wh = xy(w.size)
+        z = zone == "tall" and { math.max(0, (x - ax) / aw), 0, math.min(1, ww / aw), 1 } or { 0, math.max(0, (y - ay) / ah), 1, math.min(1, wh / ah) }
+    end
     if w.fullscreen == 1 then hl.dispatch(hl.dsp.window.fullscreen({ mode = "maximized", action = "unset", window = sel(w) })) end
     if not before[w.address] then
         local x, y = xy(w.at)
@@ -554,6 +567,15 @@ function W.setup()
         restore = with(function(w)
             if w.fullscreen ~= 0 then hl.dispatch(hl.dsp.window.fullscreen({ mode = w.fullscreen == 1 and "maximized" or "fullscreen", action = "unset", window = sel(w) }))
             else unsnap(w) end
+        end),
+        fullscreen = with(function(w)
+            hl.dispatch(hl.dsp.focus({ window = sel(w) }))
+            hl.dispatch(hl.dsp.window.fullscreen({ mode = "fullscreen", action = "toggle", window = sel(w) }))
+        end),
+        -- to the middle of its screen, keeping its size
+        middle = with(function(w)
+            if not w.floating then hl.dispatch(hl.dsp.window.float({ action = "enable", window = sel(w) })) end
+            hl.dispatch(hl.dsp.window.center({ window = sel(w) }))
         end),
         pin = with(function(w)
             if not w.floating then hl.dispatch(hl.dsp.window.float({ action = "enable", window = sel(w) })) end

@@ -1189,6 +1189,50 @@ local function app_for(class)
     end
 end
 -- the windows, the one used last first and the one in front at the end: Enter takes the one before it, as Alt+Tab
+-- what can be done to a window, as Raycast's and Tinycast's Window Management: the right button on one and Ctrl+K
+local function window_menu(w, name)
+    local function act(what, arg) return function() card.close() after(LET_GO, function() wm.win(what, w.address, arg) end) end end
+    local function lay(list)
+        local sub = {}
+        for _, z in ipairs(list) do sub[#sub + 1] = { label = tr(z[2]), run = act("snap", z[1]) } end
+        return sub
+    end
+    local desks = {}
+    for n = 1, 9 do desks[n] = { label = with_n(N("Desktop {n}"), n), on = w.desk == n, run = act("to_desk", n) } end
+    desks[#desks + 1] = { label = tr(N("A new desktop")), glyph = "plus", line = true, run = act("to_desk", 0) }
+    local screens = {}
+    for _, m in ipairs(wm.screens()) do if m.id ~= w.screen then screens[#screens + 1] = { label = m.model ~= "" and (m.model .. " · " .. m.name) or m.name, run = act("to_screen", m.name) } end end
+    local rows = {
+        { label = tr("Switch"), glyph = "app-window", keys = "↵", run = act("activate") },
+        { label = w.away and tr(N("Bring back")) or tr(N("Minimize")), glyph = w.away and "arrow-back-up" or "minus", line = true, run = act(w.away and "restore" or "minimize") },
+        { label = w.maximized and tr(N("Back to its size")) or tr(N("Maximize")), glyph = "arrows-maximize", run = act(w.maximized and "restore" or "maximize") },
+        { label = tr(N("Full screen")), glyph = "arrows-maximize", on = w.fullscreen, run = act("fullscreen") },
+        { label = tr(N("Keep on top")), glyph = "pin", on = w.pinned, run = act("pin") },
+        { label = tr(N("Lay it out")), glyph = "layout-columns", line = true, sub = {
+            { label = tr(N("Halves")), sub = lay({ { "left", N("Left half") }, { "right", N("Right half") }, { "top", N("Top half") }, { "bottom", N("Bottom half") } }) },
+            { label = tr(N("Quarters")), sub = lay({ { "tl", N("Top left quarter") }, { "tr", N("Top right quarter") }, { "bl", N("Bottom left quarter") }, { "br", N("Bottom right quarter") } }) },
+            { label = tr(N("Thirds")), sub = lay({ { "third1", N("First third") }, { "third2", N("Center third") }, { "third3", N("Last third") }, { "two1", N("First two thirds") }, { "two2", N("Last two thirds") } }) },
+            { label = tr(N("Fourths")), sub = lay({ { "fourth1", N("First fourth") }, { "fourth2", N("Second fourth") }, { "fourth3", N("Third fourth") }, { "fourth4", N("Last fourth") } }) },
+            { label = tr(N("Sixths")), sub = lay({ { "sixth1", N("Top left sixth") }, { "sixth2", N("Top center sixth") }, { "sixth3", N("Top right sixth") },
+                                                 { "sixth4", N("Bottom left sixth") }, { "sixth5", N("Bottom center sixth") }, { "sixth6", N("Bottom right sixth") } }) },
+            { label = tr(N("Center")), line = true, run = act("middle") },
+            { label = tr(N("Reasonable size")), run = act("snap", "reasonable") },
+            { label = tr(N("Maximize height")), run = act("snap", "tall") },
+            { label = tr(N("Maximize width")), run = act("snap", "wide") },
+            { label = tr(N("Almost the whole screen")), run = act("snap", "center") },
+            { label = tr(N("Back to its size")), line = true, run = act("restore") },
+        } },
+        { label = tr(N("Move to a desktop")), glyph = "layout-grid", sub = desks },
+    }
+    if #screens > 0 then rows[#rows + 1] = { label = tr(N("Move to a screen")), glyph = "device-desktop", sub = screens } end
+    rows[#rows + 1] = { label = tr("Close the window"), glyph = "x", danger = true, line = true, run = function() wm.win("close", w.address) end }
+    rows[#rows + 1] = { label = (tr("Quit {app}"):gsub("{app}", function() return name end)), glyph = "power", danger = true, run = function()
+        for _, o in ipairs(shore.wins or {}) do if o.class == w.class then wm.win("close", o.address) end end
+    end }
+    ctx.open(rows, { width = 280 })
+end
+-- the windows, the one used last first and the one in front at the end: Enter takes the one before it, as Alt+Tab;
+-- more than fit are on pages turned with the buttons by the strip, or Page Down and Up
 local function window_rows(q)
     local want, list = q:lower(), {}
     for _, w in ipairs(shore.wins or {}) do
@@ -1197,21 +1241,24 @@ local function window_rows(q)
         if want == "" or (w.title .. " " .. name):lower():find(want, 1, true) then list[#list + 1] = { w = w, a = a, name = name } end
     end
     table.sort(list, function(x, y) return (x.w.front and 1000 or x.w.recent) < (y.w.front and 1000 or y.w.recent) end)
+    local PER = 6
+    local pages = math.max(1, math.ceil(#list / PER))
+    shore.win_page = math.clamp(shore.win_page or 1, 1, pages)
     local rows = { { head = true, label = tr(N("OPEN WINDOWS")) } }
-    for i, it in ipairs(list) do
-        if i > 8 then break end
+    for i = (shore.win_page - 1) * PER + 1, math.min(#list, shore.win_page * PER) do
+        local it = list[i]
         local w = it.w
-        local function switch() wm.win("activate", w.address) end
         rows[#rows + 1] = { label = w.title ~= "" and w.title or it.name, line2 = it.name, icon = it.a and it.a.icon or "", glyph = "app-window",
                             hint = w.front and tr("Now") or w.away and tr("Put away") or with_n(N("Desktop {n}"), w.desk), main = tr("Switch"),
-                            run = function() after(LET_GO, switch) end,
-                            right = function() ctx.open({
-                                { label = tr("Switch"), glyph = "app-window", run = function() card.close() after(LET_GO, switch) end },
-                                { label = tr("Close the window"), glyph = "x", danger = true, line = true, run = function() wm.win("close", w.address) end },
-                            }, { width = 240 }) end }
+                            run = function() after(LET_GO, function() wm.win("activate", w.address) end) end,
+                            right = function() window_menu(w, it.name) end }
     end
     if #list == 0 then rows[#rows + 1] = { label = tr(shore.wins and N("No window is open") or N("Searching…")), glyph = "app-window", quiet = true } end
-    return near_line(rows)
+    local function turn(d) return function() shore.win_page = math.clamp(shore.win_page + d, 1, pages) render(true) end end
+    local pager = pages > 1 and { pills = { { label = "‹", keep = true, skip = true, off = shore.win_page <= 1, run = turn(-1) },
+                                            { label = shore.win_page .. "/" .. pages, keep = true, skip = true },
+                                            { label = "›", keep = true, skip = true, off = shore.win_page >= pages, run = turn(1) } }, per = 3, line = true } or nil
+    return near_line(rows), pager
 end
 
 -- the clipboard: Enter pastes into the window that had the keyboard before the panel took it; a terminal pastes
@@ -1357,7 +1404,9 @@ local function shore_rows()
             { label = tr("Open in LensAI"), glyph = "external-link", off = shore.chat == "new", run = function() then_do(function() run("latte-app", { "aicenter", shore.chat }, function() end) end) end },
         }, per = 3 } })
     elseif shore.view == "windows" then
-        section(window_rows(typed))
+        local rows, pager = window_rows(typed)
+        if pager then section({ pager }) end
+        section(rows)
     elseif shore.view == "clips" then
         section(clip_rows(typed))
     elseif shore.view == "agents" then
@@ -1447,7 +1496,8 @@ shore_render = function(keep, dir)
     fact.lens_has_prev, fact.lens_has_next = list[at - 1] ~= nil, list[at + 1] ~= nil
     card.open(shown, { lens = shore_top() and "top" or "bottom", id = "lens", width = WIDE / 1.2, keep = keep, first = shore_top() and true or "last",
                        again = shore.view ~= "talk" and shore.view ~= "chats", fit = true, pane = 1, step = step_mode, dir = dir, height = SHORE_H,
-                       combo = shore.view == "emoji" and function(n, it) emoji.combo(n, it, emoji_env()) end or nil })
+                       combo = (shore.view == "emoji" and function(n, it) emoji.combo(n, it, emoji_env()) end)
+                               or (shore.view == "windows" and function(n) if n == 7 or n == 8 then shore.win_page = (shore.win_page or 1) + (n == 7 and 1 or -1) render(true) end end) or nil })
 end
 -- to a mode: the rows come in from its side; the windows and the clipboard are read anew each time
 go_mode = function(id)

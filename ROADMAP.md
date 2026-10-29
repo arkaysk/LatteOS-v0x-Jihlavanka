@@ -896,6 +896,31 @@ hotové položky, či majú len čiastočnú, alebo plnú funkčnosť originálu
 launcher: poradie, naučené poradie, aliasy, záložné riadky), Okná (Tinycast window switcher a správa okien), Schránka
 (Raycast Clipboard History, Tinycast clipboard: typy, pripnutie, vloženie ako čistý text, vložiť postupne, OCR,
 úprava), Agenti, pravý klik (6B.31), AI rozhovor (Raycast Quick AI). Pri každej zoznam „má / chýba“ a doplniť chýbajúce.
+Kontrola 29. 10. (Raycast manual, Tinycast `docs/features/`):
+- **Okná** (Tinycast Switch Windows + Raycast/Tinycast Window Management). Má: zoznam podľa posledného použitia,
+  filter, prepnúť, zavrieť. Chýba: [ ] minimalizovať / obnoviť, maximalizovať, celá obrazovka, pripnúť navrch;
+  [ ] rozložiť: polovice, štvrtiny (rohy), tretiny (prvá, stredná, posledná, dve tretiny), štvrtiny ako pásy, šestiny,
+  stred, rozumná veľkosť (60 %), celá plocha, späť na pôvodnú; [ ] presunúť na plochu 1–9 / novú, na iný monitor;
+  [ ] ukončiť aplikáciu; [ ] Prepnúť okná dozadu; [ ] tie isté príkazy aj v Hľadaní („okno vľavo“) a klávesové
+  skratky (6B.29); [ ] vlastné rozloženia (Raycast Create Layout, Tinycast Rooms) a medzery.
+- **Schránka** (Raycast Clipboard History + Tinycast). Má: text a obrázky (cliphist), filter písaním, Enter vloží do
+  okna, Kopírovať, Zabudnúť všetko. Chýba: [ ] filter typu (Text, Obrázky, Súbory, Odkazy, E-maily, Farby; Ctrl+P),
+  rozpoznanie farieb, súborov a e-mailov; [ ] pripnúť (Ctrl+.), Pripnuté navrchu; [ ] zmazať položku (Ctrl+X),
+  zmazať za posledných 5/15/30 min, 1 h, 24 h, zmazať všetko; [ ] vložiť ako čistý text; [ ] upraviť obsah, premenovať
+  (Ctrl+E); [ ] text z obrázka (OCR) a z QR kódu, hľadanie v texte obrázkov; [ ] poslať do AI rozhovoru / priložiť;
+  [ ] uložiť ako úryvok (po úryvkoch, 6B.29); [ ] celá história po stranách (dnes 40 položiek); [ ] náhľad položky;
+  [ ] Vložiť postupne (+ reset, časový limit, nový riadok) s klávesovou skratkou; [ ] nastavenia: ako dlho držať
+  históriu, vynechané aplikácie, čo robí Enter, radšej čistý text, presunúť použitú navrch, rozpoznávanie textu;
+  [ ] Spýtaj sa schránky (AI). Obmedzenie: cliphist nemá čas uloženia ani viac formátov jednej položky.
+- **Hľadanie** (Raycast root search + Tinycast launcher). Má: aplikácie, súbory, nastavenia, web, kalkulačka,
+  „Opýtať sa AI“ prvé, lišta akcií. Chýba: [ ] poradie podľa zhody a naučené poradie (frecency), [ ] aliasy,
+  [ ] záložné riadky „Použiť … s“, kontextové riadky (adresa → otvoriť), [ ] návrhy na prázdnom poli podľa Tinycastu,
+  [ ] príkazy (systémové, okná, rozšírenia) priamo v Hľadaní, [ ] obľúbené s Ctrl+1–9 (6B.29).
+- **Agenti**. Bez priamej predlohy v Raycaste (Raycast Agents sú jeho vlastné); doplniť podľa 10B.36 (Kaviareň).
+- **AI rozhovor** (Raycast Quick AI). Má: otázka, prúdová odpoveď, kontext ako čipy, akcie. Chýba: [ ] výber modelu
+  pri otázke, [ ] pokračovať v rozhovore viac kolami priamo v LensShore (dnes krátke), [ ] Tab na doplňujúcu otázku.
+- **Pravý klik (6B.31)**: zodpovedá ponuke Raycastu pre aplikácie (Otvoriť, Obľúbené, Ukázať v priečinku…);
+  chýba [ ] Skryť aplikáciu z výsledkov, [ ] Priradiť alias a klávesovú skratku, [ ] Zobraziť informácie.
 
 **6B.31** [x] **Pravý klik na aplikáciu, súbor a priečinok: plocha, QuickGoo, kvapka** (používateľ 29. 10.) — v LensShore
 aj LensGoo: „Pridať ikonu na plochu“ (`latte-desktop add`: aplikáciu skopíruje, súbor/priečinok prepojí do priečinka

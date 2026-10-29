@@ -59,7 +59,8 @@ function M.windows(answer)
     end)
 end
 
--- what: activate · toggle · minimize · restore · maximize · close · pin · snap (arg: the zone) · to_desk (arg: its number) · to_screen (arg: its name)
+-- what: activate · toggle · minimize · restore · maximize · fullscreen · middle · close · pin · snap (arg: the zone, as
+-- system/hypr/latte/windows.lua names them) · to_desk (arg: its number, 0 a new one) · to_screen (arg: its name)
 function M.win(what, address, arg)
     if not address then return end
     eval(string.format("latte.win.%s(%q%s)", what, address, arg ~= nil and (", " .. (type(arg) == "string" and string.format("%q", arg) or tostring(arg))) or ""))
