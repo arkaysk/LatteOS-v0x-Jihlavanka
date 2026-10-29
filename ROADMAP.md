@@ -2145,6 +2145,8 @@ a ostatné ostávajú domáca záležitosť LensAI (10B.07, 10B.08). Pravidlá a
   konektorov (súbory, Home Assistant, domáci server…) pre všetky AI cez API aj lokálnu AI; súvisí s `latte-mcp` (10B.25).
 - Webové záložky nedostávajú systémové oprávnenia (10B.30). Pred zverejnením prejsť podmienky každej služby (automatizácia,
   klienti tretích strán).
+- **Rozhodnuté 29. 10. (používateľ): LensAI = MCP host.** Konektory beží LensAI raz a dáva ich všetkým: modelom cez API,
+  lokálnej AI a oficiálnym CLI (LensAI zapíše tie isté servery do ich nastavení). Webové záložky MCP nedostávajú.
 
 ### 10C. [ ] Heidelberg
 je zakladny textovy editor, s neobvyklo širokou ponukou formatou ktore prečíta a upraví
