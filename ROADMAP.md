@@ -822,6 +822,71 @@ obľúbené (vlastná voľba) majú prednosť pred najčastejšími, najnovšie 
 cloudom; čo LensGoo povie, keď nejde sieť, chýba kľúč, model nebeží alebo sa minul limit (nesmie ostať ticho ani
 zamrznúť). Pripájanie poskytovateľov a vstupy (hlas, obrázok, súbor) robí LensAI (10B), tu iba to, čo vidí používateľ.
 
+**6B.28** [ ] **LensShore: páska módov** (používateľ 29. 10., schválené; predlohy rofi a Spotlight v macOS 26) — vnútri
+panelu je vodorovná páska módov nad jedným spoločným poľom; písanie filtruje aktuálny mód. Návrh: plátno „LensShore —
+páska módov“ (https://claude.ai/artifact/H11X1MF81jbM4sc1P3rREa).
+- **Poloha** predvolene dole, v nastaveniach aj hore (horný dok); pri hornej sa zoznam číta od dosky smerom dole.
+- **Poradie pevné, bez dookola**: AI rozhovor · **Hľadanie** (stred, Domov pri prázdnom poli, otvára sa vždy tu) · Okná ·
+  Schránka · Agenti · Emoji a GIF · **+** (pridať mód z Jedálneho lístka, 10B.38). Ďalšie módy cez +: Úryvky, Poznámky,
+  Prekladač, Snímky, Farby, Médiá. Poradie a zapnuté módy v Nastaveniach › Kvapky › Spúšťač.
+- **Pásik štítkov** medzi zoznamom a doskou; susedný mód vykúka na krajoch panelu, posun s pružením.
+- **Ovládanie**: klik na štítok; koliesko nad pásikom; vodorovné koliesko, Shift+koliesko a dva prsty do strán kdekoľvek
+  v paneli; ťahanie pásky; Ctrl+Tab, Ctrl+1–9. Zvislé koliesko v zozname vždy posúva zoznam (pravidlo 25). Šípky ← → nie
+  (kurzor v texte).
+- **Enter**: v Hľadaní vždy AI (6B.12); v ostatných módoch hlavná akcia módu (Okná: prepnúť, Schránka: vložiť do
+  predošlej aplikácie), lišta akcií ju ukazuje (6B.24).
+- Návrh: príkaz s vlastným zoznamom (Ukončiť proces, Správa okien…) sa z Hľadania otvorí ako **dočasný mód** vedľa
+  Hľadania, Esc ho zavrie — Raycastové „ďalšie obrazovky“ v podobe pásky.
+- Zbalená doska: koliesko nad poľom = história zadaní.
+- Agenti z 6B.27 sú jedným z módov.
+
+**6B.29** [ ] **LensShore: plná funkčnosť Raycastu a Tinycastu na Linuxe** (používateľ 29. 10.: „imituj plnú funkčnosť
+Raycastu a Tinycastu, rozšírenú o naše veci“) — nahrádza výstup 6B.13. Zdroje: README Tinycastu, manuál Raycastu
+(manual.raycast.com), najpopulárnejšie rozšírenia obchodu Raycast. Ku každej funkcii linuxové riešenie (návrh, overiť):
+- [~] Aplikácie: hľadanie a obľúbené (hotové); doplniť bežiace s Ukončiť / Ukončiť všetky (`hyprctl clients`), skratku na
+  aplikáciu „prepnúť / skryť“ (bind Hyprlandu, skrytie na špeciálnu plochu).
+- [~] Súbory: mená (hotové); hľadanie vo zvolených priečinkoch cez localsearch (Tracker 3) — Tinycast tiež nemá vlastný
+  index, používa Spotlight; obsah súborov DigUp (10B.32).
+- [~] Kalkulačka a prevody (qalc, hotové); doplniť meny a kryptomeny (kurzy qalc raz denne, sťahovanie iba so súhlasom).
+- [ ] Slovník: „Definovať slovo“ a záloha pri neznámom slove — sdcv/StarDict alebo offline Wikislovník (kaikki.org),
+  aj slovenčina; overiť licencie slovníkov.
+- [ ] Schránka: text aj obrázky (cliphist + wl-clipboard), hľadanie, pripnutie, vloženie späť do predošlého okna
+  (`hyprctl dispatch sendshortcut`); heslá sa neukladajú (správcovia hesiel ich označujú `x-kde-passwordManagerHint`).
+- [ ] Úryvky: šablóny v Markdowne s placeholdermi, argumentmi a vnorením, rozbaľovanie kľúčového slova v ktorejkoľvek
+  aplikácii — preveriť espanso (GPL-3.0, Wayland) ako motor namiesto vlastného.
+- [ ] Rýchle odkazy: URL, hľadanie, súbor alebo deeplink ako príkaz s placeholdermi (vstup, schránka, dátum); predpona
+  („yt mačky“, „wiki …“).
+- [ ] Dynamické placeholdery spoločné pre úryvky, odkazy a príkazy AI: {schránka}, {označený text}, {dátum}, {argument}.
+- [ ] Skriptové príkazy vo formáte Raycast Script Commands (hlavičky `@raycast.*`) — náhrada Apple Shortcuts; alias,
+  klávesová skratka, zručnosti 6B.25 ich smú volať.
+- [ ] Rýchle akcie nad označeným textom v ľubovoľnej aplikácii: opraviť gramatiku, prepísať, preložiť, zhrnúť (primárny
+  výber `wl-paste -p`, výsledok vložiť späť) — čipy z 6B.27.
+- [ ] Správa okien ako príkazy (Tinycast má 34: polovice, štvrtiny, tretiny, veľkosť, posun, iný monitor, celá obrazovka,
+  plocha) cez `hyprctl dispatch`; pri dlaždiciach podľa režimu okien (8A).
+- [~] Systémové príkazy (čiastočne v 6B.19/6B.25): zamknúť, uspať, reštartovať, vypnúť, odhlásiť, vysypať kôš
+  (`gio trash --empty`), tmavý/svetlý vzhľad, Bluetooth, stlmiť, skryté súbory, nezaspať N minút (`systemd-inhibit`,
+  rozšírenie Coffee).
+- [ ] Kalendár: najbližšia schôdza v Domove a pripojenie jedným klikom (odkaz Meet/Teams/Zoom z udalosti) — z 10J.
+- [ ] Poznámky: rýchla poznámka v Markdowne do priečinka (trezor Obsidianu, ak je — 10B.37), hľadanie, malé plávajúce okno.
+- [ ] Emoji a symboly: mriežka, slovenské názvy z Unicode CLDR, kaomoji, symboly (šípky, matematika, meny).
+- [ ] **GIF**: hľadanie a vloženie do predošlej aplikácie (rozšírenie GIF Search) — služba Giphy / Tenor / Klipy (overiť
+  API, kľúč, podmienky); text odchádza na web → iba v časti GIF s viditeľným upozornením, filter obsahu.
+- [ ] Prekladač: lokálne (Bergamot — offline modely Firefox Translations — alebo miestny model), online iba na výber.
+- [ ] Snímky obrazovky: hľadanie v uložených, nová snímka oblasti (grim + slurp), snímka ako príloha AI.
+- [ ] Výber farby z obrazovky (hyprpicker; rozšírenie Color Picker), história farieb, kopírovať HEX/RGB.
+- [ ] Ukončiť proces podľa CPU/RAM (rozšírenie Kill Process), dáta z LatteMonitora (10D).
+- [ ] Médiá: prehrať, ďalšia, výber prehrávača (MPRIS, playerctl).
+- [ ] Karty prehliadača (Vicinae to robí rozšírením prehliadača) a nedávne projekty editorov (VS Code).
+- [ ] „Nainštaluj gimp“ → App Manager (10H), Flatpak/dnf (rozšírenie Brew).
+- [ ] Písma (fc-list, náhľad); rýchlosť siete a otvorené porty → NetManager (10G).
+- [ ] Focus z Raycastu: na čas skryť rušivé aplikácie a weby — preskúmať, väzba na Nerušiť.
+- [ ] Rozšírenia Raycastu: preveriť **Vicinae** (GPL-3.0, C++/Qt; rozšírenia Raycastu, script commands, vlastný obchod)
+  ako samostatný hostiteľ rozšírení pre LensShore namiesto vlastného runtime (Node + React); kód nepreberať (LatteOS je MIT),
+  iba spúšťať ako program. Výsledok do Jedálneho lístka (10B.38).
+- [ ] Import a export nastavení, import z Raycastu (úryvky, rýchle odkazy).
+- Nie: Hyper Key (myš prvá), hry (10K), cloudová synchronizácia (neskôr so Zálohovaním, 9), tímy a fakturácia. AI agenti,
+  MCP, skilly, projekty a modely patria do LensAI (10B.35–38); LensShore ich iba spúšťa a ukazuje.
+
 ### 6C. [~] PowerGoo
 Zdroje: LATTEOS-GOO §4.2, `crates/latte-stats`
 
