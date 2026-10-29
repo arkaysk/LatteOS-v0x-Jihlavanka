@@ -788,7 +788,7 @@ odosiela ako doteraz. Zoznam, od riadku: **HNEĎ** — zručnosti 6B.25 podľa t
 nočné osvetlenie, Zapnúť zvuk, Režim napájania…), jedným klikom; **najčastejšie spúšťané** a **obľúbené** (spoločné
 s LensGoo, `picks()`); **posledné rozhovory** s AI.
 - [x] 28. 10. postavené a overené bez obrazovky (`lens.luau`, `skills.suggestions`, `lensline.plm`).
-- [ ] **Agenti:** čo AI práve robí za človeka — úlohy „Urob za mňa“ (`latte-ai do`), bežiace agenty (Claude Code, Codex…),
+- [x] **Agenti** (29. 10. ako mód pásky, 6B.28): čo AI práve robí za človeka — úlohy „Urob za mňa“ (`latte-ai do`), bežiace agenty (Claude Code, Codex…),
   ich stav a otázky, na ktoré čakajú; klik na agenta ho ukáže. Súvisí s 6B.21 (stav na ostrove), 6B.26 (úroveň 2).
 - [ ] Návrhy AI podľa kontextu (označený text, okno vpredu): „Zhrnúť“, „Preložiť“, „Vysvetliť“ ako čipy (6B.18).
 
@@ -864,8 +864,14 @@ páska módov“ (https://claude.ai/artifact/H11X1MF81jbM4sc1P3rREa).
   zhoda prvá. Klik alebo Enter vloží do okna, kde sa písalo (`wl-copy` + Ctrl+V). Overené bez obrazovky (obrázky,
   „srdce“, kaomoji, symboly) a naživo (mód, schránka); samotné Ctrl+V do okna s emoji neoverené naživo (iný čat mal
   vtedy fokus), mechanizmus je ten istý ako pri Schránke.
-- [ ] Ďalej: Agenti, GIF (vybrať službu: Giphy / Tenor / Klipy), „+“ (7 tlačidiel → zvýšiť `items max` v `card.plm`),
-  skutočné vykúkanie obsahu susedného módu, Ctrl+1–9.
+- [x] 29. 10. mód **Agenti** (6B.27): bežiaci agenti (`latte-ai running`: Claude Code, Codex, Gemini, Aider, opencode,
+  Qwen podľa programu; okno terminálu cez rodičovské procesy), riadok = titulok úlohy, agent · priečinok, vpravo
+  „Pracuje“ / „Čaká na teba“ (z titulku okna — Claude Code tam má točiacu sa značku / ✳) alebo kde beží bez okna
+  („VS Code“); klik ukáže okno, pravý klik Zavrieť okno. Pri línii „Urob to za mňa: …“ — napísaná úloha ide agentovi
+  (`latte-ai do`), bez textu stránka agentov v LensAI. Zoznam sa obnovuje každé 3 s. Overené bez obrazovky (falošní
+  agenti s titulkami ✳ a ⠐) a naživo. Codex a Gemini stav v titulku asi nehlásia → bez „Pracuje/Čaká“.
+- [ ] Ďalej: GIF (vybrať službu: Giphy / Tenor / Klipy), „+“ (7 tlačidiel → zvýšiť `items max` v `card.plm`), objednávky
+  Kaviarne v Agentoch (10B.36), pulz ostrova, keď agent čaká (6B.21), skutočné vykúkanie obsahu susedného módu, Ctrl+1–9.
 
 **6B.31** [x] **Pravý klik na aplikáciu, súbor a priečinok: plocha, QuickGoo, kvapka** (používateľ 29. 10.) — v LensShore
 aj LensGoo: „Pridať ikonu na plochu“ (`latte-desktop add`: aplikáciu skopíruje, súbor/priečinok prepojí do priečinka

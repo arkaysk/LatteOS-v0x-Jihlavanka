@@ -46,6 +46,10 @@ No API key: the official tool of a service answers, with the account the user is
                             the task in a terminal (in DIR, else home), planning first with LatteOS's skill and changing
                             nothing until the user says yes
   latte-ai doer AGENT       the agent "Do it for me" and crashes go to (~/.config/latteos/agent); none is picked for the user
+  latte-ai running          the agents at work now, for LensShore: [{"agent", "name", "pid", "title", "where", "window",
+                            "state", "host"}]; "window" is the address of the terminal it runs in ("" for none: "host"
+                            says where it is then, e.g. "VS Code" for one in an editor reached over ssh), "state" is
+                            "working", "waiting" (for the user: Claude Code says so in the title) or "" (not told)
   latte-ai modules          what of LensAI is downloaded, for Settings › AI: {"ai", "services": [{"id", "name",
                             "installed"}], "local": {"runtime", "models"}, "voice"}
   latte-ai helpers          LensAI's Helpers page: the agent, who reads a sentence, the toggles, the programs muted
@@ -1033,6 +1037,65 @@ def do(task, who="", where=""):
     return {"ok": True, "agent": who}
 
 
+# the agents' programs as they run: by the name of the program, or of the script node or python runs
+AGENT_PROGRAMS = {"claude": "claude", "codex": "chatgpt", "gemini": "gemini", "aider": "aider", "opencode": "opencode", "qwen": "qwen"}
+AGENT_NAMES = {"aider": "Aider", "opencode": "opencode", "qwen": "Qwen Code"}
+SPINNER = set("✶✻✽✢·*")
+
+
+def running():
+    """The agents at work, each with the terminal window it is in (the window's process is one of its parents)."""
+    try:
+        clients = json.loads(subprocess.run(["hyprctl", "-j", "clients"], capture_output=True, text=True, timeout=5).stdout or "[]")
+    except (OSError, ValueError, subprocess.TimeoutExpired):
+        clients = []
+    windows = {c.get("pid"): c for c in clients}
+    parent, found, cmd = {}, [], {}
+    for d in os.listdir("/proc"):
+        if not d.isdigit():
+            continue
+        try:
+            with open("/proc/%s/stat" % d) as f:
+                parent[int(d)] = int(f.read().rsplit(")", 1)[1].split()[1])
+            with open("/proc/%s/cmdline" % d, "rb") as f:
+                argv = [x.decode(errors="replace") for x in f.read().split(b"\0") if x]
+        except (OSError, IndexError, ValueError):
+            continue
+        cmd[int(d)] = " ".join(argv[:3])
+        names = [os.path.basename(x) for x in argv[:2]]
+        tool = next((AGENT_PROGRAMS[n] for n in names if n in AGENT_PROGRAMS), None)
+        if tool and not (names[0] in ("node", "python3", "python", "bun") and len(argv) < 2):
+            found.append((int(d), tool))
+    out, seen = [], set()
+    for pid, tool in found:
+        up, window, host = pid, None, ""
+        for _ in range(40):
+            if up in windows:
+                window = windows[up]
+                break
+            if not host and "vscode-server" in cmd.get(up, ""):
+                host = "VS Code"
+            up = parent.get(up, 0)
+            if up <= 1:
+                break
+        # one agent is one row: a program that started another of the same kind is the same agent
+        key = (tool, window.get("address") if window else pid)
+        if key in seen or parent.get(pid) in [p for p, _ in found]:
+            continue
+        seen.add(key)
+        title = (window or {}).get("title", "")
+        first = title[:1]
+        state = "waiting" if first == "✳" else ("working" if first and (0x2800 <= ord(first) <= 0x28FF or first in SPINNER) else "")
+        try:
+            where = os.readlink("/proc/%d/cwd" % pid)
+        except OSError:
+            where = ""
+        out.append({"agent": tool, "name": DOERS.get(tool, {}).get("name") or AGENT_NAMES.get(tool, tool), "pid": pid,
+                    "title": title.lstrip("✳✶✻✽✢·* " + "".join(chr(c) for c in range(0x2800, 0x2900))).strip(),
+                    "where": where, "window": (window or {}).get("address", ""), "state": state, "host": host})
+    return out
+
+
 # ── a crash, and why the session ended: the facts to an agent, which explains and changes nothing (Omarchy's
 # diagnose-crash, MIT; GuardDog's notice and LatteOS SAFE ask for it)
 def crash(pid):
@@ -1784,6 +1847,9 @@ def main(a):
         r = why()
         print(json.dumps(r))
         return 0 if r["ok"] else 1
+    if a == ["running"]:
+        print(json.dumps(running(), ensure_ascii=False))
+        return 0
     where = ""
     if a and a[0] == "do" and len(a) >= 4 and a[-2] == "--in":
         where, a = a[-1], a[:-2]

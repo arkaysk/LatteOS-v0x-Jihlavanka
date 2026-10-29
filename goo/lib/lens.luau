@@ -1151,6 +1151,7 @@ local function shore_modes()
     out[#out + 1] = { id = "find", label = N("Search"), glyph = "search" }
     out[#out + 1] = { id = "windows", label = N("Windows"), glyph = "app-window" }
     out[#out + 1] = { id = "clips", label = N("Clipboard"), glyph = "clipboard" }
+    out[#out + 1] = { id = "agents", label = N("Agents"), glyph = "robot" }
     out[#out + 1] = { id = "emoji", label = N("Emoji"), glyph = "mood-smile" }
     return out
 end
@@ -1247,6 +1248,41 @@ local function clip_rows(q)
     end
     if #rows == 1 then rows[#rows + 1] = { label = tr(shore.clips and N("Nothing was copied yet") or N("Searching…")), glyph = "clipboard", quiet = true } end
     return near_line(rows)
+end
+
+-- Agents (6B.27): the agents at work for the user (latte-ai running) — Claude Code, Codex… — each in its terminal, and
+-- whether it waits for the user; a press shows its window. Nearest the line "Do it for me": what is typed goes to an
+-- agent as a task (latte-ai do), with nothing typed LensAI's agents page.
+local function agent_rows(q)
+    local task = { label = q ~= "" and (tr("Do it for me") .. ": " .. q) or (tr("Do it for me") .. "…"), glyph = "player-play",
+                   run = function()
+                       if q == "" then after(LET_GO, function() run("latte-app", { "aicenter", "agents" }, nil, { output = false }) end) return end
+                       text.lens_q, fact.lens_typed, typed = "", false, ""
+                       after(LET_GO, function() run("latte-ai", { "do", q }, nil, { output = false }) end)
+                   end }
+    local rows = { { head = true, label = tr(N("AT WORK")) } }
+    for _, a in ipairs(shore.agents or {}) do
+        local here = a.window ~= ""
+        local function show() wm.win("activate", a.window) end
+        rows[#rows + 1] = { label = a.title ~= "" and a.title or a.name, line2 = a.name .. (a.where ~= "" and (" · " .. short(a.where)) or ""),
+                            glyph = "robot", quiet = not here, main = tr("Show"),
+                            hint = here and (a.state == "waiting" and tr(N("Waiting for you")) or a.state == "working" and tr(N("Working")) or "")
+                                   or (a.host ~= "" and a.host or tr(N("No window"))),
+                            run = function() after(LET_GO, show) end,
+                            right = here and function() ctx.open({
+                                { label = tr("Show"), glyph = "app-window", run = function() card.close() after(LET_GO, show) end },
+                                { label = tr("Close the window"), glyph = "x", danger = true, line = true, run = function() wm.win("close", a.window) end },
+                            }, { width = 240 }) end or nil }
+    end
+    if #rows == 1 then rows[#rows + 1] = { label = tr(shore.agents and N("No agent is at work") or N("Searching…")), glyph = "robot", quiet = true } end
+    return task, near_line(rows)
+end
+local function read_agents(done)
+    run("latte-ai", { "running" }, function(out)
+        local ok, list = pcall(json.decode, out or "")
+        shore.agents = ok and type(list) == "table" and list or {}
+        done()
+    end)
 end
 
 -- Emoji, kaomoji and symbols: a press or Enter pastes it where one was typing. The emoji are latte-emoji's (Unicode's
@@ -1374,6 +1410,10 @@ local function shore_rows()
         section(window_rows(typed))
     elseif shore.view == "clips" then
         section(clip_rows(typed))
+    elseif shore.view == "agents" then
+        local task, rows = agent_rows(typed)
+        section({ task })
+        section(rows)
     elseif shore.view == "emoji" then
         -- the sections nearest the line first: the tabs, then what they show
         local r = emoji_rows(typed)
@@ -1484,6 +1524,7 @@ go_mode = function(id)
         if shore.view == "chats" then read_chats(again) end
     else
         shore.view = id
+        if id == "agents" then shore.agents = nil read_agents(again) end
         if id == "emoji" and not shore.emoji then
             run("latte-emoji", {}, function(out)
                 local ok, list = pcall(json.decode, out or "")
@@ -1563,9 +1604,13 @@ local function shore_start()
         swiped += v
         if math.abs(swiped) >= 3 then swipe_done = true step_mode(swiped > 0 and 1 or -1) end
     end)
+    -- while the agents are shown, they are asked again every few seconds: one starts, one comes to wait for the user
+    every(3000, function()
+        if card.id() == "lens" and shore.view == "agents" then read_agents(function() if card.id() == "lens" and shore.view == "agents" then render(true) end end) end
+    end)
     -- it opens in Search; a conversation stays where it was (6B.12)
     on("lens_press", function()
-        if card.id() ~= "lens" and (shore.view == "windows" or shore.view == "clips") then shore.view = "find" end
+        if card.id() ~= "lens" and shore.view ~= "find" and shore.view ~= "talk" and shore.view ~= "chats" then shore.view = "find" end
         M.shore_open()
     end)
     -- Enter in the AI's mode asks it; elsewhere it does the chosen row
