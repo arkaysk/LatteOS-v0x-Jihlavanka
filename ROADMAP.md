@@ -1,5 +1,5 @@
 vytvorene 22.10.2026
-naposledy upravene 27.10.2026
+naposledy upravene 29.10.2026
 # LatteOS:0.4 Jihlavanka Build
 
 Idea LatteOS je neziskový linux ktory nevyžaduje po uživatelovy znalost klavesovych skratiek, nevyžaduje po uživatelovy použivanie konzoly, a umožnuje mu fungovat s návikmy z Windows, MacOS ale aj linux. Je to OS ktory umožnuje totalne deaktivovat Ai služby vnutry, ale aj ich naopak, intenzivne využivat na urovni pomocnika OS. 
@@ -2126,6 +2126,25 @@ priamo na mieste kurzora nad vybraným textom v ľubovoľnom okne, napr. „nahr
 cursor: Select anything to ask Gemini“ — zatrasenie kurzorom vyvolá AI nad čímkoľvek na obrazovke). Preskúmať, ako
 v LatteOS vyvolať AI gestom myši (zatrasenie, podržanie) nad označeným textom alebo oblasťou obrazovky a odpovedať pri
 kurzore; súvisí s LensShore (čipy kontextu, 6B.18), hlasom (6B.23) a pravidlom Myš prvá.
+
+**10B.35** [ ] **Záložky služieb v LensAI — „jeden prsteň“** (používateľ 29. 10.) — LensAI je nadstavba: každá veľká AI, ktorú
+nejde integrovať celú, dostane v okne LensAI vlastnú záložku s jej **oficiálnym webom**. Používateľ sa prihlási sám svojím
+účtom, služba vidí bežnú návštevu prehliadača → podmienky používania sa neporušujú. Lokálna AI, domáci server, kľúče API
+a ostatné ostávajú domáca záležitosť LensAI (10B.07, 10B.08). Pravidlá a zistenia:
+- **Webview, nie iframe** — veľké AI weby vkladanie cez iframe blokujú (X-Frame-Options, CSP); každá záložka je
+  samostatný webový engine (QtWebEngine) s **vlastným profilom** (cookies, úložisko) — bezpečnejšie, umožní aj viac účtov.
+  Vzor: Ferdium, Rambox, WebCatalog. Prihlásenie cez Google môže embedded webview odmietnuť → prihlásiť v systémovom prehliadači.
+- **Do webu sa nevkladajú skripty** — LensAI odpovede nečíta, prompty neposiela, obsah medzi AI neprenáša (zakázané
+  automatizované používanie). Prenos kontextu medzi AI iba cez oficiálne API (10B.08) alebo kopírovaním používateľom.
+- **Oficiálna desktop appka v záložke** — iba nainštalovaná používateľom, **bez úpravy a bez distribúcie**; bez nej je
+  záložka prázdna (ponuka „Nainštalovať“ ako 10B.14 bod 7). Claude aj ChatGPT desktop sú Electron (ten istý web) a pre
+  Linux oficiálne **neexistujú** (linuxové balíky „Claude Desktop“ sú komunitné prebalenia → nepoužiť). Vloženie cudzieho
+  okna ide iba na X11; na Waylande (Hyprland) záložka okno iba umiestni, zväčší a prepína (pravidlá okien Hyprlandu).
+- **MCP konektory** — namiesto desktop appiek: (a) záložka s terminálom, v ktorom beží oficiálne CLI (Claude Code, Codex,
+  Gemini CLI) s účtom používateľa a jeho MCP — nadväzuje na 10B.14 bod 5; (b) **LensAI ako vlastný MCP host** — jedna sada
+  konektorov (súbory, Home Assistant, domáci server…) pre všetky AI cez API aj lokálnu AI; súvisí s `latte-mcp` (10B.25).
+- Webové záložky nedostávajú systémové oprávnenia (10B.30). Pred zverejnením prejsť podmienky každej služby (automatizácia,
+  klienti tretích strán).
 
 ### 10C. [ ] Heidelberg
 je zakladny textovy editor, s neobvyklo širokou ponukou formatou ktore prečíta a upraví
