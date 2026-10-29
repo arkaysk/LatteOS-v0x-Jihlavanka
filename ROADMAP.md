@@ -846,7 +846,7 @@ páska módov“ (https://claude.ai/artifact/H11X1MF81jbM4sc1P3rREa).
   s rozmerom, Enter = „Vložiť do: aplikácia“ (Ctrl+V, v termináli Ctrl+Shift+V, cez `send_shortcut` Hyprlandu). Písanie
   v AI móde ostáva v rozhovore a Enter sa pýta AI. Predvolene **dole**, Nastavenia › Spúšťač › LensShore › Hore na
   obrazovke. Overené bez obrazovky (labwc + Hyprland): obe polohy, Tab, koliesko, filter, „↵ Prepnúť“.
-  **Neoverené: samotné vloženie** — bez obrazovky Hyprland nemá klávesnicu a živá relácia bola zamknutá; overiť naživo.
+  Vloženie overené naživo 29. 10. (terminál, Ctrl+Shift+V); nasadené do `/usr`.
 - [ ] Ďalej: Agenti, Emoji a GIF, „+“ (pásik má miesto na 6 tlačidiel; 7 → zvýšiť `items max` v `card.plm`), vodorovné
   koliesko a dva prsty do strán (pleamar dnes dáva iba zvislé `wheel` — záplata enginu), vykúkanie susedného módu,
   Ctrl+1–9.
