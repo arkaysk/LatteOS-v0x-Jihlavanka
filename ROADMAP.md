@@ -891,7 +891,7 @@ páska módov“ (https://claude.ai/artifact/H11X1MF81jbM4sc1P3rREa).
 - [ ] Ďalej: „+“ (7 tlačidiel → zvýšiť `items max` v `card.plm` — už je 10), objednávky Kaviarne v Agentoch (10B.36),
   pulz ostrova, keď agent čaká (6B.21), skutočné vykúkanie obsahu susedného módu, Ctrl+1–9.
 
-**6B.32** [ ] **Kontrola „hotových“ položiek LensShore voči originálu** (používateľ 29. 10.: „skontroluj aj ostatné už
+**6B.32** [~] **Kontrola „hotových“ položiek LensShore voči originálu** (používateľ 29. 10.: „skontroluj aj ostatné už
 hotové položky, či majú len čiastočnú, alebo plnú funkčnosť originálu“) — Hľadanie (Raycast root search, Tinycast
 launcher: poradie, naučené poradie, aliasy, záložné riadky), Okná (Tinycast window switcher a správa okien), Schránka
 (Raycast Clipboard History, Tinycast clipboard: typy, pripnutie, vloženie ako čistý text, vložiť postupne, OCR,
@@ -942,6 +942,12 @@ Kontrola 29. 10. (Raycast manual, Tinycast `docs/features/`):
   číslica v klávese), [ ] mód „+“ (Jedálny lístok, 10B.38), [ ] pulz ostrova, keď agent čaká (6B.21), [ ] záplata
   `pleamar-wheel-x` už LensShore nepotrebuje (bežné koliesko obsahuje aj pohyb do strán) — ponechať pre iné scény alebo
   odstrániť.
+- **Stav 29. 10. večer:** hotové Okná, Schránka, Hľadanie (podrobnosti vyššie). Ďalej po poradí: [ ] **AI rozhovor**
+  (výber modelu pri otázke, viac kôl priamo v LensShore, Tab na doplňujúcu otázku), [ ] **pravý klik › Zobraziť
+  informácie** o aplikácii, [ ] **Okná › Prepnúť okná dozadu**, potom zvyšok „Chýba“ pri každej položke.
+- **Klávesové skratky odložené** (používateľ 29. 10.): Ctrl+1–9 (obľúbené, módy pásky), Ctrl+0 (pôvodná veľkosť mriežky
+  Emoji), vlastné skratky pre príkazy a aplikácie (Raycast Hotkeys). Pleamar v klávese nepovolí číslicu — vyriešiť
+  naraz, keď sa k skratkám vrátime (záplata pleamaru alebo iné mená kláves).
 - **Goo na virtuálnom monitore** (zistené 29. 10.): od 20:00 živé Goo na DP-1 (LATTE-VIRT) kreslí raz za sekundu
   („slow frame 1017 ms“) a `pleamar --say goo` odpovedá pomaly — asi Hyprland nepýta snímky pre výstup, na ktorý nikto
   nepozerá. [ ] Preveriť, či to nevadí, keď sa naň pozrie (vzdialená plocha), a či Goo nemá bežať na hlavnom DP-3.
