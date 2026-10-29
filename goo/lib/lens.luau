@@ -1001,6 +1001,7 @@ end
 -- first "Ask the AI", so Enter asks it), sections with a few rows each, the kind of each on the right; the arrows choose
 -- another. Not a drop: the drops keep off its stretch of the edge.
 local WIDE = 620                             -- the plate's length, which is the panel's width too
+local SHORE_H = 540                          -- the panel's height, the same for every mode (the user, 29. 10.)
 local shore = { view = "find", talk = {}, chat = "new", live = "", ctx = {}, use = {}, sure = {}, chats = {} }
 local function shore_top() return drops.settings().lens_top == true end      -- the bottom unless chosen (6B.28)
 -- where it lies, from the Settings: the drops keep off that stretch, the capsule lies on it
@@ -1164,7 +1165,7 @@ local function strip()
     for _, m in ipairs(shore_modes()) do
         chips[#chips + 1] = { label = tr(m.label), glyph = m.glyph, on = m.id == now, keep = true, skip = true, run = function() go_mode(m.id) end }
     end
-    return { pills = chips, per = #chips, line = true, wheel = function(d) step_mode(-d) end }
+    return { pills = chips, per = #chips, line = true }
 end
 
 -- the list nearest the line first: at the bottom edge it reads upwards, so its rows under the heading turn round
@@ -1370,7 +1371,7 @@ shore_render = function(keep, dir)
     text.lens_next = list[at + 1] and tr(list[at + 1].label) or ""
     fact.lens_has_prev, fact.lens_has_next = list[at - 1] ~= nil, list[at + 1] ~= nil
     card.open(shown, { lens = shore_top() and "top" or "bottom", id = "lens", width = WIDE / 1.2, keep = keep, first = shore_top() and true or "last",
-                       again = shore.view ~= "talk" and shore.view ~= "chats", fit = true, pane = 1, step = step_mode, dir = dir })
+                       again = shore.view ~= "talk" and shore.view ~= "chats", fit = true, pane = 1, step = step_mode, dir = dir, height = SHORE_H })
 end
 -- to a mode: the rows come in from its side; the windows and the clipboard are read anew each time
 go_mode = function(id)
@@ -1440,17 +1441,23 @@ local function shore_start()
             if card.id() == "lens" then render(true) elseif t ~= "" then M.shore_open() end
         end)
     end)
-    -- two fingers to the side over the panel: the turns are gathered, a notch and a half turns the tape once, and the
-    -- same gesture does not turn it again until the fingers rest
-    local swiped, swipe_rest, swipe_done = 0, nil, false
+    -- the wheel over the panel turns the tape: a mouse's notch turns it once; a touchpad's fingers come in small pieces,
+    -- gathered until they are worth three notches, and the same gesture does not turn it again until they rest
+    local swiped, swipe_rest, swipe_done, notched = 0, nil, false, false
     on("lens_swipe", function(v)
         v = (tonumber(v) or 0) / 1000
         if v == 0 or card.id() ~= "lens" then return end
+        if math.abs(v) >= 0.99 then
+            if notched then return end
+            notched = true
+            after(120, function() notched = false end)
+            return step_mode(v > 0 and 1 or -1)
+        end
         if swipe_rest then cancel(swipe_rest) end
         swipe_rest = after(250, function() swiped, swipe_done, swipe_rest = 0, false, nil end)
         if swipe_done then return end
         swiped += v
-        if math.abs(swiped) >= 1.5 then swipe_done = true step_mode(swiped > 0 and 1 or -1) end
+        if math.abs(swiped) >= 3 then swipe_done = true step_mode(swiped > 0 and 1 or -1) end
     end)
     -- it opens in Search; a conversation stays where it was (6B.12)
     on("lens_press", function()

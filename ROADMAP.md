@@ -852,6 +852,11 @@ páska módov“ (https://claude.ai/artifact/H11X1MF81jbM4sc1P3rREa).
   koliesko** nad panelom prepnú mód (pleamar `wheel.x`, `patches/pleamar-wheel-x.patch`, nasadený); riadky vchádzajú
   z polovice šírky panelu. Overené bez obrazovky (šípky, vodorovné koliesko) a naživo (okraje). Gesto na skutočnom
   touchpade neoverené (latte-lab ho nemá).
+- [x] 29. 10. (používateľ: „nie každá myš má nakláňanie kolieska; scroll mal byť doprava doľava“; „rovnaká veľkosť popupu
+  pre každú záložku“): **bežné koliesko nad celým panelom točí pásku** (dole = ďalší mód, jeden zárez = jeden mód;
+  touchpad zbiera pohyb do troch zárezov), pásik už vlastné koliesko nemá. Zoznam v LensShore sa kolieskom neposúva —
+  pravidlo 25 tu ustupuje rozhodnutiu používateľa. **Panel má pri každom móde rovnakú výšku** (540 px, voľba karty
+  `height`): kratší obsah drží pri línii, voľné miesto je na vzdialenom okraji. Overené bez obrazovky aj naživo.
 - [ ] Ďalej: Emoji (rozpracované: `bin/latte-emoji` — 1923 emoji, slovenské názvy z CLDR, obrázky cez Pango/Cairo, lebo
   pleamar farebné písmo COLRv1 nekreslí), Agenti, GIF (vybrať službu), „+“ (7 tlačidiel → zvýšiť `items max`
   v `card.plm`), skutočné vykúkanie obsahu susedného módu, Ctrl+1–9.

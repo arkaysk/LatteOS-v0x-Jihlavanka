@@ -31,7 +31,8 @@
 -- `tiles`: the rows between two headings are laid as a tile, a card within the card (rules between them are
 -- dropped: the tile is what holds them together).
 -- `capsule` (a drop stretched into one) makes the card grow out of all of it; `lens` slides it out of LensShore's plate;
--- `first` chooses its first row for Enter. `step` = function(±1) is what Tab does on a card without tabs; `dir` (±1) brings
+-- `first` chooses its first row for Enter. `height`: the same height whatever is in it (LensShore's modes): what is
+-- short gets room at the end away from its plate (a paragraph is guessed at by its length). `step` = function(±1) is what Tab does on a card without tabs; `dir` (±1) brings
 -- the rows in from that side, as a tape turned (LensShore's modes).
 -- Options: `custom` ("clock") draws a scene of its own instead of rows, `split` says where its coffee begins, `grow` lets it grow with the screen (card.z in parts/card.plm). `uniform` is for a family of cards of one size (LensGoo's modes). `menu` makes it a classic context menu (at the pointer, solid, no ear). `pane` (0…1) makes the card glass above its `wave` row and solid coffee below it. `keep` refreshes an open card in place (live figures): the rows do not come in again and the row
 -- chosen with the keys stays.
@@ -146,6 +147,16 @@ function M.open(rows, opts)
                 more[#more + 1] = r
             end
             rows = more
+        end
+    end
+    if opts.height and opts.lens then
+        local h = 8
+        for i, r in ipairs(rows) do
+            h += (r.para and (24 + 21 * math.ceil(#(r.label or "") / 62)) or height_of(r)) + (r.line and i > 1 and 14 or 0)
+        end
+        if h < opts.height then
+            rows = table.clone(rows)
+            table.insert(rows, opts.lens == "top" and #rows + 1 or 1, { gap = opts.height - h })
         end
     end
     local out = {}

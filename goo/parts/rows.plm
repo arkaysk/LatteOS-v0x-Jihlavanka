@@ -7,8 +7,9 @@ part Rows {
     on press card_away { card_open = false; emit card_closed }
     on press right card_away { card_open = false; emit card_closed }
     zone box card_ground { from: card.x0, card.y0; size: card.w, card.h; active: card_open; agent: hidden }
-    // two fingers to the side, or a wheel tilted, over LensShore's panel: its modes turn (lib/lens.luau gathers the turns)
-    on scroll card_ground while card_lens { emit lens_swipe(round(wheel.x * 1000)) }
+    // the wheel over LensShore's panel turns its modes as a tape (the user, 29. 10.: "the scroll is to the right and
+    // left"), down or to the right the next one; two fingers and a tilted wheel too (lib/lens.luau gathers the turns)
+    on scroll card_ground while card_lens { emit lens_swipe(round(-wheel * 1000)) }
 
     // while a menu is open over the card (parts/ctx.plm) the keys are the menu's
     on key Escape while card_open and not ctx_open { card_open = false; emit card_closed }

@@ -67,7 +67,7 @@ part Card {
     fact card_more = false                     // the chosen row has more to it: Ctrl+K, or the right button
     fact card_gen = 0                          // the logic counts up for new content: the rows come in again
     fact card_dir = 0                          // …from this side (−1 the left, 1 the right): LensShore's modes turn as a tape
-    event lens_swipe ->                        // the wheel sideways over LensShore's panel, in thousandths of a notch (right positive)
+    event lens_swipe ->                        // the wheel over LensShore's panel, in thousandths of a notch (down or right positive)
     text card_q = ""
     text card_pw = ""
     text card_hint = ""
