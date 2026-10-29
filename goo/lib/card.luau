@@ -13,6 +13,7 @@
 --       wheel   function(direction ±1) · sub: rows of a submenu, which gets a row to go back · more: the arrow
 --               of a submenu on a row that opens another card itself
 --       main    what Enter does with it, told beside LensShore's line (else its label) · skip: the arrows pass it by
+--       first   chosen from the start instead of the card's first or last (a tile: the best of what was found)
 --   { head = true, label, hint }                    the heading of a section
 --   { big = true, label, bar }                      a large figure
 --   { para = true, label }                          a paragraph
@@ -49,6 +50,7 @@ local engine                                -- set by lib/engine.luau, which own
 local shown = { rows = {}, opts = {} }      -- the card as it was last opened
 local actions, rights, wheels, slides, tab_runs, copies = {}, {}, {}, {}, {}, {}   -- copies: row → the text its copy button gives
 local choosable, chosen = {}, nil            -- what the arrow keys walk through, and where they are
+local preferred = nil                        -- the row that says `first`
 local names = {}                             -- what each row says: the one chosen is told beside LensShore's line
 -- the row chosen with the arrows (nil: none): what Enter does is told as `card_main`, and whether Ctrl+K has more
 local function choose(id)
@@ -161,7 +163,7 @@ function M.open(rows, opts)
     end
     local out = {}
     actions, rights, wheels, slides, tab_runs, copies = {}, {}, {}, {}, {}, {}
-    choosable, names = {}, {}
+    choosable, names, preferred = {}, {}, nil
 
     -- what choosing a row does
     local function action(it)
@@ -192,6 +194,7 @@ function M.open(rows, opts)
         rights[id] = it.right
         names[id] = it.main or it.label
         if not it.off and not it.quiet and not it.skip then choosable[#choosable + 1] = id end
+        if it.first then preferred = id end
     end
 
     -- `to`: the column's records; `base`: where the scene starts counting its rows; `room`: how many it holds
@@ -311,7 +314,7 @@ function M.open(rows, opts)
     -- shrinks to what it holds, not only grows
     if opts.fit then fact.card_peak = 0 end
     if opts.first and (opts.again or not chosen) and choosable[1] then
-        choose(opts.first == "last" and choosable[#choosable] or choosable[1])      -- "last": nearest a line below the card
+        choose(preferred or (opts.first == "last" and choosable[#choosable]) or choosable[1])      -- "last": nearest a line below the card
     elseif chosen then
         choose(chosen)                       -- the same row, perhaps saying something else now
     end

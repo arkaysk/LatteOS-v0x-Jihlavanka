@@ -148,6 +148,7 @@ return {
     ["microphone-off"] = "\u{ED16}",
     ["minus"] = "\u{EAF2}",
     ["mist"] = "\u{EC30}",
+    ["mood-smile"] = "\u{EAF7}",
     ["moon"] = "\u{EAF8}",
     ["mouse"] = "\u{EAF9}",
     ["movie"] = "\u{EAFA}",

@@ -11,6 +11,7 @@ local card = require("lib/card")
 local icons = require("lib/icons")
 local ctx = require("lib/ctx")
 local find = require("lib/find")
+local fold = require("lib/fold")
 local calc = require("lib/calc")
 local amount = require("lib/amount")
 local dangerous = require("lib/dangerous")
@@ -1150,6 +1151,7 @@ local function shore_modes()
     out[#out + 1] = { id = "find", label = N("Search"), glyph = "search" }
     out[#out + 1] = { id = "windows", label = N("Windows"), glyph = "app-window" }
     out[#out + 1] = { id = "clips", label = N("Clipboard"), glyph = "clipboard" }
+    out[#out + 1] = { id = "emoji", label = N("Emoji"), glyph = "mood-smile" }
     return out
 end
 local function mode_of(view) return (view == "talk" or view == "chats") and "ai" or view end
@@ -1216,22 +1218,27 @@ local TERMINALS = { foot = true, kitty = true, alacritty = true, konsole = true,
 local function front_window()
     for _, w in ipairs(shore.wins or {}) do if w.front then return w end end
 end
-local function paste(c)
+-- `put(done)` puts it on the clipboard; then Ctrl+V to the window that was in front (without one, it stays copied)
+local function paste(put)
     local w = front_window()
-    clips.copy(c.id, function() after(LET_GO, function() wm.paste(w.address, TERMINALS[w.class:lower()] == true) end) end)
+    put(function() if w then after(LET_GO, function() wm.paste(w.address, TERMINALS[w.class:lower()] == true) end) end end)
+end
+local function paste_into()
+    local w = front_window()
+    local into = w and (function() local a = app_for(w.class) return a and (a.local_name or a.name) or w.class end)()
+    return into and (tr("Paste into {app}"):gsub("{app}", function() return into end)) or tr("Copy")
 end
 local function clip_rows(q)
-    local want, w, rows = q:lower(), front_window(), { { head = true, label = tr(N("CLIPBOARD")) } }
-    local into = w and (function() local a = app_for(w.class) return a and (a.local_name or a.name) or w.class end)()
-    local main = into and (tr("Paste into {app}"):gsub("{app}", function() return into end)) or tr("Copy")
+    local want, rows = q:lower(), { { head = true, label = tr(N("CLIPBOARD")) } }
+    local main = paste_into()
     for _, c in ipairs(shore.clips or {}) do
         local label = c.picture and (tr("Picture") .. " · " .. c.picture) or c.text
         if want == "" or label:lower():find(want, 1, true) then
             if #rows > 8 then break end
             rows[#rows + 1] = { label = label, glyph = c.picture and "photo" or (c.text:match("^https?://") and "link" or "clipboard"), main = main,
-                                run = function() if w then paste(c) else clips.copy(c.id) end end,
+                                run = function() paste(function(done) clips.copy(c.id, done) end) end,
                                 right = function() ctx.open({
-                                    { label = main, glyph = "clipboard", run = function() card.close() if w then paste(c) else clips.copy(c.id) end end },
+                                    { label = main, glyph = "clipboard", run = function() card.close() paste(function(done) clips.copy(c.id, done) end) end },
                                     { label = tr("Copy"), glyph = "copy", run = function() card.close() clips.copy(c.id) end },
                                     { label = tr("Forget what was copied"), glyph = "trash", danger = true, line = true,
                                       run = function() clips.wipe(function() shore.clips = {} render(true) end) end },
@@ -1240,6 +1247,82 @@ local function clip_rows(q)
     end
     if #rows == 1 then rows[#rows + 1] = { label = tr(shore.clips and N("Nothing was copied yet") or N("Searching…")), glyph = "clipboard", quiet = true } end
     return near_line(rows)
+end
+
+-- Emoji, kaomoji and symbols: a press or Enter pastes it where one was typing. The emoji are latte-emoji's (Unicode's
+-- list, CLDR's names in the user's language, pictures drawn from the colour emoji font, which pleamar cannot draw);
+-- what was pasted lately comes first.
+local KAOMOJI = { "(◕‿◕)", "¯\\_(ツ)_/¯", "(╯°□°)╯︵ ┻━┻", "┬─┬ノ( º _ ºノ)", "(づ｡◕‿‿◕｡)づ", "ʕ•ᴥ•ʔ", "(ง •̀_•́)ง", "(¬‿¬)",
+                  "( ˘▽˘)っ♨", "(｡♥‿♥｡)", "(⌐■_■)", "(•_•)", "(✿◠‿◠)", "(^_^)/", "(^o^)" }
+local SYMBOLS = { "←", "→", "↑", "↓", "↔", "⇄", "✓", "✗", "•", "…", "–", "—", "±", "×", "÷", "≈", "≠", "≤", "≥", "∞",
+                  "√", "°", "‰", "²", "³", "½", "€", "£", "$", "¥", "§", "©", "®", "™", "„", "“" }
+local function put_text(t) return function(done) run("wl-copy", { "--", t }, function() done() end, { output = false }) end end
+local function emoji_rows(q)
+    local tab, main, rows = shore.emo_tab or "emoji", paste_into(), {}
+    local tabs = {}
+    for _, t in ipairs({ { "emoji", N("Emoji") }, { "kaomoji", N("Kaomoji") }, { "symbols", N("Symbols") } }) do
+        tabs[#tabs + 1] = { label = tr(t[2]), on = t[1] == tab, keep = true, skip = true,
+                            run = function() shore.emo_tab = t[1] render(true) end }
+    end
+    rows[#rows + 1] = { pills = tabs, per = 3 }
+    local function remember(c)
+        local recent = kept.emoji or {}
+        local i = table.find(recent, c)
+        if i then table.remove(recent, i) end
+        table.insert(recent, 1, c)
+        while #recent > 6 do table.remove(recent) end
+        kept.emoji = recent
+        save()
+    end
+    local function chip(t) return { label = t, main = main, run = function() paste(put_text(t)) end } end
+    if tab ~= "emoji" then
+        local list, out = tab == "kaomoji" and KAOMOJI or SYMBOLS, {}
+        for _, t in ipairs(list) do out[#out + 1] = chip(t) end
+        rows[#rows + 1] = { pills = out, per = tab == "kaomoji" and 3 or 6 }
+        return rows
+    end
+    if not shore.emoji then
+        rows[#rows + 1] = { label = tr(N("Preparing the emoji…")), glyph = "mood-smile", quiet = true }
+        return rows
+    end
+    local function tile(e)
+        return { label = e.name, icon = e.png, glyph = "mood-smile", main = main,
+                 run = function() remember(e.c) paste(put_text(e.c)) end }
+    end
+    local want = fold(q)
+    if want == "" then
+        local by_c, recent = {}, {}
+        for _, e in ipairs(shore.emoji) do by_c[e.c] = e end
+        for _, c in ipairs(kept.emoji or {}) do if by_c[c] then recent[#recent + 1] = tile(by_c[c]) end end
+        if #recent > 0 then
+            recent[1].first = true
+            rows[#rows + 1] = { head = true, label = tr(N("RECENTLY USED")) } rows[#rows + 1] = { tiles = recent, per = 6 }
+        end
+        local first = {}
+        for _, e in ipairs(shore.emoji) do if #first < (#recent > 0 and 12 or 18) then first[#first + 1] = tile(e) end end
+        if #recent == 0 then first[1].first = true end
+        rows[#rows + 1] = { head = true, label = tr(N("SMILEYS AND EMOTION")) }
+        rows[#rows + 1] = { tiles = first, per = 6 }
+        return rows
+    end
+    -- the name beginning with what is typed first, then a word of it, then anywhere among its words
+    local hits = {}
+    for _, e in ipairs(shore.emoji) do
+        e.key = e.key or fold(e.name .. " | " .. e.words)
+        local at = e.key:find(want, 1, true)
+        if at then
+            e.plain = e.plain or fold(e.name)
+            hits[#hits + 1] = { e = e, score = e.plain == want and -1 or at == 1 and 0 or (e.key:sub(at - 1, at - 1):match("[%s|]") and 1 or 2) }
+        end
+    end
+    for i, h in ipairs(hits) do h.at = i end
+    table.sort(hits, function(a, b) if a.score ~= b.score then return a.score < b.score end return a.at < b.at end)      -- Unicode's order within each
+    local found = {}
+    for i, h in ipairs(hits) do if i > 18 then break end found[#found + 1] = tile(h.e) end
+    if found[1] then found[1].first = true end
+    if #found == 0 then rows[#rows + 1] = { label = tr(N("No emoji is called that")), glyph = "mood-smile", quiet = true }
+    else rows[#rows + 1] = { head = true, label = tr(N("EMOJI")) } rows[#rows + 1] = { tiles = found, per = 6 } end
+    return rows
 end
 
 -- the rows, nearest the line first: at the top edge read downwards, at the bottom upwards (`first = "last"`)
@@ -1291,6 +1374,20 @@ local function shore_rows()
         section(window_rows(typed))
     elseif shore.view == "clips" then
         section(clip_rows(typed))
+    elseif shore.view == "emoji" then
+        -- the sections nearest the line first: the tabs, then what they show
+        local r = emoji_rows(typed)
+        section({ r[1] })
+        local rest = {}
+        for i = 2, #r do rest[#rest + 1] = r[i] end
+        if shore_top() then section(rest) else
+            -- at the bottom edge the headings stay above their tiles: the pairs turn round, not the rows
+            local pairs_, i = {}, 1
+            while i <= #rest do
+                if rest[i].head and rest[i + 1] then pairs_[#pairs_ + 1] = { rest[i], rest[i + 1] } i += 2 else pairs_[#pairs_ + 1] = { rest[i] } i += 1 end
+            end
+            for j = 1, #pairs_ do section(pairs_[j]) end
+        end
     elseif typed == "" then
         -- with nothing typed, LensShore's home (6B.27): what can be done at once (the skills, by how things are now),
         -- the apps one keeps coming back to, the last conversations with the AI
@@ -1387,7 +1484,14 @@ go_mode = function(id)
         if shore.view == "chats" then read_chats(again) end
     else
         shore.view = id
-        if id == "windows" or id == "clips" then
+        if id == "emoji" and not shore.emoji then
+            run("latte-emoji", {}, function(out)
+                local ok, list = pcall(json.decode, out or "")
+                shore.emoji = ok and type(list) == "table" and list or {}
+                again()
+            end)
+        end
+        if id == "windows" or id == "clips" or id == "emoji" then
             shore.wins = nil
             wm.windows(function(list) shore.wins = list or {} again() end)
         end
@@ -1553,6 +1657,7 @@ function M.start(d)
         if type(saved.fav) == "table" then kept.fav = saved.fav end
         if type(saved.layout) == "table" then for k in pairs(kept.layout) do if saved.layout[k] ~= nil then kept.layout[k] = saved.layout[k] == true end end end
         kept.filter = type(saved.filter) == "string" and saved.filter or "all"
+        kept.emoji = type(saved.emoji) == "table" and saved.emoji or {}
         if type(saved.ai) == "table" then kept.ai = saved.ai end
     end
     load_chat()

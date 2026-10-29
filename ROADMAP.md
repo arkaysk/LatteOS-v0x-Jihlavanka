@@ -857,9 +857,15 @@ páska módov“ (https://claude.ai/artifact/H11X1MF81jbM4sc1P3rREa).
   touchpad zbiera pohyb do troch zárezov), pásik už vlastné koliesko nemá. Zoznam v LensShore sa kolieskom neposúva —
   pravidlo 25 tu ustupuje rozhodnutiu používateľa. **Panel má pri každom móde rovnakú výšku** (540 px, voľba karty
   `height`): kratší obsah drží pri línii, voľné miesto je na vzdialenom okraji. Overené bez obrazovky aj naživo.
-- [ ] Ďalej: Emoji (rozpracované: `bin/latte-emoji` — 1923 emoji, slovenské názvy z CLDR, obrázky cez Pango/Cairo, lebo
-  pleamar farebné písmo COLRv1 nekreslí), Agenti, GIF (vybrať službu), „+“ (7 tlačidiel → zvýšiť `items max`
-  v `card.plm`), skutočné vykúkanie obsahu susedného módu, Ctrl+1–9.
+- [x] 29. 10. mód **Emoji** (piaty na páske): časti Emoji · Kaomoji · Symboly. Emoji ako dlaždice s obrázkom a slovenským
+  menom (`bin/latte-emoji`: 1923 emoji zo zoznamu Unicode, názvy z CLDR, obrázky raz cez Pango/Cairo do
+  `~/.cache/latteos/emoji` — pleamar farebné písmo COLRv1 nekreslí; balíky `unicode-emoji`, `cldr-emoji-annotation`).
+  Bez písania naposledy použité a Smajlíky, písanie hľadá v menách a slovách (aj anglických, bez diakritiky), presná
+  zhoda prvá. Klik alebo Enter vloží do okna, kde sa písalo (`wl-copy` + Ctrl+V). Overené bez obrazovky (obrázky,
+  „srdce“, kaomoji, symboly) a naživo (mód, schránka); samotné Ctrl+V do okna s emoji neoverené naživo (iný čat mal
+  vtedy fokus), mechanizmus je ten istý ako pri Schránke.
+- [ ] Ďalej: Agenti, GIF (vybrať službu: Giphy / Tenor / Klipy), „+“ (7 tlačidiel → zvýšiť `items max` v `card.plm`),
+  skutočné vykúkanie obsahu susedného módu, Ctrl+1–9.
 
 **6B.31** [x] **Pravý klik na aplikáciu, súbor a priečinok: plocha, QuickGoo, kvapka** (používateľ 29. 10.) — v LensShore
 aj LensGoo: „Pridať ikonu na plochu“ (`latte-desktop add`: aplikáciu skopíruje, súbor/priečinok prepojí do priečinka
