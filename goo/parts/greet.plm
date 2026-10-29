@@ -24,6 +24,7 @@ part Greet {
     let CX = W / 2
     let CY = H / 2
     let LEVEL = H * 2 / 3                      // where the coffee's surface comes to rest
+    let BAND = H / 10                          // how far the coffee's top is seen behind its front edge: the horizon is that high above it
     let R = 40                                 // the power drop
     let ROW = 23                               // half the height of the login row
     let ROLL = 190                             // how far the drop rolls: about 5 cm at 96 dpi
@@ -67,6 +68,9 @@ part Greet {
     fact sky_t = 0.5                           // its way from rising (0, left) to setting (1, right)
     fact sky_alt = 30                          // degrees above the horizon, which is the surface
     fact moon_lit = 1
+    fact sun_down = 0                          // degrees the sun is below the horizon, 0 while it is up
+    fact sun_west = true                       // it set (west, right) rather than is about to rise (east, left)
+    model stars max 240 { x: number; alt: number; mag: number; r: number; g: number; b: number }   // looking south: x 0 east … 1 west
     fact moon_waxing = true
     fact rain = 0                              // 0 none, 1 forecast soon, 2 falling now
     fact snow = false
@@ -188,12 +192,41 @@ part Greet {
 
     // ── the sky: a faint sun or moon where it really is; it rises out of the coffee and sets into it ────────
     let sky_x = W * (0.06 + 0.88 * sky_t)
-    let sky_y = LEVEL + 20 - (0.12 + 0.88 * clamp(sky_alt / 62, 0, 1)) * (LEVEL - 110)
-    ellipse { at: sky_x, sky_y; radius: 92; color: amber; opacity: 0.035 * clock_in; show: sky_body == 1 }
-    ellipse { at: sky_x, sky_y; radius: 46; color: amber; opacity: 0.15 * clock_in; show: sky_body == 1 }
+    let sky_y = LEVEL - BAND + 20 - (0.12 + 0.88 * clamp(sky_alt / 62, 0, 1)) * (LEVEL - BAND - 110)
+    // the sun: a bright core and a soft light round it, as the one its path on the coffee comes from
+    body {
+        gradient: radial sky_x, sky_y radius 120, #fff2d6, #fff2d6 22%, mix(espresso, amber, 0.45) 30%, mix(espresso, amber, 0.1) 60%, espresso
+        opacity: clock_in
+        show: sky_body == 1
+        ellipse { at: sky_x, sky_y; radius: 120 }
+    }
     ellipse { at: sky_x, sky_y; radius: 40; color: cream; opacity: 0.17 * clock_in; show: sky_body == 2 }
     // The phase is a shadow in the background's colour, pushed in from the dark side.
     ellipse { at: sky_x + if(moon_waxing, -1, 1) * 82 * moon_lit, sky_y; radius: 41.5; color: espresso; opacity: clock_in; show: sky_body == 2 and moon_lit < 0.97 }
+
+    // ── the stars: the real ones over the south, out between civil and nautical dusk, under a clear sky ──────
+    // The sky stays the screen's own dark colour, day and night.
+    let night = clamp((sun_down - 6) / 6, 0, 1)
+    let clear = pick(weather, 1, 1, 0.5, 0, 0, 0, 0, 0)
+    repeat i in 0..240 {
+        ellipse { at: W * (0.06 + 0.88 * stars.$i.x), tide_y - BAND - clamp(stars.$i.alt / 62, 0, 1.3) * (LEVEL - BAND - 110)
+                  radius: clamp(1.9 - 0.32 * stars.$i.mag, 0.7, 2.6); color: rgb(stars.$i.r, stars.$i.g, stars.$i.b)
+                  opacity: night * clear * clock_in * (1 - gone) * clamp(1.05 - 0.17 * stars.$i.mag, 0.25, 1) * clamp(stars.$i.alt / 8, 0.25, 1) * (0.8 + 0.2 * sin(time * (90 + 7 * mod(i, 13)) + 47 * i))
+                  show: i < stars.count and night > 0.01 }
+    }
+
+    // What lights the coffee: the sun or the moon where they are; after sunset the afterglow low on that side, then
+    // only a faint light from high up that makes no path (it must not pass for a sun).
+    let dusk = if(sun_down > 0, clamp(1 - sun_down / 12, 0, 1), 0)
+    let light_k = pick(sky_body, 0.18 + 0.5 * dusk, 1, 0.4) * (1 - 0.3 * rain) * clock_in
+    let light_x = if(sky_body == 0, if(dusk > 0, if(sun_west, W * 0.97, W * 0.03), CX), sky_x)
+    let light_up = if(sky_body == 0, if(dusk > 0, -4 - 10 * (1 - dusk), 420), tide_y - BAND - sky_y)
+
+    // ── the coffee's top, seen from just above it, from the horizon to behind its front edge (shaders/sea.wgsl) ──
+    // The light lays a path of glints across it; it sets behind the horizon.
+    shader sea { at: 0, tide_y - BAND - 60; size: W, BAND + 110; show: gone < 0.5 and tide > 0.01
+                 values: light_k, light_x, light_up, chop, if(sky_body == 2, 1, 0)
+                 colors: if(sky_body == 0, mix(amber, #e0703c, dusk), amber), coffee }
 
     // ── what falls outside falls here too ───────────────────────────────────────────────────────────────────
     particles { at: W / 2, -30; area: W + 300, 20; count: 110; life: 0.6s .. 0.8s; speed: 950 .. 1150; direction: 98deg; spread: 3deg
@@ -248,6 +281,13 @@ part Greet {
     shader water { at: 0, tide_y + 8; size: W, H + 62 - tide_y; show: gone < 0.5 and tide > 0.5
                    values: pick(sky_body, 0.22, 1, 0.55) * (1 - 0.3 * rain) * clock_in * (1 - gone), sky_x, (0.5 - sky_t) * 0.9, if(sky_body == 1, 0, 1), H - tide_y - 8, gale
                    colors: amber, #cfd8ff }
+    // ── the light on the surface: a bright edge, crema under it, ribbons deeper down; light added, not paint ───
+    group {
+        mode: add
+        shader crest { at: 0, tide_y - 40; size: W, 160; show: gone < 0.5 and tide > 0.5
+                       values: light_k * (1 - gone), light_x, chop, gale, 40, if(sky_body == 2, 1, 0)
+                       colors: if(sky_body == 0, mix(amber, #e0703c, dusk), amber), #cfd8ff }
+    }
 
     // ── the power drop: a glint turns in it while it rolls, then the power icon ─────────────────────────────
     ellipse { at: gx + cos(rolled * 1.9 - 50) * R * 0.46, goo_y + sin(rolled * 1.9 - 50) * R * 0.46; radius: 5; color: mix(coffee, cream, 0.4); opacity: here * (1 - icon_in) * arc }
@@ -270,15 +310,16 @@ part Greet {
     on key Escape while power_open { power_open = false }
 
     // ── language and keyboard layout, left of the power drop: a press takes the next one ────────────────────
+    // (they stand over the coffee's lit top: a shadow keeps them clear of the glints)
     let CH = gx - R - 30
     let CH_A = fields * (1 - gone)
-    text g_lang { at: CH - 112, goo_y; anchor: center; size: 18; color: cream; opacity: CH_A * 0.7; family: "tabler-icons" }
-    text "English" { at: CH - 96, goo_y; anchor: left center; size: 13.5; weight: 600; color: cream; opacity: CH_A * 0.85; family: "Inter" }
+    text g_lang { at: CH - 112, goo_y; anchor: center; size: 18; color: cream; opacity: CH_A * 0.7; shadow: 0, 1, 6, 70%, espresso; family: "tabler-icons" }
+    text "English" { at: CH - 96, goo_y; anchor: left center; size: 13.5; weight: 600; color: cream; opacity: CH_A * 0.85; shadow: 0, 1, 6, 70%, espresso; family: "Inter" }
     zone box z_lang { at: CH - 54, goo_y; size: 130, 36; cursor: pointer; label: "Language"; active: fields > 0.5 and gone < 0.1 }
     on press z_lang while locale == sk { locale = en }
     on press z_lang while locale == en { locale = sk }
-    text g_kb { at: CH - 174, goo_y; anchor: center; size: 18; color: cream; opacity: CH_A * 0.7; show: kb_count > 1; family: "tabler-icons" }
-    text kb_name { at: CH - 158, goo_y; anchor: left center; size: 13.5; weight: 600; color: cream; opacity: CH_A * 0.85; show: kb_count > 1; family: "Inter" }
+    text g_kb { at: CH - 174, goo_y; anchor: center; size: 18; color: cream; opacity: CH_A * 0.7; show: kb_count > 1; shadow: 0, 1, 6, 70%, espresso; family: "tabler-icons" }
+    text kb_name { at: CH - 158, goo_y; anchor: left center; size: 13.5; weight: 600; color: cream; opacity: CH_A * 0.85; show: kb_count > 1; shadow: 0, 1, 6, 70%, espresso; family: "Inter" }
     zone box z_kb { at: CH - 148, goo_y; size: 56, 36; cursor: pointer; label: "Keyboard layout"; active: fields > 0.5 and gone < 0.1 and kb_count > 1 }
     on press z_kb while locale == sk { emit layout(1) }
     on press z_kb while locale == en { emit layout(0) }
@@ -300,7 +341,7 @@ part Greet {
     on press z_go { emit login }
     on submit password { emit login }
     text "Wrong password" { at: text_x, gy - 44; anchor: left center; size: 13.5; color: alert; opacity: wrong; family: "Inter" }
-    text pick(kb_lock, "", "Caps Lock", "Num Lock", "Caps Lock · Num Lock") { at: text_x + 174, gy - 44 + 2.5 * sin(time * 70); anchor: left center; size: 12.5; weight: 600; color: amber; opacity: fields * (1 - gone) * 0.85; show: kb_lock > 0; family: "Inter" }
+    text pick(kb_lock, "", "Caps Lock", "Num Lock", "Caps Lock · Num Lock") { at: text_x + 174, gy - 44 + 2.5 * sin(time * 70); anchor: left center; size: 12.5; weight: 600; color: amber; opacity: fields * (1 - gone) * 0.85; show: kb_lock > 0; shadow: 0, 1, 6, 70%, espresso; family: "Inter" }
     text "Checking…" { at: text_x, gy - 44; anchor: left center; size: 13.5; color: cream; opacity: fields * 0.6; show: checking; family: "Inter" }
 
     // ── the session chooser: the one chosen; a press opens the choices above it ─────────────────────────────

@@ -29,6 +29,8 @@ Priložené súbory s vlastnou licenciou:
 | `goo/ai/*.svg` | Lobe Icons, logá služieb AI (vetva `v0.4-fresh`) | MIT (`goo/ai/LICENSE-lobe-icons.txt`) |
 | `assets/fonts/GoogleSansFlex.ttf` | Google Sans Flex (vetva `v0.4-fresh`) | OFL 1.1 (`assets/fonts/OFL-GoogleSansFlex.txt`) |
 | `assets/fonts/Lora.ttf` | Lora (vetva `v0.4-fresh`) | OFL 1.1 (`assets/fonts/OFL-Lora.txt`) |
+| `goo/shaders/sea.wgsl` | [Seascape](https://www.shadertoy.com/view/Ms2SD1) (Alexander Alekseev aka TDM, 2014), prepísaný do WGSL a prefarbený na kávu: hladina v perspektíve na prihlasovaní | CC BY-NC-SA 3.0 (hlavička súboru) |
+| `system/sky/stars.tsv` | [Yale Bright Star Catalogue](http://tdc-www.harvard.edu/catalogs/bsc5.html), 5. vydanie (Hoffleit a Warren, NASA ADC), v JSON od [brettonw/YaleBrightStarCatalog](https://github.com/brettonw/YaleBrightStarCatalog) (MIT): hviezdy do 4,5 mag na prihlasovaní | voľné údaje NASA ADC; prevod MIT |
 | `session/fonts/Manrope[wght].ttf` | Manrope | SIL OFL 1.1 (`session/fonts/OFL-Manrope.txt`) |
 | `session/fonts/Fraunces[…].ttf` | Fraunces | SIL OFL 1.1 (`session/fonts/OFL-Fraunces.txt`) |
 | `session/kvapky/textury/hlinik_*.webp`, `striebro_*.webp` | ambientCG Metal009, Metal010 | CC0 1.0 (`session/kvapky/textury/LICENCIA.txt`) |

@@ -39,102 +39,21 @@ part Rows {
         // what is written is not drawn past the frame, which is still narrow while it grows from the ear
         // (LensShore's panel goes on into its plate: so does what is drawn in it, with no round corner there)
         clip box { at: card.ax + card.sx * card.cw / 2, card.ay + card.sy * (card.ch - if(card_lens, 40, 0)) / 2; size: card.cw, card.ch + if(card_lens, 40, 0); corner: if(card_menu, 12, min(if(ear > 14, 26, 18) + (card.round - 18), min(card.cw, card.ch) / 2)) }
-        // Below a wave row the card is coffee to its very edge: a golden layer behind, the goo's own coffee in front,
-        // each lapping its own way. It is drawn here, over the whole card, because the rows have padding and cannot reach
-        // the edge; a hair is left at the edge for the card's rim. card_split (times card.z) is where the surface stands (lib/card.luau).
         // Below a wave row the card is coffee to its very edge (above it, when the card hangs from the top edge: LensShore
-        // up there): a golden layer behind, the goo's own coffee in front, each lapping its own way. card.sp is where the
-        // surface stands, from the card's top: card_split from the top (lib/card.luau), or card_tail from the bottom when
-        // what is above is not known (LensShore's answers). At LensShore's plate the coffee runs on into it, square and
-        // past the panel's foot, so the golden layer behind shows only at the surface, never as a line at the plate.
+        // up there): three velvet layers lit with gold (shaders/velvet.wgsl), each lapping its own way. It is drawn here,
+        // over the whole card, because the rows have padding and cannot reach the edge; a hair is left at the edge for
+        // the card's rim. card.sp is where the surface stands, from the card's top: card_split from the top
+        // (lib/card.luau), or card_tail from the bottom when what is above is not known (LensShore's answers). At
+        // LensShore's plate the coffee runs on into it, past the panel's foot.
+        // A card that opens swings its coffee once: two springs lag behind the opening as the coffee's modes do.
         let card.sp = if(card_tail > 0, if(card_lens and lens_edge == 2, card_tail * card.z, card.h - card_tail * card.z), card_split * card.z)
-        let card.cr = if(card_lens, 0, 24)
         let card.bi = if(card_lens, -3, 1.5)      // LensShore: the coffee runs on past the panel's foot into the plate
-        group {
-            show: (card_split > 0 or card_tail > 0) and not (card_lens and lens_edge == 2)
-          path {
-            at: card.x0, card.y0 + card.sp; color: #b8862e
-            move 1.5, 28
-            line 1.5 + (card.w - 3) * 0 / 12, 0 + 3 * sin(0 + 40 * time)
-            line 1.5 + (card.w - 3) * 1 / 12, 0 + 3 * sin(30 + 40 * time)
-            line 1.5 + (card.w - 3) * 2 / 12, 0 + 3 * sin(60 + 40 * time)
-            line 1.5 + (card.w - 3) * 3 / 12, 0 + 3 * sin(90 + 40 * time)
-            line 1.5 + (card.w - 3) * 4 / 12, 0 + 3 * sin(120 + 40 * time)
-            line 1.5 + (card.w - 3) * 5 / 12, 0 + 3 * sin(150 + 40 * time)
-            line 1.5 + (card.w - 3) * 6 / 12, 0 + 3 * sin(180 + 40 * time)
-            line 1.5 + (card.w - 3) * 7 / 12, 0 + 3 * sin(210 + 40 * time)
-            line 1.5 + (card.w - 3) * 8 / 12, 0 + 3 * sin(240 + 40 * time)
-            line 1.5 + (card.w - 3) * 9 / 12, 0 + 3 * sin(270 + 40 * time)
-            line 1.5 + (card.w - 3) * 10 / 12, 0 + 3 * sin(300 + 40 * time)
-            line 1.5 + (card.w - 3) * 11 / 12, 0 + 3 * sin(330 + 40 * time)
-            line 1.5 + (card.w - 3) * 12 / 12, 0 + 3 * sin(360 + 40 * time)
-            line card.w - 1.5, 28
-            close
-          }
-          path {
-            at: card.x0, card.y0 + card.sp; color: coffee
-            move 1.5, card.h - card.sp - card.bi - card.cr
-            line 1.5 + (card.w - 3) * 0 / 12, 9 + 2.4 * sin(90 + -55 * time)
-            line 1.5 + (card.w - 3) * 1 / 12, 9 + 2.4 * sin(150 + -55 * time)
-            line 1.5 + (card.w - 3) * 2 / 12, 9 + 2.4 * sin(210 + -55 * time)
-            line 1.5 + (card.w - 3) * 3 / 12, 9 + 2.4 * sin(270 + -55 * time)
-            line 1.5 + (card.w - 3) * 4 / 12, 9 + 2.4 * sin(330 + -55 * time)
-            line 1.5 + (card.w - 3) * 5 / 12, 9 + 2.4 * sin(390 + -55 * time)
-            line 1.5 + (card.w - 3) * 6 / 12, 9 + 2.4 * sin(450 + -55 * time)
-            line 1.5 + (card.w - 3) * 7 / 12, 9 + 2.4 * sin(510 + -55 * time)
-            line 1.5 + (card.w - 3) * 8 / 12, 9 + 2.4 * sin(570 + -55 * time)
-            line 1.5 + (card.w - 3) * 9 / 12, 9 + 2.4 * sin(630 + -55 * time)
-            line 1.5 + (card.w - 3) * 10 / 12, 9 + 2.4 * sin(690 + -55 * time)
-            line 1.5 + (card.w - 3) * 11 / 12, 9 + 2.4 * sin(750 + -55 * time)
-            line 1.5 + (card.w - 3) * 12 / 12, 9 + 2.4 * sin(810 + -55 * time)
-            line card.w - 1.5, card.h - card.sp - card.bi - card.cr
-            curve card.w - 1.5 - card.cr, card.h - card.sp - card.bi via card.w - 1.5, card.h - card.sp - card.bi
-            line 1.5 + card.cr, card.h - card.sp - card.bi
-            curve 1.5, card.h - card.sp - card.bi - card.cr via 1.5, card.h - card.sp - card.bi
-            close
-          }
-        }
-        group {
-            show: card_lens and lens_edge == 2 and card_tail > 0
-          path {
-            at: card.x0, card.y0; color: #b8862e
-            move 1.5, card.sp - 28
-            line 1.5 + (card.w - 3) * 0 / 12, card.sp - 0 - 3 * sin(0 + 40 * time)
-            line 1.5 + (card.w - 3) * 1 / 12, card.sp - 0 - 3 * sin(30 + 40 * time)
-            line 1.5 + (card.w - 3) * 2 / 12, card.sp - 0 - 3 * sin(60 + 40 * time)
-            line 1.5 + (card.w - 3) * 3 / 12, card.sp - 0 - 3 * sin(90 + 40 * time)
-            line 1.5 + (card.w - 3) * 4 / 12, card.sp - 0 - 3 * sin(120 + 40 * time)
-            line 1.5 + (card.w - 3) * 5 / 12, card.sp - 0 - 3 * sin(150 + 40 * time)
-            line 1.5 + (card.w - 3) * 6 / 12, card.sp - 0 - 3 * sin(180 + 40 * time)
-            line 1.5 + (card.w - 3) * 7 / 12, card.sp - 0 - 3 * sin(210 + 40 * time)
-            line 1.5 + (card.w - 3) * 8 / 12, card.sp - 0 - 3 * sin(240 + 40 * time)
-            line 1.5 + (card.w - 3) * 9 / 12, card.sp - 0 - 3 * sin(270 + 40 * time)
-            line 1.5 + (card.w - 3) * 10 / 12, card.sp - 0 - 3 * sin(300 + 40 * time)
-            line 1.5 + (card.w - 3) * 11 / 12, card.sp - 0 - 3 * sin(330 + 40 * time)
-            line 1.5 + (card.w - 3) * 12 / 12, card.sp - 0 - 3 * sin(360 + 40 * time)
-            line card.w - 1.5, card.sp - 28
-            close
-          }
-          path {
-            at: card.x0, card.y0; color: coffee
-            move 1.5, 1.5
-            line 1.5 + (card.w - 3) * 0 / 12, card.sp - 9 - 2.4 * sin(90 + -55 * time)
-            line 1.5 + (card.w - 3) * 1 / 12, card.sp - 9 - 2.4 * sin(150 + -55 * time)
-            line 1.5 + (card.w - 3) * 2 / 12, card.sp - 9 - 2.4 * sin(210 + -55 * time)
-            line 1.5 + (card.w - 3) * 3 / 12, card.sp - 9 - 2.4 * sin(270 + -55 * time)
-            line 1.5 + (card.w - 3) * 4 / 12, card.sp - 9 - 2.4 * sin(330 + -55 * time)
-            line 1.5 + (card.w - 3) * 5 / 12, card.sp - 9 - 2.4 * sin(390 + -55 * time)
-            line 1.5 + (card.w - 3) * 6 / 12, card.sp - 9 - 2.4 * sin(450 + -55 * time)
-            line 1.5 + (card.w - 3) * 7 / 12, card.sp - 9 - 2.4 * sin(510 + -55 * time)
-            line 1.5 + (card.w - 3) * 8 / 12, card.sp - 9 - 2.4 * sin(570 + -55 * time)
-            line 1.5 + (card.w - 3) * 9 / 12, card.sp - 9 - 2.4 * sin(630 + -55 * time)
-            line 1.5 + (card.w - 3) * 10 / 12, card.sp - 9 - 2.4 * sin(690 + -55 * time)
-            line 1.5 + (card.w - 3) * 11 / 12, card.sp - 9 - 2.4 * sin(750 + -55 * time)
-            line 1.5 + (card.w - 3) * 12 / 12, card.sp - 9 - 2.4 * sin(810 + -55 * time)
-            line card.w - 1.5, 1.5
-            close
-          }
-        }
+        let card.up = card_lens and lens_edge == 2
+        let card.swing = card.m1 - card.p
+        shader velvet { at: card.x0 + 1.5, card.y0 + if(card.up, 1.5, card.sp - 40); size: card.w - 3, if(card.up, card.sp + 41.5, card.h - card.bi - card.sp + 40)
+                        show: card_split > 0 or card_tail > 0
+                        values: card.swing * 10 * card.sx, card.swing * 4, (card.m3 - card.p) * 8, 1, 52, 0.68, if(card.up, 1, 0)
+                        colors: gold, coffee }
         // the card of ClockGoo is a scene of its own, drawn over the whole card (clock.plm)
         include "clock.plm"
         include "cam.plm"

@@ -2,8 +2,10 @@
 """latte-sky: where the sun and the moon are, and the weather, for the place in login.conf.
 
 Prints one JSON object:
-  sun, moon   {"alt": degrees above the horizon, "t": 0 at rise … 1 at set, -1 while it is down};
-              the moon also "lit" (0…1) and "waxing"
+  sun, moon   {"alt": degrees above the horizon, "t": 0 at rise … 1 at set, -1 while it is down, "west": past its
+              highest}; the moon also "lit" (0…1) and "waxing"
+  stars       [[x, alt, magnitude, r, g, b]] the stars up in the southern half of the sky that a town lets through
+              (fewer under a bright moon), brightest first: x 0 east … 1 west, as the login screen looks south
   rain        0 none, 1 in the next hours, 2 right now;  snow: whether that is snow
   wind        km/h
   now         {"temp", "code" (WMO), "kind" 1 clear … 7 storm, "icon"} or null without a forecast
@@ -17,6 +19,7 @@ Prints one JSON object:
 import datetime, json, math, os, re, sys, time, urllib.parse, urllib.request
 
 CONF = "/var/lib/latteos/login/login.conf"
+STARS = os.path.join(os.environ.get("LATTE_SHARE") or "/usr/share/latteos", "sky", "stars.tsv")
 CACHE = os.path.join(os.environ.get("XDG_CACHE_HOME") or os.path.expanduser("~/.cache"), "latteos", "weather.json")
 RAIN = set(range(51, 68)) | {80, 81, 82, 95, 96, 99}
 SNOW = {71, 73, 75, 77, 85, 86}
@@ -84,12 +87,46 @@ def sky(lat, lon, t=None):
         alt = math.degrees(math.asin(sin(phi) * sin(dec) + cos(phi) * cos(dec) * cos(h)))
         half_day = math.acos(max(-1.0, min(1.0, -math.tan(phi) * math.tan(dec))))
         up = half_day > 0.01 and abs(h) <= half_day
-        return {"alt": round(alt, 1), "t": round((h + half_day) / (2 * half_day), 4) if up else -1}
+        return {"alt": round(alt, 1), "t": round((h + half_day) / (2 * half_day), 4) if up else -1, "west": h > 0}
 
     apart = math.acos(max(-1.0, min(1.0, sin(dec_s) * sin(dec_m) + cos(dec_s) * cos(dec_m) * cos(ra_s - ra_m))))
     moon = where(ra_m, dec_m)
     moon.update(lit=round((1 - cos(apart)) / 2, 3), waxing=sin(moon_lon - sun_lon) > 0)
-    return {"sun": where(ra_s, dec_s), "moon": moon}
+    # a moon up washes the faint stars out: up to two magnitudes when it is full and high
+    limit = 4.5 - 2.0 * moon["lit"] * max(0.0, min(1.0, moon["alt"] / 20))
+    return {"sun": where(ra_s, dec_s), "moon": moon, "stars": stars(sidereal, phi, limit)}
+
+
+def tint(k):
+    """A star's colour from its temperature, softened: to the eye they are nearly white."""
+    warm, white, cool = (1.0, 0.78, 0.55), (1.0, 0.97, 0.92), (0.78, 0.86, 1.0)
+    a, b, f = (warm, white, (k - 3500) / 3000) if k < 6500 else (white, cool, (k - 6500) / 5000)
+    f = max(0.0, min(1.0, f))
+    return [round(x + (y - x) * f, 2) for x, y in zip(a, b)]
+
+
+def stars(sidereal, phi, limit, most=240):
+    """The stars up between east and west through south, as [x, alt, magnitude, r, g, b]."""
+    out = []
+    try:
+        lines = open(STARS, encoding="utf-8").read().splitlines()
+    except OSError:
+        return out
+    for line in lines:
+        if line.startswith("#") or not line.strip():
+            continue
+        ra, dec, mag, k = line.split("\t")
+        if float(mag) > limit:
+            break                                     # the table is brightest first
+        h, dec = sidereal - math.radians(float(ra)), math.radians(float(dec))
+        alt = math.asin(math.sin(phi) * math.sin(dec) + math.cos(phi) * math.cos(dec) * math.cos(h))
+        south = math.atan2(math.sin(h), math.cos(h) * math.sin(phi) - math.tan(dec) * math.cos(phi))   # 0 south, + west
+        if alt <= 0 or abs(south) > math.pi / 2:
+            continue
+        out.append([round(south / math.pi + 0.5, 4), round(math.degrees(alt), 2), float(mag)] + tint(int(k)))
+        if len(out) == most:
+            break
+    return out
 
 
 def forecast(lat, lon):

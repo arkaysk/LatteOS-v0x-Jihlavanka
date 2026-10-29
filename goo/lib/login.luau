@@ -39,6 +39,13 @@ return function(opts)
         else
             fact.sky_body = 0
         end
+        -- after sunset: how far it is down and on which side, for the afterglow and the stars
+        fact.sun_down, fact.sun_west = (tonumber(sun.t) or -1) < 0 and math.max(0, -(tonumber(sun.alt) or 0)) or 0, sun.west ~= false
+        local stars = {}
+        for _, st in ipairs(type(s.stars) == "table" and s.stars or {}) do
+            stars[#stars + 1] = { x = st[1], alt = st[2], mag = st[3], r = st[4], g = st[5], b = st[6] }
+        end
+        model.stars = stars
         fact.rain, fact.snow = tonumber(s.rain) or 0, s.snow == true
         fact.wind = tonumber(s.wind) or 0
         local now = type(s.now) == "table" and s.now or nil

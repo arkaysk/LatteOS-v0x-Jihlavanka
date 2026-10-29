@@ -2042,6 +2042,11 @@ Nautilu, Dolphinu, Thunaru a späť, aj na plochu a do iných aplikácií (prehl
 prvú položku hore „Otvoriť priečinok v novom okne“ — otvorí ho v druhej kópii DualBrew (`latte-app files PRIEČINOK`).
 Potrebuje 10A.61 (viac okien naraz).
 
+**10A.64** [ ] **Riadok príkazov na dno kávy** (používateľ 29. 10.): v režime Jeden panel spodný riadok príkazov (Alt+F1)
+prekrýva hladinu kávy v päte okna a počet priečinkov a súborov je napísaný dvakrát — v okne pod zoznamom aj na dne kávy.
+Riadok príkazov presunúť úplne dole, na dno kávovej hladiny k tlačidlám F3–F10, na miesto zdvojeného počtu (ten ostane
+iba v okne pod zoznamom); hladina (`Surface.qml`, sametové vrstvy) sa tak nezakrýva.
+
 ### 10B. [~] LensAI
 Zdroje: `bin/latte-ai`, `apps/aicenter.qml`, `system/ai/`, `system/agents/`, `inspo/ai-na-ploche.md`
 je centralne zastrešenie všetkych použitelnych AI. Je totalna kopia Omarchy Ai využitia, len s tým že sa použiva namiesto konzoloveho, graficke rozhranie. LensGoo ma jednu z položiek komunikačne okno s Ai. 

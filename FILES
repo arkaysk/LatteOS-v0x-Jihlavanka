@@ -12,6 +12,7 @@
 /usr/bin/latte-greeter                                  <- bin/latte-greeter
 /usr/bin/latte-login                                    <- bin/latte-login
 /usr/bin/latte-sky                                      <- bin/latte-sky
+/usr/share/latteos/sky/stars.tsv                        <- system/sky/stars.tsv
 /usr/bin/latte-say                                      <- bin/latte-say
 /usr/bin/latte-cal                                      <- bin/latte-cal
 /usr/bin/latte-ai                                       <- bin/latte-ai
@@ -51,6 +52,9 @@
 /usr/share/latteos/goo/login.plm                        <- goo/login.plm
 /usr/share/latteos/goo/lockscreen.plm                        <- goo/lockscreen.plm
 /usr/share/latteos/goo/lockscreen.luau                        <- goo/lockscreen.luau
+/usr/share/latteos/goo/shaders/crest.wgsl               <- goo/shaders/crest.wgsl
+/usr/share/latteos/goo/shaders/sea.wgsl                 <- goo/shaders/sea.wgsl
+/usr/share/latteos/goo/shaders/velvet.wgsl              <- goo/shaders/velvet.wgsl
 /usr/share/latteos/goo/shaders/water.wgsl               <- goo/shaders/water.wgsl
 /usr/share/latteos/goo/login.luau                       <- goo/login.luau
 /usr/share/latteos/goo/login-safe.plm                   <- goo/login-safe.plm
@@ -110,6 +114,7 @@
 /usr/share/latteos/apps/common/Menu.qml                 <- apps/common/Menu.qml
 /usr/share/latteos/apps/common/FileIcons.qml            <- apps/common/FileIcons.qml
 /usr/share/latteos/apps/common/shaders/reveal.frag.qsb  <- apps/common/shaders/reveal.frag.qsb
+/usr/share/latteos/apps/common/shaders/velvet.frag.qsb  <- apps/common/shaders/velvet.frag.qsb
 /usr/share/latteos/apps/common/window-place             <- apps/common/window-place
 /usr/share/applications/latteos-aicenter.desktop        <- system/applications/latteos-aicenter.desktop
 /usr/share/applications/latteos-guarddog.desktop        <- system/applications/latteos-guarddog.desktop

@@ -17,6 +17,8 @@ scene Lockscreen {
     }
 
     shader water = file "shaders/water.wgsl"
+    shader crest = file "shaders/crest.wgsl"
+    shader sea = file "shaders/sea.wgsl"
 
     surface lockview {
         kind: lock

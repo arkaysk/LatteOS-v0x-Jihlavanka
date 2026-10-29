@@ -1,5 +1,6 @@
-// The surface of the coffee at the foot of an app's window: two layers, a lighter one behind and the coffee in
-// front, each lapping at its own pace. The whole brown body is the coffee; the crema is only its line. It laps a little all the time, and when the window
+// The surface of the coffee at the foot of an app's window: three velvet layers lit with gold (shaders/velvet.frag),
+// a golden one behind, a caramel one, the coffee in front, each lapping at its own pace; without a graphics card two
+// flat ones. The whole brown body is the coffee. It laps a little all the time, and when the window
 // is carried about it swings as coffee in a carried cup does: it piles up against the side the window came
 // from, swings back, and settles. What moves it is how fast the window changes its speed (window-place says
 // where the window is). Put it at the bottom of a window, as wide as the window; what stands in the coffee goes
@@ -16,6 +17,8 @@ Item {
     property color coffee: "#3b1d10"
     property color crema: "#a8683c"            // the line of the surface
     property color back: "#b8862e"             // the layer behind: a yellower coffee, golden rather than faded
+    property color light: "#f7c873"            // the light on the layers
+    readonly property bool plain: GraphicsInfo.api === GraphicsInfo.Software
     property bool lively: (Quickshell.env("LATTE_TIER") || "") !== "software"
     height: depth + 40                         // room above the surface for it to swing into
     default property alias content: floor.data
@@ -94,8 +97,23 @@ Item {
         pts.push(Qt.point(width, height))
         return pts
     }
+    ShaderEffect {
+        anchors.fill: parent; visible: !sea.plain
+        property real time: sea.clock
+        property real tilt: sea.width / 2 * sea.tilt * (sea.width > 0 ? Math.min(1, 900 / sea.width) : 1)
+        property real bow: sea.bow
+        property real bob: sea.bob
+        property real rest: sea.height - sea.depth
+        property real light: 1
+        property real lightX: 0.68
+        property size size: Qt.size(width, height)
+        property color lightColor: sea.light
+        property color coffee: sea.coffee
+        property color back: sea.back
+        fragmentShader: Qt.resolvedUrl("shaders/velvet.frag.qsb")
+    }
     Shape {
-        anchors.fill: parent
+        anchors.fill: parent; visible: sea.plain
         preferredRendererType: Shape.CurveRenderer
         ShapePath {
             strokeColor: Qt.lighter(sea.back, 1.3); strokeWidth: 1.2

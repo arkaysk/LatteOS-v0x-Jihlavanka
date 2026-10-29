@@ -100,6 +100,10 @@ part Card {
 
     prop card.p = 0 ~land
     follow card.p = if(card_open, 1, 0)
+    prop card.m1 = 0 ~spring(62, 1.7)           // the coffee's first and third modes, lagging behind the opening (rows.plm)
+    prop card.m3 = 0 ~spring(190, 3.2)
+    follow card.m1 = card.p
+    follow card.m3 = card.p
     // The rows come in one after another when the content is new.
     prop reveal = 1 ~0ms
     on change card_gen { reveal: 0 ~0ms; reveal: 1 ~460ms after 16ms }

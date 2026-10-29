@@ -27,6 +27,7 @@ scene GooSide {
     include "parts/picks.plm"
     include "parts/body.plm"
     include "parts/bubble.plm"
+    shader velvet = file "shaders/velvet.wgsl"
     include "parts/card.plm"
     include "parts/faces.plm"
     include "parts/strip.plm"

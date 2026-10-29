@@ -79,7 +79,7 @@ for s in sorted(sources):
         bad.append("FILES: no such source " + s)
 tracked = subprocess.run(["git", "ls-files", "--cached", "--others", "--exclude-standard", "bin", "goo", "apps", "system", "assets"],
                          capture_output=True, text=True).stdout.split("\n")
-tools = {"system/plymouth/make-logo.py", "goo/gen.py", "apps/common/shaders/reveal.frag"}      # they make a file that is listed; they are not installed
+tools = {"system/plymouth/make-logo.py", "goo/gen.py", "apps/common/shaders/reveal.frag", "apps/common/shaders/velvet.frag"}      # they make a file that is listed; they are not installed
 for f in filter(None, tracked):
     if f not in sources and f not in tools:
         bad.append("FILES: %s is not listed" % f)
@@ -89,7 +89,7 @@ slovak = re.compile("[áäčďéíĺľňóôŕšťúýžÁÄČĎÉÍĹĽŇÓÔŔ
 code = subprocess.run(["git", "ls-files", "--cached", "--others", "--exclude-standard", "bin", "goo", "apps", "system", "crates", "plugins", "tests", "patches", "FILES", "Cargo.toml"],
                       capture_output=True, text=True).stdout.split("\n")
 for f in filter(None, code):
-    if f.startswith("goo/lang/") or f in ("tests/check.sh", "goo/lib/fold.luau") or f.endswith((".png", ".ttf", ".txt")):   # these two name the letters
+    if f.startswith("goo/lang/") or f in ("tests/check.sh", "goo/lib/fold.luau") or f.endswith((".png", ".ttf", ".txt", ".qsb")):   # these two name the letters; the rest are not text
         continue
     for n, line in enumerate(open(f, encoding="utf-8", errors="replace"), 1):
         if slovak.search(line) and not (f.endswith(".desktop") and re.match(r"\w+\[\w+\]=", line)):     # Name[sk]= is where a launcher's translation goes
