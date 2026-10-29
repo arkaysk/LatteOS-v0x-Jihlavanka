@@ -914,6 +914,20 @@ ShellRoot {
                 Repeater { model: ["\u{1F44B}", "\u{1F44B}\u{1F3FB}", "\u{1F44B}\u{1F3FC}", "\u{1F44B}\u{1F3FD}", "\u{1F44B}\u{1F3FE}", "\u{1F44B}\u{1F3FF}"]
                     Pill { required property string modelData; required property int index; text: modelData; strong: (goo.kept.lens_emoji_tone || 0) === index
                            onPressed: goo.set("lens_emoji_tone", index) } } }
+            Part { id: findPart; visible: shell.page === "lensshore"; width: view.room; title: I18n.tr("Search")
+                   note: I18n.tr("Aliases are given and apps hidden with the right button on them in LensShore; here they are taken back.")
+                   readonly property var aliases: goo.kept.lens_aliases || ({})
+                   readonly property var hidden: goo.kept.lens_hidden_apps || []
+                Label { text: I18n.tr("Aliases"); width: view.room; color: Theme.dim; font.pixelSize: 13 }
+                Label { visible: Object.keys(findPart.aliases).length === 0; text: I18n.tr("None yet"); width: view.room; font.pixelSize: 13 }
+                Repeater { model: Object.keys(findPart.aliases)
+                    Pill { required property string modelData; text: findPart.aliases[modelData] + "  →  " + modelData.replace(/\.desktop$/, ""); icon: "x"
+                           onPressed: { const a = Object.assign({}, findPart.aliases); delete a[modelData]; goo.set("lens_aliases", a) } } }
+                Label { text: I18n.tr("Hidden from the results"); width: view.room; color: Theme.dim; font.pixelSize: 13 }
+                Label { visible: findPart.hidden.length === 0; text: I18n.tr("None yet"); width: view.room; font.pixelSize: 13 }
+                Repeater { model: findPart.hidden
+                    Pill { required property string modelData; text: modelData.replace(/\.desktop$/, ""); icon: "eye"
+                           onPressed: goo.set("lens_hidden_apps", findPart.hidden.filter(x => x !== modelData)) } } }
             Part { id: clipPart; visible: shell.page === "lensshore"; width: view.room; title: I18n.tr("Clipboard")
                    note: I18n.tr("What was copied: Win+V shows it, Win+Shift+V pastes it in turn, the newest first. Passwords from password managers are never kept.")
                    readonly property var skip: goo.kept.lens_clip_skip || []

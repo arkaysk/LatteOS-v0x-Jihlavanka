@@ -917,9 +917,18 @@ Kontrola 29. 10. (Raycast manual, Tinycast `docs/features/`):
   [ ] „Vložiť ako…“ iné formáty (cliphist drží jeden formát položky), [ ] „presunúť použitú navrch“ ako voľba (vždy
   áno: vloženie ju znova uloží), [ ] Vložiť postupne neoverené naživo (Win+Shift+V).
 - **Hľadanie** (Raycast root search + Tinycast launcher). Má: aplikácie, súbory, nastavenia, web, kalkulačka,
-  „Opýtať sa AI“ prvé, lišta akcií. Chýba: [ ] poradie podľa zhody a naučené poradie (frecency), [ ] aliasy,
-  [ ] záložné riadky „Použiť … s“, kontextové riadky (adresa → otvoriť), [ ] návrhy na prázdnom poli podľa Tinycastu,
-  [ ] príkazy (systémové, okná, rozšírenia) priamo v Hľadaní, [ ] obľúbené s Ctrl+1–9 (6B.29).
+  „Opýtať sa AI“ prvé, lišta akcií. [x] 29. 10. doplnené (`goo/lib/find.luau`): poradie podľa zhody znak po znaku ako
+  Tinycast (začiatok mena 4, začiatok slova 3 — aj OrbStack, 1Password —, inde 2, medzera −1), presná zhoda a alias
+  prvé, **naučené poradie** (polčas 10 dní, +100 za otvorenie, posledné tri hľadané výrazy 17 dní), kľúčové slová
+  z `.desktop` (6B.16: „prehliadač“ → Firefox), preklep o jedno písmeno; **aliasy** (pravý klik › Priradiť alias…,
+  ukázané pri riadku) a **Skryť z výsledkov**, oboje vrátiteľné v Nastaveniach › LensShore › Hľadanie; **príkazy**
+  v Hľadaní (módy pásky, zamknúť, uspať, reštartovať, vypnúť, odhlásiť, vysypať kôš — ničiace na druhé stlačenie —,
+  okno vpredu: polovice, štvrtiny, tretiny, celá obrazovka, maximalizovať, minimalizovať); **kontextový riadok**
+  (adresa → Otvoriť v prehliadači); **záložné riadky** „Použiť „…“ s…“ (web, spustiť v termináli). Enter v Hľadaní
+  ide vždy do AI (opravené: bral riadok kontextu). Overené bez obrazovky („okno“, „github.com“) a na skúške poradia.
+  Chýba: [ ] návrhy na prázdnom poli podľa Tinycastu (nové aplikácie < 5 min; Domov 6B.27 ostáva), [ ] obľúbené
+  s Ctrl+1–9 (číslica v klávese), [ ] záložné „Definovať slovo“ a rýchle odkazy (po 6B.29), [ ] klávesové skratky
+  pre príkazy a aplikácie, [ ] príkazy rozšírení (6B.30).
 - **Agenti**. Bez priamej predlohy v Raycaste (Raycast Agents sú jeho vlastné); doplniť podľa 10B.36 (Kaviareň).
 - **AI rozhovor** (Raycast Quick AI). Má: otázka, prúdová odpoveď, kontext ako čipy, akcie. Chýba: [ ] výber modelu
   pri otázke, [ ] pokračovať v rozhovore viac kolami priamo v LensShore (dnes krátke), [ ] Tab na doplňujúcu otázku.

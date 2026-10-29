@@ -103,6 +103,8 @@ local function then_do(f) card.close() after(LET_GO, f) end
 local function launch(a)
     then_do(function() open.app(a) end)
     if not a.id then return end
+    kept.visits = kept.visits or {}
+    find.visit(kept.visits, a.id, typed)
     local recent = { a.id }
     for _, id in ipairs(kept.recent) do if id ~= a.id and #recent < 18 then recent[#recent + 1] = id end end
     kept.recent = recent
@@ -124,6 +126,17 @@ local function confirmed(cmd)
     return false
 end
 local function search_web(e, text) then_do(function() open.url(string.format(e.url, urlencode(text))) end) end
+-- what the ranking knows (lib/find.luau): the openings, the user's aliases and the apps hidden from the results (these
+-- two are Goo's settings, so the Settings can show them)
+local function aliases() local a = drops.settings().lens_aliases return type(a) == "table" and a or {} end
+local function hidden_apps() local h = drops.settings().lens_hidden_apps return type(h) == "table" and h or {} end
+local function ranked(q, most)
+    local shown_apps, hide = {}, {}
+    for _, id in ipairs(hidden_apps()) do hide[id] = true end
+    for _, a in ipairs(apps) do if not hide[a.id or ""] then shown_apps[#shown_apps + 1] = a end end
+    return find(shown_apps, q, most, { visits = kept.visits or {}, aliases = aliases() })
+end
+local alias_edit                             -- the app whose alias is being typed into LensShore's line
 -- the right button on an app: it can be pinned to the desktop as a drop of its own
 local function app_menu(a)
     local pinned = own.pinned(a)
@@ -141,6 +154,18 @@ local function app_menu(a)
         { label = pinned and tr("Unpin the drop") or tr("Pin as a drop"), glyph = "pin",
           run = function() if pinned then own.remove(a.id) else own.pin(a) end end },
         { label = tr("Add an icon to the desktop"), glyph = "device-desktop", run = function() run("latte-desktop", { "add", a.id or "" }, nil) end },
+        { label = tr(N("Give it an alias…")), glyph = "cursor-text", line = true, run = function()
+              if not fact.lens_shore then return end
+              alias_edit = a
+              text.lens_q, fact.lens_typed = aliases()[a.id or ""] or "", (aliases()[a.id or ""] or "") ~= ""
+              render(true) focus("lens_q")
+          end },
+        { label = tr(N("Hide from the results")), glyph = "eye-off", run = function()
+              local h = table.clone(hidden_apps())
+              if a.id and not table.find(h, a.id) then h[#h + 1] = a.id end
+              drops.set("lens_hidden_apps", h)
+              render(true)
+          end },
         { label = tr("Uninstall…"), glyph = "trash", line = true,
           run = function() then_do(function() run("latte-app", { "appmanager", "app", ((a.id or ""):gsub("%.desktop$", "")) }, nil) end) end },
     }, { width = 280 })
@@ -252,8 +277,8 @@ local function rows_apps()
         local shown = worked
         rows[#rows + 1] = { label = shown, glyph = "calculator", copy = shown, run = function() pcall(sys.call, "clipboard.set", shown) end }
     end
-    for _, a in ipairs(find(apps, typed, 7)) do
-        rows[#rows + 1] = { label = a.local_name or a.name or a.id, icon = a.icon or "", glyph = "apps", hint = tr("App"), run = function() launch(a) end, right = function() app_menu(a) end }
+    for _, a in ipairs(ranked(typed, 7)) do
+        rows[#rows + 1] = { label = a.local_name or a.name or a.id, icon = a.icon or "", glyph = "apps", hint = aliases()[a.id or ""] or tr("App"), run = function() launch(a) end, right = function() app_menu(a) end }
     end
     -- under a line: what the Settings have about it
     for i, p in ipairs(pages_for == typed and pages or {}) do
@@ -1352,6 +1377,59 @@ end
 -- GIFs (lib/gif.luau): the source and its key are the user's (Settings › Drops › LensShore); without a key nothing goes out
 gif_sections = function(q) return gif.sections(q, emoji_env()) end
 
+-- LatteOS's own commands in Search (Raycast's and Tinycast's root search has its commands too): the modes of the tape,
+-- the computer, the window in front. Ranked as the apps are; what does not undo asks for a second press.
+local WINDOW_ZONES = {
+    { "left", N("Left half") }, { "right", N("Right half") }, { "top", N("Top half") }, { "bottom", N("Bottom half") },
+    { "tl", N("Top left quarter") }, { "tr", N("Top right quarter") }, { "bl", N("Bottom left quarter") }, { "br", N("Bottom right quarter") },
+    { "third1", N("First third") }, { "third2", N("Center third") }, { "third3", N("Last third") }, { "two1", N("First two thirds") },
+    { "two2", N("Last two thirds") }, { "reasonable", N("Reasonable size") }, { "tall", N("Maximize height") }, { "wide", N("Maximize width") },
+}
+local function shore_commands(q)
+    local list = {
+        { id = "mode:clips", name = tr(N("Clipboard history")), keywords = { "clipboard", "win v" }, glyph = "clipboard", run = function() go_mode("clips") end, keep = true },
+        { id = "mode:emoji", name = tr(N("Emoji and symbols")), keywords = { "emoji", "symbols", "kaomoji", "gif" }, glyph = "mood-smile", run = function() go_mode("emoji") end, keep = true },
+        { id = "mode:windows", name = tr(N("Switch windows")), keywords = { "windows", "alt tab" }, glyph = "app-window", run = function() go_mode("windows") end, keep = true },
+        { id = "mode:agents", name = tr(N("Agents at work")), keywords = { "agents", "claude", "codex" }, glyph = "robot", run = function() go_mode("agents") end, keep = true },
+        { id = "sys:lock", name = tr(N("Lock the screen")), keywords = { "lock" }, glyph = "lock", run = function() then_do(function() run("latte-lock", {}, nil) end) end },
+        { id = "sys:sleep", name = tr("Sleep"), keywords = { "suspend", "sleep" }, glyph = "moon", run = function() then_do(function() wm.machine("suspend") end) end },
+        { id = "sys:reboot", name = tr("Restart"), keywords = { "reboot", "restart" }, glyph = "refresh", danger = true, run = function() then_do(function() wm.machine("reboot") end) end },
+        { id = "sys:poweroff", name = tr(N("Shut down")), keywords = { "power off", "shut down" }, glyph = "power", danger = true, run = function() then_do(function() wm.machine("poweroff") end) end },
+        { id = "sys:logout", name = tr(N("Sign out")), keywords = { "log out", "sign out" }, glyph = "logout", danger = true, run = function() then_do(wm.logout) end },
+        { id = "sys:trash", name = tr(N("Empty the Trash")), keywords = { "trash", "bin" }, glyph = "trash", danger = true, run = function() run("sh", { "-c", "gio trash --empty" }, nil, { output = false }) end },
+        { id = "sys:settings", name = tr(N("LensShore's settings")), keywords = { "settings", "preferences" }, glyph = "settings", run = function() then_do(function() open.settings("lensshore") end) end },
+    }
+    local front
+    for _, w in ipairs(shore.wins or {}) do if w.front then front = w end end
+    if front then
+        for _, z in ipairs(WINDOW_ZONES) do
+            list[#list + 1] = { id = "win:" .. z[1], name = tr(N("Window")) .. ": " .. tr(z[2]), keywords = { "window" }, glyph = "layout-columns",
+                                run = function() then_do(function() wm.win("snap", front.address, z[1]) end) end }
+        end
+        list[#list + 1] = { id = "win:full", name = tr(N("Window")) .. ": " .. tr(N("Full screen")), keywords = { "window" }, glyph = "arrows-maximize",
+                            run = function() then_do(function() wm.win("fullscreen", front.address) end) end }
+        list[#list + 1] = { id = "win:max", name = tr(N("Window")) .. ": " .. tr("Maximize"), keywords = { "window" }, glyph = "arrows-maximize",
+                            run = function() then_do(function() wm.win("maximize", front.address) end) end }
+        list[#list + 1] = { id = "win:min", name = tr(N("Window")) .. ": " .. tr("Minimize"), keywords = { "window" }, glyph = "minus",
+                            run = function() then_do(function() wm.win("minimize", front.address) end) end }
+    end
+    local rows = {}
+    for i, c in ipairs(find(list, q, 4, { visits = kept.visits or {}, aliases = aliases(), key = function(c) return c.id end })) do
+        local sure = shore.sure[c.id]
+        rows[#rows + 1] = { label = c.danger and sure and (c.name .. " — " .. tr(N("press again"))) or c.name, glyph = c.glyph, danger = c.danger and sure,
+                            hint = aliases()[c.id] or tr(N("Command")), keep = c.keep or (c.danger and not sure),
+                            run = function()
+                                if c.danger and not shore.sure[c.id] then shore.sure[c.id] = true return render(true) end
+                                shore.sure[c.id] = nil
+                                kept.visits = kept.visits or {}
+                                find.visit(kept.visits, c.id, typed)
+                                save()
+                                c.run()
+                            end }
+    end
+    return rows
+end
+
 -- the rows, nearest the line first: at the top edge read downwards, at the bottom upwards (`first = "last"`)
 local function shore_rows()
     local sections = {}
@@ -1397,6 +1475,9 @@ local function shore_rows()
             { label = tr("Conversations"), glyph = "history", keep = true, run = function() M.shore_chats() end },
             { label = tr("Open in LensAI"), glyph = "external-link", off = shore.chat == "new", run = function() then_do(function() run("latte-app", { "aicenter", shore.chat }, function() end) end) end },
         }, per = 3 } })
+    elseif alias_edit then
+        section({ { label = (tr("An alias for {app}: type it and press Enter"):gsub("{app}", function() return alias_edit.local_name or alias_edit.name or "" end)),
+                    icon = alias_edit.icon or "", glyph = "cursor-text", quiet = true } })
     elseif shore.view == "windows" then
         local rows, pager = window_rows(typed)
         if pager then section({ pager }) end
@@ -1428,21 +1509,30 @@ local function shore_rows()
         -- first, chosen: the AI (Enter); with it off, the best of what was found is first instead
         if MODES[4] then
             local p = provider()
-            local first = { { label = tr("Ask the AI") .. ": " .. q, glyph = "sparkles", hint = p and p.name or "", run = function() ask(q) text.lens_q, fact.lens_typed, typed = "", false, "" end } }
+            local first = { { label = tr("Ask the AI") .. ": " .. q, glyph = "sparkles", hint = p and p.name or "", first = true, run = function() ask(q) text.lens_q, fact.lens_typed, typed = "", false, "" end } }
             local c = context_row()
             if c then first[#first + 1] = c end
             section(first)
+        end
+        -- what was typed is itself something: an address opens in the browser (Tinycast's contextual row)
+        local host = q:match("^https?://%S+$") or q:match("^www%.%S+%.%a%a+%S*$") or q:match("^[%w%-]+%.[%a][%a]+[/%S]*$")
+        if host and not q:find("%s") and not tonumber(q) then
+            local url = q:match("^https?://") and q or ("https://" .. q)
+            section({ { label = tr(N("Open in the browser")) .. ": " .. q, glyph = "world", hint = tr("Web"), run = function() then_do(function() open.url(url) end) end } })
         end
         section(quick_rows(q))
         local result = calc(q)
         local shown_amount = result and number(result) or (worked and worked_for == q and worked)
         if shown_amount then section({ { label = shown_amount, glyph = "calculator", hint = tr("Calculator"), copy = shown_amount, run = function() pcall(sys.call, "clipboard.set", shown_amount) end } }) end
-        local hits, rows = find(apps, q, 5), {}
+        local hits, rows = ranked(q, 5), {}
         for i, a in ipairs(hits) do
             if i > 4 then break end
-            rows[#rows + 1] = { label = a.local_name or a.name or a.id, icon = a.icon or "", glyph = "apps", hint = tr("App"), run = function() launch(a) end, right = function() app_menu(a) end }
+            rows[#rows + 1] = { label = a.local_name or a.name or a.id, icon = a.icon or "", glyph = "apps", hint = aliases()[a.id or ""] or tr("App"), run = function() launch(a) end, right = function() app_menu(a) end }
         end
         if #rows > 0 then table.insert(rows, 1, { head = true, label = tr(N("APPLICATIONS")) }) section(rows) end
+        -- LatteOS's own commands, ranked the same way: the modes of the tape, the computer, the window in front
+        local cmds = shore_commands(q)
+        if #cmds > 0 then table.insert(cmds, 1, { head = true, label = tr(N("COMMANDS")) }) section(cmds) end
         rows = { { head = true, label = tr(N("FILES AND FOLDERS")) } }
         local want = q:lower()
         local files, later = {}, {}
@@ -1466,7 +1556,9 @@ local function shore_rows()
             for i, pg in ipairs(pages) do if i <= 3 then rows[#rows + 1] = { label = pg.name, glyph = pg.icon, hint = pg.area_name, run = function() then_do(function() open.settings(pg.page) end) end } end end
             section(rows)
         end
-        section({ { head = true, label = tr(N("WEB")) }, { label = (tr("Search for “{what}” on {engine}"):gsub("{what}", function() return q end):gsub("{engine}", function() return engine().name end)), glyph = "world", hint = tr("Web"), run = function() search_web(engine(), q) end } })
+        section({ { head = true, label = (tr("USE “{what}” WITH…"):gsub("{what}", function() return q end)) },
+                  { label = (tr("Search for “{what}” on {engine}"):gsub("{what}", function() return q end):gsub("{engine}", function() return engine().name end)), glyph = "world", hint = tr("Web"), run = function() search_web(engine(), q) end },
+                  { label = tr(N("Run it in a terminal")), line2 = q, glyph = "terminal-2", hint = tr(N("Command")), run = function() run_command(q) end } })
     end
     -- at the bottom edge the list reads upwards: nearest the line what comes first; room under it for the line itself
     local out = {}
@@ -1528,6 +1620,7 @@ function M.shore_open()
         local function again() if card.id() == "lens" and typed == "" and shore.view == "find" then render(true) end end
         skills.refresh(again)
         if MODES[4] then read_chats(again) end
+        wm.windows(function(l) shore.wins = l or {} end)
         fact.lens_fresh = false
         shore_render(false)
     end
@@ -1611,6 +1704,15 @@ local function shore_start()
     -- Enter in the AI's mode asks it; elsewhere it does the chosen row
     on("lens_enter", function()
         if card.id() ~= "lens" then return end
+        if alias_edit then
+            local a, t = alias_edit, (text.lens_q or ""):gsub("^%s+", ""):gsub("%s+$", "")
+            alias_edit = nil
+            local all = table.clone(aliases())
+            all[a.id or ""] = t ~= "" and t or nil
+            drops.set("lens_aliases", all)
+            text.lens_q, fact.lens_typed, typed = "", false, ""
+            return render(true)
+        end
         if shore.view == "emoji" and emoji.editing() then emoji.save_words(text.lens_q or "", emoji_env()) return render(true) end
         if shore.view == "clips" and clipboard.editing() then clipboard.finish_edit(text.lens_q or "", emoji_env()) return render(true) end
         if mode_of(shore.view) == "ai" and typed ~= "" and MODES[4] then
@@ -1700,6 +1802,11 @@ function M.start(d)
         if type(saved.layout) == "table" then for k in pairs(kept.layout) do if saved.layout[k] ~= nil then kept.layout[k] = saved.layout[k] == true end end end
         kept.filter = type(saved.filter) == "string" and saved.filter or "all"
         kept.emoji = type(saved.emoji) == "table" and saved.emoji or {}
+        -- the openings that still count (lib/find.luau): one whose weight has worn down to nothing is forgotten
+        kept.visits = {}
+        for id, v in pairs(type(saved.visits) == "table" and saved.visits or {}) do
+            if type(v) == "table" and find.frecency(v, os.time()) > 1 then kept.visits[id] = v end
+        end
         kept.emoji_pins = type(saved.emoji_pins) == "table" and saved.emoji_pins or {}
         kept.emoji_words = type(saved.emoji_words) == "table" and saved.emoji_words or {}
         if type(saved.ai) == "table" then kept.ai = saved.ai end
