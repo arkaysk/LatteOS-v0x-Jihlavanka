@@ -2182,6 +2182,29 @@ miesto, kde sa **zadávajú projekty Kaviarni**: hlavná poznámka projektu (cie
 výsledky (scény, prompty, obrázky) farma zapíše späť ako poznámky. Návrh: Kaviareň vidí iba projekty označené pre ňu
 (priečinok alebo značka v poznámke), súkromné nie. Funguje nad samotným priečinkom → aj s Logseqom či obyčajnými súbormi.
 
+**10B.38** [ ] **Jedálny lístok — obchod so skillmi a konektormi + skilly v základe** (používateľ 29. 10.) — v Kaviarni
+(10B.36). Zdroje (preskúmané 29. 10.): formát skillov je otvorený štandard **Agent Skills** (agentskills.io — iba
+špecifikácia, nie katalóg); katalógy skillov **skills.sh** (Vercel, >1 mil.), SkillsMP, Skills Directory (jediný
+s automatickou bezpečnostnou kontrolou), AgenticSkills (ručne vyberané skilly aj MCP); konektory z oficiálneho
+**MCP Registry** (registry.modelcontextprotocol.io, otvorené API, zatiaľ preview — dá sa z neho stavať vlastný katalóg).
+Pravidlá: skill = pokyny, ktoré agent vykoná → riziko ako cudzí kód; popularita nie je kontrola. Pri položke ukázať zdroj,
+licenciu, oprávnenia a výsledok kontroly; pred inštaláciou zobraziť SKILL.md; po inštalácii je skill v Kaviarni aj v CLI
+(cesty ako 10B.14 bod 4). Prijímať aj skilly stiahnuté odinakiaľ (priečinok).
+- **Do základu** (overiť licenciu každého pred zaradením, autora do `TRETIE-STRANY.md`):
+  1. [ ] **Comfy MCP** (oficiálny od ComfyUI; lokálny režim na vlastnej GPU, aj cloud) — základ obrázkových a video skillov.
+  2. [ ] Z **anthropics/skills**: algorithmic-art, canvas-design, theme-factory, skill-creator, frontend-design.
+     Skilly na dokumenty (docx, xlsx, pptx, pdf) majú obmedzujúcu licenciu → nebaliť, vlastné/otvorené náhrady.
+- **Kreatívne skilly na dorobenie** (popri 10B.36):
+  1. [ ] **Biblia sveta** — postavy, miesta, frakcie, časová os v Obsidiane; kontrola, či nový text neodporuje svetu.
+  2. [ ] **DnD sedenie** — príprava NPC a stretnutí, prompty na mapy a ilustrácie, handouty, zápis zo sedenia.
+  3. [ ] **Hudobné vydanie** — text, prompty pre Suno, obal, popis a kapitoly na YouTube.
+  4. [ ] **Výstava / séria obrazov** — názvy diel, popisy pre galériu, katalóg, webová galéria z fotiek obrazov.
+  5. [ ] **Storyboard → animatik** — z komiksu alebo scenára pohyblivý náhľad so zvukom.
+  6. [ ] **Kniha → audiokniha** — lokálny hlas (Piper, aj slovenčina), obal.
+  7. [ ] **Prekladateľ s glosárom** — jednotné výrazy naprieč knihou alebo svetom.
+  8. [ ] **Video a podcast** — prepis (whisper), vystrihnutie vatových slov, kapitoly, náhľadový obrázok.
+  9. [ ] **Herný dizajn** — dokument hry (GDD), lore, tabuľky vyváženia predmetov.
+
 ### 10C. [ ] Heidelberg
 je zakladny textovy editor, s neobvyklo širokou ponukou formatou ktore prečíta a upraví
 
