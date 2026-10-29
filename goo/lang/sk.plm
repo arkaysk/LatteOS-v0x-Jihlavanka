@@ -777,6 +777,7 @@ library Slovak {
         "NOW PLAYING" = "PRÁVE HRÁ"
         "Nothing was copied yet" = "Zatiaľ nebolo nič skopírované"
         "AI chat" = "AI rozhovor"
+        "Add an icon to the desktop" = "Pridať ikonu na plochu"
         "At the top of the screen" = "Hore na obrazovke"
         "As a dock at the top: the panel opens downwards." = "Ako dok hore: panel sa otvára smerom dole."
         "OPEN WINDOWS" = "OTVORENÉ OKNÁ"

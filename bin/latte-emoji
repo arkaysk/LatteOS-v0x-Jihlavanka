@@ -1,0 +1,93 @@
+#!/usr/bin/env python3
+"""latte-emoji: every emoji, with its name and words in the user's language and a picture of it, for LensShore.
+
+  latte-emoji     [{"c": "😀", "name": "grinning face", "words": "face | grin", "group": "Smileys & Emotion", "png": "/…/1f600.png"}, …]
+
+The list and its order are Unicode's (emoji-test.txt, package unicode-emoji), the names CLDR's (package
+cldr-emoji-annotation; English from the list where the language has none). Skin tones are left out: the default is
+shown. The pictures are drawn once from the system's colour emoji font through Pango and Cairo, which can draw its
+COLRv1 glyphs (pleamar cannot), and kept in ~/.cache/latteos/emoji/; without them "png" is empty.
+"""
+import json, os, re, sys
+import xml.etree.ElementTree as ET
+
+TEST = "/usr/share/unicode/emoji/emoji-test.txt"
+CLDR = "/usr/share/unicode/cldr/common"
+CACHE = os.path.join(os.environ.get("XDG_CACHE_HOME") or os.path.expanduser("~/.cache"), "latteos", "emoji")
+PX = 64
+TONES = re.compile("[\U0001F3FB-\U0001F3FF]")
+
+
+def emoji():
+    group, out = "", []
+    with open(TEST, encoding="utf-8") as f:
+        for line in f:
+            if line.startswith("# group:"):
+                group = line.split(":", 1)[1].strip()
+            m = re.match(r"^[0-9A-F ]+;\s*fully-qualified\s*#\s*(\S+)\s+E[\d.]+\s+(.*)$", line)
+            if m and group != "Component" and not TONES.search(m.group(1)):
+                out.append({"c": m.group(1), "name": m.group(2), "words": "", "group": group})
+    return out
+
+
+def names(lang):
+    """CLDR's names (tts) and words for a language, the derived file (flags, sequences) included."""
+    found = {}
+    for part in ("annotations", "annotationsDerived"):
+        try:
+            root = ET.parse(os.path.join(CLDR, part, lang + ".xml")).getroot()
+        except (OSError, ET.ParseError):
+            continue
+        for a in root.iter("annotation"):
+            c, text = a.get("cp"), (a.text or "").strip()
+            entry = found.setdefault(c, {})
+            entry["name" if a.get("type") == "tts" else "words"] = text
+    return found
+
+
+def picture(c):
+    """The emoji drawn into a PNG once; its path, or "" where it cannot be drawn."""
+    path = os.path.join(CACHE, "-".join("%x" % ord(ch) for ch in c if ord(ch) != 0xFE0F) + ".png")
+    if os.path.exists(path):
+        return path
+    try:
+        import cairo, gi
+        gi.require_version("Pango", "1.0")
+        gi.require_version("PangoCairo", "1.0")
+        from gi.repository import Pango, PangoCairo
+    except (ImportError, ValueError):
+        return ""
+    s = cairo.ImageSurface(cairo.FORMAT_ARGB32, PX, PX)
+    ctx = cairo.Context(s)
+    layout = PangoCairo.create_layout(ctx)
+    layout.set_font_description(Pango.FontDescription("Noto Color Emoji %dpx" % int(PX * 0.72)))
+    layout.set_text(c, -1)
+    _, ext = layout.get_pixel_extents()
+    ctx.move_to((PX - ext.width) / 2 - ext.x, (PX - ext.height) / 2 - ext.y)
+    PangoCairo.show_layout(ctx, layout)
+    os.makedirs(CACHE, exist_ok=True)
+    s.write_to_png(path + ".part")
+    os.replace(path + ".part", path)
+    return path
+
+
+def main():
+    try:
+        out = emoji()
+    except OSError:
+        print("[]")
+        return
+    lang = (os.environ.get("LC_ALL") or os.environ.get("LC_MESSAGES") or os.environ.get("LANG") or "en").split(".")[0].split("_")[0]
+    told = names(lang) if lang != "en" else {}
+    english = names("en")
+    for e in out:
+        key = e["c"] if e["c"] in told or e["c"] in english else e["c"].replace("️", "")
+        t, en = told.get(key, {}), english.get(key, {})
+        e["name"] = t.get("name") or e["name"]
+        e["words"] = " | ".join(w for w in (t.get("words"), en.get("words") if t else None) if w) or en.get("words", "")
+        e["png"] = picture(e["c"])
+    json.dump(out, sys.stdout, ensure_ascii=False)
+
+
+if __name__ == "__main__":
+    main()

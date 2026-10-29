@@ -1,8 +1,10 @@
 -- QuickGoo: the apps kept at hand. A press stretches it along its edge into a strip of their icons
 -- (parts/launch.plm); a press on one starts it and the strip draws back in, a second press on the drop does
 -- too. Which apps: LensGoo's right button on an app puts it on the strip or takes it off, and so does the right
--- button on an icon here. Until the user has chosen any, the apps started most lately stand in.
+-- button on an icon here. Until the user has chosen any, the apps started most lately stand in. A file or a folder
+-- can be kept here too (LensShore's right button): its id is "file:" or "dir:" and its path.
 local open = require("lib/open")
+local icons = require("lib/icons")
 local M = {}
 
 local FILE = "quick.json"
@@ -17,14 +19,18 @@ local drop, lately
 local function save() pcall(sys.call, "files.write", FILE, kept) end
 local function fill()
     shown = {}
-    for _, id in ipairs(kept) do if by_id[id] and #shown < MOST then shown[#shown + 1] = by_id[id] end end
+    for _, id in ipairs(kept) do
+        local kind, path = id:match("^(%a+):(/.*)$")
+        local item = by_id[id] or (path and { id = id, path = path, local_name = path:match("([^/]+)$") or path, glyph = kind == "dir" and "folder" or "file" })
+        if item and #shown < MOST then shown[#shown + 1] = item end
+    end
     if #kept == 0 then
         for _, id in ipairs(lately and lately() or {}) do if by_id[id] and #shown < 5 then shown[#shown + 1] = by_id[id] end end
         for _, a in ipairs(apps) do if #shown < 5 and not table.find(shown, a) then shown[#shown + 1] = a end end
     end
     local pins = {}
     for i, a in ipairs(shown) do
-        pins[i] = { icon = a.icon or "", has_icon = (a.icon or "") ~= "", glyph = "", name = a.local_name or a.name or a.id or "" }
+        pins[i] = { icon = a.icon or "", has_icon = (a.icon or "") ~= "", glyph = a.glyph and icons[a.glyph] or "", name = a.local_name or a.name or a.id or "" }
     end
     model.pin = pins
 end
@@ -84,7 +90,7 @@ for key, value in pairs({
         on("launch_pick", function(u)
             local a = shown[(u or 0) + 1]
             draw_in()
-            if a then after(80, function() open.app(a) end) end
+            if a then after(80, function() if a.path then open.path(a.path) else open.app(a) end end) end
         end)
         on("launch_right", function(u)
             local a = shown[(u or 0) + 1]

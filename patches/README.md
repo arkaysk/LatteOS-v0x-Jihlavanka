@@ -10,6 +10,7 @@ none is specific to LatteOS. The scenes work without them, only slower or less s
 | `pleamar-sharp-edges.patch` | The edge of a body follows how much the distance really changes per pixel. | Where shapes melt into each other the distance is squeezed, and an edge of fixed width smeared over several pixels: the holes left between melted drops had blurred rims. |
 | `pleamar-steady-glass.patch` | The glass keeps the last three frames it showed and works out the background only where all three agree; under a dense tint it is not worked out at all. | The capture the compositor hands over may be of an older frame. Unmixing it against the newest one left ghosts of text that had gone, and grain along moving edges. |
 | `pleamar-windows-and-icons.patch` | `PLEAMAR_GENERIC=window` takes only the window list from the generic protocols and leaves the rest to Hyprland; the list has any number of listeners. (The icons part went: since 0.4.22 pleamar finds icons the freedesktop way itself.) | On Hyprland the `window` service reports only the window in front. One listener pushed the other out, so drops stayed for windows that were gone. |
+| `pleamar-wheel-x.patch` | `wheel.x`: only the sideways turn of the wheel (a tilted wheel, two fingers to the side), right positive; `wheel` keeps counting it too, as before. The agent's `wheel NAME n x` turns it sideways. | A scene could not tell a sideways swipe from a turn up or down: LensShore's modes turn as a tape with two fingers to the side (ROADMAP 6B.28). |
 | `pleamar-apps-reload.patch` | Watching `apps` again reads the list again, for every listener. | The list was read once: an app installed while the desktop ran did not show up until the next login. |
 
 To build:
@@ -21,7 +22,7 @@ cargo build --release          # target/release/pleamar goes to /usr/bin/pleamar
 ```
 
 When pleamar moves on: apply each patch to the new tag; one that no longer applies was either taken upstream
-(drop it) or needs its context moved (the change itself is small in all five).
+(drop it) or needs its context moved (the change itself is small in all six).
 
 ## The title bars' plugin
 

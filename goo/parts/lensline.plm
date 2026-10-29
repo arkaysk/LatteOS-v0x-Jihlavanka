@@ -22,6 +22,10 @@ part LensLine {
     event lens_talk ->                         // the conversations
     event lens_who ->                          // who answers
     event lens_mic ->                          // the microphone, on or off
+    text lens_prev = ""                        // the modes beside the one shown (6B.28): their names at the panel's sides
+    text lens_next = ""
+    fact lens_has_prev = false
+    fact lens_has_next = false
     // the plate: lens_a…lens_b along the top (lens_edge 2) or the bottom edge (0), 46 px deep, as TrayShore's
     let ln.left = lens_a
     let ln.right = lens_b
@@ -36,6 +40,38 @@ part LensLine {
     let ln.kx = ln.fx + ln.fw - 12
     let ln.mx = if(card_more, ln.kx - ln_act_m.width - 62, ln.kx)
     let ln.kw = if(ln.keys, ln.kx - ln.mx + ln_main_m.width + 22, 0)
+
+    // The tape's edges: at each side of the panel, where there is a mode beside, an arrow and its name turned along the
+    // side; a press turns the tape there. Over the list, clear of the strip and the coffee by the line.
+    let ln.ey = if(lens_edge == 2, card.y0 + 96, card.y0 + 8)
+    let ln.eh = max(card.h - 104, 0)
+    group {
+        show: lens_shore and card_lens and card_open and card.p > 0.9 and ln.eh > 120
+        group {
+            show: lens_has_prev
+            box { from: lens_a + 2, ln.ey + ln.eh / 2 - 70; size: 20, 140; corner: 10; color: ink; opacity: 4% + 8% * ln_prev.hover }
+            text g_back { at: lens_a + 12, ln.ey + ln.eh / 2 - 48; anchor: center; size: 16; color: ink; opacity: 55% + 40% * ln_prev.hover; family: "tabler-icons" }
+            group {
+                pivot: lens_a + 12, ln.ey + ln.eh / 2 + 12
+                rotate: -90deg
+                text lens_prev { at: lens_a + 12, ln.ey + ln.eh / 2 + 12; anchor: center; width: 96; lines: 1; size: 11.5; weight: 600; color: ink; opacity: 40% + 45% * ln_prev.hover; family: "Inter" }
+            }
+            zone box ln_prev { from: lens_a + 2, ln.ey + ln.eh / 2 - 70; size: 20, 140; cursor: pointer; label: "{lens_prev}"; role: button }
+            on press ln_prev { emit card_next(0) }
+        }
+        group {
+            show: lens_has_next
+            box { from: lens_b - 22, ln.ey + ln.eh / 2 - 70; size: 20, 140; corner: 10; color: ink; opacity: 4% + 8% * ln_next.hover }
+            text g_more { at: lens_b - 12, ln.ey + ln.eh / 2 - 48; anchor: center; size: 16; color: ink; opacity: 55% + 40% * ln_next.hover; family: "tabler-icons" }
+            group {
+                pivot: lens_b - 12, ln.ey + ln.eh / 2 + 12
+                rotate: 90deg
+                text lens_next { at: lens_b - 12, ln.ey + ln.eh / 2 + 12; anchor: center; width: 96; lines: 1; size: 11.5; weight: 600; color: ink; opacity: 40% + 45% * ln_next.hover; family: "Inter" }
+            }
+            zone box ln_next { from: lens_b - 22, ln.ey + ln.eh / 2 - 70; size: 20, 140; cursor: pointer; label: "{lens_next}"; role: button }
+            on press ln_next { emit card_next(1) }
+        }
+    }
 
     // At rest the plate is coffee, as the goo is: the same coffee that stands below the panel's surface when it is out.
     // With the panel out the panel's body holds the plate, and the coffee runs on into it from the surface down.

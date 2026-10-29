@@ -22,6 +22,7 @@
 /usr/bin/latte-guarddog                                 <- bin/latte-guarddog
 /usr/bin/latte-focus                                    <- bin/latte-focus
 /usr/bin/latte-nameday                                  <- bin/latte-nameday
+/usr/bin/latte-emoji                                    <- bin/latte-emoji
 /usr/bin/latte-cam                                      <- bin/latte-cam
 /usr/bin/latte-lock                                     <- bin/latte-lock
 /usr/bin/latte-monitor                                  <- bin/latte-monitor
@@ -280,6 +281,7 @@ optional: mpvpaper                                                   # a film as
 package: python3-pillow                                              # the background: the layers on each screen put together into one picture (bin/latte-wall)
 optional /usr/bin/ffmpeg: ffmpeg (Fedora's ffmpeg-free or RPM Fusion's ffmpeg): the background, a film across screens cut for each, and pictures of films
 optional: cliphist wl-clipboard                                      # the clipboard in the shore's panel and LensShore: what was copied lately
+optional: unicode-emoji cldr-emoji-annotation python3-gobject python3-cairo google-noto-color-emoji-fonts   # LensShore's emoji: the list, their names, their pictures (bin/latte-emoji)
 optional: qalculate                                                  # the launcher: amounts in units and money, written loosely (qalc; rates from the ECB)
 optional: hyprsunset                                                 # Settings › Displays › Night light
 package: quickshell flatpak                                          # LatteOS's own apps are drawn by Quickshell; the App Manager's shop is Flathub

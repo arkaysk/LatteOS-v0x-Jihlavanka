@@ -96,6 +96,23 @@ function M.pin(a)
     save()
     apply()
 end
+-- LensShore's "pin as a drop" on a file or a folder: the drop opens it
+function M.pinned_path(path)
+    for _, entry in ipairs(list) do if entry.path == path then return true end end
+    return false
+end
+function M.pin_path(path, folder)
+    if M.pinned_path(path) then return end
+    list[#list + 1] = { id = "path-" .. (path:gsub("[^%w_-]", "-")), path = path, name = path:match("([^/]+)$") or path,
+                        glyph = folder and "folder" or "file", click = "xdg-open '" .. path:gsub("'", "'\\''") .. "'" }
+    save()
+    apply()
+end
+function M.remove_path(path)
+    for i, entry in ipairs(list) do if entry.path == path then table.remove(list, i) break end end
+    save()
+    apply()
+end
 function M.remove(id)
     for i, entry in ipairs(list) do
         if entry.id == id or entry.app == id then table.remove(list, i) break end

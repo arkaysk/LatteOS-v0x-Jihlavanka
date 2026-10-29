@@ -847,9 +847,19 @@ páska módov“ (https://claude.ai/artifact/H11X1MF81jbM4sc1P3rREa).
   v AI móde ostáva v rozhovore a Enter sa pýta AI. Predvolene **dole**, Nastavenia › Spúšťač › LensShore › Hore na
   obrazovke. Overené bez obrazovky (labwc + Hyprland): obe polohy, Tab, koliesko, filter, „↵ Prepnúť“.
   Vloženie overené naživo 29. 10. (terminál, Ctrl+Shift+V); nasadené do `/usr`.
-- [ ] Ďalej: Agenti, Emoji a GIF, „+“ (pásik má miesto na 6 tlačidiel; 7 → zvýšiť `items max` v `card.plm`), vodorovné
-  koliesko a dva prsty do strán (pleamar dnes dáva iba zvislé `wheel` — záplata enginu), vykúkanie susedného módu,
-  Ctrl+1–9.
+- [x] 29. 10. (používateľ: „vnútro popupu má byť vizuálne rolovateľné doprava doľava“): **okraje pásky** — po stranách
+  panelu šípka a meno susedného módu (otočené pozdĺž okraja), klik otočí pásku; **dva prsty do strán / naklonené
+  koliesko** nad panelom prepnú mód (pleamar `wheel.x`, `patches/pleamar-wheel-x.patch`, nasadený); riadky vchádzajú
+  z polovice šírky panelu. Overené bez obrazovky (šípky, vodorovné koliesko) a naživo (okraje). Gesto na skutočnom
+  touchpade neoverené (latte-lab ho nemá).
+- [ ] Ďalej: Emoji (rozpracované: `bin/latte-emoji` — 1923 emoji, slovenské názvy z CLDR, obrázky cez Pango/Cairo, lebo
+  pleamar farebné písmo COLRv1 nekreslí), Agenti, GIF (vybrať službu), „+“ (7 tlačidiel → zvýšiť `items max`
+  v `card.plm`), skutočné vykúkanie obsahu susedného módu, Ctrl+1–9.
+
+**6B.31** [x] **Pravý klik na aplikáciu, súbor a priečinok: plocha, QuickGoo, kvapka** (používateľ 29. 10.) — v LensShore
+aj LensGoo: „Pridať ikonu na plochu“ (`latte-desktop add`: aplikáciu skopíruje, súbor/priečinok prepojí do priečinka
+Plocha), „Mať po ruke v QuickGoo“ a „Pripnúť ako kvapku“ aj pre súbory a priečinky (QuickGoo: `file:`/`dir:` cesty,
+kvapka otvorí cestu). Neoverené naživo.
 
 **6B.29** [ ] **LensShore: plná funkčnosť Raycastu a Tinycastu na Linuxe** (používateľ 29. 10.: „imituj plnú funkčnosť
 Raycastu a Tinycastu, rozšírenú o naše veci“) — nahrádza výstup 6B.13. Zdroje: README Tinycastu, manuál Raycastu

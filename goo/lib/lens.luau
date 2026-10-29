@@ -137,16 +137,23 @@ local function app_menu(a)
           run = function() if quick.has(a) then quick.remove(a) else quick.add(a) end end },
         { label = pinned and tr("Unpin the drop") or tr("Pin as a drop"), glyph = "pin",
           run = function() if pinned then own.remove(a.id) else own.pin(a) end end },
+        { label = tr("Add an icon to the desktop"), glyph = "device-desktop", run = function() run("latte-desktop", { "add", a.id or "" }, nil) end },
         { label = tr("Uninstall…"), glyph = "trash", line = true,
           run = function() then_do(function() run("latte-app", { "appmanager", "app", ((a.id or ""):gsub("%.desktop$", "")) }, nil) end) end },
     }, { width = 280 })
 end
 -- the right button on a file or folder found, and Ctrl+K on it (6B.24): what Raycast offers on one
-local function file_menu(path, parent)
+local function file_menu(path, parent, folder)
+    local at_hand = { id = (folder and "dir:" or "file:") .. path }
     ctx.open({
         { label = tr("Open"), glyph = "external-link", keys = "↵", run = function() then_do(function() open.path(path) end) end },
         { label = tr("Show in the folder"), glyph = "folder", run = function() then_do(function() open.path(parent) end) end },
         { label = tr("Copy the path"), glyph = "copy", line = true, run = function() pcall(sys.call, "clipboard.set", path) end },
+        { label = quick.has(at_hand) and tr("Take off QuickGoo") or tr("Keep at hand in QuickGoo"), glyph = "rocket", line = true,
+          run = function() if quick.has(at_hand) then quick.remove(at_hand) else quick.add(at_hand) end end },
+        { label = own.pinned_path(path) and tr("Unpin the drop") or tr("Pin as a drop"), glyph = "pin",
+          run = function() if own.pinned_path(path) then own.remove_path(path) else own.pin_path(path, folder) end end },
+        { label = tr("Add an icon to the desktop"), glyph = "device-desktop", run = function() run("latte-desktop", { "add", path }, nil) end },
         { label = tr("Move to the Trash"), glyph = "trash", danger = true, line = true,
           run = function() then_do(function() run("latte-files", { "trash", path }, nil) end) end },
     }, { width = 260 })
@@ -319,7 +326,7 @@ local function rows_files()
         local parent = clean:match("^(.*)/[^/]*$") or "/"
         rows[#rows + 1] = { label = clean:match("([^/]+)$") or clean, glyph = folder and "folder" or "file", hint = short(parent),
                             run = function() then_do(function() open.path(clean) end) end,
-                            right = function() file_menu(clean, parent) end }
+                            right = function() file_menu(clean, parent, folder) end }
     end
     if #rows == 0 then rows[1] = { label = found and tr("Nothing found") or tr("Searching…"), glyph = "search", quiet = true } end
     return rows
@@ -1331,7 +1338,7 @@ local function shore_rows()
             local clean = folder and path:sub(1, -2) or path
             local parent = clean:match("^(.*)/[^/]*$") or "/"
             rows[#rows + 1] = { label = clean:match("([^/]+)$") or clean, glyph = folder and "folder" or "file", hint = short(parent),
-                                run = function() then_do(function() open.path(clean) end) end, right = function() file_menu(clean, parent) end }
+                                run = function() then_do(function() open.path(clean) end) end, right = function() file_menu(clean, parent, folder) end }
         end
         if found == nil then rows[#rows + 1] = { label = tr("Searching…"), glyph = "search", quiet = true } end
         if #rows > 1 or found == nil then section(rows) end
@@ -1356,6 +1363,12 @@ local function shore_rows()
 end
 shore_render = function(keep, dir)
     shown = shore_rows()
+    -- the modes beside this one, named at the panel's sides
+    local list, at = shore_modes(), 0
+    for i, m in ipairs(list) do if m.id == mode_of(shore.view) then at = i end end
+    text.lens_prev = list[at - 1] and tr(list[at - 1].label) or ""
+    text.lens_next = list[at + 1] and tr(list[at + 1].label) or ""
+    fact.lens_has_prev, fact.lens_has_next = list[at - 1] ~= nil, list[at + 1] ~= nil
     card.open(shown, { lens = shore_top() and "top" or "bottom", id = "lens", width = WIDE / 1.2, keep = keep, first = shore_top() and true or "last",
                        again = shore.view ~= "talk" and shore.view ~= "chats", fit = true, pane = 1, step = step_mode, dir = dir })
 end
@@ -1426,6 +1439,18 @@ local function shore_start()
             if t ~= "" and shore.view == "find" then look_for_files() look_for_settings() look_for_amount() end
             if card.id() == "lens" then render(true) elseif t ~= "" then M.shore_open() end
         end)
+    end)
+    -- two fingers to the side over the panel: the turns are gathered, a notch and a half turns the tape once, and the
+    -- same gesture does not turn it again until the fingers rest
+    local swiped, swipe_rest, swipe_done = 0, nil, false
+    on("lens_swipe", function(v)
+        v = (tonumber(v) or 0) / 1000
+        if v == 0 or card.id() ~= "lens" then return end
+        if swipe_rest then cancel(swipe_rest) end
+        swipe_rest = after(250, function() swiped, swipe_done, swipe_rest = 0, false, nil end)
+        if swipe_done then return end
+        swiped += v
+        if math.abs(swiped) >= 1.5 then swipe_done = true step_mode(swiped > 0 and 1 or -1) end
     end)
     -- it opens in Search; a conversation stays where it was (6B.12)
     on("lens_press", function()

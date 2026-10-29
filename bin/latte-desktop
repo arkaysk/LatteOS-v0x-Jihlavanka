@@ -8,6 +8,8 @@
 #   latte-desktop status     prints "on" or "off"
 #   latte-desktop entries FOLDER   the launchers (.desktop) in it, a line each: file name, a tab, its name, a tab, its icon
 #   latte-desktop openers FILE   the apps that open that kind of file, a line each: ID.desktop, a tab, its name
+#   latte-desktop add WHAT   an icon for it in the Desktop folder: an app (its ID.desktop) is copied there, a file or
+#                            a folder (a path) is linked; what is there already of that name stays
 #
 # With icons the bare desktop is theirs, with the menu that goes with files; the Goo's own desktop menu
 # (goo/parts/desk.plm) is told to step back, on the monitor the icons are on.
@@ -38,6 +40,18 @@ openers)
             break
         done
     done ;;
+add)
+    d="$(xdg-user-dir DESKTOP 2>/dev/null)"; { [ -n "$d" ] && [ "$d" != "$HOME" ]; } || d="$HOME/Desktop"
+    mkdir -p "$d"
+    case "${2:?}" in
+    /*) [ -e "$d/$(basename "$2")" ] || ln -s -- "$2" "$d/$(basename "$2")" ;;
+    *)  id="${2%.desktop}.desktop"
+        for dir in "${XDG_DATA_HOME:-$HOME/.local/share}" $(printf '%s' "${XDG_DATA_DIRS:-/usr/local/share:/usr/share}" | tr ':' ' ') /var/lib/flatpak/exports/share; do
+            [ -f "$dir/applications/$id" ] || continue
+            [ -e "$d/$id" ] || { cp -- "$dir/applications/$id" "$d/$id" && chmod +x "$d/$id"; }
+            break
+        done ;;
+    esac ;;
 status)  status ;;
 start)   start; tell ;;
 stop)    stop; tell ;;
