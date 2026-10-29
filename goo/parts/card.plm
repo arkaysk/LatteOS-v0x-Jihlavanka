@@ -92,7 +92,8 @@ part Card {
     event card_key ->                          // the arrow keys: 1 down, 0 up
     event card_actions ->                      // Ctrl+K: the chosen row's actions, as its right button
     event card_combo ->                        // the keys a card may ask for (`combo` in lib/card.luau): 1 Ctrl+Enter, 2 Ctrl+.,
-                                               // 3 Ctrl+E, 4 Ctrl+plus, 5 Ctrl+minus, 7 Page Down, 8 Page Up (6, Ctrl+0: pleamar takes no digit in a key)
+                                               // 3 Ctrl+E, 4 Ctrl+plus, 5 Ctrl+minus, 7 Page Down, 8 Page Up, 9 Ctrl+P,
+                                               // 10 Ctrl+X, 11 Ctrl+Shift+X (6, Ctrl+0: pleamar takes no digit in a key)
     event card_enter ->                        // Enter: the chosen row, or what is typed
     event card_closed ->
 

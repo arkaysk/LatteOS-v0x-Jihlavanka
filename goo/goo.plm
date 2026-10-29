@@ -34,7 +34,7 @@ scene Goo {
         keyboard: exclusive while card_open or kb
     }
     permissions {
-        run: "latte-sky", "latte-login", "latte-stats", "hyprctl", "foot", "hostname", "id", "cat", "powerprofilesctl", "date", "notify-send", "nmcli", "xdg-open", "xdg-user-dir", "fd", "latte-say", "sh", "latte-cal", "latte-ai", "cliphist", "latte-app", "latte-apps", "latte-devices", "latte-settings", "latte-net", "latte-desktop", "latte-focus", "latte-nameday", "latte-cam", "latte-lock", "qalc", "wl-paste", "brightnessctl", "wpctl", "bluetoothctl", "pactl", "logger", "latte-nightlight", "latte-files", "wl-copy", "latte-emoji", "latte-gif"
+        run: "latte-sky", "latte-login", "latte-stats", "hyprctl", "foot", "hostname", "id", "cat", "powerprofilesctl", "date", "notify-send", "nmcli", "xdg-open", "xdg-user-dir", "fd", "latte-say", "sh", "latte-cal", "latte-ai", "cliphist", "latte-app", "latte-apps", "latte-devices", "latte-settings", "latte-net", "latte-desktop", "latte-focus", "latte-nameday", "latte-cam", "latte-lock", "qalc", "wl-paste", "brightnessctl", "wpctl", "bluetoothctl", "pactl", "logger", "latte-nightlight", "latte-files", "wl-copy", "latte-emoji", "latte-gif", "latte-clip"
         services: "files", "files.write", "env", "clock", "battery", "window", "apps", "apps.launch", "session.*", "auth", "notifications", "notifications.*", "sound", "audio", "audio.*", "brightness", "brightness.*", "network", "network.*", "bluetooth", "bluetooth.*", "tray", "tray.*", "clipboard", "clipboard.set", "media", "media.*"
     }
 
@@ -43,6 +43,8 @@ scene Goo {
     event win_menu ->                          // the right button on a window's title: the menu of the window `win_asked`
     text win_asked = ""
     event lens_toggle ->                       // the Windows key: the launcher, open or shut
+    event lens_clipboard ->                    // Win+V: LensShore's clipboard
+    event lens_paste_next ->                   // Win+Shift+V: paste in turn, the next older each press
     event lens_mode ->                         // …or open in one of its modes: 0 apps, 1 files, 2 the web, 3 a command, 4 AI
     event clock_notes ->                       // Win+N: notifications and the calendar
     event clock_time ->                        // Win+Alt+D: the time card

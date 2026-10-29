@@ -1,0 +1,248 @@
+#!/usr/bin/env python3
+"""latte-clip: the clipboard's history for LensShore (Raycast's Clipboard History, Tinycast's clipboard), over cliphist.
+
+  latte-clip store            what wl-paste --watch hands over (on stdin) into the history: not a password manager's
+                              secret (CLIPBOARD_STATE=sensitive), not from an app the user left out; when, and from what
+                              app, is noted; a picture's text is read (tesseract) when the Settings say so
+  latte-clip list             [{"id", "kind", "text", "time", "app", "thumb", "ocr"}] newest first, what is older than the
+                              Settings keep is forgotten first; kind: text, image, file, link, email, color; a picture's
+                              thumb and a colour's swatch are drawn into ~/.cache/latteos/clips/
+  latte-clip delete ID…       those entries out of the history
+  latte-clip since MINUTES    the entries of the last so many minutes out of the history
+  latte-clip file ID          a picture of the history as a file (for pinning it, or giving it to the AI): its path
+  latte-clip ocr ID           the text in a picture;   latte-clip qr ID   the text of a QR code in it
+  latte-clip replace ID       the entry's text replaced by what is on stdin (Edit): it comes back as the newest
+
+The Settings are Goo's (~/.local/share/pleamar/goo/settings.json): lens_clip_keep (day, week, month, 3months, forever;
+month unless chosen), lens_clip_skip (window classes left out), lens_clip_ocr (true: read the text of pictures).
+"""
+import json, os, re, subprocess, sys, time
+
+DATA = os.environ.get("XDG_DATA_HOME") or os.path.expanduser("~/.local/share")
+STATE = os.path.join(os.environ.get("XDG_STATE_HOME") or os.path.expanduser("~/.local/state"), "latteos")
+CACHE = os.path.join(os.environ.get("XDG_CACHE_HOME") or os.path.expanduser("~/.cache"), "latteos", "clips")
+TIMES = os.path.join(STATE, "clipboard.json")       # id → [when, app]
+OCR = os.path.join(STATE, "clipboard-text")         # id.txt: the text read from a picture
+KEEP = {"day": 86400, "week": 7 * 86400, "month": 31 * 86400, "3months": 92 * 86400, "forever": 0}
+PICTURE = re.compile(r"^\[\[ binary data .* (\w+) (\d+)x(\d+) \]\]$")
+COLOR = re.compile(r"^\s*(#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})|(?:rgb|rgba|hsl|hsla)\([^)]*\))\s*$")
+EMAIL = re.compile(r"^\s*[^@\s]+@[^@\s]+\.[A-Za-z]{2,}\s*$")
+LINK = re.compile(r"^\s*(https?://|www\.)\S+\s*$")
+
+
+def settings():
+    try:
+        with open(os.path.join(DATA, "pleamar", "goo", "settings.json")) as f:
+            return json.load(f)
+    except (OSError, ValueError):
+        return {}
+
+
+def times():
+    try:
+        with open(TIMES) as f:
+            return json.load(f)
+    except (OSError, ValueError):
+        return {}
+
+
+def save_times(t):
+    os.makedirs(STATE, exist_ok=True)
+    with open(TIMES + ".part", "w") as f:
+        json.dump(t, f)
+    os.replace(TIMES + ".part", TIMES)
+
+
+def cliphist(*args, data=None):
+    return subprocess.run(["cliphist", *args], input=data, capture_output=True).stdout
+
+
+def entries():
+    out = []
+    for line in cliphist("list").decode(errors="replace").splitlines():
+        ident, _, text = line.partition("\t")
+        if ident.isdigit():
+            out.append((ident, text))
+    return out
+
+
+def kind(text):
+    if PICTURE.match(text):
+        return "image"
+    if text.startswith("file://"):
+        return "file"
+    if COLOR.match(text):
+        return "color"
+    if EMAIL.match(text):
+        return "email"
+    if LINK.match(text):
+        return "link"
+    return "text"
+
+
+def decode(ident, path):
+    if not os.path.exists(path):
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path + ".part", "wb") as f:
+            f.write(cliphist("decode", ident))
+        os.replace(path + ".part", path)
+    return path
+
+
+def swatch(color):
+    path = os.path.join(CACHE, "color-%s.png" % re.sub(r"\W", "", color.lower()))
+    if os.path.exists(path):
+        return path
+    try:
+        import cairo
+    except ImportError:
+        return ""
+    rgb = None
+    m = re.match(r"#([0-9a-fA-F]+)", color.strip())
+    if m:
+        h = m.group(1)
+        h = "".join(c * 2 for c in h[:3]) if len(h) in (3, 4) else h[:6]
+        rgb = tuple(int(h[i:i + 2], 16) / 255 for i in (0, 2, 4))
+    else:
+        nums = [float(x) for x in re.findall(r"[\d.]+", color)[:3]]
+        if color.strip().startswith("rgb") and len(nums) == 3:
+            rgb = tuple(n / 255 for n in nums)
+        elif len(nums) == 3:
+            import colorsys
+            rgb = colorsys.hls_to_rgb(nums[0] / 360, nums[2] / 100, nums[1] / 100)
+    if not rgb:
+        return ""
+    s = cairo.ImageSurface(cairo.FORMAT_ARGB32, 64, 64)
+    c = cairo.Context(s)
+    c.arc(32, 32, 26, 0, 6.2832)
+    c.set_source_rgb(*rgb)
+    c.fill_preserve()
+    c.set_source_rgba(1, 1, 1, 0.5)
+    c.set_line_width(3)
+    c.stroke()
+    os.makedirs(CACHE, exist_ok=True)
+    s.write_to_png(path)
+    return path
+
+
+def forget_old():
+    """What is older than the Settings keep goes; an entry never seen being copied is dated now, and kept."""
+    keep = KEEP.get(settings().get("lens_clip_keep") or "month", KEEP["month"])
+    t, now, changed, old = times(), time.time(), False, []
+    present = entries()
+    for ident, _ in present:
+        if ident not in t:
+            t[ident], changed = [now, ""], True
+        elif keep and now - t[ident][0] > keep:
+            old.append(ident)
+    known = {i for i, _ in present}
+    for ident in list(t):
+        if ident not in known:
+            del t[ident]
+            changed = True
+    if old:
+        delete(old)
+        for ident in old:
+            t.pop(ident, None)
+        changed = True
+    if changed:
+        save_times(t)
+    return [(i, x) for i, x in present if i not in old], t
+
+
+def delete(ids):
+    want = set(ids)
+    lines = "".join("%s\t%s\n" % (i, x) for i, x in entries() if i in want)
+    if lines:
+        cliphist("delete", data=lines.encode())
+    for i in want:
+        for p in (os.path.join(OCR, i + ".txt"), os.path.join(CACHE, i + ".png")):
+            if os.path.exists(p):
+                os.remove(p)
+
+
+def read_text(path):
+    try:
+        return subprocess.run(["tesseract", path, "-", "-l", "slk+eng"], capture_output=True, text=True, timeout=60).stdout.strip()
+    except (OSError, subprocess.TimeoutExpired):
+        return ""
+
+
+def store():
+    data = sys.stdin.buffer.read()
+    if not data or os.environ.get("CLIPBOARD_STATE") == "sensitive":
+        return 0
+    s = settings()
+    app = ""
+    try:
+        app = json.loads(subprocess.run(["hyprctl", "-j", "activewindow"], capture_output=True, text=True, timeout=2).stdout or "{}").get("class", "")
+    except (OSError, ValueError, subprocess.TimeoutExpired):
+        pass
+    if app and app.lower() in [x.lower() for x in s.get("lens_clip_skip") or []]:
+        return 0
+    cliphist("store", data=data)
+    newest = entries()[:1]
+    if not newest:
+        return 0
+    ident, text = newest[0]
+    t = times()
+    t[ident] = [time.time(), app]
+    save_times(t)
+    if s.get("lens_clip_ocr") and PICTURE.match(text):
+        found = read_text(decode(ident, os.path.join(CACHE, ident + ".png")))
+        if found:
+            os.makedirs(OCR, exist_ok=True)
+            with open(os.path.join(OCR, ident + ".txt"), "w") as f:
+                f.write(found)
+    return 0
+
+
+def main(a):
+    if a == ["store"]:
+        return store()
+    if a == ["list"]:
+        present, t = forget_old()
+        out, pictures = [], 0
+        for ident, text in present:
+            k = kind(text)
+            item = {"id": ident, "kind": k, "text": text, "time": int(t.get(ident, [0])[0]), "app": t.get(ident, [0, ""])[1], "thumb": "", "ocr": ""}
+            if k == "image" and pictures < 80:
+                pictures += 1
+                item["thumb"] = decode(ident, os.path.join(CACHE, ident + ".png"))
+            elif k == "color":
+                item["thumb"] = swatch(text)
+            p = os.path.join(OCR, ident + ".txt")
+            if os.path.exists(p):
+                with open(p) as f:
+                    item["ocr"] = f.read()[:2000]
+            out.append(item)
+        print(json.dumps(out, ensure_ascii=False))
+        return 0
+    if len(a) >= 2 and a[0] == "delete":
+        delete(a[1:])
+        return 0
+    if len(a) == 2 and a[0] == "since" and a[1].isdigit():
+        t, since = times(), time.time() - int(a[1]) * 60
+        delete([i for i, _ in entries() if t.get(i, [0])[0] >= since])
+        return 0
+    if len(a) == 2 and a[0] == "file":
+        print(decode(a[1], os.path.join(CACHE, a[1] + ".png")))
+        return 0
+    if len(a) == 2 and a[0] == "ocr":
+        print(read_text(decode(a[1], os.path.join(CACHE, a[1] + ".png"))))
+        return 0
+    if len(a) == 2 and a[0] == "qr":
+        r = subprocess.run(["zbarimg", "-q", "--raw", decode(a[1], os.path.join(CACHE, a[1] + ".png"))], capture_output=True, text=True)
+        print(r.stdout.strip())
+        return 0 if r.stdout.strip() else 1
+    if len(a) == 2 and a[0] == "replace":
+        new = sys.stdin.buffer.read()
+        delete([a[1]])
+        subprocess.run(["wl-copy"], input=new)
+        return 0
+    print(__doc__.strip(), file=sys.stderr)
+    return 2
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))

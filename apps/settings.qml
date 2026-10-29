@@ -914,6 +914,27 @@ ShellRoot {
                 Repeater { model: ["\u{1F44B}", "\u{1F44B}\u{1F3FB}", "\u{1F44B}\u{1F3FC}", "\u{1F44B}\u{1F3FD}", "\u{1F44B}\u{1F3FE}", "\u{1F44B}\u{1F3FF}"]
                     Pill { required property string modelData; required property int index; text: modelData; strong: (goo.kept.lens_emoji_tone || 0) === index
                            onPressed: goo.set("lens_emoji_tone", index) } } }
+            Part { id: clipPart; visible: shell.page === "lensshore"; width: view.room; title: I18n.tr("Clipboard")
+                   note: I18n.tr("What was copied: Win+V shows it, Win+Shift+V pastes it in turn, the newest first. Passwords from password managers are never kept.")
+                   readonly property var skip: goo.kept.lens_clip_skip || []
+                Label { text: I18n.tr("Keep the history for"); width: view.room; color: Theme.dim; font.pixelSize: 13 }
+                Repeater { model: [{ id: "day", name: QT_TR_NOOP("A day") }, { id: "week", name: QT_TR_NOOP("A week") }, { id: "month", name: QT_TR_NOOP("A month") },
+                                   { id: "3months", name: QT_TR_NOOP("Three months") }, { id: "forever", name: QT_TR_NOOP("For ever") }]
+                    Pill { required property var modelData; text: I18n.tr(modelData.name); strong: (goo.kept.lens_clip_keep || "month") === modelData.id
+                           onPressed: goo.set("lens_clip_keep", modelData.id) } }
+                Label { text: I18n.tr("The Enter key"); width: view.room; color: Theme.dim; font.pixelSize: 13 }
+                Repeater { model: [{ id: "paste", name: QT_TR_NOOP("Paste where you were typing") }, { id: "copy", name: QT_TR_NOOP("Copy") }]
+                    Pill { required property var modelData; text: I18n.tr(modelData.name); strong: (goo.kept.lens_clip_enter || "paste") === modelData.id
+                           onPressed: goo.set("lens_clip_enter", modelData.id) } }
+                Switch { text: I18n.tr("Read the text in pictures"); hint: I18n.tr("Pictures can then be found by the words in them; on this computer (tesseract), nothing goes out.")
+                         on: goo.kept.lens_clip_ocr === true; onPressed: goo.set("lens_clip_ocr", !on) }
+                Switch { text: I18n.tr("A new line after each text pasted in turn"); on: goo.kept.lens_clip_newline === true; onPressed: goo.set("lens_clip_newline", !on) }
+                Label { text: I18n.tr("Apps whose copying is not kept"); width: view.room; color: Theme.dim; font.pixelSize: 13 }
+                Repeater { model: clipPart.skip
+                    Pill { required property string modelData; text: modelData; icon: "x"; onPressed: goo.set("lens_clip_skip", clipPart.skip.filter(x => x !== modelData)) } }
+                Field { id: skipApp; width: Math.min(320, view.room); icon: "app-window"; hint: I18n.tr("The app's window class, e.g. keepassxc")
+                        onAccepted: { const t = text.trim(); if (t !== "" && clipPart.skip.indexOf(t) < 0) goo.set("lens_clip_skip", clipPart.skip.concat([t])); text = "" } }
+                Pill { text: I18n.tr("Leave it out"); icon: "plus"; onPressed: skipApp.accepted() } }
             Part { id: gifPart; visible: shell.page === "lensshore"; width: view.room; title: I18n.tr("GIF")
                    note: I18n.tr("GIFs are looked for at a service you choose, with your own key. What you type goes to that service, and nothing goes there without a key.")
                    readonly property string source: goo.kept.lens_gif_source || "giphy"

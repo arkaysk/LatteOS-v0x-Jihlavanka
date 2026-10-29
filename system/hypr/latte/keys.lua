@@ -36,6 +36,8 @@ function K.setup()
     bind("SUPER + SUPER_L", goo("lens_toggle"), { release = true }, "The launcher")
     bind("SUPER + SUPER_R", goo("lens_toggle"), { release = true })
     bind("CTRL + Escape", goo("lens_toggle"), nil, "The launcher, without a Windows key")
+    bind("SUPER + V", goo("lens_clipboard"), nil, "The clipboard's history")
+    bind("SUPER + SHIFT + V", goo("lens_paste_next"), nil, "Paste in turn: the next older")
     bind("CTRL + SHIFT + Escape", run("latte-app monitor"), nil, "Monitor")       -- the Task Manager's key
     bind("CTRL + ALT + Delete", run("latte-app monitor"))                          -- and the one people try first
     bind("SUPER + I", run("latte-app settings"), nil, "Settings")                  -- and Settings', as on Windows

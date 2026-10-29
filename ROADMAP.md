@@ -898,20 +898,24 @@ launcher: poradie, naučené poradie, aliasy, záložné riadky), Okná (Tinycas
 úprava), Agenti, pravý klik (6B.31), AI rozhovor (Raycast Quick AI). Pri každej zoznam „má / chýba“ a doplniť chýbajúce.
 Kontrola 29. 10. (Raycast manual, Tinycast `docs/features/`):
 - **Okná** (Tinycast Switch Windows + Raycast/Tinycast Window Management). Má: zoznam podľa posledného použitia,
-  filter, prepnúť, zavrieť. Chýba: [ ] minimalizovať / obnoviť, maximalizovať, celá obrazovka, pripnúť navrch;
-  [ ] rozložiť: polovice, štvrtiny (rohy), tretiny (prvá, stredná, posledná, dve tretiny), štvrtiny ako pásy, šestiny,
-  stred, rozumná veľkosť (60 %), celá plocha, späť na pôvodnú; [ ] presunúť na plochu 1–9 / novú, na iný monitor;
-  [ ] ukončiť aplikáciu; [ ] Prepnúť okná dozadu; [ ] tie isté príkazy aj v Hľadaní („okno vľavo“) a klávesové
+  filter, prepnúť, zavrieť. [x] 29. 10. doplnené: minimalizovať / vrátiť, maximalizovať, celá obrazovka, vždy navrchu;
+  rozložiť (polovice, štvrtiny, tretiny, pásy, šestiny, na stred, rozumná veľkosť, celá výška / šírka, pôvodná) — nové
+  zóny v `system/hypr/latte/windows.lua`; presunúť na plochu 1–9 / novú, na inú obrazovku; ukončiť aplikáciu; strany.
+  Chýba: [ ] Prepnúť okná dozadu; [ ] tie isté príkazy aj v Hľadaní („okno vľavo“) a klávesové
   skratky (6B.29); [ ] vlastné rozloženia (Raycast Create Layout, Tinycast Rooms) a medzery.
 - **Schránka** (Raycast Clipboard History + Tinycast). Má: text a obrázky (cliphist), filter písaním, Enter vloží do
-  okna, Kopírovať, Zabudnúť všetko. Chýba: [ ] filter typu (Text, Obrázky, Súbory, Odkazy, E-maily, Farby; Ctrl+P),
-  rozpoznanie farieb, súborov a e-mailov; [ ] pripnúť (Ctrl+.), Pripnuté navrchu; [ ] zmazať položku (Ctrl+X),
-  zmazať za posledných 5/15/30 min, 1 h, 24 h, zmazať všetko; [ ] vložiť ako čistý text; [ ] upraviť obsah, premenovať
-  (Ctrl+E); [ ] text z obrázka (OCR) a z QR kódu, hľadanie v texte obrázkov; [ ] poslať do AI rozhovoru / priložiť;
-  [ ] uložiť ako úryvok (po úryvkoch, 6B.29); [ ] celá história po stranách (dnes 40 položiek); [ ] náhľad položky;
-  [ ] Vložiť postupne (+ reset, časový limit, nový riadok) s klávesovou skratkou; [ ] nastavenia: ako dlho držať
-  históriu, vynechané aplikácie, čo robí Enter, radšej čistý text, presunúť použitú navrch, rozpoznávanie textu;
-  [ ] Spýtaj sa schránky (AI). Obmedzenie: cliphist nemá čas uloženia ani viac formátov jednej položky.
+  okna, Kopírovať, Zabudnúť všetko. [x] 29. 10. doplnené (`goo/lib/clipboard.luau`, `bin/latte-clip` pred cliphistom —
+  zapisuje čas a aplikáciu, vynecháva aplikácie a heslá, číta text obrázkov): filter typu (Všetko, Pripnuté, Text,
+  Obrázky, Súbory, Odkazy, E-maily, Farby; Ctrl+P), náhľady obrázkov a farieb, pri položke typ · aplikácia · čas,
+  pripnúť (Ctrl+.; pripnutý obrázok si LatteOS kópiou drží sám), zmazať (Ctrl+X), zmazať za posledných 5/15/30 min,
+  1 h, 24 h, zmazať všetko (dvakrát), vložiť ako čistý text, upraviť obsah, premenovať (Ctrl+E), text z obrázka
+  (tesseract, slk+eng) a z QR kódu (zbar), hľadanie aj v texte obrázkov, otvoriť odkaz / súbor, napísať e-mail,
+  poslať AI (text do riadku, obrázok ako príloha `--attach`), celá história po stranách, **Win+V** otvorí Schránku,
+  **Win+Shift+V** vkladá postupne (30 s, nový riadok podľa nastavenia); Nastavenia › LensShore › Schránka: ako dlho
+  držať históriu, Enter, čítať text v obrázkoch, nový riadok, vynechané aplikácie. Overené bez obrazovky a naživo
+  (watcher, zápis času, mazanie). Chýba: [ ] uložiť ako úryvok (po úryvkoch, 6B.29), [ ] Spýtaj sa schránky (AI),
+  [ ] „Vložiť ako…“ iné formáty (cliphist drží jeden formát položky), [ ] „presunúť použitú navrch“ ako voľba (vždy
+  áno: vloženie ju znova uloží), [ ] Vložiť postupne neoverené naživo (Win+Shift+V).
 - **Hľadanie** (Raycast root search + Tinycast launcher). Má: aplikácie, súbory, nastavenia, web, kalkulačka,
   „Opýtať sa AI“ prvé, lišta akcií. Chýba: [ ] poradie podľa zhody a naučené poradie (frecency), [ ] aliasy,
   [ ] záložné riadky „Použiť … s“, kontextové riadky (adresa → otvoriť), [ ] návrhy na prázdnom poli podľa Tinycastu,

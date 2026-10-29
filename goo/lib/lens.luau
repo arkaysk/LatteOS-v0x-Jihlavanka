@@ -21,9 +21,9 @@ local quick = require("drops/quickgoo")
 local skills = require("lib/skills")
 local drops = require("lib/engine")      -- not `engine`: that is the web search engine below
 local wm = require("lib/wm")
-local clips = require("lib/clips")
 local emoji = require("lib/emoji")
 local gif = require("lib/gif")
+local clipboard = require("lib/clipboard")
 local M = {}
 -- N marks a text for the translation table (tests/check.sh looks for it); tr() translates it where it is shown.
 local function N(s) return s end
@@ -1089,7 +1089,9 @@ local function ask(q)
     local due = false
     -- the AI is told the skills as they are now: which devices there are, what is on
     skills.refresh(function()
-        shore.job = spawn("latte-ai", { "send", shore.chat, p.id, m and m.id or "", said, "--stream", "--skills", skills.prompt() }, function(line)
+        local args = { "send", shore.chat, p.id, m and m.id or "", said, "--stream", "--skills", skills.prompt() }
+        if shore.attach then args[#args + 1] = "--attach" args[#args + 1] = shore.attach shore.attach = nil end
+        shore.job = spawn("latte-ai", args, function(line)
             local ok, r = pcall(json.decode, line or "")
             if not ok or type(r) ~= "table" then return end
             if r.delta then
@@ -1278,26 +1280,7 @@ local function paste_into()
     local into = w and (function() local a = app_for(w.class) return a and (a.local_name or a.name) or w.class end)()
     return into and (tr("Paste into {app}"):gsub("{app}", function() return into end)) or tr("Copy")
 end
-local function clip_rows(q)
-    local want, rows = q:lower(), { { head = true, label = tr(N("CLIPBOARD")) } }
-    local main = paste_into()
-    for _, c in ipairs(shore.clips or {}) do
-        local label = c.picture and (tr("Picture") .. " · " .. c.picture) or c.text
-        if want == "" or label:lower():find(want, 1, true) then
-            if #rows > 8 then break end
-            rows[#rows + 1] = { label = label, glyph = c.picture and "photo" or (c.text:match("^https?://") and "link" or "clipboard"), main = main,
-                                run = function() paste(function(done) clips.copy(c.id, done) end) end,
-                                right = function() ctx.open({
-                                    { label = main, glyph = "clipboard", run = function() card.close() paste(function(done) clips.copy(c.id, done) end) end },
-                                    { label = tr("Copy"), glyph = "copy", run = function() card.close() clips.copy(c.id) end },
-                                    { label = tr("Forget what was copied"), glyph = "trash", danger = true, line = true,
-                                      run = function() clips.wipe(function() shore.clips = {} render(true) end) end },
-                                }, { width = 260 }) end }
-        end
-    end
-    if #rows == 1 then rows[#rows + 1] = { label = tr(shore.clips and N("Nothing was copied yet") or N("Searching…")), glyph = "clipboard", quiet = true } end
-    return near_line(rows)
-end
+-- the clipboard is lib/clipboard.luau
 
 -- Agents (6B.27): the agents at work for the user (latte-ai running) — Claude Code, Codex… — each in its terminal, and
 -- whether it waits for the user; a press shows its window. Nearest the line "Do it for me": what is typed goes to an
@@ -1353,6 +1336,17 @@ local function emoji_env()
         paste_with = function(put) paste(put) end,
         open_url = function(u) after(LET_GO, function() open.url(u) end) end,
         open_settings = function() card.close() after(LET_GO, function() open.settings("lensshore") end) end,
+        open_path = function(p) after(LET_GO, function() open.path(p) end) end,
+        data_dir = shore.data_dir,
+        near_line = near_line,
+        -- to the AI's mode with this text in the line (and a picture to go with the question)
+        ask_ai = function(t, picture)
+            shore.attach = picture ~= "" and picture or nil
+            text.lens_q, fact.lens_typed, typed = t or "", (t or "") ~= "", t or ""
+            shore.view = #shore.talk > 0 and "talk" or "chats"
+            if card.id() ~= "lens" then M.shore_open() else render(false) end
+            after(80, function() focus("lens_q") end)
+        end,
     }
 end
 -- GIFs (lib/gif.luau): the source and its key are the user's (Settings › Drops › LensShore); without a key nothing goes out
@@ -1408,7 +1402,7 @@ local function shore_rows()
         if pager then section({ pager }) end
         section(rows)
     elseif shore.view == "clips" then
-        section(clip_rows(typed))
+        for _, s in ipairs(clipboard.sections(typed, emoji_env())) do section(s) end
     elseif shore.view == "agents" then
         local task, rows = agent_rows(typed)
         section({ task })
@@ -1497,6 +1491,7 @@ shore_render = function(keep, dir)
     card.open(shown, { lens = shore_top() and "top" or "bottom", id = "lens", width = WIDE / 1.2, keep = keep, first = shore_top() and true or "last",
                        again = shore.view ~= "talk" and shore.view ~= "chats", fit = true, pane = 1, step = step_mode, dir = dir, height = SHORE_H,
                        combo = (shore.view == "emoji" and function(n, it) emoji.combo(n, it, emoji_env()) end)
+                               or (shore.view == "clips" and function(n, it) if n == 10 and typed ~= "" then return end clipboard.combo(n, it, emoji_env()) end)
                                or (shore.view == "windows" and function(n) if n == 7 or n == 8 then shore.win_page = (shore.win_page or 1) + (n == 7 and 1 or -1) render(true) end end) or nil })
 end
 -- to a mode: the rows come in from its side; the windows and the clipboard are read anew each time
@@ -1519,7 +1514,7 @@ go_mode = function(id)
             shore.wins = nil
             wm.windows(function(list) shore.wins = list or {} again() end)
         end
-        if id == "clips" then shore.clips = nil clips.read(40, 90, function(list) shore.clips = list again() end) end
+        if id == "clips" then clipboard.load(again) end
     end
     shore_render(false, to > from and 1 or -1)
     focus("lens_q")
@@ -1548,6 +1543,9 @@ function M.shore_chats()
     end)
 end
 local function shore_start()
+    local okd, dh = pcall(sys.ask, "env", "XDG_DATA_HOME")
+    local okh0, h0 = pcall(sys.ask, "env", "HOME")
+    shore.data_dir = ((okd and type(dh) == "string" and dh ~= "") and dh or ((okh0 and h0 or "") .. "/.local/share")) .. "/latteos"
     local okst, st = pcall(sys.ask, "env", "XDG_STATE_HOME")
     local okh, h = pcall(sys.ask, "env", "HOME")
     shore.chats_dir = ((okst and type(st) == "string" and st ~= "") and st or ((okh and h or "") .. "/.local/state")) .. "/latteos/ai/chats"
@@ -1591,6 +1589,20 @@ local function shore_start()
     every(3000, function()
         if card.id() == "lens" and shore.view == "agents" then read_agents(function() if card.id() == "lens" and shore.view == "agents" then render(true) end end) end
     end)
+    -- Win+V: the clipboard (as on Windows); Win+Shift+V: paste in turn, the next older each press (lib/clipboard.luau)
+    on("lens_clipboard", function()
+        if not fact.lens_shore then return end
+        if card.id() == "lens" and shore.view == "clips" then return card.close() end
+        shore.view = "clips"
+        wm.windows(function(l) shore.wins = l or {} if card.id() == "lens" then render(true) end end)
+        clipboard.load(function() if card.id() == "lens" then render(true) end end)
+        if card.id() == "lens" then render(false) else M.shore_open() end
+    end)
+    on("lens_paste_next", function()
+        local env = emoji_env()
+        env.paste_with = function(put_it) wm.windows(function(l) shore.wins = l or {} paste(put_it) end) end
+        clipboard.paste_next(env)
+    end)
     -- it opens in Search; a conversation stays where it was (6B.12)
     on("lens_press", function()
         if card.id() ~= "lens" and shore.view ~= "find" and shore.view ~= "talk" and shore.view ~= "chats" then shore.view = "find" end
@@ -1600,6 +1612,7 @@ local function shore_start()
     on("lens_enter", function()
         if card.id() ~= "lens" then return end
         if shore.view == "emoji" and emoji.editing() then emoji.save_words(text.lens_q or "", emoji_env()) return render(true) end
+        if shore.view == "clips" and clipboard.editing() then clipboard.finish_edit(text.lens_q or "", emoji_env()) return render(true) end
         if mode_of(shore.view) == "ai" and typed ~= "" and MODES[4] then
             local q = typed
             text.lens_q, fact.lens_typed, typed = "", false, ""

@@ -29,6 +29,9 @@ part Rows {
     on key Ctrl+minus while card_open and not ctx_open { emit card_combo(5) }
     on key Next while card_open and not ctx_open { emit card_combo(7) }          // Page Down: the keyboard calls it Next
     on key Prior while card_open and not ctx_open { emit card_combo(8) }
+    on key Ctrl+p while card_open and not ctx_open { emit card_combo(9) }
+    on key Ctrl+x while card_open and not ctx_open { emit card_combo(10) }
+    on key Ctrl+Shift+x while card_open and not ctx_open { emit card_combo(11) }
     on key Ctrl+k while card_open and card_more and not ctx_open { tap.x = card.x0 + card.w - ctx_w - 8; tap.y = card.y0 + card.h - 8; emit card_actions }
     on submit card_q { emit card_enter }
     on submit card_pw { emit card_enter }

@@ -25,6 +25,7 @@
 /usr/bin/latte-nameday                                  <- bin/latte-nameday
 /usr/bin/latte-emoji                                    <- bin/latte-emoji
 /usr/bin/latte-gif                                      <- bin/latte-gif
+/usr/bin/latte-clip                                     <- bin/latte-clip
 /usr/bin/latte-cam                                      <- bin/latte-cam
 /usr/bin/latte-lock                                     <- bin/latte-lock
 /usr/bin/latte-monitor                                  <- bin/latte-monitor
@@ -69,6 +70,7 @@
 /usr/share/latteos/goo/lib/clips.luau                   <- goo/lib/clips.luau
 /usr/share/latteos/goo/lib/emoji.luau                   <- goo/lib/emoji.luau
 /usr/share/latteos/goo/lib/gif.luau                     <- goo/lib/gif.luau
+/usr/share/latteos/goo/lib/clipboard.luau               <- goo/lib/clipboard.luau
 /usr/share/latteos/goo/lib/born.luau                    <- goo/lib/born.luau
 /usr/share/latteos/goo/lib/amount.luau                  <- goo/lib/amount.luau
 /usr/share/latteos/goo/lang/sk.plm                      <- goo/lang/sk.plm
@@ -288,7 +290,7 @@ package: hyprland wireplumber libnotify swaybg hypridle              # the GOO s
 optional: mpvpaper                                                   # a film as the desktop's background
 package: python3-pillow                                              # the background: the layers on each screen put together into one picture (bin/latte-wall)
 optional /usr/bin/ffmpeg: ffmpeg (Fedora's ffmpeg-free or RPM Fusion's ffmpeg): the background, a film across screens cut for each, and pictures of films
-optional: cliphist wl-clipboard                                      # the clipboard in the shore's panel and LensShore: what was copied lately
+optional: cliphist wl-clipboard zbar tesseract tesseract-langpack-slk tesseract-langpack-eng   # the clipboard in the shore's panel and LensShore (bin/latte-clip): what was copied, QR codes, the text in pictures
 optional: unicode-emoji cldr-emoji-annotation python3-gobject python3-cairo google-noto-color-emoji-fonts google-noto-sans-symbols-2-fonts   # LensShore's emoji and symbols: the list, their names, their pictures (bin/latte-emoji)
 optional: qalculate                                                  # the launcher: amounts in units and money, written loosely (qalc; rates from the ECB)
 optional: hyprsunset                                                 # Settings › Displays › Night light
