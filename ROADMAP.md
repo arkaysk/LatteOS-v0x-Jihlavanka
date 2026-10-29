@@ -886,6 +886,45 @@ Raycastu a Tinycastu, rozšírenú o naše veci“) — nahrádza výstup 6B.13.
 - [ ] Import a export nastavení, import z Raycastu (úryvky, rýchle odkazy).
 - Nie: Hyper Key (myš prvá), hry (10K), cloudová synchronizácia (neskôr so Zálohovaním, 9), tímy a fakturácia. AI agenti,
   MCP, skilly, projekty a modely patria do LensAI (10B.35–38); LensShore ich iba spúšťa a ukazuje.
+- **Ako to robí Tinycast** (kód a `docs/features/` prečítané 29. 10., commit 37e6043; AGPL → iba princípy, píše sa
+  načisto vlastným návrhom, žiadny preklad riadok po riadku, žiadne jeho dátové súbory):
+  - **Poradie výsledkov**: skóre zhody znak po znaku (prvý znak 4, začiatok slova 3, inde 2, medzera −1; začiatok slova
+    aj pri `OrbStack`, `1Password`), presná zhoda nad všetkým, aplikácie vyhrávajú remízy nad príkazmi. **Naučené
+    poradie** (frecency): kotva `score = e^(λ·(kotva − t))`, polčas 10 dní, každé otvorenie +100, uložené posledné tri
+    hľadané výrazy pri položke (platia 17 dní); reset pri položke aj celý. Prevziať pre LensGoo/LensShore (`lens.luau`).
+  - **Návrhy na prázdnom poli** (najviac 5): nové aplikácie nainštalované pred < 5 min, potom často otvárané bez
+    skratky, potom vstavané príkazy (Schránka, Súbory, Rozvrh, Emoji). AI sa nenavrhuje. → Domov (6B.27).
+  - **Záložné riadky** „Použiť „…“ s…“ pod všetkými výsledkami: AI, Hľadať súbory, Spustiť príkaz, Definovať slovo,
+    rýchly odkaz s `{argument}`. **Kontextové riadky** navrchu, keď text niečo pripomína (adresa → Otvoriť v prehliadači).
+  - **Aliasy** používateľa pri každej položke (aplikácia, príkaz, odkaz, úryvok), ukázané ako čip pri mene.
+  - **Placeholdery** rovnaké ako Raycast (dynamic placeholders), spoločný motor pre úryvky aj odkazy: `{clipboard}`,
+    `{clipboard offset=1}`, `{selection}`, `{date format=…}`, `{time offset="+3h"}`, `{uuid}`, `{argument name= default=
+    options=}`, `{snippet:Meno}`, `{cursor}`, reťaz úprav `| trim | uppercase | percent-encode | json-stringify | raw`.
+    Rovnaké slová → import z Raycastu funguje bez prepisovania.
+  - **Schránka**: pollovanie každých 0,5 s, SQLite; vlastné zápisy označené, aby sa nezachytili znova; tajné položky
+    vynechané podľa značky; „Vložiť postupne“ (každé stlačenie vloží ďalšiu staršiu položku); vloženie ako čistý text;
+    farby rozpoznané ako farba; text z obrázka (OCR). Na Linuxe namiesto pollovania udalosti `wl-paste --watch`.
+  - **Rozšírenia Raycastu**: príkaz je hotový CommonJS balík; Tinycast dodá React 19 + react-reconciler + vlastnú náhradu
+    `@raycast/api` a Node polyfilly v JavaScriptCore, strom komponentov posiela ako JSON (prvky v props cez `__slot`,
+    funkcie ako `{"$fn": id}`) a kreslí ho natívne. Zvláda List, Grid, Detail, Form, ActionPanel, Clipboard, LocalStorage,
+    OAuth…; 114 zo 147 príkazov (32 z 37 rozšírení) beží. **Na Linuxe je to jednoduchšie**: skutočný Node.js (fs,
+    child_process, http netreba napodobňovať) + náhrada `@raycast/api` + reconciler → JSON cez stdio → pleamar kreslí
+    List/Grid/Detail/Form v našom vzhľade, myšou. Nefunguje: `AI`, `BrowserExtension`, `WindowManagement` Raycastu
+    (dajú sa napojiť na naše: LensAI, rozšírenie prehliadača, hyprctl). Rozhodnutie vlastný hostiteľ vs. Vicinae v 6B.30.
+
+**6B.30** [ ] **LensShore: rozšírenia z obchodu Raycastu** (používateľ 29. 10.: „dodatočne sa pozrieme na najobľúbenejšie
+rozšírenia a možnosti integrácie, aktivácie a deaktivácie“) — po 6B.28 a základe 6B.29.
+- [ ] Zoznam najobľúbenejších rozšírení (obchod Raycastu, napr. Kill Process, Color Picker, Google Translate, Spotify,
+  VS Code, Brew, Coffee, GIF Search) → pri každom: beží na Linuxe? čo potrebuje (macOS aplikácie, AppleScript)? máme
+  vlastnú náhradu (6B.29)?
+- [ ] Hostiteľ rozšírení: vlastný (Node + náhrada `@raycast/api`, princíp z Tinycastu) alebo **Vicinae** ako skrytý
+  hostiteľ. Vicinae je **keyboard-first**, LensShore **mouse-first** (pravidlo 1) — z Vicinae by sme brali iba beh
+  rozšírení, nie jeho okno; jeho UI by sme nepoužívali. LensShore sa ale vo veľkom spolieha na písanie, takže rýchlosť
+  klávesnice musí ostať rovnaká ako vo Vicinae.
+- [ ] Inštalácia, **zapnutie a vypnutie** rozšírenia a jeho jednotlivých príkazov (bez odinštalovania), nastavenia
+  rozšírenia (preferences), oprávnenia (sieť, súbory, príkazy) ukázané pred inštaláciou; v Jedálnom lístku (10B.38)
+  a v Nastaveniach › Kvapky › Spúšťač.
+- [ ] Rozšírenie môže pridať **mód** do pásky (6B.28) alebo iba príkazy do Hľadania.
 
 ### 6C. [~] PowerGoo
 Zdroje: LATTEOS-GOO §4.2, `crates/latte-stats`
