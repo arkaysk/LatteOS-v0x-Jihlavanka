@@ -272,6 +272,14 @@
     "words": "launcher lensgoo lists filters categories apps work media develop fun favourites search"
    },
    {
+    "id": "lensshore",
+    "under": "drops",
+    "name": "LensShore",
+    "icon": "sparkles",
+    "status": "ready",
+    "words": "lensshore launcher line ai modes tape emoji symbols kaomoji gif giphy tenor klipy key skin tone columns top bottom"
+   },
+   {
     "id": "notifications",
     "name": "Notifications",
     "icon": "bell",

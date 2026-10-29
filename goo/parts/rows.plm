@@ -21,6 +21,14 @@ part Rows {
     on key Up while card_open and not ctx_open { emit card_key(0) }
     on key Return while card_open and not card_field and not ctx_open { emit card_enter }
     // Ctrl+K: the chosen row's actions (6B.24), at the card's foot on the right, as Raycast's Action Panel
+    on key Ctrl+Return while card_open and not ctx_open { emit card_combo(1) }
+    on key Ctrl+period while card_open and not ctx_open { emit card_combo(2) }
+    on key Ctrl+e while card_open and not ctx_open { emit card_combo(3) }
+    on key Ctrl+plus while card_open and not ctx_open { emit card_combo(4) }
+    on key Ctrl+equal while card_open and not ctx_open { emit card_combo(4) }
+    on key Ctrl+minus while card_open and not ctx_open { emit card_combo(5) }
+    on key Next while card_open and not ctx_open { emit card_combo(7) }          // Page Down: the keyboard calls it Next
+    on key Prior while card_open and not ctx_open { emit card_combo(8) }
     on key Ctrl+k while card_open and card_more and not ctx_open { tap.x = card.x0 + card.w - ctx_w - 8; tap.y = card.y0 + card.h - 8; emit card_actions }
     on submit card_q { emit card_enter }
     on submit card_pw { emit card_enter }
@@ -198,7 +206,7 @@ part Rows {
                 // A tile is drawn row by row: each lays its piece and, unless it is the last, reaches under the next
                 // one, which covers that with its own; so the tile's corners are round only at its two ends.
                 box { from: 2, if(r.tile == 1 or r.tile == 4, 1, 0); size: w - 4, h + if(r.tile == 1 or r.tile == 2, 14 - 17 * card.glass, -1 - 2 * card.glass) - if(r.tile == 1 or r.tile == 4, 1, 0); corner: 15; color: mix(paper, cream, 0.075); glass: card.glass * 100%; frost: 100%; smoke: 38% * card.glass; milk: 10% * card.glass; refraction: 40% * card.glass; show: r.tile > 0 }
-                box { at: w / 2, h / 2; size: w - if(r.tile > 0, 12, 0), h - 4; corner: 12; color: if(r.danger, red, #4a372b); opacity: max(hit.hover, if(card_sel == (r.index + base) * 8, 1, 0)) * if(r.danger, 18%, 100%); show: r.kind == plain or r.kind == big }
+                box { at: w / 2, h / 2; size: w - if(r.tile > 0, 12, 0), h - 4; corner: 12; color: if(r.danger, red, #4a372b); opacity: max(hit.hover, if(card_sel == (r.index + base) * 16, 1, 0)) * if(r.danger, 18%, 100%); show: r.kind == plain or r.kind == big }
 
                 // plain
                 image r.icon { at: 15, if(r.tall, 13, 9); size: 26, 26; show: r.kind == plain and r.has_icon }
@@ -241,11 +249,11 @@ part Rows {
 
                 zone box hit { from: if(r.kind == slide, 46, 0), 1; size: w - if(r.kind == slide, 100, 0), h - 2; cursor: pointer; active: card_open and not r.off and not r.quiet and r.kind != head; label: "{r.label}"; selected: r.on }
                 zone box knob_hit { from: 4, 1; size: 42, h - 2; cursor: pointer; active: card_open and r.kind == slide; label: "{r.label}" }
-                on press knob_hit { emit card_pick((r.index + base) * 8) }
+                on press knob_hit { emit card_pick((r.index + base) * 16) }
                 on press hit while r.kind == slide { emit card_slide((r.index + base) * 1024 + round(clamp((local.x - 56) / (w - 130), 0, 1) * 1000)) }
                 on drag hit while r.kind == slide { emit card_slide((r.index + base) * 1024 + round(clamp((local.x - 56) / (w - 130), 0, 1) * 1000)) }
-                on press hit while r.kind != slide { emit card_pick((r.index + base) * 8) }
-                on press right hit { tap.x = cursor.x; tap.y = cursor.y; emit card_right((r.index + base) * 8) }
+                on press hit while r.kind != slide { emit card_pick((r.index + base) * 16) }
+                on press right hit { tap.x = cursor.x; tap.y = cursor.y; emit card_right((r.index + base) * 16) }
                 on scroll hit { emit card_wheel((r.index + base) * 2 + if(wheel > 0, 1, 0)) }
 
                 // copy, as beside the AI's messages: quiet at the row's end, lit under the pointer, a tick once done
@@ -276,9 +284,9 @@ part Rows {
 
             // ── buttons side by side, or apps as tiles ──────────────────────────────────────────────────────
             row {
-                show: r.kind == pills or r.kind == tiles
+                show: r.kind == pills or r.kind == tiles or r.kind == cells
                 opacity: shown
-                wrap: 6
+                wrap: 10
                 for it in r.items { CardItem(r, it, base, w) }
             }
         }
@@ -331,10 +339,10 @@ part Rows {
     }
 
     component CardItem(r: record, it: record, base: number, cw: number) {
-        size: cw / if(r.kind == tiles, r.per, max(r.items.count, 1)), if(r.kind == tiles, if(r.per <= 2, 66, 88), if(r.per <= 2, 60, 46))
+        size: cw / if(r.kind == tiles or r.kind == cells, r.per, max(r.items.count, 1)), if(r.kind == cells, if(r.tall, 120, 50), if(r.kind == tiles, if(r.per <= 2, 66, 88), if(r.per <= 2, 60, 46)))
         let wide = r.per <= 2
-        let w = cw / if(r.kind == tiles, r.per, max(r.items.count, 1))
-        let lit = max(hit.hover, if(card_sel == (r.index + base) * 8 + it.index + 1, 1, 0))
+        let w = cw / if(r.kind == tiles or r.kind == cells, r.per, max(r.items.count, 1))
+        let lit = max(hit.hover, if(card_sel == (r.index + base) * 16 + it.index + 1, 1, 0))
 
         // a button: the chosen one gold, one that does not undo red
         box { at: w / 2, 23; size: w - 10, 40; corner: 20; color: if(it.on, gold, if(it.danger, red, #4a372b)); opacity: if(it.on, 26%, if(it.danger, 16% + 12% * lit, 62% + 38% * lit)) * if(it.off, 0.5, 1); show: r.kind == pills and not wide }
@@ -348,6 +356,12 @@ part Rows {
             text it.glyph { size: 17; color: if(it.on, gold, if(it.danger, red, cream)); family: "tabler-icons" }
             text it.label { size: 14; weight: 600; lines: 1; color: if(it.on, gold, if(it.danger, red, cream)); family: "Inter" }
         }
+        // a cell: a picture alone (an emoji), lit under the pointer or when chosen; one that is pinned has a gold dot
+        box { at: w / 2, if(r.tall, 60, 25); size: w - 4, if(r.tall, 116, 46); corner: 12; color: #4a372b; opacity: if(r.tall, max(lit, 0.35), lit); show: r.kind == cells }
+        image it.icon { at: w / 2 - 17, 8; size: 34, 34; show: r.kind == cells and it.has_icon and not r.tall }
+        image it.icon { at: 6, 6; size: w - 12, 108; fit: cover; show: r.kind == cells and it.has_icon and r.tall }
+        text it.label { at: w / 2, 25; anchor: center; width: w - 6; lines: 1; size: 18; color: cream; align: center; show: r.kind == cells and not it.has_icon; family: "Inter" }
+        ellipse { at: w - 8, 7; radius: 2.5; color: gold; show: r.kind == cells and it.on }
         // a tile: the app's icon over its name
         box { at: w / 2, 44; size: w - 6, 84; corner: 16; color: #4a372b; opacity: lit; show: r.kind == tiles and not wide }
         image it.icon { at: w / 2 - 20, 12; size: 40, 40; show: r.kind == tiles and it.has_icon and not wide }
@@ -362,9 +376,9 @@ part Rows {
         image it.icon { at: 33, 31; size: 26, 26; show: wide and it.has_icon }
         text it.label { at: 60, 31; anchor: left center; width: w - 72; lines: 1; size: 14.5; weight: 600; color: if(it.danger, red, if(it.on, gold, cream)); opacity: if(it.off, 45%, 100%); show: wide; family: "Inter" }
 
-        zone box hit { from: 3, 2; size: w - 6, if(wide, if(r.kind == tiles, 60, 54), if(r.kind == tiles, 84, 42)); cursor: pointer; active: card_open and not it.off; label: "{it.label}"; selected: it.on }
-        on press hit { emit card_pick((r.index + base) * 8 + it.index + 1) }
-        on press right hit { tap.x = cursor.x; tap.y = cursor.y; emit card_right((r.index + base) * 8 + it.index + 1) }
+        zone box hit { from: if(r.kind == cells, 2, 3), 2; size: w - if(r.kind == cells, 4, 6), if(r.kind == cells, if(r.tall, 116, 46), if(wide, if(r.kind == tiles, 60, 54), if(r.kind == tiles, 84, 42))); cursor: pointer; active: card_open and not it.off; label: "{it.label}"; selected: it.on }
+        on press hit { tap.x = cursor.x; tap.y = cursor.y; emit card_pick((r.index + base) * 16 + it.index + 1) }      // a button may open a menu: it opens there
+        on press right hit { tap.x = cursor.x; tap.y = cursor.y; emit card_right((r.index + base) * 16 + it.index + 1) }
         on scroll hit { emit card_wheel((r.index + base) * 2 + if(wheel > 0, 1, 0)) }
     }
 

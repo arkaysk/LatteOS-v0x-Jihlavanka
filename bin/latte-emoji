@@ -1,14 +1,18 @@
 #!/usr/bin/env python3
-"""latte-emoji: every emoji, with its name and words in the user's language and a picture of it, for LensShore.
+"""latte-emoji: every emoji and Unicode symbol, with its name and words in the user's language and a picture of it,
+for LensShore's Emoji (Raycast's Emoji & Symbols, Tinycast's emoji picker).
 
-  latte-emoji     [{"c": "😀", "name": "grinning face", "words": "face | grin", "group": "Smileys & Emotion", "png": "/…/1f600.png"}, …]
+  latte-emoji             [{"c": "😀", "name": "grinning face", "words": ["face", "grin"], "group": "Smileys & Emotion",
+                            "sub": "face-smiling", "png": "/…/1f600.png", "tones": ["👋🏻", …]}, …]  (tones: only where
+                            the emoji takes them, light to dark; symbols have the group of their kind: "Arrows", "Math"…)
+  latte-emoji png C…      the picture of each, drawn now if it was not (a tone of an emoji, say): a path a line
 
-The list and its order are Unicode's (emoji-test.txt, package unicode-emoji), the names CLDR's (package
-cldr-emoji-annotation; English from the list where the language has none). Skin tones are left out: the default is
-shown. The pictures are drawn once from the system's colour emoji font through Pango and Cairo, which can draw its
-COLRv1 glyphs (pleamar cannot), and kept in ~/.cache/latteos/emoji/; without them "png" is empty.
+The list and its order are Unicode's (emoji-test.txt, package unicode-emoji), the names and words CLDR's (package
+cldr-emoji-annotation; English beside the user's language, and from Unicode's own names where CLDR has none). The
+pictures are drawn once through Pango and Cairo, which can draw the colour emoji font's COLRv1 glyphs (pleamar cannot)
+and find a font for every symbol, and kept in ~/.cache/latteos/emoji/; without them "png" is empty.
 """
-import json, os, re, sys
+import json, os, re, sys, unicodedata
 import xml.etree.ElementTree as ET
 
 TEST = "/usr/share/unicode/emoji/emoji-test.txt"
@@ -16,21 +20,62 @@ CLDR = "/usr/share/unicode/cldr/common"
 CACHE = os.path.join(os.environ.get("XDG_CACHE_HOME") or os.path.expanduser("~/.cache"), "latteos", "emoji")
 PX = 64
 TONES = re.compile("[\U0001F3FB-\U0001F3FF]")
+INK = (0xF3 / 255, 0xE9 / 255, 0xDF / 255)        # a symbol is drawn in the cards' cream; an emoji has its own colours
+# the symbols, by kind: Unicode's blocks (what is an emoji already is left to the emoji)
+SYMBOLS = (("Arrows", [(0x2190, 0x21FF), (0x27F0, 0x27FF), (0x2900, 0x297F), (0x2B00, 0x2B2F)]),
+           ("Math", [(0x2200, 0x22FF), (0x27C0, 0x27EF), (0x2980, 0x29FF)]),
+           ("Currency", [(0x20A0, 0x20C0), (0x00A2, 0x00A5)]),
+           ("Punctuation", [(0x2010, 0x205E), (0x00A1, 0x00BF), (0x2E00, 0x2E4F)]),
+           ("Letterlike", [(0x2100, 0x214F)]),
+           ("Numbers", [(0x2150, 0x218B), (0x2070, 0x209C), (0x2460, 0x24FF), (0x2776, 0x2793)]),
+           ("Greek", [(0x0391, 0x03A9), (0x03B1, 0x03C9)]),
+           ("Shapes", [(0x25A0, 0x25FF), (0x2B1B, 0x2B59)]),
+           ("Technical", [(0x2300, 0x23FF)]),
+           ("Box drawing", [(0x2500, 0x259F)]),
+           ("Dingbats", [(0x2700, 0x27BF), (0x2600, 0x26FF)]))
 
 
 def emoji():
-    group, out = "", []
+    group, sub, out, tones = "", "", [], {}
     with open(TEST, encoding="utf-8") as f:
         for line in f:
             if line.startswith("# group:"):
                 group = line.split(":", 1)[1].strip()
+            elif line.startswith("# subgroup:"):
+                sub = line.split(":", 1)[1].strip()
             m = re.match(r"^[0-9A-F ]+;\s*fully-qualified\s*#\s*(\S+)\s+E[\d.]+\s+(.*)$", line)
-            if m and group != "Component" and not TONES.search(m.group(1)):
-                out.append({"c": m.group(1), "name": m.group(2), "words": "", "group": group})
+            if not m or group == "Component":
+                continue
+            c = m.group(1)
+            found = TONES.findall(c)
+            if found:
+                # one tone for the whole emoji: a tone of the one without it
+                if len(set(found)) == 1:
+                    tones.setdefault(TONES.sub("", c), []).append(c)
+                continue
+            out.append({"c": c, "name": m.group(2), "words": [], "group": group, "sub": sub})
+    for e in out:
+        if e["c"] in tones or e["c"].replace("️", "") in tones:
+            e["tones"] = tones.get(e["c"]) or tones[e["c"].replace("️", "")]
     return out
 
 
-def names(lang):
+def symbols(taken):
+    out = []
+    for group, ranges in SYMBOLS:
+        for a, b in ranges:
+            for code in range(a, b + 1):
+                c = chr(code)
+                if c in taken or unicodedata.category(c) in ("Cn", "Co", "Cs", "Cc", "Zs", "Mn"):
+                    continue
+                name = unicodedata.name(c, "").lower()
+                if name:
+                    taken.add(c)
+                    out.append({"c": c, "name": name, "words": [], "group": group, "sub": ""})
+    return out
+
+
+def annotations(lang):
     """CLDR's names (tts) and words for a language, the derived file (flags, sequences) included."""
     found = {}
     for part in ("annotations", "annotationsDerived"):
@@ -41,12 +86,15 @@ def names(lang):
         for a in root.iter("annotation"):
             c, text = a.get("cp"), (a.text or "").strip()
             entry = found.setdefault(c, {})
-            entry["name" if a.get("type") == "tts" else "words"] = text
+            if a.get("type") == "tts":
+                entry["name"] = text
+            else:
+                entry["words"] = [w.strip() for w in text.split("|") if w.strip()]
     return found
 
 
-def picture(c):
-    """The emoji drawn into a PNG once; its path, or "" where it cannot be drawn."""
+def picture(c, color=False):
+    """The character drawn into a PNG once; its path, or "" where it cannot be drawn."""
     path = os.path.join(CACHE, "-".join("%x" % ord(ch) for ch in c if ord(ch) != 0xFE0F) + ".png")
     if os.path.exists(path):
         return path
@@ -60,9 +108,16 @@ def picture(c):
     s = cairo.ImageSurface(cairo.FORMAT_ARGB32, PX, PX)
     ctx = cairo.Context(s)
     layout = PangoCairo.create_layout(ctx)
-    layout.set_font_description(Pango.FontDescription("Noto Color Emoji %dpx" % int(PX * 0.72)))
+    font = "Noto Color Emoji" if color else "Inter, Noto Sans Symbols 2, Noto Sans Math, Noto Sans Symbols, DejaVu Sans"
+    layout.set_font_description(Pango.FontDescription("%s %dpx" % (font, int(PX * (0.72 if color else 0.6)))))
     layout.set_text(c, -1)
+    if layout.get_unknown_glyphs_count() > 0:           # no font has it: no picture, and the symbol is left out
+        return ""
     _, ext = layout.get_pixel_extents()
+    if ext.width > PX:                      # a wide symbol is made smaller to fit, not cut
+        layout.set_font_description(Pango.FontDescription("%s %dpx" % (font, int(PX * 0.6 * PX / ext.width))))
+        _, ext = layout.get_pixel_extents()
+    ctx.set_source_rgb(*INK)
     ctx.move_to((PX - ext.width) / 2 - ext.x, (PX - ext.height) / 2 - ext.y)
     PangoCairo.show_layout(ctx, layout)
     os.makedirs(CACHE, exist_ok=True)
@@ -71,23 +126,38 @@ def picture(c):
     return path
 
 
-def main():
+def main(argv):
+    if argv[:1] == ["png"]:
+        # a symbol is one character of the symbols' blocks; anything else (an emoji, a tone of one) has colours
+        symbol = lambda c: len(c) == 1 and any(a <= ord(c) <= b for _, ranges in SYMBOLS for a, b in ranges)
+        for c in argv[1:]:
+            print(picture(c, color=not symbol(c)))
+        return
     try:
         out = emoji()
     except OSError:
-        print("[]")
-        return
+        out = []
+    for e in out:
+        e["emoji"] = True
+    out += symbols({e["c"] for e in out} | {e["c"].replace("️", "") for e in out})
     lang = (os.environ.get("LC_ALL") or os.environ.get("LC_MESSAGES") or os.environ.get("LANG") or "en").split(".")[0].split("_")[0]
-    told = names(lang) if lang != "en" else {}
-    english = names("en")
+    told = annotations(lang) if lang != "en" else {}
+    english = annotations("en")
     for e in out:
         key = e["c"] if e["c"] in told or e["c"] in english else e["c"].replace("️", "")
         t, en = told.get(key, {}), english.get(key, {})
-        e["name"] = t.get("name") or e["name"]
-        e["words"] = " | ".join(w for w in (t.get("words"), en.get("words") if t else None) if w) or en.get("words", "")
-        e["png"] = picture(e["c"])
+        e["name"] = t.get("name") or en.get("name") or e["name"]
+        # the user's words first, then the English ones that are not among them (search keeps both)
+        words = list(t.get("words", []))
+        words += [w for w in en.get("words", []) if w not in words]
+        if en.get("name") and en["name"] != e["name"] and en["name"] not in words:
+            words.append(en["name"])
+        e["words"] = words
+        e["png"] = picture(e["c"], color=e.pop("emoji", False))
+    # a symbol that cannot be drawn is not offered; an emoji stays (its name still pastes it)
+    out = [e for e in out if e["png"] or e["group"] not in dict(SYMBOLS)]
     json.dump(out, sys.stdout, ensure_ascii=False)
 
 
 if __name__ == "__main__":
-    main()
+    main(sys.argv[1:])

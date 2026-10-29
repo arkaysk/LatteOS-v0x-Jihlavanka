@@ -870,8 +870,32 @@ páska módov“ (https://claude.ai/artifact/H11X1MF81jbM4sc1P3rREa).
   („VS Code“); klik ukáže okno, pravý klik Zavrieť okno. Pri línii „Urob to za mňa: …“ — napísaná úloha ide agentovi
   (`latte-ai do`), bez textu stránka agentov v LensAI. Zoznam sa obnovuje každé 3 s. Overené bez obrazovky (falošní
   agenti s titulkami ✳ a ⠐) a naživo. Codex a Gemini stav v titulku asi nehlásia → bez „Pracuje/Čaká“.
-- [ ] Ďalej: GIF (vybrať službu: Giphy / Tenor / Klipy), „+“ (7 tlačidiel → zvýšiť `items max` v `card.plm`), objednávky
-  Kaviarne v Agentoch (10B.36), pulz ostrova, keď agent čaká (6B.21), skutočné vykúkanie obsahu susedného módu, Ctrl+1–9.
+- [x] 29. 10. (používateľ: „v origináli som videl podstatne širšiu ponuku, filtrovanie a hľadanie; keď imitujeme, tak
+  úplne“) **Emoji ako Raycast Emoji & Symbols a Tinycast** (`goo/lib/emoji.luau`): 1923 emoji + 2146 Unicode symbolov
+  v 11 skupinách (`bin/latte-emoji`; písmo `google-noto-sans-symbols-2-fonts`, čo nijaké písmo nemá, sa vynechá),
+  mriežka 6–10 stĺpcov na **stranách do strán** (rozhodnutie používateľa: koliesko ostáva páske; ‹ › a PageDown/PageUp),
+  filter kategórií (Všetko, Pripnuté, Často používané, 9 skupín, Symboly ›), v prehľade Pripnuté a Často používané
+  (najviac 2 riadky), hľadanie ako Tinycast (každé slovo začína slovo mena alebo kľúčového slova, `:+1:`, celé meno
+  prvé, potom naposledy použité), akcie Vložiť · Kopírovať (Ctrl+Enter) · Vložiť a nechať otvorené · s odtieňom pleti
+  (podponuka 6) · Kód Unicode · Pripnúť (Ctrl+.) · Posunúť · Vlastné kľúčové slová (Ctrl+E), predvolený odtieň pleti,
+  Ctrl+plus/mínus stĺpce. Karta má nový druh riadku `cells` (10 v riadku, kódovanie riadok × 16) a klávesy `combo`.
+  **Kaomoji** 7 kategórií na stranách. **GIF** (`goo/lib/gif.luau`, `bin/latte-gif`): Giphy predvolene, Tenor, Klipy,
+  kľúč používateľa; Trendy / Obľúbené / Naposledy použité, veľké náhľady, Vložiť GIF (ako obrázok) · Kopírovať GIF ·
+  odkaz · Markdown · v prehliadači · obľúbené. **Nastavenia › Kvapky › LensShore** (vlastná stránka): poloha, stĺpce,
+  Enter, odtieň pleti, zdroj GIF a kľúč, kde ho získať. Overené bez obrazovky (mriežka, strany, kategórie, akcie,
+  hľadanie „mavaj“ → 👋, kaomoji, GIF s neplatným kľúčom → „Kľúč nebol prijatý“, stránka Nastavení); GIF so skutočným
+  kľúčom neoverené (parsery Giphy/Tenor/Klipy overené na ukážkových odpovediach).
+  Chýba oproti originálu: **Ctrl+0** (pleamar nepovolí číslicu v klávese — „Pôvodná veľkosť“ treba dať do ponuky),
+  **výsledky AI podľa významu**, keď sa nič nenájde (Raycast AI Results), **`:` v textových poliach** (inline
+  automatické dopĺňanie emoji), kaomoji sa kreslia písmom Inter a niektoré znaky nahrádza podobnými.
+- [ ] Ďalej: „+“ (7 tlačidiel → zvýšiť `items max` v `card.plm` — už je 10), objednávky Kaviarne v Agentoch (10B.36),
+  pulz ostrova, keď agent čaká (6B.21), skutočné vykúkanie obsahu susedného módu, Ctrl+1–9.
+
+**6B.32** [ ] **Kontrola „hotových“ položiek LensShore voči originálu** (používateľ 29. 10.: „skontroluj aj ostatné už
+hotové položky, či majú len čiastočnú, alebo plnú funkčnosť originálu“) — Hľadanie (Raycast root search, Tinycast
+launcher: poradie, naučené poradie, aliasy, záložné riadky), Okná (Tinycast window switcher a správa okien), Schránka
+(Raycast Clipboard History, Tinycast clipboard: typy, pripnutie, vloženie ako čistý text, vložiť postupne, OCR,
+úprava), Agenti, pravý klik (6B.31), AI rozhovor (Raycast Quick AI). Pri každej zoznam „má / chýba“ a doplniť chýbajúce.
 
 **6B.31** [x] **Pravý klik na aplikáciu, súbor a priečinok: plocha, QuickGoo, kvapka** (používateľ 29. 10.) — v LensShore
 aj LensGoo: „Pridať ikonu na plochu“ (`latte-desktop add`: aplikáciu skopíruje, súbor/priečinok prepojí do priečinka

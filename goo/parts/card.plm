@@ -10,6 +10,8 @@ part Card {
     //   kind     plain: an icon, a label, and on the right a hint or the arrow of a submenu
     //            head: the heading of a section · big: a large figure · para: a paragraph in a bubble
     //            pills: its `items` as buttons side by side · tiles: its `items` as apps, an icon over a name
+    //            cells: its `items` as a tight grid of pictures alone (emoji): the name is the chosen one's, beside the line;
+    //            with `tall` large pictures (GIFs), cut to fill the cell
     //            profile: a portrait, a name and a line under it
     //            slide: a slider, set by pressing or dragging along it; its icon is pressed on its own
     //   tall     a plain row with a second line under its label (`line2`)
@@ -18,16 +20,16 @@ part Card {
     //   bar      a bar filled this far (0…1), none below 0 · per: how many tiles or buttons make a line; two or fewer
     //            are laid wide, the icon beside the name · wave: two layers of coffee as a divider
     model card max 24 {
-        kind: plain | head | big | para | pills | tiles | profile | slide | wave | gap = plain
+        kind: plain | head | big | para | pills | tiles | profile | slide | wave | gap | cells = plain
         label: text; hint: text; line2: text; glyph: text; icon: image 64, 64; has_icon: bool; tall: bool
         on: bool; off: bool; quiet: bool; danger: bool; more: bool; line: bool; bar: number = -1; per: number = 4
         copy: bool                             // a copy button at its end (6B.09): its text goes to the clipboard
         tile: number = 0                       // part of a tile, a card within the card: 1 its first row, 2 inside, 3 its last, 4 alone
-        list items max 6 { label: text; glyph: text; icon: image 44, 44; has_icon: bool; on: bool; off: bool; danger: bool }
+        list items max 10 { label: text; glyph: text; icon: image 96, 96; has_icon: bool; on: bool; off: bool; danger: bool }
     }
     // the rows of a second column, beside the first: a card with two things to show at once
     model card2 max 12 {
-        kind: plain | head | big | para | pills | tiles | profile | slide | wave | gap = plain
+        kind: plain | head | big | para | pills | tiles | profile | slide | wave | gap | cells = plain
         label: text; hint: text; line2: text; glyph: text; icon: image 64, 64; has_icon: bool; tall: bool
         on: bool; off: bool; quiet: bool; danger: bool; more: bool; line: bool; bar: number = -1; per: number = 4
         copy: bool                             // a copy button at its end (6B.09): its text goes to the clipboard
@@ -89,6 +91,8 @@ part Card {
     event card_next ->                         // Tab and Shift+Tab: 1 the next tab, 0 the one before
     event card_key ->                          // the arrow keys: 1 down, 0 up
     event card_actions ->                      // Ctrl+K: the chosen row's actions, as its right button
+    event card_combo ->                        // the keys a card may ask for (`combo` in lib/card.luau): 1 Ctrl+Enter, 2 Ctrl+.,
+                                               // 3 Ctrl+E, 4 Ctrl+plus, 5 Ctrl+minus, 7 Page Down, 8 Page Up (6, Ctrl+0: pleamar takes no digit in a key)
     event card_enter ->                        // Enter: the chosen row, or what is typed
     event card_closed ->
 

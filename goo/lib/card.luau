@@ -24,6 +24,8 @@
 --       is pressed or dragged, `run` a press on its icon (to mute), `wheel` as on any row
 --   { pills = { { label, glyph, on, off, danger, keep, run }, … } }     buttons side by side, six at most; `wheel` as on any row
 --   { tiles = { { label, icon, glyph, run, right }, … }, per = 4 }     apps as tiles, `per` in a line
+--   { cells = { { label, icon, run, right, on }, … }, per = 8 }     a tight grid of pictures alone (emoji), ten at most in a line;
+--       `big = true`: large pictures (GIFs), 120 high
 -- A card may have a second column: `width2` in the options, and the rows that go there say `col = 2`. At its
 -- top it can show a month: `calendar = { title, weekdays = { 7 names }, days = { 42 × { n, dim, today, chosen,
 -- dot } }, pick = function(place 0…41), step = function(±1) }`.
@@ -32,7 +34,8 @@
 -- `tiles`: the rows between two headings are laid as a tile, a card within the card (rules between them are
 -- dropped: the tile is what holds them together).
 -- `capsule` (a drop stretched into one) makes the card grow out of all of it; `lens` slides it out of LensShore's plate;
--- `first` chooses its first row for Enter. `height`: the same height whatever is in it (LensShore's modes): what is
+-- `combo` = function(n, row): the keys of parts/rows.plm `card_combo` (Ctrl+Enter, Ctrl+., Ctrl+E, Ctrl+plus/minus/0,
+-- Page Down/Up), with the row chosen as it was given (nil: none). `first` chooses its first row for Enter. `height`: the same height whatever is in it (LensShore's modes): what is
 -- short gets room at the end away from its plate (a paragraph is guessed at by its length). `step` = function(±1) is what Tab does on a card without tabs; `dir` (±1) brings
 -- the rows in from that side, as a tape turned (LensShore's modes).
 -- Options: `custom` ("clock") draws a scene of its own instead of rows, `split` says where its coffee begins, `grow` lets it grow with the screen (card.z in parts/card.plm). `uniform` is for a family of cards of one size (LensGoo's modes). `menu` makes it a classic context menu (at the pointer, solid, no ear). `pane` (0…1) makes the card glass above its `wave` row and solid coffee below it. `keep` refreshes an open card in place (live figures): the rows do not come in again and the row
@@ -43,7 +46,8 @@ local ctx = require("lib/ctx")
 local M = {}
 
 local CARD_W, CARD_H, WAVE_AT = 600, 580, 502            -- a family of cards that keep one size (`uniform`) is this wide and at least this tall
-local ROWS, ROWS2, ITEMS, TABS = 24, 12, 6, 6        -- what the scene's models hold
+local ROWS, ROWS2, ITEMS, TABS = 24, 12, 6, 6        -- what the scene's models hold (ITEMS: buttons or tiles in a line unless `per` says)
+local CELLS = 10                             -- a line holds at most this many (parts/card.plm `items max`)
 local RISE = 74                             -- how far from the edge the owner steps to be the card's ear
 local engine                                -- set by lib/engine.luau, which owns the drops
 
@@ -52,6 +56,7 @@ local actions, rights, wheels, slides, tab_runs, copies = {}, {}, {}, {}, {}, {}
 local choosable, chosen = {}, nil            -- what the arrow keys walk through, and where they are
 local preferred = nil                        -- the row that says `first`
 local names = {}                             -- what each row says: the one chosen is told beside LensShore's line
+local items = {}                             -- what each row was given as, for `combo`
 -- the row chosen with the arrows (nil: none): what Enter does is told as `card_main`, and whether Ctrl+K has more
 local function choose(id)
     chosen = id
@@ -100,10 +105,10 @@ end
 
 -- how tall a row of the scene is, as parts/rows.plm lays it out (a paragraph is not known: 0)
 local function height_of(it)
-    if it.pills or it.tiles then
-        local n = #(it.pills or it.tiles)
-        local per = math.clamp(it.per or (it.pills and ITEMS or 4), 1, ITEMS)
-        return math.ceil(n / per) * ((it.pills and (per <= 2 and 60 or 46)) or (per <= 2 and 66 or 88))
+    if it.pills or it.tiles or it.cells then
+        local n = #(it.pills or it.tiles or it.cells)
+        local per = math.clamp(it.per or (it.pills and ITEMS or it.cells and 8 or 4), 1, CELLS)
+        return math.ceil(n / per) * ((it.cells and (it.big and 120 or 50)) or (it.pills and (per <= 2 and 60 or 46)) or (per <= 2 and 66 or 88))
     end
     if it.head then return 30 elseif it.big then return 64 elseif it.profile then return 84 elseif it.slide then return 44
     elseif it.wave then return 26 elseif it.gap then return it.gap end
@@ -163,7 +168,7 @@ function M.open(rows, opts)
     end
     local out = {}
     actions, rights, wheels, slides, tab_runs, copies = {}, {}, {}, {}, {}, {}
-    choosable, names, preferred = {}, {}, nil
+    choosable, names, preferred, items = {}, {}, nil, {}
 
     -- what choosing a row does
     local function action(it)
@@ -193,6 +198,7 @@ function M.open(rows, opts)
         actions[id] = action(it)
         rights[id] = it.right
         names[id] = it.main or it.label
+        items[id] = it
         if not it.off and not it.quiet and not it.skip then choosable[#choosable + 1] = id end
         if it.first then preferred = id end
     end
@@ -200,18 +206,18 @@ function M.open(rows, opts)
     -- `to`: the column's records; `base`: where the scene starts counting its rows; `room`: how many it holds
     local function add(it, to, base, room)
         if #to >= room then return end
-        local list = it.pills or it.tiles
+        local list = it.pills or it.tiles or it.cells
         if list then
             -- A record holds one line of them: more tiles than fit in a line go on in the next record.
-            local per = math.clamp(it.per or (it.pills and ITEMS or 4), 1, ITEMS)
+            local per = math.clamp(it.per or (it.pills and ITEMS or it.cells and 8 or 4), 1, CELLS)
             for from = 1, #list, per do
                 if #to >= room then break end
                 local items = {}
                 for j = from, math.min(from + per - 1, #list) do
                     items[#items + 1] = item_record(list[j])
-                    bind((base + #to) * 8 + #items, list[j])
+                    bind((base + #to) * 16 + #items, list[j])
                 end
-                to[#to + 1] = { kind = it.pills and "pills" or "tiles", per = per, items = items, line = it.line == true and from == 1 }
+                to[#to + 1] = { kind = it.pills and "pills" or it.cells and "cells" or "tiles", per = per, items = items, line = it.line == true and from == 1, tall = it.big == true }
                 if it.wheel then wheels[base + #to - 1] = it.wheel end
             end
             return
@@ -227,7 +233,7 @@ function M.open(rows, opts)
             bar = it.gap or (type(it.bar) == "number" and it.bar or -1), copy = type(it.copy) == "string" and it.copy ~= "",
         }
         if to[#to].copy then copies[base + #to - 1] = it.copy end
-        if pressed then bind((base + #to - 1) * 8, it) end
+        if pressed then bind((base + #to - 1) * 16, it) end
         if it.wheel then wheels[base + #to - 1] = it.wheel end
     end
     local out2 = {}
@@ -276,7 +282,7 @@ function M.open(rows, opts)
     -- where the coffee of a `wave` row begins: the heights of the rows above it, as parts/rows.plm lays them out
     local function row_h(r)
         local h = ({ plain = r.tall and 54 or 44, head = 30, big = 64, para = 0, profile = 84, slide = 44, gap = r.bar, wave = 26 })[r.kind]
-        if r.kind == "pills" then h = r.per <= 2 and 60 or 46 elseif r.kind == "tiles" then h = r.per <= 2 and 66 or 88 end
+        if r.kind == "pills" then h = r.per <= 2 and 60 or 46 elseif r.kind == "tiles" then h = r.per <= 2 and 66 or 88 elseif r.kind == "cells" then h = r.tall and 120 or 50 end
         return (h or 0) + (r.line and 14 or 0)
     end
     local split, waved = (#tabs > 0 and 44 or 0) + (opts.field and 46 or 0), false
@@ -404,6 +410,9 @@ on("card_key", function(v)
     choose(choosable[at])
 end)
 -- Ctrl+K: what the right button on the chosen row offers (6B.24, Raycast's Action Panel), at the card's foot
+on("card_combo", function(n)
+    if fact.card_open and shown.opts.combo then shown.opts.combo(tonumber(n) or 0, chosen and items[chosen]) end
+end)
 on("card_actions", function()
     local f = chosen and rights[chosen]
     if not f then return end

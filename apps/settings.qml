@@ -893,8 +893,40 @@ ShellRoot {
                              on: (goo.kept.lens === "shore") === (modelData.id === "shore"); onPressed: goo.set("lens", modelData.id)
                              Glyph { anchors.centerIn: parent; name: parent.parent.modelData.icon; font.pixelSize: 54; color: parent.parent.on ? Theme.gold : Theme.dim } } } }
             Part { visible: shell.page === "launcher" && goo.kept.lens === "shore"; width: view.room; title: "LensShore"
+                Pill { text: I18n.tr("LensShore's own settings"); icon: "sparkles"; onPressed: shell.go("lensshore") } }
+
+            // LensShore's own page (6B.28): where it lies, its Emoji (as Raycast's Emoji & Symbols are set), its GIFs
+            Part { visible: shell.page === "lensshore"; width: view.room; title: I18n.tr("Where it lies")
+                   note: goo.kept.lens === "shore" ? "" : I18n.tr("LensShore is not on: it is chosen under Launcher (LensGoo).")
                 Switch { text: I18n.tr("At the top of the screen"); hint: I18n.tr("As a dock at the top: the panel opens downwards.")
                          on: goo.kept.lens_top === true; onPressed: goo.set("lens_top", !on) } }
+            Part { visible: shell.page === "lensshore"; width: view.room; title: I18n.tr("Emoji")
+                   note: I18n.tr("How many columns the grid has, what Enter does, and the skin tone of the emoji that take one.")
+                Label { text: I18n.tr("Columns"); width: view.room; color: Theme.dim; font.pixelSize: 13 }
+                Repeater { model: [6, 7, 8, 9, 10]
+                    Pill { required property int modelData; text: String(modelData); strong: (goo.kept.lens_emoji_cols || 8) === modelData
+                           onPressed: goo.set("lens_emoji_cols", modelData) } }
+                Label { text: I18n.tr("The Enter key"); width: view.room; color: Theme.dim; font.pixelSize: 13 }
+                Repeater { model: [{ id: "paste", name: QT_TR_NOOP("Paste where you were typing") }, { id: "copy", name: QT_TR_NOOP("Copy") }]
+                    Pill { required property var modelData; text: I18n.tr(modelData.name); strong: (goo.kept.lens_emoji_enter || "paste") === modelData.id
+                           onPressed: goo.set("lens_emoji_enter", modelData.id) } }
+                Label { text: I18n.tr("Skin tone"); width: view.room; color: Theme.dim; font.pixelSize: 13 }
+                Repeater { model: ["\u{1F44B}", "\u{1F44B}\u{1F3FB}", "\u{1F44B}\u{1F3FC}", "\u{1F44B}\u{1F3FD}", "\u{1F44B}\u{1F3FE}", "\u{1F44B}\u{1F3FF}"]
+                    Pill { required property string modelData; required property int index; text: modelData; strong: (goo.kept.lens_emoji_tone || 0) === index
+                           onPressed: goo.set("lens_emoji_tone", index) } } }
+            Part { id: gifPart; visible: shell.page === "lensshore"; width: view.room; title: I18n.tr("GIF")
+                   note: I18n.tr("GIFs are looked for at a service you choose, with your own key. What you type goes to that service, and nothing goes there without a key.")
+                   readonly property string source: goo.kept.lens_gif_source || "giphy"
+                   readonly property var sources: [{ id: "giphy", name: "Giphy", url: "https://developers.giphy.com/dashboard/" },
+                                                   { id: "tenor", name: "Tenor", url: "https://developers.google.com/tenor/guides/quickstart" },
+                                                   { id: "klipy", name: "Klipy", url: "https://partner.klipy.com/" }]
+                Repeater { model: gifPart.sources
+                    Pill { required property var modelData; text: modelData.name; strong: gifPart.source === modelData.id; onPressed: goo.set("lens_gif_source", modelData.id) } }
+                Field { id: gifKey; width: Math.min(420, view.room); icon: "key"; secret: true; hint: I18n.tr("The service's key (API key)")
+                        text: goo.kept["lens_gif_key_" + gifPart.source] || ""; onAccepted: goo.set("lens_gif_key_" + gifPart.source, text.trim()) }
+                Pill { text: I18n.tr("Save the key"); icon: "check"; strong: true; onPressed: goo.set("lens_gif_key_" + gifPart.source, gifKey.text.trim()) }
+                Pill { text: I18n.tr("Where to get a key"); icon: "external-link"
+                       onPressed: Qt.openUrlExternally(gifPart.sources.find(x => x.id === gifPart.source).url) } }
 
             // every drop's own page begins with whether it is on the desktop; what it is, for those that have nothing more to set
             Part { id: dropPart; readonly property string drop: shell.dropOf[shell.page] || ""
