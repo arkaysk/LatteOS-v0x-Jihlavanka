@@ -825,6 +825,11 @@ widgetov, ktoré si človek vyberie a nahrá; **formát spoločný s dashboardom
 
 - [~] 30. 10.: tlačidlá HNEĎ z Domova odstránené, na ich mieste priehľadný pegboard (pravidlo 26 v LATTEOS-GOO). Widgety zatiaľ nejdú vložiť. Zručnosti (Wi-Fi, Nerušiť…) ostávajú písaním.
 
+- [~] 30. 10. (používateľ: LensShore nie je dashboard, ale je najklikanejší, preto **úzky pruh** na pár widgetov): pegboard nízky (64 px); pravý klik: Pridať widget… (zatiaľ otvorí galériu Widgety).
+  Chýba: skutočné vloženie do pruhu; pravý klik na widget: ponuka widgetov, Odstrániť, Upraviť; to isté v dashboarde (6H.05).
+
+**6B.43** [x] **Kopírovanie správ v LensShore** (používateľ 30. 10.): riadok Kopírovať zrušený, malá ikona iba pri hoveri nad správou používateľa aj AI. Pravý klik: Kopírovať vybrané (`patches/pleamar-right-selection.patch`, `text selected_text`), Kopírovať celú správu, LensAI, Nový rozhovor.
+
 **6B.39** [ ] **Výber módov z ponuky** (používateľ 30. 10.): Nastavenia so zoznamom dostupných módov pásky (AI, Hľadať, Okná, Schránka…); nadväzuje na **+** a Jedálny lístok (10B.38) a rozšírenia Raycastu (6B.30).
 
 **6B.40** [ ] **Mód Histogram: mapa zmien systému** (používateľ 30. 10., predloha: strom distribúcií Linuxu, časová os s vetvami): systém ako git priebežne zapisuje,

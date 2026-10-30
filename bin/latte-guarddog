@@ -180,7 +180,7 @@ def made_by_latteos(exe, argv, files):
         script = script_of(base, argv)
         return exe.startswith(("/usr/bin/", "/usr/sbin/", "/bin/")) and script is not None and script.startswith("/") and is_listed(os.path.realpath(script), files)
     if base == "wl-paste":
-        return is_listed(exe, files) and "cliphist" in argv
+        return is_listed(exe, files) and ("cliphist" in argv or "latte-clip" in argv)
     return is_listed(exe, files)
 
 
@@ -401,7 +401,8 @@ COMPONENTS = [
     ("wallpaper", "The wallpaper", lambda: unit_active("latte-session.target"), wallpaper_up,
      lambda: quiet("latte-wall", "restore")),
     ("clipboard", "Clipboard history", lambda: shutil.which("cliphist") is not None and shutil.which("wl-paste") is not None,
-     lambda: running(r"^wl-paste --watch cliphist"), lambda: start_detached("sh", "-c", "exec wl-paste --watch cliphist store")),
+     lambda: running(r"^wl-paste --watch (latte-clip|cliphist)"),
+     lambda: start_detached("sh", "-c", "command -v latte-clip >/dev/null && exec wl-paste --watch latte-clip store; exec wl-paste --watch cliphist store")),
     # the root's: the guard can say it is down, not start it
     ("net", "Cutting off the internet", lambda: os.path.exists("/usr/libexec/latte-netd"), lambda: quiet("systemctl", "is-active", "--quiet", "latte-netd.service"), None),
 ]

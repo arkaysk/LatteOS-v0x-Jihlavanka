@@ -391,3 +391,4 @@ Nové rozhodnutie: jeden riadok sem (dátum, čo, prečo) a oprava platného zne
 | Kruhová ponuka (ako Tangerine) sa nepoužije — ani ako hlavný tvar pravého kliku, ani ako hybrid kruh + zoznam; kontextová ponuka ostáva obdĺžniková podľa pravidla 23 | nie (používateľ, 30. 10.) — inspo/dalsie_inspiracie.md, Tangerine |
 | Licencia LatteOS: dnes MIT, ale nie je definitívna — nakoniec sa zvolí taká, ktorá pokryje všetky potreby | otvorené (používateľ, 30. 10.) — inspo/dalsie_inspiracie.md |
 | Miesto na widgety ukazuje priehľadnú textúru pegboardu, kým tam widget nie je; v Domove LensShore nahrádza tlačidlá HNEĎ, ktoré ustupujú pásu widgetov | áno (používateľ 30. 10.) |
+| LensShore ostáva na zadávanie, nie dashboard; keďže je najklikanejší, má úzky pruh na pár widgetov | áno (používateľ 30. 10.) |

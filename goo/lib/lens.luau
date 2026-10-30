@@ -1461,9 +1461,21 @@ local function shore_rows()
         local rows = {}
         for i = math.max(1, #shore.talk - 5), #shore.talk do
             local m = shore.talk[i]
-            if m.mine then rows[#rows + 1] = { label = m.text, glyph = "user", quiet = true, line = #rows > 0 }
+            -- the right button on a message: what is selected of it first, then all of it
+            local function menu()
+                local picked = text.selected_text or ""
+                local items = {}
+                if picked ~= "" then items[1] = { label = tr("Copy"), glyph = "copy", keys = "Ctrl+C", run = function() pcall(sys.call, "clipboard.set", picked) end } end
+                items[#items + 1] = { label = tr(N("Copy the whole message")), glyph = "copy", run = function() pcall(sys.call, "clipboard.set", m.text) end }
+                items[#items + 1] = { label = tr("Continue in LensAI"), glyph = "external-link", line = true,
+                                      run = function() then_do(function() run("latte-app", { "aicenter", shore.chat }, function() end) end) end }
+                items[#items + 1] = { label = tr("New conversation"), glyph = "plus",
+                                      run = function() shore.chat, shore.talk, shore.view = "new", {}, "find" render(true) focus("lens_q") end }
+                ctx.open(items, { width = 280 })
+            end
+            if m.mine then rows[#rows + 1] = { label = m.text, glyph = "user", quiet = true, line = #rows > 0, hover_copy = m.text, right = menu }
             else
-                rows[#rows + 1] = { para = true, label = (m.text:gsub("```latte%s*\n.-```", ""):gsub("%s+$", "")) }
+                rows[#rows + 1] = { para = true, label = (m.text:gsub("```latte%s*\n.-```", ""):gsub("%s+$", "")), hover_copy = m.text, right = menu }
                 for j, s in ipairs(suggested(m.text)) do
                     local key = i .. ":" .. j
                     if s.skill then rows[#rows + 1] = skills.row(s.skill.skill, s.skill, function() render(true) end) or { label = tr("This cannot be done here"), line2 = tostring(s.skill.skill), glyph = "alert-triangle", quiet = true }
@@ -1471,15 +1483,6 @@ local function shore_rows()
                                                       run = function() if shore.sure[key] then then_do(function() open.shell(s.cmd) end) else shore.sure[key] = true render(true) end end }
                     else rows[#rows + 1] = { label = tr("Open the link"), line2 = s.url, glyph = "world", run = function() then_do(function() open.url(s.url) end) end } end
                 end
-                -- the answer's actions (6B.24): on its Copy row, which the arrows reach
-                rows[#rows + 1] = { label = tr("Copy"), glyph = "copy", copy = m.text, keep = true, run = function() pcall(sys.call, "clipboard.set", m.text) end,
-                                    right = function() ctx.open({
-                                        { label = tr("Copy the answer"), glyph = "copy", run = function() pcall(sys.call, "clipboard.set", m.text) end },
-                                        { label = tr("Continue in LensAI"), glyph = "external-link",
-                                          run = function() then_do(function() run("latte-app", { "aicenter", shore.chat }, function() end) end) end },
-                                        { label = tr("New conversation"), glyph = "plus", line = true,
-                                          run = function() shore.chat, shore.talk, shore.view = "new", {}, "find" render(true) focus("lens_q") end },
-                                    }, { width = 260 }) end }
             end
         end
         if fact.lens_busy then rows[#rows + 1] = { para = true, label = shore.live ~= "" and shore.live or tr("Thinking…") } end
@@ -1510,7 +1513,9 @@ local function shore_rows()
     elseif typed == "" then
         -- with nothing typed, LensShore's home (6B.27): what can be done at once (the skills, by how things are now),
         -- the apps one keeps coming back to, the last conversations with the AI
-        section({ { gap = 122, peg = true } })
+        section({ { gap = 64, peg = true, right = function()
+            ctx.open({ { label = tr(N("Add a widget…")), glyph = "plus", run = function() then_do(function() run("latte-app", { "widgets" }, nil, { output = false }) end) end } }, { width = 240 })
+        end } })
         local fav, most = picks(6, true)
         local function tiles_of(list) local t = {} for i, a in ipairs(list) do t[i] = tile(a) end return { tiles = t, per = 6 } end
         if #most > 0 then section({ { head = true, label = tr(N("MOST LAUNCHED")) }, tiles_of(most) }) end

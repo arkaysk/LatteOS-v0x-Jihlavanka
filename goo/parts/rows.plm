@@ -302,6 +302,15 @@ part Rows {
                 for it in r.items { CardItem(r, it, base, w) }
             }
         }
+
+        // a message: its copy button only while the pointer is over it; the right button is the row's menu, and on a
+        // pegboard too. No cursor of its own here: a press on the letters still selects them.
+        zone box msg_hit { from: 0, 0; size: w, parts.height; active: card_open and (r.hc or r.peg); agent: hidden }
+        on press right msg_hit { tap.x = cursor.x; tap.y = cursor.y; emit card_right((r.index + base) * 16) }
+        text g_copy { at: w - 30, 20; anchor: center; size: 15; color: cream; opacity: 60% + 40% * hc_hit.hover; show: r.hc and (msg_hit.hover or hc_hit.hover) and card_copied != r.index + base; family: "tabler-icons" }
+        text g_check { at: w - 30, 20; anchor: center; size: 15; color: gold; show: r.hc and card_copied == r.index + base; family: "tabler-icons" }
+        zone box hc_hit { from: w - 46, 4; size: 32, 32; cursor: pointer; active: card_open and r.hc and (msg_hit.hover or hc_hit.hover); label: "Copy"; role: button }
+        on press hc_hit { emit card_copy(r.index + base) }
     }
 
     // ClockGoo's (clock.plm): the weather itself, behind a panel: the sky of the hour (by day or by night), the sun or the moon, clouds that

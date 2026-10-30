@@ -1,0 +1,22 @@
+diff --git a/src/render.rs b/src/render.rs
+index 1a49b17..cbf255b 100644
+--- a/src/render.rs
++++ b/src/render.rs
+@@ -2176,6 +2176,17 @@ pub fn run(
+         }
+         let (mut pressed, mut pressed_with, mut released) = (None, None, None);
+         for (button, down) in &buttons {
++            // The right button: what is selected, for a scene that declares `text selected_text`
++            // (its menu copies it), told before the rules of this press are.
++            if (*button, *down) == (1, true) {
++                if let Some(k) = scene.texts.iter().position(|t| t.0 == "selected_text") {
++                    let now_selected = selection.as_ref().filter(|s| s.anchor != s.cursor)
++                        .and_then(|s| draw.selectable.iter().find(|t| t.at == s.at).map(|t| { let (a, b) = s.bytes(&t.text); t.text[a..b].to_owned() }))
++                        .unwrap_or_default();
++                    texts[k] = now_selected.clone();
++                    let _ = to_logic.send(Event::Text(scene.texts[k].0, now_selected));
++                }
++            }
+             match (*button, *down) {
+                 (0, true) => {
+                     // On the letters of a text that can be selected, the press
