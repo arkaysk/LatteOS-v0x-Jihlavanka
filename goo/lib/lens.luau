@@ -1456,7 +1456,7 @@ local function shore_rows()
         end
         if #shore.chats == 0 then rows[#rows + 1] = { label = tr("No conversation yet"), glyph = "messages", quiet = true } end
         section(rows)
-        section({ { label = tr("New conversation"), glyph = "plus", keep = true, run = function() shore.chat, shore.talk, shore.view = "new", {}, "find" render(true) focus("lens_q") end } })
+        section({ { at_top = true, label = tr("New conversation"), glyph = "plus", keep = true, run = function() shore.chat, shore.talk, shore.view = "new", {}, "find" render(true) focus("lens_q") end } })
     elseif shore.view == "talk" then
         local rows = {}
         for i = math.max(1, #shore.talk - 5), #shore.talk do
@@ -1484,7 +1484,7 @@ local function shore_rows()
         end
         if fact.lens_busy then rows[#rows + 1] = { para = true, label = shore.live ~= "" and shore.live or tr("Thinking…") } end
         section(rows)
-        section({ { pills = {
+        section({ { at_top = true, pills = {
             { label = tr("New conversation"), glyph = "plus", keep = true, run = function() shore.chat, shore.talk, shore.view = "new", {}, "find" render(true) focus("lens_q") end },
             { label = tr("Conversations"), glyph = "history", keep = true, run = function() M.shore_chats() end },
             { label = tr("Open in LensAI"), glyph = "external-link", off = shore.chat == "new", run = function() then_do(function() run("latte-app", { "aicenter", shore.chat }, function() end) end) end },
@@ -1502,7 +1502,9 @@ local function shore_rows()
         local task, rows = agent_rows(typed)
         section({ task })
         section(rows)
-        if shore.cafe then section({ { cells = { { label = tr(N("Cafeteria")), icon = CAFE } }, per = 1, big = true } }) end
+        local cafe = { { at_top = true, pills = { { label = tr(N("Enter the cafeteria")), glyph = "door-enter", off = true, keep = true, skip = true } }, per = 1 } }
+        if shore.cafe then cafe[2] = { at_top = true, cells = { { label = tr(N("Cafeteria")), icon = CAFE } }, per = 1, big = true } end
+        section(cafe)
     elseif shore.view == "emoji" then
         for _, s in ipairs(emoji.sections(typed, emoji_env())) do section(s) end
     elseif typed == "" then

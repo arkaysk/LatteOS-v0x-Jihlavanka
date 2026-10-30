@@ -110,7 +110,7 @@ local function height_of(it)
         local per = math.clamp(it.per or (it.pills and ITEMS or it.cells and 8 or 4), 1, CELLS)
         return math.ceil(n / per) * ((it.cells and (it.big and 120 or 50)) or (it.pills and (per <= 2 and 60 or 46)) or (per <= 2 and 66 or 88))
     end
-    if it.head then return 30 elseif it.big then return 64 elseif it.profile then return 84 elseif it.slide then return 44
+    if it.prev then return 78 elseif it.head then return 30 elseif it.big then return 64 elseif it.profile then return 84 elseif it.slide then return 44
     elseif it.wave then return 26 elseif it.gap then return it.gap end
     return it.line2 and 54 or 44
 end
@@ -165,7 +165,10 @@ function M.open(rows, opts)
         end
         if h < opts.height then
             rows = table.clone(rows)
-            table.insert(rows, opts.lens == "top" and #rows + 1 or 1, { gap = opts.height - h })
+            -- `at_top`: the rows that stay at the very top of the panel, the room comes under them
+            local at = 1
+            while opts.lens ~= "top" and rows[at] and rows[at].at_top do at += 1 end
+            table.insert(rows, opts.lens == "top" and #rows + 1 or at, { gap = opts.height - h })
         end
     end
     local out = {}
@@ -229,7 +232,7 @@ function M.open(rows, opts)
         if kind == "slide" then it = table.clone(it) it.bar, it.keep = it.value or 0, true slides[base + #to] = it.set end
         to[#to + 1] = {
             kind = kind, label = it.label or "", hint = it.hint or "", line2 = it.line2 or "", glyph = glyph(it.glyph),
-            icon = it.icon or "", has_icon = (it.icon or "") ~= "", tall = kind == "plain" and (it.line2 or "") ~= "",
+            icon = it.icon or "", has_icon = (it.icon or "") ~= "", tall = kind == "plain" and (it.line2 or "") ~= "", prev = it.prev == true,
             on = it.on == true, off = it.off == true, quiet = not pressed,
             danger = it.danger == true, more = it.sub ~= nil or it.more == true, line = it.line == true and #to > 0,
             bar = it.gap or (type(it.bar) == "number" and it.bar or -1), copy = type(it.copy) == "string" and it.copy ~= "",
@@ -283,7 +286,7 @@ function M.open(rows, opts)
     fact.card_custom = (opts.custom == "clock" and 1) or (opts.custom == "cam" and 2) or (opts.custom == "ai" and 3) or (opts.custom == "calendar" and 4) or 0       -- the card is a scene of its own (parts/clock.plm), not rows
     -- where the coffee of a `wave` row begins: the heights of the rows above it, as parts/rows.plm lays them out
     local function row_h(r)
-        local h = ({ plain = r.tall and 54 or 44, head = 30, big = 64, para = 0, profile = 84, slide = 44, gap = r.bar, wave = 26 })[r.kind]
+        local h = r.prev and 78 or ({ plain = r.tall and 54 or 44, head = 30, big = 64, para = 0, profile = 84, slide = 44, gap = r.bar, wave = 26 })[r.kind]
         if r.kind == "pills" then h = r.per <= 2 and 60 or 46 elseif r.kind == "tiles" then h = r.per <= 2 and 66 or 88 elseif r.kind == "cells" then h = r.tall and 120 or 50 end
         return (h or 0) + (r.line and 14 or 0)
     end

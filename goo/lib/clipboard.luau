@@ -202,7 +202,13 @@ function M.sections(q, env)
         local where = { tr(KINDS[({ text = 3, image = 4, file = 5, link = 6, email = 7, color = 8 })[c.kind] or 3][2]) }
         if (c.app or "") ~= "" then where[#where + 1] = c.app end
         if (c.time or 0) > 0 then where[#where + 1] = ago(c.time) end
-        rows[#rows + 1] = { label = title(c, env), line2 = table.concat(where, " · "), icon = c.thumb or "", glyph = GLYPH[c.kind] or "clipboard",
+        -- a file that is a picture shows itself
+        local shows = c.thumb or ""
+        if shows == "" and c.kind == "file" then
+            local p = plain_of(c):match("^%s*(.-)%s*$")
+            if not p:find("\n") and p:lower():match("%.[pjgw][npie][gfb]?[pgf]?$") then shows = p end
+        end
+        rows[#rows + 1] = { label = title(c, env):sub(1, 300), line2 = table.concat(where, " · "), prev = true, icon = shows, glyph = GLYPH[c.kind] or "clipboard",
                             main = env.settings.lens_clip_enter == "copy" and tr("Copy") or env.main, first = i == (st.page - 1) * PER + 1, clip = c,
                             run = function() primary(c, env) end, right = function() ctx.open(actions(c, env), { width = 320 }) end }
     end

@@ -816,6 +816,19 @@ Zatiaľ okno s obrázkom od používateľa: `~/.config/latteos/cafeteria.png` (b
 
 **6B.36** [ ] **Agenti do dashboardu** (používateľ 30. 10.: zoznam patrí skôr do dashboardu): presunúť do rozbaleného TrayShore (6H.05), keď bude; v LensShore môže ostať bodka 6B.21.
 
+**6B.37** [x] (používateľ 30. 10.) Nová konverzácia úplne navrchu okna rozhovoru (`at_top`: prázdne miesto ide pod ňu). V Agentoch navrchu
+**Vstúpiť do kaviarne** (zatiaľ nefunkčné) a pod ním obrázok. Schránka: každá položka má náhľad (`prev`, 78 px): obrázok, súbor s obrázkom, tri riadky textu.
+
+**6B.38** [ ] **Pás widgetov v Domove LensShore** (používateľ 30. 10.; spresňuje 6B.34): namiesto tlačidiel HNEĎ (Vypnúť Wi-Fi…) nad pásom módov pás
+widgetov, ktoré si človek vyberie a nahrá; **formát spoločný s dashboardom** (6H.05). Príklady: štvorec **využitia Claude** — zlaté prstence
+5 h a týždeň okolo ikony Claude; graf disku (zabrané/voľné); zostatok v banke alebo na Revolute (cudzí widget, prístupové údaje len u používateľa).
+
+**6B.39** [ ] **Výber módov z ponuky** (používateľ 30. 10.): Nastavenia so zoznamom dostupných módov pásky (AI, Hľadať, Okná, Schránka…); nadväzuje na **+** a Jedálny lístok (10B.38) a rozšírenia Raycastu (6B.30).
+
+**6B.40** [ ] **Mód Histogram: mapa zmien systému** (používateľ 30. 10., predloha: strom distribúcií Linuxu, časová os s vetvami): systém ako git priebežne zapisuje,
+čo používateľ robí; časti systému majú vlastné vetvy; dá sa nájsť udalosť s chybou a **vrátiť práve ju**, zlúčiť vetvy, založiť novú. **+** zobrazí mapu na celú plochu cez všetko,
+**−** ju vráti. Treba návrh: čo sa zapisuje (súkromie), a čo sa vôbec dá vrátiť samostatne (nastavenia áno, snímky snapper, dáta aplikácií nie vždy). Používateľ chce doplniť ďalší mód: veta v správe ostala nedokončená.
+
 **6B.13** [ ] **Výskum: Tinycast ako zoznam funkcií** (používateľ 27. 10.: „vyzerá ako naše LensGoo“) —
 https://github.com/abue-ammar/tinycast (macOS, Swift, AGPL-3.0 → kód nepreberať, iba nápady). Čo LensGoo/LensShore
 nemá: bežiace aplikácie s Ukončiť (jednu/všetky), skratka na konkrétnu aplikáciu (prepnúť/skryť), história schránky

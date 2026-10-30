@@ -187,7 +187,7 @@ part Rows {
         // the rows come in one after another, each a little later, sliding in from the ear's side
         let come = clamp(reveal * 3.2 - 0.1 * r.index, 0, 1)
         let shown = come * come * (3 - 2 * come)
-        let h = if(r.kind == gap, max(r.bar, 0), pick(r.kind, if(r.tall, 54, 44), 30, 64, 0, 0, 0, 84, 44, 26))
+        let h = if(r.prev, 78, if(r.kind == gap, max(r.bar, 0), pick(r.kind, if(r.tall, 54, 44), 30, 64, 0, 0, 0, 84, 44, 26)))
 
         column parts {
             // a rule above the row
@@ -212,11 +212,17 @@ part Rows {
                 box { at: w / 2, h / 2; size: w - if(r.tile > 0, 12, 0), h - 4; corner: 12; color: if(r.danger, red, #4a372b); opacity: max(hit.hover, if(card_sel == (r.index + base) * 16, 1, 0)) * if(r.danger, 18%, 100%); show: r.kind == plain or r.kind == big }
 
                 // plain
-                image r.icon { at: 15, if(r.tall, 13, 9); size: 26, 26; show: r.kind == plain and r.has_icon }
+                image r.icon { at: 15, if(r.tall, 13, 9); size: 26, 26; show: r.kind == plain and r.has_icon and not r.prev }
+                // a preview (the clipboard's): a picture beside its name, or what a text says, three lines of it
+                image r.icon { at: 12, 7; size: 100, 64; fit: cover; show: r.prev and r.has_icon }
+                text r.label { at: 124, 28; anchor: left center; width: w - 150; lines: 1; size: 15; weight: 500; color: cream; show: r.prev and r.has_icon; family: "Inter" }
+                text r.line2 { at: 124, 50; anchor: left center; width: w - 150; lines: 1; size: 12.5; color: dim; show: r.prev and r.has_icon; family: "Inter" }
+                text r.label { at: 56, 7; width: w - 82; lines: 3; size: 13.5; line_height: 1.2; color: cream; show: r.prev and not r.has_icon; family: "Inter" }
+                text r.line2 { at: 56, 66; anchor: left center; width: w - 82; lines: 1; size: 12; color: dim; show: r.prev and not r.has_icon; family: "Inter" }
                 text r.glyph { at: 28, if(r.tall, 26, 22); anchor: center; size: 18; color: if(r.danger, red, cream); opacity: if(r.off, 40%, 90%); show: r.kind == plain and not r.has_icon and not r.on; family: "tabler-icons" }
                 text g_check { at: 28, 22; anchor: center; size: 17; color: gold; show: r.kind == plain and r.on; family: "tabler-icons" }
-                text r.label { at: 56, if(r.tall, 17, 22); anchor: left center; width: w - if(r.more, 96, 82) - if(r.copy, 34, 0); lines: 1; size: 15; weight: 500; color: if(r.danger, red, cream); opacity: if(r.off, 45%, 100%); show: r.kind == plain; family: "Inter" }
-                text r.line2 { at: 56, 36; anchor: left center; width: w - 82; lines: 1; size: 12.5; color: dim; show: r.kind == plain and r.tall; family: "Inter" }
+                text r.label { at: 56, if(r.tall, 17, 22); anchor: left center; width: w - if(r.more, 96, 82) - if(r.copy, 34, 0); lines: 1; size: 15; weight: 500; color: if(r.danger, red, cream); opacity: if(r.off, 45%, 100%); show: r.kind == plain and not r.prev; family: "Inter" }
+                text r.line2 { at: 56, 36; anchor: left center; width: w - 82; lines: 1; size: 12.5; color: dim; show: r.kind == plain and r.tall and not r.prev; family: "Inter" }
                 text r.hint { at: w - if(r.copy, 52, 18), if(r.tall, 17, 22); anchor: right center; size: 13; color: dim; show: r.kind == plain and not r.more; family: "Inter" }
                 text g_more { at: w - 22, h / 2; anchor: center; size: 16; color: dim; show: (r.kind == plain and r.more) or (r.kind == profile and not r.quiet); family: "tabler-icons" }
 
