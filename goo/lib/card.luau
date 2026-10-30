@@ -232,7 +232,7 @@ function M.open(rows, opts)
         if kind == "slide" then it = table.clone(it) it.bar, it.keep = it.value or 0, true slides[base + #to] = it.set end
         to[#to + 1] = {
             kind = kind, label = it.label or "", hint = it.hint or "", line2 = it.line2 or "", glyph = glyph(it.glyph),
-            icon = it.icon or "", has_icon = (it.icon or "") ~= "", tall = kind == "plain" and (it.line2 or "") ~= "", prev = it.prev == true,
+            icon = it.icon or "", has_icon = (it.icon or "") ~= "", tall = kind == "plain" and (it.line2 or "") ~= "", prev = it.prev == true, peg = it.peg == true,
             on = it.on == true, off = it.off == true, quiet = not pressed,
             danger = it.danger == true, more = it.sub ~= nil or it.more == true, line = it.line == true and #to > 0,
             bar = it.gap or (type(it.bar) == "number" and it.bar or -1), copy = type(it.copy) == "string" and it.copy ~= "",

@@ -211,6 +211,9 @@ part Rows {
                 box { from: 2, if(r.tile == 1 or r.tile == 4, 1, 0); size: w - 4, h + if(r.tile == 1 or r.tile == 2, 14 - 17 * card.glass, -1 - 2 * card.glass) - if(r.tile == 1 or r.tile == 4, 1, 0); corner: 15; color: mix(paper, cream, 0.075); glass: card.glass * 100%; frost: 100%; smoke: 38% * card.glass; milk: 10% * card.glass; refraction: 40% * card.glass; show: r.tile > 0 }
                 box { at: w / 2, h / 2; size: w - if(r.tile > 0, 12, 0), h - 4; corner: 12; color: if(r.danger, red, #4a372b); opacity: max(hit.hover, if(card_sel == (r.index + base) * 16, 1, 0)) * if(r.danger, 18%, 100%); show: r.kind == plain or r.kind == big }
 
+                // room for a widget, with none in it yet: the pegboard (LATTEOS-GOO, rule 26)
+                shader pegboard { at: 8, 0; size: w - 16, h; colors: cream, #000000; show: r.peg }
+
                 // plain
                 image r.icon { at: 15, if(r.tall, 13, 9); size: 26, 26; show: r.kind == plain and r.has_icon and not r.prev }
                 // a preview (the clipboard's): a picture beside its name, or what a text says, three lines of it

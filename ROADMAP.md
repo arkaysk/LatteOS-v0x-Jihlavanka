@@ -823,6 +823,8 @@ Zatiaľ okno s obrázkom od používateľa: `~/.config/latteos/cafeteria.png` (b
 widgetov, ktoré si človek vyberie a nahrá; **formát spoločný s dashboardom** (6H.05). Príklady: štvorec **využitia Claude** — zlaté prstence
 5 h a týždeň okolo ikony Claude; graf disku (zabrané/voľné); zostatok v banke alebo na Revolute (cudzí widget, prístupové údaje len u používateľa).
 
+- [~] 30. 10.: tlačidlá HNEĎ z Domova odstránené, na ich mieste priehľadný pegboard (pravidlo 26 v LATTEOS-GOO). Widgety zatiaľ nejdú vložiť. Zručnosti (Wi-Fi, Nerušiť…) ostávajú písaním.
+
 **6B.39** [ ] **Výber módov z ponuky** (používateľ 30. 10.): Nastavenia so zoznamom dostupných módov pásky (AI, Hľadať, Okná, Schránka…); nadväzuje na **+** a Jedálny lístok (10B.38) a rozšírenia Raycastu (6B.30).
 
 **6B.40** [ ] **Mód Histogram: mapa zmien systému** (používateľ 30. 10., predloha: strom distribúcií Linuxu, časová os s vetvami): systém ako git priebežne zapisuje,

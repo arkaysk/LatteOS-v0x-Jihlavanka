@@ -59,6 +59,7 @@ scene Goo {
     include "parts/body.plm"
     include "parts/bubble.plm"
     shader velvet = file "shaders/velvet.wgsl"
+    shader pegboard = file "shaders/pegboard.wgsl"
     include "parts/card.plm"
     include "parts/faces.plm"
     include "parts/strip.plm"

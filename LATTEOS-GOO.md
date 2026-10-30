@@ -96,6 +96,8 @@ bol GooPower); **kvapka** = každý samostatný tekutý prvok; **karta Goo** = o
 25. **Koliesko pôsobí iba na to, čo je priamo pod kurzorom** (27. 10.). Prázdne miesto nerobí nič (najviac zavibruje,
     pravidlo 8); záložky sa kolieskom prepínajú iba nad pásom záložiek. Zoznam, ktorý sa začal posúvať, si koliesko
     podrží ~300 ms aj keď kurzor vyjde von; na konci sa zastaví a otáčanie sa neprelieva na rodiča (kartu, okno).
+26. **Miesto na widgety ukazuje pegboard** (30. 10.). Kým v mieste, kam sa dá vložiť widget, žiadny nie je, je tam
+    **priehľadná textúra dierovanej dosky** (`goo/shaders/pegboard.wgsl`), nie tlačidlá ani prázdno. Prvý prípad: Domov LensShore.
 
 ---
 

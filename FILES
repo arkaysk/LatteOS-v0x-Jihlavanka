@@ -57,6 +57,7 @@
 /usr/share/latteos/goo/lockscreen.luau                        <- goo/lockscreen.luau
 /usr/share/latteos/goo/shaders/crest.wgsl               <- goo/shaders/crest.wgsl
 /usr/share/latteos/goo/shaders/sea.wgsl                 <- goo/shaders/sea.wgsl
+/usr/share/latteos/goo/shaders/pegboard.wgsl            <- goo/shaders/pegboard.wgsl
 /usr/share/latteos/goo/shaders/velvet.wgsl              <- goo/shaders/velvet.wgsl
 /usr/share/latteos/goo/shaders/water.wgsl               <- goo/shaders/water.wgsl
 /usr/share/latteos/goo/login.luau                       <- goo/login.luau

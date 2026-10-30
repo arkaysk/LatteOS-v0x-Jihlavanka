@@ -21,7 +21,7 @@ part Card {
     //            are laid wide, the icon beside the name · wave: two layers of coffee as a divider
     model card max 24 {
         kind: plain | head | big | para | pills | tiles | profile | slide | wave | gap | cells = plain
-        label: text; hint: text; line2: text; glyph: text; icon: image 96, 96; has_icon: bool; tall: bool; prev: bool
+        label: text; hint: text; line2: text; glyph: text; icon: image 96, 96; has_icon: bool; tall: bool; prev: bool; peg: bool
         on: bool; off: bool; quiet: bool; danger: bool; more: bool; line: bool; bar: number = -1; per: number = 4
         copy: bool                             // a copy button at its end (6B.09): its text goes to the clipboard
         tile: number = 0                       // part of a tile, a card within the card: 1 its first row, 2 inside, 3 its last, 4 alone
@@ -30,7 +30,7 @@ part Card {
     // the rows of a second column, beside the first: a card with two things to show at once
     model card2 max 12 {
         kind: plain | head | big | para | pills | tiles | profile | slide | wave | gap | cells = plain
-        label: text; hint: text; line2: text; glyph: text; icon: image 96, 96; has_icon: bool; tall: bool; prev: bool
+        label: text; hint: text; line2: text; glyph: text; icon: image 96, 96; has_icon: bool; tall: bool; prev: bool; peg: bool
         on: bool; off: bool; quiet: bool; danger: bool; more: bool; line: bool; bar: number = -1; per: number = 4
         copy: bool                             // a copy button at its end (6B.09): its text goes to the clipboard
         tile: number = 0                       // part of a tile, a card within the card: 1 its first row, 2 inside, 3 its last, 4 alone

@@ -1510,8 +1510,7 @@ local function shore_rows()
     elseif typed == "" then
         -- with nothing typed, LensShore's home (6B.27): what can be done at once (the skills, by how things are now),
         -- the apps one keeps coming back to, the last conversations with the AI
-        local chips = skills.suggestions(function() render(true) end)
-        if #chips > 0 then section({ { head = true, label = tr(N("AT ONCE")) }, { pills = chips, per = 3 } }) end
+        section({ { gap = 122, peg = true } })
         local fav, most = picks(6, true)
         local function tiles_of(list) local t = {} for i, a in ipairs(list) do t[i] = tile(a) end return { tiles = t, per = 6 } end
         if #most > 0 then section({ { head = true, label = tr(N("MOST LAUNCHED")) }, tiles_of(most) }) end
