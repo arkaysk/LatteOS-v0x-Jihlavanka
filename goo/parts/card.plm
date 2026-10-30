@@ -37,6 +37,7 @@ part Card {
         list items max 6 { label: text; glyph: text; icon: image 44, 44; has_icon: bool; on: bool; off: bool; danger: bool }
     }
     model tab max 6 { label: text; glyph: text; on: bool }
+    model card_wide max 1 { pic: image 620, 200 }
     // a month at the top of the second column: six weeks from Monday. `dim`: a day of another month,
     // `chosen`: the day whose events are shown, `dot`: something is written down for it
     model day max 42 { n: text; dim: bool; today: bool; chosen: bool; dot: bool }

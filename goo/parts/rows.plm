@@ -200,7 +200,7 @@ part Rows {
             // ── a plain row, a heading, a large figure, a profile ───────────────────────────────────────────
             group {
                 size: w, h
-                show: r.kind != para and r.kind != pills and r.kind != tiles and r.kind != wave
+                show: r.kind != para and r.kind != pills and r.kind != tiles and r.kind != cells and r.kind != wave
                 opacity: shown
                 move: (1 - shown) * if(card_dir != 0, card.w * 0.5 * card_dir, 18 * card.sx), 0
 
@@ -343,7 +343,7 @@ part Rows {
 
     component CardItem(r: record, it: record, base: number, cw: number) {
         size: cw / if(r.kind == tiles or r.kind == cells, r.per, max(r.items.count, 1)), if(r.kind == cells, if(r.tall, 120, 50), if(r.kind == tiles, if(r.per <= 2, 66, 88), if(r.per <= 2, 60, 46)))
-        let wide = r.per <= 2
+        let wide = r.per <= 2 and r.kind != cells
         let w = cw / if(r.kind == tiles or r.kind == cells, r.per, max(r.items.count, 1))
         let lit = max(hit.hover, if(card_sel == (r.index + base) * 16 + it.index + 1, 1, 0))
 
@@ -362,7 +362,9 @@ part Rows {
         // a cell: a picture alone (an emoji), lit under the pointer or when chosen; one that is pinned has a gold dot
         box { at: w / 2, if(r.tall, 60, 25); size: w - 4, if(r.tall, 116, 46); corner: 12; color: #4a372b; opacity: if(r.tall, max(lit, 0.35), lit); show: r.kind == cells }
         image it.icon { at: w / 2 - 17, 8; size: 34, 34; show: r.kind == cells and it.has_icon and not r.tall }
-        image it.icon { at: 6, 6; size: w - 12, 108; fit: cover; show: r.kind == cells and it.has_icon and r.tall }
+        image it.icon { at: 6, 6; size: w - 12, 108; fit: cover; show: r.kind == cells and it.has_icon and r.tall and r.per > 1 }
+        // one picture across the card has more to show than a cell's 96 px
+        for c in card_wide { image c.pic { at: 6, 6; size: w - 12, 108; fit: cover; show: r.kind == cells and r.tall and r.per == 1 } }
         text it.label { at: w / 2, 25; anchor: center; width: w - 6; lines: 1; size: 18; color: cream; align: center; show: r.kind == cells and not it.has_icon; family: "Inter" }
         ellipse { at: w - 8, 7; radius: 2.5; color: gold; show: r.kind == cells and it.on }
         // a tile: the app's icon over its name

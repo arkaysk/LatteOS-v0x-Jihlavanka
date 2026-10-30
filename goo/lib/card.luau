@@ -115,6 +115,8 @@ local function height_of(it)
     return it.line2 and 54 or 44
 end
 
+M.height_of = height_of
+
 function M.open(rows, opts)
     opts = opts or {}
     -- A card that has a `foot` (a row: a way on to what the card is about) gets the look of coffee below a divider, with the

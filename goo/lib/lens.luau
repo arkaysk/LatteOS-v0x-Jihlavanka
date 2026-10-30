@@ -1029,7 +1029,7 @@ end
 -- first "Ask the AI", so Enter asks it), sections with a few rows each, the kind of each on the right; the arrows choose
 -- another. Not a drop: the drops keep off its stretch of the edge.
 local WIDE = 620                             -- the plate's length, which is the panel's width too
-local SHORE_H = 540                          -- the panel's height, the same for every mode (the user, 29. 10.)
+local SHORE_H = 684                          -- the panel's height, the same for every mode (the user, 29. 10.)
 local shore = { view = "find", talk = {}, chat = "new", live = "", ctx = {}, use = {}, sure = {}, chats = {} }
 local function shore_top() return drops.settings().lens_top == true end      -- the bottom unless chosen (6B.28)
 -- where it lies, from the Settings: the drops keep off that stretch, the capsule lies on it
@@ -1067,6 +1067,13 @@ local function quick_rows(s)
         after(n * 60000, function() run("notify-send", { "-a", "LatteOS", tr("Timer"), (tr("{n} min are up"):gsub("{n}", n)) }, function() end) end)
     end } end
     if said("do not disturb", s) then add("quiet", { on = not drops.settings().quiet }) end
+    for _, w in ipairs({ { "rain", "Rain on or off", "cloud-rain" }, { "snow", "Snow on or off", "cloud-snow" } }) do
+        if s == w[1] or fold(s) == fold(tr("weather word: " .. w[1])) then
+            out[#out + 1] = { label = tr(w[2]), glyph = w[3], hint = tr("Do it now"), run = function()
+                then_do(function() run("latte-weather", { w[1] }, nil, { output = false }) end)
+            end }
+        end
+    end
     return out
 end
 
@@ -1334,12 +1341,18 @@ local function agent_rows(q)
     if #rows == 1 then rows[#rows + 1] = { label = tr(shore.agents and N("No agent is at work") or N("Searching…")), glyph = "robot", quiet = true } end
     return task, near_line(rows)
 end
+-- ponytail: a stand-in picture for the cafeteria (6B.35), the user's own file until the live view exists
+local CAFE = (function() local ok, v = pcall(sys.ask, "env", "HOME") return ok and type(v) == "string" and v or "" end)() .. "/.config/latteos/cafeteria.png"
 local agent_was, agent_news = {}, {}          -- each agent's state when last asked; those waiting that were working
 local function read_agents(done)
     run("latte-ai", { "running" }, function(out)
         local ok, list = pcall(json.decode, out or "")
         shore.agents = ok and type(list) == "table" and list or {}
-        done()
+        run("cat", { CAFE }, function(_, code)
+            shore.cafe = code == 0
+            model.card_wide = shore.cafe and { { pic = CAFE } } or {}
+            done()
+        end)
     end)
 end
 
@@ -1489,6 +1502,7 @@ local function shore_rows()
         local task, rows = agent_rows(typed)
         section({ task })
         section(rows)
+        if shore.cafe then section({ { cells = { { label = tr(N("Cafeteria")), icon = CAFE } }, per = 1, big = true } }) end
     elseif shore.view == "emoji" then
         for _, s in ipairs(emoji.sections(typed, emoji_env())) do section(s) end
     elseif typed == "" then
@@ -1560,6 +1574,15 @@ local function shore_rows()
         section({ { head = true, label = (tr("USE “{what}” WITH…"):gsub("{what}", function() return q end)) },
                   { label = (tr("Search for “{what}” on {engine}"):gsub("{what}", function() return q end):gsub("{engine}", function() return engine().name end)), glyph = "world", hint = tr("Web"), run = function() search_web(engine(), q) end },
                   { label = tr(N("Run it in a terminal")), line2 = q, glyph = "terminal-2", hint = tr(N("Command")), run = function() run_command(q) end } })
+    end
+    -- the panel stays SHORE_H: what does not fit goes, whole sections from the least important; a conversation's height is not known
+    if shore.view ~= "talk" then
+        local room = SHORE_H - 8 - card.height_of(strip()) - 14 - 26 - 8
+        for i, s in ipairs(sections) do
+            for _, r in ipairs(s) do room -= card.height_of(r) end
+            room -= i > 1 and 14 or 0
+            if room < 0 and i > 1 then for j = #sections, i, -1 do sections[j] = nil end break end
+        end
     end
     -- at the bottom edge the list reads upwards: nearest the line what comes first; room under it for the line itself
     local out = {}

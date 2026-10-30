@@ -803,6 +803,19 @@ s LensGoo, `picks()`); **posledné rozhovory** s AI.
   ich stav a otázky, na ktoré čakajú; klik na agenta ho ukáže. Súvisí s 6B.21 (stav na ostrove), 6B.26 (úroveň 2).
 - [ ] Návrhy AI podľa kontextu (označený text, okno vpredu): „Zhrnúť“, „Preložiť“, „Vysvetliť“ ako čipy (6B.18).
 
+**6B.33** [x] **Rovnaká výška všetkých módov LensShore** (používateľ 30. 10.: Hľadať a Emoji boli vyššie): 540 px bolo iba
+minimum, vyšší obsah kartu naťahoval (Emoji 678, Hľadať až 956). Teraz 684 (karta 692, zmestí sa na 1024 × 768); čo sa nezmestí,
+vypadne po celých sekciách od najmenej dôležitých. Neskracuje sa rozhovor (výška odpovede nie je známa).
+
+**6B.34** [ ] **Rýchle grafické ukazovatele v LensShore** (používateľ 30. 10.): namiesto ponuky, ktorá patrí skôr do dashboardu:
+spotreba hlavného agenta (`latte-ai agents`, limity), miesto na disku, termín pomenovanej úlohy (súčasť Kalendára, 10J, zatiaľ
+neexistuje). Grafy podľa `Theme.heat`. Spresniť: kde presne (Domov alebo vlastný mód).
+
+**6B.35** [ ] **Cafeteria: grafický náhľad práce agentov** (používateľ 30. 10.): do prázdneho miesta v móde Agenti, ak sa nevymyslí nič iné.
+Zatiaľ okno s obrázkom od používateľa: `~/.config/latteos/cafeteria.png` (bez súboru sa nič neukáže). Pôvod obrázka overiť, kým pôjde do repa.
+
+**6B.36** [ ] **Agenti do dashboardu** (používateľ 30. 10.: zoznam patrí skôr do dashboardu): presunúť do rozbaleného TrayShore (6H.05), keď bude; v LensShore môže ostať bodka 6B.21.
+
 **6B.13** [ ] **Výskum: Tinycast ako zoznam funkcií** (používateľ 27. 10.: „vyzerá ako naše LensGoo“) —
 https://github.com/abue-ammar/tinycast (macOS, Swift, AGPL-3.0 → kód nepreberať, iba nápady). Čo LensGoo/LensShore
 nemá: bežiace aplikácie s Ukončiť (jednu/všetky), skratka na konkrétnu aplikáciu (prepnúť/skryť), história schránky
