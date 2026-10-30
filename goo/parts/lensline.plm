@@ -6,6 +6,7 @@ part LensLine {
     fact lens_typed = false
     fact lens_busy = false                     // the AI is still answering: the conversations pulse
     fact lens_fresh = false                    // an answer came while the card was shut: a dot
+    fact lens_agent = false                    // an agent stopped working and waits for the user: a pulsing dot
     fact lens_listening = false                // the microphone is on
     text lens_q = ""
     text lens_hint = ""
@@ -89,6 +90,7 @@ part LensLine {
         ellipse { at: ln.left + 24, ln.cy; radius: 16; color: ink; opacity: 10% * ln_talk.hover }
         text g_ln_talk { at: ln.left + 24, ln.cy; anchor: center; size: 18; color: ink; opacity: if(lens_busy, 55% + 40% * sin(time * 300), 85%); family: "tabler-icons" }
         ellipse { at: ln.left + 33, ln.cy - 9; radius: 4; color: gold; show: lens_fresh }
+        ellipse { at: ln.left + 33, ln.cy + 9; radius: 4; color: gold; opacity: 60% + 40% * sin(time * 300); show: lens_agent }
         zone box ln_talk { at: ln.left + 24, ln.cy; size: 36, 46; cursor: pointer; label: "Conversations"; role: button }
         on press ln_talk { emit lens_talk }
 

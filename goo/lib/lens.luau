@@ -1334,6 +1334,7 @@ local function agent_rows(q)
     if #rows == 1 then rows[#rows + 1] = { label = tr(shore.agents and N("No agent is at work") or N("Searching…")), glyph = "robot", quiet = true } end
     return task, near_line(rows)
 end
+local agent_was, agent_news = {}, {}          -- each agent's state when last asked; those waiting that were working
 local function read_agents(done)
     run("latte-ai", { "running" }, function(out)
         local ok, list = pcall(json.decode, out or "")
@@ -1678,6 +1679,22 @@ local function shore_start()
         swiped += v
         if math.abs(swiped) >= 3 then swipe_done = true step_mode(swiped > 0 and 1 or -1) end
     end)
+    -- an idle agent always says it waits, so only the step from working to waiting is news: until seen or working again
+    every(5000, function()
+        if not fact.lens_shore then return end
+        run("latte-ai", { "running" }, function(out)
+            local ok, list = pcall(json.decode, out or "")
+            if not ok or type(list) ~= "table" then return end
+            local now, news = {}, {}
+            local seen = card.id() == "lens" and shore.view == "agents"
+            for _, a in ipairs(list) do
+                now[a.pid] = a.state
+                if not seen and a.state == "waiting" and (agent_was[a.pid] == "working" or agent_news[a.pid]) then news[a.pid] = true end
+            end
+            agent_was, agent_news = now, news
+            fact.lens_agent = next(news) ~= nil
+        end)
+    end)
     -- while the agents are shown, they are asked again every few seconds: one starts, one comes to wait for the user
     every(3000, function()
         if card.id() == "lens" and shore.view == "agents" then read_agents(function() if card.id() == "lens" and shore.view == "agents" then render(true) end end) end
@@ -1733,6 +1750,13 @@ local function shore_start()
         ask(q)
     end)
     on("lens_talk", function()
+        if fact.lens_agent then
+            agent_news, fact.lens_agent = {}, false
+            shore.view, shore.agents = "agents", nil
+            if card.id() == "lens" then render(true) else M.shore_open() end
+            read_agents(function() if card.id() == "lens" and shore.view == "agents" then render(true) end end)
+            return
+        end
         if card.id() == "lens" and shore.view ~= "find" then return card.close() end
         fact.lens_fresh = false
         if #shore.talk > 0 then shore.view = "talk" if card.id() == "lens" then render(true) else M.shore_open() end

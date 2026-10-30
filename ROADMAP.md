@@ -744,7 +744,11 @@ zapnutý čip; súbor pustený na ostrov je príloha (`--attach`). Neoverené na
 na potvrdenie, odkazy → „Otvoriť odkaz“, kopírovanie odpovede. Neoverené naživo.
 
 **6B.21** [~] **LensShore: ostrov hlási stav** (návrh 27. 10.): pulz tlačidla rozhovorov, kým AI pracuje pri zbalenom ostrove,
-bodka pri hotovej odpovedi. Chýba: agent (Claude Code, Codex) čaká na vstup, sťahovanie/aktualizácia.
+bodka pri hotovej odpovedi. Chýba: sťahovanie/aktualizácia.
+- [x] 30. 10.: agent čaká na vstup — pulzujúca bodka pri tlačidle rozhovorov (`lens_agent`), klik otvorí Agentov. Hlási sa iba
+  prechod z „pracuje“ na „čaká“, lebo nečinný Claude Code hlási „čaká“ stále (pravidlo 24); zhasne po pozretí alebo keď agent
+  znova pracuje. `latte-ai running` každých 5 s (0,1 s). Stav pozná iba agent v termináli s titulkom (nie VS Code). Overené bez
+  obrazovky falošným agentom (foot): pracuje → bez bodky, čaká → bodka, klik → Agenti, bodka preč.
 
 **6B.22** [x] **LensShore: kam text pôjde** (návrh 27. 10.): ikona domček (tento počítač) / oblak (služba) pri riadku, klik
 vyberie, kto odpovedá (`lens_ai` v nastaveniach Goo). Neoverené naživo.
