@@ -482,4 +482,37 @@ cudzích aplikácií (Obsidian, Photoshop)?
 - **Prepojenie s LensShore:** položka „Opýtať sa…“ v Návrhoch otvorí ostrovček LensShore už s kontextom (výrez, text,
   aplikácia) — rovnako ako hlasový príkaz „toto“ pri ukazovaní. LensShore tak nepotrebuje dlhý prompt.
 - Ak sa schváli, do ROADMAP: kruh pri ťahaní (DualBrew / 10A, kompozitor) a „Návrhy“ + AI pri kurzore (6B, LensShore).
+- **Rozhodnuté 30. 10. (používateľ): kruhová ponuka sa nepoužije** — ani ako tvar pravého kliku, ani ako hybrid
+  kruh + zoznam (`docs/goo/ROZHODNUTIA.md`). Z Tangerine ostáva iba myšlienka úprav súboru priamo pri ťahaní;
+  časť „Návrhy“ a AI pri kurzore sú stále otvorená úvaha.
+
+https://github.com/Sloth-OS-Linux/sloth-os · https://sloth-os-linux.github.io/ (r/DistroHopping, u/zsloth_dev, 29. 10. 2026)
+  - (Claude, 30. 10.) **Sloth OS** — distribúcia s **rovnakým cieľom ako LatteOS**: ľudia z Windows, ktorí nechcú terminál
+    ani sa učiť Linux; všetko z okna. Verzia 1.2.1 (1.0.4 26. 10., 1.1 27. 10., 1.2 28. 10., 1.2.1 29. 10. — veľmi rýchle tempo).
+    Kód Apache-2.0, grafika CC BY-SA 4.0.
+  - **Základ:** Universal Blue `kinoite` (Fedora Atomic) s **KDE Plasma** — teda ten istý základ, aký plánujeme v 1C
+    (Atomic/bootc), ale hotové prostredie KDE namiesto vlastnej plochy. Build BlueBuild + GitHub Actions, obrazy denne,
+    podpísané cosign; NVIDIA variant s otvoreným jadrovým ovládačom (iba GTX 16 a novšie — staršie karty nie, LatteOS
+    chce aj ~10 rokov staré). Vlastný živý inštalátor namiesto Anacondy; iba UEFI.
+  - **Čo majú a stojí za pozretie:**
+    - **Sloth Center** — všetky nastavenia v jednom okne ako Nastavenia vo Windows (aktualizácie, disky, NAS, záloha,
+      obrazovky s VRR/HDR, zvuk, Bluetooth, diagnostika Wi-Fi, po spustení, oprávnenia, „Obnoviť tento počítač“,
+      offline Pomocník, vytvorenie inštalačného média, rodičovská kontrola). Porovnať so zoznamom 11 chýbajúcich stránok (9).
+    - **Uvítací sprievodca** — nič nie je predinštalované, používateľ si vyberie aplikácie (prehliadač, Steam, Discord,
+      kancelária…); na lište sú iba vybrané. Rovnaký princíp ako Barista (10I).
+    - **Rozloženie lišty** Windows 10 / Windows 11 / Mac / Ubuntu, voliteľné v sprievodcovi aj neskôr.
+    - **„Pobeží to?“** — hľadanie hry → odhad z ProtonDB (ODbL) a AreWeAntiCheatYet (MIT): % hráčov, podľa výrobcu
+      grafiky (AMD/NVIDIA/Intel), druh anti-cheatu. **Silný nápad pre Hry (10K) a App Manager** — tie isté verejné dáta.
+    - **Programy z Windows dvojklikom** (.exe, .msi, obrazy diskov): umu-launcher + Proton, systémový Wine ako záloha bez
+      siete, nastavenia pre každý program zvlášť, pred zmenou verzie Protonu **snímka priečinka programu** (Btrfs reflink).
+      Ak existuje lepšia linuxová verzia (Discord, Chrome), ponúkne najprv ju. Porovnať s AVP2 v Baristovi.
+    - **Zdieľané poznatky** — voliteľne stiahne verejný zoznam funkčných nastavení (z ProtonDB a iných strojov Sloth OS);
+      zdieľanie je dobrovoľné a posiela iba nastavenie, výrobcu GPU, hash mena programu a náhodné ID stroja (Cloudflare Worker).
+    - **Aktualizácie** atomické na pozadí, rozdielové (~300 MB), tiché hodiny bez pripomienok reštartu; predchádzajúca verzia
+      v ponuke štartu (rollback). Presun hier Steamu medzi diskami bez sťahovania. OneDrive a Google Drive ako bežné
+      priečinky, prenos súborov a záložiek zo starého disku s Windows, PIN a odtlačok prsta, bez TPM 2.0.
+  - **Využitie v LatteOS:** najbližší „konkurent“ — sledovať a porovnať (aj do porovnania na webe). Rozdiel: Sloth OS
+    stavia na hotovom KDE a napodobňuje Windows; LatteOS má vlastnú plochu Goo, LensShore s AI, model dôvery aplikácií
+    a NET. Prevziať sa dá najmä **„Pobeží to?“**, snímka pred zmenou Protonu, zdieľané nastavenia programov a obsah
+    Sloth Center ako kontrolný zoznam pre Nastavenia (Apache-2.0 dovoľuje prevziať kód s uvedením v `TRETIE-STRANY.md`).
 
