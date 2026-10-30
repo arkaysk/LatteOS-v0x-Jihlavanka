@@ -28,6 +28,7 @@ patria k pôvodnej roadmape; tu sú prepísané na dnešné kategórie.
 | inšpirácia | verdikt | čo a prečo |
 |---|---|---|
 | **Thumbnail Bloom** (KDE, 30. 10.) | 🧭 VZOR, ⏳ | **Áno myšlienka:** „žiadne okno nie je úplne schované“ priamo napĺňa pravidlo 24 (vidieť bez kliku) a dopĺňa Glance/Parking — Glance odkladá okná ručne k okraju, Bloom **sám** zmenší prekryté okno do voľného miesta. Hodí sa ako ďalší **režim okien v 8A** (Plávajúce + Rozkvet), vypínateľný pre monitor (8A.13). **Nie kód:** je to C++ pre KWin, licencia neuvedená, a Hyprland to bez pluginu nevie (kresliť okno inde + neviditeľná klikacia vrstva). **Nie teraz:** najprv dotiahnuť Glance z poradia bod 6; Bloom stavať na tom istom mieste v engine, ktoré pozná zóny. Vyhnúť sa jeho chybe (pôvodné miesto ostane klikateľné). Natočenie o 45° iba na plnom stupni výkonu, v SAFE a pri hre vypnuté. |
+| **Trellis WM** (Dan Fessler, „OS ako fraktál“, video 22. 9.) | 🧭 VZOR, ⏳ | **Áno myšlienka „priečinok = miesto“:** projekt má svoj priestor, kde jeho okná ostávajú tam, kam ich človek dal, a vrátia sa po návrate — to je takmer presne náš **Continuity v QueenGoo** (uložené modely relácie), len naviazaný na priečinok. Silná kombinácia: **pravý klik na priečinok v DualBrew › „Otvoriť ako priestor“** obnoví okná, ktoré k nemu patria (dokumenty, prehliadač s kartami projektu, terminál v tom priečinku); prehľad „Map“ = oddialenie nad všetkými priestormi, čo dopĺňa minimapu nekonečnej pásky. **Nie ako hlavný model plochy:** vnáranie plôch do seba je pre človeka z Windowsu neznáme (pravidlo 2) a ľahko sa v ňom stratí; pri hre nemá zmysel. Kód nie (macOS, licencia neznáma). Až po Continuity a DualBrew. |
 | **Glance** (Scott Jenson) + prednáška | ✅ už v pláne | Myšlienka zón Main/Stash/Parking sedí na široký monitor 2560 × 1080; už je v poradí (bod 6, 8A). Kód KWinu sa nepreberá. |
 | **fwm** (fyzika okien) | 🧭 VZOR | Pevné pravidlá fyziky (hmotnosť, tlmenie, hranice) pre kvapky Goo — dobré. Kompozitor ani fyzika okien nie: okná, ktoré sa hádžu a padajú, sú proti „efektívne“ a hráčom by prekážali. |
 | **skwd-wall** | ✅ použité | Prechody a živé tapety sú už v 7A (7A.08–7A.12). Ďalšie použitie na zatvorenie okna a prepnutie plochy cez plugin Hyprlandu — áno, ale krátko (do ~250 ms), prepínanie aplikácií jemne alebo vôbec. |
@@ -117,6 +118,7 @@ patria k pôvodnej roadmape; tu sú prepísané na dnešné kategórie.
 ## Čo z toho zapísať do ROADMAP (návrh, čaká na schválenie)
 
 - **8A** — režim okien **Rozkvet** (podľa Thumbnail Bloom), po Glance.
+- **6E / 10A** — „Otvoriť ako priestor“: Continuity naviazané na priečinok, prehľad Map (podľa Trellis WM).
 - **10K / 10H** — „Pobeží to?“ z ProtonDB a AreWeAntiCheatYet.
 - **10H / 10I** — GitHub/GitLab vydania ako zdroj (výber súboru, SHA-256, sledovanie vydaní).
 - **10I** — snímka priečinka programu pred zmenou Protonu; ponúknuť najprv linuxovú verziu.

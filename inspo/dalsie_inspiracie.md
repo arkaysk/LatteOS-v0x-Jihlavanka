@@ -539,8 +539,7 @@ https://github.com/tgeorgiadis/quiver-launcher (r/BestGitHubRepos, ~3,2 tis. hvi
     ako JSON, overovanie a správu módov pri hrách (10K).
 
 https://github.com/LMauricius/kde-thumbnail-bloom (r/kde, u/LegendaryMauricius, „Thumbnail Bloom: a new effect and
-window management style“) · video https://m.youtube.com/watch?v=Kd9AbKawwhg (podľa používateľa ďalší možný layout plochy;
-video sa odtiaľto otvoriť nedalo — doplniť názov a autora)
+window management style“)
   - (Claude, 30. 10.) **Thumbnail Bloom** — efekt KWinu pre Plasmu 6: neaktívne okno, ktoré iné okno prekryje, sa
     **zmenší na náhľad a presunie na najbližšie voľné miesto** tej istej obrazovky, takže žiadne okno nie je úplne
     schované. Náhľad začína na 50 %, podľa miesta klesá až na 15 %; je **natočený o 45° smerom k svojmu pôvodnému miestu**
@@ -549,6 +548,17 @@ video sa odtiaľto otvoriť nedalo — doplniť názov a autora)
     Nastavenia: výnimky (navrchu, na všetkých plochách, maximalizované, celá obrazovka), veľkosti, priehľadnosť (70 %),
     uhol. C++ s KWin hlavičkami (CMake), **licencia neuvedená**, 20 hviezd, bez vydaní. Známa chyba: pôvodné miesto okna
     ostane neviditeľne klikateľné, kým sa okno nevynesie.
+  - **Využitie v LatteOS:** pozri `inspo/hodnotenie-inspiracii.md` (Okná).
+
+https://m.youtube.com/watch?v=Kd9AbKawwhg — Dan Fessler: „What happens when you make an Operating System fractal?“
+(22. 9. 2026) · vydané ako správca okien pre macOS: https://TrellisWM.app · obrázok `trellis fraktalna plocha.jpg`
+  - (Claude, 30. 10., podľa snímky a opisu videa; video ani stránka sa odtiaľto otvoriť nedali) **Trellis WM —
+    „fraktálna“ plocha.** Prototyp novej UX: **priečinok je zároveň plocha.** Na ploche ležia okná priečinkov
+    (Projects, Reference, Studio) aj ikony podpriečinkov; do priečinka sa dá „vojsť“ a stane sa celou plochou so svojimi
+    oknami a podpriečinkami, von sa ide späť o úroveň (dole drobčeky Desktop › Studio, tlačidlá Overview, Desktop
+    a **Map**). Ten istý vzor sa opakuje v každej úrovni — preto „fraktál“. Poznámka vo videu: „plocha, ktorá pôsobí
+    ako miesto; všetko má svoj domov; nič sa nezahrabe; oddialiť a vidieť celok; súvisiace veci držať pri sebe“.
+    Platforma macOS; licencia a cena neznáme.
   - **Využitie v LatteOS:** pozri `inspo/hodnotenie-inspiracii.md` (Okná).
 
 **Licencia LatteOS (používateľ 30. 10.):** dnes je v repozitári **MIT**, ale **nie je definitívna** — nakoniec sa zvolí
