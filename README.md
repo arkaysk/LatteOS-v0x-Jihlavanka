@@ -22,7 +22,7 @@ human on a real PC, and borrowed code is always credited (see *Credits* below).
 
 | | |
 |---|---|
-| ![Login](docs/screenshots/login.png) **Login** — a coffee sea at sunset, weather, clock and news. | ![LensShore](docs/screenshots/lensshore.png) **LensShore** — search, apps, quick actions, clipboard, emoji and AI in one bar. |
+| ![Login](docs/screenshots/login.png) **Login** — a coffee sea at sunset, weather, clock and news. Live Sun, Moon and Stars. | ![LensShore](docs/screenshots/lensshore.png) **LensShore** — search, apps, quick actions, clipboard, emoji and AI in one bar. |
 | ![DualBrew](docs/screenshots/dualbrew-two-panels.png) **DualBrew** — two-panel file manager (Total Commander habits, Windows looks). | ![DualBrew icons](docs/screenshots/dualbrew-icons.png) **DualBrew** — single panel with icons. |
 | ![Background](docs/screenshots/settings-background-pegboard.png) **Background** — the *pegboard*: drag pictures, films or slideshows onto your screens as layers. | ![Windows](docs/screenshots/settings-windows.png) **Windows** — each screen chooses how windows are arranged: floating, tape, tiles, glance. |
 | ![Clock](docs/screenshots/clockgoo.png) **ClockGoo** — time, weather, world clocks, digital wellbeing. | ![Performance](docs/screenshots/powergoo-strip.png) **PowerGoo strip** — CPU, RAM, GPU and VRAM at a glance. |
@@ -37,13 +37,13 @@ human on a real PC, and borrowed code is always credited (see *Credits* below).
   modes per screen and wallpapers stretched across screens (pictures, videos, slideshows).
 - **NET button.** Cut any app off the internet instantly — Windows apps too.
 - **Made for games.** Steam, Proton and current drivers; **Barista** prepares Windows programs and games for you.
-- **AI you can switch off.** Local AI (also in Slovak) can help with settings and files; online AIs live in their
+- **AI you can switch off.** Local AI (also in Slovak or another languahe) can help with settings and files; online AIs live in their
   own tabs. Generative AI can be turned off completely in the installer or in Settings.
 - **No telemetry, no ads, no account required.**
 
 ## Platform
 
-- Fedora 44 + Hyprland, Quickshell (QML) apps, Rust tools; Fedora Atomic (bootc) planned for 1.0.
+- Fedora 44 + Hyprland, Quickshell (QML) apps, Pleamar, Rust tools; Fedora Atomic (bootc) planned for 1.0.
 - Must boot without a GPU: a **SAFE** session (labwc) always works; acceleration only adds effects.
 - Target: any PC with Vulkan that is less than ~10 years old, AMD, NVIDIA and Intel.
 
