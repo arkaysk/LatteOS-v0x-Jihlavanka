@@ -165,12 +165,14 @@ FloatingWindow {
                 f.forceActiveFocus()
                 const hidden = f.echoMode !== undefined && f.echoMode !== TextInput.Normal     // a password is never copied out
                 const some = f.selectedText !== ""
-                editMenu.open(x, y, [
-                    { icon: "cut", text: I18n.tr("Cut"), hint: "Ctrl+X", enabled: some && !hidden, run: () => f.cut() },
-                    { icon: "copy", text: I18n.tr("Copy"), hint: "Ctrl+C", enabled: some && !hidden, run: () => f.copy() },
-                    { icon: "clipboard", text: I18n.tr("Paste"), hint: "Ctrl+V", enabled: f.canPaste, run: () => f.paste() },
-                    { line: true },
-                    { icon: "select-all", text: I18n.tr("Select all"), hint: "Ctrl+A", enabled: f.text !== "", run: () => f.selectAll() }])
+                const take = { icon: "select-all", text: I18n.tr("Select all"), hint: "Ctrl+A", enabled: f.text !== "", run: () => f.selectAll() }
+                editMenu.open(x, y, f.readOnly              // text only read (an AI answer): copy alone (6B.11)
+                    ? [{ icon: "copy", text: I18n.tr("Copy"), hint: "Ctrl+C", enabled: some, run: () => f.copy() },
+                       { line: true }, take]
+                    : [{ icon: "cut", text: I18n.tr("Cut"), hint: "Ctrl+X", enabled: some && !hidden, run: () => f.cut() },
+                       { icon: "copy", text: I18n.tr("Copy"), hint: "Ctrl+C", enabled: some && !hidden, run: () => f.copy() },
+                       { icon: "clipboard", text: I18n.tr("Paste"), hint: "Ctrl+V", enabled: f.canPaste, run: () => f.paste() },
+                       { line: true }, take])
             }
         }
     }
@@ -183,7 +185,7 @@ FloatingWindow {
             if (c === catcher || !c.visible || !c.enabled) continue
             const at = c.mapFromItem(item, x, y)
             if (at.x < 0 || at.y < 0 || at.x > c.width || at.y > c.height) continue
-            if (c.cursorPosition !== undefined && c.readOnly === false) return c
+            if (c.cursorPosition !== undefined && (c.readOnly === false || c.selectByMouse === true)) return c
             const deeper = fieldAt(c, at.x, at.y)
             if (deeper) return deeper
         }

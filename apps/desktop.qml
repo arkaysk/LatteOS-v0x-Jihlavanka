@@ -361,7 +361,18 @@ ShellRoot {
                         Keys.onReturnPressed: (ev) => { ev.accepted = true; desk.rename(ic.path, text); root.forceActiveFocus() }
                         Keys.onEnterPressed: (ev) => { ev.accepted = true; desk.rename(ic.path, text); root.forceActiveFocus() }
                         Keys.onEscapePressed: (ev) => { ev.accepted = true; desk.renaming = ""; root.forceActiveFocus() }
-                        onActiveFocusChanged: if (!activeFocus && desk.renaming === ic.path) desk.rename(ic.path, text) } }
+                        onActiveFocusChanged: if (!activeFocus && desk.renaming === ic.path) desk.rename(ic.path, text) }
+                    // the right button on the typed name: cut, copy, paste, as on every field (6B.11)
+                    MouseArea { anchors.fill: parent; acceptedButtons: Qt.RightButton
+                        onPressed: (m) => {
+                            const q = mapToItem(root, m.x, m.y)
+                            const some = typed.selectedText !== ""
+                            menu.open(q.x, q.y, [
+                                { icon: "cut", text: I18n.tr("Cut"), hint: "Ctrl+X", enabled: some, run: () => typed.cut() },
+                                { icon: "copy", text: I18n.tr("Copy"), hint: "Ctrl+C", enabled: some, run: () => typed.copy() },
+                                { icon: "clipboard", text: I18n.tr("Paste"), hint: "Ctrl+V", enabled: typed.canPaste, run: () => typed.paste() },
+                                { line: true },
+                                { icon: "select-all", text: I18n.tr("Select all"), hint: "Ctrl+A", enabled: typed.text !== "", run: () => typed.selectAll() }]) } } }
                 MouseArea {
                     id: hit; anchors.fill: parent; hoverEnabled: true; acceptedButtons: Qt.LeftButton | Qt.RightButton
                     property point from
