@@ -79,6 +79,15 @@ Hotové body sa z poradia vyškrtávajú (ostávajú zapísané pri svojej kateg
  27. [ ] **Optimalizácia** — zrýchlenie načítania, zmenšenie na úložisku, nižšia náročnosť na hardvér, bez obmedzenia výsledku — (17)
  28. [ ] **STRESTEST** — úplne posledný — (18)
 
+**Aktuálny cieľ — alpha vydanie (30. 10. 2026):** najbližší 1–2-týždňový blok Claude weekly session využiť na
+dokončenie už rozpracovaných a schválených úloh **a** kompaktný grafický inštalátor (2.06); potom pripraviť verejné
+alpha vydanie s možnosťou prihlásiť dobrovoľných testerov (14.20). **Nepridávať nové produktové funkcie ani nápady.**
+Opravy chýb, regresie a dokončenie prijatých úloh pokračujú. Inštalátor musí umožniť bežnú podporovanú inštaláciu bez
+konzoly; pri výbere alebo mazaní disku jasne vysvetliť následky a vyžiadať potvrdenie. Pred zverejnením overiť čistú
+inštaláciu a základný štart; neotestované možnosti (napr. dualboot) nesľubovať ako podporované.
+Beyond All Reason na latte-lab bežal výborne aj na staršom hardvéri — povzbudivý výsledok, nie náhrada testov na
+ďalších zostavách.
+
 **Čaká a nie je v poradí:** ChatGoo — Beeper nie je na latte-lab, nedá sa overiť (6I) · Návrhy kvapiek, kým ich autor neprijme (6L) ·
 Prístupnosť až v Arabice 1+ (13) · Atomic/bootc, Nervboot, LatteApp (1C, 3, 19).
 
@@ -164,6 +173,14 @@ Barista instalator OS je prva prezentacia baristu ktory bude mat v hotovom syste
 
 **2.05** [ ] Inštalátor: úvodná obrazovka s voľbou AI zapnúť / vypnúť (R3·G). Prihlasovanie: prepnutie do SAFE alebo
   iného nainštalovaného shellu (KDE, GNOME, čistá Noctalia…); SAFE nesie sadu nástrojov na zistenie, čo sa pokazilo.
+
+**2.06** [ ] **Kompaktný grafický inštalátor pre alpha vydanie** (používateľ 30. 10.): pripraviť najkratšiu bezpečnú
+cestu od inštalačného média k funkčnému LatteOS na podporovanom PC tak, aby ju človek zvládol bez konzoly. UI má
+jasne ukázať cieľový disk a následky operácie, vyžiadať výslovné potvrdenie pred zmenou alebo vymazaním dát, zobraziť
+priebeh a zrozumiteľnú chybu; po dokončení umožniť reštart do systému. Rozsah držať kompaktný — nepodporované scenáre
+ako dualboot či inštalácia na obsadený disk neponúkať, kým nie sú bezpečne implementované a otestované (2.01–2.02).
+Výsledok overiť čistou inštaláciou vo VM a na podporovanom testovacom PC; technické riešenie vybrať podľa toho, čo
+možno spoľahlivo dokončiť v alpha rozsahu.
 
 ### 2A. [ ] Prvé spustenie
 Po prvom prihlásení sa kvapky predstavia.
@@ -2638,6 +2655,12 @@ vlastný kód LatteOS tým nie je dotknutý. Preveriť: či záložky pridať č
 ostal ľahko aktualizovateľný), vzhľad GTK voči téme LatteOS (libadwaita farby z témy), slovenčina (preklady má cez gettext).
 Dnešný `apps/monitor.qml` ostáva, kým fork nedobehne; potom ho nahradí. Zapísať do TRETIE-STRANY.md.
 
+**10D.18** [ ] **Dlhodobý záznam výkonu — EEG pohľad** (používateľ 30. 10.): v LatteMonitori pridať samostatné menu
+pre históriu a súvislý graf v štýle EEG, s výberom obdobia aspoň za posledných 24 hodín a možnosťou pozrieť si dlhšie
+obdobie podľa uchovávania telemetrie (10D.07, 10D.15). Nad údajmi pri prejdení kurzorom zobraziť poznámku k vybranému
+času; uviesť tri aplikácie s najväčším podielom na zaznamenanej záťaži v danom okamihu. Rozlíšiť namerané hodnoty
+od odhadov; história podlieha súhlasu, nastaveniu uchovávania a možnosti vymazania (10D.15).
+
 ### 10E. [~] DeviceManager
 Zdroje: `apps/devices.qml`, `bin/latte-devices`
 
@@ -3070,6 +3093,11 @@ Lepton, F-Droid 2 (r. 906–907); SAFE pri zlom ovládači NVIDIA (r. 910).
 - [ ] Lepton/Android hry, gvisor, scrcpy a ďalšie externé technológie zostávajú samostatnými
   rozhodovacími bodmi; do produktu prejdú iba po teste prínosu, kompatibility, bezpečnosti a údržby.
 
+**10K.06** [ ] **Skryť Goo a LensShore počas hry** (používateľ 30. 10.): pri spustení hry nesmú kvapky Goo ani
+LensShore zostať na spodnom okraji a zasahovať do hry. Počas aktívnej hry potlačiť shellové prekrytia (najmä pri
+fullscreen/borderless); po ukončení hry alebo návrate na plochu ich obnoviť bez straty stavu. Overiť s Beyond All
+Reason na latte-lab aj podľa stres testu 369; zachovať vstup do hry a overiť, že shell zbytočne nezaťažuje systém.
+
 ---
 
 ## 11. [~] Bezpečnosť, súkromie a záloha
@@ -3242,6 +3270,12 @@ nášho kódu, alebo beží ako samostatný program. Pravidlo: bez riadku sa cud
 má autora a licenciu aj v hlavičke. Pred vydaním 1.0 sa z registra rozhodne konečná licencia: ak niečo prevzaté
 **do** nášho kódu vyžaduje GPL, celok musí byť GPL-kompatibilný; samostatné programy (skwd-wall, whyd, fork Mission
 Center) ostávajú pod svojou licenciou; nekomerčné (Shadertoy CC BY-NC-SA) obmedzujú celok, ak sa vložia dovnútra.
+
+**14.20** [ ] **Verejné alpha vydanie pre dobrovoľných testerov** (cieľ po 1–2-týždňovom dokončovacom bloku,
+30. 10.): vydať reprodukovateľný obraz/inštalačný zdroj spolu s kompaktným grafickým inštalátorom (2.06), jasne
+označiť alpha stav, podporovaný hardvér, známe obmedzenia a spôsob nahlásenia problémov. Pred vydaním prejsť brány
+14.15 a overiť čistú inštaláciu, prvý štart, základné scenáre a návrat po zlyhaní; pozvanie testerov až keď je
+inštalácia bezpečná a opakovateľná. Zverejnenie vykonať iba na výslovný pokyn.
 
 ## 15. [ ] Inšpirácie a tech radar
 Nápady bez rozhodnutia; samostatné úlohy z nich sú pri svojej kategórii. `inspo/`.

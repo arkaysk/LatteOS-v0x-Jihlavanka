@@ -5,6 +5,23 @@ tu je, **kedy a prečo** sa čo rozhodlo, a čo bolo zamietnuté. Podrobné pôv
 z vtedy) je v [docs_zaloha/2026-10-06-latteos-goo-pred-rozdelenim.md](../../docs_zaloha/2026-10-06-latteos-goo-pred-rozdelenim.md).
 Nové rozhodnutie: jeden riadok sem (dátum, čo, prečo) a oprava platného znenia v LATTEOS-GOO.md.
 
+## 30. 10. 2026
+
+- **LatteMonitor — dlhodobý záznam výkonu:** pridať samostatné menu s EEG-štýlom súvislého grafu, výberom obdobia
+  najmenej 24 hodín a možnosťou zobraziť dlhší záznam. Pri prejdení kurzorom nad časovým bodom ukázať tri aplikácie
+  s najväčším podielom na záťaži v danom okamihu. Záznam používa voliteľnú telemetriu so súhlasom, nastaviteľným
+  uchovávaním a vymazaním; namerané údaje odlíšiť od odhadov. ROADMAP 10D.18 (nadväzuje na 10D.07 a 10D.15).
+- **Smer k vydaniu:** nepridávať nové produktové funkcie; dokončiť schválený rozsah, inštalátor a pripraviť verejné
+  vydanie s cieľom pozvať dobrovoľných alpha testerov. Opravy a dokončenie prijatých úloh pokračujú. Beyond All Reason
+  na latte-lab bežal výborne na staršom hardvéri — zaznamenať ako povzbudivú skúsenosť, nie ako všeobecné potvrdenie
+  kompatibility. ROADMAP „Poradie práce“ a 10K.06.
+- **Alpha plán:** najbližší 1–2-týždňový blok Claude weekly session využiť na dokončenie rozpracovaných úloh aj
+  kompaktného grafického inštalátora, ktorým možno systém nainštalovať bez konzoly; potom pripraviť verejné alpha
+  vydanie pre dobrovoľných testerov. Neponúkať neotestovaný dualboot ani inštaláciu na obsadený disk; pri zmenách
+  disku vyžadovať zrozumiteľné upozornenie a potvrdenie. Zverejnenie len na výslovný pokyn. ROADMAP 2.06, 14.20.
+- **Herná plocha:** pri aktívnej hre skryť Goo aj LensShore, ktoré inak zostávajú na spodku obrazovky; po skončení
+  hry ich obnoviť. Oprava nadväzuje na stres test 369 a ROADMAP 10K.06.
+
 ## 27. 10. 2026
 
 - **TrayShore:** Pobrežie sa volá TrayShore — oznamovacia oblasť (system tray), upozornenia a dashboard s widgetmi
