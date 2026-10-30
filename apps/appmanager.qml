@@ -266,10 +266,11 @@ ShellRoot {
             Rectangle {
                 z: 5; visible: shell.lastError !== ""
                 anchors.horizontalCenter: parent.horizontalCenter; y: 12
-                width: Math.min(parent.width - 56, oops.implicitWidth + 60); height: 38; radius: 19; color: "#4a1f20"; border.color: Theme.red
-                Label { id: oops; x: 18; width: parent.width - 50; text: shell.lastError; anchors.verticalCenter: parent.verticalCenter }
+                width: Math.min(parent.width - 56, oops.implicitWidth + 88); height: 38; radius: 19; color: "#4a1f20"; border.color: Theme.red
+                Label { id: oops; x: 18; width: parent.width - 78; text: shell.lastError; anchors.verticalCenter: parent.verticalCenter }
                 Glyph { name: "x"; font.pixelSize: 14; anchors.right: parent.right; anchors.rightMargin: 14; anchors.verticalCenter: parent.verticalCenter }
                 MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: shell.lastError = "" }
+                CopyButton { copy: shell.lastError; anchors.right: parent.right; anchors.rightMargin: 40; anchors.verticalCenter: parent.verticalCenter }
             }
 
             // discover, as a streaming menu: one big banner with the next looking in, rows to choose from, posters
@@ -588,7 +589,9 @@ ShellRoot {
                         Label { x: 20; y: 14; text: shell.bProgress ? I18n.tr(shell.bSteps[shell.bProgress.step] || shell.bProgress.step, { what: shell.bProgress.what }) : I18n.tr("Starting…") }
                         Rectangle { x: 20; y: 46; width: parent.width - 40; height: 8; radius: 4; color: Theme.raised
                             Rectangle { height: 8; radius: 4; color: Theme.gold; width: parent.width * (shell.bProgress ? (shell.bProgress.at - 0.5) / shell.bProgress.of : 0.02); Behavior on width { NumberAnimation { duration: 300 } } } } }
-                    Label { visible: shell.bError !== ""; text: shell.bError; color: Theme.red }
+                    Row { visible: shell.bError !== ""; spacing: 10
+                        Label { width: Math.min(implicitWidth, bar.room - 30); wrapMode: Text.Wrap; text: shell.bError; color: Theme.red }
+                        CopyButton { copy: shell.bError } }
                     // the console: what is being run, for whoever likes to see it
                     Pill { icon: "terminal-2"; text: shell.bConsoleOut ? I18n.tr("Hide the console") : I18n.tr("Show the console"); strong: shell.bConsoleOut; onPressed: shell.bConsoleOut = !shell.bConsoleOut }
                     Rectangle { visible: shell.bConsoleOut; width: parent.width; height: 300; radius: 14; color: "#0d0907"; border.color: Theme.line; clip: true

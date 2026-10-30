@@ -604,9 +604,13 @@ ShellRoot {
                         Row { spacing: 12
                             Glyph { name: shell.picked ? shell.kind(shell.picked.kind).icon : ""; font.pixelSize: 30; color: Theme.gold }
                             Label { text: shell.picked ? shell.called(shell.picked) : ""; font.pixelSize: 18; font.weight: 800; width: 200; wrapMode: Text.WordWrap; maximumLineCount: 2 } }
+                        Repeater { model: shell.picked ? [shell.picked.ip, shell.picked.mac].filter(a => a) : []
+                            Row { required property string modelData; spacing: 8
+                                Label { text: parent.modelData; color: Theme.dim; font.pixelSize: 12; anchors.verticalCenter: parent.verticalCenter }
+                                CopyButton { copy: parent.modelData; font.pixelSize: 13; anchors.verticalCenter: parent.verticalCenter } } }
                         Label { color: Theme.dim; font.pixelSize: 12; width: parent.width; wrapMode: Text.WordWrap; lineHeight: 1.4
-                                text: shell.picked ? shell.picked.ip + "\n" + shell.picked.mac + (shell.picked.vendor ? "\n" + shell.picked.vendor : "")
-                                      + "\n" + (shell.picked.online ? I18n.tr("here now") : I18n.tr("last seen") + " " + shell.ago(shell.picked.last))
+                                text: shell.picked ? (shell.picked.vendor ? shell.picked.vendor + "\n" : "")
+                                      + (shell.picked.online ? I18n.tr("here now") : I18n.tr("last seen") + " " + shell.ago(shell.picked.last))
                                       + "  ·  " + I18n.tr("first seen") + " " + shell.ago(shell.picked.first) : "" }
                         Rectangle { width: parent.width; height: 38; radius: 12; color: Theme.ground; border.width: 1; border.color: rename.activeFocus ? Theme.gold : "transparent"
                             TextInput { id: rename; x: 12; width: parent.width - 24; anchors.verticalCenter: parent.verticalCenter; color: Theme.cream; font.family: Theme.font; font.pixelSize: 14; clip: true

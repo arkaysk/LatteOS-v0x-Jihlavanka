@@ -990,6 +990,7 @@ library Slovak {
         "Open in Terminal" = "Otvoriť v termináli"
         "Empty Recycle Bin" = "Vysypať Kôš"
         "Cut" = "Vystrihnúť"
+        "Copy name" = "Kopírovať názov"
         "Copy" = "Kopírovať"
         "Select all" = "Vybrať všetko"
         "Search or ask…" = "Hľadať alebo sa opýtať…"

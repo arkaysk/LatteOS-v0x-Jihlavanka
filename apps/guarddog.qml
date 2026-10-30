@@ -168,7 +168,8 @@ ShellRoot {
                     Text { text: shell.when(modelData.at); color: Theme.faint; font.family: "monospace"; font.pixelSize: 13 }
                     Text { width: 120; text: I18n.tr(shell.what[modelData.what] || modelData.what); color: shell.tint(modelData.what); font.family: "monospace"; font.pixelSize: 13; font.bold: true; elide: Text.ElideRight }
                     Text { width: 130; text: modelData.id; color: Theme.cream; font.family: "monospace"; font.pixelSize: 13; elide: Text.ElideRight }
-                    Text { width: lines.width - 400; text: modelData.text; color: Theme.dim; font.family: "monospace"; font.pixelSize: 13; elide: Text.ElideRight } } }
+                    Text { width: lines.width - 430; text: modelData.text; color: Theme.dim; font.family: "monospace"; font.pixelSize: 13; elide: Text.ElideRight }
+                    CopyButton { copy: shell.when(modelData.at) + "  " + modelData.what + "  " + modelData.id + "  " + modelData.text; reach: 0; font.pixelSize: 13 } } }
             Label { visible: logq.data.length === 0; anchors.centerIn: parent; color: Theme.faint; text: I18n.tr("Nothing yet: the guard writes here what it does.") }
         }
     }

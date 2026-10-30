@@ -60,12 +60,12 @@ ShellRoot {
     // the right button on a program, as the Task Manager has it
     function lineMenu(what, canEnd, x, y) {
         const keep = shell.kept.includes(what.name)
-        const rows = []
+        const rows = [{ icon: "copy", text: I18n.tr("Copy name"), run: () => Quickshell.clipboardText = what.name }]
         if (what.owner === "user")
             rows.push({ icon: "shield-check", text: I18n.tr("Keep running (GuardDog)"), checked: keep,
                         run: () => { keeper.command = ["latte-guarddog", "keep"].concat(keep ? [what.name, "off"] : [String(what.pids[0])]); keeper.running = true } })
         if (canEnd) rows.push({ icon: "x", text: I18n.tr("End"), danger: true, run: () => shell.act(["end"].concat(what.pids.map(String))) })
-        if (rows.length) menu.open(x, y, rows)
+        menu.open(x, y, rows)
     }
     Timer { interval: 3000; repeat: true; running: shell.page === "sensors"; triggeredOnStart: true; onTriggered: sense.ask(["sensors"]) }
     onPageChanged: if (page === "startup" && !starts.data) starts.ask(["startup"])
