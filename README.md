@@ -1,93 +1,69 @@
-# LatteOS GOO
+# LatteOS — Jihlavanka (0.x)
 
-@Arkay · nový štart 23. 9. 2026 · predtým pracovný názov „gamerdistro“ (vetva `gamerdistro` je od 5. 10. 2026 `main`)
+**A Linux desktop for people coming from Windows — made of liquid coffee.**
 
-**LatteOS GOO** je linuxová plocha pre ľudí zvyknutých na Windows 11, v ktorej lištu, Štart, hodiny a systémové
-prvky nahrádzajú **tekuté kávové kvapky** (goo): pružia, lepia sa k okraju obrazovky aj k sebe, žijú vlastným
-pohybom a reagujú na kurzor. Všetko sa ovláda myšou.
+LatteOS is a desktop built on Fedora and Hyprland for people who know Windows, want a computer that is simply
+theirs, and never want to open a terminal. The taskbar, Start menu, clock and system tray are replaced by
+**liquid coffee droplets ("goo")** that stretch, stick to the screen edge and react to the cursor. Everything
+works with the mouse; keyboard shortcuts are a bonus, never a requirement.
 
-<img width="1451" height="823" alt="obrázok" src="https://github.com/user-attachments/assets/1e535e9c-0dca-4e8b-913f-9e024b759f13" />
+> **Status: early development (0.x "Jihlavanka").** Things change daily and can break. Install it on a test
+> machine only. The first stable release will be 1.0 "Arabica".
 
+![Desktop with the coffee droplets](docs/screenshots/desktop.png)
 
-## Smer vývoja (rozhodnutie 5. 10. 2026)
+## How it is made
 
-- **LatteOS GOO je jediná edícia.** Doterajšie „gamerdistro“ sa ním stáva.
-- **LatteOS Classic sa ruší.** Nové funkcie sa preň nerobia; jeho kód (relácia „LatteOS“ s lištou Noctalie) zatiaľ
-  v repozitári ostáva a bude sa odstraňovať postupne, keď ho GOO nahradí aj ako predvolená a núdzová relácia.
-- **Predvolené prihlásenie je engine Goo** (relácia „LatteOS GOO“, 6. 10.); v ponuke prihlásenia sú popri nej samostatné
-  prostredia Marea, Noctalia (čistá) a Serpantinum. Obrazovka prihlásenia sa ešte prerobí.
-- **Hlavná práca je engine Goo** (`session/goo`): jedny pravidlá pre všetky kvapky nad
-  [pleamarom](https://github.com/k4ditano/pleamar) (k4ditano, BSD-3-Clause). Je na ňom ešte veľa práce — otvorené
-  úlohy sú v [ROADMAP.md](ROADMAP.md) (F3·G). **Na systém sa nasadzuje iba engine Goo** (6. 10.); pôvodná plocha
-  Kvapky sa už nenasadzuje.
+LatteOS is designed by **Arkay** (Slovakia) — the ideas, look and behaviour. The code is written together with an
+AI assistant (**Claude** by Anthropic). We say this openly: every feature is described, reviewed and tested by a
+human on a real PC, and borrowed code is always credited (see *Credits* below).
 
-## Kvapky (Nová architektúra)
+## What it looks like
 
-| | Kvapka | Čo robí |
-|---|---|---|
-| jadro | **GooBar** | hlavná lišta a správca okien — okná ako ikry a strapce po aplikáciách |
-| jadro | **GooPower** | účet, relácia, napájanie a profil napájania, batéria, Nastavenia, Monitor; pás výkonu (CPU, RAM, GPU, VRAM) |
-| jadro | **LensGoo** | univerzálny spúšťač a lupa: aplikácie, súbory, web, terminál, AI; rýchly zoznam aplikácií |
-| voliteľná | **QueenGoo** | App Manager a Správca zariadení |
-| voliteľná | **ClockGoo** | upozornenia a kalendár; čas, stopky, minútka, budíky, počasie a digitálna pohoda |
-| voliteľná | **ChatGoo** | doplnok pre Beeper (plán) |
+| | |
+|---|---|
+| ![Login](docs/screenshots/login.png) **Login** — a coffee sea at sunset, weather, clock and news. | ![LensShore](docs/screenshots/lensshore.png) **LensShore** — search, apps, quick actions, clipboard, emoji and AI in one bar. |
+| ![DualBrew](docs/screenshots/dualbrew-two-panels.png) **DualBrew** — two-panel file manager (Total Commander habits, Windows looks). | ![DualBrew icons](docs/screenshots/dualbrew-icons.png) **DualBrew** — single panel with icons. |
+| ![Background](docs/screenshots/settings-background-pegboard.png) **Background** — the *pegboard*: drag pictures, films or slideshows onto your screens as layers. | ![Windows](docs/screenshots/settings-windows.png) **Windows** — each screen chooses how windows are arranged: floating, tape, tiles, glance. |
+| ![Clock](docs/screenshots/clockgoo.png) **ClockGoo** — time, weather, world clocks, digital wellbeing. | ![Performance](docs/screenshots/powergoo-strip.png) **PowerGoo strip** — CPU, RAM, GPU and VRAM at a glance. |
 
-Kliky jednotlivých kvapiek sú v [LATTEOS-GOO.md §4](LATTEOS-GOO.md). Záväzné pravidlá a správanie:
-[LATTEOS-GOO.md](LATTEOS-GOO.md) (pred prácou na kvapkách prečítať), prehľad v [docs/goo/](docs/goo/README.md).
+## What makes it different
 
-## Stav
+- **Mouse first, Windows habits.** No feature is reachable only by keyboard or terminal. Right-click works
+  everywhere, always with the same menu order.
+- **Liquid desktop (Goo).** The shell is a set of droplets drawn by [pleamar](https://github.com/k4ditano/pleamar):
+  they move, merge and breathe. Glass, metal and coffee themes; a plain *FPS* theme with no effects for gaming.
+- **The pegboard.** Your monitors laid out as they really stand on the desk — for cursor movement, window
+  modes per screen and wallpapers stretched across screens (pictures, videos, slideshows).
+- **NET button.** Cut any app off the internet instantly — Windows apps too.
+- **Made for games.** Steam, Proton and current drivers; **Barista** prepares Windows programs and games for you.
+- **AI you can switch off.** Local AI (also in Slovak) can help with settings and files; online AIs live in their
+  own tabs. Generative AI can be turned off completely in the installer or in Settings.
+- **No telemetry, no ads, no account required.**
 
-- **Plocha Kvapky** (scéna `session/kvapky/kvapka.plm`) — pôvodný prototyp; kód zatiaľ
-  ostáva v repozitári, na systém sa už nenasadzuje.
-- **Engine Goo** (relácia „LatteOS GOO“, `session/goo`) — overený na reálnom PC (Hyprland,
-  AMD RX 640, 5. 10.): fyzika, vstupy myšou, GooBar s oknami, kvapky novej architektúry. Okná z kvapiek sú
-  prenesené (5.–6. 10.: spúšťač a rýchly zoznam LensGoo, karta GooPower a pás výkonu, upozornenia s kalendárom
-  a karta času ClockGoo, bublina QueenGoo); to, čo pribudlo 6. 10., ešte treba overiť naživo.
+## Platform
 
-## Štruktúra
+- Fedora 44 + Hyprland, Quickshell (QML) apps, Rust tools; Fedora Atomic (bootc) planned for 1.0.
+- Must boot without a GPU: a **SAFE** session (labwc) always works; acceleration only adds effects.
+- Target: any PC with Vulkan that is less than ~10 years old, AMD, NVIDIA and Intel.
 
-| Zložka   | Obsah |
-|----------|-------|
-| `inspo/` | inšpirácia a aktuálna predstava: technologický radar, návrh plochy, obrázky, videá |
-| `resources/` | prebraté projekty z radaru (`fetch.sh`), naše [záplaty](resources/patches/README.md), EDID, obrázky maskotov |
-| `crates/` | Rust: `latte-hw` (detekcia HW/grafiky), `latte-boot` (výber režimu NORMAL/SAFE, počítadlo pádov) |
-| `session/goo/` | **engine Goo**: scéna `goo.plm`, logika `lib/engine.luau`, kvapky `kvapky/*.luau` ([README](session/goo/README.md)) |
-| `session/kvapky/` | pôvodná scéna plochy Kvapky (`kvapka.plm`) — už sa nenasadzuje |
-| `docs/` | dokumentácia: [index](docs/README.md), [pravidlá Goo](docs/goo/PRAVIDLA.md), [kvapky](docs/goo/ROZHRANIE.md), [rozhodnutia](docs/goo/ROZHODNUTIA.md); archív starých dokumentov a meraní je v [`docs_zaloha/`](docs_zaloha/README.md) |
-| `session/` | štart a relácie: `latte-session`, `latte-greeter`, `latte-safe`, Hyprland/labwc konfigurácia, systemd, GRUB SAFE, Plymouth |
-| `setup/` | inštalácia a testy na VM: `f0-install.sh`, `f1/install-session.sh`, staré merania v `docs_zaloha/`; reálne PC latte-lab: [`lab/`](setup/lab/README.md) |
-| `old/`   | celý predchádzajúci stav repa, len na čítanie; **už sa doň nezapisuje** |
+## Credits
 
-**Toto repo je súkromné** a vyvíja sa v ňom, v jedinej vetve `main`. Verejné je
-[arkaysk/latteos](https://github.com/arkaysk/latteos): v určitých fázach sa doň presunie **vydanie** príkazom
-`setup/verejne/zverejnit.sh` — jeden commit, značka `v<verzia>` a vydanie na GitHube s popisom zo
-[ZMENY.md](ZMENY.md). Verzia je v `Cargo.toml`; každé vydanie musí mať novú. Čo ostáva súkromné, určuje
-`setup/verejne/vynechat.txt`; verejné README je `setup/verejne/README.md` (iba LatteOS GOO, Classic sa neopisuje).
-Skúška bez zverejnenia: `setup/verejne/zverejnit.sh --nasucho`. Licencia: MIT ([LICENSE](LICENSE)), cudzie súčasti
-v [TRETIE-STRANY.md](TRETIE-STRANY.md). Posledné vydanie: **0.3.0 „Jihlavanka“** (6. 10. 2026); zverejňuje
-sa iba na pokyn.
+LatteOS stands on other people's work. Every borrowed project, file, shader, font and icon is listed — who made it,
+what LatteOS uses it for and under which licence — in [TRETIE-STRANY.md](TRETIE-STRANY.md). Highlights:
+[pleamar](https://github.com/k4ditano/pleamar), [Hyprland](https://github.com/hyprwm/Hyprland),
+[Hyprglass](https://github.com/hyprnux/hyprglass), [Quickshell](https://github.com/quickshell-mirror/quickshell),
+[skwd-wall](https://github.com/liixini/skwd-wall), [whyd](https://github.com/vmaltarello/whyd),
+[labwc](https://github.com/labwc/labwc), [Tabler Icons](https://github.com/tabler/tabler-icons).
 
-Plán vývoja je v [ROADMAP.md](ROADMAP.md). Nový kód a dáta vznikajú iba mimo `old/`.
+Wallpapers in the screenshots belong to their artists and are not part of LatteOS.
 
-## Platforma
+## Licence
 
-- **Základ:** klasický **Fedora Server 44** (dnf, nie atomic); Fedora Atomic (bootc, štýl Bazzite / Universal
-  Blue), live USB a inštalátor až keď bude LatteOS GOO hotový.
-- **Vývoj a testy:** reálny PC `latte-lab` (AMD RX 640, dva monitory) a virtuálny stroj `latteOSdev`.
-- **Bez GPU musí systém naštartovať** (núdzový režim SAFE: labwc + pixman); HW akcelerácia pridáva efekty,
-  podmienkou štartu nie je.
+MIT for LatteOS's own code for now ([LICENSE](LICENSE)). The final licence will be chosen before 1.0 so that
+it fits every borrowed part.
 
-## Zásady pre engine Goo (poznámky autora — na zváženie)
+---
 
-*Nerozhodnuté (6. 10.): dnešný engine je scéna pleamaru + logika v Luau + pomocník `latte-goo`, nie samostatný daemon
-s Quickshell vrstvou; zvažuje sa, čo z týchto zásad prevziať.*
-
-1. **Oddelenie jadra od renderu (headless core):** logika (stav batérie, zoznam okien, notifikácie, AI požiadavky)
-   beží v samostatnom daemone (Python, Go alebo Rust). Quickshell/QML je iba „hlúpa“ vizuálna vrstva, ktorá
-   dostáva dáta cez IPC.
-2. **Goo API (event bus):** presné rozhranie pre kvapky, napr. `goo.emit("power", "battery_low", 15)`. Všetky
-   kvapky (aj prebraté z GitHubu) komunikujú cez tento jednotný most, nie priamym prepojením komponentov, ktoré
-   sa pri aktualizácii Noctalie rozbije.
-3. **Wrapper pre externé moduly:** prebraný kód sa obalí vlastnou triedou alebo funkciou. Kód Noctalie sa priamo
-   neupravuje, ak to nie je nevyhnutné — vždy nadstavba.
-4. **Optimalizácia.**
+*Slovensky:* LatteOS je linuxová plocha pre ľudí z Windowsu, z tekutých kávových kvapiek, ovládaná myšou.
+Navrhuje ju Arkay, kód vzniká s pomocou AI (Claude). Raný vývoj — iba na testovací počítač.
