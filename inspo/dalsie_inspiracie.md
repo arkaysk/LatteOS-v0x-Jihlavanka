@@ -538,6 +538,19 @@ https://github.com/tgeorgiadis/quiver-launcher (r/BestGitHubRepos, ~3,2 tis. hvi
     (spravidla nedôveryhodná, NET podľa voľby) → sledovať nové vydania. Z Quiveru vziať knižnicu so značkami, katalóg
     ako JSON, overovanie a správu módov pri hrách (10K).
 
+https://github.com/LMauricius/kde-thumbnail-bloom (r/kde, u/LegendaryMauricius, „Thumbnail Bloom: a new effect and
+window management style“) · video https://m.youtube.com/watch?v=Kd9AbKawwhg (podľa používateľa ďalší možný layout plochy;
+video sa odtiaľto otvoriť nedalo — doplniť názov a autora)
+  - (Claude, 30. 10.) **Thumbnail Bloom** — efekt KWinu pre Plasmu 6: neaktívne okno, ktoré iné okno prekryje, sa
+    **zmenší na náhľad a presunie na najbližšie voľné miesto** tej istej obrazovky, takže žiadne okno nie je úplne
+    schované. Náhľad začína na 50 %, podľa miesta klesá až na 15 %; je **natočený o 45° smerom k svojmu pôvodnému miestu**
+    a pod kurzorom sa narovná. Okno sa v skutočnosti nehýbe ani nemení veľkosť — iba sa kreslí inde a menšie. Klik =
+    aktivovať, pravý klik = ponuka okna, ťahanie = okno vyjde z náhľadu v plnej veľkosti a ide s kurzorom; dotyk tiež.
+    Nastavenia: výnimky (navrchu, na všetkých plochách, maximalizované, celá obrazovka), veľkosti, priehľadnosť (70 %),
+    uhol. C++ s KWin hlavičkami (CMake), **licencia neuvedená**, 20 hviezd, bez vydaní. Známa chyba: pôvodné miesto okna
+    ostane neviditeľne klikateľné, kým sa okno nevynesie.
+  - **Využitie v LatteOS:** pozri `inspo/hodnotenie-inspiracii.md` (Okná).
+
 **Licencia LatteOS (používateľ 30. 10.):** dnes je v repozitári **MIT**, ale **nie je definitívna** — nakoniec sa zvolí
 taká, ktorá pokryje všetky potreby projektu. Poznámky o licenciách pri inšpiráciách (napr. GPL-3.0 pri Mission Center)
 preto berú MIT ako súčasný stav; pri prevzatí kódu pod GPL sa rozhodne až s konečnou licenciou.
