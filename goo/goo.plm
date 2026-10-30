@@ -34,7 +34,7 @@ scene Goo {
         keyboard: exclusive while card_open or kb
     }
     permissions {
-        run: "latte-sky", "latte-login", "latte-stats", "hyprctl", "foot", "hostname", "id", "cat", "powerprofilesctl", "date", "notify-send", "nmcli", "xdg-open", "xdg-user-dir", "fd", "latte-say", "sh", "latte-cal", "latte-ai", "cliphist", "latte-app", "latte-apps", "latte-devices", "latte-settings", "latte-net", "latte-desktop", "latte-focus", "latte-nameday", "latte-cam", "latte-lock", "qalc", "wl-paste", "brightnessctl", "wpctl", "bluetoothctl", "pactl", "logger", "latte-nightlight", "latte-files", "wl-copy", "latte-emoji", "latte-gif", "latte-clip"
+        run: "latte-sky", "latte-login", "latte-stats", "hyprctl", "foot", "hostname", "id", "cat", "powerprofilesctl", "date", "notify-send", "nmcli", "xdg-open", "xdg-user-dir", "fd", "latte-say", "sh", "latte-cal", "latte-ai", "cliphist", "latte-app", "latte-apps", "latte-devices", "latte-settings", "latte-net", "latte-desktop", "latte-focus", "latte-nameday", "latte-cam", "latte-lock", "qalc", "wl-paste", "brightnessctl", "wpctl", "bluetoothctl", "pactl", "logger", "latte-nightlight", "latte-weather", "latte-files", "wl-copy", "latte-emoji", "latte-gif", "latte-clip"
         services: "files", "files.write", "env", "clock", "battery", "window", "apps", "apps.launch", "session.*", "auth", "notifications", "notifications.*", "sound", "audio", "audio.*", "brightness", "brightness.*", "network", "network.*", "bluetooth", "bluetooth.*", "tray", "tray.*", "clipboard", "clipboard.set", "media", "media.*"
     }
 

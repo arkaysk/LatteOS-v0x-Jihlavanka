@@ -1,0 +1,18 @@
+#!/bin/sh
+# latte-weather [rain | snow | off]: rain or snow on the desktop until it is asked again. What falls is goo/rain.plm or
+# goo/snow.plm, on each monitor; the glass of the windows is Hyprland's own blur variant (drops, frost).
+case "${1:-}" in rain) glass=drops ;; snow) glass=frost ;; off) ;; *) echo "latte-weather: rain, snow or off" >&2; exit 2 ;; esac
+scenes="${LATTE_GOO_DIR:-/usr/share/latteos/goo}"
+
+running=""
+pgrep -f "pleamar --scene $scenes/${1}.plm" >/dev/null && running=1
+pkill -f "pleamar --scene $scenes/(rain|snow).plm"
+if [ "$1" = off ] || [ -n "$running" ]; then
+    hyprctl -q eval 'hl.config({decoration={blur={variant=0}}})'
+    exit 0
+fi
+hyprctl -q eval "hl.config({decoration={blur={variant=\"$glass\"}}})"
+for screen in $(hyprctl -j monitors | python3 -c 'import json, sys; print(*(m["name"] for m in json.load(sys.stdin)))'); do
+    setsid pleamar --scene "$scenes/$1.plm" --no-hud --screen "$screen" >/dev/null 2>&1 &
+done
+exit 0

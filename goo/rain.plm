@@ -1,0 +1,19 @@
+// Rain, falling in front of everything; copied from pleamar-wm's session. bin/latte-weather starts it.
+scene Weather {
+    let W = sky.width
+    prop on = 0 ~2500ms
+    follow on = 1
+    surface sky {
+        size: full, full; level: overlay; keyboard: none
+        group {
+            opacity: on
+            particles {
+                at: W / 2, -40; area: W + 300, 1; count: 380
+                life: 0.55s .. 0.9s; speed: 1600 .. 2100
+                direction: 100deg; spread: 3deg; gravity: 0, 0
+                size: 1.2, 0.9; colors: #e4f0ff, #c8dcf0; opacity: 24%, 12%
+                shape: spark
+            }
+        }
+    }
+}

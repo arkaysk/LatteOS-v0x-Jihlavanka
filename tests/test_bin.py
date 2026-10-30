@@ -778,3 +778,24 @@ if shutil.which("lua"):
     assert put("15 % z 80") == "15% * 80" and put("15% of 80") == "15% * 80"
     assert put("2048 game") == "-" and put("Spotify") == "-"            # an app's name is not worked out
     os.remove(script)
+
+
+def test_weather():
+    d = tempfile.mkdtemp()
+    stub = os.path.join(d, "stub")
+    os.makedirs(stub)
+    for name, body in (("hyprctl", 'echo "hyprctl $*" >> "%s/calls"; case "$*" in *monitors*) echo \'[{"name": "DP-1"}]\' ;; esac' % d),
+                       ("pleamar", 'echo "pleamar $*" >> "%s/calls"' % d), ("pgrep", "exit 1"), ("pkill", "exit 0")):
+        open(os.path.join(stub, name), "w").write("#!/bin/sh\n" + body + "\n")
+        os.chmod(os.path.join(stub, name), 0o755)
+    env = dict(os.environ, PATH=stub + ":" + os.environ["PATH"], LATTE_GOO_DIR="/goo")
+    weather = lambda *a: subprocess.run([os.path.join(ROOT, "bin", "latte-weather"), *a], env=env, capture_output=True).returncode
+    assert weather() == 2 and weather("hail") == 2
+    assert weather("snow") == 0
+    time.sleep(0.2)                                         # pleamar is started in the background
+    calls = open(os.path.join(d, "calls")).read()
+    assert 'variant="frost"' in calls and "--scene /goo/snow.plm --no-hud --screen DP-1" in calls, calls
+    assert weather("off") == 0 and "variant=0" in open(os.path.join(d, "calls")).read()
+
+
+test_weather()

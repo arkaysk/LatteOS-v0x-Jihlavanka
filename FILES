@@ -42,6 +42,7 @@
 /usr/bin/latte-session                                  <- bin/latte-session
 /usr/bin/latte-screens                                  <- bin/latte-screens
 /usr/bin/latte-nightlight                               <- bin/latte-nightlight
+/usr/bin/latte-weather                                  <- bin/latte-weather
 /usr/bin/latte-safe                                     <- bin/latte-safe
 /usr/bin/latte-game                                     <- bin/latte-game
 /usr/libexec/os-session-select                          <- system/libexec/os-session-select
@@ -52,6 +53,8 @@
 /usr/libexec/latte-doghouse                             <- system/libexec/latte-doghouse
 /usr/share/latteos/session-env.sh                       <- system/session-env.sh
 /usr/share/latteos/FILES                                <- FILES
+/usr/share/latteos/goo/rain.plm                         <- goo/rain.plm
+/usr/share/latteos/goo/snow.plm                         <- goo/snow.plm
 /usr/share/latteos/goo/login.plm                        <- goo/login.plm
 /usr/share/latteos/goo/lockscreen.plm                        <- goo/lockscreen.plm
 /usr/share/latteos/goo/lockscreen.luau                        <- goo/lockscreen.luau
