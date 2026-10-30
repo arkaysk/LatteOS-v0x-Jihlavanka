@@ -550,17 +550,6 @@ window management style“)
     ostane neviditeľne klikateľné, kým sa okno nevynesie.
   - **Využitie v LatteOS:** pozri `inspo/hodnotenie-inspiracii.md` (Okná).
 
-https://m.youtube.com/watch?v=Kd9AbKawwhg — Dan Fessler: „What happens when you make an Operating System fractal?“
-(22. 9. 2026) · vydané ako správca okien pre macOS: https://TrellisWM.app · obrázok `trellis fraktalna plocha.jpg`
-  - (Claude, 30. 10., podľa snímky a opisu videa; video ani stránka sa odtiaľto otvoriť nedali) **Trellis WM —
-    „fraktálna“ plocha.** Prototyp novej UX: **priečinok je zároveň plocha.** Na ploche ležia okná priečinkov
-    (Projects, Reference, Studio) aj ikony podpriečinkov; do priečinka sa dá „vojsť“ a stane sa celou plochou so svojimi
-    oknami a podpriečinkami, von sa ide späť o úroveň (dole drobčeky Desktop › Studio, tlačidlá Overview, Desktop
-    a **Map**). Ten istý vzor sa opakuje v každej úrovni — preto „fraktál“. Poznámka vo videu: „plocha, ktorá pôsobí
-    ako miesto; všetko má svoj domov; nič sa nezahrabe; oddialiť a vidieť celok; súvisiace veci držať pri sebe“.
-    Platforma macOS; licencia a cena neznáme.
-  - **Využitie v LatteOS:** pozri `inspo/hodnotenie-inspiracii.md` (Okná).
-
 **Licencia LatteOS (používateľ 30. 10.):** dnes je v repozitári **MIT**, ale **nie je definitívna** — nakoniec sa zvolí
 taká, ktorá pokryje všetky potreby projektu. Poznámky o licenciách pri inšpiráciách (napr. GPL-3.0 pri Mission Center)
 preto berú MIT ako súčasný stav; pri prevzatí kódu pod GPL sa rozhodne až s konečnou licenciou.

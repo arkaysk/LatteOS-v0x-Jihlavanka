@@ -1624,6 +1624,15 @@ súčasťou okna). Ťahanie k hornému okraju dnes okno maximalizuje (`edge_zone
 layouts): niekoľko malých schém (polovice, tretiny, štvrtiny), okno pustené na políčko sa tam uloží (`snap`, zóny v
 `windows.lua`).
 
+**8A.16** [ ] **Rozkvet — prekryté okno sa zmenší do voľného miesta** (používateľ 30. 10.; github.com/LMauricius/kde-thumbnail-bloom).
+Originál sa zaradiť nedá z dvoch dôvodov: (1) je to **efekt KWinu** (C++ proti vnútornému API KDE) — v Hyprlande vôbec
+nepobeží, treba ho napísať nanovo ako plugin Hyprlandu (kresliť okno inde a menšie + klikacia vrstva nad náhľadom);
+(2) repozitár **nemá licenciu**, a to podľa autorského práva znamená „všetky práva vyhradené“, nie „voľné“ — prevziať
+z neho kód by bolo porušenie. Riešenie: požiadať autora (iba na pokyn používateľa) o pridanie licencie (MIT) — potom sa
+smie prevziať jeho algoritmus umiestnenia (50 % → 15 %, najbližšie voľné miesto, poradie podľa vrstvenia) aj s menom
+v TRETIE-STRANY.md; do tej doby iba myšlienka. Po Glance (poradie bod 6); režim pre monitor (8A.13); natočenie 45° iba
+na plnom stupni výkonu, pri hre a v SAFE vypnuté; nezopakovať jeho chybu (pôvodné miesto okna ostane klikateľné).
+
 ### 8B. [~] Obrazovky
 Rozpoznanie a rozloženie monitorov, virtuálny monitor, rozšíriť/duplikovať.
 Zdroje: `bin/latte-screens`, `system/hypr/hyprland.lua`, Nastavenia › Obrazovky
@@ -2570,6 +2579,15 @@ nepriehľadných privilegovaných služieb.
 - [ ] Rozšíriť lokálny výstup na výber údajov a bezpečné použitie ďalšími aplikáciami; zvuková
   reaktivita a ovládanie LED sú samostatne zapínateľné, bez automatického odosielania dát.
 
+**10D.17** [ ] **Základ LatteMonitora = Mission Center** (používateľ 30. 10.: „presne to, čo som chcel od LatteMonitora,
+chýba mu len pár vecí“). Vziať originál (github.com/Mission-Center-Devs/mission-center, Rust + GTK4/libadwaita, GPL-3.0,
+Flathub `io.missioncenter.MissionCenter`) a doplniť do neho **2–3 záložky**: (1) **Hardvér** ako CPU-Z/HWiNFO (čipy, pamäte,
+senzory, `latte-hw`), (2) **Po štarte** (Autoruns+, vratné vypínanie používateľských položiek), (3) **Bezpečnosť a sieť**
+(GuardDog, NET, kto s kým hovorí). Fork ostáva **samostatný program pod GPL-3.0** so zdrojákmi verejne (ako skwd-wall) —
+vlastný kód LatteOS tým nie je dotknutý. Preveriť: či záložky pridať čisto (aby sa dali posielať autorom upstream a fork
+ostal ľahko aktualizovateľný), vzhľad GTK voči téme LatteOS (libadwaita farby z témy), slovenčina (preklady má cez gettext).
+Dnešný `apps/monitor.qml` ostáva, kým fork nedobehne; potom ho nahradí. Zapísať do TRETIE-STRANY.md.
+
 ### 10E. [~] DeviceManager
 Zdroje: `apps/devices.qml`, `bin/latte-devices`
 
@@ -2832,6 +2850,13 @@ z `FILES` v nej existuje (`dnf repoquery --releasever=N`); Hyprland zamknutej ve
   `/var/lib/latteos/repo` (hyprland-latte s vmwgfx) treba pre 45 zostaviť znova alebo zrušiť.
 - [ ] Začiatkom novembra (po vydaní, ideálne do dvoch týždňov): latte-lab 44 → 45 podľa krokov vyššie.
 
+**10H.15** [ ] **Quiver Launcher integrovať tak, ako je** (používateľ 30. 10.; github.com/tgeorgiadis/quiver-launcher, MIT,
+C# .NET 10 + Avalonia, AppImage pre Linux). Veľa aplikácií je dnes iba vo vydaniach na GitHube/GitLabe. App Manager ho
+ponúkne ako súčasť (záložka/zdroj „GitHub a GitLab“): inštalácia, spúšťanie, aktualizácie, knižnica so značkami,
+katalóg, módy. Preveriť: beh .NET aplikácie na latte-labe, napojenie na profil dôvery a NET (aplikácie z Quiveru ako
+nedôveryhodné), ako mu odovzdať odkaz z App Managera. Meno a logo Quiver sú ochranná známka (TRADEMARKS.md) — uvádzať
+ako Quiver, nepremenovať. Zapísať do TRETIE-STRANY.md.
+
 ### 10I. [~] Barista
 Zdroje: `bin/latte-barista`, `recipes/`, `docs/barista/`
 Je sučastou Appmanageru. inštalator a ten kdo sa postara o beh programov z inej platformy.
@@ -2907,6 +2932,14 @@ podľa offline dát z ProtonDB a winetricks a navrhne nastavenia, ktoré pomohli
 Analýza v Baristovi. Zistiť: (a) či nastavenia aj sám použije (vyzerá tak), nielen radí; (b) formát a zdroj
 offline databázy, podľa čoho spozná program, ako často sa obnovuje; (c) čo z toho prevziať do receptov Baristu.
 Možný výsledok: Eagle ako **spustiteľná možnosť popri Baristovi** (druhý názor alebo náhradná cesta).
+
+**10I.08** [ ] **Porovnať so Sloth OS, ako to vytvoril on** (používateľ 30. 10.; github.com/Sloth-OS-Linux/sloth-os,
+Apache-2.0, Fedora Atomic + KDE, cieľ rovnaký ako LatteOS). Prejsť jeho kód a postup a porovnať s naším: **sprievodca
+prvého spustenia** bez predinštalovaných aplikácií (= Barista), **programy z Windows** (.exe/.msi dvojklikom, umu-launcher
++ Proton, Wine ako záloha, nastavenia pre každý program, snímka priečinka pred zmenou Protonu, najprv ponúknuť linuxovú
+verziu), **Sloth Center** — celá šírka nastavení v jednom okne voči našim Nastaveniam (9) a 11 chýbajúcim stránkam,
+„Will it run?“ (ProtonDB + AreWeAntiCheatYet) pre Hry (10K). Výsledok: zoznam, čo prevziať (licencia dovoľuje)
+a čo robíme inak. Podrobnosti: `inspo/dalsie_inspiracie.md`.
 
 ### 10J. [~] Kalendár
 Aplikácia Kalendár a karta ClockGoo (ľavý klik): EDS, udalosti vetou, týždeň.
@@ -3151,6 +3184,14 @@ cestu k aktualizácii alebo návratu.
   bezpečnostné aktualizácie a obnova majú prednosť pred novými efektmi.
 
 ---
+
+**14.19** [~] **Register prevzatého kódu → konečná licencia LatteOS** (používateľ 30. 10.: MIT dnes nie je definitívna).
+`TRETIE-STRANY.md` je register: **každý cudzí kód, súbor, shader, písmo či ikona** dostane riadok — od koho, odkiaľ
+(odkaz, verzia/commit), **na čo presne** ho LatteOS používa (súbor u nás), **pod akou licenciou** a či je prevzatý do
+nášho kódu, alebo beží ako samostatný program. Pravidlo: bez riadku sa cudzí kód nepreberá; prevzatý shader či súbor
+má autora a licenciu aj v hlavičke. Pred vydaním 1.0 sa z registra rozhodne konečná licencia: ak niečo prevzaté
+**do** nášho kódu vyžaduje GPL, celok musí byť GPL-kompatibilný; samostatné programy (skwd-wall, whyd, fork Mission
+Center) ostávajú pod svojou licenciou; nekomerčné (Shadertoy CC BY-NC-SA) obmedzujú celok, ak sa vložia dovnútra.
 
 ## 15. [ ] Inšpirácie a tech radar
 Nápady bez rozhodnutia; samostatné úlohy z nich sú pri svojej kategórii. `inspo/`.
