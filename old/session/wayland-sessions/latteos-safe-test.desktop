@@ -1,8 +1,0 @@
-[Desktop Entry]
-Name=LatteOS SAFE (test)
-Name[sk]=LatteOS SAFE (skúška)
-Comment=Emergency mode of LatteOS GOO (labwc, software rendering) — development test
-Comment[sk]=Núdzový režim LatteOS GOO (labwc, softvérové kreslenie) — vývojová skúška
-Exec=/usr/bin/latte-session safe
-Type=Application
-DesktopNames=labwc

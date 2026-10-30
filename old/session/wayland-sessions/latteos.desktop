@@ -1,7 +1,0 @@
-[Desktop Entry]
-Name=LatteOS GOO
-Comment=The LatteOS desktop: liquid coffee drops of the Goo engine on Hyprland
-Comment[sk]=Plocha LatteOS: tekuté kávové kvapky enginu Goo na Hyprlande
-Exec=/usr/bin/latte-session
-Type=Application
-DesktopNames=Hyprland

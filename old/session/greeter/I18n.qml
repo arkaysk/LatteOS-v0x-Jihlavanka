@@ -1,1 +1,0 @@
-../apps/common/I18n.qml
