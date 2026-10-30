@@ -436,3 +436,50 @@ https://github.com/mirkobrombin/raven
 
 finder commander screenshot. inspiracia.
 
+https://flathub.org/en-GB/apps/io.missioncenter.MissionCenter (missioncenter.io)
+  - (Claude, 30. 10.) **Mission Center** — monitor systému ako Správca úloh vo Windows 11 (Rust + GTK4/libadwaita,
+    GPL-3.0, Flatpak ~15 MiB, ~42 tis. stiahnutí mesačne): grafy CPU po jadrách, RAM, disky, sieť, **GPU (NVIDIA, AMD,
+    Intel) vrátane VRAM a kódovania videa**, ventilátory; zoznam aplikácií a procesov, služby systemd.
+  - **Využitie v LatteOS:** predloha pre **LatteMonitor (10D)** — rozloženie kariet, ako číta GPU všetkých troch výrobcov
+    (kód pozrieť skôr, než si to napíšeme sami), služby. GPL-3.0: kód prevziať iba do časti, ktorá ostane pod GPL, inak
+    len ako vzor; uviesť v `TRETIE-STRANY.md`. Už spomenutý v tech radare 2026 ako vzor pre Process Manager.
+
+**Tangerine** (Thameem Hassan / Leap Studio, macOS, vydané 7. 9. 2026; platená, offline) — obrázok `tangerine radial shift-drag.jpg`
+  - (Claude, 30. 10.) Pri ťahaní súboru stlačím **Shift** a okolo kurzora sa objaví **kruhová ponuka** (Komprimovať,
+    Metadáta, Upraviť, Pridať pozadie, Orezať, Začierniť, Poznámky… a výstupné formáty); súbor pustím na výsek a vznikne
+    upravená kópia. **Option** prepne kruh na pokročilé nástroje, šípky + Enter z klávesnice, Esc zruší. Všetko lokálne
+    (~275 konverzií). Nie je to „ďalšia aplikácia“ — žije v gestu ťahania.
+  - **Využitie v LatteOS:** Shift pri ťahaní súboru kdekoľvek (DualBrew, plocha, aj z cudzej aplikácie — kompozitor vidí
+    ťahanie a typ súboru) → kruh nad kurzorom; motory sú voľné nástroje (ffmpeg, ImageMagick/vips, Ghostscript/qpdf,
+    pandoc, exiftool, rembg lokálne). Výsledok vedľa originálu, nikdy prepísať. Kruh má **najviac 8 výsekov** a pevné
+    smery (svalová pamäť ako pri „marking menus“); viac = vnútorný kruh alebo Option/Alt.
+
+**Google DeepMind AI Pointer / Magic Pointer** (máj 2026; deepmind.google/blog/ai-pointer, ukážky v Google AI Studio,
+na Googlebooku zabudovaný)
+  - (Claude, 30. 10.) Kurzor nesie kontext: model dostane, nad čím kurzor je (text, obrázok, tabuľka, kód) a rieši „toto“,
+    „tamto“ bez dlhého promptu; ukazovanie + hlas („sprav z toho graf“). Na Googlebooku sa ponuka návrhov AI vyvolá
+    **zatrasením kurzora** nad obsahom.
+  - **Využitie v LatteOS:** pozri úvahu nižšie (pravý klik, LensShore).
+
+### Úvaha: obdĺžniková ponuka + dynamický obsah + AI pri kurzore (používateľ 30. 10., nerozhodnuté)
+Otázka používateľa: musí kontextová ponuka ostať pôvodná obdĺžniková? Čo tak obdĺžnik + obsah podľa akcie (najmä
+pri AI-centrickom LensShore), spolu s nápadom AI kurzora od Googlu? A ako to spolupracuje s pravým klikom vnútri
+cudzích aplikácií (Obsidian, Photoshop)?
+- **Ponuka cudzej aplikácie patrí jej.** Na Waylande si ju aplikácia kreslí sama ako svoje vyskakovacie okno; kompozitor
+  do nej položky pridať nevie a nemá ju prekrývať. Pravý klik v Obsidiane či Photoshope ostane presne ich.
+- **Vrstva LatteOS sa preto vyvoláva iným gestom**, ktoré aplikácie nepoužívajú, a funguje nad čímkoľvek:
+  (a) **Shift pri ťahaní** súboru → kruh Tangerine (súbory); (b) **Super + pravý klik** alebo **zatrasenie kurzora**
+  (Googlebook) nad obsahom → ponuka LatteOS „čo s týmto“ (Hyprland má Super + pravé tlačidlo dnes na zmenu veľkosti okna
+  — presunúť); (c) kláves Copilot/Menu podľa voľby.
+- **Odkiaľ LatteOS vie, „čo je pod kurzorom“:** strom prístupnosti AT-SPI (Qt a GTK aplikácie ho majú, Electron/Obsidian
+  čiastočne, aplikácie cez Wine prakticky nie) · vybraný text (primárny výber) · trieda okna · **výrez obrazovky okolo
+  kurzora** pre lokálny vizuálny model, keď nič iné nie je (Photoshop cez Wine). Snímka iba na výslovné gesto, lokálna
+  AI predvolene, pod vypínačom generatívnej AI (2B); NET a GuardDog to vidia.
+- **Tvar:** obdĺžnik ostáva pre bežnú ponuku — **pravidlo 23 (pevné poradie) sa nemení**. Dynamický obsah ide do
+  **oddelenej spodnej časti „Návrhy“**: horná časť je stále rovnaká (svalová pamäť), spodná sa mení podľa obsahu
+  (tabuľka → Graf, Zhrnúť; obrázok → Odstrániť pozadie, Zostriť; adresa → Otvoriť v mape). Kruh len tam, kde je
+  málo pevných cieľov a ruka je už v pohybe (ťahanie súboru).
+- **Prepojenie s LensShore:** položka „Opýtať sa…“ v Návrhoch otvorí ostrovček LensShore už s kontextom (výrez, text,
+  aplikácia) — rovnako ako hlasový príkaz „toto“ pri ukazovaní. LensShore tak nepotrebuje dlhý prompt.
+- Ak sa schváli, do ROADMAP: kruh pri ťahaní (DualBrew / 10A, kompozitor) a „Návrhy“ + AI pri kurzore (6B, LensShore).
+
