@@ -634,7 +634,7 @@ ta biela plocha je prisilna a potrebuje mat volitelnu hodnotu priehladnosti.
 
 **6B.10** [x] Záložka Aplikácie sa vždy otvorí na filtri **Všetky** (používateľ 26. 10.); iný filter platí, kým je LensGoo otvorený.
 
-**6B.11** [x] **Každé pole na písanie: Ctrl+C, Ctrl+V a pravý klik Vystrihnúť · Kopírovať · Prilepiť** (používateľ 26. 10.:
+**6B.11** [~] **Každé pole na písanie: Ctrl+C, Ctrl+V a pravý klik Vystrihnúť · Kopírovať · Prilepiť** (používateľ 26. 10.:
 „samozrejmosťou“). Hotové v Goo: pole karty (riadok hľadania LensGoo a každá karta s poľom; `card_field_menu` v
 `lib/card.luau`) a pole otázky AI; ponuka Goo ukazuje skratky. Ostáva: polia v aplikáciách LatteOS (Quickshell), overiť
 a doplniť rovnakú ponuku.
@@ -645,8 +645,8 @@ a doplniť rovnakú ponuku.
 - [x] 30. 10.: premenovanie ikony na ploche — pravý klik na písané meno ukáže tú istú ponuku (existujúce `Menu` plochy);
   text iba na čítanie (odpovede AI v LensAI a každý `TextEdit` so `selectByMouse` vo všetkých aplikáciách) — pravý klik
   ukáže Kopírovať · Vybrať všetko (`fieldAt` v `AppWindow` berie aj polia iba na čítanie, Vystrihnúť/Prilepiť sa im
-  neponúka). Obe appky sa v sedení bez obrazovky načítajú bez chýb; samotný klik ponuky sa headless overiť nedá
-  (pointer.py netrafí okná qs) — potvrdiť na skutočnej obrazovke.
+  neponúka; ľavý klik im klávesnicu neberie). Obe appky sa v sedení bez obrazovky načítajú bez chýb, `fieldAt` overený
+  testovacím .qml. **Neoverené:** samotný klik a vzhľad ponuky (pointer.py netrafí okná qs) — potvrdiť na skutočnej obrazovke.
 
 **6B.09** [~] **Ikona Kopírovať pri každom texte LatteOS, ktorý sa dá kopírovať** (používateľ 26. 10.): ako pri správach AI
 (6B.08) — príkazy, chybové hlásenia, správy na skopírovanie (Posledný pád), adresy, výsledok kalkulačky; v Goo aj

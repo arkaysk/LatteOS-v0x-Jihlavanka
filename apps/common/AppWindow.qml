@@ -152,7 +152,7 @@ FloatingWindow {
             acceptedButtons: Qt.LeftButton
             onActiveChanged: if (active) {
                 const f = win.fieldAt(win.contentItem, point.position.x, point.position.y)
-                if (f) { f.forceActiveFocus(); win.pressedField = f; refocus.restart() }
+                if (f && !f.readOnly) { f.forceActiveFocus(); win.pressedField = f; refocus.restart() }
             }
         }
         // the right button on any text field: cut, copy, paste, as on every field (6B.11); Ctrl+X, C, V work by themselves
