@@ -485,6 +485,14 @@ hl.on("window.move_to_workspace", function(w)
         end
     end, { timeout = 80, type = "oneshot" })
 end)
+-- a widget (bin/latte-widget) is a small thing on the desktop in every mode; its title says nothing, so its program tells
+hl.on("window.open", function(w)
+    if not w or not w.pid then return end
+    local f = io.open("/proc/" .. w.pid .. "/cmdline", "rb")
+    local line = f and f:read("a") or ""
+    if f then f:close() end
+    if line:find("/apps/widgets/", 1, true) and not w.floating then hl.dispatch(hl.dsp.window.float({ action = "enable", window = sel(w) })) end
+end)
 hl.on("window.open", function(w)
     if not (w and w.monitor) then return end
     where[w.address] = w.monitor.name

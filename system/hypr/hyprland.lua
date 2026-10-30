@@ -235,6 +235,7 @@ end
 hl.on("hyprland.start", function()
     latte.wallpaper()
     latte.cup()
+    hl.exec_cmd("latte-widget start")          -- the widgets the user chose
     hl.exec_cmd("latte-desktop start")         -- the icons on the desktop, unless the user turned them off
     hl.exec_cmd("latte-nightlight")            -- night light, if the user turned it on
     hl.exec_cmd("/usr/libexec/latte-polkit-agent")

@@ -1,0 +1,29 @@
+#!/bin/sh
+# latte-widget: the Chaldea widgets (apps/widgets), each its own small window on the desktop.
+#
+#   latte-widget on ID       shows it, and it comes back at the next login
+#   latte-widget off ID      takes it away
+#   latte-widget toggle ID   the one or the other
+#   latte-widget running     prints the ID of each one showing, a line each
+#   latte-widget start       shows those chosen (the session does this)
+share="${LATTE_SHARE:-/usr/share/latteos}"
+kept="${XDG_CONFIG_HOME:-$HOME/.config}/latteos/widgets"
+is_on() { pgrep -u "$(id -u)" -f "^qs -n -p .*/widgets/$1/shell\.qml" >/dev/null; }
+show() { is_on "$1" || setsid -f qs -n -p "$share/apps/widgets/$1/shell.qml" >/dev/null 2>&1; }
+hide() { pkill -u "$(id -u)" -f "^qs -n -p .*/widgets/$1/shell\.qml" 2>/dev/null; }
+forget() { [ -f "$kept" ] && { grep -vx -- "$1" "$kept" > "$kept.new"; mv -- "$kept.new" "$kept"; }; }
+known() {
+    case "$1" in ""|*[!a-z0-9-]*) echo "latte-widget: no such widget: $1" >&2; exit 2 ;; esac
+    [ -f "$share/apps/widgets/$1/shell.qml" ] || { echo "latte-widget: no such widget: $1" >&2; exit 2; }
+}
+on() { known "$1"; mkdir -p "$(dirname "$kept")"; forget "$1"; echo "$1" >> "$kept"; show "$1"; }
+off() { known "$1"; forget "$1"; hide "$1"; }
+
+case "${1:-}" in
+on)      on "${2:-}" ;;
+off)     off "${2:-}" ;;
+toggle)  known "${2:-}"; if is_on "$2"; then off "$2"; else on "$2"; fi ;;
+running) pgrep -u "$(id -u)" -af "^qs -n -p .*/widgets/[a-z0-9-]+/shell\.qml" | sed 's|.*/widgets/\([a-z0-9-]*\)/shell\.qml.*|\1|' ;;
+start)   [ -f "$kept" ] && while IFS= read -r id; do [ -f "$share/apps/widgets/$id/shell.qml" ] && show "$id"; done < "$kept"; exit 0 ;;
+*)       sed -n '2,8p' "$0" | sed 's/^# \{0,1\}//' >&2; exit 2 ;;
+esac

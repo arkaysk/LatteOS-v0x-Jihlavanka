@@ -14,6 +14,7 @@ a inštalátor ich prekladá alebo inštaluje z balíkov. V repozitári sú iba 
 | [skwd-wall](https://github.com/liixini/skwd-wall) | voliteľný samostatný program: výber a kreslenie tapety, prechody, paleta z tapety; LatteOS ho iba volá (`bin/latte-wall`) | GPL-3.0 |
 | [whyd](https://github.com/vmaltarello/whyd) | voliteľný samostatný program: prečo sa skončila minulá relácia (SAFE); LatteOS prikladá iba vlastné pravidlá `system/whyd/latteos.toml` | GPL-3.0-or-later |
 | [Noctalia](https://github.com/noctalia-dev/noctalia-shell) | rohová lišta, ovládacie centrum, OSD | MIT |
+| [Chaldea](https://github.com/Aleph1-9012/Chaldea) | widgety v `apps/widgets/`: vyexportované QML (`frontend/scripts/export.ts`), licencia a poznámky pri každom | widgety 0BSD, písma SIL OFL, aplikácia Apache-2.0 |
 | [Quickshell](https://github.com/quickshell-mirror/quickshell) | beh aplikácií LatteOS (QML) | LGPL-3.0 |
 | [labwc](https://github.com/labwc/labwc) | režim SAFE a prihlasovacia obrazovka | GPL-2.0 |
 | [Tabler Icons](https://github.com/tabler/tabler-icons) | ikony (písmo z Noctalie) | MIT |

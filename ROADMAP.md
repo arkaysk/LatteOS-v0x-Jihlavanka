@@ -829,6 +829,12 @@ widgetov, ktoré si človek vyberie a nahrá; **formát spoločný s dashboardom
 čo používateľ robí; časti systému majú vlastné vetvy; dá sa nájsť udalosť s chybou a **vrátiť práve ju**, zlúčiť vetvy, založiť novú. **+** zobrazí mapu na celú plochu cez všetko,
 **−** ju vráti. Treba návrh: čo sa zapisuje (súkromie), a čo sa vôbec dá vrátiť samostatne (nastavenia áno, snímky snapper, dáta aplikácií nie vždy). Používateľ chce doplniť ďalší mód: veta v správe ostala nedokončená.
 
+**6B.41** [~] **Widgety z Chaldea** (používateľ 30. 10.; [Chaldea](https://github.com/Aleph1-9012/Chaldea), widgety 0BSD): 41 vyexportovaných do `apps/widgets/`,
+galéria `latte-app widgets` (klik = na plochu / preč, voľba sa pamätá), `bin/latte-widget`, plávajú v každom režime. Chýba: prepojiť s dashboardom a pásom widgetov (6B.38);
+posuvníky s jasom a hlasitosťou, poznámky ukladať (sú iba v pamäti), vzhľady zámku sú len ukážky (nezamykajú); farby zatiaľ Chaldea, nie téma.
+
+**6B.42** [ ] **Widgety z Caelestie** (používateľ 30. 10.): preskúmať a prevziať, pred tým overiť licenciu.
+
 **6B.13** [ ] **Výskum: Tinycast ako zoznam funkcií** (používateľ 27. 10.: „vyzerá ako naše LensGoo“) —
 https://github.com/abue-ammar/tinycast (macOS, Swift, AGPL-3.0 → kód nepreberať, iba nápady). Čo LensGoo/LensShore
 nemá: bežiace aplikácie s Ukončiť (jednu/všetky), skratka na konkrétnu aplikáciu (prepnúť/skryť), história schránky

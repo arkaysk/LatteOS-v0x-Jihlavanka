@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Widgets
+Name[sk]=Widgety
+Comment=Small things for the desktop: notes, players, sliders, moving pictures
+Comment[sk]=Malé veci na plochu: poznámky, prehrávače, posuvníky, pohyblivé obrázky
+Exec=latte-app widgets
+Icon=preferences-desktop
+Categories=Utility;
+StartupWMClass=org.quickshell
