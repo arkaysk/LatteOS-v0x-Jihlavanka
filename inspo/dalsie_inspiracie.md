@@ -515,4 +515,30 @@ https://github.com/Sloth-OS-Linux/sloth-os · https://sloth-os-linux.github.io/ 
     stavia na hotovom KDE a napodobňuje Windows; LatteOS má vlastnú plochu Goo, LensShore s AI, model dôvery aplikácií
     a NET. Prevziať sa dá najmä **„Pobeží to?“**, snímka pred zmenou Protonu, zdieľané nastavenia programov a obsah
     Sloth Center ako kontrolný zoznam pre Nastavenia (Apache-2.0 dovoľuje prevziať kód s uvedením v `TRETIE-STRANY.md`).
+  - **Používateľ 30. 10. — výslovne inšpiratívne:** (1) **všetko nastavenie v jednom centre** a **šírka nastavení** —
+    Sloth Center pokrýva aj to, čo LatteOS dnes nemá (NAS, rodičovská kontrola, Reset tohto PC, inštalačné médium,
+    offline Pomocník, prostredia pre vývojárov, zdravie systému); prejsť ho položku po položke voči Nastaveniam (9)
+    a 11 chýbajúcim stránkam. (2) **Rieši niečo ako náš Barista** (10I): sprievodca výberu aplikácií + spúšťanie
+    programov z Windows s nastaveniami pre každý program a „Pobeží to?“ — porovnať postup s Baristom a AVP2.
+
+https://github.com/tgeorgiadis/quiver-launcher (r/BestGitHubRepos, ~3,2 tis. hviezd)
+  - (Claude, 30. 10.) **Quiver Launcher** — spúšťač na stiahnutie, inštaláciu a spúšťanie aplikácií priamo **z vydaní
+    na GitHube a GitLabe** (fork GithubLauncher od SirDiabo; C# .NET 10 + Avalonia; MIT, meno a logo zvlášť v TRADEMARKS.md).
+    Windows (ZIP), Linux (AppImage x64/arm64), Android (APK); macOS rozpracovaný.
+  - Čo má: osobná knižnica s mriežkou ikon, **filtre podľa značiek** a hľadanie (meno, značky, repozitár, priečinok),
+    aj ručne pridané aplikácie bez repozitára; **katalóg** (quiverlauncher.com — podľa typu, platformy, použitia AI)
+    a vlastný zoznam ako JSON súbor alebo adresa; automatické aktualizácie; **overenie stiahnutého súboru** SHA-256
+    z katalógu (inak kontrolný súčet z GitHubu, ak je), pri nezhode odmietne; výber súboru z vydania cez
+    `releaseAssetFilter` (časť mena); **módy** z Thunderstore a GameBanana; režim kiosku s PIN; zálohy knižnice; token API
+    proti limitom.
+  - **Prečo pre LatteOS (používateľ 30. 10.):** veľa aplikácií je dnes (od vydania Opus 5.5) **iba na GitHube** —
+    vydania, nie Flathub ani balík distribúcie. App Manager (10H) a Barista (10I) preto potrebujú **GitHub/GitLab vydania
+    ako plnohodnotný zdroj**: pridať repozitár → vybrať správny súbor pre Linux a architektúru (AppImage, .tar.gz,
+    .rpm, .flatpak; .exe cez Proton) → overiť kontrolný súčet → nainštalovať do priečinka aplikácie s profilom dôvery
+    (spravidla nedôveryhodná, NET podľa voľby) → sledovať nové vydania. Z Quiveru vziať knižnicu so značkami, katalóg
+    ako JSON, overovanie a správu módov pri hrách (10K).
+
+**Licencia LatteOS (používateľ 30. 10.):** dnes je v repozitári **MIT**, ale **nie je definitívna** — nakoniec sa zvolí
+taká, ktorá pokryje všetky potreby projektu. Poznámky o licenciách pri inšpiráciách (napr. GPL-3.0 pri Mission Center)
+preto berú MIT ako súčasný stav; pri prevzatí kódu pod GPL sa rozhodne až s konečnou licenciou.
 
