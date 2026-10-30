@@ -24,3 +24,6 @@ inspo/*.iso
 # súkromné — nie na verejný GitHub (používateľ 30. 10. 2026)
 inspo/
 CLAUDE.md
+
+# starý strom, zmazaný z repa; lokálne zvyšky nepatria do gitu
+/old/

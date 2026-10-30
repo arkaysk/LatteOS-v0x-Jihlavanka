@@ -647,6 +647,9 @@ a doplniť rovnakú ponuku.
   ukáže Kopírovať · Vybrať všetko (`fieldAt` v `AppWindow` berie aj polia iba na čítanie, Vystrihnúť/Prilepiť sa im
   neponúka; ľavý klik im klávesnicu neberie). Obe appky sa v sedení bez obrazovky načítajú bez chýb, `fieldAt` overený
   testovacím .qml. **Neoverené:** samotný klik a vzhľad ponuky (pointer.py netrafí okná qs) — potvrdiť na skutočnej obrazovke.
+- [x] 30. 10.: premenovanie odkazu na ploche (hlásenie používateľa: pole ukazovalo `latteos-avp2.desktop`): pole ukáže
+  zobrazený názov a zmení `Name=` v `.desktop` (`latte-desktop name`, test v `tests/test_bin.py`), súbor ostáva. Akcie
+  odkazu sa nemenia, preklady názvu sa zmažú, aby nový názov platil v každom jazyku.
 
 **6B.09** [~] **Ikona Kopírovať pri každom texte LatteOS, ktorý sa dá kopírovať** (používateľ 26. 10.): ako pri správach AI
 (6B.08) — príkazy, chybové hlásenia, správy na skopírovanie (Posledný pád), adresy, výsledok kalkulačky; v Goo aj

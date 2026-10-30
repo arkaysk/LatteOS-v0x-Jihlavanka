@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Checks of the commands in bin/ that need no system around them. Run: python3 tests/test_bin.py"""
-import contextlib, importlib.machinery, importlib.util, io, json, os, shutil, socket, struct, sys, tempfile, threading
+import contextlib, importlib.machinery, importlib.util, io, json, os, shutil, socket, struct, subprocess, sys, tempfile, threading
 
 sys.dont_write_bytecode = True          # bin/ holds commands, not a place for __pycache__
 
@@ -13,6 +13,14 @@ def load(name, folder="bin"):
     loader.exec_module(module)
     return module
 
+
+with tempfile.TemporaryDirectory() as d:
+    f = os.path.join(d, "a.desktop")
+    open(f, "w").write("[Desktop Entry]\nName=Old\nName[sk]=Stary\nExec=a\n[Desktop Action x]\nName=Keep\nName[sk]=Nechat\n")
+    os.chmod(f, 0o755)
+    subprocess.run([os.path.join(ROOT, "bin/latte-desktop"), "name", f, "AC/DC & \\ co"], check=True)
+    assert open(f).read() == "[Desktop Entry]\nName=AC/DC & \\ co\nExec=a\n[Desktop Action x]\nName=Keep\nName[sk]=Nechat\n", open(f).read()
+    assert os.stat(f).st_mode & 0o777 == 0o755 and os.listdir(d) == ["a.desktop"]
 
 sky = load("latte-sky")
 # 20 March 2025 12:00 UTC, the equinox: over the equator at Greenwich the sun is nearly overhead and mid-way.

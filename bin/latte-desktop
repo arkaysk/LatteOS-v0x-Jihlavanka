@@ -8,6 +8,7 @@
 #   latte-desktop status     prints "on" or "off"
 #   latte-desktop entries FOLDER   the launchers (.desktop) in it, a line each: file name, a tab, its name, a tab, its icon
 #   latte-desktop openers FILE   the apps that open that kind of file, a line each: ID.desktop, a tab, its name
+#   latte-desktop name FILE NAME   what a launcher (.desktop) is called, in every language; its file keeps its name
 #   latte-desktop add WHAT   an icon for it in the Desktop folder: an app (its ID.desktop) is copied there, a file or
 #                            a folder (a path) is linked; what is there already of that name stays
 #
@@ -40,6 +41,13 @@ openers)
             break
         done
     done ;;
+name)
+    f="${2:?}"; t="$(mktemp "$f.XXXXXX")" || exit 1
+    cp -pL -- "$f" "$t" &&
+        NAME="${3:?}" awk '/^\[/ { entry = ($0 == "[Desktop Entry]") }
+            entry && /^Name\[/ { next }
+            entry && /^Name=/ { print "Name=" ENVIRON["NAME"]; next }
+            { print }' "$f" > "$t" && mv -- "$t" "$f" || { rm -f -- "$t"; exit 1; } ;;
 add)
     d="$(xdg-user-dir DESKTOP 2>/dev/null)"; { [ -n "$d" ] && [ "$d" != "$HOME" ]; } || d="$HOME/Desktop"
     mkdir -p "$d"
@@ -57,5 +65,5 @@ start)   start; tell ;;
 stop)    stop; tell ;;
 restart) stop; sleep 0.3; start; tell ;;
 on|off)  mkdir -p "$(dirname "$flag")"; echo "$1" > "$flag"; stop; sleep 0.3; start; tell ;;
-*)       sed -n '2,10p' "$0" | sed 's/^# \{0,1\}//' >&2; exit 2 ;;
+*)       sed -n '2,11p' "$0" | sed 's/^# \{0,1\}//' >&2; exit 2 ;;
 esac

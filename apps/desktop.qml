@@ -47,7 +47,7 @@ ShellRoot {
               stdout: StdioCollector { onStreamFinished: desk.folder = this.text.trim() } }
 
     // ── doing things to files ──────────────────────────────────────────────────────────────────────────────
-    Process { id: doer; onExited: files.again() }
+    Process { id: doer; onExited: { files.again(); desk.readLaunchers() } }
     function sh(script, args) { doer.running = false; doer.command = ["sh", "-c", script, "sh"].concat(args || []); doer.running = true }
     function open(path) {
         if (path === trash) Quickshell.execDetached(["gio", "open", "trash:///"])
@@ -69,6 +69,9 @@ ShellRoot {
         renaming = ""
         name = name.trim()
         const old = path.split("/").pop()
+        // a launcher is renamed the way a shortcut is: what it is called changes, its file stays
+        const app = launchers[old]
+        if (app) { if (name !== "" && name !== app.name) sh('latte-desktop name "$1" "$2"', [path, name]); return }
         if (name === "" || name.indexOf("/") >= 0 || name === old) return
         const at = Object.assign({}, prefs.at)
         if (at[old]) { at[name] = at[old]; delete at[old]; set("at", at) }
@@ -357,7 +360,7 @@ ShellRoot {
                     width: parent.width + 24; height: 24; radius: 6; color: Theme.card; border.color: Theme.gold; border.width: 1
                     TextInput { id: typed; anchors.fill: parent; anchors.leftMargin: 6; anchors.rightMargin: 6; verticalAlignment: TextInput.AlignVCenter; horizontalAlignment: TextInput.AlignHCenter
                         clip: true; color: Theme.cream; selectionColor: Theme.gold; selectedTextColor: Theme.inkOnGold; selectByMouse: true; font.family: Theme.font; font.pixelSize: 12
-                        onVisibleChanged: if (visible) { text = ic.path.split("/").pop(); Qt.callLater(() => { forceActiveFocus(); const dot = text.lastIndexOf("."); select(0, dot > 0 && !ic.isDir ? dot : text.length) }) }
+                        onVisibleChanged: if (visible) { text = ic.name; Qt.callLater(() => { forceActiveFocus(); const dot = ic.path.endsWith("/" + text) ? text.lastIndexOf(".") : -1; select(0, dot > 0 && !ic.isDir ? dot : text.length) }) }
                         Keys.onReturnPressed: (ev) => { ev.accepted = true; desk.rename(ic.path, text); root.forceActiveFocus() }
                         Keys.onEnterPressed: (ev) => { ev.accepted = true; desk.rename(ic.path, text); root.forceActiveFocus() }
                         Keys.onEscapePressed: (ev) => { ev.accepted = true; desk.renaming = ""; root.forceActiveFocus() }
