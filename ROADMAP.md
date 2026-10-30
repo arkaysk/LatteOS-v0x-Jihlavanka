@@ -1,5 +1,5 @@
 vytvorene 22.10.2026
-naposledy upravene 29.10.2026
+naposledy upravene 30.10.2026
 # LatteOS:0.4 Jihlavanka Build
 
 Idea LatteOS je neziskový linux ktory nevyžaduje po uživatelovy znalost klavesovych skratiek, nevyžaduje po uživatelovy použivanie konzoly, a umožnuje mu fungovat s návikmy z Windows, MacOS ale aj linux. Je to OS ktory umožnuje totalne deaktivovat Ai služby vnutry, ale aj ich naopak, intenzivne využivat na urovni pomocnika OS. 
@@ -1431,6 +1431,24 @@ ten istý shader. Hyprland má vlastné animácie iba ako posun, zväčšenie a 
   „pripravuje sa“).
 - Krátke (do ~250 ms okrem zatvorenia), iba stupne full a standard, v SAFE nie.
   Licencia každého shadera zvlášť (skwd-wall MIT, gl-transitions MIT) do TRETIE-STRANY.md.
+
+**7A.13** [ ] (Tapety) **Tapeta v milimetroch a na obrazovkách iných počítačov** (používateľ 30. 10.; nadväzuje na 7A.08,
+8B.07 a 19.06). Plátno pegboardu sa počíta v **milimetroch**, nie v pixeloch: každá obrazovka ukáže výrez podľa svojej
+fyzickej polohy a veľkosti a prepočíta ho na svoje rozlíšenie, takže obraz má na 1080p aj 1440p rovnakú mierku.
+- **Rámiky:** pegboard pozná medzery medzi obrazovkami v mm; obraz pokračuje „za rámikom“ ako na video stene — čiara cez
+  dve obrazovky nie je zlomená ani posunutá. Hrúbku rámika vie používateľ doladiť (pri prvom nastavení ukážka s čiarou).
+- **Obrazovky iných počítačov** (19.06): na pegboarde sú ako ostatné, s menom počítača. Pri zmene tapety alebo posune
+  obrazovky pošle hlavný LatteOS agentovi hotový výrez (alebo celý obrázok + súradnice výrezu); agent si ho uloží, takže
+  tapeta ostane aj keď hlavný počítač nebeží. Na LatteOS ju kreslí `latte-wall`; **na Windows** ju agent nastaví pre každý
+  monitor zvlášť cez systémové API (`IDesktopWallpaper`) — žiadny stream, žiadny výkon.
+- **Živé tapety a video** sa cez sieť **neposielajú**: každý počítač si svoj výrez kreslí sám, hlavný iba zosynchronizuje
+  čas a nastavenia (oblak prepláva plynulo z obrazovky jedného počítača na druhý). Pri hre na danom počítači sa animácia
+  pozastaví (GPU pre hru).
+- **Režim pre počítač alebo obrazovku:** Spoločné plátno (predvolené) · Vlastná tapeta (obrazovka sa z plátna „odopne“,
+  napr. herný počítač) · Rovnaká na každej.
+- [ ] Krok 1 (len tento počítač): pegboard a `latte-wall` prepnúť z pixelov na mm podľa EDID (veľkosť obrazovky) a rámikov;
+  overiť čiaru cez dve obrazovky s rôznym PPI.
+- [ ] Krok 2: výrez pre agenta 19.06 (LatteOS a Windows), synchronizácia živých tapiet.
 ### 7B. [~] Ponuka plochy
 Pravý klik na plochu a ikony na ploche ako vo Windows 11.
 
@@ -1659,6 +1677,25 @@ obrazovke na 3 s, to isté číslo na pegboarde; **Nočné osvetlenie** — prep
 **8B.06** [ ] (Obrazovky) Zvyšok stránky Obrazovka z Windows 11: Nočné osvetlenie **podľa času** (od západu do východu slnka —
 `latte-sky` ich pozná) a dlaždica v paneli Pobrežia; **HDR** a **profil farieb** (Hyprland 0.56: `cm`, `bitdepth`; zistiť, či
 monitor HDR vie); **Rozšírené nastavenia** (údaje o monitore, VRR); **Grafika** (ktorá karta pre ktorú aplikáciu, pri dvoch GPU).
+
+**8B.07** [ ] (Obrazovky) **Mikrozoom — rovnaká fyzická veľkosť na rôznych rozlíšeniach** (používateľ 30. 10.; dotiahnutie
+8B.04 „okno cez dve obrazovky v rovnakej výške“). Dva fyzicky rovnako veľké 24" monitory, jeden 1080p (~92 PPI), druhý
+1440p (~122 PPI): okno roztiahnuté cez oba má mať riadky textu v rovnakej výške a na rovnakej línii.
+- **Výpočet v mm:** pegboard zo EDID (fyzická veľkosť) a rozlíšenia určí PPI každej obrazovky. Mierka obrazovky =
+  jej PPI / referenčné PPI (predvolene najmenšie z pripojených; v príklade 1080p = 1, 1440p ≈ 1,33). Používateľ ju vidí
+  ako jeden prepínač **„Rovnaká veľkosť na všetkých obrazovkách“** a môže ju doladiť; ručná mierka ostáva ako dnes.
+  Ak EDID veľkosť nehlási alebo klame (TV, projektor, virtuálny LATTE-VIRT), pýtať sa na uhlopriečku.
+- **Zvislá poloha v mm:** pegboard ukladá polohu obrazoviek aj zvislo podľa skutočnej výšky, nie podľa pixelov, aby
+  spodné okraje či riadky nadväzovali; červené čiary okrajov (8B.04) sa kreslia v mm.
+- **Okno cez dve obrazovky:** aplikácia kreslí **raz, v mierke ostrejšej obrazovky** (fractional-scale), kompozitor ju
+  pre slabšiu v reálnom čase **zmenší** (zmenšenie je ostré, zväčšenie by bolo rozmazané). Preveriť, čo dnes robí Hyprland
+  (aplikácia dostane mierku obrazovky s väčším prekrytím; XWayland je pri mierke ≠ 1 rozmazaný — `xwayland:force_zero_scaling`).
+- **Chyba o 1 px:** Hyprland prijme iba mierku, pri ktorej vyjde celé logické rozlíšenie, a sám ju zaokrúhli — zvoliť
+  najbližšiu platnú mierku a zvyšok dorovnať polohou na pegboarde; okraje okien prichytávať na mriežku, ktorá sedí na obe hustoty.
+- [ ] Krok 1: PPI z EDID v `latte-screens` a pegboarde, prepínač v Nastavenia › Obrazovky, overiť s hlavičkovým výstupom
+  inej mierky vedľa DP-1 (snímka okna cez obe obrazovky, porovnať výšku riadkov).
+- [ ] Krok 2: na skutočných dvoch monitoroch (STRESTEST) a v hrách (mierka sa hry na celej obrazovke netýka).
+- Rovnaký výpočet použije tapeta (7A.13) a obrazovky iných zariadení (19.06), kde sa PPI líši najviac (telefón, tablet).
 
 ### 8C. [~] Sklo a materiály
 Sklo okien (Hyprglass), materiály šálky.
@@ -3324,6 +3361,31 @@ Veľké smery po stabilnom produkte: mobilná LatteApp, prenos účtu a cloud, p
 **19.04** [ ] (Neskôr) R7 — nervboot, LatteApp · r. 1183–1184
 - [ ] Vlastný bootloader podľa nervboot, mobilná LatteApp, pokročilá bezpečnostná analytika a
   ďalšie veľké rozšírenia zostávajú návrhmi, kým neprejdú R0–R1 a nedostanú miesto v etape.
+
+**19.06** [ ] (Neskôr) **Jedna plocha cez viac zariadení — LatteOS agent** (používateľ 30. 10.). Ďalší počítač na domácej
+sieti (aj s Windows), neskôr telefón či tablet s Androidom, pridá svoje obrazovky do pegboardu a plochy LatteOS.
+Cieľ je **spolupráca v jednej ploche**: kurzor a okná prechádzajú medzi počítačmi, kopírovať-vložiť a ťahať-pustiť
+fungujú, akoby všade bežal LatteOS. **Výpočet ostáva tam, kde sa program spustil; zdieľajú sa okná.** Prečo:
+na jednom počítači beží náročné generovanie (GPU, RAM — napr. ComfyUI), na druhom náročná hra, a stále je to jedna plocha.
+- **Agent, nie celý LatteOS:** malý program na každom zariadení. Na LatteOS je súčasťou kompozitora (**plný režim**,
+  cudzie okno je ako vlastné). Na Windows je to bežná aplikácia (**ľahký režim**): kurzor a klávesnica, schránka, súbory,
+  posielanie okna von (Windows.Graphics.Capture) a cudzie okno zobrazené ako bezrámové okno so streamom (ako RemoteApp).
+  Android: aplikácia (LatteApp alebo samostatná) ako ďalší displej s dotykom.
+- **Vstup:** kurzor prejde cez okraj obrazovky na iný počítač podľa pegboardu (ako PowerToys Mouse Without Borders,
+  Input Leap / Deskflow — preveriť, čo z nich prevziať a ako idú s Hyprlandom cez libei / input capture portál).
+- **Schránka a súbory:** schránka sa synchronizuje (text, obrázky, súbory); pustený súbor sa na pozadí skopíruje na cieľový
+  počítač. Prepojiť so Správcom schránky a DualBrew.
+- **Okná:** **stream iba vtedy, keď okno opustí obrazovku svojho počítača.** Na vlastnom monitore sa kreslí natívne
+  (nulová latencia), pri presune na monitor iného počítača ide ako video (H.264/AV1 hardvérovo; Linux↔Linux preveriť
+  waypipe), vstup ide späť. Okno cez obrazovky dvoch počítačov = stream rozdelený na dve časti. Mierka cez 8B.07.
+- **Hry:** hra beží na hernom počítači a jeho monitore natívne, cez sieť ide iba kurzor. Keď hra zachytí myš, kurzor sa
+  **zamkne** na jej obrazovke (aby pri prudkom pohybe „neušiel“), skratka na odomknutie. Anti-cheat: vstup do hry ide
+  z fyzickej myši toho počítača; softvérovo vkladaný vstup z iného počítača iba mimo hier s anti-cheatom.
+- **Bezpečnosť:** iba domáca sieť, spárovanie zariadení raz (kód na obrazovke), šifrované spojenie; NET a GuardDog (10F)
+  vidia agenta ako jednu aplikáciu. Latencia: káblom cieľ pod ~10 ms, Wi-Fi s upozornením.
+- **Tapeta** na obrazovkách iných zariadení: 7A.13.
+- Poradie, keď príde rad: (1) kurzor, klávesnica a schránka LatteOS↔LatteOS a LatteOS↔Windows; (2) súbory ťahaním;
+  (3) okno poslané na iný počítač; (4) Android; (5) okno cez obrazovky dvoch počítačov.
 
 **19.05** [ ] (Neskôr) R7 — pravidlo bez GPU · r. 1185–1187
 - [ ] Každé neskoršie rozšírenie zachová základné pravidlo: LatteOS musí zostať použiteľný vo VM
