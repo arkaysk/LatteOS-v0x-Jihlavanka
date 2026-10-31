@@ -158,7 +158,7 @@ druhá relácia, kým nová nevie všetko, čo on. Zdroje: [pleamar-wm](https://
 **1D.06** [~] Vlastný `wm/session.plm`: páska, dlaždice, plávajúce, Glance, minimalizácia, prichytávanie, plochy, pás pre kvapky (dnes `system/hypr/latte/windows.lua`).
 Tapeta v relácii pleamar-wm funguje (31. 10.): `skwd-walld` sa reštartuje pri štarte relácie (`system/pleamarwm/autostart`).
 **1D.07** [ ] Skratky a stupne výkonu do `keys.conf` a `session.conf`; nastavenia obrazoviek (`latte-screens`).
-**1D.08** [ ] Titulky okien v scéne namiesto hyprbars, ponuka okna, bublina pri zrode okna. Nastavenia majú dnes tri hlavičky nad sebou (správca okien, biela, aplikácia): `frame=own` nestačí.
+**1D.08** [ ] Titulky okien v scéne namiesto hyprbars, ponuka okna, bublina pri zrode okna. Biela hlavička Qt je preč (`QT_WAYLAND_DISABLE_WINDOWDECORATION`); ostáva tenký pruh správcu okien nad aplikáciami Quickshell, `frame=own` ho neskryje.
 **1D.09** [ ] Sklo okien namiesto Hyprglass a sklo kvapiek cez `ext-background-effect`; odmerať na RX 640.
 **1D.10** [ ] `tests/screen.sh` na headless režim pleamar-wm; pleamar a pleamar-wm ako balík (COPR), zámok verzie.
 **1D.11** [ ] Agenti: LensShore úroveň 2 (6B.26) na `agent`, `hands`, `gate`; bezpečnostná kontrola `remote` pred zapnutím.

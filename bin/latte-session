@@ -43,6 +43,8 @@ command -v mise >/dev/null && { mise reshim --system; mise reshim; } >/dev/null 
 export XDG_SESSION_TYPE=wayland XDG_SESSION_DESKTOP=latteos
 export LIBSEAT_BACKEND="${LIBSEAT_BACKEND:-logind}"
 export QT_QPA_PLATFORM=wayland GDK_BACKEND=wayland,x11 MOZ_ENABLE_WAYLAND=1
+# pleamar-wm: Qt draws its own white title bar over a LatteOS app, which brings its header (apps/common/AppWindow.qml)
+[ "${1:-}" = pleamarwm ] && export QT_WAYLAND_DISABLE_WINDOWDECORATION=1
 
 run="$XDG_RUNTIME_DIR/latteos"
 next="$run/next-session"                   # latte-game writes where to go when the running session ends
@@ -108,7 +110,7 @@ crash_report() {   # $1 exit code, $2 seconds it ran, $3 when it started (epoch)
 # With lingering on (remote access that starts before login) the user's systemd outlives the session and
 # keeps its WAYLAND_DISPLAY: the game session then believes it runs inside another desktop and quits.
 clean_env() {
-    systemctl --user unset-environment WAYLAND_DISPLAY DISPLAY HYPRLAND_INSTANCE_SIGNATURE XDG_CURRENT_DESKTOP \
+    systemctl --user unset-environment WAYLAND_DISPLAY DISPLAY QT_WAYLAND_DISABLE_WINDOWDECORATION HYPRLAND_INSTANCE_SIGNATURE XDG_CURRENT_DESKTOP \
         XDG_SESSION_DESKTOP XDG_SESSION_ID XDG_SESSION_TYPE 2>/dev/null || true
 }
 clean_env
