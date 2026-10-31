@@ -165,6 +165,10 @@ Tapeta v relácii pleamar-wm funguje (31. 10.): `skwd-walld` sa reštartuje pri 
 **1D.12** [ ] Vypnúť reláciu Hyprland, keď nová vie všetko, čo ona.
 **1D.13** [ ] Aktualizácia na v0.5 myšou, bez terminálu a bez AI (používateľ 31. 10.): nový kernel, Mesa a pleamar nainštaluje App Manager s postupom a návratom (nadväzuje na 10H.14). Kým ich Fedora nemá, jeden balík LatteOS; ručné kroky z latte-lab sa používateľom nedávajú.
 
+**1D.14** [ ] Overiť v relácii pleamar-wm: tlačidlo odhlásenia, reštart a vypnutie v Goo, prepnutie do hry, bobule okien v BarGoo, widgety, tapetu s videom, dva monitory.
+**1D.15** [ ] Overiť Hyprland na Fedore 45 a pleamare 0.6.1 (aj tapetu po návrate z pleamar-wm); pluginy preložiť, ak treba.
+**1D.16** [ ] Vrátiť `umu-launcher` (Fedora 45 ho nemá, odišiel pri aktualizácii). Keď Fedora dostane Linux 7.3 a Mesu 26.3, prejsť na ne: dnes je kernel z Koji nepodpísaný a Mesa rc v `/opt/mesa-26.3`.
+
 ## 2. [~] Instalator OS
 Zdroje: `fresh-install`, `install`, `migrate-v03`, `docs/NAVRH-STARTU.md`
 ak bude možnost. latteOS bude dostupne ako LiveUSB system, pripadne presne ako https://github.com/omacom/try-omarchy-windows . čiže try-latteos-windows

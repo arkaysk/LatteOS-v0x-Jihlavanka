@@ -3,12 +3,12 @@
 **A Linux desktop for people coming from Windows — made of liquid coffee.**
 
 LatteOS is a desktop built on Fedora and [pleamar-wm](https://github.com/k4ditano/pleamar-wm) for people who know Windows, want a computer that is simply
-theirs, and never want to open a terminal. The taskbar, Start menu, clock and system tray are replaced by
+theirs, and never want to open a terminal, remember console commands or keyboard shortcuts. The taskbar, Start menu,clock and system tray are replaced by
 **liquid coffee droplets ("goo")** that stretch, stick to the screen edge and react to the cursor. Everything
 works with the mouse; keyboard shortcuts are a bonus, never a requirement.
 
 > **Status: early development (0.x "Jihlavanka").** Things change daily and can break. Install it on a test
-> machine only. The first stable release will be 1.0 "Arabica".
+> machine only. The first stable release will be 1.0 "Arabica". Jihlavanka is cheap local coffe. Good enought, but not perfect. 
 
 ![Desktop with the coffee droplets](docs/screenshots/desktop.png)
 
@@ -27,8 +27,7 @@ It was tested on one machine with a Fedora 45 beta. AMD GFX6 to GFX8 cards (such
 and Mesa 26.3, still a release candidate; without them the drops are painted by the processor.
 
 **Thanks to** [k4ditano](https://github.com/k4ditano), the author of [pleamar](https://github.com/k4ditano/pleamar),
-pleamar-wm and [Marea](https://github.com/k4ditano/marea-plm); to the rice community on Reddit; to Claude Opus 5.5, which wrote
-this migration; and to the greed of corporations, without which nobody would have needed a system like this.
+pleamar-wm and [Marea](https://github.com/k4ditano/marea-plm); to the rice community on Reddit; to Claude Opus 5.5, which bring my ideas to live; and to the greed of corporations, without which nobody would have needed a system like this.
 
 ## The Goo engine
 
