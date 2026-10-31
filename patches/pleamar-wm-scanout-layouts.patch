@@ -1,0 +1,38 @@
+diff --git a/src/session.rs b/src/session.rs
+index 793f47a..19584bc 100644
+--- a/src/session.rs
++++ b/src/session.rs
+@@ -120,13 +120,13 @@ impl Monitor {
+ impl DrmOutput {
+     fn make_buffers(&mut self, device: &wgpu::Device, modifiers: &[u64]) -> Result<(), String> {
+         let (w, h) = self.size;
+-        let wanted: Vec<u64> = if modifiers.is_empty() { vec![0] } else { modifiers.to_vec() };
++        let mut wanted: Vec<u64> = if modifiers.is_empty() { vec![0] } else { modifiers.to_vec() };
+         // On OpenGL (a card whose Vulkan driver names no layouts, see
+         // pleamar's `Gpu::new`), the buffers are laid out as the driver likes,
+         // without naming it, and EGL takes them the same way.
+         // SAFETY: only asking which side the device runs on.
+         let gl = unsafe { device.as_hal::<wgpu::hal::api::Gles>() }.is_some();
+-        for _ in 0..3 {
++        while self.buffers.len() < 3 {
+             let uses = gbm::BufferObjectFlags::SCANOUT | gbm::BufferObjectFlags::RENDERING;
+             let made = if gl {
+                 self.gbm.lock().unwrap().create_buffer_object::<()>(w, h, gbm::Format::Xrgb8888, uses)
+@@ -148,7 +148,16 @@ impl DrmOutput {
+                 wgpu::TextureUses::UNINITIALIZED,
+             )?;
+             let flags = if bo.modifier() == gbm::Modifier::Invalid { FbCmd2Flags::empty() } else { FbCmd2Flags::MODIFIERS };
+-            let fb = self.drm.add_planar_framebuffer(&bo, flags).map_err(|e| format!("the monitor does not take the buffer: {e}"))?;
++            let fb = match self.drm.add_planar_framebuffer(&bo, flags) {
++                Ok(fb) => fb,
++                // The card can paint in layouts its display cannot show (GFX6 to GFX8): the next one, linear at the end.
++                Err(e) if !gl && wanted.contains(&modifier) && wanted.len() > 1 => {
++                    println!("session · {}: the monitor does not take layout {modifier:#x} ({e}): the next one", self.name);
++                    wanted.retain(|m| *m != modifier);
++                    continue;
++                }
++                Err(e) => return Err(format!("the monitor does not take the buffer: {e}")),
++            };
+             self.buffers.push(Buffer { _bo: bo, fb, texture });
+         }
+         if gl {

@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
-# latte-session [safe|game]: a LatteOS session after login. greetd starts it through the entries in
+# latte-session [safe|game|pleamarwm]: a LatteOS session after login. greetd starts it through the entries in
 # /usr/share/wayland-sessions.
 #
 #   (no argument)   GOO: Hyprland with the Goo engine. Only in the NORMAL mode latte-boot decided at boot.
+#   pleamarwm       GOO on pleamar-wm instead of Hyprland (ROADMAP 1D), with its own folder of settings
 #   safe            SAFE: labwc with software rendering and the SAFE bar (goo/safe.plm)
 #   game            Steam Big Picture in gamescope; it switches with GOO inside the same login (latte-game)
 #
@@ -70,9 +71,12 @@ mode_toml() { sed -n "s/^$1 = \"\(.*\)\"$/\1/p" "${LATTE_RUN_DIR:-/run/latteos}/
 latte-boot session-start
 [ $? -eq 3 ] && run_safe crashes
 
+desk=Hyprland desktop_names=Hyprland
+[ "${1:-}" = pleamarwm ] && desk=pleamar-wm desktop_names=pleamar
 hconf="$share/hypr/hyprland.lua"
+[ "$desk" = pleamar-wm ] && hconf="$share/pleamarwm/autostart"
 [ -f "$hconf" ] || run_safe not-installed "$hconf"
-export XDG_CURRENT_DESKTOP=Hyprland
+export XDG_CURRENT_DESKTOP="$desktop_names"
 
 # What the login screen shows under the surface after a crash. The latte group may write there.
 crash_report() {   # $1 exit code, $2 seconds it ran, $3 when it started (epoch)
@@ -82,7 +86,7 @@ crash_report() {   # $1 exit code, $2 seconds it ran, $3 when it started (epoch)
     report="$(ls -t "$HOME"/.cache/hyprland/hyprlandCrashReport*.txt 2>/dev/null | head -1)"
     {
         echo "$(date '+%Y-%m-%d %H:%M') · $USER"
-        echo "Hyprland exit $1 after $2 s · renderer ${LATTE_RENDERER:-?} · tier ${LATTE_TIER:-?}"
+        echo "$desk exit $1 after $2 s · renderer ${LATTE_RENDERER:-?} · tier ${LATTE_TIER:-?}"
         echo
         if [ -n "$report" ] && [ "$(stat -c %Y "$report")" -ge "$3" ]; then
             echo "── crash report ($(basename "$report"))"
@@ -148,15 +152,24 @@ go_next=desktop
 [ "${1:-}" = game ] && go_next=game
 restarts=()
 while true; do
-    if [ "$go_next" = game ]; then run_game; go_next=desktop; export XDG_CURRENT_DESKTOP=Hyprland; fi
+    if [ "$go_next" = game ]; then run_game; go_next=desktop; export XDG_CURRENT_DESKTOP="$desktop_names"; fi
     t0=$(date +%s)
     # LATTE_HYPRLAND=false fakes a crash, for testing this guard.
-    "${LATTE_HYPRLAND:-Hyprland}" -c "$hconf" &
+    if [ "$desk" = pleamar-wm ]; then
+        # its own folder, apart from what ~/.config/pleamar keeps for other desktops; what the user has there wins
+        own="$config/pleamar-wm"
+        mkdir -p "$own"
+        [ -e "$own/wm" ] || ln -s "$share/pleamarwm/wm" "$own/wm"
+        wmconf="$own/session.conf"; [ -e "$wmconf" ] || wmconf="$share/pleamarwm/session.conf"
+        PATH="$share/pleamarwm/bin:$PATH" PLEAMAR_CONFIG="$own" PLEAMAR_WM_CONFIG="$wmconf" PLEAMAR_WM_AUTOSTART="$hconf" pleamar-wm session &
+    else
+        "${LATTE_HYPRLAND:-Hyprland}" -c "$hconf" &
+    fi
     hpid=$!
     wait $hpid
     rc=$?
     dt=$(( $(date +%s) - t0 ))
-    echo "Hyprland ended: exit $rc after $dt s"
+    echo "$desk ended: exit $rc after $dt s"
     if [ $rc -eq 139 ] && { [ -s "$next" ] || crashed_on_exit $hpid; }; then
         echo "it crashed while shutting down: taken as a regular end"; rc=0
     fi
@@ -170,13 +183,13 @@ while true; do
         exit 0
     fi
     crash_report "$rc" "$dt" "$t0"
-    journal warning "Hyprland ended: exit $rc after $dt s"
-    [ $dt -lt 60 ] && run_safe desktop-crash "Hyprland exit $rc after $dt s"
+    journal warning "$desk ended: exit $rc after $dt s"
+    [ $dt -lt 60 ] && run_safe desktop-crash "$desk exit $rc after $dt s"
     now=$(date +%s); keep=()
     for t in "${restarts[@]}"; do [ $(( now - t )) -lt 600 ] && keep+=("$t"); done
     restarts=("${keep[@]}" "$now")
-    [ ${#restarts[@]} -gt 3 ] && run_safe desktop-crashes "Hyprland crashed ${#restarts[@]} times in 10 minutes"
-    echo "Hyprland crashed after $dt s: restart ${#restarts[@]} of 3"
-    journal err "Hyprland crashed after $dt s: restart ${#restarts[@]} of 3"
+    [ ${#restarts[@]} -gt 3 ] && run_safe desktop-crashes "$desk crashed ${#restarts[@]} times in 10 minutes"
+    echo "$desk crashed after $dt s: restart ${#restarts[@]} of 3"
+    journal err "$desk crashed after $dt s: restart ${#restarts[@]} of 3"
     latte-boot session-start >/dev/null
 done

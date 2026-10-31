@@ -1,0 +1,6 @@
+[Desktop Entry]
+Name=LatteOS GOO (pleamar-wm)
+Comment=The Goo engine on pleamar-wm instead of Hyprland: in the making, for trying out
+Exec=/usr/bin/latte-session pleamarwm
+Type=Application
+DesktopNames=pleamar

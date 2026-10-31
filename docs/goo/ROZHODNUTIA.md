@@ -409,3 +409,5 @@ Nové rozhodnutie: jeden riadok sem (dátum, čo, prečo) a oprava platného zne
 | Licencia LatteOS: dnes MIT, ale nie je definitívna — nakoniec sa zvolí taká, ktorá pokryje všetky potreby | otvorené (používateľ, 30. 10.) — inspo/dalsie_inspiracie.md |
 | Miesto na widgety ukazuje priehľadnú textúru pegboardu, kým tam widget nie je; v Domove LensShore nahrádza tlačidlá HNEĎ, ktoré ustupujú pásu widgetov | áno (používateľ 30. 10.) |
 | LensShore ostáva na zadávanie, nie dashboard; keďže je najklikanejší, má úzky pruh na pár widgetov | áno (používateľ 30. 10.) |
+| Vetva `v0.5-pleamarwm-jihlavanka`: Hyprland nahradí pleamar-wm; dovtedy obe relácie vedľa seba v prihlasovači, ostatné úlohy pozastavené | áno (používateľ, 31. 10.) — ROADMAP 1D; dôvod: vrstva pre agentov, sklo a canvas v scéne, odpadnú pluginy Hyprlandu |
+| `v0.4-fresh` ostáva návratový bod; ak pleamar-wm pobeží na beta ovládačoch (kernel 7.3, Mesa 26.3), opíše sa to v aktualizácii v0.5 a `v0.5-pleamarwm-jihlavanka` sa nastaví ako predvolená. Do 1.0 je LatteOS alfa až beta | áno (používateľ, 31. 10.) — ROADMAP 1D |

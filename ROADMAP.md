@@ -38,6 +38,8 @@ LatteOS:2.x xxx
 
 # Poradie práce
 
+**Vetva `v0.5-pleamarwm-jihlavanka` (od 31. 10. 2026):** poradie nižšie je pozastavené, robí sa prechod z Hyprlandu na pleamar-wm (1D).
+
 Určené 22. 10. 2026 (nahrádza bývalé „Teraz“ z 12. 10.). Ide sa zhora, neskáče sa; nový nápad na koniec svojej kategórie, nie sem.
 Poradie drží tri pravidlá: **čo blokuje overovanie ostatného ide prvé** (štart, SAFE, obrazovky), **plocha pred aplikáciami**,
 **aplikácie podľa Priority UX** (zvyky z Windowsu, softvér zo zoznamu záujmov), a nakoniec Optimalizácia a STRESTEST.
@@ -142,6 +144,26 @@ Neskôr: obraz ako Bazzite, rollback.
   stabilné pracovné prúdy, reálny HW, inštalácia, aktualizácia, obnova a testovací proces.
 
 ---
+
+### 1D. [~] pleamar-wm namiesto Hyprlandu
+Vetva `v0.5-pleamarwm-jihlavanka`. Goo ostáva samostatný proces; mení sa vrstva okien pod ním. Hyprland ostáva v prihlasovači ako
+druhá relácia, kým nová nevie všetko, čo on. Zdroje: [pleamar-wm](https://github.com/k4ditano/pleamar-wm), `docs/goo/ROZHODNUTIA.md`.
+
+**1D.01** [~] Brána: pleamar-wm 0.6.2 ukáže na RX 640 obraz na dvoch monitoroch, beží v ňom Goo; odmerať záťaž a sklo.
+31. 10., Fedora 45 Beta, Linux 7.3.1, Mesa 26.3-rc3, pleamar 0.6.1, pleamar-wm 0.6.2: ostrá relácia na RX 640 a jednom monitore, Goo cez kartu, priemer 16,8 ms na snímku, CPU ~11 %, okno foot funguje. Dva monitory (pripojený je jeden) a sklo neskúšané. Bez Linuxu 7.3 a Mesy 26.3 Polaris kreslí softvérovo (~480 % CPU).
+**1D.02** [x] Vlastná položka v prihlasovači, relácia s vlastným priečinkom nastavení (`PLEAMAR_CONFIG`), strážca `latte-session`, odchod do hry.
+**1D.03** [~] Goo a aplikácie volajú `hyprctl`: v relácii pleamar-wm odpovedá náhrada `system/pleamarwm/bin/hyprctl` (zoznam okien, obrazovky, aktivovať, minimalizovať, maximalizovať, zavrieť, celá obrazovka, ďalšie okno, odhlásenie). Ostáva `pid` okna, režimy, prichytávanie, plochy, sklo (1D.06–1D.09).
+**1D.04** [x] Ostatné volania `hyprctl` idú tou istou náhradou; čo ešte nevie, píše do logu „nothing for“.
+**1D.05** [x] Goo na pleamar 0.6.1: záplaty prenesené (`patches/README.md`).
+**1D.06** [~] Vlastný `wm/session.plm`: páska, dlaždice, plávajúce, Glance, minimalizácia, prichytávanie, plochy, pás pre kvapky (dnes `system/hypr/latte/windows.lua`).
+Tapeta v relácii pleamar-wm funguje (31. 10.): `skwd-walld` sa reštartuje pri štarte relácie (`system/pleamarwm/autostart`).
+**1D.07** [ ] Skratky a stupne výkonu do `keys.conf` a `session.conf`; nastavenia obrazoviek (`latte-screens`).
+**1D.08** [ ] Titulky okien v scéne namiesto hyprbars, ponuka okna, bublina pri zrode okna. Nastavenia majú dnes tri hlavičky nad sebou (správca okien, biela, aplikácia): `frame=own` nestačí.
+**1D.09** [ ] Sklo okien namiesto Hyprglass a sklo kvapiek cez `ext-background-effect`; odmerať na RX 640.
+**1D.10** [ ] `tests/screen.sh` na headless režim pleamar-wm; pleamar a pleamar-wm ako balík (COPR), zámok verzie.
+**1D.11** [ ] Agenti: LensShore úroveň 2 (6B.26) na `agent`, `hands`, `gate`; bezpečnostná kontrola `remote` pred zapnutím.
+**1D.12** [ ] Vypnúť reláciu Hyprland, keď nová vie všetko, čo ona.
+**1D.13** [ ] Aktualizácia na v0.5 myšou, bez terminálu a bez AI (používateľ 31. 10.): nový kernel, Mesa a pleamar nainštaluje App Manager s postupom a návratom (nadväzuje na 10H.14). Kým ich Fedora nemá, jeden balík LatteOS; ručné kroky z latte-lab sa používateľom nedávajú.
 
 ## 2. [~] Instalator OS
 Zdroje: `fresh-install`, `install`, `migrate-v03`, `docs/NAVRH-STARTU.md`

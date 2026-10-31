@@ -1,0 +1,327 @@
+diff --git a/src/agent.rs b/src/agent.rs
+index ef0a416..22ce44c 100644
+--- a/src/agent.rs
++++ b/src/agent.rs
+@@ -387,7 +387,7 @@ pub enum Act {
+     /// Pressed at the zone and moved by so much before letting go.
+     Drag { name: String, by: (f32, f32) },
+     /// Notches of the wheel over it; positive, upwards.
+-    Wheel { name: String, notches: f32 },
++    Wheel { name: String, notches: f32, sideways: bool },
+     /// The field focused and this left in it, as typing would.
+     Type { name: String, text: String },
+     /// A key to the scene, as the keyboard would send it: `Escape`, `Ctrl+z`.
+@@ -429,8 +429,8 @@ impl Act {
+             }
+             "wheel" => {
+                 let name = need(name)?;
+-                let n = w.next().and_then(|x| x.parse::<f32>().ok()).ok_or_else(|| format!("`wheel {name}` needs how many notches: 3 up, -3 down"))?;
+-                Ok(Act::Wheel { name, notches: n })
++                let n = w.next().and_then(|x| x.parse::<f32>().ok()).ok_or_else(|| format!("`wheel {name}` needs how many notches: 3 up, -3 down (`x` after it: sideways, right positive)"))?;
++                Ok(Act::Wheel { name, notches: n, sideways: w.next() == Some("x") })
+             }
+             "type" => {
+                 let name = need(name)?;
+diff --git a/src/gpu.rs b/src/gpu.rs
+index 1f566de..74205b2 100644
+--- a/src/gpu.rs
++++ b/src/gpu.rs
+@@ -568,6 +568,8 @@ struct OpenBody {
+     /// Its shapes as they are, to know on the CPU where its edge goes: the
+     /// glass needs it, since it asks the compositor to blur exactly there.
+     flats: Vec<crate::shapes::FlatShape>,
++    /// How much each of them melts, in the same order: to hand them again to the strips.
++    blends: Vec<f32>,
+ }
+ 
+ /// What a text says right now. Without copying anything when it does not have to: a
+@@ -1141,6 +1143,52 @@ impl DrawList {
+         })
+     }
+ 
++    /// A body cut into vertical strips, each with the shapes that can reach it: `(box, first shape,
++    /// how many)`. The shader computes every shape of a body for every pixel of its box, so a bar
++    /// with eighty shapes across the screen costs eighty distances a pixel, though only the few
++    /// nearby matter: a smooth minimum is a plain `min` once two distances differ by more than the
++    /// blend, so a shape further than the largest blend (plus what the shadow reaches) changes
++    /// nothing there. Small bodies, glass (it follows the whole silhouette) and transformed ones
++    /// are left as they were.
++    fn strips(&mut self, g: &OpenBody, bounds: [f32; 4], shadow: Option<(f32, f32, f32, f32)>, whole: bool) -> Vec<([f32; 4], usize, usize)> {
++        const STRIP: f32 = 96.0;
++        let wide = bounds[2] - bounds[0];
++        if whole || g.n < 8 || wide < STRIP * 3.0 || g.flats.len() != g.n || g.blends.len() != g.n {
++            return vec![(bounds, g.first, g.n)];
++        }
++        let reach = g.slack * 2.0 + shadow.map_or(0.0, |(sx, sy, sd, _)| sx.abs().max(sy.abs()) + sd + 8.0) + 4.0;
++        let count = (wide / STRIP).ceil() as usize;
++        // Whole pixels, and the same number for the end of one and the start of the next: no seam.
++        let edge = |i: usize| if i == 0 { bounds[0] } else if i >= count { bounds[2] } else { (bounds[0] + i as f32 * STRIP).floor() };
++        let mut out = Vec::with_capacity(count);
++        for i in 0..count {
++            let (x0, x1) = (edge(i), edge(i + 1));
++            let first = self.shapes.len() / PER_SHAPE;
++            let (mut n, mut y, mut endless) = (0, None::<(f32, f32)>, false);
++            for (p, k) in g.flats.iter().zip(&g.blends) {
++                let b = p.bounds();
++                if b.is_some_and(|b| b[2] + reach < x0 || b[0] - reach > x1) {
++                    continue;
++                }
++                self.push_shape(*p, *k);
++                n += 1;
++                match b {
++                    Some(b) => y = Some(y.map_or((b[1], b[3]), |(y0, y1)| (y0.min(b[1]), y1.max(b[3])))),
++                    None => endless = true,
++                }
++            }
++            if n == 0 {
++                continue;
++            }
++            let (y0, y1) = match y {
++                Some((y0, y1)) if !endless => ((y0 - reach).max(bounds[1]), (y1 + reach).min(bounds[3])),
++                _ => (bounds[1], bounds[3]),
++            };
++            out.push(([x0, y0, x1, y1], first, n));
++        }
++        out
++    }
++
+     fn push_shape(&mut self, p: crate::shapes::FlatShape, blend: f32) -> usize {
+         let k = self.shapes.len() / PER_SHAPE;
+         self.shapes.resize(self.shapes.len() + PER_SHAPE, 0.0);
+@@ -1985,7 +2033,7 @@ impl DrawList {
+                 }
+                 _ if hidden => {}
+                 Instr::Group { shadow } => {
+-                    body = Some(OpenBody { first: self.shapes.len() / PER_SHAPE, n: 0, bounds: None, slack: 0.0, shadow: shadow.clone(), flats: Vec::new() })
++                    body = Some(OpenBody { first: self.shapes.len() / PER_SHAPE, n: 0, bounds: None, slack: 0.0, shadow: shadow.clone(), flats: Vec::new(), blends: Vec::new() })
+                 }
+                 Instr::Shape { shape, fusion: blend } => {
+                     let (mut p, k) = match c.seen {
+@@ -1993,10 +2041,22 @@ impl DrawList {
+                         _ => (shape.flatten_into(c, &mut self.points), blend.eval(c).max(0.0)),
+                     };
+                     p.affine = affine;
++                    // A shape of no size is not there, like a box under half a pixel: it neither
++                    // paints nor blends (a point would still raise a bump through the blend), and
++                    // it costs nothing — a body can keep slots for things that come and go.
++                    let empty = match p.kind {
++                        0 => p.radius * p.ex.abs().max(p.ey.abs()) < 0.25,
++                        3 => p.stroke < 0.25,
++                        _ => false,
++                    };
++                    if empty {
++                        continue;
++                    }
+                     let bounds = p.bounds();
+                     self.push_shape(p, k);
+                     if let Some(g) = &mut body {
+                         g.flats.push(p);
++                        g.blends.push(k);
+                         g.n += 1;
+                         g.slack = g.slack.max(k * 0.5);
+                         if let Some(b) = bounds {
+@@ -2034,10 +2094,15 @@ impl DrawList {
+                             self.glass_marks.push(self.element_count() as u32);
+                         }
+                     }
++                    // A long body with many shapes (a bar of drops) is painted in strips, each with only
++                    // the shapes that reach it: see `strips`. The picture is the same; a pixel no longer
++                    // costs every shape of the body.
++                    let whole = v * a * layered > GLASS_VISIBLE || !affine.is_identity();
++                    for (bounds, first, n) in self.strips(&g, bounds, shadow, whole) {
+                     self.element(0.0, bounds, &clips, |e| {
+                         affine.encode(&mut e[44..52]);
+-                        e[1] = g.first as f32;
+-                        e[2] = g.n as f32;
++                        e[1] = first as f32;
++                        e[2] = n as f32;
+                         e[3] = a;
+                         match paint {
+                             Paint::Color(col) => e[8..11].copy_from_slice(&color(col)),
+@@ -2078,6 +2143,7 @@ impl DrawList {
+                             }
+                         }
+                     });
++                    }
+                 }
+                 Instr::Solid { shape, color: col, alpha, glass_spec } => {
+                     let a = alpha.eval(c).clamp(0.0, 1.0) * mult;
+diff --git a/src/language/compiler.rs b/src/language/compiler.rs
+index a3a6f43..f9f10d7 100644
+--- a/src/language/compiler.rs
++++ b/src/language/compiler.rs
+@@ -498,7 +498,7 @@ pub fn compile<'a>(tree: &'a [Entry], files: &'a [String], dirs: &'a [std::path:
+     // `motion.reduced` (1: the system asks for less motion) and `color.scheme`
+     // (0 no preference, 1 dark, 2 light): what the system says, or what is said
+     // to the scene; the first, with `--reduced-motion`, settles every spring.
+-    for n in ["screen.width", "screen.height", "screen.index", "pointer.x", "pointer.y", "cursor.x", "cursor.y", "local.x", "local.y", "drag.dx", "drag.dy", "wheel", "lock.held", "drag.over", "motion.reduced", "color.scheme"] {
++    for n in ["screen.width", "screen.height", "screen.index", "pointer.x", "pointer.y", "cursor.x", "cursor.y", "local.x", "local.y", "drag.dx", "drag.dy", "wheel", "wheel.x", "lock.held", "drag.over", "motion.reduced", "color.scheme"] {
+         let h = o.e.fact(n, 0.0);
+         o.facts.insert(n.into(), h);
+     }
+@@ -1104,7 +1104,7 @@ impl<'a> Compiler<'a> {
+         if self.scopes.iter().any(|e| e.exprs.contains_key(name) || e.colors.contains_key(name) || e.strings.contains_key(name) || e.springs.contains_key(name)) {
+             return;
+         }
+-        let builtin = ["screen.", "pointer.", "local.", "drag."].iter().any(|p| name.starts_with(p)) || name == "wheel";
++        let builtin = ["screen.", "pointer.", "local.", "drag."].iter().any(|p| name.starts_with(p)) || name == "wheel" || name == "wheel.x";
+         // What the copy itself declared carries its suffix; what did not, is from outside.
+         let own = self.scopes.iter().any(|e| !e.suffix.is_empty() && name.ends_with(&e.suffix));
+         if !builtin && !own {
+diff --git a/src/platform/wayland.rs b/src/platform/wayland.rs
+index 4fe2c2a..65983c6 100644
+--- a/src/platform/wayland.rs
++++ b/src/platform/wayland.rs
+@@ -1889,6 +1889,10 @@ impl PointerHandler for State {
+                     if d != 0.0 {
+                         let _ = self.to_render.send(ToRender::Wheel(d));
+                     }
++                    let x = notches(&horizontal);
++                    if x != 0.0 {
++                        let _ = self.to_render.send(ToRender::WheelX(x));
++                    }
+                 }
+             }
+         }
+diff --git a/src/render.rs b/src/render.rs
+index d7a0519..cf522c5 100644
+--- a/src/render.rs
++++ b/src/render.rs
+@@ -709,6 +709,7 @@ pub fn run(
+         // Which of them come from an agent's own seat.
+         let mut buttons_agent: Vec<bool> = Vec::new();
+         let mut wheel = 0.0f32;
++        let mut wheel_x = 0.0f32;
+         // What fingers moved (not a wheel): for a window as it is, already
+         // counted in `wheel` as notches for the zones.
+         let mut fingers = (0.0f32, 0.0f32, 0.0f32);
+@@ -1374,6 +1375,10 @@ pub fn run(
+                     wheel += d;
+                     last_activity = Instant::now();
+                 }
++                ToRender::WheelX(d) => {
++                    wheel_x += d;
++                    last_activity = Instant::now();
++                }
+                 ToRender::Scroll { x, y, notches } => {
+                     wheel += notches;
+                     fingers = (fingers.0 + x, fingers.1 + y, fingers.2 + notches);
+@@ -1947,6 +1952,12 @@ pub fn run(
+                             a.steps.pop_front();
+                             break;
+                         }
++                        Step::WheelX(n) => {
++                            wheel -= n;
++                            wheel_x += n;
++                            a.steps.pop_front();
++                            break;
++                        }
+                         Step::Leave => {
+                             a.hand = None;
+                             pointer = real_pointer;
+@@ -2623,6 +2634,7 @@ pub fn run(
+                     "drag.dx" => facts[k] = dx,
+                     "drag.dy" => facts[k] = dy,
+                     "wheel" => facts[k] = wheel,
++                    "wheel.x" => facts[k] = wheel_x,
+                     _ => {}
+                 }
+             }
+@@ -6431,6 +6443,7 @@ enum Step {
+     Down(u8),
+     Up(u8),
+     Wheel(f32),
++    WheelX(f32),
+     /// The session's agent cursor is on its way to the hand: the press waits
+     /// for it to arrive (300 ms at most), so it is never behind the action.
+     Cursor(std::sync::Arc<std::sync::Mutex<crate::platform::CursorTrip>>, Instant),
+@@ -6522,12 +6535,12 @@ impl Acting {
+                 steps.push_back(Step::Leave);
+                 format!("dragged {name} by {}, {}", by.0, by.1)
+             }
+-            Act::Wheel { notches, .. } => {
++            Act::Wheel { notches, sideways, .. } => {
+                 steps.push_back(Step::Point);
+-                steps.push_back(Step::Wheel(*notches));
++                steps.push_back(if *sideways { Step::WheelX(*notches) } else { Step::Wheel(*notches) });
+                 steps.push_back(Step::Pause(Duration::from_millis(60)));
+                 steps.push_back(Step::Leave);
+-                format!("turned the wheel {notches} over {name}")
++                format!("turned the wheel {notches}{} over {name}", if *sideways { " sideways" } else { "" })
+             }
+             Act::Type { text, .. } => {
+                 let Some((k, _, _)) = crate::agent::field_of(scene, &scene.zones[zone]) else {
+diff --git a/src/scene.rs b/src/scene.rs
+index 6ac2da3..0f163f5 100644
+--- a/src/scene.rs
++++ b/src/scene.rs
+@@ -2417,6 +2417,9 @@ pub enum ToRender {
+     AgentButton(u8, bool),
+     /// Wheel notches: positive, upwards.
+     Wheel(f32),
++    /// The wheel turned sideways (a tilted wheel, two fingers to the side), right positive: `wheel.x`.
++    /// It is counted in `Wheel` too, as before, for the scenes that know only that one.
++    WheelX(f32),
+     /// Fingers moving what is under the pointer (a touchpad's two, one on a
+     /// phone's glass): `x`, `y`, how far it goes, in units, for a window
+     /// (down and to the right, positive: as Wayland says it), and the
+diff --git a/src/shape.wgsl b/src/shape.wgsl
+index ee1c6df..e19c45b 100644
+--- a/src/shape.wgsl
++++ b/src/shape.wgsl
+@@ -451,12 +451,17 @@ fn fs(e: VertexOut) -> @location(0) vec4<f32> {
+         d = smooth_min(d, shape_distance(first + k, p), blend);
+         if (has_shadow) { d_shadow = smooth_min(d_shadow, shape_distance(first + k, p - el.shadow.xy), blend); }
+     }
++    // Where shapes melt (smooth min) the distance is squeezed: it changes less than a pixel per pixel, and an
++    // edge of fixed width smears over several — the eyes left between melted shapes came out blurred. The edge
++    // follows how much the distance really changes per pixel instead: only ever sharper, never softer.
++    let edge_g = vec2<f32>(dpdx(d), dpdy(d));
++    let de = d / clamp(length(edge_g) * u.header.w, 0.2, 1.0);
+     // Glass: from 0 to 1, in the `uv` slot, which a body does not use.
+     let glass = el.uv.x;
+     if (has_shadow) {
+         // Its colour is the three slots of `color1`; if nothing is said, black.
+         // Under glass the shadow does not show through: only around it.
+-        let covered = 1.0 - coverage(d) * glass;
++        let covered = 1.0 - coverage(de) * glass;
+         c = over(c, el.color1.rgb, el.shadow.w * alpha * covered * (1.0 - smoothstep(-8.0, el.shadow.z, d_shadow)));
+     }
+     var tone = el.color0.rgb;
+@@ -472,7 +477,7 @@ fn fs(e: VertexOut) -> @location(0) vec4<f32> {
+         tone = between_stops(u32(el.dest.x), u32(el.dest.y), t);
+     }
+     let light = clamp(1.0 - (local.y - el.light.y) / max(el.light.z, 1.0), 0.0, 1.0) * el.light.x;
+-    tone += vec3<f32>(light) + vec3<f32>(el.color0.w) * smoothstep(-2.2, -0.4, d);
++    tone += vec3<f32>(light) + vec3<f32>(el.color0.w) * smoothstep(-2.2, -0.4, de);
+     // Where the edge points: towards where the distance grows.
+     let g = vec2<f32>(dpdx(d), dpdy(d));
+     let normal = g / max(length(g), 1e-6);
+@@ -703,7 +708,7 @@ fn fs(e: VertexOut) -> @location(0) vec4<f32> {
+         // background, sharp, under our alpha, and it would leak through like a
+         // ghost of the text behind: it is subtracted beforehand, since we know
+         // it. What is seen: ours + (1 − α)·behind = glass · coverage.
+-        let seen = coverage(d) * alpha;
++        let seen = coverage(de) * alpha;
+         let db = textureSampleLevel(backdrop_sharp, backdrop_sampler, e.pos.xy / size, 0.0);
+         let underneath = db.rgb / max(db.a, 0.001) * step(0.5, db.a);
+         let lens_alpha = seen * LENS_ALPHA;
+@@ -715,14 +720,14 @@ fn fs(e: VertexOut) -> @location(0) vec4<f32> {
+         c = over(c, tone, edge_coverage(d, tone) * alpha * mix(1.0, 0.36, glass));
+         // Smoke and milk over what the compositor blurs, which we never see:
+         // a veil of black or of white, as near as it gets.
+-        c = over(c, vec3<f32>(0.0), coverage(d) * alpha * glass * el.dest.z * 0.35);
+-        c = over(c, vec3<f32>(1.0), coverage(d) * alpha * glass * el.dest.w * 0.3);
++        c = over(c, vec3<f32>(0.0), coverage(de) * alpha * glass * el.dest.z * 0.35);
++        c = over(c, vec3<f32>(1.0), coverage(de) * alpha * glass * el.dest.w * 0.3);
+         if (glass > 0.0 && el.glass4.w > 0.0) {
+-            c = over(c, vec3<f32>(1.0), clamp((shine + finger_light) * el.glass4.w, 0.0, 1.0) * glass * coverage(d) * alpha);
++            c = over(c, vec3<f32>(1.0), clamp((shine + finger_light) * el.glass4.w, 0.0, 1.0) * glass * coverage(de) * alpha);
+         }
+     }
+     if (el.light.w > 0.0) {
+-        c = over(c, el.border.rgb, edge_coverage(abs(d + el.light.w * 0.5) - el.light.w * 0.5, el.border.rgb) * alpha);
++        c = over(c, el.border.rgb, edge_coverage(abs(de + el.light.w * 0.5) - el.light.w * 0.5, el.border.rgb) * alpha);
+     }
+     return c;
+ }

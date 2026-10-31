@@ -1,0 +1,144 @@
+#!/usr/bin/env python3
+"""hyprctl for what LatteOS asks of the compositor, answered by pleamar-wm: first on PATH in its session (bin/latte-session),
+so the shell and the apps need no change. Windows are told apart by their slot in the scene, as the address 0xN.
+Outside that session it is the real one: systemd keeps this PATH after the session has ended."""
+import concurrent.futures
+import json
+import os
+import re
+import socket
+import subprocess
+import sys
+import time
+
+WM = "wm.sock"
+FIELDS = ("title", "app", "screen", "workspace", "minimized", "floating", "fullscreen", "focused")
+
+
+def say(command):
+    with socket.socket(socket.AF_UNIX) as s:
+        s.connect(os.path.join(os.environ["PLEAMAR_SOCKETS"], WM))
+        s.sendall(command.encode() + b"\n")
+        s.shutdown(socket.SHUT_WR)
+        out = b""
+        while chunk := s.recv(65536):
+            out += chunk
+    return out.decode().rstrip("\n")
+
+
+def many(questions):
+    with concurrent.futures.ThreadPoolExecutor(16) as pool:          # one question waits for a frame: together they take one
+        return dict(zip(questions, pool.map(lambda q: say("get " + q), questions)))
+
+
+def monitors():
+    out = []
+    with open(os.path.join(os.environ["PLEAMAR_SOCKETS"], "desktop")) as f:
+        lines = [line.split(" ") for line in f.read().splitlines() if line.startswith("monitor ")]
+    shown = many(["win.shown.%d" % i for i in range(len(lines))])
+    for i, (_, name, w, h, x, y, mhz, focused, scale) in enumerate(lines):
+        ws = int(shown["win.shown.%d" % i] or 1)
+        out.append({"id": i, "name": name, "description": name, "make": "", "model": "", "width": int(w), "height": int(h),
+                    "refreshRate": int(mhz) / 1000, "x": int(x), "y": int(y), "scale": float(scale), "focused": focused == "1",
+                    "transform": 0, "dpmsStatus": True, "mirrorOf": "none", "activeWorkspace": {"id": ws, "name": str(ws)}})
+    return out
+
+
+def clients():
+    screens = monitors()
+    opened = many(["win.%d.open" % i for i in range(16)])
+    slots = [i for i in range(16) if opened["win.%d.open" % i] == "true"]
+    facts = many(["win.%d.%s" % (i, k) for i in slots for k in FIELDS])
+    places = {int(m[0]): [int(v) for v in m[1:]] for m in re.findall(r"window\s+win\.(\d+)\s.*? at (-?\d+),(-?\d+) (\d+)×(\d+)", say("describe"))}
+    out = []
+    for i in slots:
+        f = {k: facts["win.%d.%s" % (i, k)] for k in FIELDS}
+        on = int(f["screen"] or 0)
+        at = screens[on] if on < len(screens) else {"x": 0, "y": 0, "activeWorkspace": {"id": 1}}
+        ws, away = int(f["workspace"] or 1), f["minimized"] == "true"
+        x, y, w, h = places.get(i, [0, 0, 0, 0])
+        out.append({"address": "0x%d" % i, "mapped": True, "class": f["app"], "title": f["title"], "pid": 0, "monitor": on,
+                    "workspace": {"id": -99 if away else ws, "name": "special:minimized" if away else str(ws)},
+                    "visible": not away and ws == at["activeWorkspace"]["id"], "floating": f["floating"] == "true", "pinned": False,
+                    "fullscreen": 2 if f["fullscreen"] == "true" else 0, "focusHistoryID": 0 if f["focused"] == "true" else i + 1,
+                    "at": [x + at["x"], y + at["y"]], "size": [w, h]})
+    return out
+
+
+def query(what):
+    if what == "clients":
+        return clients()
+    if what == "monitors":
+        return monitors()
+    if what == "activewindow":
+        return next((c for c in clients() if c["focusHistoryID"] == 0), {})
+    if what == "activeworkspace":
+        return next((m["activeWorkspace"] for m in monitors() if m["focused"]), {"id": 1, "name": "1"})
+    return {}
+
+
+def emits(expr):
+    """What an `eval` means as events of the window manager's scene, in order; None: nothing it can do yet."""
+    m = re.match(r'latte\.win\.(\w+)\("0x(\d+)"', expr)
+    if m:
+        what, slot = m.group(1), m.group(2)
+        focus = "emit latte_focus " + slot
+        if what == "toggle":
+            return ["emit window_minimize " + slot] if say("get win.%s.focused" % slot) == "true" else [focus]
+        return {"activate": [focus], "restore": [focus], "minimize": ["emit window_minimize " + slot], "maximize": ["emit window_maximize " + slot],
+                "close": [focus, "emit close"], "fullscreen": [focus, "emit fullscreen"]}.get(what)
+    m = re.match(r"latte\.win\.cycle\((-?\d+)\)", expr)
+    if m:
+        return ["emit focus_next" if int(m.group(1)) > 0 else "emit focus_previous"]
+    return None
+
+
+def evaluate(expr):
+    m = re.search(r"hl\.exec_cmd\((\"|')(.*)\1\)", expr)
+    if m:
+        subprocess.Popen(["sh", "-c", m.group(2).replace('\\"', '"')], start_new_session=True)
+    elif "hl.dsp.exit()" in expr:
+        subprocess.run(["pkill", "-TERM", "-x", "pleamar-wm"])
+    elif "send_shortcut" in expr:
+        slot = re.search(r"address:0x(\d+)", expr)
+        if slot:
+            say("emit latte_focus " + slot.group(1))
+            time.sleep(0.1)
+        subprocess.run(["wtype", "-M", "ctrl"] + (["-M", "shift"] if "SHIFT" in expr else []) + ["-k", "v"])
+    elif expr.startswith("latte.wallpaper("):
+        path = re.search(r'"(.*)"', expr)
+        subprocess.Popen(["latte-wall", "set", "*", "picture", path.group(1)] if path else ["latte-wall", "restore"], start_new_session=True)
+    else:
+        steps = emits(expr)
+        if steps is None:           # ponytail: modes, snapping, desks, glass and the band wait for ROADMAP 1D.06 to 1D.09
+            print("hyprctl (pleamar-wm): nothing for: " + expr, file=sys.stderr)
+        for i, step in enumerate(steps or []):
+            if i:
+                time.sleep(0.05)    # a rule reads the frame before: `close` has to see the keyboard moved
+            say(step)
+
+
+def main(args):
+    args = [a for a in args if a not in ("-q", "--quiet")]
+    if args[:1] == ["--batch"]:
+        answers = [json.dumps(query(part.strip().removeprefix("j/"))) for part in args[1].split(";")]
+        print("\n\n\n".join(answers))
+    elif args[:1] == ["eval"]:
+        evaluate(args[1])
+    elif "-j" in args:
+        print(json.dumps(query(next((a for a in args if a != "-j"), ""))))
+    elif args[:1] == ["monitors"]:
+        subprocess.run(["pleamar-wm", "hyprctl", "monitors"])
+    elif args[:1] == ["cursorpos"]:
+        with socket.socket(socket.AF_UNIX) as s:
+            s.connect(os.path.join(os.environ["PLEAMAR_SOCKETS"], "cursor.sock"))
+            x, y = s.makefile().readline().split()[:2]
+        print("%d, %d" % (float(x), float(y)))
+    else:
+        print("hyprctl (pleamar-wm): nothing for: " + " ".join(args), file=sys.stderr)
+
+
+if __name__ == "__main__":
+    if os.environ.get("XDG_CURRENT_DESKTOP") != "pleamar" or not os.environ.get("PLEAMAR_SOCKETS"):
+        os.execv("/usr/bin/hyprctl", ["hyprctl"] + sys.argv[1:])
+    main(sys.argv[1:])

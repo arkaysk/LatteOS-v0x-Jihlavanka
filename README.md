@@ -2,7 +2,7 @@
 
 **A Linux desktop for people coming from Windows — made of liquid coffee.**
 
-LatteOS is a desktop built on Fedora and Hyprland for people who know Windows, want a computer that is simply
+LatteOS is a desktop built on Fedora and [pleamar-wm](https://github.com/k4ditano/pleamar-wm) for people who know Windows, want a computer that is simply
 theirs, and never want to open a terminal. The taskbar, Start menu, clock and system tray are replaced by
 **liquid coffee droplets ("goo")** that stretch, stick to the screen edge and react to the cursor. Everything
 works with the mouse; keyboard shortcuts are a bonus, never a requirement.
@@ -11,6 +11,36 @@ works with the mouse; keyboard shortcuts are a bonus, never a requirement.
 > machine only. The first stable release will be 1.0 "Arabica".
 
 ![Desktop with the coffee droplets](docs/screenshots/desktop.png)
+
+## New in 0.5: from Hyprland to pleamar-wm
+
+This branch replaces Hyprland with [pleamar-wm](https://github.com/k4ditano/pleamar-wm), a Wayland compositor whose window
+manager is itself a pleamar scene. The Goo engine already ran on pleamar, so the drops barely change; what changes is the layer
+of windows beneath them. In return the window manager, its effects and the canvas can be rewritten like any other scene, the
+Hyprland plugins go away, and agents get what the compositor is built around: a pointer and keyboard of their own that leave
+yours alone, rules for what they may touch, and a gate for what they ask to do.
+
+**This is a work in progress.** The session starts from the login screen with the Goo engine, wallpaper and window commands
+(list, focus, minimize, maximize, close), while window modes, snapping, glass and LatteOS's own shortcuts are still being moved
+over. Hyprland stays as the other session until the new one can do everything it did, and `v0.4-fresh` remains the way back.
+It was tested on one machine with a Fedora 45 beta. AMD GFX6 to GFX8 cards (such as the RX 640 it was tested on) need Linux 7.3
+and Mesa 26.3, still a release candidate; without them the drops are painted by the processor.
+
+**Thanks to** [k4ditano](https://github.com/k4ditano), the author of [pleamar](https://github.com/k4ditano/pleamar),
+pleamar-wm and [Marea](https://github.com/k4ditano/marea-plm); to the rice community on Reddit; to Claude Opus 5.5, which wrote
+this migration; and to the greed of corporations, without which nobody would have needed a system like this.
+
+## The Goo engine
+
+<img src="docs/screenshots/goo-ooze.png" alt="A cup of coffee that has spilled itself out and smiles: a living coffee ooze" width="380" align="right">
+
+Goo is an environment built on pleamar: liquid drops of coffee that seem to float in low gravity and have a life of their own.
+Each one has its own job and reacts to you, and even to your being away. The cursor draws them in and lights them. The screen's
+edges are sticky to them, and so are they to each other, while the bottom edge is a rippling surface of coffee that they fall
+into. Coffee this alive is really more of a slime, an ooze straight out of a D&D fantasy.
+
+The inspiration is exactly that: *Homebrew*, a tiny coffee ooze by Fluffy (The Fluffy Folio), posted on Reddit by michifromkmk.
+<br clear="right">
 
 ## How it is made
 

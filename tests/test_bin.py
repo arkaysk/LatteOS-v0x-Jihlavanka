@@ -799,3 +799,22 @@ def test_weather():
 
 
 test_weather()
+
+
+def test_hyprctl_on_pleamarwm():
+    shim = load("hyprctl", "system/pleamarwm/bin")
+    facts = {"win.0.open": "true", "win.0.title": "foot", "win.0.app": "foot", "win.0.screen": "0", "win.0.workspace": "1", "win.0.focused": "true"}
+    shim.monitors = lambda: [{"x": 100, "y": 0, "focused": True, "activeWorkspace": {"id": 1, "name": "1"}}]
+    shim.many = lambda questions: {q: facts.get(q, "false") for q in questions}
+    shim.say = lambda c: "  window  win.0  «foot»  at 12,20 800×600" if c == "describe" else facts.get(c.removeprefix("get "), "false")
+    c = shim.clients()
+    assert len(c) == 1 and c[0]["address"] == "0x0" and c[0]["at"] == [112, 20] and c[0]["size"] == [800, 600] and c[0]["visible"] and c[0]["focusHistoryID"] == 0
+    facts["win.0.minimized"] = "true"
+    assert shim.clients()[0]["workspace"]["name"] == "special:minimized"
+    assert shim.emits('latte.win.close("0x3")') == ["emit latte_focus 3", "emit close"]
+    assert shim.emits('latte.win.toggle("0x0")') == ["emit window_minimize 0"]
+    assert shim.emits("latte.win.cycle(-1)") == ["emit focus_previous"]
+    assert shim.emits("latte.mode.next()") is None
+
+
+test_hyprctl_on_pleamarwm()

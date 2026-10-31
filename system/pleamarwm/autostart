@@ -1,0 +1,12 @@
+# What pleamar-wm starts with the LatteOS session, one command a line (system/hypr/hyprland.lua does the same on Hyprland).
+# pleamar-wm puts its own folder first on PATH, so its hyprctl is put back in front of it where it is asked for.
+# systemd and D-Bus learn where the session is; the target starts the Goo scene and the portals.
+sh -c 'export PATH=/usr/share/latteos/pleamarwm/bin:$PATH; dbus-update-activation-environment --systemd WAYLAND_DISPLAY DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE PATH PLEAMAR_SOCKETS LATTE_MODE LATTE_RENDERER LATTE_TIER LANG; exec systemctl --user start latte-session.target'
+# skwd-walld (the wallpaper) starts with the user, before any session, and stays with the compositor it found first
+sh -c 'export PATH=/usr/share/latteos/pleamarwm/bin:$PATH; sleep 1; systemctl --user try-restart skwd-walld; sleep 1; exec latte-wall restore'
+PATH=/usr/share/latteos/pleamarwm/bin:$PATH latte-widget start
+PATH=/usr/share/latteos/pleamarwm/bin:$PATH latte-desktop start
+PATH=/usr/share/latteos/pleamarwm/bin:$PATH latte-nightlight
+/usr/libexec/latte-polkit-agent
+sh -c 'command -v cliphist >/dev/null || exit; command -v latte-clip >/dev/null && exec wl-paste --watch latte-clip store; exec wl-paste --watch cliphist store'
+latte-boot ok --after 60 --require pleamar

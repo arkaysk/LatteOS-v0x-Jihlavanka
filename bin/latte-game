@@ -23,7 +23,11 @@ case "${1:-game}" in
     game)
         why="$(available)" || { notify-send -a LatteOS "LatteOS Game" "$why" 2>/dev/null; echo "$why" >&2; exit 1; }
         echo game > "$next"
-        hyprctl dispatch exit >/dev/null ;;
+        if [ "${XDG_CURRENT_DESKTOP:-}" = pleamar ]; then
+            pkill -TERM -x pleamar-wm
+        else
+            hyprctl eval 'hl.dispatch(hl.dsp.exit())' >/dev/null
+        fi ;;
     desktop)
         echo desktop > "$next"
         steam -shutdown >/dev/null 2>&1 & ;;
