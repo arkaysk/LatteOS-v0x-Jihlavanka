@@ -298,6 +298,8 @@ základ, na ktorý sa dajú integrovať ostatné pracovné prúdy.
 **3.09** [ ] (Boot a štart) R2 — čistá inštalácia a obnova · r. 924–924
 - [ ] Overiť čistú inštaláciu, prvé spustenie, aktualizáciu a obnovu po neúspešnom štarte.
 
+**3.10** [ ] (Boot a štart) Overit. https://github.com/Zagitta/gpu-unlock pre nvdia karty a či sa to bude zavadzat pri boote. 
+
 ---
 
 ## 4. [~] Greeter a prihlásenie (LoginGoo)
@@ -351,7 +353,7 @@ zavedenie systemu a prihlasovacia obrazovka dizajnovo takmer finalna verzia.
     a odtečie; svetlo o polovicu slabšie.)
 
 
-**4.04** [ ] **Dvojitá zlato-kávová hladina v prihlasovaní** (používateľ 27. 10.): ako v kartách PowerGoo a v LensShore —
+**4.04** [x] **Dvojitá zlato-kávová hladina v prihlasovaní** (používateľ 27. 10.): ako v kartách PowerGoo a v LensShore —
 zlatá vrstva vzadu, káva vpredu, každá sa vlní po svojom (`goo/parts/rows.plm`, `card.sp`); na prihlasovacej obrazovke
 (LoginGoo, `goo/login.plm`) a v zámku obrazovky, bez čiary navyše tam, kde sa káva stretne s iným prvkom.
 
@@ -877,13 +879,14 @@ widgetov, ktoré si človek vyberie a nahrá; **formát spoločný s dashboardom
 
 **6B.40** [ ] **Mód Histogram: mapa zmien systému** (používateľ 30. 10., predloha: strom distribúcií Linuxu, časová os s vetvami): systém ako git priebežne zapisuje,
 čo používateľ robí; časti systému majú vlastné vetvy; dá sa nájsť udalosť s chybou a **vrátiť práve ju**, zlúčiť vetvy, založiť novú. **+** zobrazí mapu na celú plochu cez všetko,
-**−** ju vráti. Treba návrh: čo sa zapisuje (súkromie), a čo sa vôbec dá vrátiť samostatne (nastavenia áno, snímky snapper, dáta aplikácií nie vždy). Používateľ chce doplniť ďalší mód: veta v správe ostala nedokončená.
+**−** ju vráti. Treba návrh: čo sa zapisuje (súkromie), a čo sa vôbec dá vrátiť samostatne (nastavenia áno, snímky snapper, dáta aplikácií nie vždy). Timeline zobrazenie v canvas ploche. zoom-in zoom -out. Timeline rovnako ako branch alebo fork v github zozname . ostavaju vydiet zmeny ako nove rozvetvenie timeline. niečo ako https://learn.secbyte.org/tools/linux-timeline ale zobrazene graficky s odkazama a uzlama, podobne ako timeline obrazovka v seriali Loki v Time Variance Authority (TVA).
 
 **6B.41** [~] **Widgety z Chaldea** (používateľ 30. 10.; [Chaldea](https://github.com/Aleph1-9012/Chaldea), widgety 0BSD): 41 vyexportovaných do `apps/widgets/`,
 galéria `latte-app widgets` (klik = na plochu / preč, voľba sa pamätá), `bin/latte-widget`, plávajú v každom režime. Chýba: prepojiť s dashboardom a pásom widgetov (6B.38);
 posuvníky s jasom a hlasitosťou, poznámky ukladať (sú iba v pamäti), vzhľady zámku sú len ukážky (nezamykajú); farby zatiaľ Chaldea, nie téma.
+-nova Poznamka z 1.11. widgety z chaldea nie su spravne widgety pre dashboard LatteOS. tie sa odstrania a najdu sa ine vhodne možnosti ktore sa zaintegruju. prepoji sa to aj s vytvaranim widgetov integrovanym do Pleamar-WM. 
 
-**6B.42** [ ] **Widgety z Caelestie** (používateľ 30. 10.): preskúmať a prevziať, pred tým overiť licenciu.
+**6B.42** [ ] **Widgety z Caelestie** (používateľ 30. 10.): preskúmať a prevziať.
 
 **6B.13** [ ] **Výskum: Tinycast ako zoznam funkcií** (používateľ 27. 10.: „vyzerá ako naše LensGoo“) —
 https://github.com/abue-ammar/tinycast (macOS, Swift, AGPL-3.0 → kód nepreberať, iba nápady). Čo LensGoo/LensShore
@@ -1244,6 +1247,9 @@ Zdroje: `bin/latte-cam`; Nastavenia › Kvapky › Webkamery
 ### 6G. [x] QuickGoo
 
 **6G.01** [x] (Vlastné kvapky a návrhy kvapiek) QuickGoo · r. 100–100
+
+**6G.01** [x] (Vlastné kvapky a návrhy kvapiek) QuickGoo · každe quickGoo mosi mat volitelny sposob vysuvania panelu s ikonamy app. v zavislosti od polohy, od volneho miesta. kedže quick goo je popup. navrhujem idealne vysuvanie kolmo na pripnuty okraj. 
+
 
 ### 6H. [~] TrayShore (Pobrežie)
 Výnimka: patrí medzi Goo a stojí na rovnakom mieste, interaguje s Goo, ale nie je to Goo — nedá sa s ním manipulovať, správa sa inak a má iné pravidlá.
@@ -2282,6 +2288,8 @@ prekrýva hladinu kávy v päte okna a počet priečinkov a súborov je napísan
 Riadok príkazov presunúť úplne dole, na dno kávovej hladiny k tlačidlám F3–F10, na miesto zdvojeného počtu (ten ostane
 iba v okne pod zoznamom); hladina (`Surface.qml`, sametové vrstvy) sa tak nezakrýva.
 
+**10A.65** [ ] **manažment medií** (Arkay 1. 11.): našiel som web https://www.yanny.space/studio/ kde je dostupna app evidentne naprogramovana pomocou OPUS: app je platena. ale jej idea nie. Otazne je či priradit manažment medii k jednooknovej variante DualBrew alebo vytvorit oddelenu apliakciu. Lepšie asi ako sučast alebo mod. jednookno, dvojokno, MediaManažer. aplikacia ponuka v danom priečinku pomocou AI, bud embeded alebo claude, roztriedit obrazky. graficky užasne. ked sa aktivuje triedenie, otvori sa okno, kde všetky obrazky su v strede akoby na hromade. ako hromada fotografii, a potom sa začnu triedit na skupiny. sposob triedenia pokial nebude opisany promptom, bude asi na ai. Nasledne po tiedenia prehliadnuti je možnost otagovat dane subory adekvatne, vybranu štrukturu previest na realnu štrukturu(složka podsložka, subory). Preskumaj originalnu možnost yanny studio, najdi alternativy na internete ktore toto dokažu aj s filmotekou a audiotekou a zostav plan pre tretí mod DualBrew.  
+
 ### 10B. [~] LensAI
 Zdroje: `bin/latte-ai`, `apps/aicenter.qml`, `system/ai/`, `system/agents/`, `inspo/ai-na-ploche.md`
 je centralne zastrešenie všetkych použitelnych AI. Je totalna kopia Omarchy Ai využitia, len s tým že sa použiva namiesto konzoloveho, graficke rozhranie. LensGoo ma jednu z položiek komunikačne okno s Ai. 
@@ -2547,7 +2555,7 @@ miesto, kde sa **zadávajú projekty Kaviarni**: hlavná poznámka projektu (cie
 výsledky (scény, prompty, obrázky) farma zapíše späť ako poznámky. Návrh: Kaviareň vidí iba projekty označené pre ňu
 (priečinok alebo značka v poznámke), súkromné nie. Funguje nad samotným priečinkom → aj s Logseqom či obyčajnými súbormi.
 
-**10B.38** [ ] **Jedálny lístok — obchod so skillmi a konektormi + skilly v základe** (používateľ 29. 10.) — v Kaviarni
+**10B.38** [ ] **Menu lístok — obchod so skillmi a konektormi + skilly v základe** (používateľ 29. 10.) — v Kaviarni
 (10B.36). Zdroje (preskúmané 29. 10.): formát skillov je otvorený štandard **Agent Skills** (agentskills.io — iba
 špecifikácia, nie katalóg); katalógy skillov **skills.sh** (Vercel, >1 mil.), SkillsMP, Skills Directory (jediný
 s automatickou bezpečnostnou kontrolou), AgenticSkills (ručne vyberané skilly aj MCP); konektory z oficiálneho
@@ -2872,8 +2880,11 @@ Zdroje: `bin/latte-network`, `bin/latte-net`, `bin/latte-network`
   s limitom 2 s. Ďalej: spravovateľné switche cez SNMP (tabuľka MAC → port, BRIDGE-MIB) a LLDP (lldpd), zariadenia
   pod nimi; bežné switche sa vidieť nedajú.
 
-**10G.10** (pozn.) (Sieť) Sniffnet · r. 372–372
+**10G.10** [ ] (Sieť) Sniffnet · r. 372–372
 - **Sniffnet** ako vzor pre detektor siete a NET.
+
+**10G.11** [ ] (Sieť) pozriet v složke /inspo/dalsie-inspiracie.md a nástroje na spravu sietí. Vzhladom na to že LatteOS može byt aj zaroven hlavny pc spravcu siete, a je jedno či domacej alebo firemnej, ten bude potrebovat adekvatne nastroje na udržbu všetkých zariadeni, kontrolu a upravu ich firmware. NetManager sa v tomto pokročilom mode zmeni na NetTyrant (krutovladca). 
+
 
 ### 10H. [~] AppManager
 Zdroje: `apps/appmanager.qml`, `bin/latte-apps`, `bin/latte-app`; LATTEOS-GOO §6.3
