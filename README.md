@@ -27,7 +27,7 @@ It was tested on one machine with a Fedora 45 beta. AMD GFX6 to GFX8 cards (such
 and Mesa 26.3, still a release candidate; without them the drops are painted by the processor.
 
 **Thanks to** [k4ditano](https://github.com/k4ditano), the author of [pleamar](https://github.com/k4ditano/pleamar),
-pleamar-wm and [Marea](https://github.com/k4ditano/marea-plm); to the rice community on Reddit; to Claude Opus 5.5, which bring my ideas to live; and to the greed of corporations, without which nobody would have needed a system like this.
+pleamar-wm and [Marea](https://github.com/k4ditano/marea-plm); to the rice community on Reddit; to Claude Opus 5.5, which bring my ideas to live; and to the greed of corporations, without which nobody would have needed a system like this. And of course, Thanks for the coffe.
 
 ## The Goo engine
 
@@ -61,7 +61,7 @@ human on a real PC, and borrowed code is always credited (see *Credits* below).
 - **Mouse first, Windows habits.** No feature is reachable only by keyboard or terminal. Right-click works
   everywhere, always with the same menu order.
 - **Liquid desktop (Goo).** The shell is a set of droplets drawn by [pleamar](https://github.com/k4ditano/pleamar):
-  they move, merge and breathe. Glass, metal and coffee themes; a plain *FPS* theme with no effects for gaming.
+  they move, merge and breathe. Glass, metal and coffee themes; a plain *FPS* theme with no effects for gaming. Inspired by coffee ooze and [Marea](https://github.com/k4ditano/marea-plm)
 - **The pegboard.** Your monitors laid out as they really stand on the desk — for cursor movement, window
   modes per screen and wallpapers stretched across screens (pictures, videos, slideshows).
 - **NET button.** Cut any app off the internet instantly — Windows apps too.
@@ -72,7 +72,7 @@ human on a real PC, and borrowed code is always credited (see *Credits* below).
 
 ## Platform
 
-- Fedora 44 + Hyprland, Quickshell (QML) apps, Pleamar, Rust tools; Fedora Atomic (bootc) planned for 1.0.
+- Fedora + Pleamar WM, Quickshell (QML) apps, Pleamar, Rust tools; Fedora Atomic (bootc) planned for 1.0.
 - Must boot without a GPU: a **SAFE** session (labwc) always works; acceleration only adds effects.
 - Target: any PC with Vulkan that is less than ~10 years old, AMD, NVIDIA and Intel.
 
@@ -80,8 +80,7 @@ human on a real PC, and borrowed code is always credited (see *Credits* below).
 
 LatteOS stands on other people's work. Every borrowed project, file, shader, font and icon is listed — who made it,
 what LatteOS uses it for and under which licence — in [TRETIE-STRANY.md](TRETIE-STRANY.md). Highlights:
-[pleamar](https://github.com/k4ditano/pleamar), [Hyprland](https://github.com/hyprwm/Hyprland),
-[Hyprglass](https://github.com/hyprnux/hyprglass), [Quickshell](https://github.com/quickshell-mirror/quickshell),
+[pleamar](https://github.com/k4ditano/pleamar),  [Quickshell](https://github.com/quickshell-mirror/quickshell),
 [skwd-wall](https://github.com/liixini/skwd-wall), [whyd](https://github.com/vmaltarello/whyd),
 [labwc](https://github.com/labwc/labwc), [Tabler Icons](https://github.com/tabler/tabler-icons).
 
