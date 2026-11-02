@@ -132,10 +132,10 @@ majákom…). 20 hotových príkladov.
 YOL (7C) stojí na LensAI: pole uprostred YOL je LensShore s príkazmi `task · log · open · new · help`, Learn ponúka kurzy
 cez DeepTutor a odkazy z 10B.41, widgety YOL plní AI. Preto sa robí najprv LensAI (dashboard a API), potom YOL.
 
-## 7. Otvorené otázky
+## 7. Rozhodnuté (2. 11.)
 
-1. Dashboard: 3D scéna z dioramas ako pozadie v QtWebEngine, alebo iba myšlienky (svetlo, sklo, plynulosť) prenesené
-   do pleamaru? A aký objekt má byť „hrdinom“ — šálka kávy, Kaviareň, niečo iné?
-2. Ktoré časti dashboardu z časti 2 chceš na prvej obrazovke a ktoré až po posunutí?
-3. Agenti pleamar-wm (1D.22): ukázať ich na dashboarde už teraz (iba čítanie), alebo až keď sa prepoja s LensAI?
-4. Poradie: najprv dashboard, alebo najprv dokončiť rozhovor a služby (10B.01, 10B.27, 10B.35)?
+1. **Hlavný prvok dashboardu je šošovka:** optická šošovka lupy bez rámu a rúčky — iba sklo s vypuklinou, ktorá
+   zväčšuje (iný stupeň priblíženia v strede). Vnútri je pohľad na Kaviareň, možno GIF. Dashboard je postavený okolo nej.
+2. **Na dashboarde je všetko z časti 2 okrem stavu Kaviarne** (tá je v šošovke).
+3. **Agenti pleamar-wm sa ukazujú už teraz** (iba čítanie).
+4. **Najprv dashboard,** potom rozhovor a služby.

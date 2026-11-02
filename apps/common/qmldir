@@ -18,3 +18,4 @@ DotGraph DotGraph.qml
 DotBar DotBar.qml
 CopyButton CopyButton.qml
 Pegboard Pegboard.qml
+Lens Lens.qml
