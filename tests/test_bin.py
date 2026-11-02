@@ -817,7 +817,9 @@ def test_hyprctl_on_pleamarwm():
     shim.monitors = lambda: [{"x": 100, "y": 0, "focused": True, "activeWorkspace": {"id": 1, "name": "1"}}]
     shim.many = lambda questions: {q: facts.get(q, "false") for q in questions}
     shim.say = lambda c: "  window  win.0  «foot»  at 12,20 800×600" if c == "describe" else facts.get(c.removeprefix("get "), "false")
+    shim.pids = lambda: {0: 4242}
     c = shim.clients()
+    assert c[0]["pid"] == 4242
     assert len(c) == 1 and c[0]["address"] == "0x0" and c[0]["at"] == [112, 20] and c[0]["size"] == [800, 600] and c[0]["visible"] and c[0]["focusHistoryID"] == 0
     facts["win.0.minimized"] = "true"
     assert shim.clients()[0]["workspace"]["name"] == "special:minimized"
@@ -825,6 +827,9 @@ def test_hyprctl_on_pleamarwm():
     assert shim.emits('latte.win.toggle("0x0")') == ["emit window_minimize 0"]
     assert shim.emits("latte.win.cycle(-1)") == ["emit focus_previous"]
     assert shim.emits("latte.win.scroll(1)") == ["emit focus_next"]
+    assert shim.emits('latte.win.cut("0x3", true)') == ["fact cut.3 1"]
+    snd = shim.emits('latte.win.sounding({"0x2", "0x5"})')
+    assert len(snd) == 16 and snd[2] == "fact snd.2 1" and snd[0] == "fact snd.0 0"
     assert shim.emits("latte.win.minimize_active()") == ["emit minimize"] and shim.emits("latte.win.maximize_active()") == ["emit maximize"]
     assert shim.emits("latte.mode.next()") is None
     # the modes: facts of each monitor, kept where Hyprland's session keeps them
@@ -856,6 +861,11 @@ def test_hyprctl_on_pleamarwm():
     ran.clear()
     assert shim.dpms('hl.dsp.dpms({ action = "off" })') and ran == [["wlopm", "--off", "*"]] and not shim.dpms("hl.dsp.exit()")
     shim.subprocess.run = run
+    d = tempfile.mkdtemp()
+    open(os.path.join(d, "windows"), "w").write("0 606286\tDomov\n1 607079\tDualBrew\n")
+    os.environ["PLEAMAR_SOCKETS"] = d
+    assert load("hyprctl", "system/pleamarwm/bin").pids() == {0: 606286, 1: 607079}
+    del os.environ["PLEAMAR_SOCKETS"]
     # Settings › Keyboard: keys.conf's bindings, described by the `#:` line above each
     kc = tempfile.mkdtemp()
     open(os.path.join(kc, "keys.conf"), "w").write("#: The launcher\nbind super_l release   launch x\n#: Settings\nbind Super+i launch y\nbind Alt+F4 close\n")

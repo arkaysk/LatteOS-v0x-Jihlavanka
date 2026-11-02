@@ -45,20 +45,29 @@ def monitors():
     return out
 
 
+def pids():
+    """Each window's process, by its slot: pleamar-wm writes them in `windows` beside its sockets ("SLOT PID\tTITLE")."""
+    try:
+        with open(os.path.join(os.environ["PLEAMAR_SOCKETS"], "windows")) as f:
+            return {int(p[0]): int(p[1]) for p in (line.split("\t")[0].split() for line in f) if len(p) == 2 and p[0].isdigit() and p[1].isdigit()}
+    except OSError:
+        return {}
+
+
 def clients():
     screens = monitors()
     opened = many(["win.%d.open" % i for i in range(16)])
     slots = [i for i in range(16) if opened["win.%d.open" % i] == "true"]
     facts = many(["win.%d.%s" % (i, k) for i in slots for k in FIELDS])
     places = {int(m[0]): [int(v) for v in m[1:]] for m in re.findall(r"window\s+win\.(\d+)\s.*? at (-?\d+),(-?\d+) (\d+)×(\d+)", say("describe"))}
-    out = []
+    out, pid = [], pids()
     for i in slots:
         f = {k: facts["win.%d.%s" % (i, k)] for k in FIELDS}
         on = int(f["screen"] or 0)
         at = screens[on] if on < len(screens) else {"x": 0, "y": 0, "activeWorkspace": {"id": 1}}
         ws, away = int(f["workspace"] or 1), f["minimized"] == "true"
         x, y, w, h = places.get(i, [0, 0, 0, 0])
-        out.append({"address": "0x%d" % i, "mapped": True, "class": f["app"], "title": f["title"], "pid": 0, "monitor": on,
+        out.append({"address": "0x%d" % i, "mapped": True, "class": f["app"], "title": f["title"], "pid": pid.get(i, 0), "monitor": on,
                     "workspace": {"id": -99 if away else ws, "name": "special:minimized" if away else str(ws)},
                     "visible": not away and ws == at["activeWorkspace"]["id"], "floating": f["floating"] == "true", "pinned": False,
                     "fullscreen": 2 if f["fullscreen"] == "true" else 0, "focusHistoryID": 0 if f["focused"] == "true" else i + 1,
@@ -105,6 +114,13 @@ def query(what):
 
 def emits(expr):
     """What an `eval` means as events of the window manager's scene, in order; None: nothing it can do yet."""
+    # an app cut off the internet (bin/latte-net), and the windows that sound now (Goo): their edges say so (wm/session.plm)
+    m = re.match(r'latte\.win\.cut\("0x(\d+)", (true|false)\)', expr)
+    if m:
+        return ["fact cut.%s %d" % (m.group(1), m.group(2) == "true")]
+    if expr.startswith("latte.win.sounding("):
+        now = {int(n) for n in re.findall(r'"0x(\d+)"', expr)}
+        return ["fact snd.%d %d" % (k, k in now) for k in range(16)]
     m = re.match(r'latte\.win\.(\w+)\("0x(\d+)"', expr)
     if m:
         what, slot = m.group(1), m.group(2)
@@ -342,7 +358,7 @@ def evaluate(expr):
         if steps is None:           # ponytail: snapping, desks, glass and the band wait for ROADMAP 1D.06 to 1D.09
             print("hyprctl (pleamar-wm): nothing for: " + expr, file=sys.stderr)
         for i, step in enumerate(steps or []):
-            if i:
+            if i and step.startswith("emit"):
                 time.sleep(0.05)    # a rule reads the frame before: `close` has to see the keyboard moved
             say(step)
 

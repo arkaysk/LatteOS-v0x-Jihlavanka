@@ -278,6 +278,11 @@ scene Session {
     prop fxclock = 0
     spin fxclock by if(screen.index == 0 and (ag.0 == 1 or ag.0 > 2.5 or ag.1 == 1 or ag.1 > 2.5 or ag.2 == 1 or ag.2 > 2.5 or ag.3 == 1 or ag.3 > 2.5 or ag.4 == 1 or ag.4 > 2.5 or ag.5 == 1 or ag.5 > 2.5 or ag.6 == 1 or ag.6 > 2.5 or ag.7 == 1 or ag.7 > 2.5 or ag.8 == 1 or ag.8 > 2.5 or ag.9 == 1 or ag.9 > 2.5 or ag.10 == 1 or ag.10 > 2.5 or ag.11 == 1 or ag.11 > 2.5 or ag.12 == 1 or ag.12 > 2.5 or ag.13 == 1 or ag.13 > 2.5 or ag.14 == 1 or ag.14 > 2.5 or ag.15 == 1 or ag.15 > 2.5 or wire.0.flow != 0 or wire.1.flow != 0 or wire.2.flow != 0 or wire.3.flow != 0 or wire.4.flow != 0 or wire.5.flow != 0 or wire.6.flow != 0 or wire.7.flow != 0), 1, 0)
 
+    // LatteOS: the edges' own clock (the windows that ask to be looked at or sound): only while one does, so an idle
+    // desktop still paints nothing
+    prop edgeclock = 0
+    spin edgeclock by if(screen.index == 0 and (win.0.urgent or snd.0 > 0.5 or win.1.urgent or snd.1 > 0.5 or win.2.urgent or snd.2 > 0.5 or win.3.urgent or snd.3 > 0.5 or win.4.urgent or snd.4 > 0.5 or win.5.urgent or snd.5 > 0.5 or win.6.urgent or snd.6 > 0.5 or win.7.urgent or snd.7 > 0.5 or win.8.urgent or snd.8 > 0.5 or win.9.urgent or snd.9 > 0.5 or win.10.urgent or snd.10 > 0.5 or win.11.urgent or snd.11 > 0.5 or win.12.urgent or snd.12 > 0.5 or win.13.urgent or snd.13 > 0.5 or win.14.urgent or snd.14 > 0.5 or win.15.urgent or snd.15 > 0.5), 1, 0)
+
     // ── the desk ──
     // Nothing: the wallpaper is a program's (swaybg, below everything). Only
     // a light that follows the keyboard: where you are typing is a little warmer.
@@ -1827,6 +1832,9 @@ scene Session {
         // LatteOS: it has a shell of its own through the layer (patches/pleamar-wm-shell-fact.patch): only such a
         // window can be read, typed in and handed tasks along a wire
         fact shell.$i = 0
+        // LatteOS: cut off the internet (bin/latte-net) and playing a sound (Goo hears the mixer), as bin/hyprctl says
+        fact cut.$i = 0
+        fact snd.$i = 0
         text agt.$i = ""
         // The name its terminal was opened with (`link open --name`), if any.
         text who.$i = ""
@@ -2242,6 +2250,11 @@ scene Session {
                 box { at: x + w - 20, by; size: 8.5, 1.6; corner: 0.8; rotate: -45deg; color: #ffffff }
             }
             box { from: x, y; size: w, h; corner: 12; stroke: 1.5; color: cup.edge; opacity: lit.$i * 70% * (1 - ov) * smooth(0.75, 1, water) }
+            // LatteOS: a window says it itself, with its edge (system/hypr/latte/windows.lua): asking to be looked at, red and
+            // quick until it is in front; playing a sound, pale and slow, not the one worked in; cut off the internet, cold steel
+            box { from: x, y; size: w, h; corner: 12; stroke: 2.5; color: #e5484d; opacity: (55% + 45% * sin(edgeclock * 720)) * smooth(0.75, 1, water); show: win.$i.urgent }
+            box { from: x, y; size: w, h; corner: 12; stroke: 2; color: #ffe8c2; opacity: (35% + 30% * sin(edgeclock * 180)) * smooth(0.75, 1, water); show: snd.$i > 0.5 and not win.$i.focused and not win.$i.urgent }
+            box { from: x, y; size: w, h; corner: 12; stroke: 2; color: #6c7a89; opacity: 90% * smooth(0.75, 1, water); show: cut.$i > 0.5 and not win.$i.urgent and not (snd.$i > 0.5 and not win.$i.focused) }
             // ── on a canvas: its port, and its agent's state ──
             // The port: a drop, fuller over it, while wiring from it, and once
             // it has wires.
