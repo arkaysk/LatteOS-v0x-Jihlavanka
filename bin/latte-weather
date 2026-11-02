@@ -1,8 +1,17 @@
 #!/bin/sh
 # latte-weather [rain | snow | off]: rain or snow on the desktop until it is asked again. What falls is goo/rain.plm or
-# goo/snow.plm, on each monitor; the glass of the windows is Hyprland's own blur variant (drops, frost).
+# goo/snow.plm, on each monitor; the glass of the windows is Hyprland's own blur variant (drops, frost). In pleamar-wm's
+# session its own scene has both, the windows' glass wet or frozen with them: its facts `rain` and `snow` are set instead.
 case "${1:-}" in rain) glass=drops ;; snow) glass=frost ;; off) ;; *) echo "latte-weather: rain, snow or off" >&2; exit 2 ;; esac
 scenes="${LATTE_GOO_DIR:-/usr/share/latteos/goo}"
+
+if [ "${XDG_CURRENT_DESKTOP:-}" = pleamar ]; then
+    now=false
+    [ "$1" != off ] && now="$(pleamar-wm --say wm "get $1" 2>/dev/null)"
+    pleamar-wm --say wm "fact rain false" "fact snow false" >/dev/null 2>&1
+    [ "$1" != off ] && [ "$now" != true ] && pleamar-wm --say wm "fact $1 true" >/dev/null 2>&1
+    exit 0
+fi
 
 running=""
 pgrep -f "pleamar --scene $scenes/${1}.plm" >/dev/null && running=1
