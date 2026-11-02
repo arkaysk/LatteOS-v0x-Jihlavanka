@@ -856,6 +856,14 @@ def test_hyprctl_on_pleamarwm():
     ran.clear()
     assert shim.dpms('hl.dsp.dpms({ action = "off" })') and ran == [["wlopm", "--off", "*"]] and not shim.dpms("hl.dsp.exit()")
     shim.subprocess.run = run
+    # Settings › Keyboard: keys.conf's bindings, described by the `#:` line above each
+    kc = tempfile.mkdtemp()
+    open(os.path.join(kc, "keys.conf"), "w").write("#: The launcher\nbind super_l release   launch x\n#: Settings\nbind Super+i launch y\nbind Alt+F4 close\n")
+    os.environ["PLEAMAR_CONFIG"] = kc
+    assert shim.binds() == [{"modmask": 64, "key": "SUPER_L", "description": "The launcher", "has_description": True},
+                            {"modmask": 64, "key": "I", "description": "Settings", "has_description": True},
+                            {"modmask": 8, "key": "F4", "description": "", "has_description": False}]
+    del os.environ["PLEAMAR_CONFIG"]
     # the keys on several windows: three shown (1 in front), one put away
     win = lambda a, x, front=False, away=False, app="foot": {"address": a, "at": [x, 0], "visible": not away, "focusHistoryID": 0 if front else int(a[2:]) + 1,
                                                  "workspace": {"name": "special:minimized" if away else "1"}, "class": app}

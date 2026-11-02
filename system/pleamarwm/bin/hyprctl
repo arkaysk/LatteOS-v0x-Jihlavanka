@@ -66,11 +66,36 @@ def clients():
     return out
 
 
+MODS = {"super": 64, "ctrl": 4, "alt": 8, "shift": 1}            # Hyprland's modmask bits, as Settings › Keyboard reads them
+
+
+def binds():
+    """keys.conf's bindings as Hyprland lists them (`binds -j`), each with the `#: TEXT` line above it as its description."""
+    path = os.path.join(os.environ.get("PLEAMAR_CONFIG", ""), "keys.conf")
+    if not os.path.exists(path):
+        path = "/usr/share/latteos/pleamarwm/keys.conf"
+    out, said = [], ""
+    with open(path) as f:
+        for line in f:
+            words = line.split()
+            if line.startswith("#: "):
+                said = line[3:].strip()
+            elif words[:1] == ["bind"] and len(words) > 1:
+                *mods, key = words[1].split("+")
+                key = {"up": "up", "down": "down", "left": "left", "right": "right"}.get(key.lower(), key.upper() if len(key) == 1 or key.lower().startswith("super_") else key)
+                mask = sum(MODS.get(m.lower(), 0) for m in mods) | (64 if key.startswith("SUPER_") else 0)   # Win alone reads "Win"
+                out.append({"modmask": mask, "key": key, "description": said, "has_description": bool(said)})
+                said = ""
+    return out
+
+
 def query(what):
     if what == "clients":
         return clients()
     if what == "monitors":
         return monitors()
+    if what == "binds":
+        return binds()
     if what == "activewindow":
         return next((c for c in clients() if c["focusHistoryID"] == 0), {})
     if what == "activeworkspace":

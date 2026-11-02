@@ -1460,6 +1460,8 @@ ShellRoot {
                             Label { id: keyedText; anchors.centerIn: parent; text: shell.pressed(bound.modelData); font.pixelSize: 12; font.weight: 700; color: Theme.gold } } } } }
             Label { visible: shell.page === "keyboard"; width: view.room; wrapMode: Text.WordWrap; color: Theme.dim; font.pixelSize: 13
                     text: I18n.tr("The login screen starts with the layouts of the whole system; there one is chosen with a click.") }
+            Label { visible: shell.page === "keyboard" && shell.onPleamar; width: view.room; wrapMode: Text.WordWrap; color: Theme.dim; font.pixelSize: 13
+                    text: I18n.tr("On this desktop a layout added or taken away comes at the next login; going from one to the next works at once (Win+Space).") }
 
             // when it locks, when the screens go dark
             Part { visible: shell.page === "lock"; width: view.room; title: I18n.tr("Lock the session after"); note: I18n.tr("Left alone that long, the session locks; the password opens it again. A window that fills the screen keeps it awake.")
