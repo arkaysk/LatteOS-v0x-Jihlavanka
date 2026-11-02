@@ -417,3 +417,4 @@ Nové rozhodnutie: jeden riadok sem (dátum, čo, prečo) a oprava platného zne
 | Páska zo scrolling rozloženia pleamar-wm (BSD-3) namiesto kódu niri → LatteOS nemusí prejsť na GPL-3.0 | návrh (2. 11.), overiť správanie — ROADMAP 1D.20, 8A.07 |
 | Kaviareň stojí na vlastnej farme, nie na clodfarm; brána cez testy podľa cheap-ag | áno (používateľ, 2. 11.) — ROADMAP 10B.36, 10B.40 |
 | DeepTutor je súčasť YOL (Learn); cieľ Arabica 1.0 na hlavnom PC, ide aj s cloudovými modelmi | áno (používateľ, 2. 11.) — ROADMAP 7C.04 |
+| Jedna plocha: virtuálne plochy (Win+Ctrl+D nová, Win+Ctrl+F4 zatvoriť) sa v relácii pleamar-wm nerobia | nie (používateľ, 2. 11.) — ROADMAP 1D.07 |

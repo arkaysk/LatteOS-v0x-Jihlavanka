@@ -69,6 +69,14 @@ scene Session {
     let latte.band = 54
 
     let ink = #f5f7f5
+    // LatteOS: the title bars as they were on Hyprland (system/hypr/latte/bars.lua): the espresso cup's bar and
+    // writing, flat round buttons, the close one red.
+    // ponytail: the espresso cup only; upgrade: the other cups and the wallpaper's colours as facts from Settings
+    let cup.bar = #261d17
+    let cup.ink = #f3ebdd
+    let cup.button = #e4b283
+    let cup.close = #c75b4a
+    let cup.mark = #1e1712
     let mint = #9ed6bd
     let coral = #ef7a66
     let amber = #e8c26a
@@ -1837,7 +1845,8 @@ scene Session {
         // Free, it has our title bar if the program lets us draw its frame;
         // one that draws its own (a GTK 4 header bar, a browser's tabs) is
         // carried and stretched from its own (`handle:`, on the zones below).
-        let ours = F > 0.5 and win.$i.framed
+        // LatteOS: tiled too, as on Hyprland; carried by it in every mode
+        let ours = win.$i.framed
         // Never lost: no bigger than its monitor, and always with a good
         // piece of it —and all of its title bar— inside, to take it by.
         // (Free, the shore on its edge is kept clear, unless it hides.)
@@ -2103,14 +2112,14 @@ scene Session {
             // above it, which takes nothing from the program.
             // With Super held, all of it.
             let whole = keys.super > 0.5 or dragging == i
-            zone box title.$i { from: x.$i + if(whole or F > 0.5, 0, 12) + if(not whole and fr and ours, 32, 0), y.$i - if(whole or F > 0.5, 0, gap - 1); size: if(whole, w, if(F > 0.5, w - 76, w - 24)) - if(not whole and fr and ours, 32, 0), if(whole, h, if(F > 0.5, tb, gap - 2)); cursor: pointer; active: here and not overview and not win.$i.dialog and (ours or F < 0.5 or whole or win.$i.held > 0.5) and wiring < 0; label: "{win.$i.title}"; role: button; handle: i }
+            zone box title.$i { from: x.$i + if(whole or F > 0.5 or ours, 0, 12) + if(not whole and fr and ours, 32, 0), y.$i - if(whole or F > 0.5 or ours, 0, gap - 1); size: if(whole, w, if(F > 0.5 or ours, w - 86, w - 24)) - if(not whole and fr and ours, 32, 0), if(whole, h, if(F > 0.5 or ours, tb, gap - 2)); cursor: pointer; active: here and not overview and not win.$i.dialog and (ours or F < 0.5 or whole or win.$i.held > 0.5) and wiring < 0; label: "{win.$i.title}"; role: button; handle: i }
             // Free, its port: a drop at the start of its title bar, dragged to
             // another window to wire the two. The title bar's own zone starts
             // after it: under it, a press and the first move of a real mouse
             // in the same frame carried the window instead.
             zone ellipse port.$i { at: x + 18, y + tb / 2; radius: 12; cursor: grab; active: here and not overview and fr and ours and not win.$i.dialog; label: "Wire {win.$i.title} to another window"; role: button }
-            zone ellipse lead_zone.$i { at: x + w - 40, y + tb / 2; radius: 10; cursor: pointer; active: here and not overview and not win.$i.dialog and ours; label: "Enlarge {win.$i.title}" }
-            zone ellipse mini_zone.$i { at: x + w - 60, y + tb / 2; radius: 10; cursor: pointer; active: here and not overview and not win.$i.dialog and Fm > 0.5 and ours; label: "Minimize {win.$i.title}" }
+            zone ellipse lead_zone.$i { at: x + w - 45, y + tb / 2; radius: 10; cursor: pointer; active: here and not overview and not win.$i.dialog and ours; label: "Enlarge {win.$i.title}" }
+            zone ellipse mini_zone.$i { at: x + w - 70, y + tb / 2; radius: 10; cursor: pointer; active: here and not overview and not win.$i.dialog and ours; label: "Minimize {win.$i.title}" }
             zone ellipse close_zone.$i { at: x + w - 20, y + tb / 2; radius: 10; cursor: pointer; active: here and not overview and not win.$i.dialog and ours; label: "Close {win.$i.title}" }
             // At a glance, the whole window is a button: pressing it chooses it.
             zone box choose.$i { from: x, y; size: w, h; cursor: pointer; active: here and overview and not win.$i.dialog; label: "{win.$i.title}"; role: item }
@@ -2164,8 +2173,8 @@ scene Session {
                 show: wet <= 0.001 and cold <= 0.001
                 shader: tide, water while water < 0.999
                 clip box { from: x, y; size: w, h; corner: 12 }
-                box { from: x, y; size: w, tb * hb.$i; color: mix(#1a1e22, #1d2b27, lit.$i); show: hb.$i > 0.01 }
-                text win.$i.title { at: x + 14 + 28 * cvpt.$i, y + tb / 2 - tb * (1 - hb.$i); anchor: left center; size: 12; weight: 500; width: max(w - 110 - 24 * cvpt.$i - 170 * (ag.$i > 0.5) * (w > 400) * hb.$i, 10); lines: 1; color: ink; opacity: (55% + 45% * lit.$i) * hb.$i; show: hb.$i > 0.01 }
+                box { from: x, y; size: w, tb * hb.$i; color: cup.bar; show: hb.$i > 0.01 }
+                text win.$i.title { at: x + 14 + 28 * cvpt.$i, y + tb / 2 - tb * (1 - hb.$i); anchor: left center; size: 13; weight: 600; width: max(w - 110 - 24 * cvpt.$i - 170 * (ag.$i > 0.5) * (w > 400) * hb.$i, 10); lines: 1; color: cup.ink; opacity: (70% + 30% * lit.$i) * hb.$i; show: hb.$i > 0.01 }
                 window win.$i { at: x, y + tb * hb.$i; size: w, max(h - tb * hb.$i, 1); ask: ask.w, ask.h - tb * ours; show: drawn and not win.$i.fullscreen and wet <= 0.001 and cold <= 0.001 }
             }
             // The same, in the rain: the window seen through wet glass.
@@ -2173,8 +2182,8 @@ scene Session {
                 show: wet > 0.001
                 shader: rain, wet * pour
                 clip box { from: x, y; size: w, h; corner: 12 }
-                box { from: x, y; size: w, tb * hb.$i; color: mix(#1a1e22, #1d2b27, lit.$i); show: hb.$i > 0.01 }
-                text win.$i.title { at: x + 14 + 28 * cvpt.$i, y + tb / 2 - tb * (1 - hb.$i); anchor: left center; size: 12; weight: 500; width: max(w - 110 - 24 * cvpt.$i - 170 * (ag.$i > 0.5) * (w > 400) * hb.$i, 10); lines: 1; color: ink; opacity: (55% + 45% * lit.$i) * hb.$i; show: hb.$i > 0.01 }
+                box { from: x, y; size: w, tb * hb.$i; color: cup.bar; show: hb.$i > 0.01 }
+                text win.$i.title { at: x + 14 + 28 * cvpt.$i, y + tb / 2 - tb * (1 - hb.$i); anchor: left center; size: 13; weight: 600; width: max(w - 110 - 24 * cvpt.$i - 170 * (ag.$i > 0.5) * (w > 400) * hb.$i, 10); lines: 1; color: cup.ink; opacity: (70% + 30% * lit.$i) * hb.$i; show: hb.$i > 0.01 }
                 window win.$i { at: x, y + tb * hb.$i; size: w, max(h - tb * hb.$i, 1); ask: ask.w, ask.h - tb * ours; show: drawn and not win.$i.fullscreen and wet > 0.001 }
             }
             // And in the snow: frosted glass with snow on top.
@@ -2182,8 +2191,8 @@ scene Session {
                 show: cold > 0.001 and wet <= 0.001
                 shader: snow, cold
                 clip box { from: x, y; size: w, h; corner: 12 }
-                box { from: x, y; size: w, tb * hb.$i; color: mix(#1a1e22, #1d2b27, lit.$i); show: hb.$i > 0.01 }
-                text win.$i.title { at: x + 14 + 28 * cvpt.$i, y + tb / 2 - tb * (1 - hb.$i); anchor: left center; size: 12; weight: 500; width: max(w - 110 - 24 * cvpt.$i - 170 * (ag.$i > 0.5) * (w > 400) * hb.$i, 10); lines: 1; color: ink; opacity: (55% + 45% * lit.$i) * hb.$i; show: hb.$i > 0.01 }
+                box { from: x, y; size: w, tb * hb.$i; color: cup.bar; show: hb.$i > 0.01 }
+                text win.$i.title { at: x + 14 + 28 * cvpt.$i, y + tb / 2 - tb * (1 - hb.$i); anchor: left center; size: 13; weight: 600; width: max(w - 110 - 24 * cvpt.$i - 170 * (ag.$i > 0.5) * (w > 400) * hb.$i, 10); lines: 1; color: cup.ink; opacity: (70% + 30% * lit.$i) * hb.$i; show: hb.$i > 0.01 }
                 window win.$i { at: x, y + tb * hb.$i; size: w, max(h - tb * hb.$i, 1); ask: ask.w, ask.h - tb * ours; show: drawn and not win.$i.fullscreen and cold > 0.001 and wet <= 0.001 }
             }
             // (The wave: two soft crests of light, the second behind the first.)
@@ -2195,50 +2204,27 @@ scene Session {
                 ellipse { at: x + w - 40, y + tb / 2; radius: 20 + wave.$i * (w + h); stroke: 44 * (1 - wave.$i) + 4; color: mint; opacity: 55% * (1 - wave.$i) }
                 ellipse { at: x + w - 40, y + tb / 2; radius: 10 + max(wave.$i - 0.2, 0) * (w + h); stroke: 20 * (1 - wave.$i) + 2; color: #dffaf0; opacity: 40% * (1 - wave.$i) }
             }
-            // Its three buttons, three drops of water: put away (into
-            // Marea), to the front (free, the whole monitor), and away for
-            // good. Lit from above, a glint on top; the mouse over one, it
-            // swells, a halo spreads round it and it shows what it does.
+            // Its three buttons, as hyprbars drew them: put away, the whole room and back, close; round and
+            // flat, what each does always on it. The mouse over one, it swells a little and a halo spreads round it.
             let by = y + tb / 2
             let b.any = max(max(mini_zone.$i.hover, lead_zone.$i.hover), close_zone.$i.hover)
             group {
                 show: hb.$i > 0.01
-                opacity: (45% + 55% * max(lit.$i, b.any)) * hb.$i * smooth(0.75, 1, water)
-                ellipse { at: x + w - 60, by; radius: 8 + 3 * mini_zone.$i.hover; stroke: 1.2; color: amber; opacity: 55% * mini_zone.$i.hover }
-                ellipse { at: x + w - 40, by; radius: 8 + 3 * lead_zone.$i.hover; stroke: 1.2; color: mint; opacity: 55% * lead_zone.$i.hover }
-                ellipse { at: x + w - 20, by; radius: 8 + 3 * close_zone.$i.hover; stroke: 1.2; color: coral; opacity: 55% * close_zone.$i.hover }
-                //  (Floating on a tiled monitor there is no putting away: no amber.)
-                body {
-                    gradient: radial x + w - 62, by - 3 radius 10, #fff3d6, amber 45%, #a8781f
-                    rim: 35%
-                    shadow: 0, 1, 3, 40%
-                    opacity: if(Fm > 0.5, 1, 0)
-                    ellipse { at: x + w - 60, by; radius: 6 + 1.5 * mini_zone.$i.hover }
-                }
-                body {
-                    gradient: radial x + w - 42, by - 3 radius 10, #e8fff5, mint 45%, #3f8f76
-                    rim: 35%
-                    shadow: 0, 1, 3, 40%
-                    ellipse { at: x + w - 40, by; radius: 6 + 1.5 * lead_zone.$i.hover }
-                }
-                body {
-                    gradient: radial x + w - 22, by - 3 radius 10, #ffe4dc, coral 45%, #b0412f
-                    rim: 35%
-                    shadow: 0, 1, 3, 40%
-                    ellipse { at: x + w - 20, by; radius: 6 + 1.5 * close_zone.$i.hover }
-                }
-                ellipse { at: x + w - 62, by - 3; radius: 2; scale: 1.3, 0.75; color: #fff; opacity: 75% * if(Fm > 0.5, 1, 0) }
-                ellipse { at: x + w - 42, by - 3; radius: 2; scale: 1.3, 0.75; color: #fff; opacity: 75% }
-                ellipse { at: x + w - 22, by - 3; radius: 2; scale: 1.3, 0.75; color: #fff; opacity: 75% }
-                // What each does, over the one the mouse is on.
-                box { at: x + w - 60, by + 0.5; size: 6.5, 1.6; corner: 0.8; color: #4a3308; opacity: mini_zone.$i.hover }
-                box { at: x + w - 40, by + 0.5; size: 6.5, 6.5; corner: 1.5; stroke: 1.4; color: #0f3d2f; opacity: lead_zone.$i.hover * (1 - maxed.$i) }
-                box { at: x + w - 41.2, by + 1.7; size: 5, 5; corner: 1.2; stroke: 1.3; color: #0f3d2f; opacity: lead_zone.$i.hover * maxed.$i }
-                box { at: x + w - 38.8, by - 0.7; size: 5, 5; corner: 1.2; stroke: 1.3; color: #0f3d2f; opacity: lead_zone.$i.hover * maxed.$i * 0.6 }
-                box { at: x + w - 20, by + 0.3; size: 7.5, 1.6; corner: 0.8; rotate: 45deg; color: #4a140b; opacity: close_zone.$i.hover }
-                box { at: x + w - 20, by + 0.3; size: 7.5, 1.6; corner: 0.8; rotate: -45deg; color: #4a140b; opacity: close_zone.$i.hover }
+                opacity: (70% + 30% * max(lit.$i, b.any)) * hb.$i * smooth(0.75, 1, water)
+                ellipse { at: x + w - 70, by; radius: 9 + 3 * mini_zone.$i.hover; stroke: 1.2; color: cup.button; opacity: 55% * mini_zone.$i.hover }
+                ellipse { at: x + w - 45, by; radius: 9 + 3 * lead_zone.$i.hover; stroke: 1.2; color: cup.button; opacity: 55% * lead_zone.$i.hover }
+                ellipse { at: x + w - 20, by; radius: 9 + 3 * close_zone.$i.hover; stroke: 1.2; color: cup.close; opacity: 55% * close_zone.$i.hover }
+                ellipse { at: x + w - 70, by; radius: 8.5 + 1 * mini_zone.$i.hover; color: cup.button }
+                ellipse { at: x + w - 45, by; radius: 8.5 + 1 * lead_zone.$i.hover; color: cup.button }
+                ellipse { at: x + w - 20, by; radius: 8.5 + 1 * close_zone.$i.hover; color: cup.close }
+                box { at: x + w - 70, by + 0.5; size: 7, 1.6; corner: 0.8; color: cup.mark }
+                box { at: x + w - 45, by; size: 7, 7; corner: 1.2; stroke: 1.4; color: cup.mark; opacity: 1 - maxed.$i }
+                box { at: x + w - 46.2, by + 1.2; size: 5.5, 5.5; corner: 1.2; stroke: 1.3; color: cup.mark; opacity: maxed.$i }
+                box { at: x + w - 43.8, by - 1.2; size: 5.5, 5.5; corner: 1.2; stroke: 1.3; color: cup.mark; opacity: maxed.$i * 0.6 }
+                box { at: x + w - 20, by; size: 8.5, 1.6; corner: 0.8; rotate: 45deg; color: #ffffff }
+                box { at: x + w - 20, by; size: 8.5, 1.6; corner: 0.8; rotate: -45deg; color: #ffffff }
             }
-            box { from: x, y; size: w, h; corner: 12; stroke: 1.5; color: mint; opacity: lit.$i * 70% * (1 - ov) * smooth(0.75, 1, water) }
+            box { from: x, y; size: w, h; corner: 12; stroke: 1.5; color: cup.button; opacity: lit.$i * 70% * (1 - ov) * smooth(0.75, 1, water) }
             // ── on a canvas: its port, and its agent's state ──
             // The port: a drop, fuller over it, while wiring from it, and once
             // it has wires.
@@ -2629,6 +2615,17 @@ scene Session {
             dcl.w = i
             dcl.t: 1 ~0ms
             dcl.t: 0 after 400ms
+        }
+        // LatteOS: the right button on a title opens the window's menu, a card of the Goo scene (as hyprbars'
+        // on_right_click did; the address is bin/hyprctl's); a double click makes it take the whole room, and back.
+        // ponytail: the pointer as this monitor has it; upgrade: the desktop's, for a menu on another monitor
+        let wslot.$i = i
+        on press right title.$i { launch "latte-say 'fact tap.x {pointer.x}' 'fact tap.y {pointer.y}' 'text win_asked 0x{wslot.$i}' 'emit win_menu'" }
+        on press title.$i while tdc.t > 0.5 and tdc.w == i and not C { emit window_maximize(i) }
+        on press title.$i {
+            tdc.w = i
+            tdc.t: 1 ~0ms
+            tdc.t: 0 after 400ms
         }
         on press title.$i {
             tgrab = i
@@ -3044,7 +3041,7 @@ scene Session {
             group {
                 show: wet <= 0.001 and cold <= 0.001
                 clip box { from: x, y; size: w, h; corner: 12 }
-                box { from: x, y; size: w, tb * hb.$i; color: #1d2b27; show: hb.$i > 0.01 }
+                box { from: x, y; size: w, tb * hb.$i; color: cup.bar; show: hb.$i > 0.01 }
                 text win.$i.title { at: x + 14, y + tb / 2 - tb * (1 - hb.$i); anchor: left center; size: 12; weight: 500; width: max(w - 90, 10); lines: 1; color: ink; opacity: hb.$i; show: hb.$i > 0.01 }
                 window win.$i { at: x, y + tb * hb.$i; size: w, max(h - tb * hb.$i, 1); ask: win.$i.width, win.$i.height; show: carried and wet <= 0.001 and cold <= 0.001 }
             }
@@ -3053,7 +3050,7 @@ scene Session {
                 show: wet > 0.001
                 shader: rain, wet * pour, mouse.x - lag.x, mouse.y - lag.y
                 clip box { from: x, y; size: w, h; corner: 12 }
-                box { from: x, y; size: w, tb * hb.$i; color: #1d2b27; show: hb.$i > 0.01 }
+                box { from: x, y; size: w, tb * hb.$i; color: cup.bar; show: hb.$i > 0.01 }
                 text win.$i.title { at: x + 14, y + tb / 2 - tb * (1 - hb.$i); anchor: left center; size: 12; weight: 500; width: max(w - 90, 10); lines: 1; color: ink; opacity: hb.$i; show: hb.$i > 0.01 }
                 window win.$i { at: x, y + tb * hb.$i; size: w, max(h - tb * hb.$i, 1); ask: win.$i.width, win.$i.height; show: carried and wet > 0.001 }
             }
@@ -3062,7 +3059,7 @@ scene Session {
                 show: cold > 0.001 and wet <= 0.001
                 shader: snow, cold, mouse.x - lag.x, mouse.y - lag.y
                 clip box { from: x, y; size: w, h; corner: 12 }
-                box { from: x, y; size: w, tb * hb.$i; color: #1d2b27; show: hb.$i > 0.01 }
+                box { from: x, y; size: w, tb * hb.$i; color: cup.bar; show: hb.$i > 0.01 }
                 text win.$i.title { at: x + 14, y + tb / 2 - tb * (1 - hb.$i); anchor: left center; size: 12; weight: 500; width: max(w - 90, 10); lines: 1; color: ink; opacity: hb.$i; show: hb.$i > 0.01 }
                 window win.$i { at: x, y + tb * hb.$i; size: w, max(h - tb * hb.$i, 1); ask: win.$i.width, win.$i.height; show: carried and cold > 0.001 and wet <= 0.001 }
             }
@@ -3372,7 +3369,7 @@ scene Session {
             }
             group {
                 clip box { from: x, y; size: w, h; corner: round }
-                box { from: x, y; size: w, tb * hb.$i; color: #1d2b27; show: hb.$i > 0.01 }
+                box { from: x, y; size: w, tb * hb.$i; color: cup.bar; show: hb.$i > 0.01 }
                 text win.$i.title { at: x + 14, y + tb / 2 - tb * (1 - hb.$i); anchor: left center; size: 12; weight: 500; width: max(w - 110, 10); lines: 1; color: ink; opacity: hb.$i; show: hb.$i > 0.01 }
                 // Its program keeps the size it has while it shrinks into the drop: the
                 // picture is scaled, not the program asked (a browser asked for
@@ -3531,7 +3528,7 @@ scene Session {
     // rest, at the size it chooses, in the middle of its monitor ──
     repeat i in 0..16 {
         let dw = max(win.$i.width, 120)
-        let dh = max(win.$i.height, 40) + tb
+        let dh = max(win.$i.height, 40) + tb * win.$i.framed      // LatteOS: no bar over one that draws its own
         let dx = (W - dw) / 2
         let dy = (H - dh) / 2
         prop dlg.$i = 0 ~220ms
@@ -3552,11 +3549,11 @@ scene Session {
             }
             group {
                 clip box { from: dx, dy; size: dw, dh; corner: 12 }
-                box { from: dx, dy; size: dw, tb; color: #1d2b27 }
-                text win.$i.title { at: dx + 14, dy + tb / 2; anchor: left center; size: 12; weight: 500; width: max(dw - 40, 10); lines: 1; color: ink }
-                window win.$i { at: dx, dy + tb; size: win.$i.width, win.$i.height; ask: 0, 0; show: win.$i.dialog and win.$i.open and win.$i.screen == screen.index and dlg.ws }
+                box { from: dx, dy; size: dw, tb; color: cup.bar; show: win.$i.framed }
+                text win.$i.title { at: dx + 14, dy + tb / 2; anchor: left center; size: 13; weight: 600; width: max(dw - 40, 10); lines: 1; color: cup.ink; show: win.$i.framed }
+                window win.$i { at: dx, dy + tb * win.$i.framed; size: win.$i.width, win.$i.height; ask: 0, 0; show: win.$i.dialog and win.$i.open and win.$i.screen == screen.index and dlg.ws }
             }
-            box { from: dx, dy; size: dw, dh; corner: 12; stroke: 1.5; color: mint; opacity: 70% * win.$i.focused }
+            box { from: dx, dy; size: dw, dh; corner: 12; stroke: 1.5; color: cup.button; opacity: 70% * win.$i.focused }
         }
     }
 
@@ -3868,6 +3865,9 @@ scene Session {
     fact cvk.n = 0
     // Super and a double click on a window: two presses on it within 400 ms.
     fact dcl.w = -1
+    // LatteOS: a double click on a title (see `wslot`)
+    fact tdc.w = -1
+    prop tdc.t = 0 ~0ms
     // The second press of Super and a double click centres the camera, and the camera moves while the button
     // is still down: the release that follows is not a window being put down (it would place it again with
     // the grab and the mouse of the old camera, and the window jumped). 1 from that press to its release.
