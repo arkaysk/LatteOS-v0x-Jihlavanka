@@ -815,6 +815,7 @@ def test_hyprctl_on_pleamarwm():
     assert shim.emits('latte.win.toggle("0x0")') == ["emit window_minimize 0"]
     assert shim.emits("latte.win.cycle(-1)") == ["emit focus_previous"]
     assert shim.emits("latte.win.scroll(1)") == ["emit focus_next"]
+    assert shim.emits("latte.win.minimize_active()") == ["emit minimize"] and shim.emits("latte.win.maximize_active()") == ["emit maximize"]
     assert shim.emits("latte.mode.next()") is None
     # the modes: facts of each monitor, kept where Hyprland's session keeps them
     said, told = [], []

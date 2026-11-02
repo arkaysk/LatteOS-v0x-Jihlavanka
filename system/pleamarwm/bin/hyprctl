@@ -87,6 +87,10 @@ def emits(expr):
             return ["emit window_minimize " + slot] if say("get win.%s.focused" % slot) == "true" else [focus]
         return {"activate": [focus], "restore": [focus], "minimize": ["emit window_minimize " + slot], "maximize": ["emit window_maximize " + slot],
                 "close": [focus, "emit close"], "fullscreen": [focus, "emit fullscreen"]}.get(what)
+    # the buttons in the header of LatteOS's apps (apps/common/AppWindow.qml): the window with the keyboard
+    m = re.match(r"latte\.win\.(minimize|maximize)_active\(\)", expr)
+    if m:
+        return ["emit " + m.group(1)]
     # the tape glides to the window with the keyboard: scrolling it is going to the next one
     # ponytail: a whole window at a time, not a quarter of the screen as on Hyprland
     m = re.match(r"latte\.win\.(?:cycle|scroll)\((-?\d+)\)", expr)

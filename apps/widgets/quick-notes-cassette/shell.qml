@@ -1,3 +1,4 @@
+//@ pragma AppId org.latteos.widget
 // SPDX-License-Identifier: 0BSD
 pragma ComponentBehavior: Bound
 import QtQuick
