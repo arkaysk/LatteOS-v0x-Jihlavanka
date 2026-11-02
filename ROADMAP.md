@@ -227,6 +227,8 @@ Súpis 2. 11.: časti LatteOS, ktoré v relácii pleamar-wm ešte volajú Hyprla
 **1D.37** [x] Počasie v pleamar-wm (2. 11.): `latte-weather` v relácii pleamar-wm zapína dážď a sneh vlastnej scény pleamar-wm (hodnoty `rain`, `snow`), s mokrým a zamrznutým sklom okien; tá istá voľba druhýkrát vypína. Overené naživo.
 **1D.38** [x] Drobnosti (2. 11.): Monitor ukazuje položky autostartu podľa aktuálnej plochy (`XDG_CURRENT_DESKTOP`, aj `pleamar`); režim SAFE ukáže log Hyprlandu iba vtedy, keď existuje (výstup pleamar-wm je v logu relácie).
 **1D.39** [ ] **Sklo v popupoch** (používateľ 2. 11.): ponuky a karty kreslí jednak pleamar (karty Goo, kvapky, ponuky aplikácií LatteOS), jednak scéna pleamar-wm (ponuka doku, ovládacie centrum, výzvy); zladiť ich sklo so sklom okien a s posuvníkmi v Nastaveniach › Okná (telo okien, bočný panel).
+**1D.40** [ ] **Aplikácia neodpovedá** (používateľ 2. 11.): ako vo Windows a GNOME — správca okien pošle oknu ping (`xdg_wm_base.ping`), a keď aplikácia do pár sekúnd neodpovie, ukáže pri okne „Neodpovedá · Počkať / Ukončiť“ (myšou); GuardDog si to zapíše. pleamar-wm ping nemá → záplata (+ text issue). GuardDog stráži súčasti systému, nie aplikácie.
+**1D.41** [ ] **Klávesnica po načítaní scény správcu okien** (2. 11.): keď sa `wm/session.plm` za behu načíta znova (nasadenie, úprava), relácia stojí ~2,4 s a klávesnicu potom nedostane žiadne okno (`the keyboard to` prázdne), takže otvorená aplikácia pôsobí ako zamrznutá. Vrátiť klávesnicu oknu, ktoré ju malo; scénu na latte-lab nenasadzovať počas práce používateľa bez upozornenia.
 
 ## 2. [~] Instalator OS
 Zdroje: `fresh-install`, `install`, `migrate-v03`, `docs/NAVRH-STARTU.md`
