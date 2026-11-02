@@ -827,7 +827,8 @@ def test_hyprctl_on_pleamarwm():
     assert shim.emits('latte.win.toggle("0x0")') == ["emit window_minimize 0"]
     assert shim.emits("latte.win.cycle(-1)") == ["emit focus_previous"]
     assert shim.emits("latte.win.scroll(1)") == ["emit focus_next"]
-    assert shim.emits("latte.glass(2)") == ["fact glass.on 2"]
+    shim.glass_body = lambda: 30
+    assert shim.emits("latte.glass(2)") == ["fact glass.on 2", "fact glass.body 30"] and shim.emits("latte.glass_body()") == ["fact glass.body 30"]
     assert shim.emits('latte.win.cut("0x3", true)') == ["fact cut.3 1"]
     snd = shim.emits('latte.win.sounding({"0x2", "0x5"})')
     assert len(snd) == 16 and snd[2] == "fact snd.2 1" and snd[0] == "fact snd.0 0"

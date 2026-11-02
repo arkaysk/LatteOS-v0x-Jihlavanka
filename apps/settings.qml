@@ -85,6 +85,8 @@ ShellRoot {
     function cupOf(id) { return id === "wallpaper" ? (Theme.fromWallpaper || Theme.cups.espresso) : Theme.cups[id] }
     Word { id: glass; name: "glass" }
     Word { id: glassLevel; name: "glass-level" }
+    Word { id: glassBody; name: "glass-body" }        // how see-through the windows are, 0…100 (the window manager makes them so)
+    Word { id: glassSide; name: "glass-side" }        // and the side panel of LatteOS's apps (Theme.sideGlass)
     Word { id: wallpaper; name: "wallpaper" }
     Word { id: icons; name: "desktop-icons" }
     Word { id: screensWord; name: "screens" }
@@ -865,11 +867,20 @@ ShellRoot {
                    note: I18n.tr("Closing a window, switching desktops, changing the theme, logging in: these transitions come with LatteOS's own plugin for Hyprland.")
                 Repeater { model: [QT_TR_NOOP("Closing a window"), QT_TR_NOOP("Switching desktops"), QT_TR_NOOP("Changing the theme"), QT_TR_NOOP("Logging in"), QT_TR_NOOP("Folders in Files")]
                     Pill { required property string modelData; text: I18n.tr(modelData) + "  ·  " + I18n.tr("coming"); opacity: 0.5 } } }
-            // how much of LatteOS is glass: one choice for all of it; 0 makes everything solid (Theme.glassLevel)
-            Part { visible: shell.page === "windows"; width: view.room; title: I18n.tr("Glass"); note: I18n.tr("How much of LatteOS is glass: the side panels, the windows and the AI's pages. None: everything is solid.")
-                Repeater { model: [{ n: 0, name: QT_TR_NOOP("None") }, { n: 1, name: QT_TR_NOOP("A little") }, { n: 2, name: QT_TR_NOOP("More") }, { n: 3, name: QT_TR_NOOP("The most") }, { n: 4, name: "True Glass" }]
-                    Choice { required property var modelData; width: 150; text: I18n.tr(modelData.name); on: Theme.glassLevel === modelData.n
-                             onPressed: { glassLevel.choose(String(modelData.n)); Theme.glassLevel = modelData.n; goo.set("glass", modelData.n) } } } }
+            // the windows' glass, two parts of it, from solid to as see-through as it goes: the windows as a whole (pleamar-wm
+            // makes them so, every app's: system/pleamarwm/bin/hyprctl `latte.glass_body`), and the side panel of LatteOS's own
+            // apps (Theme.sideGlass). Kept a moment after the slider stops, not for every pixel it moves.
+            Part { visible: shell.page === "windows"; width: view.room; title: I18n.tr("Glass"); note: I18n.tr("How see-through the windows are, and the side panel of LatteOS's own apps. All the way left is solid.")
+                Repeater { model: [{ id: "body", name: QT_TR_NOOP("The windows"), was: 14 }, { id: "side", name: QT_TR_NOOP("The side panel"), was: 38 }]
+                    Item { id: seeRow; required property var modelData; width: view.room; height: 44
+                        readonly property var word: modelData.id === "body" ? glassBody : glassSide
+                        property int amount: word.value !== "" ? parseInt(word.value) : modelData.was
+                        Label { text: I18n.tr(seeRow.modelData.name); width: 170; anchors.verticalCenter: parent.verticalCenter }
+                        Slide { x: 180; width: parent.width - 260; anchors.verticalCenter: parent.verticalCenter; value: seeRow.amount / 100
+                                onMoved: to => { seeRow.amount = Math.round(to * 100); if (seeRow.modelData.id === "side") Theme.sideGlass = seeRow.amount; keepSee.restart() } }
+                        Label { anchors.right: parent.right; anchors.verticalCenter: parent.verticalCenter; text: seeRow.amount + " %"; color: Theme.gold; font.weight: 800 }
+                        Timer { id: keepSee; interval: 250
+                                onTriggered: { seeRow.word.choose(String(seeRow.amount)); if (seeRow.modelData.id === "body") Quickshell.execDetached(["sh", "-c", "sleep 0.2; hyprctl eval 'latte.glass_body()'"]) } } } } }
             Part { visible: shell.page === "windows" && Theme.glassLevel > 0 && shell.expert; expertOnly: true; width: view.room; title: I18n.tr("The glass of the side panels"); note: I18n.tr("What is behind a window shows through its side panel, blurred. Where the graphics card cannot blur, the panel is solid.")
                 Repeater { model: [{ id: "frost", name: QT_TR_NOOP("Frosted") }, { id: "smoke", name: QT_TR_NOOP("Smoked") }, { id: "clear", name: QT_TR_NOOP("Clear") }, { id: "milk", name: QT_TR_NOOP("Milky") }]
                     Choice { id: pane; required property var modelData; width: 150; height: 130; text: I18n.tr(modelData.name); on: Theme.glass === modelData.id; onPressed: { glass.choose(modelData.id); Theme.glass = modelData.id }

@@ -60,7 +60,10 @@ Singleton {
     readonly property bool trueGlass: glassLevel === 4 && blurred
     readonly property bool blurred: ["full", "standard"].includes(Quickshell.env("LATTE_TIER") || "")
     readonly property color paneGlass: glasses[glass] || glasses.frost
-    readonly property color pane: blurred && glassLevel > 0 ? Qt.rgba(paneGlass.r, paneGlass.g, paneGlass.b, Math.min(0.95, Math.max(0.2, paneGlass.a + [0, 0.15, 0, -0.15, -0.4][glassLevel]))) : surface
+    // how see-through the side panel is, 0 to 100 (Settings › Windows, ~/.config/latteos/glass-side); -1 until chosen: by the level
+    property int sideGlass: -1
+    readonly property color pane: blurred && glassLevel > 0 ? Qt.rgba(paneGlass.r, paneGlass.g, paneGlass.b, sideGlass >= 0 ? 1 - sideGlass / 100
+                                    : Math.min(0.95, Math.max(0.2, paneGlass.a + [0, 0.15, 0, -0.15, -0.4][glassLevel]))) : surface
     readonly property string font: "Inter Variable"
     readonly property string mono: "JetBrains Mono"          // figures, paths, keys: what is read as data
     readonly property string icons: Icons.family
@@ -78,6 +81,13 @@ Singleton {
         printErrors: false; watchChanges: true
         onFileChanged: reload()
         onLoaded: { const n = parseInt(text().trim()); if (n >= 0 && n <= 4) glassLevel = n }
+    }
+    FileView {
+        id: sideWord
+        path: (Quickshell.env("XDG_CONFIG_HOME") || (Quickshell.env("HOME") + "/.config")) + "/latteos/glass-side"
+        printErrors: false; watchChanges: true
+        onFileChanged: reload()
+        onLoaded: { const n = parseInt(text().trim()); if (n >= 0 && n <= 100) sideGlass = n }
     }
     FileView {
         id: cupWord

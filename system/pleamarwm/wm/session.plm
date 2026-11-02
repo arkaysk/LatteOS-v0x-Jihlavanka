@@ -116,6 +116,10 @@ scene Session {
     // apps make their own ground clear, so the window itself stays whole). pleamar's glass under each window shows
     // what is behind it: the wallpaper and the windows below.
     fact glass.on = 0
+    // how see-through a window is with glass, 0 to 100 (Settings › Windows, ~/.config/latteos/glass-body through
+    // bin/hyprctl); the one without the keyboard 8 more; carried, a little more still
+    fact glass.body = 14
+    let glass.see = if(glass.on > 0.5 and glass.on < 1.5, 1 - glass.body / 100, 1)
 
     fact ratio = 0.56                    // the leader's share of the width
     fact overview = false
@@ -2215,7 +2219,7 @@ scene Session {
                 clip box { from: x, y; size: w, h; corner: 12 }
                 box { from: x, y; size: w, tb * hb.$i; color: cup.bar; opacity: if(glass.on > 0.5, 88%, 100%); show: hb.$i > 0.01 }
                 text win.$i.title { at: x + 14 + 28 * cvpt.$i, y + tb / 2 - tb * (1 - hb.$i); anchor: left center; size: 13; weight: 600; width: max(w - 110 - 24 * cvpt.$i - 170 * (ag.$i > 0.5) * (w > 400) * hb.$i, 10); lines: 1; color: cup.ink; opacity: (70% + 30% * lit.$i) * hb.$i; show: hb.$i > 0.01 }
-                window win.$i { at: x, y + tb * hb.$i; size: w, max(h - tb * hb.$i, 1); ask: ask.w, ask.h - tb * ours; show: drawn and not win.$i.fullscreen and wet <= 0.001 and cold <= 0.001; opacity: if(glass.on > 0.5 and glass.on < 1.5, if(win.$i.focused, 86%, 78%), 100%) }
+                window win.$i { at: x, y + tb * hb.$i; size: w, max(h - tb * hb.$i, 1); ask: ask.w, ask.h - tb * ours; show: drawn and not win.$i.fullscreen and wet <= 0.001 and cold <= 0.001; opacity: if(win.$i.focused, glass.see, max(glass.see - 0.08, 0)) }
             }
             // The same, in the rain: the window seen through wet glass.
             group {
@@ -3074,7 +3078,7 @@ scene Session {
         let h = h.$i
         group {
             show: dragging == i or (landing == i and win.$i.open and win.$i.screen != landing.to)
-            opacity: 88%
+            opacity: 88% * glass.see
             pivot: x + w / 2, y + h / 2
             scale: 1
             body {
