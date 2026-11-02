@@ -1,10 +1,15 @@
 TITLE
-A `release` binding on its own key also fires after a key combo (Super+Return, Super + click)
+Feature request: a tap of a modifier alone (the Windows key opens a launcher), not fired after Super+key or Super + click
 
 BODY
 **Version:** pleamar-wm 0.6.9 (`main` at 42c8fee), on pleamar 0.7.10. Seen in the session and reproduced in `pleamar-wm headless`.
 
-**What I wanted:** the Windows key on its own, tapped and let go, opens a launcher (as on Windows and GNOME), while
+This may well not be a bug for pleamar-wm as it is: `release` is there for hold-to-talk, and nothing in its own
+keys.conf or in Marea binds a modifier alone. It comes up in LatteOS, a desktop on top of pleamar-wm for people coming
+from Windows, where the mouse comes first and the Windows key alone opens the launcher. So this is a request, with the
+change we run, in case it fits.
+
+**What we wanted:** the Windows key on its own, tapped and let go, opens a launcher (as on Windows and GNOME), while
 Super+Return, Super+Q and Super with a drag keep doing what they do:
 
 ```
@@ -38,8 +43,8 @@ PLEAMAR_CONFIG=/tmp/pwm PLEAMAR_HEADLESS_INPUT="key:Super_L:125@1800" pleamar-wm
 
 | Case | `main` (42c8fee) | with the change below |
 |---|---|---|
-| Super+Return, Super let go | 1 (wrong) | 0 |
-| Super + click, Super let go | 1 (wrong) | 0 |
+| Super+Return, Super let go | 1 (launcher opens too) | 0 |
+| Super + click, Super let go | 1 (launcher opens too) | 0 |
 | Super alone | 1 | 1 |
 
 **A suggested change:** a binding that only acts on release (it has no action on press, so it is a tap) is called
@@ -130,4 +135,4 @@ index 91f1c67..9808bd9 100644
 ```
 
 Thank you for pleamar-wm. LatteOS (a Fedora desktop) is moving onto it from Hyprland, and this is the one thing we
-had to change to keep the Windows key's tap.
+changed in its key handling to keep the Windows key's tap.

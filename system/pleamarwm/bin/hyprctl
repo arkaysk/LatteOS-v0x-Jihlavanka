@@ -92,7 +92,56 @@ def emits(expr):
     m = re.match(r"latte\.win\.(?:cycle|scroll)\((-?\d+)\)", expr)
     if m:
         return ["emit focus_next" if int(m.group(1)) > 0 else "emit focus_previous"]
-    return None
+    return many_windows(expr)
+
+
+SHOWN = os.path.join(os.environ.get("XDG_RUNTIME_DIR", "/tmp"), "latte-desk-shown")   # what Win+D put away, to bring back
+
+
+def many_windows(expr):
+    """The keys that act on several windows, as system/hypr/latte/windows.lua does on Hyprland; None: not one of them."""
+    m = re.match(r"latte\.(win\.minimize_all\((true|false)\)|win\.restore_all\(\)|win\.nth\((\d+)\)|desk\.show\(\))", expr)
+    if not m:
+        return None
+    shown = [c for c in clients() if c["visible"]]                  # on the desktop one looks at, not put away
+    slot = lambda c: c["address"][2:]
+    if m.group(1).startswith("win.minimize_all"):
+        keep = m.group(2) == "true"
+        return ["emit window_minimize " + slot(c) for c in shown if not (keep and c["focusHistoryID"] == 0)]
+    if m.group(1) == "win.restore_all()":
+        return ["emit latte_focus " + slot(c) for c in clients() if c["workspace"]["name"] == "special:minimized"]
+    if m.group(3):
+        # Win+1…9: the n-th app of the window bar (goo/lib/bar.luau: in the order they opened, one per app, put away
+        # ones too, so the number stays with the app). As on Windows: not in front, its latest window comes; in front,
+        # its next window comes, and an app of one window goes away.
+        # ponytail: an order the user dragged in the bar is not known here; upgrade: Goo answers the key itself
+        apps = {}
+        for c in sorted(clients(), key=lambda c: int(slot(c))):
+            if c["visible"] or c["workspace"]["name"] == "special:minimized":
+                apps.setdefault(c["class"], []).append(c)
+        n = int(m.group(3))
+        if n > len(apps):
+            return []
+        group = list(apps.values())[n - 1]
+        front = next((i for i, c in enumerate(group) if c["focusHistoryID"] == 0), None)
+        if front is None:
+            return ["emit latte_focus " + slot(min(group, key=lambda c: c["focusHistoryID"]))]
+        if len(group) == 1:
+            return ["emit window_minimize " + slot(group[0])]
+        return ["emit latte_focus " + slot(group[(front + 1) % len(group)])]
+    # Win+D: the desktop, and the same again brings back what it put away (only if nothing came out meanwhile)
+    if shown:
+        with open(SHOWN, "w") as f:
+            f.write(" ".join(slot(c) for c in shown))
+        return ["emit window_minimize " + slot(c) for c in shown]
+    try:
+        with open(SHOWN) as f:
+            back = f.read().split()
+        os.remove(SHOWN)
+    except OSError:
+        back = []
+    away = {slot(c) for c in clients() if c["workspace"]["name"] == "special:minimized"}   # a slot closed meanwhile may hold another window
+    return ["emit latte_focus " + s for s in back if s in away]
 
 
 ORDER = ("tape", "tiles", "floating", "glance")

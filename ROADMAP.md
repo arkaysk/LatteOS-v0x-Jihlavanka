@@ -149,6 +149,15 @@ Neskôr: obraz ako Bazzite, rollback.
 Vetva `v0.5-pleamarwm-jihlavanka`. Goo ostáva samostatný proces; mení sa vrstva okien pod ním. Hyprland ostáva v prihlasovači ako
 druhá relácia, kým nová nevie všetko, čo on. Zdroje: [pleamar-wm](https://github.com/k4ditano/pleamar-wm), `docs/goo/ROZHODNUTIA.md`.
 
+**Postup prenosu (používateľ 2. 11.): pleamar-wm sa integruje celý, potom sa mení podľa zadania LatteOS.** Berie sa pleamar,
+pleamar-wm aj shell [Marea](https://github.com/k4ditano/marea-plm) (všetko BSD-3) so všetkým, čo majú: rozloženia okien, efekty
+a vodu, sklo, ovládacie centrum, agenta, builder Arrecife. Neprepisuje sa nanovo nič, čo tam už je; vlastný kód iba tam, kde
+upstream niečo nemá alebo to odporuje pravidlám LatteOS (LATTEOS-GOO, myš prvá, preklady, farby z témy, AI vypnuteľná).
+Postup pri každom kuse: (1) zistiť, čo upstream vie (aktuálna verzia, `pleamar --docs`, README, videá autora v `inspo/`);
+(2) zapojiť bez zmeny a overiť na latte-lab; (3) zapísať rozdiely voči zadaniu a meniť iba tie — ako záplatu v `patches/`
+alebo ako vrstvu LatteOS nad ním, nie rozvetvením kódu; (4) autor a licencia do `TRETIE-STRANY.md`. Pred prácou
+`latte-upstream -v` (dnes nie je na PATH — vrátiť).
+
 **1D.01** [~] Brána: pleamar-wm 0.6.2 ukáže na RX 640 obraz na dvoch monitoroch, beží v ňom Goo; odmerať záťaž a sklo.
 31. 10., Fedora 45 Beta, Linux 7.3.1, Mesa 26.3-rc3, pleamar 0.6.1, pleamar-wm 0.6.2: ostrá relácia na RX 640 a jednom monitore, Goo cez kartu, priemer 16,8 ms na snímku, CPU ~11 %, okno foot funguje. Dva monitory (pripojený je jeden) a sklo neskúšané. Bez Linuxu 7.3 a Mesy 26.3 Polaris kreslí softvérovo (~480 % CPU).
 **1D.02** [x] Vlastná položka v prihlasovači, relácia s vlastným priečinkom nastavení (`PLEAMAR_CONFIG`), strážca `latte-session`, odchod do hry.
@@ -158,8 +167,9 @@ druhá relácia, kým nová nevie všetko, čo on. Zdroje: [pleamar-wm](https://
 **1D.06** [~] Vlastný `wm/session.plm`: páska, dlaždice, plávajúce, Glance, minimalizácia, prichytávanie, plochy, pás pre kvapky (dnes `system/hypr/latte/windows.lua`).
 Tapeta v relácii pleamar-wm funguje (31. 10.): `skwd-walld` sa reštartuje pri štarte relácie (`system/pleamarwm/autostart`).
 2. 11.: režimy z hlavy pásu okien a z Nastavení (`latte.mode.set/next/tell`) nastavujú `lay.N` a `free.N` monitora cez náhradu `hyprctl`, voľba v tom istom `window-mode` ako na Hyprlande; páska = scrolling, dlaždice = leader, plávajúce = free, LatteGlance zatiaľ = free ako na Hyprlande (vlastný v 8A; s pleamar „glance“ ani „marea“ sa nestotožňuje). Ostáva prichytávanie, plochy, pás kvapiek pre plávajúce. Opravené: `latte-say` a `latte-lock` hľadali sockety mimo `PLEAMAR_SOCKETS`, takže Goo v relácii pleamar-wm nedostal nastavenia (LensShore ostával LensGoo). Plávajúce = free bez plátna: v pleamar-wm 0.6 free vždy zapol aj canvas (sieť a zóna cez celú plochu, ktorá brala ikonám plochy kliky); canvas ostáva z pásu rozložení a cez Super+Shift+W.
+2. 11. (postup prenosu): základom je celá scéna pleamar-wm a Marey (1D.18), `wm/session.plm` nesie iba rozdiely LatteOS.
 **1D.07** [~] Skratky a stupne výkonu do `keys.conf` a `session.conf`; nastavenia obrazoviek (`latte-screens`).
-2. 11.: `system/pleamarwm/keys.conf` (odkaz z `~/.config/latteos/pleamar-wm/`, predtým bežali skratky pleamar-wm volajúce Mareu): launcher samotným Win (záplata `pleamar-wm-tap-keys`: Win+Q či Win s ťahaním ho už neotvorí), Goo, Monitor, Nastavenia, okná, plochy, zvuk a jas, ponuka pleamar-wm (Super+Tab, Super+W, Super+Shift+W, Super+Shift+I ovládacie centrum). Ostáva Win+M, Win+D, Win+Home, Win+1…9, nová/zatvorená plocha, rozloženie klávesnice, lupa; stupne výkonu; obrazovky.
+2. 11.: `system/pleamarwm/keys.conf` (odkaz z `~/.config/latteos/pleamar-wm/`, predtým bežali skratky pleamar-wm volajúce Mareu): launcher samotným Win (záplata `pleamar-wm-tap-keys`: Win+Q či Win s ťahaním ho už neotvorí), Goo, Monitor, Nastavenia, okná, plochy, zvuk a jas, ponuka pleamar-wm (Super+Tab, Super+W, Super+Shift+W, Super+Shift+I ovládacie centrum). Win+M, Win+Shift+M, Win+Home, Win+D (plocha a späť) a Win+1…9 (N-tá aplikácia pásu okien v poradí otvorenia; vpredu prejde na jej ďalšie okno, jediné schová, ako Windows) odpovedá náhrada `hyprctl` tými istými volaniami ako na Hyprlande; poradie preusporiadané v BarGoo zatiaľ nepozná. Ostáva nová/zatvorená plocha, rozloženie klávesnice, lupa; stupne výkonu; obrazovky.
 **1D.08** [ ] Titulky okien v scéne namiesto hyprbars, ponuka okna, bublina pri zrode okna. Biela hlavička Qt je preč (`QT_WAYLAND_DISABLE_WINDOWDECORATION`); ostáva tenký pruh správcu okien nad aplikáciami Quickshell, `frame=own` ho neskryje.
 **1D.09** [ ] Sklo okien namiesto Hyprglass a sklo kvapiek cez `ext-background-effect`; odmerať na RX 640.
 **1D.10** [ ] `tests/screen.sh` na headless režim pleamar-wm; pleamar a pleamar-wm ako balík (COPR), zámok verzie.
@@ -171,7 +181,30 @@ Tapeta v relácii pleamar-wm funguje (31. 10.): `skwd-walld` sa reštartuje pri 
 **1D.15** [ ] Overiť Hyprland na Fedore 45 a pleamare 0.6.1 (aj tapetu po návrate z pleamar-wm); pluginy preložiť, ak treba.
 **1D.16** [ ] Vrátiť `umu-launcher` (Fedora 45 ho nemá, odišiel pri aktualizácii). Keď Fedora dostane Linux 7.3 a Mesu 26.3, prejsť na ne: dnes je kernel z Koji nepodpísaný a Mesa rc v `/opt/mesa-26.3`.
 **1D.17** [x] Dobehnúť upstream (2. 11.): pleamar 0.7.10 a pleamar-wm 0.6.9 zo `~/src/pwm-v07/`, záplaty prenesené (`patches/README.md`), naša `wm/session.plm` spojená s novou; Goo, prihlasovač a Marea prejdú `--check`, headless 17,4 ms na snímku. Staré `/usr/bin/pleamar-0.6.1`, `pleamar-wm-0.6.2`. Ostáva ostrá relácia na RX 640 (1D.14).
+**1D.18** [ ] **Inventár pleamar-wm + Marea a čo s čím** (postup prenosu): ku každému kusu jedno z troch — berie sa bez zmeny /
+mení sa (čo a prečo) / vypína sa. Kusy: 8 rozložení okien (leader, columns, rows, grid, leader-right, scrolling ako niri,
+fractal ako Hyprland, free ako Windows; každý monitor svoje, prepnutie za behu); voda a efekty (`tide`, `rain`, `snow`, Marea,
+upozornenia ako kvapky); tri vzhľady skla (lomené, rozmazané, nepriehľadné); ovládacie centrum (`control/`); hľadanie aplikácií
+a súborov; zámok; snímky a nahrávanie obrazovky; naplánované úlohy; pamäť spoločníčky; chat s AI v bubblewrap; agent s vlastným
+kurzorom a klávesnicou (`agent`, `hands`, `gate`); karavána agentov a drôty medzi nimi; vzdialená stránka (`remote`); Arrecife (1D.19).
+Výsledok zapísať sem pod 1D (krátko) a rozhodnutia do `docs/goo/ROZHODNUTIA.md`.
 - **Canvas** (pleamar-wm od 0.5, pôvodné správanie, zistené 2. 11. v `examples/session.plm` a README 0.6.9): free je vždy canvas — okná na nekonečnej rovine, monitor sa na ňu díva kamerou; Super + ťah po prázdnej rovine ju posúva, Super + koliesko približuje k ukazovateľu, Super+0 ukáže všetky okná, Super + dvojklik dá okno do stredu; okno pustené pri hrane iného sa k nej prichytí, pri okraji monitora vezme polovicu alebo štvrtinu; zapína sa Super+W, poslednou dlaždicou pásu rozložení, v ovládacom centre, `layout X free`. Pod oknami slabá sieť (čiara každých 96 px roviny, najhustejšie 64 px na monitore, krytie 3,5 %). Zóna `canvas_bg` cez celý monitor **nemá pravý ani prostredný klik**; ľavý bez Super nerobí nič (iba ukončí premenovanie). Nemá `yields: true`, preto berie kliky aj widgetom pod scénou — ikonám plochy (`apps/desktop.qml`). **V LatteOS mení sa:** plávajúce = free bez canvasu; canvas iba z pásu rozložení a Super+Shift+W. `yields: true` by ikonám kliky vrátil, ale `desktop.qml` je cez celú obrazovku, takže kamera by prázdnu plochu nedostala; ponuku pravého kliku a ikony na canvase treba vyriešiť zvlášť.
+**1D.19** [ ] **Arrecife = Tvorca Goo** (video k4ditano „This is how you build shells and applications“, `inspo/`; `BUILDER.md`
+v marea-plm): režim Build → nakresliť obdĺžnik na obrazovke (tvar určí druh: lišta, dok, widget, aplikácia) → bublina chatu
+pri ňom → AI píše scénu, pleamar ju živo prekresľuje, chyby `--check` idú späť modelu, obrazovka drží poslednú dobrú verziu →
+Ponechať / Späť / Zahodiť; tvorby v `~/.local/share/pleamar/marea/creations/<id>/` s verziami. Pred spustením programu sa pýta,
+počas práce pruh „An agent is using this monitor · Stop“. Nahrádza vlastný návrh Tvorcu Goo (6K) a widgety z Chaldea (6B.41);
+prvá tvorba na skúšku: štvorec využitia Claude (6B.38) — presne ten je vo videu. Mení sa: poskytovateľ AI cez LensAI (lokálny
+model alebo Claude; Marea dnes ChatGPT), texty cez preklady, farby z témy, tvorby viditeľné v galérii widgetov a v Kaviarni.
+**1D.20** [ ] **Režimy okien z rozložení pleamar-wm** (video k4ditano „Tiling a fractal layout“): 8A.06 skladať z hotových
+rozložení — Páska = scrolling, Dlaždice = leader/grid/fractal (voľba v karte), Plávajúce = free; vlastné ostáva iba Glance,
+Canvas a Tri zóny. **Páska bez kódu niri**: scrolling pleamar-wm je BSD-3, takže prevzatie z niri (8A.07, GPL-3.0 a s ním
+zmena licencie LatteOS) netreba — overiť, či správanie stačí, až potom 8A.07 zrušiť.
+**1D.21** [ ] **Mriežka pri kurzore pri ťahaní okna** (vzor [MouseTiler](https://github.com/rxappdev/MouseTiler), KWin, GPL-3.0 —
+iba myšlienka): v Plávajúcich posunieš okno o pár pixelov a pri kurzore sa ukáže malá mriežka dlaždíc; pustením do políčka
+(alebo cez viac políčok) sa okno usadí. Ako Snap Layouts vo Win11, ale bez cesty k hornému okraju. Myšou aj perom a dotykom.
+**1D.22** [ ] **Agenti na plátne** (video k4ditano s oknami Claude a Codex spojenými čiarami): okná agentov ako uzly, čiara =
+kto komu dal úlohu (`term pair`, `by.N` z 1D.17). Pohľad pre Canvas (8A.12), Agentov v dashboarde (6B.36) a Kaviareň (10B.40).
 
 ## 2. [~] Instalator OS
 Zdroje: `fresh-install`, `install`, `migrate-v03`, `docs/NAVRH-STARTU.md`
@@ -1597,6 +1630,37 @@ okná a aplikácie LatteOS — každý objekt má kontextovú ponuku s pevným p
 každá položka ide aj dlhým stlačením na dotyku, dvoma prstami na touchpade, klávesom Menu / Shift+F10 a tlačidlom
 ovládača. Kde chýba, doplniť.
 
+**7B.04** [ ] **Kontextovo generovaná ponuka** (používateľ 2. 11., nákres a predloha „Quick actions · Selection“; vzor: Diablo 1
+— obsah podľa toho, na čo sa kliklo): hore rad veľkých dlaždíc Vystrihnúť · Kopírovať · Prilepiť so skratkou pod názvom
+(Prilepiť zvýraznené, ak je v schránke čo vložiť); vpravo hore názov kontextu (Výber, Súbor, Obrázok, Plocha…). Pod tým
+**pevné oddiely s pevným poradím**, ale obsah sa skladá podľa objektu (typ súboru, výber, okno, kvapka, aplikácia pod kurzorom
+cez AT-SPI). Jediné meniace sa miesto je podponuka **Goo návrhy** dole (zlatou, s ikonou iskry) — návrhy podľa obsahu, s AI
+aj bez nej. Položky cudzích programov (napr. NVIDIA, Git Bash) vo vlastnej skupine „Z aplikácií“, nie medzi našimi. Ponuka
+sa sama nepreusporadúva (ľudia z Windowsu to neznášajú). Spresňuje 7B.03 a pravidlo 23.
+
+### 7C. [ ] YOL — Your Own Life
+Plocha orientovaná na človeka a jeho činnosti (používateľ 2. 11.): klasická plocha je o súboroch a aplikáciách, dlaždice
+o oknách, YOL o človeku. Na ploche nie sú voľné ikony; plocha je dashboard nad jasne viditeľnou tapetou, okná plávajú nad ním.
+Zdroje: video „ricing my obsidian desktop“ (r/desktops, `inspo/`), snímky YOL a „OS Dashboard“ (2. 11.),
+[Obsidian-Dashboard-Gallery](https://github.com/InlitX/Obsidian-Dashboard-Gallery) (MIT, 6 nástenok na Dataview; najbližšie Pixel a Haven).
+
+**7C.01** [ ] **YOL ako režim plochy**: Klasická (ikony ako vo Windows, predvolená) · YOL. Skladá sa z hotových kusov:
+pole uprostred = LensShore s príkazmi `task · log · open · new · help` (6B), widgety v spoločnom formáte (6B.38, 6H.05) na
+pegboarde, Kalendár (10J), zoznam hier (10K), Obsidian (10B.37). Rozloženie z predlohy: rýchle akcie (+ úloha, Capture, Write,
+Journal, Workout, Habit, Check-in, Day, Week, Search, Focus, Music); oblasti (Write, Watch, Play, Build, Life, Learn) s podpoložkami;
+Dnes (agenda, úlohy dňa, zoznam na pozretie), nižšie po rolovaní návyky, cvičenie po dňoch, písanie za týždeň, projekty,
+knižnica. Akcie a oblasti oddeliť (u autora predlohy sú Write a Watch dvakrát: raz urobiť hneď, raz zbierka). Rolovanie kolieskom
+na holej ploche zladiť s tým, čo dnes robí.
+**7C.02** [ ] **Dáta v obyčajnom Markdowne** (úlohy, denník, návyky, zoznam na pozretie) v priečinku používateľa — funguje bez
+Obsidianu; trezor Obsidianu je voliteľný (10B.37).
+**7C.03** [ ] **YOL podľa človeka**: najprv 4–5 hotových profilov (Hráč, Tvorca, Študent, Vývojár, Domácnosť), nad nimi voliteľný
+kvíz s AI, ktorý nástenku poskladá; AI sa dá vypnúť, profily fungujú bez nej.
+**7C.04** [ ] **Learn = DeepTutor** (používateľ 2. 11.: súčasť YOL; [DeepTutor](https://github.com/HKUDS/DeepTutor), Apache-2.0,
+Python + Next.js; CLI `deeptutor run … --format json`, server `deeptutor serve`, LM Studio a llama.cpp aj cloud). Tok: do LensShore
+„Chcem sa naučiť základy kompozície Waylandu“ → LensAI spozná učenie → DeepTutor zostaví učebnú cestu → YOL ju ukáže v Learn.
+Cieľ Arabica 1.0 na hlavnom PC (lepší hardvér); s cloudom ide aj s Haiku či Opusom. Inštalovať na požiadanie (podľa Omarchy);
+malé lokálne modely 2B/4B nástroje zvládnu zle — ponúknuť väčší model alebo cloud.
+
 ---
 
 ## 8. [~] Okna
@@ -2535,8 +2599,8 @@ s povolením). **Premenované z „Plantáž“ (používateľ 29. 10.):** objed
 **pri presse** (stanice: scenár, prompty, obrázky, video…) → výsledok odovzdá **pri pulte**, kde ho používateľ schváli,
 opraví alebo vráti (brány) — nič sa nerobí naslepo. Každá scéna/časť je objednávka na tácke. **Vzhľad čašníčok si
 používateľ mení** (skiny / avatary; očakávaný obľúbený prvok). Pred spustením odhad času GPU a limitu cloudu; predvolene lokálne, keď je PC
-nečinné; pauza jedným klikom z pásu LensAI. Technický základ: clodfarm (`inspo/dev-ai-prostredie.md`) rozšírený o stanice
-pre ComfyUI a médiá; vývojová farma (10B.31) ostáva oddelená.
+nečinné; pauza jedným klikom z pásu LensAI. Technický základ: ~~clodfarm rozšírený o stanice~~ **vlastná farma (10B.40,
+používateľ 2. 11.)** so stanicami pre ComfyUI a médiá; vývojová farma (10B.31) ostáva oddelená.
 - **Rozhodnuté (používateľ): úlohy farmy sú skilly** — rovnaký formát `SKILL.md` ako skill LatteOS (10B.14 bod 4), takže
   Kaviareň načíta aj akékoľvek hotové skilly z iných zdrojov. Skill pre Kaviareň môže navyše mať `stanice.json` (poradie
   staníc a brány — iba pre kreslenie pása), `skripty/` (pevné kroky: rytmus, ffmpeg, export Kdenlive) a `comfy/`
@@ -2581,6 +2645,29 @@ licenciu, oprávnenia a výsledok kontroly; pred inštaláciou zobraziť SKILL.m
   7. [ ] **Prekladateľ s glosárom** — jednotné výrazy naprieč knihou alebo svetom.
   8. [ ] **Video a podcast** — prepis (whisper), vystrihnutie vatových slov, kapitoly, náhľadový obrázok.
   9. [ ] **Herný dizajn** — dokument hry (GDD), lore, tabuľky vyváženia predmetov.
+
+**10B.39** [ ] **Úrovne modelov, zálohy a strážca podmienok** (používateľ 2. 11.; vzor
+[free-claude-code](https://github.com/alishahryar1/free-claude-code), AGPL-3.0 — myšlienka, kód nie): v LensAI mapovať úrovne
+(rýchly / bežný / najlepší, ako Haiku / Sonnet / Opus) na ľubovoľný model — lokálny, predplatné, API; záložný model, opakovanie,
+limity, viac kľúčov. **Strážca podmienok:** pri každom poskytovateľovi adresa jeho podmienok používania a ich odtlačok;
+LensAI ich pravidelne kontroluje a pri zmene upozorní, ukáže rozdiel a prístup, ktorý by podmienky porušil, preruší, kým
+ho používateľ znova nepotvrdí (FCC to robí sám: integrácie, ktoré prestanú byť dovolené, odstráni). Lokálny model do Claude
+Code už ide bez proxy (LM Studio s rozhraním Anthropicu, tak ho používa clodfarm).
+
+**10B.40** [ ] **Vlastná farma pre Kaviareň** (používateľ 2. 11.: kvôli Kaviarni 10B.36 sa stavia vlastná verzia, nie clodfarm):
+úlohy = skilly, stanice, brány pri pulte. Z clodfarm vziať skúsenosti (`inspo/dev-ai-prostredie.md`, boti na LM Studio,
+výsledky do gitu), z [cheap-ag](https://github.com/muaaz9329/cheap-ag) (MIT) **bránu cez testy**: lacný model pracuje vo
+vlastnej kópii (worktree), výsledok prejde iba s prejdenou kontrolou, inak úlohu dokončí silnejší model; drahý model iba plánuje
+a číta krátky výsledok. Kontrola beží tam, kde sú nástroje (clodfarm nemá Rust ani gcc a overuje iba `git diff --check`).
+Predvolene lokálne; kód a dáta von iba s povolením. Pohľad na prácu agentov: 1D.22.
+
+**10B.41** [ ] **Znalosti o AI ako odkazy, nie vlastná pomoc** (používateľ 2. 11.):
+[awesome-generative-ai-guide](https://github.com/aishwaryanr/awesome-generative-ai-guide),
+[ai-agents-for-beginners](https://github.com/microsoft/ai-agents-for-beginners) (MIT),
+[ai-engineering-hub](https://github.com/patchy631/ai-engineering-hub). LensAI na ne odkazuje pri otázkach o AI všeobecne
+a YOL Learn (7C.04) ich ponúkne ako kurzy; pre offline a malé modely ich zaindexuje DigUp (10B.32). Pomoc k samotnému LatteOS
+ostáva naša. Hľadanie v súboroch ostáva na DigUp; [cocoindex](https://github.com/cocoindex-io/cocoindex) (Apache-2.0,
+priebežné indexovanie, potrebuje databázu) až keby agenti potrebovali vlastný index kódu.
 
 ### 10C. [ ] Heidelberg
 je zakladny textovy editor, s neobvyklo širokou ponukou formatou ktore prečíta a upraví
@@ -3329,6 +3416,17 @@ Zdroje: `inspo/dalsie_inspiracie.md`, `inspo/LatteOS – technologický radar 20
 - [ ] **GOO / ďalšie rozhodnutia:** nové návrhy z `inspo/` (napr. reakcia kvapiek na hudbu,
   vizuálne prechody, ďalšie cloudové či bezpečnostné nástroje) sú prieskum, kým sa výslovne
   neprijmú; existujúce návrhy a verdikty sú v [inspo/dalsie_inspiracie.md](inspo/dalsie_inspiracie.md).
+
+**15.03** [ ] **Dioramy v rozhraní** (používateľ 2. 11.; [dioramas](https://github.com/blendi-remade/dioramas), kód MIT, modely
+CC BY 4.0): prečo by ponuky a programy nemohli byť zaujímavejšie, ako moderný web. Pleamar 3D modely nekreslí, preto 2,5D:
+vrstvy obrázkov s paralaxou pri pohybe myši, mapa hĺbky pre svetlo, otočka objektu ako animovaná WebP. Grafiku generuje
+používateľ lokálne (ComfyUI v `/data/ai/ComfyUI`) podľa zadania od Clauda; prvá skúška na jednom mieste (O tomto počítači 9B
+alebo prvé spustenie 2A). Iba tam, kde človek čaká alebo si prezerá (prvé spustenie, O tomto počítači, karty Hier, prázdne
+stavy) — nie v ponukách a pri práci; iba na vyšších stupňoch výkonu, pri hre a v SAFE vypnuté.
+**15.04** [ ] **Uiverse galaxy** ([galaxy](https://github.com/uiverse-io/galaxy), MIT, 3000+ prvkov v CSS a Tailwinde): katalóg
+predlôh pre Arrecife (1D.19) — „sprav prepínač ako tento“; prepisuje sa do pleamaru, kód sa nepreberá.
+**15.05** [x] **open-design-agent-kit** ([feimacode](https://github.com/feimacode/open-design-agent-kit), MIT + Apache-2.0)
+nainštalovaný do Claude Code na latte-lab 2. 11. (plugin `open-design@open-design-agent-kit` 0.3.2, rozsah používateľ).
 
 ---
 

@@ -830,6 +830,23 @@ def test_hyprctl_on_pleamarwm():
     assert shim.mode("latte.mode.next()") and said[:1] == ["fact free.0 1"] and shim.load_modes() == ("tiles", {"DP-1": "floating", "DP-3": "floating"})
     assert not shim.mode('latte.win.close("0x1")')
     shim.subprocess.Popen = popen
+    # the keys on several windows: three shown (1 in front), one put away
+    win = lambda a, x, front=False, away=False, app="foot": {"address": a, "at": [x, 0], "visible": not away, "focusHistoryID": 0 if front else int(a[2:]) + 1,
+                                                 "workspace": {"name": "special:minimized" if away else "1"}, "class": app}
+    shim.clients = lambda: [win("0x2", 900, app="zen"), win("0x1", 10, front=True), win("0x4", 500), win("0x3", 0, away=True, app="gimp")]
+    shim.SHOWN = os.path.join(tempfile.mkdtemp(), "shown")
+    assert shim.emits("latte.win.minimize_all(true)") == ["emit window_minimize 2", "emit window_minimize 4"]
+    assert shim.emits("latte.win.restore_all()") == ["emit latte_focus 3"]
+    # the bar's apps in the order they opened: foot (1 and 4, 1 in front), zen (2), gimp (3, put away)
+    assert shim.emits("latte.win.nth(1)") == ["emit latte_focus 4"] and shim.emits("latte.win.nth(2)") == ["emit latte_focus 2"]
+    assert shim.emits("latte.win.nth(3)") == ["emit latte_focus 3"] and shim.emits("latte.win.nth(9)") == []
+    shim.clients = lambda: [win("0x2", 900, front=True, app="zen"), win("0x1", 10)]
+    assert shim.emits("latte.win.nth(2)") == ["emit window_minimize 2"]
+    shim.clients = lambda: [win("0x2", 900, app="zen"), win("0x1", 10, front=True), win("0x4", 500), win("0x3", 0, away=True, app="gimp")]
+    assert len(shim.emits("latte.desk.show()")) == 3 and os.path.exists(shim.SHOWN)
+    shim.clients = lambda: [win("0x2", 900, away=True), win("0x1", 10, away=True), win("0x4", 500, away=True)]
+    assert shim.emits("latte.desk.show()") == ["emit latte_focus 2", "emit latte_focus 1", "emit latte_focus 4"]
+    assert shim.emits("latte.nothing()") is None
 
 
 test_hyprctl_on_pleamarwm()
