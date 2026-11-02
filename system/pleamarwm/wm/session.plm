@@ -2185,6 +2185,9 @@ scene Session {
             body {
                 color: if(glass.on > 0.5, cup.bar, #0c0e10)
                 glass: 100% * (glass.on > 0.5)
+                // no bending: a glass as big as a window bends with a bevel as wide as it is big ("a bigger piece of glass
+                // bends more"), and the edge of that bevel showed as a ring in the window with the keyboard
+                lens: false
                 frost: auto
                 smoke: if(glass.on > 1.5, 30%, 70%)
                 refraction: if(glass.on > 1.5, 160%, 100%)
