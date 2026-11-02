@@ -418,3 +418,4 @@ Nové rozhodnutie: jeden riadok sem (dátum, čo, prečo) a oprava platného zne
 | Kaviareň stojí na vlastnej farme, nie na clodfarm; brána cez testy podľa cheap-ag | áno (používateľ, 2. 11.) — ROADMAP 10B.36, 10B.40 |
 | DeepTutor je súčasť YOL (Learn); cieľ Arabica 1.0 na hlavnom PC, ide aj s cloudovými modelmi | áno (používateľ, 2. 11.) — ROADMAP 7C.04 |
 | Jedna plocha: virtuálne plochy (Win+Ctrl+D nová, Win+Ctrl+F4 zatvoriť) sa v relácii pleamar-wm nerobia | nie (používateľ, 2. 11.) — ROADMAP 1D.07 |
+| Pôvodné možnosti pleamar, pleamar-wm a Marey ostávajú a ponúknu sa aj v Nastaveniach, oblečené do štýlu LatteOS; shore pleamar-wm sa neskôr prerobí na kvapku Goo ako variant BarGoo a Marea na zapínateľnú kvapku Goo | áno (používateľ, 2. 11.) — ROADMAP 1D.24–1D.26 |

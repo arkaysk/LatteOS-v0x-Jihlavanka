@@ -830,6 +830,9 @@ def test_hyprctl_on_pleamarwm():
     said.clear()
     assert shim.mode("latte.mode.next()") and said[:1] == ["fact free.0 1"] and shim.load_modes() == ("tiles", {"DP-1": "floating", "DP-3": "floating"})
     assert not shim.mode('latte.win.close("0x1")')
+    said.clear()
+    assert shim.cup('latte.cup("mocha")') and said[:3] == ["fact cup.br 0.243", "fact cup.bg 0.188", "fact cup.bb 0.153"] and len(said) == 9
+    assert shim.cup_colours("nothing")[0] == "261d17" and not shim.cup("latte.mode.tell()")
     shim.subprocess.Popen = popen
     # the keys on several windows: three shown (1 in front), one put away
     win = lambda a, x, front=False, away=False, app="foot": {"address": a, "at": [x, 0], "visible": not away, "focusHistoryID": 0 if front else int(a[2:]) + 1,

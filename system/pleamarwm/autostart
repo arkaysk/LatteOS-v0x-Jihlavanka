@@ -8,6 +8,8 @@ sh -c 'export PATH=/usr/share/latteos/pleamarwm/bin:$PATH; sleep 1; systemctl --
 PATH=/usr/share/latteos/pleamarwm/bin:$PATH latte-widget start
 PATH=/usr/share/latteos/pleamarwm/bin:$PATH latte-desktop start
 PATH=/usr/share/latteos/pleamarwm/bin:$PATH latte-nightlight
+# The title bars in the colours of the cup the user chose (on Hyprland, system/hypr/hyprland.lua does it as it starts).
+sh -c 'export PATH=/usr/share/latteos/pleamarwm/bin:$PATH; sleep 1; exec hyprctl eval "latte.cup()"'
 # The lowest tiers move less: the window manager's springs settle at once (on Hyprland, no animations: system/hypr/latte/tiers.lua).
 sh -c 'case "${LATTE_TIER:-software}" in minimal|software) sleep 1; exec pleamar-wm --say wm "fact motion.reduced 1" ;; esac'
 /usr/libexec/latte-polkit-agent

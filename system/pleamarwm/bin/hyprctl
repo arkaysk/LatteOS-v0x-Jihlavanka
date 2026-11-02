@@ -210,6 +210,47 @@ def mode(expr):
     return True
 
 
+# The cups' title bars, as system/hypr/latte/bars.lua has them: the bar, its writing; the edge of the window with the keyboard
+CUPS = {"espresso": ("261d17", "f3ebdd"), "mocha": ("3e3027", "f6eee2"), "porcelain": ("ebe2d2", "2a170c")}
+EDGE = "e4b283"
+
+
+def cup_colours(name):
+    """The bar, its writing and the edge for a cup; "wallpaper": what skwd-wall worked out of it (bin/latte-wall)."""
+    if name == "wallpaper":
+        try:
+            with open(os.path.join(os.environ.get("XDG_CACHE_HOME") or os.path.expanduser("~/.cache"), "skwd-wall-v2", "colors.json")) as f:
+                all = f.read()
+            of = lambda k: (re.search(r'"%s"\s*:\s*"#([0-9a-fA-F]{6})"' % k, all) or [None, None])[1]
+            if of("surfaceVariant") and of("surfaceText"):
+                return of("surfaceVariant"), of("surfaceText"), of("primary") or EDGE
+        except OSError:
+            pass
+        name = "espresso"
+    bar, ink = CUPS.get(name, CUPS["espresso"])
+    return bar, ink, EDGE
+
+
+def cup(expr):
+    """latte.cup("name") from Settings, latte.cup() from latte-wall and the session's start; False: not that."""
+    m = re.match(r'latte\.cup\((?:"(\w+)")?\)', expr)
+    if not m:
+        return False
+    name = m.group(1)
+    if not name:
+        try:
+            with open(os.path.join(os.environ.get("XDG_CONFIG_HOME") or os.path.expanduser("~/.config"), "latteos", "cup")) as f:
+                name = f.read().strip() or "espresso"
+        except OSError:
+            name = "espresso"
+    for part, colour in zip(("b", "i", "e"), cup_colours(name)):
+        for c, k in (("r", 0), ("g", 2), ("b", 4)):
+            say("fact cup.%s%s %.3f" % (part, c, int(colour[k:k + 2], 16) / 255))
+    subprocess.Popen(["gsettings", "set", "org.gnome.desktop.interface", "color-scheme", "prefer-light" if name == "porcelain" else "prefer-dark"],
+                     start_new_session=True)
+    return True
+
+
 def evaluate(expr):
     m = re.search(r"hl\.exec_cmd\((\"|')(.*)\1\)", expr)
     if m:
@@ -225,6 +266,8 @@ def evaluate(expr):
     elif expr.startswith("latte.wallpaper("):
         path = re.search(r'"(.*)"', expr)
         subprocess.Popen(["latte-wall", "set", "*", "picture", path.group(1)] if path else ["latte-wall", "restore"], start_new_session=True)
+    elif cup(expr):
+        pass
     elif not mode(expr):
         steps = emits(expr)
         if steps is None:           # ponytail: snapping, desks, glass and the band wait for ROADMAP 1D.06 to 1D.09

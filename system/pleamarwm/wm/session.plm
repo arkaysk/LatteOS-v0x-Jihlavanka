@@ -71,9 +71,20 @@ scene Session {
     let ink = #f5f7f5
     // LatteOS: the title bars as they were on Hyprland (system/hypr/latte/bars.lua): the espresso cup's bar and
     // writing, flat round buttons, the close one red.
-    // ponytail: the espresso cup only; upgrade: the other cups and the wallpaper's colours as facts from Settings
-    let cup.bar = #261d17
-    let cup.ink = #f3ebdd
+    // The cup (Settings › Coffee and cup) as facts, 0 to 1, that bin/hyprctl sets on `latte.cup(…)`: the bar, its
+    // writing and the edge of the window with the keyboard. Until it says, espresso's.
+    fact cup.br = 0.149
+    fact cup.bg = 0.114
+    fact cup.bb = 0.090
+    fact cup.ir = 0.953
+    fact cup.ig = 0.922
+    fact cup.ib = 0.867
+    fact cup.er = 0.894
+    fact cup.eg = 0.698
+    fact cup.eb = 0.514
+    let cup.bar = rgb(cup.br, cup.bg, cup.bb)
+    let cup.ink = rgb(cup.ir, cup.ig, cup.ib)
+    let cup.edge = rgb(cup.er, cup.eg, cup.eb)
     let cup.button = #e4b283
     let cup.close = #c75b4a
     let cup.mark = #1e1712
@@ -2224,7 +2235,7 @@ scene Session {
                 box { at: x + w - 20, by; size: 8.5, 1.6; corner: 0.8; rotate: 45deg; color: #ffffff }
                 box { at: x + w - 20, by; size: 8.5, 1.6; corner: 0.8; rotate: -45deg; color: #ffffff }
             }
-            box { from: x, y; size: w, h; corner: 12; stroke: 1.5; color: cup.button; opacity: lit.$i * 70% * (1 - ov) * smooth(0.75, 1, water) }
+            box { from: x, y; size: w, h; corner: 12; stroke: 1.5; color: cup.edge; opacity: lit.$i * 70% * (1 - ov) * smooth(0.75, 1, water) }
             // ── on a canvas: its port, and its agent's state ──
             // The port: a drop, fuller over it, while wiring from it, and once
             // it has wires.
@@ -3553,7 +3564,7 @@ scene Session {
                 text win.$i.title { at: dx + 14, dy + tb / 2; anchor: left center; size: 13; weight: 600; width: max(dw - 40, 10); lines: 1; color: cup.ink; show: win.$i.framed }
                 window win.$i { at: dx, dy + tb * win.$i.framed; size: win.$i.width, win.$i.height; ask: 0, 0; show: win.$i.dialog and win.$i.open and win.$i.screen == screen.index and dlg.ws }
             }
-            box { from: dx, dy; size: dw, dh; corner: 12; stroke: 1.5; color: cup.button; opacity: 70% * win.$i.focused }
+            box { from: dx, dy; size: dw, dh; corner: 12; stroke: 1.5; color: cup.edge; opacity: 70% * win.$i.focused }
         }
     }
 
