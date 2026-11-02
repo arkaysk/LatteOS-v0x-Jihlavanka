@@ -5,10 +5,14 @@ A Wayland window is not told where it is. The surface of coffee in an app's wind
 window is carried about, as coffee in a carried cup does, so it has to know: Hyprland is asked, over its socket,
 five times a second, and forty times a second for a while after the window has moved. Nothing is started for a
 question, and without Hyprland this ends at once and the coffee only laps.
+In pleamar-wm's session (its PLEAMAR_SOCKETS) nothing is asked: while the scene says this app's window is carried
+(`dragging`), it moves with the mouse, which pleamar-wm says on cursor.sock as it moves. Only how it moves matters.
 """
 import json
 import os
+import select
 import socket
+import subprocess
 import sys
 import time
 
@@ -29,6 +33,46 @@ def place():
             return tuple(c.get("at") or (0, 0))
     return None
 
+
+def pleamar():
+    """pleamar-wm: the mouse's place while this app's window is carried, until the app is gone."""
+    sockets = os.environ["PLEAMAR_SOCKETS"]
+    slot = None
+    watch = subprocess.Popen(["pleamar-wm", "--say", "wm", "watch 0 dragging"], stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
+    cursor = socket.socket(socket.AF_UNIX)
+    cursor.connect(os.path.join(sockets, "cursor.sock"))
+    carried, buf = -1, b""
+    while os.getppid() == app:
+        if slot is None:                             # its window, by the app's pid, as pleamar-wm lists them ("SLOT PID\tTITLE")
+            try:
+                with open(os.path.join(sockets, "windows")) as f:
+                    slot = next((int(p[0]) for p in (l.split("\t")[0].split() for l in f) if len(p) == 2 and p[1] == str(app)), None)
+            except OSError:
+                pass
+        ready = select.select([watch.stdout, cursor], [], [], 1.0)[0]
+        if watch.stdout in ready:
+            line = watch.stdout.readline().decode()
+            if not line:
+                return
+            if line.startswith("fact dragging "):
+                carried = int(float(line.split()[-1]))
+        if cursor in ready:
+            chunk = cursor.recv(4096)
+            if not chunk:
+                return
+            buf += chunk
+            *lines, buf = buf.split(b"\n")
+            if slot is not None and carried == slot and lines:
+                x, y = lines[-1].split()[:2]
+                print(int(float(x)), int(float(y)), flush=True)
+
+
+if os.environ.get("XDG_CURRENT_DESKTOP") == "pleamar" and os.environ.get("PLEAMAR_SOCKETS"):
+    try:
+        pleamar()
+    except OSError:
+        pass
+    sys.exit(0)
 
 last, moved = None, 0.0
 while os.getppid() == app:                     # the app has gone: so does this
