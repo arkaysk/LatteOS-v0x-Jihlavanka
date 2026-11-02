@@ -853,6 +853,8 @@ def test_hyprctl_on_pleamarwm():
     assert ran == [["pleamar-wm", "output", "DP-3", "at", "0,0"], ["pleamar-wm", "output", "HDMI-A-1", "at", "-1920,0"]]
     assert open(shim.MONITORS).read() == "HDMI-A-1 1920x1080@60.000 2560x0 1 0\nDP-3 2560x1080@100.000 0x0 1.25 1\n"
     assert shim.kept_turn("DP-3") == 1 and shim.kept_turn("DP-9") == 0 and not shim.screens("latte.cup()")
+    ran.clear()
+    assert shim.dpms('hl.dsp.dpms({ action = "off" })') and ran == [["wlopm", "--off", "*"]] and not shim.dpms("hl.dsp.exit()")
     shim.subprocess.run = run
     # the keys on several windows: three shown (1 in front), one put away
     win = lambda a, x, front=False, away=False, app="foot": {"address": a, "at": [x, 0], "visible": not away, "focusHistoryID": 0 if front else int(a[2:]) + 1,

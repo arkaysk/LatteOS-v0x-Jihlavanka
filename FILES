@@ -764,6 +764,7 @@ package: greetd labwc tuigreet plymouth plymouth-plugin-two-step plymouth-theme-
 package: rsms-inter-fonts jetbrains-mono-fonts policycoreutils-python-utils util-linux-core
 package: foot less NetworkManager-tui                                # the SAFE session's terminal and rescue menu
 package: hyprland wireplumber libnotify swaybg hypridle              # the GOO session; wpctl for the volume keys; notify-send when a timer rings; the wallpaper; the lock when idle
+package: wlopm                                                       # the screens going dark when idle on pleamar-wm (hypridle → hyprctl dispatch dpms → wlopm)
 optional: mpvpaper                                                   # a film as the desktop's background
 package: python3-pillow                                              # the background: the layers on each screen put together into one picture (bin/latte-wall)
 optional /usr/bin/ffmpeg: ffmpeg (Fedora's ffmpeg-free or RPM Fusion's ffmpeg): the background, a film across screens cut for each, and pictures of films
