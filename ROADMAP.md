@@ -1892,6 +1892,7 @@ monitor HDR vie); **Rozšírené nastavenia** (údaje o monitore, VRR); **Grafik
   inej mierky vedľa DP-1 (snímka okna cez obe obrazovky, porovnať výšku riadkov).
 - [ ] Krok 2: na skutočných dvoch monitoroch (STRESTEST) a v hrách (mierka sa hry na celej obrazovke netýka).
 - Rovnaký výpočet použije tapeta (7A.13) a obrazovky iných zariadení (19.06), kde sa PPI líši najviac (telefón, tablet).
+**8B.08** [ ] **Farebné profily a ovládanie monitora** (neskôr, používateľ 2. 11., ako vo Windows): (1) farebné profily ICC monitora (`colord`, profil z EDID alebo kalibrácie) a ich použitie v správcovi okien (protokol `wp-color-management`; pleamar-wm ho zatiaľ nemá → overiť, inak návrh autorovi); (2) čo monitor sám dokáže, z EDID (farebný priestor, HDR, rozsah jasu) a cez DDC/CI (`ddcutil`: jas, kontrast, teplota farieb, vstup priamo v monitore), ponúknuť v Nastaveniach › Obrazovky. Súvisí s nočným svetlom (1D.32).
 
 ### 8C. [~] Sklo a materiály
 Sklo okien (Hyprglass), materiály šálky.
@@ -2084,6 +2085,7 @@ nastavení, duplicitných panelov alebo nekonzistentného správania.
 náhľady v Parkingu režimu Glance, Súbory (dnes Nautilus), plocha: Späť a „Tento počítač“, skratka na výber
 tapety, stránky Nastavení Tlačiarne · Zálohovanie · Cloud, jazyk z prihlásenia do relácie, Barista,
 inštalátor so sprievodcom, ChatGoo (Beeper), okno z bubliny QueenGoo.
+**9A.11** [ ] **Cudzie aplikácie vo vzhľade LatteOS** (neskôr, používateľ 2. 11.): Nautilus a iné aplikácie GNOME (GTK 4, libadwaita), GTK 3, Qt a KDE majú dnes celkom inú farebnosť ako aplikácie LatteOS. Zistiť, čo ktorá platforma prijme (libadwaita: `~/.config/gtk-4.0/gtk.css` s farbami `@define-color` a schéma `color-scheme`; GTK 3: téma alebo `gtk.css`; Qt: qt6ct/Kvantum paleta, ako už robí `Theme.qml`; Flatpak cez `--filesystem=xdg-config/gtk-4.0`) a generovať to z vybranej šálky a farieb tapety (`bin/latte-wall`), aby sa spustili čo najbližšie podobe LatteOS.
 
 ### 9B. [x] O tomto počítači
 Stránka Nastavenia › Systém › O tomto počítači, vrátane grafu vývoja LatteOS.
