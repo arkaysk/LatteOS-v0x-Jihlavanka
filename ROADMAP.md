@@ -2697,6 +2697,7 @@ Predvolene lokálne; kód a dáta von iba s povolením. Pohľad na prácu agento
 a YOL Learn (7C.04) ich ponúkne ako kurzy; pre offline a malé modely ich zaindexuje DigUp (10B.32). Pomoc k samotnému LatteOS
 ostáva naša. Hľadanie v súboroch ostáva na DigUp; [cocoindex](https://github.com/cocoindex-io/cocoindex) (Apache-2.0,
 priebežné indexovanie, potrebuje databázu) až keby agenti potrebovali vlastný index kódu.
+**10B.42** [ ] **Úvodný dashboard LensAI** (používateľ 2. 11.): LensAI sa otvorí dashboardom (prstene limitov, agenti, Kaviareň, lokálna AI, rozhovory, rýchle úlohy, projekty Obsidianu, strážca podmienok, prechod do YOL); vzhľad podľa [dioramas](https://github.com/blendi-remade/dioramas) (kód MIT, modely CC BY 4.0). Súpis všetkých požiadaviek na LensAI: `docs/lensai/POZIADAVKY.md` (otvorené otázky v jeho časti 7). Pred YOL (7C).
 
 ### 10C. [ ] Heidelberg
 je zakladny textovy editor, s neobvyklo širokou ponukou formatou ktore prečíta a upraví
