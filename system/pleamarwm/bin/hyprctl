@@ -129,6 +129,10 @@ def emits(expr):
             return ["emit window_minimize " + slot] if say("get win.%s.focused" % slot) == "true" else [focus]
         return {"activate": [focus], "restore": [focus], "minimize": ["emit window_minimize " + slot], "maximize": ["emit window_maximize " + slot],
                 "close": [focus, "emit close"], "fullscreen": [focus, "emit fullscreen"]}.get(what)
+    # the windows' glass, as Goo asks (goo/lib/engine.luau: 0 solid, 1 glass, 2 True Glass): pleamar's glass under them
+    m = re.match(r"latte\.glass\(([012])\)", expr)
+    if m:
+        return ["fact glass.on " + m.group(1)]
     # the buttons in the header of LatteOS's apps (apps/common/AppWindow.qml): the window with the keyboard
     m = re.match(r"latte\.win\.(minimize|maximize)_active\(\)", expr)
     if m:
