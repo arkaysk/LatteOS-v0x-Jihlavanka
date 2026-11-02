@@ -526,11 +526,16 @@ ShellRoot {
             visible: shell.page === "home"
             contentHeight: homeCol.implicitHeight + 40; clip: true; boundsBehavior: Flickable.StopAtBounds
             readonly property real side: Math.max(220, (width - 56 - 340 - 32) / 2)
+            // the stage's clock, as dioramas' scenes breathe: the lens floats a little and its light drifts; still where the
+            // card has no power to spare (the lower tiers)
+            property real t: 0
+            NumberAnimation on t { from: 0; to: 6.2832; duration: 14000; loops: Animation.Infinite; running: home.visible && Theme.blurred }
             component Card: Rectangle {
                 property string title
                 property string icon
                 default property alias inner: body.data
-                width: home.side; height: body.implicitHeight + 52; radius: 16; color: Theme.card; border.width: 1; border.color: Theme.line
+                width: home.side; height: body.implicitHeight + 52; radius: 16; color: Qt.rgba(Theme.card.r, Theme.card.g, Theme.card.b, 0.72)
+                border.width: 1; border.color: Qt.rgba(Theme.gold.r, Theme.gold.g, Theme.gold.b, 0.18)
                 Row { x: 16; y: 14; spacing: 8
                     Glyph { name: parent.parent.icon; font.pixelSize: 15; color: Theme.gold; anchors.verticalCenter: parent.verticalCenter }
                     Label { text: parent.parent.title; font.weight: 700; font.pixelSize: 13; anchors.verticalCenter: parent.verticalCenter } }
@@ -547,6 +552,17 @@ ShellRoot {
                                g.strokeStyle = Qt.rgba(1, 1, 1, 0.08); g.beginPath(); g.arc(23, 23, 19, 0, 2 * Math.PI); g.stroke()
                                g.strokeStyle = parent.tint; g.beginPath(); g.arc(23, 23, 19, -Math.PI / 2, -Math.PI / 2 + 2 * Math.PI * Math.max(0.001, parent.rest)); g.stroke() } }
                 Label { anchors.centerIn: parent; text: Math.round(parent.rest * 100); font.pixelSize: 11; font.weight: 800 } }
+            // the stage: a cone of warm light onto the lens, a glow round it, its soft shadow, the edges dark, a fine grain
+            ShaderEffect {
+                width: home.width; height: Math.max(home.height, homeCol.implicitHeight + 40); visible: GraphicsInfo.api !== GraphicsInfo.Software
+                property point spot: Qt.point((lensBox.x + homeCol.x + lensBox.width / 2) / width, (lensBox.y + homeCol.y + lensBox.height / 2) / height)
+                property real ratio: width / Math.max(1, height)
+                property real time: home.t * 2.2
+                property color warm: Theme.gold
+                property point ground: Qt.point(spot.x, (lensBox.y + homeCol.y + lensBox.height * 0.96) / height)
+                property point groundSize: Qt.point(lensBox.width * 0.42 / width, lensBox.height * 0.07 / height)
+                fragmentShader: Qt.resolvedUrl("common/shaders/stage.frag.qsb")
+            }
             Column { id: homeCol; x: 28; y: 20; width: home.width - 56; spacing: 16
                 Row { spacing: 16
                     Column { spacing: 16
@@ -564,10 +580,12 @@ ShellRoot {
                             Label { text: I18n.tr("{n} models on this computer", { n: (localModels.data || []).length }); color: Theme.dim; font.pixelSize: 12 }
                             Pill { text: I18n.tr("Open"); icon: "chevron-right"; onPressed: { shell.page = "local"; localq.ask(["recommend"]); localModels.ask(["models"]) } } } }
                     // the lens: the Cafe seen through it (a GIF of its own one day; LatteOS's coffee until then)
-                    Item { width: 340; height: 340
-                        Lens { anchors.fill: parent; anchors.margins: 6; zoom: 1.7
+                    Item { id: lensBox; width: 340; height: 340
+                        // the Cafe: a GIF of the user's own if there is one, else LatteOS's picture of it (assets/lensai/cafe.jpg)
+                        Lens { anchors.fill: parent; anchors.margins: 6; anchors.topMargin: 6 - 5 * Math.sin(home.t); anchors.bottomMargin: 6 + 5 * Math.sin(home.t)
+                               zoom: 1.25; turn: 0.35 * Math.sin(home.t * 0.5)
                                source: "file://" + Quickshell.env("HOME") + "/.local/share/latteos/cafe.gif"
-                               fallback: "file://" + (Quickshell.env("LATTE_SHARE") || "/usr/share/latteos") + "/wallpapers/latteos-1.jpg" }
+                               fallback: "file://" + (Quickshell.env("LATTE_SHARE") || "/usr/share/latteos") + "/lensai/cafe.jpg" }
                         Label { anchors.horizontalCenter: parent.horizontalCenter; y: parent.height - 4; text: I18n.tr("The Cafe"); color: Theme.dim; font.pixelSize: 12; font.weight: 600 } }
                     Column { spacing: 16
                         Card { title: I18n.tr("Agents"); icon: "robot"

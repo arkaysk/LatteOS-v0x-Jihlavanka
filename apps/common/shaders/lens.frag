@@ -9,6 +9,7 @@ layout(std140, binding = 0) uniform buf {
     float qt_Opacity;
     float zoom;                                // how much bigger the middle is
     float light;                               // how bright its highlight and rim, 0 to 1
+    float turn;                                // where the light comes from, turned this much (radians): it drifts
 };
 layout(binding = 1) uniform sampler2D source;
 
@@ -26,6 +27,7 @@ void main() {
                   texture(source, q * 0.5 + 0.5).g,
                   texture(source, (q - dir * part) * 0.5 + 0.5).b);
     vec2 from = normalize(vec2(-0.6, -0.8));
+    from = vec2(from.x * cos(turn) - from.y * sin(turn), from.x * sin(turn) + from.y * cos(turn));
     float facing = max(0.0, dot(dir, from));
     float spec = pow(max(0.0, dot(normalize(vec3(p, h + 0.0001)), normalize(vec3(from * 0.55, 1.0)))), 38.0);
     float rim = smoothstep(0.84, 1.0, r);

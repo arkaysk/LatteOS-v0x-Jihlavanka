@@ -589,6 +589,9 @@
 /usr/share/latteos/apps/common/shaders/lens.frag        <- apps/common/shaders/lens.frag
 /usr/share/latteos/apps/common/shaders/lens.frag.qsb    <- apps/common/shaders/lens.frag.qsb
 /usr/share/latteos/apps/common/Lens.qml                 <- apps/common/Lens.qml
+/usr/share/latteos/apps/common/shaders/stage.frag       <- apps/common/shaders/stage.frag
+/usr/share/latteos/apps/common/shaders/stage.frag.qsb   <- apps/common/shaders/stage.frag.qsb
+/usr/share/latteos/lensai/cafe.jpg                      <- assets/lensai/cafe.jpg
 /usr/share/latteos/apps/common/shaders/velvet.frag.qsb  <- apps/common/shaders/velvet.frag.qsb
 /usr/share/latteos/apps/common/window-place             <- apps/common/window-place
 /usr/share/applications/latteos-aicenter.desktop        <- system/applications/latteos-aicenter.desktop
