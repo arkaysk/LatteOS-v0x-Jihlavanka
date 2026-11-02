@@ -64,6 +64,17 @@ FloatingWindow {
         win.mode = own ? own[1] : ((lines[0] || "").trim() || "tape")
     }
     function ask(what) { Quickshell.execDetached(["hyprctl", "eval", "latte.win." + what + "()"]) }
+    // on a canvas of pleamar-wm (its wm/session.plm writes canvas-NAME for each monitor), the window can be wired to
+    // another: the button pleamar-wm has at the start of the title bars it draws, here beside the internet's
+    property bool canvas: false
+    FileView {
+        id: canvasFile
+        path: (Quickshell.env("HOME") + "/.local/state") + "/latteos/canvas-" + (win.screen ? win.screen.name : "")
+        printErrors: false; watchChanges: true
+        onFileChanged: reload()
+        onLoaded: win.canvas = text().trim() === "1"
+        onLoadFailed: win.canvas = false
+    }
     // the window's menu in a Goo card, where the pointer is, as the right button on any title bar gives it (system/hypr/latte/bars.lua)
     function menu() {
         Quickshell.execDetached(["sh", "-c", "a=$(hyprctl -j activewindow | sed -n 's/.*\"address\": *\"\\(0x[0-9a-f]*\\)\".*/\\1/p'); set -- $(hyprctl cursorpos | tr -d ,); "
@@ -132,6 +143,13 @@ FloatingWindow {
                 Row { spacing: 0; anchors.verticalCenter: parent.verticalCenter
                     HeadButton { icon: win.net === "off" ? "world-off" : "world"; visible: win.net !== ""; lit: Theme.raised; opacity: win.net === "off" ? 1 : 0.7
                                  onPressed: { net.command = ["latte-net", "toggle", String(Quickshell.processId)]; net.running = true } }
+                    // the port, as pleamar-wm draws it: a ring with a drop in it, fuller under the mouse; a press, then
+                    // a click on another window wires the two
+                    Item { visible: win.canvas; width: 34; height: 34
+                        Rectangle { anchors.centerIn: parent; width: 16 + 4 * port.containsMouse; height: width; radius: width / 2; color: "transparent"
+                                    border.width: 1.6; border.color: "#9ed6bd"; opacity: port.containsMouse ? 0.95 : 0.55 }
+                        Rectangle { anchors.centerIn: parent; width: 7 + 3 * port.containsMouse; height: width; radius: width / 2; color: "#9ed6bd" }
+                        MouseArea { id: port; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: win.ask("wire_active") } }
                     HeadButton { icon: "minus"; visible: win.mode === "floating"; onPressed: win.ask("minimize_active") }
                     HeadButton { icon: "rectangle"; visible: win.mode === "floating"; onPressed: win.ask("maximize_active") }
                     HeadButton { icon: "x"; lit: Theme.red; onPressed: Qt.quit() } } }
