@@ -212,6 +212,18 @@ kto komu dal úlohu (`term pair`, `by.N` z 1D.17). Pohľad pre Canvas (8A.12), A
 **1D.25** [ ] **Shore pleamar-wm ako variant BarGoo** (neskôr): dok pleamar-wm (*shore*) prerobiť na kvapku enginu Goo a ponúknuť ako druhý vzhľad BarGoo. Pozor na meno: nie LensShore ani trayShore.
 **1D.26** [ ] **Kvapka Marey ako zapínateľná kvapka Goo** (neskôr): Mareu z marea-plm upraviť, aby sedela s enginom Goo (tvar, voda, farby z témy), a ponúknuť ju ako kvapku, ktorá sa zapína v Nastaveniach › Kvapky.
 **1D.27** [ ] **Kývanie okien (wobble) v pleamar-wm** (používateľ 2. 11., vzor [Hyprland 0.57](https://hypr.land/imgs/blog/update57/wobbl.mp4)): ťahané alebo zväčšované okno sa ohne ako želé a dokýve sa, keď ho pustíš. pleamar-wm to nemá (kýve sa iba Marea, keď sedí na okne). Skúsiť shaderom skupiny okna v `wm/session.plm` (ako `tide`), rýchlosť ťahania z pružín scény; iba pri stupňoch full a standard, ako na Hyprlande (`system/hypr/latte/tiers.lua`). Ak shader nestačí na pokrivenie okna, návrh autorovi.
+**1D.28** [ ] **Priehľadnosť okna iba pri ťahaní** (používateľ 2. 11., relácia pleamar-wm): sklo/priehľadnosť okna sa ukáže, len kým sa okno ťahá. Zistiť, či to robí scéna pleamar-wm (okno pri nesení) alebo chýbajúce sklo (1D.09), a zladiť so stupňom skla v Nastaveniach.
+**1D.29** [ ] **Ťahanie okna za kávovú hladinu dole** (používateľ 2. 11.): v aplikáciách LatteOS (`apps/common/AppWindow.qml`, `Surface`) sa okno dá ťahať aj za kávu v päte okna, všade, kde nie je tlačidlo ani ovládací prvok (ako za hlavičku: `startSystemMove`). Na Hyprlande aj v pleamar-wm.
+**1D.30** [ ] **Káva v okne sa kýve pri ťahaní aj v pleamar-wm** (používateľ 2. 11.): v DualBrew, GuardDog a ďalších oknách LatteOS sa hladina pri ťahaní okna nekýve, lebo `apps/common/window-place` sa pýta iba socketu Hyprlandu (podľa PID okna) a bez neho skončí. V pleamar-wm brať polohu okna z jeho scény (náhrada `hyprctl clients` s `pid`, zvyšok 1D.03) alebo z `cursor.sock` počas ťahania.
+**1D.31** [ ] **Ďalšie závislosti na Hyprlande** (súpis 2. 11., čo v relácii pleamar-wm nefunguje):
+- **Nočné svetlo** (`bin/latte-nightlight`): `hyprsunset` ide iba s Hyprlandom (jeho CTM); pleamar-wm robí farebné krivky cez wlr-gamma-control → `wlsunset` alebo `gammastep` (nie sú nainštalované).
+- **Zhasnutie obrazovky po nečinnosti** (`system/libexec/latte-idle`, `system/hypr/hypridle.conf`): `hyprctl dispatch … dpms` náhrada nepozná, obrazovka nezhasne; v pleamar-wm `idle off-after` alebo `wlopm` (wlr-output-power-management). Uzamknutie a výzvy Goo idú.
+- **Klávesnica v Nastaveniach** (`bin/latte-settings` 413): zmena rozloženia za behu cez `hl.config({ input = { kb_layout … } })` — pleamar-wm berie klávesnicu iba pri štarte (dnes z `XKB_DEFAULT_*`, 1D.07); a zoznam skratiek `hyprctl binds -j` je prázdny → dať ho z `keys.conf`.
+- **DogHouse** (`system/libexec/latte-doghouse`): hľadá iba proces `Hyprland` s `LATTE_MODE`, takže reláciu pleamar-wm nestráži (GuardDog sa nevráti, keď ho niekto zastaví).
+- **Čas v aplikáciách** (`bin/latte-focus`): udalosti zmeny okna s klávesnicou berie zo socketu Hyprlandu (`.socket2.sock`); v pleamar-wm nepočíta.
+- **Okno odrezané od internetu** (`bin/latte-net`) a **káva v okne** (`window-place`, 1D.30): hľadajú okno podľa `pid`, náhrada ho nedáva (zvyšok 1D.03).
+- **Sklo pri počasí** (`bin/latte-weather`): mení `blur variant` Hyprlandu (námraza, dážď); pleamar-wm má vlastný dážď a sneh (shadery `rain`, `snow`) → zapojiť tie.
+- Drobnosti: `bin/latte-monitor` berie z autostartu iba položky `OnlyShowIn=Hyprland`; `bin/latte-safe` ukazuje log Hyprlandu, nie pleamar-wm (`~/.local/state/pleamar-wm/session.log`).
 
 ## 2. [~] Instalator OS
 Zdroje: `fresh-install`, `install`, `migrate-v03`, `docs/NAVRH-STARTU.md`
