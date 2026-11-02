@@ -13,14 +13,17 @@ the user's cannot stop. For every LatteOS desktop (a Hyprland of the session wit
 It reads and writes no file of the user's: what is to change, the user's systemd is asked to change, as the user. What it did is in
 /var/lib/latteos/doghouse.log, a JSON line each {"at", "uid", "what", "id", "text"}, for GuardDog's window.
 """
-import json, os, pwd, subprocess, sys, time
+import json, os, pwd, re, subprocess, sys, time
 
 LOG = os.environ.get("LATTE_DOGHOUSE_LOG") or "/var/lib/latteos/doghouse.log"
 KEEP = 1000
 UNIT, VENDOR = "latte-guarddog.service", "/usr/lib/systemd/user/latte-guarddog.service"
-# what Hyprland tells systemd of the session (system/hypr/hyprland.lua, place_shell): the same, for a systemd started anew
-SESSION_ENV = ("WAYLAND_DISPLAY", "XDG_CURRENT_DESKTOP", "XDG_SESSION_TYPE", "HYPRLAND_INSTANCE_SIGNATURE", "LATTE_MODE",
-               "LATTE_RENDERER", "LATTE_TIER", "LANG")
+# what the desktop tells systemd of the session (system/hypr/hyprland.lua, place_shell; system/pleamarwm/autostart): the
+# same, for a systemd started anew
+SESSION_ENV = ("WAYLAND_DISPLAY", "XDG_CURRENT_DESKTOP", "XDG_SESSION_TYPE", "HYPRLAND_INSTANCE_SIGNATURE", "PLEAMAR_SOCKETS",
+               "PATH", "QT_WAYLAND_DISABLE_WINDOWDECORATION", "LATTE_MODE", "LATTE_RENDERER", "LATTE_TIER", "LANG")
+# the compositors a LatteOS session runs on (bin/latte-session)
+DESKTOPS = ("Hyprland", "pleamar-wm")
 RUN_USER = "/run/user/%d"
 SETTLE = 90         # a desktop younger than this is still starting: nothing is missing yet
 
@@ -52,21 +55,22 @@ def run(*argv):
 
 
 def desktops():
-    """{uid: (Hyprland's environment, its age in seconds)} for every LatteOS desktop running now."""
+    """{uid: (the compositor's environment, its age in seconds)} for every LatteOS desktop running now."""
     found = {}
     uptime = float(open("/proc/uptime").read().split()[0])
     tick = os.sysconf("SC_CLK_TCK")
     for pid in filter(str.isdigit, os.listdir("/proc")):
         try:
             stat = open("/proc/%s/stat" % pid).read()
-            if stat[stat.find("(") + 1:stat.rfind(")")] != "Hyprland":
+            comm = stat[stat.find("(") + 1:stat.rfind(")")]
+            if comm not in DESKTOPS:
                 continue
             uid = os.stat("/proc/" + pid).st_uid
             env = dict(v.split("=", 1) for v in open("/proc/%s/environ" % pid).read().split("\0") if "=" in v)
         except OSError:
             continue
         if uid and "LATTE_MODE" in env:
-            env.update(made_later(uid, pid))
+            env.update(made_later(uid, pid) if comm == "Hyprland" else pleamar_display(uid, pid))
             found[uid] = (env, uptime - int(stat[stat.rfind(")") + 2:].split()[19]) / tick)
     return found
 
@@ -81,6 +85,28 @@ def made_later(uid, pid):
             if lines[:1] == [pid] and len(lines) > 1:
                 return {"HYPRLAND_INSTANCE_SIGNATURE": sig, "WAYLAND_DISPLAY": lines[1]}
     except (OSError, IndexError):
+        pass
+    return {}
+
+
+def pleamar_display(uid, pid):
+    """pleamar-wm's Wayland socket, which its own environment has not got (it is made for its programs): the one of
+    /run/user/UID/pleamar-N it listens on, among its open sockets; its other sockets are in pleamar-pleamar-N beside it."""
+    try:
+        mine = set()
+        for fd in os.listdir("/proc/%s/fd" % pid):
+            try:
+                mine.add(os.readlink("/proc/%s/fd/%s" % (pid, fd))[8:-1])     # "socket:[INODE]"; one closed meanwhile is gone
+            except OSError:
+                pass
+        mine.discard("")
+        with open("/proc/net/unix") as f:
+            for line in f.read().splitlines()[1:]:
+                parts = line.split()
+                if len(parts) == 8 and parts[6] in mine and re.fullmatch(re.escape(RUN_USER % uid) + r"/pleamar-\d+", parts[7]):
+                    display = os.path.basename(parts[7])
+                    return {"WAYLAND_DISPLAY": display, "PLEAMAR_SOCKETS": os.path.join(RUN_USER % uid, "pleamar-" + display)}
+    except OSError:
         pass
     return {}
 

@@ -723,6 +723,16 @@ with tempfile.TemporaryDirectory() as d:
 
 # DogHouse: GuardDog's unit is LatteOS's own, or it says why not; what it did shows in this user's history only
 house = load("latte-doghouse", "system/libexec")
+# a pleamar-wm session: its Wayland socket is the one of RUN_USER/pleamar-N it listens on
+with tempfile.TemporaryDirectory() as d:
+    run_user, house.RUN_USER = house.RUN_USER, d + "/%d"
+    os.makedirs(d + "/7")
+    with socket.socket(socket.AF_UNIX) as s:
+        s.bind(d + "/7/pleamar-3")
+        s.listen()
+        assert house.pleamar_display(7, str(os.getpid())) == {"WAYLAND_DISPLAY": "pleamar-3", "PLEAMAR_SOCKETS": d + "/7/pleamar-pleamar-3"}
+    assert house.pleamar_display(7, str(os.getpid())) == {}
+    house.RUN_USER = run_user
 ok = {"LoadState": "loaded", "FragmentPath": house.VENDOR, "DropInPaths": "/usr/lib/systemd/user/service.d/10-timeout-abort.conf"}
 assert house.tampered(ok) == ""
 assert house.tampered(dict(ok, LoadState="masked")) == "masked"
