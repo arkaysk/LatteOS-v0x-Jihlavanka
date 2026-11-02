@@ -2,6 +2,27 @@
 # latte-screens [--start] MAIN [OTHER…]: the Goo scene on the main monitor and a window bar on every other.
 # Hyprland calls it whenever monitors come or go (system/hypr/hyprland.lua). It compares with what runs, so it
 # may be called at any time and as often as one likes. --start: the session begins; its target is started too.
+# --watch: in pleamar-wm's session, which says its monitors in $PLEAMAR_SOCKETS/desktop ("monitor NAME W H X Y …"):
+# starts the session as --start does and calls this again whenever that list changes. The main one as on Hyprland:
+# a real one before the virtual one (LATTE_VIRT), of those the one at 0,0, else the leftmost.
+# ponytail: Settings › Displays › Duplicate (mirroring) is Hyprland's alone yet; ROADMAP 1D.07
+if [ "${1:-}" = --watch ]; then
+    list="${PLEAMAR_SOCKETS:?}/desktop"
+    names() {
+        awk -v virt="${LATTE_VIRT:-}" '$1 == "monitor" { v = ($2 == virt); o = ($5 == 0 && $6 == 0)
+            print v, (o ? 0 : 1), $5, $2 }' "$list" 2>/dev/null | sort -n -k1,1 -k2,2 -k3,3 | awk '{ printf "%s ", $4 }'
+    }
+    flag=--start was=
+    while :; do
+        now="$(names)"
+        if [ -n "$now" ] && [ "$now" != "$was" ]; then
+            # shellcheck disable=SC2086
+            "$0" $flag $now
+            flag= was="$now"
+        fi
+        inotifywait -qq -t 60 -e close_write,moved_to,create "${list%/*}" 2>/dev/null || sleep 2
+    done
+fi
 start=0
 [ "${1:-}" = --start ] && { start=1; shift; }
 main="${1:-}"
