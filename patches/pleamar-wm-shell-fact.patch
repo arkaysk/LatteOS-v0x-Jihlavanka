@@ -1,0 +1,26 @@
+diff --git a/src/term.rs b/src/term.rs
+index 28a0281..bec7de3 100644
+--- a/src/term.rs
++++ b/src/term.rs
+@@ -1328,2 +1328,5 @@ pub fn watch_agents(windows: String, to_render: std::sync::mpsc::Sender<pleamar:
+         let mut said: std::collections::HashMap<usize, (u8, String)> = std::collections::HashMap::new();
++        // The windows that have a shell of their own through the layer, as the scene was told (`shell.N`): only
++        // they can be read, typed in and handed tasks along a wire.
++        let mut shelled: std::collections::HashSet<usize> = std::collections::HashSet::new();
+         let mut named: std::collections::HashMap<usize, String> = std::collections::HashMap::new();
+@@ -1358,4 +1361,8 @@ pub fn watch_agents(windows: String, to_render: std::sync::mpsc::Sender<pleamar:
+             };
++            let mut shells_now: std::collections::HashSet<usize> = std::collections::HashSet::new();
+             for (slot, pid) in &slots {
+                 let mine: Vec<&(i32, std::collections::BTreeMap<String, String>)> = all.iter().filter(|(_, i)| i.get("terminal").and_then(|t| t.parse::<u32>().ok()) == Some(*pid)).collect();
++                if !mine.is_empty() {
++                    shells_now.insert(*slot);
++                }
+                 // Its names: one per named shell. A terminal with tabs (Bitácora) may hold
+@@ -1433,2 +1440,6 @@ pub fn watch_agents(windows: String, to_render: std::sync::mpsc::Sender<pleamar:
+             }
++            for slot in shelled.symmetric_difference(&shells_now) {
++                let _ = to_render.send(ToRender::ExternalFact(intern(&format!("shell.{slot}")), if shells_now.contains(slot) { "1" } else { "0" }.into()));
++            }
++            shelled = shells_now;
+             let slots_known: std::collections::HashSet<usize> = said.keys().chain(now.keys()).copied().collect();

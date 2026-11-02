@@ -312,10 +312,6 @@ scene Session {
     event answered
     fact wiring = -1                     // the window whose port is being dragged
     fact wtgt = -1                       // the one under the mouse meanwhile
-    // LatteOS: wiring started from a button (`wire_from`, bin/hyprctl): the line follows the mouse, a click on
-    // another window wires the two, a click elsewhere or Esc leaves it
-    fact wclick = 0
-    event wire_from
     fact wnew.a = -1
     fact wnew.b = -1
     prop wnew.go = 0 ~0ms                // a frame later, it is put in place
@@ -466,9 +462,6 @@ scene Session {
     // nothing over the desktop's icons); the canvas comes from the strip or Super+Shift+W.
     repeat k in 0..4 {
         on change free.$k while free.$k < 0.5 { cv.$k = 0 }
-        // LatteOS: each monitor's canvas in a file of its own, for the wire button in the header of LatteOS's apps (apps/common/AppWindow.qml)
-        // ponytail: ~/.local/state, not XDG_STATE_HOME (a `${…}` is a hole of the scene's text)
-        on change cv.$k { launch "d=$HOME/.local/state/latteos; mkdir -p $d; echo {cv.$k} > $d/canvas-{monname.$k}" }
         on change cv.$k while cv.$k > 0.5 {
             cvx.$k = 0
             cvy.$k = 0
@@ -1831,6 +1824,9 @@ scene Session {
         // says so): 0 none, 1 working, 2 ready, 3 waiting for the person; and
         // what and where («claude · ~/Proyectos/pleamar»).
         fact ag.$i = 0
+        // LatteOS: it has a shell of its own through the layer (patches/pleamar-wm-shell-fact.patch): only such a
+        // window can be read, typed in and handed tasks along a wire
+        fact shell.$i = 0
         text agt.$i = ""
         // The name its terminal was opened with (`link open --name`), if any.
         text who.$i = ""
@@ -1986,8 +1982,10 @@ scene Session {
         prop hb.$i = 0 ~glide
         // (On a canvas, room for its port at the start of its title bar.)
         prop cvpt.$i = 0 ~glide
-        // LatteOS: only on a canvas, what wires are for; floating, the title bar as on Hyprland
-        follow cvpt.$i = if(fr and ours and C, 1, 0)
+        // LatteOS: only on a canvas, what wires are for, and only on a window with a shell, the only kind a wire
+        // can do anything with (`pleamar-wm link`); floating, the title bar as on Hyprland
+        let wired.ok = fr and ours and C and shell.$i > 0.5
+        follow cvpt.$i = if(wired.ok, 1, 0)
         // Carried at a glance over the cards, it shrinks towards them.
         prop ovcarry.$i = 0 ~pop
         follow ovcarry.$i = if(ovdrag == i and on.col, 1, 0)
@@ -2131,12 +2129,12 @@ scene Session {
             // above it, which takes nothing from the program.
             // With Super held, all of it.
             let whole = keys.super > 0.5 or dragging == i
-            zone box title.$i { from: x.$i + if(whole or F > 0.5 or ours, 0, 12) + if(not whole and fr and ours and C, 32, 0), y.$i - if(whole or F > 0.5 or ours, 0, gap - 1); size: if(whole, w, if(F > 0.5 or ours, w - 86, w - 24)) - if(not whole and fr and ours and C, 32, 0), if(whole, h, if(F > 0.5 or ours, tb, gap - 2)); cursor: pointer; active: here and not overview and not win.$i.dialog and (ours or F < 0.5 or whole or win.$i.held > 0.5) and wiring < 0; label: "{win.$i.title}"; role: button; handle: i }
+            zone box title.$i { from: x.$i + if(whole or F > 0.5 or ours, 0, 12) + if(not whole and wired.ok, 32, 0), y.$i - if(whole or F > 0.5 or ours, 0, gap - 1); size: if(whole, w, if(F > 0.5 or ours, w - 86, w - 24)) - if(not whole and wired.ok, 32, 0), if(whole, h, if(F > 0.5 or ours, tb, gap - 2)); cursor: pointer; active: here and not overview and not win.$i.dialog and (ours or F < 0.5 or whole or win.$i.held > 0.5) and wiring < 0; label: "{win.$i.title}"; role: button; handle: i }
             // Free, its port: a drop at the start of its title bar, dragged to
             // another window to wire the two. The title bar's own zone starts
             // after it: under it, a press and the first move of a real mouse
             // in the same frame carried the window instead.
-            zone ellipse port.$i { at: x + 18, y + tb / 2; radius: 12; cursor: grab; active: here and not overview and fr and ours and C and not win.$i.dialog; label: "Wire {win.$i.title} to another window"; role: button }
+            zone ellipse port.$i { at: x + 18, y + tb / 2; radius: 12; cursor: grab; active: here and not overview and wired.ok and not win.$i.dialog; label: "Wire {win.$i.title} to another window"; role: button }
             zone ellipse lead_zone.$i { at: x + w - 45, y + tb / 2; radius: 10; cursor: pointer; active: here and not overview and not win.$i.dialog and ours; label: "Enlarge {win.$i.title}" }
             zone ellipse mini_zone.$i { at: x + w - 70, y + tb / 2; radius: 10; cursor: pointer; active: here and not overview and not win.$i.dialog and ours; label: "Minimize {win.$i.title}" }
             zone ellipse close_zone.$i { at: x + w - 20, y + tb / 2; radius: 10; cursor: pointer; active: here and not overview and not win.$i.dialog and ours; label: "Close {win.$i.title}" }
@@ -4815,30 +4813,5 @@ scene Session {
                 text agent.name { at: ax + 24, ay - 11.5; anchor: left center; size: 10; weight: 600; color: if(k == 0, mint, #c9b3f2); measure: tag.$k }
             }
         }
-    }
-    // LatteOS: wiring with two clicks (see `wclick`), over everything while it lasts
-    on wire_from(v) {
-        wiring = v
-        wclick = 1
-    }
-    group {
-        z: 200000
-        zone box wirecatch { from: 0, 0; size: W, H; cursor: crosshair; active: wclick > 0.5; label: "Choose the window to wire to"; role: region }
-    }
-    on press wirecatch while wtgt >= 0 and wtgt != wiring {
-        wnew.a = wiring
-        wnew.b = wtgt
-        wnew.go: 0 ~0ms
-        wnew.go: 1 after 16ms
-    }
-    on press wirecatch {
-        wiring = -1
-        wtgt = -1
-        wclick = 0
-    }
-    on key Escape while wclick > 0.5 {
-        wiring = -1
-        wtgt = -1
-        wclick = 0
     }
 }

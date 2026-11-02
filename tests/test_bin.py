@@ -847,7 +847,6 @@ def test_hyprctl_on_pleamarwm():
     shim.clients = lambda: [win("0x2", 900, front=True, app="zen"), win("0x1", 10)]
     assert shim.emits("latte.win.nth(2)") == ["emit window_minimize 2"]
     shim.clients = lambda: [win("0x2", 900, app="zen"), win("0x1", 10, front=True), win("0x4", 500), win("0x3", 0, away=True, app="gimp")]
-    assert shim.emits("latte.win.wire_active()") == ["emit wire_from 1"]
     assert len(shim.emits("latte.desk.show()")) == 3 and os.path.exists(shim.SHOWN)
     shim.clients = lambda: [win("0x2", 900, away=True), win("0x1", 10, away=True), win("0x4", 500, away=True)]
     assert shim.emits("latte.desk.show()") == ["emit latte_focus 2", "emit latte_focus 1", "emit latte_focus 4"]

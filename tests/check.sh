@@ -92,6 +92,8 @@ for f in filter(None, code):
     if f.startswith(("goo/lang/", "apps/widgets/")) or f in ("tests/check.sh", "goo/lib/fold.luau") or f.endswith((".png", ".ttf", ".txt", ".qsb")):   # these two name the letters; the rest are not text
         continue
     for n, line in enumerate(open(f, encoding="utf-8", errors="replace"), 1):
+        if f.endswith(".patch") and not line.startswith("+"):                # a patch's context is its author's code, not ours
+            continue
         if slovak.search(line) and not (f.endswith(".desktop") and re.match(r"\w+\[\w+\]=", line)):     # Name[sk]= is where a launcher's translation goes
             bad.append("%s:%d: Slovak in code: %s" % (f, n, line.strip()[:70]))
 

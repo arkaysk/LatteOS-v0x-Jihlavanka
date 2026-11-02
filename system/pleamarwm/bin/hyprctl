@@ -91,10 +91,6 @@ def emits(expr):
     m = re.match(r"latte\.win\.(minimize|maximize)_active\(\)", expr)
     if m:
         return ["emit " + m.group(1)]
-    # its wire button, on a canvas: wiring from it, two clicks (wm/session.plm, `wclick`)
-    if expr == "latte.win.wire_active()":
-        front = next((c for c in clients() if c["focusHistoryID"] == 0), None)
-        return ["emit wire_from " + front["address"][2:]] if front else []
     # the tape glides to the window with the keyboard: scrolling it is going to the next one
     # ponytail: a whole window at a time, not a quarter of the screen as on Hyprland
     m = re.match(r"latte\.win\.(?:cycle|scroll)\((-?\d+)\)", expr)

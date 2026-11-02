@@ -18,6 +18,7 @@ On [pleamar-wm](https://github.com/k4ditano/pleamar-wm) 0.6.9 (commit `42c8fee`,
 | --- | --- | --- |
 | `pleamar-wm-scanout-layouts.patch` | A monitor that refuses a layout gets the next one the card can paint in, linear at the end. | On GFX6 to GFX8 (RX 640) with Linux 7.3 and Mesa 26.3 the card paints in layouts its display cannot show: the session stopped at "the monitor does not take the buffer". |
 | `pleamar-wm-tap-keys.patch` | A binding that only acts on release (`bind super_l release …`) is called off when another key or a mouse button is pressed while it is held. | The Windows key alone opens LatteOS's launcher: without this, Super+Q or a window carried with Super opened it too when Super was let go. |
+| `pleamar-wm-shell-fact.patch` | The scene is told which windows have a shell of their own through the terminal layer (`shell.N`, 1 or 0). | A wire can only do something with such a window (`pleamar-wm link` reads, types in and hands tasks to shells); LatteOS shows the port on a canvas only there. |
 
 To build:
 
