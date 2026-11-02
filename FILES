@@ -665,7 +665,6 @@
 /usr/share/latteos/whyd/latteos.toml                    <- system/whyd/latteos.toml
 /usr/share/latteos/labwc/autostart                      <- system/labwc/autostart
 /usr/share/wayland-sessions/latteos.desktop             <- system/sessions/latteos.desktop
-/usr/share/wayland-sessions/latteos-pleamarwm.desktop   <- system/sessions/latteos-pleamarwm.desktop
 /usr/share/wayland-sessions/latteos-safe.desktop        <- system/sessions/latteos-safe.desktop
 /usr/share/wayland-sessions/latteos-game.desktop        <- system/sessions/latteos-game.desktop
 /usr/share/latteos/wallpapers/latteos-1.jpg             <- assets/wallpapers/latteos-1.jpg
@@ -720,7 +719,6 @@
 /usr/lib/systemd/user/wireplumber.service.d/50-latteos-oom.conf                                         <- system/oom/user-service.conf
 /usr/lib/systemd/user/xdg-desktop-portal.service.d/50-latteos-oom.conf                                  <- system/oom/user-service.conf
 /usr/lib/systemd/user/xdg-desktop-portal-gtk.service.d/50-latteos-oom.conf                              <- system/oom/user-service.conf
-/usr/lib/systemd/user/xdg-desktop-portal-hyprland.service.d/50-latteos-oom.conf                         <- system/oom/user-service.conf
 /usr/lib/systemd/user/xdg-document-portal.service.d/50-latteos-oom.conf                                 <- system/oom/user-service.conf
 /usr/lib/systemd/user/xdg-permission-store.service.d/50-latteos-oom.conf                                <- system/oom/user-service.conf
 /usr/lib/systemd/user/at-spi-dbus-bus.service.d/50-latteos-oom.conf                                     <- system/oom/user-service.conf
@@ -763,7 +761,7 @@ $XDG_RUNTIME_DIR/latteos/                               # per user: the reason f
 package: greetd labwc tuigreet plymouth plymouth-plugin-two-step plymouth-theme-spinner egl-utils python3
 package: rsms-inter-fonts jetbrains-mono-fonts policycoreutils-python-utils util-linux-core
 package: foot less NetworkManager-tui                                # the SAFE session's terminal and rescue menu
-package: hyprland wireplumber libnotify swaybg hypridle              # the GOO session; wpctl for the volume keys; notify-send when a timer rings; the wallpaper; the lock when idle
+package: wireplumber libnotify swaybg hypridle                       # the GOO session (on pleamar-wm, /usr/bin/pleamar-wm below); wpctl for the volume keys; notify-send when a timer rings; the wallpaper; the lock when idle
 package: wlopm                                                       # the screens going dark when idle on pleamar-wm (hypridle → hyprctl dispatch dpms → wlopm)
 optional: mpvpaper                                                   # a film as the desktop's background
 package: python3-pillow                                              # the background: the layers on each screen put together into one picture (bin/latte-wall)
@@ -771,7 +769,7 @@ optional /usr/bin/ffmpeg: ffmpeg (Fedora's ffmpeg-free or RPM Fusion's ffmpeg): 
 optional: cliphist wl-clipboard zbar tesseract tesseract-langpack-slk tesseract-langpack-eng   # the clipboard in the shore's panel and LensShore (bin/latte-clip): what was copied, QR codes, the text in pictures
 optional: unicode-emoji cldr-emoji-annotation python3-gobject python3-cairo google-noto-color-emoji-fonts google-noto-sans-symbols-2-fonts   # LensShore's emoji and symbols: the list, their names, their pictures (bin/latte-emoji)
 optional: qalculate                                                  # the launcher: amounts in units and money, written loosely (qalc; rates from the ECB)
-optional: hyprsunset gammastep                                       # Settings › Displays › Night light (gammastep on pleamar-wm)
+optional: gammastep                                                  # Settings › Displays › Night light (bin/latte-nightlight)
 package: quickshell flatpak                                          # LatteOS's own apps are drawn by Quickshell; the App Manager's shop is Flathub
 package: qt6-qtdeclarative xdg-desktop-portal-gtk                   # choosing a file in LatteOS's apps is the desktop's own window for it
 package: nftables iproute                                            # latte-netd: cutting an app off the internet, closing its connections
@@ -779,8 +777,8 @@ package: pulseaudio-utils                                            # Settings 
 package: fd-find xdg-utils xdg-user-dirs                             # the launcher: finding files, opening them, the home folders
 optional: brightnessctl power-profiles-daemon                        # the brightness keys; the power profiles in PowerGoo's card
 optional: steam gamescope gamescope-session gamescope-session-steam  # the Game session; without them it is not offered
-/usr/bin/pleamar: pleamar v0.4.31 (github.com/k4ditano/pleamar) built with patches/pleamar-*.patch; see patches/README.md
-optional /usr/lib64/latteos/hyprbars.so: hyprbars (github.com/hyprwm/hyprland-plugins) built for the installed Hyprland with patches/hyprbars-latte.patch
+/usr/bin/pleamar: pleamar v0.7.10 (github.com/k4ditano/pleamar) built with patches/pleamar-*.patch; see patches/README.md
+/usr/bin/pleamar-wm: pleamar-wm v0.6.9 (github.com/k4ditano/pleamar-wm) built beside it with patches/pleamar-wm-*.patch: the window manager of the GOO session
 package: wine winetricks cabextract unshield innoextract 7zip icoutils bubblewrap    # Barista: Windows programs, each in a folder and a fence of its own
 optional: wine-dxvk wine-dxvk-d3d9 wine-dxvk-d3d8 mingw32-wine-gecko mingw64-wine-gecko wine-mono    # Direct3D 8 to 11 over Vulkan; web views and .NET inside Wine
 optional: umu-launcher protontricks lutris gamemode mangohud dosbox-staging xorriso     # Proton outside Steam (GE-Proton in /opt/latteos/proton), other runners and tools
@@ -794,7 +792,6 @@ optional: archivemount ffmpegthumbnailer poppler-utils exiv2 ImageMagick bsdtar 
 optional: yaru-icon-theme                                             # the icons files, folders and apps are shown with; others installed are offered in the Settings
 optional /usr/bin/skwd-wall-v2: skwd-wall (github.com/liixini/skwd-wall; Fedora: dnf copr enable piixini/skwd-wall-v2, then skwd-wall-v2): the wallpaper picker, transitions, scenes, and the colours of the theme "from the wallpaper"
 optional /usr/bin/whyd: whyd (github.com/vmaltarello/whyd, the rpm of its releases): SAFE then says why the last session ended, from the journal
-optional /usr/lib64/latteos/hyprglass.so: hyprglass (github.com/hyprnux/hyprglass) built for the installed Hyprland: the glass windows that go with drops of glass
 
 # What `./install --go` runs once the files are in place, a command a line. USER stands for every user of the
 # desktop (the line runs once for each), VERSION for every kernel installed.
@@ -814,11 +811,9 @@ systemctl enable latte-boot.service greetd.service latte-netd.service
 systemctl enable --now latte-doghouse.timer                         # the root's watch over GuardDog
 systemctl disable NetworkManager-wait-online.service                # it held the login screen back for a minute
 systemctl set-default graphical.target
-dnf versionlock add hyprland hyprland-devel hyprland-uwsm             # the plugins are built for this exact Hyprland; an update would break them
 
 # What `./install --remove` runs before the files go. Which login screen comes back is the system's own business.
 [undo]
-dnf versionlock delete hyprland hyprland-devel hyprland-uwsm
 systemctl disable --now latte-netd.service
 systemctl disable --now latte-doghouse.timer
 systemctl disable latte-boot.service greetd.service

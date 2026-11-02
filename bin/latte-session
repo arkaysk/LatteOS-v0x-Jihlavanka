@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# latte-session [safe|game|pleamarwm]: a LatteOS session after login. greetd starts it through the entries in
+# latte-session [safe|game]: a LatteOS session after login. greetd starts it through the entries in
 # /usr/share/wayland-sessions.
 #
-#   (no argument)   GOO: Hyprland with the Goo engine. Only in the NORMAL mode latte-boot decided at boot.
-#   pleamarwm       GOO on pleamar-wm instead of Hyprland (ROADMAP 1D), with its own folder of settings
+#   (no argument)   GOO: pleamar-wm with the Goo engine. Only in the NORMAL mode latte-boot decided at boot.
+#                   pleamar-wm, with its own folder of settings (ROADMAP 1D; Hyprland is gone, 1D.12)
 #   safe            SAFE: labwc with software rendering and the SAFE bar (goo/safe.plm)
 #   game            Steam Big Picture in gamescope; it switches with GOO inside the same login (latte-game)
 #
@@ -44,7 +44,7 @@ export XDG_SESSION_TYPE=wayland XDG_SESSION_DESKTOP=latteos
 export LIBSEAT_BACKEND="${LIBSEAT_BACKEND:-logind}"
 export QT_QPA_PLATFORM=wayland GDK_BACKEND=wayland,x11 MOZ_ENABLE_WAYLAND=1
 # pleamar-wm: Qt draws its own white title bar over a LatteOS app, which brings its header (apps/common/AppWindow.qml)
-[ "${1:-}" = pleamarwm ] && export QT_WAYLAND_DISABLE_WINDOWDECORATION=1
+export QT_WAYLAND_DISABLE_WINDOWDECORATION=1
 
 run="$XDG_RUNTIME_DIR/latteos"
 next="$run/next-session"                   # latte-game writes where to go when the running session ends
@@ -73,8 +73,8 @@ mode_toml() { sed -n "s/^$1 = \"\(.*\)\"$/\1/p" "${LATTE_RUN_DIR:-/run/latteos}/
 latte-boot session-start
 [ $? -eq 3 ] && run_safe crashes
 
-desk=Hyprland desktop_names=Hyprland
-[ "${1:-}" = pleamarwm ] && desk=pleamar-wm desktop_names=pleamar
+# ponytail: Hyprland's branches below stay until system/hypr goes (ROADMAP 1D.12); nothing starts them now
+desk=pleamar-wm desktop_names=pleamar
 hconf="$share/hypr/hyprland.lua"
 [ "$desk" = pleamar-wm ] && hconf="$share/pleamarwm/autostart"
 [ -f "$hconf" ] || run_safe not-installed "$hconf"

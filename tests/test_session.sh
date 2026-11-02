@@ -45,9 +45,11 @@ BOOT_EXIT=3 session normal
 session normal
 [ "$(why)" = not-installed ] || fail "no desktop installed: '$(why)'"
 
-echo "-- config" > "$tmp/share/hypr.lua"; mkdir -p "$tmp/share/hypr"; mv "$tmp/share/hypr.lua" "$tmp/share/hypr/hyprland.lua"
-LATTE_HYPRLAND=false session normal
+# the desktop is pleamar-wm: it falls over right after the start
+mkdir -p "$tmp/share/pleamarwm"; echo "# autostart" > "$tmp/share/pleamarwm/autostart"; echo "# rules" > "$tmp/share/pleamarwm/session.conf"
+stand_in pleamar-wm 'exit 1'
+session normal
 [ "$(why)" = desktop-crash ] || fail "a crash right after the start: '$(why)'"
-grep -q 'Hyprland exit 1' "$tmp/sys/login/last-crash.log" || fail "the crash was not reported for the login screen"
+grep -q 'pleamar-wm exit 1' "$tmp/sys/login/last-crash.log" || fail "the crash was not reported for the login screen"
 grep -q session-start "$tmp/out/boot" || fail "the start of NORMAL was not counted"
 echo "session: ok"
