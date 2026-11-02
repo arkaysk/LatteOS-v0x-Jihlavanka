@@ -1,6 +1,6 @@
 #!/bin/sh
 # latte-nightlight [on | off | KELVIN]: Night light (Settings › Displays), warmer colours that keep the blue light
-# down, as on Windows. hyprsunset does it. The choice is one word in ~/.config/latteos/nightlight: the temperature
+# down, as on Windows. hyprsunset does it on Hyprland, gammastep on pleamar-wm (its colour ramps, wlr-gamma-control). The choice is one word in ~/.config/latteos/nightlight: the temperature
 # while it is on, "off" otherwise. Without an argument what was chosen is put back (the session's start does that).
 f="${XDG_CONFIG_HOME:-$HOME/.config}/latteos/nightlight"
 WARM=4500                                   # what "on" gives the first time
@@ -16,6 +16,10 @@ case "${1:-}" in
 esac
 
 pkill -x hyprsunset
+pkill -x gammastep
 t="$(cat "$f" 2>/dev/null)"
-case "$t" in [0-9]*) setsid hyprsunset -t "$t" >/dev/null 2>&1 & ;; esac
+case "$t" in
+    [0-9]*) if [ "${XDG_CURRENT_DESKTOP:-}" = pleamar ]; then setsid gammastep -m wayland -P -O "$t" >/dev/null 2>&1 &
+            else setsid hyprsunset -t "$t" >/dev/null 2>&1 & fi ;;
+esac
 exit 0
