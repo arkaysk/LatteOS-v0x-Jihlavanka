@@ -384,7 +384,12 @@ ShellRoot {
         order(["hyprctl", "eval", shapes.map(s => "latte.screen(" + [JSON.stringify(s.name), JSON.stringify(s.mode), JSON.stringify(s.position), s.scale, s.turn, keep].join(", ") + ")").join(" ")])
         later.restart()
     }
+    // pleamar-wm moves a monitor while it runs, but takes its size, scale and turn only as a session starts: there
+    // nothing is tried and taken back, it is kept at once and said when it comes (system/pleamarwm/bin/hyprctl)
+    readonly property bool onPleamar: Quickshell.env("XDG_CURRENT_DESKTOP") === "pleamar"
+    property bool screensLater: false
     function tryScreens(shapes) {
+        if (onPleamar) { putScreens(shapes, true); screensLater = true; return }
         if (!screenBefore) screenBefore = screenList.map(asIs)
         putScreens(shapes, false); screenWait = 15
     }
@@ -1287,6 +1292,8 @@ ShellRoot {
             Pill { visible: shell.page === "me"; icon: "folder"; text: I18n.tr("Another file…"); onPressed: { chooser.what = "face"; chooser.open() } }
 
             // the screens
+            Rectangle { visible: shell.page === "displays" && shell.screensLater; width: view.room; height: 52; radius: 16; color: Theme.raised; border.width: 2; border.color: Theme.gold
+                Label { x: 18; width: parent.width - 36; text: I18n.tr("Kept. The size, scale and turn of a screen change at the next login."); font.weight: 600; anchors.verticalCenter: parent.verticalCenter } }
             Rectangle { visible: shell.page === "displays" && shell.screenWait > 0; width: view.room; height: 64; radius: 16; color: Theme.raised; border.width: 2; border.color: Theme.gold
                 Label { x: 18; text: I18n.tr("Is the picture fine? It goes back in {n} s.", { n: shell.screenWait }); font.weight: 600; anchors.verticalCenter: parent.verticalCenter }
                 Row { anchors.right: parent.right; anchors.rightMargin: 14; anchors.verticalCenter: parent.verticalCenter; spacing: 8

@@ -3,6 +3,7 @@
 so the shell and the apps need no change. Windows are told apart by their slot in the scene, as the address 0xN.
 Outside that session it is the real one: systemd keeps this PATH after the session has ended."""
 import concurrent.futures
+import glob
 import json
 import os
 import re
@@ -40,7 +41,7 @@ def monitors():
         ws = int(shown["win.shown.%d" % i] or 1)
         out.append({"id": i, "name": name, "description": name, "make": "", "model": "", "width": int(w), "height": int(h),
                     "refreshRate": int(mhz) / 1000, "x": int(x), "y": int(y), "scale": float(scale), "focused": focused == "1",
-                    "transform": 0, "dpmsStatus": True, "mirrorOf": "none", "activeWorkspace": {"id": ws, "name": str(ws)}})
+                    "transform": kept_turn(name), "dpmsStatus": True, "mirrorOf": "none", "availableModes": modes(name, int(mhz) / 1000), "vrr": False, "activeWorkspace": {"id": ws, "name": str(ws)}})
     return out
 
 
@@ -251,6 +252,49 @@ def cup(expr):
     return True
 
 
+MONITORS = os.path.join(os.environ.get("XDG_CONFIG_HOME") or os.path.expanduser("~/.config"), "latteos", "monitors")
+SCREEN = re.compile(r'latte\.screen\("([^"]+)", "(\d+x\d+@[\d.]+)", "(-?\d+)x(-?\d+)", ([\d.]+), ([0-7]), (true|false)\)')
+
+
+def screens(expr):
+    """latte.screen(…) from Settings › Displays, one or more: the place at once (`pleamar-wm output … at`), and
+    kept, as on Hyprland, in ~/.config/latteos/monitors, which bin/latte-session makes `monitor` lines of: a size,
+    a scale and a turn pleamar-wm only takes as a session starts. False: not that."""
+    found = SCREEN.findall(expr)
+    if not found:
+        return False
+    for name, mode, x, y, scale, turn, keep in found:
+        subprocess.run(["pleamar-wm", "output", name, "at", "%s,%s" % (x, y)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        if keep == "true":
+            try:
+                with open(MONITORS) as f:
+                    lines = [line for line in f.read().splitlines() if line.split()[:1] != [name]]
+            except OSError:
+                lines = []
+            os.makedirs(os.path.dirname(MONITORS), exist_ok=True)
+            with open(MONITORS, "w") as f:
+                f.write("\n".join(lines + ["%s %s %sx%s %s %s" % (name, mode, x, y, scale, turn)]) + "\n")
+    return True
+
+
+def kept_turn(name):
+    """A monitor's turn as Settings kept it (pleamar-wm does not say it): 0 to 7, as Hyprland's transform."""
+    try:
+        with open(MONITORS) as f:
+            return next((int(p[4]) for p in (line.split() for line in f) if len(p) == 5 and p[0] == name and p[4].isdigit()), 0)
+    except OSError:
+        return 0
+
+
+def modes(name, hz):
+    """What a monitor can show, as the card's driver lists it (sizes only), each at the rate it has now."""
+    # ponytail: the rate each size allows is not listed there; upgrade: the EDID's modes (edid-decode) or pleamar-wm saying them
+    for path in glob.glob("/sys/class/drm/card*-%s/modes" % name):
+        with open(path) as f:
+            return ["%s@%.2fHz" % (size, hz) for size in dict.fromkeys(f.read().split())]
+    return []
+
+
 def evaluate(expr):
     m = re.search(r"hl\.exec_cmd\((\"|')(.*)\1\)", expr)
     if m:
@@ -266,7 +310,7 @@ def evaluate(expr):
     elif expr.startswith("latte.wallpaper("):
         path = re.search(r'"(.*)"', expr)
         subprocess.Popen(["latte-wall", "set", "*", "picture", path.group(1)] if path else ["latte-wall", "restore"], start_new_session=True)
-    elif cup(expr):
+    elif cup(expr) or screens(expr):
         pass
     elif not mode(expr):
         steps = emits(expr)

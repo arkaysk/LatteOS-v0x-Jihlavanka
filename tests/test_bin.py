@@ -834,6 +834,16 @@ def test_hyprctl_on_pleamarwm():
     assert shim.cup('latte.cup("mocha")') and said[:3] == ["fact cup.br 0.243", "fact cup.bg 0.188", "fact cup.bb 0.153"] and len(said) == 9
     assert shim.cup_colours("nothing")[0] == "261d17" and not shim.cup("latte.mode.tell()")
     shim.subprocess.Popen = popen
+    # Settings › Displays: the place at once, the rest kept for the next session
+    ran, run = [], shim.subprocess.run
+    shim.subprocess.run = lambda args, **kw: ran.append(args)
+    shim.MONITORS = os.path.join(tempfile.mkdtemp(), "monitors")
+    open(shim.MONITORS, "w").write("DP-3 2560x1080@144.000 0x0 1 0\nHDMI-A-1 1920x1080@60.000 2560x0 1 0\n")
+    assert shim.screens('latte.screen("DP-3", "2560x1080@100.000", "0x0", 1.25, 1, true) latte.screen("HDMI-A-1", "1920x1080@60.000", "-1920x0", 1, 0, false)')
+    assert ran == [["pleamar-wm", "output", "DP-3", "at", "0,0"], ["pleamar-wm", "output", "HDMI-A-1", "at", "-1920,0"]]
+    assert open(shim.MONITORS).read() == "HDMI-A-1 1920x1080@60.000 2560x0 1 0\nDP-3 2560x1080@100.000 0x0 1.25 1\n"
+    assert shim.kept_turn("DP-3") == 1 and shim.kept_turn("DP-9") == 0 and not shim.screens("latte.cup()")
+    shim.subprocess.run = run
     # the keys on several windows: three shown (1 in front), one put away
     win = lambda a, x, front=False, away=False, app="foot": {"address": a, "at": [x, 0], "visible": not away, "focusHistoryID": 0 if front else int(a[2:]) + 1,
                                                  "workspace": {"name": "special:minimized" if away else "1"}, "class": app}

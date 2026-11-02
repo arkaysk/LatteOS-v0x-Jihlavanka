@@ -169,6 +169,8 @@ while true; do
         # the tier's glass first, so a blur line of the user's own wins (system/hypr/latte/tiers.lua on Hyprland; 1 is the least)
         case "${LATTE_TIER:-software}" in full) passes=3 ;; standard) passes=2 ;; *) passes=1 ;; esac
         tiered="${XDG_RUNTIME_DIR:-/tmp}/latte-pleamar-wm.conf"
+        # the screens as Settings › Displays kept them (~/.config/latteos/monitors: NAME WxH@HZ XxY SCALE TURN), as pleamar-wm's lines
+        screens() { awk 'NF == 5 && $2 ~ /^[0-9]+x[0-9]+@[0-9.]+$/ && $3 ~ /^-?[0-9]+x-?[0-9]+$/ { split($3, p, "x"); print "monitor", $1, $2, "at", p[1] "," p[2], "scale", $4, "transform", $5 }' "$config/monitors" 2>/dev/null; }
         # the keyboard the login screen chose (XKB_DEFAULT_*, as Hyprland's config reads it), not ~/.config/hypr's;
         # with more than one layout, Win+Space goes to the next, as on Windows
         kb=
@@ -177,7 +179,7 @@ while true; do
             case "$XKB_DEFAULT_LAYOUT" in *,*) case ",$opts," in *,grp:win_space_toggle,*) ;; *) opts="${opts:+$opts,}grp:win_space_toggle" ;; esac ;; esac
             kb="keyboard layout $XKB_DEFAULT_LAYOUT${XKB_DEFAULT_VARIANT:+ variant $XKB_DEFAULT_VARIANT}${opts:+ options $opts}"
         fi
-        { echo "blur passes $passes"; [ -n "$kb" ] && echo "$kb"; cat "$wmconf"; [ ! -e "$own/session.conf" ] || cat "$own/session.conf"; } > "$tiered" && wmconf="$tiered"
+        { echo "blur passes $passes"; [ -n "$kb" ] && echo "$kb"; cat "$wmconf"; screens; [ ! -e "$own/session.conf" ] || cat "$own/session.conf"; } > "$tiered" && wmconf="$tiered"
         PATH="$share/pleamarwm/bin:$PATH" PLEAMAR_CONFIG="$own" PLEAMAR_WM_CONFIG="$wmconf" PLEAMAR_WM_AUTOSTART="$hconf" pleamar-wm session &
     else
         "${LATTE_HYPRLAND:-Hyprland}" -c "$hconf" &

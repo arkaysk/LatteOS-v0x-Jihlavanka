@@ -508,6 +508,7 @@ library Slovak {
         "{free} free of {size}" = "voľných {free} z {size}"
         "How large things are" = "Aké veľké sú veci"
         "Is the picture fine? It goes back in {n} s." = "Je obraz v poriadku? O {n} s sa vráti späť."
+        "Kept. The size, scale and turn of a screen change at the next login." = "Uložené. Rozlíšenie, mierka a otočenie obrazovky sa zmenia pri ďalšom prihlásení."
         "Keep it" = "Ponechať"
         "Make it the main screen" = "Spraviť hlavnou obrazovkou"
         "On its left side" = "Na ľavom boku"
