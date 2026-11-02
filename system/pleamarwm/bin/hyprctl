@@ -151,10 +151,11 @@ SHOWN = os.path.join(os.environ.get("XDG_RUNTIME_DIR", "/tmp"), "latte-desk-show
 
 
 def glass_body():
-    """How see-through a window is, 0 to 100, as Settings › Windows keeps it (~/.config/latteos/glass-body); 14 until chosen."""
+    """How see-through a window is, 0 to 40, as Settings › Windows keeps it (~/.config/latteos/glass-body); 14 until chosen.
+    No more: a window pleamar draws at 50 % or less gets no clicks (wm/session.plm)."""
     try:
         with open(os.path.join(os.environ.get("XDG_CONFIG_HOME") or os.path.expanduser("~/.config"), "latteos", "glass-body")) as f:
-            return max(0, min(100, int(float(f.read().strip()))))
+            return max(0, min(40, int(float(f.read().strip()))))
     except (OSError, ValueError):
         return 14
 

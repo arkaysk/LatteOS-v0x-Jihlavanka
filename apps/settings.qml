@@ -871,13 +871,14 @@ ShellRoot {
             // makes them so, every app's: system/pleamarwm/bin/hyprctl `latte.glass_body`), and the side panel of LatteOS's own
             // apps (Theme.sideGlass). Kept a moment after the slider stops, not for every pixel it moves.
             Part { visible: shell.page === "windows"; width: view.room; title: I18n.tr("Glass"); note: I18n.tr("How see-through the windows are, and the side panel of LatteOS's own apps. All the way left is solid.")
-                Repeater { model: [{ id: "body", name: QT_TR_NOOP("The windows"), was: 14 }, { id: "side", name: QT_TR_NOOP("The side panel"), was: 38 }]
+                // the windows go to 40 % at most: a window more see-through than half gets no clicks in pleamar-wm
+                Repeater { model: [{ id: "body", name: QT_TR_NOOP("The windows"), was: 14, most: 40 }, { id: "side", name: QT_TR_NOOP("The side panel"), was: 38, most: 100 }]
                     Item { id: seeRow; required property var modelData; width: view.room; height: 44
                         readonly property var word: modelData.id === "body" ? glassBody : glassSide
-                        property int amount: word.value !== "" ? parseInt(word.value) : modelData.was
+                        property int amount: Math.min(modelData.most, word.value !== "" ? parseInt(word.value) : modelData.was)
                         Label { text: I18n.tr(seeRow.modelData.name); width: 170; anchors.verticalCenter: parent.verticalCenter }
-                        Slide { x: 180; width: parent.width - 260; anchors.verticalCenter: parent.verticalCenter; value: seeRow.amount / 100
-                                onMoved: to => { seeRow.amount = Math.round(to * 100); if (seeRow.modelData.id === "side") Theme.sideGlass = seeRow.amount; keepSee.restart() } }
+                        Slide { x: 180; width: parent.width - 260; anchors.verticalCenter: parent.verticalCenter; value: seeRow.amount / seeRow.modelData.most
+                                onMoved: to => { seeRow.amount = Math.round(to * seeRow.modelData.most); if (seeRow.modelData.id === "side") Theme.sideGlass = seeRow.amount; keepSee.restart() } }
                         Label { anchors.right: parent.right; anchors.verticalCenter: parent.verticalCenter; text: seeRow.amount + " %"; color: Theme.gold; font.weight: 800 }
                         Timer { id: keepSee; interval: 250
                                 onTriggered: { seeRow.word.choose(String(seeRow.amount)); if (seeRow.modelData.id === "body") Quickshell.execDetached(["sh", "-c", "sleep 0.2; hyprctl eval 'latte.glass_body()'"]) } } } } }
