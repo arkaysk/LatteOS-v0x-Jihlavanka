@@ -206,11 +206,15 @@ def many_windows(expr):
     return ["emit latte_focus " + s for s in back if s in away]
 
 
-ORDER = ("tape", "tiles", "floating", "glance")
-# a mode as the scene's facts of a monitor: its layout (5 scrolling, 0 a leader) and whether it is free.
+ORDER = ("tape", "tiles", "floating", "glance")    # what the window bar's head goes through, and its number for Goo
+# a mode as the scene's facts of a monitor: its layout (pleamar-wm's: 0 a leader on the left, 1 columns, 2 rows, 3 a grid,
+# 4 a leader on the right, 5 scrolling, 6 its «marea», called tide here, 7 fractal), whether it is free, whether a canvas,
+# and which of ORDER's the window bar's head shows for it (the tiles' kinds are tiles, the canvas is floating).
 # "glance" is LatteGlance (docs/goo/ROZHODNUTIA.md), nothing of pleamar-wm's that is called a glance.
 # ponytail: LatteGlance's windows are free, as on Hyprland, until it is a layout of its own (ROADMAP 8A)
-LAYOUT = {"tape": (5, 0), "tiles": (0, 0), "floating": (None, 1), "glance": (None, 1)}
+LAYOUT = {"tape": (5, 0, 0, 0), "tiles": (0, 0, 0, 1), "leader-right": (4, 0, 0, 1), "columns": (1, 0, 0, 1), "rows": (2, 0, 0, 1),
+          "grid": (3, 0, 0, 1), "fractal": (7, 0, 0, 1), "tide": (6, 0, 0, 1), "floating": (None, 1, 0, 2), "glance": (None, 1, 0, 3),
+          "canvas": (None, 1, 1, 2)}
 STATE = os.path.join(os.environ.get("XDG_STATE_HOME") or os.path.expanduser("~/.local/state"), "latteos", "window-mode")
 
 
@@ -221,8 +225,8 @@ def load_modes():
             lines = f.read().split("\n")
     except OSError:
         lines = []
-    every = lines[0].strip() if lines and lines[0].strip() in ORDER else "tape"
-    own = dict(p for p in (line.split() for line in lines[1:]) if len(p) == 2 and p[1] in ORDER)
+    every = lines[0].strip() if lines and lines[0].strip() in LAYOUT else "tape"
+    own = dict(p for p in (line.split() for line in lines[1:]) if len(p) == 2 and p[1] in LAYOUT)
     return every, own
 
 
@@ -235,21 +239,22 @@ def save_modes(every, own):
 def apply_modes(every, own):
     """Each monitor laid out by its mode, and the Goo scene told the main one's (the one at 0,0, which carries the drops)."""
     for m in monitors():
-        lay, free = LAYOUT[own.get(m["name"], every)]
+        lay, free, cv, head = LAYOUT[own.get(m["name"], every)]
         if lay is not None:
             say("fact lay.%d %d" % (m["id"], lay))
         say("fact free.%d %d" % (m["id"], free))
+        say("fact cv.%d %d" % (m["id"], cv))
         if m["x"] == 0 and m["y"] == 0:
-            subprocess.Popen(["latte-say", "emit window_mode %d" % ORDER.index(own.get(m["name"], every))], start_new_session=True)
+            subprocess.Popen(["latte-say", "emit window_mode %d" % head], start_new_session=True)
 
 
 def mode(expr):
     """latte.mode.set / next / tell; False: not one of them."""
-    m = re.match(r'latte\.mode\.(set|next|tell)\((?:"(\w+)"(?:,\s*"([^"]+)")?)?\)', expr)
+    m = re.match(r'latte\.mode\.(set|next|tell)\((?:"([\w-]+)"(?:,\s*"([^"]+)")?)?\)', expr)
     if not m:
         return False
     every, own = load_modes()
-    if m.group(1) == "set" and m.group(2) in ORDER:
+    if m.group(1) == "set" and m.group(2) in LAYOUT:
         if m.group(3):
             own[m.group(3)] = m.group(2)
         else:
@@ -257,7 +262,7 @@ def mode(expr):
     elif m.group(1) == "next":                  # of every screen while they share one, else of the screen one works on
         here = next((s["name"] for s in monitors() if s["focused"]), None) if own else None
         now = own.get(here, every)
-        after = ORDER[(ORDER.index(now) + 1) % len(ORDER)]
+        after = ORDER[(LAYOUT[now][3] + 1) % len(ORDER)]   # a kind of tiles goes on as tiles, the canvas as floating
         if here:
             own[here] = after
         else:

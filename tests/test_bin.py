@@ -840,12 +840,17 @@ def test_hyprctl_on_pleamarwm():
     shim.say = said.append
     shim.monitors = lambda: [{"id": 0, "name": "DP-3", "x": 0, "y": 0, "focused": True}, {"id": 1, "name": "DP-1", "x": 2560, "y": 0, "focused": False}]
     popen, shim.subprocess.Popen = shim.subprocess.Popen, lambda args, **kw: told.append(args[-1])
-    assert shim.mode('latte.mode.set("tiles")') and said == ["fact lay.0 0", "fact free.0 0", "fact lay.1 0", "fact free.1 0"] and told == ["emit window_mode 1"]
+    assert shim.mode('latte.mode.set("tiles")') and said == ["fact lay.0 0", "fact free.0 0", "fact cv.0 0", "fact lay.1 0", "fact free.1 0", "fact cv.1 0"] and told == ["emit window_mode 1"]
     said.clear()
-    assert shim.mode('latte.mode.set("floating", "DP-1")') and said == ["fact lay.0 0", "fact free.0 0", "fact free.1 1"]
+    assert shim.mode('latte.mode.set("floating", "DP-1")') and said == ["fact lay.0 0", "fact free.0 0", "fact cv.0 0", "fact free.1 1", "fact cv.1 0"]
     assert open(shim.STATE).read() == "tiles\nDP-1 floating\n"
     said.clear()
     assert shim.mode("latte.mode.next()") and said[:1] == ["fact free.0 1"] and shim.load_modes() == ("tiles", {"DP-1": "floating", "DP-3": "floating"})
+    said.clear(); told.clear()
+    assert shim.mode('latte.mode.set("leader-right")') and said[:3] == ["fact lay.0 4", "fact free.0 0", "fact cv.0 0"] and told == ["emit window_mode 1"]
+    said.clear(); told.clear()
+    assert shim.mode('latte.mode.set("canvas")') and said[:2] == ["fact free.0 1", "fact cv.0 1"] and told == ["emit window_mode 2"]
+    assert shim.mode("latte.mode.next()") and shim.load_modes()[0] == "glance"     # the canvas goes on as floating does
     assert not shim.mode('latte.win.close("0x1")')
     said.clear()
     assert shim.cup('latte.cup("mocha")') and said[:3] == ["fact cup.br 0.243", "fact cup.bg 0.188", "fact cup.bb 0.153"] and len(said) == 9

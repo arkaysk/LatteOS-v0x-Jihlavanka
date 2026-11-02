@@ -236,8 +236,18 @@ ShellRoot {
                                         { id: "floating", name: QT_TR_NOOP("Floating windows"), hint: QT_TR_NOOP("as on Windows"), icon: "app-window" },
                                         { id: "tiles", name: QT_TR_NOOP("Tiles"), hint: QT_TR_NOOP("windows share the screen"), icon: "layout-grid" },
                                         { id: "glance", name: QT_TR_NOOP("Glance"), hint: QT_TR_NOOP("one in the middle, the others at the sides"), icon: "layout-distribute-vertical" },
-                                        { id: "canvas", name: QT_TR_NOOP("Canvas"), hint: QT_TR_NOOP("free windows on a desk you zoom out of"), icon: "zoom-out-area", soon: true },
+                                        { id: "canvas", name: QT_TR_NOOP("Canvas"), hint: QT_TR_NOOP("free windows on a desk you zoom out of"), icon: "zoom-out-area" },
                                         { id: "trizone", name: QT_TR_NOOP("Three zones"), hint: QT_TR_NOOP("for wide screens: a middle and two columns"), icon: "columns-3", soon: true }]
+    // the kinds of tiles pleamar-wm lays out (system/pleamarwm/bin/hyprctl LAYOUT): small buttons under the modes; its
+    // «marea» is called Tide here, not to be taken for Marea
+    readonly property var tileKinds: [{ id: "tiles", name: QT_TR_NOOP("Leader on the left"), icon: "layout-sidebar" },
+                                      { id: "leader-right", name: QT_TR_NOOP("Leader on the right"), icon: "layout-sidebar-right" },
+                                      { id: "columns", name: QT_TR_NOOP("Columns"), icon: "layout-columns" },
+                                      { id: "rows", name: QT_TR_NOOP("Rows"), icon: "layout-board" },
+                                      { id: "grid", name: QT_TR_NOOP("Grid"), icon: "layout-grid" },
+                                      { id: "fractal", name: QT_TR_NOOP("Fractal"), icon: "layout-dashboard" },
+                                      { id: "tide", name: QT_TR_NOOP("Tide"), icon: "wave-sine" }]
+    function modeOf(id) { return windowModes.find(o => o.id === id) || tileKinds.find(o => o.id === id) }
     // what system/hypr/latte/windows.lua keeps: the mode of every screen, then a screen's own on each line ("DP-1 tiles")
     FileView { id: modes; path: (Quickshell.env("XDG_STATE_HOME") || (Quickshell.env("HOME") + "/.local/state")) + "/latteos/window-mode"
                printErrors: false; watchChanges: true; onFileChanged: reload()
@@ -799,7 +809,7 @@ ShellRoot {
                 Pegboard { id: modeBoard; width: view.room; height: 220; screens: shell.screenList.map(m => ({ x: m.x, y: m.y, w: shell.wide(m), h: shell.tall(m), name: m.name }))
                     Repeater { model: modeBoard.screens
                         Rectangle { id: ms; required property var modelData; required property int index
-                            readonly property var mode: shell.windowModes.find(o => o.id === shell.modeOn(modelData.name)) || shell.windowModes[0]
+                            readonly property var mode: shell.modeOf(shell.modeOn(modelData.name)) || shell.windowModes[0]
                             x: modeBoard.px(modelData.x) + 3; y: modeBoard.py(modelData.y) + 3; width: modelData.w * modeBoard.k - 6; height: modelData.h * modeBoard.k - 6; radius: 14
                             color: msHit.containsMouse ? Theme.raised : Theme.card; border.width: 2; border.color: shell.modeHover === modelData.name ? Theme.gold : Theme.line
                             Column { anchors.centerIn: parent; spacing: 3
@@ -811,7 +821,7 @@ ShellRoot {
                                                   popup.open(p.x, p.y, shell.windowModes.filter(o => !o.soon).map(o => ({ text: I18n.tr(o.name), icon: o.icon, checked: o.id === ms.mode.id, run: () => shell.setMode(o.id, ms.modelData.name) }))) } } } } }
                 Row { width: view.room; spacing: 12
                     Pill { strong: shell.modePick !== ""; enabled: shell.modePick !== ""; opacity: enabled ? 1 : 0.5; icon: "copy"
-                           text: shell.modePick !== "" ? I18n.tr("Use {mode} on every desktop", { mode: I18n.tr(shell.windowModes.find(o => o.id === shell.modePick).name) }) : I18n.tr("Use on every desktop")
+                           text: shell.modePick !== "" ? I18n.tr("Use {mode} on every desktop", { mode: I18n.tr(shell.modeOf(shell.modePick).name) }) : I18n.tr("Use on every desktop")
                            onPressed: shell.setMode(shell.modePick, "") }
                     Label { visible: shell.modePick === ""; text: I18n.tr("Press a mode first."); color: Theme.faint; height: 36; verticalAlignment: Text.AlignVCenter } }
                 // the modes: a press picks one for the button, a drag puts it on a screen
@@ -836,6 +846,12 @@ ShellRoot {
                                 if (m) shell.setMode(mc.modelData.id, m.name)
                                 else if (!carrying) shell.modePick = shell.modePick === mc.modelData.id ? "" : mc.modelData.id
                                 shell.modeHover = ""; carrying = false } } } } }
+                // the kinds of tiles, smaller: a press picks one for the button above, as a mode's card does
+                Flow { width: view.room; spacing: 8
+                    Label { text: I18n.tr("Tiles:"); color: Theme.dim; height: 36; verticalAlignment: Text.AlignVCenter }
+                    Repeater { model: shell.tileKinds
+                        Pill { required property var modelData; icon: modelData.icon; text: I18n.tr(modelData.name); strong: shell.modePick === modelData.id
+                               onPressed: shell.modePick = shell.modePick === modelData.id ? "" : modelData.id } } }
             // the transitions: skwd-wall's, for the wallpaper and its slideshows (ROADMAP 7A.12); what windows and
             // desktops do comes with a plugin of LatteOS's own for Hyprland
             Part { visible: shell.page === "transitions"; width: view.room; title: I18n.tr("Wallpaper and slideshows")

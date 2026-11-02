@@ -199,7 +199,7 @@ Ponechať / Späť / Zahodiť; tvorby v `~/.local/share/pleamar/marea/creations/
 počas práce pruh „An agent is using this monitor · Stop“. Nahrádza vlastný návrh Tvorcu Goo (6K) a widgety z Chaldea (6B.41);
 prvá tvorba na skúšku: štvorec využitia Claude (6B.38) — presne ten je vo videu. Mení sa: poskytovateľ AI cez LensAI (lokálny
 model alebo Claude; Marea dnes ChatGPT), texty cez preklady, farby z témy, tvorby viditeľné v galérii widgetov a v Kaviarni.
-**1D.20** [ ] **Režimy okien z rozložení pleamar-wm** (video k4ditano „Tiling a fractal layout“): 8A.06 skladať z hotových — Rozloženia pleamar-wm doplniť do Nastavení › Okná do zoznamu režimov (2. 11.).
+**1D.20** [~] **Režimy okien z rozložení pleamar-wm** (video k4ditano „Tiling a fractal layout“): 8A.06 skladať z hotových — Rozloženia pleamar-wm doplniť do Nastavení › Okná do zoznamu režimov (2. 11.). 2. 11.: Nastavenia › Okná: Canvas zapnutý; pod kartami rad „Dlaždice“ — Hlavné vľavo, Hlavné vpravo, Stĺpce, Riadky, Mriežka, Fraktál, Príliv (pleamar-wm volá „marea“) — náhrada `hyprctl` ich prekladá na `lay`, `free`, `cv`; hlava BarGoo prepína štyri hlavné (varianty dlaždíc ako Dlaždice, plátno ako Plávajúce). Kde sa prepína: Nastavenia (všetko), hlava BarGoo (hlavné štyri), pás rozložení pleamar-wm pri ťahaní okna (pôvodný; ten zatiaľ nezapisuje voľbu do `window-mode`, takže hlava BarGoo o ňom nevie). Ostáva Tri zóny.
 rozložení — Páska = scrolling, Dlaždice = leader/grid/fractal (voľba v karte), Plávajúce = free; vlastné ostáva iba Glance,
 Canvas a Tri zóny. **Páska bez kódu niri**: scrolling pleamar-wm je BSD-3, takže prevzatie z niri (8A.07, GPL-3.0 a s ním
 zmena licencie LatteOS) netreba — overiť, či správanie stačí, až potom 8A.07 zrušiť.
