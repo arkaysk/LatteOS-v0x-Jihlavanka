@@ -332,6 +332,8 @@ scene Session {
             box { from: 0, cvh.oy + k * cvh.st - 0.5; size: W, 1; color: ink; opacity: 3.5%; show: cvh.oy + k * cvh.st < H }
         }
     }
+    // (As pleamar-wm has it: no right or middle button here, and no `yields`, so on a canvas it takes the
+    // presses of what lies under the scene too —LatteOS's desktop icons—. ROADMAP 1D.18.)
     zone box canvas_bg { from: 0, 0; size: W, H; active: cvh and not overview; label: "The canvas"; role: region }
     // Dragged with Super held: the camera goes the other way, as if the plane
     // were held. Without Super a drag on the desktop leaves it where it is,
@@ -435,11 +437,12 @@ scene Session {
         fact cvy.$k = 0
         fact cvz.$k = 1
     }
-    // Free is a canvas, and a canvas is free: one follows the other. A canvas
-    // starts where the monitor's windows are, as they are.
+    // A canvas is free, and leaving free leaves the canvas. A canvas starts
+    // where the monitor's windows are, as they are.
+    // LatteOS: free alone is no canvas (floating windows, as on Windows: no grid,
+    // nothing over the desktop's icons); the canvas comes from the strip or Super+Shift+W.
     repeat k in 0..4 {
         on change free.$k while free.$k < 0.5 { cv.$k = 0 }
-        on change free.$k while free.$k > 0.5 { cv.$k = 1 }
         on change cv.$k while cv.$k > 0.5 {
             cvx.$k = 0
             cvy.$k = 0
@@ -3840,10 +3843,14 @@ scene Session {
             box { from: x[max(wg.t, 0)] - 3, y[max(wg.t, 0)] - 3; size: w[max(wg.t, 0)] + 6, h[max(wg.t, 0)] + 6; corner: 14; stroke: 2.5; color: mint; opacity: 85%; show: wtgt >= 0 }
         }
     }
-    // (Super+Shift+W, from before free was a canvas: the same as Super+W.)
+    // Super+Shift+W: the canvas, and back to tiled.
+    // LatteOS: a canvas of its own again, since free alone is no canvas here.
     event toggle_canvas
     repeat k in 0..4 {
-        on toggle_canvas while mon == k { free.$k = 1 - free.$k }
+        on toggle_canvas while mon == k {
+            free.$k = 1 - cv.$k
+            cv.$k = 1 - cv.$k
+        }
     }
     // Super+0 on a canvas: the camera takes in all of its windows (on the
     // pool it shows), as close as they fit, never closer than as they are.
@@ -4517,6 +4524,9 @@ scene Session {
             text "Touch a key or the mouse here to bring it back · it will ask you to unlock" { at: cx, cy + 194; anchor: center; size: 13.5; color: #9aa3a8 }
         }
     }
+
+    // pleamar-wm says 1 when `who.N` may hold several names (several named shells in one terminal's tabs).
+    fact who.tabs = 0
 
     // ── this desktop used from elsewhere (`pleamar-wm remote`) ──
     // While someone is in from another computer, whoever sits here sees it:

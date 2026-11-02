@@ -1,0 +1,79 @@
+diff --git a/src/route.rs b/src/route.rs
+index 91f1c67..9808bd9 100644
+--- a/src/route.rs
++++ b/src/route.rs
+@@ -30,8 +30,12 @@ pub struct Route {
+     key_client: Option<u64>,
+     key_client_at: u64,
+     /// Keys held down that went to a binding: their release is the binding's
+-    /// too, and does what its `release` says, if it has one.
++    /// too, and does what its `release` says, if it has one. A binding that
++    /// only acts on release (`bind Super_L release …`: a tap) is called off
++    /// when another key or a button is pressed meanwhile (Super+q, Super and a drag).
+     bound: Vec<(u32, Option<crate::keys::Action>)>,
++    /// Which of them only act on release, until something else is pressed.
++    taps: Vec<u32>,
+     /// The binding held down that repeats, by its key; and whether its
+     /// repetition still has to be started (the loop that holds the timers does it).
+     repeating: Option<(u32, crate::keys::Action)>,
+@@ -50,7 +54,7 @@ pub struct Route {
+ 
+ impl Route {
+     pub fn new(to_render: Sender<ToRender>) -> Route {
+-        Route { hit: Hit::Scene(None), grab: None, scene_held: Vec::new(), client_held: Vec::new(), key_client: None, key_client_at: 0, bound: Vec::new(), repeating: None, repeat_new: false, layer_keys: Vec::new(), super_held: false, to_render }
++        Route { hit: Hit::Scene(None), grab: None, scene_held: Vec::new(), client_held: Vec::new(), key_client: None, key_client_at: 0, bound: Vec::new(), taps: Vec::new(), repeating: None, repeat_new: false, layer_keys: Vec::new(), super_held: false, to_render }
+     }
+ 
+     /// The pointer at that point of a monitor, in its pixels. Says whether it
+@@ -115,9 +119,23 @@ impl Route {
+         was_program != on_program
+     }
+ 
++    /// Another key (or a button, `u32::MAX`) pressed: the taps held down act no more when let go.
++    fn spoil_taps(&mut self, evdev: u32) {
++        for c in std::mem::take(&mut self.taps) {
++            if c == evdev {
++                self.taps.push(c);
++            } else if let Some(b) = self.bound.iter_mut().find(|(k, _)| *k == c) {
++                b.1 = None;
++            }
++        }
++    }
++
+     /// A button (evdev code). Says whether a program's surface had it: then,
+     /// let go, the pointer is to be placed again (the grab is over).
+     pub fn button(&mut self, screens: &[Screen], code: u32, down: bool) -> bool {
++        if down {
++            self.spoil_taps(u32::MAX);
++        }
+         // Let go while a program drags something: straight to the compositor,
+         // which drops it wherever the pointer is (a window, a surface, the scene).
+         if layers::dragging() && !down {
+@@ -261,6 +279,9 @@ impl Route {
+             self.super_held = down;
+             let _ = self.to_render.send(ToRender::Fact("keys.super", if down { 1.0 } else { 0.0 }));
+         }
++        if down {
++            self.spoil_taps(evdev);
++        }
+         // A binding (keys.conf) takes the key before anyone —while locked,
+         // only the ones marked `locked`—.
+         if down {
+@@ -279,6 +300,9 @@ impl Route {
+                     }
+                 }
+                 self.bound.push((evdev, later.map(|b| b.action.clone())));
++                if bind.is_none() {
++                    self.taps.push(evdev);
++                }
+                 return;
+             }
+             // A program's global shortcut (the portal): down now, up when let go.
+@@ -292,6 +316,7 @@ impl Route {
+             if self.repeating.as_ref().is_some_and(|(c, _)| *c == evdev) {
+                 self.repeating = None;
+             }
++            self.taps.retain(|c| *c != evdev);
+             if let Some(k) = self.bound.iter().position(|(c, _)| *c == evdev) {
+                 if let (_, Some(action)) = self.bound.remove(k) {
+                     self.perform(&action);

@@ -5,7 +5,9 @@
 # (side.plm), as `pleamar --say` would to one. What is about a single monitor is said to all with the
 # monitor in it, and the scenes it is not about ignore it.
 #   latte-say "emit window_mode 1"
-for s in "${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"/pleamar/goo.sock "${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"/pleamar/side*.sock; do
+# pleamar-wm's session keeps the sockets in a folder of its own (PLEAMAR_SOCKETS), as `pleamar --say` knows
+d="${PLEAMAR_SOCKETS:-${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/pleamar}"
+for s in "$d"/goo.sock "$d"/side*.sock; do
     [ -S "$s" ] && { n="${s##*/}"; pleamar --say "${n%.sock}" "$@" >/dev/null 2>&1 & }
 done
 wait

@@ -1,7 +1,7 @@
 # Patches on pleamar
 
 LatteOS runs on [pleamar](https://github.com/k4ditano/pleamar) built from its source with these changes. They
-apply to pleamar **0.6.1** (commit `8bc81cc`), each on its own (`git apply`), `pleamar-speed-edges-wheel.patch` after the other four, and each is meant to be offered to pleamar's author:
+apply to pleamar **0.7.10** (commit `94ac94c`), each on its own (`git apply`), `pleamar-speed-edges-wheel.patch` after the other four, and each is meant to be offered to pleamar's author:
 none is specific to LatteOS. The scenes work without them, only slower or less sharp.
 
 | Patch | What it does | Why |
@@ -12,17 +12,18 @@ none is specific to LatteOS. The scenes work without them, only slower or less s
 | `pleamar-right-selection.patch` | A press of the right button puts what is selected into `text selected_text`, if the scene declares it. | A menu on the right button could not copy a selection: the logic did not know it. |
 | `pleamar-apps-reload.patch` | Watching `apps` again reads the list again, for every listener. | The list was read once: an app installed while the desktop ran did not show up until the next login. |
 
-On [pleamar-wm](https://github.com/k4ditano/pleamar-wm) 0.6.2 (commit `314b979`, beside `../pleamar`):
+On [pleamar-wm](https://github.com/k4ditano/pleamar-wm) 0.6.9 (commit `42c8fee`, beside `../pleamar`):
 
 | Patch | What it does | Why |
 | --- | --- | --- |
 | `pleamar-wm-scanout-layouts.patch` | A monitor that refuses a layout gets the next one the card can paint in, linear at the end. | On GFX6 to GFX8 (RX 640) with Linux 7.3 and Mesa 26.3 the card paints in layouts its display cannot show: the session stopped at "the monitor does not take the buffer". |
+| `pleamar-wm-tap-keys.patch` | A binding that only acts on release (`bind super_l release …`) is called off when another key or a mouse button is pressed while it is held. | The Windows key alone opens LatteOS's launcher: without this, Super+Q or a window carried with Super opened it too when Super was let go. |
 
 To build:
 
 ```sh
 git clone https://github.com/k4ditano/pleamar.git
-cd pleamar && git checkout 8bc81cc && for p in /path/to/patches/pleamar-*.patch; do git apply "$p"; done
+cd pleamar && git checkout 94ac94c && for p in /path/to/patches/pleamar-*.patch; do git apply "$p"; done
 cargo build --release          # target/release/pleamar goes to /usr/bin/pleamar
 ```
 

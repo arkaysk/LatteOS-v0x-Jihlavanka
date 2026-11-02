@@ -87,10 +87,74 @@ def emits(expr):
             return ["emit window_minimize " + slot] if say("get win.%s.focused" % slot) == "true" else [focus]
         return {"activate": [focus], "restore": [focus], "minimize": ["emit window_minimize " + slot], "maximize": ["emit window_maximize " + slot],
                 "close": [focus, "emit close"], "fullscreen": [focus, "emit fullscreen"]}.get(what)
-    m = re.match(r"latte\.win\.cycle\((-?\d+)\)", expr)
+    # the tape glides to the window with the keyboard: scrolling it is going to the next one
+    # ponytail: a whole window at a time, not a quarter of the screen as on Hyprland
+    m = re.match(r"latte\.win\.(?:cycle|scroll)\((-?\d+)\)", expr)
     if m:
         return ["emit focus_next" if int(m.group(1)) > 0 else "emit focus_previous"]
     return None
+
+
+ORDER = ("tape", "tiles", "floating", "glance")
+# a mode as the scene's facts of a monitor: its layout (5 scrolling, 0 a leader) and whether it is free.
+# "glance" is LatteGlance (docs/goo/ROZHODNUTIA.md), nothing of pleamar-wm's that is called a glance.
+# ponytail: LatteGlance's windows are free, as on Hyprland, until it is a layout of its own (ROADMAP 8A)
+LAYOUT = {"tape": (5, 0), "tiles": (0, 0), "floating": (None, 1), "glance": (None, 1)}
+STATE = os.path.join(os.environ.get("XDG_STATE_HOME") or os.path.expanduser("~/.local/state"), "latteos", "window-mode")
+
+
+def load_modes():
+    """The mode of every screen and the ones of a screen's own, in the file Hyprland's session keeps (system/hypr/latte/windows.lua)."""
+    try:
+        with open(STATE) as f:
+            lines = f.read().split("\n")
+    except OSError:
+        lines = []
+    every = lines[0].strip() if lines and lines[0].strip() in ORDER else "tape"
+    own = dict(p for p in (line.split() for line in lines[1:]) if len(p) == 2 and p[1] in ORDER)
+    return every, own
+
+
+def save_modes(every, own):
+    os.makedirs(os.path.dirname(STATE), exist_ok=True)
+    with open(STATE, "w") as f:
+        f.write(every + "\n" + "".join("%s %s\n" % p for p in own.items()))
+
+
+def apply_modes(every, own):
+    """Each monitor laid out by its mode, and the Goo scene told the main one's (the one at 0,0, which carries the drops)."""
+    for m in monitors():
+        lay, free = LAYOUT[own.get(m["name"], every)]
+        if lay is not None:
+            say("fact lay.%d %d" % (m["id"], lay))
+        say("fact free.%d %d" % (m["id"], free))
+        if m["x"] == 0 and m["y"] == 0:
+            subprocess.Popen(["latte-say", "emit window_mode %d" % ORDER.index(own.get(m["name"], every))], start_new_session=True)
+
+
+def mode(expr):
+    """latte.mode.set / next / tell; False: not one of them."""
+    m = re.match(r'latte\.mode\.(set|next|tell)\((?:"(\w+)"(?:,\s*"([^"]+)")?)?\)', expr)
+    if not m:
+        return False
+    every, own = load_modes()
+    if m.group(1) == "set" and m.group(2) in ORDER:
+        if m.group(3):
+            own[m.group(3)] = m.group(2)
+        else:
+            every, own = m.group(2), {}
+    elif m.group(1) == "next":                  # of every screen while they share one, else of the screen one works on
+        here = next((s["name"] for s in monitors() if s["focused"]), None) if own else None
+        now = own.get(here, every)
+        after = ORDER[(ORDER.index(now) + 1) % len(ORDER)]
+        if here:
+            own[here] = after
+        else:
+            every = after
+    if m.group(1) != "tell":
+        save_modes(every, own)
+    apply_modes(every, own)
+    return True
 
 
 def evaluate(expr):
@@ -108,9 +172,9 @@ def evaluate(expr):
     elif expr.startswith("latte.wallpaper("):
         path = re.search(r'"(.*)"', expr)
         subprocess.Popen(["latte-wall", "set", "*", "picture", path.group(1)] if path else ["latte-wall", "restore"], start_new_session=True)
-    else:
+    elif not mode(expr):
         steps = emits(expr)
-        if steps is None:           # ponytail: modes, snapping, desks, glass and the band wait for ROADMAP 1D.06 to 1D.09
+        if steps is None:           # ponytail: snapping, desks, glass and the band wait for ROADMAP 1D.06 to 1D.09
             print("hyprctl (pleamar-wm): nothing for: " + expr, file=sys.stderr)
         for i, step in enumerate(steps or []):
             if i:

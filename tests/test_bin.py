@@ -814,7 +814,22 @@ def test_hyprctl_on_pleamarwm():
     assert shim.emits('latte.win.close("0x3")') == ["emit latte_focus 3", "emit close"]
     assert shim.emits('latte.win.toggle("0x0")') == ["emit window_minimize 0"]
     assert shim.emits("latte.win.cycle(-1)") == ["emit focus_previous"]
+    assert shim.emits("latte.win.scroll(1)") == ["emit focus_next"]
     assert shim.emits("latte.mode.next()") is None
+    # the modes: facts of each monitor, kept where Hyprland's session keeps them
+    said, told = [], []
+    shim.STATE = os.path.join(tempfile.mkdtemp(), "latteos", "window-mode")
+    shim.say = said.append
+    shim.monitors = lambda: [{"id": 0, "name": "DP-3", "x": 0, "y": 0, "focused": True}, {"id": 1, "name": "DP-1", "x": 2560, "y": 0, "focused": False}]
+    popen, shim.subprocess.Popen = shim.subprocess.Popen, lambda args, **kw: told.append(args[-1])
+    assert shim.mode('latte.mode.set("tiles")') and said == ["fact lay.0 0", "fact free.0 0", "fact lay.1 0", "fact free.1 0"] and told == ["emit window_mode 1"]
+    said.clear()
+    assert shim.mode('latte.mode.set("floating", "DP-1")') and said == ["fact lay.0 0", "fact free.0 0", "fact free.1 1"]
+    assert open(shim.STATE).read() == "tiles\nDP-1 floating\n"
+    said.clear()
+    assert shim.mode("latte.mode.next()") and said[:1] == ["fact free.0 1"] and shim.load_modes() == ("tiles", {"DP-1": "floating", "DP-3": "floating"})
+    assert not shim.mode('latte.win.close("0x1")')
+    shim.subprocess.Popen = popen
 
 
 test_hyprctl_on_pleamarwm()

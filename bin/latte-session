@@ -162,6 +162,7 @@ while true; do
         own="$config/pleamar-wm"
         mkdir -p "$own"
         [ -e "$own/wm" ] || ln -s "$share/pleamarwm/wm" "$own/wm"
+        [ -e "$own/keys.conf" ] || [ -L "$own/keys.conf" ] || ln -s "$share/pleamarwm/keys.conf" "$own/keys.conf"
         wmconf="$own/session.conf"; [ -e "$wmconf" ] || wmconf="$share/pleamarwm/session.conf"
         PATH="$share/pleamarwm/bin:$PATH" PLEAMAR_CONFIG="$own" PLEAMAR_WM_CONFIG="$wmconf" PLEAMAR_WM_AUTOSTART="$hconf" pleamar-wm session &
     else

@@ -1,10 +1,10 @@
 diff --git a/src/render.rs b/src/render.rs
-index 1a49b17..cbf255b 100644
+index 23a1964..f122c23 100644
 --- a/src/render.rs
 +++ b/src/render.rs
-@@ -2176,6 +2176,17 @@ pub fn run(
-         }
-         let (mut pressed, mut pressed_with, mut released) = (None, None, None);
+@@ -2358,6 +2358,17 @@ pub fn run(
+         let held_shift = keys_held.iter().any(|(_, n)| n.starts_with("Shift"));
+         let held_ctrl = keys_held.iter().any(|(_, n)| n.starts_with("Control"));
          for (button, down) in &buttons {
 +            // The right button: what is selected, for a scene that declares `text selected_text`
 +            // (its menu copies it), told before the rules of this press are.
@@ -19,4 +19,4 @@ index 1a49b17..cbf255b 100644
 +            }
              match (*button, *down) {
                  (0, true) => {
-                     // On the letters of a text that can be selected, the press
+                     // On a terminal: it takes the keys, and the press selects in it (or is its program's).
