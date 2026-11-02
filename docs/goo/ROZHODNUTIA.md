@@ -419,3 +419,4 @@ Nové rozhodnutie: jeden riadok sem (dátum, čo, prečo) a oprava platného zne
 | DeepTutor je súčasť YOL (Learn); cieľ Arabica 1.0 na hlavnom PC, ide aj s cloudovými modelmi | áno (používateľ, 2. 11.) — ROADMAP 7C.04 |
 | Jedna plocha: virtuálne plochy (Win+Ctrl+D nová, Win+Ctrl+F4 zatvoriť) sa v relácii pleamar-wm nerobia | nie (používateľ, 2. 11.) — ROADMAP 1D.07 |
 | Pôvodné možnosti pleamar, pleamar-wm a Marey ostávajú a ponúknu sa aj v Nastaveniach, oblečené do štýlu LatteOS; shore pleamar-wm sa neskôr prerobí na kvapku Goo ako variant BarGoo a Marea na zapínateľnú kvapku Goo | áno (používateľ, 2. 11.) — ROADMAP 1D.24–1D.26 |
+| pleamar a pleamar-wm sa rozširujú ako nadstavby LatteOS (vlastné záplaty v `patches/`, vrstva nad nimi), nie ako opravy u autora: jeho smer a budúci vývoj nepoznáme a nemusí byť náš. Návrhy pre autora sa iba pripravujú (`patches/issues/`), posielajú sa až na pokyn, skôr nie | áno (používateľ, 2. 11.) — ROADMAP 1D |

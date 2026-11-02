@@ -1892,7 +1892,7 @@ monitor HDR vie); **Rozšírené nastavenia** (údaje o monitore, VRR); **Grafik
   inej mierky vedľa DP-1 (snímka okna cez obe obrazovky, porovnať výšku riadkov).
 - [ ] Krok 2: na skutočných dvoch monitoroch (STRESTEST) a v hrách (mierka sa hry na celej obrazovke netýka).
 - Rovnaký výpočet použije tapeta (7A.13) a obrazovky iných zariadení (19.06), kde sa PPI líši najviac (telefón, tablet).
-**8B.08** [ ] **Farebné profily a ovládanie monitora** (neskôr, používateľ 2. 11., ako vo Windows): (1) farebné profily ICC monitora (`colord`, profil z EDID alebo kalibrácie) a ich použitie v správcovi okien (protokol `wp-color-management`; pleamar-wm ho zatiaľ nemá → overiť, inak návrh autorovi); (2) čo monitor sám dokáže, z EDID (farebný priestor, HDR, rozsah jasu) a cez DDC/CI (`ddcutil`: jas, kontrast, teplota farieb, vstup priamo v monitore), ponúknuť v Nastaveniach › Obrazovky. Súvisí s nočným svetlom (1D.32).
+**8B.08** [ ] **Farebné profily a ovládanie monitora** (neskôr, používateľ 2. 11., ako vo Windows): (1) farebné profily ICC monitora (`colord`, profil z EDID alebo kalibrácie) a ich použitie v správcovi okien (protokol `wp-color-management`; pleamar-wm ho zatiaľ nemá → overiť, inak návrh autorovi); (2) čo monitor sám dokáže, z EDID (farebný priestor, HDR, rozsah jasu) a cez DDC/CI (`ddcutil`: jas, kontrast, teplota farieb, vstup priamo v monitore), ponúknuť v Nastaveniach › Hardvér › Obrazovky, ktoré pracujú priamo s EDID a ovládajú monitor cez DDC/CI (používateľ 2. 11.). Súvisí s nočným svetlom (1D.32).
 
 ### 8C. [~] Sklo a materiály
 Sklo okien (Hyprglass), materiály šálky.
