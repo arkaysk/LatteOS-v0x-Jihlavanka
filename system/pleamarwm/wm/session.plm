@@ -1873,7 +1873,9 @@ scene Session {
         // piece of it —and all of its title bar— inside, to take it by.
         // (Free, the shore on its edge is kept clear, unless it hides.)
         let shr = (dkpl + 28) * room[sc]
-        let ahf = ah - shr * (dock.side < 0.5)
+        // LatteOS: at the bottom the shore lies over the band of the drops, which `ah` already leaves: only what it
+        // reaches above the band is taken again (both were taken: a maximized window stopped 78 px above the shore)
+        let ahf = ah - max(shr - latte.band + gap, 0) * (dock.side < 0.5)
         let fgw = if(maxed.$i, Ws - 2 * gap - shr * (dock.side > 0.5), if(C, fw.$i * cz, min(fw.$i, Ws - 2 * gap)))
         // (On a canvas the title bar stays as it is: only what the program shows is smaller.)
         let fgh = if(maxed.$i, ahf, if(C, (fh.$i - tb * ours) * cz + tb * ours, min(fh.$i, ahf)))
@@ -2152,16 +2154,17 @@ scene Session {
             // header bar, a browser's tabs— asks to be carried or stretched
             // from them: `handle:` says which of these is pressed for it.)
             // Free: its edges and its corner make it bigger or smaller.
+            // LatteOS: with the arrows of stretching on them, as on Windows, not the hand of carrying
             // (While it is being resized, where they were when taken: a drag
             // goes on while its zone holds the point it was pressed on.)
             let ex = if(sizing == i, g.x, x)
             let ey = if(sizing == i, g.y, y)
             let ew = if(sizing == i, g.w, w)
             let eh = if(sizing == i, g.h, h)
-            zone box left_edge.$i { from: ex - 5, ey + tb; size: 10, eh - tb - 12; cursor: grab; active: here and fr and not maxed.$i and not overview; label: "Resize {win.$i.title}"; role: region; handle: i, left }
-            zone box right_edge.$i { from: ex + ew - 5, ey + tb; size: 10, eh - tb - 12; cursor: grab; active: here and fr and not maxed.$i and not overview; label: "Resize {win.$i.title}"; role: region; handle: i, right }
-            zone box bottom_edge.$i { from: ex + 12, ey + eh - 5; size: ew - 24, 10; cursor: grab; active: here and fr and not maxed.$i and not overview; label: "Resize {win.$i.title}"; role: region; handle: i, bottom }
-            zone box corner.$i { from: ex + ew - 14, ey + eh - 14; size: 20, 20; cursor: grab; active: here and fr and not maxed.$i and not overview; label: "Resize {win.$i.title}"; role: region; handle: i, bottom_right }
+            zone box left_edge.$i { from: ex - 5, ey + tb; size: 10, eh - tb - 12; cursor: ew_resize; active: here and fr and not maxed.$i and not overview; label: "Resize {win.$i.title}"; role: region; handle: i, left }
+            zone box right_edge.$i { from: ex + ew - 5, ey + tb; size: 10, eh - tb - 12; cursor: ew_resize; active: here and fr and not maxed.$i and not overview; label: "Resize {win.$i.title}"; role: region; handle: i, right }
+            zone box bottom_edge.$i { from: ex + 12, ey + eh - 5; size: ew - 24, 10; cursor: ns_resize; active: here and fr and not maxed.$i and not overview; label: "Resize {win.$i.title}"; role: region; handle: i, bottom }
+            zone box corner.$i { from: ex + ew - 14, ey + eh - 14; size: 20, 20; cursor: nwse_resize; active: here and fr and not maxed.$i and not overview; label: "Resize {win.$i.title}"; role: region; handle: i, bottom_right }
         }
         group {
             // Over the others as it was last touched (free, they overlap).
