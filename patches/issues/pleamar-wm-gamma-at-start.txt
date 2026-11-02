@@ -1,0 +1,53 @@
+TITLE
+Night light finds no colour ramps at the start of a session: wlr-gamma-control answers `failed` until monitors change
+
+BODY
+**Version:** pleamar-wm 0.6.9 (`main` at 42c8fee), on pleamar 0.7.10, a real session on DRM (`pleamar-wm session`).
+Card: AMD Radeon RX 640 (Polaris 12), Linux 7.3.1, Mesa 26.3-rc3. The card has the ramps: `drm_info` shows
+`GAMMA_LUT_SIZE` 4096 and a legacy gamma size of 256, and the session's log says
+`session · DP-1: colour ramps of 4096 steps (GAMMA_LUT)`.
+
+**What happens:** a night light started in the session (gammastep, wlsunset) gets `zwlr_gamma_control_v1.failed()`
+for every monitor: gammastep says "Zero outputs support gamma adjustment". It stays so for the whole session,
+unless the monitors change: after `pleamar-wm output DP-1 at 0,0` (the place it already has) the same night light
+works.
+
+**Cause:** at the start, `session.rs` (line 422 at 42c8fee) tells the rest of the session about the monitors with
+`layers::register(…)` only. The ramps' sizes are kept by `publish()` (`layers::set_gamma_sizes`, with
+`set_powered`), which runs only from `monitors_changed()` — a monitor plugged, unplugged or moved. Until then
+`layers::gamma_size(k)` is 0, and `GetGammaControl` in `nest.rs` answers `failed`. Headless is not affected: it
+sets the sizes itself (`PLEAMAR_HEADLESS_GAMMA`).
+
+**Reproduce:**
+
+```sh
+# in a pleamar-wm session on a card with colour ramps
+WAYLAND_DEBUG=1 gammastep -m wayland -O 4500 2>&1 | grep gamma_control
+#   -> zwlr_gamma_control_manager_v1#5.get_gamma_control(new id zwlr_gamma_control_v1#3, wl_output#4)
+#   zwlr_gamma_control_v1#3.failed()
+pkill gammastep
+pleamar-wm output DP-1 at 0,0          # any monitor, its own place: monitors_changed() → publish()
+gammastep -m wayland -O 4500           # now it works: the picture turns warm
+```
+
+Checked twice on the machine above: by the code (only `register` at the start, `set_gamma_sizes` only in
+`publish`), and live (failed before `pleamar-wm output … at`, working after it, same session).
+
+**A suggested change:** call `publish(&monitors)` at the start instead of `layers::register(…)` alone, so the
+sizes (and whether each monitor is lit) are known from the first frame. LatteOS runs this on top of 0.6.9:
+
+```diff
+--- a/src/session.rs
++++ b/src/session.rs
+@@ -419,7 +419,9 @@
+ 
+     let first = monitors.first().map_or((0.0, 0.0), |m| (m.x as f64 + m.units().0 as f64 / 2.0, m.y as f64 + m.units().1 as f64 / 2.0));
+     layers::set_card(drm.clone());
+-    layers::register(monitors.iter().map(|m| (MonitorInfo { name: m.name.clone(), size: m.size, x: m.x, y: m.y, mhz: m.mhz, scale: m.scale }, m.screen.clone())).collect());
++    // All of what the rest of the session reads of them, their colour ramps too: with only `register` here a
++    // night light found no ramps on any monitor until monitors changed (plugged, moved).
++    publish(&monitors);
+     let mover = CursorMover::new(drm.clone());
+     let mut state = State { mover, session, drm, monitors, libinput, to_render: to_render.clone(), keymap, pointer: first, cursors: Vec::new(), cursor_theme: Theme::load(), cursor_sizes: Vec::new(), cursor_gbm: None, shown: None, playing: None, queued: None, frame: 0, frame_carry: 0.0, frame_timer: None, on_plane: None, cursor_used: Default::default(), cursor_clock: 0, hidden: false, custom: None, scene_cursor: Cursor::Normal, program_cursor: Cursor::Normal, scroll: 0.0, scroll_sideways: 0.0, swipe: None, pinch: None, last_touch: std::time::Instant::now(), last_input: std::time::Instant::now(), dark_for_idle: false, route: Route::new(to_render), cursor_pictures: Vec::new(), handle: event_loop.handle(), gbm: gbm.clone(), surfaces, cursor_kind, sheets, next_sheet, quit: false, desk_moved: 0.0, desk_moved_at: std::time::Instant::now() };
+     state.make_cursors(&gbm);
+```
