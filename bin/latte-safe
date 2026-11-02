@@ -97,8 +97,9 @@ while true; do
     printf '  q) %s\n\n' "$(t "Close this menu")"
     read -r -n1 -p "  > " choice; echo
     case "$choice" in
-        1) { echo "== $log"; tail -n 80 "$log"; echo; echo "== Hyprland";
-             tail -n 60 "$(ls -t "$XDG_RUNTIME_DIR"/hypr/*/hyprland.log 2>/dev/null | head -1)" 2>/dev/null; } | less -R ;;
+        # the session's log holds pleamar-wm's own lines; Hyprland keeps one of its own, shown when there is one
+        1) { echo "== $log"; tail -n 80 "$log"; hl="$(ls -t "$XDG_RUNTIME_DIR"/hypr/*/hyprland.log 2>/dev/null | head -1)"
+             [ -n "$hl" ] && { echo; echo "== Hyprland"; tail -n 60 "$hl"; }; } | less -R ;;
         w|W) "$0" why | less -R ;;
         c|C) "$0" why copy; read -r -p "Enter…" ;;
         a|A) latte-ai why >/dev/null ;;

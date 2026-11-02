@@ -223,7 +223,7 @@ Súpis 2. 11.: časti LatteOS, ktoré v relácii pleamar-wm ešte volajú Hyprla
 **1D.35** [x] Čas v aplikáciách v pleamar-wm (2. 11.): `latte-focus` v relácii pleamar-wm počúva `pleamar-wm --say wm "watch 0 win.focus"` a aplikáciu zistí z `win.N.app`; overené naživo.
 **1D.36** [x] PID okien a okraje okien v pleamar-wm (2. 11.): náhrada `hyprctl clients` dáva `pid` zo súboru `windows` pleamar-wm (pre `latte-net` aj `window-place`); rámik okna ako na Hyprlande: odrezané od internetu oceľový (`latte.win.cut`), hrajúce zvuk bledý pomaly pulzujúci (`latte.win.sounding`), žiadajúce o pozornosť červený rýchly (`win.N.urgent` pleamar-wm); pulz má vlastné hodiny, ktoré bežia iba vtedy.
 **1D.37** [x] Počasie v pleamar-wm (2. 11.): `latte-weather` v relácii pleamar-wm zapína dážď a sneh vlastnej scény pleamar-wm (hodnoty `rain`, `snow`), s mokrým a zamrznutým sklom okien; tá istá voľba druhýkrát vypína. Overené naživo.
-**1D.38** [ ] Drobnosti: `bin/latte-monitor` berie z autostartu iba položky `OnlyShowIn=Hyprland`; `bin/latte-safe` ukazuje log Hyprlandu, nie pleamar-wm (`~/.local/state/pleamar-wm/session.log`).
+**1D.38** [x] Drobnosti (2. 11.): Monitor ukazuje položky autostartu podľa aktuálnej plochy (`XDG_CURRENT_DESKTOP`, aj `pleamar`); režim SAFE ukáže log Hyprlandu iba vtedy, keď existuje (výstup pleamar-wm je v logu relácie).
 
 ## 2. [~] Instalator OS
 Zdroje: `fresh-install`, `install`, `migrate-v03`, `docs/NAVRH-STARTU.md`

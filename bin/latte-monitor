@@ -226,7 +226,9 @@ def startup():
                 continue
             seen.add(name)
             e = desktop(path)
-            if e is None or (e.get("OnlyShowIn") and "Hyprland" not in e.get("OnlyShowIn", "")):
+            # only what starts on this desktop (Hyprland's, or pleamar-wm's "pleamar"), as systemd's autostart reads it
+            here = set(os.environ.get("XDG_CURRENT_DESKTOP", "Hyprland").split(":"))
+            if e is None or (e.get("OnlyShowIn") and not here & set(e.get("OnlyShowIn", "").split(";"))):
                 continue
             # the program itself is the system's when the user's file only switches a system one off
             base = next((p for p in (f + "/" + name for f in AUTOSTART[1:]) if os.path.exists(p)), path)
