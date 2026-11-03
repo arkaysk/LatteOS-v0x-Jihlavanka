@@ -24,7 +24,10 @@ done
 rm -f "$built"
 # the installer puts every file of FILES where it says, and takes every one off again
 stage="$(mktemp -d)"
-./install --go --root "$stage" > "$stage.log" 2>&1 || { cat "$stage.log"; echo "install --root failed"; exit 1; }
+./install --go --root "$stage" --progress > "$stage.log" 2>&1 || { cat "$stage.log"; echo "install --root failed"; exit 1; }
+# the installer's bar: only forward, and to the end
+grep '^@percent' "$stage.log" | awk '{print $2}' | python3 -c 'import sys; v = [int(x) for x in sys.stdin]; sys.exit(0 if v and v == sorted(v) and v[-1] == 100 else 1)' \
+    || { echo "install --progress: the bar does not go only forward to 100"; exit 1; }
 grep -q "could not be found" "$stage.log" && { cat "$stage.log"; exit 1; }
 [ -x "$stage/usr/bin/latte-session" ] && [ -x "$stage/usr/libexec/latte-hw-memory" ] &&
     [ -x "$stage/usr/libexec/latte-polkit-agent" ] &&

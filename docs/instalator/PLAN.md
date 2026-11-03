@@ -100,7 +100,8 @@ zisťuje sám (`dnf` verzia v repozitári), nič sa nepíše natvrdo.
 
 ## 5. Postup prác
 
-1. `install --progress` (strojový výstup krokov a percent) a zostavenie pleamaru a pleamar-wm inštalátorom (14.20 bod 3).
+1. ~~`install --progress`~~ (hotové 3. 11.: `@step N/M text`, `@percent P`, kontrola v `tests/check.sh`) a zostavenie
+   pleamaru a pleamar-wm inštalátorom (14.20 bod 3).
 2. Skript `get` a spustenie `cage` + Quickshell na čistej Fedore 45 Server vo VM.
 3. Sprievodca: obrazovky z časti 2, najprv Vitaj → Súčasti → Zhrnutie → Inštalácia.
 4. Kontrola počítača (karta, Secure Boot, kernel/Mesa) a podmienené kroky 3.4.

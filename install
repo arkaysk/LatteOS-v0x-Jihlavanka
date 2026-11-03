@@ -9,6 +9,8 @@
                              the result, for packaging, and for tests
   --prune                    with --go: what is in LatteOS's own folders and not in FILES is removed too
                              (left behind by an older LatteOS); without it, it is only listed
+  --progress                 with --go: lines for the installer's window besides the usual ones, "@step N/M text"
+                             when a part begins and "@percent P" as it goes (docs/instalator/PLAN.md)
 
 It changes nothing it was not told about in FILES. A file LatteOS replaces is kept beside it as *.pre-latteos.
 """
@@ -104,7 +106,7 @@ def leftovers(root, targets, sections):
 
 
 def main(a):
-    flags = {f for f in a if f in ("--go", "--remove", "--purge", "--prune")}
+    flags = {f for f in a if f in ("--go", "--remove", "--purge", "--prune", "--progress")}
     rest = [x for x in a if x not in flags]
     root = ""
     if rest[:1] == ["--root"] and len(rest) == 2:
@@ -117,7 +119,18 @@ def main(a):
     if act and not root and os.geteuid() != 0:
         print("install: this changes the system; run it with sudo, or with --root DIR to look at the result")
         return 1
-    say = print
+    say = lambda line: print(line, flush=True)
+    # the parts of an install and how long each takes, roughly: the installer's bar moves by them
+    with_web = "--go" in flags and not root and any(s.startswith("qsweb:") for _, s in pairs(sections.get("files", [])))
+    parts = [("build", "Building LatteOS's programs", 15)] + ([("web", "Building Quickshell for LensAI", 40)] if with_web else []) \
+        + [("files", "Copying the files", 25), ("steps", "Setting the system up", 20)]
+    whole = sum(w for _, _, w in parts)
+    def part(name, share=0.0):
+        """Where the bar is: at `share` (0…1) of that part; with --progress, a line for the installer's window."""
+        if "--progress" not in flags or "--go" not in flags: return
+        k = next(i for i, p in enumerate(parts) if p[0] == name)
+        if share == 0.0: say("@step %d/%d %s" % (k + 1, len(parts), parts[k][1]))
+        say("@percent %d" % int(100 * (sum(w for _, _, w in parts[:k]) + parts[k][2] * share) / whole))
     run = (lambda cmd: say("   $ " + cmd)) if (root or not act) else (lambda cmd: (say("   $ " + cmd), subprocess.run(cmd, shell=True))[0])
     kernels = sorted(os.listdir("/lib/modules")) if os.path.isdir("/lib/modules") else []
 
@@ -159,6 +172,7 @@ def main(a):
 
     if "--go" in flags:
         say("== building")
+        part("build")
         owner = os.environ.get("SUDO_USER") if os.geteuid() == 0 else None      # cargo's files stay the user's
         as_user = ["sudo", "-u", owner] if owner and owner != "root" else []
         crates = sorted({s[6:] for _, s in pairs(sections.get("files", [])) if s.startswith("build:")})
@@ -166,7 +180,8 @@ def main(a):
             return 1
         # LensAI's web tabs: a Quickshell of its own; without it LensAI only goes without them
         # (not into a tree under --root: tests/check.sh builds nothing that takes ten minutes)
-        if not root and any(s.startswith("qsweb:") for _, s in pairs(sections.get("files", []))):
+        if with_web:
+            part("web")
             if subprocess.run(as_user + ["sh", os.path.join(HERE, "patches", "build-quickshell-web.sh")]).returncode:
                 say("   Quickshell with a web engine was not built: LensAI goes without the services' tabs")
         # how LatteOS was developed, for the Settings' About page: from this repository's history, as the user (git
@@ -175,27 +190,29 @@ def main(a):
             subprocess.run(as_user + [sys.executable, os.path.join(HERE, "bin", "latte-activity"), "write", os.path.join(HERE, "build", "activity.json")])
 
     say("== the files" + ("" if act else " (nothing is copied without --go)"))
+    part("files")
     done = missing = 0
-    for section in ("files", "replaces", "seeds"):
-        for source, target in copies(sections, section):
-            path = root + target
-            if not os.path.isfile(source):
-                if "/build/quickshell-web/" in source:      # LensAI only goes without the services' tabs
-                    say("   not built (LensAI's tabs): " + source)
-                    continue
-                say("   not built or not there: " + source); missing += 1
+    every = [(section, c) for section in ("files", "replaces", "seeds") for c in copies(sections, section)]
+    for n, (section, (source, target)) in enumerate(every):
+        if n % 50 == 0 and n: part("files", n / len(every))
+        path = root + target
+        if not os.path.isfile(source):
+            if "/build/quickshell-web/" in source:      # LensAI only goes without the services' tabs
+                say("   not built (LensAI's tabs): " + source)
                 continue
-            if section == "seeds" and os.path.lexists(path):
-                continue                        # from the first time on it is the user's
-            if "--go" in flags:
-                os.makedirs(os.path.dirname(path), exist_ok=True)
-                if section == "replaces" and os.path.lexists(path) and not os.path.lexists(path + ".pre-latteos"):
-                    os.replace(path, path + ".pre-latteos")
-                    say("   kept the original: " + target + ".pre-latteos")
-                shutil.copyfile(source, path + ".new")
-                os.chmod(path + ".new", 0o755 if os.access(source, os.X_OK) else 0o644)
-                os.replace(path + ".new", path)
-            done += 1
+            say("   not built or not there: " + source); missing += 1
+            continue
+        if section == "seeds" and os.path.lexists(path):
+            continue                        # from the first time on it is the user's
+        if "--go" in flags:
+            os.makedirs(os.path.dirname(path), exist_ok=True)
+            if section == "replaces" and os.path.lexists(path) and not os.path.lexists(path + ".pre-latteos"):
+                os.replace(path, path + ".pre-latteos")
+                say("   kept the original: " + target + ".pre-latteos")
+            shutil.copyfile(source, path + ".new")
+            os.chmod(path + ".new", 0o755 if os.access(source, os.X_OK) else 0o644)
+            os.replace(path + ".new", path)
+        done += 1
     say("   %d files%s" % (done, ", %d could not be found" % missing if missing else ""))
     if missing and "--go" in flags:
         return 1
@@ -213,9 +230,12 @@ def main(a):
             say("   --prune with --go removes them")
 
     say("== the steps" + (" (not run under --root)" if root and act else ("" if act else " (not run without --go)")))
-    for cmd in commands(sections.get("steps", []), users(), kernels):
-        if "--go" in flags: run(cmd)
+    part("steps")
+    todo = commands(sections.get("steps", []), users(), kernels)
+    for n, cmd in enumerate(todo):
+        if "--go" in flags: run(cmd); part("steps", (n + 1) / len(todo))
         else: say("   $ " + cmd)
+    if "--progress" in flags and "--go" in flags: say("@percent 100")
     if "--go" in flags and not root:
         say("LatteOS is in place. It starts with the next boot: the login screen is greetd's.")
     return 0
