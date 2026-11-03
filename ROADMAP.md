@@ -47,16 +47,16 @@ Poradie drží tri pravidlá: **čo blokuje overovanie ostatného ide prvé** (�
 
 Hotové body sa z poradia vyškrtávajú (ostávajú zapísané pri svojej kategórii); čísla ostatných sa nemenia, odkazuje sa na ne.
 
-**Fáza 2 — Plocha Goo**
+**Fáza 2 — Plocha Goo** → končí verziou **0.6** (14.21)
   5. [~] Dokončenie kvapiek: BarGoo, LensGoo (vzhľad), PowerGoo, ClockGoo, QueenGoo, QuickGoo, TrayShore (Pobrežie), LensShore — (6A–6E, 6G, 6H)
   6. [~] Režimy okien: Glance (náhľady v Parkingu), hyprtrizone pre ultrawide — (8A)
   7. [~] Plocha: ponuka plochy (Späť, „Tento počítač“), tapety a skwd-wall, hladina na spodku okna — (7A, 7B, 8D)
 
-**Fáza 3 — Vzhľad a Nastavenia**
+**Fáza 3 — Vzhľad a Nastavenia** → **0.7**
   8. [~] Vzhľad a témy: Keramika, Hliník, Onyx, Steam, dlaždicové rozloženie podľa Vitreusu — (9A)
   9. [~] Nastavenia: 11 chýbajúcich stránok (Zálohovanie, Cloud, Bluetooth, Tlačiarne, Heslo, Oznámenia…) — (9)
 
-**Fáza 4 — Aplikácie (Priorita UX)**
+**Fáza 4 — Aplikácie (Priorita UX)** → body 10–16 **0.8**; body 17–20 spolu s Fázou 5 **0.9**
  10. [~] Barista s AVP2 a sprievodca — (10I)
  11. [~] AppManager: úlohy a história — (10H)
  12. [~] DualBrew — (10A)
@@ -69,7 +69,7 @@ Hotové body sa z poradia vyškrtávajú (ostávajú zapísané pri svojej kateg
  19. [ ] Hry — (10K)
  20. [~] Bezpečnosť a Úložisko: záloha dát, zaplnenie diskov, oddiely — (11, 2C)
 
-**Fáza 5 — Núdzová relácia, inštalácia a vydanie**
+**Fáza 5 — Núdzová relácia, inštalácia a vydanie** → **0.9** (funkčne kompletné)
  21. [ ] SafeGoo a Relácie: ovládanie okien na labwc, diagnostika pádu, okná po páde kompozitora — (5, 5A); vyvíja sa až tu, tesne pred inštalátorom
  22. [ ] Boot ako súčasť inštalátora: GRUB/SAFE položky, `latte-boot`, Plymouth — (3)
  23. [ ] Inštalátor, voľba AI, prvé spustenie (kvapky sa predstavia) — (2, 2A, 2B)
@@ -77,7 +77,7 @@ Hotové body sa z poradia vyškrtávajú (ostávajú zapísané pri svojej kateg
  25. [ ] Preklady: záverečná kontrola úplnosti — (12)
  26. [ ] Fyzikálne prostredie kvapiek — až po zmeraní Fresh na hardvéri — (6)
 
-**Fáza 6 — Záver**
+**Fáza 6 — Záver** → **0.9.x** beta, potom **1.0 „Arabica“** po bránach 14.14
  27. [ ] **Optimalizácia** — zrýchlenie načítania, zmenšenie na úložisku, nižšia náročnosť na hardvér, bez obmedzenia výsledku — (17)
  28. [ ] **STRESTEST** — úplne posledný — (18)
 
@@ -172,7 +172,7 @@ Tapeta v relácii pleamar-wm funguje (31. 10.): `skwd-walld` sa reštartuje pri 
 **1D.07** [~] Skratky a stupne výkonu do `keys.conf` a `session.conf`; nastavenia obrazoviek (`latte-screens`). — Zvyšok sa overí iba na dvoch skutočných monitoroch (2. 11.).
 2. 11.: `system/pleamarwm/keys.conf` (odkaz z `~/.config/latteos/pleamar-wm/`, predtým bežali skratky pleamar-wm volajúce Mareu): launcher samotným Win (záplata `pleamar-wm-tap-keys`: Win+Q či Win s ťahaním ho už neotvorí), Goo, Monitor, Nastavenia, okná, plochy, zvuk a jas, ponuka pleamar-wm (Super+Tab, Super+W, Super+Shift+W, Super+Shift+I ovládacie centrum). Win+M, Win+Shift+M, Win+Home, Win+D (plocha a späť) a Win+1…9 (N-tá aplikácia pásu okien v poradí otvorenia; vpredu prejde na jej ďalšie okno, jediné schová, ako Windows) odpovedá náhrada `hyprctl` tými istými volaniami ako na Hyprlande; poradie preusporiadané v BarGoo zatiaľ nepozná. Stupne výkonu: sklo `blur passes` 3/2/1 (full/standard/ostatné) pred `session.conf` používateľa, minimal a software s `motion.reduced`. Klávesnica z prihlasovača (`XKB_DEFAULT_*`, predtým platilo iba `us` z `~/.config/hypr`), pri viacerých rozloženiach aj Win+Space. Obrazovky: `latte-screens --watch` sleduje zoznam monitorov pleamar-wm a pri štarte aj pripojení dá Goo na hlavný a pás okien na ostatné. Viac plôch netreba (používateľ 2. 11.): Win+Ctrl+D a Win+Ctrl+F4 sa nerobia. Zrkadlenie je 1D.23. Lupa (zväčšenie okolo kurzora; pleamar-wm ju nemá) ide s prístupnosťou do Arabicy. Nastavenia › Obrazovky: poloha monitora sa zmení hneď (`pleamar-wm output … at`), rozlíšenie, mierka a otočenie sa uložia do `~/.config/latteos/monitors` (ako na Hyprlande) a relácia z nich pri štarte spraví riadky `monitor`; pleamar-wm ich za behu nemení, Nastavenia to povedia namiesto odpočtu „Je obraz v poriadku?“. Rozlíšenia zo `/sys/class/drm` (bez obnovovacích frekvencií). Ostáva overiť v ostrej relácii s dvoma monitormi.
 **1D.08** [~] Titulky okien v scéne namiesto hyprbars, ponuka okna, bublina pri zrode okna. Biela hlavička Qt je preč (`QT_WAYLAND_DISABLE_WINDOWDECORATION`); ostáva tenký pruh správcu okien nad aplikáciami Quickshell, `frame=own` ho neskryje.
-2. 11.: titulky ako na Hyprlande (farby šálky espresso, ploché okrúhle tlačidlá schovať · zväčšiť · zatvoriť po 25 px, kávový okraj okna s klávesnicou), aj na oknách v dlaždiciach; pravý klik na titulok otvorí ponuku okna v Goo, dvojklik zväčší. Pruh navyše bol titulok, ktorý pleamar-wm kreslí každému dialógu (pravidlo `float` robí z okien LatteOS dialóg): teraz iba tomu, kto si nekreslí vlastný. Aplikácie s vlastnou hlavičkou (zoznam z `bars.lua`) dostali `frame=own`. Aplikácie LatteOS (DualBrew, GuardDog, Nastavenia…) boli dialógy nad všetkým, bez ťahania a schovania: pravidlo `float` pre widgety chytalo všetky okná `org.quickshell`; widgety majú teraz `//@ pragma AppId org.latteos.widget` a plávajú iba ony, tlačidlá hlavičky aplikácií (`minimize_active`, `maximize_active`) odpovedá náhrada `hyprctl`. Farby titulku a okraja podľa šálky (espresso, mocha, porcelán) a tapety: `latte.cup(…)` z Nastavení a `latte-wall` nastaví hodnoty scény cez náhradu `hyprctl`, aj pri štarte relácie. Prepájanie okien (wire) slúži agentom v termináloch (`pleamar-wm link`: čítať, písať, odovzdať úlohu; s oknom bez terminálu nerobí nič): kvapka na začiatku titulku sa ukáže iba na plátne a iba na okne s terminálom (`shell.N`, záplata `pleamar-wm-shell-fact`). Vlastný `session.conf` používateľa (napr. dok pleamar-wm) už nenahrádza pravidlá LatteOS, ide za nimi. Ostáva: bublina pri zrode okna (pleamar-wm má vlastné napúšťanie vodou), ponuka na inom monitore.
+2. 11.: titulky ako na Hyprlande (farby šálky espresso, ploché okrúhle tlačidlá schovať · zväčšiť · zatvoriť po 25 px, kávový okraj okna s klávesnicou), aj na oknách v dlaždiciach; pravý klik na titulok otvorí ponuku okna v Goo, dvojklik zväčší. Pruh navyše bol titulok, ktorý pleamar-wm kreslí každému dialógu (pravidlo `float` robí z okien LatteOS dialóg): teraz iba tomu, kto si nekreslí vlastný. Aplikácie s vlastnou hlavičkou (zoznam z `bars.lua`) dostali `frame=own`. Aplikácie LatteOS (DualBrew, GuardCorgi, Nastavenia…) boli dialógy nad všetkým, bez ťahania a schovania: pravidlo `float` pre widgety chytalo všetky okná `org.quickshell`; widgety majú teraz `//@ pragma AppId org.latteos.widget` a plávajú iba ony, tlačidlá hlavičky aplikácií (`minimize_active`, `maximize_active`) odpovedá náhrada `hyprctl`. Farby titulku a okraja podľa šálky (espresso, mocha, porcelán) a tapety: `latte.cup(…)` z Nastavení a `latte-wall` nastaví hodnoty scény cez náhradu `hyprctl`, aj pri štarte relácie. Prepájanie okien (wire) slúži agentom v termináloch (`pleamar-wm link`: čítať, písať, odovzdať úlohu; s oknom bez terminálu nerobí nič): kvapka na začiatku titulku sa ukáže iba na plátne a iba na okne s terminálom (`shell.N`, záplata `pleamar-wm-shell-fact`). Vlastný `session.conf` používateľa (napr. dok pleamar-wm) už nenahrádza pravidlá LatteOS, ide za nimi. Ostáva: bublina pri zrode okna (pleamar-wm má vlastné napúšťanie vodou), ponuka na inom monitore.
 **1D.09** [x] Sklo okien namiesto Hyprglass a sklo kvapiek cez `ext-background-effect`; odmerať na RX 640. pleamar-wm má vlastné sklo (video autora s bublinami a rybami): najprv ho vyskúšať, až potom robiť vlastné.
 2. 11.: sklo okien v pleamar-wm sklom pleamaru (vzor `examples/glass.plm`): pod každé okno scéna kladie `body` s `glass`, `frost: auto`, dymom podľa stupňa a farbou šálky; vidno cez neho tapetu aj okná pod ním. Stupeň z Goo (`latte.glass` cez náhradu `hyprctl`): 1 sklo (okno 86 %, bez klávesnice 78 %, titulok 88 %), 2 True Glass (čírejšie, viac lomu, okno plné — aplikácie LatteOS si podklad sprehľadnia samy). Na RX 640 v ostrej relácii 16,5 ms na snímku. (Shader s `behind_frosted` ani ext-background-effect pre okná nešli.) Kvapky Goo si sklo robia samy. Priehľadnosť tela okien je najviac 40 %: pleamar berie okno s krytím 50 % a menej ako „nie je tam“ a nepustí doň kliky (pri 51 sa nedalo kliknúť do žiadneho okna). Sklo okien je bez lámania (`lens: false`): pri skle veľkom ako okno je skosenie široké a jeho okraj sa v aktívnom okne ukazoval ako kruh.
 **1D.10** [ ] `tests/screen.sh` na headless režim pleamar-wm; pleamar a pleamar-wm ako balík (COPR), zámok verzie. — labwc ostáva pre reláciu SAFE (aj jej testy); na pleamar-wm idú testy scén GOO (2. 11.).
@@ -211,13 +211,15 @@ iba myšlienka): v Plávajúcich posunieš okno o pár pixelov a pri kurzore sa 
 kto komu dal úlohu (`term pair`, `by.N` z 1D.17). Pohľad pre Canvas (8A.12), Agentov v dashboarde (6B.36) a Kaviareň (10B.40).
 **1D.23** [ ] **Zrkadlenie obrazoviek v pleamar-wm** (neskôr): Nastavenia › Obrazovky › Duplikovať (ako Win+P) a virtuálny monitor vedľa skutočného ukazuje jeho obraz — na Hyprlande `mirror` v `system/hypr/hyprland.lua`; pleamar-wm to zatiaľ nevie (overiť v novej verzii, inak návrh autorovi).
 **1D.24** [ ] **Pôvodné možnosti pleamar, pleamar-wm a Marey v Nastaveniach** (neskôr, používateľ 2. 11.): čo ponúka ich ovládacie centrum a Marea (rozloženia, dok, sklo, efekty, voda…), ponúknuť aj v Nastaveniach LatteOS, oblečené do nášho štýlu (farby z témy, preklady, myš prvá). — Návrh prijatý (2. 11.): jedno miesto, Nastavenia LatteOS — rozloženia v Okná, dok ako „Panel úloh“ pod Okná, rozmazanie v Prostredie › Sklo, dážď/sneh/voda v Prostredie › Efekty (s 9A.12), skratky v Klávesnici, agent a vzdialený prístup v Súkromí/AI; Nastavenia zapisujú priamo do `session.conf` a `keys.conf` pleamar-wm, ovládacie centrum (Super+Shift+I) ostáva ako pôvodné.
-**1D.25** [ ] **Shore pleamar-wm ako variant BarGoo** (neskôr): dok pleamar-wm (*shore*) prerobiť na kvapku enginu Goo a ponúknuť ako druhý vzhľad BarGoo. Pozor na meno: nie LensShore ani trayShore.
+**1D.25** [ ] **Shore pleamar-wm ako variant BarGoo** (neskôr): dok pleamar-wm (*shore*) prerobiť na kvapku enginu Goo a ponúknuť ako druhý vzhľad BarGoo. Pozor na meno: nie LensShore ani trayShore. Používateľ 3. 11. pochválil na shore: náhľad okien po prejdení
+myšou, prepínanie medzi nimi a ponuku pravého kliku — prebrať aj do BarGoo. (Oprava v ten deň: všetky aplikácie
+LatteOS mali `app_id` `org.quickshell`, shore ich zlúčil pod ikonu LensAI; teraz `//@ pragma AppId latteos-NAME`.)
 **1D.26** [ ] **Kvapka Marey ako zapínateľná kvapka Goo** (neskôr): Mareu z marea-plm upraviť, aby sedela s enginom Goo (tvar, voda, farby z témy), a ponúknuť ju ako kvapku, ktorá sa zapína v Nastaveniach › Kvapky. — Pridať medzi kvapky Goo v Nastaveniach › Kvapky (2. 11.).
 **1D.27** [ ] **Kývanie okien (wobble) v pleamar-wm** (používateľ 2. 11., vzor [Hyprland 0.57](https://hypr.land/imgs/blog/update57/wobbl.mp4)): ťahané alebo zväčšované okno sa ohne ako želé a dokýve sa, keď ho pustíš. pleamar-wm to nemá (kýve sa iba Marea, keď sedí na okne). Skúsiť shaderom skupiny okna v `wm/session.plm` (ako `tide`), rýchlosť ťahania z pružín scény; iba pri stupňoch full a standard, ako na Hyprlande (`system/hypr/latte/tiers.lua`). Ak shader nestačí na pokrivenie okna, návrh autorovi.
 **1D.28** [x] Priehľadnosť okna iba pri ťahaní (2. 11.): je to zámer pleamar-wm — ťahané okno je nadvihnuté, menšie a na 88 % nepriehľadné, aby bolo vidieť, kam dopadne; nechané tak (používateľ). V DualBrew je to vidieť najmä v ľavom paneli, kde je podklad svetlý a jednoliaty.
 **1D.29** [x] **Ťahanie okna za kávovú hladinu dole** (používateľ 2. 11.): v aplikáciách LatteOS (`apps/common/AppWindow.qml`, `Surface`) sa okno dá ťahať aj za kávu v päte okna, všade, kde nie je tlačidlo ani ovládací prvok (ako za hlavičku: `startSystemMove`). Na Hyprlande aj v pleamar-wm. — S Hyprlandom nesúvisí (2. 11.). — Hotové 3. 11.: `MouseArea` pod kávou v `AppWindow.qml` (ovládacie prvky v `foot` a v obsahu majú prednosť).
 2. 11.: pri okrajoch voľných okien je kurzor na zmenu veľkosti (šípky, nie ruka); zväčšené okno v režime plávajúce už nenecháva dole miesto dvakrát (pás kvapiek aj dok pleamar-wm cez seba), končí kúsok nad dokom.
-**1D.30** [x] Káva v okne sa kýve pri ťahaní aj v pleamar-wm (2. 11.): `apps/common/window-place` v relácii pleamar-wm nečíta Hyprland, ale `dragging` scény (`watch 0 dragging`) a polohu myši z `cursor.sock`; kým scéna ťahá okno tejto aplikácie (podľa PID v súbore `windows`), posiela pohyb myši, s ktorou sa okno hýbe. Overené bez obrazovky na GuardDogu.
+**1D.30** [x] Káva v okne sa kýve pri ťahaní aj v pleamar-wm (2. 11.): `apps/common/window-place` v relácii pleamar-wm nečíta Hyprland, ale `dragging` scény (`watch 0 dragging`) a polohu myši z `cursor.sock`; kým scéna ťahá okno tejto aplikácie (podľa PID v súbore `windows`), posiela pohyb myši, s ktorou sa okno hýbe. Overené bez obrazovky na GuardCorgi.
 Súpis 2. 11.: časti LatteOS, ktoré v relácii pleamar-wm ešte volajú Hyprland (pleamar-wm sám Hyprland nevolá).
 **1D.31** [x] DogHouse stráži aj reláciu pleamar-wm (proces `pleamar-wm`, jeho Wayland socket z `/proc/net/unix`, `PLEAMAR_SOCKETS` a `PATH` pre systemd spustený znova), 2. 11.
 **1D.32** [x] Nočné svetlo v pleamar-wm cez `gammastep` (2. 11.). pleamar-wm pri štarte relácie neoznámil veľkosť farebných kriviek (volal iba `register`, nie `publish`), takže každý program na nočné svetlo dostal `failed`; záplata `pleamar-wm-gamma-at-start`, dvakrát overené (kód, a živá relácia po `pleamar-wm output … at`), text issue v `patches/issues/`. Overiť po ďalšom prihlásení.
@@ -486,11 +488,11 @@ je nudzovy system nenaročny, umožnujuci udržbu systemu. teoreticky použiteln
 
 ### 5A. [~] Relácie
 Relácia = to, čo sa spustí po prihlásení: GOO (plocha), SAFE (núdzová), Game (Steam + gamescope). Spúšťa ich `latte-session`, ten po páde obnoví reláciu alebo prepne do SAFE.
-Zdroje: `bin/latte-session`, `bin/latte-guarddog`, `apps/guarddog.qml`, `system/systemd`, `system/whyd`, `system/oom`, `system/sessions`
+Zdroje: `bin/latte-session`, `bin/latte-guardcorgi`, `apps/guardcorgi.qml`, `system/systemd`, `system/whyd`, `system/oom`, `system/sessions`
 
-**5A.01** [x] (Relácie a GuardDog) B. systémové rozhrania · r. 633–634
+**5A.01** [x] (Relácie a GuardCorgi) B. systémové rozhrania · r. 633–634
 
-**5A.02** [ ] (Relácie a GuardDog) R2 — služby a pád relácie · r. 925–926
+**5A.02** [ ] (Relácie a GuardCorgi) R2 — služby a pád relácie · r. 925–926
 - [ ] Zabezpečiť, aby systémové služby štartovali až vtedy, keď sú potrebné, a aby ich pád nezhodil
   celú používateľskú reláciu.
 
@@ -979,7 +981,7 @@ posúvania** (~300 ms patrí koliesko zoznamu, ktorý sa začal posúvať, aj ke
 „kalkulačka“ → ktorákoľvek kalkulačka. `.desktop` to má (`Keywords=`, `GenericName=`), služba `apps` pleamaru to nedáva —
 doplniť do pleamaru (záplata v `patches/`) alebo čítať v LatteOS.
 
-**6B.17** [x] **Duplicity v prehľade LensGoo** (používateľ 27. 10.): GuardDog bol v Najčastejších aj v Najnovších, Steam
+**6B.17** [x] **Duplicity v prehľade LensGoo** (používateľ 27. 10.): GuardCorgi bol v Najčastejších aj v Najnovších, Steam
 v Najčastejších aj v Obľúbených. Aplikácia ukázaná v skoršej sekcii sa z ďalších vyradí. — Opravené 27. 10.: každá aplikácia iba raz;
 obľúbené (vlastná voľba) majú prednosť pred najčastejšími, najnovšie vynechajú obe. Overené naživo.
 
@@ -1669,6 +1671,16 @@ ovládača. Kde chýba, doplniť.
 cez AT-SPI). Jediné meniace sa miesto je podponuka **Goo návrhy** dole (zlatou, s ikonou iskry) — návrhy podľa obsahu, s AI
 aj bez nej. Položky cudzích programov (napr. NVIDIA, Git Bash) vo vlastnej skupine „Z aplikácií“, nie medzi našimi. Ponuka
 sa sama nepreusporadúva (ľudia z Windowsu to neznášajú). Spresňuje 7B.03 a pravidlo 23.
+**7B.05** [ ] **Ikony na ploche ako súčasť Goo** (používateľ 3. 11.): `apps/desktop.qml` (Quickshell) nahradiť ikonami
+vo vrstve `desk` Goo (`goo/parts/desk.plm`, `goo/lib/desk.luau`), ktorá už vlastní pravý klik na holú plochu; správanie
+a ponuky ostávajú ako vo Windows 11 (7B.01). Dôvod: v relácii pleamar-wm premenovanie len blikne (obchvat Hyprlandu
+`Exclusive` → po 150 ms `OnDemand`: pleamar-wm pri tom klávesnicu vezme a pole meno hneď uloží) a ťahanie sa seká;
+plocha ako cudzí klient sa s pleamar-wm aj Goo dohaduje o kliky a klávesnicu (`fact desk_icons`, `canvas_bg`). Ťahanie
+von do aplikácií cez `carries:`/`carry_icon:` (ide z klienta ako Goo, nie zo scény pleamar-wm), príjem `text/uri-list`.
+Priečinok, spúšťače a presuny súborov robí pomocník `latte-desktop` (scéna pleamaru smie iba do svojho priečinka) a zmeny
+posiela Goo cez `pleamar --say goo`; pomocník je kandidát na prvý prepis do Rustu (17.05). Overiť najprv pole s
+klávesnicou a pustenie súboru so skutočnou myšou a klávesnicou (pleamar `08-limitations.md` E8). Hotové = `desktop.qml`
+a `fact desk_icons` preč, `FILES` upravený.
 
 ### 7C. [ ] YOL — Your Own Life
 Plocha orientovaná na človeka a jeho činnosti (používateľ 2. 11.): klasická plocha je o súboroch a aplikáciách, dlaždice
@@ -2469,12 +2481,12 @@ je centralne zastrešenie všetkych použitelnych AI. Je totalna kopia Omarchy A
      nič sa neschvaľuje samo. LensGoo: 4. ikona v päte karty AI (úloha z poľa; prázdne pole → LensAI › Agenti).
      LensAI › Agenti: pole, voľba agenta (`latte-ai doer`, `~/.config/latteos/agent`), 6 pripravených úloh
      („Urob niečo“ z Omarchy). Overené: terminál s Claude Code sa otvorí; plán na skutočnej ploche neoverený;
-  6. [x] **pád → AI** s GuardDogom a **LatteOS SAFE** (podľa `diagnose-crash` z Omarchy), hotové 21. 10.: GuardDog
+  6. [x] **pád → AI** s GuardCorgi a **LatteOS SAFE** (podľa `diagnose-crash` z Omarchy), hotové 21. 10.: GuardCorgi
      sleduje systemd-coredump (každých 30 s), pád zapíše do denníka a ukáže upozornenie „Opýtať sa AI“ · „O tomto
-     programe nie“ (stlmenie v `guarddog.json`); `latte-ai crash PID` dá agentovi fakty (coredumpctl, denník okolo,
+     programe nie“ (stlmenie v `guardcorgi.json`); `latte-ai crash PID` dá agentovi fakty (coredumpctl, denník okolo,
      čí program), vysvetlí, nič nemení; v SAFE položka „Opýtať sa AI, prečo sa skončila“ (`latte-ai why`), aj v ponuke
-     pravého tlačidla. **Okno GuardDog** (`latte-app guarddog`, na pokyn používateľa): Čo drží v chode, Pády
-     (Opýtať sa AI, Stlmiť), Denník ako konzola (`latte-guarddog log`). Overené: pád `sleep` zachytený, upozornenie
+     pravého tlačidla. **Okno GuardCorgi** (`latte-app guardcorgi`, na pokyn používateľa): Čo drží v chode, Pády
+     (Opýtať sa AI, Stlmiť), Denník ako konzola (`latte-guardcorgi log`). Overené: pád `sleep` zachytený, upozornenie
      po slovensky; agent pri páde na ploche neoverený;
   7. [~] **inštalácia AI v okne LensAI** (používateľ 21. 10.: nie v App Manageri), hotové 21. 10.: LensAI › Služby
      má pri nenainštalovanej službe „Nainštalovať“ — oficiálny nástroj v termináli, pre používateľa bez hesla
@@ -2510,7 +2522,7 @@ je centralne zastrešenie všetkych použitelnych AI. Je totalna kopia Omarchy A
   pkexec, snímka pred diskom, plánovací režim — základ barličky (k); (2) **„Urob to za mňa“** v LensGoo: úloha pre
   predvoleného agenta v okne terminálu, najprv plán, potom potvrdenie (nie automatické schvaľovanie ako Omarchy);
   (3) **limity bez otázky** ako Omarchy (Claude OAuth usage, Grok billing) — číta token prihlásenia CLI, iba
-  so súhlasom; (4) **pád → AI**: GuardDog/whyd ponúkne „Opýtať sa AI“ so zisteniami z core dumpu; (5) **App Manager
+  so súhlasom; (4) **pád → AI**: GuardCorgi/whyd ponúkne „Opýtať sa AI“ so zisteniami z core dumpu; (5) **App Manager
   › AI**: Claude desktop, ChatGPT, LM Studio, Ollama; (6) **diktovanie do akejkoľvek aplikácie** (Voxtype, Win+H
   ako vo Windows) popri mikrofóne v LensGoo; (7) viac účtov jedného poskytovateľa a prepnutie pri limite.
 
@@ -2750,7 +2762,7 @@ je zakladny textovy editor, s neobvyklo širokou ponukou formatou ktore prečít
 
 ### 10D. [~] LatteMonitor
 Zdroje: `apps/monitor.qml`, `bin/latte-monitor`, `crates/latte-stats`; LATTEOS-GOO §6.2·1
-je monitor prostriedkov presne ako ctrl+alt+del z windows 11(jeho kopia) ale zaroven ponuka presne skopirovanu funkčnost z CpuZ a z HWinfo. Prebera informacie z GuardDog aj Dev a Net manager. spravuje aj výstup pre aplikacie-napr externy dashboard čitajuci vytaženie CPU, RAM, farebnost led na zaklade zvuku, atd.
+je monitor prostriedkov presne ako ctrl+alt+del z windows 11(jeho kopia) ale zaroven ponuka presne skopirovanu funkčnost z CpuZ a z HWinfo. Prebera informacie z GuardCorgi aj Dev a Net manager. spravuje aj výstup pre aplikacie-napr externy dashboard čitajuci vytaženie CPU, RAM, farebnost led na zaklade zvuku, atd.
 
 **10D.01** [ ] zrealizovat funkčnost
 
@@ -2848,7 +2860,7 @@ nepriehľadných privilegovaných služieb.
 chýba mu len pár vecí“). Vziať originál (github.com/Mission-Center-Devs/mission-center, Rust + GTK4/libadwaita, GPL-3.0,
 Flathub `io.missioncenter.MissionCenter`) a doplniť do neho **2–3 záložky**: (1) **Hardvér** ako CPU-Z/HWiNFO (čipy, pamäte,
 senzory, `latte-hw`), (2) **Po štarte** (Autoruns+, vratné vypínanie používateľských položiek), (3) **Bezpečnosť a sieť**
-(GuardDog, NET, kto s kým hovorí). Fork ostáva **samostatný program pod GPL-3.0** so zdrojákmi verejne (ako skwd-wall) —
+(GuardCorgi, NET, kto s kým hovorí). Fork ostáva **samostatný program pod GPL-3.0** so zdrojákmi verejne (ako skwd-wall) —
 vlastný kód LatteOS tým nie je dotknutý. Preveriť: či záložky pridať čisto (aby sa dali posielať autorom upstream a fork
 ostal ľahko aktualizovateľný), vzhľad GTK voči téme LatteOS (libadwaita farby z témy), slovenčina (preklady má cez gettext).
 Dnešný `apps/monitor.qml` ostáva, kým fork nedobehne; potom ho nahradí. Zapísať do TRETIE-STRANY.md.
@@ -2916,84 +2928,97 @@ hnedom, skoro nečitateľné; položky bočného panela pôsobia ako vypnuté.
 **10E.13** [ ] **Chyba: angličtina v Správcovi zariadení** (používateľ 27. 10.): „a processor without AVX2… the eco tier“
 porušuje pravidlo 4 (texty cez preklad).
 
-### 10F. [x] GuardDog
-Zdroje: `bin/latte-session`, `bin/latte-guarddog`, `apps/guarddog.qml`, `system/systemd`, `system/whyd`, `system/oom`, `system/sessions`
+### 10F. [x] GuardCorgi
+Do 3. 11. 2026 GuardDog; premenovaný (používateľ 3. 11.), lebo `guarddog` je iný program v systéme. Nastavenia a história
+sa pri prvom štarte prenesú zo starých mien (`guarddog.json`, `guarddog.log`).
+Zdroje: `bin/latte-session`, `bin/latte-guardcorgi`, `apps/guardcorgi.qml`, `system/systemd`, `system/whyd`, `system/oom`, `system/sessions`
 
-**10F.01** [x] (Relácie a GuardDog) GuardDog · r. 321–328
-[~] **GuardDog — strážca súčastí a kto komu patrí** (20. 10., na pokyn používateľa po tom, čo sa zabilo `qs` a zmizli
-    ikony aj ponuka plochy). `bin/latte-guarddog` (služba `latte-guarddog.service` v cieli relácie): každých 5 s
+**10F.01** [x] (Relácie a GuardCorgi) GuardCorgi · r. 321–328
+[~] **GuardCorgi — strážca súčastí a kto komu patrí** (20. 10., na pokyn používateľa po tom, čo sa zabilo `qs` a zmizli
+    ikony aj ponuka plochy). `bin/latte-guardcorgi` (služba `latte-guardcorgi.service` v cieli relácie): každých 5 s
     skontroluje scénu Goo, nečinnosť, ikony plochy, tapetu a históriu schránky; čo chýba dvakrát po sebe, to spustí
-    znova (najviac 5× za 5 minút, potom pokoj a jedno upozornenie). Stav je v `$XDG_RUNTIME_DIR/latteos/guarddog.json`.
+    znova (najviac 5× za 5 minút, potom pokoj a jedno upozornenie). Stav je v `$XDG_RUNTIME_DIR/latteos/guardcorgi.json`.
     Rovnaký program povie, komu proces patrí: `linux` (jadro a systém), `latteos` (to, z čoho je LatteOS), `user`
     (programy používateľa); Monitor › Procesy to ukazuje štítkom, filtrom a zoznamom strážených súčastí. Overené:
     zabité ikony sa do ~16 s vrátia. **Ostáva:** Nastavenia › Štart (vypnúť stráženie jednej súčasti), strážiť aj
     skutočné aplikácie používateľa na žiadosť, štítky v Správcovi zariadení, upozornenie pri páde mimo strážených súčastí.
 
-**10F.02** [x] (GuardDog) Nezabiteľnosť (26. 10.): všetky jednotky LatteOS `Restart=always`, `RestartSec=1`, `StartLimitIntervalSec=0`; overené TERM a KILL na GuardDog, Goo, lockscreen, idle, focus — späť do 1–2 s.
+**10F.02** [x] (GuardCorgi) Nezabiteľnosť (26. 10.): všetky jednotky LatteOS `Restart=always`, `RestartSec=1`, `StartLimitIntervalSec=0`; overené TERM a KILL na GuardCorgi, Goo, lockscreen, idle, focus — späť do 1–2 s.
 
-**10F.03** [x] (GuardDog) Zamrznutie (26. 10.): GuardDog má `WatchdogSec=30` (STOP → systemd ho zabije a spustí za ~30 s); zastavené a zmrazené jednotky `latte-*` GuardDog rozmrazí do 5 s (`thaw`, v konzole „rozmrazil“). Goo vlastný watchdog nemá (pleamar nehlási systemd) — rozmrazenie stačí na STOP, zaseknutá logika ide cez `goo_alive`.
+**10F.03** [x] (GuardCorgi) Zamrznutie (26. 10.): GuardCorgi má `WatchdogSec=30` (STOP → systemd ho zabije a spustí za ~30 s); zastavené a zmrazené jednotky `latte-*` GuardCorgi rozmrazí do 5 s (`thaw`, v konzole „rozmrazil“). Goo vlastný watchdog nemá (pleamar nehlási systemd) — rozmrazenie stačí na STOP, zaseknutá logika ide cez `goo_alive`.
 
-**10F.04** [x] (GuardDog) Kto stráži stráž: systemd; GuardDog pozorovateľ — zapísané v `docs/goo/ROZHODNUTIA.md` (26. 10.).
+**10F.04** [x] (GuardCorgi) Kto stráži stráž: systemd; GuardCorgi pozorovateľ — zapísané v `docs/goo/ROZHODNUTIA.md` (26. 10.).
 
-**10F.05** [x] (GuardDog) **Vyšší stupeň ochrany:** proces toho istého používateľa vie zabiť čokoľvek iné, čo beží pod ním (aj `systemctl --user stop`, `kill -9` na `systemd --user`). Úplná odolnosť = malá systémová služba pod iným uid/root (`latte-guardd`), ktorú používateľ nezabije, a ktorá obnoví používateľskú reláciu. Rozhodnúť, či to treba (komplexita proti zisku); najprv hotový bod 1 a 2.
+**10F.05** [x] (GuardCorgi) **Vyšší stupeň ochrany:** proces toho istého používateľa vie zabiť čokoľvek iné, čo beží pod ním (aj `systemctl --user stop`, `kill -9` na `systemd --user`). Úplná odolnosť = malá systémová služba pod iným uid/root (`latte-guardd`), ktorú používateľ nezabije, a ktorá obnoví používateľskú reláciu. Rozhodnúť, či to treba (komplexita proti zisku); najprv hotový bod 1 a 2.
   **26. 10. hotové — DogHouse** (`system/libexec/latte-doghouse`, `latte-doghouse.timer` raz za minútu, pod rootom): pre každú
-  plochu LatteOS (Hyprland s `LATTE_MODE`) skontroluje GuardDog — zablokovaný, podvrhnutý (vlastný unit alebo drop-in
+  plochu LatteOS (Hyprland s `LATTE_MODE`) skontroluje GuardCorgi — zablokovaný, podvrhnutý (vlastný unit alebo drop-in
   používateľa) → `systemctl --user revert` a reštart; zastavený → spustí; mŕtvy celý `systemd --user` → spustí `user@UID`,
   dá mu prostredie relácie (z prostredia Hyprlandu a z `hyprland.lock`) a cieľ relácie. So systemd používateľa hovorí ako
   používateľ (`setpriv`; `systemctl -M user@` zo služby nejde), súbory používateľa nečíta ani nepíše. Čo urobil, je v
-  `/var/lib/latteos/doghouse.log` a GuardDog to ukazuje v Denníku aj na Prehľade.
+  `/var/lib/latteos/doghouse.log` a GuardCorgi to ukazuje v Denníku aj na Prehľade.
 
-**10F.06** [x] (GuardDog) Skúška (26. 10.): `tests/test_guarddog.sh` na živej relácii (TERM, KILL, STOP, freeze; 15/15), napodobené rozmrazenie a watchdog v `tests/test_bin.py` (v `check.sh`).
+**10F.06** [x] (GuardCorgi) Skúška (26. 10.): `tests/test_guardcorgi.sh` na živej relácii (TERM, KILL, STOP, freeze; 15/15), napodobené rozmrazenie a watchdog v `tests/test_bin.py` (v `check.sh`).
 
-**10F.07** [x] (GuardDog) **Používateľ 22. 10.: „GuardDog je extrémne nehotový“.** Ďalšie chýbajúce veci z pôvodného zápisu: vypnúť stráženie jednej súčasti (Nastavenia › Štart), strážiť aj skutočné aplikácie používateľa na žiadosť, štítky `linux/latteos/user` v Správcovi zariadení, upozornenie pri páde mimo strážených súčastí. Doplniť zoznam strážených súčastí, ktoré dnes chýbajú (Pobrežie, desktop, hyprbars…).
-  **26. 10.:** vypnutie stráženia jednej súčasti už je (Nastavenia › GuardDog a okno GuardDogu, `latte-guarddog set`).
+**10F.07** [x] (GuardCorgi) **Používateľ 22. 10.: „GuardCorgi je extrémne nehotový“.** Ďalšie chýbajúce veci z pôvodného zápisu: vypnúť stráženie jednej súčasti (Nastavenia › Štart), strážiť aj skutočné aplikácie používateľa na žiadosť, štítky `linux/latteos/user` v Správcovi zariadení, upozornenie pri páde mimo strážených súčastí. Doplniť zoznam strážených súčastí, ktoré dnes chýbajú (Pobrežie, desktop, hyprbars…).
+  **26. 10.:** vypnutie stráženia jednej súčasti už je (Nastavenia › GuardCorgi a okno GuardCorgi, `latte-guardcorgi set`).
   Pobrežie je časť scény Goo a ikony plochy sú súčasť „icons“ — strážené; hyprbars je doplnok Hyprlandu, nie proces.
   Pribudlo **okno s heslom (polkit)**: polkit agenta prijme iba z prihlasovacej relácie (overené: z jednotky systemd
-  „Passed session and the session the caller is in differs“), preto ho spúšťa Hyprland a GuardDog ho po zabití vráti
+  „Passed session and the session the caller is in differs“), preto ho spúšťa Hyprland a GuardCorgi ho po zabití vráti
   cez `hyprctl eval` (~10 s). Upozornenie pri páde chodí teraz vždy (aj bez AI), AI sa ponúkne iba so zapnutým
   pomocníkom. Štítky `linux/latteos/user` boli myslené pre **Monitor** (Ctrl+Shift+Esc a od 26. 10. aj Ctrl+Alt+Del):
   štítok, filter a zoznam strážených už sú, overené naživo (16 LatteOS, 287 Linux, 21 používateľa).
-  **Tvoje programy na žiadosť (26. 10.):** Monitor › Procesy, pravé tlačidlo na programe → „Držať v chode (GuardDog)“
-  (`latte-guarddog keep PID` / `keep MENO off`); GuardDog si zapamätá spustenie (pri Flatpaku `flatpak run ID`) a čo
+  **Tvoje programy na žiadosť (26. 10.):** Monitor › Procesy, pravé tlačidlo na programe → „Držať v chode (GuardCorgi)“
+  (`latte-guardcorgi keep PID` / `keep MENO off`); GuardCorgi si zapamätá spustenie (pri Flatpaku `flatpak run ID`) a čo
   program je: cestu k súboru a jeho SHA-256. Za strážený program berie iba proces, ktorý ten súbor naozaj spúšťa (pri
   systémovom súbore, ktorý mení iba root, stačí cesta — aktualizácia ho nerozbije); rovnako pomenovaný **dvojník** sa
   nezapočíta, zapíše sa do denníka a ohlási upozornením; zmenený súbor („zmenený“) sa nechá bežať, ale ohlási sa.
   Spúšťa cez Hyprland (v prihlasovacej relácii). Strážený program má v Monitore štít a je medzi
-  strážením v GuardDogu aj s prepínačom. Overené naživo s foot: zabitý sa vrátil za 9 s, po vypnutí ostal zatvorený; dvojník `foot` (kópia iného programu) ohlásený a skutočný foot sa aj tak vrátil.
+  strážením v GuardCorgi aj s prepínačom. Overené naživo s foot: zabitý sa vrátil za 9 s, po vypnutí ostal zatvorený; dvojník `foot` (kópia iného programu) ohlásený a skutočný foot sa aj tak vrátil.
 
-**10F.08** [x] (GuardDog) **Dashboard pre používateľa** (používateľ 26. 10.; 3E: Estetické, Efektívne, Ergonomické). Úvodná
-stránka GuardDogu: funkčnosť systému (čo beží, čo stráži, celkový stav jednou vetou), **dni od posledného problému**,
-**najčastejšie problémy** (čo padalo, koľkokrát, kedy naposledy). Potrebuje históriu udalostí, nielen dnešný `guarddog.json`.
-  **26. 10. hotové:** stránka **Prehľad** (prvá v okne GuardDogu): stav jednou vetou, veľké číslo dní bez problému, pás
+**10F.08** [x] (GuardCorgi) **Dashboard pre používateľa** (používateľ 26. 10.; 3E: Estetické, Efektívne, Ergonomické). Úvodná
+stránka GuardCorgi: funkčnosť systému (čo beží, čo stráži, celkový stav jednou vetou), **dni od posledného problému**,
+**najčastejšie problémy** (čo padalo, koľkokrát, kedy naposledy). Potrebuje históriu udalostí, nielen dnešný `guardcorgi.json`.
+  **26. 10. hotové:** stránka **Prehľad** (prvá v okne GuardCorgi): stav jednou vetou, veľké číslo dní bez problému, pás
   posledných 30 dní vo farbách Monitora (dni pred začiatkom histórie sivé), 5 najčastejších problémov (klik → Pády alebo
-  Denník). História je trvalá v `~/.local/state/latteos/guarddog.log` (5000 riadkov); pády, ktoré vyrieši systemd skôr, než
-  ich GuardDog uvidí, zapisuje podľa `NRestarts` („spadol, vrátil sa“). `latte-guarddog summary`, skúška v `tests/test_bin.py`.
+  Denník). História je trvalá v `~/.local/state/latteos/guardcorgi.log` (5000 riadkov); pády, ktoré vyrieši systemd skôr, než
+  ich GuardCorgi uvidí, zapisuje podľa `NRestarts` („spadol, vrátil sa“). `latte-guardcorgi summary`, skúška v `tests/test_bin.py`.
 
-**10F.09** [x] (GuardDog) **Útok na GuardDog** (používateľ 26. 10.): keď bude GuardDog hotový (10F.02–10F.08), skúšať všetky
+**10F.09** [x] (GuardCorgi) **Útok na GuardCorgi** (používateľ 26. 10.): keď bude GuardCorgi hotový (10F.02–10F.08), skúšať všetky
 spôsoby, ako ho zabiť alebo umlčať (signály, `systemctl --user stop/mask`, zabitie `systemd --user`, zaplnenie disku,
 zmazanie stavu, zamrznutie), každý nájdený spôsob opraviť a pridať do skúšky 10F.06.
-  **26. 10., prvé kolo:** ustál TERM, KILL, STOP, zmrazenie (`tests/test_guarddog.sh`), zmazanú a pokazenú históriu.
-  **Našlo a opravené:** poškodené `~/.config/latteos/guarddog.json` (`"off": 5`, zoznam namiesto objektu, zlý `keep`)
+  **26. 10., prvé kolo:** ustál TERM, KILL, STOP, zmrazenie (`tests/test_guardcorgi.sh`), zmazanú a pokazenú históriu.
+  **Našlo a opravené:** poškodené `~/.config/latteos/guardcorgi.json` (`"off": 5`, zoznam namiesto objektu, zlý `keep`)
   a nezapisovateľný `$XDG_RUNTIME_DIR/latteos` ho zhodili a padal dokola — nastavenia sa teraz čítajú s kontrolou typov
   (`names_in`, `kept`), každé kolo stráženia prežije vlastnú chybu (zapíše ju a pokračuje); skúška v `tests/test_bin.py`.
   Strážený program sa už nepozná podľa mena, ale podľa súboru a SHA-256 (dvojník sa ohlási).
-  **Prešlo a bez roota sa opraviť nedá:** `systemctl --user stop latte-guarddog`, `mask` + zabitie, vlastný drop-in
-  v `~/.config/systemd/user/latte-guarddog.service.d/` (podvrhnutý `ExecStart`, vypnutý watchdog), zabitie `systemd --user`
+  **Prešlo a bez roota sa opraviť nedá:** `systemctl --user stop latte-guardcorgi`, `mask` + zabitie, vlastný drop-in
+  v `~/.config/systemd/user/latte-guardcorgi.service.d/` (podvrhnutý `ExecStart`, vypnutý watchdog), zabitie `systemd --user`
   (to vezme aj Goo a všetky jednotky; neskúšané naostro, odpojilo by reláciu). Všetko robí proces toho istého
   používateľa bez hesla → rieši 10F.05 (malý strážca pod rootom).
   **26. 10., druhé kolo (s DogHouse):** stop, mask (runtime aj trvalý), drop-in, podvrhnutý unit — všetko vrátené pri
-  najbližšej kontrole; samotný časovač vrátil zastavený GuardDog za 58 s. **Zabitie `systemd --user`:** Goo, zámok,
-  nečinnosť, čas pri obrazovke aj GuardDog späť za 48 s. Ten útok našiel dve skryté chyby, obe opravené: (1) zamknutá
+  najbližšej kontrole; samotný časovač vrátil zastavený GuardCorgi za 58 s. **Zabitie `systemd --user`:** Goo, zámok,
+  nečinnosť, čas pri obrazovke aj GuardCorgi späť za 48 s. Ten útok našiel dve skryté chyby, obe opravené: (1) zamknutá
   obrazovka po páde zámku ostala na núdzovej obrazovke Hyprlandu — scéna zámku si pamätala zamknutie, ale `emit` z vlastnej
   logiky nespustí vlastný handler, takže zámok nikdy neprevzala (`goo/lib/login.luau`, teraz priame volanie; overené
   zabitím zámku pri zamknutej obrazovke); (2) obrazovka zhasnutá starým hypridle po jeho reštarte ostala tmavá navždy
   (aj Moonlight sa nepripojil) — `latte-idle` ju pri štarte rozsvieti.
 
-**10F.10** [ ] (GuardDog) **Skúšky bez obrazovky nie sú pád** (zistené 29. 10.): `tests/screen.sh` na konci zabije svoj
-vnorený Hyprland a GuardDog to hlási ako „Hyprland spadol“ (pri jednom sedení 11 upozornení `notify-send --wait`, ktoré
-visia, kým sa nezatvoria). `tests/screen.sh` má GuardDogu povedať, že ide o skúšku (premenná prostredia alebo
-vlastný `XDG_RUNTIME_DIR` mimo stráženia), alebo GuardDog nemá strážiť Hyprland, ktorý nie je reláciou používateľa.
-**10F.11** [ ] **Aplikácia neodpovedá** (používateľ 2. 11.): ako vo Windows a GNOME — správca okien pošle oknu ping (`xdg_wm_base.ping`), a keď aplikácia do pár sekúnd neodpovie, ukáže pri okne „Neodpovedá · Počkať / Ukončiť“ (myšou); GuardDog si to zapíše. pleamar-wm ping nemá → záplata (+ text issue). GuardDog stráži súčasti systému, nie aplikácie. (z 1D.40: nesúvisí s Hyprlandom, ale s GuardDogom)
+**10F.10** [ ] (GuardCorgi) **Skúšky bez obrazovky nie sú pád** (zistené 29. 10.): `tests/screen.sh` na konci zabije svoj
+vnorený Hyprland a GuardCorgi to hlási ako „Hyprland spadol“ (pri jednom sedení 11 upozornení `notify-send --wait`, ktoré
+visia, kým sa nezatvoria). `tests/screen.sh` má GuardCorgi povedať, že ide o skúšku (premenná prostredia alebo
+vlastný `XDG_RUNTIME_DIR` mimo stráženia), alebo GuardCorgi nemá strážiť Hyprland, ktorý nie je reláciou používateľa.
+**10F.11** [ ] **Aplikácia neodpovedá** (používateľ 2. 11.): ako vo Windows a GNOME — správca okien pošle oknu ping (`xdg_wm_base.ping`), a keď aplikácia do pár sekúnd neodpovie, ukáže pri okne „Neodpovedá · Počkať / Ukončiť“ (myšou); GuardCorgi si to zapíše. pleamar-wm ping nemá → záplata (+ text issue). GuardCorgi stráži súčasti systému, nie aplikácie. (z 1D.40: nesúvisí s Hyprlandom, ale s GuardCorgi)
+**10F.12** [ ] **Prerobiť GuardCorgi: okno na zdravie systému nad systemd, nie druhý systemd** (používateľ 3. 11.; forma
+ešte nie je rozhodnutá, kým nie, ostáva ako je). Zistené 3. 11.: Goo, uzamknutie, idle, čas pred obrazovkou a sieťový
+strážca sú služby systemd s `Restart=always`, `RestartSec=1`, takže ich systemd vráti skôr, než GuardCorgi (5 s, dve
+zlyhania za sebou) — v denníku od 28. 10. Goo 14× „down“ a 11× „back“ (vrátil sa sám). Zdvojené so systemd: reštart,
+„5× za 5 min, potom pokoj“ (`StartLimitBurst`), stráženie seba (`WatchdogSec`), pády (číta `systemd-coredump`).
+Čo systemd nevie: či Goo naozaj žije (`get goo_alive`, nie iba proces), časti mimo systemd (tapeta, schránka, polkit,
+ikony plochy do 7B.05), komu proces patrí (zoznam s odtlačkami, Monitor), držať v chode program používateľa (`keep`),
+upozornenie na pád s „Opýtať sa AI“, okno pre človeka bez `journalctl`. Návrh: tapetu, schránku a polkit urobiť
+službami systemd (polkit potrebuje prihlásenú reláciu — overiť), vlastnú slučku reštartov vyhodiť, `keep` cez
+`systemd-run --user -p Restart=always`; zvážiť zrušenie DogHouse (rootova stráž nad strážou, prepisuje používateľove
+úpravy služieb). Kandidát na prvý pomocný program v Ruste (17.05).
 
 ### 10G. [~] NetManager
 Zdroje: `bin/latte-network`, `bin/latte-net`, `bin/latte-network`
@@ -3486,6 +3511,17 @@ inštalácia bezpečná a opakovateľná. Zverejnenie vykonať iba na výslovný
   (GFX6–8 potrebuje Linux 7.3 a Mesu 26.3 z Koji, 1D.16) a dva monitory (1D.01, 1D.07); (6) grafický inštalátor
   a obraz (2.06) — pre prvých testerov stačí 1–4.
 
+**14.21** [ ] **Verzie podľa fáz** (rozhodnuté 3. 11., používateľ súhlasil): verzia sa vydá, keď je jej fáza hotová,
+overená na latte-lab a dá sa nainštalovať od nuly — nie podľa dátumu.
+- **0.5** — prechod na pleamar-wm dotiahnutý (1D.41, 1D.42, overenie 1D.14) a inštalátor funguje na čistej Fedore 45
+  (2.06): prvá verzia na inštaláciu niekým iným, alpha pre dobrovoľníkov (14.20). Vyhlási sa až po skúške od nuly pri
+  preinštalovaní latte-lab; dovtedy sme na ceste k 0.5.
+- **0.6** Fáza 2 (Plocha Goo) · **0.7** Fáza 3 (Vzhľad a Nastavenia) · **0.8** Fáza 4 body 10–16 (aplikácie pre zvyky
+  z Windowsu) · **0.9** Fáza 4 body 17–20 a Fáza 5: funkčne kompletné, ďalej iba opravy · **0.9.x** beta: Optimalizácia
+  (17) a STRESTEST (18) · **1.0 „Arabica“** po bránach 14.14.
+- Tretie číslo (0.5.1…) = opravná verzia v rámci fázy, bez nových funkcií. Zamknuté verzie pleamaru, pleamar-wm,
+  Quickshellu a Mesy sa menia iba s novou verziou LatteOS. Každá verzia: značka v gite (`v0.6.0`), záznam v `ZMENY.md`,
+  riadok v README. Návrh: odteraz jedna hlavná vetva a verzie ako značky (vetvy a značky na GitHube iba na pokyn).
 ## 15. [ ] Inšpirácie a tech radar
 Nápady bez rozhodnutia; samostatné úlohy z nich sú pri svojej kategórii. `inspo/`.
 Zdroje: `inspo/dalsie_inspiracie.md`, `inspo/LatteOS – technologický radar 2026.md`
@@ -3635,7 +3671,7 @@ Zdroje: `docs/OPTIMALIZACIA.md`, `tests/screen.sh` (`PLEAMAR_TIMING=1`)
 **17.05** [ ] **Konečná podoba: aplikácie LatteOS a pomocné programy v Ruste nad pleamarom** (používateľ 27. 10.) — namiesto
 Quickshell/QML (`apps/`) a shell/Python skriptov (`bin/latte-*`): plochu aj okná aplikácií kreslí jeden engine v Ruste
 (pleamar, `kind: window`), logika v Ruste (`crates/`). Cieľ: menej procesov a pamäte, rýchlejší štart, jeden balík bez
-Qt a interpretov. Predtým skúška na jednej malej aplikácii (GuardDog): pamäť, rýchlosť, čo pleamaru chýba (prijímanie
+Qt a interpretov. Predtým skúška na jednej malej aplikácii (GuardCorgi): pamäť, rýchlosť, čo pleamaru chýba (prijímanie
 súborov ťahaním zvonku, čítačka obrazovky). Dovtedy sa QML neprepisuje; nové pomocné programy, kde to dáva zmysel, rovno
 v Ruste do `crates/`.
 
@@ -3726,7 +3762,7 @@ na jednom počítači beží náročné generovanie (GPU, RAM — napr. ComfyUI)
 - **Hry:** hra beží na hernom počítači a jeho monitore natívne, cez sieť ide iba kurzor. Keď hra zachytí myš, kurzor sa
   **zamkne** na jej obrazovke (aby pri prudkom pohybe „neušiel“), skratka na odomknutie. Anti-cheat: vstup do hry ide
   z fyzickej myši toho počítača; softvérovo vkladaný vstup z iného počítača iba mimo hier s anti-cheatom.
-- **Bezpečnosť:** iba domáca sieť, spárovanie zariadení raz (kód na obrazovke), šifrované spojenie; NET a GuardDog (10F)
+- **Bezpečnosť:** iba domáca sieť, spárovanie zariadení raz (kód na obrazovke), šifrované spojenie; NET a GuardCorgi (10F)
   vidia agenta ako jednu aplikáciu. Latencia: káblom cieľ pod ~10 ms, Wi-Fi s upozornením.
 - **Tapeta** na obrazovkách iných zariadení: 7A.13.
 - Poradie, keď príde rad: (1) kurzor, klávesnica a schránka LatteOS↔LatteOS a LatteOS↔Windows; (2) súbory ťahaním;
