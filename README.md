@@ -22,12 +22,64 @@ yours alone, rules for what they may touch, and a gate for what they ask to do.
 
 **This is a work in progress.** The session starts from the login screen with the Goo engine, wallpaper and window commands
 (list, focus, minimize, maximize, close), while window modes, snapping, glass and LatteOS's own shortcuts are still being moved
-over. Hyprland stays as the other session until the new one can do everything it did, and `v0.4-fresh` remains the way back.
+over. Hyprland is gone from this branch; `v0.4-fresh` remains the way back.
 It was tested on one machine with a Fedora 45 beta. AMD GFX6 to GFX8 cards (such as the RX 640 it was tested on) need Linux 7.3
 and Mesa 26.3, still a release candidate; without them the drops are painted by the processor.
 
 **Thanks to** [k4ditano](https://github.com/k4ditano), the author of [pleamar](https://github.com/k4ditano/pleamar),
 pleamar-wm and [Marea](https://github.com/k4ditano/marea-plm); to the rice community on Reddit; to Claude Opus 5.5, which bring my ideas to live; and to the greed of corporations, without which nobody would have needed a system like this. And of course, Thanks for the coffe.
+
+## Installing
+
+> **Alpha.** The installer is new and has not yet been run from start to finish on a freshly installed machine. Use a
+> computer you can wipe, not the one you work on.
+
+**What you need**
+
+- A 64-bit PC (x86_64) with **Fedora 45 Server**, freshly installed from Fedora's own installer.
+- An internet connection, and about **20 GB free** on the system disk (the build takes much of it).
+- About **half an hour**: most of it is building pleamar and pleamar-wm from source on your machine.
+- It has been tried on one machine only: an AMD Radeon RX 640, 16 GB of memory.
+
+**AMD cards of GFX6 to GFX8** (Radeon HD 7000 to RX 500, such as the RX 640): they need Linux 7.3 and Mesa 26.3, which
+Fedora 45 does not have yet. The installer notices the card and adds them: Linux 7.3.1 from Fedora's build system (Koji)
+and Mesa 26.3.0-rc3, built from source. That Linux is **not signed, so Secure Boot has to be off** or it will not start.
+
+**1. Install Fedora 45 Server.** Fedora's installer does the language, keyboard, disks, network and your account. Create
+a user with administrator rights. A separate `/data` partition for your files is a good idea, but not required.
+
+**2. Run one command.** Log in on the text console and run:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/arkaysk/LatteOS-v0x-Jihlavanka/v0.5-pleamarwm-jihlavanka/get | sudo sh
+```
+
+It checks that this is Fedora 45 with a network, installs only `git`, `cage` and `quickshell` from Fedora, downloads
+LatteOS to `/opt/latteos/src` and opens the installer on the whole screen. You use it with the mouse.
+
+**3. The installer.** What Fedora already did is shown in grey. Then: what your computer has (graphics card, memory,
+disks, Secure Boot), whether you want generative AI, which extra components to install, a summary, and the install
+itself with a list of what it is doing and a progress bar. **Nothing changes before you press Install.**
+
+**4. Restart.** LatteOS starts with the next boot, on its own login screen.
+
+<details>
+<summary>Without the installer's window, from a terminal</summary>
+
+```sh
+sudo dnf install -y git
+git clone https://github.com/arkaysk/LatteOS-v0x-Jihlavanka.git && cd LatteOS-v0x-Jihlavanka
+./install                          # says what it would do and what is missing; changes nothing
+sudo ./install --go                # installs; it builds pleamar and pleamar-wm with LatteOS's patches
+sudo ./install --go --old-amd      # the same, with Linux 7.3 and Mesa 26.3 for GFX6 to GFX8 cards
+sudo ./install --go --with "steam gamescope qalculate"    # optional packages too (FILES lists them)
+```
+
+</details>
+
+**Taking it off.** `sudo ./install --remove` takes LatteOS's files off and puts back what it replaced; `--purge` also
+removes what it made while it ran. If your system disk is Btrfs (Fedora's default), a snapshot before installing is
+the surest way back.
 
 ## The Goo engine
 
