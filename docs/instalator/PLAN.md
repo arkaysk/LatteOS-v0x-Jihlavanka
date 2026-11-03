@@ -83,6 +83,31 @@ vývojové balíky Qt 6 a Waylandu (zoznam v `FILES`, riadok s qt6-qtwebengine).
 Keď Fedora 45 dostane Linux 7.3 a Mesu 26.3 v bežných aktualizáciách, riadky 3.4 odpadnú (1D.16) — sprievodca to
 zisťuje sám (`dnf` verzia v repozitári), nič sa nepíše natvrdo.
 
+## 3.5 Ako dlho to trvá (odhad 3. 11., PC ako latte-lab, rýchly internet)
+
+| Časť | Čas | Z čoho |
+|---|---|---|
+| Balíky Fedory (základ) | 5–8 min | sťahovanie a inštalácia, podľa siete |
+| Rust a nástroje na zostavenie | 1–2 min | |
+| pleamar + pleamar-wm | 10–15 min | pleamar 0.3.2 trval 4,5 min, dnešné verzie sú väčšie (nezmerané) |
+| Quickshell pre LensAI | ~5 min | zmerané 3. 11. na latte-lab |
+| Súbory a nastavenie systému | 1–2 min | |
+| **Spolu základ** | **~25–35 min** | |
+| + Hry (Steam, Wine, DXVK…) | +5–10 min | |
+| + Lokálna AI (model 2–4 GB) | +3–10 min | podľa siete |
+| + Linux 7.3 a Mesa (iba GFX6–8) | +3–5 min | |
+
+Na slabšom PC (4 jadrá) sa zostavovanie zhruba zdvojnásobí. Keď bude obraz Universal Blue (časť 6), zostavovanie
+odpadne úplne: inštalácia ~5–10 min.
+
+## 3.6 Obrazovka inštalácie (používateľ 3. 11.)
+
+- **Posuvník v štýle grafov LatteOS:** rad segmentov ako `DotBar` (`apps/common/DotBar.qml`). Farba: pozri otázku
+  v odpovedi z 3. 11. — `Theme.heat` (zelená → zlatá → červená) by na konci svietila červenou, ako chyba.
+- **Prezentácia súčastí LatteOS vedľa**, kým sa inštaluje (inštalácia je dlhá): obrázok a dve vety o jednej súčasti,
+  po chvíli ďalšia — Goo a kvapky, LensAI, Barista (programy Windows), DualBrew, herná relácia, režimy okien,
+  SAFE a GuardDog. Vľavo zoznam krokov, vpravo prezentácia, dole posuvník a čas, ktorý ostáva.
+
 ## 4. Technika
 
 - **Príkaz:** `curl -fsSL <adresa>/get | sudo bash` (adresa po zverejnení, iba na pokyn). Skript: skontroluje
