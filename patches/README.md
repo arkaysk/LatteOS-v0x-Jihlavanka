@@ -31,3 +31,19 @@ cargo build --release          # target/release/pleamar goes to /usr/bin/pleamar
 
 When pleamar moves on: apply each patch to the new tag; one that no longer applies was either taken upstream
 (drop it) or needs its context moved (the change itself is small).
+
+## Quickshell with a web engine
+
+LatteOS's apps run in [Quickshell](https://github.com/quickshell-mirror/quickshell). Its 0.3.2 (revision `9b0f339`)
+cannot hold a web page: Chromium stops at once ("Argument list is empty"), and QtWebView, which is Chromium too on
+Linux, the same. `quickshell-webengine.patch` is [PR #351](https://github.com/quickshell-mirror/quickshell/pull/351)
+(not merged yet) brought to that revision: `//@ pragma EnableQtWebEngineQuick` initialises QtWebEngine before the app
+is made, and the app gets its program's name. One change of LatteOS's own: the library is loaded by its versioned
+name, which is the one the runtime package has. With it LensAI shows the services' own pages in tabs (ROADMAP 10B.35).
+Built without jemalloc: with it the PR's author and Quickshell's saw a crash at the start.
+
+```sh
+git clone https://github.com/quickshell-mirror/quickshell.git && cd quickshell && git checkout 9b0f339
+git apply /path/to/patches/quickshell-webengine.patch
+cmake -GNinja -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo -DUSE_JEMALLOC=OFF -DCRASH_HANDLER=OFF && ninja -C build
+```

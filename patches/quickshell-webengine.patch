@@ -1,0 +1,166 @@
+diff --git a/src/CMakeLists.txt b/src/CMakeLists.txt
+index 39985fd..3b691b4 100644
+--- a/src/CMakeLists.txt
++++ b/src/CMakeLists.txt
+@@ -42,3 +42,5 @@ endif()
+ if (NETWORK)
+ 	add_subdirectory(network)
+ endif()
++
++add_subdirectory(webengine)
+\ No newline at end of file
+diff --git a/src/launch/launch.cpp b/src/launch/launch.cpp
+index 3044d46..2c14c70 100644
+--- a/src/launch/launch.cpp
++++ b/src/launch/launch.cpp
+@@ -25,6 +25,7 @@
+ #include "../core/qmlglobal.hpp"
+ #include "../core/rootwrapper.hpp"
+ #include "../ipc/ipc.hpp"
++#include "../webengine/webengine.hpp"
+ #include "build.hpp"
+ #include "launch_p.hpp"
+ 
+@@ -72,6 +73,7 @@ int launch(const LaunchArgs& args, char** argv) {
+ 
+ 	struct {
+ 		bool useQApplication = false;
++		bool useQtWebEngineQuick = false;
+ 		bool nativeTextRendering = false;
+ 		bool desktopSettingsAware = true;
+ 		bool useSystemStyle = false;
+@@ -112,6 +114,7 @@ int launch(const LaunchArgs& args, char** argv) {
+ 			else if (pragma == "NativeTextRendering") pragmas.nativeTextRendering = true;
+ 			else if (pragma == "IgnoreSystemSettings") pragmas.desktopSettingsAware = false;
+ 			else if (pragma == "RespectSystemStyle") pragmas.useSystemStyle = true;
++			else if (pragma == "EnableQtWebEngineQuick") pragmas.useQtWebEngineQuick = true;
+ 			else if (pragma == "DropExpensiveFonts") pragmas.dropExpensiveFonts = true;
+ 			else if (pragma.startsWith("IconTheme ")) pragmas.iconTheme = pragma.sliced(10);
+ 			else if (pragma.startsWith("AppId ")) {
+@@ -281,7 +284,11 @@ int launch(const LaunchArgs& args, char** argv) {
+ 	QGuiApplication::setDesktopSettingsAware(pragmas.desktopSettingsAware);
+ 
+ 	QGuiApplication* app = nullptr;
+-	auto qArgC = 0;
++	auto qArgC = 1;
++
++	if (pragmas.useQtWebEngineQuick) {
++		web_engine::init();
++	}
+ 
+ 	if (pragmas.useQApplication) {
+ 		app = new QApplication(qArgC, argv);
+diff --git a/src/webengine/CMakeLists.txt b/src/webengine/CMakeLists.txt
+new file mode 100644
+index 0000000..66f4cd8
+--- /dev/null
++++ b/src/webengine/CMakeLists.txt
+@@ -0,0 +1,3 @@
++if (BUILD_TESTING)
++	add_subdirectory(test)
++endif()
+\ No newline at end of file
+diff --git a/src/webengine/test/CMakeLists.txt b/src/webengine/test/CMakeLists.txt
+new file mode 100644
+index 0000000..1d0c776
+--- /dev/null
++++ b/src/webengine/test/CMakeLists.txt
+@@ -0,0 +1,3 @@
++add_executable(webengine webengine.cpp)
++target_link_libraries(webengine PRIVATE Qt::Core Qt::Test)
++add_test(NAME webengine WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}" COMMAND $<TARGET_FILE:webengine>)
+\ No newline at end of file
+diff --git a/src/webengine/test/webengine.cpp b/src/webengine/test/webengine.cpp
+new file mode 100644
+index 0000000..aa726a6
+--- /dev/null
++++ b/src/webengine/test/webengine.cpp
+@@ -0,0 +1,10 @@
++#include "webengine.hpp"
++
++#include <qtest.h>
++#include <qtestcase.h>
++
++#include "../webengine.hpp"
++
++void WebEngineInitTest::init() { QVERIFY(qs::web_engine::init()); }
++
++QTEST_MAIN(WebEngineInitTest)
+\ No newline at end of file
+diff --git a/src/webengine/test/webengine.hpp b/src/webengine/test/webengine.hpp
+new file mode 100644
+index 0000000..458e344
+--- /dev/null
++++ b/src/webengine/test/webengine.hpp
+@@ -0,0 +1,8 @@
++#include <qobject.h>
++
++class WebEngineInitTest: public QObject {
++	Q_OBJECT
++
++private slots:
++	static void init();
++};
+\ No newline at end of file
+diff --git a/src/webengine/webengine.hpp b/src/webengine/webengine.hpp
+new file mode 100644
+index 0000000..5e9654f
+--- /dev/null
++++ b/src/webengine/webengine.hpp
+@@ -0,0 +1,55 @@
++#include <QDebug>
++#include <qdebug.h>
++#include <qlibrary.h>
++#include <qlogging.h>
++
++namespace qs::web_engine {
++
++inline void printNotLoaded() {
++	qWarning() << "QtWebEngineQuick is not Loaded. Using the qml type WebEngineView from "
++	              "QtWebEngine might lead to undefined behaviour!";
++}
++
++inline bool init() {
++	using InitializeFunc = void (*)();
++
++	// the runtime package has only the versioned file (libQt6WebEngineQuick.so.6); the bare name is the -devel one
++	QLibrary lib("Qt6WebEngineQuick", QT_VERSION_MAJOR);
++	if (!lib.load()) {
++		qWarning() << "Failed to load library:" << lib.errorString();
++		qWarning() << "You might need to install the necessary package for Qt6WebEngineQuick.";
++		printNotLoaded();
++		return false;
++	}
++
++	qDebug() << "Loaded library Qt6WebEngineQuick";
++
++	auto initialize =
++	    reinterpret_cast<InitializeFunc>(lib.resolve("_ZN16QtWebEngineQuick10initializeEv"));
++	if (!initialize) {
++		qWarning() << "Failed to resolve symbol 'void QtWebEngineQuick::initialize()' in lib "
++		              "Qt6WebEngineQuick. This should not happen";
++
++		printNotLoaded();
++		return false;
++	}
++
++	qDebug() << "Found symbol QtWebEngineQuick::initialize(). Initializing WebEngine...";
++
++	try {
++		initialize();
++		qDebug() << "Successfully initialized QtWebEngineQuick";
++	} catch (const std::exception& e) {
++		qWarning() << "Exception while calling QtWebEngineQuick::initialize()" << e.what();
++		printNotLoaded();
++		return false;
++	} catch (...) {
++		qWarning() << "Unknown Exception while calling QtWebEngineQuick::initialize()";
++		printNotLoaded();
++		return false;
++	}
++
++	return true;
++}
++
++} // namespace qs::web_engine
+\ No newline at end of file

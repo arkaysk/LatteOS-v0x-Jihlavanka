@@ -2636,6 +2636,9 @@ a ostatné ostávajú domáca záležitosť LensAI (10B.07, 10B.08). Pravidlá a
   konektor služby a tunel, vypínač predvolene vypnutý; okná rozhovorov LensAI ostávajú ako záloha. Zistené: Quickshell
   0.3.2 webový engine nespustí (Chromium padne: „Argument list is empty“), pleamar web nekreslí; v repozitári Fedory je
   `python3-pyqt6-webengine`.
+  3. 11.: Quickshell 0.3.2 so záplatou `patches/quickshell-webengine.patch` (PR #351, bez jemallocu) zobrazí claude.ai
+  v okne Quickshellu aj s vlastným profilom (overené bez obrazovky); zostavený v `~/src/quickshell-web/build`, ešte
+  nenainštalovaný. Ostáva: rozhodnúť inštaláciu (namiesto `qs` z COPR), potom záložky s prsteňmi v LensAI.
 
 **10B.36** [ ] **Kaviareň (Caffè) — AI farma pre každodennú a tvorivú prácu** (používateľ 29. 10.) — hravá, pútavá časť LensAI
 (a LensShore): front dlhých úloh, ktoré robia **čašníčky = agenti** (lokálne modely, ComfyUI, cloud cez API iba
