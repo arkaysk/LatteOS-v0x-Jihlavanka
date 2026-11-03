@@ -1,3 +1,4 @@
+//@ pragma AppId latteos-devices
 // Device Manager: what this computer is made of, and whether every part of it works.
 // bin/latte-devices knows; this window shows it. It changes nothing: the network, the sound and Bluetooth are
 // set from the shore's panel on the desktop.   latte-app devices [GROUP]

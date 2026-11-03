@@ -13,7 +13,7 @@ for f in bin/*; do
     case "$(head -1 "$f")" in *python*) python3 -c 'import sys; compile(open(sys.argv[1]).read(), sys.argv[1], "exec")' "$f" ;; *) bash -n "$f" ;; esac
 done
 
-for f in get patches/*.sh system/session-env.sh system/libexec/* system/kernel-install/* tests/screen.sh tests/press tests/test_screens.sh tests/test_guarddog.sh; do
+for f in get patches/*.sh system/session-env.sh system/libexec/* system/kernel-install/* tests/screen.sh tests/press tests/test_screens.sh tests/test_guardcorgi.sh; do
     case "$(head -1 "$f")" in *python*) python3 -c 'import sys; compile(open(sys.argv[1]).read(), sys.argv[1], "exec")' "$f" ;; *) bash -n "$f" ;; esac
 done
 # a shader is loaded as built: the built file must be the one its source gives
@@ -96,7 +96,7 @@ for f in filter(None, code):
 # what the commands and the scenes' logic say goes through the same table as the scenes' texts
 table = open("goo/lang/sk.plm", encoding="utf-8").read()
 said = {"bin/latte-safe": r'\bt "([^"$]+)"', "bin/latte-ai": r'\bN\("((?:[^"\\]|\\.)+)"\)',
-        "bin/latte-guarddog": r'\bT\("((?:[^"\\]|\\.)+)"\)'}
+        "bin/latte-guardcorgi": r'\bT\("((?:[^"\\]|\\.)+)"\)'}
 for f in filter(None, code):
     if f.endswith(".luau"): said[f] = r'\b(?:tr|N)\("((?:[^"\\]|\\.)+)"\)'      # N marks a text that tr() is given later
     if f.endswith(".qml"): said[f] = r'\b(?:tr|QT_TR_NOOP)\("((?:[^"\\]|\\.)+)"'     # QT_TR_NOOP marks one, in a list

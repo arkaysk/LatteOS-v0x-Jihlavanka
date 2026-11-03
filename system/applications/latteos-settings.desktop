@@ -7,4 +7,4 @@ Comment[sk]=Všetko o počítači a ploche, čo sa dá nastaviť
 Exec=latte-app settings
 Icon=preferences-system
 Categories=Settings;
-StartupWMClass=org.quickshell
+StartupWMClass=latteos-settings

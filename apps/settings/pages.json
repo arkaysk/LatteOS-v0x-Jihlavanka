@@ -329,8 +329,8 @@
     "words": "keys shortcut layout win super qwerty qwertz switch"
    },
    {
-    "id": "guarddog",
-    "name": "GuardDog",
+    "id": "guardcorgi",
+    "name": "GuardCorgi",
     "icon": "shield-check",
     "status": "ready",
     "words": "guard watch restart components running keeps alive dog",

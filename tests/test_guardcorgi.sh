@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # The guard on the real session: every part of the desktop is killed (TERM, KILL), stopped (STOP) and frozen, and must be
 # back. It shakes the desktop for a minute, so it is not in check.sh (tests/test_bin.py checks the same without a
-# session). Run in a LatteOS session: tests/test_guarddog.sh
+# session). Run in a LatteOS session: tests/test_guardcorgi.sh
 set -u
 fail=0
 pid() { systemctl --user show -p MainPID --value "$1"; }
@@ -17,8 +17,8 @@ back() {   # UNIT OLD-PID SECONDS: a new process runs it within that time
 }
 say() { if [ "$1" = 0 ]; then echo "   ok    $2"; else echo "   FAIL  $2"; fail=1; fi; }
 
-systemctl --user is-active --quiet latte-session.target || { echo "guarddog: not in a LatteOS session"; exit 2; }
-units="latte-guarddog latte-goo latte-lockscreen latte-idle latte-focus"
+systemctl --user is-active --quiet latte-session.target || { echo "guardcorgi: not in a LatteOS session"; exit 2; }
+units="latte-guardcorgi latte-goo latte-lockscreen latte-idle latte-focus"
 for u in $units; do
     for sig in TERM KILL; do
         a="$(pid "$u")"; kill "-$sig" "$a"; back "$u" "$a" 5; say $? "$u $sig"
@@ -36,5 +36,5 @@ pkill -KILL -f '^bash /usr/libexec/latte-polkit-agent'; pkill -KILL -f "$agent";
 until pgrep -f "$agent" >/dev/null || [ $t -ge 20 ]; do sleep 1; t=$((t + 1)); done
 pgrep -f "$agent" >/dev/null; say $? "polkit agent KILL (${t} s)"
 # the guard itself stopped: its watchdog (30 s) has systemd kill it and start it again
-a="$(pid latte-guarddog)"; kill -STOP "$a"; back latte-guarddog "$a" 40; say $? "latte-guarddog STOP"
-[ $fail = 0 ] && echo "guarddog: ok" || { echo "guarddog: FAILED"; exit 1; }
+a="$(pid latte-guardcorgi)"; kill -STOP "$a"; back latte-guardcorgi "$a" 40; say $? "latte-guardcorgi STOP"
+[ $fail = 0 ] && echo "guardcorgi: ok" || { echo "guardcorgi: FAILED"; exit 1; }

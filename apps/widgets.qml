@@ -1,3 +1,4 @@
+//@ pragma AppId latteos-widgets
 // Widgets: the Chaldea collection (apps/widgets, bin/latte-widget). A press on a tile puts it on the desktop or takes
 // it away; what is chosen comes back at the next login. The lockscreens are pictures to look at: they lock nothing.
 import QtQuick

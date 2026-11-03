@@ -7,4 +7,4 @@ Comment[sk]=Hľadať, inštalovať a aktualizovať aplikácie
 Exec=latte-app appmanager
 Icon=system-software-install
 Categories=System;PackageManager;
-StartupWMClass=org.quickshell
+StartupWMClass=latteos-appmanager

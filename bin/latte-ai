@@ -57,7 +57,7 @@ No API key: the official tool of a service answers, with the account the user is
                             off state in ~/.local/state/latteos/toggles; alone, the exit code says whether it is on
   latte-ai helper local|haiku   who reads a sentence: this computer (nothing leaves it) or Claude Haiku (~/.config/latteos/helper)
   latte-ai quick --for NAME PROMPT   one question for a helper, the answer alone; exit 1 when it is off or fails
-  latte-ai offer-crash      exit 0 when GuardDog offers "Ask the AI" for a crash: the toggle on and an agent chosen
+  latte-ai offer-crash      exit 0 when GuardCorgi offers "Ask the AI" for a crash: the toggle on and an agent chosen
   latte-ai invite           once: a notice asking the user to choose their agent (latte-session, a minute in)
   latte-ai local hardware | recommend | models | search TEXT [best|downloads|updated|likes] | files REPO | readme REPO |
                  get REPO FILE | runtime get | gpu on|off | remove PATH
@@ -107,7 +107,7 @@ def N(s):
 
 
 def T(text):
-    """The user's language, for what latte-ai itself shows (a notice): the table of goo/lang/<language>.plm, as GuardDog."""
+    """The user's language, for what latte-ai itself shows (a notice): the table of goo/lang/<language>.plm, as GuardCorgi."""
     lang = re.split(r"[_.@]", os.environ.get("LC_ALL") or os.environ.get("LC_MESSAGES") or os.environ.get("LANG") or "en")[0]
     try:
         with open(os.path.join(os.environ.get("LATTE_SHARE") or "/usr/share/latteos", "goo", "lang", lang + ".plm"), encoding="utf-8") as f:
@@ -1097,7 +1097,7 @@ def running():
 
 
 # ── a crash, and why the session ended: the facts to an agent, which explains and changes nothing (Omarchy's
-# diagnose-crash, MIT; GuardDog's notice and LatteOS SAFE ask for it)
+# diagnose-crash, MIT; GuardCorgi's notice and LatteOS SAFE ask for it)
 def crash(pid):
     try:
         found = json.loads(subprocess.run(["coredumpctl", "list", "--json=short", "--no-pager", str(pid)],
@@ -1108,7 +1108,7 @@ def crash(pid):
     at = datetime.datetime.fromtimestamp((c.get("time") or 0) / 1e6)
     task = ("The program %s (pid %s) crashed on %s with signal %s; systemd-coredump caught it. Find out what happened: "
             "`coredumpctl info %s`, the journal around that moment (`journalctl --since '%s' --until '%s'`), and whose it is "
-            "(LatteOS's, Fedora's or an app's: `latte-guarddog crashes`). Tell me in plain words what happened, whether it is "
+            "(LatteOS's, Fedora's or an app's: `latte-guardcorgi crashes`). Tell me in plain words what happened, whether it is "
             "worth reporting and to whom, and what I can do. Do not change anything."
             % (c.get("exe"), c.get("pid"), at.strftime("%Y-%m-%d %H:%M:%S"), c.get("sig"), c.get("pid"),
                (at - datetime.timedelta(minutes=2)).strftime("%Y-%m-%d %H:%M:%S"), (at + datetime.timedelta(seconds=30)).strftime("%Y-%m-%d %H:%M:%S")))
@@ -1593,9 +1593,9 @@ def quick_model():
 
 
 def helpers():
-    """LensAI's Helpers page: the defaults, the toggles, and the programs whose crashes are not told (GuardDog's)."""
+    """LensAI's Helpers page: the defaults, the toggles, and the programs whose crashes are not told (GuardCorgi's)."""
     try:
-        muted = json.loads(subprocess.run(["latte-guarddog", "quiet"], capture_output=True, text=True, timeout=10).stdout or "[]")
+        muted = json.loads(subprocess.run(["latte-guardcorgi", "quiet"], capture_output=True, text=True, timeout=10).stdout or "[]")
     except (OSError, ValueError, subprocess.SubprocessError):
         muted = []
     m = quick_model()
@@ -1715,7 +1715,7 @@ def main(a):
             return 0 if switched_on(a[1]) else 1
         switch(a[1], a[2])
         return 0
-    # whether GuardDog offers "Ask the AI" for a crash: the toggle, and the agent the user chose (Omarchy's crash-watch:
+    # whether GuardCorgi offers "Ask the AI" for a crash: the toggle, and the agent the user chose (Omarchy's crash-watch:
     # with none chosen the notice has nothing to offer)
     if a == ["offer-crash"]:
         return 0 if switched_on("crash-capture") and chosen(AGENT_WORD) in doers() else 1

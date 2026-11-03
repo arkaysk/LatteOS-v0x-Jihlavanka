@@ -1,4 +1,4 @@
-# Once a minute, from two minutes after the start: DogHouse looks that GuardDog is there (latte-doghouse.service).
+# Once a minute, from two minutes after the start: DogHouse looks that GuardCorgi is there (latte-doghouse.service).
 [Unit]
 Description=LatteOS DogHouse, once a minute
 

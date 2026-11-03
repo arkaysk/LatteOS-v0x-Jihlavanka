@@ -1,3 +1,4 @@
+//@ pragma AppId latteos-calendar
 // Calendar: every calendar of the user's accounts in one window (the design approved 21. 10.:
 // claude.ai/artifact/JZr5fi8uL3b6FavXCKUcbU, the week). On the side a new event, the month in small, the calendars to
 // show and the year's load in the standard heat; in the middle a day, a week or a month — the hours with the weather

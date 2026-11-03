@@ -1,3 +1,4 @@
+//@ pragma AppId latteos-settings
 // Settings: everything about the computer and the desktop that can be set, in one place, by areas, with a search.
 // The areas and their pages are listed in settings/pages.json (LensGoo searches the same list: bin/latte-settings).
 // A page that LatteOS does not have yet is listed all the same, and says where the thing is done meanwhile.
@@ -225,7 +226,7 @@ ShellRoot {
     readonly property var asks: ({ "": [[machine, ["latte-devices", "list"]], [screens, ["hyprctl", "monitors", "-j"]], [disks, ["latte-settings", "storage"]], [who, ["latte-settings", "account"]]],
                                    "sound": [[sound, ["latte-settings", "sound"]]], "defaults": [[opens, ["latte-settings", "defaults"]]], "language": [[region, ["latte-settings", "region"]]],
                                    "time": [[clock, ["latte-settings", "time"]]], "keyboard": [[keys, ["latte-settings", "keyboard"]], [binds, ["hyprctl", "binds", "-j"]]], "windows": [[screens, ["hyprctl", "monitors", "-j"]]], "transitions": [[trans, ["latte-wall", "transitions"]]], "displays": [[screens, ["hyprctl", "monitors", "-j"]]],
-                                   "guarddog": [[guardq, ["latte-guarddog", "status"]]], "clockgoo": [[clock, ["latte-settings", "time"]], [logon, ["latte-settings", "loginscreen"]], [focusq, ["latte-focus", "today"]], [weatherq, ["latte-sky", "models"]]], "storage": [[disks, ["latte-settings", "storage"]], [held, ["latte-settings", "sizes"]]], "ai": [[helpers, ["latte-ai", "modules"]]],
+                                   "guardcorgi": [[guardq, ["latte-guardcorgi", "status"]]], "clockgoo": [[clock, ["latte-settings", "time"]], [logon, ["latte-settings", "loginscreen"]], [focusq, ["latte-focus", "today"]], [weatherq, ["latte-sky", "models"]]], "storage": [[disks, ["latte-settings", "storage"]], [held, ["latte-settings", "sizes"]]], "ai": [[helpers, ["latte-ai", "modules"]]],
                                    "me": [[who, ["latte-settings", "account"]], [pictures, ["latte-settings", "wallpapers"]]], "performance": [[machine, ["latte-devices", "list"]]], "loginscreen": [[logon, ["latte-settings", "loginscreen"]]] })
     function ask() { (asks[page] || []).forEach(a => a[0].ask(a[1])); force.reload(); crashed.reload() }
     Timer { id: later; interval: 900; onTriggered: shell.ask() }       // what was asked of the compositor takes a moment to be so
@@ -1141,11 +1142,11 @@ ShellRoot {
                     Pill { anchors.right: parent.right; anchors.rightMargin: 14; anchors.verticalCenter: parent.verticalCenter; icon: "external-link"; text: I18n.tr("Open LensAI")
                            onPressed: Quickshell.execDetached(["latte-app", "aicenter"]) } } }
 
-            // GuardDog: what is kept running, and what the user has told it to leave alone
-            Pill { visible: shell.page === "guarddog"; icon: "shield-check"; text: I18n.tr("Open GuardDog: crashes and its log"); onPressed: Quickshell.execDetached(["latte-app", "guarddog"]) }
-            Part { visible: shell.page === "guarddog"; width: view.room; title: I18n.tr("What GuardDog keeps running")
+            // GuardCorgi: what is kept running, and what the user has told it to leave alone
+            Pill { visible: shell.page === "guardcorgi"; icon: "shield-check"; text: I18n.tr("Open GuardCorgi: crashes and its log"); onPressed: Quickshell.execDetached(["latte-app", "guardcorgi"]) }
+            Part { visible: shell.page === "guardcorgi"; width: view.room; title: I18n.tr("What GuardCorgi keeps running")
                    note: I18n.tr("It looks every few seconds, and starts again what has stopped. What you switch off here it leaves alone, and it stays so after an update. Switching off does not stop what is running now.")
-                Repeater { model: shell.page === "guarddog" && guardq.data ? guardq.data : []
+                Repeater { model: shell.page === "guardcorgi" && guardq.data ? guardq.data : []
                     Rectangle { required property var modelData; width: view.room; height: 62; radius: 16; color: Theme.card
                         Rectangle { x: 16; width: 11; height: 11; radius: 6; anchors.verticalCenter: parent.verticalCenter
                                     color: parent.modelData.state === "up" ? Theme.ok : (parent.modelData.state === "off" ? Theme.faint : (parent.modelData.state === "restarted" ? Theme.gold : Theme.red)) }
@@ -1157,7 +1158,7 @@ ShellRoot {
                             Behavior on color { ColorAnimation { duration: 140 } }
                             Rectangle { width: 20; height: 20; radius: 10; y: 3; x: parent.parent.modelData.off ? 3 : 23; color: parent.parent.modelData.off ? Theme.dim : Theme.ground; Behavior on x { NumberAnimation { duration: 140 } } }
                             MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor
-                                        onClicked: { Quickshell.execDetached(["latte-guarddog", "set", parent.parent.modelData.id, parent.parent.modelData.off ? "on" : "off"]); later.restart() } } } } } }
+                                        onClicked: { Quickshell.execDetached(["latte-guardcorgi", "set", parent.parent.modelData.id, parent.parent.modelData.off ? "on" : "off"]); later.restart() } } } } } }
 
             // sound: where it goes and where it comes from
             Repeater { model: shell.page === "sound" ? [{ key: "outputs", title: QT_TR_NOOP("Where the sound goes"), cmd: "sink", icon: "device-speaker" },

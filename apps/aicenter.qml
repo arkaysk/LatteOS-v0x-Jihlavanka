@@ -1,3 +1,4 @@
+//@ pragma AppId latteos-aicenter
 //@ pragma EnableQtWebEngineQuick
 // LensAI: every conversation with every AI in one list, and the services themselves — which are there,
 // which one is signed in, signing in and out. bin/latte-ai keeps the conversations (the same ones LensGoo's AI
@@ -1107,12 +1108,12 @@ ShellRoot {
                         Label { width: parent.width; wrapMode: Text.WordWrap; color: Theme.dim; font.pixelSize: 13; text: I18n.tr(sw.modelData.desc) }
                         Label { visible: sw.modelData.id === "crash-capture" && sw.modelData.on && shell.helpers.agent === ""; width: parent.width; wrapMode: Text.WordWrap; color: Theme.gold; font.pixelSize: 12
                                 text: I18n.tr("It waits for your agent: choose one above.") }
-                        // a crash: the programs it is not told for (GuardDog's “Not about this program”), each back with a press
+                        // a crash: the programs it is not told for (GuardCorgi's “Not about this program”), each back with a press
                         Flow { visible: sw.modelData.id === "crash-capture" && shell.helpers.muted.length > 0; width: parent.width; spacing: 8
                             Label { text: I18n.tr("Not told for:"); color: Theme.dim; font.pixelSize: 12; height: 28; verticalAlignment: Text.AlignVCenter }
                             Repeater { model: sw.modelData.id === "crash-capture" ? shell.helpers.muted : []
                                 Pill { required property var modelData; implicitHeight: 28; icon: "x"; text: modelData
-                                       onPressed: shell.setHelper(["latte-guarddog", "quiet", modelData, "off"]) } } } }
+                                       onPressed: shell.setHelper(["latte-guardcorgi", "quiet", modelData, "off"]) } } } }
                     Rectangle { width: 46; height: 26; radius: 13; color: sw.modelData.on ? Theme.gold : Theme.raised; anchors.right: parent.right; anchors.rightMargin: 18; y: 18
                         Rectangle { width: 20; height: 20; radius: 10; y: 3; x: sw.modelData.on ? 23 : 3; color: sw.modelData.on ? Theme.inkOnGold : Theme.dim }
                         MouseArea { anchors.fill: parent; anchors.margins: -6; cursorShape: Qt.PointingHandCursor

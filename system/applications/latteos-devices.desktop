@@ -7,4 +7,4 @@ Comment[sk]=Z čoho je tento počítač a či všetko funguje
 Exec=latte-app devices
 Icon=computer
 Categories=System;HardwareSettings;
-StartupWMClass=org.quickshell
+StartupWMClass=latteos-devices

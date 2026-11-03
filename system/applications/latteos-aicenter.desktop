@@ -7,4 +7,4 @@ Comment[sk]=Všetky rozhovory so všetkými AI na jednom mieste a prihlásenie d
 Exec=latte-app aicenter
 Icon=applications-science
 Categories=Utility;
-StartupWMClass=org.quickshell
+StartupWMClass=latteos-aicenter

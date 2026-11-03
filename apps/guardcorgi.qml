@@ -1,6 +1,7 @@
-// GuardDog: what keeps the desktop up, as a window. bin/latte-guarddog is the guard; this shows what it watches,
+//@ pragma AppId latteos-guardcorgi
+// GuardCorgi: what keeps the desktop up, as a window. bin/latte-guardcorgi is the guard; this shows what it watches,
 // the programs that crashed (with "Ask the AI", which hands the facts to an agent that explains and changes nothing)
-// and a console of what it did, newest at the bottom.   latte-app guarddog [status | crashes | log]
+// and a console of what it did, newest at the bottom.   latte-app guardcorgi [status | crashes | log]
 import QtQuick
 import Quickshell
 import Quickshell.Io
@@ -20,7 +21,7 @@ ShellRoot {
         id: q
         property var data: []
         property string buf: ""
-        function ask(args) { if (running) return; command = ["latte-guarddog"].concat(args); running = true }
+        function ask(args) { if (running) return; command = ["latte-guardcorgi"].concat(args); running = true }
         stdout: StdioCollector { onStreamFinished: q.buf = this.text }
         onExited: { try { data = JSON.parse(buf) } catch (e) {} }
     }
@@ -41,14 +42,14 @@ ShellRoot {
     function when(t) { const d = new Date(t * 1000); return d.toDateString() === new Date().toDateString() ? Qt.formatTime(d, "HH:mm:ss") : Qt.formatDateTime(d, "d. M. HH:mm") }
 
     AppWindow {
-        title: "GuardDog"
+        title: "GuardCorgi"
         heading: I18n.tr((shell.pages.find(p => p.id === shell.page) || shell.pages[0]).name)
         implicitWidth: 1040; implicitHeight: 720
         side: [
             Column { x: 14; y: 14; spacing: 4
                 Row { x: 6; spacing: 10; height: 40
                     Glyph { name: "shield-check"; font.pixelSize: 24; color: Theme.gold; anchors.verticalCenter: parent.verticalCenter }
-                    Label { text: "GuardDog"; font.pixelSize: 17; font.weight: 700; anchors.verticalCenter: parent.verticalCenter } }
+                    Label { text: "GuardCorgi"; font.pixelSize: 17; font.weight: 700; anchors.verticalCenter: parent.verticalCenter } }
                 Item { width: 1; height: 8 }
                 Repeater { model: shell.pages
                     Nav { required property var modelData; text: I18n.tr(modelData.name); icon: modelData.icon; on: shell.page === modelData.id
@@ -63,7 +64,7 @@ ShellRoot {
             readonly property bool whole: s.watching !== undefined && (s.down || []).length === 0
             readonly property int clean: s.last ? Math.floor((Date.now() / 1000 - s.last) / 86400) : (s.since ? Math.floor((Date.now() / 1000 - s.since) / 86400) : 0)
             Label { visible: state.data.length === 0; width: overview.room; wrapMode: Text.WordWrap; color: Theme.red
-                    text: I18n.tr("GuardDog is not running: the desktop is not being watched.") }
+                    text: I18n.tr("GuardCorgi is not running: the desktop is not being watched.") }
             Row { width: overview.room; spacing: 14; height: 150
                 Rectangle { width: (parent.width - 14) * 0.58; height: parent.height; radius: 20; color: Theme.card
                     Rectangle { x: 26; y: 30; width: 52; height: 52; radius: 26; color: Qt.rgba(tone.r, tone.g, tone.b, 0.18)
@@ -73,7 +74,7 @@ ShellRoot {
                         Label { width: parent.width; wrapMode: Text.WordWrap; font.pixelSize: 22; font.weight: 700
                                 text: overview.whole ? I18n.tr("Everything is running") : I18n.tr("{n} not running", { n: (overview.s.down || []).length }) }
                         Label { width: parent.width; wrapMode: Text.WordWrap; color: Theme.dim
-                                text: overview.whole ? I18n.tr("GuardDog watches {n} parts of the desktop and starts again what stops.", { n: overview.s.watching || 0 })
+                                text: overview.whole ? I18n.tr("GuardCorgi watches {n} parts of the desktop and starts again what stops.", { n: overview.s.watching || 0 })
                                                      : (overview.s.down || []).map(n => I18n.tr(n)).join(", ") } } }
                 Rectangle { width: (parent.width - 14) * 0.42; height: parent.height; radius: 20; color: Theme.card
                     Column { x: 26; y: 22; width: parent.width - 52; spacing: 2
@@ -114,7 +115,7 @@ ShellRoot {
             Label { width: statusPage.room; wrapMode: Text.WordWrap; color: Theme.dim
                     text: I18n.tr("It looks every few seconds, and starts again what has stopped. What you switch off here it leaves alone, and it stays so after an update. Switching off does not stop what is running now.") }
             Label { visible: state.data.length === 0; width: statusPage.room; wrapMode: Text.WordWrap; color: Theme.red
-                    text: I18n.tr("GuardDog is not running: the desktop is not being watched.") }
+                    text: I18n.tr("GuardCorgi is not running: the desktop is not being watched.") }
             Repeater { model: state.data
                 Rectangle { required property var modelData; width: statusPage.room; height: 62; radius: 16; color: Theme.card
                     Rectangle { x: 16; width: 11; height: 11; radius: 6; anchors.verticalCenter: parent.verticalCenter
@@ -126,7 +127,7 @@ ShellRoot {
                     Rectangle { width: 46; height: 26; radius: 13; color: parent.modelData.off ? Theme.raised : Theme.gold; anchors.right: parent.right; anchors.rightMargin: 16; anchors.verticalCenter: parent.verticalCenter
                         Rectangle { width: 20; height: 20; radius: 10; y: 3; x: parent.parent.modelData.off ? 3 : 23; color: parent.parent.modelData.off ? Theme.dim : Theme.ground }
                         MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor
-                                    onClicked: shell.act(["latte-guarddog", "set", parent.parent.modelData.id, parent.parent.modelData.off ? "on" : "off"]) } } } }
+                                    onClicked: shell.act(["latte-guardcorgi", "set", parent.parent.modelData.id, parent.parent.modelData.off ? "on" : "off"]) } } } }
         }
 
         // ── the programs that crashed this week, newest first ─────────────────────────────────────────────────
@@ -151,7 +152,7 @@ ShellRoot {
                     Row { anchors.right: parent.right; anchors.rightMargin: 14; anchors.verticalCenter: parent.verticalCenter; spacing: 8
                         Pill { implicitHeight: 32; icon: "robot"; strong: true; text: I18n.tr("Ask the AI"); onPressed: shell.act(["latte-ai", "crash", String(cr.modelData.pid)]) }
                         Pill { implicitHeight: 32; icon: cr.modelData.quiet ? "bell" : "bell-off"; text: cr.modelData.quiet ? I18n.tr("Notify") : I18n.tr("Mute")
-                               onPressed: shell.act(["latte-guarddog", "quiet", cr.modelData.name, cr.modelData.quiet ? "off" : "on"]) } } } }
+                               onPressed: shell.act(["latte-guardcorgi", "quiet", cr.modelData.name, cr.modelData.quiet ? "off" : "on"]) } } } }
         }
 
         // ── the console: what the guard did, newest at the bottom ──────────────────────────────────────────────

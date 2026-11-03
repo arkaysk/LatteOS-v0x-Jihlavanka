@@ -60,7 +60,7 @@ majákom…). 20 hotových príkladov.
 - Spotreba ako v Omarchy (Claude, Grok, Copilot, ChatGPT) (10B.14 bod 2).
 - Stránka Agenti, skill LatteOS (upraviteľný), „Urob to za mňa“ v termináli s plánom a bez automatického schvaľovania
   (10B.14 body 3–5).
-- Pád → „Opýtať sa AI“ s GuardDogom a v SAFE (10B.14 bod 6).
+- Pád → „Opýtať sa AI“ s GuardCorgi a v SAFE (10B.14 bod 6).
 - Inštalácia AI nástrojov z okna LensAI, mise; lokálna AI ako LM Studio (Objavovať, Moje modely, Spúšťanie) (10B.14 bod 7).
 - Mikrofón (whisper.cpp, Vulkan), vlastné pokyny pre každú AI (10B.12); mikro-agenti a pomocníci ako v Omarchy, každý
   vypínateľný (10B.19, 10B.21).

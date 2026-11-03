@@ -7,4 +7,4 @@ Comment[sk]=Všetky kalendáre tvojich účtov v jednom okne: deň, týždeň, m
 Exec=latte-app calendar
 Icon=office-calendar
 Categories=Office;Calendar;
-StartupWMClass=org.quickshell
+StartupWMClass=latteos-calendar

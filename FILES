@@ -27,7 +27,7 @@
 /usr/bin/latte-app                                      <- bin/latte-app
 /usr/bin/latte-apps                                     <- bin/latte-apps
 /usr/bin/latte-devices                                  <- bin/latte-devices
-/usr/bin/latte-guarddog                                 <- bin/latte-guarddog
+/usr/bin/latte-guardcorgi                               <- bin/latte-guardcorgi
 /usr/bin/latte-widget                                   <- bin/latte-widget
 /usr/bin/latte-focus                                    <- bin/latte-focus
 /usr/bin/latte-nameday                                  <- bin/latte-nameday
@@ -100,7 +100,7 @@
 /usr/share/latteos/dualbrew/recipes/smaller-picture.sh  <- system/dualbrew/recipes/smaller-picture.sh
 /usr/share/latteos/dualbrew/recipes/pictures-to-pdf.sh  <- system/dualbrew/recipes/pictures-to-pdf.sh
 /usr/share/latteos/dualbrew/recipes/send-to-phone.sh    <- system/dualbrew/recipes/send-to-phone.sh
-/usr/share/latteos/apps/guarddog.qml                    <- apps/guarddog.qml
+/usr/share/latteos/apps/guardcorgi.qml                  <- apps/guardcorgi.qml
 /usr/share/latteos/apps/widgets.qml                     <- apps/widgets.qml
 /usr/share/latteos/apps/widgets/catalog.json <- apps/widgets/catalog.json
 /usr/share/latteos/apps/widgets/glyphs-branch-grammar/GlyphArt.js <- apps/widgets/glyphs-branch-grammar/GlyphArt.js
@@ -604,7 +604,7 @@
 /usr/share/latteos/apps/common/shaders/velvet.frag.qsb  <- apps/common/shaders/velvet.frag.qsb
 /usr/share/latteos/apps/common/window-place             <- apps/common/window-place
 /usr/share/applications/latteos-aicenter.desktop        <- system/applications/latteos-aicenter.desktop
-/usr/share/applications/latteos-guarddog.desktop        <- system/applications/latteos-guarddog.desktop
+/usr/share/applications/latteos-guardcorgi.desktop      <- system/applications/latteos-guardcorgi.desktop
 /usr/share/applications/latteos-widgets.desktop         <- system/applications/latteos-widgets.desktop
 /usr/share/applications/latteos-calendar.desktop        <- system/applications/latteos-calendar.desktop
 /usr/share/applications/latteos-appmanager.desktop      <- system/applications/latteos-appmanager.desktop
@@ -709,7 +709,7 @@
 /usr/lib/systemd/user/latte-session.target              <- system/systemd/latte-session.target
 /usr/lib/systemd/user/latte-goo.service                 <- system/systemd/latte-goo.service
 /usr/lib/systemd/user/latte-idle.service                <- system/systemd/latte-idle.service
-/usr/lib/systemd/user/latte-guarddog.service             <- system/systemd/latte-guarddog.service
+/usr/lib/systemd/user/latte-guardcorgi.service           <- system/systemd/latte-guardcorgi.service
 /usr/lib/systemd/user/latte-focus.service                <- system/systemd/latte-focus.service
 /usr/lib/systemd/user/latte-netwatch.service             <- system/systemd/latte-netwatch.service
 /usr/lib/systemd/user/latte-netwatch.timer               <- system/systemd/latte-netwatch.timer
@@ -752,7 +752,7 @@
 [state]
 /run/latteos/
 /var/lib/latteos/
-/usr/share/latteos/guarddog.manifest                       # written by every install and update: what LatteOS is made of, with a hash of each (bin/latte-guarddog)
+/usr/share/latteos/guardcorgi.manifest                     # written by every install and update: what LatteOS is made of, with a hash of each (bin/latte-guardcorgi)
 /var/lib/greetd/latte-last-user
 /var/lib/greetd/latte-last-session
 /boot/loader/entries/*-lattesafe.conf
@@ -814,10 +814,10 @@ restorecon -R /run/latteos /var/lib/latteos/login
 fc-cache /usr/share/fonts/latteos
 plymouth-set-default-theme latteos -R                               # rebuilds the initramfs
 /etc/kernel/install.d/96-latteos-safe.install add VERSION
-latte-guarddog manifest                                             # what LatteOS is made of, with hashes, for GuardDog
+latte-guardcorgi manifest                                           # what LatteOS is made of, with hashes, for GuardCorgi
 systemctl daemon-reload
 systemctl enable latte-boot.service greetd.service latte-netd.service
-systemctl enable --now latte-doghouse.timer                         # the root's watch over GuardDog
+systemctl enable --now latte-doghouse.timer                         # the root's watch over GuardCorgi
 systemctl disable NetworkManager-wait-online.service                # it held the login screen back for a minute
 systemctl set-default graphical.target
 

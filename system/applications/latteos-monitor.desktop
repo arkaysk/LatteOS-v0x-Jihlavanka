@@ -6,4 +6,4 @@ Comment[sk]=Čo počítač robí, čo na ňom beží a čo sa spúšťa samo
 Exec=latte-app monitor
 Icon=utilities-system-monitor
 Categories=System;Monitor;
-StartupWMClass=org.quickshell
+StartupWMClass=latteos-monitor

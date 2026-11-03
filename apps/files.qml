@@ -1,3 +1,4 @@
+//@ pragma AppId latteos-files
 // DualBrew: the files. One panel as on Windows, or two side by side as in a commander; bin/latte-files moves
 // things, this window shows them.   latte-app files [FOLDER] [sizes]   (sizes: straight to what fills that folder)
 //

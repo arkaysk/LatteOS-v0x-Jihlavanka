@@ -59,12 +59,12 @@ def out(*argv, timeout=15):
 
 
 def guard():
-    """GuardDog's reading of who owns a process (bin/latte-guarddog), or None where it is not there."""
+    """GuardCorgi's reading of who owns a process (bin/latte-guardcorgi), or None where it is not there."""
     try:
         import importlib.machinery, importlib.util
         sys.dont_write_bytecode = True                   # a command is not a module: no __pycache__ beside it
-        path = shutil.which("latte-guarddog") or os.path.join(os.path.dirname(os.path.abspath(__file__)), "latte-guarddog")
-        loader = importlib.machinery.SourceFileLoader("latte_guarddog", path)
+        path = shutil.which("latte-guardcorgi") or os.path.join(os.path.dirname(os.path.abspath(__file__)), "latte-guardcorgi")
+        loader = importlib.machinery.SourceFileLoader("latte_guardcorgi", path)
         module = importlib.util.module_from_spec(importlib.util.spec_from_loader(loader.name, loader))
         loader.exec_module(module)
         return module

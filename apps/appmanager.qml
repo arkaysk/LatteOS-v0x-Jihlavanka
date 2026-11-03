@@ -1,3 +1,4 @@
+//@ pragma AppId latteos-appmanager
 // App Manager: the shop, what is installed, what can be updated, and Barista, who installs what no shop has.
 // bin/latte-apps knows and does everything; this window shows it. Where it begins is told in words
 // (bin/latte-app):   latte-app appmanager [updates | mine | barista [SOURCE…] | app ID]

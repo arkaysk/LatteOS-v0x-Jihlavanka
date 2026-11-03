@@ -1,3 +1,4 @@
+//@ pragma AppId latteos-monitor
 // Monitor: what the computer is doing, what runs on it, what starts by itself and why, and what its sensors say.
 // The whole machine is latte-stats's to tell (processor, memory, graphics, once a second); the programs, the
 // network and the disks latte-monitor's (every two seconds).   latte-app monitor [processes | startup | sensors]
@@ -51,9 +52,9 @@ ShellRoot {
     Ask { id: sense }
     Process { id: doer; onExited: starts.ask(["startup"]) }
     function act(args) { doer.running = false; doer.command = ["latte-monitor"].concat(args); doer.running = true }
-    // the user's programs GuardDog keeps running (bin/latte-guarddog keep): asked for while the processes are shown
+    // the user's programs GuardCorgi keeps running (bin/latte-guardcorgi keep): asked for while the processes are shown
     property var kept: []
-    Process { id: keptq; command: ["latte-guarddog", "keep"]
+    Process { id: keptq; command: ["latte-guardcorgi", "keep"]
               stdout: StdioCollector { onStreamFinished: { try { shell.kept = JSON.parse(this.text).map(k => k.name) } catch (e) {} } } }
     Timer { interval: 5000; repeat: true; running: shell.page === "processes"; triggeredOnStart: true; onTriggered: keptq.running = true }
     Process { id: keeper; onExited: keptq.running = true }
@@ -62,8 +63,8 @@ ShellRoot {
         const keep = shell.kept.includes(what.name)
         const rows = [{ icon: "copy", text: I18n.tr("Copy name"), run: () => Quickshell.clipboardText = what.name }]
         if (what.owner === "user")
-            rows.push({ icon: "shield-check", text: I18n.tr("Keep running (GuardDog)"), checked: keep,
-                        run: () => { keeper.command = ["latte-guarddog", "keep"].concat(keep ? [what.name, "off"] : [String(what.pids[0])]); keeper.running = true } })
+            rows.push({ icon: "shield-check", text: I18n.tr("Keep running (GuardCorgi)"), checked: keep,
+                        run: () => { keeper.command = ["latte-guardcorgi", "keep"].concat(keep ? [what.name, "off"] : [String(what.pids[0])]); keeper.running = true } })
         if (canEnd) rows.push({ icon: "x", text: I18n.tr("End"), danger: true, run: () => shell.act(["end"].concat(what.pids.map(String))) })
         menu.open(x, y, rows)
     }
@@ -75,7 +76,7 @@ ShellRoot {
     function rate(n) { return bytes(n) + "/s" }
     property string find: ""                   // what the processes are searched for
     property string order: "cpu"
-    property string owner: "all"               // whose: all · latteos · linux · user (GuardDog says, bin/latte-guarddog)
+    property string owner: "all"               // whose: all · latteos · linux · user (GuardCorgi says, bin/latte-guardcorgi)
     readonly property var owners: [{ id: "all", name: QT_TR_NOOP("All") }, { id: "latteos", name: QT_TR_NOOP("LatteOS") },
                                    { id: "linux", name: QT_TR_NOOP("Linux") }, { id: "user", name: QT_TR_NOOP("Your apps") }]
     function listed(list) {
@@ -188,9 +189,9 @@ ShellRoot {
         Scroll {
             id: procs
             visible: shell.page === "processes"
-            // what GuardDog watches over, and whether each stands
+            // what GuardCorgi watches over, and whether each stands
             Column { width: procs.room; spacing: 6; visible: shell.run !== null && (shell.run.guard || []).length > 0
-                Label { text: I18n.tr("WATCHED BY GUARDDOG"); color: Theme.faint; font.pixelSize: 11; font.weight: 700; font.letterSpacing: 0.8 }
+                Label { text: I18n.tr("WATCHED BY GUARDCORGI"); color: Theme.faint; font.pixelSize: 11; font.weight: 700; font.letterSpacing: 0.8 }
                 Flow { width: parent.width; spacing: 8
                     Repeater { model: shell.run ? (shell.run.guard || []) : []
                         Rectangle { required property var modelData; height: 30; radius: 15; width: gl.implicitWidth + 34; color: Theme.card

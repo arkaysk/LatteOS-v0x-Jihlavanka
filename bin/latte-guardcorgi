@@ -1,27 +1,27 @@
 #!/usr/bin/env python3
-"""latte-guarddog: GuardDog. It watches that what the desktop needs is running, starts again what is not, and says
+"""latte-guardcorgi: GuardCorgi. It watches that what the desktop needs is running, starts again what is not, and says
 whose every process is.
 
-  latte-guarddog watch          the guard itself (a user service of the session): every few seconds it looks at each
+  latte-guardcorgi watch          the guard itself (a user service of the session): every few seconds it looks at each
                                 component, starts again the one that is down, and keeps the state in
-                                $XDG_RUNTIME_DIR/latteos/guarddog.json
-  latte-guarddog status         the state: [{"id", "name", "state", "restarts"}]; state is up · restarted · down ·
+                                $XDG_RUNTIME_DIR/latteos/guardcorgi.json
+  latte-guardcorgi status         the state: [{"id", "name", "state", "restarts"}]; state is up · restarted · down ·
                                 failed (it would not stay up) · off (it is not wanted now)
-  latte-guarddog owners         {"pid": "linux" | "latteos" | "user"} for every process
-  latte-guarddog owner PID…     the same for the pids given
-  latte-guarddog keep PID       keep the user's program that runs as PID running: the guard starts it again when it stops
-  latte-guarddog keep NAME off  not any more;   latte-guarddog keep: those kept, [{"name", "run", "flatpak"}]
-  latte-guarddog set ID on|off  the user's choice for a component (kept in ~/.config/latteos/guarddog.json, which the Settings write)
-  latte-guarddog manifest       (root, at every install and update) writes the list of what LatteOS is made of, with a hash of each
-  latte-guarddog log [N]        what the guard did, the last N lines (200): [{"at", "what", "id", "text"}]; what = start ·
+  latte-guardcorgi owners         {"pid": "linux" | "latteos" | "user"} for every process
+  latte-guardcorgi owner PID…     the same for the pids given
+  latte-guardcorgi keep PID       keep the user's program that runs as PID running: the guard starts it again when it stops
+  latte-guardcorgi keep NAME off  not any more;   latte-guardcorgi keep: those kept, [{"name", "run", "flatpak"}]
+  latte-guardcorgi set ID on|off  the user's choice for a component (kept in ~/.config/latteos/guardcorgi.json, which the Settings write)
+  latte-guardcorgi manifest       (root, at every install and update) writes the list of what LatteOS is made of, with a hash of each
+  latte-guardcorgi log [N]        what the guard did, the last N lines (200): [{"at", "what", "id", "text"}]; what = start ·
                                 down · restart · failed · crash · back · thaw · fell (systemd brought it back) ·
                                 impostor (a program of a kept one's name that is not it) · changed · doghouse (DogHouse put
-                                GuardDog back)
-  latte-guarddog summary        the overview: {"watching", "up", "down": [names], "last", "since", "days": [30 counts,
+                                GuardCorgi back)
+  latte-guardcorgi summary        the overview: {"watching", "up", "down": [names], "last", "since", "days": [30 counts,
                                 oldest first; -1 before the history], "top": [{"id", "name", "count", "last", "what"}]}
-  latte-guarddog crashes        the programs that crashed in the last week, newest first: [{"pid", "exe", "name", "sig",
+  latte-guardcorgi crashes        the programs that crashed in the last week, newest first: [{"pid", "exe", "name", "sig",
                                 "at", "owner", "quiet"}] (systemd-coredump)
-  latte-guarddog quiet NAME on|off   no notice when this program crashes (the crash is still in the log); alone, those
+  latte-guardcorgi quiet NAME on|off   no notice when this program crashes (the crash is still in the log); alone, those
 
 Crashes: the guard watches systemd-coredump too. A program of the user's session that crashed gets a notice, with
 "Ask the AI" when the AI helper is on: it hands the facts to an agent (latte-ai crash PID), which explains and changes nothing.
@@ -35,7 +35,7 @@ services of the system and of the user's session: sound, portals, the bus), "lat
 "user" is everything the user started: their programs.
 
 What LatteOS is made of is not told by a name, which anyone can take: it is a list that every install and update writes
-(guarddog.manifest, owned by root) with the path and the hash of each file, and a process is LatteOS's only if the
+(guardcorgi.manifest, owned by root) with the path and the hash of each file, and a process is LatteOS's only if the
 program it runs, or the script it is given, is on that list and is still what the list says. A program that is called
 latte-anything, or that sits in the user's folder, is the user's.
 
@@ -46,11 +46,11 @@ import json, os, re, shlex, shutil, subprocess, sys, time
 
 UID = os.getuid()
 RUN = os.path.join(os.environ.get("XDG_RUNTIME_DIR") or "/tmp", "latteos")
-STATE = os.path.join(RUN, "guarddog.json")
+STATE = os.path.join(RUN, "guardcorgi.json")
 FLAG = os.path.join(os.environ.get("XDG_CONFIG_HOME") or os.path.expanduser("~/.config"), "latteos", "desktop-icons")
 EVERY, MISSES, TRIES, WINDOW, REST = 5, 2, 5, 300, 300
 # the history outlives a restart of the computer: the overview counts the days since the last problem
-LOG = os.path.join(os.environ.get("XDG_STATE_HOME") or os.path.expanduser("~/.local/state"), "latteos", "guarddog.log")
+LOG = os.path.join(os.environ.get("XDG_STATE_HOME") or os.path.expanduser("~/.local/state"), "latteos", "guardcorgi.log")
 LOG_KEEP = 5000
 PROBLEMS = ("crash", "down", "thaw", "fell", "impostor", "changed", "doghouse")
 
@@ -66,7 +66,7 @@ def T(text):
 def note(what, ident, text):
     """A line of what the guard did, for its window's console: the file keeps the last LOG_KEEP."""
     line = json.dumps({"at": int(time.time()), "what": what, "id": ident, "text": text})
-    print("guarddog: %s %s: %s" % (what, ident, text), flush=True)
+    print("guardcorgi: %s %s: %s" % (what, ident, text), flush=True)
     try:
         lines = read(LOG).splitlines()[-(LOG_KEEP - 1):] + [line]
         os.makedirs(os.path.dirname(LOG), exist_ok=True)
@@ -78,7 +78,7 @@ def note(what, ident, text):
 
 
 # ── whose a process is ────────────────────────────────────────────────────────────────────────────────────────
-MANIFEST = os.environ.get("LATTE_GUARD_MANIFEST") or "/usr/share/latteos/guarddog.manifest"
+MANIFEST = os.environ.get("LATTE_GUARD_MANIFEST") or "/usr/share/latteos/guardcorgi.manifest"
 SYSTEM = {"systemd", "(sd-pam)", "sshd", "sshd-session", "Xwayland", "dbus-broker", "dbus-broker-lau"}
 # programs of the distribution that LatteOS runs as they are: LatteOS's when this very file (its hash) is the one running
 BASES = ["/usr/bin/pleamar", "/usr/bin/pleamar-wm", "/usr/bin/Hyprland", "/usr/bin/hyprctl", "/usr/bin/labwc", "/usr/sbin/greetd", "/usr/bin/greetd",
@@ -280,7 +280,15 @@ def icons_wanted():
     return read(FLAG).strip() != "off"
 
 
-CHOICES = os.path.join(os.environ.get("XDG_CONFIG_HOME") or os.path.expanduser("~/.config"), "latteos", "guarddog.json")
+CHOICES = os.path.join(os.environ.get("XDG_CONFIG_HOME") or os.path.expanduser("~/.config"), "latteos", "guardcorgi.json")
+# GuardCorgi was GuardDog until 3. 11. 2026: the user's choices and the history move over from the old names
+for new in (CHOICES, LOG):
+    old = new.replace("guardcorgi", "guarddog")
+    if os.path.exists(old) and not os.path.exists(new):
+        try:
+            os.replace(old, new)
+        except OSError:
+            pass
 
 
 def choices():
@@ -352,7 +360,7 @@ def is_kept(k, pid):
         note("impostor" if not same else "changed", "app:" + k["name"], ("runs %s, not %s" % (exe, k.get("exe"))) if not same else
              "%s is not what it was when it was kept (an update, or someone changed it)" % exe)
         if shutil.which("notify-send"):
-            start_detached("notify-send", "-u", "critical", "-a", "LatteOS", "GuardDog",
+            start_detached("notify-send", "-u", "critical", "-a", "LatteOS", "GuardCorgi",
                            T("A program pretends to be {n}." if not same else "{n} has changed since it was kept running.").replace("{n}", k["name"]))
     return same           # a changed program is let be, not started a second time; a look-alike does not count
 
@@ -464,7 +472,7 @@ def restarts():
 
 def tell_failed(name):
     if shutil.which("notify-send"):
-        start_detached("notify-send", "-u", "critical", "-a", "LatteOS", "GuardDog", T("{n} would not stay up.").replace("{n}", T(name)))
+        start_detached("notify-send", "-u", "critical", "-a", "LatteOS", "GuardCorgi", T("{n} would not stay up.").replace("{n}", T(name)))
 
 
 # ── crashes: what systemd-coredump caught, as Omarchy's crash notices do (MIT), with LatteOS's owners ──────────────
@@ -508,15 +516,15 @@ def tell_crash(c, ask):
         return
     body = T("{n} crashed. Ask the AI what happened?" if ask else "{n} crashed.").replace("{n}", c["name"])
     script = 'a=$(notify-send -a LatteOS -u normal --wait ${3:+--action=ask="$3"} --action=mute="$4" "$1" "$2"); ' \
-             'case "$a" in ask) exec latte-ai crash "$5" ;; mute) exec latte-guarddog quiet "$6" on ;; esac'
-    start_detached("sh", "-c", script, "sh", "GuardDog", body, T("Ask the AI") if ask else "", T("Not about this program"), str(c["pid"]), c["name"])
+             'case "$a" in ask) exec latte-ai crash "$5" ;; mute) exec latte-guardcorgi quiet "$6" on ;; esac'
+    start_detached("sh", "-c", script, "sh", "GuardCorgi", body, T("Ask the AI") if ask else "", T("Not about this program"), str(c["pid"]), c["name"])
 
 
 def watch():
     os.makedirs(RUN, exist_ok=True)
     fresh = lambda c: {"id": c[0], "name": c[1], "state": "up", "restarts": 0, "off": False, "missed": 0, "tries": [], "rest": 0, "told": False}
     mine = {c[0]: fresh(c) for c in COMPONENTS}
-    note("start", "guarddog", "watching")
+    note("start", "guardcorgi", "watching")
     seen = {c["pid"] for c in crashes(1)}
     looked = 0
     mended = restarts()
@@ -527,7 +535,7 @@ def watch():
         thaw()
         now_mended = restarts()
         for unit, n in now_mended.items():
-            if n > mended.get(unit, n) and unit != "latte-guarddog.service":
+            if n > mended.get(unit, n) and unit != "latte-guardcorgi.service":
                 note("fell", ID_OF.get(unit, unit), "stopped; systemd brought it back")
         mended = now_mended
         now = time.monotonic()
@@ -590,7 +598,7 @@ def watch():
                 c["restarts"] += 1
                 c["state"], c["missed"] = "restarted", 0
             except Exception as e:                       # one component's trouble does not stop the watch over the others
-                print("guarddog: %s: %s" % (ident, e), file=sys.stderr, flush=True)
+                print("guardcorgi: %s: %s" % (ident, e), file=sys.stderr, flush=True)
         shown = [{k: c[k] for k in ("id", "name", "state", "restarts", "off")} for c in mine.values()]
         tmp = STATE + ".tmp"
         with open(tmp, "w") as f:
@@ -601,7 +609,7 @@ def watch():
         try:
             look()
         except Exception as e:      # a guard that falls over its own data guards nothing: this round is lost, not the guard
-            print("guarddog: %s: %s" % (type(e).__name__, e), file=sys.stderr, flush=True)
+            print("guardcorgi: %s: %s" % (type(e).__name__, e), file=sys.stderr, flush=True)
             alive_to_systemd()
         time.sleep(EVERY)
 
@@ -632,10 +640,10 @@ def history():
 
 
 def summary(now=None):
-    """The overview of the GuardDog window: how things stand, the days since the last problem and what goes wrong most."""
+    """The overview of the GuardCorgi window: how things stand, the days since the last problem and what goes wrong most."""
     now = now or time.time()
     events = history()
-    names = dict({c[0]: c[1] for c in COMPONENTS}, guarddog="GuardDog")
+    names = dict({c[0]: c[1] for c in COMPONENTS}, guardcorgi="GuardCorgi")
     shown = [c for c in status() if not c.get("off") and c.get("state") != "off"]
     problems = [e for e in events if e.get("what") in PROBLEMS]
     midnight = time.mktime(time.localtime(now)[:3] + (0, 0, 0, 0, 0, -1))
@@ -661,7 +669,7 @@ def manifest():
     distribution it runs as they are. Written at every install and update, by the root, and read by the guard."""
     import glob
     if os.getuid() != 0:
-        print("latte-guarddog manifest: this is the root's to write", file=sys.stderr)
+        print("latte-guardcorgi manifest: this is the root's to write", file=sys.stderr)
         return 1
     mine = sorted(set(glob.glob("/usr/bin/latte-*") + glob.glob("/usr/libexec/latte*") + glob.glob("/usr/share/latteos/apps/*.qml")
                       + glob.glob("/usr/share/latteos/goo/*.plm")))
@@ -677,7 +685,7 @@ def manifest():
         json.dump(body, f, indent=1, sort_keys=True)
     os.chmod(tmp, 0o644)
     os.replace(tmp, MANIFEST)
-    print("latte-guarddog: %d files on the list" % len(files))
+    print("latte-guardcorgi: %d files on the list" % len(files))
     return 0
 
 

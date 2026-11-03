@@ -119,7 +119,7 @@ slobodná licencia, do COPR nesmie) a založiť ho iba na pokyn (je verejný).
   `AppWindow` a `apps/common`, nie na vlastnom vzhľade.
 - **Prezentácia súčastí LatteOS vedľa**, kým sa inštaluje (inštalácia je dlhá): obrázok a dve vety o jednej súčasti,
   po chvíli ďalšia — Goo a kvapky, LensAI, Barista (programy Windows), DualBrew, herná relácia, režimy okien,
-  SAFE a GuardDog. Vľavo zoznam krokov, vpravo prezentácia, dole posuvník a čas, ktorý ostáva.
+  SAFE a GuardCorgi. Vľavo zoznam krokov, vpravo prezentácia, dole posuvník a čas, ktorý ostáva.
 
 ## 4. Technika
 

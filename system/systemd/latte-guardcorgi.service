@@ -1,7 +1,7 @@
-# GuardDog: watches that what the desktop needs is running and starts again what is not (bin/latte-guarddog).
+# GuardCorgi: watches that what the desktop needs is running and starts again what is not (bin/latte-guardcorgi).
 # It belongs to the session's target and goes when the session ends.
 [Unit]
-Description=LatteOS GuardDog
+Description=LatteOS GuardCorgi
 PartOf=latte-session.target
 After=latte-session.target latte-goo.service
 
@@ -9,7 +9,7 @@ After=latte-session.target latte-goo.service
 StartLimitIntervalSec=0
 
 [Service]
-ExecStart=/usr/bin/latte-guarddog watch
+ExecStart=/usr/bin/latte-guardcorgi watch
 # what the guard started again is the session's, not the guard's: it stays when the guard is stopped or restarted
 KillMode=process
 Restart=always

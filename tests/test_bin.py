@@ -605,8 +605,8 @@ with tempfile.TemporaryDirectory() as t:
     a = barista.analyze([lone])
     assert (a["made"], a["id"], a["verdict"] in ("may", "no")) == (True, "some-game", True), a
 
-# GuardDog says whose a process is: the kernel's and the system's, LatteOS's (only what the list names, with its hash), or the user's
-dog = load("latte-guarddog")
+# GuardCorgi says whose a process is: the kernel's and the system's, LatteOS's (only what the list names, with its hash), or the user's
+dog = load("latte-guardcorgi")
 me = os.getuid()
 with tempfile.TemporaryDirectory() as d:
     tool, script, other = (os.path.join(d, n) for n in ("latte-tool", "latte-monitor", "latteosminer"))
@@ -627,14 +627,14 @@ with tempfile.TemporaryDirectory() as d:
     assert asked(comm="latte-tool", exe=tool, cmdline=tool) == "user"
     assert asked(comm="firefox", cgroup="/user.slice/user-1000.slice/user@1000.service/app.slice/app-firefox-123.scope", exe="/usr/bin/firefox", cmdline="/usr/bin/firefox") == "user"
     # the list itself counts only if it is the root's and nobody else can write it
-    mine_list = os.path.join(d, "guarddog.manifest")
+    mine_list = os.path.join(d, "guardcorgi.manifest")
     open(mine_list, "w").write(json.dumps({"files": files, "components": ["goo"]}))
     assert dog.listed(mine_list)["state"] == "invalid"
     os.chmod(mine_list, 0o666)
     assert dog.listed(mine_list)["state"] == "invalid"
     assert dog.listed(os.path.join(d, "nothing"))["state"] == "missing"
     # what the user switched off stays off
-    dog.CHOICES = os.path.join(d, "guarddog.json")
+    dog.CHOICES = os.path.join(d, "guardcorgi.json")
     dog.choose("clipboard", False)
     dog.choose("icons", False)
     dog.choose("icons", True)
@@ -643,7 +643,7 @@ with tempfile.TemporaryDirectory() as d:
 # a stopped process of a LatteOS unit is let go on, and the guard tells systemd's watchdog it is alive
 import signal, subprocess, time
 with tempfile.TemporaryDirectory() as d:
-    dog.RUN, dog.LOG = d, os.path.join(d, "guarddog.log")
+    dog.RUN, dog.LOG = d, os.path.join(d, "guardcorgi.log")
     cg = os.path.join(d, "app.slice", "latte-test.service")
     os.makedirs(cg)
     child = subprocess.Popen(["sleep", "30"])
@@ -668,9 +668,9 @@ with tempfile.TemporaryDirectory() as d:
 
 # the overview: problems by day (today last), the most frequent first, the days since the last one
 with tempfile.TemporaryDirectory() as d:
-    dog.LOG, dog.STATE, dog.DOGHOUSE = os.path.join(d, "guarddog.log"), os.path.join(d, "guarddog.json"), os.path.join(d, "none")
+    dog.LOG, dog.STATE, dog.DOGHOUSE = os.path.join(d, "guardcorgi.log"), os.path.join(d, "guardcorgi.json"), os.path.join(d, "none")
     now = time.mktime((2026, 10, 26, 12, 0, 0, 0, 0, -1))
-    lines = [(now - 40 * 86400, "crash", "old"), (now - 3 * 86400, "start", "guarddog"), (now - 2 * 86400, "crash", "firefox"),
+    lines = [(now - 40 * 86400, "crash", "old"), (now - 3 * 86400, "start", "guardcorgi"), (now - 2 * 86400, "crash", "firefox"),
              (now - 3600, "fell", "goo"), (now - 60, "crash", "firefox"), (now - 30, "back", "goo")]
     open(dog.LOG, "w").write("".join(json.dumps({"at": int(t), "what": w, "id": i, "text": ""}) + "\n" for t, w, i in lines))
     json.dump([{"id": "goo", "name": "The Goo scene", "state": "up", "off": False}, {"id": "net", "name": "x", "state": "down", "off": False},
@@ -685,7 +685,7 @@ with tempfile.TemporaryDirectory() as d:
 # a program of the user's kept running: how to start it again comes from the process; it is that program only if it runs
 # that very file (path and hash), never by its name
 with tempfile.TemporaryDirectory() as d:
-    dog.CHOICES, dog.LOG, told = os.path.join(d, "guarddog.json"), os.path.join(d, "guarddog.log"), []
+    dog.CHOICES, dog.LOG, told = os.path.join(d, "guardcorgi.json"), os.path.join(d, "guardcorgi.log"), []
     dog.start_detached = lambda *argv: told.append(argv)
     os.makedirs(os.path.join(d, "elsewhere"))
     probe, twin_exe = os.path.join(d, "latteprobe"), os.path.join(d, "elsewhere", "latteprobe")
@@ -715,13 +715,13 @@ with tempfile.TemporaryDirectory() as d:
 
 # the user's choices are anyone's to write: whatever is in them, the guard reads no more than names from them
 with tempfile.TemporaryDirectory() as d:
-    dog.CHOICES = os.path.join(d, "guarddog.json")
+    dog.CHOICES = os.path.join(d, "guardcorgi.json")
     for junk in ('{"off": 5, "keep": "x", "quiet": {}}', '[1, 2]', '{"keep": [{"name": "foot", "run": 7}, {"name": 3}], "off": ["goo", 4]}', 'nonsense'):
         open(dog.CHOICES, "w").write(junk)
         assert dog.kept() == [] and dog.quiet_ones() == set() and dog.switched_off() <= {"goo"}, junk
         dog.choose("icons", False); dog.choose("icons", True)                  # and it can still be written over
 
-# DogHouse: GuardDog's unit is LatteOS's own, or it says why not; what it did shows in this user's history only
+# DogHouse: GuardCorgi's unit is LatteOS's own, or it says why not; what it did shows in this user's history only
 house = load("latte-doghouse", "system/libexec")
 # a pleamar-wm session: its Wayland socket is the one of RUN_USER/pleamar-N it listens on
 with tempfile.TemporaryDirectory() as d:
@@ -736,13 +736,13 @@ with tempfile.TemporaryDirectory() as d:
 ok = {"LoadState": "loaded", "FragmentPath": house.VENDOR, "DropInPaths": "/usr/lib/systemd/user/service.d/10-timeout-abort.conf"}
 assert house.tampered(ok) == ""
 assert house.tampered(dict(ok, LoadState="masked")) == "masked"
-assert house.tampered(dict(ok, FragmentPath="/home/u/.config/systemd/user/latte-guarddog.service")).startswith("replaced")
-assert house.tampered(dict(ok, DropInPaths="/home/u/.config/systemd/user/latte-guarddog.service.d/zz.conf")).startswith("changed by /home")
+assert house.tampered(dict(ok, FragmentPath="/home/u/.config/systemd/user/latte-guardcorgi.service")).startswith("replaced")
+assert house.tampered(dict(ok, DropInPaths="/home/u/.config/systemd/user/latte-guardcorgi.service.d/zz.conf")).startswith("changed by /home")
 with tempfile.TemporaryDirectory() as d:
-    dog.LOG, dog.DOGHOUSE = os.path.join(d, "guarddog.log"), os.path.join(d, "doghouse.log")
-    open(dog.LOG, "w").write(json.dumps({"at": 20, "what": "start", "id": "guarddog", "text": ""}) + "\nnot json\n")
-    open(dog.DOGHOUSE, "w").write(json.dumps({"at": 10, "uid": os.getuid(), "what": "doghouse", "id": "guarddog", "text": "x"}) + "\n"
-                                  + json.dumps({"at": 15, "uid": os.getuid() + 1, "what": "doghouse", "id": "guarddog", "text": "y"}) + "\n")
+    dog.LOG, dog.DOGHOUSE = os.path.join(d, "guardcorgi.log"), os.path.join(d, "doghouse.log")
+    open(dog.LOG, "w").write(json.dumps({"at": 20, "what": "start", "id": "guardcorgi", "text": ""}) + "\nnot json\n")
+    open(dog.DOGHOUSE, "w").write(json.dumps({"at": 10, "uid": os.getuid(), "what": "doghouse", "id": "guardcorgi", "text": "x"}) + "\n"
+                                  + json.dumps({"at": 15, "uid": os.getuid() + 1, "what": "doghouse", "id": "guardcorgi", "text": "y"}) + "\n")
     assert [(e["at"], e["what"]) for e in dog.history()] == [(10, "doghouse"), (20, "start")]
 # Night light: the word kept, and hyprsunset started with it (pkill and hyprsunset are stand-ins that note their calls)
 with tempfile.TemporaryDirectory() as d:

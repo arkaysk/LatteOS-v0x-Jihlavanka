@@ -97,7 +97,7 @@ ShellRoot {
         { icon: "folders", title: QT_TR_NOOP("DualBrew"), text: QT_TR_NOOP("Files in two panes, archives opened as folders.") },
         { icon: "device-gamepad-2", title: QT_TR_NOOP("The game session"), text: QT_TR_NOOP("Steam Big Picture in one press, and back to the desktop.") },
         { icon: "layout-columns", title: QT_TR_NOOP("Windows your way"), text: QT_TR_NOOP("A tape, tiles or free windows, on each screen its own.") },
-        { icon: "lifebuoy", title: QT_TR_NOOP("SAFE and GuardDog"), text: QT_TR_NOOP("When something breaks, a safe session that still works, and a guard that tells you why.") } ]
+        { icon: "lifebuoy", title: QT_TR_NOOP("SAFE and GuardCorgi"), text: QT_TR_NOOP("When something breaks, a safe session that still works, and a guard that tells you why.") } ]
     property int slide: 0
     Timer { interval: 12000; repeat: true; running: shell.page === "install"; onTriggered: shell.slide = (shell.slide + 1) % shell.slides.length }
 

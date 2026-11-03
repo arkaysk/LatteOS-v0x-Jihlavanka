@@ -59,7 +59,7 @@ The user's own, safe to edit (most are written by the Settings app; prefer it):
 | Desktop icons | `~/.config/latteos/desktop-icons`, `~/.config/latteos/desktop.json` |
 | Lock and idle | `~/.config/latteos/idle` |
 | Weather, place | `~/.config/latteos/weather.json` |
-| GuardDog's choices | `~/.config/latteos/guarddog.json` |
+| GuardCorgi's choices | `~/.config/latteos/guardcorgi.json` |
 | AI: on or off, the user's instructions to every AI | `~/.config/latteos/ai`, `~/.config/latteos/ai-instructions.txt` |
 | AI helpers: the agent, who reads a sentence, what is off | `~/.config/latteos/agent`, `~/.config/latteos/helper`, `~/.local/state/latteos/toggles/<name>-off` — change them with `latte-ai doer`, `latte-ai helper`, `latte-ai toggle` (LensAI › Helpers) |
 | The drops (Goo): lively, coffee in glass, hidden drops, zoom | `~/.local/share/pleamar/goo/settings.json` (taken up as soon as it is written) |
@@ -68,13 +68,13 @@ The user's own, safe to edit (most are written by the Settings app; prefer it):
 
 | Command | What it does |
 |---------|--------------|
-| `latte-app settings [PAGE]` | Opens the Settings, at a page: apps, updates, startup, defaults, ai, storage, backup, sync, performance, displays, sound, network, bluetooth, printers, power, me, password, lock, loginscreen, coffee, background, windows, drops, clockgoo, camgoo, launcher, notifications, accessibility, about, language, time, keyboard, guarddog, startmode |
+| `latte-app settings [PAGE]` | Opens the Settings, at a page: apps, updates, startup, defaults, ai, storage, backup, sync, performance, displays, sound, network, bluetooth, printers, power, me, password, lock, loginscreen, coffee, background, windows, drops, clockgoo, camgoo, launcher, notifications, accessibility, about, language, time, keyboard, guardcorgi, startmode |
 | `latte-app appmanager` · `latte-apps …` | The App Manager; `latte-apps installed`, `store search TEXT`, `install ID` (Flathub, no password), `remove ID`, `update`, `update-system` |
 | `latte-app files` · `latte-files disks` | DualBrew, the file manager; disks and partitions with how full they are (JSON) |
 | `latte-app devices` · `latte-devices list` · `latte-network inspect` | The Device Manager: hardware, the network and what is on it |
 | `latte-app monitor` · `latte-monitor` | What runs and what starts by itself |
 | `latte-app aicenter` · `latte-ai …` | LensAI: conversations with the AI services, their sign-in and limits (`latte-ai agents`, `latte-ai services`) |
-| `latte-guarddog status` · `owner PID` | Whether every part of the desktop runs; whose a process is (linux · latteos · user) |
+| `latte-guardcorgi status` · `owner PID` | Whether every part of the desktop runs; whose a process is (linux · latteos · user) |
 | `latte-say "emit …"` | Speaks to the running desktop scenes (as `pleamar --say goo`) |
 | `latte-lock` | Locks the screen |
 | `latte-net` | Cuts a running app off the internet and gives it back |
@@ -85,10 +85,10 @@ Read a command before using an option you are not sure of: they are short script
 
 ## Help with a problem
 
-- **Look before you touch:** `latte-guarddog status`, `journalctl --user -u latte-goo.service -n 100`,
+- **Look before you touch:** `latte-guardcorgi status`, `journalctl --user -u latte-goo.service -n 100`,
   `journalctl -b -p warning`, `latte-monitor`, `df -h`, `latte-files disks`.
 - **A crash:** `coredumpctl list` and `coredumpctl info PID` say what died and where; say it in plain words, and
-  whether it is LatteOS's, Fedora's or an app's (`latte-guarddog owner PID`).
+  whether it is LatteOS's, Fedora's or an app's (`latte-guardcorgi owner PID`).
 - **The desktop does not come up:** the SAFE session (chosen at login, or offered by itself after a crash) has a
   plain bar and a terminal; `latte-safe` is its rescue menu. From there `systemctl --user restart latte-goo.service`.
 - **A disk is full:** show what fills it (`du -xh --max-depth=1 / | sort -h`, snapper snapshots with
