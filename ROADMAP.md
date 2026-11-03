@@ -38,7 +38,7 @@ LatteOS:2.x xxx
 
 # Poradie práce
 
-**Vetva `v0.5-pleamarwm-jihlavanka` (od 31. 10. 2026):** poradie nižšie je pozastavené, robí sa prechod z Hyprlandu na pleamar-wm (1D).
+**Vetva `v0.5-pleamarwm-jihlavanka` (od 31. 10. 2026, predvolená od 2. 11.):** prechod z Hyprlandu na pleamar-wm (1D) je na latte-lab hotový — Hyprland odinštalovaný, „LatteOS GOO“ beží na pleamar-wm (2. 11.). Z 1D ostávajú drobnosti (1D.29, 1D.39, 1D.41), upratanie repa po Hyprlande (1D.12) a overenie na hlavnom PC s dvoma monitormi (1D.01, 1D.07, 1D.14). Potom LensAI (10B, súpis `docs/lensai/POZIADAVKY.md`) a YOL (7C) podľa používateľa, až potom sa pokračuje v poradí nižšie.
 
 Určené 22. 10. 2026 (nahrádza bývalé „Teraz“ z 12. 10.). Ide sa zhora, neskáče sa; nový nápad na koniec svojej kategórie, nie sem.
 Poradie drží tri pravidlá: **čo blokuje overovanie ostatného ide prvé** (štart, SAFE, obrazovky), **plocha pred aplikáciami**,
@@ -158,6 +158,7 @@ Postup pri každom kuse: (1) zistiť, čo upstream vie (aktuálna verzia, `pleam
 alebo ako vrstvu LatteOS nad ním, nie rozvetvením kódu; (4) autor a licencia do `TRETIE-STRANY.md`. Pred prácou
 `latte-upstream -v` (dnes nie je na PATH — vrátiť).
 
+**Hotové 2.–3. 11.:** pleamar 0.7.10 a pleamar-wm 0.6.9 so štyrmi záplatami (Win samotný, terminál pre wire, farebné krivky, obrazovka RX 640); režimy okien vrátane všetkých rozložení pleamar-wm a plátna; skratky ako vo Windows (Win+M, D, Home, 1…9); titulky ako na Hyprlande, farby šálky; aplikácie LatteOS ako bežné okná; sklo okien sklom pleamaru (bez kruhu, posuvníky Okná do 40 % a Bočný panel); obrazovky, klávesnica, stupne výkonu; nočné svetlo, zhasínanie obrazovky, DogHouse, čas v aplikáciách, okraje okien (zvuk, pozornosť, bez internetu), PID okien, kýv kávy, počasie, Monitor a SAFE; Hyprland odinštalovaný.
 **1D.01** [~] Brána: pleamar-wm 0.6.2 ukáže na RX 640 obraz na dvoch monitoroch, beží v ňom Goo; odmerať záťaž a sklo. — Dva monitory a sklo sa dajú overiť iba na skutočných dvoch monitoroch (hlavný PC používateľa), teraz nie (2. 11.).
 31. 10., Fedora 45 Beta, Linux 7.3.1, Mesa 26.3-rc3, pleamar 0.6.1, pleamar-wm 0.6.2: ostrá relácia na RX 640 a jednom monitore, Goo cez kartu, priemer 16,8 ms na snímku, CPU ~11 %, okno foot funguje. Dva monitory (pripojený je jeden) a sklo neskúšané. Bez Linuxu 7.3 a Mesy 26.3 Polaris kreslí softvérovo (~480 % CPU).
 **1D.02** [x] Vlastná položka v prihlasovači, relácia s vlastným priečinkom nastavení (`PLEAMAR_CONFIG`), strážca `latte-session`, odchod do hry.
