@@ -121,6 +121,13 @@ scene Session {
     // at 50 % or less for one that is not there, and it gets no clicks (at 51 every window was shut to the mouse)
     fact glass.body = 14
     let glass.see = if(glass.on > 0.5 and glass.on < 1.5, 1 - clamp(glass.body, 0, 40) / 100, 1)
+    // The scene's popups (the dock's names, menu and previews, the prompts) are glass as the windows are, and as
+    // see-through: Settings › Windows says it for both, popups have no slider of their own (ROADMAP 1D.39). True Glass
+    // keeps its windows whole; its popups are clearer.
+    let pop.color = if(glass.on > 0.5, cup.bar, #0c0e10)
+    let pop.glass = 100% * (glass.on > 0.5)
+    let pop.smoke = if(glass.on > 1.5, 30%, 70%)
+    let pop.tint = if(glass.on > 1.5, 60%, glass.see)
 
     fact ratio = 0.56                    // the leader's share of the width
     fact overview = false
@@ -1478,7 +1485,11 @@ scene Session {
                 group {
                     show: dk.on.$s and dk.hk.$s == j and j < dk.n.$s and pv.$s < 0 and dmenu.$s < 0 and dkdrag.$s < 0
                     body {
-                        color: #0c0e10
+                        color: pop.color
+                        glass: pop.glass
+                        frost: auto
+                        smoke: pop.smoke
+                        tint: pop.tint
                         rim: 12%
                         shadow: 0, 6, 16, 40%
                         box { at: if(dkvert, dk.cr.$s + dk.cs.$s * (dki.q[s][j] + dki.sz[s][j] / 2 + 14 + (tip.$s.$j.width + 22) / 2), dki.a[s][j]), if(dkvert, dki.a[s][j], dk.cr.$s + dk.cs.$s * (dki.q[s][j] + dki.sz[s][j] / 2 + 41)); size: (tip.$s.$j.width + 22), 26; corner: 13 }
@@ -1522,7 +1533,11 @@ scene Session {
                 pivot: if(dkvert, dk.cr.$s + dk.cs.$s * (dk.q.$s), mn.ia.$s), if(dkvert, mn.ia.$s, dk.cr.$s + dk.cs.$s * (dk.q.$s))
                 scale: 0.9 + 0.1 * mnup.$s
                 body {
-                    color: #0c0e10
+                    color: pop.color
+                    glass: pop.glass
+                    frost: auto
+                    smoke: pop.smoke
+                    tint: pop.tint
                     rim: 12%
                     shadow: 0, 10, 26, 45%
                     box { from: mn.x.$s, mn.y.$s; size: 220, mn.h.$s; corner: 12 }
@@ -3318,7 +3333,11 @@ scene Session {
             opacity: share.in
             move: 0, -14 * (1 - share.in)
             body {
-                color: #0c0e10
+                color: pop.color
+                glass: pop.glass
+                frost: auto
+                smoke: pop.smoke
+                tint: pop.tint
                 rim: 8%
                 shadow: 0, 10, 30, 50%
                 box { at: W / 2, band.y; size: band.w, 56; corner: 28 }
@@ -3494,7 +3513,11 @@ scene Session {
                 pivot: pvx, pvy + 70
                 scale: 0.92 + 0.08 * pvup + 0.03 * dockpv.$i.hover
                 body {
-                    color: #0c0e10
+                    color: pop.color
+                    glass: pop.glass
+                    frost: auto
+                    smoke: pop.smoke
+                    tint: pop.tint
                     rim: 12% + 10% * dockpv.$i.hover
                     shadow: 0, 12, 28, 45%
                     box { at: pvx, pvy + 10; size: 222, 170; corner: 14 }
@@ -4663,7 +4686,11 @@ scene Session {
         opacity: keptv
         move: 0, -20 * (1 - keptv)
         body {
-            color: #0c0e10
+            color: pop.color
+            glass: pop.glass
+            frost: auto
+            smoke: pop.smoke
+            tint: pop.tint
             rim: 16%
             shadow: 0, 10, 28, 50%
             box { at: W / 2, 52; size: 560, 56; corner: 28 }
