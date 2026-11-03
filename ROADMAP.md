@@ -2646,7 +2646,8 @@ a ostatné ostávajú domáca záležitosť LensAI (10B.07, 10B.08). Pravidlá a
   bez `qs-web` tlačidlo „Otvoriť v prehliadači“. Overené bez obrazovky (claude.ai, chat.deepseek.com).
   Dve záložky vedľa seba: hotové 3. 11. — tlačidlo „Vedľa“ v hlavičke stránky služby, ponuka ostatných záložiek a „Iba
   táto“; `latte-app aicenter tab claude deepseek` (overené bez obrazovky).
-  Ostáva: konektory cez tunel (vypínač), pretiahnutie súboru na prsteň. Prihlásenie v malom
+  Pretiahnutie súboru na prsteň: zrušené (používateľ 3. 11.) — súbor sa pridá ako na webe: „+“ služby, pretiahnutím
+  alebo vložením (Ctrl+V) priamo do stránky v záložke. Konektory cez tunel: po 10B.43. Prihlásenie v malom
   okne (Google, Apple…): hotové 3. 11. — vlastné okno s profilom záložky, stránka o ňom vie (overené testovacou
   stránkou s `window.open`); odkaz do nového okna či záložky ide do prehliadača.
   3. 11. neskôr: ikona v prsteni je favicon stránky (po otvorení záložky), dovtedy logo z lobe-icons (`goo/ai/suno.svg`
@@ -2736,6 +2737,7 @@ ostáva naša. Hľadanie v súboroch ostáva na DigUp; [cocoindex](https://githu
 priebežné indexovanie, potrebuje databázu) až keby agenti potrebovali vlastný index kódu.
 **10B.42** [x] **Úvodný dashboard LensAI** (používateľ 2. 11.): LensAI sa otvorí dashboardom (prstene limitov, agenti, Kaviareň, lokálna AI, rozhovory, rýchle úlohy, projekty Obsidianu, strážca podmienok, prechod do YOL); vzhľad podľa [dioramas](https://github.com/blendi-remade/dioramas) (kód MIT, modely CC BY 4.0). Súpis všetkých požiadaviek na LensAI: `docs/lensai/POZIADAVKY.md` (rozhodnutia v jeho časti 7). Pred YOL (7C). Rozhodnuté 2. 11.: hlavný prvok je šošovka lupy bez rámu a rúčky (iba sklo s vypuklinou), vnútri pohľad na Kaviareň (možno GIF); okolo všetko z návrhu okrem stavu Kaviarne; agenti pleamar-wm už teraz (iba čítanie); robí sa ako prvé. 3. 11.: prvá verzia v LensAI (stránka Prehľad, predvolená): šošovka `apps/common/Lens.qml` + `shaders/lens.frag` (vypuklina, lom farieb pri okraji, svetlo zľava hore, bez rámu), vnútri `~/.local/share/latteos/cafe.gif`, kým nie je, tapeta s kávou; okolo: Čo ostáva (prstene limitov, Claude týždeň / klik 5 h), Tento počítač, Agenti (pleamar-wm v termináli, iba čítanie), Rozhovory, Urob to za mňa s pripravenými úlohami, Projekty · Strážca podmienok · YOL ako „pripravuje sa“. 3. 11. neskôr: obraz Kaviarne od používateľa (výrez z jeho obrázka lupy, `assets/lensai/cafe.jpg`; GIF používateľa v `~/.local/share/latteos/cafe.gif` má prednosť); vzhľad podľa dioramas (`shaders/stage.frag`): teplý kužeľ svetla zhora na šošovku, žiara, mäkký tieň, vinetácia, filmové zrno; šošovka sa jemne vznáša a odlesk sa posúva (iba stupne full a standard). Hotové 3. 11. (používateľ: „Dashboard je hotový“); GIF Kaviarne dodá používateľ do `~/.local/share/latteos/cafe.gif`.
 
+**10B.43** [ ] **LensAI ako MCP hostiteľ** (používateľ 3. 11.; rozhodnuté 29. 10. a 3. 11., 10B.35): LensAI spúšťa konektory (MCP servery: súbory, Obsidian, Home Assistant, domáci server…) raz a dáva ich všetkým — oficiálnym CLI (zapíše tie isté servery do ich nastavení: Claude Code, Codex, Gemini CLI), modelom cez API a lokálnej AI; skilly a kontext Obsidianu tou istou cestou. Katalóg z MCP Registry (10B.38). Potom vypínač „sprístupniť konektory webovým záložkám Claude a ChatGPT“ cez ich vlastné konektory a tunel (predvolene vypnutý, s prihlásením, iba vybrané nástroje). Najprv Omarchy a hotové riešenia.
 ### 10C. [ ] Heidelberg
 je zakladny textovy editor, s neobvyklo širokou ponukou formatou ktore prečíta a upraví
 
