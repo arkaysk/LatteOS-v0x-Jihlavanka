@@ -3474,6 +3474,13 @@ Center) ostávajú pod svojou licenciou; nekomerčné (Shadertoy CC BY-NC-SA) ob
 označiť alpha stav, podporovaný hardvér, známe obmedzenia a spôsob nahlásenia problémov. Pred vydaním prejsť brány
 14.15 a overiť čistú inštaláciu, prvý štart, základné scenáre a návrat po zlyhaní; pozvanie testerov až keď je
 inštalácia bezpečná a opakovateľná. Zverejnenie vykonať iba na výslovný pokyn.
+- **Posudok 3. 11. (po prechode na pleamar-wm), od najľahšieho:** (1) README: postup pre cudzieho človeka (Fedora 45,
+  `git clone`, `sudo ./install --go`), stav alpha, známe obmedzenia; (2) 1D.41 klávesnica po načítaní scény a 1D.14
+  overenie odhlásenia/reštartu/hry/widgetov v relácii pleamar-wm; (3) pleamar, pleamar-wm a Quickshell pre LensAI
+  zostaviť inštalátorom (dnes sú v `[needs]` ako ručná vec; Quickshell z COPR Hyprlandu `lionheartp/Hyprland`);
+  (4) čistá inštalácia na čistej Fedore 45 vo VM aj s `--remove`, prvý štart a SAFE; (5) iná grafická karta než RX 640
+  (GFX6–8 potrebuje Linux 7.3 a Mesu 26.3 z Koji, 1D.16) a dva monitory (1D.01, 1D.07); (6) grafický inštalátor
+  a obraz (2.06) — pre prvých testerov stačí 1–4.
 
 ## 15. [ ] Inšpirácie a tech radar
 Nápady bez rozhodnutia; samostatné úlohy z nich sú pri svojej kategórii. `inspo/`.
