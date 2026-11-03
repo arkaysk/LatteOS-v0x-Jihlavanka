@@ -11,6 +11,8 @@
                              (left behind by an older LatteOS); without it, it is only listed
   --with PACKAGES            with --go: these optional ones too (a list: "steam gamescope"), as the installer's
                              window chose them
+  --old-amd                  with --go: Linux 7.3 and Mesa 26.3 too, for AMD cards of GFX6 to GFX8 (an RX 640), until
+                             Fedora has them (patches/old-amd.sh); --remove takes that Mesa off again
   --progress                 with --go: lines for the installer's window besides the usual ones, "@step N/M text"
                              when a part begins and "@percent P" as it goes (docs/instalator/PLAN.md)
 
@@ -111,7 +113,7 @@ def leftovers(root, targets, sections):
 
 
 def main(a):
-    flags = {f for f in a if f in ("--go", "--remove", "--purge", "--prune", "--progress")}
+    flags = {f for f in a if f in ("--go", "--remove", "--purge", "--prune", "--progress", "--old-amd")}
     rest = [x for x in a if x not in flags]
     chosen = []
     if "--with" in rest[:-1]:
@@ -134,7 +136,9 @@ def main(a):
     must, may, files, may_files = needs(sections)
     fetch = must + [p for p in chosen if p in may]       # what dnf brings: what is missing, and what was chosen of the rest
     with_packages = "--go" in flags and not root and bool(fetch)
-    parts = ([("packages", "Installing Fedora's packages", 25)] if with_packages else []) + [("build", "Building LatteOS's programs", 15)] + ([("pleamar", "Building pleamar and pleamar-wm", 45)] if with_pleamar else []) \
+    old_amd = "--old-amd" in flags and "--go" in flags and not root
+    parts = ([("packages", "Installing Fedora's packages", 25)] if with_packages else []) \
+        + ([("gpu", "Linux 7.3 and Mesa 26.3 for this graphics card", 35)] if old_amd else []) + [("build", "Building LatteOS's programs", 15)] + ([("pleamar", "Building pleamar and pleamar-wm", 45)] if with_pleamar else []) \
         + ([("web", "Building Quickshell for LensAI", 40)] if with_web else []) \
         + [("files", "Copying the files", 25), ("steps", "Setting the system up", 20)]
     whole = sum(w for _, _, w in parts)
@@ -150,6 +154,8 @@ def main(a):
     if "--remove" in flags:
         say("== the steps, undone" + (" (not run under --root)" if root else ""))
         for cmd in commands(sections.get("undo", []), users(), kernels): run(cmd)
+        if not root and os.path.isdir("/opt/mesa-26.3"):             # what --old-amd put there
+            run("sh " + os.path.join(HERE, "patches", "old-amd.sh") + " remove")
         say("== the files")
         gone = 0
         for _, target in copies(sections, "files") + copies(sections, "replaces"):
@@ -189,6 +195,13 @@ def main(a):
     if (must or files) and "--go" in flags and not root:
         say("install: what is missing has to be there first")
         return 1
+
+    if old_amd:
+        say("== Linux 7.3 and Mesa 26.3")
+        part("gpu")
+        if subprocess.run(["sh", os.path.join(HERE, "patches", "old-amd.sh")]).returncode:
+            say("install: Linux 7.3 or Mesa 26.3 could not be put in place")
+            return 1
 
     if "--go" in flags:
         say("== building")

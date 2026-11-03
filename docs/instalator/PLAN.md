@@ -80,6 +80,12 @@ vývojové balíky Qt 6 a Waylandu (zoznam v `FILES`, riadok s qt6-qtwebengine).
 | **Mesa 26.3** | dnes rc v `/opt/mesa-26.3` | tie isté karty, kým ju Fedora nemá | samostatný priečinok, nemení systémovú Mesu |
 | Quickshell 0.3 | COPR `lionheartp/Hyprland` (dnes) | kým Fedora má iba 0.2.1 | cudzí COPR; cieľ: vlastná zostava ako pri LensAI |
 
+**Hotové 3. 11.:** `patches/old-amd.sh` (`install --old-amd`, sprievodca ho pridá sám pri karte GFX6–8): Linux
+`7.3.1-200.fc45` z Koji (hotové balíky Fedory), Mesa `26.3.0-rc3` z archive.mesa3d.org (kontrolný súčet), zostavená
+s voľbami z latte-lab (radeonsi, RADV, llvmpipe) a závislosťami `dnf builddep mesa` do `/opt/mesa-26.3`, zapnutá cez
+`ld.so.conf.d` a ICD Vulkanu (záloha Fedorinho `radeon_icd…json.fedora`); `--remove` ju odoberie. Na latte-lab overené,
+že nič nemení, keď je hotové; zostavenie Mesy od nuly neoverené. Pozor: aktualizácia `mesa-vulkan-drivers` z Fedory
+prepíše ICD späť na Fedorin RADV (ako dnes na latte-lab).
 Keď Fedora 45 dostane Linux 7.3 a Mesu 26.3 v bežných aktualizáciách, riadky 3.4 odpadnú (1D.16) — sprievodca to
 zisťuje sám (`dnf` verzia v repozitári), nič sa nepíše natvrdo.
 
@@ -144,7 +150,8 @@ slobodná licencia, do COPR nesmie) a založiť ho iba na pokyn (je verejný).
    `optional:` vo `FILES`, zhrnutie, inštalácia (`./install --go --progress --with …`: zoznam častí, zlatý `DotBar`,
    čas, ktorý ostáva, prezentácia súčastí, záznam, „Skúsiť znova“), hotovo s reštartom. Snímky bez obrazovky
    (`LATTE_INSTALLER_PAGE=…`). Ostáva: preložiť opisy súčastí (sú to poznámky z `FILES`), obrázky do prezentácie,
-   Linux 7.3 a Mesa ako krok inštalácie, overenie na Quickshelli 0.2.1 z Fedory (napísané na 0.3.2).
+   overenie na Quickshelli 0.2.1 z Fedory (napísané na 0.3.2).
+   Prvá inštalácia nemusí byť dokonalá, stačí, keď funguje; po anglicky stačí (používateľ 3. 11.).
 4. Kontrola počítača (karta, Secure Boot, kernel/Mesa) a podmienené kroky 3.4.
 5. Skúška od nuly vo VM, potom na latte-lab (čistá Fedora 45 Server).
 

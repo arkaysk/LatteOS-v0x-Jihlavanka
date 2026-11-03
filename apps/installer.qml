@@ -73,7 +73,7 @@ ShellRoot {
     property real started: 0
     property string failed: ""
     Process { id: run
-        command: ["sh", "-c", "cd \"$1\" && ./install --go --progress --with \"$2\" 2>&1", "sh", shell.src, shell.chosenPackages.join(" ")]
+        command: ["sh", "-c", "cd \"$1\" && ./install --go --progress $3 --with \"$2\" 2>&1", "sh", shell.src, shell.chosenPackages.join(" "), shell.oldAmd ? "--old-amd" : ""]
         stdout: SplitParser { onRead: line => {
             if (line.startsWith("@step ")) {
                 const name = line.replace(/^@step \d+\/\d+ /, "")
