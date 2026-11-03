@@ -15,7 +15,10 @@ Item {
     // each open tab's own icon, as its page gives it (its favicon): { claude: "image://favicon/…" }
     property var icons: ({})
     // (only once its address is known: LensAI may be asked for a tab before it knows the services)
-    function open() { if (current !== "" && opened.indexOf(current) < 0 && services.some(s => s.id === current)) opened = opened.concat([current]) }
+    function open() {
+        if (opened.some(o => !services.some(s => s.id === o))) opened = opened.filter(o => services.some(s => s.id === o))      // taken off the list
+        if (current !== "" && opened.indexOf(current) < 0 && services.some(s => s.id === current)) opened = opened.concat([current])
+    }
     onCurrentChanged: open()
     onServicesChanged: open()
     Repeater {

@@ -68,8 +68,10 @@ ShellRoot {
     // the services' own pages as tabs (ROADMAP 10B.35): the one shown, and whether this Quickshell can hold a page at all
     property string tab: ""
     readonly property bool web: Quickshell.env("LATTE_WEB") === "1"
-    // whether its tool is installed or not (latte-ai): the user signs in on the page itself
-    readonly property var tabbed: [
+    // whether its tool is installed or not (latte-ai): the user signs in on the page itself. The user's own list is kept
+    // in ~/.config/latteos/lensai-tabs.json (LensAI › Settings); these until there is one
+    property var tabbed: defaultTabs
+    readonly property var defaultTabs: [
         { id: "claude", name: "Claude", web: "https://claude.ai/new" },
         { id: "gemini", name: "Gemini", web: "https://gemini.google.com/app" },
         { id: "chatgpt", name: "ChatGPT", web: "https://chatgpt.com/" },
@@ -77,6 +79,29 @@ ShellRoot {
         { id: "deepseek", name: "DeepSeek", web: "https://chat.deepseek.com/" },
         { id: "grok", name: "Grok", web: "https://grok.com/" },
         { id: "suno", name: "Suno", web: "https://suno.com/create" } ]
+    FileView {
+        id: tabsFile
+        path: (Quickshell.env("XDG_CONFIG_HOME") || (Quickshell.env("HOME") + "/.config")) + "/latteos/lensai-tabs.json"
+        printErrors: false; watchChanges: true
+        onFileChanged: reload()
+        onLoaded: { try { const t = JSON.parse(text()); if (Array.isArray(t)) shell.tabbed = t.filter(x => x && x.id && /^https?:\/\//.test(x.web || "")) } catch (e) {} }
+    }
+    function keepTabs(list) {
+        tabbed = list
+        Quickshell.execDetached(["sh", "-c", "mkdir -p \"$(dirname \"$1\")\" && printf '%s\\n' \"$2\" > \"$1\"", "sh", tabsFile.path, JSON.stringify(list, null, 1)])
+    }
+    // a page by its address; its name, or its host without one. False when it is not an address or is there already
+    function addTab(name, address) {
+        let web = address.trim()
+        if (!/^https?:\/\//.test(web)) web = "https://" + web
+        const host = web.replace(/^https?:\/\//, "").split(/[\/?#:]/)[0].toLowerCase()
+        if (!/^[a-z0-9-]+(\.[a-z0-9-]+)+$/.test(host)) return false
+        const id = host.replace(/^www\./, "")
+        if (tabbed.some(t => t.id === id)) return false
+        keepTabs(tabbed.concat([{ id: id, name: name.trim() || id, web: web }]))
+        return true
+    }
+    function removeTab(id) { keepTabs(tabbed.filter(t => t.id !== id)); if (tab === id && page === "web") page = "lensai" }
     readonly property var marks: ({ claude: "claude", gemini: "gemini", chatgpt: "openai", grok: "grok", mistral: "mistral", copilot: "githubcopilot", deepseek: "deepseek", suno: "suno" })
     // how much of a service's limit is left, 0…1, -1 where it says none (Claude: the week, the 5 hours after a click)
     function rest(id) {
@@ -171,7 +196,7 @@ ShellRoot {
     Timer { interval: 10000; repeat: true; running: shell.page === "services"; onTriggered: if (!svc.running) svc.ask(["services"]) }
     Component.onCompleted: {
         list.ask(["chats"]); who.ask(["providers", "all"]); svc.ask(["services"]); keyq.ask(["keys"])
-        if (["chats", "services", "models", "agents", "helpers", "instructions", "local"].indexOf(words[0]) >= 0) page = words[0]
+        if (["chats", "services", "models", "agents", "helpers", "instructions", "local", "lensai"].indexOf(words[0]) >= 0) page = words[0]
         if (words[0] === "tab" && words[1]) { page = "web"; tab = words[1] }      // latte-app aicenter tab claude: its own page
         if (page !== "home") agentsq.ask(["agents"])             // the rings of the tabs show what is left
         if (page === "home") lookAround()
@@ -283,13 +308,13 @@ ShellRoot {
 
     AppWindow {
         title: I18n.tr("LensAI")
-        heading: shell.page === "web" ? (shell.tabbed.find(t => t.id === shell.tab) || { name: "" }).name : shell.page === "home" ? I18n.tr("Overview") : shell.page === "agents" ? I18n.tr("Agents") : shell.page === "helpers" ? I18n.tr("Helpers") : shell.page === "local" ? I18n.tr("This computer") : shell.page === "instructions" ? I18n.tr("Instructions") : shell.page === "services" ? I18n.tr("Services") : shell.page === "models" ? I18n.tr("Models") : shell.page === "compare" ? I18n.tr("Compare") : (shell.chat ? shell.chat.title : I18n.tr("Conversations"))
+        heading: shell.page === "lensai" ? I18n.tr("Settings") : shell.page === "web" ? (shell.tabbed.find(t => t.id === shell.tab) || { name: "" }).name : shell.page === "home" ? I18n.tr("Overview") : shell.page === "agents" ? I18n.tr("Agents") : shell.page === "helpers" ? I18n.tr("Helpers") : shell.page === "local" ? I18n.tr("This computer") : shell.page === "instructions" ? I18n.tr("Instructions") : shell.page === "services" ? I18n.tr("Services") : shell.page === "models" ? I18n.tr("Models") : shell.page === "compare" ? I18n.tr("Compare") : (shell.chat ? shell.chat.title : I18n.tr("Conversations"))
         implicitWidth: 1120; implicitHeight: 760
         ground: shell.glassy ? "transparent" : Theme.ground
         searchHint: I18n.tr("Find a conversation…")
         onSearched: text => shell.find = text
         tools: [
-            Pill { implicitHeight: 34; icon: "plus"; text: I18n.tr("New conversation"); strong: true; visible: shell.page !== "web"
+            Pill { implicitHeight: 34; icon: "plus"; text: I18n.tr("New conversation"); strong: true; visible: shell.page !== "web" && shell.page !== "lensai"
                    onPressed: { shell.page = "chats"; shell.open = ""; shell.chat = null } },
             Pill { implicitHeight: 34; icon: "trash"; danger: true; visible: shell.page === "chats" && shell.open !== ""; text: I18n.tr("Delete")
                    onPressed: forget.ask(["forget", shell.open]) }
@@ -322,7 +347,12 @@ ShellRoot {
                                         source: parent.own || (shell.marks[ring.modelData.id] ? "file://" + I18n.share + "/goo/ai/" + shell.marks[ring.modelData.id] + ".svg" : "") }
                                 Label { anchors.centerIn: parent; visible: !parent.own && !shell.marks[ring.modelData.id]; text: I18n.tr(ring.modelData.name).charAt(0); color: "#2a1e17"; font.weight: 800 } }
                             MouseArea { id: ringHit; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
-                                        onClicked: { shell.page = "web"; shell.tab = ring.modelData.id } } } } }
+                                        onClicked: { shell.page = "web"; shell.tab = ring.modelData.id } } } }
+                    // another page: LensAI's settings, where the list is
+                    Rectangle { width: 48; height: 48; radius: 24; color: tabPlusHit.containsMouse || shell.page === "lensai" ? Theme.card : "transparent"
+                                border.width: 1; border.color: Theme.line
+                        Glyph { anchors.centerIn: parent; name: "plus"; font.pixelSize: 18; color: Theme.dim }
+                        MouseArea { id: tabPlusHit; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: shell.page = "lensai" } } }
                 Nav { text: I18n.tr("All conversations"); icon: "messages"; on: shell.page === "chats" && shell.only === ""; badge: shell.chats.length
                       onPressed: { shell.page = "chats"; shell.only = "" } }
                 Repeater { model: shell.services.filter(s => shell.chats.some(c => c.provider === s.id))
@@ -353,6 +383,7 @@ ShellRoot {
                 Nav { text: I18n.tr("Instructions"); icon: "file-text"; on: shell.page === "instructions"; onPressed: shell.page = "instructions" }
                 Nav { text: I18n.tr("Models"); icon: "sparkles"; on: shell.page === "models"; onPressed: { shell.page = "models"; modelq.ask(["models"]) } }
                 Nav { text: I18n.tr("Services"); icon: "plug-connected"; on: shell.page === "services"; onPressed: { shell.page = "services"; svc.ask(["services"]) } }
+                Nav { text: I18n.tr("Settings"); icon: "settings"; on: shell.page === "lensai"; onPressed: shell.page = "lensai" }
             }
         ]
 
@@ -1093,6 +1124,38 @@ ShellRoot {
                                 Rectangle { width: 20; height: 20; radius: 10; y: 3; x: mr.modelData.hidden ? 3 : 23; color: mr.modelData.hidden ? Theme.dim : Theme.inkOnGold }
                                 MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor
                                             onClicked: modeler.ask(["model", mr.modelData.hidden ? "show" : "hide", mg.modelData.id, mr.modelData.id]) } } } } } }
+        }
+
+        // ── LensAI's own settings: the services' pages in tabs, which and in what order ───────────────────────
+        Scroll {
+            id: lensaiPage
+            visible: shell.page === "lensai"
+            Label { text: I18n.tr("TABS"); color: Theme.faint; font.pixelSize: 11; font.weight: 700; font.letterSpacing: 0.8 }
+            Label { width: lensaiPage.room; wrapMode: Text.WordWrap; color: Theme.dim
+                    text: I18n.tr("Each one is the service's own page, with its own sign-in, as in a browser. Its ring under the overview shows what is left of its limit, where the service says it.") }
+            Repeater { model: shell.tabbed
+                Rectangle { id: tr; required property var modelData; required property int index; width: lensaiPage.room; height: 58; radius: 18; color: Theme.card
+                    Rectangle { x: 14; width: 30; height: 30; radius: 15; color: "#f5f1ea"; anchors.verticalCenter: parent.verticalCenter
+                        Image { anchors.centerIn: parent; visible: !!shell.marks[tr.modelData.id]; sourceSize: Qt.size(18, 18)
+                                source: shell.marks[tr.modelData.id] ? "file://" + I18n.share + "/goo/ai/" + shell.marks[tr.modelData.id] + ".svg" : "" }
+                        Label { anchors.centerIn: parent; visible: !shell.marks[tr.modelData.id]; text: tr.modelData.name.charAt(0).toUpperCase(); color: "#2a1e17"; font.weight: 800 } }
+                    Column { x: 58; width: parent.width - 300; anchors.verticalCenter: parent.verticalCenter; spacing: 2
+                        Label { text: tr.modelData.name; font.weight: 700 }
+                        Label { text: tr.modelData.web; color: Theme.dim; font.pixelSize: 12; width: parent.width; elide: Text.ElideRight } }
+                    Row { anchors.right: parent.right; anchors.rightMargin: 14; anchors.verticalCenter: parent.verticalCenter; spacing: 6
+                        // earlier and later in the list, as the rings stand
+                        Pill { icon: "chevron-up"; text: ""; visible: tr.index > 0
+                               onPressed: { const l = shell.tabbed.slice(); l.splice(tr.index - 1, 0, l.splice(tr.index, 1)[0]); shell.keepTabs(l) } }
+                        Pill { icon: "chevron-down"; text: ""; visible: tr.index < shell.tabbed.length - 1
+                               onPressed: { const l = shell.tabbed.slice(); l.splice(tr.index + 1, 0, l.splice(tr.index, 1)[0]); shell.keepTabs(l) } }
+                        Pill { icon: "trash"; danger: true; text: I18n.tr("Remove"); onPressed: shell.removeTab(tr.modelData.id) } } } }
+            Row { spacing: 10
+                Field { id: tabName; width: 220; icon: "tag"; hint: I18n.tr("Name") }
+                Field { id: tabWeb; width: Math.min(380, lensaiPage.room - 380); icon: "world-www"; hint: "https://perplexity.ai"; onAccepted: tabAdd.pressed() }
+                Pill { id: tabAdd; icon: "plus"; strong: true; text: I18n.tr("Add")
+                       onPressed: if (shell.addTab(tabName.text, tabWeb.text)) { tabName.text = ""; tabWeb.text = ""; tabBad.visible = false } else tabBad.visible = tabWeb.text.trim() !== "" } }
+            Label { id: tabBad; visible: false; color: Theme.red; font.pixelSize: 12; text: I18n.tr("That is not a web address, or its page is in the list already.") }
+            Pill { icon: "arrow-back-up"; text: I18n.tr("Back to LatteOS's list"); onPressed: shell.keepTabs(shell.defaultTabs) }
         }
 
         // ── the services: which are there, which is signed in; signing in and out ────────────────────────────

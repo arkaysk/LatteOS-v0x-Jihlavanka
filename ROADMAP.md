@@ -2646,6 +2646,12 @@ a ostatné ostávajú domáca záležitosť LensAI (10B.07, 10B.08). Pravidlá a
   bez `qs-web` tlačidlo „Otvoriť v prehliadači“. Overené bez obrazovky (claude.ai, chat.deepseek.com).
   Ostáva: konektory cez tunel (vypínač), pretiahnutie súboru na prsteň, dve záložky vedľa seba, prihlásenie Google
   v okne, ktoré potrebuje svoje „opener“ okno (zatiaľ sa otvorí v záložke).
+  3. 11. neskôr: ikona v prsteni je favicon stránky (po otvorení záložky), dovtedy logo z lobe-icons (`goo/ai/suno.svg`
+  pridané). **Nastavenia LensAI** (stránka `lensai`, v bočnom paneli a „+“ za prsteňmi): zoznam záložiek — pridať menom
+  a webovou adresou, odstrániť, posunúť hore/dole, späť na zoznam LatteOS; uložený v `~/.config/latteos/lensai-tabs.json`
+  (iba adresy http/https). **Bodka pri prsteni (návrh, čaká na súhlas):** zlatá = CLI služby pracuje alebo čaká
+  (agenti v termináli), mätová = v skrytej záložke prišlo oznámenie alebo sa zmenil názov či ikona stránky; obsah stránky
+  sa nečíta (podmienky služieb).
 
 **10B.36** [ ] **Kaviareň (Caffè) — AI farma pre každodennú a tvorivú prácu** (používateľ 29. 10.) — hravá, pútavá časť LensAI
 (a LensShore): front dlhých úloh, ktoré robia **čašníčky = agenti** (lokálne modely, ComfyUI, cloud cez API iba
