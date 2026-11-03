@@ -48,6 +48,9 @@ def built(source):
     kind, _, name = source.partition(":")
     if kind == "build":
         return [(os.path.join(HERE, "target", "release", name), name)]
+    if kind == "pleamar":               # pleamar and pleamar-wm with LatteOS's patches (patches/build-pleamar.sh)
+        src = os.path.join(HERE, "build", "pleamar-src")
+        return [(os.path.join(src, name) if "/" in name else os.path.join(src, "target", "release", name), os.path.basename(name))]
     if kind == "qsweb":                 # Quickshell with a web engine, for LensAI (patches/build-quickshell-web.sh)
         return [(os.path.join(HERE, "build", "quickshell-web", "build", "src", name), name)]
     if kind == "system":
@@ -122,7 +125,9 @@ def main(a):
     say = lambda line: print(line, flush=True)
     # the parts of an install and how long each takes, roughly: the installer's bar moves by them
     with_web = "--go" in flags and not root and any(s.startswith("qsweb:") for _, s in pairs(sections.get("files", [])))
-    parts = [("build", "Building LatteOS's programs", 15)] + ([("web", "Building Quickshell for LensAI", 40)] if with_web else []) \
+    with_pleamar = "--go" in flags and not root and any(s.startswith("pleamar:") for _, s in pairs(sections.get("files", [])))
+    parts = [("build", "Building LatteOS's programs", 15)] + ([("pleamar", "Building pleamar and pleamar-wm", 45)] if with_pleamar else []) \
+        + ([("web", "Building Quickshell for LensAI", 40)] if with_web else []) \
         + [("files", "Copying the files", 25), ("steps", "Setting the system up", 20)]
     whole = sum(w for _, _, w in parts)
     def part(name, share=0.0):
@@ -178,6 +183,12 @@ def main(a):
         crates = sorted({s[6:] for _, s in pairs(sections.get("files", [])) if s.startswith("build:")})
         if crates and subprocess.run(as_user + ["cargo", "build", "--release"] + [x for c in crates for x in ("-p", c)], cwd=HERE).returncode:
             return 1
+        # the desktop itself: pleamar and pleamar-wm with LatteOS's patches (not under --root either: ten minutes)
+        if with_pleamar:
+            part("pleamar")
+            if subprocess.run(as_user + ["sh", os.path.join(HERE, "patches", "build-pleamar.sh")]).returncode:
+                say("install: pleamar or pleamar-wm could not be built")
+                return 1
         # LensAI's web tabs: a Quickshell of its own; without it LensAI only goes without them
         # (not into a tree under --root: tests/check.sh builds nothing that takes ten minutes)
         if with_web:
@@ -199,6 +210,9 @@ def main(a):
         if not os.path.isfile(source):
             if "/build/quickshell-web/" in source:      # LensAI only goes without the services' tabs
                 say("   not built (LensAI's tabs): " + source)
+                continue
+            if root and "/build/pleamar-src/" in source:     # not built into a tree under --root (tests/check.sh)
+                say("   not built under --root: " + source)
                 continue
             say("   not built or not there: " + source); missing += 1
             continue

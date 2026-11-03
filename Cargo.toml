@@ -1,7 +1,7 @@
 [workspace]
 resolver = "2"
 members = ["crates/latte-hw", "crates/latte-boot", "crates/latte-stats"]
-exclude = ["old"]
+exclude = ["old", "build"]          # build/: what install fetches and builds (pleamar, pleamar-wm)
 
 [workspace.package]
 version = "0.4.0"

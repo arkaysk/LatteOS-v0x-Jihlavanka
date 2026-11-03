@@ -1,7 +1,7 @@
 # Patches on pleamar
 
 LatteOS runs on [pleamar](https://github.com/k4ditano/pleamar) built from its source with these changes. They
-apply to pleamar **0.7.10** (commit `94ac94c`), each on its own (`git apply`), `pleamar-speed-edges-wheel.patch` after the other four, and each is meant to be offered to pleamar's author:
+apply to pleamar **0.7.10** (tag `v0.7.10`, commit `0fdca2d`), each on its own (`git apply`), `pleamar-speed-edges-wheel.patch` after the other four, and each is meant to be offered to pleamar's author:
 none is specific to LatteOS. The scenes work without them, only slower or less sharp.
 
 | Patch | What it does | Why |
@@ -12,7 +12,7 @@ none is specific to LatteOS. The scenes work without them, only slower or less s
 | `pleamar-right-selection.patch` | A press of the right button puts what is selected into `text selected_text`, if the scene declares it. | A menu on the right button could not copy a selection: the logic did not know it. |
 | `pleamar-apps-reload.patch` | Watching `apps` again reads the list again, for every listener. | The list was read once: an app installed while the desktop ran did not show up until the next login. |
 
-On [pleamar-wm](https://github.com/k4ditano/pleamar-wm) 0.6.9 (commit `42c8fee`, beside `../pleamar`):
+On [pleamar-wm](https://github.com/k4ditano/pleamar-wm) 0.6.9 (tag `v0.6.9`, commit `42c8fee`, beside `../pleamar`):
 
 | Patch | What it does | Why |
 | --- | --- | --- |
@@ -21,13 +21,9 @@ On [pleamar-wm](https://github.com/k4ditano/pleamar-wm) 0.6.9 (commit `42c8fee`,
 | `pleamar-wm-shell-fact.patch` | The scene is told which windows have a shell of their own through the terminal layer (`shell.N`, 1 or 0). | A wire can only do something with such a window (`pleamar-wm link` reads, types in and hands tasks to shells); LatteOS shows the port on a canvas only there. |
 | `pleamar-wm-gamma-at-start.patch` | At the start of a session the monitors are told with `publish()`, their colour ramps' sizes too, not with `register` alone. | A night light (gammastep, wlsunset) got `failed` on every monitor until monitors changed: Night light did nothing on pleamar-wm. Issue text in `issues/`. |
 
-To build:
-
-```sh
-git clone https://github.com/k4ditano/pleamar.git
-cd pleamar && git checkout 94ac94c && for p in /path/to/patches/pleamar-*.patch; do git apply "$p"; done
-cargo build --release          # target/release/pleamar goes to /usr/bin/pleamar
-```
+To build: `sh patches/build-pleamar.sh` (what `sudo ./install --go` does). It fetches both into
+`build/pleamar-src`, applies the patches (pleamar's `speed-edges-wheel` after its other four, pleamar-wm's on
+pleamar-wm) and builds both into `build/pleamar-src/target/release`; install puts them in `/usr/bin`.
 
 When pleamar moves on: apply each patch to the new tag; one that no longer applies was either taken upstream
 (drop it) or needs its context moved (the change itself is small).

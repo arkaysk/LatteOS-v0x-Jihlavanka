@@ -71,7 +71,7 @@ sources = set(re.findall(r"<-\s*(\S+)", "".join(l for l in open("FILES") if not 
 for s in sorted(sources):
     if s.startswith("build:"):
         if not os.path.isdir("crates/" + s[6:]): bad.append("FILES: no crate " + s[6:])
-    elif not s.startswith(("system:", "qsweb:")) and not os.path.isfile(s):
+    elif not s.startswith(("system:", "qsweb:", "pleamar:")) and not os.path.isfile(s):
         bad.append("FILES: no such source " + s)
 tracked = subprocess.run(["git", "ls-files", "--cached", "--others", "--exclude-standard", "bin", "goo", "apps", "system", "assets"],
                          capture_output=True, text=True).stdout.split("\n")

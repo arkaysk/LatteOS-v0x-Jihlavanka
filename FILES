@@ -4,12 +4,18 @@
 #   build:NAME       the program cargo builds from crates/NAME
 #   system:PATH      a file the system already has, copied
 #   qsweb:NAME       Quickshell with a web engine, built by patches/build-quickshell-web.sh (LensAI's tabs)
+#   pleamar:NAME     pleamar and pleamar-wm with LatteOS's patches, built by patches/build-pleamar.sh (a program by
+#                    its name; a file of their sources by its path, pleamar-wm/…)
 # tests/check.sh fails when a source is missing here or a file meant for the system is not listed.
 
 [files]
 /usr/bin/latte-boot                                     <- build:latte-boot
 /usr/bin/latte-stats                                    <- build:latte-stats
 /usr/lib64/latteos/qs-web                               <- qsweb:quickshell
+/usr/bin/pleamar                                        <- pleamar:pleamar
+/usr/bin/pleamar-wm                                     <- pleamar:pleamar-wm
+/usr/share/xdg-desktop-portal/portals/pleamar.portal    <- pleamar:pleamar-wm/pleamar.portal
+/usr/share/xdg-desktop-portal/pleamar-portals.conf      <- pleamar:pleamar-wm/pleamar-portals.conf
 /usr/bin/latte-greeter                                  <- bin/latte-greeter
 /usr/bin/latte-login                                    <- bin/latte-login
 /usr/bin/latte-sky                                      <- bin/latte-sky
@@ -780,8 +786,7 @@ package: pulseaudio-utils                                            # Settings 
 package: fd-find xdg-utils xdg-user-dirs                             # the launcher: finding files, opening them, the home folders
 optional: brightnessctl power-profiles-daemon                        # the brightness keys; the power profiles in PowerGoo's card
 optional: steam gamescope gamescope-session gamescope-session-steam  # the Game session; without them it is not offered
-/usr/bin/pleamar: pleamar v0.7.10 (github.com/k4ditano/pleamar) built with patches/pleamar-*.patch; see patches/README.md
-/usr/bin/pleamar-wm: pleamar-wm v0.6.9 (github.com/k4ditano/pleamar-wm) built beside it with patches/pleamar-wm-*.patch: the window manager of the GOO session
+package: git cargo gcc-c++ pkgconf wayland-devel libxkbcommon-devel pam-devel vulkan-loader clang-devel libinput-devel libseat-devel systemd-devel mesa-libgbm-devel xorg-x11-server-Xwayland pipewire-devel openssl-devel   # building pleamar and pleamar-wm (their install.sh's list for dnf; patches/build-pleamar.sh)
 package: wine winetricks cabextract unshield innoextract 7zip icoutils bubblewrap    # Barista: Windows programs, each in a folder and a fence of its own
 optional: wine-dxvk wine-dxvk-d3d9 wine-dxvk-d3d8 mingw32-wine-gecko mingw64-wine-gecko wine-mono    # Direct3D 8 to 11 over Vulkan; web views and .NET inside Wine
 optional: umu-launcher protontricks lutris gamemode mangohud dosbox-staging xorriso     # Proton outside Steam (GE-Proton in /opt/latteos/proton), other runners and tools

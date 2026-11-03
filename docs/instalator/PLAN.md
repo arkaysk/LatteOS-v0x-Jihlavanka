@@ -89,7 +89,7 @@ zisťuje sám (`dnf` verzia v repozitári), nič sa nepíše natvrdo.
 |---|---|---|
 | Balíky Fedory (základ) | 5–8 min | sťahovanie a inštalácia, podľa siete |
 | Rust a nástroje na zostavenie | 1–2 min | |
-| pleamar + pleamar-wm | 10–15 min | pleamar 0.3.2 trval 4,5 min, dnešné verzie sú väčšie (nezmerané) |
+| pleamar + pleamar-wm | ~12,5 min | zmerané 3. 11. na latte-lab |
 | Quickshell pre LensAI | ~5 min | zmerané 3. 11. na latte-lab |
 | Súbory a nastavenie systému | 1–2 min | |
 | **Spolu základ** | **~25–35 min** | |
@@ -132,8 +132,9 @@ slobodná licencia, do COPR nesmie) a založiť ho iba na pokyn (je verejný).
 
 ## 5. Postup prác
 
-1. ~~`install --progress`~~ (hotové 3. 11.: `@step N/M text`, `@percent P`, kontrola v `tests/check.sh`) a zostavenie
-   pleamaru a pleamar-wm inštalátorom (14.20 bod 3).
+1. ~~`install --progress`~~ (hotové 3. 11.: `@step N/M text`, `@percent P`, kontrola v `tests/check.sh`) a
+   ~~zostavenie pleamaru a pleamar-wm inštalátorom~~ (hotové 3. 11.: `patches/build-pleamar.sh`, zamknuté na celé
+   commity a `cargo --locked`; na latte-lab 12,5 min). Ostáva: doinštalovať chýbajúce balíky Fedory (dnes ich `install` iba hlási).
 2. Skript `get` a spustenie `cage` + Quickshell na čistej Fedore 45 Server vo VM.
 3. Sprievodca: obrazovky z časti 2, najprv Vitaj → Súčasti → Zhrnutie → Inštalácia.
 4. Kontrola počítača (karta, Secure Boot, kernel/Mesa) a podmienené kroky 3.4.
