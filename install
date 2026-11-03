@@ -9,6 +9,8 @@
                              the result, for packaging, and for tests
   --prune                    with --go: what is in LatteOS's own folders and not in FILES is removed too
                              (left behind by an older LatteOS); without it, it is only listed
+  --with PACKAGES            with --go: these optional ones too (a list: "steam gamescope"), as the installer's
+                             window chose them
   --progress                 with --go: lines for the installer's window besides the usual ones, "@step N/M text"
                              when a part begins and "@percent P" as it goes (docs/instalator/PLAN.md)
 
@@ -111,6 +113,9 @@ def leftovers(root, targets, sections):
 def main(a):
     flags = {f for f in a if f in ("--go", "--remove", "--purge", "--prune", "--progress")}
     rest = [x for x in a if x not in flags]
+    chosen = []
+    if "--with" in rest[:-1]:
+        k = rest.index("--with"); chosen = rest[k + 1].split(); rest = rest[:k] + rest[k + 2:]
     root = ""
     if rest[:1] == ["--root"] and len(rest) == 2:
         root, rest = os.path.abspath(rest[1]), []
@@ -126,7 +131,10 @@ def main(a):
     # the parts of an install and how long each takes, roughly: the installer's bar moves by them
     with_web = "--go" in flags and not root and any(s.startswith("qsweb:") for _, s in pairs(sections.get("files", [])))
     with_pleamar = "--go" in flags and not root and any(s.startswith("pleamar:") for _, s in pairs(sections.get("files", [])))
-    parts = [("build", "Building LatteOS's programs", 15)] + ([("pleamar", "Building pleamar and pleamar-wm", 45)] if with_pleamar else []) \
+    must, may, files, may_files = needs(sections)
+    fetch = must + [p for p in chosen if p in may]       # what dnf brings: what is missing, and what was chosen of the rest
+    with_packages = "--go" in flags and not root and bool(fetch)
+    parts = ([("packages", "Installing Fedora's packages", 25)] if with_packages else []) + [("build", "Building LatteOS's programs", 15)] + ([("pleamar", "Building pleamar and pleamar-wm", 45)] if with_pleamar else []) \
         + ([("web", "Building Quickshell for LensAI", 40)] if with_web else []) \
         + [("files", "Copying the files", 25), ("steps", "Setting the system up", 20)]
     whole = sum(w for _, _, w in parts)
@@ -165,12 +173,19 @@ def main(a):
         return 0
 
     say("== what LatteOS needs")
-    must, may, files, may_files = needs(sections)
     if must: say("   missing:  sudo dnf install " + " ".join(must))
     for line in files: say("   missing:  " + line)
     if may: say("   optional: sudo dnf install " + " ".join(may))
     for line in may_files: say("   optional: " + line[9:])
     if not (must or files or may or may_files): say("   all there")
+    # Fedora's packages it brings itself; a missing file that is not a package still has to be there first
+    if with_packages:
+        part("packages")
+        say("   $ dnf install -y " + " ".join(fetch))
+        if subprocess.run(["dnf", "install", "-y"] + fetch).returncode:
+            say("install: dnf could not install them")
+            return 1
+        must = needs(sections)[0]
     if (must or files) and "--go" in flags and not root:
         say("install: what is missing has to be there first")
         return 1

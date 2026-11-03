@@ -134,7 +134,9 @@ slobodná licencia, do COPR nesmie) a založiť ho iba na pokyn (je verejný).
 
 1. ~~`install --progress`~~ (hotové 3. 11.: `@step N/M text`, `@percent P`, kontrola v `tests/check.sh`) a
    ~~zostavenie pleamaru a pleamar-wm inštalátorom~~ (hotové 3. 11.: `patches/build-pleamar.sh`, zamknuté na celé
-   commity a `cargo --locked`; na latte-lab 12,5 min). Ostáva: doinštalovať chýbajúce balíky Fedory (dnes ich `install` iba hlási).
+   commity a `cargo --locked`; na latte-lab 12,5 min). Chýbajúce balíky Fedory
+   doinštaluje sám (hotové 3. 11.: `dnf install -y`, časť posuvníka; `--with "…"` = voliteľné, ktoré vybral sprievodca).
+   Ostrá skúška `dnf` až na čistej Fedore (na latte-lab nič povinné nechýba).
 2. Skript `get` a spustenie `cage` + Quickshell na čistej Fedore 45 Server vo VM.
 3. Sprievodca: obrazovky z časti 2, najprv Vitaj → Súčasti → Zhrnutie → Inštalácia.
 4. Kontrola počítača (karta, Secure Boot, kernel/Mesa) a podmienené kroky 3.4.
