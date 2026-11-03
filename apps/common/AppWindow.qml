@@ -100,6 +100,8 @@ FloatingWindow {
         anchors.left: glass.right; anchors.right: parent.right; height: parent.height
         color: win.ground
 
+        // the coffee carries the window too, wherever nothing above it takes the press (1D.29)
+        MouseArea { anchors.bottom: parent.bottom; width: parent.width; height: sea.depth; onPressed: win.startSystemMove() }
         // the coffee: behind everything when the app has no lower part, the line above it when it has
         Surface {
             id: sea
