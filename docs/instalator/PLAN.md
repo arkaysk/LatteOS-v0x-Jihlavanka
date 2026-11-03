@@ -106,8 +106,11 @@ slobodná licencia, do COPR nesmie) a založiť ho iba na pokyn (je verejný).
 
 ## 3.6 Obrazovka inštalácie (používateľ 3. 11.)
 
-- **Posuvník v štýle grafov LatteOS:** rad segmentov ako `DotBar` (`apps/common/DotBar.qml`). Farba: pozri otázku
-  v odpovedi z 3. 11. — `Theme.heat` (zelená → zlatá → červená) by na konci svietila červenou, ako chyba.
+- **Posuvník v štýle grafov LatteOS:** rad segmentov ako `DotBar` (`apps/common/DotBar.qml`), **zlatý** (rozhodnuté
+  3. 11.); červená iba pri chybe. (`Theme.heat` ostáva grafom záťaže a aktivity, napr. commity na Gite.)
+- **Pohyblivá kávová hladina** dole v okne sprievodcu, tá istá ako v oknách aplikácií (`apps/common/Surface.qml`):
+  človek vidí prostredie LatteOS ešte pred jeho inštaláciou (používateľ 3. 11.). Sprievodca je postavený na
+  `AppWindow` a `apps/common`, nie na vlastnom vzhľade.
 - **Prezentácia súčastí LatteOS vedľa**, kým sa inštaluje (inštalácia je dlhá): obrázok a dve vety o jednej súčasti,
   po chvíli ďalšia — Goo a kvapky, LensAI, Barista (programy Windows), DualBrew, herná relácia, režimy okien,
   SAFE a GuardDog. Vľavo zoznam krokov, vpravo prezentácia, dole posuvník a čas, ktorý ostáva.
