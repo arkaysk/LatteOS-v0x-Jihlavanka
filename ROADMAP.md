@@ -2649,9 +2649,12 @@ a ostatné ostávajú domáca záležitosť LensAI (10B.07, 10B.08). Pravidlá a
   3. 11. neskôr: ikona v prsteni je favicon stránky (po otvorení záložky), dovtedy logo z lobe-icons (`goo/ai/suno.svg`
   pridané). **Nastavenia LensAI** (stránka `lensai`, v bočnom paneli a „+“ za prsteňmi): zoznam záložiek — pridať menom
   a webovou adresou, odstrániť, posunúť hore/dole, späť na zoznam LatteOS; uložený v `~/.config/latteos/lensai-tabs.json`
-  (iba adresy http/https). **Bodka pri prsteni (návrh, čaká na súhlas):** zlatá = CLI služby pracuje alebo čaká
+  (iba adresy http/https). **Bodka pri prsteni (hotové 3. 11., používateľ súhlasil):** zlatá = CLI služby pracuje alebo čaká
   (agenti v termináli), mätová = v skrytej záložke prišlo oznámenie alebo sa zmenil názov či ikona stránky; obsah stránky
-  sa nečíta (podmienky služieb).
+  sa nečíta (podmienky služieb). Agent → služba: `claude` → Claude, `codex` → ChatGPT, `gemini` → Gemini, `copilot`
+  (`pleamar-wm agents`, každých 5 s); „nové“ až 4 s po načítaní stránky, zmizne pri pohľade na záložku. Otvorené
+  záložky v `ListModel` (otvorenie ďalšej nenačíta ostatné znova), profil cez `WebEngineProfilePrototype`. Bodky
+  overené iba načítaním bez chýb — agentov a skrytú záložku testovacie prostredie nemá.
 
 **10B.36** [ ] **Kaviareň (Caffè) — AI farma pre každodennú a tvorivú prácu** (používateľ 29. 10.) — hravá, pútavá časť LensAI
 (a LensShore): front dlhých úloh, ktoré robia **čašníčky = agenti** (lokálne modely, ComfyUI, cloud cez API iba

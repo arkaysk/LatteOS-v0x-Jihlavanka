@@ -62,7 +62,11 @@ ShellRoot {
               stdout: StdioCollector { onStreamFinished: wmAgents.list = this.text.split("\n").filter(l => l.trim() !== "")
                                                              .map(l => { try { return JSON.parse(l) } catch (e) { return null } }).filter(x => x) } }
     function lookAround() { agentsq.ask(["agents"]); localModels.ask(["models"]); if (!wmAgents.running) wmAgents.running = true }
-    Timer { interval: 5000; repeat: true; running: shell.page === "home"; onTriggered: if (!wmAgents.running) wmAgents.running = true }
+    // (the rings' dots want it on every page too)
+    Timer { interval: 5000; repeat: true; running: true; triggeredOnStart: true; onTriggered: if (!wmAgents.running) wmAgents.running = true }
+    // a service whose own tool works in a terminal, or waits for the person there: the gold dot on its ring
+    readonly property var cliOf: ({ claude: "claude", codex: "chatgpt", gemini: "gemini", copilot: "copilot" })
+    function busy(id) { return wmAgents.list.some(a => cliOf[a.agent] === id && (a.state === "working" || a.state === "asking")) }
     // Claude's ring shows the week; a press on it, the 5 hours (ROADMAP 10B.35)
     property bool shortLimits: false
     // the services' own pages as tabs (ROADMAP 10B.35): the one shown, and whether this Quickshell can hold a page at all
@@ -346,6 +350,11 @@ ShellRoot {
                                         width: 18; height: 18; fillMode: Image.PreserveAspectFit
                                         source: parent.own || (shell.marks[ring.modelData.id] ? "file://" + I18n.share + "/goo/ai/" + shell.marks[ring.modelData.id] + ".svg" : "") }
                                 Label { anchors.centerIn: parent; visible: !parent.own && !shell.marks[ring.modelData.id]; text: I18n.tr(ring.modelData.name).charAt(0); color: "#2a1e17"; font.weight: 800 } }
+                            // gold: its tool in a terminal works or asks; mint: its tab, out of sight, has something new
+                            Rectangle { x: 34; y: 4; width: 11; height: 11; radius: 6; border.width: 2; border.color: Theme.pane
+                                        readonly property bool fresh: !!(webTabs.item && webTabs.item.news[ring.modelData.id])
+                                        visible: shell.busy(ring.modelData.id) || fresh
+                                        color: shell.busy(ring.modelData.id) ? Theme.gold : Theme.ok }
                             MouseArea { id: ringHit; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
                                         onClicked: { shell.page = "web"; shell.tab = ring.modelData.id } } } }
                     // another page: LensAI's settings, where the list is
