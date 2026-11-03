@@ -191,11 +191,19 @@
     "name": "Windows",
     "icon": "app-window",
     "status": "ready",
-    "words": "tape tiles floating layout glass side panel arrange glance canvas zones"
+    "words": "tape tiles floating layout arrange glance canvas zones"
+   },
+   {
+    "id": "glass",
+    "name": "Glass",
+    "icon": "glass",
+    "status": "ready",
+    "words": "glass blur see-through transparent frost smoke milk clear side panel windows coffee in glass true glass",
+    "under": "windows"
    },
    {
     "id": "transitions",
-    "name": "Transitions",
+    "name": "Transitions and effects",
     "icon": "sparkles",
     "status": "ready",
     "words": "transition effect animation wallpaper slideshow sand fade skwd"
@@ -280,12 +288,41 @@
     "words": "lensshore launcher line ai modes tape emoji symbols kaomoji gif giphy tenor klipy key skin tone columns top bottom"
    },
    {
+    "id": "dock",
+    "under": "drops",
+    "name": "Dock",
+    "icon": "layout-columns",
+    "status": "ready",
+    "words": "dock shore pinned icons hide magnify dots size side bottom left right pleamar-wm"
+   },
+   {
     "id": "notifications",
     "name": "Notifications",
     "icon": "bell",
     "status": "ready",
     "words": "do not disturb alerts"
    },
+   {
+    "id": "lockscreen-look",
+    "name": "Lock screen",
+    "icon": "lock",
+    "status": "planned",
+    "words": "lock screen picture clock notifications widgets weather media calendar"
+   },
+   {
+    "id": "lighting",
+    "name": "Dynamic lighting",
+    "icon": "bulb",
+    "status": "planned",
+    "words": "rgb lighting keyboard mouse led openrgb colour effect"
+   }
+  ]
+ },
+ {
+  "id": "accessibility",
+  "name": "Accessibility",
+  "icon": "user",
+  "pages": [
    {
     "id": "accessibility",
     "name": "Accessibility",

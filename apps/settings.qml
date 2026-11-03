@@ -87,6 +87,7 @@ ShellRoot {
     Word { id: glass; name: "glass" }
     Word { id: glassLevel; name: "glass-level" }
     Word { id: glassBody; name: "glass-body" }        // how see-through the windows are, 0…100 (the window manager makes them so)
+    Word { id: glassRipple; name: "glass-ripple" }    // a press on glass sends a ring of light through it: "0" off
     Word { id: glassSide; name: "glass-side" }        // and the side panel of LatteOS's apps (Theme.sideGlass)
     Word { id: wallpaper; name: "wallpaper" }
     Word { id: icons; name: "desktop-icons" }
@@ -99,9 +100,13 @@ ShellRoot {
         path: (Quickshell.env("XDG_DATA_HOME") || (Quickshell.env("HOME") + "/.local/share")) + "/pleamar/goo/settings.json"
         printErrors: false; watchChanges: true
         onFileChanged: reload()
-        onLoaded: { try { kept = JSON.parse(text()) } catch (e) { kept = {} } }
+        onLoaded: { try { kept = JSON.parse(text()) } catch (e) { kept = {} } paneToGoo.restart() }
         function set(key, value) { const k = Object.assign({}, kept); k[key] = value; kept = k; setText(JSON.stringify(k)) }
     }
+    // the side panel's glass as the windows have it (kind, how see-through, theme), for the Goo cards with a pane of it (goo/parts/card.plm)
+    Timer { id: paneToGoo; interval: 250
+            onTriggered: { const p = Theme.pane; const r = x => Math.round(x * 1000) / 1000; const v = { r: r(p.r), g: r(p.g), b: r(p.b), a: r(p.a) }; if (JSON.stringify(goo.kept.pane) !== JSON.stringify(v)) goo.set("pane", v) } }
+    Connections { target: Theme; function onPaneChanged() { paneToGoo.restart() } }
     // the drops that can be switched off, as the Goo scene wrote them down when it started
     FileView {
         id: dropList
@@ -232,23 +237,59 @@ ShellRoot {
     Timer { id: later; interval: 900; onTriggered: shell.ask() }       // what was asked of the compositor takes a moment to be so
     Component.onCompleted: ask()               // the front page is open from the start: no change of page asks for it
 
+    // what Home says of the look (ROADMAP 9.13)
+    readonly property var cupNames: ({ espresso: QT_TR_NOOP("Espresso cup"), mocha: QT_TR_NOOP("Mocha cup"), porcelain: QT_TR_NOOP("Porcelain"), wallpaper: QT_TR_NOOP("From the wallpaper") })
+    readonly property var glassNames: [QT_TR_NOOP("none"), QT_TR_NOOP("a little"), QT_TR_NOOP("more of it"), QT_TR_NOOP("the most"), QT_TR_NOOP("True Glass")]
     // the window modes, in the order of ROADMAP 8A.06; `soon`: decided, not made yet
-    readonly property var windowModes: [{ id: "tape", name: QT_TR_NOOP("Tape"), hint: QT_TR_NOOP("an endless strip, nothing is put away"), icon: "layout-columns" },
-                                        { id: "floating", name: QT_TR_NOOP("Floating windows"), hint: QT_TR_NOOP("as on Windows"), icon: "app-window" },
-                                        { id: "tiles", name: QT_TR_NOOP("Tiles"), hint: QT_TR_NOOP("windows share the screen"), icon: "layout-grid" },
+    readonly property var windowModes: [{ id: "tape", name: QT_TR_NOOP("Tape"), hint: QT_TR_NOOP("an endless strip, nothing is put away"), icon: "layout-columns", pic: [[0,0,20,30,3],[22,0,20,30,3],[44,0,4,30,2,0.45]] },
+                                        { id: "floating", name: QT_TR_NOOP("Floating windows"), hint: QT_TR_NOOP("as on Windows"), icon: "app-window", pic: [[0,1,20,13,3],[23,5,16,20,3],[5,18,14,11,2.5],[42,15,6,13,2,0.45]] },
+                                        { id: "tiles", name: QT_TR_NOOP("Tiles"), hint: QT_TR_NOOP("windows share the screen"), icon: "layout-grid", pic: [[0,0,26,30,3],[28,0,20,14,3],[28,16,20,14,3]] },
                                         { id: "glance", name: QT_TR_NOOP("Glance"), hint: QT_TR_NOOP("one in the middle, the others at the sides"), icon: "layout-distribute-vertical" },
                                         { id: "canvas", name: QT_TR_NOOP("Canvas"), hint: QT_TR_NOOP("free windows on a desk you zoom out of"), icon: "zoom-out-area" },
                                         { id: "trizone", name: QT_TR_NOOP("Three zones"), hint: QT_TR_NOOP("for wide screens: a middle and two columns"), icon: "columns-3", soon: true }]
     // the kinds of tiles pleamar-wm lays out (system/pleamarwm/bin/hyprctl LAYOUT): small buttons under the modes; its
     // «marea» is called Tide here, not to be taken for Marea
-    readonly property var tileKinds: [{ id: "tiles", name: QT_TR_NOOP("Leader on the left"), icon: "layout-sidebar" },
-                                      { id: "leader-right", name: QT_TR_NOOP("Leader on the right"), icon: "layout-sidebar-right" },
-                                      { id: "columns", name: QT_TR_NOOP("Columns"), icon: "layout-columns" },
-                                      { id: "rows", name: QT_TR_NOOP("Rows"), icon: "layout-board" },
-                                      { id: "grid", name: QT_TR_NOOP("Grid"), icon: "layout-grid" },
-                                      { id: "fractal", name: QT_TR_NOOP("Fractal"), icon: "layout-dashboard" },
-                                      { id: "tide", name: QT_TR_NOOP("Tide"), icon: "wave-sine" }]
+    readonly property var tileKinds: [{ id: "tiles", name: QT_TR_NOOP("Leader on the left"), icon: "layout-sidebar", pic: [[0,0,26,30,3],[28,0,20,14,3],[28,16,20,14,3]] },
+                                      { id: "leader-right", name: QT_TR_NOOP("Leader on the right"), icon: "layout-sidebar-right", pic: [[0,0,20,14,3],[0,16,20,14,3],[22,0,26,30,3]] },
+                                      { id: "columns", name: QT_TR_NOOP("Columns"), icon: "layout-columns", pic: [[0,0,14,30,3],[17,0,14,30,3],[34,0,14,30,3]] },
+                                      { id: "rows", name: QT_TR_NOOP("Rows"), icon: "layout-board", pic: [[0,0,48,8.6,2],[0,10.7,48,8.6,2],[0,21.4,48,8.6,2]] },
+                                      { id: "grid", name: QT_TR_NOOP("Grid"), icon: "layout-grid", pic: [[0,0,23,14,3],[25,0,23,14,3],[0,16,23,14,3],[25,16,23,14,3]] },
+                                      { id: "fractal", name: QT_TR_NOOP("Fractal"), icon: "layout-dashboard", pic: [[0,0,22,30,3],[24,0,24,14,3],[24,16,11,14,2],[37,16,11,6,1.5],[37,24,11,6,1.5]] },
+                                      { id: "tide", name: QT_TR_NOOP("Tide"), icon: "wave-sine", pic: [[0,0,26,26,3],[28,0,12,26,3],[42,0,6,26,2],[0,28,48,2.5,1.2,1,1]] }]
     function modeOf(id) { return windowModes.find(o => o.id === id) || tileKinds.find(o => o.id === id) }
+    function isTile(id) { return tileKinds.some(o => o.id === id) }
+    // the mode the Windows page shows below its modes: the one pressed, or the first screen's
+    readonly property string shownMode: modePick !== "" ? modePick : modeOn(screenList.length ? screenList[0].name : "")
+    // where four windows stand in each mode, as fractions of the screen (x, y, w, h), the first with the keyboard;
+    // the kinds of tiles as pleamar-wm's control centre has them (control/control.plm), the other modes ours
+    readonly property var previews: ({
+        "tiles": [[0, 0, 0.56, 1], [0.56, 0, 0.44, 0.3333], [0.56, 0.3333, 0.44, 0.3333], [0.56, 0.6667, 0.44, 0.3333]],
+        "leader-right": [[0.44, 0, 0.56, 1], [0, 0, 0.44, 0.3333], [0, 0.3333, 0.44, 0.3333], [0, 0.6667, 0.44, 0.3333]],
+        "columns": [[0, 0, 0.25, 1], [0.25, 0, 0.25, 1], [0.5, 0, 0.25, 1], [0.75, 0, 0.25, 1]],
+        "rows": [[0, 0, 1, 0.25], [0, 0.25, 1, 0.25], [0, 0.5, 1, 0.25], [0, 0.75, 1, 0.25]],
+        "grid": [[0, 0, 0.5, 0.5], [0.5, 0, 0.5, 0.5], [0, 0.5, 0.5, 0.5], [0.5, 0.5, 0.5, 0.5]],
+        "fractal": [[0, 0, 0.5, 1], [0.5, 0, 0.5, 0.5], [0.5, 0.5, 0.25, 0.5], [0.75, 0.5, 0.25, 0.5]],
+        "tide": [[0, 0, 0.48, 1], [0.48, 0, 0.2, 1], [0.68, 0, 0.16, 1], [0.84, 0, 0.16, 1]],
+        "tape": [[-0.3, 0, 0.5, 1], [0.2, 0, 0.5, 1], [0.7, 0, 0.5, 1], [1.2, 0, 0.5, 1]],
+        "floating": [[0.06, 0.08, 0.34, 0.38], [0.44, 0.04, 0.28, 0.34], [0.14, 0.54, 0.26, 0.3], [0.46, 0.46, 0.32, 0.36]],
+        "glance": [[0.2, 0.05, 0.6, 0.9], [0.02, 0.1, 0.16, 0.35], [0.02, 0.55, 0.16, 0.35], [0.82, 0.1, 0.16, 0.35]],
+        "canvas": [[0.12, 0.12, 0.24, 0.24], [0.42, 0.16, 0.2, 0.2], [0.16, 0.56, 0.28, 0.24], [0.6, 0.52, 0.24, 0.28]],
+        "trizone": [[0.25, 0, 0.5, 1], [0, 0, 0.25, 1], [0.75, 0, 0.25, 0.5], [0.75, 0.5, 0.25, 0.5]] })
+    function previewOf(id) { return previews[id] || previews.tiles }
+    // the dock of a free monitor, as pleamar-wm's control centre sets it (control/control.luau): at once in the session,
+    // and kept in LatteOS's own session.conf, which comes after the one made at login (bin/latte-session)
+    Process { id: dockRead; property var got: ({})
+              command: ["sh", "-c", "for f in hide mag dots into size side; do printf '%s ' \"$(pleamar-wm --say wm \"get dock.$f\")\"; done"]
+              stdout: StdioCollector { onStreamFinished: { const v = this.text.trim().split(/\s+/).map(Number); dockRead.got = { hide: v[0], mag: v[1], dots: v[2], into: v[3], size: v[4], side: v[5] } } } }
+    readonly property var dock: dockRead.got
+    // `config set dock` fills what it is not told with pleamar-wm's defaults: every one is written, as the session has it
+    function dockSet(fact, x) {
+        const d = Object.assign({}, dockRead.got); d[fact] = x; dockRead.got = d
+        const on = n => n === 1 ? "on" : "off"
+        const all = [["hide", on(d.hide)], ["magnify", on(d.mag)], ["dots", on(d.dots)], ["into", on(d.into)], ["size", String(d.size)], ["side", ["bottom", "left", "right"][d.side] || "bottom"]]
+        Quickshell.execDetached(["sh", "-c", "pleamar-wm --say wm \"fact dock.$1 $2\"; shift 2; export PLEAMAR_WM_CONFIG=\"$HOME/.config/latteos/pleamar-wm/session.conf\"; "
+                                 + "while [ $# -gt 1 ]; do pleamar-wm config set dock \"$1\" \"$2\"; shift 2; done",
+                                 "sh", fact, String(x)].concat(...all)) }
     // what system/hypr/latte/windows.lua keeps: the mode of every screen, then a screen's own on each line ("DP-1 tiles")
     FileView { id: modes; path: (Quickshell.env("XDG_STATE_HOME") || (Quickshell.env("HOME") + "/.local/state")) + "/latteos/window-mode"
                printErrors: false; watchChanges: true; onFileChanged: reload()
@@ -510,6 +551,27 @@ ShellRoot {
         Item { width: 1; height: 2 }
         Flow { id: inside; width: parent.width; spacing: 14 }
     }
+    component ModePic: Item {                 // a mode's picture as pleamar-wm's control centre draws it: boxes in 48 × 30
+        id: mp
+        property var pic: null
+        property bool on: false
+        width: 48; height: 30; opacity: on ? 1 : 0.7
+        Repeater { model: mp.pic || []
+            Rectangle { required property var modelData; x: modelData[0]; y: modelData[1]; width: modelData[2]; height: modelData[3]; radius: modelData[4]
+                        opacity: modelData.length > 5 ? modelData[5] : 1; color: modelData.length > 6 || mp.on ? Theme.gold : Theme.dim } } }
+    component ModeTile: Rectangle {           // a mode or a kind of tiles, small, as pleamar-wm's control centre shows its layouts
+        property string icon
+        property string text
+        property bool on: false
+        property bool hover: false
+        property var pic: null                  // its picture as pleamar-wm's control centre draws it: boxes in 48 × 30
+        radius: 12; color: on ? Theme.raised : (hover ? Theme.card : Qt.rgba(Theme.card.r, Theme.card.g, Theme.card.b, 0.5))
+        border.width: on ? 2 : 1; border.color: on ? Theme.gold : Theme.line
+        Glyph { visible: !parent.pic; name: parent.icon; font.pixelSize: 24; color: parent.on ? Theme.gold : Theme.dim; anchors.horizontalCenter: parent.horizontalCenter; y: 12 }
+        ModePic { visible: !!parent.pic; pic: parent.pic; on: parent.on; anchors.horizontalCenter: parent.horizontalCenter; y: 10 }
+        Label { text: parent.text; width: parent.width - 6; horizontalAlignment: Text.AlignHCenter; elide: Text.ElideRight; font.pixelSize: 11; font.weight: 600
+                color: parent.on ? Theme.cream : Theme.dim; anchors.horizontalCenter: parent.horizontalCenter; y: 46 }
+    }
     component Choice: Rectangle {              // one of several, with a picture of itself
         id: choice
         property string text
@@ -679,47 +741,20 @@ ShellRoot {
                                     text: [front.pc.cpu ? front.pc.cpu + (front.pc.threads ? " (" + I18n.tr("{n} threads", { n: front.pc.threads }) + ")" : "") : "", front.pc.ram_gb ? front.pc.ram_gb + " GB RAM" : "",
                                            release.pretty, front.pc.kernel ? "Linux " + front.pc.kernel : ""].filter(x => x).join("  ·  ") } }
                         Pill { anchors.right: parent.right; anchors.bottom: parent.bottom; anchors.margins: 14; implicitHeight: 30; icon: "cpu"; text: I18n.tr("About this computer"); onPressed: shell.go("about") } }
-                    // the look: dark, light, or from the wallpaper, each as a little window of itself
-                    Card { title: I18n.tr("Interface mode"); note: I18n.tr("The colours of the windows and of the desktop."); icon: "moon"
-                        Row { spacing: 10
-                            Repeater { model: [{ id: "espresso", name: QT_TR_NOOP("Espresso"), hint: QT_TR_NOOP("dark"), ground: "#17110d", pill: "#2a1e17", dot: "#f7c873" },
-                                               { id: "porcelain", name: QT_TR_NOOP("Porcelain"), hint: QT_TR_NOOP("light"), ground: "#f5eee2", pill: "#fffaf1", dot: "#b5651d" },
-                                               { id: "wallpaper", name: QT_TR_NOOP("From the wallpaper"), hint: QT_TR_NOOP("its colours"), ground: "#3a2a20", pill: "#c98a55", dot: "#f3ebdd" }]
-                                Rectangle { id: mode; required property var modelData; width: (front.col - 36 - 20) / 3; height: 118; radius: 14
-                                    readonly property bool on: Theme.cup === modelData.id
-                                    color: on ? Theme.raised : "transparent"; border.width: on ? 2 : 1; border.color: on ? Theme.gold : Theme.line
-                                    Label { x: 12; y: 10; text: I18n.tr(mode.modelData.name); font.weight: 700; font.pixelSize: 13 }
-                                    Glyph { visible: mode.on; anchors.right: parent.right; anchors.rightMargin: 10; y: 10; name: "circle-check"; font.pixelSize: 16; color: Theme.gold }
-                                    Rectangle { x: 12; y: 38; width: parent.width - 24; height: 34; radius: 17; color: mode.modelData.ground; border.width: 1; border.color: Theme.line
-                                        Rectangle { x: 6; width: parent.width * 0.5; height: 22; radius: 11; anchors.verticalCenter: parent.verticalCenter; color: mode.modelData.pill
-                                            Rectangle { x: 6; width: 10; height: 10; radius: 5; anchors.verticalCenter: parent.verticalCenter; color: mode.modelData.dot } } }
-                                    Label { x: 12; y: 84; text: I18n.tr(mode.modelData.hint); color: Theme.dim; font.pixelSize: 11 }
-                                    MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor
-                                                onClicked: { cup.choose(mode.modelData.id); Theme.cup = mode.modelData.id; Quickshell.execDetached(["hyprctl", "eval", "latte.cup(\"" + mode.modelData.id + "\")"]) } } } } } }
-                    // how much is glass: one choice for all of LatteOS, as a slider of its five steps, True Glass the last
-                    Card { title: I18n.tr("Glass"); note: I18n.tr("How much of LatteOS is glass: the side panels, the windows and the AI's pages."); icon: "droplet"
-                        Item { width: parent.width; height: 44
-                            Glyph { x: 0; anchors.verticalCenter: parent.verticalCenter; name: "circle"; color: Theme.dim; font.pixelSize: 16 }
-                            Item { id: track; x: 30; width: parent.width - 130; height: 44
-                                Rectangle { y: 19; width: parent.width; height: 6; radius: 3; color: Theme.raised }
-                                Rectangle { y: 19; width: parent.width * Theme.glassLevel / 4; height: 6; radius: 3; color: Theme.gold }
-                                Repeater { model: 5
-                                    Rectangle { required property int index; x: track.width * index / 4 - width / 2; y: index === Theme.glassLevel ? 12 : 17; width: index === Theme.glassLevel ? 20 : 10; height: width; radius: width / 2
-                                                color: index <= Theme.glassLevel ? Theme.gold : Theme.raised; border.width: index === Theme.glassLevel ? 3 : 0; border.color: Theme.ground } }
-                                MouseArea { anchors.fill: parent; anchors.margins: -10; cursorShape: Qt.PointingHandCursor
-                                    function put(x) { const n = Math.max(0, Math.min(4, Math.round(4 * x / track.width))); if (n !== Theme.glassLevel) { glassLevel.choose(String(n)); Theme.glassLevel = n; goo.set("glass", n) } }
-                                    onPressed: m => put(m.x - 10); onPositionChanged: m => { if (pressed) put(m.x - 10) } } }
-                            Glyph { x: parent.width - 92; anchors.verticalCenter: parent.verticalCenter; name: "droplet"; color: Theme.gold; font.pixelSize: 16 }
-                            Rectangle { anchors.right: parent.right; anchors.verticalCenter: parent.verticalCenter; height: 26; radius: 13; width: 64; color: Qt.rgba(Theme.gold.r, Theme.gold.g, Theme.gold.b, 0.16)
-                                Label { anchors.centerIn: parent; text: Theme.glassLevel === 4 ? "True" : Math.round(Theme.glassLevel * 100 / 3) + " %"; color: Theme.gold; font.weight: 800; font.pixelSize: 12 } } }
-                        Label { text: I18n.tr([QT_TR_NOOP("None: everything is solid."), QT_TR_NOOP("A little"), QT_TR_NOOP("More"), QT_TR_NOOP("The most"), QT_TR_NOOP("True Glass: the windows are clear glass that bends the light; what is written keeps a plate under it.")][Theme.glassLevel]); color: Theme.dim; font.pixelSize: 12; width: parent.width; wrapMode: Text.WordWrap } }
+                    // the look as it is now, and where it is chosen: Home only shows and leads (ROADMAP 9.13)
+                    Card { title: I18n.tr("The look"); note: I18n.tr("The cup the windows are made of, and how much of LatteOS is glass."); icon: "palette"
+                        Label { width: parent.width; color: Theme.dim; font.pixelSize: 13; wrapMode: Text.WordWrap
+                                text: I18n.tr((shell.cupNames[Theme.cup] || shell.cupNames.espresso)) + "  ·  " + I18n.tr("Glass") + ": " + I18n.tr(shell.glassNames[Theme.glassLevel]) }
+                        Row { spacing: 8
+                            Pill { implicitHeight: 30; icon: "cup"; text: I18n.tr("Coffee and cup"); onPressed: shell.go("coffee") }
+                            Pill { implicitHeight: 30; icon: "glass"; text: I18n.tr("Glass"); onPressed: shell.go("glass") } } }
                 }
                 Column { width: front.col; spacing: 18
-                    // the coffee on the edge of the screen: lively, and of glass
+                    // the coffee on the edge of the screen, as it is now
                     Card { title: I18n.tr("The coffee and how it moves"); note: I18n.tr("The drops on the edge of the screen: what they are made of and whether they live."); icon: "coffee"
-                        Switch { text: I18n.tr("Lively"); hint: I18n.tr("Left alone they fall asleep, the weather outside shows on the surface, playful ones play."); on: goo.kept.lively !== false; onPressed: goo.set("lively", !on) }
-                        Switch { text: I18n.tr("Coffee in glass"); hint: I18n.tr("The drops are glass with coffee in it. With the graphics card drawing by the processor they stay plain coffee.")
-                                 on: goo.kept.material === "glass" || Number(goo.kept.material) > 0.5; onPressed: goo.set("material", on ? 0 : 1) } }
+                        Label { width: parent.width; color: Theme.dim; font.pixelSize: 13; wrapMode: Text.WordWrap
+                                text: I18n.tr(goo.kept.lively !== false ? "Lively" : "Still") + "  ·  " + I18n.tr(goo.kept.material === "glass" || Number(goo.kept.material) > 0.5 ? "Coffee in glass" : "Plain coffee") }
+                        Pill { implicitHeight: 30; icon: "droplet"; text: I18n.tr("Drops (Goo)"); onPressed: shell.go("drops") } }
                     // the screens: the main one's picture, how often it is drawn, how big things are
                     Card { title: I18n.tr("Displays"); note: front.main ? front.main.name + (front.main.description ? "  ·  " + front.main.description : "") : ""; icon: "device-desktop"
                         Row { spacing: 10
@@ -790,11 +825,20 @@ ShellRoot {
                              Row { anchors.centerIn: parent; spacing: 6
                                    Repeater { model: [set.modelData.folder, set.modelData.file, set.modelData.trash]
                                               Image { required property string modelData; width: 48; height: 48; source: modelData === "" ? "" : "file://" + modelData; sourceSize.width: 96; sourceSize.height: 96; asynchronous: true } } } } } }
-            Part { visible: shell.page === "coffee"; width: view.room; title: I18n.tr("Glass")
+            Part { visible: shell.page === "glass"; width: view.room; title: I18n.tr("Glass")
+                // the steps between none and True Glass showed no difference since the windows and the side panel have their own
+                // sliders: only True Glass is offered, over the most (3); none is the switch below and the side panel at 0
+                Switch { text: I18n.tr("Extreme glass (True Glass)"); hint: I18n.tr("True Glass: the windows are clear glass that bends the light; what is written keeps a plate under it.")
+                         on: Theme.glassLevel === 4
+                         onPressed: { const n = on ? 3 : 4; glassLevel.choose(String(n)); Theme.glassLevel = n; goo.set("glass", n) } }
                 Switch { text: I18n.tr("Coffee in glass"); hint: I18n.tr("The drops are glass with coffee in it. With the graphics card drawing by the processor they stay plain coffee.")
                          on: goo.kept.material === "glass" || Number(goo.kept.material) > 0.5; onPressed: goo.set("material", on ? 0 : 1) }
                 Switch { text: I18n.tr("Windows of glass"); hint: I18n.tr("The windows are glass too, where the graphics card can: that is the cup's own look, apart from the drops.")
-                         on: goo.kept.windows === "glass"; onPressed: goo.set("windows", on ? "solid" : "glass") } }
+                         on: goo.kept.windows === "glass"; onPressed: goo.set("windows", on ? "solid" : "glass") }
+                // pleamar's own effect of its glass (`ripple:`): on the drops, Goo's cards and the window manager's popups
+                Switch { text: I18n.tr("A ripple where glass is pressed"); hint: I18n.tr("A press on glass sends a ring of light through it: on the drops, their cards and the dock's menus.")
+                         on: glassRipple.value !== "0"
+                         onPressed: { glassRipple.choose(on ? "0" : "1"); goo.set("ripple", !on); Quickshell.execDetached(["sh", "-c", "sleep 0.2; hyprctl eval 'latte.glass_body()'"]) } } }
 
             // the background: layers on the pegboard (settings/Wallpapers.qml)
             Wallpapers { visible: shell.page === "background"; open: visible; width: view.room; overlay: overlay; menu: popup }
@@ -803,7 +847,7 @@ ShellRoot {
                      hint: I18n.tr("The Recycle Bin and what is in your Desktop folder, over the background.")
                      onPressed: { const next = on ? "off" : "on"; icons.value = next; Quickshell.execDetached(["latte-desktop", next]) } }
 
-            // windows: how they are arranged, on each screen its own (ROADMAP 8A.13), and the glass of the side panels
+            // windows: how they are arranged, on each screen its own (ROADMAP 8A.13); their glass has a page of its own (glass)
             Part { visible: shell.page === "windows"; width: view.room; title: I18n.tr("How windows are arranged")
                    note: I18n.tr("Each screen can have its own: press a screen and choose, or drag a mode onto it. The button gives the mode you pressed to every desktop.")
                 // the pegboard (common/Pegboard.qml): here the screens stand, each showing its mode
@@ -814,7 +858,8 @@ ShellRoot {
                             x: modeBoard.px(modelData.x) + 3; y: modeBoard.py(modelData.y) + 3; width: modelData.w * modeBoard.k - 6; height: modelData.h * modeBoard.k - 6; radius: 14
                             color: msHit.containsMouse ? Theme.raised : Theme.card; border.width: 2; border.color: shell.modeHover === modelData.name ? Theme.gold : Theme.line
                             Column { anchors.centerIn: parent; spacing: 3
-                                Glyph { name: ms.mode.icon; font.pixelSize: 30; color: Theme.gold; anchors.horizontalCenter: parent.horizontalCenter }
+                                Glyph { visible: !ms.mode.pic; name: ms.mode.icon; font.pixelSize: 30; color: Theme.gold; anchors.horizontalCenter: parent.horizontalCenter }
+                                ModePic { visible: !!ms.mode.pic; pic: ms.mode.pic || null; on: true; anchors.horizontalCenter: parent.horizontalCenter }
                                 Label { text: I18n.tr(ms.mode.name); font.weight: 700; anchors.horizontalCenter: parent.horizontalCenter }
                                 Label { text: (ms.index + 1) + "  ·  " + ms.modelData.name; color: Theme.dim; font.pixelSize: 11; anchors.horizontalCenter: parent.horizontalCenter } }
                             MouseArea { id: msHit; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
@@ -825,34 +870,79 @@ ShellRoot {
                            text: shell.modePick !== "" ? I18n.tr("Use {mode} on every desktop", { mode: I18n.tr(shell.modeOf(shell.modePick).name) }) : I18n.tr("Use on every desktop")
                            onPressed: shell.setMode(shell.modePick, "") }
                     Label { visible: shell.modePick === ""; text: I18n.tr("Press a mode first."); color: Theme.faint; height: 36; verticalAlignment: Text.AlignVCenter } }
-                // the modes: a press picks one for the button, a drag puts it on a screen
-                Repeater { model: shell.windowModes
-                    Item { id: mc; required property var modelData; width: 200; height: 150; opacity: modelData.soon ? 0.5 : 1
-                        Choice { anchors.fill: parent; text: I18n.tr(mc.modelData.name); on: shell.modePick === mc.modelData.id
-                                 hint: mc.modelData.soon ? I18n.tr("coming") : I18n.tr(mc.modelData.hint)
-                                 Glyph { anchors.centerIn: parent; name: mc.modelData.icon; font.pixelSize: 54; color: shell.modePick === mc.modelData.id ? Theme.gold : Theme.dim } }
-                        MouseArea { anchors.fill: parent; enabled: !mc.modelData.soon; preventStealing: true; cursorShape: carrying ? Qt.ClosedHandCursor : Qt.PointingHandCursor
-                            property point from
-                            property bool carrying: false
-                            onPressed: e => { carrying = false; from = Qt.point(e.x, e.y) }
-                            onPositionChanged: e => {
-                                if (!carrying && Math.abs(e.x - from.x) + Math.abs(e.y - from.y) < 6) return
-                                carrying = true
-                                const p = mapToItem(overlay, e.x, e.y); modeGhost.icon = mc.modelData.icon; modeGhost.x = p.x - 32; modeGhost.y = p.y - 32; modeGhost.visible = true
-                                const m = modeBoard.inside(this, e.x, e.y) ? modeBoard.screenAt(modeBoard.at(this, e.x, e.y)) : null
-                                shell.modeHover = m ? m.name : "" }
-                            onReleased: e => {
-                                modeGhost.visible = false
-                                const m = carrying && modeBoard.inside(this, e.x, e.y) ? modeBoard.screenAt(modeBoard.at(this, e.x, e.y)) : null
-                                if (m) shell.setMode(mc.modelData.id, m.name)
-                                else if (!carrying) shell.modePick = shell.modePick === mc.modelData.id ? "" : mc.modelData.id
-                                shell.modeHover = ""; carrying = false } } } } }
-                // the kinds of tiles, smaller: a press picks one for the button above, as a mode's card does
+                // the modes, small as pleamar-wm's control centre has its layouts: a press picks one for the button and shows it
+                // below, a drag puts it on a screen
                 Flow { width: view.room; spacing: 8
-                    Label { text: I18n.tr("Tiles:"); color: Theme.dim; height: 36; verticalAlignment: Text.AlignVCenter }
+                    Repeater { model: shell.windowModes
+                        Item { id: mc; required property var modelData; width: 96; height: 72; opacity: modelData.soon ? 0.5 : 1
+                            readonly property bool on: shell.shownMode === modelData.id || (modelData.id === "tiles" && shell.isTile(shell.shownMode))
+                            ModeTile { anchors.fill: parent; icon: mc.modelData.icon; pic: mc.modelData.pic || null; text: I18n.tr(mc.modelData.name); on: mc.on; hover: mcHit.containsMouse }
+                            MouseArea { id: mcHit; anchors.fill: parent; hoverEnabled: true; enabled: !mc.modelData.soon; preventStealing: true; cursorShape: carrying ? Qt.ClosedHandCursor : Qt.PointingHandCursor
+                                property point from
+                                property bool carrying: false
+                                onPressed: e => { carrying = false; from = Qt.point(e.x, e.y) }
+                                onPositionChanged: e => {
+                                    if (!pressed || (!carrying && Math.abs(e.x - from.x) + Math.abs(e.y - from.y) < 6)) return
+                                    carrying = true
+                                    const p = mapToItem(overlay, e.x, e.y); modeGhost.icon = mc.modelData.icon; modeGhost.x = p.x - 32; modeGhost.y = p.y - 32; modeGhost.visible = true
+                                    const m = modeBoard.inside(this, e.x, e.y) ? modeBoard.screenAt(modeBoard.at(this, e.x, e.y)) : null
+                                    shell.modeHover = m ? m.name : "" }
+                                onReleased: e => {
+                                    modeGhost.visible = false
+                                    const m = carrying && modeBoard.inside(this, e.x, e.y) ? modeBoard.screenAt(modeBoard.at(this, e.x, e.y)) : null
+                                    if (m) shell.setMode(mc.modelData.id, m.name)
+                                    else if (!carrying) shell.modePick = shell.modePick === mc.modelData.id ? "" : mc.modelData.id
+                                    shell.modeHover = ""; carrying = false } } } } }
+                // below them, what belongs to the mode shown: Tiles has its kinds; the others get their settings later
+                Label { width: view.room; readonly property var mode: shell.modeOf(shell.shownMode) || shell.windowModes[0]
+                        text: I18n.tr(mode.name) + "  ·  " + I18n.tr(mode.hint || shell.modeOf("tiles").hint)
+                        color: Theme.dim; font.weight: 600 }
+                Flow { visible: shell.isTile(shell.shownMode); width: view.room; spacing: 8
                     Repeater { model: shell.tileKinds
-                        Pill { required property var modelData; icon: modelData.icon; text: I18n.tr(modelData.name); strong: shell.modePick === modelData.id
-                               onPressed: shell.modePick = shell.modePick === modelData.id ? "" : modelData.id } } }
+                        ModeTile { required property var modelData; width: 96; height: 72; icon: modelData.icon; pic: modelData.pic || null; text: I18n.tr(modelData.name); on: shell.shownMode === modelData.id
+                                   hover: tkHit.containsMouse
+                                   MouseArea { id: tkHit; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
+                                               onClicked: shell.modePick = shell.modePick === parent.modelData.id ? "tiles" : parent.modelData.id } } } }
+                // the preview, as pleamar-wm's control centre draws it (control/control.plm): four windows moving to where
+                // the mode would put them, in the cup's colours
+                Label { width: view.room; text: I18n.tr("Preview"); color: Theme.dim; font.pixelSize: 12; font.weight: 650 }
+                Rectangle { id: pvBox; width: Math.min(view.room, 560); height: width * 9 / 16; radius: 14; color: Theme.ground; border.width: 1; border.color: Theme.line; clip: true
+                    readonly property var at: shell.previewOf(shell.shownMode)
+                    Repeater { model: 4
+                        Rectangle { required property int index
+                            readonly property var r: pvBox.at[index]
+                            x: 6 + r[0] * (pvBox.width - 6); y: 6 + r[1] * (pvBox.height - 6)
+                            width: Math.max(r[2] * (pvBox.width - 6) - 6, 4); height: Math.max(r[3] * (pvBox.height - 6) - 6, 4)
+                            radius: 7; color: index === 0 ? Theme.raised : Theme.card; border.width: 1; border.color: Theme.line
+                            Behavior on x { NumberAnimation { duration: 420; easing.type: Easing.OutBack; easing.overshoot: 0.8 } }
+                            Behavior on y { NumberAnimation { duration: 420; easing.type: Easing.OutBack; easing.overshoot: 0.8 } }
+                            Behavior on width { NumberAnimation { duration: 420; easing.type: Easing.OutBack; easing.overshoot: 0.8 } }
+                            Behavior on height { NumberAnimation { duration: 420; easing.type: Easing.OutBack; easing.overshoot: 0.8 } }
+                            Rectangle { width: parent.width; height: 14; radius: 7; color: index === 0 ? Theme.gold : Theme.cream; opacity: index === 0 ? 0.55 : 0.08 } } } }
+                Label { visible: !shell.isTile(shell.shownMode) && shell.shownMode !== ""; width: view.room; wrapMode: Text.WordWrap; color: Theme.faint
+                        text: I18n.tr("This mode's own settings will come here.") } }
+            // the dock: pleamar-wm's control centre's Dock page, in the cup's colours (ROADMAP 9.23)
+            Part { visible: shell.page === "dock"; width: view.room; title: I18n.tr("Dock"); note: I18n.tr("The shore of a free monitor: how it shows, how it moves, and where it is.")
+                   onVisibleChanged: if (visible) { dockRead.running = false; dockRead.running = true }
+                Switch { width: view.room; text: I18n.tr("Hide it"); hint: I18n.tr("Out of sight until the mouse touches its edge; the windows have its room.")
+                         on: shell.dock.hide === 1; onPressed: shell.dockSet("hide", on ? 0 : 1) }
+                Switch { width: view.room; text: I18n.tr("Magnification"); hint: I18n.tr("The icons under the mouse swell, the nearest most, instead of rising like buoys.")
+                         on: shell.dock.mag === 1; onPressed: shell.dockSet("mag", on ? 0 : 1) }
+                Switch { width: view.room; text: I18n.tr("Drops under open programs"); hint: I18n.tr("One per window it has; gold, the one with the keyboard.")
+                         on: shell.dock.dots === 1; onPressed: shell.dockSet("dots", on ? 0 : 1) }
+                Switch { width: view.room; text: I18n.tr("Put windows away into their icon"); hint: I18n.tr("Minimized, a window goes into its program's icon instead of floating beside it.")
+                         on: shell.dock.into === 1; onPressed: shell.dockSet("into", on ? 0 : 1) }
+                Flow { width: view.room; spacing: 8
+                    Label { text: I18n.tr("Size"); width: 120; height: 36; verticalAlignment: Text.AlignVCenter; font.weight: 700 }
+                    Repeater { model: [[36, QT_TR_NOOP("Small")], [44, QT_TR_NOOP("Middle-sized")], [56, QT_TR_NOOP("Large")], [68, QT_TR_NOOP("Huge")]]
+                        Pill { required property var modelData; text: I18n.tr(modelData[1]); strong: shell.dock.size === modelData[0]
+                               onPressed: shell.dockSet("size", modelData[0]) } } }
+                Flow { width: view.room; spacing: 8
+                    Label { text: I18n.tr("Position"); width: 120; height: 36; verticalAlignment: Text.AlignVCenter; font.weight: 700 }
+                    Repeater { model: [[1, QT_TR_NOOP("Left")], [0, QT_TR_NOOP("Bottom")], [2, QT_TR_NOOP("Right")]]
+                        Pill { required property var modelData; text: I18n.tr(modelData[1]); strong: shell.dock.side === modelData[0]
+                               onPressed: shell.dockSet("side", modelData[0]) } } }
+                Label { width: view.room; wrapMode: Text.WordWrap; color: Theme.faint; text: I18n.tr("On a tiled monitor there is no dock: Super+W makes it free.") } }
             // the transitions: skwd-wall's, for the wallpaper and its slideshows (ROADMAP 7A.12); what windows and
             // desktops do comes with a plugin of LatteOS's own for Hyprland
             Part { visible: shell.page === "transitions"; width: view.room; title: I18n.tr("Wallpaper and slideshows")
@@ -887,7 +977,7 @@ ShellRoot {
             // the windows' glass, two parts of it, from solid to as see-through as it goes: the windows as a whole (pleamar-wm
             // makes them so, every app's: system/pleamarwm/bin/hyprctl `latte.glass_body`), and the side panel of LatteOS's own
             // apps (Theme.sideGlass). Kept a moment after the slider stops, not for every pixel it moves.
-            Part { visible: shell.page === "windows"; width: view.room; title: I18n.tr("Glass"); note: I18n.tr("How see-through the windows are, and the side panel of LatteOS's own apps. All the way left is solid.")
+            Part { visible: shell.page === "glass"; width: view.room; title: I18n.tr("How see-through"); note: I18n.tr("How see-through the windows are, and the side panel of LatteOS's own apps. All the way left is solid.")
                 // the windows go to 40 % at most: a window more see-through than half gets no clicks in pleamar-wm
                 Repeater { model: [{ id: "body", name: QT_TR_NOOP("The windows"), was: 14, most: 40 }, { id: "side", name: QT_TR_NOOP("The side panel"), was: 38, most: 100 }]
                     Item { id: seeRow; required property var modelData; width: view.room; height: 44
@@ -899,7 +989,7 @@ ShellRoot {
                         Label { anchors.right: parent.right; anchors.verticalCenter: parent.verticalCenter; text: seeRow.amount + " %"; color: Theme.gold; font.weight: 800 }
                         Timer { id: keepSee; interval: 250
                                 onTriggered: { seeRow.word.choose(String(seeRow.amount)); if (seeRow.modelData.id === "body") Quickshell.execDetached(["sh", "-c", "sleep 0.2; hyprctl eval 'latte.glass_body()'"]) } } } } }
-            Part { visible: shell.page === "windows" && Theme.glassLevel > 0 && shell.expert; expertOnly: true; width: view.room; title: I18n.tr("The glass of the side panels"); note: I18n.tr("What is behind a window shows through its side panel, blurred. Where the graphics card cannot blur, the panel is solid.")
+            Part { visible: shell.page === "glass" && Theme.glassLevel > 0 && shell.expert; expertOnly: true; width: view.room; title: I18n.tr("The glass of the side panels"); note: I18n.tr("What is behind a window shows through its side panel; this chooses what the glass is like. Where the graphics card cannot draw glass, the panel is solid.")
                 Repeater { model: [{ id: "frost", name: QT_TR_NOOP("Frosted") }, { id: "smoke", name: QT_TR_NOOP("Smoked") }, { id: "clear", name: QT_TR_NOOP("Clear") }, { id: "milk", name: QT_TR_NOOP("Milky") }]
                     Choice { id: pane; required property var modelData; width: 150; height: 130; text: I18n.tr(modelData.name); on: Theme.glass === modelData.id; onPressed: { glass.choose(modelData.id); Theme.glass = modelData.id }
                         ClippingRectangle { anchors.fill: parent; radius: 10; color: "transparent"

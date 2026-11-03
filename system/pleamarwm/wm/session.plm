@@ -120,6 +120,8 @@ scene Session {
     // bin/hyprctl); the one without the keyboard 8 more; carried, a little more still. Never more: pleamar takes a window
     // at 50 % or less for one that is not there, and it gets no clicks (at 51 every window was shut to the mouse)
     fact glass.body = 14
+    // a press on a popup's glass sends a ring of light through it, as on Goo's (Settings › Glass, ~/.config/latteos/glass-ripple)
+    fact glass.ripple = 1
     let glass.see = if(glass.on > 0.5 and glass.on < 1.5, 1 - clamp(glass.body, 0, 40) / 100, 1)
     // The scene's popups (the dock's names, menu and previews, the prompts) are glass as the windows are, and as
     // see-through: Settings › Windows says it for both, popups have no slider of their own (ROADMAP 1D.39). True Glass
@@ -1487,6 +1489,7 @@ scene Session {
                     body {
                         color: pop.color
                         glass: pop.glass
+                        ripple: 100% * glass.ripple
                         frost: auto
                         smoke: pop.smoke
                         tint: pop.tint
@@ -1535,6 +1538,7 @@ scene Session {
                 body {
                     color: pop.color
                     glass: pop.glass
+                    ripple: 100% * glass.ripple
                     frost: auto
                     smoke: pop.smoke
                     tint: pop.tint
@@ -3335,6 +3339,7 @@ scene Session {
             body {
                 color: pop.color
                 glass: pop.glass
+                ripple: 100% * glass.ripple
                 frost: auto
                 smoke: pop.smoke
                 tint: pop.tint
@@ -3515,6 +3520,7 @@ scene Session {
                 body {
                     color: pop.color
                     glass: pop.glass
+                    ripple: 100% * glass.ripple
                     frost: auto
                     smoke: pop.smoke
                     tint: pop.tint
@@ -4688,6 +4694,7 @@ scene Session {
         body {
             color: pop.color
             glass: pop.glass
+            ripple: 100% * glass.ripple
             frost: auto
             smoke: pop.smoke
             tint: pop.tint

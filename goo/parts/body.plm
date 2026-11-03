@@ -28,6 +28,7 @@ part Body {
         // while something moves, and costs nothing when still.
         glass: material * 100%
         lens: material > 0.02 and bends
+        ripple: 100% * glass_ripple
         shine: pointer
         frost: auto
         milk: 0.25 * (1 - material)

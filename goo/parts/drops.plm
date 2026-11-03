@@ -111,6 +111,12 @@ part Drops {
     fact lively = true                         // drops fall asleep, watch the weather and play when left alone
     fact glassy = 0                            // the material, one number: 0 plain coffee … 1 clear glass
     fact panes = 1                             // 0 where nothing is blurred (software drawing): a card that wants a pane of glass stays plain
+    fact glass_ripple = 1                      // a press on glass sends a ring of light through it (Settings › Glass)
+    // that pane is the windows' side panel: its colour and how much of it covers (Theme.pane, Settings writes it); -1 until told
+    fact pane_a = -1
+    fact pane_r = 0
+    fact pane_g = 0
+    fact pane_b = 0
     fact true_glass = false                    // True Glass (Settings › Windows › Glass, the last step): every card clear glass
     prop material = 0 ~calm                    // …which the goo only slowly turns into: water and milk mix
     follow material = glassy

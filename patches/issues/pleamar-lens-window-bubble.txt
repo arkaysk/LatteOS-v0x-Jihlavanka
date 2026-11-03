@@ -1,0 +1,23 @@
+TITLE
+Feature request: blur behind a normal window where it asks (ext-background-effect), as for panels and menus
+
+BODY
+**Version:** pleamar-wm 0.6.9 on pleamar 0.7.10, in the pleamar-wm session on an AMD RX 640 (RADV POLARIS12).
+
+LatteOS's apps (Quickshell) have a side panel of glass: what is behind the window should show through it, blurred, as
+on Windows 11 (Mica/Acrylic). Quickshell 0.3.2 asks for it with `BackgroundEffect.blurRegion`
+(`ext-background-effect-v1`). pleamar-wm takes that region from layer surfaces and popups (`nest.rs`, `layers::show`
+with `blur`), and blurs with `blur passes …` from session.conf; a toplevel window's region is not used.
+
+**What we tried instead, in the session scene:** a `body` with `glass` under the window. Without `lens` it does not
+blur (`frost` is for a glass that bends). With `lens: true`, `refraction: 0%`:
+
+- it frosts only what the scene itself painted (other windows), not the wallpaper below the scene, so under a side
+  panel it shows as a darker rectangle where a window is behind and sharp wallpaper elsewhere;
+- under a whole window a large rounded shape like a soap bubble, with a wavy edge that splits into a rainbow, shows
+  through the window, even with `dispersion`, `highlight`, `mirror` and `ripple` at 0. With `frost: 0` it is gone.
+
+**What we would like:** a toplevel window's blur region honoured as a panel's is (the same dual Kawase, the same
+`blur` settings), ideally with its strength changeable while the session runs, so a settings page can offer a slider.
+
+**What we do meanwhile:** the windows' glass is `lens: false` again (no blur, no bubble).

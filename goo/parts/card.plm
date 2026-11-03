@@ -155,6 +155,7 @@ part Card {
     let card.y0 = if(card_lens, if(lens_edge == 2, 46, H - 46 - card.h), 0) + if(card_lens, 0, 1) * if(card_dock, H - 46 - card.h, clamp(if(card.sy > 0, card.y, card.y - card.h), 12, H - 12 - card.h))
     let card.ax = if(card.sx > 0, card.x0, card.x0 + card.w)
     let card.ay = if(card.sy > 0, card.y0, card.y0 + card.h)
+    let card.pn = card_pane > 0 and pane_a >= 0 and not true_glass and not card_dock and not card_menu   // its glass is the windows' side panel
     let card.glass = if(card_dock or card_menu, 0, if(true_glass, 1, max(material, card_pane * panes)))                  // the shore is hard: its panel is never glass
     let card.q = clamp(card.p, 0, 1.08)
     prop card.ws = 290 ~grow
@@ -172,19 +173,24 @@ part Card {
     let card.ch = max(cap.v * (cap.len + ear * 2) * (1 - card.t) + card.hs * card.q, 14)
     let card.round = if(card_menu, 12, if(card_lens, 18, 18 + 40 * (1 - card.t) * (1 - card.t)))
     body {
-        gradient: card.ax, card.ay to card.ax + card.sx * card.w, card.ay + card.sy * card.h, coffee, mix(paper, coffee, 0.4), paper, paper
+        gradient: card.ax, card.ay to card.ax + card.sx * card.w, card.ay + card.sy * card.h, pick(card.pn, coffee, rgb(pane_r, pane_g, pane_b)), pick(card.pn, mix(paper, coffee, 0.4), rgb(pane_r, pane_g, pane_b)), pick(card.pn, paper, rgb(pane_r, pane_g, pane_b)), pick(card.pn, paper, rgb(pane_r, pane_g, pane_b))
         rim: 16%
         shadow: 0, 8, 22, 36% * clamp(card.p, 0, 1)
         opacity: if(card.p > 0.02 and not card_dock, 1, 0)
         // With the goo of glass the card is frosted glass too: what is behind shows through it, blurred and
         // smoked so that the light writing on it reads over anything.
         glass: card.glass * 100%
-        lens: material > 0.02
+        ripple: 100% * glass_ripple
+        // a pane is frosted as a window is (wm/session.plm): by pleamar itself, not by the compositor's stronger blur
+        lens: material > 0.02 or card.pn
         shine: pointer
         // True Glass: clearer and bending more; the smoke stays, it is what keeps the writing readable
-        frost: if(true_glass, 45%, 100%)
-        smoke: 62% * card.glass
-        refraction: if(true_glass, 200%, 120%) * card.glass
+        // clear as the side panel is: pleamar-wm blurs nothing under a window (0.6.9), so the panel shows what is behind sharp
+        frost: if(card.pn, 0%, if(true_glass, 45%, 100%))
+        // a pane above the wave is laid as the windows' side panel is: their blur with its colour over it, no smoke
+        smoke: 62% * card.glass * if(card.pn, 0, 1)
+        tint: if(card.pn, pane_a, 22%)
+        refraction: if(true_glass, 200%, 120%) * card.glass * if(card.pn, 0, 1)
         // LensShore's panel reaches 40 px into its plate: the two overlap and their sides run straight on, no waist
         box { at: card.ax + card.sx * card.cw / 2, card.ay + card.sy * (card.ch - if(card_lens, 40, 0)) / 2; size: card.cw * if(card.p > 0.02, 1, 0), card.ch + if(card_lens, 40, 0); corner: if(card_menu, 12, min(if(ear > 14, 26, 18) + (card.round - 18), min(card.cw, card.ch) / 2)) }
         ellipse { at: card.ax + if(card_owner >= 0, own.dx - own.x, 0), card.ay + if(card_owner >= 0, own.dy - own.y, 0); radius: (ear.d * clamp(card.p * 3, 0, 1) + 1) * if(card.p > 0.02 and not card_menu and not card_lens, 1, 0); blend: 4 + 30 * 4 * card.t * (1 - card.t) }

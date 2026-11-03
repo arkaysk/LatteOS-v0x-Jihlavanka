@@ -918,6 +918,9 @@ local function settings()
     local m = t.material == "glass" and 1 or tonumber(t.material) or 0
     fact.glassy = software and 0 or math.max(0, math.min(1, m))
     fact.panes = software and 0 or 1
+    fact.glass_ripple = t.ripple == false and 0 or 1
+    local pane = type(t.pane) == "table" and t.pane or {}   -- apps/settings.qml: Theme.pane, { r, g, b, a }
+    fact.pane_r, fact.pane_g, fact.pane_b, fact.pane_a = tonumber(pane.r) or 0, tonumber(pane.g) or 0, tonumber(pane.b) or 0, tonumber(pane.a) or -1
     fact.bends = t.bends ~= false
     if not fact.lively then weather_off() end
     hidden = {}

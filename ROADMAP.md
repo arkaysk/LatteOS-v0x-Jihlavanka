@@ -214,7 +214,7 @@ kto komu dal úlohu (`term pair`, `by.N` z 1D.17). Pohľad pre Canvas (8A.12), A
 **1D.25** [ ] **Shore pleamar-wm ako variant BarGoo** (neskôr): dok pleamar-wm (*shore*) prerobiť na kvapku enginu Goo a ponúknuť ako druhý vzhľad BarGoo. Pozor na meno: nie LensShore ani trayShore. Používateľ 3. 11. pochválil na shore: náhľad okien po prejdení
 myšou, prepínanie medzi nimi a ponuku pravého kliku — prebrať aj do BarGoo. (Oprava v ten deň: všetky aplikácie
 LatteOS mali `app_id` `org.quickshell`, shore ich zlúčil pod ikonu LensAI; teraz `//@ pragma AppId latteos-NAME`.)
-**1D.26** [ ] **Kvapka Marey ako zapínateľná kvapka Goo** (neskôr): Mareu z marea-plm upraviť, aby sedela s enginom Goo (tvar, voda, farby z témy), a ponúknuť ju ako kvapku, ktorá sa zapína v Nastaveniach › Kvapky. — Pridať medzi kvapky Goo v Nastaveniach › Kvapky (2. 11.).
+**1D.26** [ ] **Kvapka Marey ako zapínateľná kvapka Goo** (neskôr): Mareu z marea-plm upraviť, aby sedela s enginom Goo (tvar, voda, farby z témy), a ponúknuť ju ako kvapku, ktorá sa zapína v Nastaveniach › Kvapky. — Pridať medzi kvapky Goo v Nastaveniach › Kvapky (2. 11.). — Stav 3. 11.: Marea **nie je nainštalovaná** — je to samostatný program (repozitár `marea-plm`, príkaz `marea start` z autostartu pleamar-wm), v LatteOS chýba (preto v logu `marea.sock: No such file`); scéna `wm/session.plm` s ňou počíta (ostrov, kam idú odložené okná, dážď z jej ponuky). Najprv stiahnuť `marea-plm`, potom ju zaradiť medzi kvapky.
 **1D.27** [ ] **Kývanie okien (wobble) v pleamar-wm** (používateľ 2. 11., vzor [Hyprland 0.57](https://hypr.land/imgs/blog/update57/wobbl.mp4)): ťahané alebo zväčšované okno sa ohne ako želé a dokýve sa, keď ho pustíš. pleamar-wm to nemá (kýve sa iba Marea, keď sedí na okne). Skúsiť shaderom skupiny okna v `wm/session.plm` (ako `tide`), rýchlosť ťahania z pružín scény; iba pri stupňoch full a standard, ako na Hyprlande (`system/hypr/latte/tiers.lua`). Ak shader nestačí na pokrivenie okna, návrh autorovi.
 **1D.28** [x] Priehľadnosť okna iba pri ťahaní (2. 11.): je to zámer pleamar-wm — ťahané okno je nadvihnuté, menšie a na 88 % nepriehľadné, aby bolo vidieť, kam dopadne; nechané tak (používateľ). V DualBrew je to vidieť najmä v ľavom paneli, kde je podklad svetlý a jednoliaty.
 **1D.29** [x] **Ťahanie okna za kávovú hladinu dole** (používateľ 2. 11.): v aplikáciách LatteOS (`apps/common/AppWindow.qml`, `Surface`) sa okno dá ťahať aj za kávu v päte okna, všade, kde nie je tlačidlo ani ovládací prvok (ako za hlavičku: `startSystemMove`). Na Hyprlande aj v pleamar-wm. — S Hyprlandom nesúvisí (2. 11.). — Hotové 3. 11.: `MouseArea` pod kávou v `AppWindow.qml` (ovládacie prvky v `foot` a v obsahu majú prednosť).
@@ -231,8 +231,9 @@ Súpis 2. 11.: časti LatteOS, ktoré v relácii pleamar-wm ešte volajú Hyprla
 **1D.38** [x] Drobnosti (2. 11.): Monitor ukazuje položky autostartu podľa aktuálnej plochy (`XDG_CURRENT_DESKTOP`, aj `pleamar`); režim SAFE ukáže log Hyprlandu iba vtedy, keď existuje (výstup pleamar-wm je v logu relácie).
 **1D.39** [x] **Sklo v popupoch** (používateľ 2. 11.): ponuky a karty kreslí jednak pleamar (karty Goo, kvapky, ponuky aplikácií LatteOS), jednak scéna pleamar-wm (ponuka doku, ovládacie centrum, výzvy); zladiť ich sklo so sklom okien a s posuvníkmi v Nastaveniach › Okná (telo okien, bočný panel). — Rozhodnuté (2. 11.): popupy nemajú vlastný posuvník, riadia sa posuvníkom *Okná*. — Hotové 3. 11.: popupy scény pleamar-wm (meno a ponuka doku, náhľady okien z doku, výzva na zdieľanie, ponuka plátna z minulej relácie) sú sklo vo farbe záhlavia okien, priesvitné ako okná (`pop.*` pri `glass.see` v `wm/session.plm`). Ponuky aplikácií LatteOS (Qt) sú v okne, priehľadnosť im dáva okno. Goo (karty, kvapky, jeho ponuky) sa posuvníkom *Okná* neriadi: okná a Goo majú oddelené nastavenia farieb, priehľadnosti aj efektov (používateľ 3. 11.). Ovládacie centrum je vstavaná scéna pleamar-wm (`control.plm`), nemení sa.
 **1D.40** → presunuté do 10F.11 (2. 11.)
-**1D.41** [ ] **Klávesnica po načítaní scény správcu okien** (2. 11.): keď sa `wm/session.plm` za behu načíta znova (nasadenie, úprava), relácia stojí ~2,4 s a klávesnicu potom nedostane žiadne okno (`the keyboard to` prázdne), takže otvorená aplikácia pôsobí ako zamrznutá. Vrátiť klávesnicu oknu, ktoré ju malo; scénu na latte-lab nenasadzovať počas práce používateľa bez upozornenia. — 3. 11.: bez obrazovky (`pleamar-wm headless`, foot, scéna nahradená aj prepísaná na mieste) sa nestane: klávesy po načítaní do okna došli, `windows · the keyboard to` prázdne sa píše aj pri štarte. Ďalej treba skúsiť v skutočnej relácii (panely Goo, DRM) — s upozornením.
-**1D.42** [ ] **Popupy Goo napoly okno** (používateľ 3. 11.): karta Goo s tablou nad hladinou (`card_pane`, napr. PowerGoo) — horná časť nad hladinou je „okno“, jej priehľadnosť nech dáva posuvník *Okná* (`~/.config/latteos/glass-body`, `tint` tela karty v `goo/parts/card.plm`); hladina a spodná časť ostávajú vo farbe a nastaveniach Goo. Inak sa okná a Goo nemiešajú (1D.39). Diskutabilné — pred hotovým ukázať snímku.
+**1D.41** [ ] **Klávesnica po načítaní scény správcu okien** (2. 11.): keď sa `wm/session.plm` za behu načíta znova (nasadenie, úprava), relácia stojí ~2,4 s a klávesnicu potom nedostane žiadne okno (`the keyboard to` prázdne), takže otvorená aplikácia pôsobí ako zamrznutá. Vrátiť klávesnicu oknu, ktoré ju malo; scénu na latte-lab nenasadzovať počas práce používateľa bez upozornenia. — 3. 11.: bez obrazovky (`pleamar-wm headless`, foot, scéna nahradená aj prepísaná na mieste) sa nestane: klávesy po načítaní do okna došli, `windows · the keyboard to` prázdne sa píše aj pri štarte. Ďalej treba skúsiť v skutočnej relácii (panely Goo, DRM) — s upozornením. — 3. 11. v ostrej relácii na latte-lab (DRM, Goo, foot): načítanie scény (1,8 s) ani reštart `latte-desktop` klávesnicu nevzali, `wtype` hneď aj po 10 s písal do okna, `win.focus` ostal 0. Riadok `the keyboard to` prázdny sa píše aj pri otvorení okna (skôr, než povie app_id), nie je to znak chyby. Nezopakovalo sa; ak sa vráti, zapísať, čo presne sa nasadzovalo.
+**1D.42** [~] **Popupy Goo napoly okno** (používateľ 3. 11.): karta Goo s tablou nad hladinou (`card_pane`, napr. PowerGoo) — horná časť nad hladinou je „okno“, jej priehľadnosť nech dáva posuvník *Okná* (`~/.config/latteos/glass-body`, `tint` tela karty v `goo/parts/card.plm`); hladina a spodná časť ostávajú vo farbe a nastaveniach Goo. Inak sa okná a Goo nemiešajú (1D.39). Diskutabilné — pred hotovým ukázať snímku. — 3. 11. podľa používateľa: horné sklo zodpovedá **ľavému panelu okna**, teda posuvníku *Bočný panel* (`glass-side`), nie `glass-body`. Aj druh skla panelu (mliečne, dymové…) — preto Nastavenia posielajú do `settings.json` Goo celú farbu `Theme.pane` (`pane: {r,g,b,a}`, pri každej zmene), Goo → `pane_r/g/b/a`, karta s `card_pane` má nad hladinou túto farbu a krytie, bez dymu; pod hladinou ostáva Goo. Rozmazanie: okná sklí scéna WM sama (`frost: auto`, nad tapetou číre), karta Goo dostávala silnejší blur kompozitora (`blur passes 3`) — karta so sklom teraz kreslí sklo pleamarom (`lens`, `frost: 0`, bez lomu). Návrh používateľa: posuvník rozmazania pre obe skla (Nastavenia › Okná › Sklo) — fakt pre `frost` v `wm/session.plm` aj v karte; `auto` sa potom nahradí číslom. Čaká na pohľad používateľa. — 3. 11. **rozmazanie za oknami a bočným panelom nejde** (skúšané a vrátené): sklo v scéne pleamar-wm bez `lens` nerozmazáva, s `lens` rozmaže iba okná nakreslené scénou, nie tapetu (pod panelom tmavší „štvorec“ tam, kde je okno ikon plochy), a pod celým oknom ukazuje bublinu s dúhovým okrajom. Rozmazanie cez kompozitor (`ext-background-effect`, Quickshell `BackgroundEffect.blurRegion`) dáva pleamar-wm 0.6.9 iba panelom a ponukám, nie oknám. Sklo okien je znova `lens: false` (1D.09); karta Goo so sklom má farbu a krytie panela a je číra ako on (`frost 0`). Žiadosť pre autora pripravená: `patches/issues/pleamar-lens-window-bubble.txt` (neposlaná). Posuvníky rozmazania až keď to pleamar-wm bude vedieť.
+**1D.43** [ ] **Druhý rám za kartou Goo** (3. 11.): po načítaní scény Goo s otvorenou kartou PowerGoo ostal za kartou ešte jeden, starší rám (o ~50 px vyššie). Zistiť, či zmizne po zatvorení a otvorení karty; ak nie, je to chyba kreslenia karty (`goo/parts/card.plm`).
 
 ## 2. [~] Instalator OS
 Zdroje: `fresh-install`, `install`, `migrate-v03`, `docs/NAVRH-STARTU.md`
@@ -2036,6 +2037,98 @@ mať vlastnú predvolenú hustotu. Platí pre Goo aj aplikácie (Quickshell) rov
 **9.12** [x] **Nastavenia › Kvapky (Goo) › Kvapky na ploche** (používateľ 27. 10.): prepínač pre každú kvapku, ktorá sa dá skryť
 (zoznam zapíše scéna Goo pri štarte do `switchable.json`, vrátane vlastných); PowerGoo a LensGoo sú vždy. Overené naživo.
 
+**9.13** [x] **Domov Nastavení bez duplicít** (používateľ 3. 11.): Domov dnes opakuje Režim rozhrania, Sklo, Kávu a jej
+pohyb, Obrazovky a Úložisko — to isté je aj na ich stránkach (Sklo dokonca trikrát: Domov, Káva a šálka, Okná). Návrh:
+Domov je **prehľad a rozcestník**, nič sa tam nenastavuje — počítač (O tomto počítači), stav aktualizácií, upozornenia
+„treba vyriešiť“ (plný disk, chýbajúca záloha, ovládač), naposledy menené a odporúčané nastavenia; každá dlaždica je iba
+odkaz na svoju stránku (ako Domov v Nastaveniach Windows 11). Ovládací prvok žije na jednom mieste.
+[x] 3. 11.: Domov ukazuje vzhľad (šálka, koľko je zo skla) a kávu iba ako stav s odkazmi na Kávu a šálku, Sklo a Kvapky;
+počítač, obrazovky a úložisko ostali (boli to už prehľady s odkazom). Úroveň skla sa presunula na stránku Sklo a je z nej vypínač **Extrémne sklo (True Glass)** (používateľ 3. 11.: medzistupne 1–3 nič viditeľné nemenia, odkedy okná a bočný panel majú vlastné posuvníky; vypnutý = stupeň 3, „žiadne sklo“ = Okná zo skla vypnuté a Bočný panel na 0).
+
+**9.14** [~] **Prostredie nanovo rozdelené** (používateľ 3. 11.): (1) **Farby a téma** (doteraz Káva a šálka): farba
+Goo, farba okien, skiny (9A), ikony a písmo; (2) **Okná** a hneď pod nimi stránka **Sklo** (používateľ 3. 11.: sklo patrí k oknám, vlastná
+záložka) — [x] 3. 11. stránka `glass` v `pages.json`: Okná zo skla, Sklenená káva, priehľadnosť a rozmazanie okien
+a bočného panela, druh skla panelov; ešte sem úroveň skla z Domova (9.13). „Okná zo skla“ nie je priehľadnosť 0 —
+vypína sklo okien celé (plné okná bez dymu a odtieňa), ostáva; (3) **Pozadie**; (4) **Režim
+plochy** (rozloženie okien, Dlaždice — z Kávy a šálky preč); (5) **Prechody a efekty**; (6) **Kvapky (Goo)** — zapnúť,
+vypnúť a nastaviť každú kvapku, aj Mareu (dnes v zozname chýba); (7) **Obrazovka uzamknutia** (9.16); (8) **Dynamické
+osvetlenie** (9.15); (9) **Oznámenia**. **Prístupnosť** von do vlastnej oblasti (ako Windows 11), **Zadávanie textu**
+a **Písma** pod Systém (9.17, 9.18). Stránky kvapiek (PowerGoo … LensShore) pod Kvapky (Goo), nie vedľa nich;
+**BarGoo ostáva, kde je** (používateľ 3. 11.). Pribudne **Kurzor myši** (9.19).
+[x] 3. 11. v `pages.json`: Sklo je podstránka Okien (`under: windows`), Prechody → **Prechody a efekty**, **Dock** pod
+Kvapkami (9.23), plánované stránky **Obrazovka uzamknutia** (9.16) a **Dynamické osvetlenie** (9.15), **Prístupnosť**
+je vlastná oblasť. [ ] Káva a šálka ostáva pod svojím menom; Marea v zozname kvapiek; Ikony a písma (9.24).
+
+**9.15** [ ] **Dynamické osvetlenie** (používateľ 3. 11., podľa Windows 11 Dynamic Lighting:
+https://learn.microsoft.com/windows-hardware/design/component-guidelines/dynamic-lighting-devices): RGB klávesnice,
+myši a pásy zariadení jednou stránkou — jas, efekt (stála farba, dych, dúha, vlna), farba **z témy alebo tapety**
+(Theme), aplikácia na popredí smie prevziať ovládanie. Na Linuxe cez OpenRGB (server SDK) alebo HID LampArray;
+najprv zistiť, čo je na latte-lab a hlavnom PC.
+
+**9.16** [ ] **Obrazovka uzamknutia v Prostredí** (používateľ 3. 11.): v Účte ostáva kedy sa zamyká (Uzamknutie
+a nečinnosť); vzhľad patrí sem — pozadie obrazovky uzamknutia, hodiny, správy (oznámenia) zapnuté/vypnuté a z ktorých
+aplikácií, miniaplikácie na obrazovke uzamknutia (počasie, médiá, kalendár…), náhľad. Scéna `goo/lockscreen.*`.
+
+**9.17** [ ] **Zadávanie textu a dotyková klávesnica** (používateľ 3. 11.): rozloženia a metódy zadávania, návrhy
+a automatické opravy, emoji (Win+.), **dotyková klávesnica** na obrazovke (zapnúť pri dotyku / vždy; prevziať hotovú,
+napr. Squeekboard alebo wvkbd, nie písať vlastnú).
+
+**9.18** [ ] **Písma** (používateľ 3. 11.): zoznam nainštalovaných (fc-list) s náhľadom, hľadaním a filtrami (s pätkami,
+bez pätiek, s pevnou šírkou, ručne písané, jazyk); **inštalácia pretiahnutím** súboru .ttf/.otf do poľa
+(do `~/.local/share/fonts`, `fc-cache`); odinštalovanie; **obchod s písmami** (Google Fonts, Fontsource — licencie OFL)
+s rovnakým hľadaním a filtrami. Nahrádza „Písma (fc-list, náhľad)“ v r. 1165.
+
+**9.19** [ ] **Kurzor myši** (používateľ 3. 11.): téma, veľkosť a farba kurzora, ako Windows 11 (Prístupnosť › Ukazovateľ
+myši). pleamar-wm kreslí vlastnú šípku (`cursor: its own arrow at [24] px`) a inak tému systému (XCURSOR_THEME,
+`~/.icons/default`); Goo a aplikácie LatteOS ju majú dostať rovnako. Najprv pozrieť, čo z toho vie pleamar-wm.
+Súvisí s **AI pri kurzore** (10B.34, GoogleBook „Shake your cursor: Select anything to ask Gemini“): zatrasenie
+kurzorom vo Windows/macOS kurzor zväčší (nájsť ho), v GoogleBooku vyvolá AI nad tým, čo je pod ním. Na stránke Kurzor
+voľba, čo robí zatrasenie: nič · zväčšiť kurzor · spýtať sa AI (iba so zapnutou AI, 2B); jedno gesto nesmie robiť oboje.
+
+**9.20** [ ] **Sklo podľa pleamaru a pleamar-wm** (3. 11.): grafické nastavenia nemajú — pleamar iba jazyk scén
+(sklo: `frost`, `smoke`, `milk`, `tint`, `vivid`, `refraction`, `dispersion`, `dome`, `ripple`, `mirror`, `highlight`,
+`shine`), pleamar-wm ovládacie centrum (`pleamar-wm control`, Super+I: Rozloženia, Klávesy, Dock, Build, Agent, bez skla)
+a v `session.conf` rozmazanie panelov (`blur passes 1–6 offset noise saturation brightness menus`, až po prihlásení).
+Na stránku Sklo pridať, čo dáva zmysel: sýtosť a jas za sklom (`vivid`; `blur saturation/brightness`), zrnitosť
+(`noise`), rozmazanie za ponukami okien (`menus`). Marea = scéna pleamar-wm (`wm/session.plm`), jej nastavenia sú to isté
+ovládacie centrum — v Nastaveniach naň odkaz „Ďalšie nastavenia pleamar-wm“. **Každá voľba pleamaru, ktorá má zmysel,
+sa má dať nastaviť aj ukázať graficky** (posuvník a živá ukážka skla vedľa neho), nielen úpravou konfiguračných súborov
+(používateľ 3. 11.).
+**Metóda (návrh Clauda, 3. 11.):** (1) **register volieb** `apps/settings/effects.json` ako `pages.json`: každá voľba
+má id, meno, stránku, druh (vypínač, posuvník, výber), rozsah a predvolenú hodnotu, **cieľ** — Goo (`settings.json` → fakt
+scény, hneď), správca okien (`~/.config/latteos/<slovo>` → `hyprctl` → fakt, hneď) alebo `session.conf` (až po prihlásení,
+napísať to pri voľbe) — a **čoho sa týka** (kvapky, karty Goo, ponuky a dok, okná, kurzor); (2) Nastavenia kreslia
+stránky z registra, nová voľba pleamaru = riadok v registri + fakt v scéne; (3) **ukážka** pri voľbe je malá scéna
+pleamaru (`goo/preview.plm`), ktorá číta tie isté fakty — skutočné kreslenie, nie napodobnenie v QML; (4) skupiny:
+Sklo (`frost smoke milk tint vivid refraction dispersion dome ripple mirror highlight shine`, zvlášť pre kvapky, karty,
+ponuky), Pohyb (menej pohybu, pružiny), Rozmazanie kompozitora (`blur passes offset noise saturation brightness menus`,
+po prihlásení), Dok (9.23), Kurzor (9.19), Počasie a voda. [x] 3. 11. prvá voľba: **Vlnka po stlačení skla**
+(`ripple`, Nastavenia › Sklo; Goo `settings.json` `ripple`, správca okien `glass-ripple`), predvolene zapnutá.
+
+**9.21** [~] **Okná: režimy ako Layouts v pleamar-wm** (používateľ 3. 11.): hore obrazovky a malé dlaždice režimov
+(Páska, Plávajúce okná, Dlaždice, Glance, Canvas, Tri zóny), pod nimi časť podľa zvoleného režimu s **náhľadom**
+— štyri okná sa presunú, ako by ich režim uložil (prevzaté z `control/control.plm`, vo farbách šálky). [x] 3. 11.
+Dlaždice ukážu svoje druhy (Hlavné vľavo/vpravo, Stĺpce, Riadky, Mriežka, Fraktál, Príliv); oprava: riadok
+„Dlaždice:“ bol mimo svojej časti a ukazoval sa na každej stránke. [ ] Nastavenia ostatných režimov, keď pribudnú.
+
+**9.22** [ ] **Klávesové skratky: editor a sady** (používateľ 3. 11.): v Systém › Klávesnica a skratky okrem výberu
+klávesnice aj **editor skratiek** (zoznam, hľadanie, zmena stlačením, konflikty) a **výber sady**: ako vo Windows,
+ako v Linuxe (GNOME/KDE), ako v macOS, ako v pleamar-wm (jeho stránka *Keys*). Zapisuje do `keys.conf`.
+
+**9.23** [x] **Dock medzi Goo** (používateľ 3. 11.): v Prostredí › Kvapky (Goo) samostatná položka **Dock** — presná
+kópia stránky *Dock* ovládacieho centra pleamar-wm (skrývanie, zväčšenie pod myšou, bodky, veľkosť, strana),
+iba vo farbách LatteOS; zapisuje `dock-style` do `session.conf`.
+[x] 3. 11.: stránka Dock (skrývať, zväčšovanie, kvapky pod programami, odkladať do ikony, veľkosť, poloha) mení dock
+hneď (`fact dock.*`) a zapíše celý `dock-style` do `~/.config/latteos/pleamar-wm/session.conf` (`config set dock` inak
+doplní nezadané predvolenými; súbor `/run/…/latte-pleamar-wm.conf`, kam píše ovládacie centrum, sa pri prihlásení robí nanovo).
+
+**9.24** [ ] **Ikony a písma** (otázka používateľa 3. 11.): ikony samostatne, alebo v jednom okne s písmom? Návrh
+Clauda: jedna stránka **Ikony a písma** v Prostredí (téma ikon, veľkosť; písmo rozhrania; zoznam, inštalácia
+a obchod s písmami z 9.18) — oboje určuje, ako vyzerá text a symboly. Čaká na rozhodnutie.
+
+**9.25** [x] **Text pri „Sklo bočných panelov“ nesedí** (3. 11.): hovorí, že to, čo je za oknom, presvitá cez panel
+rozmazané — v pleamar-wm 0.6.9 je za panelom ostré (1D.42). Upraviť text, kým rozmazanie pod oknami nebude.
+
 ### 9A. [~] Vzhľad a témy
 Téma (šálka, farby z tapety), Keramika/Hliník/Onyx/Steam, ikony, vizuálne podoby podľa `inspo/`.
 Zdroje: `apps/common/Theme.qml`, `bin/latte-wall`, `bin/latte-walls`, `inspo/`, `docs/goo/PRAVIDLA.md`
@@ -2761,6 +2854,14 @@ priebežné indexovanie, potrebuje databázu) až keby agenti potrebovali vlastn
 
 **10B.43** [ ] **LensAI ako MCP hostiteľ** (používateľ 3. 11.; rozhodnuté 29. 10. a 3. 11., 10B.35): LensAI spúšťa konektory (MCP servery: súbory, Obsidian, Home Assistant, domáci server…) raz a dáva ich všetkým — oficiálnym CLI (zapíše tie isté servery do ich nastavení: Claude Code, Codex, Gemini CLI), modelom cez API a lokálnej AI; skilly a kontext Obsidianu tou istou cestou. Katalóg z MCP Registry (10B.38). Potom vypínač „sprístupniť konektory webovým záložkám Claude a ChatGPT“ cez ich vlastné konektory a tunel (predvolene vypnutý, s prihlásením, iba vybrané nástroje). Najprv Omarchy a hotové riešenia.
 **10B.44** [ ] **Skill Kaviarne: krátke video z nakrúcania do kamery** (používateľ 3. 11., vzor editácia v [Yanny Studio](https://www.yanny.space/studio/), platené a uzavreté — preberá sa iba myšlienka): vystrihnúť pauzy, opakované pokusy a výplňové slová (strih medzi slovami), titulky slovo po slove, nadpisy a pohyb, hotové štýly; pred zostavením plán na schválenie, kontrola, že text nezakrýva tvár; výstup MP4, obrázok obalu a text popisu. Najprv hotové otvorené nástroje (napr. auto-editor na strih tíšin, whisper.cpp na prepis, Remotion na titulky), až potom vlastné. Súvisí s 10B.36 (skill „video a podcast“) a 10A.66.
+**10B.45** [ ] **Build (Arrecife) v LensAI** (používateľ 3. 11.): stránka *Build* ovládacieho centra pleamar-wm
+(`pleamar-wm control`) — tvorba widgetov a scén s AI, prihlásenie poskytovateľov AI — sa integruje priamo do LensAI
+(„Start building“). Ikony pôvodné z pleamar-wm; tlačidlo orámované pôvodnou farbou pleamar-wm (mätová `mint`).
+
+**10B.46** [ ] **Agent v LensAI** hneď pod Build (používateľ 3. 11.): stránka *Agent* ovládacieho centra (agent
+s vlastným kurzorom a klávesnicou, skill `pleamar-desktop`) v LensAI; pôvodná ikona, tlačidlo orámované farbou
+pleamar-wm ako pri 10B.45.
+
 ### 10C. [ ] Heidelberg
 je zakladny textovy editor, s neobvyklo širokou ponukou formatou ktore prečíta a upraví
 
