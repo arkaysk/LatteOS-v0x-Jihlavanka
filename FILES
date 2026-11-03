@@ -96,6 +96,7 @@
 /usr/share/latteos/goo/side.luau                        <- goo/side.luau
 /usr/share/latteos/apps/aicenter.qml                    <- apps/aicenter.qml
 /usr/share/latteos/apps/aicenter/WebTabs.qml            <- apps/aicenter/WebTabs.qml
+/usr/share/latteos/apps/installer.qml                   <- apps/installer.qml
 /usr/share/latteos/dualbrew/recipes/smaller-picture.sh  <- system/dualbrew/recipes/smaller-picture.sh
 /usr/share/latteos/dualbrew/recipes/pictures-to-pdf.sh  <- system/dualbrew/recipes/pictures-to-pdf.sh
 /usr/share/latteos/dualbrew/recipes/send-to-phone.sh    <- system/dualbrew/recipes/send-to-phone.sh

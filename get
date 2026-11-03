@@ -1,0 +1,27 @@
+#!/bin/sh
+# get: LatteOS on a Fedora 45 Server just installed, by its installer's window (docs/instalator/PLAN.md, ROADMAP 2.06).
+#   curl -fsSL <address>/get | sudo sh          (the address once LatteOS is published)
+# From the text console: it brings only what the window needs from Fedora's own repositories (git, cage, quickshell),
+# fetches LatteOS into /opt/latteos/src and opens the installer full screen in cage. Nothing of LatteOS is put on the
+# system before the window's "Install".
+set -eu
+repo="${LATTE_REPO:-https://github.com/arkaysk/LatteOS-v0x-Jihlavanka.git}"
+src=/opt/latteos/src
+say() { printf '%s\n' "$*"; }
+
+[ "$(id -u)" = 0 ] || { say "LatteOS: run it with sudo:  curl -fsSL …/get | sudo sh"; exit 1; }
+. /etc/os-release
+[ "${ID:-}" = fedora ] && [ "${VERSION_ID:-}" = 45 ] || { say "LatteOS needs Fedora 45 (this is ${PRETTY_NAME:-something else})."; exit 1; }
+curl -fsS -o /dev/null --max-time 10 https://fedoraproject.org || { say "LatteOS: no internet. Connect first (nmtui), then run this again."; exit 1; }
+
+say "LatteOS: preparing the installer (git, cage, quickshell)…"
+dnf install -y -q git cage quickshell rsms-inter-fonts
+if [ -d "$src/.git" ]; then git -C "$src" pull -q --ff-only; else mkdir -p "$(dirname "$src")"; git clone -q --depth 1 "$repo" "$src"; fi
+
+wizard="$src/apps/installer.qml"
+[ -f "$wizard" ] || { say "LatteOS: the installer's window is not ready in this version yet. In the meantime: cd $src && sudo ./install --go"; exit 1; }
+say "LatteOS: opening the installer…"
+# full screen on this console; whoever asked with sudo is the one LatteOS is set up for first
+# apps/common finds its fonts beside the share (…/fonts/latteos), as in /usr/share
+mkdir -p /opt/latteos/fonts && ln -sfn "$src/assets/fonts" /opt/latteos/fonts/latteos
+LATTE_SHARE="$src" LATTE_SRC="$src" LATTE_FOR="${SUDO_USER:-}" exec cage -s -- qs -n -p "$wizard"

@@ -137,8 +137,14 @@ slobodná licencia, do COPR nesmie) a založiť ho iba na pokyn (je verejný).
    commity a `cargo --locked`; na latte-lab 12,5 min). Chýbajúce balíky Fedory
    doinštaluje sám (hotové 3. 11.: `dnf install -y`, časť posuvníka; `--with "…"` = voliteľné, ktoré vybral sprievodca).
    Ostrá skúška `dnf` až na čistej Fedore (na latte-lab nič povinné nechýba).
-2. Skript `get` a spustenie `cage` + Quickshell na čistej Fedore 45 Server vo VM.
-3. Sprievodca: obrazovky z časti 2, najprv Vitaj → Súčasti → Zhrnutie → Inštalácia.
+2. Skript `get` (hotový 3. 11., v koreni repa) a spustenie `cage` + Quickshell na čistej Fedore 45 Server vo VM
+   (neoverené: `cage` z textovej konzoly pod `sudo`).
+3. Sprievodca `apps/installer.qml` — prvá verzia 3. 11.: všetky obrazovky z časti 2, kroky Fedory sivé, kontrola
+   počítača (karta, RAM, disky, používatelia, Secure Boot, varovanie pri GFX6–8), AI áno/nie, súčasti z riadkov
+   `optional:` vo `FILES`, zhrnutie, inštalácia (`./install --go --progress --with …`: zoznam častí, zlatý `DotBar`,
+   čas, ktorý ostáva, prezentácia súčastí, záznam, „Skúsiť znova“), hotovo s reštartom. Snímky bez obrazovky
+   (`LATTE_INSTALLER_PAGE=…`). Ostáva: preložiť opisy súčastí (sú to poznámky z `FILES`), obrázky do prezentácie,
+   Linux 7.3 a Mesa ako krok inštalácie, overenie na Quickshelli 0.2.1 z Fedory (napísané na 0.3.2).
 4. Kontrola počítača (karta, Secure Boot, kernel/Mesa) a podmienené kroky 3.4.
 5. Skúška od nuly vo VM, potom na latte-lab (čistá Fedora 45 Server).
 
