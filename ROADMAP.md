@@ -2626,6 +2626,12 @@ a ostatné ostávajú domáca záležitosť LensAI (10B.07, 10B.08). Pravidlá a
   prsteň = zostávajúci limit; **Claude ukazuje týždeň, 5 h až po kliknutí** (používateľ); namiesto skratiek pôjdu
   originálne ikony služieb. Ďalšie návrhy: chytrý prsteň (prepne na 5 h, keď je tesnejší), predpoveď minutia limitu,
   dve záložky vedľa seba, pretiahnutie súboru na prsteň (skopíruje a otvorí záložku), Suno ako ďalšia záložka.
+- **Používateľ 3. 11.:** záložky služieb ako webapp v LensAI (ako prehliadač s otvorenými záložkami; QtWebEngine je
+  na latte-lab, `qt6-qtwebengine`), prsteň záložky ukazuje spotrebu a záložky majú **spoločné MCP nástroje, skilly
+  a kontext Obsidianu**. Rozpor s rozhodnutím 29. 10. („webové záložky MCP nedostávajú“): na oficiálnom webe to bez
+  vkladania skriptov ide iba cez vlastné konektory služby (vzdialený MCP server, ktorý pridá používateľ sám) — LensAI by
+  musel vystaviť svoj MCP host na adrese dostupnej z cloudu služby (tunel, prihlásenie, iba vybrané nástroje). Čaká na
+  rozhodnutie používateľa. Starý kód rozhovoru LensAI sa nezahadzuje (záloha).
 
 **10B.36** [ ] **Kaviareň (Caffè) — AI farma pre každodennú a tvorivú prácu** (používateľ 29. 10.) — hravá, pútavá časť LensAI
 (a LensShore): front dlhých úloh, ktoré robia **čašníčky = agenti** (lokálne modely, ComfyUI, cloud cez API iba
