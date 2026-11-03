@@ -95,8 +95,8 @@ zisťuje sám (`dnf` verzia v repozitári), nič sa nepíše natvrdo.
   ako kopírovanie súborov).
 - **Bezpečnosť:** nič sa nemení pred „Inštalovať“ v Zhrnutí; pred začiatkom snímka snapper, ak je Btrfs; každý krok
   má návrat (`./install --remove`); záznam do `/var/log/latteos-install.log`.
-- **Otvorená otázka:** sprievodca na Quickshelli 0.2.1 z Fedory (nič cudzie pred grafikou) alebo hneď COPR 0.3
-  (to, na čom dnes beží LatteOS). Odporúčanie: 0.2.1, sprievodca sa napíše tak, aby na nej bežal.
+- **Rozhodnuté (používateľ 3. 11.):** sprievodca beží na tom, čo ponúka hotová Fedora — Quickshell 0.2.1 z jej
+  repozitára (nič cudzie ani zostavované pred grafikou); sprievodca sa píše tak, aby na ňom bežal.
 
 ## 5. Postup prác
 
@@ -108,7 +108,8 @@ zisťuje sám (`dnf` verzia v repozitári), nič sa nepíše natvrdo.
 
 ## 6. Neskôr: Atomic, všetko v jednom obraze (používateľ 3. 11.)
 
-Ďalšia etapa: **jeden obraz** (Fedora Atomic, obraz `bootc`) s LatteOS, pleamarom, pleamar-wm, Quickshellom a
+Ďalšia etapa: **jeden obraz** (Fedora Atomic, obraz `bootc`; rozhodnuté 3. 11.: na základe **Universal Blue**
+(`ublue-os`), ako Bazzite a Bluefin — ich základný obraz a šablóna vlastného obrazu `image-template`) s LatteOS, pleamarom, pleamar-wm, Quickshellom a
 podmieneným kernelom a Mesou už v ňom — nič sa nezostavuje u človeka. Vtedy **sivé kroky prevezme náš sprievodca**:
 jazyk a klávesnica, disky a oddiely (vrátane `/data` a domovských priečinkov z 2.03), sieť a účet budú aktívne
 obrazovky LatteOS. Preto sa sprievodca stavia už teraz tak, aby každý krok mal obe podoby: „urobila Fedora“ (sivá,
