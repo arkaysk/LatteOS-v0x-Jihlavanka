@@ -1603,6 +1603,8 @@ library Slovak {
         "Asking the services…" = "Pýtam sa služieb…"
         "Write a message…" = "Napíš správu…"
         "Write below. Choose who answers with the button above the line." = "Píš dole. Kto odpovedá, vyberieš tlačidlom nad riadkom."
+        "Stays on this computer" = "Ostáva v tomto počítači"
+        "The question and what is attached go to {n}" = "Otázka a prílohy idú do služby {n}"
         "AI in LensGoo" = "AI v LensGoo"
         "Which services the AI tab of LensGoo offers to choose from. Signing in to them is done in LensAI." = "Ktoré služby ponúka záložka AI v LensGoo na výber. Prihlásenie do nich sa robí v LensAI."
         "Copy the answer" = "Kopírovať odpoveď"

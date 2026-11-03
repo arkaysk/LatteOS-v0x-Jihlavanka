@@ -148,7 +148,7 @@ ShellRoot {
     Timer { interval: 10000; repeat: true; running: shell.page === "services"; onTriggered: if (!svc.running) svc.ask(["services"]) }
     Component.onCompleted: {
         list.ask(["chats"]); who.ask(["providers", "all"]); svc.ask(["services"]); keyq.ask(["keys"])
-        if (["services", "models", "agents", "helpers", "instructions", "local"].indexOf(words[0]) >= 0) page = words[0]
+        if (["chats", "services", "models", "agents", "helpers", "instructions", "local"].indexOf(words[0]) >= 0) page = words[0]
         if (page === "agents") agentsq.ask(["agents"])
         if (page === "home") lookAround()
         if (page === "helpers") helpersq.ask(["helpers"])
@@ -379,6 +379,13 @@ ShellRoot {
                     Text { text: shell.nameOf(shell.useProvider) + " · " + (shell.useM ? shell.useM.name : ""); color: shell.style === "own" ? Theme.gold : "#8a5a14"; font.family: Theme.font; font.pixelSize: 13; font.weight: Font.Bold }
                     Glyph { name: "chevron-down"; font.pixelSize: 14; color: shell.style === "own" ? Theme.gold : "#8a5a14"; anchors.verticalCenter: parent.verticalCenter } }
                 MouseArea { id: whoHit; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: shell.openMenu("who") } }
+            // where the question goes: it stays here, or it leaves the computer for the service (ROADMAP 10B.29)
+            Row { x: whoPill.x + whoPill.width + 12; y: whoPill.y; height: whoPill.height; spacing: 6; visible: whoPill.visible && !!shell.useP
+                readonly property bool here: !!shell.useP && shell.useP.local === true
+                readonly property color ink: shell.style === "own" ? Theme.dim : shell.look.dim || "#8b8778"
+                Glyph { name: parent.here ? "device-desktop" : "cloud"; font.pixelSize: 15; color: parent.ink; anchors.verticalCenter: parent.verticalCenter }
+                Text { text: parent.here ? I18n.tr("Stays on this computer") : I18n.tr("The question and what is attached go to {n}", { n: shell.nameOf(shell.useProvider) })
+                       color: parent.ink; font.family: Theme.font; font.pixelSize: 12; anchors.verticalCenter: parent.verticalCenter } }
 
             // ── the field, a copy of the service's own: its colours, its shape, and what sits in it where it sits ──
             // + at the left (not Copilot, not DeepSeek: its paperclip is at the right); its chip at the right, or at the

@@ -2393,7 +2393,7 @@ iba v okne pod zoznamom); hladina (`Surface.qml`, sametové vrstvy) sa tak nezak
 Zdroje: `bin/latte-ai`, `apps/aicenter.qml`, `system/ai/`, `system/agents/`, `inspo/ai-na-ploche.md`
 je centralne zastrešenie všetkych použitelnych AI. Je totalna kopia Omarchy Ai využitia, len s tým že sa použiva namiesto konzoloveho, graficke rozhranie. LensGoo ma jednu z položiek komunikačne okno s Ai. 
 
-**10B.01** [ ] dizajn okna. biela plocha okna je sice identicka s originalom ale navrhujem čiastočnu priehladnost. ta biela na tmavom je priliš ostrá.
+**10B.01** [x] dizajn okna. biela plocha okna je sice identicka s originalom ale navrhujem čiastočnu priehladnost. ta biela na tmavom je priliš ostrá. — Hotové (commit 4c2af13): stránka služby v LensGoo aj LensAI je mliečne sklo podľa stupňa skla (0 biela … 4), `AppWindow.ground` ju nechá presvitnúť.
 
 **10B.02** [x] (LensAI) režim AI v LensGoo · r. 189–189
 
@@ -2561,9 +2561,12 @@ bez nečakaného prístupu k systémovým akciám.
 - [ ] LensGoo: podpora všetkých spôsobov pripojenia AI — oficiálne nástroje účtov, integrovaný Instruct model a
   lokálny server (napr. LM Studio); prehľad spotrebovaných a zostávajúcich tokenov.
 
-**10B.29** [ ] (LensAI) R3·G — kam odchádza požiadavka · r. 1079–1080
-- [ ] Zviditeľniť, kam odchádza požiadavka, čo sa posiela a či je odpoveď lokálna alebo cloudová;
+**10B.29** [x] (LensAI) R3·G — kam odchádza požiadavka · r. 1079–1080
+- [x] Zviditeľniť, kam odchádza požiadavka, čo sa posiela a či je odpoveď lokálna alebo cloudová;
   pri cloudových poskytovateľoch rešpektovať súhlas a podmienky služby.
+  Hotové 3. 11.: v LensAI vedľa prepínača „kto odpovedá“ nad poľom ikona a veta — „Ostáva v tomto počítači“ (služba
+  `local` podľa `latte-ai providers`) alebo „Otázka a prílohy idú do služby X“. Súhlas a podmienky služby stráži 10B.39.
+  `latte-app aicenter chats` otvorí LensAI rovno na rozhovore.
 
 **10B.30** [ ] (LensAI) R3·G — AI s nástrojmi na správu · r. 1081–1083
 - [ ] Ak AI dostane nástroje na správu LatteOS, použiť obmedzené rozhranie, náhľad plánovanej
@@ -2699,7 +2702,7 @@ Predvolene lokálne; kód a dáta von iba s povolením. Pohľad na prácu agento
 a YOL Learn (7C.04) ich ponúkne ako kurzy; pre offline a malé modely ich zaindexuje DigUp (10B.32). Pomoc k samotnému LatteOS
 ostáva naša. Hľadanie v súboroch ostáva na DigUp; [cocoindex](https://github.com/cocoindex-io/cocoindex) (Apache-2.0,
 priebežné indexovanie, potrebuje databázu) až keby agenti potrebovali vlastný index kódu.
-**10B.42** [~] **Úvodný dashboard LensAI** (používateľ 2. 11.): LensAI sa otvorí dashboardom (prstene limitov, agenti, Kaviareň, lokálna AI, rozhovory, rýchle úlohy, projekty Obsidianu, strážca podmienok, prechod do YOL); vzhľad podľa [dioramas](https://github.com/blendi-remade/dioramas) (kód MIT, modely CC BY 4.0). Súpis všetkých požiadaviek na LensAI: `docs/lensai/POZIADAVKY.md` (rozhodnutia v jeho časti 7). Pred YOL (7C). Rozhodnuté 2. 11.: hlavný prvok je šošovka lupy bez rámu a rúčky (iba sklo s vypuklinou), vnútri pohľad na Kaviareň (možno GIF); okolo všetko z návrhu okrem stavu Kaviarne; agenti pleamar-wm už teraz (iba čítanie); robí sa ako prvé. 3. 11.: prvá verzia v LensAI (stránka Prehľad, predvolená): šošovka `apps/common/Lens.qml` + `shaders/lens.frag` (vypuklina, lom farieb pri okraji, svetlo zľava hore, bez rámu), vnútri `~/.local/share/latteos/cafe.gif`, kým nie je, tapeta s kávou; okolo: Čo ostáva (prstene limitov, Claude týždeň / klik 5 h), Tento počítač, Agenti (pleamar-wm v termináli, iba čítanie), Rozhovory, Urob to za mňa s pripravenými úlohami, Projekty · Strážca podmienok · YOL ako „pripravuje sa“. 3. 11. neskôr: obraz Kaviarne od používateľa (výrez z jeho obrázka lupy, `assets/lensai/cafe.jpg`; GIF používateľa v `~/.local/share/latteos/cafe.gif` má prednosť); vzhľad podľa dioramas (`shaders/stage.frag`): teplý kužeľ svetla zhora na šošovku, žiara, mäkký tieň, vinetácia, filmové zrno; šošovka sa jemne vznáša a odlesk sa posúva (iba stupne full a standard). Ostáva: GIF Kaviarne, agenti LatteOS, väčšia šošovka a lepšie využitie spodku okna.
+**10B.42** [x] **Úvodný dashboard LensAI** (používateľ 2. 11.): LensAI sa otvorí dashboardom (prstene limitov, agenti, Kaviareň, lokálna AI, rozhovory, rýchle úlohy, projekty Obsidianu, strážca podmienok, prechod do YOL); vzhľad podľa [dioramas](https://github.com/blendi-remade/dioramas) (kód MIT, modely CC BY 4.0). Súpis všetkých požiadaviek na LensAI: `docs/lensai/POZIADAVKY.md` (rozhodnutia v jeho časti 7). Pred YOL (7C). Rozhodnuté 2. 11.: hlavný prvok je šošovka lupy bez rámu a rúčky (iba sklo s vypuklinou), vnútri pohľad na Kaviareň (možno GIF); okolo všetko z návrhu okrem stavu Kaviarne; agenti pleamar-wm už teraz (iba čítanie); robí sa ako prvé. 3. 11.: prvá verzia v LensAI (stránka Prehľad, predvolená): šošovka `apps/common/Lens.qml` + `shaders/lens.frag` (vypuklina, lom farieb pri okraji, svetlo zľava hore, bez rámu), vnútri `~/.local/share/latteos/cafe.gif`, kým nie je, tapeta s kávou; okolo: Čo ostáva (prstene limitov, Claude týždeň / klik 5 h), Tento počítač, Agenti (pleamar-wm v termináli, iba čítanie), Rozhovory, Urob to za mňa s pripravenými úlohami, Projekty · Strážca podmienok · YOL ako „pripravuje sa“. 3. 11. neskôr: obraz Kaviarne od používateľa (výrez z jeho obrázka lupy, `assets/lensai/cafe.jpg`; GIF používateľa v `~/.local/share/latteos/cafe.gif` má prednosť); vzhľad podľa dioramas (`shaders/stage.frag`): teplý kužeľ svetla zhora na šošovku, žiara, mäkký tieň, vinetácia, filmové zrno; šošovka sa jemne vznáša a odlesk sa posúva (iba stupne full a standard). Hotové 3. 11. (používateľ: „Dashboard je hotový“); GIF Kaviarne dodá používateľ do `~/.local/share/latteos/cafe.gif`.
 
 ### 10C. [ ] Heidelberg
 je zakladny textovy editor, s neobvyklo širokou ponukou formatou ktore prečíta a upraví
