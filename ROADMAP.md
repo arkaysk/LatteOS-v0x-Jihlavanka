@@ -2644,8 +2644,9 @@ a ostatné ostávajú domáca záležitosť LensAI (10B.07, 10B.08). Pravidlá a
   Suno (používateľ), pás prsteňov pod Prehľadom (zostávajúci limit okolo originálnej ikony; Claude týždeň / 5 h po kliku
   ako na dashboarde), vlastný profil každej služby, raz otvorená záložka ostáva načítaná; `latte-app aicenter tab ID`;
   bez `qs-web` tlačidlo „Otvoriť v prehliadači“. Overené bez obrazovky (claude.ai, chat.deepseek.com).
-  Ostáva: konektory cez tunel (vypínač), pretiahnutie súboru na prsteň, dve záložky vedľa seba, prihlásenie Google
-  v okne, ktoré potrebuje svoje „opener“ okno (zatiaľ sa otvorí v záložke).
+  Ostáva: konektory cez tunel (vypínač), pretiahnutie súboru na prsteň, dve záložky vedľa seba. Prihlásenie v malom
+  okne (Google, Apple…): hotové 3. 11. — vlastné okno s profilom záložky, stránka o ňom vie (overené testovacou
+  stránkou s `window.open`); odkaz do nového okna či záložky ide do prehliadača.
   3. 11. neskôr: ikona v prsteni je favicon stránky (po otvorení záložky), dovtedy logo z lobe-icons (`goo/ai/suno.svg`
   pridané). **Nastavenia LensAI** (stránka `lensai`, v bočnom paneli a „+“ za prsteňmi): zoznam záložiek — pridať menom
   a webovou adresou, odstrániť, posunúť hore/dole, späť na zoznam LatteOS; uložený v `~/.config/latteos/lensai-tabs.json`

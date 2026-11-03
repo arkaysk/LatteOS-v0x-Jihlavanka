@@ -5,6 +5,7 @@
 //   WebTabs { current: "claude"; services: [{ id: "claude", web: "https://claude.ai/new" }, …] }
 import QtQuick
 import QtWebEngine
+import Quickshell
 
 Item {
     id: tabs
@@ -27,6 +28,20 @@ Item {
     }
     onCurrentChanged: open()
     onServicesChanged: open()
+    // the small window a page asks for, until the page in it closes it (or the person does)
+    Component {
+        id: popup
+        FloatingWindow {
+            id: win
+            property alias view: page
+            property alias profile: page.profile
+            implicitWidth: 520; implicitHeight: 700
+            title: page.title
+            color: "white"
+            onClosed: win.destroy()
+            WebEngineView { id: page; anchors.fill: parent; onWindowCloseRequested: win.destroy() }
+        }
+    }
     Repeater {
         model: opened
         WebEngineView {
@@ -40,9 +55,15 @@ Item {
             profile: own.instance()
             // where it began, once: what the user goes to afterwards is the tab's own
             Component.onCompleted: url = (tabs.services.find(s => s.id === modelData) || {}).web || "about:blank"
-            // a page that opens a window of its own (a sign-in with Google): in the tab itself
-            // ponytail: a sign-in that needs its opener window may not finish here; then the system browser (10B.35)
-            onNewWindowRequested: request => request.openIn(view)
+            // a page that asks for a small window of its own (a sign-in with Google, Apple…) gets one, with the tab's
+            // profile, and the page that asked still knows it (the sign-in finishes there); a link to a new window or
+            // tab (a source in an answer) goes to the browser, as in any app of web pages
+            onNewWindowRequested: request => {
+                if (request.destination === WebEngineNewWindowRequest.InNewDialog) {
+                    const w = popup.createObject(tabs, { profile: view.profile })
+                    request.openIn(w.view)
+                } else Qt.openUrlExternally(request.requestedUrl)
+            }
             onIconChanged: { const i = Object.assign({}, tabs.icons); i[modelData] = String(icon); tabs.icons = i; heard() }
             onTitleChanged: heard()
             onVisibleChanged: if (visible) tabs.mark(modelData, false)
