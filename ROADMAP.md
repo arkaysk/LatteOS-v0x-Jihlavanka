@@ -2632,6 +2632,10 @@ a ostatné ostávajú domáca záležitosť LensAI (10B.07, 10B.08). Pravidlá a
   vkladania skriptov ide iba cez vlastné konektory služby (vzdialený MCP server, ktorý pridá používateľ sám) — LensAI by
   musel vystaviť svoj MCP host na adrese dostupnej z cloudu služby (tunel, prihlásenie, iba vybrané nástroje). Čaká na
   rozhodnutie používateľa. Starý kód rozhovoru LensAI sa nezahadzuje (záloha).
+  **Rozhodnuté 3. 11.:** MCP, skilly a Obsidian všade, kde to ide bez internetu; webové záložky Claude a ChatGPT iba cez
+  konektor služby a tunel, vypínač predvolene vypnutý; okná rozhovorov LensAI ostávajú ako záloha. Zistené: Quickshell
+  0.3.2 webový engine nespustí (Chromium padne: „Argument list is empty“), pleamar web nekreslí; v repozitári Fedory je
+  `python3-pyqt6-webengine`.
 
 **10B.36** [ ] **Kaviareň (Caffè) — AI farma pre každodennú a tvorivú prácu** (používateľ 29. 10.) — hravá, pútavá časť LensAI
 (a LensShore): front dlhých úloh, ktoré robia **čašníčky = agenti** (lokálne modely, ComfyUI, cloud cez API iba
