@@ -12,7 +12,7 @@ It is the user's own: nothing leaves the computer, and it can be switched off (l
 which Settings › Digital wellbeing writes; a goal in hours and a bedtime are there too). A rest is a lock of five minutes
 or more, or the session being left alone that long.
 """
-import datetime, json, os, socket, subprocess, sys, time
+import datetime, json, os, subprocess, sys, time
 
 DATA = os.path.join(os.environ.get("XDG_DATA_HOME") or os.path.expanduser("~/.local/share"), "latteos", "focus")
 CONF = os.path.join(os.environ.get("XDG_CONFIG_HOME") or os.path.expanduser("~/.config"), "latteos", "wellbeing.json")
@@ -60,14 +60,6 @@ def locked():
     return out.strip() == "yes"
 
 
-def hypr_events():
-    path = os.path.join(os.environ.get("XDG_RUNTIME_DIR", "/run/user/%d" % os.getuid()), "hypr", os.environ.get("HYPRLAND_INSTANCE_SIGNATURE", ""), ".socket2.sock")
-    s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-    s.settimeout(1.0)
-    s.connect(path)
-    return s
-
-
 def wm_events():
     """pleamar-wm's: the window with the keyboard, a line `fact win.focus N` each time it changes (its scene's `watch`)."""
     p = subprocess.Popen(["pleamar-wm", "--say", "wm", "watch 0 win.focus"], stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
@@ -95,18 +87,17 @@ def watch():
         pass
     data = load()
     link, buf, flushed = None, b"", 0.0
-    on_wm = os.environ.get("XDG_CURRENT_DESKTOP") == "pleamar"     # pleamar-wm's session: its scene says, not Hyprland
     while True:
         if link is None:
             try:
-                link = wm_events() if on_wm else hypr_events()
+                link = wm_events()
             except OSError:
                 time.sleep(5)
                 continue
         try:
-            ready = select.select([link.stdout if on_wm else link], [], [], 1.0)[0]
+            ready = select.select([link.stdout], [], [], 1.0)[0]
             if ready:
-                chunk = os.read(link.stdout.fileno(), 4096) if on_wm else link.recv(4096)
+                chunk = os.read(link.stdout.fileno(), 4096)
                 if not chunk:
                     link = None
                     continue
@@ -117,9 +108,7 @@ def watch():
         while b"\n" in buf:
             line, _, buf = buf.partition(b"\n")
             text = line.decode(errors="replace")
-            if text.startswith("activewindow>>"):
-                current = text.split(">>", 1)[1].split(",", 1)[0]
-            elif text.startswith("fact win.focus "):
+            if text.startswith("fact win.focus "):
                 current = app_of(int(float(text.split()[-1])))
         now = time.time()
         if datetime.date.today() != today:                 # a new day starts a new file

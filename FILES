@@ -3,7 +3,6 @@
 # One line a file:   target <- source     The source is a path in this repository, or
 #   build:NAME       the program cargo builds from crates/NAME
 #   system:PATH      a file the system already has, copied
-#   plugin:NAME      the Hyprland plugin `make` builds in plugins/NAME (needs hyprland-devel; again after every update of Hyprland)
 # tests/check.sh fails when a source is missing here or a file meant for the system is not listed.
 
 [files]
@@ -651,13 +650,7 @@
 /usr/share/latteos/goo/drops/mediagoo.luau              <- goo/drops/mediagoo.luau
 /usr/share/latteos/goo/drops/camgoo.luau              <- goo/drops/camgoo.luau
 /usr/share/latteos/greeter/labwc/rc.xml                 <- system/greeter/labwc/rc.xml
-/usr/share/latteos/hypr/hyprland.lua                    <- system/hypr/hyprland.lua
-/usr/share/latteos/hypr/latte/windows.lua               <- system/hypr/latte/windows.lua
-/usr/share/latteos/hypr/latte/keys.lua                  <- system/hypr/latte/keys.lua
-/usr/share/latteos/hypr/latte/tiers.lua                 <- system/hypr/latte/tiers.lua
-/usr/share/latteos/hypr/latte/bars.lua                  <- system/hypr/latte/bars.lua
-/usr/share/latteos/hypr/latte/glass.lua                 <- system/hypr/latte/glass.lua
-/usr/share/latteos/hypr/hypridle.conf                   <- system/hypr/hypridle.conf
+/usr/share/latteos/idle/hypridle.conf                   <- system/idle/hypridle.conf
 /usr/share/latteos/pleamarwm/autostart                  <- system/pleamarwm/autostart
 /usr/share/latteos/pleamarwm/session.conf               <- system/pleamarwm/session.conf
 /usr/share/latteos/pleamarwm/keys.conf                  <- system/pleamarwm/keys.conf
@@ -666,7 +659,6 @@
 /usr/share/latteos/pleamarwm/wm/shaders/rain.wgsl       <- system/pleamarwm/wm/shaders/rain.wgsl
 /usr/share/latteos/pleamarwm/wm/shaders/snow.wgsl       <- system/pleamarwm/wm/shaders/snow.wgsl
 /usr/share/latteos/pleamarwm/wm/shaders/tide.wgsl       <- system/pleamarwm/wm/shaders/tide.wgsl
-/usr/lib64/latteos/latte-events.so                      <- plugin:latte-events
 /usr/share/latteos/labwc/rc.xml                         <- system/labwc/rc.xml
 /usr/share/latteos/whyd/latteos.toml                    <- system/whyd/latteos.toml
 /usr/share/latteos/labwc/autostart                      <- system/labwc/autostart
@@ -756,7 +748,7 @@
 /boot/loader/entries/*-lattesafe-nomodeset.conf
 $XDG_RUNTIME_DIR/latteos/                               # per user: the reason for SAFE, labwc's menu, where to go next
 ~/.local/state/latteos/                                 # per user: session.log, safe.log, window-mode
-~/.config/latteos/                                      # per user: locale, tier, coffee, wallpaper, hyprland.lua (the user's own choices)
+~/.config/latteos/                                      # per user: locale, tier, coffee, wallpaper (the user's own choices)
 ~/.local/share/latteos/focus/                           # per user: the screen time of each day (bin/latte-focus); nothing leaves the computer
 ~/.local/share/pleamar/goo/                             # per user: where the drops were left, the launcher's memory, settings.json, lock.json, clock.json, timers.json
 /var/lib/latteos/login/user-*.json                      # per user, for the login screen: where the power drop is, the coffee

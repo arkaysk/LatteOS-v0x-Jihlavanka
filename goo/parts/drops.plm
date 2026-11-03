@@ -133,7 +133,7 @@ part Drops {
     // the light the drops reflect: dim and cold at night, white by day, warm at dawn and dusk
     let sky = mix(mix(#8fa3c8, #fff4e0, daylight), #ffb070, warmth)
 
-    // The session tells how long the whole system has been left alone, keys included (system/hypr/hypridle.conf);
+    // The session tells how long the whole system has been left alone, keys included (system/idle/hypridle.conf);
     // once it has spoken, the scene's own count, which knows only the pointer, is not used.
     event sys_idle
     event side_hello ->                        // the scene of another monitor has started: it wants the settings

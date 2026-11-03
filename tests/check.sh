@@ -36,11 +36,6 @@ for f in install tests/pointer.py tests/fake-player.py; do python3 -c 'import sy
 tests/test_session.sh
 tests/test_screens.sh
 
-for f in system/hypr/*.lua system/hypr/latte/*.lua; do luac -p "$f"; done
-
-echo "== plugins"
-# built against the Hyprland that is installed; without its headers there is nothing to build with
-if pkg-config --exists hyprland 2>/dev/null; then make -s -C plugins/latte-events; echo "   ok"; else echo "   hyprland-devel missing: not built"; fi
 
 echo "== scenes"
 python3 goo/gen.py --check
@@ -73,8 +68,6 @@ sources = set(re.findall(r"<-\s*(\S+)", "".join(l for l in open("FILES") if not 
 for s in sorted(sources):
     if s.startswith("build:"):
         if not os.path.isdir("crates/" + s[6:]): bad.append("FILES: no crate " + s[6:])
-    elif s.startswith("plugin:"):
-        if not os.path.isfile("plugins/" + s[7:] + "/main.cpp"): bad.append("FILES: no plugin " + s[7:])
     elif not s.startswith("system:") and not os.path.isfile(s):
         bad.append("FILES: no such source " + s)
 tracked = subprocess.run(["git", "ls-files", "--cached", "--others", "--exclude-standard", "bin", "goo", "apps", "system", "assets"],
@@ -86,7 +79,7 @@ for f in filter(None, tracked):
 
 # code is written in English; the user's language lives in goo/lang
 slovak = re.compile("[áäčďéíĺľňóôŕšťúýžÁÄČĎÉÍĹĽŇÓÔŔŠŤÚÝŽ]")
-code = subprocess.run(["git", "ls-files", "--cached", "--others", "--exclude-standard", "bin", "goo", "apps", "system", "crates", "plugins", "tests", "patches", "FILES", "Cargo.toml"],
+code = subprocess.run(["git", "ls-files", "--cached", "--others", "--exclude-standard", "bin", "goo", "apps", "system", "crates", "tests", "patches", "FILES", "Cargo.toml"],
                       capture_output=True, text=True).stdout.split("\n")
 for f in filter(None, code):
     if f.startswith(("goo/lang/", "apps/widgets/")) or f in ("tests/check.sh", "goo/lib/fold.luau") or f.endswith((".png", ".ttf", ".txt", ".qsb")):   # these two name the letters; the rest are not text

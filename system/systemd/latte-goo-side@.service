@@ -1,5 +1,5 @@
 # The Goo of a monitor that is not the main one: its own window bar (goo/side.plm). %i is the monitor's
-# name; Hyprland starts one for each such monitor and stops it when the monitor goes (system/hypr/hyprland.lua).
+# name; latte-screens starts one for each such monitor and stops it when the monitor goes.
 [Unit]
 Description=LatteOS Goo on %i
 PartOf=latte-session.target

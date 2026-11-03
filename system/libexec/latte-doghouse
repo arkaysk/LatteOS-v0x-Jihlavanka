@@ -3,9 +3,9 @@
 
 GuardDog runs as the user, so any program of the user's can stop it, mask it, put its own command in its place (a
 drop-in in ~/.config/systemd/user) or kill the user's systemd with all it runs. DogHouse is the one thing a program of
-the user's cannot stop. For every LatteOS desktop (a Hyprland of the session with LATTE_MODE) it looks once:
+the user's cannot stop. For every LatteOS desktop (a pleamar-wm of the session with LATTE_MODE) it looks once:
 
-  the user's systemd is gone        it is started again, given the session's screen (from Hyprland's environment) and
+  the user's systemd is gone        it is started again, given the session's screen (from pleamar-wm's environment) and
                                     the session's target, which starts the Goo scene and GuardDog
   GuardDog is masked or overridden  systemctl revert: the user's changes to the unit go, LatteOS's own stays
   GuardDog does not run             it is started
@@ -18,12 +18,12 @@ import json, os, pwd, re, subprocess, sys, time
 LOG = os.environ.get("LATTE_DOGHOUSE_LOG") or "/var/lib/latteos/doghouse.log"
 KEEP = 1000
 UNIT, VENDOR = "latte-guarddog.service", "/usr/lib/systemd/user/latte-guarddog.service"
-# what the desktop tells systemd of the session (system/hypr/hyprland.lua, place_shell; system/pleamarwm/autostart): the
+# what the desktop tells systemd of the session (system/pleamarwm/autostart): the
 # same, for a systemd started anew
-SESSION_ENV = ("WAYLAND_DISPLAY", "XDG_CURRENT_DESKTOP", "XDG_SESSION_TYPE", "HYPRLAND_INSTANCE_SIGNATURE", "PLEAMAR_SOCKETS",
+SESSION_ENV = ("WAYLAND_DISPLAY", "XDG_CURRENT_DESKTOP", "XDG_SESSION_TYPE", "PLEAMAR_SOCKETS",
                "PATH", "QT_WAYLAND_DISABLE_WINDOWDECORATION", "LATTE_MODE", "LATTE_RENDERER", "LATTE_TIER", "LANG")
 # the compositors a LatteOS session runs on (bin/latte-session)
-DESKTOPS = ("Hyprland", "pleamar-wm")
+DESKTOPS = ("pleamar-wm",)
 RUN_USER = "/run/user/%d"
 SETTLE = 90         # a desktop younger than this is still starting: nothing is missing yet
 
@@ -70,23 +70,9 @@ def desktops():
         except OSError:
             continue
         if uid and "LATTE_MODE" in env:
-            env.update(made_later(uid, pid) if comm == "Hyprland" else pleamar_display(uid, pid))
+            env.update(pleamar_display(uid, pid))
             found[uid] = (env, uptime - int(stat[stat.rfind(")") + 2:].split()[19]) / tick)
     return found
-
-
-def made_later(uid, pid):
-    """What Hyprland sets only once it runs, so its first environment has not got it: its signature and its Wayland
-    socket, from the lock it keeps (/run/user/UID/hypr/SIGNATURE/hyprland.lock: its pid, then the socket)."""
-    root = os.path.join(RUN_USER % uid, "hypr")
-    try:
-        for sig in os.listdir(root):
-            lines = open(os.path.join(root, sig, "hyprland.lock")).read().split()
-            if lines[:1] == [pid] and len(lines) > 1:
-                return {"HYPRLAND_INSTANCE_SIGNATURE": sig, "WAYLAND_DISPLAY": lines[1]}
-    except (OSError, IndexError):
-        pass
-    return {}
 
 
 def pleamar_display(uid, pid):

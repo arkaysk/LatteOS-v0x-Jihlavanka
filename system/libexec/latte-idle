@@ -1,7 +1,7 @@
 #!/bin/sh
 # latte-idle: starts hypridle with the times the user chose for the lock and for the screens going dark.
 # ~/.config/latteos/idle holds them in seconds, one a line:   lock=600   screen=900   (0: never)
-# What it does not say is as LatteOS has it (system/hypr/hypridle.conf, which is the pattern filled in here).
+# What it does not say is as LatteOS has it (system/idle/hypridle.conf, which is the pattern filled in here).
 share="${LATTE_SHARE:-/usr/share/latteos}"
 chosen="${XDG_CONFIG_HOME:-$HOME/.config}/latteos/idle"
 out="${XDG_RUNTIME_DIR:-/tmp}/latteos"
@@ -13,7 +13,7 @@ seconds() {         # NAME DEFAULT: the user's number for it; never is a time th
 }
 mkdir -p "$out"
 sed -e "s/^\\( *timeout = \\)[0-9]*\\( *# lock\\)$/\\1$(seconds lock 600)\\2/" \
-    -e "s/^\\( *timeout = \\)[0-9]*\\( *# screen\\)$/\\1$(seconds screen 900)\\2/" "$share/hypr/hypridle.conf" > "$out/hypridle.conf"
+    -e "s/^\\( *timeout = \\)[0-9]*\\( *# screen\\)$/\\1$(seconds screen 900)\\2/" "$share/idle/hypridle.conf" > "$out/hypridle.conf"
 [ "${1:-}" = "--print" ] && exec cat "$out/hypridle.conf"
 # a hypridle that went (a crash, a restart) may have left the screens dark: the new one never saw them go, so it would
 # never light them again

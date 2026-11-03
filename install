@@ -46,8 +46,6 @@ def built(source):
     kind, _, name = source.partition(":")
     if kind == "build":
         return [(os.path.join(HERE, "target", "release", name), name)]
-    if kind == "plugin":
-        return [(os.path.join(HERE, "plugins", name, name + ".so"), name + ".so")]
     if kind == "system":
         return [(f, os.path.basename(f)) for f in sorted(glob.glob(name))]
     return [(os.path.join(HERE, source), os.path.basename(source))]
@@ -159,15 +157,11 @@ def main(a):
 
     if "--go" in flags:
         say("== building")
-        owner = os.environ.get("SUDO_USER") if os.geteuid() == 0 else None      # cargo's and make's files stay the user's
+        owner = os.environ.get("SUDO_USER") if os.geteuid() == 0 else None      # cargo's files stay the user's
         as_user = ["sudo", "-u", owner] if owner and owner != "root" else []
         crates = sorted({s[6:] for _, s in pairs(sections.get("files", [])) if s.startswith("build:")})
-        plugins = sorted({s[7:] for _, s in pairs(sections.get("files", [])) if s.startswith("plugin:")})
         if crates and subprocess.run(as_user + ["cargo", "build", "--release"] + [x for c in crates for x in ("-p", c)], cwd=HERE).returncode:
             return 1
-        for name in plugins:
-            if subprocess.run(as_user + ["make", "-C", os.path.join(HERE, "plugins", name)]).returncode:
-                return 1
         # how LatteOS was developed, for the Settings' About page: from this repository's history, as the user (git
         # refuses a repository that is not its asker's); no history (a copy without .git) leaves the old file as it is
         if os.path.isdir(os.path.join(HERE, ".git")):

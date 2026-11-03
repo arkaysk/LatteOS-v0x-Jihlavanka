@@ -1,5 +1,5 @@
 # What happens when the session is left alone: the lock, the screens going dark, the lock before sleep
-# (system/hypr/hypridle.conf, with the user's own times filled in by latte-idle). With its own file, so a
+# (system/idle/hypridle.conf, with the user's own times filled in by latte-idle). With its own file, so a
 # ~/.config/hypr/hypridle.conf the user keeps for another desktop is neither read nor touched.
 [Unit]
 Description=LatteOS idle

@@ -744,14 +744,6 @@ with tempfile.TemporaryDirectory() as d:
     open(dog.DOGHOUSE, "w").write(json.dumps({"at": 10, "uid": os.getuid(), "what": "doghouse", "id": "guarddog", "text": "x"}) + "\n"
                                   + json.dumps({"at": 15, "uid": os.getuid() + 1, "what": "doghouse", "id": "guarddog", "text": "y"}) + "\n")
     assert [(e["at"], e["what"]) for e in dog.history()] == [(10, "doghouse"), (20, "start")]
-# Hyprland's signature and socket come from its lock, for the pid that runs it
-with tempfile.TemporaryDirectory() as d:
-    os.makedirs(os.path.join(d, "1000", "hypr", "abc_1"))
-    open(os.path.join(d, "1000", "hypr", "abc_1", "hyprland.lock"), "w").write("2814\nwayland-1\n")
-    house.RUN_USER = os.path.join(d, "%d")
-    assert house.made_later(1000, "2814") == {"HYPRLAND_INSTANCE_SIGNATURE": "abc_1", "WAYLAND_DISPLAY": "wayland-1"}
-    assert house.made_later(1000, "99") == {}
-
 # Night light: the word kept, and hyprsunset started with it (pkill and hyprsunset are stand-ins that note their calls)
 with tempfile.TemporaryDirectory() as d:
     stub = os.path.join(d, "bin")

@@ -385,7 +385,7 @@ def evaluate(expr):
 
 
 def dpms(what):
-    """The screens dark and lit again when idle (hypridle, system/hypr/hypridle.conf): wlr-output-power-management,
+    """The screens dark and lit again when idle (hypridle, system/idle/hypridle.conf): wlr-output-power-management,
     through wlopm. False: not that."""
     m = re.search(r'dpms\(\{\s*action\s*=\s*"(on|off)"', what)
     if not m:
