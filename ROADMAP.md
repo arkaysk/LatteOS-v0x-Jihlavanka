@@ -270,6 +270,10 @@ priebeh a zrozumiteľnú chybu; po dokončení umožniť reštart do systému. R
 ako dualboot či inštalácia na obsadený disk neponúkať, kým nie sú bezpečne implementované a otestované (2.01–2.02).
 Výsledok overiť čistou inštaláciou vo VM a na podporovanom testovacom PC; technické riešenie vybrať podľa toho, čo
 možno spoľahlivo dokončiť v alpha rozsahu.
+- **Plán 3. 11. (používateľ):** Fedora 45 Server → jeden príkaz → grafický sprievodca v `cage` + Quickshell; kroky
+  Fedory sivé, aktívne kroky LatteOS (kontrola počítača, AI, súčasti, vzhľad), inštalácia so zoznamom krokov a
+  posuvníkom 0–100 %. Úplný zoznam súčastí vrátane zostavovaných zo zdroja a podmieneného Linuxu 7.3 a Mesy 26.3:
+  `docs/instalator/PLAN.md`. Neskôr Atomic, všetko v jednom obraze — sivé kroky prevezme náš sprievodca (časť 6).
 **2.07** [ ] Aktualizácia na v0.5 myšou, bez terminálu a bez AI (používateľ 31. 10.): nový kernel, Mesa a pleamar nainštaluje App Manager s postupom a návratom (nadväzuje na 10H.14). Kým ich Fedora nemá, jeden balík LatteOS; ručné kroky z latte-lab sa používateľom nedávajú. (z 1D.13: patrí k inštalátoru; treba aj aktualizátor systému, 2.08)
 **2.08** [ ] **Aktualizátor systému** (používateľ 2. 11.): aktualizácie LatteOS, pleamaru a pleamar-wm (so záplatami), kernelu a Mesy myšou, s postupom a návratom (nadväzuje na 10H.14 a 2.07).
 
