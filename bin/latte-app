@@ -17,4 +17,8 @@ if [ -z "${QS_ICON_THEME:-}" ]; then
         [ -n "$t" ] && [ -f "/usr/share/icons/$t/index.theme" -o -f "$HOME/.local/share/icons/$t/index.theme" ] && { export QS_ICON_THEME="$t"; break; }
     done
 fi
-LATTE_APP_ARGS="$(printf '%s\n' "$@")" exec qs -n -p "$share/apps/$app.qml"
+# LensAI shows the services' own pages: it alone runs in the Quickshell that holds a web engine (patches/README.md);
+# LATTE_WEB tells it the tabs may be made, which in the plain one would take the app down
+qs=qs
+if [ "$app" = aicenter ] && [ -x /usr/lib64/latteos/qs-web ]; then qs=/usr/lib64/latteos/qs-web; export LATTE_WEB=1; fi
+LATTE_APP_ARGS="$(printf '%s\n' "$@")" exec "$qs" -n -p "$share/apps/$app.qml"

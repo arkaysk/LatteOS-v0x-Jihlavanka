@@ -1,10 +1,13 @@
+//@ pragma EnableQtWebEngineQuick
 // LensAI: every conversation with every AI in one list, and the services themselves — which are there,
 // which one is signed in, signing in and out. bin/latte-ai keeps the conversations (the same ones LensGoo's AI
-// tab writes) and knows the services; this window shows them.   latte-app aicenter [services | CHAT]
+// tab writes) and knows the services; this window shows them.   latte-app aicenter [services | tab SERVICE | CHAT]
 //
 // latte-app aicenter compare QUESTION PROVIDER/MODEL… asks several at once.
 // The side: all conversations or one service's, newest first, each marked with its service's colour; at the
 // bottom the services. A conversation opens on the right and goes on there, with the service and model it had.
+// The rings under the overview are the services' own pages, as tabs (apps/aicenter/WebTabs.qml; the pragma above is
+// what the Quickshell of bin/latte-app's LATTE_WEB needs for them, the plain one only warns of it).
 import QtQuick
 import Quickshell
 import Quickshell.Io
@@ -33,7 +36,7 @@ ShellRoot {
     property var services: []                  // every service known (latte-ai services)
     property bool waiting: false
     // each service has its colour, so that a conversation is known by it at a glance
-    readonly property var colours: ({ "api-deepseek": "#4d6bfe", "api-anthropic": "#d97757", "api-openai": "#10a37f", "api-google": "#4285f4", "api-xai": "#a8a8a8", "api-mistral": "#fa520f", "claude": "#d97757", "gemini": "#4285f4", "chatgpt": "#10a37f", "grok": "#a8a8a8", "mistral": "#fa520f", "local": Theme.gold, "ollama": Theme.gold })
+    readonly property var colours: ({ "api-deepseek": "#4d6bfe", "api-anthropic": "#d97757", "api-openai": "#10a37f", "api-google": "#4285f4", "api-xai": "#a8a8a8", "api-mistral": "#fa520f", "claude": "#d97757", "gemini": "#4285f4", "chatgpt": "#10a37f", "grok": "#a8a8a8", "mistral": "#fa520f", "deepseek": "#4d6bfe", "suno": "#f7c873", "local": Theme.gold, "ollama": Theme.gold })
     function colour(id) { return colours[id] || Theme.gold }
     function nameOf(id) { const p = services.find(s => s.id === id) || providers.find(s => s.id === id) || keys.find(k => k.id === id); return p ? I18n.tr(p.name) : id }
     function modelName(pid, mid) { const p = providers.find(x => x.id === pid); const m = p ? p.models.find(x => x.id === mid) : null; return m ? m.name : mid }
@@ -62,6 +65,26 @@ ShellRoot {
     Timer { interval: 5000; repeat: true; running: shell.page === "home"; onTriggered: if (!wmAgents.running) wmAgents.running = true }
     // Claude's ring shows the week; a press on it, the 5 hours (ROADMAP 10B.35)
     property bool shortLimits: false
+    // the services' own pages as tabs (ROADMAP 10B.35): the one shown, and whether this Quickshell can hold a page at all
+    property string tab: ""
+    readonly property bool web: Quickshell.env("LATTE_WEB") === "1"
+    // whether its tool is installed or not (latte-ai): the user signs in on the page itself
+    readonly property var tabbed: [
+        { id: "claude", name: "Claude", web: "https://claude.ai/new" },
+        { id: "gemini", name: "Gemini", web: "https://gemini.google.com/app" },
+        { id: "chatgpt", name: "ChatGPT", web: "https://chatgpt.com/" },
+        { id: "mistral", name: "Mistral", web: "https://chat.mistral.ai/chat" },
+        { id: "deepseek", name: "DeepSeek", web: "https://chat.deepseek.com/" },
+        { id: "grok", name: "Grok", web: "https://grok.com/" },
+        { id: "suno", name: "Suno", web: "https://suno.com/create" } ]
+    readonly property var marks: ({ claude: "claude", gemini: "gemini", chatgpt: "openai", grok: "grok", mistral: "mistral", copilot: "githubcopilot", deepseek: "deepseek", suno: "suno" })
+    // how much of a service's limit is left, 0…1, -1 where it says none (Claude: the week, the 5 hours after a click)
+    function rest(id) {
+        const s = (agents.services || []).find(x => x.id === id), l = s ? s.limits || [] : []
+        if (!l.length) return -1
+        const lim = id === "claude" && !shortLimits && l.length > 1 ? l[1] : l[0]
+        return 1 - (lim.used || 0)
+    }
     // the agents panel (Omarchy's, MIT): what each service tells of the account, and what was used
     Ask { id: agentsq; onDone: shell.agents = data || ({ services: [], stats: {} }) }
     property var agents: ({ services: [], stats: {}, doers: [], ideas: [] })
@@ -149,7 +172,8 @@ ShellRoot {
     Component.onCompleted: {
         list.ask(["chats"]); who.ask(["providers", "all"]); svc.ask(["services"]); keyq.ask(["keys"])
         if (["chats", "services", "models", "agents", "helpers", "instructions", "local"].indexOf(words[0]) >= 0) page = words[0]
-        if (page === "agents") agentsq.ask(["agents"])
+        if (words[0] === "tab" && words[1]) { page = "web"; tab = words[1] }      // latte-app aicenter tab claude: its own page
+        if (page !== "home") agentsq.ask(["agents"])             // the rings of the tabs show what is left
         if (page === "home") lookAround()
         if (page === "helpers") helpersq.ask(["helpers"])
         if (page === "local") { localq.ask(["recommend"]); localModels.ask(["models"]) }
@@ -259,13 +283,13 @@ ShellRoot {
 
     AppWindow {
         title: I18n.tr("LensAI")
-        heading: shell.page === "home" ? I18n.tr("Overview") : shell.page === "agents" ? I18n.tr("Agents") : shell.page === "helpers" ? I18n.tr("Helpers") : shell.page === "local" ? I18n.tr("This computer") : shell.page === "instructions" ? I18n.tr("Instructions") : shell.page === "services" ? I18n.tr("Services") : shell.page === "models" ? I18n.tr("Models") : shell.page === "compare" ? I18n.tr("Compare") : (shell.chat ? shell.chat.title : I18n.tr("Conversations"))
+        heading: shell.page === "web" ? (shell.tabbed.find(t => t.id === shell.tab) || { name: "" }).name : shell.page === "home" ? I18n.tr("Overview") : shell.page === "agents" ? I18n.tr("Agents") : shell.page === "helpers" ? I18n.tr("Helpers") : shell.page === "local" ? I18n.tr("This computer") : shell.page === "instructions" ? I18n.tr("Instructions") : shell.page === "services" ? I18n.tr("Services") : shell.page === "models" ? I18n.tr("Models") : shell.page === "compare" ? I18n.tr("Compare") : (shell.chat ? shell.chat.title : I18n.tr("Conversations"))
         implicitWidth: 1120; implicitHeight: 760
         ground: shell.glassy ? "transparent" : Theme.ground
         searchHint: I18n.tr("Find a conversation…")
         onSearched: text => shell.find = text
         tools: [
-            Pill { implicitHeight: 34; icon: "plus"; text: I18n.tr("New conversation"); strong: true
+            Pill { implicitHeight: 34; icon: "plus"; text: I18n.tr("New conversation"); strong: true; visible: shell.page !== "web"
                    onPressed: { shell.page = "chats"; shell.open = ""; shell.chat = null } },
             Pill { implicitHeight: 34; icon: "trash"; danger: true; visible: shell.page === "chats" && shell.open !== ""; text: I18n.tr("Delete")
                    onPressed: forget.ask(["forget", shell.open]) }
@@ -277,6 +301,28 @@ ShellRoot {
                     Label { text: I18n.tr("LensAI"); font.pixelSize: 17; font.weight: 700; anchors.verticalCenter: parent.verticalCenter } }
                 Item { width: 1; height: 6 }
                 Nav { text: I18n.tr("Overview"); icon: "layout-dashboard"; on: shell.page === "home"; onPressed: { shell.page = "home"; shell.lookAround() } }
+                // the services' own pages: a ring each, what is left of its limit round its mark; pressed, its tab
+                Flow { x: 6; width: 216; spacing: 6; visible: shell.tabbed.length > 0; topPadding: 4; bottomPadding: 4
+                    Repeater { model: shell.tabbed
+                        Item { id: ring; required property var modelData; width: 48; height: 48
+                            readonly property real share: shell.rest(modelData.id)
+                            readonly property bool on: shell.page === "web" && shell.tab === modelData.id
+                            onShareChanged: arc.requestPaint()
+                            Rectangle { anchors.fill: parent; radius: 24; color: ring.on ? Theme.raised : (ringHit.containsMouse ? Theme.card : "transparent") }
+                            Canvas { id: arc; anchors.fill: parent
+                                onPaint: { const g = getContext("2d"); g.reset(); g.lineWidth = 3.5; g.lineCap = "round"
+                                           g.strokeStyle = Qt.rgba(1, 1, 1, 0.1); g.beginPath(); g.arc(24, 24, 21, 0, 2 * Math.PI); g.stroke()
+                                           if (ring.share < 0) return
+                                           g.strokeStyle = shell.colour(ring.modelData.id); g.beginPath(); g.arc(24, 24, 21, -Math.PI / 2, -Math.PI / 2 + 2 * Math.PI * Math.max(0.001, ring.share)); g.stroke() } }
+                            Rectangle { anchors.centerIn: parent; width: 30; height: 30; radius: 15; color: "#f5f1ea"
+                                // the page's own icon once its tab is open; the service's mark before that
+                                readonly property string own: webTabs.item && webTabs.item.icons[ring.modelData.id] || ""
+                                Image { anchors.centerIn: parent; visible: !!parent.own || !!shell.marks[ring.modelData.id]; sourceSize: Qt.size(18, 18)
+                                        width: 18; height: 18; fillMode: Image.PreserveAspectFit
+                                        source: parent.own || (shell.marks[ring.modelData.id] ? "file://" + I18n.share + "/goo/ai/" + shell.marks[ring.modelData.id] + ".svg" : "") }
+                                Label { anchors.centerIn: parent; visible: !parent.own && !shell.marks[ring.modelData.id]; text: I18n.tr(ring.modelData.name).charAt(0); color: "#2a1e17"; font.weight: 800 } }
+                            MouseArea { id: ringHit; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
+                                        onClicked: { shell.page = "web"; shell.tab = ring.modelData.id } } } } }
                 Nav { text: I18n.tr("All conversations"); icon: "messages"; on: shell.page === "chats" && shell.only === ""; badge: shell.chats.length
                       onPressed: { shell.page = "chats"; shell.only = "" } }
                 Repeater { model: shell.services.filter(s => shell.chats.some(c => c.provider === s.id))
@@ -309,6 +355,19 @@ ShellRoot {
                 Nav { text: I18n.tr("Services"); icon: "plug-connected"; on: shell.page === "services"; onPressed: { shell.page = "services"; svc.ask(["services"]) } }
             }
         ]
+
+        // ── a service's own page, in its tab (ROADMAP 10B.35) ───────────────────────────────────────────────
+        Loader { id: webTabs; anchors.fill: parent; active: shell.web; visible: shell.page === "web"
+                 source: "aicenter/WebTabs.qml"
+                 Binding { target: webTabs.item; property: "current"; value: shell.page === "web" ? shell.tab : ""; when: webTabs.item !== null }
+                 Binding { target: webTabs.item; property: "services"; value: shell.tabbed; when: webTabs.item !== null } }
+        // without a web engine in this Quickshell: the page in the browser
+        Column { anchors.centerIn: parent; spacing: 12; width: 420; visible: shell.page === "web" && !shell.web
+            Glyph { name: "world"; font.pixelSize: 44; color: Theme.gold; anchors.horizontalCenter: parent.horizontalCenter }
+            Label { width: parent.width; horizontalAlignment: Text.AlignHCenter; wrapMode: Text.WordWrap; color: Theme.dim
+                    text: I18n.tr("The services' pages open here only in LensAI's own Quickshell, which this system has not got.") }
+            Pill { anchors.horizontalCenter: parent.horizontalCenter; icon: "external-link"; text: I18n.tr("Open in the browser"); strong: true
+                   onPressed: { const p = shell.tabbed.find(x => x.id === shell.tab); if (p) Qt.openUrlExternally(p.web) } } }
 
         // ── a conversation: its messages, and the line to go on with it ─────────────────────────────────────
         Item {
