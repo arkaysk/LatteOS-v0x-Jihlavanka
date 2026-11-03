@@ -71,6 +71,7 @@ ShellRoot {
     property bool shortLimits: false
     // the services' own pages as tabs (ROADMAP 10B.35): the one shown, and whether this Quickshell can hold a page at all
     property string tab: ""
+    property string tabBeside: ""              // a second tab beside it, half and half ("" none)
     readonly property bool web: Quickshell.env("LATTE_WEB") === "1"
     // whether its tool is installed or not (latte-ai): the user signs in on the page itself. The user's own list is kept
     // in ~/.config/latteos/lensai-tabs.json (LensAI › Settings); these until there is one
@@ -105,7 +106,7 @@ ShellRoot {
         keepTabs(tabbed.concat([{ id: id, name: name.trim() || id, web: web }]))
         return true
     }
-    function removeTab(id) { keepTabs(tabbed.filter(t => t.id !== id)); if (tab === id && page === "web") page = "lensai" }
+    function removeTab(id) { keepTabs(tabbed.filter(t => t.id !== id)); if (tabBeside === id) tabBeside = ""; if (tab === id && page === "web") page = "lensai" }
     readonly property var marks: ({ claude: "claude", gemini: "gemini", chatgpt: "openai", grok: "grok", mistral: "mistral", copilot: "githubcopilot", deepseek: "deepseek", suno: "suno" })
     // how much of a service's limit is left, 0…1, -1 where it says none (Claude: the week, the 5 hours after a click)
     function rest(id) {
@@ -201,7 +202,7 @@ ShellRoot {
     Component.onCompleted: {
         list.ask(["chats"]); who.ask(["providers", "all"]); svc.ask(["services"]); keyq.ask(["keys"])
         if (["chats", "services", "models", "agents", "helpers", "instructions", "local", "lensai"].indexOf(words[0]) >= 0) page = words[0]
-        if (words[0] === "tab" && words[1]) { page = "web"; tab = words[1] }      // latte-app aicenter tab claude: its own page
+        if (words[0] === "tab" && words[1]) { page = "web"; tab = words[1]; tabBeside = words[2] || "" }      // latte-app aicenter tab claude [chatgpt]: its own page, another beside
         if (page !== "home") agentsq.ask(["agents"])             // the rings of the tabs show what is left
         if (page === "home") lookAround()
         if (page === "helpers") helpersq.ask(["helpers"])
@@ -320,6 +321,12 @@ ShellRoot {
         tools: [
             Pill { implicitHeight: 34; icon: "plus"; text: I18n.tr("New conversation"); strong: true; visible: shell.page !== "web" && shell.page !== "lensai"
                    onPressed: { shell.page = "chats"; shell.open = ""; shell.chat = null } },
+            // another service's page beside this one, half and half, or this one alone again
+            Pill { implicitHeight: 34; icon: "layout-columns"; visible: shell.page === "web" && shell.web; text: I18n.tr("Beside")
+                   strong: shell.tabBeside !== ""
+                   onPressed: { const p = mapToItem(besideMenu, 0, 0)
+                                besideMenu.open(Math.max(8, p.x), 8, shell.tabbed.filter(t => t.id !== shell.tab).map(t => ({ text: t.name, checked: t.id === shell.tabBeside, run: () => shell.tabBeside = t.id }))
+                                    .concat([{ line: true }, { text: I18n.tr("This one alone"), icon: "rectangle", enabled: shell.tabBeside !== "", run: () => shell.tabBeside = "" }])) } },
             Pill { implicitHeight: 34; icon: "trash"; danger: true; visible: shell.page === "chats" && shell.open !== ""; text: I18n.tr("Delete")
                    onPressed: forget.ask(["forget", shell.open]) }
         ]
@@ -400,7 +407,9 @@ ShellRoot {
         Loader { id: webTabs; anchors.fill: parent; active: shell.web; visible: shell.page === "web"
                  source: "aicenter/WebTabs.qml"
                  Binding { target: webTabs.item; property: "current"; value: shell.page === "web" ? shell.tab : ""; when: webTabs.item !== null }
-                 Binding { target: webTabs.item; property: "services"; value: shell.tabbed; when: webTabs.item !== null } }
+                 Binding { target: webTabs.item; property: "services"; value: shell.tabbed; when: webTabs.item !== null }
+                 Binding { target: webTabs.item; property: "beside"; value: shell.page === "web" ? shell.tabBeside : ""; when: webTabs.item !== null } }
+        Menu { id: besideMenu }
         // without a web engine in this Quickshell: the page in the browser
         Column { anchors.centerIn: parent; spacing: 12; width: 420; visible: shell.page === "web" && !shell.web
             Glyph { name: "world"; font.pixelSize: 44; color: Theme.gold; anchors.horizontalCenter: parent.horizontalCenter }

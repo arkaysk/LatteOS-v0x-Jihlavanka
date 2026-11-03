@@ -10,6 +10,8 @@ import Quickshell
 Item {
     id: tabs
     property string current: ""
+    // a second one beside it, right of it, the window shared half and half ("" alone)
+    property string beside: ""
     property var services: []
     // a tab opened once stays loaded, as in a browser: going back to it finds the conversation where it was (a model,
     // not an array: a new array would make every tab again, and each would load its page anew)
@@ -24,9 +26,11 @@ Item {
     // (only once its address is known: LensAI may be asked for a tab before it knows the services)
     function open() {
         for (let i = opened.count - 1; i >= 0; i--) if (!services.some(s => s.id === opened.get(i).service)) opened.remove(i)      // taken off the list
-        if (current !== "" && has(current) < 0 && services.some(s => s.id === current)) opened.append({ service: current })
+        for (const id of [current, beside]) if (id !== "" && has(id) < 0 && services.some(s => s.id === id)) opened.append({ service: id })
     }
     onCurrentChanged: open()
+    onBesideChanged: open()
+    readonly property bool split: beside !== "" && beside !== current && current !== ""
     onServicesChanged: open()
     // the small window a page asks for, until the page in it closes it (or the person does)
     Component {
@@ -48,8 +52,11 @@ Item {
             id: view
             required property string service
             readonly property string modelData: service
-            anchors.fill: parent
-            visible: tabs.current === modelData
+            readonly property bool second: tabs.split && tabs.beside === modelData
+            x: second ? tabs.width / 2 + 1 : 0
+            width: tabs.split ? tabs.width / 2 - 1 : tabs.width
+            height: tabs.height
+            visible: tabs.current === modelData || second
             // one profile per service, on disk from the start (made at once with its name, not renamed afterwards)
             WebEngineProfilePrototype { id: own; storageName: "lensai-" + view.modelData }
             profile: own.instance()

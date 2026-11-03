@@ -2644,7 +2644,9 @@ a ostatné ostávajú domáca záležitosť LensAI (10B.07, 10B.08). Pravidlá a
   Suno (používateľ), pás prsteňov pod Prehľadom (zostávajúci limit okolo originálnej ikony; Claude týždeň / 5 h po kliku
   ako na dashboarde), vlastný profil každej služby, raz otvorená záložka ostáva načítaná; `latte-app aicenter tab ID`;
   bez `qs-web` tlačidlo „Otvoriť v prehliadači“. Overené bez obrazovky (claude.ai, chat.deepseek.com).
-  Ostáva: konektory cez tunel (vypínač), pretiahnutie súboru na prsteň, dve záložky vedľa seba. Prihlásenie v malom
+  Dve záložky vedľa seba: hotové 3. 11. — tlačidlo „Vedľa“ v hlavičke stránky služby, ponuka ostatných záložiek a „Iba
+  táto“; `latte-app aicenter tab claude deepseek` (overené bez obrazovky).
+  Ostáva: konektory cez tunel (vypínač), pretiahnutie súboru na prsteň. Prihlásenie v malom
   okne (Google, Apple…): hotové 3. 11. — vlastné okno s profilom záložky, stránka o ňom vie (overené testovacou
   stránkou s `window.open`); odkaz do nového okna či záložky ide do prehliadača.
   3. 11. neskôr: ikona v prsteni je favicon stránky (po otvorení záložky), dovtedy logo z lobe-icons (`goo/ai/suno.svg`
