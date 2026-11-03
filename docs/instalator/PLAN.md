@@ -100,6 +100,10 @@ zisťuje sám (`dnf` verzia v repozitári), nič sa nepíše natvrdo.
 Na slabšom PC (4 jadrá) sa zostavovanie zhruba zdvojnásobí. Keď bude obraz Universal Blue (časť 6), zostavovanie
 odpadne úplne: inštalácia ~5–10 min.
 
+**Vlastný COPR (hotové balíky namiesto zostavovania u človeka): zatiaľ nie** (používateľ 3. 11.) — prednosť má
+Linux 7.3 a Mesa 26.3 hneď pri inštalácii. Pred neskorším COPR: nahradiť `goo/shaders/sea.wgsl` (CC BY-NC-SA nie je
+slobodná licencia, do COPR nesmie) a založiť ho iba na pokyn (je verejný).
+
 ## 3.6 Obrazovka inštalácie (používateľ 3. 11.)
 
 - **Posuvník v štýle grafov LatteOS:** rad segmentov ako `DotBar` (`apps/common/DotBar.qml`). Farba: pozri otázku
