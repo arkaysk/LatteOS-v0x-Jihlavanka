@@ -63,6 +63,9 @@ FloatingWindow {
         const lines = modeFile.text().split("\n"), own = lines.slice(1).map(l => l.trim().split(/\s+/)).find(w => w.length === 2 && win.screen && w[0] === win.screen.name)
         win.mode = own ? own[1] : ((lines[0] || "").trim() || "tape")
     }
+    // taking (nearly) the whole screen: maximized. pleamar-wm does not tell a window it is (no xdg maximized state)
+    // ponytail: a window made that big by hand shows "restore" too; upgrade when the window manager says it
+    readonly property bool maxed: mode === "floating" && !!screen && width >= screen.width * 0.9 && height >= screen.height * 0.8
     function ask(what) { Quickshell.execDetached(["hyprctl", "eval", "latte.win." + what + "()"]) }
     // the window's menu in a Goo card, where the pointer is, as the right button on any title bar gives it (system/hypr/latte/bars.lua)
     function menu() {
@@ -116,8 +119,8 @@ FloatingWindow {
                         onPressed: mouse => {
                             if (mouse.button !== Qt.RightButton) return win.startSystemMove()
                             const at = mapToItem(win.contentItem, mouse.x, mouse.y)          // on the search field its own menu instead
-                            if (!win.fieldAt(win.contentItem, at.x, at.y)) win.menu() }
-                        onDoubleClicked: mouse => { if (mouse.button === Qt.LeftButton && win.mode === "floating") win.ask("maximize_active") } }
+                            if (!win.fieldAt(win.contentItem, at.x, at.y)) win.menu() } }
+            // (a double click on it is the window manager's: the move it asks for presses its title, which maximizes and back)
             Row { id: left; x: 12; spacing: 2; anchors.verticalCenter: parent.verticalCenter; visible: win.arrows
                 HeadButton { icon: "chevron-left"; off: !win.canGoBack; onPressed: win.back() }
                 HeadButton { icon: "chevron-right"; off: !win.canGoForward; onPressed: win.forward() } }
@@ -134,7 +137,7 @@ FloatingWindow {
                     HeadButton { icon: win.net === "off" ? "world-off" : "world"; visible: win.net !== ""; lit: Theme.raised; opacity: win.net === "off" ? 1 : 0.7
                                  onPressed: { net.command = ["latte-net", "toggle", String(Quickshell.processId)]; net.running = true } }
                     HeadButton { icon: "minus"; visible: win.mode === "floating"; onPressed: win.ask("minimize_active") }
-                    HeadButton { icon: "rectangle"; visible: win.mode === "floating"; onPressed: win.ask("maximize_active") }
+                    HeadButton { icon: win.maxed ? "copy" : "rectangle"; visible: win.mode === "floating"; onPressed: win.ask("maximize_active") }
                     HeadButton { icon: "x"; lit: Theme.red; onPressed: Qt.quit() } } }
             // the line under the header: coffee, running out towards the end
             Rectangle { y: parent.height - 2; width: parent.width; height: 2

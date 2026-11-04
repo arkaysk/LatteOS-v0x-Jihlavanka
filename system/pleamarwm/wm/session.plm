@@ -2060,8 +2060,11 @@ scene Session {
         on change win.$i.open while win.$i.open and F > 0.5 {
             fw.$i = Ws * 0.6
             fh.$i = ah * 0.7
-            fx.$i = if(C, x0 + ccx + (Ws / 2 + 28 * i) / cz - Ws * 0.3, x0 + Ws * 0.2 + 28 * i)
-            fy.$i = if(C, y0 + ccy + (ah / 2 + 28 * i) / cz - ah * 0.35, y0 + ah * 0.1 + 28 * i)
+            // LatteOS: free, not on the canvas — at the golden section of the room left around it (0.382 of it to
+            // the left and above: the middle, a little left and up), a small step for each of four slots so two
+            // opened together are not one over the other. pleamar-wm's own stepped by the slot, down to 420 px lower.
+            fx.$i = if(C, x0 + ccx + (Ws / 2 + 28 * i) / cz - Ws * 0.3, x0 + Ws * 0.4 * 0.382 + 28 * mod(i, 4))
+            fy.$i = if(C, y0 + ccy + (ah / 2 + 28 * i) / cz - ah * 0.35, y0 + ah * 0.3 * 0.382 + 28 * mod(i, 4))
             fsc.$i = sc
             maxed.$i = 0
         }
@@ -2731,7 +2734,9 @@ scene Session {
             tgrab = -1
             dcl.skip = 0
         }
-        on release title.$i while (free[mon] > 0.5 or win.$i.floating) and picked < 0 and cv[mon] < 0.5 and dcl.skip < 0.5 {
+        // LatteOS: only when it was carried (`dragging`, as the frame before saw it): a press let go where it was —a
+        // click, a double click on the header— keeps its place and its maximized state (it went back to the corner).
+        on release title.$i while (free[mon] > 0.5 or win.$i.floating) and picked < 0 and cv[mon] < 0.5 and dcl.skip < 0.5 and dragging == i {
             fx.$i = mouse.x - grab.x
             fy.$i = max(mouse.y - grab.y, win.reserved[mon].top)
             fsc.$i = mon
@@ -2743,7 +2748,7 @@ scene Session {
         }
         // On a canvas: there on the plane, as the camera sees it. Then the
         // others near it offer their edges (`cvs`): the nearest takes it.
-        on release title.$i while cv[mon] > 0.5 and free[mon] > 0.5 and picked < 0 and dcl.skip < 0.5 {
+        on release title.$i while cv[mon] > 0.5 and free[mon] > 0.5 and picked < 0 and dcl.skip < 0.5 and dragging == i {
             fx.$i = mg.x0 + cvx[mon] + (mouse.x - grab.x - mg.x0) / cvz[mon]
             fy.$i = mg.y0 + cvy[mon] + (mouse.y - grab.y - mg.y0) / cvz[mon]
             fsc.$i = mon
