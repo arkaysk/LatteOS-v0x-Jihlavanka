@@ -2242,6 +2242,11 @@ Hiroshige (1797–1858), Hokusai (1760–1849); The Met Open Access, napr. Hiros
 (čerešne na brehu, kópia aj úprava dovolená: metmuseum.org/art/collection/search/55583), Hokusai *Čerešne v Jošine*
 (JP2923, Open Access overiť), Hiroshige *Čerešne v Arašijame* a *Ranné čerešne v Šin-Jošiware* (overiť). Obrázky cez
 Open Access API múzea.
+**Japonská — textúra spresnená** (používateľ 4. 11., ukážka: silueta javora tušom s červenými listami na útese, veľké
+rumelkové slnko, hory v hmle, svetlé nebo): ako textúra lepšie ako washi — **japonské písmo** (kaligrafia), **javor**,
+**slnko a hory**. Ukážka je z platenej stránky (AI obrázok, sťahovanie za poplatok) → nepoužiť; zložiť z vlastných
+prvkov (shader: slnko, hmla, vrstvy hôr; javor a písmo kresbou z verejného diela, napr. ukiyo-e s javormi — Hiroshige,
+Hokusai — a voľnými písmami).
 **Kráľovský porcelán — tá istá metóda** (používateľ 4. 11.): textúra z múzejného Open Access, nie vymyslená — kresba
 čínskeho modro-bieleho porcelánu (dynastie Ming a Čching, kobaltová maľba: úponky, lotosy, oblaky) z The Met / Smithsonian
 Open Access (CC0, každý kus overiť), zlaté kudrlinky z ornamentov verejného diela (knihy vzorov 19. st., Openclipart),
