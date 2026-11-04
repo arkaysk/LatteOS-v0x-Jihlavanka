@@ -1146,6 +1146,17 @@ library Slovak {
         "Move here" = "Presunúť sem"
         "Create shortcuts here" = "Vytvoriť odkazy sem"
         "Recycle Bin" = "Kôš"
+        // the cups (system/cups.json)
+        "Steam" = "Steam"
+        "Valve's dark blue" = "tmavomodrá Valve"
+        "Solo Leveling" = "Solo Leveling"
+        "the System's blue glow" = "modrá žiara Systému"
+        "Royal porcelain" = "Kráľovský porcelán"
+        "white, cobalt and gold" = "biela, kobalt a zlato"
+        "Japanese" = "Japonská"
+        "washi, ink and vermilion" = "washi, tuš a rumelka"
+        "Brushed aluminium" = "Brúsený hliník"
+        "raw metal" = "surový kov"
         // Properties (props.plm)
         "Rename folder" = "Premenovanie priečinka"
         "Rename file" = "Premenovanie súboru"

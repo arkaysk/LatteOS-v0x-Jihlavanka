@@ -2151,6 +2151,9 @@ Zdroje: `apps/common/Theme.qml`, `bin/latte-wall`, `bin/latte-walls`, `inspo/`, 
 - f. [ ] **Témy Keramika, Hliník, Onyx, Steam** (používateľ, 21. 10.): v `Theme.cups` sú zatiaľ Espresso, Mocha,
   Porcelán a Z tapety; doplniť ich (aj materiál okien podľa PRAVIDLÁ bod 12). Aplikácie berú farby iba z témy
   (DualBrew, LensAI, Nastavenia…), takže sa prefarbia samy — overiť snímkou každú tému.
+  4. 11.: šálky sú v jednom zozname `system/cups.json` (Theme, Nastavenia, titulky okien, okná v pleamare); pribudli
+  **Steam**, **Brúsený hliník** a navyše **Solo Leveling**, **Kráľovský porcelán** (biela, kobalt, zlato) a **Japonská**
+  (washi, tuš, rumelka) — overené snímkou okna Vlastností v každej. Ostávajú Keramika a Onyx; vzory k šálkam 9A.13.
 
 **9A.04** (pozn.) (Vzhľad, témy a tapety) F. R3·B — shell a vzhľad · r. 840–845
 **R3·B — shell a vzhľad:** téma Latte a Úsporná, farby z tapety (r. 274); prvky stupňa Plný, varianty bez shaderov (r. 275–276, 290);
@@ -2210,6 +2213,11 @@ tapety, stránky Nastavení Tlačiarne · Zálohovanie · Cloud, jazyk z prihlá
 inštalátor so sprievodcom, ChatGoo (Beeper), okno z bubliny QueenGoo.
 **9A.11** [ ] **Cudzie aplikácie vo vzhľade LatteOS** (neskôr, používateľ 2. 11.): Nautilus a iné aplikácie GNOME (GTK 4, libadwaita), GTK 3, Qt a KDE majú dnes celkom inú farebnosť ako aplikácie LatteOS. Zistiť, čo ktorá platforma prijme (libadwaita: `~/.config/gtk-4.0/gtk.css` s farbami `@define-color` a schéma `color-scheme`; GTK 3: téma alebo `gtk.css`; Qt: qt6ct/Kvantum paleta, ako už robí `Theme.qml`; Flatpak cez `--filesystem=xdg-config/gtk-4.0`) a generovať to z vybranej šálky a farieb tapety (`bin/latte-wall`), aby sa spustili čo najbližšie podobe LatteOS.
 **9A.12** [ ] **„Sklo bočných panelov“ → Textúry a efekty** (používateľ 2. 11., Nastavenia › Okná, expertný režim): výber materiálu (mráz, dym, číre, mlieko) po posuvníku *Bočný panel* (1D.09) stratil zmysel — priehľadnosť dáva posuvník, mráz a číre majú tú istú farbu, dym a mlieko iba tmavší a svetlejší odtieň. Položku prerobiť na textúry a špeciálne efekty: vlastnosti skla pleamaru (`frost: auto`, `smoke`, `milk`, `dispersion`, `ripple`, `shine: pointer`, lámanie `lens` pri malých kusoch — panely, ponuky, kvapky; pri celom okne robí kruh), pre okná v scéne pleamar-wm aj pre bočný panel aplikácií (Qt) a popupy (1D.39); textúry (zrno, papier, kávová pena…) ako obrázok alebo shader. Najprv `pleamar --docs reference` a `examples/`.
+**9A.13** [ ] **Vzory a textúry k šálkam** (používateľ 4. 11.): farby šálok sú hotové (`system/cups.json`), k niektorým patrí
+obraz: **Kráľovský porcelán** — zlaté kudrlinky (ornament) a modro-biela kresba ako na čínskom porceláne; **Japonská** —
+japonské motívy (vlny seigaiha, sakura, tuš); **Brúsený hliník** — brúsená textúra kovu (jemné vodorovné ryhy, odlesk);
+**Solo Leveling** — modrá žiara okien „Systému“; **Steam** — bez vzoru. Ako textúra alebo shader v rámci 9A.12 (materiál
+okna, bočného panela, hlavičky), kľúč v zázname šálky; obrázky iba s licenciou, ktorá to dovolí (TRETIE-STRANY.md).
 
 ### 9B. [x] O tomto počítači
 Stránka Nastavenia › Systém › O tomto počítači, vrátane grafu vývoja LatteOS.
