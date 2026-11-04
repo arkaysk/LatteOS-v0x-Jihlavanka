@@ -2228,6 +2228,16 @@ Systému) — bez licencie a ostrý pri každej veľkosti. Zlaté kudrlinky: orn
 dielo; The Met Open Access, záznam 45434, dovoľuje kopírovať, upravovať aj šíriť) a japonské nápisy (kaligrafia, pečate).
 Bankovky nie: návrhy platidiel sa nesmú napodobňovať, berie sa pôvodná tlač. **Sakura** — druhá japonská šálka (ružová
 čerešňových kvetov, slivkový tuš, hnedá vetvičiek), vzor padajúce lupene (shader alebo kresba z verejného diela).
+4. 11. spresnené: **bez veľkých ružových plôch** — podklad takmer biely papier, písmo ako kôra, ružová iba akcent; ružové
+sú **stromy sakury v textúre** (bočný panel, hlavička, pozadie okna). Zdroj: drevoryty a maľby verejného diela —
+Hiroshige (1797–1858), Hokusai (1760–1849); The Met Open Access, napr. Hiroshige *Ženy na prechádzke po brehu Sumidy*
+(čerešne na brehu, kópia aj úprava dovolená: metmuseum.org/art/collection/search/55583), Hokusai *Čerešne v Jošine*
+(JP2923, Open Access overiť), Hiroshige *Čerešne v Arašijame* a *Ranné čerešne v Šin-Jošiware* (overiť). Obrázky cez
+Open Access API múzea.
+**Kráľovský porcelán — tá istá metóda** (používateľ 4. 11.): textúra z múzejného Open Access, nie vymyslená — kresba
+čínskeho modro-bieleho porcelánu (dynastie Ming a Čching, kobaltová maľba: úponky, lotosy, oblaky) z The Met / Smithsonian
+Open Access (CC0, každý kus overiť), zlaté kudrlinky z ornamentov verejného diela (knihy vzorov 19. st., Openclipart),
+prefarbené na zlato šálky. Ako pri Sakure: veľké plochy biele, kresba v textúre.
 
 ### 9B. [x] O tomto počítači
 Stránka Nastavenia › Systém › O tomto počítači, vrátane grafu vývoja LatteOS.
