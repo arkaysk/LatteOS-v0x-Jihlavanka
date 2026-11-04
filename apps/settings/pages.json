@@ -288,6 +288,14 @@
     "words": "lensshore launcher line ai modes tape emoji symbols kaomoji gif giphy tenor klipy key skin tone columns top bottom"
    },
    {
+    "id": "marea",
+    "under": "drops",
+    "name": "Marea",
+    "icon": "droplet",
+    "status": "ready",
+    "words": "marea ball companion k4ditano shell notifications finder chat top"
+   },
+   {
     "id": "dock",
     "under": "drops",
     "name": "Dock",

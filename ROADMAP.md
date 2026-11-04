@@ -214,7 +214,7 @@ kto komu dal úlohu (`term pair`, `by.N` z 1D.17). Pohľad pre Canvas (8A.12), A
 **1D.25** [ ] **Shore pleamar-wm ako variant BarGoo** (neskôr): dok pleamar-wm (*shore*) prerobiť na kvapku enginu Goo a ponúknuť ako druhý vzhľad BarGoo. Pozor na meno: nie LensShore ani trayShore. Používateľ 3. 11. pochválil na shore: náhľad okien po prejdení
 myšou, prepínanie medzi nimi a ponuku pravého kliku — prebrať aj do BarGoo. (Oprava v ten deň: všetky aplikácie
 LatteOS mali `app_id` `org.quickshell`, shore ich zlúčil pod ikonu LensAI; teraz `//@ pragma AppId latteos-NAME`.)
-**1D.26** [ ] **Kvapka Marey ako zapínateľná kvapka Goo** (neskôr): Mareu z marea-plm upraviť, aby sedela s enginom Goo (tvar, voda, farby z témy), a ponúknuť ju ako kvapku, ktorá sa zapína v Nastaveniach › Kvapky. — Pridať medzi kvapky Goo v Nastaveniach › Kvapky (2. 11.). — Stav 3. 11.: Marea **nie je nainštalovaná** — je to samostatný program (repozitár `marea-plm`, príkaz `marea start` z autostartu pleamar-wm), v LatteOS chýba (preto v logu `marea.sock: No such file`); scéna `wm/session.plm` s ňou počíta (ostrov, kam idú odložené okná, dážď z jej ponuky). Najprv stiahnuť `marea-plm`, potom ju zaradiť medzi kvapky.
+**1D.26** [ ] **Kvapka Marey ako zapínateľná kvapka Goo** (neskôr): Mareu z marea-plm upraviť, aby sedela s enginom Goo (tvar, voda, farby z témy), a ponúknuť ju ako kvapku, ktorá sa zapína v Nastaveniach › Kvapky. — Pridať medzi kvapky Goo v Nastaveniach › Kvapky (2. 11.). — Stav 3. 11.: Marea **nie je nainštalovaná** — je to samostatný program (repozitár `marea-plm`, príkaz `marea start` z autostartu pleamar-wm), v LatteOS chýba (preto v logu `marea.sock: No such file`); scéna `wm/session.plm` s ňou počíta (ostrov, kam idú odložené okná, dážď z jej ponuky). Najprv stiahnuť `marea-plm`, potom ju zaradiť medzi kvapky. — Hotové 4. 11. (iba prvá časť): `marea-plm` d0cad02 pripnutý v `patches/build-pleamar.sh`, celý strom v `/usr/share/latteos/marea-plm/` (FILES, bez zmien, BSD-3 v `TRETIE-STRANY.md`); Nastavenia › Kvapky › Marea má prepínač „Ukázať na ploche“ (`bin/latte-marea on|off`, voľba v `~/.config/latteos/marea`, relácia ju pri štarte vráti). Nasadené a spustené na latte-lab. Ostáva: Marea nie je kvapka enginu Goo (tvar, voda, farby z témy), je to samostatný program hore; chat a Deriva sa z `/usr` nepostavia (npm/cargo v priečinku, ktorý nie je zapisovateľný); jej oznámenia/hľadanie sa môžu biť s Goo.
 **1D.27** [ ] **Kývanie okien (wobble) v pleamar-wm** (používateľ 2. 11., vzor [Hyprland 0.57](https://hypr.land/imgs/blog/update57/wobbl.mp4)): ťahané alebo zväčšované okno sa ohne ako želé a dokýve sa, keď ho pustíš. pleamar-wm to nemá (kýve sa iba Marea, keď sedí na okne). Skúsiť shaderom skupiny okna v `wm/session.plm` (ako `tide`), rýchlosť ťahania z pružín scény; iba pri stupňoch full a standard, ako na Hyprlande (`system/hypr/latte/tiers.lua`). Ak shader nestačí na pokrivenie okna, návrh autorovi.
 **1D.28** [x] Priehľadnosť okna iba pri ťahaní (2. 11.): je to zámer pleamar-wm — ťahané okno je nadvihnuté, menšie a na 88 % nepriehľadné, aby bolo vidieť, kam dopadne; nechané tak (používateľ). V DualBrew je to vidieť najmä v ľavom paneli, kde je podklad svetlý a jednoliaty.
 **1D.29** [x] **Ťahanie okna za kávovú hladinu dole** (používateľ 2. 11.): v aplikáciách LatteOS (`apps/common/AppWindow.qml`, `Surface`) sa okno dá ťahať aj za kávu v päte okna, všade, kde nie je tlačidlo ani ovládací prvok (ako za hlavičku: `startSystemMove`). Na Hyprlande aj v pleamar-wm. — S Hyprlandom nesúvisí (2. 11.). — Hotové 3. 11.: `MouseArea` pod kávou v `AppWindow.qml` (ovládacie prvky v `foot` a v obsahu majú prednosť).
@@ -234,6 +234,15 @@ Súpis 2. 11.: časti LatteOS, ktoré v relácii pleamar-wm ešte volajú Hyprla
 **1D.41** [ ] **Klávesnica po načítaní scény správcu okien** (2. 11.): keď sa `wm/session.plm` za behu načíta znova (nasadenie, úprava), relácia stojí ~2,4 s a klávesnicu potom nedostane žiadne okno (`the keyboard to` prázdne), takže otvorená aplikácia pôsobí ako zamrznutá. Vrátiť klávesnicu oknu, ktoré ju malo; scénu na latte-lab nenasadzovať počas práce používateľa bez upozornenia. — 3. 11.: bez obrazovky (`pleamar-wm headless`, foot, scéna nahradená aj prepísaná na mieste) sa nestane: klávesy po načítaní do okna došli, `windows · the keyboard to` prázdne sa píše aj pri štarte. Ďalej treba skúsiť v skutočnej relácii (panely Goo, DRM) — s upozornením. — 3. 11. v ostrej relácii na latte-lab (DRM, Goo, foot): načítanie scény (1,8 s) ani reštart `latte-desktop` klávesnicu nevzali, `wtype` hneď aj po 10 s písal do okna, `win.focus` ostal 0. Riadok `the keyboard to` prázdny sa píše aj pri otvorení okna (skôr, než povie app_id), nie je to znak chyby. Nezopakovalo sa; ak sa vráti, zapísať, čo presne sa nasadzovalo.
 **1D.42** [x] **Popupy Goo napoly okno** (3. 11., `d7003f8`; používateľ 4. 11. hotové): karty Goo so sklom nad hladinou (PowerGoo, ClockGoo, CamGoo) majú farbu a krytie bočného panela okien (`Theme.pane` → `settings.json` Goo → `pane_r/g/b/a`), pod hladinou ostávajú Goo; sklo číre (`frost 0`). Rozmazanie pod oknami pleamar-wm 0.6.9 nevie (žiadosť `patches/issues/pleamar-lens-window-bubble.txt`, neposlaná) — prepojenie skla a efektov s pleamar-wm ďalej v 6.29.
 **1D.43** [ ] **Druhý rám za kartou Goo** (3. 11.): po načítaní scény Goo s otvorenou kartou PowerGoo ostal za kartou ešte jeden, starší rám (o ~50 px vyššie). Zistiť, či zmizne po zatvorení a otvorení karty; ak nie, je to chyba kreslenia karty (`goo/parts/card.plm`).
+
+**1D.45** [x] **Nové plávajúce okno v zlatom reze** (používateľ 4. 11.): pleamar-wm dával nové voľné okno o 28 px nižšie za každý
+slot (pri slote 12 až o 420 px dole). Teraz v režime plávajúcich okien ide na zlatý rez voľného miesta (0,382 vľavo a hore:
+stred, kúsok doľava a hore), krok 28 px iba po štyroch slotoch; plátno ostáva ako bolo. `wm/session.plm`, 4. 11.
+
+**1D.46** [x] **Maximalizovať a späť** (používateľ 4. 11.): tlačidlo v hlavičke aplikácií má pri maximalizovanom okne ikonu
+Obnoviť (dva štvorce). Dvojklik na hlavičku vracal okno do rohu: pleamar-wm pri pustení hlavičky bez pohybu zapísal nové
+miesto a zrušil maximalizáciu; teraz iba po skutočnom ťahaní (`dragging`). Dvojklik rieši iba WM (`AppWindow` ho prepínal
+druhý raz). Stav zisťuje `AppWindow` z veľkosti okna, pleamar-wm ho aplikácii neposiela. 4. 11.
 
 ## 2. [~] Instalator OS
 Zdroje: `fresh-install`, `install`, `migrate-v03`, `docs/NAVRH-STARTU.md`
@@ -663,6 +672,10 @@ používateľ berie na teraz („zatiaľ to stačí“): text ucha sa kreslí na
 posuvníky (Nastavenia › Okná › Sklo) — fakt pre `frost` v `wm/session.plm` aj v `goo/parts/card.plm` (`card_pane`), `auto`
 nahradiť číslom. Rozmazanie pod oknami čaká na pleamar-wm (1D.42, `patches/issues/pleamar-lens-window-bubble.txt`).
 Týka sa kariet so sklom (PowerGoo 6C, ClockGoo, CamGoo).
+
+**6.30** [ ] **Artefakty pri pohybe a otváraní kvapiek** (používateľ 4. 11., na neskôr): niečo sa zmenilo a pohyb kvapiek Goo
+a otváranie ich kariet (popupov) začína ukazovať grafické artefakty. Zistiť, od ktorého commitu (Goo, pleamar 0.7.10, scéna WM,
+sklo 6.29/1D.42), snímky a `--record`; súvisí s 1D.43 (druhý rám za kartou).
 
 ### 6A. [~] BarGoo
 Zdroje: `goo/lib/bar.luau`, `goo/side.plm`; LATTEOS-GOO §4.1
@@ -3645,6 +3658,28 @@ s posuvníkom a rozdielom pixelov, binárne po bajtoch, hudba a video podľa pod
 aj podpriečinkov. Hotové riešenia: **Meld** (GPL, najbližšie tomu, čo chceme: súbory, tri strany, priečinky — ako samostatný program,
 nie kód) alebo KDiff3; `diff`/`cmp`, ImageMagick `compare` pre obrázky, `rsync --dry-run` pre priečinky. Vzhľad a skratky podľa
 Total Commandera (Porovnať podľa obsahu, Synchronizovať priečinky).
+
+### 10M. [ ] Marea a pleamar: využitie v LatteOS
+Marea (k4ditano/marea-plm, BSD-3) je od 4. 11. v LatteOS ako kvapka plochy (Nastavenia › Kvapky › Marea, `bin/latte-marea`,
+strom `/usr/share/latteos/marea-plm/`). Je to celý shell v pleamare: oznámenia, ovládacie centrum, hľadanie, snímky obrazovky,
+zámok, Wi-Fi, Bluetooth, zvuk, kalendár, tapety, šatník (vzhľady), agenti, softvér, sústredenie, história. Veľa z toho LatteOS
+už má po svojom (Goo, LensAI, Nastavenia). Tu sa rozhoduje, čo ako použiť: **preniesť** funkciu do LatteOS (do Goo, LensAI,
+Nastavení), **nechať** ju v Marei a iba ju **preskinovať** na šálky LatteOS, alebo **oboje**. Pravidlá: najprv nájsť, potom písať
+(CLAUDE.md); mená Marey nie sú naše; Marea sa nemení záplatami, iba vrstvou LatteOS (ako pleamar-wm, `patches/`).
+Zdroje: `build/pleamar-src/marea-plm/` (`scene/pages/`, `logic/`, `wardrobe/`, `tools/`), `bin/latte-marea`, `apps/settings.qml`
+
+**10M.01** [ ] **Súpis a rozhodnutie** (používateľ 4. 11.): tabuľka všetkých funkcií Marey (stránky `scene/pages/*.plm`,
+plochy `scene/surfaces/`, logika `logic/*.luau`) vedľa toho, čo už je v LatteOS (BarGoo, LensGoo, PowerGoo, ClockGoo, CamGoo,
+TrayShore, LoginGoo, Nastavenia, LensAI). Pri každej: preniesť · nechať a preskinovať · oboje; nič dvakrát naraz na obrazovke
+(napr. oznámenia Marey a BarGoo). Rozhodnutia používateľa do `docs/goo/ROZHODNUTIA.md`.
+**10M.02** [ ] **Spotreba Claude a Codexu do LensAI** (používateľ 4. 11.: Marea ju zobrazuje nádherne): jej „nádrže agentov“
+(`scene/pages/agents.plm`, `logic/agents.luau`, `tools/reservas`) — koľko ostáva z 5-hodinového a týždenného okna, odpočet
+do obnovenia, voda v nádrži. Preniesť do LensAI (10B) a k službám AI v LensGoo; pravidlá Marey ostávajú (neznáme číslo nie je
+nula, percentá dvoch okien sa nesčítajú, okno po obnovení je „čaká“).
+**10M.03** [ ] **Marea v šálkach LatteOS**: vzhľad Marey (`wardrobe/`) z `system/cups.json` a farieb tapety, ako okná a Goo
+(9A); jej šatník ostáva ako voľba navyše.
+**10M.04** [ ] **Ďalšie z pleamaru**: čo z pleamaru a jeho príkladov (`pleamar --docs recipes`, `examples/`) ešte nepoužívame
+a čo by LatteOS nahradilo vlastný kód (napr. sklo, častice, shadery pre 9A.14).
 
 ## 11. [~] Bezpečnosť, súkromie a záloha
 Zdroje: `bin/latte-net`, `system/libexec/latte-netd`

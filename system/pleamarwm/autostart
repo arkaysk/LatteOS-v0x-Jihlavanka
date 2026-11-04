@@ -13,4 +13,6 @@ sh -c 'export PATH=/usr/share/latteos/pleamarwm/bin:$PATH; sleep 1; exec hyprctl
 sh -c 'case "${LATTE_TIER:-software}" in minimal|software) sleep 1; exec pleamar-wm --say wm "fact motion.reduced 1" ;; esac'
 /usr/libexec/latte-polkit-agent
 sh -c 'command -v cliphist >/dev/null || exit; command -v latte-clip >/dev/null && exec wl-paste --watch latte-clip store; exec wl-paste --watch cliphist store'
+# Marea, if the user keeps her on the desktop (Settings › Drops › Marea).
+latte-marea
 latte-boot ok --after 60 --require pleamar

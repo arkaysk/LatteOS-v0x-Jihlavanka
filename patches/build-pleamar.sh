@@ -6,7 +6,7 @@ here="$(cd "$(dirname "$0")/.." && pwd)"
 src="$here/build/pleamar-src"
 out="$src/target/release"
 newest="$(ls -t "$here"/patches/pleamar-*.patch "$0" | head -1)"      # a patch, or this file (another commit)
-[ -x "$out/pleamar" ] && [ -x "$out/pleamar-wm" ] && [ "$out/pleamar-wm" -nt "$newest" ] && [ "$out/pleamar" -nt "$newest" ] && exit 0
+[ -f "$src/marea-plm/marea" ] && [ -x "$out/pleamar" ] && [ -x "$out/pleamar-wm" ] && [ "$out/pleamar-wm" -nt "$newest" ] && [ "$out/pleamar" -nt "$newest" ] && exit 0
 mkdir -p "$src"
 # Each locked to one commit, for this LatteOS: what its author releases later comes only when the commit here is
 # changed and the patches are seen to fit (a tag can be moved, a commit cannot). pleamar-wm builds against the
@@ -23,6 +23,8 @@ for p in apps-reload right-selection steady-glass windows-and-icons window-carry
 done
 get pleamar-wm 42c8fee85fbfd8fecd1921a8e1009770e78022d7       # v0.6.9
 for p in "$here"/patches/pleamar-wm-*.patch; do git -C "$src/pleamar-wm" apply "$p"; done
+# Marea (k4ditano/marea-plm, BSD-3): scenes and scripts only, nothing to build; install copies the tree
+get marea-plm d0cad02814f761531cd3a365ac48e549df03f8b0         # 29. 10. 2026
 # one target for both: pleamar is built once; --locked: the libraries too as their Cargo.lock has them
 export CARGO_TARGET_DIR="$src/target"
 (cd "$src/pleamar" && cargo build --release --locked)

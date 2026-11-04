@@ -1,0 +1,19 @@
+#!/bin/sh
+# latte-marea [on | off]: Marea (k4ditano/marea-plm), the desktop companion, as a drop of the desktop (Settings ›
+# Drops › Marea). The choice is one word in ~/.config/latteos/marea; without an argument what was chosen is put back
+# (the session's start does that). Marea is a program of her own (layer-shell), so "on" starts her and "off" closes her.
+f="${XDG_CONFIG_HOME:-$HOME/.config}/latteos/marea"
+M=/usr/share/latteos/marea-plm/marea
+keep() { mkdir -p "${f%/*}" && printf '%s\n' "$1" > "$f"; }
+case "${1:-}" in
+    "") ;;
+    on|off) keep "$1" ;;
+    *) echo "latte-marea: on or off" >&2; exit 2 ;;
+esac
+[ -x "$M" ] || { echo "latte-marea: Marea is not installed ($M)" >&2; exit 1; }
+if [ "$(cat "$f" 2>/dev/null)" = on ]; then
+    "$M" status >/dev/null 2>&1 || setsid "$M" start >/dev/null 2>&1 &  
+else
+    "$M" stop >/dev/null 2>&1
+fi
+exit 0

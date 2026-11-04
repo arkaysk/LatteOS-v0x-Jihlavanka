@@ -54,6 +54,12 @@ def built(source):
         return [(os.path.join(HERE, "target", "release", name), name)]
     if kind == "pleamar":               # pleamar and pleamar-wm with LatteOS's patches (patches/build-pleamar.sh)
         src = os.path.join(HERE, "build", "pleamar-src")
+        if name.endswith("/**"):        # a whole tree, as it is (Marea's scenes), without git's and the evidence's files
+            top, found = os.path.join(src, name[:-3]), []
+            for d, ds, fs in os.walk(top):
+                ds[:] = [x for x in ds if x not in (".git", ".github", "evidencia", "target", "node_modules")]
+                found += [(os.path.join(d, f), os.path.relpath(os.path.join(d, f), top)) for f in sorted(fs)]
+            return found
         return [(os.path.join(src, name) if "/" in name else os.path.join(src, "target", "release", name), os.path.basename(name))]
     if kind == "qsweb":                 # Quickshell with a web engine, for LensAI (patches/build-quickshell-web.sh)
         return [(os.path.join(HERE, "build", "quickshell-web", "build", "src", name), name)]

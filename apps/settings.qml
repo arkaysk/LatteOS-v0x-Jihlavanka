@@ -83,6 +83,7 @@ ShellRoot {
         function choose(word) { value = word; Quickshell.execDetached(["sh", "-c", "mkdir -p \"$1\" && printf '%s\\n' \"$3\" > \"$1/$2\"", "sh", shell.config, name, word]) }
     }
     Word { id: cup; name: "cup" }
+    Word { id: mareaWord; name: "marea" }       // Marea on the desktop or not (bin/latte-marea)
     function cupOf(id) { return id === "wallpaper" ? (Theme.fromWallpaper || Theme.cups.espresso) : Theme.cups[id] }
     Word { id: glass; name: "glass" }
     Word { id: glassLevel; name: "glass-level" }
@@ -1097,6 +1098,11 @@ ShellRoot {
                          onPressed: { const id = dropPart.drop; const h = (goo.kept.hidden || []).filter(x => x !== id); if (on) h.push(id); goo.set("hidden", h) } }
                 Label { visible: !dropPart.optional; width: view.room; color: Theme.dim; font.pixelSize: 13; wrapMode: Text.WordWrap
                         text: I18n.tr("Always there: it belongs to the desktop itself.") } }
+            // Marea (k4ditano/marea-plm): a program of her own, so the switch starts and closes her (bin/latte-marea)
+            Part { visible: shell.page === "marea"; width: view.room; title: I18n.tr("On the desktop")
+                   note: I18n.tr("A ball with a face at the top of the screen: notifications, a finder, the control centre and a chat. A program of her own, by k4ditano.")
+                Switch { text: I18n.tr("Show it on the desktop"); on: mareaWord.value === "on"
+                         onPressed: { const w = on ? "off" : "on"; mareaWord.value = w; Quickshell.execDetached(["latte-marea", w]) } } }
             // BarGoo: whether a press on it changes the arrangement (6A.05)
             Part { visible: shell.page === "bargoo"; width: view.room; title: I18n.tr("A press on BarGoo")
                 Switch { text: I18n.tr("A press on BarGoo changes the arrangement"); hint: I18n.tr("Off: the arrangement chosen in Windows stays, and a press on BarGoo only shows the windows.")
