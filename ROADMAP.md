@@ -2224,6 +2224,10 @@ seigaiha, ornamenty, historické kresby z kníh 19. st.; zrkadlá freesvg.org ov
 Open Access** a **Smithsonian Open Access** (CC0: fotografie a kresby čínskeho modro-bieleho porcelánu, japonské šablóny
 katagami a textílie). Kde sa dá, **vzor vygenerovať shaderom** pleamaru (seigaiha, ryhy brúseného kovu `noise()`, žiara
 Systému) — bez licencie a ostrý pri každej veľkosti. Zlaté kudrlinky: ornament z verejného diela, prefarbený na zlato šálky.
+**Japonská** (používateľ 4. 11.): štýl drevorytov ukiyo-e — vlny ako **Hokusaiova Veľká vlna pri Kanagawe** (1831, verejné
+dielo; The Met Open Access, záznam 45434, dovoľuje kopírovať, upravovať aj šíriť) a japonské nápisy (kaligrafia, pečate).
+Bankovky nie: návrhy platidiel sa nesmú napodobňovať, berie sa pôvodná tlač. **Sakura** — druhá japonská šálka (ružová
+čerešňových kvetov, slivkový tuš, hnedá vetvičiek), vzor padajúce lupene (shader alebo kresba z verejného diela).
 
 ### 9B. [x] O tomto počítači
 Stránka Nastavenia › Systém › O tomto počítači, vrátane grafu vývoja LatteOS.

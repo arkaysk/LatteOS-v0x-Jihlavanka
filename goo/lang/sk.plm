@@ -1155,6 +1155,8 @@ library Slovak {
         "white, cobalt and gold" = "biela, kobalt a zlato"
         "Japanese" = "Japonská"
         "washi, ink and vermilion" = "washi, tuš a rumelka"
+        "Sakura" = "Sakura"
+        "cherry blossom pink" = "ružová čerešňových kvetov"
         "Brushed aluminium" = "Brúsený hliník"
         "raw metal" = "surový kov"
         // Properties (props.plm)
