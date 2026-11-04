@@ -2218,6 +2218,12 @@ obraz: **Kráľovský porcelán** — zlaté kudrlinky (ornament) a modro-biela 
 japonské motívy (vlny seigaiha, sakura, tuš); **Brúsený hliník** — brúsená textúra kovu (jemné vodorovné ryhy, odlesk);
 **Solo Leveling** — modrá žiara okien „Systému“; **Steam** — bez vzoru. Ako textúra alebo shader v rámci 9A.12 (materiál
 okna, bočného panela, hlavičky), kľúč v zázname šálky; obrázky iba s licenciou, ktorá to dovolí (TRETIE-STRANY.md).
+Zdroje (rešerš 4. 11., licenciu overiť pri každom kuse na pôvodnej stránke): **CC0** — ambientCG (celá knižnica, aj kovy),
+Poly Haven (textúry), ShareTextures (brúsený kov), OpenGameArt (balíky označené CC0); **Openclipart** (CC0/verejné dielo:
+seigaiha, ornamenty, historické kresby z kníh 19. st.; zrkadlá freesvg.org overiť na openclipart.org); **Metropolitan Museum
+Open Access** a **Smithsonian Open Access** (CC0: fotografie a kresby čínskeho modro-bieleho porcelánu, japonské šablóny
+katagami a textílie). Kde sa dá, **vzor vygenerovať shaderom** pleamaru (seigaiha, ryhy brúseného kovu `noise()`, žiara
+Systému) — bez licencie a ostrý pri každej veľkosti. Zlaté kudrlinky: ornament z verejného diela, prefarbený na zlato šálky.
 
 ### 9B. [x] O tomto počítači
 Stránka Nastavenia › Systém › O tomto počítači, vrátane grafu vývoja LatteOS.
