@@ -100,8 +100,7 @@ FloatingWindow {
         anchors.left: glass.right; anchors.right: parent.right; height: parent.height
         color: win.ground
 
-        // the coffee carries the window too, wherever nothing above it takes the press (1D.29)
-        MouseArea { anchors.bottom: parent.bottom; width: parent.width; height: sea.depth; onPressed: win.startSystemMove() }
+        // (the coffee carries the window too: the catcher above everything does it, 1D.29 and 1D.44)
         // the coffee: behind everything when the app has no lower part, the line above it when it has
         Surface {
             id: sea
@@ -153,8 +152,12 @@ FloatingWindow {
         PointHandler {
             acceptedButtons: Qt.LeftButton
             onActiveChanged: if (active) {
-                const f = win.fieldAt(win.contentItem, point.position.x, point.position.y)
+                const x = point.position.x, y = point.position.y
+                const f = win.fieldAt(win.contentItem, x, y)
                 if (f && !f.readOnly) { f.forceActiveFocus(); win.pressedField = f; refocus.restart() }
+                // The coffee at the foot carries the window, even where a page reaches over it (a list that scrolls,
+                // LensAI's pages), as long as no button or field is there to be pressed (1D.29, 1D.44)
+                else if (!f && y > win.height - sea.depth && x > glass.width && !win.pressableAt(win.contentItem, x, y)) win.startSystemMove()
             }
         }
         // the right button on any text field: cut, copy, paste, as on every field (6B.11); Ctrl+X, C, V work by themselves
@@ -192,6 +195,21 @@ FloatingWindow {
             if (deeper) return deeper
         }
         return null
+    }
+    // something to press at that point: a button or a row (a MouseArea of its own size, not a ground that catches
+    // everything) or a field; a list that scrolls is not one
+    function pressableAt(item, x, y) {
+        const kids = item.children
+        for (let i = kids.length - 1; i >= 0; i--) {
+            const c = kids[i]
+            if (c === catcher || !c.visible || !c.enabled) continue
+            const at = c.mapFromItem(item, x, y)
+            if (at.x < 0 || at.y < 0 || at.x > c.width || at.y > c.height) continue
+            if (c.cursorPosition !== undefined) return true
+            if (c instanceof MouseArea && c.height < sea.depth * 3) return true
+            if (win.pressableAt(c, at.x, at.y)) return true
+        }
+        return false
     }
     property Item pressedField: null
     Timer { id: refocus; interval: 150; onTriggered: if (win.pressedField) { win.pressedField.forceActiveFocus(); win.pressedField = null } }

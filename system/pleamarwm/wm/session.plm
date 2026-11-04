@@ -3608,8 +3608,15 @@ scene Session {
     repeat i in 0..16 {
         let dw = max(win.$i.width, 120)
         let dh = max(win.$i.height, 40) + tb * win.$i.framed      // LatteOS: no bar over one that draws its own
-        let dx = (W - dw) / 2
-        let dy = (H - dh) / 2
+        // LatteOS: a dialog is carried by its title bar or its own header (Properties, ROADMAP 10L.01): moved by
+        // what it was carried, kept on its monitor, back in the middle when it closes
+        fact dmx.$i = 0
+        fact dmy.$i = 0
+        fact dmx0.$i = 0
+        fact dmy0.$i = 0
+        let dx = clamp((W - dw) / 2 + dmx.$i, 40 - dw, W - 40)
+        let dy = clamp((H - dh) / 2 + dmy.$i, 0, H - 40)
+        on change win.$i.open while not win.$i.open { dmx.$i = 0; dmy.$i = 0 }
         prop dlg.$i = 0 ~220ms
         let dlg.ws = win.$i.pool == inpool[max(win.$i.screen, 0)]
         // The mouse going into it gives it the keyboard, as it does a window.
@@ -3628,6 +3635,10 @@ scene Session {
             }
             group {
                 clip box { from: dx, dy; size: dw, dh; corner: 12 }
+                // by its title bar, or by its own header when it asks (xdg-shell's move): the window is pressed for it here
+                zone box dhandle.$i { from: dx, dy; size: dw, max(tb, 48); active: win.$i.dialog and win.$i.open and dlg.ws and not overview; label: "{win.$i.title}"; role: button; handle: i }
+                on press dhandle.$i { dmx0.$i = dmx.$i; dmy0.$i = dmy.$i }
+                on drag dhandle.$i { dmx.$i = dmx0.$i + drag.dx; dmy.$i = dmy0.$i + drag.dy }
                 box { from: dx, dy; size: dw, tb; color: cup.bar; show: win.$i.framed }
                 text win.$i.title { at: dx + 14, dy + tb / 2; anchor: left center; size: 13; weight: 600; width: max(dw - 40, 10); lines: 1; color: cup.ink; show: win.$i.framed }
                 window win.$i { at: dx, dy + tb * win.$i.framed; size: win.$i.width, win.$i.height; ask: 0, 0; show: win.$i.dialog and win.$i.open and win.$i.screen == screen.index and dlg.ws }

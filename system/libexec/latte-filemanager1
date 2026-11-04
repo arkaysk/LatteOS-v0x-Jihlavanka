@@ -1,0 +1,90 @@
+#!/usr/bin/env python3
+"""org.freedesktop.FileManager1 for LatteOS (ROADMAP 10L.01): what any app asks of "the file manager" — Firefox's
+"Show in folder", Properties from a portal or a toolkit — goes to LatteOS's own: a folder opens in DualBrew, the
+properties in LatteOS's window (latte-properties). Started by D-Bus when asked, it leaves after a quiet while.
+The freedesktop interface: https://www.freedesktop.org/wiki/Specifications/file-manager-interface/"""
+import os
+import subprocess
+import sys
+import urllib.parse
+
+import gi
+
+gi.require_version("Gio", "2.0")
+from gi.repository import Gio, GLib  # noqa: E402
+
+NAME = "org.freedesktop.FileManager1"
+XML = """<node><interface name="org.freedesktop.FileManager1">
+  <method name="ShowFolders"><arg type="as" name="URIs" direction="in"/><arg type="s" name="StartupId" direction="in"/></method>
+  <method name="ShowItems"><arg type="as" name="URIs" direction="in"/><arg type="s" name="StartupId" direction="in"/></method>
+  <method name="ShowItemProperties"><arg type="as" name="URIs" direction="in"/><arg type="s" name="StartupId" direction="in"/></method>
+</interface></node>"""
+QUIET = 300                                   # seconds without a call before it leaves
+
+
+def paths(uris):
+    """The local paths of those addresses; anything not on this computer is left out."""
+    out = []
+    for u in uris:
+        p = urllib.parse.unquote(urllib.parse.urlparse(u).path) if u.startswith("file://") else u
+        if p.startswith("/"):
+            out.append(p)
+    return out
+
+
+def start(*cmd):
+    subprocess.Popen(list(cmd), start_new_session=True, stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+
+def what_to_do(method, uris):
+    """The commands for a call, as lists: kept apart from D-Bus so it can be checked without a bus."""
+    ps = paths(uris)
+    if not ps:
+        return []
+    if method == "ShowItemProperties":
+        return [["latte-properties", *ps]]
+    if method == "ShowFolders":
+        return [["latte-app", "files", p] for p in ps]
+    # ShowItems: the folder each is in (DualBrew cannot yet choose one item in it)
+    folders = []
+    for p in ps:
+        d = os.path.dirname(p.rstrip("/")) or "/"
+        if d not in folders:
+            folders.append(d)
+    return [["latte-app", "files", d] for d in folders]
+
+
+def main():
+    loop = GLib.MainLoop()
+    quiet = {"id": 0}
+
+    def rest():
+        if quiet["id"]:
+            GLib.source_remove(quiet["id"])
+        quiet["id"] = GLib.timeout_add_seconds(QUIET, loop.quit)
+
+    def call(_conn, _sender, _path, _iface, method, params, invocation):
+        uris, _startup = params.unpack()
+        for cmd in what_to_do(method, uris):
+            start(*cmd)
+        invocation.return_value(None)
+        rest()
+
+    node = Gio.DBusNodeInfo.new_for_xml(XML)
+
+    def acquired(conn, _name):
+        conn.register_object("/org/freedesktop/FileManager1", node.interfaces[0], call, None, None)
+
+    Gio.bus_own_name(Gio.BusType.SESSION, NAME, Gio.BusNameOwnerFlags.NONE, acquired, None, lambda *_: loop.quit())
+    rest()
+    loop.run()
+
+
+if __name__ == "__main__":
+    if sys.argv[1:2] == ["--check"]:
+        assert what_to_do("ShowItemProperties", ["file:///home/a/b%20c.txt", "http://x/y"]) == [["latte-properties", "/home/a/b c.txt"]]
+        assert what_to_do("ShowItems", ["file:///home/a/x", "file:///home/a/y"]) == [["latte-app", "files", "/home/a"]]
+        assert what_to_do("ShowFolders", ["file:///tmp/"]) == [["latte-app", "files", "/tmp/"]]
+        print("latte-filemanager1: ok")
+    else:
+        main()

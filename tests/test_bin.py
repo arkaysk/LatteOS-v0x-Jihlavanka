@@ -22,6 +22,9 @@ with tempfile.TemporaryDirectory() as d:
     assert open(f).read() == "[Desktop Entry]\nName=AC/DC & \\ co\nExec=a\n[Desktop Action x]\nName=Keep\nName[sk]=Nechat\n", open(f).read()
     assert os.stat(f).st_mode & 0o777 == 0o755 and os.listdir(d) == ["a.desktop"]
 
+# what an app asks of "the file manager" goes to DualBrew and LatteOS's Properties
+subprocess.run([sys.executable, os.path.join(ROOT, "system/libexec/latte-filemanager1"), "--check"], check=True, capture_output=True)
+
 sky = load("latte-sky")
 # 20 March 2025 12:00 UTC, the equinox: over the equator at Greenwich the sun is nearly overhead and mid-way.
 s = sky.sky(0, 0, 1742472000)["sun"]

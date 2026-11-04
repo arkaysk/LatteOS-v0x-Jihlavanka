@@ -47,7 +47,6 @@ import json, os, re, shlex, shutil, subprocess, sys, time
 UID = os.getuid()
 RUN = os.path.join(os.environ.get("XDG_RUNTIME_DIR") or "/tmp", "latteos")
 STATE = os.path.join(RUN, "guardcorgi.json")
-FLAG = os.path.join(os.environ.get("XDG_CONFIG_HOME") or os.path.expanduser("~/.config"), "latteos", "desktop-icons")
 EVERY, MISSES, TRIES, WINDOW, REST = 5, 2, 5, 300, 300
 # the history outlives a restart of the computer: the overview counts the days since the last problem
 LOG = os.path.join(os.environ.get("XDG_STATE_HOME") or os.path.expanduser("~/.local/state"), "latteos", "guardcorgi.log")
@@ -276,10 +275,6 @@ def wallpaper_up():
     return unit_active("skwd-walld.service") or running(r"^(\S*/)?(swaybg|mpvpaper)( |$)")
 
 
-def icons_wanted():
-    return read(FLAG).strip() != "off"
-
-
 CHOICES = os.path.join(os.environ.get("XDG_CONFIG_HOME") or os.path.expanduser("~/.config"), "latteos", "guardcorgi.json")
 # GuardCorgi was GuardDog until 3. 11. 2026: the user's choices and the history move over from the old names
 for new in (CHOICES, LOG):
@@ -402,8 +397,6 @@ COMPONENTS = [
     # polkit takes the agent only from inside the login session, so Hyprland starts it, not systemd
     ("polkit", "Asking for the password", lambda: unit_active("latte-session.target"), lambda: running(r"^/usr/bin/pleamar --scene \S*/goo/polkit\.plm"),
      lambda: quiet("hyprctl", "eval", 'hl.exec_cmd("/usr/libexec/latte-polkit-agent")')),
-    ("icons", "Icons on the desktop", icons_wanted, lambda: running(r"^qs .*apps/desktop\.qml"),
-     lambda: quiet("latte-desktop", "restart")),
     ("focus", "Screen time", lambda: unit_active("latte-session.target"), lambda: unit_active("latte-focus.service"),
      lambda: quiet("systemctl", "--user", "restart", "latte-focus.service")),
     ("wallpaper", "The wallpaper", lambda: unit_active("latte-session.target"), wallpaper_up,

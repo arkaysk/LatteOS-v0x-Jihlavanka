@@ -30,7 +30,8 @@
 #                                     LATTE_CONFLICT (both: a free name beside it, the default; replace; older; skip)
 #   latte-files clashes DIR FILE…     which of the names are already in DIR
 #   latte-files trash FILE…           to the Trash;  latte-files empty   empties it
-#   latte-files folder DIR NAME       a new folder (NAME (2) … when the name is taken);  file DIR NAME   an empty file
+#   latte-files folder DIR NAME       a new folder (NAME (2) … when the name is taken);  file DIR NAME   an empty file;
+#                                     each prints where it was made
 #   latte-files rename FILE NAME      another name in the same folder
 #   latte-files renames FILE NAME…    many at once, each in its own folder (one Ctrl+Z takes all back); a name already
 #                                     there is left alone
@@ -258,8 +259,8 @@ clashes) d="$1"; shift; for f in "$@"; do n="$(basename -- "$f")"; { [ -e "$d/$n
 link)   d="$1"; shift; for f in "$@"; do t="$(free_name "$d" "$(basename "$f")")"; ln -s -- "$f" "$t" && did made "$t"; done ;;
 trash)  for f in "$@"; do gio trash -- "$f" && did trashed "$f"; done ;;
 empty)  gio trash --empty ;;
-folder) t="$(free_name "$1" "$2")"; mkdir -- "$t" && did made "$t" ;;
-file)   t="$(free_name "$1" "$2")"; : > "$t" && did made "$t" ;;
+folder) t="$(free_name "$1" "$2")"; mkdir -- "$t" && did made "$t" && printf '%s\n' "$t" ;;
+file)   t="$(free_name "$1" "$2")"; : > "$t" && did made "$t" && printf '%s\n' "$t" ;;
 rename) case "$2" in */*|"") exit 2 ;; esac
         t="$(dirname "$1")/$2"; [ -e "$t" ] && exit 1; mv -n -- "$1" "$t" && did moved "$1" "$t" ;;
 renames) while [ $# -ge 2 ]; do

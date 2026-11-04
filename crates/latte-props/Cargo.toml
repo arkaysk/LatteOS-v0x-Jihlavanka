@@ -1,0 +1,7 @@
+[package]
+name = "latte-props"
+description = "LatteOS file properties: what a file is, as JSON, and the few things Properties may change"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true

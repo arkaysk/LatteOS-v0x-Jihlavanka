@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vlastnosti súboru — návrh LatteOS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* LatteOS GOO, one visual world (the coffee cup): the window of Properties as it would stand on the desktop.
+   Layout: a window in the middle of a desktop; a strip of file tabs, a head with the picture, section tabs, grouped rows. */
+:root {
+  --desk: #140e0b;
+  --win: #2c2019;
+  --raised: #3a2a21;
+  --row: #33261e;
+  --line: #5a463a;
+  --cream: #f3ebdd;
+  --dim: #b8a491;
+  --faint: #8a7565;
+  --gold: #f7c873;
+  --ink-gold: #17110d;
+  --ok: #4cc38a;
+  --red: #e5484d;
+  --display: "Inter", system-ui, sans-serif;
+  --body: "Inter", system-ui, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, monospace;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; }
+body {
+  background: radial-gradient(1200px 700px at 70% 10%, #4a1810 0%, transparent 60%),
+              radial-gradient(900px 600px at 10% 90%, #2a0f0a 0%, transparent 60%), var(--desk);
+  color: var(--cream); font: 14px/1.45 var(--body); font-variant-numeric: tabular-nums;
+  display: flex; flex-direction: column; align-items: center; gap: 18px; padding: 28px 16px 40px;
+}
+.note { max-width: 900px; color: var(--dim); font-size: 13px; text-align: left; }
+.note b { color: var(--cream); }
+.note ul { margin: 6px 0 0; padding-left: 18px; }
+.note li { margin: 2px 0; }
+
+/* ── the window ─────────────────────────────────────────────────────────────── */
+.window {
+  width: min(760px, 100%); background: color-mix(in srgb, var(--win) 94%, transparent);
+  border: 1px solid var(--line); border-radius: 16px; box-shadow: 0 24px 60px rgba(0,0,0,.55);
+  display: flex; flex-direction: column; overflow: hidden;
+}
+.titlebar { display: flex; align-items: center; gap: 10px; padding: 10px 12px 8px 16px; }
+.titlebar .t { flex: 1; font-weight: 600; font-size: 13px; color: var(--dim); }
+.wbtn { width: 28px; height: 28px; border-radius: 8px; display: grid; place-items: center; color: var(--dim); background: transparent; border: 0; cursor: pointer; }
+.wbtn:hover { background: var(--raised); color: var(--cream); }
+.wbtn.close:hover { background: var(--red); color: #fff; }
+
+/* the files shown: one window, a tab a file (GNOME thread: no flood of dialogs); a tab can be torn off into a window */
+.filetabs { display: flex; gap: 4px; padding: 0 12px; border-bottom: 1px solid var(--line); overflow-x: auto; }
+.ftab { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 10px 10px 0 0; color: var(--dim);
+        cursor: pointer; border: 1px solid transparent; border-bottom: 0; white-space: nowrap; background: transparent; font: inherit; }
+.ftab[aria-selected="true"] { background: var(--raised); color: var(--cream); border-color: var(--line); margin-bottom: -1px; }
+.ftab .x { opacity: .5; font-size: 12px; }
+.ftab.compare { margin-left: auto; color: var(--gold); }
+.ftab.compare[aria-selected="true"] { color: var(--gold); }
+
+.head { display: grid; grid-template-columns: 112px 1fr; gap: 18px; padding: 18px 20px 14px; align-items: center; background: var(--raised); }
+.pic { width: 112px; height: 84px; border-radius: 10px; overflow: hidden; border: 1px solid var(--line); background: #1c1410; display: grid; place-items: center; }
+.pic canvas { width: 100%; height: 100%; display: block; }
+.name { width: 100%; font: 600 18px var(--display); color: var(--cream); background: var(--win); border: 1px solid var(--line);
+        border-radius: 10px; padding: 8px 12px; }
+.name:focus { outline: 2px solid var(--gold); outline-offset: 1px; }
+.kind { margin-top: 6px; color: var(--dim); font-size: 13px; }
+.kind code { font-family: var(--mono); font-size: 12px; color: var(--faint); margin-left: 6px; }
+
+.sections { display: flex; gap: 2px; padding: 0 14px; background: var(--raised); border-bottom: 1px solid var(--line); overflow-x: auto; }
+.sec { padding: 9px 14px; color: var(--dim); border: 0; background: transparent; font: 500 13px var(--body); cursor: pointer;
+       border-bottom: 2px solid transparent; white-space: nowrap; }
+.sec[aria-selected="true"] { color: var(--cream); border-bottom-color: var(--gold); }
+.sec:focus-visible, .btn:focus-visible, .ftab:focus-visible { outline: 2px solid var(--gold); outline-offset: -2px; }
+
+.body { padding: 16px 20px; display: flex; flex-direction: column; gap: 12px; max-height: 470px; overflow-y: auto; }
+.group { background: var(--row); border: 1px solid var(--line); border-radius: 12px; }
+.group h3 { margin: 0; padding: 10px 14px 0; font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--faint); font-weight: 600; }
+.r { display: grid; grid-template-columns: 150px 1fr auto; gap: 12px; align-items: center; padding: 9px 14px; min-height: 40px; }
+.r + .r { border-top: 1px solid color-mix(in srgb, var(--line) 55%, transparent); }
+.r .k { color: var(--dim); }
+.r .v { color: var(--cream); overflow-wrap: anywhere; }
+.r .v small { color: var(--faint); margin-left: 6px; }
+.btn { font: 500 13px var(--body); color: var(--cream); background: var(--raised); border: 1px solid var(--line); border-radius: 8px;
+       padding: 6px 12px; cursor: pointer; display: inline-flex; gap: 6px; align-items: center; white-space: nowrap; }
+.btn:hover { border-color: var(--gold); }
+.btn.gold { background: var(--gold); color: var(--ink-gold); border-color: var(--gold); font-weight: 600; }
+.btn[disabled] { opacity: .45; cursor: default; border-color: var(--line); }
+.btn.danger { color: var(--red); }
+.chip { display: inline-flex; align-items: center; gap: 6px; padding: 2px 10px; border-radius: 99px; background: var(--raised); border: 1px solid var(--line); font-size: 12px; }
+.app { display: inline-flex; align-items: center; gap: 8px; }
+.appicon { width: 20px; height: 20px; border-radius: 5px; background: linear-gradient(135deg, #3d8bfd, #7a5cff); }
+
+/* a dropdown drawn inside the window (a pleamar window draws it itself; no popup surface needed) */
+.dd { position: relative; }
+.menu { position: absolute; right: 0; top: calc(100% + 6px); width: 240px; background: var(--win); border: 1px solid var(--line);
+        border-radius: 12px; box-shadow: 0 12px 30px rgba(0,0,0,.5); padding: 6px; z-index: 5; display: none; }
+.menu.open { display: block; }
+.menu button { width: 100%; text-align: left; background: transparent; border: 0; color: var(--cream); padding: 8px 10px; border-radius: 8px;
+               font: inherit; display: flex; gap: 10px; align-items: center; cursor: pointer; }
+.menu button:hover { background: var(--raised); }
+.menu hr { border: 0; border-top: 1px solid var(--line); margin: 4px 6px; }
+
+.switch { width: 38px; height: 22px; border-radius: 99px; background: var(--line); position: relative; border: 0; cursor: pointer; }
+.switch::after { content: ""; position: absolute; top: 3px; left: 3px; width: 16px; height: 16px; border-radius: 50%; background: var(--cream); transition: left .15s; }
+.switch[aria-checked="true"] { background: var(--gold); }
+.switch[aria-checked="true"]::after { left: 19px; background: var(--ink-gold); }
+.tags { display: flex; gap: 8px; }
+.tag { width: 18px; height: 18px; border-radius: 50%; border: 2px solid transparent; cursor: pointer; padding: 0; }
+.tag[aria-pressed="true"] { border-color: var(--cream); box-shadow: 0 0 0 2px var(--win) inset; }
+input.field, select.field { font: inherit; color: var(--cream); background: var(--win); border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; width: 100%; }
+.meter { height: 8px; border-radius: 99px; background: var(--win); border: 1px solid var(--line); overflow: hidden; margin-top: 6px; }
+.meter i { display: block; height: 100%; background: linear-gradient(90deg, #4cc38a, #f7c873 70%, #e5484d); }
+
+/* permissions grid (Nemo, Thunar), with the text and the number beside it */
+.perm { display: grid; grid-template-columns: 150px repeat(3, 70px) 1fr; gap: 8px 12px; padding: 12px 14px; align-items: center; }
+.perm .hd { color: var(--faint); font-size: 12px; text-align: center; }
+.perm .k { color: var(--dim); }
+.perm input { width: 18px; height: 18px; accent-color: var(--gold); justify-self: center; }
+.mono { font-family: var(--mono); font-size: 13px; }
+
+/* details: a long two-column list, grouped (Windows), scrolls */
+.dl { display: grid; grid-template-columns: 210px 1fr; }
+.dl div { padding: 6px 14px; border-top: 1px solid color-mix(in srgb, var(--line) 45%, transparent); }
+.dl .k { color: var(--dim); }
+.dl .sub { grid-column: 1 / -1; color: var(--gold); font-weight: 600; font-size: 12px; padding-top: 12px; border-top: 0; }
+
+table { width: 100%; border-collapse: collapse; }
+th, td { text-align: left; padding: 8px 14px; border-top: 1px solid color-mix(in srgb, var(--line) 45%, transparent); }
+th { color: var(--faint); font-weight: 600; font-size: 12px; border-top: 0; }
+tr.sel td { background: color-mix(in srgb, var(--gold) 16%, transparent); }
+tbody tr { cursor: pointer; }
+.cmp td.diff { color: var(--gold); font-weight: 600; }
+.cmp th:not(:first-child) { color: var(--cream); }
+
+.foot { display: flex; gap: 8px; justify-content: flex-end; align-items: center; padding: 12px 16px; border-top: 1px solid var(--line); }
+.foot .hint { margin-right: auto; color: var(--faint); font-size: 12px; }
+.ok { color: var(--ok); }
+.bad { color: var(--red); }
+[hidden] { display: none !important; }
+@media (max-width: 560px) {
+  .r { grid-template-columns: 1fr; gap: 4px; }
+  .head { grid-template-columns: 1fr; }
+  .perm { grid-template-columns: 90px repeat(3, 1fr); }
+  .perm .tail { display: none; }
+  .dl { grid-template-columns: 1fr; }
+}
+@media (prefers-reduced-motion: reduce) { .switch::after { transition: none; } }
+</style>
+</head>
+<body>
+
+<div class="window" role="dialog" aria-labelledby="wtitle">
+  <div class="titlebar">
+    <span class="t" id="wtitle">Vlastnosti</span>
+    <button class="wbtn" title="Oddeliť kartu do vlastného okna" aria-label="Oddeliť kartu do okna">⧉</button>
+    <button class="wbtn" aria-label="Minimalizovať">–</button>
+    <button class="wbtn close" aria-label="Zavrieť">✕</button>
+  </div>
+
+  <div class="filetabs" role="tablist" aria-label="Súbory">
+    <button class="ftab" role="tab" data-file="jpg" aria-selected="true">🖼 yol dashboard.jpg <span class="x">✕</span></button>
+    <button class="ftab" role="tab" data-file="dir" aria-selected="false">📁 dnd table <span class="x">✕</span></button>
+    <button class="ftab" role="tab" data-file="app" aria-selected="false">🚀 Aliens versus Predator 2 <span class="x">✕</span></button>
+    <button class="ftab compare" role="tab" data-file="cmp" aria-selected="false">⇄ Porovnať (3)</button>
+  </div>
+
+  <!-- head: picture, the name that can be typed, the kind -->
+  <div class="head" id="head">
+    <div class="pic"><canvas id="pic" width="224" height="168"></canvas></div>
+    <div>
+      <label for="name" class="kind" style="display:block;margin:0 0 4px">Meno</label>
+      <input class="name" id="name" value="yol dashboard.jpg">
+      <div class="kind" id="kind">Obrázok JPEG <code>image/jpeg</code></div>
+    </div>
+  </div>
+
+  <div class="sections" role="tablist" aria-label="Časti" id="sections">
+    <button class="sec" role="tab" data-sec="general" aria-selected="true">Všeobecné</button>
+    <button class="sec" role="tab" data-sec="security" aria-selected="false">Zabezpečenie</button>
+    <button class="sec" role="tab" data-sec="details" aria-selected="false" data-only="jpg">Podrobnosti</button>
+    <button class="sec" role="tab" data-sec="versions" aria-selected="false">Predchádzajúce verzie</button>
+    <button class="sec" role="tab" data-sec="sums" aria-selected="false" data-only="jpg app">Kontrolné súčty</button>
+    <button class="sec" role="tab" data-sec="launcher" aria-selected="false" data-only="app">Odkaz</button>
+  </div>
+
+  <div class="body">
+    <!-- ── Všeobecné ── -->
+    <section data-pane="general">
+      <div class="group" data-only="jpg app">
+        <div class="r"><span class="k">Otvára sa v</span>
+          <span class="v app" id="opener"><span class="appicon"></span><span id="openerName">Prehliadač obrázkov</span></span>
+          <span class="dd"><button class="btn" id="change" aria-haspopup="true" aria-expanded="false">Zmeniť…</button>
+            <div class="menu" id="menu" role="menu">
+              <button role="menuitem" data-app="Prehliadač obrázkov"><span class="appicon"></span>Prehliadač obrázkov</button>
+              <button role="menuitem" data-app="GIMP"><span class="appicon" style="background:linear-gradient(135deg,#8a6a3a,#c9a36b)"></span>GIMP</button>
+              <button role="menuitem" data-app="Krita"><span class="appicon" style="background:linear-gradient(135deg,#3a7bd5,#d53a9d)"></span>Krita</button>
+              <hr><button role="menuitem">Hľadať v obchode s aplikáciami…</button>
+              <button role="menuitem">Vybrať iný program…</button>
+            </div></span></div>
+      </div>
+      <div class="group">
+        <div class="r"><span class="k">Umiestnenie</span><span class="v">~/Plocha</span><button class="btn">Otvoriť priečinok</button></div>
+        <div class="r" data-only="jpg app"><span class="k">Veľkosť</span><span class="v" id="size">134 kB <small>137 539 bajtov</small></span><span></span></div>
+        <div class="r" data-only="jpg app"><span class="k">Na disku</span><span class="v" id="disk">136 kB <small>139 264 bajtov</small></span><span></span></div>
+        <div class="r" data-only="dir"><span class="k">Obsah</span><span class="v">12 položiek <small>11 súborov, 1 priečinok</small> · 6,1 MB <small>na disku 6,2 MB</small></span><span></span></div>
+        <div class="r" data-only="dir"><span class="k">Disk</span><span class="v">/home · 18,4 GB obsadených z 45,3 GB, voľných 26,9 GB
+          <div class="meter" aria-label="Zaplnenie disku 41 %"><i style="width:41%"></i></div></span><button class="btn">Analyzovať</button></div>
+      </div>
+      <div class="group">
+        <div class="r"><span class="k">Vytvorené</span><span class="v">pondelok 2. novembra 2026, 8:08</span><span></span></div>
+        <div class="r"><span class="k">Zmenené</span><span class="v">pondelok 2. novembra 2026, 8:08</span><button class="btn">Zmeniť dátum…</button></div>
+        <div class="r"><span class="k">Otvorené</span><span class="v">dnes, pred 57 minútami</span><span></span></div>
+      </div>
+      <div class="group">
+        <div class="r"><span class="k">Iba na čítanie</span><span class="v faint">nikto ho nezmení, ani ty</span><button class="switch" role="switch" aria-checked="false" aria-label="Iba na čítanie"></button></div>
+        <div class="r"><span class="k">Skrytý</span><span class="v">nevidno ho v priečinku</span><button class="switch" role="switch" aria-checked="false" aria-label="Skrytý"></button></div>
+        <div class="r" data-only="jpg app"><span class="k">Spustiteľný</span><span class="v">dá sa spustiť ako program</span><button class="switch" role="switch" aria-checked="false" aria-label="Spustiteľný"></button></div>
+      </div>
+      <div class="group" data-only="jpg">
+        <div class="r"><span class="k">Stiahnuté z</span><span class="v">pinterest.com/pin/7346… <small>Firefox, 2. 11. 2026</small></span><button class="btn">Zabudnúť pôvod</button></div>
+      </div>
+      <div class="group">
+        <div class="r"><span class="k">Farba</span><span class="tags" role="group" aria-label="Farebná značka">
+          <button class="tag" style="background:#e5484d" aria-label="červená" aria-pressed="false"></button>
+          <button class="tag" style="background:#f2994a" aria-label="oranžová" aria-pressed="false"></button>
+          <button class="tag" style="background:#f7c873" aria-label="žltá" aria-pressed="true"></button>
+          <button class="tag" style="background:#4cc38a" aria-label="zelená" aria-pressed="false"></button>
+          <button class="tag" style="background:#3d8bfd" aria-label="modrá" aria-pressed="false"></button>
+          <button class="tag" style="background:#9b6bff" aria-label="fialová" aria-pressed="false"></button></span><span></span></div>
+        <div class="r"><label class="k" for="comment">Komentár</label><input class="field" id="comment" placeholder="poznámka k súboru (vidno ju aj v Dolphine)"><span></span></div>
+      </div>
+    </section>
+
+    <!-- ── Zabezpečenie ── -->
+    <section data-pane="security" hidden>
+      <div class="group">
+        <div class="r"><label class="k" for="owner">Vlastník</label><select class="field" id="owner"><option>arkay (ty)</option><option>root</option></select><span></span></div>
+        <div class="r"><label class="k" for="group">Skupina</label><select class="field" id="group"><option>arkay</option><option>latte</option><option>wheel</option></select><span></span></div>
+      </div>
+      <div class="group">
+        <h3>Kto smie čo</h3>
+        <div class="perm" id="perm">
+          <span></span><span class="hd">Čítať</span><span class="hd">Zapisovať</span><span class="hd">Spúšťať</span><span class="tail"></span>
+          <span class="k">Vlastník</span><input type="checkbox" checked aria-label="vlastník čítať"><input type="checkbox" checked aria-label="vlastník zapisovať"><input type="checkbox" aria-label="vlastník spúšťať"><span class="tail"></span>
+          <span class="k">Skupina</span><input type="checkbox" checked aria-label="skupina čítať"><input type="checkbox" aria-label="skupina zapisovať"><input type="checkbox" aria-label="skupina spúšťať"><span class="tail"></span>
+          <span class="k">Ostatní</span><input type="checkbox" checked aria-label="ostatní čítať"><input type="checkbox" aria-label="ostatní zapisovať"><input type="checkbox" aria-label="ostatní spúšťať"><span class="tail"></span>
+        </div>
+        <div class="r"><span class="k">Zápis</span><span class="v mono" id="permtext">-rw-r--r--  ·  644</span><span></span></div>
+        <div class="r" data-only="dir"><span class="k">Na obsah</span><span class="v">rovnaké práva aj pre 12 položiek vnútri</span><button class="btn">Použiť na obsah…</button></div>
+      </div>
+      <div class="group">
+        <h3>Ďalší používatelia a skupiny (ACL)</h3>
+        <table><thead><tr><th>Kto</th><th>Čítať</th><th>Zapisovať</th><th>Spúšťať</th></tr></thead>
+          <tbody><tr><td>👤 lucia</td><td class="ok">✓</td><td class="ok">✓</td><td>—</td></tr><tr><td>👥 media</td><td class="ok">✓</td><td>—</td><td>—</td></tr></tbody></table>
+        <div class="r"><span class="k"></span><span class="v"></span><button class="btn">Pridať…</button></div>
+      </div>
+      <div class="group">
+        <div class="r"><span class="k">Špeciálne</span><span class="v">Set user ID · Set group ID · Sticky</span><button class="btn">Spresniť…</button></div>
+        <div class="r"><span class="k">SELinux</span><span class="v mono">unconfined_u:object_r:user_home_t:s0</span><span></span></div>
+      </div>
+    </section>
+
+    <!-- ── Podrobnosti ── -->
+    <section data-pane="details" hidden>
+      <div class="group">
+        <div class="dl">
+          <div class="sub">Obrázok</div>
+          <div class="k">Rozmery</div><div>1920 × 1080 px</div>
+          <div class="k">Rozlíšenie</div><div>96 dpi</div>
+          <div class="k">Farebná hĺbka</div><div>24 bitov</div>
+          <div class="sub">Fotoaparát</div>
+          <div class="k">Výrobca a model</div><div>Google Pixel 8</div>
+          <div class="k">Clona · expozícia · ISO</div><div>f/1,7 · 1/120 s · ISO 80</div>
+          <div class="k">Ohnisková vzdialenosť</div><div>6,9 mm (25 mm ekv.)</div>
+          <div class="k">Blesk</div><div>nepoužitý</div>
+          <div class="k">Odfotené</div><div>1. 11. 2026, 17:42</div>
+          <div class="sub">Miesto</div>
+          <div class="k">GPS</div><div>49,3961° N, 15,5912° E · Jihlava</div>
+          <div class="sub">Pôvod</div>
+          <div class="k">Program</div><div>Adobe Lightroom 9.1</div>
+          <div class="k">Autor</div><div>Arkay Navarion</div>
+          <div class="k">Autorské práva</div><div>—</div>
+        </div>
+        <div class="r"><span class="k"></span><span class="v faint">Pred odoslaním odstráni miesto, fotoaparát a autora (mat2).</span>
+          <button class="btn danger">Odstrániť osobné údaje…</button></div>
+      </div>
+    </section>
+
+    <!-- ── Predchádzajúce verzie (snapper) ── -->
+    <section data-pane="versions" hidden>
+      <div class="group">
+        <h3>Zo snímok systému (snapper)</h3>
+        <table id="vers"><thead><tr><th>Snímka</th><th>Dátum</th><th>Veľkosť</th><th>Zmena</th></tr></thead>
+          <tbody>
+            <tr class="sel"><td>#142 · pred aktualizáciou</td><td>4. 11. 2026, 9:00</td><td>134 kB</td><td>rovnaký</td></tr>
+            <tr><td>#139 · denná</td><td>3. 11. 2026, 9:00</td><td>131 kB</td><td>iný</td></tr>
+            <tr><td>#131 · denná</td><td>2. 11. 2026, 9:00</td><td>—</td><td>ešte nebol</td></tr>
+          </tbody></table>
+        <div class="r"><span class="k"></span><span class="v"></span><span style="display:flex;gap:8px">
+          <button class="btn">Otvoriť</button><button class="btn">Porovnať</button><button class="btn gold">Obnoviť…</button></span></div>
+      </div>
+    </section>
+
+    <!-- ── Kontrolné súčty (KDE) ── -->
+    <section data-pane="sums" hidden>
+      <div class="group">
+        <div class="r"><span class="k">SHA-256</span><span class="v mono" id="sha">—</span><button class="btn" id="calc">Spočítať</button></div>
+        <div class="r"><span class="k">MD5 · SHA-1</span><span class="v faint">na požiadanie, staré súčty pre staré stránky</span><button class="btn">Spočítať</button></div>
+        <div class="r"><label class="k" for="verify">Overiť</label><input class="field mono" id="verify" placeholder="vlož súčet zo stránky, odkiaľ súbor je"><span id="verdict" class="v"></span></div>
+      </div>
+    </section>
+
+    <!-- ── Odkaz (.desktop) ── -->
+    <section data-pane="launcher" hidden>
+      <div class="group">
+        <div class="r"><label class="k" for="exec">Príkaz</label><input class="field mono" id="exec" value="latte-barista run avp2"><span></span></div>
+        <div class="r"><label class="k" for="dir">Začať v priečinku</label><input class="field mono" id="dir" value="~/Games/avp2"><button class="btn">Prehľadávať…</button></div>
+        <div class="r"><label class="k" for="key">Klávesová skratka</label><input class="field" id="key" placeholder="žiadna — stlač kombináciu"><span></span></div>
+        <div class="r"><label class="k" for="run">Spustiť</label><select class="field" id="run"><option>Normálne okno</option><option>Na celú obrazovku</option><option>V termináli</option></select><span></span></div>
+        <div class="r"><label class="k" for="cmt">Komentár</label><input class="field" id="cmt" value="Hra cez Baristu (Wine)"><span></span></div>
+        <div class="r"><span class="k">Ikona</span><span class="v">~/Games/avp2/icon.png</span><button class="btn">Zmeniť ikonu…</button></div>
+        <div class="r"><span class="k">Pôvodný program</span><span class="v">Barista · AVP2</span><button class="btn">Otvoriť umiestnenie</button></div>
+      </div>
+    </section>
+
+    <!-- ── Porovnať (vlákno GNOME: radšej ako tri okná vedľa seba) ── -->
+    <section data-pane="compare" hidden>
+      <div class="group">
+        <h3>Rozdiely sú zlatou</h3>
+        <table class="cmp"><thead><tr><th></th><th>yol dashboard.jpg</th><th>dnd table</th><th>AVP2</th></tr></thead>
+          <tbody>
+            <tr><td class="k">Typ</td><td class="diff">obrázok JPEG</td><td class="diff">priečinok</td><td class="diff">spúšťač</td></tr>
+            <tr><td class="k">Veľkosť</td><td class="diff">134 kB</td><td class="diff">6,1 MB</td><td class="diff">145 B</td></tr>
+            <tr><td class="k">Zmenené</td><td class="diff">2. 11. 8:08</td><td class="diff">8. 10. 21:15</td><td class="diff">14. 10. 02:38</td></tr>
+            <tr><td class="k">Vlastník</td><td>arkay</td><td>arkay</td><td>arkay</td></tr>
+            <tr><td class="k">Práva</td><td class="diff">644</td><td class="diff">755</td><td class="diff">644</td></tr>
+            <tr><td class="k">Spolu</td><td colspan="3">3 položky · 6,3 MB · na disku 6,4 MB</td></tr>
+          </tbody></table>
+      </div>
+    </section>
+  </div>
+
+  <div class="foot">
+    <span class="hint" id="hint">Zmeny sa uložia, keď stlačíš OK alebo Použiť. Ctrl+Z v DualBrew ich vráti.</span>
+    <button class="btn gold" id="okb">OK</button>
+    <button class="btn">Zrušiť</button>
+    <button class="btn" id="apply" disabled>Použiť</button>
+  </div>
+</div>
+
+<div class="note">
+  <b>Čo je odkiaľ:</b>
+  <ul>
+    <li><b>Windows 11</b>: záložky Všeobecné, Zabezpečenie, Podrobnosti, Predchádzajúce verzie, Odkaz; veľkosť aj na disku; tri dátumy s „pred 57 minútami“; OK · Zrušiť · Použiť; „Odstrániť osobné údaje“.</li>
+    <li><b>KDE</b> (KPropertiesDialog): Kontrolné súčty s overením vloženého súčtu; poradie záložiek.</li>
+    <li><b>Nautilus</b>: zoskupené riadky, typ aj s MIME, prepínač Spustiteľný, SELinux kontext, veľký náhľad v hlavičke.</li>
+    <li><b>Thunar</b>: pri priečinku obsah, veľkosť na disku a zaplnenie disku. <b>Nemo</b>: mriežka práv, špeciálne príznaky, „Použiť na obsah“, textový zápis.</li>
+    <li><b>Finder / Dolphin</b>: farebná značka a komentár. <b>Vlákno GNOME</b>: jedno okno, karta na súbor (dá sa oddeliť do okna) a Porovnať namiesto troch okien vedľa seba.</li>
+    <li><b>Linux navyše</b>: „Stiahnuté z“ (prehliadač to zapisuje k súboru) namiesto Windowsového „Odblokovať“; verzie zo snímok snapper.</li>
+  </ul>
+</div>
+
+<script>
+// a picture of the wallpaper-like photo, so the head shows a preview and not an icon
+(function () {
+  const c = document.getElementById("pic"), g = c.getContext("2d");
+  const grd = g.createLinearGradient(0, 0, 224, 168); grd.addColorStop(0, "#1b2a44"); grd.addColorStop(1, "#5a1d2a");
+  g.fillStyle = grd; g.fillRect(0, 0, 224, 168);
+  for (let i = 0; i < 6; i++) { g.fillStyle = `rgba(247,200,115,${0.15 + i * 0.08})`; g.fillRect(16 + i * 33, 120 - i * 14, 24, 30 + i * 14); }
+  g.fillStyle = "rgba(243,235,221,.85)"; g.fillRect(16, 18, 120, 10); g.fillStyle = "rgba(243,235,221,.4)"; g.fillRect(16, 36, 80, 6);
+})();
+
+const files = {
+  jpg: { name: "yol dashboard.jpg", kind: 'Obrázok JPEG <code>image/jpeg</code>', title: "yol dashboard.jpg — Vlastnosti" },
+  dir: { name: "dnd table", kind: 'Priečinok <code>inode/directory</code>', title: "dnd table — Vlastnosti" },
+  app: { name: "Aliens versus Predator 2", kind: 'Spúšťač aplikácie <code>application/x-desktop</code>', title: "Aliens versus Predator 2 — Vlastnosti" },
+};
+let file = "jpg";
+const $ = (s, r = document) => r.querySelector(s), $$ = (s, r = document) => [...r.querySelectorAll(s)];
+
+function showSection(sec) {
+  $$(".sec").forEach(b => b.setAttribute("aria-selected", String(b.dataset.sec === sec)));
+  $$("[data-pane]").forEach(p => p.hidden = p.dataset.pane !== sec);
+}
+function showFile(f) {
+  file = f;
+  $$(".ftab").forEach(t => t.setAttribute("aria-selected", String(t.dataset.file === f)));
+  const cmp = f === "cmp";
+  $("#head").hidden = cmp; $("#sections").hidden = cmp;
+  if (cmp) { $$("[data-pane]").forEach(p => p.hidden = p.dataset.pane !== "compare"); $("#wtitle").textContent = "Porovnanie 3 položiek"; return; }
+  const d = files[f];
+  $("#name").value = d.name; $("#kind").innerHTML = d.kind; $("#wtitle").textContent = d.title;
+  $$("[data-only]").forEach(el => el.hidden = !el.dataset.only.split(" ").includes(f));
+  const cur = $(".sec[aria-selected='true']");
+  showSection(cur && !cur.hidden ? cur.dataset.sec : "general");
+}
+$$(".ftab").forEach(t => t.addEventListener("click", () => showFile(t.dataset.file)));
+$$(".sec").forEach(b => b.addEventListener("click", () => showSection(b.dataset.sec)));
+
+function changed() { $("#apply").disabled = false; }
+$$(".switch").forEach(s => s.addEventListener("click", () => { s.setAttribute("aria-checked", String(s.getAttribute("aria-checked") !== "true")); changed(); }));
+$$(".tag").forEach(t => t.addEventListener("click", () => { $$(".tag").forEach(o => o !== t && o.setAttribute("aria-pressed", "false"));
+  t.setAttribute("aria-pressed", String(t.getAttribute("aria-pressed") !== "true")); changed(); }));
+$$("input, select").forEach(i => i.addEventListener("input", changed));
+
+// Open with: a dropdown drawn inside the window
+const menu = $("#menu"), ch = $("#change");
+ch.addEventListener("click", e => { e.stopPropagation(); const o = !menu.classList.contains("open"); menu.classList.toggle("open", o); ch.setAttribute("aria-expanded", String(o)); });
+$$("#menu [data-app]").forEach(b => b.addEventListener("click", () => { $("#openerName").textContent = b.dataset.app; menu.classList.remove("open"); changed(); }));
+document.addEventListener("click", () => menu.classList.remove("open"));
+
+// permissions: the grid writes the text and the number as it is ticked
+function perms() {
+  const boxes = $$("#perm input"); let txt = "-", oct = "";
+  for (let w = 0; w < 3; w++) { let n = 0; ["r", "w", "x"].forEach((ch, i) => { const on = boxes[w * 3 + i].checked; txt += on ? ch : "-"; if (on) n += [4, 2, 1][i]; }); oct += n; }
+  $("#permtext").textContent = `${txt}  ·  ${oct}`;
+}
+$$("#perm input").forEach(i => i.addEventListener("change", () => { perms(); changed(); }));
+
+// versions: one chosen
+$$("#vers tbody tr").forEach(r => r.addEventListener("click", () => { $$("#vers tbody tr").forEach(o => o.classList.remove("sel")); r.classList.add("sel"); }));
+
+// checksums: computed on request, a pasted one is compared
+const SHA = "9f2c41d7a0b85e3c6d1f04ab72e9c58d3b6a01fe4c27d98b5a3e60f1c84d2b97";
+$("#calc").addEventListener("click", () => { $("#sha").textContent = SHA; verify(); });
+function verify() {
+  const v = $("#verify").value.trim().toLowerCase(), out = $("#verdict");
+  if (!v) { out.textContent = ""; return; }
+  if ($("#sha").textContent === "—") { $("#sha").textContent = SHA; }
+  out.innerHTML = v === SHA ? '<span class="ok">✓ zhoduje sa</span>' : '<span class="bad">✕ nezhoduje sa</span>';
+}
+$("#verify").addEventListener("input", verify);
+
+showFile("jpg");
+</script>
+</body>
+</html>

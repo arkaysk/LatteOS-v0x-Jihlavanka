@@ -14,5 +14,9 @@ name = "latte-hw"
 version = "0.4.0"
 
 [[package]]
+name = "latte-props"
+version = "0.4.0"
+
+[[package]]
 name = "latte-stats"
 version = "0.4.0"

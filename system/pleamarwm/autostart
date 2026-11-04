@@ -6,7 +6,6 @@ sh -c 'export PATH=/usr/share/latteos/pleamarwm/bin:$PATH; dbus-update-activatio
 # skwd-walld (the wallpaper) starts with the user, before any session, and stays with the compositor it found first
 sh -c 'export PATH=/usr/share/latteos/pleamarwm/bin:$PATH; sleep 1; systemctl --user try-restart skwd-walld; sleep 1; exec latte-wall restore'
 PATH=/usr/share/latteos/pleamarwm/bin:$PATH latte-widget start
-PATH=/usr/share/latteos/pleamarwm/bin:$PATH latte-desktop start
 PATH=/usr/share/latteos/pleamarwm/bin:$PATH latte-nightlight
 # The title bars in the colours of the cup the user chose (on Hyprland, system/hypr/hyprland.lua does it as it starts).
 sh -c 'export PATH=/usr/share/latteos/pleamarwm/bin:$PATH; sleep 1; exec hyprctl eval "latte.cup()"'

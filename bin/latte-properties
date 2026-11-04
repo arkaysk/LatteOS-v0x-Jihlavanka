@@ -1,0 +1,14 @@
+#!/bin/sh
+# latte-properties PATH…: the Properties window (goo/props.plm, ROADMAP 10L.01) for these files; several are tabs of
+# one window. Each call is a window of its own, which blocks nothing.
+[ $# -gt 0 ] || { echo "latte-properties PATH…" >&2; exit 2; }
+list=""
+for p in "$@"; do
+    case "$p" in file://*) p="$(printf '%b' "$(printf '%s' "${p#file://}" | sed 's/%/\\x/g')")" ;; esac
+    p="$(realpath -s -- "$p")"
+    list="$list$p
+"
+done
+scene="${LATTE_SHARE:-/usr/share/latteos}/goo/props.plm"
+[ -f "$scene" ] || scene="$(dirname "$(realpath "$0")")/../goo/props.plm"       # from the repository
+LATTE_PROPS="$list" exec pleamar --scene "$scene" --no-hud --answer-as "props-$$"

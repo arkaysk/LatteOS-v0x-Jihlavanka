@@ -1,0 +1,143 @@
+diff --git a/docs/11-language-reference.md b/docs/11-language-reference.md
+index ba6b5e7..01259f4 100644
+--- a/docs/11-language-reference.md
++++ b/docs/11-language-reference.md
+@@ -541,7 +541,7 @@ Each element accepts these properties and no others; another one is an error, wi
+ | `particles` | `at` · `area` · `count` · `life` · `speed` · `direction` · `spread` · `gravity` · `drag` · `size` · `colors` · `opacity` · `shape` · `emit` or `burst` · `show`: §8.3 |
+ | `shader` | `at` (its top left corner) · `size: w, h` · `corner` · `opacity` · `show` · `values: a, b, …` (up to eight numbers, any expression) · `colors: c1, c2` (up to two). What it is and how it is written: §8.1 |
+ | `figure` | `at` (where the piece's centre goes) · `size: w, h` or `scale:` (without either, one unit of the svg is one pixel) · `pivot: x, y` (in the svg's units, from its centre: the point it **turns** around, which does not move it) · `rotate` · `color` (instead of the one in the file) · `opacity` · `blend` · `stroke` · `show` |
+-| `input` | `at` · `width` · `size` · `weight` · `color` · `opacity` · `family` · `placeholder` · `selection` · `secret` · `passive` · `show` · `label` · `agent` |
++| `input` | `at` · `width` · `size` · `weight` · `color` · `opacity` · `family` · `placeholder` · `selection` · `secret` · `passive` · `select` · `show` · `label` · `agent` |
+ | `group` | `pivot` · `rotate` · `scale: s` or `sx, sy` · `move: dx, dy` · `opacity` (they melt as a single thing) · `size` (for whoever lays it out) · `show` · `z` (see below) · and its **effects**: `blur` · `glow` · `saturation` · `brightness` · `contrast` · `hue` · `mask` · `mode` (§8.2) |
+ | `popup` | `at` (inside the surface) · `size` · `open:` a fact |
+ | `row` `column` | `at` · `anchor` · `gap` · `padding` · `align:` `start` `center` `end` · `fill` · `corner` · `opacity` · `cursor` · `show` · `size: w, h` · `view: w, h` · `step` · `content` · `wrap: n` |
+@@ -1600,6 +1600,11 @@ terminal has nothing selected.
+ told apart from outside with `--answer-as NAME`: `pleamar --say NAME …`
+ reaches that one.
+ 
++**What a field chooses when focused: `select:`.** Unsaid, the cursor goes to the end of what the field holds.
++`select: all` chooses all of it, so what is typed replaces it; `select: stem` chooses what is before its last dot, as a
++file manager offers a name to rename: `report.pdf` with `report` chosen (a name with no dot, or one that starts with
++it as `.bashrc`, is all chosen). It holds whether the field is focused by a rule (`focus name`) or by the logic.
++
+ **A scene that ends: `quit`.** In a rule, `quit` ends the program, as closing
+ its window would: a terminal whose last shell ended.
+ 
+@@ -1904,7 +1909,7 @@ properties.terminal: at size family font_size line_height colors cursor selectio
+ properties.figure: at size scale rotate pivot color opacity blend stroke show grow place
+ properties.shader: at size corner opacity show values colors grow place
+ properties.particles: at area count life speed direction spread gravity drag size colors opacity shape emit burst show
+-properties.input: at width size weight color opacity family placeholder selection secret passive show label agent
++properties.input: at width size weight color opacity family placeholder selection secret passive select show label agent
+ properties.group: pivot rotate scale move opacity size show z grow span blur glow saturation brightness contrast hue mask mode shader place
+ properties.popup: at size open
+ properties.children: move
+diff --git a/src/language/compiler.rs b/src/language/compiler.rs
+index ef7ae20..5c901cd 100644
+--- a/src/language/compiler.rs
++++ b/src/language/compiler.rs
+@@ -4067,6 +4067,20 @@ impl<'a> Compiler<'a> {
+             }
+             None => false,
+         };
++        // `select: all` or `select: stem`: what is chosen when the field is focused (a name to rename: its stem).
++        if let Some(c) = p.get_mut("select") {
++            let v = c.id("all or stem")?;
++            c.expect_end()?;
++            let stem = match v.as_str() {
++                "all" => false,
++                "stem" => true,
++                _ => return c.error("`select` is all or stem"),
++            };
++            let mut s = crate::scene::SELECTS.lock().unwrap();
++            let own = interned(&name);
++            s.retain(|(n, _)| *n != own);
++            s.push((own, stem));
++        }
+         if secret {
+             let mut s = crate::scene::SECRETS.lock().unwrap();
+             let own = interned(&name);
+diff --git a/src/language/vocabulary.rs b/src/language/vocabulary.rs
+index 7e43997..b727344 100644
+--- a/src/language/vocabulary.rs
++++ b/src/language/vocabulary.rs
+@@ -35,7 +35,7 @@ pub const PROPERTIES: &[(&str, &[&str])] = &[
+     ("figure", &["at", "size", "scale", "rotate", "pivot", "color", "opacity", "blend", "stroke", "show", "grow", "place"]),
+     ("shader", &["at", "size", "corner", "opacity", "show", "values", "colors", "grow", "place"]),
+     ("particles", &["at", "area", "count", "life", "speed", "direction", "spread", "gravity", "drag", "size", "colors", "opacity", "shape", "emit", "burst", "show"]),
+-    ("input", &["at", "width", "size", "weight", "color", "opacity", "family", "placeholder", "selection", "secret", "passive", "show", "label", "agent"]),
++    ("input", &["at", "width", "size", "weight", "color", "opacity", "family", "placeholder", "selection", "secret", "passive", "select", "show", "label", "agent"]),
+     ("group", &["pivot", "rotate", "scale", "move", "opacity", "size", "show", "z", "grow", "span", "blur", "glow", "saturation", "brightness", "contrast", "hue", "mask", "mode", "shader", "place"]),
+     ("popup", &["at", "size", "open"]),
+     ("children", &["move"]),
+diff --git a/src/render.rs b/src/render.rs
+index 23a1964..c3109c3 100644
+--- a/src/render.rs
++++ b/src/render.rs
+@@ -1848,7 +1848,10 @@ pub fn run(
+                 ToRender::FocusField(name) => {
+                     crate::terminal::with(|r| r.focus = None);
+                     parked = None;
+-                    editing = name.and_then(|n| scene.texts.iter().position(|t| t.0 == n)).map(|k| Editing { field: k, cursor: texts[k].len(), anchor: texts[k].len() });
++                    editing = name.and_then(|n| scene.texts.iter().position(|t| t.0 == n)).map(|k| {
++                        let (cursor, anchor) = crate::scene::focus_choice(scene.texts[k].0, &texts[k]);
++                        Editing { field: k, cursor, anchor }
++                    });
+                     last_key = Instant::now();
+                     // Lent or not once this round's focus changes are in (below).
+                     focus_asked = editing.is_some();
+@@ -3428,7 +3431,10 @@ pub fn run(
+                     Effect::FocusField(t) => {
+                         crate::terminal::with(|r| r.focus = None);
+                         parked = None;
+-                        editing = t.map(|t| t.0 as usize).map(|k| Editing { field: k, cursor: texts[k].len(), anchor: texts[k].len() });
++                        editing = t.map(|t| t.0 as usize).map(|k| {
++                            let (cursor, anchor) = crate::scene::focus_choice(scene.texts[k].0, &texts[k]);
++                            Editing { field: k, cursor, anchor }
++                        });
+                         last_key = now;
+                         // Focusing a field is wanting to type right away. With the keyboard "on
+                         // demand", the compositor only gives it with a click, and a search box
+diff --git a/src/scene.rs b/src/scene.rs
+index f5cbea6..3c1c490 100644
+--- a/src/scene.rs
++++ b/src/scene.rs
+@@ -2777,6 +2777,21 @@ pub enum ToNest {
+ /// process because whoever does the echo —the logic— does not have the scene in front of it.
+ pub static SECRETS: std::sync::Mutex<Vec<&'static str>> = std::sync::Mutex::new(Vec::new());
+ 
++/// The texts whose field chooses part of what it holds when it is focused (`select:`): `all` everything,
++/// `stem` what is before the last dot —a file's name without its ending, as a file manager offers it to rename—.
++/// Unsaid, the cursor goes to the end and nothing is chosen.
++pub static SELECTS: std::sync::Mutex<Vec<(&'static str, bool)>> = std::sync::Mutex::new(Vec::new());
++
++/// Where the cursor and the other end of the choice go when a field holding `t` is focused: (cursor, anchor).
++pub fn focus_choice(name: &str, t: &str) -> (usize, usize) {
++    match SELECTS.lock().unwrap().iter().find(|(n, _)| *n == name).map(|(_, stem)| *stem) {
++        None => (t.len(), t.len()),
++        Some(false) => (t.len(), 0),
++        // a name that starts with its dot (".bashrc") or has none is all stem
++        Some(true) => (t.rfind('.').filter(|&i| i > 0).unwrap_or(t.len()), 0),
++    }
++}
++
+ #[derive(Clone, Debug)]
+ pub enum Event {
+     Enter(&'static str),
+@@ -3024,3 +3039,16 @@ mod cursor_tests {
+         assert_eq!(Cursor::from_name("bogus"), None);
+     }
+ }
++
++#[cfg(test)]
++mod select_tests {
++    #[test]
++    fn a_field_chooses_its_stem_or_all_of_it() {
++        super::SELECTS.lock().unwrap().extend([("t_stem", true), ("t_all", false)]);
++        assert_eq!(super::focus_choice("t_stem", "report.final.pdf"), (12, 0));
++        assert_eq!(super::focus_choice("t_stem", ".bashrc"), (7, 0));
++        assert_eq!(super::focus_choice("t_stem", "Makefile"), (8, 0));
++        assert_eq!(super::focus_choice("t_all", "a.txt"), (5, 0));
++        assert_eq!(super::focus_choice("t_none", "a.txt"), (5, 5));
++    }
++}

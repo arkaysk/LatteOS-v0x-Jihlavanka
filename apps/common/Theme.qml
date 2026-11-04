@@ -6,16 +6,16 @@ import Quickshell.Io
 
 Singleton {
     // The cup: what the windows are made of. The user's choice (a word in ~/.config/latteos/cup), as the coffee is
-    // what the goo is made of: "espresso" is the dark cup, "mocha" a warmer brown one, "porcelain" the light one.
-    readonly property var cups: ({
-        "espresso":  { ground: "#17110d", surface: "#1f1611", card: "#2a1e17", raised: "#3a2a20", line: "#4a372b", cream: "#f3ebdd", dim: "#b8a491", faint: "#8a7666", gold: "#f7c873", coffee: "#c98a55" },
-        "mocha":     { ground: "#2a1f19", surface: "#32261f", card: "#3e3027", raised: "#4f3d31", line: "#624c3e", cream: "#f6eee2", dim: "#c9b5a2", faint: "#9d8775", gold: "#f7c873", coffee: "#d59a66" },
-        "porcelain": { ground: "#f5eee2", surface: "#ebe2d2", card: "#fffaf1", raised: "#e6d9c5", line: "#d5c4ad", cream: "#2a170c", dim: "#6b5444", faint: "#9a8672", gold: "#b5651d", coffee: "#8a4b22" } })
+    // what the goo is made of. The cups are LatteOS's one list, system/cups.json (read before anything is drawn: no
+    // colour flashes); the same list gives the title bars and the windows made with pleamar.
+    readonly property var cups: { try { const all = JSON.parse(cupsFile.text()); delete all["_"]; return all } catch (e) { return ({ espresso: fallback }) } }
+    readonly property var fallback: ({ ground: "#17110d", surface: "#1f1611", card: "#2a1e17", raised: "#3a2a20", line: "#4a372b", cream: "#f3ebdd", dim: "#b8a491", faint: "#8a7666", gold: "#f7c873", coffee: "#c98a55" })
+    FileView { id: cupsFile; path: (Quickshell.env("LATTE_SHARE") || "/usr/share/latteos") + "/cups.json"; blockLoading: true; printErrors: false }
     property string cup: "espresso"
     // "wallpaper" is the fourth: the colours skwd-wall works out of the wallpaper, taken anew each time it changes
     property var fromWallpaper: null
-    readonly property var made: (cup === "wallpaper" && fromWallpaper) || cups[cup] || cups.espresso
-    readonly property bool light: cup === "porcelain"
+    readonly property var made: (cup === "wallpaper" && fromWallpaper) || cups[cup] || cups.espresso || fallback
+    readonly property bool light: !!(cups[cup] && cups[cup].light)
     function mix(a, b, t) { const x = Qt.color(a), y = Qt.color(b); return Qt.rgba(x.r + (y.r - x.r) * t, x.g + (y.g - x.g) * t, x.b + (y.b - x.b) * t, 1).toString() }
     // LatteOS's one colour of a level in every graph (the Monitor's, DotGraph and DotBar, the development graph):
     // green low, the theme's gold in the middle, red high; what is not lit is the cream at a tenth

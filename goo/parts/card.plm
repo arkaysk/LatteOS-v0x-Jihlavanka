@@ -73,6 +73,10 @@ part Card {
     event lens_swipe ->                        // the wheel over LensShore's panel, in thousandths of a notch (down or right positive)
     text card_q = ""
     text card_pw = ""
+    // a name to rename (field.select): `card_stem` chooses it without its ending as it is focused, `card_all` all of it
+    text card_stem = ""
+    text card_all = ""
+    fact card_sel = 0                          // 0 the usual field, 1 card_stem, 2 card_all
     text card_hint = ""
     text g_check = ""                          // glyphs of the icon font the card draws itself; the logic fills them
     text g_more = ""
@@ -82,6 +86,7 @@ part Card {
     fact card_copied = -1                      // …and which row was copied just now: its button shows a tick for a moment
     text g_search = ""
     text g_key = ""
+    text g_pencil = ""
     text g_back = ""
     event card_pick ->                         // a row was pressed: row × 8, + 1 + item for a pill or a tile;
                                                // the rows of the second column count on from 24

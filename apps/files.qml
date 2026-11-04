@@ -340,7 +340,23 @@ ShellRoot {
     readonly property var here: active === 0 ? left : right
     readonly property var other: active === 0 ? right : left
     // what is asked of the user in the foot: a name for something new, or another name
-    property string asking: ""                 // "" | "folder" | "file" | "rename"
+    property string asking: ""                 // "" | "folder" | "file" | "server" | "select" | "unselect" | "split"
+    // Renaming (ROADMAP 10L.02, as Nautilus): a small window under the thing, the name chosen without its ending (a
+    // folder's all of it); Rename or Enter keeps it, Escape or a press elsewhere leaves it. F2 or the menu only.
+    property var renamePop: null               // { path, dir, x, y }
+    function rename(path) {
+        const at = here.boxOf(path), w = 340
+        renamePop = { path: path, dir: here.isFolder(path),
+                      x: at ? Math.max(12, Math.min(at.x - w / 2, overlay.width - w - 12)) : (overlay.width - w) / 2,
+                      y: at ? Math.min(at.y + 6, overlay.height - 150) : overlay.height / 3 }
+    }
+    function renameDone(t) {
+        const p = renamePop ? renamePop.path : ""
+        renamePop = null
+        keys.forceActiveFocus()
+        t = (t || "").trim()
+        if (p !== "" && t !== "" && t !== p.split("/").pop()) act(["rename", p, t])
+    }
     property string askingFor: ""
 
     readonly property var placeNames: ({ "home": QT_TR_NOOP("Home"), "desktop": QT_TR_NOOP("Desktop"), "documents": QT_TR_NOOP("Documents"), "download": QT_TR_NOOP("Downloads"),
@@ -379,7 +395,7 @@ ShellRoot {
     function openArchive(path) { archiver.file = path; archiver.running = false; archiver.command = ["latte-files", "archive", path]; archiver.running = true }
     function open(path, isDir) { if (!isDir && archiveKinds.includes(FileIcons.ending(path))) return openArchive(path)
                                  if (isDir) here.go(path); else Quickshell.execDetached(path.endsWith(".desktop") ? ["gio", "launch", path] : ["gio", "open", path]) }
-    function ask(what, path) { asking = what; askingFor = path || ""; answer.text = what === "rename" ? path.split("/").pop() : (what === "folder" ? I18n.tr("New folder") : (what === "server" ? "smb://" : (what === "select" || what === "unselect" ? "*.jpg" : what === "split" ? "4000" : I18n.tr("New Text Document") + ".txt")))
+    function ask(what, path) { asking = what; askingFor = path || ""; answer.text = what === "folder" ? I18n.tr("New folder") : (what === "server" ? "smb://" : (what === "select" || what === "unselect" ? "*.jpg" : what === "split" ? "4000" : I18n.tr("New Text Document") + ".txt"))
                                Qt.callLater(() => { answer.focusIt(); }) }
     function answered(text) {
         const t = text.trim(), what = asking, target = askingFor
@@ -389,31 +405,12 @@ ShellRoot {
         if (what === "select" || what === "unselect") return here.choosePattern(t, what === "select")
         if (what === "split") { if (parseInt(t) > 0) enqueue("split", String(parseInt(t)), [target]); return }
         if (t === "" || t.indexOf("/") >= 0) return
-        if (what === "rename") act(["rename", target, t]); else act([what, here.path, t])
+        act([what, here.path, t])
     }
 
-    // ── Properties: what a file or folder is, its times, who it is and what may be done with it, the app that opens
-    // that kind, its SHA-256 (latte-files props, chmod, default, sum) ─────────────────────────────────────────
-    property string propsFor: ""
-    property var props: ({})
-    property var propsApps: []
-    property string propsSum: ""
-    property var propsAll: []                  // with more than one chosen: all of them (the sheet speaks of the first)
-    property real propsTotal: -1
-    function properties(paths) { if (typeof paths === "string") paths = [paths]; const path = paths[0]
-                                propsFor = path; propsAll = paths; props = ({}); propsSum = ""; propsApps = []; propsTotal = -1; propser.command = ["latte-files", "props", path]; propser.running = true
-                                if (paths.length > 1) { totaller.command = ["latte-files", "size"].concat(paths); totaller.running = true }
-                                if (!path.endsWith("/")) { propsOpeners.command = ["latte-desktop", "openers", path]; propsOpeners.running = true } }
-    Process { id: propser; stdout: StdioCollector { onStreamFinished: { const a = {}; for (const l of this.text.split("\n")) { const i = l.indexOf("\t"); if (i > 0) a[l.slice(0, i)] = l.slice(i + 1) } shell.props = a } } }
-    Process { id: propsOpeners; stdout: StdioCollector { onStreamFinished: shell.propsApps = this.text.split("\n").filter(l => l.indexOf("\t") > 0).map(l => ({ id: l.split("\t")[0], name: l.split("\t")[1] })) } }
-    Process { id: summer; stdout: StdioCollector { onStreamFinished: shell.propsSum = this.text.trim() || "—" } }
-    Process { id: totaller; stdout: StdioCollector { onStreamFinished: shell.propsTotal = parseFloat(this.text) || 0 } }
-    Process { id: propsDoer; onExited: shell.properties(shell.propsAll) }
-    function propsDo(args) { propsDoer.running = false; propsDoer.command = ["latte-files"].concat(args); propsDoer.running = true }
-    // one of the nine: whose (0 owner, 1 group, 2 others) and what (4 read, 2 write, 1 run)
-    function modeHas(who, bit) { const m = props.mode || "000"; return (parseInt(m[m.length - 3 + who], 8) & bit) !== 0 }
-    // as chmod's letters (u+x), so with many chosen only that one switch changes on each of them
-    function modeFlip(who, bit) { propsDo(["chmod", "ugo"[who] + (modeHas(who, bit) ? "-" : "+") + ({ 4: "r", 2: "w", 1: "x" })[bit]].concat(propsAll)) }
+    // ── Properties: the window every part of LatteOS opens (goo/props.plm, ROADMAP 10L.01), one of its own that blocks
+    // nothing; several chosen are tabs of it, with All and Compare ──────────────────────────────────────────────
+    function properties(paths) { Quickshell.execDetached(["latte-properties"].concat(typeof paths === "string" ? [paths] : paths)) }
     // ── many renamed at once (F2 with more than one chosen): a pattern of pieces — [N] the name, [C] a counter,
     // [D] [T] the day and time it was taken (EXIF) or last changed, [E] the ending — then find and replace;
     // every new name is seen before anything is done, and one Ctrl+Z takes them all back ─────────────────────
@@ -511,7 +508,7 @@ ShellRoot {
                             : { icon: "shield-lock", text: I18n.tr("Edit as the administrator…"), danger: true,
                                 run: () => Quickshell.execDetached(["foot", "--", "sh", "-c", 'printf "%s\n\n" "$2"; SUDO_EDITOR="${EDITOR:-nano}" sudoedit -- "$1"', "sh", path, I18n.tr("A system file: what you change here changes the system. The password is the administrator's.")]) })
         rows.push(many ? { icon: "pencil", text: I18n.tr("Rename all…"), hint: "F2", run: () => shell.renameMany(picked) }
-                       : { icon: "pencil", text: I18n.tr("Rename"), hint: "F2", run: () => shell.ask("rename", path) })
+                       : { icon: "pencil", text: I18n.tr("Rename"), hint: "F2", run: () => shell.rename(path) })
         if (!inTrash) rows.push({ icon: "trash", text: I18n.tr("Delete"), hint: "Del", danger: true, run: () => shell.act(["trash"].concat(picked)) })
         rows.push({ line: true }, { icon: "info-circle", text: I18n.tr("Properties"), hint: "Alt+Enter", run: () => shell.properties(many ? picked : path) })
         menu.open(x, y, rows)
@@ -676,6 +673,16 @@ ShellRoot {
         // letters typed in the list go to the first name that starts so, as in Explorer; a pause starts anew
         property string typed: ""
         Timer { id: typedOut; interval: 1000; onTriggered: panel.typed = "" }
+        // where a thing is shown, for what opens beside it (renaming): the middle of its bottom edge, in the window
+        function boxOf(p) {
+            const i = rows.indexOf(p)
+            if (i < 0) return null
+            const v = list.visible ? list : grid
+            v.positionViewAtIndex(i, list.visible ? ListView.Contain : GridView.Contain)
+            const it = v.itemAtIndex(i)
+            return it ? it.mapToItem(overlay, it.width / 2, it.height) : null
+        }
+        function isFolder(p) { for (let i = 0; i < files.count; i++) if (files.get(i, "filePath") === p) return files.get(i, "fileIsDir"); return false }
         function jump(ch) {
             typed += ch.toLowerCase(); typedOut.restart()
             const name = p => (launchers[p] ? launchers[p].name : p.split("/").pop()).toLowerCase()
@@ -1385,7 +1392,7 @@ ShellRoot {
                         MouseArea { id: fHit; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: shell.command(parent.modelData.what) } } } },
             // a name is asked for here
             Row { x: 24; anchors.verticalCenter: parent.verticalCenter; spacing: 10; visible: shell.asking !== ""
-                Label { text: shell.asking === "rename" ? I18n.tr("New name:") : (shell.asking === "server" ? I18n.tr("Address:") : (shell.asking === "split" ? I18n.tr("Pieces of (MB):") : shell.asking === "select" ? I18n.tr("Choose what matches:") : (shell.asking === "unselect" ? I18n.tr("Let go of what matches:") : I18n.tr("Name:")))); color: Theme.inkOnCoffee; anchors.verticalCenter: parent.verticalCenter }
+                Label { text: shell.asking === "server" ? I18n.tr("Address:") : (shell.asking === "split" ? I18n.tr("Pieces of (MB):") : shell.asking === "select" ? I18n.tr("Choose what matches:") : (shell.asking === "unselect" ? I18n.tr("Let go of what matches:") : I18n.tr("Name:"))); color: Theme.inkOnCoffee; anchors.verticalCenter: parent.verticalCenter }
                 Field { id: answer; width: 360; icon: "pencil"; function focusIt() { children[1].forceActiveFocus(); children[1].selectAll() }
                         onAccepted: { shell.answered(text); keys.forceActiveFocus() } }
                 Pill { implicitHeight: 34; icon: "check"; strong: true; text: I18n.tr("OK"); onPressed: { shell.answered(answer.text); keys.forceActiveFocus() } }
@@ -1407,7 +1414,6 @@ ShellRoot {
                 else if (ev.key === Qt.Key_Escape && shell.sizing) shell.hideSizes()
                 else if (ev.key === Qt.Key_Backspace) here.up()
                 else if (ev.key === Qt.Key_Tab && shell.dual) shell.active = 1 - shell.active
-                else if (shell.propsFor !== "" && ev.key === Qt.Key_Escape) shell.propsFor = ""
                 else if ((ev.key === Qt.Key_Return || ev.key === Qt.Key_Enter) && (ev.modifiers & Qt.AltModifier) && picked.length) shell.properties(picked)
                 else if ((ev.key === Qt.Key_Return || ev.key === Qt.Key_Enter || ev.key === Qt.Key_P) && ctrl && picked.length) shell.lineInsert(ev.key === Qt.Key_P)
                 else if ((ev.key === Qt.Key_Return || ev.key === Qt.Key_Enter) && one) shell.enter(one)
@@ -1417,7 +1423,7 @@ ShellRoot {
                 else if (shell.clash !== null && ev.key === Qt.Key_Escape) shell.clashed("")
                 else if (shell.renaming.length && ev.key === Qt.Key_Escape) { shell.renaming = []; keys.forceActiveFocus() }
                 else if (ev.key === Qt.Key_F2 && (ev.modifiers & Qt.ShiftModifier) && shell.dual) shell.compare()
-                else if (ev.key === Qt.Key_F2 && one) shell.ask("rename", one)
+                else if (ev.key === Qt.Key_F2 && one) shell.rename(one)
                 else if (ev.key === Qt.Key_F2 && picked.length > 1) shell.renameMany(picked)
                 else if (ev.key === Qt.Key_Delete || ev.key === Qt.Key_F8) shell.command("trash")
                 else if (ev.key === Qt.Key_F5 && shell.dual) shell.command("copy")
@@ -1628,77 +1634,18 @@ ShellRoot {
                             Pill { icon: "check"; strong: true; text: I18n.tr("Rename"); opacity: shell.renPlan.some(r => r.bad) ? 0.5 : 1; onPressed: shell.renameDo() }
                             Pill { icon: "x"; text: I18n.tr("Cancel"); onPressed: { shell.renaming = []; keys.forceActiveFocus() } }
                             Label { visible: shell.renPlan.some(r => r.bad); text: I18n.tr("Red names are empty, twice or already here"); color: Theme.red; anchors.verticalCenter: parent.verticalCenter } } } } }
-            // Properties, over the panels; a press beside it or Esc puts it away
-            Item { anchors.fill: parent; visible: shell.propsFor !== ""; z: 900
-                Rectangle { anchors.fill: parent; color: Qt.rgba(0, 0, 0, 0.35)
-                    MouseArea { anchors.fill: parent; acceptedButtons: Qt.AllButtons; onPressed: shell.propsFor = "" } }
-                Rectangle { id: sheet; width: Math.min(560, parent.width - 40); height: sheetCol.implicitHeight + 40; anchors.centerIn: parent; radius: 18
+            // the small window that renames, where the thing is (ROADMAP 10L.02)
+            Item { anchors.fill: parent; visible: shell.renamePop !== null; z: 950
+                onVisibleChanged: if (visible) { renameField.text = shell.renamePop.path.split("/").pop(); renameField.focusName(shell.renamePop.dir) }
+                MouseArea { anchors.fill: parent; acceptedButtons: Qt.AllButtons; onPressed: { shell.renamePop = null; keys.forceActiveFocus() } }
+                Rectangle { x: shell.renamePop ? shell.renamePop.x : 0; y: shell.renamePop ? shell.renamePop.y : 0; width: 340; height: 134; radius: 16
                             color: Theme.card; border.width: 1; border.color: Theme.line
                     MouseArea { anchors.fill: parent; acceptedButtons: Qt.AllButtons }
-                    readonly property var p: shell.props
-                    readonly property bool dir: p.items !== undefined
-                    readonly property bool many: shell.propsAll.length > 1
-                    readonly property string name: many ? I18n.tr("{n} items", { n: shell.propsAll.length }) : shell.propsFor.split("/").pop()
-                    function when(t) { return t && +t > 0 ? Qt.formatDateTime(new Date(parseInt(t) * 1000), "d. M. yyyy  hh:mm") : "—" }
-                    Column { id: sheetCol; x: 22; y: 20; width: parent.width - 44; spacing: 14
-                        Row { spacing: 14; width: parent.width
-                            Glyph { width: 48; height: 48; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter; name: sheet.many ? "stack-2" : shell.glyphOf(sheet.name, sheet.dir); font.pixelSize: 40; color: Theme.gold }
-                            Column { width: parent.width - 62 - 40; spacing: 3; anchors.verticalCenter: parent.verticalCenter
-                                Label { width: parent.width; text: sheet.name; font.pixelSize: 16; font.weight: 700; elide: Text.ElideMiddle }
-                                Label { width: parent.width; text: sheet.many ? "" : sheet.dir ? I18n.tr("Folder") : (sheet.p.mime || ""); color: Theme.dim; font.pixelSize: 12 } }
-                            Glyph { name: "x"; font.pixelSize: 18; color: Theme.dim; anchors.verticalCenter: parent.verticalCenter
-                                MouseArea { anchors.fill: parent; anchors.margins: -6; cursorShape: Qt.PointingHandCursor; onClicked: shell.propsFor = "" } } }
-                        Rectangle { width: parent.width; height: 1; color: Theme.line }
-                        Grid { columns: 2; columnSpacing: 18; rowSpacing: 7
-                            Repeater { model: [
-                                    [QT_TR_NOOP("Where"), shell.propsFor.slice(0, shell.propsFor.lastIndexOf("/")).replace(shell.home, "~") || "/"],
-                                    [QT_TR_NOOP("Size"), sheet.many ? (shell.propsTotal < 0 ? "…" : shell.bytes(shell.propsTotal) + "  (" + shell.propsTotal.toLocaleString(Qt.locale(), "f", 0) + " B)") : sheet.p.size !== undefined || sheet.p.bytes !== undefined ? shell.bytes(parseFloat(sheet.p.bytes !== undefined ? sheet.p.bytes : sheet.p.size)) + "  (" + Number(sheet.p.bytes !== undefined ? sheet.p.bytes : sheet.p.size).toLocaleString(Qt.locale(), "f", 0) + " B)" : "…"],
-                                    [QT_TR_NOOP("Items"), sheet.dir && !sheet.many ? String(sheet.p.items) : ""],
-                                    [QT_TR_NOOP("Modified"), sheet.many ? "" : sheet.when(sheet.p.when)],
-                                    [QT_TR_NOOP("Opened"), sheet.many ? "" : sheet.when(sheet.p.read)],
-                                    [QT_TR_NOOP("Created"), sheet.many ? "" : sheet.when(sheet.p.born)],
-                                    [QT_TR_NOOP("Owner"), (sheet.p.owner || "") + (sheet.p.group && sheet.p.group !== sheet.p.owner ? " · " + sheet.p.group : "")]].filter(r => r[1] !== "")
-                                                    .reduce((out, r) => out.concat([{ text: I18n.tr(r[0]), head: true }, { text: r[1], head: false }]), [])
-                                Label { required property var modelData; text: modelData.text; color: modelData.head ? Theme.dim : Theme.cream
-                                        font.pixelSize: 13; width: modelData.head ? 110 : sheetCol.width - 128; elide: Text.ElideMiddle } } }
-                        Rectangle { width: parent.width; height: 1; color: Theme.line }
-                        // what may be done with it, by whom: nine switches, as chmod has them; only the owner may change them
-                        Label { text: I18n.tr("Permissions") + (sheet.p.mine === "1" ? "" : "  ·  " + I18n.tr("only its owner may change them")) + (sheet.many ? "  ·  " + I18n.tr("as the first has them; a switch changes it on all") : ""); color: Theme.dim; font.pixelSize: 12; font.weight: 700 }
-                        Grid { columns: 4; columnSpacing: 14; rowSpacing: 6
-                            Repeater { model: 16
-                                Item { required property int index; readonly property int r: Math.floor(index / 4); readonly property int c: index % 4
-                                    width: c === 0 ? 110 : 96; height: 26
-                                    Label { visible: parent.r === 0 && parent.c > 0; anchors.verticalCenter: parent.verticalCenter; color: Theme.faint; font.pixelSize: 12
-                                            text: [I18n.tr("Read"), I18n.tr("Write"), sheet.dir ? I18n.tr("Enter") : I18n.tr("Run")][parent.c - 1] || "" }
-                                    Label { visible: parent.r > 0 && parent.c === 0; anchors.verticalCenter: parent.verticalCenter; font.pixelSize: 13
-                                            text: [I18n.tr("Owner"), I18n.tr("Group"), I18n.tr("Others")][parent.r - 1] || "" }
-                                    Rectangle { id: sw; visible: parent.r > 0 && parent.c > 0; width: 22; height: 22; radius: 6; anchors.verticalCenter: parent.verticalCenter
-                                        readonly property int bit: [4, 2, 1][parent.c - 1] || 0
-                                        readonly property bool on: visible && shell.modeHas(parent.r - 1, bit)
-                                        color: on ? Theme.gold : "transparent"; border.width: 1; border.color: on ? Theme.gold : Theme.line; opacity: sheet.p.mine === "1" ? 1 : 0.5
-                                        Glyph { anchors.centerIn: parent; visible: sw.on; name: "check"; font.pixelSize: 14; color: Theme.inkOnGold }
-                                        MouseArea { anchors.fill: parent; enabled: sheet.p.mine === "1"; cursorShape: Qt.PointingHandCursor; onClicked: shell.modeFlip(parent.parent.r - 1, sw.bit) } } } } }
-                        // when it was changed, set by hand for all the chosen (as the commander's Change attributes): now, or a moment
-                        Row { visible: sheet.p.mine === "1"; spacing: 10
-                            Label { width: 110; text: I18n.tr("Change the date"); color: Theme.dim; font.pixelSize: 13; anchors.verticalCenter: parent.verticalCenter }
-                            Field { id: touchAt; width: 190; height: 32; icon: "calendar"; hint: "2026-10-23 14:30"; onAccepted: if (text.trim() !== "") shell.propsDo(["touch", text.trim()].concat(shell.propsAll)) }
-                            Pill { implicitHeight: 32; text: I18n.tr("Set"); onPressed: if (touchAt.text.trim() !== "") shell.propsDo(["touch", touchAt.text.trim()].concat(shell.propsAll)) }
-                            Pill { implicitHeight: 32; icon: "clock"; text: I18n.tr("Now"); onPressed: shell.propsDo(["touch", "now"].concat(shell.propsAll)) } }
-                        // the app that opens this kind of file, always
-                        Row { visible: !sheet.dir && !sheet.many && shell.propsApps.length > 0; spacing: 12
-                            Label { width: 110; text: I18n.tr("Opens with"); color: Theme.dim; font.pixelSize: 13; anchors.verticalCenter: parent.verticalCenter }
-                            Pill { id: openerPill; implicitHeight: 32; icon: "apps"
-                                   text: (shell.propsApps.find(a => a.id === sheet.p.opener) || { name: I18n.tr("Choose…") }).name
-                                   onPressed: { const q = openerPill.mapToItem(overlay, 0, openerPill.height + 4)
-                                                menu.open(q.x, q.y, shell.propsApps.map(a => ({ text: a.name, checked: a.id === sheet.p.opener, run: () => shell.propsDo(["default", a.id, sheet.p.mime]) }))) } } }
-                        // its SHA-256, counted when asked: a big file takes a while
-                        Row { visible: !sheet.dir && !sheet.many; spacing: 12; width: parent.width
-                            Label { width: 110; text: "SHA-256"; color: Theme.dim; font.pixelSize: 13; anchors.verticalCenter: parent.verticalCenter }
-                            Pill { visible: shell.propsSum === "" && !summer.running; implicitHeight: 32; icon: "calculator"; text: I18n.tr("Count")
-                                   onPressed: { summer.command = ["latte-files", "sum", shell.propsFor]; summer.running = true } }
-                            Label { visible: summer.running; text: I18n.tr("Counting…"); color: Theme.dim; anchors.verticalCenter: parent.verticalCenter }
-                            TextInput { visible: shell.propsSum !== ""; width: parent.width - 130; text: shell.propsSum; readOnly: true; selectByMouse: true; wrapMode: TextInput.WrapAnywhere
-                                        color: Theme.cream; font.family: Theme.mono; font.pixelSize: 12; anchors.verticalCenter: parent.verticalCenter } } } } }
+                    Label { x: 18; y: 14; text: shell.renamePop && shell.renamePop.dir ? I18n.tr("Rename folder") : I18n.tr("Rename file"); font.pixelSize: 15; font.weight: 700 }
+                    Field { id: renameField; x: 16; y: 44; width: parent.width - 32; icon: "pencil"
+                            onAccepted: shell.renameDone(text); onEscaped: { shell.renamePop = null; keys.forceActiveFocus() } }
+                    Pill { anchors.right: parent.right; anchors.rightMargin: 16; y: 92; implicitHeight: 32; icon: "check"; strong: true; text: I18n.tr("Rename")
+                           onPressed: shell.renameDone(renameField.text) } } }
             Item { id: overlay; anchors.fill: parent; Menu { id: menu } }
             // what a drag of files is, in the window's own scene: the system takes it from there
             Item { id: carrier; Drag.dragType: Drag.Automatic; Drag.supportedActions: Qt.CopyAction | Qt.MoveAction | Qt.LinkAction; Drag.keys: ["text/uri-list"] }

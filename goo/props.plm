@@ -1,0 +1,559 @@
+// Properties of a file (ROADMAP 10L.01): a window of its own, which blocks nothing and of which there may be many.
+// Several files chosen at once are tabs at the top of one window, so they do not flood the screen. Sections
+// as on Windows 11, their order from KDE's Properties; rows grouped as Nautilus does. What a file is comes from
+// `latte-props` (crates/latte-props), the name is changed by `latte-files` (one Ctrl+Z with DualBrew).
+// Nothing is written until OK or Apply. Opened as `LATTE_PROPS=$'path\npath' pleamar --scene props.plm`.
+language 0.9
+import "lang/sk.plm"
+import "pleamar:ui"
+
+scene Props {
+    surface { size: 720, 660; kind: window; title: "Properties"; app_id: "org.latteos.properties"; keyboard: on_demand }
+    permissions {
+        run: "latte-props", "latte-files", "xdg-open", "date", "cat", "foot", "sha256sum", "sha1sum", "md5sum"
+        services: "env"
+    }
+
+    let W = screen.width
+    let H = screen.height
+    // the colours of the windows' cup (apps/common/Theme.qml: espresso, mocha, porcelain or from the wallpaper), from the logic
+    repeat k in 0..10 { fact c.$k.r = 0.5 }
+    repeat k in 0..10 { fact c.$k.g = 0.5 }
+    repeat k in 0..10 { fact c.$k.b = 0.5 }
+    let ground = rgb(c.0.r, c.0.g, c.0.b)
+    let surfc = rgb(c.1.r, c.1.g, c.1.b)
+    let rowc = rgb(c.2.r, c.2.g, c.2.b)
+    let raised = rgb(c.3.r, c.3.g, c.3.b)
+    let line = rgb(c.4.r, c.4.g, c.4.b)
+    let cream = rgb(c.5.r, c.5.g, c.5.b)
+    let dim = rgb(c.6.r, c.6.g, c.6.b)
+    let faint = rgb(c.7.r, c.7.g, c.7.b)
+    let gold = rgb(c.8.r, c.8.g, c.8.b)
+    let coffee = rgb(c.9.r, c.9.g, c.9.b)
+    fact light = false
+    let ink_gold = if(light, #fffaf1, #17110d)
+
+    // ── what the logic tells ─────────────────────────────────────────────────────────────────────────────────────
+    text p_title = "Properties"
+    text p_name = ""
+    text p_kind = ""
+    text p_icon = ""
+    text p_opener = ""
+    text p_where = ""
+    text p_size = ""
+    text p_disk = ""
+    text p_content = ""
+    text p_fs = ""
+    text p_created = ""
+    text p_modified = ""
+    text p_accessed = ""
+    text p_origin = ""
+    text p_comment = ""
+    text p_owner = ""
+    text p_group = ""
+    text p_permtext = ""
+    text p_selinux = ""
+    text p_touch = ""                          // a time typed to give the file (latte-files touch: "2026-10-23 14:30", "now")
+    text p_sum = ""
+    text p_sha1 = ""
+    text p_md5 = ""
+    text p_verify = ""                         // a checksum pasted from where the file came from
+    text p_verdict = ""
+    fact p_match = 0                           // 0 nothing to say, 1 it matches, 2 it does not
+    // Previous versions (snapper's snapshots)
+    model vers max 40 { when: text; what: text; state: text; changed: bool }
+    fact ver_sel = -1
+    fact ver_armed = false                     // Restore pressed once: pressed again, it is done
+    fact vers_ready = false
+    // Shortcut (a launcher's [Desktop Entry])
+    text l_exec = ""
+    text l_path = ""
+    text l_comment = ""
+    text l_icon = ""
+    fact l_terminal = false
+    // other users and groups with rights of their own (ACL), as Windows' Security lists them
+    model aclm max 12 { who: text; group: bool; r: bool; w: bool; x: bool }
+    text acl_new = ""
+    event acl_bit ->
+    event acl_del ->
+    event acl_add ->
+    fact p_dir = false
+    fact p_launcher = false                   // a .desktop runs itself: no app opens it
+    fact p_ready = false
+    fact p_has_origin = false
+    fact p_readonly = false
+    fact p_hidden = false
+    fact p_exec = false
+    fact p_rating = 0                          // 0–5 stars
+    fact p_tag = 0                             // 0 none, 1–6 the colours
+    fact p_fs_frac = 0
+    fact p_dirty = false
+    fact p_count = 1                           // files in this window
+    fact p_mode = 0                            // 0 one file, 1 All (N): what is changed goes to all, 2 Compare
+    fact p_cols = 2                            // Compare: how many files side by side (four at most)
+    fact p_two_files = false                   // Compare: two files, whose contents can be compared
+    text p_allname = ""
+    fact p_file = 0                            // the one shown
+    fact sec = 0                               // 0 General, 1 Security
+    fact menu_open = false
+    repeat i in 0..9 { fact pb.$i = false }   // the nine bits of rwx for owner, group, others
+    model openers max 12 { name: text }
+    model ftabs max 9 { name: text }
+    model cmp max 14 { label: text; a: text; b: text; c: text; d: text; diff: bool }
+    model cmp_heads max 4 { name: text }
+    model det max 250 { k: text; v: text; head: bool }
+    fact det_full = 0                          // Details: 0 the few that matter for its kind, 1 everything, by group
+    fact det_ready = false
+    event det_short
+    event det_all
+    on det_short { det_full = 0 }
+    on det_all { det_full = 1 }
+    image pic = from p_icon, 128, 128
+
+    event pick_sec
+    event flip_ro ->
+    event flip_hidden ->
+    event flip_exec ->
+    event set_rating ->
+    event set_tag ->
+    event perm ->
+    event choose_opener ->
+    event open_folder ->
+    event forget_origin ->
+    event touch_set ->
+    event touch_now ->
+    event sum ->
+    event sum_sha1 ->
+    event sum_md5 ->
+    event pick_ver ->
+    event ver_open ->
+    event ver_compare ->
+    event ver_restore ->
+    event flip_terminal ->
+    event pick_file ->
+    event compare_contents ->
+    event ok ->
+    event apply ->
+    event cancel ->
+    event done
+    on pick_sec(v) { sec = v; menu_open = false }
+    on done { quit }
+    on cancel { quit }
+
+    body { color: ground; box { from: 0, 0; size: W, H } }
+
+    // ── the header, as every LatteOS app has it (apps/common/AppWindow.qml): its name, ✕, the coffee line under it;
+    // it carries the window (`carry`) ──────────────────────────────────────────────────────────────────────────────────────
+    let hd = 56
+    zone box header { from: 0, 0; size: W, hd; label: "Move the window"; role: region }
+    on press header { carry }
+    text p_title { at: 20, hd / 2; anchor: left center; width: W - 90; lines: 1; size: 15; weight: 700; color: cream; family: "Inter" }
+    zone box close_hit { from: W - 46, 11; size: 34, 34; corner: 10; cursor: pointer; label: "Close"; role: button }
+    box { from: W - 46, 11; size: 34, 34; corner: 10; color: #e5484d; opacity: close_hit.hover }
+    text "" { at: W - 29, 28; anchor: center; size: 17; color: cream; family: "tabler-icons" }
+    on press close_hit { emit cancel }
+    body {
+        gradient: 0, hd - 1 to W, hd - 1, coffee, coffee, coffee, ground
+        box { from: 0, hd - 2; size: W, 2 }
+    }
+
+    // ── the files, when several were chosen: a tab each ──────────────────────────────────────────────────────────
+    let top = hd + if(p_count > 1, 46, 0)
+    group {
+        show: p_count > 1
+        box { from: 0, hd + 45; size: W, 1; color: line }
+        row { at: 12, hd + 8; gap: 4
+            for f in ftabs { FileTab(f) }
+        }
+    }
+
+    // ── the head: the picture, the name that can be typed, the kind ──────────────────────────────────────────────
+    group { show: p_mode != 2
+    box { from: 0, top; size: W, 112; color: raised }
+    box { from: 20, top + 16; size: 80, 80; corner: 12; color: surfc }
+    image pic { at: 24, top + 20; size: 72, 72 }
+    box { from: 116, top + 22; size: W - 136, 36; corner: 10; color: ground }
+    box { from: 116, top + 22; size: W - 136, 36; corner: 10; color: line; stroke: 1 }
+    input p_name { at: 128, top + 31; width: W - 160; size: 16; weight: 600; color: cream; selection: line; family: "Inter"; label: "Name"; show: p_mode == 0 }
+    zone box name_hit { from: 116, top + 22; size: W - 136, 36; cursor: text; label: "Name"; active: p_mode == 0 }
+    on press name_hit { focus p_name }
+    text p_allname { at: 128, top + 40; anchor: left center; size: 16; weight: 600; color: cream; family: "Inter"; show: p_mode == 1 }
+    text p_kind { at: 118, top + 78; anchor: left center; size: 13; color: dim; family: "Inter" }
+    }
+
+    // ── the sections ─────────────────────────────────────────────────────────────────────────────────────────────
+    box { from: 0, top + 112; size: W, 1; color: line; show: p_mode != 2 }
+    // the sections: tabs of our own (pleamar:ui's Segmented holds three at most, and only once a scene)
+    row { at: 20, top + 124; gap: 4; show: p_mode == 0
+        SecTab(0, "General", true)
+        SecTab(1, "Security", true)
+        SecTab(2, "Details", true)
+        SecTab(3, "Previous versions", true, w: 176)
+        SecTab(4, "Checksums", not p_dir, w: 148)
+        SecTab(5, "Shortcut", p_launcher)
+    }
+
+    // ── General ──────────────────────────────────────────────────────────────────────────────────────────────────
+    let rw = W - 40
+    let by = top + if(p_mode == 0, 172, 124)
+    let bh = H - by - 72
+    column general { at: 20, by; view: rw, bh; gap: 10; show: sec == 0 and p_ready and p_mode != 2
+        group {
+            size: rw, 44; show: not p_dir and not p_launcher
+            box { from: 0, 0; size: rw, 44; corner: 12; color: rowc }
+            text "Opens with" { at: 14, 22; anchor: left center; size: 13; color: dim; family: "Inter" }
+            text p_opener { at: 170, 22; anchor: left center; width: rw - 300; lines: 1; size: 13.5; color: cream; family: "Inter" }
+            Button("Change…", rw - 104, 7, toggle_menu)
+        }
+        group {
+            size: rw, if(p_dir, 132, 132)
+            box { from: 0, 0; size: rw, 132; corner: 12; color: rowc }
+            text "Location" { at: 14, 22; anchor: left center; size: 13; color: dim; family: "Inter" }
+            text p_where { at: 170, 22; anchor: left center; width: rw - 340; lines: 1; size: 13.5; color: cream; family: "Inter"; selectable: true }
+            Button("Open folder", rw - 152, 7, open_folder, width: 144)
+            box { from: 14, 44; size: rw - 28, 1; color: line; opacity: 55% }
+            text if(p_dir, "Contents", "Size") { at: 14, 66; anchor: left center; size: 13; color: dim; family: "Inter" }
+            text p_size { at: 170, 66; anchor: left center; width: rw - 190; lines: 1; size: 13.5; color: cream; family: "Inter" }
+            box { from: 14, 88; size: rw - 28, 1; color: line; opacity: 55% }
+            text "On disk" { at: 14, 110; anchor: left center; size: 13; color: dim; family: "Inter" }
+            text p_disk { at: 170, 110; anchor: left center; width: rw - 190; lines: 1; size: 13.5; color: cream; family: "Inter" }
+        }
+        group {
+            size: rw, 58; show: p_dir
+            box { from: 0, 0; size: rw, 58; corner: 12; color: rowc }
+            text "Disk" { at: 14, 20; anchor: left center; size: 13; color: dim; family: "Inter" }
+            text p_fs { at: 170, 20; anchor: left center; width: rw - 190; lines: 1; size: 13.5; color: cream; family: "Inter" }
+            box { from: 170, 38; size: rw - 190, 8; corner: 4; color: surfc }
+            box { from: 170, 38; size: (rw - 190) * p_fs_frac, 8; corner: 4; color: mix(#4cc38a, #e5484d, p_fs_frac) }
+        }
+        group {
+            size: rw, 176
+            box { from: 0, 0; size: rw, 176; corner: 12; color: rowc }
+            box { from: 14, 132; size: rw - 28, 1; color: line; opacity: 55% }
+            text "Change the date" { at: 14, 154; anchor: left center; size: 13; color: dim; family: "Inter" }
+            box { from: 166, 140; size: 200, 28; corner: 8; color: ground }
+            input p_touch { at: 174, 146; width: 186; size: 13; color: cream; selection: line; family: "Inter"; placeholder: "2026-10-23 14:30"; label: "Change the date" }
+            zone box touch_hit { from: 166, 140; size: 200, 28; cursor: text; label: "Change the date" }
+            on press touch_hit { focus p_touch }
+            Button("Set", 376, 139, touch_set, width: 80)
+            Button("Now", 462, 139, touch_now, width: 80)
+            text "Created" { at: 14, 22; anchor: left center; size: 13; color: dim; family: "Inter" }
+            text p_created { at: 170, 22; anchor: left center; size: 13.5; color: cream; family: "Inter" }
+            box { from: 14, 44; size: rw - 28, 1; color: line; opacity: 55% }
+            text "Modified" { at: 14, 66; anchor: left center; size: 13; color: dim; family: "Inter" }
+            text p_modified { at: 170, 66; anchor: left center; size: 13.5; color: cream; family: "Inter" }
+            box { from: 14, 88; size: rw - 28, 1; color: line; opacity: 55% }
+            text "Opened" { at: 14, 110; anchor: left center; size: 13; color: dim; family: "Inter" }
+            text p_accessed { at: 170, 110; anchor: left center; size: 13.5; color: cream; family: "Inter" }
+        }
+        group {
+            size: rw, if(p_dir, 88, 132)
+            box { from: 0, 0; size: rw, if(p_dir, 88, 132); corner: 12; color: rowc }
+            text "Read-only" { at: 14, 22; anchor: left center; size: 13; color: dim; family: "Inter" }
+            text "nobody changes it, not even you" { at: 170, 22; anchor: left center; size: 13; color: faint; family: "Inter" }
+            row { at: rw - 60, 10; Switch(p_readonly, flip_ro, accent: gold) }
+            box { from: 14, 44; size: rw - 28, 1; color: line; opacity: 55% }
+            text "Hidden" { at: 14, 66; anchor: left center; size: 13; color: dim; family: "Inter" }
+            text "not seen in its folder" { at: 170, 66; anchor: left center; size: 13; color: faint; family: "Inter" }
+            row { at: rw - 60, 54; Switch(p_hidden, flip_hidden, accent: gold) }
+            group {
+                show: not p_dir
+                box { from: 14, 88; size: rw - 28, 1; color: line; opacity: 55% }
+                text "Executable" { at: 14, 110; anchor: left center; size: 13; color: dim; family: "Inter" }
+                text "can be run as a program" { at: 170, 110; anchor: left center; size: 13; color: faint; family: "Inter" }
+                row { at: rw - 60, 98; Switch(p_exec, flip_exec, accent: gold) }
+            }
+        }
+        group {
+            size: rw, 44; show: p_has_origin
+            box { from: 0, 0; size: rw, 44; corner: 12; color: rowc }
+            text "Downloaded from" { at: 14, 22; anchor: left center; size: 13; color: dim; family: "Inter" }
+            text p_origin { at: 170, 22; anchor: left center; width: rw - 340; lines: 1; size: 13.5; color: cream; family: "Inter"; selectable: true }
+            Button("Forget it", rw - 104, 7, forget_origin)
+        }
+        group {
+            size: rw, 132
+            box { from: 0, 0; size: rw, 132; corner: 12; color: rowc }
+            text "Colour" { at: 14, 22; anchor: left center; size: 13; color: dim; family: "Inter" }
+            repeat k in 1..7 { TagDot(k, 170 + (k - 1) * 30) }
+            box { from: 14, 44; size: rw - 28, 1; color: line; opacity: 55% }
+            text "Rating" { at: 14, 66; anchor: left center; size: 13; color: dim; family: "Inter" }
+            repeat k in 1..6 { Star(k, 170 + (k - 1) * 28) }
+            box { from: 14, 88; size: rw - 28, 1; color: line; opacity: 55% }
+            text "Comment" { at: 14, 110; anchor: left center; size: 13; color: dim; family: "Inter" }
+            box { from: 166, 96; size: rw - 182, 28; corner: 8; color: ground }
+            input p_comment { at: 174, 102; width: rw - 200; size: 13; color: cream; selection: line; family: "Inter"; placeholder: "a note to the file (Dolphin shows it too)"; label: "Comment" }
+            zone box comment_hit { from: 166, 96; size: rw - 182, 28; cursor: text; label: "Comment" }
+            on press comment_hit { focus p_comment }
+        }
+    }
+
+    // ── Security ─────────────────────────────────────────────────────────────────────────────────────────────────
+    column security { at: 20, by; view: rw, bh; gap: 10; show: sec == 1 and p_ready and p_mode == 0
+        group {
+            size: rw, 88
+            box { from: 0, 0; size: rw, 88; corner: 12; color: rowc }
+            text "Owner" { at: 14, 22; anchor: left center; size: 13; color: dim; family: "Inter" }
+            text p_owner { at: 170, 22; anchor: left center; size: 13.5; color: cream; family: "Inter" }
+            box { from: 14, 44; size: rw - 28, 1; color: line; opacity: 55% }
+            text "Group" { at: 14, 66; anchor: left center; size: 13; color: dim; family: "Inter" }
+            text p_group { at: 170, 66; anchor: left center; size: 13.5; color: cream; family: "Inter" }
+        }
+        group {
+            size: rw, 196
+            box { from: 0, 0; size: rw, 196; corner: 12; color: rowc }
+            text "Read" { at: 210, 20; anchor: center; size: 12; color: faint; family: "Inter" }
+            text "Write" { at: 290, 20; anchor: center; size: 12; color: faint; family: "Inter" }
+            text "Run" { at: 370, 20; anchor: center; size: 12; color: faint; family: "Inter" }
+            text "Owner" { at: 14, 52; anchor: left center; size: 13; color: dim; family: "Inter" }
+            text "Group" { at: 14, 88; anchor: left center; size: 13; color: dim; family: "Inter" }
+            text "Others" { at: 14, 124; anchor: left center; size: 13; color: dim; family: "Inter" }
+            repeat b in 0..9 { PermBox(b, 210 + mod(b, 3) * 80, 52 + floor(b / 3) * 36) }
+            box { from: 14, 150; size: rw - 28, 1; color: line; opacity: 55% }
+            text "Written as" { at: 14, 172; anchor: left center; size: 13; color: dim; family: "Inter" }
+            text p_permtext { at: 170, 172; anchor: left center; size: 13.5; color: cream; family: "JetBrains Mono" }
+        }
+        group {
+            size: rw, 98 + aclm.count * 36
+            box { from: 0, 0; size: rw, 98 + aclm.count * 36; corner: 12; color: rowc }
+            text "Other users and groups (ACL)" { at: 14, 20; anchor: left center; size: 12; weight: 600; color: faint; family: "Inter" }
+            column { at: 0, 40; gap: 0
+                for a in aclm { AclRow(a) }
+            }
+            box { from: 166, 52 + aclm.count * 36; size: 260, 28; corner: 8; color: ground }
+            input acl_new { at: 174, 58 + aclm.count * 36; width: 246; size: 13; color: cream; selection: line; family: "Inter"; placeholder: "a user or a group"; label: "Add a user or a group" }
+            zone box acl_new_hit { from: 166, 52 + aclm.count * 36; size: 260, 28; cursor: text; label: "Add a user or a group" }
+            on press acl_new_hit { focus acl_new }
+            Button("Add", 436, 51 + aclm.count * 36, acl_add, width: 90)
+        }
+        group {
+            size: rw, 44
+            box { from: 0, 0; size: rw, 44; corner: 12; color: rowc }
+            text "SELinux" { at: 14, 22; anchor: left center; size: 13; color: dim; family: "Inter" }
+            text p_selinux { at: 170, 22; anchor: left center; width: rw - 190; lines: 1; size: 12.5; color: cream; family: "JetBrains Mono"; selectable: true }
+        }
+    }
+
+    // ── Compare: a row a property, a column a file, what differs in gold ─────────────────────────────────────────
+    let cw = (rw - 170) / max(p_cols, 1)
+    group {
+        show: p_mode == 2 and p_ready
+        row { at: 20 + 170, top + 18
+            for h in cmp_heads { group { size: cw, 30
+                text h.name { at: 0, 15; anchor: left center; width: cw - 12; lines: 1; size: 13.5; weight: 600; color: cream; family: "Inter" } } }
+        }
+        column compare { at: 20, top + 56; view: rw, H - top - 56 - 140; gap: 0
+            for r in cmp { CmpRow(r) }
+        }
+        Button("Compare contents", 20, H - 116, compare_contents, width: 180, enabled: p_two_files)
+    }
+
+    // ── Details: what the file says of itself (exiftool), the few that matter or everything ──────────────────────
+    group {
+        show: sec == 2 and p_mode == 0
+        // (two buttons, not a second Segmented: pleamar:ui's Segmented can be in a scene only once — its zones are global)
+        Button("Short", 20, by + 4, det_short, width: 110, gold_on: det_full == 0)
+        Button("Full", 136, by + 4, det_all, width: 110, gold_on: det_full == 1)
+        text "Reading…" { at: 20, by + 60; size: 13; color: faint; family: "Inter"; show: not det_ready }
+        text "The file says nothing more of itself." { at: 20, by + 60; size: 13; color: faint; family: "Inter"; show: det_ready and det.count == 0 }
+        column details { at: 20, by + 46; view: rw, bh - 46; gap: 0
+            for d in det { DetRow(d) }
+        }
+    }
+
+    // ── Previous versions: the file in the system's snapshots, newest first ───────────────────────────────────────
+    group {
+        show: sec == 3 and p_mode == 0
+        text "From the system's snapshots (snapper)" { at: 20, by + 12; size: 12; weight: 600; color: faint; family: "Inter" }
+        text "Reading…" { at: 20, by + 46; size: 13; color: faint; family: "Inter"; show: not vers_ready }
+        text "No snapshot holds this file yet." { at: 20, by + 46; size: 13; color: faint; family: "Inter"; show: vers_ready and vers.count == 0 }
+        column versions { at: 20, by + 34; view: rw, bh - 90; gap: 4
+            for v in vers { VerRow(v) }
+        }
+        Button("Open", 20, H - 116, ver_open, width: 110, enabled: ver_sel >= 0)
+        Button("Compare", 136, H - 116, ver_compare, width: 110, enabled: ver_sel >= 0 and not p_dir)
+        Button("Restore…", 252, H - 116, ver_restore, width: 170, enabled: ver_sel >= 0, shown: not ver_armed)
+        Button("Really restore?", 252, H - 116, ver_restore, width: 170, gold_on: true, shown: ver_armed)
+    }
+
+    // ── Checksums (as KDE's Properties): counted on request, and one pasted is compared with them ────────────────
+    group {
+        show: sec == 4 and p_mode == 0
+        group {
+            box { from: 20, by; size: rw, 132; corner: 12; color: rowc }
+            text "SHA-256" { at: 34, by + 22; anchor: left center; size: 13; color: dim; family: "Inter" }
+            text p_sum { at: 120, by + 22; anchor: left center; width: rw - 230; lines: 1; size: 12; color: cream; family: "JetBrains Mono"; selectable: true }
+            Button("Count", rw - 84, by + 7, sum)
+            box { from: 34, by + 44; size: rw - 28, 1; color: line; opacity: 55% }
+            text "SHA-1" { at: 34, by + 66; anchor: left center; size: 13; color: dim; family: "Inter" }
+            text p_sha1 { at: 120, by + 66; anchor: left center; width: rw - 230; lines: 1; size: 12; color: cream; family: "JetBrains Mono"; selectable: true }
+            Button("Count", rw - 84, by + 51, sum_sha1)
+            box { from: 34, by + 88; size: rw - 28, 1; color: line; opacity: 55% }
+            text "MD5" { at: 34, by + 110; anchor: left center; size: 13; color: dim; family: "Inter" }
+            text p_md5 { at: 120, by + 110; anchor: left center; width: rw - 230; lines: 1; size: 12; color: cream; family: "JetBrains Mono"; selectable: true }
+            Button("Count", rw - 84, by + 95, sum_md5)
+        }
+        box { from: 20, by + 142; size: rw, 76; corner: 12; color: rowc }
+        text "Verify" { at: 34, by + 164; anchor: left center; size: 13; color: dim; family: "Inter" }
+        box { from: 120, by + 150; size: rw - 114, 28; corner: 8; color: ground }
+        input p_verify { at: 128, by + 156; width: rw - 130; size: 12; color: cream; selection: line; family: "JetBrains Mono"; placeholder: "paste the checksum from where the file came from"; label: "Verify" }
+        zone box verify_hit { from: 120, by + 150; size: rw - 114, 28; cursor: text; label: "Verify" }
+        on press verify_hit { focus p_verify }
+        text p_verdict { at: 128, by + 200; anchor: left center; size: 13; weight: 600; color: if(p_match == 1, #4cc38a, #e5484d); family: "Inter" }
+    }
+
+    // ── Shortcut: what a launcher runs, as Windows' Shortcut tab ──────────────────────────────────────────────────
+    group {
+        show: sec == 5 and p_mode == 0 and p_launcher
+        box { from: 20, by; size: rw, 228; corner: 12; color: rowc }
+        LField("Command", 0)
+        LField("Start in", 1)
+        LField("Comment", 2)
+        LField("Icon", 3)
+        input l_exec { at: 194, by + 14; width: rw - 196; size: 13; color: cream; selection: line; family: "JetBrains Mono"; label: "Command" }
+        input l_path { at: 194, by + 58; width: rw - 196; size: 13; color: cream; selection: line; family: "JetBrains Mono"; label: "Start in" }
+        input l_comment { at: 194, by + 102; width: rw - 196; size: 13; color: cream; selection: line; family: "Inter"; label: "Comment" }
+        input l_icon { at: 194, by + 146; width: rw - 196; size: 13; color: cream; selection: line; family: "JetBrains Mono"; label: "Icon" }
+        zone box l_exec_hit { from: 186, by + 8; size: rw - 180, 28; cursor: text; label: "Command" }
+        zone box l_path_hit { from: 186, by + 52; size: rw - 180, 28; cursor: text; label: "Start in" }
+        zone box l_comment_hit { from: 186, by + 96; size: rw - 180, 28; cursor: text; label: "Comment" }
+        zone box l_icon_hit { from: 186, by + 140; size: rw - 180, 28; cursor: text; label: "Icon" }
+        on press l_exec_hit { focus l_exec }
+        on press l_path_hit { focus l_path }
+        on press l_comment_hit { focus l_comment }
+        on press l_icon_hit { focus l_icon }
+        text "Run in a terminal" { at: 34, by + 22 + 4 * 44; anchor: left center; size: 13; color: dim; family: "Inter" }
+        row { at: rw - 40, by + 10 + 4 * 44; Switch(l_terminal, flip_terminal, accent: gold) }
+    }
+
+    // ── Opens with: a list drawn in the window, under its button ─────────────────────────────────────────────────
+    event toggle_menu
+    on toggle_menu { toggle menu_open }
+    zone box menu_away { from: 0, 0; size: W, H; active: menu_open; label: "Close the list"; role: button }
+    on press menu_away { menu_open = false }
+    group {
+        show: menu_open and sec == 0
+        body {
+            color: rowc; rim: 20%; shadow: 0, 10, 26, 45%
+            box { from: W - 300, by + 50; size: 260, openers.count * 36 + 12; corner: 12 }
+        }
+        column { at: W - 294, by + 56
+            for a in openers { Opener(a) }
+        }
+    }
+
+    // ── the foot: OK · Cancel · Apply over a line, as a dialog has them (no coffee: Properties is a small service) ────
+    box { from: 0, H - 64; size: W, 1; color: line }
+    Button("OK", W - 312, H - 46, ok, gold_on: true)
+    Button("Cancel", W - 212, H - 46, cancel)
+    Button("Apply", W - 112, H - 46, apply, enabled: p_dirty)
+    on key Escape { emit cancel }
+    on key Return while not menu_open { emit ok }
+
+    // ── the pieces ───────────────────────────────────────────────────────────────────────────────────────────────
+    component Button(caption: text, x: number, y: number, press: event, width: number = 96, gold_on: bool = false, enabled: bool = true, shown: bool = true) {
+        group {
+            show: shown
+            zone box hit { from: x, y; size: width, 30; corner: 8; cursor: pointer; active: enabled; label: "{caption}"; role: button }
+            box { from: x, y; size: width, 30; corner: 8; color: if(gold_on, gold, raised); opacity: if(enabled, 100%, 45%) }
+            box { from: x, y; size: width, 30; corner: 8; color: if(hit.hover > 0.5, gold, line); stroke: 1; opacity: if(enabled, 100%, 45%) }
+            text caption { at: x + width / 2, y + 15; anchor: center; size: 13; weight: if(gold_on, 600, 500); color: if(gold_on, ink_gold, cream); family: "Inter"; opacity: if(enabled, 100%, 45%) }
+            on press hit { emit press }
+        }
+    }
+    component FileTab(f: record) {
+        size: 150, 38
+        box { from: 0, 0; size: 150, 38; corner: 10; color: if(p_file == f.index, raised, ground) }
+        text f.name { at: 12, 19; anchor: left center; width: 126; lines: 1; size: 13; weight: if(f.index == 0 or f.index == ftabs.count - 1, 600, 400); color: if(p_file == f.index, cream, if(f.index == ftabs.count - 1, gold, dim)); family: "Inter" }
+        zone box hit { from: 0, 0; size: 150, 38; cursor: pointer; label: "{f.name}"; role: tab; selected: p_file == f.index }
+        on press hit { emit pick_file(f.index) }
+    }
+    component TagDot(k: number, x: number) {
+        let tone = pick(k - 1, #e5484d, #f2994a, #f7c873, #4cc38a, #3d8bfd, #9b6bff)
+        ellipse { at: x + 9, 22; radius: 11; color: cream; show: p_tag == k }
+        ellipse { at: x + 9, 22; radius: 9; color: tone }
+        zone box hit { from: x - 2, 10; size: 24, 24; cursor: pointer; label: pick(k - 1, "Red", "Orange", "Yellow", "Green", "Blue", "Purple"); role: toggle; checked: p_tag == k }
+        on press hit { emit set_tag(k) }
+    }
+    component Star(k: number, x: number) {
+        text if(p_rating >= k, "★", "☆") { at: x + 10, 66; anchor: center; size: 20; color: if(p_rating >= k, gold, faint) }
+        zone box hit { from: x, 54; size: 24, 24; cursor: pointer; label: "{k} stars"; role: button }
+        on press hit { emit set_rating(k) }
+    }
+    component PermBox(b: number, x: number, y: number) {
+        let on = pick(b, pb.0, pb.1, pb.2, pb.3, pb.4, pb.5, pb.6, pb.7, pb.8)
+        box { from: x - 10, y - 10; size: 20, 20; corner: 5; color: if(on, gold, surfc) }
+        box { from: x - 10, y - 10; size: 20, 20; corner: 5; color: if(on, gold, line); stroke: 1.5 }
+        text "✓" { at: x, y; anchor: center; size: 13; weight: 700; color: ink_gold; show: on }
+        zone box hit { from: x - 14, y - 14; size: 28, 28; cursor: pointer; role: toggle; checked: on;
+                       label: pick(floor(b / 3), "Owner", "Group", "Others") }
+        on press hit { emit perm(b) }
+    }
+    component DetRow(d: record) {
+        size: rw, if(d.head, 40, 32)
+        box { from: 0, 0; size: rw, 32; color: rowc; opacity: if(mod(d.index, 2) == 0, 100%, 55%); show: not d.head }
+        text d.k { at: 14, if(d.head, 26, 16); anchor: left center; width: if(d.head, rw - 28, 240); lines: 1; size: if(d.head, 12, 13); weight: if(d.head, 600, 400); color: if(d.head, gold, dim); family: "Inter" }
+        text d.v { at: 270, 16; anchor: left center; width: rw - 284; lines: 1; size: 13; color: cream; family: "Inter"; selectable: true; show: not d.head }
+    }
+    component SecTab(k: number, caption: text, shown: bool, w: number = 128) {
+        size: if(shown, w + 4, 0), 32
+        group {
+            show: shown
+            box { from: 0, 0; size: w, 32; corner: 9; color: if(sec == k, raised, ground) }
+            box { from: 14, 30; size: w - 28, 2; corner: 1; color: gold; show: sec == k }
+            text caption { at: w / 2, 16; anchor: center; width: w - 4; lines: 1; size: 12.5; weight: if(sec == k, 600, 400); color: if(sec == k, cream, dim); family: "Inter" }
+            zone box hit { from: 0, 0; size: w, 32; cursor: pointer; role: tab; selected: sec == k; label: "{caption}" }
+            on press hit { sec = k; menu_open = false }
+        }
+    }
+    component VerRow(v: record) {
+        size: rw, 44
+        box { from: 0, 0; size: rw, 44; corner: 10; color: if(ver_sel == v.index, raised, rowc) }
+        box { from: 0, 0; size: rw, 44; corner: 10; color: gold; stroke: 1; opacity: if(ver_sel == v.index, 70%, 0) }
+        text v.when { at: 14, 22; anchor: left center; width: 230; lines: 1; size: 13; color: cream; family: "Inter" }
+        text v.what { at: 250, 22; anchor: left center; width: rw - 420; lines: 1; size: 13; color: dim; family: "Inter" }
+        text v.state { at: rw - 14, 22; anchor: right center; size: 12.5; weight: 600; color: if(v.changed, gold, faint); family: "Inter" }
+        zone box hit { from: 0, 0; size: rw, 44; cursor: pointer; role: item; selected: ver_sel == v.index; label: "{v.when}" }
+        on press hit { ver_sel = v.index; ver_armed = false; emit pick_ver(v.index) }
+    }
+    component AclRow(a: record) {
+        size: rw, 36
+        text "" { at: 22, 18; anchor: center; size: 15; color: dim; family: "tabler-icons" }
+        text a.who { at: 40, 18; anchor: left center; width: 150; lines: 1; size: 13.5; color: cream; family: "Inter" }
+        AclBox(a, 0, a.r)
+        AclBox(a, 1, a.w)
+        AclBox(a, 2, a.x)
+        zone box del { from: rw - 44, 4; size: 28, 28; corner: 8; cursor: pointer; label: "Remove {a.who}"; role: button }
+        box { from: rw - 44, 4; size: 28, 28; corner: 8; color: #e5484d; opacity: del.hover * 70% }
+        text "" { at: rw - 30, 18; anchor: center; size: 14; color: cream; family: "tabler-icons" }
+        on press del { emit acl_del(a.index) }
+    }
+    component AclBox(a: record, b: number, on: bool) {
+        box { from: 200 + b * 80, 8; size: 20, 20; corner: 5; color: if(on, gold, surfc) }
+        box { from: 200 + b * 80, 8; size: 20, 20; corner: 5; color: if(on, gold, line); stroke: 1.5 }
+        text "✓" { at: 210 + b * 80, 18; anchor: center; size: 13; weight: 700; color: ink_gold; show: on }
+        zone box hit { from: 196 + b * 80, 4; size: 28, 28; cursor: pointer; role: toggle; checked: on; label: pick(b, "Read", "Write", "Run") }
+        on press hit { emit acl_bit(a.index * 3 + b) }
+    }
+    component LField(caption: text, k: number) {
+        text caption { at: 34, by + 22 + k * 44; anchor: left center; size: 13; color: dim; family: "Inter" }
+        box { from: 186, by + 8 + k * 44; size: rw - 180, 28; corner: 8; color: ground }
+        box { from: 34, by + 44 + k * 44; size: rw - 28, 1; color: line; opacity: 55% }
+    }
+    component CmpRow(r: record) {
+        size: rw, 36
+        box { from: 0, 0; size: rw, 36; color: rowc; opacity: if(mod(r.index, 2) == 0, 100%, 55%) }
+        text r.label { at: 14, 18; anchor: left center; width: 150; lines: 1; size: 13; color: dim; family: "Inter" }
+        text r.a { at: 170, 18; anchor: left center; width: cw - 12; lines: 1; size: 13; color: if(r.diff, gold, cream); family: "Inter" }
+        text r.b { at: 170 + cw, 18; anchor: left center; width: cw - 12; lines: 1; size: 13; color: if(r.diff, gold, cream); family: "Inter" }
+        text r.c { at: 170 + 2 * cw, 18; anchor: left center; width: cw - 12; lines: 1; size: 13; color: if(r.diff, gold, cream); family: "Inter"; show: p_cols > 2 }
+        text r.d { at: 170 + 3 * cw, 18; anchor: left center; width: cw - 12; lines: 1; size: 13; color: if(r.diff, gold, cream); family: "Inter"; show: p_cols > 3 }
+    }
+    component Opener(a: record) {
+        size: 248, 36
+        box { from: 0, 0; size: 248, 36; corner: 8; color: raised; opacity: hit.hover }
+        text a.name { at: 12, 18; anchor: left center; width: 224; lines: 1; size: 13.5; color: cream; family: "Inter" }
+        zone box hit { from: 0, 0; size: 248, 36; cursor: pointer; label: "{a.name}" }
+        on press hit { menu_open = false; emit choose_opener(a.index) }
+    }
+}

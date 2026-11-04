@@ -38,7 +38,7 @@ LatteOS:2.x xxx
 
 # Poradie práce
 
-**Vetva `v0.5-pleamarwm-jihlavanka` (od 31. 10. 2026, predvolená od 2. 11.):** prechod z Hyprlandu na pleamar-wm (1D) je na latte-lab hotový — Hyprland odinštalovaný, „LatteOS GOO“ beží na pleamar-wm (2. 11.). Z 1D ostávajú 1D.41 a 1D.42 a overenie na hlavnom PC s dvoma monitormi (1D.01, 1D.07, 1D.14). Potom LensAI (10B, súpis `docs/lensai/POZIADAVKY.md`) a YOL (7C) podľa používateľa, až potom sa pokračuje v poradí nižšie.
+**Vetva `v0.5-pleamarwm-jihlavanka` (od 31. 10. 2026, predvolená od 2. 11.):** prechod z Hyprlandu na pleamar-wm (1D) je na latte-lab hotový — Hyprland odinštalovaný, „LatteOS GOO“ beží na pleamar-wm (2. 11.). Z 1D ostáva 1D.41 (nezopakovalo sa) a overenie na hlavnom PC s dvoma monitormi (1D.01, 1D.07); 1D.14 a 1D.42 hotové, ikony na ploche v Goo (7B.05) hotové 4. 11. Potom LensAI (10B, súpis `docs/lensai/POZIADAVKY.md`) a YOL (7C) podľa používateľa, až potom sa pokračuje v poradí nižšie.
 
 Určené 22. 10. 2026 (nahrádza bývalé „Teraz“ z 12. 10.). Ide sa zhora, neskáče sa; nový nápad na koniec svojej kategórie, nie sem.
 Poradie drží tri pravidlá: **čo blokuje overovanie ostatného ide prvé** (štart, SAFE, obrazovky), **plocha pred aplikáciami**,
@@ -180,7 +180,7 @@ Tapeta v relácii pleamar-wm funguje (31. 10.): `skwd-walld` sa reštartuje pri 
 **1D.12** [x] Vypnúť reláciu Hyprland, keď nová vie všetko, čo ona. — 2. 11.: Hyprland odinštalovaný na latte-lab (`dnf remove --noautoremove`: hyprland, -devel, -uwsm, hyprlock, hyprpicker, hyprpolkitagent, hyprsunset, xdg-desktop-portal-hyprland…; `hypridle` a knižnice ostali), zámok verzie zrušený, „LatteOS GOO“ spúšťa pleamar-wm (samostatná položka pleamar-wm a „Marea (Hyprland)“ preč), `FILES` bez Hyprlandu. Ostáva zmazať `system/hypr`, `plugins/`, záplatu hyprbars a vetvy Hyprlandu v `bin/latte-session` a ďalších skriptoch. Aj „Serpantinum“ (nefunkčná položka) preč. — Hotové 3. 11.: `system/hypr`, `plugins/` a záplata hyprbars zmazané (aj z `/usr`: hyprbars.so, hyprglass.so, latte-events.so); `hypridle.conf` presunutý do `system/idle/` (hypridle ostáva, zamyká a zhasína aj v pleamar-wm); bez vetiev Hyprlandu `latte-session`, `latte-doghouse`, `latte-focus`, `tests/screen.sh` (iba labwc), `install` a `tests/check.sh` bez pluginov. Komentáre „ako na Hyprlande“ s cestami do `system/hypr` ostali ako odkaz do histórie gitu.
 **1D.13** → presunuté do 2.07 (2. 11.)
 
-**1D.14** [ ] Overiť v relácii pleamar-wm: tlačidlo odhlásenia, reštart a vypnutie v Goo, prepnutie do hry, bobule okien v BarGoo, widgety, tapetu s videom, dva monitory. Dva monitory až po preinštalovaní hlavného PC používateľa.
+**1D.14** [x] (používateľ 4. 11. na čerstvo zapnutom latte-lab bez Hyprlandu: funguje, chybujú iba ikony na ploche a premenovanie → 7B.05; dva monitory ostávajú v 1D.01, 1D.07) Overiť v relácii pleamar-wm: tlačidlo odhlásenia, reštart a vypnutie v Goo, prepnutie do hry, bobule okien v BarGoo, widgety, tapetu s videom, dva monitory. Dva monitory až po preinštalovaní hlavného PC používateľa.
 **1D.15** [ ] Overiť Hyprland na Fedore 45 a pleamare 0.6.1 (aj tapetu po návrate z pleamar-wm); pluginy preložiť, ak treba.
 **1D.16** [ ] Vrátiť `umu-launcher` (Fedora 45 ho nemá, odišiel pri aktualizácii). Keď Fedora dostane Linux 7.3 a Mesu 26.3, prejsť na ne: dnes je kernel z Koji nepodpísaný a Mesa rc v `/opt/mesa-26.3`.
 **1D.17** [x] Dobehnúť upstream (2. 11.): pleamar 0.7.10 a pleamar-wm 0.6.9 zo `~/src/pwm-v07/`, záplaty prenesené (`patches/README.md`), naša `wm/session.plm` spojená s novou; Goo, prihlasovač a Marea prejdú `--check`, headless 17,4 ms na snímku. Staré `/usr/bin/pleamar-0.6.1`, `pleamar-wm-0.6.2`. Ostáva ostrá relácia na RX 640 (1D.14).
@@ -232,7 +232,7 @@ Súpis 2. 11.: časti LatteOS, ktoré v relácii pleamar-wm ešte volajú Hyprla
 **1D.39** [x] **Sklo v popupoch** (používateľ 2. 11.): ponuky a karty kreslí jednak pleamar (karty Goo, kvapky, ponuky aplikácií LatteOS), jednak scéna pleamar-wm (ponuka doku, ovládacie centrum, výzvy); zladiť ich sklo so sklom okien a s posuvníkmi v Nastaveniach › Okná (telo okien, bočný panel). — Rozhodnuté (2. 11.): popupy nemajú vlastný posuvník, riadia sa posuvníkom *Okná*. — Hotové 3. 11.: popupy scény pleamar-wm (meno a ponuka doku, náhľady okien z doku, výzva na zdieľanie, ponuka plátna z minulej relácie) sú sklo vo farbe záhlavia okien, priesvitné ako okná (`pop.*` pri `glass.see` v `wm/session.plm`). Ponuky aplikácií LatteOS (Qt) sú v okne, priehľadnosť im dáva okno. Goo (karty, kvapky, jeho ponuky) sa posuvníkom *Okná* neriadi: okná a Goo majú oddelené nastavenia farieb, priehľadnosti aj efektov (používateľ 3. 11.). Ovládacie centrum je vstavaná scéna pleamar-wm (`control.plm`), nemení sa.
 **1D.40** → presunuté do 10F.11 (2. 11.)
 **1D.41** [ ] **Klávesnica po načítaní scény správcu okien** (2. 11.): keď sa `wm/session.plm` za behu načíta znova (nasadenie, úprava), relácia stojí ~2,4 s a klávesnicu potom nedostane žiadne okno (`the keyboard to` prázdne), takže otvorená aplikácia pôsobí ako zamrznutá. Vrátiť klávesnicu oknu, ktoré ju malo; scénu na latte-lab nenasadzovať počas práce používateľa bez upozornenia. — 3. 11.: bez obrazovky (`pleamar-wm headless`, foot, scéna nahradená aj prepísaná na mieste) sa nestane: klávesy po načítaní do okna došli, `windows · the keyboard to` prázdne sa píše aj pri štarte. Ďalej treba skúsiť v skutočnej relácii (panely Goo, DRM) — s upozornením. — 3. 11. v ostrej relácii na latte-lab (DRM, Goo, foot): načítanie scény (1,8 s) ani reštart `latte-desktop` klávesnicu nevzali, `wtype` hneď aj po 10 s písal do okna, `win.focus` ostal 0. Riadok `the keyboard to` prázdny sa píše aj pri otvorení okna (skôr, než povie app_id), nie je to znak chyby. Nezopakovalo sa; ak sa vráti, zapísať, čo presne sa nasadzovalo.
-**1D.42** [~] **Popupy Goo napoly okno** (používateľ 3. 11.): karta Goo s tablou nad hladinou (`card_pane`, napr. PowerGoo) — horná časť nad hladinou je „okno“, jej priehľadnosť nech dáva posuvník *Okná* (`~/.config/latteos/glass-body`, `tint` tela karty v `goo/parts/card.plm`); hladina a spodná časť ostávajú vo farbe a nastaveniach Goo. Inak sa okná a Goo nemiešajú (1D.39). Diskutabilné — pred hotovým ukázať snímku. — 3. 11. podľa používateľa: horné sklo zodpovedá **ľavému panelu okna**, teda posuvníku *Bočný panel* (`glass-side`), nie `glass-body`. Aj druh skla panelu (mliečne, dymové…) — preto Nastavenia posielajú do `settings.json` Goo celú farbu `Theme.pane` (`pane: {r,g,b,a}`, pri každej zmene), Goo → `pane_r/g/b/a`, karta s `card_pane` má nad hladinou túto farbu a krytie, bez dymu; pod hladinou ostáva Goo. Rozmazanie: okná sklí scéna WM sama (`frost: auto`, nad tapetou číre), karta Goo dostávala silnejší blur kompozitora (`blur passes 3`) — karta so sklom teraz kreslí sklo pleamarom (`lens`, `frost: 0`, bez lomu). Návrh používateľa: posuvník rozmazania pre obe skla (Nastavenia › Okná › Sklo) — fakt pre `frost` v `wm/session.plm` aj v karte; `auto` sa potom nahradí číslom. Čaká na pohľad používateľa. — 3. 11. **rozmazanie za oknami a bočným panelom nejde** (skúšané a vrátené): sklo v scéne pleamar-wm bez `lens` nerozmazáva, s `lens` rozmaže iba okná nakreslené scénou, nie tapetu (pod panelom tmavší „štvorec“ tam, kde je okno ikon plochy), a pod celým oknom ukazuje bublinu s dúhovým okrajom. Rozmazanie cez kompozitor (`ext-background-effect`, Quickshell `BackgroundEffect.blurRegion`) dáva pleamar-wm 0.6.9 iba panelom a ponukám, nie oknám. Sklo okien je znova `lens: false` (1D.09); karta Goo so sklom má farbu a krytie panela a je číra ako on (`frost 0`). Žiadosť pre autora pripravená: `patches/issues/pleamar-lens-window-bubble.txt` (neposlaná). Posuvníky rozmazania až keď to pleamar-wm bude vedieť.
+**1D.42** [x] **Popupy Goo napoly okno** (3. 11., `d7003f8`; používateľ 4. 11. hotové): karty Goo so sklom nad hladinou (PowerGoo, ClockGoo, CamGoo) majú farbu a krytie bočného panela okien (`Theme.pane` → `settings.json` Goo → `pane_r/g/b/a`), pod hladinou ostávajú Goo; sklo číre (`frost 0`). Rozmazanie pod oknami pleamar-wm 0.6.9 nevie (žiadosť `patches/issues/pleamar-lens-window-bubble.txt`, neposlaná) — prepojenie skla a efektov s pleamar-wm ďalej v 6.29.
 **1D.43** [ ] **Druhý rám za kartou Goo** (3. 11.): po načítaní scény Goo s otvorenou kartou PowerGoo ostal za kartou ešte jeden, starší rám (o ~50 px vyššie). Zistiť, či zmizne po zatvorení a otvorení karty; ak nie, je to chyba kreslenia karty (`goo/parts/card.plm`).
 
 ## 2. [~] Instalator OS
@@ -241,6 +241,11 @@ ak bude možnost. latteOS bude dostupne ako LiveUSB system, pripadne presne ako 
 instalator samotny bude barista(easy instalation) ktory prevedie uživatelma krokmy, pre pohodlnu inštalaciu bez nutnosti poznat linuxove terminy, diskove struktury. samozrejme pre pokročilych uživatelov su možnost zadat udaje ručne(advanced instalation). 
 Barista instalator OS je prva prezentacia baristu ktory bude mat v hotovom systeme vlastnu ulohu (viď sekciu nativne app)  
 
+**1D.44** [~] **Ťahanie za kávu dole nefunguje v LensAI** (používateľ 4. 11., k 1D.29): zóna ťahania v päte `AppWindow.qml` ležala
+pod obsahom stránky (LensAI, GuardCorgi: zoznamy `Flickable` až dole). 4. 11.: ťahanie za kávu robí strážca stlačení nad celým
+oknom (`catcher`), ak pod kurzorom nie je pole ani tlačidlo (MouseArea menšia než trojnásobok kávy); pôvodná zóna preč. Overené
+skutočnou myšou v GuardCorgi nad zoznamom. Ostáva overiť v LensAI a ostatných oknách s `AppWindow`. Okná v pleamare (10L) ťahajú
+hlavička aj káva cez `carry` (záplata pleamaru).
 **2.01** [ ] je nutnost ponuknut aj možnost instalacie ako dualboot. 
 
 **2.02** [ ] preverit možnost instalacie na obsadeny disk (ntfs) bez straty povodnych dat.
@@ -653,6 +658,12 @@ nad kvapkou ju zväčšuje** — spoj s kartou musí ostať zliaty pri každej v
 používateľ berie na teraz („zatiaľ to stačí“): text ucha sa kreslí nad kartou (6D.11). Pri riešení meniť spoj v engine
 (`parts/card.plm`: ear, neck, `blend`), nie tvar karty ani kávy (pozri ROZHODNUTIA / pamäť o grafických opravách).
 
+**6.29** [ ] **Sklo Goo prepojené so sklom pleamar-wm** (používateľ 4. 11., po 1D.42): priehľadnosť, rozmazanie, druh skla
+(mliečne, dymové…), lom, vlnka po stlačení a ďalšie efekty skla majú v Goo a v scéne pleamar-wm jeden zdroj a jedny
+posuvníky (Nastavenia › Okná › Sklo) — fakt pre `frost` v `wm/session.plm` aj v `goo/parts/card.plm` (`card_pane`), `auto`
+nahradiť číslom. Rozmazanie pod oknami čaká na pleamar-wm (1D.42, `patches/issues/pleamar-lens-window-bubble.txt`).
+Týka sa kariet so sklom (PowerGoo 6C, ClockGoo, CamGoo).
+
 ### 6A. [~] BarGoo
 Zdroje: `goo/lib/bar.luau`, `goo/side.plm`; LATTEOS-GOO §4.1
 
@@ -951,7 +962,7 @@ widgetov, ktoré si človek vyberie a nahrá; **formát spoločný s dashboardom
 
 **6B.40** [ ] **Mód Histogram: mapa zmien systému** (používateľ 30. 10., predloha: strom distribúcií Linuxu, časová os s vetvami): systém ako git priebežne zapisuje,
 čo používateľ robí; časti systému majú vlastné vetvy; dá sa nájsť udalosť s chybou a **vrátiť práve ju**, zlúčiť vetvy, založiť novú. **+** zobrazí mapu na celú plochu cez všetko,
-**−** ju vráti. Treba návrh: čo sa zapisuje (súkromie), a čo sa vôbec dá vrátiť samostatne (nastavenia áno, snímky snapper, dáta aplikácií nie vždy). Timeline zobrazenie v canvas ploche. zoom-in zoom -out. Timeline rovnako ako branch alebo fork v github zozname . ostavaju vydiet zmeny ako nove rozvetvenie timeline. niečo ako https://learn.secbyte.org/tools/linux-timeline ale zobrazene graficky s odkazama a uzlama, podobne ako timeline obrazovka v seriali Loki v Time Variance Authority (TVA).
+**−** ju vráti. Treba návrh: čo sa zapisuje (súkromie), a čo sa vôbec dá vrátiť samostatne (nastavenia áno, snímky snapper, dáta aplikácií nie vždy). Timeline zobrazenie v canvas ploche. zoom-in zoom -out. Timeline rovnako ako branch alebo fork v github zozname . ostavaju vydiet zmeny ako nove rozvetvenie timeline. niečo ako https://learn.secbyte.org/tools/linux-timeline ale zobrazene graficky s odkazama a uzlama, podobne ako timeline obrazovka v seriali Loki v Time Variance Authority (TVA). Pre jednotlivé súbory to isté ako záložka Predchádzajúce verzie — **10L.08** (používateľ 4. 11.).
 
 **6B.41** [~] **Widgety z Chaldea** (používateľ 30. 10.; [Chaldea](https://github.com/Aleph1-9012/Chaldea), widgety 0BSD): 41 vyexportovaných do `apps/widgets/`,
 galéria `latte-app widgets` (klik = na plochu / preč, voľba sa pamätá), `bin/latte-widget`, plávajú v každom režime. Chýba: prepojiť s dashboardom a pásom widgetov (6B.38);
@@ -1230,6 +1241,8 @@ Zdroje: LATTEOS-GOO §4.2, `crates/latte-stats`
 [x] **PowerGoo s lištou údajov** (13. 10.: karta rastie z celej kapsuly — `card_strip`, `cap.len` v `goo/parts/card.plm`; začína širokou ako lišta, otvára sa smerom, ktorým lišta leží, a drží ju v sebe; overené snímkou pri spodnom okraji, pri bočnom nie)**:** kartu vysunúť z celého celku Goo + lišta, aby tvorili vizuálne jeden kus
     (dnes je ucho karty pri ľavom kliku malé a lišta ostáva vedľa). Režimy okien (4.) sú bod 7 (Glance).
 
+**6C.06** [ ] Sklo karty PowerGoo (horná tabla) prepojené so sklom pleamar-wm — rieši sa v GooEngine, 6.29.
+
 ### 6D. [~] ClockGoo
 Zdroje: `goo/parts/calendar.plm`, `bin/latte-cal`, `bin/latte-sky`; LATTEOS-GOO §4.5
 
@@ -1329,7 +1342,7 @@ Výnimka: patrí medzi Goo a stojí na rovnakom mieste, interaguje s Goo, ale ni
 (vo Windowse „notification area“, ľudovo system tray): hlasitosť, sieť, aplikácie na pozadí — a k tomu upozornenia
 a dashboard. Vedľa neho na spodnom okraji žije **LensShore** (6B.12). V kóde a textoch premenovať pri najbližšej práci
 na kategórii (6H.08).
-Zdroje: `apps/desktop.qml`, `bin/latte-desktop`, `goo/lib/desk.luau`; LATTEOS-GOO §4.8
+Zdroje: `goo/parts/desk.plm`, `goo/lib/desk.luau`, `bin/latte-desktop`; LATTEOS-GOO §4.8
 
 **6H.01** [x] (Plocha a Pobrežie) náhrada rohovej lišty (Pobrežie) · r. 97–99
 
@@ -1672,16 +1685,9 @@ ovládača. Kde chýba, doplniť.
 cez AT-SPI). Jediné meniace sa miesto je podponuka **Goo návrhy** dole (zlatou, s ikonou iskry) — návrhy podľa obsahu, s AI
 aj bez nej. Položky cudzích programov (napr. NVIDIA, Git Bash) vo vlastnej skupine „Z aplikácií“, nie medzi našimi. Ponuka
 sa sama nepreusporadúva (ľudia z Windowsu to neznášajú). Spresňuje 7B.03 a pravidlo 23.
-**7B.05** [ ] **Ikony na ploche ako súčasť Goo** (používateľ 3. 11.): `apps/desktop.qml` (Quickshell) nahradiť ikonami
-vo vrstve `desk` Goo (`goo/parts/desk.plm`, `goo/lib/desk.luau`), ktorá už vlastní pravý klik na holú plochu; správanie
-a ponuky ostávajú ako vo Windows 11 (7B.01). Dôvod: v relácii pleamar-wm premenovanie len blikne (obchvat Hyprlandu
-`Exclusive` → po 150 ms `OnDemand`: pleamar-wm pri tom klávesnicu vezme a pole meno hneď uloží) a ťahanie sa seká;
-plocha ako cudzí klient sa s pleamar-wm aj Goo dohaduje o kliky a klávesnicu (`fact desk_icons`, `canvas_bg`). Ťahanie
-von do aplikácií cez `carries:`/`carry_icon:` (ide z klienta ako Goo, nie zo scény pleamar-wm), príjem `text/uri-list`.
-Priečinok, spúšťače a presuny súborov robí pomocník `latte-desktop` (scéna pleamaru smie iba do svojho priečinka) a zmeny
-posiela Goo cez `pleamar --say goo`; pomocník je kandidát na prvý prepis do Rustu (17.05). Overiť najprv pole s
-klávesnicou a pustenie súboru so skutočnou myšou a klávesnicou (pleamar `08-limitations.md` E8). Hotové = `desktop.qml`
-a `fact desk_icons` preč, `FILES` upravený.
+**7B.05** [x] **Ikony na ploche ako súčasť Goo** (používateľ 3. 11., hotové 4. 11.): ikony kreslí vrstva `desk` Goo (`goo/parts/desk.plm`, `goo/lib/desk.luau`), súbory hýbe `latte-files` ako v DualBrew (premenovanie, Kôš, nový priečinok a súbor, presun, schránka, Vlastnosti a spoločné **Ctrl+Z** / Vrátiť späť), `latte-desktop` iba zoznam (`list`), sledovanie zmien (`watch` cez inotifywait), otvorenie a mená spúšťačov; `apps/desktop.qml` a jeho stráž v GuardCorgi preč, `desk_icons` ostáva ako vypínač z Nastavení. Overené v ostrej relácii na latte-lab skutočnou cestou cez kompozitor (ydotool/uinput): výber, dvojklik, obdĺžnik, F2 / Premenovať / Nový › s poľom mena, Escape, klik vedľa, Delete, ponuky plochy a ikony pri kurzore, ťahanie na iné miesto, na priečinok a do Koša (cez `carries:` a `drop`). Pole mena je na hornom povrchu Goo (spodnej vrstve kompozitor klávesnicu nedá bez kliku). **Chýba oproti v0.3:** Ctrl+klik, ponuka pri ťahaní pravým (Kopírovať / Presunúť / Odkaz sem), obrázok pod kurzorom pri ťahaní ikon témy (`carry_icon` chce PNG, Fluent má SVG), označenie mena bez prípony (pleamar E9), plynulý presun ikon; nová sada ikon sa ukáže až po reštarte Goo. Neoverené: súbor pustený z inej aplikácie, ťahanie von do aplikácie.
+
+**7B.06** → presunuté do 10L.02 (premenovanie okienkom, rovnako na ploche aj v DualBrew).
 
 ### 7C. [ ] YOL — Your Own Life
 Plocha orientovaná na človeka a jeho činnosti (používateľ 2. 11.): klasická plocha je o súboroch a aplikáciách, dlaždice
@@ -2478,7 +2484,11 @@ Commander; režim Jeden panel slúži na inú prácu (prehliadanie, fotky, dokum
 chýba: archívy (zip aj s heslom, 7z, tar.gz/xz/zst/bz2, cpio), viackrokové Späť / Znova (premenovanie, vytvorenie,
 presun, odstránenie), Kôš s obnovením a vysypaním, pri ťahaní ponuka Kopírovať / Presunúť / Prepojiť sem, „Tento
 počítač“ so štatistikou diskov a pripojením/odpojením, palety farieb z tapety, pružinové animácie, bočné tlačidlá
-myši. Preveriť pre režim Jeden panel (10A.59) a pre chýbajúce veci z 10A.13. Pri prevzatí kódu zápis do `TRETIE-STRANY.md`.
+myši. Preveriť pre režim Jeden panel (10A.59) a pre chýbajúce veci z 10A.13. Pri prevzatí kódu zápis do `TRETIE-STRANY.md`. — 4. 11.: Loaf
+narástol (145 commitov, v0.2.0, balíky aj .rpm): mriežka a podrobný zoznam (Ctrl+1/2, veľkosť ikon Ctrl+koliesko), karty,
+rozdelené zobrazenie F3, bočný panel (Miesta, záložky, Nedávne, S hviezdičkou, Kôš), výber vzorom, Quick Look medzerníkom,
+paleta z tapety, režim nízkej spotreby. UI je Qt6 Quick/QML ako DualBrew → jeho QML sa dá prenášať priamo; backend v Ruste
+(späť/znova, Kôš, archívy, sledovanie priečinka) je kandidát pre pomocníka latte-filem (10L.05).
 
 **10A.61** [ ] **Viac okien DualBrew naraz** (používateľ 27. 10.): DualBrew sa dá spustiť viackrát, každé okno samostatne
 (dnes druhé spustenie nič neotvorí: `latte-app` spúšťa `qs -n`, ktorý nedovolí druhú kópiu tej istej aplikácie; pre DualBrew ho vynechať).
@@ -2504,6 +2514,27 @@ ako dashboard: hore počítadlá (súbory spolu, videá, fotky, zvuky, vytvoren�
 a náhľady odlietajú do kategórií, ktoré pri tom vznikajú vľavo a vpravo — každá ako skupinka náhľadov s počtom.
 Na konci zhrnutie a „Použiť“ (premenovanie a presun až po potvrdení). Aj na videotéku a audiotéku (zvuky: obal alebo
 vlna namiesto náhľadu). Farby z témy LatteOS (nie ružová predloha), hromada môže byť z kávy a pohybovať sa ako kvapky.
+**10A.67** → presunuté do 10L.01 (vlastnosti súboru ako samostatné okno).
+
+**10A.68** (zdroj) Porovnania správcov súborov, na dotiahnutie DualBrew (používateľ 4. 11.):
+[Comparing file/folder properties in Nautilus](https://discourse.gnome.org/t/comparing-file-folder-properties-in-nautilus/6009/2)
+(vlákno 2021, celé v 10L.01) a
+[Comparing different file managers](https://forum.elivelinux.org/t/comparing-different-file-managers-caja-dolphin-efm-nautilus-nemo-pcmanfm-spacefm-thunar-and-double-commander/3697)
+(Caja, Dolphin, EFM, Nautilus, Nemo, PCManFM, SpaceFM, Thunar, Double Commander; snímky premenovania a zobrazenia; SpaceFM vie 2–4
+panely v ľubovoľnom rozložení; o vlastnostiach a premenovaní slovne nič).
+
+**10A.69** [ ] **Tlačidlo LITE v hlavičke DualBrew, predvolene zapnuté** (používateľ 4. 11., snímky Prieskumník Windows 11 a Loaf;
+spresňuje 10A.59): DualBrew je pri pohľade na množstvo údajov preplnený. V hlavičke vedľa Siete a Jeden/Dva panely tlačidlo
+**LITE** v rovnakom dizajne; zapnuté (predvolene) = jednoduchý, pekný prehliadač súborov a priečinkov: jeden panel, veľké dlaždice
+priečinkov s náhľadom obsahu (Prieskumník), čistá mriežka s výberom ako Loaf (súvislé zvýraznenie vybraných), bočný panel miest,
+riadok cesty, málo tlačidiel (Nový, Vystrihnúť/Kopírovať/Vložiť, Zoradiť, Zobraziť, Podrobnosti), počet položiek dole; bez
+príkazového riadku, filtra typov, druhého panelu a štatistík. Vypnuté = celý commander ako dnes. Zdroj: Loaf (MIT, QML) — prebrať
+mriežku, výber, karty a bočný panel (10A.60), rozloženie a lišta podľa Prieskumníka. Pri prevzatí kódu `TRETIE-STRANY.md`.
+Spresnené 4. 11. (snímka Nautilus „Files“): **vzhľad LITE podľa Nautila** — najčistejší: úzky bočný panel (Nedávne,
+S hviezdičkou, Domov, Dokumenty, Stiahnuté, Hudba, Obrázky, Videá, Kôš, pripojené disky s vysunutím, Ďalšie miesta), riadok
+cesty v strede hore s ponukou ⋮, hľadanie a prepínač zobrazenia vpravo, mriežka náhľadov so skrátenými menami (…), nič navyše.
+Nautilus je GPL (C, GTK): preberá sa rozloženie a správanie, kód z Loafu (MIT, QML).
+
 ### 10B. [~] LensAI
 Zdroje: `bin/latte-ai`, `apps/aicenter.qml`, `system/ai/`, `system/agents/`, `inspo/ai-na-ploche.md`
 je centralne zastrešenie všetkych použitelnych AI. Je totalna kopia Omarchy Ai využitia, len s tým že sa použiva namiesto konzoloveho, graficke rozhranie. LensGoo ma jednu z položiek komunikačne okno s Ai. 
@@ -3434,6 +3465,137 @@ fullscreen/borderless); po ukončení hry alebo návrate na plochu ich obnoviť 
 Reason na latte-lab aj podľa stres testu 369; zachovať vstup do hry a overiť, že shell zbytočne nezaťažuje systém.
 
 ---
+
+### 10L. [ ] Správa súborov (latte-filem)
+Všetko, čo robí so súbormi celý LatteOS, oddelené od DualBrew (používateľ 4. 11.): vlastnosti, premenovanie, informácia pri podržaní
+myši, okno Otvoriť / Uložiť pre všetky aplikácie a úkony so súbormi. DualBrew, plocha (7B), LensGoo aj cudzie aplikácie používajú to
+isté. Konečná podoba podľa 17.05: okná v pleamare (`kind: window`, štýl Goo), dáta a úkony pomocník v Ruste (`crates/`), ktorý
+neskôr nahradí `bin/latte-files`. Pravidlá pre všetky miesta v `docs/subory/`.
+Zdroje: `bin/latte-files`, `goo/lib/desk.luau`, `apps/files.qml`, `docs/subory/vlastnosti-navrh.html`, 10A.68
+
+**10L.01** [~] **Vlastnosti súboru ako samostatné okno** (používateľ 4. 11., snímky Win11, KDE, Nautilus, Thunar, Nemo, Finder; návrh
+`docs/subory/vlastnosti-navrh.html`): neblokuje okno, z ktorého sa otvorilo; jedno okno, a **karty súborov hore iba vtedy, keď sa vyberie viac súborov a stlačí
+Vlastnosti** — karta na súbor (dá sa oddeliť do vlastného okna) a **Porovnať** vybrané súbory v stĺpcoch s rozdielmi zlatou — z vlákna GNOME 2021: Explorer a Finder zaplavia
+obrazovku oknami, ktoré treba ručne zarovnávať; Nautilus je modálny, lebo na Waylande okno nevie, kam sa postaví (v LatteOS to
+rozhoduje naša scéna pleamar-wm: postaví ho pri okne, z ktorého prišlo). Otvára ho DualBrew, plocha, LensGoo a cudzie aplikácie
+cez `org.freedesktop.FileManager1` (`ShowItemProperties`; dnes Nautilus). Záložky podľa Windows 11, poradie z KDE `KPropertiesDialog`
+(LGPL — usporiadanie, nie kód): **Všeobecné** (náhľad, meno, typ s MIME, Otvára sa v + Zmeniť, umiestnenie, veľkosť aj na disku,
+pri priečinku obsah a zaplnenie disku ako Thunar, tri dátumy, Iba na čítanie, Skrytý cez `.hidden`, Spustiteľný, „Stiahnuté z“
+`user.xdg.origin.url` + Zabudnúť pôvod, farebná značka a komentár ako Finder/Dolphin), **Zabezpečenie** (vlastník, skupina, mriežka
+práv ako Nemo so zápisom `-rw-r--r-- · 644`, ACL, špeciálne príznaky, SELinux, Použiť na obsah), **Podrobnosti** (celé metadáta
+`exiv2`/`ffprobe`, Odstrániť osobné údaje cez mat2), **Predchádzajúce verzie** (snapper: Otvoriť, Porovnať, Obnoviť),
+**Kontrolné súčty** (KDE: SHA-256, MD5/SHA-1, overenie vloženého súčtu), **Odkaz** pri `.desktop` (príkaz, priečinok, skratka do
+`keys.conf`, spôsob spustenia, komentár, ikona; zápis `desktop-file-edit`); dole OK · Zrušiť · Použiť. Pleamar okno + `crates/latte-props`.
+
+    4. 11. hotová prvá časť: `crates/latte-props` (Rust bez cudzích knižníc: `info` → JSON, `set` mode, group, hidden cez
+    `.hidden`, comment, tags, rating, origin, opener; testy), okno `goo/props.plm` + `props.luau` (pleamar `kind: window`) a
+    spúšťač `latte-properties PATH…`; záložky Všeobecné a Zabezpečenie, karty pri viacerých súboroch, OK · Zrušiť · Použiť, meno
+    cez `latte-files rename`. Plocha (ponuka ikony, Alt+Enter) otvára toto okno. Overené v ostrej relácii skutočnou myšou:
+    otvorenie, záložky, posúvanie, hodnotenie zapísané (`user.baloo.rating` 8 = 4 hviezdičky) a vrátené, Zrušiť zavrie.
+    4. 11. večer: okno sa nedalo ťahať — pravidlo `window app=latteos-* frame=own` (QML aplikácie kreslia svoj titulok) zasiahlo aj
+    okno pleamaru, ktoré titulok nemá a o presun požiadať nevie; teraz `app_id` `org.latteos.properties` a pravidlo
+    `window app=org.latteos.properties float size 720x660` v `system/pleamarwm/session.conf`: titulok kreslí scéna WM, ťahanie
+    overené skutočnou myšou. Veľkosť platí od ďalšieho prihlásenia (pleamar-wm číta pravidlá pri štarte). Titulok okna je
+    anglicky „Properties“: pleamar `title:` neprekladá ani nemení za behu → vlastná záplata pleamaru (preklad a živý text).
+    4. 11. neskoro: hlavička ako v aplikáciách LatteOS (názov, ✕, kávová linka) a káva dole s OK · Zrušiť · Použiť, obe ťahajú
+    okno — efekt `carry` z vlastnej záplaty `patches/pleamar-window-carry.patch` (xdg-shell move, pleamar aj pleamar-wm zostavené
+    a nainštalované); pravidlo `frame=own`, platí od ďalšieho prihlásenia. Farby podľa šálky okien (`~/.config/latteos/cup`,
+    z tapety `skwd-wall-v2/colors.json`) ako `Theme.qml`. Karty **Všetky (N)** a **Porovnať** hotové (overené bez obrazovky s
+    tromi súbormi); Porovnať obsah pri dvoch súboroch zatiaľ cez `diff` v termináli ako DualBrew.
+    4. 11. večer po prihlásení: pravidlo `float` robilo z okna dialóg, ktorý scéna WM drží v strede bez presunu — teraz
+    `window app=org.latteos.properties size 720x660 frame=own`: iba naša hlavička, ťahanie za ňu overené skutočnou myšou
+    (veľkosť 720×660 sa bez `float` zatiaľ neuplatní, okno je väčšie). **DualBrew otvára to isté okno** (Vlastnosti, Alt+Enter);
+    jeho panel (94 riadkov) preč, zmena dátumu (Nastaviť/Teraz, `latte-files touch`) a SHA-256 (`latte-files sum`) prešli do
+    okna. Záložka **Podrobnosti** (10L.06): skrátené a úplné, `latte-props details` (exiftool so slovenskými popismi, kde ich
+    má; podpisy PDF z `pdfsig`); úprava značiek ešte nie.
+    4. 11. noc: vlastný riadok záložiek (Segmented unesie tri) — **Predchádzajúce verzie** (`latte-props versions/restore`: snímky
+    snapper najnovšie hore, rovnaká / iná / ešte nebol; Otvoriť, Porovnať (diff), Obnoviť… na dve stlačenia, súčasný súbor ide do
+    Koša; snapper `ALLOW_GROUPS=latte SYNC_ACL=yes` ako krok inštalátora, na latte-lab `ALLOW_USERS=arkay`), **Kontrolné súčty**
+    (SHA-256, SHA-1, MD5 na požiadanie, vložený súčet sa porovná s tým jeho dĺžky), **Odkaz** pri `.desktop` (príkaz, priečinok,
+    komentár, ikona, terminál; `latte-props set desktop.KEY`), **ACL** v Zabezpečení (zoznam, čítať/zapisovať/spúšťať, odobrať,
+    pridať meno; `setfacl`). **FileManager1**: `system/libexec/latte-filemanager1` (Python gi) + súbor služby v
+    `/usr/local/share/dbus-1/services` (má prednosť pred Nautilovým): Vlastnosti → toto okno, priečinok → DualBrew; overené
+    `gdbus call … ShowItemProperties`. Všetko overené bez obrazovky (verzie, súčty, odkaz, ACL).
+    4. 11. chyba (používateľ: okno „podivne useknuté“): bez `float` ho pleamar-wm uložil do dlaždice užšej ako 720 a pleamar
+    berie veľkosť okna aj ako najmenšiu, takže zvyšok odrezal. Teraz `window app=org.latteos.properties float frame=own`: dialóg
+    vo vlastnej veľkosti v strede; a naša scéna WM dialógy presúva (`dhandle` s `handle:` v `wm/session.plm`, posun sa po
+    zatvorení vráti) — ťahanie za vlastnú hlavičku overené skutočnou myšou. Platí aj pre ostatné dialógy (výber súboru…).
+    Zmena prípony: v hornom poli s celým menom (overené používateľom).
+    **Viac súborov naraz (štruktúra, používateľ 4. 11.):** karty hore = **„Všetky (N)“** prvá — spoločné úpravy ako vo Windows
+    (pole, ktoré sa líši, ukáže „rôzne“; čo sa zmení, platí pre všetky: práva, skryté, farba, hodnotenie, komentár, otvárací
+    program; súčet veľkostí), potom **karta každého súboru**, nakoniec **„Porovnať“** — vlastnosti v stĺpcoch, rozdiely zlatou;
+    pri dvoch súboroch tam aj tlačidlo **Porovnať obsah** (10L.09).
+    **Chýba:** zmena skupiny, klávesová skratka spúšťača (do `keys.conf`), časová os verzií (10L.08), „Zobraziť v priečinku“
+    s označeným súborom (DualBrew zatiaľ otvorí iba priečinok),
+    Ctrl+Z pre zmeny vlastností (vracia sa iba meno a obnovená verzia).
+
+**10L.02** [x] **Premenovanie okienkom, rovnako na ploche aj v DualBrew** (používateľ 4. 11., snímky Win11, Total Commander, Nautilus;
+`ROZHODNUTIA.md`): malé okienko pri ikone ako v Nautile (na ploche karta Goo vyrastajúca z ikony, v DualBrew okienko pri riadku
+namiesto riadku „Nové meno:“ dole), pole a tlačidlo Premenovať; meno označené bez prípony ako vo Windows (priečinok celé); Enter
+alebo Premenovať uloží, Esc zruší; spúšťa ho **iba F2 alebo ponuka**, nie pomalý druhý klik. V Goo treba, aby pole pleamaru vedelo pri
+`focus` označiť časť textu: vlastná záplata v `patches/`, návrh autorovi do `patches/issues/`.
+    4. 11. hotové: **plocha** — karta Goo vyrastá z ikony (nadpis Premenovanie súboru/priečinka, pole s ceruzkou, tlačidlo
+    Premenovať; `card.open` s `field.select`, polia `card_stem`/`card_all`); **DualBrew** — okienko pod položkou ako v Nautile
+    (`Field.focusName`, `shell.rename`), riadok „Nové meno:“ dole zrušený. Meno označené bez prípony (priečinok a spúšťač
+    celé), Enter alebo Premenovať uloží, Escape a klik vedľa nechajú meno tak, spúšťa F2 alebo ponuka. Pleamar: vlastná
+    záplata `patches/pleamar-field-select.patch` (`select: stem | all` na `input`, s testom a v príručke). Overené skutočnou
+    myšou a klávesnicou na ploche aj v DualBrew (súbor, priečinok, Escape).
+
+**10L.03** [ ] **Informácia pri podržaní myši nad súborom** (používateľ 4. 11., snímka Dolphin): po chvíli bublina s náhľadom, typom,
+veľkosťou, dátumami a pri médiách rozmermi a dĺžkou (`latte-files about`); na ploche bublina Goo (`tip` v `goo/parts/rows.plm`),
+v DualBrew rovnaká. Polia a správanie podľa Dolphinu (GPL — iba správanie, nie kód).
+
+**10L.04** [ ] **Okno Otvoriť / Uložiť pre všetky aplikácie** (používateľ 4. 11., snímka Win11 z Firefoxu): je to portál
+`org.freedesktop.portal.FileChooser`, ktorý aplikácie dostanú pri Otvoriť, Uložiť, Import, Export (Firefox, Chromium, Electron,
+GTK, Qt cez `QT_QPA_PLATFORMTHEME=xdgdesktopportal`). Dnes ho v relácii pleamar dáva GTK (`pleamar-portals.conf`, `default=gtk`).
+Cesta: hotový **xdg-desktop-portal-termfilechooser** (MIT) dovolí, aby výberom súborov bol akýkoľvek program — zavolá náš
+(`latte-filem pick` / `save`, viac súborov, priečinok, filtre typov); vzhľad podľa Windows 11: miesta vľavo, náhľady, pole
+Názov súboru, typ, Otvoriť ▾ / Zrušiť. Prechodne sa dá vyskúšať KDE portál (dialóg ako Dolphin), ale ťahá KDE knižnice.
+
+**10L.05** [ ] **Pomocník v Ruste namiesto `bin/latte-files`** (17.05): tie isté príkazy (rename, trash, copy, move, link, clip, paste,
+undo, props, about) a rovnaký záznam pre Ctrl+Z, pre plochu, DualBrew a okná 10L; najprv `props` pre 10L.01.
+
+**10L.06** [~] **Podrobnosti podľa druhu súboru: skrátené a úplné, s úpravou** (používateľ 4. 11.): všetko, čo sa o súbore dá zistiť,
+v dvoch podobách — skrátené (to podstatné pre ten druh) a úplné (každá značka), s úpravou tam, kde formát dovolí. Obrázky: EXIF, IPTC,
+XMP, GPS na mape. Hudba: ID3 (v1, v2.3, v2.4), Vorbis/FLAC, MP4, APE — interpret, album, číslo skladby, žáner, obal, text piesne,
+ReplayGain, bitrate, vzorkovanie, kanály. Video: kontajner, stopy, kodeky, rozlíšenie, snímky za sekundu, HDR, titulky, zvukové stopy
+a jazyky. Dokumenty (PDF, Word, ODF): autor, program, strany, šablóna, a **podpisy**: kto podpísal, či podpis platí, či sa dokument
+po podpise zmenil, certifikát. Hotové nástroje (nie vlastný kód): **exiftool** (číta a zapisuje takmer všetko, aj ID3 a XMP),
+**mediainfo** (BSD-2, video a zvuk podrobne), `ffprobe`, `exiv2`, **pdfsig** a `pdfinfo` (poppler, na latte-lab sú); v Ruste pre
+10L.05 crate **lofty** (MIT/Apache, značky zvuku čítať aj zapisovať) a **nom-exif** / **kamadak-exif** (čítanie EXIF).
+
+**10L.07** [ ] **Hodnotenie hviezdičkami a Obľúbené pri každom súbore** (používateľ 4. 11., Winamp, Musicolet na Androide): 0–5
+hviezdičiek a srdiečko (Obľúbené) vedľa farebnej značky; zoradiť a filtrovať podľa hodnotenia v DualBrew, na ploche, v LensGoo
+a v prehrávači. Prevziať existujúce štandardy, aby ho videli aj iné programy: pre každý súbor xattr **`user.baloo.rating`** (0–10,
+ako Dolphin a KDE; farebné značky už idú do `user.xdg.tags`), a kde to formát má, aj do súboru: **XMP `xmp:Rating`** pri fotkách
+(Lightroom, digiKam, Windows Prieskumník), **ID3 `POPM`** pri MP3 (Winamp, Windows Media Player, mnohé prehrávače v telefóne),
+`RATING` / `FMPS_Rating` pri Vorbis/FLAC (POPM má rôzne stupnice: Windows číta 224–255 ako 5 hviezdičiek a 5 zapisuje ako 255).
+Musicolet: neoverené, či hodnotenie zapisuje do súboru — väčšina prehrávačov v Androide ho drží vo vlastnej databáze (Poweramp
+to robí zámerne); overiť skúškou (ohodnotiť v Musicolete, pozrieť značky v Mp3tag / exiftool). Srdiečko = značka „favorite“ v `user.xdg.tags`, alebo 5 hviezdičiek — rozhodnúť.
+
+**10L.08** [ ] **Časové osi súborov (Timelines): predchádzajúce verzie ako vetvy** (používateľ 4. 11., snímky: časová os dejín,
+„Sacred Timeline“ zo seriálu Loki): zmeny sledovaných súborov a priečinkov sa zapisujú; dá sa spätne vyšetrovať, vrátiť sa k
+udalosti a pokračovať inak — vznikne **nová súbežná os**, stará sa nezmaže, iba sa preruší a dá sa na ňu kedykoľvek vrátiť.
+Zobrazenie ako vetvy (git, strom dejín). Stavebné kamene sú hotové: btrfs snímky (lacné, zapisovateľné = vetva) a **snapper**
+(na latte-lab je, config `root` pokrýva aj /home; jeho pravidelné snímky sa volajú práve *timeline*; `snapper undochange` vráti
+vybrané zmeny, `snapper rollback` založí novú zapisovateľnú vetvu a starú ponechá). Pre jeden súbor: záložka Predchádzajúce verzie
+v 10L.01 je pohľad na jeho os; pre celý systém je to mód Histogram v LensShore (**6B.40**) — jedna os, dva pohľady. Treba návrh:
+čo sa sleduje (súkromie, miesto na disku), ako často, a čo sa dá vrátiť samostatne. — 4. 11. spresnené: **primárne pre systém, sekundárne zapínateľné
+pre vybraný priečinok či súbor** (autor zapne pre knihu a zmeny mu ostanú navždy): vybraný priečinok = vlastný btrfs subvolume
+s vlastným configom snapper (`snapper -c kniha create-config …`, časté snímky, bez mazania), pri textoch aj git pod kapotou (každé
+uloženie zmena, návrat = nová vetva). V reálnom použití rovnako nikde (rešerš 4. 11.): vetvenie po návrate robí undo-tree vo Vime
+a Emacse (iba v editore, time-machine.nvim ho kreslí ako os), Neon pri databázach („restore“ založí novú vetvu, starú nechá),
+snapper `rollback`; snapper-gui snímky porovná, ale strom nekreslí; Lifestreams (Freeman, Gelernter, Yale 1996) nahradil
+priečinky časovým prúdom dokumentov, bez vetiev; Apple Time Machine nevetví. Spojenie btrfs + strom vetiev + os je nové.
+
+**10L.09** [ ] **Porovnanie obsahu súborov a priečinkov** (používateľ 4. 11.): pre celý LatteOS, nielen medzi panelmi DualBrew
+(10A.41 tam už vyberá, čo druhá strana nemá, a dva súbory ukáže ako diff v termináli). Otvára sa z karty Porovnať vo Vlastnostiach,
+z DualBrew (Shift+F2), z ponuky pri dvoch vybraných súboroch a z Predchádzajúcich verzií (verzia proti súčasnej). Podľa druhu:
+text a kód po riadkoch vedľa seba (zvýraznené zmeny, skok na ďalšiu, prevziať zmenu zľava/sprava), obrázky vedľa seba, prekrytím
+s posuvníkom a rozdielom pixelov, binárne po bajtoch, hudba a video podľa podrobností (10L.06), priečinky stromom so synchronizáciou
+aj podpriečinkov. Hotové riešenia: **Meld** (GPL, najbližšie tomu, čo chceme: súbory, tri strany, priečinky — ako samostatný program,
+nie kód) alebo KDiff3; `diff`/`cmp`, ImageMagick `compare` pre obrázky, `rsync --dry-run` pre priečinky. Vzhľad a skratky podľa
+Total Commandera (Porovnať podľa obsahu, Synchronizovať priečinky).
 
 ## 11. [~] Bezpečnosť, súkromie a záloha
 Zdroje: `bin/latte-net`, `system/libexec/latte-netd`

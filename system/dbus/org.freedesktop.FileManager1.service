@@ -1,0 +1,5 @@
+# LatteOS's file manager for every app (system/libexec/latte-filemanager1). Installed in /usr/local/share, which the
+# session bus reads before /usr/share: it wins over Nautilus's file of the same name, which stays for GNOME.
+[D-BUS Service]
+Name=org.freedesktop.FileManager1
+Exec=/usr/libexec/latte-filemanager1

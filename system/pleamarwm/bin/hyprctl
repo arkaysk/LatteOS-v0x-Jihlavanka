@@ -282,8 +282,14 @@ def mode(expr):
     return True
 
 
-# The cups' title bars, as system/hypr/latte/bars.lua has them: the bar, its writing; the edge of the window with the keyboard
-CUPS = {"espresso": ("261d17", "f3ebdd"), "mocha": ("3e3027", "f6eee2"), "porcelain": ("ebe2d2", "2a170c")}
+# The cups' title bars: the bar and its writing from LatteOS's one list of cups (system/cups.json); the edge of the
+# window with the keyboard is the same for all
+def cups():
+    try:
+        with open(os.path.join(os.environ.get("LATTE_SHARE") or "/usr/share/latteos", "cups.json")) as f:
+            return {k: v for k, v in json.load(f).items() if isinstance(v, dict)}
+    except (OSError, ValueError):
+        return {}
 EDGE = "e4b283"
 
 
@@ -299,8 +305,8 @@ def cup_colours(name):
         except OSError:
             pass
         name = "espresso"
-    bar, ink = CUPS.get(name, CUPS["espresso"])
-    return bar, ink, EDGE
+    c = cups().get(name) or cups().get("espresso") or {"bar": "#261d17", "ink": "#f3ebdd"}
+    return c["bar"].lstrip("#"), c["ink"].lstrip("#"), EDGE
 
 
 def cup(expr):
@@ -318,7 +324,7 @@ def cup(expr):
     for part, colour in zip(("b", "i", "e"), cup_colours(name)):
         for c, k in (("r", 0), ("g", 2), ("b", 4)):
             say("fact cup.%s%s %.3f" % (part, c, int(colour[k:k + 2], 16) / 255))
-    subprocess.Popen(["gsettings", "set", "org.gnome.desktop.interface", "color-scheme", "prefer-light" if name == "porcelain" else "prefer-dark"],
+    subprocess.Popen(["gsettings", "set", "org.gnome.desktop.interface", "color-scheme", "prefer-light" if (cups().get(name) or {}).get("light") else "prefer-dark"],
                      start_new_session=True)
     return True
 

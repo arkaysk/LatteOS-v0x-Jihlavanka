@@ -1,18 +1,85 @@
-// The desktop itself: a surface under the windows that only listens. The right button on the bare desktop
-// opens the desktop's menu where it was pressed (lib/desk.luau), as on Windows; a window in the way takes
-// the press itself, as it should. With icons on the desktop (apps/desktop.qml) the desktop is theirs, with
-// the menu that goes with files: this surface is then closed, or no icon could be pressed through it.
+// The desktop itself: a surface under the windows, with the Recycle Bin and what is in the Desktop folder as icons
+// (lib/desk.luau decides what is where; `latte-desktop` moves the files). As on Windows: a press chooses, twice
+// opens, a drag over the bare desktop chooses with a rectangle; an icon dragged is carried by the compositor, so it
+// goes to another cell, onto a folder or the Recycle Bin, or out into an app; a file from an app is let go here.
+// The keys once the desktop was pressed: Enter, F2, Delete, Alt+Enter, Ctrl+A/C/X/V/Z, F5, Escape. The right button:
+// the desktop's menu on the bare desktop, an icon's on an icon. Without icons (Settings › Background) only the menu.
+// A window in the way takes the press itself, as it should.
 part Desk {
     event desk_menu ->
+    event dk_press ->                          // a left press on icon N
+    event dk_menu ->                           // the right button on icon N
+    event dk_bare ->                           // a left press on the bare desktop
+    event dk_key ->                            // a key: 1 F2, 2 Delete, 3 Enter, 4 Alt+Enter, 5 Ctrl+A, 6 Ctrl+C, 7 Ctrl+X, 8 Ctrl+V, 9 F5, 10 Escape, 11 Ctrl+Z
     fact desk_icons = false
+    model dfile max 128 {
+        label: text; icon: image 128, 128; has_icon: bool; pic: text; x: number; y: number; picked: bool; into: bool
+        badge: text; has_badge: bool; carry: text
+    }
+    fact dk_cw = 104                           // a cell, the picture in it and its letters (View › … icons)
+    fact dk_ch = 98
+    fact dk_pic = 52
+    fact dk_font = 12
+    fact dk_rows = 1
+    fact dk_band = 0                           // the rectangle that chooses: where it began, where it is
+    fact dk_sx = 0
+    fact dk_sy = 0
+    fact dk_bx = 0
+    fact dk_by = 0
+    fact dk_bw = 0
+    fact dk_bh = 0
+    fact dk_onto = -1                          // the icon something was let go on
+    fact dk_dropx = 0
+    fact dk_dropy = 0
+    let dk.free = desk_icons and not card_open and not kb and not ctx_open
+
     surface desk {
-        open: not desk_icons
         size: full, full
         anchor: bottom
         margin: 0
         level: bottom
         reserve: -1
+        keyboard: on_demand while desk_icons
         zone box desk_hit { from: 0, 0; size: desk.width, desk.height; label: "Desktop"; role: item }
-        on press right desk_hit { tap.x = cursor.x; tap.y = cursor.y; emit desk_menu }
+        on press right desk_hit { tap.x = pointer.x; tap.y = pointer.y; emit desk_menu }
+        on press desk_hit while desk_icons { dk_band = 1; dk_sx = local.x; dk_sy = local.y; dk_bx = local.x; dk_by = local.y; dk_bw = 0; dk_bh = 0; emit dk_bare }
+        on drag desk_hit while dk_band > 0 {
+            dk_bx = min(dk_sx, dk_sx + drag.dx); dk_by = min(dk_sy, dk_sy + drag.dy)
+            dk_bh = abs(drag.dy); dk_bw = abs(drag.dx)
+        }
+        on release desk_hit { dk_band = 0; dk_bw = 0; dk_bh = 0 }
+        on drop desk_hit { dk_dropx = pointer.x; dk_dropy = pointer.y }
+
+        group {
+            show: desk_icons
+            for r in dfile { DeskIcon(r) }
+            box { from: dk_bx, dk_by; size: dk_bw, dk_bh; color: #f7c873; opacity: 18%; show: dk_band > 0 and dk_bw + dk_bh > 6 }
+            box { from: dk_bx, dk_by; size: dk_bw, dk_bh; color: #f7c873; stroke: 1; opacity: 70%; show: dk_band > 0 and dk_bw + dk_bh > 6 }
+        }
+        on key F2 while dk.free { emit dk_key(1) }
+        on key Delete while dk.free { emit dk_key(2) }
+        on key Alt+Return while dk.free { emit dk_key(4) }
+        on key Return while dk.free { emit dk_key(3) }
+        on key Ctrl+a while dk.free { emit dk_key(5) }
+        on key Ctrl+c while dk.free { emit dk_key(6) }
+        on key Ctrl+x while dk.free { emit dk_key(7) }
+        on key Ctrl+v while dk.free { emit dk_key(8) }
+        on key F5 while dk.free { emit dk_key(9) }
+        on key Escape while dk.free { emit dk_key(10) }
+        on key Ctrl+z while dk.free { emit dk_key(11) }
+    }
+
+    component DeskIcon(r: record) {
+        box { from: r.x, r.y; size: dk_cw - 4, dk_ch - 4; corner: 8; color: if(r.picked, #f7c873, #ffffff); opacity: if(r.picked, 30%, 13% * dk_hit.hover) }
+        box { from: r.x, r.y; size: dk_cw - 4, dk_ch - 4; corner: 8; color: #f7c873; stroke: 1; opacity: if(r.picked, 70%, 0) }
+        image r.icon { at: r.x + (dk_cw - 4 - dk_pic) / 2, r.y + 6; size: dk_pic, dk_pic; show: r.has_icon }
+        box { from: r.x + (dk_cw + dk_pic) / 2 - 14, r.y + 2; size: 20, 20; corner: 10; color: #f7c873; show: r.has_badge }
+        text r.badge { at: r.x + (dk_cw + dk_pic) / 2 - 4, r.y + 12; anchor: center; size: 11; weight: 700; color: #2c2019; family: "Inter"; show: r.has_badge }
+        text r.label { at: r.x + (dk_cw - 4) / 2, r.y + 9 + dk_pic; anchor: center top; width: dk_cw - 10; lines: 2; align: center
+                       size: dk_font; weight: 600; color: #ffffff; family: "Inter"; shadow: 0, 1, 3, 75% }
+        zone box dk_hit { from: r.x, r.y; size: dk_cw - 4, dk_ch - 4; active: desk_icons; carries: "{r.carry}"; carry_icon: "{r.pic}"; label: "{r.label}"; role: item; selected: r.picked }
+        on press dk_hit { emit dk_press(r.index) }
+        on press right dk_hit { tap.x = pointer.x; tap.y = pointer.y; emit dk_menu(r.index) }
+        on drop dk_hit { dk_onto = r.index }
     }
 }

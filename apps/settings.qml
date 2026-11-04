@@ -238,7 +238,8 @@ ShellRoot {
     Component.onCompleted: ask()               // the front page is open from the start: no change of page asks for it
 
     // what Home says of the look (ROADMAP 9.13)
-    readonly property var cupNames: ({ espresso: QT_TR_NOOP("Espresso cup"), mocha: QT_TR_NOOP("Mocha cup"), porcelain: QT_TR_NOOP("Porcelain"), wallpaper: QT_TR_NOOP("From the wallpaper") })
+    // a cup's name: system/cups.json says it (Theme.cups), its translation is in goo/lang/sk.plm
+    function cupName(id) { return id === "wallpaper" ? QT_TR_NOOP("From the wallpaper") : ((Theme.cups[id] || Theme.cups.espresso || {}).name || id) }
     readonly property var glassNames: [QT_TR_NOOP("none"), QT_TR_NOOP("a little"), QT_TR_NOOP("more of it"), QT_TR_NOOP("the most"), QT_TR_NOOP("True Glass")]
     // the window modes, in the order of ROADMAP 8A.06; `soon`: decided, not made yet
     readonly property var windowModes: [{ id: "tape", name: QT_TR_NOOP("Tape"), hint: QT_TR_NOOP("an endless strip, nothing is put away"), icon: "layout-columns", pic: [[0,0,20,30,3],[22,0,20,30,3],[44,0,4,30,2,0.45]] },
@@ -744,7 +745,7 @@ ShellRoot {
                     // the look as it is now, and where it is chosen: Home only shows and leads (ROADMAP 9.13)
                     Card { title: I18n.tr("The look"); note: I18n.tr("The cup the windows are made of, and how much of LatteOS is glass."); icon: "palette"
                         Label { width: parent.width; color: Theme.dim; font.pixelSize: 13; wrapMode: Text.WordWrap
-                                text: I18n.tr((shell.cupNames[Theme.cup] || shell.cupNames.espresso)) + "  ·  " + I18n.tr("Glass") + ": " + I18n.tr(shell.glassNames[Theme.glassLevel]) }
+                                text: I18n.tr(shell.cupName(Theme.cup)) + "  ·  " + I18n.tr("Glass") + ": " + I18n.tr(shell.glassNames[Theme.glassLevel]) }
                         Row { spacing: 8
                             Pill { implicitHeight: 30; icon: "cup"; text: I18n.tr("Coffee and cup"); onPressed: shell.go("coffee") }
                             Pill { implicitHeight: 30; icon: "glass"; text: I18n.tr("Glass"); onPressed: shell.go("glass") } } }
@@ -808,8 +809,7 @@ ShellRoot {
                         Rectangle { anchors.centerIn: parent; width: 70; height: 70; radius: 35; color: Theme.light ? "#fffaf1" : "#e9dcc8"
                             Rectangle { anchors.centerIn: parent; width: 56; height: 56; radius: 28; color: shell.brew(kind.modelData[1], kind.modelData[2]) } } } } }
             Part { visible: shell.page === "coffee"; width: view.room; title: I18n.tr("And in what cup?"); note: I18n.tr("The cup is what the windows are made of.")
-                Repeater { model: [{ id: "espresso", name: QT_TR_NOOP("Espresso cup"), hint: QT_TR_NOOP("dark") }, { id: "mocha", name: QT_TR_NOOP("Mocha cup"), hint: QT_TR_NOOP("warm brown") },
-                                   { id: "porcelain", name: QT_TR_NOOP("Porcelain"), hint: QT_TR_NOOP("light") }]
+                Repeater { model: Object.keys(Theme.cups).map(id => ({ id: id, name: Theme.cups[id].name || id, hint: Theme.cups[id].hint || "" }))
                            .concat(Theme.fromWallpaper ? [{ id: "wallpaper", name: QT_TR_NOOP("From the wallpaper"), hint: QT_TR_NOOP("its colours, each time it changes") }] : [])
                     Choice { required property var modelData; width: 190; text: I18n.tr(modelData.name); hint: I18n.tr(modelData.hint); on: Theme.cup === modelData.id; onPressed: { cup.choose(modelData.id); Theme.cup = modelData.id; Quickshell.execDetached(["hyprctl", "eval", "latte.cup(\"" + modelData.id + "\")"]) }
                         // a small window made of that cup

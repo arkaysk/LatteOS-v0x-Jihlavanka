@@ -1,33 +1,65 @@
 #!/bin/sh
-# latte-desktop: the icons on the desktop (apps/desktop.qml): the Recycle Bin and the user's Desktop folder.
+# latte-desktop: the icons on the desktop, which Goo draws (goo/parts/desk.plm, goo/lib/desk.luau); this lists and opens them.
 #
-#   latte-desktop start      shows them, unless the user turned them off
-#   latte-desktop stop       takes them away
-#   latte-desktop restart    again
+#   latte-desktop start | stop   tells Goo the user's choice (Goo draws them, or only its menu); restart: read them again
 #   latte-desktop on | off   the user's choice (~/.config/latteos/desktop-icons), applied at once
 #   latte-desktop status     prints "on" or "off"
+#   latte-desktop list       the Desktop folder: a first line "#", its path, how much is in the Trash; then a line
+#                            each: path, name, 1 for a folder, the icon (a name of the icon theme, or a path),
+#                            its size and when it changed (seconds), to sort by
+#   latte-desktop watch      a line whenever the Desktop folder or the Trash changes, until it is stopped
+#   latte-desktop open PATH…          each with what opens it (the Trash too, a launcher started)
+#   (Moving, renaming, the Trash, new files, the clipboard and Ctrl+Z are latte-files', as in DualBrew.)
 #   latte-desktop entries FOLDER   the launchers (.desktop) in it, a line each: file name, a tab, its name, a tab, its icon
 #   latte-desktop openers FILE   the apps that open that kind of file, a line each: ID.desktop, a tab, its name
 #   latte-desktop name FILE NAME   what a launcher (.desktop) is called, in every language; its file keeps its name
 #   latte-desktop add WHAT   an icon for it in the Desktop folder: an app (its ID.desktop) is copied there, a file or
 #                            a folder (a path) is linked; what is there already of that name stays
-#
-# With icons the bare desktop is theirs, with the menu that goes with files; the Goo's own desktop menu
-# (goo/parts/desk.plm) is told to step back, on the monitor the icons are on.
 flag="${XDG_CONFIG_HOME:-$HOME/.config}/latteos/desktop-icons"
 status() { [ "$(cat "$flag" 2>/dev/null)" = off ] && echo off || echo on; }
-running() { pgrep -u "$(id -u)" -f '^qs .*apps/desktop\.qml' >/dev/null; }
-stop() { pkill -u "$(id -u)" -f '^qs .*apps/desktop\.qml' 2>/dev/null; }
-start() { [ "$(status)" = on ] && { running || setsid -f latte-app desktop >/dev/null 2>&1; }; }
+trash="${XDG_DATA_HOME:-$HOME/.local/share}/Trash/files"
+folder() { d="$(xdg-user-dir DESKTOP 2>/dev/null)"; { [ -n "$d" ] && [ "$d" != "$HOME" ]; } || d="$HOME/Desktop"; mkdir -p "$d" "$trash"; printf '%s' "$d"; }
+# a launcher's own name, in the user's language if it has one
+called() { n="$(grep -m1 "^Name\[${LANG%%_*}\]=" "$1" | cut -d= -f2-)"; [ -n "$n" ] || n="$(grep -m1 '^Name=' "$1" | cut -d= -f2-)"; printf '%s' "$n"; }
+# the icon theme's names (what the theme has, so that a kind it lacks gets its generic icon)
+names() {
+    t="$(gsettings get org.gnome.desktop.interface icon-theme 2>/dev/null | tr -d "'")"
+    for b in "${XDG_DATA_HOME:-$HOME/.local/share}/icons" /usr/share/icons; do [ -d "$b/$t" ] && find "$b/$t" "$b/hicolor" -name '*.svg' -o -name '*.png'; done |
+        sed 's|.*/||; s|\.[a-z]*$||' | sort -u
+}
 tell() { pleamar --say goo "fact desk_icons $([ "$(status)" = on ] && echo true || echo false)" >/dev/null 2>&1; }
 
 case "${1:-}" in
+list)
+    d="$(folder)"; have="$(mktemp)"; names > "$have"
+    printf '#\t%s\t%s\n' "$d" "$(ls -A "$trash" | wc -l)"
+    for f in "$d"/*; do
+        [ -e "$f" ] || [ -L "$f" ] || continue
+        at="$(stat -L -c '%s	%Y' -- "$f" 2>/dev/null)"
+        if [ -d "$f" ]; then printf '%s\t%s\t1\tfolder\t%s\n' "$f" "${f##*/}" "$at"; continue; fi
+        case "$f" in *.desktop) n="$(called "$f")"; printf '%s\t%s\t0\t%s\t%s\n' "$f" "${n:-${f##*/}}" "$(grep -m1 '^Icon=' "$f" | cut -d= -f2-)" "$at"; continue ;; esac
+        kind="$(file -b -L --mime-type -- "$f" 2>/dev/null)"
+        case "$kind" in
+        image/png|image/jpeg|image/webp|image/gif) icon="$f" ;;
+        *)  icon="$(printf '%s' "$kind" | tr / -)"
+            grep -qx -- "$icon" "$have" || icon="${kind%%/*}-x-generic"
+            grep -qx -- "$icon" "$have" || icon=text-x-generic ;;
+        esac
+        printf '%s\t%s\t0\t%s\t%s\n' "$f" "${f##*/}" "$icon" "$at"
+    done
+    rm -f "$have" ;;
+watch)
+    exec inotifywait -m -q -e create,delete,moved_to,moved_from,close_write,attrib --format . "$(folder)" "$trash" ;;
+open)
+    shift
+    for p in "$@"; do
+        if [ "$p" = "$trash" ]; then setsid -f gio open trash:/// >/dev/null 2>&1
+        else case "$p" in *.desktop) setsid -f gio launch "$p" >/dev/null 2>&1 ;; *) setsid -f gio open "$p" >/dev/null 2>&1 ;; esac; fi
+    done ;;
 entries)
     for f in "${2:?}"/*.desktop; do
         [ -f "$f" ] || continue
-        name="$(grep -m1 "^Name\[${LANG%%_*}\]=" "$f" | cut -d= -f2-)"
-        [ -n "$name" ] || name="$(grep -m1 '^Name=' "$f" | cut -d= -f2-)"
-        printf '%s\t%s\t%s\n' "$(basename "$f")" "$name" "$(grep -m1 '^Icon=' "$f" | cut -d= -f2-)"
+        printf '%s\t%s\t%s\n' "$(basename "$f")" "$(called "$f")" "$(grep -m1 '^Icon=' "$f" | cut -d= -f2-)"
     done ;;
 openers)
     kind="$(gio info -a standard::content-type -- "${2:?}" 2>/dev/null | sed -n 's/.*content-type: //p')"
@@ -35,8 +67,7 @@ openers)
         for d in "${XDG_DATA_HOME:-$HOME/.local/share}" $(printf '%s' "${XDG_DATA_DIRS:-/usr/local/share:/usr/share}" | tr ':' ' ') /var/lib/flatpak/exports/share; do
             f="$d/applications/$id"
             [ -f "$f" ] || continue
-            name="$(grep -m1 "^Name\[${LANG%%_*}\]=" "$f" | cut -d= -f2-)"
-            [ -n "$name" ] || name="$(grep -m1 '^Name=' "$f" | cut -d= -f2-)"
+            name="$(called "$f")"
             printf '%s\t%s\n' "$id" "${name:-$id}"
             break
         done
@@ -49,8 +80,7 @@ name)
             entry && /^Name=/ { print "Name=" ENVIRON["NAME"]; next }
             { print }' "$f" > "$t" && mv -- "$t" "$f" || { rm -f -- "$t"; exit 1; } ;;
 add)
-    d="$(xdg-user-dir DESKTOP 2>/dev/null)"; { [ -n "$d" ] && [ "$d" != "$HOME" ]; } || d="$HOME/Desktop"
-    mkdir -p "$d"
+    d="$(folder)"
     case "${2:?}" in
     /*) [ -e "$d/$(basename "$2")" ] || ln -s -- "$2" "$d/$(basename "$2")" ;;
     *)  id="${2%.desktop}.desktop"
@@ -61,9 +91,9 @@ add)
         done ;;
     esac ;;
 status)  status ;;
-start)   start; tell ;;
-stop)    stop; tell ;;
-restart) stop; sleep 0.3; start; tell ;;
-on|off)  mkdir -p "$(dirname "$flag")"; echo "$1" > "$flag"; stop; sleep 0.3; start; tell ;;
-*)       sed -n '2,11p' "$0" | sed 's/^# \{0,1\}//' >&2; exit 2 ;;
+start|stop) tell ;;
+# the icons read again (another icon set chosen); ponytail: a set pleamar has already loaded changes with Goo's restart
+restart) tell; pleamar --say goo "emit dk_key 9" >/dev/null 2>&1 ;;
+on|off)  mkdir -p "$(dirname "$flag")"; echo "$1" > "$flag"; tell ;;
+*)       sed -n '2,17p' "$0" | sed 's/^# \{0,1\}//' >&2; exit 2 ;;
 esac

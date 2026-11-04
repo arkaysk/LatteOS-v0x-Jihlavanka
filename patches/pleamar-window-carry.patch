@@ -1,0 +1,182 @@
+diff --git a/docs/11-language-reference.md b/docs/11-language-reference.md
+index ba6b5e7..cb310a2 100644
+--- a/docs/11-language-reference.md
++++ b/docs/11-language-reference.md
+@@ -1603,6 +1603,11 @@ reaches that one.
+ **A scene that ends: `quit`.** In a rule, `quit` ends the program, as closing
+ its window would: a terminal whose last shell ended.
+ 
++**A window carried by its own header: `carry`.** In a rule fired by a press, `carry`
++asks the compositor to carry the scene's window with the mouse, as a title bar does
++(xdg-shell's move): `on press header { carry }`. For a `kind: window` that draws its
++own header and asks for no frame from the compositor; on a panel it does nothing.
++
+ ## 11. Text with slots
+ 
+ Inside a text in quotes that is the content of a `text` or the argument of a component:
+@@ -1913,7 +1918,7 @@ properties.layout: at anchor gap padding align fill glass lens shine refraction
+ functions: min max abs floor ceil sin cos clamp smooth mix if vel sqrt pow fract mod sign round exp log tan atan2 length noise random pick rgb
+ text_functions: upper lower
+ triggers: press release scroll drag hold enter leave hover away idle key submit focus blur drop carry change still
+-effects: toggle emit impulse ripple play focus blur close promote fullscreen minimize restore float tile launch send swap workspace pick dock accept quit
++effects: toggle emit impulse ripple play focus blur close promote fullscreen minimize restore float tile launch send swap workspace pick dock accept quit carry
+ curves: linear in_quad out_quad in_cubic out_cubic in_out_sine out_back bezier
+ frame: hold emit
+ classes: ambient reflex asked state
+diff --git a/src/gpu.rs b/src/gpu.rs
+index 655ccea..e100173 100644
+--- a/src/gpu.rs
++++ b/src/gpu.rs
+@@ -5186,6 +5186,10 @@ impl Sheet {
+     pub fn keyboard(&self, t: Keyboard) {
+         self.window.keyboard(t);
+     }
++
++    pub fn carry(&self) {
++        self.window.carry();
++    }
+ }
+ 
+ /// Header, frame history and, at the end, the lens: whether there is a background to show.
+diff --git a/src/language/compiler.rs b/src/language/compiler.rs
+index ef7ae20..8b0eb6e 100644
+--- a/src/language/compiler.rs
++++ b/src/language/compiler.rs
+@@ -7713,6 +7713,8 @@ impl<'a> Compiler<'a> {
+                         "blur" => Effect::FocusField(None),
+                         // `quit`: the scene ends, as closing its window would (a terminal whose last shell ended).
+                         "quit" => Effect::Quit,
++                        // `carry`: the window this scene is, carried by the mouse (its own header, a strip to take it by).
++                        "carry" => Effect::Carry,
+                         "focus" if self.names_window(&c) => Effect::Window(WindowAction::Focus, self.which_window(&mut c)?),
+                         // `close workspace 2 on 0`: that workspace gone, its windows to the one beside.
+                         "close" if c.word("workspace") => {
+diff --git a/src/language/vocabulary.rs b/src/language/vocabulary.rs
+index 7e43997..3b6e7ed 100644
+--- a/src/language/vocabulary.rs
++++ b/src/language/vocabulary.rs
+@@ -49,7 +49,7 @@ pub const TEXT_FUNCTIONS: &[&str] = &["upper", "lower"];
+ /// What can go after `on`. Any other word is the name of an event.
+ pub const TRIGGERS: &[&str] = &["press", "release", "scroll", "drag", "hold", "enter", "leave", "hover", "away", "idle", "key", "submit", "focus", "blur", "drop", "carry", "change", "still"];
+ /// The effects with a word of their own. Also: `prop: value ~spring` and `fact = expr`.
+-pub const EFFECTS: &[&str] = &["toggle", "emit", "impulse", "ripple", "play", "focus", "blur", "close", "promote", "fullscreen", "minimize", "restore", "float", "tile", "launch", "send", "swap", "workspace", "pick", "dock", "accept", "quit"];
++pub const EFFECTS: &[&str] = &["toggle", "emit", "impulse", "ripple", "play", "focus", "blur", "close", "promote", "fullscreen", "minimize", "restore", "float", "tile", "launch", "send", "swap", "workspace", "pick", "dock", "accept", "quit", "carry"];
+ pub const CURVES: &[&str] = &["linear", "in_quad", "out_quad", "in_cubic", "out_cubic", "in_out_sine", "out_back", "bezier"];
+ /// What a keyframe can carry besides a curve.
+ pub const KEYFRAME_OPTIONS: &[&str] = &["hold", "emit"];
+diff --git a/src/platform/mod.rs b/src/platform/mod.rs
+index a7e319d..cab33bd 100644
+--- a/src/platform/mod.rs
++++ b/src/platform/mod.rs
+@@ -1091,6 +1091,9 @@ pub trait PlatformWindow: Send {
+     /// Grab or release the keyboard with the scene running: a launcher wants it
+     /// entirely while it's open, and not at all when it isn't.
+     fn keyboard(&self, t: crate::scene::Keyboard);
++    /// Be carried by the mouse from the press that is down, as from a title bar (`carry`). Only a window does it;
++    /// anywhere else, nothing.
++    fn carry(&self) {}
+     /// That the system report (`ToRender::Frame`) when it wants the frame after
+     /// the one about to be presented. Where that's unknown, it doesn't report, and the clock sets the pace.
+     fn request_frame(&self) {}
+diff --git a/src/platform/wayland.rs b/src/platform/wayland.rs
+index 6ff7afd..f11604d 100644
+--- a/src/platform/wayland.rs
++++ b/src/platform/wayland.rs
+@@ -677,6 +677,8 @@ fn next_surface_id() -> u32 {
+ 
+ struct WaylandWindow {
+     wl: wl_surface::WlSurface,
++    /// A window's own (`kind: window`): to be carried by the mouse (`carry`). A panel or a popup has none.
++    toplevel: Option<Window>,
+     compositor: CompositorState,
+     /// To change the cursor you need the pointer's "device" and the serial
+     /// number of the last time it entered: both are set by the Wayland thread.
+@@ -831,6 +833,14 @@ impl PlatformWindow for WaylandWindow {
+         }
+     }
+ 
++    fn carry(&self) {
++        // the seat and the serial of the last press, which the compositor asks for: no press, nothing to carry
++        let (Some(w), Some(pp)) = (&self.toplevel, POPUPS.get()) else { return };
++        if let (Some(seat), Some((serial, _))) = (pp.seat.lock().unwrap().as_ref(), *pp.last_press.lock().unwrap()) {
++            w.move_(seat, serial);
++        }
++    }
++
+     fn cursor(&self, c: Cursor) {
+         let shape = shape_of(c);
+         CURSOR_SHAPE.store(c.code(), Ordering::Relaxed);
+@@ -1711,7 +1721,7 @@ impl PopupHandler for State {
+             let _ = self.to_render.send(ToRender::Sheet(Box::new(gpu::NewSheet {
+                 id: a.id,
+                 target: gpu::Target::Surface(surface),
+-                window: Box::new(WaylandWindow { wl: a.popup.wl_surface().clone(), compositor: self.compositor.clone(), cursors: e.cursors.clone(), serial: e.serial.clone(), layer: None, qh: e.qh.clone(), id: a.id, effect: Mutex::new(None), backdrop: a.backdrop.clone(), shown: Default::default() }),
++                window: Box::new(WaylandWindow { toplevel: None, wl: a.popup.wl_surface().clone(), compositor: self.compositor.clone(), cursors: e.cursors.clone(), serial: e.serial.clone(), layer: None, qh: e.qh.clone(), id: a.id, effect: Mutex::new(None), backdrop: a.backdrop.clone(), shown: Default::default() }),
+                 scale: a.parent.scale,
+                 size: a.size,
+                 mhz: a.parent.mhz,
+@@ -1918,7 +1928,7 @@ impl State {
+             let _ = self.to_render.send(ToRender::Sheet(Box::new(gpu::NewSheet {
+                 id: p.id,
+                 target: gpu::Target::Surface(surface),
+-                window: Box::new(WaylandWindow { wl: p.role.wl().clone(), compositor: self.compositor.clone(), cursors: self.cursors.clone(), serial: self.serial.clone(), layer: p.role.layer().cloned(), qh: self.qh.clone(), id: p.id, effect: Mutex::new(None), backdrop: p.backdrop.clone(), shown: Default::default() }),
++                window: Box::new(WaylandWindow { toplevel: match &p.role { Role::Window(w) => Some(w.clone()), _ => None }, wl: p.role.wl().clone(), compositor: self.compositor.clone(), cursors: self.cursors.clone(), serial: self.serial.clone(), layer: p.role.layer().cloned(), qh: self.qh.clone(), id: p.id, effect: Mutex::new(None), backdrop: p.backdrop.clone(), shown: Default::default() }),
+                 scale: p.scale,
+                 size,
+                 mhz,
+@@ -1990,7 +2000,7 @@ impl smithay_client_toolkit::session_lock::SessionLockHandler for State {
+             let _ = self.to_render.send(ToRender::Sheet(Box::new(gpu::NewSheet {
+                 id: face.id,
+                 target: gpu::Target::Surface(paints),
+-                window: Box::new(WaylandWindow { wl: face.surface.wl_surface().clone(), compositor: self.compositor.clone(), cursors: self.cursors.clone(), serial: self.serial.clone(), layer: None, qh: self.qh.clone(), id: face.id, effect: Mutex::new(None), backdrop: None, shown: Default::default() }),
++                window: Box::new(WaylandWindow { toplevel: None, wl: face.surface.wl_surface().clone(), compositor: self.compositor.clone(), cursors: self.cursors.clone(), serial: self.serial.clone(), layer: None, qh: self.qh.clone(), id: face.id, effect: Mutex::new(None), backdrop: None, shown: Default::default() }),
+                 scale: 1.0,
+                 size,
+                 mhz: face.mhz,
+diff --git a/src/render.rs b/src/render.rs
+index 23a1964..4000da8 100644
+--- a/src/render.rs
++++ b/src/render.rs
+@@ -592,6 +592,8 @@ pub fn run(
+     let mut keyboard_set: Option<Keyboard> = None;
+     let mut have_keyboard = false;
+     let mut keyboard_lent: Option<Instant> = None;
++    // `carry` was fired: the compositor is asked to carry the window with the press that is down.
++    let mut carry_asked = false;
+     // Since when the scene stopped wanting the keyboard while it was lent.
+     let mut loan_grace: Option<Instant> = None;
+     // The field being typed into, and the key that has been left held down.
+@@ -2809,6 +2811,11 @@ pub fn run(
+                     .collect()
+             })
+             .unwrap_or_default();
++        if std::mem::take(&mut carry_asked) {
++            for l in &sheets {
++                l.carry();
++            }
++        }
+         if keyboard_set.is_some() || any_condition || keyboard_lent.is_some() || scene.surfaces.iter().any(|s| s.keyboard != scene.surface().keyboard) {
+             keyboard_set = Some(mode);
+             for l in &mut sheets {
+@@ -3417,6 +3424,7 @@ pub fn run(
+                         texts[k] = v;
+                     }
+                     Effect::Quit => crate::quit_from_scene(),
++                    Effect::Carry => carry_asked = true,
+                     Effect::FocusTerminal(name) => {
+                         parked = None;
+                         editing = None;
+diff --git a/src/scene.rs b/src/scene.rs
+index f5cbea6..2e7743a 100644
+--- a/src/scene.rs
++++ b/src/scene.rs
+@@ -1958,6 +1958,9 @@ pub enum Effect {
+     FocusTerminal(&'static str),
+     /// `quit`: the program ends.
+     Quit,
++    /// `carry`: the window the scene is follows the mouse, from the press that fired the rule, as a title bar
++    /// does (xdg-shell's move). For a window that draws its own header.
++    Carry,
+     /// A live text becomes that: `name = ""`, `label = draft`.
+     Text(TextId, TextValue),
+     /// Something done to a window of the compositor inside the scene: which

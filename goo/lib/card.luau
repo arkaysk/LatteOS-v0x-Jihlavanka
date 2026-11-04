@@ -29,7 +29,7 @@
 -- A card may have a second column: `width2` in the options, and the rows that go there say `col = 2`. At its
 -- top it can show a month: `calendar = { title, weekdays = { 7 names }, days = { 42 × { n, dim, today, chosen,
 -- dot } }, pick = function(place 0…41), step = function(±1) }`.
--- A tab is { label, glyph, on, run }. The field is { hint, text, secret, change = function(text), submit =
+-- A tab is { label, glyph, on, run }. The field is { hint, text, secret, select, change = function(text), submit =
 -- function(text) }; `submit` returns true to keep what was typed, `secret` hides it as a password.
 -- `tiles`: the rows between two headings are laid as a tile, a card within the card (rules between them are
 -- dropped: the tile is what holds them together).
@@ -70,6 +70,7 @@ local calendar = nil                         -- the month shown, if any: who hea
 local ear = nil                              -- the drop that stepped out for the open card
 
 text.g_check, text.g_more, text.g_back, text.g_search, text.g_key = icons["check"], icons["chevron-right"], icons["chevron-left"], icons["search"], icons["key"]
+text.g_pencil = icons["pencil"]
 text.g_copy = icons["copy"]
 
 local function glyph(name) return name and (icons[name] or (name:byte(1) or 0) >= 128 and name) or "" end
@@ -336,12 +337,16 @@ function M.open(rows, opts)
     if field then
         text.card_hint = field.hint or ""
         fact.card_secret = field.secret == true
+        -- a name to rename: "stem" chooses it without its ending as it is focused (a file), "all" all of it (a folder)
+        fact.card_sel = field.select == "stem" and 1 or (field.select == "all" and 2 or 0)
+    else
+        fact.card_sel = 0
     end
     if field and (fresh or not had) then
-        text.card_q, text.card_pw = "", ""
+        text.card_q, text.card_pw, text.card_stem, text.card_all = "", "", "", ""
         M.text(field.text or "")
         -- what is typed goes to the field without a press
-        after(60, function() if field then focus(field.secret and "card_pw" or "card_q") end end)
+        after(60, function() if field then focus(M.field_name()) end end)
     end
     shown = { rows = rows, opts = opts }
     model.card = out
@@ -364,8 +369,13 @@ function M.open(rows, opts)
 end
 
 -- what is typed in the field: read it, or put something there
+function M.field_name()
+    if not field then return "card_q" end
+    if field.secret then return "card_pw" end
+    return field.select == "stem" and "card_stem" or (field.select == "all" and "card_all" or "card_q")
+end
 function M.text(v)
-    local name = (field and field.secret) and "card_pw" or "card_q"
+    local name = M.field_name()
     if v ~= nil then text[name], fact.card_typed = v, v ~= "" end
     return text[name] or ""
 end
@@ -481,5 +491,7 @@ function M.field_menu(name, changed)
 end
 on("card_field_menu", function() M.field_menu("card_q", typed) end)
 on("text:card_pw", typed)
+on("text:card_stem", typed)
+on("text:card_all", typed)
 
 return M

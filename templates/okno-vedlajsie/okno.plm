@@ -1,0 +1,127 @@
+// TEMPLATE — a secondary LatteOS window, made with pleamar (docs/okna/SABLONY.md). The model is Properties
+// (goo/props.plm): a small window of its own for one task — an app's own settings, Properties, a choice — not a whole
+// app. Copy this file and okno.luau into goo/ under a name of their own, rename the scene, `app_id` and `title`, and:
+//   · system/pleamarwm/session.conf:  window app=org.latteos.NAME float frame=own   (a dialog at its own size, its
+//     header drawn here and carried by the window manager's scene; without `float` a tile cuts it)
+//   · a launcher in bin/ (as bin/latte-properties), FILES for every file, the texts in goo/lang/sk.plm
+// The look: a header with the name and ✕ and the coffee line under it (it carries the window: `carry`), tabs of its own
+// when there are sections, rows grouped on cards, at the foot OK · Cancel · Apply over a line. No coffee at the foot
+// (that is the main apps' — apps/common/AppWindow.qml). The colours are the windows' cup (goo/lib/cup.luau).
+language 0.9
+import "lang/sk.plm"
+import "pleamar:ui"
+
+scene Okno {
+    surface { size: 640, 520; kind: window; title: "Settings"; app_id: "org.latteos.okno"; keyboard: on_demand }
+    permissions {
+        run: "cat"
+        services: "env"
+    }
+
+    let W = screen.width
+    let H = screen.height
+    // the colours of the windows' cup, from the logic (goo/lib/cup.luau)
+    repeat k in 0..10 { fact c.$k.r = 0.5 }
+    repeat k in 0..10 { fact c.$k.g = 0.5 }
+    repeat k in 0..10 { fact c.$k.b = 0.5 }
+    let ground = rgb(c.0.r, c.0.g, c.0.b)
+    let surfc = rgb(c.1.r, c.1.g, c.1.b)
+    let rowc = rgb(c.2.r, c.2.g, c.2.b)
+    let raised = rgb(c.3.r, c.3.g, c.3.b)
+    let line = rgb(c.4.r, c.4.g, c.4.b)
+    let cream = rgb(c.5.r, c.5.g, c.5.b)
+    let dim = rgb(c.6.r, c.6.g, c.6.b)
+    let faint = rgb(c.7.r, c.7.g, c.7.b)
+    let gold = rgb(c.8.r, c.8.g, c.8.b)
+    let coffee = rgb(c.9.r, c.9.g, c.9.b)
+    fact light = false
+    let ink_gold = if(light, #fffaf1, #17110d)
+
+    text o_title = "Settings"
+    fact o_dirty = false                       // something changed: Apply can be pressed
+    fact sec = 0                               // the section shown
+    fact o_switch = false                      // an example setting
+    event flip ->
+    event ok ->
+    event apply ->
+    event cancel ->
+    event done
+    on done { quit }
+    on cancel { quit }
+    on key Escape { emit cancel }
+
+    body { color: ground; box { from: 0, 0; size: W, H } }
+
+    // ── the header: its name, ✕, the coffee line under it; it carries the window ──────────────────────────────────
+    let hd = 56
+    zone box header { from: 0, 0; size: W, hd; label: "Move the window"; role: region }
+    on press header { carry }
+    text o_title { at: 20, hd / 2; anchor: left center; width: W - 90; lines: 1; size: 15; weight: 700; color: cream; family: "Inter" }
+    zone box close_hit { from: W - 46, 11; size: 34, 34; corner: 10; cursor: pointer; label: "Close"; role: button }
+    box { from: W - 46, 11; size: 34, 34; corner: 10; color: #e5484d; opacity: close_hit.hover }
+    text "" { at: W - 29, 28; anchor: center; size: 17; color: cream; family: "tabler-icons" }
+    on press close_hit { emit cancel }
+    body {
+        gradient: 0, hd - 1 to W, hd - 1, coffee, coffee, coffee, ground
+        box { from: 0, hd - 2; size: W, 2 }
+    }
+
+    // ── the sections, when there are any: tabs of its own (pleamar:ui's Segmented holds three, and only once a scene) ─
+    row { at: 20, hd + 14; gap: 4
+        SecTab(0, "General", true)
+        SecTab(1, "Advanced", true)
+    }
+
+    // ── what it shows: rows grouped on cards; a long one scrolls (`view:`) ────────────────────────────────────────
+    let rw = W - 40
+    let by = hd + 62
+    column first { at: 20, by; view: rw, H - by - 72; gap: 10; show: sec == 0
+        group {
+            size: rw, 88
+            box { from: 0, 0; size: rw, 88; corner: 12; color: rowc }
+            text "A setting" { at: 14, 22; anchor: left center; size: 13; color: dim; family: "Inter" }
+            text "what it does, in a few words" { at: 170, 22; anchor: left center; size: 13; color: faint; family: "Inter" }
+            row { at: rw - 60, 10; Switch(o_switch, flip, accent: gold) }
+            box { from: 14, 44; size: rw - 28, 1; color: line; opacity: 55% }
+            text "Another" { at: 14, 66; anchor: left center; size: 13; color: dim; family: "Inter" }
+            Button("Change…", rw - 104, 51, flip)
+        }
+    }
+    column second { at: 20, by; view: rw, H - by - 72; gap: 10; show: sec == 1
+        group {
+            size: rw, 44
+            box { from: 0, 0; size: rw, 44; corner: 12; color: rowc }
+            text "More" { at: 14, 22; anchor: left center; size: 13; color: dim; family: "Inter" }
+        }
+    }
+
+    // ── the foot: OK · Cancel · Apply over a line, as a dialog has them ───────────────────────────────────────────
+    box { from: 0, H - 64; size: W, 1; color: line }
+    Button("OK", W - 312, H - 46, ok, gold_on: true)
+    Button("Cancel", W - 212, H - 46, cancel)
+    Button("Apply", W - 112, H - 46, apply, enabled: o_dirty)
+    on key Return { emit ok }
+
+    // ── the pieces (the same as Properties') ──────────────────────────────────────────────────────────────────────
+    component Button(caption: text, x: number, y: number, press: event, width: number = 96, gold_on: bool = false, enabled: bool = true, shown: bool = true) {
+        group {
+            show: shown
+            zone box hit { from: x, y; size: width, 30; corner: 8; cursor: pointer; active: enabled; label: "{caption}"; role: button }
+            box { from: x, y; size: width, 30; corner: 8; color: if(gold_on, gold, raised); opacity: if(enabled, 100%, 45%) }
+            box { from: x, y; size: width, 30; corner: 8; color: if(hit.hover > 0.5, gold, line); stroke: 1; opacity: if(enabled, 100%, 45%) }
+            text caption { at: x + width / 2, y + 15; anchor: center; size: 13; weight: if(gold_on, 600, 500); color: if(gold_on, ink_gold, cream); family: "Inter"; opacity: if(enabled, 100%, 45%) }
+            on press hit { emit press }
+        }
+    }
+    component SecTab(k: number, caption: text, shown: bool, w: number = 128) {
+        size: if(shown, w + 4, 0), 32
+        group {
+            show: shown
+            box { from: 0, 0; size: w, 32; corner: 9; color: if(sec == k, raised, ground) }
+            box { from: 14, 30; size: w - 28, 2; corner: 1; color: gold; show: sec == k }
+            text caption { at: w / 2, 16; anchor: center; width: w - 4; lines: 1; size: 12.5; weight: if(sec == k, 600, 400); color: if(sec == k, cream, dim); family: "Inter" }
+            zone box hit { from: 0, 0; size: w, 32; cursor: pointer; role: tab; selected: sec == k; label: "{caption}" }
+            on press hit { sec = k }
+        }
+    }
+}
