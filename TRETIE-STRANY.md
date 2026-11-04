@@ -19,6 +19,7 @@ a inštalátor ich prekladá alebo inštaluje z balíkov. V repozitári sú iba 
 | [labwc](https://github.com/labwc/labwc) | režim SAFE a prihlasovacia obrazovka | GPL-2.0 |
 | [Tabler Icons](https://github.com/tabler/tabler-icons) | ikony (písmo z Noctalie) | MIT |
 | [Lobe Icons](https://github.com/lobehub/lobe-icons) | logá služieb AI v LensGoo a LensAI | MIT |
+| [Loaf](https://github.com/m-uvex/loaf-fm) (Musa Murad a prispievatelia) | súvislé zvýraznenie výberu v mriežke DualBrew (`apps/files.qml`, `chosenShape`): prenesený `selectionCanvas` z `qml/FilePane.qml` | MIT |
 | [Google Sans Flex](https://fonts.google.com/specimen/Google+Sans+Flex) | písmo pozdravu Gemini | OFL 1.1 |
 | [Lora](https://fonts.google.com/specimen/Lora) | písmo pozdravu Claude | OFL 1.1 |
 

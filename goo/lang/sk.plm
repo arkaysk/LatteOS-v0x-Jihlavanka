@@ -2151,6 +2151,8 @@ library Slovak {
         "Drive:" = "Jednotka:"
         "only {n}" = "iba {n}"
         "One panel" = "Jeden panel"
+        "LITE" = "LITE"
+        "Other places" = "Ďalšie miesta"
         "Copy to the other panel (F5)" = "Kopírovať do druhého panela (F5)"
         "Move to the other panel (F6)" = "Presunúť do druhého panela (F6)"
         "The same folder in the other panel" = "Ten istý priečinok v druhom paneli"

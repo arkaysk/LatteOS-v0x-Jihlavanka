@@ -2580,6 +2580,9 @@ súborov a priečinkov. **Plán (schválený 4. 11.):**
    panela** (`qml/Sidebar.qml`). Autor do `TRETIE-STRANY.md`.
 5. Nautilus je GPL (C, GTK): preberá sa rozloženie a správanie, nie kód. Premenovanie už je ako v Nautile (10L.02),
    Vlastnosti spoločné (10L.01).
+   **Stav 4. 11.:** hotové 1, 2 (prepínač LITE · Jeden · Dva, LITE predvolené; bez príkazového riadku, filtra typov a štatistík;
+   disky ako riadky s vysunutím, Ďalšie miesta; Ctrl+F ukáže riadok) a z 4 súvislé zvýraznenie výberu (mriežka). Chýba: veľkosť
+   a rozostupy mriežky a rozdelenie bočného panela z Loafu, S hviezdičkou v bočnom paneli, zvýraznenie v zozname Podrobnosti.
 
 ### 10B. [~] LensAI
 Zdroje: `bin/latte-ai`, `apps/aicenter.qml`, `system/ai/`, `system/agents/`, `inspo/ai-na-ploche.md`

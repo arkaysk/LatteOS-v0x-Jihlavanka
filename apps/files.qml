@@ -39,6 +39,14 @@ ShellRoot {
     readonly property string home: Quickshell.env("HOME") || "/"
     readonly property var words: (Quickshell.env("LATTE_APP_ARGS") || "").split("\n").filter(w => w !== "")
     property bool dual: false
+    // LITE (ROADMAP 10A.69): a plain, clean browser of files and folders, as Nautilus — one panel, a short side, no line
+    // under the panels, no filter of types, no statistics. The third of the modes in the header: LITE · One · Two panels.
+    property bool lite: true
+    readonly property string mode: lite ? "lite" : (dual ? "two" : "one")
+    function setMode(m) { lite = m === "lite"; dual = m === "two"; if (!dual) active = 0 }
+    // the line under the panels: always with one or two panels; in LITE only while it is used (Ctrl+F, Alt+F1)
+    property bool lineOpen: false              // asked for in LITE (Ctrl+F, Alt+F1); let go when it is left empty
+    readonly property bool lineShown: !lite || lineOpen || termLine.text !== ""
     // the side's quick filter of types (inspo/latteOS dualbrew.png): only files of these kinds show, folders always
     property string typeFilter: ""
     readonly property var types: ({ pictures: { name: QT_TR_NOOP("Pictures"), globs: ["*.png", "*.jpg", "*.jpeg", "*.webp", "*.gif", "*.svg", "*.heic"] },
@@ -59,7 +67,7 @@ ShellRoot {
                     if (kept.iconSize) left.iconSize = right.iconSize = kept.iconSize
                     shell.hidden = !!kept.hidden; shell.real = !!kept.real; shell.info = !!kept.info
                     if (Array.isArray(kept.columns)) shell.columns = kept.columns
-                    if (!shell.words.includes("sizes")) shell.dual = !!kept.dual
+                    if (!shell.words.includes("sizes")) { shell.dual = !!kept.dual; shell.lite = kept.lite !== undefined ? !!kept.lite : !kept.dual }
                     ready = true }
         onLoadFailed: ready = true
         function set(key, value) { if (!ready) return; const k = Object.assign({}, kept); k[key] = value; kept = k; setText(JSON.stringify(k, null, 1)) }
@@ -69,7 +77,8 @@ ShellRoot {
     onInfoChanged: prefs.set("info", info)
     onRealChanged: { prefs.set("real", real); tree = [{ path: real ? "/" : home, name: "", depth: 0, open: false }] }
     onDualChanged: if (!sizing && !peeking) prefs.set("dual", dual)
-    function shows(part) { return prefs.kept["side_" + part] !== false }
+    onLiteChanged: prefs.set("lite", lite)
+    function shows(part) { return (!lite || !["types", "network"].includes(part)) && prefs.kept["side_" + part] !== false }
     function settingsMenu() {
         const side = (part, name) => ({ text: I18n.tr(name), checked: shows(part), run: () => prefs.set("side_" + part, !shows(part)) })
         return [{ icon: "layout-sidebar", text: I18n.tr("Show in the side"), more: [side("places", "Your folders"), side("favourites", "Favourites"), side("drives", "Drives"),
@@ -122,7 +131,8 @@ ShellRoot {
                          { text: I18n.tr("The name as a regular expression"), checked: findOpts.regex, run: () => findOpt("regex", true) }, { line: true },
                          { icon: "copy", text: I18n.tr("Find the same files here"), run: () => here.findDups() }])
     }
-    function lineTo(mode) { if (lineMode === "find" && mode !== "find") { findText = ""; left.found = null; right.found = null }
+    function lineTo(mode) { lineOpen = true
+                            if (lineMode === "find" && mode !== "find") { findText = ""; left.found = null; right.found = null }
                             lineMode = mode; termLine.text = mode === "find" ? findText : ""; termLine.forceActiveFocus() }
     // the commands run before, the newest last, kept between runs; ↑ and ↓ go through them
     property int historyAt: -1
@@ -470,7 +480,7 @@ ShellRoot {
         const picked = here.picked(), many = picked.length > 1, inTrash = here.path.indexOf("/.local/share/Trash/files") >= 0
         const rows = [{ icon: "external-link", text: I18n.tr("Open"), bold: true, hint: "Enter", run: () => shell.open(path, isDir) },
             ...(apps && apps.length && !many ? [{ icon: "apps", text: I18n.tr("Open with"), more: apps.map(a => ({ text: a.name, run: () => Quickshell.execDetached(["gtk-launch", a.id, path]) })) }] : []),
-            ...(isDir && !many ? [{ icon: "layout-columns", text: I18n.tr("Open in the other panel"), run: () => { shell.dual = true; shell.other.go(path) } }] : []),
+            ...(isDir && !many ? [{ icon: "layout-columns", text: I18n.tr("Open in the other panel"), run: () => { shell.setMode("two"); shell.other.go(path) } }] : []),
             ...(isDir && !many ? [places.some(p => p.kind === "favourite" && p.path === path) ? { icon: "star", text: I18n.tr("Remove from favourites"), run: () => shell.pin(path, false) }
                                                                                              : { icon: "star", text: I18n.tr("Add to favourites"), run: () => shell.pin(path, true) }] : []),
             ...(!isDir && !many ? [{ icon: "eye", text: I18n.tr("A look"), hint: I18n.tr("Space"), run: () => shell.showPeek(path) }] : []),
@@ -658,7 +668,7 @@ ShellRoot {
             const s = Object.assign({}, bandBase), icons = shell.view !== "details", cols = Math.max(1, Math.floor(grid.width / grid.cellWidth))
             for (let i = 0; i < rows.length; i++) {
                 const cx = icons ? (i % cols) * grid.cellWidth : 0, cy = icons ? Math.floor(i / cols) * grid.cellHeight - grid.contentY : list.y + i * 34 - list.contentY
-                if (cx < x + w && cx + (icons ? grid.cellWidth : list.width) > x && cy < y + h && cy + (icons ? grid.cellHeight : 34) > y) s[files.get(i, "filePath")] = true
+                if (cx < x + w && cx + (icons ? grid.cellWidth : list.width) > x && cy < y + h && cy + (icons ? grid.cellHeight : 34) > y) s[rows[i]] = true
             }
             chosen = s
         }
@@ -766,7 +776,7 @@ ShellRoot {
         Label { id: freeText; anchors.right: parent.right; anchors.rightMargin: 18; y: 18; color: Theme.dim; font.family: Theme.mono; font.pixelSize: 12
                 text: panel.root && panel.root.total > 0 ? I18n.tr("{n} free", { n: shell.bytes(panel.root.total - panel.root.used) }) : "" }
         // what is here and what is chosen, at the panel's own foot
-        Label { x: 18; y: parent.height - 28; width: parent.width - 36; elide: Text.ElideRight; color: Theme.dim; font.family: Theme.mono; font.pixelSize: 11; visible: panel.path.startsWith("/")
+        Label { x: 18; y: parent.height - 28; width: parent.width - 36; elide: Text.ElideRight; color: Theme.dim; font.family: Theme.mono; font.pixelSize: 11; visible: !shell.lite && panel.path.startsWith("/")
                 text: (panel.picked().length ? I18n.tr("{n} chosen", { n: panel.picked().length }) + "  ·  " : "") + panel.summary
                       + (shell.typeFilter !== "" ? "  ·  " + I18n.tr("only {n}", { n: I18n.tr(shell.types[shell.typeFilter].name) }) : "")
                       + (shell.findText !== "" ? "  ·  " + I18n.tr("names with “{t}”", { t: shell.findText }) : "")
@@ -1092,8 +1102,83 @@ ShellRoot {
                         onPositionChanged: (m) => { if (panel.banding) return panel.bandMove(mapToItem(ground, m.x, m.y))
                                                     if ((m.buttons & (Qt.LeftButton | Qt.RightButton)) && Math.abs(m.x - from.x) + Math.abs(m.y - from.y) > 10) shell.drag(panel.carried(row.filePath), !!(m.buttons & Qt.RightButton)) }
                         onClicked: (m) => { if (m.button === Qt.RightButton) { const q = mapToItem(overlay, m.x, m.y); shell.itemMenu(row.filePath, row.fileIsDir, q.x, q.y) }
-                                            else if (m.button === Qt.MiddleButton && row.fileIsDir) { shell.dual = true; shell.other.go(row.filePath) } }
+                                            else if (m.button === Qt.MiddleButton && row.fileIsDir) { shell.setMode("two"); shell.other.go(row.filePath) } }
                         onDoubleClicked: (m) => { if (m.button === Qt.LeftButton && !bare) shell.open(row.filePath, row.fileIsDir) } } } }
+            // The chosen cells as one shape: every chosen cell's side that faces an unchosen one is an edge, the edges are
+            // walked into loops and every corner is rounded, outer and inner alike. Ported from Loaf's selectionCanvas
+            // (qml/FilePane.qml, MIT, Musa Murad and Loaf contributors — TRETIE-STRANY.md), on our grid and our colours.
+            // ponytail: only the icon views; the details list keeps its own row highlight.
+            Canvas { id: chosenShape; anchors.fill: grid; visible: grid.visible; antialiasing: true
+                function soon() { if (visible) requestPaint() }
+                Connections { target: panel; function onChosenChanged() { chosenShape.soon() } function onRowsChanged() { chosenShape.soon() } }
+                Connections { target: grid; function onContentYChanged() { chosenShape.soon() } function onWidthChanged() { chosenShape.soon() }
+                              function onCellWidthChanged() { chosenShape.soon() } function onCellHeightChanged() { chosenShape.soon() } }
+                onVisibleChanged: soon()
+                onPaint: {
+                    const ctx = getContext("2d"); ctx.clearRect(0, 0, width, height)
+                    if (!panel.picked().length) return
+                    const cw = grid.cellWidth, ch = grid.cellHeight, cols = Math.max(1, Math.floor(grid.width / cw)), n = panel.rows.length
+                    // the rows that can touch the view, and a row of slack each way so a shape leaving it stays open
+                    const r0 = Math.max(0, Math.floor(grid.contentY / ch) - 1), r1 = Math.min(Math.floor((n - 1) / cols), Math.ceil((grid.contentY + height) / ch) + 1)
+                    const on = i => i >= r0 * cols && i < Math.min(n, (r1 + 1) * cols) && panel.chosen[panel.rows[i]] === true
+                    const segs = []
+                    for (let i = r0 * cols; i < Math.min(n, (r1 + 1) * cols); i++) {
+                        if (!on(i)) continue
+                        const c = i % cols, x0 = Math.round(c * cw), x1 = Math.round((c + 1) * cw)
+                        const y0 = Math.round(Math.floor(i / cols) * ch - grid.contentY), y1 = Math.round(y0 + ch)
+                        if (!on(i - cols)) segs.push([x0, y0, x1, y0])                          // clockwise, the inside on the right
+                        if (!(c < cols - 1 && on(i + 1))) segs.push([x1, y0, x1, y1])
+                        if (!on(i + cols)) segs.push([x1, y1, x0, y1])
+                        if (!(c > 0 && on(i - 1))) segs.push([x0, y1, x0, y0])
+                    }
+                    ctx.beginPath()
+                    for (const loop of loops(segs)) round(ctx, loop, 12)
+                    const g = Theme.gold, css = a => "rgba(" + Math.round(g.r * 255) + "," + Math.round(g.g * 255) + "," + Math.round(g.b * 255) + "," + a + ")"   // a canvas takes CSS strings
+                    ctx.fillStyle = css(0.22); ctx.fill()
+                    ctx.strokeStyle = css(0.75); ctx.lineWidth = 1.5; ctx.lineJoin = "round"; ctx.stroke()
+                }
+                // walks the edges into loops; where two ways lead on (cells touching at a corner) it turns as far left as it
+                // can, which joins them into one shape. Only a loop that comes back to its start is drawn.
+                function loops(segs) {
+                    const outs = {}, found = []
+                    for (const g of segs) (outs[g[0] + "," + g[1]] = outs[g[0] + "," + g[1]] || []).push({ x: g[2], y: g[3], used: false })
+                    for (const g of segs) {
+                        const first = (outs[g[0] + "," + g[1]] || []).find(e => !e.used && e.x === g[2] && e.y === g[3])
+                        if (!first) continue
+                        first.used = true
+                        let cx = g[0], cy = g[1], ex = g[2], ey = g[3], guard = 0
+                        const pts = [[cx, cy]]
+                        while (guard++ < 200000) {
+                            pts.push([ex, ey])
+                            if (ex === g[0] && ey === g[1]) break
+                            const dx = ex - cx, dy = ey - cy
+                            let best = null, bestTurn = -1
+                            for (const e of outs[ex + "," + ey] || []) {
+                                if (e.used) continue
+                                let turn = Math.atan2(dx * (e.y - ey) - dy * (e.x - ex), dx * (e.x - ex) + dy * (e.y - ey))
+                                if (turn <= 0) turn += Math.PI * 2
+                                if (turn > bestTurn) { bestTurn = turn; best = e }
+                            }
+                            if (!best) break
+                            best.used = true; cx = ex; cy = ey; ex = best.x; ey = best.y
+                        }
+                        if (pts.length > 3 && ex === g[0] && ey === g[1]) found.push(pts)
+                    }
+                    return found
+                }
+                // one loop as a path with every corner rounded, never more than half the shorter side
+                function round(ctx, pts, rad) {
+                    let n = pts.length
+                    if (n > 1 && pts[n - 1][0] === pts[0][0] && pts[n - 1][1] === pts[0][1]) n -= 1
+                    if (n < 3) return
+                    ctx.moveTo((pts[0][0] + pts[1][0]) / 2, (pts[0][1] + pts[1][1]) / 2)
+                    for (let i = 1; i <= n; i++) {
+                        const p = pts[i % n], a = pts[i - 1], b = pts[(i + 1) % n]
+                        ctx.arcTo(p[0], p[1], b[0], b[1], Math.max(0, Math.min(rad, Math.hypot(p[0] - a[0], p[1] - a[1]) / 2, Math.hypot(b[0] - p[0], b[1] - p[1]) / 2)))
+                    }
+                    ctx.closePath()
+                }
+            }
             GridView { id: grid; visible: shell.view !== "details" && shell.view !== "photos" && panel.path.startsWith("/") && !panel.source && panel.peek === ""; anchors.fill: parent; model: shown; clip: true
                 readonly property bool wide: shell.view === "small" || shell.view === "tiles"     // the icon left, the name beside it
                 readonly property real icon: shell.view === "small" ? 20 : (shell.view === "tiles" ? 48 : panel.iconSize)
@@ -1112,7 +1197,7 @@ ShellRoot {
                     required property int index
                     readonly property bool roomy: !grid.wide && panel.iconSize >= 96
                     width: grid.cellWidth; height: grid.cellHeight
-                    Rectangle { anchors.fill: parent; anchors.margins: 3; radius: 10; border.width: cellDrop.containsDrag ? 2 : 0; border.color: Theme.gold; color: panel.chosen[cell.filePath] ? Qt.rgba(Theme.gold.r, Theme.gold.g, Theme.gold.b, 0.24) : (cellHover.hovered ? Theme.card
+                    Rectangle { anchors.fill: parent; anchors.margins: 3; radius: 10; border.width: cellDrop.containsDrag ? 2 : 0; border.color: Theme.gold; color: panel.chosen[cell.filePath] ? "transparent" : (cellHover.hovered ? Theme.card
                                       : (panel.tags[cell.filePath] ? Qt.rgba(Qt.color(shell.colourOf(panel.tags[cell.filePath])).r, Qt.color(shell.colourOf(panel.tags[cell.filePath])).g, Qt.color(shell.colourOf(panel.tags[cell.filePath])).b, 0.16) : "transparent")) }
                     Image { id: cellIcon; x: grid.wide ? 10 : (parent.width - width) / 2; y: grid.wide ? (parent.height - height) / 2 : 10; width: grid.icon; height: grid.icon
                             source: cell.thumb || panel.launcherIcon(cell.filePath) || FileIcons.of(cell.fileName, cell.filePath, cell.fileIsDir); sourceSize.width: Math.max(64, grid.icon * 2); sourceSize.height: Math.max(64, grid.icon * 2); fillMode: Image.PreserveAspectFit; asynchronous: true }
@@ -1154,7 +1239,7 @@ ShellRoot {
                         onPositionChanged: (m) => { if (panel.banding) return panel.bandMove(mapToItem(ground, m.x, m.y))
                                                     if ((m.buttons & (Qt.LeftButton | Qt.RightButton)) && Math.abs(m.x - from.x) + Math.abs(m.y - from.y) > 10) shell.drag(panel.carried(cell.filePath), !!(m.buttons & Qt.RightButton)) }
                         onClicked: (m) => { if (m.button === Qt.RightButton) { const q = mapToItem(overlay, m.x, m.y); shell.itemMenu(cell.filePath, cell.fileIsDir, q.x, q.y) }
-                                            else if (m.button === Qt.MiddleButton && cell.fileIsDir) { shell.dual = true; shell.other.go(cell.filePath) } }
+                                            else if (m.button === Qt.MiddleButton && cell.fileIsDir) { shell.setMode("two"); shell.other.go(cell.filePath) } }
                         onDoubleClicked: (m) => { if (m.button === Qt.LeftButton && !bare) shell.open(cell.filePath, cell.fileIsDir) } } } }
             // the photo viewer, as the old ACDSee had it: one picture big, the folder's pictures along the bottom; the
             // wheel and the arrows go through them, twice on the picture hides the strip, a slideshow if one wants
@@ -1271,9 +1356,14 @@ ShellRoot {
             Pill { implicitHeight: 34; icon: "arrow-up"; text: win.narrow ? "" : I18n.tr("Up"); onPressed: here.up() },
             Pill { id: viewPill; implicitHeight: 34; icon: shell.view === "details" ? "list" : "layout-grid"; text: win.narrow ? "" : I18n.tr("View")
                    onPressed: { const q = viewPill.mapToItem(overlay, 0, viewPill.height + 4); menu.open(q.x, Math.max(0, q.y), shell.views()) } },
-            // one panel as Explorer, or two as a commander: one switch, gold with two
-            Pill { implicitHeight: 34; icon: shell.dual ? "layout-columns" : "square-rounded"; text: win.narrow ? "" : (shell.dual ? I18n.tr("Two panels") : I18n.tr("One panel")); strong: shell.dual
-                   onPressed: { shell.dual = !shell.dual; if (!shell.dual) shell.active = 0 } },
+            // LITE (a plain browser, as Nautilus), one panel as Explorer, or two as a commander: gold with two
+            Pill { id: modePill; implicitHeight: 34; strong: shell.dual
+                   icon: shell.lite ? "leaf" : (shell.dual ? "layout-columns" : "square-rounded")
+                   text: win.narrow ? "" : (shell.lite ? I18n.tr("LITE") : (shell.dual ? I18n.tr("Two panels") : I18n.tr("One panel")))
+                   onPressed: { const q = modePill.mapToItem(overlay, 0, modePill.height + 4)
+                                menu.open(q.x, Math.max(0, q.y), [{ icon: "leaf", text: I18n.tr("LITE"), checked: shell.mode === "lite", run: () => shell.setMode("lite") },
+                                                                    { icon: "square-rounded", text: I18n.tr("One panel"), checked: shell.mode === "one", run: () => shell.setMode("one") },
+                                                                    { icon: "layout-columns", text: I18n.tr("Two panels"), checked: shell.mode === "two", run: () => shell.setMode("two") }]) } },
             Pill { id: setPill; implicitHeight: 34; icon: "settings"; onPressed: { const q = setPill.mapToItem(overlay, 0, setPill.height + 4); menu.open(q.x, Math.max(0, q.y), shell.settingsMenu()) } }
         ]
         side: [
@@ -1284,7 +1374,7 @@ ShellRoot {
                     Glyph { name: "folders"; color: Theme.gold; font.pixelSize: 22; anchors.verticalCenter: parent.verticalCenter }
                     Label { text: "DualBrew"; font.pixelSize: 17; font.weight: 800; anchors.verticalCenter: parent.verticalCenter } }
                 Item { width: 1; height: 6 }
-                Nav { text: I18n.tr("This computer"); icon: "device-desktop"; on: here.path === "computer:"; onPressed: here.go("computer:") }
+                Nav { visible: !shell.lite; text: I18n.tr("This computer"); icon: "device-desktop"; on: here.path === "computer:"; onPressed: here.go("computer:") }
                 Nav { text: I18n.tr("Recent"); icon: "history"; on: here.path === "recent:"; onPressed: here.go("recent:") }
                 Column { spacing: 4; visible: shell.shows("places")
                     Repeater { model: shell.places.filter(p => !shell.drives.includes(p.kind) && p.kind !== "favourite")
@@ -1316,12 +1406,17 @@ ShellRoot {
                           onPressed: shell.pin(here.path, true) } }
                 Column { spacing: 4; visible: shell.shows("drives")
                     // the heading opens the overview of every disk, its partitions and how full each is
-                    Rectangle { width: 222; height: 30; radius: 8; color: drivesHit.containsMouse || here.path === "disks:" ? Theme.card : "transparent"
+                    Rectangle { visible: !shell.lite; width: 222; height: 30; radius: 8; color: drivesHit.containsMouse || here.path === "disks:" ? Theme.card : "transparent"
                         Label { x: 8; anchors.bottom: parent.bottom; anchors.bottomMargin: 4; text: I18n.tr("DRIVES"); color: here.path === "disks:" ? Theme.gold : (drivesHit.containsMouse ? Theme.cream : Theme.faint); font.pixelSize: 11; font.weight: 700; font.letterSpacing: 0.8 }
                         Glyph { anchors.right: parent.right; anchors.rightMargin: 8; anchors.bottom: parent.bottom; anchors.bottomMargin: 3; name: "chart-pie"; font.pixelSize: 14; color: drivesHit.containsMouse || here.path === "disks:" ? Theme.gold : Theme.faint }
                         MouseArea { id: drivesHit; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: here.go("disks:") } }
                     // each drive as a card of its own (inspo/latteOS dualbrew.png): its name, its size, how full, what is used
-                    Repeater { model: shell.places.filter(p => ["disk", "usb", "card", "optical", "image", "phone"].includes(p.kind) && (p.path !== "/" || shell.real))
+                    // LITE: each drive a plain line, as Nautilus lists them, with its eject
+                    Repeater { model: shell.lite ? shell.places.filter(p => ["usb", "card", "optical", "image", "phone"].includes(p.kind) || (p.kind === "disk" && p.path !== "/" && p.path !== shell.home)) : []
+                        Nav { required property var modelData; text: shell.driveName(modelData); icon: shell.placeIcons[modelData.kind]; on: modelData.path !== "" && here.path === modelData.path
+                              opacity: modelData.path === "" ? 0.6 : 1; onPressed: shell.reach(modelData)
+                              tail: shell.canEject(modelData) ? "player-eject" : ""; onTailPressed: shell.eject(modelData) } }
+                    Repeater { model: shell.lite ? [] : shell.places.filter(p => ["disk", "usb", "card", "optical", "image", "phone"].includes(p.kind) && (p.path !== "/" || shell.real))
                         Rectangle { id: drv; required property var modelData; width: 222; radius: 12; height: drv.modelData.total > 0 ? 62 : 40
                             readonly property bool on: modelData.path !== "" && here.path === modelData.path
                             readonly property real f: modelData.total > 0 ? modelData.used / modelData.total : 0
@@ -1357,17 +1452,19 @@ ShellRoot {
                                 Label { id: typeText; anchors.centerIn: parent; text: I18n.tr(shell.types[parent.modelData].name); color: parent.on ? Theme.inkOnGold : Theme.dim; font.pixelSize: 11; font.weight: 700 }
                                 MouseArea { id: typeHit; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: shell.typeFilter = parent.on ? "" : parent.modelData } } } } }
                 Item { width: 1; height: 10 }
-                Nav { text: I18n.tr("The real structure"); icon: shell.real ? "eye" : "eye-off"; on: shell.real; onPressed: shell.real = !shell.real } } }
+                // LITE: what is not in the short side — this computer, disks, network — as Nautilus's "Other Locations"
+                Nav { visible: shell.lite; text: I18n.tr("Other places"); icon: "plus"; on: here.path === "computer:"; onPressed: here.go("computer:") }
+                Nav { visible: !shell.lite; text: I18n.tr("The real structure"); icon: shell.real ? "eye" : "eye-off"; on: shell.real; onPressed: shell.real = !shell.real } } }
         ]
         foot: [
             // what is here and what is chosen
-            Label { x: 24; anchors.verticalCenter: parent.verticalCenter; color: Theme.inkOnCoffee; visible: shell.asking === "" && (shell.said !== "" || !(shell.aboutFor !== "" && here.picked().length === 1))
+            Label { x: 24; anchors.verticalCenter: parent.verticalCenter; color: Theme.inkOnCoffee; elide: Text.ElideRight; width: Math.min(implicitWidth, (fkeys.visible ? fkeys.x : parent.width) - 40); visible: shell.asking === "" && (shell.said !== "" || !(shell.aboutFor !== "" && here.picked().length === 1))
                     text: shell.said !== "" ? shell.said : !here.path.startsWith("/") ? I18n.tr("Your folders and the disks")
                           : (here.picked().length ? I18n.tr("{n} chosen", { n: here.picked().length }) : here.summary)
                             + (here.measured ? "   ·   " + (here.measuring ? I18n.tr("measuring… {size} so far", { size: shell.bytes(here.total) }) : I18n.tr("{size} in all", { size: shell.bytes(here.total) }))
-                                             : (here.picked().length ? "" : "   ·   " + I18n.tr("Space: how much each folder holds"))) },
+                                             : (here.picked().length || shell.lite ? "" : "   ·   " + I18n.tr("Space: how much each folder holds"))) },
             // the one chosen: what it is (a picture's size and camera, a folder's items and size)
-            Row { x: 24; anchors.verticalCenter: parent.verticalCenter; spacing: 10; visible: shell.asking === "" && shell.said === "" && shell.aboutFor !== "" && here.picked().length === 1
+            Row { x: 24; anchors.verticalCenter: parent.verticalCenter; spacing: 10; visible: !shell.lite && shell.asking === "" && shell.said === "" && shell.aboutFor !== "" && here.picked().length === 1
                 Image { width: 22; height: 22; anchors.verticalCenter: parent.verticalCenter; sourceSize.width: 44; sourceSize.height: 44; asynchronous: true
                         source: shell.aboutFor !== "" ? FileIcons.of(shell.aboutFor.split("/").pop(), shell.aboutFor, shell.about.items !== undefined) : "" }
                 Label { anchors.verticalCenter: parent.verticalCenter; color: Theme.inkOnCoffee; elide: Text.ElideMiddle; text: shell.aboutText()
@@ -1383,7 +1480,7 @@ ShellRoot {
                 Pill { implicitHeight: 32; icon: shell.job && shell.job.paused ? "player-play" : "player-pause"; text: shell.job && shell.job.paused ? I18n.tr("Go on") : I18n.tr("Pause"); onPressed: shell.pauseJob() }
                 Pill { implicitHeight: 32; icon: "x"; danger: true; text: I18n.tr("Stop"); onPressed: shell.stopJob() } },
             // the commander's keys, with two panels
-            Row { anchors.right: parent.right; anchors.rightMargin: 20; anchors.verticalCenter: parent.verticalCenter; spacing: 8; visible: (shell.dual || !!prefs.kept.keys) && shell.asking === "" && shell.job === null
+            Row { id: fkeys; anchors.right: parent.right; anchors.rightMargin: 20; anchors.verticalCenter: parent.verticalCenter; spacing: 8; visible: (shell.dual || !!prefs.kept.keys) && shell.asking === "" && shell.job === null
                 Repeater { model: [{ key: "F3", name: QT_TR_NOOP("View"), what: "view" }, { key: "F4", name: QT_TR_NOOP("Edit"), what: "edit" }, { key: "F5", name: QT_TR_NOOP("Copy"), what: "copy" }, { key: "F6", name: QT_TR_NOOP("Move"), what: "move" }, { key: "F7", name: QT_TR_NOOP("New folder"), what: "folder" }, { key: "F8", name: QT_TR_NOOP("Delete"), what: "trash" }, { key: "F10", name: QT_TR_NOOP("Quit"), what: "quit" }]
                     Rectangle { required property var modelData; height: 30; radius: 8; width: fRow.implicitWidth + 18; color: fHit.containsMouse ? Qt.rgba(0, 0, 0, 0.45) : Qt.rgba(0, 0, 0, 0.3); border.width: 1; border.color: Qt.rgba(1, 1, 1, 0.06)
                         Row { id: fRow; anchors.centerIn: parent; spacing: 6
@@ -1454,8 +1551,8 @@ ShellRoot {
                 else if (ev.text.length === 1 && ev.text > " " && !ctrl && !(ev.modifiers & Qt.AltModifier) && here.path.startsWith("/")) here.jump(ev.text)
                 else ev.accepted = false
             }
-            Panel { id: left; index: 0; y: keys.bar; width: shell.dual ? (keys.room - 52) / 2 : keys.room; height: parent.height - 48 - keys.bar; path: shell.words[0] && (shell.words[0].startsWith("/") || shell.words[0] === "disks:" || shell.words[0] === "computer:") ? shell.words[0] : shell.home }
-            Panel { id: right; index: 1; visible: shell.dual; x: (keys.room + 52) / 2; y: keys.bar; width: (keys.room - 52) / 2; height: parent.height - 48 - keys.bar }
+            Panel { id: left; index: 0; y: keys.bar; width: shell.dual ? (keys.room - 52) / 2 : keys.room; height: parent.height - (shell.lineShown ? 48 : 0) - keys.bar; path: shell.words[0] && (shell.words[0].startsWith("/") || shell.words[0] === "disks:" || shell.words[0] === "computer:") ? shell.words[0] : shell.home }
+            Panel { id: right; index: 1; visible: shell.dual; x: (keys.room + 52) / 2; y: keys.bar; width: (keys.room - 52) / 2; height: parent.height - (shell.lineShown ? 48 : 0) - keys.bar }
             // the user's own buttons, as the commander's button bar: each of their actions, for what is chosen
             Row { visible: keys.bar > 0; x: 8; y: 6; height: 30; spacing: 6
                 Repeater { model: shell.actions
@@ -1503,7 +1600,7 @@ ShellRoot {
             // the line under the panels, in one panel and in two: what it does is chosen by the three at its start, and
             // each has its colour: $ a command run in a terminal here (Alt+F1); Find: what is here is narrowed as one
             // writes, Enter looks through every folder below too (Ctrl+F); AI: a task for the user's agent, in this folder
-            Rectangle { id: lineBox; x: 6; y: parent.height - 44; width: parent.width - 12; height: 38; radius: 19; border.width: 1; border.color: termLine.activeFocus ? Theme.gold : Theme.line
+            Rectangle { id: lineBox; visible: shell.lineShown; x: 6; y: parent.height - 44; width: parent.width - 12; height: 38; radius: 19; border.width: 1; border.color: termLine.activeFocus ? Theme.gold : Theme.line
                 color: shell.lineMode === "find" ? Qt.tint(Qt.darker(Theme.card, 1.18), Qt.rgba(Theme.gold.r, Theme.gold.g, Theme.gold.b, 0.22))
                      : shell.lineMode === "ai" ? Qt.tint(Theme.raised, Qt.rgba(Theme.cream.r, Theme.cream.g, Theme.cream.b, 0.16)) : Qt.darker(Theme.card, 1.18)
                 Behavior on color { ColorAnimation { duration: 160 } }
@@ -1516,6 +1613,8 @@ ShellRoot {
                             MouseArea { id: modeHit; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: shell.lineTo(parent.modelData.id) } } } }
                 TextInput { id: termLine; x: lineModes.x + lineModes.width + 12; width: parent.width - x - lineKey.width - 20 - (findOptsPill.visible ? 36 : 0); anchors.verticalCenter: parent.verticalCenter; color: Theme.cream; font.family: Theme.mono; font.pixelSize: 13; clip: true; selectByMouse: true
                             onTextChanged: if (shell.lineMode === "find") shell.findText = text
+                            // in LITE the line goes away again once it is left empty
+                            onActiveFocusChanged: if (!activeFocus && text === "") shell.lineOpen = false
                             Keys.onUpPressed: if (shell.lineMode === "command") shell.historyStep(-1)
                             Keys.onDownPressed: if (shell.lineMode === "command") shell.historyStep(1)
                             Keys.onPressed: (ev) => { if ((ev.modifiers & Qt.ControlModifier) && (ev.key === Qt.Key_Return || ev.key === Qt.Key_Enter || ev.key === Qt.Key_P)) {
