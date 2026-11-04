@@ -2531,17 +2531,22 @@ vlna namiesto náhľadu). Farby z témy LatteOS (nie ružová predloha), hromada
 (Caja, Dolphin, EFM, Nautilus, Nemo, PCManFM, SpaceFM, Thunar, Double Commander; snímky premenovania a zobrazenia; SpaceFM vie 2–4
 panely v ľubovoľnom rozložení; o vlastnostiach a premenovaní slovne nič).
 
-**10A.69** [ ] **Tlačidlo LITE v hlavičke DualBrew, predvolene zapnuté** (používateľ 4. 11., snímky Prieskumník Windows 11 a Loaf;
-spresňuje 10A.59): DualBrew je pri pohľade na množstvo údajov preplnený. V hlavičke vedľa Siete a Jeden/Dva panely tlačidlo
-**LITE** v rovnakom dizajne; zapnuté (predvolene) = jednoduchý, pekný prehliadač súborov a priečinkov: jeden panel, veľké dlaždice
-priečinkov s náhľadom obsahu (Prieskumník), čistá mriežka s výberom ako Loaf (súvislé zvýraznenie vybraných), bočný panel miest,
-riadok cesty, málo tlačidiel (Nový, Vystrihnúť/Kopírovať/Vložiť, Zoradiť, Zobraziť, Podrobnosti), počet položiek dole; bez
-príkazového riadku, filtra typov, druhého panelu a štatistík. Vypnuté = celý commander ako dnes. Zdroj: Loaf (MIT, QML) — prebrať
-mriežku, výber, karty a bočný panel (10A.60), rozloženie a lišta podľa Prieskumníka. Pri prevzatí kódu `TRETIE-STRANY.md`.
-Spresnené 4. 11. (snímka Nautilus „Files“): **vzhľad LITE podľa Nautila** — najčistejší: úzky bočný panel (Nedávne,
-S hviezdičkou, Domov, Dokumenty, Stiahnuté, Hudba, Obrázky, Videá, Kôš, pripojené disky s vysunutím, Ďalšie miesta), riadok
-cesty v strede hore s ponukou ⋮, hľadanie a prepínač zobrazenia vpravo, mriežka náhľadov so skrátenými menami (…), nič navyše.
-Nautilus je GPL (C, GTK): preberá sa rozloženie a správanie, kód z Loafu (MIT, QML).
+**10A.69** [ ] **DualBrew LITE: tretí režim, predvolený** (používateľ 4. 11., snímky Prieskumník Windows 11, Loaf, Nautilus;
+spresňuje 10A.59). DualBrew je pri pohľade na množstvo údajov preplnený; predvolene má byť jednoduchý a pekný prehliadač
+súborov a priečinkov. **Plán (schválený 4. 11.):**
+1. **Prepínač režimov v hlavičke rozšíriť** — dnešné tlačidlo Jeden panel / Dva panely má tri polohy: **LITE · Jeden panel ·
+   Dva panely**, v rovnakom dizajne ako ostatné tlačidlá hlavičky; predvolene LITE, voľba zapamätaná v `dualbrew.json`.
+2. **LITE zapnuté — vzhľad podľa Nautila** (najčistejší): jeden panel; úzky bočný panel ako v Nautile (Nedávne, S hviezdičkou,
+   Domov, Dokumenty, Stiahnuté, Hudba, Obrázky, Videá, Kôš, pripojené disky s vysunutím, Ďalšie miesta); riadok cesty v strede
+   hore, vpravo hľadanie a prepínač zobrazenia; čistá mriežka náhľadov so skrátenými menami (…); počet položiek dole.
+   **Skryje sa** príkazový riadok, filter typov, druhý panel a štatistiky.
+3. **Jeden panel a Dva panely** — DualBrew ako dnes (commander, Total Commander).
+4. **Z Loafu** (MIT, `github.com/m-uvex/loaf-fm`; jeho QML je zviazané s jeho Rust backendom, celé súbory sa neprevezmú):
+   **súvislé zvýraznenie výberu** (jedna plocha obkreslí všetky vybrané bunky spolu, zaoblené vonkajšie aj vnútorné rohy;
+   `qml/FilePane.qml`, Canvas `selectionCanvas`, asi 150 riadkov), **veľkosť a rozostupy mriežky**, **rozdelenie bočného
+   panela** (`qml/Sidebar.qml`). Autor do `TRETIE-STRANY.md`.
+5. Nautilus je GPL (C, GTK): preberá sa rozloženie a správanie, nie kód. Premenovanie už je ako v Nautile (10L.02),
+   Vlastnosti spoločné (10L.01).
 
 ### 10B. [~] LensAI
 Zdroje: `bin/latte-ai`, `apps/aicenter.qml`, `system/ai/`, `system/agents/`, `inspo/ai-na-ploche.md`
