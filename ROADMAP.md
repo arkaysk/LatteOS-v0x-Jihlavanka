@@ -2216,6 +2216,14 @@ inštalátor so sprievodcom, ChatGoo (Beeper), okno z bubliny QueenGoo.
 **9A.13** [ ] **Vzory a textúry k šálkam** (používateľ 4. 11.): farby šálok sú hotové (`system/cups.json`), k niektorým patrí
 obraz: **Kráľovský porcelán** — zlaté kudrlinky (ornament) a modro-biela kresba ako na čínskom porceláne; **Japonská** —
 japonské motívy (vlny seigaiha, sakura, tuš); **Brúsený hliník** — brúsená textúra kovu (jemné vodorovné ryhy, odlesk);
+**9A.14** [ ] **Pohyblivé pozadie šálky za obsahom** (používateľ 4. 11., snímka Nastavení s tapetou sakury cez sklo): rovná plocha
+za ikonami a obsahom okna je shader alebo pohyblivá textúra podľa šálky — **Sakura**: padajúce lupene (od hlavičky nadol),
+**Japonská**: štylizované vlny (Hokusai, seigaiha), Solo Leveling žiara, Hliník jemný odlesk. Hotové prostriedky: v aplikáciách
+(QML) `ParticleSystem` Qt Quick na lupene a `ShaderEffect` na vlny vedľa už pohyblivej kávovej hladiny v `AppWindow`;
+v oknách pleamaru prvky `particles` a `shader`. V `system/cups.json` kľúč `motion` (petals, waves…), jeden zdroj pre obe.
+Pravidlá: iba za obsahom (karty a riadky ostanú plné, písmo čitateľné), pomaly a jemne (nízke krytie, málo kusov),
+zastaví sa v neaktívnom okne a po nečinnosti, vypne sa pri nižších stupňoch výkonu a pri „menej pohybu“ (ostane statická
+textúra 9A.13); v Nastaveniach pri šálke vypínač Pohyblivé pozadie. Začať prototypom Sakury v jednej aplikácii.
 **Solo Leveling** — modrá žiara okien „Systému“; **Steam** — bez vzoru. Ako textúra alebo shader v rámci 9A.12 (materiál
 okna, bočného panela, hlavičky), kľúč v zázname šálky; obrázky iba s licenciou, ktorá to dovolí (TRETIE-STRANY.md).
 Zdroje (rešerš 4. 11., licenciu overiť pri každom kuse na pôvodnej stránke): **CC0** — ambientCG (celá knižnica, aj kovy),
