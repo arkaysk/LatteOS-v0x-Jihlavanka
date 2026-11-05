@@ -43,6 +43,7 @@
 /usr/bin/latte-settings                                 <- bin/latte-settings
 /usr/bin/latte-desktop                                  <- bin/latte-desktop
 /usr/bin/latte-properties                               <- bin/latte-properties
+/usr/bin/latte-linked                                   <- bin/latte-linked
 /usr/bin/latte-wall                                     <- bin/latte-wall
 /usr/bin/latte-files                                    <- bin/latte-files
 /usr/bin/latte-barista                                  <- bin/latte-barista
@@ -95,6 +96,8 @@
 /usr/share/latteos/goo/goo.plm                          <- goo/goo.plm
 /usr/share/latteos/goo/props.plm                        <- goo/props.plm
 /usr/share/latteos/goo/props.luau                       <- goo/props.luau
+/usr/share/latteos/goo/linked.plm                      <- goo/linked.plm
+/usr/share/latteos/goo/linked.luau                     <- goo/linked.luau
 /usr/share/latteos/goo/lib/cup.luau                     <- goo/lib/cup.luau
 /usr/share/latteos/cups.json                            <- system/cups.json
 /usr/share/latteos/goo/goo.luau                         <- goo/goo.luau

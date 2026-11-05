@@ -1,0 +1,212 @@
+// Linked calendars and planners — a secondary LatteOS window made from templates/okno-vedlajsie (docs/okna/SABLONY.md; ROADMAP 10J.20).
+// It replaces the GNOME Online Accounts window for what can be done here: the calendars that are linked (listed, taken away,
+// added from a web address or a CalDAV server), and the lists of tasks of the accounts, which show in the calendar. Google and
+// Microsoft 365 sign in through the system (OAuth in a browser), so they open its own window. Added and taken away at once;
+// the lists of tasks are written at OK or Apply. The model is Properties
+// (goo/props.plm): a small window of its own for one task — an app's own settings, Properties, a choice — not a whole
+// app. Copy this file and okno.luau into goo/ under a name of their own, rename the scene, `app_id` and `title`, and:
+//   · system/pleamarwm/session.conf:  window app=org.latteos.NAME float frame=own   (a dialog at its own size, its
+//     header drawn here and carried by the window manager's scene; without `float` a tile cuts it)
+//   · a launcher in bin/ (as bin/latte-properties), FILES for every file, the texts in goo/lang/sk.plm
+// The look: a header with the name and ✕ and the coffee line under it (it carries the window: `carry`), tabs of its own
+// when there are sections, rows grouped on cards, at the foot OK · Cancel · Apply over a line. No coffee at the foot
+// (that is the main apps' — apps/common/AppWindow.qml). The colours are the windows' cup (goo/lib/cup.luau).
+language 0.9
+import "lang/sk.plm"
+import "pleamar:ui"
+
+scene Linked {
+    surface { size: 640, 560; kind: window; title: "Linked calendars and planners"; app_id: "org.latteos.linked"; keyboard: on_demand }
+    permissions {
+        run: "cat", "latte-cal"
+        services: "env"
+    }
+
+    let W = screen.width
+    let H = screen.height
+    // the colours of the windows' cup, from the logic (goo/lib/cup.luau)
+    repeat k in 0..10 { fact c.$k.r = 0.5 }
+    repeat k in 0..10 { fact c.$k.g = 0.5 }
+    repeat k in 0..10 { fact c.$k.b = 0.5 }
+    let ground = rgb(c.0.r, c.0.g, c.0.b)
+    let surfc = rgb(c.1.r, c.1.g, c.1.b)
+    let rowc = rgb(c.2.r, c.2.g, c.2.b)
+    let raised = rgb(c.3.r, c.3.g, c.3.b)
+    let line = rgb(c.4.r, c.4.g, c.4.b)
+    let cream = rgb(c.5.r, c.5.g, c.5.b)
+    let dim = rgb(c.6.r, c.6.g, c.6.b)
+    let faint = rgb(c.7.r, c.7.g, c.7.b)
+    let gold = rgb(c.8.r, c.8.g, c.8.b)
+    let coffee = rgb(c.9.r, c.9.g, c.9.b)
+    fact light = false
+    let ink_gold = if(light, #fffaf1, #17110d)
+
+    text o_title = "Linked calendars and planners"
+    fact o_dirty = false                       // a list of tasks was switched: Apply can be pressed
+    fact sec = 0                               // 0 calendars, 1 planners
+    // the calendars linked: what they are called, whose they are, their colour, and whether they can be taken away here
+    model acc max 12 { name: text; sub: text; r: number; g: number; b: number; rm: bool; ask: bool }
+    // the lists of tasks of the accounts
+    model tl max 8 { name: text; sub: text; r: number; g: number; b: number; on: bool }
+    fact add_mode = 0                          // 0 nothing, 1 a CalDAV server, 2 a web address (.ics)
+    fact l_busy = false
+    text l_msg = ""
+    text l_none = ""
+    text a_name = ""                           // what is typed in the form
+    text a_url = ""
+    text a_user = ""
+    text a_pass = ""
+    text l_hint = ""
+    text t_none = ""
+    event lk_rm ->                             // a calendar's Remove: its place
+    event tl_flip ->                           // a list of tasks switched: its place
+    event sign_in ->                           // Google, Microsoft 365: through the system
+    event add_caldav ->
+    event add_ics ->
+    event add_go ->
+    event add_cancel ->
+    event ok ->
+    event apply ->
+    event cancel ->
+    event done
+    on done { quit }
+    on cancel { quit }
+    on key Escape { emit cancel }
+
+    body { color: ground; box { from: 0, 0; size: W, H } }
+
+    // ── the header: its name, ✕, the coffee line under it; it carries the window ──────────────────────────────────
+    let hd = 56
+    zone box header { from: 0, 0; size: W, hd; label: "Move the window"; role: region }
+    on press header { carry }
+    text o_title { at: 20, hd / 2; anchor: left center; width: W - 90; lines: 1; size: 15; weight: 700; color: cream; family: "Inter" }
+    zone box close_hit { from: W - 46, 11; size: 34, 34; corner: 10; cursor: pointer; label: "Close"; role: button }
+    box { from: W - 46, 11; size: 34, 34; corner: 10; color: #e5484d; opacity: close_hit.hover }
+    text "" { at: W - 29, 28; anchor: center; size: 17; color: cream; family: "tabler-icons" }
+    on press close_hit { emit cancel }
+    body {
+        gradient: 0, hd - 1 to W, hd - 1, coffee, coffee, coffee, ground
+        box { from: 0, hd - 2; size: W, 2 }
+    }
+
+    // ── the sections: tabs of their own ───────────────────────────────────────────────────────────────────────────
+    row { at: 20, hd + 14; gap: 4
+        SecTab(0, "Calendars", true)
+        SecTab(1, "Planners", true)
+    }
+
+    let rw = W - 40
+    let by = hd + 62
+    let vh = H - by - 72
+
+    // ── calendars: the linked ones, and how to link another ───────────────────────────────────────────────────────
+    column cals { at: 20, by; view: rw, vh; gap: 10; show: sec == 0
+        group {
+            size: rw, 40 + max(acc.count, 1) * 42
+            box { from: 0, 0; size: rw, 40 + max(acc.count, 1) * 42; corner: 12; color: rowc }
+            text "LINKED CALENDARS" { at: 14, 20; anchor: left center; size: 10.5; weight: 700; color: faint; family: "JetBrains Mono" }
+            text l_none { at: 14, 61; anchor: left center; size: 13; color: faint; family: "Inter"; show: acc.count == 0 }
+            for a in acc {
+                let y = 40 + a.index * 42
+                box { from: 14, y; size: rw - 28, 1; color: line; opacity: 55% }
+                ellipse { at: 24, y + 21; radius: 5; color: rgb(a.r, a.g, a.b) }
+                text a.name { at: 40, y + 14; anchor: left center; size: 13; weight: 500; color: cream; width: rw - 220; lines: 1; family: "Inter" }
+                text a.sub { at: 40, y + 31; anchor: left center; size: 11; color: faint; width: rw - 220; lines: 1; family: "Inter" }
+                zone box rm_hit { from: rw - 130, y + 6; size: 112, 30; corner: 8; cursor: pointer; active: a.rm; label: "Remove {a.name}"; role: button }
+                box { from: rw - 130, y + 6; size: 112, 30; corner: 8; color: if(a.ask, #e5484d, raised); stroke: 0; show: a.rm }
+                box { from: rw - 130, y + 6; size: 112, 30; corner: 8; color: if(rm_hit.hover > 0.5, #e5484d, line); stroke: 1; show: a.rm }
+                text "Remove" { at: rw - 74, y + 21; anchor: center; size: 12.5; weight: 500; color: cream; family: "Inter"; show: a.rm and not a.ask }
+                text "Really?" { at: rw - 74, y + 21; anchor: center; size: 12.5; weight: 600; color: #fff; family: "Inter"; show: a.ask }
+                on press rm_hit { emit lk_rm(a.index) }
+            }
+        }
+        group {
+            size: rw, if(add_mode == 0, 124, 292)
+            box { from: 0, 0; size: rw, if(add_mode == 0, 124, 292); corner: 12; color: rowc }
+            text "LINK ANOTHER" { at: 14, 20; anchor: left center; size: 10.5; weight: 700; color: faint; family: "JetBrains Mono" }
+            Provider(0, "Google", "signs in through the system", sign_in)
+            Provider(1, "Microsoft 365", "Outlook, Exchange: through the system", sign_in)
+            Provider(2, "CalDAV", "Nextcloud, iCloud, Fastmail…", add_caldav)
+            Provider(3, "Web address", "a calendar published as .ics", add_ics)
+            // the form: a name, an address, and for CalDAV a user and a password (kept in the keyring, not in a file)
+            group {
+                show: add_mode > 0
+                text "Name" { at: 14, 128; anchor: left center; size: 12; color: dim; family: "Inter" }
+                input a_name { at: 130, 120; width: rw - 160; size: 13; color: cream; selection: line; family: "Inter"; placeholder: "School, work…"; label: "Name of the calendar" }
+                text "Address" { at: 14, 164; anchor: left center; size: 12; color: dim; family: "Inter" }
+                input a_url { at: 130, 156; width: rw - 160; size: 13; color: cream; selection: line; family: "JetBrains Mono"; placeholder: "https://…"; label: "Address of the calendar" }
+                text "User" { at: 14, 200; anchor: left center; size: 12; color: dim; family: "Inter"; show: add_mode == 1 }
+                input a_user { at: 130, 192; width: rw - 160; size: 13; color: cream; selection: line; family: "Inter"; label: "User"; show: add_mode == 1 }
+                text "Password" { at: 14, 236; anchor: left center; size: 12; color: dim; family: "Inter"; show: add_mode == 1 }
+                input a_pass { at: 130, 228; width: rw - 160; size: 13; color: cream; selection: line; family: "Inter"; secret: true; label: "Password"; agent: no; show: add_mode == 1 }
+                text l_msg { at: 14, if(add_mode == 1, 266, 202); anchor: left center; size: 11.5; color: gold; width: rw - 300; lines: 1; family: "Inter" }
+                Button("Add", rw - 220, if(add_mode == 1, 252, 188), add_go, width: 96, gold_on: true, enabled: not l_busy)
+                Button("Cancel", rw - 116, if(add_mode == 1, 252, 188), add_cancel, width: 96)
+            }
+        }
+    }
+
+    // ── planners: the lists of tasks of the accounts; the ones switched on show in the calendar ───────────────────
+    column plans { at: 20, by; view: rw, vh; gap: 10; show: sec == 1
+        group {
+            size: rw, 40 + max(tl.count, 1) * 42
+            box { from: 0, 0; size: rw, 40 + max(tl.count, 1) * 42; corner: 12; color: rowc }
+            text "LISTS OF TASKS" { at: 14, 20; anchor: left center; size: 10.5; weight: 700; color: faint; family: "JetBrains Mono" }
+            text t_none { at: 14, 61; anchor: left center; size: 13; color: faint; family: "Inter"; show: tl.count == 0 }
+            for t in tl {
+                let y = 40 + t.index * 42
+                box { from: 14, y; size: rw - 28, 1; color: line; opacity: 55% }
+                ellipse { at: 24, y + 21; radius: 5; color: rgb(t.r, t.g, t.b) }
+                text t.name { at: 40, y + 14; anchor: left center; size: 13; weight: 500; color: cream; width: rw - 160; lines: 1; family: "Inter" }
+                text t.sub { at: 40, y + 31; anchor: left center; size: 11; color: faint; width: rw - 160; lines: 1; family: "Inter" }
+                zone box tl_hit { from: rw - 74, y + 8; size: 52, 26; corner: 13; cursor: pointer; label: "Show {t.name} in the calendar"; role: toggle; checked: t.on }
+                box { from: rw - 74, y + 8; size: 52, 26; corner: 13; color: if(t.on, gold, raised) }
+                ellipse { at: if(t.on, rw - 35, rw - 61), y + 21; radius: 9; color: if(t.on, ink_gold, dim) }
+                on press tl_hit { emit tl_flip(t.index) }
+            }
+        }
+        text "The tasks that have a day show in the calendar, as Google's do." { at: 4, 0; anchor: left top; width: rw - 8; size: 12; color: faint; family: "Inter"; lines: 2 }
+    }
+
+    // ── the foot: OK · Cancel · Apply over a line, as a dialog has them ───────────────────────────────────────────
+    box { from: 0, H - 64; size: W, 1; color: line }
+    Button("OK", W - 312, H - 46, ok, gold_on: true)
+    Button("Cancel", W - 212, H - 46, cancel)
+    Button("Apply", W - 112, H - 46, apply, enabled: o_dirty)
+    on key Return { emit ok }
+
+    // ── the pieces ────────────────────────────────────────────────────────────────────────────────────────────────
+    // a provider to link: its name, what it is, and what pressing it does
+    component Provider(k: number, caption: text, note: text, press: event) {
+        let px = 14 + k * ((rw - 28) / 4 + 0)
+        group {
+            zone box hit { from: px, 42; size: (rw - 28) / 4 - 8, 66; corner: 10; cursor: pointer; label: "{caption}"; role: button }
+            box { from: px, 42; size: (rw - 28) / 4 - 8, 66; corner: 10; color: raised }
+            box { from: px, 42; size: (rw - 28) / 4 - 8, 66; corner: 10; color: if(hit.hover > 0.5, gold, line); stroke: 1 }
+            text caption { at: px + 10, 62; anchor: left center; size: 13; weight: 600; color: cream; width: (rw - 28) / 4 - 28; lines: 1; family: "Inter" }
+            text note { at: px + 10, 84; anchor: left top; size: 10.5; color: faint; width: (rw - 28) / 4 - 28; lines: 3; family: "Inter" }
+            on press hit { emit press }
+        }
+    }
+    component Button(caption: text, x: number, y: number, press: event, width: number = 96, gold_on: bool = false, enabled: bool = true, shown: bool = true) {
+        group {
+            show: shown
+            zone box hit { from: x, y; size: width, 30; corner: 8; cursor: pointer; active: enabled; label: "{caption}"; role: button }
+            box { from: x, y; size: width, 30; corner: 8; color: if(gold_on, gold, raised); opacity: if(enabled, 100%, 45%) }
+            box { from: x, y; size: width, 30; corner: 8; color: if(hit.hover > 0.5, gold, line); stroke: 1; opacity: if(enabled, 100%, 45%) }
+            text caption { at: x + width / 2, y + 15; anchor: center; size: 13; weight: if(gold_on, 600, 500); color: if(gold_on, ink_gold, cream); family: "Inter"; opacity: if(enabled, 100%, 45%) }
+            on press hit { emit press }
+        }
+    }
+    component SecTab(k: number, caption: text, shown: bool, w: number = 128) {
+        size: if(shown, w + 4, 0), 32
+        group {
+            show: shown
+            box { from: 0, 0; size: w, 32; corner: 9; color: if(sec == k, raised, ground) }
+            box { from: 14, 30; size: w - 28, 2; corner: 1; color: gold; show: sec == k }
+            text caption { at: w / 2, 16; anchor: center; width: w - 4; lines: 1; size: 12.5; weight: if(sec == k, 600, 400); color: if(sec == k, cream, dim); family: "Inter" }
+            zone box hit { from: 0, 0; size: w, 32; cursor: pointer; role: tab; selected: sec == k; label: "{caption}" }
+            on press hit { sec = k }
+        }
+    }
+}

@@ -1,0 +1,5 @@
+#!/bin/sh
+# latte-linked: the window of the linked calendars and planners (goo/linked.plm, ROADMAP 10J.20), a window of its own.
+scene="${LATTE_SHARE:-/usr/share/latteos}/goo/linked.plm"
+[ -f "$scene" ] || scene="$(dirname "$(realpath "$0")")/../goo/linked.plm"       # from the repository
+exec pleamar --scene "$scene" --no-hud --answer-as "linked-$$"

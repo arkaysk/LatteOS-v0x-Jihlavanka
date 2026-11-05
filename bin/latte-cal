@@ -8,7 +8,7 @@
         [{"date", "time" ("" for a whole day), "end", "title", "location", "link" (a Teams, Meet or Zoom address found
         in it), "calendar", "color", "kind": "event"|"holiday", "uid", "source"}], sorted; a month ago to a year ahead
         unless said otherwise. A repeated event comes once for each time (Evolution Data Server writes them out).
-  latte-cal calendars        the calendars: [{"uid", "name", "account", "color", "backend", "writable", "enabled"}]
+  latte-cal calendars        the calendars: [{"uid", "name", "account", "color", "backend", "writable", "enabled", "removable"}]
   latte-cal add UID TITLE START END [LOCATION]   a new event in the calendar UID; START and END as YYYY-MM-DDTHH:MM,
         or YYYY-MM-DD for a whole day (END the day after the last); prints {"ok", "uid"}
   latte-cal update UID EVENT JSON                changes an event: any of title, start, end, location, notes, color, url, free, private
@@ -179,7 +179,8 @@ def calendars():
         parent = reg.ref_source(src.get_parent()) if src.get_parent() else None
         out.append({"uid": src.get_uid(), "name": src.get_display_name(), "account": parent.get_display_name() if parent else "",
                     "color": ext.get_color() or "#f7c873", "backend": ext.get_backend_name(), "enabled": src.get_enabled(),
-                    "writable": ext.get_backend_name() not in ("contacts", "weather", "webcal") and src.get_writable()})
+                    "writable": ext.get_backend_name() not in ("contacts", "weather", "webcal") and src.get_writable(),
+                    "removable": bool(src.get_removable()) and not src.get_uid().startswith("system")})
     return out
 
 
@@ -291,6 +292,39 @@ def remove_account(uid):
     return {"ok": True}
 
 
+def task_events(first, last):
+    """The tasks (VTODO) that have a day, of the lists switched on: shown in the calendar as Google shows its tasks."""
+    out = []
+    try:
+        EDataServer, ECal, ICalGLib = eds()
+        reg = EDataServer.SourceRegistry.new_sync(None)
+    except Exception:
+        return out
+    for lst in task_lists():
+        if not lst["enabled"]:
+            continue
+        try:
+            src = reg.ref_source(lst["uid"])
+            client = ECal.Client.connect_sync(src, ECal.ClientSourceType.TASKS, 0xFFFFFFFF, None)
+            ok, comps = client.get_object_list_sync("#t", None)
+        except Exception as e:
+            print(f"latte-cal: {lst['name']}: {e}", file=sys.stderr)
+            continue
+        for ic in comps if ok else []:
+            due = ic.get_due() if ic.get_first_property(ICalGLib.PropertyKind.DUE_PROPERTY) else None
+            if due is None or due.is_null_time():
+                continue
+            day = dt.datetime(due.get_year(), due.get_month(), due.get_day())
+            if not first <= day <= last:
+                continue
+            out.append({"date": day.strftime("%Y-%m-%d"), "time": "", "end": "", "title": (ic.get_summary() or "").strip(), "location": "", "link": "",
+                        "calendar": lst["name"], "color": lst["color"] or "#f7c873", "own_color": "", "kind": "task", "uid": ic.get_uid() or "",
+                        "source": lst["uid"], "writable": False, "notes": (ic.get_description() or "").strip(), "start": day.strftime("%Y-%m-%d"),
+                        "finish": day.strftime("%Y-%m-%d"), "allday": True, "alarms": [], "repeat": "", "rid": "",
+                        "done": ic.get_status() == ICalGLib.PropertyStatus.COMPLETED, "free": True, "private": False, "url": ""})
+    return out
+
+
 def account_events(first, last):
     try:
         EDataServer, ECal, ICalGLib = eds()
@@ -374,7 +408,7 @@ def holidays_of(years):
 
 
 def all_events(first, last, addresses):
-    found = account_events(first, last)
+    found = account_events(first, last) + task_events(first, last)
     for a in addresses:
         try:
             for e in events(fetch(a), first, last):

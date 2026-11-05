@@ -165,6 +165,7 @@ ShellRoot {
                   source: writable.length ? (writable.find(c => c.backend !== "local") || writable[0]).uid : "" }
     }
     function edit(e) { asking = false; draft = { isNew: false, alarms: e.alarms || [], alarmsDirty: false, rep: parseRule(e.repeat), recurring: !!e.repeat, rid: e.rid || "", orig: e.start, title: e.title, day: e.start.slice(0, 10), endDay: e.allday ? iso(plus(parse(e.finish), -1)) : e.finish.slice(0, 10), free: e.free === true, private: e.private === true, url: e.url || "", origin: e.source, from: e.time, to: e.end, allday: e.allday, location: e.location, notes: e.notes || "", color: e.own_color || "", source: e.source, uid: e.uid } }
+    function label(e) { return (e.kind === "task" ? (e.done ? "☑ " : "☐ ") : "") + e.title }          // a task of a list, with its box
     function span(d) {
         const last = /^\d{4}-\d{2}-\d{2}$/.test(d.endDay || "") && d.endDay > d.day ? d.endDay : d.day      // several days: the last one
         if (d.allday) return [d.day, iso(plus(parse(last), 1))]
@@ -273,7 +274,7 @@ ShellRoot {
                             Label { anchors.right: parent.right; text: parent.modelData.account || ""; width: 60; horizontalAlignment: Text.AlignRight; color: Theme.faint; font.family: Theme.mono; font.pixelSize: 10; anchors.verticalCenter: parent.verticalCenter }
                             MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: hiddenFile.flip(parent.modelData.uid) } } }
                     Text { text: I18n.tr("Linked calendars…"); color: Theme.gold; font.family: Theme.font; font.pixelSize: 13; font.underline: true
-                        MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: Quickshell.execDetached(["latte-cal", "accounts"]) } } }
+                        MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: Quickshell.execDetached(["latte-linked"]) } } }
                 // the year's load, in the standard heat: six months around this week
                 Column { width: parent.width; spacing: 6
                     Label { text: I18n.tr("LOAD OF THE YEAR"); color: Theme.faint; font.family: Theme.mono; font.pixelSize: 11; font.weight: 700 }
@@ -312,7 +313,7 @@ ShellRoot {
                     Column { id: wd; required property var modelData; width: grid.colW; spacing: 3
                         Repeater { model: shell.whole(shell.iso(wd.modelData))
                             Rectangle { required property var modelData; width: grid.colW - 6; x: 3; height: 22; radius: 6; color: Qt.alpha(modelData.color, 0.22); border.width: shell.picked && shell.picked.uid === modelData.uid ? 1 : 0; border.color: modelData.color
-                                Label { x: 8; width: parent.width - 12; anchors.verticalCenter: parent.verticalCenter; text: parent.modelData.title; font.pixelSize: 12; font.weight: 600 }
+                                Label { x: 8; width: parent.width - 12; anchors.verticalCenter: parent.verticalCenter; text: shell.label(parent.modelData); font.pixelSize: 12; font.weight: 600 }
                                 TapHandler { acceptedButtons: Qt.RightButton; onTapped: pt => { const q = parent.mapToItem(menu, pt.position.x, pt.position.y); shell.menuFor(parent.modelData, q.x, q.y) } }
                                 TapHandler { acceptedButtons: Qt.LeftButton; onDoubleTapped: if (parent.modelData.writable && parent.modelData.kind === "event") shell.edit(parent.modelData) }
                                 MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: { shell.draft = null; shell.asking = false; shell.picked = parent.modelData } } } } } } }
@@ -400,7 +401,7 @@ ShellRoot {
                         Column { visible: parent.mine; x: 6; y: 30; width: parent.width - 12; spacing: 3
                             Repeater { model: parent.parent.mine ? shell.shownOn(shell.iso(parent.parent.day)).slice(0, Math.max(1, Math.floor((parent.parent.height - 36) / 21))) : []
                                 Rectangle { required property var modelData; width: parent.width; height: 18; radius: 5; color: Qt.alpha(modelData.color, 0.22)
-                                    Label { x: 6; width: parent.width - 8; anchors.verticalCenter: parent.verticalCenter; text: (parent.modelData.time ? parent.modelData.time + " " : "") + parent.modelData.title; font.pixelSize: 11 }
+                                    Label { x: 6; width: parent.width - 8; anchors.verticalCenter: parent.verticalCenter; text: (parent.modelData.time ? parent.modelData.time + " " : "") + shell.label(parent.modelData); font.pixelSize: 11 }
                                     TapHandler { acceptedButtons: Qt.RightButton; onTapped: pt => { const q = parent.mapToItem(menu, pt.position.x, pt.position.y); shell.menuFor(parent.modelData, q.x, q.y) } }
                                     TapHandler { acceptedButtons: Qt.LeftButton; onDoubleTapped: if (parent.modelData.writable && parent.modelData.kind === "event") shell.edit(parent.modelData) }
                                     MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: { shell.draft = null; shell.picked = parent.modelData } } } } }

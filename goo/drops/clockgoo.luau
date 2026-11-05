@@ -880,7 +880,7 @@ return {
             if n then pcall(sys.call, "notifications.invoke", n.id, "default") pcall(sys.call, "notifications.dismiss", n.id) end
         end)
         on("cal_linked", function()
-            ctx.open({ { label = tr("Accounts: Google, Microsoft 365, Exchange, Nextcloud…"), glyph = "users", run = function() card.close() run("latte-cal", { "accounts" }, nil, { output = false }) end },
+            ctx.open({ { label = tr("Linked calendars and planners…"), glyph = "users", run = function() card.close() run("latte-linked", {}, nil, { output = false }) end },
                        { label = tr("A calendar from an address (.ics)…"), glyph = "link", run = function() open_calendars(d) end } }, { width = 330 })
         end)
         -- a sentence typed: what it would become, a moment after the typing stops
