@@ -18,3 +18,9 @@ majú „niekoľko obdĺžnikov postupne tmavších v sebe“. **Nespravené, č
 - **Grafika je zaťažená**: `sunshine` (streamovanie hry, v logu relácia od 7:29, HEVC 46 Mb/s) berie 26–45 % grafiky stále, `pleamar-wm` 17–30 %. Ak sleduješ
   plochu cez Moonlight, „obdĺžniky postupne tmavšie“ môžu byť aj pásy kompresie videa (banding) — porovnať so snímkou z `grim`.
 - Ďalší krok: porovnať s pôvodným vzhľadom (snímka z čias, keď to bolo v poriadku), vyskúšať bez Sunshine, a vyskúšať pleamar-wm bez blur pod oknami.
+
+**Doplnenie 5. 11. (používateľ):** artefakty sa začali **po prechode z Hyprlandu na pleamar-wm**. Plochu sleduje **stále cez Sunshine/Moonlight**, lebo latte-lab nemá vlastný monitor
+(aj za čias Hyprlandu). Sunshine má `capture = kms` (číta DRM roviny priamo), pleamar robí sklo zo snímok kompozitora (`wlr-screencopy`, podľa `--docs reference`), a moje snímky z
+`grim` (tiež screencopy) mali svetlý obdĺžnik tiež — takže nie je to len kódovanie videa. Podozrivé: (1) KMS zachytávanie rovín, ktoré pleamar-wm používa (priame zobrazenie / viac rovín,
+`pleamar-wm-scanout-layouts.patch`); (2) čas snímky pre sklo (pleamar berie pozadie po prezentovaní a sklo ukáže staré). Skúšky na poobedie: Sunshine s `capture = wlr` namiesto `kms`;
+Nastavenia › Sklo vypnúť úplne (kvapky bez skla) a pozrieť, či pás zmizne; pleamar-wm bez záplaty scanout-layouts; návrh autorovi pleamaru do `patches/issues/`.

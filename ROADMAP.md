@@ -3513,6 +3513,8 @@ Zdroje: `apps/calendar.qml`, `bin/latte-cal`, `goo/lang/sk-dates.json`
 
 **10J.22** [ ] (Kalendár) **Grafické artefakty Goo** (používateľ 5. 11.; zapísané v `bughunt/najdene-chyby.md`): karty Goo sa otvárajú sekane so svetlými štvorcami, zatváranie LensShore bliká, sklenené rámiky ClockGoo majú niekoľko postupne tmavších obdĺžnikov v sebe. Zistené: je to reálne v obraze (nielen v streame Sunshine), príčina zatiaľ neznáma; pozri bughunt. Po tom TrayShore (Pobrežie).
 
+**10J.23** [ ] (Kalendár) **Kľúčenka sa pri prihlásení neodomkne** (5. 11., okno „Odomknúť prihlasovací zväzok kľúčov“): prihlasovanie cez greetd neodomkne `login` kľúčenku (chýba `pam_gnome_keyring`), takže heslo CalDAV (a iné tajomstvá EDS) sa neuloží a systém sa pýta znova. Opraviť v PAM pre greetd (`auth optional pam_gnome_keyring.so`, `session optional pam_gnome_keyring.so auto_start`) a overiť pri novom prihlásení; Kalendár musí pri zamknutej kľúčenke povedať, nie čakať na okno.
+
 ### 10K. [ ] Hry
 Herná relácia: Steam, Proton, umu, gamescope, MangoHud, NVIDIA.
 Zdroje: `bin/latte-game`
@@ -3725,6 +3727,10 @@ Zdroje: `bin/latte-net`, `system/libexec/latte-netd`
 **11.09** [ ] (Bezpečnosť, súkromie a záloha) R3·H — bezpečnostné nástroje · r. 1100–1103
 - [ ] Voliteľné skeny či bezpečnostné nástroje nesmú sľubovať úplnú ochranu; zobrazovať limity,
   možné falošné poplachy a vyžadovať súhlas so zberom/analýzou dát.
+
+**10M.50** [ ] **Vlastný nástroj na zachytávanie obrazovky a videa — „Capture“** (používateľ 5. 11., vzor: Nástroj na vystrihovanie z Windowsu 11; snímka v `inspo/` ešte nie je): rýchle režimy (obdĺžnik, okno, celá obrazovka, voľný tvar), oneskorenie, snímka aj video, **textové akcie** (rozpoznať text zo snímky), úprava (pero, zvýrazňovač, guma, pravítko, orez), kopírovať · uložiť · zdieľať, skratka Super+Shift+S a PrtSc.
+  **Najprv hotové** (CLAUDE.md): **Marea už má „fotografiu“ aj „nahrávanie“** (`/usr/share/latteos/marea-plm/logic/camera.luau`, BSD-3): zmrazí plochu, výber obdĺžnika (`slurp`), okno alebo obrazovka, `grim`, `wl-copy`, nahrávanie; stojí na pleamare aj pleamar-wm. V systéme sú aj `grim`, `slurp`, `wf-recorder`, `gpu-screen-recorder` (VAAPI), `tesseract`.
+  **Návrh:** (1) motor z Marey (zmrazená plocha → výber → `grim`) ostáva; (2) vzhľad podľa LatteOS: výber ako preklopná vrstva pleamaru, hlavička s režimami ako v Snipping Toole, okno úpravy podľa šablóny (hlavná aplikácia s kávou, nie vedľajšie okno); (3) video cez `gpu-screen-recorder` (VAAPI, menej záťaže na RX 640 než `wf-recorder`, ten ako záloha), zvuk systému a mikrofón; (4) text zo snímky `tesseract` (slovenčina, angličtina), nápad na AI popis cez LensAI; (5) knižnica „Snímky a nahrávky“ s hľadaním (zlúčiť s 1184); (6) pozor: snímka nesmie ukázať povrchy s `captures: hidden` (heslá, okno agenta). Open-source vzory iba na nápady: Flameshot (GPL-3, úprava), Spectacle (KDE), Satty (MPL-2, úprava nad `grim`), Swappy (MIT), Kooha (GNOME, video). Rozhodnúť: vlastný editor v pleamare vs. prevziať Satty; čo s oknom agenta.
 
 ### 11A. NET a sieťové profily
 Odstavenie aplikácie od internetu (tlačidlo NET je v 8.01), profily pre Wine/Proton.
