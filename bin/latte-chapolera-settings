@@ -1,0 +1,5 @@
+#!/bin/sh
+# latte-chapolera-settings: Chapolera's own settings window.
+scene="${LATTE_SHARE:-/usr/share/latteos}/goo/chapolera-settings.plm"
+[ -f "$scene" ] || scene="$(dirname "$(realpath "$0")")/../goo/chapolera-settings.plm"
+exec pleamar --scene "$scene" --no-hud --answer-as "chapolera-settings-$$"

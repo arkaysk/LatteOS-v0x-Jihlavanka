@@ -1,0 +1,127 @@
+// Chapolera's own settings: a pleamar secondary window, based on templates/okno-vedlajsie.
+language 0.9
+import "lang/sk.plm"
+import "pleamar:ui"
+
+scene ChapoleraSettings {
+    surface { size: 560, 390; kind: window; title: "Chapolera"; app_id: "org.latteos.chapolera-settings"; keyboard: on_demand }
+    permissions {
+        run: "cat", "latte-chapolera"
+        services: "env"
+    }
+
+    let W = screen.width
+    let H = screen.height
+    repeat k in 0..10 { fact c.$k.r = 0.5 }
+    repeat k in 0..10 { fact c.$k.g = 0.5 }
+    repeat k in 0..10 { fact c.$k.b = 0.5 }
+    let ground = rgb(c.0.r, c.0.g, c.0.b)
+    let rowc = rgb(c.2.r, c.2.g, c.2.b)
+    let raised = rgb(c.3.r, c.3.g, c.3.b)
+    let line = rgb(c.4.r, c.4.g, c.4.b)
+    let cream = rgb(c.5.r, c.5.g, c.5.b)
+    let dim = rgb(c.6.r, c.6.g, c.6.b)
+    let faint = rgb(c.7.r, c.7.g, c.7.b)
+    let gold = rgb(c.8.r, c.8.g, c.8.b)
+    let coffee = rgb(c.9.r, c.9.g, c.9.b)
+    fact light = false
+    let ink_gold = if(light, #fffaf1, #17110d)
+
+    text o_title = "Chapolera settings"
+    text o_close = "Close"
+    text o_auto = "Automatic"
+    text o_manual = "Manual"
+    text o_ok = "OK"
+    text o_cancel = "Cancel"
+    text o_apply = "Apply"
+    text o_move = "Move the window"
+    text o_slider_label = "Number of previews"
+    text o_auto_text = ""
+    text o_auto_hint = ""
+    text o_manual_hint = ""
+    text o_count = ""
+    text o_error = ""
+    fact o_mode = 0
+    fact o_limit = 24
+    fact o_dirty = false
+    fact o_saving = false
+    fact o_has_error = false
+    event mode_pick ->
+    event preview_pick ->
+    event ok ->
+    event apply ->
+    event cancel ->
+    event done
+    on done { quit }
+    on key Escape { emit cancel }
+    on cancel { quit }
+
+    body { color: ground; box { from: 0, 0; size: W, H } }
+
+    let hd = 56
+    zone box header { from: 0, 0; size: W, hd; label: o_move; role: region }
+    on press header { carry }
+    text o_title { at: 20, hd / 2; anchor: left center; width: W - 90; lines: 1; size: 15; weight: 700; color: cream; family: "Inter" }
+    zone box close_hit { from: W - 46, 11; size: 34, 34; corner: 10; cursor: pointer; label: o_close; role: button; active: not o_saving }
+    box { from: W - 46, 11; size: 34, 34; corner: 10; color: #e5484d; opacity: close_hit.hover }
+    text "" { at: W - 29, 28; anchor: center; size: 17; color: cream; family: "tabler-icons" }
+    on press close_hit { emit cancel }
+    body {
+        gradient: 0, hd - 1 to W, hd - 1, coffee, coffee, coffee, ground
+        box { from: 0, hd - 2; size: W, 2 }
+    }
+
+    let rw = W - 40
+    row { at: 20, hd + 18; gap: 4
+        Segmented(o_mode, o_auto, o_manual, mode_pick, width: 260)
+    }
+
+    group {
+        show: o_mode == 0
+        box { from: 20, 116; size: rw, 160; corner: 12; color: rowc }
+        text o_auto_text { at: 36, 140; anchor: left center; width: rw - 32; lines: 2; size: 14; weight: 600; color: cream; family: "Inter" }
+        text o_auto_hint {
+            at: 36, 188; anchor: left center; width: rw - 32; lines: 2; size: 12; color: dim; family: "Inter"
+        }
+    }
+
+    group {
+        show: o_mode == 1
+        box { from: 20, 116; size: rw, 160; corner: 12; color: rowc }
+        text o_slider_label { at: 36, 142; anchor: left center; size: 13; weight: 600; color: dim; family: "Inter" }
+        text o_count { at: W - 36, 142; anchor: right center; size: 14; weight: 700; color: cream; family: "Inter" }
+        let fraction = (o_limit - 8) / 88
+        box { from: 36, 192; size: rw - 32, 6; corner: 3; color: raised }
+        box { from: 36, 192; size: (rw - 32) * fraction, 6; corner: 3; color: gold }
+        ellipse { at: 36 + (rw - 32) * fraction, 195; radius: 10; color: gold }
+        zone box preview_hit {
+            from: 20, 174; size: rw, 42; cursor: pointer; label: o_slider_label; role: slider;
+            value: o_limit; active: o_mode == 1
+        }
+        on press preview_hit { emit preview_pick((pointer.x - 36) / (rw - 32)) }
+        on drag preview_hit while o_mode == 1 { emit preview_pick((pointer.x - 36) / (rw - 32)) }
+        text o_manual_hint {
+            at: 36, 238; anchor: left center; width: rw - 32; lines: 2; size: 11; color: faint; family: "Inter"
+        }
+    }
+
+    text o_error {
+        at: 20, H - 101; anchor: left center; width: W - 40; lines: 2; size: 11; color: #e5484d; family: "Inter";
+        show: o_has_error
+    }
+
+    box { from: 0, H - 64; size: W, 1; color: line }
+    Button(o_ok, W - 312, H - 46, ok, gold_on: true, enabled: not o_saving)
+    Button(o_cancel, W - 212, H - 46, cancel, enabled: not o_saving)
+    Button(o_apply, W - 112, H - 46, apply, enabled: o_dirty and not o_saving)
+
+    component Button(caption: text, x: number, y: number, press: event, width: number = 96, gold_on: bool = false, enabled: bool = true) {
+        group {
+            zone box hit { from: x, y; size: width, 30; corner: 8; cursor: pointer; active: enabled; label: "{caption}"; role: button }
+            box { from: x, y; size: width, 30; corner: 8; color: if(gold_on, gold, raised); opacity: if(enabled, 100%, 45%) }
+            box { from: x, y; size: width, 30; corner: 8; color: if(hit.hover > 0.5, gold, line); stroke: 1; opacity: if(enabled, 100%, 45%) }
+            text caption { at: x + width / 2, y + 15; anchor: center; size: 13; weight: if(gold_on, 600, 500); color: if(gold_on, ink_gold, cream); family: "Inter"; opacity: if(enabled, 100%, 45%) }
+            on press hit { emit press }
+        }
+    }
+}

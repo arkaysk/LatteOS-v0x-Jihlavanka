@@ -67,3 +67,13 @@ sú tu, aby sa dala tabuľka obnoviť. Ruská položka sa vynecháva (služba ta
 
 Vzor rozhrania a úprav snímok: **Flameshot** (flameshot-org/flameshot, **GPL-3.0**, C++/Qt Widgets) — preberá sa súbor nástrojov a správanie aj kód, ak treba. **Licencia LatteOS nie je definitívna** (zatiaľ MIT): určí sa po dokončení podľa všetkého integrovaného materiálu tretích strán (používateľ 5. 11.).
 Motor snímok a nahrávania: **Marea** (`logic/camera.luau`, BSD-3, už v systéme). Rozpoznanie textu: **Tesseract** (Apache-2.0).
+
+## Chapolera: obrazový model
+
+[*SigLIP 2 Base Patch16 224*](https://huggingface.co/google/siglip2-base-patch16-224)
+(`google/siglip2-base-patch16-224`) je predvolený obrazovo-textový model prvého kroku triedenia. Váhy nie sú
+súčasťou repozitára; stiahli sa do `/data/ai/models/chapolera/siglip2-base-patch16-224/`
+z revízie `75de2d55ec2d0b4efc50b3e9ad70dba96a7b2fa2`. Modelová karta uvádza Apache-2.0.
+SHA-256 `model.safetensors`: `612923381c76ec5a9bed335d1c48827e3f2e506ac31b044b63b2031fadee6a0b`.
+Rust inferencia používa knižnice Candle (MIT alebo Apache-2.0), Hugging Face Tokenizers (Apache-2.0) a
+image-rs (MIT alebo Apache-2.0).

@@ -480,6 +480,7 @@ ShellRoot {
         const picked = here.picked(), many = picked.length > 1, inTrash = here.path.indexOf("/.local/share/Trash/files") >= 0
         const rows = [{ icon: "external-link", text: I18n.tr("Open"), bold: true, hint: "Enter", run: () => shell.open(path, isDir) },
             ...(apps && apps.length && !many ? [{ icon: "apps", text: I18n.tr("Open with"), more: apps.map(a => ({ text: a.name, run: () => Quickshell.execDetached(["gtk-launch", a.id, path]) })) }] : []),
+            ...(isDir && !many ? [{ icon: "sparkles", text: I18n.tr("Sort with Chapolera"), run: () => Quickshell.execDetached(["latte-app", "chapolera", path]) }] : []),
             ...(isDir && !many ? [{ icon: "layout-columns", text: I18n.tr("Open in the other panel"), run: () => { shell.setMode("two"); shell.other.go(path) } }] : []),
             ...(isDir && !many ? [places.some(p => p.kind === "favourite" && p.path === path) ? { icon: "star", text: I18n.tr("Remove from favourites"), run: () => shell.pin(path, false) }
                                                                                              : { icon: "star", text: I18n.tr("Add to favourites"), run: () => shell.pin(path, true) }] : []),

@@ -12,6 +12,7 @@
 /usr/bin/latte-boot                                     <- build:latte-boot
 /usr/bin/latte-stats                                    <- build:latte-stats
 /usr/bin/latte-props                                    <- build:latte-props
+/usr/bin/latte-chapolera                                <- build:latte-chapolera
 /usr/lib64/latteos/qs-web                               <- qsweb:quickshell
 /usr/bin/pleamar                                        <- pleamar:pleamar
 /usr/bin/pleamar-wm                                     <- pleamar:pleamar-wm
@@ -45,6 +46,7 @@
 /usr/bin/latte-properties                               <- bin/latte-properties
 /usr/bin/latte-linked                                   <- bin/latte-linked
 /usr/bin/latte-calsettings                              <- bin/latte-calsettings
+/usr/bin/latte-chapolera-settings                       <- bin/latte-chapolera-settings
 /usr/bin/latte-wall                                     <- bin/latte-wall
 /usr/bin/latte-files                                    <- bin/latte-files
 /usr/bin/latte-barista                                  <- bin/latte-barista
@@ -101,6 +103,8 @@
 /usr/share/latteos/goo/linked.luau                     <- goo/linked.luau
 /usr/share/latteos/goo/calsettings.plm                 <- goo/calsettings.plm
 /usr/share/latteos/goo/calsettings.luau                <- goo/calsettings.luau
+/usr/share/latteos/goo/chapolera-settings.plm          <- goo/chapolera-settings.plm
+/usr/share/latteos/goo/chapolera-settings.luau         <- goo/chapolera-settings.luau
 /usr/share/latteos/goo/lib/cup.luau                     <- goo/lib/cup.luau
 /usr/share/latteos/cups.json                            <- system/cups.json
 /usr/share/latteos/namedays.json                      <- system/namedays.json
@@ -584,6 +588,7 @@
 /usr/share/latteos/apps/monitor.qml                     <- apps/monitor.qml
 /usr/share/latteos/apps/settings.qml                    <- apps/settings.qml
 /usr/share/latteos/apps/files.qml                       <- apps/files.qml
+/usr/share/latteos/apps/chapolera.qml                   <- apps/chapolera.qml
 /usr/share/latteos/apps/settings/pages.json             <- apps/settings/pages.json
 /usr/share/latteos/apps/settings/Wallpapers.qml         <- apps/settings/Wallpapers.qml
 /usr/share/latteos/weather-services.txt                 <- system/weather-services.txt

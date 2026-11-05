@@ -16,6 +16,7 @@
   - [Jednotlivé kvapky](goo/ROZHRANIE.md)
 
 ### 💻 Programátor
+- [Chapolera — plán triedenia médií](chapolera/PLAN.md) — triedič podľa typu, poradie krokov a otvorené úlohy
 - [Engine Goo — API](../session/goo/README.md) — ako pridať alebo upraviť kvapku
 - [Denník rozhodnutí](goo/ROZHODNUTIA.md) — kedy a prečo sa čo rozhodlo, čo bolo zamietnuté
 - [Inštalácia a testy na latte-lab](../setup/lab/README.md)
