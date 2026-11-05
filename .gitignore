@@ -27,3 +27,6 @@ CLAUDE.md
 
 # starý strom, zmazaný z repa; lokálne zvyšky nepatria do gitu
 /old/
+
+# the name-day table while it is being built (bin/latte-nameday build)
+system/namedays.json.part

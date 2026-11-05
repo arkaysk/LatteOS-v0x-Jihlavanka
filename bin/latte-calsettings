@@ -1,0 +1,5 @@
+#!/bin/sh
+# latte-calsettings: the calendar's settings window (goo/calsettings.plm, ROADMAP 10J.16), a window of its own.
+scene="${LATTE_SHARE:-/usr/share/latteos}/goo/calsettings.plm"
+[ -f "$scene" ] || scene="$(dirname "$(realpath "$0")")/../goo/calsettings.plm"       # from the repository
+exec pleamar --scene "$scene" --no-hud --answer-as "calsettings-$$"

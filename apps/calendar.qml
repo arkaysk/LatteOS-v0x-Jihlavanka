@@ -13,10 +13,12 @@ import "common"
 ShellRoot {
     id: shell
     readonly property var words: (Quickshell.env("LATTE_APP_ARGS") || "").split("\n").filter(w => w !== "")
-    property string view: ["day", "month"].includes(words[0]) ? words[0] : "week"     // day · week · month
+    property string view: ["day", "month", "work"].includes(words[0]) ? words[0] : "week"     // day · week · month · work (the working days)
     property date anchor: /^\d{4}-\d{2}-\d{2}$/.test(words[0] || "") ? shell.parse(words[0]) : new Date()
     property var events: []
     property var calendars: []
+    property var cfg: ({ week_start: 0, namedays: [], workdays: [0, 1, 2, 3, 4], hours: 8 })      // latte-cal settings (the settings window writes them)
+    readonly property int ws: cfg.week_start || 0                                                // the week begins on: 0 Monday, 6 Sunday, 5 Saturday
     property var load: ({})                    // day → hours of events, for the year's heat
     property var sky: []                       // latte-sky's days, today first
     property var picked: null                  // the event open on the right
@@ -31,19 +33,21 @@ ShellRoot {
     function iso(d) { return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate()) }
     function parse(s) { const p = s.split("-"); return new Date(+p[0], +p[1] - 1, +p[2], 12) }
     function plus(d, n) { const x = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 12); x.setDate(x.getDate() + n); return x }
-    function monday(d) { return plus(d, -((d.getDay() + 6) % 7)) }
+    function monday(d) { return plus(d, -(((d.getDay() + 6) % 7 - ws + 7) % 7)) }          // the first day of the week, as the settings say
     function week(d) { const t = plus(d, 3 - (d.getDay() + 6) % 7); const y = new Date(t.getFullYear(), 0, 4, 12); return 1 + Math.round(((t - y) / 864e5 - 3 + (y.getDay() + 6) % 7) / 7) }
     function minutes(hm) { const p = (hm || "").split(":"); return p.length === 2 ? +p[0] * 60 + +p[1] : -1 }
     function hm(m) { return pad(Math.floor(m / 60) % 24) + ":" + pad(m % 60) }
     readonly property var monthNames: [QT_TR_NOOP("January"), QT_TR_NOOP("February"), QT_TR_NOOP("March"), QT_TR_NOOP("April"), QT_TR_NOOP("May"), QT_TR_NOOP("June"),
                                        QT_TR_NOOP("July"), QT_TR_NOOP("August"), QT_TR_NOOP("September"), QT_TR_NOOP("October"), QT_TR_NOOP("November"), QT_TR_NOOP("December")]
+    readonly property var weekNames: dayNames.slice(ws).concat(dayNames.slice(0, ws))          // the names, from the day the week begins on
     readonly property var dayNames: [QT_TR_NOOP("Mo"), QT_TR_NOOP("Tu"), QT_TR_NOOP("We"), QT_TR_NOOP("Th"), QT_TR_NOOP("Fr"), QT_TR_NOOP("Sa"), QT_TR_NOOP("Su")]
     readonly property var days: { const first = view === "week" ? monday(anchor) : anchor; const out = []; for (let i = 0; i < (view === "week" ? 7 : 1); i++) out.push(plus(first, i)); return out }
     readonly property var range: view === "month" ? [new Date(anchor.getFullYear(), anchor.getMonth(), 1, 12), new Date(anchor.getFullYear(), anchor.getMonth() + 1, 0, 12)] : [days[0], days[days.length - 1]]
-    readonly property string title: view === "month" ? I18n.tr(monthNames[anchor.getMonth()]) + " " + anchor.getFullYear()
+    readonly property string title: view === "work" ? I18n.tr("Work calendar") + " " + anchor.getFullYear()
+                                   : view === "month" ? I18n.tr(monthNames[anchor.getMonth()]) + " " + anchor.getFullYear()
                                    : view === "day" ? days[0].getDate() + ". " + (days[0].getMonth() + 1) + ". " + days[0].getFullYear()
                                    : days[0].getDate() + ". " + (days[0].getMonth() === days[6].getMonth() ? "" : (days[0].getMonth() + 1) + ". ") + "– " + days[6].getDate() + ". " + I18n.tr(monthNames[days[6].getMonth()]).toLowerCase()
-    function step(n) { anchor = view === "month" ? new Date(anchor.getFullYear(), anchor.getMonth() + n, 1, 12) : plus(anchor, n * (view === "week" ? 7 : 1)) }
+    function step(n) { anchor = view === "work" ? new Date(anchor.getFullYear() + n, 0, 1, 12) : view === "month" ? new Date(anchor.getFullYear(), anchor.getMonth() + n, 1, 12) : plus(anchor, n * (view === "week" ? 7 : 1)) }
 
     // ── what is shown: the calendars the user did not hide ────────────────────────────────────────────────────
     FileView {
@@ -93,7 +97,31 @@ ShellRoot {
         onExited: { try { q.data = JSON.parse(q.buf) } catch (e) { q.data = null } q.done() }
     }
     Ask { id: evq; onDone: { shell.events = data || []; if (shell.picked) shell.picked = shell.events.find(e => e.uid === shell.picked.uid && e.date === shell.picked.date) || null } }
+    // ── the work calendar: the working days of the year by month, and two small calculators (latte-cal workdays) ──
+    property var workData: []
+    property string rangeFrom: iso(new Date(new Date().getFullYear(), new Date().getMonth(), 1, 12))
+    property string rangeTo: iso(new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0, 12))
+    property var rangeData: null
+    property string addFrom: iso(new Date())
+    property int addN: 10
+    property string addResult: ""
+    function loadWork() { if (view === "work") workq.ask(["latte-cal", "workdays-year", "" + anchor.getFullYear()]) }
+    function calcRange() { if (rangeFrom <= rangeTo) rangeq.ask(["latte-cal", "workdays", rangeFrom, rangeTo]); else rangeData = null }
+    function calcAdd() { addq.ask(["latte-cal", "workdays-add", addFrom, "" + addN]) }
+    Ask { id: workq; onDone: shell.workData = data || [] }
+    Ask { id: rangeq; onDone: shell.rangeData = data }
+    Ask { id: addq; onDone: shell.addResult = data && data.date ? data.date : "" }
+    onViewChanged: { loadWork(); if (view === "work") { calcRange(); calcAdd() } }
+    onAnchorChanged: loadWork()
+    onRangeFromChanged: calcRange()
+    onRangeToChanged: calcRange()
+    onAddFromChanged: calcAdd()
+    onAddNChanged: calcAdd()
+    function dayText(day) { return /^\d{4}-\d{2}-\d{2}$/.test(day || "") ? parse(day).getDate() + ". " + (parse(day).getMonth() + 1) + ". " + parse(day).getFullYear() : "" }
     Ask { id: calq; onDone: shell.calendars = data || [] }
+    // the settings window writes them; what changed is read in a few seconds, and the events with it (name days)
+    Ask { id: cfgq; onDone: if (data && data.week_start !== undefined && JSON.stringify(data) !== JSON.stringify(shell.cfg)) { shell.cfg = data; shell.reload(); shell.loadWork(); if (shell.view === "work") { shell.calcRange(); shell.calcAdd() } } }
+    Timer { interval: 6000; repeat: true; running: true; onTriggered: cfgq.ask(["latte-cal", "settings"]) }
     Ask { id: yearq; onDone: { const l = {}; for (const e of data || []) if (e.kind === "event") l[e.date] = (l[e.date] || 0) + (e.time ? Math.max(0.5, (shell.minutes(e.end) - shell.minutes(e.time)) / 60) : 2); shell.load = l } }
     Ask { id: skyq; onDone: shell.sky = data && data.days ? data.days : [] }
     Ask { id: writer; onDone: shell.reload() }
@@ -103,7 +131,7 @@ ShellRoot {
     }
     onRangeChanged: evq.ask(["latte-cal", "events", "--from", iso(plus(range[0], -7)), "--to", iso(plus(range[1], 7))])
     Component.onCompleted: {
-        calq.ask(["latte-cal", "calendars"]); skyq.ask(["latte-sky"]); reload()
+        calq.ask(["latte-cal", "calendars"]); cfgq.ask(["latte-cal", "settings"]); skyq.ask(["latte-sky"]); reload()
         // latte-app calendar DAY SOURCE UID: that event open, as ClockGoo's calendar asks for it
         if (words.length >= 3) openAfter.restart()
     }
@@ -235,10 +263,10 @@ ShellRoot {
         sideWidth: 270
         tools: [
             Pill { implicitHeight: 32; text: I18n.tr("Today"); onPressed: shell.anchor = new Date() },
-            Label { visible: shell.view !== "month"; text: I18n.tr("week {n}", { n: shell.week(shell.days[0]) }); color: Theme.dim; font.family: Theme.mono; font.pixelSize: 12; anchors.verticalCenter: parent.verticalCenter },
+            Label { visible: shell.view !== "month" && shell.view !== "work"; text: I18n.tr("week {n}", { n: shell.week(shell.days[0]) }); color: Theme.dim; font.family: Theme.mono; font.pixelSize: 12; anchors.verticalCenter: parent.verticalCenter },
             Rectangle { height: 38; radius: 14; color: Theme.ground; width: seg.implicitWidth + 8; anchors.verticalCenter: parent.verticalCenter
                 Row { id: seg; x: 4; y: 4; spacing: 4
-                    Repeater { model: [{ id: "day", name: QT_TR_NOOP("Day") }, { id: "week", name: QT_TR_NOOP("Week") }, { id: "month", name: QT_TR_NOOP("Month") }]
+                    Repeater { model: [{ id: "day", name: QT_TR_NOOP("Day") }, { id: "week", name: QT_TR_NOOP("Week") }, { id: "month", name: QT_TR_NOOP("Month") }, { id: "work", name: QT_TR_NOOP("Work") }]
                         Rectangle { required property var modelData; height: 30; radius: 10; width: segText.implicitWidth + 28; color: shell.view === modelData.id ? Theme.raised : "transparent"
                             Label { id: segText; anchors.centerIn: parent; text: I18n.tr(parent.modelData.name); font.pixelSize: 13; color: shell.view === parent.modelData.id ? Theme.gold : Theme.dim; font.weight: shell.view === parent.modelData.id ? 600 : 400 }
                             MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: shell.view = parent.modelData.id } } } } }
@@ -253,9 +281,9 @@ ShellRoot {
                 Column { width: parent.width; spacing: 4
                     Label { text: I18n.tr(shell.monthNames[shell.anchor.getMonth()]) + " " + shell.anchor.getFullYear(); font.weight: 700; font.pixelSize: 13 }
                     Grid { columns: 7; width: parent.width
-                        Repeater { model: shell.dayNames
+                        Repeater { model: shell.weekNames
                             Label { required property string modelData; width: 234 / 7; height: 20; horizontalAlignment: Text.AlignHCenter; text: I18n.tr(modelData).charAt(0).toUpperCase(); color: Theme.faint; font.family: Theme.mono; font.pixelSize: 10 } }
-                        Repeater { model: { const f = new Date(shell.anchor.getFullYear(), shell.anchor.getMonth(), 1, 12), lead = (f.getDay() + 6) % 7, n = new Date(f.getFullYear(), f.getMonth() + 1, 0).getDate(); const out = []; for (let i = 0; i < lead + n; i++) out.push(i < lead ? null : new Date(f.getFullYear(), f.getMonth(), i - lead + 1, 12)); return out }
+                        Repeater { model: { const f = new Date(shell.anchor.getFullYear(), shell.anchor.getMonth(), 1, 12), lead = ((f.getDay() + 6) % 7 - shell.ws + 7) % 7, n = new Date(f.getFullYear(), f.getMonth() + 1, 0).getDate(); const out = []; for (let i = 0; i < lead + n; i++) out.push(i < lead ? null : new Date(f.getFullYear(), f.getMonth(), i - lead + 1, 12)); return out }
                             Rectangle { required property var modelData; width: 234 / 7; height: 26; radius: 7
                                 readonly property bool today: modelData !== null && shell.iso(modelData) === shell.iso(shell.now)
                                 readonly property bool inside: modelData !== null && shell.days.some(d => shell.iso(d) === shell.iso(modelData))
@@ -265,7 +293,7 @@ ShellRoot {
                 // the calendars: a tick shows or hides one; holidays are LatteOS's own
                 Column { width: parent.width; spacing: 8
                     Label { text: I18n.tr("MY CALENDARS"); color: Theme.faint; font.family: Theme.mono; font.pixelSize: 11; font.weight: 700 }
-                    Repeater { model: shell.calendars.filter(c => c.enabled).concat([{ uid: "holidays", name: QT_TR_NOOP("Holidays"), account: "LatteOS", color: "#ff6b6b" }])
+                    Repeater { model: shell.calendars.filter(c => c.enabled).concat([{ uid: "holidays", name: QT_TR_NOOP("Holidays"), account: "LatteOS", color: "#ff6b6b" }]).concat((shell.cfg.namedays || []).map(c => ({ uid: "nameday-" + c, name: I18n.tr("Name days") + " " + c.toUpperCase(), account: "LatteOS", color: "#b79bff" })))
                         Item { required property var modelData; width: 234; height: 24
                             readonly property bool on: !hiddenFile.list.includes(modelData.uid)
                             Rectangle { width: 16; height: 16; radius: 5; anchors.verticalCenter: parent.verticalCenter; color: parent.on ? parent.modelData.color : "transparent"; border.width: 2; border.color: parent.modelData.color
@@ -274,7 +302,9 @@ ShellRoot {
                             Label { anchors.right: parent.right; text: parent.modelData.account || ""; width: 60; horizontalAlignment: Text.AlignRight; color: Theme.faint; font.family: Theme.mono; font.pixelSize: 10; anchors.verticalCenter: parent.verticalCenter }
                             MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: hiddenFile.flip(parent.modelData.uid) } } }
                     Text { text: I18n.tr("Linked calendars…"); color: Theme.gold; font.family: Theme.font; font.pixelSize: 13; font.underline: true
-                        MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: Quickshell.execDetached(["latte-linked"]) } } }
+                        MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: Quickshell.execDetached(["latte-linked"]) } }
+                    Text { text: I18n.tr("Calendar settings…"); color: Theme.gold; font.family: Theme.font; font.pixelSize: 13; font.underline: true
+                        MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: Quickshell.execDetached(["latte-calsettings"]) } } }
                 // the year's load, in the standard heat: six months around this week
                 Column { width: parent.width; spacing: 6
                     Label { text: I18n.tr("LOAD OF THE YEAR"); color: Theme.faint; font.family: Theme.mono; font.pixelSize: 11; font.weight: 700 }
@@ -292,7 +322,7 @@ ShellRoot {
         // ── a day or a week: the whole days on top, the hours below ───────────────────────────────────────────
         Item {
             id: grid
-            visible: shell.view !== "month"
+            visible: shell.view !== "month" && shell.view !== "work"
             anchors.fill: parent; anchors.rightMargin: side.width
             readonly property real colW: (width - 64) / shell.days.length
             // the heads: the day, its number (gold today) and its weather
@@ -376,16 +406,73 @@ ShellRoot {
                                 Rectangle { x: -6; y: -5; width: 12; height: 12; radius: 6; color: "#ff6b6b" } } } } } }
         }
 
+        // ── the work calendar: working days by month, and what can be counted with them ────────────────────────────
+        Item {
+            id: workView
+            visible: shell.view === "work"
+            anchors.fill: parent; anchors.margins: 22; anchors.rightMargin: side.width + 22
+            // the year, month by month: days worked, hours, holidays that fall on a working day, bridges
+            Column { id: wtable; width: Math.min(parent.width * 0.6, 620); spacing: 3
+                Row { height: 28
+                    Repeater { model: [[QT_TR_NOOP("MONTH"), 150], [QT_TR_NOOP("WORKING DAYS"), 120], [QT_TR_NOOP("HOURS"), 90], [QT_TR_NOOP("HOLIDAYS"), 90], [QT_TR_NOOP("BRIDGES"), 90]]
+                        Label { required property var modelData; width: modelData[1]; height: 28; verticalAlignment: Text.AlignVCenter; text: I18n.tr(modelData[0]); color: Theme.faint; font.family: Theme.mono; font.pixelSize: 11; font.weight: 700 } } }
+                Repeater { model: shell.workData
+                    Rectangle { required property var modelData; width: wtable.width; height: 33; radius: 9
+                        readonly property bool now: modelData.month === new Date().getMonth() + 1 && shell.anchor.getFullYear() === new Date().getFullYear()
+                        color: now ? Theme.raised : "transparent"
+                        Row { anchors.verticalCenter: parent.verticalCenter; leftPadding: 0
+                            Label { width: 150; leftPadding: 10; text: I18n.tr(shell.monthNames[parent.parent.modelData.month - 1]); font.pixelSize: 14; font.weight: parent.parent.now ? 800 : 500 }
+                            Label { width: 120; text: parent.parent.modelData.days; font.family: Theme.mono; font.pixelSize: 14; font.weight: 800 }
+                            Label { width: 90; text: parent.parent.modelData.hours + " h"; font.family: Theme.mono; font.pixelSize: 13; color: Theme.dim }
+                            Label { width: 90; text: parent.parent.modelData.holidays_on_workdays.length; font.family: Theme.mono; font.pixelSize: 13; color: Theme.dim }
+                            Label { width: 90; text: parent.parent.modelData.bridges.length; font.family: Theme.mono; font.pixelSize: 13; color: Theme.dim } }
+                        MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: { shell.rangeFrom = shell.iso(new Date(shell.anchor.getFullYear(), parent.modelData.month - 1, 1, 12)); shell.rangeTo = shell.iso(new Date(shell.anchor.getFullYear(), parent.modelData.month, 0, 12)) } } } }
+                Rectangle { width: wtable.width; height: 1; color: Theme.line }
+                Row { height: 36
+                    Label { width: 150; leftPadding: 10; height: 36; verticalAlignment: Text.AlignVCenter; text: I18n.tr("Year"); font.pixelSize: 14; font.weight: 800 }
+                    Label { width: 120; height: 36; verticalAlignment: Text.AlignVCenter; text: shell.workData.reduce((a, m) => a + m.days, 0); font.family: Theme.mono; font.pixelSize: 15; font.weight: 800; color: Theme.gold }
+                    Label { width: 90; height: 36; verticalAlignment: Text.AlignVCenter; text: shell.workData.reduce((a, m) => a + m.hours, 0) + " h"; font.family: Theme.mono; font.pixelSize: 13; color: Theme.dim }
+                    Label { width: 90; height: 36; verticalAlignment: Text.AlignVCenter; text: shell.workData.reduce((a, m) => a + m.holidays_on_workdays.length, 0); font.family: Theme.mono; font.pixelSize: 13; color: Theme.dim }
+                    Label { width: 90; height: 36; verticalAlignment: Text.AlignVCenter; text: shell.workData.reduce((a, m) => a + m.bridges.length, 0); font.family: Theme.mono; font.pixelSize: 13; color: Theme.dim } }
+                Label { width: wtable.width; wrapMode: Text.WordWrap; color: Theme.faint; font.pixelSize: 12
+                        text: I18n.tr("Counted from the working days and the hours a day in the calendar settings, without the holidays that are days off. A bridge is a working day between a holiday and a day off.") } }
+            // what can be counted: the working days between two days, and the day that is some working days away
+            Column { x: wtable.width + 28; width: parent.width - x; spacing: 14
+                Rectangle { width: parent.width; height: rangeCol.height + 36; radius: 14; color: Theme.card; border.width: 1; border.color: Theme.line
+                    Column { id: rangeCol; x: 18; y: 18; width: parent.width - 36; spacing: 10
+                        Label { text: I18n.tr("WORKING DAYS BETWEEN"); color: Theme.faint; font.family: Theme.mono; font.pixelSize: 11; font.weight: 700 }
+                        Row { spacing: 8
+                            PickField { width: (rangeCol.width - 8) / 2; icon: "calendar"; text: shell.dayText(shell.rangeFrom); hint: I18n.tr("From"); onOpened: it => datePick.open(shell.at(it).x, shell.at(it).y, shell.rangeFrom, v => shell.rangeFrom = v) }
+                            PickField { width: (rangeCol.width - 8) / 2; icon: "arrow-right"; text: shell.dayText(shell.rangeTo); hint: I18n.tr("To"); onOpened: it => datePick.open(shell.at(it).x, shell.at(it).y, shell.rangeTo, v => shell.rangeTo = v) } }
+                        Label { visible: shell.rangeData !== null; text: shell.rangeData ? I18n.tr("{n} working days", { n: shell.rangeData.days }) : ""; font.pixelSize: 24; font.weight: 800; color: Theme.gold }
+                        Label { visible: shell.rangeData !== null; color: Theme.dim; font.pixelSize: 13; width: parent.width; wrapMode: Text.WordWrap
+                                text: shell.rangeData ? I18n.tr("{h} hours · {c} days in all · {o} days off", { h: shell.rangeData.hours, c: shell.rangeData.calendar_days, o: shell.rangeData.days_off }) : "" }
+                        Label { visible: shell.rangeData !== null && shell.rangeData.holidays_on_workdays.length > 0; width: parent.width; wrapMode: Text.WordWrap; color: Theme.dim; font.pixelSize: 12
+                                text: shell.rangeData ? I18n.tr("Holidays on a working day:") + "\n" + shell.rangeData.holidays_on_workdays.map(h => shell.dayText(h.date) + " " + h.name).join("\n") : "" }
+                        Label { visible: shell.rangeData !== null && shell.rangeData.bridges.length > 0; width: parent.width; wrapMode: Text.WordWrap; color: Theme.dim; font.pixelSize: 12
+                                text: shell.rangeData ? I18n.tr("Bridges:") + " " + shell.rangeData.bridges.map(d => shell.dayText(d)).join(", ") : "" } } }
+                Rectangle { width: parent.width; height: addCol.height + 36; radius: 14; color: Theme.card; border.width: 1; border.color: Theme.line
+                    Column { id: addCol; x: 18; y: 18; width: parent.width - 36; spacing: 10
+                        Label { text: I18n.tr("A DAY SOME WORKING DAYS AWAY"); color: Theme.faint; font.family: Theme.mono; font.pixelSize: 11; font.weight: 700 }
+                        Row { spacing: 8
+                            PickField { width: addCol.width - 3 * 8 - 40 - 46 - 40; icon: "calendar"; text: shell.dayText(shell.addFrom); hint: I18n.tr("From"); onOpened: it => datePick.open(shell.at(it).x, shell.at(it).y, shell.addFrom, v => shell.addFrom = v) }
+                            Pill { implicitHeight: 40; text: "−"; onPressed: shell.addN = shell.addN - 1 }
+                            Label { height: 40; verticalAlignment: Text.AlignVCenter; width: 46; horizontalAlignment: Text.AlignHCenter; text: (shell.addN > 0 ? "+" : "") + shell.addN; font.family: Theme.mono; font.pixelSize: 16; font.weight: 800 }
+                            Pill { implicitHeight: 40; text: "+"; onPressed: shell.addN = shell.addN + 1 } }
+                        Label { text: shell.dayText(shell.addResult); visible: shell.addResult !== ""; font.pixelSize: 24; font.weight: 800; color: Theme.gold }
+                        Label { text: shell.addN >= 0 ? I18n.tr("working days after the day chosen") : I18n.tr("working days before the day chosen"); color: Theme.dim; font.pixelSize: 13 } } } }
+        }
+
         // ── a month: its own days only, as ClockGoo's card; a press on a day shows it ─────────────────────────
         Item {
             visible: shell.view === "month"
             anchors.fill: parent; anchors.margins: 18; anchors.rightMargin: side.width + 18
             readonly property var first: new Date(shell.anchor.getFullYear(), shell.anchor.getMonth(), 1, 12)
-            readonly property int lead: (first.getDay() + 6) % 7
+            readonly property int lead: ((first.getDay() + 6) % 7 - shell.ws + 7) % 7
             readonly property int length: new Date(first.getFullYear(), first.getMonth() + 1, 0).getDate()
             readonly property int rows: Math.ceil((lead + length) / 7)
             Row { id: mhead
-                Repeater { model: shell.dayNames
+                Repeater { model: shell.weekNames
                     Label { required property string modelData; width: (parent.parent.width) / 7; text: I18n.tr(modelData).toUpperCase(); color: Theme.faint; font.family: Theme.mono; font.pixelSize: 11; font.weight: 700 } } }
             Grid { id: mgrid; y: mhead.height + 8; columns: 7; spacing: 6
                 Repeater { model: parent.parent.rows * 7

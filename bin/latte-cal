@@ -14,6 +14,11 @@
   latte-cal update UID EVENT JSON                changes an event: any of title, start, end, location, notes, color, url, free, private
   latte-cal remove UID EVENT [SCOPE RID]         takes an event out (of a repeating one SCOPE this|future|all of the occurrence
         RID); the last one is kept for `undo`
+  latte-cal settings                             the user's settings of the calendar (~/.config/latteos/calendar.json) and the countries of the name days
+  latte-cal settings-set JSON                    changes: namedays [codes], holiday_country, week_start (0 Monday, 6 Sunday), workdays [0-6], hours
+  latte-cal workdays FROM TO                     the working days between two dates (both in): days, hours, holidays on workdays and on days off, bridges
+  latte-cal workdays-add DATE N                  the date N working days after DATE (before it when N is negative)
+  latte-cal workdays-year YEAR                   the same for each month of the year
   latte-cal tasklists                            the lists of tasks of the accounts: [{"uid", "name", "account", "color", "removable", "enabled"}]
   latte-cal tasklist-show UID on|off             a list of tasks shows in the calendar, or not
   latte-cal add-account ics|caldav NAME ADDRESS [USER]   a calendar from an address; the password on the standard input
@@ -391,13 +396,120 @@ def place_country():
     return (os.environ.get("LANG", "sk_SK")[3:5] or "sk").lower()
 
 
+# ── the user's settings of the calendar (~/.config/latteos/calendar.json): written by the settings window, read here ─────────
+SETTINGS = os.path.join(os.environ.get("XDG_CONFIG_HOME") or os.path.expanduser("~/.config"), "latteos", "calendar.json")
+DEFAULTS = {"namedays": [], "holiday_country": "", "week_start": 0, "workdays": [0, 1, 2, 3, 4], "hours": 8}
+# the countries nameday.abalin.net knows (system/namedays.json): code → name in English (the window translates it)
+NAMEDAY_COUNTRIES = {"at": "Austria", "bg": "Bulgaria", "cz": "Czechia", "de": "Germany", "dk": "Denmark", "ee": "Estonia", "es": "Spain",
+                     "fi": "Finland", "fr": "France", "gr": "Greece", "hr": "Croatia", "hu": "Hungary", "it": "Italy", "lt": "Lithuania",
+                     "lv": "Latvia", "pl": "Poland", "se": "Sweden", "sk": "Slovakia", "us": "United States"}
+
+
+def settings():
+    """week_start: 0 Monday, 6 Sunday; workdays: 0 Monday … 6 Sunday; hours a day; namedays: country codes; holiday_country: "" for the place's."""
+    try:
+        with open(SETTINGS) as f:
+            got = json.load(f)
+    except (OSError, ValueError):
+        got = {}
+    out = dict(DEFAULTS)
+    if isinstance(got, dict):
+        out.update({k: v for k, v in got.items() if k in DEFAULTS})
+    return out
+
+
+def set_settings(change):
+    """Merges what is valid; anything else is left out. Returns the settings as they are now."""
+    now = settings()
+    for k, v in (change or {}).items():
+        if k == "namedays" and isinstance(v, list):
+            now[k] = [c for c in v if c in NAMEDAY_COUNTRIES]
+        elif k == "holiday_country" and isinstance(v, str) and re.fullmatch(r"|[a-z]{2}", v):
+            now[k] = v
+        elif k == "week_start" and v in (0, 5, 6):
+            now[k] = v
+        elif k == "workdays" and isinstance(v, list) and all(isinstance(d, int) and 0 <= d <= 6 for d in v):
+            now[k] = sorted(set(v))
+        elif k == "hours" and isinstance(v, (int, float)) and 0 < v <= 24:
+            now[k] = v
+    os.makedirs(os.path.dirname(SETTINGS), exist_ok=True)
+    with open(SETTINGS + ".new", "w") as f:
+        json.dump(now, f)
+    os.replace(SETTINGS + ".new", SETTINGS)
+    return now
+
+
+def namedays_of(first, last, countries):
+    """The name days of these countries as whole-day events, from the table shipped with LatteOS (no network)."""
+    out = []
+    if not countries:
+        return out
+    here = os.path.dirname(os.path.realpath(__file__))
+    for path in (os.path.join(os.environ.get("LATTE_SHARE") or "/usr/share/latteos", "namedays.json"), os.path.join(here, "..", "system", "namedays.json")):
+        try:
+            with open(path, encoding="utf-8") as f:
+                table = json.load(f)
+            break
+        except (OSError, ValueError):
+            table = None
+    if not table:
+        return out
+    day = dt.datetime.combine(first.date() if isinstance(first, dt.datetime) else first, dt.time())
+    end = last if isinstance(last, dt.datetime) else dt.datetime.combine(last, dt.time())
+    while day <= end:
+        names = table.get(day.strftime("%m-%d"), {})
+        for c in countries:
+            if names.get(c):
+                out.append({"date": day.strftime("%Y-%m-%d"), "time": "", "end": "", "title": names[c], "location": "", "link": "",
+                            "calendar": "Name days " + c.upper(), "color": "#b79bff", "kind": "nameday", "uid": "", "source": "nameday-" + c})
+        day += dt.timedelta(days=1)
+    return out
+
+
+def is_workday(d, st, holidays):
+    return d.weekday() in st["workdays"] and d not in holidays
+
+
+def workdays(first, last):
+    """Working days from FIRST to LAST, both included: weekdays the user works, without the holidays of the country."""
+    st = settings()
+    days = [first + dt.timedelta(n) for n in range((last - first).days + 1)]
+    hol = holidays_of(range(first.year, last.year + 1))
+    work = [d for d in days if is_workday(d, st, hol)]
+    on_workdays = [{"date": d.isoformat(), "name": hol.get(d)} for d in days if d in hol and d.weekday() in st["workdays"]]
+    on_weekend = [{"date": d.isoformat(), "name": hol.get(d)} for d in days if d in hol and d.weekday() not in st["workdays"]]
+    # a bridge: a working day between a holiday and a day off (a Friday after a Thursday holiday, a Monday before a Tuesday one)
+    bridge = []
+    for d in work:
+        before, after = d - dt.timedelta(1), d + dt.timedelta(1)
+        off = lambda x: not is_workday(x, st, hol)
+        if (before in hol and off(after)) or (after in hol and off(before)):
+            bridge.append(d.isoformat())
+    return {"days": len(work), "hours": round(len(work) * st["hours"], 1), "calendar_days": len(days),
+            "days_off": len(days) - len(work), "holidays_on_workdays": on_workdays, "holidays_on_days_off": on_weekend, "bridges": bridge}
+
+
+def workdays_add(start, n):
+    """The day that is N working days after START (before it for a negative N)."""
+    st = settings()
+    hol = holidays_of(range(start.year - 1, start.year + 3))
+    step, d, left = (1 if n >= 0 else -1), start, abs(n)
+    while left > 0:
+        d += dt.timedelta(step)
+        if d.year > start.year + 2 or d.year < start.year - 1:
+            break
+        if is_workday(d, st, hol):
+            left -= 1
+    return d
+
+
 def holidays_of(years):
     """The public holidays of the place's country (python-holidays), named in the user's language where it can."""
     try:
         import holidays
     except ImportError:
         return {}
-    country = place_country().upper()
+    country = (settings()["holiday_country"] or place_country()).upper()
     lang = (os.environ.get("LC_ALL") or os.environ.get("LANG") or "en").split("_")[0].split(".")[0]
     try:
         return holidays.country_holidays(country, years=years, language=lang)
@@ -408,7 +520,7 @@ def holidays_of(years):
 
 
 def all_events(first, last, addresses):
-    found = account_events(first, last) + task_events(first, last)
+    found = account_events(first, last) + task_events(first, last) + namedays_of(first, last, settings()["namedays"])
     for a in addresses:
         try:
             for e in events(fetch(a), first, last):
@@ -952,6 +1064,17 @@ def command(a):
         print(json.dumps(update(a[1], a[2], change)))
     elif a[0] == "remove" and len(a) in (3, 5):
         print(json.dumps(remove(*a[1:])))
+    elif a == ["settings"]:
+        print(json.dumps(dict(settings(), nameday_countries=NAMEDAY_COUNTRIES, place=place_country()), ensure_ascii=False))
+    elif a[0] == "settings-set" and len(a) == 2:
+        print(json.dumps(set_settings(json.loads(a[1])), ensure_ascii=False))
+    elif a[0] == "workdays" and len(a) == 3:
+        print(json.dumps(workdays(dt.date.fromisoformat(a[1]), dt.date.fromisoformat(a[2])), ensure_ascii=False))
+    elif a[0] == "workdays-add" and len(a) == 3:
+        print(json.dumps({"date": workdays_add(dt.date.fromisoformat(a[1]), int(a[2])).isoformat()}))
+    elif a[0] == "workdays-year" and len(a) == 2:
+        y = int(a[1])
+        print(json.dumps([dict(workdays(dt.date(y, m, 1), (dt.date(y + (m == 12), m % 12 + 1, 1) - dt.timedelta(1))), month=m) for m in range(1, 13)], ensure_ascii=False))
     elif a == ["tasklists"]:
         print(json.dumps(task_lists(), ensure_ascii=False))
     elif a[0] == "tasklist-show" and len(a) == 3:
@@ -980,7 +1103,7 @@ def command(a):
 
 
 def main(addresses):
-    if addresses and addresses[0] in ("events", "calendars", "add", "update", "remove", "tasklists", "tasklist-show", "add-account", "remove-account", "watch", "undo", "duplicate", "move", "holidays", "accounts", "parse"):
+    if addresses and addresses[0] in ("events", "calendars", "add", "update", "remove", "settings", "settings-set", "workdays", "workdays-add", "workdays-year", "tasklists", "tasklist-show", "add-account", "remove-account", "watch", "undo", "duplicate", "move", "holidays", "accounts", "parse"):
         return command(addresses)
     if not addresses or addresses[0] in ("-h", "--help"):
         print(__doc__.strip())

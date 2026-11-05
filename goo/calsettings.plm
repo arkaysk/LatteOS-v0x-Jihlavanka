@@ -1,0 +1,210 @@
+// Calendar settings — a secondary LatteOS window made from templates/okno-vedlajsie (docs/okna/SABLONY.md; ROADMAP 10J.16).
+// What is shown (the country of the holidays, the name days of which countries) and the week (where it begins, which days are
+// worked, hours a day). Written to ~/.config/latteos/calendar.json by `latte-cal settings-set` at OK or Apply; the Calendar and the
+// working-days count (latte-cal workdays) read it.
+language 0.9
+import "lang/sk.plm"
+import "pleamar:ui"
+
+scene CalSettings {
+    surface { size: 640, 560; kind: window; title: "Calendar settings"; app_id: "org.latteos.calsettings"; keyboard: on_demand }
+    permissions {
+        run: "cat", "latte-cal"
+        services: "env"
+    }
+
+    let W = screen.width
+    let H = screen.height
+    // the colours of the windows' cup, from the logic (goo/lib/cup.luau)
+    repeat k in 0..10 { fact c.$k.r = 0.5 }
+    repeat k in 0..10 { fact c.$k.g = 0.5 }
+    repeat k in 0..10 { fact c.$k.b = 0.5 }
+    let ground = rgb(c.0.r, c.0.g, c.0.b)
+    let surfc = rgb(c.1.r, c.1.g, c.1.b)
+    let rowc = rgb(c.2.r, c.2.g, c.2.b)
+    let raised = rgb(c.3.r, c.3.g, c.3.b)
+    let line = rgb(c.4.r, c.4.g, c.4.b)
+    let cream = rgb(c.5.r, c.5.g, c.5.b)
+    let dim = rgb(c.6.r, c.6.g, c.6.b)
+    let faint = rgb(c.7.r, c.7.g, c.7.b)
+    let gold = rgb(c.8.r, c.8.g, c.8.b)
+    let coffee = rgb(c.9.r, c.9.g, c.9.b)
+    fact light = false
+    let ink_gold = if(light, #fffaf1, #17110d)
+
+    text o_title = "Calendar settings"
+    fact o_dirty = false                       // something changed: Apply can be pressed
+    fact sec = 0                               // 0 what is shown, 1 the week
+    // the countries: their code, name, whether their name days are shown, whether their holidays are the ones
+    model ctry max 24 { code: text; name: text; nd: bool; hol: bool }
+    fact hol_place = true                      // the holidays follow the place
+    fact ws = 0                                // the week begins on: 0 Monday, 6 Sunday, 5 Saturday
+    fact wd0 = true
+    fact wd1 = true
+    fact wd2 = true
+    fact wd3 = true
+    fact wd4 = true
+    fact wd5 = false
+    fact wd6 = false
+    text hours_text = ""
+    text place_text = ""
+    event nd_flip ->
+    event hol_pick ->
+    event ws_pick ->
+    event wd_flip ->
+    event hrs_less ->
+    event hrs_more ->
+    event ok ->
+    event apply ->
+    event cancel ->
+    event done
+    on done { quit }
+    on cancel { quit }
+    on key Escape { emit cancel }
+
+    body { color: ground; box { from: 0, 0; size: W, H } }
+
+    // ── the header: its name, ✕, the coffee line under it; it carries the window ──────────────────────────────────
+    let hd = 56
+    zone box header { from: 0, 0; size: W, hd; label: "Move the window"; role: region }
+    on press header { carry }
+    text o_title { at: 20, hd / 2; anchor: left center; width: W - 90; lines: 1; size: 15; weight: 700; color: cream; family: "Inter" }
+    zone box close_hit { from: W - 46, 11; size: 34, 34; corner: 10; cursor: pointer; label: "Close"; role: button }
+    box { from: W - 46, 11; size: 34, 34; corner: 10; color: #e5484d; opacity: close_hit.hover }
+    text "" { at: W - 29, 28; anchor: center; size: 17; color: cream; family: "tabler-icons" }
+    on press close_hit { emit cancel }
+    body {
+        gradient: 0, hd - 1 to W, hd - 1, coffee, coffee, coffee, ground
+        box { from: 0, hd - 2; size: W, 2 }
+    }
+
+    // ── the sections ─────────────────────────────────────────────────────────────────────────────────────────────
+    row { at: 20, hd + 14; gap: 4
+        SecTab(0, "Calendars shown", true, 150)
+        SecTab(1, "Week and work", true, 150)
+    }
+
+    let rw = W - 40
+    let by = hd + 62
+    let vh = H - by - 72
+    let pw = (rw - 28 - 18) / 4                // a country's pill: four in a row
+
+    // ── what is shown: the holidays of a country, the name days of some countries ─────────────────────────────────
+    column shown { at: 20, by; view: rw, vh; gap: 10; show: sec == 0
+        group {
+            size: rw, 40 + 42 + 5 * 36 + 8
+            box { from: 0, 0; size: rw, 40 + 42 + 5 * 36 + 8; corner: 12; color: rowc }
+            text "HOLIDAYS OF" { at: 14, 20; anchor: left center; size: 10.5; weight: 700; color: faint; family: "JetBrains Mono" }
+            zone box place_hit { from: 14, 40; size: rw - 28, 32; corner: 9; cursor: pointer; label: "The holidays follow the place"; role: toggle; checked: hol_place }
+            box { from: 14, 40; size: rw - 28, 32; corner: 9; color: if(hol_place, gold, raised) }
+            box { from: 14, 40; size: rw - 28, 32; corner: 9; color: if(place_hit.hover > 0.5, gold, line); stroke: 1 }
+            text place_text { at: 28, 56; anchor: left center; size: 13; weight: 500; color: if(hol_place, ink_gold, cream); width: rw - 60; lines: 1; family: "Inter" }
+            on press place_hit { emit hol_pick(-1) }
+            for c in ctry {
+                let cx = 14 + mod(c.index, 4) * (pw + 6)
+                let cy = 82 + floor(c.index / 4) * 36
+                zone box h_hit { from: cx, cy; size: pw, 30; corner: 9; cursor: pointer; label: "Holidays of {c.name}"; role: toggle; checked: c.hol and not hol_place }
+                box { from: cx, cy; size: pw, 30; corner: 9; color: if(c.hol and not hol_place, gold, raised) }
+                box { from: cx, cy; size: pw, 30; corner: 9; color: if(h_hit.hover > 0.5, gold, line); stroke: 1 }
+                text c.name { at: cx + pw / 2, cy + 15; anchor: center; size: 12; weight: if(c.hol and not hol_place, 600, 400); color: if(c.hol and not hol_place, ink_gold, cream); width: pw - 8; lines: 1; family: "Inter" }
+                on press h_hit { emit hol_pick(c.index) }
+            }
+        }
+        group {
+            size: rw, 40 + 5 * 36 + 8
+            box { from: 0, 0; size: rw, 40 + 5 * 36 + 8; corner: 12; color: rowc }
+            text "NAME DAYS OF (SEVERAL AT ONCE)" { at: 14, 20; anchor: left center; size: 10.5; weight: 700; color: faint; family: "JetBrains Mono" }
+            for c in ctry {
+                let cx = 14 + mod(c.index, 4) * (pw + 6)
+                let cy = 40 + floor(c.index / 4) * 36
+                zone box n_hit { from: cx, cy; size: pw, 30; corner: 9; cursor: pointer; label: "Name days of {c.name}"; role: toggle; checked: c.nd }
+                box { from: cx, cy; size: pw, 30; corner: 9; color: if(c.nd, gold, raised) }
+                box { from: cx, cy; size: pw, 30; corner: 9; color: if(n_hit.hover > 0.5, gold, line); stroke: 1 }
+                text c.name { at: cx + pw / 2, cy + 15; anchor: center; size: 12; weight: if(c.nd, 600, 400); color: if(c.nd, ink_gold, cream); width: pw - 8; lines: 1; family: "Inter" }
+                on press n_hit { emit nd_flip(c.index) }
+            }
+        }
+    }
+
+    // ── the week: where it begins, which days are worked, how long ────────────────────────────────────────────────
+    column week { at: 20, by; view: rw, vh; gap: 10; show: sec == 1
+        group {
+            size: rw, 40 + 36
+            box { from: 0, 0; size: rw, 76; corner: 12; color: rowc }
+            text "THE WEEK BEGINS ON" { at: 14, 20; anchor: left center; size: 10.5; weight: 700; color: faint; family: "JetBrains Mono" }
+            WeekStart(0, "Monday", 14)
+            WeekStart(6, "Sunday", 14 + 130)
+            WeekStart(5, "Saturday", 14 + 260)
+        }
+        group {
+            size: rw, 40 + 36
+            box { from: 0, 0; size: rw, 76; corner: 12; color: rowc }
+            text "WORKING DAYS" { at: 14, 20; anchor: left center; size: 10.5; weight: 700; color: faint; family: "JetBrains Mono" }
+            WorkDay(0, "Mo", wd0)
+            WorkDay(1, "Tu", wd1)
+            WorkDay(2, "We", wd2)
+            WorkDay(3, "Th", wd3)
+            WorkDay(4, "Fr", wd4)
+            WorkDay(5, "Sa", wd5)
+            WorkDay(6, "Su", wd6)
+        }
+        group {
+            size: rw, 40 + 36
+            box { from: 0, 0; size: rw, 76; corner: 12; color: rowc }
+            text "HOURS A DAY" { at: 14, 20; anchor: left center; size: 10.5; weight: 700; color: faint; family: "JetBrains Mono" }
+            Button("−", 14, 40, hrs_less, width: 40)
+            text hours_text { at: 14 + 40 + 48, 55; anchor: center; size: 15; weight: 600; color: cream; family: "Inter" }
+            Button("+", 14 + 40 + 96, 40, hrs_more, width: 40)
+        }
+    }
+
+    // ── the foot: OK · Cancel · Apply over a line, as a dialog has them ───────────────────────────────────────────
+    box { from: 0, H - 64; size: W, 1; color: line }
+    Button("OK", W - 312, H - 46, ok, gold_on: true)
+    Button("Cancel", W - 212, H - 46, cancel)
+    Button("Apply", W - 112, H - 46, apply, enabled: o_dirty)
+    on key Return { emit ok }
+
+    // ── the pieces ────────────────────────────────────────────────────────────────────────────────────────────────
+    // a day to begin the week on, and a day of the week to work on
+    component WeekStart(k: number, caption: text, x: number) {
+        group {
+            zone box hit { from: x, 40; size: 120, 30; corner: 9; cursor: pointer; label: "The week begins on {caption}"; role: toggle; checked: ws == k }
+            box { from: x, 40; size: 120, 30; corner: 9; color: if(ws == k, gold, raised) }
+            box { from: x, 40; size: 120, 30; corner: 9; color: if(hit.hover > 0.5, gold, line); stroke: 1 }
+            text caption { at: x + 60, 55; anchor: center; size: 12.5; weight: if(ws == k, 600, 400); color: if(ws == k, ink_gold, cream); family: "Inter" }
+            on press hit { emit ws_pick(k) }
+        }
+    }
+    component WorkDay(k: number, caption: text, on: bool) {
+        group {
+            let x = 14 + k * 56
+            zone box hit { from: x, 40; size: 48, 30; corner: 15; cursor: pointer; label: "Work on {caption}"; role: toggle; checked: on }
+            box { from: x, 40; size: 48, 30; corner: 15; color: if(on, gold, raised) }
+            box { from: x, 40; size: 48, 30; corner: 15; color: if(hit.hover > 0.5, gold, line); stroke: 1 }
+            text caption { at: x + 24, 55; anchor: center; size: 12.5; weight: if(on, 600, 400); color: if(on, ink_gold, cream); family: "Inter" }
+            on press hit { emit wd_flip(k) }
+        }
+    }
+    component Button(caption: text, x: number, y: number, press: event, width: number = 96, gold_on: bool = false, enabled: bool = true, shown: bool = true) {
+        group {
+            show: shown
+            zone box hit { from: x, y; size: width, 30; corner: 8; cursor: pointer; active: enabled; label: "{caption}"; role: button }
+            box { from: x, y; size: width, 30; corner: 8; color: if(gold_on, gold, raised); opacity: if(enabled, 100%, 45%) }
+            box { from: x, y; size: width, 30; corner: 8; color: if(hit.hover > 0.5, gold, line); stroke: 1; opacity: if(enabled, 100%, 45%) }
+            text caption { at: x + width / 2, y + 15; anchor: center; size: 13; weight: if(gold_on, 600, 500); color: if(gold_on, ink_gold, cream); family: "Inter"; opacity: if(enabled, 100%, 45%) }
+            on press hit { emit press }
+        }
+    }
+    component SecTab(k: number, caption: text, shown: bool, w: number = 128) {
+        size: if(shown, w + 4, 0), 32
+        group {
+            show: shown
+            box { from: 0, 0; size: w, 32; corner: 9; color: if(sec == k, raised, ground) }
+            box { from: 14, 30; size: w - 28, 2; corner: 1; color: gold; show: sec == k }
+            text caption { at: w / 2, 16; anchor: center; width: w - 4; lines: 1; size: 12.5; weight: if(sec == k, 600, 400); color: if(sec == k, cream, dim); family: "Inter" }
+            zone box hit { from: 0, 0; size: w, 32; cursor: pointer; role: tab; selected: sec == k; label: "{caption}" }
+            on press hit { sec = k }
+        }
+    }
+}
