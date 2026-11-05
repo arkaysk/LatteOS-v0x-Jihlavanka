@@ -3511,6 +3511,8 @@ Zdroje: `apps/calendar.qml`, `bin/latte-cal`, `goo/lang/sk-dates.json`
 
 **10J.21** [ ] (Kalendár) **EduPage (slovenský)** (používateľ 5. 11.): rozvrh, suplovanie, domáce úlohy a písomky školy v kalendári. Najprv zistiť, čo EduPage dáva bez účtu (adresa kalendára .ics pre rodiča / žiaka), potom či existuje stabilné rozhranie; neoficiálne prístupy (prihlasovanie za používateľa) iba s jeho súhlasom a bez ukladania hesla do súboru. Súčasť okna prepojení (10J.20).
 
+**10J.22** [ ] (Kalendár) **Grafické artefakty Goo** (používateľ 5. 11.; zapísané v `bughunt/najdene-chyby.md`): karty Goo sa otvárajú sekane so svetlými štvorcami, zatváranie LensShore bliká, sklenené rámiky ClockGoo majú niekoľko postupne tmavších obdĺžnikov v sebe. Zistené: je to reálne v obraze (nielen v streame Sunshine), príčina zatiaľ neznáma; pozri bughunt. Po tom TrayShore (Pobrežie).
+
 ### 10K. [ ] Hry
 Herná relácia: Steam, Proton, umu, gamescope, MangoHud, NVIDIA.
 Zdroje: `bin/latte-game`

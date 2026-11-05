@@ -2,3 +2,19 @@ prihlasovaci režim. v verzii 0.4 je trošku graficky primitivnejši než povodn
 zapojenie 4 režimu okien bude kedy?
 powerGoo ked sa otvori. vydim problem. power goo ma na pravom kliku roztiahnutie na kartu s udajmy. ale ked sa vtedy klikne lavym na powerGoo, ucho popup okna je podivne male. a tiež vyditelne. powergooo ostava na lište-rozdielne chovanie než ked nie je zapnuta lišta s udajma. navrhujem. ked je zapnuta lišta s udajma aby sa popup okno vynorilo z celeho komplexu goo + bar. aby vyzualne tvorily jeden kus.
 kontextove menu. klikanie na plochu a inde ako v windows 11, v verzii 0.3 to bolo v 0.4 už to zase nie je.
+## 5. 11. 2026 — otváranie kariet Goo „sekané“, svetlé štvorce okolo karty (nahlásil používateľ)
+
+Používateľ: karty Goo sa otvárajú sekane, okolo sa ukazujú štvorce; zatváranie LensShore bliká štvorcami; sklenené rámiky ClockGoo
+majú „niekoľko obdĺžnikov postupne tmavších v sebe“. **Nespravené, čaká na rozhodnutie.** Čo som zistil (nástroj: `bughunt/zachyt-otvarania-karty.sh`,
+~30 snímok za sekundu z `grim`, iba oblasť karty):
+
+- **Je to skutočné v obraze kompozitora**, nie iba v streame: PowerGoo sa pri otváraní ~100 ms ukáže ako svetlý hranatý obdĺžnik širší než karta
+  (sklo bez tmavého krytia), vpravo od tmavého obsahu karty je svetlý pás; až potom sa karta ustáli (v pokoji je čistá, tmavá, so zaoblenými rohmi).
+- **Neurobila to** moja úprava Kalendára ani AppWindow (iba apps). Scéna karty (`goo/parts/card.plm`) sa pri tom nemenila od 3. 11.
+- Skúšané (každé s vlastným pleamarom v kópii `build/alt`, potom zrušené): oslabiť `glass`, `frost`, `smoke`, `tint`, `refraction` a vypnúť `lens` počas rastu
+  karty — pás ostal; pleamar **bez celej** záplaty `pleamar-speed-edges-wheel` — dvakrát čisté otváranie, ale Goo potom zaťažuje grafiku ~79 % (so
+  záplatou ~6 %); pásy (`body-speed`) iba pre telá ≥ 700 px, bez „prázdnych tvarov“ a bez `sharp-edges` samostatne — pás ostal. Záver: samotná záplata
+  ho nevysvetľuje; pozadie je video (Galaxy Eyes.mp4), svetlosť pásu závisí od toho, čo je práve za kartou.
+- **Grafika je zaťažená**: `sunshine` (streamovanie hry, v logu relácia od 7:29, HEVC 46 Mb/s) berie 26–45 % grafiky stále, `pleamar-wm` 17–30 %. Ak sleduješ
+  plochu cez Moonlight, „obdĺžniky postupne tmavšie“ môžu byť aj pásy kompresie videa (banding) — porovnať so snímkou z `grim`.
+- Ďalší krok: porovnať s pôvodným vzhľadom (snímka z čias, keď to bolo v poriadku), vyskúšať bez Sunshine, a vyskúšať pleamar-wm bez blur pod oknami.
