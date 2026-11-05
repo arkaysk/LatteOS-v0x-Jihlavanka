@@ -65,5 +65,5 @@ sú tu, aby sa dala tabuľka obnoviť. Ruská položka sa vynecháva (služba ta
 
 ## Capture (ROADMAP 10M.50), ešte nenapísané
 
-Vzor rozhrania a úprav snímok: **Flameshot** (flameshot-org/flameshot, **GPL-3.0**, C++/Qt Widgets) — preberá sa súbor nástrojov a správanie; ak sa preberie kód, patrí do samostatného programu `latte-capture` pod GPL-3.0.
+Vzor rozhrania a úprav snímok: **Flameshot** (flameshot-org/flameshot, **GPL-3.0**, C++/Qt Widgets) — preberá sa súbor nástrojov a správanie aj kód, ak treba. **Licencia LatteOS nie je definitívna** (zatiaľ MIT): určí sa po dokončení podľa všetkého integrovaného materiálu tretích strán (používateľ 5. 11.).
 Motor snímok a nahrávania: **Marea** (`logic/camera.luau`, BSD-3, už v systéme). Rozpoznanie textu: **Tesseract** (Apache-2.0).
