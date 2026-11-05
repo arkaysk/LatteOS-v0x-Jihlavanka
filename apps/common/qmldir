@@ -19,3 +19,5 @@ DotBar DotBar.qml
 CopyButton CopyButton.qml
 Pegboard Pegboard.qml
 Lens Lens.qml
+DatePick DatePick.qml
+TimePick TimePick.qml

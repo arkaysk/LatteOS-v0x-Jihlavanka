@@ -1,0 +1,9 @@
+# The calendar's reminders: told as they come due, also when the Calendar window is shut (bin/latte-cal watch).
+[Unit]
+Description=LatteOS calendar reminders
+PartOf=latte-session.target
+
+[Service]
+ExecStart=/usr/bin/latte-cal watch
+Restart=on-failure
+RestartSec=20

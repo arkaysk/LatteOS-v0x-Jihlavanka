@@ -857,9 +857,10 @@ return {
             end
             fill_calendar()
         end)
+        local cal_changed                       -- a sentence waiting is read again for the day just chosen
         on("cal_pick", function(place)
             local key = month.cells[(tonumber(place) or 0) + 1]
-            if key then month.chosen = key cal.side = 0 fill_calendar() end
+            if key then month.chosen = key cal.side = 0 fill_calendar() if fact.cal_typed then cal_changed() end end
         end)
         on("cal_show", function(k) cal.side = tonumber(k) or 0 fill_calendar() end)
         -- the calendar as a window of its own (apps/calendar.qml), at the chosen day; a line of the day opens its event there
@@ -884,14 +885,14 @@ return {
         end)
         -- a sentence typed: what it would become, a moment after the typing stops
         local typing = 0
-        local function cal_changed()
+        cal_changed = function()
             fact.cal_typed = (text.cal_q or "") ~= ""
             typing += 1
             local mine = typing
             if not fact.cal_typed then cal.parsed = nil fill_calendar() return end
             after(450, function()
                 if mine ~= typing then return end
-                run("latte-cal", { "parse", text.cal_q }, function(out)
+                run("latte-cal", { "parse", "--day", month.chosen or iso(os.date("*t")), text.cal_q }, function(out)
                     local ok, p = pcall(json.decode, out or "")
                     cal.parsed = ok and type(p) == "table" and p or nil
                     if card.id() == "notes" then fill_calendar() end
@@ -908,7 +909,7 @@ return {
                 if cal.reading then return end
                 cal.reading, typing = true, typing + 1
                 fill_calendar()
-                run("latte-cal", { "parse", "--ai", text.cal_q }, function(out)
+                run("latte-cal", { "parse", "--ai", "--day", month.chosen or iso(os.date("*t")), text.cal_q }, function(out)
                     local ok, q = pcall(json.decode, out or "")
                     cal.reading, cal.parsed = false, ok and type(q) == "table" and q.ok and q or p
                     if card.id() == "notes" then fill_calendar() end

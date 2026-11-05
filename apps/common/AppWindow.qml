@@ -11,12 +11,14 @@
 //
 // The side is a pane of glass from the top of the window to its bottom: the pages of the app, its places, what it
 // keeps at hand. Right of it everything is solid. The coffee is the line between the app's upper and lower part
-// when it has a lower one (`foot`); when it has none the coffee only moves quietly behind what the app shows.
+// when it has a lower one (`foot`); when it has none the coffee only moves quietly under the end of the page. What the
+// app shows never goes under the coffee: it ends above it and runs out into the ground (`reserve`, `fade`).
 // Minimise and maximise are there only where windows float: on the tape and in tiles they would do nothing.
 //
 //   AppWindow { heading: "…"; side: [ … ]; tools: [ … ]; foot: [ … ]; searchHint: "…"; onSearched: text => …
 //               arrows: true; canGoBack: …; onBack: …        … what the app shows … }
 import QtQuick
+import QtQuick.Effects
 import Quickshell
 import Quickshell.Io
 
@@ -31,6 +33,11 @@ FloatingWindow {
     property real footDepth: 58
     property color ground: Theme.ground        // what the app stands on; "transparent" lets a glass page of its own through
     readonly property bool hasFoot: sea.content.length > 0
+    // What the app shows never goes under the coffee: it ends above it and runs out into the ground over `fade` (a real
+    // see-through end, so the coffee and its glow stay as they are). With a foot the coffee begins where the page ends;
+    // without one, 44 px are kept for it (30 deep and the glow above its surface). What stands in the coffee is `foot`.
+    readonly property real reserve: hasFoot ? footDepth : 44
+    property real fade: 36
 
     property bool arrows: false                // the app has pages one goes back from
     property bool canGoBack: false
@@ -109,7 +116,7 @@ FloatingWindow {
             id: sea
             anchors.bottom: parent.bottom; width: parent.width
             depth: win.hasFoot ? win.footDepth : 30
-            opacity: win.hasFoot ? 1 : 0.55
+            // as dark as DualBrew's, with a foot or without (the user 5. 11.: it was never meant to be paler); behind what the app shows
         }
 
         Item {
@@ -143,7 +150,11 @@ FloatingWindow {
             Rectangle { y: parent.height - 2; width: parent.width; height: 2
                 gradient: Gradient { orientation: Gradient.Horizontal; GradientStop { position: 0; color: Theme.coffee } GradientStop { position: 0.7; color: Theme.coffee } GradientStop { position: 1; color: "transparent" } } }
         }
-        Item { id: body; y: head.height; width: parent.width; height: parent.height - head.height - (win.hasFoot ? win.footDepth : 0); clip: true }
+        Item { id: body; y: head.height; width: parent.width; height: parent.height - head.height - win.reserve; clip: true
+               layer.enabled: true
+               layer.effect: MultiEffect { maskEnabled: true; maskSource: bodyMask } }
+        Item { id: bodyMask; visible: false; layer.enabled: true; y: head.height; width: body.width; height: body.height
+               Rectangle { anchors.fill: parent; gradient: Gradient { GradientStop { position: 0; color: "white" } GradientStop { position: Math.max(0, 1 - win.fade / Math.max(1, body.height)); color: "white" } GradientStop { position: 1; color: "transparent" } } } }
     }
 
     // The keyboard goes where the mouse presses, as everywhere: a text field pressed takes it. Qt alone misses it on

@@ -1282,7 +1282,7 @@ Zdroje: `goo/parts/calendar.plm`, `bin/latte-cal`, `bin/latte-sky`; LATTEOS-GOO 
 
 **6D.06** [ ] (ClockGoo) Karta ClockGoo (ľavý klik) ostáva rýchly prehľad dňa; plná správa udalostí je v aplikácii Kalendár (10J), kam karta odkazuje tlačidlom „V okne“.
 
-**6D.07** [ ] Kalendar-kliknutie na poličko dna zvyrazni ten den a nasledny zapis do riadku bude mat pred sebou predvyplneny ten datum. zapis sa týka evidentne toho dna
+**6D.07** [x] (5. 11.: veta bez dňa ide na zvolený deň, `latte-cal parse --day`; nasadené) Kalendar-kliknutie na poličko dna zvyrazni ten den a nasledny zapis do riadku bude mat pred sebou predvyplneny ten datum. zapis sa týka evidentne toho dna
 
 **6D.08** [ ] kalendar-jeho funkčnost musi byt minimalne identicka s funkčnostou google Kalendaru!
 
@@ -3481,11 +3481,11 @@ Zdroje: `apps/calendar.qml`, `bin/latte-cal`, `goo/lang/sk-dates.json`
 
 **10J.06** [ ] (Kalendár) **Cieľ (používateľ 22. 10.): funkčnosť aspoň ako Google Kalendár na Androide.** Dizajn ostáva (je dobrý, nemeniť); dopĺňajú sa funkcie. Test 22. 10.: úprava udalosti je len povrchná, s Google Kalendárom sa zatiaľ nedá porovnať. Pri každej funkcii si pozrieť, čo vie Evolution Data Server (`libecal`/iTIP/VALARM/RRULE), aby sa nevymýšľalo.
 
-**10J.07** [ ] (Kalendár) **Udalosti — úprava a tvorba:** celodenné a viacdňové; začiatok/koniec s časovým pásmom (aj dve pásma); názov, miesto (s mapou/čas cesty), popis (formátovaný), prílohy, odkaz na videohovor (Meet/Teams/Zoom), farba udalosti aj kalendára, súkromná/verejná, „zaneprázdnený/voľný“; duplikovať, presunúť do iného kalendára, odstrániť, **Späť** po zmazaní.
+**10J.07** [~] (5. 11.: hotové viacdňové udalosti, voľný/obsadený, súkromné, adresa videohovoru, presun do iného kalendára, Duplikovať, Späť po zmazaní (10 s), dvojklik = úprava, pravý klik = ponuka s farbou; **chýba:** časové pásmo (aj dve), formátovaný popis, prílohy, mapa a čas cesty; nasadené, v skutočnej myši neskúšané) (5. 11.: dátum a čas sa vyberajú myšou ako v Google/Androide — malý kalendárik (`apps/common/DatePick.qml`) a ciferník najprv na hodiny, potom na minúty (`apps/common/TimePick.qml`, 24 h, dva kruhy 1–12 a 13–00); posun začiatku posúva aj koniec) (Kalendár) **Udalosti — úprava a tvorba:** celodenné a viacdňové; začiatok/koniec s časovým pásmom (aj dve pásma); názov, miesto (s mapou/čas cesty), popis (formátovaný), prílohy, odkaz na videohovor (Meet/Teams/Zoom), farba udalosti aj kalendára, súkromná/verejná, „zaneprázdnený/voľný“; duplikovať, presunúť do iného kalendára, odstrániť, **Späť** po zmazaní.
 
-**10J.08** [ ] (Kalendár) **Opakovanie (RRULE):** denne, týždenne (vybrané dni), mesačne (deň v mesiaci / n-tý deň v týždni), ročne, vlastné; koniec (dátum / po N opakovaniach); pri úprave **táto / táto a ďalšie / všetky**; výnimky.
+**10J.08** [~] (5. 11.: hotové denne/týždenne (vybrané dni)/mesačne (deň v mesiaci alebo n-tý deň v týždni)/ročne, každých N, koniec nikdy/dňa/po N, **táto / táto a ďalšie / všetky** pri úprave, mazaní aj ťahaní, Späť; nasadené; **chýba:** výnimky (vlastný zoznam dní), rýchle predvoľby „každý pracovný deň“, pravidlo s BYSETPOS; po posune celej série ostane výnimka na starom čase) (Kalendár) **Opakovanie (RRULE):** denne, týždenne (vybrané dni), mesačne (deň v mesiaci / n-tý deň v týždni), ročne, vlastné; koniec (dátum / po N opakovaniach); pri úprave **táto / táto a ďalšie / všetky**; výnimky.
 
-**10J.09** [ ] (Kalendár) **Pripomienky:** viac pripomienok na udalosť (minúty/hodiny/dni pred), predvolené pre kalendár, upozornenie cez LatteOS notifikácie aj pri zatvorenej aplikácii, odloženie.
+**10J.09** [~] (5. 11.: hotové viac pripomienok na udalosť (na začiatku … 1 týždeň pred; nová udalosť s časom má 10 min), zapisujú sa ako VALARM; služba `latte-calwatch.service` (`latte-cal watch`, každých 30 s, v `latte-session.target`) ukáže upozornenie aj pri zatvorenej aplikácii s tlačidlami Otvoriť a Odložiť o 10 min, zmeškané o viac než 15 min sa neoznamujú; nasadené, skúšané na udalosti o pár minút; **chýba:** predvolené pripomienky kalendára, vlastný čas pripomienky, pripomienky celodenných udalostí podľa Google (v deň o 9:00), pripomienky z cudzích kalendárov s absolútnym časom; neoverené, či Goo vie tlačidlá upozornení) (Kalendár) **Pripomienky:** viac pripomienok na udalosť (minúty/hodiny/dni pred), predvolené pre kalendár, upozornenie cez LatteOS notifikácie aj pri zatvorenej aplikácii, odloženie.
 
 **10J.10** [ ] (Kalendár) **Hostia a pozvánky:** pridať hostí (e-mail), stav odpovede ÁNO/NIE/MOŽNO, práva hostí (upraviť/pozvať ďalších/vidieť zoznam), odpovedať na pozvánku, ukázať voľno/obsadené hostí a **navrhnúť čas** (v EDS cez iTIP/free-busy; podľa účtu — Google, Exchange, CalDAV).
 
@@ -3498,6 +3498,18 @@ Zdroje: `apps/calendar.qml`, `bin/latte-cal`, `goo/lang/sk-dates.json`
 **10J.14** [ ] (Kalendár) **Ovládanie myšou ako Google:** ťahanie na vytvorenie (hotové), presun a zmena dĺžky ťahaním (hotové), dvojklik = úprava, pravý klik = ponuka (farba, duplikovať, odstrániť), rýchle pridanie vetou (hotové), klávesové skratky ako doplnok.
 
 **10J.15** [ ] (Kalendár) **Postup:** najprv úprava udalosti (komplet polia) + opakovanie + pripomienky, potom hostia a pozvánky, potom rok/Agenda, nakoniec Úlohy a plánovanie. Každý krok: porovnať s Google Kalendárom na Androide a zapísať, čo ešte chýba.
+
+**10J.16** [ ] (Kalendár) **Nastavenia kalendára** (používateľ 5. 11.; vedľajšie okno podľa `templates/okno-vedlajsie`): región a krajina sviatkov (aj kraj/župa, `python-holidays` vie podkrajiny), **výber menných kalendárov** (meniny: SK, CZ, HU, PL, …, zapnúť aj viac naraz, ako Kalendár Google „Zobraziť kalendáre“), druhy sviatkov (štátne, pamätné dni, cirkevné, školské prázdniny), začiatok týždňa, pracovný týždeň a čas, druhé časové pásmo, predvolená dĺžka udalosti.
+
+**10J.17** [ ] (Kalendár) **Zoznam sviatkov podľa lokality:** pohľad „Sviatky a pamätné dni“ na celý rok (dátum, deň v týždni, názov, či padne na víkend), prepínač krajín (aj rodina v zahraničí), voľné dni v roku.
+
+**10J.18** [ ] (Kalendár) **Podrobný pracovný kalendár:** počet pracovných dní v mesiaci / v roku / medzi dvoma dátumami (bez víkendov a sviatkov), fond pracovného času v hodinách, „o N pracovných dní“ od dátumu, mostíky (dni medzi sviatkom a víkendom), dovolenka (nárok, čerpanie, zostatok), sviatok padnutý na víkend, čísla týždňov; export do tabuľky.
+
+**10J.19** [ ] (Kalendár) **Čo ešte doplniť (návrh, 5. 11.):** odpočet dní do udalosti, fázy mesiaca a východ/západ slnka v dni, import a export `.ics`, tlač a PDF mesiaca, kalendár narodenín z kontaktov, školské prázdniny, ISO týždne a štvrťroky, „Teraz“ widget na ploche, pripomienky na sviatky a výročia.
+
+**10J.20** [ ] (Kalendár) **Prepojené kalendáre a plánovače:** vedľajšie okno podľa šablóny namiesto okna GNOME Online Accounts (backend `latte-cal add-account|remove-account|tasklists` hotový); zoznamy úloh z účtov v kalendári; Todoist, Notion, ClickUp, Linear cez token až ďalej.
+
+**10J.21** [ ] (Kalendár) **EduPage (slovenský)** (používateľ 5. 11.): rozvrh, suplovanie, domáce úlohy a písomky školy v kalendári. Najprv zistiť, čo EduPage dáva bez účtu (adresa kalendára .ics pre rodiča / žiaka), potom či existuje stabilné rozhranie; neoficiálne prístupy (prihlasovanie za používateľa) iba s jeho súhlasom a bez ukladania hesla do súboru. Súčasť okna prepojení (10J.20).
 
 ### 10K. [ ] Hry
 Herná relácia: Steam, Proton, umu, gamescope, MangoHud, NVIDIA.

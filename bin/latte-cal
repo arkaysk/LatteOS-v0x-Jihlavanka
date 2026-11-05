@@ -11,9 +11,18 @@
   latte-cal calendars        the calendars: [{"uid", "name", "account", "color", "backend", "writable", "enabled"}]
   latte-cal add UID TITLE START END [LOCATION]   a new event in the calendar UID; START and END as YYYY-MM-DDTHH:MM,
         or YYYY-MM-DD for a whole day (END the day after the last); prints {"ok", "uid"}
-  latte-cal update UID EVENT JSON                changes an event: any of title, start, end, location, notes, color
-  latte-cal remove UID EVENT                     takes an event out
-  latte-cal parse TEXT       a new event written as a sentence ("Obed s Petrom zajtra o 12 v Jihlavanke"): {"ok", "title",
+  latte-cal update UID EVENT JSON                changes an event: any of title, start, end, location, notes, color, url, free, private
+  latte-cal remove UID EVENT [SCOPE RID]         takes an event out (of a repeating one SCOPE this|future|all of the occurrence
+        RID); the last one is kept for `undo`
+  latte-cal tasklists                            the lists of tasks of the accounts: [{"uid", "name", "account", "color", "removable", "enabled"}]
+  latte-cal tasklist-show UID on|off             a list of tasks shows in the calendar, or not
+  latte-cal add-account ics|caldav NAME ADDRESS [USER]   a calendar from an address; the password on the standard input
+  latte-cal remove-account UID                   a calendar the user added goes away (the computer's own does not)
+  latte-cal watch [--once]                       tells the reminders as they come due (the service latte-calwatch)
+  latte-cal undo                                 puts back the event taken out last
+  latte-cal duplicate UID EVENT                  a copy of the event, beside it
+  latte-cal move UID EVENT TO                    the event into another calendar TO
+  latte-cal parse [--ai] [--day YYYY-MM-DD] TEXT   a new event written as a sentence ("Obed s Petrom zajtra o 12 v Jihlavanke"): {"ok", "title",
         "start", "end" (as `add` takes them), "allday", "place", "calendar", "calendar_name", "when"}; Slovak words
   latte-cal holidays [YEAR]  the holidays of the place's country, in the user's language where it is known
   latte-cal accounts         the window where accounts are signed in (gnome-online-accounts-gtk)
@@ -174,6 +183,114 @@ def calendars():
     return out
 
 
+def prop(icomp, kind, getter):
+    p = icomp.get_first_property(kind)
+    return getattr(p, getter)() if p else None
+
+
+def rule_of(icomp, kind):
+    """The event's RRULE as written in iCalendar ("FREQ=WEEKLY;BYDAY=MO"), "" for none."""
+    p = icomp.get_first_property(kind)
+    # the property's text is "RRULE;X-EVOLUTION-ENDDATE=…:FREQ=…" folded over lines: the rule is what follows the colon
+    return re.sub(r"\r?\n ", "", p.as_ical_string()).split(":", 1)[1].strip() if p else ""
+
+
+def rule_for(rule, whole, ICalGLib, zone):
+    """A rule as the editor writes it (UNTIL=YYYY-MM-DD) in the form iCalendar wants: a date for a whole-day event, else the
+    end of that day in UTC."""
+    def until(m):
+        y, mo, d = int(m.group(1)), int(m.group(2)), int(m.group(3))
+        if whole:
+            return "UNTIL=%04d%02d%02d" % (y, mo, d)
+        t = dt.datetime(y, mo, d, 23, 59, 59).astimezone(dt.timezone.utc)
+        return "UNTIL=" + t.strftime("%Y%m%dT%H%M%SZ")
+    return ICalGLib.Recurrence.new_from_string(re.sub(r"UNTIL=(\d{4})-(\d\d)-(\d\d)", until, rule))
+
+
+def alarms_of(icomp, ICalGLib):
+    """The reminders of an event: minutes before its start (a relative TRIGGER), sorted."""
+    out = set()
+    a = icomp.get_first_component(ICalGLib.ComponentKind.VALARM_COMPONENT)
+    while a:
+        p = a.get_first_property(ICalGLib.PropertyKind.TRIGGER_PROPERTY)
+        d = p.get_trigger().get_duration() if p else None
+        if d is not None and not d.is_null_duration():
+            out.add(-d.as_int() // 60)
+        a = icomp.get_next_component(ICalGLib.ComponentKind.VALARM_COMPONENT)
+    return sorted(out)
+
+
+def sources_of(extension):
+    """[{"uid", "name", "account", "color", "removable", "enabled"}] of the sources that have this extension."""
+    EDataServer, ECal, _ = eds()
+    reg = EDataServer.SourceRegistry.new_sync(None)
+    out = []
+    for src in reg.list_sources(extension):
+        ext = src.get_extension(extension)
+        parent = reg.ref_source(src.get_parent())
+        out.append({"uid": src.get_uid(), "name": src.get_display_name(), "account": parent.get_display_name() if parent else "",
+                    "color": ext.get_color() if hasattr(ext, "get_color") and ext.get_color() else "",
+                    "removable": bool(src.get_removable()), "enabled": bool(src.get_enabled()) and bool(getattr(ext, "get_selected", lambda: True)())})
+    return out
+
+
+def task_lists():
+    """The lists of tasks (VTODO) of the accounts."""
+    return sources_of("Task List")
+
+
+def task_list_shown(uid, on):
+    EDataServer, _, _ = eds()
+    reg = EDataServer.SourceRegistry.new_sync(None)
+    src = reg.ref_source(uid)
+    if not src:
+        return {"ok": False}
+    src.get_extension("Task List").set_selected(bool(on))
+    reg.commit_source_sync(src, None)
+    return {"ok": True}
+
+
+def add_account(kind, name, url, user="", password=""):
+    """A calendar from an address: kind "ics" (a calendar published on the web) or "caldav" (Nextcloud, iCloud, Fastmail…);
+    the password goes to the keyring (the secret service), never to a file."""
+    from gi.repository import GLib
+    EDataServer, ECal, _ = eds()
+    if not re.match(r"^(https?|webcal)://", url):
+        return {"ok": False, "error": "address"}
+    uri = GLib.Uri.parse(re.sub(r"^webcal://", "https://", url), GLib.UriFlags.NONE)
+    reg = EDataServer.SourceRegistry.new_sync(None)
+    src = EDataServer.Source.new(None, None)
+    src.set_display_name(name or uri.get_host())
+    src.set_parent("webcal-stub" if kind == "ics" else "caldav-stub")
+    cal = src.get_extension("Calendar")
+    cal.set_backend_name("webcal" if kind == "ics" else "caldav")
+    cal.set_selected(True)
+    secure = uri.get_scheme() == "https"
+    auth = src.get_extension("Authentication")
+    auth.set_host(uri.get_host() or "")
+    auth.set_port(uri.get_port() if uri.get_port() > 0 else (443 if secure else 80))
+    if user:
+        auth.set_user(user)
+    src.get_extension("Security").set_method("tls" if secure else "none")
+    web = src.get_extension("WebDAV Backend")
+    web.set_resource_path(uri.get_path() or "/")
+    reg.commit_source_sync(src, None)
+    if password:
+        src.store_password_sync(password, True, None)
+    return {"ok": True, "uid": src.get_uid()}
+
+
+def remove_account(uid):
+    """Takes a calendar (or a list of tasks) away from the computer; only what the user added, not the computer's own."""
+    EDataServer, _, _ = eds()
+    reg = EDataServer.SourceRegistry.new_sync(None)
+    src = reg.ref_source(uid)
+    if not src or not src.get_removable() or uid.startswith("system"):
+        return {"ok": False}
+    src.remove_sync(None)
+    return {"ok": True}
+
+
 def account_events(first, last):
     try:
         EDataServer, ECal, ICalGLib = eds()
@@ -197,7 +314,7 @@ def account_events(first, last):
             if whole:
                 s, e = dt.datetime.combine(start_date(start), dt.time()), dt.datetime.combine(start_date(end), dt.time())
             where = icomp.get_location() or ""
-            text = " ".join(x for x in (where, icomp.get_description() or "") if x)
+            text = " ".join(x for x in (where, icomp.get_description() or "", prop(icomp, ICalGLib.PropertyKind.URL_PROPERTY, "get_url") or "") if x)
             link = LINKS.search(text)
             # the event's own colour (iCalendar's COLOR, as Evolution keeps it), else its calendar's
             p = icomp.get_first_property(ICalGLib.PropertyKind.COLOR_PROPERTY)
@@ -213,7 +330,11 @@ def account_events(first, last):
                                 "calendar": cal["name"], "color": own or cal["color"], "own_color": own, "kind": "event",
                                 "uid": icomp.get_uid() or "", "source": cal["uid"], "writable": cal["writable"],
                                 "notes": (icomp.get_description() or "").strip(), "start": s.strftime("%Y-%m-%d" if whole else "%Y-%m-%dT%H:%M"),
-                                "finish": e.strftime("%Y-%m-%d" if whole else "%Y-%m-%dT%H:%M"), "allday": whole})
+                                "finish": e.strftime("%Y-%m-%d" if whole else "%Y-%m-%dT%H:%M"), "allday": whole,
+                                "free": prop(icomp, ICalGLib.PropertyKind.TRANSP_PROPERTY, "get_transp") == ICalGLib.PropertyTransp.TRANSPARENT,
+                                "private": prop(icomp, ICalGLib.PropertyKind.CLASS_PROPERTY, "get_class") in (ICalGLib.Property_Class.PRIVATE, ICalGLib.Property_Class.CONFIDENTIAL),
+                                "url": prop(icomp, ICalGLib.PropertyKind.URL_PROPERTY, "get_url") or "",
+                                "alarms": alarms_of(icomp, ICalGLib), "repeat": rule_of(icomp, ICalGLib.PropertyKind.RRULE_PROPERTY), "rid": ECal.Component.new_from_icalcomponent(icomp).get_recurid_as_string() or ""})
             return True
         try:
             client.generate_instances_sync(int(first.timestamp()), int(last.timestamp()), None, each)
@@ -268,7 +389,7 @@ def all_events(first, last, addresses):
                           "calendar": "", "color": "#e5484d", "kind": "holiday", "uid": "", "source": "holidays"})
     seen, out = set(), []
     for e in sorted(found, key=lambda e: (e["date"], e["kind"] != "holiday", e["time"], e["title"])):
-        key = (e["date"], e["time"], e["title"], e["source"])
+        key = (e["date"], e["time"], e["title"], e["source"], e["uid"])   # a copy of an event is its own event
         if key not in seen:
             seen.add(key)
             out.append(e)
@@ -302,11 +423,19 @@ def add(cal_uid, title, start, end, location=""):
 
 
 def update(cal_uid, event_uid, change):
-    """An event changed: any of title, start, end (as add takes them), location, notes, color ("" takes it off)."""
+    """An event changed: any of title, start, end (as add takes them), location, notes, color, url ("" takes them off),
+    free (true: shows as free), private, alarms (minutes before the start), repeat (an RRULE, UNTIL=YYYY-MM-DD allowed; "" for none); of a repeating event,
+    scope "this" | "future" | "all" with the occurrence's rid and its start before the change (orig)."""
     EDataServer, ECal, ICalGLib = eds()
     reg = EDataServer.SourceRegistry.new_sync(None)
     client = connect(ECal, reg, cal_uid)
-    ok, icomp = client.get_object_sync(event_uid, None, None)
+    # which of a repeating event: this one, this and those after it, or all (the default); "rid" says which one, "orig"
+    # the start it had, so that a change of all moves the series by as much as the one was moved
+    scope, rid, orig = change.pop("scope", "all"), change.pop("rid", ""), change.pop("orig", "")
+    if scope in ("this", "future") and not rid:
+        raise SystemExit("latte-cal: scope %s needs the occurrence's rid" % scope)
+    mod = {"this": ECal.ObjModType.THIS, "future": ECal.ObjModType.THIS_AND_FUTURE}.get(scope, ECal.ObjModType.ALL)
+    ok, icomp = client.get_object_sync(event_uid, rid if scope != "all" and rid else None, None)
     comp = ECal.Component.new_from_icalcomponent(icomp)
     zone_name = os.path.realpath("/etc/localtime").split("zoneinfo/")[-1]
     zone = ICalGLib.Timezone.get_builtin_timezone(zone_name)
@@ -319,6 +448,31 @@ def update(cal_uid, event_uid, change):
         return ECal.ComponentDateTime.new(t, None if whole else zone_name)
     if "title" in change:
         comp.set_summary(ECal.ComponentText.new(change["title"], None))
+    def local(t):
+        return dt.datetime.fromtimestamp(t.as_timet_with_zone(t.get_timezone()) if t.get_timezone() else t.as_timet())
+    if scope != "all" and "start" not in change and "end" not in change:
+        # EDS hands over an occurrence with the series' own times: it begins where its rid says, as long as the series did
+        t0 = dt.datetime.strptime(rid[:15] if "T" in rid else rid + "T000000", "%Y%m%dT%H%M%S")
+        if rid.endswith("Z"):
+            t0 = t0.replace(tzinfo=dt.timezone.utc).astimezone().replace(tzinfo=None)
+        a0, b0 = icomp.get_dtstart(), icomp.get_dtend()
+        whole = a0.is_date()
+        if whole:
+            b0 = dt.datetime.combine(start_date(b0), dt.time()); a0 = dt.datetime.combine(start_date(a0), dt.time())
+        else:
+            a0, b0 = local(a0), local(b0)
+        fmt = "%Y-%m-%d" if whole else "%Y-%m-%dT%H:%M"
+        change["start"], change["end"] = t0.strftime(fmt), (t0 + (b0 - a0)).strftime(fmt)
+    if scope == "all" and orig and "start" in change and "end" in change and rid:
+        # the series keeps its own first day: move it by the distance the shown one moved
+        def whole(t): return dt.datetime.strptime(t if "T" in t else t + "T00:00", "%Y-%m-%dT%H:%M")
+        delta = whole(change["start"]) - whole(orig)
+        old = icomp.get_dtstart(), icomp.get_dtend()
+        first = dt.datetime.fromtimestamp(old[0].as_timet_with_zone(old[0].get_timezone()) if old[0].get_timezone() else old[0].as_timet())
+        length = whole(change["end"]) - whole(change["start"])
+        first = first.replace(tzinfo=None) + delta
+        fmt = "%Y-%m-%d" if "T" not in change["start"] else "%Y-%m-%dT%H:%M"
+        change["start"], change["end"] = first.strftime(fmt), (first + length).strftime(fmt)
     if "start" in change:
         comp.set_dtstart(at(change["start"]))
     if "end" in change:
@@ -329,22 +483,221 @@ def update(cal_uid, event_uid, change):
         comp.set_descriptions([ECal.ComponentText.new(change["notes"], None)] if change["notes"] else [])
     comp.commit_sequence()
     icomp = comp.get_icalcomponent()
+
+    def reset(kind, new=None):
+        while icomp.get_first_property(kind):
+            icomp.remove_property(icomp.get_first_property(kind))
+        if new is not None:
+            icomp.add_property(new)
+    if "free" in change:      # Google's "busy / free": TRANSP, as Evolution writes it
+        reset(ICalGLib.PropertyKind.TRANSP_PROPERTY, ICalGLib.Property.new_transp(ICalGLib.PropertyTransp.TRANSPARENT if change["free"] else ICalGLib.PropertyTransp.OPAQUE))
+    if "private" in change:   # "private / default visibility": CLASS
+        reset(ICalGLib.PropertyKind.CLASS_PROPERTY, ICalGLib.Property.new_class(ICalGLib.Property_Class.PRIVATE if change["private"] else ICalGLib.Property_Class.PUBLIC))
+    if "repeat" in change and scope != "this":      # "" makes it a single event; a single occurrence has no rule of its own
+        whole = icomp.get_dtstart().is_date()
+        reset(ICalGLib.PropertyKind.RRULE_PROPERTY, ICalGLib.Property.new_rrule(rule_for(change["repeat"], whole, ICalGLib, zone)) if change["repeat"] else None)
+    if "alarms" in change:    # reminders: minutes before the start, as Google's "notification"; all are written afresh
+        a = icomp.get_first_component(ICalGLib.ComponentKind.VALARM_COMPONENT)
+        while a:
+            icomp.remove_component(a)
+            a = icomp.get_first_component(ICalGLib.ComponentKind.VALARM_COMPONENT)
+        for n in sorted({int(x) for x in change["alarms"] if int(x) >= 0}):
+            icomp.add_component(ICalGLib.Component.new_from_string(
+                "BEGIN:VALARM\r\nACTION:DISPLAY\r\nDESCRIPTION:Reminder\r\nTRIGGER:%s\r\nEND:VALARM\r\n" % ("-PT%dM" % n if n else "PT0S")))
+    if "url" in change:       # the video call's address (Meet, Teams, Zoom); "" takes it off
+        reset(ICalGLib.PropertyKind.URL_PROPERTY, ICalGLib.Property.new_url(change["url"]) if change["url"] else None)
     if "color" in change:
         # iCalendar's COLOR on the event itself (RFC 7986), as Evolution writes it; "" takes it off
         while icomp.get_first_property(ICalGLib.PropertyKind.COLOR_PROPERTY):
             icomp.remove_property(icomp.get_first_property(ICalGLib.PropertyKind.COLOR_PROPERTY))
         if change["color"]:
             icomp.add_property(ICalGLib.Property.new_color(change["color"]))
-    client.modify_object_sync(icomp, ECal.ObjModType.ALL, ECal.OperationFlags.NONE, None)
+    client.modify_object_sync(icomp, mod, ECal.OperationFlags.NONE, None)
     return {"ok": True}
 
 
-def remove(cal_uid, event_uid):
+UNDO = os.path.join(os.environ.get("XDG_RUNTIME_DIR", "/tmp"), "latte-cal-undo.json")
+
+
+def remove(cal_uid, event_uid, scope="all", rid=""):
+    """Takes an event out (of a repeating one: this occurrence, it and the ones after, or all) and keeps the whole event
+    (one level) so `undo` can put it back."""
     EDataServer, ECal, _ = eds()
     reg = EDataServer.SourceRegistry.new_sync(None)
     client = connect(ECal, reg, cal_uid)
-    client.remove_object_sync(event_uid, None, ECal.ObjModType.ALL, ECal.OperationFlags.NONE, None)
+    ok, icomp = client.get_object_sync(event_uid, None, None)
+    if ok:
+        with open(UNDO, "w") as f:
+            json.dump({"calendar": cal_uid, "ical": icomp.as_ical_string()}, f)
+    if scope in ("this", "future") and not rid:
+        raise SystemExit("latte-cal: scope %s needs the occurrence's rid" % scope)
+    mod = {"this": ECal.ObjModType.THIS, "future": ECal.ObjModType.THIS_AND_FUTURE}.get(scope, ECal.ObjModType.ALL)
+    client.remove_object_sync(event_uid, rid if scope != "all" and rid else None, mod, ECal.OperationFlags.NONE, None)
     return {"ok": True}
+
+
+def create(cal_uid, ical, same_uid=False):
+    """An event written as iCalendar goes into the calendar; a new UID unless it is the one taken out."""
+    EDataServer, ECal, ICalGLib = eds()
+    reg = EDataServer.SourceRegistry.new_sync(None)
+    client = connect(ECal, reg, cal_uid)
+    icomp = ICalGLib.Component.new_from_string(ical)
+    if not same_uid:
+        icomp.set_uid(str(uuid.uuid4()))
+    ok, uid = client.create_object_sync(icomp, ECal.OperationFlags.NONE, None)
+    return {"ok": bool(ok), "uid": uid or ""}
+
+
+def undo():
+    if not os.path.exists(UNDO):
+        return {"ok": False}
+    with open(UNDO) as f:
+        kept = json.load(f)
+    EDataServer, ECal, ICalGLib = eds()
+    client = connect(ECal, EDataServer.SourceRegistry.new_sync(None), kept["calendar"])
+    uid = ICalGLib.Component.new_from_string(kept["ical"]).get_uid()
+    if _exists(client, uid):      # a part of a series was taken out: the whole series is written over what is left
+        client.modify_object_sync(ICalGLib.Component.new_from_string(kept["ical"]), ECal.ObjModType.ALL, ECal.OperationFlags.NONE, None)
+        r = {"ok": True, "uid": uid}
+    else:
+        r = create(kept["calendar"], kept["ical"], same_uid=True)
+    os.remove(UNDO)
+    return r
+
+
+def _exists(client, uid):
+    try:
+        client.get_object_sync(uid, None, None)
+        return True
+    except Exception:
+        return False
+
+
+def duplicate(cal_uid, event_uid, to_uid=None):
+    """A copy of an event (in another calendar when TO is given); `move` is a duplicate and a removal."""
+    EDataServer, ECal, _ = eds()
+    reg = EDataServer.SourceRegistry.new_sync(None)
+    ok, icomp = connect(ECal, reg, cal_uid).get_object_sync(event_uid, None, None)
+    return create(to_uid or cal_uid, icomp.as_ical_string()) if ok else {"ok": False}
+
+
+def move(cal_uid, event_uid, to_uid):
+    r = duplicate(cal_uid, event_uid, to_uid)
+    if r["ok"]:
+        EDataServer, ECal, _ = eds()
+        reg = EDataServer.SourceRegistry.new_sync(None)
+        connect(ECal, reg, cal_uid).remove_object_sync(event_uid, None, ECal.ObjModType.ALL, ECal.OperationFlags.NONE, None)
+    return r
+
+
+# ── reminders: the ones that have come due are told, also when no window is open ────────────────────────────────
+STATE = os.path.join(os.environ.get("XDG_STATE_HOME") or os.path.expanduser("~/.local/state"), "latteos", "cal-alarms.json")
+LATE = dt.timedelta(minutes=15)       # a reminder missed by more than this (asleep, off) is not told, it would only be old news
+SNOOZE = dt.timedelta(minutes=10)
+
+
+def tr(text):
+    """What the notification says, in the desktop's language: the same table as the scenes' (goo/lang/LANG.plm)."""
+    lang = (os.environ.get("LC_MESSAGES") or os.environ.get("LANG") or "en")[:2]
+    try:
+        with open(os.path.join(os.environ.get("LATTE_SHARE") or "/usr/share/latteos", "goo", "lang", lang + ".plm"), encoding="utf-8") as f:
+            m = re.search(r'^\s*"%s"\s*=\s*"((?:[^"\\]|\\.)*)"' % re.escape(text), f.read(), re.M)
+            return m.group(1) if m else text
+    except OSError:
+        return text
+
+
+def load_state():
+    try:
+        with open(STATE) as f:
+            st = json.load(f)
+        return {"fired": dict(st.get("fired", {})), "snoozed": dict(st.get("snoozed", {}))}
+    except (OSError, ValueError):
+        return {"fired": {}, "snoozed": {}}
+
+
+def save_state(st, now):
+    old = (now - dt.timedelta(days=3)).timestamp()
+    st["fired"] = {k: v for k, v in st["fired"].items() if v > old}
+    os.makedirs(os.path.dirname(STATE), exist_ok=True)
+    with open(STATE + ".tmp", "w") as f:
+        json.dump(st, f)
+    os.replace(STATE + ".tmp", STATE)
+
+
+def due(now, st):
+    """The reminders to tell now: [(key, event)]. What is told or too old to tell is marked in `st`."""
+    out = []
+    for e in account_events(now - dt.timedelta(days=1), now + dt.timedelta(days=8)):
+        if not e.get("alarms") or e["kind"] != "event":
+            continue
+        fmt = "%Y-%m-%dT%H:%M" if e["time"] else "%Y-%m-%d"
+        start, finish = dt.datetime.strptime(e["start"], fmt), dt.datetime.strptime(e["finish"], fmt)
+        for m in e["alarms"]:
+            key = "%s/%s/%s/%d" % (e["source"], e["uid"], e["start"], m)
+            if key in st["fired"]:
+                continue
+            if key in st["snoozed"]:
+                if st["snoozed"][key] > now.timestamp():
+                    continue
+                del st["snoozed"][key]
+                out.append((key, e, start))
+            elif start - dt.timedelta(minutes=m) <= now:
+                if now - (start - dt.timedelta(minutes=m)) < LATE and now < finish:
+                    out.append((key, e, start))
+            else:
+                continue
+            st["fired"][key] = now.timestamp()
+    return out
+
+
+def tell(key, e, start, now, st, lock):
+    """One notification, with Open and Snooze; waits for the answer (a thread of its own)."""
+    mins = round((start - now).total_seconds() / 60)
+    if not e["time"]:
+        when = tr("all day")
+    elif mins >= 90:
+        when = tr("in {n} h").replace("{n}", str(round(mins / 60)))
+    elif mins > 0:
+        when = tr("in {n} min").replace("{n}", str(mins))
+    else:
+        when = tr("now")
+    body = " · ".join(x for x in (when + ((" · " + e["time"] + (" – " + e["end"] if e["end"] else "")) if e["time"] else ""), e["location"]) if x)
+    try:
+        r = subprocess.run(["notify-send", "-a", "LatteOS", "-i", "appointment-soon", "-c", "calendar", "-A", "open=" + tr("Open"),
+                            "-A", "snooze=" + tr("Snooze 10 min"), e["title"], body], capture_output=True, text=True, timeout=3600)
+    except (OSError, subprocess.TimeoutExpired):
+        return
+    if r.stdout.strip() == "snooze":
+        with lock:
+            st["snoozed"][key] = (dt.datetime.now() + SNOOZE).timestamp()
+            st["fired"].pop(key, None)
+            save_state(st, dt.datetime.now())
+    elif r.stdout.strip() == "open":
+        subprocess.Popen(["latte-app", "calendar", e["date"], e["source"], e["uid"]], start_new_session=True,
+                         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+
+def watch(once=False):
+    """Every half minute: what has come due is told. A service of the session (latte-calwatch.service)."""
+    import threading
+    import time
+    lock = threading.Lock()
+    st = load_state()
+    while True:
+        now = dt.datetime.now()
+        try:
+            with lock:
+                told = due(now, st)
+                save_state(st, now)
+            for key, e, start in told:
+                threading.Thread(target=tell, args=(key, e, start, now, st, lock), daemon=True).start()
+        except Exception as ex:      # EDS not up yet, or a calendar that cannot be read: the next round
+            print("latte-cal: watch:", ex, file=sys.stderr)
+        if once:
+            time.sleep(2)            # a moment for the notifications to be sent
+            return
+        time.sleep(30)
 
 
 # ── a new event written as a sentence ─────────────────────────────────────────────────────────────────────────────
@@ -383,7 +736,7 @@ def month_part(part, today):
     return d if d >= today else at(*((y + 1, 1) if mo == 12 else (y, mo + 1)))
 
 
-def parse(text, today=None, w=None):
+def parse(text, today=None, w=None, default=None):
     today, w = today or dt.date.today(), w or words()
     if not w:
         return {"ok": False}
@@ -480,8 +833,8 @@ def parse(text, today=None, w=None):
     if not title:
         return {"ok": False}
     # sure: a day or a time was read, and no word of time is left in the title (evening, half past, the end of the month…)
-    sure = (day is not None or start is not None) and not re.search(r"(?:^|\s)(?:" + alt(w["time_words"]) + r")\b", title.lower())
-    day = day or today
+    sure = (day is not None or start is not None or default is not None) and not re.search(r"(?:^|\s)(?:" + alt(w["time_words"]) + r")\b", title.lower())
+    day = day or default or today          # a sentence with no day goes to the day chosen in the calendar
     allday = start is None
     if allday:
         s_, e_ = day.isoformat(), (day + dt.timedelta(days=1)).isoformat()
@@ -546,9 +899,11 @@ def command(a):
         print(json.dumps(calendars(), ensure_ascii=False))
     elif a[0] == "add" and len(a) in (5, 6):
         print(json.dumps(add(*a[1:])))
-    elif a[0] == "parse" and len(a) in (2, 3) and a[1:-1] in ([], ["--ai"]):
-        r = parse(a[-1])
-        if a[1] == "--ai" and not r.get("sure"):
+    elif a[0] == "parse" and len(a) >= 2:
+        opts = a[1:-1]
+        default = dt.date.fromisoformat(opts[opts.index("--day") + 1]) if "--day" in opts and opts.index("--day") + 1 < len(opts) else None
+        r = parse(a[-1], default=default)
+        if "--ai" in opts and not r.get("sure"):
             r = ai_read(a[-1]) or dict(r, ai_failed=True)
         if r["ok"]:
             # where it goes: the first calendar of an account that may be written to, else this computer's own
@@ -558,11 +913,28 @@ def command(a):
         print(json.dumps(r, ensure_ascii=False))
     elif a[0] == "update" and len(a) == 4:
         change = json.loads(a[3])
-        if not isinstance(change, dict) or set(change) - {"title", "start", "end", "location", "notes", "color"}:
+        if not isinstance(change, dict) or set(change) - {"title", "start", "end", "location", "notes", "color", "url", "free", "private", "repeat", "alarms", "scope", "rid", "orig"}:
             return 2
         print(json.dumps(update(a[1], a[2], change)))
-    elif a[0] == "remove" and len(a) == 3:
-        print(json.dumps(remove(a[1], a[2])))
+    elif a[0] == "remove" and len(a) in (3, 5):
+        print(json.dumps(remove(*a[1:])))
+    elif a == ["tasklists"]:
+        print(json.dumps(task_lists(), ensure_ascii=False))
+    elif a[0] == "tasklist-show" and len(a) == 3:
+        print(json.dumps(task_list_shown(a[1], a[2] == "on")))
+    elif a[0] == "add-account" and len(a) in (4, 5):
+        # the password comes on the standard input, so that it is not seen in the list of processes
+        print(json.dumps(add_account(a[1], a[2], a[3], a[4] if len(a) > 4 else "", sys.stdin.readline().rstrip("\n") if len(a) > 4 else "")))
+    elif a[0] == "remove-account" and len(a) == 2:
+        print(json.dumps(remove_account(a[1])))
+    elif a[:1] == ["watch"]:
+        watch(once=a[1:] == ["--once"])
+    elif a == ["undo"]:
+        print(json.dumps(undo()))
+    elif a[0] == "duplicate" and len(a) == 3:
+        print(json.dumps(duplicate(a[1], a[2])))
+    elif a[0] == "move" and len(a) == 4:
+        print(json.dumps(move(a[1], a[2], a[3])))
     elif a[0] == "holidays":
         year = int(a[1]) if len(a) > 1 else today.year
         print(json.dumps([{"date": d.isoformat(), "name": n} for d, n in sorted(holidays_of([year]).items())], ensure_ascii=False))
@@ -574,7 +946,7 @@ def command(a):
 
 
 def main(addresses):
-    if addresses and addresses[0] in ("events", "calendars", "add", "update", "remove", "holidays", "accounts", "parse"):
+    if addresses and addresses[0] in ("events", "calendars", "add", "update", "remove", "tasklists", "tasklist-show", "add-account", "remove-account", "watch", "undo", "duplicate", "move", "holidays", "accounts", "parse"):
         return command(addresses)
     if not addresses or addresses[0] in ("-h", "--help"):
         print(__doc__.strip())

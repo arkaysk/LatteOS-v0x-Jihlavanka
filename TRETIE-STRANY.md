@@ -47,3 +47,12 @@ vrstvy AI: zisťovanie limitov služieb bez otázky (`bin/latte-ai` › `claude_
 AI pri pádoch (ROADMAP 16m), panel agentov (stránka Agenti), skill pre agentov (`system/agents/skills/latteos`)
 a inštaláciu a aktualizáciu nástrojov služieb AI cez mise (`system/mise/latteos-tools.toml` podľa
 `etc/mise/conf.d/omarchy-tools.toml`).
+
+## Kalendár (ROADMAP 10J, 6D) — vzory správania, kód sa neprenáša
+
+Správanie editora udalosti (opakovanie, pripomienky, „táto / všetky“, voľno/obsadené, presun medzi kalendármi, Späť po
+zmazaní) sa berie z **GNOME Calendar** (GPL-3.0+) a **Evolution** (LGPL-2.1+), obe nad rovnakým Evolution Data Serverom
+ako `bin/latte-cal`; rozloženie editora a pohľadov z **Merkuro Calendar** (KDE, GPL-3.0+) a Agenda s úpravou priamo
+v zozname z **Event Calendar** (Zren, plasma-applet-eventcalendar, „GPL“ bez verzie, Plasma 5). Nápady na neskôr
+(blokovanie času, čas na cestu, rezervačné odkazy): **Morgen** (uzavretý, iba ako vzor funkcií). Z ničoho z toho sa
+nekopíruje zdrojový kód, takže licencia LatteOS sa nemení.

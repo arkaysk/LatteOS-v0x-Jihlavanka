@@ -21,6 +21,8 @@ ShellRoot {
     property var sky: []                       // latte-sky's days, today first
     property var picked: null                  // the event open on the right
     property var draft: null                   // the event being written: { …, isNew }
+    property var scopeAsk: null                // of a repeating event: which of them? { options, run }
+    property bool undoable: false              // an event was just taken out: "Undo" for a while
     property bool asking: false                // "Really take it out?"
     readonly property real hourH: 52
 
@@ -67,6 +69,20 @@ ShellRoot {
         return out
     }
 
+    function at(item) { return item.mapToItem(overlay, 0, item.height + 4) }      // under a field, in the window the pickers lie over
+    // a field that is pressed, not typed into: it opens the calendar or the clock of the day or the time it shows
+    component PickField: Rectangle {
+        id: pf
+        property string icon: "calendar"
+        property string text: ""
+        property string hint: ""
+        signal opened(var item)
+        implicitWidth: 144; height: 40; radius: 12; color: Theme.card; border.width: 1; border.color: pfHit.containsMouse ? Theme.gold : Theme.line
+        Glyph { x: 12; name: pf.icon; font.pixelSize: 16; color: Theme.dim; anchors.verticalCenter: parent.verticalCenter }
+        Label { x: 38; width: parent.width - 46; elide: Text.ElideRight; anchors.verticalCenter: parent.verticalCenter; text: pf.text !== "" ? pf.text : pf.hint; color: pf.text !== "" ? Theme.cream : Theme.faint; font.pixelSize: 14 }
+        MouseArea { id: pfHit; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
+                    onClicked: pf.opened(pf) }
+    }
     component Ask: Process {
         id: q
         property var data: null
@@ -101,32 +117,110 @@ ShellRoot {
     readonly property var writable: calendars.filter(c => c.writable && c.enabled)
     readonly property var swatches: ["", "#6aa6ff", "#b79bff", "#ff9f6b", "#4cc38a", "#5fd0e0", "#f7c873", "#ff6b6b"]
 
+    // ── repeating: an RRULE as the form holds it, and back ─────────────────────────────────────────────────────────
+    readonly property var rcodes: ["MO", "TU", "WE", "TH", "FR", "SA", "SU"]
+    function noRepeat() { return { freq: "", interval: 1, days: [], monthly: "day", end: "never", until: "", count: 10, dirty: false } }
+    function parseRule(r) {
+        const o = noRepeat(); if (!r) return o
+        const kv = {}; r.split(";").forEach(x => { const i = x.indexOf("="); if (i > 0) kv[x.slice(0, i)] = x.slice(i + 1) })
+        o.freq = ({ DAILY: "d", WEEKLY: "w", MONTHLY: "m", YEARLY: "y" })[kv.FREQ] || ""
+        o.interval = +kv.INTERVAL || 1
+        if (kv.BYDAY) { o.days = kv.BYDAY.split(",").map(x => x.replace(/^[-+\d]+/, "")); if (/\d/.test(kv.BYDAY) && o.freq === "m") o.monthly = "nth" }
+        if (kv.COUNT) { o.end = "count"; o.count = +kv.COUNT }
+        else if (kv.UNTIL) {
+            o.end = "date"
+            const u = kv.UNTIL, d = u.endsWith("Z") ? new Date(Date.UTC(+u.slice(0, 4), +u.slice(4, 6) - 1, +u.slice(6, 8), +u.slice(9, 11), +u.slice(11, 13))) : new Date(+u.slice(0, 4), +u.slice(4, 6) - 1, +u.slice(6, 8))
+            o.until = iso(d)
+        }
+        return o
+    }
+    function buildRule(o, day) {
+        if (!o.freq) return ""
+        const d = parse(day), code = rcodes[(d.getDay() + 6) % 7], nth = Math.ceil(d.getDate() / 7)
+        let r = "FREQ=" + ({ d: "DAILY", w: "WEEKLY", m: "MONTHLY", y: "YEARLY" })[o.freq]
+        if (o.interval > 1) r += ";INTERVAL=" + o.interval
+        if (o.freq === "w") r += ";BYDAY=" + (o.days.length ? o.days : [code]).join(",")
+        if (o.freq === "m") r += o.monthly === "nth" ? ";BYDAY=" + (nth > 4 ? "-1" : nth) + code : ";BYMONTHDAY=" + d.getDate()
+        if (o.end === "count") r += ";COUNT=" + Math.max(1, o.count)
+        else if (o.end === "date" && /^\d{4}-\d{2}-\d{2}$/.test(o.until)) r += ";UNTIL=" + o.until
+        return r
+    }
+    function ruleText(r) {          // "Weekly", "Every 2 weeks" … for the open event
+        const o = parseRule(r), names = { d: QT_TR_NOOP("Daily"), w: QT_TR_NOOP("Weekly"), m: QT_TR_NOOP("Monthly"), y: QT_TR_NOOP("Yearly") }
+        const units = { d: QT_TR_NOOP("days"), w: QT_TR_NOOP("weeks"), m: QT_TR_NOOP("months"), y: QT_TR_NOOP("years") }
+        return o.freq === "" ? "" : (o.interval > 1 ? I18n.tr("Every {n} {unit}", { n: o.interval, unit: I18n.tr(units[o.freq]) }) : I18n.tr(names[o.freq]))
+            + (o.end === "count" ? " · " + I18n.tr("{n} times", { n: o.count }) : o.end === "date" ? " · " + I18n.tr("until {day}", { day: o.until }) : "")
+    }
+    // ── reminders: minutes before the start, as Google offers them ─────────────────────────────────────────────
+    readonly property var alarmSteps: [[0, QT_TR_NOOP("At the start")], [5, QT_TR_NOOP("5 minutes before")], [10, QT_TR_NOOP("10 minutes before")], [15, QT_TR_NOOP("15 minutes before")],
+        [30, QT_TR_NOOP("30 minutes before")], [60, QT_TR_NOOP("1 hour before")], [120, QT_TR_NOOP("2 hours before")], [1440, QT_TR_NOOP("1 day before")],
+        [2880, QT_TR_NOOP("2 days before")], [10080, QT_TR_NOOP("1 week before")]]
+    function alarmText(m) { const k = alarmSteps.find(x => x[0] === m); return k ? I18n.tr(k[1]) : I18n.tr("{n} minutes before", { n: m }) }
+    function askScope(options, run) { scopeAsk = { options: options, run: run } }
+
     // ── writing: a new event, a changed one, one moved by the mouse ───────────────────────────────────────────
     function begin(day, from, to) {
         picked = null; asking = false
-        draft = { isNew: true, title: "", day: iso(day), from: from < 0 ? "" : hm(from), to: from < 0 ? "" : hm(to), allday: from < 0, location: "", notes: "", color: "",
+        draft = { isNew: true, alarms: from < 0 ? [] : [10], alarmsDirty: false, rep: noRepeat(), recurring: false, rid: "", orig: "", title: "", day: iso(day), endDay: iso(day), free: false, private: false, url: "", origin: "", from: from < 0 ? "" : hm(from), to: from < 0 ? "" : hm(to), allday: from < 0, location: "", notes: "", color: "",
                   source: writable.length ? (writable.find(c => c.backend !== "local") || writable[0]).uid : "" }
     }
-    function edit(e) { asking = false; draft = { isNew: false, title: e.title, day: e.start.slice(0, 10), from: e.time, to: e.end, allday: e.allday, location: e.location, notes: e.notes || "", color: e.own_color || "", source: e.source, uid: e.uid } }
+    function edit(e) { asking = false; draft = { isNew: false, alarms: e.alarms || [], alarmsDirty: false, rep: parseRule(e.repeat), recurring: !!e.repeat, rid: e.rid || "", orig: e.start, title: e.title, day: e.start.slice(0, 10), endDay: e.allday ? iso(plus(parse(e.finish), -1)) : e.finish.slice(0, 10), free: e.free === true, private: e.private === true, url: e.url || "", origin: e.source, from: e.time, to: e.end, allday: e.allday, location: e.location, notes: e.notes || "", color: e.own_color || "", source: e.source, uid: e.uid } }
     function span(d) {
-        if (d.allday) return [d.day, iso(plus(parse(d.day), 1))]
-        const a = minutes(d.from) < 0 ? 540 : minutes(d.from), b = minutes(d.to) > a ? minutes(d.to) : a + 60
-        return [d.day + "T" + hm(a), b >= 1440 ? iso(plus(parse(d.day), 1)) + "T" + hm(b - 1440) : d.day + "T" + hm(b)]
+        const last = /^\d{4}-\d{2}-\d{2}$/.test(d.endDay || "") && d.endDay > d.day ? d.endDay : d.day      // several days: the last one
+        if (d.allday) return [d.day, iso(plus(parse(last), 1))]
+        const a = minutes(d.from) < 0 ? 540 : minutes(d.from), b = minutes(d.to) > a || last !== d.day ? minutes(d.to) : a + 60
+        const f = b < 0 ? a + 60 : b
+        return [d.day + "T" + hm(a), f >= 1440 ? iso(plus(parse(last), 1)) + "T" + hm(f - 1440) : last + "T" + hm(f)]
     }
     function save() {
-        const d = draft, s = span(d)
+        const d = draft
         if (d.title.trim() === "" || !/^\d{4}-\d{2}-\d{2}$/.test(d.day) || d.source === "") return
-        if (d.isNew) writer.ask(["sh", "-c", 'u=$(latte-cal add "$1" "$2" "$3" "$4" "$5" | sed -n \'s/.*"uid": "\\([^"]*\\)".*/\\1/p\'); [ -n "$6$7$8" ] && [ -n "$u" ] && latte-cal update "$1" "$u" "$9"; true',
-                                 "sh", d.source, d.title.trim(), s[0], s[1], d.location, d.notes, d.color, "x", JSON.stringify({ notes: d.notes, color: d.color })])
-        else writer.ask(["latte-cal", "update", d.source, d.uid, JSON.stringify({ title: d.title.trim(), start: s[0], end: s[1], location: d.location, notes: d.notes, color: d.color })])
-        draft = null; picked = null
+        // of a repeating event it is asked which of them (a new rule cannot be given to one occurrence alone)
+        if (!d.isNew && d.recurring) askScope(d.rep.dirty ? ["future", "all"] : ["this", "future", "all"], sc => commit(sc))
+        else commit("all")
+    }
+    function commit(scope) {
+        const d = draft, s = span(d)
+        const extra = { notes: d.notes, color: d.color, url: d.url, free: d.free, private: d.private }
+        if (d.rep.dirty || d.isNew) extra.repeat = buildRule(d.rep, d.day)
+        if (d.alarmsDirty || d.isNew) extra.alarms = d.alarms
+        if (d.isNew) writer.ask(["sh", "-c", 'u=$(latte-cal add "$1" "$2" "$3" "$4" "$5" | sed -n \'s/.*"uid": "\\([^"]*\\)".*/\\1/p\'); [ -n "$u" ] && latte-cal update "$1" "$u" "$6"; true',
+                                 "sh", d.source, d.title.trim(), s[0], s[1], d.location, JSON.stringify(extra)])
+        else {
+            if (d.recurring) Object.assign(extra, { scope: scope, rid: d.rid, orig: d.orig })
+            writer.ask(["sh", "-c", 'latte-cal update "$1" "$2" "$3" && { [ "$1" = "$4" ] || latte-cal move "$1" "$2" "$4"; }; true',
+                        "sh", d.origin, d.uid, JSON.stringify(Object.assign({ title: d.title.trim(), start: s[0], end: s[1], location: d.location }, extra)), d.source])
+        }
+        draft = null; picked = null; scopeAsk = null
+    }
+    function take(e) {
+        if (e.repeat) { askScope(["this", "future", "all"], sc => doTake(e, sc)); return }
+        doTake(e, "all")
+    }
+    function doTake(e, scope) {
+        writer.ask(["latte-cal", "remove", e.source, e.uid].concat(scope === "all" ? [] : [scope, e.rid])); picked = null; asking = false; scopeAsk = null; undoable = true; undoTimer.restart()
+    }
+    function copy(e) { writer.ask(["latte-cal", "duplicate", e.source, e.uid]) }
+    Timer { id: undoTimer; interval: 10000; onTriggered: shell.undoable = false }
+    function menuFor(e, x, y) {      // the right button on an event: edit, colour, duplicate, delete
+        if (e.kind !== "event" || !e.writable) { picked = e; return }
+        picked = e; draft = null; asking = false
+        const paint = c => writer.ask(["latte-cal", "update", e.source, e.uid, JSON.stringify({ color: c })])
+        const mine = (calendars.find(c => c.uid === e.source) || {}).color || ""
+        const names = [QT_TR_NOOP("The colour of its calendar"), QT_TR_NOOP("Blue"), QT_TR_NOOP("Violet"), QT_TR_NOOP("Orange"), QT_TR_NOOP("Green"), QT_TR_NOOP("Cyan"), QT_TR_NOOP("Gold"), QT_TR_NOOP("Red")]
+        menu.open(x, y, [{ text: I18n.tr("Edit"), icon: "pencil", run: () => edit(e) },
+                         { text: I18n.tr("Duplicate"), icon: "copy", run: () => copy(e) },
+                         { text: I18n.tr("Colour"), icon: "droplet", more: swatches.map((c, i) => ({ text: I18n.tr(names[i]), tint: c === "" ? mine : c, checked: (e.own_color || "") === c, run: () => paint(c) })) },
+                         { line: true }, { text: I18n.tr("Delete"), icon: "trash", danger: true, run: () => take(e) }])
     }
     function move(e, dayShift, minShift, longer) {
         if (!e.writable || e.kind !== "event" || e.time === "") return
         const s0 = minutes(e.time), f0 = e.end ? minutes(e.end) : s0 + 60
         const s = Math.max(0, Math.min(1425, s0 + (longer ? 0 : minShift))), f = Math.max(s + 15, (f0 > s0 ? f0 : s0 + 60) + minShift)
         const day = iso(plus(parse(e.start.slice(0, 10)), dayShift))
-        writer.ask(["latte-cal", "update", e.source, e.uid, JSON.stringify({ start: day + "T" + hm(s), end: f >= 1440 ? iso(plus(parse(day), 1)) + "T" + hm(f - 1440) : day + "T" + hm(f) })])
+        const change = { start: day + "T" + hm(s), end: f >= 1440 ? iso(plus(parse(day), 1)) + "T" + hm(f - 1440) : day + "T" + hm(f) }
+        const send = sc => { scopeAsk = null; writer.ask(["latte-cal", "update", e.source, e.uid, JSON.stringify(e.repeat ? Object.assign(change, { scope: sc, rid: e.rid, orig: e.start }) : change)]) }
+        if (e.repeat) askScope(["this", "future", "all"], send); else send("all")
     }
 
     AppWindow {
@@ -219,6 +313,8 @@ ShellRoot {
                         Repeater { model: shell.whole(shell.iso(wd.modelData))
                             Rectangle { required property var modelData; width: grid.colW - 6; x: 3; height: 22; radius: 6; color: Qt.alpha(modelData.color, 0.22); border.width: shell.picked && shell.picked.uid === modelData.uid ? 1 : 0; border.color: modelData.color
                                 Label { x: 8; width: parent.width - 12; anchors.verticalCenter: parent.verticalCenter; text: parent.modelData.title; font.pixelSize: 12; font.weight: 600 }
+                                TapHandler { acceptedButtons: Qt.RightButton; onTapped: pt => { const q = parent.mapToItem(menu, pt.position.x, pt.position.y); shell.menuFor(parent.modelData, q.x, q.y) } }
+                                TapHandler { acceptedButtons: Qt.LeftButton; onDoubleTapped: if (parent.modelData.writable && parent.modelData.kind === "event") shell.edit(parent.modelData) }
                                 MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: { shell.draft = null; shell.asking = false; shell.picked = parent.modelData } } } } } } }
             Rectangle { y: wholes.y + wholes.height + 8; width: parent.width; height: 1; color: Theme.line }
             Flickable {
@@ -267,6 +363,8 @@ ShellRoot {
                                         onPositionChanged: m => { if (!pressed || !blk.e.writable) return; const p = mapToItem(col.parent, m.x, m.y); blk.dy = Math.round((p.y - at.y) / shell.hourH * 4) * shell.hourH / 4; blk.dx = Math.round((p.x - at.x) / grid.colW) * grid.colW }
                                         onReleased: { const days = Math.round(blk.dx / grid.colW), mins = Math.round(blk.dy / shell.hourH * 60); blk.dx = 0; blk.dy = 0
                                                       if (days !== 0 || mins !== 0) shell.move(blk.e, days, mins, false); else { shell.draft = null; shell.asking = false; shell.picked = blk.e } } }
+                                    TapHandler { acceptedButtons: Qt.RightButton; onTapped: pt => { const q = parent.mapToItem(menu, pt.position.x, pt.position.y); shell.menuFor(blk.e, q.x, q.y) } }
+                                    TapHandler { acceptedButtons: Qt.LeftButton; onDoubleTapped: if (blk.e.writable && blk.e.kind === "event") shell.edit(blk.e) }
                                     MouseArea { id: stretcher; visible: blk.e.writable; anchors.bottom: parent.bottom; width: parent.width; height: 6; cursorShape: Qt.SizeVerCursor
                                         property real at: 0
                                         onPressed: m => at = mapToItem(col, 0, m.y).y
@@ -303,6 +401,8 @@ ShellRoot {
                             Repeater { model: parent.parent.mine ? shell.shownOn(shell.iso(parent.parent.day)).slice(0, Math.max(1, Math.floor((parent.parent.height - 36) / 21))) : []
                                 Rectangle { required property var modelData; width: parent.width; height: 18; radius: 5; color: Qt.alpha(modelData.color, 0.22)
                                     Label { x: 6; width: parent.width - 8; anchors.verticalCenter: parent.verticalCenter; text: (parent.modelData.time ? parent.modelData.time + " " : "") + parent.modelData.title; font.pixelSize: 11 }
+                                    TapHandler { acceptedButtons: Qt.RightButton; onTapped: pt => { const q = parent.mapToItem(menu, pt.position.x, pt.position.y); shell.menuFor(parent.modelData, q.x, q.y) } }
+                                    TapHandler { acceptedButtons: Qt.LeftButton; onDoubleTapped: if (parent.modelData.writable && parent.modelData.kind === "event") shell.edit(parent.modelData) }
                                     MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: { shell.draft = null; shell.picked = parent.modelData } } } } }
                         MouseArea { anchors.fill: parent; z: -1; enabled: parent.mine; cursorShape: Qt.PointingHandCursor; onClicked: { shell.anchor = parent.day; shell.view = "day" } } } } }
         }
@@ -323,6 +423,12 @@ ShellRoot {
                     Label { text: parent.parent.e.kind === "holiday" ? I18n.tr("Holiday") : parent.parent.e.calendar || ""; color: Theme.dim; font.pixelSize: 12 } }
                 Label { width: parent.width; wrapMode: Text.WordWrap; text: parent.e.title || ""; font.pixelSize: 22; font.weight: 800 }
                 Label { text: parent.e.date ? (shell.parse(parent.e.date).getDate() + ". " + (shell.parse(parent.e.date).getMonth() + 1) + ". · " + (parent.e.time ? parent.e.time + (parent.e.end ? " – " + parent.e.end : "") : I18n.tr("all day"))) : ""; font.family: Theme.mono; font.pixelSize: 13 }
+                Row { visible: (parent.e.repeat || "") !== ""; spacing: 8
+                    Glyph { name: "repeat"; color: Theme.dim; font.pixelSize: 15 }
+                    Label { text: shell.ruleText(parent.parent.e.repeat || ""); color: Theme.dim; width: 270; wrapMode: Text.WordWrap } }
+                Row { visible: (parent.e.alarms || []).length > 0 && parent.e.kind === "event"; spacing: 8
+                    Glyph { name: "bell"; color: Theme.dim; font.pixelSize: 15 }
+                    Label { text: (parent.parent.e.alarms || []).map(a => shell.alarmText(a)).join(" · "); color: Theme.dim; width: 270; wrapMode: Text.WordWrap } }
                 Row { visible: (parent.e.location || "") !== ""; spacing: 8
                     Glyph { name: "map-pin"; color: Theme.dim; font.pixelSize: 15 }
                     Label { text: parent.parent.e.location || ""; color: Theme.dim; width: 270; wrapMode: Text.WordWrap } }
@@ -333,8 +439,10 @@ ShellRoot {
                 Row { spacing: 8; visible: shell.picked !== null && shell.picked.kind === "event" && shell.picked.writable
                     Pill { icon: "pencil"; text: I18n.tr("Edit"); onPressed: shell.edit(shell.picked) }
                     Pill { icon: "trash"; danger: true; text: shell.asking ? I18n.tr("Really take it out?") : I18n.tr("Delete")
-                           onPressed: { if (shell.asking) { writer.ask(["latte-cal", "remove", shell.picked.source, shell.picked.uid]); shell.picked = null; shell.asking = false } else shell.asking = true } } }
-                Pill { icon: "x"; text: I18n.tr("Close"); onPressed: { shell.picked = null; shell.asking = false } }
+                           onPressed: { if (shell.asking) shell.take(shell.picked); else shell.asking = true } } }
+                Row { spacing: 8
+                    Pill { visible: shell.picked !== null && shell.picked.kind === "event" && shell.picked.writable; icon: "copy"; text: I18n.tr("Duplicate"); onPressed: shell.copy(shell.picked) }
+                    Pill { icon: "x"; text: I18n.tr("Close"); onPressed: { shell.picked = null; shell.asking = false } } }
             }
             // the event being written: what, when, where, a note, its colour, and for a new one its calendar
             Flickable {
@@ -342,17 +450,81 @@ ShellRoot {
                 anchors.fill: parent; anchors.leftMargin: 1; contentHeight: form.height + 40; clip: true; boundsBehavior: Flickable.StopAtBounds
                 Column {
                     id: form; x: 21; y: 22; width: 296; spacing: 12
-                    readonly property var d: shell.draft || ({})
+                    readonly property var d: shell.draft || ({ rep: shell.noRepeat() })
                     function set(k, v) { const n = Object.assign({}, shell.draft); n[k] = v; shell.draft = n }
+                    readonly property var dayOf: shell.parse(d.day || shell.iso(new Date()))
+                    readonly property string dayCode: shell.rcodes[(dayOf.getDay() + 6) % 7]
+                    readonly property var chosenDays: d.rep && d.rep.days.length ? d.rep.days : [dayCode]
+                    function show(day) { return /^\d{4}-\d{2}-\d{2}$/.test(day || "") ? shell.parse(day).getDate() + ". " + (shell.parse(day).getMonth() + 1) + ". " + shell.parse(day).getFullYear() : "" }
+                    // the first day moved: the last one moves with it, so that a long event stays as long
+                    function setDay(v) {
+                        const n = Object.assign({}, shell.draft), days = /^\d{4}-\d{2}-\d{2}$/.test(n.endDay || "") && /^\d{4}-\d{2}-\d{2}$/.test(n.day || "") ? Math.max(0, Math.round((shell.parse(n.endDay) - shell.parse(n.day)) / 864e5)) : 0
+                        n.day = v; n.endDay = shell.iso(shell.plus(shell.parse(v), days)); shell.draft = n
+                    }
+                    function setEndDay(v) { const n = Object.assign({}, shell.draft); n.endDay = v < n.day ? n.day : v; shell.draft = n }
+                    // the start moved: the end moves with it (never past midnight), as Google does
+                    function setFrom(v) {
+                        const n = Object.assign({}, shell.draft), a = shell.minutes(n.from), b = shell.minutes(n.to), now = shell.minutes(v)
+                        n.from = v
+                        if (a >= 0 && b > a) n.to = shell.hm(Math.min(1439, now + (b - a)))
+                        else if (b < 0 || b <= now) n.to = shell.hm(Math.min(1439, now + 60))
+                        shell.draft = n
+                    }
+                    function setRep(k, v) { const r = Object.assign({}, shell.draft.rep); r[k] = v; r.dirty = true; set("rep", r) }
                     Label { text: form.d.isNew ? I18n.tr("New event") : I18n.tr("Edit the event"); font.pixelSize: 18; font.weight: 800 }
                     Field { width: parent.width; icon: "pencil"; hint: I18n.tr("What"); text: form.d.title || ""; onTextChanged: if (shell.draft && text !== shell.draft.title) form.set("title", text); onAccepted: shell.save() }
-                    Field { width: parent.width; icon: "calendar"; hint: "2026-10-23"; text: form.d.day || ""; onTextChanged: if (shell.draft && text !== shell.draft.day) form.set("day", text) }
+                    Row { spacing: 8
+                        PickField { icon: "calendar"; text: form.show(form.d.day); hint: I18n.tr("Day"); onOpened: it => datePick.open(shell.at(it).x, shell.at(it).y, form.d.day, v => form.setDay(v)) }
+                        PickField { icon: "arrow-right"; text: form.show(form.d.endDay); hint: I18n.tr("The last day"); onOpened: it => datePick.open(shell.at(it).x, shell.at(it).y, form.d.endDay || form.d.day, v => form.setEndDay(v)) } }
                     Row { spacing: 8
                         Pill { implicitHeight: 32; text: I18n.tr("All day"); icon: form.d.allday ? "check" : ""; strong: form.d.allday === true; onPressed: form.set("allday", !form.d.allday) } }
                     Row { spacing: 8; visible: !form.d.allday
-                        Field { width: 144; icon: "clock"; hint: "09:00"; text: form.d.from || ""; onTextChanged: if (shell.draft && text !== shell.draft.from) form.set("from", text) }
-                        Field { width: 144; icon: "clock"; hint: "10:00"; text: form.d.to || ""; onTextChanged: if (shell.draft && text !== shell.draft.to) form.set("to", text) } }
+                        PickField { icon: "clock"; text: form.d.from || ""; hint: "09:00"; onOpened: it => timePick.open(shell.at(it).x, shell.at(it).y, form.d.from || "09:00", v => form.setFrom(v)) }
+                        PickField { icon: "clock"; text: form.d.to || ""; hint: "10:00"; onOpened: it => timePick.open(shell.at(it).x, shell.at(it).y, form.d.to || form.d.from || "10:00", v => form.set("to", v)) } }
+                    // repeating, as Google's "Does not repeat" and "Custom…" in one place
+                    Label { text: I18n.tr("REPEAT"); color: Theme.faint; font.family: Theme.mono; font.pixelSize: 11; font.weight: 700 }
+                    Flow { width: parent.width; spacing: 6
+                        Repeater { model: [["", QT_TR_NOOP("Does not repeat")], ["d", QT_TR_NOOP("Daily")], ["w", QT_TR_NOOP("Weekly")], ["m", QT_TR_NOOP("Monthly")], ["y", QT_TR_NOOP("Yearly")]]
+                            Pill { required property var modelData; implicitHeight: 30; text: I18n.tr(modelData[1]); strong: form.d.rep.freq === modelData[0]; onPressed: form.setRep("freq", modelData[0]) } } }
+                    Row { visible: form.d.rep.freq !== ""; spacing: 8
+                        Label { anchors.verticalCenter: parent.verticalCenter; text: I18n.tr("Every") }
+                        Field { width: 70; icon: "repeat"; hint: "1"; text: "" + form.d.rep.interval; onTextChanged: { const n = parseInt(text); if (shell.draft && n > 0 && n !== shell.draft.rep.interval) form.setRep("interval", n) } }
+                        Label { anchors.verticalCenter: parent.verticalCenter; text: I18n.tr(({ d: QT_TR_NOOP("days"), w: QT_TR_NOOP("weeks"), m: QT_TR_NOOP("months"), y: QT_TR_NOOP("years") })[form.d.rep.freq] || "") } }
+                    Row { visible: form.d.rep.freq === "w"; spacing: 4
+                        Repeater { model: shell.rcodes
+                            Rectangle { required property string modelData; required property int index
+                                readonly property bool on: form.chosenDays.includes(modelData)
+                                width: 38; height: 32; radius: 16; color: on ? Theme.gold : Theme.card; border.width: 1; border.color: on ? Theme.gold : Theme.line
+                                Label { anchors.centerIn: parent; text: I18n.tr(shell.dayNames[parent.index]); color: parent.on ? "#17110d" : Theme.cream; font.pixelSize: 12; font.weight: 700 }
+                                MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor
+                                    onClicked: { const m = parent.modelData, next = form.chosenDays.includes(m) ? form.chosenDays.filter(c => c !== m) : form.chosenDays.concat([m])
+                                                 if (next.length) form.setRep("days", shell.rcodes.filter(c => next.includes(c))) } } } } }
+                    Flow { visible: form.d.rep.freq === "m"; width: parent.width; spacing: 6
+                        Pill { implicitHeight: 30; strong: form.d.rep.monthly === "day"; text: I18n.tr("On day {n}", { n: form.dayOf.getDate() }); onPressed: form.setRep("monthly", "day") }
+                        Pill { implicitHeight: 30; strong: form.d.rep.monthly === "nth"; onPressed: form.setRep("monthly", "nth")
+                               text: I18n.tr("{n}. {day} of the month", { n: Math.ceil(form.dayOf.getDate() / 7) > 4 ? I18n.tr("last") : Math.ceil(form.dayOf.getDate() / 7), day: I18n.tr(shell.dayNames[(form.dayOf.getDay() + 6) % 7]) }) } }
+                    Flow { visible: form.d.rep.freq !== ""; width: parent.width; spacing: 6
+                        Pill { implicitHeight: 30; strong: form.d.rep.end === "never"; text: I18n.tr("Never ends"); onPressed: form.setRep("end", "never") }
+                        Pill { implicitHeight: 30; strong: form.d.rep.end === "date"; text: I18n.tr("Ends on a day"); onPressed: form.setRep("end", "date") }
+                        Pill { implicitHeight: 30; strong: form.d.rep.end === "count"; text: I18n.tr("Ends after some times"); onPressed: form.setRep("end", "count") } }
+                    PickField { visible: form.d.rep.freq !== "" && form.d.rep.end === "date"; width: 170; icon: "calendar"; hint: I18n.tr("Day"); text: form.show(form.d.rep.until)
+                                onOpened: it => datePick.open(shell.at(it).x, shell.at(it).y, form.d.rep.until || form.d.day, v => form.setRep("until", v)) }
+                    Row { visible: form.d.rep.freq !== "" && form.d.rep.end === "count"; spacing: 8
+                        Field { width: 90; icon: "repeat"; hint: "10"; text: "" + form.d.rep.count; onTextChanged: { const n = parseInt(text); if (shell.draft && n > 0 && n !== shell.draft.rep.count) form.setRep("count", n) } }
+                        Label { anchors.verticalCenter: parent.verticalCenter; text: I18n.tr("times") } }
+                    Label { text: I18n.tr("REMINDERS"); color: Theme.faint; font.family: Theme.mono; font.pixelSize: 11; font.weight: 700 }
+                    Flow { width: parent.width; spacing: 6
+                        Repeater { model: { const m = shell.alarmSteps.map(x => x[0]); return shell.alarmSteps.map(x => x[0]).concat((form.d.alarms || []).filter(a => !m.includes(a))).sort((a, b) => a - b) }
+                            Pill { required property int modelData; implicitHeight: 30; text: shell.alarmText(modelData); icon: (form.d.alarms || []).includes(modelData) ? "bell" : ""; strong: (form.d.alarms || []).includes(modelData)
+                                   onPressed: { const a = form.d.alarms || []; form.set("alarms", a.includes(modelData) ? a.filter(x => x !== modelData) : a.concat([modelData])); form.set("alarmsDirty", true) } } } }
                     Field { width: parent.width; icon: "map-pin"; hint: I18n.tr("Where"); text: form.d.location || ""; onTextChanged: if (shell.draft && text !== shell.draft.location) form.set("location", text) }
+                    Field { width: parent.width; icon: "video"; hint: I18n.tr("Video call address"); text: form.d.url || ""; onTextChanged: if (shell.draft && text !== shell.draft.url) form.set("url", text) }
+                    Row { spacing: 8
+                        Pill { implicitHeight: 32; icon: form.d.free ? "" : "check"; strong: !form.d.free; text: I18n.tr("Busy"); onPressed: form.set("free", false) }
+                        Pill { implicitHeight: 32; icon: form.d.free ? "check" : ""; strong: form.d.free === true; text: I18n.tr("Free"); onPressed: form.set("free", true) }
+                    }
+                    Row { spacing: 8
+                        Pill { implicitHeight: 32; icon: "lock"; strong: form.d.private === true; text: I18n.tr("Private"); onPressed: form.set("private", !form.d.private) } }
                     Rectangle { width: parent.width; height: 96; radius: 12; color: Theme.card; border.width: 1; border.color: notes.activeFocus ? Theme.gold : Theme.line
                         TextEdit { id: notes; x: 12; y: 10; width: parent.width - 24; height: parent.height - 20; wrapMode: Text.Wrap; color: Theme.cream; font.family: Theme.font; font.pixelSize: 13; selectByMouse: true; clip: true
                                    text: form.d.notes || ""; onTextChanged: if (shell.draft && text !== shell.draft.notes) form.set("notes", text) }
@@ -366,7 +538,7 @@ ShellRoot {
                                 Glyph { anchors.centerIn: parent; visible: parent.modelData === ""; name: "calendar"; font.pixelSize: 14; color: "#17110d" }
                                 MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: form.set("color", parent.modelData) } } } }
                     Label { text: I18n.tr("The first is the colour of its calendar."); color: Theme.faint; font.pixelSize: 11 }
-                    Column { visible: form.d.isNew === true; width: parent.width; spacing: 6
+                    Column { width: parent.width; spacing: 6
                         Label { text: I18n.tr("CALENDAR"); color: Theme.faint; font.family: Theme.mono; font.pixelSize: 11; font.weight: 700 }
                         Flow { width: parent.width; spacing: 6
                             Repeater { model: shell.writable
@@ -379,5 +551,24 @@ ShellRoot {
                 }
             }
         }
+        Item { id: overlay; anchors.fill: parent; z: 50
+            Menu { id: menu }
+            DatePick { id: datePick }
+            TimePick { id: timePick }
+            Rectangle { visible: shell.scopeAsk !== null; anchors.fill: parent; color: Qt.rgba(0, 0, 0, 0.35); z: 5
+                MouseArea { anchors.fill: parent; onClicked: shell.scopeAsk = null }
+                Rectangle { anchors.centerIn: parent; width: 320; height: scopeCol.height + 36; radius: 16; color: Theme.card; border.width: 1; border.color: Theme.line
+                    MouseArea { anchors.fill: parent }
+                    Column { id: scopeCol; x: 18; y: 18; width: parent.width - 36; spacing: 8
+                        Label { text: I18n.tr("A repeating event"); font.pixelSize: 16; font.weight: 800 }
+                        Repeater { model: shell.scopeAsk ? shell.scopeAsk.options : []
+                            Pill { required property string modelData; width: scopeCol.width; text: I18n.tr(({ this: QT_TR_NOOP("This event"), future: QT_TR_NOOP("This and following events"), all: QT_TR_NOOP("All events") })[modelData]); strong: modelData === "all"
+                                   onPressed: shell.scopeAsk.run(modelData) } }
+                        Pill { width: scopeCol.width; icon: "x"; text: I18n.tr("Cancel"); onPressed: shell.scopeAsk = null } } } }
+            Rectangle { visible: shell.undoable; anchors.horizontalCenter: parent.horizontalCenter; anchors.bottom: parent.bottom; anchors.bottomMargin: 24
+                width: undoRow.width + 28; height: 44; radius: 14; color: Theme.card; border.width: 1; border.color: Theme.line
+                Row { id: undoRow; anchors.centerIn: parent; spacing: 12
+                    Label { anchors.verticalCenter: parent.verticalCenter; text: I18n.tr("The event was taken out") }
+                    Pill { implicitHeight: 30; strong: true; icon: "arrow-back-up"; text: I18n.tr("Undo"); onPressed: { writer.ask(["latte-cal", "undo"]); shell.undoable = false } } } } }
     }
 }

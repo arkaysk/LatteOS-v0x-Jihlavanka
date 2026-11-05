@@ -600,6 +600,8 @@
 /usr/share/latteos/apps/common/Field.qml                <- apps/common/Field.qml
 /usr/share/latteos/apps/common/Reveal.qml               <- apps/common/Reveal.qml
 /usr/share/latteos/apps/common/Menu.qml                 <- apps/common/Menu.qml
+/usr/share/latteos/apps/common/DatePick.qml             <- apps/common/DatePick.qml
+/usr/share/latteos/apps/common/TimePick.qml             <- apps/common/TimePick.qml
 /usr/share/latteos/apps/common/FileIcons.qml            <- apps/common/FileIcons.qml
 /usr/share/latteos/apps/common/shaders/reveal.frag.qsb  <- apps/common/shaders/reveal.frag.qsb
 /usr/share/latteos/apps/common/shaders/lens.frag        <- apps/common/shaders/lens.frag
@@ -722,6 +724,7 @@
 /usr/lib/systemd/user/latte-focus.service                <- system/systemd/latte-focus.service
 /usr/lib/systemd/user/latte-netwatch.service             <- system/systemd/latte-netwatch.service
 /usr/lib/systemd/user/latte-netwatch.timer               <- system/systemd/latte-netwatch.timer
+/usr/lib/systemd/user/latte-calwatch.service            <- system/systemd/latte-calwatch.service
 /usr/lib/systemd/user/latte-lockscreen.service           <- system/systemd/latte-lockscreen.service
 /usr/lib/systemd/user/latte-goo-side@.service           <- system/systemd/latte-goo-side@.service
 /usr/lib/tmpfiles.d/latteos.conf                        <- system/systemd/latteos.tmpfiles
