@@ -198,8 +198,7 @@
     "name": "Glass",
     "icon": "glass",
     "status": "ready",
-    "words": "glass blur see-through transparent frost smoke milk clear side panel windows coffee in glass true glass",
-    "under": "windows"
+    "words": "glass blur see-through transparent frost smoke milk clear side panel windows coffee in glass true glass"
    },
    {
     "id": "transitions",

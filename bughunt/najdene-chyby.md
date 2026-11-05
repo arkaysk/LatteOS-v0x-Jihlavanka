@@ -24,3 +24,8 @@ majú „niekoľko obdĺžnikov postupne tmavších v sebe“. **Nespravené, č
 `grim` (tiež screencopy) mali svetlý obdĺžnik tiež — takže nie je to len kódovanie videa. Podozrivé: (1) KMS zachytávanie rovín, ktoré pleamar-wm používa (priame zobrazenie / viac rovín,
 `pleamar-wm-scanout-layouts.patch`); (2) čas snímky pre sklo (pleamar berie pozadie po prezentovaní a sklo ukáže staré). Skúšky na poobedie: Sunshine s `capture = wlr` namiesto `kms`;
 Nastavenia › Sklo vypnúť úplne (kvapky bez skla) a pozrieť, či pás zmizne; pleamar-wm bez záplaty scanout-layouts; návrh autorovi pleamaru do `patches/issues/`.
+
+**Zistené 5. 11. neskôr (hľadanie príčiny, snímky z `zachyt-otvarania-karty.sh`):**
+- **Svetlý pás vpravo pri otváraní PowerGoo** = odskok pružiny: telo karty (`card.cw`) na chvíľu presiahne konečnú šírku, ale káva (shader `velvet` v `rows.plm`) bola vždy v konečnej šírke `card.w`, takže vpravo ostala farba panela (pri Sklo 0 plná krémová). **Opravené:** káva sleduje telo (`card.bl`…`card.br`). Moje predošlé hypotézy (záplata `speed-edges-wheel`, sklo, lens, Sunshine) to nevysvetľovali.
+- **Sklo 0 nič nemenilo:** v `engine.luau` bolo `fact.panes = 1` bez ohľadu na `glass` (úroveň skla); teraz úroveň 0 vypne sklo kariet aj ich panelov. Pri plne nepriehľadnom paneli (`pane.a` ≥ 0,98) sa karta už neposiela cez sklo a lens (`card.opaque`).
+- **ClockGoo pri otváraní zabliká:** karta je krémová, na ~2 snímky (66 ms) celá zpriesvitnie (aj tmavé bloky) a vráti sa. Nie je to sklo ani `reveal`, nenašiel som príčinu (možno súvisí s `fill_calendar` hneď po otvorení). Ostáva.

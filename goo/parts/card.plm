@@ -176,18 +176,24 @@ part Card {
     let card.over = max(0, card.p - 1)
     let card.cw = if(card_dock or card_lens, card.ws, 0) + if(card_dock or card_lens, 0, 1) * max((ear * 1.8 + cap.h * cap.len) * (1 - card.t) + card.ws * (card.t * card.t * card.t + card.over * 0.6), 14)
     let card.ch = max(cap.v * (cap.len + ear * 2) * (1 - card.t) + card.hs * card.q, 14)
+    // the pane's colour comes into the card as it settles: at the first frames it was an opaque pale card, a flash, before the glass took over
+    let card.gl = clamp((card.p - 0.6) * 3, 0, 1)
+    // a pane that is not see-through at all (Settings › Glass, the side panel at 0) is a plain colour: it is not sent through the glass and
+    // the lens, which was where it blinked (opaque, see-through for two frames, opaque again)
+    let card.opaque = card.pn and pane_a > 0.98
+    let card.pc = mix(coffee, rgb(pane_r, pane_g, pane_b), card.gl)
     let card.round = if(card_menu, 12, if(card_lens, 18, 18 + 40 * (1 - card.t) * (1 - card.t)))
     body {
-        gradient: card.ax, card.ay to card.ax + card.sx * card.w, card.ay + card.sy * card.h, pick(card.pn, coffee, rgb(pane_r, pane_g, pane_b)), pick(card.pn, mix(paper, coffee, 0.4), rgb(pane_r, pane_g, pane_b)), pick(card.pn, paper, rgb(pane_r, pane_g, pane_b)), pick(card.pn, paper, rgb(pane_r, pane_g, pane_b))
+        gradient: card.ax, card.ay to card.ax + card.sx * card.w, card.ay + card.sy * card.h, pick(card.pn, coffee, card.pc), pick(card.pn, mix(paper, coffee, 0.4), card.pc), pick(card.pn, paper, card.pc), pick(card.pn, paper, card.pc)
         rim: 16%
         shadow: 0, 8, 22, 36% * clamp(card.p, 0, 1)
         opacity: if(card.p > 0.02 and not card_dock, 1, 0)
         // With the goo of glass the card is frosted glass too: what is behind shows through it, blurred and
         // smoked so that the light writing on it reads over anything.
-        glass: card.glass * 100%
+        glass: card.glass * 100% * if(card.opaque, 0, 1)
         ripple: 100% * glass_ripple
         // a pane is frosted as a window is (wm/session.plm): by pleamar itself, not by the compositor's stronger blur
-        lens: material > 0.02 or card.pn
+        lens: (material > 0.02 or card.pn) and not card.opaque
         shine: pointer
         // True Glass: clearer and bending more; the smoke stays, it is what keeps the writing readable
         // clear as the side panel is: pleamar-wm blurs nothing under a window (0.6.9), so the panel shows what is behind sharp

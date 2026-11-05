@@ -64,7 +64,11 @@ part Rows {
         let card.bi = if(card_lens, -3, 1.5)      // LensShore: the coffee runs on past the panel's foot into the plate
         let card.up = card_lens and lens_edge == 2
         let card.swing = card.m1 - card.p
-        shader velvet { at: card.x0 + 1.5, card.y0 + if(card.up, 1.5, card.sp - 40); size: card.w - 3, if(card.up, card.sp + 41.5, card.h - card.bi - card.sp + 40)
+        // The card's body swings past its final size as it opens (the spring's two bounces): the coffee follows it, or the pane's
+        // colour showed beside it as a pale strip.
+        let card.bl = min(card.x0, card.ax + card.sx * card.cw / 2 - card.cw / 2)
+        let card.br = max(card.x0 + card.w, card.ax + card.sx * card.cw / 2 + card.cw / 2)
+        shader velvet { at: card.bl + 1.5, card.y0 + if(card.up, 1.5, card.sp - 40); size: card.br - card.bl - 3, if(card.up, card.sp + 41.5, card.h - card.bi - card.sp + 40)
                         show: card_split > 0 or card_tail > 0
                         values: card.swing * 10 * card.sx, card.swing * 4, (card.m3 - card.p) * 8, 1, 52, 0.68, if(card.up, 1, 0)
                         colors: gold, coffee }
