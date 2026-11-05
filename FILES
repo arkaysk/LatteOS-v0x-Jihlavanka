@@ -103,6 +103,7 @@
 /usr/share/latteos/goo/calsettings.luau                <- goo/calsettings.luau
 /usr/share/latteos/goo/lib/cup.luau                     <- goo/lib/cup.luau
 /usr/share/latteos/cups.json                            <- system/cups.json
+/usr/share/latteos/namedays.json                      <- system/namedays.json
 /usr/share/latteos/goo/goo.luau                         <- goo/goo.luau
 /usr/share/latteos/goo/polkit.plm                      <- goo/polkit.plm
 /usr/share/latteos/goo/polkit.luau                     <- goo/polkit.luau

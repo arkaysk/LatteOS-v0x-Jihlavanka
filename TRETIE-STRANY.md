@@ -56,3 +56,9 @@ ako `bin/latte-cal`; rozloženie editora a pohľadov z **Merkuro Calendar** (KDE
 v zozname z **Event Calendar** (Zren, plasma-applet-eventcalendar, „GPL“ bez verzie, Plasma 5). Nápady na neskôr
 (blokovanie času, čas na cestu, rezervačné odkazy): **Morgen** (uzavretý, iba ako vzor funkcií). Z ničoho z toho sa
 nekopíruje zdrojový kód, takže licencia LatteOS sa nemení.
+
+## Meniny (system/namedays.json)
+
+Tabuľka menín všetkých krajín (366 dní × 18 krajín) sa raz stiahla z verejného rozhrania **nameday.abalin.net** (`bin/latte-nameday build`,
+pomaly, 1 požiadavka za 1,5 s) a dodáva sa so systémom, aby Kalendár nepotreboval sieť. Údaje o menách sú verejné fakty; zdroj a postup
+sú tu, aby sa dala tabuľka obnoviť. Ruská položka sa vynecháva (služba tam vracia iba odkaz).
