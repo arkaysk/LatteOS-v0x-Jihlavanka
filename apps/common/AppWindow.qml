@@ -112,12 +112,14 @@ FloatingWindow {
         color: win.ground
 
         // (the coffee carries the window too: the catcher above everything does it, 1D.29 and 1D.44)
-        // the coffee: behind everything when the app has no lower part, the line above it when it has
+        // the coffee: in front of what the app shows (it swings as the window is carried and its crest rises over the end of the page,
+        // which is cut off and runs out above it); only what is put in the coffee (`foot`: a button, an information) stands in it
         Surface {
             id: sea
+            z: 5
             anchors.bottom: parent.bottom; width: parent.width
             depth: win.hasFoot ? win.footDepth : 30
-            // as dark as DualBrew's, with a foot or without (the user 5. 11.: it was never meant to be paler); behind what the app shows
+            // as dark as DualBrew's, with a foot or without (the user 5. 11.: it was never meant to be paler)
         }
 
         Item {
