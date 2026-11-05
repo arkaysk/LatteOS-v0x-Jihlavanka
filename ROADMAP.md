@@ -1,6 +1,6 @@
 vytvorene 22.10.2026
-naposledy upravene 30.10.2026
-# LatteOS:0.4 Jihlavanka Build
+naposledy upravene 5.11.2026
+# LatteOS:0.5 Jihlavanka Build
 
 Idea LatteOS je neziskový linux ktory nevyžaduje po uživatelovy znalost klavesovych skratiek, nevyžaduje po uživatelovy použivanie konzoly, a umožnuje mu fungovat s návikmy z Windows, MacOS ale aj linux. Je to OS ktory umožnuje totalne deaktivovat Ai služby vnutry, ale aj ich naopak, intenzivne využivat na urovni pomocnika OS. 
 Idea pre tvorbu:
@@ -114,6 +114,11 @@ Kompozitor Hyprland 0.57 s Lua vrstvou: okná, režimy, skratky, stupne výkonu,
   zapnutý pre stupne full a standard (`tiers.lua`), `damping` namiesto `dampening`, `binds.drag_center_window = false`
   (záhlavie ostáva pod rukou ako vo Windows). Overené `tests/screen.sh`: bez chýb konfigurácie, všetky tri pluginy
   načítané, okno sa pri ťahaní ohýba. **Neoverené:** blur (ani obyčajný) v skúške bez obrazovky nekreslí — až v relácii.
+
+**1A.03** [x] **PLEAMAR-WM**    hyprland ako kompozitor bol kompletne nahradeny pleamarom. viac v 1D kategorii.
+
+**1A.04** [ ] **hyprland wobble pre Pleamar**    must have!!!
+
 
 ### 1B. [x] Pleamar
 Jazyk a engine pleamar, naše záplaty (`patches/`), skill `pleamar`, `pleamar --check`.
@@ -243,6 +248,9 @@ stred, kúsok doľava a hore), krok 28 px iba po štyroch slotoch; plátno ostá
 Obnoviť (dva štvorce). Dvojklik na hlavičku vracal okno do rohu: pleamar-wm pri pustení hlavičky bez pohybu zapísal nové
 miesto a zrušil maximalizáciu; teraz iba po skutočnom ťahaní (`dragging`). Dvojklik rieši iba WM (`AppWindow` ho prepínal
 druhý raz). Stav zisťuje `AppWindow` z veľkosti okna, pleamar-wm ho aplikácii neposiela. 4. 11.
+
+**1D.47** [ ] **hyprland wobble pre Pleamar**    must have!!!
+
 
 ## 2. [~] Instalator OS
 Zdroje: `fresh-install`, `install`, `migrate-v03`, `docs/NAVRH-STARTU.md`
