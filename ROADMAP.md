@@ -660,7 +660,7 @@ reagujú na všetko, čo na nej leží — **kvapky Goo** (vlna ich nadvihne, kv
 vynorení či ponorení rozvlní hladinu okolo seba. Jedno pravidlo v engine pre všetky, nie zvlášť pre každú dosku.
 Zovšeobecňuje 6H.06 (príboj o TrayShore); súvisí s 6.23 (vlnenie hladiny na ploche) a LATTEOS-GOO bod 18 (kameň do vody).
 
-**6.28** [ ] **Ucho a karta jedno telo** (používateľ 28. 10., snímky pri ClockGoo): kvapka, z ktorej karta rastie, a karta
+**6.28** [~] (5. 11.: ucho PowerGoo má farbu karty pri sebe — karta rastúca nahor má pri uchu kávu, nie krémový panel; `goo/parts/card.plm` `card.ear_coffee`; overené na PowerGoo (rast aj pokoj), **neoverené** na ClockGoo a ďalších kartách, ani za pohybu a pri zväčšení kolieskom) **Ucho a karta jedno telo** (používateľ 28. 10., snímky pri ClockGoo): kvapka, z ktorej karta rastie, a karta
 majú byť **jeden kus** — aspoň na pohľad: jedna farba, žiadny obrys gule ani výrazná medzera v rohu, kde sa stretávajú
 (dnes tam guľa ukazuje svoj okraj a tmavý šev proti karte). Platí aj v pohybe: ucho **žije** (kolíše sa) a **koliesko
 nad kvapkou ju zväčšuje** — spoj s kartou musí ostať zliaty pri každej veľkosti a polohe, nie iba v pokoji. Stav 28. 10.
@@ -673,7 +673,7 @@ posuvníky (Nastavenia › Okná › Sklo) — fakt pre `frost` v `wm/session.pl
 nahradiť číslom. Rozmazanie pod oknami čaká na pleamar-wm (1D.42, `patches/issues/pleamar-lens-window-bubble.txt`).
 Týka sa kariet so sklom (PowerGoo 6C, ClockGoo, CamGoo).
 
-**6.30** [ ] **Artefakty pri pohybe a otváraní kvapiek** (používateľ 4. 11., na neskôr): niečo sa zmenilo a pohyb kvapiek Goo
+**6.30** [~] (5. 11.: pokračuje v 10J.22 a `bughunt/najdene-chyby.md` — svetlý pás pri otváraní PowerGoo a sklo 0 opravené, ClockGoo bliká ďalej) **Artefakty pri pohybe a otváraní kvapiek** (používateľ 4. 11., na neskôr): niečo sa zmenilo a pohyb kvapiek Goo
 a otváranie ich kariet (popupov) začína ukazovať grafické artefakty. Zistiť, od ktorého commitu (Goo, pleamar 0.7.10, scéna WM,
 sklo 6.29/1D.42), snímky a `--record`; súvisí s 1D.43 (druhý rám za kartou).
 

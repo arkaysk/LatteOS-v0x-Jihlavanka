@@ -182,9 +182,14 @@ part Card {
     // the lens, which was where it blinked (opaque, see-through for two frames, opaque again)
     let card.opaque = card.pn and pane_a > 0.98
     let card.pc = mix(coffee, rgb(pane_r, pane_g, pane_b), card.gl)
+    // The ear (the drop the card grows out of) is one body with the card: its colour is the card's where they meet. The pane's colour is at
+    // the card's top, the coffee below the wave: a card that grows upwards from its ear has coffee at the ear, one that grows down has the pane.
+    let card.ear_coffee = card.pn and card_split > 0 and card.sy < 0
+    let card.e1 = if(card.ear_coffee, coffee, card.pc)
+    let card.e2 = if(card.ear_coffee, card.pc, if(card_split > 0, coffee, card.pc))
     let card.round = if(card_menu, 12, if(card_lens, 18, 18 + 40 * (1 - card.t) * (1 - card.t)))
     body {
-        gradient: card.ax, card.ay to card.ax + card.sx * card.w, card.ay + card.sy * card.h, pick(card.pn, coffee, card.pc), pick(card.pn, mix(paper, coffee, 0.4), card.pc), pick(card.pn, paper, card.pc), pick(card.pn, paper, card.pc)
+        gradient: card.ax, card.ay to card.ax + card.sx * card.w, card.ay + card.sy * card.h, pick(card.pn, coffee, card.e1), pick(card.pn, mix(paper, coffee, 0.4), card.e1), pick(card.pn, paper, card.e2), pick(card.pn, paper, card.e2)
         rim: 16%
         shadow: 0, 8, 22, 36% * clamp(card.p, 0, 1)
         opacity: if(card.p > 0.02 and not card_dock, 1, 0)
