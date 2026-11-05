@@ -13,7 +13,8 @@ import "common"
 ShellRoot {
     id: shell
     readonly property var words: (Quickshell.env("LATTE_APP_ARGS") || "").split("\n").filter(w => w !== "")
-    property string view: ["day", "month", "work"].includes(words[0]) ? words[0] : "week"     // day · week · month · work (the working days)
+    property string query: ""                 // what is searched for (the field in the header): the events found are shown as an agenda
+    property string view: ["day", "month", "agenda", "work"].includes(words[0]) ? words[0] : "week"     // day · week · month · work (the working days)
     property date anchor: /^\d{4}-\d{2}-\d{2}$/.test(words[0] || "") ? shell.parse(words[0]) : new Date()
     property var events: []
     property var calendars: []
@@ -42,12 +43,13 @@ ShellRoot {
     readonly property var weekNames: dayNames.slice(ws).concat(dayNames.slice(0, ws))          // the names, from the day the week begins on
     readonly property var dayNames: [QT_TR_NOOP("Mo"), QT_TR_NOOP("Tu"), QT_TR_NOOP("We"), QT_TR_NOOP("Th"), QT_TR_NOOP("Fr"), QT_TR_NOOP("Sa"), QT_TR_NOOP("Su")]
     readonly property var days: { const first = view === "week" ? monday(anchor) : anchor; const out = []; for (let i = 0; i < (view === "week" ? 7 : 1); i++) out.push(plus(first, i)); return out }
-    readonly property var range: view === "month" ? [new Date(anchor.getFullYear(), anchor.getMonth(), 1, 12), new Date(anchor.getFullYear(), anchor.getMonth() + 1, 0, 12)] : [days[0], days[days.length - 1]]
-    readonly property string title: view === "work" ? I18n.tr("Work calendar") + " " + anchor.getFullYear()
+    readonly property var range: query !== "" ? [plus(new Date(), -400), plus(new Date(), 400)] : view === "agenda" ? [anchor, plus(anchor, 45)] : view === "month" ? [new Date(anchor.getFullYear(), anchor.getMonth(), 1, 12), new Date(anchor.getFullYear(), anchor.getMonth() + 1, 0, 12)] : [days[0], days[days.length - 1]]
+    readonly property string title: query !== "" ? I18n.tr("Search") + ": " + query : view === "agenda" ? I18n.tr("Agenda")
+                                   : view === "work" ? I18n.tr("Work calendar") + " " + anchor.getFullYear()
                                    : view === "month" ? I18n.tr(monthNames[anchor.getMonth()]) + " " + anchor.getFullYear()
                                    : view === "day" ? days[0].getDate() + ". " + (days[0].getMonth() + 1) + ". " + days[0].getFullYear()
                                    : days[0].getDate() + ". " + (days[0].getMonth() === days[6].getMonth() ? "" : (days[0].getMonth() + 1) + ". ") + "– " + days[6].getDate() + ". " + I18n.tr(monthNames[days[6].getMonth()]).toLowerCase()
-    function step(n) { anchor = view === "work" ? new Date(anchor.getFullYear() + n, 0, 1, 12) : view === "month" ? new Date(anchor.getFullYear(), anchor.getMonth() + n, 1, 12) : plus(anchor, n * (view === "week" ? 7 : 1)) }
+    function step(n) { anchor = view === "agenda" ? plus(anchor, n * 30) : view === "work" ? new Date(anchor.getFullYear() + n, 0, 1, 12) : view === "month" ? new Date(anchor.getFullYear(), anchor.getMonth() + n, 1, 12) : plus(anchor, n * (view === "week" ? 7 : 1)) }
 
     // ── what is shown: the calendars the user did not hide ────────────────────────────────────────────────────
     FileView {
@@ -57,6 +59,15 @@ ShellRoot {
         property var list: []
         onLoaded: { try { list = JSON.parse(text()) } catch (e) { list = [] } }
         function flip(id) { list = list.includes(id) ? list.filter(x => x !== id) : list.concat([id]); setText(JSON.stringify(list)) }
+    }
+    // the agenda: what is shown, day by day, from the day on (or what the search found, all the year round)
+    readonly property var agenda: {
+        const q = query.trim().toLowerCase(), from = iso(range[0]), to = iso(range[1]), by = {}, out = []
+        const shownAll = events.filter(e => !hiddenFile.list.includes(e.kind === "holiday" ? "holidays" : e.source) && (q !== "" || (e.date >= from && e.date <= to))
+                                            && (q === "" || (e.title + " " + (e.location || "") + " " + (e.notes || "") + " " + (e.calendar || "")).toLowerCase().includes(q)))
+        shownAll.sort((a, b) => a.date < b.date ? -1 : a.date > b.date ? 1 : (a.time || "") < (b.time || "") ? -1 : (a.time || "") > (b.time || "") ? 1 : 0)
+        for (const e of shownAll) { if (!by[e.date]) { by[e.date] = { date: e.date, items: [] }; out.push(by[e.date]) } by[e.date].items.push(e) }
+        return out
     }
     function shownOn(key) { return events.filter(e => e.date === key && !hiddenFile.list.includes(e.kind === "holiday" ? "holidays" : e.source)) }
     function timed(key) { return shownOn(key).filter(e => e.time !== "") }
@@ -256,6 +267,9 @@ ShellRoot {
         id: win
         title: I18n.tr("Calendar")
         heading: shell.title
+        searchHint: I18n.tr("Search events")
+        searchWidth: 170
+        onSearched: text => { shell.query = text; shell.view = "agenda" }
         implicitWidth: 1440; implicitHeight: 860
         arrows: true; canGoBack: true; canGoForward: true
         onBack: shell.step(-1)
@@ -263,11 +277,11 @@ ShellRoot {
         sideWidth: 270
         tools: [
             Pill { implicitHeight: 32; text: I18n.tr("Today"); onPressed: shell.anchor = new Date() },
-            Label { visible: shell.view !== "month" && shell.view !== "work"; text: I18n.tr("week {n}", { n: shell.week(shell.days[0]) }); color: Theme.dim; font.family: Theme.mono; font.pixelSize: 12; anchors.verticalCenter: parent.verticalCenter },
+            Label { visible: shell.view !== "month" && shell.view !== "work" && shell.view !== "agenda"; text: I18n.tr("week {n}", { n: shell.week(shell.days[0]) }); color: Theme.dim; font.family: Theme.mono; font.pixelSize: 12; anchors.verticalCenter: parent.verticalCenter },
             Rectangle { height: 38; radius: 14; color: Theme.ground; width: seg.implicitWidth + 8; anchors.verticalCenter: parent.verticalCenter
                 Row { id: seg; x: 4; y: 4; spacing: 4
-                    Repeater { model: [{ id: "day", name: QT_TR_NOOP("Day") }, { id: "week", name: QT_TR_NOOP("Week") }, { id: "month", name: QT_TR_NOOP("Month") }, { id: "work", name: QT_TR_NOOP("Work") }]
-                        Rectangle { required property var modelData; height: 30; radius: 10; width: segText.implicitWidth + 28; color: shell.view === modelData.id ? Theme.raised : "transparent"
+                    Repeater { model: [{ id: "day", name: QT_TR_NOOP("Day") }, { id: "week", name: QT_TR_NOOP("Week") }, { id: "month", name: QT_TR_NOOP("Month") }, { id: "agenda", name: QT_TR_NOOP("Agenda") }, { id: "work", name: QT_TR_NOOP("Work") }]
+                        Rectangle { required property var modelData; height: 30; radius: 10; width: segText.implicitWidth + 18; color: shell.view === modelData.id ? Theme.raised : "transparent"
                             Label { id: segText; anchors.centerIn: parent; text: I18n.tr(parent.modelData.name); font.pixelSize: 13; color: shell.view === parent.modelData.id ? Theme.gold : Theme.dim; font.weight: shell.view === parent.modelData.id ? 600 : 400 }
                             MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: shell.view = parent.modelData.id } } } } }
         ]
@@ -322,7 +336,7 @@ ShellRoot {
         // ── a day or a week: the whole days on top, the hours below ───────────────────────────────────────────
         Item {
             id: grid
-            visible: shell.view !== "month" && shell.view !== "work"
+            visible: shell.view !== "month" && shell.view !== "work" && shell.view !== "agenda"
             anchors.fill: parent; anchors.rightMargin: side.width
             readonly property real colW: (width - 64) / shell.days.length
             // the heads: the day, its number (gold today) and its weather
@@ -404,6 +418,32 @@ ShellRoot {
                             // now: a red line across today
                             Rectangle { visible: col.key === shell.iso(shell.now); y: (shell.now.getHours() * 60 + shell.now.getMinutes()) / 60 * shell.hourH; width: parent.width; height: 2; color: "#ff6b6b"; z: 6
                                 Rectangle { x: -6; y: -5; width: 12; height: 12; radius: 6; color: "#ff6b6b" } } } } } }
+        }
+
+        // ── the agenda: day by day, what is coming (or what was found) ─────────────────────────────────────────────
+        Item {
+            id: agendaView
+            visible: shell.view === "agenda"
+            anchors.fill: parent; anchors.rightMargin: side.width
+            Row { id: found; visible: shell.query !== ""; x: 22; y: 14; spacing: 10; height: 40
+                Pill { implicitHeight: 32; icon: "x"; text: I18n.tr("Clear the search"); onPressed: shell.query = "" } }
+            Label { visible: shell.agenda.length === 0; anchors.centerIn: parent; text: shell.query !== "" ? I18n.tr("Nothing found") : I18n.tr("Nothing planned"); color: Theme.faint; font.pixelSize: 16 }
+            ListView { x: 22; y: found.visible ? found.height + 14 : 10; width: parent.width - 44; height: parent.height - y; spacing: 14; clip: true; model: shell.agenda; boundsBehavior: Flickable.StopAtBounds
+                delegate: Column { id: dayBlock; required property var modelData; width: ListView.view.width; spacing: 4
+                    readonly property bool today: modelData.date === shell.iso(new Date())
+                    Row { spacing: 10
+                        Label { text: I18n.tr(shell.dayNames[(shell.parse(dayBlock.modelData.date).getDay() + 6) % 7]).toUpperCase(); color: dayBlock.today ? Theme.gold : Theme.faint; font.family: Theme.mono; font.pixelSize: 12; font.weight: 700; width: 34 }
+                        Label { text: shell.dayText(dayBlock.modelData.date); font.pixelSize: 15; font.weight: 800; color: dayBlock.today ? Theme.gold : Theme.cream } }
+                    Repeater { model: dayBlock.modelData.items
+                        Rectangle { id: line; required property var modelData; width: dayBlock.width; height: 42; radius: 10; color: shell.picked && shell.picked.uid === modelData.uid && shell.picked.date === modelData.date ? Theme.raised : Theme.card
+                            border.width: 1; border.color: Theme.line
+                            Rectangle { x: 0; width: 4; height: parent.height; radius: 2; color: line.modelData.color }
+                            Label { x: 16; width: 110; anchors.verticalCenter: parent.verticalCenter; text: line.modelData.time ? line.modelData.time + (line.modelData.end ? " – " + line.modelData.end : "") : I18n.tr("all day"); color: Theme.dim; font.family: Theme.mono; font.pixelSize: 12 }
+                            Label { x: 132; width: parent.width - 132 - 190; anchors.verticalCenter: parent.verticalCenter; elide: Text.ElideRight; text: shell.label(line.modelData) + (line.modelData.location ? "  ·  " + line.modelData.location : ""); font.pixelSize: 14; font.weight: 600 }
+                            Label { anchors.right: parent.right; anchors.rightMargin: 14; width: 170; horizontalAlignment: Text.AlignRight; anchors.verticalCenter: parent.verticalCenter; elide: Text.ElideRight; text: line.modelData.calendar || ""; color: Theme.faint; font.pixelSize: 12 }
+                            MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: { shell.draft = null; shell.asking = false; shell.picked = line.modelData } }
+                            TapHandler { acceptedButtons: Qt.RightButton; onTapped: pt => { const q = line.mapToItem(menu, pt.position.x, pt.position.y); shell.menuFor(line.modelData, q.x, q.y) } }
+                            TapHandler { acceptedButtons: Qt.LeftButton; onDoubleTapped: if (line.modelData.writable && line.modelData.kind === "event") shell.edit(line.modelData) } } } } }
         }
 
         // ── the work calendar: working days by month, and what can be counted with them ────────────────────────────

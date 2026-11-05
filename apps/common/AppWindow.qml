@@ -45,6 +45,7 @@ FloatingWindow {
     signal back()
     signal forward()
     property string searchHint: ""             // with a hint the header has a field to search in
+    property real searchWidth: 250             // how wide that field is (an app with many tools in the header makes it narrower)
     property alias searchText: field.text
     signal searched(string text)
 
@@ -135,7 +136,7 @@ FloatingWindow {
                     x: win.arrows ? left.x + left.width + 12 : 20; width: Math.max(0, right.x - x - 12) }
             Row { id: right; anchors.right: parent.right; anchors.rightMargin: 12; anchors.verticalCenter: parent.verticalCenter; spacing: 8
                 Row { id: toolRow; spacing: 6; anchors.verticalCenter: parent.verticalCenter }
-                Rectangle { visible: win.searchHint !== ""; width: 250; height: 36; radius: 12; color: Theme.card; border.width: 1; border.color: field.activeFocus ? Theme.gold : "transparent"; anchors.verticalCenter: parent.verticalCenter
+                Rectangle { visible: win.searchHint !== ""; width: win.searchWidth; height: 36; radius: 12; color: Theme.card; border.width: 1; border.color: field.activeFocus ? Theme.gold : "transparent"; anchors.verticalCenter: parent.verticalCenter
                     Glyph { x: 11; name: "search"; font.pixelSize: 15; color: Theme.dim; anchors.verticalCenter: parent.verticalCenter }
                     TextInput { id: field; x: 34; width: parent.width - 44; anchors.verticalCenter: parent.verticalCenter; color: Theme.cream; font.family: Theme.font; font.pixelSize: 14; clip: true; selectByMouse: true
                                 selectionColor: Theme.coffee; onAccepted: if (text.trim() !== "") win.searched(text.trim()) }

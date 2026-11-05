@@ -3489,7 +3489,7 @@ Zdroje: `apps/calendar.qml`, `bin/latte-cal`, `goo/lang/sk-dates.json`
 
 **10J.10** [ ] (Kalendár) **Hostia a pozvánky:** pridať hostí (e-mail), stav odpovede ÁNO/NIE/MOŽNO, práva hostí (upraviť/pozvať ďalších/vidieť zoznam), odpovedať na pozvánku, ukázať voľno/obsadené hostí a **navrhnúť čas** (v EDS cez iTIP/free-busy; podľa účtu — Google, Exchange, CalDAV).
 
-**10J.11** [ ] (Kalendár) **Pohľady:** deň, 3/4 dni, týždeň, mesiac (hotové), **rok**, **Agenda/Plán** (zoznam), prechod klávesnicou aj myšou, „Dnes“, číslo týždňa, vyhľadávanie udalostí (názov, miesto, hostia), tlač.
+**10J.11** [~] (5. 11.: hotové Agenda (45 dní od zvoleného dňa, 30 dní šípkou) a vyhľadávanie udalostí v hlavičke (názov, miesto, poznámka, kalendár; celý rok dozadu aj dopredu), dvojklik a pravý klik v zozname; **chýba:** rok ako pohľad, 3/4 dni, tlač) (Kalendár) **Pohľady:** deň, 3/4 dni, týždeň, mesiac (hotové), **rok**, **Agenda/Plán** (zoznam), prechod klávesnicou aj myšou, „Dnes“, číslo týždňa, vyhľadávanie udalostí (názov, miesto, hostia), tlač.
 
 **10J.12** [ ] (Kalendár) **Kalendáre a účty:** pridať/odobrať účet (Google, Microsoft 365, iCloud, Nextcloud, CalDAV, .ics odber), viac kalendárov, skryť/ukázať (hotové), nový kalendár, zdieľanie, import a export `.ics`, kalendár sviatkov, narodeniny z kontaktov, meniny (hotové).
 
