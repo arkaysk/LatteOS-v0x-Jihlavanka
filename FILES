@@ -13,6 +13,7 @@
 /usr/bin/latte-stats                                    <- build:latte-stats
 /usr/bin/latte-props                                    <- build:latte-props
 /usr/bin/latte-chapolera                                <- build:latte-chapolera
+/usr/bin/latte-index                                    <- build:latte-index
 /usr/lib64/latteos/qs-web                               <- qsweb:quickshell
 /usr/bin/pleamar                                        <- pleamar:pleamar
 /usr/bin/pleamar-wm                                     <- pleamar:pleamar-wm

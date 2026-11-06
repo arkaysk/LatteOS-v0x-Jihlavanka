@@ -77,3 +77,9 @@ z revízie `75de2d55ec2d0b4efc50b3e9ad70dba96a7b2fa2`. Modelová karta uvádza A
 SHA-256 `model.safetensors`: `612923381c76ec5a9bed335d1c48827e3f2e506ac31b044b63b2031fadee6a0b`.
 Rust inferencia používa knižnice Candle (MIT alebo Apache-2.0), Hugging Face Tokenizers (Apache-2.0) a
 image-rs (MIT alebo Apache-2.0).
+
+## LatteIndex
+
+Crate `latte-index` používa `infer` (MIT) na rozpoznávanie signatúr, `rusqlite` (MIT; SQLite je public domain)
+a RustCrypto `sha2` (MIT alebo Apache-2.0) na SHA-256. Závislosti sa používajú ako Cargo balíky; kód z nich sa
+nekopíruje do LatteOS. Fallback MIME detekcie používa systémový príkaz `file`.

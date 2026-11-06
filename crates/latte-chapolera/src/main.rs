@@ -6,6 +6,7 @@
 //!   latte-chapolera memory
 //!   latte-chapolera classify-image IMAGE LABEL...
 //!   latte-chapolera classify-folder FOLDER LABEL...
+//!   latte-chapolera classify-folder-events FOLDER LABEL...
 
 use candle_core::{DType, Device, IndexOp, Tensor};
 use candle_nn::VarBuilder;
@@ -468,10 +469,57 @@ fn classify_folder(folder: &Path, labels: &[String]) -> Result<String, String> {
     .map_err(|error| format!("could not serialize SigLIP results: {error}"))
 }
 
+fn write_event(event: &serde_json::Value) -> Result<(), String> {
+    let stdout = std::io::stdout();
+    let mut output = stdout.lock();
+    serde_json::to_writer(&mut output, event)
+        .map_err(|error| format!("could not encode classifier event: {error}"))?;
+    output
+        .write_all(b"\n")
+        .and_then(|_| output.flush())
+        .map_err(|error| format!("could not write classifier event: {error}"))
+}
+
+fn classify_folder_events(folder: &Path, labels: &[String]) -> Result<String, String> {
+    if labels.is_empty() {
+        return Err("classify-folder-events requires at least one label".to_string());
+    }
+    let root = fs::canonicalize(folder).map_err(|error| format!("{}: {error}", folder.display()))?;
+    let photos = photo_paths(&root)?;
+    write_event(&serde_json::json!({
+        "event": "start",
+        "total": photos.len(),
+    }))?;
+    if photos.is_empty() {
+        write_event(&serde_json::json!({
+            "event": "complete",
+            "classified": 0,
+        }))?;
+        return Ok(String::new());
+    }
+
+    let classifier = SiglipClassifier::load()?;
+    for batch in photos.chunks(SIGLIP_IMAGE_BATCH_SIZE) {
+        for result in classifier.classify_batch(batch, labels)? {
+            let mut event = result;
+            event["event"] = serde_json::json!("image");
+            write_event(&event)?;
+        }
+    }
+    write_event(&serde_json::json!({
+        "event": "complete",
+        "classified": photos.len(),
+    }))?;
+    Ok(String::new())
+}
+
 fn execute(args: &[String]) -> Result<String, String> {
     match args {
         [command, image, labels @ ..] if command == "classify-image" => {
             classify_image(Path::new(image), labels)
+        }
+        [command, folder, labels @ ..] if command == "classify-folder-events" => {
+            classify_folder_events(Path::new(folder), labels)
         }
         [command, folder, labels @ ..] if command == "classify-folder" => {
             classify_folder(Path::new(folder), labels)
@@ -509,14 +557,15 @@ fn execute(args: &[String]) -> Result<String, String> {
                 "preview_limit": automatic_preview_limit(available_bytes),
             }).to_string())
         }
-        _ => Err("usage: latte-chapolera scan FOLDER LIMIT OFFSET | settings | settings-set automatic|manual LIMIT | memory | classify-image IMAGE LABEL... | classify-folder FOLDER LABEL...".to_string()),
+        _ => Err("usage: latte-chapolera scan FOLDER LIMIT OFFSET | settings | settings-set automatic|manual LIMIT | memory | classify-image IMAGE LABEL... | classify-folder FOLDER LABEL... | classify-folder-events FOLDER LABEL...".to_string()),
     }
 }
 
 fn main() {
     let args: Vec<String> = std::env::args().skip(1).collect();
     match execute(&args) {
-        Ok(output) => println!("{output}"),
+        Ok(output) if !output.is_empty() => println!("{output}"),
+        Ok(_) => {}
         Err(error) => {
             eprintln!("latte-chapolera: {error}");
             std::process::exit(2);

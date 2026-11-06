@@ -69,6 +69,9 @@ Hotové body sa z poradia vyškrtávajú (ostávajú zapísané pri svojej kateg
  19. [ ] Hry — (10K)
  20. [~] Bezpečnosť a Úložisko: záloha dát, zaplnenie diskov, oddiely — (11, 2C)
 
+**Voliteľné zdieľanie indexu:** Chapolera (10A.66) nesmie byť blokovaná LatteIndexom (10N); ak je API dostupné,
+môže využiť jeho fakty, inak použije vlastný scan a databázu.
+
 **Fáza 5 — Núdzová relácia, inštalácia a vydanie** → **0.9** (funkčne kompletné)
  21. [ ] SafeGoo a Relácie: ovládanie okien na labwc, diagnostika pádu, okná po páde kompozitora — (5, 5A); vyvíja sa až tu, tesne pred inštalátorom
  22. [ ] Boot ako súčasť inštalátora: GRUB/SAFE položky, `latte-boot`, Plymouth — (3)
@@ -117,7 +120,6 @@ Kompozitor Hyprland 0.57 s Lua vrstvou: okná, režimy, skratky, stupne výkonu,
 
 **1A.03** [x] **PLEAMAR-WM**    hyprland ako kompozitor bol kompletne nahradeny pleamarom. viac v 1D kategorii.
 
-**1A.04** [ ] **hyprland wobble pre Pleamar**    must have!!!
 
 
 ### 1B. [x] Pleamar
@@ -240,6 +242,12 @@ Súpis 2. 11.: časti LatteOS, ktoré v relácii pleamar-wm ešte volajú Hyprla
 **1D.42** [x] **Popupy Goo napoly okno** (3. 11., `d7003f8`; používateľ 4. 11. hotové): karty Goo so sklom nad hladinou (PowerGoo, ClockGoo, CamGoo) majú farbu a krytie bočného panela okien (`Theme.pane` → `settings.json` Goo → `pane_r/g/b/a`), pod hladinou ostávajú Goo; sklo číre (`frost 0`). Rozmazanie pod oknami pleamar-wm 0.6.9 nevie (žiadosť `patches/issues/pleamar-lens-window-bubble.txt`, neposlaná) — prepojenie skla a efektov s pleamar-wm ďalej v 6.29.
 **1D.43** [ ] **Druhý rám za kartou Goo** (3. 11.): po načítaní scény Goo s otvorenou kartou PowerGoo ostal za kartou ešte jeden, starší rám (o ~50 px vyššie). Zistiť, či zmizne po zatvorení a otvorení karty; ak nie, je to chyba kreslenia karty (`goo/parts/card.plm`).
 
+**1D.44** [~] **Ťahanie za kávu dole nefunguje v LensAI** (používateľ 4. 11., k 1D.29): zóna ťahania v päte `AppWindow.qml` ležala
+pod obsahom stránky (LensAI, GuardCorgi: zoznamy `Flickable` až dole). 4. 11.: ťahanie za kávu robí strážca stlačení nad celým
+oknom (`catcher`), ak pod kurzorom nie je pole ani tlačidlo (MouseArea menšia než trojnásobok kávy); pôvodná zóna preč. Overené
+skutočnou myšou v GuardCorgi nad zoznamom. Ostáva overiť v LensAI a ostatných oknách s `AppWindow`. Okná v pleamare (10L) ťahajú
+hlavička aj káva cez `carry` (záplata pleamaru).
+
 **1D.45** [x] **Nové plávajúce okno v zlatom reze** (používateľ 4. 11.): pleamar-wm dával nové voľné okno o 28 px nižšie za každý
 slot (pri slote 12 až o 420 px dole). Teraz v režime plávajúcich okien ide na zlatý rez voľného miesta (0,382 vľavo a hore:
 stred, kúsok doľava a hore), krok 28 px iba po štyroch slotoch; plátno ostáva ako bolo. `wm/session.plm`, 4. 11.
@@ -249,7 +257,6 @@ Obnoviť (dva štvorce). Dvojklik na hlavičku vracal okno do rohu: pleamar-wm p
 miesto a zrušil maximalizáciu; teraz iba po skutočnom ťahaní (`dragging`). Dvojklik rieši iba WM (`AppWindow` ho prepínal
 druhý raz). Stav zisťuje `AppWindow` z veľkosti okna, pleamar-wm ho aplikácii neposiela. 4. 11.
 
-**1D.47** [ ] **hyprland wobble pre Pleamar**    must have!!!
 
 
 ## 2. [~] Instalator OS
@@ -258,11 +265,7 @@ ak bude možnost. latteOS bude dostupne ako LiveUSB system, pripadne presne ako 
 instalator samotny bude barista(easy instalation) ktory prevedie uživatelma krokmy, pre pohodlnu inštalaciu bez nutnosti poznat linuxove terminy, diskove struktury. samozrejme pre pokročilych uživatelov su možnost zadat udaje ručne(advanced instalation). 
 Barista instalator OS je prva prezentacia baristu ktory bude mat v hotovom systeme vlastnu ulohu (viď sekciu nativne app)  
 
-**1D.44** [~] **Ťahanie za kávu dole nefunguje v LensAI** (používateľ 4. 11., k 1D.29): zóna ťahania v päte `AppWindow.qml` ležala
-pod obsahom stránky (LensAI, GuardCorgi: zoznamy `Flickable` až dole). 4. 11.: ťahanie za kávu robí strážca stlačení nad celým
-oknom (`catcher`), ak pod kurzorom nie je pole ani tlačidlo (MouseArea menšia než trojnásobok kávy); pôvodná zóna preč. Overené
-skutočnou myšou v GuardCorgi nad zoznamom. Ostáva overiť v LensAI a ostatných oknách s `AppWindow`. Okná v pleamare (10L) ťahajú
-hlavička aj káva cez `carry` (záplata pleamaru).
+
 **2.01** [ ] je nutnost ponuknut aj možnost instalacie ako dualboot. 
 
 **2.02** [ ] preverit možnost instalacie na obsadeny disk (ntfs) bez straty povodnych dat.
@@ -2570,11 +2573,12 @@ iba v okne pod zoznamom); hladina (`Surface.qml`, sametové vrstvy) sa tak nezak
 
 **10A.65** [ ] **manažment medií** (Arkay 1. 11.): našiel som web https://www.yanny.space/studio/ kde je dostupna app evidentne naprogramovana pomocou OPUS: app je platena. ale jej idea nie. Otazne je či priradit manažment medii k jednooknovej variante DualBrew alebo vytvorit oddelenu apliakciu. Lepšie asi ako sučast alebo mod. jednookno, dvojokno, MediaManažer. aplikacia ponuka v danom priečinku pomocou AI, bud embeded alebo claude, roztriedit obrazky. graficky užasne. ked sa aktivuje triedenie, otvori sa okno, kde všetky obrazky su v strede akoby na hromade. ako hromada fotografii, a potom sa začnu triedit na skupiny. sposob triedenia pokial nebude opisany promptom, bude asi na ai. Nasledne po tiedenia prehliadnuti je možnost otagovat dane subory adekvatne, vybranu štrukturu previest na realnu štrukturu(složka podsložka, subory). Preskumaj originalnu možnost yanny studio, najdi alternativy na internete ktore toto dokažu aj s filmotekou a audiotekou a zostav plan pre tretí mod DualBrew.  
 
-**10A.66** [~] **Chapolera — roztriediť priečinok podľa obsahu** (používateľ 3. 11., spresnené 5. 11.): pravý klik na priečinok v DualBrew → „Triediť s Chapolera“ otvorí samostatnú aplikáciu Chapolera s dashboardom pre daný priečinok; DualBrew ju iba spúšťa na požiadanie a nenačítava jej UI ani AI na pozadí. AI pozrie každé video, vypočuje reč, prezrie fotky a snímky obrazovky, navrhne pomenovania podľa obsahu a rozdelí súbory do predvolených alebo vlastných priečinkov (čo nikam nepatrí → „Ostatné“). Prepojenie na LensAI: predvolený nástroj pre každý typ úlohy sa prevezme z LensAI; prepínač v hlavičke ponúkne túto predvolenú voľbu (napr. Haiku 5.5) a ďalšie odporúčané nástroje. Posledná položka „Zobraziť viac“ otvorí nastavenia LensAI pre podrobnejší výber vhodného nástroja. Pravidlá LatteOS: najprv plán a náhľad, potom potvrdenie; nič sa nemaže, pôvodné mená ostávajú viditeľné a zmenu možno vrátiť. Dostupné modely a ich lokálne/cloudové použitie určuje LensAI; funkcia patrí pod vypínač AI. Logika a spracovanie môžu byť v Rust pomocníkovi (ako vlastnosti súborov v 10L.01), bez čakania na úplný prechod aplikácií na Rust v 17.05. Skill pleamar z repozitára k4ditano použiť pri implementácii okna v pleamare. Môže byť aj skill Kaviarne (10B.36). **Vzhľad (používateľ 3. 11., snímky Yanny; spresnené 5. 11.):** dashboard s počítadlami, hromadou náhľadov a kategóriami; prebrať iba animáciu roztrieďovania z Yanny Studio, nie farby ani grafické prvky. **Pokrok:** názov priečinka v spodnej kávovej hladine má kontrastný zlatý rámik. SigLIP 2 Base Patch16 224 (Apache-2.0) je stiahnutý do `/data/ai/models/chapolera/`; Rust/Candle `classify-image` a dávkový `classify-folder` už checkpoint načítajú a zoradia obrázky podľa štítkov. Na piatich syntetických obrázkoch: 16,4 s celkovo, maximum RSS 2,9 GiB na CPU; treba ešte zapojiť UI aj druhý krok cez Qwen/LensAI. Funkčná cesta viacerých médií ani ukladanie presunov zatiaľ nie sú hotové.
+**10A.66** [~] **Chapolera — trvalá sémantická vrstva a bezpečné organizovanie** (používateľ 3.–6. 11.): pravý klik na priečinok v DualBrew otvorí samostatný dashboard; DualBrew Chapoleru ani AI nenačítava na pozadí. Chapolera nie je jednorazový upratovač: voliteľne využíva všeobecné fakty LatteIndexu (10N), ak je dostupný; inak vykoná vlastný scan a používa vlastnú databázu. Inkrementálne spracúva len nové/zmenené súbory, ukladá viac tagov a vzťahov a priebežne zosúlaďuje nové súbory s existujúcou malou, plytkou taxonómiou. Tok: (1) zistiť skutočný typ podľa signatúry/MIME, (2) extrahovať technické a obsahové fakty/tagy špecializovanými nástrojmi, (3) nezávisle analyzovať duplicity/kvalitu, (4) Qwen/LensAI navrhne kompaktné kategórie podľa celej kolekcie s prednosťou existujúcich kategórií, (5) používateľ skontroluje a upraví, (6) až po potvrdení sa vykoná žurnálovaná a vratná organizácia. Jeden súbor môže mať mnoho tagov/vzťahov, no iba jednu primárnu fyzickú cestu; nič sa automaticky nemaže. Lokálne fungovanie je povinné, cloud je voliteľný a výslovne povolený. Špecializácie zahŕňajú obrázky, video/snímky/audio/subtitles, hudbu, dokumenty/OCR, e-knihy, archívy a kód. Hĺbkový návrh a rozhrania: [docs/chapolera/PLAN.md](docs/chapolera/PLAN.md); zdieľaný index: [docs/latte-index/PLAN.md](docs/latte-index/PLAN.md). UI zachová Yanny-inšpirovanú animáciu hromady bez prevzatia farieb/grafiky. Prvý fotkový tok, ktorý najprv generuje kategórie cez LensAI a potom priraďuje SigLIPom, je iba prototyp a nepredstavuje cieľové poradie.
 **Rozhodnutie (5. 11.):** zmiešaný priečinok sa najprv rozdelí podľa typu média; každý typ dostane vlastný vhodný identifikátor. Skupiny sa spracujú postupne, od najpočetnejšej po najmenej početnú; najpočetnejšia určuje poradie, nikdy sa tým nevynechajú menšie skupiny. Napríklad obrázky sa najprv spracujú SigLIP 2, ak ich je najviac; videá, zvuk, dokumenty a e-knihy dostanú svoje kroky. Qwen/LensAI zlúči signály až do návrhu kategórií. Plán: [docs/chapolera/PLAN.md](docs/chapolera/PLAN.md). Ukladanie súborov ostáva až po výslovnom potvrdení používateľa.
-Prvá implementačná etapa (5. 11.): samostatné QML okno a Rust crate `latte-chapolera` na rekurzívny inventár viditeľných súborov a podpriečinkov; QML ukazuje počty pred analýzou, voľné pokyny na triedenie a animovanú hromadu ukážok. DualBrew pomocníka nespúšťa. AI ani zmeny súborov zatiaľ nie sú zapojené.
+Prototypy (5.–6. 11.): samostatné QML okno, paginovaný rekurzívny inventár a preview; LensAI/SigLIP fotkový tok s priebežnými návrhmi bez presunov. Tento tok je dočasný: LensAI najprv navrhuje kategórie, SigLIP ich až potom skóruje, kým cieľová architektúra najprv vytvorí per-file fakty/tagy a až následne plánuje taxonomy. Nie je zatiaľ overený na reálnom LensAI modeli.
 
-Druhá implementačná etapa (5. 11.): hlavička načíta dostupných poskytovateľov a modely cez `latte-ai providers`, predvolí aktuálny predvolený výber LensAI, umožní zvoliť model dostupný v LensAI a otvoriť jeho podrobnejší zoznam. Výber platí zatiaľ iba v otvorenom okne; súbory ani pokyny sa AI ešte neposielajú a analýza nie je zapojená.
+**Rozhodnutie používateľa (6. 11.):** Chapolera je trvalá sémantická vrstva nad filesystemom; pri neskoršom pridaní súborov znovu použije nezmenené fakty a kategórie a analyzuje nové/zmenené vstupy. LatteIndex (10N) je samostatná budúca systémová schopnosť, nie závislosť Chapolery: ak bude dostupný, Chapolera môže využiť jeho všeobecné fakty; ak nie, sama vykoná scan, extrakciu, analýzu a uloží ich do vlastnej databázy. LatteIndex daemon sa teraz nevyvíja. Žiadna z vrstiev nenahrádza ani neduplikuje fyzický filesystem.
+**Oprava opisu 10A.66 (6. 11.):** skoršia formulácia „používa spoločné stabilné aktíva LatteIndexu“ neznamená povinnú závislosť. LatteIndex je voliteľný provider; standalone scanner a databáza Chapolery musia fungovať aj bez neho.
 
 **Spresnenie používateľa:** pred analýzou je v hlavnej ploche iba hromada súborov a nad ňou viacriadkové pole s voľnými pokynmi; nezobrazujú sa názvy navrhnutých priečinkov, „Neroztriedené súbory“ ani pravý stĺpec s pevnými kategóriami. Výsledné kategórie a príznaky sa vytvoria až podľa pokynov a obsahu — napríklad osoby alebo GPS pri fotkách, názov seriálu a číslo série pri epizódach, žáner pri filmoch, hudobný štýl a kapely pri hudbe. Výsledky ako duplikáty či rozmazané sa zobrazia iba vtedy, keď ich daná analýza vyhodnocuje. Počet ukážok naraz sa automaticky riadi dostupnou RAM (<1 GiB: 8, 1–2 GiB: 12, 2–4 GiB: 24, od 4 GiB: 48), prípadne sa nastaví ručne v samostatnom vedľajšom okne (8–96, krok 4). Ukážky sa stránkujú, aby limit vykresľovania neobmedzil inventár ani dostupnosť ostatných súborov. Pole s pokynmi je zatiaľ iba používateľské rozhranie; AI ich ešte nespracúva.
 
@@ -3711,6 +3715,91 @@ nula, percentá dvoch okien sa nesčítajú, okno po obnovení je „čaká“).
 **10M.04** [ ] **Ďalšie z pleamaru**: čo z pleamaru a jeho príkladov (`pleamar --docs recipes`, `examples/`) ešte nepoužívame
 a čo by LatteOS nahradilo vlastný kód (napr. sklo, častice, shadery pre 9A.14).
 
+### 10N. [ ] LatteIndex — voliteľná systémová indexačná vrstva
+LatteIndex je schopnosť a API kontrakt, nie nevyhnutná súčasť Chapolery. Navrhované pomenovanie: **LatteIndex**
+je systémová vrstva, budúci používateľský daemon **`latte-indexd`**, klient/diagnostický príkaz **`latte-index`**.
+Daemon sa teraz nevyvíja. Cieľ je lokálna, offline a od AI nezávislá služba/API pre viac klientov, bez úpravy
+originálnych súborov; indexujú sa iba výslovne povolené roots. Chapolera môže zdieľať všeobecné fakty, ale bez
+LatteIndexu musí ďalej fungovať vlastným scannerom a databázou. Štyri nezávislé vrstvy: **L0** katalóg názvov,
+cest, prípon, MIME, veľkostí, časov, filesystem identity/dostupnosti a symlink vzťahov; **L1** podporované
+technické metadáta (EXIF, ID3, PDF, rozmery obrázkov, video vlastnosti, názvy/autor dokumentov); **L2**
+konfigurovateľný textový obsah (PDF/Office/EPUB/text/kód, voliteľne OCR, titulky a prepisy); **L3** voliteľné
+embeddingy, popisy, tagy, podobnosť a AI metadáta, nikdy podmienka bežného hľadania.
+
+Architektúra má oddeliť identitu aktíva, jeho filesystem umiestnenie, content fingerprint a verziovaný výsledok
+analýzy (extractor/model); bezpečne znovu použiť výsledky pre rovnaký obsah. Skeny sú generované a prírastkové,
+s checkpointmi, obnovou prerušených úloh a reconciliáciou bez plného rebuild-u. Inotify/fanotify/journals a
+trvalé filesystem handles sa vyhodnotia bez predpokladu univerzálneho žurnálu; udalosti sa dávkujú, deduplikujú
+a po overflow/výpadku nasleduje reconciliácia; pravidelná kontrola zachytí create/write/move/rename/delete aj
+zmeškané udalosti. Vyhľadávanie pokrýva mená/cesty, prefix/substring, filtre,
+full-text a metadata, relevanciu a voliteľné hybridné keyword/vector poradie (napr. Reciprocal Rank Fusion).
+Viacjazyčný tok zachová originál a skúma Unicode normalizáciu, case-folding, diakritické alternatívy,
+jazykové tokenizéry a voliteľný stemming/lemmatizáciu. Extraktory bežia izolovane s limitmi CPU/RAM/I/O,
+timeoutmi a obmedzeným prístupom k filesystemu; chyba či poškodený súbor neblokuje ostatné indexovanie.
+Backpressure, adaptívna priepustnosť, oddelené L0–L3 fronty, interaktívna priorita vyhľadávania, odklad drahých
+úloh, pauza/pokračovanie a viditeľná diagnostika chránia desktop. Kandidátmi sú Rust, D-Bus a SQLite/WAL;
+ich výber aj backendy a extraktory závisia od porovnania a meraní, nie od popularity.
+
+Referenčné ciele: Everything — rýchle názvové hľadanie; Spotlight — súdržný UX; GNOME LocalSearch — oddelený
+indexer, klienti a sandboxovanie; Recoll — extrakcia a relevancia. Neexistuje vopred určený víťaz ani prevzatie
+cudzieho kódu. Špecifikácia v [docs/latte-index/PLAN.md](docs/latte-index/PLAN.md); Chapolera fallback v
+[docs/chapolera/PLAN.md](docs/chapolera/PLAN.md).
+
+**10N.01** [x] **Zadanie a architektonická špecifikácia LatteIndexu** (6. 11., používateľ): pomenovanie a
+  hranice, schopnosti/ne-ciele, procesy a API, dátový model, roots/exclusions, extraktory/full-text backend,
+  prírastkové správanie a reconciliácia, výkon/idle limity, súkromie, obnova, porovnanie Everything/Spotlight/
+  LocalSearch/Recoll, diagram závislostí a míľniky. **V tejto úlohe sa daemon ani indexer neimplementuje.**
+  Výstup: [docs/latte-index/PLAN.md](docs/latte-index/PLAN.md).
+**10N.02** [ ] **Technologický výskum, porovnávacia matica a benchmark plán** — pred implementáciou porovnať
+  Everything/Spotlight/GNOME LocalSearch/Recoll/Baloo ako referencie a SQLite FTS5 vs. Tantivy; prefix,
+  substring, viacjazyčné tokenizéry, metadata filtre, relevanciu a hybridné keyword/vector vyhľadávanie.
+  Preskúmať SQLite Vec1/udržiavané vektorové adaptéry, inotify/fanotify/journals, filesystem identity/handles,
+  MIME/libmagic, Tika vs. natívne extraktory, FFmpeg/FFprobe, TagLib, ExifTool a OCR. Výstupom je matica
+  výkonu, RAM, veľkosti indexu, CPU, kompatibility filesystemov, zložitosti, bezpečnosti, údržby, licencií
+  a rozšíriteľnosti; oddeliť overené voľby od experimentov. Navrhnúť schému, versioned API/capability discovery,
+  izoláciu, limity, bezpečnostný model a merateľné ciele. Žiadny kandidát sa nevyberie bez benchmarku na
+  reprezentatívnych dátach a SSD/HDD/USB; túto úlohu schváliť pred produkčným jadrom.
+**10N.03** [ ] **L0 core, SQLite a prírastkový katalóg/vyhľadávanie názvov** — Rust knižnica, verzovaná schéma
+  a migrácie, WAL/transactions, multi-volume roots, asset identity oddelená od ciest, filesystem identity,
+  generácie skenu, checkpointy a zotavenie. Prvé scan/reconciliation a filename/path search musia byť rýchle,
+  konzistentné aj po páde; nevyžadovať daemon, AI ani plný rebuild po reštarte.
+**10N.04** [ ] **L1 typovanie a metadata extraktory** — MIME/signature detection a benchmarkom zvolené
+  špecializované extractory pre supported metadata (obrázok/EXIF, audio/ID3, PDF/dokumenty, video); výsledky
+  typované, provenance/versioned, cacheované podľa fingerprintu a izolované od L0, aby extrakcia L1 nikdy
+  neblokovala okamžitú katalógovú search.
+**10N.05** [ ] **L2 full-text a bezpečná extrakcia obsahu** — nakonfigurovateľné PDF, Office, EPUB, plain text
+  a source code; OCR, titulky a prepisy ako voliteľné drahé úlohy. Izolované workery s filesystem sandboxom,
+  resource limity, timeouty, poškodené vstupy/failure isolation; FTS backend vybrať meraním a dodať
+  multilingual matching/ranking bez straty pôvodného obsahu.
+**10N.06** [ ] **Voliteľný `latte-indexd` a odolná synchronizácia** — iba po potvrdení potreby viacerých
+  nezávislých konzumentov: user service (nikdy root), D-Bus ako kandidát primárneho IPC, stabilné verzované API,
+  capability discovery, watcher + batching/deduplication, event-overflow recovery, generation/checkpoint
+  recovery, reconciliation pri resume/mount/odpojení; bez univerzálneho journal predpokladu. Backpressure,
+  adaptívny throughput, oddelené priority/queues, CPU/RAM/I/O stropy, idle scheduling a interactive-search
+  priority nesmú citeľne rušiť desktop.
+**10N.07** [ ] **CLI, klienti, nastavenia a prevádzková diagnostika** — `latte-index` pre status, zdravie,
+  štatistiky, chyby, konfiguráciu a automatizované testy; API pre search/lookup/metadata/status/config/reindex/
+  similarity; explicitné roots, vylúčené priečinky/patterny, hidden files, per-layer settings, removable/network
+  volumes iba po výbere, pause/resume/cancel a viditeľný resource/index stav. Integrovať File Manager,
+  LensShore, Quickshell/Pleamar a ďalších konzumentov; Chapolera iba cez voliteľný adapter, jej standalone
+  fallback zachovať.
+**10N.08** [ ] **L3 voliteľná sémantická interoperabilita** — oddelený adapter a storage pre text/image embeddings,
+  sémantické popisy/tagy/vzťahy a similarity/hybrid search; modely a AI voliteľné, verziované a nikdy
+  požadované pre L0–L2. Definovať vlastníctvo metadát a zdieľanie s Chapolerou tak, aby jej taxonómia ani
+  organizovanie neboli povinnosťou LatteIndexu a žiadna vrstva nemenila pôvodné súbory.
+**10N.09** [ ] **Výkonové, odolnostné a kompatibilitné brány** — cold/warm scan, query latency a priebežné
+  výsledky počas indexovania, veľkosť DB/cache, idle/aktívne CPU/RAM/I/O, backpressure, multilingual relevancia,
+  watcher overflow, suspend/resume, odpojené volumes, prerušené generácie, migrácie/DB recovery, zleformované
+  súbory a sandbox limity. Overiť merateľné ciele, regresie a obnovu bez neodôvodneného úplného reindexu.
+
+### 10O. [ ] LatteCapture
+
+**10O.50** [ ] **Vlastný nástroj na zachytávanie obrazovky a videa — „Capture“** (používateľ 5. 11., vzor: Nástroj na vystrihovanie z Windowsu 11; snímka v `inspo/` ešte nie je): rýchle režimy (obdĺžnik, okno, celá obrazovka, voľný tvar), oneskorenie, snímka aj video, **textové akcie** (rozpoznať text zo snímky), úprava (pero, zvýrazňovač, guma, pravítko, orez), kopírovať · uložiť · zdieľať, skratka Super+Shift+S a PrtSc.
+  **Najprv hotové** (CLAUDE.md): **Marea už má „fotografiu“ aj „nahrávanie“** (`/usr/share/latteos/marea-plm/logic/camera.luau`, BSD-3): zmrazí plochu, výber obdĺžnika (`slurp`), okno alebo obrazovka, `grim`, `wl-copy`, nahrávanie; stojí na pleamare aj pleamar-wm. V systéme sú aj `grim`, `slurp`, `wf-recorder`, `gpu-screen-recorder` (VAAPI), `tesseract`.
+  **Návrh:** (1) motor z Marey (zmrazená plocha → výber → `grim`) ostáva; (2) vzhľad podľa LatteOS: výber ako preklopná vrstva pleamaru, hlavička s režimami ako v Snipping Toole, okno úpravy podľa šablóny (hlavná aplikácia s kávou, nie vedľajšie okno); (3) video cez `gpu-screen-recorder` (VAAPI, menej záťaže na RX 640 než `wf-recorder`, ten ako záloha), zvuk systému a mikrofón; (4) text zo snímky `tesseract` (slovenčina, angličtina), nápad na AI popis cez LensAI; (5) knižnica „Snímky a nahrávky“ s hľadaním (zlúčiť s 1184); (6) pozor: snímka nesmie ukázať povrchy s `captures: hidden` (heslá, okno agenta). Open-source vzory iba na nápady: Flameshot (GPL-3, úprava), Spectacle (KDE), Satty (MPL-2, úprava nad `grim`), Swappy (MIT), Kooha (GNOME, video). Rozhodnúť: vlastný editor v pleamare vs. prevziať Satty; čo s oknom agenta.
+  **Rozhodnuté 5. 11. (používateľ, pozrel Satty, Swappy, Flameshot):** myš prvá, PrtSc plne podporené; **rozhranie na vystrihovanie a úpravu podľa Flameshotu** (výber s panelom nástrojov pri okraji: šípka, čiara, pero, zvýrazňovač/marker, obdĺžnik, kruh, **text**, pixelácia/rozmazanie, číslovanie, späť/znova, farba a hrúbka, kopírovať · uložiť · pripnúť). Dôvod: používateľ dnes posiela AI snímky z Nástroja na vystrihovanie, ktorý **nevie pridať textovú poznámku** (len čiary a zvýrazňovač) — Capture ju musí vedieť. Flameshot **nemá video**, preto vlastný nástroj: snímka aj nahrávanie (`gpu-screen-recorder`). Ďalej **výber a kopírovanie TEXTU zo snímky** ako v editore: `tesseract` (TSV so súradnicami slov) → priehľadná vrstva s vybrateľným textom nad obrázkom (ako „textové akcie“ v Snipping Toole; vzory NormCap, Frog — iba nápady).
+  **Licencia (rozhodnuté 5. 11.):** pri Flameshote (GPL-3.0, nie GPL-2) je licencia jedno — **licencia LatteOS je zatiaľ MIT, ale nie je definitívna**; definitívne sa určí až po dokončení, s ohľadom na všetok integrovaný materiál tretích strán. Preto sa kód smie prevziať aj priamo; autor a licencia každého kusa do `TRETIE-STRANY.md`. Flameshot je C++/Qt Widgets, nedá sa vložiť do pleamaru ani QML — preberá sa logika a súbor nástrojov (alebo kód ako samostatný program).
+
 ## 11. [~] Bezpečnosť, súkromie a záloha
 Zdroje: `bin/latte-net`, `system/libexec/latte-netd`
 
@@ -3742,11 +3831,7 @@ Zdroje: `bin/latte-net`, `system/libexec/latte-netd`
 - [ ] Voliteľné skeny či bezpečnostné nástroje nesmú sľubovať úplnú ochranu; zobrazovať limity,
   možné falošné poplachy a vyžadovať súhlas so zberom/analýzou dát.
 
-**10M.50** [ ] **Vlastný nástroj na zachytávanie obrazovky a videa — „Capture“** (používateľ 5. 11., vzor: Nástroj na vystrihovanie z Windowsu 11; snímka v `inspo/` ešte nie je): rýchle režimy (obdĺžnik, okno, celá obrazovka, voľný tvar), oneskorenie, snímka aj video, **textové akcie** (rozpoznať text zo snímky), úprava (pero, zvýrazňovač, guma, pravítko, orez), kopírovať · uložiť · zdieľať, skratka Super+Shift+S a PrtSc.
-  **Najprv hotové** (CLAUDE.md): **Marea už má „fotografiu“ aj „nahrávanie“** (`/usr/share/latteos/marea-plm/logic/camera.luau`, BSD-3): zmrazí plochu, výber obdĺžnika (`slurp`), okno alebo obrazovka, `grim`, `wl-copy`, nahrávanie; stojí na pleamare aj pleamar-wm. V systéme sú aj `grim`, `slurp`, `wf-recorder`, `gpu-screen-recorder` (VAAPI), `tesseract`.
-  **Návrh:** (1) motor z Marey (zmrazená plocha → výber → `grim`) ostáva; (2) vzhľad podľa LatteOS: výber ako preklopná vrstva pleamaru, hlavička s režimami ako v Snipping Toole, okno úpravy podľa šablóny (hlavná aplikácia s kávou, nie vedľajšie okno); (3) video cez `gpu-screen-recorder` (VAAPI, menej záťaže na RX 640 než `wf-recorder`, ten ako záloha), zvuk systému a mikrofón; (4) text zo snímky `tesseract` (slovenčina, angličtina), nápad na AI popis cez LensAI; (5) knižnica „Snímky a nahrávky“ s hľadaním (zlúčiť s 1184); (6) pozor: snímka nesmie ukázať povrchy s `captures: hidden` (heslá, okno agenta). Open-source vzory iba na nápady: Flameshot (GPL-3, úprava), Spectacle (KDE), Satty (MPL-2, úprava nad `grim`), Swappy (MIT), Kooha (GNOME, video). Rozhodnúť: vlastný editor v pleamare vs. prevziať Satty; čo s oknom agenta.
-  **Rozhodnuté 5. 11. (používateľ, pozrel Satty, Swappy, Flameshot):** myš prvá, PrtSc plne podporené; **rozhranie na vystrihovanie a úpravu podľa Flameshotu** (výber s panelom nástrojov pri okraji: šípka, čiara, pero, zvýrazňovač/marker, obdĺžnik, kruh, **text**, pixelácia/rozmazanie, číslovanie, späť/znova, farba a hrúbka, kopírovať · uložiť · pripnúť). Dôvod: používateľ dnes posiela AI snímky z Nástroja na vystrihovanie, ktorý **nevie pridať textovú poznámku** (len čiary a zvýrazňovač) — Capture ju musí vedieť. Flameshot **nemá video**, preto vlastný nástroj: snímka aj nahrávanie (`gpu-screen-recorder`). Ďalej **výber a kopírovanie TEXTU zo snímky** ako v editore: `tesseract` (TSV so súradnicami slov) → priehľadná vrstva s vybrateľným textom nad obrázkom (ako „textové akcie“ v Snipping Toole; vzory NormCap, Frog — iba nápady).
-  **Licencia (rozhodnuté 5. 11.):** pri Flameshote (GPL-3.0, nie GPL-2) je licencia jedno — **licencia LatteOS je zatiaľ MIT, ale nie je definitívna**; definitívne sa určí až po dokončení, s ohľadom na všetok integrovaný materiál tretích strán. Preto sa kód smie prevziať aj priamo; autor a licencia každého kusa do `TRETIE-STRANY.md`. Flameshot je C++/Qt Widgets, nedá sa vložiť do pleamaru ani QML — preberá sa logika a súbor nástrojov (alebo kód ako samostatný program).
+
 
 ### 11A. NET a sieťové profily
 Odstavenie aplikácie od internetu (tlačidlo NET je v 8.01), profily pre Wine/Proton.

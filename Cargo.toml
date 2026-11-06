@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["crates/latte-hw", "crates/latte-boot", "crates/latte-stats", "crates/latte-props", "crates/latte-chapolera"]
+members = ["crates/latte-hw", "crates/latte-boot", "crates/latte-stats", "crates/latte-props", "crates/latte-chapolera", "crates/latte-index"]
 exclude = ["old", "build"]          # build/: what install fetches and builds (pleamar, pleamar-wm)
 
 [workspace.package]

@@ -16,7 +16,8 @@
   - [Jednotlivé kvapky](goo/ROZHRANIE.md)
 
 ### 💻 Programátor
-- [Chapolera — plán triedenia médií](chapolera/PLAN.md) — triedič podľa typu, poradie krokov a otvorené úlohy
+- [LatteIndex — systémový index súborov](latte-index/PLAN.md) — spoločná lokálna databáza a prírastkové indexovanie
+- [Chapolera — sémantická vrstva nad súbormi](chapolera/PLAN.md) — extrakcia, tagy, taxonómia a vratné organizovanie
 - [Engine Goo — API](../session/goo/README.md) — ako pridať alebo upraviť kvapku
 - [Denník rozhodnutí](goo/ROZHODNUTIA.md) — kedy a prečo sa čo rozhodlo, čo bolo zamietnuté
 - [Inštalácia a testy na latte-lab](../setup/lab/README.md)

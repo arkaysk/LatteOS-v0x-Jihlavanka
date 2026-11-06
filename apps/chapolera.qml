@@ -28,6 +28,14 @@ ShellRoot {
     property string settingsError: ""
     property string memoryError: ""
     property string sortingInstruction: ""
+    property string analysisState: "idle"
+    property string analysisError: ""
+    property string classifierOutputError: ""
+    property int analysisTotal: 0
+    property int analysisCompleted: 0
+    property var suggestedCategories: []
+    property var analyzedImages: []
+    property bool receivedCompleteEvent: false
     property bool settingsReady: false
     property bool automaticPreviews: true
     property int manualPreviewLimit: 24
@@ -48,6 +56,7 @@ ShellRoot {
         { name: "Audio", value: String(counts.audio), icon: "music" },
         { name: "Subfolders", value: String(counts.subfolders), icon: "folder" }
     ]
+    readonly property bool analysisBusy: analysisState === "planning" || analysisState === "classifying"
     function fileUrl(path) {
         return "file://" + path.split("/").map(encodeURIComponent).join("/")
     }
@@ -128,6 +137,7 @@ ShellRoot {
 
     function scan() {
         if (!folder || !settingsReady || (automaticPreviews && !memoryReady)) return
+        if (analysisBusy) return
         if (scanner.running) {
             pendingScan = true
             return
@@ -139,6 +149,155 @@ ShellRoot {
         scanner.buf = ""
         scanner.command = ["latte-chapolera", "scan", folder, String(previewLimit), String(pageOffset)]
         scanner.running = true
+    }
+
+    function startSorting() {
+        if (analysisBusy || !folder || !result) return
+        if (!selectedProvider || !selectedProvider.local || !selectedModel) {
+            analysisError = I18n.tr("Choose a local LensAI model; cloud models are not used in this step.")
+            return
+        }
+        if (counts.photos === 0) {
+            analysisError = I18n.tr("This step can sort photos only. Other media types are not analyzed yet.")
+            return
+        }
+
+        analysisError = ""
+        classifierOutputError = ""
+        analysisTotal = 0
+        analysisCompleted = 0
+        suggestedCategories = []
+        analyzedImages = []
+        receivedCompleteEvent = false
+        analysisState = "planning"
+        categoryPlanner.buf = ""
+        categoryPlanner.command = [
+            "latte-ai", "send", "new", selectedProviderId, selectedModelId,
+            categoryPrompt()
+        ]
+        categoryPlanner.running = true
+    }
+
+    function categoryPrompt() {
+        const prompt = sortingInstruction.trim() || "Organize these photos into useful visual categories."
+        return [
+            "You prepare visual category labels for a local photo sorter.",
+            "The user writes in Slovak. Respect the user's sorting instruction.",
+            "Only propose categories that can be judged from visible image content. Do not claim to know people's identities, GPS locations, or hidden metadata.",
+            "Return only one valid JSON object, with no Markdown, in this exact shape:",
+            "{\"categories\":[{\"name\":\"short Slovak folder name\",\"image_prompt\":\"short English visual description\"}]}",
+            "Create 2 to 8 distinct categories. Folder names must not contain slashes or control characters.",
+            "The image_prompt must be a short English phrase describing visible content; do not start it with 'a photo of'.",
+            "If the instruction depends on GPS or named-person recognition, use visual categories only and do not imply that those unavailable facts were checked.",
+            "Sorting instruction: " + prompt,
+            "Visible inventory: " + counts.photos + " photos, " + counts.videos + " videos, " + counts.audio + " audio files, " + counts.other + " other files.",
+            "This stage analyzes photos only; do not propose categories for other media."
+        ].join("\n")
+    }
+
+    function acceptProposedCategories(answer) {
+        let payloadText = answer.trim()
+        const first = payloadText.indexOf("{")
+        const last = payloadText.lastIndexOf("}")
+        if (first < 0 || last <= first) throw new Error("Missing JSON object")
+        const payload = JSON.parse(payloadText.slice(first, last + 1))
+        if (!payload || !Array.isArray(payload.categories)
+                || payload.categories.length < 2 || payload.categories.length > 8)
+            throw new Error("Invalid category list")
+
+        const names = []
+        const prompts = []
+        const categories = payload.categories.map(category => {
+            if (!category || typeof category.name !== "string" || typeof category.image_prompt !== "string")
+                throw new Error("Invalid category fields")
+            const name = category.name.trim()
+            const imagePrompt = category.image_prompt.trim()
+            if (name.length === 0 || name.length > 64 || /[\/\\\u0000-\u001f]/.test(name)
+                    || imagePrompt.length === 0 || imagePrompt.length > 200)
+                throw new Error("Invalid category value")
+            const nameKey = name.toLocaleLowerCase()
+            const promptKey = imagePrompt.toLocaleLowerCase()
+            if (names.includes(nameKey) || prompts.includes(promptKey)) throw new Error("Duplicate category")
+            names.push(nameKey)
+            prompts.push(promptKey)
+            return { name, imagePrompt, count: 0, previews: [] }
+        })
+        suggestedCategories = categories
+        analysisState = "classifying"
+        classifierOutputError = ""
+        classifier.command = ["latte-chapolera", "classify-folder-events", folder]
+            .concat(categories.map(category => category.imagePrompt))
+        classifier.running = true
+    }
+
+    function acceptClassifierEvent(line) {
+        let event
+        try {
+            event = JSON.parse(line)
+        } catch (error) {
+            failAnalysis(I18n.tr("The image sorter returned invalid progress data."))
+            return
+        }
+        if (!event || typeof event.event !== "string") {
+            failAnalysis(I18n.tr("The image sorter returned invalid progress data."))
+            return
+        }
+        if (event.event === "start") {
+            if (!Number.isInteger(event.total) || event.total !== counts.photos) {
+                failAnalysis(I18n.tr("The photo count changed while sorting. Scan the folder again."))
+                return
+            }
+            analysisTotal = event.total
+            analysisCompleted = 0
+            return
+        }
+        if (event.event === "image") {
+            if (analysisCompleted >= analysisTotal) {
+                failAnalysis(I18n.tr("The image sorter returned too many photo results."))
+                return
+            }
+            if (typeof event.image !== "string" || !Array.isArray(event.scores) || event.scores.length === 0) {
+                failAnalysis(I18n.tr("The image sorter returned an invalid result."))
+                return
+            }
+            const best = event.scores[0]
+            const categoryIndex = suggestedCategories.findIndex(category => category.imagePrompt === best.label)
+            if (categoryIndex < 0 || typeof best.score !== "number" || !Number.isFinite(best.score)) {
+                failAnalysis(I18n.tr("The image sorter returned an invalid category."))
+                return
+            }
+            const categories = suggestedCategories.slice()
+            const category = Object.assign({}, categories[categoryIndex])
+            category.count += 1
+            if (category.previews.length < 4) category.previews = category.previews.concat([event.image])
+            categories[categoryIndex] = category
+            suggestedCategories = categories
+            analyzedImages = analyzedImages.concat([{
+                path: event.image,
+                category: category.name,
+                score: best.score
+            }])
+            analysisCompleted += 1
+            return
+        }
+        if (event.event === "complete") {
+            if (!Number.isInteger(event.classified) || event.classified !== analysisTotal
+                    || analysisCompleted !== analysisTotal) {
+                failAnalysis(I18n.tr("The image sorter did not return every photo."))
+                return
+            }
+            receivedCompleteEvent = true
+            analysisState = "complete"
+            return
+        }
+        failAnalysis(I18n.tr("The image sorter returned an unknown event."))
+    }
+
+    function failAnalysis(message) {
+        analysisState = "error"
+        analysisError = message
+        suggestedCategories = []
+        analyzedImages = []
     }
 
     function openSettings() {
@@ -255,6 +414,41 @@ ShellRoot {
             } catch (error) {
                 shell.modelError = I18n.tr("LensAI returned an invalid provider list.")
             }
+        }
+    }
+
+    Process {
+        id: categoryPlanner
+        property string buf: ""
+        stdout: StdioCollector { onStreamFinished: categoryPlanner.buf = this.text }
+        onExited: code => {
+            if (shell.analysisState !== "planning") return
+            if (code !== 0) {
+                shell.failAnalysis(I18n.tr("The local model could not prepare photo categories."))
+                return
+            }
+            try {
+                const response = JSON.parse(buf)
+                if (!response || response.ok !== true || typeof response.answer !== "string")
+                    throw new Error("Local model returned no answer")
+                shell.acceptProposedCategories(response.answer)
+            } catch (error) {
+                shell.failAnalysis(I18n.tr("The local model returned invalid photo categories."))
+            }
+        }
+    }
+
+    Process {
+        id: classifier
+        stdout: SplitParser { onRead: line => shell.acceptClassifierEvent(line) }
+        onExited: code => {
+            if (shell.analysisState === "error") return
+            if (code !== 0) {
+                shell.failAnalysis(I18n.tr("SigLIP 2 could not analyze the photos (exit code {code}).", { code }))
+                return
+            }
+            if (!shell.receivedCompleteEvent)
+                shell.failAnalysis(I18n.tr("SigLIP 2 finished without a complete result."))
         }
     }
 
@@ -408,23 +602,90 @@ ShellRoot {
                 }
                 Item { width: 1; height: 9 }
                 Rectangle {
+                    id: sortButton
                     width: 220
                     height: 40
                     radius: 13
-                    color: Theme.raised
-                    opacity: 0.58
+                    color: shell.analysisBusy ? Theme.raised : Theme.gold
+                    opacity: shell.analysisBusy || !shell.result ? 0.58 : 1
+                    Accessible.name: I18n.tr("Sort!")
+                    Accessible.role: Accessible.Button
                     Row {
                         anchors.centerIn: parent
                         spacing: 8
-                        Glyph { name: "sparkles"; color: Theme.faint; anchors.verticalCenter: parent.verticalCenter }
-                        Label { text: I18n.tr("Sort!"); color: Theme.faint; font.weight: 700; anchors.verticalCenter: parent.verticalCenter }
+                        Glyph {
+                            name: shell.analysisBusy ? "loader-2" : "sparkles"
+                            color: shell.analysisBusy ? Theme.faint : Theme.inkOnCoffee
+                            anchors.verticalCenter: parent.verticalCenter
+                        }
+                        Label {
+                            text: shell.analysisBusy ? I18n.tr("Analyzing…") : I18n.tr("Sort!")
+                            color: shell.analysisBusy ? Theme.faint : Theme.inkOnCoffee
+                            font.weight: 700
+                            anchors.verticalCenter: parent.verticalCenter
+                        }
+                    }
+                    MouseArea {
+                        anchors.fill: parent
+                        enabled: !!shell.result && !shell.analysisBusy
+                        cursorShape: enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
+                        onClicked: shell.startSorting()
                     }
                 }
                 Label {
                     x: 10
                     width: 210
-                    text: I18n.tr("AI analysis is not available yet.")
+                    visible: shell.analysisState === "planning"
+                    text: I18n.tr("Preparing photo categories with the local model…")
                     color: Theme.faint
+                    font.pixelSize: 11
+                    wrapMode: Text.WordWrap
+                }
+                Label {
+                    x: 10
+                    width: 210
+                    visible: shell.analysisState === "classifying"
+                    text: I18n.tr("Analyzing photos: {done} of {total}", {
+                        done: shell.analysisCompleted,
+                        total: shell.analysisTotal
+                    })
+                    color: Theme.faint
+                    font.pixelSize: 11
+                    wrapMode: Text.WordWrap
+                }
+                Label {
+                    x: 10
+                    width: 210
+                    visible: shell.analysisState === "complete"
+                    text: I18n.tr("Suggested matches are based on visual similarity. Review them before any future move.")
+                    color: Theme.gold
+                    font.pixelSize: 11
+                    wrapMode: Text.WordWrap
+                }
+                Label {
+                    x: 10
+                    width: 210
+                    visible: true
+                    text: I18n.tr("This step uses local AI only and analyzes visible photo content, not GPS or named-person identity.")
+                    color: Theme.faint
+                    font.pixelSize: 10
+                    wrapMode: Text.WordWrap
+                }
+                Label {
+                    x: 10
+                    width: 210
+                    visible: true
+                    text: I18n.tr("Videos, audio and documents are left unchanged in this step.")
+                    color: Theme.faint
+                    font.pixelSize: 10
+                    wrapMode: Text.WordWrap
+                }
+                Label {
+                    x: 10
+                    width: 210
+                    visible: shell.analysisError !== ""
+                    text: shell.analysisError
+                    color: Theme.red
                     font.pixelSize: 11
                     wrapMode: Text.WordWrap
                 }
@@ -530,7 +791,8 @@ ShellRoot {
                             width: parent.width - 40
                             horizontalAlignment: Text.AlignHCenter
                             wrapMode: Text.WordWrap
-                            visible: !shell.result || shell.result.files.length === 0
+                            visible: shell.analysisState !== "complete"
+                                     && (!shell.result || shell.result.files.length === 0)
                             text: shell.scanning
                                   ? I18n.tr("Reading folder…")
                                   : shell.scanError
@@ -600,6 +862,85 @@ ShellRoot {
                             }
                         }
 
+                        Flickable {
+                            anchors.fill: parent
+                            visible: shell.analysisState === "complete"
+                            contentWidth: width
+                            contentHeight: resultCategories.implicitHeight
+                            clip: true
+                            boundsBehavior: Flickable.StopAtBounds
+
+                            Column {
+                                id: resultCategories
+                                width: parent.width
+                                spacing: 10
+                                Repeater {
+                                    model: shell.suggestedCategories
+                                    delegate: Rectangle {
+                                        required property var modelData
+                                        width: resultCategories.width - 24
+                                        height: 124
+                                        x: 12
+                                        radius: 15
+                                        color: Theme.card
+                                        border.width: 1
+                                        border.color: Theme.line
+
+                                        Label {
+                                            x: 14
+                                            y: 10
+                                            width: parent.width - 130
+                                            text: modelData.name
+                                            color: Theme.cream
+                                            font.pixelSize: 14
+                                            font.weight: 700
+                                            elide: Text.ElideRight
+                                        }
+                                        Label {
+                                            anchors.right: parent.right
+                                            anchors.rightMargin: 14
+                                            y: 12
+                                            text: I18n.tr("{n} suggestions", { n: modelData.count })
+                                            color: Theme.dim
+                                            font.pixelSize: 11
+                                        }
+                                        Row {
+                                            x: 12
+                                            y: 38
+                                            spacing: 8
+                                            Repeater {
+                                                model: modelData.previews
+                                                delegate: Rectangle {
+                                                    id: categoryPreview
+                                                    required property string modelData
+                                                    width: 70
+                                                    height: 72
+                                                    radius: 10
+                                                    color: Theme.raised
+                                                    clip: true
+                                                    Image {
+                                                        anchors.fill: parent
+                                                        source: shell.fileUrl(categoryPreview.modelData)
+                                                        asynchronous: true
+                                                        fillMode: Image.PreserveAspectCrop
+                                                        sourceSize.width: 140
+                                                        sourceSize.height: 144
+                                                    }
+                                                }
+                                            }
+                                            Label {
+                                                visible: modelData.previews.length === 0
+                                                text: I18n.tr("No photos matched this suggestion.")
+                                                color: Theme.faint
+                                                font.pixelSize: 11
+                                                anchors.verticalCenter: parent.verticalCenter
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
                         Rectangle {
                             id: previousPage
                             width: 42
@@ -609,7 +950,7 @@ ShellRoot {
                             anchors.leftMargin: 16
                             anchors.bottom: parent.bottom
                             anchors.bottomMargin: 16
-                            visible: shell.result !== null && shell.pageOffset > 0
+                            visible: shell.analysisState !== "complete" && shell.result !== null && shell.pageOffset > 0
                             color: Theme.card
                             Accessible.name: I18n.tr("Previous")
                             Accessible.role: Accessible.Button
@@ -633,7 +974,7 @@ ShellRoot {
                             anchors.rightMargin: 16
                             anchors.bottom: parent.bottom
                             anchors.bottomMargin: 16
-                            visible: shell.result !== null && shell.result.has_more
+                            visible: shell.analysisState !== "complete" && shell.result !== null && shell.result.has_more
                             color: Theme.card
                             Accessible.name: I18n.tr("Next")
                             Accessible.role: Accessible.Button
