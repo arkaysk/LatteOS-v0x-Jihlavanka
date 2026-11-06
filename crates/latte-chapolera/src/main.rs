@@ -4,6 +4,7 @@
 //!   latte-chapolera settings
 //!   latte-chapolera settings-set automatic|manual LIMIT
 //!   latte-chapolera memory
+//!   latte-chapolera profile PATH
 //!   latte-chapolera classify-image IMAGE LABEL...
 //!   latte-chapolera classify-folder FOLDER LABEL...
 //!   latte-chapolera classify-folder-events FOLDER LABEL...
@@ -18,6 +19,7 @@ use std::path::{Path, PathBuf};
 use tokenizers::Tokenizer;
 
 mod asset_store;
+mod extractors;
 
 const DEFAULT_PREVIEW_LIMIT: usize = 24;
 const MIN_PREVIEW_LIMIT: usize = 8;
@@ -480,6 +482,7 @@ fn execute(args: &[String]) -> Result<String, String> {
             let (counts, files) = scan(path, limit, offset)?;
             Ok(output(path, &counts, &files, limit, offset))
         }
+        [command, path] if command == "profile" => asset_store::profile(Path::new(path)),
         [command] if command == "settings" => {
             let settings = read_settings(&settings_path()?)?;
             Ok(settings_json(settings))
@@ -506,7 +509,7 @@ fn execute(args: &[String]) -> Result<String, String> {
                 "preview_limit": automatic_preview_limit(available_bytes),
             }).to_string())
         }
-        _ => Err("usage: latte-chapolera scan FOLDER LIMIT OFFSET | settings | settings-set automatic|manual LIMIT | memory | classify-image IMAGE LABEL... | classify-folder FOLDER LABEL... | classify-folder-events FOLDER LABEL...".to_string()),
+        _ => Err("usage: latte-chapolera scan FOLDER LIMIT OFFSET | profile PATH | settings | settings-set automatic|manual LIMIT | memory | classify-image IMAGE LABEL... | classify-folder FOLDER LABEL... | classify-folder-events FOLDER LABEL...".to_string()),
     }
 }
 

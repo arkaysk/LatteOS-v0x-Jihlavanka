@@ -1,4 +1,5 @@
 use crate::{Counts, FileEntry};
+use crate::extractors::{self, Run as ExtractorRun, ToolVersions};
 use rusqlite::{params, Connection, OptionalExtension, Transaction, TransactionBehavior};
 use sha2::{Digest, Sha256};
 use std::collections::HashSet;
@@ -10,7 +11,7 @@ use std::os::unix::fs::MetadataExt;
 use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
 
-const SCHEMA_VERSION: i64 = 1;
+const SCHEMA_VERSION: i64 = 2;
 const HASH_BUFFER_SIZE: usize = 1024 * 1024;
 
 #[derive(Debug, PartialEq, Eq)]
@@ -39,6 +40,8 @@ struct DiscoveredFile {
 struct ExistingAsset {
     id: i64,
     metadata: FileMetadata,
+    sha256: String,
+    mime_type: String,
     media_family: String,
     was_present: bool,
 }
@@ -101,6 +104,7 @@ pub(super) fn scan_with_database(
 
     let now = unix_seconds()?;
     let mut counts = Counts::default();
+    let mut tool_versions = ToolVersions::default();
     counts.subfolders = visit_files(&root, &mut |file| {
         counts.total += 1;
         let previous = load_asset_at_path(&transaction, root_id, &file.path_key)?;
@@ -116,6 +120,17 @@ pub(super) fn scan_with_database(
                 )
                 .map_err(|error| format!("could not refresh {}: {error}", file.path.display()))?;
             add_family_count(&mut counts, &asset.media_family);
+            persist_extractions(
+                &transaction,
+                asset.id,
+                &file.path,
+                &asset.sha256,
+                &asset.mime_type,
+                &asset.media_family,
+                &file.name,
+                &mut tool_versions,
+                now,
+            )?;
             return Ok(());
         }
 
@@ -127,12 +142,12 @@ pub(super) fn scan_with_database(
             return Err(format!("{}: file changed while indexing; run the scan again", file.path.display()));
         }
 
-        let existing_id = if let Some(asset) = previous {
+        let existing_id = if let Some(asset) = previous.as_ref() {
             Some(asset.id)
         } else {
             reusable_asset_id(&transaction, root_id, &file.path, &sha256)?
         };
-        if let Some(asset_id) = existing_id {
+        let asset_id = if let Some(asset_id) = existing_id {
             update_asset(
                 &transaction,
                 asset_id,
@@ -144,6 +159,7 @@ pub(super) fn scan_with_database(
                 &sha256,
                 now,
             )?;
+            asset_id
         } else {
             transaction
                 .execute(
@@ -178,7 +194,28 @@ pub(super) fn scan_with_database(
                     ],
                 )
                 .map_err(|error| format!("could not index {}: {error}", file.path.display()))?;
+            transaction.last_insert_rowid()
+        };
+        let mime_type = previous.as_ref()
+            .filter(|asset| Some(asset.id) == existing_id)
+            .map(|asset| asset.mime_type.as_str())
+            .unwrap_or(&mime_type);
+        let verified = fs::symlink_metadata(&file.path)
+            .map_err(|error| format!("{}: {error}", file.path.display()))?;
+        if !verified.is_file() || file_metadata(&verified, &file.path)? != file.metadata {
+            return Err(format!("{}: file changed while indexing; run the scan again", file.path.display()));
         }
+        persist_extractions(
+            &transaction,
+            asset_id,
+            &file.path,
+            &sha256,
+            &mime_type,
+            &media_family,
+            &file.name,
+            &mut tool_versions,
+            now,
+        )?;
         add_family_count(&mut counts, &media_family);
         Ok(())
     })?;
@@ -194,6 +231,116 @@ pub(super) fn scan_with_database(
     let previews = load_previews(&transaction, root_id, preview_limit, preview_offset)?;
     transaction.commit().map_err(|error| format!("could not save Chapolera scan: {error}"))?;
     Ok((counts, previews))
+}
+
+pub(super) fn profile(path: &Path) -> Result<String, String> {
+    let canonical_path = fs::canonicalize(path).map_err(|error| format!("{}: {error}", path.display()))?;
+    let database_path = default_database_path()?;
+    profile_with_database(&canonical_path, &database_path)
+}
+
+fn profile_with_database(path: &Path, database_path: &Path) -> Result<String, String> {
+    let connection = open_database(database_path)?;
+    let asset: (i64, String, String, i64, String, String, String, String) = connection
+        .query_row(
+            "SELECT id, path, name, size_bytes, mime_type, format, media_family, sha256
+             FROM assets WHERE path_key = ?1 AND present = 1",
+            [path.as_os_str().as_bytes()],
+            |row| {
+                Ok((
+                    row.get(0)?,
+                    row.get(1)?,
+                    row.get(2)?,
+                    row.get(3)?,
+                    row.get(4)?,
+                    row.get(5)?,
+                    row.get(6)?,
+                    row.get(7)?,
+                ))
+            },
+        )
+        .optional()
+        .map_err(|error| format!("could not read Chapolera asset profile: {error}"))?
+        .ok_or_else(|| format!("{} is not present in the Chapolera index", path.display()))?;
+    let (asset_id, path, name, size, mime_type, format, media_family, content_sha256) = asset;
+
+    let mut fact_statement = connection
+        .prepare(
+            "SELECT fact_key, value_json, extractor_id, extractor_version, extracted_at
+             FROM asset_facts AS facts
+             WHERE asset_id = ?1 AND content_sha256 = ?2
+               AND EXISTS (
+                   SELECT 1 FROM extractor_runs AS runs
+                   WHERE runs.asset_id = facts.asset_id
+                     AND runs.extractor_id = facts.extractor_id
+                     AND runs.extractor_version = facts.extractor_version
+                     AND runs.content_sha256 = facts.content_sha256
+                     AND runs.status = 'success'
+               )
+             ORDER BY fact_key, extractor_id",
+        )
+        .map_err(|error| format!("could not prepare Chapolera fact query: {error}"))?;
+    let fact_rows = fact_statement
+        .query_map(params![asset_id, content_sha256], |row| {
+            Ok((
+                row.get::<_, String>(0)?,
+                row.get::<_, String>(1)?,
+                row.get::<_, String>(2)?,
+                row.get::<_, String>(3)?,
+                row.get::<_, i64>(4)?,
+            ))
+        })
+        .map_err(|error| format!("could not query Chapolera facts: {error}"))?;
+    let mut facts = Vec::new();
+    for row in fact_rows {
+        let (key, value, extractor, version, extracted_at) =
+            row.map_err(|error| format!("could not read Chapolera fact: {error}"))?;
+        facts.push(serde_json::json!({
+            "key": key,
+            "value": serde_json::from_str::<serde_json::Value>(&value)
+                .map_err(|error| format!("stored fact {key} is invalid JSON: {error}"))?,
+            "provenance": {
+                "extractor": extractor,
+                "version": version,
+                "content_sha256": content_sha256,
+                "extracted_at": extracted_at,
+            }
+        }));
+    }
+
+    let mut run_statement = connection
+        .prepare(
+            "SELECT extractor_id, extractor_version, status, error_message, updated_at
+             FROM extractor_runs WHERE asset_id = ?1 ORDER BY extractor_id",
+        )
+        .map_err(|error| format!("could not prepare Chapolera extractor query: {error}"))?;
+    let runs = run_statement
+        .query_map([asset_id], |row| {
+            Ok(serde_json::json!({
+                "extractor": row.get::<_, String>(0)?,
+                "version": row.get::<_, String>(1)?,
+                "status": row.get::<_, String>(2)?,
+                "error": row.get::<_, Option<String>>(3)?,
+                "updated_at": row.get::<_, i64>(4)?,
+            }))
+        })
+        .map_err(|error| format!("could not query Chapolera extractor results: {error}"))?
+        .collect::<Result<Vec<_>, _>>()
+        .map_err(|error| format!("could not read Chapolera extractor results: {error}"))?;
+    serde_json::to_string(&serde_json::json!({
+        "schema_version": 1,
+        "asset_id": asset_id,
+        "path": path,
+        "name": name,
+        "size_bytes": size,
+        "mime_type": mime_type,
+        "format": format,
+        "media_family": media_family,
+        "sha256": content_sha256,
+        "facts": facts,
+        "extractors": runs,
+    }))
+    .map_err(|error| format!("could not serialize Chapolera asset profile: {error}"))
 }
 
 fn default_database_path() -> Result<PathBuf, String> {
@@ -219,17 +366,18 @@ fn open_database(path: &Path) -> Result<Connection, String> {
 }
 
 fn initialize_schema(connection: &Connection, path: &Path) -> Result<(), String> {
-    let version: i64 = connection
+    let mut version: i64 = connection
         .query_row("PRAGMA user_version", [], |row| row.get(0))
         .map_err(|error| format!("{}: {error}", path.display()))?;
     if version == SCHEMA_VERSION {
         return Ok(());
     }
-    if version != 0 {
+    if version < 0 || version > SCHEMA_VERSION {
         return Err(format!("{}: unsupported Chapolera schema version {version}", path.display()));
     }
-    connection
-        .execute_batch(
+    if version == 0 {
+        connection
+            .execute_batch(
             "BEGIN IMMEDIATE;
              CREATE TABLE roots (
                  id INTEGER PRIMARY KEY,
@@ -266,8 +414,41 @@ fn initialize_schema(connection: &Connection, path: &Path) -> Result<(), String>
              CREATE INDEX assets_sha256 ON assets(sha256);
              PRAGMA user_version = 1;
              COMMIT;",
-        )
-        .map_err(|error| format!("could not initialize Chapolera database {}: {error}", path.display()))
+            )
+            .map_err(|error| format!("could not initialize Chapolera database {}: {error}", path.display()))?;
+        version = 1;
+    }
+    if version == 1 {
+        connection
+            .execute_batch(
+                "BEGIN IMMEDIATE;
+                 CREATE TABLE asset_facts (
+                     asset_id INTEGER NOT NULL REFERENCES assets(id) ON DELETE CASCADE,
+                     fact_key TEXT NOT NULL,
+                     value_json TEXT NOT NULL,
+                     extractor_id TEXT NOT NULL,
+                     extractor_version TEXT NOT NULL,
+                     content_sha256 TEXT NOT NULL,
+                     extracted_at INTEGER NOT NULL,
+                     PRIMARY KEY (asset_id, fact_key, extractor_id, extractor_version, content_sha256)
+                 );
+                 CREATE INDEX asset_facts_current ON asset_facts(asset_id, content_sha256);
+                 CREATE TABLE extractor_runs (
+                     asset_id INTEGER NOT NULL REFERENCES assets(id) ON DELETE CASCADE,
+                     extractor_id TEXT NOT NULL,
+                     extractor_version TEXT NOT NULL,
+                     content_sha256 TEXT NOT NULL,
+                     status TEXT NOT NULL CHECK (status IN ('success', 'failed')),
+                     error_message TEXT,
+                     updated_at INTEGER NOT NULL,
+                     PRIMARY KEY (asset_id, extractor_id)
+                 );
+                 PRAGMA user_version = 2;
+                 COMMIT;",
+            )
+            .map_err(|error| format!("could not upgrade Chapolera database {}: {error}", path.display()))?;
+    }
+    Ok(())
 }
 
 fn load_asset_at_path(
@@ -278,7 +459,8 @@ fn load_asset_at_path(
     transaction
         .query_row(
             "SELECT assets.id, size_bytes, modified_seconds, modified_nanoseconds,
-                    changed_seconds, changed_nanoseconds, device, inode, media_family,
+                    changed_seconds, changed_nanoseconds, device, inode, sha256, mime_type,
+                    media_family,
                     EXISTS (SELECT 1 FROM previous_assets WHERE asset_id = assets.id)
              FROM assets
              WHERE root_id = ?1 AND path_key = ?2
@@ -298,13 +480,132 @@ fn load_asset_at_path(
                         device: row.get(6)?,
                         inode: row.get(7)?,
                     },
-                    media_family: row.get(8)?,
-                    was_present: row.get(9)?,
+                    sha256: row.get(8)?,
+                    mime_type: row.get(9)?,
+                    media_family: row.get(10)?,
+                    was_present: row.get(11)?,
                 })
             },
         )
         .optional()
         .map_err(|error| format!("could not inspect Chapolera asset: {error}"))
+}
+
+fn persist_extractions(
+    transaction: &Transaction<'_>,
+    asset_id: i64,
+    path: &Path,
+    content_sha256: &str,
+    mime_type: &str,
+    media_family: &str,
+    file_name: &str,
+    tools: &mut ToolVersions,
+    now: i64,
+) -> Result<(), String> {
+    for extractor_id in extractors::applicable(media_family, mime_type) {
+        let version = extractors::current_version(extractor_id, tools);
+        let (version_name, run) = match version {
+            Ok(version) if extractor_run_is_current(transaction, asset_id, extractor_id, &version, content_sha256)? => {
+                continue;
+            }
+            Ok(version) => {
+                let run = extractors::run(extractor_id, &version, path, media_family);
+                (version, run)
+            }
+            Err(error) => {
+                let version = "unavailable".to_string();
+                let run = ExtractorRun {
+                    id: extractor_id,
+                    version: version.clone(),
+                    status: "failed",
+                    error: Some(error),
+                    facts: Vec::new(),
+                };
+                (version, run)
+            }
+        };
+        let run = if run.version == version_name {
+            run
+        } else {
+            ExtractorRun {
+                id: extractor_id,
+                version: version_name,
+                status: "failed",
+                error: Some(format!("could not determine {extractor_id} version")),
+                facts: Vec::new(),
+            }
+        };
+        store_extractor_run(transaction, asset_id, content_sha256, &run, now)?;
+        for fact in &run.facts {
+            let value = serde_json::to_string(&fact.value)
+                .map_err(|error| format!("could not serialize {} fact: {error}", fact.key))?;
+            transaction
+                .execute(
+                    "INSERT INTO asset_facts (
+                        asset_id, fact_key, value_json, extractor_id,
+                        extractor_version, content_sha256, extracted_at
+                     ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)
+                     ON CONFLICT(asset_id, fact_key, extractor_id, extractor_version, content_sha256)
+                     DO UPDATE SET value_json = excluded.value_json, extracted_at = excluded.extracted_at",
+                    params![asset_id, fact.key, value, run.id, run.version, content_sha256, now],
+                )
+                .map_err(|error| format!("could not save {} fact for {}: {error}", fact.key, file_name))?;
+        }
+    }
+    Ok(())
+}
+
+fn extractor_run_is_current(
+    transaction: &Transaction<'_>,
+    asset_id: i64,
+    extractor_id: &str,
+    extractor_version: &str,
+    content_sha256: &str,
+) -> Result<bool, String> {
+    transaction
+        .query_row(
+            "SELECT EXISTS (
+                SELECT 1 FROM extractor_runs
+                WHERE asset_id = ?1 AND extractor_id = ?2
+                    AND extractor_version = ?3 AND content_sha256 = ?4
+             )",
+            params![asset_id, extractor_id, extractor_version, content_sha256],
+            |row| row.get(0),
+        )
+        .map_err(|error| format!("could not check cached {extractor_id} result: {error}"))
+}
+
+fn store_extractor_run(
+    transaction: &Transaction<'_>,
+    asset_id: i64,
+    content_sha256: &str,
+    run: &ExtractorRun,
+    now: i64,
+) -> Result<(), String> {
+    transaction
+        .execute(
+            "INSERT INTO extractor_runs (
+                asset_id, extractor_id, extractor_version, content_sha256,
+                status, error_message, updated_at
+             ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)
+             ON CONFLICT(asset_id, extractor_id) DO UPDATE SET
+                extractor_version = excluded.extractor_version,
+                content_sha256 = excluded.content_sha256,
+                status = excluded.status,
+                error_message = excluded.error_message,
+                updated_at = excluded.updated_at",
+            params![
+                asset_id,
+                run.id,
+                run.version,
+                content_sha256,
+                run.status,
+                run.error,
+                now,
+            ],
+        )
+        .map_err(|error| format!("could not save {} extractor result: {error}", run.id))?;
+    Ok(())
 }
 
 fn update_asset(
@@ -530,6 +831,7 @@ fn unix_seconds() -> Result<i64, String> {
 mod tests {
     use super::*;
     use std::fs::{create_dir_all, remove_file, write};
+    use std::io::Cursor;
 
     fn test_paths(label: &str) -> (PathBuf, PathBuf) {
         let suffix = format!("{label}-{}", std::process::id());
@@ -545,6 +847,13 @@ mod tests {
 
     fn png_bytes(payload: &[u8]) -> Vec<u8> {
         [b"\x89PNG\r\n\x1a\n".as_slice(), payload].concat()
+    }
+
+    fn valid_png_bytes(width: u32, height: u32) -> Vec<u8> {
+        let image = image::DynamicImage::ImageRgba8(image::RgbaImage::new(width, height));
+        let mut output = Cursor::new(Vec::new());
+        image.write_to(&mut output, image::ImageFormat::Png).unwrap();
+        output.into_inner()
     }
 
     fn read_asset(database: &Path, root: &Path) -> (i64, String, String, bool) {
@@ -639,6 +948,61 @@ mod tests {
         let after = read_asset(&database, &root);
         assert_eq!(before.0, after.0);
         assert_ne!(before.1, after.1);
+        cleanup(&root, &database);
+    }
+
+    #[test]
+    fn stores_typed_image_facts_with_content_provenance() {
+        let (root, database) = test_paths("facts");
+        let path = root.join("image.bin");
+        write(&path, valid_png_bytes(2, 3)).unwrap();
+        scan_with_database(&root, 8, 0, &database).unwrap();
+
+        let profile: serde_json::Value =
+            serde_json::from_str(&profile_with_database(&path, &database).unwrap()).unwrap();
+        assert_eq!(profile["mime_type"], "image/png");
+        assert!(profile["facts"].as_array().unwrap().iter().any(|fact| {
+            fact["key"] == "image.width"
+                && fact["provenance"]["extractor"] == "image-header"
+                && fact["value"] == 2
+                && fact["provenance"]["content_sha256"] == profile["sha256"]
+        }));
+        assert!(profile["facts"].as_array().unwrap().iter().any(|fact| {
+            fact["key"] == "image.height"
+                && fact["provenance"]["extractor"] == "image-header"
+                && fact["value"] == 3
+        }));
+        assert!(profile["extractors"].as_array().unwrap().iter().any(|run| {
+            run["extractor"] == "image-header" && run["status"] == "success"
+        }));
+        cleanup(&root, &database);
+    }
+
+    #[test]
+    fn upgrades_existing_asset_database_to_fact_schema() {
+        let (root, database) = test_paths("migration");
+        let connection = Connection::open(&database).unwrap();
+        connection
+            .execute_batch(
+                "CREATE TABLE roots (id INTEGER PRIMARY KEY);
+                 CREATE TABLE assets (id INTEGER PRIMARY KEY);
+                 PRAGMA user_version = 1;",
+            )
+            .unwrap();
+        drop(connection);
+
+        let connection = open_database(&database).unwrap();
+        let version: i64 = connection.query_row("PRAGMA user_version", [], |row| row.get(0)).unwrap();
+        let facts_table: i64 = connection
+            .query_row(
+                "SELECT count(*) FROM sqlite_master WHERE type = 'table' AND name = 'asset_facts'",
+                [],
+                |row| row.get(0),
+            )
+            .unwrap();
+        assert_eq!(version, SCHEMA_VERSION);
+        assert_eq!(facts_table, 1);
+        drop(connection);
         cleanup(&root, &database);
     }
 }

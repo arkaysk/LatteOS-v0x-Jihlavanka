@@ -84,3 +84,11 @@ Crates `latte-index` a `latte-chapolera` používajú `infer` (MIT) na rozpozná
 `rusqlite` (MIT; SQLite je public domain) a RustCrypto `sha2` (MIT alebo Apache-2.0) na SHA-256.
 Závislosti sa používajú ako Cargo balíky; kód z nich sa nekopíruje do LatteOS. Fallback MIME detekcie LatteIndexu
 používa systémový príkaz `file`.
+
+Chapolera volá systémové programy ExifTool (Phil Harvey; GPL-1.0-or-later alebo Artistic-1.0-Perl),
+FFmpeg `ffprobe` (v tejto Fedora inštalácii GPLv3+) a Poppler `pdfinfo` (balík uvádza GPL/LGPL/MIT
+komponenty). Sú to samostatné systémové procesy; ich zdrojový kód sa do LatteOS nekopíruje ani nelinkuje.
+Používajú sa iba na čítanie a ak chýbajú, chyba sa zobrazí v stave extrakcie. Zdroje:
+[ExifTool](https://exiftool.org/), [ffprobe / FFmpeg licencie](https://ffmpeg.org/legal.html),
+[Poppler](https://poppler.freedesktop.org/). Verzie a licencie konkrétneho balíka sa môžu líšiť medzi
+inštaláciami; pri distribúcii sa kontroluje konkrétny Fedora build.

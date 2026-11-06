@@ -23,10 +23,13 @@ považovať za hotové sémantické triedenie celej kolekcie. Samostatný asset 
 SQLite v XDG data adresári, deteguje známe formáty podľa signatúry, počíta SHA-256 po blokoch a prírastkovo
 reconciliuje zvolený koreň. Nezmenené súbory nehashuje znova, rename môže zachovať ID po overení hashu a
 zmiznuté aktíva ponecháva ako neprítomné. Scan spracúva súbory priebežne a zachováva existujúci JSON kontrakt
-pre QML ukážky. Nejde ešte o kompletné profily/fakty, extractor hub ani LatteIndex integráciu. Experimentálny
-crate LatteIndex zostáva neintegrovaný a Chapolera od neho nezávisí. Chýba AI extrakcia,
-taxonómia aj organizovanie. Ďalšie kroky definujú jej samostatný asset store a provider kontrakt; prípadný
-LatteIndex adapter bude voliteľnou optimalizáciou, nie podmienkou funkčnosti.
+pre QML ukážky. Prvá vrstva extraktorov ukladá typované rozmery obrázkov, vybraný EXIF, technické stopy
+audio/videí a základné PDF údaje; fakty nesú extractor/version/content hash a sú dostupné cez
+`latte-chapolera profile`. Výsledky sa cachujú, zlyhania nástrojov sú viditeľné v stave extraktora a neblokujú
+ostatné súbory. GPS a sériové identifikátory sa nevyžadujú ani neukladajú. Zatiaľ chýbajú OCR, textové
+parsovanie, multimodálne tagy, taxonómia aj organizovanie. Experimentálny crate LatteIndex zostáva
+neintegrovaný a Chapolera od neho nezávisí; prípadný adapter bude voliteľnou optimalizáciou, nie podmienkou
+funkčnosti.
 
 ## Architektúra a závislosti
 
@@ -100,8 +103,13 @@ fakty.
 | Archív | formát, zoznam vnorených položiek | limitované rekurzívne indexovanie, bez automatického rozbalenia |
 | Kód | textový formát a jazyk | projektové manifesty a závislosti |
 
-Externé programy (FFmpeg/ffprobe, ExifTool, OCR a parsery) sa volajú cez argumentové polia bez shellu; chýbajúci
-nástroj alebo poškodený vstup sa zaznamená ako chyba konkrétneho faktu. Jeden chybný extractor nezastaví ostatné.
+**Prvá implementovaná vrstva:** rozmery obrázka číta Rust `image` podľa formátu, vybraný EXIF cez ExifTool,
+audio/video kontajner a streamy cez `ffprobe`, PDF strany/veľkosť/šifrovanie cez `pdfinfo` a bibliografické
+polia PDF cez ExifTool. Volania používajú argumentové polia bez shellu, whitelist polí a 30-sekundový timeout.
+GPS, sériové čísla a celý obsah dokumentov sa neextrahujú. Nástroje sú už systémovými závislosťami LatteOS;
+Chapolera ich neťahá ani neinštaluje. Chýbajúci nástroj alebo poškodený vstup sa uloží ako zlyhaný extractor
+run s chybou; nezmenený obsah sa neparsuje opakovane. Zmena obsahu alebo verzie nástroja zneplatní len jeho
+výsledky. Jeden chybný extractor nezastaví ostatné.
 
 ### 3. Semantic Analyzer
 
@@ -125,7 +133,8 @@ Normalizované tabuľky:
 - `roots`: explicitne indexované korene, nastavenia vylúčenia a posledná úspešná reconciliácia.
 - `assets`: stabilné `asset_id`, cesta, pôvodný názov, size/timestamps, MIME/formát, filesystem identity,
   SHA-256, prítomnosť a časy prvého/posledného videnia.
-- `facts`: `(asset_id, key, typed_value, source, confidence, analyzer_id, analyzer_version, content_hash)`.
+- `asset_facts`: `(asset_id, key, typed_value, extractor_id, extractor_version, content_hash, extracted_at)`.
+- `extractor_runs`: stav každého extractora pre asset, verziu nástroja a fingerprint; úspech aj chyba.
 - `tags`, `asset_tags`: viac tagov na súbor, s pôvodom a confidence.
 - `entities`, `asset_entities`, `asset_relations`: osoby/miesta/diela len ak sú odôvodnené a povolené; typované
   vzťahy medzi súbormi bez fyzických kópií.
@@ -276,12 +285,13 @@ do potvrdenej údržby databázy.
 ## Vývojové míľniky
 
 1. **Standalone asset store** — vlastný scanner, signatúrová detekcia, SHA-256 a lokálna databáza Chapolery;
-   aplikácia funguje aj bez LatteIndexu a služby. Základný SQLite inventár, prírastkové hashovanie, rename
-   zachovanie identity, označenie missing a paginované QML výstupy sú implementované; ďalšie kroky rozšíria
-   schému o facts, tagy, provenance a extractor cache.
+   aplikácia funguje aj bez LatteIndexu a služby. SQLite inventár, prírastkové hashovanie, rename zachovanie
+   identity, označenie missing, tabuľky facts/extractor-runs a paginované QML výstupy sú implementované;
+   tagy a entity ešte chýbajú.
 2. **Voliteľný Index Provider** — capability discovery a adapter na LatteIndex, ak je neskôr dostupný; spoločné
    fakty sa preberú bez duplicitnej extrakcie, no chýbajúce fakty doplní Chapolera.
-3. **Metadata extractors** — obrázok/EXIF, video/ffprobe, základné PDF/text; cache podľa fingerprintu a verzie.
+3. **Metadata extractors** — prvá vrstva obrázok/EXIF, video/audio cez ffprobe a PDF metadata je implementovaná;
+   širšie textové extrakcie, OCR a ďalšie parsery ostávajú otvorené.
 4. **Semantic tags** — lokálny image-text/caption/OCR podľa zdrojov; profil aktíva, provenance a kontrola kvality.
 5. **Mixed media** — audio metadata/fingerprint/ASR, e-knihy, Office/ODF, archívy s limitmi a kód.
 6. **Duplicates/quality** — exact hash, pHash/embedding kandidáti, media-specific metriky, review UI.
@@ -298,6 +308,9 @@ do potvrdenej údržby databázy.
   sieťových knižníc alebo hybrid searchu, vyhodnotí sa migrácia; nie je to dôvod začať s distribuovanou DB.
 - Externé nástroje sa volajú cez existujúce LatteOS system packages; nové balíky/modely sa pridajú až po
   overení licencie, veľkosti, zdrojov a správania na Fedora/LatteOS.
+- ExifTool, ffprobe a pdfinfo sa spúšťajú ako samostatné systémové príkazy podľa vzoru `latte-props`;
+  ich kód sa nekopíruje ani nelinkuje do Chapolery. Dostupnosť a verzia sa zisťujú za behu a zlyhanie ostáva
+  vysvetliteľné v profile aktíva.
 
 ## Otvorené rozhodnutia
 
