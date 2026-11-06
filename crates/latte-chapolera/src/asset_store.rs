@@ -1,29 +1,17 @@
 use crate::{Counts, FileEntry};
 use crate::extractors::{self, Run as ExtractorRun, ToolVersions};
+use latte_index_core::{detect_signature, sha256_file, walk_visible_files, FileFingerprint};
 use rusqlite::{params, Connection, OptionalExtension, Transaction, TransactionBehavior};
-use sha2::{Digest, Sha256};
 use std::collections::HashSet;
 use std::ffi::OsStr;
-use std::fs::{self, Metadata};
-use std::io::Read;
+use std::fs;
 use std::os::unix::ffi::OsStrExt;
-use std::os::unix::fs::MetadataExt;
 use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
 
-const SCHEMA_VERSION: i64 = 2;
-const HASH_BUFFER_SIZE: usize = 1024 * 1024;
-
-#[derive(Debug, PartialEq, Eq)]
-struct FileMetadata {
-    size: i64,
-    modified_seconds: i64,
-    modified_nanoseconds: i64,
-    changed_seconds: i64,
-    changed_nanoseconds: i64,
-    device: i64,
-    inode: i64,
-}
+const SCHEMA_VERSION: i64 = 3;
+const MAX_TAG_LABEL_LENGTH: usize = 256;
+const MAX_SEMANTIC_ID_LENGTH: usize = 128;
 
 #[derive(Debug)]
 struct DiscoveredFile {
@@ -32,18 +20,26 @@ struct DiscoveredFile {
     name_key: Vec<u8>,
     name: String,
     path_display: String,
-    metadata: FileMetadata,
+    metadata: FileFingerprint,
     scan_order: i64,
 }
 
 #[derive(Debug)]
 struct ExistingAsset {
     id: i64,
-    metadata: FileMetadata,
+    metadata: FileFingerprint,
     sha256: String,
     mime_type: String,
     media_family: String,
     was_present: bool,
+}
+
+#[derive(Debug)]
+struct SemanticTag {
+    label: String,
+    normalized_label: String,
+    confidence: f64,
+    source: String,
 }
 
 pub(super) fn scan(
@@ -134,11 +130,11 @@ pub(super) fn scan_with_database(
             return Ok(());
         }
 
-        let sha256 = hash_file(&file.path)?;
+        let sha256 = sha256_file(&file.path)?;
         let (mime_type, format, media_family) = detect_type(&file.path, &file.name)?;
         let verified = fs::symlink_metadata(&file.path)
             .map_err(|error| format!("{}: {error}", file.path.display()))?;
-        if !verified.is_file() || file_metadata(&verified, &file.path)? != file.metadata {
+        if !verified.is_file() || FileFingerprint::from_metadata(&verified, &file.path)? != file.metadata {
             return Err(format!("{}: file changed while indexing; run the scan again", file.path.display()));
         }
 
@@ -202,7 +198,7 @@ pub(super) fn scan_with_database(
             .unwrap_or(&mime_type);
         let verified = fs::symlink_metadata(&file.path)
             .map_err(|error| format!("{}: {error}", file.path.display()))?;
-        if !verified.is_file() || file_metadata(&verified, &file.path)? != file.metadata {
+        if !verified.is_file() || FileFingerprint::from_metadata(&verified, &file.path)? != file.metadata {
             return Err(format!("{}: file changed while indexing; run the scan again", file.path.display()));
         }
         persist_extractions(
@@ -239,6 +235,451 @@ pub(super) fn profile(path: &Path) -> Result<String, String> {
     profile_with_database(&canonical_path, &database_path)
 }
 
+pub(super) fn store_semantic_tags(
+    path: &Path,
+    analyzer_id: &str,
+    model_id: &str,
+    model_version: &str,
+    task_version: &str,
+    locality: &str,
+    tags_json: &str,
+) -> Result<String, String> {
+    let canonical_path =
+        fs::canonicalize(path).map_err(|error| format!("{}: {error}", path.display()))?;
+    let database_path = default_database_path()?;
+    store_semantic_tags_with_database(
+        &canonical_path,
+        analyzer_id,
+        model_id,
+        model_version,
+        task_version,
+        locality,
+        tags_json,
+        &database_path,
+    )
+}
+
+fn store_semantic_tags_with_database(
+    path: &Path,
+    analyzer_id: &str,
+    model_id: &str,
+    model_version: &str,
+    task_version: &str,
+    locality: &str,
+    tags_json: &str,
+    database_path: &Path,
+) -> Result<String, String> {
+    let analyzer_id = validate_semantic_id(analyzer_id, "analyzer ID")?;
+    let model_id = validate_semantic_id(model_id, "model ID")?;
+    let model_version = validate_semantic_id(model_version, "model version")?;
+    let task_version = validate_semantic_id(task_version, "task version")?;
+    if !matches!(locality, "local" | "cloud") {
+        return Err("semantic analysis locality must be 'local' or 'cloud'".to_string());
+    }
+    let tags = parse_semantic_tags(tags_json)?;
+    let content_sha256 = sha256_file(path)?;
+    let mut connection = open_database(database_path)?;
+    let transaction = connection
+        .transaction_with_behavior(TransactionBehavior::Immediate)
+        .map_err(|error| format!("could not begin Chapolera tag update: {error}"))?;
+    let asset: Option<(i64, String)> = transaction
+        .query_row(
+            "SELECT id, sha256 FROM assets WHERE path_key = ?1 AND present = 1",
+            [path.as_os_str().as_bytes()],
+            |row| Ok((row.get(0)?, row.get(1)?)),
+        )
+        .optional()
+        .map_err(|error| format!("could not find Chapolera asset for tags: {error}"))?;
+    let (asset_id, indexed_sha256) =
+        asset.ok_or_else(|| format!("{} is not present in the Chapolera index", path.display()))?;
+    if content_sha256 != indexed_sha256 {
+        return Err(format!(
+            "{} changed since it was indexed; scan it again before storing semantic tags",
+            path.display()
+        ));
+    }
+    let now = unix_seconds()?;
+    transaction
+        .execute(
+            "INSERT INTO semantic_runs (
+                asset_id, analyzer_id, model_id, model_version, task_version,
+                locality, content_sha256, status, error_message, updated_at
+             ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, 'success', NULL, ?8)
+             ON CONFLICT (
+                asset_id, analyzer_id, model_id, model_version, task_version,
+                locality, content_sha256
+             ) DO UPDATE SET status = 'success', error_message = NULL, updated_at = excluded.updated_at",
+            params![
+                asset_id,
+                analyzer_id,
+                model_id,
+                model_version,
+                task_version,
+                locality,
+                content_sha256,
+                now,
+            ],
+        )
+        .map_err(|error| format!("could not save Chapolera semantic run: {error}"))?;
+    let run_id: i64 = transaction
+        .query_row(
+            "SELECT id FROM semantic_runs
+             WHERE asset_id = ?1 AND analyzer_id = ?2 AND model_id = ?3
+               AND model_version = ?4 AND task_version = ?5 AND locality = ?6
+               AND content_sha256 = ?7",
+            params![
+                asset_id,
+                analyzer_id,
+                model_id,
+                model_version,
+                task_version,
+                locality,
+                content_sha256,
+            ],
+            |row| row.get(0),
+        )
+        .map_err(|error| format!("could not read Chapolera semantic run: {error}"))?;
+    transaction
+        .execute("DELETE FROM asset_tags WHERE semantic_run_id = ?1", [run_id])
+        .map_err(|error| format!("could not replace Chapolera semantic tags: {error}"))?;
+    for tag in &tags {
+        transaction
+            .execute(
+                "INSERT INTO tags (normalized_label, display_label) VALUES (?1, ?2)
+                 ON CONFLICT(normalized_label) DO NOTHING",
+                params![tag.normalized_label, tag.label],
+            )
+            .map_err(|error| format!("could not register Chapolera tag: {error}"))?;
+        let tag_id: i64 = transaction
+            .query_row(
+                "SELECT id FROM tags WHERE normalized_label = ?1",
+                [&tag.normalized_label],
+                |row| row.get(0),
+            )
+            .map_err(|error| format!("could not read Chapolera tag: {error}"))?;
+        transaction
+            .execute(
+                "INSERT INTO asset_tags (semantic_run_id, tag_id, confidence, source, created_at)
+                 VALUES (?1, ?2, ?3, ?4, ?5)",
+                params![run_id, tag_id, tag.confidence, tag.source, now],
+            )
+            .map_err(|error| format!("could not attach Chapolera tag {}: {error}", tag.label))?;
+    }
+    transaction
+        .commit()
+        .map_err(|error| format!("could not commit Chapolera semantic tags: {error}"))?;
+    serde_json::to_string(&serde_json::json!({
+        "asset_id": asset_id,
+        "content_sha256": content_sha256,
+        "stored": tags.len(),
+        "analyzer": analyzer_id,
+        "model": model_id,
+        "model_version": model_version,
+        "task_version": task_version,
+        "locality": locality,
+    }))
+    .map_err(|error| format!("could not serialize Chapolera tag result: {error}"))
+}
+
+pub(super) fn semantic_tag_cache(
+    path: &Path,
+    analyzer_id: &str,
+    model_id: &str,
+    model_version: &str,
+    task_version: &str,
+    locality: &str,
+) -> Result<String, String> {
+    let canonical_path =
+        fs::canonicalize(path).map_err(|error| format!("{}: {error}", path.display()))?;
+    let database_path = default_database_path()?;
+    semantic_tag_cache_with_database(
+        &canonical_path,
+        analyzer_id,
+        model_id,
+        model_version,
+        task_version,
+        locality,
+        &database_path,
+    )
+}
+
+pub(super) fn semantic_tag_cache_after_scan(
+    path: &Path,
+    analyzer_id: &str,
+    model_id: &str,
+    model_version: &str,
+    task_version: &str,
+    locality: &str,
+) -> Result<String, String> {
+    let canonical_path =
+        fs::canonicalize(path).map_err(|error| format!("{}: {error}", path.display()))?;
+    let database_path = default_database_path()?;
+    semantic_tag_cache_after_scan_with_database(
+        &canonical_path,
+        analyzer_id,
+        model_id,
+        model_version,
+        task_version,
+        locality,
+        &database_path,
+    )
+}
+
+fn semantic_tag_cache_after_scan_with_database(
+    path: &Path,
+    analyzer_id: &str,
+    model_id: &str,
+    model_version: &str,
+    task_version: &str,
+    locality: &str,
+    database_path: &Path,
+) -> Result<String, String> {
+    let analyzer_id = validate_semantic_id(analyzer_id, "analyzer ID")?;
+    let model_id = validate_semantic_id(model_id, "model ID")?;
+    let model_version = validate_semantic_id(model_version, "model version")?;
+    let task_version = validate_semantic_id(task_version, "task version")?;
+    if !matches!(locality, "local" | "cloud") {
+        return Err("semantic analysis locality must be 'local' or 'cloud'".to_string());
+    }
+    let metadata =
+        fs::symlink_metadata(path).map_err(|error| format!("{}: {error}", path.display()))?;
+    if !metadata.is_file() {
+        return Err(format!("{} is no longer a regular file; scan the folder again", path.display()));
+    }
+    let current_metadata = FileFingerprint::from_metadata(&metadata, path)?;
+    let connection = open_database(database_path)?;
+    let asset: Option<(i64, String, FileFingerprint)> = connection
+        .query_row(
+            "SELECT id, sha256, size_bytes, modified_seconds, modified_nanoseconds,
+                    changed_seconds, changed_nanoseconds, device, inode
+             FROM assets WHERE path_key = ?1 AND present = 1",
+            [path.as_os_str().as_bytes()],
+            |row| {
+                Ok((
+                    row.get(0)?,
+                    row.get(1)?,
+                    FileFingerprint {
+                        size: row.get(2)?,
+                        modified_seconds: row.get(3)?,
+                        modified_nanoseconds: row.get(4)?,
+                        changed_seconds: row.get(5)?,
+                        changed_nanoseconds: row.get(6)?,
+                        device: row.get(7)?,
+                        inode: row.get(8)?,
+                    },
+                ))
+            },
+        )
+        .optional()
+        .map_err(|error| format!("could not find Chapolera asset for tag cache: {error}"))?;
+    let (asset_id, content_sha256, indexed_metadata) = asset
+        .ok_or_else(|| format!("{} is not present in the Chapolera index", path.display()))?;
+    if current_metadata != indexed_metadata {
+        return Err(format!(
+            "{} changed since it was scanned; scan the folder again before checking semantic tag cache",
+            path.display()
+        ));
+    }
+    let run_id: Option<i64> = connection
+        .query_row(
+            "SELECT id FROM semantic_runs
+             WHERE asset_id = ?1 AND analyzer_id = ?2 AND model_id = ?3
+               AND model_version = ?4 AND task_version = ?5 AND locality = ?6
+               AND content_sha256 = ?7 AND status = 'success'",
+            params![
+                asset_id,
+                analyzer_id,
+                model_id,
+                model_version,
+                task_version,
+                locality,
+                content_sha256,
+            ],
+            |row| row.get(0),
+        )
+        .optional()
+        .map_err(|error| format!("could not check Chapolera semantic cache: {error}"))?;
+    let tags = if let Some(run_id) = run_id {
+        load_semantic_tags(&connection, run_id)?
+    } else {
+        Vec::new()
+    };
+    serde_json::to_string(&serde_json::json!({
+        "cached": run_id.is_some(),
+        "tags": tags,
+    }))
+    .map_err(|error| format!("could not serialize Chapolera tag cache: {error}"))
+}
+
+fn semantic_tag_cache_with_database(
+    path: &Path,
+    analyzer_id: &str,
+    model_id: &str,
+    model_version: &str,
+    task_version: &str,
+    locality: &str,
+    database_path: &Path,
+) -> Result<String, String> {
+    let analyzer_id = validate_semantic_id(analyzer_id, "analyzer ID")?;
+    let model_id = validate_semantic_id(model_id, "model ID")?;
+    let model_version = validate_semantic_id(model_version, "model version")?;
+    let task_version = validate_semantic_id(task_version, "task version")?;
+    if !matches!(locality, "local" | "cloud") {
+        return Err("semantic analysis locality must be 'local' or 'cloud'".to_string());
+    }
+    let connection = open_database(database_path)?;
+    let asset: Option<(i64, String)> = connection
+        .query_row(
+            "SELECT id, sha256 FROM assets WHERE path_key = ?1 AND present = 1",
+            [path.as_os_str().as_bytes()],
+            |row| Ok((row.get(0)?, row.get(1)?)),
+        )
+        .optional()
+        .map_err(|error| format!("could not find Chapolera asset for tag cache: {error}"))?;
+    let (asset_id, content_sha256) =
+        asset.ok_or_else(|| format!("{} is not present in the Chapolera index", path.display()))?;
+    if sha256_file(path)? != content_sha256 {
+        return Err(format!(
+            "{} changed since it was indexed; scan it again before checking semantic tag cache",
+            path.display()
+        ));
+    }
+    let run_id: Option<i64> = connection
+        .query_row(
+            "SELECT id FROM semantic_runs
+             WHERE asset_id = ?1 AND analyzer_id = ?2 AND model_id = ?3
+               AND model_version = ?4 AND task_version = ?5 AND locality = ?6
+               AND content_sha256 = ?7 AND status = 'success'",
+            params![
+                asset_id,
+                analyzer_id,
+                model_id,
+                model_version,
+                task_version,
+                locality,
+                content_sha256,
+            ],
+            |row| row.get(0),
+        )
+        .optional()
+        .map_err(|error| format!("could not check Chapolera semantic cache: {error}"))?;
+    let tags = if let Some(run_id) = run_id {
+        load_semantic_tags(&connection, run_id)?
+    } else {
+        Vec::new()
+    };
+    serde_json::to_string(&serde_json::json!({
+        "cached": run_id.is_some(),
+        "tags": tags,
+    }))
+    .map_err(|error| format!("could not serialize Chapolera tag cache: {error}"))
+}
+
+fn parse_semantic_tags(json: &str) -> Result<Vec<SemanticTag>, String> {
+    let value: serde_json::Value =
+        serde_json::from_str(json).map_err(|error| format!("invalid semantic tags JSON: {error}"))?;
+    let values = value
+        .as_array()
+        .ok_or("semantic tags must be a JSON array")?;
+    let mut labels = HashSet::new();
+    let mut tags = Vec::with_capacity(values.len());
+    for value in values {
+        let object = value
+            .as_object()
+            .ok_or("each semantic tag must be a JSON object")?;
+        let label = object
+            .get("label")
+            .and_then(serde_json::Value::as_str)
+            .ok_or("each semantic tag needs a string label")?
+            .trim();
+        if label.is_empty() || label.chars().count() > MAX_TAG_LABEL_LENGTH {
+            return Err(format!(
+                "semantic tag labels must contain 1–{MAX_TAG_LABEL_LENGTH} characters"
+            ));
+        }
+        if label.chars().any(char::is_control) {
+            return Err("semantic tag labels must not contain control characters".to_string());
+        }
+        let normalized_label = label.split_whitespace().collect::<Vec<_>>().join(" ").to_lowercase();
+        if !labels.insert(normalized_label.clone()) {
+            return Err(format!("duplicate semantic tag: {label}"));
+        }
+        let confidence = object
+            .get("confidence")
+            .and_then(serde_json::Value::as_f64)
+            .ok_or_else(|| format!("semantic tag {label:?} needs a numeric confidence"))?;
+        if !confidence.is_finite() || !(0.0..=1.0).contains(&confidence) {
+            return Err(format!("semantic tag {label:?} confidence must be between 0 and 1"));
+        }
+        let source = object
+            .get("source")
+            .and_then(serde_json::Value::as_str)
+            .ok_or_else(|| format!("semantic tag {label:?} needs a string source"))?;
+        let source = validate_semantic_id(source, "tag source")?;
+        tags.push(SemanticTag {
+            label: label.to_string(),
+            normalized_label,
+            confidence,
+            source,
+        });
+    }
+    Ok(tags)
+}
+
+fn validate_semantic_id(value: &str, description: &str) -> Result<String, String> {
+    let value = value.trim();
+    if value.is_empty()
+        || value.chars().count() > MAX_SEMANTIC_ID_LENGTH
+        || value.chars().any(char::is_control)
+    {
+        return Err(format!(
+            "{description} must contain 1–{MAX_SEMANTIC_ID_LENGTH} non-control characters"
+        ));
+    }
+    Ok(value.to_string())
+}
+
+fn load_semantic_tags(
+    connection: &Connection,
+    run_id: i64,
+) -> Result<Vec<serde_json::Value>, String> {
+    let mut statement = connection
+        .prepare(
+            "SELECT tags.normalized_label, tags.display_label, asset_tags.confidence,
+                    asset_tags.source, semantic_runs.analyzer_id, semantic_runs.model_id,
+                    semantic_runs.model_version, semantic_runs.task_version,
+                    semantic_runs.locality, semantic_runs.content_sha256,
+                    asset_tags.created_at
+             FROM asset_tags
+             JOIN tags ON tags.id = asset_tags.tag_id
+             JOIN semantic_runs ON semantic_runs.id = asset_tags.semantic_run_id
+             WHERE semantic_runs.id = ?1
+             ORDER BY tags.normalized_label",
+        )
+        .map_err(|error| format!("could not prepare Chapolera tag query: {error}"))?;
+    let rows = statement
+        .query_map([run_id], |row| {
+            Ok(serde_json::json!({
+                "normalized_label": row.get::<_, String>(0)?,
+                "label": row.get::<_, String>(1)?,
+                "confidence": row.get::<_, f64>(2)?,
+                "source": row.get::<_, String>(3)?,
+                "provenance": {
+                    "analyzer": row.get::<_, String>(4)?,
+                    "model": row.get::<_, String>(5)?,
+                    "model_version": row.get::<_, String>(6)?,
+                    "task_version": row.get::<_, String>(7)?,
+                    "locality": row.get::<_, String>(8)?,
+                    "content_sha256": row.get::<_, String>(9)?,
+                    "created_at": row.get::<_, i64>(10)?,
+                }
+            }))
+        })
+        .map_err(|error| format!("could not query Chapolera tags: {error}"))?;
+    rows.collect::<Result<Vec<_>, _>>()
+        .map_err(|error| format!("could not read Chapolera tags: {error}"))
+}
+
 fn profile_with_database(path: &Path, database_path: &Path) -> Result<String, String> {
     let connection = open_database(database_path)?;
     let asset: (i64, String, String, i64, String, String, String, String) = connection
@@ -263,6 +704,7 @@ fn profile_with_database(path: &Path, database_path: &Path) -> Result<String, St
         .map_err(|error| format!("could not read Chapolera asset profile: {error}"))?
         .ok_or_else(|| format!("{} is not present in the Chapolera index", path.display()))?;
     let (asset_id, path, name, size, mime_type, format, media_family, content_sha256) = asset;
+    let tags = load_asset_semantic_tags(&connection, asset_id, &content_sha256)?;
 
     let mut fact_statement = connection
         .prepare(
@@ -328,7 +770,7 @@ fn profile_with_database(path: &Path, database_path: &Path) -> Result<String, St
         .collect::<Result<Vec<_>, _>>()
         .map_err(|error| format!("could not read Chapolera extractor results: {error}"))?;
     serde_json::to_string(&serde_json::json!({
-        "schema_version": 1,
+        "schema_version": 2,
         "asset_id": asset_id,
         "path": path,
         "name": name,
@@ -338,9 +780,36 @@ fn profile_with_database(path: &Path, database_path: &Path) -> Result<String, St
         "media_family": media_family,
         "sha256": content_sha256,
         "facts": facts,
+        "tags": tags,
         "extractors": runs,
     }))
     .map_err(|error| format!("could not serialize Chapolera asset profile: {error}"))
+}
+
+fn load_asset_semantic_tags(
+    connection: &Connection,
+    asset_id: i64,
+    content_sha256: &str,
+) -> Result<Vec<serde_json::Value>, String> {
+    let run_ids = {
+        let mut statement = connection
+            .prepare(
+                "SELECT id FROM semantic_runs
+                 WHERE asset_id = ?1 AND content_sha256 = ?2 AND status = 'success'
+                 ORDER BY analyzer_id, model_id, model_version, task_version, locality",
+            )
+            .map_err(|error| format!("could not prepare Chapolera semantic run query: {error}"))?;
+        let rows = statement
+            .query_map(params![asset_id, content_sha256], |row| row.get::<_, i64>(0))
+            .map_err(|error| format!("could not query Chapolera semantic runs: {error}"))?;
+        rows.collect::<Result<Vec<_>, _>>()
+            .map_err(|error| format!("could not read Chapolera semantic runs: {error}"))?
+    };
+    let mut tags = Vec::new();
+    for run_id in run_ids {
+        tags.extend(load_semantic_tags(connection, run_id)?);
+    }
+    Ok(tags)
 }
 
 fn default_database_path() -> Result<PathBuf, String> {
@@ -447,6 +916,48 @@ fn initialize_schema(connection: &Connection, path: &Path) -> Result<(), String>
                  COMMIT;",
             )
             .map_err(|error| format!("could not upgrade Chapolera database {}: {error}", path.display()))?;
+        version = 2;
+    }
+    if version == 2 {
+        connection
+            .execute_batch(
+                "BEGIN IMMEDIATE;
+                 CREATE TABLE tags (
+                     id INTEGER PRIMARY KEY,
+                     normalized_label TEXT NOT NULL UNIQUE,
+                     display_label TEXT NOT NULL
+                 );
+                 CREATE TABLE semantic_runs (
+                     id INTEGER PRIMARY KEY,
+                     asset_id INTEGER NOT NULL REFERENCES assets(id) ON DELETE CASCADE,
+                     analyzer_id TEXT NOT NULL,
+                     model_id TEXT NOT NULL,
+                     model_version TEXT NOT NULL,
+                     task_version TEXT NOT NULL,
+                     locality TEXT NOT NULL CHECK (locality IN ('local', 'cloud')),
+                     content_sha256 TEXT NOT NULL,
+                     status TEXT NOT NULL CHECK (status IN ('success', 'failed')),
+                     error_message TEXT,
+                     updated_at INTEGER NOT NULL,
+                     UNIQUE (
+                         asset_id, analyzer_id, model_id, model_version,
+                         task_version, locality, content_sha256
+                     )
+                 );
+                 CREATE INDEX semantic_runs_current ON semantic_runs(asset_id, content_sha256);
+                 CREATE TABLE asset_tags (
+                     semantic_run_id INTEGER NOT NULL REFERENCES semantic_runs(id) ON DELETE CASCADE,
+                     tag_id INTEGER NOT NULL REFERENCES tags(id) ON DELETE CASCADE,
+                     confidence REAL NOT NULL CHECK (confidence >= 0 AND confidence <= 1),
+                     source TEXT NOT NULL,
+                     created_at INTEGER NOT NULL,
+                     PRIMARY KEY (semantic_run_id, tag_id, source)
+                 );
+                 CREATE INDEX asset_tags_tag ON asset_tags(tag_id);
+                 PRAGMA user_version = 3;
+                 COMMIT;",
+            )
+            .map_err(|error| format!("could not add Chapolera semantic tags to {}: {error}", path.display()))?;
     }
     Ok(())
 }
@@ -471,7 +982,7 @@ fn load_asset_at_path(
             |row| {
                 Ok(ExistingAsset {
                     id: row.get(0)?,
-                    metadata: FileMetadata {
+                    metadata: FileFingerprint {
                         size: row.get(1)?,
                         modified_seconds: row.get(2)?,
                         modified_nanoseconds: row.get(3)?,
@@ -684,91 +1195,32 @@ fn visit_files(
     root: &Path,
     visitor: &mut impl FnMut(DiscoveredFile) -> Result<(), String>,
 ) -> Result<usize, String> {
-    let mut subfolders = 0;
     let mut scan_order = 0_i64;
-    let mut pending = vec![root.to_path_buf()];
-
-    while let Some(directory) = pending.pop() {
-        let hidden = hidden_names(&directory)?;
-        let mut entries = fs::read_dir(&directory)
-            .map_err(|error| format!("{}: {error}", directory.display()))?
-            .collect::<Result<Vec<_>, _>>()
-            .map_err(|error| format!("{}: {error}", directory.display()))?;
-        entries.sort_by_key(|entry| entry.file_name());
-        let mut child_directories = Vec::new();
-
-        for entry in entries {
-            let name_key = entry.file_name();
-            let name = name_key.to_string_lossy().into_owned();
-            if name.starts_with('.') || hidden.contains(&name) {
-                continue;
-            }
-            let path = entry.path();
-            let file_type = entry.file_type().map_err(|error| format!("{}: {error}", path.display()))?;
-            if file_type.is_dir() {
-                subfolders += 1;
-                child_directories.push(path);
-            } else if file_type.is_file() {
-                let metadata = fs::symlink_metadata(&path).map_err(|error| format!("{}: {error}", path.display()))?;
-                if metadata.is_file() {
-                    visitor(DiscoveredFile {
-                        path_key: path.as_os_str().as_bytes().to_vec(),
-                        name_key: name_key.as_bytes().to_vec(),
-                        name,
-                        path_display: path.to_string_lossy().into_owned(),
-                        metadata: file_metadata(&metadata, &path)?,
-                        path,
-                        scan_order,
-                    })?;
-                    scan_order = scan_order.checked_add(1).ok_or("too many files to index")?;
-                }
-            }
+    walk_visible_files(root, &mut |path| {
+        let metadata = fs::symlink_metadata(path).map_err(|error| format!("{}: {error}", path.display()))?;
+        if !metadata.is_file() {
+            return Ok(());
         }
-        pending.extend(child_directories.into_iter().rev());
-    }
-    Ok(subfolders)
-}
-
-fn hidden_names(directory: &Path) -> Result<HashSet<String>, String> {
-    let path = directory.join(".hidden");
-    match fs::read_to_string(&path) {
-        Ok(contents) => Ok(contents.lines().map(str::to_string).collect()),
-        Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(HashSet::new()),
-        Err(error) => Err(format!("{}: {error}", path.display())),
-    }
-}
-
-fn file_metadata(metadata: &Metadata, path: &Path) -> Result<FileMetadata, String> {
-    Ok(FileMetadata {
-        size: i64::try_from(metadata.len()).map_err(|_| format!("{}: file is too large to index", path.display()))?,
-        modified_seconds: metadata.mtime(),
-        modified_nanoseconds: metadata.mtime_nsec(),
-        changed_seconds: metadata.ctime(),
-        changed_nanoseconds: metadata.ctime_nsec(),
-        device: i64::try_from(metadata.dev()).map_err(|_| format!("{}: device ID is out of range", path.display()))?,
-        inode: i64::try_from(metadata.ino()).map_err(|_| format!("{}: inode is out of range", path.display()))?,
+        let name_key = path.file_name().unwrap_or_default();
+        let name = name_key.to_string_lossy().into_owned();
+        visitor(DiscoveredFile {
+            path_key: path.as_os_str().as_bytes().to_vec(),
+            name_key: name_key.as_bytes().to_vec(),
+            name,
+            path_display: path.to_string_lossy().into_owned(),
+            metadata: FileFingerprint::from_metadata(&metadata, path)?,
+            path: path.to_path_buf(),
+            scan_order,
+        })?;
+        scan_order = scan_order.checked_add(1).ok_or("too many files to index")?;
+        Ok(())
     })
 }
 
-fn hash_file(path: &Path) -> Result<String, String> {
-    let mut file = fs::File::open(path).map_err(|error| format!("{}: {error}", path.display()))?;
-    let mut hasher = Sha256::new();
-    let mut buffer = [0; HASH_BUFFER_SIZE];
-    loop {
-        let read = file.read(&mut buffer).map_err(|error| format!("{}: {error}", path.display()))?;
-        if read == 0 {
-            break;
-        }
-        hasher.update(&buffer[..read]);
-    }
-    Ok(format!("{:x}", hasher.finalize()))
-}
-
 fn detect_type(path: &Path, name: &str) -> Result<(String, String, String), String> {
-    let detected = infer::get_from_path(path)
-        .map_err(|error| format!("could not detect file format for {}: {error}", path.display()))?;
+    let detected = detect_signature(path)?;
     let (mime_type, format) = detected
-        .map(|kind| (kind.mime_type().to_string(), kind.extension().to_ascii_uppercase()))
+        .map(|kind| (kind.mime_type, kind.extension))
         .unwrap_or_else(|| ("application/octet-stream".to_string(), String::new()));
     let media_family = match mime_type.split('/').next() {
         Some("image") => "photo",
@@ -979,6 +1431,140 @@ mod tests {
     }
 
     #[test]
+    fn stores_semantic_tags_with_provenance_and_invalidates_cache_after_content_change() {
+        let (root, database) = test_paths("semantic-tags");
+        let path = root.join("image.bin");
+        write(&path, valid_png_bytes(2, 3)).unwrap();
+        scan_with_database(&root, 8, 0, &database).unwrap();
+        let tags = r#"[{"label":"  Family   gathering ","confidence":0.93,"source":"vision"},
+                       {"label":"outdoors","confidence":0.81,"source":"vision"}]"#;
+
+        let stored = store_semantic_tags_with_database(
+            &path,
+            "chapolera-vision",
+            "siglip2-base",
+            "1",
+            "photo-tags-v1",
+            "local",
+            tags,
+            &database,
+        )
+        .unwrap();
+        let stored: serde_json::Value = serde_json::from_str(&stored).unwrap();
+        assert_eq!(stored["stored"], 2);
+
+        let cache: serde_json::Value = serde_json::from_str(
+            &semantic_tag_cache_with_database(
+                &path,
+                "chapolera-vision",
+                "siglip2-base",
+                "1",
+                "photo-tags-v1",
+                "local",
+                &database,
+            )
+            .unwrap(),
+        )
+        .unwrap();
+        assert_eq!(cache["cached"], true);
+        assert_eq!(cache["tags"].as_array().unwrap().len(), 2);
+        assert_eq!(cache["tags"][0]["normalized_label"], "family gathering");
+        assert_eq!(cache["tags"][0]["provenance"]["content_sha256"], stored["content_sha256"]);
+        assert_eq!(cache["tags"][0]["provenance"]["locality"], "local");
+        let fast_cache: serde_json::Value = serde_json::from_str(
+            &semantic_tag_cache_after_scan_with_database(
+                &path,
+                "chapolera-vision",
+                "siglip2-base",
+                "1",
+                "photo-tags-v1",
+                "local",
+                &database,
+            )
+            .unwrap(),
+        )
+        .unwrap();
+        assert_eq!(fast_cache["cached"], true);
+
+        let profile: serde_json::Value =
+            serde_json::from_str(&profile_with_database(&path, &database).unwrap()).unwrap();
+        assert_eq!(profile["schema_version"], 2);
+        assert_eq!(profile["tags"].as_array().unwrap().len(), 2);
+
+        write(&path, valid_png_bytes(4, 5)).unwrap();
+        assert!(semantic_tag_cache_after_scan_with_database(
+            &path,
+            "chapolera-vision",
+            "siglip2-base",
+            "1",
+            "photo-tags-v1",
+            "local",
+            &database,
+        )
+        .unwrap_err()
+        .contains("changed since it was scanned"));
+        assert!(store_semantic_tags_with_database(
+            &path,
+            "chapolera-vision",
+            "siglip2-base",
+            "1",
+            "photo-tags-v1",
+            "local",
+            tags,
+            &database,
+        )
+        .unwrap_err()
+        .contains("scan it again"));
+        scan_with_database(&root, 8, 0, &database).unwrap();
+        let cache: serde_json::Value = serde_json::from_str(
+            &semantic_tag_cache_with_database(
+                &path,
+                "chapolera-vision",
+                "siglip2-base",
+                "1",
+                "photo-tags-v1",
+                "local",
+                &database,
+            )
+            .unwrap(),
+        )
+        .unwrap();
+        assert_eq!(cache["cached"], false);
+        let profile: serde_json::Value =
+            serde_json::from_str(&profile_with_database(&path, &database).unwrap()).unwrap();
+        assert!(profile["tags"].as_array().unwrap().is_empty());
+        cleanup(&root, &database);
+    }
+
+    #[test]
+    fn rejects_invalid_semantic_tags_and_locality() {
+        assert!(parse_semantic_tags(r#"[{"label":" ","confidence":0.5,"source":"vision"}]"#).is_err());
+        assert!(parse_semantic_tags(r#"[{"label":"person","confidence":1.1,"source":"vision"}]"#).is_err());
+        assert!(parse_semantic_tags(
+            r#"[{"label":"Person","confidence":0.8,"source":"vision"},
+                {"label":" person ","confidence":0.7,"source":"vision"}]"#
+        )
+        .is_err());
+        let (root, database) = test_paths("bad-locality");
+        let path = root.join("image.bin");
+        write(&path, valid_png_bytes(2, 3)).unwrap();
+        scan_with_database(&root, 8, 0, &database).unwrap();
+        assert!(store_semantic_tags_with_database(
+            &path,
+            "chapolera-vision",
+            "siglip2-base",
+            "1",
+            "photo-tags-v1",
+            "remote",
+            "[]",
+            &database,
+        )
+        .unwrap_err()
+        .contains("local' or 'cloud"));
+        cleanup(&root, &database);
+    }
+
+    #[test]
     fn upgrades_existing_asset_database_to_fact_schema() {
         let (root, database) = test_paths("migration");
         let connection = Connection::open(&database).unwrap();
@@ -1000,8 +1586,32 @@ mod tests {
                 |row| row.get(0),
             )
             .unwrap();
+        let tags_table: i64 = connection
+            .query_row(
+                "SELECT count(*) FROM sqlite_master WHERE type = 'table' AND name = 'tags'",
+                [],
+                |row| row.get(0),
+            )
+            .unwrap();
+        let run_table: i64 = connection
+            .query_row(
+                "SELECT count(*) FROM sqlite_master WHERE type = 'table' AND name = 'semantic_runs'",
+                [],
+                |row| row.get(0),
+            )
+            .unwrap();
+        let asset_tags_table: i64 = connection
+            .query_row(
+                "SELECT count(*) FROM sqlite_master WHERE type = 'table' AND name = 'asset_tags'",
+                [],
+                |row| row.get(0),
+            )
+            .unwrap();
         assert_eq!(version, SCHEMA_VERSION);
         assert_eq!(facts_table, 1);
+        assert_eq!(tags_table, 1);
+        assert_eq!(run_table, 1);
+        assert_eq!(asset_tags_table, 1);
         drop(connection);
         cleanup(&root, &database);
     }

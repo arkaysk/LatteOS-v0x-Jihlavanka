@@ -7,7 +7,6 @@ license.workspace = true
 authors.workspace = true
 
 [dependencies]
-infer = "0.22.0"
+latte-index-core = { path = "../latte-index-core" }
 rusqlite = { version = "0.39.0", features = ["bundled"] }
 serde_json = "1"
-sha2 = "0.10.9"

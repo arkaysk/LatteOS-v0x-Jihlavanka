@@ -13,30 +13,39 @@ umiestnenú cestu; sémantické členstvo nevytvára kópie.
 Pri ďalšom spustení porovná zvolený rozsah so svojou databázou; nezmenené súbory a platné extrakcie znovu použije,
 nové alebo zmenené súbory spracuje a návrh zosúladí s existujúcimi kategóriami. Ak je dostupné API LatteIndexu,
 Chapolera môže načítať jeho spoločné filesystemové fakty a identity. Ak dostupné nie je, Chapolera samostatne
-vykoná scan, detekciu a vlastnú analýzu — bez pokusu automaticky štartovať alebo vyžadovať `latte-indexd`.
+vykoná scan a vlastnú analýzu cez spoločné Rust primitíva `latte-index-core` a vlastnú databázu — bez pokusu
+automaticky štartovať alebo vyžadovať `latte-indexd`.
 
 ## Aktuálny stav
 
-Existujúce QML/Rust okno je prototyp: inventár a ukážky fungujú a fotkový experiment najprv žiada LensAI o
-kategórie a potom ich skóruje SigLIPom. Toto poradie je odlišné od cieľového návrhu; nič sa preto nesmie
-považovať za hotové sémantické triedenie celej kolekcie. Samostatný asset store Chapolery už ukladá aktíva do
-SQLite v XDG data adresári, deteguje známe formáty podľa signatúry, počíta SHA-256 po blokoch a prírastkovo
+Existujúce QML/Rust okno je prototyp: inventár a ukážky fungujú a fotkový tok teraz najprv žiada lokálny model
+LensAI o opisný slovník tagov a potom SigLIPom priraďuje viac najlepších tagov jednotlivým obrázkom. LensAI
+v tomto kroku nevidí fotografie a nevytvára priečinky; SigLIP skóre sa softmaxom normalizujú iba vzhľadom na
+aktuálny slovník, preto ide o relatívne poradie, nie kalibrovanú pravdepodobnosť. Tagy sa ukladajú do databázy
+ako verzovaný lokálny beh s provenance a cache kľúčom podľa obsahu, modelu a hashu slovníka. Tento krok zatiaľ
+nepredstavuje hotové sémantické triedenie celej kolekcie. Samostatný asset store Chapolery už ukladá aktíva do
+SQLite v XDG data adresári, používa s LatteIndexom zdieľané prechádzanie viditeľných súborov, filesystemové
+fingerprinty, signatúrnu detekciu a streamovaný SHA-256 z `latte-index-core` a prírastkovo
 reconciliuje zvolený koreň. Nezmenené súbory nehashuje znova, rename môže zachovať ID po overení hashu a
 zmiznuté aktíva ponecháva ako neprítomné. Scan spracúva súbory priebežne a zachováva existujúci JSON kontrakt
-pre QML ukážky. Prvá vrstva extraktorov ukladá typované rozmery obrázkov, vybraný EXIF, technické stopy
+pre QML ukážky. SQLite schéma a sémantické tabuľky sú zatiaľ doménové a samostatné od LatteIndexu; zdieľa sa
+výpočtová vrstva skenovania, nie databáza. Prvá vrstva extraktorov ukladá typované rozmery obrázkov, vybraný EXIF, technické stopy
 audio/videí a základné PDF údaje; fakty nesú extractor/version/content hash a sú dostupné cez
 `latte-chapolera profile`. Výsledky sa cachujú, zlyhania nástrojov sú viditeľné v stave extraktora a neblokujú
-ostatné súbory. GPS a sériové identifikátory sa nevyžadujú ani neukladajú. Zatiaľ chýbajú OCR, textové
-parsovanie, multimodálne tagy, taxonómia aj organizovanie. Experimentálny crate LatteIndex zostáva
-neintegrovaný a Chapolera od neho nezávisí; prípadný adapter bude voliteľnou optimalizáciou, nie podmienkou
-funkčnosti.
+ostatné súbory. GPS a sériové identifikátory sa nevyžadujú ani neukladajú. Databáza v3 má normalizované tagy,
+provenance a cache podľa obsahu/modelu/úlohy. Zatiaľ chýbajú OCR, úplné textové parsovanie, sémantické adaptéry
+pre ostatné médiá, plánovanie taxonómie, duplicity/kvalita aj organizovanie. Experimentálny crate LatteIndex zostáva
+prototyp LatteIndexu aj Chapolera už zdieľajú `latte-index-core`, ale Chapolera od LatteIndex služby ani jeho
+databázy nezávisí. DigUp je výskumný kandidát pre voliteľné multimodálne embeddingy a vyhľadávanie; jeho použitie
+sa rozhodne po porovnaní modelu, runtime, licencií, zdrojov a výsledkov.
 
 ## Architektúra a závislosti
 
 ```text
 Súborový systém
-    ├── LatteIndex provider (ak je dostupný; spoločné OS fakty)
-    └── Chapolera standalone provider (vždy dostupný; vlastný scan a databáza)
+    ├── latte-index-core (zdieľaný scan, fingerprints, hash, signatúry)
+    ├── LatteIndex provider (ak je dostupný; voliteľné spoločné OS fakty)
+    └── Chapolera DB (vždy dostupná; vlastné extrakcie a sémantika)
              │
           ├── Extractor Hub → technické a textové fakty
           ├── Semantic Analyzer → modelové signály a tagy
@@ -46,7 +55,8 @@ Súborový systém
           └── Organizer & Recovery → potvrdená transakcia, denník a návrat
 
 DualBrew / LensGoo / ďalšie aplikácie ──→ LatteIndex API (budúca integrácia)
-Chapolera ────────────────────────────→ LatteIndex adapter OR vlastný standalone provider
+Chapolera ────────────────────────────→ LatteIndex adapter OR vlastná databáza nad latte-index-core
+Semantic Analyzer ────────────────────→ voliteľný embedding/provider adapter (DigUp sa skúma)
 ```
 
 Chapolera vlastní svoju indexačnú databázu, sémantické tagy, výsledky analyzátorov, vzťahy a návrhy kategórií.
@@ -56,8 +66,8 @@ umožnia bezpečne zlúčiť použiteľné fakty. Súbory sa neindexujú automat
 
 ### Moduly
 
-1. **Index Provider** — jednotné rozhranie, ktoré vyberie dostupný LatteIndex alebo Chapolera standalone
-   scanner/database. Sémantická analýza nikdy nečaká na systémový daemon.
+1. **Index Provider** — jednotné rozhranie, ktoré použije LatteIndex API, ak je dostupné, inak Chapolera
+   databázu nad `latte-index-core`. Sémantická analýza nikdy nečaká na systémový daemon.
 2. **Extractor Hub** — vyberá adaptéry podľa skutočného formátu, limituje čas/počet bajtov a vracia normalizované
    fakty s pôvodom; nevykonáva rozhodnutia o fyzickom presune.
 3. **Semantic Analyzer** — plánuje iba potrebné modelové úlohy, cachuje ich podľa obsahu, konfigurácie a verzie
@@ -121,6 +131,13 @@ stačia.
 Každý výstup nesie model/provider, verziu, prompt/task verziu, lokálnosť/cloud, skóre a pôvod. Cloud je vypnutý,
 pokiaľ ho používateľ výslovne nepovolí; pred odoslaním sa zobrazí čo a kam odchádza a platia limity služby.
 Lokálny index a deterministické triedenie musia fungovať bez siete a bez generatívnej AI.
+
+**Prvý implementovaný sémantický krok:** lokálny model LensAI navrhne 4–16 slovných opisných tagov, ktoré
+SigLIP 2 skóruje voči obrázkom. Ukladá sa najlepší tag a najviac štyri ďalšie tagy, ktorých softmax skóre
+presahuje 1,25-násobok rovnomerného podielu v kandidátnom slovníku. Ide o relatívnu heuristiku, nie
+kalibrovanú istotu; pri nejednoznačnom obrázku sa uloží iba najlepší kandidát. Slovník aj zdrojový model
+ovplyvňujú task cache, zmena obsahu ju zneplatní. Výsledky sa zobrazia ako tagy; návrh kategórií a fyzické
+operácie sú samostatné, zatiaľ neimplementované fázy.
 
 ### 4. Asset Intelligence DB
 
@@ -284,15 +301,19 @@ do potvrdenej údržby databázy.
 
 ## Vývojové míľniky
 
-1. **Standalone asset store** — vlastný scanner, signatúrová detekcia, SHA-256 a lokálna databáza Chapolery;
+1. **Standalone asset store** — spoločné `latte-index-core` pre scanner, signatúrovú detekciu a SHA-256,
+   plus samostatná lokálna databáza Chapolery;
    aplikácia funguje aj bez LatteIndexu a služby. SQLite inventár, prírastkové hashovanie, rename zachovanie
-   identity, označenie missing, tabuľky facts/extractor-runs a paginované QML výstupy sú implementované;
-   tagy a entity ešte chýbajú.
+   identity, označenie missing, tabuľky facts/extractor-runs, normalizované semantic tags/asset_tags/semantic_runs
+   a paginované QML výstupy sú implementované. `tags-store` ukladá modelové výsledky s content hashom,
+   verziou analyzátora/modelu/úlohy a lokálnosťou; `tags-cache` a `profile` vracajú iba výsledky pre aktuálny hash.
+   Generovanie tagov a entity ešte chýbajú.
 2. **Voliteľný Index Provider** — capability discovery a adapter na LatteIndex, ak je neskôr dostupný; spoločné
    fakty sa preberú bez duplicitnej extrakcie, no chýbajúce fakty doplní Chapolera.
 3. **Metadata extractors** — prvá vrstva obrázok/EXIF, video/audio cez ffprobe a PDF metadata je implementovaná;
    širšie textové extrakcie, OCR a ďalšie parsery ostávajú otvorené.
-4. **Semantic tags** — lokálny image-text/caption/OCR podľa zdrojov; profil aktíva, provenance a kontrola kvality.
+4. **Semantic tags** — perzistentná schéma, provenance, validácia, cache a CLI rozhranie sú implementované;
+   napojiť lokálne image-text/caption/OCR analyzátory a kontrolu kvality.
 5. **Mixed media** — audio metadata/fingerprint/ASR, e-knihy, Office/ODF, archívy s limitmi a kód.
 6. **Duplicates/quality** — exact hash, pHash/embedding kandidáti, media-specific metriky, review UI.
 7. **Taxonomy Planner** — LensAI provider adapter, existujúca kategória má prednosť, stabilné IDs, explainable diff.
@@ -302,6 +323,11 @@ do potvrdenej údržby databázy.
 
 - LatteOS je MIT. [TagStudio](https://github.com/TagStudioDev/TagStudio) (GPL-3.0) je užitočný referenčný
   príklad knižnice/tagov/SQLite, ale preberajú sa iba architektonické myšlienky, nie jeho implementácia.
+- [DigUp](https://github.com/ARahim3/DigUp) je MIT a jeho README uvádza EmbeddingGemma 2 pod Apache-2.0
+  a `llama.cpp` pod MIT. Je dôležitý kandidát na multimodálne vyhľadávanie a segmentové výsledky, nie hotová
+  Rust knižnica; integrácia (upstream CLI/proces, samostatný modelový adapter alebo prevzatie vybraného
+  správania) sa najprv vyhodnotí v LatteIndex 10N.10. Zatiaľ sa nekopíruje jeho Swift/Tauri kód ani nesťahuje
+  model. Každý použitý runtime, model a distribučné závislosti treba licenčne overiť samostatne.
 - [infer](https://crates.io/crates/infer) (MIT) je kandidát na rýchlu signatúrovú detekciu; jeho pokrytie sa
   doplní shared-mime-info/`file` fallbackom a špecializovanými kontajnerovými extraktormi.
 - SQLite cez `rusqlite` je prvá voľba pre lokálny single-user index. Ak vznikne potreba viacerých writerov,
@@ -318,4 +344,7 @@ do potvrdenej údržby databázy.
 - Zahrnúť defaultne iba používateľom vybrané korene; zoznam vylúčení a prenosné/odpojiteľné disky.
 - Koľko metadát a obsahu držať v DB, retention cache, záloha a súkromné polia (GPS/tvár).
 - Model pre captioning/OCR/audio a reálne nároky; žiadny model sa nepredvolí bez testu.
+- DigUp: či má LatteOS používať upstream `digup` proces, priamo model/runtime, alebo iba prevziať
+  kompatibilné vlastnosti vyhľadávania; zmerať kvalitu, segmentové odkazy, presné zhody, prírastkovosť,
+  RAM/CPU/úložisko a integráciu s existujúcim SigLIP/LensAI tokom.
 - Presné prahy pre vznik kategórie, podobné duplikáty a kvalitu kalibrovať na testovacích kolekciách.

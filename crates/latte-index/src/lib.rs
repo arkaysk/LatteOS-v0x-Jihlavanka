@@ -1,16 +1,13 @@
+use latte_index_core::{detect_signature, sha256_file, walk_visible_files, FileFingerprint};
 use rusqlite::{params, Connection, OptionalExtension, Transaction, TransactionBehavior};
-use sha2::{Digest, Sha256};
 use std::ffi::OsStr;
-use std::fs::{self, File};
-use std::io::Read;
+use std::fs;
 use std::os::unix::ffi::OsStrExt;
-use std::os::unix::fs::MetadataExt;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 const SCHEMA_VERSION: i64 = 1;
-const HASH_BUFFER_SIZE: usize = 1024 * 1024;
 
 #[derive(Debug, Default, PartialEq, Eq)]
 pub struct IndexSummary {
@@ -19,17 +16,6 @@ pub struct IndexSummary {
     pub updated: u64,
     pub unchanged: u64,
     pub missing: u64,
-}
-
-#[derive(Debug, PartialEq, Eq)]
-struct FileMetadata {
-    size: i64,
-    modified_seconds: i64,
-    modified_nanoseconds: i64,
-    changed_seconds: i64,
-    changed_nanoseconds: i64,
-    device: i64,
-    inode: i64,
 }
 
 pub fn default_database_path() -> Result<PathBuf, String> {
@@ -177,41 +163,7 @@ fn initialize_schema(connection: &Connection, path: &Path) -> Result<(), String>
 }
 
 fn visit_visible_files(root: &Path, visitor: &mut impl FnMut(&Path) -> Result<(), String>) -> Result<(), String> {
-    let mut pending = vec![root.to_path_buf()];
-    while let Some(directory) = pending.pop() {
-        let hidden = hidden_names(&directory)?;
-        let mut entries = fs::read_dir(&directory)
-            .map_err(|error| format!("{}: {error}", directory.display()))?
-            .collect::<Result<Vec<_>, _>>()
-            .map_err(|error| format!("{}: {error}", directory.display()))?;
-        entries.sort_by_key(|entry| entry.file_name());
-        let mut subfolders = Vec::new();
-
-        for entry in entries {
-            let name = entry.file_name();
-            if name.to_string_lossy().starts_with('.') || hidden.contains(&name.to_string_lossy().into_owned()) {
-                continue;
-            }
-            let path = entry.path();
-            let file_type = entry.file_type().map_err(|error| format!("{}: {error}", path.display()))?;
-            if file_type.is_dir() {
-                subfolders.push(path);
-            } else if file_type.is_file() {
-                visitor(&path)?;
-            }
-        }
-        pending.extend(subfolders.into_iter().rev());
-    }
-    Ok(())
-}
-
-fn hidden_names(directory: &Path) -> Result<std::collections::HashSet<String>, String> {
-    let path = directory.join(".hidden");
-    match fs::read_to_string(&path) {
-        Ok(contents) => Ok(contents.lines().map(str::to_string).collect()),
-        Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(Default::default()),
-        Err(error) => Err(format!("{}: {error}", path.display())),
-    }
+    walk_visible_files(root, visitor).map(|_| ())
 }
 
 fn index_file(
@@ -224,7 +176,7 @@ fn index_file(
     if !metadata.is_file() {
         return Ok(());
     }
-    let observed = file_metadata(&metadata, path)?;
+    let observed = FileFingerprint::from_metadata(&metadata, path)?;
     let path_key = path.as_os_str().as_bytes();
     let path_display = path.to_string_lossy().into_owned();
     let now = unix_seconds()?;
@@ -269,10 +221,10 @@ fn index_file(
         }
     }
 
-    let sha256 = hash_file(path)?;
+    let sha256 = sha256_file(path)?;
     let mime_type = detect_mime(path)?;
     let verified = fs::symlink_metadata(path).map_err(|error| format!("{}: {error}", path.display()))?;
-    if !verified.is_file() || file_metadata(&verified, path)? != observed {
+    if !verified.is_file() || FileFingerprint::from_metadata(&verified, path)? != observed {
         return Err(format!("{}: file changed while indexing; run the scan again", path.display()));
     }
     let media_family = media_family(&mime_type);
@@ -325,7 +277,7 @@ fn update_asset(
     path_key: &[u8],
     path: &str,
     original_name: &str,
-    metadata: &FileMetadata,
+    metadata: &FileFingerprint,
     mime_type: &str,
     family: &str,
     sha256: &str,
@@ -374,37 +326,9 @@ fn reusable_asset_id(
     Ok(candidate)
 }
 
-fn file_metadata(metadata: &fs::Metadata, path: &Path) -> Result<FileMetadata, String> {
-    Ok(FileMetadata {
-        size: i64::try_from(metadata.len()).map_err(|_| format!("{}: file is too large to index", path.display()))?,
-        modified_seconds: metadata.mtime(),
-        modified_nanoseconds: metadata.mtime_nsec(),
-        changed_seconds: metadata.ctime(),
-        changed_nanoseconds: metadata.ctime_nsec(),
-        device: i64::try_from(metadata.dev()).map_err(|_| format!("{}: device ID is out of range", path.display()))?,
-        inode: i64::try_from(metadata.ino()).map_err(|_| format!("{}: inode is out of range", path.display()))?,
-    })
-}
-
-fn hash_file(path: &Path) -> Result<String, String> {
-    let mut file = File::open(path).map_err(|error| format!("{}: {error}", path.display()))?;
-    let mut hasher = Sha256::new();
-    let mut buffer = vec![0u8; HASH_BUFFER_SIZE];
-    loop {
-        let read = file.read(&mut buffer).map_err(|error| format!("{}: {error}", path.display()))?;
-        if read == 0 {
-            break;
-        }
-        hasher.update(&buffer[..read]);
-    }
-    Ok(format!("{:x}", hasher.finalize()))
-}
-
 fn detect_mime(path: &Path) -> Result<String, String> {
-    if let Some(kind) = infer::get_from_path(path)
-        .map_err(|error| format!("{}: could not read file signature: {error}", path.display()))?
-    {
-        return Ok(kind.mime_type().to_string());
+    if let Some(kind) = detect_signature(path)? {
+        return Ok(kind.mime_type);
     }
     let output = Command::new("file")
         .args(["-b", "--mime-type", "--"])
@@ -516,7 +440,7 @@ mod tests {
         let connection = open_database(&database).unwrap();
         let (id, mime, hash, present) = asset(&connection, &image);
         assert_eq!(mime, "image/png");
-        assert_eq!(hash, hash_file(&image).unwrap());
+        assert_eq!(hash, sha256_file(&image).unwrap());
         assert_eq!(present, 1);
 
         let second = index_root(&root, &database).unwrap();

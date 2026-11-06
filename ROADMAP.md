@@ -221,7 +221,7 @@ kto komu dal úlohu (`term pair`, `by.N` z 1D.17). Pohľad pre Canvas (8A.12), A
 **1D.25** [ ] **Shore pleamar-wm ako variant BarGoo** (neskôr): dok pleamar-wm (*shore*) prerobiť na kvapku enginu Goo a ponúknuť ako druhý vzhľad BarGoo. Pozor na meno: nie LensShore ani trayShore. Používateľ 3. 11. pochválil na shore: náhľad okien po prejdení
 myšou, prepínanie medzi nimi a ponuku pravého kliku — prebrať aj do BarGoo. (Oprava v ten deň: všetky aplikácie
 LatteOS mali `app_id` `org.quickshell`, shore ich zlúčil pod ikonu LensAI; teraz `//@ pragma AppId latteos-NAME`.)
-**1D.26** [ ] **Kvapka Marey ako zapínateľná kvapka Goo** (neskôr): Mareu z marea-plm upraviť, aby sedela s enginom Goo (tvar, voda, farby z témy), a ponúknuť ju ako kvapku, ktorá sa zapína v Nastaveniach › Kvapky. — Pridať medzi kvapky Goo v Nastaveniach › Kvapky (2. 11.). — Stav 3. 11.: Marea **nie je nainštalovaná** — je to samostatný program (repozitár `marea-plm`, príkaz `marea start` z autostartu pleamar-wm), v LatteOS chýba (preto v logu `marea.sock: No such file`); scéna `wm/session.plm` s ňou počíta (ostrov, kam idú odložené okná, dážď z jej ponuky). Najprv stiahnuť `marea-plm`, potom ju zaradiť medzi kvapky. — Hotové 4. 11. (iba prvá časť): `marea-plm` d0cad02 pripnutý v `patches/build-pleamar.sh`, celý strom v `/usr/share/latteos/marea-plm/` (FILES, bez zmien, BSD-3 v `TRETIE-STRANY.md`); Nastavenia › Kvapky › Marea má prepínač „Ukázať na ploche“ (`bin/latte-marea on|off`, voľba v `~/.config/latteos/marea`, relácia ju pri štarte vráti). Nasadené a spustené na latte-lab. Ostáva: Marea nie je kvapka enginu Goo (tvar, voda, farby z témy), je to samostatný program hore; chat a Deriva sa z `/usr` nepostavia (npm/cargo v priečinku, ktorý nie je zapisovateľný); jej oznámenia/hľadanie sa môžu biť s Goo.
+**1D.26** [ ] **Kvapka Marey ako zapínateľná kvapka Goo** (neskôr; ďalší vývoj je v 6M): Mareu z marea-plm upraviť, aby sedela s enginom Goo (tvar, voda, farby z témy), a ponúknuť ju ako kvapku, ktorá sa zapína v Nastaveniach › Kvapky. — Pridať medzi kvapky Goo v Nastaveniach › Kvapky (2. 11.). — Stav 3. 11.: Marea **nie je nainštalovaná** — je to samostatný program (repozitár `marea-plm`, príkaz `marea start` z autostartu pleamar-wm), v LatteOS chýba (preto v logu `marea.sock: No such file`); scéna `wm/session.plm` s ňou počíta (ostrov, kam idú odložené okná, dážď z jej ponuky). Najprv stiahnuť `marea-plm`, potom ju zaradiť medzi kvapky. — Hotové 4. 11. (iba prvá časť): `marea-plm` d0cad02 pripnutý v `patches/build-pleamar.sh`, celý strom v `/usr/share/latteos/marea-plm/` (FILES, bez zmien, BSD-3 v `TRETIE-STRANY.md`); Nastavenia › Kvapky › Marea má prepínač „Ukázať na ploche“ (`bin/latte-marea on|off`, voľba v `~/.config/latteos/marea`, relácia ju pri štarte vráti). Nasadené a spustené na latte-lab. Ostáva: Marea nie je kvapka enginu Goo (tvar, voda, farby z témy), je to samostatný program hore; chat a Deriva sa z `/usr` nepostavia (npm/cargo v priečinku, ktorý nie je zapisovateľný); jej oznámenia/hľadanie sa môžu biť s Goo.
 **1D.27** [ ] **Kývanie okien (wobble) v pleamar-wm** (používateľ 2. 11., vzor [Hyprland 0.57](https://hypr.land/imgs/blog/update57/wobbl.mp4)): ťahané alebo zväčšované okno sa ohne ako želé a dokýve sa, keď ho pustíš. pleamar-wm to nemá (kýve sa iba Marea, keď sedí na okne). Skúsiť shaderom skupiny okna v `wm/session.plm` (ako `tide`), rýchlosť ťahania z pružín scény; iba pri stupňoch full a standard, ako na Hyprlande (`system/hypr/latte/tiers.lua`). Ak shader nestačí na pokrivenie okna, návrh autorovi.
 **1D.28** [x] Priehľadnosť okna iba pri ťahaní (2. 11.): je to zámer pleamar-wm — ťahané okno je nadvihnuté, menšie a na 88 % nepriehľadné, aby bolo vidieť, kam dopadne; nechané tak (používateľ). V DualBrew je to vidieť najmä v ľavom paneli, kde je podklad svetlý a jednoliaty.
 **1D.29** [x] **Ťahanie okna za kávovú hladinu dole** (používateľ 2. 11.): v aplikáciách LatteOS (`apps/common/AppWindow.qml`, `Surface`) sa okno dá ťahať aj za kávu v päte okna, všade, kde nie je tlačidlo ani ovládací prvok (ako za hlavičku: `startSystemMove`). Na Hyprlande aj v pleamar-wm. — S Hyprlandom nesúvisí (2. 11.). — Hotové 3. 11.: `MouseArea` pod kávou v `AppWindow.qml` (ovládacie prvky v `foot` a v obsahu majú prednosť).
@@ -1322,19 +1322,19 @@ Zdroje: LATTEOS-GOO §4.4
 
 **6E.01** [x] (QueenGoo) QueenGoo · r. 113–114
 
-**6E.02** [ ] **Continuity** (používateľ 27. 10.; nadväzuje na „obnovenie relácie: áno“ z ROZHODNUTÍ 6. 10.): po postáti
-myši nad QueenGoo sa okolo nej ukážu farebné ikonky uložených pracovných stavov a **+**. **+** vytvorí nový model
-Continuity z aktuálnej relácie; klik na ikonku ju obnoví jedným klikom na naposledy uložených pozíciách. Uloženie
-a vypnutie modelu uloží jeho stav znova.
+**6E.02** [ ] **Latte-Workfield v QueenGoo** (používateľ 27. 10.; názov potvrdený 6. 11.; nadväzuje na „obnovenie
+relácie: áno“ z ROZHODNUTÍ 6. 10.): po postáti myši nad QueenGoo sa ukážu vstupy do pomenovaných Latte-Workfieldov
+a **+**. **+** vytvorí nový Workfield z aktuálnej relácie; klik naň ho obnoví. Toto je Goo vstupné rozhranie do
+aplikácie Latte-Workfield v 10M, nie druhý produkt ani samostatný plán obnovy.
 Príklady používateľa: *práca* — SAP so 4 oknami GUI (každé iná funkcia), firemný program, prehliadač s tromi
 firemnými webapp, tabuľka v Exceli; *písanie* — editor s kurzorom na poslednej strane, referenčné dokumenty
 a priečinky, monitory v teplej farbe ako predtým, predtým nastavená relaxačná hudba.
-**Princíp:** Continuity si ukladá *kde čo bolo*, nie dáta — otvorí tie isté súbory a adresy, takže údaje sú vždy
+**Princíp:** Latte-Workfield si ukladá *kde čo bolo*, nie dáta — otvorí tie isté súbory a adresy, takže údaje sú vždy
 aktuálne. Heslá neukladá nikdy (prihlásenia ostávajú v prehliadači a kľúčenke). Tri vrstvy:
 (1) **okná** — aplikácie, súbory, URL, pozície, monitory, plochy, režim okien (Hyprland: `hyprctl clients`, pravidlá
 pri obnove); (2) **stav systému** — nočné svetlo (`latte-nightlight`), hlasitosť a výstup, hudba aj so skladbou
 a pozíciou (MPRIS), Kofeín, tichý režim; (3) **vnútro aplikácií** cez adaptéry: LibreOffice si posledné miesto pamätá,
-prehliadač karty, SAP GUI má súbory skratiek s transakciou; kde adaptér nie je (napr. Word cez Wine), Continuity to
+prehliadač karty, SAP GUI má súbory skratiek s transakciou; kde adaptér nie je (napr. Word cez Wine), Latte-Workfield to
 pri ikone poctivo označí. Neskôr prenos modelu na iný LatteOS (Session Manager, LatteApp).
 Preveriť hotové: obnova relácie v KDE a GNOME, hyprland-session a podobné nástroje, MPRIS.
 
@@ -1447,6 +1447,24 @@ klikom, denný cieľ zo zmluvy, nadčasy, sviatky, otázka po návrate z uzamknu
 `shift/lib/*` je čistý Luau s testami a na Noctaliu siaha iba `lib/host.luau` — kvapka Goo by vzala jadro a napísala
 vlastný `host` a kartu. Overené 28. 10. v Noctalii 5.4 (`noctalia msg plugins source add shift git …`, potrebuje swayidle):
 na lište počíta, bublina ukáže stav, dnes, týždeň a návrh „Check in?“.
+
+### 6M. [ ] MareaGoo — samostatná kvapka Marey a využitie pleamaru
+Zdroj: Marea `k4ditano/marea-plm`, BSD-3; používateľ 4.–6. 11. Marea je dostupná ako kvapka plochy
+(`bin/latte-marea`, `build/pleamar-src/marea-plm/`), no jej funkcie sa prekrývajú s Goo, LensAI a Nastaveniami.
+Najprv rozhodnúť, čo preniesť, čo ponechať a preskinovať a čo použiť oboma spôsobmi; nič neduplikovať na obrazovke.
+Marea sa nemení záplatami: LatteOS používa vrstvu integrácie a vzhľadu. Overiť názov a správanie podľa pravidiel 6.16.
+
+**6M.01** [ ] **Súpis a rozhodnutia o Marei**: porovnať stránky `scene/pages/*.plm`, plochy `scene/surfaces/` a logiku
+`logic/*.luau` s BarGoo, LensGoo, PowerGoo, ClockGoo, CamGoo, TrayShore, LoginGoo, Nastaveniami a LensAI. Pri každej
+funkcii rozhodnúť preniesť · ponechať a preskinovať · oboje; zapísať rozhodnutia používateľa do
+`docs/goo/ROZHODNUTIA.md`.
+**6M.02** [ ] **Spotreba Claude a Codexu v LensAI/LensGoo**: vyhodnotiť „nádrže agentov“ z
+`scene/pages/agents.plm`, `logic/agents.luau` a `tools/reservas`; zachovať rozlíšenie 5-hodinového a týždenného okna,
+odpočet obnovenia, neznáme číslo ≠ nula a stav „čaká“ po obnovení.
+**6M.03** [ ] **Vzhľad MareaGoo v LatteOS**: integrovať vzhľad Marey (`wardrobe/`) so `system/cups.json`, farbami
+tapety, okien a Goo (9A), pričom jej šatník môže ostať dodatočnou voľbou.
+**6M.04** [ ] **Ďalšie možnosti pleamaru**: preskúmať `pleamar --docs recipes` a `examples/`; použiť existujúce
+schopnosti, ktoré zmysluplne nahradia LatteOS kód (napr. sklo, častice a shadery pre 9A.14).
 
 ---
 
@@ -2053,7 +2071,7 @@ nastavení Noctalie a ostatných prostredí.
 https://github.com/thesysdev/open-intelligent-ui — MIT, Next.js/React, model posiela opis rozhrania v OpenUI Lang
 a aplikácia ho vykreslí; kód sa neprenesie, preberá sa princíp). Výsledok hľadania obsahuje živé prepínače,
 posúvniky a odkazy na stránky. Príklad: „prečo sa mi po reštarte neobnovia okná?“ → diagram príčin, odkazy na
-súvisiace nastavenia (Continuity 6E.02) a prepínače, ktorými to človek vyrieši priamo. **Pravidlo (návrh Clauda):**
+súvisiace nastavenia (Latte-Workfield 10M, dostupný aj z QueenGoo 6E.02) a prepínače, ktorými to človek vyrieši priamo. **Pravidlo (návrh Clauda):**
 AI nevymýšľa ovládacie prvky — smie iba odkázať na skutočné nastavenie podľa ID a vykreslí sa pravý prvok
 z Nastavení, ktorý mení skutočnú hodnotu; voľne generuje iba vysvetlenie a diagram. **Bez AI** (2B) hľadanie podľa
 kľúčových slov ukazuje tie isté skutočné prepínače, len bez diagramu. Platí aj pre LensShore (6B.12).
@@ -2292,6 +2310,7 @@ Stránka Nastavenia › Systém › O tomto počítači, vrátane grafu vývoja 
 su tie dodavane priamo s LatteOS od vydavatelov latteOS
 
 ### 10A. [~] DualBrew
+
 Zdroje: `apps/files.qml`, `bin/latte-files`, `apps/common/FileIcons.qml`
 suborovy manager na vzor Total Comander
 
@@ -2575,8 +2594,11 @@ iba v okne pod zoznamom); hladina (`Surface.qml`, sametové vrstvy) sa tak nezak
 
 **10A.66** [~] **Chapolera — trvalá sémantická vrstva a bezpečné organizovanie** (používateľ 3.–6. 11.): pravý klik na priečinok v DualBrew otvorí samostatný dashboard; DualBrew Chapoleru ani AI nenačítava na pozadí. Chapolera nie je jednorazový upratovač: voliteľne využíva všeobecné fakty LatteIndexu (10N), ak je dostupný; inak vykoná vlastný scan a používa vlastnú databázu. Inkrementálne spracúva len nové/zmenené súbory, ukladá viac tagov a vzťahov a priebežne zosúlaďuje nové súbory s existujúcou malou, plytkou taxonómiou. Tok: (1) zistiť skutočný typ podľa signatúry/MIME, (2) extrahovať technické a obsahové fakty/tagy špecializovanými nástrojmi, (3) nezávisle analyzovať duplicity/kvalitu, (4) Qwen/LensAI navrhne kompaktné kategórie podľa celej kolekcie s prednosťou existujúcich kategórií, (5) používateľ skontroluje a upraví, (6) až po potvrdení sa vykoná žurnálovaná a vratná organizácia. Jeden súbor môže mať mnoho tagov/vzťahov, no iba jednu primárnu fyzickú cestu; nič sa automaticky nemaže. Lokálne fungovanie je povinné, cloud je voliteľný a výslovne povolený. Špecializácie zahŕňajú obrázky, video/snímky/audio/subtitles, hudbu, dokumenty/OCR, e-knihy, archívy a kód. Hĺbkový návrh a rozhrania: [docs/chapolera/PLAN.md](docs/chapolera/PLAN.md); zdieľaný index: [docs/latte-index/PLAN.md](docs/latte-index/PLAN.md). UI zachová Yanny-inšpirovanú animáciu hromady bez prevzatia farieb/grafiky. Prvý fotkový tok, ktorý najprv generuje kategórie cez LensAI a potom priraďuje SigLIPom, je iba prototyp a nepredstavuje cieľové poradie.
 **Rozhodnutie (5. 11.):** zmiešaný priečinok sa najprv rozdelí podľa typu média; každý typ dostane vlastný vhodný identifikátor. Skupiny sa spracujú postupne, od najpočetnejšej po najmenej početnú; najpočetnejšia určuje poradie, nikdy sa tým nevynechajú menšie skupiny. Napríklad obrázky sa najprv spracujú SigLIP 2, ak ich je najviac; videá, zvuk, dokumenty a e-knihy dostanú svoje kroky. Qwen/LensAI zlúči signály až do návrhu kategórií. Plán: [docs/chapolera/PLAN.md](docs/chapolera/PLAN.md). Ukladanie súborov ostáva až po výslovnom potvrdení používateľa.
-Prototypy (5.–6. 11.): samostatné QML okno, paginovaný rekurzívny inventár a preview; LensAI/SigLIP fotkový tok s priebežnými návrhmi bez presunov. Tento tok je dočasný: LensAI najprv navrhuje kategórie, SigLIP ich až potom skóruje, kým cieľová architektúra najprv vytvorí per-file fakty/tagy a až následne plánuje taxonomy. Nie je zatiaľ overený na reálnom LensAI modeli.
-**Implementácia (6. 11.):** standalone Chapolera asset store používa vlastnú SQLite databázu v XDG data adresári, inkrementálny scan, rozpoznanie známych MIME signatúr, blokový SHA-256, stabilnú identitu pri overenom rename a evidenciu neprítomných aktív. Paginovaný JSON kontrakt okna zostal zachovaný. Prvá extraktorová vrstva ukladá rozmery a vybrané EXIF polia, ffprobe audio/video kontajner a streamy a pdfinfo/ExifTool základné PDF fakty. Fakty majú verziu a pôvod; chyby sú viditeľné, GPS a sériové čísla sa neextrahujú, pôvodné súbory sa nemenia. Sémantické tagy/modely, úplný text/OCR, taxonómia a organizovanie ešte nie sú hotové.
+Prototypy (5.–6. 11.): samostatné QML okno, paginovaný rekurzívny inventár a preview; pôvodný tok LensAI kategórie → SigLIP skóre bol iba dočasný a teraz ho nahrádza tags-first krok. Lokálny LensAI vytvára iba slovník vizuálnych kandidátov, SigLIP ich priraďuje fotkám a ukladá viac tagov; výsledky sa zobrazia bez návrhu priečinkov či presunov. Tok ešte treba overiť na reálnom LensAI modeli.
+**Implementácia (6. 11.):** standalone Chapolera asset store používa vlastnú SQLite databázu v XDG data adresári, inkrementálny scan, rozpoznanie známych MIME signatúr, blokový SHA-256, stabilnú identitu pri overenom rename a evidenciu neprítomných aktív. Paginovaný JSON kontrakt okna zostal zachovaný. Prvá extraktorová vrstva ukladá rozmery a vybrané EXIF polia, ffprobe audio/video kontajner a streamy a pdfinfo/ExifTool základné PDF fakty. Fakty majú verziu a pôvod; chyby sú viditeľné, GPS a sériové čísla sa neextrahujú, pôvodné súbory sa nemenia. Databáza v3 ukladá aj normalizované sémantické tagy, behy analyzátorov a provenance (model/verzia/úloha/local-cloud/content hash); CLI `tags-store` a `tags-cache` poskytuje zápis a opakované použitie výsledkov.
+**Implementácia (6. 11., pokračovanie):** prvý tags-first fotkový tok: lokálny model LensAI navrhne opisný slovník tagov, SigLIP 2 ich priradí jednotlivým fotkám a uloží viac najvhodnejších tagov do asset databázy. Cache je viazaná na obsah, model a hash slovníka; skóre SigLIPu sú relatívne poradia, nie kalibrované pravdepodobnosti. Tento krok ešte nenavrhuje priečinky ani nemení súbory. Úplný text/OCR, plánovanie taxonómie, duplicity/kvalita a organizovanie zostávajú otvorené.
+
+**Prvá funkčná beta — kritériá, nie sľubovaný dátum:** používateľ vyberie koreň a dostane prírastkový inventár s typovanými faktami; analyzované obrázky, videá a základné dokumenty získajú viac sémantických tagov s pôvodom a verziou modelu; identické duplicity sa označia bez mazania; plánovač vytvorí kompaktný návrh kategórií z celej kolekcie; používateľ návrh skontroluje a môže ho bezpečne zrušiť; potvrdené presuny majú transakčný záznam a overené obnovenie pôvodných ciest. Nepodporované alebo neisté súbory zostanú nedotknuté a cloud sa nepoužije bez výslovného súhlasu. Beta sa označí za funkčnú až po testoch inkrementálneho opakovania, poškodených vstupov, kolízií, prerušeného presunu a návratu späť. Zatiaľ nemožno určiť kalendárny termín: generovanie sémantických tagov, taxonómia, UI kontroly a bezpečný organizátor ešte nie sú implementované; pripravené je však ich perzistentné úložisko a API.
 
 **Rozhodnutie používateľa (6. 11.):** Chapolera je trvalá sémantická vrstva nad filesystemom; pri neskoršom pridaní súborov znovu použije nezmenené fakty a kategórie a analyzuje nové/zmenené vstupy. LatteIndex (10N) je samostatná budúca systémová schopnosť, nie závislosť Chapolery: ak bude dostupný, Chapolera môže využiť jeho všeobecné fakty; ak nie, sama vykoná scan, extrakciu, analýzu a uloží ich do vlastnej databázy. LatteIndex daemon sa teraz nevyvíja. Žiadna z vrstiev nenahrádza ani neduplikuje fyzický filesystem.
 **Oprava opisu 10A.66 (6. 11.):** skoršia formulácia „používa spoločné stabilné aktíva LatteIndexu“ neznamená povinnú závislosť. LatteIndex je voliteľný provider; standalone scanner a databáza Chapolery musia fungovať aj bez neho.
@@ -2617,6 +2639,7 @@ súborov a priečinkov. **Plán (schválený 4. 11.):**
 **10A.70** [ ] **Ramček okolo súborov sa dá vypnúť** (používateľ 5. 11.): vo vnútorných nastaveniach DualBrew voľba „Ramček okolo súborov“ (zapnúť/vypnúť); bez nej plocha súborov nemá obrys ani vlastné pozadie, súbory ležia priamo na stránke.
 
 ### 10B. [~] LensAI
+
 Zdroje: `bin/latte-ai`, `apps/aicenter.qml`, `system/ai/`, `system/agents/`, `inspo/ai-na-ploche.md`
 je centralne zastrešenie všetkych použitelnych AI. Je totalna kopia Omarchy Ai využitia, len s tým že sa použiva namiesto konzoloveho, graficke rozhranie. LensGoo ma jednu z položiek komunikačne okno s Ai. 
 
@@ -2806,15 +2829,17 @@ bez nečakaného prístupu k systémovým akciám.
 - [ ] Vývojová AI farma a MCP sú vývojárske nástroje, nie predvolená súčasť používateľskej plochy;
   ich úlohy, tajomstvá a prístup k repozitáru držať oddelene od runtime AI LatteOS.
 
-**10B.32** [ ] **Výskum: DigUp ako motor hľadania podľa významu** (používateľ 27. 10.) — https://github.com/ARahim3/DigUp
-(MIT; ~5 300 hviezd, 16.–22. 10. ~1 500 za týždeň). Hľadá v obsahu fotiek a snímok obrazovky, PDF aj skenovaných,
-dokumentov (txt, md, rtf, docx, odt, html), nahrávok, videí a kódu; lokálne cez EmbeddingGemma 2 v llama.cpp, jeden
-spoločný priestor pre text, obraz, zvuk a video; index v SQLite; Linux beta (.deb, AppImage; Tauri) a príkaz `digup`
-(indexovanie, hľadanie). Využitie: LensShore/LensGoo (6B.12), DualBrew (hľadanie v obsahu, 10A.04), Nastavenia (9.10).
-Preveriť: beta na Fedore (balík RPM nie je), čítanie textu zo snímok (na macOS cez Apple Vision — na Linuxe zrejme
-chýba), nároky modelu podľa stupňov výkonu, veľkosť indexu, ktoré priečinky sa indexujú a vylúčenie súkromných.
+**10B.32** [ ] **Výskum: DigUp ako motor sémantického hľadania a kandidát integrácie** (používateľ 27. 10.) —
+https://github.com/ARahim3/DigUp (MIT; podľa README EmbeddingGemma 2 Apache-2.0 cez `llama.cpp` MIT).
+Hľadá lokálne v obrázkoch, PDF/skenoch, dokumentoch, nahrávkach, videách a voliteľne kóde; jeden multimodálny
+embedding priestor prepája text, obraz, zvuk a video. Silné kandidátske prvky: vyhľadávanie po stránkach/snímkach/
+časových úsekoch, presné zhody popri význame, prírastkové indexovanie, verzie modelov a evaly. Využitie skúmať
+pre LatteIndex (10N.10), Chapoleru (10A.66), LensShore/LensGoo (6B.12), DualBrew (10A.04) a Nastavenia (9.10).
+Overiť upstream CLI alebo runtime integráciu, Fedora/Linux kompatibilitu, extrakčné rozdiely, súkromie, modelové
+licencie a veľkosť, kvalitu/jazyky, RAM/CPU, indexovú veľkosť a to, či sa oplatí prevziať správanie namiesto
+zavedenia DigUp ako povinnej závislosti.
 **Rozhodnuté 27. 10. (používateľ):** hľadanie podľa obsahu **nie je generatívne**, a preto nespadá pod vypínač AI (2B).
-Výstupom DigUp sú iba nájdené súbory, nie odpovede — rovnako ako triedenie fotiek neurónovou sieťou v Google Fotkách.
+Výstupom sú nájdené súbory/segmenty, nie generované odpovede.
 
 **10B.33** [ ] **Sledovať: hlasový rozhovor full-duplex (Dessa od Blocku)** (používateľ 27. 10., Reddit r/OpenAI) —
 model reč-na-reč, ktorý počúva a hovorí naraz (skáče do reči, prikyvuje „aha“). Ohlásený 23. 10. 2026 ako výskumná
@@ -2975,12 +3000,14 @@ s vlastným kurzorom a klávesnicou, skill `pleamar-desktop`) v LensAI; pôvodn�
 pleamar-wm ako pri 10B.45.
 
 ### 10C. [ ] Heidelberg
+
 je zakladny textovy editor, s neobvyklo širokou ponukou formatou ktore prečíta a upraví
 
 **10C.01** [ ] (Heidelberg) R3·C — Heidelberg · r. 994–994
 - [ ] **Heidelberg:** verné formátovanie docx (tabuľky, štýly, hlavičky) a ďalšie otvorené položky z F4 (riadok 792).
 
 ### 10D. [~] LatteMonitor
+
 Zdroje: `apps/monitor.qml`, `bin/latte-monitor`, `crates/latte-stats`; LATTEOS-GOO §6.2·1
 je monitor prostriedkov presne ako ctrl+alt+del z windows 11(jeho kopia) ale zaroven ponuka presne skopirovanu funkčnost z CpuZ a z HWinfo. Prebera informacie z GuardCorgi aj Dev a Net manager. spravuje aj výstup pre aplikacie-napr externy dashboard čitajuci vytaženie CPU, RAM, farebnost led na zaklade zvuku, atd.
 
@@ -3092,6 +3119,7 @@ obdobie podľa uchovávania telemetrie (10D.07, 10D.15). Nad údajmi pri prejden
 od odhadov; história podlieha súhlasu, nastaveniu uchovávania a možnosti vymazania (10D.15).
 
 ### 10E. [~] DeviceManager
+
 Zdroje: `apps/devices.qml`, `bin/latte-devices`
 
 **10E.01** [x] (Správca zariadení) Správca zariadení · r. 115–116
@@ -3149,6 +3177,7 @@ hnedom, skoro nečitateľné; položky bočného panela pôsobia ako vypnuté.
 porušuje pravidlo 4 (texty cez preklad).
 
 ### 10F. [x] GuardCorgi
+
 Do 3. 11. 2026 GuardDog; premenovaný (používateľ 3. 11.), lebo `guarddog` je iný program v systéme. Nastavenia a história
 sa pri prvom štarte prenesú zo starých mien (`guarddog.json`, `guarddog.log`).
 Zdroje: `bin/latte-session`, `bin/latte-guardcorgi`, `apps/guardcorgi.qml`, `system/systemd`, `system/whyd`, `system/oom`, `system/sessions`
@@ -3241,6 +3270,7 @@ službami systemd (polkit potrebuje prihlásenú reláciu — overiť), vlastnú
 úpravy služieb). Kandidát na prvý pomocný program v Ruste (17.05).
 
 ### 10G. [~] NetManager
+
 Zdroje: `bin/latte-network`, `bin/latte-net`, `bin/latte-network`
 
 **10G.01** [x] (Sieť) Správca zariadení: Sieť a Inšpektor · r. 146–151
@@ -3297,6 +3327,7 @@ Zdroje: `bin/latte-network`, `bin/latte-net`, `bin/latte-network`
 
 
 ### 10H. [~] AppManager
+
 Zdroje: `apps/appmanager.qml`, `bin/latte-apps`, `bin/latte-app`; LATTEOS-GOO §6.3
 Spravuje všetky aplikacie, prevažne ako flatback, bubblewrap. Ponuka ako Bazzar 
 
@@ -3378,6 +3409,7 @@ nedôveryhodné), ako mu odovzdať odkaz z App Managera. Meno a logo Quiver sú 
 ako Quiver, nepremenovať. Zapísať do TRETIE-STRANY.md.
 
 ### 10I. [~] Barista
+
 Zdroje: `bin/latte-barista`, `recipes/`, `docs/barista/`
 Je sučastou Appmanageru. inštalator a ten kdo sa postara o beh programov z inej platformy.
 
@@ -3462,6 +3494,7 @@ verziu), **Sloth Center** — celá šírka nastavení v jednom okne voči naši
 a čo robíme inak. Podrobnosti: `inspo/dalsie_inspiracie.md`.
 
 ### 10J. [~] Kalendár
+
 Aplikácia Kalendár a karta ClockGoo (ľavý klik): EDS, udalosti vetou, týždeň.
 Zdroje: `apps/calendar.qml`, `bin/latte-cal`, `goo/lang/sk-dates.json`
 
@@ -3535,6 +3568,7 @@ Zdroje: `apps/calendar.qml`, `bin/latte-cal`, `goo/lang/sk-dates.json`
 **10J.23** [ ] (Kalendár) **Kľúčenka sa pri prihlásení neodomkne** (5. 11., okno „Odomknúť prihlasovací zväzok kľúčov“): prihlasovanie cez greetd neodomkne `login` kľúčenku (chýba `pam_gnome_keyring`), takže heslo CalDAV (a iné tajomstvá EDS) sa neuloží a systém sa pýta znova. Opraviť v PAM pre greetd (`auth optional pam_gnome_keyring.so`, `session optional pam_gnome_keyring.so auto_start`) a overiť pri novom prihlásení; Kalendár musí pri zamknutej kľúčenke povedať, nie čakať na okno.
 
 ### 10K. [ ] Hry
+
 Herná relácia: Steam, Proton, umu, gamescope, MangoHud, NVIDIA.
 Zdroje: `bin/latte-game`
 
@@ -3564,6 +3598,7 @@ Reason na latte-lab aj podľa stres testu 369; zachovať vstup do hry a overiť,
 ---
 
 ### 10L. [ ] Správa súborov (latte-filem)
+
 Všetko, čo robí so súbormi celý LatteOS, oddelené od DualBrew (používateľ 4. 11.): vlastnosti, premenovanie, informácia pri podržaní
 myši, okno Otvoriť / Uložiť pre všetky aplikácie a úkony so súbormi. DualBrew, plocha (7B), LensGoo aj cudzie aplikácie používajú to
 isté. Konečná podoba podľa 17.05: okná v pleamare (`kind: window`, štýl Goo), dáta a úkony pomocník v Ruste (`crates/`), ktorý
@@ -3694,34 +3729,48 @@ aj podpriečinkov. Hotové riešenia: **Meld** (GPL, najbližšie tomu, čo chce
 nie kód) alebo KDiff3; `diff`/`cmp`, ImageMagick `compare` pre obrázky, `rsync --dry-run` pre priečinky. Vzhľad a skratky podľa
 Total Commandera (Porovnať podľa obsahu, Synchronizovať priečinky).
 
-### 10M. [ ] Marea a pleamar: využitie v LatteOS
-Marea (k4ditano/marea-plm, BSD-3) je od 4. 11. v LatteOS ako kvapka plochy (Nastavenia › Kvapky › Marea, `bin/latte-marea`,
-strom `/usr/share/latteos/marea-plm/`). Je to celý shell v pleamare: oznámenia, ovládacie centrum, hľadanie, snímky obrazovky,
-zámok, Wi-Fi, Bluetooth, zvuk, kalendár, tapety, šatník (vzhľady), agenti, softvér, sústredenie, história. Veľa z toho LatteOS
-už má po svojom (Goo, LensAI, Nastavenia). Tu sa rozhoduje, čo ako použiť: **preniesť** funkciu do LatteOS (do Goo, LensAI,
-Nastavení), **nechať** ju v Marei a iba ju **preskinovať** na šálky LatteOS, alebo **oboje**. Pravidlá: najprv nájsť, potom písať
-(CLAUDE.md); mená Marey nie sú naše; Marea sa nemení záplatami, iba vrstvou LatteOS (ako pleamar-wm, `patches/`).
-Zdroje: `build/pleamar-src/marea-plm/` (`scene/pages/`, `logic/`, `wardrobe/`, `tools/`), `bin/latte-marea`, `apps/settings.qml`
+### 10M. [ ] Latte-Workfield — uložené a obnoviteľné pracovné prostredia
 
-**10M.01** [ ] **Súpis a rozhodnutie** (používateľ 4. 11.): tabuľka všetkých funkcií Marey (stránky `scene/pages/*.plm`,
-plochy `scene/surfaces/`, logika `logic/*.luau`) vedľa toho, čo už je v LatteOS (BarGoo, LensGoo, PowerGoo, ClockGoo, CamGoo,
-TrayShore, LoginGoo, Nastavenia, LensAI). Pri každej: preniesť · nechať a preskinovať · oboje; nič dvakrát naraz na obrazovke
-(napr. oznámenia Marey a BarGoo). Rozhodnutia používateľa do `docs/goo/ROZHODNUTIA.md`.
-**10M.02** [ ] **Spotreba Claude a Codexu do LensAI** (používateľ 4. 11.: Marea ju zobrazuje nádherne): jej „nádrže agentov“
-(`scene/pages/agents.plm`, `logic/agents.luau`, `tools/reservas`) — koľko ostáva z 5-hodinového a týždenného okna, odpočet
-do obnovenia, voda v nádrži. Preniesť do LensAI (10B) a k službám AI v LensGoo; pravidlá Marey ostávajú (neznáme číslo nie je
-nula, percentá dvoch okien sa nesčítajú, okno po obnovení je „čaká“).
-**10M.03** [ ] **Marea v šálkach LatteOS**: vzhľad Marey (`wardrobe/`) z `system/cups.json` a farieb tapety, ako okná a Goo
-(9A); jej šatník ostáva ako voľba navyše.
-**10M.04** [ ] **Ďalšie z pleamaru**: čo z pleamaru a jeho príkladov (`pleamar --docs recipes`, `examples/`) ešte nepoužívame
-a čo by LatteOS nahradilo vlastný kód (napr. sklo, častice, shadery pre 9A.14).
+Latte-Workfield umožní uložiť pomenovaný stav práce a neskôr ho obnoviť. Nie je to virtuálna plocha: naraz je aktívny
+najviac jeden Workfield; pri prepnutí sa predchádzajúci môže zachovať ako dočasný Workfield a nikdy sa potichu nezahodí.
+Obsahuje podľa podpory aplikácie spustené programy, okná a ich rozloženie, obnoviteľný aplikačný stav a vybrané systémové
+nastavenia. Obnova je čiastočne úspešná aj pri chýbajúcej aplikácii a oznámi, čo sa obnoviť nepodarilo. Údaje sú vo
+verzovanom, prenositeľnom súbore s importom/exportom. Workfield nesmie predstierať obnovu vnútorného stavu iba opätovným
+spustením programu; citlivé údaje ani prístupové údaje neukladá.
+
+Integrácie sa najprv overia v aktuálnom repozitári: Pleamar WM (okná), Latte Session (životný cyklus relácie), LatteSettings,
+AppManager, DeviceManager a PipeWire. Nezdvojuje sa ich funkcionalita ani sa vopred nepredpokladá podpora, ktorú ich API
+nemá. Pri ukončení aplikácie sa chránia neuložené zmeny; adaptér môže obnoviť vnútorný stav len tam, kde to aplikácia
+umožňuje. Prvé použiteľné vydanie spĺňa základné kritériá: vytvoriť a pomenovať Workfield, uložiť zoznam aplikácií a stav
+okien, ukončiť a obnoviť reláciu s pôvodným rozložením, bezpečne prepnúť cez Temporary Workfield, oznámiť čiastočnú obnovu
+a preniesť Workfield importom/exportom. Úplná obnova každej aplikácie a systémových nastavení ostáva postupným cieľom.
+
+**10M.01** [ ] **Technický audit a návrh** (používateľ 6. 11.): preskúmať Latte Session, Pleamar WM API a identifikáciu okien/
+aplikácií, obnovu procesov a stavov, systémové API a existujúce nastavenia. Výstupom bude návrh architektúry, dátového
+formátu a rozhraní jadra, UI a aplikačných adaptérov vrátane obmedzení; bez paralelnej infraštruktúry a implementácie
+pred schválením návrhu.
+**10M.02** [ ] **Základný Workfield**: verzovaný pomenovaný súbor, vytvorenie/uloženie a zoznam s časom úpravy; menu na
+obnovenie spustených aplikácií a rozloženia okien cez existujúce rozhranie Pleamar WM. Chýbajúce aplikácie a okná hlásiť
+bez zlyhania obnovy zvyšku.
+**10M.03** [ ] **Bezpečné prepínanie a Temporary Workfield**: pred prepnutím ponúknuť ukončenie alebo zachovanie aktuálneho
+stavu. Dočasný stav sa nikdy automaticky neodstráni; možno ho obnoviť, uložiť ako trvalý alebo výslovne zahodiť. Upozorniť
+na neuloženú prácu a nepokračovať v ukončení bez bezpečného rozhodnutia používateľa.
+**10M.04** [ ] **Aplikačné adaptéry**: rozhranie adaptérov jasne rozlíši obnovené, čiastočne obnovené a neobnoviteľné dáta.
+Postupne overiť Firefox, VS Code a Moonlight; negarantovať vnútorný stav bez podpory aplikácie.
+**10M.05** [ ] **Vybrané systémové nastavenia**: používateľsky nastaviteľný výber obnovovaných kategórií (napr. jas, monitory,
+zvukové zariadenie a hlasitosť); zmeny robiť cez existujúce LatteOS rozhrania a bezpečne prispôsobiť chýbajúce zariadenia.
+**10M.06** [ ] **Prenos, kompatibilita a výkon**: export/import samostatného Workfieldu; pri importe overiť aplikácie, zariadenia,
+monitory a verziu formátu. Zmerať čas uloženia, ukončenia, obnovy a RAM; oznámiť nedostupné časti bez straty zvyšku.
 
 ### 10N. [ ] LatteIndex — voliteľná systémová indexačná vrstva
+
 LatteIndex je schopnosť a API kontrakt, nie nevyhnutná súčasť Chapolery. Navrhované pomenovanie: **LatteIndex**
 je systémová vrstva, budúci používateľský daemon **`latte-indexd`**, klient/diagnostický príkaz **`latte-index`**.
-Daemon sa teraz nevyvíja. Cieľ je lokálna, offline a od AI nezávislá služba/API pre viac klientov, bez úpravy
-originálnych súborov; indexujú sa iba výslovne povolené roots. Chapolera môže zdieľať všeobecné fakty, ale bez
-LatteIndexu musí ďalej fungovať vlastným scannerom a databázou. Štyri nezávislé vrstvy: **L0** katalóg názvov,
+Daemon sa teraz nevyvíja. Zdieľané Rust jadro `latte-index-core` už poskytuje LatteIndexu aj Chapolere rovnaké
+prehľadávanie viditeľných súborov, filesystemové fingerprinty, SHA-256 a MIME/signatúrnu detekciu. Ich SQLite
+databázy a doménové fakty zostávajú oddelené; Chapolera nepotrebuje LatteIndex daemon a pracuje samostatne cez
+spoločné jadro. Cieľ je lokálna, offline a od AI nezávislá služba/API pre viac klientov, bez úpravy originálnych
+súborov; indexujú sa iba výslovne povolené roots. Štyri nezávislé vrstvy: **L0** katalóg názvov,
 cest, prípon, MIME, veľkostí, časov, filesystem identity/dostupnosti a symlink vzťahov; **L1** podporované
 technické metadáta (EXIF, ID3, PDF, rozmery obrázkov, video vlastnosti, názvy/autor dokumentov); **L2**
 konfigurovateľný textový obsah (PDF/Office/EPUB/text/kód, voliteľne OCR, titulky a prepisy); **L3** voliteľné
@@ -3752,15 +3801,16 @@ cudzieho kódu. Špecifikácia v [docs/latte-index/PLAN.md](docs/latte-index/PLA
   LocalSearch/Recoll, diagram závislostí a míľniky. **V tejto úlohe sa daemon ani indexer neimplementuje.**
   Výstup: [docs/latte-index/PLAN.md](docs/latte-index/PLAN.md).
 **10N.02** [ ] **Technologický výskum, porovnávacia matica a benchmark plán** — pred implementáciou porovnať
-  Everything/Spotlight/GNOME LocalSearch/Recoll/Baloo ako referencie a SQLite FTS5 vs. Tantivy; prefix,
+  Everything/Spotlight/GNOME LocalSearch/Recoll/Baloo a DigUp ako referencie a SQLite FTS5 vs. Tantivy; prefix,
   substring, viacjazyčné tokenizéry, metadata filtre, relevanciu a hybridné keyword/vector vyhľadávanie.
   Preskúmať SQLite Vec1/udržiavané vektorové adaptéry, inotify/fanotify/journals, filesystem identity/handles,
   MIME/libmagic, Tika vs. natívne extraktory, FFmpeg/FFprobe, TagLib, ExifTool a OCR. Výstupom je matica
   výkonu, RAM, veľkosti indexu, CPU, kompatibility filesystemov, zložitosti, bezpečnosti, údržby, licencií
   a rozšíriteľnosti; oddeliť overené voľby od experimentov. Navrhnúť schému, versioned API/capability discovery,
   izoláciu, limity, bezpečnostný model a merateľné ciele. Žiadny kandidát sa nevyberie bez benchmarku na
-  reprezentatívnych dátach a SSD/HDD/USB; túto úlohu schváliť pred produkčným jadrom.
-**10N.03** [ ] **L0 core, SQLite a prírastkový katalóg/vyhľadávanie názvov** — Rust knižnica, verzovaná schéma
+  reprezentatívnych dátach a SSD/HDD/USB.
+**10N.03** [ ] **L0 core, SQLite a prírastkový katalóg/vyhľadávanie názvov** — rozšíriť existujúci Rust
+  `latte-index-core` a LatteIndex knižnicu o verzovanú schému
   a migrácie, WAL/transactions, multi-volume roots, asset identity oddelená od ciest, filesystem identity,
   generácie skenu, checkpointy a zotavenie. Prvé scan/reconciliation a filename/path search musia byť rýchle,
   konzistentné aj po páde; nevyžadovať daemon, AI ani plný rebuild po reštarte.
@@ -3786,12 +3836,25 @@ cudzieho kódu. Špecifikácia v [docs/latte-index/PLAN.md](docs/latte-index/PLA
   fallback zachovať.
 **10N.08** [ ] **L3 voliteľná sémantická interoperabilita** — oddelený adapter a storage pre text/image embeddings,
   sémantické popisy/tagy/vzťahy a similarity/hybrid search; modely a AI voliteľné, verziované a nikdy
-  požadované pre L0–L2. Definovať vlastníctvo metadát a zdieľanie s Chapolerou tak, aby jej taxonómia ani
+  požadované pre L0–L2. Výber DigUp/runtime/model musí čakať na výsledok 10N.10. Definovať vlastníctvo metadát
+  a zdieľanie s Chapolerou tak, aby jej taxonómia ani
   organizovanie neboli povinnosťou LatteIndexu a žiadna vrstva nemenila pôvodné súbory.
 **10N.09** [ ] **Výkonové, odolnostné a kompatibilitné brány** — cold/warm scan, query latency a priebežné
   výsledky počas indexovania, veľkosť DB/cache, idle/aktívne CPU/RAM/I/O, backpressure, multilingual relevancia,
   watcher overflow, suspend/resume, odpojené volumes, prerušené generácie, migrácie/DB recovery, zleformované
   súbory a sandbox limity. Overiť merateľné ciele, regresie a obnovu bez neodôvodneného úplného reindexu.
+**10N.10** [ ] **Výskum integrácie DigUp do LatteIndexu** — povinná príprava pred L3 rozhodnutím; preskúmať
+  upstream projekt [ARahim3/DigUp](https://github.com/ARahim3/DigUp) (MIT), EmbeddingGemma 2 (Apache-2.0),
+  `llama.cpp` (MIT) a alternatívy. Porovnať tri cesty: spúšťať upstream `digup` ako voliteľný lokálny proces,
+  integrovať model/runtime cez vlastný provider adapter alebo adaptovať len vybrané vlastnosti do LatteIndexu.
+  Zmerať Fedora kompatibilitu, embedding/search evaly, model a download, CPU/RAM/VRAM, latenciu, úložisko,
+  incremental cache, offline/privacy správanie a aktualizácie/verzie. Porovnať spoločný multimodálny embedding
+  priestor, PDF po stranách, prekrývajúce sa 30 s audio úseky, vzorkovanie video snímok + zvuku, presné textové
+  zhody + hybrid ranking, viacjazyčné claims a reprodukovateľné evaly s FTS5/Tantivy, Recoll/Xapian,
+  LocalSearch a existujúcim SigLIP/LensAI tokom Chapolery. Overiť aj oddelený opt-in index kódu, vylúčenie
+  tajomstiev/skrytých súborov/datasetov, predbežný odhad prvého skenu, samostatný model helper a model/runtime
+  compatibility tests. Výstup: adapter/API návrh, matica výhod a rizík a benchmark report; bez
+  kopírovania DigUp Swift/Tauri kódu, automatického sťahovania modelu alebo zavedenia povinnej závislosti.
 
 ### 10O. [ ] LatteCapture
 

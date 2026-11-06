@@ -1,0 +1,11 @@
+[package]
+name = "latte-index-core"
+description = "Shared local file scanning primitives for LatteOS"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+
+[dependencies]
+infer = "0.22.0"
+sha2 = "0.10.9"

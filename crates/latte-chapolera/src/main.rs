@@ -5,13 +5,17 @@
 //!   latte-chapolera settings-set automatic|manual LIMIT
 //!   latte-chapolera memory
 //!   latte-chapolera profile PATH
+//!   latte-chapolera tags-cache PATH ANALYZER MODEL MODEL_VERSION TASK_VERSION local|cloud
+//!   latte-chapolera tags-store PATH ANALYZER MODEL MODEL_VERSION TASK_VERSION local|cloud JSON
 //!   latte-chapolera classify-image IMAGE LABEL...
 //!   latte-chapolera classify-folder FOLDER LABEL...
 //!   latte-chapolera classify-folder-events FOLDER LABEL...
+//!   latte-chapolera tag-folder-events FOLDER VOCABULARY_MODEL_ID TAGS_JSON
 
 use candle_core::{DType, Device, IndexOp, Tensor};
 use candle_nn::VarBuilder;
 use candle_transformers::models::siglip;
+use sha2::{Digest, Sha256};
 use std::collections::HashSet;
 use std::fs::{self, OpenOptions};
 use std::io::Write;
@@ -30,6 +34,19 @@ const DEFAULT_SIGLIP_MODEL_DIR: &str = "/data/ai/models/chapolera/siglip2-base-p
 const SIGLIP_IMAGE_SIZE: u32 = 224;
 const SIGLIP_TEXT_LENGTH: usize = 64;
 const SIGLIP_IMAGE_BATCH_SIZE: usize = 8;
+const SIGLIP_MODEL_ID: &str = "google/siglip2-base-patch16-224";
+const SIGLIP_MODEL_VERSION: &str = "siglip2-base-patch16-224-v1";
+const TAG_ANALYZER_ID: &str = "siglip2";
+const TAG_SOURCE: &str = "siglip2-relative-softmax";
+const MAX_TAG_CANDIDATES: usize = 16;
+const MAX_TAGS_PER_ASSET: usize = 5;
+const TAG_RELATIVE_SCORE_FACTOR: f64 = 1.25;
+
+#[derive(Debug, Clone)]
+struct TagCandidate {
+    label: String,
+    image_prompt: String,
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 struct Settings {
@@ -464,6 +481,213 @@ fn classify_folder_events(folder: &Path, labels: &[String]) -> Result<String, St
     Ok(String::new())
 }
 
+fn parse_tag_candidates(json: &str) -> Result<Vec<TagCandidate>, String> {
+    let value: serde_json::Value =
+        serde_json::from_str(json).map_err(|error| format!("invalid tag candidates JSON: {error}"))?;
+    let values = value
+        .as_array()
+        .ok_or("tag candidates must be a JSON array")?;
+    if !(4..=MAX_TAG_CANDIDATES).contains(&values.len()) {
+        return Err(format!("tag candidates must contain 4–{MAX_TAG_CANDIDATES} entries"));
+    }
+
+    let mut labels = HashSet::new();
+    let mut prompts = HashSet::new();
+    values
+        .iter()
+        .map(|value| {
+            let object = value
+                .as_object()
+                .ok_or("each tag candidate must be a JSON object")?;
+            let label = object
+                .get("label")
+                .and_then(serde_json::Value::as_str)
+                .ok_or("each tag candidate needs a string label")?
+                .trim();
+            let image_prompt = object
+                .get("image_prompt")
+                .and_then(serde_json::Value::as_str)
+                .ok_or("each tag candidate needs a string image_prompt")?
+                .trim();
+            if label.is_empty()
+                || label.chars().count() > 64
+                || label.chars().any(|character| character.is_control() || matches!(character, '/' | '\\'))
+                || image_prompt.is_empty()
+                || image_prompt.chars().count() > 200
+                || image_prompt.chars().any(char::is_control)
+            {
+                return Err("tag candidate values are empty, too long, or contain forbidden characters".to_string());
+            }
+            if !labels.insert(label.to_lowercase()) || !prompts.insert(image_prompt.to_lowercase()) {
+                return Err("tag candidate labels and prompts must be distinct".to_string());
+            }
+            Ok(TagCandidate {
+                label: label.to_string(),
+                image_prompt: image_prompt.to_string(),
+            })
+        })
+        .collect()
+}
+
+fn tag_task_version(vocabulary_model_id: &str, candidates: &[TagCandidate]) -> Result<String, String> {
+    let config = serde_json::json!({
+        "task": "siglip2-image-tags-v1",
+        "vocabulary_model_id": vocabulary_model_id,
+        "candidates": candidates.iter().map(|candidate| serde_json::json!({
+            "label": &candidate.label,
+            "image_prompt": &candidate.image_prompt,
+        })).collect::<Vec<_>>(),
+    });
+    let serialized = serde_json::to_vec(&config)
+        .map_err(|error| format!("could not serialize tag task configuration: {error}"))?;
+    let digest = Sha256::digest(serialized);
+    let digest_hex = digest.iter().map(|byte| format!("{byte:02x}")).collect::<String>();
+    Ok(format!("siglip-tags-v1-{digest_hex}"))
+}
+
+fn semantic_tags_for_result(
+    result: &serde_json::Value,
+    candidates: &[TagCandidate],
+) -> Result<Vec<serde_json::Value>, String> {
+    let scores = result
+        .get("scores")
+        .and_then(serde_json::Value::as_array)
+        .ok_or("SigLIP result has no scores")?;
+    if scores.len() != candidates.len() {
+        return Err("SigLIP result does not cover every tag candidate".to_string());
+    }
+    let mut scored = Vec::with_capacity(scores.len());
+    let mut max_score = f64::NEG_INFINITY;
+    for score in scores {
+        let prompt = score
+            .get("label")
+            .and_then(serde_json::Value::as_str)
+            .ok_or("SigLIP score has no prompt label")?;
+        let candidate = candidates
+            .iter()
+            .find(|candidate| candidate.image_prompt == prompt)
+            .ok_or("SigLIP returned a prompt outside the tag vocabulary")?;
+        let logit = score
+            .get("score")
+            .and_then(serde_json::Value::as_f64)
+            .filter(|value| value.is_finite())
+            .ok_or("SigLIP returned a non-finite score")?;
+        max_score = max_score.max(logit);
+        scored.push((candidate, logit));
+    }
+    let weights = scored
+        .iter()
+        .map(|(_, logit)| (logit - max_score).exp())
+        .collect::<Vec<_>>();
+    let normalizer: f64 = weights.iter().sum();
+    if !normalizer.is_finite() || normalizer <= 0.0 {
+        return Err("SigLIP scores could not be normalized".to_string());
+    }
+    let mut ranked = scored
+        .iter()
+        .zip(weights)
+        .map(|((candidate, _), weight)| (candidate, weight / normalizer))
+        .collect::<Vec<_>>();
+    ranked.sort_by(|left, right| right.1.total_cmp(&left.1));
+    let relative_threshold = TAG_RELATIVE_SCORE_FACTOR / candidates.len() as f64;
+    Ok(ranked
+        .into_iter()
+        .enumerate()
+        .filter(|(rank, (_, score))| *rank == 0 || *score >= relative_threshold)
+        .take(MAX_TAGS_PER_ASSET)
+        .map(|(_, (candidate, confidence))| serde_json::json!({
+            "label": &candidate.label,
+            "confidence": confidence,
+            "source": TAG_SOURCE,
+        }))
+        .collect())
+}
+
+fn tag_folder_events(
+    folder: &Path,
+    vocabulary_model_id: &str,
+    tags_json: &str,
+) -> Result<String, String> {
+    let candidates = parse_tag_candidates(tags_json)?;
+    let image_prompts = candidates
+        .iter()
+        .map(|candidate| candidate.image_prompt.clone())
+        .collect::<Vec<_>>();
+    let task_version = tag_task_version(vocabulary_model_id, &candidates)?;
+    let root = fs::canonicalize(folder).map_err(|error| format!("{}: {error}", folder.display()))?;
+    let photos = photo_paths(&root)?;
+    write_event(&serde_json::json!({
+        "event": "start",
+        "total": photos.len(),
+    }))?;
+    if photos.is_empty() {
+        write_event(&serde_json::json!({
+            "event": "complete",
+            "classified": 0,
+        }))?;
+        return Ok(String::new());
+    }
+
+    let mut uncached = Vec::new();
+    for photo in &photos {
+        let cache: serde_json::Value = serde_json::from_str(&asset_store::semantic_tag_cache_after_scan(
+            photo,
+            TAG_ANALYZER_ID,
+            SIGLIP_MODEL_ID,
+            SIGLIP_MODEL_VERSION,
+            &task_version,
+            "local",
+        )?)
+        .map_err(|error| format!("could not parse Chapolera tag cache: {error}"))?;
+        if cache["cached"].as_bool() == Some(true) {
+            let tags = cache["tags"]
+                .as_array()
+                .filter(|tags| !tags.is_empty())
+                .ok_or("cached Chapolera tag result is empty or invalid")?;
+            write_event(&serde_json::json!({
+                "event": "image",
+                "image": photo.to_string_lossy(),
+                "tags": tags,
+                "cached": true,
+            }))?;
+        } else {
+            uncached.push(photo.clone());
+        }
+    }
+
+    if !uncached.is_empty() {
+        let classifier = SiglipClassifier::load()?;
+        for batch in uncached.chunks(SIGLIP_IMAGE_BATCH_SIZE) {
+            let results = classifier.classify_batch(batch, &image_prompts)?;
+            for (image_path, result) in batch.iter().zip(results) {
+                let tags = semantic_tags_for_result(&result, &candidates)?;
+                let tags_json = serde_json::to_string(&tags)
+                    .map_err(|error| format!("could not encode semantic tags: {error}"))?;
+                asset_store::store_semantic_tags(
+                    image_path,
+                    TAG_ANALYZER_ID,
+                    SIGLIP_MODEL_ID,
+                    SIGLIP_MODEL_VERSION,
+                    &task_version,
+                    "local",
+                    &tags_json,
+                )?;
+                write_event(&serde_json::json!({
+                    "event": "image",
+                    "image": image_path.to_string_lossy(),
+                    "tags": tags,
+                    "cached": false,
+                }))?;
+            }
+        }
+    }
+    write_event(&serde_json::json!({
+        "event": "complete",
+        "classified": photos.len(),
+    }))?;
+    Ok(String::new())
+}
+
 fn execute(args: &[String]) -> Result<String, String> {
     match args {
         [command, image, labels @ ..] if command == "classify-image" => {
@@ -471,6 +695,9 @@ fn execute(args: &[String]) -> Result<String, String> {
         }
         [command, folder, labels @ ..] if command == "classify-folder-events" => {
             classify_folder_events(Path::new(folder), labels)
+        }
+        [command, folder, vocabulary_model_id, tags_json] if command == "tag-folder-events" => {
+            tag_folder_events(Path::new(folder), vocabulary_model_id, tags_json)
         }
         [command, folder, labels @ ..] if command == "classify-folder" => {
             classify_folder(Path::new(folder), labels)
@@ -483,6 +710,31 @@ fn execute(args: &[String]) -> Result<String, String> {
             Ok(output(path, &counts, &files, limit, offset))
         }
         [command, path] if command == "profile" => asset_store::profile(Path::new(path)),
+        [command, path, analyzer, model, model_version, task_version, locality]
+            if command == "tags-cache" =>
+        {
+            asset_store::semantic_tag_cache(
+                Path::new(path),
+                analyzer,
+                model,
+                model_version,
+                task_version,
+                locality,
+            )
+        }
+        [command, path, analyzer, model, model_version, task_version, locality, tags]
+            if command == "tags-store" =>
+        {
+            asset_store::store_semantic_tags(
+                Path::new(path),
+                analyzer,
+                model,
+                model_version,
+                task_version,
+                locality,
+                tags,
+            )
+        }
         [command] if command == "settings" => {
             let settings = read_settings(&settings_path()?)?;
             Ok(settings_json(settings))
@@ -509,7 +761,7 @@ fn execute(args: &[String]) -> Result<String, String> {
                 "preview_limit": automatic_preview_limit(available_bytes),
             }).to_string())
         }
-        _ => Err("usage: latte-chapolera scan FOLDER LIMIT OFFSET | profile PATH | settings | settings-set automatic|manual LIMIT | memory | classify-image IMAGE LABEL... | classify-folder FOLDER LABEL... | classify-folder-events FOLDER LABEL...".to_string()),
+        _ => Err("usage: latte-chapolera scan FOLDER LIMIT OFFSET | profile PATH | tags-cache PATH ANALYZER MODEL MODEL_VERSION TASK_VERSION local|cloud | tags-store PATH ANALYZER MODEL MODEL_VERSION TASK_VERSION local|cloud JSON | settings | settings-set automatic|manual LIMIT | memory | classify-image IMAGE LABEL... | classify-folder FOLDER LABEL... | classify-folder-events FOLDER LABEL... | tag-folder-events FOLDER VOCABULARY_MODEL_ID TAGS_JSON".to_string()),
     }
 }
 
@@ -676,5 +928,84 @@ mod tests {
     fn reads_available_memory_in_bytes() {
         assert_eq!(available_memory_bytes("MemTotal: 16000 kB\nMemAvailable:  12000 kB\n").unwrap(), 12_288_000);
         assert!(available_memory_bytes("MemTotal: 16000 kB\n").is_err());
+    }
+
+    #[test]
+    fn parses_distinct_visual_tag_candidates() {
+        let tags = r#"[
+            {"label":"Mountains","image_prompt":"mountains"},
+            {"label":"Ocean","image_prompt":"ocean"},
+            {"label":"City","image_prompt":"city street"},
+            {"label":"Animals","image_prompt":"wild animals"}
+        ]"#;
+        let candidates = parse_tag_candidates(tags).unwrap();
+        assert_eq!(candidates.len(), 4);
+        assert_eq!(candidates[0].label, "Mountains");
+        assert!(parse_tag_candidates(r#"[{"label":"A","image_prompt":"a"},{"label":"a","image_prompt":"b"},{"label":"C","image_prompt":"c"},{"label":"D","image_prompt":"d"}]"#).is_err());
+    }
+
+    #[test]
+    fn tag_task_version_tracks_vocabulary_and_source_model() {
+        let candidates = parse_tag_candidates(
+            r#"[
+                {"label":"Mountains","image_prompt":"mountains"},
+                {"label":"Ocean","image_prompt":"ocean"},
+                {"label":"City","image_prompt":"city street"},
+                {"label":"Animals","image_prompt":"wild animals"}
+            ]"#,
+        )
+        .unwrap();
+        let original = tag_task_version("local/qwen", &candidates).unwrap();
+        assert_eq!(original, tag_task_version("local/qwen", &candidates).unwrap());
+        assert_ne!(original, tag_task_version("local/other", &candidates).unwrap());
+        let mut changed_vocabulary = candidates.clone();
+        changed_vocabulary[0].image_prompt = "mountain landscape".to_string();
+        assert_ne!(original, tag_task_version("local/qwen", &changed_vocabulary).unwrap());
+    }
+
+    #[test]
+    fn siglip_scores_become_ranked_relative_semantic_tags() {
+        let candidates = parse_tag_candidates(
+            r#"[
+                {"label":"Mountains","image_prompt":"mountains"},
+                {"label":"Ocean","image_prompt":"ocean"},
+                {"label":"City","image_prompt":"city street"},
+                {"label":"Animals","image_prompt":"wild animals"}
+            ]"#,
+        )
+        .unwrap();
+        let result = serde_json::json!({
+            "scores": [
+                {"label":"city street","score":0.0},
+                {"label":"mountains","score":4.0},
+                {"label":"wild animals","score":1.0},
+                {"label":"ocean","score":3.8}
+            ]
+        });
+        let tags = semantic_tags_for_result(&result, &candidates).unwrap();
+        assert_eq!(tags.len(), 2);
+        assert_eq!(tags[0]["label"], "Mountains");
+        assert_eq!(tags[1]["label"], "Ocean");
+        assert_eq!(tags[0]["source"], TAG_SOURCE);
+        let confidence_sum: f64 = tags
+            .iter()
+            .map(|tag| tag["confidence"].as_f64().unwrap())
+            .sum();
+        assert!(confidence_sum < 1.0 && confidence_sum > 0.9);
+
+        let ambiguous_result = serde_json::json!({
+            "scores": [
+                {"label":"mountains","score":1.0},
+                {"label":"ocean","score":1.0},
+                {"label":"city street","score":1.0},
+                {"label":"wild animals","score":1.0}
+            ]
+        });
+        assert_eq!(
+            semantic_tags_for_result(&ambiguous_result, &candidates)
+                .unwrap()
+                .len(),
+            1
+        );
     }
 }

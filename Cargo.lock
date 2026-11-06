@@ -916,7 +916,7 @@ dependencies = [
  "candle-nn",
  "candle-transformers",
  "image",
- "infer",
+ "latte-index-core",
  "rusqlite",
  "serde_json",
  "sha2",
@@ -931,9 +931,16 @@ version = "0.4.0"
 name = "latte-index"
 version = "0.4.0"
 dependencies = [
- "infer",
+ "latte-index-core",
  "rusqlite",
  "serde_json",
+]
+
+[[package]]
+name = "latte-index-core"
+version = "0.4.0"
+dependencies = [
+ "infer",
  "sha2",
 ]
 

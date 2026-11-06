@@ -1,8 +1,9 @@
 # LatteIndex — systémová indexačná vrstva
 
 Stav k 6. 11. 2026. Nová natívna systémová schopnosť, plánovaná v [ROADMAP 10N](../../ROADMAP.md).
-LatteIndex sa zatiaľ iba špecifikuje; jeho daemon sa teraz nevyvíja. Chapolera ho bude vedieť využiť ako
-voliteľný zdroj spoločných faktov, ale jej analýza od LatteIndexu nesmie závisieť. Pozri
+LatteIndex daemon sa teraz nevyvíja. Zdieľané Rust jadro `latte-index-core` už poskytuje spoločné skenovanie,
+filesystemové fingerprinty, SHA-256 a detekciu signatúr pre LatteIndex aj Chapoleru. Chapolera od daemonu
+ani LatteIndex databázy nezávisí. Pozri
 [plán Chapolery](../chapolera/PLAN.md).
 
 ## Pomenovanie a hranice
@@ -14,8 +15,9 @@ voliteľný zdroj spoločných faktov, ale jej analýza od LatteIndexu nesmie z�
 
 LatteIndex bude voliteľná používateľská služba v používateľskom účte, nikdy root démon. Poskytne rýchly,
 prírastkový a lokálny index zvolenej časti filesystemu; nebude meniť, presúvať ani mazať súbory a nebude
-vykonávať mediálnu taxonómiu Chapolery. Chapolera môže zdieľať jeho všeobecné fakty, no zachová si vlastný
-scanner, extractor pipeline a lokálnu databázu, keď služba nie je dostupná.
+vykonávať mediálnu taxonómiu Chapolery. Obe aplikácie používajú rovnaké nízkoúrovňové skenovacie primitíva
+z `latte-index-core`; ich SQLite databázy a doménové fakty zatiaľ zostávajú samostatné. Chapolera má vlastné
+indexačné a analytické úložisko aj vtedy, keď LatteIndex služba nie je dostupná.
 
 ## Referenčné systémy — čo si z nich vziať
 
@@ -27,10 +29,19 @@ Neexistuje jeden najlepší indexer vo všetkých úlohách:
 | Spotlight | prirodzená desktopová integrácia a pochopiteľné výsledky | jednotný používateľský zážitok, rýchle výsledky naprieč aplikáciami | uzavretú platformovú implementáciu |
 | [GNOME LocalSearch](https://gitlab.gnome.org/GNOME/localsearch) / [TinySPARQL](https://tracker.api.gnome.org/overview.html) | moderný Linuxový model indexera, typované entity a lokálne query rozhranie | oddelený indexer a klienti, typované fakty, živé zmeny | povinnú RDF/SPARQL zložitosť, kým ju potreba nepreukáže |
 | [Recoll](https://www.recoll.org/usermanual/usermanual.html) | extrakcia obsahu a kvalitné full-text vyhľadávanie cez Xapian | adaptér extraktorov, provenance chýb, relevantnosť výsledkov | závislosť od samostatnej desktopovej aplikácie ako jediného API |
+| [DigUp](https://github.com/ARahim3/DigUp) (MIT) | lokálne multimodálne sémantické hľadanie, presné zhody aj význam, výsledky po stránkach/snímkach/časových úsekoch | preskúmať EmbeddingGemma 2, spoločný embedding priestor, segmentové výsledky, hybridné radenie, inkrementálnosť a evaly | nepreberať Swift/Tauri aplikáciu ani runtime bez porovnania a skúšky integrácie |
 
 Toto je porovnanie cieľov správania, nie prevzatie cudzieho kódu. Licencie a konkrétne knižnice treba znovu
 overiť v čase implementácie. Baloo je ďalší užitočný referenčný bod pre nízku spotrebu a desktopový metadata
 index; jeho zdokumentované limity extraktorov ukazujú, prečo musí LatteIndex hlásiť chýbajúcu podporu a chyby.
+DigUp upstream opisuje EmbeddingGemma 2 ako 740M-parametrový Apache-2.0 multimodálny model, ktorého embeddingy
+prepájajú text, obraz, zvuk a video; README uvádza 865 MB modelový súbor, Linux beta, SQLite, presné textové
+zhody popri sémantickom poradí, segmentové odkazy a prírastkové indexovanie. Tieto tvrdenia a kvalita na
+LatteOS/Fedore sa musia overiť v samostatnej úlohe [10N.10](../../ROADMAP.md) pred rozhodnutím o integrácii.
+Upstream ďalej opisuje stránky PDF, prekrývajúce sa 30-sekundové audio úseky, vzorkovanie video snímok spolu
+so zvukovou stopou, voliteľné oddelené vyhľadávanie kódu a filtre na skryté/prihlasovacie/datasetové súbory.
+Modelový helper sa po indexovaní ukončí, kód má samostatný index a evaly aj referenčné vektory kontrolujú
+zmeny runtime. Silné stránky sú vstupy do benchmarkov, nie automatické technologické rozhodnutia.
 
 ## Cieľové schopnosti
 
@@ -56,13 +67,17 @@ Apps ──→ LatteIndex Client API ──→ latte-indexd (optional user servi
                    │                         ├── Scanner + metadata extractors
                    │                         ├── Filename + full-text search
                    │                         └── Local database/search backend
-                   └── if unavailable: app-specific fallback
+                   └── latte-index-core (in-process scanner primitives)
 
-Chapolera ──→ LatteIndex adapter (if available)
-     └──────→ standalone scan + Chapolera DB (always available)
+Chapolera ──→ latte-index-core ──→ standalone scan + Chapolera DB
+     └──────→ optional LatteIndex API adapter (when available)
 ```
 
-Navrhované vrstvy: `latte-index-core` (dátový model, scanner, migrácie, adapters), `latte-indexd` (user service),
+`latte-index-core` je implementovaná Rust knižnica pre skryté/vylúčené súbory a adresáre, zoradený rekurzívny
+prechod stromom, filesystemové fingerprinty, streamovaný SHA-256 a signatúrny typ súboru. LatteIndex aj
+Chapolera ju používajú; politiku skenovania, metadáta médií a doménové spracovanie si ponechávajú samostatne.
+Jej prvé vydanie nezjednocuje SQLite schémy ani vlastníctvo faktov. Spoločný asset store a migrácie sa rozhodnú
+až po porovnaní existujúcich databáz a definovaní kompatibility. Budúce vrstvy sú `latte-indexd` (user service),
 `latte-index` (CLI/API klient) a aplikáciové konzumenty. Prvé stabilné rozhranie môže byť Rust API; lokálne
 IPC/D-Bus sa navrhne až po definovaní klientov, capability discovery, prístupových práv a verziovania. Aplikácia
 musí vedieť zistiť „služba nedostupná“ a bezpečne použiť svoj vlastný provider bez štartovania či inštalovania
@@ -75,6 +90,10 @@ logy/stav v `~/.local/state/latteos/latte-index/`. Konkrétne umiestnenia potvrd
 zálohovania, veľkosti databázy a pravidiel súkromia.
 
 ## Dátový model
+
+Spoločný core zatiaľ definuje súborové skenovacie primitíva, nie zdieľanú databázovú schému. Prototypy LatteIndexu
+a Chapolery majú rozdielne SQLite schémy a ostávajú oddelené; prípadná migrácia na spoločný asset/facts store je
+otvorené architektonické rozhodnutie, nie tichý dôsledok zdieľania knižnice.
 
 `roots` obsahuje canonical root path, opt-in stav, exclusions, posledný úspešný scan a watcher cursor.
 `assets` má stabilný integer/opaque asset ID, natívnu cestu, zobrazovaný názov, root, size, mtime/ctime,
@@ -126,8 +145,9 @@ Pred implementáciou má vzniknúť a byť schválené toto zadanie:
 > štruktúru procesov a XDG dát, databázu a full-text backend, extraktorové adaptéry, watcher/reconciliation,
 > resource/power limity, ochranu súkromia a obnovu. Vyhodnotiť Everything (rýchle názvy), Spotlight (UX),
 > GNOME LocalSearch/Tracker (Linuxová architektúra) a Recoll (obsahové/full-text vyhľadávanie). Oddeliť fakty
-> LatteIndexu od sémantických tagov/taxonomie Chapolery. Chapolera musí fungovať bez démona cez svoj vlastný
-> scanner, analysis pipeline a databázu a môže voliteľne konzumovať dostupné LatteIndex API. V tejto úlohe
+> LatteIndexu od sémantických tagov/taxonomie Chapolery. Chapolera musí fungovať bez démona cez zdieľané
+> `latte-index-core`, svoju analysis pipeline a databázu a môže voliteľne konzumovať dostupné LatteIndex API.
+> V tejto úlohe
 > daemon, watcher ani produkčné indexačné jadro neimplementovať; najprv predložiť návrh, trade-offy, schému,
 > diagram závislostí, výkonové ciele a míľniky na schválenie.
 
@@ -135,8 +155,8 @@ Pred implementáciou má vzniknúť a byť schválené toto zadanie:
 
 1. **Architektonická špecifikácia** — názvy, hranice, schopnosti, API, model dát, backendy, bezpečnosť, výkon a
    etapizácia; bez démonovej implementácie. Toto je aktuálna práca.
-2. **Core knižnica** — iba po samostatnom schválení: signature/MIME, prírastkový scanner a normalizovaný model,
-   použiteľný aj in-process klientmi bez bežiacej služby.
+2. **Core knižnica** — prvé spoločné primitíva už implementuje `latte-index-core`; rozšíriť ju po benchmarkoch
+   o normalizovaný asset model a prípadnú zdieľanú schému, bez predpokladu bežiacej služby.
 3. **Search backend a extractory** — benchmark SQLite FTS5 proti Xapian pre reálne kolekcie; full-text a metadáta
    s chybami/provenance, bez sémantickej kategorizácie.
 4. **Voliteľný `latte-indexd`** — používateľský service, watcher, lokálna API/IPC a reconciliácia; až po
@@ -148,7 +168,7 @@ Pred implementáciou má vzniknúť a byť schválené toto zadanie:
 
 ## Prototyp v repozitári — nie záväzná architektúra
 
-Rust crate `crates/latte-index` a CLI vznikli ako experiment s `infer`, SHA-256 a SQLite. Nie sú daemon,
-neposkytujú zatiaľ zdieľané API a Chapolera na nich nie je závislá. Zostávajú neintegrovaným prototypom;
-ďalší vývoj sa pozastavuje, kým nebude schválená špecifikácia. Implementácia sa neskôr porovná s návrhom
-a podľa potreby upraví alebo nahradí.
+Rust crate `crates/latte-index` a CLI vznikli ako experiment s SQLite. Nie sú daemon ani služba. Spoločné
+primitíva boli extrahované do `crates/latte-index-core`, ktorý priamo používajú LatteIndex aj Chapolera;
+ich databázy a sémantické funkcie sú naďalej oddelené. Ďalšie rozšírenie core a LatteIndexu sa riadi míľnikmi
+ROADMAP a výsledkom výskumu, najmä DigUp integrácie.

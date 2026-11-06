@@ -63,7 +63,7 @@ Tabuľka menín všetkých krajín (366 dní × 18 krajín) sa raz stiahla z ver
 pomaly, 1 požiadavka za 1,5 s) a dodáva sa so systémom, aby Kalendár nepotreboval sieť. Údaje o menách sú verejné fakty; zdroj a postup
 sú tu, aby sa dala tabuľka obnoviť. Ruská položka sa vynecháva (služba tam vracia iba odkaz).
 
-## Capture (ROADMAP 10M.50), ešte nenapísané
+## Capture (ROADMAP 10O.50), ešte nenapísané
 
 Vzor rozhrania a úprav snímok: **Flameshot** (flameshot-org/flameshot, **GPL-3.0**, C++/Qt Widgets) — preberá sa súbor nástrojov a správanie aj kód, ak treba. **Licencia LatteOS nie je definitívna** (zatiaľ MIT): určí sa po dokončení podľa všetkého integrovaného materiálu tretích strán (používateľ 5. 11.).
 Motor snímok a nahrávania: **Marea** (`logic/camera.luau`, BSD-3, už v systéme). Rozpoznanie textu: **Tesseract** (Apache-2.0).

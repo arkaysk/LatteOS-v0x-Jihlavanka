@@ -5,6 +5,12 @@ tu je, **kedy a prečo** sa čo rozhodlo, a čo bolo zamietnuté. Podrobné pôv
 z vtedy) je v [docs_zaloha/2026-10-06-latteos-goo-pred-rozdelenim.md](../../docs_zaloha/2026-10-06-latteos-goo-pred-rozdelenim.md).
 Nové rozhodnutie: jeden riadok sem (dátum, čo, prečo) a oprava platného znenia v LATTEOS-GOO.md.
 
+## 6. 11. 2026
+
+- **Latte-Workfield — jediný názov pracovných prostredí:** Latte-Workfield je názov aplikácie aj uložených stavov;
+  QueenGoo poskytuje ich vstupné rozhranie, nie samostatnú schopnosť s iným názvom. Staršie pomenovanie tejto funkcie
+  sa nahrádza názvom Latte-Workfield; podrobnosti a implementačné míľniky patria do ROADMAP 10M.
+
 ## 5. 11. 2026
 
 - **Chapolera — spresnenie predanalytickej plochy:** pred triedením má stred iba hromadu súborov a nad ňou voľné pokyny; statické kategórie vrátane duplikátov/rozmazaných sa nezobrazujú, kým ich analýza neodôvodní. Pokyny pokrývajú fotky podľa osôb/GPS, seriály podľa názvu a čísla série, filmy podľa žánru a hudbu podľa štýlu/kapiel. Počet náhľadov naraz sa prispôsobuje dostupnej RAM alebo používateľskému posuvníku v samostatnom okne nastavení; ostatné súbory sú dostupné stránkovaním. (Používateľ, v nadväznosti na 10A.66.)
@@ -35,7 +41,7 @@ Nové rozhodnutie: jeden riadok sem (dátum, čo, prečo) a oprava platného zne
 - **LensShore:** AI-centrická náhrada LensGoo, riadok stále otvorený dole, ostrovček vysúvaný od spodného okraja ako
   v Marei (horná kvapka ako Marea ostáva zamietnutá — všetko dole). LensGoo nezaniká. Prečo: zachovať staré a ponúknuť
   efektívnejšie. Beží vždy iba jedno z nich, prepínač v Nastaveniach › Goo (aby nesúperili o skratku). ROADMAP 6B.12.
-- **BarGoo voliteľný** podľa druhu plochy; **Continuity** v QueenGoo (uložené pracovné stavy jedným klikom).
+- **BarGoo voliteľný** podľa druhu plochy; **Latte-Workfield** dostupný z QueenGoo (uložené pracovné stavy jedným klikom).
   ROADMAP 6A.05, 6E.02.
 - **Vlny:** príboj o TrayShore ako návrh na stavy hladiny (kľud / príboj / búrka); dvojfarebné vlny z okien vyskúšať
   na prihlásení a ploche. ROADMAP 6H.06, 6H.07.
