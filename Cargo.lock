@@ -916,7 +916,10 @@ dependencies = [
  "candle-nn",
  "candle-transformers",
  "image",
+ "infer",
+ "rusqlite",
  "serde_json",
+ "sha2",
  "tokenizers 0.22.2",
 ]
 

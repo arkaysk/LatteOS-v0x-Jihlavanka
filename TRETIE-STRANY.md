@@ -80,6 +80,7 @@ image-rs (MIT alebo Apache-2.0).
 
 ## LatteIndex
 
-Crate `latte-index` používa `infer` (MIT) na rozpoznávanie signatúr, `rusqlite` (MIT; SQLite je public domain)
-a RustCrypto `sha2` (MIT alebo Apache-2.0) na SHA-256. Závislosti sa používajú ako Cargo balíky; kód z nich sa
-nekopíruje do LatteOS. Fallback MIME detekcie používa systémový príkaz `file`.
+Crates `latte-index` a `latte-chapolera` používajú `infer` (MIT) na rozpoznávanie signatúr,
+`rusqlite` (MIT; SQLite je public domain) a RustCrypto `sha2` (MIT alebo Apache-2.0) na SHA-256.
+Závislosti sa používajú ako Cargo balíky; kód z nich sa nekopíruje do LatteOS. Fallback MIME detekcie LatteIndexu
+používa systémový príkaz `file`.

@@ -17,6 +17,8 @@ use std::io::Write;
 use std::path::{Path, PathBuf};
 use tokenizers::Tokenizer;
 
+mod asset_store;
+
 const DEFAULT_PREVIEW_LIMIT: usize = 24;
 const MIN_PREVIEW_LIMIT: usize = 8;
 const MAX_PREVIEW_LIMIT: usize = 96;
@@ -111,60 +113,7 @@ fn automatic_preview_limit(available_bytes: u64) -> usize {
 }
 
 fn scan(folder: &Path, limit: usize, offset: usize) -> Result<(Counts, Vec<FileEntry>), String> {
-    if !valid_preview_limit(limit) {
-        return Err(format!("preview limit must be {MIN_PREVIEW_LIMIT}–{MAX_PREVIEW_LIMIT} in steps of {PREVIEW_STEP}"));
-    }
-    let root = fs::canonicalize(folder).map_err(|error| format!("{}: {error}", folder.display()))?;
-    if !root.is_dir() {
-        return Err(format!("{}: not a folder", root.display()));
-    }
-    let mut counts = Counts::default();
-    let mut previews = Vec::with_capacity(limit);
-    let mut pending = vec![root.clone()];
-
-    while let Some(directory) = pending.pop() {
-        let hidden = hidden_names(&directory)?;
-        let mut entries = fs::read_dir(&directory)
-            .map_err(|error| format!("{}: {error}", directory.display()))?
-            .collect::<Result<Vec<_>, _>>()
-            .map_err(|error| format!("{}: {error}", directory.display()))?;
-        entries.sort_by_key(|entry| entry.file_name());
-        let mut subfolders = Vec::new();
-
-        for entry in entries {
-            let file_name = entry.file_name();
-            let name = file_name.to_string_lossy().into_owned();
-            if name.starts_with('.') || hidden.contains(&name) {
-                continue;
-            }
-            let path = entry.path();
-            let file_type = entry.file_type().map_err(|error| format!("{}: {error}", path.display()))?;
-            if file_type.is_dir() {
-                counts.subfolders += 1;
-                subfolders.push(path);
-                continue;
-            }
-            if !file_type.is_file() {
-                continue;
-            }
-
-            let file_kind = kind(&name);
-            counts.total += 1;
-            match file_kind {
-                "photo" => counts.photos += 1,
-                "video" => counts.videos += 1,
-                "audio" => counts.audio += 1,
-                _ => counts.other += 1,
-            }
-            if counts.total > offset && previews.len() < limit {
-                previews.push(FileEntry { name, path: path.to_string_lossy().into_owned(), kind: file_kind });
-            }
-        }
-
-        pending.extend(subfolders.into_iter().rev());
-    }
-
-    Ok((counts, previews))
+    asset_store::scan(folder, limit, offset)
 }
 
 fn output(folder: &Path, counts: &Counts, files: &[FileEntry], limit: usize, offset: usize) -> String {
@@ -585,6 +534,23 @@ mod tests {
         path
     }
 
+    fn test_database(folder: &Path) -> PathBuf {
+        let name = folder.file_name().unwrap().to_string_lossy();
+        std::env::temp_dir().join(format!("{name}.sqlite3"))
+    }
+
+    fn scan_for_test(folder: &Path, limit: usize, offset: usize) -> Result<(Counts, Vec<FileEntry>), String> {
+        asset_store::scan_with_database(folder, limit, offset, &test_database(folder))
+    }
+
+    fn cleanup_test_database(folder: &Path) {
+        let database = test_database(folder);
+        let _ = remove_dir_all(folder);
+        let _ = std::fs::remove_file(&database);
+        let _ = std::fs::remove_file(database.with_extension("sqlite3-wal"));
+        let _ = std::fs::remove_file(database.with_extension("sqlite3-shm"));
+    }
+
     #[test]
     fn scans_visible_files_and_counts_media() {
         let folder = test_folder("scan");
@@ -602,14 +568,14 @@ mod tests {
         write(folder.join(".hidden"), b"hidden.txt\n").unwrap();
         write(folder.join("hidden.txt"), b"hidden").unwrap();
 
-        let (counts, files) = scan(&folder, 8, 0).unwrap();
+        let (counts, files) = scan_for_test(&folder, 8, 0).unwrap();
         assert_eq!((counts.total, counts.photos, counts.videos, counts.audio, counts.other, counts.subfolders), (6, 2, 1, 2, 1, 2));
         assert_eq!(files.len(), 6);
         assert!(files.iter().any(|file| file.name == "portrait.JPG" && file.kind == "photo"));
         assert!(files.iter().any(|file| file.path.ends_with("nested-photo.png")));
         assert!(!files.iter().any(|file| file.name.starts_with('.')));
         assert!(!files.iter().any(|file| file.name == "hidden.txt"));
-        remove_dir_all(folder).unwrap();
+        cleanup_test_database(&folder);
     }
 
     #[test]
@@ -648,16 +614,16 @@ mod tests {
         for index in 0..21 {
             write(folder.join(format!("image-{index}.png")), b"image").unwrap();
         }
-        let (counts, first) = scan(&folder, 8, 0).unwrap();
-        let (_, second) = scan(&folder, 8, 8).unwrap();
-        let (_, third) = scan(&folder, 8, 16).unwrap();
+        let (counts, first) = scan_for_test(&folder, 8, 0).unwrap();
+        let (_, second) = scan_for_test(&folder, 8, 8).unwrap();
+        let (_, third) = scan_for_test(&folder, 8, 16).unwrap();
         assert_eq!(counts.total, 21);
         assert_eq!(first.len(), 8);
         assert_eq!(second.len(), 8);
         assert_eq!(third.len(), 5);
         assert!(first[0].name < second[0].name);
         assert!(second[0].name < third[0].name);
-        remove_dir_all(folder).unwrap();
+        cleanup_test_database(&folder);
     }
 
     #[test]
@@ -670,7 +636,7 @@ mod tests {
         let folder = test_folder("not-a-folder");
         let file = folder.join("plain.txt");
         write(&file, b"text").unwrap();
-        assert!(scan(&file, 8, 0).unwrap_err().contains("not a folder"));
+        assert!(scan_for_test(&file, 8, 0).unwrap_err().contains("not a folder"));
         remove_dir_all(folder).unwrap();
     }
 

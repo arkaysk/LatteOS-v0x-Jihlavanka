@@ -19,9 +19,12 @@ vykoná scan, detekciu a vlastnú analýzu — bez pokusu automaticky štartova�
 
 Existujúce QML/Rust okno je prototyp: inventár a ukážky fungujú a fotkový experiment najprv žiada LensAI o
 kategórie a potom ich skóruje SigLIPom. Toto poradie je odlišné od cieľového návrhu; nič sa preto nesmie
-považovať za hotové sémantické triedenie celej kolekcie. Samostatný Rust crate LatteIndex už poskytuje
-základnú signatúrovú detekciu, SHA-256 a prírastkový SQLite scan, ale nie je daemon ani zdieľané API a
-Chapolera ho zatiaľ nepoužíva. Je to neintegrovaný experiment, na ktorom Chapolera nezávisí. Chýba AI extrakcia,
+považovať za hotové sémantické triedenie celej kolekcie. Samostatný asset store Chapolery už ukladá aktíva do
+SQLite v XDG data adresári, deteguje známe formáty podľa signatúry, počíta SHA-256 po blokoch a prírastkovo
+reconciliuje zvolený koreň. Nezmenené súbory nehashuje znova, rename môže zachovať ID po overení hashu a
+zmiznuté aktíva ponecháva ako neprítomné. Scan spracúva súbory priebežne a zachováva existujúci JSON kontrakt
+pre QML ukážky. Nejde ešte o kompletné profily/fakty, extractor hub ani LatteIndex integráciu. Experimentálny
+crate LatteIndex zostáva neintegrovaný a Chapolera od neho nezávisí. Chýba AI extrakcia,
 taxonómia aj organizovanie. Ďalšie kroky definujú jej samostatný asset store a provider kontrakt; prípadný
 LatteIndex adapter bude voliteľnou optimalizáciou, nie podmienkou funkčnosti.
 
@@ -273,7 +276,9 @@ do potvrdenej údržby databázy.
 ## Vývojové míľniky
 
 1. **Standalone asset store** — vlastný scanner, signatúrová detekcia, SHA-256 a lokálna databáza Chapolery;
-   aplikácia funguje aj bez LatteIndexu a služby.
+   aplikácia funguje aj bez LatteIndexu a služby. Základný SQLite inventár, prírastkové hashovanie, rename
+   zachovanie identity, označenie missing a paginované QML výstupy sú implementované; ďalšie kroky rozšíria
+   schému o facts, tagy, provenance a extractor cache.
 2. **Voliteľný Index Provider** — capability discovery a adapter na LatteIndex, ak je neskôr dostupný; spoločné
    fakty sa preberú bez duplicitnej extrakcie, no chýbajúce fakty doplní Chapolera.
 3. **Metadata extractors** — obrázok/EXIF, video/ffprobe, základné PDF/text; cache podľa fingerprintu a verzie.
