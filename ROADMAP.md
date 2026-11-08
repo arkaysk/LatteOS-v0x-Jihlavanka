@@ -2,18 +2,6 @@ vytvorene 22.10.2026
 naposledy upravene 5.11.2026
 # LatteOS:0.5 Jihlavanka Build
 
-Idea LatteOS je neziskový linux ktory nevyžaduje po uživatelovy znalost klavesovych skratiek, nevyžaduje po uživatelovy použivanie konzoly, a umožnuje mu fungovat s návikmy z Windows, MacOS ale aj linux. Je to OS ktory umožnuje totalne deaktivovat Ai služby vnutry, ale aj ich naopak, intenzivne využivat na urovni pomocnika OS. 
-Idea pre tvorbu:
--Ked už inečo existuje, prezentovat to a ak je to dobré a schvalene, použit to. 
- Ked niečo už existuje, je funkčné, obľúbené a správne (napr. klon Total Commandera s úplnou kópiou schopností pod otvorenou
- licenciou), netreba písať tisíce riadkov kódu: aplikáciu prevziať, prispôsobiť, rozšíriť a autora uviesť v credits
- (`TRETIE-STRANY.md`). Podmienka: licencia to dovoľuje.
--Realizaciu dotahovat do konca. nespokojit sa s funkčnostou len naoko.
--Novinky. inšpirovat sa novinkamy. intenzivne patrat po nových trendoch.
--Moderne krasne pritažlive prostredie. 3E. Esteticke, Efektivne, Ergonomické
--Lepši a bezpečnejši než Win11. Lepší a praktickejši než Linux. 
--Pre hračov a použivatelov nezvyklych na linux.
-
 Nasleduju kategorie. a ich opis. Jednotlive doplnkove napady sa budu doplnat ako bod pod kategorie (napr 1.01. [x] doplnkova idea k Kernel). Podkategorie budu zase čislene (1A) [x]` `[~]` `[ ] značky na hotovo, čiastočne, nezačate. 
 Samotne latteOS sa značkuje:
 LatteOS:0.x Jihlavanka
@@ -348,6 +336,8 @@ Rozhodnuté 22. 10.: Boot sa vyvíja ako súčasť inštalátora (poradie krok 2
 Zdroje: `crates/latte-boot`, `crates/latte-hw`, `system/` (boot.toml, plymouth, kernel-install), `docs/NAVRH-STARTU.md`
 https://codeberg.org/GuillotineMelody/nervboot Bootloader UEFI v Ruste so štylizovanou ponukou štartu (MAGI z Evangelionu); nenahrádza
     systemd-boot, iba pred neho predradí vlastnú ponuku a jadro nechá naň (počítanie štartov, TPM ostávajú), inšpirácia na vlastnú ponuku štartu v štýle LatteOS pre dualboot do windows. 
+    Dalšia varianta Boot Loadera : https://github.com/NarkAgni/aarambh ...graphical UEFI boot menu for Linux
+
 
 **3.01** [~] (Boot a štart) Štart · r. 19–27
 [~] **Štart (R2).** Opravené a overené reštartom 12. 10.: čakanie na sieť (prihlasovanie 99 s → 36 s, celý štart
