@@ -1,0 +1,158 @@
+#!/usr/bin/env python3
+"""latte-mcp: LatteOS as one MCP server, the AI layer every agent shares (docs/lensai/NAVRH-MCP.md, ROADMAP 10B.43).
+It knows nothing itself: each tool is a thin cover over a command that is there already (latte-ai, pleamar-wm).
+
+  latte-mcp                 serves on stdio: what an agent's tool (Claude Code, Codex, Gemini CLI) starts
+  latte-mcp install|remove  writes it into, or takes it out of, the agents installed here, for this user
+  latte-mcp status          {"ai", "agents": [{"id", "name", "installed", "has"}]}: which agents have it
+
+It reads: the conversations kept in LensAI, who can answer and what is left of the limits, the agents at work and the
+windows open. And it changes what bin/latte-skill names (the Wi-Fi, the volume, the brightness…), each change only
+after the person allowed it in LensAI: the confirmation is LatteOS's, never the agent's own.
+With the AI turned off (Settings › AI) it serves nothing.
+"""
+import json
+import os
+import shutil
+import subprocess
+import sys
+
+NAME = "latteos"
+# the desktop's services have a short PATH: the user's own tools live in ~/.local/bin and beside (as bin/latte-ai)
+SEARCH = os.pathsep.join([os.environ.get("PATH", "/usr/local/bin:/usr/bin"), os.path.expanduser("~/.local/bin"), os.path.expanduser("~/bin"),
+                          os.path.expanduser("~/.local/share/mise/shims")])
+# how each agent is told of a server, and how it forgets one
+AGENTS = {
+    "claude": {"name": "Claude Code", "tool": "claude", "add": ["mcp", "add", "--scope", "user", NAME, "--", "latte-mcp"],
+               "remove": ["mcp", "remove", "--scope", "user", NAME]},
+    "chatgpt": {"name": "Codex", "tool": "codex", "add": ["mcp", "add", NAME, "--", "latte-mcp"], "remove": ["mcp", "remove", NAME]},
+    "gemini": {"name": "Gemini", "tool": "gemini", "add": ["mcp", "add", "--scope", "user", NAME, "latte-mcp"],
+               "remove": ["mcp", "remove", "--scope", "user", NAME]},
+}
+
+
+def turned_off():
+    try:
+        with open(os.path.join(os.environ.get("XDG_CONFIG_HOME") or os.path.expanduser("~/.config"), "latteos", "ai")) as f:
+            return f.read().strip() == "off"
+    except OSError:
+        return False
+
+
+def told(argv, lines=False, timeout=30):
+    """What a command of LatteOS answers, as JSON (or a JSON object a line); an error is said, not thrown at the agent."""
+    if turned_off():
+        return {"error": "the AI of LatteOS is turned off (Settings › AI)"}
+    try:
+        out = subprocess.run(argv, capture_output=True, text=True, timeout=timeout, env=dict(os.environ, PATH=SEARCH)).stdout
+        return [json.loads(l) for l in out.splitlines() if l.strip()] if lines else json.loads(out)
+    except (OSError, ValueError, subprocess.TimeoutExpired) as e:
+        return {"error": "%s: %s" % (argv[0], e)}
+
+
+def run(tool, args):
+    try:
+        return subprocess.run([shutil.which(tool, path=SEARCH) or tool] + args, capture_output=True, text=True, timeout=30,
+                              env=dict(os.environ, PATH=SEARCH))
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+
+
+def status():
+    out = []
+    for i, a in AGENTS.items():
+        there = shutil.which(a["tool"], path=SEARCH) is not None
+        listed = run(a["tool"], ["mcp", "list"]) if there else None
+        out.append({"id": i, "name": a["name"], "installed": there, "has": bool(listed and NAME in listed.stdout + listed.stderr)})
+    return {"ai": not turned_off(), "agents": out}
+
+
+def serve():
+    from mcp.server.fastmcp import Context, FastMCP
+    server = FastMCP(NAME, instructions="LatteOS, the desktop this runs on: the user's conversations with every AI kept in LensAI, "
+                                        "who can answer here, the agents at work and the windows open; and the small changes of `skills`, "
+                                        "each done only after the user allowed it in LensAI.")
+
+    @server.tool()
+    def conversations() -> list | dict:
+        """The user's conversations with every AI, kept in LensAI, the newest first: id, title, provider, model, when
+        it was last written to, how many messages, and where it began (from: lensai, lensgoo, lensshore)."""
+        found = told(["latte-ai", "chats"])
+        return [c for c in found if not c.get("machine")] if isinstance(found, list) else found
+
+    @server.tool()
+    def conversation(id: str) -> dict:
+        """One conversation whole, by its id from `conversations`: its messages with who said each and when."""
+        return told(["latte-ai", "chat", id]) or {"error": "no such conversation"}
+
+    @server.tool()
+    def providers() -> list | dict:
+        """Which AI can answer on this computer now (the services signed in, keys, the model that runs here), with
+        the models of each; `local` true means the answer is made on this machine and nothing leaves it."""
+        found = told(["latte-ai", "providers"])
+        return [{k: p[k] for k in ("id", "name", "local", "models")} for p in found] if isinstance(found, list) else found
+
+    @server.tool()
+    def usage() -> dict:
+        """What each AI service tells of the account: the plan, the limits (the share used, 0 to 1, and when each
+        starts again), and the tokens Claude Code used this week and today."""
+        return told(["latte-ai", "agents"])
+
+    @server.tool()
+    def agents_at_work() -> list | dict:
+        """The AI agents in this desktop's terminals: which one, in which folder, and whether it works, is ready, or
+        asks the person something."""
+        return told(["pleamar-wm", "agents", "--json"], lines=True)
+
+    @server.tool()
+    def windows() -> dict:
+        """The windows open on the desktop: program, title, where each is. Their contents are not read."""
+        done = run("pleamar-wm", ["agent", "windows"]) if not turned_off() else None
+        if done and done.returncode == 0:
+            return {"windows": done.stdout}
+        return {"error": (done.stderr.strip() if done else "") or "the windows cannot be told here"}
+
+    @server.tool()
+    def skills() -> dict:
+        """What LatteOS can change on this computer for the user (the Wi-Fi, Bluetooth, the volume, the brightness,
+        the night light, the power mode, a network or a device to connect), how to ask for each (`use`), and what
+        each thing is now, with the names of the devices and networks there are."""
+        return told(["latte-skill", "list"])
+
+    @server.tool()
+    def do_skill(skill: str, args: dict, ctx: Context) -> dict:
+        """Asks the user to allow one change from `skills`, e.g. skill "volume", args {"level": 30}. LatteOS shows
+        the user what would change, from what to what, and waits up to two minutes: answer "yes" means it was done
+        (ok says whether it worked), "no" that the user refused, "timeout" that nobody answered, "invalid" that the
+        skill or its argument is not one of `skills`. Do not ask again for what was refused."""
+        try:
+            who = ctx.session.client_params.clientInfo.name
+        except AttributeError:
+            who = "AI"
+        return told(["latte-skill", "ask", skill, json.dumps(args), "--by", who], timeout=150)
+
+    server.run()
+
+
+def main(a):
+    if not a:
+        if turned_off():
+            print("latte-mcp: the AI of LatteOS is turned off (Settings › AI)", file=sys.stderr)
+            return 1
+        serve()
+        return 0
+    if a == ["status"]:
+        print(json.dumps(status()))
+        return 0
+    if a in (["install"], ["remove"]):
+        for s in status()["agents"]:
+            if s["installed"] and s["has"] != (a[0] == "install"):
+                done = run(AGENTS[s["id"]]["tool"], AGENTS[s["id"]]["add" if a[0] == "install" else "remove"])
+                print("%s: %s" % (s["name"], "ok" if done and done.returncode == 0 else "failed"))
+        return 0
+    print(__doc__.strip())
+    return 2
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))

@@ -4,6 +4,17 @@ Kroky, ktoré musí spustiť používateľ priamo pri latte-lab (vo VS Code, v t
 buď ich zastaví kontrola oprávnení Claude Code, alebo treba prihlásenie človekom. Najnovšie hore. Po dokončení
 kroku ho označ `[x]` a napíš Claudovi, nech pokračuje.
 
+## 10. 11. 2026 — LensAI: čo audit nemohol overiť naostro (`docs/lensai/ANALYZA.md`, časť 3)
+
+Bez týchto krokov ostávajú funkcie LensAI overené iba bez skutočných účtov a zariadení.
+
+- [ ] **Codex:** `codex login` (pozri 21. 10. nižšie) — potom ChatGPT odpovie a ukáže limity.
+- [ ] **Kľúč API** (ľubovoľnej služby, aj malý kredit): LensAI › Služby › Vlastné kľúče → otázka cez kľúč.
+- [ ] **Mikrofón:** pripojiť skutočný mikrofón, v LensGoo alebo LensAI povedať vetu.
+- [ ] **DeepSeek** cez web: prihlásiť sa v záložke DeepSeek v LensAI.
+- [ ] **Agent:** v LensAI › Pomocníci vybrať agenta, potom „Urob to za mňa“ s jednoduchou úlohou na ploche.
+- [ ] **Lokálny model:** v LensAI › Tento počítač stiahnuť malý model a raz „Aktualizovať llama.cpp“.
+
 ## 29. 10. 2026 — MCP pre Blender, FreeCAD, Kdenlive a ComfyUI
 
 Aplikácie, ComfyUI (`/data/ai/ComfyUI`, procesor), model sd-turbo a plugin Remotion sú hotové. MCP servery a doplnky

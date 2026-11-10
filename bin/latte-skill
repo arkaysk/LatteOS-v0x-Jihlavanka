@@ -1,0 +1,282 @@
+#!/usr/bin/env python3
+"""latte-skill: what LatteOS may change on this computer for an AI, each a small named change the person confirms
+(ROADMAP 10B.43 step 2, docs/lensai/NAVRH-MCP.md). The skills are LensShore's (goo/lib/skills.luau), here as a
+command, so that every AI reaches the same ones through bin/latte-mcp.
+
+  latte-skill list                 {"skills": [{"id", "use"}], "now": {…}}: what this computer has, how the AI is to
+                                   ask for each, and what each thing is now (with the names of devices and networks)
+  latte-skill row ID JSON          what the change would be, in the person's language: {"label", "what", "from", "to"};
+                                   exit 1 when the argument is not one the skill takes
+  latte-skill ask ID JSON --by WHO the change asked for by an AI: LensAI shows it and the person allows or refuses it
+                                   there; allowed, it is done. {"ok", "answer": "yes" | "no" | "timeout" | "invalid"}
+  latte-skill asks                 what waits for the person now: [{"req", "by", "label", "what", "from", "to", "at"}]
+  latte-skill answer REQ yes|no    the person's word (LensAI's buttons)
+  latte-skill do ID JSON [--by WHO]   does it at once: for what the person asked for themselves
+
+What was asked, allowed, refused and done is in the journal: journalctl -t latte-skill.
+ponytail: LensShore still reads its own copy of these in goo/lib/skills.luau (and has three more that need Goo: quiet,
+open, close); it moves over to this command in ROADMAP 10B.53.
+ponytail: the confirmation guards what comes through the MCP server. An agent that the person lets run shell commands
+can change these things itself; that is its own tool's permission to give, not ours.
+"""
+import json
+import os
+import re
+import subprocess
+import sys
+import time
+import uuid
+from concurrent.futures import ThreadPoolExecutor
+
+ASKS = os.path.join(os.environ.get("XDG_STATE_HOME") or os.path.expanduser("~/.local/state"), "latteos", "asks")
+WAIT = 120                      # how long an AI's request waits for the person
+PROFILES = {"power-saver": "Power saver", "balanced": "Balanced", "performance": "Performance"}
+
+
+def T(text):
+    """The person's language: the table of goo/lang/<language>.plm, as bin/latte-ai."""
+    lang = re.split(r"[_.@]", os.environ.get("LC_ALL") or os.environ.get("LC_MESSAGES") or os.environ.get("LANG") or "en")[0]
+    try:
+        with open(os.path.join(os.environ.get("LATTE_SHARE") or "/usr/share/latteos", "goo", "lang", lang + ".plm"), encoding="utf-8") as f:
+            table = f.read()
+    except OSError:
+        return text
+    m = re.search(r'^\s*"%s"\s*=\s*"((?:[^"\\]|\\.)*)"\s*$' % re.escape(text), table, re.M)
+    return m.group(1) if m else text
+
+
+def out(argv):
+    try:
+        done = subprocess.run(argv, capture_output=True, text=True, timeout=6)
+        return done.stdout, done.returncode
+    except (OSError, subprocess.TimeoutExpired):
+        return "", 1
+
+
+def state():
+    """What each thing is now; a thing this computer has not got is left out."""
+    asked = {
+        "wifi": ["nmcli", "radio", "wifi"], "bt": ["bluetoothctl", "--timeout", "2", "show"],
+        "paired": ["bluetoothctl", "--timeout", "2", "devices", "Paired"], "volume": ["wpctl", "get-volume", "@DEFAULT_AUDIO_SINK@"],
+        "light": ["brightnessctl", "-m", "-c", "backlight"], "sound": ["latte-settings", "sound"],
+        "profile": ["powerprofilesctl", "get"], "networks": ["nmcli", "-t", "-f", "NAME,TYPE,ACTIVE", "connection", "show"],
+    }
+    with ThreadPoolExecutor(len(asked)) as pool:
+        got = dict(zip(asked, pool.map(out, asked.values())))
+    now = {}
+    w = re.match(r"\s*(enabled|disabled)", got["wifi"][0])
+    if w:
+        now["wifi"] = w.group(1) == "enabled"
+    p = re.search(r"Powered: (\w+)", got["bt"][0])
+    if p:
+        now["bt"] = p.group(1) == "yes"
+    now["paired"] = [{"id": mac, "label": name} for mac, name in re.findall(r"Device (\S+) ([^\n]+)", got["paired"][0])]
+    v = re.search(r"Volume: ([\d.]+)", got["volume"][0])
+    if v:
+        now["volume"], now["muted"] = round(float(v.group(1)) * 100), "MUTED" in got["volume"][0]
+    b = re.match(r"[^,]*,[^,]*,[^,]*,(\d+)%", got["light"][0]) if got["light"][1] == 0 else None
+    if b:
+        now["light"] = int(b.group(1))
+    try:
+        outputs = json.loads(got["sound"][0]).get("outputs", [])
+    except (ValueError, AttributeError):
+        outputs = []
+    now["outputs"] = [{"id": o["name"], "label": o.get("label") or o["name"]} for o in outputs if o.get("name")]
+    now["output"] = next((o.get("label") or o["name"] for o in outputs if o.get("default")), None)
+    try:
+        with open(os.path.join(os.environ.get("XDG_CONFIG_HOME") or os.path.expanduser("~/.config"), "latteos", "nightlight")) as f:
+            now["night"] = f.read().split()[0] != "off"
+    except (OSError, IndexError):
+        pass
+    if got["profile"][1] == 0 and got["profile"][0].strip() in PROFILES:
+        now["profile"] = got["profile"][0].strip()
+    now["networks"] = []
+    for line in got["networks"][0].splitlines():
+        m = re.match(r"^(.*):802-11-wireless:(\w+)$", line)
+        if m:
+            now["networks"].append({"label": m.group(1).replace("\\:", ":")})
+            if m.group(2) == "yes":
+                now["network"] = m.group(1).replace("\\:", ":")
+    return now
+
+
+def onoff(b):
+    return T("on") if b else T("off")
+
+
+def switch(a, now):
+    return a.get("on") if isinstance(a.get("on"), bool) else None
+
+
+def level(a, now):
+    try:
+        n = float(a.get("level"))
+    except (TypeError, ValueError):
+        return None
+    return int(n) if 0 <= n <= 100 else None
+
+
+def named(key, field):
+    """The one whose name holds the name asked for, or is held by it."""
+    def find(a, now):
+        name = a.get(field).lower() if isinstance(a.get(field), str) else ""
+        return next((d for d in now.get(key, []) if name and (name in d["label"].lower() or d["label"].lower() in name)), None)
+    return find
+
+
+def was(now, key):
+    return onoff(now[key]) if key in now else None
+
+
+# id: how the AI asks for it, whether this computer has it, the argument checked (None: not one), the row (what it
+# says, the thing, from what, to what), and the command that does it. The words are goo/lib/skills.luau's.
+SKILLS = {
+    "wifi": ('{"skill": "wifi", "on": true|false}', lambda n: "wifi" in n, switch,
+             lambda v, n: (T("Turn the Wi-Fi on") if v else T("Turn the Wi-Fi off"), "Wi-Fi", was(n, "wifi"), onoff(v)),
+             lambda v: ["nmcli", "radio", "wifi", "on" if v else "off"]),
+    "bluetooth": ('{"skill": "bluetooth", "on": true|false}', lambda n: "bt" in n, switch,
+                  lambda v, n: (T("Turn Bluetooth on") if v else T("Turn Bluetooth off"), "Bluetooth", was(n, "bt"), onoff(v)),
+                  lambda v: ["bluetoothctl", "power", "on" if v else "off"]),
+    "connect": ('{"skill": "connect", "device": "<a paired Bluetooth device>"}', lambda n: bool(n.get("paired")), named("paired", "device"),
+                lambda v, n: (T("Connect {name}").replace("{name}", v["label"]), "Bluetooth", None, v["id"]),
+                lambda v: ["bluetoothctl", "connect", v["id"]]),
+    "volume": ('{"skill": "volume", "level": 0-100}', lambda n: "volume" in n, level,
+               lambda v, n: (T("Set the volume to {n} %").replace("{n}", str(v)), T("Volume"), "%d %%" % n["volume"] if "volume" in n else None, "%d %%" % v),
+               lambda v: ["wpctl", "set-volume", "@DEFAULT_AUDIO_SINK@", str(v / 100)]),
+    "mute": ('{"skill": "mute", "on": true|false}', lambda n: "muted" in n, switch,
+             lambda v, n: (T("Mute the sound") if v else T("Unmute the sound"), T("Sound"),
+                           (T("muted") if n["muted"] else T("playing")) if "muted" in n else None, T("muted") if v else T("playing")),
+             lambda v: ["wpctl", "set-mute", "@DEFAULT_AUDIO_SINK@", "1" if v else "0"]),
+    "output": ('{"skill": "output", "device": "<a sound output>"}', lambda n: len(n.get("outputs", [])) > 1, named("outputs", "device"),
+               lambda v, n: (T("Play the sound through {name}").replace("{name}", v["label"]), T("Sound output"), n.get("output"), v["label"]),
+               lambda v: ["pactl", "set-default-sink", v["id"]]),
+    "brightness": ('{"skill": "brightness", "level": 0-100}', lambda n: "light" in n, level,
+                   lambda v, n: (T("Set the brightness to {n} %").replace("{n}", str(v)), T("Brightness"), "%d %%" % n["light"] if "light" in n else None, "%d %%" % v),
+                   lambda v: ["brightnessctl", "set", "%d%%" % v]),
+    "nightlight": ('{"skill": "nightlight", "on": true|false} (warmer colours in the evening)', lambda n: "night" in n, switch,
+                   lambda v, n: (T("Turn the night light on") if v else T("Turn the night light off"), T("Night light"), was(n, "night"), onoff(v)),
+                   lambda v: ["latte-nightlight", "on" if v else "off"]),
+    "power": ('{"skill": "power", "profile": "power-saver"|"balanced"|"performance"}', lambda n: "profile" in n,
+              lambda a, n: a.get("profile") if a.get("profile") in PROFILES else None,
+              lambda v, n: (T("Power mode") + ": " + T(PROFILES[v]), T("Power mode"), T(PROFILES[n["profile"]]) if "profile" in n else None, T(PROFILES[v])),
+              lambda v: ["powerprofilesctl", "set", v]),
+    "network": ('{"skill": "network", "name": "<a saved Wi-Fi network>"}', lambda n: bool(n.get("networks")), named("networks", "name"),
+                lambda v, n: (T("Connect to {name}").replace("{name}", v["label"]), T("Wi-Fi network"), n.get("network"), v["label"]),
+                lambda v: ["nmcli", "connection", "up", "id", v["label"]]),
+}
+
+
+def row(ident, a, now):
+    """(the value checked, what the row says), or (None, None) when the skill or its argument is not one."""
+    s = SKILLS.get(ident)
+    v = s[2](a, now) if s and isinstance(a, dict) and s[1](now) else None
+    if v is None:
+        return None, None
+    label, what, frm, to = s[3](v, now)
+    return v, {"label": label, "what": what, "from": frm if frm != to else None, "to": to}
+
+
+def journal(by, ident, a, how):
+    subprocess.run(["logger", "-t", "latte-skill", "%s %s %s %s" % (by or "person", ident, json.dumps(a, ensure_ascii=False), how)])
+
+
+def do(ident, a, by=""):
+    v, _ = row(ident, a, state())
+    if v is None:
+        return False
+    ok = out(SKILLS[ident][4](v))[1] == 0
+    journal(by, ident, a, "done" if ok else "failed")
+    return ok
+
+
+def pending():
+    found = []
+    for name in sorted(os.listdir(ASKS)) if os.path.isdir(ASKS) else []:
+        path = os.path.join(ASKS, name)
+        try:
+            with open(path) as f:
+                r = json.load(f)
+        except (OSError, ValueError):
+            continue
+        if r.get("at", 0) < time.time() - WAIT - 10:          # nobody waits for it any more
+            os.remove(path)
+        elif "answer" not in r:
+            found.append(r)
+    return found
+
+
+def keep(r):
+    os.makedirs(ASKS, exist_ok=True)
+    path = os.path.join(ASKS, r["req"] + ".json")
+    with open(path + ".new", "w") as f:
+        json.dump(r, f, ensure_ascii=False)
+    os.replace(path + ".new", path)
+    return path
+
+
+def ask(ident, a, by):
+    v, said = row(ident, a, state())
+    if v is None:
+        return {"ok": False, "answer": "invalid"}
+    path = keep(dict(said, req=uuid.uuid4().hex[:10], by=by, skill=ident, args=a, at=time.time()))
+    journal(by, ident, a, "asked")
+    # LensAI shows it (already open, this starts no second one); the person answers there
+    subprocess.Popen(["latte-app", "aicenter"], start_new_session=True, stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    answer, end = "timeout", time.time() + WAIT
+    while time.time() < end:
+        time.sleep(0.5)
+        try:
+            with open(path) as f:
+                answer = json.load(f).get("answer", "timeout")
+        except (OSError, ValueError):
+            break
+        if answer != "timeout":
+            break
+    try:
+        os.remove(path)
+    except OSError:
+        pass
+    if answer != "yes":
+        journal(by, ident, a, "refused" if answer == "no" else "not answered")
+        return {"ok": False, "answer": answer}
+    return {"ok": do(ident, a, by), "answer": "yes"}
+
+
+def main(a):
+    by = ""
+    if "--by" in a[:-1]:
+        i = a.index("--by")
+        by, a = a[i + 1], a[:i] + a[i + 2:]
+    if a == ["list"]:
+        now = state()
+        print(json.dumps({"skills": [{"id": i, "use": s[0]} for i, s in SKILLS.items() if s[1](now)], "now": now}, ensure_ascii=False))
+        return 0
+    if a == ["asks"]:
+        print(json.dumps(pending(), ensure_ascii=False))
+        return 0
+    if len(a) == 3 and a[0] == "answer" and a[2] in ("yes", "no") and re.fullmatch(r"[0-9a-f]{10}", a[1]):
+        r = next((r for r in pending() if r["req"] == a[1]), None)
+        if not r:
+            return 1
+        keep(dict(r, answer=a[2]))
+        return 0
+    if len(a) == 3 and a[0] in ("row", "do", "ask"):
+        try:
+            args = json.loads(a[2])
+        except ValueError:
+            return 2
+        if a[0] == "row":
+            _, said = row(a[1], args, state())
+            print(json.dumps(said, ensure_ascii=False))
+            return 0 if said else 1
+        if a[0] == "do":
+            return 0 if do(a[1], args, by) else 1
+        r = ask(a[1], args, by or "AI")
+        print(json.dumps(r))
+        return 0 if r["ok"] else 1
+    print(__doc__.strip())
+    return 2
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))

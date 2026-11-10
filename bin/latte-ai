@@ -21,7 +21,10 @@ No API key: the official tool of a service answers, with the account the user is
                             before the last line. --markdown: the answer may be formatted (LensAI shows
                             Markdown; LensGoo's card does not). Ended (SIGTERM), it keeps what had come, "stopped": true.
                             --skills TEXT: what LatteOS can change for the user, added to what the AI is told
-                            (LensShore: goo/lib/skills.luau)
+                            (LensShore: goo/lib/skills.luau). --from NAME: who began the conversation (lensai,
+                            lensgoo, lensshore, chapolera…), kept with it as "from"; one begun by a program for
+                            its own work (MACHINE) is "machine" in `chats`, and LensAI does not list it.
+                            With the AI turned off (Settings › AI) nothing is asked: "ok": false
   latte-ai again CHAT PROVIDER MODEL [--text TEXT] [same options as send]
                             the last answer once more, from this service and model; with --text the last question
                             is changed first
@@ -80,10 +83,11 @@ No API key: the official tool of a service answers, with the account the user is
   latte-ai usage PROVIDER   {"limits", "asked"}: what the service tells of the account's own limits without being asked
                             anything, as "limits" of send (Copilot: {"chat", "completions"}; {} when it tells nothing), and
                             how many questions went to it through Lens this month — LatteOS's own count, not the account's
-  latte-ai chats            the conversations, the newest first: [{"id", "title", "provider", "model", "updated", "count"}]
+  latte-ai chats            the conversations, the newest first: [{"id", "title", "provider", "model", "updated", "count",
+                            "from", "machine"}]
   latte-ai chat ID          one conversation whole: {"id", "title", "provider", "model", "messages": [{"role", "content",
                             "provider", "model", "at"}], "usage"}
-  latte-ai forget ID        throws one away
+  latte-ai forget ID        throws one away, and what was attached to it
 
 The conversations are kept in ~/.local/state/latteos/ai/chats/ID.json, one file each. What the user wants every AI
 to know or keep to (LensAI › Instructions) is ~/.config/latteos/ai-instructions.txt; it goes with every question.
@@ -95,6 +99,7 @@ import datetime
 import glob
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -147,6 +152,7 @@ SEARCH = os.pathsep.join([os.environ.get("PATH", "/usr/local/bin:/usr/bin"), os.
 ROOM = os.path.join(os.environ.get("XDG_STATE_HOME") or os.path.expanduser("~/.local/state"), "latteos", "ai")
 CHATS = os.path.join(ROOM, "chats")
 KEEP = 12                       # what a tool is reminded of: the last six turns
+MACHINE = ("chapolera",)        # programs that ask for their own work: their conversations are not the user's to read
 
 
 def claude(prompt, model, effort="", files=()):
@@ -473,6 +479,16 @@ def local_server():
     return shutil.which("llama-server", path=SEARCH)
 
 
+def local_mmproj(model):
+    """The vision file that belongs to a model (mmproj-<name>….gguf beside it), or None: such a model can look at pictures."""
+    import re
+    base = re.sub(r"-(q\d.*|f16|bf16|f32)\.gguf$", "", os.path.basename(model), flags=re.I)
+    for f in sorted(glob.glob(os.path.join(os.path.dirname(model), "mmproj-*.gguf"))):
+        if base.lower() in os.path.basename(f).lower():
+            return f
+    return None
+
+
 def local_models_all():
     found = []
     for d in LOCAL_DIRS:
@@ -487,7 +503,8 @@ def local_models():
     for d in LOCAL_DIRS:
         found += glob.glob(os.path.join(d, "models", "*.gguf"))
     found = [f for f in sorted(found, key=os.path.getsize) if "mmproj" not in os.path.basename(f).lower()]
-    return [{"id": f, "name": os.path.basename(f)[:-5].replace("-Q4_K_M", "").replace("-q4_k_m", "").replace("-", " ")} for f in found] if local_server() else []
+    return [{"id": f, "name": os.path.basename(f)[:-5].replace("-Q4_K_M", "").replace("-q4_k_m", "").replace("-", " "),
+             "vision": local_mmproj(f) is not None} for f in found] if local_server() else []
 
 
 def local_call(path, body=None, timeout=5):
@@ -499,8 +516,11 @@ def local_call(path, body=None, timeout=5):
 
 def local_start(model):
     """llama-server with this model, on this computer only; one that runs another model is ended first."""
+    mmproj = local_mmproj(model)
     try:
-        if local_call("/props").get("model_path") == model:
+        props = local_call("/props")
+        # a server that runs this model but without its eyes is restarted when the eyes exist
+        if props.get("model_path") == model and (not mmproj or (props.get("modalities") or {}).get("vision")):
             return True
     except (OSError, ValueError):
         pass
@@ -508,15 +528,20 @@ def local_start(model):
     os.makedirs(ROOM, exist_ok=True)
     # the processor: on graphics cards like latte-lab's the small models run faster there (inspo/ai-na-ploche.md)
     gpu = "99" if local_settings().get("gpu") else "0"        # the user's choice in LensAI › This computer
-    subprocess.Popen([local_server(), "-m", model, "-c", str(LOCAL_CONTEXT), "-t", str(max(2, (os.cpu_count() or 4) // 2)), "-ngl", gpu,
-                      "--host", "127.0.0.1", "--port", str(LOCAL_PORT), "--jinja"],
-                     stdout=open(os.path.join(ROOM, "llama-server.log"), "w"), stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL, start_new_session=True)
+    try:
+        proc = subprocess.Popen([local_server(), "-m", model, "-c", str(LOCAL_CONTEXT), "-t", str(max(2, (os.cpu_count() or 4) // 2)), "-ngl", gpu,
+                          "--host", "127.0.0.1", "--port", str(LOCAL_PORT), "--jinja"] + (["--mmproj", mmproj] if mmproj else []),
+                         stdout=open(os.path.join(ROOM, "llama-server.log"), "w"), stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL, start_new_session=True)
+    except OSError:
+        return False
     for _ in range(240):
         try:
             local_call("/health")
             return True
         except (OSError, ValueError):
             import time
+            if proc.poll() is not None:
+                return False         # the server ended (bad file, no memory): no reason to wait the rest
             time.sleep(0.5)          # a model takes a moment to load
     return False
 
@@ -550,18 +575,34 @@ def chat_completion(url, head, body, timeout=600):
 
 def local_ask(messages, model, effort, files, room):
     """The whole conversation, as messages: the server keeps no memory between questions."""
+    if not os.path.isfile(model):
+        return "latte-ai: the model file is not on this computer: %s" % model, False, {}
+    if not local_server():
+        return "latte-ai: llama-server is not installed (LensAI › This computer)", False, {}
     if not local_start(model):
         return "latte-ai: the AI on this computer did not start (see llama-server.log)", False, {}
     talk = [{"role": "system", "content": SYSTEM}] + [{"role": m["role"], "content": m["content"]} for m in messages if m.get("content")][-KEEP:]
     if len(talk) > KEEP:
         talk = [talk[0]] + talk[-KEEP:]
+    seen = []
     for f in files:
         try:
+            if f.lower().endswith((".jpg", ".jpeg", ".png", ".webp", ".gif")):
+                if local_mmproj(model):
+                    import base64
+                    kind = "jpeg" if f.lower().endswith((".jpg", ".jpeg")) else f.rsplit(".", 1)[-1].lower()
+                    with open(os.path.join(room, f), "rb") as fh:
+                        seen.append({"type": "image_url", "image_url": {"url": "data:image/%s;base64,%s" % (kind, base64.b64encode(fh.read()).decode())}})
+                else:
+                    talk[-1]["content"] += "\n\n(%s is a picture; this model cannot see pictures.)" % f
+                continue
             with open(os.path.join(room, f), errors="replace") as fh:
                 talk[-1]["content"] += "\n\n--- %s ---\n%s" % (f, fh.read(20000))
         except OSError:
             pass
-    text, used = chat_completion("http://127.0.0.1:%d/v1" % LOCAL_PORT, {}, {"messages": talk, "temperature": 0.5, "max_tokens": 1024,
+    if seen:
+        talk[-1]["content"] = [{"type": "text", "text": talk[-1]["content"]}] + seen
+    text, used = chat_completion("http://127.0.0.1:%d/v1" % LOCAL_PORT, {}, {"messages": talk, "temperature": 0.5, "max_tokens": 1024, "repeat_penalty": 1.15,
                                                                               "chat_template_kwargs": {"enable_thinking": effort == "think"}})
     return text, True, {"context": used, "window": LOCAL_CONTEXT, "tokens": used, "cost": 0}
 
@@ -1272,72 +1313,23 @@ def _row(name, glyph=None, do=None, **o):
 
 
 ATTACH, SHOT = {"attach": 0}, {"attach": 1}
-PLUS = {
-    "claude": [_row(N("Upload or add files"), "paperclip", ATTACH, key="Ctrl+U"), _row(N("Add folder"), "folder-plus"),
-               _row(N("Record a skill"), "video"), _row(N("Skills"), "template", sep=True, more=True),
-               _row(N("Connectors"), "category-plus", more=True), _row(N("Design system"), "palette", more=True),
-               _row(N("Plugins"), "plug", more=True), _row(N("Research"), "chart-dots-3", sep=True), _row(N("Memory"), "history", on=True)],
-    "gemini": [_row(N("Upload files"), "paperclip", ATTACH), _row(N("Add from Drive"), "brand-google-drive"),
-               _row(N("More upload options"), "dots", more=True), _row(N("Create an image"), "photo", sep=True),
-               _row(N("Create music"), "music"), _row("Canvas", "layout-board"), _row("Deep Research", "telescope"),
-               _row(N("Guided learning"), "book-2")],
-    "chatgpt": [_row(N("Add photos and files"), "paperclip", ATTACH, hint=N("Upload from the computer")),
-                _row(N("Add from the library"), "books", hint=N("Browse and search your files")),
-                _row(N("Create an image"), "photo", hint=N("Imagine anything")),
-                _row(N("Search the web"), "world", hint=N("Get news and information in real time")),
-                _row(N("Work in a project"), "folder", hint=N("Start a chat in a project")),
-                _row(N("Deep research"), "telescope", hint=N("Get a detailed report")),
-                _row(N("Draw"), "brush", hint=N("Draw and attach a picture")),
-                _row(N("Thinking"), "bulb", {"think": True}, hint=N("For more detailed answers")),
-                _row("GitHub", "brand-github", hint=N("Triage PRs, issues, CI, and publish flows")),
-                _row("OpenAI Platform", "brand-openai", hint=N("Manage OpenAI API keys and view organization billing and API usage."))],
-    "grok": [_row(N("Upload a file"), "file-upload", ATTACH), _row(N("Add to a project"), "folder", more=True),
-             _row(N("Recent files"), "file", more=True), _row(N("Skills"), "apps", sep=True, more=True), _row(N("Add a connector"), "category-plus")],
-    "mistral": [_row(N("Upload Files"), "upload", ATTACH), _row(N("Skills"), "flask", more=True),
-                _row(N("Connectors"), "plug", more=True), _row(N("Reset input"), "refresh", {"reset": True}, sep=True)],
-    "own": [_row(N("Attach a file…"), "paperclip", ATTACH), _row(N("A picture of the screen"), "screenshot", SHOT)],
-}
+# + offers what LatteOS itself does, the same for every service (the user, 10. 11.): what a service's own page
+# offers beside that is in its tab in LensAI
+PLUS = [_row(N("Attach a file…"), "paperclip", ATTACH), _row(N("A picture of the screen"), "screenshot", SHOT)]
 EFFORT_WORDS = {"low": N("low"), "medium": N("medium"), "high": N("high"), "xhigh": N("very high"), "max": N("highest"), "think": N("thinking")}
-CLAUDE_DESC = {"opus": N("For complex work and everyday tasks"), "sonnet": N("Most efficient for simpler tasks"), "haiku": N("Fastest for quick answers")}
-GEMINI_LEVELS = [_row(N("Low"), desc=N("Fast and efficient reasoning")), _row(N("Medium"), desc=N("Balanced reasoning")),
-                 _row(N("High"), desc=N("Thorough reasoning"))]
-GROK_MODES = [("Fast", "bolt"), ("Build", "hammer"), ("Auto", "rocket"), ("Expert", "bulb"), ("Heavy", "category-plus")]
 
 
 def chip_menu(p):
-    """The menu of the field's chip: the service's own where its own tool answers, else the models a key offers."""
-    style, models = p["style"], p["models"][:9]
-    rows = []
+    """The menu of the field's chip: the models, and how hard it may think where the tool lets that be said."""
+    rows = [_row(m["name"], do={"model": m["id"]}) for m in p["models"][:9]]
     efforts = [_row(EFFORT_WORDS.get(e, e), do={"effort": e}) for e in p.get("efforts", [])]
-    effort = _row(N("Effort"), do={"sub": efforts}, sep=True, more=True, key="@effort") if efforts else None
-    own_tool = p["id"] == style
-    if own_tool and style == "claude":
-        rows.append(_row("Fable 5.1", desc=N("For your toughest challenges"), key=N("Buy credits")))
-        rows += [_row(m["name"], do={"model": m["id"]}, desc=CLAUDE_DESC.get(m["id"], "")) for m in models]
-        rows += [effort] if effort else []
-        rows += [_row(N("More models"), sep=True, more=True),
-                 _row(N("Fable 5.1 is included in Max plans, or available with usage credits on Pro."), sep=True, note=True)]
-    elif own_tool and style == "gemini":
-        rows += [_row(m["name"], do={"model": m["id"]}, desc=N("Gemini 3 models") if m["id"] == "" else "") for m in models]
-        rows += [_row("3.1 Pro", "lock", desc=N("Advanced reasoning")), _row("4 Argon", "lock", desc=N("Complex tasks")),
-                 _row(N("Thinking level"), do={"sub": GEMINI_LEVELS}, sep=True, more=True)]
-    elif own_tool and style == "grok":
-        # the Grok CLI has one model: Auto is it; the other modes are grok.com's
-        rows += [_row(name, glyph, {"model": models[0]["id"]} if name == "Auto" and models else None) for name, glyph in GROK_MODES]
-        rows.append(_row("Premium", desc=N("Unlock advanced options"), key=N("Upgrade"), sep=True))
-    elif own_tool and style == "mistral":
-        rows += [_row(m["name"], "cube", {"model": m["id"]}) for m in models]
-        rows.append(_row("GLM-5.3 (Mistral Hosted)", "cube"))
-    else:
-        rows += [_row(m["name"], do={"model": m["id"]}) for m in models]
-        rows += [effort] if effort else []
+    if efforts:
+        rows.append(_row(N("Effort"), do={"sub": efforts}, sep=True, more=True, key="@effort"))
     return rows
 
 
 def menus(p):
-    """Copilot has no + menu (its + attaches at once), nor DeepSeek (its paperclip); DeepSeek's chip is a switch."""
-    return {"web": WEB.get(p["style"], ""), "plus": PLUS.get(p["style"], []) if p["style"] not in ("copilot", "deepseek") else [],
-            "menu": chip_menu(p)}
+    return {"web": WEB.get(p["style"], ""), "plus": PLUS, "menu": chip_menu(p)}
 
 
 def providers(all=False, every=False):
@@ -1435,14 +1427,14 @@ def instructions():
     return ("\n\nWhat the user asks of you in every conversation:\n" + said) if said else ""
 
 
-def send(ident, provider, model, question, effort="", attach=()):
+def send(ident, provider, model, question, effort="", attach=(), origin=""):
     global SYSTEM
     if "What the user asks of you" not in SYSTEM:
         SYSTEM += instructions()
     chat = None if ident == "new" else load(ident)
     if chat is None:
         chat = {"id": uuid.uuid4().hex[:12], "title": question.strip().splitlines()[0][:80], "messages": [],
-                "usage": {"context": 0, "window": 0, "tokens": 0, "cost": 0}}
+                "usage": {"context": 0, "window": 0, "tokens": 0, "cost": 0}, "from": origin}
     chat["provider"], chat["model"], chat["effort"] = provider, model, effort
     # what is attached is copied beside the question: the tool runs in that folder and reads nothing else
     room = os.path.join(ROOM, "files", chat["id"])
@@ -1537,7 +1529,8 @@ def chats():
         c = load(os.path.basename(path)[:-5])
         if c:
             out.append({"id": c["id"], "title": c.get("title", ""), "provider": c.get("provider", ""), "model": c.get("model", ""),
-                        "updated": c.get("updated", ""), "count": len(c.get("messages", []))})
+                        "updated": c.get("updated", ""), "count": len(c.get("messages", [])),
+                        "from": c.get("from", ""), "machine": c.get("from", "") in MACHINE})
     return sorted(out, key=lambda c: c["updated"], reverse=True)
 
 
@@ -1658,7 +1651,10 @@ def main(a):
         return 0
     global STREAM, SYSTEM
     if a[:1] in (["send"], ["again"]):
-        effort, attach, text, skills, rest = "", [], None, "", a[5:] if a[0] == "send" else a[4:]
+        if turned_off():                # Settings › AI: nothing leaves, whoever asks
+            print(json.dumps({"chat": "", "answer": "latte-ai: the AI is turned off (Settings › AI)", "ok": False, "usage": {}, "stopped": False}))
+            return 1
+        effort, attach, text, skills, origin, rest = "", [], None, "", "", a[5:] if a[0] == "send" else a[4:]
         while rest:
             if rest[0] == "--effort" and len(rest) > 1:
                 effort, rest = rest[1], rest[2:]
@@ -1668,6 +1664,8 @@ def main(a):
                 text, rest = rest[1], rest[2:]
             elif rest[0] == "--skills" and len(rest) > 1:
                 skills, rest = rest[1], rest[2:]
+            elif rest[0] == "--from" and len(rest) > 1:
+                origin, rest = rest[1], rest[2:]
             else:
                 STREAM = STREAM or rest[0] == "--stream"
                 SYSTEM = SYSTEM_MD if rest[0] == "--markdown" else SYSTEM
@@ -1693,7 +1691,7 @@ def main(a):
         print(json.dumps(r, ensure_ascii=False))
         return 0 if r["ok"] else 1
     if len(a) >= 5 and a[0] == "send" and a[4].strip():
-        r = send(a[1], a[2], a[3], a[4], effort, attach)
+        r = send(a[1], a[2], a[3], a[4], effort, attach, origin)
         print(json.dumps(r, ensure_ascii=False))
         return 0 if r["ok"] else 1
     # a helper's question: latte-cal reads a sentence with it; nothing when its toggle is off
@@ -1839,6 +1837,9 @@ def main(a):
             print(json.dumps({"error": str(e)}))
             return 1
         return 0
+    if a[:1] in (["crash"], ["why"], ["do"]) and turned_off():
+        print(json.dumps({"ok": False, "off": True}))
+        return 1
     if len(a) == 2 and a[0] == "crash" and a[1].isdigit():
         r = crash(int(a[1]))
         print(json.dumps(r))
@@ -1888,6 +1889,7 @@ def main(a):
             os.remove(path_of(a[1]))
         except OSError:
             return 1
+        shutil.rmtree(os.path.join(ROOM, "files", os.path.basename(a[1])), ignore_errors=True)     # what was attached goes with it
         return 0
     print(__doc__.strip())
     return 2

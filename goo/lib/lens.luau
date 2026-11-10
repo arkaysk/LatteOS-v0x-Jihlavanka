@@ -682,7 +682,7 @@ local function ai_send(asked, pid, mid)
     local m = model_of(p)
     for _, x in ipairs(p.models) do if x.id == mid then m = x end end
     text.ai_q, fact.ai_typed = "", false
-    local args, names = { "send", kept.ai.chat or "new", p.id, m.id, q }, {}
+    local args, names = { "send", kept.ai.chat or "new", p.id, m.id, q, "--from", "lensgoo" }, {}
     local e = effort_of(p)
     if e then args[#args + 1] = "--effort" args[#args + 1] = e end
     for _, f in ipairs(ai.files) do
@@ -1121,7 +1121,7 @@ local function ask(q)
     local due = false
     -- the AI is told the skills as they are now: which devices there are, what is on
     skills.refresh(function()
-        local args = { "send", shore.chat, p.id, m and m.id or "", said, "--stream", "--skills", skills.prompt() }
+        local args = { "send", shore.chat, p.id, m and m.id or "", said, "--stream", "--from", "lensshore", "--skills", skills.prompt() }
         if shore.attach then args[#args + 1] = "--attach" args[#args + 1] = shore.attach shore.attach = nil end
         shore.job = spawn("latte-ai", args, function(line)
             local ok, r = pcall(json.decode, line or "")
@@ -1879,6 +1879,9 @@ function M.start(d)
     run("latte-ai", { "providers" }, function(out)
         local found_any, list = pcall(json.decode, out or "")
         if not found_any or type(list) ~= "table" or #list == 0 then return end
+        -- one look for every AI (the user, 10. 11.): the services' own looks are LensAI's now
+        -- ponytail: the styled branches here and in parts/ai.plm are dead until they are taken out (ROADMAP 10B.52)
+        for _, p in ipairs(list) do p.style = "own" end
         ai.providers = list
         MODES[4] = { glyph = "sparkles", name = N("AI"), hint = HINTS.own, rows = rows_ai }
         if ai.pending then ai.pending = false M.open(4) end

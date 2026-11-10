@@ -241,6 +241,8 @@ slot (pri slote 12 až o 420 px dole). Teraz v režime plávajúcich okien ide n
 stred, kúsok doľava a hore), krok 28 px iba po štyroch slotoch; plátno ostáva ako bolo. `wm/session.plm`, 4. 11.
 
 **1D.46** [x] **Maximalizovať a späť** (používateľ 4. 11.): tlačidlo v hlavičke aplikácií má pri maximalizovanom okne ikonu
+
+**1D.47** [ ] **Dážď pri nečinnosti** (používateľ 10. 11.): dážď Goo (`rain.plm`) pri dlhšej nečinnosti doladiť; pleamar-wm má vlastný, lepší dážď a sneh (1D.37) — použiť ten, ale nemá sa zapínať nečinnosťou. Dnes sa kreslí aj cez pole na písanie v oknách (audit LensAI U2).
 Obnoviť (dva štvorce). Dvojklik na hlavičku vracal okno do rohu: pleamar-wm pri pustení hlavičky bez pohybu zapísal nové
 miesto a zrušil maximalizáciu; teraz iba po skutočnom ťahaní (`dragging`). Dvojklik rieši iba WM (`AppWindow` ho prepínal
 druhý raz). Stav zisťuje `AppWindow` z veľkosti okna, pleamar-wm ho aplikácii neposiela. 4. 11.
@@ -1015,6 +1017,8 @@ obľúbené (vlastná voľba) majú prednosť pred najčastejšími, najnovšie 
 cloudom; čo LensGoo povie, keď nejde sieť, chýba kľúč, model nebeží alebo sa minul limit (nesmie ostať ticho ani
 zamrznúť). Pripájanie poskytovateľov a vstupy (hlas, obrázok, súbor) robí LensAI (10B), tu iba to, čo vidí používateľ.
 
+**6B.15, krok 10. 11.:** `latte-ai send` s neexistujúcim súborom modelu visel až 120 s (čakanie na server, ktorý už skončil). Teraz: súbor sa overí vopred („model nie je na tomto počítači“), chýbajúci `llama-server` sa pomenuje a pri skončenom serveri (poškodený `.gguf`, málo pamäte) sa nečaká — chyba príde za <1 s. Neznámy poskytovateľ hlási chybu hneď. Nasadené. Ostáva overiť: sieť nejde / chýba kľúč / minul sa limit pri cloude a ako to zobrazí LensGoo.
+
 **6B.28** [~] **LensShore: páska módov** (používateľ 29. 10., schválené; predlohy rofi a Spotlight v macOS 26) — vnútri
 panelu je vodorovná páska módov nad jedným spoločným poľom; písanie filtruje aktuálny mód. Návrh: plátno „LensShore —
 páska módov“ (https://claude.ai/artifact/H11X1MF81jbM4sc1P3rREa).
@@ -1316,6 +1320,9 @@ Zdroje: LATTEOS-GOO §4.4
 relácie: áno“ z ROZHODNUTÍ 6. 10.): po postáti myši nad QueenGoo sa ukážu vstupy do pomenovaných Latte-Workfieldov
 a **+**. **+** vytvorí nový Workfield z aktuálnej relácie; klik naň ho obnoví. Toto je Goo vstupné rozhranie do
 aplikácie Latte-Workfield v 10M, nie druhý produkt ani samostatný plán obnovy.
+**Doplnenie (používateľ 6. 11.):** Latte-Workfield je **samostatná aplikácia**, nezávislá od QueenGoo (10M.07). QueenGoo je
+len jedno z jej rozhraní: Workfield môže mať vlastné okno, alebo použiť rozhranie v QueenGoo (čiastočne už je). Aplikácia
+sa nesmie spoliehať na QueenGoo; QueenGoo ju volá rovnakým príkazom ako ktorékoľvek iné rozhranie.
 Príklady používateľa: *práca* — SAP so 4 oknami GUI (každé iná funkcia), firemný program, prehliadač s tromi
 firemnými webapp, tabuľka v Exceli; *písanie* — editor s kurzorom na poslednej strane, referenčné dokumenty
 a priečinky, monitory v teplej farbe ako predtým, predtým nastavená relaxačná hudba.
@@ -2590,6 +2597,15 @@ Prototypy (5.–6. 11.): samostatné QML okno, paginovaný rekurzívny inventár
 
 **Prvá funkčná beta — kritériá, nie sľubovaný dátum:** používateľ vyberie koreň a dostane prírastkový inventár s typovanými faktami; analyzované obrázky, videá a základné dokumenty získajú viac sémantických tagov s pôvodom a verziou modelu; identické duplicity sa označia bez mazania; plánovač vytvorí kompaktný návrh kategórií z celej kolekcie; používateľ návrh skontroluje a môže ho bezpečne zrušiť; potvrdené presuny majú transakčný záznam a overené obnovenie pôvodných ciest. Nepodporované alebo neisté súbory zostanú nedotknuté a cloud sa nepoužije bez výslovného súhlasu. Beta sa označí za funkčnú až po testoch inkrementálneho opakovania, poškodených vstupov, kolízií, prerušeného presunu a návratu späť. Zatiaľ nemožno určiť kalendárny termín: generovanie sémantických tagov, taxonómia, UI kontroly a bezpečný organizátor ešte nie sú implementované; pripravené je však ich perzistentné úložisko a API.
 
+**Implementácia (9. 11.):** príkaz `latte-chapolera duplicates <priečinok>` zoskupí prítomné neprázdne súbory s rovnakým SHA-256 (iba hlási, nič nemaže); extraktor `image-sharpness` v1 ukladá fakt `image.sharpness` (rozptyl Laplaciánu na 512 px šedej kópii; nízka hodnota = rozmazané, len nápoveda, nie absolútna miera; jpeg/png/webp/gif/tiff/bmp). Skúška na 406 tapetách (`~/Obrázky/wallpaper wide`, 398 MB): prvý sken ~2 min (väčšinou exiftool na súbor), opakovaný 0,3 s; `image.sharpness` pre 403 z 404 fotiek (medián ~700, najnižšie ~26–70), identické duplicity žiadne. Ďalej: plánovač taxonómie, kontrola návrhu v okne, žurnálované organizovanie s obnovou, potom dokumenty/OCR.
+**Implementácia (9. 11., plánovač a organizér):** DB v4 (`plans`, `plan_moves` = žurnál). `latte-chapolera plan <priečinok>` navrhne kategórie deterministicky z tagov (kategória = najlepší tag aspoň 5 % súborov, min. 3; ostatné ostávajú na kontrolu; presúvajú sa iba súbory priamo v koreni, existujúce podpriečinky sa znovu použijú, kolízie sa označia `conflict`); `plan-apply <id>` presúva atomicky bez prepisu (hard_link + unlink, žurnál `moving` → `done`, dokončí prerušený presun); `plan-undo <id>` vráti iba súbory, ktorých SHA-256 sa nezmenil, a odstráni prázdne priečinky; `plan-cancel <id>`. Okno: po označení fotiek „Navrhnúť priečinky“ → karty kategórií → „Presunúť súbory do priečinkov“ → „Vrátiť presun“ / „Zahodiť návrh“. LLM (Qwen/LensAI) zatiaľ iba voliteľné vylepšenie (premenovanie/zlúčenie), plán funguje bez generatívnej AI.
+**Overenie (10. 11.):** na 404 tapetách (kópia, SigLIP 2 na CPU ≈ 25 min, nie na skutočnom Qwen slovníku) `plan` navrhol 5 kategórií a 30 fotiek nechal na kontrolu; `plan-apply` presunul 373 súborov, opätovný sken videl 5 podpriečinkov, `plan-undo` vrátil strom bajt po bajte (SHA-256 celého stromu rovnaký). Tagovanie preskočí nečitateľnú fotku (udalosť `skipped`), nepadá celé. Nasadené na latte-lab (`/usr/bin/latte-chapolera`, `apps/chapolera.qml`, `lang/sk.plm`, manifest GuardCorgi, reštart Goo). Cache tagov je naviazaná na asset ID, takže ten istý obsah v inom koreni sa tagoval znova — zlepšenie: znovupoužiť podľa SHA-256. Ostáva: skúška okna s reálnym Qwen slovníkom, perceptuálne duplicity, dokumenty/OCR.
+**Slovník tagov (10. 11.):** skúška s lokálnym Qwen 3.5 4B (~90 s vrátane načítania) ukázala, že slepý slovník je zlý (pre tapety s lietadlami navrhol „lunch“, „coffee cup“, štítky po anglicky). Oprava: `latte-chapolera sample-names <priečinok> <n>` dá modelu rovnomernú vzorku názvov súborov (okno ich pošle v prompte, 60 kusov), prompt žiada slovenské štítky a obsah podľa názvov; výsledok je zameraný (lietadlá, auto, vesmír, boj…), štítky občas bez diakritiky alebo v angličtine — SigLIP používa `image_prompt`, štítok je len zobrazenie. Ďalšie zlepšenie: model s videním (VLM) na vzorke fotiek.
+**Revízia (10. 11.):** audit našiel a opravil: `plan_moves.sha256` (presun a návrat overujú obsah z času analýzy, upravený súbor sa nepresunie), pôvodný názov súboru v bajtoch (nie UTF-8 straty), prerušený presun sa dokončí len ak cieľ má rovnaký hash, symlink s menom kategórie = konflikt, plán patrí svojmu priečinku a tlačidlá sa počas príkazu vypnú, systémová chyba celej dávky nie je „nečitateľné fotky“, `duplicates` pre `/`, riadiace znaky v názvoch pre prompt. Poznámka: `hard_link` zlyhá na exFAT/vfat — presuny tam skončia ako `failed` bez straty dát. Neopravené (nízka priorita): návrat môže odstrániť prázdny priečinok, ktorý existoval už pred plánom.
+**Slovník tagov — oprava smeru (10. 11., skúška na ~/Plocha/dnd table c, 12 súborov):** slovník nesmie byť pevný ani odvodený len z názvov súborov (hash názvy nič nehovoria; Qwen 2B sa zacyklil, Qwen 4B navrhol „konferencia, záznam obrazovky“). Teraz: `latte-chapolera contact-sheet` zloží 12 rovnomerne vybraných fotiek (aj AVIF a zle pomenované súbory) do jedného listu a model **so zrakom** z neho navrhne slovník pre tento priečinok; SigLIP ho potom priradí fotkám. Namerané na rovnakom liste: Claude Haiku — 7 s, tagy presne pre priečinok („herný stôl“, „paravan pre GM“, „vitrína na figúrky“); lokálny Qwen 3.5 4B + mmproj (stiahnutý do /data/ai/models) — 3 min, 5 približných tagov, slabá slovenčina; SmolVLM2-2.2B — 98 s a len zopakoval vzor JSON, SmolVLM2-500M — 60 s, voľný text bez JSON (nepoužiteľné); Moondream2 (GGUF 2,8 GB) a Florence-2 (nie je pre llama.cpp) neskúšané. Zabudovaný slovník (50 pojmov, `vocabulary.json`) ostáva iba ako záloha, keď model nevidí alebo zlyhá — nikdy sa nemieša do tagov z modelu. Cloud (Claude) len po druhom kliku s textom, čo odchádza (miniatúry ~12 fotiek, pár názvov, pokyn). `latte-ai`: obrázky pre lokálne modely s mmproj, `vision` v zozname modelov, `repeat_penalty` 1,15 proti zacykleniu. Rýchlosť SigLIP: textová veža sa počíta raz na beh (predtým pri každej fotke; ~8,7 → ~2,7 s/fotka na i7-4820K bez AVX2), dekódovanie podľa obsahu a cez ffmpeg pre AVIF. Ostáva: cache obrazových embeddingov podľa SHA-256, rozloženie okna podľa Yanny Sort (hore štatistiky, hromada, vpravo karty kategórií, dole Duplicates) — ešte nespravené.
+**Rozhranie podľa Yanny Sort (10. 11., používateľ: priečinky po stranách hromady, finálne tlačidlo nemusí byť v strede):** hore päť štatistík (Súborov spolu, Videá, Fotky, Vytvorené priečinky, Nájdené duplicity; čísla sa rozbehnú), pod nimi pole pokynov; hromada v strede pulzuje, kým sa fotky označujú (pruh priebehu pod štatistikami); po označení sa plán navrhne **automaticky**, dlaždice sa rozletia do dvoch stĺpcov kariet **po oboch stranách** hromady (najväčšia prvá, ľavá, pravá…; karta = priečinok, počet sa rozbehne, miniatúry vyskakujú jedna po druhej), v strede ostane iba textový údaj („10 súborov do 4 priečinkov · 2 ostávajú na kontrolu“, po presune „Roztriedené súbory: N“), dole zásobník Duplicity (iba hlási, nič nemaže). Tlačidlá **Vykonať zmeny**, Zahodiť návrh a Vrátiť presun sú v bočnom paneli. **Haiku (Claude) je predvolený model** (druhý klik = súhlas, že odíde kontaktný list ~12 miniatúr, pár názvov a pokyn; „Bez modelu“ v ponuke dá zabudovaný záložný slovník). Overené snímkou skutočnej relácie so simulovaným stavom; celý reťaz s Haiku v okne ešte neprešiel používateľom.
+**Stav: BETA (používateľ 10. 11., súhlas s predvoleným Haiku a rozložením).** Chapolera je od 10. 11. vo verzii beta: funguje celý tok sken → duplicity/kvalita → slovník od modelu so zrakom → SigLIP tagy → automatický návrh priečinkov → Vykonať zmeny → Vrátiť. Do ďalšej verzie ostáva (poradie): (1) animácia presunu — každá dlaždica z hromady odletí do karty svojho priečinka (vzor Yanny Sort), (2) rýchlosť: cache obrazových embeddingov podľa SHA-256, rýchly sken bez ExifToolu na kritickej ceste, (3) skúška, že pri Haiku sa nič z nástrojov prvého kroku nevynecháva (sken, typy, extraktory, duplicity, SigLIP), (4) dokumenty/OCR, perceptuálne duplicity, video/audio, (5) LensAI s lepším lokálnym modelom so zrakom na silnejšej grafike (dnes Qwen 3.5 4B + mmproj ≈ 3 min, Haiku ≈ 7 s).
+**Beta, skúška a rýchlosť (10. 11.):** (1) *Skúška „Haiku nevynechá nástroje prvého kroku“* (kópia ~/Plocha/dnd table c, celý tok ako v okne): Haiku iba navrhuje slovník; sken (12/12 súborov s SHA-256), extraktory (ExifTool 12/12, ostrosť 11, rozmery 11), duplicity (`dd1.jpg` = `dd1.webp` nájdené) aj SigLIP (12/12 fotiek označených, 0 bez tagu) prebehli v plnom rozsahu. Odhalená chyba: AVIF nemal rozmery (extraktor `image-header` zlyhal) — opravené (ffmpeg dokáže súbor prečítať, rozmery dá ExifTool). (2) *Rýchlosť:* `scan … quick` ukáže priečinok hneď (12 súborov: 3,0 s → 0,06 s), pomalé extraktory pustí na pozadí `latte-chapolera enrich` paralelne (do 8 vlákien; 35 behov za 1,2 s); cache obrazových embeddingov podľa SHA-256 (DB v5, `image_embeddings`): ten istý priečinok s iným slovníkom 52 s → 7,8 s a nový koreň či premenovanie neprepočítava; dávka SigLIP 4 fotky (1 → 36 s, 4 → 35 s, 8 → 52 s). Textová veža (~3 s pri 4 pojmoch, rastie so slovníkom) sa počíta raz na beh. Ostáva: obrazová veža ~2,4 s/fotka na i7-4820K (bez AVX2) — rýchlejšie len na novšom procesore či grafike (candle nemá Vulkan). (3) *Animácia:* každá dlaždica z hromady odletí do karty svojho priečinka (priradenie dáva `plan.assignments`; dlaždice letia postupne, zmenšujú sa a pri príchode zmiznú; čo ostáva na kontrolu, zostane v strede pod textom). Overené snímkami skutočnej relácie so simulovaným plánom.
 **Rozhodnutie používateľa (6. 11.):** Chapolera je trvalá sémantická vrstva nad filesystemom; pri neskoršom pridaní súborov znovu použije nezmenené fakty a kategórie a analyzuje nové/zmenené vstupy. LatteIndex (10N) je samostatná budúca systémová schopnosť, nie závislosť Chapolery: ak bude dostupný, Chapolera môže využiť jeho všeobecné fakty; ak nie, sama vykoná scan, extrakciu, analýzu a uloží ich do vlastnej databázy. LatteIndex daemon sa teraz nevyvíja. Žiadna z vrstiev nenahrádza ani neduplikuje fyzický filesystem.
 **Oprava opisu 10A.66 (6. 11.):** skoršia formulácia „používa spoločné stabilné aktíva LatteIndexu“ neznamená povinnú závislosť. LatteIndex je voliteľný provider; standalone scanner a databáza Chapolery musia fungovať aj bez neho.
 
@@ -2628,9 +2644,35 @@ súborov a priečinkov. **Plán (schválený 4. 11.):**
 
 **10A.70** [ ] **Ramček okolo súborov sa dá vypnúť** (používateľ 5. 11.): vo vnútorných nastaveniach DualBrew voľba „Ramček okolo súborov“ (zapnúť/vypnúť); bez nej plocha súborov nemá obrys ani vlastné pozadie, súbory ležia priamo na stránke.
 
+**10A.71** [ ] **DualBrew nezávislý od LatteOS** (používateľ 6. 11.): pokúsiť sa ho upraviť tak, aby sa dal nainštalovať a
+bežať na **akomkoľvek inom Linuxe**, nie len v LatteOS. Zistiť, na čom dnes visí: `bin/latte-files`, `apps/common/*`
+(`AppWindow`, `Surface`, `I18n`, farby šálok zo `system/cups.json`), `latte-app`, shim `hyprctl`, Goo (ikony, Kôš, Ctrl+Z),
+`~/.config/latteos/`. Návrh: samostatný balík (Flatpak/RPM/AUR) s vlastným jadrom a témou; pri LatteOS napojenie na Goo
+a šálky ostáva voliteľné; bez závislosti na pleamar-wm (dnes plávajúce okno `float`, titulok). Iba návrh, zatiaľ nepísať.
+
+
 ### 10B. [~] LensAI
 
-Zdroje: `bin/latte-ai`, `apps/aicenter.qml`, `system/ai/`, `system/agents/`, `inspo/ai-na-ploche.md`
+Zdroje: `bin/latte-ai`, `apps/aicenter.qml`, `system/ai/`, `system/agents/`, `inspo/ai-na-ploche.md`, `docs/lensai/POZIADAVKY.md`, `docs/lensai/ANALYZA.md` (audit a ciele 10. 11.), `docs/lensai/NAVRH-MCP.md`, `bin/latte-mcp`, `bin/latte-skill`
+
+**Stav 10. 11. večer — tu pokračovať** (rozhodnutia dňa: `docs/goo/ROZHODNUTIA.md`, riadky s „10. 11.“):
+- **Hotové a nasadené:** audit a jeho opravy (10B.47), stránka Všetky rozhovory a pôvod rozhovoru (10B.49), prstene = spotreba,
+  karta Tokeny na Prehľade, ponuky „+“ iba s tým, čo LatteOS robí (10B.50), jeden vzhľad AI v LensGoo/LensShore, záložka Kaviareň
+  (zatiaľ agenti z `pleamar-wm agents`, iba čítanie), `latte-mcp` krok 1 (čítanie) a krok 2 (zmeny s potvrdením v LensAI) — 10B.43.
+  `latte-mcp` je na latte-lab zapísaný do Claude Code, Codexu a Gemini CLI (`latte-mcp remove` ho vyberie).
+- **Poradie ďalej:**
+  1. **10B.43 krok 3:** slučka nástrojov v `latte-ai` pre kľúče API a lokálny model (dnes iba odpovedajú); nástroj `ask`
+     (opýtaj sa inej AI — spolupráca AI) s ukázaním, komu otázka ide.
+  2. **10B.40 farma:** dočítať clodfarm (`store.py`, `runner.py`, `supervisor.py`, beh bez AWS a bez Dockeru), rozhodnúť
+     o prevzatí; potom nástroje `order`/`orders`/`result`/`counter` a pult v Kaviarni (odpoveď agentovi cez `pleamar-wm agents answer`).
+  3. **10B.36 vzhľad Kaviarne:** izometrická miestnosť, čašníčky = agenti, karty postáv; vlastná pôvodná grafika.
+  4. **10B.53** LensShore na `latte-skill` (+ nerušiť, otvoriť, zavrieť s dvojitým potvrdením); **10B.48** Späť/Znova v hornej lište.
+  5. **10B.34 kurzor** (nástroje `under_pointer`, `look`); potrebuje `agent on` v `~/.config/pleamar/session.conf` — dnes vypnuté,
+     preto nástroj `windows` vracia chybu. **10B.39** strážca podmienok (vlastný kód). Nakoniec konektor pre web služieb.
+- **Neoverené naživo:** tlačidlá Povoliť/Odmietnuť myšou (overené príkazom), prepínač MCP v LensAI › Služby, krok 2 so skutočným
+  Claude Code, jednotný vzhľad a pôvod rozhovoru v LensGoo/LensShore, sekcia AI v LensGoo pri vypnutej AI (10B.51);
+  ostatné v `docs/manual-inst.md` (10. 11.). Zvyšné nálezy auditu: K5, K7, K9–K13, U1, U5 (`docs/lensai/ANALYZA.md`).
+- `docs/lensai/NAVRH-MCP.md` bod 3 ešte hovorí o potvrdzovaní v LensShore; platí rozhodnutie: potvrdzuje sa v LensAI.
 je centralne zastrešenie všetkych použitelnych AI. Je totalna kopia Omarchy Ai využitia, len s tým že sa použiva namiesto konzoloveho, graficke rozhranie. LensGoo ma jednu z položiek komunikačne okno s Ai. 
 
 **10B.01** [x] dizajn okna. biela plocha okna je sice identicka s originalom ale navrhujem čiastočnu priehladnost. ta biela na tmavom je priliš ostrá. — Hotové (commit 4c2af13): stránka služby v LensGoo aj LensAI je mliečne sklo podľa stupňa skla (0 biela … 4), `AppWindow.ground` ju nechá presvitnúť.
@@ -2739,16 +2781,7 @@ je centralne zastrešenie všetkych použitelnych AI. Je totalna kopia Omarchy A
    Claude na mobile (Code). Obojsmerná synchronizácia bežných četov a projektov claude.ai **nie**: nemá verejné
    API a podmienky zakazujú automatický prístup mimo kľúča API alebo výslovného povolenia.
 
-**10B.17** [ ] (LensAI) podľa Omarchy · r. 468–476
-- l. [ ] **Podľa Omarchy** (preskúmané 21. 10., `inspo/ai-na-ploche.md`), návrhy na výber používateľa:
-  (1) **skill LatteOS** pre agentov (`~/.claude/skills`, `~/.codex/skills`, `~/.agents/skills`): ako je LatteOS
-  postavený, čo sa smie meniť (`~/.config/latteos`, nie `/usr/share/latteos`), ktoré `latte-*` príkazy použiť,
-  pkexec, snímka pred diskom, plánovací režim — základ barličky (k); (2) **„Urob to za mňa“** v LensGoo: úloha pre
-  predvoleného agenta v okne terminálu, najprv plán, potom potvrdenie (nie automatické schvaľovanie ako Omarchy);
-  (3) **limity bez otázky** ako Omarchy (Claude OAuth usage, Grok billing) — číta token prihlásenia CLI, iba
-  so súhlasom; (4) **pád → AI**: GuardCorgi/whyd ponúkne „Opýtať sa AI“ so zisteniami z core dumpu; (5) **App Manager
-  › AI**: Claude desktop, ChatGPT, LM Studio, Ollama; (6) **diktovanie do akejkoľvek aplikácie** (Voxtype, Win+H
-  ako vo Windows) popri mikrofóne v LensGoo; (7) viac účtov jedného poskytovateľa a prepnutie pri limite.
+**10B.17** [~] (LensAI) podľa Omarchy — body 1–4 hotové v 10B.14 (21. 10.); ostáva (5) App Manager › AI, (6) diktovanie do akejkoľvek aplikácie (Win+H, neskôr), (7) viac účtov jednej služby (neskôr).
 
 **10B.18** [ ] (LensAI) AI ako barlička · r. 477–482
 - k. [ ] **AI ako barlička v systéme** (používateľ, 21. 10.: ako v Omarchy; veľa ľudí je v Linuxe stratených):
@@ -2773,17 +2806,11 @@ je centralne zastrešenie všetkych použitelnych AI. Je totalna kopia Omarchy A
 
 **10B.21** [x] (LensAI) Pomocníci ako v Omarchy · r. 557–562
 
-**10B.22** [~] (LensAI) B. AI · r. 640–641
-- [~] **ZÁKLAD / AI:** `latte-ai` už pripája lokálne, domáce a cloudové modely aj vybrané
-  poskytovateľské CLI. Používateľské AI v LensGoo má samostatne známu kvalitatívnu medzeru.
+**10B.22** [~] zlúčené do 10B.28 (10. 11.).
 
-**10B.23** [~] (LensAI) C. GOO / LensGoo a AI · r. 670–671
-- [~] **GOO / LensGoo a AI:** základ spúšťača, hľadania a AI existuje; hĺbková kontrola podľa
-  používateľa má zamerať predovšetkým kvalitu AI rozhovoru, odpovedí, výberov a chybových stavov.
+**10B.23** [~] zlúčené do 10B.28 (10. 11.).
 
-**10B.24** [ ] (LensAI) D. AI · r. 699–700
-- [ ] **AI:** zlepšiť AI v LensGoo; poskytovateľov, limity, súkromie a systémové nástroje dopĺňať
-  explicitne a iba s potvrdením používateľa.
+**10B.24** [ ] zlúčené do 10B.28 (10. 11.).
 
 **10B.25** (pozn.) (LensAI) F. R3·G — AI · r. 864–866
 **R3·G — AI:** `latte-mcp` a zručnosť pre AI (r. 546, 559, 595); limity predplatných v LensGoo (r. 598); Newelle ako jadro (r. 599);
@@ -2793,13 +2820,12 @@ streamovanie odpovede (r. 872); viac poskytovateľov a prihlásenie výberom (r.
 **Cieľ:** AI je voliteľná schopnosť systému s jasne oddeleným lokálnym/cloudovým spracovaním a
 bez nečakaného prístupu k systémovým akciám.
 
-**10B.27** [ ] (LensAI) R3·G — latte-ai a UX · r. 1072–1073
-- [ ] Dokončiť `latte-ai` a UX v LensGoo/Nastaveniach: poskytovatelia, prihlasovanie, modely,
-  streamovanie, prílohy, hlas, spotreba a limity podľa toho, čo daná služba skutočne poskytuje.
+**10B.27** [ ] zlúčené do 10B.28 (10. 11.).
 
-**10B.28** [ ] (LensAI) R3·G — spôsoby pripojenia AI · r. 1077–1078
-- [ ] LensGoo: podpora všetkých spôsobov pripojenia AI — oficiálne nástroje účtov, integrovaný Instruct model a
-  lokálny server (napr. LM Studio); prehľad spotrebovaných a zostávajúcich tokenov.
+**10B.28** [~] **Kvalita rozhovoru a chybových stavov** (zlúčené 10B.22–24, 10B.27 a 10B.28, používateľ 10. 11.): `latte-ai` a UX v LensGoo,
+LensShore a LensAI — odpovede, výbery, chybové stavy, prílohy (obrázok a PDF cez kľúč API a lokálny model: audit K7), hlas, spotreba
+a limity podľa toho, čo služba naozaj dáva; všetky spôsoby pripojenia (nástroje účtov, kľúče API, lokálny model, vlastný server).
+Stav a zvyšné nálezy: `docs/lensai/ANALYZA.md`.
 
 **10B.29** [x] (LensAI) R3·G — kam odchádza požiadavka · r. 1079–1080
 - [x] Zviditeľniť, kam odchádza požiadavka, čo sa posiela a či je odpoveď lokálna alebo cloudová;
@@ -2843,6 +2869,7 @@ priamo na mieste kurzora nad vybraným textom v ľubovoľnom okne, napr. „nahr
 cursor: Select anything to ask Gemini“ — zatrasenie kurzorom vyvolá AI nad čímkoľvek na obrazovke). Preskúmať, ako
 v LatteOS vyvolať AI gestom myši (zatrasenie, podržanie) nad označeným textom alebo oblasťou obrazovky a odpovedať pri
 kurzore; súvisí s LensShore (čipy kontextu, 6B.18), hlasom (6B.23) a pravidlom Myš prvá.
+**Doplnenie (9. 11.):** ďalšia predloha — experimentálny AI ukazovateľ Google DeepMind s Gemini: rozumie vizuálnemu kontextu pod myšou a hlasovým „this“ / „that“ (toto zhrň, tamto pošli) naprieč aplikáciami. Základ už máme: agent pleamar-wm vidí okná a polohu myši (`cursor.sock`, `pleamar-desktop`), lokálny Qwen a whisper.cpp. Lokálne povinné, cloud voliteľný a výslovne povolený. Iba návrh, zatiaľ nepísať.
 
 **10B.35** [ ] **Záložky služieb v LensAI — „jeden prsteň“** (používateľ 29. 10.) — LensAI je nadstavba: každá veľká AI, ktorú
 nejde integrovať celú, dostane v okne LensAI vlastnú záložku s jej **oficiálnym webom**. Používateľ sa prihlási sám svojím
@@ -2924,6 +2951,7 @@ používateľ 2. 11.)** so stanicami pre ComfyUI a médiá; vývojová farma (10
   4. [ ] **Tabuľky** — analýza pracovných Excel súborov, grafy, súhrn; lokálne, dáta neopustia PC.
   5. [ ] **Kontrola konzistencie textu** a **výskum** (zadanie → hľadanie → zhrnutie so zdrojmi do poznámky).
 - Dizajn: obrazovka Kaviarne (pult, presso, čašníčky) dokresliť do plátna LensAI.
+- **Spresnené 10. 11. (používateľ):** Kaviareň je súčasť LensAI a je to **zvizualizovanie práce agentov, presne ako Clod farm** (https://github.com/matank001/clodfarm) — nie samostatná aplikácia; farma 10B.40 je jej motor. Záložka Kaviareň je v bočnom paneli LensAI (10. 11.): zatiaľ agenti v termináloch podľa `pleamar-wm agents`, iba na čítanie. **Vzhľad (používateľ, 10. 11.):** žáner hier s kaviarňou a čašníčkami — izometrická miestnosť, v ktorej čašníčky (agenti) chodia medzi stolmi (objednávky) a pultom, karty postáv s menom a údajmi (model, úloha, spotreba); vlastná pôvodná grafika, bez NSFW, nie kópia konkrétnej hry. LensShore má iba klikateľný náhľad; spravuje sa v LensAI.
 
 **10B.37** [ ] **Obsidian ako projektový manažér a lokálny kontext** (používateľ 29. 10.) — externý Obsidian (nie je
 open source → LatteOS ho nebalí, iba ponúkne inštaláciu); trezor je priečinok Markdownu, pripojí sa ako konektor MCP
@@ -2962,6 +2990,7 @@ limity, viac kľúčov. **Strážca podmienok:** pri každom poskytovateľovi ad
 LensAI ich pravidelne kontroluje a pri zmene upozorní, ukáže rozdiel a prístup, ktorý by podmienky porušil, preruší, kým
 ho používateľ znova nepotvrdí (FCC to robí sám: integrácie, ktoré prestanú byť dovolené, odstráni). Lokálny model do Claude
 Code už ide bez proxy (LM Studio s rozhraním Anthropicu, tak ho používa clodfarm).
+- **Preskúmané 10. 11.:** free-claude-code (commit da29b69, 9. 11.) strážcu v kóde **nemá** — „FCC follows provider TOS and removes integrations“ je iba veta v README, robí to autor ručne. Strážca LensAI je teda vlastný kód: adresa podmienok + odtlačok textu, pravidelná kontrola, rozdiel, prerušenie prístupu do potvrdenia. MCP, skilly a konektory dostane služba iba tam, kde to jej podmienky dovoľujú (claude.ai má Skills, Connectors, Plugins v nastaveniach) — to stráži on.
 
 **10B.40** [ ] **Vlastná farma pre Kaviareň** (používateľ 2. 11.: kvôli Kaviarni 10B.36 sa stavia vlastná verzia, nie clodfarm):
 úlohy = skilly, stanice, brány pri pulte. Z clodfarm vziať skúsenosti (`inspo/dev-ai-prostredie.md`, boti na LM Studio,
@@ -2969,6 +2998,7 @@ výsledky do gitu), z [cheap-ag](https://github.com/muaaz9329/cheap-ag) (MIT) **
 vlastnej kópii (worktree), výsledok prejde iba s prejdenou kontrolou, inak úlohu dokončí silnejší model; drahý model iba plánuje
 a číta krátky výsledok. Kontrola beží tam, kde sú nástroje (clodfarm nemá Rust ani gcc a overuje iba `git diff --check`).
 Predvolene lokálne; kód a dáta von iba s povolením. Pohľad na prácu agentov: 1D.22.
+- **10. 11. (používateľ): ak je kód clodfarm dobrý, prevziať ho.** Prvý pohľad (commit 2c839ec, 20. 10.): MIT, Python 3.10+, 17 tis. riadkov, jediná závislosť `boto3`; má vlastný MCP (`mcp.py`), dozor (`supervisor.py`), tempo podľa limitov (`governor.py`), git (`gitops.py`), web panel. Docker je iba balenie → spustiť natívne ako službu používateľa (tým odpadne chýbajúci Rust a gcc v kontajneri). Treba ešte prečítať `store.py`, `runner.py`, `supervisor.py` a overiť beh bez AWS, potom rozhodnúť.
 
 **10B.41** [ ] **Znalosti o AI ako odkazy, nie vlastná pomoc** (používateľ 2. 11.):
 [awesome-generative-ai-guide](https://github.com/aishwaryanr/awesome-generative-ai-guide),
@@ -2979,7 +3009,7 @@ ostáva naša. Hľadanie v súboroch ostáva na DigUp; [cocoindex](https://githu
 priebežné indexovanie, potrebuje databázu) až keby agenti potrebovali vlastný index kódu.
 **10B.42** [x] **Úvodný dashboard LensAI** (používateľ 2. 11.): LensAI sa otvorí dashboardom (prstene limitov, agenti, Kaviareň, lokálna AI, rozhovory, rýchle úlohy, projekty Obsidianu, strážca podmienok, prechod do YOL); vzhľad podľa [dioramas](https://github.com/blendi-remade/dioramas) (kód MIT, modely CC BY 4.0). Súpis všetkých požiadaviek na LensAI: `docs/lensai/POZIADAVKY.md` (rozhodnutia v jeho časti 7). Pred YOL (7C). Rozhodnuté 2. 11.: hlavný prvok je šošovka lupy bez rámu a rúčky (iba sklo s vypuklinou), vnútri pohľad na Kaviareň (možno GIF); okolo všetko z návrhu okrem stavu Kaviarne; agenti pleamar-wm už teraz (iba čítanie); robí sa ako prvé. 3. 11.: prvá verzia v LensAI (stránka Prehľad, predvolená): šošovka `apps/common/Lens.qml` + `shaders/lens.frag` (vypuklina, lom farieb pri okraji, svetlo zľava hore, bez rámu), vnútri `~/.local/share/latteos/cafe.gif`, kým nie je, tapeta s kávou; okolo: Čo ostáva (prstene limitov, Claude týždeň / klik 5 h), Tento počítač, Agenti (pleamar-wm v termináli, iba čítanie), Rozhovory, Urob to za mňa s pripravenými úlohami, Projekty · Strážca podmienok · YOL ako „pripravuje sa“. 3. 11. neskôr: obraz Kaviarne od používateľa (výrez z jeho obrázka lupy, `assets/lensai/cafe.jpg`; GIF používateľa v `~/.local/share/latteos/cafe.gif` má prednosť); vzhľad podľa dioramas (`shaders/stage.frag`): teplý kužeľ svetla zhora na šošovku, žiara, mäkký tieň, vinetácia, filmové zrno; šošovka sa jemne vznáša a odlesk sa posúva (iba stupne full a standard). Hotové 3. 11. (používateľ: „Dashboard je hotový“); GIF Kaviarne dodá používateľ do `~/.local/share/latteos/cafe.gif`.
 
-**10B.43** [ ] **LensAI ako MCP hostiteľ** (používateľ 3. 11.; rozhodnuté 29. 10. a 3. 11., 10B.35): LensAI spúšťa konektory (MCP servery: súbory, Obsidian, Home Assistant, domáci server…) raz a dáva ich všetkým — oficiálnym CLI (zapíše tie isté servery do ich nastavení: Claude Code, Codex, Gemini CLI), modelom cez API a lokálnej AI; skilly a kontext Obsidianu tou istou cestou. Katalóg z MCP Registry (10B.38). Potom vypínač „sprístupniť konektory webovým záložkám Claude a ChatGPT“ cez ich vlastné konektory a tunel (predvolene vypnutý, s prihlásením, iba vybrané nástroje). Najprv Omarchy a hotové riešenia.
+**10B.43** [ ] **LensAI ako MCP hostiteľ** (používateľ 3. 11.; rozhodnuté 29. 10. a 3. 11., 10B.35): LensAI spúšťa konektory (MCP servery: súbory, Obsidian, Home Assistant, domáci server…) raz a dáva ich všetkým — oficiálnym CLI (zapíše tie isté servery do ich nastavení: Claude Code, Codex, Gemini CLI), modelom cez API a lokálnej AI; skilly a kontext Obsidianu tou istou cestou. Katalóg z MCP Registry (10B.38). Potom vypínač „sprístupniť konektory webovým záložkám Claude a ChatGPT“ cez ich vlastné konektory a tunel (predvolene vypnutý, s prihlásením, iba vybrané nástroje). Najprv Omarchy a hotové riešenia. **10. 11. (používateľ): pred Kaviarňou** — z LensAI spoločné rozhranie, skutočný MCP server `latte-mcp` pre celé LatteOS (farma/Kaviareň, kurzor, analýza a čety, ovládanie). Návrh na schválenie: `docs/lensai/NAVRH-MCP.md`. **Krok 1 hotový 10. 11.:** `bin/latte-mcp` (Python, `python3-mcp`) — čítanie: rozhovory, kto odpovedá, spotreba, agenti v termináloch, okná; `latte-mcp install|remove|status` ho zapíše do Claude Code, Codexu a Gemini CLI; prepínač v LensAI › Služby. Rozhodnuté: Python, skilly von z Goo do príkazu, potvrdzuje sa v LensAI. Ďalej krok 2 (ovládanie s potvrdením). **Krok 2 hotový 10. 11.:** `bin/latte-skill` (10 zmien LensShore ako príkaz: Wi-Fi, Bluetooth, pripojiť zariadenie, hlasitosť, stlmenie, výstup zvuku, jas, nočné svetlo, režim napájania, sieť), nástroje `skills` a `do_skill` v `latte-mcp`; žiadosť AI sa ukáže v LensAI ako karta nad stránkou (kto žiada, čo sa zmení, z čoho na čo; Povoliť / Odmietnuť, čaká 2 min), denník `journalctl -t latte-skill`. Overené cez MCP klienta: povolené, odmietnuté, neplatné. Ďalej krok 3 (nástroje pre kľúče API a lokálny model).
 **10B.44** [ ] **Skill Kaviarne: krátke video z nakrúcania do kamery** (používateľ 3. 11., vzor editácia v [Yanny Studio](https://www.yanny.space/studio/), platené a uzavreté — preberá sa iba myšlienka): vystrihnúť pauzy, opakované pokusy a výplňové slová (strih medzi slovami), titulky slovo po slove, nadpisy a pohyb, hotové štýly; pred zostavením plán na schválenie, kontrola, že text nezakrýva tvár; výstup MP4, obrázok obalu a text popisu. Najprv hotové otvorené nástroje (napr. auto-editor na strih tíšin, whisper.cpp na prepis, Remotion na titulky), až potom vlastné. Súvisí s 10B.36 (skill „video a podcast“) a 10A.66.
 **10B.45** [ ] **Build (Arrecife) v LensAI** (používateľ 3. 11.): stránka *Build* ovládacieho centra pleamar-wm
 (`pleamar-wm control`) — tvorba widgetov a scén s AI, prihlásenie poskytovateľov AI — sa integruje priamo do LensAI
@@ -2989,12 +3019,32 @@ priebežné indexovanie, potrebuje databázu) až keby agenti potrebovali vlastn
 s vlastným kurzorom a klávesnicou, skill `pleamar-desktop`) v LensAI; pôvodná ikona, tlačidlo orámované farbou
 pleamar-wm ako pri 10B.45.
 
+**10B.47** [x] **Opravy po audite** (10. 11., `docs/lensai/ANALYZA.md`): vypínač AI platí aj pre `latte-ai send/again/do/crash/why` a okno LensAI (stránka „AI je vypnutá“); `latte-app aicenter ID` otvorí rozhovor; `latte-ai invite` nepadá; bočný panel bez zoznamu rozhovorov — stránka **Všetky rozhovory** rozdelená podľa AI, s pôvodom; `forget` maže aj prílohy; prsteň záložky aj Prehľadu = spotrebovaný limit (plný kruh = minuté; Claude 5 h, bez neho týždeň); na Prehľade karta Tokeny namiesto Rozhovorov; preč „čoskoro“ a ručne opísané riadky ponúk. Chýba: K5, K7, K9–K13.
+
+**10B.48** [ ] **Späť a Znova v hornej lište** (používateľ 10. 11.): tlačidlá v hlavičke `AppWindow`, pri podržaní myši zoznam posledných akcií; v LensAI pre zmazanie rozhovoru a modelu (dnes jeden klik bez návratu). Najprv pozrieť Ctrl+Z v `bin/latte-files` a použiť ho.
+
+**10B.49** [~] **Pôvod rozhovoru** (používateľ 10. 11.): `latte-ai send --from MENO` uloží, kto rozhovor začal (`lensai`, `lensgoo`, `lensshore`, `chapolera`); strojové (`MACHINE` v `latte-ai`) LensAI neukazuje. Chýba: pôvod pre AI pri kurzore (10B.34), otázku k pádu, DualBrew a kalendár, a filter podľa pôvodu na stránke Všetky rozhovory.
+
+**10B.50** [x] **Ponuky „+“ a čipu v poli rozhovoru** (10. 11., používateľ): ponuky služieb patria ich webu v záložke; rozhovor cez CLI ponúka pod „+“ iba to, čo LatteOS robí (súbor, snímka obrazovky), čip iba modely a úsilie. LensGoo a LensShore kreslia každú AI rovnako (`style = "own"`).
+
+**10B.51** [ ] **Vypínač AI — LensGoo a LensShore** (používateľ 10. 11.): pri vypnutej AI zmizne z ich ponuky sekcia AI a barličky v systéme sa neponúkajú; overiť naostro (API `latte-ai providers` už vracia prázdny zoznam).
+
+**10B.52** [ ] **Upratať vzhľady služieb** (po 10B.50): vetvy podľa `style` v `goo/lib/lens.luau` a `goo/parts/ai.plm` sú mŕtve; vyhodiť ich. Okno rozhovoru v LensAI si kópie vzhľadu zatiaľ drží — rozhodnúť, či ich zjednotiť tiež.
+
+**10B.53** [ ] **LensShore berie skilly z `latte-skill`** (po 10B.43 krok 2): `goo/lib/skills.luau` má dnes vlastnú kópiu tých istých zmien; presunúť ho na príkaz. Do príkazu doplniť tri, ktoré potrebujú Goo (nerušiť, otvoriť aplikáciu, zavrieť aplikáciu — tá s dvojitým potvrdením a popisom straty), a denník napojiť na Späť/Znova (10B.48).
+
 ### 10C. [ ] Heidelberg
 
 je zakladny textovy editor, s neobvyklo širokou ponukou formatou ktore prečíta a upraví
 
 **10C.01** [ ] (Heidelberg) R3·C — Heidelberg · r. 994–994
 - [ ] **Heidelberg:** verné formátovanie docx (tabuľky, štýly, hlavičky) a ďalšie otvorené položky z F4 (riadok 792).
+
+**10C.02** [ ] **Heidelberg nezávislý od LatteOS** (používateľ 6. 11.): pokúsiť sa ho upraviť tak, aby sa dal nainštalovať
+a bežať na **akomkoľvek inom Linuxe**. Rovnaký postup ako 10A.71: zistiť závislosti na LatteOS (`apps/common/*`, `I18n`,
+šálky, `latte-*` príkazy, Goo), navrhnúť samostatný balík s vlastným jadrom a témou, napojenie na LatteOS voliteľné.
+Iba návrh, zatiaľ nepísať.
+
 
 ### 10D. [~] LatteMonitor
 
@@ -3751,6 +3801,11 @@ Postupne overiť Firefox, VS Code a Moonlight; negarantovať vnútorný stav bez
 zvukové zariadenie a hlasitosť); zmeny robiť cez existujúce LatteOS rozhrania a bezpečne prispôsobiť chýbajúce zariadenia.
 **10M.06** [ ] **Prenos, kompatibilita a výkon**: export/import samostatného Workfieldu; pri importe overiť aplikácie, zariadenia,
 monitory a verziu formátu. Zmerať čas uloženia, ukončenia, obnovy a RAM; oznámiť nedostupné časti bez straty zvyšku.
+**10M.07** [ ] **Latte-Workfield ako solo aplikácia** (používateľ 6. 11.): jadro (formát, uloženie, obnova, adaptéry) beží
+bez QueenGoo a bez Goo; rozhranie je buď **vlastné okno** aplikácie (zoznam Workfieldov, Uložiť, Obnoviť, Temporary), alebo
+**rozhranie v QueenGoo** (6E.02), prípadne oboje — jadro je jedno, rozhrania ho iba volajú (príkaz/CLI alebo D-Bus).
+Rozhodnúť v 10M.01: ktoré rozhranie je predvolené a čo robí aplikácia bez Goo (napr. cez `latte-app`/spúšťač).
+
 
 ### 10N. [ ] LatteIndex — voliteľná systémová indexačná vrstva
 

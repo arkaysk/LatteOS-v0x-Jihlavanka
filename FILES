@@ -26,6 +26,8 @@
 /usr/bin/latte-say                                      <- bin/latte-say
 /usr/bin/latte-cal                                      <- bin/latte-cal
 /usr/bin/latte-ai                                       <- bin/latte-ai
+/usr/bin/latte-mcp                                      <- bin/latte-mcp
+/usr/bin/latte-skill                                    <- bin/latte-skill
 /usr/bin/latte-activity                                 <- bin/latte-activity
 /usr/bin/latte-app                                      <- bin/latte-app
 /usr/bin/latte-apps                                     <- bin/latte-apps
@@ -802,6 +804,7 @@ package: python3-pillow                                              # the backg
 optional /usr/bin/ffmpeg: ffmpeg (Fedora's ffmpeg-free or RPM Fusion's ffmpeg): the background, a film across screens cut for each, and pictures of films
 optional: cliphist wl-clipboard zbar tesseract tesseract-langpack-slk tesseract-langpack-eng   # the clipboard in the shore's panel and LensShore (bin/latte-clip): what was copied, QR codes, the text in pictures
 optional: unicode-emoji cldr-emoji-annotation python3-gobject python3-cairo google-noto-color-emoji-fonts google-noto-sans-symbols-2-fonts   # LensShore's emoji and symbols: the list, their names, their pictures (bin/latte-emoji)
+optional: python3-mcp                                                 # LatteOS as an MCP server for the AI agents (bin/latte-mcp, LensAI › Services)
 optional: qalculate                                                  # the launcher: amounts in units and money, written loosely (qalc; rates from the ECB)
 optional: gammastep                                                  # Settings › Displays › Night light (bin/latte-nightlight)
 package: quickshell flatpak                                          # LatteOS's own apps are drawn by Quickshell; the App Manager's shop is Flathub
