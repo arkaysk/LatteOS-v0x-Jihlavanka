@@ -1,0 +1,202 @@
+[
+ {
+  "label": "aircraft",
+  "image_prompt": "military or passenger aircraft"
+ },
+ {
+  "label": "warship or tank",
+  "image_prompt": "warship, tank or armored military vehicle"
+ },
+ {
+  "label": "car",
+  "image_prompt": "car or motorcycle"
+ },
+ {
+  "label": "train or ship",
+  "image_prompt": "train, ship or boat"
+ },
+ {
+  "label": "architecture",
+  "image_prompt": "buildings and architecture"
+ },
+ {
+  "label": "city street",
+  "image_prompt": "city street or skyline"
+ },
+ {
+  "label": "room interior",
+  "image_prompt": "interior of a room"
+ },
+ {
+  "label": "mountains",
+  "image_prompt": "mountains and hills landscape"
+ },
+ {
+  "label": "forest",
+  "image_prompt": "forest with trees"
+ },
+ {
+  "label": "sea or beach",
+  "image_prompt": "sea, ocean or beach"
+ },
+ {
+  "label": "sky and clouds",
+  "image_prompt": "sky with clouds"
+ },
+ {
+  "label": "sunset",
+  "image_prompt": "sunset or sunrise"
+ },
+ {
+  "label": "snow and winter",
+  "image_prompt": "snow and winter scenery"
+ },
+ {
+  "label": "flowers",
+  "image_prompt": "flowers and plants"
+ },
+ {
+  "label": "animals",
+  "image_prompt": "animal in nature"
+ },
+ {
+  "label": "pets",
+  "image_prompt": "cat or dog"
+ },
+ {
+  "label": "birds",
+  "image_prompt": "bird"
+ },
+ {
+  "label": "portrait",
+  "image_prompt": "portrait of a person"
+ },
+ {
+  "label": "group of people",
+  "image_prompt": "group of people"
+ },
+ {
+  "label": "food",
+  "image_prompt": "food on a plate"
+ },
+ {
+  "label": "drinks",
+  "image_prompt": "drink or beverage"
+ },
+ {
+  "label": "sport",
+  "image_prompt": "sport or fitness activity"
+ },
+ {
+  "label": "musical instruments",
+  "image_prompt": "musical instrument"
+ },
+ {
+  "label": "concert or stage",
+  "image_prompt": "concert or stage performance"
+ },
+ {
+  "label": "screenshot",
+  "image_prompt": "screenshot of a computer screen or app"
+ },
+ {
+  "label": "text document",
+  "image_prompt": "document or page of text"
+ },
+ {
+  "label": "chart or diagram",
+  "image_prompt": "chart, diagram or infographic"
+ },
+ {
+  "label": "map",
+  "image_prompt": "map or floor plan"
+ },
+ {
+  "label": "logo or graphic design",
+  "image_prompt": "logo, poster or graphic design"
+ },
+ {
+  "label": "comic or meme",
+  "image_prompt": "comic, cartoon or meme"
+ },
+ {
+  "label": "illustration",
+  "image_prompt": "digital or hand drawn illustration"
+ },
+ {
+  "label": "anime",
+  "image_prompt": "anime or manga artwork"
+ },
+ {
+  "label": "fantasy art",
+  "image_prompt": "fantasy artwork with dragons, wizards or castles"
+ },
+ {
+  "label": "painting",
+  "image_prompt": "painting on canvas"
+ },
+ {
+  "label": "sculpture",
+  "image_prompt": "sculpture or statue"
+ },
+ {
+  "label": "video game",
+  "image_prompt": "video game screenshot"
+ },
+ {
+  "label": "tabletop gaming",
+  "image_prompt": "tabletop role playing game table with dice and miniatures"
+ },
+ {
+  "label": "board game",
+  "image_prompt": "board game with cards and pieces"
+ },
+ {
+  "label": "toys",
+  "image_prompt": "toys and figurines"
+ },
+ {
+  "label": "space",
+  "image_prompt": "space, planets and stars"
+ },
+ {
+  "label": "abstract pattern",
+  "image_prompt": "abstract pattern or texture"
+ },
+ {
+  "label": "electronics",
+  "image_prompt": "electronics and gadgets"
+ },
+ {
+  "label": "computer setup",
+  "image_prompt": "computer desk setup or workstation"
+ },
+ {
+  "label": "tools and workshop",
+  "image_prompt": "tools and workshop"
+ },
+ {
+  "label": "fashion",
+  "image_prompt": "clothing and fashion"
+ },
+ {
+  "label": "jewelry",
+  "image_prompt": "jewelry or accessories"
+ },
+ {
+  "label": "night scene",
+  "image_prompt": "night scene with lights"
+ },
+ {
+  "label": "close-up",
+  "image_prompt": "macro close-up of a small object"
+ },
+ {
+  "label": "furniture",
+  "image_prompt": "furniture and home decor"
+ },
+ {
+  "label": "event or conference",
+  "image_prompt": "conference or event with a crowd"
+ }
+]

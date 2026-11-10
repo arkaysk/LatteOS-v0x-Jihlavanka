@@ -348,3 +348,11 @@ do potvrdenej údržby databázy.
   kompatibilné vlastnosti vyhľadávania; zmerať kvalitu, segmentové odkazy, presné zhody, prírastkovosť,
   RAM/CPU/úložisko a integráciu s existujúcim SigLIP/LensAI tokom.
 - Presné prahy pre vznik kategórie, podobné duplikáty a kvalitu kalibrovať na testovacích kolekciách.
+
+## Stav plánovača a organizéra (9. 11. 2026)
+
+`latte-chapolera plan|plan-apply|plan-undo|plan-cancel` (modul `asset_store/organize.rs`, schéma v4). Plán je
+deterministický: kategória vznikne z najlepšieho tagu aspoň 5 % súborov (najmenej 3), ostatné súbory ostávajú na
+kontrolu; presúvajú sa iba súbory ležiace priamo v zvolenom koreni. Vykonanie používa žurnál (`plan_moves`),
+atomické `hard_link` + `unlink` bez prepisu a pri návrate overuje SHA-256. Generatívny model plánovač nepotrebuje;
+Qwen/LensAI môže neskôr iba premenovať alebo zlúčiť kategórie pred potvrdením.

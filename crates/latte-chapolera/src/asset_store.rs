@@ -5,11 +5,21 @@ use rusqlite::{params, Connection, OptionalExtension, Transaction, TransactionBe
 use std::collections::HashSet;
 use std::ffi::OsStr;
 use std::fs;
-use std::os::unix::ffi::OsStrExt;
+use std::os::unix::ffi::{OsStrExt, OsStringExt};
 use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
 
-const SCHEMA_VERSION: i64 = 3;
+pub(crate) mod organize;
+
+const SCHEMA_VERSION: i64 = 5;
+
+/// `scan quick` leaves the slow extractors (ExifTool, ffprobe…) to `enrich`, so the folder shows up at once.
+static QUICK_SCAN: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+
+pub(crate) fn set_quick_scan(quick: bool) {
+    QUICK_SCAN.store(quick, std::sync::atomic::Ordering::Relaxed);
+}
+
 const MAX_TAG_LABEL_LENGTH: usize = 256;
 const MAX_SEMANTIC_ID_LENGTH: usize = 128;
 
@@ -40,6 +50,122 @@ struct SemanticTag {
     normalized_label: String,
     confidence: f64,
     source: String,
+}
+
+/// Image features are kept by content hash, so a photo seen once is never run through the model again.
+pub(crate) fn load_embedding(path: &Path, model_version: &str) -> Option<Vec<f32>> {
+    load_embedding_with_database(path, model_version, &default_database_path().ok()?)
+}
+
+pub(crate) fn store_embedding(path: &Path, model_version: &str, vector: &[f32]) {
+    if let Ok(database) = default_database_path() {
+        let _ = store_embedding_with_database(path, model_version, vector, &database);
+    }
+}
+
+fn load_embedding_with_database(path: &Path, model_version: &str, database_path: &Path) -> Option<Vec<f32>> {
+    let connection = open_database(database_path).ok()?;
+    let blob: Vec<u8> = connection
+        .query_row(
+            "SELECT e.vector FROM image_embeddings e JOIN assets a ON a.sha256 = e.content_sha256
+             WHERE a.path_key = ?1 AND a.present = 1 AND e.model_version = ?2",
+            params![path.as_os_str().as_bytes(), model_version],
+            |row| row.get(0),
+        )
+        .optional()
+        .ok()??;
+    if blob.len() % 4 != 0 || blob.is_empty() {
+        return None;
+    }
+    Some(blob.chunks_exact(4).map(|bytes| f32::from_le_bytes([bytes[0], bytes[1], bytes[2], bytes[3]])).collect())
+}
+
+fn store_embedding_with_database(path: &Path, model_version: &str, vector: &[f32], database_path: &Path) -> Result<(), String> {
+    let connection = open_database(database_path)?;
+    let blob: Vec<u8> = vector.iter().flat_map(|value| value.to_le_bytes()).collect();
+    connection
+        .execute(
+            "INSERT OR REPLACE INTO image_embeddings (content_sha256, model_version, vector, created_at)
+             SELECT sha256, ?2, ?3, ?4 FROM assets WHERE path_key = ?1 AND present = 1",
+            params![path.as_os_str().as_bytes(), model_version, blob, unix_seconds()?],
+        )
+        .map(|_| ())
+        .map_err(|error| format!("could not store image features: {error}"))
+}
+
+pub(super) fn enrich(folder: &Path) -> Result<String, String> {
+    let canonical = fs::canonicalize(folder).map_err(|error| format!("{}: {error}", folder.display()))?;
+    enrich_with_database(&canonical, &default_database_path()?)
+}
+
+/// Runs the extractors the quick scan skipped, several files at once (they are separate processes or
+/// independent decodes), and stores everything in one transaction.
+fn enrich_with_database(root: &Path, database_path: &Path) -> Result<String, String> {
+    use std::sync::atomic::{AtomicUsize, Ordering};
+    use std::sync::Mutex;
+    let mut connection = open_database(database_path)?;
+    let assets: Vec<(i64, Vec<u8>, String, String, String, String)> = {
+        let mut statement = connection
+            .prepare(
+                "SELECT assets.id, assets.path_key, assets.name, assets.sha256, assets.mime_type, assets.media_family
+                 FROM assets JOIN roots ON roots.id = assets.root_id
+                 WHERE assets.present = 1 AND roots.root_key = ?1 ORDER BY assets.scan_order",
+            )
+            .map_err(|error| format!("could not prepare enrichment query: {error}"))?;
+        let rows = statement
+            .query_map([root.as_os_str().as_bytes()], |row| {
+                Ok((row.get(0)?, row.get(1)?, row.get(2)?, row.get(3)?, row.get(4)?, row.get(5)?))
+            })
+            .map_err(|error| format!("could not read assets: {error}"))?;
+        rows.collect::<Result<Vec<_>, _>>().map_err(|error| format!("could not read assets: {error}"))?
+    };
+    let mut tools = ToolVersions::default();
+    // (asset index, extractor, version)
+    let mut jobs: Vec<(usize, &'static str, String)> = Vec::new();
+    let mut unavailable: Vec<(usize, ExtractorRun)> = Vec::new();
+    {
+        let probe = connection.transaction().map_err(|error| error.to_string())?;
+        for (index, (asset_id, _, _, sha256, mime_type, family)) in assets.iter().enumerate() {
+            for extractor_id in extractors::applicable(family, mime_type) {
+                match extractors::current_version(extractor_id, &mut tools) {
+                    Ok(version) if extractor_run_is_current(&probe, *asset_id, extractor_id, &version, sha256)? => {}
+                    Ok(version) => jobs.push((index, extractor_id, version)),
+                    Err(error) => unavailable.push((
+                        index,
+                        ExtractorRun { id: extractor_id, version: "unavailable".to_string(), status: "failed", error: Some(error), facts: Vec::new() },
+                    )),
+                }
+            }
+        }
+    }
+    let next = AtomicUsize::new(0);
+    let finished: Mutex<Vec<(usize, ExtractorRun)>> = Mutex::new(Vec::new());
+    let workers = std::thread::available_parallelism().map(|n| n.get()).unwrap_or(4).clamp(1, 8);
+    std::thread::scope(|scope| {
+        for _ in 0..workers {
+            scope.spawn(|| loop {
+                let at = next.fetch_add(1, Ordering::Relaxed);
+                let Some((index, extractor_id, version)) = jobs.get(at) else { break };
+                let (_, path_key, _, _, _, family) = &assets[*index];
+                let path = PathBuf::from(std::ffi::OsString::from_vec(path_key.clone()));
+                let run = extractors::run(extractor_id, version, &path, family);
+                finished.lock().unwrap().push((*index, run));
+            });
+        }
+    });
+    let mut runs = finished.into_inner().unwrap_or_default();
+    runs.extend(unavailable);
+    let now = unix_seconds()?;
+    let transaction = connection
+        .transaction_with_behavior(TransactionBehavior::Immediate)
+        .map_err(|error| format!("could not begin enrichment: {error}"))?;
+    let count = runs.len();
+    for (index, run) in &runs {
+        let (asset_id, _, name, sha256, _, _) = &assets[*index];
+        store_run_with_facts(&transaction, *asset_id, sha256, run, name, now)?;
+    }
+    transaction.commit().map_err(|error| format!("could not save enrichment: {error}"))?;
+    Ok(serde_json::json!({ "assets": assets.len(), "extractor_runs": count }).to_string())
 }
 
 pub(super) fn scan(
@@ -227,6 +353,48 @@ pub(super) fn scan_with_database(
     let previews = load_previews(&transaction, root_id, preview_limit, preview_offset)?;
     transaction.commit().map_err(|error| format!("could not save Chapolera scan: {error}"))?;
     Ok((counts, previews))
+}
+
+pub(super) fn duplicates(folder: &Path) -> Result<String, String> {
+    let canonical = fs::canonicalize(folder).map_err(|error| format!("{}: {error}", folder.display()))?;
+    duplicates_with_database(&canonical, &default_database_path()?)
+}
+
+/// Groups present, non-empty assets under `folder` with identical content. Report only: nothing is deleted or moved.
+fn duplicates_with_database(folder: &Path, database_path: &Path) -> Result<String, String> {
+    let connection = open_database(database_path)?;
+    let mut prefix = folder.as_os_str().as_bytes().to_vec();
+    if prefix.last() != Some(&b'/') {
+        prefix.push(b'/');
+    }
+    let mut statement = connection
+        .prepare(
+            "SELECT sha256, size_bytes, path FROM assets
+             WHERE present = 1 AND size_bytes > 0 AND substr(path_key, 1, ?1) = ?2
+               AND sha256 IN (
+                   SELECT sha256 FROM assets
+                   WHERE present = 1 AND size_bytes > 0 AND substr(path_key, 1, ?1) = ?2
+                   GROUP BY sha256 HAVING count(*) > 1)
+             ORDER BY sha256, path",
+        )
+        .map_err(|error| format!("could not prepare duplicate query: {error}"))?;
+    let rows = statement
+        .query_map(params![prefix.len() as i64, prefix], |row| {
+            Ok((row.get::<_, String>(0)?, row.get::<_, i64>(1)?, row.get::<_, String>(2)?))
+        })
+        .map_err(|error| format!("could not read duplicates: {error}"))?;
+    let mut groups: Vec<serde_json::Value> = Vec::new();
+    let mut last = String::new();
+    for row in rows {
+        let (sha256, size, path) = row.map_err(|error| format!("could not read duplicate row: {error}"))?;
+        if sha256 != last {
+            groups.push(serde_json::json!({ "sha256": sha256, "size_bytes": size, "paths": [] }));
+            last = sha256;
+        }
+        groups.last_mut().unwrap()["paths"].as_array_mut().unwrap().push(path.into());
+    }
+    groups.sort_by(|a, b| b["size_bytes"].as_i64().cmp(&a["size_bytes"].as_i64()));
+    Ok(serde_json::json!({ "groups": groups }).to_string())
 }
 
 pub(super) fn profile(path: &Path) -> Result<String, String> {
@@ -958,6 +1126,52 @@ fn initialize_schema(connection: &Connection, path: &Path) -> Result<(), String>
                  COMMIT;",
             )
             .map_err(|error| format!("could not add Chapolera semantic tags to {}: {error}", path.display()))?;
+        version = 3;
+    }
+    if version == 3 {
+        connection
+            .execute_batch(
+                "BEGIN IMMEDIATE;
+                 CREATE TABLE plans (
+                     id INTEGER PRIMARY KEY,
+                     root_id INTEGER NOT NULL REFERENCES roots(id) ON DELETE CASCADE,
+                     created_at INTEGER NOT NULL,
+                     applied_at INTEGER,
+                     status TEXT NOT NULL CHECK (status IN ('proposed', 'applying', 'applied', 'undone', 'cancelled'))
+                 );
+                 CREATE TABLE plan_moves (
+                     plan_id INTEGER NOT NULL REFERENCES plans(id) ON DELETE CASCADE,
+                     asset_id INTEGER NOT NULL REFERENCES assets(id) ON DELETE CASCADE,
+                     from_path BLOB NOT NULL,
+                     to_path BLOB NOT NULL,
+                     category TEXT NOT NULL,
+                     confidence REAL NOT NULL,
+                     sha256 TEXT NOT NULL,
+                     status TEXT NOT NULL CHECK (status IN ('pending', 'moving', 'done', 'failed', 'undone', 'conflict')),
+                     error_message TEXT,
+                     PRIMARY KEY (plan_id, asset_id)
+                 );
+                 PRAGMA user_version = 4;
+                 COMMIT;",
+            )
+            .map_err(|error| format!("could not add Chapolera plans to {}: {error}", path.display()))?;
+        version = 4;
+    }
+    if version == 4 {
+        connection
+            .execute_batch(
+                "BEGIN IMMEDIATE;
+                 CREATE TABLE image_embeddings (
+                     content_sha256 TEXT NOT NULL,
+                     model_version TEXT NOT NULL,
+                     vector BLOB NOT NULL,
+                     created_at INTEGER NOT NULL,
+                     PRIMARY KEY (content_sha256, model_version)
+                 );
+                 PRAGMA user_version = 5;
+                 COMMIT;",
+            )
+            .map_err(|error| format!("could not add Chapolera embeddings to {}: {error}", path.display()))?;
     }
     Ok(())
 }
@@ -1013,6 +1227,9 @@ fn persist_extractions(
     tools: &mut ToolVersions,
     now: i64,
 ) -> Result<(), String> {
+    if QUICK_SCAN.load(std::sync::atomic::Ordering::Relaxed) {
+        return Ok(());
+    }
     for extractor_id in extractors::applicable(media_family, mime_type) {
         let version = extractors::current_version(extractor_id, tools);
         let (version_name, run) = match version {
@@ -1046,7 +1263,20 @@ fn persist_extractions(
                 facts: Vec::new(),
             }
         };
-        store_extractor_run(transaction, asset_id, content_sha256, &run, now)?;
+        store_run_with_facts(transaction, asset_id, content_sha256, &run, file_name, now)?;
+    }
+    Ok(())
+}
+
+fn store_run_with_facts(
+    transaction: &Transaction<'_>,
+    asset_id: i64,
+    content_sha256: &str,
+    run: &ExtractorRun,
+    file_name: &str,
+    now: i64,
+) -> Result<(), String> {
+        store_extractor_run(transaction, asset_id, content_sha256, run, now)?;
         for fact in &run.facts {
             let value = serde_json::to_string(&fact.value)
                 .map_err(|error| format!("could not serialize {} fact: {error}", fact.key))?;
@@ -1062,7 +1292,6 @@ fn persist_extractions(
                 )
                 .map_err(|error| format!("could not save {} fact for {}: {error}", fact.key, file_name))?;
         }
-    }
     Ok(())
 }
 
@@ -1613,6 +1842,39 @@ mod tests {
         assert_eq!(run_table, 1);
         assert_eq!(asset_tags_table, 1);
         drop(connection);
+        cleanup(&root, &database);
+    }
+
+    #[test]
+    fn duplicates_group_identical_content_only() {
+        let (root, database) = test_paths("dupes");
+        write(root.join("a.png"), png_bytes(&[1])).unwrap();
+        write(root.join("b.png"), png_bytes(&[1])).unwrap();
+        write(root.join("c.png"), png_bytes(&[2])).unwrap();
+        write(root.join("empty1.png"), []).unwrap();
+        write(root.join("empty2.png"), []).unwrap();
+        scan_with_database(&root, 8, 0, &database).unwrap();
+        let report: serde_json::Value =
+            serde_json::from_str(&duplicates_with_database(&root, &database).unwrap()).unwrap();
+        let groups = report["groups"].as_array().unwrap();
+        assert_eq!(groups.len(), 1);
+        assert_eq!(groups[0]["paths"].as_array().unwrap().len(), 2);
+        cleanup(&root, &database);
+    }
+
+    #[test]
+    fn image_features_are_kept_by_content_and_survive_a_rename() {
+        let (root, database) = test_paths("embeddings");
+        write(root.join("a.png"), png_bytes(&[9])).unwrap();
+        scan_with_database(&root, 8, 0, &database).unwrap();
+        let path = root.join("a.png");
+        assert!(load_embedding_with_database(&path, "m1", &database).is_none());
+        store_embedding_with_database(&path, "m1", &[0.5, -1.25, 3.0], &database).unwrap();
+        assert_eq!(load_embedding_with_database(&path, "m1", &database).unwrap(), vec![0.5, -1.25, 3.0]);
+        assert!(load_embedding_with_database(&path, "m2", &database).is_none(), "another model does not reuse them");
+        fs::rename(&path, root.join("b.png")).unwrap();
+        scan_with_database(&root, 8, 0, &database).unwrap();
+        assert_eq!(load_embedding_with_database(&root.join("b.png"), "m1", &database).unwrap().len(), 3);
         cleanup(&root, &database);
     }
 }

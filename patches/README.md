@@ -45,3 +45,10 @@ git clone https://github.com/quickshell-mirror/quickshell.git && cd quickshell &
 git apply /path/to/patches/quickshell-webengine.patch
 cmake -GNinja -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo -DUSE_JEMALLOC=OFF -DCRASH_HANDLER=OFF && ninja -C build
 ```
+
+## Author's reply (9. 11. 2026)
+
+- Covered upstream, to be dropped once released: `window-carry` (frameless windows, `decorations: none` + `handle: self`, pleamar 0.8 experimental branch) and `body-speed` of `speed-edges-wheel` (bodies painted in tiles since 0.7.18). Only `body-speed` is covered, `sharp-edges` and `wheel-x` of the same patch stay unless he says otherwise.
+- Not planned, keep as local patches: `steady-glass`, `field-select`, `right-selection`, `apps-reload`, `windows-and-icons`, and the pleamar-wm ones (`scanout-layouts`, `gamma-at-start`, `tap-keys`, `shell-fact`).
+- He asked for no PRs/issues; documenting the patches here is enough. He will mention taken patches in release notes.
+- pleamar 0.8 (pre-release first): multi-line fields, markdown, per-word colours, long lists, images from clipboard, file chooser, buttons/tabs/selects/menus/tables/toasts.

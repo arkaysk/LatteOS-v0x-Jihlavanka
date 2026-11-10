@@ -33,12 +33,17 @@ const GIB: u64 = 1024 * 1024 * 1024;
 const DEFAULT_SIGLIP_MODEL_DIR: &str = "/data/ai/models/chapolera/siglip2-base-patch16-224";
 const SIGLIP_IMAGE_SIZE: u32 = 224;
 const SIGLIP_TEXT_LENGTH: usize = 64;
-const SIGLIP_IMAGE_BATCH_SIZE: usize = 8;
+const SIGLIP_IMAGE_BATCH_SIZE: usize = 4;   // measured on an i7-4820K: 1 → 36 s, 4 → 35 s, 8 → 52 s for 12 photos
+
+/// Photos per model call; `LATTE_CHAPOLERA_BATCH` overrides it for measuring.
+fn image_batch_size() -> usize {
+    std::env::var("LATTE_CHAPOLERA_BATCH").ok().and_then(|v| v.parse().ok()).filter(|n| (1..=32).contains(n)).unwrap_or(SIGLIP_IMAGE_BATCH_SIZE)
+}
 const SIGLIP_MODEL_ID: &str = "google/siglip2-base-patch16-224";
 const SIGLIP_MODEL_VERSION: &str = "siglip2-base-patch16-224-v1";
 const TAG_ANALYZER_ID: &str = "siglip2";
 const TAG_SOURCE: &str = "siglip2-relative-softmax";
-const MAX_TAG_CANDIDATES: usize = 16;
+const MAX_TAG_CANDIDATES: usize = 80;
 const MAX_TAGS_PER_ASSET: usize = 5;
 const TAG_RELATIVE_SCORE_FACTOR: f64 = 1.25;
 
@@ -238,10 +243,12 @@ fn siglip_model_dir() -> PathBuf {
         .unwrap_or_else(|| PathBuf::from(DEFAULT_SIGLIP_MODEL_DIR))
 }
 
+fn siglip_normalize(features: &Tensor) -> candle_core::Result<Tensor> {
+    features.broadcast_div(&features.sqr()?.sum_keepdim(1)?.sqrt()?)
+}
+
 fn image_tensor(path: &Path) -> Result<Tensor, String> {
-    let image = image::open(path)
-        .map_err(|error| format!("{}: {error}", path.display()))?
-        .to_rgb8();
+    let image = extractors::open_image(path)?.to_rgb8();
     let image = image::imageops::resize(
         &image,
         SIGLIP_IMAGE_SIZE,
@@ -304,6 +311,10 @@ struct SiglipClassifier {
     model: siglip::Model,
     tokenizer: Tokenizer,
     device: Device,
+    logit_scale: Tensor,
+    logit_bias: Tensor,
+    // The text tower costs as much as the image tower and the labels are the same for a whole run.
+    text_cache: std::cell::RefCell<Option<(Vec<String>, Tensor)>>,
 }
 
 impl SiglipClassifier {
@@ -331,12 +342,24 @@ impl SiglipClassifier {
             VarBuilder::from_mmaped_safetensors(&[weights_path.as_path()], DType::F32, &device)
         }
         .map_err(|error| format!("{}: {error}", weights_path.display()))?;
-        let model = siglip::Model::new(&config, variables)
+        let model = siglip::Model::new(&config, variables.clone())
             .map_err(|error| format!("could not load SigLIP 2 model: {error}"))?;
-        Ok(Self { model, tokenizer, device })
+        let logit_scale = variables
+            .get(&[1], "logit_scale")
+            .map_err(|error| format!("could not read SigLIP logit scale: {error}"))?;
+        let logit_bias = variables
+            .get(&[1], "logit_bias")
+            .map_err(|error| format!("could not read SigLIP logit bias: {error}"))?;
+        Ok(Self { model, tokenizer, device, logit_scale, logit_bias, text_cache: std::cell::RefCell::new(None) })
     }
 
-    fn classify_batch(&self, images: &[PathBuf], labels: &[String]) -> Result<Vec<serde_json::Value>, String> {
+    /// L2-normalised text features of the labels, computed once and reused while the labels stay the same.
+    fn text_features(&self, labels: &[String]) -> Result<Tensor, String> {
+        if let Some((cached, features)) = self.text_cache.borrow().as_ref() {
+            if cached == labels {
+                return Ok(features.clone());
+            }
+        }
         let text_inputs = labels
             .iter()
             .map(|label| {
@@ -357,15 +380,52 @@ impl SiglipClassifier {
             .collect::<Vec<_>>();
         let input_ids = Tensor::from_vec(token_ids, (labels.len(), SIGLIP_TEXT_LENGTH), &self.device)
             .map_err(|error| format!("could not prepare text prompts: {error}"))?;
-        let image_tensors = images
+        let features = self
+            .model
+            .get_text_features(&input_ids)
+            .and_then(|features| siglip_normalize(&features))
+            .map_err(|error| format!("SigLIP 2 text inference failed: {error}"))?;
+        *self.text_cache.borrow_mut() = Some((labels.to_vec(), features.clone()));
+        Ok(features)
+    }
+
+    fn classify_batch(&self, images: &[PathBuf], labels: &[String]) -> Result<Vec<serde_json::Value>, String> {
+        let text_features = self.text_features(labels)?;
+        // The image tower is the expensive part and depends only on the file's content: its result is kept
+        // by SHA-256, so the same photo is never read twice, whatever the vocabulary or the folder.
+        let mut embeddings: Vec<Option<Vec<f32>>> = images
             .iter()
-            .map(|path| image_tensor(path))
-            .collect::<Result<Vec<_>, _>>()?;
-        let image_refs = image_tensors.iter().collect::<Vec<_>>();
-        let pixel_values = Tensor::cat(&image_refs, 0)
-            .map_err(|error| format!("could not combine image batch: {error}"))?;
-        let (_, logits_per_image) = self.model.forward(&pixel_values, &input_ids)
-            .map_err(|error| format!("SigLIP 2 inference failed: {error}"))?;
+            .map(|path| asset_store::load_embedding(path, SIGLIP_MODEL_VERSION))
+            .collect();
+        let missing: Vec<usize> = (0..images.len()).filter(|&i| embeddings[i].is_none()).collect();
+        if !missing.is_empty() {
+            let image_tensors = missing
+                .iter()
+                .map(|&i| image_tensor(&images[i]))
+                .collect::<Result<Vec<_>, _>>()?;
+            let image_refs = image_tensors.iter().collect::<Vec<_>>();
+            let pixel_values = Tensor::cat(&image_refs, 0)
+                .map_err(|error| format!("could not combine image batch: {error}"))?;
+            let features = self
+                .model
+                .get_image_features(&pixel_values)
+                .and_then(|features| siglip_normalize(&features))
+                .and_then(|features| features.to_vec2::<f32>())
+                .map_err(|error| format!("SigLIP 2 inference failed: {error}"))?;
+            for (&i, vector) in missing.iter().zip(features) {
+                asset_store::store_embedding(&images[i], SIGLIP_MODEL_VERSION, &vector);
+                embeddings[i] = Some(vector);
+            }
+        }
+        let width = embeddings[0].as_ref().map(Vec::len).unwrap_or(0);
+        let flat: Vec<f32> = embeddings.into_iter().flat_map(|vector| vector.unwrap_or_default()).collect();
+        let image_features = Tensor::from_vec(flat, (images.len(), width), &self.device)
+            .map_err(|error| format!("could not prepare image features: {error}"))?;
+        let logits_per_image = image_features
+            .matmul(&text_features.t().map_err(|error| error.to_string())?)
+            .and_then(|logits| logits.broadcast_mul(&self.logit_scale.exp()?))
+            .and_then(|logits| logits.broadcast_add(&self.logit_bias))
+            .map_err(|error| format!("SigLIP 2 scoring failed: {error}"))?;
 
         images
             .iter()
@@ -655,11 +715,42 @@ fn tag_folder_events(
         }
     }
 
+    let mut skipped = 0usize;
     if !uncached.is_empty() {
         let classifier = SiglipClassifier::load()?;
-        for batch in uncached.chunks(SIGLIP_IMAGE_BATCH_SIZE) {
-            let results = classifier.classify_batch(batch, &image_prompts)?;
+        for batch in uncached.chunks(image_batch_size()) {
+            // One undecodable file must not stop the run: retry the batch photo by photo and skip the bad ones.
+            let results: Vec<Result<serde_json::Value, String>> = match classifier.classify_batch(batch, &image_prompts) {
+                Ok(results) => results.into_iter().map(Ok).collect(),
+                Err(batch_error) => {
+                    let singles: Vec<Result<serde_json::Value, String>> = batch
+                        .iter()
+                        .map(|photo| {
+                            classifier
+                                .classify_batch(std::slice::from_ref(photo), &image_prompts)
+                                .and_then(|mut one| one.pop().ok_or_else(|| "empty result".to_string()))
+                        })
+                        .collect();
+                    // Every photo failing means the analyzer is broken (memory, model), not that the photos are bad.
+                    if singles.iter().all(Result::is_err) {
+                        return Err(batch_error);
+                    }
+                    singles
+                }
+            };
             for (image_path, result) in batch.iter().zip(results) {
+                let result = match result {
+                    Ok(result) => result,
+                    Err(error) => {
+                        skipped += 1;
+                        write_event(&serde_json::json!({
+                            "event": "skipped",
+                            "image": image_path.to_string_lossy(),
+                            "error": error,
+                        }))?;
+                        continue;
+                    }
+                };
                 let tags = semantic_tags_for_result(&result, &candidates)?;
                 let tags_json = serde_json::to_string(&tags)
                     .map_err(|error| format!("could not encode semantic tags: {error}"))?;
@@ -684,8 +775,70 @@ fn tag_folder_events(
     write_event(&serde_json::json!({
         "event": "complete",
         "classified": photos.len(),
+        "skipped": skipped,
     }))?;
     Ok(String::new())
+}
+
+/// Evenly spaced sample of photo file names (no extension) so a text-only model can see what the collection is about.
+fn sample_names(folder: &Path, limit: usize) -> Result<String, String> {
+    let root = fs::canonicalize(folder).map_err(|error| format!("{}: {error}", folder.display()))?;
+    let mut paths = photo_paths(&root)?;
+    paths.sort();
+    let step = (paths.len() / limit.max(1)).max(1);
+    let names: Vec<String> = paths
+        .iter()
+        .step_by(step)
+        .take(limit)
+        .filter_map(|path| {
+            path.file_stem()
+                .map(|stem| stem.to_string_lossy().chars().map(|c| if c.is_control() { ' ' } else { c }).take(60).collect())
+        })
+        .collect();
+    Ok(serde_json::json!({ "names": names }).to_string())
+}
+
+/// One JPEG with a grid of thumbnails from evenly spread photos: a model that can see gets the whole
+/// collection in one picture instead of one request per photo. Unreadable files are skipped.
+fn contact_sheet(folder: &Path, count: usize, out: &Path) -> Result<String, String> {
+    const TILE: u32 = 320;
+    const GAP: u32 = 8;
+    const COLUMNS: u32 = 4;
+    let root = fs::canonicalize(folder).map_err(|error| format!("{}: {error}", folder.display()))?;
+    let mut paths = photo_paths(&root)?;
+    paths.sort();
+    let count = count.clamp(1, 16);
+    let step = (paths.len() as f64 / count as f64).max(1.0);
+    let mut tiles = Vec::new();
+    let mut at = 0.0;
+    while tiles.len() < count && (at as usize) < paths.len() {
+        if let Ok(image) = extractors::open_image(&paths[at as usize]) {
+            tiles.push(image.thumbnail(TILE, TILE).to_rgb8());
+        }
+        at += step;
+    }
+    if tiles.is_empty() {
+        return Err("no readable photos for a contact sheet".to_string());
+    }
+    let rows = (tiles.len() as u32).div_ceil(COLUMNS);
+    let mut sheet = image::RgbImage::from_pixel(
+        COLUMNS * (TILE + GAP) + GAP,
+        rows * (TILE + GAP) + GAP,
+        image::Rgb([255, 255, 255]),
+    );
+    for (index, tile) in tiles.iter().enumerate() {
+        let (column, row) = (index as u32 % COLUMNS, index as u32 / COLUMNS);
+        image::imageops::overlay(&mut sheet, tile, (GAP + column * (TILE + GAP)) as i64, (GAP + row * (TILE + GAP)) as i64);
+    }
+    if let Some(parent) = out.parent() {
+        fs::create_dir_all(parent).map_err(|error| format!("{}: {error}", parent.display()))?;
+    }
+    sheet.save(out).map_err(|error| format!("{}: {error}", out.display()))?;
+    Ok(serde_json::json!({ "path": out.to_string_lossy(), "tiles": tiles.len() }).to_string())
+}
+
+fn parse_plan_id(id: &str) -> Result<i64, String> {
+    id.parse::<i64>().map_err(|error| format!("invalid plan id: {error}"))
 }
 
 fn execute(args: &[String]) -> Result<String, String> {
@@ -702,6 +855,11 @@ fn execute(args: &[String]) -> Result<String, String> {
         [command, folder, labels @ ..] if command == "classify-folder" => {
             classify_folder(Path::new(folder), labels)
         }
+        [command, folder] if command == "enrich" => asset_store::enrich(Path::new(folder)),
+        [command, folder, limit, offset, mode] if command == "scan" && mode == "quick" => {
+            asset_store::set_quick_scan(true);
+            execute(&[command.clone(), folder.clone(), limit.clone(), offset.clone()])
+        }
         [command, folder, limit, offset] if command == "scan" => {
             let limit = limit.parse::<usize>().map_err(|error| format!("invalid preview limit: {error}"))?;
             let offset = offset.parse::<usize>().map_err(|error| format!("invalid preview offset: {error}"))?;
@@ -709,6 +867,21 @@ fn execute(args: &[String]) -> Result<String, String> {
             let (counts, files) = scan(path, limit, offset)?;
             Ok(output(path, &counts, &files, limit, offset))
         }
+        [command, folder, count, out] if command == "contact-sheet" => contact_sheet(
+            Path::new(folder),
+            count.parse::<usize>().map_err(|error| format!("invalid tile count: {error}"))?,
+            Path::new(out),
+        ),
+        [command] if command == "base-vocabulary" => Ok(include_str!("../vocabulary.json").to_string()),
+        [command, folder, limit] if command == "sample-names" => sample_names(
+            Path::new(folder),
+            limit.parse::<usize>().map_err(|error| format!("invalid sample size: {error}"))?.min(200),
+        ),
+        [command, folder] if command == "plan" => asset_store::organize::plan(Path::new(folder)),
+        [command, id] if command == "plan-apply" => asset_store::organize::apply(parse_plan_id(id)?),
+        [command, id] if command == "plan-undo" => asset_store::organize::undo(parse_plan_id(id)?),
+        [command, id] if command == "plan-cancel" => asset_store::organize::cancel(parse_plan_id(id)?),
+        [command, folder] if command == "duplicates" => asset_store::duplicates(Path::new(folder)),
         [command, path] if command == "profile" => asset_store::profile(Path::new(path)),
         [command, path, analyzer, model, model_version, task_version, locality]
             if command == "tags-cache" =>

@@ -8,6 +8,7 @@ use std::{io, thread};
 
 const COMMAND_TIMEOUT: Duration = Duration::from_secs(30);
 const IMAGE_EXTRACTOR: &str = "image-header";
+const SHARPNESS_EXTRACTOR: &str = "image-sharpness";
 const EXIFTOOL_EXTRACTOR: &str = "exiftool";
 const FFPROBE_EXTRACTOR: &str = "ffprobe";
 const PDFINFO_EXTRACTOR: &str = "pdfinfo";
@@ -70,6 +71,9 @@ impl ToolVersions {
 
 pub(super) fn applicable(media_family: &str, mime_type: &str) -> Vec<&'static str> {
     match media_family {
+        "photo" if matches!(mime_type, "image/jpeg" | "image/png" | "image/webp" | "image/gif" | "image/tiff" | "image/bmp") => {
+            vec![IMAGE_EXTRACTOR, EXIFTOOL_EXTRACTOR, SHARPNESS_EXTRACTOR]
+        }
         "photo" => vec![IMAGE_EXTRACTOR, EXIFTOOL_EXTRACTOR],
         "video" | "audio" => vec![FFPROBE_EXTRACTOR],
         _ if mime_type == "application/pdf" => vec![EXIFTOOL_EXTRACTOR, PDFINFO_EXTRACTOR],
@@ -82,7 +86,7 @@ pub(super) fn current_version(
     tools: &mut ToolVersions,
 ) -> Result<String, String> {
     match extractor_id {
-        IMAGE_EXTRACTOR => Ok("1".to_string()),
+        IMAGE_EXTRACTOR | SHARPNESS_EXTRACTOR => Ok("1".to_string()),
         EXIFTOOL_EXTRACTOR => tools.get(EXIFTOOL_EXTRACTOR),
         FFPROBE_EXTRACTOR => tools.get(FFPROBE_EXTRACTOR),
         PDFINFO_EXTRACTOR => tools.get(PDFINFO_EXTRACTOR),
@@ -98,6 +102,7 @@ pub(super) fn run(
 ) -> Run {
     let result = match extractor_id {
         IMAGE_EXTRACTOR => image_header(path),
+        SHARPNESS_EXTRACTOR => sharpness(path),
         EXIFTOOL_EXTRACTOR => exiftool(path, media_family),
         FFPROBE_EXTRACTOR => ffprobe(path),
         PDFINFO_EXTRACTOR => pdfinfo(path),
@@ -151,13 +156,72 @@ fn image_header(path: &Path) -> Result<Vec<Fact>, String> {
         .map_err(|error| format!("{}: {error}", path.display()))?
         .with_guessed_format()
         .map_err(|error| format!("{}: {error}", path.display()))?;
-    let (width, height) = reader
-        .into_dimensions()
-        .map_err(|error| format!("{}: {error}", path.display()))?;
+    // The header alone is enough for the formats the `image` crate knows. For the others (AVIF…) ffmpeg only proves the
+    // file is readable (it hands back a downscaled copy, so its size is not the real one); ExifTool gives the dimensions.
+    let (width, height) = match reader.into_dimensions() {
+        Ok(size) => size,
+        Err(_) => {
+            open_image(path)?;
+            return Ok(Vec::new());
+        }
+    };
     Ok(vec![
         fact("image.width", Value::from(width)),
         fact("image.height", Value::from(height)),
     ])
+}
+
+/// Decodes by content, not by extension (files are often misnamed); formats the `image` crate lacks (AVIF, HEIC…)
+/// go through ffmpeg, which is already a LatteOS dependency. The result is at most 512 px: callers only analyse.
+pub(super) fn open_image(path: &Path) -> Result<image::DynamicImage, String> {
+    let direct = image::ImageReader::open(path)
+        .and_then(|reader| reader.with_guessed_format())
+        .map_err(|error| format!("{}: {error}", path.display()))
+        .and_then(|reader| reader.decode().map_err(|error| format!("{}: {error}", path.display())));
+    match direct {
+        Ok(image) => Ok(image),
+        Err(first_error) => {
+            let mut command = Command::new("ffmpeg");
+            command
+                .args(["-v", "error", "-i"])
+                .arg(path)
+                .args(["-frames:v", "1", "-vf", "scale='min(512,iw)':-2", "-f", "image2pipe", "-c:v", "png", "-"])
+                .stdin(Stdio::null())
+                .stderr(Stdio::null());
+            let output = run_command(&mut command).map_err(|_| first_error.clone())?;
+            if !output.status.success() {
+                return Err(first_error);
+            }
+            image::load_from_memory(&output.stdout).map_err(|_| first_error)
+        }
+    }
+}
+
+/// Variance of the Laplacian on a 512 px grayscale copy: low = blurry. Only a hint; the scale depends on content.
+fn sharpness(path: &Path) -> Result<Vec<Fact>, String> {
+    let gray = open_image(path)?
+        .thumbnail(512, 512)
+        .to_luma8();
+    Ok(vec![fact("image.sharpness", Value::from(laplacian_variance(&gray)))])
+}
+
+fn laplacian_variance(gray: &image::GrayImage) -> f64 {
+    let (width, height) = gray.dimensions();
+    if width < 3 || height < 3 {
+        return 0.0;
+    }
+    let px = |x: u32, y: u32| f64::from(gray.get_pixel(x, y).0[0]);
+    let (mut sum, mut sum_sq, mut count) = (0.0, 0.0, 0.0);
+    for y in 1..height - 1 {
+        for x in 1..width - 1 {
+            let value = px(x - 1, y) + px(x + 1, y) + px(x, y - 1) + px(x, y + 1) - 4.0 * px(x, y);
+            sum += value;
+            sum_sq += value * value;
+            count += 1.0;
+        }
+    }
+    let mean = sum / count;
+    ((sum_sq / count - mean * mean) * 100.0).round() / 100.0
 }
 
 fn exiftool(path: &Path, media_family: &str) -> Result<Vec<Fact>, String> {
@@ -397,8 +461,17 @@ mod tests {
     }
 
     #[test]
+    fn sharp_edges_score_higher_than_flat_images() {
+        let flat = image::GrayImage::from_pixel(16, 16, image::Luma([128]));
+        let checker = image::GrayImage::from_fn(16, 16, |x, y| image::Luma([if (x + y) % 2 == 0 { 0 } else { 255 }]));
+        assert_eq!(laplacian_variance(&flat), 0.0);
+        assert!(laplacian_variance(&checker) > 1000.0);
+    }
+
+    #[test]
     fn media_facts_select_only_expected_extractor_families() {
-        assert_eq!(applicable("photo", "image/jpeg"), vec![IMAGE_EXTRACTOR, EXIFTOOL_EXTRACTOR]);
+        assert_eq!(applicable("photo", "image/jpeg"), vec![IMAGE_EXTRACTOR, EXIFTOOL_EXTRACTOR, SHARPNESS_EXTRACTOR]);
+        assert_eq!(applicable("photo", "image/heic"), vec![IMAGE_EXTRACTOR, EXIFTOOL_EXTRACTOR]);
         assert_eq!(applicable("video", "video/mp4"), vec![FFPROBE_EXTRACTOR]);
         assert_eq!(applicable("audio", "audio/flac"), vec![FFPROBE_EXTRACTOR]);
         assert_eq!(applicable("other", "application/pdf"), vec![EXIFTOOL_EXTRACTOR, PDFINFO_EXTRACTOR]);
