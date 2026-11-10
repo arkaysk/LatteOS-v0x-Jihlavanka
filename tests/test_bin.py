@@ -186,6 +186,7 @@ assert ai.claude("q", "haiku")[:3] == ["claude", "-p", "q"] and ai.claude("q", "
 with tempfile.TemporaryDirectory() as d:
     config, os.environ["XDG_CONFIG_HOME"] = os.environ.get("XDG_CONFIG_HOME"), d
     os.makedirs(os.path.join(d, "latteos"))
+    ai.secret = lambda *a, **k: None          # not the keyring of whoever runs the test: a key kept there is one more provider
     ai.PROVIDERS = {"sh": {"name": "Shell", "local": True, "style": "own", "tool": "sh", "models": [{"id": "m", "name": "M"}],
                            "command": lambda prompt, model, effort, files: ["sh", "-c", "echo answer from $0 $1", model, effort]}}
     assert not ai.turned_off() and len(ai.providers()) == 1

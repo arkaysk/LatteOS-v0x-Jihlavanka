@@ -35,8 +35,10 @@ No API key: the official tool of a service answers, with the account the user is
   latte-ai pick             a file chooser; the paths chosen, one a line
   latte-ai shot             a picture of the screen now; its path
   latte-ai keys             the services one can bring a key of one's own to, as in VS Code, and the user's own
-                            servers: [{"id", "name", "style", "url", "has" (a key is kept), "server" (one of the user's)}]
-  latte-ai key ID           keeps the key read from stdin, in the system's keyring (never in a file)
+                            servers: [{"id", "name", "style", "url", "has" (a key is kept), "tail" (its last four
+                            characters), "page" (where a key is made), "locked" (the keyring is), "server" (one of the user's)}]
+  latte-ai key ID           keeps the key read from stdin, in the system's keyring (never in a file); refused,
+                            {"error": "locked" | "refused"}
   latte-ai forget-key ID    takes it out of the keyring
   latte-ai server add NAME URL     a server of the user's own that speaks the OpenAI API (llama-server, Ollama…)
   latte-ai server remove ID
@@ -63,10 +65,16 @@ No API key: the official tool of a service answers, with the account the user is
   latte-ai offer-crash      exit 0 when GuardCorgi offers "Ask the AI" for a crash: the toggle on and an agent chosen
   latte-ai invite           once: a notice asking the user to choose their agent (latte-session, a minute in)
   latte-ai local hardware | recommend | models | search TEXT [best|downloads|updated|likes] | files REPO | readme REPO |
-                 get REPO FILE | runtime get | gpu on|off | remove PATH
+                 get REPO FILE | downloads | cancel NAME | runtime get | gpu on|off | remove PATH |
+                 set MODEL KEY N|auto… | estimate MODEL CTX NGL
                             the AI on this computer: what it can carry, LatteOS's recommended models (with "fit": gpu ·
                             partial · cpu · too-big, and the "best"), Hugging Face's GGUF models as LM Studio lists them,
-                            a download ({"got", "total"} lines, then {"done"}), llama.cpp's Vulkan build
+                            a download ({"got", "total"} lines, then {"done"}; ended, it is paused: `downloads` lists those,
+                            `get` goes on, `cancel` drops one, by its name or its file), llama.cpp's Vulkan build. models: each with "vision",
+                            "tools", "reasoning", its "settings" (ctx ngl threads batch ubatch parallel mlock mmap; "own":
+                            those the user set) and "memory" {"gpu", "total", "vram", "free", "ram", "fit", "layers", "context",
+                            "measured" (llama.cpp's own count, else one from the file's head)}; `models measured` has
+                            llama.cpp count those it has not yet (a second each)
   latte-ai crash PID        a program that crashed (systemd-coredump): the agent finds out what happened and explains it
   latte-ai why              in SAFE: the agent finds out why the last session ended and explains it
   latte-ai models           every model of every service there is, for LensAI: [{"id", "name", "models":
@@ -405,36 +413,182 @@ def hf_get(repo, file):
     split = re.search(r"-00001-of-(\d{5})\.gguf$", file)
     if split:
         for n in range(int(split.group(1)), 0, -1):         # the first last: it is what says the model is here
-            code = hf_get_one(repo, file[:split.start()] + "-%05d-of-%s.gguf" % (n, split.group(1)))
+            code = hf_get_one(repo, file[:split.start()] + "-%05d-of-%s.gguf" % (n, split.group(1)), file)
             if code:
                 return code
         return 0
     return hf_get_one(repo, file)
 
 
-def hf_get_one(repo, file):
+def hf_get_one(repo, file, first=""):
     import urllib.request
     where = models_dir()
     os.makedirs(where, exist_ok=True)
+    import time
     dest = os.path.join(where, os.path.basename(file))
+    if os.path.exists(dest):                # a part of a model in parts that came whole before a pause
+        return 0
     part = dest + ".part"
     got = os.path.getsize(part) if os.path.exists(part) else 0
     req = urllib.request.Request("%s/%s/resolve/main/%s" % (HF, repo, file), headers={"Range": "bytes=%d-" % got} if got else {})
     with urllib.request.urlopen(req, timeout=30) as r, open(part, "ab" if got else "wb") as out:
         total = got + int(r.headers.get("Content-Length") or 0)
+        # what it is and where from, beside it: a paused download is gone on with from this (latte-ai local downloads)
+        with open(part + ".json", "w") as f:
+            json.dump({"repo": repo, "file": first or file, "total": total}, f)
         told = 0
         while True:
-            chunk = r.read(1 << 20)
+            chunk = r.read(1 << 18)
             if not chunk:
                 break
             out.write(chunk)
             got += len(chunk)
-            if got - told >= 8 << 20 or got == total:
-                told = got
+            if time.monotonic() - told >= 0.5 or got == total:
+                told = time.monotonic()
                 print(json.dumps({"got": got, "total": total}), flush=True)
     os.replace(part, dest)
+    os.remove(part + ".json")
     print(json.dumps({"done": dest}), flush=True)
     return 0
+
+
+def downloads():
+    """The downloads begun and not finished (paused, or broken off): [{"name", "repo", "file", "got", "total"}]."""
+    out = []
+    for d in LOCAL_DIRS:
+        for part in sorted(glob.glob(os.path.join(d, "models", "*.gguf.part"))):
+            try:
+                with open(part + ".json") as f:
+                    note = json.load(f)
+                out.append({"name": os.path.basename(part)[:-5], "repo": note["repo"], "file": note["file"], "got": os.path.getsize(part), "total": note["total"]})
+            except (OSError, ValueError, KeyError):
+                pass                        # a part without its note cannot be gone on with
+    return out
+
+
+def gguf(path):
+    """What a model file says of itself in its head (GGUF's metadata, github.com/ggml-org/ggml docs/gguf.md): its layers,
+    the context it was trained for, the sizes its memory is counted from, and what its chat template can do. Read once
+    for a file and kept."""
+    import hashlib, struct
+    st = os.stat(path)
+    cache = os.path.join(ROOM, "gguf-%s.json" % hashlib.sha1(("%s %d %d" % (path, st.st_size, st.st_mtime)).encode()).hexdigest()[:16])
+    try:
+        with open(cache) as f:
+            return json.load(f)
+    except (OSError, ValueError):
+        pass
+    sizes = {0: 1, 1: 1, 2: 2, 3: 2, 4: 4, 5: 4, 6: 4, 7: 1, 10: 8, 11: 8, 12: 8}
+    forms = {0: "<B", 1: "<b", 2: "<H", 3: "<h", 4: "<I", 5: "<i", 6: "<f", 7: "<?", 10: "<Q", 11: "<q", 12: "<d"}
+    kv = {}
+    try:
+        with open(path, "rb") as f:
+            if f.read(4) != b"GGUF":
+                return {}
+            _, _, count = struct.unpack("<IQQ", f.read(20))
+            word = lambda: f.read(struct.unpack("<Q", f.read(8))[0])
+            for _ in range(count):
+                key, kind = word().decode(errors="replace"), struct.unpack("<I", f.read(4))[0]
+                if kind == 8:
+                    kv[key] = word().decode(errors="replace")
+                elif kind == 9:                 # a list (the vocabulary…): only how long it is
+                    of, n = struct.unpack("<IQ", f.read(12))
+                    kv[key] = n
+                    if of == 8:
+                        for _ in range(n):
+                            f.seek(struct.unpack("<Q", f.read(8))[0], 1)
+                    elif of in sizes:
+                        f.seek(n * sizes[of], 1)
+                    else:
+                        break                   # a list of lists: nothing LatteOS needs comes after what it has by then
+                elif kind in sizes:
+                    kv[key] = struct.unpack(forms[kind], f.read(sizes[kind]))[0]
+                else:
+                    break
+    except (OSError, struct.error):
+        return {}
+    arch = kv.get("general.architecture", "")
+    num = lambda k, d=0: kv.get("%s.%s" % (arch, k)) if isinstance(kv.get("%s.%s" % (arch, k)), int) else d
+    heads = num("attention.head_count", 1) or 1
+    embd = num("embedding_length")
+    template = kv.get("tokenizer.chat_template", "") if isinstance(kv.get("tokenizer.chat_template"), str) else ""
+    out = {"arch": arch, "layers": num("block_count"), "context": num("context_length"), "embedding": embd, "heads": heads,
+           "heads_kv": num("attention.head_count_kv", heads) or heads,
+           "key": num("attention.key_length", embd // heads), "value": num("attention.value_length", embd // heads),
+           "vocab": kv.get("tokenizer.ggml.tokens", 0) if isinstance(kv.get("tokenizer.ggml.tokens"), int) else 0,
+           "tools": "tools" in template, "reasoning": any(w in template for w in ("enable_thinking", "<think>", "reasoning_content"))}
+    os.makedirs(ROOM, exist_ok=True)
+    with open(cache, "w") as f:
+        json.dump(out, f)
+    return out
+
+
+LOCAL_KEYS = {"ctx": (256, 1 << 21), "ngl": (0, 999), "threads": (1, 512), "batch": (16, 8192), "ubatch": (16, 8192), "parallel": (1, 16),
+              "mlock": (0, 1), "mmap": (0, 1)}
+
+
+def model_settings(model):
+    """How this model is loaded: the user's own word on it (LensAI › Local LLMs › My Models), the rest as LatteOS loads any."""
+    s = local_settings()
+    mine = (s.get("models") or {}).get(os.path.basename(model), {})
+    return dict({"ctx": LOCAL_CONTEXT, "ngl": 999 if s.get("gpu") else 0, "threads": max(2, (os.cpu_count() or 4) // 2),
+                 "batch": 2048, "ubatch": 512, "parallel": 1, "mlock": 0, "mmap": 1}, **{k: v for k, v in mine.items() if k in LOCAL_KEYS})
+
+
+def estimate(model, sets, hw, quick=False):
+    """The memory a model takes loaded this way, on the graphics card and in all, and how that sits on this computer.
+    llama.cpp says it itself without loading the model (its llama-fit-params, a second): kept for the next time.
+    `quick` never runs it: what was kept, else the textbook count from the file's head (Ollama's llm/memory.go and
+    fs/ggml GraphSize, MIT: weights, two bytes x context x layers x (key + value) x heads, and the computing's room),
+    which is too much for the architectures that keep tokens in only some of their layers."""
+    import re
+    g = gguf(model)
+    st = os.stat(model)
+    eyes = os.path.getsize(local_mmproj(model)) if local_mmproj(model) else 0
+    layers = g.get("layers") or 1
+    share = min(1.0, sets["ngl"] / (layers + 1))           # the layers and what comes out of the last
+    vram, free, tool = max([c["vram"] for c in hw["gpus"]] or [0]), 0, os.path.join(os.path.dirname(local_server() or ""), "llama-fit-params")
+    key = "%s %d %d c%d g%d b%d u%d p%d" % (model, st.st_size, st.st_mtime, sets["ctx"], sets["ngl"], sets["batch"], sets["ubatch"], sets["parallel"])
+    kept = {}
+    try:
+        with open(MEASURED) as f:
+            kept = json.load(f)
+    except (OSError, ValueError):
+        pass
+    if key not in kept and not quick and os.path.exists(tool):
+        try:
+            said = subprocess.run([tool, "-m", model, "-c", str(sets["ctx"]), "-ngl", str(sets["ngl"]), "-b", str(sets["batch"]), "-ub", str(sets["ubatch"]),
+                                   "-np", str(sets["parallel"]), "-v"], capture_output=True, text=True, timeout=120, stdin=subprocess.DEVNULL)
+            rows = re.findall(r"breakdown_print: \|   - (.*?)\|(.*)\|", said.stdout + said.stderr)
+            # a card: total = free + (self = …) + the rest;  the host: self = …
+            cards = [re.match(r" *(\d+) = +(\d+) \+ \( *(\d+) =", r) for n, r in rows if not n.startswith("Host")]
+            host = [re.match(r" *(\d+) =", r) for n, r in rows if n.startswith("Host")]
+            if host and host[0] and all(cards):
+                kept[key] = {"gpu": sum(int(c.group(3)) for c in cards) << 20, "host": int(host[0].group(1)) << 20,
+                             "vram": max([int(c.group(1)) for c in cards] or [0]) << 20, "free": max([int(c.group(2)) for c in cards] or [0]) << 20}
+                os.makedirs(ROOM, exist_ok=True)
+                with open(MEASURED, "w") as f:
+                    json.dump(kept, f)
+        except (OSError, subprocess.TimeoutExpired):
+            pass
+    if key in kept:
+        gpu, total = kept[key]["gpu"] + (eyes if share else 0), kept[key]["gpu"] + kept[key]["host"] + eyes
+        vram, free = kept[key]["vram"] or vram, kept[key]["free"]
+    else:
+        ctx = min(sets["ctx"], g.get("context") or sets["ctx"])
+        kv = 2 * ctx * layers * (g.get("key", 0) + g.get("value", 0)) * min(g.get("heads_kv", 1), g.get("heads", 1))
+        graph = max(4 * sets["ubatch"] * (1 + 4 * g.get("embedding", 0) + ctx * (1 + g.get("heads", 1))), 4 * sets["ubatch"] * (g.get("embedding", 0) + g.get("vocab", 0)))
+        total = st.st_size + eyes + kv + graph
+        gpu = int((st.st_size + eyes + kv) * share + (graph if share else 0))
+    if (share and gpu > vram * 0.95) or total - gpu > hw["ram"] * 0.6:
+        how = "too-big"
+    else:
+        how = "gpu" if share >= 1 else "partial" if share else "cpu"
+    return {"gpu": int(gpu), "total": int(total), "vram": vram, "free": free, "ram": hw["ram"], "fit": how, "layers": layers + 1,
+            "context": g.get("context") or 0, "measured": key in kept}
+
+
+MEASURED = os.path.join(ROOM, "local-memory.json")
 
 
 def runtime_get():
@@ -497,6 +651,17 @@ def local_models_all():
             if "mmproj" not in os.path.basename(f).lower()]
 
 
+def my_models(quick=True):
+    """The models here for LensAI's list: each with what it can do, how it is loaded, and the memory that takes."""
+    hw, out = hardware(), []
+    for m in local_models_all():
+        g, sets = gguf(m["id"]), model_settings(m["id"])
+        out.append(dict(m, vision=local_mmproj(m["id"]) is not None, tools=g.get("tools", False), reasoning=g.get("reasoning", False),
+                        arch=g.get("arch", ""), settings=sets, own=sorted((local_settings().get("models") or {}).get(os.path.basename(m["id"]), {})),
+                        memory=estimate(m["id"], sets, hw, quick)))
+    return out
+
+
 def local_models():
     """The model files there are, the smallest first: a small one answers soonest."""
     found = []
@@ -527,10 +692,12 @@ def local_start(model):
     subprocess.run(["pkill", "-f", "llama-server.*--port %d" % LOCAL_PORT])
     os.makedirs(ROOM, exist_ok=True)
     # the processor: on graphics cards like latte-lab's the small models run faster there (inspo/ai-na-ploche.md)
-    gpu = "99" if local_settings().get("gpu") else "0"        # the user's choice in LensAI › This computer
+    s = model_settings(model)                                 # the user's choice in LensAI › Local LLMs
     try:
-        proc = subprocess.Popen([local_server(), "-m", model, "-c", str(LOCAL_CONTEXT), "-t", str(max(2, (os.cpu_count() or 4) // 2)), "-ngl", gpu,
-                          "--host", "127.0.0.1", "--port", str(LOCAL_PORT), "--jinja"] + (["--mmproj", mmproj] if mmproj else []),
+        proc = subprocess.Popen([local_server(), "-m", model, "-c", str(s["ctx"]), "-t", str(s["threads"]), "-ngl", str(s["ngl"]),
+                          "-b", str(s["batch"]), "-ub", str(s["ubatch"]), "-np", str(s["parallel"]),
+                          "--host", "127.0.0.1", "--port", str(LOCAL_PORT), "--jinja"] + (["--mmproj", mmproj] if mmproj else [])
+                         + (["--mlock"] if s["mlock"] else []) + ([] if s["mmap"] else ["--no-mmap"]),
                          stdout=open(os.path.join(ROOM, "llama-server.log"), "w"), stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL, start_new_session=True)
     except OSError:
         return False
@@ -604,18 +771,18 @@ def local_ask(messages, model, effort, files, room):
         talk[-1]["content"] = [{"type": "text", "text": talk[-1]["content"]}] + seen
     text, used = chat_completion("http://127.0.0.1:%d/v1" % LOCAL_PORT, {}, {"messages": talk, "temperature": 0.5, "max_tokens": 1024, "repeat_penalty": 1.15,
                                                                               "chat_template_kwargs": {"enable_thinking": effort == "think"}})
-    return text, True, {"context": used, "window": LOCAL_CONTEXT, "tokens": used, "cost": 0}
+    return text, True, {"context": used, "window": model_settings(model)["ctx"], "tokens": used, "cost": 0}
 
 
 # ── a key of one's own (as VS Code's "Manage Models"): the service's API is asked directly, a conversation and nothing
 # else, no tools. The key lives in the system's keyring (Secret Service: gnome-keyring), looked up when it is needed.
 APIS = {
-    "api-anthropic": {"name": "Claude API", "style": "claude", "url": "https://api.anthropic.com/v1", "kind": "anthropic"},
-    "api-openai": {"name": "OpenAI API", "style": "chatgpt", "url": "https://api.openai.com/v1", "kind": "openai"},
-    "api-google": {"name": "Gemini API", "style": "gemini", "url": "https://generativelanguage.googleapis.com/v1beta/openai", "kind": "openai"},
-    "api-xai": {"name": "Grok API", "style": "grok", "url": "https://api.x.ai/v1", "kind": "openai"},
-    "api-mistral": {"name": "Mistral API", "style": "mistral", "url": "https://api.mistral.ai/v1", "kind": "openai"},
-    "api-deepseek": {"name": "DeepSeek", "style": "deepseek", "url": "https://api.deepseek.com", "kind": "openai"},
+    "api-anthropic": {"name": "Claude API", "style": "claude", "url": "https://api.anthropic.com/v1", "kind": "anthropic", "page": "https://console.anthropic.com/settings/keys"},
+    "api-openai": {"name": "OpenAI API", "style": "chatgpt", "url": "https://api.openai.com/v1", "kind": "openai", "page": "https://platform.openai.com/api-keys"},
+    "api-google": {"name": "Gemini API", "style": "gemini", "url": "https://generativelanguage.googleapis.com/v1beta/openai", "kind": "openai", "page": "https://aistudio.google.com/apikey"},
+    "api-xai": {"name": "Grok API", "style": "grok", "url": "https://api.x.ai/v1", "kind": "openai", "page": "https://console.x.ai/"},
+    "api-mistral": {"name": "Mistral API", "style": "mistral", "url": "https://api.mistral.ai/v1", "kind": "openai", "page": "https://console.mistral.ai/api-keys"},
+    "api-deepseek": {"name": "DeepSeek API", "style": "deepseek", "url": "https://api.deepseek.com", "kind": "openai", "page": "https://platform.deepseek.com/api_keys"},
 }
 SERVERS = os.path.join(os.environ.get("XDG_CONFIG_HOME") or os.path.expanduser("~/.config"), "latteos", "ai-servers.json")
 
@@ -641,10 +808,28 @@ def secret(ident, value=None, forget=False):
         if value is not None:
             return subprocess.run(["secret-tool", "store", "--label", "LatteOS AI: " + apis().get(ident, {}).get("name", ident)] + attrs,
                                   input=value, capture_output=True, text=True, timeout=60).returncode == 0
+        if keyring_locked():                # not asked: each look would bring up the system's password window
+            return None
         out = subprocess.run(["secret-tool", "lookup"] + attrs, capture_output=True, text=True, timeout=20)
         return out.stdout.strip() or None if out.returncode == 0 else None
     except (OSError, subprocess.TimeoutExpired):
         return None
+
+
+LOCKED = []                     # whether the keyring was locked when this run first looked
+
+
+def keyring_locked():
+    """Whether the keyring that keys go to is locked: then the system asks for its password, which need not be the
+    account's (a keyring made before, or a sign-in that does not open it)."""
+    if not LOCKED:
+        try:
+            out = subprocess.run(["busctl", "--user", "get-property", "org.freedesktop.secrets", "/org/freedesktop/secrets/aliases/default",
+                                  "org.freedesktop.Secret.Collection", "Locked"], capture_output=True, text=True, timeout=10)
+            LOCKED.append(out.stdout.strip() == "b true")
+        except (OSError, subprocess.TimeoutExpired):
+            LOCKED.append(False)
+    return LOCKED[0]
 
 
 def api_call(a, path, body=None, timeout=20):
@@ -1736,13 +1921,16 @@ def main(a):
         print(path if done.returncode == 0 else "")
         return done.returncode
     if a == ["keys"]:
-        print(json.dumps([{"id": i, "name": x["name"], "style": x["style"], "url": x["url"], "server": x.get("server", False),
-                           "has": secret(i) is not None} for i, x in apis().items()], ensure_ascii=False))
+        locked = keyring_locked()
+        held = {i: secret(i) for i in apis()}
+        print(json.dumps([{"id": i, "name": x["name"], "style": x["style"], "url": x["url"], "server": x.get("server", False), "page": x.get("page", ""),
+                           "has": held[i] is not None, "tail": held[i][-4:] if held[i] and len(held[i]) > 12 else "", "locked": locked}
+                          for i, x in apis().items()], ensure_ascii=False))
         return 0
     if len(a) == 2 and a[0] == "key" and a[1] in apis():
         key = sys.stdin.read().strip()
         if not key or not secret(a[1], key):
-            print("latte-ai: the keyring did not take it")
+            print(json.dumps({"error": "locked" if keyring_locked() else "refused"}))
             return 1
         try:
             os.remove(os.path.join(ROOM, "models-%s.json" % a[1]))
@@ -1810,7 +1998,33 @@ def main(a):
             elif a[1] == "recommend":
                 print(json.dumps(recommend(), ensure_ascii=False))
             elif a[1] == "models":
-                print(json.dumps(local_models_all()))
+                print(json.dumps(my_models(a[2:] != ["measured"])))
+            elif a[1] == "downloads":
+                print(json.dumps(downloads()))
+            # a download dropped, by its name here or by the file it is of (every part of that file that waits)
+            # ponytail: parts of a model in parts that came whole stay; they are used when it is downloaded again
+            elif a[1] == "cancel" and len(a) == 3:
+                for d in downloads():
+                    if a[2] in (d["name"], d["file"]):
+                        for home in LOCAL_DIRS:
+                            for f in (d["name"] + ".part", d["name"] + ".part.json"):
+                                if os.path.exists(os.path.join(home, "models", f)):
+                                    os.remove(os.path.join(home, "models", f))
+            # how a model is loaded: latte-ai local set MODEL KEY N…, or KEY auto for LatteOS's own again
+            elif a[1] == "set" and len(a) >= 5 and len(a) % 2 == 1 and all(k in LOCAL_KEYS and (v == "auto" or v.isdigit()) for k, v in zip(a[3::2], a[4::2])):
+                s = local_settings()
+                mine = s.setdefault("models", {}).setdefault(os.path.basename(a[2]), {})
+                for k, v in zip(a[3::2], a[4::2]):
+                    mine.pop(k, None)
+                    if v != "auto":
+                        mine[k] = max(LOCAL_KEYS[k][0], min(LOCAL_KEYS[k][1], int(v)))
+                os.makedirs(os.path.dirname(LOCAL_SETTINGS), exist_ok=True)
+                with open(LOCAL_SETTINGS, "w") as f:
+                    json.dump(s, f)
+                subprocess.run(["pkill", "-f", "llama-server.*--port %d" % LOCAL_PORT])       # loaded anew at the next question
+            # what it would take loaded otherwise, before it is kept: latte-ai local estimate MODEL CTX NGL
+            elif a[1] == "estimate" and len(a) == 5 and a[3].isdigit() and a[4].isdigit():
+                print(json.dumps(estimate(a[2], dict(model_settings(a[2]), ctx=int(a[3]), ngl=int(a[4])), hardware())))
             elif a[1] == "search" and len(a) in (3, 4):
                 print(json.dumps(hf_search(a[2], a[3] if len(a) == 4 else "best")))
             elif a[1] == "readme" and len(a) == 3:

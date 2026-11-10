@@ -57,11 +57,13 @@ Item {
             width: tabs.split ? tabs.width / 2 - 1 : tabs.width
             height: tabs.height
             visible: tabs.current === modelData || second
-            // one profile per service, on disk from the start (made at once with its name, not renamed afterwards)
-            WebEngineProfilePrototype { id: own; storageName: "lensai-" + view.modelData }
-            profile: own.instance()
-            // where it began, once: what the user goes to afterwards is the tab's own
-            Component.onCompleted: url = (tabs.services.find(s => s.id === modelData) || {}).web || "about:blank"
+            // one profile per service, on disk: its sign-in is there the next time LensAI is opened, session cookies too,
+            // as a browser that goes on where it was left
+            WebEngineProfilePrototype { id: own; storageName: "lensai-" + view.modelData; persistentCookiesPolicy: WebEngineProfile.ForcePersistentCookies }
+            // the profile only once the prototype stands: asked for in a binding (profile: own.instance()) it comes before
+            // the prototype knows its name, and is one that keeps nothing (offTheRecord) — every sign-in was lost on closing.
+            // Then where the tab began, once: what the user goes to afterwards is the tab's own
+            Component.onCompleted: { profile = own.instance(); url = (tabs.services.find(s => s.id === modelData) || {}).web || "about:blank" }
             // a page that asks for a small window of its own (a sign-in with Google, Apple…) gets one, with the tab's
             // profile, and the page that asked still knows it (the sign-in finishes there); a link to a new window or
             // tab (a source in an answer) goes to the browser, as in any app of web pages

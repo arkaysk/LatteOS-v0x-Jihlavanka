@@ -2655,7 +2655,14 @@ a šálky ostáva voliteľné; bez závislosti na pleamar-wm (dnes plávajúce o
 
 Zdroje: `bin/latte-ai`, `apps/aicenter.qml`, `system/ai/`, `system/agents/`, `inspo/ai-na-ploche.md`, `docs/lensai/POZIADAVKY.md`, `docs/lensai/ANALYZA.md` (audit a ciele 10. 11.), `docs/lensai/NAVRH-MCP.md`, `bin/latte-mcp`, `bin/latte-skill`
 
-**Stav 10. 11. večer — tu pokračovať** (rozhodnutia dňa: `docs/goo/ROZHODNUTIA.md`, riadky s „10. 11.“):
+**Stav 10. 11. neskoro večer — tu pokračovať 11. 11.:** hotové a nasadené 10B.54 (prihlásenie webov ostáva), 10B.55 (kľúčenka, kľúč API
+funguje — potvrdil používateľ), 10B.56 (Nastavenia Web · CLI · API · Pokyny, značky prístupu, značky služieb v CLI a API, výrazná vybraná
+záložka), 10B.57 (Lokálne LLM — „páči sa mi to“). Oddelenie dvoch záložiek tej istej služby overené skúškou (každá vidí iba svoje cookies).
+Limity berie `latte-ai` z prihlásenia nástroja služby na tomto počítači (napr. `~/.claude/.credentials.json`), takže každému ukážu jeho.
+**Ráno najprv:** skúška myšou podľa 10B.56 a 10B.57 (čo chýba), rozhodnutie o účte pri webovej záložke (poznámka, alebo čítať zo stránky),
+odpovede webových AI o prepojení s CLI/MCP od používateľa; potom poradie nižšie.
+
+**Stav 10. 11. večer** (rozhodnutia dňa: `docs/goo/ROZHODNUTIA.md`, riadky s „10. 11.“):
 - **Hotové a nasadené:** audit a jeho opravy (10B.47), stránka Všetky rozhovory a pôvod rozhovoru (10B.49), prstene = spotreba,
   karta Tokeny na Prehľade, ponuky „+“ iba s tým, čo LatteOS robí (10B.50), jeden vzhľad AI v LensGoo/LensShore, záložka Kaviareň
   (zatiaľ agenti z `pleamar-wm agents`, iba čítanie), `latte-mcp` krok 1 (čítanie) a krok 2 (zmeny s potvrdením v LensAI) — 10B.43.
@@ -3032,6 +3039,14 @@ pleamar-wm ako pri 10B.45.
 **10B.52** [ ] **Upratať vzhľady služieb** (po 10B.50): vetvy podľa `style` v `goo/lib/lens.luau` a `goo/parts/ai.plm` sú mŕtve; vyhodiť ich. Okno rozhovoru v LensAI si kópie vzhľadu zatiaľ drží — rozhodnúť, či ich zjednotiť tiež.
 
 **10B.53** [ ] **LensShore berie skilly z `latte-skill`** (po 10B.43 krok 2): `goo/lib/skills.luau` má dnes vlastnú kópiu tých istých zmien; presunúť ho na príkaz. Do príkazu doplniť tri, ktoré potrebujú Goo (nerušiť, otvoriť aplikáciu, zavrieť aplikáciu — tá s dvojitým potvrdením a popisom straty), a denník napojiť na Späť/Znova (10B.48).
+
+**10B.54** [x] **Prihlásenie vo webových záložkách sa strácalo** (používateľ 10. 11.): `profile: own.instance()` ako väzba dalo profil skôr, než prototyp poznal meno → profil `offTheRecord`, na disk nešlo nič. Teraz sa profil priradí v `Component.onCompleted` a drží aj cookies relácie (`ForcePersistentCookies`); overené skúškou (súbor `Cookies` v `~/.local/share/quickshell/QtWebEngine/lensai-*`). Do webov sa treba prihlásiť ešte raz.
+
+**10B.55** [x] **Kľúčenka zamknutá, kľúč API sa nedal uložiť** (používateľ 10. 11.): chýbal balík `gnome-keyring-pam`, kľúčenka sa pri prihlásení neodomykala a stará (21. 10.) mala neznáme heslo. Balík doinštalovaný a je vo `FILES`, stará kľúčenka odložená (`login.keyring.old-2026-11-10`); nová vznikne pri ďalšom prihlásení s heslom účtu. `latte-ai` sa zamknutej kľúčenky nepýta (okno s heslom pri každom čítaní), LensAI › Nastavenia › API povie, prečo sa kľúč neuložil. Overiť po odhlásení a prihlásení uloženie kľúča DeepSeek.
+
+**10B.56** [~] **Nastavenia podľa druhu prístupu: Web · CLI · API · Pokyny** (používateľ 10. 11.): značka za menom — zelená web, zlatá CLI, červená API. Stránky Služby, Modely a Pokyny sú časti Nastavení, Porovnať zrušené. Web: meno, ikona (zo stránky alebo Prehľadávať…), poznámka o účte, poradie, odstránenie, tá istá služba viackrát (druhý účet = vlastný profil), výber, čie limity ukazuje prsteň. Ikona stránky sa ukladá (`~/.cache/latteos/lensai-icons`). Pod každou službou CLI a kľúčom API jej modely s prepínačom „V čete LensGoo“. API: koniec uloženého kľúča, Nahradiť, Získať kľúč. Chýba: skúška myšou (úprava mena, výber ikony, ponuka limitov), účet čítaný zo stránky sa nerobí (LensAI zo stránok nečíta) — rozhodnúť, či stačí poznámka; limity druhého účtu Claude (druhý profil CLI cez `CLAUDE_CONFIG_DIR`).
+
+**10B.57** [~] **Lokálne LLM ako LM Studio** (používateľ 10. 11.; premenované z „Tento počítač“): Moje modely — schopnosti modelu (obrázky, nástroje, uvažovanie z hlavičky GGUF), prepínač „V čete LensGoo“, nastavenie načítania (kontext, vrstvy na grafike, vlákna, dávky, súbežné odpovede, mlock, mmap; `latte-ai local set`), odhad pamäte oproti hardvéru — počíta ho `llama-fit-params` z llama.cpp bez načítania modelu (`latte-ai local estimate`), bez neho vzorec z Ollamy. Sťahovanie je riadok v Mojich modeloch: %, koľko z koľkých, ostáva, rýchlosť, Pozastaviť/Pokračovať, Zrušiť (`latte-ai local downloads | cancel`). Chýba: skúška skutočného stiahnutia s pozastavením, panel nastavení videný celý a ovládaný myšou, odhad pre modely ešte nestiahnuté (dnes hrubý podľa veľkosti), nastavenia odpovede (teplota, systémový prompt), viac sťahovaní naraz.
 
 ### 10C. [ ] Heidelberg
 

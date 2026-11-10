@@ -92,3 +92,6 @@ Používajú sa iba na čítanie a ak chýbajú, chyba sa zobrazí v stave extra
 [ExifTool](https://exiftool.org/), [ffprobe / FFmpeg licencie](https://ffmpeg.org/legal.html),
 [Poppler](https://poppler.freedesktop.org/). Verzie a licencie konkrétneho balíka sa môžu líšiť medzi
 inštaláciami; pri distribúcii sa kontroluje konkrétny Fedora build.
+
+- **Ollama** (MIT, github.com/ollama/ollama) — pravidlo odhadu pamäte modelu z hlavičky GGUF (`llm/memory.go`, `fs/ggml` GraphSize), prenesené do `bin/latte-ai` (`estimate`) ako záloha; presný odhad dáva `llama-fit-params` z llama.cpp (MIT), ktorý sa iba spúšťa.
+

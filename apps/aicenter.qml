@@ -2,11 +2,11 @@
 //@ pragma EnableQtWebEngineQuick
 // LensAI: every conversation with every AI in one list, and the services themselves — which are there,
 // which one is signed in, signing in and out. bin/latte-ai keeps the conversations (the same ones LensGoo's AI
-// tab writes) and knows the services; this window shows them.   latte-app aicenter [services | tab SERVICE | CHAT]
+// tab writes) and knows the services; this window shows them.   latte-app aicenter [lensai | local | tab SERVICE | CHAT]
 //
-// latte-app aicenter compare QUESTION PROVIDER/MODEL… asks several at once.
-// The side: all conversations or one service's, newest first, each marked with its service's colour; at the
-// bottom the services. A conversation opens on the right and goes on there, with the service and model it had.
+// An AI is reached in one of three ways, each with its mark after a name (the colours of the graphs, Theme.heat): green
+// its own page in a tab (web), gold its official tool in a terminal (CLI), red a key of one's own (API). Settings has a
+// part for each, and what every AI is told first; the models on this computer have a page of their own (Local LLMs).
 // The rings under the overview are the services' own pages, as tabs (apps/aicenter/WebTabs.qml; the pragma above is
 // what the Quickshell of bin/latte-app's LATTE_WEB needs for them, the plain one only warns of it).
 import QtQuick
@@ -17,7 +17,22 @@ import "common"
 ShellRoot {
     id: shell
     readonly property var words: (Quickshell.env("LATTE_APP_ARGS") || "").split("\n").filter(w => w !== "")
-    property string page: "home"               // home (the dashboard) · all (every conversation, by service) · chats (one) · agents · helpers · local · compare · models · instructions · services
+    property string page: "home"               // home (the dashboard) · all (every conversation, by service) · chats (one) · web · cafe · agents · helpers · local · lensai (settings)
+    property string section: "web"             // the part of the settings open: web · cli · api · instructions
+    function openSection(id) {
+        page = "lensai"; section = id
+        if (id === "cli") { svc.ask(["services"]); mcpq.running = true }
+        if (id === "api") keyq.ask(["keys"])
+        if (id !== "instructions") { modelq.ask(["models"]); agentsq.ask(["agents"]) }
+    }
+    // how an AI is reached: the mark after its name
+    // the graphs' green, gold and red (Theme.heat), the gold fixed: a theme made from the wallpaper may have a red one
+    readonly property var kinds: ({ web: Theme.ok, cli: "#f2b63c", api: Theme.red })
+    function kindOf(id) { return /^(api-|server-)/.test(id) ? "api" : id === "local" || id === "ollama" ? "" : providers.some(p => p.id === id) || services.some(x => x.id === id) ? "cli" : tabbed.some(t => t.id === id) ? "web" : "cli" }
+    component Kind: Rectangle { property string kind; visible: shell.kinds[kind] !== undefined; width: 10; height: 10; radius: 3; color: visible ? shell.kinds[kind] : "transparent" }
+    component Toggle: Rectangle { id: tg; property bool on; signal flipped(); width: 46; height: 26; radius: 13; color: on ? Theme.gold : Theme.raised
+        Rectangle { width: 20; height: 20; radius: 10; y: 3; x: tg.on ? 23 : 3; color: tg.on ? Theme.inkOnGold : Theme.dim }
+        MouseArea { anchors.fill: parent; anchors.margins: -6; cursorShape: Qt.PointingHandCursor; onClicked: tg.flipped() } }
     // LatteOS's skill: the user's copy, made when it is first needed (latte-ai skill)
     FileView { id: skillFile; path: (Quickshell.env("XDG_CONFIG_HOME") || (Quickshell.env("HOME") + "/.config")) + "/latteos/skills/latteos/SKILL.md"; printErrors: false
                onLoaded: skillText.text = text(); onLoadFailed: skillMake.running = true }
@@ -25,9 +40,6 @@ ShellRoot {
     Process { id: skillReset; command: ["latte-ai", "skill", "reset"]; onExited: skillFile.reload() }
     FileView { id: rules; path: (Quickshell.env("XDG_CONFIG_HOME") || (Quickshell.env("HOME") + "/.config")) + "/latteos/ai-instructions.txt"; printErrors: false
                onLoaded: ruleText.text = text() }
-    property var picks: []                     // what is compared: up to three { provider, model }
-    property string asked: ""                  // the question they were all asked
-    property int round: 0                      // counts up for each question compared: the columns start again
     property string only: ""                   // the side shows only this service's conversations; "" all
     property string open: ""                   // the conversation shown
     property string find: ""
@@ -83,7 +95,9 @@ ShellRoot {
     property string tabBeside: ""              // a second tab beside it, half and half ("" none)
     readonly property bool web: Quickshell.env("LATTE_WEB") === "1"
     // whether its tool is installed or not (latte-ai): the user signs in on the page itself. The user's own list is kept
-    // in ~/.config/latteos/lensai-tabs.json (LensAI › Settings); these until there is one
+    // in ~/.config/latteos/lensai-tabs.json (LensAI › Settings); these until there is one. A tab: id (its profile), name,
+    // web; and the person's own: account (a note: LensAI reads nothing from a page), icon (a picture chosen), usage (the
+    // tool whose limits its ring shows: its own id unless said, "" none); fav, favUrl (the page's icon, kept)
     property var tabbed: defaultTabs
     readonly property var defaultTabs: [
         { id: "claude", name: "Claude", web: "https://claude.ai/new" },
@@ -110,13 +124,45 @@ ShellRoot {
         if (!/^https?:\/\//.test(web)) web = "https://" + web
         const host = web.replace(/^https?:\/\//, "").split(/[\/?#:]/)[0].toLowerCase()
         if (!/^[a-z0-9-]+(\.[a-z0-9-]+)+$/.test(host)) return false
-        const id = host.replace(/^www\./, "")
-        if (tabbed.some(t => t.id === id)) return false
-        keepTabs(tabbed.concat([{ id: id, name: name.trim() || id, web: web }]))
+        // the same service a second time (another account) is another tab with a profile of its own
+        const base = host.replace(/^www\./, ""); let id = base, n = 2
+        while (tabbed.some(t => t.id === id)) id = base + "-" + n++
+        keepTabs(tabbed.concat([{ id: id, name: name.trim() || base, web: web, usage: "" }]))
         return true
     }
+    function setTab(id, what) { keepTabs(tabbed.map(t => t.id === id ? Object.assign({}, t, what) : t)) }
+    function usageOf(t) { return t.usage !== undefined ? t.usage : t.id }
+    // a tab's picture: the one the person chose, else its page's own icon as it was last seen, else LatteOS's mark
+    function iconOf(t) { return t.icon ? "file://" + t.icon : t.fav ? "file://" + t.fav : marks[t.id] ? "file://" + I18n.share + "/goo/ai/" + marks[t.id] + ".svg" : "" }
+    // a page's icon is kept as a file when its tab first shows it (and again when the page changes it), so the ring has
+    // it before the tab is opened the next time
+    readonly property string favDir: (Quickshell.env("XDG_CACHE_HOME") || (Quickshell.env("HOME") + "/.cache")) + "/latteos/lensai-icons"
+    property var favQueue: []
+    Process { id: favGet; property var job: null
+              onExited: code => { const j = job; job = null; if (code === 0 && j) shell.setTab(j.id, { fav: j.path, favUrl: j.url }); shell.favNext() } }
+    function favNext() {
+        if (favGet.running || favQueue.length === 0) return
+        favGet.job = favQueue[0]; favQueue = favQueue.slice(1)
+        favGet.command = ["sh", "-c", "mkdir -p \"$1\" && curl -fsSL --max-time 20 --max-filesize 2000000 -o \"$2.new\" \"$3\" && mv \"$2.new\" \"$2\"", "sh", favDir, favGet.job.path, favGet.job.url]
+        favGet.running = true
+    }
+    function favSeen(id, icon) {
+        const url = String(icon).replace(/^image:\/\/favicon\//, ""), t = tabbed.find(x => x.id === id)
+        if (!t || !/^https?:\/\//.test(url) || t.favUrl === url || favQueue.some(j => j.id === id) || (favGet.job && favGet.job.id === id)) return
+        favQueue = favQueue.concat([{ id: id, url: url, path: favDir + "/" + id + "-" + Qt.md5(url).slice(0, 8) }]); favNext()
+    }
+    // a picture of the person's own for a tab
+    Process { id: iconPick; property string id: ""; command: ["latte-ai", "pick"]
+              stdout: StdioCollector { onStreamFinished: { const f = this.text.split("\n")[0].trim(); if (f !== "") shell.setTab(iconPick.id, { icon: f }) } } }
     function removeTab(id) { keepTabs(tabbed.filter(t => t.id !== id)); if (tabBeside === id) tabBeside = ""; if (tab === id && page === "web") page = "lensai" }
-    readonly property var marks: ({ claude: "claude", gemini: "gemini", chatgpt: "openai", grok: "grok", mistral: "mistral", copilot: "githubcopilot", deepseek: "deepseek", suno: "suno" })
+    readonly property var marks: ({ claude: "claude", gemini: "gemini", chatgpt: "openai", grok: "grok", mistral: "mistral", copilot: "githubcopilot", deepseek: "deepseek", suno: "suno",
+                                    "api-anthropic": "claude", "api-openai": "openai", "api-google": "gemini", "api-xai": "grok", "api-mistral": "mistral", "api-deepseek": "deepseek" })
+    // a service's own mark on a light disc, as the rings have it; `glyph` where LatteOS has no mark of it
+    component Mark: Rectangle { id: mk; property string of; property string glyph: "cloud"; property real size: 40
+        width: size; height: size; radius: size / 2; color: "#f5f1ea"
+        Image { anchors.centerIn: parent; visible: !!shell.marks[mk.of]; width: mk.size * 0.6; height: width; sourceSize: Qt.size(48, 48); fillMode: Image.PreserveAspectFit
+                source: shell.marks[mk.of] ? "file://" + I18n.share + "/goo/ai/" + shell.marks[mk.of] + ".svg" : "" }
+        Glyph { anchors.centerIn: parent; visible: !shell.marks[mk.of]; name: mk.glyph; font.pixelSize: mk.size * 0.5; color: "#2a1e17" } }
     // how much of a service's limit is used, 0…1, -1 where it says none: the ring closes as it is spent. The first
     // limit it tells: Claude's 5 hours, or the week on a plan without them (the user, 10. 11.)
     function used(id) {
@@ -146,13 +192,29 @@ ShellRoot {
     LocalAsk { id: hfFound }
     LocalAsk { id: hfFiles }
     property string hfRepo: ""                 // the model on Hugging Face whose files are open
-    property var getting: null                 // the download now: { file, got, total }
+    property var getting: null                 // the download now: { file, got, total, speed (bytes a second) }
+    property real gotAt: 0                     // when the speed was last counted, and how much had come by then
+    property real gotWas: 0
+    property string dropping: ""               // the download being ended is dropped, not paused: its file
+    LocalAsk { id: dlq }                       // the downloads paused or broken off (latte-ai local downloads)
+    LocalAsk { id: estq }                      // what a model would take loaded as the open settings say
+    Process { id: dropper; onExited: dlq.ask(["downloads"]) }
+    function drop(what) { dropper.command = ["latte-ai", "local", "cancel", what]; dropper.running = true }
     Process { id: getter
         stdout: SplitParser { onRead: line => { let m = null; try { m = JSON.parse(line) } catch (e) { return }
-            if (m.total) shell.getting = Object.assign({}, shell.getting, { got: m.got, total: m.total }) } }
-        onExited: { shell.getting = null; localq.ask(["recommend"]); localModels.ask(["models"]); if (shell.hfRepo) hfFiles.ask(["files", shell.hfRepo]); who.ask(["providers", "all"]) } }
-    function fetch(args, file) { if (getter.running) return; getting = { file: file, got: 0, total: 0 }; getter.command = ["latte-ai", "local"].concat(args); getter.running = true }
-    Process { id: localSet; onExited: localq.ask(["recommend"]) }
+            if (!m.total) return
+            const now = Date.now(); let speed = shell.getting ? shell.getting.speed || 0 : 0
+            if (shell.gotAt === 0 || m.got < shell.gotWas) { shell.gotAt = now; shell.gotWas = m.got }       // the first word, or the next part of a model in parts
+            else if (now - shell.gotAt >= 1500) { speed = (m.got - shell.gotWas) * 1000 / (now - shell.gotAt); shell.gotAt = now; shell.gotWas = m.got }
+            shell.getting = Object.assign({}, shell.getting, { got: m.got, total: m.total, speed: speed }) } }
+        // ended by itself it is done; ended by the person it is paused (its part stays, `get` goes on with it) or dropped
+        onExited: { const was = shell.getting; shell.getting = null
+                    if (shell.dropping !== "") { shell.drop(shell.dropping); shell.dropping = "" } else dlq.ask(["downloads"])
+                    localq.ask(["recommend"]); localModels.ask(["models", "measured"]); if (shell.hfRepo) hfFiles.ask(["files", shell.hfRepo]); who.ask(["providers", "all"]); modelq.ask(["models"]) } }
+    function fetch(args, file) { if (getter.running) return; gotAt = 0; gotWas = 0; getting = { file: file, got: 0, total: 0, speed: 0 }; getter.command = ["latte-ai", "local"].concat(args); getter.running = true }
+    function size(n) { return n < 1e9 ? Math.round(n / 1e6) + " MB" : gb(n) }
+    function openLocal() { page = "local"; localq.ask(["recommend"]); localModels.ask(["models", "measured"]); dlq.ask(["downloads"]); modelq.ask(["models"]) }
+    Process { id: localSet; onExited: { localq.ask(["recommend"]); localModels.ask(["models", "measured"]); modelq.ask(["models"]) } }
     function gb(n) { return (n / 1e9).toFixed(n >= 1e10 ? 0 : 1) + " GB" }
     readonly property var fits: ({ gpu: { word: QT_TR_NOOP("Full GPU offload"), color: "#4cc38a" }, partial: { word: QT_TR_NOOP("Partial GPU offload"), color: "#f7c873" },
                                    cpu: { word: QT_TR_NOOP("On the processor"), color: "#7aa7ff" }, "too-big": { word: QT_TR_NOOP("Likely too large for this computer"), color: "#e5484d" } })
@@ -184,16 +246,21 @@ ShellRoot {
     Process { id: asksSay; onExited: asksq.running = true }
     function answer(req, word) { asksSay.command = ["latte-skill", "answer", req, word]; asksSay.running = true; asks = asks.filter(a => a.req !== req) }
     Ask { id: keyq; onDone: shell.keys = data || [] }
-    Ask { id: keyer; onDone: { keyq.ask(["keys"]); who.ask(["providers", "all"]) } }
+    Ask { id: keyer; onDone: { shell.keyError = { id: "", error: "" }; keyq.ask(["keys"]); who.ask(["providers", "all"]); modelq.ask(["models"]) } }
     property var keys: []                      // the services one can bring a key to, and the user's own servers
     Ask { id: modelq; onDone: shell.models = data || [] }
     Ask { id: modeler; onDone: { modelq.ask(["models"]); who.ask(["providers", "all"]) } }
     property var models: []                    // every model of every service, with the user's word on each
     // a key goes to latte-ai on its standard input, never on its command line, where anyone could read it
-    Process { id: keeper; property string id: ""; property string key: ""; stdinEnabled: true
+    property var keyError: ({ id: "", error: "" })      // the key that was not taken, and why: locked (the keyring) · refused
+    Process { id: keeper; property string id: ""; property string key: ""; property string said: ""; stdinEnabled: true
+              stdout: StdioCollector { onStreamFinished: keeper.said = this.text }
               onStarted: { write(key + "\n"); key = ""; stdinEnabled = false }
-              onExited: { stdinEnabled = true; keyq.ask(["keys"]); who.ask(["providers", "all"]) } }
-    function keep(id, key) { if (key.trim() === "") return; keeper.key = key.trim(); keeper.command = ["latte-ai", "key", id]; keeper.running = true }
+              onExited: code => { stdinEnabled = true
+                                  let why = ""; if (code !== 0) { try { why = JSON.parse(said).error || "refused" } catch (e) { why = "refused" } }
+                                  shell.keyError = { id: why ? id : "", error: why }
+                                  keyq.ask(["keys"]); who.ask(["providers", "all"]); modelq.ask(["models"]) } }
+    function keep(id, key) { if (key.trim() === "" || keeper.running) return; keeper.id = id; keeper.said = ""; keeper.key = key.trim(); keeper.command = ["latte-ai", "key", id]; keeper.running = true }
     // the answer comes in pieces ({"delta"}) and then whole; stopping it ends latte-ai, which keeps what came
     property string live: ""                   // the answer as far as it has come
     property bool editing: false               // the next send changes the last question instead of asking a new one
@@ -219,25 +286,18 @@ ShellRoot {
     function inTerminal(argv) { Quickshell.execDetached(["foot", "-e", "sh", "-c", argv.map(a => "'" + a.replace(/'/g, "'\\''") + "'").join(" ") + "; echo; read -p '" + I18n.tr("Press Enter to close") + "' x"]) }
     Timer { id: later; interval: 2500; onTriggered: svc.ask(["services"]) }
     // an install in its terminal takes a while: the services are asked again while their page is open
-    Timer { interval: 10000; repeat: true; running: shell.page === "services"; onTriggered: if (!svc.running) svc.ask(["services"]) }
+    Timer { interval: 10000; repeat: true; running: shell.page === "lensai" && shell.section === "cli"; onTriggered: if (!svc.running) svc.ask(["services"]) }
     Component.onCompleted: {
         list.ask(["chats"]); who.ask(["providers", "all"]); svc.ask(["services"]); keyq.ask(["keys"]); helpersq.ask(["helpers"])      // helpers: whether the AI is on
-        if (["all", "cafe", "chats", "services", "models", "agents", "helpers", "instructions", "local", "lensai"].indexOf(words[0]) >= 0) page = words[0]
+        if (["all", "cafe", "chats", "agents", "helpers", "local", "lensai"].indexOf(words[0]) >= 0) page = words[0]
+        const part = ({ services: "cli", models: "cli", keys: "api", instructions: "instructions", lensai: words[1] || "web" })[words[0]]      // what were pages of their own are parts of the settings
+        if (part) openSection(part)
         if (words[0] === "tab" && words[1]) { page = "web"; tab = words[1]; tabBeside = words[2] || "" }      // latte-app aicenter tab claude [chatgpt]: its own page, another beside
         if (page !== "home") agentsq.ask(["agents"])             // the rings of the tabs show what is left
         if (page === "home") lookAround()
         if (page === "helpers") helpersq.ask(["helpers"])
-        if (page === "services") mcpq.running = true
-        if (page === "local") { localq.ask(["recommend"]); localModels.ask(["models"]) }
-        // latte-app aicenter compare QUESTION PROVIDER/MODEL…: the same question to each, side by side
-        if (words[0] === "compare" && words.length > 2) {
-            page = "compare"
-            picks = words.slice(2, 5).map(w => ({ provider: w.split("/")[0], model: w.slice(w.indexOf("/") + 1) }))
-            asked = words[1]
-            Qt.callLater(() => round += 1)
-        }
-        if (page === "models") modelq.ask(["models"])
-        else if (words[0] && (page === "chats" || (page === "home" && words[0] !== "home"))) choose(words[0])        // a conversation by its id
+        if (page === "local") openLocal()
+        if (words[0] && (page === "chats" || (page === "home" && words[0] !== "home"))) choose(words[0])        // a conversation by its id
     }
 
     // what the conversation goes on with: its own service and model, or the first there is for a new one
@@ -335,7 +395,7 @@ ShellRoot {
 
     AppWindow {
         title: I18n.tr("LensAI")
-        heading: shell.page === "lensai" ? I18n.tr("Settings") : shell.page === "web" ? (shell.tabbed.find(t => t.id === shell.tab) || { name: "" }).name : shell.page === "home" ? I18n.tr("Overview") : shell.page === "all" ? I18n.tr("All conversations") : shell.page === "cafe" ? I18n.tr("The Cafe") : shell.page === "agents" ? I18n.tr("Agents") : shell.page === "helpers" ? I18n.tr("Helpers") : shell.page === "local" ? I18n.tr("This computer") : shell.page === "instructions" ? I18n.tr("Instructions") : shell.page === "services" ? I18n.tr("Services") : shell.page === "models" ? I18n.tr("Models") : shell.page === "compare" ? I18n.tr("Compare") : (shell.chat ? shell.chat.title : I18n.tr("Conversations"))
+        heading: shell.page === "lensai" ? I18n.tr("Settings") : shell.page === "web" ? (shell.tabbed.find(t => t.id === shell.tab) || { name: "" }).name : shell.page === "home" ? I18n.tr("Overview") : shell.page === "all" ? I18n.tr("All conversations") : shell.page === "cafe" ? I18n.tr("The Cafe") : shell.page === "agents" ? I18n.tr("Agents") : shell.page === "helpers" ? I18n.tr("Helpers") : shell.page === "local" ? I18n.tr("Local LLMs") : (shell.chat ? shell.chat.title : I18n.tr("Conversations"))
         implicitWidth: 1120; implicitHeight: 760
         ground: shell.glassy ? "transparent" : Theme.ground
         searchHint: I18n.tr("Find a conversation…")
@@ -363,46 +423,43 @@ ShellRoot {
                 Flow { x: 6; width: 216; spacing: 6; visible: shell.tabbed.length > 0; topPadding: 4; bottomPadding: 4
                     Repeater { model: shell.tabbed
                         Item { id: ring; required property var modelData; width: 48; height: 48
-                            readonly property real share: shell.used(modelData.id)
+                            readonly property string tool: shell.usageOf(modelData)       // whose limits and whose work it shows
+                            readonly property real share: shell.used(tool)
                             readonly property bool on: shell.page === "web" && shell.tab === modelData.id
                             onShareChanged: arc.requestPaint()
-                            Rectangle { anchors.fill: parent; radius: 24; color: ring.on ? Theme.raised : (ringHit.containsMouse ? Theme.card : "transparent") }
+                            // the one whose page is open: a gold disc under it and a gold rim round its picture, seen at a glance
+                            Rectangle { anchors.fill: parent; radius: 24; color: ring.on ? Qt.rgba(Theme.gold.r, Theme.gold.g, Theme.gold.b, 0.38) : (ringHit.containsMouse ? Theme.card : "transparent") }
                             Canvas { id: arc; anchors.fill: parent
                                 onPaint: { const g = getContext("2d"); g.reset(); g.lineWidth = 3.5; g.lineCap = "round"
                                            g.strokeStyle = Qt.rgba(1, 1, 1, 0.1); g.beginPath(); g.arc(24, 24, 21, 0, 2 * Math.PI); g.stroke()
                                            if (ring.share <= 0) return
-                                           g.strokeStyle = shell.colour(ring.modelData.id); g.beginPath(); g.arc(24, 24, 21, -Math.PI / 2, -Math.PI / 2 + 2 * Math.PI * Math.max(0.001, ring.share)); g.stroke() } }
-                            Rectangle { anchors.centerIn: parent; width: 30; height: 30; radius: 15; color: "#f5f1ea"
-                                // the page's own icon once its tab is open; the service's mark before that
-                                readonly property string own: webTabs.item && webTabs.item.icons[ring.modelData.id] || ""
-                                Image { anchors.centerIn: parent; visible: !!parent.own || !!shell.marks[ring.modelData.id]; sourceSize: Qt.size(18, 18)
-                                        width: 18; height: 18; fillMode: Image.PreserveAspectFit
-                                        source: parent.own || (shell.marks[ring.modelData.id] ? "file://" + I18n.share + "/goo/ai/" + shell.marks[ring.modelData.id] + ".svg" : "") }
-                                Label { anchors.centerIn: parent; visible: !parent.own && !shell.marks[ring.modelData.id]; text: I18n.tr(ring.modelData.name).charAt(0); color: "#2a1e17"; font.weight: 800 } }
+                                           g.strokeStyle = shell.colour(ring.tool); g.beginPath(); g.arc(24, 24, 21, -Math.PI / 2, -Math.PI / 2 + 2 * Math.PI * Math.max(0.001, ring.share)); g.stroke() } }
+                            Rectangle { anchors.centerIn: parent; width: 30; height: 30; radius: 15; color: "#f5f1ea"; border.width: ring.on ? 2 : 0; border.color: Theme.gold
+                                // its picture (shell.iconOf): the page's own icon is there from the last time, before the tab is opened
+                                readonly property string own: shell.iconOf(ring.modelData)
+                                Image { anchors.centerIn: parent; visible: parent.own !== ""; sourceSize: Qt.size(36, 36)
+                                        width: 18; height: 18; fillMode: Image.PreserveAspectFit; source: parent.own }
+                                Label { anchors.centerIn: parent; visible: parent.own === ""; text: I18n.tr(ring.modelData.name).charAt(0).toUpperCase(); color: "#2a1e17"; font.weight: 800 } }
                             // gold: its tool in a terminal works or asks; mint: its tab, out of sight, has something new
                             Rectangle { x: 34; y: 4; width: 11; height: 11; radius: 6; border.width: 2; border.color: Theme.pane
                                         readonly property bool fresh: !!(webTabs.item && webTabs.item.news[ring.modelData.id])
-                                        visible: shell.busy(ring.modelData.id) || fresh
-                                        color: shell.busy(ring.modelData.id) ? Theme.gold : Theme.ok }
+                                        visible: shell.busy(ring.tool) || fresh
+                                        color: shell.busy(ring.tool) ? Theme.gold : Theme.ok }
                             MouseArea { id: ringHit; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
                                         onClicked: { shell.page = "web"; shell.tab = ring.modelData.id } } } }
                     // another page: LensAI's settings, where the list is
                     Rectangle { width: 48; height: 48; radius: 24; color: tabPlusHit.containsMouse || shell.page === "lensai" ? Theme.card : "transparent"
                                 border.width: 1; border.color: Theme.line
                         Glyph { anchors.centerIn: parent; name: "plus"; font.pixelSize: 18; color: Theme.dim }
-                        MouseArea { id: tabPlusHit; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: shell.page = "lensai" } } }
+                        MouseArea { id: tabPlusHit; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: shell.openSection("web") } } }
                 Nav { text: I18n.tr("All conversations"); icon: "messages"; on: shell.page === "all" || shell.page === "chats"; badge: shell.mine.length
                       onPressed: { shell.page = "all"; list.ask(["chats"]) } }
                 Item { width: 1; height: 10 }
                 Nav { text: I18n.tr("The Cafe"); icon: "coffee"; on: shell.page === "cafe"; onPressed: shell.page = "cafe" }
                 Nav { text: I18n.tr("Agents"); icon: "robot"; on: shell.page === "agents"; onPressed: { shell.page = "agents"; agentsq.ask(["agents"]) } }
                 Nav { text: I18n.tr("Helpers"); icon: "lifebuoy"; on: shell.page === "helpers"; onPressed: { shell.page = "helpers"; helpersq.ask(["helpers"]) } }
-                Nav { text: I18n.tr("This computer"); icon: "cpu"; on: shell.page === "local"; onPressed: { shell.page = "local"; localq.ask(["recommend"]); localModels.ask(["models"]) } }
-                Nav { text: I18n.tr("Compare"); icon: "layout-columns"; on: shell.page === "compare"; onPressed: shell.page = "compare" }
-                Nav { text: I18n.tr("Instructions"); icon: "file-text"; on: shell.page === "instructions"; onPressed: shell.page = "instructions" }
-                Nav { text: I18n.tr("Models"); icon: "sparkles"; on: shell.page === "models"; onPressed: { shell.page = "models"; modelq.ask(["models"]) } }
-                Nav { text: I18n.tr("Services"); icon: "plug-connected"; on: shell.page === "services"; onPressed: { shell.page = "services"; svc.ask(["services"]); mcpq.running = true } }
-                Nav { text: I18n.tr("Settings"); icon: "settings"; on: shell.page === "lensai"; onPressed: shell.page = "lensai" }
+                Nav { text: I18n.tr("Local LLMs"); icon: "cpu"; on: shell.page === "local"; onPressed: shell.openLocal() }
+                Nav { text: I18n.tr("Settings"); icon: "settings"; on: shell.page === "lensai"; onPressed: shell.openSection(shell.section) }
             }
         ]
 
@@ -412,6 +469,7 @@ ShellRoot {
                  Binding { target: webTabs.item; property: "current"; value: shell.page === "web" ? shell.tab : ""; when: webTabs.item !== null }
                  Binding { target: webTabs.item; property: "services"; value: shell.tabbed; when: webTabs.item !== null }
                  Binding { target: webTabs.item; property: "beside"; value: shell.page === "web" ? shell.tabBeside : ""; when: webTabs.item !== null } }
+        Connections { target: webTabs.item; function onIconsChanged() { for (const id in webTabs.item.icons) shell.favSeen(id, webTabs.item.icons[id]) } }
         Menu { id: besideMenu }
         // without a web engine in this Quickshell: the page in the browser
         Column { anchors.centerIn: parent; spacing: 12; width: 420; visible: shell.page === "web" && !shell.web
@@ -477,6 +535,7 @@ ShellRoot {
                     Row { spacing: 10; height: 30
                         Rectangle { width: 10; height: 10; radius: 5; color: shell.colour(grp.modelData.id); anchors.verticalCenter: parent.verticalCenter }
                         Label { text: shell.nameOf(grp.modelData.id); font.pixelSize: 16; font.weight: 700; anchors.verticalCenter: parent.verticalCenter }
+                        Kind { kind: shell.kindOf(grp.modelData.id); anchors.verticalCenter: parent.verticalCenter }
                         Label { text: grp.modelData.chats.length; color: Theme.dim; font.pixelSize: 12; anchors.verticalCenter: parent.verticalCenter } }
                     Repeater { model: grp.modelData.chats
                         Rectangle { id: cr; required property var modelData; width: allPage.room; height: 48; radius: 14; color: crHit.containsMouse ? Theme.raised : Theme.card
@@ -546,13 +605,14 @@ ShellRoot {
                     Glyph { name: "messages"; font.pixelSize: 48; color: Theme.gold; anchors.horizontalCenter: parent.horizontalCenter }
                     Label { text: I18n.tr("A new conversation"); font.pixelSize: 24; font.weight: 800; anchors.horizontalCenter: parent.horizontalCenter }
                     Label { width: parent.width; horizontalAlignment: Text.AlignHCenter; wrapMode: Text.WordWrap; color: Theme.dim
-                            text: shell.providers.length ? I18n.tr("Write below. Choose who answers with the button above the line.") : I18n.tr("No AI is ready on this computer: see Services.") } } }
+                            text: shell.providers.length ? I18n.tr("Write below. Choose who answers with the button above the line.") : I18n.tr("No AI is ready on this computer: see Settings.") } } }
 
             // who answers: LatteOS's own switch, the one part that is the same for every service (LensGoo has it at its foot)
             Rectangle { id: whoPill; x: box.x; y: box.y - 42; height: 32; radius: 16; width: whoRow.implicitWidth + 28; visible: shell.providers.length > 0
                 color: Qt.rgba(0.97, 0.78, 0.45, whoHit.containsMouse || shell.menuAt === "who" ? 0.3 : 0.18)
                 Row { id: whoRow; x: 14; spacing: 8; anchors.verticalCenter: parent.verticalCenter
                     Text { text: shell.nameOf(shell.useProvider) + " · " + (shell.useM ? shell.useM.name : ""); color: shell.style === "own" ? Theme.gold : "#8a5a14"; font.family: Theme.font; font.pixelSize: 13; font.weight: Font.Bold }
+                    Kind { kind: shell.kindOf(shell.useProvider); anchors.verticalCenter: parent.verticalCenter }
                     Glyph { name: "chevron-down"; font.pixelSize: 14; color: shell.style === "own" ? Theme.gold : "#8a5a14"; anchors.verticalCenter: parent.verticalCenter } }
                 MouseArea { id: whoHit; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: shell.openMenu("who") } }
             // where the question goes: it stays here, or it leaves the computer for the service (ROADMAP 10B.29)
@@ -677,7 +737,8 @@ ShellRoot {
                             Rectangle { x: 0; y: r.gap + 1; width: parent.width; height: parent.height - r.gap - 2; radius: 8; color: sheet.lk.ink; opacity: !r.off && rowHit.containsMouse ? 0.06 : 0 }
                             Glyph { visible: !!r.modelData.glyph; x: 22 - width / 2; y: r.mid - height / 2; name: r.modelData.glyph || ""; font.pixelSize: 16; color: r.web ? shell.webInk : sheet.lk.ink }
                             Glyph { visible: r.on && sheet.tickLeft; x: 22 - width / 2; y: r.mid - height / 2; name: "check"; font.pixelSize: 15; color: shell.look.tick }
-                            Text { visible: !r.modelData.note; x: r.nx; y: r.mid - height / 2; width: (sheet.hintX > 0 ? sheet.hintX : r.width - 34 - (keyText.text ? keyText.implicitWidth + 8 : 0)) - r.nx - 8; elide: Text.ElideRight
+                            Kind { kind: r.modelData.kind || ""; x: nameText.x + Math.min(nameText.contentWidth, nameText.width) + 8; y: r.mid - 5 }
+                            Text { id: nameText; visible: !r.modelData.note; x: r.nx; y: r.mid - height / 2; width: (sheet.hintX > 0 ? sheet.hintX : r.width - 34 - (keyText.text ? keyText.implicitWidth + 8 : 0)) - r.nx - 8; elide: Text.ElideRight
                                    text: I18n.tr(r.modelData.name); color: r.ink; font.family: Theme.font; font.pixelSize: 14; font.weight: Font.Medium }
                             Text { visible: !!r.modelData.desc; x: r.nx; y: r.gap + 35 - height / 2; width: r.width - r.nx - 40; elide: Text.ElideRight; text: r.modelData.desc ? I18n.tr(r.modelData.desc) : ""; color: sheet.lk.dim; font.family: Theme.font; font.pixelSize: 12 }
                             Text { visible: !!r.modelData.note; x: 14; y: r.gap + 6; width: r.width - 28; wrapMode: Text.WordWrap; maximumLineCount: 2; text: I18n.tr(r.modelData.name); color: sheet.lk.dim; font.family: Theme.font; font.pixelSize: 12 }
@@ -690,7 +751,7 @@ ShellRoot {
                             MouseArea { id: rowHit; anchors.fill: parent; anchors.topMargin: r.gap; hoverEnabled: true; enabled: !r.off; cursorShape: Qt.PointingHandCursor
                                         onClicked: shell.act(r.modelData, r.y, sheet.sub) } } } } }
             Sheet { id: menu; visible: shell.menuAt !== ""; own: shell.menuAt === "who"
-                rows: shell.menuAt === "who" ? shell.providers.map(p => ({ name: p.name, key: p.id === shell.useProvider && shell.useM ? shell.useM.name : p.models[0].name, "do": { provider: p.id, model: p.id === shell.useProvider && shell.useM ? shell.useM.id : p.models[0].id } }))
+                rows: shell.menuAt === "who" ? shell.providers.map(p => ({ name: p.name, kind: shell.kindOf(p.id), key: p.id === shell.useProvider && shell.useM ? shell.useM.name : p.models[0].name, "do": { provider: p.id, model: p.id === shell.useProvider && shell.useM ? shell.useM.id : p.models[0].id } }))
                       : shell.useP ? (shell.menuAt === "plus" ? shell.useP.plus : shell.useP.menu) : []
                 width: shell.menuAt === "who" ? 300 : shell.menuAt === "plus" ? (({ claude: 260, gemini: 280, chatgpt: 470, grok: 250, mistral: 280 })[shell.style] || 250) : (({ claude: 380, gemini: 230, chatgpt: 300, grok: 320, mistral: 270 })[shell.style] || 300)
                 hintX: shell.menuAt === "plus" && shell.style === "chatgpt" ? 196 : 0
@@ -759,9 +820,9 @@ ShellRoot {
                                         Label { text: I18n.tr(parent.modelData.name); font.pixelSize: 11; width: parent.width; horizontalAlignment: Text.AlignHCenter; elide: Text.ElideRight }
                                         Label { text: I18n.tr(parent.lim.label || ""); color: Theme.dim; font.pixelSize: 10; width: parent.width; horizontalAlignment: Text.AlignHCenter; elide: Text.ElideRight } } } }
                             Label { visible: !(shell.agents.services || []).some(s => (s.limits || []).length > 0); text: I18n.tr("No service says its limits."); color: Theme.dim; font.pixelSize: 12 } }
-                        Card { title: I18n.tr("This computer"); icon: "cpu"
+                        Card { title: I18n.tr("Local LLMs"); icon: "cpu"
                             Label { text: I18n.tr("{n} models on this computer", { n: (localModels.data || []).length }); color: Theme.dim; font.pixelSize: 12 }
-                            Pill { text: I18n.tr("Open"); icon: "chevron-right"; onPressed: { shell.page = "local"; localq.ask(["recommend"]); localModels.ask(["models"]) } } } }
+                            Pill { text: I18n.tr("Open"); icon: "chevron-right"; onPressed: shell.openLocal() } } }
                     // the lens: the Cafe seen through it (a GIF of its own one day; LatteOS's coffee until then)
                     Item { id: lensBox; width: 340; height: 340
                         // the Cafe: a GIF of the user's own if there is one, else LatteOS's picture of it (assets/lensai/cafe.jpg)
@@ -840,6 +901,7 @@ ShellRoot {
                                 Rectangle { width: 32; height: 32; radius: 9; color: "#f5f1ea"; anchors.verticalCenter: parent.verticalCenter
                                     Image { anchors.centerIn: parent; visible: sec.mark !== ""; source: sec.mark ? "file://" + I18n.share + "/goo/ai/" + sec.mark + ".svg" : ""; sourceSize: Qt.size(22, 22) } }
                                 Label { text: I18n.tr(sec.modelData.name); font.pixelSize: 16; font.weight: 800; anchors.verticalCenter: parent.verticalCenter }
+                                Kind { kind: "cli"; anchors.verticalCenter: parent.verticalCenter }
                                 Rectangle { visible: sec.modelData.plan !== ""; height: 22; radius: 11; width: planText.implicitWidth + 18; color: Qt.rgba(Theme.gold.r, Theme.gold.g, Theme.gold.b, 0.16); anchors.verticalCenter: parent.verticalCenter
                                     Label { id: planText; anchors.centerIn: parent; text: sec.modelData.plan.toUpperCase(); color: Theme.gold; font.pixelSize: 11; font.weight: 800 } }
                                 // a lapsed sign-in: signing in again, in a terminal, where the tool asks what it needs
@@ -855,15 +917,16 @@ ShellRoot {
                             Label { visible: sec.modelData.limits.length === 0; width: secCol.width; wrapMode: Text.WordWrap; color: Theme.dim; font.pixelSize: 13
                                     text: I18n.tr("{n} questions through Lens this month", { n: sec.modelData.asked }) + "  ·  " + I18n.tr("The account's quota is not told here; the service's own page shows it.") } } } }
                 Label { visible: (shell.agents.services || []).length === 0 && !agentsq.running; width: parent.width; wrapMode: Text.WordWrap; color: Theme.dim
-                        text: I18n.tr("No AI service is installed: see Services.") } } }
+                        text: I18n.tr("No AI service is installed: see Settings.") } } }
 
-        // ── the AI on this computer, as LM Studio has it: Discover (a search, its results on the left and the chosen
-        // model on the right with its download options and its card), My Models, Runtime; downloads at the foot ─────
+        // ── the models on this computer, as LM Studio has them: Discover (a search, its results on the left and the chosen
+        // model on the right with its download options and its card), My Models (the downloads too, and how each model
+        // is loaded and what memory that takes), Runtime ─────
         Item {
             id: localPage
             anchors.fill: parent
             visible: shell.page === "local"
-            property string tab: "discover"            // discover · mine · runtime
+            property string tab: shell.words[0] === "local" && ["mine", "runtime"].indexOf(shell.words[1]) >= 0 ? shell.words[1] : "discover"      // discover · mine · runtime
             property string sort: "best"
             property string query: ""
             property var picked: null                  // the model open on the right
@@ -891,12 +954,13 @@ ShellRoot {
             // the tabs, as LM Studio's left rail has them
             Row { id: localTabs; x: 22; y: 16; spacing: 8
                 Repeater { model: [{ id: "discover", name: QT_TR_NOOP("Discover"), icon: "search" }, { id: "mine", name: QT_TR_NOOP("My Models"), icon: "folder" }, { id: "runtime", name: QT_TR_NOOP("Runtime"), icon: "cpu" }]
-                    Pill { required property var modelData; implicitHeight: 34; icon: modelData.icon; text: I18n.tr(modelData.name); strong: localPage.tab === modelData.id; onPressed: localPage.tab = modelData.id } } }
+                    Pill { required property var modelData; implicitHeight: 34; icon: modelData.icon; strong: localPage.tab === modelData.id; onPressed: localPage.tab = modelData.id
+                           text: I18n.tr(modelData.name) + (modelData.id === "mine" && (shell.getting || (dlq.data || []).length) ? "  ↓" : "") } } }
 
             // ── Discover ──
             Item {
                 visible: localPage.tab === "discover"
-                anchors.fill: parent; anchors.topMargin: 62; anchors.bottomMargin: shell.getting ? 56 : 0
+                anchors.fill: parent; anchors.topMargin: 62
                 Row { x: 22; spacing: 10
                     Field { id: searchField; width: Math.min(460, localPage.width * 0.42); icon: "search"; hint: I18n.tr("Search models on Hugging Face…"); onAccepted: localPage.search() }
                     Repeater { model: [{ id: "best", name: QT_TR_NOOP("Best match") }, { id: "downloads", name: QT_TR_NOOP("Most downloads") }, { id: "updated", name: QT_TR_NOOP("Recently updated") }, { id: "likes", name: QT_TR_NOOP("Most liked") }]
@@ -963,26 +1027,139 @@ ShellRoot {
                             Pill { visible: !!localPage.chosen; implicitHeight: 40; strong: !(localPage.chosen && localPage.chosen.have); icon: localPage.chosen && localPage.chosen.have ? "check" : "download"
                                    busy: !!shell.getting && !!localPage.chosen && shell.getting.file === localPage.chosen.file
                                    text: !localPage.chosen ? "" : localPage.chosen.have ? I18n.tr("Downloaded") : I18n.tr("Download {n}", { n: (localPage.chosen.quant || "") + " · " + shell.gb(localPage.chosen.size) })
-                                   onPressed: if (localPage.chosen && !localPage.chosen.have) shell.fetch(["get", localPage.picked.repo, localPage.chosen.file], localPage.chosen.file) }
+                                   onPressed: if (localPage.chosen && !localPage.chosen.have && !shell.getting) { shell.fetch(["get", localPage.picked.repo, localPage.chosen.file], localPage.chosen.file); localPage.tab = "mine" } }
                             // the model's card
                             Rectangle { width: parent.width; height: 1; color: Theme.line }
                             TextEdit { width: parent.width; readOnly: true; selectByMouse: true; wrapMode: Text.Wrap; textFormat: TextEdit.MarkdownText; color: Theme.cream; font.family: Theme.font; font.pixelSize: 13
                                        text: readmeq.data && readmeq.data.text ? readmeq.data.text : "" } } } }
             }
 
-            // ── My Models: what is on this computer ──
+            // ── My Models: what is on this computer, and what is on its way ──
             Scroll {
                 id: minePage
                 visible: localPage.tab === "mine"
                 anchors.topMargin: 62
+                property string openModel: ""          // the model whose settings are open
                 Label { text: I18n.tr("{n} models on this computer", { n: (localModels.data || []).length }) + "  ·  " + (localPage.rec.hardware.dir || ""); color: Theme.dim; font.pixelSize: 12 }
+                // a download: how far, how much is left, how fast; paused it keeps what came and goes on from there
+                component Download: Rectangle { id: dl
+                    property string file; property real got; property real total; property real speed; property bool live
+                    signal toggled(); signal dropped()
+                    width: minePage.room; height: 66; radius: 10; color: Theme.card; border.width: 1; border.color: live ? Theme.gold : Theme.line
+                    Glyph { x: 14; y: 12; name: "download"; color: dl.live ? Theme.gold : Theme.dim }
+                    Label { x: 44; y: 10; width: parent.width - 60 - dlBtns.width; elide: Text.ElideMiddle; text: dl.file.split("/").pop(); font.weight: 600 }
+                    DotBar { x: 44; y: 40; width: Math.max(80, parent.width - 76 - dlBtns.width - dlSays.width); height: 8; segments: 40; tint: Theme.gold; value: dl.total ? dl.got / dl.total : 0 }
+                    Label { id: dlSays; anchors.right: dlBtns.left; anchors.rightMargin: 16; y: 34; font.pixelSize: 12; color: Theme.dim
+                            text: !dl.total ? I18n.tr("Starting…")
+                                : Math.floor(100 * dl.got / dl.total) + " %  ·  " + I18n.tr("{a} of {b}", { a: shell.size(dl.got), b: shell.size(dl.total) }) + "  ·  " + I18n.tr("{n} left", { n: shell.size(dl.total - dl.got) })
+                                  + (dl.live ? (dl.speed > 0 ? "  ·  " + (dl.speed / 1e6).toFixed(1) + " MB/s" : "") : "  ·  " + I18n.tr("paused")) }
+                    Row { id: dlBtns; anchors.right: parent.right; anchors.rightMargin: 10; anchors.verticalCenter: parent.verticalCenter; spacing: 6
+                        Pill { implicitHeight: 30; visible: dl.file !== "llama.cpp"; icon: dl.live ? "player-pause" : "player-play"; text: dl.live ? I18n.tr("Pause") : I18n.tr("Go on"); onPressed: dl.toggled() }
+                        Pill { implicitHeight: 30; icon: "x"; danger: true; text: I18n.tr("Cancel"); onPressed: dl.dropped() } } }
+                Download { visible: !!shell.getting; live: true
+                           file: shell.getting ? shell.getting.file : ""; got: shell.getting ? shell.getting.got : 0; total: shell.getting ? shell.getting.total : 0; speed: shell.getting ? shell.getting.speed || 0 : 0
+                           onToggled: getter.running = false
+                           onDropped: { shell.dropping = file; getter.running = false } }
+                Repeater { model: (dlq.data || []).filter(d => !shell.getting || d.file !== shell.getting.file)
+                    Download { required property var modelData; file: modelData.file; got: modelData.got; total: modelData.total
+                               onToggled: shell.fetch(["get", modelData.repo, modelData.file], modelData.file)
+                               onDropped: shell.drop(modelData.name) } }
+
+                component Cap: Rectangle { property string icon; property string word; property color tint: Theme.dim; height: 20; radius: 6; width: capRow.implicitWidth + 12
+                    color: Qt.rgba(tint.r, tint.g, tint.b, 0.14)
+                    Row { id: capRow; anchors.centerIn: parent; spacing: 4
+                        Glyph { name: parent.parent.icon; font.pixelSize: 12; color: parent.parent.tint; anchors.verticalCenter: parent.verticalCenter }
+                        Label { text: parent.parent.word; color: parent.parent.tint; font.pixelSize: 11; font.weight: 700 } } }
+                component Knob: Item { id: kn
+                    property string name; property string says; property real value; signal moved(real to)
+                    width: parent ? parent.width : 0; height: 30
+                    Label { width: 210; text: kn.name; anchors.verticalCenter: parent.verticalCenter; elide: Text.ElideRight }
+                    Slide { x: 220; width: parent.width - 220 - 190; value: kn.value; anchors.verticalCenter: parent.verticalCenter; onMoved: to => kn.moved(to) }
+                    Label { anchors.right: parent.right; width: 176; horizontalAlignment: Text.AlignRight; text: kn.says; font.weight: 700; font.pixelSize: 13; anchors.verticalCenter: parent.verticalCenter; elide: Text.ElideLeft } }
+                // how a model is loaded (LM Studio's load settings), and what memory that takes on this computer, counted by
+                // llama.cpp itself as the sliders move
+                component Loading: Column { id: ld
+                    property var model                 // a row of `latte-ai local models`
+                    property var draft: Object.assign({}, model.settings)
+                    readonly property var mem: estq.data && estFor === model.id ? estq.data : model.memory
+                    property string estFor: ""
+                    readonly property bool changed: Object.keys(draft).some(k => draft[k] !== model.settings[k])
+                    readonly property int maxCtx: Math.max(2048, model.memory.context || 32768)
+                    function put(k, v) { const d = Object.assign({}, draft); d[k] = v; draft = d; if (k === "ctx" || k === "ngl") again.restart() }
+                    Timer { id: again; interval: 350; onTriggered: { ld.estFor = ld.model.id; estq.ask(["estimate", ld.model.id, String(ld.draft.ctx), String(ld.draft.ngl)]) } }
+                    spacing: 10
+                    Rectangle { width: parent.width; height: 1; color: Theme.line }
+                    // the context on a scale of doublings, from 1024 tokens to what the model was made for
+                    Knob { name: I18n.tr("Context length"); says: I18n.tr("{n} of {m} tokens", { n: ld.draft.ctx, m: ld.maxCtx })
+                           value: Math.log(ld.draft.ctx / 1024) / Math.log(ld.maxCtx / 1024)
+                           onMoved: to => ld.put("ctx", Math.min(ld.maxCtx, Math.round(1024 * Math.pow(ld.maxCtx / 1024, to) / 256) * 256)) }
+                    Knob { name: I18n.tr("Layers on the graphics card"); says: I18n.tr("{n} of {m}", { n: Math.min(ld.draft.ngl, ld.model.memory.layers), m: ld.model.memory.layers })
+                           value: Math.min(1, ld.draft.ngl / ld.model.memory.layers); onMoved: to => ld.put("ngl", Math.round(to * ld.model.memory.layers)) }
+                    Knob { name: I18n.tr("Processor threads"); says: I18n.tr("{n} of {m}", { n: ld.draft.threads, m: localPage.rec.hardware.cores || 1 })
+                           value: (ld.draft.threads - 1) / Math.max(1, (localPage.rec.hardware.cores || 2) - 1); onMoved: to => ld.put("threads", 1 + Math.round(to * ((localPage.rec.hardware.cores || 2) - 1))) }
+                    Knob { name: I18n.tr("Evaluation batch size"); says: String(ld.draft.batch); value: Math.log(ld.draft.batch / 64) / Math.log(64); onMoved: to => ld.put("batch", Math.round(64 * Math.pow(64, to) / 64) * 64) }
+                    Knob { name: I18n.tr("Physical batch size"); says: String(ld.draft.ubatch); value: Math.log(ld.draft.ubatch / 64) / Math.log(32); onMoved: to => ld.put("ubatch", Math.round(64 * Math.pow(32, to) / 64) * 64) }
+                    Knob { name: I18n.tr("Answers at the same time"); says: String(ld.draft.parallel); value: (ld.draft.parallel - 1) / 7; onMoved: to => ld.put("parallel", 1 + Math.round(to * 7)) }
+                    Row { spacing: 24; height: 30
+                        Row { spacing: 10; anchors.verticalCenter: parent.verticalCenter
+                            Toggle { on: ld.draft.mlock === 1; onFlipped: ld.put("mlock", ld.draft.mlock === 1 ? 0 : 1) }
+                            Label { text: I18n.tr("Keep the model in memory"); anchors.verticalCenter: parent.verticalCenter } }
+                        Row { spacing: 10; anchors.verticalCenter: parent.verticalCenter
+                            Toggle { on: ld.draft.mmap === 1; onFlipped: ld.put("mmap", ld.draft.mmap === 1 ? 0 : 1) }
+                            Label { text: I18n.tr("Read the file as it is needed (mmap)"); anchors.verticalCenter: parent.verticalCenter } } }
+                    // the estimate, beside what this computer has
+                    Rectangle { width: parent.width; height: memCol.implicitHeight + 24; radius: 12; color: Theme.raised
+                        Column { id: memCol; x: 14; y: 12; width: parent.width - 28; spacing: 8
+                            Row { spacing: 10
+                                Label { text: I18n.tr("Estimated memory"); font.weight: 800; anchors.verticalCenter: parent.verticalCenter }
+                                FitChip { fit: ld.mem.fit; anchors.verticalCenter: parent.verticalCenter }
+                                Label { visible: estq.running; text: I18n.tr("Counting…"); color: Theme.dim; font.pixelSize: 12; anchors.verticalCenter: parent.verticalCenter } }
+                            Item { width: parent.width; height: 22
+                                Label { width: 150; text: I18n.tr("Graphics card"); color: Theme.dim; font.pixelSize: 13; anchors.verticalCenter: parent.verticalCenter }
+                                DotBar { x: 160; width: parent.width - 160 - 250; height: 10; segments: 30; value: ld.mem.vram ? Math.min(1, ld.mem.gpu / ld.mem.vram) : 0; anchors.verticalCenter: parent.verticalCenter }
+                                Label { anchors.right: parent.right; width: 240; horizontalAlignment: Text.AlignRight; font.pixelSize: 13; font.weight: 700; anchors.verticalCenter: parent.verticalCenter
+                                        text: I18n.tr("{a} of {b}", { a: shell.gb(ld.mem.gpu), b: shell.gb(ld.mem.vram) }) + (ld.mem.free ? "  ·  " + I18n.tr("{n} free now", { n: shell.gb(ld.mem.free) }) : "") } }
+                            Item { width: parent.width; height: 22
+                                Label { width: 150; text: I18n.tr("Memory"); color: Theme.dim; font.pixelSize: 13; anchors.verticalCenter: parent.verticalCenter }
+                                DotBar { x: 160; width: parent.width - 160 - 250; height: 10; segments: 30; value: Math.min(1, (ld.mem.total - ld.mem.gpu) / Math.max(1, ld.mem.ram)); anchors.verticalCenter: parent.verticalCenter }
+                                Label { anchors.right: parent.right; width: 240; horizontalAlignment: Text.AlignRight; font.pixelSize: 13; font.weight: 700; anchors.verticalCenter: parent.verticalCenter
+                                        text: I18n.tr("{a} of {b}", { a: shell.gb(ld.mem.total - ld.mem.gpu), b: shell.gb(ld.mem.ram) }) } }
+                            Label { width: parent.width; wrapMode: Text.WordWrap; color: Theme.dim; font.pixelSize: 12
+                                    text: I18n.tr("In all {n}.", { n: shell.gb(ld.mem.total) }) + " " + (ld.mem.measured ? I18n.tr("Counted by llama.cpp for these settings, without loading the model.") : I18n.tr("A rough count from the file; llama.cpp counts it exactly once it is downloaded (Runtime).")) } } }
+                    Row { spacing: 10
+                        Pill { implicitHeight: 34; icon: "check"; strong: ld.changed; text: I18n.tr("Apply")
+                               onPressed: if (ld.changed) { localSet.command = ["latte-ai", "local", "set", ld.model.id].concat(Object.keys(ld.draft).reduce((a, k) => a.concat([k, String(ld.draft[k])]), [])); localSet.running = true } }
+                        Pill { implicitHeight: 34; icon: "arrow-back-up"; text: I18n.tr("LatteOS's own"); visible: ld.model.own.length > 0
+                               onPressed: { localSet.command = ["latte-ai", "local", "set", ld.model.id].concat(ld.model.own.reduce((a, k) => a.concat([k, "auto"]), [])); localSet.running = true } }
+                        Label { text: I18n.tr("The model is loaded anew at the next question."); color: Theme.dim; font.pixelSize: 12; anchors.verticalCenter: parent.verticalCenter } } }
+
                 Repeater { model: localModels.data || []
-                    Rectangle { id: lm; required property var modelData; width: minePage.room; height: 50; radius: 10; color: Theme.card
-                        Glyph { x: 14; anchors.verticalCenter: parent.verticalCenter; name: "cube"; color: Theme.gold }
-                        Label { x: 44; anchors.verticalCenter: parent.verticalCenter; text: lm.modelData.name; font.weight: 600; width: parent.width - 280; elide: Text.ElideRight }
-                        Label { anchors.right: delBtn.left; anchors.rightMargin: 12; anchors.verticalCenter: parent.verticalCenter; text: shell.gb(lm.modelData.size); color: Theme.dim }
-                        Pill { id: delBtn; anchors.right: parent.right; anchors.rightMargin: 8; anchors.verticalCenter: parent.verticalCenter; implicitHeight: 30; icon: "trash"; danger: true; text: I18n.tr("Delete")
-                               onPressed: { localSet.command = ["latte-ai", "local", "remove", lm.modelData.id]; localSet.running = true; localModels.ask(["models"]) } } } }
+                    Rectangle { id: lm; required property var modelData; width: minePage.room; height: lmCol.implicitHeight + 20; radius: 10; color: Theme.card
+                        readonly property bool open: minePage.openModel === modelData.id
+                        readonly property var inChat: ((shell.models.find(p => p.id === "local") || { models: [] }).models.find(m => m.id === modelData.id)) || null
+                        border.width: open ? 1 : 0; border.color: Theme.gold
+                        Column { id: lmCol; x: 14; y: 10; width: parent.width - 28; spacing: 12
+                            Item { width: parent.width; height: 46
+                                Glyph { anchors.verticalCenter: parent.verticalCenter; name: "cube"; color: Theme.gold }
+                                Column { x: 32; width: parent.width - 32 - lmBtns.width - 12; anchors.verticalCenter: parent.verticalCenter; spacing: 5
+                                    Row { spacing: 8; width: parent.width
+                                        Label { text: lm.modelData.name; font.weight: 600; elide: Text.ElideRight; width: Math.min(implicitWidth, parent.width - 250) }
+                                        // what it can do: its file says it (the vision file beside it, its chat template)
+                                        Cap { visible: lm.modelData.vision; icon: "eye"; word: I18n.tr("sees pictures"); tint: "#7aa7ff" }
+                                        Cap { visible: lm.modelData.tools; icon: "tool"; word: I18n.tr("tools"); tint: Theme.gold }
+                                        Cap { visible: lm.modelData.reasoning; icon: "bulb"; word: I18n.tr("reasoning"); tint: Theme.ok } }
+                                    Row { spacing: 10
+                                        Label { text: shell.gb(lm.modelData.size) + "  ·  " + I18n.tr("needs {n}", { n: shell.gb(lm.modelData.memory.total) })
+                                                      + (lm.modelData.memory.gpu > 0 ? "  ·  " + I18n.tr("{n} of it on the card", { n: shell.gb(lm.modelData.memory.gpu) }) : ""); color: Theme.dim; font.pixelSize: 12; anchors.verticalCenter: parent.verticalCenter }
+                                        FitChip { fit: lm.modelData.memory.fit; anchors.verticalCenter: parent.verticalCenter } } }
+                                Row { id: lmBtns; anchors.right: parent.right; anchors.verticalCenter: parent.verticalCenter; spacing: 8
+                                    Label { visible: !!lm.inChat; text: I18n.tr("In LensGoo's chat"); color: Theme.dim; font.pixelSize: 12; anchors.verticalCenter: parent.verticalCenter }
+                                    Toggle { visible: !!lm.inChat; on: !!lm.inChat && !lm.inChat.hidden; anchors.verticalCenter: parent.verticalCenter
+                                             onFlipped: modeler.ask(["model", lm.inChat.hidden ? "show" : "hide", "local", lm.modelData.id]) }
+                                    Pill { implicitHeight: 30; icon: "settings"; text: ""; strong: lm.open; onPressed: { estq.data = null; minePage.openModel = lm.open ? "" : lm.modelData.id } }
+                                    Pill { implicitHeight: 30; icon: "trash"; danger: true; text: ""
+                                           onPressed: { localSet.command = ["latte-ai", "local", "remove", lm.modelData.id]; localSet.running = true } } } }
+                            Loader { width: parent.width; active: lm.open; visible: active; sourceComponent: Loading { width: lmCol.width; model: lm.modelData } } } } }
             }
 
             // ── Runtime: the computer, llama.cpp, the graphics card ──
@@ -1006,96 +1183,6 @@ ShellRoot {
                        onPressed: { localSet.command = ["latte-ai", "local", "gpu", localPage.rec.gpu === true ? "off" : "on"]; localSet.running = true } }
             }
 
-            // the download now, at the foot, as LM Studio's downloads bar
-            Rectangle { visible: !!shell.getting; anchors.left: parent.left; anchors.right: parent.right; anchors.bottom: parent.bottom; height: 50; color: Theme.card; border.width: 1; border.color: Theme.line
-                Glyph { x: 18; anchors.verticalCenter: parent.verticalCenter; name: "download"; color: Theme.gold }
-                Label { x: 46; anchors.verticalCenter: parent.verticalCenter; width: 300; elide: Text.ElideMiddle; text: shell.getting ? shell.getting.file : "" }
-                DotBar { x: 360; anchors.verticalCenter: parent.verticalCenter; width: parent.width - 360 - 150; height: 8; segments: 40; value: shell.getting && shell.getting.total ? shell.getting.got / shell.getting.total : 0 }
-                Label { anchors.right: parent.right; anchors.rightMargin: 18; anchors.verticalCenter: parent.verticalCenter; font.weight: 700
-                        text: shell.getting && shell.getting.total ? shell.gb(shell.getting.got) + " / " + shell.gb(shell.getting.total) : I18n.tr("Starting…") } }
-        }
-
-        // ── one question to several AIs at once, the answers side by side ──────────────────────────────────
-        Item {
-            id: cmp
-            anchors.fill: parent
-            visible: shell.page === "compare"
-            Column { id: cmpTop; x: 28; y: 22; width: parent.width - 56; spacing: 12
-                Label { width: parent.width; wrapMode: Text.WordWrap; color: Theme.dim
-                        text: I18n.tr("Choose up to three, ask once, and read them side by side. Each answer is kept as a conversation of its own, to go on with.") }
-                Flow { width: parent.width; spacing: 8
-                    Repeater { model: { const all = []; shell.providers.forEach(p => p.models.forEach(m => all.push({ provider: p.id, model: m.id, name: I18n.tr(p.name) + " · " + m.name }))); return all }
-                        Pill { required property var modelData; implicitHeight: 32; text: modelData.name
-                               readonly property bool chosen: shell.picks.some(x => x.provider === modelData.provider && x.model === modelData.model)
-                               strong: chosen; icon: chosen ? "check" : ""
-                               onPressed: shell.picks = chosen ? shell.picks.filter(x => !(x.provider === modelData.provider && x.model === modelData.model))
-                                                               : shell.picks.concat([{ provider: modelData.provider, model: modelData.model }]).slice(-3) } } }
-                Row { spacing: 10
-                    Field { id: cmpLine; width: cmpTop.width - 140; icon: "sparkles"; hint: I18n.tr("Ask them all…")
-                            onAccepted: cmpGo.pressed() }
-                    Pill { id: cmpGo; icon: "arrow-up"; strong: true; text: I18n.tr("Ask"); implicitHeight: 40
-                           onPressed: if (cmpLine.text.trim() !== "" && shell.picks.length > 0) { shell.asked = cmpLine.text.trim(); shell.round += 1; cmpLine.text = "" } } } }
-            Row {
-                anchors.top: cmpTop.bottom; anchors.topMargin: 16; anchors.bottom: parent.bottom; anchors.bottomMargin: 22; x: 28
-                spacing: 12
-                Repeater { model: shell.picks
-                    Rectangle { id: col; required property var modelData; required property int index
-                        width: (cmp.width - 56 - 12 * (shell.picks.length - 1)) / shell.picks.length; height: parent.height; radius: 18; color: Theme.card
-                        border.width: 1; border.color: Qt.rgba(Qt.color(shell.colour(modelData.provider)).r, Qt.color(shell.colour(modelData.provider)).g, Qt.color(shell.colour(modelData.provider)).b, 0.5)
-                        property string said: ""
-                        property bool busy: false
-                        property real took: 0
-                        property double began: 0
-                        // each column asks on its own, so the quickest is read first
-                        Process { id: asker
-                            stdout: SplitParser { onRead: line => { let m = null; try { m = JSON.parse(line) } catch (e) { return }
-                                if (m.delta !== undefined) col.said += m.delta
-                                else if (m.chat) col.said = m.answer } }
-                            onExited: { col.busy = false; col.took = (Date.now() - col.began) / 1000; list.ask(["chats"]) } }
-                        Connections { target: shell
-                            function onRoundChanged() {
-                                col.said = ""; col.busy = true; col.began = Date.now()
-                                asker.command = ["latte-ai", "send", "new", col.modelData.provider, col.modelData.model, shell.asked, "--stream", "--markdown", "--from", "lensai"]; asker.running = true } }
-                        Label { x: 16; y: 14; text: shell.nameOf(col.modelData.provider) + " · " + shell.modelName(col.modelData.provider, col.modelData.model)
-                                color: shell.colour(col.modelData.provider); font.weight: 700 }
-                        Label { anchors.right: parent.right; anchors.rightMargin: 16; y: 14; color: Theme.dim; font.pixelSize: 12
-                                text: col.busy ? I18n.tr("Thinking…") : (col.took > 0 ? col.took.toFixed(1) + " s" : "") }
-                        Flickable { x: 16; y: 44; width: parent.width - 32; height: parent.height - 58; clip: true; contentHeight: colText.implicitHeight; boundsBehavior: Flickable.StopAtBounds
-                            TextEdit { id: colText; width: parent.width; readOnly: true; selectByMouse: true; wrapMode: Text.Wrap; textFormat: TextEdit.MarkdownText
-                                       text: col.said; color: Theme.cream; font.family: Theme.font; font.pixelSize: 14; selectionColor: Theme.coffee } } } }
-            }
-            Label { visible: shell.picks.length === 0; anchors.centerIn: parent; color: Theme.dim; text: I18n.tr("Choose who to compare above.") }
-        }
-
-        // ── what every AI is told first: who the user is, how they want to be answered ─────────────────────
-        Scroll {
-            id: rulePage
-            visible: shell.page === "instructions"
-            Label { width: rulePage.room; wrapMode: Text.WordWrap; color: Theme.dim
-                    text: I18n.tr("What you write here goes with every question, to every AI, in LensGoo too: who you are, what you know, how you want to be answered. For example: “I am new to Linux, explain simply. Answer in Slovak.”") }
-            Rectangle { width: rulePage.room; height: 260; radius: 16; color: Theme.card; border.width: 1; border.color: ruleText.activeFocus ? Theme.gold : Theme.line
-                Flickable { anchors.fill: parent; anchors.margins: 14; clip: true; contentHeight: ruleText.implicitHeight; boundsBehavior: Flickable.StopAtBounds
-                    TextEdit { id: ruleText; width: parent.width; wrapMode: Text.Wrap; color: Theme.cream; font.family: Theme.font; font.pixelSize: 14; selectByMouse: true; selectionColor: Theme.coffee } } }
-            Row { spacing: 10
-                Pill { icon: "check"; strong: true; text: rulePage.saved ? I18n.tr("Kept") : I18n.tr("Keep"); onPressed: { rules.setText(ruleText.text.trim() + "\n"); rulePage.saved = true; keptAgain.restart() } }
-                Label { text: I18n.tr("{n} of 4000 characters", { n: ruleText.text.length }); color: ruleText.text.length > 4000 ? Theme.red : Theme.dim; font.pixelSize: 12; anchors.verticalCenter: parent.verticalCenter } }
-            property bool saved: false
-            Timer { id: keptAgain; interval: 1800; onTriggered: rulePage.saved = false }
-
-            // LatteOS's skill for the agents (as Omarchy's): the user's own copy, which their agents read; Restore
-            // brings back LatteOS's own (the user's kept beside it)
-            Item { width: 1; height: 12 }
-            Label { text: I18n.tr("LatteOS skill for the agents"); font.pixelSize: 17; font.weight: 800 }
-            Label { width: rulePage.room; wrapMode: Text.WordWrap; color: Theme.dim
-                    text: I18n.tr("What Claude Code, Codex and Gemini know about LatteOS when you ask them for help with this computer: how it is built, what may be changed and how, and that they plan first and ask. Add your own rules at the end.") }
-            Rectangle { width: rulePage.room; height: 360; radius: 16; color: Theme.card; border.width: 1; border.color: skillText.activeFocus ? Theme.gold : Theme.line
-                Flickable { id: skillView; anchors.fill: parent; anchors.margins: 14; clip: true; contentHeight: skillText.implicitHeight; boundsBehavior: Flickable.StopAtBounds
-                    TextEdit { id: skillText; width: parent.width; wrapMode: Text.Wrap; color: Theme.cream; font.family: "monospace"; font.pixelSize: 13; selectByMouse: true; selectionColor: Theme.coffee } } }
-            Row { spacing: 10
-                Pill { icon: "check"; strong: true; text: rulePage.skillSaved ? I18n.tr("Kept") : I18n.tr("Keep"); onPressed: { skillFile.setText(skillText.text); rulePage.skillSaved = true; skillKept.restart() } }
-                Pill { icon: "arrow-back-up"; text: I18n.tr("Restore LatteOS's own"); onPressed: skillReset.running = true } }
-            property bool skillSaved: false
-            Timer { id: skillKept; interval: 1800; onTriggered: rulePage.skillSaved = false }
         }
 
         // ── the helpers (Omarchy's toggles, manual 13 and 17, MIT): who does the work — the agent and who reads a sentence,
@@ -1123,7 +1210,7 @@ ShellRoot {
                         Repeater { model: shell.helpers.agents
                             Pill { required property var modelData; implicitHeight: 32; text: modelData.installed ? modelData.name : I18n.tr("{n} (not installed)", { n: modelData.name })
                                    strong: modelData.id === shell.helpers.agent; icon: modelData.id === shell.helpers.agent ? "check" : (modelData.installed ? "" : "download"); opacity: modelData.installed ? 1 : 0.6
-                                   onPressed: { if (modelData.installed) shell.setHelper(["latte-ai", "doer", modelData.id]); else { shell.page = "services"; svc.ask(["services"]) } } } } } } }
+                                   onPressed: { if (modelData.installed) shell.setHelper(["latte-ai", "doer", modelData.id]); else shell.openSection("cli") } } } } } }
             // who reads a sentence: this computer, unless the user chooses Haiku (Omarchy's Defaults, a backend to pick)
             Rectangle { width: helpPage.room; height: whoBox.implicitHeight + 32; radius: 16; color: Theme.card; border.width: 1; border.color: Theme.line
                 Column { id: whoBox; x: 18; y: 16; width: parent.width - 36; spacing: 12
@@ -1135,9 +1222,9 @@ ShellRoot {
                     Row { spacing: 12; width: parent.width
                         Repeater { model: [
                                 { id: "local", name: QT_TR_NOOP("On this computer"), glyph: "device-desktop", can: shell.helpers.local !== "",
-                                  how: shell.helpers.local !== "" ? shell.helpers.local : QT_TR_NOOP("No model yet: choose one in This computer"), note: QT_TR_NOOP("Nothing leaves this computer.") },
+                                  how: shell.helpers.local !== "" ? shell.helpers.local : QT_TR_NOOP("No model yet: choose one in Local LLMs"), note: QT_TR_NOOP("Nothing leaves this computer.") },
                                 { id: "haiku", name: "Claude Haiku", glyph: "cloud", can: shell.helpers.haiku.length > 0,
-                                  how: shell.helpers.haiku.indexOf("key") >= 0 ? QT_TR_NOOP("With your key: a second or two") : shell.helpers.haiku.indexOf("claude") >= 0 ? QT_TR_NOOP("Through Claude Code: some ten seconds") : QT_TR_NOOP("Needs Claude Code or a key (Services)"),
+                                  how: shell.helpers.haiku.indexOf("key") >= 0 ? QT_TR_NOOP("With your key: a second or two") : shell.helpers.haiku.indexOf("claude") >= 0 ? QT_TR_NOOP("Through Claude Code: some ten seconds") : QT_TR_NOOP("Needs Claude Code or a key (Settings)"),
                                   note: QT_TR_NOOP("Faster and surer; the sentence goes to Anthropic.") } ]
                             Rectangle { id: tile; required property var modelData; width: (whoBox.width - 12) / 2; height: 96; radius: 14
                                 readonly property bool picked: shell.helpers.helper === modelData.id
@@ -1151,8 +1238,8 @@ ShellRoot {
                                     Label { width: parent.width; wrapMode: Text.WordWrap; color: tile.modelData.id === "haiku" ? Theme.gold : Theme.ok; font.pixelSize: 12; text: I18n.tr(tile.modelData.note) } }
                                 MouseArea { id: tileHit; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
                                     onClicked: { if (tile.modelData.can) shell.setHelper(["latte-ai", "helper", tile.modelData.id])
-                                                 else if (tile.modelData.id === "local") { shell.page = "local"; localq.ask(["recommend"]); localModels.ask(["models"]) }
-                                                 else { shell.page = "services"; svc.ask(["services"]) } } } } } } } }
+                                                 else if (tile.modelData.id === "local") shell.openLocal()
+                                                 else shell.openSection("cli") } } } } } } }
 
             Label { text: I18n.tr("WHAT HELPS"); color: Theme.faint; font.pixelSize: 11; font.weight: 700; font.letterSpacing: 0.8 }
             Repeater { model: shell.helpers.switches
@@ -1175,137 +1262,227 @@ ShellRoot {
                                     onClicked: shell.setHelper(["latte-ai", "toggle", sw.modelData.id, sw.modelData.on ? "off" : "on"]) } } } }
         }
 
-        // ── the models: which show in LensGoo, and which one answers first ───────────────────────────────────
-        Scroll {
-            id: modelPage
-            visible: shell.page === "models"
-            Label { width: modelPage.room; wrapMode: Text.WordWrap; color: Theme.dim
-                    text: I18n.tr("Every model your services and keys offer. Those that are on show in LensGoo's choice; the star marks the one a new conversation begins with.") }
-            Waiting { visible: shell.models.length === 0 && modelq.running; text: I18n.tr("Asking the services…"); width: modelPage.room }
-            Repeater { model: shell.models
-                Column { id: mg; required property var modelData; width: modelPage.room; spacing: 6
-                    Row { spacing: 10; height: 30
-                        Rectangle { width: 10; height: 10; radius: 5; color: shell.colour(mg.modelData.id); anchors.verticalCenter: parent.verticalCenter }
-                        Label { text: I18n.tr(mg.modelData.name); font.pixelSize: 16; font.weight: 700; anchors.verticalCenter: parent.verticalCenter } }
-                    Repeater { model: mg.modelData.models
-                        Rectangle { id: mr; required property var modelData; width: modelPage.room; height: 48; radius: 14; color: Theme.card
-                            Glyph { x: 16; name: "star"; font.pixelSize: 18; color: mr.modelData.default ? Theme.gold : Theme.faint; anchors.verticalCenter: parent.verticalCenter
-                                MouseArea { anchors.fill: parent; anchors.margins: -8; cursorShape: Qt.PointingHandCursor; onClicked: modeler.ask(["model", "default", mg.modelData.id, mr.modelData.id]) } }
-                            Row { x: 48; spacing: 12; anchors.verticalCenter: parent.verticalCenter
-                                Label { text: mr.modelData.name; font.weight: 600; opacity: mr.modelData.hidden ? 0.5 : 1 }
-                                Label { visible: mr.modelData.default; text: I18n.tr("default"); color: Theme.gold; font.pixelSize: 12; anchors.verticalCenter: parent.verticalCenter } }
-                            Rectangle { width: 46; height: 26; radius: 13; color: mr.modelData.hidden ? Theme.raised : Theme.gold; anchors.right: parent.right; anchors.rightMargin: 16; anchors.verticalCenter: parent.verticalCenter
-                                Rectangle { width: 20; height: 20; radius: 10; y: 3; x: mr.modelData.hidden ? 3 : 23; color: mr.modelData.hidden ? Theme.dim : Theme.inkOnGold }
-                                MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor
-                                            onClicked: modeler.ask(["model", mr.modelData.hidden ? "show" : "hide", mg.modelData.id, mr.modelData.id]) } } } } } }
-        }
-
-        // ── LensAI's own settings: the services' pages in tabs, which and in what order ───────────────────────
-        Scroll {
-            id: lensaiPage
+        // ── LensAI's settings, a part for each way an AI is reached: its own page in a tab (web), its official tool in a
+        // terminal (CLI), a key of one's own (API); under each that can answer, which of its models LensGoo's and
+        // LensShore's chat offers. And what every AI is told first ──────────────────────────────────────────────────
+        Item {
+            id: setPage
+            anchors.fill: parent
             visible: shell.page === "lensai"
-            Label { text: I18n.tr("TABS"); color: Theme.faint; font.pixelSize: 11; font.weight: 700; font.letterSpacing: 0.8 }
-            Label { width: lensaiPage.room; wrapMode: Text.WordWrap; color: Theme.dim
-                    text: I18n.tr("Each one is the service's own page, with its own sign-in, as in a browser. Its ring under the overview shows what is left of its limit, where the service says it.") }
-            Repeater { model: shell.tabbed
-                Rectangle { id: tr; required property var modelData; required property int index; width: lensaiPage.room; height: 58; radius: 18; color: Theme.card
-                    Rectangle { x: 14; width: 30; height: 30; radius: 15; color: "#f5f1ea"; anchors.verticalCenter: parent.verticalCenter
-                        Image { anchors.centerIn: parent; visible: !!shell.marks[tr.modelData.id]; sourceSize: Qt.size(18, 18)
-                                source: shell.marks[tr.modelData.id] ? "file://" + I18n.share + "/goo/ai/" + shell.marks[tr.modelData.id] + ".svg" : "" }
-                        Label { anchors.centerIn: parent; visible: !shell.marks[tr.modelData.id]; text: tr.modelData.name.charAt(0).toUpperCase(); color: "#2a1e17"; font.weight: 800 } }
-                    Column { x: 58; width: parent.width - 300; anchors.verticalCenter: parent.verticalCenter; spacing: 2
-                        Label { text: tr.modelData.name; font.weight: 700 }
-                        Label { text: tr.modelData.web; color: Theme.dim; font.pixelSize: 12; width: parent.width; elide: Text.ElideRight } }
-                    Row { anchors.right: parent.right; anchors.rightMargin: 14; anchors.verticalCenter: parent.verticalCenter; spacing: 6
-                        // earlier and later in the list, as the rings stand
-                        Pill { icon: "chevron-up"; text: ""; visible: tr.index > 0
-                               onPressed: { const l = shell.tabbed.slice(); l.splice(tr.index - 1, 0, l.splice(tr.index, 1)[0]); shell.keepTabs(l) } }
-                        Pill { icon: "chevron-down"; text: ""; visible: tr.index < shell.tabbed.length - 1
-                               onPressed: { const l = shell.tabbed.slice(); l.splice(tr.index + 1, 0, l.splice(tr.index, 1)[0]); shell.keepTabs(l) } }
-                        Pill { icon: "trash"; danger: true; text: I18n.tr("Remove"); onPressed: shell.removeTab(tr.modelData.id) } } } }
-            Row { spacing: 10
-                Field { id: tabName; width: 220; icon: "tag"; hint: I18n.tr("Name") }
-                Field { id: tabWeb; width: Math.min(380, lensaiPage.room - 380); icon: "world-www"; hint: "https://perplexity.ai"; onAccepted: tabAdd.pressed() }
-                Pill { id: tabAdd; icon: "plus"; strong: true; text: I18n.tr("Add")
-                       onPressed: if (shell.addTab(tabName.text, tabWeb.text)) { tabName.text = ""; tabWeb.text = ""; tabBad.visible = false } else tabBad.visible = tabWeb.text.trim() !== "" } }
-            Label { id: tabBad; visible: false; color: Theme.red; font.pixelSize: 12; text: I18n.tr("That is not a web address, or its page is in the list already.") }
-            Pill { icon: "arrow-back-up"; text: I18n.tr("Back to LatteOS's list"); onPressed: shell.keepTabs(shell.defaultTabs) }
-        }
+            Row { x: 22; y: 16; spacing: 8
+                Repeater { model: [{ id: "web", name: QT_TR_NOOP("Web"), icon: "world" }, { id: "cli", name: QT_TR_NOOP("CLI"), icon: "terminal-2" }, { id: "api", name: QT_TR_NOOP("API"), icon: "key" },
+                                   { id: "instructions", name: QT_TR_NOOP("Instructions"), icon: "file-text" }]
+                    Pill { required property var modelData; implicitHeight: 34; icon: modelData.icon; text: I18n.tr(modelData.name) + (shell.kinds[modelData.id] !== undefined ? "     " : ""); strong: shell.section === modelData.id
+                           onPressed: shell.openSection(modelData.id)
+                           Kind { kind: parent.modelData.id; anchors.right: parent.right; anchors.rightMargin: 14; anchors.verticalCenter: parent.verticalCenter; border.width: 1; border.color: Qt.rgba(0, 0, 0, 0.25) } } } }
 
-        // ── the services: which are there, which is signed in; signing in and out ────────────────────────────
-        Scroll {
-            id: svcPage
-            visible: shell.page === "services"
-            Label { text: I18n.tr("ACCOUNTS"); color: Theme.faint; font.pixelSize: 11; font.weight: 700; font.letterSpacing: 0.8 }
-            Waiting { visible: shell.services.length === 0 && svc.running; text: I18n.tr("Asking the services…"); width: svcPage.room }
-            Label { width: svcPage.room; wrapMode: Text.WordWrap; color: Theme.dim
-                    text: I18n.tr("With an account, the service's official tool answers, signed in once in the terminal. Which of them LensGoo offers is set in Settings › Launcher.") }
-            Repeater { model: shell.services
-                Rectangle { id: card; required property var modelData; width: svcPage.room; height: 84; radius: 20; color: Theme.card
-                    Rectangle { x: 18; width: 48; height: 48; radius: 14; color: shell.colour(card.modelData.id); opacity: card.modelData.installed ? 1 : 0.35; anchors.verticalCenter: parent.verticalCenter
-                        Glyph { anchors.centerIn: parent; name: card.modelData.local ? "device-desktop" : "cloud"; font.pixelSize: 22; color: "#ffffff" } }
-                    Column { x: 82; width: parent.width - 82 - 300; anchors.verticalCenter: parent.verticalCenter; spacing: 4
-                        Label { text: I18n.tr(card.modelData.name); font.pixelSize: 16; font.weight: 700 }
-                        Label { width: parent.width; elide: Text.ElideRight; color: Theme.dim; font.pixelSize: 12
-                                text: !card.modelData.installed ? I18n.tr("Not installed yet: Install puts its official tool {tool} on this computer.", { tool: card.modelData.tool })
-                                    : card.modelData.local ? I18n.tr("Answers on this computer; nothing leaves it.")
-                                    : card.modelData.signed === true ? I18n.tr("Signed in") + (card.modelData.account ? " · " + card.modelData.account : "")
-                                    : card.modelData.signed === false ? I18n.tr("Not signed in") : I18n.tr("Installed; sign in once in the terminal.") } }
-                    Row { anchors.right: parent.right; anchors.rightMargin: 18; anchors.verticalCenter: parent.verticalCenter; spacing: 8
-                        Rectangle { visible: card.modelData.installed && card.modelData.signed === true; width: 10; height: 10; radius: 5; color: Theme.ok; anchors.verticalCenter: parent.verticalCenter }
-                        // the service's official tool, installed for this user in a terminal (latte-ai services › install)
-                        Pill { visible: !card.modelData.installed && (card.modelData.install || "") !== ""; icon: "download"; strong: true; text: I18n.tr("Install")
-                               onPressed: { shell.inTerminal(["sh", "-c", card.modelData.install]); later.restart() } }
-                        Pill { visible: card.modelData.installed && card.modelData.login.length > 0 && card.modelData.signed !== true; icon: "login"; strong: true; text: I18n.tr("Sign in")
-                               onPressed: { shell.inTerminal(card.modelData.login); later.restart() } }
-                        Pill { visible: card.modelData.installed && card.modelData.logout.length > 0 && card.modelData.signed === true; icon: "logout"; text: I18n.tr("Sign out")
-                               onPressed: { shell.inTerminal(card.modelData.logout); later.restart() } } } } }
+            // the models of one that can answer: which the chat of LensGoo and LensShore offers, and the star on the one a
+            // new conversation begins with
+            component ModelRows: Column { id: mrs
+                property string pid
+                readonly property var rows: (shell.models.find(p => p.id === pid) || { models: [] }).models
+                visible: rows.length > 0; spacing: 2
+                Rectangle { width: parent.width; height: 1; color: Theme.line }
+                Item { width: parent.width; height: 26
+                    Label { text: I18n.tr("MODELS"); color: Theme.faint; font.pixelSize: 11; font.weight: 700; font.letterSpacing: 0.8; anchors.verticalCenter: parent.verticalCenter }
+                    Label { anchors.right: parent.right; text: I18n.tr("In LensGoo's chat"); color: Theme.faint; font.pixelSize: 11; anchors.verticalCenter: parent.verticalCenter } }
+                Repeater { model: mrs.rows
+                    Item { id: mr; required property var modelData; width: mrs.width; height: 34
+                        Glyph { name: "star"; font.pixelSize: 16; color: mr.modelData.default ? Theme.gold : Theme.faint; anchors.verticalCenter: parent.verticalCenter
+                            MouseArea { anchors.fill: parent; anchors.margins: -8; cursorShape: Qt.PointingHandCursor; onClicked: modeler.ask(["model", "default", mrs.pid, mr.modelData.id]) } }
+                        Label { x: 28; width: parent.width - 28 - 150; elide: Text.ElideRight; text: mr.modelData.name; opacity: mr.modelData.hidden ? 0.5 : 1; anchors.verticalCenter: parent.verticalCenter }
+                        Label { anchors.right: mrTg.left; anchors.rightMargin: 12; visible: mr.modelData.default; text: I18n.tr("default"); color: Theme.gold; font.pixelSize: 12; anchors.verticalCenter: parent.verticalCenter }
+                        Toggle { id: mrTg; anchors.right: parent.right; anchors.verticalCenter: parent.verticalCenter; scale: 0.85; on: !mr.modelData.hidden
+                                 onFlipped: modeler.ask(["model", mr.modelData.hidden ? "show" : "hide", mrs.pid, mr.modelData.id]) } } } }
 
-            // LatteOS for the agents: one MCP server, written into each agent's own tool (ROADMAP 10B.43)
-            Label { text: I18n.tr("LATTEOS FOR YOUR AGENTS"); color: Theme.faint; font.pixelSize: 11; font.weight: 700; font.letterSpacing: 0.8 }
-            Rectangle { width: svcPage.room; height: mcpCol.implicitHeight + 32; radius: 18; color: Theme.card
-                Column { id: mcpCol; x: 18; y: 16; width: parent.width - 36 - 80; spacing: 6
-                    Label { text: I18n.tr("Let the agents see LatteOS"); font.weight: 700 }
-                    Label { width: parent.width; wrapMode: Text.WordWrap; color: Theme.dim; font.pixelSize: 12
-                            text: I18n.tr("Claude Code, Codex and Gemini can then read your conversations kept here, what is left of the limits, and the agents at work, and ask to change small things (the volume, the Wi-Fi…). Nothing is changed before you allow it here.") }
-                    Label { width: parent.width; wrapMode: Text.WordWrap; color: Theme.dim; font.pixelSize: 12; visible: shell.mcp.agents.length > 0
-                            text: shell.mcp.agents.filter(a => a.installed).map(a => a.name + (a.has ? " ✓" : " –")).join("   ") } }
-                Rectangle { width: 46; height: 26; radius: 13; color: shell.mcpOn ? Theme.gold : Theme.raised; anchors.right: parent.right; anchors.rightMargin: 18; y: 18; opacity: mcpSet.running ? 0.5 : 1
-                    Rectangle { width: 20; height: 20; radius: 10; y: 3; x: shell.mcpOn ? 23 : 3; color: shell.mcpOn ? Theme.inkOnGold : Theme.dim }
-                    MouseArea { anchors.fill: parent; anchors.margins: -6; cursorShape: Qt.PointingHandCursor
-                                onClicked: if (!mcpSet.running) { mcpSet.command = ["latte-mcp", shell.mcpOn ? "remove" : "install"]; mcpSet.running = true } } } }
+            // ── web: the services' own pages in tabs, which, in what order, under what name and picture ──
+            Scroll {
+                id: webSet
+                visible: shell.section === "web"
+                anchors.topMargin: 62
+                Label { width: webSet.room; wrapMode: Text.WordWrap; color: Theme.dim
+                        text: I18n.tr("Each one is the service's own page, with its own sign-in, as in a browser: the same service twice is two accounts side by side. LensAI reads nothing from a page, so the account is your own note, to tell them apart. The ring shows what is used of the limit that the service's tool tells.") }
+                Repeater { model: shell.tabbed
+                    Rectangle { id: tr; required property var modelData; required property int index; width: webSet.room; height: 104; radius: 18; color: Theme.card
+                        readonly property string pic: shell.iconOf(modelData)
+                        readonly property string tool: shell.usageOf(modelData)
+                        readonly property bool changed: nameF.text.trim() !== modelData.name || accF.text.trim() !== (modelData.account || "")
+                        function keep() { if (changed) shell.setTab(modelData.id, { name: nameF.text.trim() || modelData.name, account: accF.text.trim() }) }
+                        // its picture; pressed: the page's own again, or one of the person's
+                        Rectangle { x: 14; y: 12; width: 40; height: 40; radius: 20; color: "#f5f1ea"; border.width: picHit.containsMouse ? 2 : 0; border.color: Theme.gold
+                            Image { anchors.centerIn: parent; visible: tr.pic !== ""; sourceSize: Qt.size(48, 48); width: 24; height: 24; fillMode: Image.PreserveAspectFit; source: tr.pic }
+                            Label { anchors.centerIn: parent; visible: tr.pic === ""; text: tr.modelData.name.charAt(0).toUpperCase(); color: "#2a1e17"; font.weight: 800 }
+                            MouseArea { id: picHit; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
+                                onClicked: { const p = mapToItem(besideMenu, 0, height + 4)
+                                             besideMenu.open(p.x, p.y, [{ text: I18n.tr("The page's own icon (default)"), icon: "world", checked: !tr.modelData.icon, run: () => shell.setTab(tr.modelData.id, { icon: "" }) },
+                                                                        { text: I18n.tr("Browse…"), icon: "folder", checked: !!tr.modelData.icon, run: () => { iconPick.id = tr.modelData.id; iconPick.running = true } }]) } } }
+                        Field { id: nameF; x: 66; y: 12; width: 230; icon: "tag"; hint: I18n.tr("Name"); text: tr.modelData.name; onAccepted: tr.keep() }
+                        Field { id: accF; x: 306; y: 12; width: parent.width - 306 - 14 - (keepP.visible ? keepP.width + 8 : 0); icon: "user"; hint: I18n.tr("Account: name, e-mail (your note)"); text: tr.modelData.account || ""; onAccepted: tr.keep() }
+                        Pill { id: keepP; visible: tr.changed; anchors.right: parent.right; anchors.rightMargin: 14; y: 14; icon: "check"; strong: true; text: I18n.tr("Keep"); onPressed: tr.keep() }
+                        Row { x: 66; y: 64; spacing: 8; height: 30
+                            Kind { kind: "web"; anchors.verticalCenter: parent.verticalCenter }
+                            Label { text: tr.modelData.web; color: Theme.dim; font.pixelSize: 12; width: Math.min(implicitWidth, tr.width - 66 - trBtns.width - 50); elide: Text.ElideRight; anchors.verticalCenter: parent.verticalCenter } }
+                        Row { id: trBtns; anchors.right: parent.right; anchors.rightMargin: 14; y: 62; spacing: 6
+                            // whose limits its ring shows: a tool's that is signed in with the same account, or none
+                            Pill { implicitHeight: 32; icon: "gauge"; text: tr.tool !== "" && (shell.agents.services || []).some(x => x.id === tr.tool) ? I18n.tr("Limits: {n}", { n: shell.nameOf(tr.tool) }) : I18n.tr("No limits shown")
+                                   onPressed: { const p = mapToItem(besideMenu, 0, height + 4)
+                                                besideMenu.open(Math.min(p.x, besideMenu.width - 280), p.y, (shell.agents.services || []).map(x => ({ text: I18n.tr(x.name), checked: tr.tool === x.id,
+                                                        hint: ((shell.services.find(y => y.id === x.id) || {}).account || "").split(" · ")[0], run: () => shell.setTab(tr.modelData.id, { usage: x.id }) }))
+                                                    .concat([{ line: true }, { text: I18n.tr("None"), checked: tr.tool === "" || !(shell.agents.services || []).some(x => x.id === tr.tool), run: () => shell.setTab(tr.modelData.id, { usage: "" }) }])) } }
+                            Pill { implicitHeight: 32; icon: "chevron-up"; text: ""; visible: tr.index > 0
+                                   onPressed: { const l = shell.tabbed.slice(); l.splice(tr.index - 1, 0, l.splice(tr.index, 1)[0]); shell.keepTabs(l) } }
+                            Pill { implicitHeight: 32; icon: "chevron-down"; text: ""; visible: tr.index < shell.tabbed.length - 1
+                                   onPressed: { const l = shell.tabbed.slice(); l.splice(tr.index + 1, 0, l.splice(tr.index, 1)[0]); shell.keepTabs(l) } }
+                            Pill { implicitHeight: 32; icon: "trash"; danger: true; text: I18n.tr("Remove"); onPressed: shell.removeTab(tr.modelData.id) } } } }
+                Label { text: I18n.tr("ANOTHER PAGE"); color: Theme.faint; font.pixelSize: 11; font.weight: 700; font.letterSpacing: 0.8 }
+                Row { spacing: 10
+                    Field { id: tabName; width: 220; icon: "tag"; hint: I18n.tr("Name") }
+                    Field { id: tabWeb; width: Math.min(380, webSet.room - 380); icon: "world-www"; hint: "https://perplexity.ai"; onAccepted: tabAdd.pressed() }
+                    Pill { id: tabAdd; icon: "plus"; strong: true; text: I18n.tr("Add")
+                           onPressed: if (shell.addTab(tabName.text, tabWeb.text)) { tabName.text = ""; tabWeb.text = ""; tabBad.visible = false } else tabBad.visible = tabWeb.text.trim() !== "" } }
+                Label { id: tabBad; visible: false; color: Theme.red; font.pixelSize: 12; text: I18n.tr("That is not a web address.") }
+                Pill { icon: "arrow-back-up"; text: I18n.tr("Back to LatteOS's list"); onPressed: shell.keepTabs(shell.defaultTabs) }
+            }
 
-            // a key of one's own, as in VS Code: the service's API answers directly, a conversation and no tools
-            Label { text: I18n.tr("KEYS OF YOUR OWN"); color: Theme.faint; font.pixelSize: 11; font.weight: 700; font.letterSpacing: 0.8 }
-            Label { width: svcPage.room; wrapMode: Text.WordWrap; color: Theme.dim
-                    text: I18n.tr("With a key from the service's own site, its API answers directly: you pay it for what you use. The key is kept in the system's keyring, never in a file.") }
-            Repeater { model: shell.keys.filter(k => !k.server)
-                Rectangle { id: kc; required property var modelData; width: svcPage.room; height: 64; radius: 18; color: Theme.card
-                    Rectangle { x: 16; width: 10; height: 10; radius: 5; color: shell.colour(kc.modelData.id); anchors.verticalCenter: parent.verticalCenter }
-                    Column { x: 38; width: 260; anchors.verticalCenter: parent.verticalCenter; spacing: 2
-                        Label { text: kc.modelData.name; font.weight: 700 }
-                        Label { text: kc.modelData.has ? I18n.tr("A key is kept") : I18n.tr("No key"); color: kc.modelData.has ? Theme.ok : Theme.dim; font.pixelSize: 12 } }
-                    Row { anchors.right: parent.right; anchors.rightMargin: 14; anchors.verticalCenter: parent.verticalCenter; spacing: 8
-                        Field { id: kf; visible: !kc.modelData.has; width: Math.min(360, svcPage.room - 520); icon: "key"; secret: true; hint: I18n.tr("Paste the key…")
-                                onAccepted: { shell.keep(kc.modelData.id, text); text = "" } }
-                        Pill { visible: !kc.modelData.has; icon: "check"; strong: true; text: I18n.tr("Keep"); onPressed: { shell.keep(kc.modelData.id, kf.text); kf.text = "" } }
-                        Pill { visible: kc.modelData.has; icon: "trash"; danger: true; text: I18n.tr("Remove the key"); onPressed: keyer.ask(["forget-key", kc.modelData.id]) } } } }
+            // ── CLI: the services' official tools, signed in once in a terminal ──
+            Scroll {
+                id: cliSet
+                visible: shell.section === "cli"
+                anchors.topMargin: 62
+                Waiting { visible: shell.services.length === 0 && svc.running; text: I18n.tr("Asking the services…"); width: cliSet.room }
+                Label { width: cliSet.room; wrapMode: Text.WordWrap; color: Theme.dim
+                        text: I18n.tr("With an account, the service's official tool answers, signed in once in the terminal: it is what LensGoo's chat, the agents and the limits go through.") }
+                Repeater { model: shell.services.filter(x => x.id !== "local")
+                    Rectangle { id: card; required property var modelData; width: cliSet.room; height: cardCol.implicitHeight + 28; radius: 20; color: Theme.card
+                        Column { id: cardCol; x: 18; y: 14; width: parent.width - 36; spacing: 10
+                            Item { width: parent.width; height: 52
+                                Mark { of: card.modelData.id; glyph: "terminal-2"; size: 48; opacity: card.modelData.installed ? 1 : 0.4; anchors.verticalCenter: parent.verticalCenter }
+                                Column { x: 64; width: parent.width - 64 - cardBtns.width - 12; anchors.verticalCenter: parent.verticalCenter; spacing: 4
+                                    Row { spacing: 8
+                                        Label { text: I18n.tr(card.modelData.name); font.pixelSize: 16; font.weight: 700 }
+                                        Kind { kind: shell.kindOf(card.modelData.id); anchors.verticalCenter: parent.verticalCenter } }
+                                    Label { width: parent.width; elide: Text.ElideRight; color: Theme.dim; font.pixelSize: 12
+                                            text: !card.modelData.installed ? I18n.tr("Not installed yet: Install puts its official tool {tool} on this computer.", { tool: card.modelData.tool })
+                                                : card.modelData.local ? I18n.tr("Answers on this computer; nothing leaves it.")
+                                                : card.modelData.signed === true ? I18n.tr("Signed in") + (card.modelData.account ? " · " + card.modelData.account : "")
+                                                : card.modelData.signed === false ? I18n.tr("Not signed in") : I18n.tr("Installed; sign in once in the terminal.") } }
+                                Row { id: cardBtns; anchors.right: parent.right; anchors.verticalCenter: parent.verticalCenter; spacing: 8
+                                    Rectangle { visible: card.modelData.installed && card.modelData.signed === true; width: 10; height: 10; radius: 5; color: Theme.ok; anchors.verticalCenter: parent.verticalCenter }
+                                    // the service's official tool, installed for this user in a terminal (latte-ai services › install)
+                                    Pill { visible: !card.modelData.installed && (card.modelData.install || "") !== ""; icon: "download"; strong: true; text: I18n.tr("Install")
+                                           onPressed: { shell.inTerminal(["sh", "-c", card.modelData.install]); later.restart() } }
+                                    Pill { visible: card.modelData.installed && card.modelData.login.length > 0 && card.modelData.signed !== true; icon: "login"; strong: true; text: I18n.tr("Sign in")
+                                           onPressed: { shell.inTerminal(card.modelData.login); later.restart() } }
+                                    Pill { visible: card.modelData.installed && card.modelData.logout.length > 0 && card.modelData.signed === true; icon: "logout"; text: I18n.tr("Sign out")
+                                           onPressed: { shell.inTerminal(card.modelData.logout); later.restart() } } } }
+                            ModelRows { width: parent.width; pid: card.modelData.id } } } }
 
-            // servers of one's own: anything that speaks the OpenAI API — llama-server, Ollama, a computer at home
-            Label { text: I18n.tr("SERVERS OF YOUR OWN"); color: Theme.faint; font.pixelSize: 11; font.weight: 700; font.letterSpacing: 0.8 }
-            Repeater { model: shell.keys.filter(k => k.server)
-                Rectangle { id: sc; required property var modelData; width: svcPage.room; height: 58; radius: 18; color: Theme.card
-                    Glyph { x: 18; name: "server"; color: Theme.gold; anchors.verticalCenter: parent.verticalCenter }
-                    Column { x: 48; width: parent.width - 200; anchors.verticalCenter: parent.verticalCenter; spacing: 2
-                        Label { text: sc.modelData.name; font.weight: 700 }
-                        Label { text: sc.modelData.url; color: Theme.dim; font.pixelSize: 12; width: parent.width; elide: Text.ElideRight } }
-                    Pill { anchors.right: parent.right; anchors.rightMargin: 14; anchors.verticalCenter: parent.verticalCenter; icon: "trash"; danger: true; text: I18n.tr("Remove")
-                           onPressed: keyer.ask(["server", "remove", sc.modelData.id]) } } }
-            Row { spacing: 10
-                Field { id: srvName; width: 220; icon: "server"; hint: I18n.tr("Name") }
-                Field { id: srvUrl; width: Math.min(380, svcPage.room - 380); icon: "world-www"; hint: "http://192.168.1.10:8080/v1" }
-                Pill { icon: "plus"; strong: true; text: I18n.tr("Add")
-                       onPressed: if (/^https?:\/\/\S+$/.test(srvUrl.text.trim()) && srvName.text.trim() !== "") { keyer.ask(["server", "add", srvName.text.trim(), srvUrl.text.trim()]); srvName.text = ""; srvUrl.text = "" } } }
+                // LatteOS for the agents: one MCP server, written into each agent's own tool (ROADMAP 10B.43)
+                Label { text: I18n.tr("LATTEOS FOR YOUR AGENTS"); color: Theme.faint; font.pixelSize: 11; font.weight: 700; font.letterSpacing: 0.8 }
+                Rectangle { width: cliSet.room; height: mcpCol.implicitHeight + 32; radius: 18; color: Theme.card
+                    Column { id: mcpCol; x: 18; y: 16; width: parent.width - 36 - 80; spacing: 6
+                        Label { text: I18n.tr("Let the agents see LatteOS"); font.weight: 700 }
+                        Label { width: parent.width; wrapMode: Text.WordWrap; color: Theme.dim; font.pixelSize: 12
+                                text: I18n.tr("Claude Code, Codex and Gemini can then read your conversations kept here, what is left of the limits, and the agents at work, and ask to change small things (the volume, the Wi-Fi…). Nothing is changed before you allow it here.") }
+                        Label { width: parent.width; wrapMode: Text.WordWrap; color: Theme.dim; font.pixelSize: 12; visible: shell.mcp.agents.length > 0
+                                text: shell.mcp.agents.filter(a => a.installed).map(a => a.name + (a.has ? " ✓" : " –")).join("   ") } }
+                    Toggle { on: shell.mcpOn; anchors.right: parent.right; anchors.rightMargin: 18; y: 18; opacity: mcpSet.running ? 0.5 : 1
+                             onFlipped: if (!mcpSet.running) { mcpSet.command = ["latte-mcp", shell.mcpOn ? "remove" : "install"]; mcpSet.running = true } } }
+            }
+
+            // ── API: a key of one's own, as in VS Code: the service's API answers directly, a conversation and no tools ──
+            Scroll {
+                id: apiSet
+                visible: shell.section === "api"
+                anchors.topMargin: 62
+                Label { width: apiSet.room; wrapMode: Text.WordWrap; color: Theme.dim
+                        text: I18n.tr("With a key from the service's own site, its API answers directly: you pay it for what you use. The key is kept in the system's keyring, never in a file.") }
+                // the keyring did not open at sign-in: nothing can be kept in it or read from it
+                Rectangle { visible: shell.keys.length > 0 && shell.keys[0].locked === true; width: apiSet.room; height: lockCol.implicitHeight + 28; radius: 16
+                            color: Qt.rgba(Theme.red.r, Theme.red.g, Theme.red.b, 0.12); border.width: 1; border.color: Theme.red
+                    Glyph { x: 16; y: 16; name: "lock"; color: Theme.red }
+                    Column { id: lockCol; x: 48; y: 14; width: parent.width - 64; spacing: 4
+                        Label { text: I18n.tr("The system's keyring is locked"); font.weight: 800 }
+                        Label { width: parent.width; wrapMode: Text.WordWrap; color: Theme.dim; font.pixelSize: 13
+                                text: I18n.tr("It did not open when you signed in, so the keys kept in it cannot be read. Keeping a key asks for the keyring's own password, which is the one it was made with and need not be your account's.") } } }
+                Repeater { model: shell.keys.filter(k => !k.server)
+                    Rectangle { id: kc; required property var modelData; width: apiSet.room; height: kcCol.implicitHeight + 24; radius: 18; color: Theme.card
+                        property bool swap: false          // a kept key is being replaced
+                        readonly property bool failed: shell.keyError.id === modelData.id
+                        Column { id: kcCol; x: 16; y: 12; width: parent.width - 32; spacing: 8
+                            Item { width: parent.width; height: 44
+                                Mark { of: kc.modelData.id; glyph: "key"; size: 36; anchors.verticalCenter: parent.verticalCenter }
+                                Column { x: 48; width: 230; anchors.verticalCenter: parent.verticalCenter; spacing: 2
+                                    Row { spacing: 8
+                                        Label { text: kc.modelData.name; font.weight: 700 }
+                                        Kind { kind: "api"; anchors.verticalCenter: parent.verticalCenter } }
+                                    Label { color: kc.modelData.has ? Theme.ok : Theme.dim; font.pixelSize: 12
+                                            text: kc.modelData.has ? I18n.tr("A key is kept") + (kc.modelData.tail ? "  ·  …" + kc.modelData.tail : "") : I18n.tr("No key") } }
+                                Row { anchors.right: parent.right; anchors.verticalCenter: parent.verticalCenter; spacing: 8
+                                    Field { id: kf; visible: !kc.modelData.has || kc.swap; width: Math.max(160, Math.min(320, apiSet.room - 620)); icon: "key"; secret: true; hint: I18n.tr("Paste the key…")
+                                            onAccepted: { shell.keep(kc.modelData.id, text); text = ""; kc.swap = false } }
+                                    Pill { visible: kf.visible; icon: "check"; strong: true; busy: keeper.running && keeper.id === kc.modelData.id; text: I18n.tr("Keep"); onPressed: { shell.keep(kc.modelData.id, kf.text); kf.text = ""; kc.swap = false } }
+                                    Pill { visible: kc.modelData.has && !kc.swap; icon: "refresh"; text: I18n.tr("Replace"); onPressed: kc.swap = true }
+                                    Pill { visible: kc.modelData.has; icon: "trash"; danger: true; text: I18n.tr("Remove"); onPressed: keyer.ask(["forget-key", kc.modelData.id]) }
+                                    // where the service makes keys
+                                    Pill { visible: !kc.modelData.has && !!kc.modelData.page; icon: "external-link"; text: I18n.tr("Get a key"); onPressed: Qt.openUrlExternally(kc.modelData.page) } } }
+                            Label { visible: kc.failed; width: parent.width; wrapMode: Text.WordWrap; color: Theme.red; font.pixelSize: 12
+                                    text: shell.keyError.error === "locked" ? I18n.tr("The key was not kept: the system's keyring is locked and did not open.") : I18n.tr("The key was not kept: the system's keyring did not take it.") }
+                            ModelRows { width: parent.width; pid: kc.modelData.id } } } }
+
+                // servers of one's own: anything that speaks the OpenAI API — llama-server, Ollama, a computer at home
+                Label { text: I18n.tr("SERVERS OF YOUR OWN"); color: Theme.faint; font.pixelSize: 11; font.weight: 700; font.letterSpacing: 0.8 }
+                Repeater { model: shell.keys.filter(k => k.server)
+                    Rectangle { id: sc; required property var modelData; width: apiSet.room; height: scCol.implicitHeight + 24; radius: 18; color: Theme.card
+                        Column { id: scCol; x: 16; y: 12; width: parent.width - 32; spacing: 8
+                            Item { width: parent.width; height: 40
+                                Glyph { name: "server"; color: Theme.gold; anchors.verticalCenter: parent.verticalCenter }
+                                Column { x: 32; width: parent.width - 180; anchors.verticalCenter: parent.verticalCenter; spacing: 2
+                                    Row { spacing: 8
+                                        Label { text: sc.modelData.name; font.weight: 700 }
+                                        Kind { kind: "api"; anchors.verticalCenter: parent.verticalCenter } }
+                                    Label { text: sc.modelData.url; color: Theme.dim; font.pixelSize: 12; width: parent.width; elide: Text.ElideRight } }
+                                Pill { anchors.right: parent.right; anchors.verticalCenter: parent.verticalCenter; icon: "trash"; danger: true; text: I18n.tr("Remove")
+                                       onPressed: keyer.ask(["server", "remove", sc.modelData.id]) } }
+                            ModelRows { width: parent.width; pid: sc.modelData.id } } } }
+                Row { spacing: 10
+                    Field { id: srvName; width: 220; icon: "server"; hint: I18n.tr("Name") }
+                    Field { id: srvUrl; width: Math.min(380, apiSet.room - 380); icon: "world-www"; hint: "http://192.168.1.10:8080/v1" }
+                    Pill { icon: "plus"; strong: true; text: I18n.tr("Add")
+                           onPressed: if (/^https?:\/\/\S+$/.test(srvUrl.text.trim()) && srvName.text.trim() !== "") { keyer.ask(["server", "add", srvName.text.trim(), srvUrl.text.trim()]); srvName.text = ""; srvUrl.text = "" } } }
+            }
+
+            // ── what every AI is told first: who the user is, how they want to be answered ─────────────────────
+            Scroll {
+                id: rulePage
+                visible: shell.section === "instructions"
+                anchors.topMargin: 62
+                Label { width: rulePage.room; wrapMode: Text.WordWrap; color: Theme.dim
+                        text: I18n.tr("What you write here goes with every question, to every AI, in LensGoo too: who you are, what you know, how you want to be answered. For example: “I am new to Linux, explain simply. Answer in Slovak.”") }
+                Rectangle { width: rulePage.room; height: 260; radius: 16; color: Theme.card; border.width: 1; border.color: ruleText.activeFocus ? Theme.gold : Theme.line
+                    Flickable { anchors.fill: parent; anchors.margins: 14; clip: true; contentHeight: ruleText.implicitHeight; boundsBehavior: Flickable.StopAtBounds
+                        TextEdit { id: ruleText; width: parent.width; wrapMode: Text.Wrap; color: Theme.cream; font.family: Theme.font; font.pixelSize: 14; selectByMouse: true; selectionColor: Theme.coffee } } }
+                Row { spacing: 10
+                    Pill { icon: "check"; strong: true; text: rulePage.saved ? I18n.tr("Kept") : I18n.tr("Keep"); onPressed: { rules.setText(ruleText.text.trim() + "\n"); rulePage.saved = true; keptAgain.restart() } }
+                    Label { text: I18n.tr("{n} of 4000 characters", { n: ruleText.text.length }); color: ruleText.text.length > 4000 ? Theme.red : Theme.dim; font.pixelSize: 12; anchors.verticalCenter: parent.verticalCenter } }
+                property bool saved: false
+                Timer { id: keptAgain; interval: 1800; onTriggered: rulePage.saved = false }
+
+                // LatteOS's skill for the agents (as Omarchy's): the user's own copy, which their agents read; Restore
+                // brings back LatteOS's own (the user's kept beside it)
+                Item { width: 1; height: 12 }
+                Label { text: I18n.tr("LatteOS skill for the agents"); font.pixelSize: 17; font.weight: 800 }
+                Label { width: rulePage.room; wrapMode: Text.WordWrap; color: Theme.dim
+                        text: I18n.tr("What Claude Code, Codex and Gemini know about LatteOS when you ask them for help with this computer: how it is built, what may be changed and how, and that they plan first and ask. Add your own rules at the end.") }
+                Rectangle { width: rulePage.room; height: 360; radius: 16; color: Theme.card; border.width: 1; border.color: skillText.activeFocus ? Theme.gold : Theme.line
+                    Flickable { id: skillView; anchors.fill: parent; anchors.margins: 14; clip: true; contentHeight: skillText.implicitHeight; boundsBehavior: Flickable.StopAtBounds
+                        TextEdit { id: skillText; width: parent.width; wrapMode: Text.Wrap; color: Theme.cream; font.family: "monospace"; font.pixelSize: 13; selectByMouse: true; selectionColor: Theme.coffee } } }
+                Row { spacing: 10
+                    Pill { icon: "check"; strong: true; text: rulePage.skillSaved ? I18n.tr("Kept") : I18n.tr("Keep"); onPressed: { skillFile.setText(skillText.text); rulePage.skillSaved = true; skillKept.restart() } }
+                    Pill { icon: "arrow-back-up"; text: I18n.tr("Restore LatteOS's own"); onPressed: skillReset.running = true } }
+                property bool skillSaved: false
+                Timer { id: skillKept; interval: 1800; onTriggered: rulePage.skillSaved = false }
+            }
         }
     }
 }

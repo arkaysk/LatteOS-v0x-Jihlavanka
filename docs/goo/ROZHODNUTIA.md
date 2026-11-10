@@ -452,3 +452,12 @@ Nové rozhodnutie: jeden riadok sem (dátum, čo, prečo) a oprava platného zne
 | LensShore je iba nástroj (hľadanie, otázky, ako Raycast, rozšírený o AI) s klikateľným náhľadom na dianie v Kaviarni; práca agentov sa spravuje a potvrdzuje priamo v LensAI | áno (používateľ, 10. 11.) — ROADMAP 10B.36, 10B.43 |
 | Farma Kaviarne: ak je kód clodfarm (MIT) dobrý, prevezme sa (nahrádza „clodfarm je iba skúsenosť“ z 2. 11.) | áno (používateľ, 10. 11.) — ROADMAP 10B.40 |
 | Vzhľad Kaviarne: žáner hier s kaviarňou a čašníčkami (izometrická miestnosť, karty postáv), vlastná pôvodná grafika a postavy, bez NSFW; nie kópia konkrétnej hry | áno (používateľ, 10. 11.) — ROADMAP 10B.36 |
+
+## 10. 11. 2026 — LensAI: druhy prístupu a Lokálne LLM (používateľ)
+
+- Tri druhy prístupu k AI sa odlišujú značkou za menom: **zelená web, zlatá CLI, červená API** (farby grafov; zlatá je pevná, lebo téma z tapety môže mať „zlatú“ červenú).
+- Nastavenia LensAI majú časti **Web · CLI · API · Pokyny**; modely do četu LensGoo/LensShore sa zapínajú pri svojej službe. Stránka **Porovnať zrušená**.
+- **„Tento počítač“ → „Lokálne LLM“**, cieľ je funkčnosť LM Studia: nastavenie načítania modelu, odhad pamäte oproti hardvéru, sťahovanie s priebehom v Mojich modeloch.
+- Web: tá istá služba smie byť viackrát (iný účet = iná záložka s vlastným profilom); prsteň limitu patrí záložke, ktorej to používateľ určí.
+- Účet pri webovej záložke je **poznámka používateľa**: LensAI zo stránok nečíta (pravidlo 10B.35) — čaká na potvrdenie používateľa.
+
