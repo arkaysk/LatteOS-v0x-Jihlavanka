@@ -1055,7 +1055,7 @@ end
 local function quick_rows(s)
     s = s:lower()
     local out, n = {}, nil
-    local function add(id, a) out[#out + 1] = skills.row(id, a, function() render(true) end) end
+    local function add(id, a) out[#out + 1] = skills.row(id, a, function() render(true) end) or nil end
     n = word_then_number("brightness", s)
     if n then add("brightness", { level = n }) end
     n = word_then_number("volume", s)
@@ -1174,7 +1174,11 @@ end
 local function read_chats(done)
     run("latte-ai", { "chats" }, function(out)
         local ok, list = pcall(json.decode, out or "")
-        shore.chats = ok and type(list) == "table" and list or {}
+        shore.chats = {}
+        -- the user's own: what an app asked for itself (Chapolera's tags) is in LensAI, under its app
+        for _, c in ipairs(ok and type(list) == "table" and list or {}) do
+            if not c.machine then shore.chats[#shore.chats + 1] = c end
+        end
         if done then done() end
     end)
 end
@@ -1478,7 +1482,9 @@ local function shore_rows()
                 rows[#rows + 1] = { para = true, label = (m.text:gsub("```latte%s*\n.-```", ""):gsub("%s+$", "")), hover_copy = m.text, right = menu }
                 for j, s in ipairs(suggested(m.text)) do
                     local key = i .. ":" .. j
-                    if s.skill then rows[#rows + 1] = skills.row(s.skill.skill, s.skill, function() render(true) end) or { label = tr("This cannot be done here"), line2 = tostring(s.skill.skill), glyph = "alert-triangle", quiet = true }
+                    if s.skill then
+                        local r = skills.row(s.skill.skill, s.skill, function() render(true) end)       -- nil: latte-skill is still asked
+                        if r ~= nil then rows[#rows + 1] = r or { label = tr("This cannot be done here"), line2 = tostring(s.skill.skill), glyph = "alert-triangle", quiet = true } end
                     elseif s.cmd then rows[#rows + 1] = { label = shore.sure[key] and tr("Really run it?") or tr("Run in a terminal"), line2 = s.cmd:sub(1, 60), glyph = "terminal-2", danger = shore.sure[key] == true, keep = not shore.sure[key],
                                                       run = function() if shore.sure[key] then then_do(function() open.shell(s.cmd) end) else shore.sure[key] = true render(true) end end }
                     else rows[#rows + 1] = { label = tr("Open the link"), line2 = s.url, glyph = "world", run = function() then_do(function() open.url(s.url) end) end } end
@@ -1889,7 +1895,6 @@ function M.start(d)
     sys.watch("apps", function(list)
         apps, by_id = list or {}, {}
         for _, a in ipairs(apps) do if a.id then by_id[a.id] = a end end
-        skills.know_apps(apps)
         learn_born()
         if card.id() == "lens" then render(true) end
     end)

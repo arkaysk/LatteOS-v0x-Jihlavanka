@@ -56,6 +56,13 @@
 #                                     was made (copied, linked, a new folder) goes to the Trash, what went to the Trash
 #                                     comes back from it. Every command that changes something writes how to undo it
 #                                     to ~/.local/state/latteos/files-undo, so the desktop and every window share it
+#   latte-files redo                  does again what undo last took back, until something new is done
+#   latte-files note KIND WAS IS      writes into the journal what another command did and can put back: KIND skill,
+#                                     WAS and IS each "ID JSON" for `latte-skill do` (undo does WAS, redo IS)
+#   latte-files history [clear]       what undo and redo would do next, nearest first: `undo` or `redo`, a tab, what it
+#                                     was called (LATTE_UNDO_LABEL when it was done);  clear: forgets both
+#                                     An app with a history of its own (LensAI) sets LATTE_UNDO=NAME: its journal is
+#                                     files-undo-NAME, and its undo touches nothing done elsewhere; LATTE_UNDO=- keeps none
 #   latte-files thumb FILE            a small picture of a PDF's first page or of a video (256 px), kept in
 #                                     ~/.cache/latteos/thumbs while the file is unchanged; says where it is
 #   latte-files look FILE OUT         a picture of a PDF's first page or a frame of a video, into OUT (a .png)
@@ -80,8 +87,10 @@ free_name() {   # DIR NAME: that name, or the first "NAME (n)" nothing has yet
     printf '%s' "$t"
 }
 # how to undo what this run does: lines of ID, KIND (moved, made, trashed), WHERE IT WAS, WHERE IT IS
-log="${XDG_STATE_HOME:-$HOME/.local/state}/latteos/files-undo"; id="$(date +%s%N)"
-did() { mkdir -p "$(dirname "$log")"; printf '%s\t%s\t%s\t%s\n' "$id" "$1" "$2" "${3:-}" >> "$log"; }
+# and, for a history that is shown, WHAT IT WAS CALLED. Something new done ends what could be done again.
+log="${XDG_STATE_HOME:-$HOME/.local/state}/latteos/files-undo${LATTE_UNDO:+-$LATTE_UNDO}"; id="$(date +%s%N)"
+did() { [ "${LATTE_UNDO:-}" = - ] && return 0; mkdir -p "$(dirname "$log")"; rm -f -- "$log.redo"
+        printf '%s\t%s\t%s\t%s\t%s\n' "$id" "$1" "$2" "${3:-}" "$(printf '%s' "${LATTE_UNDO_LABEL:-}" | tr '\t\n' '  ')" >> "$log"; }
 # SRC DIR: where SRC goes in DIR. When the name is taken there, by $LATTE_CONFLICT: both (a free name beside it, the
 # default: nothing is lost), replace (the one there goes to the Trash), older (replaced only when it is older), skip.
 # Nothing printed: skipped.
@@ -432,14 +441,15 @@ job)    how="$1"; d="$2"; shift 2
 tree)   df -B1 --output=size,avail -- "$1" 2>/dev/null | tail -n1 | awk '{ printf "disk\t%s\t%s\n", $1, $2 }'
         find "$1" -xdev -mindepth 1 -maxdepth 3 -type d -printf 'dir\t%p\n' 2>/dev/null
         du -abx -d 3 -- "$1" 2>/dev/null ;;
-undo)   [ -s "$log" ] || exit 1
-        last="$(tail -n1 "$log" | cut -f1)"
+undo|redo)
+        # one journal for each way: what is taken back goes to the other, and comes from it when done again
+        from="$log"; to="$log.redo"; order=tac
+        [ "$what" = redo ] && { from="$log.redo"; to="$log"; order=cat; }
+        [ -s "$from" ] || exit 1
+        last="$(tail -n1 "$from" | cut -f1)"
+        # out of the Trash to where it was: the newest of that name (not `gio trash --list`: gvfs's list lags behind)
         # ponytail: only the home Trash; what went to another disk's .Trash-UID does not come back this way
-        grep "^$last	" "$log" | tac | while IFS="$(printf '\t')" read -r _ kind was is; do
-            case "$kind" in
-            moved)   [ -e "$was" ] || mv -n -- "$is" "$was" ;;
-            made)    { [ -e "$was" ] || [ -L "$was" ]; } && gio trash -- "$was" ;;
-            trashed) python3 -I - "$was" "${XDG_DATA_HOME:-$HOME/.local/share}/Trash" <<'PY'
+        restore() { python3 -I - "$1" "${XDG_DATA_HOME:-$HOME/.local/share}/Trash" <<'PY'
 import glob, os, shutil, sys, urllib.parse
 want, trash = sys.argv[1], sys.argv[2]
 best = None
@@ -453,10 +463,25 @@ if best and not os.path.lexists(want):
     shutil.move(os.path.join(trash, "files", os.path.basename(best[0])[:-len(".trashinfo")]), want)
     os.remove(best[0])
 PY
-            ;;
+        }
+        grep "^$last	" "$from" | $order | while IFS="$(printf '\t')" read -r _ kind was is _; do
+            case "$what:$kind" in
+            undo:skill)   latte-skill do "${was%% *}" "${was#* }" ;;
+            redo:skill)   latte-skill do "${is%% *}" "${is#* }" ;;
+            undo:moved)   [ -e "$was" ] || mv -n -- "$is" "$was" ;;
+            redo:moved)   [ -e "$is" ] || mv -n -- "$was" "$is" ;;
+            undo:made|redo:trashed)  { [ -e "$was" ] || [ -L "$was" ]; } && gio trash -- "$was" ;;
+            undo:trashed|redo:made)  restore "$was" ;;
             esac
         done
-        grep -v "^$last	" "$log" | tail -n 400 > "$log.new"; mv -- "$log.new" "$log" ;;
+        grep "^$last	" "$from" >> "$to"
+        grep -v "^$last	" "$from" | tail -n 400 > "$from.new"; mv -- "$from.new" "$from" ;;
+note)   [ "$1" = skill ] && [ $# -eq 3 ] || exit 2; did "$1" "$2" "$3" ;;
+history) [ "${1:-}" = clear ] && { rm -f -- "$log" "$log.redo"; exit 0; }
+        for way in undo redo; do
+            f="$log"; [ "$way" = redo ] && f="$log.redo"
+            [ -s "$f" ] && tac -- "$f" | awk -F'\t' -v way="$way" '!seen[$1]++ { print way "\t" $5 }'
+        done; exit 0 ;;
 thumb)  f="$1"; m="$(stat -c %Y -- "$f" 2>/dev/null)" || exit 1
         d="${XDG_CACHE_HOME:-$HOME/.cache}/latteos/thumbs"; mkdir -p "$d"
         t="$d/$(printf '%s\t%s' "$f" "$m" | md5sum | cut -c1-32).png"

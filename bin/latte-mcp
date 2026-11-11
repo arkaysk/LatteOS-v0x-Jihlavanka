@@ -9,6 +9,7 @@ It knows nothing itself: each tool is a thin cover over a command that is there 
 It reads: the conversations kept in LensAI, who can answer and what is left of the limits, the agents at work and the
 windows open. And it changes what bin/latte-skill names (the Wi-Fi, the volume, the brightness…), each change only
 after the person allowed it in LensAI: the confirmation is LatteOS's, never the agent's own.
+`ask` puts one question to another AI (latte-ai send): the one asked gets no tools and cannot ask on.
 With the AI turned off (Settings › AI) it serves nothing.
 """
 import json
@@ -39,12 +40,12 @@ def turned_off():
         return False
 
 
-def told(argv, lines=False, timeout=30):
+def told(argv, lines=False, timeout=30, **env):
     """What a command of LatteOS answers, as JSON (or a JSON object a line); an error is said, not thrown at the agent."""
     if turned_off():
         return {"error": "the AI of LatteOS is turned off (Settings › AI)"}
     try:
-        out = subprocess.run(argv, capture_output=True, text=True, timeout=timeout, env=dict(os.environ, PATH=SEARCH)).stdout
+        out = subprocess.run(argv, capture_output=True, text=True, timeout=timeout, env=dict(os.environ, PATH=SEARCH, **env)).stdout
         return [json.loads(l) for l in out.splitlines() if l.strip()] if lines else json.loads(out)
     except (OSError, ValueError, subprocess.TimeoutExpired) as e:
         return {"error": "%s: %s" % (argv[0], e)}
@@ -130,6 +131,17 @@ def serve():
         except AttributeError:
             who = "AI"
         return told(["latte-skill", "ask", skill, json.dumps(args), "--by", who], timeout=150)
+
+    @server.tool()
+    def ask(provider: str, model: str, question: str) -> dict:
+        """Asks another AI of `providers` (its id, and the id of one of its models) one question and gives its answer:
+        a second opinion, or what that one knows or does better. One question, no conversation. It uses up the
+        user's limit with that service and the user sees who was asked and what: do not pass on what the user
+        would not send to that service, and do not ask what you can answer yourself."""
+        if os.environ.get("LATTE_NO_TOOLS"):
+            return {"error": "an AI that another AI asked answers itself: it cannot ask on"}
+        r = told(["latte-ai", "send", "new", provider, model, question, "--from", "ask"], timeout=310, LATTE_NO_TOOLS="1")
+        return {k: r[k] for k in ("answer", "ok") if k in r} if isinstance(r, dict) and "answer" in r else r
 
     server.run()
 

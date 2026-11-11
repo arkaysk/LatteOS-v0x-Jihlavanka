@@ -56,6 +56,13 @@ ShellRoot {
     readonly property var mine: chats.filter(c => !c.machine)          // not what a program asked for its own work (latte-ai MACHINE)
     readonly property var shown: mine.filter(c => (only === "" || c.provider === only) && (find === "" || c.title.toLowerCase().includes(find.toLowerCase())))
     readonly property var groups: { const g = {}; shown.forEach(c => (g[c.provider] = g[c.provider] || []).push(c)); return Object.keys(g).map(p => ({ id: p, chats: g[p] })) }
+    // the tools of LatteOS an answer used (latte-ai, "used"): said beside who answered — and whom it asked, by name
+    function usedWords(used) {
+        if (!used || !used.length) return ""
+        const said = []
+        for (const u of used) { const w = u.tool === "ask" ? I18n.tr("asked {n}", { n: shell.nameOf(u.args.provider) + " · " + shell.modelName(u.args.provider, u.args.model) }) : I18n.tr("used {n}", { n: u.tool }); if (said.indexOf(w) < 0) said.push(w) }
+        return "  ·  " + said.join(", ")
+    }
     readonly property var places: ({ lensai: "LensAI", lensgoo: "LensGoo", lensshore: "LensShore" })      // where a conversation began ("from")
     function when(iso) {
         const d = new Date(iso), now = new Date()
@@ -68,6 +75,7 @@ ShellRoot {
         property string buf: ""
         signal done()
         function ask(args) { running = false; command = ["latte-ai"].concat(args); running = true }
+        environment: win.undoEnv             // what it deletes can be taken back in this window (AppWindow.undoName)
         stdout: StdioCollector { onStreamFinished: q.buf = this.text }
         onExited: { try { q.data = JSON.parse(q.buf) } catch (e) { q.data = null } q.done() }
     }
@@ -202,6 +210,7 @@ ShellRoot {
     function drop(what) { dropper.command = ["latte-ai", "local", "cancel", what]; dropper.running = true }
     Process { id: getter
         stdout: SplitParser { onRead: line => { let m = null; try { m = JSON.parse(line) } catch (e) { return }
+            if (m.error) { shell.getFailed = { file: shell.getting ? shell.getting.file : "", error: m.error }; return }
             if (!m.total) return
             const now = Date.now(); let speed = shell.getting ? shell.getting.speed || 0 : 0
             if (shell.gotAt === 0 || m.got < shell.gotWas) { shell.gotAt = now; shell.gotWas = m.got }       // the first word, or the next part of a model in parts
@@ -211,10 +220,13 @@ ShellRoot {
         onExited: { const was = shell.getting; shell.getting = null
                     if (shell.dropping !== "") { shell.drop(shell.dropping); shell.dropping = "" } else dlq.ask(["downloads"])
                     localq.ask(["recommend"]); localModels.ask(["models", "measured"]); if (shell.hfRepo) hfFiles.ask(["files", shell.hfRepo]); who.ask(["providers", "all"]); modelq.ask(["models"]) } }
-    function fetch(args, file) { if (getter.running) return; gotAt = 0; gotWas = 0; getting = { file: file, got: 0, total: 0, speed: 0 }; getter.command = ["latte-ai", "local"].concat(args); getter.running = true }
+    property var getFailed: null               // the download that was not kept, and why: { file, error } (fingerprint: it did not match the one published)
+    function getWhy(runtime) { const f = getFailed; if (!f || (f.file === "llama.cpp") !== runtime) return ""
+        return f.error === "fingerprint" ? I18n.tr("{n} was not kept: what came does not match the fingerprint published for it. Try again.", { n: f.file }) : I18n.tr("{n} was not downloaded: {m}", { n: f.file, m: f.error }) }
+    function fetch(args, file) { if (getter.running) return; getFailed = null; gotAt = 0; gotWas = 0; getting = { file: file, got: 0, total: 0, speed: 0 }; getter.command = ["latte-ai", "local"].concat(args); getter.running = true }
     function size(n) { return n < 1e9 ? Math.round(n / 1e6) + " MB" : gb(n) }
     function openLocal() { page = "local"; localq.ask(["recommend"]); localModels.ask(["models", "measured"]); dlq.ask(["downloads"]); modelq.ask(["models"]) }
-    Process { id: localSet; onExited: { localq.ask(["recommend"]); localModels.ask(["models", "measured"]); modelq.ask(["models"]) } }
+    Process { id: localSet; environment: win.undoEnv; onExited: { win.undoLook(); localq.ask(["recommend"]); localModels.ask(["models", "measured"]); modelq.ask(["models"]) } }
     function gb(n) { return (n / 1e9).toFixed(n >= 1e10 ? 0 : 1) + " GB" }
     readonly property var fits: ({ gpu: { word: QT_TR_NOOP("Full GPU offload"), color: "#4cc38a" }, partial: { word: QT_TR_NOOP("Partial GPU offload"), color: "#f7c873" },
                                    cpu: { word: QT_TR_NOOP("On the processor"), color: "#7aa7ff" }, "too-big": { word: QT_TR_NOOP("Likely too large for this computer"), color: "#e5484d" } })
@@ -243,7 +255,8 @@ ShellRoot {
               stdout: StdioCollector { onStreamFinished: { try { shell.asks = JSON.parse(this.text) } catch (e) { shell.asks = [] } } } }
     Timer { interval: 1500; repeat: true; running: true; triggeredOnStart: true; onTriggered: if (!asksq.running) asksq.running = true }
     Process { id: asksSay; onExited: asksq.running = true }
-    function answer(req, word) { asksSay.command = ["latte-skill", "answer", req, word]; asksSay.running = true; asks = asks.filter(a => a.req !== req) }
+    function answer(req, word) { asksSay.command = ["latte-skill", "answer", req, word]; asksSay.running = true; asks = asks.filter(a => a.req !== req); undoSoon.restart() }
+    Timer { id: undoSoon; interval: 2500; onTriggered: win.undoLook() }      // what was allowed is done by the one that asked, a moment later: then it can be taken back here
     Ask { id: keyq; onDone: shell.keys = data || [] }
     Ask { id: keyer; onDone: { shell.keyError = { id: "", error: "" }; keyq.ask(["keys"]); who.ask(["providers", "all"]); modelq.ask(["models"]) } }
     property var keys: []                      // the services one can bring a key to, and the user's own servers
@@ -279,14 +292,18 @@ ShellRoot {
         ask(["again", open, useProvider, useModel].concat(effort ? ["--effort", effort] : []))
     }
     function reload() { list.ask(["chats"]); if (open !== "") one.ask(["chat", open]) }
-    Ask { id: forget; onDone: { shell.open = ""; shell.chat = null; shell.page = "all"; list.ask(["chats"]) } }
+    Ask { id: forget; onDone: { shell.open = ""; shell.chat = null; shell.page = "all"; list.ask(["chats"]); win.undoLook() } }
     function choose(id) { open = id; page = "chats"; chat = null; one.ask(["chat", id]) }
     // a command to sign in or out runs in a terminal: the tool asks there what it needs
     function inTerminal(argv) { Quickshell.execDetached(["foot", "-e", "sh", "-c", argv.map(a => "'" + a.replace(/'/g, "'\\''") + "'").join(" ") + "; echo; read -p '" + I18n.tr("Press Enter to close") + "' x"]) }
     Timer { id: later; interval: 2500; onTriggered: svc.ask(["services"]) }
     // an install in its terminal takes a while: the services are asked again while their page is open
     Timer { interval: 10000; repeat: true; running: shell.page === "lensai" && shell.section === "cli"; onTriggered: if (!svc.running) svc.ask(["services"]) }
+    // the history is this window's: a new window starts anew, and the models the last one set aside are gone
+    // ponytail: a second LensAI window open at once would end the first one's history too
+    Process { id: fresh; command: ["sh", "-c", "LATTE_UNDO=lensai latte-files history clear; latte-ai local purge"]; onExited: win.undoLook() }
     Component.onCompleted: {
+        fresh.running = true
         list.ask(["chats"]); who.ask(["providers", "all"]); svc.ask(["services"]); keyq.ask(["keys"]); helpersq.ask(["helpers"])      // helpers: whether the AI is on
         if (["all", "chats", "agents", "helpers", "local", "lensai"].indexOf(words[0]) >= 0) page = words[0] === "helpers" ? "agents" : words[0]      // helpers: a part of the agents' page now
         const part = ({ services: "cli", models: "cli", keys: "api", instructions: "instructions", lensai: words[1] || "web" })[words[0]]      // what were pages of their own are parts of the settings
@@ -295,7 +312,7 @@ ShellRoot {
         if (page !== "home") agentsq.ask(["agents"])             // the rings of the tabs show what is left
         if (page === "home") lookAround()
         if (page === "local") openLocal()
-        if (words[0] && (page === "chats" || (page === "home" && words[0] !== "home"))) choose(words[0])        // a conversation by its id
+        if (/^[0-9a-f]{12}$/.test(words[0] || "")) choose(words[0])        // a conversation by its id (never the page's own word: `chats` is a new one)
     }
 
     // what the conversation goes on with: its own service and model, or the first there is for a new one
@@ -392,7 +409,14 @@ ShellRoot {
     }
 
     AppWindow {
+        id: win
         title: I18n.tr("LensAI")
+        // what is deleted here can be taken back here (ROADMAP 10B.48): a conversation comes back from the Trash, a
+        // model from beside the models, where it waits until this window is done
+        undoName: "lensai"
+        undoWord: l => l.indexOf("chat:") === 0 ? I18n.tr("Conversation “{n}” deleted", { n: l.slice(5) })
+                     : l.indexOf("model:") === 0 ? I18n.tr("Model {n} deleted", { n: l.slice(6) }) : l
+        onUndone: { list.ask(["chats"]); localq.ask(["recommend"]); localModels.ask(["models", "measured"]); modelq.ask(["models"]) }
         heading: shell.page === "lensai" ? I18n.tr("Settings") : shell.page === "web" ? (shell.tabbed.find(t => t.id === shell.tab) || { name: "" }).name : shell.page === "home" ? I18n.tr("Overview") : shell.page === "all" ? I18n.tr("All conversations") : shell.page === "agents" ? I18n.tr("Agents") : shell.page === "local" ? I18n.tr("Local LLMs") : (shell.chat ? shell.chat.title : I18n.tr("Conversations"))
         implicitWidth: 1120; implicitHeight: 760
         ground: shell.glassy ? "transparent" : Theme.ground
@@ -456,11 +480,11 @@ ShellRoot {
                 Nav { text: I18n.tr("Agents"); icon: "robot"; on: shell.page === "agents"; onPressed: { shell.page = "agents"; agentsq.ask(["agents"]); helpersq.ask(["helpers"]) } }
                 Nav { text: I18n.tr("Local LLMs"); icon: "cpu"; on: shell.page === "local"; onPressed: shell.openLocal() }
                 Nav { text: I18n.tr("Settings"); icon: "settings"; on: shell.page === "lensai"; onPressed: shell.openSection(shell.section) }
+                Nav { text: I18n.tr("AI Cursor (coming in 2027)"); icon: "pointer"; off: true }      // ROADMAP 10B.34
             }
         ]
 
         // ── a service's own page, in its tab (ROADMAP 10B.35) ───────────────────────────────────────────────
-                Nav { text: I18n.tr("AI Cursor (coming in 2027)"); icon: "pointer"; off: true }      // ROADMAP 10B.34
         Loader { id: webTabs; anchors.fill: parent; active: shell.web; visible: shell.page === "web"
                  source: "aicenter/WebTabs.qml"
                  Binding { target: webTabs.item; property: "current"; value: shell.page === "web" ? shell.tab : ""; when: webTabs.item !== null }
@@ -479,16 +503,19 @@ ShellRoot {
         // ── the counter: a change an AI asks for, over whatever page is open; nothing is done before the person's yes ──
         Column { z: 40; anchors.top: parent.top; anchors.topMargin: 12; anchors.horizontalCenter: parent.horizontalCenter; spacing: 8; width: Math.min(parent.width - 48, 620)
             Repeater { model: shell.asks
-                Rectangle { id: ak; required property var modelData; width: parent.width; height: akCol.implicitHeight + 28; radius: 18; color: Theme.raised; border.width: 2; border.color: Theme.gold
+                Rectangle { id: ak; required property var modelData; property bool armed: false; width: parent.width; height: akCol.implicitHeight + 28; radius: 18; color: Theme.raised; border.width: 2; border.color: Theme.gold
                     MouseArea { anchors.fill: parent }
                     Column { id: akCol; x: 18; y: 14; width: parent.width - 36 - akBtns.width - 12; spacing: 4
                         Label { text: I18n.tr("{who} asks to change this computer", { who: ak.modelData.by }); color: Theme.gold; font.pixelSize: 12; font.weight: 700 }
                         Label { width: parent.width; wrapMode: Text.WordWrap; text: ak.modelData.label; font.pixelSize: 16; font.weight: 800 }
                         Label { width: parent.width; wrapMode: Text.WordWrap; color: Theme.dim; font.pixelSize: 13
-                                text: ak.modelData.what + ": " + (ak.modelData.from ? ak.modelData.from + " → " : "") + ak.modelData.to } }
+                                text: ak.modelData.what + ": " + (ak.modelData.from ? ak.modelData.from + " → " : "") + ak.modelData.to }
+                        // what can lose work is allowed twice: the second time it says what will be lost
+                        Label { visible: ak.armed; width: parent.width; wrapMode: Text.WordWrap; color: Theme.red; font.pixelSize: 13; font.weight: 700; text: ak.modelData.warn || "" } }
                     Row { id: akBtns; anchors.right: parent.right; anchors.rightMargin: 14; anchors.verticalCenter: parent.verticalCenter; spacing: 8
                         Pill { implicitHeight: 36; icon: "x"; text: I18n.tr("Refuse"); onPressed: shell.answer(ak.modelData.req, "no") }
-                        Pill { implicitHeight: 36; icon: "check"; strong: true; text: I18n.tr("Allow"); onPressed: shell.answer(ak.modelData.req, "yes") } } } } }
+                        Pill { implicitHeight: 36; icon: "check"; strong: true; danger: ak.armed; text: ak.armed ? I18n.tr("Really? Press once more") : I18n.tr("Allow")
+                               onPressed: if (ak.modelData.risky && !ak.armed) ak.armed = true; else shell.answer(ak.modelData.req, "yes") } } } } }
 
         // ── the AI turned off (Settings › AI): LensAI asks nobody, and says so over whatever page it is on ─────
         Rectangle { anchors.fill: parent; z: 50; visible: !shell.helpers.ai; color: Theme.ground
@@ -527,7 +554,7 @@ ShellRoot {
             id: chatPane
             anchors.fill: parent
             visible: shell.page === "chats"
-            Rectangle { anchors.fill: parent; anchors.margins: 8; radius: 16; color: shell.look.page; opacity: shell.glassy ? [1, 0.9, 0.8, 0.68, 0.55][Theme.glassLevel] : 1 }
+            Rectangle { anchors.fill: parent; anchors.margins: 8; radius: 16; color: shell.look.page; opacity: shell.glassy ? [1, 0.95, 0.9, 0.85, 0.8][Theme.glassLevel] : 1 }
             ListView {
                 id: talk
                 anchors.fill: parent; anchors.bottomMargin: 130
@@ -537,7 +564,7 @@ ShellRoot {
                 delegate: Item { id: msg; required property var modelData; required property int index; width: talk.width; height: bubble.height + 22 + (acts.visible ? 30 : 0)
                     readonly property bool mine: modelData.role === "user"
                     readonly property bool last: index === talk.count - 1 || (mine && index === talk.count - 2)
-                    Label { x: msg.mine ? talk.width - 28 - width : 28; text: msg.mine ? I18n.tr("You") : shell.nameOf(msg.modelData.provider) + " · " + shell.modelName(msg.modelData.provider, msg.modelData.model)
+                    Label { x: msg.mine ? talk.width - 28 - width : 28; text: msg.mine ? I18n.tr("You") : shell.nameOf(msg.modelData.provider) + " · " + shell.modelName(msg.modelData.provider, msg.modelData.model) + shell.usedWords(msg.modelData.used)
                             color: shell.style === "own" ? (msg.mine ? Theme.gold : shell.colour(msg.modelData.provider)) : shell.look.dim; font.pixelSize: 11; font.weight: 700 }
                     Rectangle { id: bubble; y: 20; x: msg.mine ? talk.width - 28 - width : 28; width: Math.min(talk.width * 0.78, said.implicitWidth + 28); height: said.implicitHeight + 22; radius: 16
                         color: msg.mine ? shell.look.ubg : (shell.style === "own" ? Theme.card : "transparent")
@@ -876,10 +903,6 @@ ShellRoot {
                         Flow { width: parent.width; spacing: 8
                             Repeater { model: shell.agents.ideas || []
                                 Pill { required property var modelData; implicitHeight: 30; icon: "sparkles"; text: I18n.tr(modelData); onPressed: shell.doIt(I18n.tr(modelData), "") } } } } }
-                // one section per service: its mark, name and plan, then a line per limit window
-                Repeater { model: shell.agents.services || []
-                    Rectangle { id: sec; required property var modelData; width: agentCol.width; height: secCol.implicitHeight + 32; radius: 16; color: Theme.card; border.width: 1; border.color: Theme.line
-                        readonly property string mark: ({ claude: "claude", gemini: "gemini", chatgpt: "openai", grok: "grok", mistral: "mistral", copilot: "githubcopilot" })[modelData.id] || ""
                 // the agents in this session's terminals, as pleamar-wm tells it (`pleamar-wm agents`), read only
                 Label { text: I18n.tr("IN THE TERMINALS"); color: Theme.faint; font.pixelSize: 11; font.weight: 700; font.letterSpacing: 0.8 }
                 Repeater { model: wmAgents.list
@@ -893,6 +916,10 @@ ShellRoot {
                                 color: ag.modelData.state === "asking" ? Theme.gold : Theme.dim
                                 text: ag.modelData.state === "asking" ? I18n.tr("waits for you") : ag.modelData.state === "working" ? I18n.tr("works") : I18n.tr("ready") } } }
                 Label { visible: wmAgents.list.length === 0; text: I18n.tr("No agent at work in a terminal."); color: Theme.dim }
+                // one section per service: its mark, name and plan, then a line per limit window
+                Repeater { model: shell.agents.services || []
+                    Rectangle { id: sec; required property var modelData; width: agentCol.width; height: secCol.implicitHeight + 32; radius: 16; color: Theme.card; border.width: 1; border.color: Theme.line
+                        readonly property string mark: ({ claude: "claude", gemini: "gemini", chatgpt: "openai", grok: "grok", mistral: "mistral", copilot: "githubcopilot" })[modelData.id] || ""
                         Column { id: secCol; x: 18; y: 16; width: parent.width - 36; spacing: 10
                             Row { spacing: 12; height: 32
                                 Rectangle { width: 32; height: 32; radius: 9; color: "#f5f1ea"; anchors.verticalCenter: parent.verticalCenter
@@ -1109,6 +1136,7 @@ ShellRoot {
                            file: shell.getting ? shell.getting.file : ""; got: shell.getting ? shell.getting.got : 0; total: shell.getting ? shell.getting.total : 0; speed: shell.getting ? shell.getting.speed || 0 : 0
                            onToggled: getter.running = false
                            onDropped: { shell.dropping = file; getter.running = false } }
+                Label { visible: text !== ""; text: shell.getWhy(false); color: Theme.red; font.pixelSize: 13; wrapMode: Text.Wrap; width: Math.min(implicitWidth, parent.width) }
                 Repeater { model: (dlq.data || []).filter(d => !shell.getting || d.file !== shell.getting.file)
                     Download { required property var modelData; file: modelData.file; got: modelData.got; total: modelData.total
                                onToggled: shell.fetch(["get", modelData.repo, modelData.file], modelData.file)
@@ -1228,6 +1256,7 @@ ShellRoot {
                             text: localPage.rec.runtime ? I18n.tr("llama.cpp is ready") : I18n.tr("llama.cpp, which runs the models, is not here yet") }
                     Pill { implicitHeight: 32; icon: "download"; text: localPage.rec.runtime ? I18n.tr("Update llama.cpp") : I18n.tr("Download llama.cpp")
                            busy: !!shell.getting && shell.getting.file === "llama.cpp"; onPressed: shell.fetch(["runtime", "get"], "llama.cpp") } }
+                Label { visible: text !== ""; text: shell.getWhy(true); color: Theme.red; font.pixelSize: 13; wrapMode: Text.Wrap; width: Math.min(implicitWidth, parent.width) }
                 Pill { implicitHeight: 32; icon: localPage.rec.gpu === true ? "check" : "cpu"; strong: localPage.rec.gpu === true; text: I18n.tr("Use the graphics card")
                        onPressed: { localSet.command = ["latte-ai", "local", "gpu", localPage.rec.gpu === true ? "off" : "on"]; localSet.running = true } }
             }

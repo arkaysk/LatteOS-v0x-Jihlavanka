@@ -473,3 +473,6 @@ Nové rozhodnutie: jeden riadok sem (dátum, čo, prečo) a oprava platného zne
 - **Kaviareň pozastavená** (10B.36, 10B.40): položka Kaviareň sa z LensAI odstráni. **Položky Agenti a Pomocníci sa zlúčia** do jednej.
 - **AI kurzor (10B.34) odložený** na neskôr, pokojne do v1.x; v ľavom paneli LensAI neaktívna položka „AI Cursor (coming in 2027)“.
 - **„Urob to za mňa“ ostáva v termináli, ako je**: konzole sa používateľ vyhýba kvôli linuxovým príkazom, a v tomto termináli sa žiadne nepíšu.
+- **Späť/Znova patrí oknu, v ktorom sa akcia urobila** (10B.48): zmazanie súborov v DualBrew a Späť v LensAI nemajú nič spoločné, ako v samostatných programoch (Photoshop). Každé okno si drží vlastnú históriu príkazov Späť/Znova.
+- **Plocha má Späť/Znova spoločné so správcami súborov** (DualBrew): je síce samostatná položka, ale berie sa ako otvorený priečinok.
+- **Strážca podmienok (10B.39) odložený na neskôr.**

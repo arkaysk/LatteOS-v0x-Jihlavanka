@@ -826,7 +826,7 @@ optional: mise                                                       # the AI se
 optional: pipewire-utils                                             # pw-record: the microphone of LensGoo's AI field
 optional ~/.local/share/latteos/ai or /data/ai: whisper.cpp (built from github.com/ggml-org/whisper.cpp v1.9.5 into whisper-src/build-vk with Vulkan, or build) and whisper/ggml-large-v3-turbo-q5_0.bin or ggml-small.bin: speech to text for the microphone
 optional ~/.local/share/latteos/ai or /data/ai: llama.cpp (github.com/ggml-org/llama.cpp releases, llama/*/llama-server) and models/*.gguf (Qwen3.5 2B and 4B): the AI on this computer
-optional: archivemount ffmpegthumbnailer poppler-utils exiv2 ImageMagick bsdtar 7zip   # DualBrew: archives opened as folders, pictures of videos and PDFs, when a photo was taken, the recipes
+optional: archivemount ffmpegthumbnailer poppler-utils exiv2 ImageMagick bsdtar 7zip   # DualBrew: archives opened as folders, pictures of videos and PDFs, when a photo was taken, the recipes; LensAI: the words of an attached PDF (pdftotext)
 package: inotify-tools                                               # the desktop's icons follow the Desktop folder and the Trash (latte-desktop watch)
 optional: perl-Image-ExifTool mediainfo                              # Properties › Details: everything a photo, a song, a video or a document says of itself (latte-props)
 optional: yaru-icon-theme                                             # the icons files, folders and apps are shown with; others installed are offered in the Settings

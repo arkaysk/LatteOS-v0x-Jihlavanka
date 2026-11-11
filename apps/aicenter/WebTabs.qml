@@ -6,6 +6,7 @@
 import QtQuick
 import QtWebEngine
 import Quickshell
+import "../common"
 
 Item {
     id: tabs
@@ -75,12 +76,23 @@ Item {
             }
             onIconChanged: { const i = Object.assign({}, tabs.icons); i[modelData] = String(icon); tabs.icons = i; heard() }
             onTitleChanged: heard()
-            onVisibleChanged: if (visible) tabs.mark(modelData, false)
             // what a page does while it loads and finds its feet is not news: only after it has stood a while
             property bool settled: false
             Timer { id: settle; interval: 4000; onTriggered: view.settled = true }
-            onLoadingChanged: r => { if (r.status === WebEngineView.LoadSucceededStatus) settle.restart(); else view.settled = false }
+            onLoadingChanged: r => { if (r.status === WebEngineView.LoadSucceededStatus) settle.restart(); else view.settled = false
+                                     if (r.status === WebEngineView.LoadSucceededStatus || r.status === WebEngineView.LoadFailedStatus) tabs.show(view.modelData) }
             function heard() { if (settled && !visible) tabs.mark(modelData, true) }
+            onLoadProgressChanged: if (loadProgress >= 80) tabs.show(modelData)
+            onVisibleChanged: if (visible) { tabs.mark(modelData, false); tabs.progress = Qt.binding(() => view.loadProgress) }
         }
     }
+    // until a tab's page first shows something, the tab says what it is doing: a first visit takes seconds (over the
+    // pages, not in them: what a web view holds is not drawn above its page)
+    property var shown: ({})
+    property real progress: 0
+    function show(id) { if (shown[id]) return; const n = Object.assign({}, shown); n[id] = true; shown = n }
+    Rectangle { width: tabs.split ? tabs.width / 2 - 1 : tabs.width; height: tabs.height; z: 1; color: Theme.card
+        visible: tabs.current !== "" && !tabs.shown[tabs.current]
+        Waiting { anchors.centerIn: parent; text: I18n.tr("Opening {n}…", { n: (tabs.services.find(s => s.id === tabs.current) || {}).name || tabs.current }) }
+        DotBar { anchors.horizontalCenter: parent.horizontalCenter; y: parent.height / 2 + 64; width: 220; height: 8; segments: 24; tint: Theme.gold; value: tabs.progress / 100 } }
 }

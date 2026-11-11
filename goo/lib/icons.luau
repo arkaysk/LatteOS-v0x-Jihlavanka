@@ -10,6 +10,7 @@ return {
     ["app-window"] = "\u{EFE6}",
     ["apps"] = "\u{EBB6}",
     ["arrow-back-up"] = "\u{EB77}",
+    ["arrow-forward-up"] = "\u{EB78}",
     ["arrow-down"] = "\u{EA16}",
     ["arrow-left"] = "\u{EA19}",
     ["arrow-right"] = "\u{EA1F}",

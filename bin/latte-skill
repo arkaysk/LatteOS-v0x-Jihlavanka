@@ -5,8 +5,10 @@ command, so that every AI reaches the same ones through bin/latte-mcp.
 
   latte-skill list                 {"skills": [{"id", "use"}], "now": {…}}: what this computer has, how the AI is to
                                    ask for each, and what each thing is now (with the names of devices and networks)
-  latte-skill row ID JSON          what the change would be, in the person's language: {"label", "what", "from", "to"};
-                                   exit 1 when the argument is not one the skill takes
+  latte-skill row ID JSON          what the change would be, in the person's language: {"label", "what", "from", "to"}
+                                   (and "risky", "warn" for one that can lose work: it is to be confirmed twice, the
+                                   second time with what will be lost); exit 1 when the argument is not one the skill takes
+                                   --now JSON after `row` or `do`: what `list` said a moment ago, not read anew (LensShore)
   latte-skill ask ID JSON --by WHO the change asked for by an AI: LensAI shows it and the person allows or refuses it
                                    there; allowed, it is done. {"ok", "answer": "yes" | "no" | "timeout" | "invalid"}
   latte-skill asks                 what waits for the person now: [{"req", "by", "label", "what", "from", "to", "at"}]
@@ -14,8 +16,8 @@ command, so that every AI reaches the same ones through bin/latte-mcp.
   latte-skill do ID JSON [--by WHO]   does it at once: for what the person asked for themselves
 
 What was asked, allowed, refused and done is in the journal: journalctl -t latte-skill.
-ponytail: LensShore still reads its own copy of these in goo/lib/skills.luau (and has three more that need Goo: quiet,
-open, close); it moves over to this command in ROADMAP 10B.53.
+LensShore draws its rows from here too (goo/lib/skills.luau, ROADMAP 10B.53). What an AI was allowed in LensAI is noted
+in that window's Undo (bin/latte-files note, LATTE_UNDO=lensai) wherever the thing can be put back as it was.
 ponytail: the confirmation guards what comes through the MCP server. An agent that the person lets run shell commands
 can change these things itself; that is its own tool's permission to give, not ours.
 """
@@ -28,6 +30,8 @@ import time
 import uuid
 from concurrent.futures import ThreadPoolExecutor
 
+GOO = os.path.join(os.environ.get("XDG_DATA_HOME") or os.path.expanduser("~/.local/share"), "pleamar", "goo", "settings.json")
+HYPRCTL = None
 ASKS = os.path.join(os.environ.get("XDG_STATE_HOME") or os.path.expanduser("~/.local/state"), "latteos", "asks")
 WAIT = 120                      # how long an AI's request waits for the person
 PROFILES = {"power-saver": "Power saver", "balanced": "Balanced", "performance": "Performance"}
@@ -53,6 +57,40 @@ def out(argv):
         return "", 1
 
 
+def goo():
+    try:
+        with open(GOO) as f:
+            return json.load(f)
+    except (OSError, ValueError):
+        return {}
+
+
+def hyprctl(*args):
+    """The compositor's word through LatteOS's stand-in (pleamar-wm's session), found though PATH may lack it."""
+    import shutil
+    return out([shutil.which("hyprctl") or "/usr/share/latteos/pleamarwm/bin/hyprctl"] + list(args))
+
+
+def apps():
+    """The apps the launcher shows, by name: [{"label", "id": its .desktop file}]."""
+    try:
+        import gi
+        from gi.repository import Gio
+        return [{"label": a.get_name(), "id": a.get_filename()} for a in Gio.AppInfo.get_all() if a.should_show() and a.get_filename()]
+    except Exception:
+        return []
+
+
+def set_quiet(on):
+    """Do not disturb is Goo's own setting: written where Goo watches (as Settings does), taken up at once."""
+    kept = dict(goo(), quiet=on)
+    os.makedirs(os.path.dirname(GOO), exist_ok=True)
+    with open(GOO + ".new", "w") as f:
+        json.dump(kept, f, ensure_ascii=False, indent=1)
+    os.replace(GOO + ".new", GOO)
+    return True
+
+
 def state():
     """What each thing is now; a thing this computer has not got is left out."""
     asked = {
@@ -60,6 +98,7 @@ def state():
         "paired": ["bluetoothctl", "--timeout", "2", "devices", "Paired"], "volume": ["wpctl", "get-volume", "@DEFAULT_AUDIO_SINK@"],
         "light": ["brightnessctl", "-m", "-c", "backlight"], "sound": ["latte-settings", "sound"],
         "profile": ["powerprofilesctl", "get"], "networks": ["nmcli", "-t", "-f", "NAME,TYPE,ACTIVE", "connection", "show"],
+        "windows": [__import__("shutil").which("hyprctl") or "/usr/share/latteos/pleamarwm/bin/hyprctl", "-j", "clients"],
     }
     with ThreadPoolExecutor(len(asked)) as pool:
         got = dict(zip(asked, pool.map(out, asked.values())))
@@ -97,6 +136,20 @@ def state():
             now["networks"].append({"label": m.group(1).replace("\\:", ":")})
             if m.group(2) == "yes":
                 now["network"] = m.group(1).replace("\\:", ":")
+    now["quiet"] = goo().get("quiet") is True
+    # the running apps, one for each, with every window of theirs
+    now["running"] = []
+    try:
+        for w in json.loads(got["windows"][0] or "[]"):
+            name = w.get("class") or w.get("title") or ""
+            app = next((r for r in now["running"] if r["label"] == name), None)
+            if not app:
+                app = {"label": name, "titles": [], "windows": []}
+                now["running"].append(app)
+            app["titles"].append(w.get("title", ""))
+            app["windows"].append(w.get("address", ""))
+    except (ValueError, AttributeError):
+        pass
     return now
 
 
@@ -128,8 +181,13 @@ def was(now, key):
     return onoff(now[key]) if key in now else None
 
 
+def close_all(app):
+    return all([hyprctl("eval", 'latte.win.close("%s")' % w)[1] == 0 for w in app["windows"]])
+
+
 # id: how the AI asks for it, whether this computer has it, the argument checked (None: not one), the row (what it
-# says, the thing, from what, to what), and the command that does it. The words are goo/lib/skills.luau's.
+# says, the thing, from what, to what), and what does it: a command, or a function that says whether it worked.
+# A sixth: what will be lost — such a one is risky and is confirmed twice. BACK: how each is put back as it was.
 SKILLS = {
     "wifi": ('{"skill": "wifi", "on": true|false}', lambda n: "wifi" in n, switch,
              lambda v, n: (T("Turn the Wi-Fi on") if v else T("Turn the Wi-Fi off"), "Wi-Fi", was(n, "wifi"), onoff(v)),
@@ -163,6 +221,24 @@ SKILLS = {
     "network": ('{"skill": "network", "name": "<a saved Wi-Fi network>"}', lambda n: bool(n.get("networks")), named("networks", "name"),
                 lambda v, n: (T("Connect to {name}").replace("{name}", v["label"]), T("Wi-Fi network"), n.get("network"), v["label"]),
                 lambda v: ["nmcli", "connection", "up", "id", v["label"]]),
+    "quiet": ('{"skill": "quiet", "on": true|false} (do not disturb)', lambda n: True, switch,
+              lambda v, n: (T("Do not disturb") if v else T("Let notifications through"), T("Do not disturb"), was(n, "quiet"), onoff(v)),
+              lambda v: lambda: set_quiet(v)),
+    "open": ('{"skill": "open", "app": "<the name of an installed app>"}', lambda n: True,
+             lambda a, n: named("apps", "app")(a, {"apps": apps()}),
+             lambda v, n: (T("Open {name}").replace("{name}", v["label"]), T("App"), None, v["label"]),
+             lambda v: ["gio", "launch", v["id"]]),
+    "close": ('{"skill": "close", "app": "<a running app>"}', lambda n: bool(n.get("running")), named("running", "app"),
+              lambda v, n: (T("Close {name}").replace("{name}", v["label"]), v["label"], None, " · ".join(v["titles"])[:70]),
+              lambda v: lambda: close_all(v),
+              lambda v: T("Unsaved work in {name} will be lost").replace("{name}", v["label"])),
+}
+# what to ask for to put a thing back as it was before: None where that cannot be said (a device connected, an app)
+BACK = {
+    "wifi": lambda n: {"on": n["wifi"]}, "bluetooth": lambda n: {"on": n["bt"]}, "volume": lambda n: {"level": n["volume"]},
+    "mute": lambda n: {"on": n["muted"]}, "brightness": lambda n: {"level": n["light"]}, "nightlight": lambda n: {"on": n["night"]},
+    "power": lambda n: {"profile": n["profile"]}, "quiet": lambda n: {"on": n["quiet"]},
+    "output": lambda n: {"device": n["output"]}, "network": lambda n: {"name": n["network"]},
 }
 
 
@@ -173,19 +249,31 @@ def row(ident, a, now):
     if v is None:
         return None, None
     label, what, frm, to = s[3](v, now)
-    return v, {"label": label, "what": what, "from": frm if frm != to else None, "to": to}
+    said = {"label": label, "what": what, "from": frm if frm != to else None, "to": to}
+    if len(s) > 5:
+        said.update(risky=True, warn=s[5](v))
+    return v, said
 
 
 def journal(by, ident, a, how):
     subprocess.run(["logger", "-t", "latte-skill", "%s %s %s %s" % (by or "person", ident, json.dumps(a, ensure_ascii=False), how)])
 
 
-def do(ident, a, by=""):
-    v, _ = row(ident, a, state())
+def do(ident, a, by="", now=None, undo=""):
+    now = now or state()
+    v, said = row(ident, a, now)
     if v is None:
         return False
-    ok = out(SKILLS[ident][4](v))[1] == 0
+    how = SKILLS[ident][4](v)
+    ok = how() if callable(how) else out(how)[1] == 0
     journal(by, ident, a, "done" if ok else "failed")
+    try:
+        back = BACK[ident](now) if ok and undo and ident in BACK else None
+    except KeyError:                # what it was before is not known
+        back = None
+    if back and back != a:          # the window it was allowed in can take it back (bin/latte-files undo)
+        subprocess.run(["latte-files", "note", "skill", ident + " " + json.dumps(back, ensure_ascii=False), ident + " " + json.dumps(a, ensure_ascii=False)],
+                       env=dict(os.environ, LATTE_UNDO=undo, LATTE_UNDO_LABEL=said["label"]))
     return ok
 
 
@@ -239,14 +327,21 @@ def ask(ident, a, by):
     if answer != "yes":
         journal(by, ident, a, "refused" if answer == "no" else "not answered")
         return {"ok": False, "answer": answer}
-    return {"ok": do(ident, a, by), "answer": "yes"}
+    return {"ok": do(ident, a, by, undo="lensai"), "answer": "yes"}
 
 
 def main(a):
-    by = ""
+    by, now = "", None
     if "--by" in a[:-1]:
         i = a.index("--by")
         by, a = a[i + 1], a[:i] + a[i + 2:]
+    if "--now" in a[:-1]:
+        i = a.index("--now")
+        try:
+            now = json.loads(a[i + 1])
+        except ValueError:
+            return 2
+        a = a[:i] + a[i + 2:]
     if a == ["list"]:
         now = state()
         print(json.dumps({"skills": [{"id": i, "use": s[0]} for i, s in SKILLS.items() if s[1](now)], "now": now}, ensure_ascii=False))
@@ -266,11 +361,11 @@ def main(a):
         except ValueError:
             return 2
         if a[0] == "row":
-            _, said = row(a[1], args, state())
+            _, said = row(a[1], args, now or state())
             print(json.dumps(said, ensure_ascii=False))
             return 0 if said else 1
         if a[0] == "do":
-            return 0 if do(a[1], args, by) else 1
+            return 0 if do(a[1], args, by, now) else 1
         r = ask(a[1], args, by or "AI")
         print(json.dumps(r))
         return 0 if r["ok"] else 1

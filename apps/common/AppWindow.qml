@@ -43,6 +43,24 @@ FloatingWindow {
     property bool canGoBack: false
     property bool canGoForward: false
     signal back()
+    // Undo and Redo of what was done in this window, and in no other (the user, 11. 11.): the name of the app's own
+    // history (bin/latte-files, LATTE_UNDO). The app does its changes with `undoEnv` in the command's environment,
+    // calls undoLook() after one, and hears undone() when something was taken back or done again. A press held
+    // lists the last ones; `undoWord` turns what one was called into words
+    property string undoName: ""
+    readonly property var undoEnv: ({ LATTE_UNDO: undoName })
+    property var undoWord: (label) => label
+    property var undoList: []
+    property var redoList: []
+    signal undone()
+    function undoLook() { if (undoName !== "" && !undoAsk.running) undoAsk.running = true }
+    function undoDo(way, times) { if (undoRun.running) return; undoRun.command = ["sh", "-c", "i=0; while [ $i -lt \"$2\" ]; do latte-files \"$1\" || break; i=$((i + 1)); done", "sh", way, String(times)]; undoRun.running = true }
+    Process { id: undoAsk; command: ["latte-files", "history"]; environment: win.undoEnv
+              stdout: StdioCollector { onStreamFinished: { const u = [], r = []
+                  for (const l of this.text.split("\n")) { const at = l.indexOf("\t"); if (at > 0) (l.slice(0, at) === "undo" ? u : r).push(l.slice(at + 1)) }
+                  win.undoList = u; win.redoList = r } } }
+    Process { id: undoRun; environment: win.undoEnv; onExited: { win.undoLook(); win.undone() } }
+    onUndoNameChanged: undoLook()
     signal forward()
     property string searchHint: ""             // with a hint the header has a field to search in
     property real searchWidth: 250             // how wide that field is (an app with many tools in the header makes it narrower)
@@ -134,8 +152,23 @@ FloatingWindow {
             Row { id: left; x: 12; spacing: 2; anchors.verticalCenter: parent.verticalCenter; visible: win.arrows
                 HeadButton { icon: "chevron-left"; off: !win.canGoBack; onPressed: win.back() }
                 HeadButton { icon: "chevron-right"; off: !win.canGoForward; onPressed: win.forward() } }
+            Row { id: undos; x: win.arrows ? left.x + left.width + 6 : 12; spacing: 2; anchors.verticalCenter: parent.verticalCenter; visible: win.undoName !== ""
+                component UndoButton: HeadButton { id: ub
+                    property string way; property var list: []
+                    off: list.length === 0
+                    onPressed: win.undoDo(way, 1)
+                    // held, or the right button: the last ones, nearest first; choosing one takes back all down to it
+                    function listed() { const p = mapToItem(win.contentItem, 0, height + 4)
+                        editMenu.open(p.x, p.y, list.slice(0, 12).map((l, i) => ({ text: win.undoWord(l), icon: icon, run: () => win.undoDo(way, i + 1) }))) }
+                    MouseArea { anchors.fill: parent; enabled: !ub.off; acceptedButtons: Qt.LeftButton | Qt.RightButton; cursorShape: Qt.PointingHandCursor
+                                property bool held: false
+                                onPressed: m => { held = false; if (m.button === Qt.RightButton) { held = true; ub.listed() } }
+                                onPressAndHold: { held = true; ub.listed() }
+                                onClicked: if (!held) ub.pressed() } }
+                UndoButton { icon: "arrow-back-up"; way: "undo"; list: win.undoList }
+                UndoButton { icon: "arrow-forward-up"; way: "redo"; list: win.redoList } }
             Label { text: win.heading; font.pixelSize: 15; font.weight: 700; anchors.verticalCenter: parent.verticalCenter
-                    x: win.arrows ? left.x + left.width + 12 : 20; width: Math.max(0, right.x - x - 12) }
+                    x: win.undoName !== "" ? undos.x + undos.width + 12 : win.arrows ? left.x + left.width + 12 : 20; width: Math.max(0, right.x - x - 12) }
             Row { id: right; anchors.right: parent.right; anchors.rightMargin: 12; anchors.verticalCenter: parent.verticalCenter; spacing: 8
                 Row { id: toolRow; spacing: 6; anchors.verticalCenter: parent.verticalCenter }
                 Rectangle { visible: win.searchHint !== ""; width: win.searchWidth; height: 36; radius: 12; color: Theme.card; border.width: 1; border.color: field.activeFocus ? Theme.gold : "transparent"; anchors.verticalCenter: parent.verticalCenter

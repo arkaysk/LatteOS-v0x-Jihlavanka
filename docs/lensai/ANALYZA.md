@@ -118,7 +118,26 @@ Celé znenie je v `docs/goo/ROZHODNUTIA.md`; tu iba čo sa tým mení oproti ča
 - **Kaviareň** je súčasť LensAI, vizualizácia práce agentov ako Clod farm.
 - Otvorené: N1 (ponuky „+“ v poli rozhovoru, 10B.50).
 
-**Opravené a nasadené 10. 11. (10B.47):** K1, K2, K3, K4, K6, K8, U3, U4, U6, U9, N2, N3. **Ostáva:** K5, K7, K9–K13, U1, U5, N1.
+**Opravené a nasadené 10. 11. (10B.47):** K1, K2, K3, K4, K6, K8, U3, U4, U6, U9, N2, N3.
+
+**Opravené a nasadené 11. 11. (10B.28):** K7 (PDF cez `pdftotext`, obrázok ako obrázok aj cez kľúč API a vlastný server —
+keď ho služba odmietne, otázka ide znova bez neho s poznámkou; binárny súbor iba menom), K9 (stderr nástroja sa číta
+priebežne), K10 (`running` nájde náhradu `hyprctl` aj mimo prostredia Goo), K12 (model proti `lfs.oid` z Hugging Face,
+llama.cpp proti `digest` z GitHubu; nezhoda = súbor sa neuloží a okno to povie), K13 (`grok models` raz za deň:
+`providers` 1,0 s → 0,1 s). K11 už platilo: počítadlo „n zo 4000 znakov“ pri prekročení sčervenie.
+Nový nález pri K12: **sťahovanie llama.cpp z okna LensAI nefungovalo** — vydanie „latest“ je od v0.9.0 iba odkaz
+(`nightly-tag.txt`) na zostavenie a archív je `.tar.gz`, nie `.zip`. Opravené a overené stiahnutím b12110.
+
+U1: `latte-app aicenter chats` bral slovo „chats“ ako ID rozhovoru, preto chýbal pozdrav a svietilo „Odstrániť“; ID je už
+iba 12 šestnástkových znakov. Sklo stránky rozhovoru je mliečnejšie (0,8–0,95 namiesto 0,55–0,9): pleamar-wm pod oknami
+nerozmazáva, tapeta bola pod textom ostrá. U5: kým sa stránka služby prvý raz neukáže, záložka hovorí „Otváram X…“ s
+priebehom. LensShore už neukazuje strojové rozhovory (Chapolera), zvyšok K4.
+
+K5/U7 (10B.48, 11. 11.): Späť a Znova v hlavičke okna. Zmazaný rozhovor ide s prílohami do Koša a Späť ho vráti; model
+sa odloží vedľa modelov (`removed/`, disk `/data` Kôš nemá) a zmizne natrvalo, keď sa LensAI otvorí nabudúce. História
+patrí oknu (`LATTE_UNDO=lensai`, `bin/latte-files undo | redo | history`).
+
+Z auditu neostáva nič otvorené (N1 hotové v 10B.50).
 
 ## 6. Pôvodné otázky (pred rozhodnutím)
 

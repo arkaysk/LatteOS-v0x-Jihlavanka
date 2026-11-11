@@ -881,7 +881,8 @@ on("goo_idle", function(stage)
     if stage < 2 or fact.lively == false or TIER == "software" or low_battery then return end
     local function go(busy)
         if not busy and fact.idle >= stage then
-            weather_on()
+            -- the weather on the surface no longer comes by itself (the user, 10. and 11. 11., ROADMAP 1D.47): it fell
+            -- across the windows; E.weather.on() is kept for whoever asks for it
             if stage >= 3 and not select(2, pcall(function() return fact.locked end)) then play_on() end
         end
     end

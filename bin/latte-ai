@@ -160,7 +160,7 @@ SEARCH = os.pathsep.join([os.environ.get("PATH", "/usr/local/bin:/usr/bin"), os.
 ROOM = os.path.join(os.environ.get("XDG_STATE_HOME") or os.path.expanduser("~/.local/state"), "latteos", "ai")
 CHATS = os.path.join(ROOM, "chats")
 KEEP = 12                       # what a tool is reminded of: the last six turns
-MACHINE = ("chapolera",)        # programs that ask for their own work: their conversations are not the user's to read
+MACHINE = ("chapolera", "ask")        # programs that ask for their own work: their conversations are not the user's to read
 
 
 def claude(prompt, model, effort="", files=()):
@@ -446,10 +446,31 @@ def hf_get_one(repo, file, first=""):
             if time.monotonic() - told >= 0.5 or got == total:
                 told = time.monotonic()
                 print(json.dumps({"got": got, "total": total}), flush=True)
+    # the file against the fingerprint Hugging Face keeps of it (lfs.oid, a sha256): a broken or swapped one is not kept
+    try:
+        folder = os.path.dirname(file)
+        want = next(((f.get("lfs") or {}).get("oid") for f in hf("/api/models/%s/tree/main%s" % (repo, "/" + folder if folder else ""))
+                     if f.get("path") == file), None)
+    except (OSError, ValueError):
+        want = None
+    if want and sha256_of(part) != want:
+        os.remove(part)
+        os.remove(part + ".json")
+        print(json.dumps({"error": "fingerprint"}), flush=True)
+        return 1
     os.replace(part, dest)
     os.remove(part + ".json")
     print(json.dumps({"done": dest}), flush=True)
     return 0
+
+
+def sha256_of(path):
+    import hashlib
+    h = hashlib.sha256()
+    with open(path, "rb") as f:
+        for chunk in iter(lambda: f.read(1 << 20), b""):
+            h.update(chunk)
+    return h.hexdigest()
 
 
 def downloads():
@@ -592,16 +613,26 @@ MEASURED = os.path.join(ROOM, "local-memory.json")
 
 
 def runtime_get():
-    """llama.cpp's latest release built for Vulkan (any graphics card, and the processor), into LOCAL_DIRS[0]/llama."""
-    import urllib.request, zipfile
-    rel = json.load(urllib.request.urlopen("https://api.github.com/repos/ggml-org/llama.cpp/releases/latest", timeout=20))
-    asset = next((a for a in rel["assets"] if a["name"].endswith("-bin-ubuntu-vulkan-x64.zip")), None)
+    """llama.cpp built for Vulkan (any graphics card, and the processor), into LOCAL_DIRS[0]/llama: the build its
+    latest release names (nightly-tag.txt, since v0.9.0 the release itself carries no programs), checked against the
+    fingerprint GitHub keeps of it."""
+    import urllib.request, zipfile, tarfile
+    api = "https://api.github.com/repos/ggml-org/llama.cpp/releases/"
+    rel = json.load(urllib.request.urlopen(api + "latest", timeout=20))
+    named = next((a for a in rel["assets"] if a["name"] == "nightly-tag.txt"), None)
+    if named:
+        tag = urllib.request.urlopen(named["browser_download_url"], timeout=20).read().decode().strip()
+        if not re.fullmatch(r"[\w.-]+", tag):
+            print(json.dumps({"error": "no build named in " + rel.get("tag_name", "")}))
+            return 1
+        rel = json.load(urllib.request.urlopen(api + "tags/" + tag, timeout=20))
+    asset = next((a for a in rel["assets"] if a["name"].endswith(("-bin-ubuntu-vulkan-x64.tar.gz", "-bin-ubuntu-vulkan-x64.zip"))), None)
     if not asset:
         print(json.dumps({"error": "no Vulkan build in " + rel.get("tag_name", "")}))
         return 1
     home = os.path.join(LOCAL_DIRS[0], "llama", rel["tag_name"])
     os.makedirs(home, exist_ok=True)
-    zpath = home + ".zip"
+    zpath = home + (".zip" if asset["name"].endswith(".zip") else ".tar.gz")
     with urllib.request.urlopen(asset["browser_download_url"], timeout=30) as r, open(zpath, "wb") as out:
         total, got = asset["size"], 0
         while True:
@@ -611,13 +642,26 @@ def runtime_get():
             out.write(chunk)
             got += len(chunk)
             print(json.dumps({"got": got, "total": total}), flush=True)
-    with zipfile.ZipFile(zpath) as z:
-        z.extractall(home)
+    want = (asset.get("digest") or "").partition("sha256:")[2]
+    if want and sha256_of(zpath) != want:
+        os.remove(zpath)
+        os.rmdir(home)
+        print(json.dumps({"error": "fingerprint"}), flush=True)
+        return 1
+    if zpath.endswith(".zip"):
+        with zipfile.ZipFile(zpath) as z:
+            z.extractall(home)
+    else:
+        with tarfile.open(zpath) as z:
+            z.extractall(home, filter="data")
     os.remove(zpath)
     # the archive keeps its programs in build/bin: llama-server is looked for one folder down
     for f in glob.glob(os.path.join(home, "**", "*"), recursive=True):
-        if os.path.isfile(f) and os.path.dirname(f) != home:
+        # a link too, though what it points at may have gone up already: the libraries are found by those names
+        if (os.path.isfile(f) or os.path.islink(f)) and os.path.dirname(f) != home:
             os.replace(f, os.path.join(home, os.path.basename(f)))
+    for d in sorted((d for d in glob.glob(os.path.join(home, "**", ""), recursive=True) if d.rstrip(os.sep) != home), reverse=True):
+        os.rmdir(d)
     for f in glob.glob(os.path.join(home, "*")):
         if os.path.isfile(f) and not f.endswith((".so", ".txt", ".md")) and "." not in os.path.basename(f):
             os.chmod(f, 0o755)
@@ -724,8 +768,9 @@ def chat_completion(url, head, body, timeout=600):
         if not STREAM:
             d = json.load(r)
             u = d.get("usage") or {}
-            return d["choices"][0]["message"]["content"].strip(), u.get("prompt_tokens", 0) + u.get("completion_tokens", 0)
-        text, used = [], 0
+            m = d["choices"][0]["message"]
+            return (m.get("content") or "").strip(), u.get("prompt_tokens", 0) + u.get("completion_tokens", 0), m.get("tool_calls") or []
+        text, used, calls = [], 0, {}
         for raw in r:
             line = raw.decode(errors="replace").strip()
             if not line.startswith("data:") or line == "data: [DONE]":
@@ -735,9 +780,130 @@ def chat_completion(url, head, body, timeout=600):
                 bit = (c.get("delta") or {}).get("content") or ""
                 text.append(bit)
                 piece(bit)
+                for t in (c.get("delta") or {}).get("tool_calls") or []:       # a tool asked for comes in pieces too, by its index
+                    call = calls.setdefault(t.get("index", 0), {"id": "", "type": "function", "function": {"name": "", "arguments": ""}})
+                    call["id"] = t.get("id") or call["id"]
+                    for k in ("name", "arguments"):
+                        call["function"][k] += (t.get("function") or {}).get(k) or ""
             u = d.get("usage") or {}
             used = u.get("prompt_tokens", 0) + u.get("completion_tokens", 0) or used
-        return "".join(text).strip(), used
+        return "".join(text).strip(), used, [calls[i] for i in sorted(calls)]
+
+
+# ── tools for an AI that has none of its own (a key's API, the model on this computer): LatteOS's own, the ones every
+# agent gets from bin/latte-mcp, asked for over MCP as an agent's tool would (ROADMAP 10B.43, step 3). A service's
+# official tool (Claude Code, Codex…) is given latte-mcp in its own settings and needs none of this.
+USED = []                       # the tools this answer used: [{"tool", "args"}], kept with the answer
+TOOLS_WORD = ("\n\nYou have tools of this computer. What they can tell (what a setting is now, who can answer, what is "
+              "open), find out with them instead of guessing or promising to; then answer with what they said.")
+ROUNDS = 6                      # how many times one answer may go for tools
+
+
+def tools_open(who):
+    """(the tools, call(name, args) → text, close) or None: without python3-mcp or latte-mcp, and for an AI that
+    another AI asked (LATTE_NO_TOOLS: it answers, it does not ask on)."""
+    if os.environ.get("LATTE_NO_TOOLS") or turned_off() or not shutil.which("latte-mcp", path=SEARCH):
+        return None
+    try:
+        import asyncio, threading
+        from mcp import ClientSession, StdioServerParameters, types
+        from mcp.client.stdio import stdio_client
+    except ImportError:
+        return None
+    loop, ready, box = asyncio.new_event_loop(), threading.Event(), {}
+
+    async def life():               # the session lives in a thread of its own until the answer is done
+        try:
+            server = StdioServerParameters(command=shutil.which("latte-mcp", path=SEARCH), env=dict(os.environ, PATH=SEARCH))
+            async with stdio_client(server, errlog=open(os.devnull, "w")) as (r, w):
+                async with ClientSession(r, w, client_info=types.Implementation(name=who, version="1")) as s:
+                    await s.initialize()
+                    box["tools"], box["session"], box["done"] = (await s.list_tools()).tools, s, asyncio.Event()
+                    ready.set()
+                    await box["done"].wait()
+        except Exception:
+            pass
+        finally:
+            ready.set()
+    threading.Thread(target=lambda: loop.run_until_complete(life()), daemon=True).start()
+    ready.wait(20)
+    if "session" not in box:
+        return None
+
+    def call(name, args, most=12000):
+        USED.append({"tool": name, "args": args})
+        try:
+            r = asyncio.run_coroutine_threadsafe(box["session"].call_tool(name, args), loop).result(320)
+            return "\n".join(c.text for c in r.content if getattr(c, "text", None))[:most] or "(nothing)"
+        except Exception as e:      # told to the model, which says it on: a tool that failed is no reason to lose the answer
+            return "error: %s" % (e or type(e).__name__)
+    return box["tools"], call, lambda: loop.call_soon_threadsafe(box["done"].set)
+
+
+def converse(url, head, body, who, timeout=600, most=12000):
+    """chat_completion, and whenever the model asks for tools, the tools and the question again: (text, tokens)."""
+    import urllib.error
+    opened = tools_open(who)
+    if not opened:
+        return chat_completion(url, head, body, timeout)[:2]
+    tools, call, close = opened
+    offer = [{"type": "function", "function": {"name": t.name, "description": t.description or "", "parameters": t.inputSchema}} for t in tools]
+    talk, total, text = list(body["messages"]), 0, ""
+    if talk and talk[0]["role"] == "system":       # a small model answers around a tool unless it is told it has them
+        talk[0] = dict(talk[0], content=talk[0]["content"] + TOOLS_WORD)
+    try:
+        for n in range(ROUNDS):
+            try:
+                text, used, calls = chat_completion(url, head, dict(body, messages=talk, tools=offer), timeout)
+            except urllib.error.HTTPError as e:
+                if n or e.code not in (400, 404, 422):
+                    raise
+                return chat_completion(url, head, body, timeout)[:2]        # a model or service that takes no tools answers without
+            total += used
+            if not calls:
+                break
+            talk.append({"role": "assistant", "content": text or None, "tool_calls": calls})
+            for c in calls:
+                try:
+                    args = json.loads(c["function"]["arguments"] or "{}")
+                except ValueError:
+                    args = {}
+                talk.append({"role": "tool", "tool_call_id": c["id"], "content": call(c["function"]["name"], args if isinstance(args, dict) else {}, most)})
+        return text, total
+    finally:
+        close()
+
+
+PICTURES = (".jpg", ".jpeg", ".png", ".webp", ".gif")
+
+
+def attached(room, f):
+    """What an attached file adds to the question of a model that is given text: a PDF's words (pdftotext), the
+    beginning of a text file, and of anything else only that it is there — never its bytes as letters."""
+    path = os.path.join(room, f)
+    try:
+        if f.lower().endswith(".pdf"):
+            said = subprocess.run(["pdftotext", "-layout", path, "-"], capture_output=True, timeout=60).stdout.decode(errors="replace").strip()
+            return "\n\n--- %s ---\n%s" % (f, said[:20000]) if said else "\n\n(%s is a PDF with no text in it that could be read.)" % f
+        with open(path, "rb") as fh:
+            raw = fh.read(80000)
+    except (OSError, subprocess.TimeoutExpired):
+        return "\n\n(%s could not be read.)" % f
+    if b"\0" in raw:
+        return "\n\n(%s is not a text file; it could not be read.)" % f
+    return "\n\n--- %s ---\n%s" % (f, raw.decode(errors="replace")[:20000])
+
+
+def picture(room, f):
+    """An attached picture as (kind, base64), or None when the file is not a picture."""
+    if not f.lower().endswith(PICTURES):
+        return None
+    import base64
+    try:
+        with open(os.path.join(room, f), "rb") as fh:
+            return "image/" + ("jpeg" if f.lower().endswith((".jpg", ".jpeg")) else f.rsplit(".", 1)[-1].lower()), base64.b64encode(fh.read()).decode()
+    except OSError:
+        return None
 
 
 def local_ask(messages, model, effort, files, room):
@@ -753,24 +919,21 @@ def local_ask(messages, model, effort, files, room):
         talk = [talk[0]] + talk[-KEEP:]
     seen = []
     for f in files:
-        try:
-            if f.lower().endswith((".jpg", ".jpeg", ".png", ".webp", ".gif")):
-                if local_mmproj(model):
-                    import base64
-                    kind = "jpeg" if f.lower().endswith((".jpg", ".jpeg")) else f.rsplit(".", 1)[-1].lower()
-                    with open(os.path.join(room, f), "rb") as fh:
-                        seen.append({"type": "image_url", "image_url": {"url": "data:image/%s;base64,%s" % (kind, base64.b64encode(fh.read()).decode())}})
-                else:
-                    talk[-1]["content"] += "\n\n(%s is a picture; this model cannot see pictures.)" % f
-                continue
-            with open(os.path.join(room, f), errors="replace") as fh:
-                talk[-1]["content"] += "\n\n--- %s ---\n%s" % (f, fh.read(20000))
-        except OSError:
-            pass
+        pic = picture(room, f)
+        if pic and local_mmproj(model):
+            seen.append({"type": "image_url", "image_url": {"url": "data:%s;base64,%s" % pic}})
+        elif pic:
+            talk[-1]["content"] += "\n\n(%s is a picture; this model cannot see pictures.)" % f
+        else:
+            talk[-1]["content"] += attached(room, f)
     if seen:
         talk[-1]["content"] = [{"type": "text", "text": talk[-1]["content"]}] + seen
-    text, used = chat_completion("http://127.0.0.1:%d/v1" % LOCAL_PORT, {}, {"messages": talk, "temperature": 0.5, "max_tokens": 1024, "repeat_penalty": 1.15,
-                                                                              "chat_template_kwargs": {"enable_thinking": effort == "think"}})
+    body = {"messages": talk, "temperature": 0.5, "max_tokens": 1024, "repeat_penalty": 1.15, "chat_template_kwargs": {"enable_thinking": effort == "think"}}
+    # tools only for a model whose template knows them, and their answers kept short: its window is small
+    if gguf(model).get("tools"):
+        text, used = converse("http://127.0.0.1:%d/v1" % LOCAL_PORT, {}, body, PROVIDERS["local"]["name"], most=3000)
+    else:
+        text, used = chat_completion("http://127.0.0.1:%d/v1" % LOCAL_PORT, {}, body)[:2]
     return text, True, {"context": used, "window": model_settings(model)["ctx"], "tokens": used, "cost": 0}
 
 
@@ -870,20 +1033,52 @@ def api_ask(ident):
     def ask(messages, model, effort, files, room):
         a = dict(apis()[ident], id=ident)
         talk = [{"role": m["role"], "content": m["content"]} for m in messages if m.get("content")][-KEEP:]
-        for f in files:
+        seen = [(f, picture(room, f)) for f in files]
+        for f, pic in seen:
+            if not pic:
+                talk[-1]["content"] += attached(room, f)
+        seen = [(f, pic) for f, pic in seen if pic]
+        words = talk[-1]["content"]
+        blind = words + "".join("\n\n(%s is a picture; this model cannot see pictures.)" % f for f, _ in seen)
+        import urllib.error
+
+        def once(fn):
+            """With the pictures; a service or model that refuses them is asked again without, told that they were there."""
             try:
-                with open(os.path.join(room, f), errors="replace") as fh:
-                    talk[-1]["content"] += "\n\n--- %s ---\n%s" % (f, fh.read(20000))
-            except OSError:
-                pass
+                return fn()
+            except urllib.error.HTTPError as e:
+                if not seen or e.code not in (400, 404, 415, 422):
+                    raise
+                talk[-1]["content"] = blind
+                return fn()
         if a["kind"] == "anthropic":
-            r = api_call(a, "/messages", {"model": model, "max_tokens": 2048, "system": SYSTEM, "messages": talk}, timeout=300)
-            u = r.get("usage") or {}
-            used = u.get("input_tokens", 0) + u.get("output_tokens", 0)
+            if seen:
+                talk[-1]["content"] = [{"type": "image", "source": {"type": "base64", "media_type": pic[0], "data": pic[1]}} for _, pic in seen] \
+                    + [{"type": "text", "text": words}]
+            opened = tools_open(a["name"])
+            body = {"model": model, "max_tokens": 2048, "system": SYSTEM + (TOOLS_WORD if opened else ""), "messages": talk}
+            if opened:              # Anthropic's own shape of the same: tool_use in the answer, tool_result in the next question
+                body["tools"] = [{"name": t.name, "description": t.description or "", "input_schema": t.inputSchema} for t in opened[0]]
+            used = 0
+            try:
+                for _ in range(ROUNDS):
+                    r = once(lambda: api_call(a, "/messages", body, timeout=300))
+                    u = r.get("usage") or {}
+                    used += u.get("input_tokens", 0) + u.get("output_tokens", 0)
+                    asked = [b for b in r.get("content", []) if b.get("type") == "tool_use"]
+                    if not opened or not asked:
+                        break
+                    body["messages"] = body["messages"] + [{"role": "assistant", "content": r["content"]}, {"role": "user", "content": [
+                        {"type": "tool_result", "tool_use_id": b["id"], "content": opened[1](b["name"], b.get("input") or {})} for b in asked]}]
+            finally:
+                if opened:
+                    opened[2]()
             return "".join(b.get("text", "") for b in r.get("content", [])).strip(), True, {"context": used, "window": 200000, "tokens": used, "cost": 0}
+        if seen:
+            talk[-1]["content"] = [{"type": "text", "text": words}] + [{"type": "image_url", "image_url": {"url": "data:%s;base64,%s" % pic}} for _, pic in seen]
         key = secret(ident)
-        text, used = chat_completion(a["url"], {"Authorization": "Bearer " + key} if key else {},
-                                     {"model": model, "messages": [{"role": "system", "content": SYSTEM}] + talk}, timeout=300)
+        text, used = once(lambda: converse(a["url"], {"Authorization": "Bearer " + key} if key else {},
+                                           {"model": model, "messages": [{"role": "system", "content": SYSTEM}] + talk}, a["name"], timeout=300))
         return text, True, {"context": used, "window": 0, "tokens": used, "cost": 0}
     return ask
 
@@ -1272,7 +1467,7 @@ SPINNER = set("✶✻✽✢·*")
 def running():
     """The agents at work, each with the terminal window it is in (the window's process is one of its parents)."""
     try:
-        clients = json.loads(subprocess.run(["hyprctl", "-j", "clients"], capture_output=True, text=True, timeout=5).stdout or "[]")
+        clients = json.loads(subprocess.run([shutil.which("hyprctl") or "/usr/share/latteos/pleamarwm/bin/hyprctl", "-j", "clients"], capture_output=True, text=True, timeout=5).stdout or "[]")
     except (OSError, ValueError, subprocess.TimeoutExpired):
         clients = []
     windows = {c.get("pid"): c for c in clients}
@@ -1401,12 +1596,25 @@ def asked_this_month(provider):
 
 
 def grok_models():
+    """Asked of the tool once a day: the question takes most of a second, at every opening of LensGoo."""
+    cache = os.path.join(ROOM, "models-grok.json")
+    try:
+        if os.path.getmtime(cache) > datetime.datetime.now().timestamp() - 86400:
+            with open(cache) as f:
+                return json.load(f)
+    except (OSError, ValueError):
+        pass
     try:
         out = subprocess.run(["grok", "models"], capture_output=True, text=True, timeout=20, env=dict(os.environ, PATH=SEARCH)).stdout
     except (OSError, subprocess.TimeoutExpired):
         return []
     found = [l.strip().lstrip("*").split()[0] for l in out.splitlines() if l.startswith("  ") and l.strip()]
-    return [{"id": m, "name": m.replace("grok-", "Grok ")} for m in found]
+    out = [{"id": m, "name": m.replace("grok-", "Grok ")} for m in found]
+    if out:
+        os.makedirs(ROOM, exist_ok=True)
+        with open(cache, "w") as f:
+            json.dump(out, f)
+    return out
 
 
 def codex(prompt, model, effort="", files=()):
@@ -1640,6 +1848,8 @@ def send(ident, provider, model, question, effort="", attach=(), origin=""):
             CHILD.terminate()
         answer, ok, stopped = "".join(PIECES).strip(), bool(PIECES), True
     msg = {"role": "assistant", "content": answer, "provider": provider, "model": model, "at": now(), "ok": ok}
+    if USED:
+        msg["used"] = list(USED)
     if stopped:
         msg["stopped"] = True
     chat["messages"].append(msg)
@@ -1680,7 +1890,9 @@ def ask_one(p, provider, chat, model, effort, files, room):
                                  stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
         late = threading.Timer(300, CHILD.kill)
         late.start()
-        out = []
+        out, err = [], []
+        aside = threading.Thread(target=lambda: err.append(CHILD.stderr.read()), daemon=True)     # read as it comes: a full pipe would stop the tool
+        aside.start()
         for line in CHILD.stdout:
             out.append(line)
             if "read" in p:
@@ -1696,7 +1908,8 @@ def ask_one(p, provider, chat, model, effort, files, room):
                 piece(line)
         code = CHILD.wait()
         late.cancel()
-        err = CHILD.stderr.read()
+        aside.join(5)
+        err = "".join(err)
         answer, ok = "".join(out).strip(), code == 0
         if "read" in p:
             try:
@@ -2044,7 +2257,18 @@ def main(a):
                 path = os.path.realpath(a[2])
                 if not any(path.startswith(os.path.realpath(os.path.join(d, "models")) + os.sep) for d in LOCAL_DIRS) or not path.endswith(".gguf"):
                     return 1
-                os.remove(path)
+                # a model is too big for the Trash, and its disk may have none: in a window with a history
+                # (LATTE_UNDO) it is set aside beside the models until that window is done (local purge), else it is gone
+                if os.environ.get("LATTE_UNDO"):
+                    aside = os.path.join(os.path.dirname(os.path.dirname(path)), "removed")
+                    os.makedirs(aside, exist_ok=True)
+                    subprocess.run(["latte-files", "move", aside, path],
+                                   env=dict(os.environ, LATTE_CONFLICT="both", LATTE_UNDO_LABEL="model:" + os.path.basename(path)[:-5]))
+                else:
+                    os.remove(path)
+            elif a[1:] == ["purge"]:
+                for d in LOCAL_DIRS:
+                    shutil.rmtree(os.path.join(d, "removed"), ignore_errors=True)
             else:
                 return 2
         except OSError as e:
@@ -2099,12 +2323,15 @@ def main(a):
         print(json.dumps(c, ensure_ascii=False) if c else "null")
         return 0 if c else 1
     if len(a) == 2 and a[0] == "forget":
-        try:
-            os.remove(path_of(a[1]))
-        except OSError:
+        # to the Trash, what was attached with it (bin/latte-files): the window it was deleted in can take it back
+        # (LATTE_UNDO names its history; without one none is kept), and it is in the Trash for anyone else
+        chat = load(a[1])
+        if not chat:
             return 1
-        shutil.rmtree(os.path.join(ROOM, "files", os.path.basename(a[1])), ignore_errors=True)     # what was attached goes with it
-        return 0
+        room = os.path.join(ROOM, "files", os.path.basename(a[1]))
+        subprocess.run(["latte-files", "trash", path_of(a[1])] + ([room] if os.path.isdir(room) else []),
+                       env=dict(os.environ, LATTE_UNDO=os.environ.get("LATTE_UNDO") or "-", LATTE_UNDO_LABEL="chat:" + chat.get("title", "")[:60]))
+        return 1 if os.path.exists(path_of(a[1])) else 0
     print(__doc__.strip())
     return 2
 
