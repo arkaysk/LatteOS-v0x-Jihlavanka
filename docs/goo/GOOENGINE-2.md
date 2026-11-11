@@ -27,6 +27,8 @@ latte-lab. **[zdroj]** = prečítané v zdroji pleamaru; **[overiť]** = odhad, 
 | Jadro fyziky | **priamo v Ruste**, nie obchádzky v jazyku scény |
 | Kreslenie | **tenký ostrý obrys okolo celej hmoty**, vrátane vlákien a kariet; **nikdy čiara vnútri**. Goo, hladina a karty sú jedna hmota (§7) |
 | Kurzor | **súčasť Goo**: kvapka, ktorá sa pri rýchlom pohybe splošťuje a pri spomalení zavlní (§8) |
+| Farba kurzora | **adaptívna podľa pozadia**; voľba v Nastaveniach: adaptívny · farba goo s podsvietením alebo vrhaným tieňom · vypnuté (klasický kurzor) (§8.3) |
+| Lišta okien | predvolene **BarGoo**; voľby: BarGoo · DockShore · vypnutá (§11.2) |
 | Reakcie na kurzor | **silnejšie** |
 | Marea (k4ditano) | vzhľad **MareaGoo**, aby zapadla medzi kvapky (§11) |
 | Dok pleamar-wm | **DockShore** (§11) |
@@ -330,6 +332,21 @@ nulové oneskorenie. Kurzor kreslený scénou príde o snímku neskôr. Preto dv
 ostane téma z bodu 1 a deformáciu dostane iba **stopa** za systémovým kurzorom: bruško a kvapôčky kreslené scénou
 pod pevným hrotom z témy. Vypínač v Nastaveniach › Kurzor: Systémový · Goo · Goo so živou kvapkou.
 
+### 8.3 Farba a Nastavenia › Kurzor (používateľ 11. 11.)
+
+| Voľba | Čo robí |
+|---|---|
+| **Adaptívny** (predvolené) | kurzor si farbu volí podľa toho, čo je pod ním: na tmavom pozadí svetlý (krémová káva), na svetlom tmavý (espresso), s plynulým prechodom. Obrys je vždy opačný než výplň, takže ho vidno na čomkoľvek |
+| **Farba goo** | káva používateľa ako kvapky. K nej jedno z dvoch: **podsvietenie** (svetlý lem okolo, `glow`) alebo **vrhaný tieň** (tmavý, posunutý) — čo ho oddelí od pozadia |
+| **Vypnuté** | klasický systémový kurzor, Goo nič nekreslí a nič neskrýva |
+
+Ako kurzor zistí pozadie: scéna už vie čítať, čo je za ňou (`behind(s, at)` v shaderi, tá istá snímka pozadia ako
+pre sklo **[zdroj]**). Kurzor je shader nad kvapkou, ktorý vezme jas pozadia pod hrotom a zmieša podľa neho dve
+farby; jas ide cez pomalú pružinu (120 ms), aby kurzor nad textom neblikal. **[overiť]** cenu: snímka pozadia
+sa berie najviac raz za 50 ms a iba malý výrez okolo kurzora; kde sa pozadie snímať nedá (stupeň < 2, statická
+téma xcursor), adaptívny kurzor je dvojfarebný natrvalo — svetlá výplň s tmavým obrysom, čo je čitateľné všade.
+Zápis do `~/.config/latteos/cursor.json` (`mode`: `adaptive` | `goo` | `off`; `lift`: `glow` | `shadow`).
+
 ---
 
 ## 9. Karty a Shore: živšie otváranie a zatváranie
@@ -461,8 +478,8 @@ Dok pleamar-wm (autor ho volá *shore*) kreslí `wm/session.plm` (`dk.*`). Ostá
 - otvára a zatvára sa podľa §9.4,
 - ikony programov sa správajú ako ikry BarGoo: pod kurzorom sa nadvihnú a sused sa pridá (čísla z §5.3),
 - Goo dostane jeho rozsah ako ďalšiu stenu (`shore.2.a`, `shore.2.b`): hladina sa odráža, kvapky sa mu vyhnú,
-- meno v Nastaveniach: **DockShore**. BarGoo a DockShore robia to isté; ktorý je zapnutý, je voľba v Nastaveniach
-  › Okná, predvolene BarGoo.
+- meno v Nastaveniach: **DockShore**. Nastavenia › Okná › Lišta okien: **BarGoo** (predvolené) · **DockShore** ·
+  **vypnutá**. Naraz beží najviac jedna; vypnutá necháva okná iba na prepínanie klávesmi a prehľad.
 
 ---
 
@@ -576,7 +593,5 @@ niečo chýbalo. Ak čas nevyjde, zastaviť po 5 a zvyšok dokončiť ďalší d
 
 ## 17. Čo ešte treba od používateľa
 
-1. **Predloha kurzora:** tvary a farby priložených kurzorov sú dúhové; kurzor Goo bude kávový. Ak má mať farbu
-   (napr. akcent témy v kvapôčkach), povedať ktorú.
-2. **BarGoo alebo DockShore** ako predvolená lišta okien (§11.2) — návrh je BarGoo.
-3. Po kroku 3 a po kroku 6 pozrieť plochu rukou: dojem zo silnejších reakcií a z kurzora sa nedá zmerať.
+Farba kurzora a lišta okien sú rozhodnuté (§1). Ostáva: po kroku 3 a po kroku 6 pozrieť plochu rukou — dojem zo
+silnejších reakcií a z kurzora sa nedá zmerať.
