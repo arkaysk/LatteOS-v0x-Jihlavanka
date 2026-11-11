@@ -604,6 +604,7 @@
 /usr/share/latteos/apps/common/Label.qml                        <- apps/common/Label.qml
 /usr/share/latteos/apps/common/Pill.qml                         <- apps/common/Pill.qml
 /usr/share/latteos/apps/common/Nav.qml                          <- apps/common/Nav.qml
+/usr/share/latteos/apps/common/Roll.qml                         <- apps/common/Roll.qml
 /usr/share/latteos/apps/common/Scroll.qml                       <- apps/common/Scroll.qml
 /usr/share/latteos/apps/common/Waiting.qml                      <- apps/common/Waiting.qml
 /usr/share/latteos/apps/common/qmldir                           <- apps/common/qmldir

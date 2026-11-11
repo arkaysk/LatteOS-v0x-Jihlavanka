@@ -461,3 +461,15 @@ Nové rozhodnutie: jeden riadok sem (dátum, čo, prečo) a oprava platného zne
 - Web: tá istá služba smie byť viackrát (iný účet = iná záložka s vlastným profilom); prsteň limitu patrí záložke, ktorej to používateľ určí.
 - Účet pri webovej záložke je **poznámka používateľa**: LensAI zo stránok nečíta (pravidlo 10B.35) — čaká na potvrdenie používateľa.
 
+
+## 11. 11. 2026 — agentické úlohy a Build (používateľ)
+
+- Na rozhraní Kaviarne ani na jej názve používateľ **netrvá**; potrebná je možnosť agentického spracovania dlhých úloh (10B.36, 10B.40).
+- **Bez konzoly:** agenti pleamar-wm v termináli nevyhovujú; používateľ sa konzole vyhýba — všetko zadávať a sledovať v grafickom rozhraní.
+- **Režim Build (Arrecife, 1D.19) integrovať úplne, v pôvodnej podobe** (potvrdenie rozhodnutia z 2. 11.).
+- Kandidát na motor dlhých úloh namiesto vlastnej farmy: [Paperclip](https://github.com/paperclipai/paperclip) (MIT) s vlastným webovým rozhraním — nerozhodnuté, čaká na skúšku na latte-lab.
+- **Režim Build sa spúšťa z ponuky pravého kliku na pracovnú plochu** (1D.19); dnes ho spúšťa `pleamar-wm build on` (Super+B) a hľadanie Marey.
+- Širšie agentické úlohy: LatteOS nepribalí žiadny orchestrátor — **každý si nainštaluje vlastnú variantu** (používateľ skúsi Paperclip). Na osobné projekty stačí jednoduchšie agentické rozhranie; Claude Agent Teams zvažované, nerozhodnuté (experimentálne, iba v interaktívnej relácii).
+- **Kaviareň pozastavená** (10B.36, 10B.40): položka Kaviareň sa z LensAI odstráni. **Položky Agenti a Pomocníci sa zlúčia** do jednej.
+- **AI kurzor (10B.34) odložený** na neskôr, pokojne do v1.x; v ľavom paneli LensAI neaktívna položka „AI Cursor (coming in 2027)“.
+- **„Urob to za mňa“ ostáva v termináli, ako je**: konzole sa používateľ vyhýba kvôli linuxovým príkazom, a v tomto termináli sa žiadne nepíšu.

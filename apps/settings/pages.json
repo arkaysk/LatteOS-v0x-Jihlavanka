@@ -387,6 +387,14 @@
     "status": "ready",
     "words": "boot safe mode crash rescue start",
     "expert": true
+   },
+   {
+    "id": "wmcontrol",
+    "name": "pleamar-wm control centre",
+    "icon": "adjustments-horizontal",
+    "status": "ready",
+    "words": "window manager layouts keys dock build agent control centre pleamar",
+    "run": "pleamar-wm control"
    }
   ]
  }

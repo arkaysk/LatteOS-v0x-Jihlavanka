@@ -6,6 +6,7 @@ Glyph Glyph.qml
 Label Label.qml
 Pill Pill.qml
 Nav Nav.qml
+Roll Roll.qml
 Scroll Scroll.qml
 Waiting Waiting.qml
 Surface Surface.qml

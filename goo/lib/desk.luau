@@ -222,6 +222,8 @@ local function desktop_menu()
         { label = tr("Display settings"), glyph = "device-desktop", line = true, run = function() open.settings("displays") end },
         { label = tr("Personalize"), glyph = "palette", run = function() open.settings("coffee") end },
         { label = tr("Wallpaper"), glyph = "photo", run = function() open.settings("background") end },
+        -- pleamar-wm's Build mode as it is (Arrecife, ROADMAP 1D.19): draw where a thing should go and ask for it
+        { label = tr("Build something"), glyph = "hammer", line = true, keys = "Win+B", run = function() run("sh", { "-c", "exec pleamar-wm build on" }, nil, { output = false }) end },
         { label = tr("Open in terminal"), glyph = "terminal-2", line = true, run = function() run("sh", cat({ 'cd "$1" && exec foot', folder }), nil, { output = false }) end },
     }, { width = 290 })
 end

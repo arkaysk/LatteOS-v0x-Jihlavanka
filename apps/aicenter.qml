@@ -17,7 +17,7 @@ import "common"
 ShellRoot {
     id: shell
     readonly property var words: (Quickshell.env("LATTE_APP_ARGS") || "").split("\n").filter(w => w !== "")
-    property string page: "home"               // home (the dashboard) · all (every conversation, by service) · chats (one) · web · cafe · agents · helpers · local · lensai (settings)
+    property string page: "home"               // home (the dashboard) · all (every conversation, by service) · chats (one) · web · agents (the helpers too) · local · lensai (settings)
     property string section: "web"             // the part of the settings open: web · cli · api · instructions
     function openSection(id) {
         page = "lensai"; section = id
@@ -221,7 +221,6 @@ ShellRoot {
     // "Do it for me": the task goes to an agent in a terminal, which plans first and changes nothing before a yes
     Process { id: doer }
     function doIt(task, who) { doer.command = ["latte-ai", "do", task].concat(who ? [who] : []); doer.running = true }
-    Process { id: chooser; onExited: agentsq.ask(["agents"]) }
     Timer { interval: 180000; repeat: true; running: shell.page === "agents"; onTriggered: agentsq.ask(["agents"]) }
     function tokens(n) { return n >= 1e6 ? (n / 1e6).toFixed(1) + " M" : n >= 1e3 ? Math.round(n / 1e3) + " k" : String(n || 0) }
     function modelWord(id) { const m = /claude-(\w+)-(\d+)-(\d+)/.exec(id || ""); return m ? m[1].charAt(0).toUpperCase() + m[1].slice(1) + " " + m[2] + "." + m[3] : (id || "") }
@@ -289,13 +288,12 @@ ShellRoot {
     Timer { interval: 10000; repeat: true; running: shell.page === "lensai" && shell.section === "cli"; onTriggered: if (!svc.running) svc.ask(["services"]) }
     Component.onCompleted: {
         list.ask(["chats"]); who.ask(["providers", "all"]); svc.ask(["services"]); keyq.ask(["keys"]); helpersq.ask(["helpers"])      // helpers: whether the AI is on
-        if (["all", "cafe", "chats", "agents", "helpers", "local", "lensai"].indexOf(words[0]) >= 0) page = words[0]
+        if (["all", "chats", "agents", "helpers", "local", "lensai"].indexOf(words[0]) >= 0) page = words[0] === "helpers" ? "agents" : words[0]      // helpers: a part of the agents' page now
         const part = ({ services: "cli", models: "cli", keys: "api", instructions: "instructions", lensai: words[1] || "web" })[words[0]]      // what were pages of their own are parts of the settings
         if (part) openSection(part)
         if (words[0] === "tab" && words[1]) { page = "web"; tab = words[1]; tabBeside = words[2] || "" }      // latte-app aicenter tab claude [chatgpt]: its own page, another beside
         if (page !== "home") agentsq.ask(["agents"])             // the rings of the tabs show what is left
         if (page === "home") lookAround()
-        if (page === "helpers") helpersq.ask(["helpers"])
         if (page === "local") openLocal()
         if (words[0] && (page === "chats" || (page === "home" && words[0] !== "home"))) choose(words[0])        // a conversation by its id
     }
@@ -395,7 +393,7 @@ ShellRoot {
 
     AppWindow {
         title: I18n.tr("LensAI")
-        heading: shell.page === "lensai" ? I18n.tr("Settings") : shell.page === "web" ? (shell.tabbed.find(t => t.id === shell.tab) || { name: "" }).name : shell.page === "home" ? I18n.tr("Overview") : shell.page === "all" ? I18n.tr("All conversations") : shell.page === "cafe" ? I18n.tr("The Cafe") : shell.page === "agents" ? I18n.tr("Agents") : shell.page === "helpers" ? I18n.tr("Helpers") : shell.page === "local" ? I18n.tr("Local LLMs") : (shell.chat ? shell.chat.title : I18n.tr("Conversations"))
+        heading: shell.page === "lensai" ? I18n.tr("Settings") : shell.page === "web" ? (shell.tabbed.find(t => t.id === shell.tab) || { name: "" }).name : shell.page === "home" ? I18n.tr("Overview") : shell.page === "all" ? I18n.tr("All conversations") : shell.page === "agents" ? I18n.tr("Agents") : shell.page === "local" ? I18n.tr("Local LLMs") : (shell.chat ? shell.chat.title : I18n.tr("Conversations"))
         implicitWidth: 1120; implicitHeight: 760
         ground: shell.glassy ? "transparent" : Theme.ground
         searchHint: I18n.tr("Find a conversation…")
@@ -455,15 +453,14 @@ ShellRoot {
                 Nav { text: I18n.tr("All conversations"); icon: "messages"; on: shell.page === "all" || shell.page === "chats"; badge: shell.mine.length
                       onPressed: { shell.page = "all"; list.ask(["chats"]) } }
                 Item { width: 1; height: 10 }
-                Nav { text: I18n.tr("The Cafe"); icon: "coffee"; on: shell.page === "cafe"; onPressed: shell.page = "cafe" }
-                Nav { text: I18n.tr("Agents"); icon: "robot"; on: shell.page === "agents"; onPressed: { shell.page = "agents"; agentsq.ask(["agents"]) } }
-                Nav { text: I18n.tr("Helpers"); icon: "lifebuoy"; on: shell.page === "helpers"; onPressed: { shell.page = "helpers"; helpersq.ask(["helpers"]) } }
+                Nav { text: I18n.tr("Agents"); icon: "robot"; on: shell.page === "agents"; onPressed: { shell.page = "agents"; agentsq.ask(["agents"]); helpersq.ask(["helpers"]) } }
                 Nav { text: I18n.tr("Local LLMs"); icon: "cpu"; on: shell.page === "local"; onPressed: shell.openLocal() }
                 Nav { text: I18n.tr("Settings"); icon: "settings"; on: shell.page === "lensai"; onPressed: shell.openSection(shell.section) }
             }
         ]
 
         // ── a service's own page, in its tab (ROADMAP 10B.35) ───────────────────────────────────────────────
+                Nav { text: I18n.tr("AI Cursor (coming in 2027)"); icon: "pointer"; off: true }      // ROADMAP 10B.34
         Loader { id: webTabs; anchors.fill: parent; active: shell.web; visible: shell.page === "web"
                  source: "aicenter/WebTabs.qml"
                  Binding { target: webTabs.item; property: "current"; value: shell.page === "web" ? shell.tab : ""; when: webTabs.item !== null }
@@ -503,26 +500,6 @@ ShellRoot {
                         text: I18n.tr("LensAI asks no AI and nothing leaves this computer until it is turned on in Settings › AI.") }
                 Pill { anchors.horizontalCenter: parent.horizontalCenter; icon: "settings"; strong: true; text: I18n.tr("Open Settings › AI")
                        onPressed: Quickshell.execDetached(["latte-app", "settings", "ai"]) } } }
-
-        // ── the Cafe: the agents' work, seen (ROADMAP 10B.36). Until its farm is there (10B.40), who works in this
-        // session's terminals and who waits for the person, as pleamar-wm tells it (`pleamar-wm agents`), read only ──
-        Scroll {
-            id: cafePage
-            visible: shell.page === "cafe"
-            Label { width: cafePage.room; wrapMode: Text.WordWrap; color: Theme.dim
-                    text: I18n.tr("The agents at work in the terminals of this desktop: who works, and who waits for you. Orders, stations and the counter come with the farm.") }
-            Repeater { model: wmAgents.list
-                Rectangle { id: ag; required property var modelData; width: cafePage.room; height: 58; radius: 18; color: Theme.card
-                    Rectangle { x: 18; width: 12; height: 12; radius: 6; anchors.verticalCenter: parent.verticalCenter
-                                color: ag.modelData.state === "asking" ? Theme.gold : ag.modelData.state === "working" ? Theme.ok : Theme.faint }
-                    Column { x: 44; width: parent.width - 220; anchors.verticalCenter: parent.verticalCenter; spacing: 2
-                        Label { text: ag.modelData.agent || ""; font.weight: 700 }
-                        Label { text: String(ag.modelData.folder || "").replace(Quickshell.env("HOME"), "~"); color: Theme.dim; font.pixelSize: 12; width: parent.width; elide: Text.ElideMiddle } }
-                    Label { anchors.right: parent.right; anchors.rightMargin: 18; anchors.verticalCenter: parent.verticalCenter; font.pixelSize: 13; font.weight: 700
-                            color: ag.modelData.state === "asking" ? Theme.gold : Theme.dim
-                            text: ag.modelData.state === "asking" ? I18n.tr("waits for you") : ag.modelData.state === "working" ? I18n.tr("works") : I18n.tr("ready") } } }
-            Label { visible: wmAgents.list.length === 0; text: I18n.tr("No agent at work in a terminal."); color: Theme.dim }
-        }
 
         // ── every conversation, LensGoo's and LensShore's too, under the service that answered (the user, 10. 11.) ──
         Scroll {
@@ -823,15 +800,13 @@ ShellRoot {
                         Card { title: I18n.tr("Local LLMs"); icon: "cpu"
                             Label { text: I18n.tr("{n} models on this computer", { n: (localModels.data || []).length }); color: Theme.dim; font.pixelSize: 12 }
                             Pill { text: I18n.tr("Open"); icon: "chevron-right"; onPressed: shell.openLocal() } } }
-                    // the lens: the Cafe seen through it (a GIF of its own one day; LatteOS's coffee until then)
+                    // the lens: a GIF of the user's own in it, LatteOS's coffee until then; a press shows the agents
                     Item { id: lensBox; width: 340; height: 340
-                        // the Cafe: a GIF of the user's own if there is one, else LatteOS's picture of it (assets/lensai/cafe.jpg)
                         Lens { anchors.fill: parent; anchors.margins: 6; anchors.topMargin: 6 - 5 * Math.sin(home.t); anchors.bottomMargin: 6 + 5 * Math.sin(home.t)
                                zoom: 1.25; turn: 0.35 * Math.sin(home.t * 0.5)
                                source: "file://" + Quickshell.env("HOME") + "/.local/share/latteos/cafe.gif"
                                fallback: "file://" + (Quickshell.env("LATTE_SHARE") || "/usr/share/latteos") + "/lensai/cafe.jpg" }
-                        Label { anchors.horizontalCenter: parent.horizontalCenter; y: parent.height - 4; text: I18n.tr("The Cafe"); color: Theme.dim; font.pixelSize: 12; font.weight: 600 }
-                        MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: shell.page = "cafe" } }
+                        MouseArea { anchors.fill: parent; cursorShape: Qt.PointingHandCursor; onClicked: { shell.page = "agents"; helpersq.ask(["helpers"]) } } }
                     Column { spacing: 16
                         Card { title: I18n.tr("Agents"); icon: "robot"
                             Repeater { model: wmAgents.list
@@ -871,7 +846,21 @@ ShellRoot {
                         Label { text: I18n.tr("Counted from Claude Code's own records on this computer, LensAI's questions included."); color: Theme.dim; font.pixelSize: 12; width: parent.width; wrapMode: Text.WordWrap } }
                     Pill { anchors.right: parent.right; anchors.rightMargin: 16; anchors.verticalCenter: parent.verticalCenter; implicitHeight: 34; icon: "refresh"; text: ""
                            busy: agentsq.running; onPressed: agentsq.ask(["agents"]) } }
-                // "Do it for me": what the agent should do, which agent, and tasks to start from
+                // the agent: crashes and "Do it for me" go to it; LatteOS picks none for the user (Omarchy's default agent)
+                Rectangle { width: agentCol.width; height: agentBox.implicitHeight + 32; radius: 16; color: Theme.card; border.width: 1; border.color: Theme.line
+                    Column { id: agentBox; x: 18; y: 16; width: parent.width - 36; spacing: 10
+                        Row { spacing: 10
+                            Glyph { name: "robot"; color: Theme.gold; font.pixelSize: 20; anchors.verticalCenter: parent.verticalCenter }
+                            Label { text: I18n.tr("Your agent"); font.pixelSize: 16; font.weight: 800; anchors.verticalCenter: parent.verticalCenter } }
+                        Label { width: parent.width; wrapMode: Text.WordWrap; color: Theme.dim; font.pixelSize: 13
+                                text: shell.helpers.agent === "" ? I18n.tr("None is chosen: LatteOS does not choose for you. Crashes and “Do it for me” go to the one you choose.")
+                                                                 : I18n.tr("Crashes and “Do it for me” go to it. It plans first and changes nothing before your yes.") }
+                        Flow { width: parent.width; spacing: 8
+                            Repeater { model: shell.helpers.agents
+                                Pill { required property var modelData; implicitHeight: 32; text: modelData.installed ? modelData.name : I18n.tr("{n} (not installed)", { n: modelData.name })
+                                       strong: modelData.id === shell.helpers.agent; icon: modelData.id === shell.helpers.agent ? "check" : (modelData.installed ? "" : "download"); opacity: modelData.installed ? 1 : 0.6
+                                       onPressed: { if (modelData.installed) shell.setHelper(["latte-ai", "doer", modelData.id]); else shell.openSection("cli") } } } } } }
+                // "Do it for me": what the agent should do, and tasks to start from
                 Rectangle { width: parent.width; height: doCol.implicitHeight + 32; radius: 16; color: Theme.card; border.width: 1; border.color: Theme.line
                     visible: (shell.agents.doers || []).length > 0
                     Column { id: doCol; x: 18; y: 16; width: parent.width - 36; spacing: 12
@@ -884,11 +873,6 @@ ShellRoot {
                                             onAccepted: { if (text.trim() !== "") { shell.doIt(text, ""); text = "" } } }
                                 Label { x: 14; anchors.verticalCenter: parent.verticalCenter; visible: doTask.text === ""; color: Theme.faint; text: I18n.tr("What should it do? For example: my disk is full, make room") } }
                             Pill { id: doGo; implicitHeight: 40; icon: "robot"; strong: true; text: I18n.tr("Do it"); onPressed: { if (doTask.text.trim() !== "") { shell.doIt(doTask.text, ""); doTask.text = "" } } } }
-                        // which agent: the chosen one first (latte-ai doer)
-                        Flow { width: parent.width; spacing: 8
-                            Repeater { model: shell.agents.doers || []
-                                Pill { required property var modelData; implicitHeight: 30; text: modelData.name; strong: modelData.chosen; icon: modelData.chosen ? "check" : ""
-                                       onPressed: { chooser.command = ["latte-ai", "doer", modelData.id]; chooser.running = true } } } }
                         Flow { width: parent.width; spacing: 8
                             Repeater { model: shell.agents.ideas || []
                                 Pill { required property var modelData; implicitHeight: 30; icon: "sparkles"; text: I18n.tr(modelData); onPressed: shell.doIt(I18n.tr(modelData), "") } } } } }
@@ -896,6 +880,19 @@ ShellRoot {
                 Repeater { model: shell.agents.services || []
                     Rectangle { id: sec; required property var modelData; width: agentCol.width; height: secCol.implicitHeight + 32; radius: 16; color: Theme.card; border.width: 1; border.color: Theme.line
                         readonly property string mark: ({ claude: "claude", gemini: "gemini", chatgpt: "openai", grok: "grok", mistral: "mistral", copilot: "githubcopilot" })[modelData.id] || ""
+                // the agents in this session's terminals, as pleamar-wm tells it (`pleamar-wm agents`), read only
+                Label { text: I18n.tr("IN THE TERMINALS"); color: Theme.faint; font.pixelSize: 11; font.weight: 700; font.letterSpacing: 0.8 }
+                Repeater { model: wmAgents.list
+                    Rectangle { id: ag; required property var modelData; width: agentCol.width; height: 58; radius: 18; color: Theme.card
+                        Rectangle { x: 18; width: 12; height: 12; radius: 6; anchors.verticalCenter: parent.verticalCenter
+                                    color: ag.modelData.state === "asking" ? Theme.gold : ag.modelData.state === "working" ? Theme.ok : Theme.faint }
+                        Column { x: 44; width: parent.width - 220; anchors.verticalCenter: parent.verticalCenter; spacing: 2
+                            Label { text: ag.modelData.agent || ""; font.weight: 700 }
+                            Label { text: String(ag.modelData.folder || "").replace(Quickshell.env("HOME"), "~"); color: Theme.dim; font.pixelSize: 12; width: parent.width; elide: Text.ElideMiddle } }
+                        Label { anchors.right: parent.right; anchors.rightMargin: 18; anchors.verticalCenter: parent.verticalCenter; font.pixelSize: 13; font.weight: 700
+                                color: ag.modelData.state === "asking" ? Theme.gold : Theme.dim
+                                text: ag.modelData.state === "asking" ? I18n.tr("waits for you") : ag.modelData.state === "working" ? I18n.tr("works") : I18n.tr("ready") } } }
+                Label { visible: wmAgents.list.length === 0; text: I18n.tr("No agent at work in a terminal."); color: Theme.dim }
                         Column { id: secCol; x: 18; y: 16; width: parent.width - 36; spacing: 10
                             Row { spacing: 12; height: 32
                                 Rectangle { width: 32; height: 32; radius: 9; color: "#f5f1ea"; anchors.verticalCenter: parent.verticalCenter
@@ -917,7 +914,59 @@ ShellRoot {
                             Label { visible: sec.modelData.limits.length === 0; width: secCol.width; wrapMode: Text.WordWrap; color: Theme.dim; font.pixelSize: 13
                                     text: I18n.tr("{n} questions through Lens this month", { n: sec.modelData.asked }) + "  ·  " + I18n.tr("The account's quota is not told here; the service's own page shows it.") } } } }
                 Label { visible: (shell.agents.services || []).length === 0 && !agentsq.running; width: parent.width; wrapMode: Text.WordWrap; color: Theme.dim
-                        text: I18n.tr("No AI service is installed: see Settings.") } } }
+                        text: I18n.tr("No AI service is installed: see Settings.") }
+                // the helpers (Omarchy's toggles, manual 13 and 17, MIT): who reads a sentence, and each helper as a switch;
+                // off, only the offer goes, the thing itself stays at hand
+                // who reads a sentence: this computer, unless the user chooses Haiku (Omarchy's Defaults, a backend to pick)
+                Rectangle { width: agentCol.width; height: whoBox.implicitHeight + 32; radius: 16; color: Theme.card; border.width: 1; border.color: Theme.line
+                    Column { id: whoBox; x: 18; y: 16; width: parent.width - 36; spacing: 12
+                        Row { spacing: 10
+                            Glyph { name: "bolt"; color: Theme.gold; font.pixelSize: 20; anchors.verticalCenter: parent.verticalCenter }
+                            Label { text: I18n.tr("Small tasks"); font.pixelSize: 16; font.weight: 800; anchors.verticalCenter: parent.verticalCenter } }
+                        Label { width: parent.width; wrapMode: Text.WordWrap; color: Theme.dim; font.pixelSize: 13
+                                text: I18n.tr("A sentence to read, a date to find: what the rules of LatteOS do not manage. What it read is always shown before anything is done.") }
+                        Row { spacing: 12; width: parent.width
+                            Repeater { model: [
+                                    { id: "local", name: QT_TR_NOOP("On this computer"), glyph: "device-desktop", can: shell.helpers.local !== "",
+                                      how: shell.helpers.local !== "" ? shell.helpers.local : QT_TR_NOOP("No model yet: choose one in Local LLMs"), note: QT_TR_NOOP("Nothing leaves this computer.") },
+                                    { id: "haiku", name: "Claude Haiku", glyph: "cloud", can: shell.helpers.haiku.length > 0,
+                                      how: shell.helpers.haiku.indexOf("key") >= 0 ? QT_TR_NOOP("With your key: a second or two") : shell.helpers.haiku.indexOf("claude") >= 0 ? QT_TR_NOOP("Through Claude Code: some ten seconds") : QT_TR_NOOP("Needs Claude Code or a key (Settings)"),
+                                      note: QT_TR_NOOP("Faster and surer; the sentence goes to Anthropic.") } ]
+                                Rectangle { id: tile; required property var modelData; width: (whoBox.width - 12) / 2; height: 96; radius: 14
+                                    readonly property bool picked: shell.helpers.helper === modelData.id
+                                    color: picked ? Qt.rgba(Theme.gold.r, Theme.gold.g, Theme.gold.b, 0.12) : (tileHit.containsMouse ? Theme.raised : "transparent")
+                                    border.width: picked ? 2 : 1; border.color: picked ? Theme.gold : Theme.line; opacity: modelData.can || picked ? 1 : 0.55
+                                    Glyph { x: 14; y: 14; name: tile.modelData.glyph; color: tile.picked ? Theme.gold : Theme.dim; font.pixelSize: 20 }
+                                    Glyph { anchors.right: parent.right; anchors.rightMargin: 14; y: 14; visible: tile.picked; name: "circle-check"; color: Theme.gold; font.pixelSize: 18 }
+                                    Column { x: 44; y: 12; width: parent.width - 80; spacing: 3
+                                        Label { text: I18n.tr(tile.modelData.name); font.weight: 800 }
+                                        Label { width: parent.width; elide: Text.ElideRight; color: Theme.dim; font.pixelSize: 12; text: I18n.tr(tile.modelData.how) }
+                                        Label { width: parent.width; wrapMode: Text.WordWrap; color: tile.modelData.id === "haiku" ? Theme.gold : Theme.ok; font.pixelSize: 12; text: I18n.tr(tile.modelData.note) } }
+                                    MouseArea { id: tileHit; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
+                                        onClicked: { if (tile.modelData.can) shell.setHelper(["latte-ai", "helper", tile.modelData.id])
+                                                     else if (tile.modelData.id === "local") shell.openLocal()
+                                                     else shell.openSection("cli") } } } } } } }
+                Label { text: I18n.tr("WHAT HELPS"); color: Theme.faint; font.pixelSize: 11; font.weight: 700; font.letterSpacing: 0.8 }
+                Label { width: parent.width; wrapMode: Text.WordWrap; color: Theme.dim
+                        text: I18n.tr("Small agents that help LatteOS. Each one can be turned off: then it stops offering itself, and what it did can still be asked for by hand.") }
+                Repeater { model: shell.helpers.switches
+                    Rectangle { id: sw; required property var modelData; width: agentCol.width; height: swCol.implicitHeight + 32; radius: 16; color: Theme.card; border.width: 1; border.color: Theme.line
+                        Glyph { x: 18; y: 18; name: sw.modelData.glyph; color: sw.modelData.on ? Theme.gold : Theme.faint; font.pixelSize: 20 }
+                        Column { id: swCol; x: 52; y: 16; width: parent.width - 52 - 90; spacing: 6
+                            Label { text: I18n.tr(sw.modelData.name); font.pixelSize: 15; font.weight: 800 }
+                            Label { width: parent.width; wrapMode: Text.WordWrap; color: Theme.dim; font.pixelSize: 13; text: I18n.tr(sw.modelData.desc) }
+                            Label { visible: sw.modelData.id === "crash-capture" && sw.modelData.on && shell.helpers.agent === ""; width: parent.width; wrapMode: Text.WordWrap; color: Theme.gold; font.pixelSize: 12
+                                    text: I18n.tr("It waits for your agent: choose one above.") }
+                            // a crash: the programs it is not told for (GuardCorgi's “Not about this program”), each back with a press
+                            Flow { visible: sw.modelData.id === "crash-capture" && shell.helpers.muted.length > 0; width: parent.width; spacing: 8
+                                Label { text: I18n.tr("Not told for:"); color: Theme.dim; font.pixelSize: 12; height: 28; verticalAlignment: Text.AlignVCenter }
+                                Repeater { model: sw.modelData.id === "crash-capture" ? shell.helpers.muted : []
+                                    Pill { required property var modelData; implicitHeight: 28; icon: "x"; text: modelData
+                                           onPressed: shell.setHelper(["latte-guardcorgi", "quiet", modelData, "off"]) } } } }
+                        Rectangle { width: 46; height: 26; radius: 13; color: sw.modelData.on ? Theme.gold : Theme.raised; anchors.right: parent.right; anchors.rightMargin: 18; y: 18
+                            Rectangle { width: 20; height: 20; radius: 10; y: 3; x: sw.modelData.on ? 23 : 3; color: sw.modelData.on ? Theme.inkOnGold : Theme.dim }
+                            MouseArea { anchors.fill: parent; anchors.margins: -6; cursorShape: Qt.PointingHandCursor
+                                        onClicked: shell.setHelper(["latte-ai", "toggle", sw.modelData.id, sw.modelData.on ? "off" : "on"]) } } } } } }
 
         // ── the models on this computer, as LM Studio has them: Discover (a search, its results on the left and the chosen
         // model on the right with its download options and its card), My Models (the downloads too, and how each model
@@ -1183,83 +1232,6 @@ ShellRoot {
                        onPressed: { localSet.command = ["latte-ai", "local", "gpu", localPage.rec.gpu === true ? "off" : "on"]; localSet.running = true } }
             }
 
-        }
-
-        // ── the helpers (Omarchy's toggles, manual 13 and 17, MIT): who does the work — the agent and who reads a sentence,
-        // picked by the user — and each helper as a switch; off, only the offer goes, the thing itself stays at hand ──
-        Scroll {
-            id: helpPage
-            visible: shell.page === "helpers"
-            Label { width: helpPage.room; wrapMode: Text.WordWrap; color: Theme.dim
-                    text: I18n.tr("Small agents that help LatteOS. Each one can be turned off: then it stops offering itself, and what it did can still be asked for by hand.") }
-            Rectangle { visible: !shell.helpers.ai; width: helpPage.room; height: 48; radius: 14; color: Qt.rgba(Theme.red.r, Theme.red.g, Theme.red.b, 0.14)
-                Label { x: 16; width: parent.width - 32; anchors.verticalCenter: parent.verticalCenter; wrapMode: Text.WordWrap
-                        text: I18n.tr("The AI layer of LatteOS is off: none of these asks any AI now.") } }
-
-            Label { text: I18n.tr("WHO DOES THE WORK"); color: Theme.faint; font.pixelSize: 11; font.weight: 700; font.letterSpacing: 0.8 }
-            // the agent: crashes and "Do it for me" go to it; LatteOS picks none for the user (Omarchy's default agent)
-            Rectangle { width: helpPage.room; height: agentBox.implicitHeight + 32; radius: 16; color: Theme.card; border.width: 1; border.color: Theme.line
-                Column { id: agentBox; x: 18; y: 16; width: parent.width - 36; spacing: 10
-                    Row { spacing: 10
-                        Glyph { name: "robot"; color: Theme.gold; font.pixelSize: 20; anchors.verticalCenter: parent.verticalCenter }
-                        Label { text: I18n.tr("Your agent"); font.pixelSize: 16; font.weight: 800; anchors.verticalCenter: parent.verticalCenter } }
-                    Label { width: parent.width; wrapMode: Text.WordWrap; color: Theme.dim; font.pixelSize: 13
-                            text: shell.helpers.agent === "" ? I18n.tr("None is chosen: LatteOS does not choose for you. Crashes and “Do it for me” go to the one you choose.")
-                                                             : I18n.tr("Crashes and “Do it for me” go to it. It plans first and changes nothing before your yes.") }
-                    Flow { width: parent.width; spacing: 8
-                        Repeater { model: shell.helpers.agents
-                            Pill { required property var modelData; implicitHeight: 32; text: modelData.installed ? modelData.name : I18n.tr("{n} (not installed)", { n: modelData.name })
-                                   strong: modelData.id === shell.helpers.agent; icon: modelData.id === shell.helpers.agent ? "check" : (modelData.installed ? "" : "download"); opacity: modelData.installed ? 1 : 0.6
-                                   onPressed: { if (modelData.installed) shell.setHelper(["latte-ai", "doer", modelData.id]); else shell.openSection("cli") } } } } } }
-            // who reads a sentence: this computer, unless the user chooses Haiku (Omarchy's Defaults, a backend to pick)
-            Rectangle { width: helpPage.room; height: whoBox.implicitHeight + 32; radius: 16; color: Theme.card; border.width: 1; border.color: Theme.line
-                Column { id: whoBox; x: 18; y: 16; width: parent.width - 36; spacing: 12
-                    Row { spacing: 10
-                        Glyph { name: "bolt"; color: Theme.gold; font.pixelSize: 20; anchors.verticalCenter: parent.verticalCenter }
-                        Label { text: I18n.tr("Small tasks"); font.pixelSize: 16; font.weight: 800; anchors.verticalCenter: parent.verticalCenter } }
-                    Label { width: parent.width; wrapMode: Text.WordWrap; color: Theme.dim; font.pixelSize: 13
-                            text: I18n.tr("A sentence to read, a date to find: what the rules of LatteOS do not manage. What it read is always shown before anything is done.") }
-                    Row { spacing: 12; width: parent.width
-                        Repeater { model: [
-                                { id: "local", name: QT_TR_NOOP("On this computer"), glyph: "device-desktop", can: shell.helpers.local !== "",
-                                  how: shell.helpers.local !== "" ? shell.helpers.local : QT_TR_NOOP("No model yet: choose one in Local LLMs"), note: QT_TR_NOOP("Nothing leaves this computer.") },
-                                { id: "haiku", name: "Claude Haiku", glyph: "cloud", can: shell.helpers.haiku.length > 0,
-                                  how: shell.helpers.haiku.indexOf("key") >= 0 ? QT_TR_NOOP("With your key: a second or two") : shell.helpers.haiku.indexOf("claude") >= 0 ? QT_TR_NOOP("Through Claude Code: some ten seconds") : QT_TR_NOOP("Needs Claude Code or a key (Settings)"),
-                                  note: QT_TR_NOOP("Faster and surer; the sentence goes to Anthropic.") } ]
-                            Rectangle { id: tile; required property var modelData; width: (whoBox.width - 12) / 2; height: 96; radius: 14
-                                readonly property bool picked: shell.helpers.helper === modelData.id
-                                color: picked ? Qt.rgba(Theme.gold.r, Theme.gold.g, Theme.gold.b, 0.12) : (tileHit.containsMouse ? Theme.raised : "transparent")
-                                border.width: picked ? 2 : 1; border.color: picked ? Theme.gold : Theme.line; opacity: modelData.can || picked ? 1 : 0.55
-                                Glyph { x: 14; y: 14; name: tile.modelData.glyph; color: tile.picked ? Theme.gold : Theme.dim; font.pixelSize: 20 }
-                                Glyph { anchors.right: parent.right; anchors.rightMargin: 14; y: 14; visible: tile.picked; name: "circle-check"; color: Theme.gold; font.pixelSize: 18 }
-                                Column { x: 44; y: 12; width: parent.width - 80; spacing: 3
-                                    Label { text: I18n.tr(tile.modelData.name); font.weight: 800 }
-                                    Label { width: parent.width; elide: Text.ElideRight; color: Theme.dim; font.pixelSize: 12; text: I18n.tr(tile.modelData.how) }
-                                    Label { width: parent.width; wrapMode: Text.WordWrap; color: tile.modelData.id === "haiku" ? Theme.gold : Theme.ok; font.pixelSize: 12; text: I18n.tr(tile.modelData.note) } }
-                                MouseArea { id: tileHit; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor
-                                    onClicked: { if (tile.modelData.can) shell.setHelper(["latte-ai", "helper", tile.modelData.id])
-                                                 else if (tile.modelData.id === "local") shell.openLocal()
-                                                 else shell.openSection("cli") } } } } } } }
-
-            Label { text: I18n.tr("WHAT HELPS"); color: Theme.faint; font.pixelSize: 11; font.weight: 700; font.letterSpacing: 0.8 }
-            Repeater { model: shell.helpers.switches
-                Rectangle { id: sw; required property var modelData; width: helpPage.room; height: swCol.implicitHeight + 32; radius: 16; color: Theme.card; border.width: 1; border.color: Theme.line
-                    Glyph { x: 18; y: 18; name: sw.modelData.glyph; color: sw.modelData.on ? Theme.gold : Theme.faint; font.pixelSize: 20 }
-                    Column { id: swCol; x: 52; y: 16; width: parent.width - 52 - 90; spacing: 6
-                        Label { text: I18n.tr(sw.modelData.name); font.pixelSize: 15; font.weight: 800 }
-                        Label { width: parent.width; wrapMode: Text.WordWrap; color: Theme.dim; font.pixelSize: 13; text: I18n.tr(sw.modelData.desc) }
-                        Label { visible: sw.modelData.id === "crash-capture" && sw.modelData.on && shell.helpers.agent === ""; width: parent.width; wrapMode: Text.WordWrap; color: Theme.gold; font.pixelSize: 12
-                                text: I18n.tr("It waits for your agent: choose one above.") }
-                        // a crash: the programs it is not told for (GuardCorgi's “Not about this program”), each back with a press
-                        Flow { visible: sw.modelData.id === "crash-capture" && shell.helpers.muted.length > 0; width: parent.width; spacing: 8
-                            Label { text: I18n.tr("Not told for:"); color: Theme.dim; font.pixelSize: 12; height: 28; verticalAlignment: Text.AlignVCenter }
-                            Repeater { model: sw.modelData.id === "crash-capture" ? shell.helpers.muted : []
-                                Pill { required property var modelData; implicitHeight: 28; icon: "x"; text: modelData
-                                       onPressed: shell.setHelper(["latte-guardcorgi", "quiet", modelData, "off"]) } } } }
-                    Rectangle { width: 46; height: 26; radius: 13; color: sw.modelData.on ? Theme.gold : Theme.raised; anchors.right: parent.right; anchors.rightMargin: 18; y: 18
-                        Rectangle { width: 20; height: 20; radius: 10; y: 3; x: sw.modelData.on ? 23 : 3; color: sw.modelData.on ? Theme.inkOnGold : Theme.dim }
-                        MouseArea { anchors.fill: parent; anchors.margins: -6; cursorShape: Qt.PointingHandCursor
-                                    onClicked: shell.setHelper(["latte-ai", "toggle", sw.modelData.id, sw.modelData.on ? "off" : "on"]) } } } }
         }
 
         // ── LensAI's settings, a part for each way an AI is reached: its own page in a tab (web), its official tool in a

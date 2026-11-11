@@ -195,6 +195,7 @@ Ponechať / Späť / Zahodiť; tvorby v `~/.local/share/pleamar/marea/creations/
 počas práce pruh „An agent is using this monitor · Stop“. Nahrádza vlastný návrh Tvorcu Goo (6K) a widgety z Chaldea (6B.41);
 prvá tvorba na skúšku: štvorec využitia Claude (6B.38) — presne ten je vo videu. Mení sa: poskytovateľ AI cez LensAI (lokálny
 model alebo Claude; Marea dnes ChatGPT), texty cez preklady, farby z témy, tvorby viditeľné v galérii widgetov a v Kaviarni.
+- **11. 11. (používateľ):** Build integrovať úplne v pôvodnej podobe a **spúšťať z ponuky pravého kliku na pracovnú plochu** (riadok „Build“ → `pleamar-wm build on`, dnes iba Super+B a hľadanie Marey). Riadok „Postaviť niečo“ pridaný a nasadený 11. 11. (`goo/lib/desk.luau`); ostáva vyskúšať celú tvorbu s prihlásenou AI.
 **1D.20** [~] **Režimy okien z rozložení pleamar-wm** (video k4ditano „Tiling a fractal layout“): 8A.06 skladať z hotových — Rozloženia pleamar-wm doplniť do Nastavení › Okná do zoznamu režimov (2. 11.). 2. 11.: Nastavenia › Okná: Canvas zapnutý; pod kartami rad „Dlaždice“ — Hlavné vľavo, Hlavné vpravo, Stĺpce, Riadky, Mriežka, Fraktál, Príliv (pleamar-wm volá „marea“) — náhrada `hyprctl` ich prekladá na `lay`, `free`, `cv`; hlava BarGoo prepína štyri hlavné (varianty dlaždíc ako Dlaždice, plátno ako Plávajúce). Kde sa prepína: Nastavenia (všetko), hlava BarGoo (hlavné štyri), pás rozložení pleamar-wm pri ťahaní okna (pôvodný; ten zatiaľ nezapisuje voľbu do `window-mode`, takže hlava BarGoo o ňom nevie). Ostáva Tri zóny.
 rozložení — Páska = scrolling, Dlaždice = leader/grid/fractal (voľba v karte), Plávajúce = free; vlastné ostáva iba Glance,
 Canvas a Tri zóny. **Páska bez kódu niri**: scrolling pleamar-wm je BSD-3, takže prevzatie z niri (8A.07, GPL-3.0 a s ním
@@ -205,7 +206,7 @@ iba myšlienka): v Plávajúcich posunieš okno o pár pixelov a pri kurzore sa 
 **1D.22** [ ] **Agenti na plátne** (video k4ditano s oknami Claude a Codex spojenými čiarami): okná agentov ako uzly, čiara = — Áno (2. 11.). Agenti pleamar-wm v termináli (ako ich urobil k4ditano) sú dnes alternatívou k LensAI a fungujú nezávisle; agentický systém LatteOS s nimi zatiaľ nie je prepojený.
 kto komu dal úlohu (`term pair`, `by.N` z 1D.17). Pohľad pre Canvas (8A.12), Agentov v dashboarde (6B.36) a Kaviareň (10B.40).
 **1D.23** [ ] **Zrkadlenie obrazoviek v pleamar-wm** (neskôr): Nastavenia › Obrazovky › Duplikovať (ako Win+P) a virtuálny monitor vedľa skutočného ukazuje jeho obraz — na Hyprlande `mirror` v `system/hypr/hyprland.lua`; pleamar-wm to zatiaľ nevie (overiť v novej verzii, inak návrh autorovi).
-**1D.24** [ ] **Pôvodné možnosti pleamar, pleamar-wm a Marey v Nastaveniach** (neskôr, používateľ 2. 11.): čo ponúka ich ovládacie centrum a Marea (rozloženia, dok, sklo, efekty, voda…), ponúknuť aj v Nastaveniach LatteOS, oblečené do nášho štýlu (farby z témy, preklady, myš prvá). — Návrh prijatý (2. 11.): jedno miesto, Nastavenia LatteOS — rozloženia v Okná, dok ako „Panel úloh“ pod Okná, rozmazanie v Prostredie › Sklo, dážď/sneh/voda v Prostredie › Efekty (s 9A.12), skratky v Klávesnici, agent a vzdialený prístup v Súkromí/AI; Nastavenia zapisujú priamo do `session.conf` a `keys.conf` pleamar-wm, ovládacie centrum (Super+Shift+I) ostáva ako pôvodné.
+**1D.24** [ ] **Pôvodné možnosti pleamar, pleamar-wm a Marey v Nastaveniach** (neskôr, používateľ 2. 11.): čo ponúka ich ovládacie centrum a Marea (rozloženia, dok, sklo, efekty, voda…), ponúknuť aj v Nastaveniach LatteOS, oblečené do nášho štýlu (farby z témy, preklady, myš prvá). — Návrh prijatý (2. 11.): jedno miesto, Nastavenia LatteOS — rozloženia v Okná, dok ako „Panel úloh“ pod Okná, rozmazanie v Prostredie › Sklo, dážď/sneh/voda v Prostredie › Efekty (s 9A.12), skratky v Klávesnici, agent a vzdialený prístup v Súkromí/AI; Nastavenia zapisujú priamo do `session.conf` a `keys.conf` pleamar-wm, ovládacie centrum (Super+I, `pleamar-wm control`) ostáva ako pôvodné. **11. 11.:** odkaz naň je v Nastavenia › Systém („Ovládacie centrum pleamar-wm“; riadok s poľom `run` v `apps/settings/pages.json`, nasadené).
 **1D.25** [ ] **Shore pleamar-wm ako variant BarGoo** (neskôr): dok pleamar-wm (*shore*) prerobiť na kvapku enginu Goo a ponúknuť ako druhý vzhľad BarGoo. Pozor na meno: nie LensShore ani trayShore. Používateľ 3. 11. pochválil na shore: náhľad okien po prejdení
 myšou, prepínanie medzi nimi a ponuku pravého kliku — prebrať aj do BarGoo. (Oprava v ten deň: všetky aplikácie
 LatteOS mali `app_id` `org.quickshell`, shore ich zlúčil pod ikonu LensAI; teraz `//@ pragma AppId latteos-NAME`.)
@@ -2001,6 +2002,7 @@ Zdroje: `apps/common/` (AppWindow, Surface, Menu); LATTEOS-GOO §6.3·0
 [ ] **Hladina na spodku okna aplikácie ako miesto pre dve veci** (používateľ, 14. 10.): (a) **zaujímavé funkcie**
     aplikácie, zvýraznené výraznou ikonou ako Barista v App Manageri; (b) **tooltip**: rady a triky, a popis
     tlačidla, nad ktorým je kurzor. Platí pre každé okno s hladinou (`apps/common/AppWindow.qml`, `Surface.qml`).
+**8D.04** [x] **Rolovací text v ľavom paneli** (používateľ 11. 11.): názov, ktorý sa do riadku nezmestí, sa pod myšou alebo na vybranom riadku posunie na koniec a späť (`apps/common/Roll.qml`, použité v `Nav.qml` a v zozname stránok Nastavení); inak ostáva skrátený. Nasadené 11. 11.; overené v skúšobnej scéne, v okne myšou nie. `Nav.off` = neaktívny riadok (ohlásená funkcia).
 
 ---
 
@@ -2665,16 +2667,16 @@ odpovede webových AI o prepojení s CLI/MCP od používateľa; potom poradie ni
 **Stav 10. 11. večer** (rozhodnutia dňa: `docs/goo/ROZHODNUTIA.md`, riadky s „10. 11.“):
 - **Hotové a nasadené:** audit a jeho opravy (10B.47), stránka Všetky rozhovory a pôvod rozhovoru (10B.49), prstene = spotreba,
   karta Tokeny na Prehľade, ponuky „+“ iba s tým, čo LatteOS robí (10B.50), jeden vzhľad AI v LensGoo/LensShore, záložka Kaviareň
-  (zatiaľ agenti z `pleamar-wm agents`, iba čítanie), `latte-mcp` krok 1 (čítanie) a krok 2 (zmeny s potvrdením v LensAI) — 10B.43.
+  (zatiaľ agenti z `pleamar-wm agents`, iba čítanie; 11. 11. zrušená, zoznam je na stránke Agenti), `latte-mcp` krok 1 (čítanie) a krok 2 (zmeny s potvrdením v LensAI) — 10B.43.
   `latte-mcp` je na latte-lab zapísaný do Claude Code, Codexu a Gemini CLI (`latte-mcp remove` ho vyberie).
 - **Poradie ďalej:**
   1. **10B.43 krok 3:** slučka nástrojov v `latte-ai` pre kľúče API a lokálny model (dnes iba odpovedajú); nástroj `ask`
      (opýtaj sa inej AI — spolupráca AI) s ukázaním, komu otázka ide.
-  2. **10B.40 farma:** dočítať clodfarm (`store.py`, `runner.py`, `supervisor.py`, beh bez AWS a bez Dockeru), rozhodnúť
+  2. *(pozastavené 11. 11. s Kaviarňou)* **10B.40 farma:** dočítať clodfarm (`store.py`, `runner.py`, `supervisor.py`, beh bez AWS a bez Dockeru), rozhodnúť
      o prevzatí; potom nástroje `order`/`orders`/`result`/`counter` a pult v Kaviarni (odpoveď agentovi cez `pleamar-wm agents answer`).
-  3. **10B.36 vzhľad Kaviarne:** izometrická miestnosť, čašníčky = agenti, karty postáv; vlastná pôvodná grafika.
+  3. *(pozastavené 11. 11.)* **10B.36 vzhľad Kaviarne:** izometrická miestnosť, čašníčky = agenti, karty postáv; vlastná pôvodná grafika.
   4. **10B.53** LensShore na `latte-skill` (+ nerušiť, otvoriť, zavrieť s dvojitým potvrdením); **10B.48** Späť/Znova v hornej lište.
-  5. **10B.34 kurzor** (nástroje `under_pointer`, `look`); potrebuje `agent on` v `~/.config/pleamar/session.conf` — dnes vypnuté,
+  5. *(odložené 11. 11. na neskôr, až v1.x)* **10B.34 kurzor** (nástroje `under_pointer`, `look`); potrebuje `agent on` v `~/.config/pleamar/session.conf` — dnes vypnuté,
      preto nástroj `windows` vracia chybu. **10B.39** strážca podmienok (vlastný kód). Nakoniec konektor pre web služieb.
 - **Neoverené naživo:** tlačidlá Povoliť/Odmietnuť myšou (overené príkazom), prepínač MCP v LensAI › Služby, krok 2 so skutočným
   Claude Code, jednotný vzhľad a pôvod rozhovoru v LensGoo/LensShore, sekcia AI v LensGoo pri vypnutej AI (10B.51);
@@ -2811,7 +2813,7 @@ je centralne zastrešenie všetkych použitelnych AI. Je totalna kopia Omarchy A
     - Ďalšie polia postupne (Nastavenia, App Manager, LensGoo). Merané 21. 10.: model 4B ~12 s na procesore a
       pri dátumoch sa mýli — čo vedia pravidlá, robia pravidlá; AI iba na zvyšok a vždy s potvrdením.
 
-**10B.21** [x] (LensAI) Pomocníci ako v Omarchy · r. 557–562
+**10B.21** [x] (LensAI) Pomocníci ako v Omarchy · r. 557–562 — 11. 11. (používateľ): stránka Pomocníci zlúčená do stránky Agenti (Tvoj agent, Urob to za mňa, V termináloch, účty a limity, Malé úlohy, Čo pomáha); `latte-app aicenter helpers` otvorí Agentov.
 
 **10B.22** [~] zlúčené do 10B.28 (10. 11.).
 
@@ -2876,7 +2878,7 @@ priamo na mieste kurzora nad vybraným textom v ľubovoľnom okne, napr. „nahr
 cursor: Select anything to ask Gemini“ — zatrasenie kurzorom vyvolá AI nad čímkoľvek na obrazovke). Preskúmať, ako
 v LatteOS vyvolať AI gestom myši (zatrasenie, podržanie) nad označeným textom alebo oblasťou obrazovky a odpovedať pri
 kurzore; súvisí s LensShore (čipy kontextu, 6B.18), hlasom (6B.23) a pravidlom Myš prvá.
-**Doplnenie (9. 11.):** ďalšia predloha — experimentálny AI ukazovateľ Google DeepMind s Gemini: rozumie vizuálnemu kontextu pod myšou a hlasovým „this“ / „that“ (toto zhrň, tamto pošli) naprieč aplikáciami. Základ už máme: agent pleamar-wm vidí okná a polohu myši (`cursor.sock`, `pleamar-desktop`), lokálny Qwen a whisper.cpp. Lokálne povinné, cloud voliteľný a výslovne povolený. Iba návrh, zatiaľ nepísať.
+**Doplnenie (9. 11.):** ďalšia predloha — experimentálny AI ukazovateľ Google DeepMind s Gemini: rozumie vizuálnemu kontextu pod myšou a hlasovým „this“ / „that“ (toto zhrň, tamto pošli) naprieč aplikáciami. Základ už máme: agent pleamar-wm vidí okná a polohu myši (`cursor.sock`, `pleamar-desktop`), lokálny Qwen a whisper.cpp. Lokálne povinné, cloud voliteľný a výslovne povolený. Iba návrh, zatiaľ nepísať. **11. 11. (používateľ):** odložené na neskôr, pokojne až do v1.x; predloha https://deepmind.google/blog/ai-pointer/ (Magic Pointer je uzavretý a iba pre Gemini, preberá sa myšlienka). V LensAI je v ľavom paneli neaktívna položka „AI Cursor (coming in 2027)“ (`Nav.off`).
 
 **10B.35** [ ] **Záložky služieb v LensAI — „jeden prsteň“** (používateľ 29. 10.) — LensAI je nadstavba: každá veľká AI, ktorú
 nejde integrovať celú, dostane v okne LensAI vlastnú záložku s jej **oficiálnym webom**. Používateľ sa prihlási sám svojím
@@ -2936,7 +2938,7 @@ a ostatné ostávajú domáca záležitosť LensAI (10B.07, 10B.08). Pravidlá a
   záložky v `ListModel` (otvorenie ďalšej nenačíta ostatné znova), profil cez `WebEngineProfilePrototype`. Bodky
   overené iba načítaním bez chýb — agentov a skrytú záložku testovacie prostredie nemá.
 
-**10B.36** [ ] **Kaviareň (Caffè) — AI farma pre každodennú a tvorivú prácu** (používateľ 29. 10.) — hravá, pútavá časť LensAI
+**10B.36** [ ] **POZASTAVENÉ 11. 11. (používateľ: na rozhraní ani názve netrvá; položka Kaviareň z LensAI odstránená, Agenti a Pomocníci zlúčení do stránky Agenti, kde je aj zoznam agentov v termináloch; širšie úlohy si každý rieši vlastným nástrojom, napr. Paperclip).** **Kaviareň (Caffè) — AI farma pre každodennú a tvorivú prácu** (používateľ 29. 10.) — hravá, pútavá časť LensAI
 (a LensShore): front dlhých úloh, ktoré robia **čašníčky = agenti** (lokálne modely, ComfyUI, cloud cez API iba
 s povolením). **Premenované z „Plantáž“ (používateľ 29. 10.):** objednávka (úloha zo skillu) → čašníčka ju spracuje
 **pri presse** (stanice: scenár, prompty, obrázky, video…) → výsledok odovzdá **pri pulte**, kde ho používateľ schváli,
@@ -2999,7 +3001,7 @@ ho používateľ znova nepotvrdí (FCC to robí sám: integrácie, ktoré presta
 Code už ide bez proxy (LM Studio s rozhraním Anthropicu, tak ho používa clodfarm).
 - **Preskúmané 10. 11.:** free-claude-code (commit da29b69, 9. 11.) strážcu v kóde **nemá** — „FCC follows provider TOS and removes integrations“ je iba veta v README, robí to autor ručne. Strážca LensAI je teda vlastný kód: adresa podmienok + odtlačok textu, pravidelná kontrola, rozdiel, prerušenie prístupu do potvrdenia. MCP, skilly a konektory dostane služba iba tam, kde to jej podmienky dovoľujú (claude.ai má Skills, Connectors, Plugins v nastaveniach) — to stráži on.
 
-**10B.40** [ ] **Vlastná farma pre Kaviareň** (používateľ 2. 11.: kvôli Kaviarni 10B.36 sa stavia vlastná verzia, nie clodfarm):
+**10B.40** [ ] **POZASTAVENÉ 11. 11. s Kaviarňou (10B.36).** **Vlastná farma pre Kaviareň** (používateľ 2. 11.: kvôli Kaviarni 10B.36 sa stavia vlastná verzia, nie clodfarm):
 úlohy = skilly, stanice, brány pri pulte. Z clodfarm vziať skúsenosti (`inspo/dev-ai-prostredie.md`, boti na LM Studio,
 výsledky do gitu), z [cheap-ag](https://github.com/muaaz9329/cheap-ag) (MIT) **bránu cez testy**: lacný model pracuje vo
 vlastnej kópii (worktree), výsledok prejde iba s prejdenou kontrolou, inak úlohu dokončí silnejší model; drahý model iba plánuje

@@ -47,7 +47,9 @@ ShellRoot {
     function go(id) {
         // a page of the expert mode asked for by name (LensGoo, a link): the mode comes on with it
         if (!all.find(q => q.id === id) && areasAll.some(a => a.pages.some(q => q.id === id && q.expert))) { setExpert(true); Qt.callLater(() => go(id)); return }
-        const p = all.find(q => q.id === id); if (p) { page = id; unfolded = p.area.id; asked = "" }
+        const p = all.find(q => q.id === id)
+        if (p && p.run) { Quickshell.execDetached(p.run.split(" ")); return }      // a line that opens a window of its own (pleamar-wm's control centre), not a page
+        if (p) { page = id; unfolded = p.area.id; asked = "" }
     }
     // no accents, no case, y as i; as in bin/latte-settings, which LensGoo asks: a slip of a letter does not matter
     function plain(s) { return s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/y/g, "i") }
@@ -681,7 +683,7 @@ ShellRoot {
                                         readonly property bool on: shell.page === modelData.id && shell.asked === ""
                                         color: on ? Theme.raised : (lineHit.containsMouse ? Theme.card : "transparent")
                                         Rectangle { width: 3; height: 16; radius: 2; color: Theme.gold; visible: line.on; anchors.verticalCenter: parent.verticalCenter }
-                                        Label { x: line.sub ? 62 : 44; width: parent.width - 70 - (line.sub ? 18 : 0); text: I18n.tr(line.modelData.name); font.pixelSize: line.sub ? 12 : 13; color: line.on ? Theme.cream : Theme.dim; anchors.verticalCenter: parent.verticalCenter }
+                                        Roll { x: line.sub ? 62 : 44; width: parent.width - 70 - (line.sub ? 18 : 0); rolling: line.on || lineHit.containsMouse; text: I18n.tr(line.modelData.name); font.pixelSize: line.sub ? 12 : 13; color: line.on ? Theme.cream : Theme.dim; anchors.verticalCenter: parent.verticalCenter }
                                         Dot { status: line.modelData.status; anchors.right: parent.right; anchors.rightMargin: 12; anchors.verticalCenter: parent.verticalCenter }
                                         Glyph { visible: !!line.modelData.expert; name: "tools"; font.pixelSize: 12; color: Theme.gold; anchors.right: parent.right; anchors.rightMargin: 28; anchors.verticalCenter: parent.verticalCenter }
                                         MouseArea { id: lineHit; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: shell.go(line.modelData.id) } } } } } } } }

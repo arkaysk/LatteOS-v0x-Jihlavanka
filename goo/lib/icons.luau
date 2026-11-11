@@ -176,6 +176,7 @@ return {
     ["player-stop"] = "\u{ED4A}",
     ["plug"] = "\u{EBD9}",
     ["plug-connected"] = "\u{F00A}",
+    ["pointer"] = "\u{F265}",
     ["plus"] = "\u{EB0B}",
     ["point"] = "\u{EB0C}",
     ["point-filled"] = "\u{F698}",
