@@ -330,7 +330,8 @@ nulové oneskorenie. Kurzor kreslený scénou príde o snímku neskôr. Preto dv
 
 **Toto je najrizikovejší kus návrhu.** Ak bude živý kurzor cítiť ako oneskorený (overiť rukou na 60 aj 144 Hz),
 ostane téma z bodu 1 a deformáciu dostane iba **stopa** za systémovým kurzorom: bruško a kvapôčky kreslené scénou
-pod pevným hrotom z témy. Vypínač v Nastaveniach › Kurzor: Systémový · Goo · Goo so živou kvapkou.
+pod pevným hrotom z témy. Voľby v Nastaveniach › Kurzor sú v §8.3; živá kvapka je k nim samostatný
+prepínač.
 
 ### 8.3 Farba a Nastavenia › Kurzor (používateľ 11. 11.)
 
