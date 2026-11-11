@@ -1,509 +1,492 @@
 # GooEngine 2 — „Živá hladina“
 
-Návrh a pokyny na kódovanie · 11. 11. 2026 · vetva `v0.5-pleamarwm-jihlavanka` · ROADMAP 6.09, 6.21, 6.27–6.30, 1D.27
+Návrh a pokyny na kódovanie · 11. 11. 2026, druhé znenie (po rozhodnutiach používateľa z večera 11. 11.)
+Vetva `v0.5-pleamarwm-jihlavanka` · ROADMAP 6.09, 6.21, 6.27–6.30, 6M, 1D.25–1D.27
 
-Tento dokument je zadanie pre reláciu, ktorá bude GooEngine prepisovať. Opisuje, čo je na dnešnom engine zlé,
-čím sa to nahradí a v akom poradí. Vzhľad a zásady Goo (`LATTEOS-GOO.md` §2–3) sa nemenia: kvapky sú káva, kurzor
-iba priťahuje, karta rastie z ucha, okraj obrazovky je hladina. Mení sa to, **z čoho ten pohyb vzniká**.
+Zadanie pre reláciu, ktorá GooEngine prepíše. Zásady Goo (`LATTEOS-GOO.md` §2–3) platia ďalej: kvapky sú káva,
+kurzor iba priťahuje, karta rastie z ucha, okraj obrazovky je hladina. Mení sa, **z čoho pohyb vzniká** (fyzikálne
+jadro v Ruste), **ako sa hmota kreslí** (jedna hmota, jeden obrys) a pribúda kurzor ako súčasť Goo.
 
-**Ako bol návrh overený.** Prečítaný je celý pohybový kód enginu (`goo/parts/drops.plm`, `body.plm`, `shapes.plm`,
-`card.plm`, `bubble.plm`, `rows.plm`, `goo/gen.py`, `goo/lib/engine.luau`, `goo/lib/card.luau`), scéna okien
-(`system/pleamarwm/wm/session.plm`), referencia jazyka pleamaru a zdrojový kód pleamaru 0.7.10 aj 0.7.27
-a pleamar-wm 0.6.9 aj 0.6.15. **Pleamar sa v tejto relácii nepodarilo spustiť**, takže ukážky kódu nižšie sú náčrty:
-každú treba prejsť cez `pleamar --check` a zmerať na latte-lab. Čo stojí na správaní prečítanom priamo v zdroji
-pleamaru, je označené **[zdroj]**; čo je odhad, je označené **[overiť]**.
-
----
-
-## 1. Čo je na dnešnom engine zlé
-
-| # | Nález | Kde | Dôsledok |
-|---|---|---|---|
-| D1 | **Scéna nikdy neodpočíva.** `time` je v 30 výrazoch `drops.plm`, 12 v `shapes.plm`, 19 v `rows.plm`. Podľa referencie: kým scéna menuje `time`, „never rests“. | `drops.plm` r. 199–200, 247–300, 358–364 | Kreslí sa 60 snímok/s, aj keď sa nikto nedotýka myši. Odtiaľ 17–44 % jadra v pokoji (merania 6. 10. a 12. 10.). |
-| D2 | **Jedno telo cez celú obrazovku s ~215 tvarmi**, nakreslené dvakrát (sklo + káva v ňom) a tretí raz po kúskoch (jadrá). V pleamare 0.7.10 prejde každý pixel tela všetkými tvarmi. | `body.plm`, `shapes.plm` | Cena na grafickej karte rastie s počtom miest, nie s počtom kvapiek. Neobsadené miesto stojí toľko ako obsadené. |
-| D3 | **Fyzika je rozdelená medzi scénu a logiku a obe hádajú to isté.** Pád je vzorec ½·g·t² v scéne, logika si ten istý čas počíta cez `after(sqrt(2·h/g))` a `GRAVITY` je zapísaná na dvoch miestach. | `drops.plm` r. 259–275, `engine.luau` r. 660–695 | Keď sa jedno zmení, druhé sa rozíde: sploštenie a vlna prídu skôr alebo neskôr než dopad. |
-| D4 | **Kvapky na seba nepôsobia.** Neprekrývanie počíta logika (`apart()`): prepíše domov a kvapka tam dokĺže. Kvapka nemá hmotnosť ani rýchlosť, ktorú by si niesla. | `engine.luau` r. 135–224 | Hodená kvapka neletí, susedia neuhnú nárazom, veľká a malá sa správajú rovnako. Presne to, čo žiada 6.09. |
-| D5 | **Hladina sú štyri pripravené animácie.** Vlna beží pevnou rýchlosťou 420 px/s, neodráža sa, nestretáva sa s inou, o dosky (Shore) sa nezaujíma; „swell“ je osem putujúcich elíps. | `drops.plm` r. 182–200, 250–253 | Nedá sa splniť 6.27 (vlny, kvapky a Shore spolu). Piata vlna naraz zruší prvú. |
-| D6 | **Karta má jednu pružinu na otvorenie aj zatvorenie** (`land = 630, 14`, s odskokom). Pri zatváraní odskok vyskočí kapsulou; zakrýva to `card_alive` s časovačom 120 ms. | `card.plm` r. 133–134, `card.luau` r. 96–103 | Artefakty z 6.30. Zatvorenie nemá odskakovať, iba otvorenie. |
-| D7 | **Suseda pozná kvapka iba z kópie jeho údajov v zázname** (`left_at`, `right_r`…), teda z jeho domova, nie z miesta, kde práve je. | `drops.plm` r. 73–74, 356–368 | Vlákno a voda mieria na domov suseda. Keď sa sused hýbe, spoj sa odtrhne od tvaru (šev z 6.28). |
-| D8 | **Výber „jednej z 32“ je rozpísaný ako `pick(…32 hodnôt…)`** v `picks.plm` a `card.plm`. Jazyk 0.9 má `x[i]`. | `gen.py`, `card.plm` r. 140–151 | Dlhé výrazy, ktoré sa ťažko čítajú a ľahko rozídu. |
-| D9 | **Okná žijú v inej scéne s inými číslami.** Sklo má dve sady nastavení (6.29), okná sa nekývu (1D.27), pružiny okien a kvapiek nemajú nič spoločné. | `wm/session.plm` | Okno a kvapka vedľa seba sa hýbu, akoby boli z iného systému. |
-| D10 | **Stupeň výkonu rieši logika po kúskoch** (`software` vypne sklo). Scéna nemá jedno číslo, podľa ktorého by ubrala. | `engine.luau` r. 1003–1006 | Efekt sa nedá pridať bez toho, aby zhoršil slabý stroj (6.21). |
-
-D1 a D2 sú výkon, D3–D5 a D7 sú fyzika, D6 sú vyskakovacie karty, D9 sú okná.
+**Ako bol návrh overený.** Prečítaný je pohybový kód enginu (`goo/parts/*.plm`, `goo/gen.py`,
+`goo/lib/engine.luau`, `goo/lib/card.luau`), scéna okien (`system/pleamarwm/wm/session.plm`), referencia jazyka
+a zdrojový kód pleamaru 0.7.10 a 0.7.27 a pleamar-wm 0.6.9 a 0.6.15. **Pleamar sa v tejto relácii nepodarilo
+preložiť ani spustiť.** Ukážky kódu sú náčrty; každú treba prejsť cez `pleamar --check`, `cargo test` a zmerať na
+latte-lab. **[zdroj]** = prečítané v zdroji pleamaru; **[overiť]** = odhad, ktorý musí potvrdiť skúška.
 
 ---
 
-## 2. Čo pleamar vie a engine to nepoužíva
+## 1. Rozhodnutia používateľa (11. 11.)
 
-Toto sú stavebné kamene celého návrhu. Všetky sú v pleamare 0.7.10, ktorý na latte-lab beží.
+| Vec | Rozhodnutie |
+|---|---|
+| Pokojný stav | spomalený dych na menej snímkach **môže byť** |
+| Pustená kvapka | **letí v smere hodu**, podľa fyziky |
+| Kývanie okien | **celý obsah okna**, ako wobble na Hyprlande |
+| Hladina | **iba dole** |
+| Dážď pri nečinnosti na hladine | **zrušený**. Počasie pri nečinnosti preberie dážď a sneh pleamar-wm na oknách (§12) |
+| Jadro fyziky | **priamo v Ruste**, nie obchádzky v jazyku scény |
+| Kreslenie | **tenký ostrý obrys okolo celej hmoty**, vrátane vlákien a kariet; **nikdy čiara vnútri**. Goo, hladina a karty sú jedna hmota (§7) |
+| Kurzor | **súčasť Goo**: kvapka, ktorá sa pri rýchlom pohybe splošťuje a pri spomalení zavlní (§8) |
+| Reakcie na kurzor | **silnejšie** |
+| Marea (k4ditano) | vzhľad **MareaGoo**, aby zapadla medzi kvapky (§11) |
+| Dok pleamar-wm | **DockShore** (§11) |
+| Karty a Shore | otváranie a zatváranie **živšie a plynulejšie** (§9) |
+| Rozsah | **všetko naraz, zajtra**; hotová verzia, nie pokus |
 
-1. **Hodiny, ktoré sa dajú zastaviť. [zdroj]** `spin p by výraz` pripočíta každú snímku `výraz · dt`. Keď je výraz 0,
-   vlastnosť stojí a **scénu nedrží hore** (`render.rs`, `Behavior::Advance`). `spin life by awake` je teda čas,
-   ktorý beží iba vtedy, keď má prečo. To isté `wave p = amplitúda at f`: pod amplitúdou 0,01 scénu nebudí.
-2. **Pružina v pokoji nestojí nič. [zdroj]** `Animated::step` sa vráti hneď, keď je vlastnosť v cieli a stojí.
-   Pružina sa integruje po 2 ms krokoch, takže znesie aj tuhé nastavenia.
-3. **Pružiny sa smú navzájom sledovať, aj do kruhu. [zdroj]** `follow` číta hodnoty iných vlastností z tej istej
-   snímky; cykly sa nekontrolujú. Reťaz vlastností, z ktorých každá sleduje priemer susedov, je tlmená vlnová
-   rovnica. Z toho je hladina (§5).
-4. **Rýchlosť pružiny je čitateľná:** `vel(prop)`. Z nej je tvar za pohybu (§6.4) aj kývanie okna (§9).
-5. **Štuchnutie s výrazom:** `impulse prop výraz`. Sila zrážky, dopadu a šplechnutia sa počíta v okamihu udalosti.
-6. **Čítanie a zápis podľa miesta:** `x[i]` v jazyku 0.9, aj v pravidle (`h[col] = …`). Kvapka si prečíta, kde
-   **práve je** jej sused, a výšku hladiny pod sebou.
-7. **Počet snímok podľa stavu:** `rate: 60, 24 while ambient, 8 while asleep`. Krok scény je krok jej najrýchlejšej
-   otvorenej plochy.
-8. **Shader nad skupinou:** `shader: meno, a, b while podmienka` dostane obsah skupiny cez `inside(s, at)` a smie
-   ho pokriviť. V `wm/session.plm` tak už beží `tide`, `rain` a `snow` nad oknom. Rovnako sa urobí kývanie okna.
-9. **Knižnica:** `library` + `import "…" as meno`. Tie isté pružiny, konštanty a komponenty načíta scéna Goo aj
-   scéna okien.
-10. **Čo drží scénu hore, vypíše `PLEAMAR_TIMING=1`** (`alive_by`: „spin life“, „wave …“). Tým sa overuje pokoj.
+---
 
-Čo jazyk **nevie** a návrh to obchádza: tuhosť pružiny je číslo, nie výraz (`spring(k, c)` berie iba čísla), takže
-hmotnosť sa nedá vyjadriť frekvenciou pružiny; v `body` nie je `repeat`, takže tvary ďalej píše `gen.py`.
+## 2. Čo je na dnešnom engine zlé
+
+| # | Nález | Kde |
+|---|---|---|
+| D1 | **Scéna nikdy neodpočíva.** `time` je v 30 výrazoch `drops.plm`, 12 v `shapes.plm`, 19 v `rows.plm`; kým scéna `time` menuje, kreslí 60 snímok/s. Odtiaľ 17–44 % jadra v pokoji. | `drops.plm` r. 199–300 |
+| D2 | **Jedno telo cez obrazovku s ~215 tvarmi**, kreslené dvakrát. V pleamare 0.7.10 prejde každý pixel všetkými tvarmi; neobsadené miesto stojí ako obsadené. | `body.plm`, `shapes.plm` |
+| D3 | **Fyzika je na dvoch miestach.** Pád počíta scéna vzorcom, logika ten istý čas háda cez `after(sqrt(2h/g))`; `GRAVITY` je zapísaná dvakrát. | `drops.plm` r. 259–275, `engine.luau` r. 660–695 |
+| D4 | **Kvapky na seba nepôsobia.** Neprekrývanie robí logika prepísaním domova. Kvapka nemá hmotnosť ani rýchlosť. | `engine.luau` r. 135–224 |
+| D5 | **Hladina sú štyri pripravené animácie.** Vlna sa neodráža, nestretne s inou, dosky (Shore) nevidí. | `drops.plm` r. 182–253 |
+| D6 | **Karta má jednu pružinu s odskokom na oba smery.** Zatváranie vyskočí kapsulou; zakrýva to `card_alive` a časovač. | `card.plm` r. 133, `card.luau` r. 96 |
+| D7 | **Suseda pozná kvapka z kópie jeho domova,** nie z miesta, kde práve je. Spoj sa pri pohybe odtrhne od tvaru. | `drops.plm` r. 356–368 |
+| D8 | **Karta je iné telo než kvapky.** V rohu, kde sa stretnú, je obrys gule a šev (6.28). | `card.plm` r. 185–205 |
+| D9 | **Okná žijú v inej scéne s inými číslami.** Dve sady skla (6.29), žiadne kývanie (1D.27). | `wm/session.plm` |
+| D10 | **Stupeň výkonu sa rieši po kúskoch v logike.** Scéna nemá jedno číslo, podľa ktorého ubrať. | `engine.luau` r. 1003 |
 
 ---
 
 ## 3. Krok 0 — pleamar 0.7.27 a pleamar-wm 0.6.15
 
-Urobiť **pred** akýmkoľvek prepisom a zmerať samostatne. Dnes je `patches/build-pleamar.sh` na 0.7.10 a 0.6.9.
+Dnes je `patches/build-pleamar.sh` na 0.7.10 a 0.6.9. Jazyk sa medzitým nezmenil; zmenil sa výkon.
 
-| Verzia | Čo prináša pre GooEngine |
+| Verzia | Čo prináša |
 |---|---|
-| 0.7.11–0.7.14 | Živý lom skla odpočíva, kým sa sklo hýbe nad stojacim pozadím; snímka pozadia ide rovno na kartu. |
-| **0.7.18** | **Veľké telo sa delí na dlaždice 64 px** a každá meria iba tvary, ktoré do nej siahajú; neviditeľné telo sa nekreslí vôbec. Autor nameral na Vitreuse 17,4 → 4,4 ms na snímku. To je priamo D2. `dome` je šošovka každého tvaru zvlášť. |
-| 0.7.19 | Keď `rate:` stúpne, nečaká sa na starý dlhý krok. Potrebné pre §4.2 (prebudenie bez oneskorenia). |
-| **0.7.21** | Telo je vlastný úsek kresby a kopíruje sa zo snímky predtým, aj keď sa pred ním niečo zmenilo. |
-| 0.7.24 + wm 0.6.15 | Sklo Goo vidí okná pod sebou bez dier (`glass-sees-below`). Týka sa 6.29 a 1D.42. |
+| **0.7.18** | Veľké telo sa delí na dlaždice 64 px, každá meria iba tvary, ktoré do nej siahajú; neviditeľné telo sa nekreslí. Autor nameral 17,4 → 4,4 ms na snímku. Priamo D2 — a podmienka pre jednu hmotu z §7. |
+| 0.7.11–0.7.14 | Živý lom skla odpočíva nad stojacim pozadím; snímka pozadia ide rovno na kartu. |
+| 0.7.19 | Keď `rate:` stúpne, nečaká sa na starý dlhý krok (prebudenie bez oneskorenia). |
+| **0.7.21** | Telo je vlastný úsek kresby a kopíruje sa zo snímky predtým. |
+| 0.7.24 + wm 0.6.15 | Sklo Goo vidí okná pod sebou bez dier (6.29, 1D.42). |
 
-Postup: preniesť záplaty z `patches/` (sedem pre pleamar, štyri pre pleamar-wm), `--check` všetkých scén, potom
-zmerať `goo.plm` s `PLEAMAR_TIMING=1` v pokoji, pri pohybe myšou a s otvorenou kartou. **Tieto tri čísla sú
-východisko**, s ktorým sa porovnáva každý ďalší krok. Ak niektorá záplata nesadne, napísať to a neobchádzať.
+Preniesť záplaty z `patches/` (sedem pre pleamar, štyri pre pleamar-wm), `--check` všetkých scén a zmerať
+`goo.plm` s `PLEAMAR_TIMING=1` v pokoji, pri pohybe myšou a s otvorenou kartou. **Tieto tri čísla sú východisko.**
 
 ---
 
-## 4. Piliere návrhu
-
-### 4.1 Energia namiesto času
-
-Všetko, čo sa hýbe, je **štuchnutie do tlmenej sústavy** alebo **sledovanie niečoho, čo sa hýbe**. Nič nečíta holý
-`time`. V `goo/`, `wm/` ani v shaderoch Goo nesmie po prepise ostať `time` mimo jedného miesta: `tests/check.sh`
-to má strážiť (`grep` s výnimkou `phys/clock.plm`).
+## 4. Architektúra: tri vrstvy
 
 ```
-// phys/clock.plm — the one clock of the goo. It runs while something is alive and stands still otherwise.
-fact stir = 0                      // the logic and the rules raise it; see below
-prop awake = 0 ~900ms              // 1 while there is a reason to move, easing out when there is none
-follow awake = if(stir > 0 or near_any > 0.01 or card.p > 0.01 or wind_on, 1, 0)
-prop life = 0 ~0ms
-spin life by awake * pace          // pace: 1 awake, 0.35 ambient; 0 asleep, so the scene rests
+  Luau (goo/lib, goo/drops)      čo kvapka JE a ROBÍ: register, domovy, karty, kliky, ukladanie
+        │  domov, veľkosť, povaha, príkazy (skoč, zachvej sa)          ▲ udalosti (dopadla, narazila, praskla)
+        ▼                                                              │
+  Rust  (crates/goo-phys)        kde hmota JE: polohy, rýchlosti, zrážky, let, hladina, spoje, kurzor
+        │  fakty na snímku: g.x.k, g.y.k, g.r.k, g.st.k, g.rot.k, h.i, cur.*, joint.*
+        ▼
+  Scéna (goo/parts)              ako hmota VYZERÁ: jedno telo, obrys, sklo, tváre, karty, zóny myši
 ```
 
-Všade, kde je dnes `time`, bude `life`. Dych, drift a šum (`noise(life * 0.11 + k * 1.37)`) tak spomalia a zastanú
-spolu s hodinami a rozbehnú sa z miesta, kde stáli, bez skoku.
+### 4.1 Prečo Rust a ako sa pripojí
 
-### 4.2 Štyri stavy energie
+Jazyk scény nemá hmotnosť (tuhosť pružiny je číslo, nie výraz), nemá zrážky ani cykly. Všetko to ide obísť, ale za
+cenu `gen.py`, výrazov po 32 a správania, ktoré sa nedá otestovať. V Ruste je to obyčajný kód s `cargo test`.
 
-| Stav | Kedy | Snímky | Čo beží |
-|---|---|---|---|
-| **čulý** | kurzor do 260 px od okraja s kvapkami, ťahanie, otvorená karta, letí kvapka, vlní sa hladina | 60 | všetko |
-| **pokojný** | 4 s po poslednom z toho | 24 | `life` na 35 %: dych a drift, nič iné |
-| **spiaci** | nečinnosť systému ≥ 1 (`sys_idle`), úsporný profil, batéria pod 20 % | 8, a iba kým dobieha pružina | občasný vzdych (§6.6), počasie pri stupni 2 |
-| **skrytý** | okno na celú obrazovku, zamknuté, stupeň výkonu Softvér | 0 | nič; `life` stojí |
+Pleamar je **knižnica** (`pleamar::run`, `provide_platform`, `provide_windows`); pleamar-wm je program, ktorý ju
+volá **[zdroj]**. Rovnako vznikne program LatteOS:
 
-```
-surface { …; rate: 60, 24 while ambient, 8 while asleep }
-```
-
-Zásada „neustály vlastný pohyb“ (§3 pravidiel) ostáva: v pokojnom stave kvapky dýchajú, len pomalšie a na 24
-snímkach. **Na schválenie používateľom:** či je spomalený dych v pokojnom stave v poriadku. Ak nie, pokojný stav
-beží na plných 60 a úspora D1 sa zmenší zhruba na polovicu.
-
-### 4.3 Jedna fyzika, jedna knižnica
-
-Nový priečinok `goo/phys/` s knižnicami, ktoré načíta `goo.plm`, `side.plm`, `lockscreen.plm`, `login.plm` aj
-`wm/session.plm`:
-
-| Súbor | Obsah |
+| Kus | Čo je |
 |---|---|
-| `phys/world.plm` | konštanty sveta: `GRAVITY`, `LEVEL`, `STICK`, odpor vzduchu, pružnosť odrazu; pomenované pružiny (`glide`, `drip`, `grow`, `settle`, `land`, `shut`, `jelly`) |
-| `phys/clock.plm` | `life`, `awake`, stavy energie (§4.1–4.2) |
-| `phys/surface.plm` | hladina: stĺpce, šírenie, okraje, dosky (§5) |
-| `phys/drop.plm` | pohyb jednej kvapky v súradniciach okraja (§6) |
-| `phys/joint.plm` | spoje: voda, vlákno, krk, ucho (§7) |
-| `phys/popup.plm` | komponent rastu karty z kvapky (§8) |
-| `phys/material.plm` | jedno sklo pre Goo aj okná (§10) |
-| `phys/shaders/jelly.wgsl`, `splash.wgsl` | kývanie obsahu, svetlo na hrebeni |
+| `crates/goo-phys` | čistá knižnica bez závislostí: svet, krok, udalosti. Nevie nič o pleamare ani o Waylande. Testy v `cargo test`. |
+| `crates/latte-goo` | program: `pleamar` ako závislosť + `goo-phys`. Spúšťa `goo.plm` namiesto holého `pleamar --scene`. |
+| `patches/pleamar-step-hook.patch` | **nová malá záplata:** `pleamar::provide_step(f)`. Render zavolá `f(dt, &mut zápis_faktov)` raz za snímku pred vyhodnotením scény a z návratovej hodnoty vie, či svet ešte žije (inak scéna zaspí). |
 
-`GRAVITY` a ostatné čísla sveta sú **iba tu**. Logika ich nepotrebuje (§4.5).
+Fakty sa zapisujú priamo v procese (render ich už dnes berie ako `ToRender::Fact(meno, f32)` **[zdroj]**), bez
+soketu a bez textu. **Záplatu ponúknuť autorovi pleamaru** — je to to isté, čo `provide_windows` robí pre okná.
+Vstupy z logiky (domovy, príkazy) idú tými istými faktami opačným smerom: jadro si ich prečíta v háku.
 
-### 4.4 Stupeň kvality ako jedno číslo
+**[overiť] prvé, čo treba zajtra urobiť:** napísať záplatu a prázdny `latte-goo`, ktorý každú snímku zapíše jeden
+fakt, a pozrieť, či sa pohyb kreslí plynule a či scéna zaspí, keď hák vráti „nežije“. Na tom stojí celý návrh.
+Ak hák nepôjde, náhradná cesta je vlastnosť scény za každým faktom s krátkou pružinou; to je horšie (o snímku
+neskôr) a rozhodne sa až potom.
 
-`fact tier` nastaví logika raz z `LATTE_TIER`: 0 softvér/SAFE, 1 úsporný, 2 štandard, 3 plný. Každý efekt má pri
-sebe podmienku a jeho vypnutie nesmie zmeniť rozloženie ani čitateľnosť.
+### 4.2 Zmluva medzi jadrom a scénou
 
-| | 0 | 1 | 2 | 3 |
-|---|---|---|---|---|
-| kvapky, karty, sadnutie a zdvih | bez pružín (`~0ms`) | áno | áno | áno |
-| zrážky, hod, tvar z rýchlosti | nie | áno | áno | áno |
-| hladina | rovná | 24 stĺpcov | 48 | 64 + svetlo na hrebeni |
-| sklo a lom | nie | sklo bez lomu | áno | áno + `dome` |
-| kývanie okien | nie | nie | áno | áno |
-| častice (šplech, bublina) | nie | polovica | áno | áno |
+Jadro píše, scéna iba číta. Jadro nekreslí a nepozná farby; scéna nepočíta polohy.
 
-Počet stĺpcov je počet pri načítaní (`repeat`), nie výraz: `gen.py --columns N` ho zapíše a inštalátor zvolí
-podľa stupňa. **[overiť]** či stačí jeden počet (48) a nižší stupeň iba vypne šírenie.
+| Fakt | Význam |
+|---|---|
+| `g.x.k`, `g.y.k` | stred kvapky k, px |
+| `g.r.k` | polomer, ako sa má nakresliť (0: miesto je prázdne) |
+| `g.st.k`, `g.rot.k` | natiahnutie v smere pohybu (0…0,4) a jeho uhol; plocha sa zachováva |
+| `g.sq.k` | sploštenie kolmo na okraj (dopad, stlačenie, sadnutie) |
+| `g.tip.k`, `g.tipa.k` | hrot ku kurzoru: dĺžka a uhol (§6.3) |
+| `h.i` | výška hladiny v stĺpci i, px |
+| `j.on.k`, `j.w.k`, `j.ax/ay/bx/by.k` | vlákno od kvapky k k susedovi: či je, hrúbka, konce |
+| `cur.x`, `cur.y`, `cur.st`, `cur.rot`, `cur.wob`, `cur.tailx`, `cur.taily` | kurzor (§8) |
+| `stir` | 0…1: koľko energie svet má; z neho stav scény (§14) |
 
-### 4.5 Scéna hlási, logika nehádá
+Udalosti z jadra do logiky: `goo_landed(k)`, `goo_bumped(k·64 + j)`, `goo_parted(k)`, `goo_joined(k)`,
+`goo_torn(k)`. Z `engine.luau` zmiznú `GRAVITY`, všetky `after(math.sqrt(…))`, `apart()` za pohybu
+a publikovanie `left_*`/`right_*`. Rozhranie kvapiek (`drops/*.luau`, `Drop:…`, `E.define`, `kvapky.json`) sa
+**nemení**.
 
-Logika prestane počítať časy. Scéna oznámi, čo sa stalo:
+### 4.3 Čo ostáva v scéne
 
-```
-event goo_landed ->        // k × 4096 + impact speed (px/s, capped): where it is now is freed.x, freed.y
-event goo_torn ->          // a sticky drop let go of home
-event goo_joined ->        // k: its thread to the right neighbour formed; goo_parted: it snapped
-event goo_bumped ->        // k × 64 + j: k ran into j at more than 120 px/s
-```
-
-Z `engine.luau` zmiznú `GRAVITY`, všetky `after(math.sqrt(…))` a publikovanie `left_*`/`right_*`. Ostane register
-kvapiek, trvalé rozloženie (kto má kde domov), ukladanie a to, čo kvapka robí po kliknutí.
+Zóny a pravidlá myši, vznášanie nad kvapkou (`hit.hover`), tváre, karty, sklo, obrys. Scéna má vlastné hodiny
+`life` (`spin life by awake` — stoja, keď `stir` je 0 **[zdroj]**) pre drobný šum v kresbe; `time` nesmie ostať
+nikde v `goo/` ani `wm/` a `tests/check.sh` to stráži. `gen.py` ostáva iba na tvary tela (`body` nepozná `repeat`).
 
 ---
 
-## 5. Hladina (`phys/surface.plm`)
+## 5. Jadro `goo-phys`
 
-Hladina je rad stĺpcov pozdĺž spodného okraja. Každý stĺpec je pružina, ktorá sleduje priemer svojich susedov
-a pritom sa vracia k nule. To je diskrétna tlmená vlnová rovnica: vlna sa šíri, odráža, dve vlny sa preložia
-a všetko samo doznie. Nič z toho sa neanimuje ručne.
+### 5.1 Svet a krok
 
-```
-// N columns, Δ = W / (N − 1) px apart. T < 1 pulls each one back to rest; the rest of the pull is its neighbours'.
-spring water = 130, 1.6
-let T = 0.97
-let wall[N]                                   // 1 where a shore's plate lies: the water under it does not move
-repeat i in 0..N {
-    prop h.$i = 0 ~water                      // height above the level, px; up is positive
-    follow h.$i = if(wall[i] > 0.5, 0, T * (h[max(i - 1, 0)] + h[min(i + 1, N - 1)]) / 2 + gust.$i)
+```rust
+pub struct World { pub drops: Vec<Drop>, pub surface: Surface, pub cursor: Cursor, pub joints: Vec<Joint>,
+                   pub walls: Vec<Wall>, pub cfg: Config, events: Vec<Event> }
+impl World {
+    /// Advances by `dt` in fixed steps of 1/240 s (at most 8 a frame). Returns the energy left: 0 is rest.
+    pub fn step(&mut self, dt: f32, input: &Input) -> f32;
+    pub fn drain_events(&mut self) -> impl Iterator<Item = Event>;
 }
 ```
 
-- **Rýchlosť vlny** je Δ · √(k·T/2). Pri N = 48 na šírke 2560 px (Δ ≈ 54) a k = 130 je to ≈ 430 px/s, ako dnes.
-  Pri inej šírke obrazovky sa mení Δ, preto `k` voliť z tabuľky podľa šírky tak, aby rýchlosť ostala **[overiť]**.
-- **Stabilita. [zdroj + výpočet]** Ciele sa prepočítajú raz za snímku, pružiny sa integrujú po 2 ms. Najrýchlejší
-  kmit má ω = √(2kT) ≈ 16 rad/s; aj pri 24 snímkach (42 ms) je ω·dt ≈ 0,67, bezpečne pod hranicou 2.
-- **Okraje obrazovky** odrážajú: krajný stĺpec berie za chýbajúceho suseda sám seba (`max`/`min` vyššie).
-- **Dosky (6.27):** stĺpce pod TrayShore a LensShore majú `wall = 1`. Vlna sa od dosky odrazí sama, lebo jej sused
-  stojí. Doska, ktorá sa vysunie alebo zasunie, štuchne dva stĺpce pri svojich koncoch. Jedno pravidlo pre každú
-  dosku: logika zapíše `shore.$s.a`, `shore.$s.b` (px) a počítadlo `shore.$s.n`.
-- **Šplech:** jedno pravidlo rozdá štuchnutie okolitým stĺpcom zvonovou krivkou.
+- **Pevný krok 1/240 s**, polo-implicitný Euler (najprv rýchlosť, potom poloha). Výsledok nezávisí od počtu snímok.
+- **Pokoj:** keď je súčet kinetickej energie a vzdialeností od cieľov pod prahom pol sekundy, `step` vráti 0,
+  všetko sa dosadí presne do cieľa a hák povie renderu „nežije“. Prebudí ho vstup (myš pri okraji, príkaz, okno).
+- **Všetky čísla sveta** (`gravity`, `drag`, `restitution`, tuhosti) sú v `Config` s predvolenými hodnotami
+  a dajú sa prepísať z `~/.config/latteos/goo-phys.json` — ladenie bez prekladu.
+- **Stupeň 0** (softvér, SAFE): `step` nepočíta nič a píše domovy. Scéna je statická.
 
+### 5.2 Kvapka
+
+Stav: poloha, rýchlosť, polomer, hmotnosť `m = (r/26)²` (× 2,5 pre povahu „heavy“), domov (okraj, miesto, výška),
+režim: **sedí** · **drží ju ruka** · **letí**. V režime „sedí“ na ňu pôsobia sily:
+
+| Sila | Vzorec | Poznámka |
+|---|---|---|
+| domov | `−k·(p − domov) − c·v`, pozdĺž okraja mäkšie (`k = 150`), kolmo tuhšie s prekmitom (`k = 190`, `c = 9`) | dnešné `glide` a `drip` |
+| kurzor | §5.3 | iba priťahuje |
+| sused | odpudzovanie pri prekryve, §5.4 | |
+| hladina | zdvih o výšku stĺpca pod ňou, delený `√m` | veľká sa na vlne sotva pohne |
+| vietor | `gale · sin(…)` delené `√m` | iba keď logika povie, že fúka |
+| dych, drift | pomalý šum na cieli, nie na sile | stojí s hodinami |
+
+Sadnutie v pokoji, zdvih pri kurzore a „stále“ kvapky (kapsuly) ostávajú ako dnes; sú to posuny cieľa.
+
+### 5.3 Kurzor: silnejšie reakcie
+
+Dnešné čísla (príťažlivosť 0,3, dosah 220 px, zdvih ¾ polomeru) sú opatrné. Nové predvolené hodnoty a tri nové
+správania; všetko v `Config`, aby sa dali doladiť pohľadom:
+
+| | Dnes | Nové |
+|---|---|---|
+| dosah | 220 px | 300 px |
+| príťažlivosť | 0,30 | 0,55 |
+| zdvih | 0,75 r | 1,1 r |
+| náklon | 0,8 r | 1,2 r |
+| sused sa pridá | 30 % | 45 % |
+
+1. **Hrot.** Kvapka sa ku kurzoru nenakláňa celá: vytiahne k nemu špičku (`g.tip`), ako kvapka, ktorej sa niečo
+   dotýka. Dĺžka najviac 0,6 r; zásada 20 (odtrhnutie do 1,6 r) platí.
+2. **Brázda.** Kurzor, ktorý preletí popri kvapkách rýchlo, ich strhne za sebou: štuchnutie v smere pohybu kurzora
+   úmerné jeho rýchlosti a blízkosti, delené hmotnosťou. Dokývu sa samy. Pri hladine štuchne aj stĺpce pod sebou.
+3. **Dotyk.** Keď je kurzor-kvapka (§8) bližšie než súčet polomerov, vznikne medzi nimi vlákno ako medzi dvoma
+   kvapkami: natiahne sa, stenčí a praskne. Stlačenie tlačidla nad kvapkou ju sploští od miesta dotyku.
+
+Kurzor ďalej **iba priťahuje**; brázda je ťah za ním, nie odstrčenie.
+
+### 5.4 Zrážky a neprekrývanie
+
+Kvapky na tom istom okraji sú kruhy (kapsuly úsečky s polomerom). Pri prekryve sa obe posunú od seba v pomere
+hmotností a vymenia si časť rýchlosti (`restitution` 0,25; povaha „playful“ 0,6). Náraz nad 120 px/s vyšle
+`goo_bumped` a obe sa sploštia v smere nárazu. **Trvalé** rozloženie (kto má kde domov) ostáva logike a spustí sa
+po `goo_landed`; za pohybu sa o prekrytie stará jadro. Zásada 22 platí v oboch.
+
+Steny: okraje obrazovky, dosky Shore (TrayShore, LensShore, DockShore) a — v druhom kroku — titulky okien, pred
+ktorými dnes kvapka uskakuje (`E.avoid`).
+
+### 5.5 Let: hod, pád, skok
+
+Pustená kvapka si nesie rýchlosť ruky (obmedzenú na 1600 px/s). V režime „letí“ na ňu pôsobí gravitácia
+800 px/s² a odpor vzduchu (`drag` 1,8); domov ani kurzor nie. Let končí **prvým dotykom okraja**: dole dopadne do
+hladiny, pri boku alebo hore sa prilepí. Od dosky a od inej kvapky sa odrazí. Pri dopade jadro:
+
+1. štuchne hladinu silou `m · rýchlosť` (§5.6),
+2. sploští kvapku úmerne rýchlosti,
+3. vyšle `goo_landed(k)`; logika určí domov a jadro kvapku prepne na „sedí“ v tom istom kroku, bez skoku.
+
+`Drop:jump(at, speed)` je ten istý let s danou počiatočnou rýchlosťou; hra pri nečinnosti (stupeň 3) ostáva.
+Kvapka, ktorá `returns` (BarGoo), sa vráti pružinou. Zásada „pád, nie výstrel“: strop rýchlosti a odpor.
+
+### 5.6 Hladina — iba dole
+
+Rad stĺpcov pozdĺž spodného okraja (48 pri stupni 2, 64 pri stupni 3, 24 pri stupni 1). Každý stĺpec má výšku
+a rýchlosť; ťahá ho späť k nule a k priemeru susedov:
+
+```rust
+// per column, per fixed step
+let pull = cfg.tension * (h[i - 1] + h[i + 1] - 2.0 * h[i]) - cfg.restore * h[i] - cfg.damp * v[i];
+v[i] += pull * dt;  h[i] += v[i] * dt;
 ```
-event splash                                  // from the scene itself and from the logic (E.ripple)
-fact splash.x = 0                             // px along the bottom edge
-fact splash.v = 0                             // px/s into the water: mass × speed, capped
-on splash {
-    repeat i in 0..N { impulse h.$i -splash.v * exp(-pow((i * DX - splash.x) / 60, 2)) }
-}
-```
 
-- **Dážď** (nečinnosť 2): `every 250ms..900ms while raining { rain_n = rain_n + 1; splash.x = W * random(rain_n); splash.v = 60; emit splash }`.
-- **Vietor:** `gust.$i = gale * 2.2 * sin(life * 70 − i * 23)`, iba keď `gale > 0`; inak je to konštanta 0 a stĺpec
-  odpočíva.
-- **Kresba:** N − 1 úsečiek s `blend` medzi bodmi `(i·Δ, H − LEVEL − h[i])`, ako prihlasovacia obrazovka
-  (`parts/surface.plm`), v tom istom tele ako kvapky. Nahrádza 12 elíps vĺn a 8 elíps „swell“. V pokoji je hladina
-  rovná a jej tvary sa neprepočítavajú.
-- **Stupeň 3:** nad hladinou skupina `mode: add` so shaderom svetla na hrebeni (vzor `shaders/crest.wgsl`), iba
-  `while stirred > 0.01`, kde `stirred` je pomalá pružina za súčtom |h|.
+Tlmená vlnová rovnica: vlna sa šíri (≈ 430 px/s ako dnes), **odráža od okrajov obrazovky a od dosiek** (stĺpce pod
+doskou stoja), dve vlny sa preložia a všetko samo doznie. To je 6.27. Dve šíriace kolá na krok (rozostrenie
+k susedom) držia hladinu hladkú. Čo hladinu rozvlní: dopad kvapky, brázda kurzora, doska pri vysunutí a zasunutí
+(štuchne stĺpce pri svojich koncoch), okno, ktoré sa rýchlo priblíži k spodnému okraju (§10.2), vietor.
+**Dážď na hladine nie je** (§12).
 
-`E.ripple(where, force, kind)` v logike ostáva ako tenká obálka: nastaví `splash.x`, `splash.v`, vyšle `splash`.
-Druh „tremble“ je štuchnutie striedavým znamienkom do troch stĺpcov.
+Kresba: úsečky medzi bodmi stĺpcov s `blend`, v tej istej hmote ako kvapky (§7). Nahrádza 12 elíps vĺn a 8 elíps
+„swell“. Pri stupni 3 svetlo na hrebeni (vzor `shaders/crest.wgsl`), iba kým `stir > 0`.
 
-**Ostatné tri okraje** hladinu nemajú (dnes tiež nie). Ak ju používateľ bude chcieť, je to ten istý komponent
-s iným `N` a osou, iba pri stupni 3.
+### 5.7 Spoje
+
+Vlákno medzi susedmi má stav. Vznikne pod 0,9 súčtu polomerov, tenčí sa natiahnutím (`w = w₀ / (1 + 1,6·n)`),
+**praskne** nad 2,3 súčtu: obe kvapky dostanú spätný ráz, jadro vyšle `goo_parted`. Konce vedú na **živé** polohy,
+takže spoj sa od tvaru neodtrhne (D7). Krk ťahanej kvapky a ucho karty sú spoje toho istého druhu. Voda pri okraji
+medzi susedmi je hladina sama (§5.6), nie zvláštny tvar.
+
+### 5.8 Testy jadra (`cargo test -p goo-phys`)
+
+Vlna sa odrazí od steny a doznie · dve kvapky sa po 2 s neprekrývajú · pustená z pokoja padá rovno, hodená letí
+oblúkom a končí na okraji · svet dosiahne pokoj (energia 0) do 3 s od posledného vstupu · výsledok pri 24, 60
+a 144 snímkach sa líši o menej než 1 px · stupeň 0 nepohne ničím.
 
 ---
 
-## 6. Kvapka (`phys/drop.plm`)
-
-Kvapka sa ďalej počíta v súradniciach svojho okraja: `t` pozdĺž, `n` od okraja do obrazovky (dnešné `tx/ty/nx/ny`
-je dobrý základ a ostáva). Mení sa to, z čoho sa skladá cieľ jej pružín, a čo sa stane, keď stratí kontakt s okrajom.
-
-### 6.1 Hmotnosť
-
-`let m.$k = pow(r0.$k / 26, 2)` — plocha oproti bežnej kvapke. Keďže tuhosť pružiny nemôže byť výraz, hmotnosť
-nemení frekvenciu, ale **odozvu na sily**:
-
-| Sila | Účinok delený hmotnosťou |
-|---|---|
-| vietor, drift, zachvenie | výchylka × 1/√m (dnešné `small`) |
-| vlna pod kvapkou | zdvih × 1/√m; veľká kvapka sa na vlne sotva pohne |
-| náraz suseda | štuchnutie × m_druhého / (m_k + m_druhého) |
-| dopad do hladiny | `splash.v` = m × rýchlosť dopadu |
-| príťažlivosť kurzora | bez zmeny (je to túžba, nie sila) |
-
-Povaha „heavy“ z `engine.luau` sa stane násobkom hmotnosti (× 2,5), „playful“ pružnosťou odrazu.
-
-### 6.2 Susedia naživo a mäkké zrážky
-
-Záznam nesie namiesto ôsmich polí `left_*`/`right_*` iba **čísla miest**: `lk`, `rk` (−1: nikto). Kvapka číta, kde
-sused práve je (`x[rk]`, `rr[rk]`), nie kde býva.
-
-```
-// along the edge, how far the neighbour on the right reaches into this one: positive while they overlap
-let over.r.$k = if(goo.$k.rk >= 0, (rr.$k + rr[goo.$k.rk] + GAP) - (pt[goo.$k.rk] - pt.$k), 0)
-let over.l.$k = if(goo.$k.lk >= 0, (rr.$k + rr[goo.$k.lk] + GAP) - (pt.$k - pt[goo.$k.lk]), 0)
-let shove.$k = max(0, over.l.$k) * share.l.$k - max(0, over.r.$k) * share.r.$k     // share: the other's mass over both
-follow pt.$k = home.t.$k + lean.$k + drag.t.$k + shove.$k
-```
-
-Pretože obe kvapky čítajú polohu tej druhej, tlačia sa navzájom a pružiny ich rozsadia. Ťahaná alebo hodená
-kvapka tak susedov **naozaj odtlačí** a oni sa vrátia. `apart()` v logike ostáva iba na **trvalé** rozloženie:
-spustí sa po `goo_landed` a po zmene veľkosti, nie počas pohybu. Zásada 22 (nič sa neprekryje) platí v pokoji
-z logiky a za pohybu z pružín.
-
-Keď `vel(pt.$k)` pri prvom dotyku presiahne 120 px/s, scéna vyšle `goo_bumped` a obe kvapky dostanú `impulse sq`
-(sploštenie v smere nárazu). Cena: dve čítania podľa miesta na kvapku, vyhodnotí sa iba zvolený prvok **[zdroj]**.
-
-### 6.3 Let: hod, pád, skok
-
-Jeden mechanizmus pre všetky tri. Pri pustení scéna zapíše, odkiaľ a ako rýchlo:
-
-```
-on release hit.$k while held.$k > 0 {
-    fly.x0.$k = x.$k;  fly.y0.$k = y.$k
-    fly.vx.$k = clamp(vel(px.$k), -1600, 1600)        // the hand's speed is the throw
-    fly.vy.$k = clamp(vel(py.$k), -1600, 1200)
-    fly.at.$k = life;  flying.$k = 1
-}
-let ft.$k = life - fly.at.$k
-let fx.$k = fly.x0.$k + fly.vx.$k * (1 - exp(-DRAG * ft.$k)) / DRAG      // the air slows it sideways
-let fy.$k = fly.y0.$k + fly.vy.$k * ft.$k + 0.5 * GRAVITY * ft.$k * ft.$k
-```
-
-Uzavretý vzorec, nie integrovanie po snímkach: je presný pri 60 aj 24 snímkach a nedriftuje. Let končí prvým
-dotykom okraja:
-
-```
-let touch.$k = fy.$k > H - LEVEL - rr.$k or fx.$k < STICK or fx.$k > W - STICK or fy.$k < STICK
-on change touch.$k while flying.$k > 0 and touch.$k {
-    flying.$k = 0
-    freed.x = fx.$k;  freed.y = fy.$k
-    splash.x = fx.$k;  splash.v = m.$k * min(fly.vy.$k + GRAVITY * ft.$k, 1400);  emit splash
-    impulse sq.$k 4 + 0.006 * (fly.vy.$k + GRAVITY * ft.$k)
-    emit goo_landed(k)
-}
-```
-
-Logika na `goo_landed` určí domov (okraj, `at`), zvýši `land` a scéna v tej istej snímke vynuluje posun, ako dnes.
-Kvapka pustená z pokoja padá rovno dole (rýchlosť 0), pustená za pohybu letí oblúkom, hodená k bočnému okraju sa
-naň prilepí. `Drop:jump(at, speed)` nastaví tie isté fakty (`fly.vx`, `fly.vy` hore). Kvapka, ktorá `returns`
-(BarGoo), dostane namiesto letu návrat pružinou. Dopad na dosku (Shore): doska je `wall`, kvapka sa odrazí
-(`fly.vy = −e · v`, nový let) a dopadne do goo vedľa — nahrádza dnešné dva vnorené časovače.
-
-Zásada „pád, nie výstrel“: rýchlosť hodu je obmedzená (1600 px/s) a `DRAG` ≈ 1,8 ju rýchlo uberie. **Na
-schválenie:** či sa kvapka smie hodiť, alebo má pustená vždy padať rovno dole ako dnes (`fly.vx = 0`).
-
-### 6.4 Tvar z pohybu
-
-Kvapka sa natiahne v smere, ktorým sa hýbe, a zúži naprieč, aby plocha ostala rovnaká:
-
-```
-let sp.$k = length(vel(px.$k), vel(py.$k)) + if(flying.$k > 0, length(fly.vx.$k, fly.vy.$k + GRAVITY * ft.$k), 0)
-let st.$k = clamp(sp.$k / 1800, 0, 0.32) * tier_on
-// ellipse { …; scale: (1 + st) , 1 / (1 + st); rotate: atan2(vy, vx) * 1deg }
-```
-
-Padajúca kvapka je slza, dopadnutá placka (`sq`), ťahaná sa nakláňa za rukou. Dnešné `wide.$k` (sploštenie
-a sadnutie) ostáva a sčíta sa s tým. **[overiť]** `rotate:` na tvare vnútri `body` (referencia ho uvádza pri každom
-tvare).
-
-### 6.5 Jazda na vlne
-
-`rises.$k` dostane namiesto štyroch ručných vĺn výšku hladiny pod sebou, medzi dvoma stĺpcami:
-
-```
-let col.$k = clamp(pt.$k / DX, 0, N - 1.001)
-let lift.$k = mix(h[floor(col.$k)], h[floor(col.$k) + 1], fract(col.$k)) / sqrt(m.$k)
-```
-
-A naopak: kvapka, ktorá sa pri okraji rýchlo pohne (ťahanie popri hladine, dosadnutie, stlačenie), štuchne stĺpec
-pod sebou (`on change sign(vel(pt.$k))` s prahom). Kvapky a hladina sú tak jedna sústava v oboch smeroch.
-
-### 6.6 Život
-
-- **Dych a drift** čítajú `life` (§4.1). Vzorce ostávajú.
-- **Spiaci stav:** namiesto dychu vzdych. `every 3s..8s while asleep and lively { sigh = sigh + 1 }` a každé miesto
-  `on change sigh while floor(random(sigh) * slots) == k { impulse sq.$k 2.5 }`. Jedna kvapka sa nadýchne, scéna
-  sekundu kreslí a zaspí.
-- **Kurzor:** drahý výpočet blízkosti obaliť `if(hot.e, …, 0)`, kde `hot.e` je „kurzor je do 260 px od okraja e“.
-  `if` vyhodnotí iba platnú vetvu **[zdroj]**, takže myš uprostred obrazovky nestojí nič.
-- **Neobsadené miesto** nič nepočíta: každý `follow` začína `if(goo.$k.on, …, 0)` a tvary majú polomer 0.
-
-### 6.7 Čo z `drops.plm` ostáva a čo odchádza
+## 6. Čo z `drops.plm` ostane
 
 | Ostáva | Mení sa | Odchádza |
 |---|---|---|
-| súradnice okraja, `sit`/`up`/`lean`, zóna a pravidlá myši, kapsula, jadro, guľky | `time` → `life`; susedia cez `lk`/`rk`; `rises` cez `lift`; let cez §6.3 | `ripple` model a `wave.$k`, `swell`, `falls`/`fly`/`cross`, polia `left_*`/`right_*`, `fall`/`fall_h`/`jump_*` v zázname |
+| zóna a pravidlá myši, kapsula, jadro, guľky, tváre | poloha a tvar sa čítajú z `g.*`; `time` → `life` | všetky pružiny polohy, `ripple`, `wave`, `swell`, `falls`/`fly`/`cross`, `going.*`, polia `left_*`/`right_*`, `fall*`/`jump*`, `picks.plm` |
+
+Ťahanie: scéna ďalej hlási `drag.dx/dy`; jadro ich berie ako polohu ruky. `goo_letgo` nesie iba číslo miesta —
+kde a ako rýchlo, vie jadro.
 
 ---
 
-## 7. Spoje (`phys/joint.plm`)
+## 7. Kreslenie: jedna hmota, jeden obrys
 
-Vzhľad podľa zásady 21 (ostré oká, vlákno medzi hornými časťami) ostáva. Mení sa, odkiaľ kam spoj vedie.
+**Pravidlo (používateľ 11. 11.):** okolo hmoty je tenký, ostrý, nerozmazaný obrys, ktorý sleduje okraj **celého**
+tvaru — kvapiek, vlákien, hladiny aj karty. Vnútri hmoty nie je nikdy čiara, ktorá by niečo oddeľovala. Goo,
+hladina a karty tak stále tvoria jeden kus.
 
-- **Voda a vlákno** vedú na **živú** polohu suseda (`x[rk]`, `y[rk]`). Keď sa sused zdvihne, nakloní alebo ho
-  niekto ťahá, spoj ide s ním.
-- **Vlákno má stav:** `fact tied.$k`. Vznikne, keď sú kvapky bližšie než 0,9 súčtu polomerov, a **praskne**, keď
-  sa natiahne nad 2,3 súčtu (`on change`). Pri prasknutí dostanú obe kvapky štuchnutie od seba (spätný ráz), scéna
-  vyšle `goo_parted`, a pri stupni ≥ 2 odletí pár kvapôčok (`particles … burst`). Medzitým sa vlákno tenčí podľa
-  natiahnutia: `w = w0 / (1 + 1.6 · natiahnutie)`.
-- **Krk ťahanej kvapky** (dnes posledný riadok `shapes.plm` s tromi `pick` po 32): cez `x[carried]`. Krk je zvon
-  `4·s·(1−s)` po dĺžke, najtenší v strede, a praskne pri `tear`.
-- **Ucho karty** je spoj toho istého druhu (§8.3): žiadny zvláštny kód v `card.plm`.
+Z toho plynie:
 
-`picks.plm` sa zmenší na pár riadkov alebo zanikne: `own.x` je `x[card_owner]`. **[overiť]** či `x[i]` s meniacim
-sa miestom smie byť priamo v `body` (referencia: áno, je to `pick` nad všetkými prvkami).
+1. **Všetko je v jednom `body`:** kvapky, stopky, vlákna, hladina, ucho, **rám karty**, dosky Shore a kurzor.
+   Obrys je `border: 1.25, farba` tohto tela **[zdroj: `body` má `border: width, #color`]**; sleduje spojenú
+   siluetu, takže kde sa dva tvary zlejú, čiara medzi nimi nie je.
+2. **Karta už nie je vlastné telo.** Dnešný rám karty v `card.plm` sa presunie do hmoty. Ucho prestane byť
+   kópia kvapky v cudzom tele — je to tá istá kvapka. Tým zaniká šev z 6.28 aj dvojitý obrys.
+3. **Farba vnútri sa mení plynule, nie hranou.** Karta je pri uchu káva a ďalej prechádza do farby panela
+   (schválené 5. 11.): to robí `gradient` tela a nad ním výplň s mäkkým okrajom (skupina s `mask`), ktorá je celá
+   vnútri siluety. Žiadny tvar s vlastným `rim`, tieňom alebo okrajom vnútri hmoty.
+4. **Tieň je jeden,** pod celou hmotou, tesný (dnešné `shadow: 0, 2, 2, 28%` pri kvapkách; karta si pýta väčší —
+   tieň rastie s `card.p`, ale je to stále tieň toho istého tela).
+5. **Sklo je jedno.** Hmota má jeden materiál; karta, ktorá chce byť sklenená tabuľa nad vlnou (`card_pane`),
+   to dostane prekrytím vnútri siluety, nie vlastným telom.
+6. **Obsah** (texty, ikony, riadky, tváre) sa kreslí nad hmotou a nemá obrys.
+
+**[overiť]** dve veci hneď po kroku 0: (a) či obrys tela ostane ostrý pri `glass` a pri zlievaní (`blend`),
+(b) koľko stojí hmota s kartou cez pol obrazovky po dlaždicovaní z 0.7.18. Ak (b) nevyjde, náhrada: výplne ako
+dnes vo viacerých telách **bez** obrysu a nad nimi jedno telo iba s obrysom zo všetkých tvarov.
+
+Druhý monitor (`side.plm`), zámok a prihlásenie kreslia tým istým pravidlom z tej istej knižnice `goo/phys/`
+(`world.plm` konštanty a pružiny kresby, `mass.plm` komponent hmoty, `material.plm` sklo).
 
 ---
 
-## 8. Vyskakovacie karty (`phys/popup.plm`)
+## 8. GooCursor — kurzor ako kvapka
 
-### 8.1 Dve pružiny, dva smery
+Predloha: priložené kurzory (šípka a ruka z farby, ktorá steká a odkvapkáva). Kurzor je kvapka kávy s ostrým
+hrotom, ktorá má hmotnosť: pri rýchlom pohybe sa sploští a natiahne dozadu, pri zabrzdení sa hmota presunie
+dopredu a zavlní, v pokoji dýcha.
+
+### 8.1 Model (v `goo-phys`)
+
+Dve telesá spojené pružinou: **hrot** je presne tam, kde je ukazovateľ (žiadna pružina, žiadne oneskorenie),
+**bruško** za ním s hmotnosťou. Z ich vzájomnej polohy a rýchlosti:
+
+| Fakt | Z čoho | Čo kreslí |
+|---|---|---|
+| `cur.st`, `cur.rot` | rýchlosť hrotu | natiahnutie a smer; pri 2000 px/s je kurzor o 35 % dlhší a užší |
+| `cur.tailx/y` | poloha bruška voči hrotu | kam visí zadok kvapky |
+| `cur.wob` | pružina za zrýchlením | zavlnenie pri zabrzdení: dva kmity a pokoj |
+| kvapôčky | rýchla zmena smeru | odtrhne sa 1–3 kvapôčky (častice), ktoré spadnú do hladiny |
+
+Tvary podľa toho, čo ukazovateľ robí: **šípka** (kvapka s hrotom vľavo hore), **ruka** nad klikateľným (hrot sa
+zaguľatí do prsta), **písanie** (zvislá tenká kvapka), **ťahanie** (kvapka sa zovrie). Prechod medzi nimi je
+pretečenie, nie výmena obrázka. Farba: káva používateľa s jedným svetlým odleskom; obrys podľa §7.
+
+### 8.2 Kde sa kreslí — a riziko
+
+Systémový kurzor kreslí pleamar-wm na kurzorovej rovine grafickej karty z témy `XCURSOR_THEME` **[zdroj]**; má
+nulové oneskorenie. Kurzor kreslený scénou príde o snímku neskôr. Preto dve vrstvy:
+
+1. **Téma kurzora „LatteOS Goo“** (`assets/cursors/`, bežná téma xcursor so šípkou, rukou a ostatnými tvarmi
+   v štýle predlohy). Funguje všade — v hrách, nad oknom na celú obrazovku, v SAFE — a je to istý výsledok.
+2. **Živý kurzor** v hmote Goo (stupeň ≥ 2): scéna ho kreslí ako kvapku z `cur.*` a systémový sa skryje. Záplata
+   `patches/pleamar-wm-cursor-hide.patch`: príkaz `pleamar-wm cursor hide|show` (vnútri už `layers::hide_cursor`
+   je **[zdroj]**). Keď Goo nekreslí (celá obrazovka, zámok, pád scény, stupeň < 2), systémový sa vráti — strážca
+   v `latte-session` ho ukáže vždy, keď `goo_alive` neodpovie.
+
+**Toto je najrizikovejší kus návrhu.** Ak bude živý kurzor cítiť ako oneskorený (overiť rukou na 60 aj 144 Hz),
+ostane téma z bodu 1 a deformáciu dostane iba **stopa** za systémovým kurzorom: bruško a kvapôčky kreslené scénou
+pod pevným hrotom z témy. Vypínač v Nastaveniach › Kurzor: Systémový · Goo · Goo so živou kvapkou.
+
+---
+
+## 9. Karty a Shore: živšie otváranie a zatváranie
+
+### 9.1 Dve pružiny, dva smery
 
 ```
 spring land = 630, 14          // opening: a quarter of a second, two bounces one can see
 spring shut = 900, 60          // closing: critically damped, about 140 ms, nothing comes back
-prop card.p = 0 ~land
 on change card_open while card_open     { card.p: 1 ~land }
 on change card_open while not card_open { card.p: 0 ~shut }
 ```
 
-Zatvorenie nikdy neprestrelí pod nulu, takže karta nevyskočí kapsulou. `card_alive` a časovač 120 ms v `card.luau`
-sa zrušia: kresba sa riadi `card.p > 0.01`. Rieši 6.30 (časť o zatváraní).
+`card_alive` a časovač 120 ms v `card.luau` sa zrušia.
 
-### 8.2 Tri fázy rastu
+### 9.2 Otvorenie v troch fázach
 
-Jedna hodnota `card.p`, z nej tri krivky, každá s vlastným oknom, aby sa veci diali po sebe a nie naraz:
-
-| Fáza | Rozsah `card.p` | Čo sa deje |
+| Fáza | `card.p` | Čo sa deje |
 |---|---|---|
-| **1 · krk** | 0 – 0,35 | Kvapka vystúpi od okraja, z nej vyrastie guľatý výbežok užší než kvapka. Krk je zvon `4·t·(1−t)`. |
-| **2 · rozliatie** | 0,2 – 0,8 | Výbežok sa rozleje do šírky (kubicky) a narovná rohy: polomer rohu z 58 na 18. |
-| **3 · usadenie** | 0,7 – 1 + prestrel | Výška dobehne s odskokom; pri prestrele sa karta vydúva aj do šírky (`max(0, p−1) · 0,6`). |
+| **1 · nádych** | 0 – 0,15 | kvapka sa pred skokom prikrčí (sploštenie 12 %), hladina pod ňou klesne |
+| **2 · výron** | 0,1 – 0,6 | z kvapky vyrazí guľatý výbežok užší než ona; krk je zvon `4·t·(1−t)`; kvapka vystúpi od okraja |
+| **3 · rozliatie** | 0,4 – 1 + prestrel | výbežok sa rozleje do šírky, rohy sa narovnajú (58 → 18), výška dobehne s odskokom; pri prestrele sa vydúva aj do šírky |
 
-Dnešný `card.plm` má fázy 2 a 3 v jednom výraze; rozdeliť ich na pomenované `let` a ponechať čísla, ktoré
-používateľ už schválil (zvon, 0,6, rohy).
+Počas fázy 3 beží po obryse karty **vlna** (dva hrebene od ucha po oboch stranách, shader podľa `cardrip`
+z Vitreusu) a hladina v karte (`velvet`, módy `m1`, `m3`) sa raz zakýve. Riadky prichádzajú po sebe až od
+`card.p > 0,7`. Kvapka-ucho po celý čas žije: dýcha, reaguje na kurzor, rastie kolieskom — je to tá istá hmota.
 
-### 8.3 Ucho a karta jedno telo (6.28)
+### 9.3 Zatvorenie
 
-- Ucho sa do tela karty kreslí na **živej** polohe a v živom polomere vlastníka (`x[card_owner]`, `rr[card_owner]`),
-  nie na domove s rozdielom. Kolíše sa, rastie kolieskom a spoj ide s ním.
-- Zliatie (`blend`) ucha s kartou neklesá na 4, keď je karta otvorená, ale ostane na hodnote úmernej polomeru
-  ucha (`max(12, 0.45 · ear)`), aby v rohu nebol zárez. Dnes `4 + 120·t·(1−t)` padne pri t = 1 na 4: to je ten šev.
-- Farba: prechod kávy do farby panela (`card.pc`, schválené 5. 11.) ostáva.
-- Kvapka-vlastník sa počas otvorenej karty **nekreslí v tele kvapiek** (polomer × `1 − card.own.$k`), iba v tele
-  karty. Dve telá cez seba dávajú dvojitý obrys a pri skle dvojitý lom.
+Nie prehraté otvorenie odzadu: obsah zhasne prvý (60 ms), karta sa **nasaje** do ucha (šírka sa zúži rýchlejšie
+než výška, takže tečie dnu ako do lievika), ucho sa na okamih nafúkne o 10 %, dosadne k okraju a pošle do hladiny
+malú vlnu. Bez odskoku späť.
 
-### 8.4 Obsah
+### 9.4 Shore (TrayShore, LensShore, DockShore)
 
-- **Riadky prichádzajú po vlne,** nie naraz: dnešný `reveal` (460 ms, posun 0,1 na riadok) ostáva, ale začne až
-  vo fáze 3 (`card.p > 0.7`), nie pri zmene obsahu počas rastu.
-- **Hladina v karte** (`velvet`, módy `card.m1`, `card.m3`) je dobrá a ostáva. Pri zatváraní sa módy nesledujú
-  (`follow … = if(card_open, card.p, 0)` s pružinou `shut`), aby sa nezakývala prázdna kapsula.
-- **Zmena veľkosti otvorenej karty** (iná záložka, viac riadkov): `card.ws`/`card.hs` na pružine `grow` ostávajú;
-  horná hrana pri prepínaní záložiek neskáče (zásada 9) — `card_min`/`card_peak` ostávajú.
-- **Sklo počas rastu:** `lens hold while card.p > 0.02 and card.p < 0.98` — snímka pozadia sa neberie, kým sa
-  karta hýbe. Lom sa prepočíta raz, keď dosadne. **[zdroj]** referencia §8.1.
+Doska je tvrdá, ale stojí vo vode. Panel dosky sa dnes vysunie ako plech. Nové:
 
-### 8.5 Bublina okna a prasknutie
+- **Vysunutie:** panel vyjde s prekmitom 4 % (pružina `land`), hladina po oboch koncoch dosky sa nadvihne a vlna
+  odbehne; kvapky nablízku sa zhupnú. Obsah po sebe ako v karte.
+- **Zasunutie:** kriticky tlmené (`shut`), hladina sa na okamih prepadne tam, kam panel zapadol.
+- **LensShore** už je jedno telo so svojím panelom; teraz je to tá istá hmota ako všetko ostatné (§7), s tým
+  istým obrysom.
+- Doska je pre hladinu stena a pre kvapky prekážka (§5.4, §5.6).
 
-`bubble.plm` číta `time` (`blow.at = time`). Prejsť na `life` a `stir` (§4.1): bublina zobudí hodiny na 0,6 s.
-Miesto, kde bublina dosadne na okno a kde okno praskne, štuchne hladinu, ak je do 200 px nad ňou.
+### 9.5 Bublina okna
+
+`bubble.plm` prejde z `time` na `life`. Kde bublina dosadne na okno a kde okno praskne, štuchne hladinu, ak je to
+do 200 px nad ňou.
 
 ---
 
-## 9. Okná v pleamar-wm
+## 10. Okná v pleamar-wm
 
-Scéna okien je iný proces (`system/pleamarwm/wm/session.plm`), takže stav sa nezdieľa. Zdieľa sa **knižnica**
-(§4.3) a pár faktov cez `latte-say`. Postup: najprv Goo (kroky 1–6 v §12), potom okná.
+Scéna okien je iný proces, hmota sa teda nezdieľa. Zdieľa sa knižnica `goo/phys/` a pár faktov cez `latte-say`.
 
-### 9.1 Kývanie okna — wobble (1D.27)
+### 10.1 Kývanie — celý obsah okna (1D.27)
 
-Okno je v scéne už dnes vo vlastnej skupine so shaderom (`shader: tide, water while water < 0.999`). Kývanie je
-ďalší shader tej istej skupiny, alebo rozšírenie `tide`:
+Okno je v `wm/session.plm` už dnes vo vlastnej skupine so shaderom (`tide`, `rain`, `snow`). Kývanie je štvrtý:
+**štyri rohy na pružinách**, každý dobieha svoj cieľ, a shader medzi nimi obsah okna plynule ohne — klasický
+wobble, pri ktorom roh ďaleko od ruky mešká najviac.
 
 ```
-// per window: where it is going leads, a loose spring lags behind; the difference is how far it is bent
-spring jelly = 240, 11                      // from phys/world.plm: two swings one can see, then still
-prop jx.$i = 0 ~jelly
-prop jy.$i = 0 ~jelly
-follow jx.$i = x                            // the window's own x, y as the layout says
-follow jy.$i = y
-let bend.x = clamp(x - jx.$i, -90, 90)
-let bend.y = clamp(y - jy.$i, -90, 90)
+spring jelly = 240, 11                       // goo/phys/world.plm: two swings one can see, then still
+repeat c in 0..4 {                           // 0 top left, 1 top right, 2 bottom left, 3 bottom right
+    prop jx.$i.$c = 0 ~jelly
+    prop jy.$i.$c = 0 ~jelly
+    follow jx.$i.$c = x + w * (c == 1 or c == 3)
+    follow jy.$i.$c = y + h * (c >= 2)
+}
+// how far each corner lags behind where it should be, eight numbers: exactly a shader's `values`
 group {
-    shader: jelly, bend.x, bend.y, grab.u, grab.v while abs(bend.x) + abs(bend.y) > 0.3
+    shader: jelly, lag.x.0, lag.y.0, lag.x.1, lag.y.1, lag.x.2, lag.y.2, lag.x.3, lag.y.3 while bent > 0.3
     …title bar, window…
 }
 ```
 
 ```wgsl
-// phys/shaders/jelly.wgsl — the window as a sheet of jelly held at one point: the further from the hand, the more it lags
+// goo/phys/shaders/jelly.wgsl — the window as a sheet held by four corners that each lag on a spring
 fn shade(s: Shader) -> vec4<f32> {
-    let grab = vec2<f32>(s.a.z, s.a.w);                    // where it is held, 0…1 of its box
-    let far = distance(s.uv, grab);
-    let lag = vec2<f32>(s.a.x, s.a.y) * far * far;         // nothing at the hand, most at the far corner
-    return inside(s, s.pos + lag);
+    let top = mix(s.a.xy, s.a.zw, s.uv.x);
+    let bottom = mix(s.b.xy, s.b.zw, s.uv.x);
+    return inside(s, s.pos + mix(top, bottom, s.uv.y));
 }
 ```
 
-- Bod držania (`grab.u`, `grab.v`) je miesto, kde myš okno chytila; pri zmene veľkosti protiľahlý roh.
-- **Podmienka `while`** je kľúčová: v pokoji skupina nemá vlastný prechod a okno sa kreslí ako dnes **[zdroj]**.
-- Skupina s efektom nesmie byť v inej skupine s efektom. Okno v daždi alebo snehu má už svoj shader: tam sa kývanie
-  vynechá, alebo sa `bend` pridá ako ďalšie hodnoty do `rain`/`snow` (majú voľné miesta v `values`).
-- Iba stupeň ≥ 2 a nikdy pri okne na celú obrazovku.
-- **[overiť]** Okraj: `inside` mimo skupiny je priehľadné, takže ohnutý roh sa oreže o rámec skupiny. Skupine dať
-  rezervu (`size` väčšie o 90 px na každú stranu), inak roh pri veľkom ohybe zmizne.
+- Roh pri ruke má tuhšiu pružinu (`~80ms`), takže okno drží pod kurzorom a zvyšok za ním vlaje.
+- **`while`** je kľúčové: v pokoji skupina nemá vlastný prechod a okno sa kreslí ako dnes **[zdroj]**.
+- Pri pustení dostanú rohy štuchnutie úmerné rýchlosti ruky; okno sa raz prehne a ustáli. Zmena veľkosti kýve
+  protiľahlé rohy.
+- V daždi a snehu má okno už svoj shader a dva efekty skupiny sa nesmú vnoriť: tam sa kývanie vynechá.
+- Stupeň ≥ 2, nikdy okno na celú obrazovku.
+- **[overiť]** `inside` mimo skupiny je priehľadné: skupine dať rezervu 90 px okolo, inak sa ohnutý roh oreže.
+  Predloha správania: wobble z Hyprlandu 0.57; rediwm (Zig, wlroots) na stránke projektu deformáciu neopisuje,
+  pozrieť jeho video a `src/` pri ladení dojmu.
 
-### 9.2 Okno ako teleso
+### 10.2 Okno a hmota
 
-- **Dosadnutie:** pustené okno dostane `impulse` do `jy` úmerné rýchlosti ruky; raz sa prehne a ustáli.
-- **Minimalizácia do BarGoo** (zásada 14): scéna okien okno zmenší do kvapky (to robí dnes Goo v `body.plm`,
-  `going.*`) a pošle `latte-say 'fact fly.x0 …' 'emit win_min'`. Goo z toho urobí **let podľa §6.3**: kvapka okna
-  je kvapka ako každá iná, dopadne, šplechne a splynie s BarGoo. Blok `going.*` v `drops.plm` a `body.plm` zanikne.
-- **Okno nad hladinou:** scéna okien pošle Goo, keď spodná hrana okna prejde pásom 54 px nad okrajom
-  (`latte.band`) rýchlejšie než 300 px/s: jedno `splash`. Okno ťahané popri hladine ju rozvlní.
-- **Kvapky uhýbajú oknu** dnes skokom domova (`E.avoid`). S §6.2 dostane kvapka okno ako tretieho „suseda“
-  (obdĺžnik namiesto kruhu) a uhne pružinou. Druhý krok, až keď beží základ.
-
-### 9.3 Spoločné pružiny
-
-`wm/session.plm` má vlastné pružiny okien. Tie, ktoré majú s kvapkami vyzerať rovnako (dosadnutie, otvorenie,
-zatvorenie), nahradiť menami z `phys/world.plm`. Scénu upstreamu meniť čo najmenej: každý zásah označiť
-`// LatteOS:` ako doteraz, aby sa dala znova zlúčiť s novou verziou.
+- **Minimalizácia do BarGoo:** scéna okien okno zmenší do kvapky a povie Goo, kde a ako rýchlo. Jadro z toho
+  urobí **let podľa §5.5**: kvapka okna dopadne, šplechne a splynie s BarGoo. Blok `going.*` zaniká.
+- **Okno pri hladine:** keď spodná hrana okna prejde pásom 54 px nad okrajom rýchlejšie než 300 px/s, scéna okien
+  pošle Goo jedno štuchnutie hladiny na šírku okna.
+- **Kvapky a titulok okna:** okno je pre jadro stena (druhý krok, §5.4).
+- **Pružiny:** dosadnutie, otvorenie a zatvorenie okna berú mená z `goo/phys/world.plm`. Scénu upstreamu meniť iba
+  v blokoch `// LatteOS:`.
 
 ---
 
-## 10. Sklo a materiál (`phys/material.plm`, 6.29)
+## 11. MareaGoo a DockShore
 
-Jedna sada faktov pre Goo aj okná, jeden zdroj v Nastaveniach › Okná › Sklo:
+### 11.1 MareaGoo (6M, 1D.26)
 
-| Fakt | Rozsah | Kam ide |
-|---|---|---|
-| `glass.amount` | 0–1 | `glass:` kvapiek, kariet, okien |
-| `glass.frost` | 0–1 (číslo, nie `auto`) | `frost:` |
-| `glass.smoke`, `glass.milk` | 0–1 | čitateľnosť svetlého/tmavého písma |
-| `glass.bend` | 0–2 | `refraction:`, a `dome:` pri stupni 3 |
-| `glass.rainbow` | 0–2,5 | `dispersion:` |
-| `glass.ripple` | 0–1 | `ripple:` |
+Marea je vlastná scéna pleamaru (`marea-plm`, BSD-3). Nestane sa súčasťou hmoty (iný proces), ale dostane **skin**,
+v ktorom vyzerá ako ďalšia kvapka:
 
-Knižnica dá komponent, ktorý tie vlastnosti nastaví rovnako na tele kvapiek, karte aj podklade okna. Logika Goo
-ich pri zmene pošle scéne okien jedným `latte-say`. Pomer vody a mlieka (zásada 6) ostáva tým, čo `glass.amount`
-kvapiek určuje; okná majú svoj stupeň.
+- farby z kávy používateľa (`water`, `milk` → rovnaký `coffee` ako v `drops.plm`) a z `system/cups.json`,
+- kreslenie podľa §7: jedno telo, ten istý obrys, ten istý tieň, to isté sklo (`goo/phys/material.plm`),
+- pružiny z `goo/phys/world.plm`, aby dosadala a pružila ako kvapky,
+- žiadna tvár ani oči, ak ich skin Marey má (zásada 7) **[overiť v `wardrobe/`]**,
+- Goo o nej vie ako o stene/susedovi: Marea hlási svoj obdĺžnik (`latte-say`), kvapky jej uhnú a hladina sa od nej
+  odrazí, ak sedí na spodnom okraji.
+
+Skin je priečinok v `goo/marea/`; pôvodná Marea sa nemení, iba sa spúšťa s ním.
+
+### 11.2 DockShore (1D.25)
+
+Dok pleamar-wm (autor ho volá *shore*) kreslí `wm/session.plm` (`dk.*`). Ostáva tam — potrebuje okná —, ale:
+
+- vyzerá ako doska LatteOS: farba `shore.goo`, obrys a zaoblenie ako TrayShore a LensShore,
+- otvára a zatvára sa podľa §9.4,
+- ikony programov sa správajú ako ikry BarGoo: pod kurzorom sa nadvihnú a sused sa pridá (čísla z §5.3),
+- Goo dostane jeho rozsah ako ďalšiu stenu (`shore.2.a`, `shore.2.b`): hladina sa odráža, kvapky sa mu vyhnú,
+- meno v Nastaveniach: **DockShore**. BarGoo a DockShore robia to isté; ktorý je zapnutý, je voľba v Nastaveniach
+  › Okná, predvolene BarGoo.
+
+---
+
+## 12. Počasie pri nečinnosti
+
+Dážď a sneh na hladine sú zrušené (používateľ 11. 11.): z `body.plm` preč tri `particles`, z `drops.plm` fakty
+`rain`, `snow`, z `engine.luau` `weather_on/off`. Stupeň nečinnosti 2 namiesto toho **zapne počasie pleamar-wm**:
+dážď alebo sneh na oknách (`rain_level`, shadery `rain.wgsl` a `snow.wgsl` v `wm/session.plm`), silou podľa
+skutočného počasia z Open-Meteo, ako „intenzívne počasie“ pri nečinnosti. Prebudenie ho vypne. Vietor ostáva
+v Goo (vlní hladinu a kýve kvapky). Podmienky „kedy nie“ z §3.1 pravidiel platia.
+
+---
+
+## 13. Sklo a materiál (6.29)
+
+Jedna sada faktov pre Goo, karty, okná, MareaGoo aj DockShore, jeden zdroj v Nastaveniach › Okná › Sklo:
+`glass.amount`, `glass.frost` (číslo, nie `auto`), `glass.smoke`, `glass.milk`, `glass.bend` (→ `refraction`,
+a `dome` pri stupni 3), `glass.rainbow` (→ `dispersion`), `glass.ripple`. Komponent v `goo/phys/material.plm`
+ich nastaví všade rovnako; Goo ich pri zmene pošle scéne okien jedným `latte-say`.
 
 Úspory lomu, ktoré dnes nie sú zapnuté **[zdroj]**:
 
 ```
-lens every 50ms + 450ms * (1 - awake)       // calm: two captures a second are enough
+lens every 50ms + 450ms * (1 - awake)
 lens hold while card.p > 0.02 and card.p < 0.98
 ```
 
@@ -511,68 +494,89 @@ Pri stupni 1: `lens = image "~/.cache/latteos/wallpaper.png"` — sklo láme iba
 
 ---
 
-## 11. Rozpočet a brány
+## 14. Energia, stupne, rozpočet
 
-Merať na latte-lab (RX 640, 2560 × 1080) nástrojom z `skill/measuring.md` (`medir`, `PLEAMAR_TIMING=1`), 30 s
-na každý stav, s 12 kvapkami a 8 oknami v BarGoo. Východisko je meranie po kroku 0.
-
-| Stav | Dnes (posledné merania) | Cieľ |
+| Stav | Kedy | Snímky |
 |---|---|---|
-| skrytý (celá obrazovka, zámok) | nemerané | **0 snímok**, pod 0,3 % jadra |
-| spiaci | 17–44 % jadra (scéna neodpočíva) | pod 1 % jadra |
-| pokojný | to isté | pod 4 % jadra |
-| čulý, myš nad kvapkami | 24 % jadra pri 32 miestach | pod 12 % jadra, snímka do 3 ms |
-| otvorenie karty | nemerané | žiadna snímka nad 16,7 ms |
-| rozvlnená hladina, 48 stĺpcov | — | príplatok do 0,5 ms na snímku |
-| softvérové kreslenie (stupeň 0) | — | 0 snímok v pokoji, žiadna pružina |
+| **čulý** | `stir > 0`: kurzor pri okraji, ťahanie, karta, let, vlny | 60 |
+| **pokojný** | 4 s potom | 24, dych a drift na 35 % rýchlosti |
+| **spiaci** | nečinnosť ≥ 1, úsporný profil, batéria pod 20 % | 8, iba kým dobieha vzdych |
+| **skrytý** | celá obrazovka, zámok, stupeň 0 | 0 |
 
-**Brána po každom kroku:** `tests/check.sh`, `pleamar --check` všetkých scén, `gen.py --check`, meranie troch
-stavov a porovnanie snímok `tests/screen.sh` s predošlým krokom. Krok, ktorý zhorší pokoj alebo snímku karty, sa
-nevracia do vetvy, kým sa nenájde prečo. `PLEAMAR_TIMING=1` musí v spiacom stave vypísať prázdne `alive_by`.
+`surface { …; rate: 60, 24 while ambient, 8 while asleep }`. V spiacom stave sa raz za 3–8 s nadýchne jedna
+náhodná kvapka; scéna sekundu kreslí a zaspí.
+
+`fact tier` (z `LATTE_TIER`): 0 softvér/SAFE · 1 úsporný · 2 štandard · 3 plný.
+
+| | 0 | 1 | 2 | 3 |
+|---|---|---|---|---|
+| fyzika jadra | vypnutá | áno | áno | áno |
+| hladina | rovná | 24 stĺpcov | 48 | 64 + svetlo |
+| sklo a lom | nie | bez lomu | áno | + `dome` |
+| kývanie okien, živý kurzor | nie | nie | áno | áno |
+| častice | nie | polovica | áno | áno |
+
+Rozpočet na latte-lab (RX 640, 2560 × 1080, 12 kvapiek, 8 okien v BarGoo, 30 s na stav):
+
+| Stav | Dnes | Cieľ |
+|---|---|---|
+| skrytý | nemerané | 0 snímok, pod 0,3 % jadra |
+| spiaci | 17–44 % jadra | pod 1 % |
+| pokojný | to isté | pod 4 % |
+| čulý | 24 % pri 32 miestach | pod 12 %, snímka do 3 ms |
+| otvorenie karty | nemerané | žiadna snímka nad 16,7 ms |
+| krok jadra (32 kvapiek, 64 stĺpcov, 8 podkrokov) | — | pod 0,1 ms |
+
+`PLEAMAR_TIMING=1` musí v spiacom stave vypísať prázdne `alive_by`.
 
 ---
 
-## 12. Poradie práce
+## 15. Poradie práce — všetko v jednom behu
 
-Každý krok je samostatný commit, ktorý necháva plochu funkčnú. Neskáče sa.
+Rozhodnuté je urobiť všetko naraz. Aj tak ide o commity po sebe, z ktorých každý necháva plochu funkčnú; keď sa
+niečo pokazí, je jasné kde. Pred začiatkom značka `v0.5-pred-gooengine2`.
 
 | # | Krok | Hotovo, keď |
 |---|---|---|
-| 0 | pleamar 0.7.27, pleamar-wm 0.6.15, záplaty, východiskové meranie (§3) | tri čísla zapísané v `docs/OPTIMALIZACIA.md` |
-| 1 | `phys/world.plm`, `phys/clock.plm`; `goo.plm` na `language 0.9`; `time` → `life` všade; `rate:` so stavmi; `tier` | v spiacom stave 0 snímok; vzhľad v čulom stave rovnaký ako predtým |
-| 2 | karta: pružina `shut`, zrušiť `card_alive`, tri fázy pomenované, ucho naživo (§8.1–8.3) | zatvorenie bez vyskočenia; šev ucha preč pri pohybe aj kolieskom |
-| 3 | hladina `phys/surface.plm`, `E.ripple` ako obálka, dosky ako steny, jazda na vlne (§5, §6.5) | kameň sa odrazí od okraja a od TrayShore; dve vlny sa preložia |
-| 4 | susedia cez `lk`/`rk`, mäkké zrážky, spoje naživo (§6.2, §7); `picks.plm` zmenšiť | ťahaná kvapka odtlačí suseda; vlákno praskne a zlepí sa |
-| 5 | let (§6.3), tvar z pohybu (§6.4), udalosti `goo_landed` a spol.; z `engine.luau` preč časovače a `GRAVITY` | hra pri nečinnosti (Worms) beží na novom lete; `Drop:jump` bez zmeny rozhrania |
-| 6 | materiál a úspory lomu (§10); `side.plm`, `lockscreen.plm`, `login.plm` na tú istú knižnicu | jedny posuvníky skla; druhý monitor sa správa rovnako |
-| 7 | okná: `jelly.wgsl`, spoločné pružiny, minimalizácia ako let, šplech od okna (§9) | okno sa pri ťahaní kýve a v pokoji nestojí nič navyše |
-| 8 | dokumenty: `LATTEOS-GOO.md` §3, `docs/goo/PRAVIDLA.md`, `ROZHODNUTIA.md`, ROADMAP 6.09, 6.27–6.30, 1D.27 | — |
+| 0 | pleamar 0.7.27, pleamar-wm 0.6.15, záplaty, východiskové meranie | tri čísla v `docs/OPTIMALIZACIA.md` |
+| 1 | **hák a kostra:** `pleamar-step-hook.patch`, `crates/goo-phys` (prázdny svet), `crates/latte-goo`, relácia spúšťa `latte-goo` | jeden fakt z Rustu hýbe tvarom plynule; scéna zaspí, keď svet stojí |
+| 2 | **jadro:** kvapky, kurzor (§5.2–5.3), zrážky, let, hladina, spoje, testy | `cargo test -p goo-phys` zelené |
+| 3 | **scéna na jadre:** `drops.plm` číta `g.*`, `time` preč, `rate:` so stavmi, `tier`; z `engine.luau` preč časovače, `GRAVITY`, susedia | plocha sa správa ako predtým plus zrážky a hod; v spiacom stave 0 snímok |
+| 4 | **jedna hmota a obrys** (§7): karta, Shore a hladina do tela kvapiek | žiadna čiara vnútri; šev ucha preč |
+| 5 | **karty a Shore** (§9): pružiny, fázy, nasatie, vlna po obryse | zatvorenie bez vyskočenia |
+| 6 | **kurzor** (§8): téma xcursor, potom živá kvapka a záplata na skrytie | téma funguje všade; živý kurzor za vypínačom |
+| 7 | **okná** (§10): `jelly.wgsl`, minimalizácia ako let, šplech od okna, spoločné pružiny | okno sa kýve a v pokoji nestojí nič navyše |
+| 8 | **MareaGoo, DockShore, počasie, sklo** (§11–13); `side.plm`, zámok a prihlásenie na tú istú knižnicu | jedny posuvníky skla; dosky sú steny |
+| 9 | meranie proti rozpočtu, `FILES`, `TRETIE-STRANY.md` (shader z Vitreusu), `LATTEOS-GOO.md` §3, `PRAVIDLA.md`, `ROZHODNUTIA.md`, ROADMAP | — |
 
-Rozhranie kvapiek (`drops/*.luau`, `Drop:…`, `E.define`, `E.upsert`, `kvapky.json`) sa **nemení**. Menia sa iba
-vnútornosti `engine.luau` a záznam `goo` v scéne. Po každom kroku `gen.py` a kontrola, že súbory, ktoré píše,
-sedia.
+Po každom kroku: `tests/check.sh`, `pleamar --check` všetkých scén, `gen.py --check`, `cargo test`, snímky
+`tests/screen.sh`.
+
+**Otvorene o rozsahu:** je to prepis jadra plochy, nový program v Ruste, tri nové záplaty a zásah do scény okien.
+Za jeden deň sa to dá napísať; overiť rukou na latte-lab (kurzor, kývanie, dojem z kvapiek) sa to za ten istý deň
+celé nedá. Kroky 0–5 sú základ, bez ktorého plocha nefunguje; 6–8 sa dajú zapnúť vypínačom neskôr bez toho, aby
+niečo chýbalo. Ak čas nevyjde, zastaviť po 5 a zvyšok dokončiť ďalší deň — nie skracovať overenie.
 
 ---
 
-## 13. Riziká
+## 16. Riziká
 
 | Riziko | Čo s ním |
 |---|---|
-| Kruhové `follow` medzi stĺpcami alebo kvapkami sa rozkmitá | Tuhosť držať pod hranicou z §5; pri prvom spustení `--record h.0,h.24` a pozrieť, či doznie. Poistka: `clamp` na cieli. |
-| `x[i]` s meniacim sa miestom je drahšie, než sa zdá (pick nad 32 prvkami na každom čítaní) | Zmerať po kroku 4. Ak áno, vrátiť sa pri vlákne k údajom v zázname a `x[i]` nechať iba na zrážku. |
-| `rate:` 24 pri pokojnom stave vyzerá trhane | Skúsiť 30; ak ani to, pokojný stav na 60 a rozhodne používateľ (§4.2). |
-| Kývanie okna oreže rohy alebo rozmaže text | Rezerva okolo skupiny; ohyb obmedzený na 90 px; text sa počas ohybu vzorkuje lineárne — krátky ohyb to znesie. Ak nie, kývať iba rám a tieň, nie obsah. |
-| Scéna okien sa po zásahoch ťažko zlučuje s upstreamom | Zásahy iba v označených blokoch `// LatteOS:`; shader a pružiny v knižnici mimo `session.plm`. |
-| Hod kvapky skončí mimo obrazovky pri viacerých monitoroch | Let sa počíta v súradniciach svojej scény a končí na jej okraji; prechod na druhý monitor nie je súčasťou. |
-| Tuhosť pružiny nie je výraz, hmotnosť je iba napodobená | Stačí na dojem (§6.1). Ak nie, návrh autorovi pleamaru: `spring(k, c)` s výrazmi → `patches/issues/`. |
+| Hák do renderu nejde tak jednoducho, alebo fakty z neho kreslia o snímku neskôr | Overuje krok 1, pred všetkým ostatným. Náhrada v §4.1. |
+| Autor pleamaru vydáva denne; štvrtá záplata do `render.rs` sa bude rozchádzať | Záplata do 50 riadkov na jednom mieste; hneď ju ponúknuť autorovi. |
+| Jedna hmota s kartou je drahá alebo obrys pri skle nie je ostrý | Overiť po kroku 0; náhrada v §7. |
+| Živý kurzor mešká za rukou | Téma xcursor je základ a funguje vždy; živá kvapka je voliteľná (§8.2). |
+| Pád `latte-goo` nechá skrytý systémový kurzor | Strážca v `latte-session` ho ukáže, keď `goo_alive` neodpovie. |
+| Kývanie oreže rohy alebo rozmaže text | Rezerva okolo skupiny, ohyb najviac 90 px. Ak text trpí: kratší dokmit (`jelly = 320, 16`). |
+| Silnejšie reakcie na kurzor rušia pri práci | Všetky čísla v `goo-phys.json`; posuvník „Živosť“ v Nastaveniach › Kvapky násobí dosah a príťažlivosť. |
+| Scéna okien sa po zásahoch ťažko zlučuje s upstreamom | Zásahy iba v blokoch `// LatteOS:`; shader a pružiny v knižnici. |
 
 ---
 
-## 14. Otázky na používateľa pred kódovaním
+## 17. Čo ešte treba od používateľa
 
-1. **Pokojný stav:** spomalený dych na 24 snímkach, alebo plný pohyb stále (§4.2)?
-2. **Hod kvapky:** smie pustená kvapka letieť v smere ruky, alebo vždy padá rovno dole (§6.3)?
-3. **Kývanie okien:** celý obsah okna, alebo iba rám a tieň (§9.1)?
-4. **Hladina na ostatných okrajoch:** iba dole ako dnes, alebo pri stupni 3 všade (§5)?
-5. **Poradie:** kroky 0–2 opravujú výkon a karty a nepridávajú nič nové; kroky 3–7 sú nová funkcia. ROADMAP od
-   30. 10. hovorí „nepridávať nové produktové funkcie“ pred alpha vydaním. Robiť teraz všetko, alebo iba 0–2?
+1. **Predloha kurzora:** tvary a farby priložených kurzorov sú dúhové; kurzor Goo bude kávový. Ak má mať farbu
+   (napr. akcent témy v kvapôčkach), povedať ktorú.
+2. **BarGoo alebo DockShore** ako predvolená lišta okien (§11.2) — návrh je BarGoo.
+3. Po kroku 3 a po kroku 6 pozrieť plochu rukou: dojem zo silnejších reakcií a z kurzora sa nedá zmerať.
