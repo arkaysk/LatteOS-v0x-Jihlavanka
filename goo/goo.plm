@@ -8,8 +8,8 @@
 // Its parts, in the order they are painted:
 //   drops    what a drop is: its record, how it moves, what the mouse does to it
 //   picks    (written by gen.py) the one drop a card grows from
-//   shore    the hard corner at the bottom right: background programs, the network, the volume
-//   body     the goo: every drop and the edge as one body; shapes.plm in it is written by gen.py
+//   body     the goo: every drop, the edge and the shores' plates as one body; shapes.plm in it is written by gen.py
+//   shore    what is on the hard corner at the bottom right: background programs, the network, the volume
 //   bubble   a window born of a drop comes in a bubble; a window closed bursts
 //   card     the card's state and its frame
 //   faces    what each drop shows on itself
@@ -56,8 +56,8 @@ scene Goo {
 
     include "parts/drops.plm"
     include "parts/picks.plm"
-    include "parts/shore.plm"
     include "parts/body.plm"
+    include "parts/shore.plm"            // after the body: the plate is the body's, what is on it is drawn over it
     include "parts/bubble.plm"
     shader velvet = file "shaders/velvet.wgsl"
     shader pegboard = file "shaders/pegboard.wgsl"
