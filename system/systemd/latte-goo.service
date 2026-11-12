@@ -12,7 +12,8 @@ StartLimitIntervalSec=0
 # With this the list of windows comes from the generic protocols and everything else from Hyprland
 # (patches/pleamar-windows-and-icons.patch): Hyprland's own socket only reports the window in front.
 Environment=PLEAMAR_GENERIC=window
+# latte-goo is pleamar with Goo's physics stepping inside it (crates/latte-goo, docs/goo/GOOENGINE-2.md §4).
 # On the monitor latte-screens named as the main one; without a name, wherever it lands.
-ExecStart=/bin/sh -c 'exec /usr/bin/pleamar --scene /usr/share/latteos/goo/goo.plm --no-hud $${LATTE_GOO_SCREEN:+--screen "$$LATTE_GOO_SCREEN"}'
+ExecStart=/bin/sh -c 'exec /usr/bin/latte-goo --scene /usr/share/latteos/goo/goo.plm --no-hud $${LATTE_GOO_SCREEN:+--screen "$$LATTE_GOO_SCREEN"}'
 Restart=always
 RestartSec=1

@@ -28,7 +28,8 @@ scene Goo {
         margin: 0
         level: top
         reserve: -1
-        rate: 60
+        // sixty frames while something moves; a core that pulses on a still desktop needs no more than twenty
+        rate: 60, 20 while stir < 0.001 and card.p < 0.01
         // An open card is a menu: it has the keyboard until a press elsewhere, so Escape closes it at once
         // and its field is typed into without a press. So has Goo while it is walked with the arrow keys.
         keyboard: exclusive while card_open or kb
@@ -70,4 +71,8 @@ scene Goo {
     include "parts/desk.plm"
     include "parts/lensline.plm"           // over the card: the line stays on its capsule while the card grows out of it
     include "parts/ctx.plm"
+
+    // The scene's clock (parts/drops.plm): it runs while the world is stirred, a card is out, the keyboard walks
+    // the drops or something asked for a moment of it. At rest it stands, and the scene paints nothing.
+    spin tick by if(stir > 0.001 or buzz > 0.001 or card.p > 0.01 or kb.p > 0.01 or beats or lens_busy or lens_agent, 1, 0)
 }

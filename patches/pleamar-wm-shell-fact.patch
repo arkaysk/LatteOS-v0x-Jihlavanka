@@ -2,13 +2,19 @@ diff --git a/src/term.rs b/src/term.rs
 index 28a0281..bec7de3 100644
 --- a/src/term.rs
 +++ b/src/term.rs
-@@ -1328,2 +1328,5 @@ pub fn watch_agents(windows: String, to_render: std::sync::mpsc::Sender<pleamar:
+@@ -1326,6 +1326,9 @@ pub fn watch_agents(windows: String, to_render: std::sync::mpsc::Sender<pleamar:
+         let _ = to_render.send(ToRender::ExternalFact(intern("who.tabs"), "1".into()));
+         let home = std::env::var("HOME").unwrap_or_default();
          let mut said: std::collections::HashMap<usize, (u8, String)> = std::collections::HashMap::new();
 +        // The windows that have a shell of their own through the layer, as the scene was told (`shell.N`): only
 +        // they can be read, typed in and handed tasks along a wire.
 +        let mut shelled: std::collections::HashSet<usize> = std::collections::HashSet::new();
          let mut named: std::collections::HashMap<usize, String> = std::collections::HashMap::new();
-@@ -1358,4 +1361,8 @@ pub fn watch_agents(windows: String, to_render: std::sync::mpsc::Sender<pleamar:
+         // The agents of named terminals, as last seen: which, since when, and when
+         // Codex's conversation was last looked for (sessions.rs).
+@@ -1356,8 +1359,12 @@ pub fn watch_agents(windows: String, to_render: std::sync::mpsc::Sender<pleamar:
+                     2
+                 }
              };
 +            let mut shells_now: std::collections::HashSet<usize> = std::collections::HashSet::new();
              for (slot, pid) in &slots {
@@ -17,10 +23,16 @@ index 28a0281..bec7de3 100644
 +                    shells_now.insert(*slot);
 +                }
                  // Its names: one per named shell. A terminal with tabs (Bitácora) may hold
-@@ -1433,2 +1440,6 @@ pub fn watch_agents(windows: String, to_render: std::sync::mpsc::Sender<pleamar:
+                 // a whole caravan, each companion in its own: `who.N` says them all, apart
+                 // by spaces, and each one's agent is up, gets its letters and keeps its
+@@ -1431,6 +1438,10 @@ pub fn watch_agents(windows: String, to_render: std::sync::mpsc::Sender<pleamar:
+                     }
+                 }
              }
 +            for slot in shelled.symmetric_difference(&shells_now) {
 +                let _ = to_render.send(ToRender::ExternalFact(intern(&format!("shell.{slot}")), if shells_now.contains(slot) { "1" } else { "0" }.into()));
 +            }
 +            shelled = shells_now;
              let slots_known: std::collections::HashSet<usize> = said.keys().chain(now.keys()).copied().collect();
+             for slot in slots_known {
+                 let new = now.get(&slot).cloned().unwrap_or((0, String::new()));

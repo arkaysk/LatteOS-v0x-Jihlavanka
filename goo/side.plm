@@ -11,7 +11,8 @@ scene GooSide {
         margin: 0
         level: top
         reserve: -1
-        rate: 60
+        // sixty frames while something moves; a core that pulses on a still desktop needs no more than twenty
+        rate: 60, 20 while stir < 0.001 and card.p < 0.01
         keyboard: exclusive while card_open or kb
     }
     permissions {
@@ -37,4 +38,8 @@ scene GooSide {
     include "parts/rows.plm"
     include "parts/desk.plm"
     include "parts/ctx.plm"
+
+    // The scene's clock (parts/drops.plm): it runs while the world is stirred, a card is out, the keyboard walks
+    // the drops or something asked for a moment of it. At rest it stands, and the scene paints nothing.
+    spin tick by if(stir > 0.001 or buzz > 0.001 or card.p > 0.01 or kb.p > 0.01 or beats, 1, 0)
 }

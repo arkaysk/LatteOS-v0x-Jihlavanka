@@ -48,6 +48,22 @@ part Body {
         include "shapes.plm"
     }
 
+    // The light of the sun or the moon, low over the surface from the side they stand on: the level there and
+    // the edges of the goo around it catch it, fading with the distance. Light added, never paint; none of it is
+    // worked out when there is no such light.
+    group {
+        show: sunlit > 0.02
+        mask: radial sun.x, H radius 60 to W * 0.5
+        mode: add
+        body {
+            color: mix(#000000, sunlight, 0.14)
+            rim: 100%
+            opacity: sunlit
+            box { from: 0, H; size: W, 40 }
+            include "shapes.plm"
+        }
+    }
+
     // a window put away shrinks into a drop where it was; from there it falls as part of the goo
     body {
         gradient: gone.x0, gone.y0 - gone.h / 2 to gone.x0, gone.y0 + gone.h / 2, mix(#2c2019, coffee, going.k), coffee

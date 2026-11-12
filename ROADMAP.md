@@ -681,6 +681,8 @@ Týka sa kariet so sklom (PowerGoo 6C, ClockGoo, CamGoo).
 a otváranie ich kariet (popupov) začína ukazovať grafické artefakty. Zistiť, od ktorého commitu (Goo, pleamar 0.7.10, scéna WM,
 sklo 6.29/1D.42), snímky a `--record`; súvisí s 1D.43 (druhý rám za kartou).
 
+**6.31** [~] **GooEngine 2 — „Živá hladina“** (používateľ 11.–12. 11., návrh a stav `docs/goo/GOOENGINE-2.md`): fyzikálne jadro v Ruste, jedna hmota s jedným obrysom, kurzor ako kvapka, živšie karty, kývanie okien, MareaGoo, DockShore, herné efekty podľa hardvéru, jeden súbor nastavení `gooengine.json`. Rieši 6.09, 6.21, 6.27–6.30, 6M, 1D.25–1D.27. 12. 11.: kroky 0–3 hotové a nasadené (pleamar 0.7.27, pleamar-wm 0.6.15, `pleamar-step-hook.patch`, `crates/goo-phys` so 17 testami, `crates/latte-goo`; `drops.plm` číta jadro, `time` → `tick`, plocha v pokoji berie 1 % jadra namiesto 17–44 %, hodená kvapka letí; vlákna iba zo zlepenia, gravitácia iba dole a lepenie k bokom, viditeľná hladina so svetlom slnka a mesiaca). Chýba: krok 4 (jedna hmota a obrys) až 9; susedia a spoje z jadra, vietor, dych v pokoji; stránka Nastavenia › Kvapky › Engine; §20 (osvetlenie, mäkké telesá, SDF).
+
 ### 6A. [~] BarGoo
 Zdroje: `goo/lib/bar.luau`, `goo/side.plm`; LATTEOS-GOO §4.1
 

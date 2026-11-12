@@ -36,3 +36,23 @@ Kľúčové zistenie: pri softvérovom kreslení stojí **každá snímka** komp
 - [x] Nástroj `setup/test/vykon.sh` (26. 9.): zmeria CPU a PSS relácie za 30 s (pokoj / animácie / otvorené okná) a uloží
   výsledok, aby sa dalo porovnávať medzi commitmi.
 
+## GooEngine 2 — východisko (12. 11. 2026)
+
+Merané `tests/screen.sh 14` s `PLEAMAR_TIMING=1` na latte-lab (i7-4820K, RX 640, 1920 × 1080 bez obrazovky), plocha
+`goo/goo.plm` v pokoji, procesor na jedno kolo renderu (pravidlá a pružiny + skladanie + oblasti + kreslenie):
+
+| Program | ms na kolo | kôl za sekundu | Odpočíva? |
+|---|---|---|---|
+| pleamar 0.7.10 (doteraz) | 5,3 | 60 | nie — `alive: spin time`, väzby na `time` |
+| pleamar 0.7.27 | 4,2 | 60 | nie |
+| latte-goo (0.7.27 + hák, scéna ho ešte nevyužíva) | 4,2–5,1 | 60 | nie |
+| skúšobná scéna na jadre (`tests/goo-phys/probe.plm`, 6 kvapiek, 48 stĺpcov) | 0,8 | 53, potom 0 | **áno** — po doznení sa scéna prestane kresliť |
+
+Dnešná scéna sa v pokoji nikdy nezastaví (nález D1 z `docs/goo/GOOENGINE-2.md`): to odstráni až krok 3, keď
+`drops.plm` prestane menovať `time`. Pohyb myšou a otvorená karta sa doplnia pri kroku 3, na tej istej scéne pred a po.
+
+**Po kroku 3 (12. 11.), živá relácia na latte-lab:** proces `latte-goo` v pokoji 10 tikov procesora za 10 s, teda
+asi **1 % jedného jadra** (dovtedy 17–44 %). Bez obrazovky: po doznení (`stir` = 0) scéna do konca behu nenakreslila
+ani snímku. Pri pohybe kurzora okolo kvapiek 5,2 ms na kolo pri 36–41 kolách — to je čulý stav a ešte nie je meraný
+proti rozpočtu (§14 návrhu); dlaždice tela a jedna hmota prídu v kroku 4.
+

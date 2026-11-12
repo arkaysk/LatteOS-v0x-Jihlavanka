@@ -476,3 +476,18 @@ Nové rozhodnutie: jeden riadok sem (dátum, čo, prečo) a oprava platného zne
 - **Späť/Znova patrí oknu, v ktorom sa akcia urobila** (10B.48): zmazanie súborov v DualBrew a Späť v LensAI nemajú nič spoločné, ako v samostatných programoch (Photoshop). Každé okno si drží vlastnú históriu príkazov Späť/Znova.
 - **Plocha má Späť/Znova spoločné so správcami súborov** (DualBrew): je síce samostatná položka, ale berie sa ako otvorený priečinok.
 - **Strážca podmienok (10B.39) odložený na neskôr.**
+
+
+## 12. 11. 2026 — GooEngine 2 (používateľ)
+
+- Návrh prepisu enginu je `docs/goo/GOOENGINE-2.md`; rozhodnutia z 11. 11. sú v jeho §1 (jadro fyziky v Ruste, jedna hmota s jedným obrysom, kurzor ako kvapka, hladina iba dole, dážď na hladine zrušený, BarGoo predvolená lišta okien, DockShore, MareaGoo).
+- **Hardvér:** engine má bežať solídne na asi 12 rokov starom hardvéri a úžasne na novom. Meradlá: latte-lab (i7-4820K, RX 640) a počítač používateľa (i5-11400, 80 GB RAM, RTX 3060).
+- **Moderné herné efekty**, kde to Rust a pleamar dovolia (žiara, rozklad farieb, kaustiky, spŕška, rázová vlna, stopy, pohyblivé svetlo) — podľa stupňa hardvéru, každý vypínateľný.
+- **Jeden súbor nastavení enginu** (`~/.config/latteos/gooengine.json`): fyzika, vzhľad **aj využitie hardvéru** (stupeň, snímky za sekundu, kroky fyziky, sklo, častice, batéria, výber karty). Nastavuje sa v Nastaveniach.
+- **Osvetlenie, mäkké telesá, metaballs/SDF** (12. 11.): používateľ chce ambient occlusion, screen-space tiene, bloom, objemovú žiaru, svetlo za kurzorom; deformáciu pri náraze so zachovaním objemu, vlnenie povrchu, sekundárne deformácie, reakciu na silu a hmotnosť; jednotnú siluetu, plynulé spájanie, ostrý obrys, deformáciu pri kolíziách, lepšie krky a vlákna. Postup: `docs/goo/GOOENGINE-2.md` §20.
+- **Shore ako varianta pre profesionála** (12. 11.): za cenu trochy hravosti sa dá skoro všetko prepnúť na Shore — stačia LensShore, DockShore a TrayShore. Dosky reagujú s hladinou, s Goo aj medzi sebou a dajú sa spojiť, keď sa pritiahnu blízko seba. Postup: `docs/goo/GOOENGINE-2.md` §21.
+- **DockShore a BarGoo nemajú spoločné meno** (12. 11.): účel je podobný, nie rovnaký. („BarShore“ bol preklep používateľa.)
+- **Goo sa od Shore odráža** (12. 11.: „odrážanie je skvelé“); návrh na stekanie goo po doske používateľ škrtol.
+- **Vlákno je následok zlepenia** (12. 11.): vzniká pri odďaľovaní vecí, ktoré sa dotkli, a trvá do pretrhnutia; nikdy pri približovaní, kým zlepené nie sú. Padajúca kvapka nemá vlákno k okraju ani k inému Goo.
+- **Gravitácia je iba dole** (12. 11.): k bokom ani k stropu nič nepadá, ale Goo sa na bok či strop dokáže prilepiť.
+- **Hladina podobnejšia prihlasovaniu** (12. 11.): vlnenie bolo skoro nepoznateľné. Hladina má byť prirodzenejšia, ako v Greeteri, ale iba 2D (bez šikmého pohľadu na more), nasvietená slnkom alebo mesiacom, ktoré nevidno: ráno pri východe ten okraj hladiny a okolité okraje Goo.

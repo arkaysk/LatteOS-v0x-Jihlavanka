@@ -1,8 +1,8 @@
 diff --git a/docs/11-language-reference.md b/docs/11-language-reference.md
-index ba6b5e7..cb310a2 100644
+index 3c96ddc..86a54ce 100644
 --- a/docs/11-language-reference.md
 +++ b/docs/11-language-reference.md
-@@ -1603,6 +1603,11 @@ reaches that one.
+@@ -1614,6 +1614,11 @@ reaches that one.
  **A scene that ends: `quit`.** In a rule, `quit` ends the program, as closing
  its window would: a terminal whose last shell ended.
  
@@ -14,7 +14,7 @@ index ba6b5e7..cb310a2 100644
  ## 11. Text with slots
  
  Inside a text in quotes that is the content of a `text` or the argument of a component:
-@@ -1913,7 +1918,7 @@ properties.layout: at anchor gap padding align fill glass lens shine refraction
+@@ -1924,7 +1929,7 @@ properties.layout: at anchor gap padding align fill glass lens shine refraction
  functions: min max abs floor ceil sin cos clamp smooth mix if vel sqrt pow fract mod sign round exp log tan atan2 length noise random pick rgb
  text_functions: upper lower
  triggers: press release scroll drag hold enter leave hover away idle key submit focus blur drop carry change still
@@ -24,10 +24,10 @@ index ba6b5e7..cb310a2 100644
  frame: hold emit
  classes: ambient reflex asked state
 diff --git a/src/gpu.rs b/src/gpu.rs
-index 655ccea..e100173 100644
+index c4d2bef..263d0a2 100644
 --- a/src/gpu.rs
 +++ b/src/gpu.rs
-@@ -5186,6 +5186,10 @@ impl Sheet {
+@@ -5559,6 +5559,10 @@ impl Sheet {
      pub fn keyboard(&self, t: Keyboard) {
          self.window.keyboard(t);
      }
@@ -39,10 +39,10 @@ index 655ccea..e100173 100644
  
  /// Header, frame history and, at the end, the lens: whether there is a background to show.
 diff --git a/src/language/compiler.rs b/src/language/compiler.rs
-index ef7ae20..8b0eb6e 100644
+index d70e09c..7109228 100644
 --- a/src/language/compiler.rs
 +++ b/src/language/compiler.rs
-@@ -7713,6 +7713,8 @@ impl<'a> Compiler<'a> {
+@@ -7784,6 +7784,8 @@ impl<'a> Compiler<'a> {
                          "blur" => Effect::FocusField(None),
                          // `quit`: the scene ends, as closing its window would (a terminal whose last shell ended).
                          "quit" => Effect::Quit,
@@ -65,10 +65,10 @@ index 7e43997..3b6e7ed 100644
  /// What a keyframe can carry besides a curve.
  pub const KEYFRAME_OPTIONS: &[&str] = &["hold", "emit"];
 diff --git a/src/platform/mod.rs b/src/platform/mod.rs
-index a7e319d..cab33bd 100644
+index 5e777c6..d42ce18 100644
 --- a/src/platform/mod.rs
 +++ b/src/platform/mod.rs
-@@ -1091,6 +1091,9 @@ pub trait PlatformWindow: Send {
+@@ -1105,6 +1105,9 @@ pub trait PlatformWindow: Send {
      /// Grab or release the keyboard with the scene running: a launcher wants it
      /// entirely while it's open, and not at all when it isn't.
      fn keyboard(&self, t: crate::scene::Keyboard);
@@ -79,10 +79,10 @@ index a7e319d..cab33bd 100644
      /// the one about to be presented. Where that's unknown, it doesn't report, and the clock sets the pace.
      fn request_frame(&self) {}
 diff --git a/src/platform/wayland.rs b/src/platform/wayland.rs
-index 6ff7afd..f11604d 100644
+index cd29d54..cc56b09 100644
 --- a/src/platform/wayland.rs
 +++ b/src/platform/wayland.rs
-@@ -677,6 +677,8 @@ fn next_surface_id() -> u32 {
+@@ -860,6 +860,8 @@ fn next_surface_id() -> u32 {
  
  struct WaylandWindow {
      wl: wl_surface::WlSurface,
@@ -91,7 +91,7 @@ index 6ff7afd..f11604d 100644
      compositor: CompositorState,
      /// To change the cursor you need the pointer's "device" and the serial
      /// number of the last time it entered: both are set by the Wayland thread.
-@@ -831,6 +833,14 @@ impl PlatformWindow for WaylandWindow {
+@@ -1062,6 +1064,14 @@ impl PlatformWindow for WaylandWindow {
          }
      }
  
@@ -106,7 +106,7 @@ index 6ff7afd..f11604d 100644
      fn cursor(&self, c: Cursor) {
          let shape = shape_of(c);
          CURSOR_SHAPE.store(c.code(), Ordering::Relaxed);
-@@ -1711,7 +1721,7 @@ impl PopupHandler for State {
+@@ -2020,7 +2030,7 @@ impl PopupHandler for State {
              let _ = self.to_render.send(ToRender::Sheet(Box::new(gpu::NewSheet {
                  id: a.id,
                  target: gpu::Target::Surface(surface),
@@ -115,7 +115,7 @@ index 6ff7afd..f11604d 100644
                  scale: a.parent.scale,
                  size: a.size,
                  mhz: a.parent.mhz,
-@@ -1918,7 +1928,7 @@ impl State {
+@@ -2243,7 +2253,7 @@ impl State {
              let _ = self.to_render.send(ToRender::Sheet(Box::new(gpu::NewSheet {
                  id: p.id,
                  target: gpu::Target::Surface(surface),
@@ -124,7 +124,7 @@ index 6ff7afd..f11604d 100644
                  scale: p.scale,
                  size,
                  mhz,
-@@ -1990,7 +2000,7 @@ impl smithay_client_toolkit::session_lock::SessionLockHandler for State {
+@@ -2315,7 +2325,7 @@ impl smithay_client_toolkit::session_lock::SessionLockHandler for State {
              let _ = self.to_render.send(ToRender::Sheet(Box::new(gpu::NewSheet {
                  id: face.id,
                  target: gpu::Target::Surface(paints),
@@ -134,7 +134,7 @@ index 6ff7afd..f11604d 100644
                  size,
                  mhz: face.mhz,
 diff --git a/src/render.rs b/src/render.rs
-index 23a1964..4000da8 100644
+index 405d29c..94c2782 100644
 --- a/src/render.rs
 +++ b/src/render.rs
 @@ -592,6 +592,8 @@ pub fn run(
@@ -146,7 +146,7 @@ index 23a1964..4000da8 100644
      // Since when the scene stopped wanting the keyboard while it was lent.
      let mut loan_grace: Option<Instant> = None;
      // The field being typed into, and the key that has been left held down.
-@@ -2809,6 +2811,11 @@ pub fn run(
+@@ -2833,6 +2835,11 @@ pub fn run(
                      .collect()
              })
              .unwrap_or_default();
@@ -158,7 +158,7 @@ index 23a1964..4000da8 100644
          if keyboard_set.is_some() || any_condition || keyboard_lent.is_some() || scene.surfaces.iter().any(|s| s.keyboard != scene.surface().keyboard) {
              keyboard_set = Some(mode);
              for l in &mut sheets {
-@@ -3417,6 +3424,7 @@ pub fn run(
+@@ -3441,6 +3448,7 @@ pub fn run(
                          texts[k] = v;
                      }
                      Effect::Quit => crate::quit_from_scene(),
@@ -167,10 +167,10 @@ index 23a1964..4000da8 100644
                          parked = None;
                          editing = None;
 diff --git a/src/scene.rs b/src/scene.rs
-index f5cbea6..2e7743a 100644
+index 4ca8806..f90e2e0 100644
 --- a/src/scene.rs
 +++ b/src/scene.rs
-@@ -1958,6 +1958,9 @@ pub enum Effect {
+@@ -1972,6 +1972,9 @@ pub enum Effect {
      FocusTerminal(&'static str),
      /// `quit`: the program ends.
      Quit,

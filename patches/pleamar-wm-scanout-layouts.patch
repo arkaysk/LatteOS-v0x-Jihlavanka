@@ -1,8 +1,8 @@
 diff --git a/src/session.rs b/src/session.rs
-index 793f47a..19584bc 100644
+index ce2a4ff..f29223b 100644
 --- a/src/session.rs
 +++ b/src/session.rs
-@@ -120,13 +120,13 @@ impl Monitor {
+@@ -126,13 +126,13 @@ impl Monitor {
  impl DrmOutput {
      fn make_buffers(&mut self, device: &wgpu::Device, modifiers: &[u64]) -> Result<(), String> {
          let (w, h) = self.size;
@@ -18,7 +18,7 @@ index 793f47a..19584bc 100644
              let uses = gbm::BufferObjectFlags::SCANOUT | gbm::BufferObjectFlags::RENDERING;
              let made = if gl {
                  self.gbm.lock().unwrap().create_buffer_object::<()>(w, h, gbm::Format::Xrgb8888, uses)
-@@ -148,7 +148,16 @@ impl DrmOutput {
+@@ -154,7 +154,16 @@ impl DrmOutput {
                  wgpu::TextureUses::UNINITIALIZED,
              )?;
              let flags = if bo.modifier() == gbm::Modifier::Invalid { FbCmd2Flags::empty() } else { FbCmd2Flags::MODIFIERS };

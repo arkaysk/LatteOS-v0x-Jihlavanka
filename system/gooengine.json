@@ -1,0 +1,43 @@
+{
+ "hardware": {
+  "tier": "auto",
+  "fps": 60,
+  "fps_calm": 24,
+  "fps_asleep": 8,
+  "physics_hz": 240,
+  "columns": "auto",
+  "particles": 1,
+  "glass": "auto",
+  "lens_ms": 50,
+  "pause_fullscreen": true,
+  "battery_saver": 20,
+  "gpu": "auto"
+ },
+ "effects": {
+  "refraction": "auto",
+  "crest_light": "auto",
+  "spray": "auto",
+  "bloom": "auto",
+  "dispersion": "auto",
+  "caustics": "auto",
+  "fresnel": "auto",
+  "shockwave": "auto",
+  "trails": "auto",
+  "light": "auto",
+  "relief": "auto",
+  "ao": "auto",
+  "soft_shadow": "auto",
+  "halo": "auto",
+  "harmonics": "auto"
+ },
+ "physics": {},
+ "look": {
+  "outline": 1.25,
+  "liveliness": 1
+ },
+ "cursor": {
+  "mode": "adaptive",
+  "lift": "glow",
+  "live": true
+ }
+}

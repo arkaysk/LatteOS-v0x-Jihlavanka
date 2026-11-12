@@ -48,7 +48,6 @@ local THREAD = 2.3           -- neighbours join while their centres are within t
 local MIN_GAP = 0.95         -- centres stay this many sums of radii apart: drops touch and melt, never cover
 local BERRY_GAP = 1.2        -- a stranger keeps further from a bar's berries, so as not to melt with them
 local STICK = 130            -- let go within this many px of an edge, a drop sticks to it
-local GRAVITY = 800          -- px/s², the scene's: how long a fall takes
 local PLACES = "places.json"
 
 local slots, by_id = {}, {}  -- place (0…N−1) → drop; id → drop
@@ -101,7 +100,7 @@ local function record(d)
         core = d.core or 0, core_hue = d.core_hue or 0, core_beat = d.core_beat == true,
         melt = num(v.melt, 1), puddle = num(v.puddle, 1), crown = glyph(v.crown), cap = num(v.cap, 0), cap_dir = num(v.cap_dir, 0),
         line2 = v.line2 or "", lines = (v.line2 or "") ~= "" and 2 or 1, still = v.still == true, chosen = d.chosen == true,
-        hop = d.n.hop, squash = d.n.squash, dip = d.n.dip, shiver = d.n.shiver, land = d.n.land, fall = d.n.fall, fall_h = d.fall_h or 0,
+        returns = v.returns == true, hop = d.n.hop, squash = d.n.squash, dip = d.n.dip, shiver = d.n.shiver, back = d.n.back,
         jump = d.n.jump, jump_v = d.jump_v or 0, jump_dx = d.jump_dx or 0,
     }
 end
@@ -155,7 +154,7 @@ local function apart()
     for k = 0, N - 1 do if slots[k] and not slots[k].hidden then list[#list + 1] = slots[k] end end
     -- nobody sits on the shore: whoever would slides along the edge until it is off it
     for _, d in ipairs(list) do
-        if docked(d) and not d.dragging and not d.on_shore and not d.def.beside and along(d) > limit(d) then
+        if docked(d) and not d.dragging and not d.def.beside and along(d) > limit(d) then
             d.at, d.shift = limit(d) / len(d), 0
         end
     end
@@ -257,9 +256,10 @@ local function publish()
             for k = 0, N - 1 do if slots[k] then follow_anchor(slots[k], 0) end end
         end
         neighbours()
-        local list = {}
+        local list, beats = {}, false
         for k = 0, N - 1 do
             local d = slots[k]
+            if d and not d.hidden and (d.core or 0) > 0 and d.core_beat == true then beats = true end
             local r = d and record(d) or { on = false }
             if d and d.left then r.left, r.left_at, r.left_shift = true, d.left.at, d.left.shift + (d.left.aside or 0) end
             if d and d.right then
@@ -269,6 +269,7 @@ local function publish()
             list[k + 1] = r
         end
         model.goo = list
+        fact.beats = beats                  -- the scene's clock runs for a core that pulses
         publishing = false
         if again then again = false publish() end
     end)
@@ -400,16 +401,15 @@ end
 function Drop:hop() self.n.hop += 1 publish() end
 function Drop:squash() self.n.squash += 1 publish() end
 -- A throw along its edge to `at` (nil: up and down on the spot), up at `speed` px/s; whoever sits where it
--- lands steps aside. It flattens and the surface ripples when it lands; answers how long that takes, in ms.
+-- lands steps aside. The flight, the flattening and the splash when it lands are the world's (crates/goo-phys);
+-- answers about how long it takes, in ms.
 function Drop:jump(at, speed)
     local from = along(self)
     if at then self.at, self.shift = clamp(at, 0.02, 0.98), 0 end
     self.jump_v, self.jump_dx = speed, from - along(self)
     self.n.jump += 1
     E.apart(self) publish()
-    local takes = 160 + 2 * speed / GRAVITY * 1000
-    after(takes, function() self:squash() E.ripple(self, 2 + speed * 0.006, "stone") end)
-    return takes
+    return 160 + speed * 2.5
 end
 function Drop:shiver() self.n.shiver += 1 publish() end
 function Drop:tip(s) text.tip = s or "" end
@@ -487,7 +487,7 @@ function E.define(def, live)
     if not k then log("goo: all " .. N .. " places are taken, no room for " .. def.id) return nil end
     local v = values(def)
     local d = setmetatable({ id = def.id, k = k, v = v, def = def, live = live == true, aside = 0,
-                             n = { hop = 0, squash = 0, dip = 0, shiver = 0, land = 0, fall = 0, jump = 0 } }, Drop)
+                             n = { hop = 0, squash = 0, dip = 0, shiver = 0, back = 0, jump = 0 } }, Drop)
     local seat = num(v.seat, v.size * 0.8)
     local anchor = def.beside and by_id[def.beside]
     if anchor then
@@ -630,15 +630,28 @@ on("goo_grab", function(k)
     call(d, "grab")
 end)
 
--- Let go after a drag, a drop never stays in the air. Near an edge it sticks to it; anywhere else it falls
--- straight down to the bottom one, dives and comes up, and the surface ripples. One that `returns` goes back.
+-- Let go after a drag, a drop never stays in the air: the world throws it with the hand's speed (crates/goo-phys)
+-- and it flies until it meets an edge, where `goo_landed` says it came down. A drop asked whether it wants to be
+-- put there may say no, and one that `returns` goes back unless it was let go right at an edge: those spring home.
+local function settle(d, x, y, edge, w, h)
+    d.edge = edge
+    d.at = math.min(clamp(edge % 2 == 1 and y / h or x / w, 0.02, 0.98), limit(d) / len(d))
+    d.rise = num(d.v.seat, d.v.size * 0.8) * d.zoom
+    d.moved, d.shift = true, 0
+    save()
+    E.apart(d)
+    publish()
+    call(d, "placed")
+end
+local function screen()
+    local w, h = num(fact.sw, 0), num(fact.sh, 0)
+    return w > 0 and w or 1920, h > 0 and h or 1080
+end
 on("goo_letgo", function(k)
     local d = slots[k]
     if not d then return end
     local x, y = num(fact["freed.x"], 0), num(fact["freed.y"], 0)
-    local w, h = num(fact.sw, 0), num(fact.sh, 0)
-    if w <= 0 then w = 1920 end
-    if h <= 0 then h = 1080 end
+    local w, h = screen()
     d.dragging = false
     d.drops = (d.drops or 0) + 1
     local edge, best = 0, math.huge
@@ -647,51 +660,22 @@ on("goo_letgo", function(k)
     end
     local fell = best == math.huge
     local has, res = call(d, "letgo", x, y, edge)
-    local back = (has and res == false) or (fell and d.v.returns)
-    local fall = 0
-    if not back then
-        d.edge = edge
-        d.at = math.min(clamp(edge % 2 == 1 and y / h or x / w, 0.02, 0.98), limit(d) / len(d))
-        d.rise = num(d.v.seat, d.v.size * 0.8) * d.zoom
-        d.moved, d.shift = true, 0
-        -- Over the shore it comes down on the plate, which is hard: it does not stick, it hops off into the goo.
-        if edge == 0 and shore.w > 0 and x > w - shore.w - radius(d) then
-            local seat = d.rise
-            d.on_shore = true
-            d.at, d.rise = clamp(x / w, 0.02, 0.99), shore.h + radius(d) * 0.75
-            fell = true
-            after(math.sqrt(2 * math.max(0, (h - 6 - d.rise) - y) / GRAVITY) * 1000 + 90, function()
-                d.on_shore = nil
-                if by_id[d.id] ~= d or d.dragging then return end
-                -- it leaves the plate at the plate's height and comes down to the goo from the top of its hop
-                local takes = d:jump(limit(d) / len(d) - 0.01, 300)
-                after(takes * 0.6, function()
-                    if by_id[d.id] ~= d or d.dragging then return end
-                    d.rise = seat
-                    publish() save()
-                end)
-            end)
-        end
-        if fell then fall = math.max(0, (h - 6 - d.rise) - y) end
-        save()
-    end
-    -- The new home, the end of the drag and the height of the fall reach the scene in one record.
-    d.n.land += 1
-    d.fall_h = fall
-    if fall > 0 then d.n.fall += 1 end
-    E.apart(d)
-    publish()
-    call(d, "placed")
-    if back then return end
-    -- When it lands it flattens and the surface ripples; stuck to an edge it dives and comes up at once.
-    after(fall > 0 and math.sqrt(2 * fall / GRAVITY) * 1000 or 0, function()
-        if by_id[d.id] ~= d or d.dragging then return end
-        -- on the shore there is nothing to dive into, and no water to ripple
-        if fall > 0 or d.on_shore then d.n.squash += 1 else d.n.dip += 1 end
+    if (has and res == false) or (fell and d.v.returns) then
+        d.n.back += 1
         publish()
-        if d.on_shore then return end
-        after(fall > 0 and 60 or 200, function() E.ripple(d, (fall > 0 and 3 + math.min(fall, 900) * 0.008 or 4) + radius(d) * 0.12, "stone") end)
-    end)
+        call(d, "placed")
+    elseif d.v.returns then
+        settle(d, x, y, edge, w, h)         -- the world does not throw it: its new home is said here
+    else
+        d.flying = true
+    end
+end)
+on("goo_landed", function(k)
+    local d = slots[k]
+    if not d or not d.flying or d.dragging then return end          -- a jump lands at the home it already has
+    d.flying = nil
+    local w, h = screen()
+    settle(d, num(fact["freed.x"], 0), num(fact["freed.y"], 0), num(fact["freed.e"], 0), w, h)
 end)
 
 -- ── Goo from the keyboard (parts/keys.plm) ───────────────────────────────────────────────────────────────────
@@ -811,6 +795,19 @@ local function sky()
         local alt = type(t.sun) == "table" and tonumber(t.sun.alt) or 30
         fact.day = clamp((alt + 6) / 12, 0, 1)                     -- civil twilight … the sun 6° up
         fact.golden = clamp(1 - math.abs(alt - 2) / 10, 0, 1)      -- the sun between −8° and 12°
+        -- the light on the level: the sun low on its side (below the horizon, the glow where it went down or
+        -- comes up), by day faint from where it stands, at night the moon's if it is up
+        local sun, moon = type(t.sun) == "table" and t.sun or {}, type(t.moon) == "table" and t.moon or {}
+        local low = clamp(1 - math.abs(alt - 2) / 10, 0, 1)
+        if alt > -8 then
+            fact.sun_moon = false
+            fact.sun_at = alt > 0 and clamp(num(sun.t, 0.5), 0.03, 0.97) or (sun.west and 0.97 or 0.03)
+            fact.sun_k = math.max(low, alt > 12 and 0.3 or 0)
+        elseif num(moon.alt, -90) > 0 then
+            fact.sun_moon, fact.sun_at, fact.sun_k = true, clamp(num(moon.t, 0.5), 0.03, 0.97), 0.25 + 0.35 * num(moon.lit, 0)
+        else
+            fact.sun_k = 0
+        end
     end)
 end
 E.weather = { on = weather_on, off = weather_off, now = weather }

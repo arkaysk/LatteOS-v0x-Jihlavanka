@@ -15,6 +15,7 @@
 #   DO='foot & sleep 1; …'         shell run inside the session two seconds in
 #   SCENE=goo/login.plm            another scene (default goo/goo.plm)
 #   SIZE=1920x1080
+#   PLEAMAR=build/pleamar-src/target/release/latte-goo   another program for the scene (default: pleamar of PATH)
 # The compositor has no mouse; tests/pointer.py is one (it can drag a window):  DO='pointer.py 1920x1080 400,300 down 2,300 up'
 # In a scene the mouse and the keys are its own fake ones (pleamar --help):
 #   tests/screen.sh 8 --mouse "718,1056@2000 down@2500 up@2600 type:foo@4000 key:Return@6000"
@@ -46,7 +47,7 @@ rm -f "$out"/shot*.png "$out/scene.log" "$out/do.log"
 {
     echo "cd $(dirname "$scene")"
     echo "export PATH=\"$repo/bin:$repo/target/release:$repo/tests:\$PATH\" LANG=\"${LANG:-sk_SK.UTF-8}\" PLEAMAR_GENERIC=window XDG_DATA_HOME=$out/data XDG_STATE_HOME=$out/state XDG_CONFIG_HOME=$out/config XDG_CACHE_HOME=$out/cache LATTE_SHARE=$out/share"
-    echo "pleamar --scene $scene --no-hud --seconds $secs $args > $out/scene.log 2>&1 &"
+    echo "${PLEAMAR:-pleamar} --scene $scene --no-hud --seconds $secs $args > $out/scene.log 2>&1 &"
     for t in ${SHOTS:-}; do echo "(sleep $t; grim $out/shot-$t.png) &"; done
     [ -n "${DO:-}" ] && echo "(sleep 2; $DO) > $out/do.log 2>&1 &"
     echo "(sleep $((secs - 1)); grim $out/shot.png) &"

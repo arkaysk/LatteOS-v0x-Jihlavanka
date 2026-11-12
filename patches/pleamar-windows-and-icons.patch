@@ -70,10 +70,10 @@ index 16c84f5..e31956f 100644
              e.report_workspaces();
          }
 diff --git a/src/platform/mod.rs b/src/platform/mod.rs
-index 35ee464..44303f3 100644
+index bbf0db6..5e777c6 100644
 --- a/src/platform/mod.rs
 +++ b/src/platform/mod.rs
-@@ -139,7 +139,7 @@ fn start_service(from: &str, name: &str, notify: Box<dyn Fn(SysValue) + Send>) -
+@@ -151,7 +151,7 @@ fn start_service(from: &str, name: &str, notify: Box<dyn Fn(SysValue) + Send>) -
      // `PLEAMAR_GENERIC=1` skips the Hyprland path: it's how to test here what
      // the other compositors will see.
      #[cfg(target_os = "linux")]
@@ -82,7 +82,7 @@ index 35ee464..44303f3 100644
          return hyprland::service(name, notify);
      }
      // Any other Wayland: the protocols everyone understands.
-@@ -220,7 +220,7 @@ pub fn command(from: &str, name: &str, args: &[SysValue]) -> Result<(), String>
+@@ -240,7 +240,7 @@ pub fn command(from: &str, name: &str, args: &[SysValue]) -> Result<(), String>
          return thumbnails::command(name, args);
      }
      #[cfg(target_os = "linux")]
@@ -91,7 +91,7 @@ index 35ee464..44303f3 100644
          return hyprland::command(name, args);
      }
      #[cfg(target_os = "linux")]
-@@ -1076,7 +1076,7 @@ pub static CURSOR_WANTED: std::sync::atomic::AtomicBool = std::sync::atomic::Ato
+@@ -1210,7 +1210,7 @@ pub static CURSOR_WANTED: std::sync::atomic::AtomicBool = std::sync::atomic::Ato
  /// arrives, and `cursor.x` is only known over the scene, like `pointer.x`.
  pub fn watch_cursor(to_render: std::sync::mpsc::Sender<crate::scene::ToRender>) {
      #[cfg(target_os = "linux")]
@@ -100,7 +100,7 @@ index 35ee464..44303f3 100644
          hyprland::watch_cursor(to_render);
      } else if let Some(dir) = std::env::var("PLEAMAR_SOCKETS").ok().filter(|d| std::path::Path::new(&format!("{d}/cursor.sock")).exists()) {
          session_cursor(dir, to_render);
-@@ -1430,3 +1430,18 @@ pub(crate) mod tests {
+@@ -1588,3 +1588,18 @@ pub(crate) mod tests {
          let _ = std::fs::remove_dir_all(&dir);
      }
  }

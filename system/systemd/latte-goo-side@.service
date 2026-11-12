@@ -11,6 +11,6 @@ StartLimitIntervalSec=0
 [Service]
 Environment=PLEAMAR_GENERIC=window
 Environment=LATTE_GOO_SCREEN=%i
-ExecStart=/usr/bin/pleamar --scene /usr/share/latteos/goo/side.plm --no-hud --screen %i
+ExecStart=/usr/bin/latte-goo --scene /usr/share/latteos/goo/side.plm --no-hud --screen %i
 Restart=always
 RestartSec=1

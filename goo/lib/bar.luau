@@ -388,10 +388,9 @@ on("win_min", function()
     local head = E.get(HEAD)
     local cx, cy = x + w / 2, y + h / 2
     local to = (head and head.edge == 0) and math.min(E.along(head) + (berries_out() and 90 or 0), E.limit(head)) or cx
-    local takes = math.sqrt(2 * math.max(40, sh - 6 - cy) / 800)            -- the scene's gravity, px/s²
-    fact["gone.x0"], fact["gone.y0"], fact["gone.x1"], fact["gone.w"], fact["gone.h"], fact["gone.for"] = cx, cy, to, w, h, takes
+    -- the world throws a drop from there so that it comes down at `to`, and the level splashes where it does
+    fact["gone.x0"], fact["gone.y0"], fact["gone.x1"], fact["gone.w"], fact["gone.h"] = cx, cy, to, w, h
     fact.gone_n += 1
-    after((takes + 0.2) * 1000, function() E.ripple(to / sw, 7, "stone") end)
     after(250, M.refresh)                    -- its berry dims at once
 end)
 

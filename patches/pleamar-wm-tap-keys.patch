@@ -1,5 +1,5 @@
 diff --git a/src/route.rs b/src/route.rs
-index 91f1c67..9808bd9 100644
+index 0d0a3b9..03d4c47 100644
 --- a/src/route.rs
 +++ b/src/route.rs
 @@ -30,8 +30,12 @@ pub struct Route {
@@ -16,16 +16,16 @@ index 91f1c67..9808bd9 100644
      /// The binding held down that repeats, by its key; and whether its
      /// repetition still has to be started (the loop that holds the timers does it).
      repeating: Option<(u32, crate::keys::Action)>,
-@@ -50,7 +54,7 @@ pub struct Route {
+@@ -53,7 +57,7 @@ pub struct Route {
  
  impl Route {
      pub fn new(to_render: Sender<ToRender>) -> Route {
--        Route { hit: Hit::Scene(None), grab: None, scene_held: Vec::new(), client_held: Vec::new(), key_client: None, key_client_at: 0, bound: Vec::new(), repeating: None, repeat_new: false, layer_keys: Vec::new(), super_held: false, to_render }
-+        Route { hit: Hit::Scene(None), grab: None, scene_held: Vec::new(), client_held: Vec::new(), key_client: None, key_client_at: 0, bound: Vec::new(), taps: Vec::new(), repeating: None, repeat_new: false, layer_keys: Vec::new(), super_held: false, to_render }
+-        Route { hit: Hit::Scene(None), grab: None, scene_held: Vec::new(), client_held: Vec::new(), key_client: None, key_client_at: 0, bound: Vec::new(), repeating: None, repeat_new: false, layer_keys: Vec::new(), super_held: false, locks: (false, false), to_render }
++        Route { hit: Hit::Scene(None), grab: None, scene_held: Vec::new(), client_held: Vec::new(), key_client: None, key_client_at: 0, bound: Vec::new(), taps: Vec::new(), repeating: None, repeat_new: false, layer_keys: Vec::new(), super_held: false, locks: (false, false), to_render }
      }
  
      /// The pointer at that point of a monitor, in its pixels. Says whether it
-@@ -115,9 +119,23 @@ impl Route {
+@@ -118,9 +122,23 @@ impl Route {
          was_program != on_program
      }
  
@@ -49,7 +49,7 @@ index 91f1c67..9808bd9 100644
          // Let go while a program drags something: straight to the compositor,
          // which drops it wherever the pointer is (a window, a surface, the scene).
          if layers::dragging() && !down {
-@@ -261,6 +279,9 @@ impl Route {
+@@ -264,6 +282,9 @@ impl Route {
              self.super_held = down;
              let _ = self.to_render.send(ToRender::Fact("keys.super", if down { 1.0 } else { 0.0 }));
          }
@@ -59,7 +59,7 @@ index 91f1c67..9808bd9 100644
          // A binding (keys.conf) takes the key before anyone —while locked,
          // only the ones marked `locked`—.
          if down {
-@@ -279,6 +300,9 @@ impl Route {
+@@ -282,6 +303,9 @@ impl Route {
                      }
                  }
                  self.bound.push((evdev, later.map(|b| b.action.clone())));
@@ -69,7 +69,7 @@ index 91f1c67..9808bd9 100644
                  return;
              }
              // A program's global shortcut (the portal): down now, up when let go.
-@@ -292,6 +316,7 @@ impl Route {
+@@ -295,6 +319,7 @@ impl Route {
              if self.repeating.as_ref().is_some_and(|(c, _)| *c == evdev) {
                  self.repeating = None;
              }

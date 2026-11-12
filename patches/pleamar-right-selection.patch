@@ -1,8 +1,8 @@
 diff --git a/src/render.rs b/src/render.rs
-index 23a1964..f122c23 100644
+index eea0b7d..405d29c 100644
 --- a/src/render.rs
 +++ b/src/render.rs
-@@ -2358,6 +2358,17 @@ pub fn run(
+@@ -2361,6 +2361,17 @@ pub fn run(
          let held_shift = keys_held.iter().any(|(_, n)| n.starts_with("Shift"));
          let held_ctrl = keys_held.iter().any(|(_, n)| n.starts_with("Control"));
          for (button, down) in &buttons {

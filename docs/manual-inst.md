@@ -65,3 +65,16 @@ nevyhnutne potrebuje. **Riziko** (používateľ prijal 21. 10.): doplnok použí
   (`dsh --profile headless` s `DSH_PERMISSION_MODE=read-only` a `DSH_TELEMETRY_MODE=DISABLED`, model cez `--patch`:
   `deepseek-reasoner` = čip „Hlboké myslenie“ zapnutý, `deepseek-chat` = vypnutý). Ak to kontrola oprávnení znova
   zastaví, povoliť v Claude Code (`/permissions`) Bash pre `dsh` a pre úpravy `bin/latte-ai`.
+
+## 12. 11. 2026 — pleamar-wm 0.6.15 (GooEngine 2, krok 0)
+
+- [ ] Odhlásiť sa a prihlásiť: nový `/usr/bin/pleamar-wm` (0.6.15) sa spustí až s novou reláciou. Overené je iba bez
+  obrazovky, nie na skutočnom monitore.
+- Keby sa relácia nespustila: z prihlasovania vybrať SAFE (alebo TTY, Ctrl+Alt+F3) a vrátiť starý program:
+  `sudo cp /usr/bin/pleamar-wm-0.6.9 /usr/bin/pleamar-wm` (a `sudo cp /usr/bin/pleamar-0.7.10 /usr/bin/pleamar`),
+  potom napísať Claudovi.
+- [ ] Pozrieť plochu rukou po kroku 3 GooEngine 2: reakcie kvapiek na kurzor (silnejšie), ťahanie a hod kvapkou,
+  minimalizácia okna do BarGoo, vlny pri dopade. Scéna spred kroku 3 je v `/usr/share/latteos/goo.pred-gooengine2`
+  (návrat: `sudo cp -a /usr/share/latteos/goo.pred-gooengine2/. /usr/share/latteos/goo/` a
+  `systemctl --user restart latte-goo`).
+

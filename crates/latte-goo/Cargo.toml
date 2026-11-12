@@ -1,0 +1,20 @@
+# Outside the workspace: it needs pleamar's source, which install fetches (patches/build-pleamar.sh builds this too).
+[package]
+name = "latte-goo"
+description = "LatteOS Goo: pleamar with the physics of goo-phys stepping inside it"
+version = "0.4.0"
+edition = "2021"
+license = "MIT"
+authors = ["Arkay"]
+
+[dependencies]
+pleamar = { path = "../../build/pleamar-src/pleamar" }
+goo-phys = { path = "../goo-phys" }
+serde_json = "1"
+
+[profile.release]
+opt-level = 3
+lto = "thin"
+strip = true
+
+[workspace]

@@ -5,7 +5,7 @@ A `body` takes no `repeat`, and a name cannot be indexed by a number that is onl
 runs. So two parts are written here, from the number of places the scene declares (`model goo max N` in
 parts/drops.plm):
 
-  parts/shapes.plm   the shapes of every drop, of the ripples and of a falling window, for the one body they melt in
+  parts/shapes.plm   the shapes of every drop, of the level and of a falling window, for the one body they melt in
   parts/picks.plm    the values of ONE drop, chosen by a fact: the drop a card grows from, the one chosen from the keyboard, the ones with a strip
 
   parts/waves.plm    the login screen's coffee surface: where each point of it is, from a sum of Gerstner waves
@@ -62,30 +62,26 @@ def shapes(n):
             "    line {{ from: base.x.{k}, base.y.{k}; to: x.{k}, y.{k}; width: rr.{k} * 2 * stalk.{k}; blend: 14 }}\n"
             # the water to the neighbour, the drop itself, the thread to the neighbour
             "    line {{ from: water.ax.{k}, water.ay.{k}; to: water.bx.{k}, water.by.{k}; width: water.w.{k} * 2; blend: 16 }}\n"
-            "    ellipse {{ at: x.{k}, y.{k}; radius: rr.{k}; scale: 1 + wide.{k}, 1 - wide.{k}; blend: link.{k} }}\n"
+            # (longer the way it flies, the area kept: goo-phys says how much and which way)
+            "    ellipse {{ at: x.{k}, y.{k}; radius: rr.{k}; scale: (1 + wide.{k}) * (1 + g.st.{k}), (1 - wide.{k}) / (1 + g.st.{k}); "
+            "rotate: if(g.st.{k} > 0.03, g.rot.{k}, 0); blend: link.{k} }}\n"
+            # the tip it reaches out to the pointer
+            "    ellipse {{ at: x.{k} + cos(g.tipa.{k}) * (rr.{k} * 0.72 + g.tip.{k}), y.{k} + sin(g.tipa.{k}) * (rr.{k} * 0.72 + g.tip.{k}); "
+            "radius: rr.{k} * 0.3 * if(g.tip.{k} > 0.5, 1, 0); blend: 20 }}\n"
             "    line {{ from: thread.ax.{k}, thread.ay.{k}; to: thread.bx.{k}, thread.by.{k}; width: thread.w.{k}; blend: thread.root.{k} }}\n"
             # the straight part of a capsule, along the edge
             "    line {{ from: x.{k} + {ax} * cap.{k} * (goo.{k}.cap_dir - 1), y.{k} + {ay} * cap.{k} * (goo.{k}.cap_dir - 1); "
             "to: x.{k} + {ax} * cap.{k} * (goo.{k}.cap_dir + 1), y.{k} + {ay} * cap.{k} * (goo.{k}.cap_dir + 1); "
             "width: rr.{k} * 2 * if(cap.{k} > 0.5, 1, 0); blend: link.{k} }}\n"
         ).format(k=k, ax=ax, ay=ay))
-    # the ripples: a stone thrown in is two crests running apart, a tremble a hump shivering on the spot
-    for i in range(4):
-        for sign in "-+":
-            out.append("    ellipse {{ at: rip.x.{i} {s} age.{i} * 420, H - LEVEL + ripple.{i}.force * 1.2; "
-                       "radius: rip.a.{i} * 2.2 * if(ripple.{i}.kind > 0.5, 0, 1); scale: 2.2, 1; blend: 14 }}\n".format(i=i, s=sign))
-        out.append("    ellipse {{ at: rip.x.{i}, H - LEVEL + 4; radius: rip.a.{i} * (1.2 + 0.6 * sin(time * 1900)) * "
-                   "if(ripple.{i}.kind > 0.5, 1, 0); scale: 2.6, 1; blend: 12 }}\n".format(i=i))
-    # The swell: crests that travel along the bottom edge, out of sight under it until `swell` lifts them.
-    # Flat humps, not the login screen's sum of waves: that one costs half a millisecond a frame even at rest,
-    # and here there are a few px of surface to show it on.
-    for i in range(SWELL):
-        speed, high, pace = 46 + 17 * (i * 5 % 7), 14 + 2.5 * (i * 3 % 5), 31 + 9 * (i % 4)
-        out.append("    ellipse {{ at: mod(W * {i} / {n} + {speed} * time, W + 400) - 200, H + 38 - swell * {high} * (0.7 + 0.3 * sin(time * {pace} + {ph})); "
-                   "radius: 120; scale: 2.3, 0.24; blend: 14 }}\n".format(i=i, n=SWELL, speed=speed, high=high, pace=pace, ph=i * 67))
-    # a window put away, on its way down into the bar
-    out.append("    ellipse { at: going.x, going.y; radius: 16 * if(going.k >= 1, going.on, 0) * clamp((gone.for + 0.45 - going.t) / 0.3, 0, 1); "
-               "scale: 1 - 0.12 * clamp(going.t, 0, 1), 1 + 0.2 * clamp(going.t, 0, 1); blend: 16 }\n")
+    # The level: a hump for each column of goo-phys's surface along the bottom edge. It stands a few px over the
+    # edge with a slow swell of its own (two sines of the scene's clock: still when the desktop is), and rises and
+    # falls by the column's height, so that a wave is seen to run, come back from a plate and die.
+    for i in range(COLUMNS):
+        out.append("    ellipse {{ at: W * {x} / {n}, H + 30 - LEVEL - 2.5 * sin({a} + tick * 26) - 1.5 * sin({b} - tick * 17) - h.{i} * 4; "
+                   "radius: 30; scale: W / {n} / 30 * 1.7, 1; blend: 14 }}\n".format(i=i, n=COLUMNS, x=i + 0.5, a=i * 37 % 360, b=i * 71 % 360))
+    # a window put away, on its way down into the bar: a drop goo-phys throws
+    out.append("    ellipse { at: going.x, going.y; radius: 16 * going.on; scale: 0.9, 1.15; blend: 16 }\n")
     # the neck of the one drop being dragged, from its home to where it is
     out.append("    line {{ from: {hx}, {hy}; to: {x}, {y}; width: if(carried >= 0, {w}, 0); blend: 22 }}\n".format(
         hx=pick("carried", "home.x.{k}", n), hy=pick("carried", "home.y.{k}", n), x=pick("carried", "x.{k}", n),
@@ -124,7 +120,7 @@ WAVES = ((820, "7", 22, 0), (430, "4.2", 31, 70), (250, "2.6", 44, 200), (150, "
          (1300, "6 * gale", 17, 120))
 SPAN = 32                                   # the surface is SPAN lines, from a little left of the screen to a little right
 THICK = 30                                  # half the width of a line: how far the coffee reaches up from its centre
-SWELL = 8                                   # crests on the desktop's surface, when something stirs it
+COLUMNS = 48                                # columns of the desktop's level: `repeat i in 0..48` in parts/drops.plm
 RAIN = 9                                    # places on the surface where a drop can fall, each at its own pace
 
 

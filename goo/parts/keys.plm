@@ -33,6 +33,6 @@ part Keys {
 
     prop kb.p = 0 ~nimble
     follow kb.p = if(kb and kb_at >= 0, 1, 0)
-    ellipse { at: kb.x, kb.y; radius: kb.r; color: mix(coffee, cream, 0.34); opacity: kb.p * (0.24 + 0.16 * sin(time * 210)) }
-    ellipse { at: kb.x, kb.y; radius: kb.r + 2.5; stroke: 2; color: mix(coffee, cream, 0.55); opacity: kb.p * (0.5 + 0.3 * sin(time * 210)) }
+    ellipse { at: kb.x, kb.y; radius: kb.r; color: mix(coffee, cream, 0.34); opacity: kb.p * (0.24 + 0.16 * sin(tick * 210)) }
+    ellipse { at: kb.x, kb.y; radius: kb.r + 2.5; stroke: 2; color: mix(coffee, cream, 0.55); opacity: kb.p * (0.5 + 0.3 * sin(tick * 210)) }
 }

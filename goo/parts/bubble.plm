@@ -31,12 +31,14 @@ part Bubble {
     prop blow.sy = 0 ~0ms
     prop blow.sr = 0 ~0ms
     on change blow_n {
-        blow.at = time
+        blow.at = tick
+        buzz: 1 ~0ms
+        buzz: 0 ~2000ms after 16ms
         blow.sx: if(born_owner >= 0, born.x, W / 2) ~0ms
         blow.sy: if(born_owner >= 0, born.y, H - 20) ~0ms
         blow.sr: if(born_owner >= 0, born.r * 0.6, 14) ~0ms
     }
-    let bt = time - blow.at
+    let bt = tick - blow.at
     let bf = clamp(bt / FLY, 0, 1)
     let be = 1 - (1 - bf) * (1 - bf)
     let bg = clamp((bt - FLY) / GROW, 0, 1)
@@ -57,8 +59,8 @@ part Bubble {
     particles { at: blow.x, blow.y; area: blow.w, blow.h; count: 240; life: 0.35s .. 0.7s; speed: 30 .. 150; gravity: 0, 700; drag: 1.2
                 size: 5, 2; colors: cream, film; opacity: 70%, 0%; shape: dot; burst: blow_burst }
 
-    on change pop_n { pop.at = time }
-    let pk = clamp((time - pop.at) / 0.18, 0, 1)
+    on change pop_n { pop.at = tick; buzz: 1 ~0ms; buzz: 0 ~2000ms after 16ms }
+    let pk = clamp((tick - pop.at) / 0.18, 0, 1)
     box { at: pop.x, pop.y; size: pop.w * (1 + 0.04 * pk), pop.h * (1 + 0.04 * pk); corner: 14; stroke: 2; color: cream; opacity: 50% * (1 - pk); show: pk < 1 and pop.w > 0 }
     particles { at: pop.x, pop.y; area: pop.w, pop.h; count: 240; life: 0.35s .. 0.7s; speed: 30 .. 150; gravity: 0, 700; drag: 1.2
                 size: 5, 2; colors: cream, film; opacity: 70%, 0%; shape: dot; burst: pop_burst }

@@ -1,0 +1,64 @@
+diff --git a/src/lib.rs b/src/lib.rs
+index 501651c..5127477 100644
+--- a/src/lib.rs
++++ b/src/lib.rs
+@@ -35,6 +35,7 @@ pub mod terminal;
+ 
+ pub use platform::{host_keymap, provide_layer_hooks, provide_platform, provide_windows, set_host_keymap, LayerHooks, NestSender, Platform, PlatformWindow};
+ pub use gpu::{Frames, NewSheet, Sent, Target, View};
++pub use render::{provide_step, HostStep};
+ /// The same wgpu the render paints with, for a platform that lends it textures.
+ pub use wgpu;
+ pub use scenes::from_file::read as read_scene;
+diff --git a/src/render.rs b/src/render.rs
+index 64f4d98..667476c 100644
+--- a/src/render.rs
++++ b/src/render.rs
+@@ -466,6 +466,20 @@ impl Cycle {
+     }
+ }
+ 
++/// What a program that carries pleamar inside runs once a frame (`provide_step`).
++pub type HostStep = Box<dyn FnMut(f32, &[(&'static str, f32)], &mut [f32]) -> bool + Send>;
++static STEP: std::sync::Mutex<Option<HostStep>> = std::sync::Mutex::new(None);
++
++/// A step of the host's own, once a frame: it gets the seconds since the frame before, the scene's
++/// facts by name (the same order as the values; another slice means another scene was read) and
++/// their values to write, and answers whether its world still moves. While it does the scene keeps
++/// painting; when it does not, the scene rests as any other, and the next frame —a pointer that
++/// moved, a fact the logic set— calls it again. What `provide_windows` is to windows, for motion
++/// that is worked out in Rust: physics with masses and collisions, which a spring cannot say.
++pub fn provide_step(f: HostStep) {
++    *STEP.lock().unwrap() = Some(f);
++}
++
+ pub fn run(
+     instance: wgpu::Instance,
+     rx: Receiver<ToRender>,
+@@ -2772,6 +2786,13 @@ pub fn run(
+             }
+         }
+ 
++        // The host's own step (`provide_step`): it writes facts for this frame, after the pointer's
++        // and before the rules read them, and says whether its world still moves.
++        let step_alive = match STEP.lock().unwrap().as_mut() {
++            Some(f) => f(dt, &scene.facts, &mut facts),
++            None => false,
++        };
++
+         for (kind, data) in &drops {
+             if let Some(k) = hovered {
+                 let _ = to_logic.send(Event::Received(scene.zones[k].id, kind.clone(), data.clone()));
+@@ -3628,6 +3649,12 @@ pub fn run(
+         let mut alive = plays;
+         // (`PLEAMAR_TIMING`) what keeps it alive, each by its name.
+         let mut alive_by: Vec<String> = Vec::new();
++        if step_alive {
++            alive = true;
++            if timing {
++                alive_by.push("the host's step".to_owned());
++            }
++        }
+         if timing && plays {
+             alive_by.push("the logic hears every frame".to_owned());
+         }

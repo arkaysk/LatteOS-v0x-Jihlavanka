@@ -1,5 +1,5 @@
 diff --git a/docs/11-language-reference.md b/docs/11-language-reference.md
-index ba6b5e7..01259f4 100644
+index 86a54ce..006d20e 100644
 --- a/docs/11-language-reference.md
 +++ b/docs/11-language-reference.md
 @@ -541,7 +541,7 @@ Each element accepts these properties and no others; another one is an error, wi
@@ -11,7 +11,7 @@ index ba6b5e7..01259f4 100644
  | `group` | `pivot` · `rotate` · `scale: s` or `sx, sy` · `move: dx, dy` · `opacity` (they melt as a single thing) · `size` (for whoever lays it out) · `show` · `z` (see below) · and its **effects**: `blur` · `glow` · `saturation` · `brightness` · `contrast` · `hue` · `mask` · `mode` (§8.2) |
  | `popup` | `at` (inside the surface) · `size` · `open:` a fact |
  | `row` `column` | `at` · `anchor` · `gap` · `padding` · `align:` `start` `center` `end` · `fill` · `corner` · `opacity` · `cursor` · `show` · `size: w, h` · `view: w, h` · `step` · `content` · `wrap: n` |
-@@ -1600,6 +1600,11 @@ terminal has nothing selected.
+@@ -1611,6 +1611,11 @@ terminal has nothing selected.
  told apart from outside with `--answer-as NAME`: `pleamar --say NAME …`
  reaches that one.
  
@@ -23,7 +23,7 @@ index ba6b5e7..01259f4 100644
  **A scene that ends: `quit`.** In a rule, `quit` ends the program, as closing
  its window would: a terminal whose last shell ended.
  
-@@ -1904,7 +1909,7 @@ properties.terminal: at size family font_size line_height colors cursor selectio
+@@ -1920,7 +1925,7 @@ properties.terminal: at size family font_size line_height colors cursor selectio
  properties.figure: at size scale rotate pivot color opacity blend stroke show grow place
  properties.shader: at size corner opacity show values colors grow place
  properties.particles: at area count life speed direction spread gravity drag size colors opacity shape emit burst show
@@ -33,10 +33,10 @@ index ba6b5e7..01259f4 100644
  properties.popup: at size open
  properties.children: move
 diff --git a/src/language/compiler.rs b/src/language/compiler.rs
-index ef7ae20..5c901cd 100644
+index 7109228..8690065 100644
 --- a/src/language/compiler.rs
 +++ b/src/language/compiler.rs
-@@ -4067,6 +4067,20 @@ impl<'a> Compiler<'a> {
+@@ -4130,6 +4130,20 @@ impl<'a> Compiler<'a> {
              }
              None => false,
          };
@@ -58,7 +58,7 @@ index ef7ae20..5c901cd 100644
              let mut s = crate::scene::SECRETS.lock().unwrap();
              let own = interned(&name);
 diff --git a/src/language/vocabulary.rs b/src/language/vocabulary.rs
-index 7e43997..b727344 100644
+index 3b6e7ed..45f1116 100644
 --- a/src/language/vocabulary.rs
 +++ b/src/language/vocabulary.rs
 @@ -35,7 +35,7 @@ pub const PROPERTIES: &[(&str, &[&str])] = &[
@@ -71,10 +71,10 @@ index 7e43997..b727344 100644
      ("popup", &["at", "size", "open"]),
      ("children", &["move"]),
 diff --git a/src/render.rs b/src/render.rs
-index 23a1964..c3109c3 100644
+index 94c2782..df9377f 100644
 --- a/src/render.rs
 +++ b/src/render.rs
-@@ -1848,7 +1848,10 @@ pub fn run(
+@@ -1852,7 +1852,10 @@ pub fn run(
                  ToRender::FocusField(name) => {
                      crate::terminal::with(|r| r.focus = None);
                      parked = None;
@@ -86,7 +86,7 @@ index 23a1964..c3109c3 100644
                      last_key = Instant::now();
                      // Lent or not once this round's focus changes are in (below).
                      focus_asked = editing.is_some();
-@@ -3428,7 +3431,10 @@ pub fn run(
+@@ -3460,7 +3463,10 @@ pub fn run(
                      Effect::FocusField(t) => {
                          crate::terminal::with(|r| r.focus = None);
                          parked = None;
@@ -99,10 +99,10 @@ index 23a1964..c3109c3 100644
                          // Focusing a field is wanting to type right away. With the keyboard "on
                          // demand", the compositor only gives it with a click, and a search box
 diff --git a/src/scene.rs b/src/scene.rs
-index f5cbea6..3c1c490 100644
+index f90e2e0..c999df1 100644
 --- a/src/scene.rs
 +++ b/src/scene.rs
-@@ -2777,6 +2777,21 @@ pub enum ToNest {
+@@ -2794,6 +2794,21 @@ pub enum ToNest {
  /// process because whoever does the echo —the logic— does not have the scene in front of it.
  pub static SECRETS: std::sync::Mutex<Vec<&'static str>> = std::sync::Mutex::new(Vec::new());
  
@@ -124,7 +124,7 @@ index f5cbea6..3c1c490 100644
  #[derive(Clone, Debug)]
  pub enum Event {
      Enter(&'static str),
-@@ -3024,3 +3039,16 @@ mod cursor_tests {
+@@ -3041,3 +3056,16 @@ mod cursor_tests {
          assert_eq!(Cursor::from_name("bogus"), None);
      }
  }

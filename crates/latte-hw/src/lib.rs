@@ -79,7 +79,7 @@ fn kfd_node(pci_device: &str) -> Option<(u32, bool)> {
 }
 
 /// The performance tier a card can carry, and why.
-/// full: RDNA with 10 GB+ · standard: Vega, smaller RDNA, RTX 20+, GTX 16 · eco: GCN 1–4, GTX 10xx ·
+/// full: RDNA with 10 GB+, RTX 30+ · standard: Vega, smaller RDNA, RTX 20, GTX 16 · eco: GCN 1–4, GTX 10xx ·
 /// minimal: integrated graphics.
 pub fn tier_for(g: &Gpu) -> (&'static str, String) {
     let vram = if g.vram_mb > 0 { format!(", {} GB VRAM", (g.vram_mb + 512) / 1024) } else { String::new() };
@@ -100,7 +100,9 @@ pub fn tier_for(g: &Gpu) -> (&'static str, String) {
         "0x10de" => {
             // Untested on real hardware: Turing and newer start at PCI id 0x1e00.
             let id = u32::from_str_radix(g.device.trim_start_matches("0x"), 16).unwrap_or(0);
-            if id >= 0x1e00 { ("standard", format!("NVIDIA Turing or newer ({}){vram}", g.device)) }
+            // Ampere (RTX 30xx) and newer start at 0x2200: the full tier (GOOENGINE-2.md §18.1).
+            if id >= 0x2200 { ("full", format!("NVIDIA Ampere or newer ({}){vram}", g.device)) }
+            else if id >= 0x1e00 { ("standard", format!("NVIDIA Turing ({}){vram}", g.device)) }
             else { ("eco", format!("NVIDIA Maxwell/Pascal/Volta ({}){vram}", g.device)) }
         }
         "0x8086" if g.vram_mb == 0 => ("minimal", format!("Intel integrated ({})", g.driver)),

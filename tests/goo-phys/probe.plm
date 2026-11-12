@@ -1,0 +1,294 @@
+// tests/goo-phys/probe.plm: written by probe.py, do not edit.
+// The smallest scene that lives on latte-goo's physics (docs/goo/GOOENGINE-2.md §4): six drops along the bottom
+// edge, the level between them and the cursor as a drop, all one body with one outline. Nothing here moves by
+// itself: no `time`, no spring. What moves is written by goo-phys once a frame, and when its world is still
+// the scene rests (PLEAMAR_TIMING=1 then names nothing that keeps it alive).
+//   latte-goo --scene tests/goo-phys/probe.plm
+language 0.4
+
+scene GooProbe {
+    surface { size: full, 420; anchor: bottom; level: top; reserve: -1; rate: 60 }
+
+    let W = screen.width
+    let H = 420
+    fact stir = 0
+    fact tier = 2
+    fact gale = 0
+    fact cur.x = 0
+    fact cur.y = 0
+    fact cur.st = 0
+    fact cur.rot = 0
+    fact cur.wob = 0
+    fact cur.tailx = 0
+    fact cur.taily = 0
+    fact ev.landed = 0
+    fact g.hx.0 = 260
+    fact g.hy.0 = 408
+    fact g.hr.0 = 20
+    fact g.held.0 = 0
+    fact g.jump.0 = 0
+    fact g.jvx.0 = 0
+    fact g.jvy.0 = 0
+    fact g.x.0 = 0
+    fact g.y.0 = 0
+    fact g.r.0 = 0
+    fact g.st.0 = 0
+    fact g.rot.0 = 0
+    fact g.sq.0 = 0
+    fact g.tip.0 = 0
+    fact g.tipa.0 = 0
+    fact j.on.0 = 0
+    fact j.w.0 = 0
+    fact j.ax.0 = 0
+    fact j.ay.0 = 0
+    fact j.bx.0 = 0
+    fact j.by.0 = 0
+    fact g.hx.1 = 500
+    fact g.hy.1 = 406.2
+    fact g.hr.1 = 23
+    fact g.held.1 = 0
+    fact g.jump.1 = 0
+    fact g.jvx.1 = 0
+    fact g.jvy.1 = 0
+    fact g.x.1 = 0
+    fact g.y.1 = 0
+    fact g.r.1 = 0
+    fact g.st.1 = 0
+    fact g.rot.1 = 0
+    fact g.sq.1 = 0
+    fact g.tip.1 = 0
+    fact g.tipa.1 = 0
+    fact j.on.1 = 0
+    fact j.w.1 = 0
+    fact j.ax.1 = 0
+    fact j.ay.1 = 0
+    fact j.bx.1 = 0
+    fact j.by.1 = 0
+    fact g.hx.2 = 740
+    fact g.hy.2 = 404.4
+    fact g.hr.2 = 26
+    fact g.held.2 = 0
+    fact g.jump.2 = 0
+    fact g.jvx.2 = 0
+    fact g.jvy.2 = 0
+    fact g.x.2 = 0
+    fact g.y.2 = 0
+    fact g.r.2 = 0
+    fact g.st.2 = 0
+    fact g.rot.2 = 0
+    fact g.sq.2 = 0
+    fact g.tip.2 = 0
+    fact g.tipa.2 = 0
+    fact j.on.2 = 0
+    fact j.w.2 = 0
+    fact j.ax.2 = 0
+    fact j.ay.2 = 0
+    fact j.bx.2 = 0
+    fact j.by.2 = 0
+    fact g.hx.3 = 980
+    fact g.hy.3 = 402.6
+    fact g.hr.3 = 29
+    fact g.held.3 = 0
+    fact g.jump.3 = 0
+    fact g.jvx.3 = 0
+    fact g.jvy.3 = 0
+    fact g.x.3 = 0
+    fact g.y.3 = 0
+    fact g.r.3 = 0
+    fact g.st.3 = 0
+    fact g.rot.3 = 0
+    fact g.sq.3 = 0
+    fact g.tip.3 = 0
+    fact g.tipa.3 = 0
+    fact j.on.3 = 0
+    fact j.w.3 = 0
+    fact j.ax.3 = 0
+    fact j.ay.3 = 0
+    fact j.bx.3 = 0
+    fact j.by.3 = 0
+    fact g.hx.4 = 1220
+    fact g.hy.4 = 400.8
+    fact g.hr.4 = 32
+    fact g.held.4 = 0
+    fact g.jump.4 = 0
+    fact g.jvx.4 = 0
+    fact g.jvy.4 = 0
+    fact g.x.4 = 0
+    fact g.y.4 = 0
+    fact g.r.4 = 0
+    fact g.st.4 = 0
+    fact g.rot.4 = 0
+    fact g.sq.4 = 0
+    fact g.tip.4 = 0
+    fact g.tipa.4 = 0
+    fact j.on.4 = 0
+    fact j.w.4 = 0
+    fact j.ax.4 = 0
+    fact j.ay.4 = 0
+    fact j.bx.4 = 0
+    fact j.by.4 = 0
+    fact g.hx.5 = 1460
+    fact g.hy.5 = 399
+    fact g.hr.5 = 35
+    fact g.held.5 = 0
+    fact g.jump.5 = 0
+    fact g.jvx.5 = 0
+    fact g.jvy.5 = 0
+    fact g.x.5 = 0
+    fact g.y.5 = 0
+    fact g.r.5 = 0
+    fact g.st.5 = 0
+    fact g.rot.5 = 0
+    fact g.sq.5 = 0
+    fact g.tip.5 = 0
+    fact g.tipa.5 = 0
+    fact j.on.5 = 0
+    fact j.w.5 = 0
+    fact j.ax.5 = 0
+    fact j.ay.5 = 0
+    fact j.bx.5 = 0
+    fact j.by.5 = 0
+    fact h.0 = 0
+    fact h.1 = 0
+    fact h.2 = 0
+    fact h.3 = 0
+    fact h.4 = 0
+    fact h.5 = 0
+    fact h.6 = 0
+    fact h.7 = 0
+    fact h.8 = 0
+    fact h.9 = 0
+    fact h.10 = 0
+    fact h.11 = 0
+    fact h.12 = 0
+    fact h.13 = 0
+    fact h.14 = 0
+    fact h.15 = 0
+    fact h.16 = 0
+    fact h.17 = 0
+    fact h.18 = 0
+    fact h.19 = 0
+    fact h.20 = 0
+    fact h.21 = 0
+    fact h.22 = 0
+    fact h.23 = 0
+    fact h.24 = 0
+    fact h.25 = 0
+    fact h.26 = 0
+    fact h.27 = 0
+    fact h.28 = 0
+    fact h.29 = 0
+    fact h.30 = 0
+    fact h.31 = 0
+    fact h.32 = 0
+    fact h.33 = 0
+    fact h.34 = 0
+    fact h.35 = 0
+    fact h.36 = 0
+    fact h.37 = 0
+    fact h.38 = 0
+    fact h.39 = 0
+    fact h.40 = 0
+    fact h.41 = 0
+    fact h.42 = 0
+    fact h.43 = 0
+    fact h.44 = 0
+    fact h.45 = 0
+    fact h.46 = 0
+    fact h.47 = 0
+
+    body {
+        color: #5a3a26
+        border: 1.25, #f3e3cf
+        box { from: 0, H - 10; size: W, 12 }
+        ellipse { at: 0.5 * W / 48, H - 6 - h.0; radius: 8; scale: W / 48 / 8, 1; blend: 24 }
+        ellipse { at: 1.5 * W / 48, H - 6 - h.1; radius: 8; scale: W / 48 / 8, 1; blend: 24 }
+        ellipse { at: 2.5 * W / 48, H - 6 - h.2; radius: 8; scale: W / 48 / 8, 1; blend: 24 }
+        ellipse { at: 3.5 * W / 48, H - 6 - h.3; radius: 8; scale: W / 48 / 8, 1; blend: 24 }
+        ellipse { at: 4.5 * W / 48, H - 6 - h.4; radius: 8; scale: W / 48 / 8, 1; blend: 24 }
+        ellipse { at: 5.5 * W / 48, H - 6 - h.5; radius: 8; scale: W / 48 / 8, 1; blend: 24 }
+        ellipse { at: 6.5 * W / 48, H - 6 - h.6; radius: 8; scale: W / 48 / 8, 1; blend: 24 }
+        ellipse { at: 7.5 * W / 48, H - 6 - h.7; radius: 8; scale: W / 48 / 8, 1; blend: 24 }
+        ellipse { at: 8.5 * W / 48, H - 6 - h.8; radius: 8; scale: W / 48 / 8, 1; blend: 24 }
+        ellipse { at: 9.5 * W / 48, H - 6 - h.9; radius: 8; scale: W / 48 / 8, 1; blend: 24 }
+        ellipse { at: 10.5 * W / 48, H - 6 - h.10; radius: 8; scale: W / 48 / 8, 1; blend: 24 }
+        ellipse { at: 11.5 * W / 48, H - 6 - h.11; radius: 8; scale: W / 48 / 8, 1; blend: 24 }
+        ellipse { at: 12.5 * W / 48, H - 6 - h.12; radius: 8; scale: W / 48 / 8, 1; blend: 24 }
+        ellipse { at: 13.5 * W / 48, H - 6 - h.13; radius: 8; scale: W / 48 / 8, 1; blend: 24 }
+        ellipse { at: 14.5 * W / 48, H - 6 - h.14; radius: 8; scale: W / 48 / 8, 1; blend: 24 }
+        ellipse { at: 15.5 * W / 48, H - 6 - h.15; radius: 8; scale: W / 48 / 8, 1; blend: 24 }
+        ellipse { at: 16.5 * W / 48, H - 6 - h.16; radius: 8; scale: W / 48 / 8, 1; blend: 24 }
+        ellipse { at: 17.5 * W / 48, H - 6 - h.17; radius: 8; scale: W / 48 / 8, 1; blend: 24 }
+        ellipse { at: 18.5 * W / 48, H - 6 - h.18; radius: 8; scale: W / 48 / 8, 1; blend: 24 }
+        ellipse { at: 19.5 * W / 48, H - 6 - h.19; radius: 8; scale: W / 48 / 8, 1; blend: 24 }
+        ellipse { at: 20.5 * W / 48, H - 6 - h.20; radius: 8; scale: W / 48 / 8, 1; blend: 24 }
+        ellipse { at: 21.5 * W / 48, H - 6 - h.21; radius: 8; scale: W / 48 / 8, 1; blend: 24 }
+        ellipse { at: 22.5 * W / 48, H - 6 - h.22; radius: 8; scale: W / 48 / 8, 1; blend: 24 }
+        ellipse { at: 23.5 * W / 48, H - 6 - h.23; radius: 8; scale: W / 48 / 8, 1; blend: 24 }
+        ellipse { at: 24.5 * W / 48, H - 6 - h.24; radius: 8; scale: W / 48 / 8, 1; blend: 24 }
+        ellipse { at: 25.5 * W / 48, H - 6 - h.25; radius: 8; scale: W / 48 / 8, 1; blend: 24 }
+        ellipse { at: 26.5 * W / 48, H - 6 - h.26; radius: 8; scale: W / 48 / 8, 1; blend: 24 }
+        ellipse { at: 27.5 * W / 48, H - 6 - h.27; radius: 8; scale: W / 48 / 8, 1; blend: 24 }
+        ellipse { at: 28.5 * W / 48, H - 6 - h.28; radius: 8; scale: W / 48 / 8, 1; blend: 24 }
+        ellipse { at: 29.5 * W / 48, H - 6 - h.29; radius: 8; scale: W / 48 / 8, 1; blend: 24 }
+        ellipse { at: 30.5 * W / 48, H - 6 - h.30; radius: 8; scale: W / 48 / 8, 1; blend: 24 }
+        ellipse { at: 31.5 * W / 48, H - 6 - h.31; radius: 8; scale: W / 48 / 8, 1; blend: 24 }
+        ellipse { at: 32.5 * W / 48, H - 6 - h.32; radius: 8; scale: W / 48 / 8, 1; blend: 24 }
+        ellipse { at: 33.5 * W / 48, H - 6 - h.33; radius: 8; scale: W / 48 / 8, 1; blend: 24 }
+        ellipse { at: 34.5 * W / 48, H - 6 - h.34; radius: 8; scale: W / 48 / 8, 1; blend: 24 }
+        ellipse { at: 35.5 * W / 48, H - 6 - h.35; radius: 8; scale: W / 48 / 8, 1; blend: 24 }
+        ellipse { at: 36.5 * W / 48, H - 6 - h.36; radius: 8; scale: W / 48 / 8, 1; blend: 24 }
+        ellipse { at: 37.5 * W / 48, H - 6 - h.37; radius: 8; scale: W / 48 / 8, 1; blend: 24 }
+        ellipse { at: 38.5 * W / 48, H - 6 - h.38; radius: 8; scale: W / 48 / 8, 1; blend: 24 }
+        ellipse { at: 39.5 * W / 48, H - 6 - h.39; radius: 8; scale: W / 48 / 8, 1; blend: 24 }
+        ellipse { at: 40.5 * W / 48, H - 6 - h.40; radius: 8; scale: W / 48 / 8, 1; blend: 24 }
+        ellipse { at: 41.5 * W / 48, H - 6 - h.41; radius: 8; scale: W / 48 / 8, 1; blend: 24 }
+        ellipse { at: 42.5 * W / 48, H - 6 - h.42; radius: 8; scale: W / 48 / 8, 1; blend: 24 }
+        ellipse { at: 43.5 * W / 48, H - 6 - h.43; radius: 8; scale: W / 48 / 8, 1; blend: 24 }
+        ellipse { at: 44.5 * W / 48, H - 6 - h.44; radius: 8; scale: W / 48 / 8, 1; blend: 24 }
+        ellipse { at: 45.5 * W / 48, H - 6 - h.45; radius: 8; scale: W / 48 / 8, 1; blend: 24 }
+        ellipse { at: 46.5 * W / 48, H - 6 - h.46; radius: 8; scale: W / 48 / 8, 1; blend: 24 }
+        ellipse { at: 47.5 * W / 48, H - 6 - h.47; radius: 8; scale: W / 48 / 8, 1; blend: 24 }
+        // drop 0: longer the way it goes, flatter where it met something (the area kept), a tip to the cursor, its thread
+        ellipse { at: g.x.0, g.y.0; radius: g.r.0; scale: (1 + g.st.0) * (1 + g.sq.0 * 0.6), (1 - g.sq.0 * 0.6) / (1 + g.st.0); rotate: if(g.st.0 > 0.02, g.rot.0, 0); blend: 18 }
+        ellipse { at: g.x.0 + cos(g.tipa.0) * (g.r.0 * 0.7 + g.tip.0), g.y.0 + sin(g.tipa.0) * (g.r.0 * 0.7 + g.tip.0); radius: g.r.0 * 0.3 * (g.tip.0 > 0.5); blend: 22 }
+        line { from: j.ax.0, j.ay.0; to: j.bx.0, j.by.0; width: j.w.0 * j.on.0; blend: 14 }
+        // drop 1: longer the way it goes, flatter where it met something (the area kept), a tip to the cursor, its thread
+        ellipse { at: g.x.1, g.y.1; radius: g.r.1; scale: (1 + g.st.1) * (1 + g.sq.1 * 0.6), (1 - g.sq.1 * 0.6) / (1 + g.st.1); rotate: if(g.st.1 > 0.02, g.rot.1, 0); blend: 18 }
+        ellipse { at: g.x.1 + cos(g.tipa.1) * (g.r.1 * 0.7 + g.tip.1), g.y.1 + sin(g.tipa.1) * (g.r.1 * 0.7 + g.tip.1); radius: g.r.1 * 0.3 * (g.tip.1 > 0.5); blend: 22 }
+        line { from: j.ax.1, j.ay.1; to: j.bx.1, j.by.1; width: j.w.1 * j.on.1; blend: 14 }
+        // drop 2: longer the way it goes, flatter where it met something (the area kept), a tip to the cursor, its thread
+        ellipse { at: g.x.2, g.y.2; radius: g.r.2; scale: (1 + g.st.2) * (1 + g.sq.2 * 0.6), (1 - g.sq.2 * 0.6) / (1 + g.st.2); rotate: if(g.st.2 > 0.02, g.rot.2, 0); blend: 18 }
+        ellipse { at: g.x.2 + cos(g.tipa.2) * (g.r.2 * 0.7 + g.tip.2), g.y.2 + sin(g.tipa.2) * (g.r.2 * 0.7 + g.tip.2); radius: g.r.2 * 0.3 * (g.tip.2 > 0.5); blend: 22 }
+        line { from: j.ax.2, j.ay.2; to: j.bx.2, j.by.2; width: j.w.2 * j.on.2; blend: 14 }
+        // drop 3: longer the way it goes, flatter where it met something (the area kept), a tip to the cursor, its thread
+        ellipse { at: g.x.3, g.y.3; radius: g.r.3; scale: (1 + g.st.3) * (1 + g.sq.3 * 0.6), (1 - g.sq.3 * 0.6) / (1 + g.st.3); rotate: if(g.st.3 > 0.02, g.rot.3, 0); blend: 18 }
+        ellipse { at: g.x.3 + cos(g.tipa.3) * (g.r.3 * 0.7 + g.tip.3), g.y.3 + sin(g.tipa.3) * (g.r.3 * 0.7 + g.tip.3); radius: g.r.3 * 0.3 * (g.tip.3 > 0.5); blend: 22 }
+        line { from: j.ax.3, j.ay.3; to: j.bx.3, j.by.3; width: j.w.3 * j.on.3; blend: 14 }
+        // drop 4: longer the way it goes, flatter where it met something (the area kept), a tip to the cursor, its thread
+        ellipse { at: g.x.4, g.y.4; radius: g.r.4; scale: (1 + g.st.4) * (1 + g.sq.4 * 0.6), (1 - g.sq.4 * 0.6) / (1 + g.st.4); rotate: if(g.st.4 > 0.02, g.rot.4, 0); blend: 18 }
+        ellipse { at: g.x.4 + cos(g.tipa.4) * (g.r.4 * 0.7 + g.tip.4), g.y.4 + sin(g.tipa.4) * (g.r.4 * 0.7 + g.tip.4); radius: g.r.4 * 0.3 * (g.tip.4 > 0.5); blend: 22 }
+        line { from: j.ax.4, j.ay.4; to: j.bx.4, j.by.4; width: j.w.4 * j.on.4; blend: 14 }
+        // drop 5: longer the way it goes, flatter where it met something (the area kept), a tip to the cursor, its thread
+        ellipse { at: g.x.5, g.y.5; radius: g.r.5; scale: (1 + g.st.5) * (1 + g.sq.5 * 0.6), (1 - g.sq.5 * 0.6) / (1 + g.st.5); rotate: if(g.st.5 > 0.02, g.rot.5, 0); blend: 18 }
+        ellipse { at: g.x.5 + cos(g.tipa.5) * (g.r.5 * 0.7 + g.tip.5), g.y.5 + sin(g.tipa.5) * (g.r.5 * 0.7 + g.tip.5); radius: g.r.5 * 0.3 * (g.tip.5 > 0.5); blend: 22 }
+        line { from: j.ax.5, j.ay.5; to: j.bx.5, j.by.5; width: j.w.5 * j.on.5; blend: 14 }
+        // the cursor as a drop: its tip where the pointer is, its belly behind
+        ellipse { at: cur.x, cur.y; radius: 5; blend: 8 }
+        ellipse { at: cur.x + cur.tailx + 6, cur.y + cur.taily + 8; radius: 8; scale: (1 + cur.st) * (1 + cur.wob * 0.3), 1 / (1 + cur.st); rotate: cur.rot; blend: 12 }
+    }
+
+    // a press on a drop throws it up and to the right
+    zone ellipse hit.0 { at: g.x.0, g.y.0; radius: g.r.0 + 6; cursor: pointer; label: "Drop 0"; role: button }
+    on press hit.0 { g.jvx.0 = 500; g.jvy.0 = -900; g.jump.0 = g.jump.0 + 1 }
+    zone ellipse hit.1 { at: g.x.1, g.y.1; radius: g.r.1 + 6; cursor: pointer; label: "Drop 1"; role: button }
+    on press hit.1 { g.jvx.1 = 500; g.jvy.1 = -900; g.jump.1 = g.jump.1 + 1 }
+    zone ellipse hit.2 { at: g.x.2, g.y.2; radius: g.r.2 + 6; cursor: pointer; label: "Drop 2"; role: button }
+    on press hit.2 { g.jvx.2 = 500; g.jvy.2 = -900; g.jump.2 = g.jump.2 + 1 }
+    zone ellipse hit.3 { at: g.x.3, g.y.3; radius: g.r.3 + 6; cursor: pointer; label: "Drop 3"; role: button }
+    on press hit.3 { g.jvx.3 = 500; g.jvy.3 = -900; g.jump.3 = g.jump.3 + 1 }
+    zone ellipse hit.4 { at: g.x.4, g.y.4; radius: g.r.4 + 6; cursor: pointer; label: "Drop 4"; role: button }
+    on press hit.4 { g.jvx.4 = 500; g.jvy.4 = -900; g.jump.4 = g.jump.4 + 1 }
+    zone ellipse hit.5 { at: g.x.5, g.y.5; radius: g.r.5 + 6; cursor: pointer; label: "Drop 5"; role: button }
+    on press hit.5 { g.jvx.5 = 500; g.jvy.5 = -900; g.jump.5 = g.jump.5 + 1 }
+}

@@ -88,9 +88,9 @@ part LensLine {
         show: lens_shore and lens_b > lens_a
         // the conversations: a pulse while the AI answers, a dot when an answer came meanwhile
         ellipse { at: ln.left + 24, ln.cy; radius: 16; color: ink; opacity: 10% * ln_talk.hover }
-        text g_ln_talk { at: ln.left + 24, ln.cy; anchor: center; size: 18; color: ink; opacity: if(lens_busy, 55% + 40% * sin(time * 300), 85%); family: "tabler-icons" }
+        text g_ln_talk { at: ln.left + 24, ln.cy; anchor: center; size: 18; color: ink; opacity: if(lens_busy, 55% + 40% * sin(tick * 300), 85%); family: "tabler-icons" }
         ellipse { at: ln.left + 33, ln.cy - 9; radius: 4; color: gold; show: lens_fresh }
-        ellipse { at: ln.left + 33, ln.cy + 9; radius: 4; color: gold; opacity: 60% + 40% * sin(time * 300); show: lens_agent }
+        ellipse { at: ln.left + 33, ln.cy + 9; radius: 4; color: gold; opacity: 60% + 40% * sin(tick * 300); show: lens_agent }
         zone box ln_talk { at: ln.left + 24, ln.cy; size: 36, 46; cursor: pointer; label: "Conversations"; role: button }
         on press ln_talk { emit lens_talk }
 

@@ -1,7 +1,7 @@
 [workspace]
 resolver = "2"
-members = ["crates/latte-hw", "crates/latte-boot", "crates/latte-stats", "crates/latte-props", "crates/latte-chapolera", "crates/latte-index", "crates/latte-index-core"]
-exclude = ["old", "build"]          # build/: what install fetches and builds (pleamar, pleamar-wm)
+members = ["crates/goo-phys", "crates/latte-hw", "crates/latte-boot", "crates/latte-stats", "crates/latte-props", "crates/latte-chapolera", "crates/latte-index", "crates/latte-index-core"]
+exclude = ["old", "build", "crates/latte-goo"]   # build/: what install fetches and builds (pleamar, pleamar-wm); latte-goo is built with them (patches/build-pleamar.sh)
 
 [workspace.package]
 version = "0.4.0"

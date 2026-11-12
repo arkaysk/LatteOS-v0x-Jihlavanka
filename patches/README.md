@@ -1,20 +1,21 @@
 # Patches on pleamar
 
 LatteOS runs on [pleamar](https://github.com/k4ditano/pleamar) built from its source with these changes. They
-apply to pleamar **0.7.10** (tag `v0.7.10`, commit `0fdca2d`), each on its own (`git apply`), `pleamar-speed-edges-wheel.patch` after the others, and each is meant to be offered to pleamar's author:
+apply to pleamar **0.7.27** (tag `v0.7.27`, commit `dc902fe`), each on its own (`git apply`), `pleamar-speed-edges-wheel.patch` after the six before it and `pleamar-step-hook.patch` last, and each is meant to be offered to pleamar's author:
 none is specific to LatteOS. The scenes work without them, only slower or less sharp.
 
 | Patch | What it does | Why |
 | --- | --- | --- |
-| `pleamar-speed-edges-wheel.patch` | `body-speed`: a long body with many shapes is painted in vertical strips, each with only the shapes that reach it; a shape of no size is left out. `sharp-edges`: the edge of a body follows how much the distance really changes per pixel. `wheel-x`: only the sideways turn of the wheel. | A body's shader works out every shape for every pixel: without strips the bar alone fills an RX 640 (100 % of the card, 115 ms a frame). |
+| `pleamar-speed-edges-wheel.patch` | A shape of no size in a body is left out: it neither paints nor blends. `sharp-edges`: the edge of a body follows how much the distance really changes per pixel. `wheel-x`: only the sideways turn of the wheel. (`body-speed`, a long body painted in strips, went with 0.7.27: since 0.7.18 pleamar paints bodies in tiles itself.) | A body keeps slots for drops that come and go: a point would still raise a bump through the blend. |
 | `pleamar-steady-glass.patch` | The glass keeps the last three frames it showed and works out the background only where all three agree; under a dense tint it is not worked out at all. | The capture the compositor hands over may be of an older frame. Unmixing it against the newest one left ghosts of text that had gone, and grain along moving edges. |
 | `pleamar-windows-and-icons.patch` | `PLEAMAR_GENERIC=window` takes only the window list from the generic protocols and leaves the rest to Hyprland; the list has any number of listeners. (The icons part went: since 0.4.22 pleamar finds icons the freedesktop way itself.) | On Hyprland the `window` service reports only the window in front. One listener pushed the other out, so drops stayed for windows that were gone. |
 | `pleamar-right-selection.patch` | A press of the right button puts what is selected into `text selected_text`, if the scene declares it. | A menu on the right button could not copy a selection: the logic did not know it. |
 | `pleamar-window-carry.patch` | `carry`, an effect: in a rule fired by a press, the scene's `kind: window` is carried by the mouse, as from a title bar (xdg-shell's move with the press's serial). Documented in the reference beside `quit`. | A pleamar window that draws its own header —LatteOS's windows look like its other apps, ROADMAP 10L.01— could not be moved at all: only a frame drawn by the compositor carried it. |
 | `pleamar-field-select.patch` | `select: all \| stem` on an `input`: focused, the field chooses all it holds, or what is before its last dot (a file's name without its ending). Documented in the reference. | Renaming a file as Windows and Nautilus offer it (ROADMAP 10L.02): the name chosen, the ending kept. A field could only put its cursor at the end. |
 | `pleamar-apps-reload.patch` | Watching `apps` again reads the list again, for every listener. | The list was read once: an app installed while the desktop ran did not show up until the next login. |
+| `pleamar-step-hook.patch` | `pleamar::provide_step(f)`: a program that carries pleamar as a library runs `f(dt, the facts' names, their values)` once a frame, after the pointer's facts and before the rules, and answers whether its world still moves; while it does the scene keeps painting (`PLEAMAR_TIMING` names it "the host's step"), when it does not the scene rests. | Goo's motion is physics with masses, collisions and a surface that carries waves (`crates/goo-phys`, docs/goo/GOOENGINE-2.md §4): a spring's stiffness is a number, not an expression, and a scene has no loops. `crates/latte-goo` is pleamar with that step inside it. |
 
-On [pleamar-wm](https://github.com/k4ditano/pleamar-wm) 0.6.9 (tag `v0.6.9`, commit `42c8fee`, beside `../pleamar`):
+On [pleamar-wm](https://github.com/k4ditano/pleamar-wm) 0.6.15 (tag `v0.6.15`, commit `96f37e4`, beside `../pleamar`):
 
 | Patch | What it does | Why |
 | --- | --- | --- |
@@ -24,8 +25,8 @@ On [pleamar-wm](https://github.com/k4ditano/pleamar-wm) 0.6.9 (tag `v0.6.9`, com
 | `pleamar-wm-gamma-at-start.patch` | At the start of a session the monitors are told with `publish()`, their colour ramps' sizes too, not with `register` alone. | A night light (gammastep, wlsunset) got `failed` on every monitor until monitors changed: Night light did nothing on pleamar-wm. Issue text in `issues/`. |
 
 To build: `sh patches/build-pleamar.sh` (what `sudo ./install --go` does). It fetches both into
-`build/pleamar-src`, applies the patches (pleamar's `speed-edges-wheel` after its other four, pleamar-wm's on
-pleamar-wm) and builds both into `build/pleamar-src/target/release`; install puts them in `/usr/bin`.
+`build/pleamar-src`, applies the patches (pleamar's in the order above, pleamar-wm's on pleamar-wm) and builds both,
+and `crates/latte-goo` on that pleamar, into `build/pleamar-src/target/release`; install puts them in `/usr/bin`.
 
 When pleamar moves on: apply each patch to the new tag; one that no longer applies was either taken upstream
 (drop it) or needs its context moved (the change itself is small).

@@ -475,7 +475,8 @@ mod tests {
         assert_eq!(latte_hw::tier_for(&amd(90012, 512, true)).0, "minimal");      // Renoir APU
         let nv = |d: &str| Gpu { vendor: "0x10de".into(), device: d.into(), driver: "nvidia".into(), ..amd(0, 0, false) };
         assert_eq!(latte_hw::tier_for(&nv("0x1c03")).0, "eco");                   // GTX 1060
-        assert_eq!(latte_hw::tier_for(&nv("0x2504")).0, "standard");              // RTX 3060
+        assert_eq!(latte_hw::tier_for(&nv("0x1f08")).0, "standard");              // RTX 2060
+        assert_eq!(latte_hw::tier_for(&nv("0x2504")).0, "full");                  // RTX 3060 (GOOENGINE-2.md §18.1)
         assert!(latte_hw::tier_for(&amd(80003, 4096, false)).1.contains("gfx803"));
     }
 
